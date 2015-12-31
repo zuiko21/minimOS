@@ -1,6 +1,6 @@
 # minimOS
 
-###Minimalistic, portable, scalable Operating System for everything from embedded devices to (quasi) full-featured desktop computers!
+####Minimalistic, portable, scalable Operating System for everything from embedded devices to (quasi) full-featured desktop computers!
 
 ##Purpose
 Currently in a VERY early development stage, hopefully will become a common reference platform for deployment of computer-related appliances -- think about embedded systems, like the original intent: an Actual Exposure Time Meter for classic photographic cameras. But by virtue of its modularity and scalability would equally serve to a whole breed of home-made, retro-inspided computers.
@@ -11,41 +11,105 @@ Initial target is the venerable 65(C)02 and its big brother, the 16-bit enabled 
 ##Supported architectures
 With great embarrassment I have to admit never have owned a 65xx computer... but suport for these classic machines shouldn't be difficult to add -- for instance, I have declared as 'reserved' the two first zero-page bytes in case the utterly popular Commodore-64 (using a 6510) is targeted. Back to my own-designed machines, here's the current history & roadmap:
 
-MTE ("Medidor de Tiempos de Exposición", Exposure Time Meter)
-Form-factor: 
-Status: planned, finishing design.
-Specs: 1 MHz 6503 (28 pin, 4 kiB space), 128-byte RAM, 3 kiB-EPROM, VIA 6522, four (very large) 7-segment LED digits.
+**MTE _("Medidor de Tiempos de Exposición", Exposure Time Meter)_**
 
-SDd ("Sistema de Desarrollo didáctico", Development System)
+Status: finishing design.
+
+Form-factor: soldered PCB.
+
+Specs: 1 MHz 6503 (28 pin, 4 kiB space), 128-byte RAM, 3 kiB-EPROM (addressable range from a 2732), VIA 6522
+
+Intefaces: four (very large) 7-segment LED digits, light sensor, maybe a couple of keys...
+
+
+
+**SDd _("Sistema de Desarrollo didáctico", Learning Development System)_**
+
 Status: WORKING!
-Specs: 1 MHz 65SC02, 2 kiB RAM, 2-4 kIB (E)EPROM, VIA 65C22. Currently interfaced to a 4-digit LED-keypad.
 
-CHIHUAHUA
-Status: debugging hardware :-(
-Specs: Soldered, compact version of SDd. Strange bug with VIA, not solved yet. Probably abandoned.
+Form-factor: solderless breadboard.
 
-CHIHUAHA PLUS
+Specs: 1 MHz 65SC02, 2 kiB RAM, 2-4 kIB (E)EPROM, VIA 65C22.
+
+Interfaces: Amplified piezo buzzer between PB7-CB2, currently with a VIA-attached 4-digit LED-keypad.
+
+
+
+**CHIHUAHUA**
+
+Status: finished and _sort-of_ working, but with some strange malfunction :-(
+
+Form-factor: Breadboard with point-to-point soldering.
+
+Specs: Soldered, compact version of SDd. Strange bug with VIA, not solved yet. Probably will be discarded.
+
+Interfaces: Piezo buzzer between PB7-CB2, SS-22 and VIA-port connectors.
+
+
+**CHIHUAHA PLUS**
+
 Status: under construction.
-Specs: 1 MHz (socketed) 65C02, 16 kiB RAM, 32 kiB EPROM, VIA 65C22. SS-22 and obsolete "VIAport" connections, in a similar form-factor as CHIHUAHUA
 
-SDx ("Sistema de Desarrollo eXpandible", Expansible Develpment System)
-Status: abandoned :-(
-Specs: 2 MHz 65C02/102, 8-16 kIB RAM, 32 kiB EPROM, VIA 65C22, ACIA 65SC51, RTC 146815.
+Form-factor: Breadboard with point-to-point soldering.
 
-Baja
+Specs: 1 MHz (socketed osc.) 65C02, 16 kiB RAM, 32 kiB EPROM, VIA 65C22.
+
+Interfaces: Amplified piezo buzzer between PB7-CB2, SS-22 and VIA-port connectors.
+
+
+
+
+**SDx _("Sistema de Desarrollo eXpandible", Expansible Develpment System)_**
+
 Status: aborted :-(
+
+Form-factor: Breadboard with point-to-point soldering.
+
+Specs: 1.25 / 2 MHz 65C02/102, 8-16 kIB RAM, 32 kiB EPROM, VIA 65C22, ACIA 65SC51, RTC 146818.
+
+Interfaces: Amplified piezo buzzer between PB7-CB2, Hitachi LCD, TTL-level async., SS-22 and VIA-port connectors. Several diagnostic LEDs.
+
+
+**Baja**
+
+Status: never started :-(
+
 Specs: intended to be a fully bankswitching 65C02 SBC, but also pluggable into a backplane.
 
-SDm ("Sistema de Desarrollo mejorado", Improved Development System)
-Status: in design stage
-Specs: 2 MHz 65C02, 128 kiB RAM (16K + 7*16K banks), 32 kiB EPROM, VIA 65C22, ACIA 65SC51 in breadboard.
 
-Veracruz
+
+**SDm _("Sistema de Desarrollo mejorado", Improved Development System)_**
+
+Status: finishing design.
+
+Form-factor: solderless breadboard.
+
+Specs: 2 MHz 65C02, 128 kiB RAM (16K + 7*16K banks), 32 kiB EPROM, VIA 65C22, maybe a 65SC51 ACIA.
+
+Intefaces: same as SDd, perhaps would use a separate ACIA in a soldered breadboard, VIA-attached.
+
+
+
+**Veracruz**
+
 Status: in design stage
+
+Form-factor: Breadboard with point-to-point soldering
+
 Specs: 2 MHz (at least) 65816, 512 kiB RAM, 32 kiB EPROM, 2 x VIA 65C22, ACIA/UART (16C550/2?), RTC(?)
 
-Jalisco
-Status: in design stage
-Specs: 12 MHz (hope!) 65816, up to 8 MiB RAM (2 x Garth's modules), 2 x VIA 65C22, UART, 65SIB (with SD-card slot) and SS-22 ports. To be buit on real PCB with PLCC components, likely with PLD decoding.
+Intefaces: New VIA and SS-22 connectors, TTL-level async, 65SIB, Hitachi LCD thru VIA, maybe I2C.
 
-...more to come!
+
+
+**Jalisco**
+
+Status: in design stage
+
+Form-factor: 4-layer PCB, SMD components.
+
+Specs: 12 MHz (hope!) 65816, up to 8 MiB RAM (2 x Garth's modules), 32 kiB Kernel + 2 MiB EPROM (?), 2 x VIA 65C22, (2x) UART.
+
+Interfaces: most likely those of Veracruz, possibly plus SD-card, text console output...
+
+*...more to come!*
