@@ -89,6 +89,17 @@ Specs: 2 MHz 65C02, 128 kiB RAM (16K + 7*16K banks), 32 kiB EPROM, VIA 65C22, ma
 Intefaces: same as SDd, perhaps would use a separate ACIA in a soldered breadboard, VIA-attached.
 
 
+**Tijuana**
+
+Status: finishing design.
+
+Form-factor: Breadboard with point-to-point soldering.
+
+Specs: 3.072 MHz 65C02, 2-8 kiB SRAM, 96 kiB VRAM, 16 kiB EPROM, VIA 65C22, CRTC 6845-S, DUART 2681? *Intended to be a colour & graphics capable VT-52 based terminal.*
+
+Interfaces: 2 x TTL-level async., SS-22, parallel input, VGA-compatible video output (576x432 @ 1 bpp, 3-bit RGB or 3-bit greyscale) 
+
+
 
 **Veracruz**
 
