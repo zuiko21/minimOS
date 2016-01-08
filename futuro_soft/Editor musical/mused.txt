@@ -1,0 +1,100 @@
+/* Cabecera ejecutable minimOS (por determinar) */
+
+/* código a ejecutar */
+		y = open_w(0)		// obtiene dispositivo, no sé si guardarlo en PZ
+		z_used = *			// bytes usados (por determinar)
+		string(y, &splash)	// imprime cadena
+		menu = 0			// primera opción (x2)
+
+		do {
+				string(y, &help)			// ayuda ¿sólo la primera vez?
+				string(y, men_tx[menu])		// extrae cadena de la tabla
+				cout(y, 13)					// espera para la siguiente línea
+				while (c) {z2 = cin(y)}		// espera tecla
+				if (z2=13) ejecutar(menu)	// llama a la rutina pertinente
+				if (z2=27 || z2=+ || z2=^)	// siguiente opción
+				{
+					menu++
+					if (menu = 6) 	menu = 0
+				}
+		} forever;
+				
+/* funciones */
+ejecutar(i)
+{
+	select(i)
+	{
+		case 0: intro()	
+		case 1: edit()
+		case 2: tempo()
+		case 3: play()
+		case 4: borra()
+		case 5: salir()
+		default: error()
+	}
+	menu++;
+}
+
+borra()
+{
+    string(y, &cf_borr)
+    while (c) {z2 = cin(y)}		// espera tecla
+    if (z2=+ || z2=up)        // o sin equivalente de cursor
+    {
+        string(y, &borrada)
+        himem=lomem
+    }
+ }   
+    
+salir()
+{
+string(y, &cf_sal)
+    while (c) {z2 = cin(y)}		// espera tecla
+    if (z2=- || z2=down)        // o sin equivalente de cursor
+    {
+        string(y, &bye)
+        free_w(y)
+        EXIT OK
+    }
+}
+
+tempo()
+{
+	// ¿mostrar cadena de ayuda?
+	do {
+			string(y, t_tx[t_ind])		// muestra velocidad actual
+			cout(y, 13);
+			while (c) {z2 = cin(y)}		// espera tecla
+			if (z2=+ || z2=up)	{
+				t_ind++							// en realidad +2 para vectores
+				if (t_ind>15)		t_ind=15	// sin wrap, límite superior
+			}
+			if (z2=- || z2=down) {
+				t_ind--							// en realidad +2 para vectores
+				if (t_ind<0)		t_ind=0		// límite inferior
+			}
+	} while (z2 != '?' && z2 != 27 && z2 != 13)		// vuelve al menú o fija afinación
+	if (z2 = 13)	{ //fijar afinación }
+}
+				
+/* datos */
+		splash[] = "Editor musical 1.0", 13, 0
+		
+		help[] = "CR=OK, Esc=NO", 13, 0
+
+		men_tx[] = { &m1, &m2, &m3, &m4, &m5, &m6 }		
+		m1[] = "1.Introducir: INTR", 0
+		m2[] = "2.Editar: EDIT", 0
+		m3[] = "3.Tempo: TEMP", 0
+		m4[] = "4.Tocar: PLAY", 0
+		m5[] = "5.Borrar: BORR" ,0
+		m6[] = "6.Salir: SALE", 0
+
+		t_tx[] = { &t1, &t2 ...}
+		t1[] = "Negra d=40", 0		// quizá deje "Negra" en la cadena de ayuda.
+		t2[] = "Negra d=60", 0
+		...
+		
+		cf_borr[]="Sí=+", 13, 0
+		borrada[]="Sí=-", 13,0
+		

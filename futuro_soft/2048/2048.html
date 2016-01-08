@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<!-- 2048 tile game 1.3.1, 20140519... -->
+	<!-- (c) 2014 Carlos J. Santisteban -->
+	<head>
+		<title>2048</title>
+		<style type="text/css">
+			.tile {
+				width: 2em;
+				height: 2em;
+				line-height: 2em;
+				text-align: center;
+				font-family: sans;
+				font-size: 1.4em;
+				padding: 2px;
+				margin: 1px;
+				float: left;
+			}
+			.centro {
+				text-align: center;
+			}
+			.vert {
+				width: 128px;
+				height: 64px;
+			}
+			.horiz {
+				width: 64px;
+				height: 128px;
+			}
+		</style>
+	</head>
+	<body> <!--onkeypress="tecla(event);"> ***no sé gestionar este evento*** -->
+		<table border="0">
+			<tr>
+				<td colspan="3" class="centro"><input type="image" src="img/up.png" class="vert" id="up" /></td>
+			</tr>
+			<tr>
+				<td><input type="image" src="img/left.png" class="horiz" id="left" /></td>
+				<td>
+					<span class="tile" id="c00"></span>
+					<span class="tile" id="c01"></span>
+					<span class="tile" id="c02"></span>
+					<span class="tile" id="c03"></span>
+					<br />
+					<span class="tile" id="c10"></span>
+					<span class="tile" id="c11"></span>
+					<span class="tile" id="c12"></span>
+					<span class="tile" id="c13"></span>
+					<br />
+					<span class="tile" id="c20"></span>
+					<span class="tile" id="c21"></span>
+					<span class="tile" id="c22"></span>
+					<span class="tile" id="c23"></span>
+					<br />
+					<span class="tile" id="c30"></span>
+					<span class="tile" id="c31"></span>
+					<span class="tile" id="c32"></span>
+					<span class="tile" id="c33"></span>
+				</td>
+				<td><input type="image" src="img/right.png" class="horiz" id="right" /></td>
+			</tr>
+			<tr>
+				<td colspan="3" class="centro"><input type="image" src="img/down.png" class="vert" id="down" /></td>
+			</tr>
+			<tr>
+				<td colspan="3" class="centro" id="score"></td>
+			</tr>
+		</table>
+		<p>
+			<a href="http://validator.w3.org/check?uri=referer">
+				<img src="http://www.w3.org/Icons/valid-xhtml10" alt="Valid XHTML 1.0 Strict" height="31" width="88" />
+			</a>
+		</p>
+		<script type="text/javascript">
+//		<![CDATA[
+			var nx, ny;										// coordenadas de la nueva ficha
+			var mat = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];				// la matriz global del juego
+			var fondo = [	"#FFE", "#EEC", "#FB7", "#F84", "#F77", "#F44",		/* colores de fondo (2-64) */
+							"#FF8", "#FF4", "#FB7", "#FF0", "#FE4", "#BBB" ];	/* colores de fondo (128-4096) */
+			var puntos, hisc;								// tanteos (global)
+			var sal = document.getElementById("score");		// enlace global para mostrar tanteo
+
+			hisc = cargar();			// lee el récord anterior
+			if (hisc == "")				// ¿no hay cookie?
+			{
+				hisc = 0;				// se estrena en esta máquina
+				alert("Bienvenido al 2048");
+			}
+			iniciar();					// inicia partida
+			
+			function iniciar()		// tablero inicial
+			{
+				var i, j;				// bucles genéricos
+				
+				puntos = 0;				// inicia puntuación
+				for (i=0; i<4; i++)
+				{
+					for (j=0; j<4; j++)
+					{
+						mat[i][j] = 0;	// cero es casilla vacía
+					}
+				}
+				document.getElementById("up").onclick		= arriba;	// activa botones
+				document.getElementById("left").onclick		= izquierda;
+				document.getElementById("right").onclick	= derecha;
+				document.getElementById("down").onclick		= abajo;
+				
+				generar();				// colocación aleatoria primera jugada
+				generar();
+				mostrar();				// presenta primer tablero
+			}
+			
+			function generar()		// pone un dos en una casilla aleatoria libre
+			{
+				do
+				{
+					nx = Math.floor(Math.random() * 4);
+					ny = Math.floor(Math.random() * 4);
+				}
+				while (mat[ny][nx] != 0);	// espera casilla vacía, pero PUEDE COLGARSE SI NO CABE
+				if (Math.random() > 0.2)	mat[ny][nx] = 2;		// pone un dos
+				else						mat[ny][nx] = 4;		// o un cuatro con 1/8 de probabilidad
+			}
+
+			function mostrar()		// exhibe el tablero completo en pantalla
+			{
+				var i, j;				// bucles genéricos
+				var num;				// enlace para mostrar casilla
+				var etiq;				// compone el id de la casilla a mostrar
+
+				for (i=0; i<4; i++)
+				{
+					for (j=0; j<4; j++)
+					{
+						etiq = 'c' + i.toString().concat(j);		// compone id de casilla
+						num = document.getElementById(etiq);		// conecta con casilla
+						if (mat[i][j] != 0)
+						{
+							num.innerHTML = mat[i][j];				// pone el contenido
+							num.style.backgroundColor = fondo[loga(mat[i][j])%12];	// fondo según valor
+						}
+						else
+						{
+							num.innerHTML = " ";						// casilla vacía
+							num.style.backgroundColor = "#CCC";		// fichas vacías en gris
+						}
+						if (nx==j && ny==i)
+							num.style.fontWeight="bolder";			// nueva ficha en negrita
+						else
+							num.style.fontWeight="normal";
+					}
+				}
+				if (puntos > hisc)			hisc = puntos;				// actualiza récord
+				sal.innerHTML  = "Puntos: <b>" + puntos + "</b><br />";	// muestra tanteo
+				sal.innerHTML += "R&eacute;cord: <b>" + hisc + "</b>";	// máxima puntuación
+			}
+
+			function gravedad(d)		// desplaza fichas
+			{
+				var x, y;		// columna y fila para bucles
+				var z = 0;		// contador desplazamientos
+				var n;			// fichas desaparecidas
+
+				switch(d)		// según dfile:///usr/share/firefox-cgaconfig/firefox/index.htmlirección escogida
+				{
+					case 'w':	// arriba
+						for (x=0; x<4; x++)			// para cada columna...
+						{
+							y=0;					// fila inicial
+							n=0;					// fichas desaparecidas
+							while (y+n < 4)			// avanza hasta haber procesado 4 fichas
+							{
+								while (mat[y][x] == 0 && n<4)	// casilla vacía
+								{
+									mueve(x, y, d);				// hacer sitio
+									n++;						// una menos
+								}
+								if (y>0)			// ante la primera no puede haber igual
+								{
+									if (mat[y][x] == mat[y-1][x])	// iguales juntas
+									{
+										mat[y-1][x] *= 2;			// almacena doble valor
+										puntos += mat[y-1][x];		// añade al tanteo
+										mueve(x, y, d);				// y elimina la repetida
+										n++;						// otra menos
+									}
+								}
+								y++;				// siguiente fila
+							}
+							z += n;					// contabiliza desplazamientos
+						}
+						break;
+
+					case 'a':	// izquierda
+						for (y=0; y<4; y++)			// para cada fila...
+						{
+							x=0;					// columna inicial
+							n=0;					// fichas desaparecidas
+							while (x+n < 4)			// avanza hasta haber procesado 4 fichas
+							{
+								while (mat[y][x] == 0 && n<4)		// casilla vacía
+								{
+									mueve(x, y, d);				// hacer sitio
+									n++;						// una menos
+								}
+								if (x>0)			// ante la primera no puede haber igual
+								{
+									if (mat[y][x] == mat[y][x-1])	// iguales juntas
+									{
+										mat[y][x-1] *= 2;			// almacena doble valor
+										puntos += mat[y][x-1];		// añade al tanteo
+										mueve(x, y, d);				// y elimina la repetida
+										n++;						// otra menos
+									}
+								}
+								x++;				// siguiente fila
+							}
+							z += n;					// contabiliza desplazamientos
+						}
+						break;
+
+					case 'd':	// derecha
+						for (y=0; y<4; y++)			// para cada fila...
+						{
+							x=3;					// columna inicial
+							n=0;					// fichas desaparecidas
+							while (x-n >= 0)		// retrocede hasta haber procesado 4 fichas
+							{
+								while (mat[y][x] == 0 && n<4)	// casilla vacía
+								{
+									mueve(x, y, d);				// hacer sitio
+									n++;						// una menos
+								}
+								if (x<3)			// tras la última no puede haber igual
+								{
+									if (mat[y][x] == mat[y][x+1])	// iguales juntas
+									{
+										mat[y][x+1] *= 2;			// almacena doble valor
+										puntos += mat[y][x+1];		// añade al tanteo
+										mueve(x, y, d);				// y elimina la repetida
+										n++;						// otra menos
+									}
+								}
+								x--;				// siguiente fila
+							}
+							z += n;					// contabiliza desplazamientos
+						}
+						break;
+
+					case 'x':	// abajo
+						for (x=0; x<4; x++)			// para cada columna...
+						{
+							y=3;					// fila inicial
+							n=0;					// fichas desaparecidas
+							while (y-n >= 0)		// retrocede hasta haber procesado 4 fichas
+							{
+								while (mat[y][x] == 0 && n<4)	// casilla vacía
+								{
+									mueve(x, y, d);				// hacer sitio
+									n++;						// una menos
+								}
+								if (y<3)			// tras la última no puede haber igual
+								{
+									if (mat[y][x] == mat[y+1][x])	// iguales juntas
+									{
+										mat[y+1][x] *= 2;			// almacena doble valor
+										puntos += mat[y+1][x];		// añade al tanteo							
+										mueve(x, y, d);				// y elimina la repetida
+										n++;						// otra menos
+									}
+								}
+								y--;				// fila anterior
+							}
+							z += n;					// contabiliza desplazamientos
+						}
+						break;
+					default:	// tecla errónea (?)
+						alert("ERROR INTERNO: dirección errónea");
+				}
+
+				return z;
+			}
+
+			function mueve(x, y, d)		// desplaza fichas solapando una
+			{
+				var i;			// bucle genérico
+
+				switch(d)
+				{
+					case 'w':	// arriba
+						for (i=y+1; i<4; i++)			// ficha origen
+							mat[i-1][x] = mat[i][x];	// machaca destino
+						mat[3][x] = 0;					// limpia el hueco resultante
+						break;
+					case 'a':	// izquierda
+						for (i=x+1; i<4; i++)			// ficha origen
+							mat[y][i-1] = mat[y][i];	// machaca destino
+						mat[y][3] = 0;					// limpia el hueco resultante
+						break;
+					case 'd':	// derecha
+						for (i=x-1; i>=0; i--)			// ficha origen
+							mat[y][i+1] = mat[y][i];	// machaca destino
+						mat[y][0] = 0;					// limpia el hueco resultante
+						break;
+					case 'x':	// abajo
+						for (i=y-1; i>=0; i--)			// ficha origen
+							mat[i+1][x] = mat[i][x];	// machaca destino
+						mat[0][x] = 0;					// limpia el hueco resultante
+						break;	// no estrictamente necesario
+				}
+			}
+
+			function posible()			// determina se se puede seguir jugando
+			{
+				var n = 0;	// contador de vacías o iguales
+				var i, j;	// bucles genéricos
+
+				for (i=0; i<4; i++)					// explora por filas
+				{
+					if (mat[i][0] == 0)		n++;	// si al menos la primera columna está vacía
+					for (j=1; j<4; j++)				// columnas (excepto primera)
+					{
+						if (mat[i][j] == mat[i][j-1])		n++;	// en caso de vecinas iguales
+						if (mat[i][j] == 0)					n++;	// en caso de casilla vacía
+						if (mat[j][i] == mat[j-1][i])		n++;	// busca vecinas iguales, por columnas
+					}
+				}
+
+				return n;	// cero si no se puede seguir
+			}
+
+			function arriba()
+			{
+				if (gravedad('w') > 0)		// mueve hacia arriba, a ver si ha cambiado algo
+				{
+					generar();			// nueva ficha
+					mostrar();			// actualiza
+				}
+				seguir();				// ¿es posible?
+			}
+			
+			function abajo()
+			{
+				if (gravedad('x') > 0)		// mueve hacia abajo, a ver si ha cambiado algo
+				{
+					generar();			// nueva ficha
+					mostrar();			// actualiza
+				}
+				seguir();				// ¿es posible?
+			}
+
+			function derecha()
+			{
+				if (gravedad('d') > 0)		// mueve hacia derecha, a ver si ha cambiado algo
+				{
+					generar();			// nueva ficha
+					mostrar();			// actualiza
+				}
+				seguir();				// ¿es posible?
+			}
+			
+			function izquierda()
+			{
+				if (gravedad('a') > 0)		// mueve hacia izquierda, a ver si ha cambiado algo
+				{
+					generar();			// nueva ficha
+					mostrar();			// actualiza
+				}
+				seguir();				// ¿es posible?
+			}
+
+/*			function tecla(e)		// gestiona tecla pulsada ***NO FUNCIONA***
+			{
+				var t;				// código de la tecla
+				
+				t = e.charCode || 32;	// en minúscula
+				switch(t)
+				{
+					case 'w':
+						arriba();
+						break;
+					case 'a':
+						izquierda();
+						break;
+					case 'x':
+						abajo();
+						break;
+					case 'd':
+						derecha();
+						break;		// no necesario
+					default:		//*****DEBUG*****
+						alert("mal");
+				}
+			}
+*/
+
+			function seguir()		// modulariza "bucle" principal
+			{
+				if (posible() == 0)		// no es posible seguir
+					fracaso();
+				// posible mejora al detectar 2048
+			}
+
+			function fracaso()		// el juego ha terminado
+			{
+				alert("Has fracasado miserablemente");
+				document.getElementById("up").onclick		= null;	// desactiva botones
+				document.getElementById("left").onclick		= null;
+				document.getElementById("right").onclick	= null;
+				document.getElementById("down").onclick		= null;
+				guardar();											// guarda el récord
+				sal.innerHTML += '<br /><input type="button" value="Otra partida" onclick="iniciar();" />';
+			}
+			
+			function loga(x)		// logaritmo en base 2
+			{
+				var n = -1;			// el valor más bajo (2) dará índice 0
+				
+				while (x>1)			// mientras se pueda dividir
+				{
+					x /= 2;
+					n++;
+				}
+				
+				return n;
+			}
+			
+			function guardar()		// guarda el récord en la cookie
+			{
+				var d = new Date();
+				
+				d.setTime(d.getTime()+31536003965);		// expira al año
+				document.cookie = "cjss2048hiScore=" + hisc + "; expires=" + d.toGMTString();
+			}
+
+			function cargar()		// lee la cookie, fusilado de w3schools
+			{
+				var i, c;
+				var ca = document.cookie.split(';');
+
+				for(i=0; i<ca.length; i++)
+				{
+					c = ca[i].trim();
+					if (c.indexOf("cjss2048hiScore=")==0)
+						return c.substring(16,c.length);
+				}
+
+				return "";
+			}
+//		]]>
+		</script>
+	</body>
+</html>

@@ -1,0 +1,27 @@
+*** required labels in zeropage for EhBASIC ***
+* these use indirect Y-indexed addressing *
+Itempl
+Smeml
+Obendl
+Nbendl
+Baslnl
+ut1_pl
+ut2_pl
+Bpntrl
+des_pl
+des_2l
+Lvarpl
+str_pl
+Rdptrl
+FAC2_2
+FAC1_1
+Vrschl
+Astrtl
+Adatal
+func_l
+Cvaral
+ssptr_l
+garb_l
+sdescr
+Sutill
+Cptrl
