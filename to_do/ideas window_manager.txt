@@ -1,0 +1,31 @@
+open_w(size, pos, *y)	// returns y = virtual device number
+{
+	i=0;
+
+	if (size!=0 || pos!=0)	// no real windows yet
+		return err;
+	do	// look for available window
+	{
+		if (win[i] == CLOSED)	break;	// available
+		i++;
+	}while (i<4);	// max 4 windows
+//	win[i]=create_fifo();	// clear buffer
+
+	y=i+1;	// virtual dev = 1...4
+}
+
+close_w(y)
+{
+	if (i=1...4)
+	{
+		win[i] = NULL;
+	}
+}
+
+NC:
+00	open (in use)
+01	free (no more to show)
+10	requested (if click on close and NOT free, ask whether to save etc)
+11	closed (if click on close and FREE, or if interactive exit)
+
+interactive procs should check window state from time to time (at every prompt?) in case it's no longer 00 (OPEN). FREE (unexpected!) and CLOSED should abort and not show anything; REQ allows some interaction for orderly stop.

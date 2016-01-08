@@ -1,0 +1,11 @@
++208 (RTC+LCD)
+	#209: RTC (pseudo-driver block)
+	#211: LCD
++224 (ACIA)
+	#224: serial 1
+	#232: serial 0 (SEL@16552=CS@16550=A3)
++240 (VIA)
+	#240: LED keypad (IORB; in & out)
+	#241: parallel (IORA)
+	#243: ASCII keyboard (DDRA)
+	#250: SS-22 (SR)
