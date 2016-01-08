@@ -1,0 +1,90 @@
+.text
+* = $FF80
+last_c = 0
+cont_pb = 1
+cont_pa = 2
+z_low = 3
+z_high = 4
+irq = $FFFF
+
+;inicializar procesador
+reset:
+SEI       ;sin interrupciones
+CLD       ;modo binario
+LDX #$FF  ;tope de la pila
+TXS       ;Stack Pointer
+
+;inicializa VIA
+STX $6FF2  ;Data Direction Register B
+STX $6FF3  ;Data Direction Register A
+STX $6FF0  ;Output Register B
+STX $6FF1  ;Output Register B
+STX $6FFC  ;Peripheral Control Register
+LDX #$E0
+STX $6FFB  ;Auxiliary Control Register
+LDX #0
+STX $6FFE  ;Interrupt Enable Register
+
+;programa principal
+STX last_c   ;último desplazado ($00)
+STX cont_pb  ;puerto B ($01)
+STX cont_pa  ;puerto A ($02)
+display:
+LDA cont_pb
+STA $6FF0    ;salida por PB
+LDA cont_pa
+STA $6FF1    ;salida por PA
+LDA last_c
+BEQ set_c    ;si acabó en 1...
+CLC          ;meterle un 0
+BCC c_ok
+set_c:
+SEC          ;...si no, meter un 1
+c_ok:
+ROR cont_pb  ;rotación 16 bits
+ROR cont_pa
+BCC clr_c    ;si acabó en uno...
+DEC last_c   ;marcarlo
+BCS rotado
+clr_c:
+LDA #0       ;...si no, borrarlo
+STA last_c
+rotado:
+JSR espera   ;retardo
+CLC
+BCC display  ;muestra bit desplazado
+
+;rutina retardo 0,4 segundos @ 1 MHz
+espera:
+LDA #$C3     ;$C3C3 ≈ 50000
+STA z_low    ;establece contadores
+STA z_high
+bucle:
+DEC z_low    ;siguiente byte bajo
+BNE bucle    ;hasta paso por cero
+DEC z_high   ;siguiente byte alto
+BNE bucle    ;acaba en paso por cero
+RTS          ;regresa al programa
+
+;relleno...
+
+.dsb 6, $FF
+
+;programa alternativo
+nmi:
+LDA #0       ;todos los bits de entrada...
+STA $6FF3    ;...en PA
+copia:
+LDA $6FF1    ;lee PA y...
+STA $6FF0    ;...lo copia en PB
+JSR espera   ;retardo
+CLC
+BCC copia    ;vuelta a empezar
+
+;relleno...
+.dsb 10, $FF
+
+;vectores 6502
+.word nmi    ;Non-Maskable Interrupt
+.word reset  ;Reset vector
+.word irq    ;Break & Interrupt Request (en blanco)

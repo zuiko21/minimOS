@@ -1,0 +1,80 @@
+;inicializar procesador
+reset:
+FF80  78      SEI       ;sin interrupciones ***no 87***
+FF81  D8      CLD       ;modo binario
+FF82  A2FF    LDX #$FF  ;tope de la pila
+FF84  9A      TXS       ;Stack Pointer
+
+;inicializa VIA
+FF85  8EF26F  STX $6FF2  ;Data Direction Register B
+FF88  8EF36F  STX $6FF3  ;Data Direction Register A
+FF8B  8EF06F  STX $6FF0  ;Output Register B
+FF8E  8EF16F  STX $6FF1  ;Output Register B
+FF91  8EFC6F  STX $6FFC  ;Peripheral Control Register
+FF94  A2E0    LDX #$E0
+FF96  8EFB6F  STX $6FFB  ;Auxiliary Control Register
+FF99  A200    LDX #0
+FF9B  8EFE6F  STX $6FFE  ;Interrupt Enable Register **ponía 6FFF**
+
+;programa principal
+FF9E  8600    STX last_c   ;último desplazado ($00)
+FFA0  8601    STX cont_pb  ;puerto B ($01)
+FFA2  8602    STX cont_pa  ;puerto A ($02)
+display:
+FFA4  A501    LDA cont_pb
+FFA6  8DF06F  STA $6FF0    ;salida por PB
+FFA9  A502    LDA cont_pa
+FFAB  8DF16F  STA $6FF1    ;salida por PA
+FFAE  A500    LDA last_c
+FFB0  F003    BEQ set_c    ;si acabó en 1...
+FFB2  18      CLC          ;meterle un 0
+FFB3  9001    BCC c_ok
+set_c:
+FFB5  38      SEC          ;...si no, meter un 1
+c_ok:
+FFB6  6601    ROR cont_pb  ;rotación 16 bits
+FFB8  6602    ROR cont_pa
+FFBA  9004    BCC clr_c    ;si acabó en uno...
+FFBC  C600    DEC last_c   ;marcarlo
+FFBE  B004    BCS rotado
+clr_c:
+FFC0  A900    LDA #0       ;...si no, borrarlo
+FFC2  8500    STA last_c
+rotado:
+FFC4  20CAFF  JSR espera   ;retardo
+FFC7  18      CLC
+FFC8  90DA    BCC display  ;muestra bit desplazado
+
+;rutina retardo 0,4 segundos @ 1 MHz
+espera:
+FFCA  A9C3    LDA #$C3     ;$C3C3 ≈ 50000
+FFCC  8503    STA z_low    ;establece contadores
+FFCE  8504    STA z_high
+bucle:
+FFD0  C603    DEC z_low    ;siguiente byte bajo
+FFD2  D0FC    BNE bucle    ;hasta paso por cero
+FFD4  C604    DEC z_high   ;siguiente byte alto
+FFD6  D0F8    BNE bucle    ;acaba en paso por cero
+FFD8  60      RTS          ;regresa al programa
+
+;relleno...
+FFD9  FF      DC.B $FF x6
+
+;programa alternativo
+nmi:
+FFDF  A900    LDA #0       ;todos los bits de entrada...
+FFE1  8DF36F  STA $6FF3    ;...en PA
+copia:
+FFE4  ADF16F  LDA $6FF1    ;lee PA y...
+FFE7  8DF06F  STA $6FF0    ;...lo copia en PB
+FFEA  20CAFF  JSR espera   ;retardo
+FFED  18      CLC
+FFEE  90F4    BCC copia    ;vuelta a empezar
+
+;relleno...
+FFF0  FF      DC.B $FF x10
+
+;vectores 6502
+FFFA  DFFF    =nmi    ;Non-Maskable Interrupt **LITTLE ENDIAN**
+FFFC  80FF    =reset  ;Reset vector
+FFFE  FFFF    =irq    ;Break & Interrupt Request (en blanco)

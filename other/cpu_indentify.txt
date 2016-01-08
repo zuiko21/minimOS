@@ -1,0 +1,122 @@
+
+David Empson <dempson@actrix.gen.nz> wrote:
+
+> If you are writing a program which depends on the R65C02 instructions,
+> you should definitely include code to test the CPU type (6502, 65C02,
+> R65C02 or 65802/65816) before executing any instructions specific to the
+> R65C02.  There was a routine in Eyes & Lichty which detected most of
+> these, and I worked out an extended version which identified all four
+> major types (I'd have to do a bit of hunting to find it, or reconstruct
+> it).
+
+I've managed to locate the original article I posted in October 1994
+with this detection routine (this required a fair amount of searching on
+my IIgs).  Here is the text of my earlier article, with a little editing
+for tidiness.
+
+
+I've had a request for a revised version of the routine to detect the
+processor, so that it can identify a Rockwell R65C02.
+
+Here is the routine I've come up with.  This routine has an additional
+benefit: it will correctly detect a 65802/65816 if the chip is in 8-bit
+native mode (the previous routine would incorrectly identify it as a
+65C02).  Neither routine will work properly if the 65802/65816 is in
+native mode with the M or X bits clear (i.e. 16-bit registers).
+
+0320- A0 00     LDY #$00
+0322- F8        SED
+0323- A9 99     LDA #$99
+0325- 18        CLC
+0326- 69 01     ADC #$01
+0328- D8        CLD
+0329- D0 15     BMI $0340  ; 6502: N flag not affected by decimal add
+032B- A0 03     LDY #$03
+032D- A2 00     LDX #$00
+032F- BB        TYX        ; 65802 instruction, NOP on all 65C02s
+0330- D0 0E     BNE $0340  ; Branch only on 65802/816
+0332- A6 EA     LDX $EA
+0334- 88        DEY
+0335- 84 EA     STY $EA
+0337- 17 EA     RMB1 $EA   ; Rockwell R65C02 instruction
+0339- C4 EA     CPY $EA    ; Location $EA unaffected on other 65C02
+033B- 86 EA     STX $EA
+033D- D0 01     BNE $0340  ; Branch only on Rockwell R65C02 (test CPY)
+033F- 88        DEY
+0340- 84 00     STY $00
+0342- 60        RTS
+
+I've included comments to show the general logic.  The routine first
+tests for a 6502 using the same trick as before: relying on the negative
+flag not being affected by an add in decimal mode.  This only happens on
+a 6502.
+
+The next part of the code checks for a 65802 or 65816 by seeing if the
+TYX instruction is implemented (transfer Y to X).  On a 65C02 (both
+types), this is an undefined opcode, which will behave as a NOP.  On the
+65C02, the Z flag will still be set from the LDX #$00 instruction.  On
+the 65802/65816, the Z flag will be clear because the TYX instruction
+set the X register to 3 (the contents of Y).  The branch only occurs on
+the 65802/65816.
+
+The third part of the code tests for a Rockwell R65C02 by seeing if the
+special zero page bit manipulation instructions are present.  The R65C02
+has 32 extra opcodes.  The instructions are:
+
+RMBn zp          Reset Memory Bit n in zero page location (8 opcodes)
+SMBn zp          Set Memory Bit n in zero page location (8 opcodes)
+BBRn zp,dest     Branch if bit n reset in zero page location (8 opcodes)
+BBSn zp,dest     Branch if bit n set in zero page location (8 opcodes)
+
+The opcodes are:
+
+$07, $17, $27, $37, $47, $57, $67, $77 (RMBn zp)
+$87, $97, $A7, $B7, $C7, $D7, $E7, $F7 (SMBn zp)
+$0F, $1F, $2F, $3F, $4F, $5F, $6F, $7F (BBRn zp,dest)
+$8F, $9F, $AF, $BF, $CF, $DF, $EF, $FF (BBSn zp,dest)
+
+The code saves the contents of zero page location $EA, sets it to 2,
+then tries to use the RMB1 instruction to clear bit 1 of the location.
+
+On a Rockwell R65C02, this will work, and location $EA will now contain
+zero, so the following CPY sees that the location has changed.
+
+On any other 65C02, the $17 opcode is undefined, so acts as a NOP.  The
+operand ($EA) is then executed as an instrution.  $EA is the opcode for
+NOP, so nothing happens.  Location $EA still contains $02, so the CPY
+sees that the location is the same.
+
+The following STX is used to restore the original contents of location
+$EA.  It doesn't affect the flags.  The following BNE tests the result
+of the CPY.  If the branch occurs, we have a Rockwell R65C02.  If not,
+we have a standard 65C02.
+
+So, after calling this routine, location 0 (and the acummulator) contain
+one of the following values:
+
+0  6502
+1  Standard 65C02
+2  Rockwell R65C02
+3  65802 or 65816
+
+
+Incidentally, I found that a IIe clone I have here contains a Rockwell
+R65C02, so I've tested this routine on all four types of processor
+(except the 65802, but I have tested it on the 65816).
+
+Here is a BASIC subroutine to implement the above routine.
+
+6000 REM IDENTIFY THE PROCESSOR
+6010 I = 800
+6020 READ J: IF J < 0 THEN GOTO 6040
+6030 POKE I,J: I = I + 1: GOTO 6020
+6040 CALL 800
+6050 CPU = PEEK(0): REM 0 = 6502, 1 = 65C02, 2 = R65C02, 3 = 65802/816
+6060 RETURN
+6070 DATA 160,0,248,169,153,24,105,1,216,48,21,160,3,162,0,187,208,14
+6080 DATA 166,234,136,132,234,23,234,196,234,134,234,208,1,136,132,0
+6090 DATA 96,-1
+
+Share and enjoy!
+
+

@@ -1,0 +1,105 @@
+; SDd SRAM-tester (up to 512Kx8)
+; (c) 2013 Carlos J. Santisteban
+; version 1.1, 65C02+6820
+; last modified 2013.02.08
+
+#define	_VIA	$6FF0
+#define  pa  $6FF0
+#define	_iorb	0
+#define _iora	1
+#define	_ddrb	2
+#define	_ddra	3
+#define  cra  $6FF4
+#define	_t1cl	4
+#define	_t1ch	5
+#define	_t1ll	6
+#define	_t1lh	7
+#define  pb  $6FF8
+#define	_t2cl	8
+#define	_t2ch	9
+#define	_sr	10
+#define	_acr	11
+#define  crb  $6FFC
+#define	_pcr	12
+#define	_ifr	13
+#define	_ier	14
+#define	_nhra	15
+
+* = $FE00		; next 256 bytes before last
+start:
+; initialize some stuff
+
+ldx	#$3c
+stx	cra		; select PA
+STZ	pa		; first byte, don't pulse out the 4040
+ldx	#$38
+stx	cra		; select DDRA
+LDA	#$FF		; all bits output
+STA	pa		; PA as address output
+stx	crb		; select DDRB
+STZ	pb		; PB as input, so far
+TAY			; keep $FF somewhere
+
+; the algorithm itself
+
+STZ	0	;_VIA+_t1ll	; reset T1 counter latches...
+STZ	1	;_VIA+_t1lh	; ...but don't start counting
+LDA	#$AA		; initial pattern
+
+pat:
+ldx	#$3c
+stx	crb		; select PB
+sta	pb		; set data bus
+ldx	#$38
+stx	crb		; select DDRB
+STY	pb		; output byte
+ldx	#$30
+stx	crb		; CB2 goes 0
+ldx	#$38
+stx	crb		; back to 1, ¬WE has been pulsed low
+STZ	pb		; prepare to read
+ldx	#$34
+stx	cra		; CA2 goes 0
+CMP	pb		; compare stored byte with pattern
+BNE	error		; something went wrong!
+ldx	#$3c
+stx	cra		; negate OE, no longer reads
+EOR	#$FF		; shift pattern
+BPL	pat		; try once more
+
+INC	pa		; next byte
+BNE	pat		; do check if no boundary crossed
+INC	0	;_VIA+_t1ll	; another page
+BNE	pat
+INC	1	;_VIA+_t1lh	; MSB
+LDA	#2		; for 128 KiB
+CMP	1	;_VIA+_t1lh	; check limit
+BNE	pat		; until the end (128 KiB)
+
+lock:
+BRA	lock		; test ended OK, LED at Q12 shoud be lit
+
+error:
+ldx	#$3c
+stx	crb		; disable ¬WE
+stx	cra		; disable ¬OE
+
+flash:
+STZ	pa		;   zeroes
+JSR	wait		; not a very short pulse
+STY	pa  		; pulse out PA7
+LDX	#63		; delay loops
+delay:
+DEX
+BNE	delay
+BRA	flash		; blinking forever
+
+wait:	RTS		; lose some time
+
+.dsb	32, $ff
+; 6502 vectors
+* = $FFFA
+
+.word	$FFFF		; no NMI
+.word	start		; code address
+.word	$FFFF		; no IRQ/BRK
