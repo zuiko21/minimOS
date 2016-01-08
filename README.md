@@ -84,9 +84,9 @@ Status: finishing design.
 
 Form-factor: solderless breadboard.
 
-Specs: 2 MHz 65C02, 128 kiB RAM (16K + 7*16K banks), 32 kiB EPROM, VIA 65C22, maybe a 65SC51 ACIA.
+Specs: 2 MHz 65C02, 128 kiB RAM (16K + 7x16K banks), 32 kiB EPROM, VIA 65C22, maybe a 65SC51 ACIA.
 
-Intefaces: same as SDd, perhaps would use a separate ACIA in a soldered breadboard, VIA-attached.
+Intefaces: same as SDd, perhaps would incorporate ACIA in a soldered breadboard, attached thru VIA.
 
 
 **Tijuana**
@@ -95,9 +95,9 @@ Status: finishing design.
 
 Form-factor: Breadboard with point-to-point soldering.
 
-Specs: 3.072 MHz 65C02, 2-8 kiB SRAM, 96 kiB VRAM, 16 kiB EPROM, VIA 65C22, CRTC 6845-S, DUART 2681? *Intended to be a colour & graphics capable VT-52 based terminal.*
+Specs: 3.072 MHz 65C02, 2-8 kiB SRAM, 3x32 kiB VRAM, 16 kiB EPROM, VIA 65C22, CRTC HD46505, ACIA 6551A. *Intended to be a colour & graphics capable VT-52 based terminal.*
 
-Interfaces: 2 x TTL-level async., SS-22, parallel input, VGA-compatible video output (576x432 @ 1 bpp, 3-bit RGB or 3-bit greyscale) 
+Interfaces: Piezo buzzer, TTL-level async., SS-22, parallel input, VGA-compatible video output (576x448 @ 1 bpp, 3-bit RGB or 3-bit greyscale) 
 
 
 
@@ -107,9 +107,9 @@ Status: in design stage
 
 Form-factor: Breadboard with point-to-point soldering
 
-Specs: 2 MHz (at least) 65816, 512 kiB RAM, 32 kiB EPROM, 2 x VIA 65C22, ACIA/UART (16C550/2?), RTC(?)
+Specs: 2 MHz (at least) 65816, 512 kiB RAM, 32 kiB EPROM, 2 x VIA 65C22, UART 16C550, RTC MC146818.
 
-Intefaces: New VIA and SS-22 connectors, TTL-level async, 65SIB, Hitachi LCD thru VIA, maybe I2C.
+Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async, 65SIB, Hitachi LCD thru VIA, maybe I2C.
 
 
 
@@ -119,7 +119,7 @@ Status: in design stage
 
 Form-factor: 4-layer PCB, SMD components.
 
-Specs: 12 MHz (hope!) 65816, up to 8 MiB RAM (2 x Garth's modules), 32 kiB Kernel + 2 MiB EPROM (?), 2 x VIA 65C22, (2x) UART.
+Specs: 12 MHz (I hope!) 65816, up to 8 MiB RAM (2 x Garth's modules), 32 kiB Kernel + 2 MiB EPROM (?), 2 x VIA 65C22, (2x) UART.
 
 Interfaces: most likely those of Veracruz, possibly plus SD-card, text console output...
 
