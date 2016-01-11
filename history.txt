@@ -1,0 +1,110 @@
+minimOS version history
+(c) 2012-2013 Carlos J. Santisteban
+
+0.1a1 (2007-02-03):
+	-ran (rather buggy!) on a 6502 emulator written in C.
+	-cout and string only (!) 
+	-supports 6845 VDU and 6551 ACIA
+	-hardwired slots (VDU, RAM, NuBus...)
+	-debugger stub
+
+0.1.a2 (2007-03-13, incomplete):
+	-revamped zeropage & I/O area
+	-UART 16C550 instead of ACIA 6551
+	-intended support for RTC MC146818 and Hitachi LCD
+	-detects CPU type (NMOS, CMOS, Rockwell, C816)
+
+0.2: complete rewrite for "less hardwired" slots; never assembled
+
+0.3: design stage of a much more flexible architecture, hardly any coding
+
+***THE REAL THING***
+
+0.4a1 (2012-11-19):
+	-Preliminary API, 11 kernel functions
+	-EXTREMELY KLUDGY memory management...
+
+0.4a2 (2012-12-05):
+	-modular coding (#includes et al)
+	-added 3 kernel functions (su_peek, su_poke, string)
+	-supports LED keypad; intended support for LCD and ACIA
+
+0.4a3 (2012-12-26)
+	-NEW KERNEL CALL ADDRESS, doesn't need over 8 kiB
+	-SEPARATE device drivers: LED keypad so far, dummy driver for others
+	-drivers have 5 routines: reset, poll, request, input, output
+		poll = called by periodical interrupt (VIA timer 1)
+		request = called by device-generated IRQ (should check source)
+
+0.4b1 (2012-12-26)
+	-Assembled for SDd (untested so far)
+0.4b2 (2013-02-19)
+	-New API for disabling/enabling interrupts
+	-New API for frequency generator, ø2/(2n)
+	-drivers have now 9 routines -- add 1-sec interrupt, block I/O and shutdown procedure to those above (a3)
+	-offset 18 @ driver header has authorization code about driver capabilities:
+		D7 = poll (may need to be authorized by future kernel versions)
+		D6 = request (id.)
+		D5 = input capable
+		D4 = output capable
+		D3 = 1-sec. interrupt (may be authorized)
+		D2 = block-input capable
+		D1 = block-output capable
+		D0 = relocatable / loadable on-the-fly (not yet implemented)
+	-sorted out preprocessor issues... :-(
+		*NO comments after #defines
+		*macros with colons shouldn't be written inside comments (!)
+	-not really necessary, but changed all constants to Hex, name beginning with underscore
+	-Assembled for SDd with LED-keypad driver only, NMOS version available
+	-Some (future) support for MTE, SDx and stub driver for SS-22 port!
+
+0.4b3 (2013-05-04)
+	-Essentially a debug release
+	-ISR finally acknowledges VIA-T1 interrupt!!!
+	-Minor fixes in LED Keypad driver
+	-Some builds with debug code for hex display
+	-Among other things, RAM check algorithm was faulty
+
+0.4b4b (2013-05-05) ***** FIRST SUCCESSFUL BOOT!!! *****
+	-Built for SDd CMOS
+	-Debug driver for Hex display
+	-New, faster RAM check algorithm
+
+0.4b4LK4 (2013-05-12)
+	-Based on 0.4b4b
+	-Complete rewrite of LED Keypad driver, with single byte FIFO
+	-Typing program at the end of POST, only to demonstrate
+	-Dirty NMI "debugger"
+
+0.4rc (2013-05-21)
+	-Final release of 0.4 version
+	-Fixed LED keypad driver: made spurious keystroke at powerup
+	-Minor cosmetic changes
+	-Separate "shell.s" file included after POST
+
+====================================================
+
+0.4.1 TO DO:
+	-uptime() API in ticks + 24-bit seconds
+	-Generic FIFO
+	-Driver for ASCII keyboard + Hitachi LCD
+	-Droplet-like startup sound!
+	-User-installed NMI routine, with 'magic number' for safety
+	-Tidy up exec() even without filesystem
+	-Possible modification of SDd in order to use ACIA; finish appropriate driver
+	-Driver for SS-22 port
+	-Boot from SS-22 "server"!
+	-Possible new naming convention
+	-Fix remaining bug on LED keypad driver when more than three dots go...
+
+	-0.4.x will become a single-task fork of 0.5 and beyond.
+=================================================
+0.5 to do:
+
+All of the obove plus:
+	-software multitasking (4 jobs)
+	-separate firmware and modules
+	-possible "netbooting" via ACIA instead of SS-22 (separate, simplified FW drivers)
+	-hardware options described in options.h for easier porting
+	-improved memory management
+

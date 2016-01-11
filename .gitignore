@@ -1,0 +1,39 @@
+# no binaries
+*.bin
+*.o65
+*.out
+*.rom
+
+# no backups
+*~
+
+#Linux-specific files
+.Trash-*
+
+#OS X-specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+#Icon must end with two \r
+Icon
+
+
+
+#Tumbnails
+._*
+
+#Files in OS X root volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+#Potentially created directories
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
