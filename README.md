@@ -1,3 +1,6 @@
+*This project is under [the MIT License](https://opensource.org/licenses/MIT), see LICENSE for details.*
+
+
 # minimOS
 
 ####Minimalistic, portable, scalable Operating System for everything from embedded devices to (quasi) full-featured desktop computers!
