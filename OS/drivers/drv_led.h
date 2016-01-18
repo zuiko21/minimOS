@@ -1,6 +1,6 @@
-; minimOS 0.4b4 LED-keypad variables
-; (C) 2013 Carlos J. Santisteban
-; last modified 2013.05.07
+; LED-keypad driver 0.9 variables
+; (c) 2013-2015 Carlos J. Santisteban
+; last modified 20150126-1214
 
 led_len		.byt	4		; display size, please keep order!
 led_mux		.byt	0		; LED digit displayed by ISR

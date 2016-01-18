@@ -1,32 +1,50 @@
-; minimOS 0.4b3 zero-page system variables - SDx, 6502
-; (c) 2012-2013 Carlos J. Santisteban
-; last modified 2013.05.04
+; minimOS 0.5a3 zero-page system variables
+; (c) 2012-2015 Carlos J. Santisteban
+; last modified 20150619-1315
 
 .zero
 
 ; user space
 * = 0
+reserved	.word	0	; reserved for 6510, free for user otherwise -- but NOT saved via _software_ as multitasking context
+z_used		.byt	0	; user-reserved space in ZP, not really used with _hardware_ multitasking
+-user:
+-user_zp:
+uz						; user context starts here, $03...$E3 newname 20150128,0206
 
-reserved	.word	0	; reserved for 6510
-z_used		.byt	0	; user-reserved space in ZP, new name 130504
-user:				; user space starts here... 
+; reserved for kernel functions
+* = $E4					; new address 130603, hope it stays forever! 4 more bytes 150122
+locals		.dsb	12	; variables for kernel functions @ $E4, new name 150122
+
+local1	= locals		; new aliases for easy porting, new 20150619
+locpt1	= local1
+local2	= locals + 4
+locpt2	= local2
+local3	= locals + 8
+locpt3	= local3
 
 ; kernel parameters
-* = $EA				; new address! 130504
+-z10L:
+-z10W:
+-z10:
+zaddr3:					; new alias 20150615 for Ax registers on 680x0!
+zpar3		.dsb	4	; up to 4 bytes, including older names @ $F0
 
-z10L:
-z10W:
-z10		.dsb	4	; up to 4 bytes, including older z10L and z10W
-z6L:
-z6W:
-z6		.dsb	4
-z2L:
-z2W:
-z2		.dsb	4
+-z6L:
+-z6W:
+-z6:
+zaddr2:					; new alias 20150615 for Ax registers on 680x0!
+zpar2		.dsb	4	; all @ $F4
+
+-z2L:
+-z2W:
+-z2:
+zaddr:					; new alias 20150615 for Ax registers on 680x0!
+zpar		.dsb	4	; all @ $F8
 
 ; reserved for system use
-sysptr		.word	0	; ZP pointer for kernel functions, new 130504
-sysvec		.word	0	; ZP pointer for interrupts only
-sysvar		.byt	0	; variable for interrupts only
-sys_sp		.byt	0	; stack pointer for context switch
-signature	.asc	"mOS*"	; process' short name
+-sysvec:
+sysptr		.word	0	; ZP pointer for interrupts only @ $FC
+-sysvar:
+systmp		.byt	0	; temporary storage for interrupts only @ $FE
+sys_sp		.byt	0	; stack pointer for context switch @ $FF

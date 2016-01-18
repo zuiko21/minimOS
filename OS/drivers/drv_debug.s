@@ -1,57 +1,75 @@
-; minimOS 0.4b4 DEBUG bus-sniffer driver, 65C02 SDd
+; DEBUG bus-sniffer driver for minimOS
+; v0.9.2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 2013.05.05
-; revised 2016.01.13, suitable for 0.4 API
+; last modified 20150605-1411
+; revised 20160115 for commit with new filenames
+
+#ifndef		DRIVERS
+#include "options.h"
+#include "macros.h"
+#include "abi.h"		; new filename
+.zero
+#include "zeropage.h"
+.bss
+#include "firmware/firmware.h"
+#include "sysvars.h"
+.text
+#endif
 
 ; *** begins with sub-function addresses table ***
-	.word	led_reset	; initialize device and appropiate sysvars, called by POST only
-	.word	led_get		; poll, read keypad into buffer (called by ISR)
-	.word	ledg_rts	; req, his one can't generate IRQs, thus SEC+RTS
-	.word	led_cin		; cin, input from buffer
-	.word	led_cout	; cout, output to display
+	.byt	DEV_DEBUG					; D_ID, new values 20150323
+	.byt	A_POLL + A_CIN + A_COUT		; poll, no req., I/O, no 1-sec and neither block transfers, non relocatable (NEWEST HERE)
+	.word	dled_reset	; initialize device and appropiate systmps, called by POST only
+	.word	dled_get	; poll, read keypad into buffer (called by ISR)
+	.word	ledg_rts	; req, this one can't generate IRQs, thus CLC+RTS
+	.word	dled_cin	; cin, input from buffer
+	.word	dled_cout	; cout, output to display
 	.word	ledg_rts	; NEW, 1-sec, no need for 1-second interrupt
 	.word	ledg_rts	; NEW, sin, no block input
 	.word	ledg_rts	; NEW, sout, no block output
 	.word	ledg_rts	; NEWER, bye, no shutdown procedure
-	.byt	%10110000	; poll, no req., I/O, no 1-sec and neither block transfers, non relocatable (NEWEST HERE)
-	.byt	0		; reserved for new 20-byte block
+	.word	debug_info	; NEWEST info string
+	.byt	0			; reserved for D_MEM
+
+; *** info string ***
+debug_info:
+	.asc	"DEBUG VIAport driver v0.9.1", 0
 
 ; *** output ***
-led_cout:
+dled_cout:
 	LDA z2			; get char in case is control
 	CMP #13			; carriage return? (shouldn't just clear, but wait for next char instead...)
 	BNE no_blank	; if so, clear LED display
-	STZ _VIA+_iora
-	STZ _VIA+_iorb
-	_BRA led_end
+	STZ VIA+IORA
+	STZ VIA+IORB
+	BEQ dled_end	; no need for BRA, otherwise much like 150323
 no_blank:
-	LDX _VIA+_iora	; take last char
-	STX _VIA+_iorb	; scroll to the left
-	STA _VIA+_iora	; 'print' character
-led_end:
+	LDX VIA+IORA	; take last char
+	STX VIA+IORB	; scroll to the left
+	STA VIA+IORA	; 'print' character
+dled_end:
 	_EXIT_OK
 
 ; *** input ***
-led_cin:
-	_ERR(_empty)	; mild error, so far
+dled_cin:
+	_ERR(EMPTY)	; mild error, so far
 
 ; *** poll ***
-led_get:
-	INC sysvar		; interrupt counter, every 1.28 seconds
-	BNE led_end		; not much to do in the while
-	LDA _VIA+_pcr	; get CB2 status
+dled_get:
+	INC systmp		; interrupt counter, every 1.28 seconds
+	BNE dled_end		; not much to do in the while
+	LDA VIA+PCR	; get CB2 status
 	EOR #%00100000	; toggle CB2
-	STA _VIA+_pcr	; set CB2 status
+	STA VIA+PCR	; set CB2 status
 ledg_rts:
 	_EXIT_OK
 
 ; *** initialise ***
-
-led_reset:
-	_STZA _VIA+_iora	; clear digits
-	_STZA _VIA+_iorb	; clear digits
+dled_reset:
+	_STZA VIA+IORA	; clear digits
+	_STZA VIA+IORB	; clear digits
 	LDA #$FF		; all output
-	STA _VIA+_ddra	; set direction
-	STA _VIA+_ddrb
-	_STZA sysvar	; some more odd init code
+	STA VIA+DDRA	; set direction
+	STA VIA+DDRB
+	_STZA systmp	; some more odd init code
 	_EXIT_OK

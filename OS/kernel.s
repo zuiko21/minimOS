@@ -1,623 +1,386 @@
-; minimOS 0.4rc1 (release candidate 1) SDd, 65C02
+; minimOS generic Kernel
+; v0.5a8
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 2013.05.21
-; include filenames updated 2016.01.13 (for GitHub)
+; last modified 20151014-1843
+; revised 20160115 for commit with new filenames
 
-; first allocatable SRAM page, architecture dependant!
-#define _lomem	3
+; avoid standalone definitions
+#define		KERNEL	_KERNEL
 
-; conditional assembly, select machine from SDd, SDx, MTE, Baja, Veracruz...
-#define SDd 0
+; uncomment in case of separate, downloadable jump & boot files
+; should assume standalone assembly!!! (will get drivers anyway)
+;#define		DOWNLOAD	_DOWNLOAD
 
-; conditional assembly, indicate NMOS for macros replacing new opcodes
-;#define NMOS 0
-
-; *** include files *** filenames updated 160113, removed _0.4 part ***
-; generic definitions
+; in case of standalone assembly
+#ifndef		ROM
+#include "options.h"	; machine specific
 #include "macros.h"
-#include "api.h"
-
-; label definitions
+#include "abi.h"		; ** new filename **
 .zero
 #include "zeropage.h"
-
-; system variables
 .bss
+#include "firmware/firmware.h"	; machine specific
+#ifdef		DOWNLOAD
+* = $0400				; safe address for patchable 2 kiB systems, change if required
+#else
 #include "sysvars.h"
-
-; driver-specific system variables
-#include "drivers/drv_led.h"
-;#include "drivers/drv_acia.h"
-;#include "drivers/drv_ss22.h"
-
+#include "drivers.h"
+user_sram = *
+#include "drivers.s"	; don't assemble actual code, just labels
+* = ROM_BASE			; just a placeholder, no standardised address
+#endif
 .text
+#endif
 
-; ***** the kernel contents *****
-* = $F800		; *** 27C16 savvy address ***
-k_vec:			; kernel's entry points
-	.word cout	; output a character
-	.word cin	; get a character
-	.word malloc	; reserve memory (kludge!)
-	.word free	; release memory (kludgest!)
-	.word open_w	; get I/O port or window
-	.word close_w	; close window
-	.word free_w	; will be closed by kernel
-	.word hid_push	; insert into input queue (deprecated -- will be 'uptime' in 0.4.1)
-	.word b_fork	; get available PID
-	.word b_exec	; launch new process
-	.word load_link	; get addr. once in RAM/ROM
-	.word su_poke	; write protected addresses
-	.word su_peek	; read protected addresses
-	.word string	; prints a C-string
-	.word dis_int	; disable interrupts
-	.word en_int	; enable interrupts (not needed for 65xx)
-	.word set_fg	; enable frequency generator (VIA T1@PB7)
+; **************************************************
+; *** kernel begins here, much like a warm reset ***
+; **************************************************
 
-; ***** I/O device drivers *****
-; begin with address table for sub-functions
-drv_ss22:			; SS-22 link
-;#include "drivers/drv_ss22.s"
-drv_acia:			; serial port
-;#include "drivers/drv_acia.s"
-drv_lcd:			; Hitachi LCD
-;#include "drivers/drv_lcd.s"
+#ifndef		FINAL
+	_BRA warm				; in case somebody JMPs to kernel
+	.asc	"<warm>"		; *** just for easier debugging ***
+#endif
 
-; dummy driver, eight fake addresses
-dummy_drv:
-	.word void_routine	; +D_INIT, device reset
-	.word void_routine	; +D_POLL, device poll, called periodically
-	.word void_routine	; +D_REQ, asynchronous interrupt request by device (should verify source)
-	.word void_routine	; +D_CIN, device input, get character from device or buffer
-	.word void_routine	; +D_COUT, device output, buffered or not
-	.word void_routine	; +D_SEC, one second periodic interrupt
-	.word void_routine	; +D_SIN, device input, block transfer
-	.word void_routine	; +D_SOUT, device output, block transfer
-	.word void_routine	; +D_BYE, shutdown procedure
-	.byt 	0		; +D_AUTH, feature authorization code (new), dummy driver does nothing
-	.byt	0		; +D_ID, reserved for alignment (device number!)
-void_routine:
-	_EXIT_OK		; essentially RTS
+warm:
+-kernel:			; defined also into ROM file, just in case is needed by firmware
+	SEI				; shouldn't use macro, really
+#ifdef	NMOS
+	CLD				; not needed for CMOS
+#endif
 
-drv_led:			; should be default device
-#include "drivers/drv_led.s"
+; install kernel jump table if not previously loaded, NOT for 128-byte systems
+#ifndef	LOWRAM
+#ifndef		DOWNLOAD
+	LDA #<k_vec		; get table LSB (2+3)
+	STA zpar
+	LDA #>k_vec		; get table MSB (2+3)
+	STA zpar+1
+	_ADMIN(INSTALL)	; copy jump table (14...)
+#endif
+#endif
 
-; ***** kernel generic routines *****
-; *** dummy function, non implemented
-unimplemented:			; placeholder here
-	_ERR(_unavail)		; go away!
+; install ISR code (as defined in "isr/irq.s" below)
+	LDA #<k_isr		; get address LSB (2)
+	STA zpar		; no need to know about actual vector location (3)
+	LDA #>k_isr		; get address MSB (2+3)
+	STA zpar+1
+	_ADMIN(SET_ISR)	; install routine (14...)
 
-; *** K0, output a character ***
-cout:				; Y <- dev, z2 <- char
-	CPY #0			; default device?
-	BNE k0_port		; check actual port
-	LDY default_out	; default output device
-k0_port:
-	CPY #ss22_dev		; SS-22?
-	BNE k0_no_ss22
-	JMP (drv_ss22+_d_out)	; may call its label on driver code
-k0_no_ss22:
-	CPY #acia_dev		; serial port?
-	BNE k0_no_acia
-	JMP (drv_acia+_d_out)	; @device drivers area
-k0_no_acia:
-	CPY #lcd_dev		; LCD & I/O keypad?
-	BNE k0_no_lcd
-	JMP (drv_lcd+_d_out)	; @device drivers area
-k0_no_lcd:
-	CPY #led_dev		; LED & VIA keypad?
-	BNE k0_no_led
-	JMP (drv_led+_d_out)	; @device drivers area
-k0_no_led:			; no supported device found
-	_ERR(_not_found)	; unknown device
+; install optional NMI code (as defined in "isr/nmi.s" below)
+	LDA #<k_nmi		; get address LSB (2)
+	STA zpar		; no need to know about actual vector location (3)
+	LDA #>k_nmi		; get address MSB (2+3)
+	STA zpar+1
+	_ADMIN(SET_NMI)	; install routine (14...)
 
-; *** K2, get a character ***
-cin:				; Y <- dev, z2 -> char
-	CPY #0			; default device?
-	BNE k2_port		; check actual port
-	LDY default_in		; default input device
-k2_port:
-	CPY #ss22_dev		; SS-22?
-	BNE k2_no_ss22
-	JMP (drv_ss22+_d_in)	; may call its label on driver code
-k2_no_ss22:
-	CPY #acia_dev		; serial port?
-	BNE k2_no_acia
-	JMP (drv_acia+_d_in)	; @device drivers area
-k2_no_acia:
-	CPY #lcd_dev		; LCD & I/O keypad?
-	BNE k2_no_lcd
-	JMP (drv_lcd+_d_in)	; @device drivers area
-k2_no_lcd:
-	CPY #led_dev	; LED & VIA keypad?
-	BNE k2_no_led
-	JMP (drv_led+_d_in)	; @device drivers area
-k2_no_led:			; no supported device found
-	_ERR(_not_found)	; unknown device
+; *****************************
+; *** memory initialisation ***
+; *****************************
+; should be revised ASAP
 
-; *** K4, reserve memory (kludge!) ***
-malloc:			; z2L <- size, z6L -> addr
-	LDA z2+2
-	ORA z2+3	; asking over 16 K?
-	BEQ k4_no_bank	; no bank switching...
-	_ERR(_full)	; ...available so far
-k4_no_bank:
-	CLC		; for adding
-	LDA z2+1	; number of pages
-	LDX z2		; round size?
-	BEQ k4_aligned	; no need for extra page
-	SEC		; else increase result
-k4_aligned:
-	ADC ptr_page	; next free page
-	CMP himem	; it's beyond the limit?
-	BMI k4_enough	; OK, then
-	_ERR(_full)	; else no room
-k4_enough:
-	LDX ptr_page	; start address
-	STX z6+1	; store at output parameter
-	_STZX z6	; aligned page, using X for NMOS
-	STA ptr_page	; update pointer for next req...
-	_EXIT_OK
+#ifndef		LOWRAM
+#ifndef		FINAL
+	_BRA memo_label			; skip the markup!
+	.asc	"<memo>"		; *** just for easier debugging ***
+memo_label:
+#endif
 
-; *** K6, release memory (kludgest!) ***
-free:			; z6L <- addr
-	LDA z6+1	; get start page
-	STA ptr_page	; it's now the first free page!
-	_EXIT_OK
+	LDA #' '			; unassigned space (2)
+	LDX #MAX_LIST		; depending on RAM size, corrected 20150326 (2)
+mreset:
+		STA ram_stat, X		; set entry as unassigned, essential (4)
+		DEX					; previous byte (2)
+		BNE mreset			; leaves first entry alone (3/2, is this OK?)
+	LDA #<user_sram		; get first entry LSB (2)
+	STA ram_tab			; create entry (4)
+	LDA #>user_sram		; same for MSB (2+4)
+	STA ram_tab+1
+	LDA #'F'			; set free entry (2+4)
+	STA ram_stat
+	LDA #0				; compute free RAM (2+2)
+	SEC
+	SBC #<user_sram		; substract LSB (2+4)
+	STA ram_siz
+	LDA himem			; get ram size MSB (4)
+	SBC #>user_sram		; substract MSB (2)
+	STA ram_siz+1		; entry is OK (4)
+#endif
 
-; *** K8, get I/O port or window ***
-open_w:				; Y -> dev, z2W -> size, z10W -> pos
-				; z6L -> pointer to window title?
-	LDA z2			; asking for some size?
-	ORA z2+1
-	BEQ k8_no_window	; can't do it
-	_ERR(_no_rsrc)
-k8_no_window:
-	LDY #0			; constant device?
-	_EXIT_OK
+; ******************************************************
+; intialise drivers from their jump tables! new 20150206
+; optimised code with self-generated ID list 20150220
+; new code disabling failed drivers 20150318
+; ******************************************************
+; systems with enough ram should create direct table!!!!!!!!!!!
 
-; *** K10, close window ***
-close_w:		; Y <- dev
-; *** K12, will be closed by kernel ***
-free_w:			; Y <- dev
-; *** K14, insert into input queue. DEPRECATE NOW??? ***
-hid_push:		; Y <- char
-			; all the same, so far...
-	_EXIT_OK	; doesn't do much, either
+#ifndef		FINAL
+	_BRA dinit_label		; skip the markup!
+	.asc	"<dinit>"		; *** just for easier debugging ***
+dinit_label:
+#endif
 
-; *** K16, get available PID ***
-b_fork:			; Y -> PID
-	LDY #0		; no multitasking, so far...
-	_EXIT_OK
+; set some labels, much neater this way
+da_ptr	= locpt2		; pointer for indirect addressing, new CIN/COUT compatible 20150619
+drv_aix = local3		; address index for, not necessarily PROPOSED, driver list, new 20150318, shifted 20150619
 
-; *** K18, launch new process ***
-; THIS IS VERY BAD, PLEASE CHECK ASAP, ESPECIALLY THE NEW SYSTEM POINTERS
-b_exec:				; Y <- PID, z2L <- addr
-	CPY #0			; no multitasking yet
-	BNE k18_multi
-	LDX z_used		; how many bytes to save
-	INX			; including that
-k18_save:
-	LDA z_used-1, X	; get used byte
-	PHA			; save it
-	DEX			; countdown
-	BNE k18_save		; another one
-	STX z_used		; reset variable for the new process!
-	LDX #5			; now for the environment variables
-k18_sys_sv:
-	LDA sys_sp-1, X		; get a system byte
-	PHA			; save it
-	DEX			; countdown
-	BNE k18_sys_sv		; and another one
-	LDA #<k18_return-1	; LSB return address
-	PHA			; pseudo-return for the RTS
-	LDA #>k18_return-1	; MSB return address
-	PHA
-	JMP (z2)		; start code execution
-k18_return:
-	LDX #0			; reset index
-k18_sys_rs:
-	PLA			; retrieve system byte
-	STA sysptr, X		; restore it
-	INX			; count it
-	CPX #10		; until it's done
-	BNE k18_sys_rs
-	PLA			; get number of user bytes
-	STA z_used		; restore it
-	LDX #1			; reset index
-k18_restore:
-	PLA			; retrieve user byte
-	STA user, X		; restore it
-	INX			; count it
-	DEY			; one less to go
-	BNE k18_restore		; until it's done
-	_EXIT_OK
-k18_multi:
-	_ERR(_no_rsrc)
+; driver full install is new 20150208
+	_STZA dpoll_mx		; reset indexes, sorry for NMOS (4x4)
+	_STZA dreq_mx
+	_STZA dsec_mx
+#ifdef LOWRAM
+	_STZA drv_num		; single index of, not necessarily SUCCESSFULLY, installed drivers, updated 20150318
+#else
+	LDX #0				; reset index of direct table (2)
+	TXA					; value to be stored (2)
+dr_clear:
+		STA drivers_pt+1, X		; clear MSB, since no driver is allowed in zeropage (4)
+		INX						; next pointer (2+2)
+		INX
+		BNE dr_clear			; finish page (3/2)
+#endif
+	_STZA drv_aix
+; first get the pointer to each driver table
+dr_loop:
+; get address index
+		LDX drv_aix			; get address index (4)
+		LDA drivers_ad+1, X	; get address MSB (4)
+		BNE dr_inst			; not in zeropage, in case is too far for BEQ dr_ok (3/2)
+			JMP dr_ok			; all done otherwise (0/4)
+dr_inst:
+		STA da_ptr+1		; store pointer (3)
+		LDA drivers_ad, X	; same for LSB (4+3)
+		STA da_ptr
+; create entry on IDs table ** new 20150219
+		LDY #D_ID			; offset for ID (2)
+		LDA (da_ptr), Y		; get ID code (5)
+			BPL dr_abort		; reject logical devices (2/3)
 
-; *** K20, get address once in RAM/ROM (kludge!) ***
-load_link:		; z2L -> addr, z10L <- *path
-; *** assume path points to filename in header, code begins +248
-	CLC		; ready to add
-	LDA z10		; get LSB
-	ADC #248	; offset to actual code!
-	STA z2		; store address LSB
-	LDA z10+1	; get MSB so far
-	ADC #0		; propagate carry!
-	STA z2+1	; store address MSB
-	LDA #0		; NMOS only
-	STA z2+2	; STZ, invalidate bank...
-	STA z2+3	; ...just in case
-	BCS k20_wrap	; really unexpected error
-	_EXIT_OK
-k20_wrap:
-	_ERR(_invalid)	; something was wrong
+#ifndef	LOWRAM
+; new faster driver list 20151014
+		ASL					; use retrieved ID as index (2+2)
+		TAY
+		LDA drivers_pt+1, Y		; check whether in use (5?)
+			BNE dr_abort			; already in use, don't register! (2/3)
+		LDA da_ptr				; get driver table LSB (3)
+		STA drivers_pt, Y		; store in table (5?)
+		LDA da_ptr+1			; same for MSB (3+5?)
+		STA drivers_pt+1, Y
+#else
+#ifdef	SAFE
+; ** let's check whether the ID is in already in use **
+		LDX #0			; reset index (2)
+		BEQ dr_limit	; check whether has something to check, no need for BRA (3)
+dr_scan:
+			CMP drivers_id, X	; compare with list entry (4)
+				BEQ dr_abort		; already in use, don't register! (2/3)
+			INX					; go for next (2)
+dr_limit:	CPX drv_num			; all done? (4)
+			BNE dr_scan			; go for next (3/2)
+; ** end of check **
+#else
+		LDX drv_num			; retrieve single offset (4) *** already set because of the previous check, if done
+#endif
+		STA drivers_id, X	; store in list, now in RAM (4)
+#endif
 
-; *** K22, write to protected addresses ***
-su_poke:		; Y <- value, z2L <- addr
-	TYA		; transfer value
-	_STAX(z2)	; store value, macro for NMOS
-	_EXIT_OK
+; register interrupt routines (as usual)
+		LDY #D_AUTH			; offset for feature code (2)
+		LDA (da_ptr), Y		; get auth code (5)
+		AND #A_POLL			; check whether D_POLL routine is avaliable (2)
+			BEQ dr_nopoll		; no D_POLL installed (2/3)
+		LDY #D_POLL			; get offset for periodic vector (2)
+		LDX dpoll_mx		; get destination index (4)
+		CPX #MAX_QUEUE		; compare against limit (2)
+			BCS dr_abort		; error registering driver! (2/3) eek
+dr_ploop:
+			LDA (da_ptr), Y		; get one byte (5)
+			STA drv_poll, X		; store in RAM (4)
+			INY					; increase indexes (2+2)
+			INX
+			CPY #D_POLL+2		; both bytes done? (2)
+			BCC dr_ploop		; if not, go for MSB (3/2) eek
+		STX dpoll_mx		; save updated index (4)
+		LDY #D_AUTH			; offset for feature code (2)
+dr_nopoll:
 
-; *** K24, read from protected addresses ***
-su_peek:		; Y -> value, z2L <- addr
-	_LDAX(z2)	; store value, macro for NMOS
-	TAY		; transfer value
-	_EXIT_OK
+		LDA (da_ptr), Y		; get auth code (5)
+		AND #A_REQ			; check D_REQ presence (2)
+			BEQ dr_noreq		; no D_REQ installed (2/3)
+		LDY #D_REQ			; get offset for async vector (2)
+		LDX dreq_mx			; get destination index (4)
+		CPX #MAX_QUEUE		; compare against limit (2)
+			BCS dr_abort		; error registering driver! (2/3) eek
+dr_aloop:
+			LDA (da_ptr), Y		; get its LSB (5)
+			STA drv_async, X	; store in RAM (4)
+			INY					; increase indexes (2+2)
+			INX
+			CPY #D_REQ+2		; both bytes done? (2)
+			BCC dr_aloop		; if not, go for MSB (3/2) eek
+		STX dreq_mx			; save updated index  (4)
+		LDY #D_AUTH			; offset for feature code (2)
+dr_noreq:
 
-; *** K26, prints a C-string ***
-string:			; Y <- dev, z10L <- *string
-	_LDAX(z10)	; get current character, NMOS too
-	BEQ k26_end	; NUL = end-of-string
-	STA z2		; ready to go out
-	STY z6		; save Y in case cout destroys it
-	_KERNEL(_cout)	; call cout
-	LDY z6		; restore Y
-	INC z10		; next character
-	BNE string
-	INC z10+1	; cross page boundary
-	BNE string	; ...or BRA
-k26_end:
-	_EXIT_OK
+		LDA (da_ptr), Y		; get auth code (5)
+		AND #A_SEC			; check D_SEC (2)
+			BEQ dr_nosec		; no D_SEC installed (2/3)
+		LDY #D_SEC			; get offset for 1-sec vector (2)
+		LDX dsec_mx			; get destination index (4)
+		CPX #MAX_QUEUE		; compare against limit (2)
+			BCS dr_abort		; error registering driver! (2/3) eek
+dr_sloop:
+			LDA (da_ptr), Y		; get its LSB (5)
+			STA drv_sec, X		; store in RAM (4)
+			INY					; increase indexes (2+2)
+			INX
+			CPY #D_SEC+2		; both bytes done? (2)
+			BCC dr_sloop		; if not, go for MSB (3/2) eek
+		STX dsec_mx			; save updated index (4)
+dr_nosec: 
+; continue initing drivers
+		JSR dr_icall	; call routine (6+...)
+			BCS dr_abort	; failed initialisation, new 20150320
+dr_next:
+#ifdef	LOWRAM
+		INC drv_num		; update SINGLE index (6)
+#endif
+; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
+; in case drivers_ad is *created* in RAM, dr_abort could just be here
+		INC drv_aix		; update ADDRESS index, even if unsuccessful (5)
+		JMP dr_loop		; go for next (3)
+dr_abort:
+#ifdef	LOWRAM
+		LDX drv_num			; get failed driver index (4)
+		LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
+		STA drivers_id, X	; delete older value (4)
+#else
+		LDY #D_ID			; offset for ID (2)
+		LDA (da_ptr), Y		; get ID code (5)
+			BPL dr_next			; nothing to delete (2/3)
+		ASL					; use retrieved ID as index (2+2)
+		TAX
+		_STZA drivers_pt+1, X	; discard it (4)
+#endif
+		_BRA dr_next			; go for next (3)
 
-; *** K28, disable interrupts ***
-dis_int:		; C -> not authorized (?)
-	SEI		; disable interrupts
-	CLC		; no error so far
-	RTS
+dr_icall:
+	LDY #D_INIT+1		; get MSB first (2)
+dr_call:				; *** generic driver call, pointer set at locpt2, Y holds table offset+1 *** new 20150610
+#ifndef	NMOS
+	LDA (da_ptr), Y		; destination pointer (5)
+	TAX					; store temporarily (2) new '816 compatible code 20151014
+	DEY					; go for LSB (2)
+	LDA (da_ptr), Y		; repeat procedure (5)
+	BNE dr_nowrap		; won't mess with MSB (3/2)
+		DEX					; will carry (2) or 
+dr_nowrap:
+	_DEC				; RTS will go one less (2)
+	PHX					; push MSB -- no NMOS macro!!!!! (3)
+	PHA					; push LSB (3)
+#else
+	DEY					; get LSB first
+	LDA (da_ptr), Y
+	TAX					; store temporarily in X
+	INY					; go for MSB in A
+	LDA (da_ptr), Y
+	CPX #0				; check whether wraps or not
+	BNE dr_nowrap
+		_DEC
+dr_nowrap:
+	DEX					; RTS will go one less
+	PHA					; push address
+	_PHX
+#endif
+	RTS					; the actual COMPATIBLE jump (6)
 
-; *** K30, enable interrupts ***
-en_int:			; not needed for 65xx, even with protection hardware
-	CLI		; enable interrupts
-	CLC		; no error
-	RTS
+dr_ok:					; all drivers init'd
+#ifdef	LOWRAM
+	LDX drv_num			; retrieve single index (4)
+	_STZA drivers_id, X	; terminate list, and we're done! (4)
+#endif
 
-; *** K32, enable/disable frequency generator (Phi2/n) on VIA ***
-set_fg:			; z2 <- dividing factor (times two?)
-	LDA z2
-	ORA z2+1
-	BEQ k32_dis	; if zero, disable output
-	LDA _VIA+_acr	; get current configuration
-	BMI k32_busy	; already in use
-	LDX _VIA+_t1ll	; get older T1 latch values
-	STX old_t1	; save them
-	LDX _VIA+_t1lh
-	STX old_t1+1
-	LDX z2		; get new division factor
-	STX _VIA+_t1ll	; store it
-	LDX z2+1
-	STX _VIA+_t1lh
-	STX _VIA+_t1ch	; get it running!
-	ORA #$C0	; enable free-run PB7 output
-	STA _VIA+_acr	; update config
-k32_none:
-	_EXIT_OK	; finish anyway
-k32_dis:
-	LDA _VIA+_acr	; get current configuration
-	BPL k32_none	; it wasn't playing!
-	AND #$7F	; disable PB7 only
-	STA _VIA+_acr	; update config
-	LDA old_t1	; older T1L_L
-	STA _VIA+_t1ll	; restore old value
-	LDA old_t1+1
-	STA _VIA+_t1lh	; it's supposed to be running already
-	_BRA k32_none
-k32_busy:
-	_ERR(_busy)	; couldn't set
+; **********************************
+; ********* startup code ***********
+; **********************************
 
-; ***** micro-kernel begins *****
-; ***** power-on self-test *****
-post:
-	SEI			; just in case, but already in boot code?
-	CLD			; in case of warm reset, even for CMOS
-; should check out here for the 65xx version...
-; *** initial beep (500Hz/MHz) during SRAM test ***
-	LDA #%11100010		; CB2 *high*, Cx1 negative edge, CA2 indep. neg.	
-	STA _VIA+_pcr		; sound output is enabled
-	LDA #%11000000		; T1 cont, PB7 squarewave, no SR, no latch (so far)
-	STA _VIA+_acr
-	LDA #$7F		; disable all interrupts, todo = check VIA presence (should read $80)
-	STA _VIA+_ier
-	LDA #$F2		; $1F2 = 1kHz beep @ 1 MHz, obviously NOT $61A8 for 500...
-	STA _VIA+_t1cl		; put value into latch
-	LDA #$01
-	STA _VIA+_t1ch		; start counting!
+#ifndef		FINAL
+	_BRA start_label		; skip the markup!
+	.asc	"<start>"		; *** just for easier debugging ***
+start_label:
+#endif
 
-; *** SRAM test *** new code from 130502
-rtest:
-	LDA #$55		; initial pattern
-	STA z_used		; safe address, check vector availability
-	LDA #$AA		; a different byte
-	STA z_used+1	; check MSB
-	LDA z_used		; check results
-	CMP #$55		; additional procedure
-	BNE ram_fail
-	EOR z_used+1	; should give all 1's
-	INC				; now should be zero
-	BNE ram_fail
-	LDY #4			; best offset, saves vector and suitable for SDd (goes into T1CL, which won't pass the test)
-	STZ z_used		; reset pointer
-	STZ z_used+1
-	LDA #$55		; initial pattern
-data_chk:
-	STA (z_used), Y	; store it
-	CMP (z_used), y	; and check it
-	BNE measure		; most likely the end of decoded SRAM
-	EOR #$FF		; reverse pattern
-	BMI data_chk	; try once again
-	INC z_used+1	; next page
-	BIT z_used+1	; end of SRAM?
-	BVC data_chk	; if not, try next page
-measure:
-	LDX z_used+1	; number of pages
-c_page:
-	DEC z_used+1	; maximum is one less
-	LDA z_used+1	; data to be written
-	STA (z_used), Y	; store value
-	BNE c_page		; until we get down to zero-page
-	DEX
-	STX z_used+1	; last page number
-	LDA (z_used), Y	; value at last actual page
-	INC				; add one for number of pages
-	STA himem		; SRAM pages found
-	LDX #$FF		; points to last byte in zero-page
-	LDA #0			; value to be written, $FE would be 6510-savvy?
-fill:
-	STA 0, X		; store different values
-;STX _VIA+_iora	; DEBUG code
-	DEX				; go to previous byte
-	DEC
-	BNE fill		; fill out zero-page -- NOT 6510 savvy!
-	LDX $FF			; check last byte for mirroring
-	BEQ	full_zp		; not a 128-byte system
-	STZ himem		; not even a full page; should store actual size (X) anywhere...
-full_zp:
-	TXA				; usually zero, but 128-byte systems get correct initial value
-	DEX				; set pointer to last byte...
-byte_chk:
-	CMP 0, X		; check stored byte
-	BNE ram_fail
-	DEX				; down to first byte, NOT 6510-savvy!
-	DEC
-	BNE byte_chk
-	BEQ ram_ok		; could be BRA, but not worth the macro
-	
-ram_fail:
-	JMP panic		; lock at some special address...
-	
-ram_ok:				; go on...
+; reset several remaining flags
+	_STZA cin_mode	; reset binary mode flag, new 20150618
 
-; *** device initialisation ***
-	JSR init_via		; standard initialisation
-; initialise I/O drivers
-	JSR init_led		; preliminary reset, should be from table
-;	JSR init_ss22
-;	JSR init_acia
-;	JSR init_lcd
+; *** set default SIGTERM handler for single-task systems, new 20150514 ***
+#ifndef		MULTITASK
+	LDA #<k38_kill	; get default routine address LSB
+	STA stt_handler	; store in new system variable
+	LDA #>k38_kill	; same for MSB
+	STA stt_handler+1
+#endif
 
-; *** set default I/O device ***
-	LDA #led_dev	; much better than just zero
-	STA default_out	; should check some devices, now defaults to LED keypad
+; **********************************
+; original startup code, revise ASAP ****************************
+; **********************************
+
+; *** set default I/O device *** REVISE ASAP
+	LDA #DEV_LED	; LED-keypad, new constant 20150324
+	STA default_out	; should check some devices
 	STA default_in
 
-; *** final startup! ***
-	LDA #<isr		; get ISR address
-	STA irqvec		; put it on vector
-	LDA #>isr
-	STA irqvec+1
-	CLI			; enable interrupts
-; say hello!
+; *** interrupt setup no longer here, firmware did it! *** 20150605
+	_CLI			; enable interrupts
+
+; say hello! *** revise ASAP
 	LDA #<hello		; LSB of the string
 	STA z10
 	LDA #>hello		; MSB
 	STA z10+1
-	LDY default_out		; default device, currently LED, 130505 read from variable
-	_KERNEL(_string)	; print the message
-	
+	LDY #0			; default device, let the kernel get it!
+	_KERNEL(STRING)	; print the message
+
+; ******************************
 ; **** launch monitor/shell ****
-shell:				; so far, a post-POST task only!
+; ******************************
+
+#ifndef		FINAL
+	_BRA shell				; skip the markup!
+	.asc	"<shell>"		; *** just for easier debugging ***
+#endif
+
+; so far, shell is a post-POST task only!
+shell:
 #include "shell.s"
 	BRK				; just in case...
-	
+
 hello:
-	.asc "HOLA", 13, 0		; startup text
+	.asc "HOLA", 13, 0	; startup text
 
+; *** generic kernel routines, now in separate file 20150924 *** new filenames
+#ifndef		LOWRAM
+#include "api.s"
+#else
+#include "api_lowram.s"
+#endif
 
-init_via:
-	LDA #%11000010		; CB2 low, Cx1 negative edge, CA2 indep. neg.	
-	STA _VIA+_pcr
-	LDA #%01000000		; T1 cont, no PB7, no SR, no latch (so far)
-	STA _VIA+_acr
-	LDA #$7F		; disable all interrupts (for a moment)
-	STA _VIA+_ier
-	LDA #$86		; $1388 (-2) = 200 Hz interrupt @ 2 MHz
-	STA _VIA+_t1cl		; put value into latch (write to counter)
-	LDA #$13
-	STA _VIA+_t1ch		; start counting!
-	LDA #$C0		; enable T1 interrupt only
-	STA _VIA+_ier
-	RTS
+; *** new, sorted out code 20150124 ***
+; *** interrupt service routine ***
 
-init_led:
-	JMP (drv_led+_d_init)	; do whatever is needed
-init_ss22:
-	JMP (drv_ss22+_d_init)	; do whatever is needed
-init_acia:
-	JMP (drv_acia+_d_init)	; will return to POST
-init_lcd:
-	JMP (drv_lcd+_d_init)	; will return to POST
+#ifndef		FINAL
+	.asc	"<isr>"		; *** just for easier debugging ***
+#endif
 
-; ***** non-maskable interrupt (debugger) ***** revised 130512
-nmi:
-	PHA		; save registers
-	_PHX
-	_PHY
-	JSR led_reset	; reset output device LED keypad, just in case
-	LDA #<nmi_txt	; string address load
-	STA sysvec
-	LDA #>nmi_txt
-	STA sysvec+1
-debug:			; entry point for BRK
-	LDA z2		; save possible kernel function in progress
-	PHA
-;	LDY default_out	; default device
-deb_str:
-	_LDAX(sysvec)	; get character
-	BEQ deb_wait	; NUL at end of string
-	STA z2			; get the character ready...
-	JSR led_cout	; somewhat ugly
-	INC sysvec		; next character
-	BNE deb_str
-	INC sysvec+1	; boundary crossing
-	_BRA deb_str
+k_isr:
+#include "isr/irq.s"
 
-; ***** simulate interrupts calling led_poll!
-deb_wait:
-	LDX #4		; 4 is about 195 Hz @ 1 MHz, no need to set the LSB
-deb_dly:
-	DEY
-	BNE deb_dly	; delay loop, 1280 clocks
-	DEX		; one iteration less
-	BNE deb_dly
-	JSR led_get	; simulate interrupt!
+; *** non-maskable interrupt handler ***
+; must begin with 'UNj*'
 
-; ***** read key and wait until OK is pressed
-	JSR led_cin	; read keypad buffer
-	BCS deb_wait	; nothing pressed
-	LDA z2		; the ASCII code
-	CMP #13		; is it OK?
-	BNE deb_wait	; keep waiting otherwise
-	LDA #12		; load FF code
-	STA z2		; print form feed, clears screen
-	JSR led_cout
-	
-	PLA		; retrieve old parameter
-	STA z2		; nothing has changed!
+#ifndef		FINAL
+	.asc	"<nmi>"		; *** just for easier debugging ***
+#endif
 
-; return to process
-	_PLY		; restore registers
-	_PLX
-	PLA
-	RTI
-nmi_txt:		; splash text string
-	.asc "NMI>", 0
-	
-; ***** interrupt request handler *****
-irq:
-	JMP (irqvec)	; vectored ISR
+k_nmi:
+#include "isr/nmi.s"
 
-; ***** interrupt service routine *****
-isr:
-	PHA	; save registers
-	_PHX
-	_PHY
-; check whether from VIA, BRK...
-	BIT _VIA+_ifr		; much better than LDA + ASL + BPL!
-	BVC async_irq		; not from T1
-; execute driver poll routines, since it's periodic (VIA T1)
-; there must be some better ways for doing this...
-	LDA _VIA+_t1cl		; acknowledge interrupt!!!!!!!!!!!!!!!!!!!!!
-; execute D_POLL code in drivers
-	JSR led_poll		; very important, muxes display and keypad
-isr_done:
-	_PLY	; restore registers
-	_PLX
-	PLA
-	RTI
-led_poll:
-	JMP (drv_led+_d_poll)	; should be from table
-; in case of non-periodic interrupt, let the drivers ask their devices
-async_irq:
-;	JSR ss22_req		; service routine, may be direct label
-;	BCC isr_done		; IRQ serviced by a driver -> go away!
-;	JSR acia_req		; increase a_irqs if detected! (???)
-;	BCC isr_done		; IRQ serviced by a driver -> go away!
-; check for BRK
-	TSX			; get stack pointer
-	LDA $0104, X		; get saved PSR
-	AND #$10		; mask out B bit
-	BEQ isr_done		; spurious interrupt!
-
-; BRK handler
-; *** do something to tell the debugger it's from BRK, not NMI...
-	LDA #<brk_txt	; string address load
-	STA sysvec
-	LDA #>brk_txt
-	STA sysvec+1
-	JMP debug		; debug somehow
-brk_txt:
-	.asc "BRK ", 0		; splash text string
-
-ss22_req:
-	JMP (drv_ss22+_d_req)	; manage generated interrupt
-acia_req:
-	JMP (drv_acia+_d_req)	; this one will get the job done
-
-; ***** boot code *****
-; choose boot address depending on PA0-PA3
-reset:
-	SEI		; in case of warm reset
-	CLD		; just in case, a must for NMOS
-
-	LDA #$F0	; PA4...7 as output
-	STA _VIA+_ddra
-	LDA #$10	; bit 4 high, 5-7 low
-	STA _VIA+_iora	; set PA4 high
-	LDX #_SP	; initial stack pointer
-	TXS		; initialise stack
-	LDA #$0F	; mask 4 lower bits
-	AND _VIA+_iora	; read PA0-PA3 for startup ID
-	ASL		; multiply by 2
-	TAX		; table index
-	_JMPX(table)	; macro for NMOS, but revise it for 6510! (done)
-
-; help for manual linking...
-	.asc	" minimOS 0.4rc1 CHIHUAHUA CMOS @ 20130521-1821 ", 0
-
-* = $FEEE
-panic:
-	_BRA panic			; locks at very obvious address
-	.asc "PANIC!", 0	; would appear at $FEF0
-	
-* = $FFC0		; 'kernel call' primitive, NEW ADDRESS
-k_call:			; X <- function code
-;	TXA		; preliminary check for odd codes
-;	LSR		; check bit 0
-;	BCS bad_call	; disaster
-	_JMPX(k_vec)	; macro for NMOS, not 6510-savvy!
-
-; error handler for system call primitive, currently unused
-bad_call:
-/*	_ERR(_unavail)	; in case of odd function number */
-
-; boot addresses table, may contain future primitives
-* = $FFD0
-table:
-	.word post		; default startup address
-	.dsb 28, $FF	; empty vectors
-	.word post		; in case the pull-ups put $FF on PA
-
-; 6502 vectors
-* = $FFFA
-	.word	nmi
-	.word	reset
-	.word	irq
