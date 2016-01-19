@@ -1,7 +1,6 @@
 ; minimOS 0.5a11 API
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20150611-1308
-; revised 20160115 for commit as mOS 0.5a8
+; last modified 20160119 (comments for future changes)
 
 ; VIA 65(C)22 registers
 ; offsets from base address (add to base in options.h)
@@ -117,7 +116,7 @@ W_FREE		= 128	; no longer in use, may be closed by kernel itself
 W_REQ		=  64	; requested to close, will send SIGTERM to creator braid
 
 ; optional filesystem subfunctions 20150304, TBD, renamed 20150305
-FOPEN		=   0
+FOPEN		=   0	; why not FS_OPEN, etc?
 FSEEK		=   2
 FTELL		=   4
 FCLOSE		=   6
@@ -154,6 +153,9 @@ BUSY	=   8	; can't use it now, free it or wait
 CORRUPT	=   9	; data corruption, new 150205
 
 ; some kernel-related definitions, redefined as labels 20150604
+; MAX_BRAIDS should be system variable, as defined by firmware and/or multitasking driver
+; if defined in firmware, think about a gestalt-like function for reanding/setting it!
+
 #ifdef	MULTITASK
 #ifdef		AUTOBANK
 ; set number of maximum concurrent tasks
@@ -166,6 +168,8 @@ CORRUPT	=   9	; data corruption, new 150205
 #endif
 
 ; set number of quantums to wait for actual taskswitching
+; this should be defined elsewhere, most likely into the software-multitasking driver
+
 QUANTUM_COUNT	=	32 / MAX_BRAIDS		; computed in any case
 
 #ifndef	LOWRAM
@@ -177,16 +181,19 @@ QUANTUM_COUNT	=	32 / MAX_BRAIDS		; computed in any case
 #endif
 
 ; optional filesystem limits, TBD
+; again, this might be defined elsewhere
+
 MAX_FILES	=	16
 MAX_VOLS	=	8
 
 ; physical device numbers, TBD
+; these are likely to become 'logical' port IDs like rs0, rs1, ss0... regardless of actual implementation
 DEV_LED		= 252	; LED keypad on VIAport
 DEV_LCD		= 210	; Hitachi LCD module, TO_DO
 DEV_ACIA	= 236	; ACIA, currently 6551
 DEV_SS22	= 250	; SS-22 port
 DEV_ASCII	= 241	; ASCII keyboard on VIAport, TO_DO
-DEV_DEBUG	= 255	; 'Porculete' bus sniffer, NEW 20150323
+DEV_DEBUG	= 255	; Bus sniffer, NEW 20150323
 
 ; more temporary IDs
 

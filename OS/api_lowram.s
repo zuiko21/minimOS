@@ -1,8 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5a8
-; (c) 2012-2015 Carlos J. Santisteban
-; last modified 20151015-1106
-; revised 20160115 for commit
+; (c) 2012-2016 Carlos J. Santisteban
+; last modified 20160119
 
 #ifndef		FINAL
 	.asc	"<kern>"		; *** just for easier debugging *** no markup to skip
@@ -29,16 +28,11 @@ cout:
 		LDA default_out	; default output device (4)
 k0_port:
 	BMI k02_phys	; not a logic device (3/2)
-		CMP #64			; first file-dev??? ***
-			BMI k0_win		; should be window manager
-k0_log:
+; no need to check for windows or filesystem
 ; investigate rest of logical devices
 		CMP #DEV_NULL	; lastly, ignore output
 			BNE k02_nfound	; final error otherwise
 		_EXIT_OK		; "/dev/null" is always OK
-k0_win:
-; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)	; not yet implemented
 ; optimised backwards loop 20150318, 13 bytes (+1), 5+11*n if not found, 13 if the LAST one
 ; old forward loop was 16 bytes, 9+17*n if not found, 15 if the first one
 k02_phys:
@@ -99,18 +93,19 @@ k2_port:
 		JSR k02_phys	; check physical devices... but come back for events! new 20150617
 			BCS k2_exit		; some error, send it back
 ; ** EVENT management **
+; this might be revised, or supressed altogether!
 		LDA zpar		; get received character
 		CMP #' '		; printable?
-			BMI k2_manage	; if not, might be an event
+			BCC k2_manage	; if not, might be an event
 k2_exit:
-		RTS
+		_EXIT_OK		; above comparison would set carry
 ; ** continue event management **
 k2_manage:
 ; check for binary mode
 	LDY cin_mode	; get flag, new sysvar 20150617
 	BEQ k2_event	; should process possible event
 		_STZY cin_mode	; back to normal mode
-		BNE k2_exit		; and return whatever was received, no need for BRA
+		_BRA k2_exit	; and return whatever was received
 k2_event:
 	CMP #16			; is it DLE?
 	BNE k2_notdle	; otherwise check next
@@ -118,19 +113,8 @@ k2_event:
 		BNE k2_abort	; and supress received character, no need for BRA
 k2_notdle:
 	CMP #3			; is it ^C? (TERM)
-	BNE k2_noterm	; otherwise check next
+	BNE k2_exit		; otherwise there's no more to check -- only signal for single-task systems!
 		LDA #SIGTERM
-		BNE k2_signal	; send signal, no need for BRA?
-k2_noterm:
-	CMP #4			; is it ^D? (KILL)
-	BNE k2_nokill	; otherwise check next
-		LDA #SIGKILL
-		BNE k2_signal	; send signal, no need for BRA?
-k2_nokill:
-	CMP #26			; is it ^Z? (STOP)
-	BNE k2_exit		; otherwise there's no more to check
-		LDA #SIGSTOP	; last signal to be sent
-k2_signal:
 		STA zpar2		; set signal as parameter
 		LDY #0			; ***self-sent signal***
 		_KERNEL(B_SIGNAL)	; send signal
@@ -138,10 +122,7 @@ k2_abort:
 		_ERR(EMPTY)		; no character was received
 
 k2_nph:
-	CMP #64			; first file-dev??? ***
-		BMI k2_win		; should be window manager
-
-k2_log:
+; only logical devs, no need to check for windows or filesystem
 	CMP #DEV_RND	; getting a random number?
 		BEQ k2_rnd		; compute it!
 	CMP #DEV_NULL	; lastly, ignore input
@@ -152,11 +133,6 @@ k2_rnd:
 ; *** generate random number (TO DO) ***
 	LDY ticks		; simple placeholder
 	_EXIT_OK
-
-k2_win:
-; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)	; not yet implemented
-
 
 ; *** K4, reserve memory ***
 ; *** K6, release memory ***

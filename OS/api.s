@@ -1,8 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5a8
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20151015-1107
-; revised 20160115 for commit
+; last modified 20160119 (new _CS macros and corrected comparisons)
 
 #ifndef		FINAL
 	.asc	"<kern>"		; *** just for easier debugging *** no markup to skip
@@ -30,11 +29,11 @@ cout:
 k0_port:
 	BMI k02_phys	; not a logic device (3/2)
 		CMP #64			; first file-dev??? ***
-			BCC k0_win		; should be window manager
+			BCC k0_win		; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 		CMP #64+MAX_FILES	; still within file-devs?
-			BCS k0_log		; not a file
+			BCS k0_log		; that value or over, not a file
 ; *** manage here output to open file ***
 		_ERR(NO_RSRC)	; not yet implemented ***placeholder***
 #endif
@@ -82,18 +81,19 @@ k2_port:
 		JSR k02_phys	; check physical devices... but come back for events! new 20150617
 			BCS k2_exit		; some error, send it back
 ; ** EVENT management **
+; this might be revised, or supressed altogether!
 		LDA zpar		; get received character
 		CMP #' '		; printable?
-			BMI k2_manage	; if not, might be an event
+			BCC k2_manage	; if not, might be an event
 k2_exit:
-		RTS
+		_EXIT_OK		; above comparison would set carry
 ; ** continue event management **
 k2_manage:
 ; check for binary mode
 	LDY cin_mode	; get flag, new sysvar 20150617
 	BEQ k2_event	; should process possible event
 		_STZY cin_mode	; back to normal mode
-		BNE k2_exit		; and return whatever was received, no need for BRA
+		_BRA k2_exit	; and return whatever was received
 k2_event:
 	CMP #16			; is it DLE?
 	BNE k2_notdle	; otherwise check next
@@ -105,7 +105,7 @@ k2_notdle:
 		LDA #SIGTERM
 		BNE k2_signal	; send signal, no need for BRA?
 k2_noterm:
-	CMP #4			; is it ^D? (KILL)
+	CMP #4			; is it ^D? (KILL) somewhat dangerous...
 	BNE k2_nokill	; otherwise check next
 		LDA #SIGKILL
 		BNE k2_signal	; send signal, no need for BRA?
@@ -115,19 +115,19 @@ k2_nokill:
 		LDA #SIGSTOP	; last signal to be sent
 k2_signal:
 		STA zpar2		; set signal as parameter
-		LDY #0			; ***self-sent signal***
+		LDY #0			; ***self-sent signal*** revise? maybe 'LDY pid' or something
 		_KERNEL(B_SIGNAL)	; send signal
 k2_abort:
 		_ERR(EMPTY)		; no character was received
 
 k2_nph:
 	CMP #64			; first file-dev??? ***
-		BMI k2_win		; should be window manager
+		BCC k2_win		; below that, should be window manager
 
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 	CMP #64+MAX_FILES	; still within file-devs?
-		BPL k2_log		; not a file
+		BCS k2_log		; that or over, not a file
 ; *** manage here output to open file ***
 	_ERR(NO_RSRC)	; not yet implemented ***placeholder***
 #endif
@@ -146,7 +146,7 @@ k2_rnd:
 	_EXIT_OK
 
 k2_win:
-; *** virtual windows manager TO DO ***
+; *** virtual window manager TO DO ***
 	_ERR(NO_RSRC)	; not yet implemented
 
 
@@ -162,9 +162,9 @@ malloc:
 		BNE k4_nobank	; not implemented yet
 	BIT zpar+2		; asking over 16K?
 		BMI k4_nobank	; not implemented yet
-		BCS k4_nobank
+		BVS k4_nobank	; EEEK
 	LDY #0			; reset index
-	_SEI			; this is dangerous!
+	_ENTER_CS		; this is dangerous! enter critical section, new 160119
 k4_scan:
 		LDA ram_stat, Y		; get state of current entry (4)
 		CMP #'F'			; looking for a free one (2)
@@ -173,7 +173,7 @@ k4_cont:
 		INY					; increase index (2)
 		CPY #MAX_LIST/2		; until the end (2+3)
 		BNE k4_scan
-	_CLI			; were off by 15*n, up to 240 clocks instead of 304
+	_EXIT_CS		; were off by 15*n, up to 240 clocks instead of 304
 	_ERR(FULL)		; no room for it!
 k4_nobank:
 	_ERR(UNAVAIL)	; no bankswitching yet
@@ -183,10 +183,10 @@ k4_found:
 	TAX						; now indexing in words
 	LDA ram_siz+1, X		; get size MSB (4)
 	CMP zpar+1				; compare (3)
-		BMI k4_cont				; smaller, thus continue searching (2/3)
+		BCC k4_cont				; smaller, thus continue searching (2/3)
 	LDA ram_siz, X			; check LSB, just in case (4)
 	CMP zpar				; compare (3)
-		BMI k4_cont				; smaller, thus continue searching (2/3)
+		BCC k4_cont				; smaller, thus continue searching (2/3)
 ; here we go
 	LDA ram_siz, X			; get current free block size LSB (4)
 	STA locals				; store it for later (3)
@@ -211,7 +211,7 @@ k4_opt:
 			STA ram_siz+2, Y
 			DEY					; next
 			CPY locals+2
-			BPL k4_opt
+			BCS k4_opt
 		CLC
 		LSR locals+2		; do same for ram_stat
 		LDY #(MAX_LIST/2)-1
@@ -245,7 +245,7 @@ k4_ok:
 	STA zpar2				; store output (3)
 	LDA ram_tab+1, X		; same for MSB (4+3)
 	STA zpar2+1
-	_CLI					; danger is over (2) 
+	_EXIT_CS				; end of critical section, new 160119
 	_EXIT_OK				; we're done
 
 
@@ -256,21 +256,20 @@ k4_ok:
 
 free:
 	LDX #0			; reset indexes
-	_SEI			; supposedly dangerous
+	_ENTER_CS		; supposedly dangerous
 k6_loop:
 		LDA ram_tab, X		; get entry LSB
 		CMP zpar2			; compare
 			BNE k6_next			; try other
 		LDA ram_tab+1, X	; same for MSB
 		CMP zpar2+1
-			BNE k6_next
-		_BRA k6_found		; stop searching
+			BEQ k6_found		; stop searching, much easier this way
 k6_next:
 		INX
 		INX
 		CPX #MAX_LIST		; until the end
-		BPL k6_loop
-	_CLI
+		BCC k6_loop
+	_EXIT_CS
 	_ERR(N_FOUND)			; no block to be freed!
 k6_found:
 	TXA				; get two-byte index
@@ -297,7 +296,7 @@ k6_opt:
 		_STZA ram_tab+3, X
 ; ** already optimized **
 k6_ok:
-	_CLI
+	_EXIT_CS
 	_EXIT_OK
 
 
@@ -332,7 +331,7 @@ free_w:
 
 uptime:
 	LDX #1			; first go for remaining ticks (2 bytes) (2)
-	_SEI			; don't change while copying (2)
+	_ENTER_CS		; don't change while copying
 k14_loop:
 		LDA ticks, X	; get system variable byte (not uptime, corrected 20150125) (4)
 		STA zpar, X		; and store them in output parameter (3)
@@ -344,7 +343,7 @@ k14_upt:
 		STA zpar2, X	; and store it in output parameter (3) corrected 150610
 		DEX				; go for next (2+3/2)
 		BPL k14_upt
-	_CLI			; disabled for 62 clocks, not 53...
+	_EXIT_CS		; disabled for 62 clocks, not 53...
 	_EXIT_OK
 
 
@@ -443,26 +442,29 @@ k20_wrap:
 
 
 ; *** K22, write to protected addresses *** revised 20150208
+; might be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
-; destroys A (and X for NMOS)
+; destroys A
 
 su_poke:
 	TYA				; transfer value
-	_STAX(zpar)		; store value, macro for NMOS
+	_STAY(zpar)		; store value, macro for NMOS
 	_EXIT_OK
 
 
 ; *** K24, read from protected addresses *** revised 20150208
+; might be deprecated, not sure if of any use in other architectures
 ; Y -> value, zpar <- addr
-; destroys A (and X for NMOS)
+; destroys A
 
 su_peek:
-	_LDAX(zpar)		; store value, macro for NMOS
+	_LDAY(zpar)		; store value, macro for NMOS
 	TAY				; transfer value
 	_EXIT_OK
 
 
 ; *** K26, prints a C-string *** revised 20150208, revamped 20151015
+; needs great revision, determine device once!!!
 ; Y <- dev, zpar3 <- *string (.w in current version)
 ; destroys A, Y (and X for NMOS)
 ; uses locals[0]
@@ -500,6 +502,8 @@ su_cli:				; not needed for 65xx, even with protection hardware
 
 
 ; *** K32, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
+; should use some firmware interface, just in case it doesn't affect jiffy-IRQ!
+; should also be Phi2-rate independent... input as Hz, or 100uS steps?
 ; zpar.W <- dividing factor (times two?), C -> busy
 ; destroys A, X...
 
@@ -543,6 +547,8 @@ go_shell:
 	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
 
 ; *** K36, proper shutdown, with or without poweroff ***
+; ** should deploy new 2-step shutdown routine, first send SIGTERM to all and set flag with desired action
+; ** when the scheduler finds no remaining tasks, call again with flag set and proceed
 ; Y <- subfunction code (0=shutdown, 2=suspend, 6=warmboot, 4=coldboot) new API 20150603
 ; C -> couldn't poweroff or reboot (?)
 
@@ -551,9 +557,9 @@ shutdown:
 		BEQ k36_stat		; don't shutdown system then!
 	PHY				; store mode for later, first must do proper system shutdown
 ; ** the real stuff starts here **
-; ask all braids ***but the current one*** to terminate
-; then check flags until all braids ***but this one*** are free
-; could return just here after some timeout
+; ask all braids ***but the current one*** to terminate -- no, ask ALL of them
+; then check flags until all braids ***but this one*** are free -- the scheduler will, waiting for NO braids active
+; could return just here after some timeout -- dunno, no longer will stay after sending SIGTERM
 ; now let's disable all drivers
 	_SEI			; disable interrupts
 
@@ -575,7 +581,7 @@ sd_loop:
 			STA locpt2
 			PHX					; save index for later
 				LDY #D_BYE+1		; offset for shutdown routine
-				JSR dr_call			; call routine from generic code!!!
+				JSR dr_call			; call routine from generic code!!! *** NOT HERE
 			PLX					; retrieve index
 sd_next:
 		INX					; advance to next entry (2+2)
@@ -626,7 +632,7 @@ k38_st:				; *** single-task interface, in case MM driver failed *** (repeated f
 	LDY zpar2		; get the signal
 	CPY #SIGTERM	; clean shutoff
 		BEQ k38_term
-	CPY #SIGKILL	; suicide
+	CPY #SIGKILL	; suicide, makes any sense?
 		BEQ k38_kill
 k38_pid:			; placeholder...
 	_ERR(INVALID)	; unrecognised signal
@@ -644,7 +650,7 @@ k38_call:
 	LDY zpar2		; get the signal
 	CPY #SIGTERM	; clean shutoff
 		BEQ k38_term
-	CPY #SIGKILL	; suicide
+	CPY #SIGKILL	; suicide, makes any sense?
 		BEQ k38_kill
 k38_pid:			; placeholder...
 	_ERR(INVALID)	; unrecognised signal

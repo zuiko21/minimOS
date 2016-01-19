@@ -1,11 +1,10 @@
-; minimOS 0.5a7 MACRO definitions
-; (c) 2012-2015 Carlos J. Santisteban
-; last modified 20151015-1111
+; minimOS 0.5a8 MACRO definitions
+; (c) 2012-2016 Carlos J. Santisteban
+; last modified 20160119
 
 ; redefined as labels 20150603
 ; standard addresses, new 20150220
-admin_call	=	$FFA0	; watch out for '816, maybe a wrapper at $FFA8
-bankswitch	=	$FFB0	; TBD, deprecated '02 bankswitching!
+admin_call	=	$FFA0	; watch out for 65816, maybe a wrapper at $FFA8
 kernel_call	=	$FFC0
 ; *** warm_start deprecated 20150602
 ; new definition 20150326, relocated 20150603 for adequate room
@@ -22,6 +21,9 @@ FILE_DEV	=	130
 
 ; common function calls
 #define		_EXIT_OK	CLC: RTS
+; new macros for critical sections, do not just rely on SEI/CLI 20160119
+#define		_ENTER_CS	PHP: SEI
+#define		_EXIT_CS	PLP
 ; new exit for asynchronous driver routines when not satisfied 20150320, renamed 20150929
 #define		_NEXT_ISR	SEC: RTS
 #define		_ERR(a)		LDY #a: SEC: RTS
