@@ -1,6 +1,6 @@
-; minimOS 0.5a11 API
+; minimOS 0.5a12 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160119 (comments for future changes)
+; last modified 20160120 (adapted to new memory management)
 
 ; VIA 65(C)22 registers
 ; offsets from base address (add to base in options.h)
@@ -135,6 +135,13 @@ FS_FREE		=  28	; get free space on current volume
 FS_MOUNT	=  30	; mount (all?) volumes on a device
 FS_UNMNT	=  32	; unmount volume
 FS_CREATE	=  34	; format filesystem
+
+; values for RAM chunck status
+; make certain FREE_RAM is zero for easier scan (BEQ)
+; even number just in case indexed jump is used (none as of 20160120)
+FREE_RAM	=	0
+USED_RAM	=	2
+UNAS_RAM	=	4
 
 ; logic devices, TBD, new 20150309
 DEV_RND		= 126	; get a random number

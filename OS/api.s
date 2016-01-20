@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5a8
+; v0.5a9
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160119 (new _CS macros and corrected comparisons)
+; last modified 20160120 (slight optimization, esp. memory management and string printing)
 
 #ifndef		FINAL
 	.asc	"<kern>"		; *** just for easier debugging *** no markup to skip
@@ -17,8 +17,8 @@ unimplemented:		; placeholder here, not currently used
 ; destroys X, A... plus driver
 ; uses local2
 
-dt_ptr = local2		; could be called by STRING
-cio_of = dt_ptr + 2	; parameter switching between cin and cout
+dt_ptr = local2		; could be called by STRING, same as locpt2
+cio_of = dt_ptr + 2	; parameter switching between cin and cout ** might use local3 as well, best for 680x0 port!
 
 cout:
 	LDA #D_COUT		; only difference from cin (2)
@@ -85,8 +85,10 @@ k2_port:
 		LDA zpar		; get received character
 		CMP #' '		; printable?
 			BCC k2_manage	; if not, might be an event
+k2_exitOK:
+		CLC				; above comparison would set carry
 k2_exit:
-		_EXIT_OK		; above comparison would set carry
+		RTS				; cannot use macro because may need to keep Carry
 ; ** continue event management **
 k2_manage:
 ; check for binary mode
@@ -111,7 +113,7 @@ k2_noterm:
 		BNE k2_signal	; send signal, no need for BRA?
 k2_nokill:
 	CMP #26			; is it ^Z? (STOP)
-	BNE k2_exit		; otherwise there's no more to check
+	BNE k2_exitOK	; otherwise there's no more to check
 		LDA #SIGSTOP	; last signal to be sent
 k2_signal:
 		STA zpar2		; set signal as parameter
@@ -128,7 +130,7 @@ k2_nph:
 #ifdef	FILESYSTEM
 	CMP #64+MAX_FILES	; still within file-devs?
 		BCS k2_log		; that or over, not a file
-; *** manage here output to open file ***
+; *** manage here input from open file ***
 	_ERR(NO_RSRC)	; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
@@ -159,15 +161,15 @@ k2_win:
 malloc:
 	LDA zpar+2		; asking over 64K?
 	ORA zpar+3
-		BNE k4_nobank	; not implemented yet
-	BIT zpar+2		; asking over 16K?
+		BNE k4_nobank	; most likely never available for 65C02
+	BIT zpar+2		; asking over 32K?
 		BMI k4_nobank	; not implemented yet
-		BVS k4_nobank	; EEEK
+;		BVS k4_nobank	; there is no longer a reason to stop at 16K
 	LDY #0			; reset index
 	_ENTER_CS		; this is dangerous! enter critical section, new 160119
 k4_scan:
 		LDA ram_stat, Y		; get state of current entry (4)
-		CMP #'F'			; looking for a free one (2)
+;		CMP #FREE_RAM		; looking for a free one (2) not needed if free is zero
 			BEQ k4_found		; got one (2/3)
 k4_cont:
 		INY					; increase index (2)
@@ -196,7 +198,7 @@ k4_found:
 	STA ram_siz, X			; reduce entry (4)
 	LDA zpar+1				; same for MSB (3+4)
 	STA ram_siz+1, X
-	LDA #'U'				; mark block as used (2)
+	LDA #USED_RAM			; mark block as used (2) define elsewhere
 	STA ram_stat, Y			; indexed by byte (4)
 	LDA locals
 	ORA locals+1			; some space remaining? (3+3)
@@ -220,7 +222,7 @@ k4_stat:
 			STA ram_stat+1, Y	; check too
 			DEY					; next
 			CPY locals+2
-			BPL k4_stat
+			BCS k4_stat			; EEEK, was BPL, hope it is OK
 ; now create new free entry
 		LDA ram_tab, X		; get current address
 		CLC
@@ -237,8 +239,8 @@ k4_stat:
 		SBC zpar+1
 		STA ram_siz+3, X
 		LDY locals+2		; Y is no longer valid, thus restore from stored X/2
-		LDA #'F'			; set new entry as free
-		STA ram_stat+1, Y
+		LDA #FREE_RAM		; needed even if free is zero
+		STA ram_stat+1, Y	; set new entry as free, unfortunately no STZ abs,Y
 ; ** optimization finished **
 k4_ok:
 	LDA ram_tab, X			; get address' LSB (4)
@@ -276,19 +278,19 @@ k6_found:
 	CLC
 	LSR				; convert to byte index
 	TAY				; could be saved but no way with optimization...
-	LDA #'F'		; free block
-	STA ram_stat, Y
+	LDA #FREE_RAM	; free block
+	STA ram_stat, Y	; unfortunately no STZ abs,Y
 ; ** optimize list, highly recommended **
 k6_opt:
 		LDA ram_stat+1, Y	; get status of contiguous entry
-		CMP #'F'			; was it free?
-			BNE k6_ok			; wasn't, so nothing to optimize
+;		CMP #FREE_RAM		; was it free? no need if free is zero
+			BNE k6_ok			; was not free, so nothing to optimize
 		LDA ram_siz, X		; get actual size LSB
 		CLC
 		ADC ram_siz+2, X	; add following size
 		LDA ram_siz+1, X	; same with MSB
 		ADC ram_siz+3, X
-		LDA #' '			; create unassigned entry
+		LDA #UNAS_RAM		; create unassigned entry
 		STA ram_stat+1, Y	; **KLUDGE** just set entry as unassigned, instead of obliterating it
 		_STZA ram_siz+2, X	; clear size of it, so the KLUDGE might work
 		_STZA ram_siz+3, X
@@ -352,6 +354,7 @@ k14_upt:
 
 b_fork:
 #ifdef	MULTITASK
+; ** might be replaced with LDY pid on optimized builds **
 	LDA #MM_FORK	; subfunction code
 	_BRA k1618_call	; do actual calling
 #else
@@ -364,6 +367,7 @@ b_fork:
 ; Y <- PID, zpar2.W <- addr (was z2L)
 b_exec:
 #ifdef	MULTITASK
+; ** might be repaced with driver code on optimized builds **
 	LDA #MM_EXEC	; subfunction code
 	STY locals		; COUT shouldn't touch it anyway
 k1618_call:
@@ -394,6 +398,7 @@ k18_st:
 	JSR k18_jmp		; call supplied address
 	_EXIT_OK		; back to shell?
 k18_jmp:
+; this kind of jump will not work on native 816 mode!
 	LDA zpar2+1		; get address MSB first
 	PHA				; put it on stack
 	LDA zpar2		; same for LSB
@@ -424,7 +429,7 @@ k18_jmp:
 ; *** K20, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
 ; z2L -> addr, z10L <- *path
 load_link:
-; *** assume path points to filename in header, code begins +248
+; *** assume path points to filename in header, code begins +248 *** KLUDGE
 	CLC				; ready to add
 	LDA z10			; get LSB
 	ADC #248		; offset to actual code!
@@ -444,7 +449,7 @@ k20_wrap:
 ; *** K22, write to protected addresses *** revised 20150208
 ; might be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
-; destroys A
+; destroys A (and maybe Y on NMOS)
 
 su_poke:
 	TYA				; transfer value
@@ -463,38 +468,77 @@ su_peek:
 	_EXIT_OK
 
 
-; *** K26, prints a C-string *** revised 20150208, revamped 20151015
-; needs great revision, determine device once!!!
-; Y <- dev, zpar3 <- *string (.w in current version)
-; destroys A, Y (and X for NMOS)
+; *** K26, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
+; Y <- dev, zpar3 = zaddr3 <- *string (.w in current version)
+; destroys all
 ; uses locals[0]
-; calls cout (K0)
+; calls cout, but now directly at driver code *** great revision, scans ONCE for device driver
 
 string:
-	STY locals		; save Y in case cout destroys it
-;k26_loop:
-;		_LDAX(zpar3)	; get current character, NMOS too
-;			BEQ k26_end		; NUL = end-of-string
-;		STA zpar		; ready to go out
-;		LDY locals		; restore Y
-;		_KERNEL(COUT)	; call cout
-;		INC zpar3		; next character
-;	BNE k26_loop
-;		INC zpar3+1		; cross page boundary
-;	BNE k26_loop		; ...or BRA
-k26_end:
-	_EXIT_OK
-
+; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
+	TYA				; for indexed comparisons (2)
+	BNE k26_port	; not default (3/2)
+		LDA default_out	; default output device (4)
+k26_port:
+	BMI k26_phys	; not a logic device (3/2)
+		CMP #64			; first file-dev??? ***
+			BCC k26_win		; below that, should be window manager
+; ** optional filesystem access **
+#ifdef	FILESYSTEM
+		CMP #64+MAX_FILES	; still within file-devs?
+			BCS k26_log		; that value or over, not a file
+; *** manage here output to open file ***
+		_ERR(NO_RSRC)	; not yet implemented ***placeholder***
+#endif
+; ** end of filesystem access **
+k26_log:
+; investigate rest of logical devices
+		CMP #DEV_NULL	; lastly, ignore output
+			BNE k26_nfound	; final error otherwise
+k26_exit:
+		_EXIT_OK		; "/dev/null" is always OK
+k26_win:
+; *** virtual windows manager TO DO ***
+	_ERR(NO_RSRC)	; not yet implemented
+k26_nfound:
+	_ERR(N_FOUND)	; unknown device
+k26_phys:
+; ** new direct indexing, 20151013, 24 bytes, 36 clocks **
+	ASL					; convert to index (2+2)
+	TAX
+	LDA drivers_pt+1, X	; get MSB from new table (4)
+		BEQ k26_nfound		; not found (2/3)
+	TAY					; store temporarily (2)
+	LDA drivers_pt, X	; get LSB (4)
+	CLC					; prepare for adding offset (2)
+	ADC #D_COUT			; compute final address, fixed constant! (2)
+	STA local1			; store pointer (3)
+	TYA					; restore MSB (2)
+	ADC #0				; take carry into account (2+3)
+	STA local1+1		; pointer is ready, use this routine for every character in string (3)
+; ** the actual printing loop **
+	LDY #0				; reset index, new faster approach! (2)
+k26_loop:
+		LDA (zaddr3), Y		; get character from string, new approach (5)
+			BEQ k26_exit		; terminated! (2/3)
+		PHY					; save just in case COUT destroys it (3)
+		STA zpar			; store output character for COUT (3)
+			JSR k26_call		; indirect subroutine call (6...)
+		PLY					; restore index (4)
+		_BRA k26_loop		; continue, will check for termination later (3)
+k26_call:
+		JMP (local1)		; go at stored pointer (...6)
 
 ; *** K28, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
-
+; probably not needed on 65xx, _CS macros are much more interesting anyway
 su_sei:
 	SEI				; disable interrupts
 	_EXIT_OK		; no error so far
 
 
 ; *** K30, enable interrupts *** revised 20150209
+; probably not needed on 65xx, _CS macros are much more interesting anyway
 
 su_cli:				; not needed for 65xx, even with protection hardware
 	CLI				; enable interrupts
@@ -502,7 +546,7 @@ su_cli:				; not needed for 65xx, even with protection hardware
 
 
 ; *** K32, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
-; should use some firmware interface, just in case it doesn't affect jiffy-IRQ!
+; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
 ; zpar.W <- dividing factor (times two?), C -> busy
 ; destroys A, X...

@@ -1,8 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5a8
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20151014-1843
-; revised 20160115 for commit with new filenames
+; last modified 20160120 (adapted for new memory management services)
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -85,7 +84,7 @@ warm:
 memo_label:
 #endif
 
-	LDA #' '			; unassigned space (2)
+	LDA #UNAS_RAM		; unassigned space (2) should be defined somewhere (2)
 	LDX #MAX_LIST		; depending on RAM size, corrected 20150326 (2)
 mreset:
 		STA ram_stat, X		; set entry as unassigned, essential (4)
@@ -95,8 +94,8 @@ mreset:
 	STA ram_tab			; create entry (4)
 	LDA #>user_sram		; same for MSB (2+4)
 	STA ram_tab+1
-	LDA #'F'			; set free entry (2+4)
-	STA ram_stat
+;	LDA #FREE_RAM		; no longer needed if free is zero
+	_STZA ram_stat		; set free entry (4)
 	LDA #0				; compute free RAM (2+2)
 	SEC
 	SBC #<user_sram		; substract LSB (2+4)
@@ -330,7 +329,7 @@ start_label:
 	STA default_in
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
-	_CLI			; enable interrupts
+	CLI				; enable interrupts
 
 ; say hello! *** revise ASAP
 	LDA #<hello		; LSB of the string
@@ -375,12 +374,12 @@ k_isr:
 #include "isr/irq.s"
 
 ; *** non-maskable interrupt handler ***
-; must begin with 'UNj*'
 
 #ifndef		FINAL
 	.asc	"<nmi>"		; *** just for easier debugging ***
 #endif
 
 k_nmi:
+; must begin with 'UNj*' magic string!
 #include "isr/nmi.s"
 
