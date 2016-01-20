@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5a8
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160119
+; last modified 20160120 (some improvements from regular API)
 
 #ifndef		FINAL
 	.asc	"<kern>"		; *** just for easier debugging *** no markup to skip
@@ -239,49 +239,76 @@ k20_wrap:
 
 
 ; *** K22, write to protected addresses *** revised 20150208
+; might be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
-; destroys A (and X for NMOS)
+; destroys A (and maybe Y on NMOS)
 
 su_poke:
 	TYA				; transfer value
-	_STAX(zpar)		; store value, macro for NMOS
+	_STAY(zpar)		; store value, macro for NMOS
 	_EXIT_OK
 
 
 ; *** K24, read from protected addresses *** revised 20150208
+; might be deprecated, not sure if of any use in other architectures
 ; Y -> value, zpar <- addr
-; destroys A (and X for NMOS)
+; destroys A
 
 su_peek:
-	_LDAX(zpar)		; store value, macro for NMOS
+	_LDAY(zpar)		; store value, macro for NMOS
 	TAY				; transfer value
 	_EXIT_OK
 
 
 ; *** K26, prints a C-string *** revised 20150208
 ; Y <- dev, zpar3 <- *string (.w in current version)
-; destroys A, Y (and X for NMOS)
+; destroys A, Y
 ; uses locals[0]
 ; calls cout (K0)
 
 string:
-	STY locals		; save Y in case cout destroys it
+; ** alternative version, preserves pointer ** 23 bytes for CMOS, 27 if SAFE mode, NMOS add 1 byte
+	STY local1		; save Y in case COUT destroys it
+	LDY #0			; reset new index
 k26_loop:
-		_LDAX(zpar3)	; get current character, NMOS too
-			BEQ k26_end		; NUL = end-of-string
-		STA zpar		; ready to go out
-		LDY locals		; restore Y
-		_KERNEL(COUT)	; call cout
-		INC zpar3		; next character
-	BNE k26_loop
-		INC zpar3+1		; cross page boundary
-	BNE k26_loop		; ...or BRA
+		LDA (zaddr3), Y		; get character, new approach
+			BEQ k26_end			; NUL = end-of-string
+		STA zpar			; store output character for COUT
+		PHY					; save current index
+		LDY local1			; retrieve device number
+		_KERNEL(COUT)		; call routine
+#ifdef	SAFE
+			BCS k26_err			; extra check
+#endif
+		PLY					; retrieve index
+		_BRA k26_loop		; repeat, will later check for termination
 k26_end:
 	_EXIT_OK
+#ifdef	SAFE
+k26_err:
+	PLY				; cleanup stack
+	RTS				; return error code
+#endif
+
+; original version was 25 bytes, NMOS add 2 bytes, SAFE would add 4 bytes
+;	STY locals		; save Y in case cout destroys it
+;k26_loop:
+;		_LDAY(zpar3)	; get current character, NMOS too
+;			BEQ k26_end		; NUL = end-of-string
+;		STA zpar		; ready to go out
+;		LDY locals		; restore Y
+;		_KERNEL(COUT)	; call cout
+;		INC zpar3		; next character
+;	BNE k26_loop
+;		INC zpar3+1		; cross page boundary
+;	BNE k26_loop		; ...or BRA
+;k26_end:
+;	_EXIT_OK
 
 
 ; *** K28, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
+; probably not needed on 65xx, _CS macros are much more interesting anyway
 
 su_sei:
 	SEI				; disable interrupts
@@ -289,6 +316,7 @@ su_sei:
 
 
 ; *** K30, enable interrupts *** revised 20150209
+; probably not needed on 65xx, _CS macros are much more interesting anyway
 
 su_cli:				; not needed for 65xx, even with protection hardware
 	CLI				; enable interrupts
@@ -296,6 +324,8 @@ su_cli:				; not needed for 65xx, even with protection hardware
 
 
 ; *** K32, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
+; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
+; should also be Phi2-rate independent... input as Hz, or 100uS steps?
 ; zpar.W <- dividing factor (times two?), C -> busy
 ; destroys A, X...
 
