@@ -58,11 +58,11 @@ execute:
 			JMP (optable_h, X)	; emulation routines for opcodes with bit7 hi (6)
 lo_jump:
 		JMP (optable_l, X)	; otherwise, emulation routines for opcodes with bit7 low
-next_op:					; continue execution via JMP next_op, will not arrive here otherwise (...3)
+next_op:					; continue execution via JMP next_op, will not arrive here otherwise
 		CLC				; prepare to increase PC (2)
 		ADC pc68		; add up to LSB (3+3)
 		STA pc68
-			BCC execute		; go for next instruction if not carry (3/2)
+			BCC execute		; go for next instruction if not carry (3/2, usual overhead is +28, plus +5 from standard exit)
 		INC pc68		; increase MSB (5)
 		BIT pc68		; let us check it against emulated limits (3)
 	BMI negative	; will it be in ROM area
@@ -81,12 +81,12 @@ _83:_87:_8f:_93:_9d:_a3:_b3:_c3:_c7:_cc:_cd:_cf:_d3:_dc:_dd:_e3:_ec:_ed:_f3:_fc:
 ; useful opcodes
 _01:	; NOP
 	TYA			; number of bytes as required
-	JMP next_op	; standard end of routine
+	JMP next_op	; standard end of routine (all +5 unless otherwise noted)
 _06:	; TAP (2)
 	LDA a68		; get A accumulator...
 	STA psr68	; ...and store it in CCR (+6)
 	TYA			; number of bytes as required
-	JMP next_op	; standard end of routine (all +5)
+	JMP next_op	; standard end of routine
 _07:	; TPA (2)
 	LDA psr68	; get CCR...
 	STA a68		; ...and store it in A (+6)
@@ -168,12 +168,32 @@ _11:	; CBA
 
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_16:	; TAB
-
+_16:	; TAB (2)
+	LDA psr68	; get original flags
+	AND #%11110001	; reset N,Z, and always V
+	LDX a68		; get A
+	STX b68		; store in B
+	BNE tab_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+tab_nz:
+	BPL tab_pl	; skip if positive
+		ORA #%00001000	; set N flag
+tab_pl:
+	STA psr68	; update status (+20...22)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_17:	; TBA
-
+_17:	; TBA (2)
+	LDA psr68	; get original flags
+	AND #%11110001	; reset N,Z, and always V
+	LDX b68		; get B
+	STX a68		; store in A
+	BNE tba_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+tba_nz:
+	BPL tba_pl	; skip if positive
+		ORA #%00001000	; set N flag
+tba_pl:
+	STA psr68	; update status (+20...22)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _19:	; DAA
@@ -308,16 +328,59 @@ _3f:	; SWI
 
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_40:	; NEG A
-
+_40:	; NEG A (2)
+	SEC			; prepare substraction
+	LDA #0
+	SBC a68		; negate A
+	STA a68		; update value
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	LDX a68		; check stored value
+	BNE nega_nz	; skip if not zero
+		ORA #%00000101	; set Z and C flags
+nega_nz:
+	BPL nega_pl	; skip if positive
+		ORA #%00001000	; set N flag
+nega_pl:
+	CPX #$80	; did change sign?
+	BNE nega_nv	; skip if not V
+		ORA #%00000010	; set V flag
+nega_nv:
+	STA psr68	; update status (+32...35)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _43:	; COM A
-
+	LDA a68		; get A
+	EOR #$FF	; complement it
+	STA a68		; update value
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	INC			; C always set
+	LDX a68		; check stored value
+	BNE coma_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+coma_nz:
+	BPL coma_pl	; skip if positive
+		ORA #%00001000	; set N flag
+coma_pl:
+	CPX #$80	; did change sign?
+	BNE coma_nv	; skip if not V
+		ORA #%00000010	; set V flag
+coma_nv:
+	STA psr68	; update status (+)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_44:	; LSR A
-
+_44:	; LSR A (2)
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits (N always reset)
+	LSR a68		; shift A right
+	BNE lsra_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+lsra_nz:
+	BCC lsra_nc	; skip if there was no carry
+		ORA #%00000011	; will set C and V flags
+lsra_nc:
+	STA psr68	; update status (+21...23)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _46:	; ROR A
@@ -336,36 +399,107 @@ _49:	; ROL A
 
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_4a:	; DEC A
-
+_4a:	; DEC A (2)
+	LDA psr68	; get original status
+	AND #%11110001	; reset all relevant bits for CCR 
+	DEC a68		; decrease A
+	BNE deca_nz	; skip if not zero
+		ORA #%00000100	; will set Z bit
+deca_nz:
+	BPL deca_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+deca_pl:
+	LDX a68		; let us check value
+	CPX #$7F	; did change sign?
+	BNE deca_nv	; skip if not overflow
+		ORA #%00000010	; will set V flag
+deca_nv:
+	STA psr68	; store new flags (+27...30)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_4c:	; INC A
-
+_4c:	; INC A (2)
+	LDA psr68	; get original status
+	AND #%11110001	; reset all relevant bits for CCR 
+	INC a68		; increase A
+	BNE inca_nz	; skip if not zero
+		ORA #%00000100	; will set Z bit
+inca_nz:
+	BPL inca_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+inca_pl:
+	LDX a68		; let us check value
+	CPX #$80	; did change sign?
+	BNE inca_nv	; skip if not overflow
+		ORA #%00000010	; will set V flag
+inca_nv:
+	STA psr68	; store new flags (+27...30)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _4d:	; TST A
 
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_4f:	; CLR A
+_4f:	; CLR A (2)
 	STZ a68		; clear A
 	LDA psr68	; get previous status
 	AND #%11110100	; clear N, V, C
 	ORA #%00000100	; set Z
-	STA psr68	; update
+	STA psr68	; update (+13)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _50:	; NEG B
-
+	SEC			; prepare substraction
+	LDA #0
+	SBC b68		; negate B
+	STA b68		; update value
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	LDX b68		; check stored value
+	BNE negb_nz	; skip if not zero
+		ORA #%00000101	; set Z and C flags
+negb_nz:
+	BPL negb_pl	; skip if positive
+		ORA #%00001000	; set N flag
+negb_pl:
+	CPX #$80	; did change sign?
+	BNE negb_nv	; skip if not V
+		ORA #%00000010	; set V flag
+negb_nv:
+	STA psr68	; update status (+32...35)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_53:	; COM B
-
+_53:	; COM B (2)
+	LDA b68		; get B
+	EOR #$FF	; complement it
+	STA b8		; update value
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	INC			; C always set
+	LDX b68		; check stored value
+	BNE comb_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+comb_nz:
+	BPL comb_pl	; skip if positive
+		ORA #%00001000	; set N flag
+comb_pl:
+	CPX #$80	; did change sign?
+	BNE comb_nv	; skip if not V
+		ORA #%00000010	; set V flag
+comb_nv:
+	STA psr68	; update status (+)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _54:	; LSR B
-
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits (N always reset)
+	LSR b68		; shift B right
+	BNE lsrb_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+lsrb_nz:
+	BCC lsrb_nc	; skip if there was no carry
+		ORA #%00000011	; will set C and V flags
+lsrb_nc:
+	STA psr68	; update status (+21...23)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _56:	; ROR B
@@ -385,23 +519,51 @@ _59:	; ROL B
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _5a:	; DEC B
-
+	LDA psr68	; get original status
+	AND #%11110001	; reset all relevant bits for CCR 
+	DEC b68		; decrease B
+	BNE decb_nz	; skip if not zero
+		ORA #%00000100	; will set Z bit
+decb_nz:
+	BPL decb_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+decb_pl:
+	LDX b68		; let us check value
+	CPX #$7F	; did change sign?
+	BNE decb_nv	; skip if not overflow
+		ORA #%00000010	; will set V flag
+decb_nv:
+	STA psr68	; store new flags (+27...30)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _5c:	; INC B
-
+	LDA psr68	; get original status
+	AND #%11110001	; reset all relevant bits for CCR 
+	INC b68		; increase B
+	BNE incb_nz	; skip if not zero
+		ORA #%00000100	; will set Z bit
+incb_nz:
+	BPL incb_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+incb_pl:
+	LDX b68		; let us check value
+	CPX #$80	; did change sign?
+	BNE incb_nv	; skip if not overflow
+		ORA #%00000010	; will set V flag
+incb_nv:
+	STA psr68	; store new flags (+27...30)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _5d:	; TST B
 
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_5f:	; CLR B
+_5f:	; CLR B (2)
 	STZ b68		; clear B
 	LDA psr68	; get previous status
 	AND #%11110100	; clear N, V, C
 	ORA #%00000100	; set Z
-	STA psr68	; update
+	STA psr68	; update (+13)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _60:	; NEG ind
