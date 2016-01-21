@@ -3,14 +3,14 @@
 ; (c) 2016 Carlos J. Santisteban
 ; last modified 20160121
 
-#include "options.h"	; machine specific
-#include "macros.h"
-#include "abi.h"		; ** new filename **
+#include "../../OS/options.h"	; machine specific
+#include "../../OS/macros.h"
+#include "../../OS/abi.h"		; ** new filename **
 .zero
-#include "zeropage.h"
+#include "../../OS/zeropage.h"
 .bss
-#include "firmware/firmware.h"	; machine specific
-#include "sysvars.h"
+#include "../../OS/firmware/firmware.h"	; machine specific
+#include "../../OS/sysvars.h"
 .text
 
 ; minimOS executable header will go here
@@ -106,7 +106,8 @@ _07:	; TPA (2)
 ;	JMP next_op	; standard end of routine
 _08:	; INX (4) faster 22 bytes
 	TYA			; number of bytes as required
-	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
+;	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
+	.word $B27	; *** xa65 does not assemble Rockwell opcodes! ***
 	INC x68		; increase LSB
 	BEQ inx_w	; wrap is a rare case
 		JMP next_op	; usual end (+12 mostly, worth it)
@@ -115,11 +116,13 @@ inx_w:
 	BEQ inx_z	; becoming zero is even rarer!
 		JMP next_op	; wrapped non-zero end (+20 in this case)
 inx_z:
-	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+26 worst case)
+;	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+26 worst case)
+	.word $BA7	; *** xa65 does not assemble Rockwell opcodes! ***
 	JMP next_op	; rarest end of routine
 _09:	; DEX (4)
 	TYA			; number of bytes as required
-	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
+;	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
+	.word $B27	; *** xa65 does not assemble Rockwell opcodes! ***
 	DEC x68		; decrease LSB
 		BEQ dex_z	; could be zero
 	LDX x68		; let us see...
@@ -134,38 +137,91 @@ dex_z:
 	BEQ dex_zz	; it really is all zeroes!
 		JMP next_op	; go away otherwise (+18)
 dex_zz:
-	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+24 in this case)
+;	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+24 in this case)
+	.word $BA7	; *** xa65 does not assemble Rockwell opcodes! ***
 	JMP next_op	; rarest end of routine
 _0a:	; CLV (2)
-	RMB1 psr68	; clear V bit, *** Rockwell only! *** (+5)
+;	RMB1 psr68	; clear V bit, *** Rockwell only! *** (+5)
+	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0b:	; SEV (2)
-	SMB1 psr68	; set V bit, *** Rockwell only! *** (+5)
+;	SMB1 psr68	; set V bit, *** Rockwell only! *** (+5)
+	.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0c:	; CLC (2)
-	RMB0 psr68	; clear C bit, *** Rockwell only! *** (+5)
+;	RMB0 psr68	; clear C bit, *** Rockwell only! *** (+5)
+	.word $B07	; *** xa65 does not assemble Rockwell opcodes! ***
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0d:	; SEC (2)
-	SMB0 psr68	; set C bit, *** Rockwell only! *** (+5)
+;	SMB0 psr68	; set C bit, *** Rockwell only! *** (+5)
+	.word $B87	; *** xa65 does not assemble Rockwell opcodes! ***
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0e:	; CLI (2)
-	RMB4 psr68	; clear I bit, *** Rockwell only! *** (+5)
+;	RMB4 psr68	; clear I bit, *** Rockwell only! *** (+5)
+	.word $B47	; *** xa65 does not assemble Rockwell opcodes! ***
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0f:	; SEI (2)
-	SMB4 psr68	; set I bit, *** Rockwell only! *** (+5)
+;	SMB4 psr68	; set I bit, *** Rockwell only! *** (+5)
+	.word $BC7	; *** xa65 does not assemble Rockwell opcodes! ***
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_10:	; SBA
-
+_10:	; SBA (2)
+;	RMB1 psr68	; clear V
+	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
+	LDA a68		; get A
+	BPL sba_nm	; skip if was positive
+;		SMB1 psr68	; set V like N, to be EORed later
+		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
+sba_nm:
+	SEC			; prepare for subtraction
+	SBC b68		; minus B
+	STA a68		; store result in A
+	LDA psr68	; get original flags
+	LDA #%11110010	; mask out affected bits (but keep V)
+	BCC sba_nc	; check for carry, will it work just like the 6502?
+		INC			; will set C flag
+sba_nc:
+	LDX a68		; retrieve value
+	BNE sba_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+sba_nz:
+	BPL sba_pl	; skip if positive
+		ORA #%00001000	; set N flag
+		EOR #%00000010	; toggle V flag (see above)
+sba_pl:
+	STA psr68	; update status (+39...48)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_11:	; CBA
-
+_11:	; CBA (2)
+;	RMB1 psr68	; clear V
+	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
+	LDA a68		; get A
+	BPL cba_nm	; skip if was positive
+;		SMB1 psr68	; set V like N, to be EORed later
+		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
+cba_nm:
+	SEC			; prepare subtraction, simulating comparison
+	SBC b68		; minus B
+	TAX			; store for later
+	LDA psr68	; get original flags
+	LDA #%11110010	; mask out affected bits (but keep V)
+	BCC cba_nc	; check for carry, will it work just like the 6502?
+		INC			; will set C flag
+cba_nc:
+	CPX #0		; test value, hope it is OK
+	BNE cba_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+cba_nz:
+	BPL cba_pl	; skip if positive
+		ORA #%00001000	; set N flag
+		EOR #%00000010	; toggle V flag (see above)
+cba_pl:
+	STA psr68	; update status (+37...46)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _16:	; TAB (2)
@@ -200,8 +256,31 @@ _19:	; DAA
 
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_1b:	; ABA
-
+_1b:	; ABA (2)
+;	RMB1 psr68	; clear V
+	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
+	LDA a68		; get A
+	BPL aba_nm	; skip if was positive
+;		SMB1 psr68	; set V like N, to be EORed later
+		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
+aba_nm:
+	CLC			; prepare to add
+	ADC b68		; plus B
+	STA a68		; store result in A
+	LDA psr68	; get original flags
+	LDA #%11110010	; mask out affected bits (but keep V)
+	BCC aba_nc	; check for carry, will it work just like the 6502?
+		INC			; will set C flag
+aba_nc:
+	LDX a68		; retrieve value
+	BNE aba_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+aba_nz:
+	BPL aba_pl	; skip if positive
+		ORA #%00001000	; set N flag
+		EOR #%00000010	; toggle V flag (see above)
+aba_pl:
+	STA psr68	; update status (+39...48)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _20:	; BRA rel
@@ -329,7 +408,7 @@ _3f:	; SWI
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _40:	; NEG A (2)
-	SEC			; prepare substraction
+	SEC			; prepare subtraction
 	LDA #0
 	SBC a68		; negate A
 	STA a68		; update value
@@ -349,7 +428,7 @@ nega_nv:
 	STA psr68	; update status (+32...35)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_43:	; COM A
+_43:	; COM A (2)
 	LDA a68		; get A
 	EOR #$FF	; complement it
 	STA a68		; update value
@@ -367,7 +446,7 @@ coma_pl:
 	BNE coma_nv	; skip if not V
 		ORA #%00000010	; set V flag
 coma_nv:
-	STA psr68	; update status (+)
+	STA psr68	; update status (+30...33)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _44:	; LSR A (2)
@@ -380,23 +459,94 @@ lsra_nz:
 	BCC lsra_nc	; skip if there was no carry
 		ORA #%00000011	; will set C and V flags
 lsra_nc:
-	STA psr68	; update status (+21...23)
+	STA psr68	; update status (+19...21)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _46:	; ROR A
-
+	CLC			; prepare
+	LDA psr68	; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ rora_do	; skip if C clear
+		SEC			; otherwise, set carry
+rora_do:
+	AND #%11110000	; reset relevant bits
+	ROR a68		; rotate A right
+	BNE rora_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+rora_nz:
+	BPL rora_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+rora_pl:
+	BCC rora_nc	; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+rora_nc:
+	STA psr68	; update status (+29...37)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_47:	; ASR A
-
+_47:	; ASR A (2)
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	CLC			; prepare
+	BIT a68		; check bit 7
+	BPL asra_do	; do not insert C if clear
+		SEC			; otherwise, set carry
+asra_do:
+	ROR a68		; emulate aritmetic shift left with preloaded-C rotation
+	BNE asra_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+asra_nz:
+	BPL asra_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+asra_pl:
+	BCC asra_nc	; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+asra_nc:
+	STA psr68	; update status (+30...38)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_48:	; ASL A
-
+_48:	; ASL A (2)
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	ASL a68		; shift A left
+	BNE asla_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+asla_nz:
+	BPL asla_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+asla_pl:
+	BCC asla_nc	; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+asla_nc:
+	STA psr68	; update status (+22...29)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_49:	; ROL A
-
+_49:	; ROL A (2)
+	CLC			; prepare
+	LDA psr68	; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ rola_do	; skip if C clear
+		SEC			; otherwise, set carry
+rola_do:
+	AND #%11110000	; reset relevant bits
+	ROL a68		; rotate A left
+	BNE rola_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+rola_nz:
+	BPL rola_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+rola_pl:
+	BCC rola_nc	; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+rola_nc:
+	STA psr68	; update status (+29...37)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _4a:	; DEC A (2)
@@ -436,7 +586,7 @@ inca_nv:
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _4d:	; TST A
-
+	
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _4f:	; CLR A (2)
@@ -447,8 +597,8 @@ _4f:	; CLR A (2)
 	STA psr68	; update (+13)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_50:	; NEG B
-	SEC			; prepare substraction
+_50:	; NEG B (2)
+	SEC			; prepare subtraction
 	LDA #0
 	SBC b68		; negate B
 	STA b68		; update value
@@ -471,7 +621,7 @@ negb_nv:
 _53:	; COM B (2)
 	LDA b68		; get B
 	EOR #$FF	; complement it
-	STA b8		; update value
+	STA b68		; update value
 	LDA psr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -486,10 +636,10 @@ comb_pl:
 	BNE comb_nv	; skip if not V
 		ORA #%00000010	; set V flag
 comb_nv:
-	STA psr68	; update status (+)
+	STA psr68	; update status (+30...33)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_54:	; LSR B
+_54:	; LSR B (2)
 	LDA psr68	; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
 	LSR b68		; shift B right
@@ -499,26 +649,97 @@ lsrb_nz:
 	BCC lsrb_nc	; skip if there was no carry
 		ORA #%00000011	; will set C and V flags
 lsrb_nc:
-	STA psr68	; update status (+21...23)
+	STA psr68	; update status (+19...21)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_56:	; ROR B
-
+_56:	; ROR B (2)
+	CLC			; prepare
+	LDA psr68	; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ rorb_do	; skip if C clear
+		SEC			; otherwise, set carry
+rorb_do:
+	AND #%11110000	; reset relevant bits
+	ROR b68		; rotate B right
+	BNE rorb_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+rorb_nz:
+	BPL rorb_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+rorb_pl:
+	BCC rorb_nc	; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+rorb_nc:
+	STA psr68	; update status (+29...37)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_57:	; ASR B
-
+_57:	; ASR B (2)
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	CLC			; prepare
+	BIT b68		; check bit 7
+	BPL asrb_do	; do not insert C if clear
+		SEC			; otherwise, set carry
+asrb_do:
+	ROR b68		; emulate aritmetic shift left with preloaded-C rotation
+	BNE asrb_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+asrb_nz:
+	BPL asrb_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+asrb_pl:
+	BCC asrb_nc	; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+asrb_nc:
+	STA psr68	; update status (+30...38)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_58:	; ASL B
-
-	TYA		; number of bytes as required
-	JMP next_op	; standard end of routine
-_59:	; ROL B
-
+_58:	; ASL B (2)
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	ASL b68		; shift B left
+	BNE aslb_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+aslb_nz:
+	BPL aslb_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+aslb_pl:
+	BCC aslb_nc	; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+aslb_nc:
+	STA psr68	; update status (+22...29)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_5a:	; DEC B
+_59:	; ROL B (2)
+	CLC			; prepare
+	LDA psr68	; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ rolb_do	; skip if C clear
+		SEC			; otherwise, set carry
+rolb_do:
+	AND #%11110000	; reset relevant bits
+	ROL b68		; rotate B left
+	BNE rolb_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+rolb_nz:
+	BPL rolb_pl	; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+rolb_pl:
+	BCC rolb_nc	; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+rolb_nc:
+	STA psr68	; update status (+29...37)
+	TYA			; number of bytes as required
+	JMP next_op	; standard end of routine
+_5a:	; DEC B (2)
 	LDA psr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	DEC b68		; decrease B
@@ -536,7 +757,7 @@ decb_nv:
 	STA psr68	; store new flags (+27...30)
 	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
-_5c:	; INC B
+_5c:	; INC B (2)
 	LDA psr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	INC b68		; increase B

@@ -2,7 +2,7 @@
 ; set for CMOS SDm
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160120
+; last modified 20160121
 
 ; *** set conditional assembly ***
 ; uncomment to remove debugging markup
@@ -59,7 +59,7 @@ VIA2	=	$DFF0		; SDm is a single-VIA machine, others may change
 ; VIA_SS is the one for SS-22 interface
 ; VIA_SP is the one for SPI interface (TBD)
 VIA_J	=	VIA1		; the only one in SDm, though
-VIA_SP	=	VIA1
+VIA_FG	=	VIA1
 VIA_SS	=	VIA1
 VIA_SP	=	VIA1
 
