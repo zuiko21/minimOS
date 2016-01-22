@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160121
+; last modified 20160122
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -39,19 +39,17 @@ go_emu:
 
 ; *** start the emulation! ***
 reset68:
-	LDA $BFFF		; get RESET vector LSB from emulated ROM (this is big-endian!)
-	STA pc68		; store as inicial PC
+	LDY $BFFF		; get RESET vector LSB from emulated ROM (this is big-endian!)
 	LDA $BFFE		; same for MSB... but create offset!
 	AND #%10111111	; use two 16K chunks only
 	BMI set_pc		; $C000-$FFFF goes into $8000-$BFFF (emulated ROM area)
 		EOR #%01000000	; otherwise goes into emulated RAM area ($4000-$7FFF)
 set_pc:
+	STZ pc68		; base offset is 0, Y index holds LSB
 	STA pc68+1		; address fully generated
-; *** init a few values more ***
-	LDY #1			; preset index for operand access, will serve to reset instruction length
 ; *** main loop ***
 execute:
-		LDA (pc68)		; get opcode (needs CMOS) (5)
+		LDA (pc68), Y		; get opcode (needs CMOS) (5)
 		ASL				; double it as will become pointer (2)
 		TAX				; use as pointer, keeping carry (2)
 		BCC lo_jump		; seems to be less opcodes with bit7 low... (2/3)
@@ -59,18 +57,16 @@ execute:
 lo_jump:
 		JMP (optable_l, X)	; otherwise, emulation routines for opcodes with bit7 low
 next_op:					; continue execution via JMP next_op, will not arrive here otherwise
-		CLC				; prepare to increase PC (2)
-		ADC pc68		; add up to LSB (3+3)
-		STA pc68
-			BCC execute		; go for next instruction if not carry (3/2, usual overhead is +28, plus +5 from standard exit)
-		INC pc68		; increase MSB (5)
-		BIT pc68		; let us check it against emulated limits (3)
-	BMI negative	; will it be in ROM area
-		BVS execute		; continue in RAM area
-	; ***
+		INY			; advance one byte (2)
+		BNE execute		; fetch next instruction if no boundary is crossed (3/2)
+; usual overhead is now 22+3=25 clock cycles, instead of 33
+	INC pc68 + 1		; increase MSB otherwise (5)
+	BMI negative		; this will be in ROM area (3/2)
+		SMB6 pc68 + 1		; in RAM area, A14 is always high (5) *** check for xa65
+		BRA execute		; fetch next (3)
 negative:
-	BVC execute		; no wrap in ROM area
-	; ***
+	RMB6 pc68 + 1		; in ROM area, A14 is always low (5) *** check for xa65
+	BRA execute		; fetch next (3) worst case 39+3 cycles
 
 ; *** opcode execution routines, labels must match those on tables below ***
 ; unsupported opcodes first
@@ -80,17 +76,14 @@ _83:_87:_8f:_93:_9d:_a3:_b3:_c3:_c7:_cc:_cd:_cf:_d3:_dc:_dd:_e3:_ec:_ed:_f3:_fc:
 	BRK		; *** really do not know what to do upon an illegal opcode!
 ; useful opcodes
 _01:	; NOP
-	TYA			; number of bytes as required
-	JMP next_op	; standard end of routine (all +5 unless otherwise noted)
+	JMP next_op	; standard end of routine (all +3 unless otherwise noted)
 _06:	; TAP (2)
 	LDA a68		; get A accumulator...
 	STA psr68	; ...and store it in CCR (+6)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _07:	; TPA (2)
 	LDA psr68	; get CCR...
 	STA a68		; ...and store it in A (+6)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 ;_08:	; INX (4) slower 18 bytes
 ;	INC x68		; increase LSB
@@ -105,7 +98,6 @@ _07:	; TPA (2)
 ;	TYA			; number of bytes as required
 ;	JMP next_op	; standard end of routine
 _08:	; INX (4) faster 22 bytes
-	TYA			; number of bytes as required
 ;	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
 	.word $B27	; *** xa65 does not assemble Rockwell opcodes! ***
 	INC x68		; increase LSB
@@ -120,7 +112,6 @@ inx_z:
 	.word $BA7	; *** xa65 does not assemble Rockwell opcodes! ***
 	JMP next_op	; rarest end of routine
 _09:	; DEX (4)
-	TYA			; number of bytes as required
 ;	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
 	.word $B27	; *** xa65 does not assemble Rockwell opcodes! ***
 	DEC x68		; decrease LSB
@@ -143,32 +134,26 @@ dex_zz:
 _0a:	; CLV (2)
 ;	RMB1 psr68	; clear V bit, *** Rockwell only! *** (+5)
 	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0b:	; SEV (2)
 ;	SMB1 psr68	; set V bit, *** Rockwell only! *** (+5)
 	.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0c:	; CLC (2)
 ;	RMB0 psr68	; clear C bit, *** Rockwell only! *** (+5)
 	.word $B07	; *** xa65 does not assemble Rockwell opcodes! ***
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0d:	; SEC (2)
 ;	SMB0 psr68	; set C bit, *** Rockwell only! *** (+5)
 	.word $B87	; *** xa65 does not assemble Rockwell opcodes! ***
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0e:	; CLI (2)
 ;	RMB4 psr68	; clear I bit, *** Rockwell only! *** (+5)
 	.word $B47	; *** xa65 does not assemble Rockwell opcodes! ***
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _0f:	; SEI (2)
 ;	SMB4 psr68	; set I bit, *** Rockwell only! *** (+5)
 	.word $BC7	; *** xa65 does not assemble Rockwell opcodes! ***
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _10:	; SBA (2)
 ;	RMB1 psr68	; clear V
@@ -195,7 +180,6 @@ sba_nz:
 		EOR #%00000010	; toggle V flag (see above)
 sba_pl:
 	STA psr68	; update status (+39...48)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _11:	; CBA (2)
 ;	RMB1 psr68	; clear V
@@ -222,7 +206,6 @@ cba_nz:
 		EOR #%00000010	; toggle V flag (see above)
 cba_pl:
 	STA psr68	; update status (+37...46)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _16:	; TAB (2)
 	LDA psr68	; get original flags
@@ -236,7 +219,6 @@ tab_nz:
 		ORA #%00001000	; set N flag
 tab_pl:
 	STA psr68	; update status (+20...22)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _17:	; TBA (2)
 	LDA psr68	; get original flags
@@ -250,11 +232,9 @@ tba_nz:
 		ORA #%00001000	; set N flag
 tba_pl:
 	STA psr68	; update status (+20...22)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _19:	; DAA
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _1b:	; ABA (2)
 ;	RMB1 psr68	; clear V
@@ -281,11 +261,10 @@ aba_nz:
 		EOR #%00000010	; toggle V flag (see above)
 aba_pl:
 	STA psr68	; update status (+39...48)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _20:	; BRA rel
 
-	LDA #2		; number of bytes as required
+	LDA #2		; number of bytes as required *** no longer this way, increase Y accordingly...
 	JMP next_op	; standard end of routine
 _22:	; BHI rel
 
@@ -348,10 +327,8 @@ _30:	; TSX (2)
 	STA x68			; store in X
 	LDA sp68 + 1	; same for MSB (+12)
 	STA x68 + 1
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _31:	; INS (4)
-	TYA			; number of bytes as required
 	INC sp68	; increase LSB
 	BEQ ins_w	; wrap is a rare case
 		JMP next_op	; usual end (+7 mostly)
@@ -360,14 +337,11 @@ ins_w:
 	JMP next_op		; wrapped end (+13 worst case)
 _32:	; PUL A
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _33:	; PUL B
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _34:	; DES (4)
-	TYA			; number of bytes as required
 	DEC sp68	; decrease LSB
 	LDX sp68	; let us see...
 	CPX #$FF	; check for wrap
@@ -381,31 +355,24 @@ _35:	; TXS (2)
 	STA sp68	; store as stack pointer
 	LDA x68 + 1	; same for MSB (+12)
 	STA sp68 + 1
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _36:	; PSH A
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _37:	; PSH B
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _39:	; RTS
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _3b:	; RTI
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _3e:	; WAI
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _3f:	; SWI
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _40:	; NEG A (2)
 	SEC			; prepare subtraction
@@ -426,7 +393,6 @@ nega_pl:
 		ORA #%00000010	; set V flag
 nega_nv:
 	STA psr68	; update status (+32...35)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _43:	; COM A (2)
 	LDA a68		; get A
@@ -447,7 +413,6 @@ coma_pl:
 		ORA #%00000010	; set V flag
 coma_nv:
 	STA psr68	; update status (+30...33)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _44:	; LSR A (2)
 	LDA psr68	; get original flags
@@ -460,7 +425,6 @@ lsra_nz:
 		ORA #%00000011	; will set C and V flags
 lsra_nc:
 	STA psr68	; update status (+19...21)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _46:	; ROR A
 	CLC			; prepare
@@ -483,7 +447,6 @@ rora_pl:
 		EOR #%00000010	; toggle V bit
 rora_nc:
 	STA psr68	; update status (+29...37)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _47:	; ASR A (2)
 	LDA psr68	; get original flags
@@ -506,7 +469,6 @@ asra_pl:
 		EOR #%00000010	; toggle V bit
 asra_nc:
 	STA psr68	; update status (+30...38)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _48:	; ASL A (2)
 	LDA psr68	; get original flags
@@ -524,7 +486,6 @@ asla_pl:
 		EOR #%00000010	; toggle V bit
 asla_nc:
 	STA psr68	; update status (+22...29)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _49:	; ROL A (2)
 	CLC			; prepare
@@ -547,7 +508,6 @@ rola_pl:
 		EOR #%00000010	; toggle V bit
 rola_nc:
 	STA psr68	; update status (+29...37)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _4a:	; DEC A (2)
 	LDA psr68	; get original status
@@ -565,7 +525,6 @@ deca_pl:
 		ORA #%00000010	; will set V flag
 deca_nv:
 	STA psr68	; store new flags (+27...30)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _4c:	; INC A (2)
 	LDA psr68	; get original status
@@ -583,11 +542,9 @@ inca_pl:
 		ORA #%00000010	; will set V flag
 inca_nv:
 	STA psr68	; store new flags (+27...30)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _4d:	; TST A
 	
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _4f:	; CLR A (2)
 	STZ a68		; clear A
@@ -595,7 +552,6 @@ _4f:	; CLR A (2)
 	AND #%11110100	; clear N, V, C
 	ORA #%00000100	; set Z
 	STA psr68	; update (+13)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _50:	; NEG B (2)
 	SEC			; prepare subtraction
@@ -616,7 +572,6 @@ negb_pl:
 		ORA #%00000010	; set V flag
 negb_nv:
 	STA psr68	; update status (+32...35)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _53:	; COM B (2)
 	LDA b68		; get B
@@ -637,7 +592,6 @@ comb_pl:
 		ORA #%00000010	; set V flag
 comb_nv:
 	STA psr68	; update status (+30...33)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _54:	; LSR B (2)
 	LDA psr68	; get original flags
@@ -650,7 +604,6 @@ lsrb_nz:
 		ORA #%00000011	; will set C and V flags
 lsrb_nc:
 	STA psr68	; update status (+19...21)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _56:	; ROR B (2)
 	CLC			; prepare
@@ -673,7 +626,6 @@ rorb_pl:
 		EOR #%00000010	; toggle V bit
 rorb_nc:
 	STA psr68	; update status (+29...37)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _57:	; ASR B (2)
 	LDA psr68	; get original flags
@@ -696,7 +648,6 @@ asrb_pl:
 		EOR #%00000010	; toggle V bit
 asrb_nc:
 	STA psr68	; update status (+30...38)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _58:	; ASL B (2)
 	LDA psr68	; get original flags
@@ -714,7 +665,6 @@ aslb_pl:
 		EOR #%00000010	; toggle V bit
 aslb_nc:
 	STA psr68	; update status (+22...29)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _59:	; ROL B (2)
 	CLC			; prepare
@@ -737,7 +687,6 @@ rolb_pl:
 		EOR #%00000010	; toggle V bit
 rolb_nc:
 	STA psr68	; update status (+29...37)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _5a:	; DEC B (2)
 	LDA psr68	; get original status
@@ -755,7 +704,6 @@ decb_pl:
 		ORA #%00000010	; will set V flag
 decb_nv:
 	STA psr68	; store new flags (+27...30)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _5c:	; INC B (2)
 	LDA psr68	; get original status
@@ -773,11 +721,9 @@ incb_pl:
 		ORA #%00000010	; will set V flag
 incb_nv:
 	STA psr68	; store new flags (+27...30)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _5d:	; TST B
 
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _5f:	; CLR B (2)
 	STZ b68		; clear B
@@ -785,10 +731,9 @@ _5f:	; CLR B (2)
 	AND #%11110100	; clear N, V, C
 	ORA #%00000100	; set Z
 	STA psr68	; update (+13)
-	TYA			; number of bytes as required
 	JMP next_op	; standard end of routine
 _60:	; NEG ind
-	LDA #2		; number of bytes as required
+	LDA #2		; number of bytes as required *** revise...
 	JMP next_op	; standard end of routine
 _63:	; COM ind
 	LDA #2		; number of bytes as required
