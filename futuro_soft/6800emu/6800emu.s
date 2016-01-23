@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160122
+; last modified 20160123
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -16,9 +16,9 @@
 ; minimOS executable header will go here
 
 ; declare zeropage addresses
-pc68	=	uz		; program counter (16 bit, little-endian, negative $4000 offset)
-sp68	=	uz+2	; stack pointer (16 bit, little-endian, positive $4000 offset)
-x68		=	uz+4	; index register (16 bit, little-endian, positive $4000 offset)
+pc68	=	uz		; program counter (16 bit, little-endian)
+sp68	=	uz+2	; stack pointer (16 bit, little-endian)
+x68		=	uz+4	; index register (16 bit, little-endian)
 a68		=	uz+6	; first accumulator (8 bit)
 b68		=	uz+7	; second accumulator (8 bit)
 psr68	=	uz+8	; status register (8 bit)
@@ -27,13 +27,13 @@ tmptr	=	uz+9	; temporary storage (up to 16 bit)
 ; *** startup code ***
 #ifdef	SAFE
 	LDA z_used		; check available zeropage space
-	CMP #11			; currently needed space
+	CMP #tmptr-uz+2		; currently needed space
 	BCS go_emu		; enough space
 		_ERR(FULL)		; not enough memory otherwise (rare)
 go_emu:
 #endif
 ; might check here whether a Rockwell 65C02 is used!
-	LDA #11			; actually needed zeropage space
+	LDA #tmptr-uz+2		; actually needed zeropage space
 	STA z_used		; set value as required
 ; should try to allocate memory here
 
@@ -41,9 +41,9 @@ go_emu:
 reset68:
 	LDY $BFFF		; get RESET vector LSB from emulated ROM (this is big-endian!)
 	LDA $BFFE		; same for MSB... but create offset!
-	AND #%10111111	; use two 16K chunks only
+	AND #%10111111	; use two 16K chunks ignoring A14
 	BMI set_pc		; $C000-$FFFF goes into $8000-$BFFF (emulated ROM area)
-		EOR #%01000000	; otherwise goes into emulated RAM area ($4000-$7FFF)
+		ORA #%01000000	; otherwise goes into emulated RAM area ($4000-$7FFF)
 set_pc:
 	STZ pc68		; base offset is 0, Y index holds LSB
 	STA pc68+1		; address fully generated
@@ -85,18 +85,6 @@ _07:	; TPA (2)
 	LDA psr68	; get CCR...
 	STA a68		; ...and store it in A (+6)
 	JMP next_op	; standard end of routine
-;_08:	; INX (4) slower 18 bytes
-;	INC x68		; increase LSB
-;	BNE inx_nw	; no wrap
-;		INC x68 + 1	; increase MSB too
-;	BNE inx_nw	; no zero anyway (+15 in this case)
-;		SMB2 psr68	; set Z bit, *** Rockwell only! ***
-;		BRA inx_z	; all done (+22 worst case)
-;inx_nw:
-;	RMB2 psr68	; clear Z bit, *** Rockwell only! *** (+13 mostly)
-;inx_z:
-;	TYA			; number of bytes as required
-;	JMP next_op	; standard end of routine
 _08:	; INX (4) faster 22 bytes
 ;	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
 	.word $B27	; *** xa65 does not assemble Rockwell opcodes! ***
@@ -263,9 +251,29 @@ aba_pl:
 	STA psr68	; update status (+39...48)
 	JMP next_op	; standard end of routine
 _20:	; BRA rel
-
-	LDA #2		; number of bytes as required *** no longer this way, increase Y accordingly...
-	JMP next_op	; standard end of routine
+	INY  ; go for operand
+SEC  ; base offset is after the instruction
+LDA (pc68), Y  ; check direction
+BMI bra_bk  ; backwards jump
+ TYA   ; get current pc low
+ ADC (pc68), Y  ; add offset
+ BCC bra_go  ; same msb, go away
+  INC pc68 + 1  ; carry on msb
+  BPL bra_lf  ; skip if in low area
+   RMB6 pc68+1  ; otherwise clear A14
+   JMP execute  ; and jump
+bra_lf:
+  SMB6 pc68+1  ; low area needs A14 set
+bra_go:
+  JMP execute  ; resume execution (+24...37, I think)
+bra_bk:
+ TYA   ; get current pc low
+ ADC (pc68), Y  ; "subtract" offset
+ BCS bra_go  ; all done
+  DEC pc68 + 1  ; borrow on msb
+   BPL bra_lf  ; skip if in low area
+  RMB6 pc68+1  ; otherwise clear A14
+  JMP execute  ; and jump
 _22:	; BHI rel
 
 	LDA #2		; number of bytes as required
@@ -275,17 +283,17 @@ _23:	; BLS rel
 	LDA #2		; number of bytes as required
 	JMP next_op	; standard end of routine
 _24:	; BCC rel
-
-	LDA #2		; number of bytes as required
-	JMP next_op	; standard end of routine
+		INY  ; go for operand
+BBR0 psr68, bra_do  ; only if carry clear
+ JMP next_op  ; exit without branching
 _25:	; BCS rel
-
-	LDA #2		; number of bytes as required
-	JMP next_op	; standard end of routine
+		INY  ; go for operand
+BBS0 psr68, bra_do  ; only if carry set
+	JMP next_op	; exit without branching
 _26:	; BNE rel
-
-	LDA #2		; number of bytes as required
-	JMP next_op	; standard end of routine
+	INY  ; go for operand
+BBR2 psr68, bra_do  ; only if zero clear
+	JMP next_op	; exit without branching
 _27:	; BEQ rel
 
 	LDA #2		; number of bytes as required
