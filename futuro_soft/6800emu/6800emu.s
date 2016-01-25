@@ -33,7 +33,6 @@
 #define SMB7	.byt $FF: .byt
 
 ; these make listings more succint
-#define	_PC_BOUND	BPL *+7: RMB6 pc68+1: JMP execute: SMB6 pc68+1: JMP execute
 #define	_AH_BOUND	AND #%10111111: BMI *+4: ORA #%01000000
 
 ; ** minimOS executable header will go here **
@@ -140,13 +139,13 @@ dex_z:
 		RMB2 psr68	; clear Z bit, *** Rockwell only! ***
 		JMP next_op	; go away otherwise (+18)
 dex_zz:
-	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+19 in this case)
-	JMP next_op	; rarest end of routine
+	SMB2 psr68	; set Z bit, *** Rockwell only! ***
+	JMP next_op	; rarest end of routine (+19 in this case)
 _0a:	; CLV (2)
 	RMB1 psr68	; clear V bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _0b:	; SEV (2)
-	SMB1, psr68	; set V bit, *** Rockwell only! *** (+5)
+	SMB1 psr68	; set V bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _0c:	; CLC (2)
 	RMB0 psr68	; clear C bit, *** Rockwell only! *** (+5)
@@ -161,13 +160,14 @@ _0f:	; SEI (2)
 	SMB4 psr68	; set I bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _10:	; SBA (2)
-	RMB1 psr68	; clear V
 	LDA a68		; get A
 	BPL sba_nm	; skip if was positive
 		SMB1 psr68	; set V like N, to be EORed later
-;		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
+		BRA sba_vn	; do not clear V
 sba_nm:
-	SEC			; prepare for subtraction
+	RMB1 psr68	; clear V
+sba_nv:
+	SEC		; prepare for subtraction
 	SBC b68		; minus B
 	STA a68		; store result in A
 	LDA psr68	; get original flags
@@ -175,16 +175,21 @@ sba_nm:
 	BCC sba_nc	; check for carry, will it work just like the 6502?
 		INC			; will set C flag
 sba_nc:
+	STA psr68	; update cleared values
 	LDX a68		; retrieve value
 	BNE sba_nz	; skip if not zero
-		ORA #%00000100	; set Z flag
+		SMB2 psr68	; set Z flag *** Rockwell only ***
 sba_nz:
 	BPL sba_pl	; skip if positive
-		ORA #%00001000	; set N flag
-		EOR #%00000010	; toggle V flag (see above)
+		SMB3 psr68	; set N flag *** Rockwell only ***
+		BBS1 psr68, sba_v0	; if V set, toggle it to zero *** Rockewell, macro pending ***
+			SMB1 psr68			; set V otherwise
+			BRA sba_pl			; all done
+sba_v0:
+		RMB1 psr68			; V and N were set, V goes 0
 sba_pl:
-	STA psr68	; update status (+39...48)
-	JMP next_op	; standard end of routine
+;	STA psr68	; update status (+39...48)
+	JMP next_op	; standard end of routine (+36...
 _11:	; CBA (2)
 	RMB1 psr68	; clear V
 ;	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
