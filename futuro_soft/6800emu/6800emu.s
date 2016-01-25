@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160123
+; last modified 20160125
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -13,7 +13,30 @@
 #include "../../OS/sysvars.h"
 .text
 
-; minimOS executable header will go here
+; ** some useful macros **
+; these need to be used in xa65, might go into macros.h
+#define	RMB0	.byt $0F: .byt
+#define RMB1	.byt $1F: .byt
+#define RMB2	.byt $2F: .byt
+#define RMB3	.byt $3F: .byt
+#define RMB4	.byt $4F: .byt
+#define RMB5	.byt $5F: .byt
+#define RMB6	.byt $6F: .byt
+#define RMB7	.byt $7F: .byt
+#define SMB0	.byt $8F: .byt
+#define SMB1	.byt $9F: .byt
+#define SMB2	.byt $AF: .byt
+#define SMB3	.byt $BF: .byt
+#define SMB4	.byt $CF: .byt
+#define SMB5	.byt $DF: .byt
+#define SMB6	.byt $EF: .byt
+#define SMB7	.byt $FF: .byt
+
+; these make listings more succint
+#define	_PC_BOUND	BPL *+7: RMB6 pc68+1: JMP execute: SMB6 pc68+1: JMP execute
+#define	_AH_BOUND	AND #%10111111: BMI *+4: ORA #%01000000
+
+; ** minimOS executable header will go here **
 
 ; declare zeropage addresses
 pc68	=	uz		; program counter (16 bit, little-endian)
@@ -63,6 +86,7 @@ next_op:					; continue execution via JMP next_op, will not arrive here otherwis
 	INC pc68 + 1		; increase MSB otherwise (5)
 	BMI negative		; this will be in ROM area (3/2)
 		SMB6 pc68 + 1		; in RAM area, A14 is always high (5) *** check for xa65
+;		.word $3E7			; *** xa65 does not assemble Rockwell opcodes! ***
 		BRA execute		; fetch next (3)
 negative:
 	RMB6 pc68 + 1		; in ROM area, A14 is always low (5) *** check for xa65
@@ -86,70 +110,62 @@ _07:	; TPA (2)
 	STA a68		; ...and store it in A (+6)
 	JMP next_op	; standard end of routine
 _08:	; INX (4) faster 22 bytes
-;	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
-	.word $B27	; *** xa65 does not assemble Rockwell opcodes! ***
 	INC x68		; increase LSB
 	BEQ inx_w	; wrap is a rare case
+		RMB2 psr68	; clear Z bit, *** Rockwell only! ***
 		JMP next_op	; usual end (+12 mostly, worth it)
 inx_w:
 	INC x68 + 1	; increase MSB
 	BEQ inx_z	; becoming zero is even rarer!
+		RMB2 psr68	; clear Z bit, *** Rockwell only! ***
 		JMP next_op	; wrapped non-zero end (+20 in this case)
 inx_z:
-;	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+26 worst case)
-	.word $BA7	; *** xa65 does not assemble Rockwell opcodes! ***
+	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+21 worst case)
 	JMP next_op	; rarest end of routine
 _09:	; DEX (4)
-;	RMB2 psr68	; clear Z bit, *** Rockwell only! ***
-	.word $B27	; *** xa65 does not assemble Rockwell opcodes! ***
 	DEC x68		; decrease LSB
-		BEQ dex_z	; could be zero
-	LDX x68		; let us see...
-	CPX #$FF	; check for wrap
-	BEQ dex_w	; wrap is a rare case
-		JMP next_op	; usual end (+19 mostly)
+	BEQ dex_z	; could be zero
+		LDX x68		; let us see...
+		CPX #$FF	; check for wrap
+		BEQ dex_w	; wrap is a rare case
+			RMB2 psr68	; clear Z bit, *** Rockwell only! ***
+			JMP next_op	; usual end (+19 mostly)
 dex_w:
-	DEC x68 + 1	; decrease MSB
-	JMP next_op	; wrapped non-zero end (+25 worst case)
+		DEC x68 + 1	; decrease MSB
+		RMB2 psr68	; clear Z bit, *** Rockwell only! ***
+		JMP next_op	; wrapped non-zero end (+25 worst case)
 dex_z:
 	LDX x68 + 1	; let us see the MSB contents
 	BEQ dex_zz	; it really is all zeroes!
+		RMB2 psr68	; clear Z bit, *** Rockwell only! ***
 		JMP next_op	; go away otherwise (+18)
 dex_zz:
-;	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+24 in this case)
-	.word $BA7	; *** xa65 does not assemble Rockwell opcodes! ***
+	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+19 in this case)
 	JMP next_op	; rarest end of routine
 _0a:	; CLV (2)
-;	RMB1 psr68	; clear V bit, *** Rockwell only! *** (+5)
-	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
+	RMB1 psr68	; clear V bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _0b:	; SEV (2)
-;	SMB1 psr68	; set V bit, *** Rockwell only! *** (+5)
-	.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
+	SMB1, psr68	; set V bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _0c:	; CLC (2)
-;	RMB0 psr68	; clear C bit, *** Rockwell only! *** (+5)
-	.word $B07	; *** xa65 does not assemble Rockwell opcodes! ***
+	RMB0 psr68	; clear C bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _0d:	; SEC (2)
-;	SMB0 psr68	; set C bit, *** Rockwell only! *** (+5)
-	.word $B87	; *** xa65 does not assemble Rockwell opcodes! ***
+	SMB0 psr68	; set C bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _0e:	; CLI (2)
-;	RMB4 psr68	; clear I bit, *** Rockwell only! *** (+5)
-	.word $B47	; *** xa65 does not assemble Rockwell opcodes! ***
+	RMB4 psr68	; clear I bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _0f:	; SEI (2)
-;	SMB4 psr68	; set I bit, *** Rockwell only! *** (+5)
-	.word $BC7	; *** xa65 does not assemble Rockwell opcodes! ***
+	SMB4 psr68	; set I bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 _10:	; SBA (2)
-;	RMB1 psr68	; clear V
-	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
+	RMB1 psr68	; clear V
 	LDA a68		; get A
 	BPL sba_nm	; skip if was positive
-;		SMB1 psr68	; set V like N, to be EORed later
-		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
+		SMB1 psr68	; set V like N, to be EORed later
+;		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
 sba_nm:
 	SEC			; prepare for subtraction
 	SBC b68		; minus B
@@ -170,12 +186,12 @@ sba_pl:
 	STA psr68	; update status (+39...48)
 	JMP next_op	; standard end of routine
 _11:	; CBA (2)
-;	RMB1 psr68	; clear V
-	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
+	RMB1 psr68	; clear V
+;	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
 	LDA a68		; get A
 	BPL cba_nm	; skip if was positive
-;		SMB1 psr68	; set V like N, to be EORed later
-		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
+		SMB1 psr68	; set V like N, to be EORed later
+;		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
 cba_nm:
 	SEC			; prepare subtraction, simulating comparison
 	SBC b68		; minus B
@@ -225,12 +241,12 @@ _19:	; DAA
 
 	JMP next_op	; standard end of routine
 _1b:	; ABA (2)
-;	RMB1 psr68	; clear V
-	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
+	RMB1 psr68	; clear V
+;	.word $B17	; *** xa65 does not assemble Rockwell opcodes! ***
 	LDA a68		; get A
 	BPL aba_nm	; skip if was positive
-;		SMB1 psr68	; set V like N, to be EORed later
-		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
+		SMB1 psr68	; set V like N, to be EORed later
+;		.word $B97	; *** xa65 does not assemble Rockwell opcodes! ***
 aba_nm:
 	CLC			; prepare to add
 	ADC b68		; plus B
