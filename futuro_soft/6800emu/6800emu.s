@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160125
+; last modified 20160127
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -69,10 +69,7 @@ go_emu:
 reset68:
 	LDY $BFFF		; get RESET vector LSB from emulated ROM (this is big-endian!)
 	LDA $BFFE		; same for MSB... but create offset!
-	AND #%10111111	; use two 16K chunks ignoring A14
-	BMI set_pc		; $C000-$FFFF goes into $8000-$BFFF (emulated ROM area)
-		ORA #%01000000	; otherwise goes into emulated RAM area ($4000-$7FFF)
-set_pc:
+	_AH_BOUND		; use two 16K chunks ignoring A14
 	STZ pc68		; base offset is 0, Y index holds LSB
 	STA pc68+1		; address fully generated
 ; *** main loop ***
