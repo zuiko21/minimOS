@@ -293,7 +293,7 @@ _17:
 
 _19:
 ; DAA (2)
-
+	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end of routine
 
 _1b:
@@ -367,12 +367,14 @@ bra_bk:
 _22:
 ; BHI rel (4)
 	_PC_ADV			; go for operand
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; exit without branching
 
 _23:
 ; BLS rel (4)
 	_PC_ADV			; go for operand
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; exit without branching
 
@@ -427,24 +429,28 @@ _2b:
 _2c:
 ; BGE rel (4)
 	_PC_ADV			; go for operand
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op		; exit without branching
 
 _2d:
 ; BLT rel (4)
 	_PC_ADV			; go for operand
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op		; exit without branching
 
 _2e:
 ; BGT rel (4)
 	_PC_ADV			; go for operand
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op		; exit without branching
 
 _2f:
 ; BLE rel (4)
 	_PC_ADV			; go for operand
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op		; exit without branching
 
@@ -467,11 +473,13 @@ ins_w:
 
 _32:
 ; PUL A (4)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
 _33:
 ; PUL B (4)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
@@ -496,31 +504,37 @@ _35:
 
 _36:
 ; PSH A (4)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
 _37:
 ; PSH B (4)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
 _39:
 ; RTS (5)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
 _3b:
 ; RTI (10)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
 _3e:
 ; WAI (9)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
 _3f:
 ; SWI (12)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
@@ -641,7 +655,7 @@ asla_nc:
 	JMP next_op	; standard end of routine
 
 _49:
-; ROL A (2) ****continue here
+; ROL A (2)
 	CLC			; prepare
 	LDA psr68	; get original flags
 	BIT #%00000001	; mask for C flag
@@ -653,6 +667,7 @@ rola_do:
 	BNE rola_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 rola_nz:
+	LDX a68		; retrieve again!
 	BPL rola_pl	; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
@@ -661,38 +676,44 @@ rola_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 rola_nc:
-	STA psr68	; update status (+29...37)
+	STA psr68	; update status (+32...40)
 	JMP next_op	; standard end of routine
 
-_4a:	; DEC A (2)
+_4a:
+; DEC A (2)
 	LDA psr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA psr68	; store new flags
 	DEC a68		; decrease A
 	_CC_NZ		; check these
+	LDX a68		; check it!
 	CPX #$7F	; did change sign?
 	BNE deca_nv	; skip if not overflow
 		SMB1 psr68	; will set V flag
 deca_nv:
-	JMP next_op	; standard end of routine (+22...34)
+	JMP next_op	; standard end of routine (+27...39)
 
-_4c:	; INC A (2)
+_4c:
+; INC A (2)
 	LDA psr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA psr68	; store new flags
 	INC a68		; increase A
 	_CC_NZ		; check these
+	LDX a68		; check it!
 	CPX #$80	; did change sign?
 	BNE inca_nv	; skip if not overflow
 		SMB1 psr68	; will set V flag
 inca_nv:
+	JMP next_op	; standard end of routine (+27...39)
+
+_4d:
+; TST A (2)
+	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end of routine
 
-_4d:	; TST A
-	
-	JMP next_op	; standard end of routine
-
-_4f:	; CLR A (2)
+_4f:
+; CLR A (2)
 	STZ a68		; clear A
 	LDA psr68	; get previous status
 	AND #%11110100	; clear N, V, C
@@ -700,49 +721,40 @@ _4f:	; CLR A (2)
 	STA psr68	; update (+13)
 	JMP next_op	; standard end of routine
 
-_50:	; NEG B (2)
+_50:
+; NEG B (2)
+	LDA psr68	; get original flags
+	AND #%11110000	; reset relevant bits
+	STA psr68	; update status
 	SEC			; prepare subtraction
 	LDA #0
 	SBC b68		; negate B
 	STA b68		; update value
-	LDA psr68	; get original flags
-	AND #%11110000	; reset relevant bits
-	LDX b68		; check stored value
-	BNE negb_nz	; skip if not zero
-		ORA #%00000101	; set Z and C flags
-negb_nz:
-	BPL negb_pl	; skip if positive
-		ORA #%00001000	; set N flag
-negb_pl:
-	CPX #$80	; did change sign?
+	_CC_NZ		; check these
+	CMP #$80	; did change sign?
 	BNE negb_nv	; skip if not V
-		ORA #%00000010	; set V flag
+		SMB1 psr68	; set V flag
 negb_nv:
-	STA psr68	; update status (+32...35)
-	JMP next_op	; standard end of routine
+	JMP next_op	; standard end of routine (+29...41)
 
-_53:	; COM B (2)
-	LDA b68		; get B
-	EOR #$FF	; complement it
-	STA b68		; update value
+_53:
+; COM B (2)
 	LDA psr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
-	LDX b68		; check stored value
-	BNE comb_nz	; skip if not zero
-		ORA #%00000100	; set Z flag
-comb_nz:
-	BPL comb_pl	; skip if positive
-		ORA #%00001000	; set N flag
-comb_pl:
+	STA psr68	; update status
+	LDA b68		; get B
+	EOR #$FF	; complement it
+	STA b68		; update value
+	_CC_NZ		; check these
 	CPX #$80	; did change sign?
 	BNE comb_nv	; skip if not V
-		ORA #%00000010	; set V flag
+		SMB1 psr68	; set V flag
 comb_nv:
-	STA psr68	; update status (+30...33)
-	JMP next_op	; standard end of routine
+	JMP next_op	; standard end of routine (+29...41)
 
-_54:	; LSR B (2)
+_54:
+; LSR B (2)
 	LDA psr68	; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
 	LSR b68		; shift B right
@@ -755,7 +767,8 @@ lsrb_nc:
 	STA psr68	; update status (+19...21)
 	JMP next_op	; standard end of routine
 
-_56:	; ROR B (2)
+_56:
+; ROR B (2)
 	CLC			; prepare
 	LDA psr68	; get original flags
 	BIT #%00000001	; mask for C flag
@@ -767,6 +780,7 @@ rorb_do:
 	BNE rorb_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 rorb_nz:
+	LDX b68		; retrieve again!
 	BPL rorb_pl	; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
@@ -775,10 +789,11 @@ rorb_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 rorb_nc:
-	STA psr68	; update status (+29...37)
+	STA psr68	; update status (+32...40)
 	JMP next_op	; standard end of routine
 
-_57:	; ASR B (2)
+_57:
+; ASR B (2)
 	LDA psr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	CLC			; prepare
@@ -790,6 +805,7 @@ asrb_do:
 	BNE asrb_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 asrb_nz:
+	LDX b68		; retrieve again!
 	BPL asrb_pl	; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
@@ -798,16 +814,18 @@ asrb_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 asrb_nc:
-	STA psr68	; update status (+30...38)
+	STA psr68	; update status (+33...41)
 	JMP next_op	; standard end of routine
 
-_58:	; ASL B (2)
+_58:
+; ASL B (2)
 	LDA psr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	ASL b68		; shift B left
 	BNE aslb_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 aslb_nz:
+	LDX b68		; retrieve again!
 	BPL aslb_pl	; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
@@ -816,10 +834,11 @@ aslb_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 aslb_nc:
-	STA psr68	; update status (+22...29)
+	STA psr68	; update status (+25...32)
 	JMP next_op	; standard end of routine
 
-_59:	; ROL B (2)
+_59:
+; ROL B (2)
 	CLC			; prepare
 	LDA psr68	; get original flags
 	BIT #%00000001	; mask for C flag
@@ -831,6 +850,7 @@ rolb_do:
 	BNE rolb_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 rolb_nz:
+	LDX b68		; retrieve again!
 	BPL rolb_pl	; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
@@ -839,50 +859,46 @@ rolb_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 rolb_nc:
-	STA psr68	; update status (+29...37)
+	STA psr68	; update status (+32...40)
 	JMP next_op	; standard end of routine
 
-_5a:	; DEC B (2)
+
+_5a:
+; DEC B (2)
 	LDA psr68	; get original status
-	AND #%11110001	; reset all relevant bits for CCR 
+	AND #%11110001	; reset all relevant bits for CCR
+	STA psr68	; store new flags
 	DEC b68		; decrease B
-	BNE decb_nz	; skip if not zero
-		ORA #%00000100	; will set Z bit
-decb_nz:
-	BPL decb_pl	; skip if positive
-		ORA #%00001000	; will set N bit
-decb_pl:
-	LDX b68		; let us check value
+	_CC_NZ		; check these
+	LDX b68		; check it!
 	CPX #$7F	; did change sign?
 	BNE decb_nv	; skip if not overflow
-		ORA #%00000010	; will set V flag
+		SMB1 psr68	; will set V flag
 decb_nv:
-	STA psr68	; store new flags (+27...30)
-	JMP next_op	; standard end of routine
+	JMP next_op	; standard end of routine (+27...39)
 
-_5c:	; INC B (2)
+_5c:
+; INC B (2)
 	LDA psr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
+	STA psr68	; store new flags
 	INC b68		; increase B
-	BNE incb_nz	; skip if not zero
-		ORA #%00000100	; will set Z bit
-incb_nz:
-	BPL incb_pl	; skip if positive
-		ORA #%00001000	; will set N bit
-incb_pl:
-	LDX b68		; let us check value
+	_CC_NZ		; check these
+	LDX b68		; check it!
 	CPX #$80	; did change sign?
 	BNE incb_nv	; skip if not overflow
-		ORA #%00000010	; will set V flag
+		SMB1 psr68	; will set V flag
 incb_nv:
-	STA psr68	; store new flags (+27...30)
-	JMP next_op	; standard end of routine
+	JMP next_op	; standard end of routine (+27...39)
 
-_5d:	; TST B
+_5d:
+; TST B (2)
+	; ***** TO DO ***** TO DO *****
 
-	JMP next_op	; standard end of routine
+	JMP next_op	; standard end
 
-_5f:	; CLR B (2)
+_5f:
+; CLR B (2)
 	STZ b68		; clear B
 	LDA psr68	; get previous status
 	AND #%11110100	; clear N, V, C
@@ -890,422 +906,683 @@ _5f:	; CLR B (2)
 	STA psr68	; update (+13)
 	JMP next_op	; standard end of routine
 
-_60:	; NEG ind
+_60:
+; NEG ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_63:	; COM ind
+_63:
+; COM ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_64:	; LSR ind
+_64:
+; LSR ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_66:	; ROR ind
+_66:
+; ROR ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_67:	; ASR ind
+_67:
+; ASR ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_68:	; ASL ind
+_68:
+; ASL ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_69:	; ROL ind
+_69:
+; ROL ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_6a:	; DEC ind
+_6a:
+; DEC ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_6c:	; INC ind
+_6c:
+; INC ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_6d:	; TST ind
+_6d:
+; TST ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_6e:	; JMP ind
+_6e:
+; JMP ind
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_6f:	; CLR ind
+_6f:
+; CLR ind (7)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_70:	; NEG ext
+_70:
+; NEG ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_73:	; COM ext
+_73:
+; COM ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_74:	; LSR ext
+_74:
+; LSR ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_76:	; ROR ext
+_76:
+; ROR ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_77:	; ASR ext
+_77:
+; ASR ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_78:	; ASL ext
+_78:
+; ASL ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_79:	; ROL ext
+_79:
+; ROL ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_7a:	; DEC ext
+_7a:
+; DEC ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_7c:	; INC ext
+_7c:
+; INC ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_7d:	; TST ext
+_7d:
+; TST ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_7e:	; JMP ext
+_7e:
+; JMP ext
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_7f:	; CLR ext
+_7f:
+; CLR ext (6)
+	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
-_80:	; SUB A imm
-	LDA #2		; number of bytes *** revise
-	JMP next_op	; standard end
-_81:	; CMP A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_82:	; SBC A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_84:	; AND A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_85:	; BIT A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_86:	; LDA A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_88:	; EOR A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_89:	; ADC A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_8a:	; ORA A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_8b:	; ADD A imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_8c:	; CPX imm
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_8d:	; BSR rel
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_8e:	; LDS imm
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_90:	; SUB A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_91:	; CMP A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_92:	; SBC A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_94:	; AND A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_95:	; BIT A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_96:	; LDA A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_97:	; STA A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_98:	; EOR A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_99:	; ADC A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_9a:	; ORA A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_9b:	; ADD A dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_9c:	; CPX dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_9e:	; LDS dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_9f:	; STS dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a0:	; SUB A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a1:	; CMP A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a2:	; SBC A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a4:	; AND A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a5:	; BIT A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a6:	; LDA A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a7:	; STA A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a8:	; EOR A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_a9:	; ADC A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_aa:	; ORA A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ab:	; ADD A ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ac:	; CPX ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ad:	; JSR ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ae:	; LDS ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_af:	; STS ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_b0:	; SUB A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_b1:	; CMP A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_b2:	; SBC A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_b4:	; AND A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_b5:	; BIT A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_b6:	; LDA A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_b7:	; STA A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_b8:	; EOR A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_b9:	; ADC A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_ba:	; ORA A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_bb:	; ADD A ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_bc:	; CPX ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_bd:	; JSR ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_be:	; LDS ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_bf:	; STS ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_c0:	; SUB B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_c1:	; CMP B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_c2:	; SBC B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_c4:	; AND B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_c5:	; BIT B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_c6:	; LDA B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_c8:	; EOR B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_c9:	; ADC B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ca:	; ORA B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_cb:	; ADD B imm
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ce:	; LDX ind
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_d0:	; SUB B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_d1:	; CMP B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_d2:	; SBC B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_d4:	; AND B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_d5:	; BIT B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_d6:	; LDA B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_d7:	; STA B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_d8:	; EOR B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_d9:	; ADC B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_da:	; ORA B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_db:	; ADD B dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_de:	; LDX dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_df:	; STX dir
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e0:	; SUB B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e1:	; CMP B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e2:	; SBC B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e4:	; AND B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e5:	; BIT B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e6:	; LDA B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e7:	; STA B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e8:	; EOR B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_e9:	; ADC B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ea:	; ORA B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_eb:	; ADD B ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ee:	; LDX ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_ef:	; STX ind
-	LDA #2		; number of bytes
-	JMP next_op	; standard end
-_f0:	; SUB B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_f1:	; CMP B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_f2:	; SBC B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_f4:	; AND B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_f5:	; BIT B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_f6:	; LDA B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_f7:	; STA B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_f8:	; EOR B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_f9:	; ADC B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_fa:	; ORA B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_fb:	; ADD B ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_fe:	; LDX ext
-	LDA #3		; number of bytes
-	JMP next_op	; standard end
-_ff:	; STX ext
-	LDA #3		; number of bytes
+_80:
+; SUB A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_81:
+; CMP A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_82:
+; SBC A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_84:
+; AND A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_85:
+; BIT A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_86:
+; LDA A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_88:
+; EOR A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_89:
+; ADC A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_8a:
+; ORA A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_8b:
+; ADD A imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_8c:
+; CPX imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_8d:
+; BSR rel
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_8e:
+; LDS imm
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_90:
+; SUB A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_91:
+; CMP A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_92:
+; SBC A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_94:
+; AND A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_95:
+; BIT A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_96:
+; LDA A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_97:
+; STA A dir (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_98:
+; EOR A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_99:
+; ADC A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_9a:
+; ORA A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_9b:
+; ADD A dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_9c:
+; CPX dir
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_9e:
+; LDS dir
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_9f:
+; STS dir
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a0:
+; SUB A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a1:
+; CMP A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a2:
+; SBC A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a4:
+; AND A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a5:
+; BIT A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a6:
+; LDA A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a7:
+; STA A ind (6)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a8:
+; EOR A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_a9:
+; ADC A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_aa:
+; ORA A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ab:
+; ADD A ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ac:
+; CPX ind
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ad:
+; JSR ind
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ae:
+; LDS ind
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_af:
+; STS ind
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b0:
+; SUB A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b1:
+; CMP A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b2:
+; SBC A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b4:
+; AND A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b5:
+; BIT A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b6:
+; LDA A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b7:
+; STA A ext (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b8:
+; EOR A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_b9:
+; ADC A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ba:
+; ORA A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_bb:
+; ADD A ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_bc:
+; CPX ext
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_bd:
+; JSR ext
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_be:
+; LDS ext
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_bf:
+; STS ext
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_c0:
+; SUB B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_c1:
+; CMP B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_c2:
+; SBC B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_c4:
+; AND B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_c5:
+; BIT B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_c6:
+; LDA B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_c8:
+; EOR B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_c9:
+; ADC B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ca:
+; ORA B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_cb:
+; ADD B imm (2)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ce:
+; LDX ind ()
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d0:
+; SUB B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d1:
+; CMP B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d2:
+; SBC B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d4:
+; AND B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d5:
+; BIT B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d6:
+; LDA B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d7:
+; STA B dir (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d8:
+; EOR B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_d9:
+; ADC B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_da:
+; ORA B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_db:
+; ADD B dir (3)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_de:
+; LDX dir (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_df:
+; STX dir (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e0:
+; SUB B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e1:
+; CMP B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e2:
+; SBC B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e4:
+; AND B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e5:
+; BIT B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e6:
+; LDA B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e7:
+; STA B ind (6)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e8:
+; EOR B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_e9:
+; ADC B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ea:
+; ORA B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_eb:
+; ADD B ind (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ee:
+; LDX ind (6)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ef:
+; STX ind (7)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f0:
+; SUB B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f1:
+; CMP B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f2:
+; SBC B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f4:
+; AND B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f5:
+; BIT B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f6:
+; LDA B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f7:
+; STA B ext (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f8:
+; EOR B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_f9:
+; ADC B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_fa:
+; ORA B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_fb:
+; ADD B ext (4)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_fe:
+; LDX ext (5)
+	; ***** TO DO ***** TO DO *****
+	JMP next_op	; standard end
+
+_ff:
+; STX ext (6)
+	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
 ; *** opcode execution addresses table ***
