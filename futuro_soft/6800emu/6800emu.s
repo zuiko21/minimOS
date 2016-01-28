@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160127
+; last modified 20160128
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -50,11 +50,11 @@
 #define _BBS7(a,b)	.byt $FF: .byt a: .byt b-*-2
 
 ; these make listings more succint
-; inject address MSB into 16+16K space
+; inject address MSB into 16+16K space (5...6)
 #define	_AH_BOUND	AND #%10111111: BMI *+4: ORA #%01000000
-; increase Y checking injected boundary crossing
+; increase Y checking injected boundary crossing (5...18)
 #define _PC_ADV		INY: BNE *+13: LDA pc68+1: INC: _AH_BOUND: STA pc68+1
-; check Z & N flags
+; check Z & N flags (6...14)
 #define _CC_NZ		BNE *+4: SMB2 psr68: BPL *+4: SMB3 psr68
 
 ; ** minimOS executable header will go here **
@@ -96,19 +96,31 @@ execute:
 		BCC lo_jump		; seems to be less opcodes with bit7 low... (2/3)
 			JMP (optable_h, X)	; emulation routines for opcodes with bit7 hi (6)
 lo_jump:
-		JMP (optable_l, X)	; otherwise, emulation routines for opcodes with bit7 low
+			JMP (optable_l, X)	; otherwise, emulation routines for opcodes with bit7 low
 next_op:					; continue execution via JMP next_op, will not arrive here otherwise
 		INY			; advance one byte (2)
 		BNE execute		; fetch next instruction if no boundary is crossed (3/2)
 ; usual overhead is now 22+3=25 clock cycles, instead of 33
-	INC pc68 + 1		; increase MSB otherwise (5)
+; boundary crossing **original version is 15-16 cycles, 12 bytes**
+	INC pc68 + 1		; increase MSB otherwise, faster than using _PC_ADV (5)
 	BMI negative		; this will be in ROM area (3/2)
-		SMB6 pc68 + 1		; in RAM area, A14 is always high (5) *** check for xa65
-;		.word $3E7			; *** xa65 does not assemble Rockwell opcodes! ***
+		SMB6 pc68 + 1		; in RAM area, A14 is always high (5) *** Rockwell
 		BRA execute		; fetch next (3)
 negative:
-	RMB6 pc68 + 1		; in ROM area, A14 is always low (5) *** check for xa65
+	RMB6 pc68 + 1		; in ROM area, A14 is always low (5) *** Rockwell
 	BRA execute		; fetch next (3) worst case 39+3 cycles
+
+; alternative is 15-16 cycles, 17 bytes **NOT WORTH here but perhaps for other memory schemes**
+;	LDA pc68+1			; get MSB (3)
+;	INC					; advance (2)
+;	BMI negative		; into emulated ROM? (3/2)
+;		ORA #%01000000		; otherwise set A14 (0/2)
+;		STA pc68+1			; update pointer (0/3)
+;		BRA execute			; continue (0/3)
+;negative:
+;	AND #10111111		; inject into lower 16K ROM (2/0)
+;	STA pc68+1			; update pointer (3/0)
+;	BRA execute			; continue (3/0)
 
 ; *** opcode execution routines, labels must match those on tables below ***
 ; unsupported opcodes first
@@ -116,21 +128,27 @@ _00:_02:_03:_04:_05:_12:_13:_14:_15:_18:_1a:_1c:_1d:_1e:_1f:_21:_38:_3a:_3c:_3d
 _41:_42:_45:_4b:_4e:_51:_52:_55:_5b:_5e:_61:_62:_65:_6b:_71:_72:_75:_7b
 _83:_87:_8f:_93:_9d:_a3:_b3:_c3:_c7:_cc:_cd:_cf:_d3:_dc:_dd:_e3:_ec:_ed:_f3:_fc:_fd
 	BRK		; *** really do not know what to do upon an illegal opcode!
-; useful opcodes
-_01:	; NOP
+
+; valid opcode definitions
+
+; NOP (2)
+_01:
 	JMP next_op	; standard end of routine (all +3 unless otherwise noted)
 
-_06:	; TAP (2)
+; TAP (2)
+_06:
 	LDA a68		; get A accumulator...
 	STA psr68	; ...and store it in CCR (+6)
 	JMP next_op	; standard end of routine
 
-_07:	; TPA (2)
+; TPA (2)
+_07:
 	LDA psr68	; get CCR...
 	STA a68		; ...and store it in A (+6)
 	JMP next_op	; standard end of routine
 
-_08:	; INX (4) faster 22 bytes
+; INX (4) faster 22 bytes
+_08:
 	INC x68		; increase LSB
 	BEQ inx_w	; wrap is a rare case
 		RMB2 psr68	; clear Z bit, *** Rockwell only! ***
@@ -144,7 +162,8 @@ inx_z:
 	SMB2 psr68	; set Z bit, *** Rockwell only! *** (+21 worst case)
 	JMP next_op	; rarest end of routine
 
-_09:	; DEX (4)
+; DEX (4)
+_09:
 	DEC x68		; decrease LSB
 	BEQ dex_z	; could be zero
 		LDX x68		; let us see...
@@ -165,37 +184,44 @@ dex_zz:
 	SMB2 psr68	; set Z bit, *** Rockwell only! ***
 	JMP next_op	; rarest end of routine (+19 in this case)
 
-_0a:	; CLV (2)
+; CLV (2)
+_0a:
 	RMB1 psr68	; clear V bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 
-_0b:	; SEV (2)
+; SEV (2)
+_0b:
 	SMB1 psr68	; set V bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 
-_0c:	; CLC (2)
+; CLC (2)
+_0c:
 	RMB0 psr68	; clear C bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 
-_0d:	; SEC (2)
+; SEC (2)
+_0d:
 	SMB0 psr68	; set C bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 
-_0e:	; CLI (2)
+; CLI (2)
+_0e:
 	RMB4 psr68	; clear I bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 
-_0f:	; SEI (2)
+; SEI (2)
+_0f:
 	SMB4 psr68	; set I bit, *** Rockwell only! *** (+5)
 	JMP next_op	; standard end of routine
 
-_10:	; SBA (2)
+; SBA (2)
+_10:
 	LDA a68		; get A
 	BPL sba_nm	; skip if was positive
-		SMB1 psr68	; set V like N, to be toggled later
+		SMB1 psr68	; set V like N, to be toggled later ***Rockwell***
 		BRA sba_sv	; do not clear V
 sba_nm:
-	RMB1 psr68	; clear V
+	RMB1 psr68	; clear V ***Rockwell***
 sba_sv:
 	SEC			; prepare for subtraction
 	SBC b68		; minus B
@@ -205,27 +231,26 @@ sba_sv:
 	BCC sba_nc	; check for carry, will it work just like the 6502?
 		INC			; will set C flag
 sba_nc:
-	STA psr68	; update cleared values
 	LDX a68		; retrieve value
 	BNE sba_nz	; skip if not zero
-		SMB2 psr68	; set Z flag *** Rockwell only ***
+		ORA #%00000100	; set Z flag
 sba_nz:
+	LDX a68		; retrieve again!
 	BPL sba_pl	; skip if positive
-		SMB3 psr68	; set N flag *** Rockwell only ***
-		BBS1 psr68, sba_v0	; if V set, toggle it to zero *** Rockewell, macro pending ***
-			SMB1 psr68			; set V otherwise
-			BRA sba_pl			; all done
-sba_v0:
-		RMB1 psr68			; V and N were set, V goes 0
+		ORA #%00001000	; set N flag
+		EOR #%00000010	; toggle V flag (see above)
 sba_pl:
-	JMP next_op	; standard end of routine (+36...63)
+	STA psr68	; update flags
+	JMP next_op	; standard end of routine (+42...49)
 
 _11:	; CBA (2)
-	RMB1 psr68	; clear V ***Rockwell***
 	LDA a68		; get A
 	BPL cba_nm	; skip if was positive
-		SMB1 psr68	; set V like N, to be EORed later
+		SMB1 psr68	; set V like N, to be toggled later ***Rockwell***
+		BRA cba_sv	; do not clear V
 cba_nm:
+	RMB1 psr68	; clear V ***Rockwell***
+cba_sv:
 	SEC			; prepare subtraction, simulating comparison
 	SBC b68		; minus B
 	TAX			; store for later
@@ -238,14 +263,16 @@ cba_nc:
 	BNE cba_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 cba_nz:
+	CPX #0		; retrieve again!
 	BPL cba_pl	; skip if positive
 		ORA #%00001000	; set N flag
 		EOR #%00000010	; toggle V flag (see above)
 cba_pl:
-	STA psr68	; update status (+37...46)
+	STA psr68	; update status (+39...46)
 	JMP next_op	; standard end of routine
 
-_16:	; TAB (2)
+; TAB (2)
+_16:
 	LDA psr68	; get original flags
 	AND #%11110001	; reset N,Z, and always V
 	STA psr68	; update status
@@ -254,7 +281,8 @@ _16:	; TAB (2)
 	_CC_NZ		; set NZ flags when needed
 	JMP next_op	; standard end of routine (+20...28)
 
-_17:	; TBA (2)
+; TBA (2)
+_17:
 	LDA psr68	; get original flags
 	AND #%11110001	; reset N,Z, and always V
 	STA psr68	; update status
@@ -263,16 +291,20 @@ _17:	; TBA (2)
 	_CC_NZ		; check these flags
 	JMP next_op	; standard end of routine (+20...28)
 
-_19:	; DAA
+; DAA (2)
+_19:
 
 	JMP next_op	; standard end of routine
 
-_1b:	; ABA (2)
-	RMB1 psr68	; clear V
+; ABA (2)
+_1b:
 	LDA a68		; get A
 	BPL aba_nm	; skip if was positive
-		SMB1 psr68	; set V like N, to be EORed later
+		SMB1 psr68	; set V like N, to be toggled later ***Rockwell***
+		BRA aba_sv	; do not clear V
 aba_nm:
+	RMB1 psr68	; clear V ***Rockwell***
+aba_sv:
 	CLC			; prepare to add
 	ADC b68		; plus B
 	STA a68		; store result in A
@@ -285,15 +317,17 @@ aba_nc:
 	BNE aba_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 aba_nz:
+	LDX a68		; retrieve again!
 	BPL aba_pl	; skip if positive
 		ORA #%00001000	; set N flag
 		EOR #%00000010	; toggle V flag (see above)
 aba_pl:
-	STA psr68	; update status (+39...48)
+	STA psr68	; update status (+42...49)
 	JMP next_op	; standard end of routine
 
-_20:	; BRA rel
-	_PC_ADV			; go for operand
+; BRA rel (4)
+_20:
+	_PC_ADV			; go for operand (5...18)
 bra_do:
 	SEC				; base offset is after the instruction
 	LDA (pc68), Y	; check direction
@@ -301,15 +335,25 @@ bra_do:
 		TYA				; get current pc low
 		ADC (pc68), Y	; add offset
 		TAY				; new offset!!!
-		BCC bra_go		; same msb, go away
-			INC pc68 + 1	; carry on msb
-			BPL bra_lf		; skip if in low area
-				RMB6 pc68+1		; otherwise clear A14
-				JMP execute		; and jump
-bra_lf:
-			SMB6 pc68+1			; low area needs A14 set
+		BCS bra_bc		; same msb, go away
 bra_go:
-		JMP execute		; resume execution
+			JMP execute		; resume execution (-5 because jump, here +28...42)
+bra_bc:
+; this version is 14 bytes, 15-16 cycles
+		INC pc68 + 1	; carry on msb
+		BPL bra_lf		; skip if in low area
+			RMB6 pc68+1		; otherwise clear A14
+			JMP execute		; and jump
+bra_lf:
+		SMB6 pc68+1			; low area needs A14 set
+		JMP execute
+; this other version is 14 bytes, 16-17 clocks, perhaps worth in other schemes
+;			LDA pc68+1	; get MSB
+;			INC			; increase
+;			_AH_BOUND	; inject into emulated space
+;			STA pc68+1	; update pointer
+;bra_go:
+;		JMP execute	; do jump
 bra_bk:
 	TYA				; get current pc low
 	ADC (pc68), Y	; "subtract" offset
@@ -320,7 +364,8 @@ bra_bk:
  	RMB6 pc68+1		; otherwise clear A14
 	JMP execute		; and jump
 
-_22:	; BHI rel
+; BHI rel (4) *** continue here ***************************************************
+_22:
 	_PC_ADV			; go for operand
 
 	JMP next_op	; exit without branching
