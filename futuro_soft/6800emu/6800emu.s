@@ -524,7 +524,7 @@ ins_w:
 _32:
 ; PUL A (4)
 	; ***** TO DO ***** TO DO *****
-
+	
 	JMP next_op	; standard end of routine
 
 _33:
@@ -555,7 +555,18 @@ _35:
 _36:
 ; PSH A (4)
 	; ***** TO DO ***** TO DO *****
-
+	LDX sp68		; get SP LSB
+	LDA sp68 + 1	; now for MSB
+	_AH_BOUND		; but inject it into emulated space
+	STX tmptr		; store in pointer
+	STA sp68 + 1	; pointer is ready
+	DEX				; and post-decrease
+	CPX #$FF		; check for wrap
+	BEQ psha_w		; rare case
+		LDA a68			; get A contents
+	STA (tmptr)	; store in into stack space
+	DEC sp68	; post-decrease
+	LDX
 	JMP next_op	; standard end of routine
 
 _37:
