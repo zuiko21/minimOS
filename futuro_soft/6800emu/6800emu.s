@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160128
+; last modified 20160129
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -15,39 +15,39 @@
 
 ; ** some useful macros **
 ; these need to be used in xa65, might go into macros.h
-#define	RMB0	.byt $07: .byt
-#define RMB1	.byt $17: .byt
-#define RMB2	.byt $27: .byt
-#define RMB3	.byt $37: .byt
-#define RMB4	.byt $47: .byt
-#define RMB5	.byt $57: .byt
-#define RMB6	.byt $67: .byt
-#define RMB7	.byt $77: .byt
-#define SMB0	.byt $87: .byt
-#define SMB1	.byt $97: .byt
-#define SMB2	.byt $A7: .byt
-#define SMB3	.byt $B7: .byt
-#define SMB4	.byt $C7: .byt
-#define SMB5	.byt $D7: .byt
-#define SMB6	.byt $E7: .byt
-#define SMB7	.byt $F7: .byt
-; these need a more complex syntax...
-#define _BBR0(a,b)	.byt $0F: .byt a: .byt b-*-2
-#define _BBR1(a,b)	.byt $1F: .byt a: .byt b-*-2
-#define _BBR2(a,b)	.byt $2F: .byt a: .byt b-*-2
-#define _BBR3(a,b)	.byt $3F: .byt a: .byt b-*-2
-#define _BBR4(a,b)	.byt $4F: .byt a: .byt b-*-2
-#define _BBR5(a,b)	.byt $5F: .byt a: .byt b-*-2
-#define _BBR6(a,b)	.byt $6F: .byt a: .byt b-*-2
-#define _BBR7(a,b)	.byt $7F: .byt a: .byt b-*-2
-#define _BBS0(a,b)	.byt $8F: .byt a: .byt b-*-2
-#define _BBS1(a,b)	.byt $9F: .byt a: .byt b-*-2
-#define _BBS2(a,b)	.byt $AF: .byt a: .byt b-*-2
-#define _BBS3(a,b)	.byt $BF: .byt a: .byt b-*-2
-#define _BBS4(a,b)	.byt $CF: .byt a: .byt b-*-2
-#define _BBS5(a,b)	.byt $DF: .byt a: .byt b-*-2
-#define _BBS6(a,b)	.byt $EF: .byt a: .byt b-*-2
-#define _BBS7(a,b)	.byt $FF: .byt a: .byt b-*-2
+#define	RMB0	RMB #0,
+#define RMB1	RMB #1,
+#define RMB2	RMB #2,
+#define RMB3	RMB #3,
+#define RMB4	RMB #4,
+#define RMB5	RMB #5,
+#define RMB6	RMB #6,
+#define RMB7	RMB #7,
+#define SMB0	SMB #0,
+#define SMB1	SMB #1,
+#define SMB2	SMB #2,
+#define SMB3	SMB #3,
+#define SMB4	SMB #4,
+#define SMB5	SMB #5,
+#define SMB6	SMB #6,
+#define SMB7	SMB #7,
+; these almost got me nuts!
+#define BBR0	BBR #0,
+#define BBR1	BBR #1,
+#define BBR2	BBR #2,
+#define BBR3	BBR #3,
+#define BBR4	BBR #4,
+#define BBR5	BBR #5,
+#define BBR6	BBR #6,
+#define BBR7	BBR #7,
+#define BBS0	BBS #0,
+#define BBS1	BBS #1,
+#define BBS2	BBS #2,
+#define BBS3	BBS #3,
+#define BBS4	BBS #4,
+#define BBS5	BBS #5,
+#define BBS6	BBS #6,
+#define BBS7	BBS #7,
 
 ; these make listings more succint
 ; inject address MSB into 16+16K space (5...6)
@@ -102,7 +102,7 @@ next_op:					; continue execution via JMP next_op, will not arrive here otherwis
 		BNE execute		; fetch next instruction if no boundary is crossed (3/2)
 ; usual overhead is now 22+3=25 clock cycles, instead of 33
 ; boundary crossing **original version is 15-16 cycles, 12 bytes**
-	INC pc68 + 1		; increase MSB otherwise, faster than using _PC_ADV (5)
+	INC pc68 + 1		; increase MSB otherwise, faster than using 'that macro' (5)
 	BMI negative		; this will be in ROM area (3/2)
 		SMB6 pc68 + 1		; in RAM area, A14 is always high (5) *** Rockwell
 		BRA execute		; fetch next (3)
@@ -367,91 +367,141 @@ bra_bk:
 _22:
 ; BHI rel (4)
 	_PC_ADV			; go for operand
-	; ***** TO DO ***** TO DO *****
-
+	BBS0 psr68, bhi_go	; neither carry...
+	BBS2 psr68, bhi_go	; ...nor zero...
+		JMP bra_do		; ...do branch (+11...50)
+bhi_go:
 	JMP next_op	; exit without branching
 
 _23:
 ; BLS rel (4)
 	_PC_ADV			; go for operand
-	; ***** TO DO ***** TO DO *****
-
-	JMP next_op	; exit without branching
+	BBS0 psr68, bls_do	; either carry...
+	BBS2 psr68, bls_do	; ...or zero will do
+		JMP next_op	; exit without branching
+bls_do:
+		JMP bra_do		; do branch (+15...51)
 
 _24:
 ; BCC rel (4)
 	_PC_ADV			; go for operand
-		_BBR0(psr68, bra_do)	; only if carry clear (+10...43)
+	BBS0 psr68, bcc_go	; only if carry clear...
+		JMP bra_do		; ...do branch (+11...45)
+bcc_go:
 	JMP next_op		; exit without branching
 
 _25:
 ; BCS rel (4)
 	_PC_ADV			; go for operand
-		_BBS0(psr68, bra_do)	; only if carry set
+	BBR0 psr68, bcs_go	; only if carry set...
+		JMP bra_do		; ...do branch (+11...45)
+bcs_go:
 	JMP next_op		; exit without branching
 
 _26:
 ; BNE rel (4)
 	_PC_ADV			; go for operand
-		_BBR2(psr68, bra_do)	; only if zero clear
+	BBS2 psr68, bne_go	; only if zero clear...
+		JMP bra_do		; ...do branch (+11...45)
+bne_go:
 	JMP next_op		; exit without branching
 
 _27:
 ; BEQ rel (4)
 	_PC_ADV			; go for operand
-		_BBS2(psr68, bra_do)	; only if zero set
+	BBR2 psr68, beq_go	; only if zero set...
+		JMP bra_do		; ...do branch (+11...45)
+beq_go:
 	JMP next_op		; exit without branching
 
 _28:
 ; BVC rel (4)
 	_PC_ADV			; go for operand
-		_BBR1(psr68, bra_do)	; only if overflow clear
+	BBS1 psr68, bvc_go	; only if overflow clear...
+		JMP bra_do		; ...do branch (+11...45)
+bvc_go:
 	JMP next_op		; exit without branching
 
 _29:
 ; BVS rel (4)
 	_PC_ADV			; go for operand
-		_BBS1(psr68, bra_do)	; only if overflow set
+	BBR1 psr68, bvs_go	; only if overflow set...
+		JMP bra_do		; ...do branch (+11...45)
+bvs_go:
 	JMP next_op		; exit without branching
 
 _2a:
 ; BPL rel (4)
 	_PC_ADV			; go for operand
-		_BBR3(psr68, bra_do)	; only if negative clear
+	BBS3 psr68, bpl_go	; only if plus...
+		JMP bra_do		; ...do branch (+11...45)
+bpl_go:
 	JMP next_op		; exit without branching
 
 _2b:
 ; BMI rel (4)
 	_PC_ADV			; go for operand
-		_BBS3(psr68, bra_do)	; only if negative set
+	BBR3 psr68, bmi_go	; only if negative...
+		JMP bra_do		; ...do branch (+11...45)
+bmi_go:
 	JMP next_op		; exit without branching
 
 _2c:
 ; BGE rel (4)
 	_PC_ADV			; go for operand
-	; ***** TO DO ***** TO DO *****
-
+	LDA psr68		; get flags
+	AND #%00001010	; filter N and V only
+	BIT #%00000010	; check V
+	BEQ bge_nx		; do not XOR N if clear
+		EOR #%00001000	; toggle N
+bge_nx:
+	BNE bge_go		; N XOR V is one, do not branch
+		JMP bra_do		; jump otherwise (+18...53)?
+bge_go:
 	JMP next_op		; exit without branching
 
 _2d:
 ; BLT rel (4)
 	_PC_ADV			; go for operand
-	; ***** TO DO ***** TO DO *****
-
+	LDA psr68		; get flags
+	AND #%00001010	; filter N and V only
+	BIT #%00000010	; check V
+	BEQ blt_nx		; do not XOR N if clear
+		EOR #%00001000	; toggle N
+blt_nx:
+	BEQ blt_go		; N XOR V is zero, do not branch
+		JMP bra_do		; jump otherwise (+18...53)?
+blt_go:
 	JMP next_op		; exit without branching
 
 _2e:
 ; BGT rel (4)
 	_PC_ADV			; go for operand
-	; ***** TO DO ***** TO DO *****
-
+	LDA psr68		; get flags
+	AND #%00011010	; filter Z, N and V
+	BIT #%00000010	; check V
+	BEQ bgt_nx		; do not XOR N if clear
+		EOR #%00001000	; toggle N
+bgt_nx:
+	BNE bgt_go		; N XOR V (OR Z) is one, do not branch
+		JMP bra_do		; jump otherwise (+18...53)?
+bgt_go:
 	JMP next_op		; exit without branching
 
 _2f:
 ; BLE rel (4)
 	_PC_ADV			; go for operand
-	; ***** TO DO ***** TO DO *****
-
+	BBS2 psr68, ble_do	; will branch if zero
+		LDA psr68		; get flags
+		AND #%00001010	; filter N and V only
+		BIT #%00000010	; check V
+		BEQ ble_nx		; do not XOR N if clear
+			EOR #%00001000	; toggle N
+ble_nx:
+		BEQ ble_go		; N XOR V is zero, do not branch
+ble_do:
+	JMP bra_do		; jump otherwise (+23...58) maybe worth like BGT
+ble_go:
 	JMP next_op		; exit without branching
 
 _30:
