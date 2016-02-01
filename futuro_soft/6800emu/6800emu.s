@@ -3,7 +3,7 @@
 ; (c) 2016 Carlos J. Santisteban
 ; last modified 20160201
 
-#include "../../OS/opt ions.h"	; machine specific
+#include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
 #include "../../OS/abi.h"		; ** new filename **
 .zero
@@ -1164,22 +1164,22 @@ _67:
 	AND #%11110000	; reset relevant bits
 	CLC			; prepare
 	BIT b68		; check bit 7
-	BPL asrb_do	; do not insert C if clear
+	BPL asri_do	; do not insert C if clear
 		SEC			; otherwise, set carry
-asrb_do:
+asri_do:
 	ROR b68		; emulate aritmetic shift left with preloaded-C rotation*****
-	BNE asrb_nz	; skip if not zero
+	BNE asri_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
-asrb_nz:
+asri_nz:
 	LDX b68		; retrieve again!
-	BPL asrb_pl	; skip if positive
+	BPL asri_pl	; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
-asrb_pl:
-	BCC asrb_nc	; skip if there was no carry
+asri_pl:
+	BCC asri_nc	; skip if there was no carry
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
-asrb_nc:
+asri_nc:
 	STA ccr68	; update status (+33...41)
 	JMP next_op	; standard end of routine
 
