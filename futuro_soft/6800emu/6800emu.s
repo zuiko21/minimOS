@@ -1,9 +1,9 @@
 ; 6800 emulator for minimOS!
-; v0.1a2
+; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160130
+; last modified 20160201
 
-#include "../../OS/options.h"	; machine specific
+#include "../../OS/opt ions.h"	; machine specific
 #include "../../OS/macros.h"
 #include "../../OS/abi.h"		; ** new filename **
 .zero
@@ -50,24 +50,24 @@
 #define BBS7	BBS #7,
 
 ; these make listings more succint
-; inject address MSB into 16+16K space (5...6)
+; inject address MSB into 16+16K space (5/5.5/6)
 #define	_AH_BOUND	AND #%10111111: BMI *+4: ORA #%01000000
-; increase Y checking injected boundary crossing (5...18)
+; increase Y checking injected boundary crossing (5/5/18)
 #define _PC_ADV		INY: BNE *+13: LDA pc68+1: INC: _AH_BOUND: STA pc68+1
-; compute pointer for indexed addressing mode (31...33/45)
+; compute pointer for indexed addressing mode (31/32/45)
 #define _INDEXED	_PC_ADV: LDA (pc68), Y: CLC: ADC x68: STA tmptr: LDA x68+1: ADC #0: _AH_BOUND: STA tmptr+1
-; compute pointer for extended addressing mode (31...34/45)
+; compute pointer for extended addressing mode (31/32.5/45)
 #define _EXTENDED	_PC_ADV: LDA (pc68), Y: _AH_BOUND: STA tmptr+1: _PC_ADV: LDA (pc68), Y: STA tmptr
 
 
-; check Z & N flags (6...14)
+; check Z & N flags (6/10/14)
 #define _CC_NZ		BNE *+4: SMB2 ccr68: BPL *+4: SMB3 ccr68
 
 ; ** minimOS executable header will go here **
 
 ; declare zeropage addresses
 tmptr	=	uz		; temporary storage (up to 16 bit)
-sp68	=	uz+2	; stack pointer (16 bit, little-endian)
+sp68	=	uz+2	; stack pointer (16 bit, little-endian, now injected into host map)
 pc68	=	uz+4	; program counter (16 bit, little-endian, injected into host map) same as stacking order
 x68		=	uz+6	; index register (16 bit, little-endian)
 a68		=	uz+8	; first accumulator (8 bit)
@@ -119,6 +119,7 @@ next_op:					; continue execution via JMP next_op, will not arrive here otherwis
 _00:_02:_03:_04:_05:_12:_13:_14:_15:_18:_1a:_1c:_1d:_1e:_1f:_21:_38:_3a:_3c:_3d
 _41:_42:_45:_4b:_4e:_51:_52:_55:_5b:_5e:_61:_62:_65:_6b:_71:_72:_75:_7b
 _83:_87:_8f:_93:_9d:_a3:_b3:_c3:_c7:_cc:_cd:_cf:_d3:_dc:_dd:_e3:_ec:_ed:_f3:_fc:_fd
+
 ; illegal opcodes will seem to trigger an NMI!
 nmi68:
 	_PC_ADV			; hardware interrupts (when available) supposedly checked before incrementing PC, anyway skip illegal opcode
@@ -160,85 +161,96 @@ _01:
 
 _06:
 ; TAP (2)
+; +6
 	LDA a68		; get A accumulator...
-	STA ccr68	; ...and store it in CCR (+6)
+	STA ccr68	; ...and store it in CCR
 	JMP next_op	; standard end of routine
 
 _07:
 ; TPA (2)
+; +6
 	LDA ccr68	; get CCR...
-	STA a68		; ...and store it in A (+6)
+	STA a68		; ...and store it in A
 	JMP next_op	; standard end of routine
 
 _08:
-; INX (4) faster 22 bytes
+; INX (4)
+; +12/12/21
 	INC x68		; increase LSB
 	BEQ inx_w	; wrap is a rare case
 		RMB2 ccr68	; clear Z bit, *** Rockwell only! ***
-		JMP next_op	; usual end (+12 mostly, worth it)
+		JMP next_op	; usual end
 inx_w:
 	INC x68 + 1	; increase MSB
 	BEQ inx_z	; becoming zero is even rarer!
 		RMB2 ccr68	; clear Z bit, *** Rockwell only! ***
 		JMP next_op	; wrapped non-zero end (+20 in this case)
 inx_z:
-	SMB2 ccr68	; set Z bit, *** Rockwell only! *** (+21 worst case)
+	SMB2 ccr68	; set Z bit, *** Rockwell only! ***
 	JMP next_op	; rarest end of routine
 
 _09:
 ; DEX (4)
+; +18/19/25, worth optimising like DES??
 	DEC x68		; decrease LSB
 	BEQ dex_z	; could be zero
 		LDX x68		; let us see...
 		CPX #$FF	; check for wrap
 		BEQ dex_w	; wrap is a rare case
 			RMB2 ccr68	; clear Z bit, *** Rockwell only! ***
-			JMP next_op	; usual end (+19 mostly)
+			JMP next_op	; usual end
 dex_w:
 		DEC x68 + 1	; decrease MSB
 		RMB2 ccr68	; clear Z bit, *** Rockwell only! ***
-		JMP next_op	; wrapped non-zero end (+25 worst case)
+		JMP next_op	; wrapped non-zero end
 dex_z:
 	LDX x68 + 1	; let us see the MSB contents
 	BEQ dex_zz	; it really is all zeroes!
 		RMB2 ccr68	; clear Z bit, *** Rockwell only! ***
-		JMP next_op	; go away otherwise (+18)
+		JMP next_op	; go away otherwise
 dex_zz:
 	SMB2 ccr68	; set Z bit, *** Rockwell only! ***
-	JMP next_op	; rarest end of routine (+19 in this case)
+	JMP next_op	; rarest end of routine
 
 _0a:
 ; CLV (2)
-	RMB1 ccr68	; clear V bit, *** Rockwell only! *** (+5)
+; +5
+	RMB1 ccr68	; clear V bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
 _0b:
 ; SEV (2)
-	SMB1 ccr68	; set V bit, *** Rockwell only! *** (+5)
+; +5
+	SMB1 ccr68	; set V bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
 _0c:
 ; CLC (2)
-	RMB0 ccr68	; clear C bit, *** Rockwell only! *** (+5)
+; +5
+	RMB0 ccr68	; clear C bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
 _0d:
 ; SEC (2)
-	SMB0 ccr68	; set C bit, *** Rockwell only! *** (+5)
+; +5
+	SMB0 ccr68	; set C bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
 _0e:
 ; CLI (2)
-	RMB4 ccr68	; clear I bit, *** Rockwell only! *** (+5)
+; +5
+	RMB4 ccr68	; clear I bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
 _0f:
 ; SEI (2)
-	SMB4 ccr68	; set I bit, *** Rockwell only! *** (+5)
+; +5
+	SMB4 ccr68	; set I bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
 _10:
 ; SBA (2)
+; +42/45.5/49
 	LDA a68		; get A
 	BPL sba_nm	; skip if was positive
 		SMB1 ccr68	; set V like N, to be toggled later ***Rockwell***
@@ -264,10 +276,11 @@ sba_nz:
 		EOR #%00000010	; toggle V flag (see above)
 sba_pl:
 	STA ccr68	; update flags
-	JMP next_op	; standard end of routine (+42...49)
+	JMP next_op	; standard end of routine
 
 _11:
 ; CBA (2)
+; +39/42.5/46
 	LDA a68		; get A
 	BPL cba_nm	; skip if was positive
 		SMB1 ccr68	; set V like N, to be toggled later ***Rockwell***
@@ -292,28 +305,30 @@ cba_nz:
 		ORA #%00001000	; set N flag
 		EOR #%00000010	; toggle V flag (see above)
 cba_pl:
-	STA ccr68	; update status (+39...46)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 _16:
 ; TAB (2)
+; +20/24/28
 	LDA ccr68	; get original flags
 	AND #%11110001	; reset N,Z, and always V
 	STA ccr68	; update status
 	LDX a68		; get A
 	STX b68		; store in B
 	_CC_NZ		; set NZ flags when needed
-	JMP next_op	; standard end of routine (+20...28)
+	JMP next_op	; standard end of routine
 
 _17:
 ; TBA (2)
+; +20/24/28
 	LDA ccr68	; get original flags
 	AND #%11110001	; reset N,Z, and always V
 	STA ccr68	; update status
 	LDX b68		; get B
 	STX a68		; store in A
 	_CC_NZ		; check these flags
-	JMP next_op	; standard end of routine (+20...28)
+	JMP next_op	; standard end of routine
 
 _19:
 ; DAA (2)
@@ -322,6 +337,7 @@ _19:
 
 _1b:
 ; ABA (2)
+; +42/45.5/49
 	LDA a68		; get A
 	BPL aba_nm	; skip if was positive
 		SMB1 ccr68	; set V like N, to be toggled later ***Rockwell***
@@ -346,11 +362,12 @@ aba_nz:
 		ORA #%00001000	; set N flag
 		EOR #%00000010	; toggle V flag (see above)
 aba_pl:
-	STA ccr68	; update status (+42...49)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 _20:
 ; BRA rel (4)
+; -5+25/34.3/52
 	_PC_ADV			; go for operand (5...18)
 bra_do:
 	SEC				; base offset is after the instruction
@@ -361,7 +378,7 @@ bra_do:
 		TAY				; new offset!!!
 		BCS bra_bc		; same msb, go away
 bra_go:
-			JMP execute		; resume execution (-5 because jump, here +28...42)
+			JMP execute		; resume execution
 bra_bc:
 		INC pc68 + 1	; carry on msb
 		BPL bra_lf		; skip if in low area
@@ -382,21 +399,23 @@ bra_bk:
 
 _22:
 ; BHI rel (4)
+; +11/24.8/65
 	_PC_ADV			; go for operand
 	BBS0 ccr68, bhi_go	; neither carry...
 	BBS2 ccr68, bhi_go	; ...nor zero...
-		JMP bra_do		; ...do branch (+11...50)
+		JMP bra_do		; ...do branch
 bhi_go:
 	JMP next_op	; exit without branching
 
 _23:
 ; BLS rel (4)
+;**revise branching anyway**
 	_PC_ADV			; go for operand
 	BBS0 ccr68, bls_do	; either carry...
 	BBS2 ccr68, bls_do	; ...or zero will do
 		JMP next_op	; exit without branching
 bls_do:
-		JMP bra_do		; do branch (+15...51)
+		JMP bra_do		; do branch
 
 _24:
 ; BCC rel (4)
@@ -522,110 +541,140 @@ ble_go:
 
 _30:
 ; TSX (4)
-	LDA sp68		; get stack pointer LSB
-	STA x68			; store in X
-	LDA sp68 + 1	; same for MSB (+12)
-	STA x68 + 1
-	JMP next_op		; standard end of routine
+; +21/23/25
+	LDA sp68+1		; get stack pointer MSB, to be injected
+	LDX sp68		; get stack pointer LSB
+	INX				; point to last used!!!
+	STX x68			; store in X
+	BEQ tsx_w		; rare wrap
+tsx_do:
+		_AH_BOUND		; inject
+		STA x68 + 1		; pointer complete
+		JMP next_op		; standard end of routine
+tsx_w:
+	INC				; increase MSB
+	_AH_BOUND		; inject
+	STA x68 + 1		; pointer complete
+	JMP next_op		; rarer end of routine
 
 _31:
 ; INS (4)
+; +7/7/22
 	INC sp68	; increase LSB
 	BEQ ins_w	; wrap is a rare case
-		JMP next_op	; usual end (+7 mostly)
+		JMP next_op	; usual end
 ins_w:
-	INC sp68 + 1	; increase MSB
-	JMP next_op		; wrapped end (+13 worst case)
+	LDA sp68 + 1	; prepare to inject
+	INC				; increase MSB
+	_AH_BOUND
+	STA sp68 + 1	; update pointer
+	JMP next_op		; wrapped end
 
 _32:
 ; PUL A (4)
-	LDX sp68	; get stack pointer LSB
-	LDA sp68 + 1	; get MSB
-	INX			; pre-increment
-	STX tmptr	; store a copy
-	STX sp68	; and update real value
-	BEQ pula_w	; should correct MSB, rare?
+; +15/15/30
+	INC sp68		; pre-increment
+	BEQ pula_w		; should correct MSB, rare?
 pula_do:
-		_AH_BOUND		; inject MSB into emulated space
-		STA tmptr + 1	; pointer ready
-		LDA (tmptr)	; take value from stack
-		STA a68		; store it in accumulator A
-		JMP next_op	; standard end of routine (+32...42)
+		LDA (sp68)		; take value from stack
+		STA a68			; store it in accumulator A
+		JMP next_op		; standard end of routine
 pula_w:
-	INC			; increase MSB
+	LDA sp68 + 1	; get stack pointer MSB
+	INC				; increase MSB
+	_AH_BOUND		; keep injected
 	STA sp68 + 1	; update real thing
-	BRA pula_do		; continue processing
+	LDA (sp68)		; take value from stack
+	STA a68			; store it in accumulator A
+	JMP next_op		; standard end of routine
 
 _33:
-; PUL B (4)
-	LDX sp68	; get stack pointer LSB
-	LDA sp68 + 1	; get MSB
-	INX			; pre-increment
-	STX tmptr	; store a copy
-	STX sp68	; and update real value
-	BEQ pulb_w	; should correct MSB, rare?
+; +15/15/30
+	INC sp68		; pre-increment
+	BEQ pulb_w		; should correct MSB, rare?
 pulb_do:
-		_AH_BOUND		; inject MSB into emulated space
-		STA tmptr + 1	; pointer ready
-		LDA (tmptr)	; take value from stack
-		STA b68		; store it in accumulator B
-		JMP next_op	; standard end of routine (+32...42)
+		LDA (sp68)		; take value from stack
+		STA b68			; store it in accumulator B
+		JMP next_op		; standard end of routine
 pulb_w:
-	INC			; increase MSB
+	LDA sp68 + 1	; get stack pointer MSB
+	INC				; increase MSB
+	_AH_BOUND		; keep injected
 	STA sp68 + 1	; update real thing
-	BRA pulb_do		; continue processing
+	LDA (sp68)		; take value from stack
+	STA b68			; store it in accumulator B
+	JMP next_op		; standard end of routine
 
 _34:
 ; DES (4)
-	DEC sp68	; decrease LSB
-	LDX sp68	; let us see...
-	CPX #$FF	; check for wrap
-	BEQ des_w	; wrap is a rare case
-		JMP next_op	; usual end (+12 mostly)
+; +10/10/24
+	LDA sp68		; check older LSB
+	BEQ des_w		; will wrap upon decrease!
+		DEC sp68		; decrease LSB
+		JMP next_op		; usual end
 des_w:
-	DEC sp68 + 1	; decrease MSB
-	JMP next_op	; wrapped end (+18 worst case)
+	DEC sp68		; as usual
+	LDA sp68 + 1	; get MSB
+	DEC				; decrease
+	_AH_BOUND		; keep injected
+	JMP next_op		; wrapped end
 
 _35:
 ; TXS (4)
-	LDA x68		; get X LSB
-	STA sp68	; store as stack pointer
-	LDA x68 + 1	; same for MSB (+12)
-	STA sp68 + 1
-	JMP next_op	; standard end of routine
+; +21/21.5/25
+	LDA x68+1		; MSB will be injected
+	LDX x68			; check LSB
+	BEQ txs_w		; will wrap upon decrease
+		DEX				; as expected
+		STX sp68		; copy
+		_AH_BOUND		; always!
+		STA sp68+1		; pointer ready
+		JMP next_op		; standard end
+txs_w:
+	DEX				; as expected
+	STX sp68		; copy
+	DEC				; will also affect MSB
+	_AH_BOUND		; always!
+	STA sp68+1		; pointer ready
+	JMP next_op		; standard end
 
 _36:
 ; PSH A (4)
-	LDX sp68	; get stack pointer LSB
-	STX tmptr	; store a copy
-	LDA sp68 + 1	; get MSB but...
-	_AH_BOUND		; inject it into emulated space
-	STA tmptr + 1	; pointer ready
+; +18/18/33
 	LDA a68		; get accumulator A
-	STA (tmptr)	; put it on stack space
+	STA (sp68)	; put it on stack space
+	LDX sp68	; check LSB
+	BEQ psha_w	; will wrap
+		DEX			; post-decrease
+		STX sp68	; update real value
+		JMP next_op	; all done
+psha_w:
 	DEX			; post-decrease
 	STX sp68	; update real value
-	CPX #$FF	; did it wrap?
-	BEQ psha_w	; MSB is to be corrected
-		JMP next_op	; standard end of routine
-psha_w:
-	DEC sp68 + 1	; modify real MSB, no further checking needed
-	JMP next_op		; all done (+34...41)
+	LDA sp68+1	; get MSB
+	DEC			; decrease it
+	_AH_BOUND	; and inject it
+	STA sp68+1	; worst update
+	JMP next_op		; all done
 
 _37:
 ; PSH B (4)
-	LDX sp68	; get stack pointer LSB
-	STX tmptr	; store a copy
-	LDA sp68 + 1	; get MSB but...
-	_AH_BOUND		; inject it into emulated space
-	STA tmptr + 1	; pointer ready
+; +18/18/33
 	LDA b68		; get accumulator B
-	STA (tmptr)	; put it on stack space
+	STA (sp68)	; put it on stack space
+	LDX sp68	; check LSB
+	BEQ pshb_w	; will wrap
+		DEX			; post-decrease
+		STX sp68	; update real value
+		JMP next_op	; all done
+pshb_w:
 	DEX			; post-decrease
 	STX sp68	; update real value
-	CPX #$FF	; did it wrap?
-		BEQ psha_w	; MSB is to be corrected, actually reuses code from above without speed hit
-	JMP next_op	; standard end of routine
+	LDA sp68+1	; get MSB
+	DEC			; decrease it
+	_AH_BOUND	; and inject it
+	STA sp68+1	; worst update
+	JMP next_op		; all done
 
 _39:
 ; RTS (5)
@@ -1062,18 +1111,22 @@ comi_nv:
 
 _64:
 ; LSR ind (7)
-	; ***** TO DO ***** TO DO *****
+; + ***this done, check time***
 	_INDEXED	; addressing mode
+	LDA (tmptr)	; get operand
+	LSR
+	STA (tmptr)	; modify operand
+	TAX			; store for later, worth it
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
-	LSR b68		; shift B right*****no (tmptr) available!
-	BNE lsri_nz	; skip if not zero
-		ORA #%00000100	; set Z flag
-lsri_nz:
 	BCC lsri_nc	; skip if there was no carry
 		ORA #%00000011	; will set C and V flags
 lsri_nc:
-	STA ccr68	; update status (+19...21)
+	CPX #0		; retrieve value
+	BNE lsri_nz	; skip if not zero
+		ORA #%00000100	; set Z flag
+lsri_nz:
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 
