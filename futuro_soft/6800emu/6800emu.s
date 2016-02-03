@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160202
+; last modified 20160203
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -187,23 +187,23 @@ inx_z:
 
 _09:
 ; DEX (4)
-; +18/19/25, worth optimising like DES??
-	DEC x68		; decrease LSB
-	BEQ dex_z	; could be zero
-		LDX x68		; let us see...
-		CPX #$FF	; check for wrap
-		BEQ dex_w	; wrap is a rare case
-			RMB2 ccr68	; clear Z bit, *** Rockwell only! ***
-			JMP next_op	; usual end
+; +17...
+	LDA x68			; check LSB
+	BEQ dex_w		; if zero, will wrap upon decrease!
+		DEC x68			; otherwise just decrease LSB
+		BEQ dex_z		; if zero now, could be all zeroes!
+			RMB2 ccr68		; clear Z bit, *** Rockwell only! ***
+			JMP next_op		; usual end
 dex_w:
-		DEC x68 + 1	; decrease MSB
-		RMB2 ccr68	; clear Z bit, *** Rockwell only! ***
-		JMP next_op	; wrapped non-zero end
+		DEC x68			; decrease as usual
+		DEC x68 + 1		; wrap MSB
+		RMB2 ccr68		; clear Z bit, *** Rockwell only! ***
+		JMP next_op		; usual end
 dex_z:
-	LDX x68 + 1	; let us see the MSB contents
-	BEQ dex_zz	; it really is all zeroes!
-		RMB2 ccr68	; clear Z bit, *** Rockwell only! ***
-		JMP next_op	; go away otherwise
+	LDA x68 + 1		; check MSB
+	BEQ dex_zz		; it went down to zero!
+		RMB2 ccr68		; clear Z bit, *** Rockwell only! ***
+		JMP next_op		; usual end
 dex_zz:
 	SMB2 ccr68	; set Z bit, *** Rockwell only! ***
 	JMP next_op	; rarest end of routine
@@ -396,89 +396,98 @@ bra_bk:
 _22:
 ; BHI rel (4)
 ; +11/24.8/65
-	_PC_ADV			; go for operand
+	_PC_ADV				; go for operand
 	BBS0 ccr68, bhi_go	; neither carry...
 	BBS2 ccr68, bhi_go	; ...nor zero...
 		JMP bra_do		; ...do branch
 bhi_go:
-	JMP next_op	; exit without branching
+	JMP next_op		; exit without branching
 
 _23:
 ; BLS rel (4)
-;**revise branching anyway**
-	_PC_ADV			; go for operand
+; +11...
+	_PC_ADV				; go for operand
 	BBS0 ccr68, bls_do	; either carry...
 	BBS2 ccr68, bls_do	; ...or zero will do
-		JMP next_op	; exit without branching
+		JMP next_op			; exit without branching
 bls_do:
 		JMP bra_do		; do branch
 
 _24:
 ; BCC rel (4)
-	_PC_ADV			; go for operand
-	BBS0 ccr68, bcc_go	; only if carry clear...
-		JMP bra_do		; ...do branch (+11...45)
-bcc_go:
-	JMP next_op		; exit without branching
+; +10...
+	_PC_ADV				; go for operand
+	BBR0 ccr68, bcc_do	; only if carry clear
+		JMP next_op			; exit without branching otherwise
+bcc_do:
+	JMP bra_do			; do branch
 
 _25:
 ; BCS rel (4)
-	_PC_ADV			; go for operand
-	BBR0 ccr68, bcs_go	; only if carry set...
-		JMP bra_do		; ...do branch (+11...45)
-bcs_go:
-	JMP next_op		; exit without branching
+; +10...
+	_PC_ADV				; go for operand
+	BBS0 ccr68, bcs_do	; only if carry set...
+		JMP next_op			; exit without branching
+bcs_do:
+	JMP bra_do			; branch
 
 _26:
 ; BNE rel (4)
-	_PC_ADV			; go for operand
-	BBS2 ccr68, bne_go	; only if zero clear...
-		JMP bra_do		; ...do branch (+11...45)
-bne_go:
-	JMP next_op		; exit without branching
+; +10...
+	_PC_ADV				; go for operand
+	BBR2 ccr68, bne_do	; only if zero clear...
+		JMP next_op			; exit without branching
+bne_do:
+	JMP bra_do			; branch
 
 _27:
 ; BEQ rel (4)
-	_PC_ADV			; go for operand
-	BBR2 ccr68, beq_go	; only if zero set...
-		JMP bra_do		; ...do branch (+11...45)
-beq_go:
-	JMP next_op		; exit without branching
+; +10...
+	_PC_ADV				; go for operand
+	BBS2 ccr68, beq_do	; only if zero set...
+		JMP next_op			; exit without branching
+beq_do:
+	JMP bra_do			; branch
 
 _28:
 ; BVC rel (4)
-	_PC_ADV			; go for operand
-	BBS1 ccr68, bvc_go	; only if overflow clear...
-		JMP bra_do		; ...do branch (+11...45)
-bvc_go:
-	JMP next_op		; exit without branching
+; +10...
+	_PC_ADV				; go for operand
+	BBR1 ccr68, bvc_do		; only if overflow clear...
+		JMP next_op			; exit without branching
+bvc_do:
+	JMP bra_do			; branch
 
 _29:
 ; BVS rel (4)
-	_PC_ADV			; go for operand
-	BBR1 ccr68, bvs_go	; only if overflow set...
-		JMP bra_do		; ...do branch (+11...45)
-bvs_go:
-	JMP next_op		; exit without branching
+; +10...
+	_PC_ADV				; go for operand
+	BBS1 ccr68, bvs_do	; only if overflow set...
+		JMP next_op			; exit without branching
+bvs_do:
+	JMP bra_do			; branch
 
 _2a:
 ; BPL rel (4)
-	_PC_ADV			; go for operand
-	BBS3 ccr68, bpl_go	; only if plus...
-		JMP bra_do		; ...do branch (+11...45)
-bpl_go:
-	JMP next_op		; exit without branching
+; +10...
+	_PC_ADV				; go for operand
+	BBR3 ccr68, bpl_do	; only if plus...
+		JMP next_op			; exit without branching
+bpl_do:
+		JMP bra_do			; branch
 
 _2b:
 ; BMI rel (4)
-	_PC_ADV			; go for operand
-	BBR3 ccr68, bmi_go	; only if negative...
-		JMP bra_do		; ...do branch (+11...45)
-bmi_go:
-	JMP next_op		; exit without branching
+; +10...
+	_PC_ADV				; go for operand
+	BBS3 ccr68, bmi_do	; only if negative...
+		JMP next_op			; exit without branching
+bmi_do:
+	JMP bra_do			; ...do branch
 
 _2c:
 ; BGE rel (4)
+; +17...
 	_PC_ADV			; go for operand
 	LDA ccr68		; get flags
 	AND #%00001010	; filter N and V only
@@ -486,13 +495,14 @@ _2c:
 	BEQ bge_nx		; do not XOR N if clear
 		EOR #%00001000	; toggle N
 bge_nx:
-	BNE bge_go		; N XOR V is one, do not branch
-		JMP bra_do		; jump otherwise (+18...53)?
-bge_go:
-	JMP next_op		; exit without branching
+	BEQ bge_do		; branch N XOR V is zero
+		JMP next_op		; exit without branching
+bge_do:
+	JMP bra_do		; jump otherwise
 
 _2d:
 ; BLT rel (4)
+; +17...
 	_PC_ADV			; go for operand
 	LDA ccr68		; get flags
 	AND #%00001010	; filter N and V only
@@ -500,40 +510,40 @@ _2d:
 	BEQ blt_nx		; do not XOR N if clear
 		EOR #%00001000	; toggle N
 blt_nx:
-	BEQ blt_go		; N XOR V is zero, do not branch
-		JMP bra_do		; jump otherwise (+18...53)?
-blt_go:
-	JMP next_op		; exit without branching
+	BNE blt_do		; branch if N XOR V is true
+		JMP next_op		; exit without branching
+blt_do:
+	JMP bra_do		; jump otherwise
 
 _2e:
 ; BGT rel (4)
+; +17...
 	_PC_ADV			; go for operand
 	LDA ccr68		; get flags
-	AND #%00011010	; filter Z, N and V
+	AND #%00001110	; filter Z, N and V
 	BIT #%00000010	; check V
 	BEQ bgt_nx		; do not XOR N if clear
 		EOR #%00001000	; toggle N
 bgt_nx:
-	BNE bgt_go		; N XOR V (OR Z) is one, do not branch
-		JMP bra_do		; jump otherwise (+18...53)?
-bgt_go:
-	JMP next_op		; exit without branching
+	BEQ bgt_do		; only if N XOR V (OR Z) is false
+		JMP next_op		; exit without branching
+bgt_do:
+	JMP bra_do		; jump otherwise
 
 _2f:
 ; BLE rel (4)
+; +17...
 	_PC_ADV			; go for operand
-	BBS2 ccr68, ble_do	; will branch if zero
-		LDA ccr68		; get flags
-		AND #%00001010	; filter N and V only
-		BIT #%00000010	; check V
-		BEQ ble_nx		; do not XOR N if clear
-			EOR #%00001000	; toggle N
+	LDA ccr68		; get flags
+	AND #%00001110	; filter Z, N and V
+	BIT #%00000010	; check V
+	BEQ ble_nx		; do not XOR N if clear
+		EOR #%00001000	; toggle N
 ble_nx:
-		BEQ ble_go		; N XOR V is zero, do not branch
+	BNE ble_do		; only if N XOR V (OR Z) is true
+		JMP next_op		; exit without branching
 ble_do:
-	JMP bra_do		; jump otherwise (+23...58) maybe worth like BGT
-ble_go:
-	JMP next_op		; exit without branching
+	JMP bra_do		; jump otherwise
 
 _30:
 ; TSX (4)
@@ -699,6 +709,7 @@ _3f:
 
 _40:
 ; NEG A (2)
+; +29/35/41
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
@@ -711,10 +722,11 @@ _40:
 	BNE nega_nv	; skip if not V
 		SMB1 ccr68	; set V flag
 nega_nv:
-	JMP next_op	; standard end of routine (+29...41)
+	JMP next_op	; standard end of routine
 
 _43:
 ; COM A (2)
+; +24/28/32
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -723,28 +735,26 @@ _43:
 	EOR #$FF	; complement it
 	STA a68		; update value
 	_CC_NZ		; check these
-	CPX #$80	; did change sign?
-	BNE coma_nv	; skip if not V
-		SMB1 ccr68	; set V flag
-coma_nv:
-	JMP next_op	; standard end of routine (+29...41)
+	JMP next_op	; standard end of routine
 
 _44:
 ; LSR A (2)
-	LDA ccr68	; get original flags
+; +19/20/21
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
-	LSR a68		; shift A right
-	BNE lsra_nz	; skip if not zero
+	LSR a68			; shift A right
+	BNE lsra_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
 lsra_nz:
-	BCC lsra_nc	; skip if there was no carry
-		ORA #%00000011	; will set C and V flags
+	BCC lsra_nc		; skip if there was no carry
+		ORA #%00000011	; will set C and V flags, is that OK?
 lsra_nc:
-	STA ccr68	; update status (+19...21)
-	JMP next_op	; standard end of routine
+	STA ccr68		; update status
+	JMP next_op		; standard end of routine
 
 _46:
 ; ROR A (2)
+; +32/36/40
 	CLC			; prepare
 	LDA ccr68	; get original flags
 	BIT #%00000001	; mask for C flag
@@ -765,11 +775,12 @@ rora_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 rora_nc:
-	STA ccr68	; update status (+32...40)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 _47:
 ; ASR A (2)
+; +33/37/41
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	CLC			; prepare
@@ -790,11 +801,12 @@ asra_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 asra_nc:
-	STA ccr68	; update status (+33...41)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 _48:
 ; ASL A (2)
+; +25/28.5/32
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	ASL a68		; shift A left
@@ -810,36 +822,38 @@ asla_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 asla_nc:
-	STA ccr68	; update status (+25...32)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 _49:
 ; ROL A (2)
-	CLC			; prepare
-	LDA ccr68	; get original flags
+; +32/36/40
+	CLC				; prepare
+	LDA ccr68		; get original flags
 	BIT #%00000001	; mask for C flag
-	BEQ rola_do	; skip if C clear
-		SEC			; otherwise, set carry
+	BEQ rola_do		; skip if C clear
+		SEC				; otherwise, set carry
 rola_do:
 	AND #%11110000	; reset relevant bits
-	ROL a68		; rotate A left
-	BNE rola_nz	; skip if not zero
+	ROL a68			; rotate A left
+	BNE rola_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
 rola_nz:
-	LDX a68		; retrieve again!
-	BPL rola_pl	; skip if positive
+	LDX a68			; retrieve again!
+	BPL rola_pl		; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 rola_pl:
-	BCC rola_nc	; skip if there was no carry
+	BCC rola_nc		; skip if there was no carry
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 rola_nc:
-	STA ccr68	; update status (+32...40)
-	JMP next_op	; standard end of routine
+	STA ccr68		; update status
+	JMP next_op		; standard end of routine
 
 _4a:
 ; DEC A (2)
+; +27//39
 	LDA ccr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68	; store new flags
@@ -850,7 +864,7 @@ _4a:
 	BNE deca_nv	; skip if not overflow
 		SMB1 ccr68	; will set V flag
 deca_nv:
-	JMP next_op	; standard end of routine (+27...39)
+	JMP next_op	; standard end of routine
 
 _4c:
 ; INC A (2)
@@ -886,6 +900,7 @@ _4f:
 
 _50:
 ; NEG B (2)
+; +29/35/41
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
@@ -898,10 +913,11 @@ _50:
 	BNE negb_nv	; skip if not V
 		SMB1 ccr68	; set V flag
 negb_nv:
-	JMP next_op	; standard end of routine (+29...41)
+	JMP next_op	; standard end of routine
 
 _53:
 ; COM B (2)
+; +24/28/32
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -910,28 +926,26 @@ _53:
 	EOR #$FF	; complement it
 	STA b68		; update value
 	_CC_NZ		; check these
-	CPX #$80	; did change sign?
-	BNE comb_nv	; skip if not V
-		SMB1 ccr68	; set V flag
-comb_nv:
-	JMP next_op	; standard end of routine (+29...41)
+	JMP next_op	; standard end of routine
 
 _54:
 ; LSR B (2)
-	LDA ccr68	; get original flags
+; +19/20/21
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
-	LSR b68		; shift B right
-	BNE lsrb_nz	; skip if not zero
+	LSR b68			; shift B right
+	BNE lsrb_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
 lsrb_nz:
-	BCC lsrb_nc	; skip if there was no carry
-		ORA #%00000011	; will set C and V flags
+	BCC lsrb_nc		; skip if there was no carry
+		ORA #%00000011	; will set C and V flags, OK?
 lsrb_nc:
-	STA ccr68	; update status (+19...21)
-	JMP next_op	; standard end of routine
+	STA ccr68		; update status
+	JMP next_op		; standard end of routine
 
 _56:
 ; ROR B (2)
+; +32/36/40
 	CLC			; prepare
 	LDA ccr68	; get original flags
 	BIT #%00000001	; mask for C flag
@@ -952,11 +966,12 @@ rorb_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 rorb_nc:
-	STA ccr68	; update status (+32...40)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 _57:
 ; ASR B (2)
+; +33/37/41
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	CLC			; prepare
@@ -977,11 +992,12 @@ asrb_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 asrb_nc:
-	STA ccr68	; update status (+33...41)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 _58:
 ; ASL B (2)
+; +25/28.5/32
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	ASL b68		; shift B left
@@ -997,11 +1013,12 @@ aslb_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 aslb_nc:
-	STA ccr68	; update status (+25...32)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 _59:
 ; ROL B (2)
+; +32/36/40
 	CLC			; prepare
 	LDA ccr68	; get original flags
 	BIT #%00000001	; mask for C flag
@@ -1022,12 +1039,13 @@ rolb_pl:
 		ORA #%00000001	; will set C flag
 		EOR #%00000010	; toggle V bit
 rolb_nc:
-	STA ccr68	; update status (+32...40)
+	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
 
 _5a:
 ; DEC B (2)
+; +27//39
 	LDA ccr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68	; store new flags
@@ -1038,7 +1056,7 @@ _5a:
 	BNE decb_nv	; skip if not overflow
 		SMB1 ccr68	; will set V flag
 decb_nv:
-	JMP next_op	; standard end of routine (+27...39)
+	JMP next_op	; standard end of routine
 
 _5c:
 ; INC B (2)
@@ -1092,6 +1110,7 @@ negi_nv:
 
 _63:
 ; COM ind (7)
+; +
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -1101,11 +1120,7 @@ _63:
 	EOR #$FF	; complement it
 	STA (tmptr)	; update value
 	_CC_NZ		; check these
-	CPX #$80	; did change sign?
-	BNE comi_nv	; skip if not V
-		SMB1 ccr68	; set V flag
-comi_nv:
-	JMP next_op	; standard end of routine (+60...74)
+	JMP next_op	; standard end of routine
 
 _64:
 ; LSR ind (7)
@@ -1293,10 +1308,18 @@ _6d:
 	JMP next_op		; standard end of routine
 
 _6e:
-; JMP ind
-	; ***** TO DO ***** TO DO *****
-
-	JMP next_op	; standard end of routine
+; JMP ind (4)
+; -5+27//28
+	_PC_ADV			; get operand
+	LDA (pc68), Y	; set offset
+	CLC				; prepare
+	ADC x68			; add LSB
+	TAY				; this is new offset!
+	LDA x68 + 1		; get MSB
+	ADC #0			; propagate carry
+	_AH_BOUND		; stay injected
+	STA pc68 + 1	; update pointer
+	JMP execute		; do jump
 
 _6f:
 ; CLR ind (7)
@@ -1573,23 +1596,53 @@ _82:
 
 _84:
 ; AND A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +30...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	AND a68			; AND with accumulator A
+	STA a68			; update
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _85:
 ; BIT A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +27...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	AND a68			; AND with accumulator A
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _86:
 ; LDA A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +27...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	STA a68			; update accumulator A
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _88:
 ; EOR A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +30...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	EOR a68			; EOR with accumulator A
+	STA a68			; update
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _89:
 ; ADC A imm (2)
@@ -1598,8 +1651,16 @@ _89:
 
 _8a:
 ; ORA A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +30...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	ORA a68			; OR with accumulator A
+	STA a68			; update
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _8b:
 ; ADD A imm (2)
