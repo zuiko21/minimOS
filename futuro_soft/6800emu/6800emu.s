@@ -2054,23 +2054,53 @@ _c2:
 
 _c4:
 ; AND B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +30...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	AND b68			; AND with accumulator B
+	STA b68			; update
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _c5:
 ; BIT B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +27...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	AND b68			; AND with accumulator B
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _c6:
 ; LDA B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +27...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	STA b68			; update accumulator B
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _c8:
 ; EOR B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +30...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	EOR b68			; EOR with accumulator B
+	STA b68			; update
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _c9:
 ; ADC B imm (2)
@@ -2079,8 +2109,16 @@ _c9:
 
 _ca:
 ; ORA B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +30...
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; go for operand
+	LDA (pc68), Y	; immediate
+	ORA b68			; OR with accumulator B
+	STA b68			; update
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 _cb:
 ; ADD B imm (2)
@@ -2219,28 +2257,65 @@ _e2:
 
 _e4:
 ; AND B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	_INDEXED		; points to operand
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get B accumulator
+	AND (tmptr)		; AND with operand
+	STA b68			; update B
+	_CC_NZ			; set flags
+	JMP next_op		; standard end
 
 _e5:
 ; BIT B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	_INDEXED		; points to operand
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get B accumulator
+	AND (tmptr)		; AND with operand, just for flags
+	_CC_NZ			; set flags
+	JMP next_op		; standard end
 
 _e6:
 ; LDA B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	_INDEXED		; points to operand
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	LDA (tmptr)		; get operand
+	STA b68			; load into B
+	_CC_NZ			; set flags
+	JMP next_op		; standard end
 
 _e7:
 ; STA B ind (6)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	_INDEXED		; points to operand
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get B accumulator
+	STA (tmptr)		; store at operand
+	_CC_NZ			; set flags
+	JMP next_op		; standard end
 
 _e8:
 ; EOR B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	_INDEXED		; points to operand
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get B accumulator
+	EOR (tmptr)		; EOR with operand
+	STA b68			; update B
+	_CC_NZ			; set flags
+	JMP next_op		; standard end
 
 _e9:
 ; ADC B ind (5)
@@ -2249,8 +2324,16 @@ _e9:
 
 _ea:
 ; ORA B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	_INDEXED		; points to operand
+	LDA ccr68		; get flags
+	AND #%11110001	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get B accumulator
+	ORA (tmptr)		; ORA with operand
+	STA b68			; update B
+	_CC_NZ			; set flags
+	JMP next_op		; standard end
 
 _eb:
 ; ADD B ind (5)
