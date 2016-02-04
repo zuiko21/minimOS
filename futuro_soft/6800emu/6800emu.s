@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160203
+; last modified 20160204
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -60,6 +60,8 @@
 #define	_EXTENDED	_PC_ADV: LDA (pc68), Y: _AH_BOUND: STA tmptr+1: _PC_ADV: LDA (pc68), Y: STA tmptr
 ; compute pointer (as X index) for direct addressing mode (12/12/25)
 #define	_DIRECT		_PC_ADV: LDA (pc68), Y: TAX
+; get immediate operand directly into tmptr, unless further optimisation is available (13/13/26)
+#define	_IMMEDIATE	_PC_ADV: LDA (pc68), Y: STA tmptr
 
 ; check Z & N flags (6/10/14)
 #define _CC_NZ		BNE *+4: SMB2 ccr68: BPL *+4: SMB3 ccr68
@@ -685,9 +687,38 @@ pshb_w:
 
 _39:
 ; RTS (5)
-	; ***** TO DO ***** TO DO *****
-
-	JMP next_op	; standard end of routine
+; +
+	INC sp68		; pre-increment
+	BEQ rts_w		; should correct MSB, rare?
+rts_do:
+		LDA (sp68)		; take return MSB from stack
+		STA pc68 + 1	; store into register
+		INC sp68		; go for next
+		BEQ rts_w2		; another chance for wrapping
+			LDA (sp68)		; pop the LSB
+			TAY				; which is new offset
+			JMP execute		; and resume execution
+		STA a68			; store it in accumulator A
+		JMP next_op		; standard end of routine
+rts_w:
+	LDA sp68 + 1	; get stack pointer MSB
+	INC				; increase MSB
+	_AH_BOUND		; keep injected
+	STA sp68 + 1	; update real thing
+	LDA (sp68)		; take return MSB from stack
+	STA pc68 + 1	; store into register
+	INC sp68		; go for next
+	LDA (sp68)		; pop the LSB
+	TAY				; which is new offset
+	JMP execute		; and resume execution
+rts_w2:
+	LDA sp68 + 1	; get stack pointer MSB
+	INC				; increase MSB
+	_AH_BOUND		; keep injected
+	STA sp68 + 1	; update real thing
+	LDA (sp68)		; pop the LSB
+	TAY				; which is new offset
+	JMP execute		; and resume execution
 
 _3b:
 ; RTI (10)
@@ -1363,10 +1394,6 @@ _73:
 	EOR #$FF	; complement it
 	STA (tmptr)	; update value
 	_CC_NZ		; check these
-	CPX #$80	; did change sign?
-	BNE come_nv	; skip if not V
-		SMB1 ccr68	; set V flag
-come_nv:
 	JMP next_op	; standard end of routine
 
 _74:
@@ -1581,8 +1608,23 @@ _7f:
 
 _80:
 ; SUB A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +44...
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_IMMEDIATE		; get operand
+	LDA a68			; get accumulator A
+	SEC				; prepare
+	SBC tmptr		; subtract without carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCS subam_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+subam_nc:
+	BVC subam_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+subam_nv:
+	JMP next_op		; standard end
 
 _81:
 ; CMP A imm (2)
@@ -1591,8 +1633,28 @@ _81:
 
 _82:
 ; SBC A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +52...
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_IMMEDIATE		; get operand
+	SEC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ sbcam_do	; skip if C clear
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcam_do:
+	LDA a68			; get accumulator A
+	SBC tmptr		; subtract with carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCS sbcam_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+sbcam_nc:
+	BVC sbcam_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sbcam_nv:
+	JMP next_op		; standard end
 
 _84:
 ; AND A imm (2)
@@ -1668,7 +1730,7 @@ _8b:
 	JMP next_op	; standard end
 
 _8c:
-; CPX imm (2)
+; CPX imm (3)
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
@@ -1678,14 +1740,29 @@ _8d:
 	JMP next_op	; standard end
 
 _8e:
-; LDS imm
+; LDS imm (3)
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
 _90:
 ; SUB A dir (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +44...
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_DIRECT			; get operand
+	LDA a68			; get accumulator A
+	SEC				; prepare
+	SBC $4000,X		; subtract without carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCS subad_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+subad_nc:
+	BVC subad_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+subad_nv:
+	JMP next_op		; standard end
 
 _91:
 ; CMP A dir (3)
@@ -1694,8 +1771,28 @@ _91:
 
 _92:
 ; SBC A dir (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +52...
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_DIRECT			; get operand
+	SEC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ sbcad_do	; skip if C clear
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcad_do:
+	LDA a68			; get accumulator A
+	SBC $4000, X	; subtract with carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCS sbcad_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+sbcad_nc:
+	BVC sbcad_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sbcad_nv:
+	JMP next_op		; standard end
 
 _94:
 ; AND A dir (3)
@@ -1799,8 +1896,22 @@ _9f:
 
 _a0:
 ; SUB A ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_INDEXED		; get operand
+	LDA a68			; get accumulator A
+	SEC				; prepare
+	SBC (tmptr)		; subtract without carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCS subai_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+subai_nc:
+	BVC subai_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+subai_nv:
+	JMP next_op		; standard end
 
 _a1:
 ; CMP A ind (5)
@@ -1809,8 +1920,28 @@ _a1:
 
 _a2:
 ; SBC A ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_INDEXED		; get operand
+	SEC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ sbcai_do	; skip if C clear
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcai_do:
+	LDA a68			; get accumulator A
+	SBC (tmptr)		; subtract with carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCS sbcai_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+sbcai_nc:
+	BVC sbcai_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sbcai_nv:
+	JMP next_op		; standard end
 
 _a4:
 ; AND A ind (5)
@@ -1919,8 +2050,22 @@ _af:
 
 _b0:
 ; SUB A ext (4)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_EXTENDED		; get operand
+	LDA a68			; get accumulator A
+	SEC				; prepare
+	SBC (tmptr)		; subtract without carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCS subae_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+subae_nc:
+	BVC subae_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+subae_nv:
+	JMP next_op		; standard end
 
 _b1:
 ; CMP A ext (4)
@@ -1929,8 +2074,28 @@ _b1:
 
 _b2:
 ; SBC A ext (4)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_EXTENDED		; get operand
+	SEC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ sbcae_do	; skip if C clear
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcae_do:
+	LDA a68			; get accumulator A
+	SBC (tmptr)		; subtract with carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCS sbcae_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+sbcae_nc:
+	BVC sbcae_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sbcae_nv:
+	JMP next_op		; standard end
 
 _b4:
 ; AND A ext (4)
@@ -2039,8 +2204,22 @@ _bf:
 
 _c0:
 ; SUB B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_IMMEDIATE		; get operand
+	LDA b68			; get accumulator B
+	SEC				; prepare
+	SBC tmptr		; subtract without carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCS subbm_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+subbm_nc:
+	BVC subbm_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+subbm_nv:
+	JMP next_op		; standard end
 
 _c1:
 ; CMP B imm (2)
@@ -2049,8 +2228,28 @@ _c1:
 
 _c2:
 ; SBC B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_IMMEDIATE		; get operand
+	SEC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ sbcbm_do	; skip if C clear
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcbm_do:
+	LDA b68			; get accumulator B
+	SBC tmptr		; subtract with carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCS sbcbm_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+sbcbm_nc:
+	BVC sbcbm_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sbcbm_nv:
+	JMP next_op		; standard end
 
 _c4:
 ; AND B imm (2)
@@ -2132,8 +2331,22 @@ _ce:
 
 _d0:
 ; SUB B dir (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_DIRECT			; get operand
+	LDA b68			; get accumulator B
+	SEC				; prepare
+	SBC $4000, X	; subtract without carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCS subbd_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+subbd_nc:
+	BVC subbd_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+subbd_nv:
+	JMP next_op		; standard end
 
 _d1:
 ; CMP B dir (3)
@@ -2142,8 +2355,28 @@ _d1:
 
 _d2:
 ; SBC B dir (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_DIRECT			; get operand
+	SEC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ sbcbd_do	; skip if C clear
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcbd_do:
+	LDA b68			; get accumulator B
+	SBC $4000, X	; subtract with carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCS sbcbd_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+sbcbd_nc:
+	BVC sbcbd_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sbcbd_nv:
+	JMP next_op		; standard end
 
 _d4:
 ; AND B dir (3)
@@ -2242,8 +2475,22 @@ _df:
 
 _e0:
 ; SUB B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_INDEXED		; get operand
+	LDA b68			; get accumulator B
+	SEC				; prepare
+	SBC (tmptr)		; subtract without carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCS subbi_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+subbi_nc:
+	BVC subbi_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+subbi_nv:
+	JMP next_op		; standard end
 
 _e1:
 ; CMP B ind (5)
@@ -2252,8 +2499,28 @@ _e1:
 
 _e2:
 ; SBC B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_INDEXED		; get operand
+	SEC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ sbcbi_do	; skip if C clear
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcbi_do:
+	LDA b68			; get accumulator B
+	SBC (tmptr)		; subtract with carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCS sbcbi_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+sbcbi_nc:
+	BVC sbcbi_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sbcbi_nv:
+	JMP next_op		; standard end
 
 _e4:
 ; AND B ind (5)
@@ -2352,8 +2619,22 @@ _ef:
 
 _f0:
 ; SUB B ext (4)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_EXTENDED		; get operand
+	LDA b68			; get accumulator B
+	SEC				; prepare
+	SBC (tmptr)		; subtract without carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCS subbe_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+subbe_nc:
+	BVC subbe_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+subbe_nv:
+	JMP next_op		; standard end
 
 _f1:
 ; CMP B ext (4)
@@ -2362,8 +2643,28 @@ _f1:
 
 _f2:
 ; SBC B ext (4)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_EXTENDED		; get operand
+	SEC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ sbcbe_do	; skip if C clear
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcbe_do:
+	LDA b68			; get accumulator B
+	SBC (tmptr)		; subtract with carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCS sbcbe_nc	; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+sbcbe_nc:
+	BVC sbcbe_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sbcbe_nv:
+	JMP next_op		; standard end
 
 _f4:
 ; AND B ext (4)
