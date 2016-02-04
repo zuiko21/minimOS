@@ -339,6 +339,7 @@ _1b:
 ; ABA (2)
 ; +42/45.5/49
 ; ** might set V according to native 6502 result **
+; *** missing H flag ***
 	LDA a68		; get A
 	BPL aba_nm	; skip if was positive
 		SMB1 ccr68	; set V like N, to be toggled later ***Rockwell***
@@ -1076,7 +1077,6 @@ rolb_nc:
 	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
-
 _5a:
 ; DEC B (2)
 ; +27//39
@@ -1725,8 +1725,28 @@ _88:
 
 _89:
 ; ADC A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +43...
+; *** missing H flag ***
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ adcam_do	; skip if C was clear
+		SEC				; otherwise, set carry
+adcam_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; not worth using the macro
+	LDA (pc68), Y	; get operand
+	ADC a68			; add accumulator A
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCC adcam_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+adcam_nc:
+	BVC adcam_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+adcam_nv:
+	JMP next_op		; standard end
 
 _8a:
 ; ORA A imm (2)
@@ -1743,13 +1763,49 @@ _8a:
 
 _8b:
 ; ADD A imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; *** missing H flag ***
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; not worth using the macro
+	LDA (pc68), Y	; get operand
+	ADC a68			; add accumulator A
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCC addam_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+addam_nc:
+	BVC addam_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+addam_nv:
+	JMP next_op		; standard end
 
 _8c:
 ; CPX imm (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	_PC_ADV			; get first operand
+	SEC				; prepare
+	LDA x68 + 1		; MSB at X
+	SBC (pc68), Y	; subtract memory
+	STA tmptr		; keep for later
+	BPL cpxm_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
+cpxm_pl:
+	_PC_ADV			; get second operand
+	LDA x68			; LSB at X
+	SBC (pc68), Y	; value LSB
+	ORA tmptr		; blend with stored MSB
+	BNE cpxm_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
+cpxm_nz:
+	BVC cpxm_nv		; only if overflow...
+		SMB1 ccr68		; ...set V flag
+cpxm_nv:
+	JMP next_op		; standard end
 
 _8d:
 ; BSR rel
@@ -1902,8 +1958,28 @@ _98:
 
 _99:
 ; ADC A dir (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +49...
+; *** missing H flag ***
+	_DIRECT			; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ adcad_do	; skip if C was clear
+		SEC				; otherwise, set carry
+adcad_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA a68			; get accumulator A
+	ADC $4000, X	; add with carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCC adcad_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+adcad_nc:
+	BVC adcad_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+adcad_nv:
+	JMP next_op		; standard end
 
 _9a:
 ; ORA A dir (3)
@@ -1920,13 +1996,50 @@ _9a:
 
 _9b:
 ; ADD A dir (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+; *** missing H flag ***
+	_DIRECT			; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA a68			; get accumulator A
+	ADC $4000, X	; add without carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCC addad_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+addad_nc:
+	BVC addad_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+addad_nv:
+	JMP next_op		; standard end
 
 _9c:
 ; CPX dir
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	_DIRECT			; get operand
+	SEC				; prepare
+	LDA x68 + 1		; MSB at X
+	SBC $4000, X	; subtract memory
+	STA tmptr		; keep for later
+	BPL cpxd_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
+cpxd_pl:
+	_PC_ADV			; get second operand
+	LDA x68			; LSB at X
+	SBC $4001, X	; value LSB
+	ORA tmptr		; blend with stored MSB
+	BNE cpxd_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
+cpxd_nz:
+	BVC cpxd_nv		; only if overflow...
+		SMB1 ccr68		; ...set V flag
+cpxd_nv:
+	JMP next_op		; standard end
 
 _9e:
 ; LDS dir
@@ -2088,8 +2201,28 @@ _a8:
 
 _a9:
 ; ADC A ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +70...
+; *** missing H flag ***
+	_INDEXED		; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ adcai_do	; skip if C was clear
+		SEC				; otherwise, set carry
+adcai_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA a68			; get accumulator A
+	ADC (tmptr)		; add with carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCC adcai_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+adcai_nc:
+	BVC adcai_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+adcai_nv:
+	JMP next_op		; standard end
 
 _aa:
 ; ORA A ind (5)
@@ -2106,13 +2239,56 @@ _aa:
 
 _ab:
 ; ADD A ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +64...
+; *** missing H flag ***
+	_INDEXED		; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA a68			; get accumulator A
+	ADC (tmptr)		; add without carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCC addai_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+addai_nc:
+	BVC addai_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+addai_nv:
+	JMP next_op		; standard end
 
 _ac:
 ; CPX ind
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	_INDEXED		; get operand
+	SEC				; prepare
+	LDA x68 + 1		; MSB at X
+	SBC (tmptr)		; subtract memory
+	TAX				; keep for later
+	BPL cpxi_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
+cpxi_pl:
+	INC tmptr		; point to next byte
+	BNE cpxi_nw		; usually will not wrap
+		LDA tmptr + 1	; get original MSB
+		INC				; advance
+		_AH_BOUND		; inject
+		STA tmptr + 1	; restore
+cpxi_nw:
+	LDA x68			; LSB at X
+	SBC (tmptr)		; value LSB
+	STX tmptr		; retrieve old MSB
+	ORA tmptr		; blend with stored MSB
+	BNE cpxi_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
+cpxi_nz:
+	BVC cpxi_nv		; only if overflow...
+		SMB1 ccr68		; ...set V flag
+cpxi_nv:
+	JMP next_op		; standard end
 
 _ad:
 ; JSR ind
@@ -2299,8 +2475,28 @@ _b8:
 
 _b9:
 ; ADC A ext (4)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +70...
+; *** missing H flag ***
+	_INDEXED		; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ adcae_do	; skip if C was clear
+		SEC				; otherwise, set carry
+adcae_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA a68			; get accumulator A
+	ADC (tmptr)		; add with carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCC adcae_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+adcae_nc:
+	BVC adcae_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+adcae_nv:
+	JMP next_op		; standard end
 
 _ba:
 ; ORA A ext (4)
@@ -2317,13 +2513,57 @@ _ba:
 
 _bb:
 ; ADD A ext (4)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +64...
+; *** missing H flag ***
+	_EXTENDED		; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA a68			; get accumulator A
+	ADC (tmptr)		; add without carry
+	STA a68			; update accumulator
+	_CC_NZ			; check these
+	BCC addae_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+addae_nc:
+	BVC addae_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+addae_nv:
+	JMP next_op		; standard end
 
 _bc:
 ; CPX ext
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	_EXTENDED		; get operand
+	SEC				; prepare
+	LDA x68 + 1		; MSB at X
+	SBC (tmptr)		; subtract memory
+	TAX				; keep for later
+	BPL cpxe_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
+cpxe_pl:
+	INC tmptr		; point to next byte
+	BNE cpxe_nw		; usually will not wrap
+		LDA tmptr + 1	; get original MSB
+		INC				; advance
+		_AH_BOUND		; inject
+		STA tmptr + 1	; restore
+cpxe_nw:
+	LDA x68			; LSB at X
+	SBC (tmptr)		; value LSB
+	STX tmptr		; retrieve old MSB
+	ORA tmptr		; blend with stored MSB
+	BNE cpxe_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
+cpxe_nz:
+	BVC cpxe_nv		; only if overflow...
+		SMB1 ccr68		; ...set V flag
+cpxe_nv:
+	JMP next_op		; standard end
 
 _bd:
 ; JSR ext
@@ -2424,9 +2664,6 @@ cmpbm_nv:
 _c2:
 ; SBC B imm (2)
 ; +
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
 	_IMMEDIATE		; get operand
 	SEC				; prepare
 	LDA ccr68		; get original flags
@@ -2434,6 +2671,8 @@ _c2:
 	BEQ sbcbm_do	; skip if C clear
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcbm_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
 	LDA b68			; get accumulator B
 	SBC tmptr		; subtract with carry
 	STA b68			; update accumulator
@@ -2498,8 +2737,28 @@ _c8:
 
 _c9:
 ; ADC B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +43...
+; *** missing H flag ***
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ adcbm_do	; skip if C was clear
+		SEC				; otherwise, set carry
+adcbm_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; not worth using the macro
+	LDA (pc68), Y	; get operand
+	ADC b68			; add accumulator B
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCC adcbm_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+adcbm_nc:
+	BVC adcbm_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+adcbm_nv:
+	JMP next_op		; standard end
 
 _ca:
 ; ORA B imm (2)
@@ -2516,8 +2775,23 @@ _ca:
 
 _cb:
 ; ADD B imm (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; *** missing H flag ***
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	_PC_ADV			; not worth using the macro
+	LDA (pc68), Y	; get operand
+	ADC b68			; add accumulator B
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCC addbm_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+addbm_nc:
+	BVC addbm_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+addbm_nv:
+	JMP next_op		; standard end
 
 _ce:
 ; LDX imm (3)
@@ -2581,9 +2855,6 @@ cmpbd_nv:
 _d2:
 ; SBC B dir (3)
 ; +
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
 	_DIRECT			; get operand
 	SEC				; prepare
 	LDA ccr68		; get original flags
@@ -2591,6 +2862,8 @@ _d2:
 	BEQ sbcbd_do	; skip if C clear
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcbd_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
 	LDA b68			; get accumulator B
 	SBC $4000, X	; subtract with carry
 	STA b68			; update accumulator
@@ -2667,8 +2940,28 @@ _d8:
 
 _d9:
 ; ADC B dir (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +49...
+; *** missing H flag ***
+	_DIRECT			; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ adcbd_do	; skip if C was clear
+		SEC				; otherwise, set carry
+adcbd_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get accumulator B
+	ADC $4000, X	; add with carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCC adcbd_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+adcbd_nc:
+	BVC adcbd_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+adcbd_nv:
+	JMP next_op		; standard end
 
 _da:
 ; ORA B dir (3)
@@ -2685,8 +2978,23 @@ _da:
 
 _db:
 ; ADD B dir (3)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; *** missing H flag ***
+	_DIRECT			; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get accumulator B
+	ADC $4000, X	; add without carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCC addbd_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+addbd_nc:
+	BVC addbd_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+addbd_nv:
+	JMP next_op		; standard end
 
 _de:
 ; LDX dir (4)
@@ -2801,9 +3109,6 @@ cmpbi_nv:
 _e2:
 ; SBC B ind (5)
 ; +
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
 	_INDEXED		; get operand
 	SEC				; prepare
 	LDA ccr68		; get original flags
@@ -2811,6 +3116,8 @@ _e2:
 	BEQ sbcbi_do	; skip if C clear
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcbi_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
 	STA b68			; update accumulator
@@ -2887,8 +3194,28 @@ _e8:
 
 _e9:
 ; ADC B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +70...
+; *** missing H flag ***
+	_INDEXED		; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ adcbi_do	; skip if C was clear
+		SEC				; otherwise, set carry
+adcbi_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get accumulator B
+	ADC (tmptr)		; add with carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCC adcbi_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+adcbi_nc:
+	BVC adcbi_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+adcbi_nv:
+	JMP next_op		; standard end
 
 _ea:
 ; ORA B ind (5)
@@ -2905,8 +3232,23 @@ _ea:
 
 _eb:
 ; ADD B ind (5)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; *** missing H flag ***
+	_INDEXED		; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get accumulator B
+	ADC (tmptr)		; add without carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCC addbi_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+addbi_nc:
+	BVC addbi_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+addbi_nv:
+	JMP next_op		; standard end
 
 _ee:
 ; LDX ind (6)
@@ -3021,9 +3363,6 @@ cmpbe_nv:
 _f2:
 ; SBC B ext (4)
 ; +
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
 	_EXTENDED		; get operand
 	SEC				; prepare
 	LDA ccr68		; get original flags
@@ -3031,6 +3370,8 @@ _f2:
 	BEQ sbcbe_do	; skip if C clear
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcbe_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update flags
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
 	STA b68			; update accumulator
@@ -3107,8 +3448,28 @@ _f8:
 
 _f9:
 ; ADC B ext (4)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +70...
+; *** missing H flag ***
+	_EXTENDED		; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	BIT #%00000001	; mask for C flag
+	BEQ adcbe_do	; skip if C was clear
+		SEC				; otherwise, set carry
+adcbe_do:
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get accumulator B
+	ADC (tmptr)		; add with carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCC adcbe_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+adcbe_nc:
+	BVC adcbe_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+adcbe_nv:
+	JMP next_op		; standard end
 
 _fa:
 ; ORA B ext (4)
@@ -3125,8 +3486,24 @@ _fa:
 
 _fb:
 ; ADD B ext (4)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +64...
+; *** missing H flag ***
+	_EXTENDED		; get operand
+	CLC				; prepare
+	LDA ccr68		; get original flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA b68			; get accumulator B
+	ADC (tmptr)		; add without carry
+	STA b68			; update accumulator
+	_CC_NZ			; check these
+	BCC addbe_nc	; only if carry...
+		SMB0 ccr68		; ...set C flag
+addbe_nc:
+	BVC addbe_nv	; only if overflow...
+		SMB1 ccr68		; ...set V flag
+addbe_nv:
+	JMP next_op		; standard end
 
 _fe:
 ; LDX ext (5)
