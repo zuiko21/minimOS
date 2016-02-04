@@ -903,6 +903,7 @@ deca_nv:
 
 _4c:
 ; INC A (2)
+; +27//39
 	LDA ccr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68	; store new flags
@@ -913,24 +914,26 @@ _4c:
 	BNE inca_nv	; skip if not overflow
 		SMB1 ccr68	; will set V flag
 inca_nv:
-	JMP next_op	; standard end of routine (+27...39)
+	JMP next_op	; standard end of routine
 
 _4d:
 ; TST A (2)
+; +17...
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
 	LDA a68		; check accumulator A
 	_CC_NZ		; check these flags
-	JMP next_op	; standard end of routine (+17...25)
+	JMP next_op	; standard end of routine
 
 _4f:
 ; CLR A (2)
+; +13
 	STZ a68		; clear A
 	LDA ccr68	; get previous status
 	AND #%11110100	; clear N, V, C
 	ORA #%00000100	; set Z
-	STA ccr68	; update (+13)
+	STA ccr68	; update
 	JMP next_op	; standard end of routine
 
 _50:
@@ -1094,6 +1097,7 @@ decb_nv:
 
 _5c:
 ; INC B (2)
+; +27//39
 	LDA ccr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68	; store new flags
@@ -1104,24 +1108,26 @@ _5c:
 	BNE incb_nv	; skip if not overflow
 		SMB1 ccr68	; will set V flag
 incb_nv:
-	JMP next_op	; standard end of routine (+27...39)
+	JMP next_op	; standard end of routine
 
 _5d:
 ; TST B (2)
+; +17...
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
 	LDA b68		; check accumulator B
 	_CC_NZ		; check these flags
-	JMP next_op	; standard end of routine (+17...25)
+	JMP next_op	; standard end of routine
 
 _5f:
 ; CLR B (2)
+; +13...
 	STZ b68		; clear B
 	LDA ccr68	; get previous status
 	AND #%11110100	; clear N, V, C
 	ORA #%00000100	; set Z
-	STA ccr68	; update (+13)
+	STA ccr68	; update
 	JMP next_op	; standard end of routine
 
 _60:
@@ -1481,7 +1487,6 @@ asre_pl:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
-
 _78:
 ; ASL ext (6)
 ; +
@@ -1587,6 +1592,7 @@ _7d:
 
 _7e:
 ; JMP ext (3)
+; +32//46
 	_PC_ADV		; go for destination MSB
 	LDA (pc68), Y	; get it
 	_AH_BOUND	; check against emulated limits
@@ -1764,6 +1770,7 @@ _8a:
 _8b:
 ; ADD A imm (2)
 ; *** missing H flag ***
+; +
 	CLC				; prepare
 	LDA ccr68		; get original flags
 	AND #%11110000	; clear relevant bits
@@ -2076,6 +2083,7 @@ stsd_pl:
 
 _a0:
 ; SUB A ind (5)
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2260,6 +2268,7 @@ addai_nv:
 
 _ac:
 ; CPX ind
+; +
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
@@ -2350,6 +2359,7 @@ stsi_w:
 
 _b0:
 ; SUB A ext (4)
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2625,6 +2635,7 @@ stse_w:
 
 _c0:
 ; SUB B imm (2)
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2775,6 +2786,7 @@ _ca:
 
 _cb:
 ; ADD B imm (2)
+; +
 ; *** missing H flag ***
 	CLC				; prepare
 	LDA ccr68		; get original flags
@@ -2816,6 +2828,7 @@ ldxm_nz:
 
 _d0:
 ; SUB B dir (3)
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2978,6 +2991,7 @@ _da:
 
 _db:
 ; ADD B dir (3)
+; +
 ; *** missing H flag ***
 	_DIRECT			; get operand
 	CLC				; prepare
@@ -2998,7 +3012,7 @@ addbd_nv:
 
 _de:
 ; LDX dir (4)
-; +73
+; +73...
 	LDA ccr68		; get original flags (3)
 	AND #%11110001	; reset relevant bits (2)
 	STA ccr68		; update flags (3)
@@ -3070,6 +3084,7 @@ stxd_w:
 
 _e0:
 ; SUB B ind (5)
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -3232,6 +3247,7 @@ _ea:
 
 _eb:
 ; ADD B ind (5)
+; +
 ; *** missing H flag ***
 	_INDEXED		; get operand
 	CLC				; prepare
@@ -3324,6 +3340,7 @@ stxi_w:
 
 _f0:
 ; SUB B ext (4)
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
