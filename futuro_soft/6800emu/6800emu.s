@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160204
+; last modified 20160205
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -2805,7 +2805,7 @@ addbm_nv:
 
 _ce:
 ; LDX imm (3)
-; +
+; +43...
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
