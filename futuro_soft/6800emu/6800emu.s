@@ -691,7 +691,7 @@ pshb_w:
 
 _39:
 ; RTS (5)
-; +
+; +29/29/44
 	INC sp68		; pre-increment
 	BEQ rts_w		; should correct MSB, rare?
 rts_do:
@@ -702,8 +702,6 @@ rts_do:
 			LDA (sp68)		; pop the LSB
 			TAY				; which is new offset
 			JMP execute		; and resume execution
-		STA a68			; store it in accumulator A
-		JMP next_op		; standard end of routine
 rts_w:
 	LDA sp68 + 1	; get stack pointer MSB
 	INC				; increase MSB
@@ -1132,7 +1130,7 @@ _5f:
 
 _60:
 ; NEG ind (7)
-; +
+; +64...
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
@@ -1150,7 +1148,7 @@ negi_nv:
 
 _63:
 ; COM ind (7)
-; +
+; +59...
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -1164,7 +1162,7 @@ _63:
 
 _64:
 ; LSR ind (7)
-; +
+; +61...
 	_INDEXED	; addressing mode
 	LDA (tmptr)	; get operand
 	LSR
@@ -1184,7 +1182,7 @@ lsri_nz:
 
 _66:
 ; ROR ind (7)
-; +
+; +76...
 	_INDEXED		; addressing mode
 	CLC				; prepare
 	LDA ccr68		; get original flags
@@ -1216,7 +1214,7 @@ rori_pl:
 
 _67:
 ; ASR ind (7)
-; +
+; +71...
 	_INDEXED		; get pointer to operand
 	CLC				; prepare
 	LDA (tmptr)		; check operand
@@ -1246,7 +1244,7 @@ asri_pl:
 
 _68:
 ; ASL ind (7)
-; +
+; +66...
 	_INDEXED		; prepare pointer
 	LDA (tmptr)		; get operand
 	ASL				; shift left
@@ -1272,7 +1270,7 @@ asli_pl:
 
 _69:
 ; ROL ind (7)
-; +
+; +76...
 	_INDEXED		; addressing mode
 	CLC				; prepare
 	LDA ccr68		; get original flags
@@ -1304,7 +1302,7 @@ roli_pl:
 
 _6a:
 ; DEC ind (7)
-; +
+; +62...
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
@@ -1321,7 +1319,7 @@ deci_nv:
 
 _6c:
 ; INC ind (7)
-; +
+; +62...
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68		; store new flags
@@ -1338,7 +1336,7 @@ inci_nv:
 
 _6d:
 ; TST ind (7)
-; +
+; +50...
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -1349,7 +1347,7 @@ _6d:
 
 _6e:
 ; JMP ind (4)
-; -5+27//28
+; -5+30...
 	_PC_ADV			; get operand
 	LDA (pc68), Y	; set offset
 	CLC				; prepare
@@ -1363,7 +1361,7 @@ _6e:
 
 _6f:
 ; CLR ind (7)
-; +
+; +48...
 	_INDEXED		; prepare pointer
 	LDA #0			; no indirect STZ available
 	STA (tmptr)		; clear memory
@@ -1375,7 +1373,7 @@ _6f:
 
 _70:
 ; NEG ext (6)
-; +
+; +64...
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -1393,7 +1391,7 @@ nege_nv:
 
 _73:
 ; COM ext (6)
-; +
+; +59...
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -1592,7 +1590,7 @@ _7d:
 
 _7e:
 ; JMP ext (3)
-; +32//46
+; -5+32//46
 	_PC_ADV		; go for destination MSB
 	LDA (pc68), Y	; get it
 	_AH_BOUND	; check against emulated limits
@@ -1770,7 +1768,7 @@ _8a:
 _8b:
 ; ADD A imm (2)
 ; *** missing H flag ***
-; +
+; +38...
 	CLC				; prepare
 	LDA ccr68		; get original flags
 	AND #%11110000	; clear relevant bits
@@ -1790,7 +1788,7 @@ addam_nv:
 
 _8c:
 ; CPX imm (3)
-; +
+; +51...
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
@@ -1815,7 +1813,7 @@ cpxm_nv:
 	JMP next_op		; standard end
 
 _8d:
-; BSR rel
+; BSR rel (8)
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
@@ -1903,7 +1901,7 @@ sbcad_nv:
 
 _94:
 ; AND A dir (3)
-; +
+; +36...
 	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1916,7 +1914,7 @@ _94:
 
 _95:
 ; BIT A dir (3)
-; +
+; +33...
 	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1928,7 +1926,7 @@ _95:
 
 _96:
 ; LDA A dir (3)
-; +
+; +33...
 	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1940,7 +1938,7 @@ _96:
 
 _97:
 ; STA A dir (4)
-; +
+; +33...
 	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1952,7 +1950,7 @@ _97:
 
 _98:
 ; EOR A dir (3)
-; +
+; +36...
 	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1990,7 +1988,7 @@ adcad_nv:
 
 _9a:
 ; ORA A dir (3)
-; +
+; +36...
 	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -2003,7 +2001,7 @@ _9a:
 
 _9b:
 ; ADD A dir (3)
-; +
+; +44...
 ; *** missing H flag ***
 	_DIRECT			; get operand
 	CLC				; prepare
@@ -2023,8 +2021,8 @@ addad_nv:
 	JMP next_op		; standard end
 
 _9c:
-; CPX dir
-; +
+; CPX dir (4)
+; +56...
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
@@ -2049,7 +2047,7 @@ cpxd_nv:
 	JMP next_op		; standard end
 
 _9e:
-; LDS dir
+; LDS dir (4)
 ; +42...
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
@@ -2066,8 +2064,8 @@ ldsd_pl:
 	JMP next_op		; standard end
 
 _9f:
-; STS dir
-; +
+; STS dir (5)
+; +37...
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
@@ -2083,7 +2081,7 @@ stsd_pl:
 
 _a0:
 ; SUB A ind (5)
-; +
+; +64...
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2103,7 +2101,7 @@ subai_nv:
 
 _a1:
 ; CMP A ind (5)
-; +41...
+; +61...
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2122,7 +2120,7 @@ cmpai_nv:
 
 _a2:
 ; SBC A ind (5)
-; +
+; +72...
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2147,7 +2145,7 @@ sbcai_nv:
 
 _a4:
 ; AND A ind (5)
-; +
+; +56...
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -2160,7 +2158,7 @@ _a4:
 
 _a5:
 ; BIT A ind (5)
-; +
+; +53...
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -2172,7 +2170,7 @@ _a5:
 
 _a6:
 ; LDA A ind (5)
-; +
+; +53...
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -2184,7 +2182,7 @@ _a6:
 
 _a7:
 ; STA A ind (6)
-; +
+; +53...
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -2196,7 +2194,7 @@ _a7:
 
 _a8:
 ; EOR A ind (5)
-; +
+; +56...
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -2234,7 +2232,7 @@ adcai_nv:
 
 _aa:
 ; ORA A ind (5)
-; +
+; +56...
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -2267,8 +2265,8 @@ addai_nv:
 	JMP next_op		; standard end
 
 _ac:
-; CPX ind
-; +
+; CPX ind (6)
+; +82...
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
@@ -2300,13 +2298,13 @@ cpxi_nv:
 	JMP next_op		; standard end
 
 _ad:
-; JSR ind
+; JSR ind (8)
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
 _ae:
-; LDS ind
-; +
+; LDS ind (6)
+; +70...
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
@@ -2332,8 +2330,8 @@ ldsi_w:
 	JMP next_op		; standard end
 
 _af:
-; STS ind
-; +
+; STS ind (7)
+; +65...
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
@@ -2543,7 +2541,7 @@ addae_nv:
 	JMP next_op		; standard end
 
 _bc:
-; CPX ext
+; CPX ext (5)
 ; +
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
@@ -2576,12 +2574,12 @@ cpxe_nv:
 	JMP next_op		; standard end
 
 _bd:
-; JSR ext
+; JSR ext (9)
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
 _be:
-; LDS ext
+; LDS ext (5)
 ; +
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
@@ -2608,7 +2606,7 @@ ldse_w:
 	JMP next_op		; standard end
 
 _bf:
-; STS ext
+; STS ext (6)
 ; +
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
