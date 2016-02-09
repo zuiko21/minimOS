@@ -63,7 +63,7 @@
 ; get immediate operand directly into tmptr, unless further optimisation is available (13/13/26)
 #define	_IMMEDIATE	_PC_ADV: LDA (pc68), Y: STA tmptr
 
-; check Z & N flags (6/8/14) will not set both bits at once!
+; check Z & N flags (6/8/10) will not set both bits at once!
 #define _CC_NZ		BNE *+4: SMB2 ccr68: BPL *+4: SMB3 ccr68
 
 ; declare some constants
@@ -171,6 +171,7 @@ nmi_loop:
 
 ; ** accumulator and memory **
 
+; add without carry
 _8b:
 ; ADD A imm (2)
 ; +57/63/
@@ -210,7 +211,7 @@ addam_nv:
 
 _9b:
 ; ADD A dir (3)
-; +65/69.5?
+; +66/72/
 	_DIRECT			; point to operand in X
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -247,7 +248,7 @@ addad_nv:
 
 _ab:
 ; ADD A ind (5)
-; +83/
+; +83/90/
 	_INDEXED		; point to operand
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -284,7 +285,7 @@ addai_nv:
 
 _bb:
 ; ADD A ext (4)
-; +83...
+; +83/90/
 	_EXTENDED		; point to operand
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -358,7 +359,7 @@ addbm_nv:
 
 _db:
 ; ADD B dir (3)
-; +60/67.5/
+; +66/72/
 	_DIRECT			; point to operand in X
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
@@ -395,7 +396,7 @@ addbd_nv:
 
 _eb:
 ; ADD B ind (5)
-; +83...
+; +83/90/
 	_INDEXED		; point to operand
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
@@ -432,7 +433,7 @@ addbi_nv:
 
 _fb:
 ; ADD B ext (4)
-; +83...
+; +83/90/
 	_EXTENDED		; point to operand
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
@@ -467,6 +468,7 @@ addbe_nv:
 	_CC_NZ			; check final bits
 	JMP next_op		; standard end
 
+; add accumulators
 _1b:
 ; ABA (2)
 ; +50/56/
@@ -503,9 +505,10 @@ aba_nv:
 	_CC_NZ			; check final bits
 	JMP next_op		; standard end
 
+; add with carry
 _89:
 ; ADC A imm (2)
-; +65/70.5/
+; +63/69.5/
 	_PC_ADV			; not worth using the macro
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -545,7 +548,7 @@ adcam_nv:
 
 _99:
 ; ADC A dir (3)
-; +
+; +72/78.5/
 	_DIRECT			; point to operand in X
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -585,7 +588,7 @@ adcad_nv:
 
 _a9:
 ; ADC A ind (5)
-; +
+; +89/96/
 	_INDEXED		; point to operand
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -609,7 +612,7 @@ adcai_cc:
 		EOR #%00100000	; toggle H
 		JMP adcai_sh2	; do not reload CCR
 adcai_nh2:
-	LDA ccr68		; get original flags
+	LDA ccr68		; get original flags (69 aquí
 	AND #%11110000	; clear relevant bits, respecting H
 adcai_sh2:
 	BCC adcai_nc	; only if carry...
@@ -625,7 +628,7 @@ adcai_nv:
 
 _b9:
 ; ADC A ext (4)
-; +
+; +89/96/
 	_EXTENDED		; point to operand
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -665,7 +668,7 @@ adcae_nv:
 
 _c9:
 ; ADC B imm (2)
-; +65/70.5/
+; +63/69.5/
 	_PC_ADV			; not worth using the macro
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
@@ -705,7 +708,7 @@ adcbm_nv:
 
 _d9:
 ; ADC B dir (3)
-; +
+; +72/78.5/
 	_DIRECT			; point to operand in X
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
@@ -745,7 +748,7 @@ adcbd_nv:
 
 _e9:
 ; ADC B ind (5)
-; +
+; +89/96/
 	_INDEXED		; point to operand
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
@@ -785,7 +788,7 @@ adcbi_nv:
 
 _f9:
 ; ADC B ext (4)
-; +
+; +89/96/
 	_EXTENDED		; point to operand
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
@@ -823,9 +826,10 @@ adcbe_nv:
 	_CC_NZ			; check final bits
 	JMP next_op		; standard end
 
+; logical AND
 _84:
 ; AND A imm (2)
-; +30...
+; +30/32/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -838,7 +842,7 @@ _84:
 
 _94:
 ; AND A dir (3)
-; +36...
+; +36/38/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -851,7 +855,7 @@ _94:
 
 _a4:
 ; AND A ind (5)
-; +56...
+; +56/58.5/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -864,7 +868,7 @@ _a4:
 
 _b4:
 ; AND A ext (4)
-; +
+; +56/58.5/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -877,7 +881,7 @@ _b4:
 
 _c4:
 ; AND B imm (2)
-; +30...
+; +30/32/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -890,7 +894,7 @@ _c4:
 
 _d4:
 ; AND B dir (3)
-; +
+; +36/38/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -903,7 +907,7 @@ _d4:
 
 _e4:
 ; AND B ind (5)
-; +
+; +56/58.5/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -916,7 +920,7 @@ _e4:
 
 _f4:
 ; AND B ext (4)
-; +
+; +56/58.5/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -927,9 +931,10 @@ _f4:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
+; AND without modifying register
 _85:
 ; BIT A imm (2)
-; +27...
+; +27/29/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -941,7 +946,7 @@ _85:
 
 _95:
 ; BIT A dir (3)
-; +33...
+; +33/35/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -953,7 +958,7 @@ _95:
 
 _a5:
 ; BIT A ind (5)
-; +53...
+; +53/55.5/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -965,7 +970,7 @@ _a5:
 
 _b5:
 ; BIT A ext (4)
-; +
+; +53/55.5/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -977,7 +982,7 @@ _b5:
 
 _c5:
 ; BIT B imm (2)
-; +27...
+; +27/29/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -989,7 +994,7 @@ _c5:
 
 _d5:
 ; BIT B dir (3)
-; +
+; +27/29/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1001,7 +1006,7 @@ _d5:
 
 _e5:
 ; BIT B ind (5)
-; +
+; +53/55.5/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1013,7 +1018,7 @@ _e5:
 
 _f5:
 ; BIT B ext (4)
-; +
+; +53/55.5/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1023,6 +1028,7 @@ _f5:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
+; clear
 _4f:
 ; CLR A (2)
 ; +13
@@ -1035,7 +1041,7 @@ _4f:
 
 _5f:
 ; CLR B (2)
-; +13...
+; +13
 	STZ b68		; clear B
 	LDA ccr68	; get previous status
 	AND #%11110100	; clear N, V, C
@@ -1045,7 +1051,7 @@ _5f:
 
 _6f:
 ; CLR ind (7)
-; +48...
+; +48/48.5/
 	_INDEXED		; prepare pointer
 	LDA #0			; no indirect STZ available
 	STA (tmptr)		; clear memory
@@ -1057,7 +1063,7 @@ _6f:
 
 _7f:
 ; CLR ext (6)
-; +
+; +48/48.5/
 	_EXTENDED		; prepare pointer
 	LDA #0			; no indirect STZ available
 	STA (tmptr)		; clear memory
@@ -1067,9 +1073,10 @@ _7f:
 	STA ccr68		; update flags
 	JMP next_op		; standard end of routine
 
+; compare
 _81:
 ; CMP A imm (2)
-; +41...
+; +41/47/
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -1088,7 +1095,7 @@ cmpam_nv:
 
 _91:
 ; CMP A dir (3)
-; +41...
+; +41/47/
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -1107,7 +1114,7 @@ cmpad_nv:
 
 _a1:
 ; CMP A ind (5)
-; +61...
+; +61/67.5/
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -1126,7 +1133,7 @@ cmpai_nv:
 
 _b1:
 ; CMP A ext (4)
-; +
+; +61/67.5/
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -1145,7 +1152,7 @@ cmpae_nv:
 
 _c1:
 ; CMP B imm (2)
-; +41...
+; +41/47/
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -1164,7 +1171,7 @@ cmpbm_nv:
 
 _d1:
 ; CMP B dir (3)
-; +41...
+; +41/47/
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -1183,7 +1190,7 @@ cmpbd_nv:
 
 _e1:
 ; CMP B ind (5)
-; +
+; +61/67.5/
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -1202,7 +1209,7 @@ cmpbi_nv:
 
 _f1:
 ; CMP B ext (4)
-; +
+; +61/67.5/
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -1219,6 +1226,7 @@ cmpbe_nv:
 	_CC_NZ			; check these
 	JMP next_op		; standard end
 
+; compare accumulators
 _11:
 ; CBA (2)
 ; +39/42.5/46
@@ -1250,9 +1258,10 @@ cba_pl:
 	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
+; 1's complement
 _43:
-; COM A (2)
-; +24/28/32
+; COM A (2) already revised...
+; +24/26/28
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -1265,7 +1274,7 @@ _43:
 
 _53:
 ; COM B (2)
-; +24/28/32
+; +24/26/28
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -1278,7 +1287,7 @@ _53:
 
 _63:
 ; COM ind (7)
-; +59...
+; +59/61.5/
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -1292,7 +1301,7 @@ _63:
 
 _73:
 ; COM ext (6)
-; +59...
+; +59/61.5/
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	INC			; C always set
@@ -1304,9 +1313,10 @@ _73:
 	_CC_NZ		; check these
 	JMP next_op	; standard end of routine
 
+; 2's complement
 _40:
 ; NEG A (2)
-; +29/35/41
+; +29/33/37
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
@@ -1323,7 +1333,7 @@ nega_nv:
 
 _50:
 ; NEG B (2)
-; +29/35/41
+; +29/33/37
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
@@ -1340,7 +1350,7 @@ negb_nv:
 
 _60:
 ; NEG ind (7)
-; +64...
+; +64/68.5/
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
@@ -1358,7 +1368,7 @@ negi_nv:
 
 _70:
 ; NEG ext (6)
-; +64...
+; +64/68.5/
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -1374,14 +1384,16 @@ _70:
 nege_nv:
 	JMP next_op	; standard end of routine
 
+; decimal adjust
 _19:
 ; DAA (2)
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end of routine
 
+; decrement
 _4a:
 ; DEC A (2)
-; +27//39
+; +27/31/35
 	LDA ccr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68	; store new flags
@@ -1396,7 +1408,7 @@ deca_nv:
 
 _5a:
 ; DEC B (2)
-; +27//39
+; +27/31/35
 	LDA ccr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68	; store new flags
@@ -1411,7 +1423,7 @@ decb_nv:
 
 _6a:
 ; DEC ind (7)
-; +62...
+; +62/66.5/
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
@@ -1428,7 +1440,7 @@ deci_nv:
 
 _7a:
 ; DEC ext (6)
-; +
+; +62/66.5/
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
@@ -1443,9 +1455,10 @@ _7a:
 dece_nv:
 	JMP next_op		; standard end of routine
 
+; exclusive OR
 _88:
 ; EOR A imm (2)
-; +30...
+; +30/32/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1458,7 +1471,7 @@ _88:
 
 _98:
 ; EOR A dir (3)
-; +36...
+; +36/38/
 	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1471,7 +1484,7 @@ _98:
 
 _a8:
 ; EOR A ind (5)
-; +56...
+; +56/58.5/
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1484,7 +1497,7 @@ _a8:
 
 _b8:
 ; EOR A ext (4)
-; +
+; +56/58.5/
 	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1497,7 +1510,7 @@ _b8:
 
 _c8:
 ; EOR B imm (2)
-; +30...
+; +30/32/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1510,7 +1523,7 @@ _c8:
 
 _d8:
 ; EOR B dir (3)
-; +
+; +36/38/
 	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1523,7 +1536,7 @@ _d8:
 
 _e8:
 ; EOR B ind (5)
-; +
+; +56/58.5/
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1536,7 +1549,7 @@ _e8:
 
 _f8:
 ; EOR B ext (4)
-; +
+; +56/58.5/
 	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1547,9 +1560,10 @@ _f8:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
+; increment
 _4c:
 ; INC A (2)
-; +27//39
+; +27/31/35
 	LDA ccr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68	; store new flags
@@ -1564,7 +1578,7 @@ inca_nv:
 
 _5c:
 ; INC B (2)
-; +27//39
+; +27/31/35
 	LDA ccr68	; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68	; store new flags
@@ -1579,7 +1593,7 @@ incb_nv:
 
 _6c:
 ; INC ind (7)
-; +62...
+; +62/66.5/
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68		; store new flags
@@ -1596,7 +1610,7 @@ inci_nv:
 
 _7c:
 ; INC ext (6)
-; +
+; +62/66.5/
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68		; store new flags
@@ -1611,6 +1625,7 @@ _7c:
 ince_nv:
 	JMP next_op		; standard end of routine
 
+; load accumulator ** no longer timed 
 _86:
 ; LDA A imm (2)
 ; +27...
@@ -1707,6 +1722,7 @@ _f6:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
+; inclusive OR
 _8a:
 ; ORA A imm (2)
 ; +30...
@@ -1811,6 +1827,7 @@ _fa:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
+; push accumulator
 _36:
 ; PSH A (4)
 ; +18/18/33
@@ -1849,6 +1866,7 @@ pshb_w:
 	STA sp68+1	; worst update
 	JMP next_op		; all done
 
+; pull accumulator
 _32:
 ; PUL A (4)
 ; +15/15/30
@@ -1885,6 +1903,7 @@ pulb_w:
 	STA b68			; store it in accumulator B
 	JMP next_op		; standard end of routine
 
+; rotate left
 _49:
 ; ROL A (2)
 ; +32/36/40
@@ -2001,6 +2020,7 @@ role_pl:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
+; rotate right
 _46:
 ; ROR A (2)
 ; +32/36/40
@@ -2117,6 +2137,7 @@ rore_pl:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
+; arithmetic shift left
 _48:
 ; ASL A (2)
 ; +25/28.5/32
@@ -2211,6 +2232,7 @@ asle_pl:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
+; arithmetic shift right
 _47:
 ; ASR A (2)
 ; +33/37/41
@@ -2323,6 +2345,7 @@ asre_pl:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
+; logical shift right
 _44:
 ; LSR A (2)
 ; +19/20/21
@@ -2393,6 +2416,7 @@ lsre_nz:
 	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
+; store accumulator
 _97:
 ; STA A dir (4)
 ; +33...
@@ -2465,6 +2489,7 @@ _f7:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
+; subtract without carry
 _80:
 ; SUB A imm (2)
 ; +44...
@@ -2625,6 +2650,7 @@ subbe_nc:
 subbe_nv:
 	JMP next_op		; standard end
 
+; subtract accumulators
 _10:
 ; SBA (2)
 ; +42/45.5/49
@@ -2656,6 +2682,7 @@ sba_pl:
 	STA ccr68	; update flags
 	JMP next_op	; standard end of routine
 
+; subtract with carry
 _82:
 ; SBC A imm (2)
 ; +52...
@@ -2852,6 +2879,7 @@ sbcbe_nc:
 sbcbe_nv:
 	JMP next_op		; standard end
 
+; transfer accumulator
 _16:
 ; TAB (2)
 ; +20/24/28
@@ -2874,6 +2902,7 @@ _17:
 	_CC_NZ		; check these flags
 	JMP next_op	; standard end of routine
 
+; test for zero or minus
 _4d:
 ; TST A (2)
 ; +17...
@@ -2918,6 +2947,7 @@ _7d:
 
 ; ** index register and stack pointer ops **
 
+; compare index
 _8c:
 ; CPX imm (3)
 ; +51...
@@ -3036,6 +3066,7 @@ cpxe_nz:
 cpxe_nv:
 	JMP next_op		; standard end
 
+; decrement index
 _09:
 ; DEX (4)
 ; +17...
@@ -3059,6 +3090,7 @@ dex_zz:
 	SMB2 ccr68	; set Z bit, *** Rockwell only! ***
 	JMP next_op	; rarest end of routine
 
+; decrement stack pointer
 _34:
 ; DES (4)
 ; +10/10/24
@@ -3073,6 +3105,7 @@ des_w:
 	_AH_BOUND		; keep injected
 	JMP next_op		; wrapped end
 
+; increase index
 _08:
 ; INX (4)
 ; +12/12/21
@@ -3089,6 +3122,7 @@ inx_z:
 	SMB2 ccr68	; set Z bit, *** Rockwell only! ***
 	JMP next_op	; rarest end of routine
 
+; increase stack pointer
 _31:
 ; INS (4)
 ; +7/7/22
@@ -3102,6 +3136,7 @@ ins_w:
 	STA sp68 + 1	; update pointer
 	JMP next_op		; wrapped end
 
+; load index
 _ce:
 ; LDX imm (3)
 ; +43...
@@ -3243,6 +3278,7 @@ ldxe_nz3:
 	STA x68			; register complete
 	JMP next_op		; standard end
 
+; load stack pointer
 _8e:
 ; LDS imm (3)
 ; +42...
@@ -3332,6 +3368,7 @@ ldse_w:
 	STA sp68		; register complete
 	JMP next_op		; standard end
 
+; store index
 _df:
 ; STX dir (5)
 ; +56...
@@ -3428,6 +3465,7 @@ stxe_w:
 	STA (tmptr)		; store in memory (5)
 	JMP next_op		; standard end
 
+; store stack pointer
 _9f:
 ; STS dir (5)
 ; +37...
@@ -3496,6 +3534,7 @@ stse_w:
 	STA (tmptr)		; register complete
 	JMP next_op		; standard end
 
+; transfers between index and stack pointer 
 _30:
 ; TSX (4)
 ; +21/23/25
@@ -3535,6 +3574,7 @@ txs_w:
 
 ; ** jumps and branching **
 
+; branch always
 _20:
 ; BRA rel (4)
 ; -5+25/34.3/52
@@ -3567,6 +3607,7 @@ bra_bk:
  	RMB6 pc68+1		; otherwise clear A14
 	JMP execute		; and jump
 
+; branch if higher
 _22:
 ; BHI rel (4)
 ; +11/24.8/65
@@ -3577,6 +3618,7 @@ _22:
 bhi_go:
 	JMP next_op		; exit without branching
 
+; branch if lower or same
 _23:
 ; BLS rel (4)
 ; +11...
@@ -3587,6 +3629,7 @@ _23:
 bls_do:
 		JMP bra_do		; do branch
 
+; branch if carry clear
 _24:
 ; BCC rel (4)
 ; +10...
@@ -3596,6 +3639,7 @@ _24:
 bcc_do:
 	JMP bra_do			; do branch
 
+; branch if carry set
 _25:
 ; BCS rel (4)
 ; +10...
@@ -3605,6 +3649,7 @@ _25:
 bcs_do:
 	JMP bra_do			; branch
 
+; branch if not equal
 _26:
 ; BNE rel (4)
 ; +10...
@@ -3614,6 +3659,7 @@ _26:
 bne_do:
 	JMP bra_do			; branch
 
+; branch if equal zero
 _27:
 ; BEQ rel (4)
 ; +10...
@@ -3623,6 +3669,7 @@ _27:
 beq_do:
 	JMP bra_do			; branch
 
+; branch if overflow clear
 _28:
 ; BVC rel (4)
 ; +10...
@@ -3632,6 +3679,7 @@ _28:
 bvc_do:
 	JMP bra_do			; branch
 
+; branch if overflow set
 _29:
 ; BVS rel (4)
 ; +10...
@@ -3641,6 +3689,7 @@ _29:
 bvs_do:
 	JMP bra_do			; branch
 
+; branch if plus
 _2a:
 ; BPL rel (4)
 ; +10...
@@ -3650,6 +3699,7 @@ _2a:
 bpl_do:
 		JMP bra_do			; branch
 
+; branch if minus
 _2b:
 ; BMI rel (4)
 ; +10...
@@ -3659,6 +3709,7 @@ _2b:
 bmi_do:
 	JMP bra_do			; ...do branch
 
+; branch if greater or equal (signed)
 _2c:
 ; BGE rel (4)
 ; +17...
@@ -3674,6 +3725,7 @@ bge_nx:
 bge_do:
 	JMP bra_do		; jump otherwise
 
+; branch if less than (signed)
 _2d:
 ; BLT rel (4)
 ; +17...
@@ -3689,6 +3741,7 @@ blt_nx:
 blt_do:
 	JMP bra_do		; jump otherwise
 
+; branch if greater (signed)
 _2e:
 ; BGT rel (4)
 ; +17...
@@ -3704,6 +3757,7 @@ bgt_nx:
 bgt_do:
 	JMP bra_do		; jump otherwise
 
+; branch if less or equal (signed)
 _2f:
 ; BLE rel (4)
 ; +17...
@@ -3719,11 +3773,13 @@ ble_nx:
 ble_do:
 	JMP bra_do		; jump otherwise
 
+; branch to subroutine
 _8d:
 ; BSR rel (8)
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
+; jump
 _6e:
 ; JMP ind (4)
 ; -5+30...
@@ -3751,6 +3807,7 @@ _7e:
 	STX pc68 + 1	; MSB goes into register area
 	JMP execute	; all done (-5 for jumps, all this is +32...46)
 
+; jump to subroutine
 _ad:
 ; JSR ind (8)
 	; ***** TO DO ***** TO DO *****
@@ -3761,6 +3818,7 @@ _bd:
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
+; return from subroutine
 _39:
 ; RTS (5)
 ; +29/29/44
@@ -3794,18 +3852,21 @@ rts_w2:
 	TAY				; which is new offset
 	JMP execute		; and resume execution
 
+; return from interrupt
 _3b:
 ; RTI (10)
 	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
+; wait for interrupt
 _3e:
 ; WAI (9)
 	; ***** TO DO ***** TO DO *****
 
 	JMP next_op	; standard end of routine
 
+; software interrupt
 _3f:
 ; SWI (12)
 	; ***** TO DO ***** TO DO *****
@@ -3814,42 +3875,49 @@ _3f:
 
 ; ** status register opcodes **
 
+; clear overflow
 _0a:
 ; CLV (2)
 ; +5
 	RMB1 ccr68	; clear V bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
+; set overflow
 _0b:
 ; SEV (2)
 ; +5
 	SMB1 ccr68	; set V bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
+; clear carry
 _0c:
 ; CLC (2)
 ; +5
 	RMB0 ccr68	; clear C bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
+; set carry
 _0d:
 ; SEC (2)
 ; +5
 	SMB0 ccr68	; set C bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
+; clear interrupt mask
 _0e:
 ; CLI (2)
 ; +5
 	RMB4 ccr68	; clear I bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
+; set interrupt mask
 _0f:
 ; SEI (2)
 ; +5
 	SMB4 ccr68	; set I bit, *** Rockwell only! ***
 	JMP next_op	; standard end of routine
 
+; transfers between CCR and accumulator A
 _06:
 ; TAP (2)
 ; +6
