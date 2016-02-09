@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160208
+; last modified 20160209
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -54,9 +54,9 @@
 #define	_AH_BOUND	AND #hi_mask: BMI *+4: ORA #lo_mask
 ; increase Y checking injected boundary crossing (5/5/18)
 #define	_PC_ADV		INY: BNE *+13: LDA pc68+1: INC: _AH_BOUND: STA pc68+1
-; compute pointer for indexed addressing mode (31/32/45)
+; compute pointer for indexed addressing mode (31/31.5/45)
 #define	_INDEXED	_PC_ADV: LDA (pc68), Y: CLC: ADC x68: STA tmptr: LDA x68+1: ADC #0: _AH_BOUND: STA tmptr+1
-; compute pointer for extended addressing mode (31/32.5/45)
+; compute pointer for extended addressing mode (31/31.5/45)
 #define	_EXTENDED	_PC_ADV: LDA (pc68), Y: _AH_BOUND: STA tmptr+1: _PC_ADV: LDA (pc68), Y: STA tmptr
 ; compute pointer (as X index) for direct addressing mode (12/12/25)
 #define	_DIRECT		_PC_ADV: LDA (pc68), Y: TAX
@@ -69,9 +69,8 @@
 ; declare some constants
 hi_mask	=	%10111111	; injects A15 hi into $8000-$BFFF, regardless of A14
 lo_mask	=	%01000000	; injects A15 lo into $4000-$7FFF, regardless of A14
-;lo_mask	=	%00100000	; injects into 8 K ($2000-$3FFF) for CHIHUAHUA plus
-
-; ** minimOS executable header will go here **
+;lo_mask	=	%00100000	; injects into 8 K ($2000-$3FFF) for 16K RAM systems
+e_base	=	$4000		; emulated space start ($2000 for 16K systems)
 
 ; declare zeropage addresses
 tmptr	=	uz		; temporary storage (up to 16 bit)
@@ -81,9 +80,12 @@ x68		=	uz+6	; index register (16 bit, little-endian)
 a68		=	uz+8	; first accumulator (8 bit)
 b68		=	uz+9	; second accumulator (8 bit)
 ccr68	=	uz+10	; status register (8 bit)
+cdev	=	uz+11	; I/O device *** minimOS specific ***
+
+; *** minimOS executable header will go here ***
 
 ; *** startup code, minimOS specific stuff ***
-	LDA #tmptr-uz+2	; zeropage space needed
+	LDA #cdev-uz+1	; zeropage space needed
 #ifdef	SAFE
 	CMP z_used		; check available zeropage space
 	BCC go_emu		; nore than enough space
@@ -92,6 +94,9 @@ ccr68	=	uz+10	; status register (8 bit)
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
+	STZ zpar		; no screen size required
+	_KERNEL(OPEN_W)	; ask for a character I/O device
+	
 ; might check here whether a Rockwell 65C02 is used!
 ; should try to allocate memory here
 
@@ -116,11 +121,12 @@ lo_jump:
 ; *** NOP (2) arrives here, saving 3 bytes and 3 cycles ***
 _01:
 ; continue execution via JMP next_op, will not arrive here otherwise
-next_op:		INY			; advance one byte (2)
+next_op:
+		INY				; advance one byte (2)
 		BNE execute		; fetch next instruction if no boundary is crossed (3/2)
 ; usual overhead is now 22+3=25 clock cycles, instead of 33
 ; boundary crossing, simplified version
-; ** should be revised for CHIHUAHUA plus (8 K low area) **
+; ** should be revised for 16K RAM systems **
 	INC pc68 + 1		; increase MSB otherwise, faster than using 'that macro' (5)
 	BPL execute			; seems to stay in RAM area (3/2)
 		RMB6 pc68 + 1		; in ROM area, A14 is goes low (5) *** Rockwell
@@ -204,7 +210,7 @@ addam_nv:
 
 _9b:
 ; ADD A dir (3)
-; +60...
+; +65/69.5?
 	_DIRECT			; point to operand in X
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -215,7 +221,7 @@ addad_nh:
 	RMB5 ccr68		; otherwise H is clear
 addad_sh:
 	CLC				; prepare
-	ADC $4000, X	; add operand
+	ADC e_base, X	; add operand
 	STA a68			; update accumulator
 	PHA				; store for later!
 	BIT #%00010000	; check bit 4 again
@@ -241,7 +247,7 @@ addad_nv:
 
 _ab:
 ; ADD A ind (5)
-; +83...
+; +83/
 	_INDEXED		; point to operand
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
@@ -352,7 +358,7 @@ addbm_nv:
 
 _db:
 ; ADD B dir (3)
-; +60...
+; +60/67.5/
 	_DIRECT			; point to operand in X
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
@@ -363,7 +369,7 @@ addbd_nh:
 	RMB5 ccr68		; otherwise H is clear
 addbd_sh:
 	CLC				; prepare
-	ADC $4000, X	; add operand
+	ADC e_base, X	; add operand
 	STA b68			; update accumulator
 	PHA				; store for later!
 	BIT #%00010000	; check bit 4 again
@@ -553,7 +559,7 @@ adcad_sh:
 	BBR0 ccr68, adcad_cc	; no previous carry
 		SEC						; otherwise preset C
 adcad_cc:
-	ADC $4000, X	; add operand
+	ADC e_base, X	; add operand
 	STA a68			; update accumulator
 	PHA				; store for later!
 	BIT #%00010000	; check bit 4 again
@@ -713,7 +719,7 @@ adcbd_sh:
 	BBR0 ccr68, adcbd_cc	; no previous carry
 		SEC						; otherwise preset C
 adcbd_cc:
-	ADC $4000, X	; add operand
+	ADC e_base, X	; add operand
 	STA b68			; update accumulator
 	PHA				; store for later!
 	BIT #%00010000	; check bit 4 again
@@ -838,7 +844,7 @@ _94:
 	STA ccr68		; update
 	_DIRECT			; X points to operand
 	LDA a68			; get A accumulator
-	AND $4000, X	; AND with operand
+	AND e_base, X	; AND with operand
 	STA a68			; update A
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
@@ -890,7 +896,7 @@ _d4:
 	STA ccr68		; update
 	_DIRECT			; X points to operand
 	LDA b68			; get B accumulator
-	AND $4000, X	; AND with operand
+	AND e_base, X	; AND with operand
 	STA b68			; update B
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
@@ -941,7 +947,7 @@ _95:
 	STA ccr68		; update
 	_DIRECT			; X points to operand
 	LDA a68			; get A accumulator
-	AND $4000, X	; test operand
+	AND e_base, X	; test operand
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
@@ -989,7 +995,7 @@ _d5:
 	STA ccr68		; update
 	_DIRECT			; X points to operand
 	LDA b68			; get B accumulator
-	AND $4000, X	; AND with operand
+	AND e_base, X	; AND with operand
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
@@ -1089,7 +1095,7 @@ _91:
 	_DIRECT			; get operand
 	LDA a68			; get accumulator A
 	SEC				; prepare
-	SBC $4000, X	; subtract without carry
+	SBC e_base, X	; subtract without carry
 	BCS cmpad_nc	; only if borrow...
 		SMB0 ccr68		; ...set C flag (opposite of 6502)
 cmpad_nc:
@@ -1165,7 +1171,7 @@ _d1:
 	_DIRECT			; get operand
 	LDA b68			; get accumulator B
 	SEC				; prepare
-	SBC $4000, X	; subtract without carry
+	SBC e_base, X	; subtract without carry
 	BCS cmpbd_nc	; only if borrow...
 		SMB0 ccr68		; ...set C flag (opposite of 6502)
 cmpbd_nc:
@@ -1458,7 +1464,7 @@ _98:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA a68			; get A accumulator
-	EOR $4000, X	; EOR with operand
+	EOR e_base, X	; EOR with operand
 	STA a68			; update A
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
@@ -1510,7 +1516,7 @@ _d8:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA b68			; get B accumulator
-	EOR $4000, X	; EOR with operand
+	EOR e_base, X	; EOR with operand
 	STA b68			; update B
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
@@ -1624,7 +1630,7 @@ _96:
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	LDA $4000, X	; get operand
+	LDA e_base, X	; get operand
 	STA a68			; load into A
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
@@ -1672,7 +1678,7 @@ _d6:
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	LDA $4000, X	; get operand
+	LDA e_base, X	; get operand
 	STA b68			; laod into B
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
@@ -1722,7 +1728,7 @@ _9a:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA a68			; get A accumulator
-	ORA $4000, X	; ORA with operand
+	ORA e_base, X	; ORA with operand
 	STA a68			; update A
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
@@ -1774,7 +1780,7 @@ _da:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA b68			; get B accumulator
-	ORA $4000, X	; ORA with operand
+	ORA e_base, X	; ORA with operand
 	STA b68			; update B
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
@@ -2215,7 +2221,7 @@ _47:
 	BPL asra_do	; do not insert C if clear
 		SEC			; otherwise, set carry
 asra_do:
-	ROR a68		; emulate aritmetic shift left with preloaded-C rotation
+	ROR a68		; emulate arithmetic shift left with preloaded-C rotation
 	BNE asra_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 asra_nz:
@@ -2241,7 +2247,7 @@ _57:
 	BPL asrb_do	; do not insert C if clear
 		SEC			; otherwise, set carry
 asrb_do:
-	ROR b68		; emulate aritmetic shift left with preloaded-C rotation
+	ROR b68		; emulate arithmetic shift left with preloaded-C rotation
 	BNE asrb_nz	; skip if not zero
 		ORA #%00000100	; set Z flag
 asrb_nz:
@@ -2266,7 +2272,7 @@ _67:
 	BPL asri_do		; do not insert C if clear
 		SEC				; otherwise, set carry
 asri_do:
-	ROR 			; emulate aritmetic shift left with preloaded-C rotation
+	ROR 			; emulate arithmetic shift left with preloaded-C rotation
 	STA (tmptr)		; update memory
 	TAX				; store for later!
 	LDA ccr68		; get original flags
@@ -2296,7 +2302,7 @@ _77:
 	BPL asre_do		; do not insert C if clear
 		SEC				; otherwise, set carry
 asre_do:
-	ROR 			; emulate aritmetic shift left with preloaded-C rotation
+	ROR 			; emulate arithmetic shift left with preloaded-C rotation
 	STA (tmptr)		; update memory
 	TAX				; store for later!
 	LDA ccr68		; get original flags
@@ -2395,7 +2401,7 @@ _97:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA a68			; get A accumulator
-	STA $4000, X	; store at operand
+	STA e_base, X	; store at operand
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
@@ -2431,7 +2437,7 @@ _d7:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA b68			; get B accumulator
-	STA $4000, X	; store into operand
+	STA e_base, X	; store into operand
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
@@ -2488,7 +2494,7 @@ _90:
 	_DIRECT			; get operand
 	LDA a68			; get accumulator A
 	SEC				; prepare
-	SBC $4000,X		; subtract without carry
+	SBC e_base,X		; subtract without carry
 	STA a68			; update accumulator
 	_CC_NZ			; check these
 	BCS subad_nc	; only if borrow...
@@ -2568,7 +2574,7 @@ _d0:
 	_DIRECT			; get operand
 	LDA b68			; get accumulator B
 	SEC				; prepare
-	SBC $4000, X	; subtract without carry
+	SBC e_base, X	; subtract without carry
 	STA b68			; update accumulator
 	_CC_NZ			; check these
 	BCS subbd_nc	; only if borrow...
@@ -2689,7 +2695,7 @@ _92:
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcad_do:
 	LDA a68			; get accumulator A
-	SBC $4000, X	; subtract with carry
+	SBC e_base, X	; subtract with carry
 	STA a68			; update accumulator
 	_CC_NZ			; check these
 	BCS sbcad_nc	; only if borrow...
@@ -2787,7 +2793,7 @@ sbcbd_do:
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
 	LDA b68			; get accumulator B
-	SBC $4000, X	; subtract with carry
+	SBC e_base, X	; subtract with carry
 	STA b68			; update accumulator
 	_CC_NZ			; check these
 	BCS sbcbd_nc	; only if borrow...
@@ -2947,14 +2953,14 @@ _9c:
 	_DIRECT			; get operand
 	SEC				; prepare
 	LDA x68 + 1		; MSB at X
-	SBC $4000, X	; subtract memory
+	SBC e_base, X	; subtract memory
 	STA tmptr		; keep for later
 	BPL cpxd_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 cpxd_pl:
 	_PC_ADV			; get second operand
 	LDA x68			; LSB at X
-	SBC $4001, X	; value LSB
+	SBC e_base + 1, X	; value LSB
 	ORA tmptr		; blend with stored MSB
 	BNE cpxd_nz		; was not zero
 		SMB2 ccr68		; otherwise set Z
@@ -3262,13 +3268,13 @@ _9e:
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
 	_DIRECT			; get operand address
-	LDA $4000, X	; value MSB
+	LDA e_base, X	; value MSB
 	BPL ldsd_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 ldsd_pl:
 	_AH_BOUND		; keep injected
 	STA sp68 + 1	; update register
-	LDA $4001, X	; value LSB
+	LDA e_base + 1, X	; value LSB
 	STA sp68		; register complete
 	JMP next_op		; standard end
 
@@ -3343,11 +3349,11 @@ stxd_pl:
 stxd_nz:
 	_DIRECT			; get operand address (12...)
 	LDA x68 + 1		; value MSB (3)
-	STA $4000, X	; store in memory (4)
+	STA e_base, X	; store in memory (4)
 	INC tmptr		; point to next byte! (5)
 	BEQ stxd_w		; rare wrap (2/3)
 		LDA x68			; value LSB (3)
-		STA $4001, X	; store in memory (4)
+		STA e_base + 1, X	; store in memory (4)
 		JMP next_op		; standard end
 stxd_w:
 	LDA tmptr + 1	; check pointer MSB
@@ -3355,7 +3361,7 @@ stxd_w:
 	_AH_BOUND		; keep injected
 	STA tmptr + 1	; update pointer
 	LDA x68			; value LSB (3)
-	STA $4001, X	; store in memory (4)
+	STA e_base + 1, X	; store in memory (4)
 	JMP next_op		; standard end
 
 _ef:
@@ -3430,12 +3436,12 @@ _9f:
 	STA ccr68		; update flags
 	_DIRECT			; get operand address
 	LDA sp68		; get original
-	STA $4000, X	; value MSB
+	STA e_base, X	; value MSB
 	BPL stsd_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 stsd_pl:
 	LDA sp68 + 1	; get LSB
-	STA $4001, X	; store it
+	STA e_base + 1, X	; store it
 	JMP next_op		; standard end
 
 _af:
