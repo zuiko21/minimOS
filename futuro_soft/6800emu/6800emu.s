@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160209
+; last modified 20160210
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -31,7 +31,6 @@
 #define SMB5	SMB #5,
 #define SMB6	SMB #6,
 #define SMB7	SMB #7,
-; these almost got me nuts!
 #define BBR0	BBR #0,
 #define BBR1	BBR #1,
 #define BBR2	BBR #2,
@@ -66,13 +65,15 @@
 ; check Z & N flags (6/8/10) will not set both bits at once!
 #define _CC_NZ		BNE *+4: SMB2 ccr68: BPL *+4: SMB3 ccr68
 
-; declare some constants
+; *** declare some constants ***
 hi_mask	=	%10111111	; injects A15 hi into $8000-$BFFF, regardless of A14
 lo_mask	=	%01000000	; injects A15 lo into $4000-$7FFF, regardless of A14
-;lo_mask	=	%00100000	; injects into 8 K ($2000-$3FFF) for 16K RAM systems
+;lo_mask	=	%00100000	; injects into upper 8 K ($2000-$3FFF) for 16K RAM systems
 e_base	=	$4000		; emulated space start ($2000 for 16K systems)
+e_top	=	$C000		; top over emulated space (third 16K block in most systems)
 
-; declare zeropage addresses
+; *** declare zeropage addresses ***
+; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
 tmptr	=	uz		; temporary storage (up to 16 bit)
 sp68	=	uz+2	; stack pointer (16 bit, little-endian, now injected into host map)
 pc68	=	uz+4	; program counter (16 bit, little-endian, injected into host map) same as stacking order
@@ -104,8 +105,8 @@ go_emu:
 reset68:
 	LDA #%11010000	; restart with interrupts masked
 	STA ccr68		; store initial flags
-	LDY $BFFF		; get RESET vector LSB from emulated ROM (this is big-endian!)
-	LDA $BFFE		; same for MSB... but create offset!
+	LDY e_top - 1	; get RESET vector LSB from emulated ROM (this is big-endian!)
+	LDA e_top - 2	; same for MSB... but create offset!
 	_AH_BOUND		; use two 16K chunks ignoring A14
 	STZ pc68		; base offset is 0, Y index holds LSB
 	STA pc68+1		; address fully generated
@@ -161,8 +162,8 @@ nmi_loop:
 		DEY					; stack grows backwards
 		BMI nmi_loop		; zero is included
 	SMB4 ccr68		; mask interrupts! *** Rockwell ***
-	LDY $BFFD		; get LSB from emulated NMI vector
-	LDA $BFFC		; get MSB...
+	LDY e_top - 3	; get LSB from emulated NMI vector
+	LDA e_top - 4	; get MSB...
 	_AH_BOUND		; ...but inject it into emulated space
 	STA pc68 + 1	; update PC
 	JMP execute		; continue with NMI handler
@@ -856,10 +857,10 @@ _94:
 _a4:
 ; AND A ind (5)
 ; +56/58.5/
+	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; points to operand
 	LDA a68			; get A accumulator
 	AND (tmptr)		; AND with operand
 	STA a68			; update A
@@ -869,10 +870,10 @@ _a4:
 _b4:
 ; AND A ext (4)
 ; +56/58.5/
+	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; points to operand
 	LDA a68			; get A accumulator
 	AND (tmptr)		; AND with operand
 	STA a68			; update A
@@ -908,10 +909,10 @@ _d4:
 _e4:
 ; AND B ind (5)
 ; +56/58.5/
+	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; points to operand
 	LDA b68			; get B accumulator
 	AND (tmptr)		; AND with operand
 	STA b68			; update B
@@ -921,10 +922,10 @@ _e4:
 _f4:
 ; AND B ext (4)
 ; +56/58.5/
+	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; points to operand
 	LDA b68			; get B accumulator
 	AND (tmptr)		; AND with operand
 	STA b68			; update B
@@ -959,10 +960,10 @@ _95:
 _a5:
 ; BIT A ind (5)
 ; +53/55.5/
+	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; points to operand
 	LDA a68			; get A accumulator
 	AND (tmptr)		; AND with operand, just for flags
 	_CC_NZ			; set flags
@@ -971,10 +972,10 @@ _a5:
 _b5:
 ; BIT A ext (4)
 ; +53/55.5/
+	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; points to operand
 	LDA a68			; get A accumulator
 	AND (tmptr)		; AND with operand, just for flags
 	_CC_NZ			; set flags
@@ -1007,10 +1008,10 @@ _d5:
 _e5:
 ; BIT B ind (5)
 ; +53/55.5/
+	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; points to operand
 	LDA b68			; get B accumulator
 	AND (tmptr)		; AND with operand, just for flags
 	_CC_NZ			; set flags
@@ -1019,10 +1020,10 @@ _e5:
 _f5:
 ; BIT B ext (4)
 ; +53/55.5/
+	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; points to operand
 	LDA b68			; get B accumulator
 	AND (tmptr)		; AND with operand, just for flags
 	_CC_NZ			; set flags
@@ -1115,10 +1116,10 @@ cmpad_nv:
 _a1:
 ; CMP A ind (5)
 ; +61/67.5/
+	_INDEXED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; get operand
 	LDA a68			; get accumulator A
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
@@ -1134,10 +1135,10 @@ cmpai_nv:
 _b1:
 ; CMP A ext (4)
 ; +61/67.5/
+	_EXTENDED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; get operand
 	LDA a68			; get accumulator A
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
@@ -1191,10 +1192,10 @@ cmpbd_nv:
 _e1:
 ; CMP B ind (5)
 ; +61/67.5/
+	_INDEXED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; get operand
 	LDA b68			; get accumulator B
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
@@ -1210,10 +1211,10 @@ cmpbi_nv:
 _f1:
 ; CMP B ext (4)
 ; +61/67.5/
+	_EXTENDED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; get operand
 	LDA b68			; get accumulator B
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
@@ -1229,150 +1230,137 @@ cmpbe_nv:
 ; compare accumulators
 _11:
 ; CBA (2)
-; +39/42.5/46
-; ** might set V according to native 6502 result ** CONTINUE CLEANUP HERE
-	LDA a68		; get A
-	BPL cba_nm	; skip if was positive
-		SMB1 ccr68	; set V like N, to be toggled later ***Rockwell***
-		BRA cba_sv	; do not clear V
-cba_nm:
-	RMB1 ccr68	; clear V ***Rockwell***
-cba_sv:
-	SEC			; prepare subtraction, simulating comparison
-	SBC b68		; minus B
-	TAX			; store for later
-	LDA ccr68	; get original flags
-	LDA #%11110010	; mask out affected bits (but keep V)
-	BCC cba_nc	; check for carry, will it work just like the 6502?
-		INC			; will set C flag
+; +28/34/40
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA a68			; get accumulator A
+	SEC				; prepare
+	SBC b68			; subtract B without carry
+	BCS cba_nc		; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 cba_nc:
-	CPX #0		; test value, hope it is OK
-	BNE cba_nz	; skip if not zero
-		ORA #%00000100	; set Z flag
-cba_nz:
-	CPX #0		; retrieve again!
-	BPL cba_pl	; skip if positive
-		ORA #%00001000	; set N flag
-		EOR #%00000010	; toggle V flag (see above)
-cba_pl:
-	STA ccr68	; update status
-	JMP next_op	; standard end of routine
+	BVC cba_nv		; only if overflow...
+		SMB1 ccr68		; ...set V flag
+cba_nv:
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 ; 1's complement
 _43:
-; COM A (2) already revised...
+; COM A (2)
 ; +24/26/28
-	LDA ccr68	; get original flags
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
-	INC			; C always set
-	STA ccr68	; update status
-	LDA a68		; get A
-	EOR #$FF	; complement it
-	STA a68		; update value
-	_CC_NZ		; check these
-	JMP next_op	; standard end of routine
+	INC				; C always set
+	STA ccr68		; update status
+	LDA a68			; get A
+	EOR #$FF		; complement it
+	STA a68			; update value
+	_CC_NZ			; check these
+	JMP next_op		; standard end of routine
 
 _53:
 ; COM B (2)
 ; +24/26/28
-	LDA ccr68	; get original flags
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
-	INC			; C always set
-	STA ccr68	; update status
-	LDA b68		; get B
-	EOR #$FF	; complement it
-	STA b68		; update value
-	_CC_NZ		; check these
-	JMP next_op	; standard end of routine
+	INC				; C always set
+	STA ccr68		; update status
+	LDA b68			; get B
+	EOR #$FF		; complement it
+	STA b68			; update value
+	_CC_NZ			; check these
+	JMP next_op		; standard end of routine
 
 _63:
 ; COM ind (7)
 ; +59/61.5/
-	LDA ccr68	; get original flags
+	_INDEXED		; compute pointer
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
-	INC			; C always set
-	STA ccr68	; update status
-	_INDEXED	; compute pointer
-	LDA (tmptr)	; get memory
-	EOR #$FF	; complement it
-	STA (tmptr)	; update value
-	_CC_NZ		; check these
-	JMP next_op	; standard end of routine
+	INC				; C always set
+	STA ccr68		; update status
+	LDA (tmptr)		; get memory
+	EOR #$FF		; complement it
+	STA (tmptr)		; update value
+	_CC_NZ			; check these
+	JMP next_op		; standard end of routine
 
 _73:
 ; COM ext (6)
 ; +59/61.5/
-	LDA ccr68	; get original flags
+	_EXTENDED		; addressing mode
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
-	INC			; C always set
-	STA ccr68	; update status
-	_EXTENDED	; addressing mode
-	LDA (tmptr)	; get memory
-	EOR #$FF	; complement it
-	STA (tmptr)	; update value
-	_CC_NZ		; check these
-	JMP next_op	; standard end of routine
+	INC				; C always set
+	STA ccr68		; update status
+	LDA (tmptr)		; get memory
+	EOR #$FF		; complement it
+	STA (tmptr)		; update value
+	_CC_NZ			; check these
+	JMP next_op		; standard end of routine
 
 ; 2's complement
 _40:
 ; NEG A (2)
 ; +29/33/37
-	LDA ccr68	; get original flags
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
-	STA ccr68	; update status
-	SEC			; prepare subtraction
+	STA ccr68		; update status
+	SEC				; prepare subtraction
 	LDA #0
-	SBC a68		; negate A
-	STA a68		; update value
-	_CC_NZ		; check these
-	CMP #$80	; did change sign?
-	BNE nega_nv	; skip if not V
-		SMB1 ccr68	; set V flag
+	SBC a68			; negate A
+	STA a68			; update value
+	_CC_NZ			; check these
+	CMP #$80		; did change sign?
+	BNE nega_nv		; skip if not V
+		SMB1 ccr68		; set V flag
 nega_nv:
-	JMP next_op	; standard end of routine
+	JMP next_op		; standard end of routine
 
 _50:
 ; NEG B (2)
 ; +29/33/37
-	LDA ccr68	; get original flags
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
-	STA ccr68	; update status
-	SEC			; prepare subtraction
+	STA ccr68		; update status
+	SEC				; prepare subtraction
 	LDA #0
-	SBC b68		; negate B
-	STA b68		; update value
-	_CC_NZ		; check these
-	CMP #$80	; did change sign?
-	BNE negb_nv	; skip if not V
-		SMB1 ccr68	; set V flag
+	SBC b68			; negate B
+	STA b68			; update value
+	_CC_NZ			; check these
+	CMP #$80		; did change sign?
+	BNE negb_nv		; skip if not V
+		SMB1 ccr68		; set V flag
 negb_nv:
-	JMP next_op	; standard end of routine
+	JMP next_op		; standard end of routine
 
 _60:
 ; NEG ind (7)
 ; +64/68.5/
-	LDA ccr68	; get original flags
+	_INDEXED		; compute pointer
+	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
-	STA ccr68	; update status
-	_INDEXED	; compute pointer
-	SEC			; prepare subtraction
+	STA ccr68		; update status
+	SEC				; prepare subtraction
 	LDA #0
-	SBC (tmptr)	; negate memory
-	STA (tmptr)	; update value
-	_CC_NZ		; check these
-	CMP #$80	; did change sign?
-	BNE negi_nv	; skip if not V
-		SMB1 ccr68	; set V flag
+	SBC (tmptr)		; negate memory
+	STA (tmptr)		; update value
+	_CC_NZ			; check these
+	CMP #$80		; did change sign?
+	BNE negi_nv		; skip if not V
+		SMB1 ccr68		; set V flag
 negi_nv:
-	JMP next_op	; standard end of routine
+	JMP next_op		; standard end of routine
 
 _70:
 ; NEG ext (6)
 ; +64/68.5/
+	_EXTENDED		; addressing mode
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
-	_EXTENDED		; addressing mode
 	SEC				; prepare subtraction
 	LDA #0
 	SBC (tmptr)		; negate memory
@@ -1382,7 +1370,7 @@ _70:
 	BNE nege_nv		; skip if not V
 		SMB1 ccr68		; set V flag
 nege_nv:
-	JMP next_op	; standard end of routine
+	JMP next_op		; standard end of routine
 
 ; decimal adjust
 _19:
@@ -1394,40 +1382,40 @@ _19:
 _4a:
 ; DEC A (2)
 ; +27/31/35
-	LDA ccr68	; get original status
+	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
-	STA ccr68	; store new flags
-	DEC a68		; decrease A
-	_CC_NZ		; check these
-	LDX a68		; check it!
-	CPX #$7F	; did change sign?
-	BNE deca_nv	; skip if not overflow
-		SMB1 ccr68	; will set V flag
+	STA ccr68		; store new flags
+	DEC a68			; decrease A
+	_CC_NZ			; check these
+	LDX a68			; check it!
+	CPX #$7F		; did change sign?
+	BNE deca_nv		; skip if not overflow
+		SMB1 ccr68		; will set V flag
 deca_nv:
-	JMP next_op	; standard end of routine
+	JMP next_op		; standard end of routine
 
 _5a:
 ; DEC B (2)
 ; +27/31/35
-	LDA ccr68	; get original status
+	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
-	STA ccr68	; store new flags
-	DEC b68		; decrease B
-	_CC_NZ		; check these
-	LDX b68		; check it!
-	CPX #$7F	; did change sign?
-	BNE decb_nv	; skip if not overflow
-		SMB1 ccr68	; will set V flag
+	STA ccr68		; store new flags
+	DEC b68			; decrease B
+	_CC_NZ			; check these
+	LDX b68			; check it!
+	CPX #$7F		; did change sign?
+	BNE decb_nv		; skip if not overflow
+		SMB1 ccr68		; will set V flag
 decb_nv:
-	JMP next_op	; standard end of routine
+	JMP next_op		; standard end of routine
 
 _6a:
 ; DEC ind (7)
 ; +62/66.5/
+	_INDEXED		; addressing mode
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
-	_INDEXED		; addressing mode
 	LDA (tmptr)		; no DEC (tmptr) available...
 	DEC
 	STA (tmptr)
@@ -1441,10 +1429,10 @@ deci_nv:
 _7a:
 ; DEC ext (6)
 ; +62/66.5/
+	_EXTENDED		; addressing mode
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
-	_EXTENDED		; addressing mode
 	LDA (tmptr)		; no DEC (tmptr) available...
 	DEC
 	STA (tmptr)
@@ -1472,10 +1460,10 @@ _88:
 _98:
 ; EOR A dir (3)
 ; +36/38/
-	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; X points to operand
 	LDA a68			; get A accumulator
 	EOR e_base, X	; EOR with operand
 	STA a68			; update A
@@ -1524,10 +1512,10 @@ _c8:
 _d8:
 ; EOR B dir (3)
 ; +36/38/
-	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; X points to operand
 	LDA b68			; get B accumulator
 	EOR e_base, X	; EOR with operand
 	STA b68			; update B
@@ -1564,40 +1552,40 @@ _f8:
 _4c:
 ; INC A (2)
 ; +27/31/35
-	LDA ccr68	; get original status
+	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
-	STA ccr68	; store new flags
-	INC a68		; increase A
-	_CC_NZ		; check these
-	LDX a68		; check it!
-	CPX #$80	; did change sign?
-	BNE inca_nv	; skip if not overflow
-		SMB1 ccr68	; will set V flag
+	STA ccr68		; store new flags
+	INC a68			; increase A
+	_CC_NZ			; check these
+	LDX a68			; check it!
+	CPX #$80		; did change sign?
+	BNE inca_nv		; skip if not overflow
+		SMB1 ccr68		; will set V flag
 inca_nv:
-	JMP next_op	; standard end of routine
+	JMP next_op		; standard end of routine
 
 _5c:
 ; INC B (2)
 ; +27/31/35
-	LDA ccr68	; get original status
+	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
-	STA ccr68	; store new flags
-	INC b68		; increase B
-	_CC_NZ		; check these
-	LDX b68		; check it!
-	CPX #$80	; did change sign?
-	BNE incb_nv	; skip if not overflow
-		SMB1 ccr68	; will set V flag
+	STA ccr68		; store new flags
+	INC b68			; increase B
+	_CC_NZ			; check these
+	LDX b68			; check it!
+	CPX #$80		; did change sign?
+	BNE incb_nv		; skip if not overflow
+		SMB1 ccr68		; will set V flag
 incb_nv:
-	JMP next_op	; standard end of routine
+	JMP next_op		; standard end of routine
 
 _6c:
 ; INC ind (7)
 ; +62/66.5/
+	_INDEXED		; addressing mode
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68		; store new flags
-	_INDEXED		; addressing mode
 	LDA (tmptr)		; no INC (tmptr) available...
 	INC
 	STA (tmptr)
@@ -1611,10 +1599,10 @@ inci_nv:
 _7c:
 ; INC ext (6)
 ; +62/66.5/
+	_EXTENDED		; addressing mode
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68		; store new flags
-	_EXTENDED		; addressing mode
 	LDA (tmptr)		; no INC (tmptr) available...
 	INC
 	STA (tmptr)
@@ -1625,7 +1613,7 @@ _7c:
 ince_nv:
 	JMP next_op		; standard end of routine
 
-; load accumulator ** no longer timed 
+; load accumulator ** CONTINUE TIMING HERE ************************
 _86:
 ; LDA A imm (2)
 ; +27...
@@ -1641,10 +1629,10 @@ _86:
 _96:
 ; LDA A dir (3)
 ; +33...
-	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; X points to operand
 	LDA e_base, X	; get operand
 	STA a68			; load into A
 	_CC_NZ			; set flags
@@ -1689,10 +1677,10 @@ _c6:
 _d6:
 ; LDA B dir (3)
 ; +
-	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; X points to operand
 	LDA e_base, X	; get operand
 	STA b68			; laod into B
 	_CC_NZ			; set flags
@@ -1722,10 +1710,10 @@ _f6:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
-; inclusive OR
+; inclusive OR **already timed***************************
 _8a:
 ; ORA A imm (2)
-; +30...
+; +30/32/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1738,11 +1726,11 @@ _8a:
 
 _9a:
 ; ORA A dir (3)
-; +36...
-	_DIRECT			; X points to operand
+; +36/38/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; X points to operand
 	LDA a68			; get A accumulator
 	ORA e_base, X	; ORA with operand
 	STA a68			; update A
@@ -1751,7 +1739,7 @@ _9a:
 
 _aa:
 ; ORA A ind (5)
-; +56...
+; +56/58.5/
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1764,7 +1752,7 @@ _aa:
 
 _ba:
 ; ORA A ext (4)
-; +
+; +56/58.5/
 	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1777,7 +1765,7 @@ _ba:
 
 _ca:
 ; ORA B imm (2)
-; +30...
+; +30/32/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1790,11 +1778,11 @@ _ca:
 
 _da:
 ; ORA B dir (3)
-; +
-	_DIRECT			; X points to operand
+; +36/38/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; X points to operand
 	LDA b68			; get B accumulator
 	ORA e_base, X	; ORA with operand
 	STA b68			; update B
@@ -1803,7 +1791,7 @@ _da:
 
 _ea:
 ; ORA B ind (5)
-; +
+; +56/58.5/
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1816,7 +1804,7 @@ _ea:
 
 _fa:
 ; ORA B ext (4)
-; +
+; +56/58.5/
 	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1827,49 +1815,45 @@ _fa:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
-; push accumulator
+; push accumulator *** revised but not timed **********************
 _36:
 ; PSH A (4)
-; +18/18/33
-	LDA a68		; get accumulator A
-	STA (sp68)	; put it on stack space
-	LDX sp68	; check LSB
-	BEQ psha_w	; will wrap
-		DEX			; post-decrease
-		STX sp68	; update real value
-		JMP next_op	; all done
+; +
+	LDA a68			; get accumulator A
+	STA (sp68)		; put it on stack space
+	LDX sp68		; check LSB
+	BEQ psha_w		; will wrap
+		DEC sp68		; post-decrement
+		JMP next_op		; all done
 psha_w:
-	DEX			; post-decrease
-	STX sp68	; update real value
-	LDA sp68+1	; get MSB
-	DEC			; decrease it
-	_AH_BOUND	; and inject it
-	STA sp68+1	; worst update
+	DEC sp68		; post-decrement
+	LDA sp68+1		; get MSB
+	DEC				; decrease it
+	_AH_BOUND		; and inject it
+	STA sp68+1		; worst update
 	JMP next_op		; all done
 
 _37:
 ; PSH B (4)
-; +18/18/33
-	LDA b68		; get accumulator B
-	STA (sp68)	; put it on stack space
-	LDX sp68	; check LSB
-	BEQ pshb_w	; will wrap
-		DEX			; post-decrease
-		STX sp68	; update real value
-		JMP next_op	; all done
+; +
+	LDA b68			; get accumulator B
+	STA (sp68)		; put it on stack space
+	LDX sp68		; check LSB
+	BEQ pshb_w		; will wrap
+		DEC sp68		; post-decrement
+		JMP next_op		; all done
 pshb_w:
-	DEX			; post-decrease
-	STX sp68	; update real value
-	LDA sp68+1	; get MSB
-	DEC			; decrease it
-	_AH_BOUND	; and inject it
-	STA sp68+1	; worst update
+	DEC sp68		; post-decrement
+	LDA sp68+1		; get MSB
+	DEC				; decrease it
+	_AH_BOUND		; and inject it
+	STA sp68+1		; worst update
 	JMP next_op		; all done
 
 ; pull accumulator
 _32:
 ; PUL A (4)
-; +15/15/30
+; +
 	INC sp68		; pre-increment
 	BEQ pula_w		; should correct MSB, rare?
 pula_do:
@@ -1887,7 +1871,7 @@ pula_w:
 
 _33:
 ; PUL B (4)
-; +15/15/30
+; +
 	INC sp68		; pre-increment
 	BEQ pulb_w		; should correct MSB, rare?
 pulb_do:
@@ -1903,7 +1887,7 @@ pulb_w:
 	STA b68			; store it in accumulator B
 	JMP next_op		; standard end of routine
 
-; rotate left
+; rotate left *** to be revised ********************************
 _49:
 ; ROL A (2)
 ; +32/36/40
@@ -2416,14 +2400,14 @@ lsre_nz:
 	STA ccr68	; update status
 	JMP next_op	; standard end of routine
 
-; store accumulator
+; store accumulator *** revised but not TIMED *************************
 _97:
 ; STA A dir (4)
-; +33...
-	_DIRECT			; X points to operand
+; +
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; X points to operand
 	LDA a68			; get A accumulator
 	STA e_base, X	; store at operand
 	_CC_NZ			; set flags
@@ -2431,7 +2415,7 @@ _97:
 
 _a7:
 ; STA A ind (6)
-; +53...
+; +
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -2456,10 +2440,10 @@ _b7:
 _d7:
 ; STA B dir (4)
 ; +
-	_DIRECT			; X points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; X points to operand
 	LDA b68			; get B accumulator
 	STA e_base, X	; store into operand
 	_CC_NZ			; set flags
@@ -2492,7 +2476,7 @@ _f7:
 ; subtract without carry
 _80:
 ; SUB A imm (2)
-; +44...
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2501,18 +2485,18 @@ _80:
 	SEC				; prepare
 	SBC tmptr		; subtract without carry
 	STA a68			; update accumulator
-	_CC_NZ			; check these
 	BCS subam_nc	; only if borrow...
-		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 subam_nc:
 	BVC subam_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 subam_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _90:
 ; SUB A dir (3)
-; +44...
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -2521,53 +2505,53 @@ _90:
 	SEC				; prepare
 	SBC e_base,X		; subtract without carry
 	STA a68			; update accumulator
-	_CC_NZ			; check these
 	BCS subad_nc	; only if borrow...
-		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 subad_nc:
 	BVC subad_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 subad_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _a0:
 ; SUB A ind (5)
-; +64...
+; +
+	_INDEXED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; get operand
 	LDA a68			; get accumulator A
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
 	STA a68			; update accumulator
-	_CC_NZ			; check these
 	BCS subai_nc	; only if borrow...
-		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 subai_nc:
 	BVC subai_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 subai_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _b0:
 ; SUB A ext (4)
 ; +
+	_EXTENDED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; get operand
 	LDA a68			; get accumulator A
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
 	STA a68			; update accumulator
-	_CC_NZ			; check these
 	BCS subae_nc	; only if borrow...
-		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 subae_nc:
 	BVC subae_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 subae_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _c0:
@@ -2581,13 +2565,13 @@ _c0:
 	SEC				; prepare
 	SBC tmptr		; subtract without carry
 	STA b68			; update accumulator
-	_CC_NZ			; check these
 	BCS subbm_nc	; only if borrow...
-		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 subbm_nc:
 	BVC subbm_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 subbm_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _d0:
@@ -2601,224 +2585,202 @@ _d0:
 	SEC				; prepare
 	SBC e_base, X	; subtract without carry
 	STA b68			; update accumulator
-	_CC_NZ			; check these
 	BCS subbd_nc	; only if borrow...
-		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 subbd_nc:
 	BVC subbd_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 subbd_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _e0:
 ; SUB B ind (5)
 ; +
+	_INDEXED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; get operand
 	LDA b68			; get accumulator B
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
 	STA b68			; update accumulator
-	_CC_NZ			; check these
 	BCS subbi_nc	; only if borrow...
-		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 subbi_nc:
 	BVC subbi_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 subbi_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _f0:
 ; SUB B ext (4)
 ; +
+	_EXTENDED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; get operand
 	LDA b68			; get accumulator B
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
 	STA b68			; update accumulator
-	_CC_NZ			; check these
 	BCS subbe_nc	; only if borrow...
-		SMB0 ccr68		; ...set C flag (opposite of 6502?)
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 subbe_nc:
 	BVC subbe_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 subbe_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 ; subtract accumulators
 _10:
 ; SBA (2)
-; +42/45.5/49
-; ** might set V according to native 6502 result **
-	LDA a68		; get A
-	BPL sba_nm	; skip if was positive
-		SMB1 ccr68	; set V like N, to be toggled later ***Rockwell***
-		BRA sba_sv	; do not clear V
-sba_nm:
-	RMB1 ccr68	; clear V ***Rockwell***
-sba_sv:
-	SEC			; prepare for subtraction
-	SBC b68		; minus B
-	STA a68		; store result in A
-	LDA ccr68	; get original flags
-	LDA #%11110010	; mask out affected bits (but keep V)
-	BCC sba_nc	; check for carry, will it work just like the 6502?
-		INC			; will set C flag
+; +
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
+	LDA a68			; get accumulator A
+	SEC				; prepare
+	SBC b68			; subtract B without carry
+	STA a68			; update accumulator A
+	BCS sba_nc		; only if borrow...
+		SMB0 ccr68		; ...set C flag (opposite of 6502)
 sba_nc:
-	LDX a68		; retrieve value
-	BNE sba_nz	; skip if not zero
-		ORA #%00000100	; set Z flag
-sba_nz:
-	LDX a68		; retrieve again!
-	BPL sba_pl	; skip if positive
-		ORA #%00001000	; set N flag
-		EOR #%00000010	; toggle V flag (see above)
-sba_pl:
-	STA ccr68	; update flags
-	JMP next_op	; standard end of routine
+	BVC sba_nv		; only if overflow...
+		SMB1 ccr68		; ...set V flag
+sba_nv:
+	_CC_NZ			; check these
+	JMP next_op		; standard end
 
 ; subtract with carry
 _82:
 ; SBC A imm (2)
-; +52...
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
 	_IMMEDIATE		; get operand
 	SEC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ sbcam_do	; skip if C clear
-		CLC				; otherwise, set carry, opposite of 6502?
+	BBR0 ccr68, sbcam_do	; skip if C clear ** Rockwell **
+		CLC				; otherwise, set carry, opposite of 6502
 sbcam_do:
 	LDA a68			; get accumulator A
 	SBC tmptr		; subtract with carry
 	STA a68			; update accumulator
-	_CC_NZ			; check these
 	BCS sbcam_nc	; only if borrow...
 		SMB0 ccr68		; ...set C flag (opposite of 6502?)
 sbcam_nc:
 	BVC sbcam_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 sbcam_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _92:
 ; SBC A dir (3)
-; +52...
+; +
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
 	_DIRECT			; get operand
 	SEC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ sbcad_do	; skip if C clear
+	BBR0 ccr68, sbcad_do	; skip if C clear ** Rockwell **
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcad_do:
 	LDA a68			; get accumulator A
 	SBC e_base, X	; subtract with carry
 	STA a68			; update accumulator
-	_CC_NZ			; check these
 	BCS sbcad_nc	; only if borrow...
 		SMB0 ccr68		; ...set C flag (opposite of 6502?)
 sbcad_nc:
 	BVC sbcad_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 sbcad_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _a2:
 ; SBC A ind (5)
-; +72...
+; +
+	_INDEXED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_INDEXED		; get operand
 	SEC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ sbcai_do	; skip if C clear
+	BBR0 ccr68, sbcai_do	; skip if C clear ** Rockwell **
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcai_do:
 	LDA a68			; get accumulator A
 	SBC (tmptr)		; subtract with carry
 	STA a68			; update accumulator
-	_CC_NZ			; check these
 	BCS sbcai_nc	; only if borrow...
 		SMB0 ccr68		; ...set C flag (opposite of 6502?)
 sbcai_nc:
 	BVC sbcai_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 sbcai_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _b2:
 ; SBC A ext (4)
 ; +
+	_EXTENDED		; get operand
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
-	_EXTENDED		; get operand
 	SEC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ sbcae_do	; skip if C clear
+	BBR0 ccr68, sbcae_do	; skip if C clear ** Rockwell **
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcae_do:
 	LDA a68			; get accumulator A
 	SBC (tmptr)		; subtract with carry
 	STA a68			; update accumulator
-	_CC_NZ			; check these
 	BCS sbcae_nc	; only if borrow...
 		SMB0 ccr68		; ...set C flag (opposite of 6502?)
 sbcae_nc:
 	BVC sbcae_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 sbcae_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _c2:
 ; SBC B imm (2)
 ; +
-	_IMMEDIATE		; get operand
-	SEC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ sbcbm_do	; skip if C clear
-		CLC				; otherwise, set carry, opposite of 6502?
-sbcbm_do:
+	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
+	_IMMEDIATE		; get operand
+	SEC				; prepare
+	BBR0 ccr68, sbcbm_do	; skip if C clear ** Rockwell **
+		CLC				; otherwise, set carry, opposite of 6502
+sbcbm_do:
 	LDA b68			; get accumulator B
 	SBC tmptr		; subtract with carry
 	STA b68			; update accumulator
-	_CC_NZ			; check these
 	BCS sbcbm_nc	; only if borrow...
 		SMB0 ccr68		; ...set C flag (opposite of 6502?)
 sbcbm_nc:
 	BVC sbcbm_nv	; only if overflow...
 		SMB1 ccr68		; ...set V flag
 sbcbm_nv:
+	_CC_NZ			; check these
 	JMP next_op		; standard end
 
 _d2:
 ; SBC B dir (3)
 ; +
-	_DIRECT			; get operand
-	SEC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ sbcbd_do	; skip if C clear
-		CLC				; otherwise, set carry, opposite of 6502?
-sbcbd_do:
+	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
+	_DIRECT			; get operand
+	SEC				; prepare
+	BBR0 ccr68, sbcbd_do	; skip if C clear ** Rockwell **
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcbd_do:
 	LDA b68			; get accumulator B
 	SBC e_base, X	; subtract with carry
 	STA b68			; update accumulator
@@ -2835,14 +2797,13 @@ _e2:
 ; SBC B ind (5)
 ; +
 	_INDEXED		; get operand
-	SEC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ sbcbi_do	; skip if C clear
-		CLC				; otherwise, set carry, opposite of 6502?
-sbcbi_do:
+	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
+	SEC				; prepare
+	BBR0 ccr68, sbcbi_do	; skip if C clear ** Rockwell **
+		CLC				; otherwise, set carry, opposite of 6502?
+sbcbi_do:
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
 	STA b68			; update accumulator
@@ -2859,14 +2820,13 @@ _f2:
 ; SBC B ext (4)
 ; +
 	_EXTENDED		; get operand
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
 	SEC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ sbcbe_do	; skip if C clear
+	BBR0 ccr68, sbcbe_do	; skip if C clear ** Rockwell **
 		CLC				; otherwise, set carry, opposite of 6502?
 sbcbe_do:
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update flags
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
 	STA b68			; update accumulator
@@ -2879,7 +2839,7 @@ sbcbe_nc:
 sbcbe_nv:
 	JMP next_op		; standard end
 
-; transfer accumulator
+; transfer accumulator *** CONTINUE REVISION HERE ********************
 _16:
 ; TAB (2)
 ; +20/24/28
