@@ -1627,16 +1627,31 @@ _86:
 	JMP next_op		; standard end
 
 _96:
-; LDA A dir (3)
-; +33...
+; LDA A dir (3) *** access to $00 is redirected to minimOS standard input ***
+; +
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	_DIRECT			; X points to operand
-	LDA e_base, X	; get operand
-	STA a68			; load into A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+; ** trap address in case it goes to host console **
+	TXA				; check offset
+	BEQ ldaad_trap		; ** intercept input!
+; ** continue execution otherwise **
+		LDA e_base, X	; get operand
+ldaad_ret:
+		STA a68			; load into A
+		_CC_NZ			; set flags
+		JMP next_op		; standard end
+; *** trap input, minimOS specific ***
+ldaad_trap:
+	LDY #0			; *** minimOS standard device, TBD ***
+	_KERNEL(CIN)	; standard input, non locking
+	BCC ldaad_ok	; there was something available
+		LDA #0			; otherwise, NUL means no char was available
+		JMP ldaad_ret	; continue
+ldaad_ok:
+	LDA zpar		; get received character
+	JMP ldaad_ret	; store and go
 
 _a6:
 ; LDA A ind (5)
@@ -1675,16 +1690,31 @@ _c6:
 	JMP next_op		; standard end
 
 _d6:
-; LDA B dir (3)
+; LDA B dir (3) *** access to $00 is redirected to minimOS standard input ***
 ; +
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	_DIRECT			; X points to operand
-	LDA e_base, X	; get operand
-	STA b68			; laod into B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+; ** trap address in case it goes to host console **
+	TXA				; check offset
+	BEQ ldabd_trap		; ** intercept input!
+; ** continue execution otherwise **
+		LDA e_base, X	; get operand
+ldabd_ret:
+		STA b68			; load into A
+		_CC_NZ			; set flags
+		JMP next_op		; standard end
+; *** trap input, minimOS specific ***
+ldabd_trap:
+	LDY #0			; *** minimOS standard device, TBD ***
+	_KERNEL(CIN)	; standard input, non locking
+	BCC ldabd_ok	; there was something available
+		LDA #0			; otherwise, NUL means no char was available
+		JMP ldabd_ret	; continue
+ldabd_ok:
+	LDA zpar		; get received character
+	JMP ldabd_ret	; store and go
 
 _e6:
 ; LDA B ind (5)
@@ -2402,16 +2432,29 @@ lsre_nz:
 
 ; store accumulator *** revised but not TIMED *************************
 _97:
-; STA A dir (4)
+; STA A dir (4) *** access to $00 is redirected to minimOS standard output ***
 ; +
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	_DIRECT			; X points to operand
-	LDA a68			; get A accumulator
-	STA e_base, X	; store at operand
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+; ** trap address in case it goes to host console **
+	TXA				; check offset
+	BEQ staad_trap		; ** intercept input!
+; ** continue execution otherwise **
+		LDA a68			; get A
+		STA e_base, X	; store in memory
+		_CC_NZ			; set flags
+		JMP next_op		; standard end
+; *** trap output, minimOS specific ***
+staad_trap:
+	LDY #0			; *** minimOS standard device, TBD ***
+	LDA a68			; get char in A
+	STA zpar		; parameter for COUT
+	_KERNEL(COUT)	; standard output
+	LDA a68			; just for flags
+	_CC_NZ			; check these
+	JMP next_op		; ended
 
 _a7:
 ; STA A ind (6)
@@ -2438,16 +2481,29 @@ _b7:
 	JMP next_op		; standard end
 
 _d7:
-; STA B dir (4)
+; STA B dir (4) *** access to $00 is redirected to minimOS standard output ***
 ; +
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	_DIRECT			; X points to operand
-	LDA b68			; get B accumulator
-	STA e_base, X	; store into operand
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+; ** trap address in case it goes to host console **
+	TXA				; check offset
+	BEQ stabd_trap		; ** intercept input!
+; ** continue execution otherwise **
+		LDA b68			; get B
+		STA e_base, X	; store in memory
+		_CC_NZ			; set flags
+		JMP next_op		; standard end
+; *** trap output, minimOS specific ***
+stabd_trap:
+	LDY #0			; *** minimOS standard device, TBD ***
+	LDA b68			; get char in B
+	STA zpar		; parameter for COUT
+	_KERNEL(COUT)	; standard output
+	LDA b68			; just for flags
+	_CC_NZ			; check these
+	JMP next_op		; ended
 
 _e7:
 ; STA B ind (6)
@@ -2839,33 +2895,33 @@ sbcbe_nc:
 sbcbe_nv:
 	JMP next_op		; standard end
 
-; transfer accumulator *** CONTINUE REVISION HERE ********************
+; transfer accumulator *** already TIMED ***************************************************************
 _16:
 ; TAB (2)
-; +20/24/28
+; +20/22/24
 	LDA ccr68	; get original flags
 	AND #%11110001	; reset N,Z, and always V
 	STA ccr68	; update status
-	LDX a68		; get A
-	STX b68		; store in B
+	LDA a68		; get A
+	STA b68		; store in B
 	_CC_NZ		; set NZ flags when needed
 	JMP next_op	; standard end of routine
 
 _17:
 ; TBA (2)
-; +20/24/28
+; +20/22/24
 	LDA ccr68	; get original flags
 	AND #%11110001	; reset N,Z, and always V
 	STA ccr68	; update status
-	LDX b68		; get B
-	STX a68		; store in A
+	LDA b68		; get B
+	STA a68		; store in A
 	_CC_NZ		; check these flags
 	JMP next_op	; standard end of routine
 
 ; test for zero or minus
 _4d:
 ; TST A (2)
-; +17...
+; +17/19/21
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
@@ -2875,7 +2931,7 @@ _4d:
 
 _5d:
 ; TST B (2)
-; +17...
+; +17/19/21
 	LDA ccr68	; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
@@ -2885,22 +2941,22 @@ _5d:
 
 _6d:
 ; TST ind (7)
-; +50...
+; +50/52.5/
+	_INDEXED		; set pointer
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
-	_INDEXED		; set pointer
 	LDA (tmptr)		; check operand
 	_CC_NZ			; check these flags
 	JMP next_op		; standard end of routine
 
 _7d:
 ; TST ext (6)
-; +
+; +50/52.5/
+	_EXTENDED		; set pointer
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
-	_EXTENDED		; set pointer
 	LDA (tmptr)		; check operand
 	_CC_NZ			; check these flags
 	JMP next_op		; standard end of routine
@@ -2910,7 +2966,7 @@ _7d:
 ; compare index
 _8c:
 ; CPX imm (3)
-; +51...
+; +53/59/
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
@@ -2936,7 +2992,7 @@ cpxm_nv:
 
 _9c:
 ; CPX dir (4)
-; +56...
+; +56/62/
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
@@ -2962,11 +3018,11 @@ cpxd_nv:
 
 _ac:
 ; CPX ind (6)
-; +82...
+; +82/88.5/
+	_INDEXED		; get operand
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
-	_INDEXED		; get operand
 	SEC				; prepare
 	LDA x68 + 1		; MSB at X
 	SBC (tmptr)		; subtract memory
@@ -2995,11 +3051,11 @@ cpxi_nv:
 
 _bc:
 ; CPX ext (5)
-; +
+; +82/88.5/
+	_EXTENDED		; get operand
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
-	_EXTENDED		; get operand
 	SEC				; prepare
 	LDA x68 + 1		; MSB at X
 	SBC (tmptr)		; subtract memory
@@ -3029,7 +3085,7 @@ cpxe_nv:
 ; decrement index
 _09:
 ; DEX (4)
-; +17...
+; +17/17/24
 	LDA x68			; check LSB
 	BEQ dex_w		; if zero, will wrap upon decrease!
 		DEC x68			; otherwise just decrease LSB
@@ -3053,7 +3109,7 @@ dex_zz:
 ; decrement stack pointer
 _34:
 ; DES (4)
-; +10/10/24
+; +10/10/22
 	LDA sp68		; check older LSB
 	BEQ des_w		; will wrap upon decrease!
 		DEC sp68		; decrease LSB
@@ -3099,7 +3155,7 @@ ins_w:
 ; load index
 _ce:
 ; LDX imm (3)
-; +43...
+; +43/47/
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits
 	STA ccr68		; update flags
@@ -3120,128 +3176,82 @@ ldxm_nz:
 
 _de:
 ; LDX dir (4)
-; +73...
-	LDA ccr68		; get original flags (3)
-	AND #%11110001	; reset relevant bits (2)
-	STA ccr68		; update flags (3)
-	_DIRECT			; get operand address (31...)
-	LDX #2			; counter of expected zeroes (2)
-	LDA (tmptr)		; value MSB (5)
-	BNE ldxd_nz1	; skip first zero detection (3/2)
-		DEX				; MSB was zero (0/2)
-ldxd_nz1:
-	BPL ldxd_pl		; not negative (3/2)
-		SMB3 ccr68		; otherwise set N flag (0/5)
+; +43/47/
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	_DIRECT			; get first operand pointer
+	LDA e_base, X	; value MSB
+	BPL ldxd_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
 ldxd_pl:
-	STA x68 + 1		; update register (3)
-	INC tmptr		; point to next byte! (5)
-	BEQ ldxd_w		; rare wrap (2/3)
-		LDA (tmptr)		; value LSB (5)
-		BNE ldxd_nz2	; not zero anyway (3/2)
-			DEX				; LSB was zero
-			BNE ldxd_nz2	; and neither was MSB
-				SMB2 ccr68		; otherwise set Z flag
-ldxd_nz2:
-		STA x68			; register complete (3)
-		JMP next_op		; standard end
-ldxd_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
-	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
-	LDA (tmptr)		; value LSB
-	BNE ldxd_nz3	; not zero anyway
-		DEX				; LSB was zero
-		BNE ldxd_nz3	; and neither was MSB
-			SMB2 ccr68		; otherwise set Z flag
-ldxd_nz3:
+	STA x68 + 1		; update register
+	LDA e_base+1, X	; value LSB
 	STA x68			; register complete
+	ORA x68 + 1		; check for zero
+	BNE ldxd_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
+ldxd_nz:
 	JMP next_op		; standard end
 
 _ee:
 ; LDX ind (6)
-; +73...
-	LDA ccr68		; get original flags (3)
-	AND #%11110001	; reset relevant bits (2)
-	STA ccr68		; update flags (3)
-	_INDEXED		; get operand address (31...)
-	LDX #2			; counter of expected zeroes (2)
-	LDA (tmptr)		; value MSB (5)
-	BNE ldxi_nz1	; skip first zero detection (3/2)
-		DEX				; MSB was zero (0/2)
-ldxi_nz1:
-	BPL ldxi_pl		; not negative (3/2)
-		SMB3 ccr68		; otherwise set N flag (0/5)
+; +72/76/
+	_INDEXED		; get operand address
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	LDA (tmptr)		; value MSB
+	BPL ldxi_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
 ldxi_pl:
-	STA x68 + 1		; update register (3)
-	INC tmptr		; point to next byte! (5)
-	BEQ ldxi_w		; rare wrap (2/3)
-		LDA (tmptr)		; value LSB (5)
-		BNE ldxi_nz2	; not zero anyway (3/2)
-			DEX				; LSB was zero
-			BNE ldxi_nz2	; and neither was MSB
-				SMB2 ccr68		; otherwise set Z flag
-ldxi_nz2:
-		STA x68			; register complete (3)
-		JMP next_op		; standard end
-ldxi_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
-	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
+	STA x68 + 1		; update register
+	INC tmptr		; go for next operand
+	BNE ldxi_nw		; rare wrap
+		LDA tmptr+1		; get pointer MSB
+		INC				; increment
+		_AH_BOUND		; keep injected
+		STA tmptr+1		; update pointer
+ldxi_nw:
 	LDA (tmptr)		; value LSB
-	BNE ldxi_nz3	; not zero anyway
-		DEX				; LSB was zero
-		BNE ldxi_nz3	; and neither was MSB
-			SMB2 ccr68		; otherwise set Z flag
-ldxi_nz3:
 	STA x68			; register complete
+	ORA x68 + 1		; check for zero
+	BNE ldxi_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
+ldxi_nz:
 	JMP next_op		; standard end
 
 _fe:
 ; LDX ext (5)
-; +73...
-	LDA ccr68		; get original flags (3)
-	AND #%11110001	; reset relevant bits (2)
-	STA ccr68		; update flags (3)
-	_EXTENDED		; get operand address (31...)
-	LDX #2			; counter of expected zeroes (2)
-	LDA (tmptr)		; value MSB (5)
-	BNE ldxe_nz1	; skip first zero detection (3/2)
-		DEX				; MSB was zero (0/2)
-ldxe_nz1:
-	BPL ldxe_pl		; not negative (3/2)
-		SMB3 ccr68		; otherwise set N flag (0/5)
+; +72/76/
+	_EXTENDED		; get operand address
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	LDA (tmptr)		; value MSB
+	BPL ldxe_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
 ldxe_pl:
-	STA x68 + 1		; update register (3)
-	INC tmptr		; point to next byte! (5)
-	BEQ ldxe_w		; rare wrap (2/3)
-		LDA (tmptr)		; value LSB (5)
-		BNE ldxe_nz2	; not zero anyway (3/2)
-			DEX				; LSB was zero
-			BNE ldxe_nz2	; and neither was MSB
-				SMB2 ccr68		; otherwise set Z flag
-ldxe_nz2:
-		STA x68			; register complete (3)
-		JMP next_op		; standard end
-ldxe_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
-	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
+	STA x68 + 1		; update register
+	INC tmptr		; go for next operand
+	BNE ldxe_nw		; rare wrap
+		LDA tmptr+1		; get pointer MSB
+		INC				; increment
+		_AH_BOUND		; keep injected
+		STA tmptr+1		; update pointer
+ldxe_nw:
 	LDA (tmptr)		; value LSB
-	BNE ldxe_nz3	; not zero anyway
-		DEX				; LSB was zero
-		BNE ldxe_nz3	; and neither was MSB
-			SMB2 ccr68		; otherwise set Z flag
-ldxe_nz3:
 	STA x68			; register complete
+	ORA x68 + 1		; check for zero
+	BNE ldxe_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
+ldxe_nz:
 	JMP next_op		; standard end
 
 ; load stack pointer
 _8e:
 ; LDS imm (3)
-; +42...
+; +42/44/
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
@@ -3255,256 +3265,277 @@ ldsm_pl:
 	_PC_ADV			; get second operand
 	LDA (pc68), Y	; value LSB
 	STA sp68		; register complete
+;	ORA sp68 + 1	; check for zero
+;	BNE ldsm_nz		; was not zero
+;		SMB2 ccr68		; otherwise set Z
+;ldsm_nz:
 	JMP next_op		; standard end
 
 _9e:
 ; LDS dir (4)
-; +42...
+; +42/44.5/
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
-	_DIRECT			; get operand address
+	_DIRECT			; get operand address in X
 	LDA e_base, X	; value MSB
 	BPL ldsd_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 ldsd_pl:
 	_AH_BOUND		; keep injected
 	STA sp68 + 1	; update register
-	LDA e_base + 1, X	; value LSB
+	LDA e_base+1, X	; value LSB
 	STA sp68		; register complete
+;	ORA sp68 + 1	; check for zero
+;	BNE ldsd_nz		; was not zero
+;		SMB2 ccr68		; otherwise set Z
+;ldsd_nz:
 	JMP next_op		; standard end
 
 _ae:
 ; LDS ind (6)
-; +70...
+; +70/73/
+	_INDEXED		; get operand address
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
-	_INDEXED		; get operand address
 	LDA (tmptr)		; value MSB
 	BPL ldsi_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 ldsi_pl:
 	_AH_BOUND		; keep injected
 	STA sp68 + 1	; update register
-	INC tmptr		; point to next byte!
+	INC tmptr		; go for next operand
 	BEQ ldsi_w		; rare wrap
 		LDA (tmptr)		; value LSB
 		STA sp68		; register complete
+;		ORA sp68 + 1	; check for zero
+;		BNE ldsi_nz		; was not zero
+;			SMB2 ccr68		; otherwise set Z
+;ldsi_nz:
 		JMP next_op		; standard end
 ldsi_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
+	LDA tmptr+1		; get pointer MSB
+	INC				; increment
 	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
+	STA tmptr+1		; update pointer
 	LDA (tmptr)		; value LSB
 	STA sp68		; register complete
+;	ORA sp68 + 1	; check for zero
+;	BNE ldsi_wnz	; was not zero
+;		SMB2 ccr68		; otherwise set Z
+;ldsi_wnz:
 	JMP next_op		; standard end
 
 _be:
 ; LDS ext (5)
-; +
+; +70/73/
+	_INDEXED		; get operand address
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
-	_EXTENDED		; get operand address
 	LDA (tmptr)		; value MSB
 	BPL ldse_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 ldse_pl:
 	_AH_BOUND		; keep injected
 	STA sp68 + 1	; update register
-	INC tmptr		; point to next byte!
+	INC tmptr		; go for next operand
 	BEQ ldse_w		; rare wrap
 		LDA (tmptr)		; value LSB
 		STA sp68		; register complete
+;		ORA sp68 + 1	; check for zero
+;		BNE ldse_nz		; was not zero
+;			SMB2 ccr68		; otherwise set Z
+;ldse_nz:
 		JMP next_op		; standard end
 ldse_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
+	LDA tmptr+1		; get pointer MSB
+	INC				; increment
 	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
+	STA tmptr+1		; update pointer
 	LDA (tmptr)		; value LSB
 	STA sp68		; register complete
+;	ORA sp68 + 1	; check for zero
+;	BNE ldse_wnz	; was not zero
+;		SMB2 ccr68		; otherwise set Z
+;ldse_wnz:
 	JMP next_op		; standard end
 
 ; store index
 _df:
 ; STX dir (5)
-; +56...
-	LDA ccr68		; get original flags (3)
-	AND #%11110001	; reset relevant bits (2)
-	LDX x68 + 1		; check sign! (3)
-	BPL stxd_pl		; was not negative (3/2)
-		ORA #%00001000	; set N flag otherwise (0/2)
+; +43/47/
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	_DIRECT			; get first operand pointer
+	LDA x68 + 1		; value MSB
+	STA e_base, X	; store it
+	BPL stxd_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
 stxd_pl:
-	STA ccr68		; update flags (3)
-	TXA				; retrieve MSB (2)
-	ORA x68			; blend with LSB (3)
-	BNE stxd_nz		; only if it is zero (3/2)
-		SMB2 ccr68		; set Z flag (0/5)
+	LDA x68			; value LSB
+	STA e_base+1, X	; store in memory 
+	ORA x68 + 1		; check for zero
+	BNE stxd_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
 stxd_nz:
-	_DIRECT			; get operand address (12...)
-	LDA x68 + 1		; value MSB (3)
-	STA e_base, X	; store in memory (4)
-	INC tmptr		; point to next byte! (5)
-	BEQ stxd_w		; rare wrap (2/3)
-		LDA x68			; value LSB (3)
-		STA e_base + 1, X	; store in memory (4)
-		JMP next_op		; standard end
-stxd_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
-	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
-	LDA x68			; value LSB (3)
-	STA e_base + 1, X	; store in memory (4)
 	JMP next_op		; standard end
 
 _ef:
 ; STX ind (7)
-; +75...
-	LDA ccr68		; get original flags (3)
-	AND #%11110001	; reset relevant bits (2)
-	LDX x68 + 1		; check sign! (3)
-	BPL stxi_pl		; was not negative (3/2)
-		ORA #%00001000	; set N flag otherwise (0/2)
+; +72/76.5/
+	_INDEXED		; get first operand pointer
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	LDA x68 + 1		; value MSB
+	STA (tmptr)		; store it
+	BPL stxi_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
 stxi_pl:
-	STA ccr68		; update flags (3)
-	TXA				; retrieve MSB (2)
-	ORA x68			; blend with LSB (3)
-	BNE stxi_nz		; only if it is zero (3/2)
-		SMB2 ccr68		; set Z flag (0/5)
+	INC tmptr		; go for next operand
+	BEQ stxi_nw		; rare wrap
+		LDA tmptr+1		; get pointer MSB
+		INC				; increment
+		_AH_BOUND		; keep injected
+		STA tmptr+1		; update
+stxi_nw:
+	LDA x68			; value LSB
+	STA (tmptr)		; store in memory 
+	ORA x68 + 1		; check for zero
+	BNE stxi_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
 stxi_nz:
-	_INDEXED		; get operand address (31...)
-	TXA				; value MSB, already loaded (2)
-	STA (tmptr)		; store in memory (5)
-	INC tmptr		; point to next byte! (5)
-	BEQ stxi_w		; rare wrap (2/3)
-		LDA x68			; value LSB (3)
-		STA (tmptr)		; store in memory (5)
-		JMP next_op		; standard end
-stxi_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
-	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
-	LDA x68			; value LSB (3)
-	STA (tmptr)		; store in memory (5)
 	JMP next_op		; standard end
 
 _ff:
 ; STX ext (6)
-; +75...
-	LDA ccr68		; get original flags (3)
-	AND #%11110001	; reset relevant bits (2)
-	LDX x68 + 1		; check sign! (3)
-	BPL stxe_pl		; was not negative (3/2)
-		ORA #%00001000	; set N flag otherwise (0/2)
+; +72/76.5/
+	_EXTENDED		; get first operand pointer
+	LDA ccr68		; get original flags
+	AND #%11110001	; reset relevant bits
+	STA ccr68		; update flags
+	LDA x68 + 1		; value MSB
+	STA (tmptr)		; store it
+	BPL stxe_pl		; not negative
+		SMB3 ccr68		; otherwise set N flag
 stxe_pl:
-	STA ccr68		; update flags (3)
-	TXA				; retrieve MSB (2)
-	ORA x68			; blend with LSB (3)
-	BNE stxe_nz		; only if it is zero (3/2)
-		SMB2 ccr68		; set Z flag (0/5)
+	INC tmptr		; go for next operand
+	BEQ stxe_nw		; rare wrap
+		LDA tmptr+1		; get pointer MSB
+		INC				; increment
+		_AH_BOUND		; keep injected
+		STA tmptr+1		; update
+stxe_nw:
+	LDA x68			; value LSB
+	STA (tmptr)		; store in memory 
+	ORA x68 + 1		; check for zero
+	BNE stxe_nz		; was not zero
+		SMB2 ccr68		; otherwise set Z
 stxe_nz:
-	_EXTENDED		; get operand address (31...)
-	TXA				; value MSB, already loaded (2)
-	STA (tmptr)		; store in memory (5)
-	INC tmptr		; point to next byte! (5)
-	BEQ stxe_w		; rare wrap (2/3)
-		LDA x68			; value LSB (3)
-		STA (tmptr)		; store in memory (5)
-		JMP next_op		; standard end
-stxe_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
-	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
-	LDA x68			; value LSB (3)
-	STA (tmptr)		; store in memory (5)
 	JMP next_op		; standard end
 
 ; store stack pointer
 _9f:
 ; STS dir (5)
-; +37...
+; +37/39/
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
 	_DIRECT			; get operand address
-	LDA sp68		; get original
+	LDA sp68+1		; get original
 	STA e_base, X	; value MSB
 	BPL stsd_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 stsd_pl:
-	LDA sp68 + 1	; get LSB
-	STA e_base + 1, X	; store it
+	LDA sp68		; get LSB
+	STA e_base+1, X	; store it
+;	ORA sp68 + 1	; blend with MSB
+;	BNE stsd_nz		; check for zero
+;		SMB2 ccr68		; otherwise set Z
+;stsd_nz:
 	JMP next_op		; standard end
 
 _af:
 ; STS ind (7)
-; +65...
+; +65/67.5/
+	_INDEXED		; get operand address
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
-	_INDEXED		; get operand address
 	LDA sp68 + 1	; value MSB
-	STA (tmptr)		; store in memory
 	BPL stsi_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 stsi_pl:
-	INC tmptr		; point to next byte!
+	STA (tmptr)		; store in memory
+	INC tmptr		; go for next operand
 	BEQ stsi_w		; rare wrap
 		LDA sp68		; value LSB
-		STA (tmptr)		; register complete
+		STA (tmptr)		; transfer complete
+;		ORA sp68 + 1	; check for zero
+;		BNE stsi_nz		; was not zero
+;			SMB2 ccr68		; otherwise set Z
+;stsi_nz:
 		JMP next_op		; standard end
 stsi_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
+	LDA tmptr+1		; get pointer MSB
+	INC				; increment
 	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
+	STA tmptr+1		; update pointer
 	LDA sp68		; value LSB
-	STA (tmptr)		; register complete
+	STA (tmptr)		; transfer complete
+;	ORA sp68 + 1	; check for zero
+;	BNE stsi_wnz	; was not zero
+;		SMB2 ccr68		; otherwise set Z
+;stsi_wnz:
 	JMP next_op		; standard end
 
 _bf:
 ; STS ext (6)
-; +
+; +65/67.5/
+	_EXTENDED		; get operand address
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
-	_EXTENDED		; get operand address
 	LDA sp68 + 1	; value MSB
-	STA (tmptr)		; store in memory
-	BPL stse_pl		; not negative
+	BPL stsi_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
-stse_pl:
-	INC tmptr		; point to next byte!
-	BEQ stse_w		; rare wrap
+stsi_pl:
+	STA (tmptr)		; store in memory
+	INC tmptr		; go for next operand
+	BEQ stsi_w		; rare wrap
 		LDA sp68		; value LSB
-		STA (tmptr)		; register complete
+		STA (tmptr)		; transfer complete
+;		ORA sp68 + 1	; check for zero
+;		BNE stsi_nz		; was not zero
+;			SMB2 ccr68		; otherwise set Z
+;stsi_nz:
 		JMP next_op		; standard end
-stse_w:
-	LDA tmptr + 1	; check pointer MSB
-	INC				; increase from wrapping
+stsi_w:
+	LDA tmptr+1		; get pointer MSB
+	INC				; increment
 	_AH_BOUND		; keep injected
-	STA tmptr + 1	; update pointer
+	STA tmptr+1		; update pointer
 	LDA sp68		; value LSB
-	STA (tmptr)		; register complete
+	STA (tmptr)		; transfer complete
+;	ORA sp68 + 1	; check for zero
+;	BNE stsi_wnz	; was not zero
+;		SMB2 ccr68		; otherwise set Z
+;stsi_wnz:
 	JMP next_op		; standard end
 
 ; transfers between index and stack pointer 
 _30:
 ; TSX (4)
-; +21/23/25
-	LDA sp68+1		; get stack pointer MSB, to be injected
+; +16/16/25
+	LDA sp68 + 1	; get stack pointer MSB, to be injected
 	LDX sp68		; get stack pointer LSB
 	INX				; point to last used!!!
 	STX x68			; store in X
 	BEQ tsx_w		; rare wrap
 tsx_do:
-		_AH_BOUND		; inject
 		STA x68 + 1		; pointer complete
 		JMP next_op		; standard end of routine
 tsx_w:
@@ -3515,26 +3546,26 @@ tsx_w:
 
 _35:
 ; TXS (4)
-; +21/21.5/25
-	LDA x68+1		; MSB will be injected
+; +21/21/25
+	LDA x68 + 1		; MSB will be injected
 	LDX x68			; check LSB
 	BEQ txs_w		; will wrap upon decrease
 		DEX				; as expected
 		STX sp68		; copy
 		_AH_BOUND		; always!
-		STA sp68+1		; pointer ready
+		STA sp68 + 1	; pointer ready
 		JMP next_op		; standard end
 txs_w:
 	DEX				; as expected
 	STX sp68		; copy
 	DEC				; will also affect MSB
 	_AH_BOUND		; always!
-	STA sp68+1		; pointer ready
+	STA sp68 + 1	; pointer ready
 	JMP next_op		; standard end
 
 ; ** jumps and branching **
 
-; branch always
+; branch always *** ALL UNCHECKED ******************************************************+
 _20:
 ; BRA rel (4)
 ; -5+25/34.3/52
@@ -3769,7 +3800,7 @@ _7e:
 
 ; jump to subroutine
 _ad:
-; JSR ind (8)
+; JSR ind (8) *** ESSENTIAL for minimOS·63 kernel calling **********************
 	; ***** TO DO ***** TO DO *****
 	JMP next_op	; standard end
 
@@ -3835,7 +3866,7 @@ _3f:
 
 ; ** status register opcodes **
 
-; clear overflow
+; clear overflow *** these are trivial, nothing else to revise *********************************
 _0a:
 ; CLV (2)
 ; +5
