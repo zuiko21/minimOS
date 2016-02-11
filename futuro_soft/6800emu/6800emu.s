@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160210
+; last modified 20160211
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -1375,8 +1375,31 @@ nege_nv:
 ; decimal adjust
 _19:
 ; DAA (2)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end of routine
+; +20/930.5/1841
+; ** first approach, awfully slow!!! **
+	LDA ccr68		; get original status
+	AND #%11110001	; reset all relevant bits for CCR, do NOT reset C!
+	STA ccr68		; store new flags
+	LDX a68			; get binary number to be converted
+		BEQ daa_nv		; nothing to convert
+	CPX #100		; will it overflow?
+	BCC daa_conv	; range OK
+		SMB0 ccr68		; otherwise set C
+daa_conv:
+	CLC				; prepare
+	LDA #0			; will compute final value
+	SED				; set decimal mode!!! (...28 worst)
+daa_loop:
+		ADC #1			; decimal increase
+		DEX				; decrement counter
+		BNE daa_loop	; until done (7x255+6 = 1791)
+	CLD				; back to binary mode!!!
+	STA a68			; update accumulator with BCD value
+	BVC daa_nv		; only if overflow...
+		SMB1 ccr68		; ...set V flag
+daa_nv:
+	_CC_NZ			; check these flags (+22 worst)
+	JMP next_op		; standard end of routine
 
 ; decrement
 _4a:
@@ -1613,10 +1636,10 @@ _7c:
 ince_nv:
 	JMP next_op		; standard end of routine
 
-; load accumulator ** CONTINUE TIMING HERE ************************
+; load accumulator
 _86:
 ; LDA A imm (2)
-; +27...
+; +27/29/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1628,7 +1651,7 @@ _86:
 
 _96:
 ; LDA A dir (3) *** access to $00 is redirected to minimOS standard input ***
-; +
+; +37/39/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1655,7 +1678,7 @@ ldaad_ok:
 
 _a6:
 ; LDA A ind (5)
-; +53...
+; +53/55.5/
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1667,7 +1690,7 @@ _a6:
 
 _b6:
 ; LDA A ext (4)
-; +
+; +53/55.5/
 	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1679,7 +1702,7 @@ _b6:
 
 _c6:
 ; LDA B imm (2)
-; +27...
+; +27/29/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1691,7 +1714,7 @@ _c6:
 
 _d6:
 ; LDA B dir (3) *** access to $00 is redirected to minimOS standard input ***
-; +
+; +37/39/
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -1718,7 +1741,7 @@ ldabd_ok:
 
 _e6:
 ; LDA B ind (5)
-; +
+; +53/55.5/
 	_INDEXED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1730,7 +1753,7 @@ _e6:
 
 _f6:
 ; LDA B ext (4)
-; +
+; +53/55.5/
 	_EXTENDED		; points to operand
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
@@ -1740,7 +1763,7 @@ _f6:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
-; inclusive OR **already timed***************************
+; inclusive OR
 _8a:
 ; ORA A imm (2)
 ; +30/32/
@@ -1845,10 +1868,10 @@ _fa:
 	_CC_NZ			; set flags
 	JMP next_op		; standard end
 
-; push accumulator *** revised but not timed **********************
+; push accumulator
 _36:
 ; PSH A (4)
-; +
+; +18/18/33
 	LDA a68			; get accumulator A
 	STA (sp68)		; put it on stack space
 	LDX sp68		; check LSB
@@ -1865,7 +1888,7 @@ psha_w:
 
 _37:
 ; PSH B (4)
-; +
+; +18/18/33
 	LDA b68			; get accumulator B
 	STA (sp68)		; put it on stack space
 	LDX sp68		; check LSB
@@ -1883,7 +1906,7 @@ pshb_w:
 ; pull accumulator
 _32:
 ; PUL A (4)
-; +
+; +15/15/30
 	INC sp68		; pre-increment
 	BEQ pula_w		; should correct MSB, rare?
 pula_do:
@@ -1901,7 +1924,7 @@ pula_w:
 
 _33:
 ; PUL B (4)
-; +
+; +15/15/30
 	INC sp68		; pre-increment
 	BEQ pulb_w		; should correct MSB, rare?
 pulb_do:
@@ -1917,22 +1940,22 @@ pulb_w:
 	STA b68			; store it in accumulator B
 	JMP next_op		; standard end of routine
 
-; rotate left *** to be revised ********************************
+; rotate left
 _49:
 ; ROL A (2)
-; +32/36/40
+; +29/33/37
 	CLC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ rola_do		; skip if C clear
+	LDA ccr68		; get flags
+	BIT #%00000001	; check original C
+	BEQ rola_do		; go on if C was clear
 		SEC				; otherwise, set carry
 rola_do:
-	AND #%11110000	; reset relevant bits
+	AND #%11110000	; clear relevant bits
 	ROL a68			; rotate A left
 	BNE rola_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
+		LDX a68			; retrieve again, faster this way!
 rola_nz:
-	LDX a68			; retrieve again!
 	BPL rola_pl		; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
@@ -1946,39 +1969,37 @@ rola_nc:
 
 _59:
 ; ROL B (2)
-; +32/36/40
-	CLC			; prepare
-	LDA ccr68	; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ rolb_do	; skip if C clear
-		SEC			; otherwise, set carry
-rolb_do:
-	AND #%11110000	; reset relevant bits
-	ROL b68		; rotate B left
-	BNE rolb_nz	; skip if not zero
-		ORA #%00000100	; set Z flag
-rolb_nz:
-	LDX b68		; retrieve again!
-	BPL rolb_pl	; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-rolb_pl:
-	BCC rolb_nc	; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-rolb_nc:
-	STA ccr68	; update status
-	JMP next_op	; standard end of routine
-
-_69:
-; ROL ind (7)
-; +76...
-	_INDEXED		; addressing mode
+; +29/33/37
 	CLC				; prepare
 	LDA ccr68		; get original flags
 	BIT #%00000001	; mask for C flag
-	BEQ roli_do		; skip if C clear
+	BEQ rolb_do		; skip if C clear
 		SEC				; otherwise, set carry
+rolb_do:
+	AND #%11110000	; reset relevant bits
+	ROL b68			; rotate B left
+	BNE rolb_nz		; skip if not zero
+		ORA #%00000100	; set Z flag
+		LDX b68			; retrieve again, faster this way!
+rolb_nz:
+	BPL rolb_pl		; skip if positive
+		ORA #%00001000	; will set N bit
+		EOR #%00000010	; toggle V bit
+rolb_pl:
+	BCC rolb_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+rolb_nc:
+	STA ccr68		; update status
+	JMP next_op		; standard end of routine
+
+_69:
+; ROL ind (7)
+; +72/76/
+	_INDEXED		; addressing mode
+	CLC				; prepare
+	BBR0 ccr68, roli_do	; skip if C clear
+		SEC					; otherwise, set carry
 roli_do:
 	LDA (tmptr)		; get memory
 	ROL				; rotate left
@@ -1986,31 +2007,29 @@ roli_do:
 	TAX				; keep for later
 	LDA ccr68		; get flags again
 	AND #%11110000	; reset relevant bits
-	BCC roli_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-roli_nc:
 	CPX #0			; watch computed value!
 	BNE roli_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
+		CPX #0			; retrieve again, much faster!
 roli_nz:
-	CPX #0			; watch computed value!
 	BPL roli_pl		; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 roli_pl:
+	BCC roli_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+roli_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
 _79:
 ; ROL ext (6)
-; +
+; +72/76/
 	_EXTENDED		; addressing mode
 	CLC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ role_do		; skip if C clear
-		SEC				; otherwise, set carry
+	BBR0 ccr68, roli_do	; skip if C clear
+		SEC					; otherwise, set carry
 role_do:
 	LDA (tmptr)		; get memory
 	ROL				; rotate left
@@ -2018,23 +2037,23 @@ role_do:
 	TAX				; keep for later
 	LDA ccr68		; get flags again
 	AND #%11110000	; reset relevant bits
-	BCC role_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-role_nc:
 	CPX #0			; watch computed value!
 	BNE role_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
+		CPX #0			; retrieve again, much faster!
 role_nz:
-	CPX #0			; watch computed value!
 	BPL role_pl		; skip if positive
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 role_pl:
+	BCC role_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+role_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
-; rotate right
+; rotate right **** CONTINUE REVISION HERE **************************************************
 _46:
 ; ROR A (2)
 ; +32/36/40
