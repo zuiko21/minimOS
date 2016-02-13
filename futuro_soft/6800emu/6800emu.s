@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160212
+; last modified 20160213
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -2669,7 +2669,7 @@ _92:
 	_DIRECT			; get operand
 	SEC				; prepare
 	BBR0 ccr68, sbcad_do	; skip if C clear ** Rockwell **
-		CLC				; otherwise, set carry, opposite of 6502?
+		CLC				; otherwise, set carry, opposite of 6502
 sbcad_do:
 	LDA a68			; get accumulator A
 	SBC e_base, X	; subtract with carry
@@ -2687,7 +2687,7 @@ _a2:
 	STA ccr68		; update
 	SEC				; prepare
 	BBR0 ccr68, sbcai_do	; skip if C clear ** Rockwell **
-		CLC				; otherwise, set carry, opposite of 6502?
+		CLC				; otherwise, set carry, opposite of 6502
 sbcai_do:
 	LDA a68			; get accumulator A
 	SBC (tmptr)		; subtract with carry
@@ -2705,7 +2705,7 @@ _b2:
 	STA ccr68		; update
 	SEC				; prepare
 	BBR0 ccr68, sbcae_do	; skip if C clear ** Rockwell **
-		CLC				; otherwise, set carry, opposite of 6502?
+		CLC				; otherwise, set carry, opposite of 6502
 sbcae_do:
 	LDA a68			; get accumulator A
 	SBC (tmptr)		; subtract with carry
@@ -2741,7 +2741,7 @@ _d2:
 	_DIRECT			; get operand
 	SEC				; prepare
 	BBR0 ccr68, sbcbd_do	; skip if C clear ** Rockwell **
-		CLC				; otherwise, set carry, opposite of 6502?
+		CLC				; otherwise, set carry, opposite of 6502
 sbcbd_do:
 	LDA b68			; get accumulator B
 	SBC e_base, X	; subtract with carry
@@ -2759,7 +2759,7 @@ _e2:
 	STA ccr68		; update
 	SEC				; prepare
 	BBR0 ccr68, sbcbi_do	; skip if C clear ** Rockwell **
-		CLC				; otherwise, set carry, opposite of 6502?
+		CLC				; otherwise, set carry, opposite of 6502
 sbcbi_do:
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
@@ -2777,7 +2777,7 @@ _f2:
 	STA ccr68		; update
 	SEC				; prepare
 	BBR0 ccr68, sbcbe_do	; skip if C clear ** Rockwell **
-		CLC				; otherwise, set carry, opposite of 6502?
+		CLC				; otherwise, set carry, opposite of 6502
 sbcbe_do:
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
@@ -3436,12 +3436,53 @@ txs_w:
 
 ; ** jumps and branching **
 
-; branch always *** ALL UNCHECKED ******************************************************+
+; branch if lower or same
+_23:
+; BLS rel (4)
+; +15/30/
+	_PC_ADV				; go for operand
+		BBS0 ccr68, bra_do	; either carry...
+		BBS2 ccr68, bra_do	; ...or zero will do
+	JMP next_op			; exit without branching
+
+; branch if overflow clear
+_28:
+; BVC rel (4)
+; +10...
+	_PC_ADV				; go for operand
+		BBR1 ccr68, bra_do		; only if overflow clear
+	JMP next_op			; exit without branching
+
+; branch if overflow set
+_29:
+; BVS rel (4)
+; +10...
+	_PC_ADV				; go for operand
+		BBS1 ccr68, bra_do	; only if overflow set
+	JMP next_op			; exit without branching
+
+; branch if plus
+_2a:
+; BPL rel (4)
+; +10...
+	_PC_ADV				; go for operand
+		BBR3 ccr68, bra_do	; only if plus
+	JMP next_op			; exit without branching
+
+; branch if minus
+_2b:
+; BMI rel (4)
+; +10...
+	_PC_ADV				; go for operand
+		BBS3 ccr68, bra_do	; only if negative
+	JMP next_op			; exit without branching
+
+; branch always
 _20:
 ; BRA rel (4)
-; -5+25/34.3/52
-	_PC_ADV			; go for operand (5...18)
-bra_do:
+; -5 +25/32/
+	_PC_ADV			; go for operand
+bra_do:				; max. from 29 here
 	SEC				; base offset is after the instruction
 	LDA (pc68), Y	; check direction
 	BMI bra_bk		; backwards jump
@@ -3469,109 +3510,39 @@ bra_bk:
  	RMB6 pc68+1		; otherwise clear A14
 	JMP execute		; and jump
 
-; branch if higher
-_22:
-; BHI rel (4)
-; +11/24.8/65
-	_PC_ADV				; go for operand
-	BBS0 ccr68, bhi_go	; neither carry...
-	BBS2 ccr68, bhi_go	; ...nor zero...
-		JMP bra_do		; ...do branch
-bhi_go:
-	JMP next_op		; exit without branching
-
-; branch if lower or same
-_23:
-; BLS rel (4)
-; +11...
-	_PC_ADV				; go for operand
-	BBS0 ccr68, bls_do	; either carry...
-	BBS2 ccr68, bls_do	; ...or zero will do
-		JMP next_op			; exit without branching
-bls_do:
-		JMP bra_do		; do branch
-
 ; branch if carry clear
 _24:
 ; BCC rel (4)
-; +10...
+; +10/25/
 	_PC_ADV				; go for operand
-	BBR0 ccr68, bcc_do	; only if carry clear
-		JMP next_op			; exit without branching otherwise
-bcc_do:
-	JMP bra_do			; do branch
+		BBR0 ccr68, bra_do	; only if carry clear
+	JMP next_op			; exit without branching otherwise
 
 ; branch if carry set
 _25:
 ; BCS rel (4)
-; +10...
+; +10/25/
 	_PC_ADV				; go for operand
-	BBS0 ccr68, bcs_do	; only if carry set...
-		JMP next_op			; exit without branching
-bcs_do:
-	JMP bra_do			; branch
+		BBS0 ccr68, bra_do	; only if carry set
+	JMP next_op			; exit without branching
 
 ; branch if not equal
 _26:
 ; BNE rel (4)
 ; +10...
 	_PC_ADV				; go for operand
-	BBR2 ccr68, bne_do	; only if zero clear...
-		JMP next_op			; exit without branching
-bne_do:
-	JMP bra_do			; branch
+		BBR2 ccr68, bra_do	; only if zero clear
+	JMP next_op			; exit without branching
 
 ; branch if equal zero
 _27:
 ; BEQ rel (4)
 ; +10...
 	_PC_ADV				; go for operand
-	BBS2 ccr68, beq_do	; only if zero set...
-		JMP next_op			; exit without branching
-beq_do:
-	JMP bra_do			; branch
+		BBS2 ccr68, bra_do	; only if zero set
+	JMP next_op			; exit without branching
 
-; branch if overflow clear
-_28:
-; BVC rel (4)
-; +10...
-	_PC_ADV				; go for operand
-	BBR1 ccr68, bvc_do		; only if overflow clear...
-		JMP next_op			; exit without branching
-bvc_do:
-	JMP bra_do			; branch
-
-; branch if overflow set
-_29:
-; BVS rel (4)
-; +10...
-	_PC_ADV				; go for operand
-	BBS1 ccr68, bvs_do	; only if overflow set...
-		JMP next_op			; exit without branching
-bvs_do:
-	JMP bra_do			; branch
-
-; branch if plus
-_2a:
-; BPL rel (4)
-; +10...
-	_PC_ADV				; go for operand
-	BBR3 ccr68, bpl_do	; only if plus...
-		JMP next_op			; exit without branching
-bpl_do:
-		JMP bra_do			; branch
-
-; branch if minus
-_2b:
-; BMI rel (4)
-; +10...
-	_PC_ADV				; go for operand
-	BBS3 ccr68, bmi_do	; only if negative...
-		JMP next_op			; exit without branching
-bmi_do:
-	JMP bra_do			; ...do branch
-
-; branch if greater or equal (signed)
+; branch if greater or equal (signed) *** REVISE *********************
 _2c:
 ; BGE rel (4)
 ; +17...
@@ -3634,6 +3605,17 @@ ble_nx:
 		JMP next_op		; exit without branching
 ble_do:
 	JMP bra_do		; jump otherwise
+
+; branch if higher
+_22:
+; BHI rel (4)
+; +11/29/
+	_PC_ADV				; go for operand
+	BBS0 ccr68, bhi_go	; neither carry...
+	BBS2 ccr68, bhi_go	; ...nor zero...
+		JMP bra_do		; ...do branch
+bhi_go:
+	JMP next_op		; exit without branching
 
 ; branch to subroutine
 _8d:
