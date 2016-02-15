@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160213
+; last modified 20160215
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -3448,7 +3448,7 @@ _23:
 ; branch if overflow clear
 _28:
 ; BVC rel (4)
-; +10...
+; +10/25/
 	_PC_ADV				; go for operand
 		BBR1 ccr68, bra_do		; only if overflow clear
 	JMP next_op			; exit without branching
@@ -3456,7 +3456,7 @@ _28:
 ; branch if overflow set
 _29:
 ; BVS rel (4)
-; +10...
+; +10/25/
 	_PC_ADV				; go for operand
 		BBS1 ccr68, bra_do	; only if overflow set
 	JMP next_op			; exit without branching
@@ -3464,7 +3464,7 @@ _29:
 ; branch if plus
 _2a:
 ; BPL rel (4)
-; +10...
+; +10/25/
 	_PC_ADV				; go for operand
 		BBR3 ccr68, bra_do	; only if plus
 	JMP next_op			; exit without branching
@@ -3472,12 +3472,12 @@ _2a:
 ; branch if minus
 _2b:
 ; BMI rel (4)
-; +10...
+; +10/25/
 	_PC_ADV				; go for operand
 		BBS3 ccr68, bra_do	; only if negative
 	JMP next_op			; exit without branching
 
-; branch always
+; branch always (used by other branches)
 _20:
 ; BRA rel (4)
 ; -5 +25/32/
@@ -3529,7 +3529,7 @@ _25:
 ; branch if not equal
 _26:
 ; BNE rel (4)
-; +10...
+; +10/25/
 	_PC_ADV				; go for operand
 		BBR2 ccr68, bra_do	; only if zero clear
 	JMP next_op			; exit without branching
@@ -3537,91 +3537,130 @@ _26:
 ; branch if equal zero
 _27:
 ; BEQ rel (4)
-; +10...
+; +10/25/
 	_PC_ADV				; go for operand
 		BBS2 ccr68, bra_do	; only if zero set
 	JMP next_op			; exit without branching
 
-; branch if greater or equal (signed) *** REVISE *********************
+; branch if greater or equal (signed)
 _2c:
 ; BGE rel (4)
-; +17...
+; +17/34/
 	_PC_ADV			; go for operand
 	LDA ccr68		; get flags
-	AND #%00001010	; filter N and V only
 	BIT #%00000010	; check V
 	BEQ bge_nx		; do not XOR N if clear
 		EOR #%00001000	; toggle N
 bge_nx:
-	BEQ bge_do		; branch N XOR V is zero
-		JMP next_op		; exit without branching
-bge_do:
-	JMP bra_do		; jump otherwise
+	AND #%00001010	; filter N and V only
+		BEQ branch		; branch if N XOR V is zero
+	JMP next_op		; exit without branching
 
 ; branch if less than (signed)
 _2d:
 ; BLT rel (4)
-; +17...
+; +17/34/
 	_PC_ADV			; go for operand
 	LDA ccr68		; get flags
-	AND #%00001010	; filter N and V only
 	BIT #%00000010	; check V
 	BEQ blt_nx		; do not XOR N if clear
 		EOR #%00001000	; toggle N
 blt_nx:
-	BNE blt_do		; branch if N XOR V is true
-		JMP next_op		; exit without branching
-blt_do:
-	JMP bra_do		; jump otherwise
+	AND #%00001010	; filter N and V only
+		BNE branch		; branch if N XOR V is true
+	JMP next_op		; exit without branching
 
 ; branch if greater (signed)
 _2e:
 ; BGT rel (4)
-; +17...
+; +17/34/
 	_PC_ADV			; go for operand
 	LDA ccr68		; get flags
-	AND #%00001110	; filter Z, N and V
 	BIT #%00000010	; check V
 	BEQ bgt_nx		; do not XOR N if clear
 		EOR #%00001000	; toggle N
 bgt_nx:
-	BEQ bgt_do		; only if N XOR V (OR Z) is false
-		JMP next_op		; exit without branching
-bgt_do:
-	JMP bra_do		; jump otherwise
+	AND #%00001110	; filter Z, N and V
+		BEQ branch		; only if N XOR V (OR Z) is false
+	JMP next_op		; exit without branching
 
 ; branch if less or equal (signed)
 _2f:
 ; BLE rel (4)
-; +17...
+; +17/34/
 	_PC_ADV			; go for operand
 	LDA ccr68		; get flags
-	AND #%00001110	; filter Z, N and V
 	BIT #%00000010	; check V
 	BEQ ble_nx		; do not XOR N if clear
 		EOR #%00001000	; toggle N
 ble_nx:
-	BNE ble_do		; only if N XOR V (OR Z) is true
-		JMP next_op		; exit without branching
-ble_do:
-	JMP bra_do		; jump otherwise
+	AND #%00001110	; filter Z, N and V
+		BNE branch		; only if N XOR V (OR Z) is true
+ble_exit:
+	JMP next_op		; exit without branching (reused)
 
 ; branch if higher
 _22:
 ; BHI rel (4)
 ; +11/29/
-	_PC_ADV				; go for operand
-	BBS0 ccr68, bhi_go	; neither carry...
-	BBS2 ccr68, bhi_go	; ...nor zero...
-		JMP bra_do		; ...do branch
-bhi_go:
-	JMP next_op		; exit without branching
+	_PC_ADV			; go for operand
+		BBS0 ccr68, ble_exit	; neither carry...
+		BBS2 ccr68, ble_exit	; ...nor zero (reuse is OK)
+branch:
+	JMP bra_do		; *** repeater ***
 
 ; branch to subroutine
 _8d:
 ; BSR rel (8)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +
+; *** REVISE NEW PROCEDURE ******************************************
+	_PC_ADV			; go for operand
+	TYA				; get current PC-LSB minus one
+	SEC				; return to next byte!
+	ADC #0
+	STA (sp68)		; stack LSB first
+	DEC sp68		; decrement SP
+	BNE bsr_phi		; no wrap, just push MSB
+		LDA sp68 + 1	; get SP MSB
+		DEC				; down one page
+		_AH_BOUND		; inject
+		STA sp68 + 1	; update pointer
+bsr_phi:
+	LDA pc68+1		; get current MSB *** careful if there was a wrap before
+	STA (sp68)		; push it!
+	DEC sp68		; update SP
+	BNE bsr_do		; no wrap, just push MSB
+		LDA sp68 + 1	; get SP MSB
+		DEC				; down one page
+		_AH_BOUND		; inject
+		STA sp68 + 1	; update pointer	
+bsr_do:				; max. from 29 here
+	SEC				; base offset is after the instruction
+	LDA (pc68), Y	; check direction
+	BMI bsr_bk		; backwards jump
+		TYA				; get current pc low
+		ADC (pc68), Y	; add offset
+		TAY				; new offset!!!
+		BCS bsr_bc		; same msb, go away
+bsr_go:
+			JMP execute		; resume execution
+bsr_bc:
+		INC pc68 + 1	; carry on msb
+		BPL bsr_lf		; skip if in low area
+			RMB6 pc68+1		; otherwise clear A14
+			JMP execute		; and jump
+bsr_lf:
+		SMB6 pc68+1			; low area needs A14 set
+		JMP execute
+bsr_bk:
+	TYA				; get current pc low
+	ADC (pc68), Y	; "subtract" offset
+	TAY				; new offset!!!
+		BCS bsr_go		; all done
+	DEC pc68 + 1	; borrow on msb
+		BPL bsr_lf		; skip if in low area
+ 	RMB6 pc68+1		; otherwise clear A14
+	JMP execute		; and jump
 
 ; jump
 _6e:
