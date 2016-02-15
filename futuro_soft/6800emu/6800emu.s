@@ -79,7 +79,7 @@ e_top	=	$C000		; top over emulated space (third 16K block in most systems)
 
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
-tmptr	=	uz		; temporary storage (up to 16 bit)
+tmptr	=	uz		; temporary storage (up to 16 bit, little endian)
 sp68	=	uz+2	; stack pointer (16 bit, little-endian, now injected into host map)
 pc68	=	uz+4	; program counter (16 bit, little-endian, injected into host map) same as stacking order
 x68		=	uz+6	; index register (16 bit, little-endian)
@@ -3596,7 +3596,7 @@ _2f:
 ble_nx:
 	AND #%00001110	; filter Z, N and V
 		BNE branch		; only if N XOR V (OR Z) is true
-ble_exit:
+br_exit:
 	JMP next_op		; exit without branching (reused)
 
 ; branch if higher
@@ -3604,36 +3604,65 @@ _22:
 ; BHI rel (4)
 ; +11/29/
 	_PC_ADV			; go for operand
-		BBS0 ccr68, ble_exit	; neither carry...
-		BBS2 ccr68, ble_exit	; ...nor zero (reuse is OK)
+		BBS0 ccr68, br_exit	; neither carry...
+		BBS2 ccr68, br_exit	; ...nor zero (reuse is OK)
 branch:
-	JMP bra_do		; *** repeater ***
+; ** inline code from BRA @ bra_do **
+	SEC				; base offset is after the instruction
+	LDA (pc68), Y	; check direction
+	BMI br_bk		; backwards jump
+		TYA				; get current pc low
+		ADC (pc68), Y	; add offset
+		TAY				; new offset!!!
+		BCS br_bc		; same msb, go away
+br_go:
+			JMP execute		; resume execution
+br_bc:
+		INC pc68 + 1	; carry on msb
+		BPL br_lf		; skip if in low area
+			RMB6 pc68+1		; otherwise clear A14
+			JMP execute		; and jump
+br_lf:
+		SMB6 pc68+1			; low area needs A14 set
+		JMP execute
+br_bk:
+	TYA				; get current pc low
+	ADC (pc68), Y	; "subtract" offset
+	TAY				; new offset!!!
+		BCS br_go		; all done
+	DEC pc68 + 1	; borrow on msb
+		BPL br_lf		; skip if in low area
+ 	RMB6 pc68+1		; otherwise clear A14
+	JMP execute		; and jump
 
 ; branch to subroutine
 _8d:
 ; BSR rel (8)
 ; +
-; *** REVISE NEW PROCEDURE ******************************************
 	_PC_ADV			; go for operand
+; * push return address *
 	TYA				; get current PC-LSB minus one
 	SEC				; return to next byte!
-	ADC #0
+	ADC #0			; will set carry if wrapped!
 	STA (sp68)		; stack LSB first
 	DEC sp68		; decrement SP
 	BNE bsr_phi		; no wrap, just push MSB
 		LDA sp68 + 1	; get SP MSB
-		DEC				; down one page
+		DEC				; previous page
 		_AH_BOUND		; inject
 		STA sp68 + 1	; update pointer
 bsr_phi:
-	LDA pc68+1		; get current MSB *** careful if there was a wrap before
+	LDA pc68+1		; get current MSB
+	ADC #0			; take previous carry!
+	_AH_BOUND		; just in case
 	STA (sp68)		; push it!
 	DEC sp68		; update SP
-	BNE bsr_do		; no wrap, just push MSB
+	BNE bsr_do		; no wrap, ready to go!
 		LDA sp68 + 1	; get SP MSB
-		DEC				; down one page
+		DEC				; previous page
 		_AH_BOUND		; inject
-		STA sp68 + 1	; update pointer	
+		STA sp68 + 1	; update pointer
+; ** inline code from BRA @ bra_do **
 bsr_do:				; max. from 29 here
 	SEC				; base offset is after the instruction
 	LDA (pc68), Y	; check direction
@@ -3680,26 +3709,84 @@ _6e:
 _7e:
 ; JMP ext (3)
 ; -5+32//46
-	_PC_ADV		; go for destination MSB
+	_PC_ADV			; go for destination MSB
 	LDA (pc68), Y	; get it
-	_AH_BOUND	; check against emulated limits
-	TAX			; hold it for a moment
-	_PC_ADV		; now for the LSB
+	_AH_BOUND		; check against emulated limits
+	TAX				; hold it for a moment
+	_PC_ADV			; now for the LSB
 	LDA (pc68), Y	; get it
-	TAY			; this works as index
+	TAY				; this works as index
 	STX pc68 + 1	; MSB goes into register area
-	JMP execute	; all done (-5 for jumps, all this is +32...46)
+	JMP execute		; all done (-5 for jumps, all this is +32...46)
 
 ; jump to subroutine
 _ad:
-; JSR ind (8) *** ESSENTIAL for minimOS·63 kernel calling **********************
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; JSR ind (8) *** ESSENTIAL for minimOS·63 kernel calling ***
+; +82// (already discounted -5 for jumps)
+	_INDEXED		; get address + offset at tmptr ***** any faster way? *****
+; * push return address *
+	TYA				; get current PC-LSB minus one
+	SEC				; return to next byte!
+	ADC #0			; will set carry if wrapped!
+	STA (sp68)		; stack LSB first
+	DEC sp68		; decrement SP
+	BNE jsri_phi		; no wrap, just push MSB
+		LDA sp68 + 1	; get SP MSB
+		DEC				; previous page
+		_AH_BOUND		; inject
+		STA sp68 + 1	; update pointer
+jsri_phi:
+	LDA pc68+1		; get current MSB
+	ADC #0			; take previous carry!
+	_AH_BOUND		; just in case
+	STA (sp68)		; push it!
+	DEC sp68		; update SP
+	BNE jsri_do		; no wrap, ready to go!
+		LDA sp68 + 1	; get SP MSB
+		DEC				; previous page
+		_AH_BOUND		; inject
+		STA sp68 + 1	; update pointer
+jsri_do:
+; * virtual indirect jump via tmptr ***** check faster way from JMPs *****
+	LDY tmptr		; get destination LSB
+	LDA tmptr + 1	; get destination MSB
+	_AH_BOUND		; keep injected!
+	STA pc68 + 1	; update PC
+	JMP execute		; go on!
 
 _bd:
 ; JSR ext (9)
-	; ***** TO DO ***** TO DO *****
-	JMP next_op	; standard end
+; +82// (already discounted -5 for jumps)
+	_EXTENDED		; get address + offset at tmptr ***** any faster way? *****
+; * push return address *
+	TYA				; get current PC-LSB minus one
+	SEC				; return to next byte!
+	ADC #0			; will set carry if wrapped!
+	STA (sp68)		; stack LSB first
+	DEC sp68		; decrement SP
+	BNE jsre_phi		; no wrap, just push MSB
+		LDA sp68 + 1	; get SP MSB
+		DEC				; previous page
+		_AH_BOUND		; inject
+		STA sp68 + 1	; update pointer
+jsre_phi:
+	LDA pc68+1		; get current MSB
+	ADC #0			; take previous carry!
+	_AH_BOUND		; just in case
+	STA (sp68)		; push it!
+	DEC sp68		; update SP
+	BNE jsre_do		; no wrap, ready to go!
+		LDA sp68 + 1	; get SP MSB
+		DEC				; previous page
+		_AH_BOUND		; inject
+		STA sp68 + 1	; update pointer
+jsre_do:
+; * virtual indirect jump via tmptr ***** check faster way from JMPs *****
+	LDY tmptr		; get destination LSB
+	LDA tmptr + 1	; get destination MSB
+	_AH_BOUND		; keep injected!
+	STA pc68 + 1	; update PC
+	JMP execute		; go on!
 
 ; return from subroutine
 _39:
@@ -3758,7 +3845,7 @@ _3f:
 
 ; ** status register opcodes **
 
-; clear overflow *** these are trivial, nothing else to revise *********************************
+; clear overflow
 _0a:
 ; CLV (2)
 ; +5
