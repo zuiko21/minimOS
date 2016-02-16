@@ -4,7 +4,7 @@ AKA *minimOS*, this is the **original** branch. While the forthcoming **minimOSÂ
 Depending on the targeted processor, code chunks (firmware, kernel, drivers, apps...) may be classified as:
 * **NMOS:** only the original, **legal** opcodes are supported. *Some macros are provided in order to emulate the missing CMOS instructions*.
 * **CMOS (*generic*):** usual, preferred deployment, includes basic CMOS upgrades but *not* the Rockwell/WDC extensions (RMB/SMB/BBR/BBS).
-* **CMOS (Rockwell):** allows the use of RMB/SMB/BBR/BBS and maybe WAI/STP. *This is **not** compatible with 65C816 processors, due to their lack of Rockwell extensions (replaced by the new addressing modes).
+* **CMOS (Rockwell):** allows the use of RMB/SMB/BBR/BBS and maybe WAI/STP. *This is NOT compatible with 65C816 processors, due to their lack of Rockwell extensions (replaced by the new addressing modes).
 
 Obviously, no 65(C)02 is able to execute '816 code, although the latter is capable of running NMOS and *generic* 65C02 code.
 
@@ -21,6 +21,6 @@ Since the firmware code at `k_call` is designed around a `JMP (fw_table, X)` ins
 **Parameter passing and return values** are done via the **Y** register and/or some *zeropage* locations. There are **12 bytes** for parameters (three chunks of 32-bit words) known as:
 ```
 zpar  = zaddr  = $F0
-zpar2 = zaddr2 = $E8
-zpar3 = zaddr3 = $E4
+zpar2 = zaddr2 = $F4
+zpar3 = zaddr3 = $F8
 ```
