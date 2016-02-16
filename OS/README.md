@@ -37,4 +37,26 @@ local3 = locpt3 = $EC
 where the `localX` labels are used for *data*, and `locptX` for *pointers*. The generic label `locals` gives access to the beginning of this area. Hopefully, **all these addresses $E4-$FB would remain unchanged** in future versions, although at such an early stage (as of 0.5 version) *this cannot be guaranteed*. In case of change, built binaries won't be compatible any longer, and reassembly/recompiling would be necessary, source code unchanged.
 
 ###User zeropage space
-Full featured systems will have (currently) **between $03 and $E3** freely available, pointed by the label `uz`. Due to the **software-implemented multitasking** on some 65(C)02 systems, user programmes are **encouraged** (but not *required*) to keep zeropage use from the bottom up, and to **set the system variable `z_used` with the currently used zeropage space**. It is OK (and recommended) to update this value dinamically, since *software-driven* context switching will **only** save `z_used` bytes from `uz` up. On the other hand, systems with *hardware-assisted multitasking* (or any 65C816 implementation) make no use whatsoever of this value, but should not be used because of compatibility reasons. Leaving `z_used` *default* value (currently **$E1** for full featured systems) is safe anyway, albeit performance might be impaired whenever software-multitasking is in use.
+Full featured systems will have (currently) **between $03 and $E3** freely available, pointed by the label `uz`. Due to the **software-implemented multitasking** on some 65(C)02 systems, user programmes are **encouraged** (but not *required*) to keep zeropage use from the bottom up, and to **set the system variable `z_used` with the currently used zeropage space**. It is OK (and recommended) to update this value dinamically, since *software-driven* context switching will **only** save `z_used` bytes from `uz` up. On the other hand, systems with *hardware-assisted multitasking* (or any 65C816 implementation) make no use whatsoever of this value, but should not be used because of compatibility reasons. Leaving `z_used` *default* value (currently **$E1** for full featured systems) is **safe** anyway, albeit performance might be impaired whenever software-multitasking is in use.
+
+###Reserved zeropage space
+Besides user space and locals/parameters area, there are some bytes usually reserved:
+
+* `$00-$01: reserved` for compatibility with 6510 systems. *These will be free ONLY if the CPU is NOT a 6510 AND no software-multitasking is in use*.
+* `$FC-$FD: sysptr` might be used by **interrupt tasks** anytime, which aren't expected to be reentrant anyway.
+* `$FE: systmp` might be equally used by **interrupts**. Tinkering with these will do no harm, however values may change unexpectedly *if interrupts are enabled*.
+* `$FF: sys_sp` holds the SP register between context switches. Unlike the above, **this cannot be altered** if *any* form of multitasking is in use, otherwise the system will crash!
+
+##File description
+*(to be done)*
+###`options.h`
+###`macros.h`
+###`abi.h`
+###`zeropage.h`
+###`sysvars.h`
+###`drivers.h`
+###`rom.s`
+###`kernel.s`
+###`drivers.s`
+###`api.s`
+###`shell.s`
