@@ -43,6 +43,7 @@ Full featured systems will have (currently) **between $03 and $E3** freely avail
 Besides user space and locals/parameters area, there are some bytes usually reserved:
 
 * `$00-$01: reserved` for compatibility with 6510 systems. *These will be free ONLY if the CPU is NOT a 6510 AND no software-multitasking is in use*.
+* `$03: z_used` is expected to indicate how many zeropage bytes (from `uz`) are actually used, for a faster *software-based* multitasking. *Otherwise (hardware-assisted or NO multitasking) is free*.
 * `$FC-$FD: sysptr` might be used by **interrupt tasks** anytime, which aren't expected to be reentrant anyway.
 * `$FE: systmp` might be equally used by **interrupts**. Tinkering with these will do no harm, however values may change unexpectedly *if interrupts are enabled*.
 * `$FF: sys_sp` holds the SP register between context switches. Unlike the above, **this cannot be altered** if *any* form of multitasking is in use, otherwise the system will crash!
