@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
-; v0.1a5
+; v0.1a6 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160215
+; last modified 20160217
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -145,8 +145,8 @@ _41:_42:_45:_4b:_4e:_51:_52:_55:_5b:_5e:_61:_62:_65:_6b:_71:_72:_75:_7b
 _83:_87:_8f:_93:_9d:_a3:_b3:_c3:_c7:_cc:_cd:_cf:_d3:_dc:_dd:_e3:_ec:_ed:_f3:_fc:_fd
 
 ; illegal opcodes will seem to trigger an NMI!
-nmi68:
-	_PC_ADV			; hardware interrupts (when available) supposedly checked before incrementing PC, anyway skip illegal opcode
+	_PC_ADV			; skip illegal opcode
+nmi68:				; hardware interrupts, when available, to be checked AFTER incrementing PC
 	SEC				; prepare subtraction
 	LDA sp68		; get stack pointer LSB
 	SBC #7			; make room for stack frame
@@ -158,14 +158,17 @@ nmi68:
 		STA sp68+1		; update pointer
 nmi_do:
 	STX sp68		; room already made
-	LDX #0			; index for register area stacking
+	LDX #1			; index for register area stacking (skip fake PC LSB)
+	TYA				; actual PC LSB goes first!
 	LDY #7			; index for stack area
+	STA (sp68), Y	; push LSB first, then the loop
+	DEY				; post-decrement
 nmi_loop:
 		LDA pc68, X			; get one byte from register area
 		STA (sp68), Y		; store in free stack space
 		INX					; increase original offset
 		DEY					; stack grows backwards
-		BMI nmi_loop		; zero is included
+		BNE nmi_loop		; zero is NOT included!!!
 	SMB4 ccr68		; mask interrupts! *** Rockwell ***
 	LDY e_top - 3	; get LSB from emulated NMI vector
 	LDA e_top - 4	; get MSB...
@@ -3722,8 +3725,8 @@ _7e:
 ; jump to subroutine
 _ad:
 ; JSR ind (8) *** ESSENTIAL for minimOS·63 kernel calling ***
-; +82// (already discounted -5 for jumps)
-	_INDEXED		; get address + offset at tmptr ***** any faster way? *****
+; -5 +72//
+	_PC_ADV			; point to offset
 ; * push return address *
 	TYA				; get current PC-LSB minus one
 	SEC				; return to next byte!
@@ -3747,17 +3750,21 @@ jsri_phi:
 		_AH_BOUND		; inject
 		STA sp68 + 1	; update pointer
 jsri_do:
-; * virtual indirect jump via tmptr ***** check faster way from JMPs *****
-	LDY tmptr		; get destination LSB
-	LDA tmptr + 1	; get destination MSB
-	_AH_BOUND		; keep injected!
-	STA pc68 + 1	; update PC
-	JMP execute		; go on!
+; * compute destination address and jump, new from JMP ind *
+	LDA (pc68), Y	; set offset
+	CLC				; prepare
+	ADC x68			; add LSB
+	TAY				; this is new offset!
+	LDA x68 + 1		; get MSB
+	ADC #0			; propagate carry
+	_AH_BOUND		; stay injected
+	STA pc68 + 1	; update pointer
+	JMP execute		; do jump
 
 _bd:
 ; JSR ext (9)
-; +82// (already discounted -5 for jumps)
-	_EXTENDED		; get address + offset at tmptr ***** any faster way? *****
+; -5 +74//
+	_PC_ADV			; point to operand MSB
 ; * push return address *
 	TYA				; get current PC-LSB minus one
 	SEC				; return to next byte!
@@ -3781,12 +3788,15 @@ jsre_phi:
 		_AH_BOUND		; inject
 		STA sp68 + 1	; update pointer
 jsre_do:
-; * virtual indirect jump via tmptr ***** check faster way from JMPs *****
-	LDY tmptr		; get destination LSB
-	LDA tmptr + 1	; get destination MSB
-	_AH_BOUND		; keep injected!
-	STA pc68 + 1	; update PC
-	JMP execute		; go on!
+; * compute destination address and jump, new from JMP ext *
+	LDA (pc68), Y	; get MSB
+	_AH_BOUND		; check against emulated limits
+	TAX				; hold it for a moment
+	_PC_ADV			; now for the LSB
+	LDA (pc68), Y	; get it
+	TAY				; this works as index
+	STX pc68 + 1	; MSB goes into register area
+	JMP execute		; all done
 
 ; return from subroutine
 _39:
@@ -3825,23 +3835,71 @@ rts_w2:
 ; return from interrupt
 _3b:
 ; RTI (10)
-	; ***** TO DO ***** TO DO *****
-
-	JMP next_op	; standard end of routine
+; -5 +139/139/
+	LDY #1			; forget PC MSB, index for pulling from stack
+	LDX #7			; bytes into stack frame (4 up here)
+rti_loop:
+		LDA (sp68), Y	; pull from stack
+		STA pc68, X		; store into register area
+		INY				; (pre)increment
+		DEX				; go backwards
+		BNE rti_loop	; zero NOT included (111 total loop)
+	LDA (sp68), Y	; last byte in frame is LSB
+	TAX				; store for later
+	LDA sp68		; correct stack pointer
+	CLC				; prepare
+	ADC #7			; release space
+	STA sp68		; update LSB
+	BCC rti_nw		; skip if did not wrap
+		LDA sp68+1		; not just INC zp...
+		INC
+		_AH_BOUND		; ...must be kept injected
+		STA sp68+1		; update MSB when needed
+rti_nw:
+	TXA				; get older LSB
+	TAY				; and make it effective! (24 lastly)
+	JMP execute		; resume execution
 
 ; wait for interrupt
 _3e:
 ; WAI (9)
 	; ***** TO DO ***** TO DO *****
-
+	; *** should just check the external interrupt source... if I bit is clear ***
 	JMP next_op	; standard end of routine
 
 ; software interrupt
 _3f:
 ; SWI (12)
-	; ***** TO DO ***** TO DO *****
-
-	JMP next_op	; standard end of routine
+; -5 +165/165/
+	_PC_ADV			; skip opcode
+	SEC				; prepare subtraction
+	LDA sp68		; get stack pointer LSB
+	SBC #7			; make room for stack frame
+	TAX				; store for later
+	BCS swi_do		; no need for further action
+		LDA sp68+1		; get MSB
+		DEC				; wrap
+		_AH_BOUND		; keep into emulated space
+		STA sp68+1		; update pointer
+swi_do:
+	STX sp68		; room already made
+	LDX #1			; index for register area stacking (skip fake PC LSB)
+	TYA				; actual PC LSB goes first!
+	LDY #7			; index for stack area
+	STA (sp68), Y	; push LSB first, then the loop
+	DEY				; post-decrement (33 up here)
+swi_loop:
+		LDA pc68, X			; get one byte from register area
+		STA (sp68), Y		; store in free stack space
+		INX					; increase original offset
+		DEY					; stack grows backwards
+		BNE swi_loop		; zero is NOT included!!! (7x16 -1 last, total 111)
+	SMB4 ccr68		; mask interrupts! *** Rockwell ***
+	LDY e_top - 5	; get LSB from emulated SWI vector
+	LDA e_top - 6	; get MSB...
+	_AH_BOUND		; ...but inject it into emulated space
+	STA pc68 + 1	; update PC (21 last)
+	JMP execute		; continue with SWI handler
 
 ; ** status register opcodes **
 
