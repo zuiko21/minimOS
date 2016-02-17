@@ -49,11 +49,15 @@ Besides user space and locals/parameters area, there are some bytes usually rese
 * `$FF: sys_sp` holds the SP register between context switches. Unlike the above, **this cannot be altered** if *any* form of multitasking is in use, otherwise the system will crash!
 
 ##File description
-*(to be done)*
 ###`options.h`
+Contains definitions for most hardware, especially the **memory map**. This will mainly affect the [firmware](firmware) and [drivers](drivers) since the *kernel* is expected to be as generic as possible!
 ###`macros.h`
+Many useful `#define` declarations, **shorthands** for common code *snippets* (function calls, etc) and NMOS missing opcodes simulations. Currently, the **standard addresses** (`k_call`, ...) are defined here as *labels*, but might be moved into `abi.h`.
 ###`abi.h`
+Formerly `api.h`, defines numeric constants like **function numbers**, error codes, driver table offsets etc. Also the VIA register addresses for convenience, as most 65xx will have at least one (though not required). 
 ###`zeropage.h`
+*(to be done)*
+
 ###`sysvars.h`
 ###`drivers.h`
 ###`rom.s`
