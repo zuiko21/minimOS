@@ -3641,7 +3641,7 @@ br_bk:
 ; branch to subroutine
 _8d:
 ; BSR rel (8)
-; +
+; -5 +67/71.5/
 	_PC_ADV			; go for operand
 ; * push return address *
 	TYA				; get current PC-LSB minus one
@@ -3697,7 +3697,7 @@ bsr_bk:
 ; jump
 _6e:
 ; JMP ind (4)
-; -5+30...
+; -5 +30/30/44
 	_PC_ADV			; get operand
 	LDA (pc68), Y	; set offset
 	CLC				; prepare
@@ -3711,7 +3711,7 @@ _6e:
 
 _7e:
 ; JMP ext (3)
-; -5+32//46
+; -5 +32/32/46
 	_PC_ADV			; go for destination MSB
 	LDA (pc68), Y	; get it
 	_AH_BOUND		; check against emulated limits
@@ -3725,7 +3725,7 @@ _7e:
 ; jump to subroutine
 _ad:
 ; JSR ind (8) *** ESSENTIAL for minimOS·63 kernel calling ***
-; -5 +72//
+; -5 +72/72/
 	_PC_ADV			; point to offset
 ; * push return address *
 	TYA				; get current PC-LSB minus one
@@ -3763,7 +3763,7 @@ jsri_do:
 
 _bd:
 ; JSR ext (9)
-; -5 +74//
+; -5 +74/74/
 	_PC_ADV			; point to operand MSB
 ; * push return address *
 	TYA				; get current PC-LSB minus one
@@ -3801,7 +3801,7 @@ jsre_do:
 ; return from subroutine
 _39:
 ; RTS (5)
-; +29/29/44
+; -5 +29/29/44
 	INC sp68		; pre-increment
 	BEQ rts_w		; should correct MSB, rare?
 rts_do:
@@ -3863,9 +3863,39 @@ rti_nw:
 ; wait for interrupt
 _3e:
 ; WAI (9)
-	; ***** TO DO ***** TO DO *****
-	; *** should just check the external interrupt source... if I bit is clear ***
-	JMP next_op	; standard end of routine
+; estimated 170...
+	_PC_ADV			; skip opcode
+	SEC				; prepare subtraction
+	LDA sp68		; get stack pointer LSB
+	SBC #7			; make room for stack frame
+	TAX				; store for later
+	BCS wai_do		; no need for further action
+		LDA sp68+1		; get MSB
+		DEC				; wrap
+		_AH_BOUND		; keep into emulated space
+		STA sp68+1		; update pointer
+wai_do:
+	STX sp68		; room already made
+	LDX #1			; index for register area stacking (skip fake PC LSB)
+	TYA				; actual PC LSB goes first!
+	LDY #7			; index for stack area
+	STA (sp68), Y	; push LSB first, then the loop
+	DEY				; post-decrement (33 up here)
+wai_loop:
+		LDA pc68, X			; get one byte from register area
+		STA (sp68), Y		; store in free stack space
+		INX					; increase original offset
+		DEY					; stack grows backwards
+		BNE wai_loop		; zero is NOT included!!! (7x16 -1 last, total 111)
+; status saved, now wait for IRQ (if enabled) or NMI
+	LDX #0			; IRQ offset, set to 4 for NMI
+; wait for interrupt here, setting X accordingly...
+	SMB4 ccr68		; mask interrupts! *** Rockwell ***
+	LDY e_top-7, X	; get LSB from emulated IRQ or NMI vector
+	LDA e_top-8, X	; get MSB...
+	_AH_BOUND		; ...but inject it into emulated space
+	STA pc68 + 1	; update PC (21 last)
+	JMP execute		; continue with IRQ handler
 
 ; software interrupt
 _3f:

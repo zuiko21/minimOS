@@ -198,6 +198,11 @@ cnz_pl:
 		SMB2 ccr68		; set Z
 	BRA next_op		; (check reach) standard end
 
+; update indirect pointer and check NZ
+ind_nz:
+	STA (tmptr)		; store at pointed address
+	BRA check_nz	; check flags and exit
+	
 ; check V & C bits, then N & V
 check_flags:
 	BVC cvc_cc		; if carry...
@@ -284,41 +289,13 @@ _ab:
 ; ADD A ind (5)
 ; +83/90/
 	_INDEXED		; point to operand
-	LDA a68			; get accumulator A
-	BIT #%00010000	; check bit 4
-	BEQ addai_nh	; do not set H if clear
-		SMB5 ccr68		; set H temporarily as b4
-		JMP addai_sh	; do not clear it
-addai_nh:
-	RMB5 ccr68		; otherwise H is clear
-addai_sh:
-	CLC				; prepare
-	ADC (tmptr)		; add operand
-	TAX				; store for later!
-	BIT #%00010000	; check bit 4 again
-	BNE addai_nh2	; do not invert H
-		LDA ccr68		; get original flags
-		AND #%11110000	; clear relevant bits, respecting H
-		EOR #%00100000	; toggle H
-		JMP addai_sh2	; do not reload CCR
-addai_nh2:
-	LDA ccr68		; get original flags
-	AND #%11110000	; clear relevant bits, respecting H
-addai_sh2:
-	BCC addai_nc	; only if carry...
-		INC				; ...set C flag
-addai_nc:
-	BVC addai_nv	; only if overflow...
-		ORA #%00000010	; ...set V flag
-addai_nv:
-	STA ccr68		; update flags
-	TXA				; retrieve value!
-	JMP a_nz		; update A and check NZ
+	BRA addae		; otherwise the same
 
 _bb:
 ; ADD A ext (4)
 ; +83/90/
 	_EXTENDED		; point to operand
+addae:
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
 	BEQ addae_nh	; do not set H if clear
@@ -424,41 +401,13 @@ _eb:
 ; ADD B ind (5)
 ; +83/90/
 	_INDEXED		; point to operand
-	LDA b68			; get accumulator B
-	BIT #%00010000	; check bit 4
-	BEQ addbi_nh	; do not set H if clear
-		SMB5 ccr68		; set H temporarily as b4
-		JMP addbi_sh	; do not clear it
-addbi_nh:
-	RMB5 ccr68		; otherwise H is clear
-addbi_sh:
-	CLC				; prepare
-	ADC (tmptr)		; add operand
-	TAX				; store for later!
-	BIT #%00010000	; check bit 4 again
-	BNE addbi_nh2	; do not invert H
-		LDA ccr68		; get original flags
-		AND #%11110000	; clear relevant bits, respecting H
-		EOR #%00100000	; toggle H
-		JMP addbi_sh2	; do not reload CCR
-addbi_nh2:
-	LDA ccr68		; get original flags
-	AND #%11110000	; clear relevant bits, respecting H
-addbi_sh2:
-	BCC addbi_nc	; only if carry...
-		INC				; ...set C flag
-addbi_nc:
-	BVC addbi_nv	; only if overflow...
-		ORA #%00000010	; ...set V flag
-addbi_nv:
-	STA ccr68		; update flags
-	TXA				; retrieve value!
-	JMP b_nz		; update B and check NZ
+	BRA addbe		; the same
 
 _fb:
 ; ADD B ext (4)
 ; +83/90/
 	_EXTENDED		; point to operand
+addbe:
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
 	BEQ addbe_nh	; do not set H if clear
@@ -606,44 +555,13 @@ _a9:
 ; ADC A ind (5)
 ; +89/96/
 	_INDEXED		; point to operand
-	LDA a68			; get accumulator A
-	BIT #%00010000	; check bit 4
-	BEQ adcai_nh	; do not set H if clear
-		SMB5 ccr68		; set H temporarily as b4
-		JMP adcai_sh	; do not clear it
-adcai_nh:
-	RMB5 ccr68		; otherwise H is clear
-adcai_sh:
-	CLC				; prepare
-	BBR0 ccr68, adcai_cc	; no previous carry
-		SEC						; otherwise preset C
-adcai_cc:
-	ADC (tmptr)		; add operand
-	TAX				; store for later!
-	BIT #%00010000	; check bit 4 again
-	BNE adcai_nh2	; do not invert H
-		LDA ccr68		; get original flags
-		AND #%11110000	; clear relevant bits, respecting H
-		EOR #%00100000	; toggle H
-		JMP adcai_sh2	; do not reload CCR
-adcai_nh2:
-	LDA ccr68		; get original flags (69 aquí
-	AND #%11110000	; clear relevant bits, respecting H
-adcai_sh2:
-	BCC adcai_nc	; only if carry...
-		INC				; ...set C flag
-adcai_nc:
-	BVC adcai_nv	; only if overflow...
-		ORA #%00000010	; ...set V flag
-adcai_nv:
-	STA ccr68		; update flags
-	TXA				; retrieve value!
-	JMP a_nz		; update A and check NZ
+	BRA adcae		; same
 
 _b9:
 ; ADC A ext (4)
 ; +89/96/
 	_EXTENDED		; point to operand
+adcae:
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
 	BEQ adcae_nh	; do not set H if clear
@@ -758,44 +676,13 @@ _e9:
 ; ADC B ind (5)
 ; +89/96/
 	_INDEXED		; point to operand
-	LDA b68			; get accumulator B
-	BIT #%00010000	; check bit 4
-	BEQ adcbi_nh	; do not set H if clear
-		SMB5 ccr68		; set H temporarily as b4
-		JMP adcbi_sh	; do not clear it
-adcbi_nh:
-	RMB5 ccr68		; otherwise H is clear
-adcbi_sh:
-	CLC				; prepare
-	BBR0 ccr68, adcbi_cc	; no previous carry
-		SEC						; otherwise preset C
-adcbi_cc:
-	ADC (tmptr)		; add operand
-	TAX				; store for later!
-	BIT #%00010000	; check bit 4 again
-	BNE adcbi_nh2	; do not invert H
-		LDA ccr68		; get original flags
-		AND #%11110000	; clear relevant bits, respecting H
-		EOR #%00100000	; toggle H
-		JMP adcbi_sh2	; do not reload CCR
-adcbi_nh2:
-	LDA ccr68		; get original flags
-	AND #%11110000	; clear relevant bits, respecting H
-adcbi_sh2:
-	BCC adcbi_nc	; only if carry...
-		INC				; ...set C flag
-adcbi_nc:
-	BVC adcbi_nv	; only if overflow...
-		ORA #%00000010	; ...set V flag
-adcbi_nv:
-	STA ccr68		; update flags
-	TXA				; retrieve value!
-	JMP b_nz		; update B and check NZ
+	JMP adcbe		; same
 
 _f9:
 ; ADC B ext (4)
 ; +89/96/
 	_EXTENDED		; point to operand
+adcbe:
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
 	BEQ adcbe_nh	; do not set H if clear
@@ -857,17 +744,13 @@ _a4:
 ; AND A ind (5)
 ; +56/58.5/
 	_INDEXED		; points to operand
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	LDA a68			; get A accumulator
-	AND (tmptr)		; AND with operand
-	JMP a_nz		; update A and check NZ
+	BRA andae		; same
 
 _b4:
 ; AND A ext (4)
 ; +56/58.5/
 	_EXTENDED		; points to operand
+andae:
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -901,6 +784,7 @@ _e4:
 ; AND B ind (5)
 ; +56/58.5/
 	_INDEXED		; points to operand
+;***************************************************************
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -929,7 +813,7 @@ _85:
 	_PC_ADV			; go for operand
 	LDA (pc68), Y	; immediate
 	AND a68			; AND with accumulator A
-	check_nz		; check flags and end
+	JMP check_nz	; check flags and end
 
 _95:
 ; BIT A dir (3)
@@ -940,7 +824,7 @@ _95:
 	_DIRECT			; X points to operand
 	LDA a68			; get A accumulator
 	AND e_base, X	; test operand
-	check_nz		; check flags and end
+	JMP check_nz	; check flags and end
 
 _a5:
 ; BIT A ind (5)
@@ -951,7 +835,7 @@ _a5:
 	STA ccr68		; update
 	LDA a68			; get A accumulator
 	AND (tmptr)		; AND with operand, just for flags
-	check_nz		; check flags and end
+	JMP check_nz	; check flags and end
 
 _b5:
 ; BIT A ext (4)
@@ -962,7 +846,7 @@ _b5:
 	STA ccr68		; update
 	LDA a68			; get A accumulator
 	AND (tmptr)		; AND with operand, just for flags
-	check_nz		; check flags and end
+	JMP check_nz	; check flags and end
 
 _c5:
 ; BIT B imm (2)
@@ -973,7 +857,7 @@ _c5:
 	_PC_ADV			; go for operand
 	LDA (pc68), Y	; immediate
 	AND b68			; AND with accumulator B
-	check_nz		; check flags and end
+	JMP check_nz	; check flags and end
 
 _d5:
 ; BIT B dir (3)
@@ -984,7 +868,7 @@ _d5:
 	_DIRECT			; X points to operand
 	LDA b68			; get B accumulator
 	AND e_base, X	; AND with operand
-	check_nz		; check flags and end
+	JMP check_nz	; check flags and end
 
 _e5:
 ; BIT B ind (5)
@@ -995,7 +879,7 @@ _e5:
 	STA ccr68		; update
 	LDA b68			; get B accumulator
 	AND (tmptr)		; AND with operand, just for flags
-	check_nz		; check flags and end
+	JMP check_nz	; check flags and end
 
 _f5:
 ; BIT B ext (4)
@@ -1006,7 +890,7 @@ _f5:
 	STA ccr68		; update
 	LDA b68			; get B accumulator
 	AND (tmptr)		; AND with operand, just for flags
-	check_nz		; check flags and end
+	JMP check_nz	; check flags and end
 
 ; clear
 _4f:
@@ -1076,9 +960,7 @@ _91:
 	LDA a68			; get accumulator A
 	SEC				; prepare
 	SBC e_base, X	; subtract without carry
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; check NZVC and exit
 
 _a1:
 ; CMP A ind (5)
@@ -1090,9 +972,7 @@ _a1:
 	LDA a68			; get accumulator A
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; check NZVC and exit
 
 _b1:
 ; CMP A ext (4)
@@ -1104,9 +984,7 @@ _b1:
 	LDA a68			; get accumulator A
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; check NZVC and exit
 
 _c1:
 ; CMP B imm (2)
@@ -1118,9 +996,7 @@ _c1:
 	LDA b68			; get accumulator B
 	SEC				; prepare
 	SBC tmptr		; subtract without carry
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; check NZVC and exit
 
 _d1:
 ; CMP B dir (3)
@@ -1132,9 +1008,7 @@ _d1:
 	LDA b68			; get accumulator B
 	SEC				; prepare
 	SBC e_base, X	; subtract without carry
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; check NZVC and exit
 
 _e1:
 ; CMP B ind (5)
@@ -1146,9 +1020,7 @@ _e1:
 	LDA b68			; get accumulator B
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; check NZVC and exit
 
 _f1:
 ; CMP B ext (4)
@@ -1160,9 +1032,7 @@ _f1:
 	LDA b68			; get accumulator B
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; check NZVC and exit
 
 ; compare accumulators
 _11:
@@ -1174,9 +1044,7 @@ _11:
 	LDA a68			; get accumulator A
 	SEC				; prepare
 	SBC b68			; subtract B without carry
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; check NZVC and exit
 
 ; 1's complement
 _43:
@@ -1188,9 +1056,7 @@ _43:
 	STA ccr68		; update status
 	LDA a68			; get A
 	EOR #$FF		; complement it
-	STA a68			; update value
-	_CC_NZ			; check these
-	JMP next_op		; standard end of routine
+	JMP a_nz		; update A, check NZ and exit
 
 _53:
 ; COM B (2)
@@ -1201,9 +1067,7 @@ _53:
 	STA ccr68		; update status
 	LDA b68			; get B
 	EOR #$FF		; complement it
-	STA b68			; update value
-	_CC_NZ			; check these
-	JMP next_op		; standard end of routine
+	JMP b_nz		; update B, check NZ and exit
 
 _63:
 ; COM ind (7)
@@ -1215,9 +1079,7 @@ _63:
 	STA ccr68		; update status
 	LDA (tmptr)		; get memory
 	EOR #$FF		; complement it
-	STA (tmptr)		; update value
-	_CC_NZ			; check these
-	JMP next_op		; standard end of routine
+	JMP ind_nz		; store, check flags and exit
 
 _73:
 ; COM ext (6)
@@ -1229,9 +1091,7 @@ _73:
 	STA ccr68		; update status
 	LDA (tmptr)		; get memory
 	EOR #$FF		; complement it
-	STA (tmptr)		; update value
-	_CC_NZ			; check these
-	JMP next_op		; standard end of routine
+	JMP ind_nz		; store, check flags and exit
 
 ; 2's complement
 _40:
@@ -1331,8 +1191,7 @@ daa_loop:
 daa_nv:
 	STA a68			; update accumulator with BCD value
 daa_ok:
-	_CC_NZ			; check these flags (+22 worst)
-	JMP next_op		; standard end of routine
+	JMP check_flags	; check and exit
 
 ; decrement
 _4a:
@@ -1409,9 +1268,8 @@ _88:
 	_PC_ADV			; go for operand
 	LDA (pc68), Y	; immediate
 	EOR a68			; EOR with accumulator A
-	STA a68			; update
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
+
 
 _98:
 ; EOR A dir (3)
@@ -1422,9 +1280,7 @@ _98:
 	_DIRECT			; X points to operand
 	LDA a68			; get A accumulator
 	EOR e_base, X	; EOR with operand
-	STA a68			; update A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _a8:
 ; EOR A ind (5)
@@ -1435,9 +1291,7 @@ _a8:
 	STA ccr68		; update
 	LDA a68			; get A accumulator
 	EOR (tmptr)		; EOR with operand
-	STA a68			; update A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _b8:
 ; EOR A ext (4)
@@ -1448,9 +1302,7 @@ _b8:
 	STA ccr68		; update
 	LDA a68			; get A accumulator
 	EOR (tmptr)		; EOR with operand
-	STA a68			; update A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _c8:
 ; EOR B imm (2)
@@ -1461,9 +1313,7 @@ _c8:
 	_PC_ADV			; go for operand
 	LDA (pc68), Y	; immediate
 	EOR b68			; EOR with accumulator B
-	STA b68			; update
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 _d8:
 ; EOR B dir (3)
@@ -1474,9 +1324,7 @@ _d8:
 	_DIRECT			; X points to operand
 	LDA b68			; get B accumulator
 	EOR e_base, X	; EOR with operand
-	STA b68			; update B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 _e8:
 ; EOR B ind (5)
@@ -1487,9 +1335,7 @@ _e8:
 	STA ccr68		; update
 	LDA b68			; get B accumulator
 	EOR (tmptr)		; EOR with operand
-	STA b68			; update B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 _f8:
 ; EOR B ext (4)
@@ -1500,9 +1346,7 @@ _f8:
 	STA ccr68		; update
 	LDA b68			; get B accumulator
 	EOR (tmptr)		; EOR with operand
-	STA b68			; update B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 ; increment
 _4c:
@@ -1578,9 +1422,7 @@ _86:
 	STA ccr68		; update
 	_PC_ADV			; go for operand
 	LDA (pc68), Y	; immediate
-	STA a68			; update accumulator A
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _96:
 ; LDA A dir (3) *** access to $00 is redirected to minimOS standard input ***
@@ -1595,9 +1437,7 @@ _96:
 ; ** continue execution otherwise **
 		LDA e_base, X	; get operand
 ldaad_ret:
-		STA a68			; load into A
-		_CC_NZ			; set flags
-		JMP next_op		; standard end
+		JMP a_nz		; update A, check NZ and exit
 ; *** trap input, minimOS specific ***
 ldaad_trap:
 	LDY #0			; *** minimOS standard device, TBD ***
@@ -1617,9 +1457,7 @@ _a6:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA (tmptr)		; get operand
-	STA a68			; load into A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _b6:
 ; LDA A ext (4)
@@ -1629,9 +1467,7 @@ _b6:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA (tmptr)		; get operand
-	STA a68			; load into A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _c6:
 ; LDA B imm (2)
@@ -1641,9 +1477,7 @@ _c6:
 	STA ccr68		; update
 	_PC_ADV			; go for operand
 	LDA (pc68), Y	; immediate
-	STA b68			; update accumulator B
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 _d6:
 ; LDA B dir (3) *** access to $00 is redirected to minimOS standard input ***
@@ -1658,9 +1492,7 @@ _d6:
 ; ** continue execution otherwise **
 		LDA e_base, X	; get operand
 ldabd_ret:
-		STA b68			; load into A
-		_CC_NZ			; set flags
-		JMP next_op		; standard end
+		JMP b_nz		; update B, check NZ and exit
 ; *** trap input, minimOS specific ***
 ldabd_trap:
 	LDY #0			; *** minimOS standard device, TBD ***
@@ -1680,9 +1512,7 @@ _e6:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA (tmptr)		; get operand
-	STA b68			; load into B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 _f6:
 ; LDA B ext (4)
@@ -1692,9 +1522,7 @@ _f6:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA (tmptr)		; get operand
-	STA b68			; load into B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 ; inclusive OR
 _8a:
@@ -1706,9 +1534,7 @@ _8a:
 	_PC_ADV			; go for operand
 	LDA (pc68), Y	; immediate
 	ORA a68			; OR with accumulator A
-	STA a68			; update
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _9a:
 ; ORA A dir (3)
@@ -1719,9 +1545,7 @@ _9a:
 	_DIRECT			; X points to operand
 	LDA a68			; get A accumulator
 	ORA e_base, X	; ORA with operand
-	STA a68			; update A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _aa:
 ; ORA A ind (5)
@@ -1732,9 +1556,7 @@ _aa:
 	STA ccr68		; update
 	LDA a68			; get A accumulator
 	ORA (tmptr)		; ORA with operand
-	STA a68			; update A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _ba:
 ; ORA A ext (4)
@@ -1745,9 +1567,7 @@ _ba:
 	STA ccr68		; update
 	LDA a68			; get A accumulator
 	ORA (tmptr)		; ORA with operand
-	STA a68			; update A
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP a_nz		; update A, check NZ and exit
 
 _ca:
 ; ORA B imm (2)
@@ -1758,9 +1578,7 @@ _ca:
 	_PC_ADV			; go for operand
 	LDA (pc68), Y	; immediate
 	ORA b68			; OR with accumulator B
-	STA b68			; update
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 _da:
 ; ORA B dir (3)
@@ -1771,9 +1589,7 @@ _da:
 	_DIRECT			; X points to operand
 	LDA b68			; get B accumulator
 	ORA e_base, X	; ORA with operand
-	STA b68			; update B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 _ea:
 ; ORA B ind (5)
@@ -1784,9 +1600,7 @@ _ea:
 	STA ccr68		; update
 	LDA b68			; get B accumulator
 	ORA (tmptr)		; ORA with operand
-	STA b68			; update B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 _fa:
 ; ORA B ext (4)
@@ -1797,9 +1611,7 @@ _fa:
 	STA ccr68		; update
 	LDA b68			; get B accumulator
 	ORA (tmptr)		; ORA with operand
-	STA b68			; update B
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP b_nz		; update B, check NZ and exit
 
 ; push accumulator
 _36:
@@ -2392,8 +2204,7 @@ _97:
 ; ** continue execution otherwise **
 		LDA a68			; get A
 		STA e_base, X	; store in memory
-		_CC_NZ			; set flags
-		JMP next_op		; standard end
+		JMP check_nz	; usual ending
 ; *** trap output, minimOS specific ***
 staad_trap:
 	LDY #0			; *** minimOS standard device, TBD ***
@@ -2401,8 +2212,7 @@ staad_trap:
 	STA zpar		; parameter for COUT
 	_KERNEL(COUT)	; standard output
 	LDA a68			; just for flags
-	_CC_NZ			; check these
-	JMP next_op		; ended
+	JMP check_nz	; usual ending
 
 _a7:
 ; STA A ind (6)
@@ -2412,9 +2222,7 @@ _a7:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA a68			; get A accumulator
-	STA (tmptr)		; store at operand
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP ind_nz		; store, check NZ and exit
 
 _b7:
 ; STA A ext (5)
@@ -2424,9 +2232,7 @@ _b7:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA a68			; get A accumulator
-	STA (tmptr)		; store at operand
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP ind_nz		; store, check NZ and exit
 
 _d7:
 ; STA B dir (4) *** access to $00 is redirected to minimOS standard output ***
@@ -2441,8 +2247,7 @@ _d7:
 ; ** continue execution otherwise **
 		LDA b68			; get B
 		STA e_base, X	; store in memory
-		_CC_NZ			; set flags
-		JMP next_op		; standard end
+		JMP check_nz	; usual ending
 ; *** trap output, minimOS specific ***
 stabd_trap:
 	LDY #0			; *** minimOS standard device, TBD ***
@@ -2450,8 +2255,7 @@ stabd_trap:
 	STA zpar		; parameter for COUT
 	_KERNEL(COUT)	; standard output
 	LDA b68			; just for flags
-	_CC_NZ			; check these
-	JMP next_op		; ended
+	JMP check_nz	; ended
 
 _e7:
 ; STA B ind (6)
@@ -2461,9 +2265,7 @@ _e7:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA b68			; get B accumulator
-	STA (tmptr)		; store at operand
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP ind_nz		; store, check NZ and exit
 
 _f7:
 ; STA B ext (5)
@@ -2473,9 +2275,7 @@ _f7:
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA b68			; get B accumulator
-	STA (tmptr)		; store at operand
-	_CC_NZ			; set flags
-	JMP next_op		; standard end
+	JMP ind_nz		; store, check NZ and exit
 
 ; subtract without carry
 _80:
@@ -2489,9 +2289,7 @@ _80:
 	SEC				; prepare
 	SBC tmptr		; subtract without carry
 	STA a68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _90:
 ; SUB A dir (3)
@@ -2504,9 +2302,7 @@ _90:
 	SEC				; prepare
 	SBC e_base,X		; subtract without carry
 	STA a68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _a0:
 ; SUB A ind (5)
@@ -2519,9 +2315,7 @@ _a0:
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
 	STA a68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _b0:
 ; SUB A ext (4)
@@ -2534,9 +2328,7 @@ _b0:
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
 	STA a68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _c0:
 ; SUB B imm (2)
@@ -2549,9 +2341,7 @@ _c0:
 	SEC				; prepare
 	SBC tmptr		; subtract without carry
 	STA b68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _d0:
 ; SUB B dir (3)
@@ -2564,9 +2354,7 @@ _d0:
 	SEC				; prepare
 	SBC e_base, X	; subtract without carry
 	STA b68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _e0:
 ; SUB B ind (5)
@@ -2579,9 +2367,7 @@ _e0:
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
 	STA b68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _f0:
 ; SUB B ext (4)
@@ -2594,9 +2380,7 @@ _f0:
 	SEC				; prepare
 	SBC (tmptr)		; subtract without carry
 	STA b68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 ; subtract accumulators
 _10:
@@ -2609,9 +2393,7 @@ _10:
 	SEC				; prepare
 	SBC b68			; subtract B without carry
 	STA a68			; update accumulator A
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 ; subtract with carry
 _82:
@@ -2628,9 +2410,7 @@ sbcam_do:
 	LDA a68			; get accumulator A
 	SBC tmptr		; subtract with carry
 	STA a68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _92:
 ; SBC A dir (3)
@@ -2646,9 +2426,7 @@ sbcad_do:
 	LDA a68			; get accumulator A
 	SBC e_base, X	; subtract with carry
 	STA a68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _a2:
 ; SBC A ind (5)
@@ -2664,9 +2442,7 @@ sbcai_do:
 	LDA a68			; get accumulator A
 	SBC (tmptr)		; subtract with carry
 	STA a68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _b2:
 ; SBC A ext (4)
@@ -2682,9 +2458,7 @@ sbcae_do:
 	LDA a68			; get accumulator A
 	SBC (tmptr)		; subtract with carry
 	STA a68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _c2:
 ; SBC B imm (2)
@@ -2700,9 +2474,7 @@ sbcbm_do:
 	LDA b68			; get accumulator B
 	SBC tmptr		; subtract with carry
 	STA b68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _d2:
 ; SBC B dir (3)
@@ -2718,9 +2490,7 @@ sbcbd_do:
 	LDA b68			; get accumulator B
 	SBC e_base, X	; subtract with carry
 	STA b68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _e2:
 ; SBC B ind (5)
@@ -2736,9 +2506,7 @@ sbcbi_do:
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
 	STA b68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 _f2:
 ; SBC B ext (4)
@@ -2754,9 +2522,7 @@ sbcbe_do:
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
 	STA b68			; update accumulator
-	_CC_CV			; check borrow
-	_CC_NZ			; check these
-	JMP next_op		; standard end
+	JMP check_flags	; and exit
 
 ; transfer accumulator
 _16:
@@ -2766,9 +2532,7 @@ _16:
 	AND #%11110001	; reset N,Z, and always V
 	STA ccr68	; update status
 	LDA a68		; get A
-	STA b68		; store in B
-	_CC_NZ		; set NZ flags when needed
-	JMP next_op	; standard end of routine
+	JMP b_nz	; update B, check NZ and exit
 
 _17:
 ; TBA (2)
@@ -2777,9 +2541,7 @@ _17:
 	AND #%11110001	; reset N,Z, and always V
 	STA ccr68	; update status
 	LDA b68		; get B
-	STA a68		; store in A
-	_CC_NZ		; check these flags
-	JMP next_op	; standard end of routine
+	JMP a_nz	; update A, check NZ and exit
 
 ; test for zero or minus
 _4d:
@@ -2789,8 +2551,7 @@ _4d:
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
 	LDA a68		; check accumulator A
-	_CC_NZ		; check these flags
-	JMP next_op	; standard end of routine
+	JMP check_nz
 
 _5d:
 ; TST B (2)
@@ -2799,8 +2560,7 @@ _5d:
 	AND #%11110000	; reset relevant bits
 	STA ccr68	; update status
 	LDA b68		; check accumulator B
-	_CC_NZ		; check these flags
-	JMP next_op	; standard end of routine
+	JMP check_nz
 
 _6d:
 ; TST ind (7)
@@ -2810,8 +2570,7 @@ _6d:
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
 	LDA (tmptr)		; check operand
-	_CC_NZ			; check these flags
-	JMP next_op		; standard end of routine
+	JMP check_nz
 
 _7d:
 ; TST ext (6)
@@ -2821,8 +2580,7 @@ _7d:
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
 	LDA (tmptr)		; check operand
-	_CC_NZ			; check these flags
-	JMP next_op		; standard end of routine
+	JMP check_nz
 
 ; ** index register and stack pointer ops **
 
