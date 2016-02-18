@@ -640,13 +640,13 @@ _5f:
 
 _6f:
 ; CLR ind (7)
-; +
+; +57/57.5/71
 	_INDEXED		; prepare pointer
 	BRA clre		; same code
 
 _7f:
 ; CLR ext (6)
-; +
+; +54/54.5/68
 	_EXTENDED		; prepare pointer
 clre:
 	LDA #0			; no indirect STZ available
@@ -656,7 +656,7 @@ clre:
 ; compare
 _81:
 ; CMP A imm (2)
-; +
+; +47/51/82
 	_PC_ADV			; get operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -665,7 +665,7 @@ _81:
 
 _91:
 ; CMP A dir (3)
-; +
+; +51/55/86
 	_DIRECT			; get operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -674,15 +674,15 @@ _91:
 
 _a1:
 ; CMP A ind (5)
-; +
+; +64/68.5/100
 	_INDEXED		; get operand
 	BRA cmpae		; same
 
 _b1:
 ; CMP A ext (4)
-; +61/67.5/
+; +61/65.5/97
 	_EXTENDED		; get operand
-cmpae:
+cmpae:				; +30/34/52 from here
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -693,7 +693,7 @@ cmpae:
 
 _c1:
 ; CMP B imm (2)
-; +
+; +47/51/82
 	_PC_ADV			; get operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -702,7 +702,7 @@ _c1:
 
 _d1:
 ; CMP B dir (3)
-; +
+; +51/55/86
 	_DIRECT			; get operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -711,13 +711,13 @@ _d1:
 
 _e1:
 ; CMP B ind (5)
-; +
+; +64/68.5/100
 	_INDEXED		; get operand
 	BRA cmpbe		; same
 
 _f1:
 ; CMP B ext (4)
-; +61/67.5/
+; +61/65.5/97
 	_EXTENDED		; get operand
 cmpbe:
 	LDA ccr68		; get flags
@@ -765,15 +765,15 @@ _53:
 
 _63:
 ; COM ind (7)
-; +
+; +65/67.5/
 	_INDEXED		; compute pointer
 	BRA come		; same
 
 _73:
 ; COM ext (6)
-; +59/61.5/
+; +62/64.5/
 	_EXTENDED		; addressing mode
-come:
+come:				; +31/33/42 from here
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	INC				; C always set
@@ -793,7 +793,8 @@ _40:
 	LDA #0
 	SBC a68			; negate A
 	STA a68			; update value
-	_CC_NZ			; check these ** not standard ending, might use TAX/CPX for compact version
+nega:				; +11/15/19 from here
+	_CC_NZ			; check these
 	CMP #$80		; did change sign?
 	BNE nega_nv		; skip if not V
 		SMB1 ccr68		; set V flag
@@ -802,7 +803,7 @@ nega_nv:
 
 _50:
 ; NEG B (2)
-; +29/33/37
+; +32/36/40
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -810,24 +811,19 @@ _50:
 	LDA #0
 	SBC b68			; negate B
 	STA b68			; update value
-	_CC_NZ			; check these ** not standard ending, might use TAX/CPX for compact version
-	CMP #$80		; did change sign?
-	BNE negb_nv		; skip if not V
-		SMB1 ccr68		; set V flag
-negb_nv:
-	JMP next_op		; standard end of routine
+	BRA nega		; check flags
 
 _60:
 ; NEG ind (7)
-; +
+; +70/74.5/
 	_INDEXED		; compute pointer
 	BRA nege		; same
 
 _70:
 ; NEG ext (6)
-; +64/68.5/
+; +67/71.5/
 	_EXTENDED		; addressing mode
-nege:
+nege:				; +36/40/44 from here
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -835,12 +831,7 @@ nege:
 	LDA #0
 	SBC (tmptr)		; negate memory
 	STA (tmptr)		; update value
-	_CC_NZ			; check these ** not standard ending, might use TAX/CPX for compact version
-	CMP #$80		; did change sign?
-	BNE nege_nv		; skip if not V
-		SMB1 ccr68		; set V flag
-nege_nv:
-	JMP next_op		; standard end of routine
+	BRA nega		; continue
 
 ; decimal adjust
 _19:
@@ -874,33 +865,29 @@ daa_ok:
 ; decrement
 _4a:
 ; DEC A (2)
-; +27/31/35
+; +
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
 	DEC a68			; decrease A
-	_CC_NZ			; check these ** non-standard ending, might use TXA before checking NZ at end
 	LDX a68			; check it!
+deca:
 	CPX #$7F		; did change sign?
 	BNE deca_nv		; skip if not overflow
 		SMB1 ccr68		; will set V flag
 deca_nv:
-	JMP next_op		; standard end of routine
+	TXA				; retrieve!
+	JMP check_nz	; end
 
 _5a:
 ; DEC B (2)
-; +27/31/35
+; +
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
 	DEC b68			; decrease B
-	_CC_NZ			; check these ** non-standard ending, might use TXA before checking NZ at end
 	LDX b68			; check it!
-	CPX #$7F		; did change sign?
-	BNE decb_nv		; skip if not overflow
-		SMB1 ccr68		; will set V flag
-decb_nv:
-	JMP next_op		; standard end of routine
+	BRA deca		; continue
 
 _6a:
 ; DEC ind (7)
@@ -910,7 +897,7 @@ _6a:
 
 _7a:
 ; DEC ext (6)
-; +62/66.5/
+; +
 	_EXTENDED		; addressing mode
 dece:
 	LDA ccr68		; get original status
@@ -919,12 +906,8 @@ dece:
 	LDA (tmptr)		; no DEC (tmptr) available...
 	DEC
 	STA (tmptr)
-	_CC_NZ			; check these ** non-standard ending, might use TAX and TXA before checking NZ at end
-	CMP #$7F		; did change sign?
-	BNE dece_nv		; skip if not overflow
-		SMB1 ccr68		; will set V flag
-dece_nv:
-	JMP next_op		; standard end of routine
+	TAX				; store for later
+	BRA deca		; continue
 
 ; exclusive OR
 _88:
@@ -935,7 +918,6 @@ _88:
 	LDA pc68 + 1	; get address MSB
 	STA tmptr + 1	; pointer is ready
 	BRA eorae		; continue as indirect addressing
-
 
 _98:
 ; EOR A dir (3)
@@ -954,7 +936,7 @@ _a8:
 
 _b8:
 ; EOR A ext (4)
-; +56/58.5/
+; +
 	_EXTENDED		; points to operand
 eorae:
 	LDA ccr68		; get flags
@@ -990,7 +972,7 @@ _e8:
 
 _f8:
 ; EOR B ext (4)
-; +56/58.5/
+; +
 	_EXTENDED		; points to operand
 eorbe:
 	LDA ccr68		; get flags
@@ -1003,33 +985,29 @@ eorbe:
 ; increment
 _4c:
 ; INC A (2)
-; +27/31/35
+; +
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68		; store new flags
 	INC a68			; increase A
-	_CC_NZ			; check these ** non-standard ending, might use TXA before checking NZ at end
 	LDX a68			; check it!
+inca:
 	CPX #$80		; did change sign?
 	BNE inca_nv		; skip if not overflow
 		SMB1 ccr68		; will set V flag
 inca_nv:
-	JMP next_op		; standard end of routine
+	TXA				; retrieve!
+	JMP check_nz	; end
 
 _5c:
 ; INC B (2)
-; +27/31/35
+; +
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR 
 	STA ccr68		; store new flags
 	INC b68			; increase B
-	_CC_NZ			; check these ** non-standard ending, might use TXA before checking NZ at end
 	LDX b68			; check it!
-	CPX #$80		; did change sign?
-	BNE incb_nv		; skip if not overflow
-		SMB1 ccr68		; will set V flag
-incb_nv:
-	JMP next_op		; standard end of routine
+	BRA inca		; continue
 
 _6c:
 ; INC ind (7)
@@ -1039,7 +1017,7 @@ _6c:
 
 _7c:
 ; INC ext (6)
-; +62/66.5/
+; +
 	_EXTENDED		; addressing mode
 ince:
 	LDA ccr68		; get original status
@@ -1048,12 +1026,8 @@ ince:
 	LDA (tmptr)		; no INC (tmptr) available...
 	INC
 	STA (tmptr)
-	_CC_NZ			; check these ** non-standard ending, might use TAX and TXA before checking NZ at end
-	CMP #$80		; did change sign?
-	BNE ince_nv		; skip if not overflow
-		SMB1 ccr68		; will set V flag
-ince_nv:
-	JMP next_op		; standard end of routine
+	TAX				; store for later
+	BRA inca		; continue
 
 ; load accumulator
 _86:
@@ -1096,7 +1070,7 @@ _a6:
 
 _b6:
 ; LDA A ext (4)
-; +53/55.5/
+; +
 	_EXTENDED		; points to operand
 ldaae:
 	LDA ccr68		; get flags
@@ -1145,7 +1119,7 @@ _e6:
 
 _f6:
 ; LDA B ext (4)
-; +53/55.5/
+; +
 	_EXTENDED		; points to operand
 ldabe:
 	LDA ccr68		; get flags
@@ -1181,7 +1155,7 @@ _aa:
 
 _ba:
 ; ORA A ext (4)
-; +56/58.5/
+; +
 	_EXTENDED		; points to operand
 oraae:
 	LDA ccr68		; get flags
@@ -1217,7 +1191,7 @@ _ea:
 
 _fa:
 ; ORA B ext (4)
-; +56/58.5/
+; +
 	_EXTENDED		; points to operand
 orabe:
 	LDA ccr68		; get flags
@@ -1230,71 +1204,51 @@ orabe:
 ; push accumulator
 _36:
 ; PSH A (4)
-; +18/18/33
+; +
 	LDA a68			; get accumulator A
+psha:
 	STA (sp68)		; put it on stack space
 	LDX sp68		; check LSB
-	BEQ psha_w		; will wrap
-		DEC sp68		; post-decrement
-		JMP next_op		; all done
-psha_w:
+	BNE psha_nw		; will not wrap
+		LDA sp68+1		; get MSB
+		DEC				; decrease it
+		_AH_BOUND		; and inject it
+		STA sp68+1		; worst update
+psha_nw:
 	DEC sp68		; post-decrement
-	LDA sp68+1		; get MSB
-	DEC				; decrease it
-	_AH_BOUND		; and inject it
-	STA sp68+1		; worst update
 	JMP next_op		; all done
 
 _37:
 ; PSH B (4)
-; +18/18/33
+; +
 	LDA b68			; get accumulator B
-	STA (sp68)		; put it on stack space
-	LDX sp68		; check LSB
-	BEQ pshb_w		; will wrap
-		DEC sp68		; post-decrement
-		JMP next_op		; all done
-pshb_w:
-	DEC sp68		; post-decrement
-	LDA sp68+1		; get MSB
-	DEC				; decrease it
-	_AH_BOUND		; and inject it
-	STA sp68+1		; worst update
-	JMP next_op		; all done
+	BRA psha		; same
 
 ; pull accumulator
 _32:
 ; PUL A (4)
-; +15/15/30
+; +
 	INC sp68		; pre-increment
-	BEQ pula_w		; should correct MSB, rare?
-pula_do:
-		LDA (sp68)		; take value from stack
-		STA a68			; store it in accumulator A
-		JMP next_op		; standard end of routine
-pula_w:
-	LDA sp68 + 1	; get stack pointer MSB
-	INC				; increase MSB
-	_AH_BOUND		; keep injected
-	STA sp68 + 1	; update real thing
+	BNE pula_nw		; should not correct MSB
+		LDA sp68 + 1	; get stack pointer MSB
+		INC				; increase MSB
+		_AH_BOUND		; keep injected
+		STA sp68 + 1	; update real thing
+pula_nw:
 	LDA (sp68)		; take value from stack
 	STA a68			; store it in accumulator A
 	JMP next_op		; standard end of routine
 
 _33:
 ; PUL B (4)
-; +15/15/30
+; +
 	INC sp68		; pre-increment
-	BEQ pulb_w		; should correct MSB, rare?
-pulb_do:
-		LDA (sp68)		; take value from stack
-		STA b68			; store it in accumulator B
-		JMP next_op		; standard end of routine
-pulb_w:
-	LDA sp68 + 1	; get stack pointer MSB
-	INC				; increase MSB
-	_AH_BOUND		; keep injected
-	STA sp68 + 1	; update real thing
+	BNE pulb_nw		; should not correct MSB
+		LDA sp68 + 1	; get stack pointer MSB
+		INC				; increase MSB
+		_AH_BOUND		; keep injected
+		STA sp68 + 1	; update real thing
+pulb_nw:
 	LDA (sp68)		; take value from stack
 	STA b68			; store it in accumulator B
 	JMP next_op		; standard end of routine
@@ -1302,18 +1256,20 @@ pulb_w:
 ; rotate left
 _49:
 ; ROL A (2)
-; +29/33/37
+; +
 	CLC				; prepare
-	LDA ccr68		; get flags
-	BIT #%00000001	; check original C
-	BEQ rola_do		; go on if C was clear
-		SEC				; otherwise, set carry
+	BBR0 ccr68, rola_do	; skip if C clear
+		SEC					; otherwise, set carry
 rola_do:
-	AND #%11110000	; clear relevant bits
 	ROL a68			; rotate A left
+	LDX a68			; keep for later
+rots:				; *** common rotation ending, with value in X ***
+	LDA ccr68		; get flags again
+	AND #%11110000	; reset relevant bits
+	CPX #0			; watch computed value!
 	BNE rola_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
-		LDX a68			; retrieve again, faster this way!
+		CPX #0			; retrieve again, much faster!
 rola_nz:
 	BPL rola_pl		; skip if positive
 		ORA #%00001000	; will set N bit
@@ -1328,39 +1284,18 @@ rola_nc:
 
 _59:
 ; ROL B (2)
-; +29/33/37
-	CLC				; prepare
-	LDA ccr68		; get original flags
-	BIT #%00000001	; mask for C flag
-	BEQ rolb_do		; skip if C clear
-		SEC				; otherwise, set carry
-rolb_do:
-	AND #%11110000	; reset relevant bits
-	ROL b68			; rotate B left
-	BNE rolb_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		LDX b68			; retrieve again, faster this way!
-rolb_nz:
-	BPL rolb_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-rolb_pl:
-	BCC rolb_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-rolb_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
-
-_69:
-; ROL ind (7)
 ; +
-	_INDEXED		; addressing mode
-	BRA role		; same
+	CLC				; prepare
+	BBR0 ccr68, rolb_do	; skip if C clear
+		SEC					; otherwise, set carry
+rolb_do:
+	ROL b68			; rotate B left
+	LDX b68			; keep for later
+	BRA rots		; same code!
 
 _79:
 ; ROL ext (6)
-; +72/76/
+; +
 	_EXTENDED		; addressing mode
 role:
 	CLC				; prepare
@@ -1371,76 +1306,36 @@ role_do:
 	ROL				; rotate left
 	STA (tmptr)		; modify
 	TAX				; keep for later
-	LDA ccr68		; get flags again
-	AND #%11110000	; reset relevant bits
-	CPX #0			; watch computed value!
-	BNE role_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		CPX #0			; retrieve again, much faster!
-role_nz:
-	BPL role_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-role_pl:
-	BCC role_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-role_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	BRA rots		; continue
+
+_69:
+; ROL ind (7)
+; +
+	_INDEXED		; addressing mode
+	BRA role		; same
 
 ; rotate right
 _46:
 ; ROR A (2)
-; +29/33/37
+; +
 	CLC				; prepare
-	LDA ccr68		; get flags
-	BIT #%00000001	; check original C
-	BEQ rora_do		; go on if C was clear
-		SEC				; otherwise, set carry
+	BBR0 ccr68, rora_do	; skip if C clear
+		SEC					; otherwise, set carry
 rora_do:
-	AND #%11110000	; clear relevant bits
 	ROR a68			; rotate A right
-	BNE rora_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		LDX a68			; retrieve again, faster this way!
-rora_nz:
-	BPL rora_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-rora_pl:
-	BCC rora_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-rora_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	LDX a68			; keep for later
+	JMP rots		; common end!
 
 _56:
 ; ROR B (2)
-; +29/33/37
+; +
 	CLC				; prepare
-	LDA ccr68		; get flags
-	BIT #%00000001	; check original C
-	BEQ rorb_do		; go on if C was clear
-		SEC				; otherwise, set carry
+	BBR0 ccr68, rorb_do	; skip if C clear
+		SEC					; otherwise, set carry
 rorb_do:
-	AND #%11110000	; clear relevant bits
 	ROR b68			; rotate B right
-	BNE rorb_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		LDX a68			; retrieve again, faster this way!
-rorb_nz:
-	BPL rorb_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-rorb_pl:
-	BCC rorb_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-rorb_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	LDX b68			; keep for later
+	JMP rots		; common end!
 
 _66:
 ; ROR ind (7)
@@ -1450,7 +1345,7 @@ _66:
 
 _76:
 ; ROR ext (6)
-; +72/76/
+; +
 	_EXTENDED		; addressing mode
 rore:
 	CLC				; prepare
@@ -1461,66 +1356,22 @@ rore_do:
 	ROR				; rotate right
 	STA (tmptr)		; modify
 	TAX				; keep for later
-	LDA ccr68		; get flags again
-	AND #%11110000	; reset relevant bits
-	CPX #0			; watch computed value!
-	BNE rore_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		CPX #0			; retrieve again, much faster!
-rore_nz:
-	BPL rore_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-rore_pl:
-	BCC rore_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-rore_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	JMP rots		; common end!
 
 ; arithmetic shift left
 _48:
 ; ASL A (2)
-; +22/25.5/29
-	LDA ccr68		; get original flags
-	AND #%11110000	; reset relevant bits
+; +
 	ASL a68			; shift A left
-	BNE asla_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		LDX a68			; retrieve again!
-asla_nz:
-	BPL asla_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-asla_pl:
-	BCC asla_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asla_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	LDX a68			; retrieve again!
+	JMP rots		; common end
 
 _58:
 ; ASL B (2)
-; +22/25.5/29
-	LDA ccr68		; get original flags
-	AND #%11110000	; reset relevant bits
+; +
 	ASL b68			; shift B left
-	BNE aslb_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		LDX a68			; retrieve again!
-aslb_nz:
-	BPL aslb_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-aslb_pl:
-	BCC aslb_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-aslb_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	LDX b68			; retrieve again!
+	JMP rots		; common end
 
 _68:
 ; ASL ind (7)
@@ -1530,83 +1381,39 @@ _68:
 
 _78:
 ; ASL ext (6)
-; +64/68.5/
+; +
 	_EXTENDED		; prepare pointer
 asle:
 	LDA (tmptr)		; get operand
 	ASL				; shift left
 	STA (tmptr)		; update memory
 	TAX				; save for later!
-	LDA ccr68		; get original flags
-	AND #%11110000	; reset relevant bits
-	CPX #0			; retrieve value
-	BNE asle_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		CPX #0			; retrieve again!
-asle_nz:
-	BPL asle_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-asle_pl:
-	BCC asle_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asle_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	JMP rots		; common end!
 
 ; arithmetic shift right
 _47:
 ; ASR A (2)
-; +30/34/38
-	LDA ccr68		; get original flags
-	AND #%11110000	; reset relevant bits
+; +
 	CLC				; prepare
 	BIT a68			; check bit 7
 	BPL asra_do		; do not insert C if clear
 		SEC				; otherwise, set carry
 asra_do:
 	ROR a68			; emulate arithmetic shift left with preloaded-C rotation
-	BNE asra_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		LDX a68			; retrieve again!
-asra_nz:
-	BPL asra_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-asra_pl:
-	BCC asra_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asra_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	TAX				; store for later
+	JMP rots		; common end!
 
 _57:
 ; ASR B (2)
-; +30/34/38
-	LDA ccr68		; get original flags
-	AND #%11110000	; reset relevant bits
+; +
 	CLC				; prepare
 	BIT b68			; check bit 7
 	BPL asrb_do		; do not insert C if clear
 		SEC				; otherwise, set carry
 asrb_do:
 	ROR b68			; emulate arithmetic shift left with preloaded-C rotation
-	BNE asrb_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		LDX b68			; retrieve again!
-asrb_nz:
-	BPL asrb_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-asrb_pl:
-	BCC asrb_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asrb_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	TAX				; store for later
+	JMP rots		; common end!
 
 _67:
 ; ASR ind (7)
@@ -1616,7 +1423,7 @@ _67:
 
 _77:
 ; ASR ext (6)
-; +72/74.5/
+; +
 	_EXTENDED		; get pointer to operand
 asre:
 	CLC				; prepare
@@ -1627,31 +1434,16 @@ asre_do:
 	ROR 			; emulate arithmetic shift left with preloaded-C rotation
 	STA (tmptr)		; update memory
 	TAX				; store for later!
-	LDA ccr68		; get original flags
-	AND #%11110000	; reset relevant bits
-	CPX #0			; retrieve value
-	BNE asre_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-		CPX #0			; retrieve again!
-asre_nz:
-	BPL asre_pl		; skip if positive
-		ORA #%00001000	; will set N bit
-		EOR #%00000010	; toggle V bit
-asre_pl:
-	BCC asre_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asre_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	JMP rots		; common end!
 
 ; logical shift right
 _44:
 ; LSR A (2)
-; +19/20/21
+; +
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
 	LSR a68			; shift A right
+lshift:				; *** common ending for logical shifts ***
 	BNE lsra_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
 lsra_nz:
@@ -1663,18 +1455,11 @@ lsra_nc:
 
 _54:
 ; LSR B (2)
-; +19/20/21
+; +
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
 	LSR b68			; shift B right
-	BNE lsrb_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-lsrb_nz:
-	BCC lsrb_nc		; skip if there was no carry
-		ORA #%00000011	; will set C and V flags, seems OK
-lsrb_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	BRA lshift		; common end!
 
 _64:
 ; LSR ind (7)
@@ -1684,7 +1469,7 @@ _64:
 
 _74:
 ; LSR ext (6)
-; +61/62.5/
+; +
 	_EXTENDED		; addressing mode
 lsre:
 	LDA (tmptr)		; get operand
@@ -1694,16 +1479,9 @@ lsre:
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
 	CPX #0			; retrieve value
-	BNE lsre_nz		; skip if not zero
-		ORA #%00000100	; set Z flag
-lsre_nz:
-	BCC lsre_nc		; skip if there was no carry
-		ORA #%00000011	; will set C and V flags
-lsre_nc:
-	STA ccr68		; update status
-	JMP next_op		; standard end of routine
+	BRA lshift		; common end!
 
-; store accumulator
+; store accumulator [[[[continue from here]]]]]]
 _97:
 ; STA A dir (4) *** access to $00 is redirected to minimOS standard output ***
 ; +
