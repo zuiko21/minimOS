@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a6 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160217
+; last modified 20160217 -- corrected 20160218
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -3204,7 +3204,7 @@ ldsi_w:
 _be:
 ; LDS ext (5)
 ; +70/73/
-	_INDEXED		; get operand address
+	_EXTENDED		; get operand address
 	LDA ccr68		; get original flags
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags

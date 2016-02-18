@@ -57,17 +57,11 @@
 #define	_INDEXED	_PC_ADV: LDA (pc68), Y: CLC: ADC x68: STA tmptr: LDA x68+1: ADC #0: _AH_BOUND: STA tmptr+1
 ; compute pointer for extended addressing mode (31/31.5/45)
 #define	_EXTENDED	_PC_ADV: LDA (pc68), Y: _AH_BOUND: STA tmptr+1: _PC_ADV: LDA (pc68), Y: STA tmptr
-; compute pointer (as X index) for direct addressing mode (12/12/25)
-#define	_DIRECT		_PC_ADV: LDA (pc68), Y: TAX
-; get immediate operand directly into tmptr, unless further optimisation is available (13/13/26)
-#define	_IMMEDIATE	_PC_ADV: LDA (pc68), Y: STA tmptr
+; compute pointer (as A index) for direct addressing mode (10/10/23)
+#define	_DIRECT		_PC_ADV: LDA (pc68), Y
 
 ; check Z & N flags (6/8/10) will not set both bits at once!
 #define _CC_NZ		BNE *+4: SMB2 ccr68: BPL *+4: SMB3 ccr68
-; check C & V flags (6/10/14) borrow works opposite of 6502, thus BCS!
-#define _CC_CV		BCS *+4: SMB0 ccr68: BVC *+4: SMB1 ccr68
-; check Z & V flags (6/10/14)
-#define	_CC_ZV		BNE *+4: SMB2 ccr68: BVC *+4: SMB1 ccr68
 
 
 ; *** declare some constants ***
@@ -117,7 +111,7 @@ reset68:
 	STA pc68+1		; address fully generated
 ; *** main loop ***
 execute:
-		LDA (pc68), Y		; get opcode (needs CMOS) (5)
+		LDA (pc68), Y	; get opcode (needs CMOS) (5)
 		ASL				; double it as will become pointer (2)
 		TAX				; use as pointer, keeping carry (2)
 		BCC lo_jump		; seems to be less opcodes with bit7 low... (2/3)
@@ -180,16 +174,16 @@ nmi_loop:
 
 ; ** common endings **
 
-; update B and check N & Z bits (slightly slower than A)
+; update B and check N & Z bits (9/11/20)
 b_nz:
 	STA b68			; update accumulator B
 	BRA check_nz	; check usual flags
 
-; update A and check N & Z bits
+; update A and check N & Z bits (6/8/17)
 a_nz:
 	STA a68			; update accumulator A
 
-; just check N & Z, then exit
+; just check N & Z, then exit (3/5/14)
 check_nz:
 	BPL cnz_pl		; if minus...
 		SMB3 ccr68		; set N
@@ -198,18 +192,18 @@ cnz_pl:
 		SMB2 ccr68		; set Z
 	BRA next_op		; (check reach) standard end
 
-; update indirect pointer and check NZ
+; update indirect pointer and check NZ (11/13/22)
 ind_nz:
 	STA (tmptr)		; store at pointed address
 	BRA check_nz	; check flags and exit
 	
-; check V & C bits, then N & V
+; check V & C bits, then N & V (9/13/31)
 check_flags:
-	BVC cvc_cc		; if carry...
-		SMB1 ccr68		; set C
+	BVC cvc_cc		; if overflow...
+		SMB1 ccr68		; set V
 cvc_cc:
-	BCS check_nz	; if overflow...
-		SMB0 ccr68		; set V
+	BCS check_nz	; if carry...
+		SMB0 ccr68		; set C
 	BRA check_nz	; continue checking
 
 ; ** accumulator and memory **
@@ -217,7 +211,7 @@ cvc_cc:
 ; add without carry
 _8b:
 ; ADD A imm (2)
-; +
+; +69/75.5/95
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -226,16 +220,16 @@ _8b:
 
 _9b:
 ; ADD A dir (3)
-; +
-	_DIRECT			; point to operand in X
-	STX tmptr		; store LSB of pointer
+; +73/79.5/99
+	_DIRECT			; point to operand
+	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
 	STA tmptr+1		; pointer is ready
 	BRA addae		; continue as indirect addressing
 
 _ab:
 ; ADD A ind (5)
-; +
+; +86/93/
 	_INDEXED		; point to operand
 	BRA addae		; otherwise the same
 
@@ -243,24 +237,25 @@ _bb:
 ; ADD A ext (4)
 ; +83/90/
 	_EXTENDED		; point to operand
-addae:
+addae:				; +52/58.5/65 from here
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
 	BEQ addae_nh	; do not set H if clear
 		SMB5 ccr68		; set H temporarily as b4
-		JMP addae_sh	; do not clear it
+		BRA addae_sh	; do not clear it
 addae_nh:
 	RMB5 ccr68		; otherwise H is clear
 addae_sh:
 	CLC				; prepare
 	ADC (tmptr)		; add operand
+adda:				; +30/36/49 from here
 	TAX				; store for later!
 	BIT #%00010000	; check bit 4 again
 	BNE addae_nh2	; do not invert H
 		LDA ccr68		; get original flags
 		AND #%11110000	; clear relevant bits, respecting H
 		EOR #%00100000	; toggle H
-		JMP addae_sh2	; do not reload CCR
+		BRA addae_sh2	; do not reload CCR
 addae_nh2:
 	LDA ccr68		; get original flags
 	AND #%11110000	; clear relevant bits, respecting H
@@ -275,9 +270,25 @@ addae_nv:
 	TXA				; retrieve value!
 	JMP a_nz		; update A and check NZ
 
+; add accumulators
+_1b:
+; ABA (2)
+; +51/58/72
+	LDA a68			; get accumulator A
+	BIT #%00010000	; check bit 4
+	BEQ aba_nh		; do not set H if clear
+		SMB5 ccr68		; set H temporarily as b4
+		BRA aba_sh		; do not clear it
+aba_nh:
+	RMB5 ccr68		; otherwise H is clear
+aba_sh:
+	CLC				; prepare
+	ADC b68			; add second accumulator
+	BRA adda		; continue adding to A +21/22/23...
+
 _cb:
 ; ADD B imm (2)
-; +
+; +72/78.5/98
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -286,29 +297,29 @@ _cb:
 
 _db:
 ; ADD B dir (3)
-; +
-	_DIRECT			; point to operand in X
-	STX tmptr		; store LSB of pointer
+; +76/82.5/102
+	_DIRECT			; point to operand
+	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
 	STA tmptr+1		; pointer is ready
 	BRA addbe		; continue as indirect addressing
 
 _eb:
 ; ADD B ind (5)
-; +
+; +89/96
 	_INDEXED		; point to operand
 	BRA addbe		; the same
 
 _fb:
 ; ADD B ext (4)
-; +83/90/
+; +86/93/
 	_EXTENDED		; point to operand
 addbe:
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
 	BEQ addbe_nh	; do not set H if clear
 		SMB5 ccr68		; set H temporarily as b4
-		JMP addbe_sh	; do not clear it
+		BRA addbe_sh	; do not clear it
 addbe_nh:
 	RMB5 ccr68		; otherwise H is clear
 addbe_sh:
@@ -320,7 +331,7 @@ addbe_sh:
 		LDA ccr68		; get original flags
 		AND #%11110000	; clear relevant bits, respecting H
 		EOR #%00100000	; toggle H
-		JMP addbe_sh2	; do not reload CCR
+		BRA addbe_sh2	; do not reload CCR
 addbe_nh2:
 	LDA ccr68		; get original flags
 	AND #%11110000	; clear relevant bits, respecting H
@@ -335,45 +346,11 @@ addbe_nv:
 	TXA				; retrieve value!
 	JMP b_nz		; update B and check NZ
 
-; add accumulators
-_1b:
-; ABA (2)
-; +50/56/
-	LDA a68			; get accumulator A
-	BIT #%00010000	; check bit 4
-	BEQ aba_nh		; do not set H if clear
-		SMB5 ccr68		; set H temporarily as b4
-		JMP aba_sh		; do not clear it
-aba_nh:
-	RMB5 ccr68		; otherwise H is clear
-aba_sh:
-	CLC				; prepare
-	ADC b68			; add second accumulator
-	TAX				; store for later!
-	BIT #%00010000	; check bit 4 again
-	BNE aba_nh2		; do not invert H
-		LDA ccr68		; get original flags
-		AND #%11110000	; clear relevant bits, respecting H
-		EOR #%00100000	; toggle H
-		JMP aba_sh2		; do not reload CCR
-aba_nh2:
-	LDA ccr68		; get original flags
-	AND #%11110000	; clear relevant bits, respecting H
-aba_sh2:
-	BCC aba_nc		; only if carry...
-		INC				; ...set C flag
-aba_nc:
-	BVC aba_nv		; only if overflow...
-		ORA #%00000010	; ...set V flag
-aba_nv:
-	STA ccr68		; update flags
-	TXA				; retrieve value!
-	JMP a_nz		; update A and check NZ
 
 ; add with carry
 _89:
 ; ADC A imm (2)
-; +
+;  +75/81.5/101
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -382,16 +359,16 @@ _89:
 
 _99:
 ; ADC A dir (3)
-; +
-	_DIRECT			; point to operand in X
-	STX tmptr		; store LSB of pointer
+; +79/85.5/105
+	_DIRECT			; point to operand
+	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
 	STA tmptr+1		; pointer is ready
 	BRA adcae		; continue as indirect addressing
 
 _a9:
 ; ADC A ind (5)
-; +
+; +92/99/
 	_INDEXED		; point to operand
 	BRA adcae		; same
 
@@ -399,12 +376,12 @@ _b9:
 ; ADC A ext (4)
 ; +89/96/
 	_EXTENDED		; point to operand
-adcae:
+adcae:				; +58/64.5/71 from here
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
 	BEQ adcae_nh	; do not set H if clear
 		SMB5 ccr68		; set H temporarily as b4
-		JMP adcae_sh	; do not clear it
+		BRA adcae_sh	; do not clear it
 adcae_nh:
 	RMB5 ccr68		; otherwise H is clear
 adcae_sh:
@@ -419,7 +396,7 @@ adcae_cc:
 		LDA ccr68		; get original flags
 		AND #%11110000	; clear relevant bits, respecting H
 		EOR #%00100000	; toggle H
-		JMP adcae_sh2	; do not reload CCR
+		BRA adcae_sh2	; do not reload CCR
 adcae_nh2:
 	LDA ccr68		; get original flags
 	AND #%11110000	; clear relevant bits, respecting H
@@ -436,7 +413,7 @@ adcae_nv:
 
 _c9:
 ; ADC B imm (2)
-; +
+;  +78/84.5/104
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -445,29 +422,29 @@ _c9:
 
 _d9:
 ; ADC B dir (3)
-; +72/78.5/
-	_DIRECT			; point to operand in X
-	STX tmptr		; store LSB of pointer
+; +82/88.5/108
+	_DIRECT			; point to operand
+	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
 	STA tmptr+1		; pointer is ready
 	BRA adcbe		; continue as indirect addressing
 
 _e9:
 ; ADC B ind (5)
-; +
+; +95/102/
 	_INDEXED		; point to operand
 	BRA adcbe		; same
 
 _f9:
 ; ADC B ext (4)
-; +89/96/
+; +92/99/
 	_EXTENDED		; point to operand
 adcbe:
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
 	BEQ adcbe_nh	; do not set H if clear
 		SMB5 ccr68		; set H temporarily as b4
-		JMP adcbe_sh	; do not clear it
+		BRA adcbe_sh	; do not clear it
 adcbe_nh:
 	RMB5 ccr68		; otherwise H is clear
 adcbe_sh:
@@ -482,7 +459,7 @@ adcbe_cc:
 		LDA ccr68		; get original flags
 		AND #%11110000	; clear relevant bits, respecting H
 		EOR #%00100000	; toggle H
-		JMP adcbe_sh2	; do not reload CCR
+		BRA adcbe_sh2	; do not reload CCR
 adcbe_nh2:
 	LDA ccr68		; get original flags
 	AND #%11110000	; clear relevant bits, respecting H
@@ -500,7 +477,7 @@ adcbe_nv:
 ; logical AND
 _84:
 ; AND A imm (2)
-; +
+; +42/44/66
 	_PC_ADV			; go for operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -509,16 +486,16 @@ _84:
 
 _94:
 ; AND A dir (3)
-; +
-	_DIRECT			; X points to operand
-	STX tmptr		; store LSB of pointer
+; +46/48/70
+	_DIRECT			; points to operand
+	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
 	STA tmptr+1		; pointer is ready
 	BRA andae		; continue as indirect addressing
 
 _a4:
 ; AND A ind (5)
-; +
+; +59/61.5/
 	_INDEXED		; points to operand
 	BRA andae		; same
 
@@ -527,7 +504,7 @@ _b4:
 ; +56/58.5/
 	_EXTENDED		; points to operand
 andae:
-	LDA ccr68		; get flags
+	LDA ccr68		; get flags (+25/27/36 from here)
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA a68			; get A accumulator
@@ -536,7 +513,7 @@ andae:
 
 _c4:
 ; AND B imm (2)
-; +
+; +45/47/69
 	_PC_ADV			; go for operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -545,22 +522,22 @@ _c4:
 
 _d4:
 ; AND B dir (3)
-; +
-	_DIRECT			; X points to operand
-	STX tmptr		; store LSB of pointer
+; +49/51/73
+	_DIRECT			; points to operand
+	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
 	STA tmptr+1		; pointer is ready
 	BRA andbe		; continue as indirect addressing
 
 _e4:
 ; AND B ind (5)
-; +
+; +62/64.5/
 	_INDEXED		; points to operand
 	BRA andbe		; same
 
 _f4:
 ; AND B ext (4)
-; +
+; +59/61.5/
 	_EXTENDED		; points to operand
 andbe:
 	LDA ccr68		; get flags
@@ -573,7 +550,7 @@ andbe:
 ; AND without modifying register
 _85:
 ; BIT A imm (2)
-; +
+; +39/41/63
 	_PC_ADV			; go for operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -582,18 +559,16 @@ _85:
 
 _95:
 ; BIT A dir (3)
-; +33/35/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
-	LDA a68			; get A accumulator
-	AND e_base, X	; test operand
-	JMP check_nz	; check flags and end
+; +43/45/67
+	_DIRECT			; points to operand
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA bitae		; continue as indirect addressing
 
 _a5:
 ; BIT A ind (5)
-; +
+; +56/58.5/
 	_INDEXED		; points to operand
 	BRA bitae		; same
 
@@ -601,7 +576,7 @@ _b5:
 ; BIT A ext (4)
 ; +53/55.5/
 	_EXTENDED		; points to operand
-bitae:
+bitae:				; +22/24/33 from here
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -611,7 +586,7 @@ bitae:
 
 _c5:
 ; BIT B imm (2)
-; +
+; +42/44/66
 	_PC_ADV			; go for operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -620,24 +595,22 @@ _c5:
 
 _d5:
 ; BIT B dir (3)
-; +27/29/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
-	LDA b68			; get B accumulator
-	AND e_base, X	; AND with operand
-	JMP check_nz	; check flags and end
+; +46/48/70
+	_DIRECT			; points to operand
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA bitbe		; continue as indirect addressing
 
 _e5:
 ; BIT B ind (5)
-; +
+; +59/61.5/
 	_INDEXED		; points to operand
 	BRA bitbe		; same
 
 _f5:
 ; BIT B ext (4)
-; +53/55.5/
+; +56/58.5/
 	_EXTENDED		; points to operand
 bitbe:
 	LDA ccr68		; get flags
@@ -652,6 +625,7 @@ _4f:
 ; CLR A (2)
 ; +13
 	STZ a68		; clear A
+clra:
 	LDA ccr68	; get previous status
 	AND #%11110100	; clear N, V, C
 	ORA #%00000100	; set Z
@@ -660,13 +634,9 @@ _4f:
 
 _5f:
 ; CLR B (2)
-; +13
+; +16
 	STZ b68		; clear B
-	LDA ccr68	; get previous status
-	AND #%11110100	; clear N, V, C
-	ORA #%00000100	; set Z
-	STA ccr68	; update
-	JMP next_op	; standard end of routine
+	BRA clra	; same
 
 _6f:
 ; CLR ind (7)
@@ -676,16 +646,12 @@ _6f:
 
 _7f:
 ; CLR ext (6)
-; +48/48.5/
+; +
 	_EXTENDED		; prepare pointer
 clre:
 	LDA #0			; no indirect STZ available
 	STA (tmptr)		; clear memory
-	LDA ccr68		; get previous status
-	AND #%11110100	; clear N, V, C
-	ORA #%00000100	; set Z
-	STA ccr68		; update flags
-	JMP next_op		; standard end of routine
+	BRA clra		; same
 
 ; compare
 _81:
@@ -699,15 +665,12 @@ _81:
 
 _91:
 ; CMP A dir (3)
-; +41/47/
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
+; +
 	_DIRECT			; get operand
-	LDA a68			; get accumulator A
-	SEC				; prepare
-	SBC e_base, X	; subtract without carry
-	JMP check_flags	; check NZVC and exit
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA cmpae		; continue as indirect addressing
 
 _a1:
 ; CMP A ind (5)
@@ -739,15 +702,12 @@ _c1:
 
 _d1:
 ; CMP B dir (3)
-; +41/47/
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
+; +
 	_DIRECT			; get operand
-	LDA b68			; get accumulator B
-	SEC				; prepare
-	SBC e_base, X	; subtract without carry
-	JMP check_flags	; check NZVC and exit
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA cmpbe		; continue as indirect addressing
 
 _e1:
 ; CMP B ind (5)
@@ -979,14 +939,12 @@ _88:
 
 _98:
 ; EOR A dir (3)
-; +36/38/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
-	LDA a68			; get A accumulator
-	EOR e_base, X	; EOR with operand
-	JMP a_nz		; update A, check NZ and exit
+; +
+	_DIRECT			; Points to operand
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA eorae		; continue as indirect addressing
 
 _a8:
 ; EOR A ind (5)
@@ -1017,14 +975,12 @@ _c8:
 
 _d8:
 ; EOR B dir (3)
-; +36/38/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
-	LDA b68			; get B accumulator
-	EOR e_base, X	; EOR with operand
-	JMP b_nz		; update B, check NZ and exit
+; +
+	_DIRECT			; points to operand
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA eorbe		; continue as indirect addressing
 
 _e8:
 ; EOR B ind (5)
@@ -1111,28 +1067,26 @@ _86:
 
 _96:
 ; LDA A dir (3) *** access to $00 is redirected to minimOS standard input ***
-; +37/39/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
+; +
+	_DIRECT				; X points to operand
 ; ** trap address in case it goes to host console **
-	TXA				; check offset
 	BEQ ldaad_trap		; ** intercept input!
 ; ** continue execution otherwise **
-		LDA e_base, X	; get operand
-ldaad_ret:
-		JMP a_nz		; update A, check NZ and exit
+		STA tmptr		; store LSB of pointer
+		LDA #>e_base	; emulated MSB
+		STA tmptr+1		; pointer is ready
+		BRA ldaae		; continue as indirect addressing
 ; *** trap input, minimOS specific ***
 ldaad_trap:
 	LDY #0			; *** minimOS standard device, TBD ***
 	_KERNEL(CIN)	; standard input, non locking
 	BCC ldaad_ok	; there was something available
 		LDA #0			; otherwise, NUL means no char was available
-		JMP ldaad_ret	; continue
+		BRA ldaad_ret	; continue
 ldaad_ok:
 	LDA zpar		; get received character
-	JMP ldaad_ret	; store and go, it was slow anyway
+ldaad_ret:
+	JMP a_nz		; update A, check NZ and exit
 
 _a6:
 ; LDA A ind (5)
@@ -1162,28 +1116,26 @@ _c6:
 
 _d6:
 ; LDA B dir (3) *** access to $00 is redirected to minimOS standard input ***
-; +37/39/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
+; +
+	_DIRECT				; A points to operand
 ; ** trap address in case it goes to host console **
-	TXA				; check offset
 	BEQ ldabd_trap		; ** intercept input!
 ; ** continue execution otherwise **
-		LDA e_base, X	; get operand
-ldabd_ret:
-		JMP b_nz		; update B, check NZ and exit
+		STA tmptr		; store LSB of pointer
+		LDA #>e_base	; emulated MSB
+		STA tmptr+1		; pointer is ready
+		BRA ldabe		; continue as indirect addressing
 ; *** trap input, minimOS specific ***
 ldabd_trap:
 	LDY #0			; *** minimOS standard device, TBD ***
 	_KERNEL(CIN)	; standard input, non locking
 	BCC ldabd_ok	; there was something available
 		LDA #0			; otherwise, NUL means no char was available
-		JMP ldabd_ret	; continue
+		BRA ldabd_ret	; continue
 ldabd_ok:
 	LDA zpar		; get received character, it was slow anyway
-	JMP ldabd_ret	; store and go
+ldabd_ret:
+	JMP b_nz		; update B, check NZ and exit
 
 _e6:
 ; LDA B ind (5)
@@ -1214,14 +1166,12 @@ _8a:
 
 _9a:
 ; ORA A dir (3)
-; +36/38/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
-	LDA a68			; get A accumulator
-	ORA e_base, X	; ORA with operand
-	JMP a_nz		; update A, check NZ and exit
+; +
+	_DIRECT			; points to operand
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA oraae		; continue as indirect addressing
 
 _aa:
 ; ORA A ind (5)
@@ -1252,14 +1202,12 @@ _ca:
 
 _da:
 ; ORA B dir (3)
-; +36/38/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
-	LDA b68			; get B accumulator
-	ORA e_base, X	; ORA with operand
-	JMP b_nz		; update B, check NZ and exit
+; +
+	_DIRECT			; points to operand
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA orabe		; continue as indirect addressing
 
 _ea:
 ; ORA B ind (5)
@@ -1416,7 +1364,7 @@ _79:
 	_EXTENDED		; addressing mode
 role:
 	CLC				; prepare
-	BBR0 ccr68, roli_do	; skip if C clear
+	BBR0 ccr68, role_do	; skip if C clear
 		SEC					; otherwise, set carry
 role_do:
 	LDA (tmptr)		; get memory
@@ -1758,18 +1706,15 @@ lsre_nc:
 ; store accumulator
 _97:
 ; STA A dir (4) *** access to $00 is redirected to minimOS standard output ***
-; +37/39/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
+; +
+	_DIRECT				; A points to operand
 ; ** trap address in case it goes to host console **
-	TXA				; check offset
 	BEQ staad_trap		; ** intercept input!
 ; ** continue execution otherwise **
-		LDA a68			; get A
-		STA e_base, X	; store in memory
-		JMP check_nz	; usual ending
+		STA tmptr		; store LSB of pointer
+		LDA #>e_base	; emulated MSB
+		STA tmptr+1		; pointer is ready
+		BRA staae		; continue as indirect addressing
 ; *** trap output, minimOS specific ***
 staad_trap:
 	LDY #0			; *** minimOS standard device, TBD ***
@@ -1798,18 +1743,15 @@ staae:
 
 _d7:
 ; STA B dir (4) *** access to $00 is redirected to minimOS standard output ***
-; +37/39/
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	_DIRECT			; X points to operand
+; +
+	_DIRECT				; A points to operand
 ; ** trap address in case it goes to host console **
-	TXA				; check offset
 	BEQ stabd_trap		; ** intercept input!
 ; ** continue execution otherwise **
-		LDA b68			; get B
-		STA e_base, X	; store in memory
-		JMP check_nz	; usual ending
+		STA tmptr		; store LSB of pointer
+		LDA #>e_base	; emulated MSB
+		STA tmptr+1		; pointer is ready
+		BRA stabe		; continue as indirect addressing
 ; *** trap output, minimOS specific ***
 stabd_trap:
 	LDY #0			; *** minimOS standard device, TBD ***
@@ -1848,16 +1790,12 @@ _80:
 
 _90:
 ; SUB A dir (3)
-; +44/50/
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
+; +
 	_DIRECT			; get operand
-	LDA a68			; get accumulator A
-	SEC				; prepare
-	SBC e_base,X		; subtract without carry
-	STA a68			; update accumulator
-	JMP check_flags	; and exit
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA subae		; continue as indirect addressing
 
 _a0:
 ; SUB A ind (5)
@@ -1890,16 +1828,12 @@ _c0:
 
 _d0:
 ; SUB B dir (3)
-; +44/50/
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
+; +
 	_DIRECT			; get operand
-	LDA b68			; get accumulator B
-	SEC				; prepare
-	SBC e_base, X	; subtract without carry
-	STA b68			; update accumulator
-	JMP check_flags	; and exit
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA subbe		; continue as indirect addressing
 
 _e0:
 ; SUB B ind (5)
@@ -1946,19 +1880,12 @@ _82:
 
 _92:
 ; SBC A dir (3)
-; +50/56.5/
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
+; +
 	_DIRECT			; get operand
-	SEC				; prepare
-	BBR0 ccr68, sbcad_do	; skip if C clear ** Rockwell **
-		CLC				; otherwise, set carry, opposite of 6502
-sbcad_do:
-	LDA a68			; get accumulator A
-	SBC e_base, X	; subtract with carry
-	STA a68			; update accumulator
-	JMP check_flags	; and exit
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA sbcae		; continue as indirect addressing
 
 _a2:
 ; SBC A ind (5)
@@ -1994,19 +1921,12 @@ _c2:
 
 _d2:
 ; SBC B dir (3)
-; +50/56.5/
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
+; +
 	_DIRECT			; get operand
-	SEC				; prepare
-	BBR0 ccr68, sbcbd_do	; skip if C clear ** Rockwell **
-		CLC				; otherwise, set carry, opposite of 6502
-sbcbd_do:
-	LDA b68			; get accumulator B
-	SBC e_base, X	; subtract with carry
-	STA b68			; update accumulator
-	JMP check_flags	; and exit
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA sbcbe		; continue as indirect addressing
 
 _e2:
 ; SBC B ind (5)
@@ -2100,24 +2020,12 @@ _8c:
 
 _9c:
 ; CPX dir (4)
-; +56/62/
-	LDA ccr68		; get original flags
-	AND #%11110001	; reset relevant bits
-	STA ccr68		; update flags
+; +
 	_DIRECT			; get operand
-	SEC				; prepare
-	LDA x68 + 1		; MSB at X
-	SBC e_base, X	; subtract memory
-	STA tmptr		; keep for later
-	BPL cpxd_pl		; not negative
-		SMB3 ccr68		; otherwise set N flag
-cpxd_pl:
-	_PC_ADV			; get second operand
-	LDA x68			; LSB at X
-	SBC e_base + 1, X	; value LSB
-	ORA tmptr		; blend with stored MSB
-	_CC_ZV			; check these bits
-	JMP next_op		; standard end
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA cpxe		; continue as indirect addressing
 
 _ac:
 ; CPX ind (6)
@@ -2151,7 +2059,12 @@ cpxe_nw:
 	SBC (tmptr)		; value LSB
 	STX tmptr		; retrieve old MSB
 	ORA tmptr		; blend with stored MSB
-	_CC_ZV			; check these bits
+	BNE cpxe_nz		; if zero...
+		SMB2 ccr68		; set Z
+cpxe_nz:
+	BVC cpxe_nv		; if overflow...
+		SMB1 ccr68		; set V
+cpxe_nv:
 	JMP next_op		; standard end
 
 ; decrement index
@@ -2236,23 +2149,12 @@ _ce:
 
 _de:
 ; LDX dir (4)
-; +43/47/
-	LDA ccr68		; get original flags
-	AND #%11110001	; reset relevant bits
-	STA ccr68		; update flags
+; +
 	_DIRECT			; get first operand pointer
-	LDA e_base, X	; value MSB
-	BPL ldxd_pl		; not negative
-		SMB3 ccr68		; otherwise set N flag
-ldxd_pl:
-	STA x68 + 1		; update register
-	LDA e_base+1, X	; value LSB
-	STA x68			; register complete
-	ORA x68 + 1		; check for zero
-	BNE ldxd_nz		; was not zero
-		SMB2 ccr68		; otherwise set Z
-ldxd_nz:
-	JMP next_op		; standard end
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA ldxe		; continue as indirect addressing
 
 _ee:
 ; LDX ind (6)
@@ -2300,24 +2202,12 @@ _8e:
 
 _9e:
 ; LDS dir (4)
-; +42/44.5/
-	LDA ccr68		; get original flags
-	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
-	STA ccr68		; update flags
-	_DIRECT			; get operand address in X
-	LDA e_base, X	; value MSB
-	BPL ldsd_pl		; not negative
-		SMB3 ccr68		; otherwise set N flag
-ldsd_pl:
-	_AH_BOUND		; keep injected
-	STA sp68 + 1	; update register
-	LDA e_base+1, X	; value LSB
-	STA sp68		; register complete
-;	ORA sp68 + 1	; check for zero
-;	BNE ldsd_nz		; was not zero
-;		SMB2 ccr68		; otherwise set Z
-;ldsd_nz:
-	JMP next_op		; standard end
+; +
+	_DIRECT			; get operand address
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA ldse		; continue as indirect addressing
 
 _ae:
 ; LDS ind (6)
@@ -2364,23 +2254,12 @@ ldse_w:
 ; store index
 _df:
 ; STX dir (5)
-; +43/47/
-	LDA ccr68		; get original flags
-	AND #%11110001	; reset relevant bits
-	STA ccr68		; update flags
+; +
 	_DIRECT			; get first operand pointer
-	LDA x68 + 1		; value MSB
-	STA e_base, X	; store it
-	BPL stxd_pl		; not negative
-		SMB3 ccr68		; otherwise set N flag
-stxd_pl:
-	LDA x68			; value LSB
-	STA e_base+1, X	; store in memory 
-	ORA x68 + 1		; check for zero
-	BNE stxd_nz		; was not zero
-		SMB2 ccr68		; otherwise set Z
-stxd_nz:
-	JMP next_op		; standard end
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA stxe		; continue as indirect addressing
 
 _ef:
 ; STX ind (7)
@@ -2419,23 +2298,12 @@ stxe_nz:
 ; store stack pointer
 _9f:
 ; STS dir (5)
-; +37/39/
-	LDA ccr68		; get original flags
-	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
-	STA ccr68		; update flags
+; +
 	_DIRECT			; get operand address
-	LDA sp68+1		; get original
-	STA e_base, X	; value MSB
-	BPL stsd_pl		; not negative
-		SMB3 ccr68		; otherwise set N flag
-stsd_pl:
-	LDA sp68		; get LSB
-	STA e_base+1, X	; store it
-;	ORA sp68 + 1	; blend with MSB
-;	BNE stsd_nz		; check for zero
-;		SMB2 ccr68		; otherwise set Z
-;stsd_nz:
-	JMP next_op		; standard end
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA stse		; continue as indirect addressing
 
 _af:
 ; STS ind (7)
@@ -2452,12 +2320,12 @@ stse:
 	AND #%11110001	; reset relevant bits -- Z always zero because of injection!
 	STA ccr68		; update flags
 	LDA sp68 + 1	; value MSB
-	BPL stsi_pl		; not negative
+	BPL stse_pl		; not negative
 		SMB3 ccr68		; otherwise set N flag
 stse_pl:
 	STA (tmptr)		; store in memory
 	INC tmptr		; go for next operand
-	BEQ stsi_w		; rare wrap
+	BEQ stse_w		; rare wrap
 		LDA sp68		; value LSB
 		STA (tmptr)		; transfer complete
 ;		ORA sp68 + 1	; check for zero
