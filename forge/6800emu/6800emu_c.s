@@ -1530,17 +1530,11 @@ _a0:
 
 _b0:
 ; SUB A ext (4)
-; +64/70.5/
+; +67/73.5/
 	_EXTENDED		; get operand
 subae:
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
-	LDA a68			; get accumulator A
 	SEC				; prepare
-	SBC (tmptr)		; subtract without carry
-	STA a68			; update accumulator
-	JMP check_flags	; and exit
+	BRA sbcae_do	; and continue
 
 _c0:
 ; SUB B imm (2)
@@ -1568,17 +1562,10 @@ _e0:
 
 _f0:
 ; SUB B ext (4)
-; +64/70.5/
-	_EXTENDED		; get operand
+; +67/73.5/			; get operand
 subbe:
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
-	LDA b68			; get accumulator B
 	SEC				; prepare
-	SBC (tmptr)		; subtract without carry
-	STA b68			; update accumulator
-	JMP check_flags	; and exit
+	BRA sbcbe_do	; and continue
 
 ; subtract accumulators
 _10:
@@ -1623,13 +1610,13 @@ _b2:
 ; +70/77/
 	_EXTENDED		; get operand
 sbcae:
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
 	SEC				; prepare
 	BBR0 ccr68, sbcae_do	; skip if C clear ** Rockwell **
 		CLC				; otherwise, set carry, opposite of 6502
 sbcae_do:
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
 	LDA a68			; get accumulator A
 	SBC (tmptr)		; subtract with carry
 	STA a68			; update accumulator
@@ -1664,13 +1651,13 @@ _f2:
 ; +70/77/
 	_EXTENDED		; get operand
 sbcbe:
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
 	SEC				; prepare
 	BBR0 ccr68, sbcbe_do	; skip if C clear ** Rockwell **
 		CLC				; otherwise, set carry, opposite of 6502
 sbcbe_do:
+	LDA ccr68		; get flags
+	AND #%11110000	; clear relevant bits
+	STA ccr68		; update
 	LDA b68			; get accumulator B
 	SBC (tmptr)		; subtract with carry
 	STA b68			; update accumulator
