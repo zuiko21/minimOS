@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a6 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160217 -- corrected 20160218
+; last modified 20160217 -- corrected 20160218,19
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -1267,7 +1267,7 @@ _73:
 ; 2's complement
 _40:
 ; NEG A (2)
-; +29/33/37
+; +32/36/47
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -1276,6 +1276,9 @@ _40:
 	SBC a68			; negate A
 	STA a68			; update value
 	_CC_NZ			; check these ** not standard ending, might use TAX/CPX for compact version
+	BNE nega_nc		; carry only if zero
+		SMB0 ccr68		; set C flag
+nega_nc:
 	CMP #$80		; did change sign?
 	BNE nega_nv		; skip if not V
 		SMB1 ccr68		; set V flag
@@ -1284,7 +1287,7 @@ nega_nv:
 
 _50:
 ; NEG B (2)
-; +29/33/37
+; +32/36/47
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -1293,6 +1296,9 @@ _50:
 	SBC b68			; negate B
 	STA b68			; update value
 	_CC_NZ			; check these ** not standard ending, might use TAX/CPX for compact version
+	BNE negb_nc		; carry only if zero
+		SMB0 ccr68		; set C flag
+negb_nc:
 	CMP #$80		; did change sign?
 	BNE negb_nv		; skip if not V
 		SMB1 ccr68		; set V flag
@@ -1301,7 +1307,7 @@ negb_nv:
 
 _60:
 ; NEG ind (7)
-; +64/68.5/
+; +67/71.5/
 	_INDEXED		; compute pointer
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
@@ -1311,6 +1317,9 @@ _60:
 	SBC (tmptr)		; negate memory
 	STA (tmptr)		; update value
 	_CC_NZ			; check these ** not standard ending, might use TAX/CPX for compact version
+	BNE negi_nc		; carry only if zero
+		SMB0 ccr68		; set C flag
+negi_nc:
 	CMP #$80		; did change sign?
 	BNE negi_nv		; skip if not V
 		SMB1 ccr68		; set V flag
@@ -1319,7 +1328,7 @@ negi_nv:
 
 _70:
 ; NEG ext (6)
-; +64/68.5/
+; +67/71.5/
 	_EXTENDED		; addressing mode
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
@@ -1329,6 +1338,9 @@ _70:
 	SBC (tmptr)		; negate memory
 	STA (tmptr)		; update value
 	_CC_NZ			; check these ** not standard ending, might use TAX/CPX for compact version
+	BNE nege_nc		; carry only if zero
+		SMB0 ccr68		; set C flag
+nege_nc:
 	CMP #$80		; did change sign?
 	BNE nege_nv		; skip if not V
 		SMB1 ccr68		; set V flag

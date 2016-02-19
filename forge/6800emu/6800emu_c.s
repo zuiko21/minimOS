@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS! *** COMPACT VERSION ***
 ; v0.1a6 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160218
+; last modified 20160219
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -208,10 +208,10 @@ cvc_cc:
 
 ; ** accumulator and memory **
 
-; add without carry
+; add to A
 _8b:
 ; ADD A imm (2)
-; +69/75.5/95
+; +69/75.5/95 +3
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -220,7 +220,7 @@ _8b:
 
 _9b:
 ; ADD A dir (3)
-; +73/79.5/99
+; +73/79.5/99 +3
 	_DIRECT			; point to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -229,125 +229,18 @@ _9b:
 
 _ab:
 ; ADD A ind (5)
-; +86/93/
+; +86/93/ +3
 	_INDEXED		; point to operand
 	BRA addae		; otherwise the same
 
 _bb:
 ; ADD A ext (4)
-; +83/90/
+; +83/90/ +3
 	_EXTENDED		; point to operand
-addae:				; +52/58.5/65 from here
-	LDA a68			; get accumulator A
-	BIT #%00010000	; check bit 4
-	BEQ addae_nh	; do not set H if clear
-		SMB5 ccr68		; set H temporarily as b4
-		BRA addae_sh	; do not clear it
-addae_nh:
-	RMB5 ccr68		; otherwise H is clear
-addae_sh:
-	CLC				; prepare
-	ADC (tmptr)		; add operand
-adda:				; +30/36/49 from here
-	TAX				; store for later!
-	BIT #%00010000	; check bit 4 again
-	BNE addae_nh2	; do not invert H
-		LDA ccr68		; get original flags
-		AND #%11110000	; clear relevant bits, respecting H
-		EOR #%00100000	; toggle H
-		BRA addae_sh2	; do not reload CCR
-addae_nh2:
-	LDA ccr68		; get original flags
-	AND #%11110000	; clear relevant bits, respecting H
-addae_sh2:
-	BCC addae_nc	; only if carry...
-		INC				; ...set C flag
-addae_nc:
-	BVC addae_nv	; only if overflow...
-		ORA #%00000010	; ...set V flag
-addae_nv:
-	STA ccr68		; update flags
-	TXA				; retrieve value!
-	JMP a_nz		; update A and check NZ
+addae:				; +52/58.5/65 from here +3
+	CLC				; this uses no carry
+	JMP adcae_cc	; otherwise the same as ADC
 
-; add accumulators
-_1b:
-; ABA (2)
-; +51/58/72
-	LDA a68			; get accumulator A
-	BIT #%00010000	; check bit 4
-	BEQ aba_nh		; do not set H if clear
-		SMB5 ccr68		; set H temporarily as b4
-		BRA aba_sh		; do not clear it
-aba_nh:
-	RMB5 ccr68		; otherwise H is clear
-aba_sh:
-	CLC				; prepare
-	ADC b68			; add second accumulator
-	BRA adda		; continue adding to A +21/22/23...
-
-_cb:
-; ADD B imm (2)
-; +72/78.5/98
-	_PC_ADV			; not worth using the macro
-	STY tmptr		; store LSB of pointer
-	LDA pc68 + 1	; get address MSB
-	STA tmptr + 1	; pointer is ready
-	BRA addbe		; continue as indirect addressing
-
-_db:
-; ADD B dir (3)
-; +76/82.5/102
-	_DIRECT			; point to operand
-	STA tmptr		; store LSB of pointer
-	LDA #>e_base	; emulated MSB
-	STA tmptr+1		; pointer is ready
-	BRA addbe		; continue as indirect addressing
-
-_eb:
-; ADD B ind (5)
-; +89/96
-	_INDEXED		; point to operand
-	BRA addbe		; the same
-
-_fb:
-; ADD B ext (4)
-; +86/93/
-	_EXTENDED		; point to operand
-addbe:
-	LDA b68			; get accumulator B
-	BIT #%00010000	; check bit 4
-	BEQ addbe_nh	; do not set H if clear
-		SMB5 ccr68		; set H temporarily as b4
-		BRA addbe_sh	; do not clear it
-addbe_nh:
-	RMB5 ccr68		; otherwise H is clear
-addbe_sh:
-	CLC				; prepare
-	ADC (tmptr)		; add operand
-	TAX				; store for later!
-	BIT #%00010000	; check bit 4 again
-	BNE addbe_nh2	; do not invert H
-		LDA ccr68		; get original flags
-		AND #%11110000	; clear relevant bits, respecting H
-		EOR #%00100000	; toggle H
-		BRA addbe_sh2	; do not reload CCR
-addbe_nh2:
-	LDA ccr68		; get original flags
-	AND #%11110000	; clear relevant bits, respecting H
-addbe_sh2:
-	BCC addbe_nc	; only if carry...
-		INC				; ...set C flag
-addbe_nc:
-	BVC addbe_nv	; only if overflow...
-		ORA #%00000010	; ...set V flag
-addbe_nv:
-	STA ccr68		; update flags
-	TXA				; retrieve value!
-	JMP b_nz		; update B and check NZ
-
-
-; add with carry
 _89:
 ; ADC A imm (2)
 ;  +75/81.5/101
@@ -377,6 +270,10 @@ _b9:
 ; +89/96/
 	_EXTENDED		; point to operand
 adcae:				; +58/64.5/71 from here
+	CLC				; prepare
+	BBR0 ccr68, adcae_cc	; no previous carry
+		SEC						; otherwise preset C
+adcae_cc:
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
 	BEQ adcae_nh	; do not set H if clear
@@ -385,11 +282,8 @@ adcae:				; +58/64.5/71 from here
 adcae_nh:
 	RMB5 ccr68		; otherwise H is clear
 adcae_sh:
-	CLC				; prepare
-	BBR0 ccr68, adcae_cc	; no previous carry
-		SEC						; otherwise preset C
-adcae_cc:
 	ADC (tmptr)		; add operand
+adda:
 	TAX				; store for later!
 	BIT #%00010000	; check bit 4 again
 	BNE adcae_nh2	; do not invert H
@@ -410,6 +304,55 @@ adcae_nv:
 	STA ccr68		; update flags
 	TXA				; retrieve value!
 	JMP a_nz		; update A and check NZ
+
+; add accumulators
+_1b:
+; ABA (2)
+; +51/58/72
+	LDA a68			; get accumulator A
+	BIT #%00010000	; check bit 4
+	BEQ aba_nh		; do not set H if clear
+		SMB5 ccr68		; set H temporarily as b4
+		BRA aba_sh		; do not clear it
+aba_nh:
+	RMB5 ccr68		; otherwise H is clear
+aba_sh:
+	CLC				; prepare
+	ADC b68			; add second accumulator
+	BRA adda		; continue adding to A +21/22/23...
+
+; add to B
+_cb:
+; ADD B imm (2)
+; +72/78.5/98 +3
+	_PC_ADV			; not worth using the macro
+	STY tmptr		; store LSB of pointer
+	LDA pc68 + 1	; get address MSB
+	STA tmptr + 1	; pointer is ready
+	BRA addbe		; continue as indirect addressing
+
+_db:
+; ADD B dir (3)
+; +76/82.5/102 +3
+	_DIRECT			; point to operand
+	STA tmptr		; store LSB of pointer
+	LDA #>e_base	; emulated MSB
+	STA tmptr+1		; pointer is ready
+	BRA addbe		; continue as indirect addressing
+
+_eb:
+; ADD B ind (5)
+; +89/96 +3
+	_INDEXED		; point to operand
+	BRA addbe		; the same
+
+_fb:
+; ADD B ext (4)
+; +86/93/ +3
+	_EXTENDED		; point to operand
+addbe:
+	CLC				; this takes no carry
+	JMP adcbe_cc	; otherwise the same as ADC!
 
 _c9:
 ; ADC B imm (2)
@@ -440,6 +383,10 @@ _f9:
 ; +92/99/
 	_EXTENDED		; point to operand
 adcbe:
+	CLC				; prepare
+	BBR0 ccr68, adcbe_cc	; no previous carry
+		SEC						; otherwise preset C
+adcbe_cc:
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
 	BEQ adcbe_nh	; do not set H if clear
@@ -448,10 +395,6 @@ adcbe:
 adcbe_nh:
 	RMB5 ccr68		; otherwise H is clear
 adcbe_sh:
-	CLC				; prepare
-	BBR0 ccr68, adcbe_cc	; no previous carry
-		SEC						; otherwise preset C
-adcbe_cc:
 	ADC (tmptr)		; add operand
 	TAX				; store for later!
 	BIT #%00010000	; check bit 4 again
@@ -785,7 +728,7 @@ come:				; +31/33/42 from here
 ; 2's complement
 _40:
 ; NEG A (2)
-; +29/33/37
+; +
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -793,17 +736,21 @@ _40:
 	LDA #0
 	SBC a68			; negate A
 	STA a68			; update value
-nega:				; +11/15/19 from here
-	_CC_NZ			; check these
-	CMP #$80		; did change sign?
+nega:				; +
+	BNE nega_nc		; carry only if zero
+		SMB0 ccr68		; set C flag
+nega_nc:
+	TAX				; keep for later!
+	CMP #$80		; will overflow?
 	BNE nega_nv		; skip if not V
 		SMB1 ccr68		; set V flag
 nega_nv:
-	JMP next_op		; standard end of routine
+	TXA				; retrieve
+	JMP check_nz	; finish
 
 _50:
 ; NEG B (2)
-; +32/36/40
+; + nega+3
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -815,15 +762,15 @@ _50:
 
 _60:
 ; NEG ind (7)
-; +70/74.5/
+; + ext+3
 	_INDEXED		; compute pointer
 	BRA nege		; same
 
 _70:
 ; NEG ext (6)
-; +67/71.5/
+; +
 	_EXTENDED		; addressing mode
-nege:				; +36/40/44 from here
+nege:				; +
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
