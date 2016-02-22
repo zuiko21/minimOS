@@ -234,7 +234,7 @@ _8b:
 
 _9b:
 ; ADD A dir (3)
-; +73/79.5/99 +3	*** continue timing here ***
+; +75/81.5/
 	_DIRECT			; point to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -243,21 +243,21 @@ _9b:
 
 _ab:
 ; ADD A ind (5)
-; +86/93/ +3
+; +89/96/
 	_INDEXED		; point to operand
 	BRA addae		; otherwise the same
 
 _bb:
 ; ADD A ext (4)
-; +83/90/ +3
+; +86/93/
 	_EXTENDED		; point to operand
-addae:				; +52/58.5/65 from here +3
+addae:				; +55/61.5/ from here
 	CLC				; this uses no carry
 	JMP adcae_cc	; otherwise the same as ADC
 
 _89:
 ; ADC A imm (2)
-;  +75/81.5/101
+;  +74/81/
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -266,7 +266,7 @@ _89:
 
 _99:
 ; ADC A dir (3)
-; +79/85.5/105
+; +78/85/
 	_DIRECT			; point to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -275,15 +275,15 @@ _99:
 
 _a9:
 ; ADC A ind (5)
-; +92/99/
+; +91/98.5/
 	_INDEXED		; point to operand
 	BRA adcae		; same
 
 _b9:
 ; ADC A ext (4)
-; +89/96/
+; +88/95.5/
 	_EXTENDED		; point to operand
-adcae:				; +58/64.5/71 from here
+adcae:				; +57/64/ from here
 	CLC				; prepare
 	BBR0 ccr68, adcae_cc	; no previous carry
 		SEC						; otherwise preset C
@@ -297,7 +297,7 @@ adcae_nh:
 	RMB5 ccr68		; otherwise H is clear
 adcae_sh:
 	ADC (tmptr)		; add operand
-adda:
+adda:				; +31/36.5/ from here
 	TAX				; store for later!
 	BIT #%00010000	; check bit 4 again
 	BNE adcae_nh2	; do not invert H
@@ -322,7 +322,7 @@ adcae_nv:
 ; add accumulators
 _1b:
 ; ABA (2)
-; +51/58/72
+; + 52/58.5/
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
 	BEQ aba_nh		; do not set H if clear
@@ -333,12 +333,12 @@ aba_nh:
 aba_sh:
 	CLC				; prepare
 	ADC b68			; add second accumulator
-	BRA adda		; continue adding to A +21/22/23...
+	BRA adda		; continue adding to A
 
 ; add to B
 _cb:
 ; ADD B imm (2)
-; +72/78.5/98 +3
+; + *****CONTINUE HERE********
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -347,7 +347,7 @@ _cb:
 
 _db:
 ; ADD B dir (3)
-; +76/82.5/102 +3
+; +
 	_DIRECT			; point to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -356,13 +356,13 @@ _db:
 
 _eb:
 ; ADD B ind (5)
-; +89/96 +3
+; +
 	_INDEXED		; point to operand
 	BRA addbe		; the same
 
 _fb:
 ; ADD B ext (4)
-; +86/93/ +3
+; +
 	_EXTENDED		; point to operand
 addbe:
 	CLC				; this takes no carry
@@ -370,7 +370,7 @@ addbe:
 
 _c9:
 ; ADC B imm (2)
-;  +78/84.5/104
+;  +
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -379,7 +379,7 @@ _c9:
 
 _d9:
 ; ADC B dir (3)
-; +82/88.5/108
+; +
 	_DIRECT			; point to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -388,19 +388,19 @@ _d9:
 
 _e9:
 ; ADC B ind (5)
-; +95/102/
+; +
 	_INDEXED		; point to operand
 	BRA adcbe		; same
 
 _f9:
 ; ADC B ext (4)
-; +92/99/
+; +
 	_EXTENDED		; point to operand
 adcbe:
 	CLC				; prepare
 	BBR0 ccr68, adcbe_cc	; no previous carry
 		SEC						; otherwise preset C
-adcbe_cc:
+adcbe_cc:			; +// from here
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
 	BEQ adcbe_nh	; do not set H if clear
