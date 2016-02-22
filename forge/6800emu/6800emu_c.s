@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS! *** COMPACT VERSION ***
 ; v0.1a6 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160219
+; last modified 20160222
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -51,13 +51,13 @@
 ; these make listings more succint
 ; inject address MSB into 16+16K space (5/5.5/6)
 #define	_AH_BOUND	AND #hi_mask: BMI *+4: ORA #lo_mask
-; increase Y checking injected boundary crossing (5/5/18)
-#define	_PC_ADV		INY: BNE *+13: LDA pc68+1: INC: _AH_BOUND: STA pc68+1
-; compute pointer for indexed addressing mode (31/31.5/45)
+; increase Y checking injected boundary crossing (5/5/30) ** new compact version
+#define	_PC_ADV		INY: BNE *+5: JSR wrap_pc
+; compute pointer for indexed addressing mode (31/31.5/)
 #define	_INDEXED	_PC_ADV: LDA (pc68), Y: CLC: ADC x68: STA tmptr: LDA x68+1: ADC #0: _AH_BOUND: STA tmptr+1
-; compute pointer for extended addressing mode (31/31.5/45)
+; compute pointer for extended addressing mode (31/31.5/)
 #define	_EXTENDED	_PC_ADV: LDA (pc68), Y: _AH_BOUND: STA tmptr+1: _PC_ADV: LDA (pc68), Y: STA tmptr
-; compute pointer (as A index) for direct addressing mode (10/10/23)
+; compute pointer (as A index) for direct addressing mode (10/10/)
 #define	_DIRECT		_PC_ADV: LDA (pc68), Y
 
 ; check Z & N flags (6/8/10) will not set both bits at once!
@@ -96,7 +96,7 @@ go_emu:
 	STA z_used		; set required ZP space as required by minimOS
 	STZ zpar		; no screen size required
 	_KERNEL(OPEN_W)	; ask for a character I/O device
-	
+
 ; might check here whether a Rockwell 65C02 is used!
 ; should try to allocate memory here
 
@@ -104,11 +104,9 @@ go_emu:
 reset68:
 	LDA #%11010000	; restart with interrupts masked
 	STA ccr68		; store initial flags
-	LDY e_top - 1	; get RESET vector LSB from emulated ROM (this is big-endian!)
-	LDA e_top - 2	; same for MSB... but create offset!
-	_AH_BOUND		; use two 16K chunks ignoring A14
-	STZ pc68		; base offset is 0, Y index holds LSB
-	STA pc68+1		; address fully generated
+	LDX #6			; offset for reset
+	BRA vector_pull	; generic startup!
+
 ; *** main loop ***
 execute:
 		LDA (pc68), Y	; get opcode (needs CMOS) (5)
@@ -138,9 +136,13 @@ _00:_02:_03:_04:_05:_12:_13:_14:_15:_18:_1a:_1c:_1d:_1e:_1f:_21:_38:_3a:_3c:_3d
 _41:_42:_45:_4b:_4e:_51:_52:_55:_5b:_5e:_61:_62:_65:_6b:_71:_72:_75:_7b
 _83:_87:_8f:_93:_9d:_a3:_b3:_c3:_c7:_cc:_cd:_cf:_d3:_dc:_dd:_e3:_ec:_ed:_f3:_fc:_fd
 
-; illegal opcodes will seem to trigger an NMI!
+; illegal opcodes will seem to trigger an interupt!
 	_PC_ADV			; skip illegal opcode
 nmi68:				; hardware interrupts, when available, to be checked AFTER incrementing PC
+	LDX #4			; offset for NMI vector
+intr68:				; ** generic interrupt entry point, offset in X **
+	STX tmptr		; store offset for later
+; save processor status
 	SEC				; prepare subtraction
 	LDA sp68		; get stack pointer LSB
 	SBC #7			; make room for stack frame
@@ -163,14 +165,26 @@ nmi_loop:
 		INX					; increase original offset
 		DEY					; stack grows backwards
 		BNE nmi_loop		; zero is NOT included!!!
+	LDX tmptr		; retrieve offset
+vector_pull:		; ** standard vector pull entry point, offset in X **
 	SMB4 ccr68		; mask interrupts! *** Rockwell ***
-	LDY e_top - 3	; get LSB from emulated NMI vector
-	LDA e_top - 4	; get MSB...
+	LDY e_top-7, X	; get LSB from emulated vector
+	LDA e_top-8, X	; get MSB...
 	_AH_BOUND		; ...but inject it into emulated space
 	STA pc68 + 1	; update PC
-	JMP execute		; continue with NMI handler
+	BRA execute		; continue with NMI handler
 
 ; *** valid opcode definitions ***
+
+; ** common routines **
+
+; increment PC MSB in case of boundary crossing, rare (19/19.5/20)
+wrap_pc:
+	LDA pc68 + 1	; get MSB
+	INC				; increment
+	_AH_BOUND		; keep injected!
+	STA pc68 + 1	; update pointer
+	RTS				; *** only subroutine as of 160222 in rare cases, worth it ***
 
 ; ** common endings **
 
@@ -211,7 +225,7 @@ cvc_cc:
 ; add to A
 _8b:
 ; ADD A imm (2)
-; +69/75.5/95 +3
+; +71/77.5/
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -220,7 +234,7 @@ _8b:
 
 _9b:
 ; ADD A dir (3)
-; +73/79.5/99 +3
+; +73/79.5/99 +3	*** continue timing here ***
 	_DIRECT			; point to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -273,7 +287,7 @@ adcae:				; +58/64.5/71 from here
 	CLC				; prepare
 	BBR0 ccr68, adcae_cc	; no previous carry
 		SEC						; otherwise preset C
-adcae_cc:
+adcae_cc:			; +49/55.5/  from here
 	LDA a68			; get accumulator A
 	BIT #%00010000	; check bit 4
 	BEQ adcae_nh	; do not set H if clear
@@ -1534,7 +1548,7 @@ _b0:
 	_EXTENDED		; get operand
 subae:
 	SEC				; prepare
-	BRA sbcae_do	; and continue
+	JMP sbcae_do	; and continue
 
 _c0:
 ; SUB B imm (2)
@@ -1565,7 +1579,7 @@ _f0:
 ; +67/73.5/			; get operand
 subbe:
 	SEC				; prepare
-	BRA sbcbe_do	; and continue
+	JMP sbcbe_do	; and continue
 
 ; subtract accumulators
 _10:
@@ -2268,33 +2282,7 @@ _22:
 		BBS0 ccr68, br_exit	; neither carry...
 		BBS2 ccr68, br_exit	; ...nor zero (reuse is OK)
 branch:
-; ** inline code from BRA @ bra_do **
-	SEC				; base offset is after the instruction
-	LDA (pc68), Y	; check direction
-	BMI br_bk		; backwards jump
-		TYA				; get current pc low
-		ADC (pc68), Y	; add offset
-		TAY				; new offset!!!
-		BCS br_bc		; same msb, go away
-br_go:
-			JMP execute		; resume execution
-br_bc:
-		INC pc68 + 1	; carry on msb
-		BPL br_lf		; skip if in low area
-			RMB6 pc68+1		; otherwise clear A14
-			JMP execute		; and jump
-br_lf:
-		SMB6 pc68+1			; low area needs A14 set
-		JMP execute
-br_bk:
-	TYA				; get current pc low
-	ADC (pc68), Y	; "subtract" offset
-	TAY				; new offset!!!
-		BCS br_go		; all done
-	DEC pc68 + 1	; borrow on msb
-		BPL br_lf		; skip if in low area
- 	RMB6 pc68+1		; otherwise clear A14
-	JMP execute		; and jump
+	JMP bra_do		; continue as usual
 
 ; branch to subroutine
 _8d:
@@ -2318,72 +2306,18 @@ bsr_phi:
 	_AH_BOUND		; just in case
 	STA (sp68)		; push it!
 	DEC sp68		; update SP
-	BNE bsr_do		; no wrap, ready to go!
+	BNE branch		; no wrap, ready to go!
 		LDA sp68 + 1	; get SP MSB
 		DEC				; previous page
 		_AH_BOUND		; inject
 		STA sp68 + 1	; update pointer
-; ** inline code from BRA @ bra_do **
-bsr_do:				; max. from 29 here
-	SEC				; base offset is after the instruction
-	LDA (pc68), Y	; check direction
-	BMI bsr_bk		; backwards jump
-		TYA				; get current pc low
-		ADC (pc68), Y	; add offset
-		TAY				; new offset!!!
-		BCS bsr_bc		; same msb, go away
-bsr_go:
-			JMP execute		; resume execution
-bsr_bc:
-		INC pc68 + 1	; carry on msb
-		BPL bsr_lf		; skip if in low area
-			RMB6 pc68+1		; otherwise clear A14
-			JMP execute		; and jump
-bsr_lf:
-		SMB6 pc68+1			; low area needs A14 set
-		JMP execute
-bsr_bk:
-	TYA				; get current pc low
-	ADC (pc68), Y	; "subtract" offset
-	TAY				; new offset!!!
-		BCS bsr_go		; all done
-	DEC pc68 + 1	; borrow on msb
-		BPL bsr_lf		; skip if in low area
- 	RMB6 pc68+1		; otherwise clear A14
-	JMP execute		; and jump
+	JMP bra_do		; do branch
 
-; jump
-_6e:
-; JMP ind (4)
-; -5+30...
-	_PC_ADV			; get operand
-	LDA (pc68), Y	; set offset
-	CLC				; prepare
-	ADC x68			; add LSB
-	TAY				; this is new offset!
-	LDA x68 + 1		; get MSB
-	ADC #0			; propagate carry
-	_AH_BOUND		; stay injected
-	STA pc68 + 1	; update pointer
-	JMP execute		; do jump
+; jump (and to subroutines)
 
-_7e:
-; JMP ext (3)
-; -5+32//46
-	_PC_ADV			; go for destination MSB
-	LDA (pc68), Y	; get it
-	_AH_BOUND		; check against emulated limits
-	TAX				; hold it for a moment
-	_PC_ADV			; now for the LSB
-	LDA (pc68), Y	; get it
-	TAY				; this works as index
-	STX pc68 + 1	; MSB goes into register area
-	JMP execute		; all done (-5 for jumps, all this is +32...46)
-
-; jump to subroutine
 _ad:
 ; JSR ind (8) *** ESSENTIAL for minimOS·63 kernel calling ***
-; -5 +72//
+; -5 +
 	_PC_ADV			; point to offset
 ; * push return address *
 	TYA				; get current PC-LSB minus one
@@ -2402,13 +2336,18 @@ jsri_phi:
 	_AH_BOUND		; just in case
 	STA (sp68)		; push it!
 	DEC sp68		; update SP
-	BNE jsri_do		; no wrap, ready to go!
+	BNE jmpi		; no wrap, ready to go!
 		LDA sp68 + 1	; get SP MSB
 		DEC				; previous page
 		_AH_BOUND		; inject
 		STA sp68 + 1	; update pointer
-jsri_do:
-; * compute destination address and jump, new from JMP ind *
+	BRA jmpi		; compute address and jump
+
+_6e:
+; JMP ind (4)
+; -5+30...
+	_PC_ADV			; get operand
+jmpi:
 	LDA (pc68), Y	; set offset
 	CLC				; prepare
 	ADC x68			; add LSB
@@ -2421,7 +2360,7 @@ jsri_do:
 
 _bd:
 ; JSR ext (9)
-; -5 +74//
+; -5 +
 	_PC_ADV			; point to operand MSB
 ; * push return address *
 	TYA				; get current PC-LSB minus one
@@ -2440,62 +2379,42 @@ jsre_phi:
 	_AH_BOUND		; just in case
 	STA (sp68)		; push it!
 	DEC sp68		; update SP
-	BNE jsre_do		; no wrap, ready to go!
+	BNE jmpe		; no wrap, ready to go!
 		LDA sp68 + 1	; get SP MSB
 		DEC				; previous page
 		_AH_BOUND		; inject
 		STA sp68 + 1	; update pointer
-jsre_do:
-; * compute destination address and jump, new from JMP ext *
-	LDA (pc68), Y	; get MSB
+	BRA jmpe		; compute address and jump
+
+_7e:
+; JMP ext (3)
+; -5+32//46
+	_PC_ADV			; go for destination MSB
+jmpe:
+	LDA (pc68), Y	; get it
 	_AH_BOUND		; check against emulated limits
 	TAX				; hold it for a moment
 	_PC_ADV			; now for the LSB
 	LDA (pc68), Y	; get it
 	TAY				; this works as index
 	STX pc68 + 1	; MSB goes into register area
-	JMP execute		; all done
+	JMP execute		; all done (-5 for jumps, all this is +32...46)
 
 ; return from subroutine
 _39:
 ; RTS (5)
-; +29/29/44
-	INC sp68		; pre-increment
-	BEQ rts_w		; should correct MSB, rare?
-rts_do:
-		LDA (sp68)		; take return MSB from stack
-		STA pc68 + 1	; store into register
-		INC sp68		; go for next
-		BEQ rts_w2		; another chance for wrapping
-			LDA (sp68)		; pop the LSB
-			TAY				; which is new offset
-			JMP execute		; and resume execution
-rts_w:
-	LDA sp68 + 1	; get stack pointer MSB
-	INC				; increase MSB
-	_AH_BOUND		; keep injected
-	STA sp68 + 1	; update real thing
-	LDA (sp68)		; take return MSB from stack
-	STA pc68 + 1	; store into register
-	INC sp68		; go for next
-	LDA (sp68)		; pop the LSB
-	TAY				; which is new offset
-	JMP execute		; and resume execution
-rts_w2:
-	LDA sp68 + 1	; get stack pointer MSB
-	INC				; increase MSB
-	_AH_BOUND		; keep injected
-	STA sp68 + 1	; update real thing
-	LDA (sp68)		; pop the LSB
-	TAY				; which is new offset
-	JMP execute		; and resume execution
+; +
+	LDX #1			; just the return address MSB to pull
+	BRA return68	; generic procedure
 
 ; return from interrupt
 _3b:
 ; RTI (10)
 ; -5 +139/139/
-	LDY #1			; forget PC MSB, index for pulling from stack
 	LDX #7			; bytes into stack frame (4 up here)
+return68:			; ** generic entry point, X = bytes to be pulled **
+	STX tmptr		; store for later subtraction
+	LDY #1			; forget PC MSB, index for pulling from stack
 rti_loop:
 		LDA (sp68), Y	; pull from stack
 		STA pc68, X		; store into register area
@@ -2506,7 +2425,7 @@ rti_loop:
 	TAX				; store for later
 	LDA sp68		; correct stack pointer
 	CLC				; prepare
-	ADC #7			; release space
+	ADC tmptr		; release space
 	STA sp68		; update LSB
 	BCC rti_nw		; skip if did not wrap
 		LDA sp68+1		; not just INC zp...
@@ -2521,43 +2440,19 @@ rti_nw:
 ; wait for interrupt
 _3e:
 ; WAI (9)
+; +
 	; ***** TO DO ***** TO DO *****
 	; *** should just check the external interrupt source... if I bit is clear ***
-	JMP next_op	; standard end of routine
+	; *** then call intr68 with appropriate X value ***
+	JMP next_op		; standard end of routine
 
 ; software interrupt
 _3f:
 ; SWI (12)
-; -5 +165/165/
+; -5 +
 	_PC_ADV			; skip opcode
-	SEC				; prepare subtraction
-	LDA sp68		; get stack pointer LSB
-	SBC #7			; make room for stack frame
-	TAX				; store for later
-	BCS swi_do		; no need for further action
-		LDA sp68+1		; get MSB
-		DEC				; wrap
-		_AH_BOUND		; keep into emulated space
-		STA sp68+1		; update pointer
-swi_do:
-	STX sp68		; room already made
-	LDX #1			; index for register area stacking (skip fake PC LSB)
-	TYA				; actual PC LSB goes first!
-	LDY #7			; index for stack area
-	STA (sp68), Y	; push LSB first, then the loop
-	DEY				; post-decrement (33 up here)
-swi_loop:
-		LDA pc68, X			; get one byte from register area
-		STA (sp68), Y		; store in free stack space
-		INX					; increase original offset
-		DEY					; stack grows backwards
-		BNE swi_loop		; zero is NOT included!!! (7x16 -1 last, total 111)
-	SMB4 ccr68		; mask interrupts! *** Rockwell ***
-	LDY e_top - 5	; get LSB from emulated SWI vector
-	LDA e_top - 6	; get MSB...
-	_AH_BOUND		; ...but inject it into emulated space
-	STA pc68 + 1	; update PC (21 last)
-	JMP execute		; continue with SWI handler
+	LDX #2			; SWI vector offset
+	JMP intr68		; generic interrupt handler
 
 ; ** status register opcodes **
 
