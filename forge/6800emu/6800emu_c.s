@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS! *** COMPACT VERSION ***
 ; v0.1a6 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160222
+; last modified 20160223
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -435,255 +435,255 @@ adcbe_nv:
 _84:
 ; AND A imm (2)
 ; +42/44/
-	_PC_ADV			; go for operand
-	STY tmptr		; store LSB of pointer
-	LDA pc68 + 1	; get address MSB
-	STA tmptr + 1	; pointer is ready
-	BRA andae		; continue as indirect addressing
+	_PC_ADV			; go for operand (5)
+	STY tmptr		; store LSB of pointer (3)
+	LDA pc68 + 1	; get address MSB (3)
+	STA tmptr + 1	; pointer is ready (3)
+	BRA andae		; continue as indirect addressing (3+)
 
 _94:
 ; AND A dir (3)
 ; +46/48/
-	_DIRECT			; points to operand
-	STA tmptr		; store LSB of pointer
-	LDA #>e_base	; emulated MSB
-	STA tmptr+1		; pointer is ready
-	BRA andae		; continue as indirect addressing
+	_DIRECT			; points to operand (10)
+	STA tmptr		; store LSB of pointer (3)
+	LDA #>e_base	; emulated MSB (2)
+	STA tmptr+1		; pointer is ready (3)
+	BRA andae		; continue as indirect addressing (3+)
 
 _a4:
 ; AND A ind (5)
 ; +59/61.5/
-	_INDEXED		; points to operand
-	BRA andae		; same
+	_INDEXED		; points to operand (31/31.5)
+	BRA andae		; same (3+)
 
 _b4:
 ; AND A ext (4)
 ; +56/58.5/
-	_EXTENDED		; points to operand
+	_EXTENDED		; points to operand (31/31.5)
 andae:				; +25/27/36 from here
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	LDA a68			; get A accumulator
-	AND (tmptr)		; AND with operand
-	JMP a_nz		; update A and check NZ
+	LDA ccr68		; get flags (3)
+	AND #%11110001	; clear relevant bits (2)
+	STA ccr68		; update (3)
+	LDA a68			; get A accumulator (3)
+	AND (tmptr)		; AND with operand (5)
+	JMP a_nz		; update A and check NZ (3+)
 
 _c4:
 ; AND B imm (2)
 ; +45/47/
-	_PC_ADV			; go for operand
-	STY tmptr		; store LSB of pointer
-	LDA pc68 + 1	; get address MSB
-	STA tmptr + 1	; pointer is ready
-	BRA andbe		; continue as indirect addressing
+	_PC_ADV			; go for operand (5)
+	STY tmptr		; store LSB of pointer (3)
+	LDA pc68 + 1	; get address MSB (3)
+	STA tmptr + 1	; pointer is ready (3)
+	BRA andbe		; continue as indirect addressing (3+)
 
 _d4:
 ; AND B dir (3)
 ; +49/51/
-	_DIRECT			; points to operand
-	STA tmptr		; store LSB of pointer
-	LDA #>e_base	; emulated MSB
-	STA tmptr+1		; pointer is ready
-	BRA andbe		; continue as indirect addressing
+	_DIRECT			; points to operand (10)
+	STA tmptr		; store LSB of pointer (3)
+	LDA #>e_base	; emulated MSB (2)
+	STA tmptr+1		; pointer is ready (3)
+	BRA andbe		; continue as indirect addressing (3+)
 
 _e4:
 ; AND B ind (5)
 ; +62/64.5/
-	_INDEXED		; points to operand
-	BRA andbe		; same
+	_INDEXED		; points to operand (31/31.5)
+	BRA andbe		; same (3+)
 
 _f4:
 ; AND B ext (4)
 ; +59/61.5/
-	_EXTENDED		; points to operand
+	_EXTENDED		; points to operand (31/31.5)
 andbe:				; +28/30/39 from here
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	LDA b68			; get B accumulator
-	AND (tmptr)		; AND with operand
-	JMP b_nz		; update B and check NZ
+	LDA ccr68		; get flags (3)
+	AND #%11110001	; clear relevant bits (2)
+	STA ccr68		; update (3)
+	LDA b68			; get B accumulator (3)
+	AND (tmptr)		; AND with operand (5)
+	JMP b_nz		; update B and check NZ (3+)
 
 ; AND without modifying register
 _85:
 ; BIT A imm (2)
 ; +39/41/
-	_PC_ADV			; go for operand
-	STY tmptr		; store LSB of pointer
-	LDA pc68 + 1	; get address MSB
-	STA tmptr + 1	; pointer is ready
-	BRA bitae		; continue as indirect addressing
+	_PC_ADV			; go for operand (5)
+	STY tmptr		; store LSB of pointer (3)
+	LDA pc68 + 1	; get address MSB (3)
+	STA tmptr + 1	; pointer is ready (3)
+	BRA bitae		; continue as indirect addressing (3+)
 
 _95:
 ; BIT A dir (3)
 ; +43/45/
-	_DIRECT			; points to operand
-	STA tmptr		; store LSB of pointer
-	LDA #>e_base	; emulated MSB
-	STA tmptr+1		; pointer is ready
-	BRA bitae		; continue as indirect addressing
+	_DIRECT			; points to operand (10)
+	STA tmptr		; store LSB of pointer (3)
+	LDA #>e_base	; emulated MSB (2)
+	STA tmptr+1		; pointer is ready (3)
+	BRA bitae		; continue as indirect addressing (3+)
 
 _a5:
 ; BIT A ind (5)
 ; +56/58.5/
-	_INDEXED		; points to operand
-	BRA bitae		; same
+	_INDEXED		; points to operand (31/31.5)
+	BRA bitae		; same (3+)
 
 _b5:
 ; BIT A ext (4)
 ; +53/55.5/
-	_EXTENDED		; points to operand
+	_EXTENDED		; points to operand (31/31.5)
 bitae:				; +22/24/33 from here
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	LDA a68			; get A accumulator
-	AND (tmptr)		; AND with operand, just for flags
-	JMP check_nz	; check flags and end
+	LDA ccr68		; get flags (3)
+	AND #%11110001	; clear relevant bits (2)
+	STA ccr68		; update (3)
+	LDA a68			; get A accumulator (3)
+	AND (tmptr)		; AND with operand, just for flags (5)
+	JMP check_nz	; check flags and end (3+)
 
 _c5:
 ; BIT B imm (2)
 ; +39/41/
-	_PC_ADV			; go for operand
-	STY tmptr		; store LSB of pointer
-	LDA pc68 + 1	; get address MSB
-	STA tmptr + 1	; pointer is ready
-	BRA bitbe		; continue as indirect addressing
+	_PC_ADV			; go for operand (5)
+	STY tmptr		; store LSB of pointer (3)
+	LDA pc68 + 1	; get address MSB (3)
+	STA tmptr + 1	; pointer is ready (3)
+	BRA bitbe		; continue as indirect addressing (3+)
 
 _d5:
 ; BIT B dir (3)
 ; +43/45/
-	_DIRECT			; points to operand
-	STA tmptr		; store LSB of pointer
-	LDA #>e_base	; emulated MSB
-	STA tmptr+1		; pointer is ready
-	BRA bitbe		; continue as indirect addressing
+	_DIRECT			; points to operand (10)
+	STA tmptr		; store LSB of pointer (3)
+	LDA #>e_base	; emulated MSB (2)
+	STA tmptr+1		; pointer is ready (3)
+	BRA bitbe		; continue as indirect addressing (3+)
 
 _e5:
 ; BIT B ind (5)
 ; +56/58.5/
-	_INDEXED		; points to operand
-	BRA bitbe		; same
+	_INDEXED		; points to operand (31/31.5)
+	BRA bitbe		; same (3+)
 
 _f5:
 ; BIT B ext (4)
 ; +53/55.5/
-	_EXTENDED		; points to operand
+	_EXTENDED		; points to operand (31/31.5)
 bitbe:				; +22/24/33 from here
-	LDA ccr68		; get flags
-	AND #%11110001	; clear relevant bits
-	STA ccr68		; update
-	LDA b68			; get B accumulator
-	AND (tmptr)		; AND with operand, just for flags
-	JMP check_nz	; check flags and end
+	LDA ccr68		; get flags (3)
+	AND #%11110001	; clear relevant bits (2)
+	STA ccr68		; update (3)
+	LDA b68			; get B accumulator (3)
+	AND (tmptr)		; AND with operand, just for flags (5)
+	JMP check_nz	; check flags and end (3+)
 
 ; clear
 _4f:
 ; CLR A (2)
 ; +13
-	STZ a68		; clear A
+	STZ a68		; clear A (3)
 clra:
-	LDA ccr68	; get previous status
-	AND #%11110100	; clear N, V, C
-	ORA #%00000100	; set Z
-	STA ccr68	; update
+	LDA ccr68	; get previous status (3)
+	AND #%11110100	; clear N, V, C (2)
+	ORA #%00000100	; set Z (2)
+	STA ccr68	; update (3)
 	JMP next_op	; standard end of routine
 
 _5f:
 ; CLR B (2)
 ; +16
-	STZ b68		; clear B
-	BRA clra	; same
+	STZ b68		; clear B (3)
+	BRA clra	; same (3+)
 
 _6f:
 ; CLR ind (7)
 ; +57/57.5/
-	_INDEXED		; prepare pointer
-	BRA clre		; same code
+	_INDEXED		; prepare pointer (31/31.5)
+	BRA clre		; same code (3+)
 
 _7f:
 ; CLR ext (6)
 ; +54/54.5/
-	_EXTENDED		; prepare pointer
+	_EXTENDED		; prepare pointer (31/31.5)
 clre:
-	LDA #0			; no indirect STZ available
-	STA (tmptr)		; clear memory
-	BRA clra		; same
+	LDA #0			; no indirect STZ available (2)
+	STA (tmptr)		; clear memory (5)
+	BRA clra		; same (3+)
 
 ; compare
 _81:
 ; CMP A imm (2)
 ; +47/51/
-	_PC_ADV			; get operand
-	STY tmptr		; store LSB of pointer
-	LDA pc68 + 1	; get address MSB
-	STA tmptr + 1	; pointer is ready
-	BRA cmpae		; continue as indirect addressing
+	_PC_ADV			; get operand (5)
+	STY tmptr		; store LSB of pointer (3)
+	LDA pc68 + 1	; get address MSB (3)
+	STA tmptr + 1	; pointer is ready (3)
+	BRA cmpae		; continue as indirect addressing (3+)
 
 _91:
 ; CMP A dir (3)
 ; +51/55/
-	_DIRECT			; get operand
-	STA tmptr		; store LSB of pointer
-	LDA #>e_base	; emulated MSB
-	STA tmptr+1		; pointer is ready
-	BRA cmpae		; continue as indirect addressing
+	_DIRECT			; get operand (10)
+	STA tmptr		; store LSB of pointer (3)
+	LDA #>e_base	; emulated MSB (2)
+	STA tmptr+1		; pointer is ready (3)
+	BRA cmpae		; continue as indirect addressing (3+)
 
 _a1:
 ; CMP A ind (5)
 ; +64/68.5/
-	_INDEXED		; get operand
-	BRA cmpae		; same
+	_INDEXED		; get operand (31/31.5)
+	BRA cmpae		; same (3+)
 
 _b1:
 ; CMP A ext (4)
 ; +61/65.5/
-	_EXTENDED		; get operand
+	_EXTENDED		; get operand (31/31.5)
 cmpae:				; +30/34/52 from here
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
-	LDA a68			; get accumulator A
-	SEC				; prepare
-	SBC (tmptr)		; subtract without carry
-	JMP check_flags	; check NZVC and exit
+	LDA ccr68		; get flags (3)
+	AND #%11110000	; clear relevant bits (2)
+	STA ccr68		; update (3)
+	LDA a68			; get accumulator A (3)
+	SEC				; prepare (2)
+	SBC (tmptr)		; subtract without carry (5)
+	JMP check_flags	; check NZVC and exit (3+)
 
 _c1:
 ; CMP B imm (2)
 ; +47/51/
-	_PC_ADV			; get operand
-	STY tmptr		; store LSB of pointer
-	LDA pc68 + 1	; get address MSB
-	STA tmptr + 1	; pointer is ready
-	BRA cmpbe		; continue as indirect addressing
+	_PC_ADV			; get operand (5)
+	STY tmptr		; store LSB of pointer (3)
+	LDA pc68 + 1	; get address MSB (3)
+	STA tmptr + 1	; pointer is ready (3)
+	BRA cmpbe		; continue as indirect addressing (3+)
 
 _d1:
 ; CMP B dir (3)
 ; +51/55/
-	_DIRECT			; get operand
-	STA tmptr		; store LSB of pointer
-	LDA #>e_base	; emulated MSB
-	STA tmptr+1		; pointer is ready
-	BRA cmpbe		; continue as indirect addressing
+	_DIRECT			; get operand (10)
+	STA tmptr		; store LSB of pointer (3)
+	LDA #>e_base	; emulated MSB (2)
+	STA tmptr+1		; pointer is ready (3)
+	BRA cmpbe		; continue as indirect addressing (3+)
 
 _e1:
 ; CMP B ind (5)
 ; +64/68.5/
-	_INDEXED		; get operand
-	BRA cmpbe		; same
+	_INDEXED		; get operand (31/31.5)
+	BRA cmpbe		; same (3+)
 
 _f1:
 ; CMP B ext (4)
 ; +61/65.5/
-	_EXTENDED		; get operand
+	_EXTENDED		; get operand (31/31.5)
 cmpbe:				; +30/34/52 from here
-	LDA ccr68		; get flags
-	AND #%11110000	; clear relevant bits
-	STA ccr68		; update
-	LDA b68			; get accumulator B
-	SEC				; prepare
-	SBC (tmptr)		; subtract without carry
-	JMP check_flags	; check NZVC and exit
+	LDA ccr68		; get flags (3)
+	AND #%11110000	; clear relevant bits (2)
+	STA ccr68		; update (3)
+	LDA b68			; get accumulator B (3)
+	SEC				; prepare (2)
+	SBC (tmptr)		; subtract without carry (5)
+	JMP check_flags	; check NZVC and exit (3+)
 
 ; compare accumulators
 _11:
