@@ -338,7 +338,7 @@ aba_sh:
 ; add to B
 _cb:
 ; ADD B imm (2)
-; + *****CONTINUE HERE********
+; +76/81.5/
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -347,7 +347,7 @@ _cb:
 
 _db:
 ; ADD B dir (3)
-; +
+; +80/85.5/
 	_DIRECT			; point to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -356,21 +356,21 @@ _db:
 
 _eb:
 ; ADD B ind (5)
-; +
+; +93/99/
 	_INDEXED		; point to operand
 	BRA addbe		; the same
 
 _fb:
 ; ADD B ext (4)
-; +
+; +90/96/
 	_EXTENDED		; point to operand
-addbe:
+addbe:				; +59/64.5/ from here
 	CLC				; this takes no carry
 	JMP adcbe_cc	; otherwise the same as ADC!
 
 _c9:
 ; ADC B imm (2)
-;  +
+;  +79/85/
 	_PC_ADV			; not worth using the macro
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -379,7 +379,7 @@ _c9:
 
 _d9:
 ; ADC B dir (3)
-; +
+; +83/89/
 	_DIRECT			; point to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -388,19 +388,19 @@ _d9:
 
 _e9:
 ; ADC B ind (5)
-; +
+; +96/102.5/
 	_INDEXED		; point to operand
 	BRA adcbe		; same
 
 _f9:
 ; ADC B ext (4)
-; +
+; +93/99.5/
 	_EXTENDED		; point to operand
-adcbe:
+adcbe:				; +62/68/ from here
 	CLC				; prepare
 	BBR0 ccr68, adcbe_cc	; no previous carry
 		SEC						; otherwise preset C
-adcbe_cc:			; +// from here
+adcbe_cc:			; +54/59.5/ from here
 	LDA b68			; get accumulator B
 	BIT #%00010000	; check bit 4
 	BEQ adcbe_nh	; do not set H if clear
@@ -434,7 +434,7 @@ adcbe_nv:
 ; logical AND
 _84:
 ; AND A imm (2)
-; +42/44/66
+; +42/44/
 	_PC_ADV			; go for operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -443,7 +443,7 @@ _84:
 
 _94:
 ; AND A dir (3)
-; +46/48/70
+; +46/48/
 	_DIRECT			; points to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -460,8 +460,8 @@ _b4:
 ; AND A ext (4)
 ; +56/58.5/
 	_EXTENDED		; points to operand
-andae:
-	LDA ccr68		; get flags (+25/27/36 from here)
+andae:				; +25/27/36 from here
+	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
 	LDA a68			; get A accumulator
@@ -470,7 +470,7 @@ andae:
 
 _c4:
 ; AND B imm (2)
-; +45/47/69
+; +45/47/
 	_PC_ADV			; go for operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -479,7 +479,7 @@ _c4:
 
 _d4:
 ; AND B dir (3)
-; +49/51/73
+; +49/51/
 	_DIRECT			; points to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -496,7 +496,7 @@ _f4:
 ; AND B ext (4)
 ; +59/61.5/
 	_EXTENDED		; points to operand
-andbe:
+andbe:				; +28/30/39 from here
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -507,7 +507,7 @@ andbe:
 ; AND without modifying register
 _85:
 ; BIT A imm (2)
-; +39/41/63
+; +39/41/
 	_PC_ADV			; go for operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -516,7 +516,7 @@ _85:
 
 _95:
 ; BIT A dir (3)
-; +43/45/67
+; +43/45/
 	_DIRECT			; points to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -543,7 +543,7 @@ bitae:				; +22/24/33 from here
 
 _c5:
 ; BIT B imm (2)
-; +42/44/66
+; +39/41/
 	_PC_ADV			; go for operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -552,7 +552,7 @@ _c5:
 
 _d5:
 ; BIT B dir (3)
-; +46/48/70
+; +43/45/
 	_DIRECT			; points to operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -561,15 +561,15 @@ _d5:
 
 _e5:
 ; BIT B ind (5)
-; +59/61.5/
+; +56/58.5/
 	_INDEXED		; points to operand
 	BRA bitbe		; same
 
 _f5:
 ; BIT B ext (4)
-; +56/58.5/
+; +53/55.5/
 	_EXTENDED		; points to operand
-bitbe:
+bitbe:				; +22/24/33 from here
 	LDA ccr68		; get flags
 	AND #%11110001	; clear relevant bits
 	STA ccr68		; update
@@ -597,13 +597,13 @@ _5f:
 
 _6f:
 ; CLR ind (7)
-; +57/57.5/71
+; +57/57.5/
 	_INDEXED		; prepare pointer
 	BRA clre		; same code
 
 _7f:
 ; CLR ext (6)
-; +54/54.5/68
+; +54/54.5/
 	_EXTENDED		; prepare pointer
 clre:
 	LDA #0			; no indirect STZ available
@@ -613,7 +613,7 @@ clre:
 ; compare
 _81:
 ; CMP A imm (2)
-; +47/51/82
+; +47/51/
 	_PC_ADV			; get operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -622,7 +622,7 @@ _81:
 
 _91:
 ; CMP A dir (3)
-; +51/55/86
+; +51/55/
 	_DIRECT			; get operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -631,13 +631,13 @@ _91:
 
 _a1:
 ; CMP A ind (5)
-; +64/68.5/100
+; +64/68.5/
 	_INDEXED		; get operand
 	BRA cmpae		; same
 
 _b1:
 ; CMP A ext (4)
-; +61/65.5/97
+; +61/65.5/
 	_EXTENDED		; get operand
 cmpae:				; +30/34/52 from here
 	LDA ccr68		; get flags
@@ -650,7 +650,7 @@ cmpae:				; +30/34/52 from here
 
 _c1:
 ; CMP B imm (2)
-; +47/51/82
+; +47/51/
 	_PC_ADV			; get operand
 	STY tmptr		; store LSB of pointer
 	LDA pc68 + 1	; get address MSB
@@ -659,7 +659,7 @@ _c1:
 
 _d1:
 ; CMP B dir (3)
-; +51/55/86
+; +51/55/
 	_DIRECT			; get operand
 	STA tmptr		; store LSB of pointer
 	LDA #>e_base	; emulated MSB
@@ -668,15 +668,15 @@ _d1:
 
 _e1:
 ; CMP B ind (5)
-; +64/68.5/100
+; +64/68.5/
 	_INDEXED		; get operand
 	BRA cmpbe		; same
 
 _f1:
 ; CMP B ext (4)
-; +61/65.5/97
+; +61/65.5/
 	_EXTENDED		; get operand
-cmpbe:
+cmpbe:				; +30/34/52 from here
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -688,7 +688,7 @@ cmpbe:
 ; compare accumulators
 _11:
 ; CBA (2)
-; +28/34/40
+; +28/32/50
 	LDA ccr68		; get flags
 	AND #%11110000	; clear relevant bits
 	STA ccr68		; update
@@ -700,7 +700,7 @@ _11:
 ; 1's complement
 _43:
 ; COM A (2)
-; +24/26/28
+; +24/26/35
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	INC				; C always set
@@ -711,7 +711,7 @@ _43:
 
 _53:
 ; COM B (2)
-; +24/26/28
+; +27/29/38
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	INC				; C always set
@@ -742,7 +742,7 @@ come:				; +31/33/42 from here
 ; 2's complement
 _40:
 ; NEG A (2)
-; +
+; +18/24/37
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -750,7 +750,7 @@ _40:
 	LDA #0
 	SBC a68			; negate A
 	STA a68			; update value
-nega:				; +
+nega:				; +// from here
 	BNE nega_nc		; carry only if zero
 		SMB0 ccr68		; set C flag
 nega_nc:
@@ -764,7 +764,7 @@ nega_nv:
 
 _50:
 ; NEG B (2)
-; + nega+3
+; +21/27/40
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -776,15 +776,15 @@ _50:
 
 _60:
 ; NEG ind (7)
-; + ext+3
+; +77/83.5/
 	_INDEXED		; compute pointer
 	BRA nege		; same
 
 _70:
 ; NEG ext (6)
-; +
+; +74/80.5/
 	_EXTENDED		; addressing mode
-nege:				; +
+nege:				; +43/49/62 from here
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
 	STA ccr68		; update status
@@ -826,13 +826,13 @@ daa_ok:
 ; decrement
 _4a:
 ; DEC A (2)
-; +
+; +29/33/44
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
 	DEC a68			; decrease A
 	LDX a68			; check it!
-deca:
+deca:				; +13/17/28 from here
 	CPX #$7F		; did change sign?
 	BNE deca_nv		; skip if not overflow
 		SMB1 ccr68		; will set V flag
@@ -842,7 +842,7 @@ deca_nv:
 
 _5a:
 ; DEC B (2)
-; +
+; +33/36/47
 	LDA ccr68		; get original status
 	AND #%11110001	; reset all relevant bits for CCR
 	STA ccr68		; store new flags
