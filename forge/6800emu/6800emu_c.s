@@ -160,11 +160,11 @@ nmi_do:
 	STA (sp68), Y	; push LSB first, then the loop (5)
 	DEY				; post-decrement (2)
 nmi_loop:
-		LDA pc68, X			; get one byte from register area (4x7)
-		STA (sp68), Y		; store in free stack space (5x7)
-		INX					; increase original offset (2x7)
-		DEY					; stack grows backwards (2x7)
-		BNE nmi_loop		; zero is NOT included!!! (3x7 -1)
+		LDA pc68, X			; get one byte from register area (4y)
+		STA (sp68), Y		; store in free stack space (5y)
+		INX					; increase original offset (2y)
+		DEY					; stack grows backwards (2y)
+		BNE nmi_loop		; zero is NOT included!!! (3y -1)
 	LDX tmptr		; retrieve offset
 vector_pull:		; ** standard vector pull entry point, offset in X **
 	SMB4 ccr68		; mask interrupts! (5) *** Rockwell ***
@@ -210,7 +210,7 @@ cnz_pl:
 ind_nz:
 	STA (tmptr)		; store at pointed address
 	BRA check_nz	; check flags and exit
-	
+
 ; check V & C bits, then N & V (9/13/31)
 check_flags:
 	BVC cvc_cc		; if overflow...
@@ -225,69 +225,69 @@ cvc_cc:
 ; add to A
 _8b:
 ; ADD A imm (2)
-; +71/77.5/
+; +72/78
 	_PC_ADV			; not worth using the macro (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA addae		; continue as indirect addressing (3+)
+	BRA addae		; continue as indirect addressing (58/64)
 
 _9b:
 ; ADD A dir (3)
-; +75/81.5/
+; +76/82/
 	_DIRECT			; point to operand (10)
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA addae		; continue as indirect addressing (3+)
+	BRA addae		; continue as indirect addressing (58/64)
 
 _ab:
 ; ADD A ind (5)
-; +89/96/
+; +89/95.5/
 	_INDEXED		; point to operand 31/31.5
-	BRA addae		; otherwise the same 3+
+	BRA addae		; otherwise the same (58/64)
 
 _bb:
 ; ADD A ext (4)
-; +86/93/
+; +86/92.5/
 	_EXTENDED		; point to operand (31/31.5)
-addae:				; +55/61.5/ from here
+addae:				; +55/61/ from here
 	CLC				; this uses no carry (2)
-	JMP adcae_cc	; otherwise the same as ADC (3+)
+	JMP adcae_cc	; otherwise the same as ADC (53/59)
 
 _89:
 ; ADC A imm (2)
-;  +74/81/
+;  +75/81.5/
 	_PC_ADV			; not worth using the macro (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA adcae		; continue as indirect addressing (3+)
+	BRA adcae		; continue as indirect addressing (61/67.5)
 
 _99:
 ; ADC A dir (3)
-; +78/85/
+; +79/85.5/
 	_DIRECT			; point to operand (10)
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA adcae		; continue as indirect addressing (3+)
+	BRA adcae		; continue as indirect addressing (61/67.5)
 
 _a9:
 ; ADC A ind (5)
-; +91/98.5/
-	_INDEXED		; point to operand 31/31.5
-	BRA adcae		; same 3+
+; +92/99/
+	_INDEXED		; point to operand (31/31.5)
+	BRA adcae		; same (3+)
 
 _b9:
 ; ADC A ext (4)
-; +88/95.5/
+; +89/96/
 	_EXTENDED		; point to operand (31/31.5)
-adcae:				; +57/64/ from here
+adcae:				; +58/64.5 from here
 	CLC				; prepare (2)
 	BBR0 ccr68, adcae_cc	; no previous carry (6/6.5...) *** Rockwell ***
 		SEC						; otherwise preset C
-adcae_cc:			; +49/55.5/  from here
+adcae_cc:			; +50/56/ from here
 	LDA a68			; get accumulator A (3)
 	BIT #%00010000	; check bit 4 (2)
 	BEQ adcae_nh	; do not set H if clear (8/9...)
@@ -297,7 +297,7 @@ adcae_nh:
 	RMB5 ccr68		; otherwise H is clear *** Rockwell ***
 adcae_sh:
 	ADC (tmptr)		; add operand (5)
-adda:				; +31/36.5/ from here
+adda:				; +32/37/ from here
 	TAX				; store for later! (2)
 	BIT #%00010000	; check bit 4 again (2)
 	BNE adcae_nh2	; do not invert H (8/10...)
@@ -317,12 +317,12 @@ adcae_nc:
 adcae_nv:
 	STA ccr68		; update flags (3)
 	TXA				; retrieve value! (2)
-	JMP a_nz		; update A and check NZ (3+)
+	JMP a_nz		; update A and check NZ (9/11/20)
 
 ; add accumulators
 _1b:
 ; ABA (2)
-; + 52/58.5/
+; +53/59/
 	LDA a68			; get accumulator A (3)
 	BIT #%00010000	; check bit 4 (2)
 	BEQ aba_nh		; do not set H if clear (8/9...)
@@ -333,74 +333,74 @@ aba_nh:
 aba_sh:
 	CLC				; prepare (2)
 	ADC b68			; add second accumulator (3)
-	BRA adda		; continue adding to A (3+)
+	BRA adda		; continue adding to A (35/40)
 
 ; add to B
 _cb:
 ; ADD B imm (2)
-; +76/81.5/
+; +75/81/
 	_PC_ADV			; not worth using the macro (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA addbe		; continue as indirect addressing (3+)
+	BRA addbe		; continue as indirect addressing (61/67)
 
 _db:
 ; ADD B dir (3)
-; +80/85.5/
+; +79/85/
 	_DIRECT			; point to operand (10)
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA addbe		; continue as indirect addressing (3+)
+	BRA addbe		; continue as indirect addressing (61/67)
 
 _eb:
 ; ADD B ind (5)
-; +93/99/
+; +92/98.5/
 	_INDEXED		; point to operand (31/31.5)
-	BRA addbe		; the same (3+)
+	BRA addbe		; the same (61/67)
 
 _fb:
 ; ADD B ext (4)
-; +90/96/
+; +89/95.5/
 	_EXTENDED		; point to operand (31/31.5)
-addbe:				; +59/64.5/ from here
+addbe:				; +58/64/ from here
 	CLC				; this takes no carry (2)
-	JMP adcbe_cc	; otherwise the same as ADC! (3+)
+	JMP adcbe_cc	; otherwise the same as ADC! (56/62)
 
 _c9:
 ; ADC B imm (2)
-;  +79/85/
+;  +78/84.5/
 	_PC_ADV			; not worth using the macro (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA adcbe		; continue as indirect addressing (3+)
+	BRA adcbe		; continue as indirect addressing (64/70.5)
 
 _d9:
 ; ADC B dir (3)
-; +83/89/
+; +82/88.5/
 	_DIRECT			; point to operand (10)
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA adcbe		; continue as indirect addressing (3+)
+	BRA adcbe		; continue as indirect addressing (64/70.5)
 
 _e9:
 ; ADC B ind (5)
-; +96/102.5/
+; +95/102/
 	_INDEXED		; point to operand (31/31.5)
-	BRA adcbe		; same (3+)
+	BRA adcbe		; same (64/70.5)
 
 _f9:
 ; ADC B ext (4)
-; +93/99.5/
+; +92/99/
 	_EXTENDED		; point to operand (31/31.5)
-adcbe:				; +62/68/ from here
+adcbe:				; +61/67.5/ from here
 	CLC				; prepare (2)
 	BBR0 ccr68, adcbe_cc	; no previous carry (6/6.5...) *** Rockwell ***
 		SEC						; otherwise preset C
-adcbe_cc:			; +54/59.5/ from here
+adcbe_cc:			; +53/59/ from here
 	LDA b68			; get accumulator B (3)
 	BIT #%00010000	; check bit 4 (2)
 	BEQ adcbe_nh	; do not set H if clear (8/9...)
@@ -429,7 +429,7 @@ adcbe_nc:
 adcbe_nv:
 	STA ccr68		; update flags (3)
 	TXA				; retrieve value! (2)
-	JMP b_nz		; update B and check NZ (3+)
+	JMP b_nz		; update B and check NZ (12/14/23)
 
 ; logical AND
 _84:
@@ -439,7 +439,7 @@ _84:
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA andae		; continue as indirect addressing (3+)
+	BRA andae		; continue as indirect addressing (28/30/39)
 
 _94:
 ; AND A dir (3)
@@ -448,13 +448,13 @@ _94:
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA andae		; continue as indirect addressing (3+)
+	BRA andae		; continue as indirect addressing (28/30/39)
 
 _a4:
 ; AND A ind (5)
 ; +59/61.5/
 	_INDEXED		; points to operand (31/31.5)
-	BRA andae		; same (3+)
+	BRA andae		; same (28/30/39)
 
 _b4:
 ; AND A ext (4)
@@ -466,7 +466,7 @@ andae:				; +25/27/36 from here
 	STA ccr68		; update (3)
 	LDA a68			; get A accumulator (3)
 	AND (tmptr)		; AND with operand (5)
-	JMP a_nz		; update A and check NZ (3+)
+	JMP a_nz		; update A and check NZ (9/11/20)
 
 _c4:
 ; AND B imm (2)
@@ -475,7 +475,7 @@ _c4:
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA andbe		; continue as indirect addressing (3+)
+	BRA andbe		; continue as indirect addressing (31/33/42)
 
 _d4:
 ; AND B dir (3)
@@ -484,13 +484,13 @@ _d4:
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA andbe		; continue as indirect addressing (3+)
+	BRA andbe		; continue as indirect addressing (31/33/42)
 
 _e4:
 ; AND B ind (5)
 ; +62/64.5/
 	_INDEXED		; points to operand (31/31.5)
-	BRA andbe		; same (3+)
+	BRA andbe		; same (31/33/42)
 
 _f4:
 ; AND B ext (4)
@@ -502,7 +502,7 @@ andbe:				; +28/30/39 from here
 	STA ccr68		; update (3)
 	LDA b68			; get B accumulator (3)
 	AND (tmptr)		; AND with operand (5)
-	JMP b_nz		; update B and check NZ (3+)
+	JMP b_nz		; update B and check NZ (12/14/23)
 
 ; AND without modifying register
 _85:
@@ -512,7 +512,7 @@ _85:
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA bitae		; continue as indirect addressing (3+)
+	BRA bitae		; continue as indirect addressing (25/27/36)
 
 _95:
 ; BIT A dir (3)
@@ -521,13 +521,13 @@ _95:
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA bitae		; continue as indirect addressing (3+)
+	BRA bitae		; continue as indirect addressing (25/27/36)
 
 _a5:
 ; BIT A ind (5)
 ; +56/58.5/
 	_INDEXED		; points to operand (31/31.5)
-	BRA bitae		; same (3+)
+	BRA bitae		; same (25/27/36)
 
 _b5:
 ; BIT A ext (4)
@@ -539,7 +539,7 @@ bitae:				; +22/24/33 from here
 	STA ccr68		; update (3)
 	LDA a68			; get A accumulator (3)
 	AND (tmptr)		; AND with operand, just for flags (5)
-	JMP check_nz	; check flags and end (3+)
+	JMP check_nz	; check flags and end (6/8/17)
 
 _c5:
 ; BIT B imm (2)
@@ -548,7 +548,7 @@ _c5:
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA bitbe		; continue as indirect addressing (3+)
+	BRA bitbe		; continue as indirect addressing (25/27/36)
 
 _d5:
 ; BIT B dir (3)
@@ -557,13 +557,13 @@ _d5:
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA bitbe		; continue as indirect addressing (3+)
+	BRA bitbe		; continue as indirect addressing (25/27/36)
 
 _e5:
 ; BIT B ind (5)
 ; +56/58.5/
 	_INDEXED		; points to operand (31/31.5)
-	BRA bitbe		; same (3+)
+	BRA bitbe		; same (25/27/36)
 
 _f5:
 ; BIT B ext (4)
@@ -575,7 +575,7 @@ bitbe:				; +22/24/33 from here
 	STA ccr68		; update (3)
 	LDA b68			; get B accumulator (3)
 	AND (tmptr)		; AND with operand, just for flags (5)
-	JMP check_nz	; check flags and end (3+)
+	JMP check_nz	; check flags and end (6/8/17)
 
 ; clear
 _4f:
@@ -593,27 +593,27 @@ _5f:
 ; CLR B (2)
 ; +16
 	STZ b68		; clear B (3)
-	BRA clra	; same (3+)
+	BRA clra	; same (13)
 
 _6f:
 ; CLR ind (7)
-; +57/57.5/
+; +54/54.5/
 	_INDEXED		; prepare pointer (31/31.5)
-	BRA clre		; same code (3+)
+	BRA clre		; same code (23)
 
 _7f:
 ; CLR ext (6)
-; +54/54.5/
+; +51/51.5/
 	_EXTENDED		; prepare pointer (31/31.5)
 clre:
 	LDA #0			; no indirect STZ available (2)
 	STA (tmptr)		; clear memory (5)
-	BRA clra		; same (3+)
+	BRA clra		; same (13)
 
 ; compare
 _81:
 ; CMP A imm (2)
-; +47/51/
+; +47/51/******************************************
 	_PC_ADV			; get operand (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
@@ -707,7 +707,7 @@ _43:
 	STA ccr68		; update status (3)
 	LDA a68			; get A (3)
 	EOR #$FF		; complement it (2)
-	JMP a_nz		; update A, check NZ and exit (3+)
+	JMP a_nz		; update A, check NZ and exit (9/11/20)
 
 _53:
 ; COM B (2)
@@ -718,7 +718,7 @@ _53:
 	STA ccr68		; update status (3)
 	LDA b68			; get B (3)
 	EOR #$FF		; complement it (2)
-	JMP b_nz		; update B, check NZ and exit (3+)
+	JMP b_nz		; update B, check NZ and exit (12/14/23)
 
 _63:
 ; COM ind (7)
@@ -760,7 +760,7 @@ nega_nc:
 		SMB1 ccr68		; set V flag *** Rockwell ***
 nega_nv:
 	TXA				; retrieve (2)
-	JMP check_nz	; finish (3+)
+	JMP check_nz	; finish (6/8/17)
 
 _50:
 ; NEG B (2)
@@ -838,7 +838,7 @@ deca:				; +13/17/28 from here
 		SMB1 ccr68		; will set V flag *** Rockwell ***
 deca_nv:
 	TXA				; retrieve! (2)
-	JMP check_nz	; end (3+)
+	JMP check_nz	; end (6/8/17)
 
 _5a:
 ; DEC B (2)
@@ -905,7 +905,7 @@ eorae:
 	STA ccr68		; update (3)
 	LDA a68			; get A accumulator (3)
 	EOR (tmptr)		; EOR with operand (5)
-	JMP a_nz		; update A, check NZ and exit (3+)
+	JMP a_nz		; update A, check NZ and exit (9/11/20)
 
 _c8:
 ; EOR B imm (2)
@@ -941,7 +941,7 @@ eorbe:
 	STA ccr68		; update (3)
 	LDA b68			; get B accumulator (3)
 	EOR (tmptr)		; EOR with operand (5)
-	JMP b_nz		; update B, check NZ and exit (3+)
+	JMP b_nz		; update B, check NZ and exit (12/14/23)
 
 ; increment
 _4c:
@@ -958,7 +958,7 @@ inca:
 		SMB1 ccr68		; will set V flag *** Rockwell ***
 inca_nv:
 	TXA				; retrieve! (2)
-	JMP check_nz	; end (3+)
+	JMP check_nz	; end (6/8/17)
 
 _5c:
 ; INC B (2)
@@ -1038,7 +1038,7 @@ ldaae:
 	AND #%11110001	; clear relevant bits (2)
 	STA ccr68		; update (3)
 	LDA (tmptr)		; get operand (5)
-	JMP a_nz		; update A, check NZ and exit (3+)
+	JMP a_nz		; update A, check NZ and exit (9/11/20)
 
 _c6:
 ; LDA B imm (2)
@@ -1087,7 +1087,7 @@ ldabe:
 	AND #%11110001	; clear relevant bits (2)
 	STA ccr68		; update (3)
 	LDA (tmptr)		; get operand (5)
-	JMP b_nz		; update B, check NZ and exit (3+)
+	JMP b_nz		; update B, check NZ and exit (12/14/23)
 
 ; inclusive OR
 _8a:
@@ -1124,7 +1124,7 @@ oraae:
 	STA ccr68		; update (3)
 	LDA a68			; get A accumulator (3)
 	ORA (tmptr)		; ORA with operand (5)
-	JMP a_nz		; update A, check NZ and exit (3+)
+	JMP a_nz		; update A, check NZ and exit (9/11/20)
 
 _ca:
 ; ORA B imm (2)
@@ -1160,7 +1160,7 @@ orabe:
 	STA ccr68		; update (3)
 	LDA b68			; get B accumulator (3)
 	ORA (tmptr)		; ORA with operand (5)
-	JMP b_nz		; update B, check NZ and exit (3+)
+	JMP b_nz		; update B, check NZ and exit (12/14/23)
 
 ; push accumulator
 _36:
@@ -1686,7 +1686,7 @@ _16:
 	AND #%11110001	; reset N,Z, and always V (2)
 	STA ccr68		; update status (3)
 	LDA a68			; get A (3)
-	JMP b_nz		; update B, check NZ and exit (3+)
+	JMP b_nz		; update B, check NZ and exit (12/14/23)
 
 _17:
 ; TBA (2)
@@ -1695,7 +1695,7 @@ _17:
 	AND #%11110001	; reset N,Z, and always V (2)
 	STA ccr68		; update status (3)
 	LDA b68			; get B (3)
-	JMP a_nz		; update A, check NZ and exit (3+)
+	JMP a_nz		; update A, check NZ and exit (9/11/20)
 
 ; test for zero or minus
 _4d:
@@ -1705,7 +1705,7 @@ _4d:
 	AND #%11110000	; reset relevant bits (2)
 	STA ccr68		; update status (3)
 	LDA a68			; check accumulator A (3)
-	JMP check_nz	; (3+)
+	JMP check_nz	; (6/8/17)
 
 _5d:
 ; TST B (2)
@@ -1714,7 +1714,7 @@ _5d:
 	AND #%11110000	; reset relevant bits (2)
 	STA ccr68		; update status (3)
 	LDA b68			; check accumulator B (3)
-	JMP check_nz	; (3+)
+	JMP check_nz	; (6/8/17)
 
 _6d:
 ; TST ind (7)
@@ -1731,7 +1731,7 @@ tste:
 	AND #%11110000	; reset relevant bits (2)
 	STA ccr68		; update status (3)
 	LDA (tmptr)		; check operand (5)
-	JMP check_nz	; (3+)
+	JMP check_nz	; (6/8/17)
 
 ; ** index register and stack pointer ops **
 
