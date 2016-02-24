@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1a6 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160217 -- corrected 20160218,19
+; last modified 20160217 -- corrected 20160218,19,24
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -3282,7 +3282,7 @@ _ef:
 		SMB3 ccr68		; otherwise set N flag
 stxi_pl:
 	INC tmptr		; go for next operand
-	BEQ stxi_nw		; rare wrap
+	BNE stxi_nw		; rare wrap
 		LDA tmptr+1		; get pointer MSB
 		INC				; increment
 		_AH_BOUND		; keep injected
@@ -3309,7 +3309,7 @@ _ff:
 		SMB3 ccr68		; otherwise set N flag
 stxe_pl:
 	INC tmptr		; go for next operand
-	BEQ stxe_nw		; rare wrap
+	BNE stxe_nw		; rare wrap
 		LDA tmptr+1		; get pointer MSB
 		INC				; increment
 		_AH_BOUND		; keep injected
