@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS! *** COMPACT VERSION ***
-; v0.1a6 -- complete minus hardware interrupts!
+; v0.1b1 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160224
+; last modified 20160225
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -88,16 +88,23 @@ cdev	=	uz+11	; I/O device *** minimOS specific ***
 	LDA #cdev-uz+1	; zeropage space needed
 #ifdef	SAFE
 	CMP z_used		; check available zeropage space
-	BCC go_emu		; nore than enough space
+	BCC go_emu		; more than enough space
 	BEQ go_emu		; just enough!
 		_ERR(FULL)		; not enough memory otherwise (rare)
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
 	STZ zpar		; no screen size required
+	STZ zpar+1		; neither MSB
+	LDY #<title		; LSB of window title
+	LDA #>title		; MSB of window title
+	STY zaddr3		; set parameter
+	STA zaddr3+1
 	_KERNEL(OPEN_W)	; ask for a character I/O device
-
-; might check here whether a Rockwell 65C02 is used!
+	BCC open_emu	; no errors
+		RTS				; abort otherwise!
+open_emu:
+	STY cdev		; store device!!!
 ; should try to allocate memory here
 
 ; *** start the emulation! ***
@@ -113,9 +120,9 @@ execute:
 		ASL				; double it as will become pointer (2)
 		TAX				; use as pointer, keeping carry (2)
 		BCC lo_jump		; seems to be less opcodes with bit7 low... (2/3)
-			JMP (optable_h, X)	; emulation routines for opcodes with bit7 hi (6)
+			JMP (opt_h, X)	; emulation routines for opcodes with bit7 hi (6)
 lo_jump:
-			JMP (optable_l, X)	; otherwise, emulation routines for opcodes with bit7 low
+			JMP (opt_l, X)	; otherwise, emulation routines for opcodes with bit7 low
 ; *** NOP (2) arrives here, saving 3 bytes and 3 cycles ***
 _01:
 ; continue execution via JMP next_op, will not arrive here otherwise
@@ -129,6 +136,10 @@ next_op:
 	BPL execute			; seems to stay in RAM area (3/2)
 		RMB6 pc68 + 1		; in ROM area, A14 is goes low (5) *** Rockwell
 	BRA execute			; fetch next (3)
+
+; *** window title, optional and minimOS specific ***
+title:
+	.asc	"6800 simulator", 0
 
 ; *** opcode execution routines, labels must match those on tables below ***
 ; unsupported opcodes first
@@ -613,12 +624,12 @@ clre:
 ; compare
 _81:
 ; CMP A imm (2)
-; +47/51/******************************************
+; +47/51/
 	_PC_ADV			; get operand (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA cmpae		; continue as indirect addressing (3+)
+	BRA cmpae		; continue as indirect addressing (33/37/55)
 
 _91:
 ; CMP A dir (3)
@@ -627,13 +638,13 @@ _91:
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA cmpae		; continue as indirect addressing (3+)
+	BRA cmpae		; continue as indirect addressing (33/37/55)
 
 _a1:
 ; CMP A ind (5)
 ; +64/68.5/
 	_INDEXED		; get operand (31/31.5)
-	BRA cmpae		; same (3+)
+	BRA cmpae		; same (33/37/55)
 
 _b1:
 ; CMP A ext (4)
@@ -646,7 +657,7 @@ cmpae:				; +30/34/52 from here
 	LDA a68			; get accumulator A (3)
 	SEC				; prepare (2)
 	SBC (tmptr)		; subtract without carry (5)
-	JMP check_flags	; check NZVC and exit (3+)
+	JMP check_flags	; check NZVC and exit (12/16/34)
 
 _c1:
 ; CMP B imm (2)
@@ -655,7 +666,7 @@ _c1:
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA cmpbe		; continue as indirect addressing (3+)
+	BRA cmpbe		; continue as indirect addressing (33/37/55)
 
 _d1:
 ; CMP B dir (3)
@@ -664,13 +675,13 @@ _d1:
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA cmpbe		; continue as indirect addressing (3+)
+	BRA cmpbe		; continue as indirect addressing (33/37/55)
 
 _e1:
 ; CMP B ind (5)
 ; +64/68.5/
 	_INDEXED		; get operand (31/31.5)
-	BRA cmpbe		; same (3+)
+	BRA cmpbe		; same (33/37/55)
 
 _f1:
 ; CMP B ext (4)
@@ -683,7 +694,7 @@ cmpbe:				; +30/34/52 from here
 	LDA b68			; get accumulator B (3)
 	SEC				; prepare (2)
 	SBC (tmptr)		; subtract without carry (5)
-	JMP check_flags	; check NZVC and exit (3+)
+	JMP check_flags	; check NZVC and exit (12/16/34)
 
 ; compare accumulators
 _11:
@@ -695,7 +706,7 @@ _11:
 	LDA a68			; get accumulator A (3)
 	SEC				; prepare (2)
 	SBC b68			; subtract B without carry (3)
-	JMP check_flags	; check NZVC and exit (3+)
+	JMP check_flags	; check NZVC and exit (12/16/34)
 
 ; 1's complement
 _43:
@@ -724,7 +735,7 @@ _63:
 ; COM ind (7)
 ; +65/67.5/
 	_INDEXED		; compute pointer (31/31.5)
-	BRA come		; same (3+)
+	BRA come		; same (34/36/45)
 
 _73:
 ; COM ext (6)
@@ -737,12 +748,12 @@ come:				; +31/33/42 from here
 	STA ccr68		; update status (3)
 	LDA (tmptr)		; get memory (5)
 	EOR #$FF		; complement it (2)
-	JMP ind_nz		; store, check flags and exit (3+)
+	JMP ind_nz		; store, check flags and exit (14/17/25)
 
 ; 2's complement
 _40:
 ; NEG A (2)
-; +18/24/37
+; +36/40/51
 	LDA ccr68		; get original flags (3)
 	AND #%11110000	; reset relevant bits (2)
 	STA ccr68		; update status (3)
@@ -750,7 +761,7 @@ _40:
 	LDA #0			; (2)
 	SBC a68			; negate A (3)
 	STA a68			; update value (3)
-nega:				; +// from here
+nega:				; +18/22/33 from here
 	BNE nega_nc		; carry only if zero (3)
 		SMB0 ccr68		; set C flag *** Rockwell ***
 nega_nc:
@@ -764,7 +775,7 @@ nega_nv:
 
 _50:
 ; NEG B (2)
-; +21/27/40
+; +39/43/54
 	LDA ccr68		; get original flags (3)
 	AND #%11110000	; reset relevant bits (2)
 	STA ccr68		; update status (3)
@@ -772,19 +783,19 @@ _50:
 	LDA #0			; (2)
 	SBC b68			; negate B (3)
 	STA b68			; update value (3)
-	BRA nega		; check flags (3+)
+	BRA nega		; check flags (21/25/36)
 
 _60:
 ; NEG ind (7)
-; +77/83.5/
+; +77/81.5/
 	_INDEXED		; compute pointer (31/31.5)
-	BRA nege		; same (3+)
+	BRA nege		; same (46/50/61)
 
 _70:
 ; NEG ext (6)
-; +74/80.5/
+; +74/78.5/
 	_EXTENDED		; addressing mode (31/31.5)
-nege:				; +43/49/62 from here
+nege:				; +43/47/58 from here
 	LDA ccr68		; get original flags (3)
 	AND #%11110000	; reset relevant bits (2)
 	STA ccr68		; update status (3)
@@ -792,7 +803,7 @@ nege:				; +43/49/62 from here
 	LDA #0			; (2)
 	SBC (tmptr)		; negate memory (5)
 	STA (tmptr)		; update value (5)
-	BRA nega		; continue (3+)
+	BRA nega		; continue (21/25/36)
 
 ; decimal adjust
 _19:
@@ -826,13 +837,13 @@ daa_ok:
 ; decrement
 _4a:
 ; DEC A (2)
-; +29/33/44
+; +29/31/
 	LDA ccr68		; get original status (3)
 	AND #%11110001	; reset all relevant bits for CCR (2)
 	STA ccr68		; store new flags (3)
 	DEC a68			; decrease A (5)
 	LDX a68			; check it! (3)
-deca:				; +13/17/28 from here
+deca:				; +13/15/ from here
 	CPX #$7F		; did change sign? (2)
 	BNE deca_nv		; skip if not overflow (3...)
 		SMB1 ccr68		; will set V flag *** Rockwell ***
@@ -842,25 +853,25 @@ deca_nv:
 
 _5a:
 ; DEC B (2)
-; +33/36/47
+; +32/34/
 	LDA ccr68		; get original status (3)
 	AND #%11110001	; reset all relevant bits for CCR (2)
 	STA ccr68		; store new flags (3)
 	DEC b68			; decrease B (5)
 	LDX b68			; check it! (3)
-	BRA deca		; continue (3+)
+	BRA deca		; continue (16/18)
 
 _6a:
 ; DEC ind (7)
-; +
+; +72/74.5/
 	_INDEXED		; addressing mode (31/31.5)
-	BRA dece		; same (3+)
+	BRA dece		; same (41/43)
 
 _7a:
 ; DEC ext (6)
-; +
+; +69/71.5/
 	_EXTENDED		; addressing mode (31/31.5)
-dece:
+dece:				; +38/40/ from here
 	LDA ccr68		; get original status (3)
 	AND #%11110001	; reset all relevant bits for CCR (2)
 	STA ccr68		; store new flags (3)
@@ -868,38 +879,38 @@ dece:
 	DEC				; (2)
 	STA (tmptr)		; (5)
 	TAX				; store for later (2)
-	BRA deca		; continue (3+)
+	BRA deca		; continue (16/18)
 
 ; exclusive OR
 _88:
 ; EOR A imm (2)
-; +
+; +42/44/
 	_PC_ADV			; go for operand (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA eorae		; continue as indirect addressing (3+)
+	BRA eorae		; continue as indirect addressing (28/30/39)
 
 _98:
 ; EOR A dir (3)
-; +
+; +46/48/
 	_DIRECT			; Points to operand (10)
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA eorae		; continue as indirect addressing (3+)
+	BRA eorae		; continue as indirect addressing (28/30/39)
 
 _a8:
 ; EOR A ind (5)
-; +
+; +59/61.5/
 	_INDEXED		; points to operand (31/31.5)
-	BRA eorae		; same (3+)
+	BRA eorae		; same (28/30/39)
 
 _b8:
 ; EOR A ext (4)
-; +
+; +56/58.5/
 	_EXTENDED		; points to operand (31/31.5)
-eorae:
+eorae:				; +25/27/36 from here
 	LDA ccr68		; get flags (3)
 	AND #%11110001	; clear relevant bits (2)
 	STA ccr68		; update (3)
@@ -909,33 +920,33 @@ eorae:
 
 _c8:
 ; EOR B imm (2)
-; +
+; +45/48/
 	_PC_ADV			; go for operand (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA eorbe		; continue as indirect addressing (3+)
+	BRA eorbe		; continue as indirect addressing (31/33/42)
 
 _d8:
 ; EOR B dir (3)
-; +
+; +49/51/
 	_DIRECT			; points to operand (10)
 	STA tmptr		; store LSB of pointer (3)
 	LDA #>e_base	; emulated MSB (2)
 	STA tmptr+1		; pointer is ready (3)
-	BRA eorbe		; continue as indirect addressing (3+)
+	BRA eorbe		; continue as indirect addressing (31/33/42)
 
 _e8:
 ; EOR B ind (5)
-; +
+; +62/64.5/
 	_INDEXED		; points to operand (31/31.5)
-	BRA eorbe		; same (3+)
+	BRA eorbe		; same (31/33/42)
 
 _f8:
 ; EOR B ext (4)
-; +
+; +59/61.5/
 	_EXTENDED		; points to operand (31/31.5)
-eorbe:
+eorbe:				; +28/30/39 from here
 	LDA ccr68		; get flags (3)
 	AND #%11110001	; clear relevant bits (2)
 	STA ccr68		; update (3)
@@ -946,13 +957,13 @@ eorbe:
 ; increment
 _4c:
 ; INC A (2)
-; +
+; +29/31/
 	LDA ccr68		; get original status (3)
 	AND #%11110001	; reset all relevant bits for CCR (2)
 	STA ccr68		; store new flags (3)
 	INC a68			; increase A (5)
 	LDX a68			; check it! (3)
-inca:
+inca:				; +13/15/ from here
 	CPX #$80		; did change sign? (2)
 	BNE inca_nv		; skip if not overflow (3...)
 		SMB1 ccr68		; will set V flag *** Rockwell ***
@@ -962,7 +973,7 @@ inca_nv:
 
 _5c:
 ; INC B (2)
-; +
+; +32/34/
 	LDA ccr68		; get original status (3)
 	AND #%11110001	; reset all relevant bits for CCR (2)
 	STA ccr68		; store new flags (3)
@@ -972,13 +983,13 @@ _5c:
 
 _6c:
 ; INC ind (7)
-; +
+; +72/74.5/
 	_INDEXED		; addressing mode (31/31.5)
 	BRA ince		; same (3+)
 
 _7c:
 ; INC ext (6)
-; +
+; +69/71.5/
 	_EXTENDED		; addressing mode (31/31.5)
 ince:
 	LDA ccr68		; get original status (3)
@@ -993,27 +1004,29 @@ ince:
 ; load accumulator
 _86:
 ; LDA A imm (2)
-; +
+; +39/41/
 	_PC_ADV			; go for operand (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA ldaae		; continue as indirect addressing (3+)
+	BRA ldaae		; continue as indirect addressing (25/27/36)
 
 _96:
-; LDA A dir (3) *** access to $00 is redirected to minimOS standard input ***
-; +
+; LDA A dir (3) *** access to $00 is redirected to standard input ***
+; +45/47
 	_DIRECT				; X points to operand (10)
 ; ** trap address in case it goes to host console **
+;	CMP #limit+1		; compare against last trapped address, optional (2)
+;	BCC ldaad_trap		; ** intercept range, otherwise use BEQ (2)
 	BEQ ldaad_trap		; ** intercept input! (2)
 ; ** continue execution otherwise **
 		STA tmptr		; store LSB of pointer (3)
 		LDA #>e_base	; emulated MSB (2)
 		STA tmptr+1		; pointer is ready (3)
-		BRA ldaae		; continue as indirect addressing (3+)
-; *** trap input, minimOS specific ***
+		BRA ldaae		; continue as indirect addressing (25/27/36)
+; *** input from console, minimOS specific ***
 ldaad_trap:
-	LDY #0			; *** minimOS standard device, TBD ***
+	LDY cdev		; *** minimOS standard device ***
 	_KERNEL(CIN)	; standard input, non locking
 	BCC ldaad_ok	; there was something available
 		LDA #0			; otherwise, NUL means no char was available
@@ -1025,15 +1038,15 @@ ldaad_ret:
 
 _a6:
 ; LDA A ind (5)
-; +
+; +56/58.5/
 	_INDEXED		; points to operand (31/31.5)
-	BRA ldaae		; same (3+)
+	BRA ldaae		; same (25/27/36)
 
 _b6:
 ; LDA A ext (4)
-; +
+; +53/55.5/
 	_EXTENDED		; points to operand (31/31.5)
-ldaae:
+ldaae:				; +22/24/33 from here
 	LDA ccr68		; get flags (3)
 	AND #%11110001	; clear relevant bits (2)
 	STA ccr68		; update (3)
@@ -1042,27 +1055,29 @@ ldaae:
 
 _c6:
 ; LDA B imm (2)
-; +
+; +42/44/
 	_PC_ADV			; go for operand (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
 	STA tmptr + 1	; pointer is ready (3)
-	BRA ldabe		; continue as indirect addressing (3+)
+	BRA ldabe		; continue as indirect addressing (28/30/39)
 
 _d6:
-; LDA B dir (3) *** access to $00 is redirected to minimOS standard input ***
-; +
+; LDA B dir (3) *** access to $00 is redirected to standard input ***
+; +48/50/
 	_DIRECT				; A points to operand (10)
 ; ** trap address in case it goes to host console **
+;	CMP #limit+1		; compare against last trapped address, optional (2)
+;	BCC ldabd_trap		; ** intercept range, otherwise use BEQ (2)
 	BEQ ldabd_trap		; ** intercept input! (2)
 ; ** continue execution otherwise **
 		STA tmptr		; store LSB of pointer (3)
 		LDA #>e_base	; emulated MSB (2)
 		STA tmptr+1		; pointer is ready (3)
-		BRA ldabe		; continue as indirect addressing (3+)
-; *** trap input, minimOS specific ***
+		BRA ldabe		; continue as indirect addressing (28/30/39)
+; *** input from console, minimOS specific ***
 ldabd_trap:
-	LDY #0			; *** minimOS standard device, TBD ***
+	LDY cdev		; *** minimOS standard device ***
 	_KERNEL(CIN)	; standard input, non locking
 	BCC ldabd_ok	; there was something available
 		LDA #0			; otherwise, NUL means no char was available
@@ -1074,15 +1089,15 @@ ldabd_ret:
 
 _e6:
 ; LDA B ind (5)
-; +
+; +59/61.5/
 	_INDEXED		; points to operand (31/31.5)
-	BRA ldabe		; same (3+)
+	BRA ldabe		; same (28/30/39)
 
 _f6:
 ; LDA B ext (4)
-; +
+; +56/58.5/
 	_EXTENDED		; points to operand (31/31.5)
-ldabe:
+ldabe:				; +25/27/36
 	LDA ccr68		; get flags (3)
 	AND #%11110001	; clear relevant bits (2)
 	STA ccr68		; update (3)
@@ -1092,7 +1107,7 @@ ldabe:
 ; inclusive OR
 _8a:
 ; ORA A imm (2)
-; +
+; + [[[[[[[[[[[[[[[[[[[[[[[[CONTINUE HERE]]]]]]]]]]]]]]]]]]]]]]]]
 	_PC_ADV			; go for operand (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc68 + 1	; get address MSB (3)
@@ -1227,6 +1242,10 @@ rola_do:
 rots:				; *** common rotation ending, with value in X ***
 	LDA ccr68		; get flags again (3)
 	AND #%11110000	; reset relevant bits (2)
+	BCC rola_nc		; skip if there was no carry (3/4.5...)
+		ORA #%00000001	; will set C flag (2)
+		EOR #%00000010	; toggle V bit (2)
+rola_nc:
 	CPX #0			; watch computed value! (2)
 	BNE rola_nz		; skip if not zero (3...)
 		ORA #%00000100	; set Z flag (2)
@@ -1236,10 +1255,6 @@ rola_nz:
 		ORA #%00001000	; will set N bit (2)
 		EOR #%00000010	; toggle V bit (2)
 rola_pl:
-	BCC rola_nc		; skip if there was no carry (3/4.5...)
-		ORA #%00000001	; will set C flag (2)
-		EOR #%00000010	; toggle V bit (2)
-rola_nc:
 	STA ccr68		; update status (3)
 	JMP next_op		; standard end of routine
 
@@ -1436,10 +1451,10 @@ lsre:
 	LDA (tmptr)		; get operand (5)
 	LSR				; (2)
 	STA (tmptr)		; modify operand (5)
-	TAX				; store for later, worth it (2)
+	PHP				; store status, really needed!!! (3)
 	LDA ccr68		; get original flags (3)
 	AND #%11110000	; reset relevant bits (N always reset) (2)
-	CPX #0			; retrieve value (2)
+	PLP				; retrieve status, proper way!!! (4)
 	BRA lshift		; common end! (3+)
 
 ; store accumulator [[[[continue from here]]]]]]
@@ -1478,7 +1493,7 @@ staae:
 	AND #%11110001	; clear relevant bits (2)
 	STA ccr68		; update (3)
 	LDA a68			; get A accumulator (3)
-	JMP ind_nz		; store, check NZ and exit (3+)
+	JMP ind_nz		; store, check NZ and exit (14/17/25)
 
 _d7:
 ; STA B dir (4) *** access to $00 is redirected to minimOS standard output ***
@@ -1515,7 +1530,7 @@ stabe:
 	AND #%11110001	; clear relevant bits (2)
 	STA ccr68		; update (3)
 	LDA b68			; get B accumulator (3)
-	JMP ind_nz		; store, check NZ and exit (3+)
+	JMP ind_nz		; store, check NZ and exit (14/17/25)
 
 ; subtract without carry
 _80:
@@ -1593,7 +1608,7 @@ _10:
 	SEC				; prepare (2)
 	SBC b68			; subtract B without carry (3)
 	STA a68			; update accumulator A (3)
-	JMP check_flags	; and exit (3+)
+	JMP check_flags	; and exit (12/16/34)
 
 ; subtract with carry
 _82:
@@ -1635,7 +1650,7 @@ sbcae_do:
 	LDA a68			; get accumulator A
 	SBC (tmptr)		; subtract with carry (5)
 	STA a68			; update accumulator (3)
-	JMP check_flags	; and exit (3+)
+	JMP check_flags	; and exit (12/16/34)
 
 _c2:
 ; SBC B imm (2)
@@ -1676,7 +1691,7 @@ sbcbe_do:
 	LDA b68			; get accumulator B (3)
 	SBC (tmptr)		; subtract with carry (5)
 	STA b68			; update accumulator (3)
-	JMP check_flags	; and exit (3+)
+	JMP check_flags	; and exit (12/16/34)
 
 ; transfer accumulator
 _16:
@@ -2516,7 +2531,7 @@ _07:
 
 ; *** opcode execution addresses table ***
 ; should stay no matter the CPU!
-optable_l:
+opt_l:
 	.word	_00
 	.word	_01
 	.word	_02
@@ -2645,7 +2660,7 @@ optable_l:
 	.word	_7d
 	.word	_7e
 	.word	_7f
-optable_h:
+opt_h:
 	.word	_80
 	.word	_81
 	.word	_82

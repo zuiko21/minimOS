@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
-; v0.1a6 -- complete minus hardware interrupts!
+; v0.1b1 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160217 -- corrected 20160218,19,24
+; last modified 20160225
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -1983,6 +1983,10 @@ roli_do:
 	TAX				; keep for later
 	LDA ccr68		; get flags again
 	AND #%11110000	; reset relevant bits
+	BCC roli_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+roli_nc:
 	CPX #0			; watch computed value!
 	BNE roli_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
@@ -1992,10 +1996,6 @@ roli_nz:
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 roli_pl:
-	BCC roli_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-roli_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2013,6 +2013,10 @@ role_do:
 	TAX				; keep for later
 	LDA ccr68		; get flags again
 	AND #%11110000	; reset relevant bits
+	BCC role_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+role_nc:
 	CPX #0			; watch computed value!
 	BNE role_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
@@ -2022,10 +2026,6 @@ role_nz:
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 role_pl:
-	BCC role_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-role_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2096,6 +2096,10 @@ rori_do:
 	TAX				; keep for later
 	LDA ccr68		; get flags again
 	AND #%11110000	; reset relevant bits
+	BCC rori_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+rori_nc:
 	CPX #0			; watch computed value!
 	BNE rori_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
@@ -2105,10 +2109,6 @@ rori_nz:
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 rori_pl:
-	BCC rori_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-rori_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2126,6 +2126,10 @@ rore_do:
 	TAX				; keep for later
 	LDA ccr68		; get flags again
 	AND #%11110000	; reset relevant bits
+	BCC rore_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+rore_nc:
 	CPX #0			; watch computed value!
 	BNE rore_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
@@ -2135,10 +2139,6 @@ rore_nz:
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 rore_pl:
-	BCC rore_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-rore_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2195,6 +2195,10 @@ _68:
 	TAX				; save for later!
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
+	BCC asli_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+asli_nc:
 	CPX #0			; retrieve value
 	BNE asli_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
@@ -2204,10 +2208,6 @@ asli_nz:
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 asli_pl:
-	BCC asli_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asli_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2221,6 +2221,10 @@ _78:
 	TAX				; save for later!
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
+	BCC asle_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+asle_nc:
 	CPX #0			; retrieve value
 	BNE asle_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
@@ -2230,10 +2234,6 @@ asle_nz:
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 asle_pl:
-	BCC asle_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asle_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2304,6 +2304,10 @@ asri_do:
 	TAX				; store for later!
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
+	BCC asri_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+asri_nc:
 	CPX #0			; retrieve value
 	BNE asri_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
@@ -2313,10 +2317,6 @@ asri_nz:
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 asri_pl:
-	BCC asri_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asri_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2334,6 +2334,10 @@ asre_do:
 	TAX				; store for later!
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits
+	BCC asre_nc		; skip if there was no carry
+		ORA #%00000001	; will set C flag
+		EOR #%00000010	; toggle V bit
+asre_nc:
 	CPX #0			; retrieve value
 	BNE asre_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
@@ -2343,10 +2347,6 @@ asre_nz:
 		ORA #%00001000	; will set N bit
 		EOR #%00000010	; toggle V bit
 asre_pl:
-	BCC asre_nc		; skip if there was no carry
-		ORA #%00000001	; will set C flag
-		EOR #%00000010	; toggle V bit
-asre_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2391,13 +2391,13 @@ _64:
 	TAX				; store for later, worth it
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
+	BCC lsri_nc		; skip if there was no carry
+		ORA #%00000011	; will set C and V flags
+lsri_nc:
 	CPX #0			; retrieve value
 	BNE lsri_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
 lsri_nz:
-	BCC lsri_nc		; skip if there was no carry
-		ORA #%00000011	; will set C and V flags
-lsri_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
@@ -2411,13 +2411,13 @@ _74:
 	TAX				; store for later, worth it
 	LDA ccr68		; get original flags
 	AND #%11110000	; reset relevant bits (N always reset)
+	BCC lsre_nc		; skip if there was no carry
+		ORA #%00000011	; will set C and V flags
+lsre_nc:
 	CPX #0			; retrieve value
 	BNE lsre_nz		; skip if not zero
 		ORA #%00000100	; set Z flag
 lsre_nz:
-	BCC lsre_nc		; skip if there was no carry
-		ORA #%00000011	; will set C and V flags
-lsre_nc:
 	STA ccr68		; update status
 	JMP next_op		; standard end of routine
 
