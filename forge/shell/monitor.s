@@ -175,6 +175,7 @@ help:
 	_BRA do_call		; set regs and jump! no return!
 
 move:
+
 set_count:
 	JSR fetch_word		; get operand word
 	LDY tmp				; copy LSB
@@ -184,6 +185,13 @@ set_count:
 	RTS
 
 origin:
+	JSR fetch_word		; get operand word
+	LDY tmp				; copy LSB
+	LDA tmp+1			; and MSB
+	STY ptr				; into destination variable
+	STA ptr+1
+	RTS
+
 set_PSR:
 	LDX cursor			; retrieve index
 	JSR getNextChar		; go to operand
@@ -199,8 +207,7 @@ quit:
 	RTS					; exit to minimOS
 
 store_str:
-	TXA					; get cursor
-	TAY					; use as offset
+	LDY cursor				; use as offset
 sstr_l:
 		INY					; skip the S and increase
 		LDA buffer, Y		; get raw character
@@ -220,6 +227,12 @@ set_lines:
 	RTS
 
 view_regs:
+	LDA #>regs_head		; print header
+	LDY #<regs_head
+	JSR prnStr
+	; **********************
+	RTS
+
 store_word:
 	JSR fetch_word		; get operand word
 	LDA tmp				; get LSB
@@ -370,6 +383,7 @@ h2b_err:
 
 ; * fetch more than one byte from hex input buffer *
 fetch_word:
+	LDX cursor			; retrieve index
 	JSR getNextChar		; point to operand
 	JSR hex2byte		; get first byte (MSB) in tmp
 	LDY tmp				; leave room for next
@@ -426,6 +440,9 @@ prompt:
 
 err_bad:
 	.asc	"*** Bad command ***", CR, 0
+
+regs_head:
+	.asc	CR, "PC: A:X:Y:S:NV-bDIZC", CR, 0
 
 help_str:
 	.asc	"---Command list---", CR
