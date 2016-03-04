@@ -28,12 +28,13 @@ user_sram	= $0400
 	ptr		= uz		; current address pointer
 	siz		= ptr+2		; number of bytes to copy or transfer ('n')
 	lines	= siz+2		; lines to dump ('u')
-	_a		= lines+1	; A register
+	_pc		= lines+1	; PC, should be filled by NMI/BRK handler
+	_a		= _pc+2		; A register
 	_x		= _a+1		; X register
 	_y		= _x+1		; Y register
-	_psr	= _y+1		; status register
-	_sp		= _psr+1	; stack pointer
-	cursor	= _sp+1		; storage for X offset
+	_sp		= _y+1		; stack pointer
+	_psr	= _sp+1		; status register
+	cursor	= _psr+1	; storage for X offset
 	buffer	= cursor+1		; storage for input line (BUFSIZ chars)
 	tmp		= buffer+BUFSIZ	; temporary storage
 	iodev	= tmp+2		; standard I/O ##### minimOS specific #####
@@ -86,7 +87,11 @@ open_mon:
 
 ; *** begin things ***
 main_loop:
-; might print current address in hex!!!
+; put current address before prompt
+		LDA ptr+1			; MSB goes first
+		JSR prnHex			; print it
+		LDA ptr				; same for LSB
+		JSR prnHex
 		LDA #>prompt		; address of prompt string
 		LDY #<prompt
 		JSR prnStr			; print the string!
@@ -142,7 +147,7 @@ sb_end:
 call_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
-; restore stack pointer, this is somehow dangerous, to say the least...
+; restore stack pointer...
 	LDX _sp				; get stored value
 	TXS					; set new pointer...
 ; SP restored
@@ -152,7 +157,7 @@ call_address:
 jump_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
-; restore stack pointer, this is somehow dangerous, to say the least...
+; restore stack pointer...
 	LDX _sp				; get stored value
 	TXS					; set new pointer...
 ; SP restored
@@ -257,7 +262,16 @@ view_regs:
 	LDA #>regs_head		; print header
 	LDY #<regs_head
 	JSR prnStr
-	; **********************
+; PC might get printed by loop below in 20-char version
+	LDA _pc+1			; get PC MSB
+	JSR prnHex			; show it
+	LDA _pc				; same for LSB
+	JSR prnHex
+	LDA #' '			; space
+	JSR prnChar			; print it (not used in 20-char version)
+	LDX #0				; reset counter
+vr_l:
+; ****************************************************
 	RTS
 
 store_word:
@@ -309,12 +323,20 @@ _unrecognised:
 	JMP bad_cmd			; show error message and continue
 
 ; *** useful routines ***
+; * print a character in A *
+prnChar:
+	STA zpar			; store character
+	LDY iodev			; get device
+	_KERNEL(COUT)		; output it ##### minimOS #####
+; ignoring possible I/O errors
+	RTS
+
 ; * print a NULL-terminated string pointed by $AAYY *
 prnStr:
 	STA zaddr3+1		; store MSB
 	STY zaddr3			; LSB
 	LDY iodev			; standard device
-	_KERNEL(STRING)		; print it!
+	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
 	RTS
 
@@ -430,7 +452,33 @@ fetch_word:
 
 ; * print a byte in A as two hex ciphers *
 prnHex:
-	; ***************************************************
+	JSR ph_conv			; first get the ciphers done
+	LDA tmp				; get cipher for MSB
+	JSR prnChar			; print it!
+	LDA tmp+1			; same for LSB
+	JSR prnChar
+	RTS					; done
+ph_conv:
+	STA tmp+1			; keep for later
+	AND #$F0			; mask for MSB
+	LSR					; convert to value
+	LSR
+	LSR
+	LSR
+	LDY #0				; this is first value
+	JSR ph_b2a			; convert this cipher
+	LDA tmp+1			; get again
+	AND #$0F			; mask for LSB
+	INY					; this will be second cipher
+ph_b2a:
+	CMP #10				; will be letter?
+	BCS ph_n			; numbers do not need this
+		ADC #7				; turn into letter, C was clear
+ph_n:
+	CLC
+	ADC #'0'			; turn into ASCII
+	STA tmp, Y
+	RTS
 
 ; *** pointers to command routines ***
 cmd_ptr:
