@@ -1,5 +1,5 @@
 /* Monitor shell for minimOS (simple version) 0.5b1
- * last modified 2016-03-03
+ * last modified 2016-03-04
  * (c) 2016 Carlos J. Santisteban
  * */
 
@@ -36,12 +36,12 @@ user_sram	= $0400
 	cursor	= _sp+1		; storage for X offset
 	buffer	= cursor+1		; storage for input line (BUFSIZ chars)
 	tmp		= buffer+BUFSIZ	; temporary storage
-	iodev	= tmp+2		; standard I/O ** minimOS specific **
+	iodev	= tmp+2		; standard I/O ##### minimOS specific #####
 
 	__last	= iodev+1	; *** just for easier size check ***
 
 ; *** initialise the monitor ***
-; ** minimOS specific stuff **
+; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
@@ -63,10 +63,10 @@ go_mon:
 		RTS					; abort otherwise!
 open_mon:
 	STY iodev			; store device!!!
-; ** end of minimOS specific stuff
+; ##### end of minimOS specific stuff #####
 
 ; global variables
-	LDA #>user_sram		; initial address
+	LDA #>user_sram		; initial address ##### provided by rom.s, but may be changed #####
 	LDY #<user_sram
 	STY ptr				; store LSB
 	STA ptr+1			; and MSB
@@ -77,6 +77,13 @@ open_mon:
 	LDY #<splash
 	JSR prnStr			; print the string!
 
+; *** store current stack pointer as it will be restored upon JSR/JMP ***
+; hopefully the remaining registers will be stored by NMI/BRK handler!
+	TSX					; get current stack pointer
+	DEX					; will be restored from a routine call
+	DEX
+	STX _sp				; store original value
+
 ; *** begin things ***
 main_loop:
 ; might print current address in hex!!!
@@ -84,8 +91,8 @@ main_loop:
 		LDY #<prompt
 		JSR prnStr			; print the string!
 		JSR getLine			; input a line
-		LDX #$FF			; GetNextChar will advance it!
-		JSR getNextChar		; get first character on string
+		LDX #$FF			; getNextChar will advance it to zero!
+		JSR gnc_do			; get first character on string, without the variable
 ;		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 ;			BNE not_mcmd		; not a monitor command
 		STX cursor			; save cursor!
@@ -109,9 +116,12 @@ d_error:
 	JSR prnStr			; display error
 	_BRA main_loop		; continue
 
+; *** call command routine ***
+call_mcmd:
+	_JMPX(cmd_ptr)		; indexed jump macro
+
 ; *** command routines, named as per pointer table ***
 set_A:
-	LDX cursor			; retrieve index
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDY tmp				; converted byte
@@ -119,7 +129,6 @@ set_A:
 	RTS
 
 store_byte:
-	LDX cursor			; retrieve index
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDA tmp				; converted byte
@@ -160,7 +169,6 @@ do_call:
 examine:
 
 set_SP:
-	LDX cursor			; retrieve index
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDY tmp				; converted byte
@@ -175,6 +183,27 @@ help:
 	_BRA do_call		; set regs and jump! no return!
 
 move:
+; preliminary version goes forward, modifies ptr and X
+	JSR fetch_word		; get operand word
+	LDY #0				; reset offset
+	LDX siz+1			; check n MSB
+		BEQ mv_l			; go to second stage if zero
+mv_hl:
+		LDA (ptr), Y		; get source byte
+		STA (tmp), Y		; copy at destination
+		INY					; next byte
+		BNE mv_hl			; until a page is done
+	INC ptr+1			; next page
+	INC tmp+1
+	DEX					; one less to go
+		BNE mv_hl			; stay in first stage until the last page
+mv_l:
+		LDA (ptr), Y		; get source byte
+		STA (tmp), Y		; copy at destination
+		INY					; next byte
+		CPY siz				; compare with LSB
+		BNE mv_l			; continue until done
+	RTS
 
 set_count:
 	JSR fetch_word		; get operand word
@@ -193,7 +222,6 @@ origin:
 	RTS
 
 set_PSR:
-	LDX cursor			; retrieve index
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDY tmp				; converted byte
@@ -219,7 +247,6 @@ sstr_end:
 	RTS
 
 set_lines:
-	LDX cursor			; retrieve index
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDY tmp				; converted byte
@@ -250,7 +277,6 @@ sw_end:
 	RTS
 
 set_X:
-	LDX cursor			; retrieve index
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDY tmp				; converted byte
@@ -258,7 +284,6 @@ set_X:
 	RTS
 
 set_Y:
-	LDX cursor			; retrieve index
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDY tmp				; converted byte
@@ -278,7 +303,7 @@ poweroff:
 fw_shut:
 	_KERNEL(SHUTDOWN)
 
-unrecognised:
+_unrecognised:
 	PLA					; discard main loop return address
 	PLA
 	JMP bad_cmd			; show error message and continue
@@ -335,12 +360,16 @@ gl_cr:
 
 ; * get clean character from buffer in A, cursor at X *
 getNextChar:
+	LDX cursor			; retrieve index
+gnc_do:
 	INX					; advance!
 	LDA buffer, X		; get raw character
 	CMP #' '			; white space?
-		BEQ getNextChar		; skip it!
+		BEQ gnc_do			; skip it!
 	CMP #'$'			; ignored radix?
-		BEQ getNextChar		; skip it!
+		BEQ gnc_do			; skip it!
+;	CMP #';'			; is it a comment?
+;		BEQ gn_fin			; forget until the end
 	CMP #'a'			; not lowercase?
 		BCC gn_ok			; all done!
 	CMP #'z'+1			; still within lowercase?
@@ -348,6 +377,15 @@ getNextChar:
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
 	RTS
+;gn_fin:
+;		INX				; skip another character in comment
+;		LDA buffer, X	; get pointed char
+;			BEQ gh_ok		; finish if already at terminator
+;		CMP #58			; colon ends sentence
+;			BEQ gh_ok
+;		CMP #CR			; newline ends too
+;			BNE gn_fin
+;	RTS
 
 ; * convert two hex ciphers into byte@tmp, A is current char, X is cursor *
 hex2byte:
@@ -372,7 +410,7 @@ h2b_num:
 		CLC
 		ADC tmp				; add computed nibble
 		STA tmp				; and store full byte
-		JSR getNextChar		; go for next hex cipher
+		JSR gnc_do			; go for next hex cipher
 		INY					; loop counter
 		CPY #2				; two ciphers per byte
 		BNE h2b_l			; until done
@@ -383,7 +421,6 @@ h2b_err:
 
 ; * fetch more than one byte from hex input buffer *
 fetch_word:
-	LDX cursor			; retrieve index
 	JSR getNextChar		; point to operand
 	JSR hex2byte		; get first byte (MSB) in tmp
 	LDY tmp				; leave room for next
@@ -391,24 +428,24 @@ fetch_word:
 	JSR hex2byte		; get second byte, tmp is little-endian now
 	RTS
 
-; * call command routine *
-call_mcmd:
-	_JMPX(cmd_ptr)		; indexed jump macro
+; * print a byte in A as two hex ciphers *
+prnHex:
+	; ***************************************************
 
 ; *** pointers to command routines ***
 cmd_ptr:
 	.word	set_A			; .A
 	.word	store_byte		; .B
 	.word	call_address	; .C
-	.word	unrecognised	; .D
+	.word	_unrecognised	; .D
 	.word	examine			; .E
 	.word	force			; .F
 	.word	set_SP			; .G
 	.word	help			; .H
-	.word	unrecognised	; .I
+	.word	_unrecognised	; .I
 	.word	jump_address	; .J
-	.word	unrecognised	; .K
-	.word	unrecognised	; .L
+	.word	_unrecognised	; .K
+	.word	_unrecognised	; .L
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
@@ -416,7 +453,7 @@ cmd_ptr:
 	.word	quit			; .Q
 	.word	reboot			; .R
 	.word	store_str		; .S
-	.word	unrecognised	; .T
+	.word	_unrecognised	; .T
 	.word	set_lines		; .U
 	.word	view_regs		; .V
 	.word	store_word		; .W
@@ -442,7 +479,8 @@ err_bad:
 	.asc	"*** Bad command ***", CR, 0
 
 regs_head:
-	.asc	CR, "PC: A:X:Y:S:NV-bDIZC", CR, 0
+	.asc	CR, "PC:  A: X: Y: S: NV-bDIZC", CR, 0
+;	.asc	CR, "PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
 
 help_str:
 	.asc	"---Command list---", CR
