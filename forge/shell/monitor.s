@@ -1,7 +1,9 @@
-/* Monitor shell for minimOS (simple version) 0.5b1
- * last modified 2016-03-04
- * (c) 2016 Carlos J. Santisteban
- * */
+; Monitor shell for minimOS (simple version)
+; v0.5b1
+; last modified 2016-03-05
+; (c) 2016 Carlos J. Santisteban
+
+; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
 #ifndef	KERNEL
 #include "../../OS/options.h"
@@ -22,13 +24,14 @@ user_sram	= $0400
 #define	BS			9
 #define	BEL			7
 
-; *** include minimOS headers and some other stuff ***
+; ##### include minimOS headers and some other stuff #####
 -shell:
 ; *** declare zeropage variables ***
+; ##### uz is first available zeropage byte #####
 	ptr		= uz		; current address pointer
 	siz		= ptr+2		; number of bytes to copy or transfer ('n')
 	lines	= siz+2		; lines to dump ('u')
-	_pc		= lines+1	; PC, should be filled by NMI/BRK handler
+	_pc		= lines+1	; PC, would be filled by NMI/BRK handler
 	_a		= _pc+2		; A register
 	_x		= _a+1		; X register
 	_y		= _x+1		; Y register
@@ -39,9 +42,10 @@ user_sram	= $0400
 	tmp		= buffer+BUFSIZ	; temporary storage
 	iodev	= tmp+2		; standard I/O ##### minimOS specific #####
 
-	__last	= iodev+1	; *** just for easier size check ***
+	__last	= iodev+1	; ##### just for easier size check #####
 
 ; *** initialise the monitor ***
+
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -73,7 +77,8 @@ open_mon:
 	STA ptr+1			; and MSB
 	LDA #4				; standard number of lines
 	STA lines			; set variable
-	_STZA siz			; clear copy/transfer size
+	STA siz      ; also default transfer size
+	_STZA siz+1			; clear copy/transfer size MSB
 	LDA #>splash		; address of splash message
 	LDY #<splash
 	JSR prnStr			; print the string!
@@ -100,11 +105,11 @@ main_loop:
 		JSR gnc_do			; get first character on string, without the variable
 ;		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 ;			BNE not_mcmd		; not a monitor command
+;   JSR gnc_do   ; get into command byte otherwise
 		STX cursor			; save cursor!
 		CMP #'Z'+1			; past last command?
 			BCS bad_cmd			; unrecognised
-		SEC
-		SBC #'A'			; first available command
+		SBC #'A'-1			; first available command (had borrow)
 			BCC bad_cmd			; cannot be lower
 		ASL					; times two to make it index
 		TAX					; use as index
@@ -126,7 +131,7 @@ call_mcmd:
 	_JMPX(cmd_ptr)		; indexed jump macro
 
 ; *** command routines, named as per pointer table ***
-set_A:
+set_A: ; should unify these **********
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDY tmp				; converted byte
@@ -172,6 +177,7 @@ do_call:
 	JMP (tmp)			; go! might return somewhere else
 
 examine:
+; ***** TO DO ***** TO DO *****
 
 set_SP:
 	JSR getNextChar		; go to operand
@@ -185,10 +191,10 @@ help:
 	LDY #<help_str
 	JMP prnStr			; print it, and return to main loop
 
-	_BRA do_call		; set regs and jump! no return!
-
 move:
-; preliminary version goes forward, modifies ptr and X
+; preliminary version goes forward only, modifies ptr.MSB and X!
+; if siz=0 will do 256 bytes
+
 	JSR fetch_word		; get operand word
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
@@ -242,10 +248,14 @@ quit:
 store_str:
 	LDY cursor				; use as offset
 sstr_l:
+    INC ptr  ; advance destination
+    BNE sstr_nc  ; boundary not crossed
+      INC ptr+1  ; next page otherwise
+sstr_nc:
 		INY					; skip the S and increase
 		LDA buffer, Y		; get raw character
-		STA (ptr), Y		; store in place
-		BEQ sstr_end		; until terminator, will be stored anyway
+		_STAX(ptr)		; store in place
+		  BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
 		BNE sstr_l			; contine string
 sstr_end:
@@ -267,12 +277,34 @@ view_regs:
 	JSR prnHex			; show it
 	LDA _pc				; same for LSB
 	JSR prnHex
-	LDA #' '			; space
-	JSR prnChar			; print it (not used in 20-char version)
+;	LDA #' '			; space
+;	JSR prnChar			; print it (not used in 20-char version)
 	LDX #0				; reset counter
 vr_l:
-; ****************************************************
-	RTS
+    LDA _a, X  ; get value from regs
+    _PHX  ; save index!
+    JSR prnHex  ; show value in hex
+;    LDA #' '  ; space, not for 20-char
+;    JSR prnChar  ; print it
+    _PLX  ; restore index
+    INX  ; next reg
+    CPX #4  ; all regs done?
+    BNE vr_l  ; continue otherwise
+  LDX #8  ; number of bits
+  STX tmp  ; temp counter
+  LDA _psr  ; copy original value
+  STA tmp+1  ; temp storage
+vr_sb:
+    ASL tmp+1  ; get highest bit
+    LDA #'0'  ; default is off
+    BCC vr_off  ; was off
+      _INC  ; otherwise turns into 1
+vr_off:
+    JSR prnChar  ; prints bit
+    DEC tmp  ; one less
+    BNE vr_sb ; until done
+  LDA #CR  ; print newline
+  JMP prnChar  ; will return
 
 store_word:
 	JSR fetch_word		; get operand word
@@ -347,10 +379,10 @@ getLine:
 	STX tmp				; set variable
 gl_l:
 		LDY iodev			; use device
-		_KERNEL(CIN)		; get one character
+		_KERNEL(CIN)		; get one character #####
 			BCS gl_l			; wait until something
 		LDY iodev			; use device again
-		_KERNEL(COUT)		; echo!!! hope parameter stays ok
+		_KERNEL(COUT)		; echo!!! hope parameter stays ok #####
 ; ignoring possible I/O error...
 		LDA zpar			; get received
 		LDX tmp				; retrieve index
@@ -374,7 +406,7 @@ gl_off:
 	LDA #BEL			; console sound?
 	STA zpar			; store parameter
 	LDY iodev			; use device
-	_KERNEL(COUT)		; complain!
+	_KERNEL(COUT)		; complain! #####
 	_BRA gl_l			; continue
 gl_cr:
 	_STZA buffer, X		; terminate string
@@ -386,6 +418,7 @@ getNextChar:
 gnc_do:
 	INX					; advance!
 	LDA buffer, X		; get raw character
+	  BEQ gn_ok  ; go away if ended
 	CMP #' '			; white space?
 		BEQ gnc_do			; skip it!
 	CMP #'$'			; ignored radix?
@@ -402,9 +435,9 @@ gn_ok:
 ;gn_fin:
 ;		INX				; skip another character in comment
 ;		LDA buffer, X	; get pointed char
-;			BEQ gh_ok		; finish if already at terminator
+;			BEQ gn_ok		; finish if already at terminator
 ;		CMP #58			; colon ends sentence
-;			BEQ gh_ok
+;			BEQ gn_ok
 ;		CMP #CR			; newline ends too
 ;			BNE gn_fin
 ;	RTS
@@ -429,8 +462,7 @@ h2b_num:
 		ASL tmp
 		ASL tmp
 		ASL tmp
-		CLC
-		ADC tmp				; add computed nibble
+		ORA tmp				; add computed nibble
 		STA tmp				; and store full byte
 		JSR gnc_do			; go for next hex cipher
 		INY					; loop counter
@@ -447,8 +479,7 @@ fetch_word:
 	JSR hex2byte		; get first byte (MSB) in tmp
 	LDY tmp				; leave room for next
 	STY tmp+1
-	JSR hex2byte		; get second byte, tmp is little-endian now
-	RTS
+	JMP hex2byte		; get second byte, tmp is little-endian now, will return
 
 ; * print a byte in A as two hex ciphers *
 prnHex:
@@ -456,8 +487,7 @@ prnHex:
 	LDA tmp				; get cipher for MSB
 	JSR prnChar			; print it!
 	LDA tmp+1			; same for LSB
-	JSR prnChar
-	RTS					; done
+	JMP prnChar  ; will return
 ph_conv:
 	STA tmp+1			; keep for later
 	AND #$F0			; mask for MSB
@@ -473,10 +503,9 @@ ph_conv:
 ph_b2a:
 	CMP #10				; will be letter?
 	BCS ph_n			; numbers do not need this
-		ADC #7				; turn into letter, C was clear
+		ADC #'A'-'9'				; turn into letter, C was clear
 ph_n:
-	CLC
-	ADC #'0'			; turn into ASCII
+	ADC #'0'-1			; turn into ASCII, C supposed set
 	STA tmp, Y
 	RTS
 
@@ -527,8 +556,8 @@ err_bad:
 	.asc	"*** Bad command ***", CR, 0
 
 regs_head:
-	.asc	CR, "PC:  A: X: Y: S: NV-bDIZC", CR, 0
-;	.asc	CR, "PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
+;	.asc	CR, "PC:  A: X: Y: S: NV-bDIZC", CR, 0
+	.asc	CR, "PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
 
 help_str:
 	.asc	"---Command list---", CR
