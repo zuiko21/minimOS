@@ -40,7 +40,8 @@ user_sram	= $0400
 	cursor	= _psr+1	; storage for X offset
 	buffer	= cursor+1		; storage for input line (BUFSIZ chars)
 	tmp		= buffer+BUFSIZ	; temporary storage
-	iodev	= tmp+2		; standard I/O ##### minimOS specific #####
+	tmp2	= tmp+2		; for hex dumps
+	iodev	= tmp2+2	; standard I/O ##### minimOS specific #####
 
 	__last	= iodev+1	; ##### just for easier size check #####
 
@@ -129,18 +130,14 @@ call_mcmd:
 	_JMPX(cmd_ptr)		; indexed jump macro
 
 ; *** command routines, named as per pointer table ***
-set_A: ; should unify these **********
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
-	LDY tmp				; converted byte
-	STY _a				; set accumulator
+set_A:
+	JSR fetch_byte		; get operand in A
+	STA _a				; set accumulator
 	RTS
 
 store_byte:
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
-	LDA tmp				; converted byte
-	_STAY(ptr)			; set accumulator
+	JSR fetch_byte		; get operand in A
+	_STAY(ptr)			; set byte in memory
 	INC ptr				; advance pointer
 	BNE sb_end			; all done if no wrap
 		INC ptr+1			; increase MSB otherwise
@@ -175,13 +172,69 @@ do_call:
 	JMP (tmp)			; go! might return somewhere else
 
 examine:
-; ***** TO DO ***** TO DO *****
+	JSR fetch_word		; get address
+	LDY tmp				; save tmp elsewhere
+	LDA tmp+1
+	STY tmp2
+	STA tmp2+1
+	LDX lines			; get counter
+ex_l:
+		_PHX				; save counters
+		LDA tmp2+1			; address MSB
+		JSR prnHex			; print it
+		LDA tmp2			; same for LSB
+		JSR prnHex
+		LDA #>dump_in		; address of separator
+		LDY #<dump_in
+		JSR prnStr			; print it
+		; loop for 4/8 hex bytes
+		LDY #0				; reset offset
+ex_h:
+			LDA (tmp2), Y		; get byte
+			_PHY				; save offset
+			JSR prnHex			; print it in hex
+;			LDA #' '			; print space, not in 20-char
+;			JSR prnChar
+			_PLY				; retrieve index
+			INY					; next byte
+			CPY #4				; bytes per line (8 if not 20-char)
+			BNE ex_h			; continue line
+		LDA #>dump_out		; address of separator
+		LDY #<dump_out
+		JSR prnStr			; print it
+		; loop for 4/8 ASCII
+		LDY #0				; reset offset
+ex_a:
+			LDA (tmp2), Y		; get byte
+			_PHY				; save offset
+			CMP #127			; check whether printable
+				BCC ex_np
+			CMP #' '
+				BCS ex_np
+			_BRA ex_pr			; it is printable
+ex_np:
+				LDA #'.'			; substitute
+ex_pr:		JSR prnChar			; print it
+			_PLY				; retrieve index
+			INY					; next byte
+			CPY #4				; bytes per line (8 if not 20-char)
+			BNE ex_a			; continue line
+		LDA #CR				; print newline
+		JSR prnChar
+		LDA tmp2			; get pointer LSB
+		CLC
+		ADC #4				; add shown bytes (8 if not 20-char)
+		STA tmp2			; update pointer
+		BCC ex_npb			; skip if within same page
+			INC tmp2+1			; next page
+ex_npb:
+		DEX
+		BNE ex_l
+	RTS
 
 set_SP:
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
-	LDY tmp				; converted byte
-	STY _sp				; set stack pointer
+	JSR fetch_byte		; get operand in A
+	STA _sp				; set stack pointer
 	RTS
 
 help:
@@ -231,10 +284,8 @@ origin:
 	RTS
 
 set_PSR:
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
-	LDY tmp				; converted byte
-	STY _psr			; set status
+	JSR fetch_byte		; get operand in A
+	STA _psr			; set status
 	RTS
 
 quit:
@@ -260,10 +311,8 @@ sstr_end:
 	RTS
 
 set_lines:
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
-	LDY tmp				; converted byte
-	STY lines			; set number of lines
+	JSR fetch_byte		; get operand in A
+	STA lines			; set number of lines
 	RTS
 
 view_regs:
@@ -321,17 +370,13 @@ sw_end:
 	RTS
 
 set_X:
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
-	LDY tmp				; converted byte
-	STY _x				; set register
+	JSR fetch_byte		; get operand in A
+	STA _x				; set register
 	RTS
 
 set_Y:
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
-	LDY tmp				; converted byte
-	STY _y				; set register
+	JSR fetch_byte		; get operand in A
+	STA _y				; set register
 	RTS
 
 force:
@@ -471,12 +516,17 @@ h2b_err:
 	DEX					; will try to reprocess this char
 	RTS
 
+; * fetch one byte from buffer, value in A *
+fetch_byte:
+	JSR getNextChar		; go to operand
+	JSR hex2byte		; convert value
+	LDA tmp				; converted byte
+	RTS
+
 ; * fetch more than one byte from hex input buffer *
 fetch_word:
-	JSR getNextChar		; point to operand
-	JSR hex2byte		; get first byte (MSB) in tmp
-	LDY tmp				; leave room for next
-	STY tmp+1
+	JSR fetch_byte		; get operand in A
+	STA tmp+1			; leave room for next
 	JMP hex2byte		; get second byte, tmp is little-endian now, will return
 
 ; * print a byte in A as two hex ciphers *
@@ -556,6 +606,14 @@ err_bad:
 regs_head:
 ;	.asc	CR, "PC:  A: X: Y: S: NV-bDIZC", CR, 0
 	.asc	CR, "PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
+
+dump_in:
+	.asc	"[", 0		; for 20-char version
+;	.asc	" [ ", 0
+
+dump_out:
+	.asc	"] ", 0		; for 20-char version
+;	.asc	" ] ", 0
 
 help_str:
 	.asc	"---Command list---", CR
