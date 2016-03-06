@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.5b1
-; last modified 2016-03-05
+; last modified 2016-03-06
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -86,8 +86,6 @@ open_mon:
 ; *** store current stack pointer as it will be restored upon JSR/JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler!
 	TSX					; get current stack pointer
-	DEX					; will be restored from a routine call
-	DEX
 	STX _sp				; store original value
 
 ; *** begin things ***
@@ -248,14 +246,14 @@ quit:
 store_str:
 	LDY cursor				; use as offset
 sstr_l:
-    INC ptr  ; advance destination
-    BNE sstr_nc  ; boundary not crossed
-      INC ptr+1  ; next page otherwise
+	INC ptr				; advance destination
+	BNE sstr_nc			; boundary not crossed
+		INC ptr+1			; next page otherwise
 sstr_nc:
 		INY					; skip the S and increase
 		LDA buffer, Y		; get raw character
-		_STAX(ptr)		; store in place
-		  BEQ sstr_end		; until terminator, will be stored anyway
+		_STAX(ptr)			; store in place
+			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
 		BNE sstr_l			; contine string
 sstr_end:
@@ -281,30 +279,30 @@ view_regs:
 ;	JSR prnChar			; print it (not used in 20-char version)
 	LDX #0				; reset counter
 vr_l:
-    LDA _a, X  ; get value from regs
-    _PHX  ; save index!
-    JSR prnHex  ; show value in hex
-;    LDA #' '  ; space, not for 20-char
-;    JSR prnChar  ; print it
-    _PLX  ; restore index
-    INX  ; next reg
-    CPX #4  ; all regs done?
-    BNE vr_l  ; continue otherwise
-  LDX #8  ; number of bits
-  STX tmp  ; temp counter
-  LDA _psr  ; copy original value
-  STA tmp+1  ; temp storage
+		LDA _a, X			; get value from regs
+		_PHX				; save index!
+		JSR prnHex			; show value in hex
+;		LDA #' '			; space, not for 20-char
+;		JSR prnChar			; print it
+		_PLX				; restore index
+		INX					; next reg
+		CPX #4				; all regs done?
+		BNE vr_l			; continue otherwise
+	LDX #8				; number of bits
+	STX tmp				; temp counter
+	LDA _psr			; copy original value
+	STA tmp+1			; temp storage
 vr_sb:
-    ASL tmp+1  ; get highest bit
-    LDA #'0'  ; default is off
-    BCC vr_off  ; was off
-      _INC  ; otherwise turns into 1
+		ASL tmp+1			; get highest bit
+		LDA #'0'			; default is off
+		BCC vr_off			; was off
+			_INC				; otherwise turns into 1
 vr_off:
-    JSR prnChar  ; prints bit
-    DEC tmp  ; one less
-    BNE vr_sb ; until done
-  LDA #CR  ; print newline
-  JMP prnChar  ; will return
+		JSR prnChar			; prints bit
+		DEC tmp				; one less
+		BNE vr_sb			; until done
+	LDA #CR				; print newline
+	JMP prnChar			; will return
 
 store_word:
 	JSR fetch_word		; get operand word
