@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.5b1
-; last modified 2016-03-06
+; last modified 2016-03-07
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -190,8 +190,8 @@ ex_l:
 		; loop for 4/8 hex bytes
 		LDY #0				; reset offset
 ex_h:
-			LDA (tmp2), Y		; get byte
 			_PHY				; save offset
+			LDA (tmp2), Y		; get byte
 			JSR prnHex			; print it in hex
 ;			LDA #' '			; print space, not in 20-char
 ;			JSR prnChar
@@ -208,9 +208,9 @@ ex_a:
 			LDA (tmp2), Y		; get byte
 			_PHY				; save offset
 			CMP #127			; check whether printable
-				BCC ex_np
-			CMP #' '
 				BCS ex_np
+			CMP #' '
+				BCC ex_np
 			_BRA ex_pr			; it is printable
 ex_np:
 				LDA #'.'			; substitute
@@ -343,9 +343,9 @@ vr_l:
 	STA tmp+1			; temp storage
 vr_sb:
 		ASL tmp+1			; get highest bit
-		LDA #'0'			; default is off
+		LDA #' '			; default is off (space)
 		BCC vr_off			; was off
-			_INC				; otherwise turns into 1
+			_INC				; otherwise turns into '!'
 vr_off:
 		JSR prnChar			; prints bit
 		DEC tmp				; one less
@@ -550,10 +550,10 @@ ph_conv:
 	INY					; this will be second cipher
 ph_b2a:
 	CMP #10				; will be letter?
-	BCS ph_n			; numbers do not need this
-		ADC #'A'-'9'				; turn into letter, C was clear
+	BCC ph_n			; numbers do not need this
+		ADC #'A'-'9'-2		; turn into letter, C was set
 ph_n:
-	ADC #'0'-1			; turn into ASCII, C supposed set
+	ADC #'0'			; turn into ASCII
 	STA tmp, Y
 	RTS
 
