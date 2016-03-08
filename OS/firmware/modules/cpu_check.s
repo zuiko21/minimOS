@@ -2,8 +2,7 @@
 ; version 0.9b1
 ; (c) 2015-2016 Carlos J. Santisteban
 ; essentially from the work of David Empson, Oct. '94
-; last modified 20150622-1235
-; revised 20160115 for commit
+; last modified 20160308-1413
 
 	LDY #$00			; by default, NMOS 6502
 	SED					; decimal mode
@@ -14,12 +13,12 @@
 		BMI cpuck_set		; NMOS, N flag not affected by decimal add
 	LDY #$03			; let's assume now '816
 	LDX #$00			; sets Z temporarily
-	TYX					; 65802 instruction will clear Z, NOP on all 65C02s won't
+	.byt	$BB			; TYX, 65802 instruction will clear Z, NOP on all 65C02s won't
 		BNE cpuck_set		; Branch only on 65802/816
 	LDX $EA				; save contents of $EA, really needed???
 	DEY					; try now with Rockwell
 	STY $EA				; store '2' there
-	RMB1 $EA			; Rockwell R65C02 instruction
+	RMB #1, $EA			; Rockwell R65C02 instruction ***xa65 syntax***
 	CPY $EA				; Location $EA unaffected on other 65C02
 	STX $EA				; restore contents, really needed???
 		BNE cpuck_set		; Branch only on Rockwell R65C02 (test CPY)

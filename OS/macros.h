@@ -1,56 +1,67 @@
-; minimOS 0.5a8 MACRO definitions
+; minimOS 0.5a9 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160119
+; last modified 20160308
 
+; *** standard addresses ***
 ; redefined as labels 20150603
-; standard addresses, new 20150220
-admin_call	=	$FFA0	; watch out for 65816, maybe a wrapper at $FFA8
-kernel_call	=	$FFC0
-; *** warm_start deprecated 20150602
-; new definition 20150326, relocated 20150603 for adequate room
-nmi_end		=	$FFD0
+; revamped 20160308
+
+kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
+admin_call	=	$FFD0	; ending in RTS, 816 will use a PHK wrapper and do JSL to $FFD1
 
 ; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS, new 20150410
-panic		=	$FFED
+panic		=	$FFE0	; more-or-less 816 savvy address, new 20160308
 
-; device numbers for optional pseudo-driver modules, TBD
+; *** device numbers for optional pseudo-driver modules, TBD ***
 ; renamed as labels 20150603
 TASK_DEV	=	128
 WIN_DEV		=	129
 FILE_DEV	=	130
 
-; common function calls
-#define		_EXIT_OK	CLC: RTS
-; new macros for critical sections, do not just rely on SEI/CLI 20160119
-#define		_ENTER_CS	PHP: SEI
-#define		_EXIT_CS	PLP
-; new exit for asynchronous driver routines when not satisfied 20150320, renamed 20150929
-#define		_NEXT_ISR	SEC: RTS
-#define		_ERR(a)		LDY #a: SEC: RTS
+; *** common function calls ***
+
+; system calling interface
 #define		_KERNEL(a)	LDX #a: JSR kernel_call
-; *** C816 version should be something like		_KERN16(a)		LDX #a	COP #0
-; *** C02 wrapper then should be like							COP #0	RTS
+; * C816 version should be something like	KERN16(a)		LDX #a	COP #0
+; * C816 routines ending in RTI and redefined EXIT_OK and ERR endings!
+; * C02 wrapper then should be like			KERNEL(a)		COP #0	RTS
+
 ; new primitive for administrative meta-kernel in firmware 20150118
 #define		_ADMIN(a)	LDX #a: JSR admin_call
-; *** C816 might need a wrapper... or place a NOP after the above for automated change to JSL
-; new standardised NMI exit 20150409
-#define		_NMI_END	JMP nmi_end
-; *** C816 might need JML
-#define		_PANIC		JMP panic
+; * C816 version should be like				ADM16(a)		LDX #a	JSL adm16_call
+; * C816 routines ending in RTL, wrapper for 02 tasks will include PHK prior to adm16_call handler
+
 ; new macro for filesystem calling, no specific kernel entries! 20150305, new offset 20150603
 #define		_FILESYS(a)	STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
 
-; interrupt enable/disable calls, just in case
+; *** function endings ***
+; * due to implicit PLP on COP, these should be heavily revised for C816
+#define		_EXIT_OK	CLC: RTS
+#define		_ERR(a)		LDY #a: SEC: RTS
+
+; new exit for asynchronous driver routines when not satisfied 20150320, renamed 20150929
+#define		_NEXT_ISR	SEC: RTS
+
+; new macros for critical sections, do not just rely on SEI/CLI 20160119
+#define		_ENTER_CS	PHP: SEI
+#define		_EXIT_CS	PLP
+
+; ** interrupt enable/disable calls, just in case **
 #define		_SEI		SEI
 ; otherwise call SU_SEI function
 #define		_CLI		CLI
 ; otherwise call SU_CLI function, not really needed on 65xx 
 
-; conditional assembly
+#define		_PANIC		JMP panic
+; * C816 will use JML for panic, likely to be deprecated
+
+; standardised NMI exit 20150409 *** DEPRECATED 20160308
+
+; *** conditional opcode assembly ***
 #ifdef	NMOS
 #define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
 ; other emulation, 20 clocks instead of 23 but 13 bytes instead of 10 and takes sysptr
-;#define		_JMPX(a)	LDA a, X: STA sysptr: LDA a+1, X: STA sysptr+1: JMP (sysptr)
+; LDA a, X	STA sysptr	LDA a+1, X	STA sysptr+1	JMP (sysptr)
 #define		_PHX		TXA: PHA
 #define		_PHY		TYA: PHA
 #define		_PLX		PLA: TAX
@@ -68,7 +79,7 @@ FILE_DEV	=	130
 #define		_STZY		LDY #0: STY
 #define		_STZA		LDA #0: STA
 ; new instructions 20150606, implemented from <http://www.6502.org/tutorials/65c02opcodes.html>
-; ...but they aren't ATOMIC!!!
+; ...but they are not ATOMIC!!!
 #define		_TRB(a)		BIT a: PHP: PHA: EOR #$FF: AND a: STA a: PLA: PHP
 #define		_TSB(a)		BIT a: PHP: PHA: ORA a: STA a: PLA: PLP
 #else
@@ -91,3 +102,4 @@ FILE_DEV	=	130
 #define		_TSB(a)		TSB a
 #endif
 
+; *** might include here the conversion of RMB/SMB/BBR/BBS for xa65 ***

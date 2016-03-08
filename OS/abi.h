@@ -1,6 +1,6 @@
-; minimOS 0.5a12 API/ABI
+; minimOS 0.5a13 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160120 (adapted to new memory management)
+; last modified 20160308
 
 ; VIA 65(C)22 registers
 ; offsets from base address (add to base in options.h)
@@ -46,13 +46,15 @@ A_BLIN	= %00000100		; D_BLIN capability
 A_BLOUT	= %00000010		; D_BLOUT capability
 A_MEM	= %00000001		; D_MEM dynamically linked, on-the-fly loadable driver
 
-; administrative meta-kernel calls (new 20150123)
+; administrative meta-kernel calls (new 20150123) TBD
 INSTALL		=  0	; copy jump table
 SET_ISR		=  2	; set IRQ vector
 SET_NMI		=  4	; set (magic preceded) NMI routine
 PATCH		=  6	; patch single function (renumbered)
 GESTALT		=  8	; get system info (renumbered)
 POWEROFF	= 10	; power-off, suspend or cold boot, new 20150409
+CONTEXT		= 12	; context bankswitching, new 20160308
+JIFFY		= 14	; set jiffy IRQ speed, TBD, NEW 20160308
 
 ; kernel function codes for system call
 COUT		=   0	; character output
@@ -201,6 +203,7 @@ DEV_ACIA	= 236	; ACIA, currently 6551
 DEV_SS22	= 250	; SS-22 port
 DEV_ASCII	= 241	; ASCII keyboard on VIAport, TO_DO
 DEV_DEBUG	= 255	; Bus sniffer, NEW 20150323
+DEV_CONIO	= 132	; for Kowalski simulator, NEW 20160308
 
 ; more temporary IDs
 

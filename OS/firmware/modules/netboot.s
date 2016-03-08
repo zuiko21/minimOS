@@ -1,8 +1,7 @@
 ; NetBoot module for minimOS firmware
-; v0.5a1
+; v0.5a2
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20150309-1108
-; revised 20160115 for commit with new filenames
+; last modified 20160308-1358
 
 #define		NETBOOT		_NETBOOT
 
@@ -226,7 +225,7 @@ nb_ack:
 
 ; *** command strings ***
 nb_log:
-	.asc	"!", _MACHINE_ID, 0		; short name for login
+	.asc	"!", MACHINE_ID, 0		; short name for login
 ;*************************
 nb_ljump:
 	.asc	"Ljump", 0		; for loading jump table

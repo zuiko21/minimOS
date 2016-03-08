@@ -1,8 +1,8 @@
-; firmware for minimOS
-; generic template v0.5.1a1
+; firmware for minimOS on SDm/Jalapa (and maybe others)
+; generic template v0.5.2a1
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20150622-0914
-; revised 20160115 for commit with new filenames
+; *** revamped 20160308 ***
+; last modified 20160308-1402
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -10,39 +10,44 @@
 #ifndef		KERNEL
 #include "options.h"
 #include "macros.h"
-#include "abi.h"		; new filename
+#include "abi.h"
 .zero
 #include "zeropage.h"
 .bss
 #include "firmware/firmware.h"
+#include "sysvars.h"
 .text
-sysvars		= *				; free RAM from here
 kernel		= remote_boot	; in case no kernel is provided with firmware, try to download one forever
 * = ROM_BASE				; sample address
 #endif
 
 ; *** first some ROM identification *** new 20150612
-	.asc "Firmware for "
+fw_start:
+	.asc 0, "aV****", 13	; standard volume wrapper, new 20160308
+	.asc "0.5.2a1 firmware for "
 fw_mname:
-	.asc	_MACHINE_NAME, 0
+	.asc	MACHINE_NAME, 0
 
-; ***** boot code *****
+	.dsb	fw_start + $FC - *, $FF	; generate padding to link
+	.asc	$FF,$FF,$FF,$FF			; undefined ending???
+
+; *** cold restart ***
 ; basic init
 reset:
-	SEI				; cold boot. Don't use macro, maybe no OS installed this far (2)
+	SEI				; cold boot. Do not use macro, maybe no OS installed this far (2)
 	CLD				; just in case, a must for NMOS, maybe for emulating '816 (2)
-	LDX #SP			; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
+	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
 ; disable all interrupt sources
 	LDA #$7F		; disable all interrupts (2+4)
-	STA VIA+IER
+	STA VIA1 + IER
 
 ; and optionally check for VIA presence
 #ifdef	SAFE
-	LDA VIA+IER		; check VIA presence, NEW 20150118 (4)
+	LDA VIA1 + IER	; check VIA presence, NEW 20150118 (4)
 	CMP #$80		; should read $80 (2)
 	BEQ via_ok		; panic otherwise! (slight modification 20150121 and 0220) (3/2)
-		_PANIC			; no way to tell the world... (3)
+		_PANIC			; no other way to tell the world... (3)
 #endif
 
 #ifndef	FINAL
@@ -51,6 +56,7 @@ reset:
 #endif
 
 via_ok:
+
 ; *** optional firmware modules ***
 ; optional boot selector
 #include "firmware/modules/bootoff.s"
@@ -58,8 +64,11 @@ via_ok:
 ; ***continue power-on self-test***
 post:
 
-;might check ROM integrity here
+; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
+
+; some systems might copy ROM-in-RAM and continue at faster speed!
+;#include "firmware/modules/rominram.s"
 
 ; startup beep
 #include "firmware/modules/beep.s"
@@ -69,34 +78,39 @@ post:
 
 ; *** VIA initialisation (and stop beeping) ***
 	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
-	STA VIA+PCR
+	STA VIA1 + PCR
 	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
-	STA VIA+ACR
+	STA VIA1 + ACR
 ; *** preset kernel start address (standard label from ROM file) ***
 	LDA #<kernel	; get LSB (2)
 	STA fw_warm		; store in sysvars (4)
 	LDA #>kernel	; same for MSB (2+4)
 	STA fw_warm+1
 ; *** set default CPU type ***
-	LDA #_CPU_TYPE	; constant from options.h (2)
+	LDA #CPU_TYPE	; constant from options.h (2)
 	STA fw_cpu		; store variable (4)
 
-; might check out here for the CPU type...
-;#include "firmware/modules/cpucheck.s"
+; might check out here for the actual CPU type...
+#include "firmware/modules/cpu_check.s"
 
 ; *** maybe this is the place for final interrupt setup *** 20150605
 	LDA	#<T1_DIV	; set IRQ frequency divisor LSB ** revised 20150220 (2)
-	STA VIA+T1CL	; put value into latch (write to counter) (4)
+	STA VIA + T1CL	; put value into latch (write to counter) (4)
 	LDA #>T1_DIV	; same for MSB (2)
-	STA VIA+T1CH	; start counting! (4)
+	STA VIA + T1CH	; start counting! (4)
 	LDA #<IRQ_FREQ	; interrupts per second, LSB ** revised 20150225 (2)
 	STA irq_freq	; store speed... (4)
 	STA ticks		; and counter value (4)
 	LDA #>IRQ_FREQ	; same for MSB (2+4+4)
 	STA irq_freq+1
 	STA ticks+1
+	LDX #3			; number of bytes in uptime seconds
+res_sec:
+		_STZA ticks+1, X	; reset byte, note special offset
+		DEX					; next byte backwards
+		BNE res_sec
 	LDA #$C0		; enable T1 interrupt only (2+4)
-	STA VIA+IER
+	STA VIA + IER
 
 #ifndef	FINAL
 	_BRA remote_boot	; skip the markup
@@ -106,7 +120,7 @@ post:
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
 remote_boot:
-#include "firmware/modules/netboot.s"
+;#include "firmware/modules/netboot.s"
 
 ; *** firmware ends, jump into the kernel ***
 start_kernel:
@@ -148,6 +162,20 @@ nmi_chkmag:
 		INY					; another byte (2)
 		DEX					; internal string is read backwards (2)
 		BPL nmi_chkmag		; down to zero (3/2)
+	JSR go_nmi			; call actual code (6)
+; *** here goes the former nmi_end routine ***
+	LDX #2				; have to retrieve systmp and sysptr, new 20150326 (2)
+nmi_restore:
+		PLA					; get byte from stack (4)
+		STA sysptr, X		; restore it (3)
+		DEX					; go backwards (2)
+		BPL nmi_restore		; offset zero included (3/2, total loop is 35 clocks)
+	_PLY				; restore regular registers
+	_PLX
+	PLA
+	RTI					; resume normal execution, hopefully
+
+go_nmi:
 	JMP (fw_nmi)		; jump to code (and inocuous header) (6)
 fw_magic:
 	.asc	"*jNU"		; reversed magic string
@@ -157,7 +185,6 @@ std_nmi:
 #include "firmware/modules/std_nmi.s"
 ;	JMP (fw_warm)		; a much simpler way
 
-; *** please note, all NMI routines must end with _NMI_END (standard macro) ***
 
 #ifndef	FINAL
 	.asc	"<admin>"	; easier debugging
@@ -266,15 +293,6 @@ fwp_func:
 	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	kernel		; shouldn't use this, just in case
 
-; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	admin_call-*, $FF
-#endif
-
-; *** administrative meta-kernel call primitive ($FFA0) ***
-* = admin_call
-	_JMPX(fw_admin)		; takes 6 clocks with CMOS
-
 ; *** administrative jump table ***
 ; might go elsewhere as it may grow, especially on NMOS
 fw_admin:
@@ -287,21 +305,23 @@ fw_admin:
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	bankswitch-*, $FF
-#endif
-
-; *** bankswitching primitive ($FFB0) *** TO-DO
-* = bankswitch
-	_NEXT				; placeholder rejecting the call (2+6)
-
-; filling for ready-to-blow ROM
-#ifdef		ROM
 	.dsb	kernel_call-*, $FF
 #endif
 
 ; *** minimOS function call primitive ($FFC0) ***
 * = kernel_call
 	_JMPX(fw_table)	; macro for NMOS compatibility (6)
+
+; filling for ready-to-blow ROM
+#ifdef		ROM
+	.dsb	admin_call-*, $FF
+#endif
+
+; *** administrative meta-kernel call primitive ($FFA0) ***
+* = admin_call
+	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+
+
 
 ; *** vectored IRQ handler ***
 ; might go elsewhere, especially on NMOS systems
@@ -311,25 +331,6 @@ fw_admin:
 
 irq:
 	JMP (fw_isr)	; vectored ISR (6)
-
-; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	nmi_end-*, $FF
-#endif
-
-; *** minimOS NMI ending procedure ($FFD0) new 20150326, relocated 20150604 ***
-; current version (20150326) has room just enough before PANIC in NMOS version!!! no longer a problem...
-* = nmi_end
-	LDX #2				; have to retrieve systmp and sysptr, new 20150326 (2)
-nmi_restore:
-		PLA					; get byte from stack (4)
-		STA sysptr, X		; restore it (3)
-		DEX					; go backwards (2)
-		BPL nmi_restore		; offset zero included (3/2, total loop is 35 clocks)
-	_PLY				; restore regular registers
-	_PLX
-	PLA
-	RTI					; resume normal execution, hopefully
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -343,6 +344,7 @@ panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
 
 ; *** ROM vectors, including 65C816 ***
+; **********revise these, they start at $FFEx****************
 * = $FFF0			; should be already at it
 	.word	$1111	; reserved 1
 	.word	$2222	; reserved 2

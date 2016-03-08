@@ -1,6 +1,6 @@
 ; firmware variables for minimOS 0.5a2
-; (c) 2015 Carlos J. Santisteban
-; last modified 20150220-
+; (c) 2015-2016 Carlos J. Santisteban
+; last modified 20160308
 
 -sysram:
 #ifndef		LOWRAM
