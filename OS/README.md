@@ -62,7 +62,7 @@ Global system variables, as used by the kernel. *Will usually go after [firmware
 ###`rom.s`
 **This is the main file to be assembled** making reference to all other OS files. Thanks to the current file structure, generating custom ROMs for different machines will be as simple as choosing the appropriate `options.h` file from the [template folder](options/) and assembling `rom.s`.
 ###`kernel.s`
-Surprisingly bereft of *API's functions*, this is a **mostly generic** piece of code. However, the [Interrupt Service Routine](isr/ir.s) is dependant of the kernel, as is the (implicitally related in 6502/65C02) [BRK handler](isr/brk.s).
+Surprisingly bereft of *API's functions*, this is a **mostly generic** piece of code. However, the [Interrupt Service Routine](isr/irq.s) is dependant of the kernel, as is the (implicitally related in 6502/65C02) [BRK handler](isr/brk.s).
 ###`api.s`
 Here are the **kernel functions** providing services to the running apps. This will get included from the [kernel](kernel.s) for most systems.
 ###`api_lowram.s`
@@ -78,8 +78,8 @@ OBSOLETE file with the actual code for drivers. *Replaced by [templates](drivers
 ###`drivers`
 Code and headers for **drivers**. Also contains a [template folder](drivers/config/) with combinations of `.h` and appropriate `.s` files of drivers to be inculuded on any particular configuration.
 ###`firmware`
-Machine-dependent code, including POST. Also **highly modular**, makes reference to several files on the [modules](/firmware/modules/) folder. *Will also contain a [machines](/firmware/machines/) folder with templates for particular architectures*.
+Machine-dependent code, including POST. Also **highly modular**, makes reference to several files on the [modules](firmware/modules/) folder. *Will also contain a [machines](firmware/machines/) folder with templates for particular architectures*.
 ###`isr`
-The **Interrupt Service Routines**, namely `irq.s`, `brk.s` and `nmi.s`, usually *kernel-dependent*. Notice that there is a [default NMI handler](/firmware/modules/std.nmi.s) supplied by the *firmware*, in case the (dynamically) installed one gets corrupted.
+The **Interrupt Service Routines**, namely `irq.s`, `brk.s` and `nmi.s`, usually *kernel-dependent*. Notice that there is a [default NMI handler](firmware/modules/std_nmi.s) supplied by the *firmware*, in case the (dynamically) installed one gets corrupted.
 ###`options`
 Templates for the `options.h` file to be copied or linked at the `OS` directory as appropriate.
