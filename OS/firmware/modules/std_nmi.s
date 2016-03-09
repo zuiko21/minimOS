@@ -1,7 +1,7 @@
 ; standard NMI handler for minimOS firmware
-; v0.5a2
-; (c) 2015 Carlos J. Santisteban
-; last modified 20150216-1406
+; v0.5a3
+; (c) 2015-2016 Carlos J. Santisteban
+; last modified 20160309-0954
 
 ; in case of standalone assembly
 #ifndef		FIRMWARE
@@ -10,12 +10,9 @@
 .text
 #endif
 
--std_nmi:
-	TSX				; get actual stack pointer
-	LDA $0104, X	; in order to get P from the stack
+; placeholder, just enable interrupts and return
+	TSX				; get current stack pointer
+	LDA $010A, X	; in order to get P from the stack (jsr, 4@sysptr, 4regs!)
 	AND #%11111011	; remove interrupt mask bit
-	STA $0104, X	; ints will be restored upon exit
-	_PLY			; restore regs NEW
-	_PLX
-	PLA
-	RTI				; go away, hopefully everything settled now
+	STA $010A, X	; ints will be restored upon exit
+	RTS				; back to handler end, hopefully everything settled now

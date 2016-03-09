@@ -1,8 +1,8 @@
 ; default options for minimOS and other modules
-; set for CMOS Chihuahua PLUS
+; generic template, suitable for SDm/Jalapa
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160308
+; last modified 20160309
 
 ; *** set conditional assembly ***
 ; uncomment to remove debugging markup
@@ -37,8 +37,8 @@
 #define		MACHINE_NAME	"Jalapa"
 #define		MACHINE_ID		"sdm"
 
-; Suitable driver package (add .h or .s when needed) in options folder inside drivers folder, new 20160308
-#define		DRIVER_PACK		"options/jalapa"
+; Suitable driver package (add .h or .s as needed) in options folder inside drivers folder, new 20160308
+#define		DRIVER_PACK		machines/jalapa
 
 ; ** start of ROM **
 ;ROM_BASE	=	$F400	; special case for MTE (3 kiB out of 4k full 6503 space)

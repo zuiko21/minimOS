@@ -1,8 +1,7 @@
 ; minimOS ROM template for SDm
 ; v0.5a4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20150615-1410
-; revised 20160115 for commit with new filenames
+; last modified 20160309
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -57,7 +56,7 @@ sysvol:
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
 version:
-	.asc	"minimOS 0.5a4 for ", _MACHINE_NAME		; system version and machine
+	.asc	"minimOS 0.5a4 for ", MACHINE_NAME		; system version and machine
 	.asc	"20150615-1409", 0				; build date and time
 
 	.dsb	sysvol + $F4 - *, $FF			; for ready-to-blow ROM, advance to time/date field

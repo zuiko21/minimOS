@@ -1,7 +1,6 @@
 ; minimOS 0.5a9 shell code
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20151029-0942
-; revised 20160115 for commit with new filenames
+; last modified 20160309
 
 ; in case of standalone assembly
 #ifndef		KERNEL
@@ -18,7 +17,6 @@
 ; trying something like a stand-alone utility
 ; might be called by NMI and BRK handlers!
 
-.(								; make these local
 
 ; *** constants definition ***
 ; number of characters in input buffer, check for 128-byte systems
@@ -131,10 +129,10 @@ mon_cli:
 		BEQ mc_end		; already terminated
 			BIT mode		; binary mode?
 			BPL mc_bin		; get full command set
-				LDY #NUM_ACMD	; reduced set otherwise
+;				LDY #NUM_ACMD	; reduced set otherwise
 			BNE mc_scan		; continue checking command, no need for BRA
 mc_bin:
-				LDY #NUM_FCMD	; the full set
+;				LDY #NUM_FCMD	; the full set
 mc_scan:
 			CMP mon_cmd-1, Y	; compare against table
 				BEQ mon_do			; found
@@ -263,4 +261,4 @@ mon_cmd	.asc	"!@,'*&"
 ; P = set P??? (d--)
 ; S = set SP???????? (d--)
 
-.)
+
