@@ -1,7 +1,7 @@
 ; minimOS basic I/O driver for Kowalski 6502 simulator
 ; v0.9b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160308-1237
+; last modified 20160310-1310
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -9,9 +9,6 @@
 #include "abi.h"
 .zero
 #include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-#include "sysvars.h"
 .text
 #endif
 

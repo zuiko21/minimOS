@@ -121,8 +121,8 @@ ZP_AVAIL	=	$25
 
 #else
 SPTR		=	$FF		; general case stack pointer, new name 20160308
-;SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
-SYSRAM		=	$4000	; *** special case for bankswitched SDm/Jalapa ***
+SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
+;SYSRAM		=	$4000	; *** special case for bankswitched SDm/Jalapa ***
 ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp
 
 #endif

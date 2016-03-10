@@ -2,7 +2,10 @@
 ; on Kowalski's 6502 simulator
 ; v0.9a2
 ; (c)2016 Carlos J. Santisteban
-; last modified 20160310-1232
+; last modified 20160310-1335
+
+#define		ROM		_ROM
+#define		KERNEL	_KERNEL
 
 #include "options.h"	; machine specific
 #include "macros.h"
@@ -16,7 +19,6 @@ user_sram = *
 
 * = $E000			; just a placeholder, no standardised address
 
-#define	ROM		_ROM
 
 reset:
 ; *** basic init ***
@@ -40,7 +42,7 @@ kernel:
 	BRK				; end execution
 ;************************ module under testing **********************************
 module:
-;#include "shell.s"		; here goes the code
+#include "shell/monitor.s"		; here goes the code
 ;********************************************************************************
 	RTS				; just in case
 
@@ -93,7 +95,9 @@ str_loop:
 			BEQ str_end			; terminated
 		JSR kco_dir			; direct call!
 		INY					; next
-		BNE str_loop		; no need for BRA
+		BNE str_loop		; no BRA!
+			INC zaddr3+1		; page crossing!
+		BNE str_loop		; continue
 str_end:
 	_EXIT_OK
 

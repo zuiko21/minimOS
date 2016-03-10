@@ -228,6 +228,7 @@ ex_pr:		JSR prnChar			; print it
 		BCC ex_npb			; skip if within same page
 			INC tmp2+1			; next page
 ex_npb:
+		_PLX				; check next line!!!!
 		DEX
 		BNE ex_l
 	RTS
@@ -495,11 +496,9 @@ h2b_l:
 			BCC h2b_err			; below number!
 		CMP #10				; already OK?
 		BCC h2b_num			; do not shift letter value
-			CMP #'A'-'0'		; should be a letter then
-				BCC h2b_err			; not!
-			CMP #'F'-'0'+1		; but no more than F
-				BCS h2b_err			; bad letter
-			SBC #'A'-'0'-9		; convert from hex (had CLC before!)
+			CMP #23			; should be a valid hex
+				BCS h2b_err			; not!
+			SBC #6			; convert from hex (had CLC before!)
 h2b_num:
 		ASL tmp				; older value times 16
 		ASL tmp
