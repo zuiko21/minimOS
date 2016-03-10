@@ -14,7 +14,7 @@
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/firmware.h"
+#include "firmware/ARCH.h"
 #include "sysvars.h"
 .text
 kernel		= remote_boot	; in case no kernel is provided with firmware, try to download one forever

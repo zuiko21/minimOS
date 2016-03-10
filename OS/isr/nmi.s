@@ -1,20 +1,21 @@
-; NMI module for minimOS 0.5a2
+; NMI module for minimOS
+; v0.5a3
 ; (c) 2015-2016 Carlos J. Santisteban
 ; originally issued 20130512 ???
-; last modified 20150326-1900
-; revised 20160115 for commit with new filenames
+; last modified 20160310
 
 #ifndef 	KERNEL
+#define		KERNEL	_NMI
 #include "options.h"
 #include "macros.h"
-#include "abi.h"	; new filename
+#include "abi.h"
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/firmware.h"
+#include "firmware/ARCH.h"
 #include "sysvars.h"
-#include "drivers.h"
-#include "drivers.s"
+#include "drivers/config/DRIVER_PACK.h"
+#include "drivers/config/DRIVER_PACK.s"
 .text
 #endif
 
@@ -64,7 +65,7 @@ PLA		; retrieve old parameter
 STA z2		; nothing has changed!
 
 ; return to process
-JMP nmi_end	; standard address, new 20150326
+RTS	; new standard ending 20160310
 
 nmi_txt:		; splash text string
 .asc "NMI>", 0

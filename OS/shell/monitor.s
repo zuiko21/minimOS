@@ -1,19 +1,19 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.5b1
-; last modified 2016-03-07
+; last modified 2016-03-10
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
 #ifndef	KERNEL
-#include "../../OS/options.h"
-#include "../../OS/macros.h"
-#include "../../OS/abi.h"
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
 .zero
-#include "../../OS/zeropage.h"
+#include "zeropage.h"
 .bss
-#include "../../OS/firmware/firmware.h"
-#include "../../OS/sysvars.h"
+#include "firmware/ARCH.h"
+#include "sysvars.h"
 .text
 user_sram	= $0400
 #endif

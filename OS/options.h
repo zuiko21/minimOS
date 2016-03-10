@@ -2,14 +2,14 @@
 ; generic template, suitable for SDm/Jalapa
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160309
+; last modified 20160310
 
 ; *** set conditional assembly ***
 ; uncomment to remove debugging markup
-;#define	FINAL	_FINAL
+#define	FINAL	_FINAL
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
 ; uncomment for macros replacing new opcodes
 ;#define	NMOS	_NMOS
@@ -34,17 +34,34 @@
 
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
+
 #define		MACHINE_NAME	"Jalapa"
 #define		MACHINE_ID		"sdm"
 
-; Suitable driver package (add .h or .s as needed) in options folder inside drivers folder, new 20160308
-#define		DRIVER_PACK		machines/jalapa
+; Firmware selection, new 20160310, will pickup suitable template from firmware/
+; may or may not coicide with driver pack below! usually add _fw for clarity
+#define		ARCH			jalapa_fw
+
+; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
+; may suit different configurations on a machine
+#define		DRIVER_PACK		jalapa
+
+; *** Default files ***
+; default shell from folder
+#define		SHELL		monitor.s
+
+; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **
 ;ROM_BASE	=	$F400	; special case for MTE (3 kiB out of 4k full 6503 space)
 ;ROM_BASE	=	$F000	; 4 kiB ROM SDd/Chihuahua
 ;ROM_BASE	=	$C000	; Tijuana, maybe Veracruz? new Chihuahua PLUS?
 ROM_BASE	=	$8000	; SDm/Jalapa, might become the generic case
+
+; ** position of firmware, usually skipping I/O area **
+FW_BASE		=	$E000	; standard value
+;FW_BASE	=	$F800	; reduced value for MTE, SDd?
+
 
 ; ** I/O definitions **
 

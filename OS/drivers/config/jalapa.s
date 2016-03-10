@@ -1,8 +1,8 @@
 ; includes for minimOS drivers
-; v0.5a4
+; Jalapa-specific configuration!
+; v0.5a5
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20150930-1428
-; revised 20160115 for commit with new filenames
+; last modified 20160310
 
 #define		DRIVERS		_DRIVERS
 
@@ -10,13 +10,13 @@
 #ifndef		KERNEL
 #include "options.h"
 #include "macros.h"
-#include "abi.h"		; new filename
+#include "abi.h"
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/firmware.h"
+#include "firmware/ARCH.h"
 #include "sysvars.h"
-#include "drivers.h"
+#include "drivers/config/DRIVER_PACK.h"	; generic access
 .text
 #endif
 

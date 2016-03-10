@@ -2,20 +2,20 @@
 ; v0.5b4
 ; features TBD
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20151029-0910
-; revised 20160115 for commit with new filenames
+; last modified 20160310-1226
 
 #define		ISR		_ISR
 
 ; in case of standalone assembly from 'xa isr/irq.s'
 #ifndef		KERNEL
+#define		KERNEL	_IRQ
 #include "options.h"
 #include "macros.h"
-#include "abi.h"			; new filename
+#include "abi.h"
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/firmware.h"
+#include "firmware/ARCH.h"	; generic filename
 #include "sysvars.h"
 .text
 * = ROM_BASE
@@ -62,7 +62,7 @@ ir_done:
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
 	BEQ isr_done		; spurious interrupt! (2/3)
-		JMP brk_handler		; BRK otherwise (3/0)
+		JSR brk_handler		; BRK otherwise (6/0)
 ; go away (18 total)
 isr_done:
 	_PLY	; restore registers (3x4 + 6)
@@ -141,8 +141,7 @@ i_sec:
 	.asc	"<brk>"
 #endif
 
-brk_handler:
+brk_handler:			; should end in RTS anyway, 20160310
 #include "isr/brk.s"
-	JMP isr_done		; all done, if ever reaches this point (3)
 
 

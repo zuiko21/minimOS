@@ -2,7 +2,7 @@
 ; on Kowalski's 6502 simulator
 ; v0.9a2
 ; (c)2016 Carlos J. Santisteban
-; last modified 20160310-1005
+; last modified 20160310-1232
 
 #include "options.h"	; machine specific
 #include "macros.h"
@@ -10,13 +10,13 @@
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/firmware.h"	; really needed?
-#include "sysvars.h"			; really needed?
+#include "firmware/ARCH.h"	; really needed?
 user_sram = *
+.text
 
-* = ROM_BASE			; just a placeholder, no standardised address
+* = $E000			; just a placeholder, no standardised address
 
-;#define	ROM		_ROM
+#define	ROM		_ROM
 
 reset:
 ; *** basic init ***
@@ -35,10 +35,11 @@ kernel:
 	CLD				; just in case, a must for NMOS, maybe for emulating '816 (2)
 ; *** prepare execution ***
 	LDA #$E1		; standard available space on zeropage
-	STA zp_used		; notify
+	STA z_used		; notify
 	JSR module		; execute code!
 	BRK				; end execution
 ;************************ module under testing **********************************
+module:
 ;#include "shell.s"		; here goes the code
 ;********************************************************************************
 	RTS				; just in case
@@ -163,7 +164,7 @@ nmint:
 intack:
 	.asc " [IRQ] ", 0
 
-fw_table:
+fw_kern:
 	.word	kow_cout	; COUT 0
 	.word	kow_cin		; CIN 2
 	.word	unimpl		; 4
@@ -183,7 +184,6 @@ fw_table:
 	.word	unimpl		; 32
 	.word	unimpl		; 34
 	.word	shutdn		; SHUTDOWN 36
-fw_end:
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -192,11 +192,11 @@ fw_end:
 
 ; *** minimOS function call primitive ($FFC0) ***
 * = kernel_call
-	CPX #fw_end-fw_table	; check against limits
-	BCC call_ok				; no overflow
-		JMP unimpl				; error otherwise
+	CPX #37				; check against limits
+	BCC call_ok			; no overflow
+		JMP unimpl			; error otherwise
 call_ok:
-	_JMPX(fw_table)	; macro for NMOS compatibility (6)
+	_JMPX(fw_kern)		; macro for NMOS compatibility (6)
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM

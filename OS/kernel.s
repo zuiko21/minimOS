@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5a8
+; v0.5a9
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160120 (adapted for new memory management services)
+; last modified 20160310 (revamped machine support)
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -18,14 +18,14 @@
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/firmware.h"	; machine specific
+#include "firmware/ARCH.h"	; machine specific
 #ifdef		DOWNLOAD
 * = $0400				; safe address for patchable 2 kiB systems, change if required
 #else
 #include "sysvars.h"
-#include "drivers.h"
+#include "drivers/config/DRIVER_PACK.h"
 user_sram = *
-#include "drivers.s"	; don't assemble actual code, just labels
+#include "drivers/config/DRIVER_PACK.s"	; don't assemble actual code, just labels
 * = ROM_BASE			; just a placeholder, no standardised address
 #endif
 .text
@@ -350,7 +350,7 @@ start_label:
 
 ; so far, shell is a post-POST task only!
 shell:
-#include "shell.s"
+#include "shell/SHELL"
 	BRK				; just in case...
 
 hello:

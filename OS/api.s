@@ -1,7 +1,9 @@
 ; minimOS generic Kernel API
 ; v0.5a9
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160120 (slight optimization, esp. memory management and string printing)
+; last modified 20160310
+
+; no way for standalone assembly...
 
 #ifndef		FINAL
 	.asc	"<kern>"		; *** just for easier debugging *** no markup to skip
