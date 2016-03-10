@@ -435,10 +435,10 @@ gl_l:
 		CMP #BS				; is it backspace?
 			BEQ gl_bs			; delete then
 		STA buffer, X		; store into buffer
-		INX					; next
 		CPX #BUFSIZ			; overflow?
 			BCS gl_off			; complain if so
-		STX tmp				; update index
+		INX					; next
+	STX tmp				; update index
 		_BRA gl_l			; and continue
 gl_bs:
 	CPX #0				; already empty?
@@ -526,6 +526,7 @@ fetch_byte:
 fetch_word:
 	JSR fetch_byte		; get operand in A
 	STA tmp+1			; leave room for next
+LDA buffer, X; get next char!!!
 	JMP hex2byte		; get second byte, tmp is little-endian now, will return
 
 ; * print a byte in A as two hex ciphers *
