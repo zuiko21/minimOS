@@ -1,8 +1,8 @@
 ; MINIMAL support for minimOS components
 ; on Kowalski's 6502 simulator
-; v0.9a1
+; v0.9a2
 ; (c)2016 Carlos J. Santisteban
-; last modified 20160309-1420
+; last modified 20160310-1005
 
 #include "options.h"	; machine specific
 #include "macros.h"
@@ -10,11 +10,9 @@
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/firmware.h"	; machine specific
-#include "sysvars.h"
-;#include "drivers.h"
+#include "firmware/firmware.h"	; really needed?
+#include "sysvars.h"			; really needed?
 user_sram = *
-;#include "drivers.s"	; don't assemble actual code, just labels
 
 * = ROM_BASE			; just a placeholder, no standardised address
 
@@ -35,15 +33,21 @@ reset:
 	STA fw_cpu		; store variable (4)
 kernel:
 	CLD				; just in case, a must for NMOS, maybe for emulating '816 (2)
-;********************************************************************************
-;******************** module under testing **************************************
+; *** prepare execution ***
+	LDA #$E1		; standard available space on zeropage
+	STA zp_used		; notify
+	JSR module		; execute code!
+	BRK				; end execution
+;************************ module under testing **********************************
 ;#include "shell.s"		; here goes the code
 ;********************************************************************************
-	BRK				; ????
+	RTS				; just in case
 
 ; *** minimal kernel support ***
 ; *** output ***
 kow_cout:
+	CPY #0			; default device?
+		BNE kow_err		; abort I/O otherwise
 	LDA zpar		; get char in case is control
 kco_dir:
 	CMP #13			; carriage return?
@@ -56,8 +60,13 @@ kow_ncr:
 kow_rts:
 	_EXIT_OK
 
+kow_err:
+	_ERR(NO_RSRC);	; unsupported device
+
 ; *** input ***
 kow_cin:
+	CPY #0			; default device?
+		BNE kow_err		; abort I/O otherwise
 	LDA IO_BASE+4	; get input from I/O window
 	BEQ kow_empty	; nothing available
 		STA zpar		; store result otherwise
@@ -96,15 +105,69 @@ shutdn:
 	JSR string			; print the string
 	JMP panic			; lock the system!
 
+; *** unimplemented function ***
+unimpl:
+	LDY #<invalid		; get unimplemented message
+	LDA #>invalid
+	STY zaddr3			; set parameter
+	STA zaddr3 + 1
+	JSR string			; print the string
+	RTS					; continue
+
+; *** minimal interrupt support ***
+nmi:
+	PHA					; store regs
+	_PHX
+	_PHY
+	JSR do_nmi			; execute!
+	_PLY				; restore regs
+	_PLX
+	PLA
+	RTI
+
+do_nmi:
+; *** place adequate NMI routine here ***
+	LDY #<nmint			; get NMI message
+	LDA #>nmint
+	STY zaddr3			; set parameter
+	STA zaddr3 + 1
+	JSR string			; print the string
+	RTS					; continue
+
+irq:
+	PHA					; store regs
+	_PHX
+	_PHY
+	JSR isr				; execute!
+	_PLY				; restore regs
+	_PLX
+	PLA
+	RTI
+
+isr:
+; *** place adequate IRQ routine here ***
+	LDY #<intack		; get IRQ message
+	LDA #>intack
+	STY zaddr3			; set parameter
+	STA zaddr3 + 1
+	JSR string			; print the string
+	RTS					; continue
+
 ; *** data and tables ***
 off:
 	.asc 13, "[SHUTDOWN]", 0
+invalid:
+	.asc " [UNIMPLEMENTED] ", 0
+nmint:
+	.asc " [NMI] ", 0
+intack:
+	.asc " [IRQ] ", 0
 
 fw_table:
 	.word	kow_cout	; COUT 0
 	.word	kow_cin		; CIN 2
-	.word	unimpl		; MALLOC 4
-	.word	unimpl		; FREE 6
+	.word	unimpl		; 4
+	.word	unimpl		; 6
 	.word	open_w		; OPENW 8
 	.word	unimpl		; 10
 	.word	unimpl		; 12
@@ -142,7 +205,11 @@ call_ok:
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = admin_call
-	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+	CPX #10				; only SHUTDOWN supported!
+	BEQ do_shut
+		JMP unimpl			; error otherwise
+do_shut:
+	JMP shutdn			; valid so far
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -156,14 +223,14 @@ panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
 	NOP					; padding for reserved C816 vectors
 
-; *** 65C816 ROM vectors ***
+; *** 65C816 ROM vectors, should not be called ever ***
 * = $FFE4				; should be already at it
-	.word	fwp_cold	; native COP		@ $FFE4
-	.word	fwp_cold	; native BRK		@ $FFE6
-	.word	fwp_cold	; native ABORT		@ $FFE8
-	.word	fwp_cold	; native NMI		@ $FFEA
+	.word	shutdn		; native COP		@ $FFE4
+	.word	shutdn		; native BRK		@ $FFE6
+	.word	shutdn		; native ABORT		@ $FFE8
+	.word	shutdn		; native NMI		@ $FFEA
 	.word	$FFFF		; reserved			@ $FFEC
-	.word	fwp_cold	; native IRQ		@ $FFEE
+	.word	shutdn		; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
 	.word	nmi			; emulated COP		@ $FFF4
