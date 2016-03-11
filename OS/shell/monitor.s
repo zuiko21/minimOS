@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5b1
-; last modified 2016-03-10
+; v0.5b2
+; last modified 20160311-0956
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -18,11 +18,20 @@
 user_sram	= $0400
 #endif
 
+; *** uncomment for narrow (20-char) displays ***
+;#define	NARROW	_NARROW
+
 ; *** constant definitions ***
 #define	BUFSIZ		20
 #define	CR			13
 #define	BS			9
 #define	BEL			7
+; bytes per line in dumps
+#ifdef	NARROW
+#define		PERLINE		4
+#else
+#define		PERLINE		8
+#endif
 
 ; ##### include minimOS headers and some other stuff #####
 -shell:
@@ -78,7 +87,7 @@ open_mon:
 	STA ptr+1			; and MSB
 	LDA #4				; standard number of lines
 	STA lines			; set variable
-	STA siz      ; also default transfer size
+	STA siz				; also default transfer size
 	_STZA siz+1			; clear copy/transfer size MSB
 	LDA #>splash		; address of splash message
 	LDY #<splash
@@ -191,13 +200,20 @@ ex_l:
 		LDY #0				; reset offset
 ex_h:
 			_PHY				; save offset
+; space only when wider than 20 char AND if not the first
+#ifndef	NARROW
+			BEQ ex_ns			; no space if the first one
+				_PHY				; please keep Y!
+				LDA #' '			; print space, not in 20-char
+				JSR prnChar
+				_PLY				; retrieve Y!
+ex_ns:
+#endif
 			LDA (tmp2), Y		; get byte
 			JSR prnHex			; print it in hex
-;			LDA #' '			; print space, not in 20-char
-;			JSR prnChar
 			_PLY				; retrieve index
 			INY					; next byte
-			CPY #4				; bytes per line (8 if not 20-char)
+			CPY #PERLINE		; bytes per line (8 if not 20-char)
 			BNE ex_h			; continue line
 		LDA #>dump_out		; address of separator
 		LDY #<dump_out
@@ -217,20 +233,20 @@ ex_np:
 ex_pr:		JSR prnChar			; print it
 			_PLY				; retrieve index
 			INY					; next byte
-			CPY #4				; bytes per line (8 if not 20-char)
+			CPY #PERLINE		; bytes per line (8 if not 20-char)
 			BNE ex_a			; continue line
 		LDA #CR				; print newline
 		JSR prnChar
 		LDA tmp2			; get pointer LSB
 		CLC
-		ADC #4				; add shown bytes (8 if not 20-char)
+		ADC #PERLINE		; add shown bytes (8 if not 20-char)
 		STA tmp2			; update pointer
 		BCC ex_npb			; skip if within same page
 			INC tmp2+1			; next page
 ex_npb:
-		_PLX				; check next line!!!!
-		DEX
-		BNE ex_l
+		_PLX				; retrieve counter!!!!
+		DEX					; one line less
+		BNE ex_l			; continue until done
 	RTS
 
 set_SP:
@@ -325,15 +341,23 @@ view_regs:
 	JSR prnHex			; show it
 	LDA _pc				; same for LSB
 	JSR prnHex
-;	LDA #' '			; space
-;	JSR prnChar			; print it (not used in 20-char version)
+
+#ifndef	NARROW
+	LDA #' '			; space (not used in 20-char version)
+	JSR prnChar			; print it
+#endif
+
 	LDX #0				; reset counter
 vr_l:
 		LDA _a, X			; get value from regs
 		_PHX				; save index!
 		JSR prnHex			; show value in hex
-;		LDA #' '			; space, not for 20-char
-;		JSR prnChar			; print it
+
+#ifndef	NARROW
+		LDA #' '			; space, not for 20-char
+		JSR prnChar			; print it
+#endif
+
 		_PLX				; restore index
 		INX					; next reg
 		CPX #4				; all regs done?
@@ -438,7 +462,7 @@ gl_l:
 		CPX #BUFSIZ			; overflow?
 			BCS gl_off			; complain if so
 		INX					; next
-	STX tmp				; update index
+		STX tmp				; update index
 		_BRA gl_l			; and continue
 gl_bs:
 	CPX #0				; already empty?
@@ -447,10 +471,10 @@ gl_bs:
 	STX tmp				; update index
 	_BRA gl_l			; continue input
 gl_off:
-	LDA #BEL			; console sound?
-	STA zpar			; store parameter
-	LDY iodev			; use device
-	_KERNEL(COUT)		; complain! #####
+;	LDA #BEL			; console sound?
+;	STA zpar			; store parameter
+;	LDY iodev			; use device
+;	_KERNEL(COUT)		; complain! #####
 	_BRA gl_l			; continue
 gl_cr:
 	_STZA buffer, X		; terminate string
@@ -526,7 +550,8 @@ fetch_byte:
 fetch_word:
 	JSR fetch_byte		; get operand in A
 	STA tmp+1			; leave room for next
-LDA buffer, X; get next char!!!
+	DEX					; as will increment...
+	JSR gnc_do			; get next char!!!
 	JMP hex2byte		; get second byte, tmp is little-endian now, will return
 
 ; * print a byte in A as two hex ciphers *
@@ -591,7 +616,7 @@ title:
 	.asc	"miniMonitor", 0
 
 splash:
-	.asc	"minimOS 0.5b1 shell", CR
+	.asc	"minimOS 0.5b2 shell", CR
 	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
 
 prompt:
@@ -604,16 +629,21 @@ err_bad:
 	.asc	"*** Bad command ***", CR, 0
 
 regs_head:
-;	.asc	CR, "PC:  A: X: Y: S: NV-bDIZC", CR, 0
+#ifdef	NARROW
 	.asc	CR, "PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
+#else
+	.asc	CR, "PC:  A: X: Y: S: NV-bDIZC", CR, 0
+#endif
 
 dump_in:
+#ifdef	NARROW
 	.asc	"[", 0		; for 20-char version
-;	.asc	" [ ", 0
+#else
+	.asc	" [", 0
+#endif
 
 dump_out:
-	.asc	"] ", 0		; for 20-char version
-;	.asc	" ] ", 0
+	.asc	"] ", 0
 
 help_str:
 	.asc	"---Command list---", CR
