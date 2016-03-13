@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5b2
-; last modified 20160311-0956
+; v0.5b3
+; last modified 20160313
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -26,7 +26,7 @@ user_sram	= $0400
 #define	CR			13
 #define	BS			9
 #define	BEL			7
-; bytes per line in dumps
+; bytes per line in dumps 4 or 8/16
 #ifdef	NARROW
 #define		PERLINE		4
 #else
@@ -105,9 +105,8 @@ main_loop:
 		JSR prnHex			; print it
 		LDA ptr				; same for LSB
 		JSR prnHex
-		LDA #>prompt		; address of prompt string
-		LDY #<prompt
-		JSR prnStr			; print the string!
+		LDA #'>'		; prompt character
+		JSR prnChar			; print it
 		JSR getLine			; input a line
 		LDX #$FF			; getNextChar will advance it to zero!
 		JSR gnc_do			; get first character on string, without the variable
@@ -314,16 +313,18 @@ quit:
 store_str:
 	LDY cursor				; use as offset
 sstr_l:
-	INC ptr				; advance destination
-	BNE sstr_nc			; boundary not crossed
-		INC ptr+1			; next page otherwise
-sstr_nc:
 		INY					; skip the S and increase
 		LDA buffer, Y		; get raw character
 		_STAX(ptr)			; store in place
 			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
-		BNE sstr_l			; contine string
+		  BEQ sstr_cr			; terminate and exit
+	  INC ptr				; advance destination
+	  BNE sstr_l			; boundary not crossed
+	INC ptr+1			; next page otherwise
+  _BRA sstr_l  ; continue
+sstr_cr:
+  _STZA buffer, X  ; terminate string
 sstr_end:
 	RTS
 
@@ -443,40 +444,31 @@ prnStr:
 ; * get input line from device at fixed-address buffer *
 ; minimOS should have one of these in API...
 getLine:
-	LDX #0				; reset pointer
-	STX tmp				; set variable
+	_STZX tmp				; reset variable
 gl_l:
 		LDY iodev			; use device
 		_KERNEL(CIN)		; get one character #####
-			BCS gl_l			; wait until something
-		LDY iodev			; use device again
-		_KERNEL(COUT)		; echo!!! hope parameter stays ok #####
-; ignoring possible I/O error...
+			BCS gl_l			; wait for something
 		LDA zpar			; get received
 		LDX tmp				; retrieve index
 		CMP #CR				; hit CR?
 			BEQ gl_cr			; all done then
 		CMP #BS				; is it backspace?
-			BEQ gl_bs			; delete then
+		BNE gl_nbs			; delete then
+		  CPX #0  ; already 0?
+		    BEQ gl_l  ; ignore if so
+		  DEC tmp  ; reduce index
+		  _BRA gl_echo  ; print and continue
+gl_nbs:
+		CPX #BUFSIZ	-1		; overflow?
+			BCS gl_l		; ignore if so 		
 		STA buffer, X		; store into buffer
-		CPX #BUFSIZ			; overflow?
-			BCS gl_off			; complain if so
-		INX					; next
-		STX tmp				; update index
-		_BRA gl_l			; and continue
-gl_bs:
-	CPX #0				; already empty?
-		BEQ gl_off			; complain
-	DEX					; backoff
-	STX tmp				; update index
-	_BRA gl_l			; continue input
-gl_off:
-;	LDA #BEL			; console sound?
-;	STA zpar			; store parameter
-;	LDY iodev			; use device
-;	_KERNEL(COUT)		; complain! #####
-	_BRA gl_l			; continue
+		INC	tmp				; update index
+gl_echo:
+		JSR prnChar  ; echo!
+ 	  _BRA gl_l			; and continue
 gl_cr:
+  JSR prnChar  ; newline
 	_STZA buffer, X		; terminate string
 	RTS					; and all done!
 
@@ -616,11 +608,9 @@ title:
 	.asc	"miniMonitor", 0
 
 splash:
-	.asc	"minimOS 0.5b2 shell", CR
+	.asc	"minimOS 0.5b3 shell", CR
 	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
 
-prompt:
-	.asc	">", 0
 
 ;err_mmod:
 ;	.asc	"***Missing module***", CR, 0
