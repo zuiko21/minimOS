@@ -112,7 +112,7 @@ main_loop:
 		JSR gnc_do			; get first character on string, without the variable
 ;		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 ;			BNE not_mcmd		; not a monitor command
-;   JSR gnc_do   ; get into command byte otherwise
+;		JSR gnc_do			; get into command byte otherwise
 		STX cursor			; save cursor!
 		CMP #'Z'+1			; past last command?
 			BCS bad_cmd			; unrecognised
@@ -318,13 +318,13 @@ sstr_l:
 		_STAX(ptr)			; store in place
 			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
-		  BEQ sstr_cr			; terminate and exit
-	  INC ptr				; advance destination
-	  BNE sstr_l			; boundary not crossed
+			BEQ sstr_cr			; terminate and exit
+		INC ptr				; advance destination
+		BNE sstr_l			; boundary not crossed
 	INC ptr+1			; next page otherwise
-  _BRA sstr_l  ; continue
+	_BRA sstr_l			; continue
 sstr_cr:
-  _STZA buffer, X  ; terminate string
+	_STZA buffer, X		; terminate string
 sstr_end:
 	RTS
 
@@ -455,20 +455,20 @@ gl_l:
 			BEQ gl_cr			; all done then
 		CMP #BS				; is it backspace?
 		BNE gl_nbs			; delete then
-		  CPX #0  ; already 0?
-		    BEQ gl_l  ; ignore if so
-		  DEC tmp  ; reduce index
-		  _BRA gl_echo  ; print and continue
+			CPX #0				; already 0?
+				BEQ gl_l			; ignore if so
+			DEC tmp				; reduce index
+			_BRA gl_echo		; print and continue
 gl_nbs:
-		CPX #BUFSIZ	-1		; overflow?
+		CPX #BUFSIZ-1		; overflow?
 			BCS gl_l		; ignore if so 		
 		STA buffer, X		; store into buffer
 		INC	tmp				; update index
 gl_echo:
-		JSR prnChar  ; echo!
- 	  _BRA gl_l			; and continue
+		JSR prnChar			; echo!
+		_BRA gl_l			; and continue
 gl_cr:
-  JSR prnChar  ; newline
+	JSR prnChar			; newline
 	_STZA buffer, X		; terminate string
 	RTS					; and all done!
 
