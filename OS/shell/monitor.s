@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5b4
-; last modified 20160317-0918
+; v0.5rc1
+; last modified 20160317-1109
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -24,7 +24,7 @@ user_sram	= $0400
 ; *** constant definitions ***
 #define	BUFSIZ		20
 #define	CR			13
-#define	BS			9
+#define	BS			8
 #define	BEL			7
 ; bytes per line in dumps 4 or 8/16
 #ifdef	NARROW
@@ -460,10 +460,10 @@ gl_l:
 			CPX #0				; already 0?
 				BEQ gl_l			; ignore if so
 			DEC cursor			; reduce index
-			_BRA gl_echo		; print and continue
+			_BRA gl_echo		; resume operation
 gl_nbs:
 		CPX #BUFSIZ-1		; overflow?
-			BCS gl_l		; ignore if so 		
+			BCS gl_l			; ignore if so
 		STA buffer, X		; store into buffer
 		INC	cursor			; update index
 gl_echo:
@@ -611,7 +611,7 @@ title:
 	.asc	"miniMonitor", 0
 
 splash:
-	.asc	"minimOS 0.5b3 shell", CR
+	.asc	"minimOS 0.5b4 shell", CR
 	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
 
 
@@ -623,9 +623,9 @@ err_bad:
 
 regs_head:
 #ifdef	NARROW
-	.asc	CR, "PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
+	.asc	"PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
 #else
-	.asc	CR, "PC:  A: X: Y: S: NV-bDIZC", CR, 0
+	.asc	"PC:  A: X: Y: S: NV-bDIZC", CR, 0
 #endif
 
 dump_in:
