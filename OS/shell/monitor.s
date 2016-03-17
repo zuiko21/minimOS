@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5b3
-; last modified 20160313
+; v0.5b4
+; last modified 20160317-0918
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -110,6 +110,8 @@ main_loop:
 		JSR getLine			; input a line
 		LDX #$FF			; getNextChar will advance it to zero!
 		JSR gnc_do			; get first character on string, without the variable
+		TAY					; just in case...
+			BEQ main_loop		; ignore blank lines! 
 ;		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 ;			BNE not_mcmd		; not a monitor command
 ;		JSR gnc_do			; get into command byte otherwise
@@ -444,31 +446,32 @@ prnStr:
 ; * get input line from device at fixed-address buffer *
 ; minimOS should have one of these in API...
 getLine:
-	_STZX tmp				; reset variable
+	_STZX cursor			; reset variable
 gl_l:
 		LDY iodev			; use device
 		_KERNEL(CIN)		; get one character #####
 			BCS gl_l			; wait for something
 		LDA zpar			; get received
-		LDX tmp				; retrieve index
+		LDX cursor			; retrieve index
 		CMP #CR				; hit CR?
 			BEQ gl_cr			; all done then
 		CMP #BS				; is it backspace?
 		BNE gl_nbs			; delete then
 			CPX #0				; already 0?
 				BEQ gl_l			; ignore if so
-			DEC tmp				; reduce index
+			DEC cursor			; reduce index
 			_BRA gl_echo		; print and continue
 gl_nbs:
 		CPX #BUFSIZ-1		; overflow?
 			BCS gl_l		; ignore if so 		
 		STA buffer, X		; store into buffer
-		INC	tmp				; update index
+		INC	cursor			; update index
 gl_echo:
 		JSR prnChar			; echo!
 		_BRA gl_l			; and continue
 gl_cr:
 	JSR prnChar			; newline
+	LDX cursor			; retrieve cursor!!!!!
 	_STZA buffer, X		; terminate string
 	RTS					; and all done!
 
