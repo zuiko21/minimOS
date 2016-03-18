@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc1
-; last modified 20160317-1109
+; v0.5rc2
+; last modified 20160318-0909
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -262,7 +262,6 @@ help:
 
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
-; if siz=0 will do 256 bytes
 
 	JSR fetch_word		; get operand word
 	LDY #0				; reset offset
@@ -277,12 +276,15 @@ mv_hl:
 	INC tmp+1
 	DEX					; one less to go
 		BNE mv_hl			; stay in first stage until the last page
+	LDA siz				; check LSB
+		BEQ mv_end			; nothing to copy!
 mv_l:
 		LDA (ptr), Y		; get source byte
 		STA (tmp), Y		; copy at destination
 		INY					; next byte
 		CPY siz				; compare with LSB
 		BNE mv_l			; continue until done
+mv_end:
 	RTS
 
 set_count:
@@ -611,7 +613,7 @@ title:
 	.asc	"miniMonitor", 0
 
 splash:
-	.asc	"minimOS 0.5b4 shell", CR
+	.asc	"minimOS 0.5 monitor", CR
 	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
 
 
