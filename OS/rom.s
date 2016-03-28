@@ -1,7 +1,7 @@
 ; minimOS ROM template for SDm
 ; v0.5a5
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160310
+; last modified 20160328
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -25,7 +25,7 @@
 ; firmware specific variables, usually from $0200
 * = SYSRAM		; as defined in options.h
 sysram:
-#include "firmware/arch/ARCH.h"
+#include "firmware/ARCH.h"
 
 ; generic system variables
 sysvars:
@@ -81,4 +81,4 @@ drivers:
 
 ; *** hardware-dependent firmware ***
 firmware:
-#include "firmware/arch/ARCH.s"
+#include "firmware/ARCH.s"
