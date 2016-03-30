@@ -4,6 +4,9 @@
 *.out
 *.rom
 
+# new in minimOS, ignore options.h since it will be linked or copied from options folder!
+options.h
+
 # no backups
 *~
 
