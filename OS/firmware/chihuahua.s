@@ -1,11 +1,11 @@
-; firmware for minimOS on Kowalski simulator
+; firmware for minimOS on Chichuahua PLUS (and maybe others)
 ; v0.9a1
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20160331-0857
+; last modified 20160331-0946
 
 #define		FIRMWARE	_FIRMWARE
 
-; in case of standalone assembly
+; in case of stand alone assembly
 #ifndef		KERNEL
 #include "options.h"
 #include "macros.h"
@@ -13,11 +13,11 @@
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/kowalski.h"
+#include "firmware/chihuahua.h"
 #include "sysvars.h"
 .text
-* = FW_BASE					; sample address
-kernel = ROM_BASE			; in case is not available, cannot download!
+kernel	= remote_boot	; in case no kernel is provided with firmware, try to download one forever
+*		= FW_BASE		; sample address
 #endif
 
 ; *** first some ROM identification *** new 20150612
@@ -33,22 +33,43 @@ fw_mname:
 ; *** cold restart ***
 ; basic init
 reset:
-#ifdef	SAFE
-	SEI				; cold boot (2) not needed for simulator?
-#endif
-	CLD				; just in case, a must for NMOS (2)
+	SEI				; cold boot. Do not use macro, maybe no OS installed this far (2)
+	CLD				; just in case, a must for NMOS, maybe for emulating '816 (2)
 	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
+; disable all interrupt sources
+	LDA #$7F		; disable all interrupts (2+4)
+	STA VIA1 + IER
+
+; and optionally check for VIA presence
+#ifdef	SAFE
+	LDA VIA1 + IER	; check VIA presence, NEW 20150118 (4)
+	CMP #$80		; should read $80 (2)
+	BEQ via_ok		; panic otherwise! (slight modification 20150121 and 0220) (3/2)
+		_PANIC			; no other way to tell the world... (3)
+via_ok:
+#endif
 
 ; *** optional firmware modules ***
-post:
+; optional boot selector
+#include "firmware/modules/bootoff.s"
 
+; ***continue power-on self-test***
+post:
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
+
+; startup beep
+#include "firmware/modules/beep.s"
 
 ; SRAM test
 #include "firmware/modules/ramtest.s"
 
+; *** VIA initialisation (and stop beeping) ***
+	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
+	STA VIA1 + PCR
+	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
+	STA VIA1 + ACR
 ; *** preset kernel start address (standard label from ROM file) ***
 	LDA #<kernel	; get LSB (2)
 	STA fw_warm		; store in sysvars (4)
@@ -58,9 +79,23 @@ post:
 	LDA #CPU_TYPE	; constant from options.h (2)
 	STA fw_cpu		; store variable (4)
 
-; might check out here for the actual CPU type... would illegal opcodes break simulation?
-;#include "firmware/modules/cpu_check.s"
+; might check out here for the actual CPU type...
+#include "firmware/modules/cpu_check.s"
+#ifdef	SAFE
+#ifndef	NMOS
+;	LDA fw_cpu		; already in A, but may change
+	CMP #'N'		; is it NMOS? not supported!
+	BNE fw_cpuOK	; otherwise continue
+		_PANIC
+fw_cpuOK:
+#endif
+#endif
 
+; *** maybe this is the place for final interrupt setup *** 20150605
+	LDA	#<T1_DIV	; set IRQ frequency divisor LSB ** revised 20150220 (2)
+	STA VIA + T1CL	; put value into latch (write to counter) (4)
+	LDA #>T1_DIV	; same for MSB (2)
+	STA VIA + T1CH	; start counting! (4)
 	LDA #<IRQ_FREQ	; interrupts per second, LSB ** revised 20150225 (2)
 	STA irq_freq	; store speed... (4)
 	STA ticks		; and counter value (4)
@@ -72,6 +107,13 @@ res_sec:
 		_STZA ticks+1, X	; reset byte, note special offset
 		DEX					; next byte backwards
 		BNE res_sec
+	LDA #$C0		; enable T1 interrupt only (2+4)
+	STA VIA + IER
+
+; *** optional network booting ***
+; might modify the contents of fw_warm
+remote_boot:
+;#include "firmware/modules/netboot.s"
 
 ; *** firmware ends, jump into the kernel ***
 start_kernel:
@@ -79,7 +121,11 @@ start_kernel:
 
 ; *** vectored NMI handler with magic number ***
 nmi:
-	CLD					; eeeeeeeeek! not sure if Kowalski simulator behaves like a C02
+
+#ifdef	NMOS
+	CLD					; eeeeeeeeek! 20150316
+#endif
+
 ; save registers AND system pointers
 	PHA					; save registers (3x3)
 	_PHX
@@ -135,48 +181,31 @@ std_nmi:
 fw_magic:
 	.asc	"*jNU"		; reversed magic string
 
-
 ; *** administrative functions ***
 ; A0, install jump table
 ; zpar.W <- address of supplied jump table
 fw_install:
 	LDY #0				; reset index (2)
-
-#ifdef	SAFE
 	_ENTER_CS			; disable interrupts! (5)
-#endif
-
 fwi_loop:
 		LDA (zpar), Y		; get from table as supplied (5)
 		STA fw_table, Y		; copy where the firmware expects it (4+2)
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
-
-#ifdef	SAFE
 	_EXIT_CS			; restore interrupts if needed (4)
-#endif
-
 	_EXIT_OK			; all done (8)
 
 
 ; A2, set IRQ vector
 ; zpar.W <- address of ISR
 fw_s_isr:
-
-#ifdef	SAFE
-	_ENTER_CS			; disable interrupts! (5)
-#endif
-
-	LDA zpar			; get LSB (3)
-	STA fw_isr			; store for firmware (4)
-	LDA zpar+1			; get MSB (3+4)
+	_ENTER_CS				; disable interrupts! (5)
+	LDA zpar				; get LSB (3)
+	STA fw_isr				; store for firmware (4)
+	LDA zpar+1				; get MSB (3+4)
 	STA fw_isr+1
-
-#ifdef	SAFE
-	_EXIT_CS			; restore interrupts if needed (4)
-#endif
-
-	_EXIT_OK			; done (8)
+	_EXIT_CS				; restore interrupts if needed (4)
+	_EXIT_OK				; done (8)
 
 
 ; A4, set NMI vector
@@ -184,32 +213,24 @@ fw_s_isr:
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected
 fw_s_nmi:
-	LDA zpar			; get LSB (3)
-	STA fw_nmi			; store for firmware (4)
-	LDA zpar+1			; get MSB (3+4)
+	LDA zpar				; get LSB (3)
+	STA fw_nmi				; store for firmware (4)
+	LDA zpar+1				; get MSB (3+4)
 	STA fw_nmi+1
-	_EXIT_OK			; done (8)
+	_EXIT_OK				; done (8)
 
 
 ; A6, patch single function
 ; zpar.W <- address of code
 ; Y <- function to be patched
 fw_patch:
-	LDA zpar			; get LSB (3)
-
-#ifdef	SAFE
-	_ENTER_CS			; disable interrupts! (5)
-#endif
-
-	STA fw_table, Y		; store where the firmware expects it (4)
-	LDA zpar+1			; same for MSB (3+4)
+	LDA zpar				; get LSB (3)
+	_ENTER_CS				; disable interrupts! (5)
+	STA fw_table, Y			; store where the firmware expects it (4)
+	LDA zpar+1				; same for MSB (3+4)
 	STA fw_table+1, Y
-
-#ifdef	SAFE
-	_EXIT_CS			; restore interrupts if needed (4)
-#endif
-
-	_EXIT_OK			; done (8)
+	_EXIT_CS				; restore interrupts if needed (4)
+	_EXIT_OK				; done (8)
 
 
 ; A8, get system info, API TBD
@@ -236,6 +257,7 @@ fw_gestalt:
 	STA zpar3+1
 	_EXIT_OK		; done (8)
 
+
 ; A10, poweroff etc
 ; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
 ; C -> not implemented
@@ -245,14 +267,14 @@ fw_power:
 	_JMPX(fwp_func)		; select from jump table
 
 fwp_off:
-	BRK					; stop simulation!
+	BRK					; stop execution!
 	.asc	"{OFF}", 0	; just in case is handled
 
 fwp_susp:
-	_EXIT_OK			; just continue execution
+	_ERR(UNAVAIL)		; just continue execution
 
 fwp_cold:
-	JMP ($FFFC)			; call 6502 vector, not really needed here but...
+#include "firmware/modules/coldboot.s"
 
 ; sub-function jump table
 fwp_func:
@@ -262,7 +284,8 @@ fwp_func:
 	.word	kernel		; shouldn't use this, just in case
 
 ; *** administrative jump table ***
-; PLEASE CHANGE ORDER ASAP
+; might go elsewhere as it may grow, especially on NMOS
+; COULD CHANGE ORDER
 fw_admin:
 	.word	fw_install
 	.word	fw_s_isr
@@ -285,9 +308,15 @@ fw_admin:
 	.dsb	admin_call-*, $FF
 #endif
 
-; *** administrative meta-kernel call primitive ($FFD0) ***
+; *** administrative meta-kernel call primitive ($FFA0) ***
 * = admin_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+
+
+; *** vectored IRQ handler ***
+; might go elsewhere, especially on NMOS systems
+irq:
+	JMP (fw_isr)	; vectored ISR (6)
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -299,18 +328,21 @@ fw_admin:
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
+	NOP					; padding for reserved C816 vectors
 
-; no 65816 vectors on simulator!
-
-; *** vectored IRQ handler ***
-irq:
-	JMP (fw_isr)	; vectored ISR (6)
-
-; filling for ready-to-blow ROM
-#ifdef	ROM
-	.dsb	$FFFA-*, $FF
-#endif
-
+; *** 65C816 ROM vectors ***
+* = $FFE4				; should be already at it
+	.word	fwp_cold	; native COP		@ $FFE4
+	.word	fwp_cold	; native BRK		@ $FFE6
+	.word	fwp_cold	; native ABORT		@ $FFE8
+	.word	fwp_cold	; native NMI		@ $FFEA
+	.word	$FFFF		; reserved			@ $FFEC
+	.word	fwp_cold	; native IRQ		@ $FFEE
+	.word	$FFFF		; reserved			@ $FFF0
+	.word	$FFFF		; reserved			@ $FFF2
+	.word	nmi			; emulated COP		@ $FFF4
+	.word	$FFFF		; reserved			@ $FFF6
+	.word	nmi			; emulated ABORT 	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
 	.word	nmi			; (emulated) NMI	@ $FFFA

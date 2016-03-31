@@ -1,6 +1,6 @@
 ; minimOS 0.5a9 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160308
+; last modified 20160331
 
 ; *** standard addresses ***
 ; redefined as labels 20150603
@@ -74,11 +74,11 @@ FILE_DEV	=	130
 #define		_INC		CLC: ADC #1
 #define		_DEC		SEC: SBC #1
 #define		_BRA		JMP
-; faster than CLC:BVC and the very same size, but no longer position-independent
+; faster than CLC-BVC and the very same size, but no longer position-independent
 #define		_STZX		LDX #0: STX
 #define		_STZY		LDY #0: STY
 #define		_STZA		LDA #0: STA
-; new instructions 20150606, implemented from <http://www.6502.org/tutorials/65c02opcodes.html>
+; new instructions 20150606, implemented from www.6502.org/tutorials/65c02opcodes.html
 ; ...but they are not ATOMIC!!!
 #define		_TRB(a)		BIT a: PHP: PHA: EOR #$FF: AND a: STA a: PLA: PHP
 #define		_TSB(a)		BIT a: PHP: PHA: ORA a: STA a: PLA: PLP
