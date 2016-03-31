@@ -2,7 +2,7 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160330-1229
+; last modified 20160331-1154
 
 ; *** set conditional assembly ***
 
@@ -20,7 +20,7 @@
 #define		MACHINE_ID		"sdd+"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
-#define		ARCH			chihuahua_plus
+#define		ARCH			chihuahua
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
@@ -42,7 +42,7 @@ FW_BASE		=	$E000	; standard value
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-;IO_BASE	=	$B000	; new Chihuahua PLUS, reserved for expansion at $Bxxx, undecoded area $8000-$9FFF
+IO_BASE	=	$B000	; new Chihuahua PLUS, reserved for expansion at $Bxxx, undecoded area $8000-$9FFF
 
 ; * VIA 65(C)22 Base address, machine dependent *
 ; generic address declaration
