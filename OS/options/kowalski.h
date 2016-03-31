@@ -2,7 +2,7 @@
 ; suitable for Kowalski simulator
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160330-1240
+; last modified 20160331-1345
 
 ; *** set conditional assembly ***
 
@@ -42,7 +42,7 @@ FW_BASE		=	$F800	; simple firmware expected on Kowalski simulator
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-;IO_BASE	=	$DF00	; set accordingly on simulator!
+IO_BASE		=	$DF00	; set accordingly on simulator!
 
 ; missing hardware declarations...
 ; * VIA 65(C)22 Base address, machine dependent *
@@ -64,6 +64,8 @@ VIA_SP	=	VIA1
 ACIA1	=	IO_BASE + $20	; fake ACIA address, should not be checked!
 ACIA	=	ACIA1			; for increased compatibility
 
+; *** set standard device *** new 20160331 
+DEVICE	=	DEV_CONIO		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220

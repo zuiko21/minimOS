@@ -2,7 +2,7 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160331-1154
+; last modified 20160331-1346
 
 ; *** set conditional assembly ***
 
@@ -64,6 +64,8 @@ VIA_SP	=	VIA1
 ACIA1	=	IO_BASE + $D0	; ACIA address on most (no longer $DFE0 for easier decoding 688+138)
 ACIA	=	ACIA1			; for increased compatibility
 
+; *** set standard device *** new 20160331 
+DEVICE	=	DEV_LED		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220

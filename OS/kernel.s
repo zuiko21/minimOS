@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5a9
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160310 (revamped machine support)
+; last modified 20160331-1351
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,11 +35,6 @@ user_sram = *
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
 
-#ifndef		FINAL
-	_BRA warm				; in case somebody JMPs to kernel
-	.asc	"<warm>"		; *** just for easier debugging ***
-#endif
-
 warm:
 -kernel:			; defined also into ROM file, just in case is needed by firmware
 	SEI				; shouldn't use macro, really
@@ -65,12 +60,7 @@ warm:
 	STA zpar+1
 	_ADMIN(SET_ISR)	; install routine (14...)
 
-; install optional NMI code (as defined in "isr/nmi.s" below)
-	LDA #<k_nmi		; get address LSB (2)
-	STA zpar		; no need to know about actual vector location (3)
-	LDA #>k_nmi		; get address MSB (2+3)
-	STA zpar+1
-	_ADMIN(SET_NMI)	; install routine (14...)
+; Kernel no longer supplies default NMI, but could install it otherwise
 
 ; *****************************
 ; *** memory initialisation ***
@@ -78,12 +68,6 @@ warm:
 ; should be revised ASAP
 
 #ifndef		LOWRAM
-#ifndef		FINAL
-	_BRA memo_label			; skip the markup!
-	.asc	"<memo>"		; *** just for easier debugging ***
-memo_label:
-#endif
-
 	LDA #UNAS_RAM		; unassigned space (2) should be defined somewhere (2)
 	LDX #MAX_LIST		; depending on RAM size, corrected 20150326 (2)
 mreset:
@@ -111,12 +95,6 @@ mreset:
 ; new code disabling failed drivers 20150318
 ; ******************************************************
 ; systems with enough ram should create direct table!!!!!!!!!!!
-
-#ifndef		FINAL
-	_BRA dinit_label		; skip the markup!
-	.asc	"<dinit>"		; *** just for easier debugging ***
-dinit_label:
-#endif
 
 ; set some labels, much neater this way
 da_ptr	= locpt2		; pointer for indirect addressing, new CIN/COUT compatible 20150619
@@ -302,12 +280,6 @@ dr_ok:					; all drivers init'd
 ; ********* startup code ***********
 ; **********************************
 
-#ifndef		FINAL
-	_BRA start_label		; skip the markup!
-	.asc	"<start>"		; *** just for easier debugging ***
-start_label:
-#endif
-
 ; reset several remaining flags
 	_STZA cin_mode	; reset binary mode flag, new 20150618
 
@@ -324,37 +296,21 @@ start_label:
 ; **********************************
 
 ; *** set default I/O device *** REVISE ASAP
-	LDA #DEV_LED	; LED-keypad, new constant 20150324
+	LDA #DEVICE		; as defined in options.h
 	STA default_out	; should check some devices
 	STA default_in
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 	CLI				; enable interrupts
 
-; say hello! *** revise ASAP
-	LDA #<hello		; LSB of the string
-	STA z10
-	LDA #>hello		; MSB
-	STA z10+1
-	LDY #0			; default device, let the kernel get it!
-	_KERNEL(STRING)	; print the message
-
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
-
-#ifndef		FINAL
-	_BRA shell				; skip the markup!
-	.asc	"<shell>"		; *** just for easier debugging ***
-#endif
 
 ; so far, shell is a post-POST task only!
 shell:
 #include "shell/SHELL"
 	BRK				; just in case...
-
-hello:
-	.asc "HOLA", 13, 0	; startup text
 
 ; *** generic kernel routines, now in separate file 20150924 *** new filenames
 #ifndef		LOWRAM
@@ -366,20 +322,7 @@ hello:
 ; *** new, sorted out code 20150124 ***
 ; *** interrupt service routine ***
 
-#ifndef		FINAL
-	.asc	"<isr>"		; *** just for easier debugging ***
-#endif
-
 k_isr:
 #include "isr/irq.s"
 
-; *** non-maskable interrupt handler ***
-
-#ifndef		FINAL
-	.asc	"<nmi>"		; *** just for easier debugging ***
-#endif
-
-k_nmi:
-; must begin with 'UNj*' magic string!
-#include "isr/nmi.s"
-
+; default NMI-ISR is on firmware!

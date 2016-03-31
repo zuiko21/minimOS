@@ -1,7 +1,7 @@
 ; minimOS ROM template for SDm
-; v0.5a5
+; v0.5a6
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160328
+; last modified 20160331-1316
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -42,12 +42,7 @@ user_sram:
 .text
 * = ROM_BASE		; as defined in options.h
 
-; *** auto-bankswitching routine (not yet implemented) ***
-#ifdef		AUTOBANK
-#include "autobank.s"
-	.dsb	ROM_BASE + 256 - *, $FF		; for ready-to-blow ROM, advance to next 'sector'
-#endif
-
+; * autobank no longer supported *
 ; *** minimOS volume header, new 20150604 ***
 ; should be included from somewhere else!
 sysvol:
@@ -57,15 +52,19 @@ sysvol:
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
 version:
-	.asc	"minimOS 0.5a5 for ", MACHINE_NAME		; system version and machine
-	.asc	"20160310-1100", 0				; build date and time
+	.asc	"minimOS 0.5a6 for ", MACHINE_NAME		; system version and machine
+	.asc	13, "20160331-1445", 0				; build date and time
 
 	.dsb	sysvol + $F4 - *, $FF			; for ready-to-blow ROM, advance to time/date field
 
-	.asc	$80, $48			; time, 09.04.00 *** correct!
-	.asc	$C4, $46			; date, 2015/06/04
-	.asc	128, 0, 0, 0		; length, 32 KiB ROM (128 pages)
-	.asc	$FF, $FF, $FF, $FF	; link, final item (appendable)
+	.word	$75A0				; time, 14.45
+	.word	$487F				; date, 2016/03/31
+	
+romsize	=	$10000 - ROM_BASE	; compute size!
+
+	.byt	romsize/256			; ROM size in pages
+	.byt	0, 0, 0
+	.byt	$FF, $FF, $FF, $FF	; link, final item (appendable)
 
 ; *** the GENERIC kernel starts here ***
 kernel:
@@ -76,8 +75,8 @@ drivers:
 #include "drivers/config/DRIVER_PACK.s"
 
 ; *** make separate room for firmware ***
-	.dsb	$E000-*, $FF		; for ready-to-blow ROM, skip to firmware area
-* = FW_BASE		; *** reserve the last 8 kiB for firmware, skip SDm I/O area!!! change if appropriate in options.h 20160310
+	.dsb	FW_BASE - *, $FF	; for ready-to-blow ROM, skip to firmware area
+* = FW_BASE						; skip I/O area for firmware
 
 ; *** hardware-dependent firmware ***
 firmware:

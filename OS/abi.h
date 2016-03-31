@@ -1,6 +1,6 @@
-; minimOS 0.5a13 API/ABI
+; minimOS 0.5a14 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160308
+; last modified 20160331
 
 ; VIA 65(C)22 registers
 ; offsets from base address (add to base in options.h)
@@ -163,7 +163,7 @@ CORRUPT	=   9	; data corruption, new 150205
 
 ; some kernel-related definitions, redefined as labels 20150604
 ; MAX_BRAIDS should be system variable, as defined by firmware and/or multitasking driver
-; if defined in firmware, think about a gestalt-like function for reanding/setting it!
+; if defined in firmware, think about a gestalt-like function for reading/setting it!
 
 #ifdef	MULTITASK
 #ifdef		AUTOBANK
@@ -204,6 +204,7 @@ DEV_SS22	= 250	; SS-22 port
 DEV_ASCII	= 241	; ASCII keyboard on VIAport, TO_DO
 DEV_DEBUG	= 255	; Bus sniffer, NEW 20150323
 DEV_CONIO	= 132	; for Kowalski simulator, NEW 20160308
+DEV_VGA		= 192	; integrated VGA-compatible Tijuana, NEW 20160331
 
 ; more temporary IDs
 

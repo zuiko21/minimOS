@@ -64,6 +64,8 @@ VIA_SP	=	VIA1
 ACIA1	=	IO_BASE + $D0	; ACIA address on SDm and most other (no longer $DFE0 for easier decoding 688+138)
 ACIA	=	ACIA1			; for increased compatibility
 
+; *** set standard device *** new 20160331 
+DEVICE	=	DEV_VGA		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220
