@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5b2
+; v0.5b3
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160401-0938
+; last modified 20160401-1109
 
 ; no way for standalone assembly...
 
@@ -10,13 +10,15 @@ unimplemented:		; placeholder here, not currently used
 	_ERR(UNAVAIL)	; go away!
 
 
-; *** K0, output a character ***
+; *** COUT, output a character ***
 ; Y <- dev, zpar <- char
 ; destroys X, A... plus driver
-; uses local2
+; uses local2 **** check against string
+; ALIASES: io_c = zpar, io_pt = local2
 
-dt_ptr = local2		; could be called by STRING, same as locpt2
-cio_of = dt_ptr + 2	; parameter switching between cin and cout ** might use local3 as well, best for 680x0 port!
+dt_ptr = io_pt		; could be called by STRING, same as locpt2
+cio_of = io_pt + 2	; parameter switching between cin and cout ** might use local3 as well, best for 680x0 port!
+cio_pt = io_pt + 2	; also resolved driver pointer, cio_of no longer needed!
 
 cout:
 	LDA #D_COUT		; only difference from cin (2)
@@ -58,16 +60,22 @@ cio_phys:
 		TYA					; restore MSB (2)
 		ADC #0				; take carry into account (2+3)
 		STA dt_ptr+1
-; ******** add indirection level, just like STRING ****************
-		JMP (dt_ptr)		; go for it! (6)
+		LDY #1				; offset for MSB
+		LDA (dt_ptr), Y		; get MSB
+		STA cio_pt+1		; store final pointer
+		DEY					; offset for LSB, actually 0, index already reset!
+		LDA (dt_ptr), Y		; get LSB
+		STA cio_pt			; store final pointer
+		JMP (cio_pt)		; go for it! (6)
 cio_nfound:
 	_ERR(N_FOUND)	; unknown device
 
-; *** K2, get a character *** revamped 20150209
+; *** CIN, get a character *** revamped 20150209
 ; Y <- dev, zpar -> char, C = not available
 ; destroys X, A... plus driver
 ; uses locals[1-3]
 ; ** shares code with cout **
+; ALIASES: io_c = zpar
 
 cin:
 	LDA #D_CIN		; only difference from cout
@@ -81,7 +89,7 @@ ci_port:
 			BCS ci_exit		; some error, send it back
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
-		LDA zpar		; get received character
+		LDA io_c		; get received character
 		CMP #' '		; printable?
 			BCC ci_manage	; if not, might be an event
 ci_exitOK:
@@ -151,18 +159,19 @@ ci_win:
 	_ERR(NO_RSRC)	; not yet implemented
 
 
-; *** K4, reserve memory *** revamped 20150209
+; *** MALLOC, reserve memory *** revamped 20150209
 ; zpar <- size, zpar2 -> addr, C = not enough memory (16-bit so far, but put zeroes on high-size!)
 ; ** ONLY for systems over 128-byte RAM **
 ; destroys X, Y, A
 ; uses locals[0-2]
+; ALIASES: ma_rs = zpar, ma_pt = zpar2, ma_l = locals
 
 malloc:
-	LDA zpar+2		; asking over 64K?
-	ORA zpar+3
-		BNE ma_nobank	; most likely never available for 65C02
-	BIT zpar+2		; asking over 32K?
-		BMI ma_nobank	; not implemented yet
+;	LDA ma_rs+2		; asking over 64K?
+;	ORA ma_rs+3
+;		BNE ma_nobank	; most likely never available for 65C02
+;	BIT ma_rs+1		; asking over 32K?
+;		BMI ma_nobank	; not implemented yet
 ;		BVS ma_nobank	; there is no longer a reason to stop at 16K
 	LDY #0			; reset index
 	_ENTER_CS		; this is dangerous! enter critical section, new 160119
@@ -183,27 +192,27 @@ ma_found:
 	ASL						; two times
 	TAX						; now indexing in words
 	LDA ram_siz+1, X		; get size MSB (4)
-	CMP zpar+1				; compare (3)
+	CMP ma_rs+1				; compare (3)
 		BCC ma_cont				; smaller, thus continue searching (2/3)
 	LDA ram_siz, X			; check LSB, just in case (4)
-	CMP zpar				; compare (3)
+	CMP ma_rs				; compare (3)
 		BCC ma_cont				; smaller, thus continue searching (2/3)
 ; here we go
 	LDA ram_siz, X			; get current free block size LSB (4)
-	STA locals				; store it for later (3)
+	STA ma_l				; store it for later (3)
 	LDA ram_siz+1, X		; same for MSB (4+3)
-	STA locals+1
-	LDA zpar				; get size LSB (3)
+	STA ma_l+1
+	LDA ma_rs				; get size LSB (3)
 	STA ram_siz, X			; reduce entry (4)
-	LDA zpar+1				; same for MSB (3+4)
+	LDA ma_rs+1				; same for MSB (3+4)
 	STA ram_siz+1, X
 	LDA #USED_RAM			; mark block as used (2) define elsewhere
 	STA ram_stat, Y			; indexed by byte (4)
-	LDA locals
-	ORA locals+1			; some space remaining? (3+3)
+	LDA ma_l
+	ORA ma_l+1				; some space remaining? (3+3)
 	BEQ ma_ok				; nothing more to do (2/3)
 ; ** make room for sub-entry, highly recommended **
-		STX locals+2			; store limit
+		STX ma_l+2				; store limit
 		LDY #MAX_LIST-2			; first origin (2)
 ma_opt:
 			LDA ram_tab, Y		; get origin
@@ -211,59 +220,59 @@ ma_opt:
 			LDA ram_siz, Y		; same for ram_siz
 			STA ram_siz+2, Y
 			DEY					; next
-			CPY locals+2
+			CPY ma_l+2
 			BCS ma_opt
 		CLC
-		LSR locals+2		; do same for ram_stat
+		LSR ma_l+2			; do same for ram_stat
 		LDY #(MAX_LIST/2)-1
 ma_stat:
 			LDA ram_stat, Y
 			STA ram_stat+1, Y	; check too
 			DEY					; next
-			CPY locals+2
+			CPY ma_l+2
 			BCS ma_stat			; EEEK, was BPL, hope it is OK
 ; now create new free entry
 		LDA ram_tab, X		; get current address
 		CLC
-		ADC zpar			; add size LSB
+		ADC ma_rs			; add size LSB
 		STA ram_tab+2, X	; set new entry, best not touching X!
 		LDA ram_tab+1, X	; same for MSB
-		ADC zpar+1
+		ADC ma_rs+1
 		STA ram_tab+3, X
-		LDA locals			; get size LSB
+		LDA ma_l			; get size LSB
 		SEC
-		SBC zpar			; substract size
+		SBC ma_rs			; substract size
 		STA ram_siz+2, X	; store in new entry, same as before
-		LDA locals+1		; same for MSB
-		SBC zpar+1
+		LDA ma_l+1			; same for MSB
+		SBC ma_rs+1
 		STA ram_siz+3, X
-		LDY locals+2		; Y is no longer valid, thus restore from stored X/2
+		LDY ma_l+2			; Y is no longer valid, thus restore from stored X/2
 		LDA #FREE_RAM		; needed even if free is zero
 		STA ram_stat+1, Y	; set new entry as free, unfortunately no STZ abs,Y
 ; ** optimization finished **
 ma_ok:
 	LDA ram_tab, X			; get address' LSB (4)
-	STA zpar2				; store output (3)
+	STA ma_pt				; store output (3)
 	LDA ram_tab+1, X		; same for MSB (4+3)
-	STA zpar2+1
+	STA ma_pt+1
 	_EXIT_CS				; end of critical section, new 160119
 	_EXIT_OK				; we're done
 
 
-; *** K6, release memory *** revamped 20150209
+; *** FREE, release memory *** revamped 20150209
 ; zpar2 <- addr
 ; ** ONLY for systems over 128-byte RAM
 ; destroys X, Y, A
-
+; ALIASES: fr_pt = zpar2
 free:
 	LDX #0			; reset indexes
 	_ENTER_CS		; supposedly dangerous
 fr_loop:
 		LDA ram_tab, X		; get entry LSB
-		CMP zpar2			; compare
+		CMP fr_pt			; compare
 			BNE fr_next			; try other
 		LDA ram_tab+1, X	; same for MSB
-		CMP zpar2+1
+		CMP fr_pt+1
 			BEQ fr_found		; stop searching, much easier this way
 fr_next:
 		INX
@@ -301,13 +310,13 @@ fr_ok:
 	_EXIT_OK
 
 
-; *** K8, get I/O port or window *** interface revised 20150208
+; *** OPEN_W, get I/O port or window *** interface revised 20150208
 ; Y -> dev, zpar.l <- size+pos*64K, zpar3 <- pointer to window title!
 ; destroys A
-
+; ALIASES: ow_rect = zpar, ow_tit = zpar3 *** REVISE
 open_w:
-	LDA zpar			; asking for some size?
-	ORA zpar+1
+	LDA ow_rect			; asking for some size?
+	ORA ow_rect+1
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 ow_no_window:
@@ -315,40 +324,41 @@ ow_no_window:
 	_EXIT_OK
 
 
-; *** K10, close window ***
+; *** CLOSE_W, close window ***
 ; Y <- dev
 close_w:
 
-; *** K12, release window, will be closed by kernel ***
+; *** FREE_W, release window, will be closed by kernel ***
 ; Y <- dev
 free_w:
 	_EXIT_OK		; doesn't do much, either
 
 
-; *** K14, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
+; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
 ; zpar.W -> fr-ticks
 ; zpar2.L -> 24-bit uptime in seconds
 ; destroys X, A
+; ALIASES: zpar = up_ticks, zpar2 = up_sec
 
 uptime:
 	LDX #1			; first go for remaining ticks (2 bytes) (2)
 	_ENTER_CS		; don't change while copying
 up_loop:
-		LDA ticks, X	; get system variable byte (not uptime, corrected 20150125) (4)
-		STA zpar, X		; and store them in output parameter (3)
-		DEX				; go for next (2+3/2)
+		LDA ticks, X		; get system variable byte (not uptime, corrected 20150125) (4)
+		STA up_ticks, X		; and store them in output parameter (3)
+		DEX					; go for next (2+3/2)
 		BPL up_loop
 	LDX #2			; now for the uptime in seconds (3 bytes) (2)
 up_upt:
-		LDA ticks+2, X	; get system variable uptime, new 20150318 (4)
-		STA zpar2, X	; and store it in output parameter (3) corrected 150610
-		DEX				; go for next (2+3/2)
+		LDA ticks+2, X		; get system variable uptime, new 20150318 (4)
+		STA up_sec, X		; and store it in output parameter (3) corrected 150610
+		DEX					; go for next (2+3/2)
 		BPL up_upt
 	_EXIT_CS		; disabled for 62 clocks, not 53...
 	_EXIT_OK
 
 
-; *** K16, get available PID *** properly interfaced 20150417
+; *** B_FORK, get available PID *** properly interfaced 20150417
 ; Y -> PID
 
 b_fork:
@@ -361,16 +371,18 @@ b_fork:
 	_EXIT_OK
 #endif
 
-; *** K18, launch new loaded process *** properly interfaced 20150417 with changed API!
+; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, zpar2.W <- addr (was z2L)
+; ALIASES: ex_pt = zpar2; io_c = zpar from COUT, ex_tmp = locals (not touched by COUT, as is used by string)
+
 b_exec:
 #ifdef	MULTITASK
 ; ** might be repaced with driver code on optimized builds **
 	LDA #MM_EXEC	; subfunction code
-	STY locals		; COUT shouldn't touch it anyway
+	STY ex_tmp		; COUT shouldn't touch it anyway
 mmfe_call:
-	STA zpar		; as fake parameter
+	STA io_c		; as fake parameter
 	LDY #TASK_DEV	; multitasking as device driver!
 	_KERNEL(COUT)	; call pseudo-driver
 #ifdef	SAFE
@@ -381,7 +393,7 @@ mmfe_call:
 ; *** multitasking driver failed, thus try single-task versions
 mmfe_fail:
 	TAY				; get PID in case of MM_EXEC
-	LDA zpar		; retrieve subfunction for a moment
+	LDA io_c		; retrieve subfunction for a moment
 	CMP #MM_FORK
 	BNE mmfe_nofork	; skip single-task fork version
 		LDY #0			; no multitasking, system reserved PID
@@ -398,9 +410,9 @@ exec_st:
 	_EXIT_OK		; back to shell?
 exec_jmp:
 ; this kind of jump will not work on native 816 mode!
-	LDA zpar2+1		; get address MSB first
+	LDA ex_pt+1		; get address MSB first
 	PHA				; put it on stack
-	LDA zpar2		; same for LSB
+	LDA ex_pt		; same for LSB
 	PHA
 	PHP				; ready for RTI
 	RTI				; actual jump, won't return here
@@ -416,36 +428,38 @@ exec_st:
 	JSR exec_jmp		; call supplied address
 	_EXIT_OK		; back to shell?
 exec_jmp:
-	LDA zpar2+1		; get address MSB first
+	LDA ex_pt+1		; get address MSB first
 	PHA				; put it on stack
-	LDA zpar2		; same for LSB
+	LDA ex_pt		; same for LSB
 	PHA
 	PHP				; ready for RTI
 	RTI				; actual jump, won't return here
 #endif
 
 
-; *** K20, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
+; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
 ; z2L -> addr, z10L <- *path
+; ALIASES: ll_pt = z2L, ll_name = z10L
+
 load_link:
 ; *** assume path points to filename in header, code begins +248 *** KLUDGE
 	CLC				; ready to add
 	LDA z10			; get LSB
 	ADC #248		; offset to actual code!
-	STA z2			; store address LSB
-	LDA z10+1		; get MSB so far
+	STA ll_pt		; store address LSB
+	LDA ll_name+1	; get MSB so far
 	ADC #0			; propagate carry!
-	STA z2+1		; store address MSB
+	STA ll_pt+1		; store address MSB
 	LDA #0			; NMOS only
-	STA z2+2		; STZ, invalidate bank...
-	STA z2+3		; ...just in case
-	BCS ll_wrap	; really unexpected error
-	_EXIT_OK
+	STA ll_pt+2		; STZ, invalidate bank...
+	STA ll_pt+3		; ...just in case
+	BCS ll_wrap		; really unexpected error
+		_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
 
-; *** K22, write to protected addresses *** revised 20150208
+; *** SU_POKE, write to protected addresses *** revised 20150208
 ; might be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
 ; destroys A (and maybe Y on NMOS)
@@ -456,7 +470,7 @@ su_poke:
 	_EXIT_OK
 
 
-; *** K24, read from protected addresses *** revised 20150208
+; *** SU_PEEK, read from protected addresses *** revised 20150208
 ; might be deprecated, not sure if of any use in other architectures
 ; Y -> value, zpar <- addr
 ; destroys A
@@ -466,8 +480,9 @@ su_peek:
 	TAY				; transfer value
 	_EXIT_OK
 
+; *************** C O N T I N U E   R E V A M P   H E R E *****************************
 
-; *** K26, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
+; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
 ; Y <- dev, zpar3 = zaddr3 <- *string (.w in current version)
 ; destroys all
 ; uses locals[0,1]
@@ -515,14 +530,13 @@ str_phys:
 	TYA					; restore MSB (2)
 	ADC #0				; take carry into account (2+3)
 	STA local1+1		; pointer to pointer??? (3)
-	LDY #0				; offset for LSB
-	LDA (local1), Y		; get LSB
-	STA locpt2			; store final pointer
-	INY					; offset for MSB
+	LDY #1				; offset for MSB
 	LDA (local1), Y		; get MSB
-	STA locpt2+1		; store final pointer
+	STA local1+3		; store final pointer
+	DEY					; offset for LSB, actually 0, index already reset!
+	LDA (local1), Y		; get LSB
+	STA local1+2		; store final pointer
 ; ** the actual printing loop **
-	LDY #0				; reset index, new faster approach! (2)
 str_loop:
 		LDA (zaddr3), Y		; get character from string, new approach (5)
 			BEQ str_exit		; terminated! (2/3)
@@ -533,9 +547,9 @@ str_loop:
 		INY					; eeeeeeeeeeeek (2)
 		_BRA str_loop		; continue, will check for termination later (3)
 str_call:
-		JMP (locpt2)		; go at stored pointer (...6)
+		JMP (local1+2)		; go at stored pointer (...6)
 
-; *** K28, disable interrupts *** revised 20150209
+; *** SU_SEI, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 su_sei:
@@ -543,7 +557,7 @@ su_sei:
 	_EXIT_OK		; no error so far
 
 
-; *** K30, enable interrupts *** revised 20150209
+; *** SU_CLI, enable interrupts *** revised 20150209
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 
 su_cli:				; not needed for 65xx, even with protection hardware
@@ -551,7 +565,7 @@ su_cli:				; not needed for 65xx, even with protection hardware
 	_EXIT_OK		; no error
 
 
-; *** K32, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
+; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
 ; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
 ; zpar.W <- dividing factor (times two?), C -> busy
@@ -591,12 +605,12 @@ fg_dis:
 fg_busy:
 	_ERR(BUSY)		; couldn't set
 
-; *** K34, launch default shell *** new 20150604
+; *** GO_SHELL, launch default shell *** new 20150604
 ; no interface needed
 go_shell:
 	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
 
-; *** K36, proper shutdown, with or without poweroff ***
+; *** SHUTDOWN, proper shutdown, with or without poweroff ***
 ; ** should deploy new 2-step shutdown routine, first send SIGTERM to all and set flag with desired action
 ; ** when the scheduler finds no remaining tasks, call again with flag set and proceed
 ; Y <- subfunction code (0=shutdown, 2=suspend, 6=warmboot, 4=coldboot) new API 20150603
@@ -665,7 +679,7 @@ sd_tab:
 	.word	sd_warm	; warm boot direct by kernel
 
 
-; *** K38, send UNIX-like signal to a braid ***
+; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; zpar2.B <- signal to be sent , Y <- addressed braid
 ; uses locals[0] too
 ; don't know of possible errors
@@ -712,7 +726,7 @@ sig_call:
 	JMP (stt_handler)	; jump to single-word vector, don't forget to init it somewhere!
 #endif
 
-; *** K40, get execution flags of a braid ***
+; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
 ; Y -> flags, TBD
 ; uses locals[0] too
@@ -734,7 +748,7 @@ stat_st:				; *** single-task interface, in case MM driver failed *** copied fro
 	_EXIT_OK
 #endif
 
-; *** K42, get current braid PID ***
+; *** GET_PID, get current braid PID ***
 ; Y -> PID, TBD
 ; uses locals[0] too
 ; don't know of possible errors
@@ -754,7 +768,7 @@ pid_st:				; *** single-task interface, in case MM driver failed *** copied from
 	_EXIT_OK
 #endif
 
-; *** K44, set SIGTERM handler, default is like SIGKILL ***
+; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
 ; Y <- PID, zpar2.W <- SIGTERM handler routine (ending in RTS)
 ; uses locals[0] too
 ; bad PID is probably the only feasible error
@@ -780,7 +794,7 @@ hndl_st:				; *** single-task interface, in case MM driver failed *** copied fro
 	_EXIT_OK
 #endif
 
-; *** K46, Yield CPU time to next braid ***
+; *** B_YIELD, Yield CPU time to next braid ***
 ; supposedly no interface needed, don't think I need to tell if ignored
 ; destroys like COUT and _TASK_DEV
 
@@ -825,7 +839,7 @@ yld_table:
 #endif
 #endif
 
-; *** K48, get taskswitching info for multitasking driver *** revamped 20150521
+; *** TS_INFO, get taskswitching info for multitasking driver *** revamped 20150521
 ; Y -> number of bytes, zpar... -> bytes of the proposed _reversed_ stack frame (originally 3)
 
 ts_info:
