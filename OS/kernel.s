@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5a9
+; v0.5b1
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160331-1351
+; last modified 20160401-0909
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -12,13 +12,13 @@
 
 ; in case of standalone assembly
 #ifndef		ROM
-#include "options.h"	; machine specific
+#include "options.h"
 #include "macros.h"
-#include "abi.h"		; ** new filename **
+#include "abi.h"
 .zero
 #include "zeropage.h"
 .bss
-#include "firmware/ARCH.h"	; machine specific
+#include "firmware/ARCH.h"
 #ifdef		DOWNLOAD
 * = $0400				; safe address for patchable 2 kiB systems, change if required
 #else
@@ -45,18 +45,18 @@ warm:
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
 #ifndef		DOWNLOAD
-	LDA #<k_vec		; get table LSB (2+3)
-	STA zpar
-	LDA #>k_vec		; get table MSB (2+3)
+	LDY #<k_vec		; get table address, nicer way (2+2)
+	LDA #>k_vec
+	STY zpar		; store parameter (3+3)
 	STA zpar+1
 	_ADMIN(INSTALL)	; copy jump table (14...)
 #endif
 #endif
 
 ; install ISR code (as defined in "isr/irq.s" below)
-	LDA #<k_isr		; get address LSB (2)
-	STA zpar		; no need to know about actual vector location (3)
-	LDA #>k_isr		; get address MSB (2+3)
+	LDY #<k_isr		; get address, nicer way (2+2)
+	LDA #>k_isr
+	STY zpar		; no need to know about actual vector location (3)
 	STA zpar+1
 	_ADMIN(SET_ISR)	; install routine (14...)
 
@@ -285,17 +285,17 @@ dr_ok:					; all drivers init'd
 
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 #ifndef		MULTITASK
-	LDA #<k38_kill	; get default routine address LSB
-	STA stt_handler	; store in new system variable
-	LDA #>k38_kill	; same for MSB
+	LDY #<sig_kill	; get default routine address LSB
+	LDA #>sig_kill	; same for MSB
+	STY stt_handler	; store in new system variable
 	STA stt_handler+1
 #endif
 
 ; **********************************
-; original startup code, revise ASAP ****************************
+; startup code, revise ASAP
 ; **********************************
 
-; *** set default I/O device *** REVISE ASAP
+; *** set default I/O device ***
 	LDA #DEVICE		; as defined in options.h
 	STA default_out	; should check some devices
 	STA default_in
@@ -307,10 +307,18 @@ dr_ok:					; all drivers init'd
 ; **** launch monitor/shell ****
 ; ******************************
 
-; so far, shell is a post-POST task only!
+	JSR shell			; should be done this way, until a proper EXEC is made!
+#ifndef		MULTITASK
+	LDY #PW_OFF			; after execution, shut down system (al least)
+	_ADMIN(POWEROFF)	; via firmware, will not return
+#else
+	BRK					; just in case...
+	.asc	"{EXIT}", 0	; if managed
+#endif
+
+; place here the shell code, must end in RTS
 shell:
 #include "shell/SHELL"
-	BRK				; just in case...
 
 ; *** generic kernel routines, now in separate file 20150924 *** new filenames
 #ifndef		LOWRAM

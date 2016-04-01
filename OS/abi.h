@@ -1,6 +1,6 @@
-; minimOS 0.5a14 API/ABI
+; minimOS 0.5a15 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160331
+; last modified 20160401-1006
 
 ; VIA 65(C)22 registers
 ; offsets from base address (add to base in options.h)
@@ -27,14 +27,14 @@ D_AUTH	=  1	; authorization code
 D_INIT	=  2	; device reset
 D_POLL	=  4	; periodic interrupt task
 D_REQ	=  6	; asynchronous interrupt request
-D_CIN	=  6	; character input
-D_COUT	=  8	; character output
-D_SEC	= 10	; 1-second interrupt
-D_BLIN	= 12	; block input, new names 20150304, also for control purposes
-D_BLOUT	= 14	; block output, new names 20150304, also for control purposes
-D_BYE	= 16	; shutdown procedure
-D_INFO	= 18	; points to a C-string with driver info, NEW 20150323
-D_MEM	= 20	; NEW, required variable space (if relocatable)
+D_CIN	=  8	; character input
+D_COUT	= 10	; character output
+D_SEC	= 12	; 1-second interrupt
+D_BLIN	= 14	; block input, new names 20150304, also for control purposes
+D_BLOUT	= 16	; block output, new names 20150304, also for control purposes
+D_BYE	= 18	; shutdown procedure
+D_INFO	= 20	; points to a C-string with driver info, NEW 20150323
+D_MEM	= 22	; NEW, required variable space (if relocatable)
 
 ; Driver authorization mask values, new 20150323
 A_POLL	= %10000000		; D_POLL routine available

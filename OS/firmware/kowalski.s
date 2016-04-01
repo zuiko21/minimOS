@@ -47,7 +47,7 @@ post:
 ;#include "firmware/modules/romcheck.s"
 
 ; SRAM test
-#include "firmware/modules/ramtest.s"
+;#include "firmware/modules/ramtest.s"
 
 ; *** preset kernel start address (standard label from ROM file) ***
 	LDA #<kernel	; get LSB (2)
