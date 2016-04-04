@@ -1,0 +1,44 @@
+*** API for minimOS 0.5 ***
+*** last modified 20160404-1343 ***
+
+COUT = 0
+====
+zpar = io_c <- char
+Y <- device
+C -> error
+
+uses:
+local2 = io_pt.w
+local2+2 = cio_of.b = cio_pt.w
+
+RESPECT: local1 (STRING)
+
+
+CIN = 2
+===
+Y <- device
+zpar = io_c -> char
+C -> error
+
+uses:
+local2 = io_pt.w
+local2+2 = cio_of.b = cio_pt.w
+
+STRING = 4
+READLN* = 6
+OPENW = 8
+SHUTDOWN = 10
+UPTIME =
+B_EXEC = 
+B_FORK = 
+GET_PID =
+B_STATUS =
+B_SIGNAL =
+SET_HNDL =
+CLOSEW = 
+FREEW = 
+
+MALLOC
+FREE
+LOADLINK...
+

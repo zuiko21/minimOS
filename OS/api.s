@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5b3
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160401-1109
+; last modified 20160404-1334
 
 ; no way for standalone assembly...
 
@@ -545,9 +545,11 @@ str_loop:
 			JSR str_call		; indirect subroutine call (6...)
 		PLY					; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
-		_BRA str_loop		; continue, will check for termination later (3)
+		BNE str_loop		; still within same page
+	INC zaddr3+1		; otherwise increase, parameter has changed!
+	_BRA str_loop		; continue, will check for termination later (3)
 str_call:
-		JMP (local1+2)		; go at stored pointer (...6)
+	JMP (local1+2)		; go at stored pointer (...6)
 
 ; *** SU_SEI, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
