@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5b3
+; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160404-1334
+; last modified 20160406-1014
 
 ; no way for standalone assembly...
 
@@ -14,7 +14,7 @@ unimplemented:		; placeholder here, not currently used
 ; Y <- dev, zpar <- char
 ; destroys X, A... plus driver
 ; uses local2 **** check against string
-; ALIASES: io_c = zpar, io_pt = local2
+; ALIASES, io_c = zpar, io_pt = local2
 
 dt_ptr = io_pt		; could be called by STRING, same as locpt2
 cio_of = io_pt + 2	; parameter switching between cin and cout ** might use local3 as well, best for 680x0 port!
@@ -27,7 +27,7 @@ cout:
 	BNE co_port		; not default (3/2)
 		LDA default_out	; default output device (4)
 co_port:
-	BMI cio_phys	; not a logic device (3/2)
+	BMI co_phys		; not a logic device (3/2)
 		CMP #64			; first file-dev??? ***
 			BCC co_win		; below that, should be window manager
 ; ** optional filesystem access **
@@ -46,27 +46,11 @@ co_log:
 co_win:
 ; *** virtual windows manager TO DO ***
 	_ERR(NO_RSRC)	; not yet implemented
-cio_phys:
-; ** new direct indexing, 20151013, 24 bytes, 37 clocks **
+co_phys:
+; ** new direct indexing **
 	ASL					; convert to index (2+2)
 	TAX
-	LDA drivers_pt+1, X	; get MSB from new table (4)
-	BEQ cio_nfound		; not found (2/3)
-		TAY					; store temporarily (2)
-		LDA drivers_pt, X	; get LSB (4)
-		CLC					; prepare for adding offset (2)
-		ADC cio_of			; compute final address, generic (3)
-		STA dt_ptr			; store pointer (3)
-		TYA					; restore MSB (2)
-		ADC #0				; take carry into account (2+3)
-		STA dt_ptr+1
-		LDY #1				; offset for MSB
-		LDA (dt_ptr), Y		; get MSB
-		STA cio_pt+1		; store final pointer
-		DEY					; offset for LSB, actually 0, index already reset!
-		LDA (dt_ptr), Y		; get LSB
-		STA cio_pt			; store final pointer
-		JMP (cio_pt)		; go for it! (6)
+	_JMPX(drv_opt)		; direct jump!!!
 cio_nfound:
 	_ERR(N_FOUND)	; unknown device
 
@@ -75,7 +59,7 @@ cio_nfound:
 ; destroys X, A... plus driver
 ; uses locals[1-3]
 ; ** shares code with cout **
-; ALIASES: io_c = zpar
+; ALIASES, io_c = zpar
 
 cin:
 	LDA #D_CIN		; only difference from cout
@@ -85,7 +69,7 @@ cin:
 		LDA default_in	; default input device
 ci_port:
 	BPL ci_nph		; logic device
-		JSR cio_phys	; check physical devices... but come back for events! new 20150617
+		JSR ci_phys		; check physical devices... but come back for events! new 20150617
 			BCS ci_exit		; some error, send it back
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
@@ -96,6 +80,12 @@ ci_exitOK:
 		CLC				; above comparison would set carry
 ci_exit:
 		RTS				; cannot use macro because may need to keep Carry
+ci_phys:
+; ** new direct indexing **
+	ASL					; convert to index (2+2)
+	TAX
+	_JMPX(drv_ipt)		; direct jump!!!
+
 ; ** continue event management **
 ci_manage:
 ; check for binary mode
@@ -164,7 +154,7 @@ ci_win:
 ; ** ONLY for systems over 128-byte RAM **
 ; destroys X, Y, A
 ; uses locals[0-2]
-; ALIASES: ma_rs = zpar, ma_pt = zpar2, ma_l = locals
+; ALIASES, ma_rs = zpar, ma_pt = zpar2, ma_l = locals
 
 malloc:
 ;	LDA ma_rs+2		; asking over 64K?
@@ -263,7 +253,7 @@ ma_ok:
 ; zpar2 <- addr
 ; ** ONLY for systems over 128-byte RAM
 ; destroys X, Y, A
-; ALIASES: fr_pt = zpar2
+; ALIASES, fr_pt = zpar2
 free:
 	LDX #0			; reset indexes
 	_ENTER_CS		; supposedly dangerous
@@ -313,7 +303,7 @@ fr_ok:
 ; *** OPEN_W, get I/O port or window *** interface revised 20150208
 ; Y -> dev, zpar.l <- size+pos*64K, zpar3 <- pointer to window title!
 ; destroys A
-; ALIASES: ow_rect = zpar, ow_tit = zpar3 *** REVISE
+; ALIASES, ow_rect = zpar, ow_tit = zpar3 *** REVISE
 open_w:
 	LDA ow_rect			; asking for some size?
 	ORA ow_rect+1
@@ -338,7 +328,7 @@ free_w:
 ; zpar.W -> fr-ticks
 ; zpar2.L -> 24-bit uptime in seconds
 ; destroys X, A
-; ALIASES: zpar = up_ticks, zpar2 = up_sec
+; ALIASES, zpar = up_ticks, zpar2 = up_sec
 
 uptime:
 	LDX #1			; first go for remaining ticks (2 bytes) (2)
@@ -374,7 +364,7 @@ b_fork:
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, zpar2.W <- addr (was z2L)
-; ALIASES: ex_pt = zpar2; io_c = zpar from COUT, ex_tmp = locals (not touched by COUT, as is used by string)
+; ALIASES, ex_pt = zpar2; io_c = zpar from COUT, ex_tmp = locals (not touched by COUT, as is used by string)
 
 b_exec:
 #ifdef	MULTITASK
@@ -439,7 +429,7 @@ exec_jmp:
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
 ; z2L -> addr, z10L <- *path
-; ALIASES: ll_pt = z2L, ll_name = z10L
+; ALIASES, ll_pt = z2L, ll_name = z10L
 
 load_link:
 ; *** assume path points to filename in header, code begins +248 *** KLUDGE

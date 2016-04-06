@@ -2,12 +2,15 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160331-1346
+; last modified 20160406-0834
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
 ;#define		SAFE	_SAFE
+
+; uncomment to enable (software) multitasking
+;#define		MULTITASK	_MULTITASK
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -53,26 +56,21 @@ VIA		=	VIA1			; for compatibility with older code
 ; VIA_J is the one which does the jiffy IRQ, most likely the main one
 ; VIA_FG is the one for audio generation (/PB7 & CB2)
 ; VIA_SS is the one for SS-22 interface
-; VIA_SP is the one for SPI interface (TBD)
 
 VIA_J	=	VIA1
 VIA_FG	=	VIA1
 VIA_SS	=	VIA1
-VIA_SP	=	VIA1
 
-; * optional ACIA/UART address *
+; * optional ACIA/UART address (in external board!) *
 ACIA1	=	IO_BASE + $D0	; ACIA address on most (no longer $DFE0 for easier decoding 688+138)
 ACIA	=	ACIA1			; for increased compatibility
-
-; *** set standard device *** new 20160331 
-DEVICE	=	DEV_LED		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220
 
-; highest SRAM page, just in case of mirroring/bus error * NOT YET USED
-; page 127 (32 kiB) is the new generic case
-SRAM =	127
+; SRAM pages, just in case of mirroring/bus error * NOT YET USED
+; 128 pages (32 kiB) is the new generic case, no longer the highest page number!
+SRAM =	128
 
 SPTR		=	$FF		; general case stack pointer, new name 20160308
 SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
@@ -81,12 +79,18 @@ ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp
 
 ; *** speed definitions ***
 
-; interrupt counter value
-T1_DIV	=	4998		; (5000-2) 200Hz ints @ 1 MHz (5 ms quantum) general case
-IRQ_FREQ =	200			; general case
+; ** master Phi-2 clock speed, used to compute remaining values! **
+PHI2	=	1000000		; clock speed in Hz
 
-; initial speed for SS-22 link
+; ** jiffy interrupt frequency **
+IRQ_FREQ =	200			; general case
+; T1_DIV no longer specified, should be computed elsewhere
+; could be PHI2/IRQ_FREQ-2
+
+; ** initial speed for SS-22 link, begin no faster than 15625 bps **
 SS_SPEED =	30		; 15625 bps @ 1 MHz
+; could be PHI2/31250-2
 
 ; speed code in fixed-point format, new 20150129
 SPEED_CODE =	$10		; 1 MHz system
+; could be computed as PHI2*16/1000000

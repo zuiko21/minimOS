@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5b1
+; v0.5b2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160401-0909
+; last modified 20160406-1014
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -90,15 +90,14 @@ mreset:
 #endif
 
 ; ******************************************************
-; intialise drivers from their jump tables! new 20150206
-; optimised code with self-generated ID list 20150220
-; new code disabling failed drivers 20150318
+; intialise drivers from their jump tables
+; new direct I/O tables for much faster access 20160406
 ; ******************************************************
-; systems with enough ram should create direct table!!!!!!!!!!!
 
 ; set some labels, much neater this way
-da_ptr	= locpt2		; pointer for indirect addressing, new CIN/COUT compatible 20150619
-drv_aix = local3		; address index for, not necessarily PROPOSED, driver list, new 20150318, shifted 20150619
+da_ptr	= sysptr		; pointer for indirect addressing, new CIN/COUT compatible 20150619
+drv_aix = systmp		; address index for, not necessarily PROPOSED, driver list, new 20150318, shifted 20150619
+tm_ptr	= locals		; temporary pointer for double-indirect addressing!
 
 ; driver full install is new 20150208
 	_STZA dpoll_mx		; reset indexes, sorry for NMOS (4x4)
@@ -108,14 +107,19 @@ drv_aix = local3		; address index for, not necessarily PROPOSED, driver list, ne
 	_STZA drv_num		; single index of, not necessarily SUCCESSFULLY, installed drivers, updated 20150318
 #else
 	LDX #0				; reset index of direct table (2)
-	TXA					; value to be stored (2)
 dr_clear:
-		STA drivers_pt+1, X		; clear MSB, since no driver is allowed in zeropage (4)
-		INX						; next pointer (2+2)
-		INX
+		LDA #<dr_error			; make unused entries point to a standard error routine, new 20160406 (2)
+		STA drv_opt, X			; set LSB for output (4)
+		STA drv_ipt, X			; and for input (4)
+		INX						; go for MSB (2)
+		LDA #>dr_error			; pretty much the same, not worth a loop (2)
+		STA drv_opt, X			; set MSB for output (4)
+		STA drv_ipt, X			; and for input (4)
+		INX						; next entry (2)
 		BNE dr_clear			; finish page (3/2)
 #endif
 	_STZA drv_aix
+
 ; first get the pointer to each driver table
 dr_loop:
 ; get address index
@@ -130,18 +134,42 @@ dr_inst:
 ; create entry on IDs table ** new 20150219
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code (5)
-			BPL dr_abort		; reject logical devices (2/3)
+			BPL dr_abort		; reject logical devices (2/3) ????
 
 #ifndef	LOWRAM
-; new faster driver list 20151014
+; new faster driver list 20151014, revamped 20160406
 		ASL					; use retrieved ID as index (2+2)
 		TAY
-		LDA drivers_pt+1, Y		; check whether in use (5?)
-			BNE dr_abort			; already in use, don't register! (2/3)
-		LDA da_ptr				; get driver table LSB (3)
-		STA drivers_pt, Y		; store in table (5?)
-		LDA da_ptr+1			; same for MSB (3+5?)
-		STA drivers_pt+1, Y
+		LDA drv_opt, X		; check whether in use (4)
+		CMP #<dr_error		; if set something different than the default value (2)
+			BNE dr_abort		; already in use (2/3)
+		LDA drv_opt+1, X	; check MSB too (4+2)
+		CMP #>dr_error
+			BNE dr_abort		; already in use (2/3)
+		PHY					; save index! (3)
+		LDY #D_COUT			; offset for output routine (2)
+		LDA (da_ptr), Y		; get its address LSB (5)
+		STA tm_ptr			; store temporarily (3)
+		INY					; same for MSB (2)
+		LDA (da_ptr), Y		; get MSB (5)
+		STA tm_ptr+1		; store temporarily (3)
+		PLY					; restore index (4)
+		LDA tm_ptr			; get driver table LSB (3)
+		STA drv_opt, Y		; store in table (5?)
+		LDA tm_ptr+1		; same for MSB (3+5?)
+		STA drv_opt+1, Y
+		PHY					; save index again! (3)
+		LDY #D_CIN			; same for input routine (2)
+		LDA (da_ptr), Y		; get its address LSB (5)
+		STA tm_ptr			; store temporarily (3)
+		INY					; same for MSB (2)
+		LDA (da_ptr), Y		; get MSB (5)
+		STA tm_ptr+1		; store temporarily (3)
+		PLY					; restore index (4)
+		LDA tm_ptr			; get driver table LSB (3)
+		STA drv_ipt, Y		; store in table (5?)
+		LDA tm_ptr+1		; same for MSB (3+5?)
+		STA drv_ipt+1, Y
 #else
 #ifdef	SAFE
 ; ** let's check whether the ID is in already in use **
@@ -222,7 +250,7 @@ dr_next:
 		INC drv_num		; update SINGLE index (6)
 #endif
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
-; in case drivers_ad is *created* in RAM, dr_abort could just be here
+; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
 		INC drv_aix		; update ADDRESS index, even if unsuccessful (5)
 		JMP dr_loop		; go for next (3)
 dr_abort:
@@ -236,9 +264,17 @@ dr_abort:
 			BPL dr_next			; nothing to delete (2/3)
 		ASL					; use retrieved ID as index (2+2)
 		TAX
-		_STZA drivers_pt+1, X	; discard it (4)
+		LDA #<dr_error			; make deleted entries point to a standard error routine, new 20160406 (2)
+		STA drv_opt, X			; set LSB for output (4)
+		STA drv_ipt, X			; and for input (4)
+		LDA #>dr_error			; pretty much the same, not worth a loop (2)
+		STA drv_opt+1, X		; set MSB for output (4)
+		STA drv_ipt+1, X		; and for input (4)
 #endif
 		_BRA dr_next			; go for next (3)
+
+dr_error:
+	_ERR(N_FOUND)		; standard exit for non-existing drivers!
 
 dr_icall:
 	LDY #D_INIT+1		; get MSB first (2)
@@ -287,8 +323,8 @@ dr_ok:					; all drivers init'd
 #ifndef		MULTITASK
 	LDY #<sig_kill	; get default routine address LSB
 	LDA #>sig_kill	; same for MSB
-	STY stt_handler	; store in new system variable
-	STA stt_handler+1
+	STY mm_term		; store in new system variable
+	STA mm_term+1
 #endif
 
 ; **********************************

@@ -2,12 +2,15 @@
 ; suitable for Tijuana with built-in VGA-compatible output
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160330-1421
+; last modified 20160406-0900
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
 ;#define		SAFE	_SAFE
+
+; uncomment to enable (software) multitasking
+;#define		MULTITASK	_MULTITASK
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -17,7 +20,7 @@
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
 
 #define		MACHINE_NAME	"Tijuana"
-#define		MACHINE_ID		"tVGA"
+#define		MACHINE_ID		"tvga"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
 #define		ARCH			tijuana
@@ -70,8 +73,8 @@ DEVICE	=	DEV_VGA		; standard I/O device
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220
 
-; highest SRAM page, just in case of mirroring/bus error * NOT YET USED
-SRAM		=	63		; up to 16 kiB for general use, despite having much more memory!
+; SRAM pages, just in case of mirroring/bus error * NOT YET USED
+SRAM		=	64		; up to 16 kiB for general use, despite having much more memory!
 
 SPTR		=	$FF		; general case stack pointer, new name 20160308
 SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
@@ -79,17 +82,24 @@ ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp
 
 
 ; *** speed definitions ***
-; meaningless because no hardware interrupts!
 
-; interrupt counter value
-T1_DIV		=	15358	; (15360-2) 200Hz ints @ 3.072 MHz (5 ms quantum)
+; ** master Phi-2 clock speed, used to compute remaining values! **
+PHI2	=	3072000		; clock speed in Hz
+;PHI2	=	3146875		; if proper VGA dot clock is used
+
+; ** jiffy interrupt frequency **
+IRQ_FREQ =	200			; general case
+; T1_DIV no longer specified, should be computed elsewhere
+; could be PHI2/IRQ_FREQ-2
+;T1_DIV		=	15358	; (15360-2) 200Hz ints @ 3.072 MHz (5 ms quantum)
 ;T1_DIV		=	15732	; (15734-2) ~200Hz ints @ 3.146875 MHz with proper VGA dot clock, otherwise 2 sec/day faster!
-IRQ_FREQ	=	200		; general case
 
-; initial speed for SS-22 link
-;SS_SPEED	=	97		; 15625 bps @ 3.072 MHz
-SS_SPEED	=	99		; in case of proper VGA dot clock (3.146875 MHz) but might be fine otherwise
+; ** initial speed for SS-22 link, begin no faster than 15625 bps **
+SS_SPEED	=	97		; 15625 bps @ 3.072 MHz
+;SS_SPEED	=	99		; in case of proper VGA dot clock (3.146875 MHz) but might be fine otherwise
+; could be PHI2/31250-2
 
 ; speed code in fixed-point format, new 20150129
 SPEED_CODE	=	$31		; 3.072 MHz system
 ;SPEED_CODE	=	$32		; 3.146875 MHz system
+; could be computed as PHI2*16/1000000
