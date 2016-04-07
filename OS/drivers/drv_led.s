@@ -1,9 +1,8 @@
 ; LED Keypad driver for minimOS
 ; as originally issued on 0.4rc1 20130521
-; v0.9.1 with new ABI 20150323
+; v0.9.2 corrected NMOS version 20160407
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20150323-1101
-; revised 20160115 for commit with new filenames
+; last modified 20160407-1203
 
 ; in case of standalone assembly via 'xa drivers/drv_led.s'
 #ifndef		DRIVERS
@@ -59,7 +58,7 @@ led_ncr:
 led_blank:
 		LDX led_len		; display size
 led_clear:
-		_STZY led_pos, X	; will clear LED buffer _and_ position, NMOS respects A in case of previous CR
+		_STZA led_pos, X	; will clear LED buffer _and_ position, NMOS will *not* keep A corrected 20160407
 		DEX
 		BPL led_clear	; loops until all clear, zero will loop too
 		_EXIT_OK

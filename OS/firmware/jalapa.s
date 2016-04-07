@@ -1,8 +1,8 @@
 ; firmware for minimOS on SDm/Jalapa (and maybe others)
-; generic template v0.5.2a1
+; generic template v0.5.2a2
 ; (c)2015-2016 Carlos J. Santisteban
 ; *** revamped 20160308 ***
-; last modified 20160309-1008
+; last modified 20160407-1154
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -24,9 +24,9 @@ kernel		= remote_boot	; in case no kernel is provided with firmware, try to down
 ; *** first some ROM identification *** new 20150612
 fw_start:
 	.asc 0, "aS****", 13	; standard system file wrapper, new 20160309
-	.asc "0.5.2a1 firmware for "
+	.asc "0.5.2a2 firmware for "
 fw_mname:
-	.asc	MACHINE_NAME, 0
+	.asc	MACHINE_NAME, 0, 0
 
 	.dsb	fw_start + $FC - *, $FF	; generate padding to link
 	.asc	$FF,$FF,$FF,$FF			; undefined ending???
@@ -94,6 +94,9 @@ post:
 #include "firmware/modules/cpu_check.s"
 
 ; *** maybe this is the place for final interrupt setup *** 20150605
+; first of all, compute Timer 1 division factor, out from options.h 20160407
+T1_DIV = PHI2/IRQ_FREQ-2
+
 	LDA	#<T1_DIV	; set IRQ frequency divisor LSB ** revised 20150220 (2)
 	STA VIA + T1CL	; put value into latch (write to counter) (4)
 	LDA #>T1_DIV	; same for MSB (2)

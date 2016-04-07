@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160407-0945
+; last modified 20160407-1234
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -47,8 +47,8 @@ warm:
 #ifndef		DOWNLOAD
 	LDY #<k_vec		; get table address, nicer way (2+2)
 	LDA #>k_vec
-	STY zpar		; store parameter (3+3)
-	STA zpar+1
+	STY zaddr3		; store parameter (3+3)
+	STA zaddr3+1
 	_ADMIN(INSTALL)	; copy jump table (14...)
 #endif
 #endif
@@ -56,8 +56,8 @@ warm:
 ; install ISR code (as defined in "isr/irq.s" below)
 	LDY #<k_isr		; get address, nicer way (2+2)
 	LDA #>k_isr
-	STY zpar		; no need to know about actual vector location (3)
-	STA zpar+1
+	STY zaddr3		; no need to know about actual vector location (3)
+	STA zaddr3+1
 	_ADMIN(SET_ISR)	; install routine (14...)
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
@@ -134,42 +134,40 @@ dr_inst:
 ; create entry on IDs table ** new 20150219
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code (5)
-			BPL dr_abort		; reject logical devices (2/3) ????
-
+#ifdef	SAFE
+		BMI dr_phys			; only physical devices (3/2)
+			JMP dr_abort		; reject logical devices (3)
+dr_phys:
+#endif
 #ifndef	LOWRAM
 ; new faster driver list 20151014, revamped 20160406
 		ASL					; use retrieved ID as index (2+2)
 		TAY
 		LDA drv_opt, X		; check whether in use (4)
 		CMP #<dr_error		; if set something different than the default value (2)
-			BNE dr_abort		; already in use (2/3)
+		BEQ dr_lsb			; LSB was OK (3/2)
+			JMP dr_abort		; already in use (3)
+dr_lsb:
 		LDA drv_opt+1, X	; check MSB too (4+2)
 		CMP #>dr_error
-			BNE dr_abort		; already in use (2/3)
+		BEQ dr_msb			; all OK then (3/2) 
+			JMP dr_abort		; already in use (3)
+dr_msb:
 		PHY					; save index! (3)
 		LDY #D_COUT			; offset for output routine (2)
-dr_oinst:
-			LDA (da_ptr), Y			; get its address byte (5)
-			STA tm_ptr-D_COUT, Y	; store temporarily (3)
-			INY						; same for MSB (2)
-			CPY #D_COUT+2			; until both bytes done (2)
-			BNE dr_oinst
+		JSR dr_gind			; get indirect address
 		PLY					; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
-		STA drv_opt, Y		; store in table (5?)
-		LDA tm_ptr+1		; same for MSB (3+5?)
+		STA drv_opt, Y		; store in table (4)
+		LDA tm_ptr+1		; same for MSB (3+4)
 		STA drv_opt+1, Y
 		PHY					; save index again! (3)
 		LDY #D_CIN			; same for input routine (2)
-		LDA (da_ptr), Y		; get its address LSB (5)
-		STA tm_ptr			; store temporarily (3)
-		INY					; same for MSB (2)
-		LDA (da_ptr), Y		; get MSB (5)
-		STA tm_ptr+1		; store temporarily (3)
+		JSR dr_gind			; get indirect address
 		PLY					; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
-		STA drv_ipt, Y		; store in table (5?)
-		LDA tm_ptr+1		; same for MSB (3+5?)
+		STA drv_ipt, Y		; store in table (4)
+		LDA tm_ptr+1		; same for MSB (3+4)
 		STA drv_ipt+1, Y
 #else
 #ifdef	SAFE
@@ -273,6 +271,13 @@ dr_abort:
 		STA drv_ipt+1, X		; and for input (4)
 #endif
 		_BRA dr_next			; go for next (3)
+
+dr_gind:
+	LDA (da_ptr), Y		; get address LSB (5)
+	STA tm_ptr			; store temporarily (3)
+	INY					; same for MSB (2)
+	LDA (da_ptr), Y		; get MSB (5)
+	STA tm_ptr+1		; store temporarily (3)
 
 dr_error:
 	_ERR(N_FOUND)		; standard exit for non-existing drivers!

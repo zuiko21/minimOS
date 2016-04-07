@@ -8,6 +8,7 @@
 
 ; comment for optimized code without optional checks
 ;#define		SAFE	_SAFE
+;#define		NMOS	_NMOS
 
 ; uncomment to enable (software) multitasking
 ;#define		MULTITASK	_MULTITASK
@@ -64,6 +65,9 @@ VIA_SS	=	VIA1
 ; * optional ACIA/UART address (in external board!) *
 ACIA1	=	IO_BASE + $D0	; ACIA address on most (no longer $DFE0 for easier decoding 688+138)
 ACIA	=	ACIA1			; for increased compatibility
+
+; *** set standard device *** new 20160331 
+DEVICE	=	DEV_LED		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220

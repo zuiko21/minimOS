@@ -1,12 +1,12 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
-; v0.9a1
+; v0.9a2
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20160331-0946
+; last modified 20160407-1238
 
 #define		FIRMWARE	_FIRMWARE
 
 ; in case of stand alone assembly
-#ifndef		KERNEL
+#ifndef		ROM
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
@@ -23,9 +23,9 @@ kernel	= remote_boot	; in case no kernel is provided with firmware, try to downl
 ; *** first some ROM identification *** new 20150612
 fw_start:
 	.asc 0, "aS****", 13	; standard system file wrapper, new 20160309
-	.asc "0.9a1 firmware for "
+	.asc "0.9a2 firmware for "
 fw_mname:
-	.asc	MACHINE_NAME, 0
+	.asc	MACHINE_NAME, 0, 0
 
 	.dsb	fw_start + $FC - *, $FF	; generate padding to link
 	.asc	$FF,$FF,$FF,$FF			; undefined ending???
@@ -71,9 +71,9 @@ post:
 	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
 	STA VIA1 + ACR
 ; *** preset kernel start address (standard label from ROM file) ***
-	LDA #<kernel	; get LSB (2)
-	STA fw_warm		; store in sysvars (4)
-	LDA #>kernel	; same for MSB (2+4)
+	LDY #<kernel	; get LSB, nicer (2)
+	LDA #>kernel	; same for MSB (2)
+	STY fw_warm		; store in sysvars (4+4)
 	STA fw_warm+1
 ; *** set default CPU type ***
 	LDA #CPU_TYPE	; constant from options.h (2)
@@ -86,21 +86,24 @@ post:
 ;	LDA fw_cpu		; already in A, but may change
 	CMP #'N'		; is it NMOS? not supported!
 	BNE fw_cpuOK	; otherwise continue
-		_PANIC
+		_PANIC			; cannot handle BRK, alas
 fw_cpuOK:
 #endif
 #endif
 
 ; *** maybe this is the place for final interrupt setup *** 20150605
-	LDA	#<T1_DIV	; set IRQ frequency divisor LSB ** revised 20150220 (2)
-	STA VIA + T1CL	; put value into latch (write to counter) (4)
-	LDA #>T1_DIV	; same for MSB (2)
+; first of all, compute Timer 1 division factor, out from options.h 20160407
+T1_DIV = PHI2/IRQ_FREQ-2
+
+	LDY	#<T1_DIV	; set IRQ frequency divisor LSB ** revised 20150220 (2)
+	LDA #>T1_DIV	; same for MSB, nicer (2)
+	STY VIA + T1CL	; put value into latch (write to counter) (4)
 	STA VIA + T1CH	; start counting! (4)
-	LDA #<IRQ_FREQ	; interrupts per second, LSB ** revised 20150225 (2)
-	STA irq_freq	; store speed... (4)
-	STA ticks		; and counter value (4)
-	LDA #>IRQ_FREQ	; same for MSB (2+4+4)
-	STA irq_freq+1
+	LDY #<IRQ_FREQ	; interrupts per second, LSB ** revised 20150225 (2)
+	LDA #>IRQ_FREQ	; same for MSB (2)
+	STY irq_freq	; store speed... (4)
+	STY ticks		; and counter value (4)
+	STA irq_freq+1	; same for MSB (4+4)
 	STA ticks+1
 	LDX #3			; number of bytes in uptime seconds
 res_sec:
@@ -138,12 +141,12 @@ nmi_save:
 		CPX #3				; number of bytes to save, makes retrieving simpler (2)
 		BNE nmi_save		; until the end (3/2, total loop is 38 clocks)
 ; check whether user NMI pointer is valid
-	LDY #0				; offset for NMI code pointer (2)
 ;	LDX #3				; offset for (reversed) magic string (2) ** already loaded from earlier step
-	LDA fw_nmi			; copy vector to zeropage (corrected 20150118) (4+3+4+3)
-	STA sysptr
+	LDY fw_nmi			; copy vector to zeropage (corrected 20150118) (4+4+3+3)
 	LDA fw_nmi+1
+	STY sysptr			; nicer way 20160407
 	STA sysptr+1
+	LDY #0				; offset for NMI code pointer (2)
 nmi_chkmag:
 		LDA (sysptr), Y		; get code byte (5)
 		CMP fw_magic, X		; compare with string (4)
@@ -152,7 +155,7 @@ nmi_chkmag:
 		DEX					; internal string is read backwards (2)
 		BPL nmi_chkmag		; down to zero (3/2)
 do_nmi:
-	JSR go_nmi			; call actual code (6)
+	JSR go_nmi			; call actual code, ending in RTS (6)
 ; *** here goes the former nmi_end routine ***
 nmi_end:
 	LDX #2				; have to retrieve systmp and sysptr, new 20150326 (2)
@@ -166,29 +169,31 @@ nmi_restore:
 	PLA
 	RTI					; resume normal execution, hopefully
 
-go_nmi:
-	JMP (fw_nmi)		; jump to code (and inocuous header) (6)
-
 ; *** execute standard NMI handler ***
 rst_nmi:
 	JSR std_nmi			; call standard handler
 	_BRA nmi_end		; and finish as usual
 
-; *** default code for NMI handler, if not installed or invalid ***
-std_nmi:
-#include "firmware/modules/std_nmi.s"
+; *** execute installed NMI handler ***
+go_nmi:
+	JMP (fw_nmi)		; jump to code (and inocuous header) (6)
 
 fw_magic:
 	.asc	"*jNU"		; reversed magic string
 
+; *** default code for NMI handler, if not installed or invalid ***
+std_nmi:
+#include "firmware/modules/std_nmi.s"
+
+
 ; *** administrative functions ***
 ; A0, install jump table
-; zpar.W <- address of supplied jump table
+; zaddr3.W <- address of supplied jump table
 fw_install:
 	LDY #0				; reset index (2)
 	_ENTER_CS			; disable interrupts! (5)
 fwi_loop:
-		LDA (zpar), Y		; get from table as supplied (5)
+		LDA (zaddr3), Y		; get from table as supplied (5)
 		STA fw_table, Y		; copy where the firmware expects it (4+2)
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
@@ -197,37 +202,37 @@ fwi_loop:
 
 
 ; A2, set IRQ vector
-; zpar.W <- address of ISR
+; zaddr3.W <- address of ISR
 fw_s_isr:
+	LDY zaddr3				; get LSB, nicer (3)
+	LDA zaddr3+1			; get MSB (3)
 	_ENTER_CS				; disable interrupts! (5)
-	LDA zpar				; get LSB (3)
-	STA fw_isr				; store for firmware (4)
-	LDA zpar+1				; get MSB (3+4)
+	STY fw_isr				; store for firmware (4+4)
 	STA fw_isr+1
 	_EXIT_CS				; restore interrupts if needed (4)
 	_EXIT_OK				; done (8)
 
 
 ; A4, set NMI vector
-; zpar.W <- address of NMI code (including magic string)
+; zaddr3.W <- address of NMI code (including magic string)
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected
 fw_s_nmi:
-	LDA zpar				; get LSB (3)
-	STA fw_nmi				; store for firmware (4)
-	LDA zpar+1				; get MSB (3+4)
+	LDY zaddr3				; get LSB (3)
+	LDA zaddr3+1			; get MSB (3)
+	STY fw_nmi				; store for firmware (4+4)
 	STA fw_nmi+1
 	_EXIT_OK				; done (8)
 
 
 ; A6, patch single function
-; zpar.W <- address of code
+; zaddr3.W <- address of code
 ; Y <- function to be patched
 fw_patch:
-	LDA zpar				; get LSB (3)
+	LDY zaddr3				; get LSB (3)
+	LDA zaddr3+1			; same for MSB (3)
 	_ENTER_CS				; disable interrupts! (5)
-	STA fw_table, Y			; store where the firmware expects it (4)
-	LDA zpar+1				; same for MSB (3+4)
+	STA fw_table, Y			; store where the firmware expects it (4+4)
 	STA fw_table+1, Y
 	_EXIT_CS				; restore interrupts if needed (4)
 	_EXIT_OK				; done (8)
