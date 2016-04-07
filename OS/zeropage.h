@@ -1,6 +1,6 @@
 ; minimOS 0.5a4 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160406-0928
+; last modified 20160407-1003
 
 .zero
 
@@ -17,29 +17,33 @@ uz						; user context starts here, $03...$E3 newname 20150128,0206
 locals:						; old label for compatibility
 
 ; *** include aliases here for local1/locpt1 ***
-local1:locpt1	.dsb	4	; variables for kernel functions @ $E4, new name 150122, 150619
+ma_l: str_dev:
+local1: locpt1	.dsb	4	; variables for kernel functions @ $E4, new name 150122, 150619
 
 ; *** include aliases here for local2/locpt2 ***
-local2:locpt2	.dsb	4	; variables for kernel functions @ $E8, new name 150122, 150619
+local2: locpt2	.dsb	4	; variables for kernel functions @ $E8, new name 150122, 150619
 
 ; *** include aliases here for local3/locpt3 ***
-local3:locpt3	.dsb	4	; variables for kernel functions @ $EC, new name 150122, 150619
+local3: locpt3	.dsb	4	; variables for kernel functions @ $EC, new name 150122, 150619
 
 
 ; ** kernel parameters **
 ; new standardised aliases for ABI freedom 20160406
 
+; *** include aliases here for zpar3/zaddr3 ***
+b_sig: ex_pt:
 z10:z10W:z10L:				; old labels for compatibility, new alias 20150615 for Ax registers on 680x0!
-; *** include aliases here for zpar3/zaddr3 ***
-zpar3:zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
+zpar3: zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
 
-z6:z6W:z6L:					; old labels for compatibility
 ; *** include aliases here for zpar2/zaddr2 ***
-zpar2:zaddr2	.dsb	4	; up to 4 bytes, including older names @ $F4
+ma_pt: up_sec: str_pt:
+z6:z6W:z6L:					; old labels for compatibility
+zpar2: zaddr2	.dsb	4	; up to 4 bytes, including older names @ $F4
 
+; *** include aliases here for zpar/zaddr ***
+io_c: ma_rs: w_rect: up_ticks:
 z2:z2W:z2L:					; old labels for compatibility
-; *** include aliases here for zpar3/zaddr3 ***
-zpar:zaddr		.dsb	4	; up to 4 bytes, including older names @ $F8
+zpar: zaddr		.dsb	4	; up to 4 bytes, including older names @ $F8
 
 
 ; ** reserved for system use **

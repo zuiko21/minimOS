@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160406-1014
+; last modified 20160407-1016
 
 ; no way for standalone assembly...
 
@@ -11,18 +11,9 @@ unimplemented:		; placeholder here, not currently used
 
 
 ; *** COUT, output a character ***
-; Y <- dev, zpar <- char
-; destroys X, A... plus driver
-; uses local2 **** check against string
-; ALIASES, io_c = zpar, io_pt = local2
-
-dt_ptr = io_pt		; could be called by STRING, same as locpt2
-cio_of = io_pt + 2	; parameter switching between cin and cout ** might use local3 as well, best for 680x0 port!
-cio_pt = io_pt + 2	; also resolved driver pointer, cio_of no longer needed!
+; Y <- dev, io_c <- char
 
 cout:
-	LDA #D_COUT		; only difference from cin (2)
-	STA cio_of		; store for further indexing (3)
 	TYA				; for indexed comparisons (2)
 	BNE co_port		; not default (3/2)
 		LDA default_out	; default output device (4)
@@ -51,19 +42,14 @@ co_phys:
 	ASL					; convert to index (2+2)
 	TAX
 	_JMPX(drv_opt)		; direct jump!!!
+
 cio_nfound:
 	_ERR(N_FOUND)	; unknown device
 
 ; *** CIN, get a character *** revamped 20150209
-; Y <- dev, zpar -> char, C = not available
-; destroys X, A... plus driver
-; uses locals[1-3]
-; ** shares code with cout **
-; ALIASES, io_c = zpar
+; Y <- dev, io_c -> char, C = not available
 
 cin:
-	LDA #D_CIN		; only difference from cout
-	STA cio_of		; store for further addition
 	TYA				; for indexed comparisons
 	BNE ci_port		; specified
 		LDA default_in	; default input device
@@ -80,13 +66,14 @@ ci_exitOK:
 		CLC				; above comparison would set carry
 ci_exit:
 		RTS				; cannot use macro because may need to keep Carry
+
 ci_phys:
 ; ** new direct indexing **
 	ASL					; convert to index (2+2)
 	TAX
 	_JMPX(drv_ipt)		; direct jump!!!
 
-; ** continue event management **
+; ** continue event management ** REVISE
 ci_manage:
 ; check for binary mode
 	LDY cin_mode	; get flag, new sysvar 20150617
@@ -253,16 +240,16 @@ ma_ok:
 ; zpar2 <- addr
 ; ** ONLY for systems over 128-byte RAM
 ; destroys X, Y, A
-; ALIASES, fr_pt = zpar2
+; ALIASES, ma_pt = zpar2
 free:
 	LDX #0			; reset indexes
 	_ENTER_CS		; supposedly dangerous
 fr_loop:
 		LDA ram_tab, X		; get entry LSB
-		CMP fr_pt			; compare
+		CMP ma_pt			; compare
 			BNE fr_next			; try other
 		LDA ram_tab+1, X	; same for MSB
-		CMP fr_pt+1
+		CMP ma_pt+1
 			BEQ fr_found		; stop searching, much easier this way
 fr_next:
 		INX
@@ -303,10 +290,10 @@ fr_ok:
 ; *** OPEN_W, get I/O port or window *** interface revised 20150208
 ; Y -> dev, zpar.l <- size+pos*64K, zpar3 <- pointer to window title!
 ; destroys A
-; ALIASES, ow_rect = zpar, ow_tit = zpar3 *** REVISE
+; ALIASES, w_rect = zpar, str_pt = zpar3 *** REVISE
 open_w:
-	LDA ow_rect			; asking for some size?
-	ORA ow_rect+1
+	LDA w_rect			; asking for some size?
+	ORA w_rect+1
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 ow_no_window:
@@ -363,8 +350,8 @@ b_fork:
 
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, zpar2.W <- addr (was z2L)
-; ALIASES, ex_pt = zpar2; io_c = zpar from COUT, ex_tmp = locals (not touched by COUT, as is used by string)
+; Y <- PID, zpar3.W <- addr (was z2L)
+; ALIASES, ex_pt = zpar3; io_c = zpar from COUT, ex_tmp = locals (not touched by COUT, as is used by string)
 
 b_exec:
 #ifdef	MULTITASK
@@ -428,21 +415,21 @@ exec_jmp:
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
-; z2L -> addr, z10L <- *path
-; ALIASES, ll_pt = z2L, ll_name = z10L
+; zpar3 -> addr, zpar2 <- *path
+; ALIASES, ex_pt = zpar3, str_pt = zpar2
 
 load_link:
 ; *** assume path points to filename in header, code begins +248 *** KLUDGE
 	CLC				; ready to add
 	LDA z10			; get LSB
 	ADC #248		; offset to actual code!
-	STA ll_pt		; store address LSB
-	LDA ll_name+1	; get MSB so far
+	STA ex_pt		; store address LSB
+	LDA str_pt+1	; get MSB so far
 	ADC #0			; propagate carry!
-	STA ll_pt+1		; store address MSB
+	STA ex_pt+1		; store address MSB
 	LDA #0			; NMOS only
-	STA ll_pt+2		; STZ, invalidate bank...
-	STA ll_pt+3		; ...just in case
+	STA ex_pt+2		; STZ, invalidate bank...
+	STA ex_pt+3		; ...just in case
 	BCS ll_wrap		; really unexpected error
 		_EXIT_OK
 ll_wrap:
@@ -473,9 +460,9 @@ su_peek:
 ; *************** C O N T I N U E   R E V A M P   H E R E *****************************
 
 ; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
-; Y <- dev, zpar3 = zaddr3 <- *string (.w in current version)
+; Y <- dev, zpar2 = str_pt <- *string (.w in current version)
 ; destroys all
-; uses locals[0,1]
+; uses locals = str_dev
 ; calls cout, but now directly at driver code *** great revision, scans ONCE for device driver
 
 string:
@@ -507,39 +494,24 @@ str_win:
 str_nfound:
 	_ERR(N_FOUND)	; unknown device
 str_phys:
-; ** new direct indexing, 20151013, 24 bytes, 36 clocks **
+; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
-	TAX
-	LDA drivers_pt+1, X	; get MSB from new table (4)
-		BEQ str_nfound		; not found (2/3)
-	TAY					; store temporarily (2)
-	LDA drivers_pt, X	; get LSB (4)
-	CLC					; prepare for adding offset (2)
-	ADC #D_COUT			; compute final address, fixed constant! (2)
-	STA local1			; store pointer (3)
-	TYA					; restore MSB (2)
-	ADC #0				; take carry into account (2+3)
-	STA local1+1		; pointer to pointer??? (3)
-	LDY #1				; offset for MSB
-	LDA (local1), Y		; get MSB
-	STA local1+3		; store final pointer
-	DEY					; offset for LSB, actually 0, index already reset!
-	LDA (local1), Y		; get LSB
-	STA local1+2		; store final pointer
+	STA str_dev			; store for indexed call! (3)
 ; ** the actual printing loop **
 str_loop:
-		LDA (zaddr3), Y		; get character from string, new approach (5)
+		LDA (str_pt), Y		; get character from string, new approach (5)
 			BEQ str_exit		; terminated! (2/3)
 		PHY					; save just in case COUT destroys it (3)
-		STA zpar			; store output character for COUT (3)
+		STA io_c			; store output character for COUT (3)
 			JSR str_call		; indirect subroutine call (6...)
 		PLY					; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
-	INC zaddr3+1		; otherwise increase, parameter has changed!
+	INC str_pt+1		; otherwise increase, parameter has changed!
 	_BRA str_loop		; continue, will check for termination later (3)
 str_call:
-	JMP (local1+2)		; go at stored pointer (...6)
+	LDX str_dev			; get driver pointer position (3)
+	_JMPX(drv_opt)		; go at stored pointer (...6)
 
 ; *** SU_SEI, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
@@ -630,15 +602,17 @@ shutdown:
 ; first get the pointer to each driver table
 sd_loop:
 ; get address index
-		LDA drivers_pt+1, X	; get address MSB (4)
-		BEQ sd_next			; no way in zeropage, skip to next (3/2)
-			STA locpt2+1		; store pointer (3)
-			LDA drivers_pt, X	; same for LSB (4+3)
-			STA locpt2
-			PHX					; save index for later
-				LDY #D_BYE+1		; offset for shutdown routine
-				JSR dr_call			; call routine from generic code!!! *** NOT HERE
-			PLX					; retrieve index
+		LDA drivers_ad, X	; get address from original list
+		STA sysptr			; store temporarily
+		LDA drivers_ad+1, X	; same for MSB
+		STA sysptr+1
+		LDY #D_BYE			; shutdown offset
+		LDA (sysptr), Y		; get pointer LSB
+		STA locals			; store somewhere********************
+
+		PHX					; save index for later
+			JSR dr_call			; call routine from generic code!!! *** NOT HERE
+		PLX					; retrieve index
 sd_next:
 		INX					; advance to next entry (2+2)
 		INX
@@ -672,7 +646,7 @@ sd_tab:
 
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
-; zpar2.B <- signal to be sent , Y <- addressed braid
+; b_sig <- signal to be sent , Y <- addressed braid
 ; uses locals[0] too
 ; don't know of possible errors
 
@@ -685,7 +659,7 @@ signal:
 sig_st:				; *** single-task interface, in case MM driver failed *** (repeated from below)
 	TYA				; check correct PID, really needed?
 		BNE sig_pid		; strange error?
-	LDY zpar2		; get the signal
+	LDY b_sig		; get the signal
 	CPY #SIGTERM	; clean shutoff
 		BEQ sig_term
 	CPY #SIGKILL	; suicide, makes any sense?
@@ -703,7 +677,7 @@ sig_call:
 ; *** single task interface (copied above) ***
 	TYA				; check correct PID, really needed?
 		BNE sig_pid		; strange error?
-	LDY zpar2		; get the signal
+	LDY b_sig		; get the signal
 	CPY #SIGTERM	; clean shutoff
 		BEQ sig_term
 	CPY #SIGKILL	; suicide, makes any sense?
@@ -715,7 +689,7 @@ sig_term:
 sig_kill:
 	_EXIT_OK		; *** don't know what to do here ***
 sig_call:
-	JMP (stt_handler)	; jump to single-word vector, don't forget to init it somewhere!
+	JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
 #endif
 
 ; *** B_STATUS, get execution flags of a braid ***
@@ -780,9 +754,9 @@ hndl_st:				; *** single-task interface, in case MM driver failed *** copied fro
 #else
 ; *** single-task interface, copied above ***
 	LDA zpar2		; get LSB
-	STA stt_handler	; store in single variable
+	STA mm_term	; store in single variable
 	LDA zpar2+1		; same for MSB
-	STA stt_handler+1
+	STA mm_term+1
 	_EXIT_OK
 #endif
 
@@ -833,7 +807,7 @@ yld_table:
 
 ; *** TS_INFO, get taskswitching info for multitasking driver *** revamped 20150521
 ; Y -> number of bytes, zpar... -> bytes of the proposed _reversed_ stack frame (originally 3)
-
+; REVISE REVISE
 ts_info:
 	LDA #0					; what will X hold? could be 0 as long as the multitasaking driver is the first one!
 	STA zpar+2				; store output value

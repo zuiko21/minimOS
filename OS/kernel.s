@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160406-1014
+; last modified 20160407-0945
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -148,11 +148,12 @@ dr_inst:
 			BNE dr_abort		; already in use (2/3)
 		PHY					; save index! (3)
 		LDY #D_COUT			; offset for output routine (2)
-		LDA (da_ptr), Y		; get its address LSB (5)
-		STA tm_ptr			; store temporarily (3)
-		INY					; same for MSB (2)
-		LDA (da_ptr), Y		; get MSB (5)
-		STA tm_ptr+1		; store temporarily (3)
+dr_oinst:
+			LDA (da_ptr), Y			; get its address byte (5)
+			STA tm_ptr-D_COUT, Y	; store temporarily (3)
+			INY						; same for MSB (2)
+			CPY #D_COUT+2			; until both bytes done (2)
+			BNE dr_oinst
 		PLY					; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
 		STA drv_opt, Y		; store in table (5?)
