@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5a8
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160120 (some improvements from regular API)
+; last modified 20160407-1412
 
 #ifndef		FINAL
 	.asc	"<kern>"		; *** just for easier debugging *** no markup to skip
@@ -24,28 +24,28 @@ cout:
 	LDA #D_COUT		; only difference from cin (2)
 	STA cio_of		; store for further indexing (3)
 	TYA				; for indexed comparisons (2)
-	BNE k0_port		; not default (3/2)
+	BNE co_port		; not default (3/2)
 		LDA default_out	; default output device (4)
-k0_port:
-	BMI k02_phys	; not a logic device (3/2)
+co_port:
+	BMI cio_phys	; not a logic device (3/2)
 ; no need to check for windows or filesystem
 ; investigate rest of logical devices
 		CMP #DEV_NULL	; lastly, ignore output
-			BNE k02_nfound	; final error otherwise
+			BNE cio_nfound	; final error otherwise
 		_EXIT_OK		; "/dev/null" is always OK
 ; optimised backwards loop 20150318, 13 bytes (+1), 5+11*n if not found, 13 if the LAST one
 ; old forward loop was 16 bytes, 9+17*n if not found, 15 if the first one
-k02_phys:
+cio_phys:
 	LDX drv_num		; number of drivers (4)
-		BEQ k02_nfound	; no drivers at all! (2/3)
-k02_loop:
+		BEQ cio_nfound	; no drivers at all! (2/3)
+cio_loop:
 		CMP drivers_id-1, X	; get ID from list, notice trick (4)
-			BEQ k02_dev		; device found! (2/3)
+			BEQ cio_dev		; device found! (2/3)
 		DEX				; go back one (2)
-		BNE k02_loop	; repeat until end, will reach not_found otherwise (3/2)
-k02_nfound:
-	_ERR(N_FOUND)	; unknown device, needed before k02_dev in case of optimized loop
-k02_dev:
+		BNE cio_loop	; repeat until end, will reach not_found otherwise (3/2)
+cio_nfound:
+	_ERR(N_FOUND)	; unknown device, needed before cio_dev in case of optimized loop
+cio_dev:
 	DEX				; needed because of backwards optimized loop (2)
 	TXA				; get index in list (2)
 	ASL				; two times (2)
@@ -86,50 +86,50 @@ cin:
 	LDA #D_CIN		; only difference from cout
 	STA cio_of		; store for further addition
 	TYA				; for indexed comparisons
-	BNE k2_port		; specified
+	BNE ci_port		; specified
 		LDA default_in	; default input device
-k2_port:
-	BPL k2_nph		; logic device
-		JSR k02_phys	; check physical devices... but come back for events! new 20150617
-			BCS k2_exit		; some error, send it back
+ci_port:
+	BPL ci_nph		; logic device
+		JSR cio_phys	; check physical devices... but come back for events! new 20150617
+			BCS ci_exit		; some error, send it back
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
 		LDA zpar		; get received character
 		CMP #' '		; printable?
-			BCC k2_manage	; if not, might be an event
-k2_exit:
+			BCC ci_manage	; if not, might be an event
+ci_exit:
 		_EXIT_OK		; above comparison would set carry
 ; ** continue event management **
-k2_manage:
+ci_manage:
 ; check for binary mode
 	LDY cin_mode	; get flag, new sysvar 20150617
-	BEQ k2_event	; should process possible event
+	BEQ ci_event	; should process possible event
 		_STZY cin_mode	; back to normal mode
-		_BRA k2_exit	; and return whatever was received
-k2_event:
+		_BRA ci_exit	; and return whatever was received
+ci_event:
 	CMP #16			; is it DLE?
-	BNE k2_notdle	; otherwise check next
+	BNE ci_notdle	; otherwise check next
 		INC cin_mode	; set binary mode!
-		BNE k2_abort	; and supress received character, no need for BRA
-k2_notdle:
+		BNE ci_abort	; and supress received character, no need for BRA
+ci_notdle:
 	CMP #3			; is it ^C? (TERM)
-	BNE k2_exit		; otherwise there's no more to check -- only signal for single-task systems!
+	BNE ci_exit		; otherwise there's no more to check -- only signal for single-task systems!
 		LDA #SIGTERM
 		STA zpar2		; set signal as parameter
 		LDY #0			; ***self-sent signal***
 		_KERNEL(B_SIGNAL)	; send signal
-k2_abort:
+ci_abort:
 		_ERR(EMPTY)		; no character was received
 
-k2_nph:
+ci_nph:
 ; only logical devs, no need to check for windows or filesystem
 	CMP #DEV_RND	; getting a random number?
-		BEQ k2_rnd		; compute it!
+		BEQ ci_rnd		; compute it!
 	CMP #DEV_NULL	; lastly, ignore input
-		BNE k02_nfound	; final error otherwise
+		BNE cio_nfound	; final error otherwise
 	_EXIT_OK		; "/dev/null" is always OK
 
-k2_rnd:
+ci_rnd:
 ; *** generate random number (TO DO) ***
 	LDY ticks		; simple placeholder
 	_EXIT_OK
@@ -152,9 +152,9 @@ ts_info:
 open_w:
 	LDA zpar			; asking for some size?
 	ORA zpar+1
-	BEQ k8_no_window	; wouldn't do it
+	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
-k8_no_window:
+ow_no_window:
 	LDY #0				; constant default device
 	_EXIT_OK
 
@@ -176,17 +176,17 @@ free_w:
 uptime:
 	LDX #1			; first go for remaining ticks (2 bytes) (2)
 	_SEI			; don't change while copying (2)
-k14_loop:
+up_loop:
 		LDA ticks, X	; get system variable byte (not uptime, corrected 20150125) (4)
 		STA zpar, X		; and store them in output parameter (3)
 		DEX				; go for next (2+3/2)
-		BPL k14_loop
+		BPL up_loop
 	LDX #2			; now for the uptime in seconds (3 bytes) (2)
-k14_upt:
+up_upt:
 		LDA ticks+2, X	; get system variable uptime, new 20150318 (4)
 		STA zpar2, X	; and store it in output parameter (3) corrected 150610
 		DEX				; go for next (2+3/2)
-		BPL k14_upt
+		BPL up_upt
 	_CLI			; disabled for 62 clocks, not 53...
 	_EXIT_OK
 
@@ -204,12 +204,12 @@ b_fork:
 b_exec:
 ; non-multitasking version
 	CPY #0			; should be system reserved PID
-	BEQ k18_st		; OK for single-task system
+	BEQ ex_st		; OK for single-task system
 		_ERR(NO_RSRC)	; no way without multitasking
-k18_st:
-	JSR k18_jmp		; call supplied address
+ex_st:
+	JSR ex_jmp		; call supplied address
 	_EXIT_OK		; back to shell?
-k18_jmp:
+ex_jmp:
 	LDA zpar2+1		; get address MSB first
 	PHA				; put it on stack
 	LDA zpar2		; same for LSB
@@ -232,9 +232,9 @@ load_link:
 	LDA #0			; NMOS only
 	STA z2+2		; STZ, invalidate bank...
 	STA z2+3		; ...just in case
-	BCS k20_wrap	; really unexpected error
+	BCS ll_wrap	; really unexpected error
 	_EXIT_OK
-k20_wrap:
+ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
 
@@ -270,39 +270,39 @@ string:
 ; ** alternative version, preserves pointer ** 23 bytes for CMOS, 27 if SAFE mode, NMOS add 1 byte
 	STY local1		; save Y in case COUT destroys it
 	LDY #0			; reset new index
-k26_loop:
+str_loop:
 		LDA (zaddr3), Y		; get character, new approach
-			BEQ k26_end			; NUL = end-of-string
+			BEQ str_end			; NUL = end-of-string
 		STA zpar			; store output character for COUT
 		PHY					; save current index
 		LDY local1			; retrieve device number
 		_KERNEL(COUT)		; call routine
 #ifdef	SAFE
-			BCS k26_err			; extra check
+			BCS str_err			; extra check
 #endif
 		PLY					; retrieve index
-		_BRA k26_loop		; repeat, will later check for termination
-k26_end:
+		_BRA str_loop		; repeat, will later check for termination
+str_end:
 	_EXIT_OK
 #ifdef	SAFE
-k26_err:
+str_err:
 	PLY				; cleanup stack
 	RTS				; return error code
 #endif
 
 ; original version was 25 bytes, NMOS add 2 bytes, SAFE would add 4 bytes
 ;	STY locals		; save Y in case cout destroys it
-;k26_loop:
+;str_loop:
 ;		_LDAY(zpar3)	; get current character, NMOS too
-;			BEQ k26_end		; NUL = end-of-string
+;			BEQ str_end		; NUL = end-of-string
 ;		STA zpar		; ready to go out
 ;		LDY locals		; restore Y
 ;		_KERNEL(COUT)	; call cout
 ;		INC zpar3		; next character
-;	BNE k26_loop
+;	BNE str_loop
 ;		INC zpar3+1		; cross page boundary
-;	BNE k26_loop		; ...or BRA
-;k26_end:
+;	BNE str_loop		; ...or BRA
+;str_end:
 ;	_EXIT_OK
 
 
@@ -332,9 +332,9 @@ su_cli:				; not needed for 65xx, even with protection hardware
 set_fg:
 	LDA zpar
 	ORA zpar+1
-		BEQ k32_dis		; if zero, disable output
+		BEQ fg_dis		; if zero, disable output
 	LDA VIA+ACR		; get current configuration
-		BMI k32_busy	; already in use
+		BMI fg_busy	; already in use
 	LDX VIA+T1LL	; get older T1 latch values
 	STX old_t1		; save them
 	LDX VIA+T1LH
@@ -347,11 +347,11 @@ set_fg:
 	STX VIA+T1CH	; get it running!
 	ORA #$C0		; enable free-run PB7 output
 	STA VIA+ACR		; update config
-k32_none:
+fg_none:
 	_EXIT_OK		; finish anyway
-k32_dis:
+fg_dis:
 	LDA VIA+ACR		; get current configuration
-		BPL k32_none	; it wasn't playing!
+		BPL fg_none	; it wasn't playing!
 	AND #$7F		; disable PB7 only
 	STA VIA+ACR		; update config
 	LDA old_t1		; older T1L_L
@@ -359,8 +359,8 @@ k32_dis:
 	LDA old_t1+1
 	STA VIA+T1LH	; it's supposed to be running already
 ; *** TO_DO - restore standard quantum ***
-		_BRA k32_none
-k32_busy:
+		_BRA fg_none
+fg_busy:
 	_ERR(BUSY)		; couldn't set
 
 ; *** K34, launch default shell *** new 20150604
@@ -374,7 +374,7 @@ go_shell:
 
 shutdown:
 	CPY #PW_STAT	; is it going to suspend?
-		BEQ k36_stat		; don't shutdown system then!
+		BEQ sd_stat		; don't shutdown system then!
 	PHY				; store mode for later, first must do proper system shutdown
 ; ** the real stuff starts here **
 ; ask all braids ***but the current one*** to terminate
@@ -411,29 +411,29 @@ sd_loop:
 ; ** system cleanly shut, time to let the firmware turn-off or reboot **
 sd_done:
 	PLX				; retrieve mode as index!
-	_JMPX(k36_tab)	; do as appropriate
+	_JMPX(sd_tab)	; do as appropriate
 
 
 ; firmware interface
-k36_off:
+sd_off:
 	LDY #PW_OFF			; poweroff
-k36_fw:
+sd_fw:
 	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
 	RTS					; just in case was not implemented!
-k36_stat:
+sd_stat:
 	LDY #PW_STAT		; suspend
-	BNE k36_fw			; no need for BRA
-k36_cold:
+	BNE sd_fw			; no need for BRA
+sd_cold:
 	LDY #PW_COLD		; cold boot
-	BNE k36_fw			; will reboot, shared code, no need for BRA
-k36_warm:
-	JMP kernel			; firmware no longer should take pointer, generic kernel knows anyway
+	BNE sd_fw			; will reboot, shared code, no need for BRA
+sd_warm:
+	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
-k36_tab:
-	.word	k36_off		; shutdown call
-	.word	k36_stat	; suspend, shouldn't arrive here anyway
-	.word	k36_cold	; cold boot via firmware
-	.word	k36_warm	; warm boot direct by kernel
+sd_tab:
+	.word	sd_off		; shutdown call
+	.word	sd_stat	; suspend, shouldn't arrive here anyway
+	.word	sd_cold	; cold boot via firmware
+	.word	sd_warm	; warm boot direct by kernel
 
 
 ; *** K38, send UNIX-like signal to a braid ***
@@ -444,20 +444,20 @@ k36_tab:
 signal:
 ; *** single task interface ***
 	TYA				; check correct PID, really needed?
-		BNE k38_pid		; strange error?
+		BNE sig_pid		; strange error?
 	LDY zpar2		; get the signal
 	CPY #SIGTERM	; clean shutoff
-		BEQ k38_term
+		BEQ sig_term
 	CPY #SIGKILL	; suicide
-		BEQ k38_kill
-k38_pid:			; placeholder...
+		BEQ sig_kill
+sig_pid:			; placeholder...
 	_ERR(INVALID)	; unrecognised signal
-k38_term:
-	JSR k38_call	; call routine, RTS will get back here
-k38_kill:
+sig_term:
+	JSR sig_call	; call routine, RTS will get back here
+sig_kill:
 	_EXIT_OK		; *** don't know what to do here ***
-k38_call:
-	JMP (stt_handler)	; jump to single-word vector, don't forget to init it somewhere!
+sig_call:
+	JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
 
 ; *** K40, get execution flags of a braid ***
 ; Y <- addressed braid
@@ -488,9 +488,9 @@ get_pid:
 set_handler:
 ; *** single-task interface ***
 	LDA zpar2		; get LSB
-	STA stt_handler	; store in single variable
+	STA mm_term	; store in single variable
 	LDA zpar2+1		; same for MSB
-	STA stt_handler+1
+	STA mm_term+1
 	_EXIT_OK
 
 ; *** K46, Yield CPU time to next braid ***
@@ -507,7 +507,7 @@ yield:
 	.asc	"<jump>"	; easier extraction for 'jump' file
 #endif
 #ifdef		LOWRAM
-fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
+-fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
 #endif
 k_vec:
 	.word	cout		; output a character

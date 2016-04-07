@@ -7,8 +7,9 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-;#define		SAFE	_SAFE
+#define		SAFE	_SAFE
 ;#define		NMOS	_NMOS
+;#define		LOWRAM	_LOWRAM
 
 ; uncomment to enable (software) multitasking
 ;#define		MULTITASK	_MULTITASK

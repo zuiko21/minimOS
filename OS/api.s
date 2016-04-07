@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160407-1016
+; last modified 20160407-1313
 
 ; no way for standalone assembly...
 
@@ -636,7 +636,9 @@ sd_cold:
 	LDY #PW_COLD		; cold boot
 	BNE sd_fw			; will reboot, shared code, no need for BRA
 sd_warm:
-	JMP kernel			; firmware no longer should take pointer, generic kernel knows anyway
+	SEI					; maybe a better place to do it
+	CLD
+	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
 sd_tab:
 	.word	sd_off		; shutdown call

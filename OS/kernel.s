@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160407-1234
+; last modified 20160407-1437
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -36,28 +36,25 @@ user_sram = *
 ; **************************************************
 
 warm:
--kernel:			; defined also into ROM file, just in case is needed by firmware
-	SEI				; shouldn't use macro, really
-#ifdef	NMOS
-	CLD				; not needed for CMOS
-#endif
-
+; assume interrupts off, binary mode and 65C816 in emulation mode!
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
+; ++++++
 #ifndef		DOWNLOAD
 	LDY #<k_vec		; get table address, nicer way (2+2)
 	LDA #>k_vec
-	STY zaddr3		; store parameter (3+3)
-	STA zaddr3+1
+	STY ex_pt		; store parameter (3+3)
+	STA ex_pt+1
 	_ADMIN(INSTALL)	; copy jump table (14...)
 #endif
+; ++++++
 #endif
 
 ; install ISR code (as defined in "isr/irq.s" below)
 	LDY #<k_isr		; get address, nicer way (2+2)
 	LDA #>k_isr
-	STY zaddr3		; no need to know about actual vector location (3)
-	STA zaddr3+1
+	STY ex_pt		; no need to know about actual vector location (3)
+	STA ex_pt+1
 	_ADMIN(SET_ISR)	; install routine (14...)
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
@@ -68,6 +65,7 @@ warm:
 ; should be revised ASAP
 
 #ifndef		LOWRAM
+; ++++++
 	LDA #UNAS_RAM		; unassigned space (2) should be defined somewhere (2)
 	LDX #MAX_LIST		; depending on RAM size, corrected 20150326 (2)
 mreset:
@@ -87,11 +85,11 @@ mreset:
 	LDA himem			; get ram size MSB (4)
 	SBC #>user_sram		; substract MSB (2)
 	STA ram_siz+1		; entry is OK (4)
+; ++++++
 #endif
 
 ; ******************************************************
 ; intialise drivers from their jump tables
-; new direct I/O tables for much faster access 20160406
 ; ******************************************************
 
 ; set some labels, much neater this way
@@ -103,9 +101,14 @@ tm_ptr	= locals		; temporary pointer for double-indirect addressing!
 	_STZA dpoll_mx		; reset indexes, sorry for NMOS (4x4)
 	_STZA dreq_mx
 	_STZA dsec_mx
+	_STZA drv_aix		; why not here?
+
 #ifdef LOWRAM
-	_STZA drv_num		; single index of, not necessarily SUCCESSFULLY, installed drivers, updated 20150318
+; ------ low-RAM systems have no direct tables to reset ------
+	_STZA drv_num		; single index of, not necessarily SUCCESSFULLY, detected drivers, updated 20150318
+; ------
 #else
+; ++++++ new direct I/O tables for much faster access 20160406 ++++++
 	LDX #0				; reset index of direct table (2)
 dr_clear:
 		LDA #<dr_error			; make unused entries point to a standard error routine, new 20160406 (2)
@@ -117,12 +120,11 @@ dr_clear:
 		STA drv_ipt, X			; and for input (4)
 		INX						; next entry (2)
 		BNE dr_clear			; finish page (3/2)
+; ++++++
 #endif
-	_STZA drv_aix
 
 ; first get the pointer to each driver table
 dr_loop:
-; get address index
 		LDX drv_aix			; get address index (4)
 		LDA drivers_ad+1, X	; get address MSB (4)
 		BNE dr_inst			; not in zeropage, in case is too far for BEQ dr_ok (3/2)
@@ -140,7 +142,7 @@ dr_inst:
 dr_phys:
 #endif
 #ifndef	LOWRAM
-; new faster driver list 20151014, revamped 20160406
+; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 		ASL					; use retrieved ID as index (2+2)
 		TAY
 		LDA drv_opt, X		; check whether in use (4)
@@ -169,9 +171,12 @@ dr_msb:
 		STA drv_ipt, Y		; store in table (4)
 		LDA tm_ptr+1		; same for MSB (3+4)
 		STA drv_ipt+1, Y
+; ++++++
 #else
+; ------ IDs table filling for low-RAM systems ------
 #ifdef	SAFE
-; ** let's check whether the ID is in already in use **
+; check whether the ID is in already in use
+; might use a reversed loop, doing at the end LDX drv_num anyway?
 		LDX #0			; reset index (2)
 		BEQ dr_limit	; check whether has something to check, no need for BRA (3)
 dr_scan:
@@ -180,11 +185,11 @@ dr_scan:
 			INX					; go for next (2)
 dr_limit:	CPX drv_num			; all done? (4)
 			BNE dr_scan			; go for next (3/2)
-; ** end of check **
 #else
 		LDX drv_num			; retrieve single offset (4) *** already set because of the previous check, if done
 #endif
 		STA drivers_id, X	; store in list, now in RAM (4)
+; ------
 #endif
 
 ; register interrupt routines (as usual)
@@ -246,7 +251,9 @@ dr_nosec:
 			BCS dr_abort	; failed initialisation, new 20150320
 dr_next:
 #ifdef	LOWRAM
+; ------ low-RAM systems keep count of installed drivers ------
 		INC drv_num		; update SINGLE index (6)
+; ------
 #endif
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
@@ -254,10 +261,13 @@ dr_next:
 		JMP dr_loop		; go for next (3)
 dr_abort:
 #ifdef	LOWRAM
+; ------ low-RAM systems keep count of installed drivers ------
 		LDX drv_num			; get failed driver index (4)
 		LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
 		STA drivers_id, X	; delete older value (4)
+; ------
 #else
+; ++++++
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code (5)
 			BPL dr_next			; nothing to delete (2/3)
@@ -269,9 +279,11 @@ dr_abort:
 		LDA #>dr_error			; pretty much the same, not worth a loop (2)
 		STA drv_opt+1, X		; set MSB for output (4)
 		STA drv_ipt+1, X		; and for input (4)
+; ++++++
 #endif
 		_BRA dr_next			; go for next (3)
 
+; get indirect address from driver pointer table
 dr_gind:
 	LDA (da_ptr), Y		; get address LSB (5)
 	STA tm_ptr			; store temporarily (3)
@@ -284,38 +296,21 @@ dr_error:
 
 dr_icall:
 	LDY #D_INIT+1		; get MSB first (2)
-dr_call:				; *** generic driver call, pointer set at locpt2, Y holds table offset+1 *** new 20150610
-#ifndef	NMOS
-	LDA (da_ptr), Y		; destination pointer (5)
-	TAX					; store temporarily (2) new '816 compatible code 20151014
+dr_call:				; *** generic driver call, pointer set at sysptr, Y holds table offset+1 *** new 20150610
+	LDA (da_ptr), Y		; destination pointer MSB (5)
+	PHA					; push it (3)
 	DEY					; go for LSB (2)
 	LDA (da_ptr), Y		; repeat procedure (5)
-	BNE dr_nowrap		; won't mess with MSB (3/2)
-		DEX					; will carry (2) or 
-dr_nowrap:
-	_DEC				; RTS will go one less (2)
-	PHX					; push MSB -- no NMOS macro!!!!! (3)
 	PHA					; push LSB (3)
-#else
-	DEY					; get LSB first
-	LDA (da_ptr), Y
-	TAX					; store temporarily in X
-	INY					; go for MSB in A
-	LDA (da_ptr), Y
-	CPX #0				; check whether wraps or not
-	BNE dr_nowrap
-		_DEC
-dr_nowrap:
-	DEX					; RTS will go one less
-	PHA					; push address
-	_PHX
-#endif
-	RTS					; the actual COMPATIBLE jump (6)
+	PHP					; 816 is expected to be in emulation mode anyway
+	RTI					; actual jump (7)
 
-dr_ok:					; all drivers init'd
+dr_ok:					; all drivers inited
 #ifdef	LOWRAM
+; ------ terminate ID list ------
 	LDX drv_num			; retrieve single index (4)
 	_STZA drivers_id, X	; terminate list, and we're done! (4)
+; ------
 #endif
 
 ; **********************************
