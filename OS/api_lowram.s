@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5a8
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160408-1114
+; last modified 20160408-1245
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -15,8 +15,7 @@ ts_info:
 	_ERR(UNAVAIL)	; go away!
 
 ; *** COUT, output a character *** revamped 20150208
-; Y <- dev, zpar <- char
-; destroys X, A... plus driver
+; Y <- dev, io_c <- char
 ; uses local2
 
 dt_ptr = local2		; could be called by STRING
@@ -52,34 +51,18 @@ cio_dev:
 	TXA				; get index in list (2)
 	ASL				; two times (2)
 	TAX				; index for address table!
-; version 1 takes 27 clocks and 18 bytes ********
-	CLC				; (2)
+	CLC				; prepare (2)
 	LDA drivers_ad, X	; take table LSB (4)
 	ADC cio_of			; compute final address, generic (3)
 	STA dt_ptr			; store pointer (3)
 	LDA drivers_ad+1, X	; same for LSB (4)
 	ADC #0				; take carry into account (2+3)
 	STA dt_ptr+1
-	JMP (dt_ptr)		; go for it! (6?)
-
-;version 2 takes 45 clocks and 21 bytes, although saves one routine
-;	LDA drivers_ad, X	; take table LSB (4)
-;	STA dt_ptr			; store driver base pointer (3)
-;	LDA drivers_ad+1, X	; same for LSB (4)
-;	STA dt_ptr+1		; (3)
-;	LDY cio_of			; offset for table (3)
-;dr_call:				; *** generic driver call, pointer set at locpt2, Y holds table offset+1 *** new 20150610
-;	LDA (dt_ptr), Y		; destination pointer (5)
-;	PHA					; put it on stack (3)
-;	DEY					; go for LSB (2)
-;	LDA (dt_ptr), Y		; repeat procedure (5+3)
-;	PHA
-;	PHP					; complete for RTI (3)
-;	RTI					; the actual jump (7)
+	JMP (dt_ptr)		; go for it! (6)
 
 
 ; *** CIN, get a character *** revamped 20150209
-; Y <- dev, zpar -> char, C = not available
+; Y <- dev, io_c -> char, C = not available
 ; destroys X, A... plus driver
 ; uses locals[1-3]
 ; ** shares code with cout **
@@ -117,7 +100,8 @@ ci_notdle:
 	CMP #3			; is it ^C? (TERM)
 	BNE ci_exit		; otherwise there's no more to check -- only signal for single-task systems!
 		LDA #SIGTERM
-		STA zpar2		; set signal as parameter
+		STA b_sig		; set signal as parameter
+; ********************************** CONTINUE REVAMP *************************************************+
 		LDY #0			; sent to all, this is the only one
 		_KERNEL(B_SIGNAL)	; send signal
 ci_abort:
