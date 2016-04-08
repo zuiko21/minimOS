@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160407-1437
+; last modified 20160408-0939
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -59,6 +59,8 @@ warm:
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
+	_STZA sd_flag	; this is important to be clear (PW_STAT) ASAP
+
 ; *****************************
 ; *** memory initialisation ***
 ; *****************************
@@ -91,6 +93,7 @@ mreset:
 ; ******************************************************
 ; intialise drivers from their jump tables
 ; ******************************************************
+; THINK about making API entries for this!
 
 ; set some labels, much neater this way
 da_ptr	= sysptr		; pointer for indirect addressing, new CIN/COUT compatible 20150619
@@ -146,12 +149,12 @@ dr_phys:
 		ASL					; use retrieved ID as index (2+2)
 		TAY
 		LDA drv_opt, X		; check whether in use (4)
-		CMP #<dr_error		; if set something different than the default value (2)
+		EOR drv_ipt, X		; only the same if not installed! eeeeek
 		BEQ dr_lsb			; LSB was OK (3/2)
 			JMP dr_abort		; already in use (3)
 dr_lsb:
 		LDA drv_opt+1, X	; check MSB too (4+2)
-		CMP #>dr_error
+		EOR drv_ipt, X		; only the same if not installed! eeeeek
 		BEQ dr_msb			; all OK then (3/2) 
 			JMP dr_abort		; already in use (3)
 dr_msb:

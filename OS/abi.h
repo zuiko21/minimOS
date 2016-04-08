@@ -1,6 +1,6 @@
-; minimOS 0.5a15 API/ABI
+; minimOS 0.5a16 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160401-1006
+; last modified 20160408-1010
 
 ; VIA 65(C)22 registers
 ; offsets from base address (add to base in options.h)
@@ -105,11 +105,12 @@ SIGTERM		=  2	; ask braid to terminate in an orderly fashion, default handler is
 SIGSTOP		=  4	; pause braid, will go BR_STOP
 SIGCONT		=  6	; resume a previously paused braid, will go BR_RUN
 
-; power control values, new 20150603, valid for kernel and firmware
-PW_OFF		=  0	; power off, some code might expect it to be zero!
-PW_STAT		=  2	; suspend (go static) if available
+; power control values, new 20150603, valid for kernel and firmware, resorted 20160408
+PW_STAT		=  0	; suspend (go static) if available, or no pending action, best if zero
+PW_WARM		=  2	; warm reset (needs no firmware) renumbered 150603
 PW_COLD		=  4	; cold reset (needed for compatibility with other architectures) renumbered 150603
-PW_WARM		=  6	; warm reset (needs no firmware) renumbered 150603
+PW_OFF		=  6	; power off
+PW_CLEAN	=  8	; scheduler detected system is clean for poweroff! new 20160408
 
 ; optional windowing system values, new 20150326, TBD
 W_OPEN		=   0	; active window in use

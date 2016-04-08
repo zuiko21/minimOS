@@ -1,7 +1,7 @@
-; minimOS generic Kernel API
+s; minimOS generic Kernel API
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160407-1313
+; last modified 20160408-1014
 
 ; no way for standalone assembly...
 
@@ -577,51 +577,23 @@ go_shell:
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
 ; ** should deploy new 2-step shutdown routine, first send SIGTERM to all and set flag with desired action
 ; ** when the scheduler finds no remaining tasks, call again with flag set and proceed
-; Y <- subfunction code (0=shutdown, 2=suspend, 6=warmboot, 4=coldboot) new API 20150603
+; Y <- subfunction code new API 20150603, 20160408
 ; C -> couldn't poweroff or reboot (?)
 
 shutdown:
-	CPY #PW_STAT	; is it going to suspend?
-		BEQ sd_stat		; don't shutdown system then!
-	PHY				; store mode for later, first must do proper system shutdown
+	CPY #PW_CLEAN		; from scheduler only!
+		BEQ sd_2nd			; continue with second stage
+	CPY #PW_STAT		; is it going to suspend?
+		BEQ sd_stat			; don't shutdown system then!
+	STY sd_flag			; store mode for later, first must do proper system shutdown
 ; ** the real stuff starts here **
-; ask all braids ***but the current one*** to terminate -- no, ask ALL of them
-; then check flags until all braids ***but this one*** are free -- the scheduler will, waiting for NO braids active
-; could return just here after some timeout -- dunno, no longer will stay after sending SIGTERM
-; now let's disable all drivers
-	_SEI			; disable interrupts
-
-#ifdef	SAFE
-	_STZA dpoll_mx	; disable interrupt queues, just in case
-	_STZA dreq_mx
-	_STZA dsec_mx
-#endif
-
-; call each driver's shutdown routine *** new system 20151015
-	LDX #0			; reset index
-; first get the pointer to each driver table
-sd_loop:
-; get address index
-		LDA drivers_ad, X	; get address from original list
-		STA sysptr			; store temporarily
-		LDA drivers_ad+1, X	; same for MSB
-		STA sysptr+1
-		LDY #D_BYE			; shutdown offset
-		LDA (sysptr), Y		; get pointer LSB
-		STA locals			; store somewhere********************
-
-		PHX					; save index for later
-			JSR dr_call			; call routine from generic code!!! *** NOT HERE
-		PLX					; retrieve index
-sd_next:
-		INX					; advance to next entry (2+2)
-		INX
-		BNE sd_loop			; repeat until zero
-; ** system cleanly shut, time to let the firmware turn-off or reboot **
-sd_done:
-	PLX				; retrieve mode as index!
-	_JMPX(sd_tab)	; do as appropriate
-
+; ask all braids to terminate
+	LDY #0				; PID=0 means ALL braids
+	LDA #SIGTERM		; will be asked to terminate
+	STA b_sig			; store signal type
+	_KERNEL(B_SIGNAL)	; ask braids to terminate
+	CLI					; make sure all will keep running!
+	_EXIT_OK
 
 ; firmware interface
 sd_off:
@@ -640,17 +612,65 @@ sd_warm:
 	CLD
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
-sd_tab:
-	.word	sd_off		; shutdown call
-	.word	sd_stat	; suspend, shouldn't arrive here anyway
-	.word	sd_cold	; cold boot via firmware
-	.word	sd_warm	; warm boot direct by kernel
+; the scheduler will wait for NO braids active
+; now let's disable all drivers
+sd_2nd:
+	_SEI			; disable interrupts
+
+#ifdef	SAFE
+	_STZA dpoll_mx	; disable interrupt queues, just in case
+	_STZA dreq_mx
+	_STZA dsec_mx
+#endif
+
+; call each driver's shutdown routine *** new system 20151015
+	LDX #0			; reset index
+; first get the pointer to each driver table
+sd_loop:
+; get address index
+		LDA drivers_ad, X	; get address from original list
+		STA sysptr			; store temporarily
+		LDA drivers_ad+1, X	; same for MSB
+			BEQ sd_done			; no more drivers to shutdown!
+		STA sysptr+1
+; check here whether the driver was successfully installed, get ID as index for drv_opt/ipt
+		LDY #D_ID			; point to ID of driver
+		LDA (sysptr), Y		; get ID
+		ASL					; convert to index
+			BCC sd_next			; invalid device ID!
+		TAY					; use as index
+		LDA drv_opt, Y		; check LSB
+		EOR drv_ipt, Y		; only the same if not installed...
+		BNE sd_msb			; but check MSB too!
+			INY					; point to MSB
+			LDA drv_opt, Y		; check MSB
+			EOR drv_ipt, Y		; only the same if not installed!
+			BEQ sd_next			; nothing to shutoff
+sd_msb:
+		LDY #D_BYE+1		; shutdown MSB offset
+		PHX					; save index for later
+		JSR dr_call			; call routine from generic code!!!
+		PLX					; retrieve index
+sd_next:
+		INX					; advance to next entry (2+2)
+		INX
+		BNE sd_loop			; repeat
+; system cleanly shut, time to let the firmware turn-off or reboot
+sd_done:
+	LDX sd_flag			; retrieve mode as index!
+	_JMPX(sd_tab)		; do as appropriate
+
+sd_tab:					; check order in abi.h!
+	.word	sd_stat		; suspend
+	.word	sd_warm		; warm boot direct by kernel
+	.word	sd_cold		; cold boot via firmware
+	.word	sd_off		; shutdown system
 
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid
 ; uses locals[0] too
-; don't know of possible errors
+; don't know of possible errors********
 
 signal:
 #ifdef	MULTITASK

@@ -1,6 +1,6 @@
 ; minimOS 0.5a7 System Variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160406-0906
+; last modified 20160408-0929
 
 .bss
 
@@ -45,5 +45,6 @@ ticks		.dsb	5	; (irq_freq)-interrupts, then approximate uptime in seconds (3 byt
 default_out	.byt	0	; global default devices
 default_in	.byt	0
 old_t1		.word	0	; keep old T1 latch value for FG, revised 150208
+sd_flag		.byt	0	; default task upon no remaining braids! 160408
 
 ;driver-specific system variables come after this one, in main source
