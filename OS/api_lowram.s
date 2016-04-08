@@ -1,18 +1,20 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5a8
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160407-1412
-
-#ifndef		FINAL
-	.asc	"<kern>"		; *** just for easier debugging *** no markup to skip
-#endif
+; last modified 20160408-1114
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
+; *** MALLOC, reserve memory ***
+; *** FREE, release memory ***
+; *** TS_INFO, get taskswitching info for multitasking driver ***
+; not for 128-byte systems
+malloc:
+free:
+ts_info:
 	_ERR(UNAVAIL)	; go away!
 
-
-; *** K0, output a character *** revamped 20150208
+; *** COUT, output a character *** revamped 20150208
 ; Y <- dev, zpar <- char
 ; destroys X, A... plus driver
 ; uses local2
@@ -76,7 +78,7 @@ cio_dev:
 ;	RTI					; the actual jump (7)
 
 
-; *** K2, get a character *** revamped 20150209
+; *** CIN, get a character *** revamped 20150209
 ; Y <- dev, zpar -> char, C = not available
 ; destroys X, A... plus driver
 ; uses locals[1-3]
@@ -116,7 +118,7 @@ ci_notdle:
 	BNE ci_exit		; otherwise there's no more to check -- only signal for single-task systems!
 		LDA #SIGTERM
 		STA zpar2		; set signal as parameter
-		LDY #0			; ***self-sent signal***
+		LDY #0			; sent to all, this is the only one
 		_KERNEL(B_SIGNAL)	; send signal
 ci_abort:
 		_ERR(EMPTY)		; no character was received
@@ -134,18 +136,8 @@ ci_rnd:
 	LDY ticks		; simple placeholder
 	_EXIT_OK
 
-; *** K4, reserve memory ***
-; *** K6, release memory ***
-; *** K48, get taskswitching info for multitasking driver ***
-; not for 128-byte systems
 
-malloc:
-free:
-ts_info:
-	_ERR(UNAVAIL)	; not for 128-byte systems
-
-
-; *** K8, get I/O port or window *** interface revised 20150208
+; *** OPEN_W, get I/O port or window *** interface revised 20150208
 ; Y -> dev, zpar.l <- size+pos*64K, zpar3 <- pointer to window title!
 ; destroys A
 
@@ -154,21 +146,10 @@ open_w:
 	ORA zpar+1
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
-ow_no_window:
-	LDY #0				; constant default device
-	_EXIT_OK
 
 
-; *** K10, close window ***
-; *** K12, release window, will be closed by kernel ***
-; Y <- dev
 
-close_w:
-free_w:
-	_EXIT_OK		; doesn't do much, either
-
-
-; *** K14, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
+; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
 ; zpar.W -> fr-ticks
 ; zpar2.L -> 24-bit uptime in seconds
 ; destroys X, A
@@ -191,14 +172,25 @@ up_upt:
 	_EXIT_OK
 
 
-; *** K16, get available PID *** properly interfaced 20150417
-; Y -> PID
+; *** GET_PID, get available PID *** properly interfaced 20150417
+; *** B_FORK, reserve braid, just the same as GET_PID on single task systems! ***
+; Y -> PID (always 0)
+; *** B_YIELD, Yield CPU time to next braid ***
+; supposedly no interface needed, don't think I need to tell if ignored
+; *** CLOSE_W, close window ***
+; *** FREE_W, release window, will be closed by kernel ***
+; Y <- dev
 
+ow_no_window:
+get_pid:
 b_fork:
 	LDY #0			; no multitasking, system reserved PID
+yield:
+close_w:
+free_w:
 	_EXIT_OK
 
-; *** K18, launch new loaded process *** properly interfaced 20150417 with changed API!
+; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, zpar2.W <- addr (was z2L)
 b_exec:
@@ -218,7 +210,7 @@ ex_jmp:
 	RTI				; actual jump, won't return here
 
 
-; *** K20, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
+; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
 ; z2L -> addr, z10L <- *path
 load_link:
 ; *** assume path points to filename in header, code begins +248
@@ -238,7 +230,7 @@ ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
 
-; *** K22, write to protected addresses *** revised 20150208
+; *** SU_POKE, write to protected addresses *** revised 20150208
 ; might be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
 ; destroys A (and maybe Y on NMOS)
@@ -249,7 +241,7 @@ su_poke:
 	_EXIT_OK
 
 
-; *** K24, read from protected addresses *** revised 20150208
+; *** SU_PEEK, read from protected addresses *** revised 20150208
 ; might be deprecated, not sure if of any use in other architectures
 ; Y -> value, zpar <- addr
 ; destroys A
@@ -260,7 +252,7 @@ su_peek:
 	_EXIT_OK
 
 
-; *** K26, prints a C-string *** revised 20150208
+; *** STRING, prints a C-string *** revised 20150208
 ; Y <- dev, zpar3 <- *string (.w in current version)
 ; destroys A, Y
 ; uses locals[0]
@@ -278,17 +270,18 @@ str_loop:
 		LDY local1			; retrieve device number
 		_KERNEL(COUT)		; call routine
 #ifdef	SAFE
-			BCS str_err			; extra check
+		BCC str_nerr		; extra check
+			PLY					; cleanup stack
+			RTS					; return error code
+str_nerr:
 #endif
 		PLY					; retrieve index
-		_BRA str_loop		; repeat, will later check for termination
+		INY					; eeeeeeeek!
+		BNE str_loop		; repeat, will later check for termination
+	INC zaddr3+1		; next page, unfortunately
+	BNE str_loop		; no need for BRA
 str_end:
 	_EXIT_OK
-#ifdef	SAFE
-str_err:
-	PLY				; cleanup stack
-	RTS				; return error code
-#endif
 
 ; original version was 25 bytes, NMOS add 2 bytes, SAFE would add 4 bytes
 ;	STY locals		; save Y in case cout destroys it
@@ -306,7 +299,7 @@ str_err:
 ;	_EXIT_OK
 
 
-; *** K28, disable interrupts *** revised 20150209
+; *** SU_SEI, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 
@@ -315,7 +308,7 @@ su_sei:
 	_EXIT_OK		; no error so far
 
 
-; *** K30, enable interrupts *** revised 20150209
+; *** SU_CLI, enable interrupts *** revised 20150209
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 
 su_cli:				; not needed for 65xx, even with protection hardware
@@ -323,7 +316,7 @@ su_cli:				; not needed for 65xx, even with protection hardware
 	_EXIT_OK		; no error
 
 
-; *** K32, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
+; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
 ; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
 ; zpar.W <- dividing factor (times two?), C -> busy
@@ -363,12 +356,12 @@ fg_dis:
 fg_busy:
 	_ERR(BUSY)		; couldn't set
 
-; *** K34, launch default shell *** new 20150604
+; *** GO_SHELL, launch default shell *** new 20150604
 ; no interface needed
 go_shell:
 	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
 
-; *** K36, proper shutdown, with or without poweroff ***
+; *** SHUTDOWN, proper shutdown, with or without poweroff ***
 ; Y <- subfunction code (0=shutdown, 2=suspend, 6=warmboot, 4=coldboot) new API 20150603
 ; C -> couldn't poweroff or reboot (?)
 
@@ -436,7 +429,7 @@ sd_tab:
 	.word	sd_warm	; warm boot direct by kernel
 
 
-; *** K38, send UNIX-like signal to a braid ***
+; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; zpar2.B <- signal to be sent , Y <- addressed braid
 ; uses locals[0] too
 ; don't know of possible errors
@@ -459,7 +452,7 @@ sig_kill:
 sig_call:
 	JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
 
-; *** K40, get execution flags of a braid ***
+; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
 ; Y -> flags, TBD
 ; uses locals[0] too
@@ -470,17 +463,7 @@ status:
 	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
 	_EXIT_OK
 
-; *** K42, get current braid PID ***
-; Y -> PID, TBD
-; uses locals[0] too
-; don't know of possible errors
-
-get_pid:
-; *** single-task interface ***
-	LDY #0			; system-reserved PID for single-task execution
-	_EXIT_OK
-
-; *** K44, set SIGTERM handler, default is like SIGKILL ***
+; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
 ; Y <- PID, zpar2.W <- SIGTERM handler routine (ending in RTS)
 ; uses locals[0] too
 ; bad PID is probably the only feasible error
@@ -493,22 +476,10 @@ set_handler:
 	STA mm_term+1
 	_EXIT_OK
 
-; *** K46, Yield CPU time to next braid ***
-; supposedly no interface needed, don't think I need to tell if ignored
-
-yield:
-	_EXIT_OK		; no one to give CPU time away!
-
 ; *** end of kernel functions ***
 
 ; jump table, if not in separate 'jump' file
-#ifndef		DOWNLOAD
-#ifndef		FINAL
-	.asc	"<jump>"	; easier extraction for 'jump' file
-#endif
-#ifdef		LOWRAM
 -fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
-#endif
 k_vec:
 	.word	cout		; output a character
 	.word	cin			; get a character
@@ -535,13 +506,3 @@ k_vec:
 	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
 	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
 
-#ifndef		FINAL
-	.asc	"</jump>"	; easier extraction for 'jump' file
-#endif
-#else
-#include "drivers.s"	; this package will be included with downloadable kernels
-.data
-#include "sysvars.h"	; donwloadable systems have all vars AND drivers after the kernel itself
-#include "drivers.h"
-user_sram = *			; the rest of SRAM
-#endif
