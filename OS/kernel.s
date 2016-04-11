@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5b2
+; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160408-0939
+; last modified 20160411-1339
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -74,6 +74,7 @@ mreset:
 		STA ram_stat, X		; set entry as unassigned, essential (4)
 		DEX					; previous byte (2)
 		BNE mreset			; leaves first entry alone (3/2, is this OK?)
+; please note Jalapa special RAM address!
 	LDA #<user_sram		; get first entry LSB (2)
 	STA ram_tab			; create entry (4)
 	LDA #>user_sram		; same for MSB (2+4)

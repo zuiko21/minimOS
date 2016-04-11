@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5a8
+; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160408-1245
+; last modified 20160411-1343
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used

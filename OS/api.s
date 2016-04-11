@@ -1,7 +1,7 @@
-s; minimOS generic Kernel API
-; v0.5b4
+; minimOS generic Kernel API
+; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160408-1014
+; last modified 20160411-1342
 
 ; no way for standalone assembly...
 
@@ -615,6 +615,8 @@ sd_warm:
 ; the scheduler will wait for NO braids active
 ; now let's disable all drivers
 sd_2nd:
+	LDA sd_flag		; check what was pending
+		BEQ sd_stat		; actually an error...
 	_SEI			; disable interrupts
 
 #ifdef	SAFE
