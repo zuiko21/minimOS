@@ -1,6 +1,6 @@
 ; minimOS 0.5a4 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160407-1003
+; last modified 20160412-1014
 
 .zero
 
@@ -17,7 +17,7 @@ uz						; user context starts here, $03...$E3 newname 20150128,0206
 locals:						; old label for compatibility
 
 ; *** include aliases here for local1/locpt1 ***
-ma_l: str_dev:
+da_ptr: ma_l: str_dev:
 local1: locpt1	.dsb	4	; variables for kernel functions @ $E4, new name 150122, 150619
 
 ; *** include aliases here for local2/locpt2 ***

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160411-1343
+; last modified 20160412-1014
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -16,10 +16,10 @@ ts_info:
 
 ; *** COUT, output a character *** revamped 20150208
 ; Y <- dev, io_c <- char
-; uses local2
+; uses da_ptr
 
-dt_ptr = local2		; could be called by STRING
-cio_of = dt_ptr + 2	; parameter switching between cin and cout
+cio_of = da_ptr		; parameter switching between cin and cout
+; da_ptr globally defined, cio_of not needed upon calling dr_call!
 
 cout:
 	LDA #D_COUT		; only difference from cin (2)
@@ -51,15 +51,23 @@ cio_dev:
 	TXA				; get index in list (2)
 	ASL				; two times (2)
 	TAX				; index for address table!
-	CLC				; prepare (2)
-	LDA drivers_ad, X	; take table LSB (4)
-	ADC cio_of			; compute final address, generic (3)
-	STA dt_ptr			; store pointer (3)
-	LDA drivers_ad+1, X	; same for LSB (4)
-	ADC #0				; take carry into account (2+3)
-	STA dt_ptr+1
-	JMP (dt_ptr)		; go for it! (6)
+; original version was 18 bytes, 27 clocks
+;	CLC					; prepare (2)
+;	LDA drivers_ad, X	; take table LSB (4)
+;	ADC cio_of			; compute final address, generic (3)
+;	STA da_ptr			; store pointer (3)
+;	LDA drivers_ad+1, X	; same for LSB (4)
+;	ADC #0				; take carry into account (2+3)
+;	STA da_ptr+1
+;	JMP (da_ptr)		; go for it! (6)
 
+; unified version is 15 bytes, 20 + 29 clocks
+	LDY cio_of			; get offset (3)
+	LDA drivers_ad, X	; take table LSB (4)
+	STA da_ptr			; store pointer (3)
+	LDA drivers_ad+1, X	; same for LSB (4+3)
+	STA da_ptr+1		; cannot use neater way but no longer needs cio_of!
+	JMP dr_call			; re-use routine (3...)
 
 ; *** CIN, get a character *** revamped 20150209
 ; Y <- dev, io_c -> char, C = not available
@@ -239,7 +247,7 @@ su_peek:
 ; *** STRING, prints a C-string *** revised 20150208
 ; Y <- dev, zpar3 <- *string (.w in current version)
 ; destroys A, Y
-; uses locals[0]
+; uses locals[0] ****REVISE REVISE**************
 ; calls cout (K0)
 
 string:

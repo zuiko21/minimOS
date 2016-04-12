@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160411-1339
+; last modified 20160412-1014
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -97,9 +97,9 @@ mreset:
 ; THINK about making API entries for this!
 
 ; set some labels, much neater this way
-da_ptr	= sysptr		; pointer for indirect addressing, new CIN/COUT compatible 20150619
+da_ptr	= locals		; pointer for indirect addressing, new CIN/COUT compatible 20150619
 drv_aix = systmp		; address index for, not necessarily PROPOSED, driver list, new 20150318, shifted 20150619
-tm_ptr	= locals		; temporary pointer for double-indirect addressing!
+tm_ptr	= sysptr		; temporary pointer for double-indirect addressing!
 
 ; driver full install is new 20150208
 	_STZA dpoll_mx		; reset indexes, sorry for NMOS (4x4)
@@ -299,15 +299,18 @@ dr_error:
 	_ERR(N_FOUND)		; standard exit for non-existing drivers!
 
 dr_icall:
-	LDY #D_INIT+1		; get MSB first (2)
-dr_call:				; *** generic driver call, pointer set at sysptr, Y holds table offset+1 *** new 20150610
+	LDY #D_INIT			; original pointer (2)
+; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
+; takes 10 bytes, 29 clocks
+dr_call:
+	INY					; get MSB first (2)
 	LDA (da_ptr), Y		; destination pointer MSB (5)
 	PHA					; push it (3)
 	DEY					; go for LSB (2)
 	LDA (da_ptr), Y		; repeat procedure (5)
 	PHA					; push LSB (3)
-	PHP					; 816 is expected to be in emulation mode anyway
-	RTI					; actual jump (7)
+	PHP					; 816 is expected to be in emulation mode anyway (3)
+	RTI					; actual jump (6)
 
 dr_ok:					; all drivers inited
 #ifdef	LOWRAM
