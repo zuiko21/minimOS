@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.5b4
+; v0.5b4, should match kernel.s
 ; features TBD
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160310-1226
+; last modified 20160412-0952
 
 #define		ISR		_ISR
 
@@ -34,23 +34,20 @@
 	PHA						; save registers (3x3)
 	_PHX
 	_PHY
+
+; *** place here HIGH priority async tasks, if required ***
+
 ; check whether from VIA, BRK... (7 if periodic, 6 if async)
 	BIT VIA+IFR				; much better than LDA + ASL + BPL! (4)
 		BVS periodic		; from T1 (3/2)
 
-; *** async interrupt otherwise *** (3 if not final)
-#ifndef		FINAL
-	_BRA async_irq
-	.asc	"<async>"
-async_irq:
-#endif
-
+; *** async interrupt otherwise ***
 ; execute D_REQ in drivers (7 if nothing to do, 3+28*number of drivers until one replies, plus inner codes)
 	LDX dreq_mx		; get queue size (4)
 	BEQ ir_done		; no drivers to call (2/3)
 i_req:
 		_PHX				; keep index! (3)
-			JSR ir_call			; call from table (12...)
+		JSR ir_call			; call from table (12...)
 		_PLX				; restore index (4)
 			BCC isr_done		; driver satisfied, thus go away NOW, BCC instead of BCS 20150320 (2/3)
 		DEX					; go backwards to be faster! (2+2)
@@ -82,15 +79,9 @@ is_call:
 periodic:
 	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
 
-; scheduler no longer here, just an optional driver!
+; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
-; execute D_POLL code in drivers (3 if not final)
-#ifndef		FINAL
-	_BRA polling_label
-	.asc	"<poll>"
-polling_label:
-#endif
-
+; execute D_POLL code in drivers
 ; 7 if nothing to do, typically 6+26 clocks per entry (not 62!) plus inner codes
 	LDX dpoll_mx		; get queue size (4)
 	BEQ ip_done			; no drivers to call (2/3)
@@ -98,9 +89,9 @@ i_poll:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; no improvement with offset, all of them will be called anyway
 		_PHX				; keep index! (3)
-			JSR ip_call			; call from table (12...)
-; *** here is the return point needed for b_exec in order to create the stack frame ***
-isr_sched_ret:			; take this standard address!!!
+		JSR ip_call			; call from table (12...)
+; *** here is the return point needed for B_EXEC in order to create the stack frame ***
+isr_sched_ret:				; *** take this standard address!!! ***
 		_PLX				; restore index (4)
 		BNE i_poll			; until zero is done (3/2)
 ip_done:
@@ -113,9 +104,9 @@ ip_done:
 	LDA ticks+1			; compare it (4)
 	CMP #$FF			; wrapped? (2)
 		BNE isr_done		; no second completed yet *** revise for load balancing (3/2)
-	LDA irq_freq		; get final value (4)
-	STA ticks			; set values (4)
-	LDA irq_freq+1		; same for MSB (4+4)
+	LDY irq_freq		; get final value (4)
+	LDA irq_freq+1		; same for MSB (4)
+	STY ticks			; set values (4+4)
 	STA ticks+1
 	INC ticks+2			; one more second (6)
 		BNE second			; no wrap (3/2)
@@ -126,21 +117,17 @@ ip_done:
 ; to be done - balancing into, say, 8 time slots
 second:
 	LDX dsec_mx			; get queue size (4)
-	BEQ isr_done		; no drivers to call (2/3)
+		BEQ isr_done		; no drivers to call (2/3)
 i_sec:
 		DEX					; go backwards to be faster! (2x2)
 		DEX
 		_PHX				; keep index! (3)
-			JSR is_call			; call from table (12...)
+		JSR is_call			; call from table (12...)
 		_PLX				; restore index (4)
 		BNE i_sec			; until zero is done (3/2)
 	BEQ isr_done		; go away, no need for BRA if not called from elsewhere (3)
 
 ; *** BRK handler ***
-#ifndef		FINAL
-	.asc	"<brk>"
-#endif
-
 brk_handler:			; should end in RTS anyway, 20160310
 #include "isr/brk.s"
 
