@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160412-1014
+; last modified 20160413-0919
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -74,7 +74,7 @@ mreset:
 		STA ram_stat, X		; set entry as unassigned, essential (4)
 		DEX					; previous byte (2)
 		BNE mreset			; leaves first entry alone (3/2, is this OK?)
-; please note Jalapa special RAM address!
+; please note Jalapa special RAM addressing!
 	LDA #<user_sram		; get first entry LSB (2)
 	STA ram_tab			; create entry (4)
 	LDA #>user_sram		; same for MSB (2+4)
@@ -97,23 +97,23 @@ mreset:
 ; THINK about making API entries for this!
 
 ; set some labels, much neater this way
-da_ptr	= locals		; pointer for indirect addressing, new CIN/COUT compatible 20150619
-drv_aix = systmp		; address index for, not necessarily PROPOSED, driver list, new 20150318, shifted 20150619
+; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
 tm_ptr	= sysptr		; temporary pointer for double-indirect addressing!
+;drv_aix = systmp		; address index for, not necessarily PROPOSED, driver list, new 20150318, shifted 20150619
 
 ; driver full install is new 20150208
-	_STZA dpoll_mx		; reset indexes, sorry for NMOS (4x4)
-	_STZA dreq_mx
-	_STZA dsec_mx
-	_STZA drv_aix		; why not here?
+	LDX #0				; reset driver index (2)
+	STX dpoll_mx		; reset all indexes, NMOS-savvy (4+4+4)
+	STX dreq_mx
+	STX dsec_mx
+;	STX drv_aix
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------
-	_STZA drv_num		; single index of, not necessarily SUCCESSFULLY, detected drivers, updated 20150318
+	STX drv_num			; single index of, not necessarily SUCCESSFULLY, detected drivers, updated 20150318 (4)
 ; ------
 #else
 ; ++++++ new direct I/O tables for much faster access 20160406 ++++++
-	LDX #0				; reset index of direct table (2)
 dr_clear:
 		LDA #<dr_error			; make unused entries point to a standard error routine, new 20160406 (2)
 		STA drv_opt, X			; set LSB for output (4)
@@ -129,7 +129,8 @@ dr_clear:
 
 ; first get the pointer to each driver table
 dr_loop:
-		LDX drv_aix			; get address index (4)
+;		LDX drv_aix
+		PHX					; keep current value, just in case (3)
 		LDA drivers_ad+1, X	; get address MSB (4)
 		BNE dr_inst			; not in zeropage, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
@@ -145,32 +146,29 @@ dr_inst:
 			JMP dr_abort		; reject logical devices (3)
 dr_phys:
 #endif
+
 #ifndef	LOWRAM
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 		ASL					; use retrieved ID as index (2+2)
 		TAY
-		LDA drv_opt, X		; check whether in use (4)
-		EOR drv_ipt, X		; only the same if not installed! eeeeek
+		LDA drv_opt, Y		; check whether in use (4)
+		EOR drv_ipt, Y		; only the same if not installed! eeeeek
 		BEQ dr_lsb			; LSB was OK (3/2)
 			JMP dr_abort		; already in use (3)
 dr_lsb:
-		LDA drv_opt+1, X	; check MSB too (4+2)
-		EOR drv_ipt, X		; only the same if not installed! eeeeek
+		LDA drv_opt+1, Y	; check MSB too (4+2)
+		EOR drv_ipt, Y		; only the same if not installed! eeeeek
 		BEQ dr_msb			; all OK then (3/2) 
 			JMP dr_abort		; already in use (3)
 dr_msb:
-		PHY					; save index! (3)
-		LDY #D_COUT			; offset for output routine (2)
+		LDA #D_COUT			; offset for output routine (2)
 		JSR dr_gind			; get indirect address
-		PLY					; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
 		STA drv_opt, Y		; store in table (4)
 		LDA tm_ptr+1		; same for MSB (3+4)
 		STA drv_opt+1, Y
-		PHY					; save index again! (3)
-		LDY #D_CIN			; same for input routine (2)
+		LDA #D_CIN			; same for input routine (2)
 		JSR dr_gind			; get indirect address
-		PLY					; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
 		STA drv_ipt, Y		; store in table (4)
 		LDA tm_ptr+1		; same for MSB (3+4)
@@ -261,14 +259,16 @@ dr_next:
 #endif
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
-		INC drv_aix		; update ADDRESS index, even if unsuccessful (5)
+;		INC drv_aix
+		PLX				; retrieve saved index (4)
+		INX				; update ADDRESS index, even if unsuccessful (2)
 		JMP dr_loop		; go for next (3)
 dr_abort:
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
-		LDX drv_num			; get failed driver index (4)
+		LDY drv_num			; get failed driver index (4)
 		LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
-		STA drivers_id, X	; delete older value (4)
+		STA drivers_id, Y	; delete older value (4)
 ; ------
 #else
 ; ++++++
@@ -276,24 +276,28 @@ dr_abort:
 		LDA (da_ptr), Y		; get ID code (5)
 			BPL dr_next			; nothing to delete (2/3)
 		ASL					; use retrieved ID as index (2+2)
-		TAX
+		TAY
 		LDA #<dr_error			; make deleted entries point to a standard error routine, new 20160406 (2)
-		STA drv_opt, X			; set LSB for output (4)
-		STA drv_ipt, X			; and for input (4)
+		STA drv_opt, Y			; set LSB for output (4)
+		STA drv_ipt, Y			; and for input (4)
 		LDA #>dr_error			; pretty much the same, not worth a loop (2)
-		STA drv_opt+1, X		; set MSB for output (4)
-		STA drv_ipt+1, X		; and for input (4)
+		STA drv_opt+1, Y		; set MSB for output (4)
+		STA drv_ipt+1, Y		; and for input (4)
 ; ++++++
 #endif
 		_BRA dr_next			; go for next (3)
 
-; get indirect address from driver pointer table
+; get indirect address from driver pointer table, 13 bytes, 33 clocks
 dr_gind:
+	_PHY				; save index! (3)
+	TAY					; use supplied index (2)
 	LDA (da_ptr), Y		; get address LSB (5)
 	STA tm_ptr			; store temporarily (3)
 	INY					; same for MSB (2)
 	LDA (da_ptr), Y		; get MSB (5)
 	STA tm_ptr+1		; store temporarily (3)
+	_PLY				; restore index (4)
+	RTS					; come back!!! (6)
 
 dr_error:
 	_ERR(N_FOUND)		; standard exit for non-existing drivers!
@@ -313,6 +317,7 @@ dr_call:
 	RTI					; actual jump (6)
 
 dr_ok:					; all drivers inited
+	PLA					; discard stored X, no hassle for NMOS
 #ifdef	LOWRAM
 ; ------ terminate ID list ------
 	LDX drv_num			; retrieve single index (4)
@@ -328,6 +333,7 @@ dr_ok:					; all drivers inited
 	_STZA cin_mode	; reset binary mode flag, new 20150618
 
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
+; could be done always, will not harm anyway
 #ifndef		MULTITASK
 	LDY #<sig_kill	; get default routine address LSB
 	LDA #>sig_kill	; same for MSB
@@ -352,6 +358,7 @@ dr_ok:					; all drivers inited
 ; ******************************
 
 	JSR shell			; should be done this way, until a proper EXEC is made!
+; ****revise this, should do PROPER shutdown and keep waiting for the firmware to power OFF
 #ifndef		MULTITASK
 	LDY #PW_OFF			; after execution, shut down system (al least)
 	_ADMIN(POWEROFF)	; via firmware, will not return
