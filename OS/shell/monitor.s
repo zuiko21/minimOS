@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc2
-; last modified 20160318-0909
+; v0.5rc3
+; last modified 20160413-1010, just new ABI labels
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -67,12 +67,12 @@ user_sram	= $0400
 go_mon:
 #endif
 	STA z_used			; set needed ZP space as required by minimOS
-	_STZA zpar			; no screen size required
-	_STZA zpar+1		; neither MSB
+	_STZA w_rect		; no screen size required
+	_STZA w_rect+1		; neither MSB
 	LDY #<title			; LSB of window title
 	LDA #>title			; MSB of window title
-	STY zaddr3			; set parameter
-	STA zaddr3+1
+	STY str_pt			; set parameter
+	STA str_pt+1
 	_KERNEL(OPEN_W)		; ask for a character I/O device
 	BCC open_mon		; no errors
 		RTS					; abort otherwise!
@@ -430,7 +430,7 @@ _unrecognised:
 ; *** useful routines ***
 ; * print a character in A *
 prnChar:
-	STA zpar			; store character
+	STA io_c			; store character
 	LDY iodev			; get device
 	_KERNEL(COUT)		; output it ##### minimOS #####
 ; ignoring possible I/O errors
@@ -438,8 +438,8 @@ prnChar:
 
 ; * print a NULL-terminated string pointed by $AAYY *
 prnStr:
-	STA zaddr3+1		; store MSB
-	STY zaddr3			; LSB
+	STA str_pt+1		; store MSB
+	STY str_pt			; LSB
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
@@ -453,7 +453,7 @@ gl_l:
 		LDY iodev			; use device
 		_KERNEL(CIN)		; get one character #####
 			BCS gl_l			; wait for something
-		LDA zpar			; get received
+		LDA io_c			; get received
 		LDX cursor			; retrieve index
 		CMP #CR				; hit CR?
 			BEQ gl_cr			; all done then
