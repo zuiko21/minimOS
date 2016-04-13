@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160413-0919
+; last modified 20160413-0925
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -130,7 +130,7 @@ dr_clear:
 ; first get the pointer to each driver table
 dr_loop:
 ;		LDX drv_aix
-		PHX					; keep current value, just in case (3)
+		_PHX				; keep current value, just in case (3)
 		LDA drivers_ad+1, X	; get address MSB (4)
 		BNE dr_inst			; not in zeropage, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
@@ -260,7 +260,7 @@ dr_next:
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
 ;		INC drv_aix
-		PLX				; retrieve saved index (4)
+		_PLX			; retrieve saved index (4)
 		INX				; update ADDRESS index, even if unsuccessful (2)
 		JMP dr_loop		; go for next (3)
 dr_abort:
