@@ -1,7 +1,7 @@
 ; firmware for minimOS on Kowalski simulator
-; v0.9a1
+; v0.9a2
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20160331-0857
+; last modified 20160414-1417
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -138,7 +138,7 @@ fw_magic:
 
 ; *** administrative functions ***
 ; A0, install jump table
-; zpar.W <- address of supplied jump table
+; ex_pt.W <- address of supplied jump table
 fw_install:
 	LDY #0				; reset index (2)
 
@@ -147,7 +147,7 @@ fw_install:
 #endif
 
 fwi_loop:
-		LDA (zpar), Y		; get from table as supplied (5)
+		LDA (ex_pt), Y		; get from table as supplied (5)
 		STA fw_table, Y		; copy where the firmware expects it (4+2)
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
@@ -160,16 +160,16 @@ fwi_loop:
 
 
 ; A2, set IRQ vector
-; zpar.W <- address of ISR
+; ex_pt.W <- address of ISR
 fw_s_isr:
 
 #ifdef	SAFE
 	_ENTER_CS			; disable interrupts! (5)
 #endif
 
-	LDA zpar			; get LSB (3)
+	LDA ex_pt			; get LSB (3)
 	STA fw_isr			; store for firmware (4)
-	LDA zpar+1			; get MSB (3+4)
+	LDA ex_pt+1			; get MSB (3+4)
 	STA fw_isr+1
 
 #ifdef	SAFE
@@ -180,29 +180,29 @@ fw_s_isr:
 
 
 ; A4, set NMI vector
-; zpar.W <- address of NMI code (including magic string)
+; ex_pt.W <- address of NMI code (including magic string)
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected
 fw_s_nmi:
-	LDA zpar			; get LSB (3)
+	LDA ex_pt			; get LSB (3)
 	STA fw_nmi			; store for firmware (4)
-	LDA zpar+1			; get MSB (3+4)
+	LDA ex_pt+1			; get MSB (3+4)
 	STA fw_nmi+1
 	_EXIT_OK			; done (8)
 
 
 ; A6, patch single function
-; zpar.W <- address of code
+; ex_pt.W <- address of code
 ; Y <- function to be patched
 fw_patch:
-	LDA zpar			; get LSB (3)
+	LDA ex_pt			; get LSB (3)
 
 #ifdef	SAFE
 	_ENTER_CS			; disable interrupts! (5)
 #endif
 
 	STA fw_table, Y		; store where the firmware expects it (4)
-	LDA zpar+1			; same for MSB (3+4)
+	LDA ex_pt+1			; same for MSB (3+4)
 	STA fw_table+1, Y
 
 #ifdef	SAFE
@@ -254,12 +254,12 @@ fwp_susp:
 fwp_cold:
 	JMP ($FFFC)			; call 6502 vector, not really needed here but...
 
-; sub-function jump table
+; sub-function jump table (eeeek)
 fwp_func:
-	.word	fwp_off		; poweroff	+FW_OFF
 	.word	fwp_susp	; suspend	+FW_STAT
-	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	kernel		; shouldn't use this, just in case
+	.word	fwp_cold	; coldboot	+FW_COLD
+	.word	fwp_off		; poweroff	+FW_OFF
 
 ; *** administrative jump table ***
 ; PLEASE CHANGE ORDER ASAP

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160412-0955
+; last modified 20160414-1346
 
 ; no way for standalone assembly...
 
@@ -497,6 +497,7 @@ str_phys:
 ; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
 	STA str_dev			; store for indexed call! (3)
+	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
 str_loop:
 		LDA (str_pt), Y		; get character from string, new approach (5)

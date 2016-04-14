@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160413-0925
+; last modified 20160414-1402
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -156,7 +156,7 @@ dr_phys:
 		BEQ dr_lsb			; LSB was OK (3/2)
 			JMP dr_abort		; already in use (3)
 dr_lsb:
-		LDA drv_opt+1, Y	; check MSB too (4+2)
+		LDA drv_opt, Y	; check MSB too (4+2)
 		EOR drv_ipt, Y		; only the same if not installed! eeeeek
 		BEQ dr_msb			; all OK then (3/2) 
 			JMP dr_abort		; already in use (3)
@@ -262,6 +262,7 @@ dr_next:
 ;		INC drv_aix
 		_PLX			; retrieve saved index (4)
 		INX				; update ADDRESS index, even if unsuccessful (2)
+		INX				; eeeeeeeek! pointer arithmetic! (2)
 		JMP dr_loop		; go for next (3)
 dr_abort:
 #ifdef	LOWRAM
