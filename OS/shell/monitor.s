@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc3
-; last modified 20160413-1010, just new ABI labels
+; v0.5rc4
+; last modified 20160415-0908 for NMOS compatibility
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -222,8 +222,8 @@ ex_ns:
 		; loop for 4/8 ASCII
 		LDY #0				; reset offset
 ex_a:
+			_PHY				; save offset BEFORE!
 			LDA (tmp2), Y		; get byte
-			_PHY				; save offset
 			CMP #127			; check whether printable
 				BCS ex_np
 			CMP #' '
@@ -315,11 +315,15 @@ quit:
 	RTS					; exit to minimOS
 
 store_str:
-	LDY cursor				; use as offset
+;	LDY cursor				; use as offset
 sstr_l:
-		INY					; skip the S and increase
+		INC cursor			; skip the S and increase, not INY
+		LDY cursor			; allows NMOS macro!
 		LDA buffer, Y		; get raw character
-		_STAX(ptr)			; store in place
+		_STAY(ptr)			; store in place, STAX will not work
+#ifdef	NMOS
+		TAY					; update flags altered by macro!
+#endif
 			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
 			BEQ sstr_cr			; terminate and exit

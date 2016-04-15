@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160414-1402
+; last modified 20160415-0844
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -161,14 +161,18 @@ dr_lsb:
 		BEQ dr_msb			; all OK then (3/2) 
 			JMP dr_abort		; already in use (3)
 dr_msb:
-		LDA #D_COUT			; offset for output routine (2)
+		_PHY				; save index! (3)
+		LDY #D_COUT			; offset for output routine (2)
 		JSR dr_gind			; get indirect address
+		_PLY				; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
 		STA drv_opt, Y		; store in table (4)
 		LDA tm_ptr+1		; same for MSB (3+4)
 		STA drv_opt+1, Y
-		LDA #D_CIN			; same for input routine (2)
+		_PHY				; save index! (3)
+		LDY #D_CIN			; same for input routine (2)
 		JSR dr_gind			; get indirect address
+		_PLY				; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
 		STA drv_ipt, Y		; store in table (4)
 		LDA tm_ptr+1		; same for MSB (3+4)
@@ -290,14 +294,11 @@ dr_abort:
 
 ; get indirect address from driver pointer table, 13 bytes, 33 clocks
 dr_gind:
-	_PHY				; save index! (3)
-	TAY					; use supplied index (2)
 	LDA (da_ptr), Y		; get address LSB (5)
 	STA tm_ptr			; store temporarily (3)
 	INY					; same for MSB (2)
 	LDA (da_ptr), Y		; get MSB (5)
 	STA tm_ptr+1		; store temporarily (3)
-	_PLY				; restore index (4)
 	RTS					; come back!!! (6)
 
 dr_error:
@@ -358,6 +359,9 @@ dr_ok:					; all drivers inited
 ; **** launch monitor/shell ****
 ; ******************************
 
+; until a proper B_EXEC is done, at least set available zeropage space!
+	LDA #ZP_AVAIL		; available bytes
+	STA z_used			; set environment variable
 	JSR shell			; should be done this way, until a proper EXEC is made!
 ; ****revise this, should do PROPER shutdown and keep waiting for the firmware to power OFF
 #ifndef		MULTITASK

@@ -7,7 +7,8 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-;#define		SAFE	_SAFE
+#define		SAFE	_SAFE
+#define		NMOS	_NMOS
 
 ; hard to multitask on this...
 
