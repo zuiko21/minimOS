@@ -1,7 +1,7 @@
 ; firmware for minimOS on Kowalski simulator
 ; v0.9a2
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20160414-1417
+; last modified 20160418-1332
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -22,13 +22,19 @@ kernel = ROM_BASE			; in case is not available, cannot download!
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
+#ifdef	FILESYSTEM
 	.asc 0, "aS****", 13	; standard system file wrapper, new 20160309
 	.asc "0.9a1 firmware for "
+#endif
+
+; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
+#ifdef	FILESYSTEM
 	.dsb	fw_start + $FC - *, $FF	; generate padding to link
 	.asc	$FF,$FF,$FF,$FF			; undefined ending???
+#endif
 
 ; *** cold restart ***
 ; basic init
