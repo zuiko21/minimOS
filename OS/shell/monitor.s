@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc4
-; last modified 20160415-0908 for NMOS compatibility
+; v0.5rc5
+; last modified 20160418-0920 for NMOS compatibility
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -358,8 +358,8 @@ view_regs:
 
 	LDX #0				; reset counter
 vr_l:
-		LDA _a, X			; get value from regs
 		_PHX				; save index!
+		LDA _a, X			; get value from regs
 		JSR prnHex			; show value in hex
 
 #ifndef	NARROW
