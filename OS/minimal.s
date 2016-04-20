@@ -1,8 +1,8 @@
 ; MINIMAL support for minimOS components
 ; on Kowalski's 6502 simulator
-; v0.9.1b2
+; v0.9.1b4
 ; (c)2016 Carlos J. Santisteban
-; last modified 20160413-1050
+; last modified 20160420-0856
 
 #define		ROM		_ROM
 #define		KERNEL	_KERNEL
@@ -16,7 +16,7 @@
 user_sram = SYSRAM
 .text
 
-* = $E000			; just a placeholder, no standardised address
+* = ROM_BASE
 
 reset:
 ; *** basic init ***
@@ -181,22 +181,23 @@ fw_kern:
 	.word	shutdn		; SHUTDOWN 36
 
 ; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	kernel_call-*, $FF
-#endif
+	.dsb	kernel_call-3-*, $FF
+
+; ** stub for error handling **
+* = kernel_call-3
+bad_call:
+	JMP unimpl			; invalid function number
 
 ; *** minimOS function call primitive ($FFC0) ***
-* = kernel_call
+* = kernel_call			; should be already here!
+#ifdef	SAFE
 	CPX #37				; check against limits
-	BCC call_ok			; no overflow
-		JMP unimpl			; error otherwise
-call_ok:
+		BCS bad_call		; overflow
+#endif
 	_JMPX(fw_kern)		; macro for NMOS compatibility (6)
 
 ; filling for ready-to-blow ROM
-#ifdef		ROM
 	.dsb	admin_call-*, $FF
-#endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = admin_call
@@ -207,9 +208,7 @@ do_shut:
 	JMP shutdn			; valid so far
 
 ; filling for ready-to-blow ROM
-#ifdef	ROM
 	.dsb	panic-*, $FF
-#endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = panic
@@ -218,13 +217,13 @@ panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
 	NOP					; padding for reserved C816 vectors
 
+hard_vectors = $FFFA	; needed because of the lack of 65816 vectors
+
 ; filling for ready-to-blow ROM
-#ifdef	ROM
 	.dsb	$FFFA-*, $FF
-#endif
 
 ; *** 65(C)02 ROM vectors ***
-* = $FFFA				; just in case
+* = $FFFA
 	.word	nmi			; (emulated) NMI	@ $FFFA
 	.word	reset		; (emulated) RST	@ $FFFC
 	.word	irq			; (emulated) IRQ	@ $FFFE
