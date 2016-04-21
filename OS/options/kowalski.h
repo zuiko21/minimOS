@@ -2,13 +2,14 @@
 ; suitable for Kowalski simulator
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160406-0852
+; last modified 20160421-0915
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
 #define		NMOS	_NMOS
+;#define		LOWRAM	_LOWRAM
 
 ; hard to multitask on this...
 
@@ -72,12 +73,19 @@ DEVICE	=	DEV_CONIO		; standard I/O device
 ; * some pointers and addresses * renamed 20150220
 
 ; SRAM pages, just in case of mirroring/bus error * NOT YET USED
+#ifndef	LOWRAM
 SRAM =	223		; 55.75 KiB available this far
 
 SPTR		=	$FF		; general case stack pointer, new name 20160308
 SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
 ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp
-
+#else
+; rare lowram version for testing purposes
+SRAM		=	0
+SPTR		=	$63		; (previously $75) MTE and other 128-byte RAM systems!
+SYSRAM		=	$28		; for 128-byte systems, reduced value 20150210
+ZP_AVAIL	=	$25
+#endif
 
 ; *** speed definitions ***
 ; ***** meaningless because there are no hardware interrupts! *****

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160414-1346
+; last modified 20160421-0956
 
 ; no way for standalone assembly...
 
@@ -500,12 +500,15 @@ str_phys:
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
 str_loop:
+		_PHY				; save just in case COUT destroys it (3)
 		LDA (str_pt), Y		; get character from string, new approach (5)
-			BEQ str_exit		; terminated! (2/3)
-		PHY					; save just in case COUT destroys it (3)
+		BNE str_cont		; not terminated! (3/2)
+			PLA					; otherwise discard saved Y (4)
+			_EXIT_OK			; and go away!
+str_cont:
 		STA io_c			; store output character for COUT (3)
 			JSR str_call		; indirect subroutine call (6...)
-		PLY					; restore index (4)
+		_PLY				; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
 	INC str_pt+1		; otherwise increase, parameter has changed!
