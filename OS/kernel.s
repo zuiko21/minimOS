@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160415-0844
+; last modified 20160420-1408
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -183,8 +183,9 @@ dr_msb:
 #ifdef	SAFE
 ; check whether the ID is in already in use
 ; might use a reversed loop, doing at the end LDX drv_num anyway?
+; *** may fail if no drivers installed! *** think about doing it in reverse!
 		LDX #0			; reset index (2)
-		BEQ dr_limit	; check whether has something to check, no need for BRA (3)
+;		BEQ dr_limit	; check whether has something to check, no need for BRA (3)
 dr_scan:
 			CMP drivers_id, X	; compare with list entry (4)
 				BEQ dr_abort		; already in use, don't register! (2/3)
@@ -217,7 +218,6 @@ dr_ploop:
 		STX dpoll_mx		; save updated index (4)
 		LDY #D_AUTH			; offset for feature code (2)
 dr_nopoll:
-
 		LDA (da_ptr), Y		; get auth code (5)
 		AND #A_REQ			; check D_REQ presence (2)
 			BEQ dr_noreq		; no D_REQ installed (2/3)
@@ -235,7 +235,6 @@ dr_aloop:
 		STX dreq_mx			; save updated index  (4)
 		LDY #D_AUTH			; offset for feature code (2)
 dr_noreq:
-
 		LDA (da_ptr), Y		; get auth code (5)
 		AND #A_SEC			; check D_SEC (2)
 			BEQ dr_nosec		; no D_SEC installed (2/3)

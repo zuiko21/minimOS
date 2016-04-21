@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc5
-; last modified 20160420-0834 for shared library use
+; v0.5rc6
+; last modified 20160421-1414 allowing use with LOWRAM
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -22,7 +22,7 @@ user_sram	= $0400
 ;#define	NARROW	_NARROW
 
 ; *** constant definitions ***
-#define	BUFSIZ		20
+#define	BUFSIZ		16
 #define	CR			13
 #define	BS			8
 #define	BEL			7

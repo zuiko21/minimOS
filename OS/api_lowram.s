@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160412-1014
+; last modified 20160421-1431
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -258,16 +258,16 @@ str_loop:
 		LDA (zaddr3), Y		; get character, new approach
 			BEQ str_end			; NUL = end-of-string
 		STA zpar			; store output character for COUT
-		PHY					; save current index
+		_PHY				; save current index
 		LDY local1			; retrieve device number
 		_KERNEL(COUT)		; call routine
 #ifdef	SAFE
 		BCC str_nerr		; extra check
-			PLY					; cleanup stack
+			_PLY				; cleanup stack
 			RTS					; return error code
 str_nerr:
 #endif
-		PLY					; retrieve index
+		_PLY				; retrieve index
 		INY					; eeeeeeeek!
 		BNE str_loop		; repeat, will later check for termination
 	INC zaddr3+1		; next page, unfortunately
