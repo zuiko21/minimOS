@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160422-1010
+; last modified 20160422-1109
 
 ; no way for standalone assembly...
 
@@ -329,9 +329,10 @@ b_fork:
 #ifdef	MULTITASK
 ; ** might be replaced with LDY pid on optimized builds **
 	LDA #MM_FORK	; subfunction code
-; ***********************************************************
-	_BRA mmfe_call	; do actual calling
-; ** check for errors, not necessarily to call singletask version!
+	STA io_c		; as fake parameter
+	LDY #TASK_DEV	; multitasking as device driver!
+	_KERNEL(COUT)	; call pseudo-driver
+	RTS				; return whatever error code
 #else
 	LDY #0			; no multitasking, system reserved PID
 	_EXIT_OK
@@ -340,60 +341,23 @@ b_fork:
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L)
-; uses ex_tmp
+; uses str_dev for temporary braid storage, driver will pick it up!
 
 b_exec:
 #ifdef	MULTITASK
 ; ** might be repaced with driver code on optimized builds **
 	LDA #MM_EXEC	; subfunction code
-	STY ex_tmp		; COUT shouldn't touch it anyway
-mmfe_call:
+	STY str_dev		; COUT shouldn't touch it
 	STA io_c		; as fake parameter
 	LDY #TASK_DEV	; multitasking as device driver!
 	_KERNEL(COUT)	; call pseudo-driver
-#ifdef	SAFE
-		BCS mmfe_fail	; try non-multitasking functions
-#endif
 	RTS				; return previous error
-#ifdef	SAFE
-; *** multitasking driver failed, thus try single-task versions
-mmfe_fail:
-	TAY				; get PID in case of MM_EXEC
-	LDA io_c		; retrieve subfunction for a moment
-	CMP #MM_FORK
-	BNE mmfe_nofork	; skip single-task fork version
-		LDY #0			; no multitasking, system reserved PID
-		_EXIT_OK
-mmfe_nofork:
-	CMP #MM_EXEC
-		BNE exec_derr	; double error, otherwise do single-task exec
-; non-multitasking exec **** (repeated from below) ****
-	CPY #0			; should be system reserved PID
-	BEQ exec_st		; OK for single-task system
-		_ERR(NO_RSRC)	; no way without multitasking
-exec_st:
-	JSR exec_jmp		; call supplied address
-	_EXIT_OK		; back to shell?
-exec_jmp:
-; this kind of jump will not work on native 816 mode!
-	LDA ex_pt+1		; get address MSB first
-	PHA				; put it on stack
-	LDA ex_pt		; same for LSB
-	PHA
-	PHP				; ready for RTI
-	RTI				; actual jump, won't return here
-exec_derr:
-	_ERR(INVALID)
-#endif
 #else
 ; non-multitasking version
 	CPY #0			; should be system reserved PID
 	BEQ exec_st		; OK for single-task system
 		_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
-	JSR exec_jmp		; call supplied address
-	_EXIT_OK		; back to shell?
-exec_jmp:
 	LDA ex_pt+1		; get address MSB first
 	PHA				; put it on stack
 	LDA ex_pt		; same for LSB
@@ -404,13 +368,12 @@ exec_jmp:
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
-; zpar3 -> addr, zpar2 <- *path
-; ALIASES, ex_pt = zpar3, str_pt = zpar2
+; ex_pt -> addr, str_pt <- *path
 
 load_link:
 ; *** assume path points to filename in header, code begins +248 *** KLUDGE
 	CLC				; ready to add
-	LDA z10			; get LSB
+	LDA str_pt		; get LSB
 	ADC #248		; offset to actual code!
 	STA ex_pt		; store address LSB
 	LDA str_pt+1	; get MSB so far
@@ -448,9 +411,8 @@ su_peek:
 
 
 ; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
-; Y <- dev, zpar2 = str_pt <- *string (.w in current version)
-; destroys all
-; uses locals = str_dev
+; Y <- dev, str_pt <- *string (.w in current version)
+; uses str_dev
 ; calls cout, but now directly at driver code *** great revision, scans ONCE for device driver
 
 string:
@@ -495,7 +457,7 @@ str_loop:
 			_EXIT_OK			; and go away!
 str_cont:
 		STA io_c			; store output character for COUT (3)
-			JSR str_call		; indirect subroutine call (6...)
+		JSR str_call		; indirect subroutine call (6...)
 		_PLY				; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
@@ -504,6 +466,7 @@ str_cont:
 str_call:
 	LDX str_dev			; get driver pointer position (3)
 	_JMPX(drv_opt)		; go at stored pointer (...6)
+
 
 ; *** SU_SEI, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
@@ -562,24 +525,23 @@ fg_dis:
 fg_busy:
 	_ERR(BUSY)		; couldn't set
 
+
 ; *** GO_SHELL, launch default shell *** new 20150604
 ; no interface needed
 go_shell:
 	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
 
+
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
-; ** should deploy new 2-step shutdown routine, first send SIGTERM to all and set flag with desired action
-; ** when the scheduler finds no remaining tasks, call again with flag set and proceed
-; Y <- subfunction code new API 20150603, 20160408
+; Y <- subfunction code new ABI 20150603, 20160408
 ; C -> couldn't poweroff or reboot (?)
 
 shutdown:
 	CPY #PW_CLEAN		; from scheduler only!
-z		BEQ sd_2nd			; continue with second stage
+		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_stat			; don't shutdown system then!
 	STY sd_flag			; store mode for later, first must do proper system shutdown
-; ** the real stuff starts here **
 ; ask all braids to termmm_siginate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
@@ -587,7 +549,7 @@ z		BEQ sd_2nd			; continue with second stage
 	_KERNEL(B_SIGNAL)	; ask braids to terminate
 	CLI					; make sure all will keep running!
 	_EXIT_OK
-b_sig
+
 ; firmware interface
 sd_off:
 	LDY #PW_OFF			; poweroff
@@ -609,15 +571,16 @@ sd_warm:
 ; now let's disable all drivers
 sd_2nd:
 	LDA sd_flag		; check what was pending
-		BEQ sd_stat		; actually an error...
+	BNE sd_shut		; something to do
+		BRK				; otherwise an error!
+		.asc	"{sched}", 0	; panic code
+sd_shut:
 	_SEI			; disable interrupts
-
 #ifdef	SAFE
 	_STZA dpoll_mx	; disable interrupt queues, just in case
 	_STZA dreq_mx
 	_STZA dsec_mx
 #endif
-
 ; call each driver's shutdown routine *** new system 20151015
 	LDX #0			; reset index
 ; first get the pointer to each driver table
@@ -661,6 +624,7 @@ sd_tab:					; check order in abi.h!
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; shutdown system
 
+; ***************************************************** REVAMP *************************************************+
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid
