@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160421-0956
+; last modified 20160422-1010
 
 ; no way for standalone assembly...
 
@@ -12,6 +12,7 @@ unimplemented:		; placeholder here, not currently used
 
 ; *** COUT, output a character ***
 ; Y <- dev, io_c <- char
+; LOWRAM version uses da_ptr!!!
 
 cout:
 	TYA				; for indexed comparisons (2)
@@ -46,6 +47,7 @@ co_phys:
 cio_nfound:
 	_ERR(N_FOUND)	; unknown device
 
+
 ; *** CIN, get a character *** revamped 20150209
 ; Y <- dev, io_c -> char, C = not available
 
@@ -66,7 +68,6 @@ ci_exitOK:
 		CLC				; above comparison would set carry
 ci_exit:
 		RTS				; cannot use macro because may need to keep Carry
-
 ci_phys:
 ; ** new direct indexing **
 	ASL					; convert to index (2+2)
@@ -100,16 +101,15 @@ ci_nokill:
 	BNE ci_exitOK	; otherwise there's no more to check
 		LDA #SIGSTOP	; last signal to be sent
 ci_signal:
-		STA zpar2		; set signal as parameter
-		LDY #0			; ***self-sent signal*** revise? maybe 'LDY pid' or something
-		_KERNEL(B_SIGNAL)	; send signal
+		STA b_sig			; set signal as parameter
+		_KERNEL(GET_PID)	; as this will be a self-sent signal!
+		_KERNEL(B_SIGNAL)	; send signal to PID in Y
 ci_abort:
 		_ERR(EMPTY)		; no character was received
 
 ci_nph:
 	CMP #64			; first file-dev??? ***
 		BCC ci_win		; below that, should be window manager
-
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 	CMP #64+MAX_FILES	; still within file-devs?
@@ -137,19 +137,14 @@ ci_win:
 
 
 ; *** MALLOC, reserve memory *** revamped 20150209
-; zpar <- size, zpar2 -> addr, C = not enough memory (16-bit so far, but put zeroes on high-size!)
+; ma_rs <- size, ma_pt -> addr, C = not enough memory (16-bit so far, but put zeroes on high-size!)
 ; ** ONLY for systems over 128-byte RAM **
-; destroys X, Y, A
-; uses locals[0-2]
-; ALIASES, ma_rs = zpar, ma_pt = zpar2, ma_l = locals
+; uses ma_l
 
 malloc:
 ;	LDA ma_rs+2		; asking over 64K?
 ;	ORA ma_rs+3
 ;		BNE ma_nobank	; most likely never available for 65C02
-;	BIT ma_rs+1		; asking over 32K?
-;		BMI ma_nobank	; not implemented yet
-;		BVS ma_nobank	; there is no longer a reason to stop at 16K
 	LDY #0			; reset index
 	_ENTER_CS		; this is dangerous! enter critical section, new 160119
 ma_scan:
@@ -161,9 +156,8 @@ ma_cont:
 		CPY #MAX_LIST/2		; until the end (2+3)
 		BNE ma_scan
 	_EXIT_CS		; were off by 15*n, up to 240 clocks instead of 304
-	_ERR(FULL)		; no room for it!
 ma_nobank:
-	_ERR(UNAVAIL)	; no bankswitching yet
+	_ERR(FULL)		; no room for it!
 ma_found:
 	TYA						; compute other index
 	ASL						; two times
@@ -237,10 +231,9 @@ ma_ok:
 
 
 ; *** FREE, release memory *** revamped 20150209
-; zpar2 <- addr
+; ma_pt <- addr
 ; ** ONLY for systems over 128-byte RAM
-; destroys X, Y, A
-; ALIASES, ma_pt = zpar2
+
 free:
 	LDX #0			; reset indexes
 	_ENTER_CS		; supposedly dangerous
@@ -288,9 +281,8 @@ fr_ok:
 
 
 ; *** OPEN_W, get I/O port or window *** interface revised 20150208
-; Y -> dev, zpar.l <- size+pos*64K, zpar3 <- pointer to window title!
-; destroys A
-; ALIASES, w_rect = zpar, str_pt = zpar3 *** REVISE
+; Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to window title!
+
 open_w:
 	LDA w_rect			; asking for some size?
 	ORA w_rect+1
@@ -298,24 +290,19 @@ open_w:
 		_ERR(NO_RSRC)
 ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
+;	EXIT_OK on subsequent system calls!
+
+; *** CLOSE_W, close window ***
+; *** FREE_W, release window, will be closed by kernel ***
+; Y <- dev
+close_w:				; doesn't do much
+free_w:					; doesn't do much, either
 	_EXIT_OK
 
 
-; *** CLOSE_W, close window ***
-; Y <- dev
-close_w:
-
-; *** FREE_W, release window, will be closed by kernel ***
-; Y <- dev
-free_w:
-	_EXIT_OK		; doesn't do much, either
-
-
-; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
-; zpar.W -> fr-ticks
-; zpar2.L -> 24-bit uptime in seconds
-; destroys X, A
-; ALIASES, zpar = up_ticks, zpar2 = up_sec
+; *** UPTIME, get approximate uptime *** revised 20150208, corrected 20150318
+; up_ticks -> fr-ticks
+; up_sec -> 24-bit uptime in seconds
 
 uptime:
 	LDX #1			; first go for remaining ticks (2 bytes) (2)
@@ -342,7 +329,9 @@ b_fork:
 #ifdef	MULTITASK
 ; ** might be replaced with LDY pid on optimized builds **
 	LDA #MM_FORK	; subfunction code
+; ***********************************************************
 	_BRA mmfe_call	; do actual calling
+; ** check for errors, not necessarily to call singletask version!
 #else
 	LDY #0			; no multitasking, system reserved PID
 	_EXIT_OK
@@ -350,8 +339,8 @@ b_fork:
 
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, zpar3.W <- addr (was z2L)
-; ALIASES, ex_pt = zpar3; io_c = zpar from COUT, ex_tmp = locals (not touched by COUT, as is used by string)
+; Y <- PID, ex_pt <- addr (was z2L)
+; uses ex_tmp
 
 b_exec:
 #ifdef	MULTITASK
@@ -457,7 +446,6 @@ su_peek:
 	TAY				; transfer value
 	_EXIT_OK
 
-; *************** C O N T I N U E   R E V A M P   H E R E *****************************
 
 ; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
 ; Y <- dev, zpar2 = str_pt <- *string (.w in current version)
@@ -539,6 +527,7 @@ su_cli:				; not needed for 65xx, even with protection hardware
 ; zpar.W <- dividing factor (times two?), C -> busy
 ; destroys A, X...
 
+; *******TO BE REVISED*********
 set_fg:
 	LDA zpar
 	ORA zpar+1
@@ -586,19 +575,19 @@ go_shell:
 
 shutdown:
 	CPY #PW_CLEAN		; from scheduler only!
-		BEQ sd_2nd			; continue with second stage
+z		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_stat			; don't shutdown system then!
 	STY sd_flag			; store mode for later, first must do proper system shutdown
 ; ** the real stuff starts here **
-; ask all braids to terminate
+; ask all braids to termmm_siginate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
 	_KERNEL(B_SIGNAL)	; ask braids to terminate
 	CLI					; make sure all will keep running!
 	_EXIT_OK
-
+b_sig
 ; firmware interface
 sd_off:
 	LDY #PW_OFF			; poweroff
@@ -681,8 +670,9 @@ sd_tab:					; check order in abi.h!
 signal:
 #ifdef	MULTITASK
 	LDA #MM_SIGNAL	; subfunction code
-	STY locals		; COUT shouldn't touch it anyway
+	STY mm_sig		; COUT shouldn't touch it anyway
 	_BRA yld_call	; go for the driver
+; ** if the driver fails, it will NEVER reach this point!!!! **
 #ifdef	SAFE
 sig_st:				; *** single-task interface, in case MM driver failed *** (repeated from below)
 	TYA				; check correct PID, really needed?
@@ -729,8 +719,10 @@ sig_call:
 status:
 #ifdef	MULTITASK
 	LDA #MM_STATUS	; subfunction code
+	;**************
 	STY locals		; COUT shouldn't touch it anyway
 	_BRA yld_call	; go for the driver
+; ** if the driver fails, it will NEVER reach this point!!!! **
 #ifdef	SAFE
 stat_st:				; *** single-task interface, in case MM driver failed *** copied from below
 	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
@@ -744,13 +736,14 @@ stat_st:				; *** single-task interface, in case MM driver failed *** copied fro
 
 ; *** GET_PID, get current braid PID ***
 ; Y -> PID, TBD
-; uses locals[0] too
+; uses locals[0] too ***revise
 ; don't know of possible errors
 
 get_pid:
 #ifdef	MULTITASK
 	LDA #MM_PID		; subfunction code
 	_BRA yld_call	; go for the driver
+; ** if the driver fails, it will NEVER reach this point!!!! **
 #ifdef	SAFE
 pid_st:				; *** single-task interface, in case MM driver failed *** copied from below
 	LDY #0			; system-reserved PID for single-task execution
@@ -771,6 +764,7 @@ set_handler:
 #ifdef	MULTITASK
 	LDA #MM_HANDL	; subfunction code
 	_BRA yld_call	; go for the driver
+; ** if the driver fails, it will NEVER reach this point!!!! **
 #ifdef	SAFE
 hndl_st:				; *** single-task interface, in case MM driver failed *** copied from below
 	LDA zpar2		; get LSB

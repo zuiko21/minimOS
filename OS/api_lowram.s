@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160421-1431
+; last modified 20160422-0929
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -87,7 +87,7 @@ ci_port:
 			BCS ci_exit		; some error, send it back
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
-		LDA zpar		; get received character
+		LDA io_c		; get received character
 		CMP #' '		; printable?
 			BCC ci_manage	; if not, might be an event
 ci_exit:
@@ -109,7 +109,6 @@ ci_notdle:
 	BNE ci_exit		; otherwise there's no more to check -- only signal for single-task systems!
 		LDA #SIGTERM
 		STA b_sig		; set signal as parameter
-; ********************************** CONTINUE REVAMP *************************************************+
 		LDY #0			; sent to all, this is the only one
 		_KERNEL(B_SIGNAL)	; send signal
 ci_abort:
@@ -130,41 +129,16 @@ ci_rnd:
 
 
 ; *** OPEN_W, get I/O port or window *** interface revised 20150208
-; Y -> dev, zpar.l <- size+pos*64K, zpar3 <- pointer to window title!
+; Y -> dev, w_rect.l <- size+pos*64K, zpar3 <- pointer to window title!
 ; destroys A
 
 open_w:
-	LDA zpar			; asking for some size?
-	ORA zpar+1
+	LDA w_rect			; asking for some size?
+	ORA w_rect+1
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 
-
-
-; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
-; zpar.W -> fr-ticks
-; zpar2.L -> 24-bit uptime in seconds
-; destroys X, A
-
-uptime:
-	LDX #1			; first go for remaining ticks (2 bytes) (2)
-	_SEI			; don't change while copying (2)
-up_loop:
-		LDA ticks, X	; get system variable byte (not uptime, corrected 20150125) (4)
-		STA zpar, X		; and store them in output parameter (3)
-		DEX				; go for next (2+3/2)
-		BPL up_loop
-	LDX #2			; now for the uptime in seconds (3 bytes) (2)
-up_upt:
-		LDA ticks+2, X	; get system variable uptime, new 20150318 (4)
-		STA zpar2, X	; and store it in output parameter (3) corrected 150610
-		DEX				; go for next (2+3/2)
-		BPL up_upt
-	_CLI			; disabled for 62 clocks, not 53...
-	_EXIT_OK
-
-
-; *** GET_PID, get available PID *** properly interfaced 20150417
+; *** GET_PID, get current PID *** properly interfaced 20150417
 ; *** B_FORK, reserve braid, just the same as GET_PID on single task systems! ***
 ; Y -> PID (always 0)
 ; *** B_YIELD, Yield CPU time to next braid ***
@@ -182,9 +156,36 @@ close_w:
 free_w:
 	_EXIT_OK
 
+
+; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
+; zpar.W -> fr-ticks
+; zpar2.L -> 24-bit uptime in seconds
+; destroys X, A
+; ALIASES, zpar = up_ticks, zpar2 = up_sec
+
+uptime:
+	LDX #1			; first go for remaining ticks (2 bytes) (2)
+	_SEI			; don't change while copying (2)
+up_loop:
+		LDA ticks, X	; get system variable byte (not uptime, corrected 20150125) (4)
+		STA up_ticks, X	; and store them in output parameter (3)
+		DEX				; go for next (2+3/2)
+		BPL up_loop
+	LDX #2			; now for the uptime in seconds (3 bytes) (2)
+up_upt:
+		LDA ticks+2, X	; get system variable uptime, new 20150318 (4)
+		STA up_sec, X	; and store it in output parameter (3) corrected 150610
+		DEX				; go for next (2+3/2)
+		BPL up_upt
+	_CLI			; disabled for 62 clocks, not 53...
+	_EXIT_OK
+
+
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, zpar2.W <- addr (was z2L)
+; Y <- PID, zpar3.W <- addr (was z2L)
+; ALIASES, ex_pt = zpar3; io_c = zpar from COUT, ex_tmp = locals (not touched by COUT, as is used by string)
+
 b_exec:
 ; non-multitasking version
 	CPY #0			; should be system reserved PID
@@ -194,9 +195,9 @@ ex_st:
 	JSR ex_jmp		; call supplied address
 	_EXIT_OK		; back to shell?
 ex_jmp:
-	LDA zpar2+1		; get address MSB first
+	LDA ex_pt+1		; get address MSB first
 	PHA				; put it on stack
-	LDA zpar2		; same for LSB
+	LDA ex_pt		; same for LSB
 	PHA
 	PHP				; ready for RTI
 	RTI				; actual jump, won't return here
@@ -204,18 +205,20 @@ ex_jmp:
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
 ; z2L -> addr, z10L <- *path
+; ALIASES, ex_pt = zpar3, str_pt = zpar2
+
 load_link:
 ; *** assume path points to filename in header, code begins +248
 	CLC				; ready to add
-	LDA z10			; get LSB
+	LDA str_pt		; get LSB
 	ADC #248		; offset to actual code!
-	STA z2			; store address LSB
-	LDA z10+1		; get MSB so far
+	STA ex_pt		; store address LSB
+	LDA str_pt+1	; get MSB so far
 	ADC #0			; propagate carry!
-	STA z2+1		; store address MSB
+	STA ex_pt+1		; store address MSB
 	LDA #0			; NMOS only
-	STA z2+2		; STZ, invalidate bank...
-	STA z2+3		; ...just in case
+	STA ex_pt+2		; STZ, invalidate bank...
+	STA ex_pt+3		; ...just in case
 	BCS ll_wrap	; really unexpected error
 	_EXIT_OK
 ll_wrap:
@@ -245,21 +248,20 @@ su_peek:
 
 
 ; *** STRING, prints a C-string *** revised 20150208
-; Y <- dev, zpar3 <- *string (.w in current version)
-; destroys A, Y
-; uses locals[0] ****REVISE REVISE**************
-; calls cout (K0)
+; Y <- dev, str_pt <- *string (.w in current version)
+; uses str_end
+; calls COUT
 
 string:
 ; ** alternative version, preserves pointer ** 23 bytes for CMOS, 27 if SAFE mode, NMOS add 1 byte
-	STY local1		; save Y in case COUT destroys it
+	STY str_dev		; save Y in case COUT destroys it
 	LDY #0			; reset new index
 str_loop:
-		LDA (zaddr3), Y		; get character, new approach
+		LDA (str_pt), Y		; get character, new approach
 			BEQ str_end			; NUL = end-of-string
 		STA zpar			; store output character for COUT
 		_PHY				; save current index
-		LDY local1			; retrieve device number
+		LDY str_dev			; retrieve device number
 		_KERNEL(COUT)		; call routine
 #ifdef	SAFE
 		BCC str_nerr		; extra check
@@ -270,7 +272,7 @@ str_nerr:
 		_PLY				; retrieve index
 		INY					; eeeeeeeek!
 		BNE str_loop		; repeat, will later check for termination
-	INC zaddr3+1		; next page, unfortunately
+	INC str_pt+1		; next page, unfortunately
 	BNE str_loop		; no need for BRA
 str_end:
 	_EXIT_OK
@@ -314,6 +316,7 @@ su_cli:				; not needed for 65xx, even with protection hardware
 ; zpar.W <- dividing factor (times two?), C -> busy
 ; destroys A, X...
 
+; *******TO BE REVISED*********
 set_fg:
 	LDA zpar
 	ORA zpar+1
@@ -385,9 +388,9 @@ sd_loop:
 		DEX
 		LDA drivers_ad+1, X	; get address MSB (4)
 		BEQ sd_done			; not in zeropage
-		STA locals+1		; store pointer (3)
+		STA da_ptr+1		; store pointer (3)
 		LDA drivers_ad, X	; same for LSB (4+3)
-		STA locals
+		STA da_ptr
 		PHX					; save index for later
 			LDY #D_BYE+1		; offset for shutdown routine
 			JSR dr_call			; call routine from generic code!
@@ -422,15 +425,14 @@ sd_tab:
 
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
-; zpar2.B <- signal to be sent , Y <- addressed braid
-; uses locals[0] too
+; b_sig <- signal to be sent , Y <- addressed braid
 ; don't know of possible errors
 
 signal:
 ; *** single task interface ***
 	TYA				; check correct PID, really needed?
 		BNE sig_pid		; strange error?
-	LDY zpar2		; get the signal
+	LDY b_sig		; get the signal
 	CPY #SIGTERM	; clean shutoff
 		BEQ sig_term
 	CPY #SIGKILL	; suicide
