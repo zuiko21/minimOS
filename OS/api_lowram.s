@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.5b4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160422-0929
+; last modified 20160425-1342
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -18,7 +18,7 @@ ts_info:
 ; Y <- dev, io_c <- char
 ; uses da_ptr
 
-cio_of = da_ptr		; parameter switching between cin and cout
+cio_of = da_ptr		; parameter switching between CIN and COUT
 ; da_ptr globally defined, cio_of not needed upon calling dr_call!
 
 cout:
@@ -51,16 +51,6 @@ cio_dev:
 	TXA				; get index in list (2)
 	ASL				; two times (2)
 	TAX				; index for address table!
-; original version was 18 bytes, 27 clocks
-;	CLC					; prepare (2)
-;	LDA drivers_ad, X	; take table LSB (4)
-;	ADC cio_of			; compute final address, generic (3)
-;	STA da_ptr			; store pointer (3)
-;	LDA drivers_ad+1, X	; same for LSB (4)
-;	ADC #0				; take carry into account (2+3)
-;	STA da_ptr+1
-;	JMP (da_ptr)		; go for it! (6)
-
 ; unified version is 15 bytes, 20 + 29 clocks
 	LDY cio_of			; get offset (3)
 	LDA drivers_ad, X	; take table LSB (4)
@@ -71,8 +61,7 @@ cio_dev:
 
 ; *** CIN, get a character *** revamped 20150209
 ; Y <- dev, io_c -> char, C = not available
-; destroys X, A... plus driver
-; uses locals[1-3]
+; uses da_ptr
 ; ** shares code with cout **
 
 cin:
@@ -90,8 +79,10 @@ ci_port:
 		LDA io_c		; get received character
 		CMP #' '		; printable?
 			BCC ci_manage	; if not, might be an event
+ci_exitOK:
+		CLC				; otherwise, no error --- eeeeeeeek!
 ci_exit:
-		_EXIT_OK		; above comparison would set carry
+		RTS				; above comparison would set carry
 ; ** continue event management **
 ci_manage:
 ; check for binary mode
@@ -106,7 +97,7 @@ ci_event:
 		BNE ci_abort	; and supress received character, no need for BRA
 ci_notdle:
 	CMP #3			; is it ^C? (TERM)
-	BNE ci_exit		; otherwise there's no more to check -- only signal for single-task systems!
+	BNE ci_exitOK	; otherwise there's no more to check -- only signal for single-task systems!
 		LDA #SIGTERM
 		STA b_sig		; set signal as parameter
 		LDY #0			; sent to all, this is the only one
@@ -145,7 +136,7 @@ open_w:
 ; supposedly no interface needed, don't think I need to tell if ignored
 ; *** CLOSE_W, close window ***
 ; *** FREE_W, release window, will be closed by kernel ***
-; Y <- dev
+; Y <- dev, these will not do much anyway
 
 ow_no_window:
 get_pid:
@@ -158,14 +149,12 @@ free_w:
 
 
 ; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
-; zpar.W -> fr-ticks
-; zpar2.L -> 24-bit uptime in seconds
-; destroys X, A
-; ALIASES, zpar = up_ticks, zpar2 = up_sec
+; up_ticks -> fr-ticks
+; up_sec -> 24-bit uptime in seconds
 
 uptime:
 	LDX #1			; first go for remaining ticks (2 bytes) (2)
-	_SEI			; don't change while copying (2)
+	_ENTER_CS		; don't change while copying (2)
 up_loop:
 		LDA ticks, X	; get system variable byte (not uptime, corrected 20150125) (4)
 		STA up_ticks, X	; and store them in output parameter (3)
@@ -177,14 +166,13 @@ up_upt:
 		STA up_sec, X	; and store it in output parameter (3) corrected 150610
 		DEX				; go for next (2+3/2)
 		BPL up_upt
-	_CLI			; disabled for 62 clocks, not 53...
+	_EXIT_CS		; disabled for 62 clocks?
 	_EXIT_OK
 
 
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, zpar3.W <- addr (was z2L)
-; ALIASES, ex_pt = zpar3; io_c = zpar from COUT, ex_tmp = locals (not touched by COUT, as is used by string)
+; Y <- PID, ex_pt <- addr (was z2L)
 
 b_exec:
 ; non-multitasking version
@@ -204,23 +192,22 @@ ex_jmp:
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
-; z2L -> addr, z10L <- *path
-; ALIASES, ex_pt = zpar3, str_pt = zpar2
+; ex_pt -> addr, str_pt <- *path
 
 load_link:
 ; *** assume path points to filename in header, code begins +248
-	CLC				; ready to add
+	CLC			; ready to add
 	LDA str_pt		; get LSB
 	ADC #248		; offset to actual code!
 	STA ex_pt		; store address LSB
-	LDA str_pt+1	; get MSB so far
+	LDA str_pt+1		; get MSB so far
 	ADC #0			; propagate carry!
 	STA ex_pt+1		; store address MSB
 	LDA #0			; NMOS only
 	STA ex_pt+2		; STZ, invalidate bank...
 	STA ex_pt+3		; ...just in case
-	BCS ll_wrap	; really unexpected error
-	_EXIT_OK
+	BCS ll_wrap		; really unexpected error
+		_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
@@ -249,24 +236,25 @@ su_peek:
 
 ; *** STRING, prints a C-string *** revised 20150208
 ; Y <- dev, str_pt <- *string (.w in current version)
-; uses str_end
+; uses str_dev
 ; calls COUT
 
 string:
-; ** alternative version, preserves pointer ** 23 bytes for CMOS, 27 if SAFE mode, NMOS add 1 byte
-	STY str_dev		; save Y in case COUT destroys it
+	STY str_dev		; save Y
 	LDY #0			; reset new index
+;	LDA str_pt+1	; get older MSB in case it changes
+;	PHA				; save it somewhere!
 str_loop:
 		LDA (str_pt), Y		; get character, new approach
 			BEQ str_end			; NUL = end-of-string
-		STA zpar			; store output character for COUT
+		STA io_c			; store output character for COUT
 		_PHY				; save current index
 		LDY str_dev			; retrieve device number
 		_KERNEL(COUT)		; call routine
 #ifdef	SAFE
 		BCC str_nerr		; extra check
-			_PLY				; cleanup stack
-			RTS					; return error code
+			PLA				; cleanup stack
+			_BRA str_exit		; return error code (and restore pointer)
 str_nerr:
 #endif
 		_PLY				; retrieve index
@@ -275,22 +263,11 @@ str_nerr:
 	INC str_pt+1		; next page, unfortunately
 	BNE str_loop		; no need for BRA
 str_end:
-	_EXIT_OK
-
-; original version was 25 bytes, NMOS add 2 bytes, SAFE would add 4 bytes
-;	STY locals		; save Y in case cout destroys it
-;str_loop:
-;		_LDAY(zpar3)	; get current character, NMOS too
-;			BEQ str_end		; NUL = end-of-string
-;		STA zpar		; ready to go out
-;		LDY locals		; restore Y
-;		_KERNEL(COUT)	; call cout
-;		INC zpar3		; next character
-;	BNE str_loop
-;		INC zpar3+1		; cross page boundary
-;	BNE str_loop		; ...or BRA
-;str_end:
-;	_EXIT_OK
+	CLC		; no errors
+str_exit:
+;	PLA		; get MSB back
+;	STA str_pt+1	; restore it
+	RTS		; return error code
 
 
 ; *** SU_SEI, disable interrupts *** revised 20150209
@@ -363,13 +340,10 @@ go_shell:
 shutdown:
 	CPY #PW_STAT	; is it going to suspend?
 		BEQ sd_stat		; don't shutdown system then!
-	PHY				; store mode for later, first must do proper system shutdown
+	_PHY				; store mode for later, first must do proper system shutdown
 ; ** the real stuff starts here **
-; ask all braids ***but the current one*** to terminate
-; then check flags until all braids ***but this one*** are free
-; could return just here after some timeout
 ; now let's disable all drivers
-	_SEI			; disable interrupts
+	SEI			; disable interrupts
 
 #ifdef	SAFE
 	_STZA dpoll_mx	; disable interrupt queues, just in case
@@ -391,14 +365,14 @@ sd_loop:
 		STA da_ptr+1		; store pointer (3)
 		LDA drivers_ad, X	; same for LSB (4+3)
 		STA da_ptr
-		PHX					; save index for later
-			LDY #D_BYE+1		; offset for shutdown routine
-			JSR dr_call			; call routine from generic code!
-		PLX					; retrieve index
-		BNE sd_loop			; repeat until zero
+		_PHX			; save index for later
+		LDY #D_BYE		; offset for shutdown routine --- eeeeeek!
+		JSR dr_call		; call routine from generic code!
+		_PLX			; retrieve index
+		BNE sd_loop		; repeat until zero
 ; ** system cleanly shut, time to let the firmware turn-off or reboot **
 sd_done:
-	PLX				; retrieve mode as index!
+	_PLX				; retrieve mode as index!
 	_JMPX(sd_tab)	; do as appropriate
 
 
@@ -425,54 +399,52 @@ sd_tab:
 
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
-; b_sig <- signal to be sent , Y <- addressed braid
-; don't know of possible errors
+; b_sig <- signal to be sent , Y <- addressed braid (0 means ALL braids AND the only accepted value with singletasking)
 
 signal:
-; *** single task interface ***
 	TYA				; check correct PID, really needed?
 		BNE sig_pid		; strange error?
 	LDY b_sig		; get the signal
 	CPY #SIGTERM	; clean shutoff
-		BEQ sig_term
+	BNE sig_ncall	; call routine, RTS will return to caller
+		JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
+sig_ncall:
 	CPY #SIGKILL	; suicide
-		BEQ sig_kill
+	BNE sig_pid		; nothing else to do
+sig_kill:
+		_ADMIN(POWEROFF)	; suicide
+		BRK
+		.asc	"{KILL}", 0	; suicide!
 sig_pid:			; placeholder...
 	_ERR(INVALID)	; unrecognised signal
-sig_term:
-	JSR sig_call	; call routine, RTS will get back here
-sig_kill:
-	_EXIT_OK		; *** don't know what to do here ***
-sig_call:
-	JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
 
 ; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
 ; Y -> flags, TBD
-; uses locals[0] too
-; don't know of possible errors
 
 status:
-; *** single-task interface ***
-	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
+	TYA			; check correct PID, really needed?
+		BNE sig_pid	; strange error?
+	LDY #BR_RUN		; single-task systems are always running
 	_EXIT_OK
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; Y <- PID, zpar2.W <- SIGTERM handler routine (ending in RTS)
-; uses locals[0] too
+; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTS) *** NEW address 20160425
 ; bad PID is probably the only feasible error
 
 set_handler:
-; *** single-task interface ***
-	LDA zpar2		; get LSB
-	STA mm_term	; store in single variable
-	LDA zpar2+1		; same for MSB
+	TYA			; check correct PID, really needed?
+		BNE sig_pid	; strange error?
+	LDY ex_pt		; get LSB
+	LDA ex_pt+1		; same for MSB
+	STY mm_term		; store in single variable
 	STA mm_term+1
 	_EXIT_OK
 
 ; *** end of kernel functions ***
 
 ; jump table, if not in separate 'jump' file
+; *** order MUST match abi.h ***
 -fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
 k_vec:
 	.word	cout		; output a character
