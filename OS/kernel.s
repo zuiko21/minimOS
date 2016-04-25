@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5b4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160420-1408
+; last modified 20160425-1416
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -184,17 +184,16 @@ dr_msb:
 ; check whether the ID is in already in use
 ; might use a reversed loop, doing at the end LDX drv_num anyway?
 ; *** may fail if no drivers installed! *** think about doing it in reverse!
-		LDX #0			; reset index (2)
+		LDY #0			; reset index (2)
 ;		BEQ dr_limit	; check whether has something to check, no need for BRA (3)
 dr_scan:
-			CMP drivers_id, X	; compare with list entry (4)
+			CMP drivers_id, Y	; compare with list entry (4)
 				BEQ dr_abort		; already in use, don't register! (2/3)
-			INX					; go for next (2)
-dr_limit:	CPX drv_num			; all done? (4)
+			INY					; go for next (2)
+dr_limit:	CPY drv_num			; all done? (4)
 			BNE dr_scan			; go for next (3/2)
-#else
-		LDX drv_num			; retrieve single offset (4) *** already set because of the previous check, if done
 #endif
+		LDX drv_num			; retrieve single offset (4)
 		STA drivers_id, X	; store in list, now in RAM (4)
 ; ------
 #endif
