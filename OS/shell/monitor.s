@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc6
-; last modified 20160421-1414 allowing use with LOWRAM
+; v0.5rc7
+; last modified 20160426-1002
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -95,6 +95,7 @@ open_mon:
 
 ; *** store current stack pointer as it will be restored upon JSR/JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler!
+get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
 
@@ -162,7 +163,14 @@ call_address:
 	TXS					; set new pointer...
 ; SP restored
 	JSR do_call			; set regs and jump!
-	JMP main_loop		; hopefully context is OK
+; ** should record actual registers here **
+	STA _a
+	STX _x
+	STY _y
+	PHP					; get current status
+	PLA					; A was already saved
+	STA _psr
+	JMP get_sp			; hopefully context is OK
 
 jump_address:
 	JSR fetch_word		; get operand address
