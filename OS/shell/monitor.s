@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc7
-; last modified 20160426-1002
+; v0.5rc8
+; last modified 20160427-1340
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -75,7 +75,7 @@ go_mon:
 	STA str_pt+1
 	_KERNEL(OPEN_W)		; ask for a character I/O device
 	BCC open_mon		; no errors
-		RTS					; abort otherwise!
+		_ERR(NO_RSRC)		; abort otherwise! proper error code
 open_mon:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
@@ -94,7 +94,7 @@ open_mon:
 	JSR prnStr			; print the string!
 
 ; *** store current stack pointer as it will be restored upon JSR/JMP ***
-; hopefully the remaining registers will be stored by NMI/BRK handler!
+; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
 get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
@@ -158,7 +158,7 @@ sb_end:
 call_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
-; restore stack pointer...
+; restore stack pointer... and forget return address (will jump anyway)
 	LDX _sp				; get stored value
 	TXS					; set new pointer...
 ; SP restored
@@ -171,6 +171,7 @@ call_address:
 	PLA					; A was already saved
 	STA _psr
 	JMP get_sp			; hopefully context is OK
+
 
 jump_address:
 	JSR fetch_word		; get operand address
@@ -320,7 +321,7 @@ quit:
 ; will not check any pending issues
 	PLA					; discard main loop return address
 	PLA
-	RTS					; exit to minimOS
+	_EXIT_OK			; exit to minimOS, proper error code
 
 store_str:
 ;	LDY cursor				; use as offset
