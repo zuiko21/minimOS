@@ -1,7 +1,7 @@
 /* line editor for minimOS!
  * v0.5a1
  * (c)2016 Carlos J. Santisteban
- * last modified 20160428-1426 */
+ * last modified 20160428-1437 */
  
 #include <stdio.h>
 
@@ -18,6 +18,7 @@
 typedef unsigned char b8;
 
 b8	ram[65536], a, x, y;
+b8	buffer[256];
 b8	key, edit=FALSE;
 int cur, ptr, optr, src, dest, delta;
 
@@ -25,9 +26,15 @@ void prev() {
 	printf("PREV\n");
 }
 
-void pop() {
+void pop() {		//copy line into buffer
 	printf("POP\n");
-	
+	int	i=0;
+	b8	c;
+	while (c=ram[ptr+i]) {
+		buffer[i]=c;
+		i++;
+	}
+	buffer[i] = '\0';
 }
 
 void prompt() {
@@ -50,9 +57,15 @@ b8 buflen() {
 	return 0;
 }
 
-void push() {
+void push() {		//copy buffer @ptr
 	printf("PUSH\n");
-	
+	int	i=0;
+	b8	c;
+	while (c=buffer[i]) {
+		ram[ptr+i]=c;
+		i++;
+	}
+	ram[ptr+i] = '\n';
 }
 
 void indent() {
