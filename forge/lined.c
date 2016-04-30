@@ -1,8 +1,8 @@
 /* line editor for minimOS!
  * v0.5a1
  * (c)2016 Carlos J. Santisteban
- * last modified 20160429-0945 */
- 
+ * last modified 20160430/1221 */
+
 #include <stdio.h>
 
 #define	ctl_g	'\a'
@@ -15,18 +15,18 @@
 #define	TRUE	-1
 
 
-typedef unsigned char b8;
+typedef unsigned char byte;
 
-b8	ram[65536]={"Hola\nMundo\n\0"};
-b8	a, x, y;
-b8	buffer[256];
-b8	key, edit;
-int cur, ptr, optr, src, dest, delta, top;
+byte	ram[65536];
+byte	a, x, y;
+byte	key, edit;
+int	cur, ptr, optr, src, dest, delta, top;
+int	buffer=512;
 
 void prev() {
-	printf("(PREV)\n");
-	b8	c;
-	
+//	printf("(PREV)\n");
+	byte	c;
+
 	if (ptr>0) {
 		ptr--;
 		c = ram[ptr];
@@ -37,59 +37,60 @@ void prev() {
 }
 
 void pop() {		//copy line into buffer
-	printf("(POP)\n");
+//	printf("(POP)\n");
 	int	i=0;
-	b8	c;
-	
+	byte	c;
+
 	c=ram[ptr+i];
 	while (c!='\0' && c!='\n') {
-		buffer[i]=c;
+		ram[buffer+i]=c;
 		i++;
 		c=ram[ptr+i];
 	}
-	buffer[i] = '\0';
+	ram[buffer+i] = '\0';
 }
 
 void prompt() {
-	printf("(PROMPT)\n");
+//	printf("(PROMPT)\n");
 	int	i=0;
-	b8	c;
-	
+	byte	c;
+
 	printf("%04x>", cur);
-	c = buffer[i];
+	c = ram[buffer+i];
 	while (c!='\n' && c!='\0') {
 		putchar(c);
-		c = buffer[++i];
+		i++;
+		c = ram[buffer+i];
 	}
 }
 
 void move_dn(int s, int d) {
 	printf("MOVE_DN %d -> %d\n", s, d);
-	
+
 }
 
 void move_up(int s, int d) {
 	printf("MOVE_UP %d -> %d\n", s, d);
-	
+
 }
 
 b8 buflen() {
-	printf("(BUFLEN)\n");
+//	printf("(BUFLEN)\n");
 	int	i=0;
-	
-	while(buffer[i]!='\0') {
+
+	while(ram[buffer+i]!='\0') {
 		i++;
 	}
-	
+
 	return i;
 }
 
 void push() {		//copy buffer @ptr
-	printf("(PUSH)\n");
+//	printf("(PUSH)\n");
 	int	i=0;
-	b8	c;
-	
-	while ((c=buffer[i]) != '\0') {
+	byte	c;
+
+	while ((c=ram[buffer+i]) != '\0') {
 		ram[ptr+i]=c;
 		i++;
 	}
@@ -97,28 +98,27 @@ void push() {		//copy buffer @ptr
 }
 
 void indent() {
-	printf("(INDENT)\n");
-	
-	b8	c;
+//	printf("(INDENT)\n");
+	byte	c;
 	int	i=0;
-	
+
 	if (ram[ptr]) {		// not the end
 		ptr++;
 		c = ram[ptr];
 		while (c==' ' || c=='\t') {
-			buffer[i++]=c;
+			ram[buffer+i]=c;
+			i++;
 			ptr++;
 			c = ram[ptr];
 		}
 	}
-	buffer[i]='\0';
+	ram[buffer+i]='\0';
 }
 
 void next() {
-	printf("(NEXT)\n");
-	
-	b8	c;
-	
+//	printf("(NEXT)\n");
+	byte	c;
+
 	if (ptr<top) {
 		ptr++;
 		c = ram[ptr];
@@ -129,9 +129,9 @@ void next() {
 }
 
 void show() {			//print cur: and line @ptr, advance ptr! otherwise next()
-	printf("(SHOW)\n");
-	b8	c;
-	
+//	printf("(SHOW)\n");
+	byte	c;
+
 	printf("%04x:", cur);
 	c = ram[ptr];
 	while (c!='\n' && c!='\0') {
@@ -144,14 +144,14 @@ void show() {			//print cur: and line @ptr, advance ptr! otherwise next()
 
 int ask() {
 	int i;
-	
+
 	printf("Line: ");
 	scanf("%d", &i);
-	
+
 	return i;
 }
 
-b8 valid(b8 k) {
+byte valid(byte k) {
 	printf("(VALID %c)\n", k);
 	if (k=='\t' || ('a'<=k && k<='z') || ('A'<=k && k<='Z') || ('0'<=k && k<='9'))
 		return TRUE;
@@ -162,12 +162,11 @@ b8 valid(b8 k) {
 int main(void)
 {
 	cur = 0;
-	top = 0;
-	ptr = 0;
+	top = 1024;
+	ptr = 1024;
 	ram[ptr]='\0';
-	buffer[0]=' ';
-	buffer[1]='\0';
-	
+	ram[buffer]='\0';
+
 	edit=FALSE;
 	pop();
 	prompt();
@@ -245,9 +244,10 @@ int main(void)
 			//edit like READLN in raw
 			//don't manage CR/ESC
 			putchar(key);
-			buffer[x++]=key;
+			ram[buffer+x]=key;
+			x++;
 		}
 	} while(-1);				// loop forever
-	
+
 	return 0;
 }
