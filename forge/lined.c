@@ -74,7 +74,7 @@ void move_up(int s, int d) {
 
 }
 
-b8 buflen() {
+byte buflen() {
 //	printf("(BUFLEN)\n");
 	int	i=0;
 
