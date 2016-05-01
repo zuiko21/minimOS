@@ -25,7 +25,7 @@
 #include "sysvars.h"
 #include "drivers/config/DRIVER_PACK.h"
 user_sram = *
-#include "drivers/config/DRIVER_PACK.s"	; don't assemble actual code, just labels
+#include "drivers/config/DRIVER_PACK.s"
 * = ROM_BASE			; just a placeholder, no standardised address
 #endif
 .text
@@ -59,7 +59,7 @@ warm:
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
-	_STZA sd_flag	; this is important to be clear (PW_STAT) ASAP
+	_STZA sd_flag	; this is important to be clear (PW_STAT) or set as proper error handler
 
 ; *****************************
 ; *** memory initialisation ***
@@ -68,7 +68,7 @@ warm:
 
 #ifndef		LOWRAM
 ; ++++++
-	LDA #UNAS_RAM		; unassigned space (2) should be defined somewhere (2)
+	LDA #UNAS_RAM		; unassigned space (2)
 	LDX #MAX_LIST		; depending on RAM size, corrected 20150326 (2)
 mreset:
 		STA ram_stat, X		; set entry as unassigned, essential (4)
@@ -80,13 +80,13 @@ mreset:
 	LDA #>user_sram		; same for MSB (2+4)
 	STA ram_tab+1
 ;	LDA #FREE_RAM		; no longer needed if free is zero
-	_STZA ram_stat		; set free entry (4)
+	_STZA ram_stat		; set free entry (4) otherwise STA
 	LDA #0				; compute free RAM (2+2)
 	SEC
-	SBC #<user_sram		; substract LSB (2+4)
+	SBC #<user_sram		; subtract LSB (2+4)
 	STA ram_siz
 	LDA himem			; get ram size MSB (4)
-	SBC #>user_sram		; substract MSB (2)
+	SBC #>user_sram		; subtract MSB (2)
 	STA ram_siz+1		; entry is OK (4)
 ; ++++++
 #endif
@@ -99,14 +99,12 @@ mreset:
 ; set some labels, much neater this way
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
 tm_ptr	= sysptr		; temporary pointer for double-indirect addressing!
-;drv_aix = systmp		; address index for, not necessarily PROPOSED, driver list, new 20150318, shifted 20150619
 
 ; driver full install is new 20150208
 	LDX #0				; reset driver index (2)
 	STX dpoll_mx		; reset all indexes, NMOS-savvy (4+4+4)
 	STX dreq_mx
 	STX dsec_mx
-;	STX drv_aix
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------
@@ -129,10 +127,9 @@ dr_clear:
 
 ; first get the pointer to each driver table
 dr_loop:
-;		LDX drv_aix
-		_PHX				; keep current value, just in case (3)
+		_PHX				; keep current value, no longer drv_aix (3)
 		LDA drivers_ad+1, X	; get address MSB (4)
-		BNE dr_inst			; not in zeropage, in case is too far for BEQ dr_ok (3/2)
+		BNE dr_inst			; cannot be in zeropage, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
 		STA da_ptr+1		; store pointer (3)
@@ -181,7 +178,7 @@ dr_msb:
 #else
 ; ------ IDs table filling for low-RAM systems ------
 #ifdef	SAFE
-; check whether the ID is in already in use
+; check whether the ID is already in use
 		LDY #0			; reset index (2)
 		BEQ dr_limit	; check whether has something to check, no need for BRA (3)
 dr_scan:
@@ -259,7 +256,6 @@ dr_next:
 #endif
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
-;		INC drv_aix
 		_PLX			; retrieve saved index (4)
 		INX				; update ADDRESS index, even if unsuccessful (2)
 		INX				; eeeeeeeek! pointer arithmetic! (2)
@@ -319,7 +315,7 @@ dr_ok:					; all drivers inited
 #ifdef	LOWRAM
 ; ------ terminate ID list ------
 	LDX drv_num			; retrieve single index (4)
-	_STZA drivers_id, X	; terminate list, and we're done! (4)
+	_STZA drivers_id, X	; terminate list, and we are done! (4)
 ; ------
 #endif
 
