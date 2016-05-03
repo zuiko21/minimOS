@@ -1,16 +1,16 @@
 /* line editor for minimOS!
  * v0.5a1
  * (c)2016 Carlos J. Santisteban
- * last modified 20160430/1221 */
+ * last modified 20160503 */
 
 #include <stdio.h>
 
 #define	ctl_g	'\a'
-#define	ctl_e	'\t'
-#define	ctl_x	'\b'
+#define	ctl_e	0x5
+#define	ctl_x	0x18
 #define	cr		'\n'
-#define	down	'S'
-#define	up		'W'
+#define	down	0x13
+#define	up		0x17
 #define	FALSE	0
 #define	TRUE	-1
 
@@ -25,12 +25,11 @@ int	buffer=512;
 
 void prev() {
 //	printf("(PREV)\n");
-	byte	c;
 
 	if (ptr>0) {
 		ptr--;
-		c = ram[ptr];
-		while (c!='\n' && c!='\0' && ptr>0) {
+		a = ram[ptr];
+		while (a!='\n' && a!='\0' && ptr>0) {
 			ptr--;
 		}
 	}
@@ -38,16 +37,15 @@ void prev() {
 
 void pop() {		//copy line into buffer
 //	printf("(POP)\n");
-	int	i=0;
-	byte	c;
+	x=0;
 
-	c=ram[ptr+i];
-	while (c!='\0' && c!='\n') {
-		ram[buffer+i]=c;
-		i++;
-		c=ram[ptr+i];
+	a=ram[ptr+x];
+	while (a!='\0' && a!='\n') {
+		ram[buffer+x]=a;
+		x++;
+		a=ram[ptr+x];
 	}
-	ram[buffer+i] = '\0';
+	ram[buffer+x] = '\0';
 }
 
 void prompt() {
