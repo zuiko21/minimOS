@@ -26,26 +26,28 @@ int	buffer=512;
 void prev() {
 //	printf("(PREV)\n");
 
-	if (ptr>0) {
+	if (ram[ptr]!='\0') {    // needs leading terminator at ptr=0
 		ptr--;
 		a = ram[ptr];
 		while (a!='\n' && a!='\0' && ptr>0) {
 			ptr--;
 		}
-	}
+	} else {
+                printf ("{start}\n");
+        }
 }
 
 void pop() {		//copy line into buffer
 //	printf("(POP)\n");
-	x=0;
+	x=1;
 
 	a=ram[ptr+x];
 	while (a!='\0' && a!='\n') {
-		ram[buffer+x]=a;
+		ram[buffer-1+x]=a;
 		x++;
 		a=ram[ptr+x];
 	}
-	ram[buffer+x] = '\0';
+	ram[buffer-1+x] = '\0';
 }
 
 void prompt() {
@@ -54,7 +56,7 @@ void prompt() {
 
 	printf("%04x>", cur);
 	a = ram[buffer+x];
-	while (a!='\n' && a!='\0') {
+	while (a!='\0') {
 		putchar(a);
 		x++;
 		a = ram[buffer+x];
@@ -79,16 +81,16 @@ byte buflen() {
 		x++;
 	}
 
-	return i;
+	return x;
 }
 
 void push() {		//copy buffer @ptr
 //	printf("(PUSH)\n");
-	x=0;
+	x=1;
 
-	while ((a=ram[buffer+x]) != '\0') {
+	while ((a=ram[buffer-1+x]) != '\0') {
 		ram[ptr+x]=a;
-		c++;
+		x++;
 	}
 	ram[ptr+x] = '\n';
 }
@@ -97,7 +99,7 @@ void indent() {
 //	printf("(INDENT)\n");
 	x=0;
 
-	if (ram[ptr]) {		// not the end
+	if (ram[ptr] != '\0') {		// not the end? *****revise
 		ptr++;
 		a = ram[ptr];
 		while (a==' ' || a=='\t') {
@@ -113,13 +115,15 @@ void indent() {
 void next() {
 //	printf("(NEXT)\n");
 
-	if (ptr<top) {
+	if (ram[ptr]!='\0') {
 		ptr++;
 		a = ram[ptr];
 		while (a!='\n' && a!='\0' && ptr>0) {
 			ptr++;
 		}
-	}
+	} else {
+                printf ("{END}\n");
+        }
 }
 
 void show() {			//print cur: and line @ptr, advance ptr! otherwise next()
@@ -155,7 +159,7 @@ byte valid(byte k) {
 int main(void)
 {
 	cur = 0;
-	top = 1024;
+//	top = 1024;
 	ptr = 1024;
 	ram[ptr]='\0';
 	ram[buffer]='\0';
@@ -237,8 +241,8 @@ int main(void)
 			//edit like READLN in raw
 			//don't manage CR/ESC
 			putchar(key);
-			ram[buffer+x]=key;
-			x++;
+			ram[buffer+y]=key;
+			y++;
 		}
 	} while(-1);				// loop forever
 
