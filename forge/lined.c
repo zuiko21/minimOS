@@ -1,7 +1,7 @@
 /* line editor for minimOS!
  * v0.5a1
  * (c)2016 Carlos J. Santisteban
- * last modified 20160503 */
+ * last modified 20160503-1505 */
 
 #include <stdio.h>
 
@@ -50,15 +50,14 @@ void pop() {		//copy line into buffer
 
 void prompt() {
 //	printf("(PROMPT)\n");
-	int	i=0;
-	byte	c;
+	x=0;
 
 	printf("%04x>", cur);
-	c = ram[buffer+i];
-	while (c!='\n' && c!='\0') {
-		putchar(c);
-		i++;
-		c = ram[buffer+i];
+	a = ram[buffer+x];
+	while (a!='\n' && a!='\0') {
+		putchar(a);
+		x++;
+		a = ram[buffer+x];
 	}
 }
 
@@ -74,10 +73,10 @@ void move_up(int s, int d) {
 
 byte buflen() {
 //	printf("(BUFLEN)\n");
-	int	i=0;
+	x=0;
 
-	while(ram[buffer+i]!='\0') {
-		i++;
+	while(ram[buffer+x]!='\0') {
+		x++;
 	}
 
 	return i;
@@ -85,42 +84,39 @@ byte buflen() {
 
 void push() {		//copy buffer @ptr
 //	printf("(PUSH)\n");
-	int	i=0;
-	byte	c;
+	x=0;
 
-	while ((c=ram[buffer+i]) != '\0') {
-		ram[ptr+i]=c;
-		i++;
+	while ((a=ram[buffer+x]) != '\0') {
+		ram[ptr+x]=a;
+		c++;
 	}
-	ram[ptr+i] = '\n';
+	ram[ptr+x] = '\n';
 }
 
 void indent() {
 //	printf("(INDENT)\n");
-	byte	c;
-	int	i=0;
+	x=0;
 
 	if (ram[ptr]) {		// not the end
 		ptr++;
-		c = ram[ptr];
-		while (c==' ' || c=='\t') {
-			ram[buffer+i]=c;
-			i++;
+		a = ram[ptr];
+		while (a==' ' || a=='\t') {
+			ram[buffer+x]=a;
+			x++;
 			ptr++;
-			c = ram[ptr];
+			a = ram[ptr];
 		}
 	}
-	ram[buffer+i]='\0';
+	ram[buffer+x]='\0';
 }
 
 void next() {
 //	printf("(NEXT)\n");
-	byte	c;
 
 	if (ptr<top) {
 		ptr++;
-		c = ram[ptr];
-		while (c!='\n' && c!='\0' && ptr>0) {
+		a = ram[ptr];
+		while (a!='\n' && a!='\0' && ptr>0) {
 			ptr++;
 		}
 	}
@@ -128,14 +124,13 @@ void next() {
 
 void show() {			//print cur: and line @ptr, advance ptr! otherwise next()
 //	printf("(SHOW)\n");
-	byte	c;
 
 	printf("%04x:", cur);
-	c = ram[ptr];
-	while (c!='\n' && c!='\0') {
-		putchar(c);
+	a = ram[ptr];
+	while (a!='\n' && a!='\0') {
+		putchar(a);
 		ptr++;
-		c = ram[ptr];
+		a = ram[ptr];
 	}
 	printf("\n");
 }
@@ -186,7 +181,7 @@ int main(void)
 			}
 		}
 		if (key==cr) {				//***insert or accept current***
-			x=0;
+			y=0;
 			if (!edit) {				//*insert new line*
 				src=ptr;					//current is kept
 				dest=ptr+buflen()		;	//room for buffer
