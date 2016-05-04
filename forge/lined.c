@@ -1,9 +1,15 @@
 /* line editor for minimOS!
  * v0.5a1
  * (c)2016 Carlos J. Santisteban
- * last modified 20160503-1505 */
+ * last modified 20160504-1352 */
+
+/* See info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <termios.h>
+#include <string.h>
 
 #define	ctl_g	'\a'
 #define	ctl_e	0x5
@@ -14,8 +20,22 @@
 #define	FALSE	0
 #define	TRUE	-1
 
-
 typedef unsigned char byte;
+ 
+byte getch(void) //Dynamic String Input function from Daniweb.com
+{ 
+    int ch;
+    struct termios oldt;
+    struct termios newt;
+    tcgetattr(STDIN_FILENO, &oldt); /*store old settings */
+    newt = oldt; /* copy old settings to new settings */
+    newt.c_lflag &= ~(ICANON | ECHO); /* make one change to old settings in new settings */
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt); /*apply the new settings immediatly */
+    ch = getchar(); /* standard getchar call */
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt); /*reapply the old settings */
+    return (byte)ch; /*return received char */
+}
+
 
 byte	ram[65536];
 byte	a, x, y;
@@ -168,22 +188,24 @@ int main(void)
 	pop();
 	prompt();
 	do {
-		key = getchar_unlocked();			//read key
+		key = getch();			//read key
 		if (key==ctl_e) {			//***edit previous***
+		printf("Ctl-E ");
 			if (cur>0)		cur--;
 			edit=TRUE;					//mode: edit existing
 			prev();						//go back until CR or begin
 			pop();						//copy line into buffer
 			prompt();					//print cur> and buffer contents
-		}
+		} else
 		if (key==ctl_x) {			//***delete previous***
+		printf("Ctl-X ");
 			if (cur>0) {				//none if empty
 				src=ptr;					//start of current line
 				prev();						//back to previous
 				move_dn(src,ptr);			//displace
 				cur--;
 			}
-		}
+		} else
 		if (key==cr) {				//***insert or accept current***
 			y=0;
 			if (!edit) {				//*insert new line*
@@ -207,8 +229,9 @@ int main(void)
 			next();						//point to next
 			cur++;
 			prompt();					//show cur> and buffer (indent)
-		}
+		} else
 		if (key==up && cur>1) {		//***show previous***
+		printf("Ctl-W ");
 			cur-=2;
 			prev();
 			//this should be common
@@ -216,17 +239,19 @@ int main(void)
 			show();						//print cur: and line @ptr, advance ptr! otherwise next()
 			cur++;
 			prompt();					//show new cur> and buffer (indent)
-		}
+		} else
 		if (key==down && ram[ptr]) {	//***show next if not at end***
+		printf("Ctl-S ");
 			//common as above
 			indent();					//get leading whitespace
 			show();						//print cur: and line @ptr, advance ptr! otherwise next()
 			cur++;
 			prompt();					//show new cur> and buffer (indent)
-		}
+		} else
 		//should do start & end keys
 		//what to do on ESC? common block?
 		if (key==ctl_g) {			//***goto line***
+		printf("Ctl-G ");
 			dest=ask();					//prompt for line number
 			ptr=0;						//eeeeeeek!
 			for(cur=0;cur<dest;cur++) {
@@ -236,7 +261,7 @@ int main(void)
 			}
 			ptr=optr;					//back once, should decr. cur???
 			//common as above
-		}
+		} else
 		if (valid(key)) {			//***including tabs shown raw***
 			//edit like READLN in raw
 			//don't manage CR/ESC
