@@ -1,11 +1,12 @@
 /* line editor for minimOS!
  * v0.5a1
  * (c)2016 Carlos J. Santisteban
- * last modified 20160504-1352 */
+ * last modified 20160504-1414 */
 
-/* See info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
+/* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
 #include <stdio.h>
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
@@ -36,25 +37,24 @@ byte getch(void) //Dynamic String Input function from Daniweb.com
     return (byte)ch; /*return received char */
 }
 
-
 byte	ram[65536];
 byte	a, x, y;
 byte	key, edit;
-int	cur, ptr, optr, src, dest, delta, top;
+int	cur, ptr, optr, src, dest, delta, top, zz;
 int	buffer=512;
 
 void prev() {
 //	printf("(PREV)\n");
 
-	if (ram[ptr]!='\0') {    // needs leading terminator at ptr=0
+	if (ram[ptr]!='\0') {    // needs leading terminator at ptr=0???
 		ptr--;
 		a = ram[ptr];
 		while (a!='\n' && a!='\0' && ptr>0) {
 			ptr--;
 		}
 	} else {
-                printf ("{start}\n");
-        }
+		printf ("{start}\n");
+	}
 }
 
 void pop() {		//copy line into buffer
@@ -86,10 +86,30 @@ void prompt() {
 void move_dn(int s, int d) {
 	printf("MOVE_DN %d -> %d\n", s, d);
 
+	while(s<top) {
+		ram[d] = ram[s];
+		d++;
+		s++;
+	}
+	
+	top = d;
 }
 
 void move_up(int s, int d) {
 	printf("MOVE_UP %d -> %d\n", s, d);
+	
+	int		delta = d-s;
+	int		tmptr;
+	
+	tmptr = top;
+	top += delta;
+	d = top;
+	
+	while(tmptr>s) {
+		ram[d]=ram[tmptr];
+		d--;
+		tmptr--;
+	}
 
 }
 
@@ -142,8 +162,8 @@ void next() {
 			ptr++;
 		}
 	} else {
-                printf ("{END}\n");
-        }
+		printf ("{END}\n");
+	}
 }
 
 void show() {			//print cur: and line @ptr, advance ptr! otherwise next()
@@ -179,8 +199,8 @@ byte valid(byte k) {
 int main(void)
 {
 	cur = 0;
-//	top = 1024;
 	ptr = 1024;
+	top = ptr+1;
 	ram[ptr]='\0';
 	ram[buffer]='\0';
 
@@ -189,6 +209,13 @@ int main(void)
 	prompt();
 	do {
 		key = getch();			//read key
+
+		if (key==0x14) {		//***DEBUG ^T***
+			printf("\nCONTENTS:\n");
+			for (zz=1024; zz<top; zz++)	printf("%c", ram[zz]);
+			printf("\n-----\n");
+		} else
+		
 		if (key==ctl_e) {			//***edit previous***
 		printf("Ctl-E ");
 			if (cur>0)		cur--;
