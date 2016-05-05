@@ -8,7 +8,7 @@
 
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
-;#define		NMOS	_NMOS
+#define		NMOS	_NMOS
 #define		LOWRAM	_LOWRAM
 
 ; hard to multitask on this...

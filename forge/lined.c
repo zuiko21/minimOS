@@ -1,7 +1,7 @@
 /* line editor for minimOS!
- * v0.5a1
+ * v0.5a2
  * (c)2016 Carlos J. Santisteban
- * last modified 20160504-1414 */
+ * last modified 20160505-1235 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -20,6 +20,9 @@
 #define	up		0x17
 #define	FALSE	0
 #define	TRUE	-1
+
+#define	buffer	512
+#define	start	1024
 
 typedef unsigned char byte;
  
@@ -40,8 +43,7 @@ byte getch(void) //Dynamic String Input function from Daniweb.com
 byte	ram[65536];
 byte	a, x, y;
 byte	key, edit;
-int	cur, ptr, optr, src, dest, delta, top, zz;
-int	buffer=512;
+int		cur, ptr, optr, src, dest, delta, top, zz;
 
 void prev() {
 //	printf("(PREV)\n");
@@ -196,13 +198,35 @@ byte valid(byte k) {
 		return FALSE;
 }
 
+void load() {
+
+// preload some content
+	int i=0;
+	byte texto[10]={"123\n456\0"};
+	while(ram[start+i]=texto[i]) {
+		printf("%c", texto[i]);
+		i++;
+	}
+// continue as usual
+
+	ptr = start;
+	cur = 0;
+	
+	while (ram[ptr]!='\0') {
+		if (ram[ptr]=='\n')		cur++;
+		ptr++;
+	}
+	if (cur==0 && ptr>start) {		// some chars but no CR
+		cur = 1;					// single line
+	}
+	top = ptr;
+	printf("{%d bytes, %d lines}\n", ptr-start, cur);
+}
+
 int main(void)
 {
-	cur = 0;
-	ptr = 1024;
-	top = ptr+1;
-	ram[ptr]='\0';
-	ram[buffer]='\0';
+
+	load();		// get 'file' and count lines and bytes
 
 	edit=FALSE;
 	pop();
