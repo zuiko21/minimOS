@@ -1,7 +1,7 @@
 /* line editor for minimOS!
  * v0.5a2
  * (c)2016 Carlos J. Santisteban
- * last modified 20160506-1010 */
+ * last modified 20160506-1112 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -249,8 +249,10 @@ int main(void)
 				printf("{start}\n");		// complain
 				ram[buffer] = 0;			// empty buffer
 			} else {
-				edit=TRUE;					// mode: edit existing
-				prev();						// go back until CR or begin
+				if (!edit) {				// was not already editing?
+					prev();						// go back until CR or begin
+					edit=TRUE;					// mode: edit existing
+				}
 				pop();						// copy line into buffer
 			}
 			prompt();					//print cur> and buffer contents
@@ -260,16 +262,21 @@ int main(void)
 			if (cur==0) {				// no previous line to delete
 				printf("{start}\n");		// complain
 			} else {
-				src=ptr;					// start of current line
-				prev();						// back to previous
-				move_dn(src,ptr);			// displace...
+				optr=ptr;					// remember from where
+				prev();						// beginning of previous line to be deleted
+				delta = optr-ptr;			// position shift, for convenience
+				move_dn(optr+1,ptr+1);		// move down! should do something like top = top-delta
+				prev();						// let us see what we have above
+				indent();					// get leading whitespace on buffer
+				show();						// print previous line
+				prompt();					// ready to insert another
 			}
 			break;
 		case cr:					//***insert or accept current***
 			y=0;
 			if (!edit) {				//*insert new line*
 				src=ptr+1;					//current is kept
-				dest=ptr+buflen()		;	//room for buffer
+				dest=ptr+buflen()+2		;	//room for buffer
 				move_up(src,dest);
 			} else {					//*replace old*
 				edit=FALSE;
@@ -286,7 +293,7 @@ int main(void)
 			}
 			push();						//copy buffer @ptr
 			indent();					//copy leading whitespace into buffer and terminate it
-			next();						//point to next
+			show();						//point to next, have a look anyway
 			prompt();					//show cur> and buffer (indent)
 			break;
 		case up:					//***show previous***
