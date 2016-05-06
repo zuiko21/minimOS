@@ -1,7 +1,7 @@
 /* line editor for minimOS!
  * v0.5a2
  * (c)2016 Carlos J. Santisteban
- * last modified 20160506-1112 */
+ * last modified 20160506-1229 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -47,7 +47,7 @@ byte	key, edit;
 int		cur, ptr, optr, src, dest, delta, top, zz;
 
 void prev() {			// *** point to previous line
-	if (ram[ptr-1]) {		// not at the beginning
+	if (ram[ptr-1]!='\0') {		// not at the beginning
 		ptr--;					// end of last line
 		a = ram[ptr];
 		while (a!='\n' && a!='\0') {	// seek for newline or start
@@ -76,7 +76,7 @@ void next() {			// *** point to next line
 
 void pop() {			// *** copy line into buffer
 	x=1;					// leading CR is not to be copied
-	a=ram[ptr+x];			// first character
+	a=ram[ptr+1];			// first character
 	while (a!='\0' && a!='\n') {	// until newline or end
 		ram[buffer-1+x]=a;				// copy character into buffer, notice offset
 		x++;
@@ -85,7 +85,7 @@ void pop() {			// *** copy line into buffer
 	ram[buffer-1+x] = '\0';	// terminate buffer
 }
 
-void push() {			// *** copy buffer @ptr
+void push() {			// *** copy buffer @ptr, and increase pointer
 	x=0;					// reset index
 	a=ram[buffer];			// first character
 	while (a != '\0') {		// until buffer is terminated
@@ -102,27 +102,32 @@ void prompt() {			// *** show cur> and buffer contents
 	printf("%04x>", cur);	// ask for current line
 	a = ram[buffer];		// first char in buffer
 	while (a!='\0') {		// until terminated
-		putchar(a);				// print it
+		if (a!='\t') {
+                    putchar(a);				// print it
+                } else {
+                    putchar ('>');    // tab replacement
+                }
 		x++;
 		a = ram[buffer+x];		// next char
 	}
 }
 
 void move_dn(int s, int d) {
-	printf("MOVE_DN %d -> %d\n", s, d);
-//************************
-	while(s<top) {
+//	printf("MOVE_DN %d -> %d\n", s, d);
+	int	delta=d-s;
+
+	while(s<=top) {
 		ram[d] = ram[s];
 		d++;
 		s++;
 	}
 	
-	top = d;
+	top -= delta;
 }
 
 void move_up(int s, int d) {
-	printf("MOVE_UP %d -> %d\n", s, d);
-//***************************
+//	printf("MOVE_UP %d -> %d\n", s, d);
+
 	int		delta = d-s;
 	int		tmptr;
 	
@@ -130,7 +135,7 @@ void move_up(int s, int d) {
 	top += delta;
 	d = top;
 	
-	while(tmptr>s) {
+	while(tmptr>=s) {
 		ram[d]=ram[tmptr];
 		d--;
 		tmptr--;
@@ -228,20 +233,21 @@ int main(void)
 	edit=FALSE;					// standard mode
 //printf("cur=%d, ptr=%d---",cur,ptr);
 	prev();						// get last line
-	if (ram[ptr]) {				// not empty?
-//printf("notEmpty ");
+	if (ram[ptr]!='\0') {			// not empty?
 		indent();					// get whitespace into buffer
 		show();						// print it!
-	}
+	} else {
+		ram [buffer]='\0';		// eeeeek 
 	prompt();					// ask for next line
 	do {
-		key = getch();				//read key
+		key = getch();				// read key
 
 		switch(key) {				// compare values...
 		case 0x14: 					//***DEBUG ^T shows all***
 			printf("\nCONTENTS:\n");
 			for (zz=start; zz<top; zz++)	printf("%c", ram[zz]);
 			printf("\n-----\n");
+			prompt();
 			break;
 		case ctl_e:					//***edit previous***
 //		printf("Ctl-E ");
@@ -261,16 +267,16 @@ int main(void)
 //		printf("Ctl-X ");
 			if (cur==0) {				// no previous line to delete
 				printf("{start}\n");		// complain
+				ram[buffer]='\0';
 			} else {
 				optr=ptr;					// remember from where
 				prev();						// beginning of previous line to be deleted
-				delta = optr-ptr;			// position shift, for convenience
-				move_dn(optr+1,ptr+1);		// move down! should do something like top = top-delta
+				move_dn(optr+1,ptr+1);		// move down
 				prev();						// let us see what we have above
 				indent();					// get leading whitespace on buffer
 				show();						// print previous line
-				prompt();					// ready to insert another
 			}
+			prompt();					// ready to insert another
 			break;
 		case cr:					//***insert or accept current***
 			y=0;
@@ -334,9 +340,13 @@ int main(void)
 			if (valid(key)) {			//***including tabs shown raw***
 				//edit like READLN in raw
 				//don't manage CR/ESC
+				if (key=='\b') {
+
+} else {
 				putchar(key);
 				ram[buffer+y]=key;
 				y++;
+}
 			}
 		}
 	} while(-1);				// loop forever
