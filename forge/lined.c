@@ -1,7 +1,7 @@
 /* line editor for minimOS!
- * v0.5a2
+ * v0.5a3
  * (c)2016 Carlos J. Santisteban
- * last modified 20160506-1229 */
+ * last modified 20160506-1459 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -24,6 +24,7 @@
 
 #define	buffer	512
 #define	start	1024
+#define BUFSIZ	80
 
 typedef unsigned char byte;
  
@@ -228,22 +229,22 @@ int main(void)
 {
 
 	load();						// get 'file' and count lines and bytes
-	ram[start-1] = 0;			// needs leading terminator!!!!
+	ram[start-1] = 0;			// needs leading terminator!!!! Might go into load()
 
 	edit=FALSE;					// standard mode
-//printf("cur=%d, ptr=%d---",cur,ptr);
 	prev();						// get last line
 	if (ram[ptr]!='\0') {			// not empty?
 		indent();					// get whitespace into buffer
 		show();						// print it!
 	} else {
-		ram [buffer]='\0';		// eeeeek 
+		ram [buffer]='\0';		// eeeeek
+	}
 	prompt();					// ask for next line
 	do {
 		key = getch();				// read key
 
 		switch(key) {				// compare values...
-		case 0x14: 					//***DEBUG ^T shows all***
+		case 0x14: 					//***DEBUG ^T shows all*** will become a regular command
 			printf("\nCONTENTS:\n");
 			for (zz=start; zz<top; zz++)	printf("%c", ram[zz]);
 			printf("\n-----\n");
@@ -281,14 +282,13 @@ int main(void)
 		case cr:					//***insert or accept current***
 			y=0;
 			if (!edit) {				//*insert new line*
-				src=ptr+1;					//current is kept
-				dest=ptr+buflen()+2		;	//room for buffer
+				src=ptr+1;					// current is kept
+				dest=ptr+buflen()+2		;	// room for buffer
 				move_up(src,dest);
 			} else {					//*replace old*
 				edit=FALSE;
 				optr=ptr;					//save current pos
 				next();						//set ptr to next line (advance current size)
-//***
 				delta=optr+buflen()-ptr;	//new vs old length
 				if (delta>0) {				//now is longer
 					move_up(optr,optr+delta);	//get extra room
@@ -341,8 +341,9 @@ int main(void)
 				//edit like READLN in raw
 				//don't manage CR/ESC
 				if (key=='\b') {
-
-} else {
+printf ("\b \b");
+y--;
+	} else {
 				putchar(key);
 				ram[buffer+y]=key;
 				y++;
