@@ -1,7 +1,7 @@
 /* line editor for minimOS!
  * v0.5a3
  * (c)2016 Carlos J. Santisteban
- * last modified 20160506-1459 */
+ * last modified 20160508-1158 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -18,7 +18,11 @@
 #define	cr		'\n'
 // cannot use ^S for down, use ^R instead EEEEEEK
 #define	down	0x12
+// ^W is up
 #define	up		0x17
+#define	backspace	0x8
+#define	escape	0x1b
+
 #define	FALSE	0
 #define	TRUE	-1
 
@@ -336,18 +340,26 @@ int main(void)
 			show();						// print cur: and line @ptr, advance ptr! otherwise next()
 			prompt();					// show new cur> and buffer (indent)
 			break;
+		case escape:
+			y = 0;
+			ram[buffer]='\0';				// clear buffer
+			prompt();
+			break;
+		case backspace:
+			if (0<y) {				// something in buffer
+				y--;					// delete char in buffer
+				printf("\b");				// also on screen
+			}
+			break;
 		default:					// manage regular typing
-			if (valid(key)) {			//***including tabs shown raw***
-				//edit like READLN in raw
-				//don't manage CR/ESC
-				if (key=='\b') {
-printf ("\b \b");
-y--;
-	} else {
-				putchar(key);
-				ram[buffer+y]=key;
-				y++;
-}
+			if (valid(key) && y<BUFSIZ) {			//***put keystroke in buffer
+				if (key=='\t') {				// tabs made printable
+					putchar('•');					// desired substitution
+				} else {
+					putchar(key);					// print typed
+					ram[buffer+y]=key;				// store in buffer
+					y++;
+				}
 			}
 		}
 	} while(-1);				// loop forever
