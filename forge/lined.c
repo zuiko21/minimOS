@@ -1,7 +1,7 @@
 /* line editor for minimOS!
  * v0.5a4
  * (c)2016 Carlos J. Santisteban
- * last modified 20160508-1232 */
+ * last modified 20160509-1343 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -28,7 +28,7 @@
 
 #define	buffer	512
 #define	start	1024
-#define BUFSIZ	80
+#define bufsize	80
 
 typedef unsigned char byte;
  
@@ -51,75 +51,77 @@ byte	a, x, y;
 byte	key, edit;
 int		cur, ptr, optr, src, dest, delta, top, zz;
 
-void prev() {			// *** point to previous line
-	if (ram[ptr-1]!='\0') {		// not at the beginning
-		ptr--;					// end of last line
+void prev() {					// *** point to previous line
+	byte flag=0;
+	if (start<ptr) {				// not at the beginning
+		ptr--;							// end of last line
 		a = ram[ptr];
-		while (a!='\n' && a!='\0') {	// seek for newline or start
+		while (a!='\n' && a!='\0' && start<ptr) {	// seek for newline or start
+			flag=1;
 			ptr--;							// backwards
 			a = ram[ptr];					// eeeeek!
 		}
-		cur--;					// one less line
+		cur-=flag;							// one less line
 	} else {
-		printf("\n{START}");	// no way to go back
+		printf("\n{START}");			// no way to go back
 	}
 }
 
-void next() {			// *** point to next line
-	if (ram[ptr]!='\0') {	// not at end already
-		ptr++;					// start of this line
+void next() {					// *** point to next line
+	if (ptr<top) {					// not at end already
+		ptr++;							// start of this line
 		a = ram[ptr];
-		while (a!='\n' && a!='\0') {	// seek for newline or end
+		while (a!='\n' && a!='\0' && ptr<top) {	// seek for newline or end
 			ptr++;							// forth
 			a = ram[ptr];					// eeeeek!
 		}
-		cur++;				// one more line
+		cur++;							// one more line
 	} else {
-		printf ("\n{END}");	// cannot advance
+		printf ("\n{END}");				// cannot advance
 	}
 }
 
-void pop() {			// *** copy line into buffer
-	x=1;					// leading CR is not to be copied
-	a=ram[ptr+1];			// first character
+void pop() {					// *** copy line into buffer
+	x=1;							// leading CR is not to be copied
+	a=ram[ptr+1];					// first character
 	while (a!='\0' && a!='\n') {	// until newline or end
 		ram[buffer-1+x]=a;				// copy character into buffer, notice offset
 		x++;
 		a=ram[ptr+x];					// next character
 	}
-	ram[buffer-1+x] = '\0';	// terminate buffer
+	ram[buffer-1+x] = '\0';			// terminate buffer
 }
 
-void push() {			// *** copy buffer @ptr, and increase pointer
-	x=0;					// reset index
-	a=ram[buffer];			// first character
-	while (a != '\0') {		// until buffer is terminated
-		ptr++;					// should increase too!
-		ram[ptr]=a;				// copy from buffer
+void push() {					// *** copy buffer @ptr, and increase pointer
+	x=0;							// reset index
+	a=ram[buffer];					// first character
+	while (a != '\0') {				// until buffer is terminated
+		ptr++;							// should increase too!
+		ram[ptr]=a;						// copy from buffer
 		x++;
-		a=ram[buffer+x];		// next character
+		a=ram[buffer+x];				// next character
 	}
-	ram[++ptr] = '\n';		// place trailing CR
+	ram[++ptr] = '\n';				// place trailing CR
 }
 
-void prompt() {			// *** show cur> and buffer contents
-	x=0;					// reset index
-	printf("\n%04x>", cur);	// ask for current line
-	a = ram[buffer];		// first char in buffer
-	while (a!='\0') {		// until terminated
+void prompt() {					// *** show cur> and buffer contents
+	x=0;							// reset index
+	printf("\n%04x>", cur);			// ask for current line
+	a = ram[buffer];				// first char in buffer
+	while (a!='\0') {				// until terminated
 		if (a!='\t') {
-                    putchar(a);				// print it
-                } else {
-                    putchar('•');			// tab replacement
-                }
+			putchar(a);						// print it
+		} else {
+			putchar('~');					// tab replacement
+		}
 		x++;
-		a = ram[buffer+x];		// next char
+		a = ram[buffer+x];				// next char
 	}
-	y = x;				// eeeeeek
+	y = x;							// eeeeeek
 }
 
 void move_dn(int s, int d) {
-	int	delta=d-s;
+	int		delta=d-s;
 
 	while(s<=top) {
 		ram[d] = ram[s];
@@ -144,10 +146,9 @@ void move_up(int s, int d) {
 		d--;
 		tmptr--;
 	}
-
 }
 
-byte buflen() {			// *** return buffer length
+byte buflen() {					// *** return buffer length
 	x=0;							// reset counter
 
 	while(ram[buffer+x]!='\0') {	// until terminated
@@ -157,7 +158,7 @@ byte buflen() {			// *** return buffer length
 	return x;						// result
 }
 
-void indent() {			// *** copy leading whitespace into buffer
+void indent() {					// *** copy leading whitespace into buffer
 	x=1;							// points at first character on current line
 	a = ram[ptr+1];					// get first char
 	while (a==' ' || a=='\t') {		// while there is whitespace
@@ -168,9 +169,9 @@ void indent() {			// *** copy leading whitespace into buffer
 	ram[buffer-1+x]='\0';				// temporary buffer termination
 }
 
-void show() {			// *** print cur: and line @ptr, advance ptr!
-	if (ram[ptr]=='\0') {	// already at end?
-		printf("\n{end}");		// complain
+void show() {					// *** print cur: and line @ptr, advance ptr!
+	if (ram[ptr]=='\0') {			// already at end?
+		printf("\n{end}");				// complain
 	} else {
 		ptr++;							// first char in line
 		a = ram[ptr];					// check char
@@ -184,23 +185,23 @@ void show() {			// *** print cur: and line @ptr, advance ptr!
 	}
 }
 
-int ask() {				// *** ask for a line number to jump at
+int ask() {						// *** ask for a line number to jump at
 	int i;
 
 	printf("\nLine: ");
-	scanf("%d", &i);
+	scanf("%d",&i);
 
 	return i;
 }
 
-byte valid(byte k) {	// *** check whether it is printable or not
-	if ((k=='\t') || (' '<=k))	// eeeeek
+byte valid(byte k) {			// *** check whether it is printable or not
+	if ((k=='\t') || (' '<=k))		// eeeeek
 		return TRUE;
 	else
 		return FALSE;
 }
 
-void load() {			// *** check current 'file' and go to its end
+void load() {					// *** check current 'file' and go to its end
 
 // ********preload some content*********
 	int i=0;
@@ -279,6 +280,7 @@ int main(void)
 			break;
 		case cr:					//***insert or accept current***
 			if (!edit) {				//*insert new line*
+				ram[ptr]='\n';				// in case is NULL at the end EEEEEEK
 				src=ptr+1;					// current is kept
 				dest=ptr+buflen()+2		;	// room for buffer
 				move_up(src,dest);
@@ -286,7 +288,7 @@ int main(void)
 				edit=FALSE;
 				optr=ptr;					//save current pos
 				next();						//set ptr to next line (advance current size)
-				delta=optr+buflen()-ptr;	//new vs old length
+				delta=optr+buflen()+1-ptr;	//new vs old length
 				if (delta>0) {				//now is longer
 					move_up(optr,optr+delta);	//get extra room
 				} else if (delta<0) { 		//now is shorter
@@ -323,7 +325,8 @@ int main(void)
 				next();						// advance one line
 				if (!ram[ptr])	break;		//abort at end
 			}
-			if (cur == 0) {				// at start, no whitespace to take
+			key=0;							// why???
+			if (ptr==start) {				// at start, no whitespace to take
 				ram[buffer]='\0';
 			} else {
 				indent();					// get leading whitespace
@@ -342,9 +345,9 @@ int main(void)
 			}
 			break;
 		default:					// manage regular typing
-			if (valid(key) && y<BUFSIZ) {			//***put keystroke in buffer
+			if (valid(key) && y<bufsize) {			//***put keystroke in buffer
 				if (key=='\t') {				// tabs made printable
-					putchar('•');					// desired substitution
+					putchar('~');					// desired substitution
 				} else {
 					putchar(key);					// print typed
 					ram[buffer+y]=key;				// store in buffer
