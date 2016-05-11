@@ -1,7 +1,7 @@
 /* line editor for minimOS!
  * v0.5a6
  * (c)2016 Carlos J. Santisteban
- * last modified 20160511-1238 */
+ * last modified 20160511-1421 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -119,9 +119,9 @@ void prompt() {					// *** show cur> and buffer contents
 }
 
 void move_dn(int s, int d) {
-	int		delta=d-s;
+	int		delta=s-d;	// eeeeeeek
 
-	while(s<=top) {
+	while(s <= top) {
 		ram[d] = ram[s];
 		d++;
 		s++;
@@ -139,8 +139,8 @@ void move_up(int s, int d) {
 	top += delta;
 	d = top;
 	
-	while(tmptr>=s) {
-		ram[d]=ram[tmptr];
+	while(tmptr >= s) {
+		ram[d] = ram[tmptr];
 		d--;
 		tmptr--;
 	}
@@ -168,7 +168,7 @@ void indent() {					// *** copy leading whitespace into buffer
 }
 
 void show() {					// *** print cur: and line @ptr, advance ptr!
-	if (ram[ptr]=='\0') {			// already at end?
+	if (top<=ptr) {					// already at end?
 		printf("\n{end}");				// complain
 	} else {
 		ptr++;							// first char in line
@@ -255,7 +255,7 @@ int main(void)
 			prompt();
 			break;
 		case ctl_e:					//***edit previous***
-			if (cur==0) {				// insert at top
+			if (ptr==start) {				// insert at top
 				printf("\n{start}");		// complain
 				ram[buffer] = 0;			// empty buffer
 			} else {
@@ -277,7 +277,7 @@ int main(void)
 				move_dn(optr+1,ptr+1);		// move down
 				prev();						// let us see what we have above
 				if (start<ptr) {			// not the first one
-					cur++;
+//					cur++;
 					indent();					// get leading whitespace on buffer
 					show();						// return, or just next???
 				}
@@ -295,26 +295,33 @@ int main(void)
 				edit=FALSE;
 				optr=ptr;					//save current pos
 				next();						//set ptr to next line (advance current size)
-				delta=optr+buflen()+1-ptr;	//new vs old length
+				delta=buflen()+1-(ptr-optr);	//new vs old length
 				if (delta>0) {				//now is longer
 					move_up(optr,optr+delta);	//get extra room
 				} else if (delta<0) { 		//now is shorter
-					move_dn(optr+delta,optr);	//shrink
+					move_dn(ptr,ptr+delta);	//shrink! eeeek!
 				}							//don't move if same length
 				ptr=optr;					//retrieve
 			}
 			push();						//copy buffer @ptr plus trailing CR
 			// common block
+			prev();						// have a look at last line!
 			indent();					//copy leading whitespace into buffer and terminate it
-//			show();						//point to next, have a look anyway
+			next();						// just after recent line, no need to show?
 			prompt();					//show cur> and buffer (indent)
 			break;
 		case up:					//***show previous***
-			prev();						// skip pointed buffer...
-			prev();						// ...and previous line to show!
-			//this should be common
-			indent();					// get leading whitespace
-			show();						// print cur: and line @ptr, advance ptr! otherwise next()
+			if (ptr<=start) {			// empty???
+				printf("\n{start}");		// cannot go back!
+				ram[buffer]='\0';			// clear buffer
+				cur = 0;					// just in case...
+			} else {
+				prev();						// skip pointed buffer...
+				prev();						// ...and previous line to show!
+				//this should be common
+				indent();					// get leading whitespace
+				show();						// print cur: and line @ptr, advance ptr! otherwise next()
+			}
 			prompt();					// show new cur> and buffer (indent)
 			break;
 		case down:					//***show next if not at end***
@@ -357,9 +364,9 @@ int main(void)
 					putchar('~');					// desired substitution
 				} else {
 					putchar(key);					// print typed
-					ram[buffer+y]=key;				// store in buffer
-					y++;
 				}
+				ram[buffer+y]=key;				// store in buffer
+				y++;
 			}
 		}
 	} while(-1);				// loop forever
