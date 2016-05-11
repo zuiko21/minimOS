@@ -1,7 +1,7 @@
 /* line editor for minimOS!
  * v0.5a6
  * (c)2016 Carlos J. Santisteban
- * last modified 20160511-1013 */
+ * last modified 20160511-1238 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -52,16 +52,14 @@ byte	key, edit;
 int		cur, ptr, optr, src, dest, delta, top, zz;
 
 void prev() {					// *** point to previous line
-	byte flag=0;
 	if (start<ptr) {				// not at the beginning
 		ptr--;							// end of last line
 		a = ram[ptr];
 		while (a!='\n' && a!='\0' && start<ptr) {	// seek for newline or start
-			flag=1;
 			ptr--;							// backwards
 			a = ram[ptr];					// eeeeek!
 		}
-		cur-=flag;							// one less line
+		cur--;							// one less line
 	} else {
 		printf("\n{START}");			// no way to go back
 	}
@@ -211,7 +209,7 @@ void load() {					// *** check current 'file' and go to its end
 
 // ********preload some content*********
 	int i=0;
-	byte texto[80]={" 123\n  456\n   789\n\0"};	// couple of sample lines
+	byte texto[80]={"\0"};	// couple of sample lines
 	
 	while(ram[start+i]=texto[i]) {
 		printf("%c", texto[i]);
@@ -239,8 +237,8 @@ int main(void)
 	ram[start-1] = 0;			// needs leading terminator!!!! Might go into load()
 
 	edit=FALSE;					// standard mode
-	prev();						// get last line
-	if (ram[ptr]!='\0') {			// not empty?
+	if (start<ptr) {			// not empty?
+		prev();						// get last line
 		indent();					// get whitespace into buffer
 		show();						// print it!
 		cur--;						// eeeeek
@@ -277,10 +275,12 @@ int main(void)
 				optr=ptr;					// remember from where
 				prev();						// beginning of previous line to be deleted
 				move_dn(optr+1,ptr+1);		// move down
-//				prev();						// let us see what we have above
-//				indent();					// get leading whitespace on buffer
-//				show();						// print previous line
-				cur--;						// eeeeeeek
+				prev();						// let us see what we have above
+				if (start<ptr) {			// not the first one
+					cur++;
+					indent();					// get leading whitespace on buffer
+					show();						// return, or just next???
+				}
 			}
 			prompt();					// ready to insert another
 			break;
