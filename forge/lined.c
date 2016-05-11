@@ -1,7 +1,7 @@
 /* line editor for minimOS!
- * v0.5a4
+ * v0.5a6
  * (c)2016 Carlos J. Santisteban
- * last modified 20160509-1343 */
+ * last modified 20160511-1013 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */
 
@@ -185,6 +185,12 @@ void show() {					// *** print cur: and line @ptr, advance ptr!
 	}
 }
 
+void all() {					// *** show all contents ***
+	printf("\n\nCONTENTS:\n");
+	for (zz=start; zz<top; zz++)	printf("%c", ram[zz]);
+	printf("\n-----");
+}	
+	
 int ask() {						// *** ask for a line number to jump at
 	int i;
 
@@ -205,7 +211,7 @@ void load() {					// *** check current 'file' and go to its end
 
 // ********preload some content*********
 	int i=0;
-	byte texto[80]={" 123\n  456\n   789\0"};	// couple of sample lines
+	byte texto[80]={" 123\n  456\n   789\n\0"};	// couple of sample lines
 	
 	while(ram[start+i]=texto[i]) {
 		printf("%c", texto[i]);
@@ -237,6 +243,7 @@ int main(void)
 	if (ram[ptr]!='\0') {			// not empty?
 		indent();					// get whitespace into buffer
 		show();						// print it!
+		cur--;						// eeeeek
 	} else {
 		ram[buffer]='\0';		// eeeeek
 	}
@@ -246,9 +253,7 @@ int main(void)
 
 		switch(key) {				// compare values...
 		case 0x14: 					//***DEBUG ^T shows all*** will become a regular command
-			printf("\n\nCONTENTS:\n");
-			for (zz=start; zz<top; zz++)	printf("%c", ram[zz]);
-			printf("\n-----");
+			all();						// show all
 			prompt();
 			break;
 		case ctl_e:					//***edit previous***
@@ -272,18 +277,20 @@ int main(void)
 				optr=ptr;					// remember from where
 				prev();						// beginning of previous line to be deleted
 				move_dn(optr+1,ptr+1);		// move down
-				prev();						// let us see what we have above
-				indent();					// get leading whitespace on buffer
-				show();						// print previous line
+//				prev();						// let us see what we have above
+//				indent();					// get leading whitespace on buffer
+//				show();						// print previous line
+				cur--;						// eeeeeeek
 			}
 			prompt();					// ready to insert another
 			break;
 		case cr:					//***insert or accept current***
+			ram[buffer+y] = '\0';		// eeeeeeeek
 			if (!edit) {				//*insert new line*
-				ram[ptr]='\n';				// in case is NULL at the end EEEEEEK
 				src=ptr+1;					// current is kept
-				dest=ptr+buflen()+2		;	// room for buffer
+				dest=src+buflen()+1		;	// room for buffer
 				move_up(src,dest);
+				cur++;						// eeeeeeek
 			} else {					//*replace old*
 				edit=FALSE;
 				optr=ptr;					//save current pos
@@ -296,10 +303,10 @@ int main(void)
 				}							//don't move if same length
 				ptr=optr;					//retrieve
 			}
-			push();						//copy buffer @ptr
+			push();						//copy buffer @ptr plus trailing CR
 			// common block
 			indent();					//copy leading whitespace into buffer and terminate it
-			show();						//point to next, have a look anyway
+//			show();						//point to next, have a look anyway
 			prompt();					//show cur> and buffer (indent)
 			break;
 		case up:					//***show previous***
@@ -341,7 +348,7 @@ int main(void)
 		case backspace:
 			if (0<y) {				// something in buffer
 				y--;					// delete char in buffer
-				printf("\b");				// also on screen
+				printf("\b \b");		// also on screen
 			}
 			break;
 		default:					// manage regular typing
