@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160512-1013
+; last modified 20160512-1115
 
 #ifndef	ROM
 #include "options.h"
@@ -35,10 +35,10 @@ user_sram	= $0400
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	ptr		=	uz		; current address ponter
-	src		=	ptr+2	; temporary storage & source
-	tmp=src
-	dest	=	src+2	; temporary storage & destination
-	cur		=	dest+2	; current line number
+	src		=	ptr+2	; source
+	dest	=	src+2	; destination
+	tmp		=	dest+2	; temporary storage, aka optr
+	cur		=	tmp+2	; current line number
 	start	=	cur+2	; start of loaded text
 	top		=	start+2	; end of text (NULL terminated)
 	key		=	top+2	; read key, really needed?
@@ -139,66 +139,151 @@ le_loop:
 		CMP io_c			; was that the key?
 		BNE le_sw1			; check next otherwise
 			JSR l_all			; show all
-			JSR l_prompt		; ask for current line
-			_BRA le_loop		; and continue
+			JMP l_prlp			; prompt and continue!
 le_sw1:
 		LDA #EDIT			; code for 'edit' command (^E)
 		CMP io_c			; was that the key?
 		BNE le_sw2			; check next otherwise
-			
-			JSR l_prompt		; ask for current line
-			_BRA le_loop
+			LDA ptr+1			; check pointer MSB
+			CMP start+1			; at beginning?
+				BNE led_else		; was not
+			LDA ptr				; check LSB too
+			CMP start
+			BNE led_else		; otherwise is at the beginning
+le_clbuf:
+				; ** complain 'start' **
+				_STZA l_buff		; clear buffer
+				_BRA led_ex			; and prompt
+led_else:
+			LDA edit			; check edit mode
+			BNE led_ned			; discard current buffer
+				JSR l_prev			; otherwise get previous
+				INC edit			; and enter edit mode
+led_ned:
+			JSR l_pop		; fill buffer from memory
+led_ex:
+			JMP l_prlp			; prompt and continue!
 le_sw2:
 		LDA #DELETE			; code for 'delete' command (^X)
 		CMP io_c			; was that the key?
 		BNE le_sw3			; check next otherwise
-			
-			JSR l_prompt		; ask for current line
-			_BRA le_loop
+			LDA cur				; is it at the beginning?
+				BEQ le_clbuf		; complain, clear buffer and continue
+			LDY ptr				; get current pos
+			LDA ptr+1
+			INY					; increase
+			BNE ld_nw2			; check MSB
+				_INC
+ld_nw2:
+			STY src				; store source pointer
+			STA src+1
+			JSR l_prev			; get previous
+			LDY ptr				; get current address
+			LDA ptr+1
+			INY					; increase
+			BNE ld_nw			; check MSB
+				_INC
+ld_nw:
+			STY dest			; store destination pointer
+			STA dest+1
+			JSR l_mvdn			; move memory down
+			JSR l_prev			; back to previous line
+; if start<ptr...
+
+				JSR l_indent		; get leading whitespace
+				JSR l_show			; display this line!
+ld_ex:
+			JMP l_prlp			; prompt and continue!
 le_sw3:
 		LDA #CR				; code for Return key
 		CMP io_c			; was that the key?
 		BNE le_sw4			; check next otherwise
+			LDY key				; this is really the index for buffer
+			LDA #0				; NULL terminator 
+			STA l_buff, Y		; terminate buffer
+			LDA edit			; edit in progress?
+			BNE lcr_else		; replace old content
 			
+				BNE lcr_com			; continue in common block, no need for BRA?
+lcr_else:
+			_STZA edit			; no longer in edit mode
+			LDY ptr				; get current position
+			LDA ptr+1
+			; compute... TO DO TO DO
+			LDY tmp				; retrieve optr
+			LDA tmp+1
+			STY ptr				; restore pointer
+			STA ptr+1
+lcr_com:
 			JSR l_push			; copy buffer into memory
 			JSR l_prev			; back to previous line
 			JSR l_indent		; get leading whitespace
 			JSR l_next			; advance to next line
-			JSR l_prompt		; ask for current line
-			_BRA le_loop
+			JMP l_prlp			; prompt and continue!
 le_sw4:
 		LDA #UP				; code for 'up' key (^W)
 		CMP io_c			; was that the key?
 		BNE le_sw5			; check next otherwise
+
+			JSR l_indent		; get leading whitespace
+			JSR l_show			; display this line!
 			
-			_BRA le_loop
+			JMP l_prlp			; prompt and continue!
 le_sw5:
 		LDA #DOWN			; code for 'down' command (^R)
 		CMP io_c			; was that the key?
 		BNE le_sw6			; check next otherwise
-			
-			_BRA le_loop2
+			JSR l_indent		; get leading whitespace
+			JSR l_show			; display this line!
+			JMP l_prlp			; prompt and continue!
 le_sw6:
 		LDA #GOTO			; code for 'go to' command (^G)
 		CMP io_c			; was that the key?
 		BNE le_sw7			; check next otherwise
 			
-			_BRA le_loop2
+			JSR l_indent		; get leading whitespace
+			JSR l_show			; display this line!
+
+			JMP l_prlp			; prompt and continue!
 le_sw7:
 		LDA #ESCAPE			; code for 'esc' key
 		CMP io_c			; was that the key?
 		BNE le_sw8			; check next otherwise
-			
-			_BRA le_loop2
+			_STZA l_buff		; clear buffer
+			JMP l_prlp			; prompt and continue!
 le_sw8:
 		LDA #BACKSPACE		; code for 'backspace' key
 		CMP io_c			; was that the key?
 		BEQ le_def			; check default otherwise
+			LDY key				; this is really the index for buffer
+			BEQ le_loop2		; empty buffer, nothing to delete
+				DEC key				; otherwise decrease index
+				LDY iodev			; proper code already in A and io_c
+				_KERNEL(COUT)		; print backspace
 le_loop2:
 			JMP	le_loop			; continue forever
-le_def:
-		
+; manage regular typing as default
+le_def:	
+		LDY key				; this is really the index for buffer
+		CPY #LBUFSIZ		; full buffer?
+			BCS le_loop2		; ignore then
+		JSR l_valid			; check for a valid key
+			BCS le_loop2		; was not
+		LDA io_c			; the valid raw key
+		STA l_buff, Y		; store into buffer!
+		LDA #TAB			; was a tabulator?
+		CMP io_c
+		BNE ldf_prn			; regular char, do not convert
+			LDA #'~'			; substitution char
+			STA io_c
+ldf_prn:
+		LDY iodev			; print the char ###
+		_KERNEL(COUT)		; ###
+		INC key				; another char in buffer
 		_BRA le_loop2		; and continue
+l_prlp:
+		JSR l_prompt		; prompt for current line
+		_BRA le_loop2		; and continue (saves one byte)
 
 ; *** useful routines ***
 ; * basic output and hexadecimal handling *
@@ -212,6 +297,10 @@ l_all					; show all
 l_prompt				; ask for current line
 l_push					; copy buffer into memory
 l_next					; advance to next line
+l_pop					; fill buffer from memory
+l_mvdn					; move memory down
+l_mvup					; move memory up
+l_valid					; check for a valid key
 
 ; * hexadecimal input *
 hexIn:					; read line asking for address, will set at tmp
