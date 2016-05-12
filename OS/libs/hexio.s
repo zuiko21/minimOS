@@ -1,8 +1,8 @@
 ; shared library for minimOS
 ; hexadecimal routines
-; version 0.5rc1
+; version 0.5rc2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160420-0834
+; last modified 20160512-0853
 
 #ifndef	HEXIO
 #define		HEXIO	_HEXIO
@@ -47,7 +47,7 @@ h2b_num:
 		ASL tmp
 		ORA tmp				; add computed nibble
 		STA tmp				; and store full byte
-		JSR gnc_do			; go for next hex cipher
+		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
 		INY					; loop counter
 		CPY #2				; two ciphers per byte
 		BNE h2b_l			; until done
