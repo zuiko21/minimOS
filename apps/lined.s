@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160513-1034
+; last modified 20160513-1056
 
 #ifndef	ROM
 #include "options.h"
@@ -287,9 +287,10 @@ le_sw4:
 			LDA start+1			; get start address
 			LDY start
 			CMP ptr+1			; compare MSB
-				BCC lu_do			; it is not at the start
-				BNE lu_else
-				; ****************************************
+				BCC lu_else			; it is not at the start
+				BNE lu_do
+			CPY ptr				; compare LSB
+				BCC lu_else			; not at start
 lu_do:
 			JMP le_clbuf
 lu_else:
