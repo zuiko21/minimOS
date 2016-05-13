@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160513-1002
+; last modified 20160513-1034
 
 #ifndef	ROM
 #include "options.h"
@@ -128,13 +128,12 @@ ll_some:
 	JSR l_prev			; back to previous (last) line
 	JSR l_indent		; get leading whitespace
 	JSR l_show			; display this line!
-; cur-- is not as easy as it looks...
+; cur-- is not as easy as it seems...
 	LDY cur				; might wrap...
 	BNE ll_nw			; process accordingly
 		DEC cur+1			; correct MSB!
 ll_nw:
-	DEY					; will do LSB anyway
-	STY cur				; update variable
+	DEC cur				; update variable LSB
 le_pr1:
 	_STZA edit			; reset EDIT flag (false)
 
@@ -312,7 +311,28 @@ le_sw6:
 			LDA #>le_line
 			JSR prnStr			; prompt for line number
 			JSR hexIn			; read value asking for line number, will set at tmp
-			; *****************************
+			LDY start			; get start address
+			LDA start+1
+			STY ptr				; reset pointer
+			STA ptr+1
+			_STZA cur			; reset counter
+			_STZA cur+1
+			_STZA tmp2			; reset counter as zz
+			_STZA tmp2+1
+lg_loop:
+				JSR l_next			; advance one line
+				_LDAY(ptr)			; check if not at end
+					BEQ lg_brk			; exit from loop
+				INC tmp2			; another zz
+				BNE lg_nw			; did not wrap
+					INC tmp2+1			; otherwise correct MSB
+lg_nw:
+				LDA tmp				; check LSB of 'dest'
+				CMP tmp2			; compare with zz
+					BNE lg_loop			; continue as usual
+				LDA tmp+1			; check MSB just in case
+				CMP tmp2+1
+					BNE lg_loop			; continue
 			LDA ptr+1			; get MSB
 			CMP start+1			; compare
 				BNE ldn_do			; not the same
