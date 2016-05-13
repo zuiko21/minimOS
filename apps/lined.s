@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160512-1442
+; last modified 20160513-1002
 
 #ifndef	ROM
 #include "options.h"
@@ -26,6 +26,7 @@ user_sram	= $0400
 #define	DOWN		$12
 #define	UP			$17
 #define	GOTO		7
+#define	QUIT		$11
 #define	BACKSPACE	8
 #define	TAB			9
 #define	ESCAPE		27
@@ -38,7 +39,8 @@ user_sram	= $0400
 	src		=	ptr+2	; source
 	dest	=	src+2	; destination
 	tmp		=	dest+2	; temporary storage, aka optr
-	cur		=	tmp+2	; current line number
+	tmp2	=	tmp+2	; temporary storage, aka delta
+	cur		=	tmp2+2	; current line number
 	start	=	cur+2	; start of loaded text
 	top		=	start+2	; end of text (NULL terminated)
 	key		=	top+2	; position in buffer, unlike the C version
@@ -80,7 +82,7 @@ open_ed:
 	JSR hexIn			; read line asking for address, will set at tmp
 ; this could be the load() routine
 	LDA tmp+1			; get start address
-	LDY tmp
+	LDY tmp				; *** this one will define status for BNE ***
 	STA start+1			; store
 	STY start
 	BNE le_nw			; will not wrap
@@ -121,8 +123,7 @@ ll_end:
 		BNE ll_some			; not empty
 	CPY start			; check LSB too
 	BNE ll_some			; was not empty
-		_STZA l_buff		; clear buffer otherwise
-		BEQ le_pr1			; and go for prompt, no need for BRA
+		JMP le_cbp			; clear buffer and prompt
 ll_some:
 	JSR l_prev			; back to previous (last) line
 	JSR l_indent		; get leading whitespace
@@ -139,7 +140,7 @@ le_pr1:
 
 ; *** main loop ***
 le_loop:
-		JSR lockCin			; get char in A (and in io_c)
+		JSR lockCin			; get char in A
 		CMP #SHOW			; was 'show all' command (currently ^T)?
 		BNE le_sw1			; check next otherwise
 ; show all
@@ -157,8 +158,7 @@ le_sw1:
 			BNE led_else		; otherwise is at the beginning
 le_clbuf:
 				JSR txtStart		; complain
-				_STZA l_buff		; clear buffer
-				_BRA led_ex			; and prompt
+				JMP le_cbp			; clear buffer and prompt
 led_else:
 			LDA edit			; check edit mode
 			BNE led_ned			; discard current buffer
@@ -201,14 +201,15 @@ ld_nw:
 			CMP ptr
 			BCS ld_ex			; start position, do not get indent
 ld_ind:
-				JSR l_indent		; get leading whitespace
-				JSR l_show			; display this line!
+			JMP ldn_do			; indent, show, prompt and continue!
 ld_ex:
 			JMP l_prlp			; prompt and continue!
 le_sw3:
 		CMP #CR				; was Return key?
-		BNE le_sw4			; check next otherwise
+			BEQ lcr_do			; process accordingly
+		JMP le_sw4			; check next otherwise (was out of range)
 ; enter!
+lcr_do:
 			LDY key				; this is really the index for buffer
 			LDA #0				; NULL terminator 
 			STA l_buff, Y		; terminate buffer
@@ -220,7 +221,7 @@ le_sw3:
 				BEQ lcr_nw			; no wrap
 					_INC				; correct MSB
 lcr_nw:
-				STY src			; set source address
+				STY src			; set source address = ptr+1
 				STA src+1
 				TYA				; let us operate over the value on src
 				SEC				; plus one!!!
@@ -241,28 +242,34 @@ lcr_else:
 			STY tmp				; store as optr
 			STA tmp+1
 			JSR l_next			; advance to next line
-			; compute delta = key+1+optr-ptr
+; compute delta = key+1+optr-ptr
 			LDA key				; this only gets to LSB
 			SEC					; +1
-; ******cannot use optr & tmp*********
-			ADC optr			; third term
+			ADC tmp				; third term (+optr)
 			TAY					; keep partial LSB
-			LDA optr+1			; this is the MSB
+			LDA tmp+1			; this is the MSB
 			ADC #0				; propagate carry
-			STA tmp+1			; all added
-			TYA					; retrieve LSB
+			STA tmp2+1			; 3 terms added, only delta.MSB written!
+			TYA					; retrieve delta.LSB
 			SEC					; prepare
-			SBC ptr				; subtract MSB
-			STA tmp				; store full LSB
-			LDA tmp+1			; now for MSB
+			SBC ptr				; subtract LSB
+			STA tmp2			; store full LSB for delta
+			LDA tmp2+1			; now for MSB
 			SBC ptr+1			; propagate borrow
+			STA tmp2+1			; delta is fully stored!
 			BMI lcr_dn			; negative result will move down
-				ORA tmp				; check also LSB in case is zero
+				ORA tmp2			; check also LSB in case is zero
 					BEQ lcr_nomv		; no need to move!
-				; move_up(optr, optr+delta)
+				LDY tmp			; get optr.LSB
+				LDA tmp+1		; get optr.MSB
+				JSR plusDelta	; store src and make dest=src+delta!
+				JSR l_mvup		; move memory up
 				_BRA lcr_nomv
 lcr_dn:
-			; move_dn(ptr,ptr+delta)
+			LDY ptr				; get ptr
+			LDA ptr+1
+			JSR plusDelta		; store src and make dest=src+delta!
+			JSR l_mvdn			; move memory down
 lcr_nomv:
 			LDY tmp				; retrieve optr
 			LDA tmp+1
@@ -278,50 +285,77 @@ le_sw4:
 		CMP #UP				; was 'up' key (^W)?
 		BNE le_sw5			; check next otherwise
 ; line up
-
-			JSR l_indent		; get leading whitespace
-			JSR l_show			; display this line!
-			
-			JMP l_prlp			; prompt and continue!
+			LDA start+1			; get start address
+			LDY start
+			CMP ptr+1			; compare MSB
+				BCC lu_do			; it is not at the start
+				BNE lu_else
+				; ****************************************
+lu_do:
+			JMP le_clbuf
+lu_else:
+			JSR l_prev			; skip ponted buffer
+			JSR l_prev			; ...and previous
+			_BRA ldn_do			; indent, show, prompt and continue!
 le_sw5:
 		CMP #DOWN			; was 'down' key (^R)?
 		BNE le_sw6			; check next otherwise
-; line down
+; line down *** this is a common ending ***
+ldn_do:
 			JSR l_indent		; get leading whitespace
 			JSR l_show			; display this line!
-			JMP l_prlp			; prompt and continue!
+			_BRA l_prlp			; prompt and continue!
 le_sw6:
 		CMP #GOTO			; was 'go to' command (^G)?
 		BNE le_sw7			; check next otherwise
-			
-			JSR l_indent		; get leading whitespace
-			JSR l_show			; display this line!
-
-			JMP l_prlp			; prompt and continue!
+			LDY #<le_line		; get string address
+			LDA #>le_line
+			JSR prnStr			; prompt for line number
+			JSR hexIn			; read value asking for line number, will set at tmp
+			; *****************************
+			LDA ptr+1			; get MSB
+			CMP start+1			; compare
+				BNE ldn_do			; not the same
+			LDA ptr				; otherwise check LSB too
+			CMP start
+				BNE ldn_do			; not at start
+				BEQ le_cbp			; otherwise, clear buffer and prompt
 le_sw7:
 		CMP #ESCAPE			; was 'esc' key?
 		BNE le_sw8			; check next otherwise
-; escape clears input buffer
+; escape clears input buffer and prompt *** common ***
+le_cbp:
 			_STZA l_buff		; clear buffer
-			JMP l_prlp			; prompt and continue!
+			_BRA l_prlp			; prompt and continue!
 le_sw8:
+		CMP #QUIT			; was 'quit' command (^Q)?
+		BNE le_sw9			; check next otherwise
+; quit after asking for confirmation!
+			LDY #<le_quit		; get string address
+			LDA #>le_quit
+			JSR prnStr			; print the string
+			JSR lockCin			; wait for a char
+			ORA #32				; all lower case
+			CMP #'y'			; accepted by user?
+			BNE l_prlp			; if not, prompt again and continue
+				_EXIT_OK			; otherwise exit to shell?
+le_sw9:
 		CMP #BACKSPACE		; was 'backspace' key?
 		BNE le_def			; check default otherwise
 ; backspace
 			LDY key				; this is really the index for buffer
 			BEQ le_loop2		; empty buffer, nothing to delete
 				DEC key				; otherwise decrease index
-				JSR prnChar			; proper code already at A (and io_c...)
+				JSR prnChar			; proper code already at A
 le_loop2:
 			JMP	le_loop			; continue forever
-le_def:	
+le_def:
 ; manage regular typing as default
 		LDY key				; this is really the index for buffer
 		CPY #LBUFSIZ		; full buffer?
 			BCS le_loop2		; ignore then
 		JSR l_valid			; check for a valid key
 			BCS le_loop2		; was not
-;		LDA io_c			; the valid raw key
 		STA l_buff, Y		; store into buffer!
 		CMP #TAB			; was a tabulator?
 		BNE ldf_prn			; regular char, do not convert
@@ -329,7 +363,7 @@ le_def:
 ldf_prn:
 		JSR prnChar			; print 
 		INC key				; another char in buffer
-		_BRA le_loop2		; and continue
+		BNE le_loop2		; and continue, no need for BRA
 l_prlp:
 		JSR l_prompt		; prompt for current line
 		_BRA le_loop2		; and continue (saves one byte)
@@ -369,7 +403,7 @@ h2b_l:
 		CMP #10				; already OK?
 		BCC h2b_num			; do not shift letter value
 			CMP #23			; should be a valid hex
-				BCS h2b_err			; not!
+				BCS h2b_err		; not!
 			SBC #6			; convert from hex (had CLC before!)
 h2b_num:
 		ASL tmp				; older value times 16
@@ -378,10 +412,10 @@ h2b_num:
 		ASL tmp
 		ORA tmp				; add computed nibble
 		STA tmp				; and store full byte
-gnc_do:
+; inline version of gnc_do
 		INX					; advance!
 		LDA l_buff, X		; get raw character
-		  BEQ gn_ok  ; go away if ended
+		  BEQ gn_ok  			; go away if ended
 		CMP #'a'			; not lowercase?
 			BCC gn_ok			; all done!
 		CMP #'z'+1			; still within lowercase?
@@ -393,10 +427,11 @@ gn_ok:
 		BNE h2b_l			; until done
 	RTS					; value is at tmp
 h2b_err:
-	DEX					; will try to reprocess this char
+	DEX					; will try to reprocess this char*****
 	RTS
 
 ; * print a byte in A as two hex ciphers *
+; uses tmp.W
 prnHex:
 	JSR ph_conv			; first get the ciphers done
 	LDA tmp				; get cipher for MSB
@@ -427,7 +462,7 @@ ph_n:
 ; ** end of inline library **
 
 ; ##### standard locking input (minimOS specific) #####
-; get char from device in A
+; * get char in A from standard device *
 lockCin:
 	_PHX				; should not affect X
 lci_loop:
@@ -436,31 +471,16 @@ lci_loop:
 #ifndef	SAFE
 		BCS lci_loop		; wait for something (other errors will lock!)
 #else
-		CPY #EMPTY			; the only expected error
+			BCC lci_ok			; already got a valid char!
+		CPY #EMPTY			; if not, this is the only expected error
 		BEQ lci_loop		; continue waiting
-			PLA					; otherwise discard stack and abort!
-			PLA
-			PLA
-			PLA
-			PLA
-			RTS					; will keep error for the OS
+			BRK					; abort execution!
+			.asc	"I/O error", 0		; just in case is handled
 #endif
+lci_ok:
 	_PLX				; restore X
 	LDA io_c			; get char in A
 	RTS
-
-; TO DO TO DO
-l_prev:					; back to previous (last) line
-l_indent:				; get leading whitespace
-l_show:					; display this line!
-l_all					; show all
-l_prompt				; ask for current line
-l_push					; copy buffer into memory
-l_next					; advance to next line
-l_pop					; fill buffer from memory
-l_mvdn					; move memory down
-l_mvup					; move memory up
-l_valid					; check for a valid key
 
 ; * hexadecimal input *
 hexIn:					; read line asking for address, will set at tmp
@@ -487,6 +507,42 @@ hxi_proc:
 
 	RTS
 
+; ** business logic functions **
+l_prev:					; back to previous (last) line
+l_indent:				; get leading whitespace
+l_show:					; display this line!
+l_all					; show all
+l_prompt				; ask for current line
+l_push					; copy buffer into memory
+l_next					; advance to next line
+l_pop					; fill buffer from memory
+l_mvdn					; move memory down
+l_mvup					; move memory up
+
+; * check for a valid key *
+l_valid:
+	CMP #' '			; printable char?
+		BCS lv_ok			; say OK
+	CMP #TAB			; or is it a tabulation?
+		BEQ lv_ok			; OK too
+	_ERR(INVALID)		; ##### otherwise is NOT valid (SEC, RTS will do)
+lv_ok:
+	_EXIT_OK			; ##### CLC, RTS will do
+
+; * store src and make dest=src+delta! *
+plusDelta:
+	STY src				; set source address
+	STA src+1
+	TAX					; keep MSB
+	TYA					; operate on LSB
+	CLC					; prepare
+	ADC tmp2			; +delta.LSB
+	STA dest			; store destination address LSB
+	TXA					; now for MSB
+	ADC tmp2+1			; +delta.MSB
+	STA dest+1			; destination fully stored!
+	RTS
+
 ; * alert from start of document *
 txtStart:
 	LDY #<le_start		; LSB of string
@@ -506,3 +562,7 @@ le_start:
 	.asc	CR, "{start}", 0
 le_end:
 	.asc	CR, "{end}", 0
+le_quit:
+	.asc	CR, "Quit? (Y/n):", 0
+le_line:
+	.asc	CR, "Line $", 0
