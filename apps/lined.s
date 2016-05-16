@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160513-1056
+; last modified 20160516-1345
 
 #ifndef	ROM
 #include "options.h"
@@ -118,7 +118,9 @@ ll_next:
 		BNE ll_scan			; no need for BRA
 ll_end:
 	STY ptr				; update pointer LSB
+	STY top				; also as top
 	LDA ptr+1			; let us see MSB
+	STA top+1			; also as top, will not affect flags
 	CMP start+1			; compare against start address
 		BNE ll_some			; not empty
 	CPY start			; check LSB too
@@ -304,7 +306,7 @@ le_sw5:
 ldn_do:
 			JSR l_indent		; get leading whitespace
 			JSR l_show			; display this line!
-			_BRA l_prlp			; prompt and continue!
+			JMP l_prlp			; prompt and continue!
 le_sw6:
 		CMP #GOTO			; was 'go to' command (^G)?
 		BNE le_sw7			; check next otherwise
@@ -334,6 +336,7 @@ lg_nw:
 				LDA tmp+1			; check MSB just in case
 				CMP tmp2+1
 					BNE lg_loop			; continue
+lg_brk:
 			LDA ptr+1			; get MSB
 			CMP start+1			; compare
 				BNE ldn_do			; not the same
@@ -346,6 +349,7 @@ le_sw7:
 		BNE le_sw8			; check next otherwise
 ; escape clears input buffer and prompt *** common ***
 le_cbp:
+
 			_STZA l_buff		; clear buffer
 			_BRA l_prlp			; prompt and continue!
 le_sw8:
@@ -529,16 +533,246 @@ hxi_proc:
 	RTS
 
 ; ** business logic functions **
-l_prev:					; back to previous (last) line
-l_indent:				; get leading whitespace
-l_show:					; display this line!
-l_all					; show all
-l_prompt				; ask for current line
-l_push					; copy buffer into memory
-l_next					; advance to next line
-l_pop					; fill buffer from memory
-l_mvdn					; move memory down
-l_mvup					; move memory up
+; back to previous (last) line
+l_prev:
+	LDY start				; get LSB
+	LDA start+1			; and MSB
+	CMP ptr+1			; check whether at start
+		BCC lpv_do			; far away, will go back
+	CPY ptr				; check LSB otherwise
+		BCC lpv_do			; if at start, complain
+		JMP txtStart		; just complain and will return
+lpv_do:
+		LDY ptr				; will decrease ptr
+		BNE lpv_dec			; directly if no wrap
+			DEC ptr+1			; do not forget MSB
+lpv_dec:
+		DEC ptr				; decrease LSB
+		_LDAY(ptr)			; see char, hard to optimise
+			BEQ lpv_exit		; terminator aborts
+		CMP #CR				; newline aborts too
+		BNE lpv_do			; continue otherwise
+lpv_exit:
+	LDY cur				; will decrease cur
+	BNE lpv_cur			; directly if no wrap
+		DEC cur+1			; do not forget MSB
+lpv_cur:
+	DEC cur				; decrease LSB
+	RTS
+
+; get leading whitespace
+l_indent:
+	LDY #1				; reset index, note trick!
+li_loop:
+		LDA (ptr), Y		; get first char
+		CMP #' '			; check whether space
+		BEQ li_do			; will be accepted
+			CMP #TAB			; or tabulation
+				BNE li_exit			; stop otherwise
+li_do:
+		STA l_buff-1, Y		; put data on buffer, notice offset *** WARNING! not 816-soft-multitask savvy!
+		INY					; next
+		BNE li_loop			; no need for BRA
+li_exit:
+	LDA #0				; trailing terminator
+	STA l_buff, Y		; no need for temporary offset, as ptr will not be changed!
+	RTS
+
+; display this line!
+l_show:
+	LDY ptr				; get LSB
+	LDA ptr+1			; and MSB
+	CMP top+1			; check whether at the end
+		BCC lsh_do			; far away, will advance
+	CPY top				; check LSB otherwise
+		BCC lsh_do			; if at end, complain
+		JMP txtEnd			; just complain and will return
+lsh_do:
+; ***************************************
+
+; show all
+l_all:
+	LDA #CR				; leading newline
+	JSR prnChar			; make some room
+	LDY start			; get LSB
+	LDA start+1			; MSB too
+	_STZX tmp			; will use indirect-indexed mode
+	STA tmp+1			; pointer MSB
+la_loop:
+		_PHY				; keep pointer!
+		LDA (tmp), Y		; get char
+			BEQ la_exit			; ended
+		JSR prnChar			; print it!
+		_PLY				; restore pointer
+		INY					; next
+		BNE la_loop			; did not wrap
+			INC tmp+1			; increase MSB otherwise
+		BNE la_loop			; no need for BRA
+			PHA					; dummy value!
+la_exit:
+	PLA					; discard saved pointer
+	LDA #CR				; trailing newline
+	JMP prnChar			; make room and return
+
+; ask for current line
+l_prompt:
+; ******************
+
+; copy buffer into memory
+l_push:
+	LDY #0				; reset index
+lph_loop:
+		LDA l_buff, Y		; get buffer data *** WARNING! not 816-soft-multitask savvy!
+			BEQ lph_exit		; abort upon terminator
+		STA (ptr), Y		; store from pointer (to be increased later)
+		INY					; next
+		BNE lph_loop		; no need for BRA
+lph_exit:
+	INY					; one more
+	LDA #CR				; terminator
+	STA (ptr), Y		; copied as newline
+	TYA					; get index
+	CLC					; prepare
+	ADC ptr				; add to LSB
+	STA ptr				; update
+	BCC lph_end			; will not cross page
+		INC ptr+1			; rarely done?
+lph_end:
+	RTS
+
+; advance to next line
+l_next:
+	LDY ptr				; get LSB
+	LDA ptr+1			; and MSB
+	CMP top+1			; check whether at the end
+		BCC lnx_do			; far away, will advance
+	CPY top				; check LSB otherwise
+		BCC lnx_do			; if at end, complain
+		JMP txtEnd			; just complain and will return
+lnx_do:
+	LDY #1				; reset index, notice trick!
+lnx_loop:
+		LDA (ptr), Y		; see char
+			BEQ lnx_exit		; terminator aborts
+		CMP #CR				; newline aborts too
+			BEQ lnx_exit
+		INY					; next in line
+		BNE lnx_loop		; no need for BRA
+lnx_exit:
+	CLC					; prepare
+	TYA					; get pointer LSB
+	ADC ptr				; add to current value
+	STA ptr				; update
+	BCC lnx_cur			; will not cross page
+		INC ptr+1			; rarely done?
+lnx_cur:
+	INC cur				; increase cur
+	BNE lnx_end
+		INC cur+1			; do not forget MSB
+lnx_end:
+	RTS
+
+; fill buffer from memory
+l_pop:
+	LDY #1				; reset index, note trick!
+lpl_loop:
+		LDA (ptr), Y		; get first char
+			BEQ lpl_exit		; abort if terminator
+		CMP #CR				; newline also aborts
+			BEQ lpl_exit
+		STA l_buff-1, Y		; put data on buffer, notice offset *** WARNING! not 816-soft-multitask savvy!
+		INY					; next
+		BNE lpl_loop		; no need for BRA
+lpl_exit:
+	LDA #0				; trailing terminator
+	STA l_buff, Y		; no need for temporary offset, as ptr will not be changed!
+	RTS
+
+; move memory down
+; uses tmp2 as delta!
+l_mvdn:
+	LDA src				; compute local delta!
+	SEC					; prepare
+	SBC dest			; subtract
+	STA tmp2			; store result
+	LDA src+1			; same for MSB
+	SBC dest+1
+	STA tmp2+1
+md_loop:
+		_LDAY(src)			; get origin, hard to optimise
+		_STAY(dest)			; copy value
+		LDY dest			; will decrease dest!
+		BNE md_nw			; without wrapping
+			DEC dest+1			; at boundary crossing
+md_nw:
+		DEC dest			; not worth keeping
+		LDY src				; will decrease dest!
+		LDA src+1			; MSB too
+		BNE md_nw2			; without wrapping
+			_DEC				; at boundary crossing
+			STA src+1			; rarely done
+md_nw2:
+		DEY					; worth keeping!
+		STY src				; update value
+		CMP top+1			; reached limit?
+			BCS md_loop			; not
+		CPY top				; check LSB!
+			BCS md_loop			; still to go
+	LDA top					; get top.LSB
+	LDX top+1				; and MSB
+	SEC						; prepare
+	SBC tmp2				; subtract delta.LSB
+	STA top					; update value
+	TXA						; retrieve MSB
+	SBC tmp2+1				; same for MSB
+	STA top+1
+	RTS
+
+; move memory up
+; uses tmp2 as delta! uses tmp
+l_mvup:
+	LDA dest			; compute local delta!
+	SEC					; prepare
+	SBC src				; subtract
+	STA tmp2			; store result
+	LDA dest+1			; same for MSB
+	SBC src+1
+	STA tmp2+1
+	LDA top				; start from the end!
+	LDX top+1
+	STA tmp				; local pointer
+	STX tmp+1
+	CLC					; prepare
+	ADC tmp2			; top += delta
+	STA top
+	TAY					; keep result
+	TXA					; now for MSB
+	ADC tmp2+1
+	STA top+1
+	STA dest+1			; use dest locally
+	STY dest
+mu_loop:
+		_LDAY(tmp)			; get source, hard to optimise
+		_STAY(dest)			; copy value
+		LDY dest			; will decrease dest!
+		BNE mu_nw			; without wrapping
+			DEC dest+1			; at boundary crossing
+mu_nw:
+		DEC dest			; not worth keeping
+		LDY tmp				; will decrease tmp
+		LDA tmp+1			; MSB for future comparison
+		BNE mu_nw2			; no wrap
+			_DEC				; page cross
+			STA tmp+1			; rarely done
+mu_nw2:
+		DEY					; worth keeping!
+		STY tmp				; update value
+		CMP src+1			; reached limit?
+			BCC mu_loop			; not
+		CPY src				; check LSB!
+			BCC mu_loop			; still to go
+			BEQ mu_loop			; even if the same
+	RTS
 
 ; * check for a valid key *
 l_valid:
