@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160516-1429
+; last modified 20160516-1718
 
 #ifndef	ROM
 #include "options.h"
@@ -514,7 +514,7 @@ hxi_loop:
 		CMP #BACKSPACE		; is it backspace?
 		BNE hxi_nbs			; skip otherwise
 			CPX #0				; is there anything to delete?
-				BCC hxi_loop		; ignore if empty
+				BEQ hxi_loop		; ignore if empty
 			DEX					; back one char otherwise
 			JSR prnChar			; print backspace 
 			_BRA hxi_loop		; continue
@@ -527,8 +527,13 @@ hxi_nbs:
 		INX					; next position in buffer
 		BNE hxi_loop		; no need for BRA
 hxi_proc:
-; process hex and save result at tmp ******** TO DO TO DO TO DO
-
+; process hex and save result at tmp.w
+	LDX #0				; reset index
+	LDA l_buff			; get first char
+	JSR hex2byte			; convert MSB
+	LDA tmp				; preserve low byte
+	STA tmp+1
+	JSR hex2byte			; now convert LSB in situ
 	RTS
 
 ; ** business logic functions **
