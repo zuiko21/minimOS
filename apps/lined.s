@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160516-1345
+; last modified 20160516-1429
 
 #ifndef	ROM
 #include "options.h"
@@ -130,7 +130,6 @@ ll_some:
 	JSR l_prev			; back to previous (last) line
 	JSR l_indent		; get leading whitespace
 	JSR l_show			; display this line!
-; cur-- is not as easy as it seems...
 	LDY cur				; might wrap...
 	BNE ll_nw			; process accordingly
 		DEC cur+1			; correct MSB!
@@ -588,7 +587,41 @@ l_show:
 		BCC lsh_do			; if at end, complain
 		JMP txtEnd			; just complain and will return
 lsh_do:
-; ***************************************
+; now get the 'cur' line number printed in hex!
+	LDA cur+1			; MSB goes first!
+	JSR prnHex			; prints two hex digits
+	LDA cur				; now the LSB
+	JSR prnHex
+	LDA #$3A			; code of the colon character
+	JSR prnChar			; print it, end of header
+	LDY #1				; reset index, skipping leading newline!
+lsh_loop:
+		_PHY				; save index, NMOS compatibility needs to be here
+		LDA (ptr), Y		; get char in memory
+			BEQ lsh_exit		; abort upon terminator, do not forget stacked index!
+		CMP #CR				; newline will exit too
+			BEQ lsh_exit
+		JSR prnChar			; print it
+		_PLY				; restore index
+		INY					; next char
+			BNE lsh_loop		; no wrap, continue
+		INC ptr+1			; increase MSB otherwise
+			BNE lsh_loop
+lsh_exit:
+	PLA					; discard saved index!!!
+	TYA					; get current offset
+	CLC					; prepare
+	ADC ptr				; add to current value
+	STA ptr				; update LSB
+	LDA ptr+1			; propagate carry
+	ADC #0
+	STA ptr+1			; update MSB too
+	INC cur				; count another line
+	BNE lsh_nw			; no page cross
+		INC cur+1			; increase  MSB otherwise
+lsh_nw:
+	LDA #CR				; end on newline
+	JMP prnChar			; print it and return
 
 ; show all
 l_all:
@@ -616,7 +649,24 @@ la_exit:
 
 ; ask for current line
 l_prompt:
-; ******************
+	LDA cur+1			; MSB goes first!
+	JSR prnHex			; prints two hex digits
+	LDA cur				; now the LSB
+	JSR prnHex
+	LDA #'>'			; prompt character
+	JSR prnChar			; print it, end of header
+	LDY #0				; reset index
+lpm_loop:
+		_PHY				; save index, NMOS compatibility needs to be here
+		LDA l_buff, Y		; get char from buffer *** WARNING! not 816-soft-multitask savvy!
+			BEQ lpm_exit		; abort upon terminator, do not forget stacked index!
+		JSR prnChar			; print it
+		_PLY				; restore index
+		INY					; next char
+		BNE lpm_loop		; no need for BRA, continue
+lpm_exit:
+	PLA					; discard saved index!!!
+	RTS
 
 ; copy buffer into memory
 l_push:
