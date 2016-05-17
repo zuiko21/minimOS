@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160517-1318
+; last modified 20160517-1651
 
 #ifndef	ROM
 #include "options.h"
@@ -212,9 +212,9 @@ le_sw3:
 		JMP le_sw4			; check next otherwise (was out of range)
 ; enter!
 lcr_do:
-			LDY key				; this is really the index for buffer
+			LDX key				; this is really the index for buffer
 			LDA #0				; NULL terminator 
-			STA l_buff, Y		; terminate buffer
+			STA l_buff, X		; terminate buffer, 816-savvy
 			LDA edit			; edit in progress?
 			BNE lcr_else		; replace old content
 				LDY ptr				; get current LSB
@@ -377,12 +377,12 @@ le_loop2:
 			JMP	le_loop			; continue forever
 le_def:
 ; manage regular typing as default
-		LDY key				; this is really the index for buffer
-		CPY #LBUFSIZ		; full buffer?
+		LDX key				; this is really the index for buffer
+		CPX #LBUFSIZ		; full buffer?
 			BCS le_loop2		; ignore then
 		JSR l_valid			; check for a valid key
 			BCS le_loop2		; was not
-		STA l_buff, Y		; store into buffer!
+		STA l_buff, X		; store into buffer, 816-savvy!
 		CMP #TAB			; was a tabulator?
 		BNE ldf_prn			; regular char, do not convert
 			LDA #'~'			; substitution char
@@ -418,7 +418,7 @@ prnStr:
 ; currently ignoring any errors...
 	RTS
 
-; * convert two hex ciphers into byte@tmp, X is cursor originally set at $FF *
+; * convert two hex ciphers into byte@tmp, X is cursor originally set at 0 *
 hex2byte:
 	LDY #2				; reset loop counter, 2 ciphers per byte
 	_STZA tmp			; also reset value
@@ -492,12 +492,10 @@ ph_n:
 ; ##### standard locking input (minimOS specific) #####
 ; * get char in A from standard device *
 lockCin:
-	_PHX				; should not affect X
-lci_loop:
 		LDY iodev			; get I/O device
 		_KERNEL(CIN)		; non-locking input
 #ifndef	SAFE
-		BCS lci_loop		; wait for something (other errors will lock!)
+		BCS lockCin			; wait for something (other errors will lock!)
 #else
 			BCC lci_ok			; already got a valid char!
 		CPY #EMPTY			; if not, this is the only expected error
@@ -506,32 +504,31 @@ lci_loop:
 			.asc	"I/O error", 0		; just in case is handled
 #endif
 lci_ok:
-	_PLX				; restore X
 	LDA io_c			; get char in A
 	RTS
 
 ; * hexadecimal input *
 hexIn:					; read line asking for address, will set at tmp
 	LDX #0				; reset cursor
+	STX tmp2			; new safer storage
 hxi_loop:
 		JSR lockCin			; wait until something is in A
 		CMP #BACKSPACE		; is it backspace?
 		BNE hxi_nbs			; skip otherwise
-			CPX #0				; is there anything to delete?
+			LDX tmp2			; is there anything to delete?
 				BEQ hxi_loop		; ignore if empty
-			DEX					; back one char otherwise
+			DEC tmp2				; back one char otherwise
 			JSR prnChar			; print backspace 
 			_BRA hxi_loop		; continue
 hxi_nbs:
 		CMP #CR				; is it return?
 			BEQ hxi_proc		; proceed!
+		LDX tmp2			; retrieve index
 		CPX #LBUFSIZ		; check against limits
 			BEQ hxi_loop		; buffer full, only backspace or CR accepted!
 		STA l_buff, X		; store char
-		STX tmp2		; need to save X in order to display char!!! Cannot use stack in case of NMOS macro
-		JSR prnChar		; eeeeeeek!!!
-		LDX tmp2		; retrieve index, NMOS-savvy
-		INX					; next position in buffer
+		JSR prnChar			; eeeeeeek!!!
+		INC tmp2			; next position in buffer
 		BNE hxi_loop		; no need for BRA
 hxi_proc:
 ; process hex and save result at tmp.w
@@ -572,7 +569,8 @@ lpv_cur:
 
 ; get leading whitespace
 l_indent:
-	LDY #1				; reset index, note trick!
+	LDX #1				; reset index, note trick!
+	LDY #0				; source index
 li_loop:
 		LDA (ptr), Y		; get first char
 		CMP #' '			; check whether space
@@ -580,8 +578,9 @@ li_loop:
 			CMP #TAB			; or tabulation
 				BNE li_exit			; stop otherwise
 li_do:
-		STA l_buff-1, Y		; put data on buffer, notice offset *** WARNING! not 816-soft-multitask savvy!
+		STA l_buff, X		; put data on buffer, 816-savvy!
 		INY					; next
+		INX
 		BNE li_loop			; no need for BRA
 li_exit:
 	LDA #0				; trailing terminator
@@ -599,6 +598,8 @@ l_show:
 		JMP txtEnd			; just complain and will return
 lsh_do:
 ; now get the 'cur' line number printed in hex!
+	LDA #CR				; eeeek
+	JSR prnChar			; put leading newline
 	LDA cur+1			; MSB goes first!
 	JSR prnHex			; prints two hex digits
 	LDA cur				; now the LSB
@@ -660,20 +661,22 @@ la_exit:
 
 ; ask for current line
 l_prompt:
+	LDA #CR				; eeeeeek
+	JSR prnHex			; put leading newline
 	LDA cur+1			; MSB goes first!
 	JSR prnHex			; prints two hex digits
 	LDA cur				; now the LSB
 	JSR prnHex
 	LDA #'>'			; prompt character
 	JSR prnChar			; print it, end of header
-	LDY #0				; reset index
+	LDX #0				; reset index
 lpm_loop:
-		_PHY				; save index, NMOS compatibility needs to be here
-		LDA l_buff, Y		; get char from buffer *** WARNING! not 816-soft-multitask savvy!
+		_PHX				; save index, NMOS compatibility needs to be here
+		LDA l_buff, X		; get char from buffer, 816-savvy!
 			BEQ lpm_exit		; abort upon terminator, do not forget stacked index!
 		JSR prnChar			; print it
-		_PLY				; restore index
-		INY					; next char
+		_PLX				; restore index
+		INX					; next char
 		BNE lpm_loop		; no need for BRA, continue
 lpm_exit:
 	PLA					; discard saved index!!!
@@ -682,15 +685,16 @@ lpm_exit:
 
 ; copy buffer into memory
 l_push:
+	LDY #1				; source index, notice offset
 	LDY #0				; reset index
 lph_loop:
-		LDA l_buff, Y		; get buffer data *** WARNING! not 816-soft-multitask savvy!
+		LDA l_buff, X		; get buffer data, 816-savvy!
 			BEQ lph_exit		; abort upon terminator
 		STA (ptr), Y		; store from pointer (to be increased later)
 		INY					; next
+		INX
 		BNE lph_loop		; no need for BRA
 lph_exit:
-;	INY					; one more
 	LDA #CR				; terminator
 	STA (ptr), Y		; copied as newline
 	TYA					; get index
