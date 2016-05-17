@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5b1
+; v0.5b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160517-1009
+; last modified 20160517-1318
 
 #ifndef	ROM
 #include "options.h"
@@ -79,12 +79,12 @@ open_ed:
 ; *** ask for text address (could be after loading) ***
 	LDA #'$'			; hex radix as prompt
 	JSR prnChar			; print it!
-;	JSR hexIn			; read line asking for address, will set at tmp
+	JSR hexIn			; read line asking for address, will set at tmp
 ; this could be the load() routine
-;	LDA tmp+1			; get start address
-LDA #$10	; fixed at $1001 for testing
-LDY #1
-;	LDY tmp				; *** this one will define status for BNE ***
+	LDA tmp+1			; get start address
+;LDA #$10	; fixed at $1001 for testing
+;LDY #1
+	LDY tmp				; *** this one will define status for BNE ***
 	STA start+1			; store
 	STY start
 	BNE le_nw			; will not wrap
@@ -528,10 +528,14 @@ hxi_nbs:
 		CPX #LBUFSIZ		; check against limits
 			BEQ hxi_loop		; buffer full, only backspace or CR accepted!
 		STA l_buff, X		; store char
+		STX tmp2		; need to save X in order to display char!!! Cannot use stack in case of NMOS macro
+		JSR prnChar		; eeeeeeek!!!
+		LDX tmp2		; retrieve index, NMOS-savvy
 		INX					; next position in buffer
 		BNE hxi_loop		; no need for BRA
 hxi_proc:
 ; process hex and save result at tmp.w
+	JSR prnChar			; show final CR!
 	LDX #0					; reset index
 	JSR hex2byte			; convert MSB
 	LDA tmp					; preserve low byte
@@ -834,13 +838,14 @@ mu_nw2:
 
 ; * check for a valid key *
 l_valid:
+	CLC				; OK by default
 	CMP #' '			; printable char?
 		BCS lv_ok			; say OK
 	CMP #TAB			; or is it a tabulation?
 		BEQ lv_ok			; OK too
-	_ERR(INVALID)		; ##### otherwise is NOT valid (SEC, RTS will do)
+	SEC				; otherwise is NOT valid (cannot touch Y!!!)
 lv_ok:
-	_EXIT_OK			; ##### CLC, RTS will do
+	RTS
 
 ; * store src and make dest=src+delta! *
 plusDelta:
