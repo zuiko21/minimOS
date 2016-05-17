@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160516-1718
+; last modified 20160517-0907
 
 #ifndef	ROM
 #include "options.h"
@@ -178,7 +178,7 @@ le_sw2:
 			LDY ptr				; get current pos
 			LDA ptr+1
 			INY					; increase
-			BNE ld_nw2			; check MSB
+			BNE ld_nw2			; check MSB too
 				_INC
 ld_nw2:
 			STY src				; store source pointer
@@ -187,7 +187,7 @@ ld_nw2:
 			LDY ptr				; get current address
 			LDA ptr+1
 			INY					; increase
-			BNE ld_nw			; check MSB
+			BNE ld_nw			; check MSB too
 				_INC
 ld_nw:
 			STY dest			; store destination pointer
@@ -416,10 +416,11 @@ prnStr:
 ; currently ignoring any errors...
 	RTS
 
-; * convert two hex ciphers into byte@tmp, A is current char, X is cursor *
+; * convert two hex ciphers into byte@tmp, X is cursor originally set at $FF *
 hex2byte:
-	LDY #0				; reset loop counter
-	STY tmp				; also reset value
+	LDY #2				; reset loop counter, 2 ciphers per byte
+	_STZA tmp			; also reset value
+	JSR gnc_do			; get first char!
 h2b_l:
 		SEC					; prepare
 		SBC #'0'			; convert to value
@@ -436,22 +437,23 @@ h2b_num:
 		ASL tmp
 		ORA tmp				; add computed nibble
 		STA tmp				; and store full byte
-; inline version of gnc_do
-		INX					; advance!
-		LDA l_buff, X		; get raw character
-		  BEQ gn_ok  			; go away if ended
-		CMP #'a'			; not lowercase?
-			BCC gn_ok			; all done!
-		CMP #'z'+1			; still within lowercase?
-			BCS gn_ok			; otherwise do not correct!
-		AND #%11011111		; remove bit 5 to uppercase
-gn_ok:
-		INY					; loop counter
-		CPY #2				; two ciphers per byte
+		JSR gnc_do			; obtain next char
+		DEY					; loop counter
 		BNE h2b_l			; until done
-	RTS					; value is at tmp
 h2b_err:
-	DEX					; will try to reprocess this char*****
+	RTS					; value is at tmp
+
+; simplified gnc_do routine
+gnc_do:
+	LDA l_buff, X		; get raw character
+		BEQ gn_ok			; go away if ended
+	CMP #'a'			; not lowercase?
+		BCC gn_ok			; all done!
+	CMP #'z'+1			; still within lowercase?
+		BCS gn_ok			; otherwise do not correct!
+	AND #%11011111		; remove bit 5 to uppercase
+	INX					; advance!
+gn_ok:
 	RTS
 
 ; * print a byte in A as two hex ciphers *
@@ -528,13 +530,11 @@ hxi_nbs:
 		BNE hxi_loop		; no need for BRA
 hxi_proc:
 ; process hex and save result at tmp.w
-	LDX #0				; reset index
-	LDA l_buff			; get first char
+	LDX #0					; reset index
 	JSR hex2byte			; convert MSB
-	LDA tmp				; preserve low byte
+	LDA tmp					; preserve low byte
 	STA tmp+1
-	JSR hex2byte			; now convert LSB in situ
-	RTS
+	JMP hex2byte			; now convert LSB in situ, and return
 
 ; ** business logic functions **
 ; back to previous (last) line
