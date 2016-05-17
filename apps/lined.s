@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160517-0907
+; last modified 20160517-1009
 
 #ifndef	ROM
 #include "options.h"
@@ -79,10 +79,12 @@ open_ed:
 ; *** ask for text address (could be after loading) ***
 	LDA #'$'			; hex radix as prompt
 	JSR prnChar			; print it!
-	JSR hexIn			; read line asking for address, will set at tmp
+;	JSR hexIn			; read line asking for address, will set at tmp
 ; this could be the load() routine
-	LDA tmp+1			; get start address
-	LDY tmp				; *** this one will define status for BNE ***
+;	LDA tmp+1			; get start address
+LDA #$10	; fixed at $1001 for testing
+LDY #1
+;	LDY tmp				; *** this one will define status for BNE ***
 	STA start+1			; store
 	STY start
 	BNE le_nw			; will not wrap
@@ -463,7 +465,7 @@ prnHex:
 	LDA tmp				; get cipher for MSB
 	JSR prnChar			; print it!
 	LDA tmp+1			; same for LSB
-	JMP prnChar  ; will return
+	JMP prnChar			; will return
 ph_conv:
 	STA tmp+1			; keep for later
 	AND #$F0			; mask for MSB
@@ -524,7 +526,7 @@ hxi_nbs:
 		CMP #CR				; is it return?
 			BEQ hxi_proc		; proceed!
 		CPX #LBUFSIZ		; check against limits
-			BCS hxi_loop		; buffer full, only backspace or CR accepted!
+			BEQ hxi_loop		; buffer full, only backspace or CR accepted!
 		STA l_buff, X		; store char
 		INX					; next position in buffer
 		BNE hxi_loop		; no need for BRA
@@ -671,6 +673,7 @@ lpm_loop:
 		BNE lpm_loop		; no need for BRA, continue
 lpm_exit:
 	PLA					; discard saved index!!!
+	STY key				; eeeeeeeeek^2!
 	RTS
 
 ; copy buffer into memory
@@ -683,7 +686,7 @@ lph_loop:
 		INY					; next
 		BNE lph_loop		; no need for BRA
 lph_exit:
-	INY					; one more
+;	INY					; one more
 	LDA #CR				; terminator
 	STA (ptr), Y		; copied as newline
 	TYA					; get index

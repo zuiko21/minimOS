@@ -31,7 +31,7 @@ reset:
 	BRK				; end execution
 ;************************ module under testing **********************************
 module:
-#include "shell/monitor.s"		; here goes the code
+#include "../apps/lined.s"		; here goes the code
 ;********************************************************************************
 	RTS				; just in case
 
