@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160518-1240
+; last modified 20160518-1304
 
 #ifndef	ROM
 #include "options.h"
@@ -185,6 +185,19 @@ ld_nw2:
 ld_nw:
 			STY dest			; store destination pointer
 			STA dest+1
+	brk
+lda #'['
+jsr prnChar
+lda src+1
+jsr prnHex
+lda src
+jsr prnHex
+lda dest+1
+jsr prnHex
+lda dest
+jsr prnHex
+lda #13
+jsr prnChar
 			JSR l_mvdn			; move memory down
 			JSR l_prev			; back to previous line
 			LDA start+1			; check MSB
@@ -223,7 +236,6 @@ lcr_nw:
 				LDA src+1		; now for the MSB
 				ADC #0			; just propagate carry
 				STA dest+1		; pointer complete
-brk
 				JSR l_mvup		; move memory up!
 				INC cur			; do not forget MSB!
 				BNE lcr_com		; did not wrap
