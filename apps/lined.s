@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160518-1339
+; last modified 20160518-1440
 
 #ifndef	ROM
 #include "options.h"
@@ -185,19 +185,6 @@ ld_nw2:
 ld_nw:
 			STY dest			; store destination pointer
 			STA dest+1
-
-lda #'['
-jsr prnChar
-lda src+1
-jsr prnHex
-lda src
-jsr prnHex
-lda dest+1
-jsr prnHex
-lda dest
-jsr prnHex
-lda #13
-jsr prnChar
 			JSR l_mvdn			; move memory down
 			JSR l_prev			; back to previous line
 			LDA start+1			; check MSB
@@ -767,6 +754,12 @@ lpl_exit:
 ; move memory down
 ; uses tmp2 as delta!
 l_mvdn:
+lda top+1
+jsr prnHex
+lda top
+jsr prnHex
+lda #'='
+jsr prnChar
 	LDA src				; compute local delta!
 	SEC					; prepare
 	SBC dest			; subtract
@@ -776,7 +769,23 @@ l_mvdn:
 	STA tmp2+1
 md_loop:
 		_LDAY(src)			; get origin, hard to optimise
-		_STAY(dest)			; copy value
+;		_STAY(dest)			; copy value
+lda tmp
+pha
+lda tmp+1
+pha
+
+lda src+1
+jsr prnHex
+lda src
+jsr prnHex
+lda #'.'
+jsr prnChar
+	brk
+pla
+sta tmp+1
+pla
+sta tmp+2
 		INC dest			; will INCREASE dest! eeeeek!
 		BNE md_nw			; without wrapping
 			INC dest+1			; at boundary crossing
@@ -790,9 +799,9 @@ md_nw:
 md_nw2:
 		STY src				; update value
 		CMP top+1			; reached limit?
-			BCS md_loop			; not
+			BNE md_loop			; not, instead of BCC?
 		CPY top				; check LSB!
-			BCS md_loop			; still to go
+			BNE md_loop			; still to go
 	LDA top					; get top.LSB
 	LDX top+1				; and MSB
 	SEC						; prepare
@@ -828,14 +837,30 @@ l_mvup:
 	STY dest
 mu_loop:
 		_LDAY(tmp)			; get source, hard to optimise
-		_STAY(dest)			; copy value
+;		_STAY(dest)			; copy value
+lda tmp
+pha
+lda tmp+1
+pha
+
+lda dest+1
+jsr prnHex
+lda dest
+jsr prnHex
+lda #'+'
+jsr prnChar
+
+pla
+sta tmp+1
+pla
+sta tmp+2
 		LDY dest			; will decrease dest!
 		BNE mu_nw			; without wrapping
 			DEC dest+1			; at boundary crossing
 mu_nw:
 		DEC dest			; not worth keeping
+		LDA tmp+1			; MSB for future comparison, but here eeeeeek!
 		LDY tmp				; will decrease tmp
-		LDA tmp+1			; MSB for future comparison
 		BNE mu_nw2			; no wrap
 			_DEC				; page cross
 			STA tmp+1			; rarely done
@@ -843,7 +868,7 @@ mu_nw2:
 		DEY					; worth keeping!
 		STY tmp				; update value
 		CMP src+1			; reached limit?
-			BCC mu_loop			; not
+			BNE mu_loop			; not
 		CPY src				; check LSB!
 			BCC mu_loop			; still to go
 			BEQ mu_loop			; even if the same
