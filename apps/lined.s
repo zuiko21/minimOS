@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160517-1651
+; last modified 20160518-0850
 
 #ifndef	ROM
 #include "options.h"
@@ -499,7 +499,7 @@ lockCin:
 #else
 			BCC lci_ok			; already got a valid char!
 		CPY #EMPTY			; if not, this is the only expected error
-		BEQ lci_loop		; continue waiting
+		BEQ lockCin			; continue waiting
 			BRK					; abort execution!
 			.asc	"I/O error", 0		; just in case is handled
 #endif
@@ -583,8 +583,7 @@ li_do:
 		INX
 		BNE li_loop			; no need for BRA
 li_exit:
-	LDA #0				; trailing terminator
-	STA l_buff, Y		; no need for temporary offset, as ptr will not be changed!
+	_STZA l_buff, X		; no need for temporary offset, as ptr will not be changed!
 	RTS
 
 ; display this line!
@@ -618,7 +617,7 @@ lsh_loop:
 		INY					; next char
 			BNE lsh_loop		; no wrap, continue
 		INC ptr+1			; increase MSB otherwise
-			BNE lsh_loop
+			_BRA lsh_loop
 lsh_exit:
 	PLA					; discard saved index!!!
 	TYA					; get current offset
@@ -636,6 +635,7 @@ lsh_nw:
 	JMP prnChar			; print it and return
 
 ; show all
+; could just use STRING!!!
 l_all:
 	LDA #CR				; leading newline
 	JSR prnChar			; make some room
@@ -652,8 +652,7 @@ la_loop:
 		INY					; next
 		BNE la_loop			; did not wrap
 			INC tmp+1			; increase MSB otherwise
-		BNE la_loop			; no need for BRA
-			PHA					; dummy value!
+		_BRA la_loop		; just in case
 la_exit:
 	PLA					; discard saved pointer
 	LDA #CR				; trailing newline
@@ -741,17 +740,18 @@ lnx_end:
 ; fill buffer from memory
 l_pop:
 	LDY #1				; reset index, note trick!
+	LDX #0				; index for buffer
 lpl_loop:
 		LDA (ptr), Y		; get first char
 			BEQ lpl_exit		; abort if terminator
 		CMP #CR				; newline also aborts
 			BEQ lpl_exit
-		STA l_buff-1, Y		; put data on buffer, notice offset *** WARNING! not 816-soft-multitask savvy!
+		STA l_buff, X		; put data on buffer, 816-savvy!
 		INY					; next
+		INX
 		BNE lpl_loop		; no need for BRA
 lpl_exit:
-	LDA #0				; trailing terminator
-	STA l_buff, Y		; no need for temporary offset, as ptr will not be changed!
+	_STZA l_buff, X		; no need for temporary offset, as ptr will not be changed!
 	RTS
 
 ; move memory down
