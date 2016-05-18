@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160518-1304
+; last modified 20160518-1339
 
 #ifndef	ROM
 #include "options.h"
@@ -185,7 +185,7 @@ ld_nw2:
 ld_nw:
 			STY dest			; store destination pointer
 			STA dest+1
-	brk
+
 lda #'['
 jsr prnChar
 lda src+1
@@ -557,15 +557,19 @@ l_prev:
 		JMP txtStart		; just complain and will return
 lpv_do:
 		LDY ptr				; will decrease ptr
+		_STZA ptr			; use indirect indexed!
+lpv_loop:
+		TYA					; check LSB, worth it
 		BNE lpv_dec			; directly if no wrap
 			DEC ptr+1			; do not forget MSB
 lpv_dec:
-		DEC ptr				; decrease LSB
-		_LDAY(ptr)			; see char, hard to optimise
+		DEY					; decrease LSB
+		LDA (ptr), Y		; see char
 			BEQ lpv_exit		; terminator aborts
 		CMP #CR				; newline aborts too
-		BNE lpv_do			; continue otherwise
+			BNE lpv_loop		; continue otherwise
 lpv_exit:
+	STY ptr				; restore pointer LSB
 	LDY cur				; will decrease cur
 	BNE lpv_cur			; directly if no wrap
 		DEC cur+1			; do not forget MSB
