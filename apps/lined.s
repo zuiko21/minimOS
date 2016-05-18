@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160518-1012
+; last modified 20160518-1240
 
 #ifndef	ROM
 #include "options.h"
@@ -75,32 +75,28 @@ open_ed:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 
+	_STZA edit			; reset EDIT flag (false)
 ; *** ask for text address (could be after loading) ***
 	LDA #'$'			; hex radix as prompt
 	JSR prnChar			; print it!
 	JSR hexIn			; read line asking for address, will set at tmp
 ; this could be the load() routine
 	LDA tmp+1			; get start address
-;LDA #$10	; fixed at $1001 for testing
-;LDY #1
 	LDY tmp				; *** this one will define status for BNE ***
-	STA start+1			; store
+	STA start+1			; store unmodified
 	STY start
-	BNE le_nw			; will not wrap
+	BNE le_nw			; will not wrap upon decrease
 		_DEC				; decrease MSB
 le_nw:
 	DEY					; one less for leading terminator
-	STY ptr				; store pointer
-	STA ptr+1
+	_STZX ptr			; clear pointer LSB (will use indirect indexed)
+	STA ptr+1			; pointer MSB
 	LDA #0				; NULL value
-	_STAY(ptr)			; store just before text!
-	LDY ptr				; initial value LSB
-	_STZA ptr			; clear pointer LSB
+	STA (ptr), Y		; store just before text!
 	INY					; correct value
 	BNE le_nw2			; did not wrap
 		INC ptr+1			; carry otherwise
 le_nw2:
-
 ; scan the 'document' until the end
 	LDA #1				; default number of lines
 	STA cur				; set initial value
@@ -117,7 +113,7 @@ ll_next:
 		INY					; increase LSB
 		BNE ll_scan			; no page boundary crossing
 			INC ptr+1			; otherwise next page
-		BNE ll_scan			; no need for BRA
+		_BRA ll_scan
 ll_end:
 	STY ptr				; update pointer LSB
 	STY top				; also as top
@@ -127,18 +123,13 @@ ll_end:
 		BNE ll_some			; not empty
 	CPY start			; check LSB too
 	BNE ll_some			; was not empty
+		_STZA cur			; otherwise there are no lines! eeeeeeek!
 		JMP le_cbp			; clear buffer and prompt
 ll_some:
 	JSR l_prev			; back to previous (last) line
 	JSR l_indent		; get leading whitespace
 	JSR l_show			; display this line!
-	LDY cur				; might wrap...
-	BNE ll_nw			; process accordingly
-		DEC cur+1			; correct MSB!
-ll_nw:
-	DEC cur				; update variable LSB
-le_pr1:
-	_STZA edit			; reset EDIT flag (false)
+	JSR l_prompt		; eeeeeeeeek!
 
 ; *** main loop ***
 le_loop:
