@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5b2
+; v0.5b4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160518-0850
+; last modified 20160518-1012
 
 #ifndef	ROM
 #include "options.h"
@@ -13,7 +13,6 @@
 #include "firmware/ARCH.h"
 #include "sysvars.h"
 .text
-user_sram	= $0400
 #endif
 
 ; *** constants declaration ***
@@ -101,6 +100,7 @@ le_nw:
 	BNE le_nw2			; did not wrap
 		INC ptr+1			; carry otherwise
 le_nw2:
+
 ; scan the 'document' until the end
 	LDA #1				; default number of lines
 	STA cur				; set initial value
@@ -198,10 +198,10 @@ ld_nw:
 			JSR l_prev			; back to previous line
 			LDA start+1			; check MSB
 			CMP ptr+1			; compare current pos
-				BCC ld_ind			; well over start, get indent
-			LDA start			; now check LSB
-			CMP ptr
-			BCS ld_ex			; start position, do not get indent
+			BCC ld_ind			; well over start, get indent
+				LDA start			; now check LSB
+				CMP ptr
+					BCS ld_ex			; start position, do not get indent
 ld_ind:
 			JMP ldn_do			; indent, show, prompt and continue!
 ld_ex:
@@ -218,9 +218,9 @@ lcr_do:
 			LDA edit			; edit in progress?
 			BNE lcr_else		; replace old content
 				LDY ptr				; get current LSB
-				LDA ptr				; and MSB
+				LDA ptr+1			; and MSB
 				INY					; one more
-				BEQ lcr_nw			; no wrap
+				BNE lcr_nw			; no wrap
 					_INC				; correct MSB
 lcr_nw:
 				STY src			; set source address = ptr+1
@@ -232,6 +232,7 @@ lcr_nw:
 				LDA src+1		; now for the MSB
 				ADC #0			; just propagate carry
 				STA dest+1		; pointer complete
+brk
 				JSR l_mvup		; move memory up!
 				INC cur			; do not forget MSB!
 				BNE lcr_com		; did not wrap
@@ -378,8 +379,8 @@ le_loop2:
 le_def:
 ; manage regular typing as default
 		LDX key				; this is really the index for buffer
-		CPX #LBUFSIZ		; full buffer?
-			BCS le_loop2		; ignore then
+		CPX #LBUFSIZ-1		; full buffer?
+			BEQ le_loop2		; ignore then
 		JSR l_valid			; check for a valid key
 			BCS le_loop2		; was not
 		STA l_buff, X		; store into buffer, 816-savvy!
@@ -423,6 +424,7 @@ hex2byte:
 	LDY #2				; reset loop counter, 2 ciphers per byte
 	_STZA tmp			; also reset value
 	JSR gnc_do			; get first char!
+
 h2b_l:
 		SEC					; prepare
 		SBC #'0'			; convert to value
@@ -443,6 +445,7 @@ h2b_num:
 		DEY					; loop counter
 		BNE h2b_l			; until done
 h2b_err:
+	DEX					; why?
 	RTS					; value is at tmp
 
 ; simplified gnc_do routine
@@ -454,8 +457,8 @@ gnc_do:
 	CMP #'z'+1			; still within lowercase?
 		BCS gn_ok			; otherwise do not correct!
 	AND #%11011111		; remove bit 5 to uppercase
-	INX					; advance!
 gn_ok:
+	INX					; advance! eeeeeek!
 	RTS
 
 ; * print a byte in A as two hex ciphers *
@@ -661,7 +664,7 @@ la_exit:
 ; ask for current line
 l_prompt:
 	LDA #CR				; eeeeeek
-	JSR prnHex			; put leading newline
+	JSR prnChar			; put leading newline
 	LDA cur+1			; MSB goes first!
 	JSR prnHex			; prints two hex digits
 	LDA cur				; now the LSB
@@ -679,7 +682,7 @@ lpm_loop:
 		BNE lpm_loop		; no need for BRA, continue
 lpm_exit:
 	PLA					; discard saved index!!!
-	STY key				; eeeeeeeeek^2!
+	STX key				; eeeeeeeeek^2!
 	RTS
 
 ; copy buffer into memory
@@ -767,18 +770,17 @@ l_mvdn:
 md_loop:
 		_LDAY(src)			; get origin, hard to optimise
 		_STAY(dest)			; copy value
-		LDY dest			; will decrease dest!
+		INC dest			; will INCREASE dest! eeeeek!
 		BNE md_nw			; without wrapping
-			DEC dest+1			; at boundary crossing
+			INC dest+1			; at boundary crossing
 md_nw:
-		DEC dest			; not worth keeping
-		LDY src				; will decrease dest!
+		LDY src				; will INCREASE src!
 		LDA src+1			; MSB too
+		INY					; increase! eeeeeek!
 		BNE md_nw2			; without wrapping
-			_DEC				; at boundary crossing
+			_INC				; at boundary crossing
 			STA src+1			; rarely done
 md_nw2:
-		DEY					; worth keeping!
 		STY src				; update value
 		CMP top+1			; reached limit?
 			BCS md_loop			; not
@@ -842,13 +844,14 @@ mu_nw2:
 
 ; * check for a valid key *
 l_valid:
-	CLC				; OK by default
 	CMP #' '			; printable char?
 		BCS lv_ok			; say OK
 	CMP #TAB			; or is it a tabulation?
 		BEQ lv_ok			; OK too
-	SEC				; otherwise is NOT valid (cannot touch Y!!!)
+	SEC				; otherwise is NOT valid
+	RTS
 lv_ok:
+	CLC				; OK by default (minimOS could use macro)
 	RTS
 
 ; * store src and make dest=src+delta! *
