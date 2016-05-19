@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5b4
+; v0.5b5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160518-1440
+; last modified 20160519-1000
 
 #ifndef	ROM
 #include "options.h"
@@ -207,62 +207,55 @@ lcr_do:
 			LDA #0				; NULL terminator 
 			STA l_buff, X		; terminate buffer, 816-savvy
 			LDA edit			; edit in progress?
-			BNE lcr_else		; replace old content
+			BNE lcr_else		; replace old content then
 				LDY ptr				; get current LSB
 				LDA ptr+1			; and MSB
-				INY					; one more
-				BNE lcr_nw			; no wrap
-					_INC				; correct MSB
-lcr_nw:
-				STY src			; set source address = ptr+1
+				STY src				; set source address = ptr!
 				STA src+1
-				TYA				; let us operate over the value on src
-				SEC				; plus one!!!
-				ADC key			; this serves as buflen(), really
-				STA dest		; set destination address LSB
-				LDA src+1		; now for the MSB
-				ADC #0			; just propagate carry
-				STA dest+1		; pointer complete
-				JSR l_mvup		; move memory up!
-				INC cur			; do not forget MSB!
-				BNE lcr_com		; did not wrap
-					INC cur+1		; otherwise propagate carry
-				BNE lcr_com		; continue in common block, no need for BRA
+				TYA					; let us operate over the value on src
+				SEC					; plus one!!!
+				ADC key				; this serves as buflen(), really
+				STA dest			; set destination address LSB
+				LDA src+1			; now for the MSB
+				ADC #0				; just propagate carry
+				STA dest+1			; pointer complete
+				JSR l_mvup			; move memory up!
+				INC cur				; do not forget MSB!
+				BNE lcr_com			; did not wrap
+					INC cur+1			; otherwise propagate carry
+				_BRA lcr_com		; continue in common block
 lcr_else:
 			_STZA edit			; no longer in edit mode
-			LDY ptr				; get current position
+			LDY ptr				; get original pointer (will stay)
 			LDA ptr+1
 			STY tmp				; store as optr
 			STA tmp+1
+			STY src				; and as src
+			STA src+1
 			JSR l_next			; advance to next line
-; compute delta = key+1+optr-ptr
-			LDA key				; this only gets to LSB
-			SEC					; +1
-			ADC tmp				; third term (+optr)
-			TAY					; keep partial LSB
-			LDA tmp+1			; this is the MSB
-			ADC #0				; propagate carry
-			STA tmp2+1			; 3 terms added, only delta.MSB written!
-			TYA					; retrieve delta.LSB
-			SEC					; prepare
-			SBC ptr				; subtract LSB
-			STA tmp2			; store full LSB for delta
-			LDA tmp2+1			; now for MSB
-			SBC ptr+1			; propagate borrow
-			STA tmp2+1			; delta is fully stored!
-			BMI lcr_dn			; negative result will move down
-				ORA tmp2			; check also LSB in case is zero
-					BEQ lcr_nomv		; no need to move!
-				LDY tmp			; get optr.LSB
-				LDA tmp+1		; get optr.MSB
-				JSR plusDelta	; store src and make dest=src+delta!
-				JSR l_mvup		; move memory up
+; Y = old line length (ptr-optr)
+; compute delta A = Y-(key+1)
+			TYA					; old line length
+			CLC					; set borrow!
+			SBC key				; subtract new length (plus one)
+			BEQ lcr_nomv		; no need to move!
+			BCC lcr_up			; negative result will move up
+				STA tmp				; will be subtracted
+				SEC					; prepare
+				LDA src				; get source LSB
+				SBC tmp				; minus delta
+				STA dest			; as destination
+				LDA src+1			; now MSB
+				SBC #0				; propagate borrow
+				STA dest+1			; pointers ready
+				JSR l_mvdn			; move memory down
 				_BRA lcr_nomv
-lcr_dn:
+lcr_up:
+;*****************************
 			LDY ptr				; get ptr
 			LDA ptr+1
 			JSR plusDelta		; store src and make dest=src+delta!
-			JSR l_mvdn			; move memory down
+			JSR l_mvup			; move memory up
 lcr_nomv:
 			LDY tmp				; retrieve optr
 			LDA tmp+1
@@ -380,7 +373,7 @@ le_def:
 ldf_prn:
 		JSR prnChar			; print 
 		INC key				; another char in buffer
-		BNE le_loop2		; and continue, no need for BRA
+		_BRA le_loop2		; and continue
 l_prlp:
 		JSR l_prompt		; prompt for current line
 		_BRA le_loop2		; and continue (saves one byte)
@@ -522,10 +515,10 @@ hxi_nbs:
 		STA l_buff, X		; store char
 		JSR prnChar			; eeeeeeek!!!
 		INC tmp2			; next position in buffer
-		BNE hxi_loop		; no need for BRA
+		_BRA hxi_loop
 hxi_proc:
 ; process hex and save result at tmp.w
-	JSR prnChar			; show final CR!
+	JSR prnChar				; show final CR!
 	LDX #0					; reset index
 	JSR hex2byte			; convert MSB
 	LDA tmp					; preserve low byte
@@ -535,7 +528,7 @@ hxi_proc:
 ; ** business logic functions **
 ; back to previous (last) line
 l_prev:
-	LDY start				; get LSB
+	LDY start			; get LSB
 	LDA start+1			; and MSB
 	CMP ptr+1			; check whether at start
 		BCC lpv_do			; far away, will go back
@@ -578,7 +571,7 @@ li_do:
 		STA l_buff, X		; put data on buffer, 816-savvy!
 		INY					; next
 		INX
-		BNE li_loop			; no need for BRA
+		_BRA li_loop
 li_exit:
 	_STZA l_buff, X		; no need for temporary offset, as ptr will not be changed!
 	RTS
@@ -673,7 +666,7 @@ lpm_loop:
 		JSR prnChar			; print it
 		_PLX				; restore index
 		INX					; next char
-		BNE lpm_loop		; no need for BRA, continue
+		_BRA lpm_loop
 lpm_exit:
 	PLA					; discard saved index!!!
 	STX key				; eeeeeeeeek^2!
@@ -689,7 +682,7 @@ lph_loop:
 		STA (ptr), Y		; store from pointer (to be increased later)
 		INY					; next
 		INX
-		BNE lph_loop		; no need for BRA
+		_BRA lph_loop
 lph_exit:
 	LDA #CR				; terminator
 	STA (ptr), Y		; copied as newline
@@ -712,15 +705,17 @@ l_next:
 		BCC lnx_do			; if at end, complain
 		JMP txtEnd			; just complain and will return
 lnx_do:
-	LDY #1				; reset index, notice trick!
+	LDY #0				; reset index
 lnx_loop:
 		LDA (ptr), Y		; see char
-			BEQ lnx_exit		; terminator aborts
-		CMP #CR				; newline aborts too
+			BEQ lnx_abort		; terminator aborts
+		CMP #CR				; newline ends but go past it!
 			BEQ lnx_exit
 		INY					; next in line
-		BNE lnx_loop		; no need for BRA
+		_BRA lnx_loop
 lnx_exit:
+	INY					; skip trailing newline!
+lnx_abort:
 	CLC					; prepare
 	TYA					; get pointer LSB
 	ADC ptr				; add to current value
@@ -746,7 +741,7 @@ lpl_loop:
 		STA l_buff, X		; put data on buffer, 816-savvy!
 		INY					; next
 		INX
-		BNE lpl_loop		; no need for BRA
+		_BRA lpl_loop
 lpl_exit:
 	_STZA l_buff, X		; no need for temporary offset, as ptr will not be changed!
 	RTS
@@ -754,12 +749,6 @@ lpl_exit:
 ; move memory down
 ; uses tmp2 as delta!
 l_mvdn:
-lda top+1
-jsr prnHex
-lda top
-jsr prnHex
-lda #'='
-jsr prnChar
 	LDA src				; compute local delta!
 	SEC					; prepare
 	SBC dest			; subtract
@@ -769,23 +758,8 @@ jsr prnChar
 	STA tmp2+1
 md_loop:
 		_LDAY(src)			; get origin, hard to optimise
-;		_STAY(dest)			; copy value
-lda tmp
-pha
-lda tmp+1
-pha
-
-lda src+1
-jsr prnHex
-lda src
-jsr prnHex
-lda #'.'
-jsr prnChar
-	brk
-pla
-sta tmp+1
-pla
-sta tmp+2
+		_STAY(dest)			; copy value
+			BEQ md_exit			; abort upon trailing terminator already copied!
 		INC dest			; will INCREASE dest! eeeeek!
 		BNE md_nw			; without wrapping
 			INC dest+1			; at boundary crossing
@@ -798,17 +772,15 @@ md_nw:
 			STA src+1			; rarely done
 md_nw2:
 		STY src				; update value
-		CMP top+1			; reached limit?
-			BNE md_loop			; not, instead of BCC?
-		CPY top				; check LSB!
-			BNE md_loop			; still to go
-	LDA top					; get top.LSB
-	LDX top+1				; and MSB
-	SEC						; prepare
-	SBC tmp2				; subtract delta.LSB
-	STA top					; update value
-	TXA						; retrieve MSB
-	SBC tmp2+1				; same for MSB
+		BRA md_loop			; continue
+md_exit:
+	LDA top				; get top.LSB
+	LDX top+1			; and MSB
+	SEC					; prepare
+	SBC tmp2			; subtract delta.LSB
+	STA top				; update value
+	TXA					; retrieve MSB
+	SBC tmp2+1			; same for MSB
 	STA top+1
 	RTS
 
@@ -837,23 +809,8 @@ l_mvup:
 	STY dest
 mu_loop:
 		_LDAY(tmp)			; get source, hard to optimise
-;		_STAY(dest)			; copy value
-lda tmp
-pha
-lda tmp+1
-pha
-
-lda dest+1
-jsr prnHex
-lda dest
-jsr prnHex
-lda #'+'
-jsr prnChar
-
-pla
-sta tmp+1
-pla
-sta tmp+2
+		
+		_STAY(dest)			; copy value
 		LDY dest			; will decrease dest!
 		BNE mu_nw			; without wrapping
 			DEC dest+1			; at boundary crossing
