@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160519-1000
+; last modified 20160519-1244
 
 #ifndef	ROM
 #include "options.h"
@@ -115,6 +115,7 @@ ll_next:
 			INC ptr+1			; otherwise next page
 		_BRA ll_scan
 ll_end:
+; ***** needs to add leading CR if [-1] is not CR nor NUL *****
 	STY ptr				; update pointer LSB
 	STY top				; also as top
 	LDA ptr+1			; let us see MSB
@@ -143,16 +144,24 @@ le_sw1:
 		CMP #EDIT			; was 'edit' command (^E)?
 		BNE le_sw2			; check next otherwise
 ; edit
-			LDA ptr+1			; check pointer MSB
-			CMP start+1			; at beginning?
-				BNE led_else		; was not
-			LDA ptr				; check LSB too
-			CMP start
-			BNE led_else		; otherwise is at the beginning
+			LDY ptr
+			BNE led_nw			; will cross page?
+				DEC ptr+1			; page crossed
+led_nw:
+			DEY					; decrease LSB anyway
+			_STZA ptr			; indirect indexed!
+			LDA (ptr), Y		; check pointed[-1]
+			BNE led_else		; was not leading terminator
+				INY					; let things as before
+				BNE led_nw2			; no crossing
+					INC ptr+1			; correct MSB
+led_nw2:
+				STY ptr			; pointer restored!!!
 le_clbuf:
-				JSR txtStart		; complain
+				JSR txtStart		; otherwise complain
 				JMP le_cbp			; clear buffer and prompt
 led_else:
+			STY ptr				; update decreased pointer
 			LDA edit			; check edit mode
 			BNE led_ned			; discard current buffer
 				JSR l_prev			; otherwise get previous
@@ -240,7 +249,7 @@ lcr_else:
 			SBC key				; subtract new length (plus one)
 			BEQ lcr_nomv		; no need to move!
 			BCC lcr_up			; negative result will move up
-				STA tmp				; will be subtracted
+				STA tmp				; store delta!
 				SEC					; prepare
 				LDA src				; get source LSB
 				SBC tmp				; minus delta
@@ -251,10 +260,12 @@ lcr_else:
 				JSR l_mvdn			; move memory down
 				_BRA lcr_nomv
 lcr_up:
-;*****************************
-			LDY ptr				; get ptr
-			LDA ptr+1
-			JSR plusDelta		; store src and make dest=src+delta!
+			CLC					; prepare
+			ADC src				; delta plus src
+			STA dest			; store as destination
+			LDA src+1			; get MSB
+			ADC #0				; propagate carry
+			STA dest+1
 			JSR l_mvup			; move memory up
 lcr_nomv:
 			LDY tmp				; retrieve optr
@@ -526,30 +537,46 @@ hxi_proc:
 	JMP hex2byte			; now convert LSB in situ, and return
 
 ; ** business logic functions **
-; back to previous (last) line
+; back to previous line (revamped)
+; X returns skipped line length
 l_prev:
-	LDY start			; get LSB
-	LDA start+1			; and MSB
-	CMP ptr+1			; check whether at start
-		BCC lpv_do			; far away, will go back
-	CPY ptr				; check LSB otherwise
-		BCC lpv_do			; if at start, complain
+	LDX #0				; auxiliary counter!
+	LDY ptr				; get pointer LSB
+	_STZA ptr			; will use indirect indexed!
+	TYA					; worth it
+	BNE lpv_nw			; no page cross
+		DEC ptr+1			; otherwise correct MSB
+lpv_nw:
+	INX
+	DEY					; back once anyway
+	LDA (ptr), Y		; check for leading newline
+	BNE lpv_do			; not at start
+lpv_abort:
+		DEX
+		INY					; restore position
+		STY ptr				; in case of reaching first line
+		BNE lpv_nw2			; was MSB changed?
+			INC ptr+1			; if so, restore it
+lpv_nw2:
 		JMP txtStart		; just complain and will return
 lpv_do:
-		LDY ptr				; will decrease ptr
-		_STZA ptr			; use indirect indexed!
-lpv_loop:
 		TYA					; check LSB, worth it
 		BNE lpv_dec			; directly if no wrap
 			DEC ptr+1			; do not forget MSB
 lpv_dec:
-		DEY					; decrease LSB
-		LDA (ptr), Y		; see char
+		DEY					; should be before a leading CR
+		INX
+		LDA (ptr), Y		; look at char
 			BEQ lpv_exit		; terminator aborts
-		CMP #CR				; newline aborts too
-			BNE lpv_loop		; continue otherwise
+		CMP #CR				; newline aborts in a different way
+			BNE lpv_do			; continue otherwise
 lpv_exit:
-	STY ptr				; restore pointer LSB
+	DEX
+	INY					; not at the very lead
+	STY ptr				; update pointer
+	BNE lpv_nw3			; was MSB changed?
+		INC ptr+1			; if so, restore it
+lpv_nw3:
 	LDY cur				; will decrease cur
 	BNE lpv_cur			; directly if no wrap
 		DEC cur+1			; do not forget MSB
@@ -557,9 +584,9 @@ lpv_cur:
 	DEC cur				; decrease LSB
 	RTS
 
-; get leading whitespace
+; get leading whitespace (revamped)
 l_indent:
-	LDX #1				; reset index, note trick!
+	LDX #0				; reset index
 	LDY #0				; source index
 li_loop:
 		LDA (ptr), Y		; get first char
@@ -576,17 +603,9 @@ li_exit:
 	_STZA l_buff, X		; no need for temporary offset, as ptr will not be changed!
 	RTS
 
-; display this line!
+; display this line! (revamped)
 l_show:
-	LDY ptr				; get LSB
-	LDA ptr+1			; and MSB
-	CMP top+1			; check whether at the end
-		BCC lsh_do			; far away, will advance
-	CPY top				; check LSB otherwise
-		BCC lsh_do			; if at end, complain
-		JMP txtEnd			; just complain and will return
-lsh_do:
-; now get the 'cur' line number printed in hex!
+; get the 'cur' line number printed in hex!
 	LDA #CR				; eeeek
 	JSR prnChar			; put leading newline
 	LDA cur+1			; MSB goes first!
@@ -595,28 +614,29 @@ lsh_do:
 	JSR prnHex
 	LDA #$3A			; code of the colon character
 	JSR prnChar			; print it, end of header
-	LDY #1				; reset index, skipping leading newline!
+	LDY #0				; reset index
 lsh_loop:
-		_PHY				; save index, NMOS compatibility needs to be here
-		LDA (ptr), Y		; get char in memory
-			BEQ lsh_exit		; abort upon terminator, do not forget stacked index!
-		CMP #CR				; newline will exit too
+		_PHY				; save index, needs to be here for NMOS compatibility
+		LDA (ptr), Y		; get char from memory
+			BEQ lsh_abort		; abort upon terminator, do not forget stacked index!
+		CMP #CR				; newline will exit too, but in a different way
 			BEQ lsh_exit
 		JSR prnChar			; print it
 		_PLY				; restore index
 		INY					; next char
-			BNE lsh_loop		; no wrap, continue
-		INC ptr+1			; increase MSB otherwise
-			_BRA lsh_loop
+		_BRA lsh_loop
+lsh_abort:
+	JSR txtEnd			; complain
 lsh_exit:
 	PLA					; discard saved index!!!
 	TYA					; get current offset
-	CLC					; prepare
-	ADC ptr				; add to current value
-	STA ptr				; update LSB
-	LDA ptr+1			; propagate carry
-	ADC #0
-	STA ptr+1			; update MSB too
+	BEQ lsh_nw			; did not move, go away!
+		CLC					; prepare
+		ADC ptr				; add to current value
+		STA ptr				; update LSB
+		BCC lsh_cur			; no page cross
+			INC ptr+1			; update MSB otherwise
+lsh_cur:
 	INC cur				; count another line
 	BNE lsh_nw			; no page cross
 		INC cur+1			; increase  MSB otherwise
@@ -624,31 +644,17 @@ lsh_nw:
 	LDA #CR				; end on newline
 	JMP prnChar			; print it and return
 
-; show all
-; could just use STRING!!!
+; show all (revamped)
 l_all:
 	LDA #CR				; leading newline
 	JSR prnChar			; make some room
 	LDY start			; get LSB
 	LDA start+1			; MSB too
-	_STZX tmp			; will use indirect-indexed mode
-	STA tmp+1			; pointer MSB
-la_loop:
-		_PHY				; keep pointer!
-		LDA (tmp), Y		; get char
-			BEQ la_exit			; ended
-		JSR prnChar			; print it!
-		_PLY				; restore pointer
-		INY					; next
-		BNE la_loop			; did not wrap
-			INC tmp+1			; increase MSB otherwise
-		_BRA la_loop		; just in case
-la_exit:
-	PLA					; discard saved pointer
+	JSR prnStr			; print whole string!!!
 	LDA #CR				; trailing newline
 	JMP prnChar			; make room and return
 
-; ask for current line
+; ask for current line (revised)
 l_prompt:
 	LDA #CR				; eeeeeek
 	JSR prnChar			; put leading newline
@@ -672,9 +678,9 @@ lpm_exit:
 	STX key				; eeeeeeeeek^2!
 	RTS
 
-; copy buffer into memory
+; copy buffer into memory (revamped)
 l_push:
-	LDY #1				; source index, notice offset
+	LDX #0				; source index
 	LDY #0				; reset index
 lph_loop:
 		LDA l_buff, X		; get buffer data, 816-savvy!
@@ -695,20 +701,18 @@ lph_exit:
 lph_end:
 	RTS
 
-; advance to next line
+; advance to next line (revamped)
+; Y returns advanced skipped line length
 l_next:
-	LDY ptr				; get LSB
-	LDA ptr+1			; and MSB
-	CMP top+1			; check whether at the end
-		BCC lnx_do			; far away, will advance
-	CPY top				; check LSB otherwise
-		BCC lnx_do			; if at end, complain
-		JMP txtEnd			; just complain and will return
-lnx_do:
 	LDY #0				; reset index
 lnx_loop:
 		LDA (ptr), Y		; see char
-			BEQ lnx_abort		; terminator aborts
+		BNE lnx_cont		; terminator aborts
+			_PHY				; save index
+			JSR txtEnd			; complain
+			_PLY				; restore register!
+			_BRA lnx_abort		; exit with ptr at trailing terminator
+lnx_cont:
 		CMP #CR				; newline ends but go past it!
 			BEQ lnx_exit
 		INY					; next in line
@@ -716,25 +720,26 @@ lnx_loop:
 lnx_exit:
 	INY					; skip trailing newline!
 lnx_abort:
-	CLC					; prepare
-	TYA					; get pointer LSB
-	ADC ptr				; add to current value
-	STA ptr				; update
-	BCC lnx_cur			; will not cross page
-		INC ptr+1			; rarely done?
+	TYA					; did move?
+	BEQ lnx_end			; if not, same line!
+		CLC					; prepare
+		ADC ptr				; add to current value
+		STA ptr				; update
+		BCC lnx_cur			; will not cross page
+			INC ptr+1			; rarely done?
 lnx_cur:
-	INC cur				; increase cur
-	BNE lnx_end
-		INC cur+1			; do not forget MSB
+		INC cur				; increase cur
+		BNE lnx_end
+			INC cur+1			; do not forget MSB
 lnx_end:
 	RTS
 
-; fill buffer from memory
+; fill buffer from memory (revamped)
 l_pop:
-	LDY #1				; reset index, note trick!
 	LDX #0				; index for buffer
+	LDY #0				; reset index
 lpl_loop:
-		LDA (ptr), Y		; get first char
+		LDA (ptr), Y		; get char
 			BEQ lpl_exit		; abort if terminator
 		CMP #CR				; newline also aborts
 			BEQ lpl_exit
@@ -746,7 +751,7 @@ lpl_exit:
 	_STZA l_buff, X		; no need for temporary offset, as ptr will not be changed!
 	RTS
 
-; move memory down
+; move memory down (revamped)
 ; uses tmp2 as delta!
 l_mvdn:
 	LDA src				; compute local delta!
@@ -756,35 +761,27 @@ l_mvdn:
 	LDA src+1			; same for MSB
 	SBC dest+1
 	STA tmp2+1
+	LDY #0				; let us try to optimise
 md_loop:
-		_LDAY(src)			; get origin, hard to optimise
-		_STAY(dest)			; copy value
-			BEQ md_exit			; abort upon trailing terminator already copied!
-		INC dest			; will INCREASE dest! eeeeek!
-		BNE md_nw			; without wrapping
-			INC dest+1			; at boundary crossing
-md_nw:
-		LDY src				; will INCREASE src!
-		LDA src+1			; MSB too
-		INY					; increase! eeeeeek!
-		BNE md_nw2			; without wrapping
-			_INC				; at boundary crossing
-			STA src+1			; rarely done
-md_nw2:
-		STY src				; update value
-		BRA md_loop			; continue
+		LDA (src), Y		; get origin
+		STA (dest), Y		; copy value
+			BEQ md_exit			; abort upon trailing terminator... already copied!
+		INY					; next!
+			BNE md_loop			; no page crossing!
+		INC src+1			; otherwise, increase BOTH MSBs
+		INC dest+1
+			BRA md_loop			; and continue until terminator
 md_exit:
 	LDA top				; get top.LSB
-	LDX top+1			; and MSB
 	SEC					; prepare
 	SBC tmp2			; subtract delta.LSB
 	STA top				; update value
-	TXA					; retrieve MSB
+	LDA top+1			; retrieve MSB
 	SBC tmp2+1			; same for MSB
-	STA top+1
+	STA top+1			; top updated
 	RTS
 
-; move memory up
+; move memory up (revamped)
 ; uses tmp2 as delta! uses tmp
 l_mvup:
 	LDA dest			; compute local delta!
@@ -794,44 +791,45 @@ l_mvup:
 	LDA dest+1			; same for MSB
 	SBC src+1
 	STA tmp2+1
+; set local pointers
 	LDA top				; start from the end!
 	LDX top+1
 	STA tmp				; local pointer
 	STX tmp+1
 	CLC					; prepare
 	ADC tmp2			; top += delta
-	STA top
-	TAY					; keep result
-	TXA					; now for MSB
-	ADC tmp2+1
-	STA top+1
+	STA top				; update pointer
+	STA dest			; will use as local dest
+	TXA					; retrieve MSB
+	ADC tmp2+1			; new size
+	STA top+1			; complete pointer
 	STA dest+1			; use dest locally
-	STY dest
+; go for the loop
+	LDY #0				; initial value! will decrease afterwards
 mu_loop:
-		_LDAY(tmp)			; get source, hard to optimise
-		
-		_STAY(dest)			; copy value
-		LDY dest			; will decrease dest!
-		BNE mu_nw			; without wrapping
-			DEC dest+1			; at boundary crossing
-mu_nw:
-		DEC dest			; not worth keeping
-		LDA tmp+1			; MSB for future comparison, but here eeeeeek!
-		LDY tmp				; will decrease tmp
-		BNE mu_nw2			; no wrap
-			_DEC				; page cross
-			STA tmp+1			; rarely done
-mu_nw2:
-		DEY					; worth keeping!
-		STY tmp				; update value
-		CMP src+1			; reached limit?
-			BNE mu_loop			; not
-		CPY src				; check LSB!
-			BCC mu_loop			; still to go
-			BEQ mu_loop			; even if the same
+		DEY					; one less
+		CPY #$FF			; did wrap?
+		BNE mu_sp			; same page if not
+			DEC tmp+1			; otherwise decrease BOTH MSBs
+			DEC dest+1
+mu_sp:
+		LDA (tmp), Y		; get source
+		STA (dest), Y		; copy value
+			BEQ mu_exit			; unexpected start?
+; check whether we are done
+		TYA					; operate on offset
+		CLC					; prepare
+		ADC dest			; compute actual destination
+		TAX					; store temporarily
+		LDA dest+1			; MSB
+		ADC #0				; propagate carry
+		CMP src+1			; gross comparison
+			BNE mu_loop			; still to do
+		CPX src				; check LSB just in case
+			BNE mu_loop			; still to do
 	RTS
 
-; * check for a valid key *
+; * check for a valid key * (OK)
 l_valid:
 	CMP #' '			; printable char?
 		BCS lv_ok			; say OK
@@ -843,27 +841,13 @@ lv_ok:
 	CLC				; OK by default (minimOS could use macro)
 	RTS
 
-; * store src and make dest=src+delta! *
-plusDelta:
-	STY src				; set source address
-	STA src+1
-	TAX					; keep MSB
-	TYA					; operate on LSB
-	CLC					; prepare
-	ADC tmp2			; +delta.LSB
-	STA dest			; store destination address LSB
-	TXA					; now for MSB
-	ADC tmp2+1			; +delta.MSB
-	STA dest+1			; destination fully stored!
-	RTS
-
-; * alert from start of document *
+; * alert from start of document * (OK)
 txtStart:
 	LDY #<le_start		; LSB of string
 	LDA #>le_start		; MSB
 	JMP prnStr			; continue subroutine
 
-; * alert from end of document *
+; * alert from end of document * (OK)
 txtEnd:
 	LDY #<le_end		; LSB of string
 	LDA #>le_end		; MSB
