@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160519-1244
+; last modified 20160519-1421
 
 #ifndef	ROM
 #include "options.h"
@@ -151,17 +151,18 @@ led_nw:
 			DEY					; decrease LSB anyway
 			_STZA ptr			; indirect indexed!
 			LDA (ptr), Y		; check pointed[-1]
-			BNE led_else		; was not leading terminator
-				INY					; let things as before
-				BNE led_nw2			; no crossing
-					INC ptr+1			; correct MSB
+			PHP					; just store status! will clean up things
+			INY					; let things as before
+			BNE led_nw2			; no crossing
+				INC ptr+1			; correct MSB
 led_nw2:
-				STY ptr			; pointer restored!!!
+			STY ptr				; pointer restored!!!
+			PLP					; retrieve status
+			BNE led_else		; was not leading terminator
 le_clbuf:
 				JSR txtStart		; otherwise complain
 				JMP le_cbp			; clear buffer and prompt
 led_else:
-			STY ptr				; update decreased pointer
 			LDA edit			; check edit mode
 			BNE led_ned			; discard current buffer
 				JSR l_prev			; otherwise get previous
@@ -179,33 +180,21 @@ le_sw2:
 				BEQ le_clbuf		; complain, clear buffer and continue
 			LDY ptr				; get current pos
 			LDA ptr+1
-			INY					; increase
-			BNE ld_nw2			; check MSB too
-				_INC
-ld_nw2:
 			STY src				; store source pointer
 			STA src+1
 			JSR l_prev			; get previous
 			LDY ptr				; get current address
 			LDA ptr+1
-			INY					; increase
-			BNE ld_nw			; check MSB too
-				_INC
-ld_nw:
 			STY dest			; store destination pointer
 			STA dest+1
 			JSR l_mvdn			; move memory down
-			JSR l_prev			; back to previous line
-			LDA start+1			; check MSB
-			CMP ptr+1			; compare current pos
-			BCC ld_ind			; well over start, get indent
-				LDA start			; now check LSB
-				CMP ptr
-					BCS ld_ex			; start position, do not get indent
-ld_ind:
+			LDA cur				; was the first one?
+			ORA cur+1			; just look for zero
+			BNE ld_do			; more before, can show last
+				JMP l_prlp			; otherwise prompt and continue
+ld_do:
+			JSR l_prev			; back to previous line (to be shown)
 			JMP ldn_do			; indent, show, prompt and continue!
-ld_ex:
-			JMP l_prlp			; prompt and continue!
 le_sw3:
 		CMP #CR				; was Return key?
 			BEQ lcr_do			; process accordingly
@@ -279,20 +268,48 @@ lcr_com:
 			JSR l_next			; advance to next line
 			JMP l_prlp			; prompt and continue!
 le_sw4:
+; --- supress debug code from here ---
+		CMP #4					; was 'debug' key (^D)?
+		BNE le_sw_debug			; check next otherwise
+			LDY #<debug_str			; pointer to debug string
+			LDA #>debug_str
+			JSR prnStr				; print banner
+			LDA start+1			; 'start'
+			JSR prnHex
+			LDA start
+			JSR prnHex
+			LDA #' '			; space
+			JSR prnChar
+			LDA ptr+1			; 'ptr'
+			JSR prnHex
+			LDA ptr
+			JSR prnHex
+			LDA #' '			; space
+			JSR prnChar
+			LDA top+1			; 'top'
+			JSR prnHex
+			LDA top
+			JSR prnHex
+			LDA #CR
+			JSR prnChar
+			JMP l_prlp
+debug_str:
+	.asc	CR, "(start,ptr,top)=", 0
+le_sw_debug:
+; --- end of debug block ---
 		CMP #UP				; was 'up' key (^W)?
 		BNE le_sw5			; check next otherwise
 ; line up
-			LDA start+1			; get start address
-			LDY start
-			CMP ptr+1			; compare MSB
-				BCC lu_else			; it is not at the start
-				BNE lu_do
-			CPY ptr				; compare LSB
-				BCC lu_else			; not at start
-lu_do:
-			JMP le_clbuf
-lu_else:
-			JSR l_prev			; skip ponted buffer
+			LDA cur				; is it at the beginning?
+			ORA cur+1			; do not forget MSB!
+				BEQ lu_no			; complain, clear buffer and continue
+			JSR l_prev			; skip pointed buffer
+			LDA cur				; is it now at the beginning?
+			ORA cur+1			; do not forget MSB!
+			BNE lu_yes			; OK to back off another one
+lu_no:
+				JMP le_clbuf		; otherwise complain etc
+lu_yes:
 			JSR l_prev			; ...and previous
 			_BRA ldn_do			; indent, show, prompt and continue!
 le_sw5:
@@ -306,6 +323,7 @@ ldn_do:
 le_sw6:
 		CMP #GOTO			; was 'go to' command (^G)?
 		BNE le_sw7			; check next otherwise
+		
 			LDY #<le_line		; get string address
 			LDA #>le_line
 			JSR prnStr			; prompt for line number
@@ -345,7 +363,6 @@ le_sw7:
 		BNE le_sw8			; check next otherwise
 ; escape clears input buffer and prompt *** common ***
 le_cbp:
-
 			_STZA l_buff		; clear buffer
 			_BRA l_prlp			; prompt and continue!
 le_sw8:
@@ -618,20 +635,22 @@ l_show:
 lsh_loop:
 		_PHY				; save index, needs to be here for NMOS compatibility
 		LDA (ptr), Y		; get char from memory
-			BEQ lsh_abort		; abort upon terminator, do not forget stacked index!
+		BNE lsh_cr			; abort upon terminator, do not forget stacked index!
+			PLA
+			JSR txtEnd			; complain
+			RTS					; that is it???
+lsh_cr:
 		CMP #CR				; newline will exit too, but in a different way
 			BEQ lsh_exit
 		JSR prnChar			; print it
 		_PLY				; restore index
 		INY					; next char
 		_BRA lsh_loop
-lsh_abort:
-	JSR txtEnd			; complain
 lsh_exit:
 	PLA					; discard saved index!!!
 	TYA					; get current offset
 	BEQ lsh_nw			; did not move, go away!
-		CLC					; prepare
+		SEC					; prepare... but from next! eeeeeeek!
 		ADC ptr				; add to current value
 		STA ptr				; update LSB
 		BCC lsh_cur			; no page cross
@@ -641,8 +660,9 @@ lsh_cur:
 	BNE lsh_nw			; no page cross
 		INC cur+1			; increase  MSB otherwise
 lsh_nw:
-	LDA #CR				; end on newline
-	JMP prnChar			; print it and return
+;	LDA #CR				; end on newline
+;	JMP prnChar			; print it and return
+	RTS
 
 ; show all (revamped)
 l_all:
@@ -651,7 +671,7 @@ l_all:
 	LDY start			; get LSB
 	LDA start+1			; MSB too
 	JSR prnStr			; print whole string!!!
-	LDA #CR				; trailing newline
+	LDA #'~'			; trailing character
 	JMP prnChar			; make room and return
 
 ; ask for current line (revised)
@@ -815,7 +835,7 @@ mu_loop:
 mu_sp:
 		LDA (tmp), Y		; get source
 		STA (dest), Y		; copy value
-			BEQ mu_exit			; unexpected start?
+;			BEQ mu_exit			; unexpected start?
 ; check whether we are done
 		TYA					; operate on offset
 		CLC					; prepare
