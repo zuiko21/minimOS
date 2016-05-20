@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5b5
+; v0.5b6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160520-1006
+; last modified 20160520-1404
 
 #ifndef	ROM
 #include "options.h"
@@ -98,8 +98,7 @@ le_nw:
 		INC ptr+1			; carry otherwise
 le_nw2:
 ; scan the 'document' until the end
-	LDA #1				; default number of lines
-	STA cur				; set initial value
+	_STZA cur				; set initial value
 	_STZA cur+1			; do not forget MSB!
 ll_scan:
 		LDA (ptr), Y		; get stored char
@@ -115,16 +114,42 @@ ll_next:
 			INC ptr+1			; otherwise next page
 		_BRA ll_scan
 ll_end:
-; ***** needs to add leading CR if [-1] is not CR nor NUL *****
+; add leading CR if [-1] is not CR nor NUL
+	TYA					; check LSB, worth it
+	BNE ll_dec			; directly if no wrap
+			DEC ptr+1			; do not forget MSB
+ll_dec:
+	DEY					; what is before term?
+	LDA (ptr), Y
+	TAX					; keep for later
+	INY					; back to end
+	BNE ll_inc		; no wrap
+		INC ptr+1			; else correct MSB
+ll_inc:
+	TXA					; retrieve value
+	BEQ ll_empty		; nothing to correct
+		CMP #CR				; already a newline?
+ 	BEQ ll_empty		; nothing to correct
+ 		LDA #CR				; otherwise put newline
+ 		STA (ptr), Y
+ 		INY					; now for the missing term
+ 		BNE ll_term		; did not wrap
+ 			INC ptr+1
+ll_term:
+ 		LDA #0				; put terminator
+ 		STA (ptr), Y
+ 		INC cur				; one more detected line
+ 		BNE ll_empty
+ 			INC cur+1
+ll_empty:
+; continue setting pointers
 	STY ptr				; update pointer LSB
 	STY top				; also as top
 	LDA ptr+1			; let us see MSB
 	STA top+1			; also as top, will not affect flags
-	CMP start+1			; compare against start address
-		BNE ll_some			; not empty
-	CPY start			; check LSB too
+	LDA cur				; any line?
+	ORA cur+1
 	BNE ll_some			; was not empty
-		_STZA cur			; otherwise there are no lines! eeeeeeek!
 		JMP le_cbp			; clear buffer and prompt
 ll_some:
 	JSR l_prev			; back to previous (last) line
@@ -225,25 +250,22 @@ lcr_else:
 			CLC					; set borrow!
 			SBC key				; subtract new length (plus one)
 			BEQ lcr_nomv		; no need to move!
-			BCC lcr_up			; negative result will move up
-				STA tmp				; store delta!
-				SEC					; prepare
-				LDA src				; get source LSB
-				SBC tmp				; minus delta
-				STA dest			; as destination
-				LDA src+1			; now MSB
-				SBC #0				; propagate borrow
-				STA dest+1			; pointers ready
+			PHP					; keep status for later
+			STA tmp				; store delta!
+			SEC					; prepare
+			LDA src				; get source LSB
+			SBC tmp				; minus delta
+			STA dest			; as destination
+			LDA src+1			; now MSB
+			SBC #0				; propagate borrow
+			STA dest+1		; pointers ready
+			PLP					; retrieve status (from unsigned op)
+			BCC lcr_up		; negative result will move up
 				JSR l_mvdn			; move memory down
 				_BRA lcr_nomv
 lcr_up:
-			CLC					; prepare
-			ADC src				; delta plus src
-			STA dest			; store as destination
-			LDA src+1			; get MSB
-			ADC #1				; propagate carry????
-			STA dest+1
-			JSR l_mvup			; move memory up
+			DEC dest+1		; correct signed delta! eeeeeek
+			JSR l_mvup		; move memory up
 lcr_nomv:
 			_PLY				; retrieve optr
 			PLA
