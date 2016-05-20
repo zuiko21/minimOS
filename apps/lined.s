@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160519-1421
+; last modified 20160520-1006
 
 #ifndef	ROM
 #include "options.h"
@@ -144,20 +144,8 @@ le_sw1:
 		CMP #EDIT			; was 'edit' command (^E)?
 		BNE le_sw2			; check next otherwise
 ; edit
-			LDY ptr
-			BNE led_nw			; will cross page?
-				DEC ptr+1			; page crossed
-led_nw:
-			DEY					; decrease LSB anyway
-			_STZA ptr			; indirect indexed!
-			LDA (ptr), Y		; check pointed[-1]
-			PHP					; just store status! will clean up things
-			INY					; let things as before
-			BNE led_nw2			; no crossing
-				INC ptr+1			; correct MSB
-led_nw2:
-			STY ptr				; pointer restored!!!
-			PLP					; retrieve status
+			LDA cur				; check whether at start
+			ORA cur+1
 			BNE led_else		; was not leading terminator
 le_clbuf:
 				JSR txtStart		; otherwise complain
@@ -226,10 +214,10 @@ lcr_else:
 			_STZA edit			; no longer in edit mode
 			LDY ptr				; get original pointer (will stay)
 			LDA ptr+1
-			STY tmp				; store as optr
-			STA tmp+1
-			STY src				; and as src
+			STY src				; store as src
 			STA src+1
+			PHA					; keep optr in stack!!!!!! eeeeeek!
+			_PHY				; order essential for NMOS compatibility
 			JSR l_next			; advance to next line
 ; Y = old line length (ptr-optr)
 ; compute delta A = Y-(key+1)
@@ -253,12 +241,12 @@ lcr_up:
 			ADC src				; delta plus src
 			STA dest			; store as destination
 			LDA src+1			; get MSB
-			ADC #0				; propagate carry
+			ADC #1				; propagate carry????
 			STA dest+1
 			JSR l_mvup			; move memory up
 lcr_nomv:
-			LDY tmp				; retrieve optr
-			LDA tmp+1
+			_PLY				; retrieve optr
+			PLA
 			STY ptr				; restore pointer
 			STA ptr+1
 lcr_com:
@@ -317,13 +305,17 @@ le_sw5:
 		BNE le_sw6			; check next otherwise
 ; line down *** this is a common ending ***
 ldn_do:
+			_LDAY(ptr)			; watch pointed
+			BNE ldn_pick		; not at end
+				JSR txtEnd			; complain
+				JSR l_prev			; otherwise do not advance
+ldn_pick:
 			JSR l_indent		; get leading whitespace
 			JSR l_show			; display this line!
 			JMP l_prlp			; prompt and continue!
 le_sw6:
 		CMP #GOTO			; was 'go to' command (^G)?
 		BNE le_sw7			; check next otherwise
-		
 			LDY #<le_line		; get string address
 			LDA #>le_line
 			JSR prnStr			; prompt for line number
@@ -337,27 +329,29 @@ le_sw6:
 			_STZA tmp2			; reset counter as zz
 			_STZA tmp2+1
 lg_loop:
-				JSR l_next			; advance one line
-				_LDAY(ptr)			; check if not at end
-					BEQ lg_brk			; exit from loop
-				INC tmp2			; another zz
-				BNE lg_nw			; did not wrap
-					INC tmp2+1			; otherwise correct MSB
-lg_nw:
-				LDA tmp				; check LSB of 'dest'
+				LDA tmp				; check LSB of asked value
 				CMP tmp2			; compare with zz
-					BNE lg_loop			; continue as usual
+					BNE lg_adv			; another one
 				LDA tmp+1			; check MSB just in case
 				CMP tmp2+1
-					BNE lg_loop			; continue
-lg_brk:
-			LDA ptr+1			; get MSB
-			CMP start+1			; compare
-				BNE ldn_do			; not the same
-			LDA ptr				; otherwise check LSB too
-			CMP start
-				BNE ldn_do			; not at start
-				BEQ le_cbp			; otherwise, clear buffer and prompt
+					BEQ lg_exit			; all done then
+lg_adv:
+				_LDAY(ptr)			; check currently pointed
+				BNE lg_cont			; not at end
+					JSR txtEnd			; otherwise complain
+					_BRA lg_exit		; finish anyway
+lg_cont:
+				JSR l_next			; advance one line
+				INC tmp2			; another zz
+				BNE lg_loop			; did not wrap
+					INC tmp2+1			; otherwise correct MSB
+				_BRA lg_loop		; continue
+lg_exit:
+			LDA cur				; check whether there is nothing before
+			ORA cur+1
+				BEQ le_cbp			; no reference to pick
+			JSR l_prev			; otherwise back once
+			_BRA ldn_do			; indent, show, prompt and continue
 le_sw7:
 		CMP #ESCAPE			; was 'esc' key?
 		BNE le_sw8			; check next otherwise
@@ -790,7 +784,7 @@ md_loop:
 			BNE md_loop			; no page crossing!
 		INC src+1			; otherwise, increase BOTH MSBs
 		INC dest+1
-			BRA md_loop			; and continue until terminator
+			_BRA md_loop		; and continue until terminator
 md_exit:
 	LDA top				; get top.LSB
 	SEC					; prepare
@@ -824,6 +818,47 @@ l_mvup:
 	ADC tmp2+1			; new size
 	STA top+1			; complete pointer
 	STA dest+1			; use dest locally
+; --- supress debug code from here ---
+lda tmp
+pha
+lda tmp+1
+pha
+			LDY #<debug_mu			; pointer to debug string
+			LDA #>debug_mu
+			JSR prnStr				; print banner
+			LDA src+1			; 'src'
+			JSR prnHex
+			LDA src
+			JSR prnHex
+			LDA #' '			; space
+			JSR prnChar
+			LDA top+1			; 'tmp'
+			JSR prnHex
+			LDA top
+			JSR prnHex
+			LDA #' '			; space
+			JSR prnChar
+			LDA dest+1			; 'dest'
+			JSR prnHex
+			LDA dest
+			JSR prnHex
+			LDA #' '			; space
+			JSR prnChar
+			LDA tmp2+1			; 'delta'
+			JSR prnHex
+			LDA tmp2
+			JSR prnHex
+			LDA #CR
+			JSR prnChar
+pla
+			STA tmp+1
+pla
+			STA tmp
+			_BRA debug_mu_end
+debug_mu:
+	.asc	CR, "(src,tmp,dest,delta)=", 0
+debug_mu_end:
+; --- end of debug block ---
 ; go for the loop
 	LDY #0				; initial value! will decrease afterwards
 mu_loop:
