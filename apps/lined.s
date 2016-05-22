@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160520-1404
+; last modified 20160522-1122
 
 #ifndef	ROM
 #include "options.h"
@@ -243,29 +243,36 @@ lcr_else:
 			STA src+1
 			PHA					; keep optr in stack!!!!!! eeeeeek!
 			_PHY				; order essential for NMOS compatibility
+			INC key				; buffer length plus newline
 			JSR l_next			; advance to next line
 ; Y = old line length (ptr-optr)
-; compute delta A = Y-(key+1)
-			TYA					; old line length
-			CLC					; set borrow!
-			SBC key				; subtract new length (plus one)
+			CPY key				; compare old-new
 			BEQ lcr_nomv		; no need to move!
-			PHP					; keep status for later
-			STA tmp				; store delta!
-			SEC					; prepare
-			LDA src				; get source LSB
-			SBC tmp				; minus delta
-			STA dest			; as destination
-			LDA src+1			; now MSB
-			SBC #0				; propagate borrow
-			STA dest+1		; pointers ready
-			PLP					; retrieve status (from unsigned op)
-			BCC lcr_up		; negative result will move up
-				JSR l_mvdn			; move memory down
+			BCC lcr_down		; now is shorter
+; now is longer, move up
+; compute delta A = Y-(key+1)
+
+/*				TYA					; old line length
+				SEC					; set borrow!
+				SBC key				; subtract new length (plus one)
+				PHP					; keep status for later
+				STA tmp				; store delta!
+				SEC					; prepare
+				LDA src				; get source LSB
+				SBC tmp				; minus delta
+				STA dest			; as destination
+				LDA src+1			; now MSB
+				SBC #0				; propagate borrow
+				STA dest+1			; pointers ready
+				PLP					; retrieve status (from unsigned op) */
+
+				JSR l_plusD			; make dest = src + delta
+				JSR l_mvup			; move memory up
 				_BRA lcr_nomv
-lcr_up:
-			DEC dest+1		; correct signed delta! eeeeeek
-			JSR l_mvup		; move memory up
+lcr_down:
+; now is shorter, 
+			JSR l_plusD			; make dest = src + delta
+			JSR l_mvdn			; move memory down
 lcr_nomv:
 			_PLY				; retrieve optr
 			PLA
