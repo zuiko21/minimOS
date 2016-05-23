@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160522-2238
+; last modified 20160523-1320
 
 #ifndef	ROM
 #include "options.h"
@@ -254,7 +254,14 @@ lcr_else:
 				LDA key				; bigger value (new length)
 				SBC tmp				; C already set, subtract old length
 				STA tmp				; now it is delta (always positive)
-				JSR l_plusD			; make dest = src + delta
+; compute dest as src+delta (tmp)
+				LDA src				; get source LSB
+				CLC
+				ADC tmp				; add delta
+				STA dest			; as destination
+				LDA src+1			; now MSB
+				ADC #0				; propagate carry
+				STA dest+1			; pointers ready
 				JSR l_mvup			; move memory up
 				_BRA lcr_nomv
 lcr_down:
@@ -263,7 +270,14 @@ lcr_down:
 			SEC
 			SBC key					; subtract new value
 			STA tmp					; this is delta
-			JSR l_plusD			; make dest = src + delta
+; compute dest as src-delta (tmp)
+			LDA src				; get source LSB
+			SEC
+			SBC tmp				; subtract delta
+			STA dest			; as destination
+			LDA src+1			; now MSB
+			SBC #0				; propagate borrow
+			STA dest+1			; pointers ready
 			JSR l_mvdn			; move memory down
 lcr_nomv:
 			_PLY				; retrieve optr
@@ -569,17 +583,6 @@ hxi_proc:
 	JMP hex2byte			; now convert LSB in situ, and return
 
 ; ** business logic functions **
-; compute dest as src+delta (tmp)
-l_plusD:
-	LDA src				; get source LSB
-	CLC
-	ADC tmp				; add delta
-	STA dest			; as destination
-	LDA src+1			; now MSB
-	ADC #0				; propagate carry
-	STA dest+1			; pointers ready
-	RTS
-
 ; back to previous line (revamped)
 ; X returns skipped line length
 l_prev:
