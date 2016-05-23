@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5b6
+; v0.5b7
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160523-1320
+; last modified 20160523-1407
 
 #ifndef	ROM
 #include "options.h"
@@ -29,6 +29,7 @@
 #define	BACKSPACE	8
 #define	TAB			9
 #define	ESCAPE		27
+#define	SUBSTITUTE	'~'
 
 ; ##### include minimOS headers and some other stuff #####
 
@@ -266,10 +267,10 @@ lcr_else:
 				_BRA lcr_nomv
 lcr_down:
 ; now is shorter, move down
-			TYA						; bigger value (old)
+			TYA					; bigger value (old)
 			SEC
-			SBC key					; subtract new value
-			STA tmp					; this is delta
+			SBC key				; subtract new value
+			STA tmp				; this is delta
 ; compute dest as src-delta (tmp)
 			LDA src				; get source LSB
 			SEC
@@ -426,7 +427,7 @@ le_def:
 		STA l_buff, X		; store into buffer, 816-savvy!
 		CMP #TAB			; was a tabulator?
 		BNE ldf_prn			; regular char, do not convert
-			LDA #'~'			; substitution char
+			LDA #SUBSTITUTE		; substitution char
 ldf_prn:
 		JSR prnChar			; print 
 		INC key				; another char in buffer
@@ -718,6 +719,10 @@ lpm_loop:
 		_PHX				; save index, NMOS compatibility needs to be here
 		LDA l_buff, X		; get char from buffer, 816-savvy!
 			BEQ lpm_exit		; abort upon terminator, do not forget stacked index!
+		CMP #TAB			; is it a tabulation?
+		BNE lpm_prn			; print directly otherwise
+			LDA #SUBSTITUTE		; or show equivalence! eeeeeeek!
+lpm_prn:
 		JSR prnChar			; print it
 		_PLX				; restore index
 		INX					; next char
