@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b7
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160523-1407
+; last modified 20160524-0944
 
 #ifndef	ROM
 #include "options.h"
@@ -249,16 +249,15 @@ lcr_else:
 ; Y = old line length (ptr-optr)
 			CPY key				; compare old-new
 			BEQ lcr_nomv		; no need to move!
-			BCC lcr_down		; now is shorter
+			BCS lcr_down		; now is shorter
 ; now is longer, move up
 				STY tmp				; will be subtracted from new length
 				LDA key				; bigger value (new length)
+				SEC					; wtf
 				SBC tmp				; C already set, subtract old length
-				STA tmp				; now it is delta (always positive)
 ; compute dest as src+delta (tmp)
-				LDA src				; get source LSB
 				CLC
-				ADC tmp				; add delta
+				ADC src				; add delta to src
 				STA dest			; as destination
 				LDA src+1			; now MSB
 				ADC #0				; propagate carry
@@ -270,7 +269,7 @@ lcr_down:
 			TYA					; bigger value (old)
 			SEC
 			SBC key				; subtract new value
-			STA tmp				; this is delta
+			STA tmp				; this is delta, store temporarily
 ; compute dest as src-delta (tmp)
 			LDA src				; get source LSB
 			SEC
@@ -815,6 +814,47 @@ l_mvdn:
 	LDA src+1			; same for MSB
 	SBC dest+1
 	STA tmp2+1
+; --- supress debug code from here ---
+lda tmp
+pha
+lda tmp+1
+pha
+			LDY #<debug_md			; pointer to debug string
+			LDA #>debug_md
+			JSR prnStr				; print banner
+			LDA src+1			; 'src'
+			JSR prnHex
+			LDA src
+			JSR prnHex
+			LDA #' '			; space
+			JSR prnChar
+			LDA top+1			; 'tmp'
+			JSR prnHex
+			LDA top
+			JSR prnHex
+			LDA #' '			; space
+			JSR prnChar
+			LDA dest+1			; 'dest'
+			JSR prnHex
+			LDA dest
+			JSR prnHex
+			LDA #' '			; space
+			JSR prnChar
+			LDA tmp2+1			; 'delta'
+			JSR prnHex
+			LDA tmp2
+			JSR prnHex
+			LDA #CR
+			JSR prnChar
+pla
+			STA tmp+1
+pla
+			STA tmp
+			_BRA debug_md_end
+debug_md:
+	.asc	CR, "vvv(src,top,dest,delta)=", 0
+debug_md_end:
+; --- end of debug block ---
 	LDY #0				; let us try to optimise
 md_loop:
 		LDA (src), Y		; get origin
