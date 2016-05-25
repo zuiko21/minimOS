@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5b7
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160524-0944
+; last modified 20160525-1009
 
 #ifndef	ROM
 #include "options.h"
@@ -189,6 +189,7 @@ le_sw2:
 		CMP #DELETE			; was 'delete' command (^X)?
 		BNE le_sw3			; check next otherwise
 ; delete
+			_STZA edit			; no longer in edit mode
 			LDA cur				; is it at the beginning?
 			ORA cur+1			; do not forget MSB!
 				BEQ le_clbuf		; complain, clear buffer and continue
@@ -218,6 +219,7 @@ lcr_do:
 			LDX key				; this is really the index for buffer
 			LDA #0				; NULL terminator 
 			STA l_buff, X		; terminate buffer, 816-savvy
+			INC key				; done here
 			LDA edit			; edit in progress?
 			BNE lcr_else		; replace old content then
 				LDY ptr				; get current LSB
@@ -225,7 +227,7 @@ lcr_do:
 				STY src				; set source address = ptr!
 				STA src+1
 				TYA					; let us operate over the value on src
-				SEC					; plus one!!!
+				CLC
 				ADC key				; this serves as buflen(), really
 				STA dest			; set destination address LSB
 				LDA src+1			; now for the MSB
@@ -244,7 +246,6 @@ lcr_else:
 			STA src+1
 			PHA					; keep optr in stack!!!!!! eeeeeek!
 			_PHY				; order essential for NMOS compatibility
-			INC key				; buffer length plus newline
 			JSR l_next			; advance to next line
 ; Y = old line length (ptr-optr)
 			CPY key				; compare old-new
@@ -265,14 +266,14 @@ lcr_else:
 				JSR l_mvup			; move memory up
 				_BRA lcr_nomv
 lcr_down:
-; now is shorter, move down
+; now is shorter, move down *** still debugging ***
 			TYA					; bigger value (old)
-			SEC
+;			CLC					; other way to correct???
 			SBC key				; subtract new value
+;			_DEC				; why?????
 			STA tmp				; this is delta, store temporarily
 ; compute dest as src-delta (tmp)
 			LDA src				; get source LSB
-			SEC
 			SBC tmp				; subtract delta
 			STA dest			; as destination
 			LDA src+1			; now MSB
@@ -323,6 +324,7 @@ le_sw_debug:
 		CMP #UP				; was 'up' key (^W)?
 		BNE le_sw5			; check next otherwise
 ; line up
+			_STZA edit			; no longer in edit mode
 			LDA cur				; is it at the beginning?
 			ORA cur+1			; do not forget MSB!
 				BEQ lu_no			; complain, clear buffer and continue
@@ -340,6 +342,7 @@ le_sw5:
 		BNE le_sw6			; check next otherwise
 ; line down *** this is a common ending ***
 ldn_do:
+			_STZA edit			; no longer in edit mode
 			_LDAY(ptr)			; watch pointed
 			BNE ldn_pick		; not at end
 				JSR txtEnd			; complain
@@ -351,6 +354,7 @@ ldn_pick:
 le_sw6:
 		CMP #GOTO			; was 'go to' command (^G)?
 		BNE le_sw7			; check next otherwise
+			_STZA edit			; no longer in edit mode
 			LDY #<le_line		; get string address
 			LDA #>le_line
 			JSR prnStr			; prompt for line number
@@ -666,8 +670,7 @@ lsh_loop:
 		LDA (ptr), Y		; get char from memory
 		BNE lsh_cr			; abort upon terminator, do not forget stacked index!
 			PLA
-			JSR txtEnd			; complain
-			RTS					; that is it???
+			JMP txtEnd			; complain and return?
 lsh_cr:
 		CMP #CR				; newline will exit too, but in a different way
 			BEQ lsh_exit
@@ -678,7 +681,7 @@ lsh_cr:
 lsh_exit:
 	PLA					; discard saved index!!!
 	TYA					; get current offset
-	BEQ lsh_nw			; did not move, go away!
+;	BEQ lsh_nw			; did not move, go away! *** makes little sense now
 		SEC					; prepare... but from next! eeeeeeek!
 		ADC ptr				; add to current value
 		STA ptr				; update LSB
@@ -746,7 +749,7 @@ lph_exit:
 	LDA #CR				; terminator
 	STA (ptr), Y		; copied as newline
 	TYA					; get index
-	CLC					; prepare
+	SEC					; should skip trailing newline?????
 	ADC ptr				; add to LSB
 	STA ptr				; update
 	BCC lph_end			; will not cross page
