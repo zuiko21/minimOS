@@ -1,5 +1,5 @@
 ; Basic loader for minimOS (simple version)
-; v0.5a1
+; v0.5rc1
 ; last modified 20160525-1247
 ; (c) 2016 Carlos J. Santisteban
 
@@ -86,6 +86,7 @@ l_shut:
 txtptr:
 	.word	opt1	; as declared below
 	.word	opt2
+	.word	opt3
 	.word	optx	; exit, always present, includes prompt
 	.word	0		; last pointer is a double NUL
 
@@ -93,6 +94,7 @@ codeptr:
 	.word	l_shut	; common exit routine
 	.word	label1	; these are the addresses of the chunks of code
 	.word	label2
+	.word	label3
 
 ; *** on-screen texts ***
 ; these are content-dependent
@@ -100,6 +102,8 @@ opt1:
 	.asc	"1) M/L Monitor", 13, 0
 opt2:
 	.asc	"2) Line editor", 13, 0
+opt3:
+	.asc	"3) Disassembler (debug)", 13, 0
 ; these are always present
 optx:
 	.asc	13, "0) SHUTDOWN", 13, "?", 0
@@ -117,4 +121,10 @@ label2:
 .(
 #define	KERNEL
 #include "../apps/lined.s"
+.)
+
+label3:
+.(
+#define	KERNEL
+#include "shell/disasm.s"
 .)
