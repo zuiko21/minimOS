@@ -15,7 +15,7 @@
 #include "firmware/ARCH.h"
 #include "sysvars.h"
 .text
-user_sram	= $0400
++user_sram	= $0500
 #endif
 
 ; *** uncomment for narrow (20-char) displays ***

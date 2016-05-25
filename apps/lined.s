@@ -1,9 +1,9 @@
 ; line editor for minimOS!
-; v0.5b7
+; v0.5rc1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160525-1009
+; last modified 20160525-1320
 
-#ifndef	ROM
+#ifndef	KERNEL
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
@@ -48,12 +48,12 @@
 	l_buff	=	edit+2	; temporary input buffer
 	iodev	=	l_buff+LBUFSIZ	; standard I/O ##### minimOS specific #####
 
-	__last	= iodev+1	; ##### just for easier size check #####
+	__last1	= iodev+1	; ##### just for easier size check #####
 
 ; *** initialise the editor ***
 
 ; ##### minimOS specific stuff #####
-	LDA #__last-uz		; zeropage space needed
+	LDA #__last1-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
 	CMP z_used			; check available zeropage space
@@ -77,6 +77,9 @@ open_ed:
 ; ##### end of minimOS specific stuff #####
 
 	_STZA edit			; reset EDIT flag (false)
+	LDY #<le_splash		; get splash string
+	LDA #>le_splash
+	JSR prnStr			; print it!
 ; *** ask for text address (could be after loading) ***
 	LDA #'$'			; hex radix as prompt
 	JSR prnChar			; print it!
@@ -242,11 +245,13 @@ lcr_else:
 			_STZA edit			; no longer in edit mode
 			LDY ptr				; get original pointer (will stay)
 			LDA ptr+1
-			STY src				; store as src
-			STA src+1
 			PHA					; keep optr in stack!!!!!! eeeeeek!
 			_PHY				; order essential for NMOS compatibility
 			JSR l_next			; advance to next line
+			LDX ptr				; get NEW pointer eeeeeeeek!
+			LDA ptr+1
+			STX src				; store as src but keeping Y eeeeeek!
+			STA src+1
 ; Y = old line length (ptr-optr)
 			CPY key				; compare old-new
 			BEQ lcr_nomv		; no need to move!
@@ -266,11 +271,9 @@ lcr_else:
 				JSR l_mvup			; move memory up
 				_BRA lcr_nomv
 lcr_down:
-; now is shorter, move down *** still debugging ***
+; now is shorter, move down
 			TYA					; bigger value (old)
-;			CLC					; other way to correct???
-			SBC key				; subtract new value
-;			_DEC				; why?????
+			SBC key				; subtract new value, borrow already set
 			STA tmp				; this is delta, store temporarily
 ; compute dest as src-delta (tmp)
 			LDA src				; get source LSB
@@ -292,35 +295,6 @@ lcr_com:
 			JSR l_next			; advance to next line
 			JMP l_prlp			; prompt and continue!
 le_sw4:
-; --- supress debug code from here ---
-		CMP #4					; was 'debug' key (^D)?
-		BNE le_sw_debug			; check next otherwise
-			LDY #<debug_str			; pointer to debug string
-			LDA #>debug_str
-			JSR prnStr				; print banner
-			LDA start+1			; 'start'
-			JSR prnHex
-			LDA start
-			JSR prnHex
-			LDA #' '			; space
-			JSR prnChar
-			LDA ptr+1			; 'ptr'
-			JSR prnHex
-			LDA ptr
-			JSR prnHex
-			LDA #' '			; space
-			JSR prnChar
-			LDA top+1			; 'top'
-			JSR prnHex
-			LDA top
-			JSR prnHex
-			LDA #CR
-			JSR prnChar
-			JMP l_prlp
-debug_str:
-	.asc	CR, "(start,ptr,top)=", 0
-le_sw_debug:
-; --- end of debug block ---
 		CMP #UP				; was 'up' key (^W)?
 		BNE le_sw5			; check next otherwise
 ; line up
@@ -817,47 +791,6 @@ l_mvdn:
 	LDA src+1			; same for MSB
 	SBC dest+1
 	STA tmp2+1
-; --- supress debug code from here ---
-lda tmp
-pha
-lda tmp+1
-pha
-			LDY #<debug_md			; pointer to debug string
-			LDA #>debug_md
-			JSR prnStr				; print banner
-			LDA src+1			; 'src'
-			JSR prnHex
-			LDA src
-			JSR prnHex
-			LDA #' '			; space
-			JSR prnChar
-			LDA top+1			; 'tmp'
-			JSR prnHex
-			LDA top
-			JSR prnHex
-			LDA #' '			; space
-			JSR prnChar
-			LDA dest+1			; 'dest'
-			JSR prnHex
-			LDA dest
-			JSR prnHex
-			LDA #' '			; space
-			JSR prnChar
-			LDA tmp2+1			; 'delta'
-			JSR prnHex
-			LDA tmp2
-			JSR prnHex
-			LDA #CR
-			JSR prnChar
-pla
-			STA tmp+1
-pla
-			STA tmp
-			_BRA debug_md_end
-debug_md:
-	.asc	CR, "vvv(src,top,dest,delta)=", 0
-debug_md_end:
-; --- end of debug block ---
 	LDY #0				; let us try to optimise
 md_loop:
 		LDA (src), Y		; get origin
@@ -901,47 +834,6 @@ l_mvup:
 	ADC tmp2+1			; new size
 	STA top+1			; complete pointer
 	STA dest+1			; use dest locally
-; --- supress debug code from here ---
-lda tmp
-pha
-lda tmp+1
-pha
-			LDY #<debug_mu			; pointer to debug string
-			LDA #>debug_mu
-			JSR prnStr				; print banner
-			LDA src+1			; 'src'
-			JSR prnHex
-			LDA src
-			JSR prnHex
-			LDA #' '			; space
-			JSR prnChar
-			LDA top+1			; 'tmp'
-			JSR prnHex
-			LDA top
-			JSR prnHex
-			LDA #' '			; space
-			JSR prnChar
-			LDA dest+1			; 'dest'
-			JSR prnHex
-			LDA dest
-			JSR prnHex
-			LDA #' '			; space
-			JSR prnChar
-			LDA tmp2+1			; 'delta'
-			JSR prnHex
-			LDA tmp2
-			JSR prnHex
-			LDA #CR
-			JSR prnChar
-pla
-			STA tmp+1
-pla
-			STA tmp
-			_BRA debug_mu_end
-debug_mu:
-	.asc	CR, "(src,tmp,dest,delta)=", 0
-debug_mu_end:
-; --- end of debug block ---
 ; go for the loop
 	LDY #0				; initial value! will decrease afterwards
 mu_loop:
@@ -994,6 +886,8 @@ txtEnd:
 ; *** strings and data ***
 le_title:
 	.asc	"Line Editor", 0
+le_splash:
+	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
 le_start:
 	.asc	CR, "{start}", 0
 le_end:
