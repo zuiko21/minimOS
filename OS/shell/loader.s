@@ -1,6 +1,6 @@
 ; Basic loader for minimOS (simple version)
 ; v0.5rc1
-; last modified 20160525-1247
+; last modified 20160526-1404
 ; (c) 2016 Carlos J. Santisteban
 
 #ifndef	KERNEL
@@ -103,7 +103,7 @@ opt1:
 opt2:
 	.asc	"2) Line editor", 13, 0
 opt3:
-	.asc	"3) Disassembler (debug)", 13, 0
+	.asc	"3) miniMoDA (debug)", 13, 0
 ; these are always present
 optx:
 	.asc	13, "0) SHUTDOWN", 13, "?", 0
@@ -126,5 +126,5 @@ label2:
 label3:
 .(
 #define	KERNEL
-#include "shell/disasm.s"
+#include "shell/miniMoDA.s"
 .)
