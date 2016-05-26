@@ -1,6 +1,6 @@
 ; Monitor shell with disassembler for minimOS
-; v0.5a2
-; last modified 20160526-1000
+; v0.5rc1
+; last modified 20160526-1345
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -263,10 +263,12 @@ po_loop:
 		CMP #'%'			; relative addressing
 		BNE po_nrel			; currently the same as single byte!
 ; put here specific code for relative arguments!
+			_BRA po_sbyte		; *** placeholder
 po_nrel:
 		CMP #'@'			; single byte operand
 		BNE po_nbyt			; otherwise check word-sized operand
 ; could check also for undefined references!!!
+po_sbyte:
 			LDA #'$'			; hex radix
 			JSR prnChar
 			LDY bytes			; retrieve instruction index
@@ -309,7 +311,30 @@ po_done:
 		BNE po_loop			; will work as no opcode string near 256 bytes long!
 po_end:
 ; add spaces until 20 chars!
+		LDA #13				; number of chars after the initial 7
+		CMP count			; already done?
+	BEQ po_dump			; go for dump then
+		LDA #' '			; otherwise print a space
+		JSR prnChar
+		INC count			; eeeeeeeeeeeek
+		BNE po_end			; until complete, again no need for BRA
 ; print hex dump as a comment!
+po_dump:
+	LDA #';'			; semicolon as comment introducer
+	JSR prnChar
+	LDY #0				; reset index
+	STY tmp3			; save index (no longer scan)
+po_dbyt:
+		LDA #' '			; leading space
+		JSR prnChar
+		LDY tmp3			; retrieve index
+		LDA (tmp2), Y		; get current byte in instruction
+		JSR prnHex			; show as hex
+		INC tmp3			; next
+		LDX bytes			; get limit (-1)
+		INX					; correct for post-increased
+		CPX tmp3			; compare current count
+		BNE po_dbyt			; loop until done
 ; skip all bytes and point to next opcode
 	LDA tmp2			; address LSB
 	SEC					; skip current opcode...
