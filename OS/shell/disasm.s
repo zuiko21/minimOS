@@ -1,6 +1,6 @@
 ; Monitor shell with disassembler for minimOS
-; v0.5a1
-; last modified 20160525-1441
+; v0.5a2
+; last modified 20160526-1000
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -48,10 +48,13 @@
 	_psr	= _sp+1		; status register
 	cursor	= _psr+1	; storage for X offset
 	buffer	= cursor+1		; storage for input line (BUFSIZ chars)
-	tmp		= buffer+BUFSIZ	; temporary storage
+	tmp		= buffer+BUFSIZ	; temporary storage, used by prnHex
 	tmp2	= tmp+2		; for hex dumps
-	tmp3	= tmp2+2	; more storage
-	iodev	= tmp3+1	; standard I/O ##### minimOS specific #####
+	tmp3	= tmp2+2	; more storage, also for indexes
+	scan	= tmp3+1	; pointer to opcode list
+	count	= scan+2	; char count for screen formatting
+	bytes	= count+1	; bytes per instruction
+	iodev	= bytes+1	; standard I/O ##### minimOS specific #####
 
 	__last	= iodev+1	; ##### just for easier size check #####
 
@@ -127,7 +130,7 @@ main_loop:
 		JSR call_mcmd		; call monitor command
 		_BRA main_loop		; continue forever
 ;not_mcmd:
-;	LDA #>err_mmod		; address of error message
+;	LDA #>err_mmod		; address oftmp3 error message
 ;	LDY #<err_mmod
 ;	_BRA d_error		; display error
 bad_cmd:
@@ -200,16 +203,6 @@ disassemble:
 	LDX lines			; get counter
 das_l:
 		_PHX				; save counters
-		LDA #'_'			; make it self-hosting
-		JSR prnChar
-		LDA tmp2+1			; address MSB *** this may go into printOpcode
-		JSR prnHex			; print it
-		LDA tmp2			; same for LSB
-		JSR prnHex
-		LDA #$3A			; code of the colon character
-		JSR prnChar
-		LDA #' '			; leading space, might use string
-		JSR prnChar
 ; time to show the opcode and trailing spaces until 20 chars
 		JSR disOpcode		; dissassemble one opcode @tmp2 (will print it)
 		_PLX				; retrieve counter
@@ -218,52 +211,115 @@ das_l:
 	RTS
 
 disOpcode:
+	_LDAY(tmp2)			; check pointed opcode
+	STA tmp3			; keep for comparisons, was tmp[2] in C
 	LDY #<da_oclist		; get address of opcode list
 	LDA #>da_oclist
-	_STZA tmp			; use tmp as scan (indirect-indexed)
-	STA tmp+1
-	LDX #0				; counter of skipped opcodes (will it need zp var?)
+	_STZA scan			; indirect-indexed pointer
+	STA scan+1
+	LDX #0				; counter of skipped opcodes
 do_chkopc:
-#ifdef	NMOS
-		_PHY				; save without indirect!
-#endif
-		_LDAY(tmp2)			; check pointed
-		STA tmp3			; temporarily
-#ifdef	NMOS
-		_PLY				; retrieve without indirect!
-#endif
 		CPX tmp3			; check if desired opcode already pointed
 			BEQ do_found		; no more to skip
 do_skip:
-			LDA (tmp), Y		; get char in list
+			LDA (scan), Y		; get char in list
 			BMI do_other		; found end-of-opcode mark (bit 7)
 			INY
 			BNE do_skip			; next char in list if not crossed
-				INC tmp+1			; otherwise correct MSB
+				INC scan+1			; otherwise correct MSB
 			_BRA do_skip
 do_other:
+		INY					; needs to point to actual opcode, not previous end eeeeeek!
+		BNE do_set			; if not crossed
+			INC scan+1			; otherwise correct MSB
+do_set:
 		INX					; yet another opcode skipped
 		BNE do_chkopc		; until list is done ***should not arrive here***
 do_found:
-	STY tmp				; restore pointer
-brk
-	_LDAY(tmp2)			; ****placeholder
-	JSR prnOpcode
-	LDX #2				; ****placeholder
-	TXA					; get offset
-	CLC
-	ADC tmp2			; add to current address
-	STA tmp2
-	BCC do_nowr			; in case of page crossing
-		INC tmp2+1
-do_nowr:
-	RTS
+	STY scan			; restore pointer
+; this is a fully defined opcode, when symbolic assembler is available!
+	JMP prnOpcode		; show all and return
 
 prnOpcode:
-	JSR prnHex
-	LDA #CR
+; first goes the current address in label style
+	LDA #'_'			; make it self-hosting
 	JSR prnChar
-	RTS
+	LDA tmp2+1			; address MSB *** this may go into printOpcode
+	JSR prnHex			; print it
+	LDA tmp2			; same for LSB
+	JSR prnHex
+	LDA #$3A			; code of the colon character
+	JSR prnChar
+	LDA #' '			; leading space, might use string
+	JSR prnChar
+; then extract the opcode string from scan
+	LDY #0				; scan increase, temporarily stored in tmp3
+	STY bytes			; number of bytes to be dumped (-1)
+	STY count			; printed chars for proper formatting
+po_loop:
+		LDA (scan), Y		; get char in opcode list
+		STY tmp3			; keep index as will be destroyed
+		AND #$7F			; filter out possible end mark
+		CMP #'%'			; relative addressing
+		BNE po_nrel			; currently the same as single byte!
+; put here specific code for relative arguments!
+po_nrel:
+		CMP #'@'			; single byte operand
+		BNE po_nbyt			; otherwise check word-sized operand
+; could check also for undefined references!!!
+			LDA #'$'			; hex radix
+			JSR prnChar
+			LDY bytes			; retrieve instruction index
+			INY					; point to operand!
+			LDA (tmp2), Y		; get whatever byte
+			STY bytes			; correct index
+			JSR prnHex			; show in hex
+			LDX #3				; number of chars to add
+			_BRA po_done		; update count and continue
+po_nbyt:
+		CMP #'&'			; word operand
+		BNE po_nwd			; otherwise is normal char
+; could check also for undefined references!!!
+			LDA #'$'			; hex radix
+			JSR prnChar
+			LDY bytes			; retrieve instruction index
+			INY					; point to operand MSB!
+			INY
+			STY bytes			; save here as will back off for LSB
+			LDA (tmp2), Y		; get whatever byte
+			JSR prnHex			; show in hex
+			LDY bytes			; retrieve final index
+			DEY					; back to LSB
+			LDA (tmp2), Y		; get whatever byte
+			JSR prnHex			; show in hex
+			LDX #5				; five more chars
+			_BRA po_done		; update count and continue
+po_nwd:
+		JSR prnChar			; just print it
+		INC count			; yet another char
+po_done:
+		TXA					; increase of number of chars
+		CLC
+		ADC count			; add to previous value
+		STA count			; update value
+		LDY tmp3			; get scan index
+		LDA (scan), Y		; get current char again
+			BMI po_end			; opcode ended, no more to show
+		INY					; go for next char otherwise
+		BNE po_loop			; will work as no opcode string near 256 bytes long!
+po_end:
+; add spaces until 20 chars!
+; print hex dump as a comment!
+; skip all bytes and point to next opcode
+	LDA tmp2			; address LSB
+	SEC					; skip current opcode...
+	ADC bytes			; ...plus number of operands
+	STA tmp2
+	BCC po_nowr			; in case of page crossing
+		INC tmp2+1
+po_nowr:
+	LDA #CR				; final newline
+	JMP prnChar			; print it and return
 
 examine:
 	JSR fetch_word		; get address
