@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5a1
-; last modified 20160526-1435
+; v0.5a2
+; last modified 20160527-0957
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -152,6 +152,7 @@ sc_in:
 sc_adv:
 		INC cursor			; ...and input buffer
 		JSR getNextChar		; pick next valid char
+		STA tmp3			; eeeeeeeek
 		TAX					; terminator?
 		BNE sc_in			; if not, continue checking
 	_BRA main_loop
@@ -161,6 +162,7 @@ lda #'~'
 jsr prnChar
 _ply
 ; *************should get cursor back to initial value!
+	_STZA cursor
 		LDA (scan), Y		; check list contents
 			BMI nx_opc			; try next opcode
 		INY
@@ -169,10 +171,6 @@ _ply
 			BNE no_match			; no need for BRA eeeeeek
 nx_opc:
 	; **************************
-	_STZA cursor
-	
-	JSR getNextChar
-	
 	; **************************************************
 	_BRA main_loop		; continue
 
