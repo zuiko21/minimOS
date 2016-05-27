@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a2
-; last modified 20160527-0957
+; last modified 20160527-1107
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -144,6 +144,19 @@ not_mcmd:
 	STA scan+1
 sc_in:
 		LDA (scan), Y		; get something in list
+		CMP #'%'			; relative addressing?
+		BNE sc_nrel
+			; *****
+sc_nrel:
+		CMP #'@'			; single byte operand?
+		BNE sc_nsbyt
+			; *****
+sc_nsbyt:
+		CMP #'&'			; word-sized operand? hope it is OK
+		BNE sc_nwrd
+			; ****
+sc_nwrd:
+; regular char in list, compare with input
 		CMP tmp3			; coincides with input?
 			BNE no_match		; try another opcode
 		INY					; otherwise advance char in list...
@@ -151,28 +164,59 @@ sc_in:
 			INC scan+1
 sc_adv:
 		INC cursor			; ...and input buffer
-		JSR getNextChar		; pick next valid char
-		STA tmp3			; eeeeeeeek
-		TAX					; terminator?
-		BNE sc_in			; if not, continue checking
+		JSR checkEnd		; is there anything more? TO DO***
+
 	_BRA main_loop
 no_match:
-_phy
-lda #'~'
-jsr prnChar
-_ply
 ; *************should get cursor back to initial value!
-	_STZA cursor
+		_STZA cursor
+; skip current opcode
 		LDA (scan), Y		; check list contents
 			BMI nx_opc			; try next opcode
 		INY
 			BNE no_match		; scan until the end of the opcode
-		INC scan+1				; eeeeeeek
-			BNE no_match			; no need for BRA eeeeeek
+		INC scan+1			; eeeeeeek
+			BNE no_match		; no need for BRA eeeeeek
 nx_opc:
-	; **************************
-	; **************************************************
-	_BRA main_loop		; continue
+		INY
+		BNE opc_skpd		; get into next opcode
+			INC scan+1
+opc_skpd:
+; increase opcode count
+		INC count			; try next opcode
+			BEQ opc_nrec		; nothing more to check!
+	; if over 255, all checked! otherwise continue without error
+		LDA (scan), Y		; check list contents, might use a double bit-7 termination!
+		BMI fin_loop		; match or error!
+			DEC cursor			; correction needed???
+			JSR getNextChar
+			_BRA main_loop		; hope it is OK
+fin_loop:
+		; check whether is match or error
+		BNE opc_ok			; if recognised
+opc_nrec:
+			_STZA bytes			; set count to stay here
+			LDY #<opc_error		; error message
+			LDA #>opc_error
+			JSR prnStr			; print error
+			_BRA main_loop		; continue
+opc_ok:
+		LDY bytes			; set pointer to last argument
+poke_loop:
+			LDA tmp-1, Y		; get argument, note trick, 816-savvy???
+			STA (ptr), Y		; store in RAM
+			DEY					; next byte
+			BPL poke_loop		; could start on zero
+		LDA count			; opcode is invalid, I am afraid
+		_STAY(ptr)			; poke it
+; should call disassembly ****
+; increase pointer
+		CLC
+		ADC ptr				; add to LSB
+		STA ptr				; update
+			BCC main_loop		; all done
+		INC ptr+1			; otherwise check MSB
+			_BRA main_loop		; should not wrap anyway
 
 ; *** call command routine ***
 call_mcmd:
