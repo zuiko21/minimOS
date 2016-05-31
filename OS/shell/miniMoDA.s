@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a2
-; last modified 20160527-1107
+; last modified 20160531-0942
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -140,10 +140,12 @@ not_mcmd:
 	STA tmp3			; will store char in input
 	LDY #<da_oclist		; get list address
 	LDA #>da_oclist
+	_STZX count			; reset opcode counter (aka tmp[2])
 	_STZX scan			; store pointer (indirect-indexed)
 	STA scan+1
 sc_in:
 		LDA (scan), Y		; get something in list
+		AND #$7F			; eeeeeeeeek
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 			; *****
@@ -159,20 +161,24 @@ sc_nwrd:
 ; regular char in list, compare with input
 		CMP tmp3			; coincides with input?
 			BNE no_match		; try another opcode
+		LDA (scan), Y		; recheck for bit-7
+		BPL op_nfound		; opcode continues
+			JSR checkEnd		; anything else?
+			BCC opc_ok			; already at end is perfect match!
+op_nfound:
 		INY					; otherwise advance char in list...
 		BNE sc_adv			; eeeeeek
 			INC scan+1
 sc_adv:
 		INC cursor			; ...and input buffer
 		JSR checkEnd		; is there anything more? TO DO***
-
-	_BRA main_loop
+	BCS main_loop		; already at end means reset and try next!
 no_match:
 ; *************should get cursor back to initial value!
 		_STZA cursor
 ; skip current opcode
 		LDA (scan), Y		; check list contents
-			BMI nx_opc			; try next opcode
+			BMI nx_opc			; end-of-opcode
 		INY
 			BNE no_match		; scan until the end of the opcode
 		INC scan+1			; eeeeeeek
@@ -185,12 +191,9 @@ opc_skpd:
 ; increase opcode count
 		INC count			; try next opcode
 			BEQ opc_nrec		; nothing more to check!
-	; if over 255, all checked! otherwise continue without error
-		LDA (scan), Y		; check list contents, might use a double bit-7 termination!
-		BMI fin_loop		; match or error!
-			DEC cursor			; correction needed???
-			JSR getNextChar
-			_BRA main_loop		; hope it is OK
+		DEC cursor			; correction needed???
+		JSR getNextChar
+		_BRA main_loop		; hope it is OK
 fin_loop:
 		; check whether is match or error
 		BNE opc_ok			; if recognised
