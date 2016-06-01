@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a2
-; last modified 20160531-0942
+; last modified 20160601-0934
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -193,7 +193,7 @@ opc_skpd:
 			BEQ opc_nrec		; nothing more to check!
 		DEC cursor			; correction needed???
 		JSR getNextChar
-		_BRA main_loop		; hope it is OK
+		JMP main_loop		; hope it is OK
 fin_loop:
 		; check whether is match or error
 		BNE opc_ok			; if recognised
@@ -202,7 +202,7 @@ opc_nrec:
 			LDY #<opc_error		; error message
 			LDA #>opc_error
 			JSR prnStr			; print error
-			_BRA main_loop		; continue
+			JMP main_loop		; continue
 opc_ok:
 		LDY bytes			; set pointer to last argument
 poke_loop:
@@ -217,9 +217,10 @@ poke_loop:
 		CLC
 		ADC ptr				; add to LSB
 		STA ptr				; update
-			BCC main_loop		; all done
-		INC ptr+1			; otherwise check MSB
-			_BRA main_loop		; should not wrap anyway
+		BCC op_done			; not done
+			INC ptr+1			; otherwise check MSB
+op_done:
+		JMP main_loop		; should not wrap anyway
 
 ; *** call command routine ***
 call_mcmd:
@@ -843,6 +844,9 @@ gn_fin:
 			BNE gn_fin
 	RTS
 
+checkEnd:
+; ******** TO DO    TO DO     TO DO ******************
+	RTS
 
 ; * fetch one byte from buffer, value in A *
 fetch_byte:
@@ -903,6 +907,9 @@ err_mmod:
 
 err_bad:
 	.asc	"*** Bad command ***", CR, 0
+
+opc_error:
+	.asc	"*** Bad opcode ***", CR, 0
 
 regs_head:
 #ifdef	NARROW
