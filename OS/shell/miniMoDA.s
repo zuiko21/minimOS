@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a3
-; last modified 20160601-1337
+; last modified 20160601-1356
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -39,17 +39,17 @@
 -shell:
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
-	ptr		= uz		; current address pointer *** might be unified with _pc even in simple monitor
-	siz		= ptr+2		; number of bytes to copy or transfer ('n')
-	lines	= siz+2		; lines to dump ('u')
-	_pc		= lines+1	; PC, would be filled by NMI/BRK handler
+	ptr		= uz		; current address pointer, would be filled by NMI/BRK handler
+	_pc		= ptr		; ***unified variables, keep both names for compatibility***
 	_a		= _pc+2		; A register
 	_x		= _a+1		; X register
 	_y		= _x+1		; Y register
 	_sp		= _y+1		; stack pointer
 	_psr	= _sp+1		; status register
-	cursor	= _psr+1	; storage for X offset
-	buffer	= cursor+1		; storage for input line (BUFSIZ chars)
+	siz		= _psr+1	; number of bytes to copy or transfer ('n')
+	lines	= siz+2		; lines to dump ('u')
+	cursor	= lines+1	; storage for cursor offset, now on Y
+	buffer	= cursor+1	; storage for input line (BUFSIZ chars)
 	tmp		= buffer+BUFSIZ	; temporary storage, used by prnHex
 	tmp2	= tmp+2		; for hex dumps
 	tmp3	= tmp2+2	; more storage, also for indexes
@@ -410,7 +410,7 @@ po_end:
 ; add spaces until 20 chars!
 		LDA #13				; number of chars after the initial 7
 		CMP count			; already done?
-	BEQ po_dump			; go for dump then
+	BCC po_dump			; go for dump then, even if over
 		LDA #' '			; otherwise print a space
 		JSR prnChar
 		INC count			; eeeeeeeeeeeek
