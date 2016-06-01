@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a3
-; last modified 20160601-1400
+; last modified 20160601-1438
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -141,16 +141,14 @@ d_error:
 	_BRA main_loop		; continue
 not_mcmd:
 ; ** try to assemble the opcode! **
-; might use the _pc variable as ptr???
-	STA tmp3			; will store char in input
+	STY tmp3			; keep original offset! new
 	LDY #<da_oclist		; get list address
 	LDA #>da_oclist
 	_STZX count			; reset opcode counter (aka tmp[2])
-	_STZX scan			; store pointer (indirect-indexed)
+	STA scan			; store pointer
 	STA scan+1
 sc_in:
-		LDA (scan), Y		; get something in list
-		AND #$7F			; eeeeeeeeek
+		JSR getListChar		; new, will return c in A and x as carry bit!
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 			; *****
@@ -164,35 +162,43 @@ sc_nsbyt:
 			; ****
 sc_nwrd:
 ; regular char in list, compare with input
-		CMP tmp3			; coincides with input?
+		LDY cursor			; let us see what we have
+		CMP (bufpt), Y		; coincides with input?
 			BNE no_match		; try another opcode
-		LDA (scan), Y		; recheck for bit-7
-		BPL op_nfound		; opcode continues
+		JSR getListChar		; recheck bit 7
+		BCC op_advance		; opcode continues
 			JSR checkEnd		; anything else?
 			BCC opc_ok			; already at end is perfect match!
-op_nfound:
-		INY					; otherwise advance char in list...
+; should be a loop looking for the opcode end! *******************
+op_advance:
+		INC scan			; otherwise advance char in list...
 		BNE sc_adv			; eeeeeek
 			INC scan+1
 sc_adv:
-		INC cursor			; ...and input buffer
-		JSR checkEnd		; is there anything more? TO DO***
-	BCS main_loop		; already at end means reset and try next!
+		INC cursor			; ...and in input buffer
+		JSR checkEnd		; is there anything more?
+		BCC sc_nwrd			; if so, keep comparing
 no_match:
-; *************should get cursor back to initial value!
-		_STZA cursor
+; get cursor back to initial value!
+		LDA tmp3			; get original cursor value, new
+		STA cursor			; reset cursor
 ; skip current opcode
-		LDA (scan), Y		; check list contents
+		LDY scan			; worth indirect indexed?
+		_STZA scan
+sc_skip:
+			LDA (scan), Y		; check list contents
 			BMI nx_opc			; end-of-opcode
 		INY
-			BNE no_match		; scan until the end of the opcode
+			BNE sc_skip			; scan until the end of the opcode
 		INC scan+1			; eeeeeeek
-			BNE no_match		; no need for BRA eeeeeek
+			BNE sc_skip			; no need for BRA eeeeeek
 nx_opc:
 		INY
 		BNE opc_skpd		; get into next opcode
 			INC scan+1
 opc_skpd:
+		STY scan			; restore pointer!
+		; *************************
 ; increase opcode count
 		INC count			; try next opcode
 			BEQ opc_nrec		; nothing more to check!
@@ -857,6 +863,23 @@ gn_fin:
 gn_exit:
 	STY cursor			; worth updating here!
 	SEC					; new, indicates line has ended because one of the above
+	RTS
+
+; * get clean character from opcode list, set Carry if last one! *
+getListChar:
+		_LDAY(scan)			; get current
+		CMP #' '			; is it blank?
+			BNE glc_do			; found something interesting
+		INC scan			; try next
+		BNE getListChar		; if did not wrap
+			INC scan+1			; otherwise carry on
+		_BRA getListChar	; *** might use BNE as well
+glc_do:
+	CLC					; normally not the end
+	BPL glc_end			; it was not
+		SEC					; otherwise do x=128
+glc_end:
+	AND #$7F			; most convenient!
 	RTS
 
 checkEnd:
