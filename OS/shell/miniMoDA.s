@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a3
-; last modified 20160601-1356
+; last modified 20160601-1400
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -15,7 +15,6 @@
 #include "firmware/ARCH.h"
 #include "sysvars.h"
 .text
-+user_sram	= $0500
 #endif
 
 ; *** uncomment for narrow (20-char) displays ***
@@ -88,10 +87,7 @@ open_da:
 ; ##### end of minimOS specific stuff #####
 
 ; global variables
-	LDA #>user_sram		; initial address ##### provided by rom.s, but may be changed #####
-	LDY #<user_sram		; ### no need to do all this if unified as _pc (will be set by BRK/NMI)
-	STY ptr				; store LSB
-	STA ptr+1			; and MSB
+; will no longer set ptr, as should be done by BRK/NMI handler as _pc
 	LDA #4				; standard number of lines
 	STA lines			; set variable
 	STA siz				; also default transfer size

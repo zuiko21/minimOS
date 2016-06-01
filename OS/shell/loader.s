@@ -1,6 +1,6 @@
 ; Basic loader for minimOS (simple version)
-; v0.5rc2
-; last modified 20160527-0910
+; v0.5rc3
+; last modified 20160601-1407
 ; (c) 2016 Carlos J. Santisteban
 
 #ifndef	KERNEL
@@ -13,7 +13,6 @@
 #include "firmware/ARCH.h"
 #include "sysvars.h"
 .text
-+user_sram	=	$0500
 #endif
 
 ; *** zeropage variables ***
@@ -68,6 +67,8 @@ menu_exit:
 ; should probably close/free device
 	LDA io_c		; get key
 	AND #$0F		; filter number
+	CMP #3+1		; *** first incorrect option!!! ***
+		BCS loader_init	; beyond available options!
 	ASL				; twice
 	TAX				; use as index
 	JSR l_call		; execute option
