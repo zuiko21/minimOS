@@ -296,7 +296,7 @@ int main(void) {
 			}
 			continue;			// command ended, ask for another
 		} //else printf("***Missing module***\n");	// *** REMOVE else with assembler
-/* *** for symbolic assembler only *** */
+/* *** for symbolic assembler only *** /
 		if (b=='_') {			// a label is being defined
 printf("\nDefining");
 			scanLabel();					// looks for a label in symbol table, (sal) if found
@@ -507,7 +507,7 @@ void checkEnd(void) {			// check whether there's no more in the input line
 void fetchValue(int bytes) {	// advance to the next n bytes, convert into tmp[0...1]
 	udfd = 0;					// assume defined value, this far
 	getNextChar();				// advance to operand
-/* symbolic reference */
+/* symbolic reference /
 	if (b=='_') {				// that is a symbolic reference
 printf("\nSymbol:");
 		scanLabel();			// check label, (x) if match found
@@ -593,7 +593,7 @@ printf("'\n");
 			tmp[i] = value;			// store converted value
 		}
 		count = i;					// size as supplied
-	}	// *** remove this } if no symbols are to be detected
+	//}	// *** remove this } if no symbols are to be detected
 }
 
 void disassemble(void) {		// disassemble for one opcode
@@ -661,7 +661,7 @@ void opcodePrint(void) {		// prints instruction and hexdump
 		}
 		printf("\n");
 }
-
+/*
 void scanLabel(void) {			// looks for a label in symbol table, (x) if found
 			getNextChar();		// load it
 			os = cursor;		// remember position in order to return
@@ -689,13 +689,13 @@ printf(", ");
 			}
 printf("]\n");
 }
-
+*/
 void init(void) {		// initialize variables
 	ptr = 0x400;			// set initial address
 	siz = 0;				// copy/transfer size
 	lines = 4;				// lines to disassemble/display
 
-/* in case symbolic assembler is used */
+/* in case symbolic assembler is used /
 	empty = 0;				// first empty entry in symbol table (8*used symbols)
 	lref  = 0;				// last undefined reference offset
 	undef = 0;				// number of undefined references

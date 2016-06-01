@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a2
-; last modified 20160601-0934
+; last modified 20160601-0958
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -136,7 +136,8 @@ d_error:
 	JSR prnStr			; display error
 	_BRA main_loop		; continue
 not_mcmd:
-; try to assemble the opcode!
+; ** try to assemble the opcode! **
+; might use the _pc variable as ptr???
 	STA tmp3			; will store char in input
 	LDY #<da_oclist		; get list address
 	LDA #>da_oclist
