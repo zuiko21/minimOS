@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5a2
-; last modified 20160601-0958
+; v0.5a3
+; last modified 20160601-1337
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -26,6 +26,8 @@
 #define	CR			13
 #define	BS			8
 #define	BEL			7
+#define	COLON		58
+
 ; bytes per line in dumps 4 or 8/16
 #ifdef	NARROW
 #define		PERLINE		4
@@ -37,7 +39,7 @@
 -shell:
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
-	ptr		= uz		; current address pointer
+	ptr		= uz		; current address pointer *** might be unified with _pc even in simple monitor
 	siz		= ptr+2		; number of bytes to copy or transfer ('n')
 	lines	= siz+2		; lines to dump ('u')
 	_pc		= lines+1	; PC, would be filled by NMI/BRK handler
@@ -52,7 +54,8 @@
 	tmp2	= tmp+2		; for hex dumps
 	tmp3	= tmp2+2	; more storage, also for indexes
 	scan	= tmp3+1	; pointer to opcode list
-	count	= scan+2	; char count for screen formatting
+	bufpt	= scan+2	; NEW pointer to variable buffer
+	count	= bufpt+2	; char count for screen formatting
 	bytes	= count+1	; bytes per instruction
 	iodev	= bytes+1	; standard I/O ##### minimOS specific #####
 
@@ -86,7 +89,7 @@ open_da:
 
 ; global variables
 	LDA #>user_sram		; initial address ##### provided by rom.s, but may be changed #####
-	LDY #<user_sram
+	LDY #<user_sram		; ### no need to do all this if unified as _pc (will be set by BRK/NMI)
 	STY ptr				; store LSB
 	STA ptr+1			; and MSB
 	LDA #4				; standard number of lines
@@ -103,6 +106,12 @@ get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
 
+; *** NEW variable buffer setting ***
+	LDY #<buffer		; get LSB that is full address in zeropage
+	LDA #0				; ### in case of '816 should be TDC, XBA!!! ###
+	STY bufpt			; set new movable pointer
+	STA bufpt+1
+
 ; *** begin things ***
 main_loop:
 ; put current address before prompt
@@ -113,14 +122,13 @@ main_loop:
 		LDA #'>'		; prompt character
 		JSR prnChar			; print it
 		JSR getLine			; input a line
-		LDX #$FF			; getNextChar will advance it to zero!
+		LDY #$FF			; getNextChar will advance it to zero!
 		JSR gnc_do			; get first character on string, without the variable
-		TAY					; just in case...
+		TAX					; just in case...
 			BEQ main_loop		; ignore blank lines! 
 		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 			BNE not_mcmd		; not a monitor command
 		JSR gnc_do			; get into command byte otherwise
-		STX cursor			; save cursor!
 		CMP #'Z'+1			; past last command?
 			BCS bad_cmd			; unrecognised
 		SBC #'A'-1			; first available command (had borrow)
@@ -193,7 +201,7 @@ opc_skpd:
 		INC count			; try next opcode
 			BEQ opc_nrec		; nothing more to check!
 		DEC cursor			; correction needed???
-		JSR getNextChar
+		JSR getNextChar		; *******check new format***********
 		JMP main_loop		; hope it is OK
 fin_loop:
 		; check whether is match or error
@@ -578,10 +586,11 @@ quit:
 
 ; ** .S = store raw string **
 store_str:
-		INC cursor			; skip the S and increase, not INY
-		LDY cursor			; allows NMOS macro!
-		LDA buffer, Y		; get raw character
-		_STAY(ptr)			; store in place, STAX will not work
+	LDY cursor			; allows NMOS macro!
+sst_loop:
+		INY					; skip the S and increase
+		LDA (bufpt), Y		; get raw character
+		_STAX(ptr)			; store in place, respect Y but now X is OK to use in NMOS
 #ifdef	NMOS
 		TAY					; update flags altered by macro!
 #endif
@@ -589,12 +598,14 @@ store_str:
 		CMP #CR				; newline also accepted, just in case
 			BEQ sstr_cr			; terminate and exit
 		INC ptr				; advance destination
-		BNE store_str		; boundary not crossed
+		BNE sst_loop		; boundary not crossed
 	INC ptr+1			; next page otherwise
-	_BRA store_str		; continue
+	_BRA sst_loop		; continue, might use BNE
 sstr_cr:
-	_STZA buffer, X		; terminate string
+	LDA #0				; sorry, no STZ indirect
+	STA (bufpt), Y		; terminate string
 sstr_end:
+	STY cursor			; update optimised index!
 	RTS
 
 ; ** .U = set 'u' number of lines/instructions **
@@ -724,10 +735,10 @@ prnStr:
 ; currently ignoring any errors...
 	RTS
 
-; * convert two hex ciphers into byte@tmp, A is current char, X is cursor *
+; * convert two hex ciphers into byte@tmp, A is current char, Y is cursor from NEW buffer *
 hex2byte:
-	LDY #0				; reset loop counter
-	STY tmp				; also reset value
+	LDX #0				; reset loop counter
+	STX tmp				; also reset value
 h2b_l:
 		SEC					; prepare
 		SBC #'0'			; convert to value
@@ -745,12 +756,12 @@ h2b_num:
 		ORA tmp				; add computed nibble
 		STA tmp				; and store full byte
 		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
-		INY					; loop counter
-		CPY #2				; two ciphers per byte
+		INX					; loop counter
+		CPX #2				; two ciphers per byte
 		BNE h2b_l			; until done
 	RTS					; value is at tmp
 h2b_err:
-	DEX					; will try to reprocess this char
+	DEY					; will try to reprocess this char
 	RTS
 
 ; * print a byte in A as two hex ciphers *
@@ -767,60 +778,62 @@ ph_conv:
 	LSR
 	LSR
 	LSR
-	LDY #0				; this is first value
+	LDX #0				; this is first value
 	JSR ph_b2a			; convert this cipher
 	LDA tmp+1			; get again
 	AND #$0F			; mask for LSB
-	INY					; this will be second cipher
+	INX					; this will be second cipher
 ph_b2a:
 	CMP #10				; will be letter?
 	BCC ph_n			; numbers do not need this
 		ADC #'A'-'9'-2		; turn into letter, C was set
 ph_n:
 	ADC #'0'			; turn into ASCII
-	STA tmp, Y
+	STA tmp, X			; this became 816-savvy!
 	RTS
 
 ; ** end of inline library **
 
 ; * get input line from device at fixed-address buffer *
 ; minimOS should have one of these in API...
+; new movable buffer!
 getLine:
-	_STZX cursor			; reset variable
+	_STZA cursor			; reset variable
 gl_l:
 		LDY iodev			; use device
 		_KERNEL(CIN)		; get one character #####
 			BCS gl_l			; wait for something
 		LDA io_c			; get received
-		LDX cursor			; retrieve index
+		LDY cursor			; retrieve index
 		CMP #CR				; hit CR?
 			BEQ gl_cr			; all done then
 		CMP #BS				; is it backspace?
 		BNE gl_nbs			; delete then
-			CPX #0				; already 0?
+			CPY #0				; already 0?
 				BEQ gl_l			; ignore if so
 			DEC cursor			; reduce index
 			_BRA gl_echo		; resume operation
 gl_nbs:
-		CPX #BUFSIZ-1		; overflow?
+		CPY #BUFSIZ-1		; overflow?
 			BCS gl_l			; ignore if so
-		STA buffer, X		; store into buffer
+		STA (bufpt), Y		; store into buffer
 		INC	cursor			; update index
 gl_echo:
 		JSR prnChar			; echo!
 		_BRA gl_l			; and continue
 gl_cr:
 	JSR prnChar			; newline
-	LDX cursor			; retrieve cursor!!!!!
-	_STZA buffer, X		; terminate string
+	LDY cursor			; retrieve cursor!!!!!
+	LDA #0				; sorry, no STZ for indirect-indexed!
+	STA (bufpt), Y		; terminate string
 	RTS					; and all done!
 
-; * get clean character from buffer in A, cursor at X *
+; * get clean character from NEW buffer in A, (return) offset at Y *
 getNextChar:
-	LDX cursor			; retrieve index
+	LDY cursor			; retrieve index
 gnc_do:
-	INX					; advance!
-	LDA buffer, X		; get raw character
+	INY					; advance!
+	LDA (bufpt), Y		; get raw character
 	  BEQ gn_ok  ; go away if ended
 	CMP #' '			; white space?
 		BEQ gnc_do			; skip it!
@@ -834,15 +847,20 @@ gnc_do:
 		BCS gn_ok			; otherwise do not correct!
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
+	STY cursor			; worth updating here!
+	CLC					; new, will signal line did not end here
 	RTS
 gn_fin:
-		INX				; skip another character in comment
-		LDA buffer, X	; get pointed char
-			BEQ gn_ok		; finish if already at terminator
-		CMP #58			; colon ends sentence
-			BEQ gn_ok
+		INY				; skip another character in comment
+		LDA (bufpt), Y	; get pointed char
+			BEQ gn_exit		; finish if already at terminator
+		CMP #COLON		; colon ends sentence
+			BEQ gn_exit
 		CMP #CR			; newline ends too
 			BNE gn_fin
+gn_exit:
+	STY cursor			; worth updating here!
+	SEC					; new, indicates line has ended because one of the above
 	RTS
 
 checkEnd:
@@ -860,7 +878,7 @@ fetch_byte:
 fetch_word:
 	JSR fetch_byte		; get operand in A
 	STA tmp+1			; leave room for next
-	DEX					; as will increment...
+	DEY					; as will increment...
 	JSR gnc_do			; get next char!!!
 	JMP hex2byte		; get second byte, tmp is little-endian now, will return
 
