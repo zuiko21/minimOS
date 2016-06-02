@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a4
-; last modified 20160602-1228
+; last modified 20160602-1340
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -527,6 +527,35 @@ help:
 	LDY #<help_str
 	JMP prnStr			; print it, and return to main loop
 
+; ** .I = show symbol table ***
+symbol_table:
+;***********placeholder*************
+	LDA #'?'
+	STA io_c
+	LDY iodev
+	_KERNEL(COUT)
+	RTS		; ***** TO DO ****** TO DO ******
+
+; ** .K = keep (save) **
+; ### highly system dependent ###
+save_bytes:
+;***********placeholder*************
+	LDA #'!'
+	STA io_c
+	LDY iodev
+	_KERNEL(COUT)
+	RTS		; ***** TO DO ****** TO DO ******
+
+; ** .L = load **
+; ### highly system dependent ###
+load_bytes:
+;***********placeholder*************
+	LDA #'@'
+	STA io_c
+	LDY iodev
+	_KERNEL(COUT)
+	RTS		; ***** TO DO ****** TO DO ******
+
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
@@ -613,8 +642,9 @@ sstr_end:
 ; ** .T = assemble from source **
 asm_source:
 ;***********placeholder*************
-	LDA #'!'
+	LDA #'*'
 	STA io_c
+	LDY iodev
 	_KERNEL(COUT)
 	RTS		; ***** TO DO ****** TO DO ******
 
@@ -920,10 +950,10 @@ cmd_ptr:
 	.word	force			; .F
 	.word	set_SP			; .G
 	.word	help			; .H
-	.word	_unrecognised	; .I
+	.word	symbol_table	; .I
 	.word	jump_address	; .J
-	.word	_unrecognised	; .K
-	.word	_unrecognised	; .L
+	.word	save_bytes		; .K
+	.word	load_bytes		; .L
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
