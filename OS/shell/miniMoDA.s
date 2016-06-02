@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5a3
-; last modified 20160601-1438
+; v0.5a4
+; last modified 20160602-1228
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -610,6 +610,14 @@ sstr_end:
 	STY cursor			; update optimised index!
 	RTS
 
+; ** .T = assemble from source **
+asm_source:
+;***********placeholder*************
+	LDA #'!'
+	STA io_c
+	_KERNEL(COUT)
+	RTS		; ***** TO DO ****** TO DO ******
+
 ; ** .U = set 'u' number of lines/instructions **
 set_lines:
 	JSR fetch_byte		; get operand in A
@@ -923,7 +931,7 @@ cmd_ptr:
 	.word	quit			; .Q
 	.word	reboot			; .R
 	.word	store_str		; .S
-	.word	_unrecognised	; .T
+	.word	asm_source		; .T
 	.word	set_lines		; .U
 	.word	view_regs		; .V
 	.word	store_word		; .W
@@ -982,6 +990,8 @@ help_str:
 	.asc	"Gd = set SP reg.", CR
 	.asc	"H = show this list", CR
 	.asc	"Ja = jump", CR
+	.asc	"K = save 'n' bytes", CR
+	.asc	"L = load up to 'n'", CR
 	.asc	"Ma =copy n byt. to a", CR
 	.asc	"Na = set 'n' bytes", CR
 	.asc	"Oa = set address", CR
@@ -989,6 +999,7 @@ help_str:
 	.asc	"Q = quit", CR
 	.asc	"R = reboot", CR
 	.asc	"Ss = put raw string", CR
+	.asc	"Ta = assemble source", CR
 	.asc	"Ud = set 'u' lines", CR
 	.asc	"V = view registers", CR
 	.asc	"Wa = store word", CR
