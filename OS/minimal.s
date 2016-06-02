@@ -2,7 +2,7 @@
 ; on Kowalski's 6502 simulator
 ; v0.9.1b4
 ; (c)2016 Carlos J. Santisteban
-; last modified 20160420-0856
+; last modified 20160602-1114
 
 #define		ROM		_ROM
 #define		KERNEL	_KERNEL
@@ -24,6 +24,17 @@ reset:
 	CLD				; just in case, a must for NMOS, maybe for emulating '816 (2)
 	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
+
+#ifndef	LOWRAM
+; *** fill stack with canary values *** NOT SUITABLE FOR LOWRAM
+	LDX #0			; reset index
+canary:
+		TXA				; set value
+		STA $0100, X	; store value
+		INX				; next
+		BNE canary		; loop until done
+#endif
+
 ; *** prepare execution ***
 	LDA #$E1		; standard available space on zeropage
 	STA z_used		; notify
