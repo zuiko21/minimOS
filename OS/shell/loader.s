@@ -1,6 +1,6 @@
 ; Basic loader for minimOS (simple version)
-; v0.5rc3
-; last modified 20160601-1407
+; v0.5rc4
+; last modified 20160602-1054
 ; (c) 2016 Carlos J. Santisteban
 
 #ifndef	KERNEL
@@ -77,9 +77,13 @@ menu_exit:
 ; *** basic routines ***
 ; call chosen program
 l_call:
-	LDA #ZP_AVAIL		; reset available space!
-	STA z_used			; eeeeeek
-	_JMPX(codeptr)		; choose from compiled table
+	LDY l_io		; make some room
+	LDA #13			; newline
+	STA io_c		; as parameter
+	_KERNEL(COUT)	; better looking
+	LDA #ZP_AVAIL	; reset available space!
+	STA z_used		; eeeeeek
+	_JMPX(codeptr)	; choose from compiled table
 
 ; exit
 l_shut:
