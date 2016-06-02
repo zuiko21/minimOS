@@ -1,6 +1,6 @@
 ; Basic loader for minimOS (simple version)
 ; v0.5rc4
-; last modified 20160602-1054
+; last modified 20160602-1102
 ; (c) 2016 Carlos J. Santisteban
 
 #ifndef	KERNEL
@@ -66,6 +66,12 @@ menu_exit:
 	_KERNEL(COUT)	; hope is kept!
 ; should probably close/free device
 	LDA io_c		; get key
+	PHA				; save it!!!
+	LDY l_io		; make some room
+	LDA #13			; newline
+	STA io_c		; as parameter
+	_KERNEL(COUT)	; better looking
+	PLA				; retrieve selection!!!
 	AND #$0F		; filter number
 	CMP #3+1		; *** first incorrect option!!! ***
 		BCS loader_init	; beyond available options!
@@ -77,10 +83,6 @@ menu_exit:
 ; *** basic routines ***
 ; call chosen program
 l_call:
-	LDY l_io		; make some room
-	LDA #13			; newline
-	STA io_c		; as parameter
-	_KERNEL(COUT)	; better looking
 	LDA #ZP_AVAIL	; reset available space!
 	STA z_used		; eeeeeek
 	_JMPX(codeptr)	; choose from compiled table
