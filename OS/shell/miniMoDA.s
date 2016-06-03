@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a5
-; last modified 20160603-0920
+; last modified 20160603-0955
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -102,14 +102,14 @@ get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
 
-; *** NEW variable buffer setting ***
-	LDY #<buffer		; get LSB that is full address in zeropage
-	LDA #0				; ### in case of 65816 should be TDC, XBA!!! ###
-	STY bufpt			; set new movable pointer
-	STA bufpt+1
-
 ; *** begin things ***
 main_loop:
+		_STZA cursor		; eeeeeeeeeek
+; *** NEW variable buffer setting ***
+		LDY #<buffer		; get LSB that is full address in zeropage
+		LDA #0				; ### in case of 65816 should be TDC, XBA!!! ###
+		STY bufpt			; set new movable pointer
+		STA bufpt+1
 ; put current address before prompt
 		LDA ptr+1			; MSB goes first
 		JSR prnHex			; print it
@@ -118,6 +118,8 @@ main_loop:
 		LDA #'>'			; prompt character
 		JSR prnChar			; print it
 		JSR getLine			; input a line
+; execute single command (or assemble opcode) from buffer
+cli_loop:
 		LDY #$FF			; getNextChar will advance it to zero!
 		JSR gnc_do			; get first character on string, without the variable
 		TAX					; just in case...
@@ -132,7 +134,17 @@ main_loop:
 		ASL					; times two to make it index
 		TAX					; use as index
 		JSR call_mcmd		; call monitor command
-		_BRA main_loop		; continue forever
+		DEC cursor			; ???
+		JSR getNextChar		; should be done but check whether in direct mode
+		BCC cmd_term		; no more commands in line
+			LDA cursor			; otherwise advance pointer
+			ADC bufpt			; carry was set, so the colon/newline is skipped
+			STA bufpt			; update pointer
+				BCC cli_loop		; MSB OK means try another
+			INC bufpt+1			; otherwise wrap!
+				_BRA cli_loop		; and try another
+cmd_term:
+		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
 bad_cmd:
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
@@ -862,11 +874,15 @@ getNextChar:
 gnc_do:
 	INY					; advance!
 	LDA (bufpt), Y		; get raw character
-	  BEQ gn_ok  ; go away if ended
+		BEQ gn_ok			; go away if ended
 	CMP #' '			; white space?
 		BEQ gnc_do			; skip it!
 	CMP #'$'			; ignored radix?
 		BEQ gnc_do			; skip it!
+	CMP #COLON			; end of sentence?
+		BEQ gn_exit			; command is done but not the whole buffer!
+	CMP #CR				; newline?
+		BEQ gn_exit			; go for next too
 	CMP #';'			; is it a comment?
 		BEQ gn_fin			; forget until the end
 	CMP #'a'			; not lowercase?
@@ -876,19 +892,19 @@ gnc_do:
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
 	STY cursor			; worth updating here!
-	CLC					; new, will signal line did not end here
+	CLC					; new, will signal buffer is done
 	RTS
 gn_fin:
 		INY				; skip another character in comment
 		LDA (bufpt), Y	; get pointed char
-			BEQ gn_exit		; finish if already at terminator
-		CMP #COLON		; colon ends sentence
+			BEQ gn_ok		; completely finish if already at terminator
+		CMP #COLON		; colon ends just this sentence
 			BEQ gn_exit
 		CMP #CR			; newline ends too
 			BNE gn_fin
 gn_exit:
 	STY cursor			; worth updating here!
-	SEC					; new, indicates line has ended because one of the above
+	SEC					; new, indicates command has ended but not the last in input buffer
 	RTS
 
 ; * get clean character from opcode list, set Carry if last one! *
