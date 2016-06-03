@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5a4
-; last modified 20160602-1340
+; v0.5a5
+; last modified 20160603-0920
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -104,7 +104,7 @@ get_sp:
 
 ; *** NEW variable buffer setting ***
 	LDY #<buffer		; get LSB that is full address in zeropage
-	LDA #0				; ### in case of '816 should be TDC, XBA!!! ###
+	LDA #0				; ### in case of 65816 should be TDC, XBA!!! ###
 	STY bufpt			; set new movable pointer
 	STA bufpt+1
 
@@ -115,7 +115,7 @@ main_loop:
 		JSR prnHex			; print it
 		LDA ptr				; same for LSB
 		JSR prnHex
-		LDA #'>'		; prompt character
+		LDA #'>'			; prompt character
 		JSR prnChar			; print it
 		JSR getLine			; input a line
 		LDY #$FF			; getNextChar will advance it to zero!
@@ -659,28 +659,16 @@ view_regs:
 	LDA #>regs_head		; print header
 	LDY #<regs_head
 	JSR prnStr
-; PC might get printed by loop below in 20-char version
-	LDA _pc+1			; get PC MSB
-	JSR prnHex			; show it
-	LDA _pc				; same for LSB
-	JSR prnHex
-
-#ifndef	NARROW
-	LDA #' '			; space (not used in 20-char version)
-	JSR prnChar			; print it
-#endif
+; since _pc and ptr are the same, no need to print it!
 
 	LDX #0				; reset counter
 vr_l:
 		_PHX				; save index!
 		LDA _a, X			; get value from regs
 		JSR prnHex			; show value in hex
-
-#ifndef	NARROW
+; without PC being shown, narrow displays will also put regular spacing
 		LDA #' '			; space, not for 20-char
 		JSR prnChar			; print it
-#endif
-
 		_PLX				; restore index
 		INX					; next reg
 		CPX #4				; all regs done?
@@ -988,11 +976,7 @@ opc_error:
 	.asc	"*** Bad opcode ***", CR, 0
 
 regs_head:
-#ifdef	NARROW
-	.asc	"PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
-#else
-	.asc	"PC:  A: X: Y: S: NV-bDIZC", CR, 0
-#endif
+	.asc	"A: X: Y: S: NV-bDIZC", CR, 0
 
 dump_in:
 #ifdef	NARROW
