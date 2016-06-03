@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a5
-; last modified 20160603-0955
+; last modified 20160603-1058
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -134,7 +134,6 @@ cli_loop:
 		ASL					; times two to make it index
 		TAX					; use as index
 		JSR call_mcmd		; call monitor command
-		DEC cursor			; ???
 		JSR getNextChar		; should be done but check whether in direct mode
 		BCC cmd_term		; no more commands in line
 			LDA cursor			; otherwise advance pointer
@@ -795,10 +794,12 @@ h2b_num:
 		ASL tmp
 		ORA tmp				; add computed nibble
 		STA tmp				; and store full byte
-		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
 		INX					; loop counter
 		CPX #2				; two ciphers per byte
-		BNE h2b_l			; until done
+			BEQ h2b_end			; all done
+		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
+		_BRA h2b_l			; process it
+h2b_end:
 	RTS					; value is at tmp
 h2b_err:
 	DEY					; will try to reprocess this char
@@ -939,7 +940,7 @@ fetch_byte:
 fetch_word:
 	JSR fetch_byte		; get operand in A
 	STA tmp+1			; leave room for next
-	DEY					; as will increment...
+;	DEY					; as will increment...
 	JSR gnc_do			; get next char!!!
 	JMP hex2byte		; get second byte, tmp is little-endian now, will return
 
