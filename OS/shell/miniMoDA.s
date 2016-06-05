@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a5
-; last modified 20160603-1058
+; last modified 201605-1146
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -23,6 +23,7 @@
 ; *** constant definitions ***
 #define	BUFSIZ		16
 #define	CR			13
+#define	TAB			9
 #define	BS			8
 #define	BEL			7
 #define	COLON		58
@@ -878,6 +879,8 @@ gnc_do:
 		BEQ gn_ok			; go away if ended
 	CMP #' '			; white space?
 		BEQ gnc_do			; skip it!
+	CMP #TAB			; tabulations will be skipped too
+		BEQ gnc_do
 	CMP #'$'			; ignored radix?
 		BEQ gnc_do			; skip it!
 	CMP #COLON			; end of sentence?
@@ -886,6 +889,8 @@ gnc_do:
 		BEQ gn_exit			; go for next too
 	CMP #';'			; is it a comment?
 		BEQ gn_fin			; forget until the end
+	CMP #'_'			; is it a label? Not yet supported!!!
+		BEQ gn_fin			; treat it as a comment!
 	CMP #'a'			; not lowercase?
 		BCC gn_ok			; all done!
 	CMP #'z'+1			; still within lowercase?
