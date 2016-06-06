@@ -37,7 +37,7 @@
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **
-ROM_BASE	=	$E000	; safe for Kowalski if I/O area set to $DF00
+ROM_BASE	=	$8000	; room for a lot of code!
 
 ; ** position of firmware, usually skipping I/O area **
 FW_BASE		=	$F800	; simple firmware expected on Kowalski simulator
