@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a5
-; last modified 201605-1146
+; last modified 20160606-0824
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -137,7 +137,7 @@ cli_loop:
 		JSR call_mcmd		; call monitor command
 		JSR getNextChar		; should be done but check whether in direct mode
 		BCC cmd_term		; no more commands in line
-			LDA cursor			; otherwise advance pointer
+			TYA				; otherwise advance pointer
 			ADC bufpt			; carry was set, so the colon/newline is skipped
 			STA bufpt			; update pointer
 				BCC cli_loop		; MSB OK means try another
@@ -640,10 +640,26 @@ sst_loop:
 			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
 			BEQ sstr_cr			; terminate and exit
+		CMP #COLON			; that marks end of sentence, thus not accepted in string!
+			BEQ sstr_cr
+		CMP #';'			; comments neither included
+			BEQ sstr_com		; skip until colon, newline or nul
 		INC ptr				; advance destination
 		BNE sst_loop		; boundary not crossed
 	INC ptr+1			; next page otherwise
 	_BRA sst_loop		; continue, might use BNE
+sstr_com:
+	LDA #0				; not STZ indirect
+	STA (bufpt), Y		; terminate string, cannot optimise because detached index
+sstr_cloop:
+		INY					; advance
+		LDA (bufpt), Y		; check whatever
+			BEQ sstr_end		; terminator ends
+		CMP #CR				; newline ends too
+			BEQ sstr_end
+		CMP #COLON			; and also does colon
+			BEQ sstr_end
+		BNE sstr_cloop		; otherwise continue discarding, no need for BRA
 sstr_cr:
 	LDA #0				; sorry, no STZ indirect
 	STA (bufpt), Y		; terminate string
@@ -897,9 +913,8 @@ gnc_do:
 		BCS gn_ok			; otherwise do not correct!
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
-	STY cursor			; worth updating here!
 	CLC					; new, will signal buffer is done
-	RTS
+	BCC gn_end			; save and exit, no need for BRA
 gn_fin:
 		INY				; skip another character in comment
 		LDA (bufpt), Y	; get pointed char
@@ -909,8 +924,9 @@ gn_fin:
 		CMP #CR			; newline ends too
 			BNE gn_fin
 gn_exit:
-	STY cursor			; worth updating here!
 	SEC					; new, indicates command has ended but not the last in input buffer
+gn_end:
+	STY cursor			; worth updating here!
 	RTS
 
 ; * get clean character from opcode list, set Carry if last one! *
