@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a5
-; last modified 20160606-1311
+; last modified 20160607-1001
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -125,6 +125,8 @@ cli_loop:
 		JSR gnc_do			; get first character on string, without the variable
 		TAX					; just in case...
 			BEQ main_loop		; ignore blank lines! 
+		CMP #COLON			; just in case?
+			BEQ cli_chk			; advance to next valid char
 		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 			BNE not_mcmd		; not a monitor command
 		JSR gnc_do			; get into command byte otherwise
@@ -136,6 +138,7 @@ cli_loop:
 		TAX					; use as index
 		JSR call_mcmd		; call monitor command
 		JSR getNextChar		; should be done but check whether in direct mode
+cli_chk:
 		BCC cmd_term		; no more commands in line
 			TYA				; otherwise advance pointer
 			ADC bufpt			; carry was set, so the colon/newline is skipped
@@ -153,6 +156,9 @@ d_error:
 	_BRA main_loop		; continue
 not_mcmd:
 ; ** try to assemble the opcode! **
+; temporarily disabled....
+	JMP cli_chk			; OK???
+
 	STY tmp3			; keep original offset! new
 	LDY #<da_oclist		; get list address
 	LDA #>da_oclist
