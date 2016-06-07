@@ -20,9 +20,9 @@ Status: finishing design.
 
 Form-factor: soldered PCB.
 
-Specs: 1 MHz 6503 (28 pin, 4 kiB space), 128-byte RAM, 3 kiB-EPROM (addressable range from a 2732), VIA 6522
+Specs: 1 MHz 6503 (28 pin, 4 kiB addressing space), 128-byte RAM, 3 kiB-EPROM (addressable range from a 2732), VIA 6522
 
-Intefaces: four (very large) 7-segment LED digits, light sensor, maybe a couple of keys...
+Intefaces: four (very large) 7-segment LED digits, light sensor, a couple of keys...
 
 
 
@@ -70,7 +70,7 @@ Form-factor: Breadboard with point-to-point soldering.
 
 Specs: 1.25 / 2 MHz 65C02/102, 8-16 kIB RAM, 32 kiB EPROM, VIA 65C22, ACIA 65SC51, RTC 146818.
 
-Interfaces: Amplified piezo buzzer between PB7-CB2, Hitachi LCD, TTL-level async., SS-22 and VIA-port connectors. Several diagnostic LEDs.
+Interfaces: Amplified piezo buzzer between PB7-CB2, Hitachi LCD, TTL-level RS-232, SS-22 and VIA-port connectors. Several diagnostic LEDs.
 
 
 **Baja**
@@ -81,26 +81,26 @@ Specs: intended to be a fully bankswitching 65C02 SBC, but also pluggable into a
 
 
 
-**SDm _("Sistema de Desarrollo mejorado", Improved Development System)_**
+**Jalapa (formerly SDm)**
 
 Status: finishing design.
 
-Form-factor: solderless breadboard.
+Form-factor: Breadboard with point-to-point soldering.
 
-Specs: 2 MHz 65C02, 128 kiB RAM (16K + 7x16K banks), 32 kiB EPROM, VIA 65C22, maybe a 65SC51 ACIA.
+Specs: 1.8432 / 2.304 MHz 65C02, 128 kiB RAM (16K + 7x16K banks), 32 kiB EPROM, VIA 65C22, ACIA 65SC51.
 
-Intefaces: same as SDd, perhaps would incorporate ACIA in a soldered breadboard, attached thru VIA.
+Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, VIA (SBC-2 style but with "mirrored" power pins), TTL-level RS-232, *miniBus* slot (6502 direct expansion)
 
 
 **Tijuana**
 
 Status: finishing design.
 
-Form-factor: Breadboard with point-to-point soldering.
+Form-factor: Single layer PCB?
 
 Specs: 3.072 MHz 65C02, 2-8 kiB SRAM, 3x32 kiB VRAM, 16 kiB EPROM, VIA 65C22, CRTC HD46505, ACIA 6551A. *Intended to be a colour & graphics capable VT-52 based terminal.*
 
-Interfaces: Piezo buzzer, TTL-level async., SS-22, parallel input, VGA-compatible video output (576x448 @ 1 bpp, 3-bit RGB or 3-bit greyscale) 
+Interfaces: Piezo buzzer, TTL-level async., SS-22, parallel input, VGA-compatible video output (576x448 @ 1 bpp, 3-bit RGB or 3-bit greyscale), *miniBus* slot (6502 direct expansion) 
 
 
 
@@ -108,11 +108,11 @@ Interfaces: Piezo buzzer, TTL-level async., SS-22, parallel input, VGA-compatibl
 
 Status: in design stage
 
-Form-factor: Breadboard with point-to-point soldering
+Form-factor: ?
 
 Specs: 2 MHz (at least) 65816, 512 kiB RAM, 32 kiB EPROM, 2 x VIA 65C22, UART 16C550, RTC MC146818.
 
-Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async, 65SIB, Hitachi LCD thru VIA, maybe I2C.
+Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async, 65SIB, Hitachi LCD thru VIA, maybe I2C, *miniBus* slot (6502 direct expansion)
 
 
 
