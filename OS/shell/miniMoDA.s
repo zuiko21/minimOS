@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a5
-; last modified 20160607-1001
+; last modified 20160607-1109
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -156,28 +156,38 @@ d_error:
 	_BRA main_loop		; continue
 not_mcmd:
 ; ** try to assemble the opcode! **
-; temporarily disabled....
-	JMP cli_chk			; OK???
-
-	STY tmp3			; keep original offset! new
+;	JMP cli_chk			; in order to disable opcode decoding!
 	LDY #<da_oclist		; get list address
 	LDA #>da_oclist
 	_STZX count			; reset opcode counter (aka tmp[2])
-	STA scan			; store pointer
+	STY scan			; store pointer from Y eeeeeeeeeeek
 	STA scan+1
 sc_in:
 		JSR getListChar		; new, will return c in A and x as carry bit!
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
-			; *****
+; try to get a relative operand
+			BEQ sc_sbyt			; *** currently no different from single-byte ***
 sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
-			; *****
+; try to get a single byte operand
+sc_sbyte:					; *** temporary label ***
+			JSR fetch_byte		; currently it is a single byte...
+				BCS no_match		; OK if no number found?
+			STA tmp2			; store value to be poked
+			_BRA sc_adv			; check end of instruction???
 sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
-			; ****
+; try to get a word-sized operand
+			JSR fetch_word		; currently it is a single byte...
+				BCS no_match		; OK if no number found?
+			LDY tmp				; get computed value
+			LDA tmp+1
+			STY tmp2			; store in safer place
+			STA tmp2+1
+			_BRA sc_adv			; check end of instruction???
 sc_nwrd:
 ; regular char in list, compare with input
 		LDY cursor			; let us see what we have
@@ -198,8 +208,7 @@ sc_adv:
 		BCC sc_nwrd			; if so, keep comparing
 no_match:
 ; get cursor back to initial value!
-		LDA tmp3			; get original cursor value, new
-		STA cursor			; reset cursor
+		_STZA cursor		; reset cursor
 ; skip current opcode
 		LDY scan			; worth indirect indexed?
 		_STZA scan
@@ -823,9 +832,11 @@ h2b_num:
 		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
 		_BRA h2b_l			; process it
 h2b_end:
-	RTS					; value is at tmp
+	_EXIT_OK				; value is at tmp, carry clear!
 h2b_err:
+	SEC					; indicate error!
 	DEY					; will try to reprocess this char
+; might be improved with a DEX, BPL h2b_err loop?
 	RTS
 
 ; * print a byte in A as two hex ciphers *
@@ -956,16 +967,18 @@ checkEnd:
 ; ******** TO DO    TO DO     TO DO ******************
 	RTS
 
-; * fetch one byte from buffer, value in A *
+; * fetch one byte from buffer, value in A and @tmp *
 fetch_byte:
 	JSR getNextChar		; go to operand
 	JSR hex2byte		; convert value
 	LDA tmp				; converted byte
+fetch_abort:
 	RTS
 
-; * fetch more than one byte from hex input buffer *
+; * fetch more than one byte from hex input buffer, value @tmp.w *
 fetch_word:
 	JSR fetch_byte		; get operand in A
+		BCS fetch_abort		; new, do not keep trying if error, not sure if needed
 	STA tmp+1			; leave room for next
 ;	DEY					; as will increment...
 	JSR gnc_do			; get next char!!!
