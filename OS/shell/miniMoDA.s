@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5a5
-; last modified 20160607-1109
+; last modified 20160608-1014
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -51,11 +51,11 @@
 	cursor	= lines+1	; storage for cursor offset, now on Y
 	buffer	= cursor+1	; storage for input line (BUFSIZ chars)
 	tmp		= buffer+BUFSIZ	; temporary storage, used by prnHex
-	tmp2	= tmp+2		; for hex dumps
+	tmp2	= tmp+2		; for hex dumps, also operand storage
 	tmp3	= tmp2+2	; more storage, also for indexes
 	scan	= tmp3+1	; pointer to opcode list
 	bufpt	= scan+2	; NEW pointer to variable buffer
-	count	= bufpt+2	; char count for screen formatting
+	count	= bufpt+2	; char count for screen formatting, also opcode count
 	bytes	= count+1	; bytes per instruction
 	iodev	= bytes+1	; standard I/O ##### minimOS specific #####
 
@@ -105,7 +105,7 @@ get_sp:
 
 ; *** begin things ***
 main_loop:
-		_STZA cursor		; eeeeeeeeeek
+;		_STZA cursor		; eeeeeeeeeek... but really needed?
 ; *** NEW variable buffer setting ***
 		LDY #<buffer		; get LSB that is full address in zeropage
 		LDA #0				; ### in case of 65816 should be TDC, XBA!!! ###
@@ -157,13 +157,14 @@ d_error:
 not_mcmd:
 ; ** try to assemble the opcode! **
 ;	JMP cli_chk			; in order to disable opcode decoding!
-	LDY #<da_oclist		; get list address
-	LDA #>da_oclist
-	_STZX count			; reset opcode counter (aka tmp[2])
+;	TAX					; keep b, hope it lasts!
+	_STZA count			; reset opcode counter (aka tmp[2])
+	LDY #<da_oclist-1	; get list address, notice trick
+	LDA #>da_oclist-1
 	STY scan			; store pointer from Y eeeeeeeeeeek
 	STA scan+1
 sc_in:
-		JSR getListChar		; new, will return c in A and x as carry bit!
+		JSR getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
@@ -172,7 +173,7 @@ sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
 ; try to get a single byte operand
-sc_sbyte:					; *** temporary label ***
+sc_sbyt:					; *** temporary label ***
 			JSR fetch_byte		; currently it is a single byte...
 				BCS no_match		; OK if no number found?
 			STA tmp2			; store value to be poked
@@ -190,75 +191,59 @@ sc_nsbyt:
 			_BRA sc_adv			; check end of instruction???
 sc_nwrd:
 ; regular char in list, compare with input
-		LDY cursor			; let us see what we have
+		LDY cursor			; let us see what we have, no need to keep b?
 		CMP (bufpt), Y		; coincides with input?
-			BNE no_match		; try another opcode
-		JSR getListChar		; recheck bit 7
-		BCC op_advance		; opcode continues
-			JSR checkEnd		; anything else?
-			BCC opc_ok			; already at end is perfect match!
-; should be a loop looking for the opcode end! *******************
-op_advance:
-		INC scan			; otherwise advance char in list...
-		BNE sc_adv			; eeeeeek
-			INC scan+1
+		BEQ sc_adv			; if so, continue scanning input
+			LDY #0				; otherwise seek end of current opcode
+sc_seek:
+				LDA (scan), Y		; look at opcode list
+					BMI sc_skpd			; already at end
+				INY					; otherwise advance
+				_BRA sc_seek		; could be BNE as well
+sc_skpd:
+			TYA					; get offset
+			CLC					; stay at the end
+			ADC scan			; add to current pointer
+			STA scan			; update LSB
+			BCC sc_nxoc			; and continue
+				INC scan+1			; in case of page crossing
+sc_nxoc:
+no_match:	; **** ???? ****
+			_STZA cursor		; back to beginning of instruction
+			INC count			; try next opcode
+			BNE sc_in			; all done if some opcode remains in list
+			BEQ bad_cmd			; otherwise generic error
 sc_adv:
-		INC cursor			; ...and in input buffer
-		JSR checkEnd		; is there anything more?
-		BCC sc_nwrd			; if so, keep comparing
-no_match:
-; get cursor back to initial value!
-		_STZA cursor		; reset cursor
-; skip current opcode
-		LDY scan			; worth indirect indexed?
-		_STZA scan
-sc_skip:
-			LDA (scan), Y		; check list contents
-			BMI nx_opc			; end-of-opcode
-		INY
-			BNE sc_skip			; scan until the end of the opcode
-		INC scan+1			; eeeeeeek
-			BNE sc_skip			; no need for BRA eeeeeek
-nx_opc:
-		INY
-		BNE opc_skpd		; get into next opcode
-			INC scan+1
-opc_skpd:
-		STY scan			; restore pointer!
-		; *************************
-; increase opcode count
-		INC count			; try next opcode
-			BEQ opc_nrec		; nothing more to check!
-		DEC cursor			; correction needed???
-		JSR getNextChar		; *******check new format***********
-		JMP main_loop		; hope it is OK
-fin_loop:
-		; check whether is match or error
-		BNE opc_ok			; if recognised
-opc_nrec:
-			_STZA bytes			; set count to stay here
-			LDY #<opc_error		; error message
-			LDA #>opc_error
-			JSR prnStr			; print error
-			JMP main_loop		; continue
-opc_ok:
+		JSR checkEnd		; what to do here?????
+; near the end of decoding loop...
+		JSR getNextChar		; get another valid char
+;		TAX					; keep b temporarily
+		_LDAY(scan)			; check what was x...
+			BEQ sc_in			; ...while (!x)
+		BMI valid_oc		; x==128, valid opcode found
+			_STZA bytes			; otherwise nothing to poke, really needed?
+			_BRA bad_cmd		; generic error
+valid_oc:
+; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
+		BEQ poke_opc		; no operands
 poke_loop:
-			LDA tmp-1, Y		; get argument, note trick, 816-savvy???
+			LDA tmp2-1, Y		; get argument, note trick, ***NOT 816-savvy***
 			STA (ptr), Y		; store in RAM
 			DEY					; next byte
 			BPL poke_loop		; could start on zero
+poke_opc:
 		LDA count			; opcode is invalid, I am afraid
 		_STAY(ptr)			; poke it
-; should call disassembly ****
-; increase pointer
-		CLC
-		ADC ptr				; add to LSB
-		STA ptr				; update
-		BCC op_done			; not done
-			INC ptr+1			; otherwise check MSB
-op_done:
-		JMP main_loop		; should not wrap anyway
+		LDA bytes			; add number of operands...
+		SEC					; ...plus opcode itself...
+		ADC ptr				; ...to current address
+		STA ptr				; update LSB
+		BCC main_nw			; check for wrap
+			INC ptr+1			; in case of page crossing
+main_nw:
+		JMP main_loop		; and continue forever
+; *** this is the end of main loop ***
 
 ; *** call command routine ***
 call_mcmd:
@@ -946,16 +931,16 @@ gn_end:
 	STY cursor			; worth updating here!
 	RTS
 
-; * get clean character from opcode list, set Carry if last one! *
+; * get clean NEXT character from opcode list, set Carry if last one! *
 getListChar:
-		_LDAY(scan)			; get current
-		CMP #' '			; is it blank?
-			BNE glc_do			; found something interesting
-		INC scan			; try next
-		BNE getListChar		; if did not wrap
-			INC scan+1			; otherwise carry on
-		_BRA getListChar	; *** might use BNE as well
+	INC scan			; try next
+	BNE glc_do			; if did not wrap
+		INC scan+1			; otherwise carry on
 glc_do:
+		_LDAY(scan)			; get current
+		CMP #' '			; is it blank? will never end an opcode, though
+		BEQ getListChar		; nothing interesting yet
+	_LDAY(scan)			; recheck bit 7
 	CLC					; normally not the end
 	BPL glc_end			; it was not
 		SEC					; otherwise do x=128

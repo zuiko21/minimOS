@@ -140,7 +140,7 @@ int main(void) {
 					// ...
 					break;
 				case 'I':		// show symbol table
-/* ***only if symbolic assembler*** */
+/* ***only if symbolic assembler*** /
 					printf("Symbol table:\n");
 					i = 0;
 					x = 0;							// defined unless otherwise!!!
