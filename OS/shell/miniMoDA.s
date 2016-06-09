@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b2
-; last modified 20160609-1350
+; last modified 20160609-1434
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -161,6 +161,7 @@ not_mcmd:
 ;	JMP cli_chk			; in order to disable opcode decoding!
 ;	TAX					; keep b, hope it lasts!
 	_STZA count			; reset opcode counter (aka tmp[2])
+	_STZA bytes			; eeeeeeeeek
 	LDY #<da_oclist-1	; get list address, notice trick
 	LDA #>da_oclist-1
 	STY scan			; store pointer from Y eeeeeeeeeeek
@@ -183,6 +184,7 @@ sc_sbyt:					; *** temporary label ***
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
 			JSR fetch_byte		; this one should NOT succeed
 				BCC no_match		; OK if no other number found?
+			INC bytes			; one operand was detected
 			_BRA sc_adv			; continue decoding
 sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
@@ -195,6 +197,8 @@ sc_nsbyt:
 			LDA tmp+1
 			STY tmp2			; store in safer place
 			STA tmp2+1
+			INC bytes			; two operands were detected
+			INC bytes
 			_BRA sc_adv			; continue decoding
 sc_nwrd:
 
@@ -217,6 +221,7 @@ sc_seek:
 				INC scan+1			; in case of page crossing
 no_match:
 			_STZA cursor		; back to beginning of instruction
+			_STZA bytes			; also no operands detected! eeeeek
 			INC count			; try next opcode
 			BNE sc_in			; there is another opcode to try
 			BEQ bad_opc			; otherwise no opcode did match
@@ -239,25 +244,27 @@ valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
 		BEQ poke_opc		; no operands
+			INY					; make room for opcode! eeeeeek
 poke_loop:
-			LDA tmp2-1, Y		; get argument, note trick, ***NOT 816-savvy***
+			LDA tmp2-2, Y		; get argument, note trick, ***NOT 816-savvy***
 			STA (ptr), Y		; store in RAM
 			DEY					; next byte
-			BPL poke_loop		; could start on zero
+			BNE poke_loop		; could start on zero
 poke_opc:
 		LDA count			; matching opcode as computed
 		_STAY(ptr)			; poke it
-; now it is time to print the opcode and hex dump!
+; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!
 
 ; advance pointer and continue execution
 		LDA bytes			; add number of operands...
-		SEC					; ...plus opcode itself...
+		SEC					; ...plus opcode itself... (will be included? CLC then)
 		ADC ptr				; ...to current address
 		STA ptr				; update LSB
 		BCC main_nw			; check for wrap
 			INC ptr+1			; in case of page crossing
 main_nw:
-		_LDAY(bufpt)		; check what remains in buffer
+		LDY cursor			; eeeeeeeek
+		LDA (bufpt), Y		; check what remains in buffer
 		BNE main_nnul		; termination will return to exterior main loop
 			JMP main_loop		; and continue forever
 main_nnul:
@@ -1001,7 +1008,11 @@ fetch_word:
 	STA tmp+1			; leave room for next
 ;	DEY					; as will increment...
 	JSR gnc_do			; get next char!!!
-	JMP hex2byte		; get second byte, tmp is little-endian now, will return
+	JSR hex2byte		; get second byte, tmp is little-endian now
+		BCC fetch_abort		; actually OK!!!
+	DEC cursor			; should discard previous byte!
+	DEC cursor
+	RTS
 
 ; * abort command execution and return stack cleanup (remove X bytes) *
 abort:
