@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b1
-; last modified 20160609-1056
+; v0.5b2
+; last modified 20160609-1112
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -1021,6 +1021,18 @@ fetch_word:
 	JSR gnc_do			; get next char!!!
 	JMP hex2byte		; get second byte, tmp is little-endian now, will return
 
+; * abort command execution and return stack cleanup (remove X bytes) *
+abort:
+#ifdef	SAFE
+	TXA					; nothing to discard?
+	BNE do_abort		; otherwise proceed normally
+		RTS					; if not, just return quietly
+#endif
+do_abort:	
+		PLA					; discard one byte
+		DEX					; decrease counter
+		BNE do_abort		; until all done
+	JMP bad_cmd			; and show generic error
 
 ; *** pointers to command routines ***
 cmd_ptr:
