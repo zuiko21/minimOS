@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b1
-; last modified 20160609-1035
+; last modified 20160609-1047
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -690,8 +690,8 @@ sst_loop:
 	INC ptr+1			; next page otherwise
 	_BRA sst_loop		; continue, might use BNE
 sstr_com:
-	LDA #0				; not STZ indirect
-	STA (bufpt), Y		; terminate string, cannot optimise because detached index
+	LDA #0				; no STZ indirect
+	_STAX(ptr)			; terminate string in memory Eeeeeeeeek
 sstr_cloop:
 		INY					; advance
 		LDA (bufpt), Y		; check whatever
@@ -702,8 +702,8 @@ sstr_cloop:
 			BEQ sstr_end
 		BNE sstr_cloop		; otherwise continue discarding, no need for BRA
 sstr_cr:
-	LDA #0				; sorry, no STZ indirect
-	STA (bufpt), Y		; terminate string
+	LDA #0				; no STZ indirect
+	_STAX(ptr)			; terminate string in memory Eeeeeeeeek
 sstr_end:
 	STY cursor			; update optimised index!
 	RTS
