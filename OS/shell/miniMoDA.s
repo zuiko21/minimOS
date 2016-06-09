@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b1
-; last modified 20160608-1413
+; last modified 20160609-1004
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -248,17 +248,15 @@ sc_nterm:
 			BCS valid_oc		; both opcode and instruction ended
 			BCC no_match		; only opcode complete, keep trying! eeeeek
 sc_rem:
-			
-			BCS bad_opc			; unexpected instruction end!
-; near the end of decoding loop...
-;		TAX					; keep b temporarily
-		_LDAY(scan)			; check what was x...
-		AND #$80			; eeeeeeeeeeek
-		BEQ sc_in			; ...while (!x)
-		BMI valid_oc		; x==128, valid opcode found
+			BCC sc_cont			; instruction continues
 bad_opc:
 			_STZA bytes			; otherwise nothing to poke, really needed?
-			JMP bad_cmd		; generic error
+			JMP bad_cmd			; generic error
+; near the end of decoding loop...
+;		TAX					; keep b temporarily
+sc_cont:
+		_LDAY(scan)			; check what was x...
+		Bmi valid_oc: jmp sc_in			; ...while (!x)
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
