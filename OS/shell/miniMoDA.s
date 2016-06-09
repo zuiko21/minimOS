@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b1
-; last modified 20160609-1004
+; last modified 20160609-1035
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -138,7 +138,7 @@ cli_loop:
 		TAX					; use as index
 		JSR call_mcmd		; call monitor command
 		JSR getNextChar		; should be done but check whether in direct mode
-		BCC cmd_term		; no more commands in line
+		BCC cmd_term		; no more commands in line (or directly to main loop?)
 cli_chk:
 			TYA				; otherwise advance pointer
 			ADC bufpt			; carry was set, so the colon/newline is skipped
@@ -710,12 +710,14 @@ sstr_end:
 
 ; ** .T = assemble from source **
 asm_source:
-;***********placeholder*************
-	LDA #'*'
-	STA io_c
-	LDY iodev
-	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
+	PLA					; discard return address as will jump inside cli_loop
+	PLA
+	JSR fetch_word		; get desired address
+	LDY tmp				; fetch result
+	LDA tmp+1
+	STY bufpt			; this will be new buffer
+	STA bufpt+1
+	JMP cli_loop		; execute as commands!
 
 ; ** .U = set 'u' number of lines/instructions **
 set_lines:
@@ -968,14 +970,6 @@ gn_fin:
 		CMP #CR			; newline ends too
 			BNE gn_fin
 gn_exit:
-
-pha
-phy
-lda #'!'
-jsr prnChar
-ply
-pla
-
 	SEC					; new, indicates command has ended but not the last in input buffer
 gn_end:
 	STY cursor			; worth updating here!
