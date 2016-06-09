@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b1
-; last modified 20160609-1047
+; last modified 20160609-1056
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -145,7 +145,7 @@ cli_chk:
 			STA bufpt			; update pointer
 			BCC cli_loop		; MSB OK means try another
 				INC bufpt+1			; otherwise wrap!
-			_BRA cli_loop		; and try another
+			_BRA cli_loop		; and try another (BCS or BNE might do as well)
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
 bad_cmd:
@@ -705,6 +705,7 @@ sstr_cr:
 	LDA #0				; no STZ indirect
 	_STAX(ptr)			; terminate string in memory Eeeeeeeeek
 sstr_end:
+	DEY					; will call getNextChar afterwards eeeeeeeeek
 	STY cursor			; update optimised index!
 	RTS
 
