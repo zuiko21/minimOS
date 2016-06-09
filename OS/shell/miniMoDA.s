@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b2
-; last modified 20160609-1112
+; last modified 20160609-1350
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -123,9 +123,9 @@ main_loop:
 cli_loop:
 		LDY #$FF			; getNextChar will advance it to zero!
 		JSR gnc_do			; get first character on string, without the variable
-		TAX					; just in case...
+		TAX					; set status for A
 			BEQ main_loop		; ignore blank lines! 
-		CMP #COLON			; just in case?
+		CMP #COLON			; end of instruction?
 			BEQ cli_chk			; advance to next valid char
 		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 			BNE not_mcmd		; not a monitor command
@@ -140,7 +140,8 @@ cli_loop:
 		JSR getNextChar		; should be done but check whether in direct mode
 		BCC cmd_term		; no more commands in line (or directly to main loop?)
 cli_chk:
-			TYA				; otherwise advance pointer
+			TYA					; otherwise advance pointer
+			SEC					; set carry in case the BCC is skipped! eeeek
 			ADC bufpt			; carry was set, so the colon/newline is skipped
 			STA bufpt			; update pointer
 			BCC cli_loop		; MSB OK means try another
@@ -166,11 +167,6 @@ not_mcmd:
 	STA scan+1
 sc_in:
 		JSR getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
-
-pha
-jsr prnChar	; what is looking on list
-pla
-
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
@@ -180,83 +176,65 @@ sc_nrel:
 		BNE sc_nsbyt
 ; try to get a single byte operand
 sc_sbyt:					; *** temporary label ***
+			DEC cursor			; eeeeeeek
 			JSR fetch_byte		; currently it is a single byte...
 				BCS no_match		; could not get operand
 			STA tmp2			; store value to be poked
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
 			JSR fetch_byte		; this one should NOT succeed
 				BCC no_match		; OK if no other number found?
-			_BRA sc_adv			; check end of instruction???
+			_BRA sc_adv			; continue decoding
 sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
 ; try to get a word-sized operand
+			DEC cursor			; eeeeeeeek
 			JSR fetch_word		; currently it is a single byte...
 				BCS no_match		; not if no number found?
 			LDY tmp				; get computed value
 			LDA tmp+1
 			STY tmp2			; store in safer place
 			STA tmp2+1
-			_BRA sc_adv			; check end of instruction???
+			_BRA sc_adv			; continue decoding
 sc_nwrd:
 
 ; regular char in list, compare with input
-		STA tmp3			; eeeeeeeek!
-		LDY cursor			; let us see what we have, no need to keep b?
-		LDA (bufpt), Y		; raw input
-		JSR gnc_low			; dirty trick! eeeeeeeek
-
-pha
-jsr prnChar	; what is on buffer
-pla
-
+		STA tmp3			; store list contents eeeeeeeek!
+		DEC cursor			; let us see what we have, no need to keep b?
+		JSR getNextChar		; reload char from buffer eeeeeeeek^2
 		CMP tmp3			; list coincides with input?
 		BEQ sc_adv			; if so, continue scanning input
-			LDY #0				; otherwise seek end of current opcode
+			LDY #$FF			; otherwise seek end of current opcode
 sc_seek:
+				INY					; advance in list (optimised)
 				LDA (scan), Y		; look at opcode list
-					BMI sc_skpd			; already at end
-				INY					; otherwise advance
-
-phy
-lda #'.'
-jsr prnChar	; skip
-ply
-
-				_BRA sc_seek		; could be BNE as well
-sc_skpd:
+				BPL sc_seek			; until the end
 			TYA					; get offset
 			CLC					; stay at the end
 			ADC scan			; add to current pointer
 			STA scan			; update LSB
-			BCC sc_nxoc			; and continue
+			BCC no_match		; and try another opcode
 				INC scan+1			; in case of page crossing
-sc_nxoc:
-no_match:	; **** ???? ****
+no_match:
 			_STZA cursor		; back to beginning of instruction
 			INC count			; try next opcode
-			BNE sc_in			; all done if some opcode remains in list
-			BEQ bad_opc			; otherwise generic error
+			BNE sc_in			; there is another opcode to try
+			BEQ bad_opc			; otherwise no opcode did match
 sc_adv:
 		JSR getNextChar		; get another valid char, in case it has ended
-		TAX					; needs it!
+		TAX					; check A flags
 		BNE sc_nterm		; if end of buffer, sentence ends too
-			SEC					; just like a colon
+			SEC					; just like a colon, instruction ended
 sc_nterm:
 		_LDAY(scan)			; what it being pointed in list?
 		BPL sc_rem			; opcode not complete
 			BCS valid_oc		; both opcode and instruction ended
 			BCC no_match		; only opcode complete, keep trying! eeeeek
 sc_rem:
-			BCC sc_cont			; instruction continues
+		BCC sc_in			; neither opcode nor instruction ended, continue matching
 bad_opc:
-			_STZA bytes			; otherwise nothing to poke, really needed?
-			JMP bad_cmd			; generic error
-; near the end of decoding loop...
-;		TAX					; keep b temporarily
-sc_cont:
-		_LDAY(scan)			; check what was x...
-		Bmi valid_oc: jmp sc_in			; ...while (!x)
+		_STZA bytes			; otherwise nothing to poke, really needed?
+		JMP bad_cmd			; generic error
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
@@ -861,11 +839,15 @@ h2b_num:
 		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
 		_BRA h2b_l			; process it
 h2b_end:
+	STY cursor				; new! eeeeek
 	_EXIT_OK				; value is at tmp, carry clear!
 h2b_err:
-	SEC					; indicate error!
-	DEY					; will try to reprocess this char
-; might be improved with a DEX, BPL h2b_err loop?
+	DEX						; at least one cipher processed?
+	BMI h2b_exit			; no need to correct
+		DEY					; will try to reprocess former char
+h2b_exit:
+	SEC					; indicate error
+	STY cursor			; eeeek
 	RTS
 
 ; * print a byte in A as two hex ciphers *
