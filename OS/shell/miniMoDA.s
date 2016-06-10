@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b2
-; last modified 20160609-1434
+; v0.5b3
+; last modified 20160610-0924
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -158,8 +158,6 @@ d_error:
 
 not_mcmd:
 ; ** try to assemble the opcode! **
-;	JMP cli_chk			; in order to disable opcode decoding!
-;	TAX					; keep b, hope it lasts!
 	_STZA count			; reset opcode counter (aka tmp[2])
 	_STZA bytes			; eeeeeeeeek
 	LDY #<da_oclist-1	; get list address, notice trick
@@ -183,7 +181,11 @@ sc_sbyt:					; *** temporary label ***
 			STA tmp2			; store value to be poked
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
 			JSR fetch_byte		; this one should NOT succeed
-				BCC no_match		; OK if no other number found?
+			BCS sbyt_ok			; OK if no other number found
+				DEC cursor			; otherwise is an error, forget previous byte!!!
+				DEC cursor
+				BCC no_match		; reject
+sbyt_ok:
 			INC bytes			; one operand was detected
 			_BRA sc_adv			; continue decoding
 sc_nsbyt:
@@ -195,7 +197,7 @@ sc_nsbyt:
 				BCS no_match		; not if no number found?
 			LDY tmp				; get computed value
 			LDA tmp+1
-			STY tmp2			; store in safer place
+			STY tmp2			; store in safer place, endianness was ok
 			STA tmp2+1
 			INC bytes			; two operands were detected
 			INC bytes
@@ -244,15 +246,14 @@ valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
 		BEQ poke_opc		; no operands
-			INY					; make room for opcode! eeeeeek
 poke_loop:
-			LDA tmp2-2, Y		; get argument, note trick, ***NOT 816-savvy***
+			LDA tmp2-1, Y		; get argument, note trick, ***NOT 816-savvy***
 			STA (ptr), Y		; store in RAM
 			DEY					; next byte
 			BNE poke_loop		; could start on zero
 poke_opc:
 		LDA count			; matching opcode as computed
-		_STAY(ptr)			; poke it
+		STA (ptr), Y		; poke it, Y guaranteed to be zero here
 ; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!
 
 ; advance pointer and continue execution
