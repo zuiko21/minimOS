@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b3
-; last modified 20160610-0924
+; last modified 20160610-1042
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -183,7 +183,7 @@ sc_sbyt:					; *** temporary label ***
 			JSR fetch_byte		; this one should NOT succeed
 			BCS sbyt_ok			; OK if no other number found
 				DEC cursor			; otherwise is an error, forget previous byte!!!
-				DEC cursor
+				DEC cursor			; *** this could be problematic if whitespace in there, better use a skipping function ***
 				BCC no_match		; reject
 sbyt_ok:
 			INC bytes			; one operand was detected
@@ -968,9 +968,9 @@ gn_end:
 
 ; * get clean NEXT character from opcode list, set Carry if last one! *
 getListChar:
-	INC scan			; try next
-	BNE glc_do			; if did not wrap
-		INC scan+1			; otherwise carry on
+		INC scan			; try next
+		BNE glc_do			; if did not wrap
+			INC scan+1			; otherwise carry on
 glc_do:
 		_LDAY(scan)			; get current
 		CMP #' '			; is it blank? will never end an opcode, though
