@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b4
-; last modified 20160612-1126
+; last modified 20160612-1827
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -178,7 +178,11 @@ sc_sbyt:					; *** temporary label ***
 			DEC cursor			; eeeeeeek but this seems ok
 			JSR fetch_byte		; currently it is a single byte...
 				BCS no_match		; could not get operand
-			STA tmp2			; store value to be poked
+			LDX bytes			; check whether the first operand!
+			BNE sbyt_2nd		; otherwise do not overwrite previous
+				STA tmp2			; store value to be poked
+sbyt_2nd:
+			STA tmp2+1		; store here too, for BBS/BBR eeeeeek
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
 			JSR fetch_byte		; this one should NOT succeed
 			BCS sbyt_ok			; OK if no other number found
@@ -227,7 +231,8 @@ no_match:
 			_STZA bytes			; also no operands detected! eeeeek
 			INC count			; try next opcode
 			BNE sc_in			; there is another opcode to try
-			BEQ bad_opc			; otherwise no opcode did match
+		_STZA bytes			; otherwise nothing to poke, really needed?
+		JMP bad_cmd			; generic error
 sc_adv:
 		JSR getNextChar		; get another valid char, in case it has ended
 		TAX					; check A flags... and keep c!
@@ -240,9 +245,7 @@ sc_nterm:
 			BCC no_match		; only opcode complete, keep trying! eeeeek
 sc_rem:
 		BCC sc_in			; neither opcode nor instruction ended, continue matching
-bad_opc:
-		_STZA bytes			; otherwise nothing to poke, really needed?
-		JMP bad_cmd			; generic error
+		BCS no_match		; instruction is shorter, usually non-indexed indirect eeeeeeek
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
