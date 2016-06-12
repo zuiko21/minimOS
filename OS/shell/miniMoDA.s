@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b3
-; last modified 20160610-1042
+; v0.5b4
+; last modified 20160612-1126
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -175,24 +175,25 @@ sc_nrel:
 		BNE sc_nsbyt
 ; try to get a single byte operand
 sc_sbyt:					; *** temporary label ***
-			DEC cursor			; eeeeeeek
+			DEC cursor			; eeeeeeek but this seems ok
 			JSR fetch_byte		; currently it is a single byte...
 				BCS no_match		; could not get operand
 			STA tmp2			; store value to be poked
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
 			JSR fetch_byte		; this one should NOT succeed
 			BCS sbyt_ok			; OK if no other number found
-				DEC cursor			; otherwise is an error, forget previous byte!!!
-				DEC cursor			; *** this could be problematic if whitespace in there, better use a skipping function ***
+				JSR backChar		; otherwise is an error, forget previous byte!!!
+				JSR backChar
 				BCC no_match		; reject
 sbyt_ok:
+			JSR backChar		; reject tested char! eeeeeeeek
 			INC bytes			; one operand was detected
 			_BRA sc_adv			; continue decoding
 sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
 ; try to get a word-sized operand
-			DEC cursor			; eeeeeeeek
+			DEC cursor			; eeeeeeeek but seems OK
 			JSR fetch_word		; currently it is a single byte...
 				BCS no_match		; not if no number found?
 			LDY tmp				; get computed value
@@ -206,7 +207,7 @@ sc_nwrd:
 
 ; regular char in list, compare with input
 		STA tmp3			; store list contents eeeeeeeek!
-		DEC cursor			; let us see what we have, no need to keep b?
+		DEC cursor			; let us see what we have, seems ok
 		JSR getNextChar		; reload char from buffer eeeeeeeek^2
 		CMP tmp3			; list coincides with input?
 		BEQ sc_adv			; if so, continue scanning input
@@ -229,7 +230,7 @@ no_match:
 			BEQ bad_opc			; otherwise no opcode did match
 sc_adv:
 		JSR getNextChar		; get another valid char, in case it has ended
-		TAX					; check A flags
+		TAX					; check A flags... and keep c!
 		BNE sc_nterm		; if end of buffer, sentence ends too
 			SEC					; just like a colon, instruction ended
 sc_nterm:
@@ -264,8 +265,7 @@ poke_opc:
 		BCC main_nw			; check for wrap
 			INC ptr+1			; in case of page crossing
 main_nw:
-		LDY cursor			; eeeeeeeek
-		LDA (bufpt), Y		; check what remains in buffer
+		TXA					; retrieve c, what was NEXT in buffer eeeeeeek^3
 		BNE main_nnul		; termination will return to exterior main loop
 			JMP main_loop		; and continue forever
 main_nnul:
@@ -847,15 +847,13 @@ h2b_num:
 		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
 		_BRA h2b_l			; process it
 h2b_end:
-	STY cursor				; new! eeeeek
 	_EXIT_OK				; value is at tmp, carry clear!
 h2b_err:
 	DEX						; at least one cipher processed?
 	BMI h2b_exit			; no need to correct
-		DEY					; will try to reprocess former char
+		JSR backChar			; will try to reprocess former char
 h2b_exit:
 	SEC					; indicate error
-	STY cursor			; eeeek
 	RTS
 
 ; * print a byte in A as two hex ciphers *
@@ -966,6 +964,21 @@ gn_end:
 	STY cursor			; worth updating here!
 	RTS
 
+; * back off one character, skipping whitespace, use instead of DEC cursor! *
+backChar:
+	LDY cursor			; get current position
+bc_loop:
+		DEY					; back once
+		LDA (bufpt), Y		; check what is pointed
+		CMP #' '			; blank?
+			BEQ bc_loop			; once more
+		CMP #TAB			; tabulation?
+			BEQ bc_loop			; ignore
+		CMP #'$'			; ignored radix?
+			BEQ bc_loop			; also ignore
+	STY cursor				; otherwise we are done
+	RTS
+
 ; * get clean NEXT character from opcode list, set Carry if last one! *
 getListChar:
 		INC scan			; try next
@@ -1011,8 +1024,8 @@ fetch_word:
 	JSR gnc_do			; get next char!!!
 	JSR hex2byte		; get second byte, tmp is little-endian now
 		BCC fetch_abort		; actually OK!!!
-	DEC cursor			; should discard previous byte!
-	DEC cursor
+	JSR backChar		; should discard previous byte!
+	JSR backChar
 	RTS
 
 ; * abort command execution and return stack cleanup (remove X bytes) *
