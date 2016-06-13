@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b4
-; last modified 20160612-1827
+; last modified 20160613-0821
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -244,8 +244,8 @@ sc_nterm:
 			BCS valid_oc		; both opcode and instruction ended
 			BCC no_match		; only opcode complete, keep trying! eeeeek
 sc_rem:
-		BCC sc_in			; neither opcode nor instruction ended, continue matching
 		BCS no_match		; instruction is shorter, usually non-indexed indirect eeeeeeek
+		JMP sc_in			; neither opcode nor instruction ended, continue matching
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
