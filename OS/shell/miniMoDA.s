@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b4
-; last modified 20160614-0957
+; last modified 20160614-1014
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -404,7 +404,12 @@ po_loop:
 		CMP #'%'			; relative addressing
 		BNE po_nrel			; currently the same as single byte!
 ; put here specific code for relative arguments!
-			_BRA po_sbyte		; *** placeholder
+;			_BRA po_sbyte		; *** placeholder
+			LDA #'$'			; hex radix
+			JSR prnChar
+			LDY bytes			; retrieve instruction index
+			INY					; point to operand!
+; should I call fetch_word???
 po_nrel:
 		CMP #'@'			; single byte operand
 		BNE po_nbyt			; otherwise check word-sized operand
