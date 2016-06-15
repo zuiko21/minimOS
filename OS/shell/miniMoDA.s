@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b4
-; last modified 20160614-1014
+; v0.5b5
+; last modified 20160615-1114
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -409,7 +409,24 @@ po_loop:
 			JSR prnChar
 			LDY bytes			; retrieve instruction index
 			INY					; point to operand!
-; should I call fetch_word???
+			_STZA temp			; reset MSB correction
+			LDA (oper), Y		; get offset!
+			STY bytes			; correct index
+			SEC					; plus opcode...
+			ADC #1				; ...and displacement...
+			ADC oper			; ...from current position
+			PHA					; this is the LSB, now check for the MSB
+			BCC po_pp			; forward without page crossing, nothing else to do!
+			; *********correct MSB (displacement at temp) as needed******
+po_pp:
+			LDA oper+1			; get address MSB
+			CLC
+			ADC temp			; add computed correction!
+			JSR prnHex			; two ciphers
+			PLA					; previously computed LSB
+			JSR prnHex			; another two
+			LDX #5				; five more chars
+			_BRA po_done		; update and continue
 po_nrel:
 		CMP #'@'			; single byte operand
 		BNE po_nbyt			; otherwise check word-sized operand
