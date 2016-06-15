@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b5
-; last modified 20160615-1416
+; last modified 20160615-1502
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -407,17 +407,29 @@ po_loop:
 ;			_BRA po_sbyte		; *** placeholder
 			LDA #'$'			; hex radix
 			JSR prnChar
+			LDY #1				; standard branch offset
+			_STZA value			; reset MSB correction
+			_LDAX(oper)			; check opocde for a moment
+			AND #$0F			; watch low-nibble only
+			CMP #$0F			; is it BBR/BBS?
+			BNE po_nobbx		; if not, keep standard offset
+				INY					; otherwise needs one more byte!
+po_nobbx:
+			STY value+1			; store for a moment as will be added later
 			LDY bytes			; retrieve instruction index
 			INY					; point to operand!
-			_STZA value			; reset MSB correction
 			LDA (oper), Y		; get offset!
 			STY bytes			; correct index
 			SEC					; plus opcode...
-			ADC #1				; ...and displacement...
+			ADC value+1			; ...and displacement...
 			ADC oper			; ...from current position
 			PHA					; this is the LSB, now check for the MSB
 			BCC po_pp			; forward without page crossing, nothing else to do!
-			; *********correct MSB (displacement at temp) as needed******
+				BMI po_rn			; partial result was negative
+					INC value			; if now positive, forward to next page
+					_BRA po_pp			; and continue
+po_rn:
+				DEC value			; going back near the end of previous page
 po_pp:
 			LDA oper+1			; get address MSB
 			CLC
@@ -471,7 +483,7 @@ po_done:
 		LDA (scan), Y		; get current char again
 			BMI po_end			; opcode ended, no more to show
 		INY					; go for next char otherwise
-		BNE po_loop			; will work as no opcode string near 256 bytes long!
+		JMP po_loop			; BNE would work as no opcode string near 256 bytes long, but too far...
 po_end:
 ; add spaces until 20 chars!
 		LDA #13				; number of chars after the initial 7
