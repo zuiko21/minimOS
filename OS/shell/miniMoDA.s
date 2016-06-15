@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b5
-; last modified 20160615-1411
+; last modified 20160615-1416
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -409,7 +409,7 @@ po_loop:
 			JSR prnChar
 			LDY bytes			; retrieve instruction index
 			INY					; point to operand!
-;			_STZA temp			; reset MSB correction
+			_STZA value			; reset MSB correction
 			LDA (oper), Y		; get offset!
 			STY bytes			; correct index
 			SEC					; plus opcode...
@@ -421,7 +421,7 @@ po_loop:
 po_pp:
 			LDA oper+1			; get address MSB
 			CLC
-;			ADC temp			; add computed correction!
+			ADC value			; add computed correction!
 			JSR prnHex			; two ciphers
 			PLA					; previously computed LSB
 			JSR prnHex			; another two
