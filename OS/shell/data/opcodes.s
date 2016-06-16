@@ -1,13 +1,16 @@
-; minimOS 0.5a1 disassembler
+; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160119
+; last modified 20160616-1006
 
 ; Opcode list as bit-7 terminated strings
 ; @ expects single byte, & expects word
 ; NEW % expects RELATIVE addressing
 ; Rockwell 65C02 version (plus STP & WAI)
 ; will be used by the assembler module too
-da_oclist:
+
+#ifndef	OPCODELIST
+#define		OPCODELIST	_OPCODELIST
++da_oclist:
 	.asc	"BRK ", '@'+$80	; $00=BRK (actually a 2-byte opcode)
 	.asc	"ORA (@, X", ')'+$80	; $01=ORA (zp,X)
 	.asc	"?", '@'+$80	; $02=?
@@ -264,5 +267,4 @@ da_oclist:
 	.asc	"SBC &, ", 'X'+$80	; $FD=SBC abs,X
 	.asc	"INC &, ", 'X'+$80	; $FE=INC abs,X
 	.asc	"BBS7 @, ", '%'+$80	; $FF=BBS7 zp, rel	CMOS Rockwell
-
-
+#endif

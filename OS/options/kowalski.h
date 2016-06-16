@@ -37,7 +37,7 @@
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **
-ROM_BASE	=	$8000	; room for a lot of code!
+ROM_BASE	=	$E000	; skip I/O
 
 ; ** position of firmware, usually skipping I/O area **
 FW_BASE		=	$F800	; simple firmware expected on Kowalski simulator

@@ -1,6 +1,6 @@
 ; Basic loader for minimOS (simple version)
-; v0.5rc5
-; last modified 20160602-1423
+; v0.5rc6
+; last modified 20160616-1004
 ; (c) 2016 Carlos J. Santisteban
 
 #ifndef	KERNEL
@@ -13,13 +13,12 @@
 #include "firmware/ARCH.h"
 #include "sysvars.h"
 .text
+user_sram	=	$1000
 #endif
 
 ; *** zeropage variables ***
 	l_io	=	uz		; default device
-	l_ptr	=	l_io+1	; generic pointer (not used?)
-	l_num	=	l_ptr+2	; detected lines (not yet used?)
-	__last2	=	l_ptr+1	; END
+	__last2	=	l_io+1	; END
 
 ; *** initialise the loader ***
 
@@ -61,8 +60,8 @@ menu_exit:
 	_KERNEL(COUT)	; better looking
 	PLA				; retrieve selection!!!
 	AND #$0F		; filter number
-;	CMP #3+1		; *** first incorrect option!!! ***
-;		BCS loader_init	; beyond available options!
+	CMP #10			; only 9 entries supported
+		BCS loader_init	; beyond available options!
 	ASL				; twice
 	TAX				; use as index
 	JSR l_call		; execute option
@@ -97,20 +96,13 @@ codeptr:
 	.word	label7
 	.word	label8
 	.word	label9
-	.word	invalid_option
-	.word	invalid_option
-	.word	invalid_option
-	.word	invalid_option
-	.word	invalid_option
-	.word	invalid_option
 
 ; *** on-screen texts ***
 ; these are content-dependent
 optxt:
-	.asc	"1) M/L Monitor", 13
-	.asc	"2) Monitor + disassembler", 13
-	.asc	"3) Line editor", 13
-	.asc	"4) miniMoDA (debug)", 13
+	.asc	"1) Monitor + disassembler", 13
+	.asc	"2) Line editor", 13
+	.asc	"3) miniMoDA (debug)", 13
 ; these are always present
 	.asc	13, "0) SHUTDOWN", 13, "?", 0
 l_title:
@@ -120,25 +112,25 @@ l_title:
 label1:
 .(
 #define	KERNEL
-#include "shell/monitor.s"
+#include "shell/disasm.s"
 .)
 
 label2:
 .(
 #define	KERNEL
-#include "shell/disasm.s"
+#include "../apps/lined.s"
 .)
 
 label3:
 .(
 #define	KERNEL
-#include "../apps/lined.s"
+#include "shell/miniMoDA.s"
 .)
 
 label4:
 .(
 #define	KERNEL
-#include "shell/miniMoDA.s"
+;#include "shell/miniMoDA.s"
 .)
 
 label5:
@@ -172,4 +164,4 @@ label9:
 .)
 
 ; wrong option arrives here
-	JMP loader_init
+	RTS
