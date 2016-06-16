@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b5
-; last modified 20160616-1324
+; last modified 20160616-1340
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -144,21 +144,21 @@ cli_chk:
 			SEC					; set carry in case the BCC is skipped! eeeek
 			ADC bufpt			; carry was set, so the colon/newline is skipped
 			STA bufpt			; update pointer
-			BCC cli_loop		; MSB OK means try another
+			BCC cli_loop		; MSB OK means try another right now
 				INC bufpt+1			; otherwise wrap!
 			_BRA cli_loop		; and try another (BCS or BNE might do as well)
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
-overflow:
-	LDA #>err_ovf		; address of overflow message
-	LDY #<err_ovf
-	_BRA d_error		; display and restore
 bad_cmd:
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
 d_error:
 	JSR prnStr			; display error
 	_BRA main_loop		; restore
+overflow:
+	LDA #>err_ovf		; address of overflow message
+	LDY #<err_ovf
+	_BRA d_error		; display and restore
 
 not_mcmd:
 ; ** try to assemble the opcode! **
@@ -320,7 +320,8 @@ main_nw:
 		BNE main_nnul		; termination will return to exterior main loop
 			JMP main_loop		; and continue forever
 main_nnul:
-		JMP cli_loop		; otherwise continue parsing line
+		LDY cursor			; eeeeeeeeek
+		JMP cli_chk			; otherwise continue parsing line eeeeeeeeeek
 ; *** this is the end of main loop ***
 
 ; *** call command routine ***
