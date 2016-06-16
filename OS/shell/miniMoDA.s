@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b5
-; last modified 20160616-1246
+; last modified 20160616-1324
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -176,7 +176,9 @@ sc_in:
 ; try to get a relative operand
 ;			BEQ sc_sbyt			; *** currently no different from single-byte ***
 			JSR fetch_word		; will pick up a couple of bytes
-				BCS no_match		; not if no number found?
+			BCC srel_ok			; no errors, go translate into relative offset 
+				JMP no_match		; no address, not OK
+srel_ok:
 			LDY #1				; standard branch operands
 			LDA count			; check opcode for a moment
 			AND #$0F			; watch low-nibble on opcode
@@ -190,7 +192,7 @@ sc_nobbx:
 ; --- (value) holds the desired address
 ; --- (value)-fomerly computed address is the proper offset
 ; --- offset MUST fit in a signed byte! overflow otherwise
-; --- alternatively, (ptr)+Y - (value), then EOR #$FF, how to check bounds then? same sign on MSB & LSB!
+; --- alternatively, bad_opc(ptr)+Y - (value), then EOR #$FF, how to check bounds then? same sign on MSB & LSB!
 			CLC					; prepare
 			ADC ptr				; A = ptr + Y
 			SEC					; now for the subtraction
@@ -206,13 +208,18 @@ srel_2nd:
 ; first compute MSB (no need to complement)
 			LDA ptr+1			; get original position
 			SBC value+1			; subtract MSB
-			BMI srel_fwd		; forward branch, actually
-				LDA oper+1			;
-
+			BEQ srel_bak		; if zero, was backwards branch, no other positive accepted!
+				CMP #$FF			; otherwise, only $FF valid for forward branch
+				BEQ srel_fwd		; possibly valid forward branch
+					JMP overflow		; overflow otherwise
 srel_fwd:
+				LDA oper+1			; check stored offset
+				BPL srel_done		; positive is OK
+					JMP overflow		; slight overflow otherwise
+srel_bak:
 			LDA oper+1			; check stored offset
-			BPL srel_done		; should be positive!
-				JMP 
+			BMI srel_done		; this has to be negative
+				JMP overflow		; slight overflow otherwise
 srel_done:
 			INC bytes			; one operand was really detected
 			_BRA sc_adv			; continue decoding
@@ -220,7 +227,7 @@ sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
 ; try to get a single byte operand
-sc_sbyt:					; *** temporary label ***
+;sc_sbyt:					; *** temporary label ***
 			JSR fetch_byte		; currently it is a single byte...
 				BCS no_match		; could not get operand
 			STA oper			; store value to be poked *** here
@@ -248,7 +255,6 @@ sc_nsbyt:
 			INC bytes
 			_BRA sc_adv			; continue decoding
 sc_nwrd:
-
 ; regular char in list, compare with input
 		STA temp			; store list contents eeeeeeeek!
 		JSR getNextChar		; reload char from buffer eeeeeeeek^2
@@ -269,9 +275,12 @@ no_match:
 			_STZA cursor		; back to beginning of instruction
 			_STZA bytes			; also no operands detected! eeeeek
 			INC count			; try next opcode
-			BNE sc_in			; there is another opcode to try
-		_STZA bytes			; otherwise nothing to poke, really needed?
-		JMP bad_cmd			; generic error
+			BEQ bad_opc			; no more to try!
+				JMP sc_in			; there is another opcode to try
+bad_opc:
+			LDA #>err_opc		; address of wrong opcode message
+			LDY #<err_opc
+			JMP d_error			; display and restore
 sc_adv:
 		JSR getNextChar		; get another valid char, in case it has ended
 		TAX					; check A flags... and keep c!
@@ -1155,7 +1164,7 @@ err_mmod:
 err_bad:
 	.asc	"*** Bad command ***", CR, 0
 
-opc_error:
+err_opc:
 	.asc	"*** Bad opcode ***", CR, 0
 
 err_ovf:
