@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b5
-; last modified 20160616-1340
+; last modified 20160616-1406
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -127,7 +127,7 @@ cli_loop:
 			BEQ main_loop		; ignore blank lines! 
 		CMP #COLON			; end of instruction?
 			BEQ cli_chk			; advance to next valid char
-		CMP #'.'			; comtmpmand introducer (not used nor accepted if monitor only)
+		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 			BNE not_mcmd		; not a monitor command
 		JSR gnc_do			; get into command byte otherwise
 		CMP #'Z'+1			; past last command?
@@ -162,7 +162,7 @@ overflow:
 
 not_mcmd:
 ; ** try to assemble the opcode! **
-	_STZA count			; reset opcode counter (aka value[2])
+	_STZA count			; reset opcode counter
 	_STZA bytes			; eeeeeeeeek
 	LDY #<da_oclist-1	; get list address, notice trick
 	LDA #>da_oclist-1
@@ -190,9 +190,11 @@ sc_nobbx:
 ; --- at this point, (ptr)+Y+1 is the address of next instruction
 ; --- should offset be zero, the branch will just arrive there
 ; --- (value) holds the desired address
-; --- (value)-fomerly computed address is the proper offset
+; --- (value) minus that previously computed address is the proper offset
 ; --- offset MUST fit in a signed byte! overflow otherwise
-; --- alternatively, bad_opc(ptr)+Y - (value), then EOR #$FF, how to check bounds then? same sign on MSB & LSB!
+; --- alternatively, bad_opc(ptr)+Y - (value), then EOR #$FF
+; --- how to check bounds then? same sign on MSB & LSB!
+; --- but MSB can ONLY be 0 or $FF!
 			CLC					; prepare
 			ADC ptr				; A = ptr + Y
 			SEC					; now for the subtraction
@@ -297,11 +299,13 @@ sc_rem:
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
+		LDX bytes			; to be 816-savvy...
 		BEQ poke_opc		; no operands
 poke_loop:
-			LDA oper-1, Y		; get argument, note trick, ***NOT 816-savvy***
+			LDA oper-1, X		; get argument, note trick, 816-savvy
 			STA (ptr), Y		; store in RAM
 			DEY					; next byte
+			DEX
 			BNE poke_loop		; could start on zero
 poke_opc:
 		LDA count			; matching opcode as computed
