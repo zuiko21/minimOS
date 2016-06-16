@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b5
-; last modified 20160616-0941
+; last modified 20160616-1246
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -149,12 +149,16 @@ cli_chk:
 			_BRA cli_loop		; and try another (BCS or BNE might do as well)
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
+overflow:
+	LDA #>err_ovf		; address of overflow message
+	LDY #<err_ovf
+	_BRA d_error		; display and restore
 bad_cmd:
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
 d_error:
 	JSR prnStr			; display error
-	_BRA main_loop		; continue
+	_BRA main_loop		; restore
 
 not_mcmd:
 ; ** try to assemble the opcode! **
@@ -165,24 +169,61 @@ not_mcmd:
 	STY scan			; store pointer from Y eeeeeeeeeeek
 	STA scan+1
 sc_in:
+		DEC cursor			; every single option will do it anyway
 		JSR getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
-			BEQ sc_sbyt			; *** currently no different from single-byte ***
+;			BEQ sc_sbyt			; *** currently no different from single-byte ***
+			JSR fetch_word		; will pick up a couple of bytes
+				BCS no_match		; not if no number found?
+			LDY #1				; standard branch operands
+			LDA count			; check opcode for a moment
+			AND #$0F			; watch low-nibble on opcode
+			CMP #$0F			; is it BBR/BBS?
+			BNE sc_nobbx		; if not, keep standard offset
+				INY					; otherwise needs one more byte!
+sc_nobbx:
+			TYA					; get branch operand size
+; --- at this point, (ptr)+Y+1 is the address of next instruction
+; --- should offset be zero, the branch will just arrive there
+; --- (value) holds the desired address
+; --- (value)-fomerly computed address is the proper offset
+; --- offset MUST fit in a signed byte! overflow otherwise
+; --- alternatively, (ptr)+Y - (value), then EOR #$FF, how to check bounds then? same sign on MSB & LSB!
+			CLC					; prepare
+			ADC ptr				; A = ptr + Y
+			SEC					; now for the subtraction
+			SBC value			; one's complement of result
+			EOR #$FF			; the actual offset!
+; will poke offset first, then check bounds
+			LDX bytes			; check whether the first operand!
+			BNE srel_2nd		; otherwise do not overwrite previous
+				STA oper			; normal storage
+srel_2nd:
+			STA oper+1			; storage for BBR/BBS
+; check whether within branching range
+; first compute MSB (no need to complement)
+			LDA ptr+1			; get original position
+			SBC value+1			; subtract MSB
+			BMI srel_fwd		; forward branch, actually
+				LDA oper+1			;
+
+srel_fwd:
+			LDA oper+1			; check stored offset
+			BPL srel_done		; should be positive!
+				JMP 
+srel_done:
+			INC bytes			; one operand was really detected
+			_BRA sc_adv			; continue decoding
 sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
 ; try to get a single byte operand
 sc_sbyt:					; *** temporary label ***
-			DEC cursor			; eeeeeeek but this seems ok
 			JSR fetch_byte		; currently it is a single byte...
 				BCS no_match		; could not get operand
-			LDX bytes			; check whether the first operand!
-			BNE sbyt_2nd		; otherwise do not overwrite previous
-				STA oper			; store value to be poked
-sbyt_2nd:
-			STA oper+1		; store here too, for BBS/BBR eeeeeek
+			STA oper			; store value to be poked *** here
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
 			JSR fetch_byte		; this one should NOT succeed
 			BCS sbyt_ok			; OK if no other number found
@@ -197,8 +238,7 @@ sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
 ; try to get a word-sized operand
-			DEC cursor			; eeeeeeeek but seems OK
-			JSR fetch_word		; currently it is a single byte...
+			JSR fetch_word		; will pick up a couple of bytes
 				BCS no_match		; not if no number found?
 			LDY value				; get computed value
 			LDA value+1
@@ -211,7 +251,6 @@ sc_nwrd:
 
 ; regular char in list, compare with input
 		STA temp			; store list contents eeeeeeeek!
-		DEC cursor			; let us see what we have, seems ok
 		JSR getNextChar		; reload char from buffer eeeeeeeek^2
 		CMP temp			; list coincides with input?
 		BEQ sc_adv			; if so, continue scanning input
@@ -1110,7 +1149,6 @@ splash:
 	.asc	"minimOS 0.5 monitor/debugger/assembler", CR
 	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
 
-
 err_mmod:
 	.asc	"***Missing module***", CR, 0
 
@@ -1119,6 +1157,9 @@ err_bad:
 
 opc_error:
 	.asc	"*** Bad opcode ***", CR, 0
+
+err_ovf:
+	.asc	"*** Out of range ***", CR, 0
 
 regs_head:
 	.asc	"A: X: Y: S: NV-bDIZC", CR, 0
