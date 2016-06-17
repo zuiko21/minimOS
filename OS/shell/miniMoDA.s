@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b5
-; last modified 20160616-1406
+; v0.5b6
+; last modified 20160617-0953
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -171,6 +171,11 @@ not_mcmd:
 sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
+
+pha
+jsr prnChar
+pla
+
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
@@ -262,6 +267,7 @@ sc_nwrd:
 		JSR getNextChar		; reload char from buffer eeeeeeeek^2
 		CMP temp			; list coincides with input?
 		BEQ sc_adv			; if so, continue scanning input
+sc_skip:
 			LDY #$FF			; otherwise seek end of current opcode
 sc_seek:
 				INY					; advance in list (optimised)
@@ -276,6 +282,10 @@ sc_seek:
 no_match:
 			_STZA cursor		; back to beginning of instruction
 			_STZA bytes			; also no operands detected! eeeeek
+
+lda #'*'
+jsr prnChar
+
 			INC count			; try next opcode
 			BEQ bad_opc			; no more to try!
 				JMP sc_in			; there is another opcode to try
@@ -294,7 +304,7 @@ sc_nterm:
 			BCS valid_oc		; both opcode and instruction ended
 			BCC no_match		; only opcode complete, keep trying! eeeeek
 sc_rem:
-		BCS no_match		; instruction is shorter, usually non-indexed indirect eeeeeeek
+		BCS sc_skip			; instruction is shorter, usually non-indexed indirect eeeeeeek^3
 		JMP sc_in			; neither opcode nor instruction ended, continue matching
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
