@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b6
-; last modified 20160617-0953
+; last modified 20160802-1020
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -127,6 +127,8 @@ cli_loop:
 			BEQ main_loop		; ignore blank lines! 
 		CMP #COLON			; end of instruction?
 			BEQ cli_chk			; advance to next valid char
+		CMP #CR				; ** newline is the same as colon **
+			BEQ cli_chk
 		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 			BNE not_mcmd		; not a monitor command
 		JSR gnc_do			; get into command byte otherwise
@@ -171,11 +173,7 @@ not_mcmd:
 sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
-
-pha
-jsr prnChar
-pla
-
+; (removed debug code)
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
@@ -282,10 +280,7 @@ sc_seek:
 no_match:
 			_STZA cursor		; back to beginning of instruction
 			_STZA bytes			; also no operands detected! eeeeek
-
-lda #'*'
-jsr prnChar
-
+; (removed debug code *)
 			INC count			; try next opcode
 			BEQ bad_opc			; no more to try!
 				JMP sc_in			; there is another opcode to try
@@ -321,7 +316,7 @@ poke_opc:
 		LDA count			; matching opcode as computed
 		STA (ptr), Y		; poke it, Y guaranteed to be zero here
 ; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!
-
+; **** to do above ****
 ; advance pointer and continue execution
 		LDA bytes			; add number of operands...
 		SEC					; ...plus opcode itself... (will be included? CLC then)
