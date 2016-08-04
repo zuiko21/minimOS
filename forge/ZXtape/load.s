@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160804-1716
+; last modified 20160804-1723
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -14,6 +14,7 @@
 ; ddrx = VIA DDRx
 ; px6in = VIA IORx, easy detection via BIT instruction (V) though not used!
 ; speedcode = stores CPU speed in fixed point format ($10 = 1 MHz)
+ mask = %01000000  ; preset for bit 6 but change otherwise
 ; *** zeropage ***
 ; pointer (word)
 ; length (word) is best on ZP
@@ -36,13 +37,13 @@ zx_load:
 	AND #%10111111	; make sure bit 6 is input
 	STA ddrx	; set direction, port is ready
 	LDA px6in	; get whole byte
-	AND #%01000000	; filter bit 6 or whatever
+	AND #mask	; filter bit 6 or whatever
 	STA last	; set initial value as only transitions will matter
 
 ; stub******stub******stub******stub
 
 	LDA px6in	; get whole byte
-	AND #%01000000	; filter bit 6 or whatever
+	AND #mask	; filter bit 6 or whatever
 	CMP last	; compare against previous value
 	BEQ stay	; did not change, keep waiting and counting
 		STA last	; update with new value
