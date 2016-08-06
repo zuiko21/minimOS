@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
-; v0.1a2
+; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160805-1301
+; last modified 20160806-1300
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -38,7 +38,7 @@
 ;   now accept only guide, timing $9C, but edges must be within 857 uS (B=$C6)
 ;     needs at least 256 pairs
 ;   for sync, timing is $C9 waiting for a single short edge (ld edge 1)
-;     keep waiting aginst $D4, call 'ld edge 1' again for the other edge
+;     keep waiting against $D4, call 'ld edge 1' again for the other edge
 ;   reading bits use timing $B0 ($B2 for flag?)
 ; * two pulses in less than 713 uS means 0, otherwise 1, timeout after 1575 uS *
 
@@ -55,13 +55,51 @@ zx_load:
 	AND #mask	; filter bit 6 or whatever
 	STA last	; set initial value as only transitions will matter
 
-; stub******stub******stub******stub
+; *** get a couple of edges, much like the original ***
 
-	LDA px6in	; get whole byte
-	AND #mask	; filter bit 6 or whatever
-	CMP last	; compare against previous value
-	BEQ stay	; did not change, keep waiting and counting
-		STA last	; update with new value
-		; *** most likely exit loop
+ld_edge2:
+
+	JSR ld_edge1	; get first edge
+	BCS ld_edge1	; if successful, go for the second one
+		RTS		; otherwise return with C clear and Z set, timeout 
+
+; *** get timed edge, named much like the original ***
+; Y = preloaded with max time, will go down to zero upon timeout
+; returns with C if edge found, otherwise Z means timeout
+; both C and Z clear means BREAK was pressed (not yet implemented)
+
+ld_edge1:
+
+; previous delay, 119 uS @ 1 MHz, 112.5 uS @ 14 Mhz
+	LDX speedcode	; (4) adjust for CPU speed
+ld_delay:
+		NOP		; (2*) lose some time
+		DEX		; (2*) count depending on CPU speed
+		BNE ld_delay	; (3*) wait 112+8-1 uS @ 1 MHz before entering sampling loop
+		
+; now wait for an edge
+; @ 1 MHz this takes 17*16-10 = 262 uS per Y decrease -- too much!
+; should shift right X, but do not let it zero (slowest machines)
+; e.g. LDA speedcode, LSR, LSR, TAX, BNE bit_loop, INX does 17*4-1+9 = 76 uS
+
+edge_loop:
+	LDX speedcode	; (4*) reload correction factor
+bit_loop:
+		LDA px6in	; (4**) get whole byte
+		AND #mask	; (2**) filter bit 6 or whatever
+		CMP last	; (3**) compare against previous value
+		BEQ stay	; (3**) did not change, keep waiting and counting
+; edge was found
+			STA last	; (3) update with new value
+			SEC		; (2+6) found edge within timeframe
+			RTS
 stay:
-	; *** increase count and check for timeouts
+		; *** increase count and check for timeouts
+		DEX		; (2**) CPU speed dependent counter
+	BNE bit_loop	; (3**) continue checking
+		DEY		; (2*) 'absolute' timing counter
+	BNE edge_loop	; (3*) wait for edge or timeout
+; no edge found within expected timeframe
+	CLC		; (2+6) no edge found, and Z means timeout
+; *** if available, BREAK key should return with CLC and _NOT_ Z
+	RTS
