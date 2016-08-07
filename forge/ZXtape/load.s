@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
 ; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160806-1300
+; last modified 20160807-1613
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -23,10 +23,10 @@
 ; sys_sp is safe to use when interrupts are disabled
 
 ; *** REFERENCE: pulse lengths ***
-; guide tone = 619/619 uS
+; guide tone = 619/619 uS (cycle 1.238 mS) 
 ; sync = 191/210 uS
-; zero = 244/244 uS
-; one = 489/489 uS
+; zero = 244/244 uS (cycle 488 uS)
+; one = 489/489 uS (cycle 978 uS)
 
 ; *** ADVICE ***
 ; wait about 102 uS before entering timing loop
@@ -70,17 +70,29 @@ ld_edge2:
 
 ld_edge1:
 
-; previous delay, 119 uS @ 1 MHz, 112.5 uS @ 14 Mhz
+; previous delay, 115 uS @ 1 MHz, 112.2 uS @ 14 Mhz
+; remove NOP for 83 uS @ 1 MHz, 80 uS @ 14 MHz
+; extra NOP does 147 uS @ 1 MHz, 144.2 uS @ 14 MHz
+
 	LDX speedcode	; (4) adjust for CPU speed
 ld_delay:
 		NOP		; (2*) lose some time
 		DEX		; (2*) count depending on CPU speed
-		BNE ld_delay	; (3*) wait 112+8-1 uS @ 1 MHz before entering sampling loop
+		BNE ld_delay	; (3*) wait before entering sampling loop
 		
 ; now wait for an edge
-; @ 1 MHz this takes 17*16-10 = 262 uS per Y decrease -- too much!
-; should shift right X, but do not let it zero (slowest machines)
-; e.g. LDA speedcode, LSR, LSR, TAX, BNE bit_loop, INX does 17*4-1+9 = 76 uS
+; new algorithm, somewhat faster
+;   Y:  1 MHz 14 Mc (uS)
+; -----+-----+-----
+;    1   271   257
+;    2   535   514
+;    3   799   770
+
+;   Y:    -   1 NOP 2NOPs (total delay @ 1 MHz)
+; -----+-----+-----+-----
+;    1   354   386   418
+;    2   618   650   682
+;    3   882   914   946
 
 edge_loop:
 	LDX speedcode	; (4*) reload correction factor
@@ -88,18 +100,19 @@ bit_loop:
 		LDA px6in	; (4**) get whole byte
 		AND #mask	; (2**) filter bit 6 or whatever
 		CMP last	; (3**) compare against previous value
-		BEQ stay	; (3**) did not change, keep waiting and counting
-; edge was found
-			STA last	; (3) update with new value
-			SEC		; (2+6) found edge within timeframe
-			RTS
-stay:
-		; *** increase count and check for timeouts
-		DEX		; (2**) CPU speed dependent counter
-	BNE bit_loop	; (3**) continue checking
-		DEY		; (2*) 'absolute' timing counter
-	BNE edge_loop	; (3*) wait for edge or timeout
+		BNE changed	; (2**) if did not change, keep waiting and counting
+; increase count and check for timeouts
+			DEX		; (2**) CPU speed dependent counter
+		BNE bit_loop	; (3**) continue checking
+			DEY		; (2*) 'absolute' timing counter
+		BNE edge_loop	; (3*) wait for edge or timeout
 ; no edge found within expected timeframe
-	CLC		; (2+6) no edge found, and Z means timeout
+		CLC		; (2+6) no edge found, and Z means timeout
 ; *** if available, BREAK key should return with CLC and _NOT_ Z
+		RTS
+changed:
+; edge was found
+	STA last	; (3) update with new value
+	SEC		; (2+6) found edge within timeframe
 	RTS
+
