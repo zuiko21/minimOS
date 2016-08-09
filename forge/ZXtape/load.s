@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
 ; v0.1a4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160809-1340
+; last modified 20160809-1720
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -60,10 +60,13 @@ zx_load:
 
 
 ; *** get a byte from the data stream ***
-; preload Y with first value, and A with #1 (end marker)!
+; return with C set means OK, clear means error!
 
 ld_8bits:
 
+	LDA #1	; marker pattern
+	LDY #17	; timing value *****revise
+ld_bits:
 		JSR ld_edge2	; get whole bit
 		BCS bitOK	; something was received
 			RTS		; timeout otherwise
@@ -71,14 +74,41 @@ bitOK:
 		CPY #15	; one/zero threshold *****revise
 ; is C correctly set? (clear if zero, set if one) *****revise
 		ROL		; rotate bits and push marker
-		LDY #17	; 4.5 mS timeout for next bit
-		BCC ld_8bits	; continue while bits remain
+		LDY #17	; 4.5 mS timeout for next bit *****
+		BCC ld_bits	; continue while bits remain
 ; byte is in A, add to checksum
 	PHA		; keep it!!
 	EOR checksum	; add to current
 	STA checksum	; and update stored value
 	PLA		; retrieve value!
-; should store byte? and decrease counter******* TO DO *** TO DO ****** 
+	RTS
+
+; get byte, store it and decrease counter
+	JSR ld_8bits	; get byte in A
+		BCC error	; something went wrong
+; **consider not doing this if counter became zero, ie do not store checksum as data! 
+	LDY #0	; NMOS savvy!
+	STA (data_pt), Y	; store byte
+	INC data_pt	; point to next byte
+	BNE nw1	; check MSB in case
+		INC data_pt+1
+nw1:
+	DEC data_size	; one byte less to go
+	BNE somewhere	; check MSB just in case
+		LDX data_size+1
+	BEQ ended	; if zero too, all done!
+		DEC data_size+1	; otherwise decrease MSB...
+		JMP somewhere	; ...and get another ***** TO DO
+ended:
+; if the checksum was already processed, stored value should be zero
+	LDA checksum	; check stored
+	CLC		; assume OK
+	BEQ finished	; zero means OK
+error:			; ***could use specific routine, but this will do
+		SEC		; otherwise loading error
+		LDY #corrupt
+finished:
+	RTS
 
 ; *** get a couple of edges, much like the original ***
 
