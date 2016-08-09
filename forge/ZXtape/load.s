@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
-; v0.1a3
+; v0.1a4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160807-1613
+; last modified 20160809-1340
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -14,6 +14,7 @@
 ; ddrx = VIA DDRx
 ; px6in = VIA IORx, easy detection via BIT instruction (V) though not used!
 ; speedcode = stores CPU speed in fixed point format ($10 = 1 MHz)
+
  mask = %01000000  ; preset for bit 6 but change otherwise
  
 ; *** zeropage ***
@@ -40,7 +41,7 @@
 ;   for sync, timing is $C9 waiting for a single short edge (ld edge 1)
 ;     keep waiting against $D4, call 'ld edge 1' again for the other edge
 ;   reading bits use timing $B0 ($B2 for flag?)
-; * two pulses in less than 713 uS means 0, otherwise 1, timeout after 1575 uS *
+; * two pulses in less than 713 uS ($CB) means 0, otherwise 1, timeout after 1575 uS *
 
 zx_load:
 
@@ -54,6 +55,30 @@ zx_load:
 	LDA px6in	; get whole byte
 	AND #mask	; filter bit 6 or whatever
 	STA last	; set initial value as only transitions will matter
+
+; *** now get the guide, flag and, if matching, load the bits ***
+
+
+; *** get a byte from the data stream ***
+; preload Y with first value, and A with #1 (end marker)!
+
+ld_8bits:
+
+		JSR ld_edge2	; get whole bit
+		BCS bitOK	; something was received
+			RTS		; timeout otherwise
+bitOK:
+		CPY #15	; one/zero threshold *****revise
+; is C correctly set? (clear if zero, set if one) *****revise
+		ROL		; rotate bits and push marker
+		LDY #17	; 4.5 mS timeout for next bit
+		BCC ld_8bits	; continue while bits remain
+; byte is in A, add to checksum
+	PHA		; keep it!!
+	EOR checksum	; add to current
+	STA checksum	; and update stored value
+	PLA		; retrieve value!
+; should store byte? and decrease counter******* TO DO *** TO DO ****** 
 
 ; *** get a couple of edges, much like the original ***
 
@@ -92,7 +117,7 @@ ld_delay:
 ; -----+-----+-----+-----
 ;    1   354   386   418
 ;    2   618   650   682
-;    3   882   914   946
+;    3   882   914   946 (264 per Y)
 
 edge_loop:
 	LDX speedcode	; (4*) reload correction factor
