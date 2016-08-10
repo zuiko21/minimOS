@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
-; v0.1a4
+; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160810-1409
+; last modified 20160810-1645
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -58,8 +58,16 @@ zx_load:
 
 ; *** now get the guide, flag and, if matching, load the bits ***
 
-
-
+; *** check the flag and, if matches with supplied, proceed to load ***
+	LDA #0	; NMOS savvy
+	STA checksum	; reset it now as will be included in total computation
+	JSR ld_8bits	; get the first byte
+		BCC error		; something went wrong
+	CMP flag	; what were you looking for? (0=header or $FF=data)
+	BEQ ld_loop	; matched flag, proceed with load
+		LDY #empty	; otherwise is a discarded block, check with ABI***
+		SEC		; notice error code and exit
+		RTS
 ; get byte, store it and decrease counter
 ld_loop:
 	JSR ld_8bits	; get byte in A
@@ -84,9 +92,9 @@ ended:
 	LDA checksum	; check stored
 	CLC		; assume OK
 	BEQ finished	; zero means OK
-error:			; ***could use specific routine, but this will do
+error:
 		SEC		; otherwise loading error
-		LDY #corrupt
+		LDY #corrupt	; ***check against ABI
 finished:
 	RTS
 ; ****** all finished ******
@@ -100,7 +108,9 @@ ld_8bits:
 	LDA #1	; marker pattern
 	LDY #17	; timing value *****revise
 ld_bits:
+		PHA		; eeeeeeek
 		JSR ld_edge2	; get whole bit
+		PLA		; eeeeeeek
 		BCS bitOK	; something was received
 			RTS		; timeout otherwise
 bitOK:
@@ -137,7 +147,7 @@ ld_edge1:
 
 	LDX speedcode	; (4) adjust for CPU speed
 ld_delay:
-		NOP		; (2*) lose some time
+		NOP		; (2*) lose some time, see comments
 		DEX		; (2*) count depending on CPU speed
 		BNE ld_delay	; (3*) wait before entering sampling loop
 		
