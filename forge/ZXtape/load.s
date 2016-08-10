@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
 ; v0.1a4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160809-1720
+; last modified 20160810-1409
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -59,7 +59,40 @@ zx_load:
 ; *** now get the guide, flag and, if matching, load the bits ***
 
 
-; *** get a byte from the data stream ***
+
+; get byte, store it and decrease counter
+ld_loop:
+	JSR ld_8bits	; get byte in A
+		BCC error	; something went wrong
+; store byte in memory, checksum is not counted
+	LDY #0	; NMOS savvy!
+	STA (data_pt), Y	; store byte ***** change for CMP if verifying
+	INC data_pt	; point to next byte
+	BNE nw1	; check MSB in case
+		INC data_pt+1
+nw1:
+	DEC data_size	; one byte less to go
+	BNE ld_loop	; check MSB just in case
+		LDX data_size+1
+	BEQ ended	; if zero too, all done!
+		DEC data_size+1	; otherwise decrease MSB...
+		JMP ld_loop	; ...and get another
+ended:
+; finally load checksum and the stored one should turn zero
+	JSR ld_8bits	; get checksum byte in A (and modify stored)
+		BCC error	; something went wrong
+	LDA checksum	; check stored
+	CLC		; assume OK
+	BEQ finished	; zero means OK
+error:			; ***could use specific routine, but this will do
+		SEC		; otherwise loading error
+		LDY #corrupt
+finished:
+	RTS
+; ****** all finished ******
+
+; ***** USEFUL ROUTINES *****
+; *** get a byte in A from the data stream ***
 ; return with C set means OK, clear means error!
 
 ld_8bits:
@@ -81,33 +114,6 @@ bitOK:
 	EOR checksum	; add to current
 	STA checksum	; and update stored value
 	PLA		; retrieve value!
-	RTS
-
-; get byte, store it and decrease counter
-	JSR ld_8bits	; get byte in A
-		BCC error	; something went wrong
-; **consider not doing this if counter became zero, ie do not store checksum as data! 
-	LDY #0	; NMOS savvy!
-	STA (data_pt), Y	; store byte
-	INC data_pt	; point to next byte
-	BNE nw1	; check MSB in case
-		INC data_pt+1
-nw1:
-	DEC data_size	; one byte less to go
-	BNE somewhere	; check MSB just in case
-		LDX data_size+1
-	BEQ ended	; if zero too, all done!
-		DEC data_size+1	; otherwise decrease MSB...
-		JMP somewhere	; ...and get another ***** TO DO
-ended:
-; if the checksum was already processed, stored value should be zero
-	LDA checksum	; check stored
-	CLC		; assume OK
-	BEQ finished	; zero means OK
-error:			; ***could use specific routine, but this will do
-		SEC		; otherwise loading error
-		LDY #corrupt
-finished:
 	RTS
 
 ; *** get a couple of edges, much like the original ***
