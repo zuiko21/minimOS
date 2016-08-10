@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
-; v0.1a5
+; v0.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160810-1645
+; last modified 20160810-1847
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -18,10 +18,10 @@
  mask = %01000000  ; preset for bit 6 but change otherwise
  
 ; *** zeropage ***
-; pointer (word)
-; length (word) is best on ZP
+; counter is best on zp
+; length (word) and checksum are best on ZP
 ; last will actually hold the relevant bit read from the port
-; sys_sp is safe to use when interrupts are disabled
+; sys_sp is safe to use when interrupts are disabled, ditto for sys_ptr
 
 ; *** REFERENCE: pulse lengths ***
 ; guide tone = 619/619 uS (cycle 1.238 mS) 
@@ -56,19 +56,65 @@ zx_load:
 	AND #mask	; filter bit 6 or whatever
 	STA last	; set initial value as only transitions will matter
 
-; *** now get the guide, flag and, if matching, load the bits ***
+; *** first wait for the guide tone and sync ***
+	LDY #0	; longest timeout
+	STY counter	; will be used later as guide tone pulse counter
+ld_brk:
+		;BEQ wait	; in case BREAK was not pressed, not yet implemented
+		;	_EXIT_CS	; PLP actually
+		;	_ERR(ABORT)	; signal NEW error in ABI***
 
-; *** check the flag and, if matches with supplied, proceed to load ***
+wait:
+		JSR ld_edge1	; look for any pulse
+		BCC ld_brk	; until found or aborted
+		
+; now wait for a second and see if the pulsing signal remains
+	LDX speedcode	; machine specific
+	TXA		; save for later as will be reused!
+wp_loop:
+		LDY #49	; (2) adjusted for nearly 1 second, whole loop should take ~62500 clocks!
+wp_loop2:
+				DEX		;(2**) will loop 256 iterations most of the time
+				BNE wp_loop2	; (3**) 1279 per Y, but 79 @ 1 MHz once in Y loop!
+			DEY		; (2*) auxiliary counter
+			BNE wp_loop2	; (3*)
+		TAX		; (2) retrieve value!
+		DEX		; (2) CPU speed dependent
+		BNE wp_loop	; (3) until the end of delay
+	JSR ld_edge2	; continue only if two edges are found
+		BCC ld_brk	; will check at last whether BREAK was pressed (if implemented)
+		
+; now accept only a guide tone
+leader:
+		LDY #	; guide tone timing constant***
+		JSR ld_edge2	; wait for two edges...
+			BCC ld_brk	; ...hopefully successful
+		CPY #	; guide tone threshold***
+			BCx wait	; was not the proper frequency ***check
+		INC counter	; needs 256 of these
+	BNE leader
+
+; time to fetch the sync pulse
+sync:
+		LDY #	; timing constant***
+		JSR ld_edge1	; try to get first half
+			BCC ld_brk	; no luck
+		CPY #	; adequate threshold
+			BCx sync	; keep trying ***check
+		JSR ld_edge1	; must get the other half
+	BCC error	; not found!
+
+; *** now load the flag and, if matches with supplied, proceed to load ***
 	LDA #0	; NMOS savvy
 	STA checksum	; reset it now as will be included in total computation
 	JSR ld_8bits	; get the first byte
 		BCC error		; something went wrong
 	CMP flag	; what were you looking for? (0=header or $FF=data)
 	BEQ ld_loop	; matched flag, proceed with load
-		LDY #empty	; otherwise is a discarded block, check with ABI***
-		SEC		; notice error code and exit
-		RTS
-; get byte, store it and decrease counter
+		_EXIT_CS	; PLP actually
+		_ERR(N_FOUND)	; otherwise is a discarded block
+
+; *** get byte, store it and decrease counter ***
 ld_loop:
 	JSR ld_8bits	; get byte in A
 		BCC error	; something went wrong
@@ -82,21 +128,22 @@ nw1:
 	DEC data_size	; one byte less to go
 	BNE ld_loop	; check MSB just in case
 		LDX data_size+1
-	BEQ ended	; if zero too, all done!
+	BEQ loaded	; if zero too, all done!
 		DEC data_size+1	; otherwise decrease MSB...
 		JMP ld_loop	; ...and get another
-ended:
+loaded:
 ; finally load checksum and the stored one should turn zero
 	JSR ld_8bits	; get checksum byte in A (and modify stored)
 		BCC error	; something went wrong
 	LDA checksum	; check stored
-	CLC		; assume OK
-	BEQ finished	; zero means OK
+	BNE error	; zero means OK
+		_EXIT_CS	; PLP actually
+		_EXIT_OK	; this is CLC RTS
+		
 error:
-		SEC		; otherwise loading error
-		LDY #corrupt	; ***check against ABI
-finished:
-	RTS
+	_EXIT_CS	; PLP, actually
+	_ERR(CORRUPT)	; otherwise a loading error happened
+	
 ; ****** all finished ******
 
 ; ***** USEFUL ROUTINES *****
@@ -106,7 +153,7 @@ finished:
 ld_8bits:
 
 	LDA #1	; marker pattern
-	LDY #17	; timing value *****revise
+	LDY #6	; timing value
 ld_bits:
 		PHA		; eeeeeeek
 		JSR ld_edge2	; get whole bit
@@ -114,10 +161,10 @@ ld_bits:
 		BCS bitOK	; something was received
 			RTS		; timeout otherwise
 bitOK:
-		CPY #15	; one/zero threshold *****revise
+		CPY #4	; one/zero threshold
 ; is C correctly set? (clear if zero, set if one) *****revise
 		ROL		; rotate bits and push marker
-		LDY #17	; 4.5 mS timeout for next bit *****
+		LDY #6	; 1.6 mS timeout for next bit
 		BCC ld_bits	; continue while bits remain
 ; byte is in A, add to checksum
 	PHA		; keep it!!
