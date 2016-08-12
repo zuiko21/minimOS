@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
-; v0.1a6
+; v0.1b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160810-1847
+; last modified 20160812-2032
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -39,9 +39,9 @@
 ;   now accept only guide, timing $9C, but edges must be within 857 uS (B=$C6)
 ;     needs at least 256 pairs
 ;   for sync, timing is $C9 waiting for a single short edge (ld edge 1)
-;     keep waiting against $D4, call 'ld edge 1' again for the other edge
+;     keep waiting against $D4 (742 uS) calling 'ld edge 1' again for the other edge
 ;   reading bits use timing $B0 ($B2 for flag?)
-; * two pulses in less than 713 uS ($CB) means 0, otherwise 1, timeout after 1575 uS *
+; * two pulses in less than ***893 uS ($CB) means 0, otherwise 1, timeout after 1349 uS *
 
 zx_load:
 
@@ -86,21 +86,21 @@ wp_loop2:
 		
 ; now accept only a guide tone
 leader:
-		LDY #	; guide tone timing constant***
-		JSR ld_edge2	; wait for two edges...
+		LDY #6	; guide tone timing constant
+		JSR ld_edge2	; wait for two edges up to 1.685 mS, actually 1.738
 			BCC ld_brk	; ...hopefully successful
-		CPY #	; guide tone threshold***
-			BCx wait	; was not the proper frequency ***check
+		CPY #3	; guide tone threshold, actually 946 uS vs. 857!
+			BCC wait	; was not the proper frequency
 		INC counter	; needs 256 of these
 	BNE leader
 
 ; time to fetch the sync pulse
 sync:
-		LDY #	; timing constant***
+		LDY #3	; timing constant for 927 uS (actually 946)
 		JSR ld_edge1	; try to get first half
 			BCC ld_brk	; no luck
-		CPY #	; adequate threshold
-			BCx sync	; keep trying ***check
+		CPY #2	; adequate threshold (742 uS, actually 682) is this OK?
+			BCC sync	; keep trying
 		JSR ld_edge1	; must get the other half
 	BCC error	; not found!
 
@@ -153,7 +153,7 @@ error:
 ld_8bits:
 
 	LDA #1	; marker pattern
-	LDY #6	; timing value
+	LDY #5	; timing value eeeeeek
 ld_bits:
 		PHA		; eeeeeeek
 		JSR ld_edge2	; get whole bit
@@ -161,11 +161,14 @@ ld_bits:
 		BCS bitOK	; something was received
 			RTS		; timeout otherwise
 bitOK:
-		CPY #4	; one/zero threshold
-; is C correctly set? (clear if zero, set if one) *****revise
+		CPY #3	; one/zero threshold, OK?
+; is C correctly set? (clear if zero, set if one) NOT!!!
+; will insert bits inverted and then invert the whole byte
 		ROL		; rotate bits and push marker
-		LDY #6	; 1.6 mS timeout for next bit
+		LDY #5	; 1.5 mS timeout for next bit
 		BCC ld_bits	; continue while bits remain
+; byte is done... but inverted!
+	EOR #$FF	; invert byte eek
 ; byte is in A, add to checksum
 	PHA		; keep it!!
 	EOR checksum	; add to current
@@ -195,6 +198,7 @@ ld_edge1:
 	LDX speedcode	; (4) adjust for CPU speed
 ld_delay:
 		NOP		; (2*) lose some time, see comments
+		NOP
 		DEX		; (2*) count depending on CPU speed
 		BNE ld_delay	; (3*) wait before entering sampling loop
 		
@@ -210,7 +214,7 @@ ld_delay:
 ; -----+-----+-----+-----
 ;    1   354   386   418
 ;    2   618   650   682
-;    3   882   914   946 (264 per Y)
+;    3   882   914   946 (154+264 per Y), 1210, 1474, 1738, 2002...
 
 edge_loop:
 	LDX speedcode	; (4*) reload correction factor
