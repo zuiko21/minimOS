@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader - alternate version
-; v0.1a1
+; v0.1a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160813-1708
+; last modified 20160813-1758
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -127,10 +127,15 @@ wp_loop2:
 leader:
 		LDY sc_tt+2	; guide tone timing constant
 		LDX sc_tt+3	; MSB
-		JSR ld_edge2	; wait for two edges up to 1.685 mS, actually 1.738
+		JSR ld_edge2	; wait for two edges up to 1.685 mS
 			BCC ld_brk	; ...hopefully successful
 ; compare X/Y with threshold @sc_tt[0-1]
-			BCC wait	; was not the proper frequency***
+		CPX sc_tt+1	; check MSB first
+			BCC wait	; was not the proper frequency
+			BNE lead_cs	; otherwise well within limits
+		CPY sc_tt	; check LSB if close
+			BCC wait	; was not the proper frequency
+lead_cs:
 		INC counter	; needs 256 of these
 	BNE leader
 
@@ -141,7 +146,12 @@ sync:
 		JSR ld_edge1	; try to get first half
 			BCC ld_brk	; no luck
 ; adequate threshold @sc_tt[4-5]
-			BCC sync	; keep trying***
+		CPX sc_tt+5	; check MSB first
+			BCC sync	; keep trying
+			BNE syn_cs	; well within limits
+		CPY sc_tt+4	; check LSB if close
+			BCC sync	; keep trying
+syn_cs:
 		JSR ld_edge1	; must get the other half
 	BCC error	; not found!
 
@@ -210,12 +220,21 @@ ld_bits:
 			RTS		; timeout otherwise
 bitOK:
 ; one/zero threshold @sc_tt[8-9]
+		CPX sc_tt+9	; check MSB first
+			BCC bit_in	; will insert zero
+			BNE bit_set	; otherwise one
+		CPY sc_tt+8	; check MSB if close
+			BCC bit_in	; will do zero
+bit_set: 
+		SEC		; usually needed
 ; is C correctly set? (clear if zero, set if one) NOT!!!
 ; will insert bits inverted and then invert the whole byte
+bit_in:
 		ROL		; rotate bits and push marker
-		LDY #5	; 1.5 mS timeout for next bit
-		BCC ld_bits	; continue while bits remain
-; byte is done... but inverted!***
+		LDY sc_tt+10	; 1.5 mS timeout for next bit
+		LDX sc_tt+11	; MSB eeeek
+		BCC ld_bits	; continue while bits remain (no marker yet)
+; byte is done... but inverted!
 	EOR #$FF	; invert byte eek
 ; byte is in A, add to checksum
 	PHA		; keep it!!
