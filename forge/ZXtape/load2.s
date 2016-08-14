@@ -1,94 +1,96 @@
 ; minimOS ZX tape interface loader - alternate version
-; v0.1a2
+; v0.1b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160813-1758
+; last modified 20160814-1148
 
-; ***** Load block of bytes at (data_pt), size stored at data_size *****
-; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
-; ****   otherwise will wait for the discarded block to end without loading ****
-; ****   because it will keep looking for a header ($00) ****
-; ***** If detected, 17 byte header gets loaded at (data_pt) *****
-; ****   because flag is set to look for a header ($00) ****
-
-; *** needed data ***
-; ddrx = VIA DDRx
-; px6in = VIA IORx, easy detection via BIT instruction (V) though not used!
-; speedcode = stores CPU speed in fixed point format ($10 = 1 MHz)
-
- mask = %01000000  ; preset for bit 6 but change otherwise
- 
-; *** zeropage *** TBD
-; counter is best on zp
-; length (word) and checksum are best on ZP
-; last will actually hold the relevant bit read from the port
-; sys_sp is safe to use when interrupts are disabled, ditto for sys_ptr
-
-; *** REFERENCE: pulse lengths ***
+; ***** REFERENCE: pulse lengths *****
 ; guide tone = 619/619 uS (cycle 1.238 mS) 
 ; sync = 191/210 uS
 ; zero = 244/244 uS (cycle 488 uS)
 ; one = 489/489 uS (cycle 978 uS)
 
-; *** ORIGINAL TIMING ***
+; ***** ORIGINAL TIMING *****
 ; pulse wait ~14000t, ~4 mS ($00)
 ; leader timeout/threshold ($9C/C6) 1.686 mS / 978 uS
 ; sync ($C9/D4) 927 / 742 uS
 ; bits ($B0/CB) 1349 / 893 uS
 
+; *** needed data and pointers ***
+	ddrx		= VIA1+DDRB	; VIA DDRx
+	px6in	= VIA1+IORB	; VIA IORx, easy detection via BIT instruction (V) though not used
+	speedcode	= $0210	; PLACEHOLDER stores CPU speed in fixed point format ($10 = 1 MHz)
+
+	mask = %01000000  ; preset for bit 6 but change otherwise
+
+; *** variable definitions ***
+	sc_tt	= local1	; 12-byte computed timing table storage
+	loc_tt	= sysptr	; 3-byte temporary storage (includes systmp) for fixed point timings
+	loc_sc	= sys_sp	; temporary storage for speed code
+	counter	= sysptr	; just one byte waiting for the guide tone, loc_tt released
+	last		= systmp	; previous value on input port
+
+; *** interface *** TBD
+	data_pt		= ma_pt	; address where the data or header will be loaded
+	data_size	= ma_rs	; size of data block, set to 17 when looking for a header!
+	flag			= b_sig	; set to $00 when looking for a header, $FF otherwise
+
+; ***** REAL STUFF BEGINS HERE *****
+
 zx_load:
 
 ; disable interrupts!!!
 	_ENTER_CS	; actually PHP and SEI
+; best do that first for sys_sp, systmp & sysptr availability
 
-; first of all, recompute timing constants for current speedcode
-	LDA speedcode	; get original value
-	STA loc_sc	; store temporarily as will be shifted
-	LDY #6	; table size
-	LDX #12	; table size, times two
+; first of all, recompute timing constants for current speedcode - revamped
+	LDX #12	; table size as index
+; prepare for one value
 preload:
-		LDA timing-1, Y	; get original value (notice offset)
-		STA loc_tt-2, X	; store in zeropage (note offset)
-		LDA #0	; NMOS savvy
-		STA loc_tt-1, X	; clear MSB
-		STA sc_tt-1, X	; and also result variables
+		LDA speedcode	; (4*6) get original value
+		STA loc_sc	; (3*6) store temporarily as will be shifted
+		LDA timing-2, X	; (4*6) get original value FRACTION (notice offset)
+		STA loc_tt	; (3*6) store in zeropage
+		LDA timing-1, X	; (4*6) get original INTEGER
+		STA loc_tt+1	; (3*6) continue storage
+		LDA #0	; (2*6) NMOS savvy
+		STA loc_tt+2	; (3*6) clear MSB
+		STA sc_tt-1, X	; (10*6) and also result variables
 		STA sc_tt-2, X
-		DEX		; update pointers
-		DEX
-		DEY
-		BNE preload
-	LDY #8	; number of bits per byte
+; 218 clocks up here
 mult:
-		LSR loc_sc	; get lowest bit from speedcode
-		BCC mul_z	; nothing to add this time
-			LDX #12	; will process several at once
+			LSR loc_sc	; (5*6*n) get lowest bit from speedcode
+			BCC mul_z	; (2.5*6*n) nothing to add this time
 mul_add:
-				LDA loc_tt-2, X	; current factor LSB
-				CLC
-				ADC sc_tt-2, X	; add to last value
-				BCC mul_nc	; no change in MSB
-					INC sc_tt-1, X	; otherwise, propagate carry
-mul_nc:
-				DEX		; continue variable roundup
-				DEX
-				BNE mul_add
+				CLC		; (2*6*hn) prepare addition
+				LDA loc_tt+1	; (3*6*hn) current factor LSB
+				ADC sc_tt-2, X	; (4*6*hn) add to last value
+				STA sc_tt-2, X	; (5*6*hn) update eeeeeeek
+				LDA loc_tt+2	; (3*6*hn) continue adding MSB
+				ADC sc_tt-1, X	; (4*6*hn) propagate carry
+				STA sc_tt-1, X	; (5*6*hn) complete addition
 mul_z:
-		LDA loc_sc	; look for remaining bits
-			BEQ mul_done	; no more bits!
-		LDX #12	; prepare loop for next bit
-mul_sl:
-			ASL loc_tt-2, X	; double the current value
-			ROL loc_tt-1, X	; propagating to MSB
-			DEX		; continue variable roundup
-			DEX
-			BNE mul_sl
-		DEY		; go for next bit
-		BNE mult
+			LDA loc_sc	; (3*6*n) look for remaining bits
+				BEQ mul_done	; (2*6*n) no more bits!
+			ASL loc_tt	; (5*6*n) double the current value
+			ROL loc_tt+1	; (5*6*n) propagating to LSB
+			ROL loc_tt+2	; (5*6*n) and MSB!
+			BCC mult	; (3*6*n) go for next bit
+; go for next value, last block takes 183*n fixed clocks plus 156*hn
+; for n=8 and h=0.5 that is 2088
+; for n=8 and h=1/8 (8 MHz) is 1620
+; for n=5 and h=0.2 (1 Mhz) is 1071
 mul_done:
-; sc_tt holds the 16-bit timing constants adapted for the speedcode
-	
+		DEX		; (4*6)continue variable roundup
+		DEX
+		BNE preload	; (3*6)
+; add finally 41 clocks
+; sc_tt now holds the 16-bit timing constants adapted for the speedcode
+; "worst" case 2347 clocks (n=8, half the bits set, at least 9.1875 MHz)
+; will take 1330 clocks @ 1 MHz and 1879 @ 8 MHz
+
 ; initialise input port
 	LDA ddrx	; previous data direction register on VIA
-	AND #%10111111	; make sure bit 6 is input
+	AND #255-mask	; make sure bit 6 (or whatever) is input
 	STA ddrx	; set direction, port is ready
 	LDA px6in	; get whole byte
 	AND #mask	; filter bit 6 or whatever
@@ -96,7 +98,7 @@ mul_done:
 
 ; *** first wait for the guide tone and sync ***
 	LDY #0	; longest timeout...
-	LDX speedcode	; ...with this MSB ***revise
+	LDX speedcode	; ...with this MSB
 	STY counter	; will be used later as guide tone pulse counter
 ld_brk:
 		;BEQ wait	; in case BREAK was not pressed, not yet implemented
@@ -198,10 +200,14 @@ error:
 ; ****** all finished ******
 
 ; ***** DATA TABLES *****
+; timing constants in fixed point, threshold first, then timeout ***revise values
 timing:
-	.word	$643A	; leader timeout (MSB)/threshold (LSB) ***revise values
-	.word	$372C	; sync
-	.word	$5035	; bits
+	.word	$03A0	; leader
+	.word	$0640	; leader timeout 
+	.word	$0370	; sync
+	.word	$02C0	; sync timeout
+	.word	$0500	; bits threshold
+	.word	$0350	; bits timeout
 	
 ; ***** USEFUL ROUTINES *****
 ; *** get a byte in A from the data stream ***
@@ -258,27 +264,26 @@ ld_edge2:
 
 ld_edge1:
 
-; previous delay
+; previous delay (118 uS @ 1 MHz, 112.4 @ 14 MHz)
 
 	LDA speedcode	; (4) adjust for CPU speed
 	SEC		; (2)
 ld_delay:
-		NOP		; (2*) lose some time***
-		NOP
+		NOP		; (2*) lose some time
 		SBC #1		; (2*) count depending on CPU speed
 		BNE ld_delay	; (3*) wait before entering sampling loop
 		
 ; now wait for an edge
+; Y decreases every 16 clocks, X every 4102 clocks
 
 edge_loop:
-bit_loop:
 		LDA px6in	; (4**) get whole byte
 		AND #mask	; (2**) filter bit 6 or whatever
 		CMP last	; (3**) compare against previous value
 		BNE changed	; (2**) if did not change, keep waiting and counting
 ; increase count and check for timeouts
 			DEY		; (2**) timing constant LSB
-		BNE bit_loop	; (3**) continue checking
+		BNE edge_loop	; (3**) continue checking
 			DEX		; (2*) timing constant MSB
 			CMP #$FF	; (2*) check eventual expiration
 		BNE edge_loop	; (3*) wait for edge or timeout
