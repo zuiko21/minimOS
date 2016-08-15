@@ -1,16 +1,27 @@
-; minimOS 0.5a4 zero-page system variables
+; minimOS 0.5a5 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160422-0934
+; last modified 20160815-1222
 
 .zero
 
 ; ** user space **
 * = 0
-res6510		.word	0	; reserved for 6510, free for user otherwise -- but NOT saved via _software_ as multitasking context
+
+#ifndef	C64
+sysout		.byt	0	; default parent outout device (NOT for 6510)
+sys_in		.byt	0	; default parent input device (NOT for 6510)
+#else
+res6510:	.word	0	; reserved for 6510
+#endif
+
 z_used		.byt	0	; user-reserved space in ZP, not really used with _hardware_ multitasking
 user:user_zp:			; older labels for compatibility
 uz						; user context starts here, $03...$E3 newname 20150128,0206
 
+#ifdef	C64
+sysout		.byt	0	; default parent outout device (for 6510)
+sys_in		.byt	0	; default parent input device (for 6510)
+#endif
 
 ; ** local variables for kernel functions **
 * = $E4						; new address 130603, hope it stays forever! 4 more bytes 150122

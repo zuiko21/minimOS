@@ -1,19 +1,9 @@
 ; line editor for minimOS!
 ; v0.5rc1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160525-1320
+; last modified 20160815-1220 (removed common headers)
 
-#ifndef	KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
-.text
-#endif
+#include "usual.h"
 
 ; *** constants declaration ***
 #define	LBUFSIZ		80

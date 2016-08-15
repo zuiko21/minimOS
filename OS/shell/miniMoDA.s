@@ -1,21 +1,11 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b6
-; last modified 20160802-1020
+; last modified 20160815-1220 (removed common headers)
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
-#ifndef	KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
-.text
-#endif
+#include "usual.h"
 
 ; *** uncomment for narrow (20-char) displays ***
 ;#define	NARROW	_NARROW
