@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** COMPACT VERSION ***
-; v0.1a1
+; v0.1a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160819-1011
+; last modified 20160820-0144
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -244,37 +244,37 @@ cvc_cc:
 ; to B
 
 _41:
-; MOV B, C (4)
+; MOV B,C (4)
 ; +12
 	LDA c80	; source
 	BRA movb	; common end
 
 _42:
-; MOV B, D (4)
+; MOV B,D (4)
 ; +12
 	LDA d80	; source
 	BRA movb	; common end
 
 _43:
-; MOV B, E (4)
+; MOV B,E (4)
 ; +12
 	LDA e80	; source
 	BRA movb	; common end
 
 _44:
-; MOV B, H (4)
+; MOV B,H (4)
 ; +12
 	LDA h80	; source
 	BRA movb	; common end
 
 _45:
-; MOV B, L (4)
+; MOV B,L (4)
 ; +12
 	LDA l80	; source
 	BRA movb	; common end
 
 _46:
-; MOV B, M (7)
+; MOV B,M (7)
 ; +11
 	LDA (hl80)	; pointed source
 movb:
@@ -282,7 +282,7 @@ movb:
 	JMP next_op	; flags unaffected
 
 _47:
-; MOV B, A (4)
+; MOV B,A (4)
 ; +12
 	LDA a80	; source
 	BRA movb	; common end
@@ -290,37 +290,37 @@ _47:
 ; to C
 
 _48:
-; MOV C, B (4)
+; MOV C,B (4)
 ; +12
 	LDA b80	; source
 	BRA movc	; common end
 
 _4A:
-; MOV C, D (4)
+; MOV C,D (4)
 ; +12
 	LDA d80	; source
 	BRA movc	; common end
 
 _4B:
-; MOV C, E (4)
+; MOV C,E (4)
 ; +12
 	LDA e80	; source
 	BRA movc	; common end
 
 _4C:
-; MOV C, H (4)
+; MOV C,H (4)
 ; +12
 	LDA h80	; source
 	BRA movc	; common end
 
 _4D:
-; MOV C, L (4)
+; MOV C,L (4)
 ; 12
 	LDA l80	; source
 	BRA movc	; common end
 
 _4E:
-; MOV C, M (7)
+; MOV C,M (7)
 ; +12
 	LDA (hl80)	; pointed source
 movc:
@@ -328,7 +328,7 @@ movc:
 	JMP next_op	; flags unaffected
 
 _4F:
-; MOV C, A (4)
+; MOV C,A (4)
 ; +12
 	LDA a80	; source
 	BRA movc	; common end
@@ -336,37 +336,37 @@ _4F:
 ; to D
 
 _50:
-; MOV D, B (4)
+; MOV D,B (4)
 ; +12
 	LDA b80	; source
 	BRA movd	; common end
 
 _51:
-; MOV D, C (4)
+; MOV D,C (4)
 ; +12
 	LDA c80	; source
 	BRA movd	; common end
 
 _53:
-; MOV D, E (4)
+; MOV D,E (4)
 ; +12
 	LDA e80	; source
 	BRA movd	; common end
 
 _54:
-; MOV D, H (4)
+; MOV D,H (4)
 ; +12
 	LDA h80	; source
 	BRA movd	; common end
 
 _55:
-; MOV D, L (4)
+; MOV D,L (4)
 ; +12
 	LDA l80	; source
 	BRA movd	; common end
 
 _56:
-; MOV D, M (7)
+; MOV D,M (7)
 ; +11
 	LDA (hl80)	; pointed source
 movd:
@@ -374,7 +374,7 @@ movd:
 	JMP next_op	; flags unaffected
 
 _57:
-; MOV D, A (4)
+; MOV D,A (4)
 ; +12
 	LDA a80	; source
 	BRA movd	; common end
@@ -396,7 +396,7 @@ _59:
 _5A:
 ; MOV E,D (4)
 ; +12
-	LDA e80	; source
+	LDA d80	; source
 	BRA move	; common end
 
 _5C:
@@ -427,49 +427,268 @@ _5F:
 
 ; to H
 
-_58:
-; MOV E,B (4)
+_60:
+; MOV H,B (4)
 ; +12
 	LDA b80	; source
-	BRA move	; common end
+	BRA movh	; common end
 
-_59:
-; MOV E,C (4)
+_61:
+; MOV H,C (4)
 ; +12
 	LDA c80	; source
-	BRA move	; common end
+	BRA movh	; common end
 
-_5A:
-; MOV E,D (4)
+_62:
+; MOV H,D (4)
+; +12
+	LDA d80	; source
+	BRA movh	; common end
+
+_63:
+; MOV H,E (4)
 ; +12
 	LDA e80	; source
-	BRA move	; common end
+	BRA movh	; common end
 
-_5C:
-; MOV E,H (4)
-; +12
-	LDA h80	; source
-	BRA move	; common end
-
-_5D:
-; MOV E,L (4)
+_65:
+; MOV H,L (4)
 ; +12
 	LDA l80	; source
-	BRA move	; common end
+	BRA movh	; common end
 
-_5E:
-; MOV E,M (7)
+_66:
+; MOV H,M (7)
 ; +11
 	LDA (hl80)	; pointed source
-move:
-	STA e80	; destination
+movh:
+	STA h80	; destination
 	JMP next_op	; flags unaffected
 
-_5F:
-; MOV E,A (4)
+_67:
+; MOV H,A (4)
 ; +12
 	LDA a80	; source
-	BRA move	; common end
+	BRA movh	; common end
+
+; to L
+
+_68:
+; MOV L,B (4)
+; +12
+	LDA b80	; source
+	BRA movl	; common end
+
+_69:
+; MOV L,C (4)
+; +12
+	LDA c80	; source
+	BRA movl	; common end
+
+_6A:
+; MOV L,D (4)
+; +12
+	LDA d80	; source
+	BRA movl	; common end
+
+_6B:
+; MOV L,E (4)
+; +12
+	LDA e80	; source
+	BRA movl	; common end
+
+_6C:
+; MOV L,H (4)
+; +12
+	LDA h80	; source
+	BRA movl	; common end
+
+_6E:
+; MOV L,M (7)
+; +11
+	LDA (hl80)	; pointed source
+movl:
+	STA l80	; destination
+	JMP next_op	; flags unaffected
+
+_6F:
+; MOV L,A (4)
+; +12
+	LDA a80	; source
+	BRA movl	; common end
+
+; to memory
+
+_70:
+; MOV M,B (7)
+; +
+	LDA b80	; source
+	BRA movm	; common end
+
+_71:
+; MOV M,C (7)
+; +
+	LDA c80	; source
+	BRA movm	; common end
+
+_72:
+; MOV M,D (7)
+; +
+	LDA d80	; source
+	BRA movm	; common end
+
+_73:
+; MOV M,E (7)
+; +
+	LDA e80	; source
+	BRA movm	; common end
+
+_74:
+; MOV M,H (7)
+; +
+	LDA h80	; source
+	BRA movm	; common end
+
+_75:
+; MOV M,L (7)
+; +
+	LDA l80	; source
+	BRA movm	; common end
+
+_77:
+; MOV M,A (7)
+; +
+	LDA a80	; source
+movm:
+	STA (hl80)	; pointed destination
+	JMP next_op	; flags unaffected
+
+; to A
+
+_78:
+; MOV A,B (4)
+; +12
+	LDA b80	; source
+	BRA mova	; common end
+
+_79:
+; MOV A,C (4)
+; +12
+	LDA c80	; source
+	BRA mova	; common end
+
+_7A:
+; MOV A,D (4)
+; +12
+	LDA d80	; source
+	BRA mova	; common end
+
+_7B:
+; MOV A,E (4)
+; +12
+	LDA e80	; source
+	BRA mova	; common end
+
+_7C:
+; MOV A,H (4)
+; +12
+	LDA h80	; source
+	BRA mova	; common end
+
+_7D:
+; MOV A,L (4)
+; +12
+	LDA l80	; source
+	BRA mova	; common end
+
+_7E:
+; MOV A,M (7)
+; +11
+	LDA (hl80)	; pointed source
+mova:
+	STA a80	; destination
+	JMP next_op	; flags unaffected
+
+; immediate
+
+_06:
+; MVI B (7)
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA b80	; destination
+	
+_0D:
+; MVI C (7)
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA c80	; destination
+	
+_16:
+; MVI D (7)
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA d80	; destination
+	
+_1D:
+; MVI E (7)
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA e80	; destination
+	
+_26:
+; MVI H (7)
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA h80	; destination
+	
+_2D:
+; MVI L (7)
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA l80	; destination
+	
+_36:
+; MVI M (10?)
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA (hl80)	; destination
+
+_3D:
+; MVI A (7)
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA a80	; destination
+	
+; double immediate
+
+_06:
+; LXI B (10?)****************
+; +
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get immediate
+	STA b80	; destination
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ;******* older 6800 code ********
 _8b:
