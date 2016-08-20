@@ -1,7 +1,7 @@
-; Intel 8080/8085 emulator for minimOS! *** COMPACT VERSION ***
+; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160820-0144
+; last modified 20160820-1252
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -49,19 +49,16 @@
 #define BBS7	BBS #7,
 
 ; these make listings more succint
+
 ; inject address MSB into 16+16K space (5/5.5/6)
 #define	_AH_BOUND	AND #hi_mask: BMI *+4: ORA #lo_mask
+
 ; increase Y checking injected boundary crossing (5/5/30) ** new compact version
 #define	_PC_ADV		INY: BNE *+5: JSR wrap_pc
 
-/*
-; compute pointer for indexed addressing mode (31/31.5/)
-#define	_INDEXED	_PC_ADV: LDA (pc80), Y: CLC: ADC x80: STA tmptr: LDA x80+1: ADC #0: _AH_BOUND: STA tmptr+1
-; compute pointer for extended addressing mode (31/31.5/)
-#define	_EXTENDED	_PC_ADV: LDA (pc80), Y: _AH_BOUND: STA tmptr+1: _PC_ADV: LDA (pc80), Y: STA tmptr
-; compute pointer (as A index) for direct addressing mode (10/10/)
-#define	_DIRECT		_PC_ADV: LDA (pc80), Y
-*/
+; compute pointer for direct absolute addressing mode (31/31.5/)
+#define	_DIRECT	_PC_ADV: LDA (pc80), Y: _AH_BOUND: STA tmptr: _PC_ADV: LDA (pc80), Y: STA tmptr+1
+
 
 ; check Z & N flags (6/8/10) will not set both bits at once!
 #define _CC_NZ		BNE *+4: SMB2 ccr80: BPL *+4: SMB3 ccr80
@@ -211,7 +208,7 @@ wrap_pc:
 	INC				; increment
 	_AH_BOUND		; keep injected!
 	STA pc80 + 1	; update pointer
-	RTS				; *** only subroutine as of 160222 in rare cases, worth it ***
+	RTS				; *** only subroutine, to be used in rare cases, worth it ***
 
 ; ** common endings **
 
@@ -321,7 +318,7 @@ _4D:
 
 _4E:
 ; MOV C,M (7)
-; +12
+; +11
 	LDA (hl80)	; pointed source
 movc:
 	STA c80	; destination
@@ -521,43 +518,43 @@ _6F:
 
 _70:
 ; MOV M,B (7)
-; +
+; +14
 	LDA b80	; source
 	BRA movm	; common end
 
 _71:
 ; MOV M,C (7)
-; +
+; +14
 	LDA c80	; source
 	BRA movm	; common end
 
 _72:
 ; MOV M,D (7)
-; +
+; +14
 	LDA d80	; source
 	BRA movm	; common end
 
 _73:
 ; MOV M,E (7)
-; +
+; +14
 	LDA e80	; source
 	BRA movm	; common end
 
 _74:
 ; MOV M,H (7)
-; +
+; +14
 	LDA h80	; source
 	BRA movm	; common end
 
 _75:
 ; MOV M,L (7)
-; +
+; +14
 	LDA l80	; source
 	BRA movm	; common end
 
 _77:
 ; MOV M,A (7)
-; +
+; +11
 	LDA a80	; source
 movm:
 	STA (hl80)	; pointed destination
@@ -613,72 +610,235 @@ mova:
 
 _06:
 ; MVI B (7)
-; +
+; +16
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA b80	; destination
-	
+	JMP next_op	; flags unaffected
+
 _0D:
 ; MVI C (7)
-; +
+; +16
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA c80	; destination
-	
+	JMP next_op	; flags unaffected
+
 _16:
 ; MVI D (7)
-; +
+; +16
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA d80	; destination
-	
+	JMP next_op	; flags unaffected
+
 _1D:
 ; MVI E (7)
-; +
+; +16
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA e80	; destination
-	
+	JMP next_op	; flags unaffected
+
 _26:
 ; MVI H (7)
-; +
+; +16
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA h80	; destination
-	
+	JMP next_op	; flags unaffected
+
 _2D:
 ; MVI L (7)
-; +
+; +16
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA l80	; destination
-	
+	JMP next_op	; flags unaffected
+
 _36:
-; MVI M (10?)
-; +
+; MVI M (10)
+; +18
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA (hl80)	; destination
+	JMP next_op	; flags unaffected
 
 _3D:
 ; MVI A (7)
-; +
+; +16
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA a80	; destination
-	
+	JMP next_op	; flags unaffected
+
 ; double immediate
 
-_06:
-; LXI B (10?)****************
-; +
+_01:
+; LXI B (10)
+; +29
 	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA b80	; destination
+	LDA (pc80), Y	; get first immediate
+	STA c80	; LSB destination
+	_PC_ADV		; advance to next byte
+	LDA (pc80), Y	; get second immediate
+	STA b80	; MSB destination
+	JMP next_op	; flags unaffected
 
+_11:
+; LXI D (10)
+; +29
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get first immediate
+	STA e80	; LSB destination
+	_PC_ADV		; advance to next byte
+	LDA (pc80), Y	; get second immediate
+	STA d80	; MSB destination
+	JMP next_op	; flags unaffected
 
+_21:
+; LXI H (10)
+; +29
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get first immediate
+	STA l80	; LSB destination
+	_PC_ADV		; advance to next byte
+	LDA (pc80), Y	; get second immediate
+	STA h80	; MSB destination
+	JMP next_op	; flags unaffected
 
+_31:
+; LXI SP (10)
+; +29
+	_PC_ADV		; point to operand
+	LDA (pc80), Y	; get first immediate
+	STA sp80	; LSB destination
+	_PC_ADV		; advance to next byte
+	LDA (pc80), Y	; get second immediate
+	STA sp80+1	; MSB destination
+	JMP next_op	; flags unaffected
 
+; Load/store A indirect
+
+_0A:
+; LDAX B (7)
+;+11
+	LDA (bc80)	; get indirect data
+	STA a80	; destination
+	JMP next_op	; flags unaffected
+
+_1A:
+; LDAX D (7)
+;+11
+	LDA (de80)	; get indirect data
+	STA a80	; destination
+	JMP next_op	; flags unaffected
+
+_02:
+; STAX B (7)
+;+11
+	LDA a80	; get source data
+	STA (bc80)	; indirect destination
+	JMP next_op	; flags unaffected
+
+_12:
+; STAX D (7)
+;+11
+	LDA a80	; get source data
+	STA (de80)	; indirect destination
+	JMP next_op	; flags unaffected
+
+; load/store direct
+
+_3A:
+; LDA (13)
+;+42
+	_DIRECT		; get pointer to operand
+	LDA (tmptr)	; actual data
+	STA a80	; destination
+	JMP next_op	; flags unaffected
+	
+_2A:
+; LHLD (16)
+;+58
+	_DIRECT		; point to operand
+	LDA (tmptr)	; actual LSB
+	STA l80	; destination
+	INC tmptr	; point to MSB
+	BNE lhld	; did not wrap
+		INC tmptr+1	; correct otherwise
+lhld:
+	LDA (tmptr)	; repeat for MSB
+	STA h80
+	JMP next_op	; flags unaffecfed
+	
+_32:
+; STA (13)
+;+42
+	_DIRECT		; get destination address
+	LDA a80	; source data
+	STA (tmptr)	; store at destination
+	JMP next_op	; flags unaffected
+
+_22:
+; SHLD (16)
+;+58
+	_DIRECT		; point to operand
+	LDA l80	; actual LSB
+	STA (tmptr)	; destination
+	INC tmptr	; point to MSB
+	BNE shld	; did not wrap
+		INC tmptr+1	; correct otherwise
+shld:
+	LDA h80	; repeat for MSB
+	STA (tmptr)
+	JMP next_op	; flags unaffecfed
+
+; exchange DE & HL
+
+_EB:
+; XCHG (4)
+;+27
+	LDX d80	; preserve MSB
+	LDA h80	; get other source
+	STA d80	; substitute
+	STX h80	; restore other MSB
+	LDX e80	; same for LSB
+	LDA l80
+	STA e80
+	STX l80
+	JMP next_op	; flags unaffected
+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
 
 
 
