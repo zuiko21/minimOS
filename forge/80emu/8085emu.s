@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160820-1252
+; last modified 20160820-1606
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -56,8 +56,8 @@
 ; increase Y checking injected boundary crossing (5/5/30) ** new compact version
 #define	_PC_ADV		INY: BNE *+5: JSR wrap_pc
 
-; compute pointer for direct absolute addressing mode (31/31.5/)
-#define	_DIRECT	_PC_ADV: LDA (pc80), Y: _AH_BOUND: STA tmptr: _PC_ADV: LDA (pc80), Y: STA tmptr+1
+; compute pointer for direct absolute addressing mode (31/31.5/) eeeek
+#define	_DIRECT	_PC_ADV: LDA (pc80), Y: STA tmptr: _PC_ADV: LDA (pc80), Y: _AH_BOUND: STA tmptr+1
 
 
 ; check Z & N flags (6/8/10) will not set both bits at once!
@@ -121,7 +121,7 @@ open_emu:
 reset80:
 	LDA #%11010000	; restart with interrupts masked***revise initial value
 	STA f80		; store initial flags
-	_STZA pc80	; RST 00
+	STZ pc80	; RST 00
 	LDA #lo_mask	; inject low memory into 65xx space
 	STA pc80+1	; injected MSB
 
@@ -292,31 +292,31 @@ _48:
 	LDA b80	; source
 	BRA movc	; common end
 
-_4A:
+_4a:
 ; MOV C,D (4)
 ; +12
 	LDA d80	; source
 	BRA movc	; common end
 
-_4B:
+_4b:
 ; MOV C,E (4)
 ; +12
 	LDA e80	; source
 	BRA movc	; common end
 
-_4C:
+_4c:
 ; MOV C,H (4)
 ; +12
 	LDA h80	; source
 	BRA movc	; common end
 
-_4D:
+_4d:
 ; MOV C,L (4)
 ; 12
 	LDA l80	; source
 	BRA movc	; common end
 
-_4E:
+_4e:
 ; MOV C,M (7)
 ; +11
 	LDA (hl80)	; pointed source
@@ -324,7 +324,7 @@ movc:
 	STA c80	; destination
 	JMP next_op	; flags unaffected
 
-_4F:
+_4f:
 ; MOV C,A (4)
 ; +12
 	LDA a80	; source
@@ -390,25 +390,25 @@ _59:
 	LDA c80	; source
 	BRA move	; common end
 
-_5A:
+_5a:
 ; MOV E,D (4)
 ; +12
 	LDA d80	; source
 	BRA move	; common end
 
-_5C:
+_5c:
 ; MOV E,H (4)
 ; +12
 	LDA h80	; source
 	BRA move	; common end
 
-_5D:
+_5d:
 ; MOV E,L (4)
 ; +12
 	LDA l80	; source
 	BRA move	; common end
 
-_5E:
+_5e:
 ; MOV E,M (7)
 ; +11
 	LDA (hl80)	; pointed source
@@ -416,7 +416,7 @@ move:
 	STA e80	; destination
 	JMP next_op	; flags unaffected
 
-_5F:
+_5f:
 ; MOV E,A (4)
 ; +12
 	LDA a80	; source
@@ -482,25 +482,25 @@ _69:
 	LDA c80	; source
 	BRA movl	; common end
 
-_6A:
+_6a:
 ; MOV L,D (4)
 ; +12
 	LDA d80	; source
 	BRA movl	; common end
 
-_6B:
+_6b:
 ; MOV L,E (4)
 ; +12
 	LDA e80	; source
 	BRA movl	; common end
 
-_6C:
+_6c:
 ; MOV L,H (4)
 ; +12
 	LDA h80	; source
 	BRA movl	; common end
 
-_6E:
+_6e:
 ; MOV L,M (7)
 ; +11
 	LDA (hl80)	; pointed source
@@ -508,7 +508,7 @@ movl:
 	STA l80	; destination
 	JMP next_op	; flags unaffected
 
-_6F:
+_6f:
 ; MOV L,A (4)
 ; +12
 	LDA a80	; source
@@ -574,31 +574,31 @@ _79:
 	LDA c80	; source
 	BRA mova	; common end
 
-_7A:
+_7a:
 ; MOV A,D (4)
 ; +12
 	LDA d80	; source
 	BRA mova	; common end
 
-_7B:
+_7b:
 ; MOV A,E (4)
 ; +12
 	LDA e80	; source
 	BRA mova	; common end
 
-_7C:
+_7c:
 ; MOV A,H (4)
 ; +12
 	LDA h80	; source
 	BRA mova	; common end
 
-_7D:
+_7d:
 ; MOV A,L (4)
 ; +12
 	LDA l80	; source
 	BRA mova	; common end
 
-_7E:
+_7e:
 ; MOV A,M (7)
 ; +11
 	LDA (hl80)	; pointed source
@@ -616,7 +616,7 @@ _06:
 	STA b80	; destination
 	JMP next_op	; flags unaffected
 
-_0D:
+_0d:
 ; MVI C (7)
 ; +16
 	_PC_ADV		; point to operand
@@ -632,7 +632,7 @@ _16:
 	STA d80	; destination
 	JMP next_op	; flags unaffected
 
-_1D:
+_1d:
 ; MVI E (7)
 ; +16
 	_PC_ADV		; point to operand
@@ -648,7 +648,7 @@ _26:
 	STA h80	; destination
 	JMP next_op	; flags unaffected
 
-_2D:
+_2d:
 ; MVI L (7)
 ; +16
 	_PC_ADV		; point to operand
@@ -664,7 +664,7 @@ _36:
 	STA (hl80)	; destination
 	JMP next_op	; flags unaffected
 
-_3D:
+_3d:
 ; MVI A (7)
 ; +16
 	_PC_ADV		; point to operand
@@ -718,16 +718,16 @@ _31:
 	STA sp80+1	; MSB destination
 	JMP next_op	; flags unaffected
 
-; Load/store A indirect
+; ** Load/store A indirect **
 
-_0A:
+_0a:
 ; LDAX B (7)
 ;+11
 	LDA (bc80)	; get indirect data
 	STA a80	; destination
 	JMP next_op	; flags unaffected
 
-_1A:
+_1a:
 ; LDAX D (7)
 ;+11
 	LDA (de80)	; get indirect data
@@ -748,9 +748,9 @@ _12:
 	STA (de80)	; indirect destination
 	JMP next_op	; flags unaffected
 
-; load/store direct
+; ** load/store direct **
 
-_3A:
+_3a:
 ; LDA (13)
 ;+42
 	_DIRECT		; get pointer to operand
@@ -758,7 +758,7 @@ _3A:
 	STA a80	; destination
 	JMP next_op	; flags unaffected
 	
-_2A:
+_2a:
 ; LHLD (16)
 ;+58
 	_DIRECT		; point to operand
@@ -794,9 +794,9 @@ shld:
 	STA (tmptr)
 	JMP next_op	; flags unaffecfed
 
-; exchange DE & HL
+; ** exchange DE & HL **
 
-_EB:
+_eb:
 ; XCHG (4)
 ;+27
 	LDX d80	; preserve MSB
@@ -809,6 +809,433 @@ _EB:
 	STX l80
 	JMP next_op	; flags unaffected
 
+; ** jump **
+
+_c3:
+; JMP (10)
+;+41
+jmp:
+	_DIRECT		; get target address in tmptr
+	LDA tmptr	; copy fetched address...
+	LDX tmptr+1	; already bound MSB
+	STA pc80	; ...into PC
+	STX pc80+1
+	JMP execute	; jump to it!
+	
+_da:
+; JC (7/10)
+;+49 if taken, +20 if not
+	LDA f80	; get flags
+	LSR		; C is least bit, now into native C
+		BCS jmp	; execute jump
+notjmp:
+	_PC_ADV		; skip unused address
+	_PC_ADV
+	JMP next_op	; continue otherwise
+
+_d2:
+; JNC (7/10)
+;+49 if taken, +23 if not
+	LDA f80	; get flags
+	LSR		; C is least bit, now into native C
+		BCC jmp	; execute jump
+	BCS notjmp	; skip and continue, no need for BRA
+
+_f2:
+; JP (7/10)
+;+46 if taken, +20 if not
+	BIT f80	; get flags, sign is 6502 compatible!
+		BPL jmp	; execute jump
+	BMI notjmp	; skip and continue, no need for BRA
+
+_fa:
+; JM (7/10)
+;+46 if taken, +20 if not
+	BIT f80	; get flags, sign is 6502 compatible!
+		BMI jmp	; execute jump
+	BPL notjmp	; skip and continue, no need for BRA
+
+_ca:
+; JZ (7/10)
+;+46 if taken, +20 if not
+	BIT f80	; get flags, Z coincides with 6502 V bit!
+		BVS jmp	; execute jump
+	BVC notjmp	; skip and continue, no need for BRA
+
+_c2:
+; JNZ (7/10)
+;+46 if taken, +20 if not
+	BIT f80	; get flags, Z coincides with 6502 V bit!
+		BVC jmp	; execute jump
+	BVS notjmp	; skip and continue, no need for BRA
+
+_ea:
+; JPE (7/10)
+;+49 if taken, +23 if not
+	LDA f80	; get flags
+	AND #%00000100		; filter P/V bit
+		BNE jmp	; execute jump
+	BEQ notjmp	; skip and continue, no need for BRA
+
+_e2:
+; JPO (7/10)
+;+49 if taken, +23 if not
+	LDA f80	; get flags
+	AND #%00000100		; filter P/V bit
+		BEQ jmp	; execute jump
+	BNE notjmp	; skip and continue, no need for BRA
+
+; ** call **
+
+_cd:
+; CALL (18)
+;+
+call:
+	_DIRECT		; get target address in tmptr
+	_PC_ADV		; set PC as the return address
+; push return address into stack
+	LDA pc80+1	; fetch PC MSB
+	JSR push	; ***might be online***
+	LDA pc80	; same for LSB
+	JSR push
+; continue jump, might be merged with jump
+	LDA tmptr	; copy fetched address...
+	LDX tmptr+1	; already bound MSB
+	STA pc80	; ...into PC
+	STX pc80+1
+	JMP execute	; jump to it!
+	
+_dc:
+; CC (9/18)
+;+49 if taken, +20 if not
+	LDA f80	; get flags
+	LSR		; C is least bit, now into native C
+		BCS call	; execute call
+	BCC notjmp	; continue otherwise
+
+_d4:
+; CNC (9/18)
+;+ if taken, + if not
+	LDA f80	; get flags
+	LSR		; C is least bit, now into native C
+		BCC call	; execute call
+	BCS notjmp	; skip and continue, no need for BRA
+
+_f4:
+; CP (9/18)
+;+ if taken, + if not
+	BIT f80	; get flags, sign is 6502 compatible!
+		BPL call	; execute call
+	BMI notjmp	; skip and continue, no need for BRA
+
+_fc:
+; CM (9/18)
+;+ if taken, + if not
+	BIT f80	; get flags, sign is 6502 compatible!
+		BMI call	; execute call
+	BPL notjmp	; skip and continue, no need for BRA
+
+_cc:
+; CZ (9/18)
+;+ if taken, + if not
+	BIT f80	; get flags, Z coincides with 6502 V bit!
+		BVS call	; execute call
+	BVC notjmp	; skip and continue, no need for BRA
+
+_c4:
+; CNZ (9/18)
+;+ if taken, + if not
+	BIT f80	; get flags, Z coincides with 6502 V bit!
+		BVC call	; execute call
+	BVS notjmp	; skip and continue, no need for BRA
+
+_ec:
+; CPE (9/18)
+;+ if taken, + if not
+	LDA f80	; get flags
+	AND #%00000100		; filter P/V bit
+		BNE call	; execute call
+	BEQ notjmp	; skip and continue, no need for BRA
+
+_e4:
+; CPO (9/18)
+;+ if taken, + if not
+	LDA f80	; get flags
+	AND #%00000100		; filter P/V bit
+		BEQ call	; execute call
+	BNE notjmp	; skip and continue, no need for BRA
+
+; ** return **
+
+_c9:
+; RET (10)
+;+
+ret:
+; pop return address from stack
+	JSR pop		; ***might be online***
+	STA pc80	; fetch PC LSB
+	JSR pop		; same for MSB
+	_AH_BOUND		; just in case!
+	STA pc80+1
+; continue execution
+	JMP execute	; jump to it!
+	
+_d8:
+; RC (6/12)
+;+ if taken, + if not
+	LDA f80	; get flags
+	LSR		; C is least bit, now into native C
+		BCS ret	; execute ret
+	BCC notjmp	; continue otherwise
+
+_d0:
+; RNC (6/12)
+;+ if taken, + if not
+	LDA f80	; get flags
+	LSR		; C is least bit, now into native C
+		BCC ret	; execute ret
+	BCS notjmp	; skip and continue, no need for BRA
+
+_f0:
+; RP (6/12)
+;+ if taken, + if not
+	BIT f80	; get flags, sign is 6502 compatible!
+		BPL ret	; execute ret
+	BMI notjmp	; skip and continue, no need for BRA
+
+_f8:
+; RM (6/12)
+;+ if taken, + if not
+	BIT f80	; get flags, sign is 6502 compatible!
+		BMI ret	; execute ret
+	BPL notjmp	; skip and continue, no need for BRA
+
+_c8:
+; RZ (6/12)
+;+ if taken, + if not
+	BIT f80	; get flags, Z coincides with 6502 V bit!
+		BVS ret	; execute ret
+	BVC notjmp	; skip and continue, no need for BRA
+
+_c0:
+; RNZ (6/12)
+;+ if taken, + if not
+	BIT f80	; get flags, Z coincides with 6502 V bit!
+		BVC ret	; execute ret
+	BVS notjmp	; skip and continue, no need for BRA
+
+_e8:
+; RPE (6/12)
+;+ if taken, + if not
+	LDA f80	; get flags
+	AND #%00000100		; filter P/V bit
+		BNE ret	; execute ret
+	BEQ notjmp	; skip and continue, no need for BRA
+
+_e0:
+; RPO (6/12)
+;+ if taken, + if not
+	LDA f80	; get flags
+	AND #%00000100		; filter P/V bit
+		BEQ ret	; execute ret
+	BNE notjmp	; skip and continue, no need for BRA
+
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
+_:
+;()
+;+
 _:
 ;()
 ;+
@@ -851,6 +1278,7 @@ _:
 
 
 ;******* older 6800 code ********
+/*
 _8b:
 ; ADD A imm (2)
 ; +72/78
@@ -3145,6 +3573,8 @@ _07:
 	LDA ccr80	; get CCR... (3)
 	STA a80		; ...and store it in A (3)
 	JMP next_op	; standard end of routine
+*/
+
 
 ; *** opcode execution addresses table ***
 ; should stay no matter the CPU!
