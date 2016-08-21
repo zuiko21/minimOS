@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160821-1932
+; last modified 20160821-2259
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -53,7 +53,7 @@
 ; inject address MSB into 16+16K space (5/5.5/6)
 #define	_AH_BOUND	AND #hi_mask: BMI *+4: ORA #lo_mask
 
-; increase Y checking injected boundary crossing (5/5/30) ** new compact version
+; increment Y checking injected boundary crossing (5/5/30) ** new compact version
 #define	_PC_ADV		INY: BNE *+5: JSR wrap_pc
 
 ; compute pointer for direct absolute addressing mode (31/31.5/) eeeek
@@ -74,29 +74,29 @@ e_top	=	$C000		; top over emulated space (third 16K block in most systems)
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
 tmptr	=	uz		; temporary storage (up to 16 bit, little endian)
-sp80	=	uz+2	; stack pointer (16 bit injected into host map)
-pc80	=	uz+4	; program counter (16 bit injected into host map)
-af80 = f80		=	uz+6	; flags SZ-H-VNC
-a80		=	uz+7	;
+sp80		=	uz+2	; stack pointer (16 bit injected into host map)
+pc80		=	uz+4	; program counter (16 bit injected into host map)
+f80		=	uz+6	; flags SZ-H-VNC
+a80		=	uz+7	; general purpose registers
 ; S is sign
 ; Z is zero
 ; H is half carry (for BCD, not testable)
 ; V is P/V, parity/overflow, sets on logical/rots with EVEN 1s
 ; N is add/subtract (for BCD, not testable) 1 is subtract
 ; C is carry, reset by AND, OR, XOR, borrow unlike 6502
-bc80 = c80 = uz+8 ; convenient little endian
-b80 = uz+9 ;
-de80 = e80 = uz+10 ;
-d80 = uz+11 ;
-hl80 = l80 = uz+12 ; memory pointer in convenient little endian order
-h80 = uz+13 ;
-rimask = uz+14	; interrupt masks as set by SIM and read by RIM
+c80		= uz+8
+b80		= uz+9
+e80		= uz+10
+d80		= uz+11
+l80		= uz+12
+h80		= uz+13
+rimask	= uz+14	; interrupt masks as set by SIM and read by RIM
 ; rimask = SID-I7-I6-I5-IE-M7-M6-M5
 ; SID is serial input (not implemented)
 ; I7~I5 are pending stati of INT7.5 ~ INT5.5, first one could be reset by SIM.D4
 ; IE is interrupt enable flag
 ; M7~M5 are the masks for INT7.5~INT5.5, set by SIM.d2~d0 iff d3=1
-cdev	=	uz+15	; I/O device *** minimOS specific ***
+cdev		= uz+15		; I/O device *** minimOS specific ***
 
 ; *** minimOS executable header will go here ***
 
@@ -141,7 +141,7 @@ execute:
 lo_jump:
 			JMP (opt_l, X)	; otherwise, emulation routines for opcodes with bit7 low
 
-; *** NOP () arrives here, saving 3 bytes and 3 cycles ***
+; *** NOP (4) arrives here, saving 3 bytes and 3 cycles ***
 ; also 'absurd' instructions like MOV B, B
 
 _00:
@@ -151,10 +151,10 @@ _40:_49:_52:_5b:_64:_6d:_7f:
 next_op:
 		INY				; advance one byte (2)
 		BNE execute		; fetch next instruction if no boundary is crossed (3/2)
-; usual overhead is now 22+3=25 clock cycles, instead of 33
+; usual overhead is 22 clock cycles, not including final jump
 ; boundary crossing, simplified version
 ; ** should be revised for 16K RAM systems **
-	INC pc80 + 1		; increase MSB otherwise, faster than using 'that macro' (5)
+	INC pc80 + 1		; increment MSB otherwise, faster than using 'that macro' (5)
 	BPL execute			; seems to stay in low area (3/2)
 		RMB6 pc80 + 1		; in ROM area, A14 is goes low (5) *** Rockwell
 	BRA execute			; fetch next (3)
@@ -173,17 +173,20 @@ exit:
 _cb:_ed:_dd:_fd:
 
 	_PC_ADV			; skip illegal opcode (5)
+
 nmi80:				; hardware interrupts, when available, to be checked AFTER incrementing PC
 	LDX #$24			; offset for NMI entry point (2)
-intr80:				; ** generic interrupt entry point, offset in X **
-	STX tmptr		; keep it eeeeeek^2
+
+intr80:				; ** generic interrupt entry point, offset in X ** (70/)
+	STX tmptr		; keep it eeeeeek^2 (3)
 	TYA
 	TAX			; retrieve current PC (2+2+3)
 	LDA pc80+1
 	JSR push	; save return address (50 best case)
 ; saved processor status
 ; seems to push PC only!!!
-	LDX tmptr	; retrieve offset eeeeek^2
+	LDX tmptr	; retrieve offset eeeeek^2 (3)
+
 vector_pull:		; ** standard jump to entry point, offset in X **
 	LDA #lo_mask	; get injected MSB (2)
 	STA pc80+1	; set it (3)
@@ -213,7 +216,7 @@ push:
 		STA sp80+1
 ph1n:
 	PLA		; retrieve LSB
-	DEC sp80	; predecrease
+	DEC sp80	; predecrement
 	STA (sp80)	; store without altering status
 	BNE ph2n	; will not wrap second time
 		LDA sp80+1	; correct MSB otherwise
@@ -221,16 +224,16 @@ ph1n:
 		_AH_BOUND		; just in case
 		STA sp80+1
 ph2n:
-	DEC sp80	; last predecrease
+	DEC sp80	; last predecrement
 	TXA		; original LSB
 	STA (sp80)	; push LSB last
 	RTS
 
 ; pop word from stack into A/X (34 best case)
 pop:
-	LDA (sp80)	; pop first value as will be postincreased
+	LDA (sp80)	; pop first value as will be postincrementd
 	TAX		; final LSB destination
-	INC sp80	; postincrease
+	INC sp80	; postincrement
 	BNE plnw	; did not wrap
 		LDA sp80+1	; correct MSB otherwise
 		INC
@@ -238,7 +241,7 @@ pop:
 		STA sp80+1
 plnw:
 	LDA (sp80)	; now pop other byte
-	INC sp80	; postincrease
+	INC sp80	; postincrement
 	BNE plend	; all OK
 		PHA		; need to keep value
 		LDA sp80+1	; correct MSB...
@@ -311,7 +314,7 @@ _45:
 	BRA movb	; common end
 
 _46:
-; MOV B,M (7)
+; MOV B,M (7) from memory
 ; +28
 	LDX l80		; pointer LSB
 	LDA h80		; pointer MSB...
@@ -362,7 +365,7 @@ _4d:
 	BRA movc	; common end
 
 _4e:
-; MOV C,M (7)
+; MOV C,M (7) from memory
 ; +28
 	LDX l80		; pointer LSB
 	LDA h80		; pointer MSB...
@@ -413,7 +416,7 @@ _55:
 	BRA movd	; common end
 
 _56:
-; MOV D,M (7)
+; MOV D,M (7) from memory
 ; +28
 	LDX l80		; pointer LSB
 	LDA h80		; pointer MSB...
@@ -464,7 +467,7 @@ _5d:
 	BRA move	; common end
 
 _5e:
-; MOV E,M (7)
+; MOV E,M (7) from memory
 ; +28
 	LDX l80		; pointer LSB
 	LDA h80		; pointer MSB...
@@ -515,7 +518,7 @@ _65:
 	BRA movh	; common end
 
 _66:
-; MOV H,M (7)
+; MOV H,M (7) from memory
 ; +28
 	LDX l80		; pointer LSB
 	LDA h80		; pointer MSB...
@@ -566,7 +569,7 @@ _6c:
 	BRA movl	; common end
 
 _6e:
-; MOV L,M (7)
+; MOV L,M (7) from memory
 ; +28
 	LDX l80		; pointer LSB
 	LDA h80		; pointer MSB...
@@ -675,7 +678,7 @@ _7d:
 	BRA mova	; common end
 
 _7e:
-; MOV A,M (7)
+; MOV A,M (7) from memory
 ; +28
 	LDX l80		; pointer LSB
 	LDA h80		; pointer MSB...
@@ -738,11 +741,16 @@ _2d:
 	JMP next_op	; flags unaffected
 
 _36:
-; MVI M (10)
-; +18
+; MVI M (10) to memory
+; +41
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
-	STA (hl80)	; destination
+	STA (tmptr)	; eeeeeeek
 	JMP next_op	; flags unaffected
 
 _3d:
@@ -800,7 +808,7 @@ _31:
 	STA sp80+1	; MSB destination
 	JMP next_op	; flags unaffected
 
-; ** Load/store A indirect **
+; ** load/store A indirect **
 
 _0a:
 ; LDAX B (7)
@@ -853,7 +861,7 @@ _3a:
 	JMP next_op	; flags unaffected
 	
 _2a:
-; LHLD (16)
+; LHLD (16) load HL direct
 ;+58
 	_DIRECT		; point to operand
 	LDA (tmptr)	; actual LSB
@@ -875,7 +883,7 @@ _32:
 	JMP next_op	; flags unaffected
 
 _22:
-; SHLD (16)
+; SHLD (16) store HL direct
 ;+58
 	_DIRECT		; point to operand
 	LDA l80	; actual LSB
@@ -888,7 +896,7 @@ shld:
 	STA (tmptr)
 	JMP next_op	; flags unaffecfed
 
-; ** exchange DE & HL **
+; exchange DE & HL
 
 _eb:
 ; XCHG (4)
@@ -911,80 +919,69 @@ _c3:
 ;+38
 jmp:
 	_DIRECT		; get target address in tmptr
+do_jmp:
 	LDY tmptr	; copy fetched address...
 	LDX tmptr+1	; already bound MSB
 	STX pc80+1	; ...into PC
 	JMP execute	; jump to it!
 	
 _da:
-; JC (7/10)
-;+46 if taken, +20 if not
-	LDA f80	; get flags
-	LSR		; C is least bit, now into native C
-		BCS jmp	; execute jump
+; JC (7/10) if carry
+;+44 if taken, +21 if not
+		BBS0 f80, jmp	; best way
+	BRA notjmp	; otherwise skip & continue
+
+_d2:
+; JNC (7/10) if not carry
+;+44 if taken, +21 if not
+		BBR0 f80, jmp	; best way
+	BRA notjmp	; otherwise skip & continue
+
+_f2:
+; JP (7/10) if plus
+;+44 if taken, +21 if not
+		BBR7 f80, jmp	; best way
+	BRA notjmp	; skip and continue
+
+_fa:
+; JM (7/10) if minus
+;+44 if taken, +21 if not
+		BBS7 f80, jmp	; best way
+	BRA notjmp	; skip and continue
+
+_ca:
+; JZ (7/10) if zero
+;+44 if taken, +21 if not
+		BBS6 f80, jmp	; best way
+	BRA notjmp	; skip and continue
+
+_c2:
+; JNZ (7/10) if not zero
+;+44 if taken, +21 if not
+		BBR6 f80, jmp	; best way in the most used one
 notjmp:
 	_PC_ADV		; skip unused address
 	_PC_ADV
 	JMP next_op	; continue otherwise
 
-_d2:
-; JNC (7/10)
-;+46 if taken, +23 if not
-	LDA f80	; get flags
-	LSR		; C is least bit, now into native C
-		BCC jmp	; execute jump
-	BCS notjmp	; skip and continue, no need for BRA
-
-_f2:
-; JP (7/10)
-;+44 if taken, +21 if not
-	BIT f80	; get flags, sign is 6502 compatible!
-		BPL jmp	; execute jump
-	BMI notjmp	; skip and continue, no need for BRA
-
-_fa:
-; JM (7/10)
-;+44 if taken, +21 if not
-	BIT f80	; get flags, sign is 6502 compatible!
-		BMI jmp	; execute jump
-	BPL notjmp	; skip and continue, no need for BRA
-
-_ca:
-; JZ (7/10)
-;+44 if taken, +21 if not
-	BIT f80	; get flags, Z coincides with 6502 V bit!
-		BVS jmp	; execute jump
-	BVC notjmp	; skip and continue, no need for BRA
-
-_c2:
-; JNZ (7/10)
-;+44 if taken, +21 if not
-	BIT f80	; get flags, Z coincides with 6502 V bit!
-		BVC jmp	; execute jump
-	BVS notjmp	; skip and continue, no need for BRA
-
 _ea:
-; JPE (7/10)
-;+46 if taken, +23 if not
-	LDA f80	; get flags
-	AND #%00000100		; filter P/V bit
-		BNE jmp	; execute jump
-	BEQ notjmp	; skip and continue, no need for BRA
+; JPE (7/10) on parity even, better version
+;+ 44 if taken, + 21 if not
+		BBS2 f80, jmp	; jump on flag 2 set
+	BRA notjmp	; otherwise skip and continue
 
 _e2:
-; JPO (7/10)
-;+46 if taken, +23 if not
-	LDA f80	; get flags
-	AND #%00000100		; filter P/V bit
-		BEQ jmp	; execute jump
-	BNE notjmp	; skip and continue, no need for BRA
+; JPO (7/10) on parity odd
+;+ 44 if taken, + 21 if not
+		BBR2 f80, jmp	; jump on flag 2 clear
+	BRA notjmp	; otherwise skip and continue
 
 _e9:
-; PCHL ()
+; PCHL (4) jump to address pointed by HL
 ;+12
 	LDY l80		; get HL word
 	LDA h80
-	_AH_BOUND	; juat in case
+	_AH_BOUND	; eeeeeek
 	STA pc80+1	; set PC
 	JMP execute
 
@@ -993,87 +990,70 @@ _e9:
 
 _cd:
 ; CALL (18)
-;+94 best
+;+100/
 call:
 	_DIRECT		; get target address in tmptr
 	_PC_ADV		; set PC as the return address
-; push return address into stack
 	TYA
 	TAX		; fetch PC LSB
 	LDA pc80+1	; fetch PC MSB
 	JSR push	; ***might be online*** push word in A/X
-; continue jump, might be merged with jump
-	LDY tmptr	; copy fetched address...
-	LDX tmptr+1	; already bound MSB
-	STX pc80+1	; ...into PC
-	JMP execute	; jump to it!
+	BRA do_jmp	; continue like jump, shorter (7)
 	
 _dc:
-; CC (9/18)
-;+102 if taken, +23 if not
-	LDA f80	; get flags
-	LSR		; C is least bit, now into native C
-		BCS call	; execute call
-	BCC notjmp	; continue otherwise
+; CC (9/18) if carry
+;+106 if taken, +21 if not
+		BBS0 f80, call	; best way
+	BRA notjmp	; otherwise skip & continue
 
 _d4:
-; CNC (9/18)
-;+102 if taken, +23 if not
-	LDA f80	; get flags
-	LSR		; C is least bit, now into native C
-		BCC call	; execute call
-	BCS notjmp	; skip and continue, no need for BRA
+; CNC (9/18) if not carry
+;+106 if taken, +21 if not
+		BBR0 f80, call	; best way
+	BRA notjmp	; otherwise skip & continue
 
 _f4:
-; CP (9/18)
-;+100 if taken, +21 if not
-	BIT f80	; get flags, sign is 6502 compatible!
-		BPL call	; execute call
-	BMI notjmp	; skip and continue, no need for BRA
+; CP (9/18) if plus
+;+106 if taken, +21 if not
+		BBR7 f80, call	; better
+	BRA notjmp	; skip and continue
 
 _fc:
-; CM (9/18)
-;+100 if taken, +21 if not
-	BIT f80	; get flags, sign is 6502 compatible!
-		BMI call	; execute call
-	BPL notjmp	; skip and continue, no need for BRA
+; CM (9/18) if minus
+;+106 if taken, +21 if not
+		BBS7 f80, call	; best way
+	BRA notjmp	; otherwise skip & continue
 
 _cc:
-; CZ (9/18)
-;+100 if taken, +21 if not
-	BIT f80	; get flags, Z coincides with 6502 V bit!
-		BVS call	; execute call
-	BVC notjmp	; skip and continue, no need for BRA
+; CZ (9/18) if zero
+;+106 if taken, +21 if not
+		BBS6 f80, call	; best way
+	BRA notjmp	; otherwise skip & continue
 
 _c4:
-; CNZ (9/18)
-;+100 if taken, +21 if not
-	BIT f80	; get flags, Z coincides with 6502 V bit!
-		BVC call	; execute call
-	BVS notjmp	; skip and continue, no need for BRA
+; CNZ (9/18) if not zero
+;+106 if taken, +21 if not
+		BBR6 f80, call	; best way
+	BRA notjmp	; otherwise skip & continue
 
 _ec:
-; CPE (9/18)
-;+102 if taken, +23 if not
-	LDA f80	; get flags
-	AND #%00000100		; filter P/V bit
-		BNE call	; execute call
-	BEQ notjmp	; skip and continue, no need for BRA
+; CPE (9/18) on parity even, better version, saves 3 bytes & 2 clocks
+;+ 106 if taken, + 21 if not
+		BBS2 f80, call	; jump on flag 2 set
+	BRA notjmp	; otherwise skip and continue
 
 _e4:
-; CPO (9/18)
-;+102 if taken, +23 if not
-	LDA f80	; get flags
-	AND #%00000100		; filter P/V bit
-		BEQ call	; execute call
-	BNE notjmp	; skip and continue, no need for BRA
+; CPO (9/18) on parity odd
+;+ 106 if taken, + 21 if not
+		BBR2 f80, call	; jump on flag 2 clear
+	BRA notjmp	; otherwise skip and continue
 
 
 ; ** return **
 
 _c9:
 ; RET (10)
-;+44
+;+50
 ret:
 ; pop return address from stack
 	JSR pop		; ***might be online*** returns word in A/X
@@ -1081,169 +1061,143 @@ ret:
 	STA pc80+1	; fetch injected MSB
 	TXA		; fetch LSB...
 	TAY		; ...into PC
-; continue execution
-	JMP execute	; jump to it!
+	JMP execute	; back to caller
 	
 _d8:
-; RC (6/12)
-;+52 if taken, +23 if not
-	LDA f80	; get flags
-	LSR		; C is least bit, now into native C
-		BCS ret	; execute ret
-	BCC notjmp	; continue otherwise
+; RC (6/12) if carry
+;+56 if taken, +21 if not
+		BBS0 f80, ret	; faster & shorter
+	BRA notjmp	; otherwise skip & continue
 
 _d0:
-; RNC (6/12)
-;+52 if taken, +23 if not
-	LDA f80	; get flags
-	LSR		; C is least bit, now into native C
-		BCC ret	; execute ret
-	BCS notjmp	; skip and continue, no need for BRA
+; RNC (6/12) if not carry
+;+56 if taken, +21 if not
+		BBR0 f80, ret	; faster & shorter
+	BRA notjmp	; otherwise skip & continue
 
 _f0:
-; RP (6/12)
-;+50 if taken, +21 if not
-	BIT f80	; get flags, sign is 6502 compatible!
-		BPL ret	; execute ret
-	BMI notjmp	; skip and continue, no need for BRA
+; RP (6/12) if plus
+;+56 if taken, +21 if not
+		BBR7 f80, ret	; faster & shorter
+	BRA notjmp	; otherwise skip & continue
 
 _f8:
-; RM (6/12)
-;+50 if taken, +21 if not
-	BIT f80	; get flags, sign is 6502 compatible!
-		BMI ret	; execute ret
-	BPL notjmp	; skip and continue, no need for BRA
+; RM (6/12) if minus
+;+56 if taken, +21 if not
+		BBS7 f80, ret	; faster & shorter
+	BRA notjmp	; otherwise skip & continue
 
 _c8:
-; RZ (6/12)
-;+50 if taken, +21 if not
-	BIT f80	; get flags, Z coincides with 6502 V bit!
-		BVS ret	; execute ret
-	BVC notjmp	; skip and continue, no need for BRA
+; RZ (6/12) if zero
+;+56 if taken, +21 if not
+		BBS6 f80, ret	; faster & shorter
+	BRA notjmp	; otherwise skip & continue
 
 _c0:
-; RNZ (6/12)
-;+50 if taken, +21 if not
-	BIT f80	; get flags, Z coincides with 6502 V bit!
-		BVC ret	; execute ret
-	BVS notjmp	; skip and continue, no need for BRA
+; RNZ (6/12) if not zero
+;+56 if taken, +21 if not
+		BBR6 f80, ret	; faster & shorter
+	BRA notjmp	; otherwise skip & continue
 
 _e8:
-; RPE (6/12)
-;+52 if taken, +23 if not
-	LDA f80	; get flags
-	AND #%00000100		; filter P/V bit
-		BNE ret	; execute ret
-	BEQ notjmp	; skip and continue, no need for BRA
+; RPE (6/12) on parity even, better version
+;+ 56 if taken, + 21 if not
+		BBS2 f80, ret	; jump on flag 2 set
+	BRA notjmp	; otherwise skip and continue
 
 _e0:
-; RPO (6/12)
-;+52 if taken, +23 if not
-	LDA f80	; get flags
-	AND #%00000100		; filter P/V bit
-		BEQ ret	; execute ret
-	BNE notjmp	; skip and continue, no need for BRA
+; RPO (6/12) on parity odd
+;+ 56 if taken, + 21 if not
+		BBR2 f80, ret	; jump on flag 2 clear
+	BRA notjmp	; otherwise skip and continue
 
 
 ; ** restart **
 ; faster, specific routines
 
 _c7:
-; RST 0 ()
-;+10+...
+; RST 0 (11?)
+;+80/
 	_PC_ADV		; skip opcode
 	LDX #0	; offset
 	JMP intr80	; calling procedure
 
 _cf:
-; RST 1 ()
-;+10+...
+; RST 1 (11?)
+;+80/
 	_PC_ADV		; skip opcode
 	LDX #$08	; offset
 	JMP intr80	; calling procedure
 
 _d7:
-; RST 2 ()
-;+10+...
+; RST 2 (11?)
+;+80/
 	_PC_ADV		; skip opcode
 	LDX #$10	; offset
 	JMP intr80	; calling procedure
 
 _df:
-; RST 3 ()
-;+10+...
+; RST 3 (11?)
+;+80/
 	_PC_ADV		; skip opcode
 	LDX #$18	; offset
 	JMP intr80	; calling procedure
 
 _e7:
-; RST 4 ()
-;+10+...
+; RST 4 (11?)
+;+80/
 	_PC_ADV		; skip opcode
 	LDX #$20	; offset
 	JMP intr80	; calling procedure
 
 _ef:
-; RST 5 ()
-;+10+...
+; RST 5 (11?)
+;+80/
 	_PC_ADV		; skip opcode
 	LDX #$28	; offset
 	JMP intr80	; calling procedure
 
 _f7:
-; RST 6 ()
-;+10+...
+; RST 6 (11?)
+;+80/
 	_PC_ADV		; skip opcode
 	LDX #$30	; offset
 	JMP intr80	; calling procedure
 
 _ff:
-; RST 7 ()
-;+10+...
+; RST 7 (11?)
+;+80/
 	_PC_ADV		; skip opcode
 	LDX #$38	; offset
 	JMP intr80	; calling procedure
-
-/*
-_c7:_cf:_d7:_df:_e7:_ef:_f7:_ff:
-; slower but more compact version
-; RST n () ***** GENERIC CODE *****
-;+17+...
-; does it disable interrupts???
-	LDA (pc80), Y	; get current opcode
-	AND #%00111000	; filter relevant bits
-	TAX
-	_PC_ADV		; skip opcode itself!
-	JMP intr80	; call restart procedure
-*/
 
 
 ; ** stack **
 
 _c5:
-; PUSH B (12)
-;+56
+; PUSH B (12) BE
+;+62
 	LDA b80		; load data word
 	LDX c80
 	BRA phcnt	; push and continue
 
 _d5:
-; PUSH D (12)
-;+56
+; PUSH D (12) DE
+;+62
 	LDA d80		; load data word
 	LDX e80
 	BRA phcnt	; push and continue
 
 _e5:
-; PUSH H (12)
-;+56
+; PUSH H (12) HL
+;+62
 	LDA h80		; load data word
 	LDX l80
 	BRA phcnt	; push and continue
 
 _f5:
-; PUSH PSW (12)
-;+53
+; PUSH PSW (12) AF
+;+59
 	LDA a80		; load data word
 	LDX f80
 phcnt:
@@ -1251,39 +1205,39 @@ phcnt:
 	JMP next_op	; flags unaffected
 
 _c1:
-; POP B (10)
-;+43
+; POP B (10) BC
+;+52
 	JSR pop		; retrieve from stack
 	STA b80		; store MSB
 	STX c80		; store LSB
 	JMP next_op
 
 _d1:
-; POP D (10)
-;+43
+; POP D (10) DE
+;+52
 	JSR pop		; retrieve from stack
 	STA d80		; store MSB
 	STX e80		; store LSB
 	JMP next_op
 
 _e1:
-; POP H (10)
-;+43
+; POP H (10) HL
+;+52
 	JSR pop		; retrieve from stack
 	STA h80		; store MSB
 	STX l80		; store LSB
 	JMP next_op
 
 _f1:
-; POP PSW (10)
-;+43
+; POP PSW (10) AF
+;+49
 	JSR pop		; retrieve from stack
 	STA a80		; store MSB
 	STX f80		; store LSB
 	JMP next_op
 
 _e3:
-; XTHL (16)
+; XTHL (16) exchange HL with top of stack
 ;+105, could be optimised
 	JSR pop		; get top of stack
 	STX tmptr	; store temporarily
@@ -1298,18 +1252,19 @@ _e3:
 	JMP next_op
 
 _f9:
-; SPHL (6)
-;+15
+; SPHL (6) set SP as HL
+;+20/
 	LDA h80		; get HL word
 	LDX l80
+	_AH_BOUND		; eeeeeek
 	STA sp80+1	; set SP
 	STX sp80
 	JMP next_op
 
 _33:
 ; INX SP ()
-;+11
-	INC sp80	; increase SP LSB
+;+11/
+	INC sp80	; increment SP LSB
 	BNE xsend	; no wrap
 		LDA sp80+1	; get MSB
 		INC
@@ -1328,7 +1283,7 @@ _3b:
 		_AH_BOUND	; just in case
 		STA sp80+1
 dcxn:
-	DEC sp80	; decrease LSB
+	DEC sp80	; decrement LSB
 	JMP next_op
 
 
@@ -1336,13 +1291,13 @@ dcxn:
 
 _fb:
 ; EI (4)
-;+
+;+8
 	SMB3 rimask	; enable interrupts
 	JMP next_op
 
 _f3:
 ; DI (4)
-;+
+;+8
 	RMB3 rimask	; disable interrupts
 	JMP next_op
 
@@ -1433,7 +1388,7 @@ _20:
 
 _30:
 ; SIM (4) set interrupt mask
-;+
+;+16/
 	LDA a80		; get argument
 	BIT #%00010000	; check bit 4
 	BEQ sim_r7	; will not clear I7.5
@@ -1450,7 +1405,7 @@ sim_r7:
 sim_m:
 	JMP next_op	; anything else?
 
-
+	
 ;** rotate **
 
 _07:
@@ -1509,12 +1464,17 @@ _1f:
 
 _34:
 ; INR M (10)
-;+52
-	LDA (hl80)	; older value
+;+69
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; older value
 	TAX		; for further testing
 	INC		; operation
 	PHP		; keep status
-	STA (hl80)	; and update memory
+	STA (tmptr)	; and update memory
 	LDA f80		; get previous status
 	AND #%00101001	; reset relevant bits
 	PLP		; retrieve native status
@@ -1604,12 +1564,17 @@ _3c:
 
 _35:
 ; DCR M (10)
-;+52
-	LDA (hl80)	; older value
+;+69
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; older value
 	TAX		; for further testing
 	DEC		; operation
 	PHP		; keep status
-	STA (hl80)	; and update memory
+	STA (tmptr)	; and update memory
 	LDA f80		; get previous status
 	AND #%00101001	; reset relevant bits
 	PLP		; retrieve native status
@@ -1701,7 +1666,7 @@ _3d:
 _03:
 ; INX B (6)
 ;+11
-	INC c80	; increase LSB
+	INC c80	; increment LSB
 	BNE ixb	; no wrap
 		INC b80	; correct MSB
 ixb:
@@ -1714,15 +1679,15 @@ _0b:
 	BNE dxb	; will not wrap
 		DEC b80	; correct MSB otherwise
 dxb:
-	DEC c80	; decrease LSB
+	DEC c80	; decrement LSB
 	JMP next_op
 
 _13:
 ; INX D (6)
 ;+11
-	INC e80	; increase LSB
+	INC e80	; increment LSB
 	BNE ixd	; no wrap
-		INC d80	; get MSB
+		INC d80	; correct MSB
 ixd:
 	JMP next_op	; flags unaffected
 
@@ -1733,13 +1698,13 @@ _1b:
 	BNE dxd	; will not wrap
 		DEC d80	; correct MSB otherwise
 dxd:
-	DEC e80	; decrease LSB
+	DEC e80	; decrement LSB
 	JMP next_op
 
 _23:
 ; INX H (6)
 ;+11
-	INC l80	; increase LSB
+	INC l80	; increment LSB
 	BNE ixh	; no wrap
 		INC h80	; correct MSB
 ixh:
@@ -1752,7 +1717,7 @@ _2b:
 	BNE dxh	; will not wrap
 		DEC h80	; correct MSB otherwise
 dxh:
-	DEC l80	; decrease LSB
+	DEC l80	; decrement LSB
 	JMP next_op
 
 _:
@@ -1899,9 +1864,6 @@ _:
 _:
 ;()
 ;+
-
-
-
 
 
 
@@ -1984,38 +1946,6 @@ andae:				; +25/27/36 from here
 	AND (tmptr)		; AND with operand (5)
 	JMP a_nz		; update A and check NZ (9/11/20)
 
-; AND without modifying register
-_85:
-; BIT A imm (2)
-; +39/41/
-	_PC_ADV			; go for operand (5)
-	STY tmptr		; store LSB of pointer (3)
-	LDA pc80 + 1	; get address MSB (3)
-	STA tmptr + 1	; pointer is ready (3)
-	BRA bitae		; continue as indirect addressing (25/27/36)
-
-_95:
-; BIT A dir (3)
-; +43/45/
-	_DIRECT			; points to operand (10)
-	STA tmptr		; store LSB of pointer (3)
-	LDA #>e_base	; emulated MSB (2)
-	STA tmptr+1		; pointer is ready (3)
-	BRA bitae		; continue as indirect addressing (25/27/36)
-
-_b5:
-; BIT A ext (4)
-; +53/55.5/
-	_EXTENDED		; points to operand (31/31.5)
-bitae:				; +22/24/33 from here
-	LDA ccr80		; get flags (3)
-	AND #%11110001	; clear relevant bits (2)
-	STA ccr80		; update (3)
-	LDA a80			; get A accumulator (3)
-	AND (tmptr)		; AND with operand, just for flags (5)
-	JMP check_nz	; check flags and end (6/8/17)
-
-
 ; compare
 _81:
 ; CMP A imm (2)
@@ -2040,68 +1970,6 @@ cmpae:				; +30/34/52 from here
 	JMP check_flags	; check NZVC and exit (12/16/34)
 
 
-; 1's complement
-_43:
-; COM A (2)
-; +24/26/35
-	LDA ccr80		; get original flags (3)
-	AND #%11110000	; reset relevant bits (2)
-	INC				; C always set (2)
-	STA ccr80		; update status (3)
-	LDA a80			; get A (3)
-	EOR #$FF		; complement it (2)
-	JMP a_nz		; update A, check NZ and exit (9/11/20)
-
-_73:
-; COM ext (6)
-; +62/64.5/
-	_EXTENDED		; addressing mode (31/31.5)
-come:				; +31/33/42 from here
-	LDA ccr80		; get original flags (3)
-	AND #%11110000	; reset relevant bits (2)
-	INC				; C always set (2)
-	STA ccr80		; update status (3)
-	LDA (tmptr)		; get memory (5)
-	EOR #$FF		; complement it (2)
-	JMP ind_nz		; store, check flags and exit (14/17/25)
-
-; 2's complement
-_40:
-; NEG A (2)
-; +36/40/51
-	LDA ccr80		; get original flags (3)
-	AND #%11110000	; reset relevant bits (2)
-	STA ccr80		; update status (3)
-	SEC				; prepare subtraction (2)
-	LDA #0			; (2)
-	SBC a80			; negate A (3)
-	STA a80			; update value (3)
-nega:				; +18/22/33 from here
-	BNE nega_nc		; carry only if zero (3)
-		SMB0 ccr80		; set C flag *** Rockwell ***
-nega_nc:
-	TAX				; keep for later! (2)
-	CMP #$80		; will overflow? (2)
-	BNE nega_nv		; skip if not V (3)
-		SMB1 ccr80		; set V flag *** Rockwell ***
-nega_nv:
-	TXA				; retrieve (2)
-	JMP check_nz	; finish (6/8/17)
-
-_70:
-; NEG ext (6)
-; +74/78.5/
-	_EXTENDED		; addressing mode (31/31.5)
-nege:				; +43/47/58 from here
-	LDA ccr80		; get original flags (3)
-	AND #%11110000	; reset relevant bits (2)
-	STA ccr80		; update status (3)
-	SEC				; prepare subtraction (2)
-	LDA #0			; (2)
-	SBC (tmptr)		; negate memory (5)
-	STA (tmptr)		; update value (5)
-	BRA nega		; continue (21/25/36)
-
 ; decimal adjust
 _19:
 ; DAA (2)
@@ -2120,7 +1988,7 @@ daa_conv:
 	LDA #0			; will compute final value
 	SED				; set decimal mode!!! (...28 worst)
 daa_loop:
-		ADC #1			; decimal increase
+		ADC #1			; decimal increment
 		DEX				; decrement counter
 		BNE daa_loop	; until done (7x255+6 = 1791)
 	CLD				; back to binary mode!!!
@@ -2130,37 +1998,6 @@ daa_nv:
 	STA a80			; update accumulator with BCD value
 daa_ok:
 	JMP check_flags	; check and exit
-
-; decrement
-_4a:
-; DEC A (2)
-; +29/31/
-	LDA ccr80		; get original status (3)
-	AND #%11110001	; reset all relevant bits for CCR (2)
-	STA ccr80		; store new flags (3)
-	DEC a80			; decrease A (5)
-	LDX a80			; check it! (3)
-deca:				; +13/15/ from here
-	CPX #$7F		; did change sign? (2)
-	BNE deca_nv		; skip if not overflow (3...)
-		SMB1 ccr80		; will set V flag *** Rockwell ***
-deca_nv:
-	TXA				; retrieve! (2)
-	JMP check_nz	; end 
-	
-_7a:
-; DEC ext (6)
-; +69/71.5/
-	_EXTENDED		; addressing mode (31/31.5)
-dece:				; +38/40/ from here
-	LDA ccr80		; get original status (3)
-	AND #%11110001	; reset all relevant bits for CCR (2)
-	STA ccr80		; store new flags (3)
-	LDA (tmptr)		; no DEC (tmptr) available... (5)
-	DEC				; (2)
-	STA (tmptr)		; (5)
-	TAX				; store for later (2)
-	BRA deca		; continue (16/18)
 
 _b8:
 ; EOR A ext (4)
@@ -2173,39 +2010,6 @@ eorae:				; +25/27/36 from here
 	LDA a80			; get A accumulator (3)
 	EOR (tmptr)		; EOR with operand (5)
 	JMP a_nz		; update A, check NZ and exit (9/11/20)
-
-
-; increment
-_4c:
-; INC A (2)
-; +29/31/
-	LDA ccr80		; get original status (3)
-	AND #%11110001	; reset all relevant bits for CCR (2)
-	STA ccr80		; store new flags (3)
-	INC a80			; increase A (5)
-	LDX a80			; check it! (3)
-inca:				; +13/15/ from here
-	CPX #$80		; did change sign? (2)
-	BNE inca_nv		; skip if not overflow (3...)
-		SMB1 ccr80		; will set V flag *** Rockwell ***
-inca_nv:
-	TXA				; retrieve! (2)
-	JMP check_nz	; end (6/8/17)
-
-
-_7c:
-; INC ext (6)
-; +69/71.5/
-	_EXTENDED		; addressing mode (31/31.5)
-ince:
-	LDA ccr80		; get original status (3)
-	AND #%11110001	; reset all relevant bits for CCR (2)
-	STA ccr80		; store new flags (3)
-	LDA (tmptr)		; no INC (tmptr) available... (5)
-	INC				; (2)
-	STA (tmptr)		; (5)
-	TAX				; store for later (2)
-	BRA inca		; continue (3+)
 
 _96:
 ; LDA A dir (3) *** access to $00 is redirected to standard input ***
@@ -2253,155 +2057,6 @@ oraae:
 	LDA a80			; get A accumulator (3)
 	ORA (tmptr)		; ORA with operand (5)
 	JMP a_nz		; update A, check NZ and exit (9/11/20)
-
-; rotate left
-_49:
-; ROL A (2)
-; +
-	CLC				; prepare (2)
-	BBR0 ccr80, rola_do	; skip if C clear (6/6.5...) *** Rockwell ***
-		SEC					; otherwise, set carry
-rola_do:
-	ROL a80			; rotate A left (5)
-	LDX a80			; keep for later (3)
-rots:				; *** common rotation ending, with value in X ***
-	LDA ccr80		; get flags again (3)
-	AND #%11110000	; reset relevant bits (2)
-	BCC rola_nc		; skip if there was no carry (3/4.5...)
-		ORA #%00000001	; will set C flag (2)
-		EOR #%00000010	; toggle V bit (2)
-rola_nc:
-	CPX #0			; watch computed value! (2)
-	BNE rola_nz		; skip if not zero (3...)
-		ORA #%00000100	; set Z flag (2)
-		CPX #0			; retrieve again, much faster! (2)
-rola_nz:
-	BPL rola_pl		; skip if positive (3/4.5...)
-		ORA #%00001000	; will set N bit (2)
-		EOR #%00000010	; toggle V bit (2)
-rola_pl:
-	STA ccr80		; update status (3)
-	JMP next_op		; standard end of routine
-
-_79:
-; ROL ext (6)
-; +
-	_EXTENDED		; addressing mode (31/31.5)
-role:
-	CLC				; prepare (2)
-	BBR0 ccr80, role_do	; skip if C clear (6/6.5) *** Rockwell ***
-		SEC					; otherwise, set carry
-role_do:
-	LDA (tmptr)		; get memory (5)
-	ROL				; rotate left (2)
-	STA (tmptr)		; modify (5)
-	TAX				; keep for later (2)
-	BRA rots		; continue 
-	
-; rotate right
-_46:
-; ROR A (2)
-; +
-	CLC				; prepare (2)
-	BBR0 ccr80, rora_do	; skip if C clear (6/6.5...) *** Rockwell ***
-		SEC					; otherwise, set carry
-rora_do:
-	ROR a80			; rotate A right (5)
-	LDX a80			; keep for later (3)
-	JMP rots		; common end! (3+)
-
-_76:
-; ROR ext (6)
-; +
-	_EXTENDED		; addressing mode (31/31.5)
-rore:
-	CLC				; prepare (2)
-	BBR0 ccr80, rore_do	; skip if C clear (6/6.5...) *** Rockwell ***
-		SEC					; otherwise, set carry
-rore_do:
-	LDA (tmptr)		; get memory (5)
-	ROR				; rotate right (2)
-	STA (tmptr)		; modify (5)
-	TAX				; keep for later (2)
-	JMP rots		; common end! (3+)
-
-; arithmetic shift left
-_48:
-; ASL A (2)
-; +
-	ASL a80			; shift A left (5)
-	LDX a80			; retrieve again! (3)
-	JMP rots		; common end (3+)
-
-_78:
-; ASL ext (6)
-; +
-	_EXTENDED		; prepare pointer (31/31.5)
-asle:
-	LDA (tmptr)		; get operand (5)
-	ASL				; shift left (2)
-	STA (tmptr)		; update memory (5)
-	TAX				; save for later! (2)
-	JMP rots		; common end! (3+)
-
-; arithmetic shift right
-_47:
-; ASR A (2)
-; +
-	CLC				; prepare (2)
-	BIT a80			; check bit 7 (3)
-	BPL asra_do		; do not insert C if clear
-		SEC				; otherwise, set carry (2)
-asra_do:
-	ROR a80			; emulate arithmetic shift left with preloaded-C rotation (5)
-	TAX				; store for later (2)
-	JMP rots		; common end! (3+)
-
-_77:
-; ASR ext (6)
-; +
-	_EXTENDED		; get pointer to operand (31/31.5)
-asre:
-	CLC				; prepare (2)
-	LDA (tmptr)		; check operand (5)
-	BPL asre_do		; do not insert C if clear
-		SEC				; otherwise, set carry (2)
-asre_do:
-	ROR 			; emulate arithmetic shift left with preloaded-C rotation (2)
-	STA (tmptr)		; update memory (5)
-	TAX				; store for later! (2)
-	JMP rots		; common end! (3+)
-
-; logical shift right
-_44:
-; LSR A (2)
-; +
-	LDA ccr80		; get original flags (3)
-	AND #%11110000	; reset relevant bits (N always reset) (2)
-	LSR a80			; shift A right (5)
-lshift:				; *** common ending for logical shifts ***
-	BNE lsra_nz		; skip if not zero (3...)
-		ORA #%00000100	; set Z flag (2)
-lsra_nz:
-	BCC lsra_nc		; skip if there was no carry (3/3.5...)
-		ORA #%00000011	; will set C and V flags, seems OK (2)
-lsra_nc:
-	STA ccr80		; update status (3)
-	JMP next_op		; standard end of routine
-
-_74:
-; LSR ext (6)
-; +
-	_EXTENDED		; addressing mode (31/31.5)
-lsre:
-	LDA (tmptr)		; get operand (5)
-	LSR				; (2)
-	STA (tmptr)		; modify operand (5)
-	PHP				; store status, really needed!!! (3)
-	LDA ccr80		; get original flags (3)
-	AND #%11110000	; reset relevant bits (N always reset) (2)
-	PLP				; retrieve status, proper way!!! (4)
-	BRA lshift		; common end! (3+)
 
 ; store
 _97:
@@ -2470,26 +2125,6 @@ sbcae_do:
 	STA a80			; update accumulator (3)
 	JMP check_flags	; and exit (12/16/34)
 	
-; test for zero or minus
-_4d:
-; TST A (2)
-; +17/19/21
-	LDA ccr80		; get original flags (3)
-	AND #%11110000	; reset relevant bits (2)
-	STA ccr80		; update status (3)
-	LDA a80			; check accumulator A (3)
-	JMP check_nz	; (6/8/17)
-
-_7d:
-; TST ext (6)
-; +50/52.5/
-	_EXTENDED		; set pointer (31/31.5)
-tste:
-	LDA ccr80		; get original flags (3)
-	AND #%11110000	; reset relevant bits (2)
-	STA ccr80		; update status (3)
-	LDA (tmptr)		; check operand (5)
-	JMP check_nz	; (6/8/17)
 
 ; ** index register and stack pointer ops **
 
@@ -2546,29 +2181,7 @@ cpxe_nz:
 cpxe_nv:
 	JMP next_op		; standard end
 
-; decrement index
-_09:
-; DEX (4)
-; +17/17/24
-	LDA x80			; check LSB (3)
-	BEQ dex_w		; if zero, will wrap upon decrease! (2)
-		DEC x80			; otherwise just decrease LSB (5)
-		BEQ dex_z		; if zero now, could be all zeroes! (2)
-			RMB2 ccr80		; clear Z bit (5) *** Rockwell only! ***
-			JMP next_op		; usual end
-dex_w:
-		DEC x80			; decrease as usual
-		DEC x80 + 1		; wrap MSB
-		RMB2 ccr80		; clear Z bit, *** Rockwell only! ***
-		JMP next_op		; usual end
-dex_z:
-	LDA x80 + 1		; check MSB
-	BEQ dex_zz		; it went down to zero!
-		RMB2 ccr80		; clear Z bit, *** Rockwell only! ***
-		JMP next_op		; usual end
-dex_zz:
-	SMB2 ccr80	; set Z bit, *** Rockwell only! ***
-	JMP next_op	; rarest end 
+
 */
 
 
