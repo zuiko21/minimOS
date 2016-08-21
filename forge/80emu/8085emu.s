@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
-; v0.1a4
+; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160821-0018
+; last modified 20160821-1932
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -145,7 +145,7 @@ lo_jump:
 ; also 'absurd' instructions like MOV B, B
 
 _00:
-_40:_49:_52:_5B:_64:_6D:_7F:
+_40:_49:_52:_5b:_64:_6d:_7f:
 
 ; continue execution via JMP next_op, will not arrive here otherwise
 next_op:
@@ -159,18 +159,19 @@ next_op:
 		RMB6 pc80 + 1		; in ROM area, A14 is goes low (5) *** Rockwell
 	BRA execute			; fetch next (3)
 
+
 ; *** window title, optional and minimOS specific ***
 title:
 	.asc	"8085 simulator", 0
 exit:
 	.asc 13, "{HLT}", 13, 0
 
-; *** opcode execution routines, labels must match those on tables below ***
-; unsupported opcodes first
+
+; *** interrupt support ***
+; unsupported opcodes will be TRAPped
 
 _cb:_ed:_dd:_fd:
 
-; illegal opcodes will seem to trigger a non maskable interupt!
 	_PC_ADV			; skip illegal opcode (5)
 nmi80:				; hardware interrupts, when available, to be checked AFTER incrementing PC
 	LDX #$24			; offset for NMI entry point (2)
@@ -189,6 +190,7 @@ vector_pull:		; ** standard jump to entry point, offset in X **
 	TXA
 	TAY		; update PC (4)
 	BRA execute		; continue with interrupt handler
+
 
 ; ** common routines **
 
@@ -272,7 +274,8 @@ cvc_cc:
 		SMB0 f80		; set C *** Rockwell ***
 	BRA check_nz	; continue checking
 
-; *** valid opcode definitions ***
+
+; *** *** valid opcode definitions *** ***
 
 ; ** move **
 ; to B
@@ -309,8 +312,13 @@ _45:
 
 _46:
 ; MOV B,M (7)
-; +11
-	LDA (hl80)	; pointed source
+; +28
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; pointed source
 movb:
 	STA b80	; destination
 	JMP next_op	; flags unaffected
@@ -355,8 +363,13 @@ _4d:
 
 _4e:
 ; MOV C,M (7)
-; +11
-	LDA (hl80)	; pointed source
+; +28
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; pointed source
 movc:
 	STA c80	; destination
 	JMP next_op	; flags unaffected
@@ -401,8 +414,13 @@ _55:
 
 _56:
 ; MOV D,M (7)
-; +11
-	LDA (hl80)	; pointed source
+; +28
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; pointed source
 movd:
 	STA d80	; destination
 	JMP next_op	; flags unaffected
@@ -447,8 +465,13 @@ _5d:
 
 _5e:
 ; MOV E,M (7)
-; +11
-	LDA (hl80)	; pointed source
+; +28
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; pointed source
 move:
 	STA e80	; destination
 	JMP next_op	; flags unaffected
@@ -493,8 +516,13 @@ _65:
 
 _66:
 ; MOV H,M (7)
-; +11
-	LDA (hl80)	; pointed source
+; +28
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; pointed source
 movh:
 	STA h80	; destination
 	JMP next_op	; flags unaffected
@@ -539,8 +567,13 @@ _6c:
 
 _6e:
 ; MOV L,M (7)
-; +11
-	LDA (hl80)	; pointed source
+; +28
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; pointed source
 movl:
 	STA l80	; destination
 	JMP next_op	; flags unaffected
@@ -548,53 +581,59 @@ movl:
 _6f:
 ; MOV L,A (4)
 ; +12
-	LDA a80	; source
+	LDX a80	; source
 	BRA movl	; common end
 
 ; to memory
 
 _70:
 ; MOV M,B (7)
-; +14
-	LDA b80	; source
+; +33
+	LDX b80	; source
 	BRA movm	; common end
 
 _71:
 ; MOV M,C (7)
-; +14
-	LDA c80	; source
+; +33
+	LDX c80	; source
 	BRA movm	; common end
 
 _72:
 ; MOV M,D (7)
-; +14
-	LDA d80	; source
+; +33
+	LDX d80	; source
 	BRA movm	; common end
 
 _73:
 ; MOV M,E (7)
-; +14
-	LDA e80	; source
+; +33
+	LDX e80	; source
 	BRA movm	; common end
 
 _74:
 ; MOV M,H (7)
-; +14
-	LDA h80	; source
+; +33
+	LDX h80	; source
 	BRA movm	; common end
 
 _75:
 ; MOV M,L (7)
-; +14
-	LDA l80	; source
+; +33
+	LDX l80	; source
 	BRA movm	; common end
 
 _77:
 ; MOV M,A (7)
-; +11
-	LDA a80	; source
+; +30
+	LDX a80	; source
 movm:
-	STA (hl80)	; pointed destination
+	LDA l80		; pointer LSB
+	STA tmptr	; create temporary pointer
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STA tmptr+1	; pointer ready
+	TXA		; get data
+	STA (tmptr)	; pointed source
 	JMP next_op	; flags unaffected
 
 ; to A
@@ -637,8 +676,13 @@ _7d:
 
 _7e:
 ; MOV A,M (7)
-; +11
-	LDA (hl80)	; pointed source
+; +28
+	LDX l80		; pointer LSB
+	LDA h80		; pointer MSB...
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; pointed source
 mova:
 	STA a80	; destination
 	JMP next_op	; flags unaffected
@@ -746,12 +790,13 @@ _21:
 
 _31:
 ; LXI SP (10)
-; +29
+; +34
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get first immediate
 	STA sp80	; LSB destination
 	_PC_ADV		; advance to next byte
 	LDA (pc80), Y	; get second immediate
+	_AH_BOUND		; SP is kept bound eeeeeeek
 	STA sp80+1	; MSB destination
 	JMP next_op	; flags unaffected
 
@@ -759,31 +804,43 @@ _31:
 
 _0a:
 ; LDAX B (7)
-;+11
-	LDA (bc80)	; get indirect data
+; +28
+	LDX c80		; pointer LSB
+	LDA b80		; pointer MSB...
+ldax:
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
+	LDA (tmptr)	; pointed source
 	STA a80	; destination
 	JMP next_op	; flags unaffected
 
 _1a:
 ; LDAX D (7)
-;+11
-	LDA (de80)	; get indirect data
-	STA a80	; destination
-	JMP next_op	; flags unaffected
+; +31
+	LDX e80		; pointer LSB
+	LDA d80		; pointer MSB...
+	BRA ldax	; common end
 
 _02:
 ; STAX B (7)
-;+11
+; +28
+	LDX c80		; pointer LSB
+	LDA b80		; pointer MSB...
+stax:
+	_AH_BOUND	; ...to be bound
+	STX tmptr	; create temporary pointer
+	STA tmptr+1
 	LDA a80	; get source data
-	STA (bc80)	; indirect destination
+	STA (tmptr)	; indirect destination
 	JMP next_op	; flags unaffected
 
 _12:
 ; STAX D (7)
-;+11
-	LDA a80	; get source data
-	STA (de80)	; indirect destination
-	JMP next_op	; flags unaffected
+;+31
+	LDX e80		; pointer LSB
+	LDA d80		; pointer MSB...
+	BRA stax	; common end
 
 ; ** load/store direct **
 
@@ -845,6 +902,7 @@ _eb:
 	STA e80
 	STX l80
 	JMP next_op	; flags unaffected
+
 
 ; ** jump **
 
@@ -930,6 +988,7 @@ _e9:
 	STA pc80+1	; set PC
 	JMP execute
 
+
 ; ** call **
 
 _cd:
@@ -1009,6 +1068,7 @@ _e4:
 		BEQ call	; execute call
 	BNE notjmp	; skip and continue, no need for BRA
 
+
 ; ** return **
 
 _c9:
@@ -1084,17 +1144,79 @@ _e0:
 		BEQ ret	; execute ret
 	BNE notjmp	; skip and continue, no need for BRA
 
-; ** restart **
 
+; ** restart **
+; faster, specific routines
+
+_c7:
+; RST 0 ()
+;+10+...
+	_PC_ADV		; skip opcode
+	LDX #0	; offset
+	JMP intr80	; calling procedure
+
+_cf:
+; RST 1 ()
+;+10+...
+	_PC_ADV		; skip opcode
+	LDX #$08	; offset
+	JMP intr80	; calling procedure
+
+_d7:
+; RST 2 ()
+;+10+...
+	_PC_ADV		; skip opcode
+	LDX #$10	; offset
+	JMP intr80	; calling procedure
+
+_df:
+; RST 3 ()
+;+10+...
+	_PC_ADV		; skip opcode
+	LDX #$18	; offset
+	JMP intr80	; calling procedure
+
+_e7:
+; RST 4 ()
+;+10+...
+	_PC_ADV		; skip opcode
+	LDX #$20	; offset
+	JMP intr80	; calling procedure
+
+_ef:
+; RST 5 ()
+;+10+...
+	_PC_ADV		; skip opcode
+	LDX #$28	; offset
+	JMP intr80	; calling procedure
+
+_f7:
+; RST 6 ()
+;+10+...
+	_PC_ADV		; skip opcode
+	LDX #$30	; offset
+	JMP intr80	; calling procedure
+
+_ff:
+; RST 7 ()
+;+10+...
+	_PC_ADV		; skip opcode
+	LDX #$38	; offset
+	JMP intr80	; calling procedure
+
+/*
 _c7:_cf:_d7:_df:_e7:_ef:_f7:_ff:
-; RST n () GENERIC CODE
-;+
+; slower but more compact version
+; RST n () ***** GENERIC CODE *****
+;+17+...
 ; does it disable interrupts???
 	LDA (pc80), Y	; get current opcode
 	AND #%00111000	; filter relevant bits
 	TAX
 	_PC_ADV		; skip opcode itself!
 	JMP intr80	; call restart procedure
+*/
+
 
 ; ** stack **
 
@@ -1209,65 +1331,430 @@ dcxn:
 	DEC sp80	; decrease LSB
 	JMP next_op
 
+
 ; ** control **
 
-_:
+_fb:
 ; EI (4)
 ;+
 	SMB3 rimask	; enable interrupts
 	JMP next_op
 
-_:
+_f3:
 ; DI (4)
 ;+
 	RMB3 rimask	; disable interrupts
 	JMP next_op
 
-_:
-; HLT (-)
+_76:
+; HLT (5)
 ; abort emulation and return to shell
+; ...sice interrupts are not yet supported!
 	LDY cdev	; console device
 	_KERNEL(FREE_W)	; release device or window
 	_EXIT_OK		; *** go away ***
 
 
-; **  **
-_:
-;()
+; ** specials **
+
+_2f:
+; CMA (4) complement A
+;+19
+	LDA a80		; get accumulator
+	EOR #$FF	; complement
+	STA a80		; update
+	LDA f80		; status
+	ORA #%00010010	; set H & N, rest unaffected
+	STA f80		; update status
+	JMP next_op
+
+_37:
+; STC (4) set carry
+;+13
+	LDA f80		; status
+	AND #%11101100	; reset H & N, and C
+	INC		; ...easier to set! save one byte, same clocks
+	STA f80		; update status
+	JMP next_op
+
+_3f:
+; CMC (4) complement carry
+;+20
+	LDA f80		; status
+	AND #%11101101	; reset H & N
+	ROR		; copy C in native carry
+	ROL		; ...and back to original
+	BCC cmc	; carry was not set
+		ORA #%00010000	; otherwise copy old C into H
+cmc:
+	EOR #%00000001	; invert C
+	STA f80		; update status
+	JMP next_op
+
+_27:
+; DAA (4) decimal adjust
 ;+
-_:
-;()
+	; ***** TO DO ***** TO DO ***** TO DO ***** TO DO *****
+
+
+; ** input/output **
+; * might be trapped easily *
+
+_db:
+; IN (10)
+;+22
+	_PC_ADV		; go for address
+	LDA (pc80), Y	; get port
+	TAX
+	LDA IO_BASE, X	; actual port access
+	STA a80		; gets into A
+	JMP next_op	; flags unaffected
+
+_d3:
+; OUT (10)
+;+22
+	_PC_ADV		; go for address
+	LDA (pc80), Y	; get port
+	TAX
+	LDA a80		; take data from A
+	STA IO_BASE, X	; actual port access
+	JMP next_op	; flags unaffected
+
+
+; ** new 8085 instructions **
+
+_20:
+; RIM (4) read interrupt mask
+;+11
+	LDA rimask	; get data
+	AND #%01111111	; no serial input this far...
+	STA a80		; transfer to A
+	JMP next_op	; anything else?
+
+_30:
+; SIM (4) set interrupt mask
 ;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
+	LDA a80		; get argument
+	BIT #%00010000	; check bit 4
+	BEQ sim_r7	; will not clear I7.5
+		RMB6 rimask	; otherwise reset it
+sim_r7:
+	BIT #%00001000	; check bit 3
+	BEQ sim_m	; no mask change
+		AND #%00000111	; otherwise filter new masks
+		STA tmptr	; save them
+		LDA rimask	; older values
+		AND #%11111000	; delete older
+		ORA tmptr	; put new ones
+		STA rimask	; update
+sim_m:
+	JMP next_op	; anything else?
+
+
+;** rotate **
+
+_07:
+; RLC (4) rotate A left
+;+26/
+	LDA f80		; old flags
+	AND #%11101100	; reset H & N, C in case
+	ROR		; lose C!
+	BIT a80		; check bit 7!
+	BPL rlc		; was off
+		SEC		; otherwise set carry
+rlc:
+	ROL a80		; rotate register
+	ROL		; return updated status
+	STA f80		; store flags
+	JMP next_op
+
+_0f:
+; RRC (4) rotate A right
+;+24/
+	LDA a80		; temporary check
+	LSR		; copy bit 0 in native C
+	LDA f80		; old flags
+	AND #%11101100	; reset H, N & C!
+	ROR a80		; rotate register
+	BCC rrc		; no carry to set
+		INC		; otherwise set bit 0!
+rrc:
+	STA f80		; store flags
+	JMP next_op
+
+_17:
+; RAL (4) rotate A left thru carry
+;+20
+	LDA f80		; old flags
+	AND #%11101101	; reset relevant
+	ROR		; copy C on native
+	ROL a80		; rotate register
+	ROL		; return status with updated carry
+	STA f80		; update status
+	JMP next_op
+
+_1f:
+; RAR (4) rotate A right thru carry
+;+20
+	LDA f80		; old flags
+	AND #%11101101	; reset relevant
+	ROR		; copy C on native
+	ROR a80		; rotate register
+	ROL		; return status with updated carry
+	STA f80		; update status
+	JMP next_op
+	
+
+; ** increment & decrement **
+
+_34:
+; INR M (10)
+;+52
+	LDA (hl80)	; older value
+	TAX		; for further testing
+	INC		; operation
+	PHP		; keep status
+	STA (hl80)	; and update memory
+	LDA f80		; get previous status
+	AND #%00101001	; reset relevant bits
+	PLP		; retrieve native status
+iflags:
+	BPL if_s	; positive...
+		ORA #%1000000	; ...or set S
+		BRA if_z	; cannot be also zero!
+if_s:
+	BNE if_z	; not zero...
+		ORA #%01000000	; ...or set Z
+if_z:
+	CPX #$7F	; will overflow?
+	BNE if_v	; not...
+		ORA #%00000100	; ...or set V
+if_v:
+	STA f80		; store partial flags
+	TXA		; get old value in accumulator
+	AND #$0F	; filter low nibble
+	CPX #$0F	; only value that will half carry after INR
+	BNE if_h	; exit if done
+		SMB4 f80	; ...or set H
+if_h:
+	JMP next_op
+
+_04:
+; INR B (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX b80		; appropriate register
+	INC b80
+	BRA iflags	; common ending
+
+_0c:
+; INR C (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX c80		; appropriate register
+	INC c80
+	BRA iflags	; common ending
+
+_14:
+; INR D (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX d80		; appropriate register
+	INC d80
+	BRA iflags	; common ending
+
+_1c:
+; INR E (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX e80		; appropriate register
+	INC e80
+	BRA iflags	; common ending
+
+_24:
+; INR H (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX h80		; appropriate register
+	INC h80
+	BRA iflags	; common ending
+
+_2c:
+; INR L (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX l80		; appropriate register
+	INC l80
+	BRA iflags	; common ending
+
+_3c:
+; INR A (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX a80		; appropriate register
+	INC a80
+	BRA iflags	; common ending
+
+_35:
+; DCR M (10)
+;+52
+	LDA (hl80)	; older value
+	TAX		; for further testing
+	DEC		; operation
+	PHP		; keep status
+	STA (hl80)	; and update memory
+	LDA f80		; get previous status
+	AND #%00101001	; reset relevant bits
+	PLP		; retrieve native status
+dflags:
+	BPL if_s	; positive...
+		ORA #%1000000	; ...or set S
+		BRA df_z	; cannot be also zero!
+df_s:
+	BNE df_z	; not zero...
+		ORA #%01000000	; ...or set Z
+df_z:
+	CPX #$80	; will overflow?
+	BNE df_v	; not...
+		ORA #%00000100	; ...or set V
+df_v:
+	STA f80		; store partial flags
+	TXA		; get old value in accumulator
+	AND #$0F	; filter low nibble, zero will overflow
+	BNE df_h	; exit if done
+		SMB4 f80	; ...or set H
+df_h:
+	JMP next_op
+
+_05:
+; DCR B (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX b80		; appropriate register
+	DEC b80
+	BRA dflags	; common ending
+
+_0d:
+; DCR C (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX c80		; appropriate register
+	DEC c80
+	BRA dflags	; common ending
+
+_15:
+; DCR D (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX d80		; appropriate register
+	DEC d80
+	BRA dflags	; common ending
+
+_1d:
+; DCR E (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX e80		; appropriate register
+	DEC e80
+	BRA dflags	; common ending
+
+_25:
+; DCR H (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX h80		; appropriate register
+	DEC h80
+	BRA dflags	; common ending
+
+_2d:
+; DCR L (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX l80		; appropriate register
+	DEC l80
+	BRA dflags	; common ending
+
+_3d:
+; DCR A (4)
+;+42/
+	LDA f80		; common start
+	AND #%00101001
+	LDX a80		; appropriate register
+	DEC a80
+	BRA dflags	; common ending
+
+; 16-bit inc/dec 
+
+_03:
+; INX B (6)
+;+11
+	INC c80	; increase LSB
+	BNE ixb	; no wrap
+		INC b80	; correct MSB
+ixb:
+	JMP next_op	; flags unaffected
+
+_0b:
+; DCX B (6)
+;+14
+	LDX c80	; preload LSB
+	BNE dxb	; will not wrap
+		DEC b80	; correct MSB otherwise
+dxb:
+	DEC c80	; decrease LSB
+	JMP next_op
+
+_13:
+; INX D (6)
+;+11
+	INC e80	; increase LSB
+	BNE ixd	; no wrap
+		INC d80	; get MSB
+ixd:
+	JMP next_op	; flags unaffected
+
+_1b:
+; DCX D (6)
+;+14
+	LDX e80	; preload LSB
+	BNE dxd	; will not wrap
+		DEC d80	; correct MSB otherwise
+dxd:
+	DEC e80	; decrease LSB
+	JMP next_op
+
+_23:
+; INX H (6)
+;+11
+	INC l80	; increase LSB
+	BNE ixh	; no wrap
+		INC h80	; correct MSB
+ixh:
+	JMP next_op	; flags unaffected
+
+_2b:
+; DCX H (6)
+;+14
+	LDX l80	; preload LSB
+	BNE dxh	; will not wrap
+		DEC h80	; correct MSB otherwise
+dxh:
+	DEC l80	; decrease LSB
+	JMP next_op
+
 _:
 ;()
 ;+
