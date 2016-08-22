@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160821-2259
+; last modified 20160822-2226
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -51,25 +51,25 @@
 ; these make listings more succint
 
 ; inject address MSB into 16+16K space (5/5.5/6)
-#define	_AH_BOUND	AND #hi_mask: BMI *+4: ORA #lo_mask
+#define	_AH_BOUND		AND #hi_mask: BMI *+4: ORA #lo_mask
 
 ; increment Y checking injected boundary crossing (5/5/30) ** new compact version
 #define	_PC_ADV		INY: BNE *+5: JSR wrap_pc
 
 ; compute pointer for direct absolute addressing mode (31/31.5/) eeeek
-#define	_DIRECT	_PC_ADV: LDA (pc80), Y: STA tmptr: _PC_ADV: LDA (pc80), Y: _AH_BOUND: STA tmptr+1
+#define	_DIRECT		_PC_ADV: LDA (pc80), Y: STA tmptr: _PC_ADV: LDA (pc80), Y: _AH_BOUND: STA tmptr+1
 
+; compute pointer from HL (17/17.5/18)
+#define	_MEMORY		LDX l80: LDA h80: AH_BOUND: STX tmptr: STA tmptr+1
 
-; check Z & N flags (6/8/10) will not set both bits at once!
-#define _CC_NZ		BNE *+4: SMB2 ccr80: BPL *+4: SMB3 ccr80
+; check Z & S flags (6/8/10) will not set both bits at once! eeeek
+#define _CC_SZ		BPL *+4: SMB7 f80: BNE *+4: SMB6 f80
 
 
 ; *** declare some constants ***
 hi_mask	=	%10111111	; injects A15 hi into $8000-$BFFF, regardless of A14
 lo_mask	=	%01000000	; injects A15 lo into $4000-$7FFF, regardless of A14
 ;lo_mask	=	%00100000	; injects into upper 8 K ($2000-$3FFF) for 16K RAM systems
-e_base	=	$4000		; emulated space start ($2000 for 16K systems)
-e_top	=	$C000		; top over emulated space (third 16K block in most systems)
 
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
@@ -316,11 +316,7 @@ _45:
 _46:
 ; MOV B,M (7) from memory
 ; +28
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
 movb:
 	STA b80	; destination
@@ -367,11 +363,7 @@ _4d:
 _4e:
 ; MOV C,M (7) from memory
 ; +28
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
 movc:
 	STA c80	; destination
@@ -418,11 +410,7 @@ _55:
 _56:
 ; MOV D,M (7) from memory
 ; +28
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
 movd:
 	STA d80	; destination
@@ -469,11 +457,7 @@ _5d:
 _5e:
 ; MOV E,M (7) from memory
 ; +28
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
 move:
 	STA e80	; destination
@@ -520,11 +504,7 @@ _65:
 _66:
 ; MOV H,M (7) from memory
 ; +28
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
 movh:
 	STA h80	; destination
@@ -571,11 +551,7 @@ _6c:
 _6e:
 ; MOV L,M (7) from memory
 ; +28
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
 movl:
 	STA l80	; destination
@@ -626,7 +602,7 @@ _75:
 	BRA movm	; common end
 
 _77:
-; MOV M,A (7)
+; MOV M,A (7) cannot use macro in order to stay generic
 ; +30
 	LDX a80	; source
 movm:
@@ -680,11 +656,7 @@ _7d:
 _7e:
 ; MOV A,M (7) from memory
 ; +28
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
 mova:
 	STA a80	; destination
@@ -743,11 +715,7 @@ _2d:
 _36:
 ; MVI M (10) to memory
 ; +41
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA (tmptr)	; eeeeeeek
@@ -1465,11 +1433,7 @@ _1f:
 _34:
 ; INR M (10)
 ;+69
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; older value
 	TAX		; for further testing
 	INC		; operation
@@ -1481,7 +1445,6 @@ _34:
 iflags:
 	BPL if_s	; positive...
 		ORA #%1000000	; ...or set S
-		BRA if_z	; cannot be also zero!
 if_s:
 	BNE if_z	; not zero...
 		ORA #%01000000	; ...or set Z
@@ -1565,11 +1528,7 @@ _3c:
 _35:
 ; DCR M (10)
 ;+69
-	LDX l80		; pointer LSB
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
+	_MEMORY		; prepare pointer
 	LDA (tmptr)	; older value
 	TAX		; for further testing
 	DEC		; operation
@@ -1581,7 +1540,6 @@ _35:
 dflags:
 	BPL if_s	; positive...
 		ORA #%1000000	; ...or set S
-		BRA df_z	; cannot be also zero!
 df_s:
 	BNE df_z	; not zero...
 		ORA #%01000000	; ...or set Z
@@ -1720,39 +1678,316 @@ dxh:
 	DEC l80	; decrement LSB
 	JMP next_op
 
+
+; ** logical **
+
+; and
+
+_a0:
+; ANA B (4)
+;+37/
+	LDA b80		; variable term
+	BRA anam	; generic routine
+
+_a1:
+; ANA C (4)
+;+37/
+	LDA c80		; variable term
+	BRA anam	; generic routine
+
+_a2:
+; ANA D (4)
+;+37/
+	LDA d80		; variable term
+	BRA anam	; generic routine
+
+_a3:
+; ANA E (4)
+;+37/
+	LDA e80		; variable term
+	BRA anam	; generic routine
+
+_a4:
+; ANA H (4)
+;+37/
+	LDA h80		; variable term
+	BRA anam	; generic routine
+
+_a5:
+; ANA L (4)
+;+37/
+	LDA b80		; variable term
+	BRA anam	; generic routine
+
+_a6:
+; ANA M (7)
+;+53/
+; * should unused bits be respected... *
+;	LDA f80		; get old flags
+;	AND #%00111000	; reset S, Z, N, V & C
+;	ORA #%00010000	; set H... and save it!!!*
+	_MEMORY		; prepare pointer
+	LDA (tmptr)	; variable term
+anam:
+	LDX #%00010000	; base flags, modify accordingly, does NOT respect unused bits*
+	STX f80		; store base flags*
+	TAX		; keep original value for overflow checking
+	AND a80		; logical AND
+	STA a80		; store result
+l_flags:
+	_CC_SZ		; check sign & zero bits
+	TXA		; retrieve older value
+	EOR a80		; just looking at bit 7 (overflow?)
+	BPL ana_v	; did not change, no overflow
+		SMB2 f80	; or set V
+ana_v:
+	JMP next_op
+
+_a7:_b7:
+; ANA A (4) somewhat special as will only update flags!
+; ORA A (4) does pretty much the same!
+;+28/
+	LDA #%00010000	; base flags, modify accordingly, does not respect unused bits
+	STA f80		; store base flags
+	LDX a80		; original intact data
+	BRA l_flags	; just check flags!
+	
+
+; exclusive or
+
+_a8:
+; XRA B (4)
+;+
+	LDA b80		; variable term
+	BRA xram	; generic routine
+
+_a9:
+; XRA C (4)
+;+
+	LDA c80		; variable term
+	BRA xram	; generic routine
+
+_aa:
+; XRA D (4)
+;+
+	LDA d80		; variable term
+	BRA xram	; generic routine
+
+_ab:
+; XRA E (4)
+;+
+	LDA e80		; variable term
+	BRA xram	; generic routine
+
+_ac:
+; XRA H (4)
+;+
+	LDA h80		; variable term
+	BRA xram	; generic routine
+
+_ad:
+; XRA L (4)
+;+
+	LDA l80		; variable term
+	BRA xram	; generic routine
+
+_ae:
+; XRA M (7) with parity instead of overflow!
+;+
+	_MEMORY		; prepare pointer
+	LDA (tmptr)	; variable term
+xram:
+	LDX #%00010000	; base flags, modify accordingly, does NOT respect unused bits*
+	STX f80		; store base flags*
+	EOR a80		; logical Exclusive OR
+	STA a80		; store result
+	_CC_SZ		; check sign & zero bits
+	LDX #0		; ones counter
+xr_pc:
+		LSR		; shift result
+		BCC xr_z	; was zero
+			INX		; otherwise count another one
+xr_z:
+		BNE xr_pc	; continue counting ones
+	TXA		; retrieve count value
+	LSR	; just looking at bit 0 (even/odd)
+	BCS xra_v	; odd number, no parity
+		SMB2 f80	; or set P
+xra_v:
+	JMP next_op
+
+_af:
+; XRA A (4) will always get zero,
+;+11
+	LDA #%01000100	; fixed flags!
+	STA f80		; store flags
+	STZ a80		; result is always zero!
+	JMP next_op
+
+; or
+
+_b0:
+; ORA B (4)
+;+40
+	LDA b80		; variable term
+	BRA oram	; generic routine
+
+_b1:
+; ORA C (4)
+;+40
+	LDA c80		; variable term
+	BRA oram	; generic routine
+
+_b2:
+; ORA D (4)
+;+40
+	LDA d80		; variable term
+	BRA oram	; generic routine
+
+_b3:
+; ORA E (4)
+;+40
+	LDA e80		; variable term
+	BRA oram	; generic routine
+
+_b4:
+; ORA H (4)
+;+40
+	LDA h80		; variable term
+	BRA oram	; generic routine
+
+_b5:
+; ORA L (4)
+;+40
+	LDA l80		; variable term
+	BRA oram	; generic routine
+
+_b6:
+; ORA M (7)
+;+56/
+	_MEMORY		; prepare pointer
+	LDA (tmptr)	; variable term
+oram:
+	LDX #%00010000	; base flags, modify accordingly, does NOT respect unused bits*
+	STX f80		; store base flags*
+	TAX		; keep original value for overflow checking
+	ORA a80		; logical OR
+	STA a80		; store result
+	BRA l_flags	; common status check... or is it parity like XOR???********
+
+
+; compare with A
+
+_b8:
+; CMP B (4)
+;+
+	LDA b80		; variable term
+	BRA cmpm	; generic routine
+
+_b9:
+; CMP C (4)
+;+
+	LDA c80		; variable term
+	BRA cmpm	; generic routine
+
+_ba:
+; CMP D (4)
+;+
+	LDA d80		; variable term
+	BRA cmpm	; generic routine
+
+_bb:
+; CMP E (4)
+;+
+	LDA e80		; variable term
+	BRA cmpm	; generic routine
+
+_bc:
+; CMP H (4)
+;+
+	LDA h80		; variable term
+	BRA cmpm	; generic routine
+
+_bd:
+; CMP L (4)
+;+
+	LDA l80		; variable term
+	BRA cmpm	; generic routine
+
+_be:
+; CMP M (7)
+;+
+	_MEMORY		; prepare pointer
+	LDA (tmptr)	; variable term
+cmpm:
+	LDX #%00010000	; base flags, modify accordingly, does NOT respect unused bits*
+	STX f80		; store base flags*
+	TAX		; keep original value for overflow checking
+	SEC		; prepare subtraction
+	SBC a80		; subtract without storing
+	_CC_SZ		; check sign & zero bits
+	BVC cmp_v	; no overflow
+		SMB2 f80	; or set V
+cmp_v:
+	BCS cmp_c	; if native carry is set, there is NO borrow
+		SMB0 f80	; otherwise set emulated C
+cmp_c:
+	JMP next_op
+
+_bf:
+; CMP A (4) special
+;+8
+	LDA #%01000000	; fixed flags!
+	STA f80		; store flags
+	JMP next_op
+
+
+; and immediate
+
+_e6:
+; ANI (7)
+;+44/
+	_PC_ADV		; go for the operand
+	LDA (pc80), Y	; immediate addressing
+	BRA anam	; generic routine
+
+; exclusive or immediate
+
+_ee:
+; XRI (7)
+;+
+	_PC_ADV		; go for the operand
+	LDA (pc80), Y	; immediate addressing
+	BRA xram	; generic routine
+
+; or immediate
+
+_f6:
+; ORI (7)
+;+47/
+	_PC_ADV		; go for the operand
+	LDA (pc80), Y	; immediate addressing
+	BRA oram	; generic routine
+
+
+; compare A immediate
+
+_fe:
+; CPI (7)
+;+
+	_PC_ADV		; go for the operand
+	LDA (pc80), Y	; immediate addressing
+	BRA cmpm	; generic routine
+	
+
+; ** addition **
 _:
 ;()
 ;+
 _:
 ;()
 ;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
-_:
-;()
-;+
+
 _:
 ;()
 ;+
