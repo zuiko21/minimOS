@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160823-1846
+; last modified 20160823-2150
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -1980,14 +1980,20 @@ _fe:
 	
 
 ; ** addition **
+
+; without carry
+
 _86:
 ; ADD M (7)
 ;+
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
+	TAX		; eeeeek
 addm:
-	LDX #%00010000	; base flags, modify accordingly, does NOT respect unused bits*
-	STX f80		; store base flags*
+	LDA f80		; old flags
+	AND #%00101010	; clear SZHPC
+	STA f80		; store base flags
+	TXA		; number to be added
 	CLC		; ignore previous carry
 	ADC a80		; addition
 	STA a80		; store result
@@ -1996,20 +2002,121 @@ a_flags:
 	_CC_SZ		; check sign & zero bits
 	BCC add_c	; no carry was generated
 		SMB0 f80	; or set C
-	TXA		; retrieve older value
-	EOR a80		; just looking at bit 7 (overflow?)
-	BPL ana_v	; did not change, no overflow
-		SMB2 f80	; or set V
-ana_v:
-	JMP next_op
+add_c:
+	TXA		; retrieve older value************NO
+	EOR a80		; check differences
+	AND #%00001000	; bit 3 only
+	BEQ add_h	; no change, no halfcarry
+		SMB4 f80	; or set H
+add_h:
+	JMP xpc		; check parity and finish
 
-_:
-;()
+_80:
+; ADD B (4)
 ;+
+	LDX b80		; appropriate register
+	BRA addm	; common routine
 
-_:
-;()
+_81:
+; ADD C (4)
 ;+
+	LDX c80		; appropriate register
+	BRA addm	; common routine
+
+_82:
+; ADD D (4)
+;+
+	LDX d80		; appropriate register
+	BRA addm	; common routine
+
+_83:
+; ADD E (4)
+;+
+	LDX e80		; appropriate register
+	BRA addm	; common routine
+
+_84:
+; ADD H (4)
+;+
+	LDX h80		; appropriate register
+	BRA addm	; common routine
+
+_85:
+; ADD L (4)
+;+
+	LDX l80		; appropriate register
+	BRA addm	; common routine
+
+_87:
+; ADD A (4)
+;+
+	LDX a80		; appropriate register
+	BRA addm	; common routine
+
+; with carry
+
+_8e:
+; ADC M (7)
+;+
+	_MEMORY		; prepare pointer
+	LDA (tmptr)	; variable term
+	TAX		; eeeeek
+adcm:
+	LDA f80		; old flags
+	CLC
+	BBS0 f80, adc_nc	; had carry set?
+		SEC		; if so, set native
+adc_nc:
+	AND #%00101010	; clear SZHPC
+	STA f80		; store base flags
+	TXA		; number to be added
+	ADC a80		; addition with previous carry
+	STA a80		; store result
+	TAX		; keep value
+	BRA a_flags	; update status & continue
+
+_88:
+; ADC B (4)
+;+
+	LDX b80		; appropriate register
+	BRA adcm
+
+_89:
+; ADC C (4)
+;+
+	LDX b80		; appropriate register
+	BRA adcm
+
+_8a:
+; ADC D (4)
+;+
+	LDX b80		; appropriate register
+	BRA adcm
+
+_8b:
+; ADC E (4)
+;+
+	LDX b80		; appropriate register
+	BRA adcm
+
+_8c:
+; ADC H (4)
+;+
+	LDX b80		; appropriate register
+	BRA adcm
+
+_8d:
+; ADC L (4)
+;+
+	LDX b80		; appropriate register
+	BRA adcm
+
+_8f:
+; ADC A (4)
+;+
+	LDX b80		; appropriate register
+	BRA adcm
+
 _:
 ;()
 ;+
@@ -2177,93 +2284,6 @@ adcae_nv:
 	TXA				; retrieve value! (2)
 	JMP a_nz		; update A and check NZ 
 	
-; logical AND
-_84:
-; AND A imm (2)
-; +42/44/
-	_PC_ADV			; go for operand (5)
-	STY tmptr		; store LSB of pointer (3)
-	LDA pc80 + 1	; get address MSB (3)
-	STA tmptr + 1	; pointer is ready (3)
-	BRA andae		; continue as indirect addressing (28/30/39)
-
-
-_b4:
-; AND A ext (4)
-; +56/58.5/
-	_EXTENDED		; points to operand (31/31.5)
-andae:				; +25/27/36 from here
-	LDA ccr80		; get flags (3)
-	AND #%11110001	; clear relevant bits (2)
-	STA ccr80		; update (3)
-	LDA a80			; get A accumulator (3)
-	AND (tmptr)		; AND with operand (5)
-	JMP a_nz		; update A and check NZ (9/11/20)
-
-; compare
-_81:
-; CMP A imm (2)
-; +47/51/
-	_PC_ADV			; get operand (5)
-	STY tmptr		; store LSB of pointer (3)
-	LDA pc80 + 1	; get address MSB (3)
-	STA tmptr + 1	; pointer is ready (3)
-	BRA cmpae		; continue as indirect addressing (33/37/55)
-
-_b1:
-; CMP A ext (4)
-; +61/65.5/
-	_EXTENDED		; get operand (31/31.5)
-cmpae:				; +30/34/52 from here
-	LDA ccr80		; get flags (3)
-	AND #%11110000	; clear relevant bits (2)
-	STA ccr80		; update (3)
-	LDA a80			; get accumulator A (3)
-	SEC				; prepare (2)
-	SBC (tmptr)		; subtract without carry (5)
-	JMP check_flags	; check NZVC and exit (12/16/34)
-
-
-; decimal adjust
-_19:
-; DAA (2)
-; +20/~400/1841?
-; ** first approach, awfully slow!!! **
-	LDA ccr80		; get original status
-	AND #%11110001	; reset all relevant bits for CCR, do NOT reset C!
-	STA ccr80		; store new flags
-	LDX a80			; get binary number to be converted
-		BEQ daa_ok		; nothing to convert
-	CPX #100		; will it overflow?
-	BCC daa_conv	; range OK
-		SMB0 ccr80		; otherwise set C *** Rockwell ***
-daa_conv:
-	CLC				; prepare
-	LDA #0			; will compute final value
-	SED				; set decimal mode!!! (...28 worst)
-daa_loop:
-		ADC #1			; decimal increment
-		DEX				; decrement counter
-		BNE daa_loop	; until done (7x255+6 = 1791)
-	CLD				; back to binary mode!!!
-	BVC daa_nv		; only if overflow...
-		SMB1 ccr80		; ...set V flag *** Rockwell ***
-daa_nv:
-	STA a80			; update accumulator with BCD value
-daa_ok:
-	JMP check_flags	; check and exit
-
-_b8:
-; EOR A ext (4)
-; +56/58.5/
-	_EXTENDED		; points to operand (31/31.5)
-eorae:				; +25/27/36 from here
-	LDA ccr80		; get flags (3)
-	AND #%11110001	; clear relevant bits (2)
-	STA ccr80		; update (3)
-	LDA a80			; get A accumulator (3)
-	EOR (tmptr)		; EOR with operand (5)
-	JMP a_nz		; update A, check NZ and exit (9/11/20)
 
 _96:
 ; LDA A dir (3) *** access to $00 is redirected to standard input ***
@@ -2290,27 +2310,6 @@ ldaad_ok:
 ldaad_ret:
 	JMP a_nz		; update A, check NZ and exit
 
-; inclusive OR
-_8a:
-; ORA A imm (2)
-; +
-	_PC_ADV			; go for operand (5)
-	STY tmptr		; store LSB of pointer (3)
-	LDA pc80 + 1	; get address MSB (3)
-	STA tmptr + 1	; pointer is ready (3)
-	BRA oraae		; continue as indirect addressing (3+)
-
-_ba:
-; ORA A ext (4)
-; +
-	_EXTENDED		; points to operand (31/31.5)
-oraae:
-	LDA ccr80		; get flags (3)
-	AND #%11110001	; clear relevant bits (2)
-	STA ccr80		; update (3)
-	LDA a80			; get A accumulator (3)
-	ORA (tmptr)		; ORA with operand (5)
-	JMP a_nz		; update A, check NZ and exit (9/11/20)
 
 ; store
 _97:
@@ -2379,62 +2378,6 @@ sbcae_do:
 	STA a80			; update accumulator (3)
 	JMP check_flags	; and exit (12/16/34)
 	
-
-; ** index register and stack pointer ops **
-
-; compare index
-_8c:
-; CPX imm (3)
-; +
-	_PC_ADV			; get first operand (5)
-	STY tmptr		; store LSB of pointer (3)
-	LDA pc80 + 1	; get address MSB (3)
-	STA tmptr + 1	; pointer is ready (3)
-	BRA cpxe		; continue as indirect addressing (3+)
-
-_9c:
-; CPX dir (4)
-; +
-	_DIRECT			; get operand (10)
-	STA tmptr		; store LSB of pointer (3)
-	LDA #>e_base	; emulated MSB (2)
-	STA tmptr+1		; pointer is ready (3)
-	BRA cpxe		; continue as indirect addressing (3+)
-
-_bc:
-; CPX ext (5)
-; +82/88.5/
-	_EXTENDED		; get operand (31/31.5)
-cpxe:
-	LDA ccr80		; get original flags (3)
-	AND #%11110001	; reset relevant bits (2)
-	STA ccr80		; update flags (3)
-	SEC				; prepare (2)
-	LDA x80 + 1		; MSB at X (3)
-	SBC (tmptr)		; subtract memory (5)
-	TAX				; keep for later (2)
-	BPL cpxe_pl		; not negative (3/5...)
-		SMB3 ccr80		; otherwise set N flag *** Rockwell ***
-cpxe_pl:
-	INC tmptr		; point to next byte (5)
-	BNE cpxe_nw		; usually will not wrap (3...)
-		LDA tmptr + 1	; get original MSB
-		INC				; advance
-		_AH_BOUND		; inject
-		STA tmptr + 1	; restore
-cpxe_nw:
-	LDA x80			; LSB at X (3)
-	SBC (tmptr)		; value LSB (5)
-	STX tmptr		; retrieve old MSB (3)
-	ORA tmptr		; blend with stored MSB (3)
-	BNE cpxe_nz		; if zero... (3...)
-		SMB2 ccr80		; set Z *** Rockwell ***
-cpxe_nz:
-	BVC cpxe_nv		; if overflow... (3/5...)
-		SMB1 ccr80		; set V *** Rockwell ***
-cpxe_nv:
-	JMP next_op		; standard end
-
 
 */
 
