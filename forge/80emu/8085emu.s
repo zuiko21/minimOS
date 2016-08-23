@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
-; v0.1a5
+; v0.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160822-2226
+; last modified 20160823-1846
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -67,23 +67,25 @@
 
 
 ; *** declare some constants ***
-hi_mask	=	%10111111	; injects A15 hi into $8000-$BFFF, regardless of A14
-lo_mask	=	%01000000	; injects A15 lo into $4000-$7FFF, regardless of A14
-;lo_mask	=	%00100000	; injects into upper 8 K ($2000-$3FFF) for 16K RAM systems
+hi_mask	= %10111111	; injects A15 hi into $8000-$BFFF, regardless of A14
+lo_mask	= %01000000	; injects A15 lo into $4000-$7FFF, regardless of A14
+;lo_mask	= %00100000	; injects into upper 8 K ($2000-$3FFF) for 16K RAM systems
 
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
-tmptr	=	uz		; temporary storage (up to 16 bit, little endian)
-sp80		=	uz+2	; stack pointer (16 bit injected into host map)
-pc80		=	uz+4	; program counter (16 bit injected into host map)
-f80		=	uz+6	; flags SZ-H-VNC
-a80		=	uz+7	; general purpose registers
+tmptr	= uz		; temporary storage (up to 16 bit, little endian)
+sp80		= uz+2	; stack pointer (16 bit injected into host map)
+pc80		= uz+4	; program counter (16 bit injected into host map)
+f80		= uz+6	; flags SZiH-PnC
 ; S is sign
 ; Z is zero
+; i would be interrupt ENABLE flag?????
 ; H is half carry (for BCD, not testable)
-; V is P/V, parity/overflow, sets on logical/rots with EVEN 1s
-; N is add/subtract (for BCD, not testable) 1 is subtract
-; C is carry, reset by AND, OR, XOR, borrow unlike 6502
+; P is parity, sets on logical/rots when number of 1s is EVEN
+; ** on Z80 is P/V, also overflow
+; ** n is add/subtract (for BCD, not testable) 1 is subtract, Z80 only
+; C is carry, reset by AND, OR, XOR, borrow unlike 6502!
+a80		= uz+7	; general purpose registers
 c80		= uz+8
 b80		= uz+9
 e80		= uz+10
@@ -94,7 +96,7 @@ rimask	= uz+14	; interrupt masks as set by SIM and read by RIM
 ; rimask = SID-I7-I6-I5-IE-M7-M6-M5
 ; SID is serial input (not implemented)
 ; I7~I5 are pending stati of INT7.5 ~ INT5.5, first one could be reset by SIM.D4
-; IE is interrupt enable flag
+; IE is interrupt enable flag, also at f.d5???
 ; M7~M5 are the masks for INT7.5~INT5.5, set by SIM.d2~d0 iff d3=1
 cdev		= uz+15		; I/O device *** minimOS specific ***
 
@@ -1282,34 +1284,29 @@ _76:
 
 _2f:
 ; CMA (4) complement A
-;+19
+;+11
 	LDA a80		; get accumulator
 	EOR #$FF	; complement
 	STA a80		; update
-	LDA f80		; status
-	ORA #%00010010	; set H & N, rest unaffected
-	STA f80		; update status
+;	LDA f80		; status only affected in Z80!
+;	ORA #%00010010	; set H & N, rest unaffected
+;	STA f80		; update status
 	JMP next_op
 
 _37:
 ; STC (4) set carry
-;+13
-	LDA f80		; status
-	AND #%11101100	; reset H & N, and C
-	INC		; ...easier to set! save one byte, same clocks
-	STA f80		; update status
+;+8
+;	LDA f80		; Z80 status
+;	AND #%11101100	; reset H & N, and C, Z80 only?
+;	STA f80		; update status
+	SMB0 f80	; easiest way in Intel CPUs
 	JMP next_op
 
 _3f:
 ; CMC (4) complement carry
-;+20
+;+11
 	LDA f80		; status
-	AND #%11101101	; reset H & N
-	ROR		; copy C in native carry
-	ROL		; ...and back to original
-	BCC cmc	; carry was not set
-		ORA #%00010000	; otherwise copy old C into H
-cmc:
+;	AND #%11101101	; reset H & N, only for Z80?
 	EOR #%00000001	; invert C
 	STA f80		; update status
 	JMP next_op
@@ -1317,7 +1314,46 @@ cmc:
 _27:
 ; DAA (4) decimal adjust
 ;+
-	; ***** TO DO ***** TO DO ***** TO DO ***** TO DO *****
+	LDA a80		; binary value
+	TAX		; worth saving
+		BBS4 f80, lp6	; halfcarry was set, add 6
+	AND #$0F	; low nibble
+	CMP #10		; BCD valid?
+		BCS llp6	; if not, reload value and add 6
+daah:
+	TXA		; reload current value
+		BBS0 f80, hp6	; normal carry was set, add 6 to hi nibble
+	AND #$F0	; hi nibble
+	CMP #10		; valid BCD?
+	BCC daac	; OK, do not add anything
+		TXA		; A was lost
+hp6:
+		CLC
+		ADC #$60	; add 6 to hi nibble, might set native C
+		STA a80		; update value!
+		TAX		; right value
+daac:
+	TXA		; in order to check flags
+	_CC_SZ		; usual check
+	BCC daa_nc	; no final carry
+		SMB0 f80	; or set C
+daa_nc:
+	JMP xpc		; check parity and exit
+; pseudo-routine for low nibble
+llp6:
+	TXA		; reload as was masked
+lp6:
+	CLC
+	ADC #6	; correct low nibble
+	STA a80		; update
+	TXA		; get older value
+	EOR a80		; check differences
+	AND #%00001000	; looking for bit 3
+	BEQ lp_nh	; no change, no half carry
+		SMB4 f80	; or set H
+lp_nh:
+	LDX a80		; retrieve value
+	BRA daah	; and try next nibble
 
 
 ; ** input/output **
@@ -1431,192 +1467,155 @@ _1f:
 ; ** increment & decrement **
 
 _34:
-; INR M (10)
-;+69
+; INR M (11)
+;+
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; older value
-	TAX		; for further testing
 	INC		; operation
-	PHP		; keep status
+	TAX		; FINAL result for further testing, status OK
 	STA (tmptr)	; and update memory
-	LDA f80		; get previous status
-	AND #%00101001	; reset relevant bits
-	PLP		; retrieve native status
 iflags:
-	BPL if_s	; positive...
-		ORA #%1000000	; ...or set S
-if_s:
-	BNE if_z	; not zero...
-		ORA #%01000000	; ...or set Z
-if_z:
-	CPX #$7F	; will overflow?
-	BNE if_v	; not...
-		ORA #%00000100	; ...or set V
-if_v:
+	LDA f80		; get previous status
+	AND #%00101011	; reset SZHP
 	STA f80		; store partial flags
-	TXA		; get old value in accumulator
+	TXA		; retrieve native status
+	_CC_SZ		; check sign & zero as usual
 	AND #$0F	; filter low nibble
-	CPX #$0F	; only value that will half carry after INR
-	BNE if_h	; exit if done
+	BNE pchk	; not zero, could not set H
 		SMB4 f80	; ...or set H
-if_h:
+xpc:		; *** will adjust parity from X ***
+	TXA		; let us operate on current result
+apc:		; *** will adjuzt parity from A ***
+	LDX #0	; reset counter of ones
+if_loop:
+		LSR		; shift out one bit
+		BCC if_cc	; was zero...
+			INX		; ...or increase counter of ones
+if_cc:
+		BNE if_loop	; continue until done
+	TXA		; get count result
+	LSR		; even or odd?
+	BCS if_po	; least bit set, means odd...
+		SMB2 f80	; ...or set P
+if_po:
 	JMP next_op
 
 _04:
 ; INR B (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX b80		; appropriate register
+;+
 	INC b80
+	LDX b80		; appropriate register
 	BRA iflags	; common ending
 
 _0c:
 ; INR C (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX c80		; appropriate register
+;+
 	INC c80
+	LDX c80		; appropriate register
 	BRA iflags	; common ending
 
 _14:
 ; INR D (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX d80		; appropriate register
+;+
 	INC d80
+	LDX d80		; appropriate register
 	BRA iflags	; common ending
 
 _1c:
 ; INR E (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX e80		; appropriate register
+;+
 	INC e80
+	LDX e80		; appropriate register
 	BRA iflags	; common ending
 
 _24:
 ; INR H (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX h80		; appropriate register
+;+
 	INC h80
+	LDX h80		; appropriate register
 	BRA iflags	; common ending
 
 _2c:
 ; INR L (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX l80		; appropriate register
+;+
 	INC l80
+	LDX l80		; appropriate register
 	BRA iflags	; common ending
 
 _3c:
 ; INR A (4)
 ;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX a80		; appropriate register
 	INC a80
+	LDX a80		; appropriate register
 	BRA iflags	; common ending
 
 _35:
-; DCR M (10)
-;+69
+; DCR M (11)
+;+
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; older value
-	TAX		; for further testing
 	DEC		; operation
-	PHP		; keep status
+	TAX		; FINAL result for further testing, status OK
 	STA (tmptr)	; and update memory
-	LDA f80		; get previous status
-	AND #%00101001	; reset relevant bits
-	PLP		; retrieve native status
 dflags:
-	BPL if_s	; positive...
-		ORA #%1000000	; ...or set S
-df_s:
-	BNE df_z	; not zero...
-		ORA #%01000000	; ...or set Z
-df_z:
-	CPX #$80	; will overflow?
-	BNE df_v	; not...
-		ORA #%00000100	; ...or set V
-df_v:
+	LDA f80		; get previous status
+	AND #%00101011	; reset SZHP
 	STA f80		; store partial flags
-	TXA		; get old value in accumulator
-	AND #$0F	; filter low nibble, zero will overflow
-	BNE df_h	; exit if done
+	TXA		; retrieve native status
+	_CC_SZ		; check sign & zero
+	AND #$0F	; filter low nibble
+	CMP #$0F	; only value that could set H
+	BNE xpc	; not that, go to standard end
 		SMB4 f80	; ...or set H
-df_h:
-	JMP next_op
+	BRA xpc	; standard end
 
 _05:
 ; DCR B (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX b80		; appropriate register
+;+
 	DEC b80
+	LDX b80		; appropriate register
 	BRA dflags	; common ending
 
 _0d:
 ; DCR C (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX c80		; appropriate register
+;+
 	DEC c80
+	LDX c80		; appropriate register
 	BRA dflags	; common ending
 
 _15:
 ; DCR D (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX d80		; appropriate register
+;+
 	DEC d80
+	LDX d80		; appropriate register
 	BRA dflags	; common ending
 
 _1d:
 ; DCR E (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX e80		; appropriate register
+;+
 	DEC e80
+	LDX e80		; appropriate register
 	BRA dflags	; common ending
 
 _25:
 ; DCR H (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX h80		; appropriate register
+;+
 	DEC h80
+	LDX h80		; appropriate register
 	BRA dflags	; common ending
 
 _2d:
 ; DCR L (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX l80		; appropriate register
+;+
 	DEC l80
+	LDX l80		; appropriate register
 	BRA dflags	; common ending
 
 _3d:
 ; DCR A (4)
-;+42/
-	LDA f80		; common start
-	AND #%00101001
-	LDX a80		; appropriate register
+;+
 	DEC a80
+	LDX a80		; appropriate register
 	BRA dflags	; common ending
 
 ; 16-bit inc/dec 
@@ -1981,9 +1980,29 @@ _fe:
 	
 
 ; ** addition **
-_:
-;()
+_86:
+; ADD M (7)
 ;+
+	_MEMORY		; prepare pointer
+	LDA (tmptr)	; variable term
+addm:
+	LDX #%00010000	; base flags, modify accordingly, does NOT respect unused bits*
+	STX f80		; store base flags*
+	CLC		; ignore previous carry
+	ADC a80		; addition
+	STA a80		; store result
+	TAX		; keep value
+a_flags:
+	_CC_SZ		; check sign & zero bits
+	BCC add_c	; no carry was generated
+		SMB0 f80	; or set C
+	TXA		; retrieve older value
+	EOR a80		; just looking at bit 7 (overflow?)
+	BPL ana_v	; did not change, no overflow
+		SMB2 f80	; or set V
+ana_v:
+	JMP next_op
+
 _:
 ;()
 ;+
@@ -2680,3 +2699,4 @@ opt_h:
 	.word	_fd
 	.word	_fe
 	.word	_ff
+	
