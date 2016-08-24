@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160823-2150
+; last modified 20160824-2232
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -76,14 +76,15 @@ lo_mask	= %01000000	; injects A15 lo into $4000-$7FFF, regardless of A14
 tmptr	= uz		; temporary storage (up to 16 bit, little endian)
 sp80		= uz+2	; stack pointer (16 bit injected into host map)
 pc80		= uz+4	; program counter (16 bit injected into host map)
-f80		= uz+6	; flags SZiH-PnC
+f80		= uz+6	; flags SZ?H?P-C
 ; S is sign
 ; Z is zero
-; i would be interrupt ENABLE flag?????
+; ? is always 0 on 8080, undefined in 8085
 ; H is half carry (for BCD, not testable)
 ; P is parity, sets on logical/rots when number of 1s is EVEN
 ; ** on Z80 is P/V, also overflow
-; ** n is add/subtract (for BCD, not testable) 1 is subtract, Z80 only
+; - is always 1 in 8080, undefined in 8085
+; ** - is add/subtract in Z80 (for BCD, not testable) 1 is subtract
 ; C is carry, reset by AND, OR, XOR, borrow unlike 6502!
 a80		= uz+7	; general purpose registers
 c80		= uz+8
@@ -177,6 +178,7 @@ _cb:_ed:_dd:_fd:
 	_PC_ADV			; skip illegal opcode (5)
 
 nmi80:				; hardware interrupts, when available, to be checked AFTER incrementing PC
+; nmi is called TRAP in 8085, absent in 8080!!!
 	LDX #$24			; offset for NMI entry point (2)
 
 intr80:				; ** generic interrupt entry point, offset in X ** (70/)
@@ -195,6 +197,22 @@ vector_pull:		; ** standard jump to entry point, offset in X **
 	TXA
 	TAY		; update PC (4)
 	BRA execute		; continue with interrupt handler
+
+; ** other 8085 hardware interrupts... when available **
+rst55:
+		BBS0 rimask, execute	; ignore if masked
+	LDX #$2C	; hardwired address
+	BRA intr80	; respond to interrupt
+
+rst65:
+		BBS1 rimask, execute	; ignore if masked
+	LDX #$34	; hardwired address
+	BRA intr80	; respond to interrupt
+
+rst75:
+		BBS2 rimask, execute	; ignore if masked
+	LDX #$3C	; hardwired address
+	BRA intr80	; respond to interrupt
 
 
 ; ** common routines **
@@ -286,31 +304,31 @@ cvc_cc:
 ; to B
 
 _41:
-; MOV B,C (4)
+; MOV B,C (5, 4 @ 8085)
 ; +12
 	LDA c80	; source
 	BRA movb	; common end
 
 _42:
-; MOV B,D (4)
+; MOV B,D (5, 4 @ 8085)
 ; +12
 	LDA d80	; source
 	BRA movb	; common end
 
 _43:
-; MOV B,E (4)
+; MOV B,E (5, 4 @ 8085)
 ; +12
 	LDA e80	; source
 	BRA movb	; common end
 
 _44:
-; MOV B,H (4)
+; MOV B,H (5, 4 @ 8085)
 ; +12
 	LDA h80	; source
 	BRA movb	; common end
 
 _45:
-; MOV B,L (4)
+; MOV B,L (5, 4 @ 8085)
 ; +12
 	LDA l80	; source
 	BRA movb	; common end
@@ -325,7 +343,7 @@ movb:
 	JMP next_op	; flags unaffected
 
 _47:
-; MOV B,A (4)
+; MOV B,A (5, 4 @ 8085)
 ; +12
 	LDA a80	; source
 	BRA movb	; common end
@@ -333,31 +351,31 @@ _47:
 ; to C
 
 _48:
-; MOV C,B (4)
+; MOV C,B (5, 4 @ 8085)
 ; +12
 	LDA b80	; source
 	BRA movc	; common end
 
 _4a:
-; MOV C,D (4)
+; MOV C,D (5, 4 @ 8085)
 ; +12
 	LDA d80	; source
 	BRA movc	; common end
 
 _4b:
-; MOV C,E (4)
+; MOV C,E (5, 4 @ 8085)
 ; +12
 	LDA e80	; source
 	BRA movc	; common end
 
 _4c:
-; MOV C,H (4)
+; MOV C,H (5, 4 @ 8085)
 ; +12
 	LDA h80	; source
 	BRA movc	; common end
 
 _4d:
-; MOV C,L (4)
+; MOV C,L (5, 4 @ 8085)
 ; 12
 	LDA l80	; source
 	BRA movc	; common end
@@ -372,7 +390,7 @@ movc:
 	JMP next_op	; flags unaffected
 
 _4f:
-; MOV C,A (4)
+; MOV C,A (5, 4 @ 8085)
 ; +12
 	LDA a80	; source
 	BRA movc	; common end
@@ -380,31 +398,31 @@ _4f:
 ; to D
 
 _50:
-; MOV D,B (4)
+; MOV D,B (5, 4 @ 8085)
 ; +12
 	LDA b80	; source
 	BRA movd	; common end
 
 _51:
-; MOV D,C (4)
+; MOV D,C (5, 4 @ 8085)
 ; +12
 	LDA c80	; source
 	BRA movd	; common end
 
 _53:
-; MOV D,E (4)
+; MOV D,E (5, 4 @ 8085)
 ; +12
 	LDA e80	; source
 	BRA movd	; common end
 
 _54:
-; MOV D,H (4)
+; MOV D,H (5, 4 @ 8085)
 ; +12
 	LDA h80	; source
 	BRA movd	; common end
 
 _55:
-; MOV D,L (4)
+; MOV D,L (5, 4 @ 8085)
 ; +12
 	LDA l80	; source
 	BRA movd	; common end
@@ -419,7 +437,7 @@ movd:
 	JMP next_op	; flags unaffected
 
 _57:
-; MOV D,A (4)
+; MOV D,A (5, 4 @ 8085)
 ; +12
 	LDA a80	; source
 	BRA movd	; common end
@@ -427,31 +445,31 @@ _57:
 ; to E
 
 _58:
-; MOV E,B (4)
+; MOV E,B (5, 4 @ 8085)
 ; +12
 	LDA b80	; source
 	BRA move	; common end
 
 _59:
-; MOV E,C (4)
+; MOV E,C (5, 4 @ 8085)
 ; +12
 	LDA c80	; source
 	BRA move	; common end
 
 _5a:
-; MOV E,D (4)
+; MOV E,D (5, 4 @ 8085)
 ; +12
 	LDA d80	; source
 	BRA move	; common end
 
 _5c:
-; MOV E,H (4)
+; MOV E,H (5, 4 @ 8085)
 ; +12
 	LDA h80	; source
 	BRA move	; common end
 
 _5d:
-; MOV E,L (4)
+; MOV E,L (5, 4 @ 8085)
 ; +12
 	LDA l80	; source
 	BRA move	; common end
@@ -466,7 +484,7 @@ move:
 	JMP next_op	; flags unaffected
 
 _5f:
-; MOV E,A (4)
+; MOV E,A (5, 4 @ 8085)
 ; +12
 	LDA a80	; source
 	BRA move	; common end
@@ -474,31 +492,31 @@ _5f:
 ; to H
 
 _60:
-; MOV H,B (4)
+; MOV H,B (5, 4 @ 8085)
 ; +12
 	LDA b80	; source
 	BRA movh	; common end
 
 _61:
-; MOV H,C (4)
+; MOV H,C (5, 4 @ 8085)
 ; +12
 	LDA c80	; source
 	BRA movh	; common end
 
 _62:
-; MOV H,D (4)
+; MOV H,D (5, 4 @ 8085)
 ; +12
 	LDA d80	; source
 	BRA movh	; common end
 
 _63:
-; MOV H,E (4)
+; MOV H,E (5, 4 @ 8085)
 ; +12
 	LDA e80	; source
 	BRA movh	; common end
 
 _65:
-; MOV H,L (4)
+; MOV H,L (5, 4 @ 8085)
 ; +12
 	LDA l80	; source
 	BRA movh	; common end
@@ -513,7 +531,7 @@ movh:
 	JMP next_op	; flags unaffected
 
 _67:
-; MOV H,A (4)
+; MOV H,A (5, 4 @ 8085)
 ; +12
 	LDA a80	; source
 	BRA movh	; common end
@@ -521,31 +539,31 @@ _67:
 ; to L
 
 _68:
-; MOV L,B (4)
+; MOV L,B (5, 4 @ 8085)
 ; +12
 	LDA b80	; source
 	BRA movl	; common end
 
 _69:
-; MOV L,C (4)
+; MOV L,C (5, 4 @ 8085)
 ; +12
 	LDA c80	; source
 	BRA movl	; common end
 
 _6a:
-; MOV L,D (4)
+; MOV L,D (5, 4 @ 8085)
 ; +12
 	LDA d80	; source
 	BRA movl	; common end
 
 _6b:
-; MOV L,E (4)
+; MOV L,E (5, 4 @ 8085)
 ; +12
 	LDA e80	; source
 	BRA movl	; common end
 
 _6c:
-; MOV L,H (4)
+; MOV L,H (5, 4 @ 8085)
 ; +12
 	LDA h80	; source
 	BRA movl	; common end
@@ -560,7 +578,7 @@ movl:
 	JMP next_op	; flags unaffected
 
 _6f:
-; MOV L,A (4)
+; MOV L,A (5, 4 @ 8085)
 ; +12
 	LDX a80	; source
 	BRA movl	; common end
@@ -620,37 +638,37 @@ movm:
 ; to A
 
 _78:
-; MOV A,B (4)
+; MOV A,B (5, 4 @ 8085)
 ; +12
 	LDA b80	; source
 	BRA mova	; common end
 
 _79:
-; MOV A,C (4)
+; MOV A,C (5, 4 @ 8085)
 ; +12
 	LDA c80	; source
 	BRA mova	; common end
 
 _7a:
-; MOV A,D (4)
+; MOV A,D (5, 4 @ 8085)
 ; +12
 	LDA d80	; source
 	BRA mova	; common end
 
 _7b:
-; MOV A,E (4)
+; MOV A,E (5, 4 @ 8085)
 ; +12
 	LDA e80	; source
 	BRA mova	; common end
 
 _7c:
-; MOV A,H (4)
+; MOV A,H (5, 4 @ 8085)
 ; +12
 	LDA h80	; source
 	BRA mova	; common end
 
 _7d:
-; MOV A,L (4)
+; MOV A,L (5, 4 @ 8085)
 ; +12
 	LDA l80	; source
 	BRA mova	; common end
@@ -896,37 +914,37 @@ do_jmp:
 	JMP execute	; jump to it!
 	
 _da:
-; JC (7/10) if carry
+; JC (10, 7/10 @ 8085) if carry
 ;+44 if taken, +21 if not
 		BBS0 f80, jmp	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _d2:
-; JNC (7/10) if not carry
+; JNC (10, 7/10 @ 8085) if not carry
 ;+44 if taken, +21 if not
 		BBR0 f80, jmp	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _f2:
-; JP (7/10) if plus
+; JP (10, 7/10 @ 8085) if plus
 ;+44 if taken, +21 if not
 		BBR7 f80, jmp	; best way
 	BRA notjmp	; skip and continue
 
 _fa:
-; JM (7/10) if minus
+; JM (10, 7/10 @ 8085) if minus
 ;+44 if taken, +21 if not
 		BBS7 f80, jmp	; best way
 	BRA notjmp	; skip and continue
 
 _ca:
-; JZ (7/10) if zero
+; JZ (10, 7/10 @ 8085) if zero
 ;+44 if taken, +21 if not
 		BBS6 f80, jmp	; best way
 	BRA notjmp	; skip and continue
 
 _c2:
-; JNZ (7/10) if not zero
+; JNZ (10, 7/10 @ 8085) if not zero
 ;+44 if taken, +21 if not
 		BBR6 f80, jmp	; best way in the most used one
 notjmp:
@@ -935,19 +953,19 @@ notjmp:
 	JMP next_op	; continue otherwise
 
 _ea:
-; JPE (7/10) on parity even, better version
+; JPE (10, 7/10 @ 8085) on parity even, better version
 ;+ 44 if taken, + 21 if not
 		BBS2 f80, jmp	; jump on flag 2 set
 	BRA notjmp	; otherwise skip and continue
 
 _e2:
-; JPO (7/10) on parity odd
+; JPO (10, 7/10 @ 8085) on parity odd
 ;+ 44 if taken, + 21 if not
 		BBR2 f80, jmp	; jump on flag 2 clear
 	BRA notjmp	; otherwise skip and continue
 
 _e9:
-; PCHL (4) jump to address pointed by HL
+; PCHL (5, 6 @ 8085) jump to address pointed by HL
 ;+12
 	LDY l80		; get HL word
 	LDA h80
@@ -959,7 +977,7 @@ _e9:
 ; ** call **
 
 _cd:
-; CALL (18)
+; CALL (17, 18 @ 8085)
 ;+100/
 call:
 	_DIRECT		; get target address in tmptr
@@ -971,49 +989,49 @@ call:
 	BRA do_jmp	; continue like jump, shorter (7)
 	
 _dc:
-; CC (9/18) if carry
+; CC (11/17, 9/18 @ 8085) if carry
 ;+106 if taken, +21 if not
 		BBS0 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _d4:
-; CNC (9/18) if not carry
+; CNC (11/17, 9/18 @ 8085) if not carry
 ;+106 if taken, +21 if not
 		BBR0 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _f4:
-; CP (9/18) if plus
+; CP (11/17, 9/18 @ 8085) if plus
 ;+106 if taken, +21 if not
 		BBR7 f80, call	; better
 	BRA notjmp	; skip and continue
 
 _fc:
-; CM (9/18) if minus
+; CM (11/17, 9/18 @ 8085) if minus
 ;+106 if taken, +21 if not
 		BBS7 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _cc:
-; CZ (9/18) if zero
+; CZ (11/17, 9/18 @ 8085) if zero
 ;+106 if taken, +21 if not
 		BBS6 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _c4:
-; CNZ (9/18) if not zero
+; CNZ (11/17, 9/18 @ 8085) if not zero
 ;+106 if taken, +21 if not
 		BBR6 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _ec:
-; CPE (9/18) on parity even, better version, saves 3 bytes & 2 clocks
+; CPE (11/17, 9/18 @ 8085) on parity even, better version, saves 3 bytes & 2 clocks
 ;+ 106 if taken, + 21 if not
 		BBS2 f80, call	; jump on flag 2 set
 	BRA notjmp	; otherwise skip and continue
 
 _e4:
-; CPO (9/18) on parity odd
+; CPO (11/17, 9/18 @ 8085p) on parity odd
 ;+ 106 if taken, + 21 if not
 		BBR2 f80, call	; jump on flag 2 clear
 	BRA notjmp	; otherwise skip and continue
@@ -1034,49 +1052,49 @@ ret:
 	JMP execute	; back to caller
 	
 _d8:
-; RC (6/12) if carry
+; RC (5/11, 6/12 @ 8085) if carry
 ;+56 if taken, +21 if not
 		BBS0 f80, ret	; faster & shorter
 	BRA notjmp	; otherwise skip & continue
 
 _d0:
-; RNC (6/12) if not carry
+; RNC (5/11, 6/12 @ 8085) if not carry
 ;+56 if taken, +21 if not
 		BBR0 f80, ret	; faster & shorter
 	BRA notjmp	; otherwise skip & continue
 
 _f0:
-; RP (6/12) if plus
+; RP (5/11, 6/12 @ 8085) if plus
 ;+56 if taken, +21 if not
 		BBR7 f80, ret	; faster & shorter
 	BRA notjmp	; otherwise skip & continue
 
 _f8:
-; RM (6/12) if minus
+; RM (5/11, 6/12 @ 8085) if minus
 ;+56 if taken, +21 if not
 		BBS7 f80, ret	; faster & shorter
 	BRA notjmp	; otherwise skip & continue
 
 _c8:
-; RZ (6/12) if zero
+; RZ (5/11, 6/12 @ 8085) if zero
 ;+56 if taken, +21 if not
 		BBS6 f80, ret	; faster & shorter
 	BRA notjmp	; otherwise skip & continue
 
 _c0:
-; RNZ (6/12) if not zero
+; RNZ (5/11, 6/12 @ 8085) if not zero
 ;+56 if taken, +21 if not
 		BBR6 f80, ret	; faster & shorter
 	BRA notjmp	; otherwise skip & continue
 
 _e8:
-; RPE (6/12) on parity even, better version
+; RPE (5/11, 6/12 @ 8085) on parity even, better version
 ;+ 56 if taken, + 21 if not
 		BBS2 f80, ret	; jump on flag 2 set
 	BRA notjmp	; otherwise skip and continue
 
 _e0:
-; RPO (6/12) on parity odd
+; RPO (5/11, 6/12 @ 8085) on parity odd
 ;+ 56 if taken, + 21 if not
 		BBR2 f80, ret	; jump on flag 2 clear
 	BRA notjmp	; otherwise skip and continue
@@ -1086,56 +1104,56 @@ _e0:
 ; faster, specific routines
 
 _c7:
-; RST 0 (11?)
+; RST 0 (11, 12 @ 8085)
 ;+80/
 	_PC_ADV		; skip opcode
 	LDX #0	; offset
 	JMP intr80	; calling procedure
 
 _cf:
-; RST 1 (11?)
+; RST 1 (11, 12 @ 8085)
 ;+80/
 	_PC_ADV		; skip opcode
 	LDX #$08	; offset
 	JMP intr80	; calling procedure
 
 _d7:
-; RST 2 (11?)
+; RST 2 (11, 12 @ 8085)
 ;+80/
 	_PC_ADV		; skip opcode
 	LDX #$10	; offset
 	JMP intr80	; calling procedure
 
 _df:
-; RST 3 (11?)
+; RST 3 (11, 12 @ 8085)
 ;+80/
 	_PC_ADV		; skip opcode
 	LDX #$18	; offset
 	JMP intr80	; calling procedure
 
 _e7:
-; RST 4 (11?)
+; RST 4 (11, 12 @ 8085)
 ;+80/
 	_PC_ADV		; skip opcode
 	LDX #$20	; offset
 	JMP intr80	; calling procedure
 
 _ef:
-; RST 5 (11?)
+; RST 5 (11, 12 @ 8085)
 ;+80/
 	_PC_ADV		; skip opcode
 	LDX #$28	; offset
 	JMP intr80	; calling procedure
 
 _f7:
-; RST 6 (11?)
+; RST 6 (11, 12 @ 8085)
 ;+80/
 	_PC_ADV		; skip opcode
 	LDX #$30	; offset
 	JMP intr80	; calling procedure
 
 _ff:
-; RST 7 (11?)
+; RST 7 (11, 12 @ 8085)
 ;+80/
 	_PC_ADV		; skip opcode
 	LDX #$38	; offset
@@ -1145,28 +1163,28 @@ _ff:
 ; ** stack **
 
 _c5:
-; PUSH B (12) BE
+; PUSH B (11, 13 @ 8085) BE
 ;+62
 	LDA b80		; load data word
 	LDX c80
 	BRA phcnt	; push and continue
 
 _d5:
-; PUSH D (12) DE
+; PUSH D (11, 13 @ 8085) DE
 ;+62
 	LDA d80		; load data word
 	LDX e80
 	BRA phcnt	; push and continue
 
 _e5:
-; PUSH H (12) HL
+; PUSH H (11, 13 @ 8085) HL
 ;+62
 	LDA h80		; load data word
 	LDX l80
 	BRA phcnt	; push and continue
 
 _f5:
-; PUSH PSW (12) AF
+; PUSH PSW (11, 12! @ 8085) AF
 ;+59
 	LDA a80		; load data word
 	LDX f80
@@ -1207,7 +1225,7 @@ _f1:
 	JMP next_op
 
 _e3:
-; XTHL (16) exchange HL with top of stack
+; XTHL (18, 16 @ 8085) exchange HL with top of stack
 ;+105, could be optimised
 	JSR pop		; get top of stack
 	STX tmptr	; store temporarily
@@ -1222,7 +1240,7 @@ _e3:
 	JMP next_op
 
 _f9:
-; SPHL (6) set SP as HL
+; SPHL (5, 6 @ 8085) set SP as HL
 ;+20/
 	LDA h80		; get HL word
 	LDX l80
@@ -1232,7 +1250,7 @@ _f9:
 	JMP next_op
 
 _33:
-; INX SP ()
+; INX SP (5, 6 @ 8085)
 ;+11/
 	INC sp80	; increment SP LSB
 	BNE xsend	; no wrap
@@ -1244,7 +1262,7 @@ xsend:
 	JMP next_op	; flags unaffected
 
 _3b:
-; DCX SP ()
+; DCX SP (5, 6 @ 8085)
 ;+14
 	LDX sp80	; preload LSB
 	BNE dcxn	; will not wrap
@@ -1262,6 +1280,7 @@ dcxn:
 _fb:
 ; EI (4)
 ;+8
+; ***** actually delays enabling for one instruction! *****
 	SMB3 rimask	; enable interrupts
 	JMP next_op
 
@@ -1272,9 +1291,9 @@ _f3:
 	JMP next_op
 
 _76:
-; HLT (5)
+; HLT (7, 5 @ 8085)
 ; abort emulation and return to shell
-; ...sice interrupts are not yet supported!
+; ...since interrupts are not yet supported!
 	LDY cdev	; console device
 	_KERNEL(FREE_W)	; release device or window
 	_EXIT_OK		; *** go away ***
@@ -1467,8 +1486,9 @@ _1f:
 ; ** increment & decrement **
 
 _34:
-; INR M (11)
+; INR M (10!)
 ;+
+; ***** affects all but C *****
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; older value
 	INC		; operation
@@ -1501,57 +1521,58 @@ if_po:
 	JMP next_op
 
 _04:
-; INR B (4)
+; INR B (5, 4 @ 8085)
 ;+
 	INC b80
 	LDX b80		; appropriate register
 	BRA iflags	; common ending
 
 _0c:
-; INR C (4)
+; INR C (5, 4 @ 8085)
 ;+
 	INC c80
 	LDX c80		; appropriate register
 	BRA iflags	; common ending
 
 _14:
-; INR D (4)
+; INR D (5, 4 @ 8085)
 ;+
 	INC d80
 	LDX d80		; appropriate register
 	BRA iflags	; common ending
 
 _1c:
-; INR E (4)
+; INR E (5, 4 @ 8085)
 ;+
 	INC e80
 	LDX e80		; appropriate register
 	BRA iflags	; common ending
 
 _24:
-; INR H (4)
+; INR H (5, 4 @ 8085)
 ;+
 	INC h80
 	LDX h80		; appropriate register
 	BRA iflags	; common ending
 
 _2c:
-; INR L (4)
+; INR L (5, 4 @ 8085)
 ;+
 	INC l80
 	LDX l80		; appropriate register
 	BRA iflags	; common ending
 
 _3c:
-; INR A (4)
+; INR A (5, 4 @ 8085)
 ;+42/
 	INC a80
 	LDX a80		; appropriate register
 	BRA iflags	; common ending
 
 _35:
-; DCR M (11)
+; DCR M (10!)
 ;+
+;***** affects all but C *****
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; older value
 	DEC		; operation
@@ -1570,49 +1591,49 @@ dflags:
 	BRA xpc	; standard end
 
 _05:
-; DCR B (4)
+; DCR B (5, 4 @ 8085)
 ;+
 	DEC b80
 	LDX b80		; appropriate register
 	BRA dflags	; common ending
 
 _0d:
-; DCR C (4)
+; DCR C (5, 4 @ 8085)
 ;+
 	DEC c80
 	LDX c80		; appropriate register
 	BRA dflags	; common ending
 
 _15:
-; DCR D (4)
+; DCR D (5, 4 @ 8085)
 ;+
 	DEC d80
 	LDX d80		; appropriate register
 	BRA dflags	; common ending
 
 _1d:
-; DCR E (4)
+; DCR E (5, 4 @ 8085)
 ;+
 	DEC e80
 	LDX e80		; appropriate register
 	BRA dflags	; common ending
 
 _25:
-; DCR H (4)
+; DCR H (5, 4 @ 8085)
 ;+
 	DEC h80
 	LDX h80		; appropriate register
 	BRA dflags	; common ending
 
 _2d:
-; DCR L (4)
+; DCR L (5, 4 @ 8085)
 ;+
 	DEC l80
 	LDX l80		; appropriate register
 	BRA dflags	; common ending
 
 _3d:
-; DCR A (4)
+; DCR A (5, 4 @ 8085)
 ;+
 	DEC a80
 	LDX a80		; appropriate register
@@ -1621,7 +1642,7 @@ _3d:
 ; 16-bit inc/dec 
 
 _03:
-; INX B (6)
+; INX B (5, 6 @ 8085)
 ;+11
 	INC c80	; increment LSB
 	BNE ixb	; no wrap
@@ -1630,7 +1651,7 @@ ixb:
 	JMP next_op	; flags unaffected
 
 _0b:
-; DCX B (6)
+; DCX B (5, 6 @ 8085)
 ;+14
 	LDX c80	; preload LSB
 	BNE dxb	; will not wrap
@@ -1640,7 +1661,7 @@ dxb:
 	JMP next_op
 
 _13:
-; INX D (6)
+; INX D (5, 6 @ 8085)
 ;+11
 	INC e80	; increment LSB
 	BNE ixd	; no wrap
@@ -1649,7 +1670,7 @@ ixd:
 	JMP next_op	; flags unaffected
 
 _1b:
-; DCX D (6)
+; DCX D (5, 6 @ 8085)
 ;+14
 	LDX e80	; preload LSB
 	BNE dxd	; will not wrap
@@ -1659,7 +1680,7 @@ dxd:
 	JMP next_op
 
 _23:
-; INX H (6)
+; INX H (5, 6 @ 8085)
 ;+11
 	INC l80	; increment LSB
 	BNE ixh	; no wrap
@@ -1668,7 +1689,7 @@ ixh:
 	JMP next_op	; flags unaffected
 
 _2b:
-; DCX H (6)
+; DCX H (5, 6 @ 8085)
 ;+14
 	LDX l80	; preload LSB
 	BNE dxh	; will not wrap
@@ -1721,6 +1742,8 @@ _a5:
 _a6:
 ; ANA M (7)
 ;+53/
+; ***** WARNING: 8085 (and Z80?) sets H, but 8080 computes old.d3 OR new.d3 for H *****
+; ***** Logic ops clear C (at least ANA/ANI) *****
 ; * should unused bits be respected... *
 ;	LDA f80		; get old flags
 ;	AND #%00111000	; reset S, Z, N, V & C
@@ -1793,6 +1816,7 @@ _ad:
 _ae:
 ; XRA M (7) with parity instead of overflow!
 ;+
+; ***** clears C & H *****
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 xram:
@@ -1864,6 +1888,7 @@ _b5:
 _b6:
 ; ORA M (7)
 ;+56/
+;***** resets C & H ***
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 oram:
@@ -1964,6 +1989,7 @@ _ee:
 _f6:
 ; ORI (7)
 ;+47/
+;***** resets C & H *****
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA oram	; generic routine
@@ -2120,9 +2146,12 @@ _8f:
 _:
 ;()
 ;+
+
 _:
-;()
+; DAD B (10)
 ;+
+;***** affects just C *****
+
 _:
 ;()
 ;+
