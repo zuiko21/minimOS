@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160824-2232
+; last modified 20160825-0105
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -80,8 +80,8 @@ f80		= uz+6	; flags SZ?H?P-C
 ; S is sign
 ; Z is zero
 ; ? is always 0 on 8080, undefined in 8085
-; H is half carry (for BCD, not testable)
-; P is parity, sets on logical/rots when number of 1s is EVEN
+; H is half carry (for BCD, not testable), reset by OR/XOR
+; P is parity, sets on logical/rots (and more?) when number of 1s is EVEN
 ; ** on Z80 is P/V, also overflow
 ; - is always 1 in 8080, undefined in 8085
 ; ** - is add/subtract in Z80 (for BCD, not testable) 1 is subtract
@@ -165,7 +165,7 @@ next_op:
 
 ; *** window title, optional and minimOS specific ***
 title:
-	.asc	"8085 simulator", 0
+	.asc	"i8085", 0
 exit:
 	.asc 13, "{HLT}", 13, 0
 
@@ -273,29 +273,6 @@ plend:
 	RTS
 
 ; ** common endings ** TBD **** TBD ****
-
-; just check S & Z, then exit (3/5/14)
-check_nz:
-	BPL cnz_pl		; if minus...
-		SMB7 f80		; set S *** Rockwell ***
-cnz_pl:
-	BNE next_op		; (check reach) if zero...
-		SMB6 f80		; set Z *** Rockwell ***
-	BRA next_op		; (check reach) standard end
-
-; update indirect pointer and check NZ (11/13/22)
-ind_nz:
-	STA (tmptr)		; store at pointed address
-	BRA check_nz	; check flags and exit
-
-; check V & C bits, then N & V (9/13/31)
-check_flags:
-	BVC cvc_cc		; if overflow...
-		SMB2 f80		; set V *** Rockwell ***
-cvc_cc:
-	BCS check_nz	; if carry...
-		SMB0 f80		; set C *** Rockwell ***
-	BRA check_nz	; continue checking
 
 
 ; *** *** valid opcode definitions *** ***
@@ -945,7 +922,7 @@ _ca:
 
 _c2:
 ; JNZ (10, 7/10 @ 8085) if not zero
-;+44 if taken, +21 if not
+;+44 if taken, +18 if not
 		BBR6 f80, jmp	; best way in the most used one
 notjmp:
 	_PC_ADV		; skip unused address
@@ -1365,7 +1342,7 @@ lp6:
 	CLC
 	ADC #6	; correct low nibble
 	STA a80		; update
-	TXA		; get older value
+	TXA		; get older value*******not sure about H
 	EOR a80		; check differences
 	AND #%00001000	; looking for bit 3
 	BEQ lp_nh	; no change, no half carry
@@ -1432,54 +1409,39 @@ sim_m:
 ;** rotate **
 
 _07:
-; RLC (4) rotate A left
-;+26/
-	LDA f80		; old flags
-	AND #%11101100	; reset H & N, C in case
-	ROR		; lose C!
-	BIT a80		; check bit 7!
-	BPL rlc		; was off
-		SEC		; otherwise set carry
-rlc:
+; RLC (4) rotate A left, Z80 needs older version of rots
+; +17
+	LSR f80		; lose C
+	LDA a80		; check bit 7
+	ASL		; if one, set native carry
 	ROL a80		; rotate register
-	ROL		; return updated status
-	STA f80		; store flags
+	ROL f80		; restore new C
 	JMP next_op
 
 _0f:
 ; RRC (4) rotate A right
-;+24/
+;+17
+	LSR f80		; lose C
 	LDA a80		; temporary check
 	LSR		; copy bit 0 in native C
-	LDA f80		; old flags
-	AND #%11101100	; reset H, N & C!
 	ROR a80		; rotate register
-	BCC rrc		; no carry to set
-		INC		; otherwise set bit 0!
-rrc:
-	STA f80		; store flags
+	ROL f80		; restore new C
 	JMP next_op
 
 _17:
 ; RAL (4) rotate A left thru carry
-;+20
-	LDA f80		; old flags
-	AND #%11101101	; reset relevant
-	ROR		; copy C on native
+;+12
+	LSR f80		; copy C on native
 	ROL a80		; rotate register
-	ROL		; return status with updated carry
-	STA f80		; update status
+	ROL f80		; return status with updated carry
 	JMP next_op
 
 _1f:
 ; RAR (4) rotate A right thru carry
-;+20
-	LDA f80		; old flags
-	AND #%11101101	; reset relevant
-	ROR		; copy C on native
+;+12
+	LSR f80		; copy C on native
 	ROR a80		; rotate register
-	ROL		; return status with updated carry
-	STA f80		; update status
+	ROL f80		; return status with updated carry
 	JMP next_op
 	
 
@@ -1498,14 +1460,19 @@ iflags:
 	LDA f80		; get previous status
 	AND #%00101011	; reset SZHP
 	STA f80		; store partial flags
-	TXA		; retrieve native status
+	TXA		; retrieve native status SZ
 	_CC_SZ		; check sign & zero as usual
 	AND #$0F	; filter low nibble
 	BNE pchk	; not zero, could not set H
 		SMB4 f80	; ...or set H
-xpc:		; *** will adjust parity from X ***
+
+; *** will adjust parity from X ***
+xpc:
 	TXA		; let us operate on current result
-apc:		; *** will adjuzt parity from A ***
+	BEQ if_pe	; zero means even parity
+
+; *** will adjust parity from A ***
+apc:
 	LDX #0	; reset counter of ones
 if_loop:
 		LSR		; shift out one bit
@@ -1516,12 +1483,13 @@ if_cc:
 	TXA		; get count result
 	LSR		; even or odd?
 	BCS if_po	; least bit set, means odd...
+if_pe:
 		SMB2 f80	; ...or set P
 if_po:
 	JMP next_op
 
 _04:
-; INR B (5, 4 @ 8085)
+; INR B (5, 4 @ 8085) [[[[[[[[[[[[[[[[[[[[[continue here]]]]]]]]]]]]]]]]]
 ;+
 	INC b80
 	LDX b80		; appropriate register
