@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160825-2359
+; last modified 20160826-0015
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -2121,27 +2121,76 @@ _8f:
 	LDX b80		; appropriate register
 	BRA adcm
 
-_:
-;()
+; immediate
+
+_c6:
+; ADI (7)
 ;+
+	_PC_ADV		; go for the operand
+	LDA (pc80), Y	; immediate addressing
+	BRA addi	; generic routine
+
+_ce:
+; ACI (7)
+;+
+	_PC_ADV		; go for the operand
+	LDA (pc80), Y	; immediate addressing
+	BRA adci	; generic routine
 
 _:
 ; DAD B (10)
 ;+
 ;***** affects just C *****
+	LSR f80		; move C to native carry
+	LDA l80		; add LSB
+	ADC c80
+	STA l80		; store
+	LDA h80		; same for MSB
+	ADC b80
+	STA h80
+	ROL f80		; restore emulated C flag
+	JMP next_op
 
 _:
-;()
+; DAD D (10)
 ;+
+	LSR f80		; move C to native carry
+	LDA l80		; add LSB
+	ADC e80
+	STA l80		; store
+	LDA h80		; same for MSB
+	ADC d80
+	STA h80
+	ROL f80		; restore emulated C flag
+	JMP next_op
+
 _:
-;()
+; DAD H (10)
 ;+
+	LSR f80		; move C to native carry
+	LDA l80		; add LSB
+	ADC l80
+	STA l80		; store
+	LDA h80		; same for MSB
+	ADC h80
+	STA h80
+	ROL f80		; restore emulated C flag
+	JMP next_op
+
 _:
-;()
+; DAD SP (10)
 ;+
-_:
-;()
-;+
+	LSR f80		; move C to native carry
+	LDA l80		; add LSB
+	ADC sp80
+	STA l80		; store
+	LDA h80		; same for MSB
+	ADC sp80+1
+	STA h80
+	ROL f80		; restore emulated C flag
+	JMP next_op
+
+
 _:
 ;()
 ;+
