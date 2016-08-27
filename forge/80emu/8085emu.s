@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160827-0101
+; last modified 20160827-2337
 
 #include "usual.h"
 
@@ -182,7 +182,7 @@ nmi80:				; hardware interrupts, when available, to be checked AFTER incrementin
 ; nmi is called TRAP in 8085, absent in 8080!!!
 	LDX #$24			; offset for NMI entry point (2)
 
-intr80:				; ** generic interrupt entry point, offset in X ** (70/)
+intr80:				; ** generic interrupt entry point, offset in X ** (70/76.5/83)
 	STX tmptr		; keep it eeeeeek^2 (3)
 	TYA
 	TAX			; retrieve current PC (2+2+3)
@@ -897,31 +897,31 @@ do_jmp:
 	
 _da:
 ; JC (10, 7/10 @ 8085) if carry
-;+44//70 if taken, +21//46 if not
+;+44/44.5/70 if taken, +21/21/46 if not
 		BBS0 f80, jump	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _d2:
 ; JNC (10, 7/10 @ 8085) if not carry
-;+44//70 if taken, +21//46 if not
+;+44/44.5/70 if taken, +21/21/46 if not
 		BBR0 f80, jump	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _f2:
 ; JP (10, 7/10 @ 8085) if plus
-;+44//70 if taken, +21//46 if not
+;+44/44.5/70 if taken, +21/21/46 if not
 		BBR7 f80, jump	; best way
 	BRA notjmp	; skip and continue
 
 _fa:
 ; JM (10, 7/10 @ 8085) if minus
-;+44//70 if taken, +21//46 if not
+;+44/44.5/70 if taken, +21/21/46 if not
 		BBS7 f80, jump	; best way
 	BRA notjmp	; skip and continue
 
 _ca:
 ; JZ (10, 7/10 @ 8085) if zero
-;+44//70 if taken, +18//43 if not
+;+44/44.5/70 if taken, +18/18/43 if not
 		BBS6 f80, jump	; best way
 notjmp:
 	_PC_ADV		; skip unused address
@@ -930,19 +930,19 @@ notjmp:
 
 _c2:
 ; JNZ (10, 7/10 @ 8085) if not zero
-;+44//70 if taken, +21//46 if not
+;+44/44.5/70 if taken, +21/21/46 if not
 		BBR6 f80, jump	; best way
 	BRA notjmp	; skip and continue
 
 _ea:
 ; JPE (10, 7/10 @ 8085) on parity even, better version
-;+44//70 if taken, +21//46 if not
+;+44/44.5/70 if taken, +21/21/46 if not
 		BBS2 f80, jump	; jump on flag 2 set
 	BRA notjmp	; otherwise skip and continue
 
 _e2:
 ; JPO (10, 7/10 @ 8085) on parity odd
-;+44//70 if taken, +21//46 if not
+;+44/44.5/70 if taken, +21/21/46 if not
 		BBR2 f80, jump	; jump on flag 2 clear
 	BRA notjmp	; otherwise skip and continue
 
@@ -972,43 +972,43 @@ call:
 	
 _dc:
 ; CC (11/17, 9/18 @ 8085) if carry
-;+106/113/170 if taken, +21//46 if not
+;+106/113/170 if taken, +21/21/46 if not
 		BBS0 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _d4:
 ; CNC (11/17, 9/18 @ 8085) if not carry
-;+106/113/170 if taken, +21//46 if not
+;+106/113/170 if taken, +21/21/46 if not
 		BBR0 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _f4:
 ; CP (11/17, 9/18 @ 8085) if plus
-;+106/113/170 if taken, +21//46 if not
+;+106/113/170 if taken, +21/21/46 if not
 		BBR7 f80, call	; better
 	BRA notjmp	; skip and continue
 
 _fc:
 ; CM (11/17, 9/18 @ 8085) if minus
-;+106/113/170 if taken, +21//46 if not
+;+106/113/170 if taken, +21/21/46 if not
 		BBS7 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _cc:
 ; CZ (11/17, 9/18 @ 8085) if zero
-;+106/113/170 if taken, +21//46 if not
+;+106/113/170 if taken, +21/21/46 if not
 		BBS6 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _c4:
 ; CNZ (11/17, 9/18 @ 8085) if not zero
-;+106/113/170 if taken, +21//46 if not
+;+106/113/170 if taken, +21/21/46 if not
 		BBR6 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _ec:
 ; CPE (11/17, 9/18 @ 8085) on parity even, better version, saves 3 bytes & 2 clocks
-;+106/113/170 if taken, +21//46 if not
+;+106/113/170 if taken, +21/21/46 if not
 		BBS2 f80, call	; jump on flag 2 set
 	BRA notjmp	; otherwise skip and continue
 
@@ -1035,37 +1035,37 @@ ret:
 	
 _d8:
 ; RC (5/11, 6/12 @ 8085) if carry
-;+56//77 if taken, +21//46 if not
+;+56/66.5/77 if taken, +21/21/46 if not
 		BBS0 f80, ret	; faster & shorter
 	BRA notjmp2	; otherwise skip & continue
 
 _d0:
 ; RNC (5/11, 6/12 @ 8085) if not carry
-;+56//77 if taken, +21//46 if not
+;+56/66.5/77 if taken, +21/21/46 if not
 		BBR0 f80, ret	; faster & shorter
 	BRA notjmp2	; otherwise skip & continue
 
 _f0:
 ; RP (5/11, 6/12 @ 8085) if plus
-;+56//77 if taken, +21//46 if not
+;+56/66.5/77 if taken, +21/21/46 if not
 		BBR7 f80, ret	; faster & shorter
 	BRA notjmp2	; otherwise skip & continue
 
 _f8:
 ; RM (5/11, 6/12 @ 8085) if minus
-;+56//77 if taken, +21//46 if not
+;+56/66.5/77 if taken, +21/21/46 if not
 		BBS7 f80, ret	; faster & shorter
 	BRA notjmp2	; otherwise skip & continue
 
 _c0:
 ; RNZ (5/11, 6/12 @ 8085) if not zero
-;+56//77 if taken, +21//46 if not
+;+56/66.5/77 if taken, +21/21/46 if not
 		BBR6 f80, ret	; faster & shorter
 	BRA notjmp2	; otherwise skip & continue
 
 _c8:
 ; RZ (5/11, 6/12 @ 8085) if zero
-;+56//77 if taken, +18//43 if not
+;+56/66.5/77 if taken, +18/18/43 if not
 		BBS6 f80, ret	; faster & shorter
 notjmp2:
 	_PC_ADV		; skip unused address
@@ -1074,13 +1074,13 @@ notjmp2:
 
 _e8:
 ; RPE (5/11, 6/12 @ 8085) on parity even, better version
-;+56//77 if taken, +21//46 if not
+;+56/66.5/77 if taken, +21/21/46 if not
 		BBS2 f80, ret	; jump on flag 2 set
 	BRA notjmp2	; otherwise skip and continue
 
 _e0:
 ; RPO (5/11, 6/12 @ 8085) on parity odd
-;+56//77 if taken, +21//46 if not
+;+56/66.5/77 if taken, +21/21/46 if not
 		BBR2 f80, ret	; jump on flag 2 clear
 	BRA notjmp2	; otherwise skip and continue
 
@@ -1090,56 +1090,56 @@ _e0:
 
 _c7:
 ; RST 0 (11, 12 @ 8085)
-;+80/
+;+80/86.5/118
 	_PC_ADV		; skip opcode
 	LDX #0	; offset
 	JMP intr80	; calling procedure
 
 _cf:
 ; RST 1 (11, 12 @ 8085)
-;+80/
+;+80/86.5/118
 	_PC_ADV		; skip opcode
 	LDX #$08	; offset
 	JMP intr80	; calling procedure
 
 _d7:
 ; RST 2 (11, 12 @ 8085)
-;+80/
+;+80/86.5/118
 	_PC_ADV		; skip opcode
 	LDX #$10	; offset
 	JMP intr80	; calling procedure
 
 _df:
 ; RST 3 (11, 12 @ 8085)
-;+80/
+;+80/86.5/118
 	_PC_ADV		; skip opcode
 	LDX #$18	; offset
 	JMP intr80	; calling procedure
 
 _e7:
 ; RST 4 (11, 12 @ 8085)
-;+80/
+;+80/86.5/118
 	_PC_ADV		; skip opcode
 	LDX #$20	; offset
 	JMP intr80	; calling procedure
 
 _ef:
 ; RST 5 (11, 12 @ 8085)
-;+80/
+;+80/86.5/118
 	_PC_ADV		; skip opcode
 	LDX #$28	; offset
 	JMP intr80	; calling procedure
 
 _f7:
 ; RST 6 (11, 12 @ 8085)
-;+80/
+;+80/86.5/118
 	_PC_ADV		; skip opcode
 	LDX #$30	; offset
 	JMP intr80	; calling procedure
 
 _ff:
 ; RST 7 (11, 12 @ 8085)
-;+80/
+;+80/86.5/118
 	_PC_ADV		; skip opcode
 	LDX #$38	; offset
 	JMP intr80	; calling procedure
@@ -1149,28 +1149,28 @@ _ff:
 
 _c5:
 ; PUSH B (11, 13 @ 8085) BE
-;+62
+;+62/68.5/75
 	LDA b80		; load data word
 	LDX c80
 	BRA phcnt	; push and continue
 
 _d5:
 ; PUSH D (11, 13 @ 8085) DE
-;+62
+;+62/68.5/75
 	LDA d80		; load data word
 	LDX e80
 	BRA phcnt	; push and continue
 
 _e5:
 ; PUSH H (11, 13 @ 8085) HL
-;+62
+;+62/68.5/75
 	LDA h80		; load data word
 	LDX l80
 	BRA phcnt	; push and continue
 
 _f5:
 ; PUSH PSW (11, 12! @ 8085) AF
-;+59//******
+;+59/65.5/72
 	LDA a80		; load data word
 	LDX f80
 phcnt:
@@ -1179,7 +1179,7 @@ phcnt:
 
 _c1:
 ; POP B (10) BC
-;+52
+;+52/62/72
 	JSR pop		; retrieve from stack
 	STA b80		; store MSB
 	STX c80		; store LSB
@@ -1187,7 +1187,7 @@ _c1:
 
 _d1:
 ; POP D (10) DE
-;+52
+;+52/62/72
 	JSR pop		; retrieve from stack
 	STA d80		; store MSB
 	STX e80		; store LSB
@@ -1195,7 +1195,7 @@ _d1:
 
 _e1:
 ; POP H (10) HL
-;+52
+;+52/62/72
 	JSR pop		; retrieve from stack
 	STA h80		; store MSB
 	STX l80		; store LSB
@@ -1203,7 +1203,7 @@ _e1:
 
 _f1:
 ; POP PSW (10) AF
-;+49
+;+49/59/69
 	JSR pop		; retrieve from stack
 	STA a80		; store MSB
 	STX f80		; store LSB
@@ -1211,7 +1211,7 @@ _f1:
 
 _e3:
 ; XTHL (18, 16 @ 8085) exchange HL with top of stack
-;+105, could be optimised
+;+117/133.5/150, could be optimised
 	JSR pop		; get top of stack
 	STX tmptr	; store temporarily
 	STA tmptr+1
@@ -1226,7 +1226,7 @@ _e3:
 
 _f9:
 ; SPHL (5, 6 @ 8085) set SP as HL
-;+20/
+;+20/20.5/21
 	LDA h80		; get HL word
 	LDX l80
 	_AH_BOUND		; eeeeeek
@@ -1236,7 +1236,7 @@ _f9:
 
 _33:
 ; INX SP (5, 6 @ 8085)
-;+11/
+;+11/17.5/24
 	INC sp80	; increment SP LSB
 	BNE xsend	; no wrap
 		LDA sp80+1	; get MSB
@@ -1248,7 +1248,7 @@ xsend:
 
 _3b:
 ; DCX SP (5, 6 @ 8085)
-;+14
+;+14/20.5/27
 	LDX sp80	; preload LSB
 	BNE dcxn	; will not wrap
 		LDA sp80+1	; original MSB
@@ -1277,7 +1277,7 @@ _f3:
 
 _76:
 ; HLT (7, 5 @ 8085)
-; abort emulation and return to shell
+; abort emulation and return to shell...
 ; ...since interrupts are not yet supported!
 	LDY cdev	; console device
 	_KERNEL(FREE_W)	; release device or window
@@ -1317,7 +1317,7 @@ _3f:
 
 _27:
 ; DAA (4) decimal adjust
-;+
+;+57//192
 	LDA a80		; binary value
 	TAX		; worth saving
 		BBS4 f80, lp6	; halfcarry was set, add 6
@@ -1343,6 +1343,7 @@ daac:
 		SMB0 f80	; or set C
 daa_nc:
 	JMP xpc		; check parity and exit
+
 ; pseudo-routine for low nibble
 llp6:
 	TXA		; reload as was masked
@@ -1365,7 +1366,7 @@ lp_nh:
 
 _db:
 ; IN (10)
-;+22
+;+22/22/47
 	_PC_ADV		; go for address
 	LDA (pc80), Y	; get port
 	TAX
@@ -1375,7 +1376,7 @@ _db:
 
 _d3:
 ; OUT (10)
-;+22
+;+22/22/47
 	_PC_ADV		; go for address
 	LDA (pc80), Y	; get port
 	TAX
@@ -1396,7 +1397,7 @@ _20:
 
 _30:
 ; SIM (4) set interrupt mask
-;+16/
+;+16/25.5/35
 	LDA a80		; get argument
 	BIT #%00010000	; check bit 4
 	BEQ sim_r7	; will not clear I7.5
@@ -1457,7 +1458,7 @@ _1f:
 
 _34:
 ; INR M (10!)
-;+
+;+65/140/160
 ; ***** affects all but C *****
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; older value
@@ -1465,7 +1466,7 @@ _34:
 	TAX		; FINAL result for further testing, status OK
 	STA (tmptr)	; and update memory
 iflags:
-	LDA f80		; get previous status
+	LDA f80		; get previous status (+34/108.5/128)
 	AND #%00101011	; reset SZHP
 	STA f80		; store partial flags
 	TXA		; retrieve native status SZ
@@ -1474,12 +1475,12 @@ iflags:
 	BNE xpc		; not zero, could not set H
 		SMB4 f80	; ...or set H
 
-; *** will adjust parity from X ***
+; *** will adjust parity from X *** +13/83.5/99
 xpc:
 	TXA		; let us operate on current result
 	BEQ if_pe	; zero means even parity
 
-; *** will adjust parity from A ***
+; *** will adjust parity from A *** +23/79.5/95
 apc:
 	LDX #0	; reset counter of ones
 if_loop:
@@ -1498,56 +1499,56 @@ if_po:
 
 _04:
 ; INR B (5, 4 @ 8085)
-;+
+;+45/119.5/139
 	INC b80
 	LDX b80		; appropriate register
 	BRA iflags	; common ending
 
 _0c:
 ; INR C (5, 4 @ 8085)
-;+
+;+45/119.5/139
 	INC c80
 	LDX c80		; appropriate register
 	BRA iflags	; common ending
 
 _14:
 ; INR D (5, 4 @ 8085)
-;+
+;+45/119.5/139
 	INC d80
 	LDX d80		; appropriate register
 	BRA iflags	; common ending
 
 _1c:
 ; INR E (5, 4 @ 8085)
-;+
+;+45/119.5/139
 	INC e80
 	LDX e80		; appropriate register
 	BRA iflags	; common ending
 
 _24:
 ; INR H (5, 4 @ 8085)
-;+
+;+45/119.5/139
 	INC h80
 	LDX h80		; appropriate register
 	BRA iflags	; common ending
 
 _2c:
 ; INR L (5, 4 @ 8085)
-;+
+;+45/119.5/139
 	INC l80
 	LDX l80		; appropriate register
 	BRA iflags	; common ending
 
 _3c:
 ; INR A (5, 4 @ 8085)
-;+42/
+;+45/119.5/139
 	INC a80
 	LDX a80		; appropriate register
 	BRA iflags	; common ending
 
 _35:
 ; DCR M (10!)
-;+
+;+67/143.5/165
 ;***** affects all but C *****
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; older value
@@ -1555,7 +1556,7 @@ _35:
 	TAX		; FINAL result for further testing, status OK
 	STA (tmptr)	; and update memory
 dflags:
-	LDA f80		; get previous status
+	LDA f80		; get previous status (+36/112/133)
 	AND #%00101011	; reset SZHP
 	STA f80		; store partial flags
 	TXA		; retrieve native status
@@ -1568,49 +1569,49 @@ dflags:
 
 _05:
 ; DCR B (5, 4 @ 8085)
-;+
+;+47/123/144
 	DEC b80
 	LDX b80		; appropriate register
 	BRA dflags	; common ending
 
 _0d:
 ; DCR C (5, 4 @ 8085)
-;+
+;+47/123/144
 	DEC c80
 	LDX c80		; appropriate register
 	BRA dflags	; common ending
 
 _15:
 ; DCR D (5, 4 @ 8085)
-;+
+;+47/123/144
 	DEC d80
 	LDX d80		; appropriate register
 	BRA dflags	; common ending
 
 _1d:
 ; DCR E (5, 4 @ 8085)
-;+
+;+47/123/144
 	DEC e80
 	LDX e80		; appropriate register
 	BRA dflags	; common ending
 
 _25:
 ; DCR H (5, 4 @ 8085)
-;+
+;+47/123/144
 	DEC h80
 	LDX h80		; appropriate register
 	BRA dflags	; common ending
 
 _2d:
 ; DCR L (5, 4 @ 8085)
-;+
+;+47/123/144
 	DEC l80
 	LDX l80		; appropriate register
 	BRA dflags	; common ending
 
 _3d:
 ; DCR A (5, 4 @ 8085)
-;+
+;+47/123/144
 	DEC a80
 	LDX a80		; appropriate register
 	BRA dflags	; common ending
@@ -1619,7 +1620,7 @@ _3d:
 
 _03:
 ; INX B (5, 6 @ 8085)
-;+11
+;+11/13/15
 	INC c80	; increment LSB
 	BNE ixb	; no wrap
 		INC b80	; correct MSB
@@ -1628,7 +1629,7 @@ ixb:
 
 _0b:
 ; DCX B (5, 6 @ 8085)
-;+14
+;+14/16/18
 	LDX c80	; preload LSB
 	BNE dxb	; will not wrap
 		DEC b80	; correct MSB otherwise
@@ -1638,7 +1639,7 @@ dxb:
 
 _13:
 ; INX D (5, 6 @ 8085)
-;+11
+;+11/13/15
 	INC e80	; increment LSB
 	BNE ixd	; no wrap
 		INC d80	; correct MSB
@@ -1647,7 +1648,7 @@ ixd:
 
 _1b:
 ; DCX D (5, 6 @ 8085)
-;+14
+;+14/16/18
 	LDX e80	; preload LSB
 	BNE dxd	; will not wrap
 		DEC d80	; correct MSB otherwise
@@ -1657,7 +1658,7 @@ dxd:
 
 _23:
 ; INX H (5, 6 @ 8085)
-;+11
+;+11/13/15
 	INC l80	; increment LSB
 	BNE ixh	; no wrap
 		INC h80	; correct MSB
@@ -1666,7 +1667,7 @@ ixh:
 
 _2b:
 ; DCX H (5, 6 @ 8085)
-;+14
+;+14/16/18
 	LDX l80	; preload LSB
 	BNE dxh	; will not wrap
 		DEC h80	; correct MSB otherwise
@@ -1681,51 +1682,51 @@ dxh:
 
 _a0:
 ; ANA B (4)
-;+
+;+56/114.5/132
 	LDX b80		; variable term
 	BRA anam	; generic routine
 
 _a1:
 ; ANA C (4)
-;+37/
+;+56/114.5/132
 	LDX c80		; variable term
 	BRA anam	; generic routine
 
 _a2:
 ; ANA D (4)
-;+37/
+;+56/114.5/132
 	LDX d80		; variable term
 	BRA anam	; generic routine
 
 _a3:
 ; ANA E (4)
-;+37/
+;+56/114.5/132
 	LDX e80		; variable term
 	BRA anam	; generic routine
 
 _a4:
 ; ANA H (4)
-;+37/
+;+56/114.5/132
 	LDX h80		; variable term
 	BRA anam	; generic routine
 
 _a5:
 ; ANA L (4)
-;+37/
+;+56/114.5/132
 	LDX b80		; variable term
 	BRA anam	; generic routine
 
 _a6:
 ; ANA M (7)
-;+
+;+74/128/151
 ; ***** WARNING, 8085 (and Z80?) sets H, but 8080 computes old.d3 OR new.d3 for H *****
 ; ***** Logic ops clear C (at least ANA/ANI) *****
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 anai:
-	TAX		; keep data here
+	TAX		; keep data here (+52/110.5/128)
 anam:
-	LDA f80		; get old flags
+	LDA f80		; get old flags (+50/108.5/126)
 	AND #%00111010	; reset S, Z, P & C
 	ORA #%00010000	; set H... 8085 behaviour
 	STA f80		; store base flags
@@ -1734,11 +1735,11 @@ anam:
 	STA a80		; store result
 l_flags:
 	_CC_SZ		; check sign & zero bits
-	JMP apc		; check parity & finish
+	JMP apc		; check parity & finish (26/82.5/98)
 
 _a7:
 ; ANA A (4) somewhat special as will only update flags! not worth
-; +
+; +56/114.5/132
 	LDX a80		; original intact data
 	BRA anam
 
@@ -1746,7 +1747,7 @@ _a7:
 
 _e6:
 ; ANI (7)
-;+
+;+65/123.5/166
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA anai	; generic routine
@@ -1755,56 +1756,56 @@ _e6:
 
 _a8:
 ; XRA B (4)
-;+
+;+55/115.5/133
 	LDX b80		; variable term
 	BRA xram	; generic routine
 
 _a9:
 ; XRA C (4)
-;+
+;+57/115.5/133
 	LDX c80		; variable term
 	BRA xram	; generic routine
 
 _aa:
 ; XRA D (4)
-;+
+;+57/115.5/133
 	LDX d80		; variable term
 	BRA xram	; generic routine
 
 _ab:
 ; XRA E (4)
-;+
+;+57/115.5/133
 	LDX e80		; variable term
 	BRA xram	; generic routine
 
 _ac:
 ; XRA H (4)
-;+
+;+57/115.5/133
 	LDX h80		; variable term
 	BRA xram	; generic routine
 
 _ad:
 ; XRA L (4)
-;+
+;+57/115.5/133
 	LDX l80		; variable term
 	BRA xram	; generic routine
 
 _ae:
 ; XRA M (7) with parity instead of overflow!
-;+
+;+75/134/152
 ; ***** clears C & H *****
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 xrai:
-	TAX		; keep data here
+	TAX		; keep data here (+53/111.5/129)
 xram:
-	LDA f80		; get old flags
+	LDA f80		; get old flags (+51/109.5/127)
 	AND #%00101010	; reset S, Z, H, P & C
 	STA f80		; store base flags
 	TXA		; retrieve value
 	EOR a80		; logical exclusive-OR
 	STA a80		; store result
-	BRA l_flags	; common status check
+	BRA l_flags	; common status check (35/93.5/111)
 
 _af:
 ; XRA A (4) will always get zero, worth optimising as a quick way to zero A
@@ -1820,69 +1821,69 @@ _af:
 
 _b6:
 ; ORA M (7)
-;+
+;+75/134/152
 ;***** resets C & H ***
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 orai:
-	TAX		; keep data here
+	TAX		; keep data here (+53/111.5/129)
 oram:
-	LDA f80		; get old flags
+	LDA f80		; get old flags (+51/109.5/127)
 	AND #%00101010	; reset S, Z, H, P & C
 	STA f80		; store base flags
 	TXA		; retrieve value
 	ORA a80		; logical OR
 	STA a80		; store result
-	BRA l_flags	; common status check
+	BRA l_flags	; common status check (35/93.5/111)
 
 ; exclusive or immediate
 
 _ee:
 ; XRI (7)
-;+
+;+60/122.5/165
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
-	BRA xrai	; generic routine
+	BRA xrai	; generic routine (54/112.5/130)
 
 _b0:
 ; ORA B (4)
-;+
+;+57/115.5/133
 	LDX b80		; variable term
 	BRA oram	; generic routine
 
 _b1:
 ; ORA C (4)
-;+
+;+57/115.5/133
 	LDX c80		; variable term
 	BRA oram	; generic routine
 
 _b2:
 ; ORA D (4)
-;+
+;+57/115.5/133
 	LDX d80		; variable term
 	BRA oram	; generic routine
 
 _b3:
 ; ORA E (4)
-;+
+;+57/115.5/133
 	LDX e80		; variable term
 	BRA oram	; generic routine
 
 _b4:
 ; ORA H (4)
-;+
+;+57/115.5/133
 	LDX h80		; variable term
 	BRA oram	; generic routine
 
 _b5:
 ; ORA L (4)
-;+
+;+57/115.5/133
 	LDX l80		; variable term
 	BRA oram	; generic routine
 
 _b7:
 ; ORA A (4) not really the same as AND A (this clears H)
-;+/
+;+/57/115.5/133
 	LDX a80		; variable term
 	BRA oram	; generic routine
 
@@ -1890,7 +1891,7 @@ _b7:
 
 _f6:
 ; ORI (7)
-;+
+;+60/122.5/165
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA orai	; generic routine
@@ -1899,49 +1900,49 @@ _f6:
 
 _b8:
 ; CMP B (4)
-;+
+;+64/140.5/156
 	LDX b80		; variable term
 	BRA cmpm	; generic routine
 
 _b9:
 ; CMP C (4)
-;+
+;+64/140.5/156
 	LDX c80		; variable term
 	BRA cmpm	; generic routine
 
 _ba:
 ; CMP D (4)
-;+
+;+64/140.5/156
 	LDX d80		; variable term
 	BRA cmpm	; generic routine
 
 _bb:
 ; CMP E (4)
-;+
+;+64/140.5/156
 	LDX e80		; variable term
 	BRA cmpm	; generic routine
 
 _bc:
 ; CMP H (4)
-;+
+;+64/140.5/156
 	LDX h80		; variable term
 	BRA cmpm	; generic routine
 
 _bd:
 ; CMP L (4)
-;+
+;+64/140.5/156
 	LDX l80		; variable term
 	BRA cmpm	; generic routine
 
 _be:
 ; CMP M (7)
-;+
+;+82/159/175
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 cmpi:
-	TAX		; will receive value here
+	TAX		; will receive value here (+60/136.5/152)
 cmpm:
-	STX tmptr	; keep first operand!
+	STX tmptr	; keep first operand! (+58/134.5/150)
 	LDA f80		; get old flags
 	AND #%00101010	; reset S, Z, H, P & C
 	STA f80		; store base flags
@@ -1959,7 +1960,7 @@ cmp_c:
 	BEQ cmp_h	; no half carry if zero
 		SMB4 f80	; or set H
 cmp_h:
-	JMP xpc		; compute parity from X as A was destroyed
+	JMP xpc		; compute parity from X as A was destroyed (+16/86.5/102)
 
 _bf:
 ; CMP A (4) special
@@ -1974,7 +1975,7 @@ _bf:
 
 _fe:
 ; CPI (7)
-;+
+;+73/149.5/190
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA cmpi	; generic routine
