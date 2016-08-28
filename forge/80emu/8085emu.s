@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160828-0015
+; last modified 20160828-1145
 
 #include "usual.h"
 
@@ -2200,49 +2200,49 @@ _39:
 
 _90:
 ; SUB B (4)
-;+
+;+69/147.5/169
 	LDX b80		; get register
 	BRA subm	; common code
 
 _91:
 ; SUB C (4)
-;+
+;+69/147.5/169
 	LDX c80		; get register
 	BRA subm	; common code
 
 _92:
 ; SUB D (4)
-;+
+;+69/147.5/169
 	LDX d80		; get register
 	BRA subm	; common code
 
 _93:
 ; SUB E (4)
-;+
+;+69/147.5/169
 	LDX e80		; get register
 	BRA subm	; common code
 
 _94:
 ; SUB H (4)
-;+
+;+69/147.5/169
 	LDX h80		; get register
 	BRA subm	; common code
 
 _95:
 ; SUB L (4)
-;+
+;+69/147.5/169
 	LDX l80		; get register
 	BRA subm	; common code
 
 _96:
 ; SUB M (7)
-;+
+;+87/164/186
 	_MEMORY			; prepare pointer
 	LDA (tmptr)		; variable term
 subi:
-	TAX				; eeeeek
+	TAX				; eeeeek (+65/141.5/163)
 subm:
-	STX tmptr		; keep first operand!
+	STX tmptr		; keep first operand! (+63/139.5/161)
 	LDA f80			; old flags
 	AND #%00101010	; clear SZHPC
 	STA f80			; store base flags
@@ -2253,14 +2253,14 @@ subm:
 	STA a80			; store result
 	TAX				; keep value
 s_flags:
-	_CC_SZ			; check sign & zero bits
+	_CC_SZ			; check sign & zero bits (+36/112.5/134)
 	BCS sub_c		; no borrow was generated
 		SMB0 f80		; or set C
 sub_c:
 	EOR tmptr		; exclusive OR on three values
 	EOR tmptr+1
 	AND #%00010000	; bit 4 only
-	BEQ sub_h		; no change, no halfcarry
+	BEQ sub_h		; no change, no halfcarry, could optimise!
 		SMB4 f80		; or set H
 sub_h:
 	JMP xpc			; check parity and finish (+16/86.5/102)
@@ -2278,7 +2278,7 @@ _97:
 
 _d6:
 ; SUI (7)
-;+
+;+83/154.5/201
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA subi	; generic routine
@@ -2323,13 +2323,13 @@ _9d:
 
 _9e:
 ; SBB M (7)
-;+
+;+95/172.5/195
 	_MEMORY			; prepare pointer
 	LDA (tmptr)		; variable term
 sbbi:
-	TAX				; eeeeek
+	TAX				; eeeeek (+73/150/172)
 sbbm:
-	STX tmptr		; keep first operand!
+	STX tmptr		; keep first operand! (+71/148/170)
 	LDA f80			; old flags
 	SEC
 	BIT #%00000001	; check original C
@@ -2343,11 +2343,11 @@ sbb_c:
 	SBC tmptr		; subtraction
 	STA a80			; store result
 	TAX				; keep value
-	JMP s_flags		; common end
+	JMP s_flags		; common end (39/115.5/137)
 
 _9f:
 ; SBB A (4) result depends on C, not worth optimising
-;+
+;+77/154/176
 	LDA a80		; get register
 	BRA sbbm	; common code
 
@@ -2355,7 +2355,7 @@ _9f:
 
 _de:
 ; SBI (7)
-;+
+;+86/163/210
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA sbbi	; generic routine
