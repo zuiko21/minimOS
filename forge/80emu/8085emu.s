@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
 ; v0.1b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160827-2337
+; last modified 20160828-0015
 
 #include "usual.h"
 
@@ -1987,13 +1987,13 @@ _fe:
 
 _86:
 ; ADD M (7)
-;+
+;+90/167/189
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 addi:
-	TAX		; eeeeek
+	TAX		; eeeeek (+68/144.5/166)
 addm:
-	STX tmptr	; keep first operand!
+	STX tmptr	; keep first operand! (+66/142.5/164)
 	LDA f80		; old flags
 	AND #%00101010	; clear SZHPC
 	STA f80		; store base flags
@@ -2004,7 +2004,7 @@ addm:
 	STA a80		; store result
 	TAX		; keep value
 a_flags:
-	_CC_SZ		; check sign & zero bits
+	_CC_SZ		; check sign & zero bits (+39/115.5/137)
 	BCC add_c	; no carry was generated
 		SMB0 f80	; or set C
 add_c:
@@ -2014,47 +2014,47 @@ add_c:
 	BEQ add_h	; no change, no halfcarry
 		SMB4 f80	; or set H
 add_h:
-	JMP xpc		; check parity and finish
+	JMP xpc		; check parity and finish (19/89.5/105)
 
 _80:
 ; ADD B (4)
-;+
+;+72/148.5/170
 	LDX b80		; appropriate register
 	BRA addm	; common routine
 
 _81:
 ; ADD C (4)
-;+
+;+72/148.5/170
 	LDX c80		; appropriate register
 	BRA addm	; common routine
 
 _82:
 ; ADD D (4)
-;+
+;+72/148.5/170
 	LDX d80		; appropriate register
 	BRA addm	; common routine
 
 _83:
 ; ADD E (4)
-;+
+;+72/148.5/170
 	LDX e80		; appropriate register
 	BRA addm	; common routine
 
 _84:
 ; ADD H (4)
-;+
+;+72/148.5/170
 	LDX h80		; appropriate register
 	BRA addm	; common routine
 
 _85:
 ; ADD L (4)
-;+
+;+72/148.5/170
 	LDX l80		; appropriate register
 	BRA addm	; common routine
 
 _87:
-; ADD A (4), worth optimising? shift left, if C then toggle H, should recheck SZ & H
-;+
+; ADD A (4), worth optimising? rot left, if C then toggle H, should recheck SZ & H
+;+72/148.5/170
 	LDX a80		; appropriate register
 	BRA addm	; common routine
 
@@ -2062,7 +2062,7 @@ _87:
 
 _c6:
 ; ADI (7)
-;+
+;+81/157.5/204
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA addi	; generic routine
@@ -2071,19 +2071,18 @@ _c6:
 
 _8e:
 ; ADC M (7)
-;+
+;+99/176.5/199
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 adci:
-	TAX		; eeeeek
+	TAX		; eeeeek (+77/154/176)
 adcm:
-	STX tmptr	; keep first operand!
-	LDA f80		; old flags
-	; old is 
+	STX tmptr	; keep first operand! (+75/152/174)
 	CLC
-	BBS0 f80, adc_nc	; had carry set?
+	BBR0 f80, adc_nc	; had carry set?
 		SEC		; if so, set native
 adc_nc:
+	LDA f80		; old flags
 	AND #%00101010	; clear SZHPC
 	STA f80		; store base flags
 	LDA a80		; look at accumulator
@@ -2091,47 +2090,47 @@ adc_nc:
 	ADC tmptr	; addition with carry
 	STA a80		; store result
 	TAX		; keep value
-	JMP a_flags	; continue
+	JMP a_flags	; continue (+42/118.5/140)
 
 _88:
 ; ADC B (4)
-;+
+;+81/158/180
 	LDX b80		; appropriate register
 	BRA adcm
 
 _89:
 ; ADC C (4)
-;+
+;+81/158/180
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8a:
 ; ADC D (4)
-;+
+;+81/158/180
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8b:
 ; ADC E (4)
-;+
+;+81/158/180
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8c:
 ; ADC H (4)
-;+
+;+81/158/180
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8d:
 ; ADC L (4)
-;+
+;+81/158/180
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8f:
-; ADC A (4)
-;+
+; ADC A (4) might optimise as emulated C is OK for rots
+;+81/158/180
 	LDX b80		; appropriate register
 	BRA adcm
 
@@ -2139,14 +2138,14 @@ _8f:
 
 _ce:
 ; ACI (7)
-;+
+;+90/167/214
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA adci	; generic routine
 
 _09:
 ; DAD B (10)
-;+
+;+27
 ;***** affects just C *****
 	LSR f80		; move C to native carry
 	LDA l80		; add LSB
@@ -2160,7 +2159,7 @@ _09:
 
 _19:
 ; DAD D (10)
-;+
+;+27
 	LSR f80		; move C to native carry
 	LDA l80		; add LSB
 	ADC e80
@@ -2173,7 +2172,7 @@ _19:
 
 _29:
 ; DAD H (10)
-;+
+;+27
 	LSR f80		; move C to native carry
 	LDA l80		; add LSB
 	ADC l80
@@ -2186,7 +2185,7 @@ _29:
 
 _39:
 ; DAD SP (10)
-;+
+;+27
 	LSR f80		; move C to native carry
 	LDA l80		; add LSB
 	ADC sp80
@@ -2264,11 +2263,11 @@ sub_c:
 	BEQ sub_h		; no change, no halfcarry
 		SMB4 f80		; or set H
 sub_h:
-	JMP xpc			; check parity and finish
+	JMP xpc			; check parity and finish (+16/86.5/102)
 
 _97:
 ; SUB A (4) special as always returns zero
-;+
+;+13
 	LDA f80		; get flags
 	AND #%01101110	; clear S, H & C
 	ORA #%01000100	; set Z & P
