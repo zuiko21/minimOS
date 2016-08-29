@@ -1,8 +1,8 @@
 ; Intel 8080/8085 emulator for minimOS!
 ; *** FAST VERSION WITHOUT PARITY OR BCD ARITHMETIC ***
-; v0.1a1
+; v0.1b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160829-1503
+; last modified 20160829-2312
 
 #include "usual.h"
 
@@ -2139,54 +2139,54 @@ _d6:
 
 _98:
 ; SBB B (4)
-;+
+;+45/49.5/54 no HP
 	LDX b80		; get register
 	BRA sbbm	; common code
 
 _99:
 ; SBB C (4)
-;+
+;+45/49.5/54 no HP
 	LDX c80		; get register
 	BRA sbbm	; common code
 
 _9a:
 ; SBB D (4)
-;+
+;+45/49.5/54 no HP
 	LDX d80		; get register
 	BRA sbbm	; common code
 
 _9b:
 ; SBB E (4)
-;+
+;+45/49.5/54 no HP
 	LDX e80		; get register
 	BRA sbbm	; common code
 
 _9c:
 ; SBB H (4)
-;+
+;+45/49.5/54 no HP
 	LDX h80		; get register
 	BRA sbbm	; common code
 
 _9d:
 ; SBB L (4)
-;+
+;+45/49.5/54 no HP
 	LDX l80		; get register
 	BRA sbbm	; common code
 
 _9e:
 ; SBB M (7)
-;+
+;+63/68/73 no HP
 	_MEMORY			; prepare pointer
 	LDA (tmptr)		; variable term
 sbbi:
-	TAX				; eeeeek
+	TAX				; eeeeek(+41/45.5/50)
 sbbm:
-	STX tmptr		; keep first operand!
+	STX tmptr		; keep first operand! (+39/43.5/48)
 	LDA f80			; old flags
 	SEC
 ;	* 5 bytes 5/6 clocks, FASTER *
 	BIT #%00000001	; check original C
-	BCC sbb_c		; if clear, no borrow!
+	BEQ sbb_c		; if clear, no borrow! eeeeek
 		CLC				; or clear native carry (sets borrow)
 ;	* 4 bytes 6/7 clocks, slower, smaller alternative *
 ;	BBR0 f80, sbb_c	; if clear, no borrow!
@@ -2206,7 +2206,7 @@ sbb_c:
 
 _9f:
 ; SBB A (4) result depends on C, not worth optimising
-;+
+;+45/49.5/54 no HP
 	LDA a80		; get register
 	BRA sbbm	; common code
 
@@ -2214,7 +2214,7 @@ _9f:
 
 _de:
 ; SBI (7)
-;+
+;+52/58.5/88 no HP
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA sbbi	; generic routine
