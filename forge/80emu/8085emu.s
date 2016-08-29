@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
-; v0.1b1
+; v0.1b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160828-1145
+; last modified 20160829-2355
 
 #include "usual.h"
 
@@ -826,7 +826,7 @@ _3a:
 	
 _2a:
 ; LHLD (16) load HL direct
-;+58/64.5/121
+;+58/64.5/97###
 	_DIRECT		; point to operand
 	LDA (tmptr)	; actual LSB
 	STA l80	; destination
@@ -851,7 +851,7 @@ _32:
 
 _22:
 ; SHLD (16) store HL direct
-;+58/64.5/121
+;+58/64.5/97###
 	_DIRECT		; point to operand
 	LDA l80	; actual LSB
 	STA (tmptr)	; destination
@@ -960,7 +960,7 @@ _e9:
 
 _cd:
 ; CALL (17, 18 @ 8085)
-;+100/107/164
+;+100/107/136###
 call:
 	_DIRECT		; get target address in tmptr
 	_PC_ADV		; set PC as the return address
@@ -972,49 +972,49 @@ call:
 	
 _dc:
 ; CC (11/17, 9/18 @ 8085) if carry
-;+106/113/170 if taken, +21/21/46 if not
+;+106/113/142### if taken, +21/21/46 if not
 		BBS0 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _d4:
 ; CNC (11/17, 9/18 @ 8085) if not carry
-;+106/113/170 if taken, +21/21/46 if not
+;+106/113/142### if taken, +21/21/46 if not
 		BBR0 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _f4:
 ; CP (11/17, 9/18 @ 8085) if plus
-;+106/113/170 if taken, +21/21/46 if not
+;+106/113/142### if taken, +21/21/46 if not
 		BBR7 f80, call	; better
 	BRA notjmp	; skip and continue
 
 _fc:
 ; CM (11/17, 9/18 @ 8085) if minus
-;+106/113/170 if taken, +21/21/46 if not
+;+106/113/142### if taken, +21/21/46 if not
 		BBS7 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _cc:
 ; CZ (11/17, 9/18 @ 8085) if zero
-;+106/113/170 if taken, +21/21/46 if not
+;+106/113/142### if taken, +21/21/46 if not
 		BBS6 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _c4:
 ; CNZ (11/17, 9/18 @ 8085) if not zero
-;+106/113/170 if taken, +21/21/46 if not
+;+106/113/142### if taken, +21/21/46 if not
 		BBR6 f80, call	; best way
 	BRA notjmp	; otherwise skip & continue
 
 _ec:
 ; CPE (11/17, 9/18 @ 8085) on parity even, better version, saves 3 bytes & 2 clocks
-;+106/113/170 if taken, +21/21/46 if not
+;+106/113/142### if taken, +21/21/46 if not
 		BBS2 f80, call	; jump on flag 2 set
 	BRA notjmp	; otherwise skip and continue
 
 _e4:
 ; CPO (11/17, 9/18 @ 8085p) on parity odd
-;+106/113/170 if taken, +21//46 if not
+;+106/113/142### if taken, +21//46 if not
 		BBR2 f80, call	; jump on flag 2 clear
 	BRA notjmp	; otherwise skip and continue
 
@@ -1967,7 +1967,7 @@ _bf:
 ;+13
 	LDA f80		; old flags
 	AND #%01101010	; clear S, H, P & C
-	ORA #%10000000	; set Z!
+	ORA #%01000000	; set Z!
 	STA f80		; store flags
 	JMP next_op
 
@@ -1987,13 +1987,13 @@ _fe:
 
 _86:
 ; ADD M (7)
-;+90/167/189
+;+88/165/187###
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 addi:
-	TAX		; eeeeek (+68/144.5/166)
+	TAX		; eeeeek (+66/142.5/164)
 addm:
-	STX tmptr	; keep first operand! (+66/142.5/164)
+	STX tmptr	; keep first operand! (+64/140.5/162)
 	LDA f80		; old flags
 	AND #%00101010	; clear SZHPC
 	STA f80		; store base flags
@@ -2002,12 +2002,10 @@ addm:
 	CLC		; ignore previous carry
 	ADC tmptr	; addition
 	STA a80		; store result
-	TAX		; keep value
+	BCC a_flags	; no carry was generated
+		SMB0 f80	; or set C
 a_flags:
 	_CC_SZ		; check sign & zero bits (+39/115.5/137)
-	BCC add_c	; no carry was generated
-		SMB0 f80	; or set C
-add_c:
 	EOR tmptr	; exclusive OR on three values
 	EOR tmptr+1
 	AND #%00010000	; bit 4 only
@@ -2018,43 +2016,43 @@ add_h:
 
 _80:
 ; ADD B (4)
-;+72/148.5/170
+;+70/146.5/168###
 	LDX b80		; appropriate register
 	BRA addm	; common routine
 
 _81:
 ; ADD C (4)
-;+72/148.5/170
+;+70/146.5/168###
 	LDX c80		; appropriate register
 	BRA addm	; common routine
 
 _82:
 ; ADD D (4)
-;+72/148.5/170
+;+70/146.5/168###
 	LDX d80		; appropriate register
 	BRA addm	; common routine
 
 _83:
 ; ADD E (4)
-;+72/148.5/170
+;+70/146.5/168###
 	LDX e80		; appropriate register
 	BRA addm	; common routine
 
 _84:
 ; ADD H (4)
-;+72/148.5/170
+;+70/146.5/168###
 	LDX h80		; appropriate register
 	BRA addm	; common routine
 
 _85:
 ; ADD L (4)
-;+72/148.5/170
+;+70/146.5/168###
 	LDX l80		; appropriate register
 	BRA addm	; common routine
 
 _87:
 ; ADD A (4), worth optimising? rot left, if C then toggle H, should recheck SZ & H
-;+72/148.5/170
+;+70/146.5/168###
 	LDX a80		; appropriate register
 	BRA addm	; common routine
 
@@ -2062,7 +2060,7 @@ _87:
 
 _c6:
 ; ADI (7)
-;+81/157.5/204
+;+79/155.5/202###
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA addi	; generic routine
@@ -2071,66 +2069,63 @@ _c6:
 
 _8e:
 ; ADC M (7)
-;+99/176.5/199
+;+
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 adci:
-	TAX		; eeeeek (+77/154/176)
+	TAX		; eeeeek
 adcm:
-	STX tmptr	; keep first operand! (+75/152/174)
-	CLC
-	BBR0 f80, adc_nc	; had carry set?
-		SEC		; if so, set native
-adc_nc:
-	LDA f80		; old flags
-	AND #%00101010	; clear SZHPC
+	STX tmptr	; keep first operand!
+	LDA f80		; get old flags
+	LSR		; copy emulated C on native carry! 
+	AND #%00010101	; clear SZHP, note shift
 	STA f80		; store base flags
 	LDA a80		; look at accumulator
 	STA tmptr+1	; keep second
 	ADC tmptr	; addition with carry
 	STA a80		; store result
-	TAX		; keep value
-	JMP a_flags	; continue (+42/118.5/140)
+	ROL f80		; restore flags with result C
+	JMP a_flags	; continue 
 
 _88:
 ; ADC B (4)
-;+81/158/180
+;+
 	LDX b80		; appropriate register
 	BRA adcm
 
 _89:
 ; ADC C (4)
-;+81/158/180
+;+
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8a:
 ; ADC D (4)
-;+81/158/180
+;+
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8b:
 ; ADC E (4)
-;+81/158/180
+;+
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8c:
 ; ADC H (4)
-;+81/158/180
+;+
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8d:
 ; ADC L (4)
-;+81/158/180
+;+
 	LDX b80		; appropriate register
 	BRA adcm
 
 _8f:
 ; ADC A (4) might optimise as emulated C is OK for rots
-;+81/158/180
+;+
 	LDX b80		; appropriate register
 	BRA adcm
 
@@ -2138,7 +2133,7 @@ _8f:
 
 _ce:
 ; ACI (7)
-;+90/167/214
+;+
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA adci	; generic routine
@@ -2200,49 +2195,49 @@ _39:
 
 _90:
 ; SUB B (4)
-;+69/147.5/169
+;+67/145.5/167###
 	LDX b80		; get register
 	BRA subm	; common code
 
 _91:
 ; SUB C (4)
-;+69/147.5/169
+;+67/145.5/167###
 	LDX c80		; get register
 	BRA subm	; common code
 
 _92:
 ; SUB D (4)
-;+69/147.5/169
+;+67/145.5/167###
 	LDX d80		; get register
 	BRA subm	; common code
 
 _93:
 ; SUB E (4)
-;+69/147.5/169
+;+67/145.5/167###
 	LDX e80		; get register
 	BRA subm	; common code
 
 _94:
 ; SUB H (4)
-;+69/147.5/169
+;+67/145.5/167###
 	LDX h80		; get register
 	BRA subm	; common code
 
 _95:
 ; SUB L (4)
-;+69/147.5/169
+;+67/145.5/167###
 	LDX l80		; get register
 	BRA subm	; common code
 
 _96:
 ; SUB M (7)
-;+87/164/186
+;+85/162/184###
 	_MEMORY			; prepare pointer
 	LDA (tmptr)		; variable term
 subi:
-	TAX				; eeeeek (+65/141.5/163)
+	TAX				; eeeeek (+63/139.5/161)
 subm:
-	STX tmptr		; keep first operand! (+63/139.5/161)
+	STX tmptr		; keep first operand! (+61/137.5/159)
 	LDA f80			; old flags
 	AND #%00101010	; clear SZHPC
 	STA f80			; store base flags
@@ -2251,7 +2246,6 @@ subm:
 	SEC				; ignore previous borrow
 	SBC tmptr		; subtraction
 	STA a80			; store result
-	TAX				; keep value
 s_flags:
 	_CC_SZ			; check sign & zero bits (+36/112.5/134)
 	BCS sub_c		; no borrow was generated
@@ -2278,7 +2272,7 @@ _97:
 
 _d6:
 ; SUI (7)
-;+83/154.5/201
+;+81/152.5/199###
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA subi	; generic routine
@@ -2287,53 +2281,53 @@ _d6:
 
 _98:
 ; SBB B (4)
-;+
+;+75/151.5/173###
 	LDX b80		; get register
 	BRA sbbm	; common code
 
 _99:
 ; SBB C (4)
-;+
+;+75/151.5/173
 	LDX c80		; get register
 	BRA sbbm	; common code
 
 _9a:
 ; SBB D (4)
-;+
+;+75/151.5/173
 	LDX d80		; get register
 	BRA sbbm	; common code
 
 _9b:
 ; SBB E (4)
-;+
+;+75/151.5/173
 	LDX e80		; get register
 	BRA sbbm	; common code
 
 _9c:
 ; SBB H (4)
-;+
+;+75/151.5/173
 	LDX h80		; get register
 	BRA sbbm	; common code
 
 _9d:
 ; SBB L (4)
-;+
+;+75/151.5/173
 	LDX l80		; get register
 	BRA sbbm	; common code
 
 _9e:
 ; SBB M (7)
-;+95/172.5/195
+;+93/170/192###
 	_MEMORY			; prepare pointer
 	LDA (tmptr)		; variable term
 sbbi:
-	TAX				; eeeeek (+73/150/172)
+	TAX				; eeeeek (+71/147.5/169)
 sbbm:
-	STX tmptr		; keep first operand! (+71/148/170)
+	STX tmptr		; keep first operand! (+69/145.5/167)
 	LDA f80			; old flags
 	SEC
 	BIT #%00000001	; check original C
-	BCS sbb_c		; if set, no borrow!
+	BEQ sbb_c		; if set, no borrow! eeeeek
 		CLC				; native carry
 sbb_c:
 	AND #%00101010	; clear SZHPC
@@ -2342,12 +2336,11 @@ sbb_c:
 	STA tmptr+1		; keep second
 	SBC tmptr		; subtraction
 	STA a80			; store result
-	TAX				; keep value
 	JMP s_flags		; common end (39/115.5/137)
 
 _9f:
 ; SBB A (4) result depends on C, not worth optimising
-;+77/154/176
+;+75/151.5/173###
 	LDA a80		; get register
 	BRA sbbm	; common code
 
@@ -2355,7 +2348,7 @@ _9f:
 
 _de:
 ; SBI (7)
-;+86/163/210
+;+84/160.5/207###
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA sbbi	; generic routine
