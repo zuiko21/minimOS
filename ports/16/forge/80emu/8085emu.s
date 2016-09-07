@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160904-1623
+; last modified 20160907-2337
 
 #include "usual.h"
 
@@ -9,8 +9,8 @@
 
 ; these make listings more succint
 
-; increment Y checking injected boundary crossing (5/5/30) ** new compact version
-#define	_PC_ADV		INY: BNE *+5: JSR wrap_pc
+; increment Y checking injected boundary crossing (5/5/9) ** must be in 8 bit mode!
+#define	_PC_ADV		INY: BNE *+4: INC pc80+1
 
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
@@ -57,35 +57,34 @@ cdev		= uz+15		; I/O device *** minimOS specific ***
 	CMP z_used		; check available zeropage space
 	BCC go_emu		; more than enough space
 	BEQ go_emu		; just enough!
-		_ERR(FULL)		; not enough memory otherwise (rare)
+		_ERR16(FULL)		; not enough memory otherwise (rare)
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
-	STZ zpar		; no screen size required
-	STZ zpar+1		; neither MSB
 ; set M to 16-bit
+	REP #%00100000	; macro needed???
+	STZ zpar		; no screen size required, 16 bit op?
 	LDA #title		; address window title
 	STA zaddr3		; set parameter
-	STA zaddr3+1
-	_KERNEL(OPEN_W)	; ask for a character I/O device
+	_KERN16(OPEN_W)	; ask for a character I/O device
 	BCC open_emu	; no errors
-		_ERR(NO_RSRC)		; abort otherwise!
+		_ERR16(NO_RSRC)		; abort otherwise!
 open_emu:
 	STY cdev		; store device!!!
 ; should try to allocate memory here
 ; will currently assume whole bank 1
-;****************************************************continue here
+
 ; *** start the emulation! ***
 reset80:
+	STZ pc80	; indirect indexed! still on 16-bit
+; back to 8 bit, macro needed?
+	SEP #%00100000
 	LDY #0		; RST 0
-	STY rimask	; restart with interrupts disabled
-	STY pc80	; indirect indexed! NMOS savvy...
-	LDA #lo_mask	; inject low memory into 65xx space
-	STA pc80+1	; injected MSB
+	STY rimask	; restart with interrupts disabled, make sure 8 bit
 
 ; *** main loop ***
 execute:
-		LDA (pc80), Y	; get opcode (needs CMOS) (5)
+		LDA (pc80), Y	; get opcode (5)
 		ASL				; double it as will become pointer (2)
 		TAX				; use as pointer, keeping carry (2)
 		BCC lo_jump		; seems to be less opcodes with bit7 low... (2/3)
@@ -105,12 +104,9 @@ next_op:
 		BNE execute		; fetch next instruction if no boundary is crossed (3/2)
 		
 ; usual overhead is 22 clock cycles, not including final jump
-; boundary crossing, simplified version
-; ** should be revised for other than 16K+16K systems **
+; boundary crossing, much simpler on 816
 
-	INC pc80 + 1		; increment MSB otherwise, faster than using 'that macro' (5)
-	BPL execute			; seems to stay in low area (3/2)
-		RMB6 pc80 + 1		; in ROM area, A14 is goes low (5) *** Rockwell
+	INC pc80 + 1		; increment MSB otherwise (5)
 	BRA execute			; fetch next (3)
 
 
@@ -127,102 +123,53 @@ exit:
 _08:_10:_18:_28:_38:_d9:
 _cb:_ed:_dd:_fd:
 
-	_PC_ADV			; skip illegal opcode (5)
+	_PC_ADV			; skip illegal opcode (5)****needed???
 
 nmi80:				; hardware interrupts, when available, to be checked AFTER incrementing PC
 ; nmi is called TRAP in 8085, absent in 8080!!!
 	LDX #$24			; offset for NMI entry point (2)
 
-intr80:				; ** generic interrupt entry point, offset in X ** (70/76.5/83)
-	STX tmptr		; keep it eeeeeek^2 (3)
-	TYA
-	TAX			; retrieve current PC (2+2+3)
-	LDA pc80+1
-	JSR push	; save return address (50 best case)
+intr80:				; ** generic interrupt entry point, offset in X ** (37!)
+	LDA pc80+1	; get PC MSB (3)
+	XBA		; make room for LSB (3)
+	TYA		; composed! (2)
+	REP #%00100000	; ** 16 bit memory  ** (3)
+	DEC sp80	; correct SP (7+7)
+	DEC sp80
+	STA (sp80)	; return address pushed (6)
 ; saved processor status
 ; seems to push PC only!!!
-	LDX tmptr	; retrieve offset eeeeek^2 (3)
+	SEP #%00100000	; ** back to 8 bit ** (3)
 
-vector_pull:		; ** standard jump to entry point, offset in X **
-	LDA #lo_mask	; get injected MSB (2)
-	STA pc80+1	; set it (3)
-	TXA
-	TAY		; update PC (4)
+vector_pull:		; ** standard jump to entry point, offset in X ** 8 bit memory and index
+	STZ pc80+1	; set MSB clear (3)
+	TXY		; update PC (2)
 	BRA execute		; continue with interrupt handler
 
 ; ** other 8085 hardware interrupts... when available **
 rst55:
-		BBS0 rimask, execute	; ignore if masked
+	LDA rimask	; get all masks
+	ASR		; quickly get bit 0
+		BCS execute	; ignore if masked
 	LDX #$2C	; hardwired address
 	BRA intr80	; respond to interrupt
 
 rst65:
-		BBS1 rimask, execute	; ignore if masked
+	LDA rimask	; get all masks
+	AND #%00000010		; get bit 1
+		BNE execute	; ignore if masked
 	LDX #$34	; hardwired address
 	BRA intr80	; respond to interrupt
 
 rst75:
-		BBS2 rimask, execute	; ignore if masked
+	LDA rimask	; get all masks
+	AND #%00000100		; get bit 2
+		BNE execute	; ignore if masked
 	LDX #$3C	; hardwired address
 	BRA intr80	; respond to interrupt
 
 
 ; ** common routines **
-
-; increment PC MSB in case of boundary crossing, rare (19/19.5/20)
-wrap_pc:
-	LDA pc80 + 1	; get MSB
-	INC				; increment
-	_AH_BOUND		; keep injected!
-	STA pc80 + 1	; update pointer
-	RTS				; *** to be used in rare cases, worth it ***
-
-; push word from A/X into stack (44/50.5/57)
-push:
-	PHA		; keep it!
-	LDA sp80	; prefetch SP LSB
-	BNE ph1n	; will not wrap!
-		LDA sp80+1	; correct MSB
-		DEC
-		_AH_BOUND		; just in case
-		STA sp80+1
-ph1n:
-	PLA		; retrieve LSB
-	DEC sp80	; predecrement
-	STA (sp80)	; store without altering status
-	BNE ph2n	; will not wrap second time
-		LDA sp80+1	; correct MSB otherwise
-		DEC
-		_AH_BOUND		; just in case
-		STA sp80+1
-ph2n:
-	DEC sp80	; last predecrement
-	TXA		; original LSB
-	STA (sp80)	; push LSB last
-	RTS
-
-; pop word from stack into A/X (34/44/54)
-pop:
-	LDA (sp80)	; pop first value as will be postincrementd
-	TAX		; final LSB destination
-	INC sp80	; postincrement
-	BNE plnw	; did not wrap
-		LDA sp80+1	; correct MSB otherwise
-		INC
-		_AH_BOUND		; just in case
-		STA sp80+1
-plnw:
-	LDA (sp80)	; now pop other byte
-	INC sp80	; postincrement
-	BNE plend	; all OK
-		PHA		; need to keep value
-		LDA sp80+1	; correct MSB...
-		INC
-		_AH_BOUND		; ...and keep it injected
-		STA sp80+1
-		PLA		; retrieve value
-plend:
-	RTS
 
 
 ; *** *** valid opcode definitions *** ***
@@ -262,9 +209,8 @@ _45:
 
 _46:
 ; MOV B,M (7) from memory
-; +28/28.5/29
-	_MEMORY		; prepare pointer
-	LDA (tmptr)	; pointed source
+; +11
+	LDA (hl80)	; pointed source
 movb:
 	STA b80	; destination
 	JMP next_op	; flags unaffected
@@ -309,9 +255,8 @@ _4d:
 
 _4e:
 ; MOV C,M (7) from memory
-; +28/28.5/29
-	_MEMORY		; prepare pointer
-	LDA (tmptr)	; pointed source
+; +11
+	LDA (hl80)	; pointed source
 movc:
 	STA c80	; destination
 	JMP next_op	; flags unaffected
@@ -356,9 +301,8 @@ _55:
 
 _56:
 ; MOV D,M (7) from memory
-; +28/28.5/29
-	_MEMORY		; prepare pointer
-	LDA (tmptr)	; pointed source
+; +11
+	LDA (hl80)	; pointed source
 movd:
 	STA d80	; destination
 	JMP next_op	; flags unaffected
@@ -403,9 +347,8 @@ _5d:
 
 _5e:
 ; MOV E,M (7) from memory
-; +28/28.5/29
-	_MEMORY		; prepare pointer
-	LDA (tmptr)	; pointed source
+; +11
+	LDA (hl80)	; pointed source
 move:
 	STA e80	; destination
 	JMP next_op	; flags unaffected
@@ -450,9 +393,8 @@ _65:
 
 _66:
 ; MOV H,M (7) from memory
-; +28/28.5/29
-	_MEMORY		; prepare pointer
-	LDA (tmptr)	; pointed source
+; +11
+	LDA (hl80)	; pointed source
 movh:
 	STA h80	; destination
 	JMP next_op	; flags unaffected
@@ -497,9 +439,8 @@ _6c:
 
 _6e:
 ; MOV L,M (7) from memory
-; +28/28.5/29
-	_MEMORY		; prepare pointer
-	LDA (tmptr)	; pointed source
+; +11
+	LDA (hl80)	; pointed source
 movl:
 	STA l80	; destination
 	JMP next_op	; flags unaffected
@@ -514,52 +455,46 @@ _6f:
 
 _70:
 ; MOV M,B (7)
-; +33/33.5/34
-	LDX b80	; source
+; +14
+	LDA b80	; source
 	BRA movm	; common end
 
 _71:
 ; MOV M,C (7)
-; +33/33.5/34
-	LDX c80	; source
+; +14
+	LDA c80	; source
 	BRA movm	; common end
 
 _72:
 ; MOV M,D (7)
-; +33/33.5/34
-	LDX d80	; source
+; +14
+	LDA d80	; source
 	BRA movm	; common end
 
 _73:
 ; MOV M,E (7)
-; +33/33.5/34
-	LDX e80	; source
+; +14
+	LDA e80	; source
 	BRA movm	; common end
 
 _74:
 ; MOV M,H (7)
-; +33/33.5/34
-	LDX h80	; source
+; +14
+	LDA h80	; source
 	BRA movm	; common end
 
 _75:
 ; MOV M,L (7)
-; +33/33.5/34
-	LDX l80	; source
+; +14
+	LDA l80	; source
 	BRA movm	; common end
 
 _77:
 ; MOV M,A (7) cannot use macro in order to stay generic
-; +30/30.5/31
-	LDX a80	; source
+; +11
+	LDA a80	; source
 movm:
-	LDA l80		; pointer LSB
-	STA tmptr	; create temporary pointer
-	LDA h80		; pointer MSB...
-	_AH_BOUND	; ...to be bound
-	STA tmptr+1	; pointer ready
-	TXA		; get data
-	STA (tmptr)	; pointed source
+	STA (hl80)	; pointed source
 	JMP next_op	; flags unaffected
 
 ; to A
@@ -602,9 +537,8 @@ _7d:
 
 _7e:
 ; MOV A,M (7) from memory
-; +28/28.5/29
-	_MEMORY		; prepare pointer
-	LDA (tmptr)	; pointed source
+; +11
+	LDA (hl80)	; pointed source
 mova:
 	STA a80	; destination
 	JMP next_op	; flags unaffected
@@ -613,7 +547,7 @@ mova:
 
 _06:
 ; MVI B (7)
-; +16/16/41
+; +16/16/20
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA b80	; destination
@@ -621,7 +555,7 @@ _06:
 
 _0e:
 ; MVI C (7)
-; +16/16/41
+; +16/16/20
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA c80	; destination
@@ -629,7 +563,7 @@ _0e:
 
 _16:
 ; MVI D (7)
-; +16/16/41
+; +16/16/20
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA d80	; destination
@@ -637,7 +571,7 @@ _16:
 
 _1e:
 ; MVI E (7)
-; +16/16/41
+; +16/16/20
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA e80	; destination
@@ -645,7 +579,7 @@ _1e:
 
 _26:
 ; MVI H (7)
-; +16/16/41
+; +16/16/20
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA h80	; destination
@@ -653,7 +587,7 @@ _26:
 
 _2e:
 ; MVI L (7)
-; +16/16/41
+; +16/16/20
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA l80	; destination
@@ -661,16 +595,15 @@ _2e:
 
 _36:
 ; MVI M (10) to memory
-; +35/35.5/61
-	_MEMORY		; prepare pointer
+; +18/18/22
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
-	STA (tmptr)	; eeeeeeek
+	STA (hl80)	; simple!
 	JMP next_op	; flags unaffected
 
 _3e:
 ; MVI A (7)
-; +16/16/41
+; +16/16/20
 	_PC_ADV		; point to operand
 	LDA (pc80), Y	; get immediate
 	STA a80	; destination
@@ -680,47 +613,48 @@ _3e:
 
 _01:
 ; LXI B (10)
-; +29/29/54
+; +29/29/33, 21 bytes
 	_PC_ADV		; point to operand
+	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get first immediate
-	STA c80	; LSB destination
-	_PC_ADV		; advance to next byte
-	LDA (pc80), Y	; get second immediate
-	STA b80	; MSB destination
+	STA bc80	; destination
+	SEP #%00100000	; ** back to 8 bit **
+	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffected
 
 _11:
 ; LXI D (10)
-; +29/29/54
+; was +29/29/54, 23 bytes
+; +29/29/33, 21 bytes
 	_PC_ADV		; point to operand
+	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get first immediate
-	STA e80	; LSB destination
-	_PC_ADV		; advance to next byte
-	LDA (pc80), Y	; get second immediate
-	STA d80	; MSB destination
+	STA de80	; destination
+	SEP #%00100000	; ** back to 8 bit **
+	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffected
 
 _21:
 ; LXI H (10)
-; +29/29/54
+; +29/29/33, 21 bytes
 	_PC_ADV		; point to operand
+	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get first immediate
-	STA l80	; LSB destination
-	_PC_ADV		; advance to next byte
-	LDA (pc80), Y	; get second immediate
-	STA h80	; MSB destination
+	STA hl80	; destination
+	SEP #%00100000	; ** back to 8 bit **
+	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffected
 
 _31:
 ; LXI SP (10)
-; +34/34.5/60
+; was +34/34.5/60, 29 bytes
+; +29/29/33, 21 bytes
 	_PC_ADV		; point to operand
+	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get first immediate
-	STA sp80	; LSB destination
-	_PC_ADV		; advance to next byte
-	LDA (pc80), Y	; get second immediate
-	_AH_BOUND		; SP is kept bound eeeeeeek
-	STA sp80+1	; MSB destination
+	STA sp80	; destination
+	SEP #%00100000	; ** back to 8 bit **
+	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffected
 
 ; ** load/store A indirect **
