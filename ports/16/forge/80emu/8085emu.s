@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160907-2337
+; last modified 20160908-0017
 
 #include "usual.h"
 
@@ -661,97 +661,73 @@ _31:
 
 _0a:
 ; LDAX B (7)
-; +28/28.5/29
-	LDX c80		; pointer LSB
-	LDA b80		; pointer MSB...
-ldax:
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
-	LDA (tmptr)	; pointed source
+; +11
+	LDA (bc80)	; pointed source
 	STA a80	; destination
 	JMP next_op	; flags unaffected
 
 _1a:
 ; LDAX D (7)
-; +31/31.5/32
-	LDX e80		; pointer LSB
-	LDA d80		; pointer MSB...
-	BRA ldax	; common end
+; +11
+	LDA (de80)	; pointed source
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _02:
 ; STAX B (7)
-; +28/28.5/29
-	LDX c80		; pointer LSB
-	LDA b80		; pointer MSB...
-stax:
-	_AH_BOUND	; ...to be bound
-	STX tmptr	; create temporary pointer
-	STA tmptr+1
-	LDA a80	; get source data
-	STA (tmptr)	; indirect destination
+; +11
+	LDA a80		; source
+	STA (bc80)	; pointed destination
 	JMP next_op	; flags unaffected
 
 _12:
 ; STAX D (7)
-;+31/31.5/32
-	LDX e80		; pointer LSB
-	LDA d80		; pointer MSB...
-	BRA stax	; common end
+; +11
+	LDA a80		; source
+	STA (de80)	; pointed destination
+	JMP next_op	; flags unaffected
 
 ; ** load/store direct **
 
 _3a:
 ; LDA (13)
-;+42/42.5/68
-	_DIRECT		; get pointer to operand
-	LDA (tmptr)	; actual data
+;+16/16/20
+	_PC_ADV		; advance to operand
+	LDA (pc80), Y	; actual data
 	STA a80	; destination
 	JMP next_op	; flags unaffected
 	
 _2a:
 ; LHLD (16) load HL direct
-;+58/64.5/97###
-	_DIRECT		; point to operand
-	LDA (tmptr)	; actual LSB
-	STA l80	; destination
-	INC tmptr	; point to MSB
-	BNE lhld	; did not wrap
-		LDA tmptr+1	; eeeeeeeeek
-		INC		; correct MSB otherwise
-		_AH_BOUND	; eeeeeek
-		STA tmptr+1
-lhld:
-	LDA (tmptr)	; repeat for MSB
-	STA h80
+;+29/29/33
+	_PC_ADV		; point to operand
+	REP #%00100000	; ** 16 bit memory **
+	LDA (pc80), Y	; get operand
+	STA hl80	; destination
+	SEP #%00100000	; ** back to 8 bit **
+	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffecfed
 	
 _32:
 ; STA (13)
-;+42/42.5/68
-	_DIRECT		; get destination address
-	LDA a80	; source data
-	STA (tmptr)	; store at destination
+;+16/16/20
+	_PC_ADV		; advance to operand
+	LDA a80		; source
+	STA (pc80), Y	; destination
 	JMP next_op	; flags unaffected
 
 _22:
 ; SHLD (16) store HL direct
-;+58/64.5/97###
-	_DIRECT		; point to operand
-	LDA l80	; actual LSB
-	STA (tmptr)	; destination
-	INC tmptr	; point to MSB
-	BNE shld	; did not wrap
-		LDA tmptr+1	; eeeeeeeeek
-		INC		; correct MSB otherwise
-		_AH_BOUND	; eeeeeek
-		STA tmptr+1
-shld:
-	LDA h80	; repeat for MSB
-	STA (tmptr)
+;+29/29/33
+	_PC_ADV		; point to operand
+	REP #%00100000	; ** 16 bit memory **
+	LDA hl80	; source
+	STA (pc80), Y	; destination
+	SEP #%00100000	; ** back to 8 bit **
+	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffecfed
 
-; exchange DE & HL
+; exchange DE & HL*******************************
 
 _eb:
 ; XCHG (4)
