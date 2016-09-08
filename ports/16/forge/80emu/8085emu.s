@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160908-0017
+; last modified 20160908-1259
 
 #include "usual.h"
 
@@ -727,19 +727,17 @@ _22:
 	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffecfed
 
-; exchange DE & HL*******************************
+; exchange DE & HL
 
 _eb:
 ; XCHG (4)
-;+27
-	LDX d80	; preserve MSB
-	LDA h80	; get other source
-	STA d80	; substitute
-	STX h80	; restore other MSB
-	LDX e80	; same for LSB
-	LDA l80
-	STA e80
-	STX l80
+;+25
+	REP #%00110000	; ** 16 bit memory and indexes **
+	LDA hl80	; one pair
+	LDX de80	; the other one
+	STA de80	; exchange both
+	STX hl80
+	SEP #%00110000	; ** back to 8 bit **
 	JMP next_op	; flags unaffected
 
 
@@ -747,43 +745,52 @@ _eb:
 
 _c3:
 ; JMP (10)
-;+38/38.5/64
+;+24/24/28
 jump:
-	_DIRECT		; get target address in tmptr
-do_jmp:
-	LDY tmptr	; copy fetched address...
-	LDX tmptr+1	; already bound MSB
-	STX pc80+1	; ...into PC
+	_PC_ADV		; go for operand
+	REP #%00100000	; ** 16 bit memory **
+	LDA (pc80), Y	; get operand
+	TAY		; extract LSB
+	AND #$FF00	; and delete it from pointer
+	STA pc80	; register is ready
+	SEP #%00100000	; ** back to 8 bit **
 	JMP execute	; jump to it!
 	
 _da:
 ; JC (10, 7/10 @ 8085) if carry
-;+44/44.5/70 if taken, +21/21/46 if not
-		BBS0 f80, jump	; best way
+;+32/32/36 if taken, +23/23/27 if not
+	LDA f80		; get flags
+	LSR		; put bit 0 on native C
+		BCS jump	; execute jump
 	BRA notjmp	; otherwise skip & continue
 
 _d2:
 ; JNC (10, 7/10 @ 8085) if not carry
-;+44/44.5/70 if taken, +21/21/46 if not
-		BBR0 f80, jump	; best way
+;+32/32/36 if taken, +23/23/27 if not
+	LDA f80		; get flags
+	LSR		; put bit 0 on native C
+		BCC jump	; execute jump
 	BRA notjmp	; otherwise skip & continue
 
 _f2:
 ; JP (10, 7/10 @ 8085) if plus
-;+44/44.5/70 if taken, +21/21/46 if not
-		BBR7 f80, jump	; best way
-	BRA notjmp	; skip and continue
+;+30/30/34 if taken, +21/21/25 if not
+	BIT f80		; get flags bit 7
+		BPL jump	; execute jump
+	BRA notjmp	; otherwise skip & continue
 
 _fa:
 ; JM (10, 7/10 @ 8085) if minus
-;+44/44.5/70 if taken, +21/21/46 if not
-		BBS7 f80, jump	; best way
-	BRA notjmp	; skip and continue
+;+30/30/34 if taken, +21/21/25 if not
+	BIT f80		; get flags bit 7
+		BMI jump	; execute jump
+	BRA notjmp	; otherwise skip & continue
 
 _ca:
 ; JZ (10, 7/10 @ 8085) if zero
-;+44/44.5/70 if taken, +18/18/43 if not
-		BBS6 f80, jump	; best way
+;+30/30/34 if taken, +18/18/22 if not
+	BIT f80		; get flags bit 6
+		BVS jump	; execute jump
 notjmp:
 	_PC_ADV		; skip unused address
 	_PC_ADV
@@ -791,8 +798,9 @@ notjmp:
 
 _c2:
 ; JNZ (10, 7/10 @ 8085) if not zero
-;+44/44.5/70 if taken, +21/21/46 if not
-		BBR6 f80, jump	; best way
+;+30/30/34 if taken, +21/21/25 if not
+	BIT f80		; get flags bit 6
+		BVC jump	; execute jump
 	BRA notjmp	; skip and continue
 
 _ea:
