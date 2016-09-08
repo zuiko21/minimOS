@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
-; v0.1a2
+; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160908-1736
+; last modified 20160908-2013
 
 #include "usual.h"
 
@@ -61,8 +61,7 @@ cdev		= uz+15		; I/O device *** minimOS specific ***
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
-; set M to 16-bit
-	REP #%00100000	; macro needed???
+	.al:	REP #%00100000	; 16 bit memory
 	STZ zpar		; no screen size required, 16 bit op?
 	LDA #title		; address window title
 	STA zaddr3		; set parameter
@@ -77,8 +76,7 @@ open_emu:
 ; *** start the emulation! ***
 reset80:
 	STZ pc80	; indirect indexed! still on 16-bit
-; back to 8 bit, macro needed?
-	SEP #%00100000
+	.as:	SEP #%00100000	; back to 8 bit
 	LDY #0		; RST 0
 	STY rimask	; restart with interrupts disabled, make sure 8 bit
 
@@ -133,13 +131,13 @@ intr80:				; ** generic interrupt entry point, offset in X ** (37!)
 	LDA pc80+1	; get PC MSB (3)
 	XBA		; make room for LSB (3)
 	TYA		; composed! (2)
-	REP #%00100000	; ** 16 bit memory  ** (3)
+	.al:	REP #%00100000	; ** 16 bit memory  ** (3)
 	DEC sp80	; correct SP (7+7)
 	DEC sp80
 	STA (sp80)	; return address pushed (6)
 ; saved processor status
 ; seems to push PC only!!!
-	SEP #%00100000	; ** back to 8 bit ** (3)
+	.as:	SEP #%00100000	; ** back to 8 bit ** (3)
 
 vector_pull:		; ** standard jump to entry point, offset in X ** 8 bit memory and index
 	STZ pc80+1	; set MSB clear (3)
@@ -179,321 +177,356 @@ rst75:
 
 _41:
 ; MOV B,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA movb	; common end
+	STA b80	; destination
+	JMP next_op	; flags unaffected
 
 _42:
 ; MOV B,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA movb	; common end
+	STA b80	; destination
+	JMP next_op	; flags unaffected
 
 _43:
 ; MOV B,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movb	; common end
+	STA b80	; destination
+	JMP next_op	; flags unaffected
 
 _44:
 ; MOV B,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA movb	; common end
+	STA b80	; destination
+	JMP next_op	; flags unaffected
 
 _45:
 ; MOV B,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA movb	; common end
+	STA b80	; destination
+	JMP next_op	; flags unaffected
 
 _46:
 ; MOV B,M (7) from memory
 ; +11
 	LDA (hl80)	; pointed source
-movb:
 	STA b80	; destination
 	JMP next_op	; flags unaffected
 
 _47:
 ; MOV B,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA movb	; common end
+	STA b80	; destination
+	JMP next_op	; flags unaffected
 
 ; to C
 
 _48:
 ; MOV C,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4a:
 ; MOV C,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4b:
 ; MOV C,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4c:
 ; MOV C,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4d:
 ; MOV C,L (5, 4 @ 8085)
-; 12
+; 9
 	LDA l80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4e:
 ; MOV C,M (7) from memory
 ; +11
 	LDA (hl80)	; pointed source
-movc:
 	STA c80	; destination
 	JMP next_op	; flags unaffected
 
 _4f:
 ; MOV C,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 ; to D
 
 _50:
 ; MOV D,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _51:
 ; MOV D,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _53:
 ; MOV D,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _54:
 ; MOV D,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _55:
 ; MOV D,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _56:
 ; MOV D,M (7) from memory
 ; +11
 	LDA (hl80)	; pointed source
-movd:
 	STA d80	; destination
 	JMP next_op	; flags unaffected
 
 _57:
 ; MOV D,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 ; to E
 
 _58:
 ; MOV E,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _59:
 ; MOV E,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _5a:
 ; MOV E,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _5c:
 ; MOV E,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _5d:
 ; MOV E,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _5e:
 ; MOV E,M (7) from memory
 ; +11
 	LDA (hl80)	; pointed source
-move:
 	STA e80	; destination
 	JMP next_op	; flags unaffected
 
 _5f:
 ; MOV E,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 ; to H
 
 _60:
 ; MOV H,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _61:
 ; MOV H,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _62:
 ; MOV H,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _63:
 ; MOV H,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _65:
 ; MOV H,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _66:
 ; MOV H,M (7) from memory
 ; +11
 	LDA (hl80)	; pointed source
-movh:
 	STA h80	; destination
 	JMP next_op	; flags unaffected
 
 _67:
 ; MOV H,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 ; to L
 
 _68:
 ; MOV L,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _69:
 ; MOV L,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _6a:
 ; MOV L,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _6b:
 ; MOV L,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _6c:
 ; MOV L,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _6e:
 ; MOV L,M (7) from memory
 ; +11
 	LDA (hl80)	; pointed source
-movl:
 	STA l80	; destination
 	JMP next_op	; flags unaffected
 
 _6f:
 ; MOV L,A (5, 4 @ 8085)
-; +12
+; +9
 	LDX a80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 ; to memory
 
 _70:
 ; MOV M,B (7)
-; +14
+; +11
 	LDA b80	; source
-	BRA movm	; common end
+	STA (hl80)	; pointed source
+	JMP next_op	; flags unaffected
 
 _71:
 ; MOV M,C (7)
-; +14
+; +11
 	LDA c80	; source
-	BRA movm	; common end
+	STA (hl80)	; pointed source
+	JMP next_op	; flags unaffected
 
 _72:
 ; MOV M,D (7)
-; +14
+; +11
 	LDA d80	; source
-	BRA movm	; common end
+	STA (hl80)	; pointed source
+	JMP next_op	; flags unaffected
 
 _73:
 ; MOV M,E (7)
-; +14
+; +11
 	LDA e80	; source
-	BRA movm	; common end
+	STA (hl80)	; pointed source
+	JMP next_op	; flags unaffected
 
 _74:
 ; MOV M,H (7)
-; +14
+; +11
 	LDA h80	; source
-	BRA movm	; common end
+	STA (hl80)	; pointed source
+	JMP next_op	; flags unaffected
 
 _75:
 ; MOV M,L (7)
-; +14
+; +11
 	LDA l80	; source
-	BRA movm	; common end
+	STA (hl80)	; pointed source
+	JMP next_op	; flags unaffected
 
 _77:
 ; MOV M,A (7) cannot use macro in order to stay generic
 ; +11
 	LDA a80	; source
-movm:
 	STA (hl80)	; pointed source
 	JMP next_op	; flags unaffected
 
@@ -503,43 +536,48 @@ _78:
 ; MOV A,B (5, 4 @ 8085)
 ; +12
 	LDA b80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _79:
 ; MOV A,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7a:
 ; MOV A,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7b:
 ; MOV A,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7c:
 ; MOV A,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7d:
 ; MOV A,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7e:
 ; MOV A,M (7) from memory
 ; +11
 	LDA (hl80)	; pointed source
-mova:
 	STA a80	; destination
 	JMP next_op	; flags unaffected
 
@@ -615,22 +653,21 @@ _01:
 ; LXI B (10)
 ; +29/29/33, 21 bytes
 	_PC_ADV		; point to operand
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get first immediate
 	STA bc80	; destination
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffected
 
 _11:
 ; LXI D (10)
-; was +29/29/54, 23 bytes
 ; +29/29/33, 21 bytes
 	_PC_ADV		; point to operand
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get first immediate
 	STA de80	; destination
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffected
 
@@ -638,22 +675,21 @@ _21:
 ; LXI H (10)
 ; +29/29/33, 21 bytes
 	_PC_ADV		; point to operand
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get first immediate
 	STA hl80	; destination
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffected
 
 _31:
 ; LXI SP (10)
-; was +34/34.5/60, 29 bytes
 ; +29/29/33, 21 bytes
 	_PC_ADV		; point to operand
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get first immediate
 	STA sp80	; destination
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffected
 
@@ -701,10 +737,10 @@ _2a:
 ; LHLD (16) load HL direct
 ;+29/29/33
 	_PC_ADV		; point to operand
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (pc80), Y	; get operand
 	STA hl80	; destination
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffecfed
 	
@@ -720,10 +756,10 @@ _22:
 ; SHLD (16) store HL direct
 ;+29/29/33
 	_PC_ADV		; point to operand
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA hl80	; source
 	STA (pc80), Y	; destination
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	_PC_ADV		; skip LSB
 	JMP next_op	; flags unaffecfed
 
@@ -732,12 +768,12 @@ _22:
 _eb:
 ; XCHG (4)
 ;+25
-	REP #%00110000	; ** 16 bit memory and indexes **
+	.al:	.xl:	REP #%00110000	; ** 16 bit memory and indexes **
 	LDA hl80	; one pair
 	LDX de80	; the other one
 	STA de80	; exchange both
 	STX hl80
-	SEP #%00110000	; ** back to 8 bit **
+	.as:	.xs:	SEP #%00110000	; ** back to 8 bit **
 	JMP next_op	; flags unaffected
 
 
@@ -748,10 +784,10 @@ _c3:
 ;+23/23/27
 jump:
 	_PC_ADV		; go for operand
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 do_jmp:
 	LDA (pc80), Y	; get operand
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	TAY		; extract LSB
 	XBA		; switch to MSB
 	STA pc80+1	; register is ready
@@ -840,7 +876,7 @@ call:
 	LDA pc80+1	; get PC MSB (3)
 	XBA		; make room for LSB (3)
 	TYA		; composed! (2)
-	REP #%00100001	; ** 16 bit memory & clear C ** (3)
+	.al:	REP #%00100001	; ** 16 bit memory & clear C ** (3)
 	ADC #2	; point to return address (3)
 	DEC sp80	; correct SP (7+7)
 	DEC sp80
@@ -914,11 +950,11 @@ _c9:
 ; RET (10)
 ;+32
 ret:
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (sp80)	; fetch return address
 	INC sp80	; advance SP
 	INC sp80
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	TAY		; extract LSB
 	XBA		; switch to MSB
 	STA pc80+1	; register is ready
@@ -1053,114 +1089,114 @@ _ff:
 _c5:
 ; PUSH B (11, 13 @ 8085) BE
 ;+36
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA bc80		; load data word
 	BRA phcnt	; continue in 16 bit
 
 _d5:
 ; PUSH D (11, 13 @ 8085) DE
 ;+36
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA de80		; load data word
 	BRA phcnt	; continue in 16 bit
 
 _e5:
 ; PUSH H (11, 13 @ 8085) HL
 ;+36
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA hl80		; load data word
 	BRA phcnt	; continue in 16 bit
 
 _f5:
 ; PUSH PSW (11, 12! @ 8085) AF
 ;+33
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA af80	; get origin
 phcnt:
 	DEC sp80	; make room
 	DEC sp80
 	STA (sp80)	; push value
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op	; flags unaffected
 
 _c1:
 ; POP B (10) BC
 ;+33
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (sp80)	; pop from stack
 	INC sp80		; correct SP
 	INC sp80
 	STA bc80		; store word
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op
 
 _d1:
 ; POP D (10) DE
 ;+33
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (sp80)	; pop from stack
 	INC sp80		; correct SP
 	INC sp80
 	STA de80		; store word
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op
 
 _e1:
 ; POP H (10) HL
 ;+33
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (sp80)	; pop from stack
 	INC sp80		; correct SP
 	INC sp80
 	STA hl80		; store word
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op
 
 _f1:
 ; POP PSW (10) AF
 ;+33
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (sp80)	; pop from stack
 	INC sp80		; correct SP
 	INC sp80
 	STA af80		; store word
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op
 
 _e3:
 ; XTHL (18, 16 @ 8085) exchange HL with top of stack
 ;+29
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (sp80)	; top of stack
 	LDX hl80	; HL contents
 	STX (sp80)	; exchange them
 	STA hl80
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op
 
 _f9:
 ; SPHL (5, 6 @ 8085) set SP as HL
 ;+17
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA hl80	; HL contents
 	STA sp80	; copy into SP
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op
 
 _33:
 ; INX SP (5, 6 @ 8085)
 ;+16
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	INC sp80	; increment SP
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op	; flags unaffected
 
 _3b:
 ; DCX SP (5, 6 @ 8085)
 ;+16
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	DEC sp80	; decrement SP
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op	; flags unaffected
 
 
@@ -1528,7 +1564,7 @@ _3d:
 
 _03:
 ; INX B (5, 6 @ 8085)
-;+11/13/15
+;+11/11/15
 	INC c80	; increment LSB
 	BNE ixb	; no wrap
 		INC b80	; correct MSB
@@ -1537,7 +1573,7 @@ ixb:
 
 _0b:
 ; DCX B (5, 6 @ 8085)
-;+14/16/18
+;+14/14/18
 	LDX c80	; preload LSB
 	BNE dxb	; will not wrap
 		DEC b80	; correct MSB otherwise
@@ -1547,7 +1583,7 @@ dxb:
 
 _13:
 ; INX D (5, 6 @ 8085)
-;+11/13/15
+;+11/11/15
 	INC e80	; increment LSB
 	BNE ixd	; no wrap
 		INC d80	; correct MSB
@@ -1556,7 +1592,7 @@ ixd:
 
 _1b:
 ; DCX D (5, 6 @ 8085)
-;+14/16/18
+;+14/14/18
 	LDX e80	; preload LSB
 	BNE dxd	; will not wrap
 		DEC d80	; correct MSB otherwise
@@ -1566,7 +1602,7 @@ dxd:
 
 _23:
 ; INX H (5, 6 @ 8085)
-;+11/13/15
+;+11/11/15
 	INC l80	; increment LSB
 	BNE ixh	; no wrap
 		INC h80	; correct MSB
@@ -1575,7 +1611,7 @@ ixh:
 
 _2b:
 ; DCX H (5, 6 @ 8085)
-;+14/16/18
+;+14/14/18
 	LDX l80	; preload LSB
 	BNE dxh	; will not wrap
 		DEC h80	; correct MSB otherwise
@@ -2051,11 +2087,11 @@ _09:
 ;+31
 ;***** affects just C ***** no faster but shorter
 	LSR f80		; move C to native carry
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA hl80		; add word
 	ADC bc80
 	STA hl80		; store result
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	ROL f80		; restore emulated C flag
 	JMP next_op
 
@@ -2063,11 +2099,11 @@ _19:
 ; DAD D (10)
 ;+31
 	LSR f80		; move C to native carry
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA hl80		; add word
 	ADC de80
 	STA hl80		; store result
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	ROL f80		; restore emulated C flag
 	JMP next_op
 
@@ -2076,11 +2112,11 @@ _29:
 ; DAD H (10)
 ;+31
 	LSR f80		; move C to native carry
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA hl80		; add word
 	ADC hl80
 	STA hl80		; store result
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	ROL f80		; restore emulated C flag
 	JMP next_op
 
@@ -2089,11 +2125,11 @@ _39:
 ; DAD SP (10)
 ;+31
 	LSR f80		; move C to native carry
-	REP #%00100000	; ** 16 bit memory **
+	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA hl80		; add word
 	ADC sp80
 	STA hl80		; store result
-	SEP #%00100000	; ** back to 8 bit **
+	.as:	SEP #%00100000	; ** back to 8 bit **
 	ROL f80		; restore emulated C flag
 	JMP next_op
 
