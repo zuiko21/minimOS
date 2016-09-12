@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
-; v0.1a4
+; v0.1b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160912-2015
+; last modified 20160912-2339
 
 #include "usual.h"
 
@@ -1253,48 +1253,48 @@ _3f:
 	JMP next_op
 
 _27:
-; DAA (4) decimal adjust******* TO DO *****
-;+57//192
+; DAA (4) decimal adjust
+;+59/76/93
 	LDA a80		; binary value
 	TAX		; worth saving
-		BBS4 f80, lp6	; halfcarry was set, add 6
+	LDA f80		; check flags
+	AND #%00010000	; H mask
+		BNE llp6	; halfcarry was set, add 6
+	TXA		; restore!
 	AND #$0F	; low nibble
 	CMP #10		; BCD valid?
 		BCS llp6	; if not, reload value and add 6
 daah:
+	LSR f80		; flags again, get bit 0 (C) easily
+		BCS hp6	; normal carry was set, add 6 to hi nibble
 	TXA		; reload current value
-		BBS0 f80, hp6	; normal carry was set, add 6 to hi nibble
 	AND #$F0	; hi nibble
 	CMP #10		; valid BCD?
-	BCC daac	; OK, do not add anything
-		TXA		; A was lost
+	BCC daa_nc	; OK, do not add anything
 hp6:
+		TXA		; A was lost
 		CLC
 		ADC #$60	; add 6 to hi nibble, might set native C
 		STA a80		; update value!
 		TAX		; right value
-daac:
-	TXA		; in order to check flags
-	_CC_SZ		; usual check
-	BCC daa_nc	; no final carry
-		SMB0 f80	; or set C
 daa_nc:
-	JMP xpc		; check parity and exit
+	ROL f80		; set C as native, restoring flags
+	JMP i_szp		; check usual flags and exit (18)
 
 ; pseudo-routine for low nibble
 llp6:
 	TXA		; reload as was masked
-lp6:
 	CLC
 	ADC #6	; correct low nibble
 	STA a80		; update
-	TXA		; get older value*******not sure about H
+	TXA		; get older value, not sure about H
 	EOR a80		; check differences
 	AND #%00001000	; looking for bit 3
 	BEQ lp_nh	; no change, no half carry
-		SMB4 f80	; or set H
+		LDA #%00010000	; H mask
+		TSB f80	; or set H
 lp_nh:
-	LDX a80		; retrieve value
+	LDX a80		; retrieve new value
 	BRA daah	; and try next nibble
 
 
@@ -1333,12 +1333,14 @@ _20:
 	JMP next_op	; anything else?
 
 _30:
-; SIM (4) set interrupt mask********** TO DO *****
-;+16/25.5/35
+; SIM (4) set interrupt mask
+;+16/28/40
 	LDA a80		; get argument
 	BIT #%00010000	; check bit 4
 	BEQ sim_r7	; will not clear I7.5
-		RMB6 rimask	; otherwise reset it
+		LDA #%01000000	; mask bit 6
+		TRB rimask	; otherwise reset it
+		LDA a80		; reload!
 sim_r7:
 	BIT #%00001000	; check bit 3
 	BEQ sim_m	; no mask change
@@ -1638,7 +1640,7 @@ _a6:
 ; ANA M (7)
 ;+33
 ; ***** WARNING, 8085 (and Z80?) sets H, but 8080 computes old.d3 OR new.d3 for H *****
-; ***** Logic ops clear C (at least ANA/ANI) *****
+; ***** clears just C *****
 	LDA (hl80)	; variable term
 anai:
 	AND a80		; logical AND (+28)
@@ -1880,7 +1882,7 @@ _fe:
 	BRA cmpi	; generic routine
 
 
-; ** addition ** do these affect P????????
+; ** addition **
 
 ; without carry
 
