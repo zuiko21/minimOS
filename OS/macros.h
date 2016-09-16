@@ -1,6 +1,6 @@
-; minimOS 0.5a9 MACRO definitions
+; minimOS 0.5a10 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160331
+; last modified 20160916
 
 ; *** standard addresses ***
 ; redefined as labels 20150603
@@ -8,6 +8,7 @@
 
 kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
 admin_call	=	$FFD0	; ending in RTS, 816 will use a PHK wrapper and do JSL to $FFD1
+adm16_call	=	$FFD1
 
 ; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS, new 20150410
 panic		=	$FFE0	; more-or-less 816 savvy address, new 20160308
@@ -21,23 +22,27 @@ FILE_DEV	=	130
 ; *** common function calls ***
 
 ; system calling interface
-#define		_KERNEL(a)	LDX #a: JSR kernel_call
-; * C816 version should be something like	KERN16(a)		LDX #a	COP #0
+#define		_KERNEL(a)		LDX #a: JSR kernel_call
+#define		_KERN16(a)		LDX #a: COP #0
 ; * C816 routines ending in RTI and redefined EXIT_OK and ERR endings!
 ; * C02 wrapper then should be like			KERNEL(a)		COP #0	RTS
 
 ; new primitive for administrative meta-kernel in firmware 20150118
 #define		_ADMIN(a)	LDX #a: JSR admin_call
-; * C816 version should be like				ADM16(a)		LDX #a	JSL adm16_call
+#define		_ADM16(a)	LDX #a	JSL adm16_call
 ; * C816 routines ending in RTL, wrapper for 02 tasks will include PHK prior to adm16_call handler
 
 ; new macro for filesystem calling, no specific kernel entries! 20150305, new offset 20150603
 #define		_FILESYS(a)	STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
 
 ; *** function endings ***
-; * due to implicit PLP on COP, these should be heavily revised for C816
+; * due to implicit PHP on COP, these should be heavily revised for C816
 #define		_EXIT_OK	CLC: RTS
 #define		_ERR(a)		LDY #a: SEC: RTS
+
+; makeshift 816 versions
+#define		_OK_16		PLP: CLC: PHP: RTI
+#define		_ERR16(a)	LDY #a: PLP: SEC: PHP: RTI
 
 ; new exit for asynchronous driver routines when not satisfied 20150320, renamed 20150929
 #define		_NEXT_ISR	SEC: RTS
