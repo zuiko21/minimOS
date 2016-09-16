@@ -171,9 +171,6 @@ rst75:
 	BRA intr80	; respond to interrupt
 
 
-; ** common routines **
-
-
 ; *** *** valid opcode definitions *** ***
 
 ; ** move **
@@ -1013,7 +1010,7 @@ notjmp2:
 
 _e8:
 ; RPE (5/11, 6/12 @ 8085) on parity even
-;+38 if taken, +23/23/27 if not
+;+40 if taken, +23/23/27 if not
 	LDA f80		; get flags
 	AND #%00000100	; check bit 2
 		BNE ret	; execute return
@@ -1021,7 +1018,7 @@ _e8:
 
 _e0:
 ; RPO (5/11, 6/12 @ 8085) on parity odd
-;+38 if taken, +23/23/27 if not
+;+40 if taken, +23/23/27 if not
 	LDA f80		; get flags
 	AND #%00000100	; check bit 2
 		BEQ ret	; execute return
