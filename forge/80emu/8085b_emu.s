@@ -1,8 +1,8 @@
 ; Intel 8080/8085 emulator for minimOS!
 ; *** FAST VERSION WITHOUT PARITY OR BCD ARITHMETIC ***
-; v0.1b1
+; v0.1b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160829-2312
+; last modified 20160916-1106
 
 #include "usual.h"
 
@@ -2198,9 +2198,9 @@ sbb_c:
 	SBC tmptr		; subtraction
 	STA a80			; store result
 	_CC_SZ			; check sign & zero bits
-	BCS sbb_c		; no borrow was generated
+	BCS sbb_nb		; no borrow was generated
 		SMB0 f80		; or set C
-sbb_c:
+sbb_nb:
 	JMP next_op			; no parity nor H!
 
 

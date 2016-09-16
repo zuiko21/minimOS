@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
-; v0.1b1
+; v0.1b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160912-2339
+; last modified 20160916-1113
 
 #include "usual.h"
 
@@ -18,7 +18,8 @@ tmptr	= uz		; temporary storage (up to 16 bit, little endian)
 sp80		= uz+2	; stack pointer
 pc80		= uz+4	; program counter
 
-af80	= f80		= uz+6	; flags SZ?H?P-C
+f80		= uz+6	; flags SZ?H?P-C
+	af80	= f80
 
 ; S is sign
 ; Z is zero
@@ -30,13 +31,16 @@ af80	= f80		= uz+6	; flags SZ?H?P-C
 ; ** - is add/subtract in Z80 (for BCD, not testable) 1 is subtract
 ; C is carry, reset by AND, OR, XOR, borrow unlike 6502!
 
-			a80		= uz+7	; general purpose registers
-bc80	= c80		= uz+8
-			b80		= uz+9
-de80	= e80		= uz+10
-			d80		= uz+11
-hl80	= l80		= uz+12
-			h80		= uz+13
+a80		= uz+7	; general purpose registers
+c80		= uz+8
+	bc80	= c80
+b80		= uz+9
+e80		= uz+10
+	de80	= e80
+d80		= uz+11
+l80		= uz+12
+	hl80	= l80
+h80		= uz+13
 
 rimask	= uz+14	; interrupt masks as set by SIM and read by RIM
 
@@ -61,7 +65,7 @@ cdev		= uz+15		; I/O device *** minimOS specific ***
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
-	.al:	REP #%00100000	; 16 bit memory
+	.al: REP #%00100000	; 16 bit memory
 	STZ zpar		; no screen size required, 16 bit op?
 	LDA #title		; address window title
 	STA zaddr3		; set parameter
@@ -76,7 +80,7 @@ open_emu:
 ; *** start the emulation! ***
 reset80:
 	STZ pc80	; indirect indexed! still on 16-bit
-	.as:	SEP #%00100000	; back to 8 bit
+	.as: SEP #%00100000	; back to 8 bit
 	LDY #0		; RST 0
 	STY rimask	; restart with interrupts disabled, make sure 8 bit
 
@@ -260,7 +264,7 @@ _4d:
 	LDA l80	; source
 	STA c80	; destination
 	JMP next_op	; flags unaffected
-
+exchange them
 _4e:
 ; MOV C,M (7) from memory
 ; +11
@@ -464,7 +468,12 @@ _6c:
 	LDA h80	; source
 	STA l80	; destination
 	JMP next_op	; flags unaffected
-
+OPEN_W) ; ask for a character I/O device
+../forge/80emu/8085emu16.s:line 69: 100c:Syntax error
+  _ERR16(NO_RSRC)  ; abort otherwise!
+../forge/80emu/8085emu16.s:line 71: 100e:Syntax error
+ SEP #%00100000 ; back to 8 bit
+../forge/80emu/8085emu16.s:line
 _6e:
 ; MOV L,M (7) from memory
 ; +11
@@ -824,6 +833,13 @@ _fa:
 		BMI jump	; execute jump
 	BRA notjmp	; otherwise skip & continue
 
+_c2:
+; JNZ (10, 7/10 @ 8085) if not zero
+;+29/29/33 if taken, +21/21/25 if not
+	BIT f80		; get flags bit 6
+		BVC jump	; execute jump
+	BRA notjmp	; skip and continue
+
 _ca:
 ; JZ (10, 7/10 @ 8085) if zero
 ;+29/29/33 if taken, +18/18/22 if not
@@ -833,13 +849,6 @@ notjmp:
 	_PC_ADV		; skip unused address
 	_PC_ADV
 	JMP next_op	; continue otherwise
-
-_c2:
-; JNZ (10, 7/10 @ 8085) if not zero
-;+29/29/33 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 6
-		BVC jump	; execute jump
-	BRA notjmp	; skip and continue
 
 _ea:
 ; JPE (10, 7/10 @ 8085) on parity even
@@ -1165,12 +1174,13 @@ _f1:
 
 _e3:
 ; XTHL (18, 16 @ 8085) exchange HL with top of stack
-;+29
+;+31
 	.al:	REP #%00100000	; ** 16 bit memory **
 	LDA (sp80)	; top of stack
 	LDX hl80	; HL contents
-	STX (sp80)	; exchange them
-	STA hl80
+	STA hl80	; exchange them
+	TXA
+	STA (sp80)
 	.as:	SEP #%00100000	; ** back to 8 bit **
 	JMP next_op
 

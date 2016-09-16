@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** FASTER VERSION WITH LUT *** Rockwell only!
-; v0.1a1
+; v0.1a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160914-2229
+; last modified 20160916-1101
 
 #include "usual.h"
 

@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** REASONABLY COMPACT VERSION ***
-; v0.1b2
+; v0.1b3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160829-2355
+; last modified 20160916-1101
 
 #include "usual.h"
 
