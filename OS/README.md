@@ -1,10 +1,11 @@
 #minimOS·65 ABI
-AKA *minimOS*, this is the **original** branch. While the forthcoming **minimOS·16** (for the 65C816) will remain inter-operative with this one, support for *all* variants of the 6502 is guaranteed here.
+AKA *minimOS*, this is the **original** branch. While the forthcoming **minimOS·16** (for the 65C816) will remain inter-operative with this one, support for *all* variants of the 6502 is guaranteed here. **65C816 code is integrated here** while docs will explain appliable differences.
 
 Depending on the targeted processor, code *chunks* (firmware, kernel, drivers, apps...) may be classified as:
-* **NMOS:** only the original, **legal** opcodes are supported. *Some macros are provided in order to emulate the missing CMOS instructions*.
-* **CMOS (*generic*):** usual, preferred deployment, includes basic CMOS upgrades but *not* the Rockwell/WDC extensions (RMB/SMB/BBR/BBS).
-* **CMOS (Rockwell):** allows the use of RMB/SMB/BBR/BBS and maybe WAI/STP. *This is NOT compatible with 65C816 processors, due to their lack of Rockwell extensions (replaced by the new addressing modes)*.
+* `n`, **NMOS:** only the original, **legal** opcodes are supported. *Some macros are provided in order to emulate the missing CMOS instructions*.
+* `b`, **CMOS (*generic*):** usual, preferred deployment, includes basic CMOS upgrades but *not* the Rockwell/WDC extensions (RMB/SMB/BBR/BBS).
+* `r`, **CMOS (Rockwell):** allows the use of RMB/SMB/BBR/BBS and maybe WAI/STP. *This is NOT compatible with 65C816 processors, due to their lack of Rockwell extensions (replaced by the new addressing modes)*.
+* `v`, **65C816:** besides the proper CPU, requires the use of a suitable '816 firmware and specific kernel, capable of executing all of the above **except** the Rockwell variant.
 
 Obviously, no 65(C)02 is able to execute '816 code, although the latter is capable of running NMOS and *generic* 65C02 code.
 
@@ -14,9 +15,11 @@ The *firmware* has a standardised address (`k_call = $FFC0`) for kernel entry. T
 LDX #function_number
 JSR k_call
 ```
-For convenience, a *macro* for this is defined as `_KERNEL(function_number)`. Functions will return via `RTS` with the **carry bit** *clear* if all was OK. In case of **error**, carry bit is *set* and **Y** register may contain an *error code*. 
+For convenience, a *macro* for this is defined as `_KERNEL(function_number)`. Functions will return via `RTS` with the **carry bit** *clear* if all was OK. In case of **error**, carry bit is *set* and **Y** register may contain an *error code*. There are the `_EXIT_OK` and `_ERR(error_code)` macros for convenience. 
 
 Since the firmware code at `k_call` is designed around a `JMP (fw_table, X)` instruction (or equivalent NMOS sequence, supplied as a *macro*), `function_number` is expected to be an **even** number, thus up to **128 system calls** are supported.
+
+**65C816 variant** has its own set of macros: `_KERN16(function_number)` (actually implemented as a COP opcode), `_OK16` and `_ERR16(error_code)` but otherwise they offer very much the same interface. Suitable '816 firmware would then implement a compatible 8-bit call around a `COP: RTS` sequence ('816 API functions would obviously end on `RTI` instead of `RTS`).
 
 **Parameter passing and return values** are done via the **Y** register and/or some *zeropage* locations. There are **12 bytes** for parameters (three 32-bit words) known as:
 ```
@@ -37,12 +40,12 @@ local3 = locpt3 = $EC
 where the `localX` labels are used for *data*, and `locptX` for *pointers*. The generic label `locals` gives access to the beginning of this area. Hopefully, **all these addresses $E4-$FB would remain unchanged** in future versions, although at such an early stage (as of 0.5 version) *this cannot be guaranteed*. In case of change, built binaries won't be compatible any longer, and reassembly/recompiling would be necessary, source code unchanged.
 
 ###User zeropage space
-Full featured systems will have (currently) **241 bytes** *between $03 and $E3* freely available, the first one pointed by the label `uz`. Due to the **software-implemented multitasking** on some 65(C)02 systems, user programmes are **encouraged** (but not *required*) to keep zeropage use from the bottom up, and **setting the system variable `z_used` with the currently used zeropage space**. It is OK (and recommended) to update this value dinamically, since *software-driven* context switching will **only** save `z_used` bytes from `uz` up. On the other hand, systems with *hardware-assisted multitasking* (or any 65C816 implementation) make no use whatsoever of this value, but should not be used because of compatibility reasons. Leaving `z_used`'s *default* value (currently **$E1** for full featured systems) is **safe** anyway  albeit performance might be impaired whenever software-multitasking is in use.
+Full featured systems will have (currently) **241 bytes** *between $03 and $E3* freely available, the first one pointed by the label `uz`. Due to the **software-implemented multitasking** on some 65(C)02 systems, user programmes are **encouraged** (but not *required*) to keep zeropage use from the bottom up, and **setting the system variable `z_used` with the currently used zeropage space**. It is OK (and recommended) to update this value dinamically, since *software-driven* context switching will **only** save `z_used` bytes from `uz` up. On the other hand, systems with *hardware-assisted multitasking* (or any 65C816 implementation) make no use whatsoever of this value, but should not be altered because of compatibility reasons. Leaving `z_used`'s *default* value (currently **$E1** for full featured systems) is **safe** anyway  albeit performance might be impaired whenever software-multitasking is in use.
 
 ###Reserved zeropage space
 Besides user space and locals/parameters area, there are some bytes usually reserved:
 
-* `$00-$01: reserved` for compatibility with 6510 systems. *These will be free ONLY if the CPU is NOT a 6510 AND no software-multitasking is in use*.
+* `$00-$01: reserved` for compatibility with 6510 systems. *Will include default per-process I/O device numbers*, but on 6510 systems will be located just before `locals` (usually `$E2`).
 * `$03: z_used` is expected to indicate how many zeropage bytes (from `uz`) are actually used, for a faster *software-based* multitasking. *Otherwise (hardware-assisted or NO multitasking) is free*.
 * `$FC-$FD: sysptr` might be used by **interrupt tasks** anytime, which aren't expected to be reentrant anyway.
 * `$FE: systmp` might be equally used by **interrupts**. Tinkering with these will do no harm, however values may change unexpectedly *if interrupts are enabled*.
