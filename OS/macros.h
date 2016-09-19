@@ -1,14 +1,15 @@
-; minimOS 0.5a10 MACRO definitions
+; minimOS 0.5a11 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160916
+; last modified 20160919
 
 ; *** standard addresses ***
 ; redefined as labels 20150603
 ; revamped 20160308
+; proper 816 support 20160919
 
 kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
-admin_call	=	$FFD0	; ending in RTS, 816 will use a PHK wrapper and do JSL to $FFD1
-adm16_call	=	$FFD1
+admin_call	=	$FFD8	; ending in RTS, no way to use a PHK wrapper eeeeeeek! JSL adm16_call & RTS instead
+adm16_call	=	$FFD0 ; ending in RTL, might push P for mode preservation
 
 ; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS, new 20150410
 panic		=	$FFE0	; more-or-less 816 savvy address, new 20160308
@@ -28,12 +29,12 @@ FILE_DEV	=	130
 ; * C02 wrapper then should be like			KERNEL(a)		COP #0	RTS
 
 ; new primitive for administrative meta-kernel in firmware 20150118
-#define		_ADMIN(a)	LDX #a: JSR admin_call
-#define		_ADM16(a)	LDX #a	JSL adm16_call
-; * C816 routines ending in RTL, wrapper for 02 tasks will include PHK prior to adm16_call handler
+#define		_ADMIN(a)		LDX #a: JSR admin_call
+#define		_ADM16(a)		LDX #a	JSL adm16_call
+; * C816 routines ending in RTL, see wrapper for 02 tasks above!
 
 ; new macro for filesystem calling, no specific kernel entries! 20150305, new offset 20150603
-#define		_FILESYS(a)	STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
+#define		_FILESYS(a)		STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
 
 ; *** function endings ***
 ; * due to implicit PHP on COP, these should be heavily revised for C816
@@ -58,7 +59,7 @@ FILE_DEV	=	130
 ; otherwise call SU_CLI function, not really needed on 65xx 
 
 #define		_PANIC		JMP panic
-; * C816 will use JML for panic, likely to be deprecated
+#define		_PANIC16	JMP panic
 
 ; standardised NMI exit 20150409 *** DEPRECATED 20160308
 
@@ -107,4 +108,36 @@ FILE_DEV	=	130
 #define		_TSB(a)		TSB a
 #endif
 
-; *** might include here the conversion of RMB/SMB/BBR/BBS for xa65 ***
+; *** include here the syntax conversion of RMB/SMB/BBR/BBS for xa65 ***
+#define		RMB0	RMB #0,
+#define		RMB1	RMB #1,
+#define		RMB2	RMB #2,
+#define 	RMB3	RMB #3,
+#define		RMB4	RMB #4,
+#define		RMB5	RMB #5,
+#define		RMB6	RMB #6,
+#define		RMB7	RMB #7,
+#define		SMB0	SMB #0,
+#define		SMB1	SMB #1,
+#define		SMB2	SMB #2,
+#define		SMB3	SMB #3,
+#define		SMB4	SMB #4,
+#define		SMB5	SMB #5,
+#define		SMB6	SMB #6,
+#define		SMB7	SMB #7,
+#define		BBR0	BBR #0,
+#define		BBR1	BBR #1,
+#define		BBR2	BBR #2,
+#define		BBR3	BBR #3,
+#define		BBR4	BBR #4,
+#define		BBR5	BBR #5,
+#define		BBR6	BBR #6,
+#define		BBR7	BBR #7,
+#define		BBS0	BBS #0,
+#define		BBS1	BBS #1,
+#define		BBS2	BBS #2,
+#define		BBS3	BBS #3,
+#define		BBS4	BBS #4,
+#define		BBS5	BBS #5,
+#define		BBS6	BBS #6,
+#define		BBS7	BBS #7,
