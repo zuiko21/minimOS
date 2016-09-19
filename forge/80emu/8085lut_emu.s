@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** FASTER VERSION WITH LUT *** Rockwell only!
 ; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160919-1012
+; last modified 20160919-1235
 
 #include "usual.h"
 
@@ -1324,17 +1324,11 @@ _2f:
 	LDA a80		; get accumulator
 	EOR #$FF	; complement
 	STA a80		; update
-;	LDA f80		; status only affected in Z80!
-;	ORA #%00010010	; set H & N, rest unaffected
-;	STA f80		; update status
 	JMP next_op
 
 _37:
 ; STC (4) set carry
 ;+8
-;	LDA f80		; Z80 status
-;	AND #%11101100	; reset H & N, and C, Z80 only?
-;	STA f80		; update status
 	SMB0 f80	; easiest way in Intel CPUs
 	JMP next_op
 
@@ -1342,14 +1336,13 @@ _3f:
 ; CMC (4) complement carry
 ;+11
 	LDA f80		; status
-;	AND #%11101101	; reset H & N, only for Z80?
 	EOR #%00000001	; invert C
 	STA f80		; update status
 	JMP next_op
 
 _27:
 ; DAA (4) decimal adjust
-;+
+;+54/~70.5/87#
 	LDA a80		; binary value
 	TAX		; worth saving
 		BBS4 f80, lp6	; halfcarry was set, add 6
@@ -1372,7 +1365,7 @@ daac:
 	BCC daa_nc	; no final carry
 		SMB0 f80	; or set C
 daa_nc:
-	JMP i_szp		; check flags and exit
+	JMP i_szp		; check flags and exit (18)
 
 ; pseudo-routine for low nibble
 llp6:
@@ -1449,7 +1442,7 @@ sim_m:
 
 _07:
 ; RLC (4) rotate A left, Z80 needs older version of rots
-; +17
+; +23
 	LSR f80		; lose C
 	LDA a80		; check bit 7
 	ASL		; if one, set native carry
@@ -1459,7 +1452,7 @@ _07:
 
 _0f:
 ; RRC (4) rotate A right
-;+17
+;+23
 	LSR f80		; lose C
 	LDA a80		; temporary check
 	LSR		; copy bit 0 in native C
@@ -1469,7 +1462,7 @@ _0f:
 
 _17:
 ; RAL (4) rotate A left thru carry
-;+12
+;+18
 	LSR f80		; copy C on native
 	ROL a80		; rotate register
 	ROL f80		; return status with updated carry
@@ -1477,12 +1470,12 @@ _17:
 
 _1f:
 ; RAR (4) rotate A right thru carry
-;+12
+;+18
 	LSR f80		; copy C on native
 	ROR a80		; rotate register
 	ROL f80		; return status with updated carry
 	JMP next_op
-	
+
 
 ; ** increment & decrement **
 
@@ -1577,49 +1570,49 @@ dflags:
 
 _05:
 ; DCR B (5, 4 @ 8085)
-;+
+;+38/41.5/45
 	DEC b80
 	LDX b80		; appropriate register
 	BRA dflags	; common ending
 
 _0d:
 ; DCR C (5, 4 @ 8085)
-;+47/123/144
+;+38/41.5/45
 	DEC c80
 	LDX c80		; appropriate register
 	BRA dflags	; common ending
 
 _15:
 ; DCR D (5, 4 @ 8085)
-;+47/123/144
+;+38/41.5/45
 	DEC d80
 	LDX d80		; appropriate register
 	BRA dflags	; common ending
 
 _1d:
 ; DCR E (5, 4 @ 8085)
-;+47/123/144
+;+38/41.5/45
 	DEC e80
 	LDX e80		; appropriate register
 	BRA dflags	; common ending
 
 _25:
 ; DCR H (5, 4 @ 8085)
-;+47/123/144
+;+38/41.5/45
 	DEC h80
 	LDX h80		; appropriate register
 	BRA dflags	; common ending
 
 _2d:
 ; DCR L (5, 4 @ 8085)
-;+47/123/144
+;+38/41.5/45
 	DEC l80
 	LDX l80		; appropriate register
 	BRA dflags	; common ending
 
 _3d:
 ; DCR A (5, 4 @ 8085)
-;+47/123/144
+;+38/41.5/45
 	DEC a80
 	LDX a80		; appropriate register
 	BRA dflags	; common ending
@@ -1690,43 +1683,43 @@ dxh:
 
 _a0:
 ; ANA B (4)
-;+
+;+34
 	LDA b80		; variable term
 	BRA anam	; generic routine
 
 _a1:
 ; ANA C (4)
-;+
+;+34
 	LDA c80		; variable term
 	BRA anam	; generic routine
 
 _a2:
 ; ANA D (4)
-;+
+;+34
 	LDA d80		; variable term
 	BRA anam	; generic routine
 
 _a3:
 ; ANA E (4)
-;+
+;+34
 	LDA e80		; variable term
 	BRA anam	; generic routine
 
 _a4:
 ; ANA H (4)
-;+
+;+34
 	LDA h80		; variable term
 	BRA anam	; generic routine
 
 _a5:
 ; ANA L (4)
-;+
+;+34
 	LDA l80		; variable term
 	BRA anam	; generic routine
 
 _a6:
 ; ANA M (7)
-;+
+;+50/50.5/51
 ; ***** WARNING, 8085 (and Z80?) sets H, but 8080 computes old.d3 OR new.d3 for H *****
 ; ***** Logic ops clear C (at least ANA/ANI) *****
 	_MEMORY		; prepare pointer
@@ -1742,7 +1735,7 @@ anam:
 
 _a7:
 ; ANA A (4) somewhat special as will only update flags! not worth
-; +
+; +34
 	LDA a80		; original intact data
 	BRA anam
 
@@ -1750,7 +1743,7 @@ _a7:
 
 _e6:
 ; ANI (7)
-;+
+;+41/41/66
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA anam	; generic routine
@@ -1759,43 +1752,43 @@ _e6:
 
 _a8:
 ; XRA B (4)
-;+
+;+32
 	LDA b80		; variable term
 	BRA xram	; generic routine
 
 _a9:
 ; XRA C (4)
-;+
+;+32
 	LDA c80		; variable term
 	BRA xram	; generic routine
 
 _aa:
 ; XRA D (4)
-;+
+;+32
 	LDA d80		; variable term
 	BRA xram	; generic routine
 
 _ab:
 ; XRA E (4)
-;+
+;+32
 	LDA e80		; variable term
 	BRA xram	; generic routine
 
 _ac:
 ; XRA H (4)
-;+
+;+32
 	LDA h80		; variable term
 	BRA xram	; generic routine
 
 _ad:
 ; XRA L (4)
-;+
+;+32
 	LDA l80		; variable term
 	BRA xram	; generic routine
 
 _ae:
 ; XRA M (7) with parity instead of overflow!
-;+
+;+48/48.5/49
 ; ***** clears C & H *****
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
@@ -1822,7 +1815,7 @@ _af:
 
 _b6:
 ; ORA M (7)
-;+
+;+51/51.5/52
 ;***** resets C & H ***
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
@@ -1834,50 +1827,50 @@ oram:
 
 _ee:
 ; XRI (7)
-;+
+;+39/39/64
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA xram	; generic routine (54/112.5/130)
 
 _b0:
 ; ORA B (4)
-;+
+;+35
 	LDA b80		; variable term
 	BRA oram	; generic routine
 
 _b1:
 ; ORA C (4)
-;+
+;+35
 	LDA c80		; variable term
 	BRA oram	; generic routine
 
 _b2:
 ; ORA D (4)
-;+
+;+35
 	LDA d80		; variable term
 	BRA oram	; generic routine
 
 _b3:
 ; ORA E (4)
-;+
+;+35
 	LDA e80		; variable term
 	BRA oram	; generic routine
 
 _b4:
 ; ORA H (4)
-;+
+;+35
 	LDA h80		; variable term
 	BRA oram	; generic routine
 
 _b5:
 ; ORA L (4)
-;+
+;+35
 	LDA l80		; variable term
 	BRA oram	; generic routine
 
 _b7:
 ; ORA A (4) not really the same as AND A (this clears H)
-;+
+;+35
 	LDA a80		; variable term
 	BRA oram	; generic routine
 
@@ -1885,7 +1878,7 @@ _b7:
 
 _f6:
 ; ORI (7)
-;+60/122.5/165
+;+42/42/67
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA oram	; generic routine
@@ -1894,43 +1887,43 @@ _f6:
 
 _b8:
 ; CMP B (4)
-;+
+;+61/67/73
 	LDA b80		; variable term
 	BRA cmpm	; generic routine
 
 _b9:
 ; CMP C (4)
-;+
+;+61/67/73
 	LDA c80		; variable term
 	BRA cmpm	; generic routine
 
 _ba:
 ; CMP D (4)
-;+
+;+61/67/73
 	LDA d80		; variable term
 	BRA cmpm	; generic routine
 
 _bb:
 ; CMP E (4)
-;+
+;+61/67/73
 	LDA e80		; variable term
 	BRA cmpm	; generic routine
 
 _bc:
 ; CMP H (4)
-;+
+;+61/67/73
 	LDA h80		; variable term
 	BRA cmpm	; generic routine
 
 _bd:
 ; CMP L (4)
-;+
+;+61/67/73
 	LDA l80		; variable term
 	BRA cmpm	; generic routine
 
 _be:
 ; CMP M (7)
-;+
+;+77/83.5/90
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 cmpm:
@@ -1967,7 +1960,7 @@ _bf:
 
 _fe:
 ; CPI (7)
-;+73/149.5/190
+;+68/74/105
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA cmpm	; generic routine
@@ -1979,7 +1972,7 @@ _fe:
 
 _86:
 ; ADD M (7)
-;+88/165/187###
+;+82/87.5/93
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 addm:
@@ -2006,43 +1999,43 @@ add_h:
 
 _80:
 ; ADD B (4)
-;+
+;+66/71/76
 	LDA b80		; appropriate register
 	BRA addm	; common routine
 
 _81:
 ; ADD C (4)
-;+
+;+66/71/76
 	LDA c80		; appropriate register
 	BRA addm	; common routine
 
 _82:
 ; ADD D (4)
-;+
+;+66/71/76
 	LDA d80		; appropriate register
 	BRA addm	; common routine
 
 _83:
 ; ADD E (4)
-;+
+;+66/71/76
 	LDA e80		; appropriate register
 	BRA addm	; common routine
 
 _84:
 ; ADD H (4)
-;+
+;+66/71/76
 	LDA h80		; appropriate register
 	BRA addm	; common routine
 
 _85:
 ; ADD L (4)
-;+
+;+66/71/76
 	LDA l80		; appropriate register
 	BRA addm	; common routine
 
 _87:
 ; ADD A (4), worth optimising? rot left, if C then toggle H, should recheck SZ & H
-;+
+;+66/71/76
 	LDA a80		; appropriate register
 	BRA addm	; common routine
 
@@ -2050,7 +2043,7 @@ _87:
 
 _c6:
 ; ADI (7)
-;+
+;+73/78/108
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA addm	; generic routine
@@ -2059,7 +2052,7 @@ _c6:
 
 _8e:
 ; ADC M (7)
-;+
+;+88/90.5/93
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; variable term
 adcm:
@@ -2078,43 +2071,43 @@ adcm:
 
 _88:
 ; ADC B (4)
-;+
+;+72/74/76
 	LDA b80		; appropriate register
 	BRA adcm
 
 _89:
 ; ADC C (4)
-;+
+;+72/74/76
 	LDA c80		; appropriate register
 	BRA adcm
 
 _8a:
 ; ADC D (4)
-;+
+;+72/74/76
 	LDA d80		; appropriate register
 	BRA adcm
 
 _8b:
 ; ADC E (4)
-;+
+;+72/74/76
 	LDA e80		; appropriate register
 	BRA adcm
 
 _8c:
 ; ADC H (4)
-;+
+;+72/74/76
 	LDA h80		; appropriate register
 	BRA adcm
 
 _8d:
 ; ADC L (4)
-;+
+;+72/74/76
 	LDA l80		; appropriate register
 	BRA adcm
 
 _8f:
 ; ADC A (4) might optimise as emulated C is OK for rots
-;+
+;+72/74/76
 	LDA a80		; appropriate register
 	BRA adcm
 
@@ -2122,7 +2115,7 @@ _8f:
 
 _ce:
 ; ACI (7)
-;+
+;+79/81/108
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA adcm	; generic routine
@@ -2184,43 +2177,43 @@ _39:
 
 _90:
 ; SUB B (4)
-;+
+;+69/74/79
 	LDA b80		; get register
 	BRA subm	; common code
 
 _91:
 ; SUB C (4)
-;+
+;+69/74/79
 	LDA c80		; get register
 	BRA subm	; common code
 
 _92:
 ; SUB D (4)
-;+
+;+69/74/79
 	LDA d80		; get register
 	BRA subm	; common code
 
 _93:
 ; SUB E (4)
-;+
+;+69/74/79
 	LDA e80		; get register
 	BRA subm	; common code
 
 _94:
 ; SUB H (4)
-;+
+;+69/74/79
 	LDA h80		; get register
 	BRA subm	; common code
 
 _95:
 ; SUB L (4)
-;+
+;+69/74/79
 	LDA l80		; get register
 	BRA subm	; common code
 
 _96:
 ; SUB M (7)
-;+
+;+85/90.5/96
 	_MEMORY			; prepare pointer
 	LDA (tmptr)		; variable term
 subm:
@@ -2252,7 +2245,7 @@ _97:
 
 _d6:
 ; SUI (7)
-;+
+;+76/81/111
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA subm	; generic routine
@@ -2261,43 +2254,43 @@ _d6:
 
 _98:
 ; SBB B (4)
-;+
+;+85/90.5/96
 	LDA b80		; get register
 	BRA sbbm	; common code
 
 _99:
 ; SBB C (4)
-;+
+;+85/90.5/96
 	LDA c80		; get register
 	BRA sbbm	; common code
 
 _9a:
 ; SBB D (4)
-;+
+;+85/90.5/96
 	LDA d80		; get register
 	BRA sbbm	; common code
 
 _9b:
 ; SBB E (4)
-;+
+;+85/90.5/96
 	LDA e80		; get register
 	BRA sbbm	; common code
 
 _9c:
 ; SBB H (4)
-;+
+;+85/90.5/96
 	LDA h80		; get register
 	BRA sbbm	; common code
 
 _9d:
 ; SBB L (4)
-;+
+;+85/90.5/96
 	LDA l80		; get register
 	BRA sbbm	; common code
 
 _9e:
 ; SBB M (7)
-;+
+;+101/107/113
 	_MEMORY			; prepare pointer
 	LDA (tmptr)		; variable term
 sbbm:
@@ -2318,7 +2311,7 @@ sbb_c:
 
 _9f:
 ; SBB A (4) result depends on C, not worth optimising
-;+
+;+85/90.5/96
 	LDA a80		; get register
 	BRA sbbm	; common code
 
@@ -2326,7 +2319,7 @@ _9f:
 
 _de:
 ; SBI (7)
-;+
+;+92/97.5/128
 	_PC_ADV		; go for the operand
 	LDA (pc80), Y	; immediate addressing
 	BRA sbbm	; generic routine
