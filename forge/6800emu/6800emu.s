@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
 ; v0.1b1 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160225
+; last modified 20160919-1419
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -14,41 +14,8 @@
 .text
 
 ; ** some useful macros **
-; these need to be used in xa65, might go into macros.h
-#define	RMB0	RMB #0,
-#define RMB1	RMB #1,
-#define RMB2	RMB #2,
-#define RMB3	RMB #3,
-#define RMB4	RMB #4,
-#define RMB5	RMB #5,
-#define RMB6	RMB #6,
-#define RMB7	RMB #7,
-#define SMB0	SMB #0,
-#define SMB1	SMB #1,
-#define SMB2	SMB #2,
-#define SMB3	SMB #3,
-#define SMB4	SMB #4,
-#define SMB5	SMB #5,
-#define SMB6	SMB #6,
-#define SMB7	SMB #7,
-#define BBR0	BBR #0,
-#define BBR1	BBR #1,
-#define BBR2	BBR #2,
-#define BBR3	BBR #3,
-#define BBR4	BBR #4,
-#define BBR5	BBR #5,
-#define BBR6	BBR #6,
-#define BBR7	BBR #7,
-#define BBS0	BBS #0,
-#define BBS1	BBS #1,
-#define BBS2	BBS #2,
-#define BBS3	BBS #3,
-#define BBS4	BBS #4,
-#define BBS5	BBS #5,
-#define BBS6	BBS #6,
-#define BBS7	BBS #7,
-
 ; these make listings more succint
+
 ; inject address MSB into 16+16K space (5/5.5/6)
 #define	_AH_BOUND	AND #hi_mask: BMI *+4: ORA #lo_mask
 ; increase Y checking injected boundary crossing (5/5/18)

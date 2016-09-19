@@ -6,7 +6,6 @@
 #include "usual.h"
 
 ; ** some useful macros **
-
 ; these make listings more succint
 
 ; increment Y checking injected boundary crossing (5/5/9) ** must be in 8 bit mode!
