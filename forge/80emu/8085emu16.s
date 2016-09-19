@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
-; v0.1b2
+; v0.1b3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160916-1232
+; last modified 20160919-1003
 
 #include "usual.h"
 
@@ -476,7 +476,7 @@ _6e:
 _6f:
 ; MOV L,A (5, 4 @ 8085)
 ; +9
-	LDX a80	; source
+	LDA a80	; source
 	STA l80	; destination
 	JMP next_op	; flags unaffected
 

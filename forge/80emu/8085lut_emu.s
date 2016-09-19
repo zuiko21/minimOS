@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** FASTER VERSION WITH LUT *** Rockwell only!
-; v0.1a2
+; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160916-1303
+; last modified 20160919-0958
 
 #include "usual.h"
 
@@ -326,240 +326,265 @@ _47:
 	STA b80	; destination
 	JMP next_op	; flags unaffected
 
-; to C *****continue here
+; to C
 
 _48:
 ; MOV C,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4a:
 ; MOV C,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4b:
 ; MOV C,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4c:
 ; MOV C,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4d:
 ; MOV C,L (5, 4 @ 8085)
-; 12
+; 9
 	LDA l80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 _4e:
 ; MOV C,M (7) from memory
 ; +28/28.5/29
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
-movc:
 	STA c80	; destination
 	JMP next_op	; flags unaffected
 
 _4f:
 ; MOV C,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA movc	; common end
+	STA c80	; destination
+	JMP next_op	; flags unaffected
 
 ; to D
 
 _50:
 ; MOV D,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _51:
 ; MOV D,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _53:
 ; MOV D,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _54:
 ; MOV D,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _55:
 ; MOV D,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 _56:
 ; MOV D,M (7) from memory
 ; +28/28.5/29
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
-movd:
 	STA d80	; destination
 	JMP next_op	; flags unaffected
 
 _57:
 ; MOV D,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA movd	; common end
+	STA d80	; destination
+	JMP next_op	; flags unaffected
 
 ; to E
 
 _58:
 ; MOV E,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _59:
 ; MOV E,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _5a:
 ; MOV E,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _5c:
 ; MOV E,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _5d:
 ; MOV E,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 _5e:
 ; MOV E,M (7) from memory
 ; +28/28.5/29
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
-move:
 	STA e80	; destination
 	JMP next_op	; flags unaffected
 
 _5f:
 ; MOV E,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA move	; common end
+	STA e80	; destination
+	JMP next_op	; flags unaffected
 
 ; to H
 
 _60:
 ; MOV H,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _61:
 ; MOV H,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _62:
 ; MOV H,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _63:
 ; MOV H,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _65:
 ; MOV H,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 _66:
 ; MOV H,M (7) from memory
 ; +28/28.5/29
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
-movh:
 	STA h80	; destination
 	JMP next_op	; flags unaffected
 
 _67:
 ; MOV H,A (5, 4 @ 8085)
-; +12
+; +9
 	LDA a80	; source
-	BRA movh	; common end
+	STA h80	; destination
+	JMP next_op	; flags unaffected
 
 ; to L
 
 _68:
 ; MOV L,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _69:
 ; MOV L,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _6a:
 ; MOV L,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _6b:
 ; MOV L,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _6c:
 ; MOV L,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA movl	; common end
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 _6e:
 ; MOV L,M (7) from memory
 ; +28/28.5/29
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
-movl:
 	STA l80	; destination
 	JMP next_op	; flags unaffected
 
 _6f:
 ; MOV L,A (5, 4 @ 8085)
-; +12
-	LDX a80	; source
-	BRA movl	; common end
+; +9
+	LDA a80	; source
+	STA l80	; destination
+	JMP next_op	; flags unaffected
 
 ; to memory
 
@@ -617,46 +642,51 @@ movm:
 
 _78:
 ; MOV A,B (5, 4 @ 8085)
-; +12
+; +9
 	LDA b80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _79:
 ; MOV A,C (5, 4 @ 8085)
-; +12
+; +9
 	LDA c80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7a:
 ; MOV A,D (5, 4 @ 8085)
-; +12
+; +9
 	LDA d80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7b:
 ; MOV A,E (5, 4 @ 8085)
-; +12
+; +9
 	LDA e80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7c:
 ; MOV A,H (5, 4 @ 8085)
-; +12
+; +9
 	LDA h80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7d:
 ; MOV A,L (5, 4 @ 8085)
-; +12
+; +9
 	LDA l80	; source
-	BRA mova	; common end
+	STA a80	; destination
+	JMP next_op	; flags unaffected
 
 _7e:
 ; MOV A,M (7) from memory
 ; +28/28.5/29
 	_MEMORY		; prepare pointer
 	LDA (tmptr)	; pointed source
-mova:
 	STA a80	; destination
 	JMP next_op	; flags unaffected
 
