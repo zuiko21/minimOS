@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS! *** FASTER VERSION WITH LUT *** Rockwell only!
 ; v0.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160919-0958
+; last modified 20160919-1012
 
 #include "usual.h"
 
@@ -855,10 +855,10 @@ _3a:
 	LDA (tmptr)	; actual data
 	STA a80	; destination
 	JMP next_op	; flags unaffected
-	
+
 _2a:
 ; LHLD (16) load HL direct
-;+58/64.5/97###
+;+63/67.5/97
 	_DIRECT		; point to operand
 	LDA (tmptr)	; actual LSB
 	STA l80	; destination
@@ -872,7 +872,7 @@ lhld:
 	LDA (tmptr)	; repeat for MSB
 	STA h80
 	JMP next_op	; flags unaffecfed
-	
+
 _32:
 ; STA (13)
 ;+42/42.5/68
@@ -883,7 +883,7 @@ _32:
 
 _22:
 ; SHLD (16) store HL direct
-;+58/64.5/97###
+;+63/67.5/97
 	_DIRECT		; point to operand
 	LDA l80	; actual LSB
 	STA (tmptr)	; destination
@@ -926,7 +926,7 @@ do_jmp:
 	LDX tmptr+1	; already bound MSB
 	STX pc80+1	; ...into PC
 	JMP execute	; jump to it!
-	
+
 _da:
 ; JC (10, 7/10 @ 8085) if carry
 ;+44/44.5/70 if taken, +21/21/46 if not
