@@ -1,20 +1,10 @@
 ; MINIMAL support for minimOS components
 ; on Kowalski's 6502 simulator
-; v0.9.1b4
+; v0.9.1b6
 ; (c)2016 Carlos J. Santisteban
-; last modified 20160602-1114
+; last modified 20160921-1352
 
-#define		ROM		_ROM
-#define		KERNEL	_KERNEL
-
-#include "options/kowalski.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-user_sram = SYSRAM
-.text
+#include "usual.h"
 
 * = ROM_BASE
 
@@ -210,12 +200,10 @@ bad_call:
 ; filling for ready-to-blow ROM
 	.dsb	admin_call-*, $FF
 
-; *** administrative meta-kernel call primitive ($FFD0) ***
+; *** administrative meta-kernel call primitive ($FFD8) ***
 * = admin_call
 	CPX #10				; only SHUTDOWN supported!
-	BEQ do_shut
-		JMP unimpl			; error otherwise
-do_shut:
+		BNE bad_call		; error otherwise
 	JMP shutdn			; valid so far
 
 ; filling for ready-to-blow ROM

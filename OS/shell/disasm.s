@@ -1,22 +1,11 @@
 ; Monitor shell with disassembler for minimOS
-; v0.5rc1
-; last modified 20160526-1345
+; v0.5rc2
+; last modified 20160921-1338
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
-#ifndef	KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
-.text
-+user_sram	= $0500
-#endif
+#include "usual.h"
 
 ; *** uncomment for narrow (20-char) displays ***
 ;#define	NARROW	_NARROW

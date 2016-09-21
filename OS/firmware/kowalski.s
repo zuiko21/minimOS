@@ -1,30 +1,18 @@
 ; firmware for minimOS on Kowalski simulator
 ; v0.9a2
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20160418-1332
+; last modified 20160921-1350
 
 #define		FIRMWARE	_FIRMWARE
 
 ; in case of standalone assembly
-#ifndef		KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/kowalski.h"
-#include "sysvars.h"
-.text
-* = FW_BASE					; sample address
-kernel = ROM_BASE			; in case is not available, cannot download!
-#endif
+#include "usual.h"
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
 #ifdef	FILESYSTEM
 	.asc 0, "aS****", 13	; standard system file wrapper, new 20160309
-	.asc "0.9a1 firmware for "
+	.asc "0.9b1 firmware for "
 #endif
 
 ; at least, put machine name as needed by firmware!
@@ -291,7 +279,7 @@ fw_admin:
 	.dsb	admin_call-*, $FF
 #endif
 
-; *** administrative meta-kernel call primitive ($FFD0) ***
+; *** administrative meta-kernel call primitive ($FFD8) ***
 * = admin_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 

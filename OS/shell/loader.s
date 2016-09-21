@@ -1,20 +1,9 @@
 ; Basic loader for minimOS (simple version)
-; v0.5rc6
-; last modified 20160616-1004
+; v0.5rc7
+; last modified 20160921-1338
 ; (c) 2016 Carlos J. Santisteban
 
-#ifndef	KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
-.text
-user_sram	=	$1000
-#endif
+#include "usual.h"
 
 ; *** zeropage variables ***
 	l_io	=	uz		; default device
