@@ -1,6 +1,6 @@
 ; minimOS 0.5a5 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160815-1222
+; last modified 20160921-0845
 
 .zero
 
@@ -19,6 +19,7 @@ user:user_zp:			; older labels for compatibility
 uz						; user context starts here, $03...$E3 newname 20150128,0206
 
 #ifdef	C64
+* = locals - 2			; just before local variables, hope it assembles OK!
 sysout		.byt	0	; default parent outout device (for 6510)
 sys_in		.byt	0	; default parent input device (for 6510)
 #endif
@@ -58,7 +59,7 @@ z2:z2W:z2L:					; old labels for compatibility
 zpar: zaddr		.dsb	4	; up to 4 bytes, including older names @ $F8
 
 
-; ** reserved for system use **
+; ** reserved for system use during interrupts **
 
 sysptr:sysvec	.word	0	; ZP pointer for interrupts only @ $FC
 systmp:sysvar	.byt	0	; temporary storage for interrupts only @ $FE
