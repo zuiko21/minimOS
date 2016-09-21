@@ -1,6 +1,6 @@
 ; minimOS 0.5a11 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160919
+; last modified 20160921
 
 ; *** standard addresses ***
 ; redefined as labels 20150603
@@ -24,9 +24,11 @@ FILE_DEV	=	130
 
 ; system calling interface
 #define		_KERNEL(a)		LDX #a: JSR kernel_call
-#define		_KERN16(a)		LDX #a: COP #0
+#define		_KERN16(a)		LDX #a: COP #$FF
 ; * C816 routines ending in RTI and redefined EXIT_OK and ERR endings!
-; * C02 wrapper then should be like			KERNEL(a)		COP #0	RTS
+; * C02 wrapper then should be like			KERNEL(a)		COP #$FF	RTS
+; ***** TEMPTATIVE KERN16 as		LDX #a		CLC		COP #$FF *****
+; ***** takes one more byte per call like 02 but makes a MUCH faster OK_16
 
 ; new primitive for administrative meta-kernel in firmware 20150118
 #define		_ADMIN(a)		LDX #a: JSR admin_call
@@ -42,8 +44,11 @@ FILE_DEV	=	130
 #define		_ERR(a)		LDY #a: SEC: RTS
 
 ; makeshift 816 versions
+; ...or just redefine KERNEL, ADMIN, EXIT_OK, ERR if option C816 is set???
 #define		_OK_16		PLP: CLC: PHP: RTI
+; ***** TEMPTATIVE see above for a simple RTI, reduce overhead by 7 clocks! *****
 #define		_ERR16(a)	LDY #a: PLP: SEC: PHP: RTI
+; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
 
 ; new exit for asynchronous driver routines when not satisfied 20150320, renamed 20150929
 #define		_NEXT_ISR	SEC: RTS
