@@ -1,11 +1,11 @@
-#minimOS·65 ABI
-AKA *minimOS*, this is the **original** branch. While the forthcoming **minimOS·16** (for the 65C816) will remain inter-operative with this one, support for *all* variants of the 6502 is guaranteed here. **65C816 code is integrated here** while docs will explain appliable differences.
+#minimOS·65 *and minimOS·16* ABI
+AKA *minimOS*, this is the **original** branch. The originally planed **minimOS·16** port (for the 65C816) is **integrated here**, thus support for *all* variants of the 6502 is guaranteed, while docs will explain appliable differences.
 
 Depending on the targeted processor, code *chunks* (firmware, kernel, drivers, apps...) may be classified as:
 * `n`, **NMOS:** only the original, **legal** opcodes are supported. *Some macros are provided in order to emulate the missing CMOS instructions*.
 * `b`, **CMOS (*generic*):** usual, preferred deployment, includes basic CMOS upgrades but *not* the Rockwell/WDC extensions (RMB/SMB/BBR/BBS).
 * `r`, **CMOS (Rockwell):** allows the use of RMB/SMB/BBR/BBS and maybe WAI/STP. *This is NOT compatible with 65C816 processors, due to their lack of Rockwell extensions (replaced by the new addressing modes)*.
-* `v`, **65C816:** besides the proper CPU, requires the use of a suitable '816 firmware and specific kernel, capable of executing all of the above **except** the Rockwell variant.
+* `v`, **65C816:** besides the proper CPU, requires the use of a suitable '816 firmware and specific kernel API, capable of executing all of the above **except** the Rockwell variant.
 
 Obviously, no 65(C)02 is able to execute '816 code, although the latter is capable of running NMOS and *generic* 65C02 code.
 
@@ -19,9 +19,10 @@ For convenience, a *macro* for this is defined as `_KERNEL(function_number)`. Fu
 
 Since the firmware code at `k_call` is designed around a `JMP (fw_table, X)` instruction (or equivalent NMOS sequence, supplied as a *macro*), `function_number` is expected to be an **even** number, thus up to **128 system calls** are supported.
 
-**65C816 variant** has its own set of macros: `_KERN16(function_number)` (actually implemented as a COP opcode), `_OK16` and `_ERR16(error_code)` but otherwise they offer very much the same interface. Suitable '816 firmware would then implement a compatible 8-bit call around a `COP: RTS` sequence ('816 API functions would obviously end on `RTI` instead of `RTS`).
+**65C816 variant** has its own set of macros: `_KERN16(function_number)` (actually implemented as a `COP $FF` opcode), `_OK16` and `_ERR16(error_code)` but otherwise they offer very much the same interface. Suitable '816 firmware would then implement a compatible 8-bit call around a `COP: RTS` sequence ('816 API functions would obviously end on `RTI` instead of `RTS`).
 
-**Parameter passing and return values** are done via the **Y** register and/or some *zeropage* locations. There are **12 bytes** for parameters (three 32-bit words) known as:
+###Parameter passing and return values
+These are done via the **Y** register and/or some *zeropage* locations. There are **12 bytes** for parameters (three 32-bit words) known as:
 ```
 zpar  = zaddr  = $F0
 zpar2 = zaddr2 = $F4
@@ -45,10 +46,14 @@ Full featured systems will have (currently) **241 bytes** *between $03 and $E3* 
 ###Reserved zeropage space
 Besides user space and locals/parameters area, there are some bytes usually reserved:
 
-* `$00-$01: reserved` for compatibility with 6510 systems. *Will include default per-process I/O device numbers*, but on 6510 systems will be located just before `locals` (usually `$E2`).
-* `$03: z_used` is expected to indicate how many zeropage bytes (from `uz`) are actually used, for a faster *software-based* multitasking. *Otherwise (hardware-assisted or NO multitasking) is free*.
-* `$FC-$FD: sysptr` might be used by **interrupt tasks** anytime, which aren't expected to be reentrant anyway.
-* `$FE: systmp` might be equally used by **interrupts**. Tinkering with these will do no harm, however values may change unexpectedly *if interrupts are enabled*.
+* `$00: sysout` is the defult output device for the current task. *This is `res6510` on 6510 systems, and obviously **not** available here.*
+* `$01: sys_in` is the defult input device for the current task. *This is `res6510` on 6510 systems, and obviously **not** available here.*
+* `$02: z_used` is expected to indicate how many zeropage bytes (from `uz`) are actually used, for a faster *software-based* multitasking. *Otherwise (hardware-assisted or NO multitasking at all) is free*.
+* `$03: uz`is the first byte of the user's free zeropage space. Tasks start with the currently available bytes set on `z_used`.
+* `$E2-$E3` will be the usual location of `sysout` and `sys_in` of 6510 systems, otherwise free for user.
+* `$E4` will (hopefully) stay as the beginning of local variables and kernel parameters (from `$F0`).
+* `$FC-$FD: sysptr` might be used by **interrupt tasks** anytime. Tinkering with these will do no harm, however values may change unexpectedly *if interrupts are enabled*.
+* `$FE: systmp` might be equally used by **interrupts**, which aren't expected to be reentrant anyway.
 * `$FF: sys_sp` holds the SP register between context switches. Like the above, if *any* form of multitasking is in use, this **will** change unexpectedly whenever context is switched.
 
 ##File description
@@ -66,8 +71,12 @@ Global system variables, as used by the kernel. *Will usually go after [firmware
 **This is the main file to be assembled** making reference to all other OS files. Thanks to the current file structure, generating custom ROMs for different machines will be as simple as choosing the appropriate `options.h` file from the [template folder](options/) and assembling `rom.s`.
 ###`kernel.s`
 Surprisingly bereft of *API's functions*, this is a **mostly generic** piece of code. However, the [Interrupt Service Routine](isr/irq.s) is dependant of the kernel, as is the (implicitally related in 6502/65C02) [BRK handler](isr/brk.s).
+###`kernel16.s`
+*Same as above for the 65C816 processor.*
 ###`api.s`
 Here are the **kernel functions** providing services to the running apps. This will get included from the [kernel](kernel.s) for most systems.
+###`api16.s`
+*Same as above for the 65C816 processor.* Functions must end in **`RTI`** instead of `RTS`.
 ###`api_lowram.s`
 An alternative for the [above file](api.s) with redesigned functions for **128-byte systems**. Many features are crippled, however.
 ###`shell.s`
