@@ -1,6 +1,6 @@
 ; minimOS 0.5a5 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160921-0845
+; last modified 20160922-1351
 
 .zero
 
@@ -49,7 +49,7 @@ z10:z10W:z10L:				; old labels for compatibility, new alias 20150615 for Ax regi
 zpar3: zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
 
 ; *** include aliases here for zpar2/zaddr2 ***
-ma_pt: up_sec: str_pt:
+ma_pt: up_sec: str_pt: cpu_ll:
 z6:z6W:z6L:					; old labels for compatibility
 zpar2: zaddr2	.dsb	4	; up to 4 bytes, including older names @ $F4
 

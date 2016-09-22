@@ -1,15 +1,15 @@
 ; minimOS 0.5a11 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160921
+; last modified 20160922
 
 ; *** standard addresses ***
 ; redefined as labels 20150603
 ; revamped 20160308
-; proper 816 support 20160919
+; proper 816 support 20160919, revamped 0922
 
 kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
 admin_call	=	$FFD8	; ending in RTS, no way to use a PHK wrapper eeeeeeek! JSL adm16_call & RTS instead
-adm16_call	=	$FFD0 ; ending in RTL, might push P for mode preservation
+adm16_call	=	$FFD0 	; ending in RTL, might push P for mode preservation
 
 ; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS, new 20150410
 panic		=	$FFE0	; more-or-less 816 savvy address, new 20160308
@@ -22,36 +22,41 @@ FILE_DEV	=	130
 
 ; *** common function calls ***
 
-; system calling interface
-#define		_KERNEL(a)		LDX #a: JSR kernel_call
-#define		_KERN16(a)		LDX #a: COP #$FF
-; * C816 routines ending in RTI and redefined EXIT_OK and ERR endings!
-; * C02 wrapper then should be like			KERNEL(a)		COP #$FF	RTS
-; ***** TEMPTATIVE KERN16 as		LDX #a		CLC		COP #$FF *****
-; ***** takes one more byte per call like 02 but makes a MUCH faster OK_16
-
+; system calling interface *** unified ·65 and ·16 macros
 ; new primitive for administrative meta-kernel in firmware 20150118
+
+#ifndef	C816
+#define		_KERNEL(a)		LDX #a: JSR kernel_call
 #define		_ADMIN(a)		LDX #a: JSR admin_call
-#define		_ADM16(a)		LDX #a	JSL adm16_call
-; * C816 routines ending in RTL, see wrapper for 02 tasks above!
+#else
+#define		_KERNEL(a)		LDX #a: CLC: COP #$FF
+#define		_ADMIN(a)		LDX #a:	JSL adm16_call
+#endif
+
+; * C816 routines ending in RTI and redefined EXIT_OK and ERR endings!
+; * C02 wrapper then should be like			COP #$FF	RTS
+; * C816 firmware routines ending in RTL, see wrapper for 02 tasks above!
 
 ; new macro for filesystem calling, no specific kernel entries! 20150305, new offset 20150603
+; ** revise for 816 systems ****
 #define		_FILESYS(a)		STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
 
 ; *** function endings ***
-; * due to implicit PHP on COP, these should be heavily revised for C816
+; * due to implicit PHP on COP, these should be heavily revised for 65C816
+
+#ifndef	C816
 #define		_EXIT_OK	CLC: RTS
 #define		_ERR(a)		LDY #a: SEC: RTS
+#else
+#define		_EXIT_OK	RTI
+#define		_ERR(a)		LDY #a: PLP: SEC: PHP: RTI
 
-; makeshift 816 versions
-; ...or just redefine KERNEL, ADMIN, EXIT_OK, ERR if option C816 is set???
-#define		_OK_16		PLP: CLC: PHP: RTI
-; ***** TEMPTATIVE see above for a simple RTI, reduce overhead by 7 clocks! *****
-#define		_ERR16(a)	LDY #a: PLP: SEC: PHP: RTI
 ; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
 
 ; new exit for asynchronous driver routines when not satisfied 20150320, renamed 20150929
 #define		_NEXT_ISR	SEC: RTS
+#define		_ISR_DONE	CLC: RTS
+; can no longer use EXIT_OK because of 65816 reimplementation!!! check drivers!
 
 ; new macros for critical sections, do not just rely on SEI/CLI 20160119
 #define		_ENTER_CS	PHP: SEI
@@ -63,10 +68,11 @@ FILE_DEV	=	130
 #define		_CLI		CLI
 ; otherwise call SU_CLI function, not really needed on 65xx 
 
+#ifndef	C816
 #define		_PANIC		JMP panic
-#define		_PANIC16	JMP panic
-
-; standardised NMI exit 20150409 *** DEPRECATED 20160308
+#else
+#define		_PANIC		JML panic
+#endif
 
 ; *** conditional opcode assembly ***
 #ifdef	NMOS

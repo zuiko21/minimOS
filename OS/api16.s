@@ -1,15 +1,15 @@
 ; minimOS·16 generic Kernel API!
-; v0.5b1, should match kernel16.s
+; v0.5a1, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160921-1406
+; last modified 20160922-1439
 
 ; no way for standalone assembly...
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
 	.as: .xs: SEP $30	; *** standard register size ***
-	_ERR16(UNAVAIL)	; go away!
+	_ERR(UNAVAIL)	; go away!
 
 
 ; *** COUT, output a character ***
@@ -20,7 +20,9 @@ cout:
 	.as: .xs: SEP $30	; *** standard register size ***
 	TYA				; for indexed comparisons (2)
 	BNE co_port		; not default (3/2)
-		LDA default_out	; default output device (4)
+		LDA sysout		; new per-process standard device ### apply this to ·65
+		BNE co_port		; already a valid device
+			LDA default_out	; otherwise get system global (4)
 co_port:
 	BMI co_phys		; not a logic device (3/2)
 		CMP #64			; first file-dev??? ***
@@ -30,25 +32,31 @@ co_port:
 		CMP #64+MAX_FILES	; still within file-devs?
 			BCS co_log		; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR16(NO_RSRC)	; not yet implemented ***placeholder***
+		_ERR(NO_RSRC)	; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
 co_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL	; lastly, ignore output
 			BNE cio_nfound	; final error otherwise
-		_OK_16		; "/dev/null" is always OK
+		_EXIT_OK		; "/dev/null" is always OK
 co_win:
 ; *** virtual windows manager TO DO ***
-	_ERR16(NO_RSRC)	; not yet implemented
+	_ERR(NO_RSRC)	; not yet implemented
 co_phys:
 ; ** new direct indexing **
 	ASL					; convert to index (2+2)
 	TAX
-	_JMPX(drv_opt)		; direct jump!!! **** needs 16-bit driver ending on RTI... or redefined standard macros!
-
+	JSR (drv_opt, X)	; direct CALL!!! driver might end in RTS as usual
+cio_callend:
+	PLA					; extract previous status!
+	BCC co_notc			; no need to clear carry
+		ORA #1				; otherwise set it
+co_notc:
+	PHA					; replace stored flags
+	RTI					; end of call procedure
 cio_nfound:
-	_ERR16(N_FOUND)	; unknown device
+	_ERR(N_FOUND)		; unknown device
 
 
 ; *** CIN, get a character *** revamped 20150209
@@ -58,33 +66,30 @@ cin:
 	.as: .xs: SEP $30	; *** standard register size ***
 	TYA				; for indexed comparisons
 	BNE ci_port		; specified
-		LDA default_in	; default input device
+		LDA sys_in		; new per-process standard device ### apply this to ·65
+		BNE ci_port		; already a valid device
+			LDA default_in	; otherwise get system global
 ci_port:
 	BPL ci_nph		; logic device
-		JSR ci_phys		; check physical devices... but come back for events! new 20150617
-			BCS ci_exit		; some error, send it back
+; ** new direct indexing **
+		ASL					; convert to index (2+2)
+		TAX
+		JSR (drv_ipt, X)	; direct CALL!!!
+			BCS cio_callend		; if some error, send it back
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
 		LDA io_c		; get received character
 		CMP #' '		; printable?
 			BCC ci_manage	; if not, might be an event
-ci_exitOK:
-		_OK_16			; generic macro, older trick NLA
-ci_exit:
-		RTS				; cannot use macro because may need to keep Carry
-ci_phys:
-; ** new direct indexing **
-	ASL					; convert to index (2+2)
-	TAX
-	_JMPX(drv_ipt)		; direct jump!!!
+		_EXIT_OK			; generic macro, older trick NLA
 
 ; ** continue event management ** REVISE
 ci_manage:
 ; check for binary mode
 	LDY cin_mode	; get flag, new sysvar 20150617
 	BEQ ci_event	; should process possible event
-		_STZY cin_mode	; back to normal mode
-		_BRA ci_exit	; and return whatever was received
+		STZ cin_mode	; back to normal mode
+		_EXIT_OK		; and return whatever was received
 ci_event:
 	CMP #16			; is it DLE?
 	BNE ci_notdle	; otherwise check next
@@ -102,14 +107,16 @@ ci_noterm:
 		BNE ci_signal	; send signal, no need for BRA?
 ci_nokill:
 	CMP #26			; is it ^Z? (STOP)
-	BNE ci_exitOK	; otherwise there's no more to check
-		LDA #SIGSTOP	; last signal to be sent
+	BEQ ci_stop		; last signal to be sent
+		_EXIT_OK		; otherwise all done
+ci_stop:
+	LDA #SIGSTOP	; last signal to be sent
 ci_signal:
-		STA b_sig			; set signal as parameter
-		_KERN16(GET_PID)	; as this will be a self-sent signal!
-		_KERN16(B_SIGNAL)	; send signal to PID in Y
+	STA b_sig			; set signal as parameter
+	_KERNEL(GET_PID)	; as this will be a self-sent signal!
+	_KERNEL(B_SIGNAL)	; send signal to PID in Y
 ci_abort:
-		_ERR16(EMPTY)		; no character was received
+	_ERR(EMPTY)		; no character was received
 
 ci_nph:
 	CMP #64			; first file-dev??? ***
@@ -119,7 +126,7 @@ ci_nph:
 	CMP #64+MAX_FILES	; still within file-devs?
 		BCS ci_log		; that or over, not a file
 ; *** manage here input from open file ***
-	_ERR16(NO_RSRC)	; not yet implemented ***placeholder***
+	_ERR(NO_RSRC)	; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
 
@@ -128,28 +135,28 @@ ci_log:
 		BEQ ci_rnd		; compute it!
 	CMP #DEV_NULL	; lastly, ignore input
 		BNE cio_nfound	; final error otherwise
-	_OK_16		; "/dev/null" is always OK
+	_EXIT_OK		; "/dev/null" is always OK
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
 	LDY ticks		; simple placeholder
-	_OK_16
+	_EXIT_OK
 
 ci_win:
 ; *** virtual window manager TO DO ***
-	_ERR16(NO_RSRC)	; not yet implemented
+	_ERR(NO_RSRC)	; not yet implemented
 
 
 ; *** MALLOC, reserve memory *** revamped 20150209
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory (16-bit so far, but put zeroes on high-size!)
-; ** ONLY for systems over 128-byte RAM **
+; ** Up to 64K RAM supported so far **
 ; uses ma_l
 
 malloc:
-;	LDA ma_rs+2		; asking over 64K?
-;	ORA ma_rs+3
-;		BNE ma_nobank	; most likely never available for 65C02
 	.as: .xs: SEP $30	; *** standard register size ***
+	LDA ma_rs+2		; asking over 64K?
+	ORA ma_rs+3
+		BNE ma_nobank	; not YET supported
 	LDY #0			; reset index
 	_ENTER_CS		; this is dangerous! enter critical section, new 160119
 ma_scan:
@@ -162,7 +169,7 @@ ma_cont:
 		BNE ma_scan
 	_EXIT_CS		; were off by 15*n, up to 240 clocks instead of 304
 ma_nobank:
-	_ERR16(FULL)		; no room for it!
+	_ERR(FULL)		; no room for it!
 ma_found:
 	TYA						; compute other index
 	ASL						; two times
@@ -232,7 +239,7 @@ ma_ok:
 	LDA ram_tab+1, X		; same for MSB (4+3)
 	STA ma_pt+1
 	_EXIT_CS				; end of critical section, new 160119
-	_OK_16				; we're done
+	_EXIT_OK				; we're done
 
 
 ; *** FREE, release memory *** revamped 20150209
@@ -256,7 +263,7 @@ fr_next:
 		CPX #MAX_LIST		; until the end
 		BCC fr_loop
 	_EXIT_CS
-	_ERR16(N_FOUND)			; no block to be freed!
+	_ERR(N_FOUND)			; no block to be freed!
 fr_found:
 	TXA				; get two-byte index
 	CLC
@@ -283,7 +290,7 @@ fr_opt:
 ; ** already optimized **
 fr_ok:
 	_EXIT_CS
-	_OK_16
+	_EXIT_OK
 
 
 ; *** OPEN_W, get I/O port or window *** interface revised 20150208
@@ -294,7 +301,7 @@ open_w:
 	LDA w_rect			; asking for some size?
 	ORA w_rect+1
 	BEQ ow_no_window	; wouldn't do it
-		_ERR16(NO_RSRC)
+		_ERR(NO_RSRC)
 ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
 ;	EXIT_OK on subsequent system calls!
@@ -304,7 +311,7 @@ ow_no_window:
 ; Y <- dev
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
-	_OK_16
+	_EXIT_OK
 
 
 ; *** UPTIME, get approximate uptime *** revised 20150208, corrected 20150318
@@ -327,7 +334,7 @@ up_upt:
 		DEX					; go for next (2+3/2)
 		BPL up_upt
 	_EXIT_CS		; disabled for 62 clocks, not 53...
-	_OK_16
+	_EXIT_OK
 
 
 ; *** B_FORK, get available PID *** properly interfaced 20150417
@@ -340,16 +347,17 @@ b_fork:
 	LDA #MM_FORK	; subfunction code
 	STA io_c		; as fake parameter
 	LDY #TASK_DEV	; multitasking as device driver!
-	_KERN16(COUT)	; call pseudo-driver
-	RTS				; return whatever error code
+	_KERNEL(COUT)	; call pseudo-driver
+	JMP cio_callend	; return whatever error code
 #else
 	LDY #0			; no multitasking, system reserved PID
-	_OK_16
+	_EXIT_OK
 #endif
+
 
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr (was z2L)
+; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture
 ; uses str_dev for temporary braid storage, driver will pick it up!
 
 b_exec:
@@ -360,14 +368,27 @@ b_exec:
 	STY str_dev		; COUT shouldn't touch it
 	STA io_c		; as fake parameter
 	LDY #TASK_DEV	; multitasking as device driver!
-	_KERN16(COUT)	; call pseudo-driver
-	RTS				; return previous error
+	_KERNEL(COUT)	; call pseudo-driver
+	JMP cio_callend	; return whatever error code
 #else
 ; non-multitasking version
 	CPY #0			; should be system reserved PID
 	BEQ exec_st		; OK for single-task system
-		_ERR16(NO_RSRC)	; no way without multitasking
+		_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
+; this is for 816 tasks ONLY, what to do with old 02 tasks, ending in RTS????
+	LDA cpu_ll		; check architecture
+	CMP #'V'		; check whether native 816 code (ending in RTL)
+	BEQ exec_816		; go for it
+		LDX #0			; zero offset for indirect call!
+		JSR (ex_pt, X)	; will end in RTS and return just here, lower 64K only
+		JMP cio_callend	; return whatever error code
+exec_816:
+	JSR jsr816		; expected to return here????
+	JMP cio_callend	; return error code
+jsr816:
+	LDA ex_pt+2		; destination bank address!!!
+	PHA				; put it on stack for 816 apps will end in RTI
 	LDA ex_pt+1		; get address MSB first
 	PHA				; put it on stack
 	LDA ex_pt		; same for LSB
@@ -378,25 +399,31 @@ exec_st:
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
-; ex_pt -> addr, str_pt <- *path
+; ex_pt -> addr, str_pt <- *path, cpu_ll -> architecture
+; *** only 64K RAM supported so far ***
 
 load_link:
-; *** assume path points to filename in header, code begins +248 *** KLUDGE
+; *** assume path points to header, code begins +256 *** STILL A KLUDGE
 	.as: .xs: SEP $30	; *** standard register size ***
-	CLC				; ready to add
-	LDA str_pt		; get LSB
-	ADC #248		; offset to actual code!
-	STA ex_pt		; store address LSB
-	LDA str_pt+1	; get MSB so far
-	ADC #0			; propagate carry!
-	STA ex_pt+1		; store address MSB
-	LDA #0			; NMOS only
-	STA ex_pt+2		; STZ, invalidate bank...
-	STA ex_pt+3		; ...just in case
-	BCS ll_wrap		; really unexpected error
-		_OK_16
+	LDY #1			; offset for filetype
+	LDA (str_pt), Y	; check filetype
+	CMP #'m'		; must be minimOS app!
+		BNE ll_wrap		; error otherwise
+	INY				; next byte is CPU type then
+	LDA (str_pt), Y	; get it
+	CMP #'R'		; Rockwell is the only unsupported type!
+		BEQ ll_wrap
+	TAX				; save CPU type otherwise
+	LDA str_pt		; get pointer LSB
+	LDY str_pt+1	; and MSB
+	INY				; start from next page
+	STA ex_pt		; save execution pointer
+	STY ex_pt+1
+	STZ ex_pt+2		; invalidate bank... this far
+	STX cpu_ll		; set CPU type also
+	_EXIT_OK
 ll_wrap:
-	_ERR16(INVALID)	; something was wrong
+	_ERR(INVALID)	; something was wrong
 
 
 ; *** SU_POKE, write to protected addresses *** revised 20150208
@@ -408,7 +435,7 @@ su_poke:
 	.as: .xs: SEP $30	; *** standard register size ***
 	TYA				; transfer value
 	_STAY(zpar)		; store value, macro for NMOS
-	_OK_16
+	_EXIT_OK
 
 
 ; *** SU_PEEK, read from protected addresses *** revised 20150208
@@ -420,7 +447,7 @@ su_peek:
 	.as: .xs: SEP $30	; *** standard register size ***
 	_LDAY(zpar)		; store value, macro for NMOS
 	TAY				; transfer value
-	_OK_16
+	_EXIT_OK
 
 
 ; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
@@ -443,7 +470,7 @@ str_port:
 		CMP #64+MAX_FILES	; still within file-devs?
 			BCS str_log		; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR16(NO_RSRC)	; not yet implemented ***placeholder***
+		_ERR(NO_RSRC)	; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
 str_log:
@@ -451,12 +478,12 @@ str_log:
 		CMP #DEV_NULL	; lastly, ignore output
 			BNE str_nfound	; final error otherwise
 str_exit:
-		_OK_16		; "/dev/null" is always OK
+		_EXIT_OK		; "/dev/null" is always OK
 str_win:
 ; *** virtual windows manager TO DO ***
-	_ERR16(NO_RSRC)	; not yet implemented
+	_ERR(NO_RSRC)	; not yet implemented
 str_nfound:
-	_ERR16(N_FOUND)	; unknown device
+	_ERR(N_FOUND)	; unknown device
 str_phys:
 ; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
@@ -468,7 +495,7 @@ str_loop:
 		LDA (str_pt), Y		; get character from string, new approach (5)
 		BNE str_cont		; not terminated! (3/2)
 			PLA					; otherwise discard saved Y (4)
-			_OK_16			; and go away!
+			_EXIT_OK			; and go away!
 str_cont:
 		STA io_c			; store output character for COUT (3)
 		JSR str_call		; indirect subroutine call (6...)
@@ -487,7 +514,7 @@ str_call:
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 su_sei:
 	SEI				; disable interrupts
-	_OK_16		; no error so far
+	_EXIT_OK		; no error so far
 
 
 ; *** SU_CLI, enable interrupts *** revised 20150209
@@ -495,7 +522,7 @@ su_sei:
 
 su_cli:				; not needed for 65xx, even with protection hardware
 	CLI				; enable interrupts
-	_OK_16		; no error
+	_EXIT_OK		; no error
 
 
 ; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
@@ -524,7 +551,7 @@ set_fg:
 	ORA #$C0		; enable free-run PB7 output
 	STA VIA+ACR		; update config
 fg_none:
-	_OK_16		; finish anyway
+	_EXIT_OK		; finish anyway
 fg_dis:
 	LDA VIA+ACR		; get current configuration
 		BPL fg_none	; it wasn't playing!
@@ -537,7 +564,7 @@ fg_dis:
 ; *** TO_DO - restore standard quantum ***
 		_BRA fg_none
 fg_busy:
-	_ERR16(BUSY)		; couldn't set
+	_ERR(BUSY)		; couldn't set
 
 
 ; *** GO_SHELL, launch default shell *** new 20150604
@@ -560,9 +587,9 @@ shutdown:
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
-	_KERN16(B_SIGNAL)	; ask braids to terminate
+	_KERNEL(B_SIGNAL)	; ask braids to terminate
 	CLI					; make sure all will keep running!
-	_OK_16
+	_EXIT_OK
 
 ; firmware interface
 sd_off:
@@ -661,11 +688,11 @@ sig_st:				; *** single-task interface, in case MM driver failed *** (repeated f
 	CPY #SIGKILL	; suicide, makes any sense?
 		BEQ sig_kill
 sig_pid:			; placeholder...
-	_ERR16(INVALID)	; unrecognised signal
+	_ERR(INVALID)	; unrecognised signal
 sig_term:
 	JSR sig_call	; call routine, RTS will get back here
 sig_kill:
-	_OK_16		; *** don't know what to do here ***
+	_EXIT_OK		; *** don't know what to do here ***
 sig_call:
 	JMP (mm_term)	; jump to single-word vector, actually taken from an unused table!
 #endif
@@ -679,11 +706,11 @@ sig_call:
 	CPY #SIGKILL	; suicide, makes any sense?
 		BEQ sig_kill
 sig_pid:			; placeholder...
-	_ERR16(INVALID)	; unrecognised signal
+	_ERR(INVALID)	; unrecognised signal
 sig_term:
 	JSR sig_call	; call routine, RTS will get back here
 sig_kill:
-	_OK_16		; *** don't know what to do here ***
+	_EXIT_OK		; *** don't know what to do here ***
 sig_call:
 	JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
 #endif
@@ -704,12 +731,12 @@ status:
 #ifdef	SAFE
 stat_st:				; *** single-task interface, in case MM driver failed *** copied from below
 	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
-	_OK_16
+	_EXIT_OK
 #endif
 #else	
 ; *** single-task interface, copied above ***
 	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
-	_OK_16
+	_EXIT_OK
 #endif
 
 ; *** GET_PID, get current braid PID ***
@@ -725,12 +752,12 @@ get_pid:
 #ifdef	SAFE
 pid_st:				; *** single-task interface, in case MM driver failed *** copied from below
 	LDY #0			; system-reserved PID for single-task execution
-	_OK_16
+	_EXIT_OK
 #endif
 #else
 ; *** single-task interface, copied above ***
 	LDY #0			; system-reserved PID for single-task execution
-	_OK_16
+	_EXIT_OK
 #endif
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
@@ -749,7 +776,7 @@ hndl_st:				; *** single-task interface, in case MM driver failed *** copied fro
 	STA mm_term		; store in single variable (from unused table)
 	LDA zpar2+1		; same for MSB
 	STA mm_term+1
-	_OK_16
+	_EXIT_OK
 #endif
 #else
 ; *** single-task interface, copied above ***
@@ -757,7 +784,7 @@ hndl_st:				; *** single-task interface, in case MM driver failed *** copied fro
 	STA mm_term	; store in single variable
 	LDA zpar2+1		; same for MSB
 	STA mm_term+1
-	_OK_16
+	_EXIT_OK
 #endif
 
 ; *** B_YIELD, Yield CPU time to next braid ***
@@ -766,17 +793,17 @@ hndl_st:				; *** single-task interface, in case MM driver failed *** copied fro
 
 yield:
 #ifndef	MULTITASK
-	_OK_16		; no one to give CPU time away!
+	_EXIT_OK		; no one to give CPU time away!
 #else
 #ifndef	AUTOBANK
-	_OK_16		; if no multitasking assisting hardware is present, just ignore and stay
+	_EXIT_OK		; if no multitasking assisting hardware is present, just ignore and stay
 #else
 	LDA #MM_YIELD	; subfunction code
 #endif
 yld_call:			; unified calling procedure
 	STA zpar		; subfunction as fake character
 	LDY #TASK_DEV	; multitasking driver ID
-	_KERN16(COUT)	; call driver
+	_KERNEL(COUT)	; call driver
 #ifdef	SAFE
 		BCS yld_failed	; in case multitasking driver was included but failed to register...
 #endif
@@ -790,9 +817,9 @@ yld_failed:			; *** emergency single-task management ***
 	_JMPX(yld_table-4)	; go to appropriate label! note offset, since B_FORK and B_EXEC are already processed
 
 yld_st:
-		_OK_16		; in case isn't defined elsewhere
+		_EXIT_OK		; in case isn't defined elsewhere
 yld_err:
-		_ERR16(INVALID)	; some generic error...
+		_ERR(INVALID)	; some generic error...
 
 ; addresses of single-task routines, new procedure 20150610
 yld_table:
@@ -816,7 +843,7 @@ ts_info:
 	LDA #<(isr_sched_ret-1)	; same for LSB
 	STA zpar
 	LDY #3					; number of bytes
-	_OK_16
+	_EXIT_OK
 
 ; *** end of kernel functions ***
 
