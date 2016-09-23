@@ -1,8 +1,8 @@
 ; firmware for minimOS on SDm/Jalapa (and maybe others)
-; generic template v0.5.2a2
+; generic template v0.5.2a3
 ; (c)2015-2016 Carlos J. Santisteban
 ; *** revamped 20160308 ***
-; last modified 20160407-1154
+; last modified 20160923-0959
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -24,7 +24,7 @@ kernel		= remote_boot	; in case no kernel is provided with firmware, try to down
 ; *** first some ROM identification *** new 20150612
 fw_start:
 	.asc 0, "aS****", 13	; standard system file wrapper, new 20160309
-	.asc "0.5.2a2 firmware for "
+	.asc "0.5.2a3 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0, 0
 
@@ -212,7 +212,7 @@ fwi_loop:
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
 	_EXIT_CS			; restore interrupts if needed (4)
-	_EXIT_OK			; all done (8)
+	_FINISH				; all done (8)
 
 
 ; A2, set IRQ vector
@@ -224,7 +224,7 @@ fw_s_isr:
 	LDA zpar+1				; get MSB (3+4)
 	STA fw_isr+1
 	_EXIT_CS				; restore interrupts if needed (4)
-	_EXIT_OK				; done (8)
+	_FINISH					; done (8)
 
 
 ; A4, set NMI vector
@@ -236,7 +236,7 @@ fw_s_nmi:
 	STA fw_nmi				; store for firmware (4)
 	LDA zpar+1				; get MSB (3+4)
 	STA fw_nmi+1
-	_EXIT_OK				; done (8)
+	_FINISH					; done (8)
 
 
 ; A6, patch single function
@@ -244,7 +244,7 @@ fw_s_nmi:
 ; Y <- function to be patched
 fw_patch:
 #ifdef		LOWRAM
-	_ERR(UNAVAIL)			; no way to patch on 128-byte systems
+	_ABORT(UNAVAIL)			; no way to patch on 128-byte systems
 #else
 	LDA zpar				; get LSB (3)
 	_ENTER_CS				; disable interrupts! (5)
@@ -252,7 +252,7 @@ fw_patch:
 	LDA zpar+1				; same for MSB (3+4)
 	STA fw_table+1, Y
 	_EXIT_CS				; restore interrupts if needed (4)
-	_EXIT_OK				; done (8)
+	_FINISH					; done (8)
 #endif
 
 
@@ -278,7 +278,7 @@ fw_gestalt:
 	STA zpar3
 	LDA #>fw_mname	; same for MSB (2+3)
 	STA zpar3+1
-	_EXIT_OK		; done (8)
+	_FINISH			; done (8)
 
 
 ; A10, poweroff etc

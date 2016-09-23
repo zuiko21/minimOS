@@ -2,7 +2,7 @@
 ; as originally supplied with minimOS 0.4b4LK4
 ; new ABI 20150323
 ; (c) Carlos J. Santisteban
-; last modified 20150323-0911
+; last modified 20150923-0952
 
 ; *** dummy device driver ***
 	.byt	0				; +D_ID, reserved for alignment (device number!)
@@ -23,4 +23,4 @@ void_info:
 	.asc	"DUMMY", 0
 
 void_routine:
-_EXIT_OK					; essentially RTS
+_EXIT_OK					; essentially RTS... or should it be CLC-RTS, or FINISH????

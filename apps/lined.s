@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5rc1
+; v0.5rc2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160815-1220 (removed common headers)
+; last modified 20160923-0928
 
 #include "usual.h"
 
@@ -49,7 +49,7 @@
 	CMP z_used			; check available zeropage space
 	BCC go_lined		; enough space
 	BEQ go_lined		; just enough!
-		_ERR(FULL)			; not enough memory otherwise (rare)
+		_ABORT(FULL)		; not enough memory otherwise (rare) new interface 20160923
 go_lined:
 #endif
 	STA z_used			; set needed ZP space as required by minimOS
@@ -61,7 +61,7 @@ go_lined:
 	STA str_pt+1
 	_KERNEL(OPEN_W)		; ask for a character I/O device
 	BCC open_ed			; no errors
-		_ERR(NO_RSRC)		; abort otherwise! proper error code
+		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_ed:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
@@ -373,7 +373,7 @@ le_sw8:
 			ORA #32				; all lower case
 			CMP #'y'			; accepted by user?
 			BNE l_prlp			; if not, prompt again and continue
-				_EXIT_OK			; otherwise exit to shell?
+				_FINISH				; otherwise exit to shell? new interface
 le_sw9:
 		CMP #BACKSPACE		; was 'backspace' key?
 		BNE le_def			; check default otherwise

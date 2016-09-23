@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
-; v0.1b3
+; v0.1b4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160919-1003
+; last modified 20160923-0935
 
 #include "usual.h"
 
@@ -60,7 +60,7 @@ cdev		= uz+15		; I/O device *** minimOS specific ***
 	CMP z_used		; check available zeropage space
 	BCC go_emu		; more than enough space
 	BEQ go_emu		; just enough!
-		_ERR16(FULL)		; not enough memory otherwise (rare)
+		_ABORT(FULL)	; not enough memory otherwise (rare) new interface
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
@@ -68,9 +68,9 @@ go_emu:
 	STZ zpar		; no screen size required, 16 bit op?
 	LDA #title		; address window title
 	STA zaddr3		; set parameter
-	_KERN16(OPEN_W)	; ask for a character I/O device
+	_KERNEL(OPEN_W)	; ask for a character I/O device
 	BCC open_emu	; no errors
-		_ERR16(NO_RSRC)		; abort otherwise!
+		_ABORT(NO_RSRC)	; abort otherwise!
 open_emu:
 	STY cdev		; store device!!!
 ; should try to allocate memory here
@@ -1223,8 +1223,8 @@ _76:
 ; abort emulation and return to shell...
 ; ...since interrupts are not yet supported!
 	LDY cdev	; console device
-	_KERN16(FREE_W)	; release device or window
-	_OK_16		; *** go away ***
+	_KERNEL(FREE_W)	; release device or window
+	_FINISH		; *** go away ***
 
 
 ; ** specials **

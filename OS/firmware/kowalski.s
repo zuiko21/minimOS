@@ -1,7 +1,7 @@
 ; firmware for minimOS on Kowalski simulator
-; v0.9a2
+; v0.9a3
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20160921-1350
+; last modified 20160923-0955
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -150,7 +150,7 @@ fwi_loop:
 	_EXIT_CS			; restore interrupts if needed (4)
 #endif
 
-	_EXIT_OK			; all done (8)
+	_FINISH				; all done (8)
 
 
 ; A2, set IRQ vector
@@ -170,7 +170,7 @@ fw_s_isr:
 	_EXIT_CS			; restore interrupts if needed (4)
 #endif
 
-	_EXIT_OK			; done (8)
+	_FINISH				; done (8)
 
 
 ; A4, set NMI vector
@@ -182,7 +182,7 @@ fw_s_nmi:
 	STA fw_nmi			; store for firmware (4)
 	LDA ex_pt+1			; get MSB (3+4)
 	STA fw_nmi+1
-	_EXIT_OK			; done (8)
+	_FINISH				; done (8)
 
 
 ; A6, patch single function
@@ -203,7 +203,7 @@ fw_patch:
 	_EXIT_CS			; restore interrupts if needed (4)
 #endif
 
-	_EXIT_OK			; done (8)
+	_FINISH				; done (8)
 
 
 ; A8, get system info, API TBD
@@ -228,7 +228,7 @@ fw_gestalt:
 	STA zpar3
 	LDA #>fw_mname	; same for MSB (2+3)
 	STA zpar3+1
-	_EXIT_OK		; done (8)
+	_FINISH			; done (8)
 
 ; A10, poweroff etc
 ; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)

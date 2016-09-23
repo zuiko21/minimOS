@@ -1,6 +1,6 @@
 ; Basic loader for minimOS (simple version)
-; v0.5rc7
-; last modified 20160921-1338
+; v0.5rc8
+; last modified 20160923-0928
 ; (c) 2016 Carlos J. Santisteban
 
 #include "usual.h"
@@ -23,7 +23,7 @@ loader_init:
 	STA str_pt+1
 	_KERNEL(OPEN_W)		; ask for a character I/O device
 	BCC open_loader		; no errors
-		_ERR(NO_RSRC)		; abort otherwise! proper error code
+		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_loader:
 	STY l_io			; store device!!!
 ; ##### end of minimOS specific stuff #####

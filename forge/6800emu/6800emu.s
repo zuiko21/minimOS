@@ -1,7 +1,7 @@
 ; 6800 emulator for minimOS!
-; v0.1b1 -- complete minus hardware interrupts!
+; v0.1b2 -- complete minus hardware interrupts!
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160919-1419
+; last modified 20160923-0935
 
 #include "../../OS/options.h"	; machine specific
 #include "../../OS/macros.h"
@@ -63,13 +63,16 @@ cdev	=	uz+11	; I/O device *** minimOS specific ***
 	CMP z_used		; check available zeropage space
 	BCC go_emu		; nore than enough space
 	BEQ go_emu		; just enough!
-		_ERR(FULL)		; not enough memory otherwise (rare)
+		_ABORT(FULL)	; not enough memory otherwise (rare) new interface
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
 	STZ zpar		; no screen size required
 	_KERNEL(OPEN_W)	; ask for a character I/O device
-	
+	BCC open_emu	; no errors
+		_ABORT(NO_RSRC)	; abort otherwise!
+open_emu:
+
 ; might check here whether a Rockwell 65C02 is used!
 ; should try to allocate memory here
 

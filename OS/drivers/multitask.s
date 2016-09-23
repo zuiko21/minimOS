@@ -1,9 +1,10 @@
 ; software multitasking module for minimOS
-; v0.5a5
+; v0.5a6
 ; (c) 2015-2016 Carlos J. Santisteban
 ; last modified 20150617-1327
-; revised 20160115 for commit with new filenames
+; revised 20160923-0951
 
+; *** this makes sense for 02 only, but check newer interface ASAP *************************
 ; in case of standalone assembly from 'xa drivers/multitask.s'
 #ifndef		DRIVERS
 #include "options.h"
@@ -82,7 +83,7 @@ mm_xsl:						; should take 35 clocks
 	_KERNEL(TS_INFO)	; get taskswitching info for needed stack frame
 
 #ifdef	SAFE
-		BCS mm_exit			; keep error if not available
+		_ABORT(UNAVAIL)		; error if not available
 #endif
 
 	STY mm_sfsiz		; store stack frame size! new 20150521
@@ -91,9 +92,7 @@ mm_tscp:
 		STA mm_stack-1, Y	; store into private vars
 		DEY					; go for next byte
 		BNE mm_tscp
-	CLC					; no errors this far
-mm_exit:
-	RTS					; keeps error code in C
+	_FINISH				; I think it is called via JSR/JSL? or CLC & RTS?
 
 ; *** the scheduler code ***
 mm_sched:

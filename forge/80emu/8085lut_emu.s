@@ -1,8 +1,8 @@
 ; Intel 8080/8085 emulator for minimOS!
 ; *** FASTER VERSION WITH LUT *** Rockwell only!
-; v0.1b1
+; v0.1b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160919-1405
+; last modified 20160923-0935
 
 #include "usual.h"
 
@@ -71,7 +71,7 @@ cdev		= uz+15		; I/O device *** minimOS specific ***
 	CMP z_used		; check available zeropage space
 	BCC go_emu		; more than enough space
 	BEQ go_emu		; just enough!
-		_ERR(FULL)		; not enough memory otherwise (rare)
+		_ABORT(FULL)	; not enough memory otherwise (rare) new interface
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
@@ -83,7 +83,7 @@ go_emu:
 	STA zaddr3+1
 	_KERNEL(OPEN_W)	; ask for a character I/O device
 	BCC open_emu	; no errors
-		_ERR(NO_RSRC)		; abort otherwise!
+		_ABORT(NO_RSRC)	; abort otherwise!
 open_emu:
 	STY cdev		; store device!!!
 ; should try to allocate memory here
@@ -1280,7 +1280,7 @@ _76:
 ; ...since interrupts are not yet supported!
 	LDY cdev	; console device
 	_KERNEL(FREE_W)	; release device or window
-	_EXIT_OK		; *** go away ***
+	_FINISH			; *** go away *** new interface
 
 
 ; ** specials **

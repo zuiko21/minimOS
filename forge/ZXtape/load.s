@@ -1,7 +1,7 @@
 ; minimOS ZX tape interface loader!
-; v0.1b1
+; v0.1b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160812-2032
+; last modified 20160923-0944
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****
 ; ****   ONLY if enabled by setting 'flag' to look for data ($FF) ****
@@ -112,7 +112,7 @@ sync:
 	CMP flag	; what were you looking for? (0=header or $FF=data)
 	BEQ ld_loop	; matched flag, proceed with load
 		_EXIT_CS	; PLP actually
-		_ERR(N_FOUND)	; otherwise is a discarded block
+		_ERR(N_FOUND)	; otherwise is a discarded block *** for drivers, ABORT otherwise
 
 ; *** get byte, store it and decrease counter ***
 ld_loop:
@@ -138,11 +138,11 @@ loaded:
 	LDA checksum	; check stored
 	BNE error	; zero means OK
 		_EXIT_CS	; PLP actually
-		_EXIT_OK	; this is CLC RTS
+		_EXIT_OK	; this is CLC RTS ** for drivers, FINISH otherwise
 		
 error:
 	_EXIT_CS	; PLP, actually
-	_ERR(CORRUPT)	; otherwise a loading error happened
+	_ERR(CORRUPT)	; otherwise a loading error happened *** for drivers, ABORT otherwise
 	
 ; ****** all finished ******
 

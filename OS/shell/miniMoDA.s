@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b6
-; last modified 20160815-1220 (removed common headers)
+; v0.5b7
+; last modified 20160923-1013
 ; (c) 2016 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -60,7 +60,7 @@
 	CMP z_used			; check available zeropage space
 	BCC go_da			; enough space
 	BEQ go_da			; just enough!
-		_ERR(FULL)			; not enough memory otherwise (rare)
+		_ABORT(FULL)		; not enough memory otherwise (rare) new interface
 go_da:
 #endif
 	STA z_used			; set needed ZP space as required by minimOS
@@ -72,7 +72,7 @@ go_da:
 	STA str_pt+1
 	_KERNEL(OPEN_W)		; ask for a character I/O device
 	BCC open_da			; no errors
-		_ERR(NO_RSRC)		; abort otherwise! proper error code
+		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_da:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
@@ -732,7 +732,7 @@ quit:
 ; will not check any pending issues
 	PLA					; discard main loop return address
 	PLA
-	_EXIT_OK			; exit to minimOS, proper error code
+	_FINISH				; exit to minimOS, proper error code, new interface
 
 ; ** .S = store raw string **
 store_str:
@@ -927,7 +927,7 @@ h2b_num:
 		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
 		_BRA h2b_l			; process it
 h2b_end:
-	_EXIT_OK			; clear carry, value is valid!
+	CLC: RTS			; clear carry, value is valid! macro NLA
 h2b_err:
 	DEX					; at least one cipher processed?
 	BMI h2b_exit		; no need to correct

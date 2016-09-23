@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
-; v0.9a2
+; v0.9a3
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20160407-1238
+; last modified 20160623-1002
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -198,7 +198,7 @@ fwi_loop:
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
 	_EXIT_CS			; restore interrupts if needed (4)
-	_EXIT_OK			; all done (8)
+	_FINISH				; all done (8)
 
 
 ; A2, set IRQ vector
@@ -210,7 +210,7 @@ fw_s_isr:
 	STY fw_isr				; store for firmware (4+4)
 	STA fw_isr+1
 	_EXIT_CS				; restore interrupts if needed (4)
-	_EXIT_OK				; done (8)
+	_FINISH					; done (8)
 
 
 ; A4, set NMI vector
@@ -222,7 +222,7 @@ fw_s_nmi:
 	LDA zaddr3+1			; get MSB (3)
 	STY fw_nmi				; store for firmware (4+4)
 	STA fw_nmi+1
-	_EXIT_OK				; done (8)
+	_FINISH					; done (8)
 
 
 ; A6, patch single function
@@ -235,7 +235,7 @@ fw_patch:
 	STA fw_table, Y			; store where the firmware expects it (4+4)
 	STA fw_table+1, Y
 	_EXIT_CS				; restore interrupts if needed (4)
-	_EXIT_OK				; done (8)
+	_FINISH					; done (8)
 
 
 ; A8, get system info, API TBD
@@ -260,7 +260,7 @@ fw_gestalt:
 	STA zpar3
 	LDA #>fw_mname	; same for MSB (2+3)
 	STA zpar3+1
-	_EXIT_OK		; done (8)
+	_FINISH			; done (8)
 
 
 ; A10, poweroff etc
@@ -276,7 +276,7 @@ fwp_off:
 	.asc	"{OFF}", 0	; just in case is handled
 
 fwp_susp:
-	_ERR(UNAVAIL)		; just continue execution
+	_ABORT(UNAVAIL)		; just continue execution
 
 fwp_cold:
 #include "firmware/modules/coldboot.s"
