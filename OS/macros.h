@@ -1,6 +1,6 @@
 ; minimOS 0.5a11 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160922
+; last modified 20160923
 
 ; *** standard addresses ***
 ; redefined as labels 20150603
@@ -9,7 +9,7 @@
 
 kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
 admin_call	=	$FFD8	; ending in RTS, no way to use a PHK wrapper eeeeeeek! JSL adm16_call & RTS instead
-adm16_call	=	$FFD0 	; ending in RTL, might push P for mode preservation
+adm16_call	=	$FFD0 	; ending in RTL, routines should push P for mode preservation in case is needed
 
 ; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS, new 20150410
 panic		=	$FFE0	; more-or-less 816 savvy address, new 20160308
@@ -42,13 +42,19 @@ FILE_DEV	=	130
 #define		_FILESYS(a)		STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
 
 ; *** function endings ***
-; * due to implicit PHP on COP, these should be heavily revised for 65C816
+; * due to implicit PHP on COP, these should be heavily revised for 65816
+; new FINISH and ABORT macros for app exit to shell, using RTL for 65816
+; firmware interface can no longer use EXIT_OK and ERR, now reserved for the kernel API
 
 #ifndef	C816
+#define		_FINISH		CLC: RTS
 #define		_EXIT_OK	CLC: RTS
+#define		_ABORT(a)	LDY #a: SEC: RTS
 #define		_ERR(a)		LDY #a: SEC: RTS
 #else
+#define		_FINISH		CLC: RTL
 #define		_EXIT_OK	RTI
+#define		_ABORT(a)	LDY #a: SEC: RTL
 #define		_ERR(a)		LDY #a: PLP: SEC: PHP: RTI
 
 ; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
@@ -68,6 +74,7 @@ FILE_DEV	=	130
 #define		_CLI		CLI
 ; otherwise call SU_CLI function, not really needed on 65xx 
 
+; ** panic call, pretty much the same jump to standard address, could be far in case of 65816 **
 #ifndef	C816
 #define		_PANIC		JMP panic
 #else
@@ -100,6 +107,7 @@ FILE_DEV	=	130
 #define		_TRB(a)		BIT a: PHP: PHA: EOR #$FF: AND a: STA a: PLA: PHP
 #define		_TSB(a)		BIT a: PHP: PHA: ORA a: STA a: PLA: PLP
 #else
+; standard CMOS opcodes
 #define		_JMPX(a)	JMP (a, X)
 #define		_PHX		PHX
 #define		_PHY		PHY
