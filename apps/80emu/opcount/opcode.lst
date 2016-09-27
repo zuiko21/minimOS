@@ -1,0 +1,246 @@
+aci 
+adc a
+adc b
+adc c
+adc d
+adc e
+adc h
+adc l
+adc m
+add a
+add b
+add c
+add d
+add e
+add h
+add l
+add m
+adi 
+ana a
+ana b
+ana c
+ana d
+ana e
+ana h
+ana l
+ana m
+ani 
+call 
+cc 
+cm 
+cma 
+cmc 
+cmp a
+cmp b
+cmp c
+cmp d
+cmp e
+cmp h
+cmp l
+cmp m
+cnc 
+cnz 
+cp 
+cpe 
+cpi 
+cpo 
+cz 
+daa
+dad b
+dad d
+dad h
+dad sp
+dcr a
+dcr b
+dcr c
+dcr d
+dcr e
+dcr h
+dcr l
+dcr m
+dcx b
+dcx d
+dcx h
+dcx sp
+di
+ei
+hlt
+in 
+inr a
+inr b
+inr c
+inr d
+inr e
+inr h
+inr l
+inr m
+inx b
+inx d
+inx h
+inx sp
+jc 
+jm 
+jmp 
+jnc 
+jnz 
+jp 
+jpe 
+jpo 
+jz 
+lda 
+ldax b
+ldax d
+lhld 
+lxi b
+lxi d
+lxi h
+lxi sp
+mov a,a
+mov a,b
+mov a,c
+mov a,d
+mov a,e
+mov a,h
+mov a,l
+mov a,m
+mov b,a
+mov b,b
+mov b,c
+mov b,d
+mov b,e
+mov b,h
+mov b,l
+mov b,m
+mov c,a
+mov c,b
+mov c,c
+mov c,d
+mov c,e
+mov c,h
+mov c,l
+mov c,m
+mov d,a
+mov d,b
+mov d,c
+mov d,d
+mov d,e
+mov d,h
+mov d,l
+mov d,m
+mov e,a
+mov e,b
+mov e,c
+mov e,d
+mov e,e
+mov e,h
+mov e,l
+mov e,m
+mov h,a
+mov h,b
+mov h,c
+mov h,d
+mov h,e
+mov h,h
+mov h,l
+mov h,m
+mov l,a
+mov l,b
+mov l,c
+mov l,d
+mov l,e
+mov l,h
+mov l,l
+mov l,m
+mov m,a
+mov m,b
+mov m,c
+mov m,d
+mov m,e
+mov m,h
+mov m,l
+mvi a,
+mvi b,
+mvi c,
+mvi d,
+mvi e,
+mvi h,
+mvi l,
+mvi m,
+nop
+ora a
+ora b
+ora c
+ora d
+ora e
+ora h
+ora l
+ora m
+ori 
+out 
+pchl
+pop b
+pop d
+pop h
+pop psw
+push b
+push d
+push h
+push psw
+ral
+rar
+rc
+ret
+rim
+rlc
+rm
+rnc
+rnz
+rp
+rpe
+rpo
+rrc
+rst 0
+rst 1
+rst 2
+rst 3
+rst 4
+rst 5
+rst 6
+rst 7
+rz
+sbb a
+sbb b
+sbb c
+sbb d
+sbb e
+sbb h
+sbb l
+sbb m
+sbi 
+shld 
+sim
+sphl
+sta 
+stax b
+stax d
+stc
+sub a
+sub b
+sub c
+sub d
+sub e
+sub h
+sub l
+sub m
+sui 
+xchg
+xra a
+xra b
+xra c
+xra d
+xra e
+xra h
+xra l
+xra m
+xri 
+xthl

@@ -1,0 +1,6 @@
+#!/bin/bash
+cat $1/*.asm > temp1			# mix all sources into one single file
+tr [:upper:] [:lower:] <temp1 >temp2	# all in lower case
+tr [!:] '\n' <temp2 >temp3		# put newlines instead of sentence separators
+tr -s '\t' ' ' <temp3 >source.asm	# use single space instead of tabulators
+rm temp[1-3]				# clean up

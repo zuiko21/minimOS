@@ -1,0 +1,11 @@
+#!/bin/bash
+echo "8080 opcode stats" > stats	# clear output file
+IFS=''					# keep spaces from opcode list!
+while read line; do
+	echo -n "$line: " >> stats	# heading for measured opcode
+	echo -n "buscando $line... "	# tell me what is looking for
+	found=$(cut -f1 -d ";" $1 | grep -c "$line")	# supress comments
+					# and count occurrences (-c)
+	echo "$found" >> stats		# include result
+	echo $found			# and show it
+done < opcode.lst

@@ -1,0 +1,247 @@
+8080 opcode stats (CP/M 2.0 sources)
+aci : 4
+adc a: 0
+adc b: 1
+adc c: 0
+adc d: 0
+adc e: 1
+adc h: 0
+adc l: 0
+adc m: 0
+add a: 13
+add b: 5
+add c: 3
+add d: 3
+add e: 0
+add h: 3
+add l: 4
+add m: 2
+adi : 19
+ana a: 0
+ana b: 4
+ana c: 1
+ana d: 0
+ana e: 0
+ana h: 2
+ana l: 1
+ana m: 2
+ani : 110
+call : 976
+cc : 2
+cm : 0
+cma : 0
+cmc : 0
+cmp a: 1
+cmp b: 2
+cmp c: 1
+cmp d: 2
+cmp e: 2
+cmp h: 3
+cmp l: 3
+cmp m: 46
+cnc : 4
+cnz : 27
+cp : 4
+cpe : 0
+cpi : 313
+cpo : 0
+cz : 13
+daa: 7
+dad b: 34
+dad d: 104
+dad h: 25
+dad sp: 4
+dcr a: 45
+dcr b: 33
+dcr c: 50
+dcr d: 1
+dcr e: 6
+dcr h: 0
+dcr l: 1
+dcr m: 14
+dcx b: 11
+dcx d: 5
+dcx h: 22
+dcx sp: 0
+di: 390
+ei: 5
+hlt: 5
+in : 25
+inr a: 28
+inr b: 10
+inr c: 11
+inr d: 1
+inr e: 1
+inr h: 3
+inr l: 1
+inr m: 22
+inx b: 3
+inx d: 49
+inx h: 213
+inx sp: 0
+jc : 50
+jm : 0
+jmp : 484
+jnc : 48
+jnz : 303
+jp : 0
+jpe : 0
+jpo : 0
+jz : 240
+lda : 194
+ldax b: 3
+ldax d: 51
+lhld : 182
+lxi b: 28
+lxi d: 105
+lxi h: 324
+lxi sp: 16
+mov a,a: 4
+mov a,b: 51
+mov a,c: 52
+mov a,d: 28
+mov a,e: 26
+mov a,h: 26
+mov a,l: 37
+mov a,m: 127
+mov b,a: 34
+mov b,b: 0
+mov b,c: 2
+mov b,d: 1
+mov b,e: 0
+mov b,h: 19
+mov b,l: 3
+mov b,m: 17
+mov c,a: 49
+mov c,b: 0
+mov c,c: 0
+mov c,d: 0
+mov c,e: 2
+mov c,h: 0
+mov c,l: 14
+mov c,m: 26
+mov d,a: 11
+mov d,b: 2
+mov d,c: 0
+mov d,d: 0
+mov d,e: 0
+mov d,h: 0
+mov d,l: 0
+mov d,m: 17
+mov e,a: 26
+mov e,b: 2
+mov e,c: 2
+mov e,d: 1
+mov e,e: 0
+mov e,h: 1
+mov e,l: 0
+mov e,m: 30
+mov h,a: 15
+mov h,b: 5
+mov h,c: 0
+mov h,d: 2
+mov h,e: 0
+mov h,h: 0
+mov h,l: 0
+mov h,m: 7
+mov l,a: 31
+mov l,b: 1
+mov l,c: 7
+mov l,d: 1
+mov l,e: 4
+mov l,h: 0
+mov l,l: 0
+mov l,m: 2
+mov m,a: 84
+mov m,b: 10
+mov m,c: 10
+mov m,d: 12
+mov m,e: 15
+mov m,h: 0
+mov m,l: 0
+mvi a,: 114
+mvi b,: 40
+mvi c,: 150
+mvi d,: 27
+mvi e,: 7
+mvi h,: 9
+mvi l,: 7
+mvi m,: 50
+nop: 6
+ora a: 125
+ora b: 20
+ora c: 15
+ora d: 0
+ora e: 1
+ora h: 10
+ora l: 8
+ora m: 5
+ori : 10
+out : 21
+pchl: 21
+pop b: 83
+pop d: 59
+pop h: 90
+pop psw: 39
+push b: 77
+push d: 41
+push h: 100
+push psw: 45
+ral: 36
+rar: 34
+rc: 141
+ret: 389
+rim: 0
+rlc: 9
+rm: 43
+rnc: 14
+rnz: 33
+rp: 17
+rpe: 0
+rpo: 0
+rrc: 24
+rst 0: 0
+rst 1: 0
+rst 2: 0
+rst 3: 0
+rst 4: 0
+rst 5: 0
+rst 6: 0
+rst 7: 0
+rz: 73
+sbb a: 0
+sbb b: 3
+sbb c: 2
+sbb d: 4
+sbb e: 0
+sbb h: 9
+sbb l: 0
+sbb m: 3
+sbi : 3
+shld : 138
+sim: 4
+sphl: 6
+sta : 147
+stax b: 3
+stax d: 17
+stc: 14
+sub a: 1
+sub b: 3
+sub c: 6
+sub d: 2
+sub e: 5
+sub h: 0
+sub l: 9
+sub m: 9
+sui : 24
+xchg: 105
+xra a: 72
+xra b: 0
+xra c: 0
+xra d: 0
+xra e: 0
+xra h: 1
+xra l: 1
+xra m: 0
+xri : 0
+xthl: 10
