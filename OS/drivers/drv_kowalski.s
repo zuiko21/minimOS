@@ -42,13 +42,13 @@ kow_cout:
 kow_ncr:
 	STA IO_BASE+1	; print it
 kow_rts:
-	_EXIT_OK
+	_DR_OK
 
 ; *** input ***
 kow_cin:
 	LDA IO_BASE+4	; get input from I/O window
 	BEQ kow_empty	; nothing available
 		STA zpar		; store result otherwise
-		_EXIT_OK
+		_DR_OK
 kow_empty:
-	_ERR(EMPTY)		; nothing yet
+	_DR_ERR(EMPTY)		; nothing yet

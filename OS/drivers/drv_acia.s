@@ -2,7 +2,7 @@
 ; v0.5b3
 ; (c) 2012-2016 Carlos J. Santisteban
 ; last modified 20150929-0944
-; revised 20160115 for commit with new filenames
+; revised 20160928 FOR NEW INTERFACE
 
 ; *** constants for 65(C)51 registers ***
 ; get ACIA from options.h
@@ -65,7 +65,7 @@ acia_init:
 	STA ser_read
 	STA ser_cont
 acia_rts:
-	_EXIT_OK		; needed instead of RTS with the new strict kernel
+	_DR_OK		; needed instead of RTS with the new strict kernel
 
 ; *** output ***
 acia_cout:
@@ -81,17 +81,17 @@ acia_ochk:
 	BNE acia_ochk	; continue checking
 		INX			; increase MSB, could compare for shorter wait
 	BNE acia_ochk
-		_ERR(TIMEOUT)	; no timely reply
+		_DR_ERR(TIMEOUT)	; no timely reply
 acia_free:
 	LDA zpar		; get char to be sent, revised 150205
 	STA ACIA_TD		; send it
-	_EXIT_OK
+	_DR_OK
 
 ; *** input ***
 acia_cin:
 	LDX ser_cont	; number of characters in buffer
 	BNE acin_some	; not empty
-		_ERR(EMPTY)	; mild error otherwise
+		_DR_ERR(EMPTY)	; mild error otherwise
 acin_some:
 	CMP #16			; buffer was full? maybe a lower number, see below
 	BNE acin_noen	; nope, no need to restore Tx
@@ -109,7 +109,7 @@ acin_noen:
 	INX				; advance to next position
 	STX ser_read	; update pointer
 	DEC ser_cont	; one less
-	_EXIT_OK
+	_DR_OK
 
 ; *** request ***
 acia_rcvd:
@@ -127,10 +127,10 @@ acia_do:
 	ASL				; get bit 3 on C, RDRF
 	BCS acrc_rcv	; a character arrived!
 ; most likely /CTS went up...
-		_EXIT_OK	; really don't know what to do here
+		_DR_OK	; really don't know what to do here
 acrc_rcv:
 	BEQ acrc_ok		; no errors, go store it
-		_ERR(CORRUPT)	; some framing errors
+		_DR_ERR(CORRUPT)	; some framing errors
 acrc_ok:
 ; store it into buffer
 	LDX ser_cont	; number of characters in buffer
@@ -152,16 +152,16 @@ acrc_ok:
 		AND #%11110011	; clear bits 3-2 (/RTS goes high)
 		STA ACIA_CMD	; ask sender to stop
 acrc_room:
-	_EXIT_OK		; all done
+	_DR_OK			; all done
 acrc_full:
-	_ERR(FULL)		; there was no room
+	_DR_ERR(FULL)	; there was no room
 acrc_err:
-	_ERR(N_FOUND)	; unexpected broken link
+	_DR_ERR(N_FOUND)	; unexpected broken link
 
 ; *** NEW shutdown procedure 150204 ***
 acia_bye:
 	LDA #%11000010	; /RTS hi -> Tx disabled, no ints, DT not ready
 	STA ACIA_CMD	; command sent
-	_EXIT_OK
+	_DR_OK			; maybe RTS will suffice?
 
 

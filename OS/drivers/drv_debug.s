@@ -2,7 +2,7 @@
 ; v0.9.2
 ; (c) 2012-2016 Carlos J. Santisteban
 ; last modified 20150605-1411
-; revised 20160115 for commit with new filenames
+; revised 20160928-1054 FOR NEW INTERFACE
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -48,11 +48,11 @@ no_blank:
 	STX VIA+IORB	; scroll to the left
 	STA VIA+IORA	; 'print' character
 dled_end:
-	_EXIT_OK
+	_DR_OK
 
 ; *** input ***
 dled_cin:
-	_ERR(EMPTY)	; mild error, so far
+	_DR_ERR(EMPTY)	; mild error, so far
 
 ; *** poll ***
 dled_get:
@@ -62,7 +62,7 @@ dled_get:
 	EOR #%00100000	; toggle CB2
 	STA VIA+PCR	; set CB2 status
 ledg_rts:
-	_EXIT_OK
+	_DR_OK
 
 ; *** initialise ***
 dled_reset:
@@ -72,4 +72,4 @@ dled_reset:
 	STA VIA+DDRA	; set direction
 	STA VIA+DDRB
 	_STZA systmp	; some more odd init code
-	_EXIT_OK
+	_DR_OK

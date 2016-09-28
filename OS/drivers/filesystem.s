@@ -2,7 +2,7 @@
 ; v0.5a1
 ; (c) 2015-2016 Carlos J. Santisteban
 ; last modified 20150323-1104
-; revised 20160115 for commit with new filenames
+; revised 20160928
 
 ; *** put here standalone includes ***
 #ifndef		DRIVERS
@@ -125,7 +125,7 @@ fo_ncmp:
 			INY						; advance it too (2)
 			BNE fo_ncmp			; keep comparing, best not use BRA (3/2)
 fo_err:
-	_ERR(N_FOUND)			; file not found
+	_DR_ERR(N_FOUND)			; file not found
 fo_found:
 ; time to assign a device number to this file...**********************best to assign device first, then locate file within its own data structures???
 	LDX #0					; reset index

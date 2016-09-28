@@ -2,7 +2,7 @@
 ; v0.5b1
 ; (c) 2012-2016 Carlos J. Santisteban
 ; last modified 20150323-1102
-; revised 20160115 for commit with new filenames
+; revised 20160928
 
 ; in case of standalone assembly via 'xa drivers/drv_ss22.s'
 #ifndef		DRIVERS
@@ -56,7 +56,7 @@ ss_init:
 ; activate ints
 	LDA #$81		; enable CA2 interrupt ONLY (unlike the async version)
 	STA VIA+IER
-	_EXIT_OK		; won't fail, but strict kernel needs this
+	_DR_OK			; won't fail, but strict kernel needs this
 
 ; *** output ***
 ss_cout:
@@ -71,7 +71,7 @@ ss_time:
 			BEQ ss_free		; proceed if available (2/3)
 		DEX				; apply timeout (2)
 		BNE ss_time		; not expired yet (3/2)
-	_ERR(TIMEOUT)	; no timely reply
+	_DR_ERR(TIMEOUT)	; no timely reply
 ss_free:
 	DEC ss_stat		; sending in progress
 ; put byte into SR and that clears flag
@@ -99,20 +99,20 @@ ss_comp:
 			BNE ss_done		; exit if finished (2/3)
 		DEX				; apply timeout (2)
 		BNE ss_comp		; not expired yet (3/2)
-	_ERR(TIMEOUT)	; no timely reply
+	_DR_ERR(TIMEOUT)	; no timely reply
 ss_done:
 ; turn off SR and we're done
 	LDA VIA+ACR		; get previous state
 	AND #$E7		; mask out SR bits
 	STA VIA+ACR		; shift register disabled
 	_STZA ss_stat	; operation finished (4)
-	_EXIT_OK
+	_DR_OK
 
 ; *** input ***
 ss_cin:
 	LDX ss_cont		; number of characters in buffer
 	BNE ss_some		; not empty
-		_ERR(EMPTY)		; mild error otherwise
+		_DR_ERR(EMPTY)		; mild error otherwise
 ss_some:
 	LDA ss_read		; position to be read from buffer
 	AND #$0F		; modulo-16, new 20150211
@@ -128,9 +128,9 @@ ss_some:
 	BEQ ss_ok		; nothing pending
 	BMI ss_ok		; sending anyway
 		JSR ss_get2		; otherwise, do receive at last!
-		CLI				; enable interrupts after that!
+		CLI				; enable interrupts after that! **** always???
 ss_ok:
-	_EXIT_OK
+	_DR_OK
 
 ; *** request ***
 ss_rcp:
@@ -143,7 +143,7 @@ ss_end:	; **** is this really needed???
 ss_sent:
 ; wait for no operations in progress (?)
 	LDX #91			; load timeout counter (91x11 = 1 ms @ 1 MHz)
-	CLI				; enable interrupts for a moment
+	CLI				; enable interrupts for a moment ***** revise
 ss_hold:
 		LDA ss_stat		; check availability (4)
 			BEQ ss_get		; proceed if available (2/3)
@@ -188,7 +188,7 @@ ss_off:
 	STA VIA+ACR		; shift register disabled
 	_STZA ss_stat	; operation finished (4)
 ss_full:
-	_EXIT_OK		; driver satisfied, new format
+	_DR_OK			; driver satisfied, new format
 
 ; *** shutdown ***
 ss_bye:

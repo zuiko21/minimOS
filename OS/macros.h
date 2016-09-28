@@ -1,6 +1,6 @@
 ; minimOS 0.5a11 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160923
+; last modified 20160928
 
 ; *** standard addresses ***
 ; redefined as labels 20150603
@@ -19,6 +19,12 @@ panic		=	$FFE0	; more-or-less 816 savvy address, new 20160308
 TASK_DEV	=	128
 WIN_DEV		=	129
 FILE_DEV	=	130
+
+; *** considerations for minimOS·16 ***
+; kernel return is via RTI (note CLC trick)
+; kernel functions are expected to be in bank zero!
+; 6502 apps might work bank-agnostic, binaries should use wrapper JSR pointer, RTL
+; driver routines are expected to be in bank zero too... standard JSR/RTS, must return to kernel!
 
 ; *** common function calls ***
 
@@ -58,6 +64,10 @@ FILE_DEV	=	130
 #define		_ERR(a)		LDY #a: PLP: SEC: PHP: RTI
 
 ; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
+
+; driver init & I/O routine endings, for both 6502 and 816 (expected to be in bank zero anyway)
+#define		_DR_OK		CLC: RTS
+#define		_DR_ERR(a)	LDY #a: SEC: RTS
 
 ; new exit for asynchronous driver routines when not satisfied 20150320, renamed 20150929
 #define		_NEXT_ISR	SEC: RTS

@@ -2,7 +2,7 @@
 ; v0.5a1
 ; (c) 2012-2016 Carlos J. Santisteban
 ; last modified 20150323-1103
-; revised 20160115 for commit with new filenames
+; revised 20160928
 
 ; in case of standalone assembly via 'xa drivers/drv_ss22.s'
 #ifndef		DRIVERS
@@ -55,7 +55,7 @@ ss_init:
 ; activate ints
 	LDA #$85		; enable CA2 and SR interrupts
 	STA VIA+IER
-	RTS				; called during boot, no need to signal anything
+	_DR_OK			; called during boot, needs to signal OK!
 
 ; *** output ***
 ss_cout:
@@ -70,7 +70,7 @@ ss_time:
 			BEQ ss_free		; proceed if available (2/3)
 		DEX				; apply timeout (2)
 		BNE ss_time		; not expired yet (3/2)
-	_ERR(TIMEOUT)	; no timely reply
+	_DR_ERR(TIMEOUT)	; no timely reply
 ; put byte into SR and that clears flag
 ss_free:
 	DEC ss_stat		; sending in progress
@@ -91,7 +91,7 @@ ss_free:
 	STA VIA+PCR		; CA2 is pulsed
 	PLA				; get previous PCR
 	STA VIA+PCR		; restore it
-	_EXIT_OK
+	_DR_OK
 
 ; *** input ***
 ss_cin:
@@ -114,7 +114,7 @@ ss_some:
 			BEQ ss_ok		; nothing in progress
 			BPL ss_shift	; get the pending byte, if receiving
 ss_ok
-	_EXIT_OK
+	_DR_OK
 
 ; *** request ***
 ss_rcp:
@@ -146,6 +146,7 @@ ss_sent:
 	AND #$E7		; mask out SR bits
 	STA VIA+ACR		; shift register disabled
 	_STZA ss_stat	; operation finished (4)
+; ******* this has to be revised for the new macros ***********
 ss_err:
 	SEC				; C=1 means driver satisfied (2)
 ss_end:
@@ -162,6 +163,7 @@ ss_wait:
 			BEQ ss_rdy		; proceed if available (2/3)
 		DEX				; apply timeout (2)
 		BNE ss_wait		; not expired yet (3/2)
+; ******* revise *********
 	SEC				; no timely reply (2)
 	RTS				; C=1 means driver satisfied (6)
 ss_rdy

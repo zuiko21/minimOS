@@ -2,7 +2,7 @@
 ; as originally issued on 0.4rc1 20130521
 ; v0.9.2 corrected NMOS version 20160407
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160407-1203
+; last modified 20160928-1053 for new interface
 
 ; in case of standalone assembly via 'xa drivers/drv_led.s'
 #ifndef		DRIVERS
@@ -49,7 +49,7 @@ led_cout:
 	BNE led_ncr		; check other codes
 		LDA #$FF		; -1 means next received character will clear the display
 		STA led_pos		; update variable!
-		_EXIT_OK
+		_DR_OK
 led_ncr:
 	CMP #12			; FF clears too
 		BEQ led_blank
@@ -61,7 +61,7 @@ led_clear:
 		_STZA led_pos, X	; will clear LED buffer _and_ position, NMOS will *not* keep A corrected 20160407
 		DEX
 		BPL led_clear	; loops until all clear, zero will loop too
-		_EXIT_OK
+		_DR_OK
 led_noclear:
 	LDX led_pos		; check whether a new line was due
 	BPL	led_nonl	; some other standard value
@@ -75,7 +75,7 @@ led_nonl:
 		_STZA led_buf, X	; clear position
 		STX led_pos		; update cursor position
 led_end:
-		_EXIT_OK
+		_DR_OK
 led_nobs:
 	CMP #'.'		; may add dot to previous char
 		BNE led_nodot
@@ -86,7 +86,7 @@ led_nobs:
 	LSR				; check LSB for decimal point
 		BCS led_nodot	; already has dot, go away
 	INC led_buf, X	; add decimal point
-	_EXIT_OK
+	_DR_OK
 led_nodot:
 	CMP #' '		; check whether is non-printable
 	BPL led_print	; OK to print
@@ -112,7 +112,7 @@ led_cur:
 	LDX led_pos		; get cursor position
 	STA led_buf, X	; store bitmap
 	INC led_pos		; move cursor
-	_EXIT_OK
+	_DR_OK
 
 ; *** input, rewritten 130507 ***
 ; could use generic FIFO from 0.4.1, but a single-byte buffer will do
@@ -122,9 +122,9 @@ led_cin:
 		LDA lkp_buf		; gets the only char stored at buffer
 		STA z2			; output value
 		_STZA lkp_cont	; it's empty now! Could use DEC, but no advantage on CMOS
-		_EXIT_OK
+		_DR_OK
 ledi_none:
-	_ERR(EMPTY)	; mild error otherwise
+	_DR_ERR(EMPTY)	; mild error otherwise
 
 ; *** poll, rewritten 130506, corrected 130512 ***
 led_get:
@@ -151,7 +151,7 @@ led_nw:
 	CPX #_led_digits	; four columns processed?
 	BEQ ledg_go			; decode it!
 ledg_end:
-		_EXIT_OK
+		_DR_OK
 ; decode depressed key
 ledg_go:
 	DEX					; now it's 3
@@ -168,7 +168,7 @@ ledg_row:
 ledg_kpr:
 	BCS ledg_scan	; key was actually pressed?
 		_STZA lkp_new	; no longer pressed, reset previous scancode
-		RTS				; ...and go away, there was no error
+		RTS				; ...and go away, there was no error **** WATCH THIS
 ledg_scan:
 	STY systmp		; save row (1-4) number
 	TXA				; column number
@@ -188,9 +188,9 @@ ledg_scan:
 	BNE ledg_full	; has something already
 		STA lkp_buf		; store char from A into buffer
 		INC lkp_cont	; it's full now!
-		_EXIT_OK
+		_DR_OK
 ledg_full:
-	_ERR(FULL)		; no room
+	_DR_ERR(FULL)		; no room
 
 ; *** initialise, revised for new simplified keypad buffer 130507 ***
 led_reset:
@@ -223,7 +223,7 @@ led_dispcl:
 	AND #%00011111		; keep other PCR bits
 	ORA #%11000000		; CB2 low (display enable)
 	STA VIA+PCR		; instead of the rest
-	_EXIT_OK
+	_DR_OK
 
 ; **** data tables ****
 kptable:		; ascii values, reversed both column and row order 130512

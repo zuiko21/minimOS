@@ -1,8 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.5a6
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20150617-1327
-; revised 20160923-0951
+; last modified 20150928-1045
 
 ; *** this makes sense for 02 only, but check newer interface ASAP *************************
 ; in case of standalone assembly from 'xa drivers/multitask.s'
@@ -83,7 +82,7 @@ mm_xsl:						; should take 35 clocks
 	_KERNEL(TS_INFO)	; get taskswitching info for needed stack frame
 
 #ifdef	SAFE
-		_ABORT(UNAVAIL)		; error if not available
+		_DR_ERR(UNAVAIL)	; error if not available
 #endif
 
 	STY mm_sfsiz		; store stack frame size! new 20150521
@@ -92,7 +91,7 @@ mm_tscp:
 		STA mm_stack-1, Y	; store into private vars
 		DEY					; go for next byte
 		BNE mm_tscp
-	_FINISH				; I think it is called via JSR/JSL? or CLC & RTS?
+	_DR_OK				; new interface for both 6502 and 816
 
 ; *** the scheduler code ***
 mm_sched:
@@ -200,7 +199,7 @@ mm_loaded:
 	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
 		BNE mm_sigterm		; process it now! (2/3)
 mm_rts:
-	_EXIT_OK			; everything done, continue with ISR, will RTS do?
+	_DR_OK				; everything done, continue with ISR, will RTS do?
 
 ; the actual SIGTERM routine execution, new 20150611
 mm_sigterm:
@@ -248,7 +247,7 @@ mm_piderr:
 	PLA					; discard return address, since called from a subroutine (4+4)
 	PLA
 mm_bad:
-	_ERR(INVALID)		; not a valid PID or subfunction code, worth checking
+	_DR_ERR(INVALID)		; not a valid PID or subfunction code, worth checking
 #endif
 
 ; reserve a free braid
@@ -262,13 +261,13 @@ mmf_loop:
 		DEY					; try next (2)
 		BPL mmf_loop		; until the bottom of the list (3/2)
 	CLI					; nothing was found (2)
-	_ERR(FULL)			; no available braids!
+	_DR_ERR(FULL)			; no available braids!
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
 	STA mm_flags, Y		; reserve braid (4)
 	CLI					; end of risk (2)
 	INY					; first PID is 1 (2)
-	_EXIT_OK
+	_DR_OK
 
 ; get code at some address running into a paused (?) braid
 mm_exec:
@@ -356,7 +355,7 @@ mm_pre_exec:
 
 ; switch to next braid
 mm_yield:
-	_EXIT_OK		; if no multitasking assisting hardware is present, just ignore and stay, will RTS do?
+	_DR_OK			; if no multitasking assisting hardware is present, just ignore and stay, will RTS do?
 
 ; send some signal to a braid
 mm_signal:
@@ -373,7 +372,7 @@ mm_signal:
 #ifdef	SAFE
 	CPX #SIGCONT+1		; compare against last (2)
 	BMI mms_jmp			; abort if wrong signal
-		_ERR(INVALID)		; unrecognized signal!
+		_DR_ERR(INVALID)		; unrecognized signal!
 #endif
 
 mms_jmp:
@@ -392,13 +391,13 @@ mms_kill:
 	LDA #0				; STZ is not worth
 	STA mm_treq-1, Y	; Clear unattended TERM signal, 20150617
 ; should probably free up all windows belonging to this PID...
-	_EXIT_OK
+	_DR_OK
 
 ; ask braid to terminate
 mms_term:
 	TXA					; should get something not zero!
 	STA mm_treq-1, Y	; set SIGTERM request for that braid
-	_EXIT_OK
+	_DR_OK
 
 ; resume execution
 mms_cont:
@@ -409,7 +408,7 @@ mms_cont:
 	LDA #BR_RUN			; resume (2)
 	STA mm_flags-1, Y	; store new status (5)
 	CLI					; were off for ...
-	_EXIT_OK
+	_DR_OK
 
 ; pause execution
 mms_stop:
@@ -418,9 +417,9 @@ mms_stop:
 		BNE mms_kerr		; no way to stop it! (2/3)
 	LDA #BR_STOP		; pause it (2)
 	STA mm_flags-1, Y	; store new status (5)
-	_EXIT_OK
+	_DR_OK
 mms_kerr:
-	_ERR(INVALID)		; not a valid PID
+	_DR_ERR(INVALID)	; not a valid PID
 
 ; get execution flags for a braid
 mm_status:
@@ -433,12 +432,12 @@ mm_status:
 
 	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
 	TAY					; return value (2) *** might want to write it somewhere for faster BIT
-	_EXIT_OK
+	_DR_OK
 
 ; get current PID
 mm_getpid:
 	LDY mm_pid			; get PID (4)
-	_EXIT_OK
+	_DR_OK
 
 ; set SIGTERM handler
 mm_hndl:
@@ -455,11 +454,11 @@ mm_hndl:
 	LDA zpar2+1			; now for MSB (3+4)
 	STA mm_term+1, Y
 	CLI					; were off for 13 clocks (2)
-	_EXIT_OK
+	_DR_OK
 
 ; priorize braid, jump to it at once, really needed?
 mm_prior:
-	_EXIT_OK			; placeholder
+	_DR_OK			; placeholder
 
 ; *** subfuction addresses table ***
 mm_funct:
