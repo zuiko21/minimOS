@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.5a6
+; v0.5a7
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20150928-1045
+; last modified 20160929-1052
 
 ; *** this makes sense for 02 only, but check newer interface ASAP *************************
 ; in case of standalone assembly from 'xa drivers/multitask.s'
@@ -24,12 +24,12 @@
 	.byt	A_POLL		; polling scheduler this far, might get some I/O for API
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
-	.word	mm_rts		; D_REQ does nothing
-	.word	mm_rts		; no input
+	.word	mm_end		; D_REQ does nothing
+	.word	mm_exit		; no input
 	.word	mm_cmd		; output will process all subfunctions!
 	.word	mm_rts		; no need for 1-second interrupt
-	.word	mm_rts		; no block input
-	.word	mm_rts		; no block output
+	.word	mm_exit		; no block input
+	.word	mm_exit		; no block output
 	.word	mm_bye		; shutdown procedure
 	.word	mm_info		; NEW, points to descriptor string
 	.byt	0			; reserved, D_MEM
@@ -91,6 +91,7 @@ mm_tscp:
 		STA mm_stack-1, Y	; store into private vars
 		DEY					; go for next byte
 		BNE mm_tscp
+mm_exit:
 	_DR_OK				; new interface for both 6502 and 816
 
 ; *** the scheduler code ***
@@ -98,40 +99,31 @@ mm_sched:
 ; check whether it's time to switch or not
 	DEC mm_qcnt			; decrease remaining quantum count (6)
 	BEQ mm_do			; change task if expired (2/3)
-		RTS					; go away ASAP otherwise (6/0)
+		RTS					; go away ASAP otherwise, no need for macro (6/0)
 mm_do:
 ; execute scheduler itself
 	LDA #QUANTUM_COUNT	; get number of quantums to wait (2)
 	STA mm_qcnt			; restore counter for next time (4)
 ; get next available PID
 
-#ifdef	SAFE
-	LDY #2				; to avoid deadlocks (2)
-#endif
-
+	LDY #2				; to avoid deadlocks AND proper shutdown detection (2)
 	LDX mm_pid			; actual PID as index (4)
 mm_scan:
 		DEX					; going backwards is faster (2)
 		BNE mm_next			; no wrap, remember first PID is 1 (3/2)
 			LDX #MAX_BRAIDS		; go to end instead, valid as last PID (2)
-
-#ifdef	SAFE
 			DEY					; and check is not forever (2)
-				BEQ mm_lock			; shouldn't happen ever! (2/3)
-#endif
-
+				BEQ mm_lock			; should only happen at shutdown time (2/3)
 mm_next:
 		LDA mm_flags-1, X		; get status of entry, seems OK for first PID=1 (4)
 		BNE mm_scan				; zero means executable braid (3/2)
 ; an executable braid is found
 	CPX mm_pid			; is it the same as before? (4)
-		BNE mm_switch		; if not, go and switch braids (3/2)
-		BEQ mm_rts			; otherwise, nothing to do; no need for BRA (0/3)
+	BNE mm_switch		; if not, go and switch braids (3/2)
+		RTS					; otherwise, nothing to do; no need for BRA (0/3)
 
-#ifdef	SAFE
 mm_lock:
-	_KERNEL(GO_SHELL)	; severe error! restart the shell
-#endif
+		_KERNEL()			; all tasks stopped, time for shutdown
 
 ; arrived here in typically 39 clocks, if all braids were executable
 mm_switch:
@@ -198,16 +190,16 @@ mm_loaded:
 	LDX mm_pid			; get current PID again (4)
 	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
 		BNE mm_sigterm		; process it now! (2/3)
-mm_rts:
-	_DR_OK				; everything done, continue with ISR, will RTS do?
+	RTS					; all done, continue ISR
 
 ; the actual SIGTERM routine execution, new 20150611
 mm_sigterm:
 	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
 	JSR mms_tj			; should call handler and let it finish at some point (6+32)
-	_BRA mm_rts			; term handler will return here
+	_FINISH				; term handler will return here, is this OK?
 
 mms_tj:
+; ********* revise this for 816 ***********
 	TXA					; addressed braid (2)
 	ASL					; two times (2)
 	TAX					; proper offset in handler table, plus 2 (2)
@@ -220,6 +212,7 @@ mms_tj:
 
 ; *** shutdown code TO DO ***
 mm_bye:
+mm_rts:
 	RTS
 
 ; *** subfunction processing section ***
@@ -458,7 +451,11 @@ mm_hndl:
 
 ; priorize braid, jump to it at once, really needed?
 mm_prior:
-	_DR_OK			; placeholder
+	_DR_OK				; placeholder
+
+; emergency exit, should never arruive here!
+mm_exit:
+	_NEXT_ISR			; just in case
 
 ; *** subfuction addresses table ***
 mm_funct:
