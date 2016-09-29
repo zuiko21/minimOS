@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.5a7
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160929-1052
+; last modified 20160929-1114
 
 ; *** this makes sense for 02 only, but check newer interface ASAP *************************
 ; in case of standalone assembly from 'xa drivers/multitask.s'
@@ -36,7 +36,7 @@
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5a4", 0
+	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5a7", 0
 
 ; *** initialisation code ***
 mm_init:
@@ -71,12 +71,12 @@ mm_xsl:						; should take 35 clocks
 		BNE mm_xsl			; all braids, including the first one
 	INX					; the first PID is 1
 	STX mm_pid			; set index as current PID
-; prepare first running task
+; prepare first running task **** ?????
 	LDA #<mms_kill-1	; get default TERM handler LSB (will arrive via RTS, thus one byte before)
 	STA mm_term			; store in table
 	LDA #>mms_kill-1	; same for MSB
 	STA mm_term+1
-	LDA #BR_RUN			; will start "current" task
+	LDA #BR_RUN			; will start "current" task **** 
 	STA mm_flags		; no need for index, first entry anyway
 ; get proper stack frame from kernel, new 20150507
 	_KERNEL(TS_INFO)	; get taskswitching info for needed stack frame
@@ -287,7 +287,7 @@ mme_sp:
 		DEY						; until desired PID
 		BNE mme_sp
 	TSX					; get current SP
-	_SEI				; *** critical section begins ***
+	_ENTER_CS			; *** critical section begins ***
 	STX systmp			; will hold original SP
 	TAX					; computed value as destination SP
 	DEX					; initial value is one less from next one's start
@@ -329,7 +329,7 @@ mme_sf:
 	TXA					; temporary storage
 	LDX systmp			; retrive original value
 	TXS					; back to our own stack!
-	CLI					; *** end of critical section ***
+	_EXIT_CS			; *** end of critical section ***
 	LDY #sys_sp			; get offset for stored SP
 	STA (sysptr), Y		; store into context
 	LDY #z_used			; offset for user zero-page bytes EEEEEK!
