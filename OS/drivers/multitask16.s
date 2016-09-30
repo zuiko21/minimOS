@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160930-0914
+; last modified 20160930-1236
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -49,7 +49,7 @@ mm_init:
 	TCD					; direct-page set for first context
 	LDX #0				; reset index
 mm_rsp:
-		LDY #_SP			; original SP value *** check
+		LDY #_SP			; original SP value *** check or set as $FF directly
 		STY sys_sp			; direct page storage of original SP
 		LDY #BR_FREE		; adequate value in two highest bits
 		STY mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
@@ -61,11 +61,14 @@ mm_rsp:
 		INX					; go for next
 		CPX #MAX_BRAIDS		; all done?
 		BNE mm_rsp			; continue until all done
-
-; ***** CONTINUE HERE ***************** CONTINUE HERE **^*********************
-
-	STX mm_pid			; set index as current PID
-; prepare first running task **** ?????
+	XBA					; go check MSB again
+	LDA #>mm_context	; initial value for task 1
+	XBA					; little endian again
+	TCD					; set as default direct-page
+	LDA #1				; default task
+	STA mm_pid			; set as current PID
+; ****** set actual SP *********
+; prepare first running task **** ????? ****** CHECK *****
 	LDA #<mms_kill-1	; get default TERM handler LSB (will arrive via RTS, thus one byte before)
 	STA mm_term			; store in table
 	LDA #>mms_kill-1	; same for MSB
@@ -87,6 +90,7 @@ mm_tscp:
 		BNE mm_tscp
 mm_exit:
 	_DR_OK				; new interface for both 6502 and 816
+; ******************************* revise all of the above ***********************
 
 ; *** the scheduler code ***
 mm_sched:
@@ -110,95 +114,44 @@ mm_next:
 		RTS					; otherwise, nothing to do; no need for BRA (0/3)
 
 mm_lock:
-		_KERNEL()			; all tasks stopped, time for shutdown
+		_KERNEL()			; all tasks stopped, time for shutdown ****** revise interface
 
 ; arrived here in typically 39 clocks, if all braids were executable
 mm_switch:
+; store previous status
+	STX mm_pid			; will need to add that
+; keep stack pointer!
+	TSX					; get index MSB (2)
+	STX sys_sp			; store as usual (3)
 ; go into new braid
 	TDC					; get current zeropage pointer
 	XBA					; we will touch MSB only
-; ****************** add to X base context MSB!!! ********************
-
-	STX systmp			; store new PID (3)
-	LDA mm_pid			; compute older PID's storage address (4+2)
 	CLC
-	ADC #>mm_context	; PID as MSB (full page for each context) (2)
-	STA sysptr+1		; store pointer MSB (3)
-	LDA #<mm_context	; fixed LSB (2+3)
-	STA sysptr
-; store previous status
-; keep stack pointer!
-	TSX					; get index (2)
-	STX sys_sp			; store as usual (3)
-; then user-zeropage
-	LDA z_used			; actual bytes used on zeropage (3, 27 up to here)
-	_STAY(sysptr)		; store value
-		BEQ mm_saved		; skip if nothing to save (+2/3)
-	TAY					; use as index
-mm_save:
-		LDA z_used, Y		; get byte from zeropage (4*)
-		STA (sysptr), Y		; store it, although two bytes earlier (5)
-		DEY					; previous byte (2)
-		BNE mm_save			; until z_used, but NOT copied itself (3/2, used*14, max 3150) eeek!
-mm_saved:
-; finally the kernel context
-	LDY #locals			; beginning of variables (2)
-mm_kern:
-		LDA 0, Y			; get byte from locals and parameters (4*)
-		STA (sysptr), Y		; store in context area (5)
-		INY					; next byte (2)
-		BNE mm_kern			; up to $FF (3/2, total 391)
-; now let's retrieve new task's context
-; compute storage address
-	LDA systmp			; retrieve new PID (3)
-	STA mm_pid			; set new value, in the meanwhile (4+2)
+	ADC mm_pid			; compute offset within stored direct-pages
+	DEC					; first valid PID is 1!!!
+; set stack pointer to new context
+	LDA #>mm_stacks		; contextual stack area base pointer, assume page-aligned!!!
 	CLC
-	ADC #>mm_context	; PID as MSB (full page for each context) (2)
-	STA sysptr+1		; store pointer MSB, LSB is still valid (3)
-; restore kernel context
-	LDY #locals			; beginning of variables (2, 16 up here)
-mm_rest:
-		LDA (sysptr), Y		; get from context area (5)
-		STA 0, Y			; store byte from locals and parameters (4*)
-		INY					; next byte (2)
-		BNE mm_rest			; up to $FF (3/2, total 391)
-; then user-zeropage
-	_LDAY(sysptr)		; stored z_used (5)
-	STA z_used			; restore in zero page
-		BEQ mm_loaded		; skip if possible
-	TAY					; actual bytes used on zeropage (2)
-mm_load:
-		LDA (sysptr), Y		; get it, although two bytes earlier (5)
-		STA z_used, Y		; store byte in zeropage (4*)
-		DEY					; previous byte (2)
-		BNE mm_load			; until z_used but NOT copied itself (3/2, used*14+13, max 3163)
-mm_loaded:
-; finally get current stack pointer!
-	LDX sys_sp			; restored value (3)
-	TXS					; stack pointer updated! (2)
+	ADC mm_pid			; add offset for new braid
+	DEC					; one less!
+	XBA					; that was MSB
+	LDA sys_sp			; restored value (3) *** should add LSB if not page-aligned?
+	TCS					; stack pointer updated!
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
 	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
-		BNE mm_sigterm		; process it now! (2/3)
+		BNE mm_sigterm		; process it now! (2/3) *** careful! it ends on _FINISH instead of RTS
 	RTS					; all done, continue ISR
 
 ; the actual SIGTERM routine execution, new 20150611
 mm_sigterm:
-	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
-	JSR mms_tj			; should call handler and let it finish at some point (6+32)
-	_FINISH				; term handler will return here, is this OK?
-
-mms_tj:
-; ********* revise this for 816 ***********
+	STZ mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
+	DEX					; correct offset
 	TXA					; addressed braid (2)
 	ASL					; two times (2)
-	TAX					; proper offset in handler table, plus 2 (2)
-	LDA mm_term-1, X	; get MSB from table (4)
-	PHA					; put it on stack (3)
-	LDA mm_term-2, X	; now get the LSB, I can save both DEXs (4)
-	PHA					; address complete (3)
-	PHP					; ready for RTI (3)
-	RTI					; do jump to handler (6)
+	TAX					; proper offset in handler table (2)
+	JSR (mm_term, X)	; indexed indirect call! note it MUST be in bank zero!!!
+	_FINISH				; term handler will return here, is this OK? ******* revise
 
 ; *** shutdown code TO DO ***
 mm_bye:
@@ -214,7 +167,7 @@ mm_cmd:
 		BPL mm_bad			; go away otherwise! (2/3)
 #endif
 
-	_JMPX(mm_funct)		; jump to appropriate routine (6)
+	JMP (mm_funct, X)	; jump to appropriate routine (6)
 
 #ifdef	SAFE
 ; check PID within limits (21 clocks optimized 150514, was 23 clocks including JSR)
@@ -227,7 +180,7 @@ mm_chkpid:
 
 mm_pidz:				; placeholder
 mm_piderr:
-	PLA					; discard return address, since called from a subroutine (4+4)
+	PLA					; discard return address, since called from a subroutine (4+4) **** check
 	PLA
 mm_bad:
 	_DR_ERR(INVALID)		; not a valid PID or subfunction code, worth checking
@@ -236,23 +189,21 @@ mm_bad:
 ; reserve a free braid
 mm_fork:
 	LDY #MAX_BRAIDS-1	; scan backwards is usually faster (2)
-	_SEI				; this is delicate (2)
+; ** assume interrupts are off via COP **
 mmf_loop:
 		LDA mm_flags, Y		; get that braid's status (4)
 		CMP #BR_FREE		; check whether available (2)
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
 		BPL mmf_loop		; until the bottom of the list (3/2)
-	CLI					; nothing was found (2)
-	_DR_ERR(FULL)			; no available braids!
+	_DR_ERR(FULL)			; no available braids! *** it is a kernel I/O call...
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
 	STA mm_flags, Y		; reserve braid (4)
-	CLI					; end of risk (2)
 	INY					; first PID is 1 (2)
-	_DR_OK
+	_DR_OK			; this OK? it is a kernel I/O call...
 
-; get code at some address running into a paused (?) braid
+; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
 mm_exec:
 
 #ifdef	SAFE
@@ -332,7 +283,7 @@ mme_sf:
 
 
 ; pre-execution routine for faster task-switching first time!
-mm_pre_exec:
+mm_pre_exec:	; ******** revise or delete altogether for 816 **********
 	STA z_used		; store maximum available zero-page bytes from A, for safety EEEEEEK
 	RTI				; 'return' to start of task! Much simpler, as long as a dummy PHP is done
 
@@ -359,7 +310,7 @@ mm_signal:
 #endif
 
 mms_jmp:
-	_JMPX(mms_table)	; jump to actual code
+	JMP (mms_table, X)	; jump to actual code
 
 mms_table:
 	.word	mms_kill
@@ -384,13 +335,13 @@ mms_term:
 
 ; resume execution
 mms_cont:
-	_SEI				; this is delicate (2)
+	_ENTER_CS			; this is delicate **** really needed?
 	LDA mm_flags-1, Y	; first check current state (5)
 	CMP #BR_STOP		; is it paused? (2)
 		BNE mms_kerr		; no way to resume it! (2/3)
 	LDA #BR_RUN			; resume (2)
 	STA mm_flags-1, Y	; store new status (5)
-	CLI					; were off for ...
+	_EXIT_CS			; were off for ... ********** revise
 	_DR_OK
 
 ; pause execution
@@ -443,7 +394,7 @@ mm_hndl:
 mm_prior:
 	_DR_OK				; placeholder
 
-; emergency exit, should never arruive here!
+; emergency exit, should never arrive here!
 mm_exit:
 	_NEXT_ISR			; just in case
 
