@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160930-1236
+; last modified 20160930-1438
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -44,35 +44,37 @@ mm_init:
 
 ; initialise stack pointers and flags table
 	LDA #>mm_context	; MSB of storage area
+	CLC
+	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily wrong...
 	XBA					; will be the rest of the pointer
-	LDA #<mm_context	; same for LSB
-	TCD					; direct-page set for first context
-	LDX #0				; reset index
+	LDA #<mm_context	; same for LSB... should be zero for performance reasons
+	TCD					; direct-page set for just-over-last context
+	LDX #MAX_BRAIDS		; reset backwards index
 mm_rsp:
-		LDY #_SP			; original SP value *** check or set as $FF directly
+		XBA					; get accumulator MSB
+		DEC					; go for next context (contiguous)
+		XBA					; back to MSB
+		TCD					; set direct-page
+		LDY #$FF			; original SP value, no need to skim on that
 		STY sys_sp			; direct page storage of original SP
 		LDY #BR_FREE		; adequate value in two highest bits
 		STY mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
 		STZ mm_treq-1, X	; set SIGTERM request flags to zero
-		XBA					; get accumulator MSB
-		INC					; go for next context (contiguous)
-		XBA					; back to MSB
-		TCD					; adapt direct-page
-		INX					; go for next
-		CPX #MAX_BRAIDS		; all done?
+		DEX					; go for next
 		BNE mm_rsp			; continue until all done
-	XBA					; go check MSB again
-	LDA #>mm_context	; initial value for task 1
-	XBA					; little endian again
-	TCD					; set as default direct-page
 	LDA #1				; default task
 	STA mm_pid			; set as current PID
-; ****** set actual SP *********
+; set current SP
+	LDA #>mm_stacks		; contextual stack area base pointer *** assume page-aligned!!!
+	XBA					; that was MSB
+	LDA sys_sp			; restored value (3)
+	TCS					; stack pointer updated!
 ; prepare first running task **** ????? ****** CHECK *****
 	LDA #<mms_kill-1	; get default TERM handler LSB (will arrive via RTS, thus one byte before)
 	STA mm_term			; store in table
 	LDA #>mms_kill-1	; same for MSB
 	STA mm_term+1
+
 	LDA #BR_RUN			; will start "current" task **** 
 	STA mm_flags		; no need for index, first entry anyway
 ; get proper stack frame from kernel, new 20150507
@@ -214,13 +216,13 @@ mm_exec:
 #endif
 
 ; prepare storage pointer for later
-	_DEC
+	DEC
 	CLC					; put after DEC, otherwise NMOS emulation might fail! 20150616
 	ADC #>mm_context	; compute final MSB, note first stored PID is 1!
 	STA sysptr+1		; store it
 	LDA #<mm_context	; LSB needs no offset
 	STA sysptr			; store it
-; compute shared stack address
+; compute shared stack address ****** SUPRESS THIS ********
 	LDA #0				; reset values
 	CLC
 mme_sp:
