@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5a1
+; v0.5a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160930-1438
+; last modified 20161003-1018
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -34,7 +34,7 @@
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5a1", 0
+	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5a1", 0
 
 ; *** initialisation code ***
 mm_init:
@@ -45,9 +45,9 @@ mm_init:
 ; initialise stack pointers and flags table
 	LDA #>mm_context	; MSB of storage area
 	CLC
-	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily wrong...
+	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily outside range...
 	XBA					; will be the rest of the pointer
-	LDA #<mm_context	; same for LSB... should be zero for performance reasons
+	LDA #<mm_context	; same for LSB... should be ZERO for performance reasons
 	TCD					; direct-page set for just-over-last context
 	LDX #MAX_BRAIDS		; reset backwards index
 mm_rsp:
@@ -69,19 +69,21 @@ mm_rsp:
 	XBA					; that was MSB
 	LDA sys_sp			; restored value (3)
 	TCS					; stack pointer updated!
-; prepare first running task **** ????? ****** CHECK *****
+; prepare first running task, as no standard B_FORK will be used
 	LDA #<mms_kill-1	; get default TERM handler LSB (will arrive via RTS, thus one byte before)
 	STA mm_term			; store in table
 	LDA #>mms_kill-1	; same for MSB
 	STA mm_term+1
-
-	LDA #BR_RUN			; will start "current" task **** 
+	LDA #BR_RUN			; will start "current" task
 	STA mm_flags		; no need for index, first entry anyway
-; get proper stack frame from kernel, new 20150507
+	
+; get proper stack frame from kernel, new 20150507 *** REVISE THIS
 	_KERNEL(TS_INFO)	; get taskswitching info for needed stack frame
 
 #ifdef	SAFE
+	BCC mmi_tsok		; skip if no error eeeeeeeeeek
 		_DR_ERR(UNAVAIL)	; error if not available
+mmi_tsok:
 #endif
 
 	STY mm_sfsiz		; store stack frame size! new 20150521
@@ -116,7 +118,8 @@ mm_next:
 		RTS					; otherwise, nothing to do; no need for BRA (0/3)
 
 mm_lock:
-		_KERNEL()			; all tasks stopped, time for shutdown ****** revise interface
+		LDY #PW_CLEAN		; special code to do proper shutdown
+		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown ****** revise interface
 
 ; arrived here in typically 39 clocks, if all braids were executable
 mm_switch:
@@ -132,10 +135,9 @@ mm_switch:
 	ADC mm_pid			; compute offset within stored direct-pages
 	DEC					; first valid PID is 1!!!
 ; set stack pointer to new context
-	LDA #>mm_stacks		; contextual stack area base pointer, assume page-aligned!!!
+	LDA #>mm_stacks-1	; contextual stack area base pointer, assume page-aligned!!!
 	CLC
 	ADC mm_pid			; add offset for new braid
-	DEC					; one less!
 	XBA					; that was MSB
 	LDA sys_sp			; restored value (3) *** should add LSB if not page-aligned?
 	TCS					; stack pointer updated!
@@ -324,8 +326,7 @@ mms_table:
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status (5)
-	LDA #0				; STZ is not worth
-	STA mm_treq-1, Y	; Clear unattended TERM signal, 20150617
+	STZ mm_treq-1, Y	; Clear unattended TERM signal, 20150617
 ; should probably free up all windows belonging to this PID...
 	_DR_OK
 

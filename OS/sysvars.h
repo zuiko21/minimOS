@@ -1,6 +1,6 @@
-; minimOS 0.5a7 System Variables
+; minimOS 0.5a8 System Variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160408-0929
+; last modified 20161003-0951
 
 .bss
 
@@ -25,11 +25,9 @@ drv_sec		.dsb	MAX_QUEUE	; space for 1-sec routines
 cin_mode	.byt	0			; CIN binary mode flag for event management, new 20150618
 
 ; integrated SIGTERM handler(s), no longer on driver memory!
-#ifndef		MULTITASK
-mm_term		.dsb	2				; SIGTERM routine address
-#else
+; assume MAX_BRAIDS defined as 1 on non multitasking systems!
+
 mm_term		.dsb	2*MAX_BRAIDS	; unified space 20160406
-#endif
 
 ; new memory management table 150209
 ; should be revised...
