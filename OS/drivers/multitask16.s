@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161003-1018
+; last modified 20161003-1041
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -34,7 +34,7 @@
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5a1", 0
+	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5a2", 0
 
 ; *** initialisation code ***
 mm_init:
@@ -293,7 +293,7 @@ mm_pre_exec:	; ******** revise or delete altogether for 816 **********
 
 ; switch to next braid
 mm_yield:
-	_DR_OK			; if no multitasking assisting hardware is present, just ignore and stay, will RTS do?
+	_DR_OK			; if no multitasking assisting hardware is present, just ignore and stay
 
 ; send some signal to a braid
 mm_signal:
