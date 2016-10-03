@@ -1,5 +1,5 @@
 ; static variables for 65816 software multitasking module for minimOS·16
-; v0.5a1
+; v0.5.1a1
 ; (c) 2016 Carlos J. Santisteban
 ; last modified 20161003-0839
 

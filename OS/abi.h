@@ -1,8 +1,8 @@
-; minimOS 0.5a16 API/ABI
+; minimOS 0.5.1a1 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160408-1010
+; last modified 20161003-1226
 
-; VIA 65(C)22 registers
+; VIA 65(C)22 registers, just for convenience
 ; offsets from base address (add to base in options.h)
 IORB	= $0
 IORA	= $1
@@ -19,44 +19,44 @@ ACR		= $B
 PCR		= $C
 IFR		= $D
 IER		= $E
-NHRA	= $F	; IRA/ORA without handshake
+NHRA	= $F		; IRA/ORA without handshake
 
-; Driver table offsets, new order 20150323
-D_ID	=  0	; driver ID
-D_AUTH	=  1	; authorization code
-D_INIT	=  2	; device reset
-D_POLL	=  4	; periodic interrupt task
-D_REQ	=  6	; asynchronous interrupt request
-D_CIN	=  8	; character input
-D_COUT	= 10	; character output
-D_SEC	= 12	; 1-second interrupt
-D_BLIN	= 14	; block input, new names 20150304, also for control purposes
-D_BLOUT	= 16	; block output, new names 20150304, also for control purposes
-D_BYE	= 18	; shutdown procedure
-D_INFO	= 20	; points to a C-string with driver info, NEW 20150323
-D_MEM	= 22	; NEW, required variable space (if relocatable)
+; ** Driver table offsets **
+D_ID	=  0		; driver ID
+D_AUTH	=  1		; authorization code
+D_INIT	=  2		; device reset
+D_POLL	=  4		; periodic interrupt task
+D_REQ	=  6		; asynchronous interrupt request
+D_CIN	=  8		; character input
+D_COUT	= 10		; character output
+D_SEC	= 12		; 1-second interrupt
+D_BLIN	= 14		; block input, new names 20150304, also for control purposes
+D_BLOUT	= 16		; block output, new names 20150304, also for control purposes
+D_BYE	= 18		; shutdown procedure
+D_INFO	= 20		; points to a C-string with driver info
+D_MEM	= 22		; NEW, required variable space (if relocatable)
 
-; Driver authorization mask values, new 20150323
-A_POLL	= %10000000		; D_POLL routine available
-A_REQ	= %01000000		; D_REQ routine available
-A_CIN	= %00100000		; D_CIN capability
-A_COUT	= %00010000		; D_COUT capability
-A_SEC	= %00001000		; D_SEC routine available
-A_BLIN	= %00000100		; D_BLIN capability
-A_BLOUT	= %00000010		; D_BLOUT capability
-A_MEM	= %00000001		; D_MEM dynamically linked, on-the-fly loadable driver
+; ** Driver feature mask values **
+A_POLL	= %10000000	; D_POLL routine available
+A_REQ	= %01000000	; D_REQ routine available
+A_CIN	= %00100000	; D_CIN capability
+A_COUT	= %00010000	; D_COUT capability
+A_SEC	= %00001000	; D_SEC routine available
+A_BLIN	= %00000100	; D_BLIN capability
+A_BLOUT	= %00000010	; D_BLOUT capability
+A_MEM	= %00000001	; D_MEM dynamically linked, on-the-fly loadable driver
 
-; administrative meta-kernel calls (new 20150123) TBD
+; ** firmware interface calls (TBD) **
 INSTALL		=  0	; copy jump table
 SET_ISR		=  2	; set IRQ vector
 SET_NMI		=  4	; set (magic preceded) NMI routine
 PATCH		=  6	; patch single function (renumbered)
 GESTALT		=  8	; get system info (renumbered)
-POWEROFF	= 10	; power-off, suspend or cold boot, new 20150409
-CONTEXT		= 12	; context bankswitching, new 20160308
-JIFFY		= 14	; set jiffy IRQ speed, TBD, NEW 20160308
+POWEROFF	= 10	; power-off, suspend or cold boot
+CONTEXT		= 12	; context bankswitching
+JIFFY		= 14	; set jiffy IRQ speed, ** TBD **
 
-; kernel function codes for system call
+; ***** ***** kernel function codes for system call ***** *****
 COUT		=   0	; character output
 CIN			=   2	; character input
 MALLOC		=   4	; allocate memory
@@ -71,19 +71,19 @@ LOAD_LINK	=  20	; get an executable from its path, and get it loaded into primar
 SU_POKE		=  22	; access protected memory or I/O
 SU_PEEK		=  24	; access protected memory or I/O
 STRING		=  26	; output a C-string via COUT
-SU_SEI		=  28	; disable interrupts
-SU_CLI		=  30	; enable interrupts, not really needed on 65xx
+SU_SEI		=  28	; disable interrupts, really needed?
+SU_CLI		=  30	; enable interrupts, really needed?
 SET_FG		=  32	; set PB7 frequency generator
-GO_SHELL	=  34	; launch default shell, new 20150604
-SHUTDOWN	=  36	; proper shutdown, with or without power-off, new 20150409, renumbered 20150604
-B_SIGNAL	=  38	; send UNIX_like signal to a braid, new 20150413
-B_STATUS	=  40	; get execution flags of a braid, new 20150413
-GET_PID		=  42	; get current braid PID, new 20150413
-SET_HNDL	=  44	; set SIGTERM handler, new 20150417
-B_YIELD		=  46	; give away CPU time, not really needed, new 20150413, renumbered 20150604
-TS_INFO		=  48	; get taskswitching info for multitasking driver, new 20150507, renumbered 20150604
+GO_SHELL	=  34	; launch default shell, probably needed
+SHUTDOWN	=  36	; proper shutdown, with or without power-off
+B_SIGNAL	=  38	; send UNIX_like signal to a braid
+B_STATUS	=  40	; get execution flags of a braid
+GET_PID		=  42	; get current braid PID
+SET_HNDL	=  44	; set SIGTERM handler
+B_YIELD		=  46	; give away CPU time, not really needed but interesting anyway
+TS_INFO		=  48	; get taskswitching info for multitasking driver, to be revised
 
-; optional multitasking subfunctions, new 20150326, TBD
+; ** optional multitasking subfunctions, TBD **
 MM_FORK		=  0	; reserve a free braid (will go BR_STOP for a moment)
 MM_EXEC		=  2	; get code at some address running into a paused braid (will go BR_RUN)
 MM_YIELD	=  4	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
@@ -93,38 +93,39 @@ MM_PID		= 10	; get current PID, new 20150413
 MM_HANDL	= 12	; set TERM handler, new 20150416
 MM_PRIOR	= 14	; priorize braid, jump to it at once, really needed? new 20150413, renumbered 20150416
 
-; multitasking status values, new 20150325
+; ** multitasking status values **
 BR_FREE		= 192	; free slot, non-executable
 BR_RUN		=   0	; active process, may get CPU time, should be zero for quick evaluation
-BR_STOP		= 128	; paused process, won't get CPU until resumed
+BR_STOP		= 128	; paused process, will not get CPU until resumed
 BR_END		=  64	; ended task, waiting for rendez-vous
+; might add a fifth state for forked-but-not-yet-loaded braids (in order NOT to start them abnormally)
 
-; multitasking signals, new 20150326, renumbered 20150611
+; ** multitasking signals **
 SIGKILL		=  0	; immediately kill braid, will go BR_FREE
 SIGTERM		=  2	; ask braid to terminate in an orderly fashion, default handler is SIGKILL
 SIGSTOP		=  4	; pause braid, will go BR_STOP
 SIGCONT		=  6	; resume a previously paused braid, will go BR_RUN
 
-; power control values, new 20150603, valid for kernel and firmware, resorted 20160408
+; ** power control values, valid for kernel and firmware **
 PW_STAT		=  0	; suspend (go static) if available, or no pending action, best if zero
 PW_WARM		=  2	; warm reset (needs no firmware) renumbered 150603
 PW_COLD		=  4	; cold reset (needed for compatibility with other architectures) renumbered 150603
 PW_OFF		=  6	; power off
 PW_CLEAN	=  8	; scheduler detected system is clean for poweroff! new 20160408
 
-; optional windowing system values, new 20150326, TBD
+; ** optional windowing system values, TBD **
 W_OPEN		=   0	; active window in use
 W_CLOSE		= 192	; closed, free window
 W_FREE		= 128	; no longer in use, may be closed by kernel itself
 W_REQ		=  64	; requested to close, will send SIGTERM to creator braid
 
-; optional filesystem subfunctions 20150304, TBD, renamed 20150305
+; ** optional filesystem subfunctions 20150304, TBD **
 FOPEN		=   0	; why not FS_OPEN, etc?
 FSEEK		=   2
 FTELL		=   4
 FCLOSE		=   6
 FFLUSH		=   8
-; extra codes new 20150305, order TBD
+; extra codes TBD
 FS_MKDIR	=  10	; create directory
 FS_CD		=  12	; set working directory
 FS_PATH		=  14	; get working directory
@@ -139,48 +140,37 @@ FS_MOUNT	=  30	; mount (all?) volumes on a device
 FS_UNMNT	=  32	; unmount volume
 FS_CREATE	=  34	; format filesystem
 
-; values for RAM chunck status
+; ** values for RAM chunck status **
 ; make certain FREE_RAM is zero for easier scan (BEQ)
-; even number just in case indexed jump is used (none as of 20160120)
+; even number just in case indexed jump is used
 FREE_RAM	=	0
 USED_RAM	=	2
 UNAS_RAM	=	4
 
-; logic devices, TBD, new 20150309
+; ** logic devices, TBD **
 DEV_RND		= 126	; get a random number
 DEV_NULL	= 127	; ignore I/O
 
-; error codes
-OK		=   0	; not needed on 65xx, CLC instead
-UNAVAIL	=   1	; unavailable on this version
-TIMEOUT	=   2	; try later
-FULL	=   3	; not enough memory, try less
-N_FOUND	=   4	; try another
-NO_RSRC	=   5	; no resource, try a different way
-EMPTY	=   6	; put some and retry
-INVALID	=   7	; invalid argument
-BUSY	=   8	; can't use it now, free it or wait
-CORRUPT	=   9	; data corruption, new 150205
+; ***** ***** error codes ***** *****
+OK		=   0		; not needed on 65xx, CLC instead
+UNAVAIL	=   1		; unavailable on this version
+TIMEOUT	=   2		; try later
+FULL	=   3		; not enough memory, try less
+N_FOUND	=   4		; try another
+NO_RSRC	=   5		; no resource, try a different way
+EMPTY	=   6		; put some and retry
+INVALID	=   7		; invalid argument
+BUSY	=   8		; cannot use it now, free it or wait
+CORRUPT	=   9		; data corruption
 
-; some kernel-related definitions, redefined as labels 20150604
+; some kernel-related definitions
 ; MAX_BRAIDS should be system variable, as defined by firmware and/or multitasking driver
+; default updateable value = 1 (no multitasking)
 ; if defined in firmware, think about a gestalt-like function for reading/setting it!
 
-#ifdef	MULTITASK
-#ifdef		AUTOBANK
-; set number of maximum concurrent tasks
-				MAX_BRAIDS		=	32	; with hardware-assisted multitasking, overhead around 48µS or 0.96% @ 1 MHz)
-#else
-				MAX_BRAIDS		=	4	; keeps reasonable latency while minimizing overhead (max. about 7.2ms or 18% CPU time @ 1 MHz, minimum 0.9ms or 2.25%)
-#endif
-#else
-		MAX_BRAIDS		=	1			; no multitasking
-#endif
+-MAX_BRAIDS	=	1	; no multitasking
 
-; set number of quantums to wait for actual taskswitching
-; this should be defined elsewhere, most likely into the software-multitasking driver
-
-QUANTUM_COUNT	=	32 / MAX_BRAIDS		; computed in any case
+; QUANTUM_COUNT no longer defined here
 
 #ifndef	LOWRAM
 			MAX_QUEUE	=	16	; maximum number of drivers, and queue size (half the number of drivers)
@@ -196,7 +186,7 @@ QUANTUM_COUNT	=	32 / MAX_BRAIDS		; computed in any case
 MAX_FILES	=	16
 MAX_VOLS	=	8
 
-; physical device numbers, TBD
+; ** physical device numbers, TBD **
 ; these are likely to become 'logical' port IDs like rs0, rs1, ss0... regardless of actual implementation
 DEV_LED		= 252	; LED keypad on VIAport
 DEV_LCD		= 210	; Hitachi LCD module, TO_DO

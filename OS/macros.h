@@ -1,21 +1,17 @@
-; minimOS 0.5a11 MACRO definitions
+; minimOS 0.5.1a1 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160928
+; last modified 20160928-1215
 
 ; *** standard addresses ***
-; redefined as labels 20150603
-; revamped 20160308
-; proper 816 support 20160919, revamped 0922
 
 kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
 admin_call	=	$FFD8	; ending in RTS, no way to use a PHK wrapper eeeeeeek! JSL adm16_call & RTS instead
 adm16_call	=	$FFD0 	; ending in RTL, routines should push P for mode preservation in case is needed
 
-; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS, new 20150410
-panic		=	$FFE0	; more-or-less 816 savvy address, new 20160308
+; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS
+panic		=	$FFE0	; more-or-less 816 savvy address
 
 ; *** device numbers for optional pseudo-driver modules, TBD ***
-; renamed as labels 20150603
 TASK_DEV	=	128
 WIN_DEV		=	129
 FILE_DEV	=	130
@@ -29,7 +25,7 @@ FILE_DEV	=	130
 ; *** common function calls ***
 
 ; system calling interface *** unified ·65 and ·16 macros
-; new primitive for administrative meta-kernel in firmware 20150118
+; do apps (or any code outside bank 0) need to call firmware interface???
 
 #ifndef	C816
 #define		_KERNEL(a)		LDX #a: JSR kernel_call
@@ -43,12 +39,11 @@ FILE_DEV	=	130
 ; * C02 wrapper then should be like			COP #$FF	RTS
 ; * C816 firmware routines ending in RTL, see wrapper for 02 tasks above!
 
-; new macro for filesystem calling, no specific kernel entries! 20150305, new offset 20150603
+; new macro for filesystem calling, no specific kernel entries!
 ; ** revise for 816 systems ****
 #define		_FILESYS(a)		STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
 
 ; *** function endings ***
-; * due to implicit PHP on COP, these should be heavily revised for 65816
 ; new FINISH and ABORT macros for app exit to shell, using RTL for 65816
 ; firmware interface can no longer use EXIT_OK and ERR, now reserved for the kernel API
 
@@ -66,25 +61,22 @@ FILE_DEV	=	130
 ; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
 
 ; driver init & I/O routine endings, for both 6502 and 816 (expected to be in bank zero anyway)
+; driver code without error signaling (eg. shutdown, jiffy interrupt) may just end on RTS no matter the CPU
 #define		_DR_OK		CLC: RTS
 #define		_DR_ERR(a)	LDY #a: SEC: RTS
 
-; new exit for asynchronous driver routines when not satisfied 20150320, renamed 20150929
+; new exit for asynchronous driver routines when not satisfied
 #define		_NEXT_ISR	SEC: RTS
 #define		_ISR_DONE	CLC: RTS
 ; can no longer use EXIT_OK because of 65816 reimplementation!!! check drivers!
 
-; new macros for critical sections, do not just rely on SEI/CLI 20160119
+; new macros for critical sections, do not just rely on SEI/CLI
 #define		_ENTER_CS	PHP: SEI
 #define		_EXIT_CS	PLP
 
-; ** interrupt enable/disable calls, just in case **
-#define		_SEI		SEI
-; otherwise call SU_SEI function
-#define		_CLI		CLI
-; otherwise call SU_CLI function, not really needed on 65xx 
+; ** interrupt enable/disable macros deprecated 20161003 and replaced by the above macros **
 
-; ** panic call, pretty much the same jump to standard address, could be far in case of 65816 **
+; ** panic call, pretty much the same jump to standard address, JML for 816 just in case **
 #ifndef	C816
 #define		_PANIC		JMP panic
 #else
@@ -94,8 +86,6 @@ FILE_DEV	=	130
 ; *** conditional opcode assembly ***
 #ifdef	NMOS
 #define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
-; other emulation, 20 clocks instead of 23 but 13 bytes instead of 10 and takes sysptr
-; LDA a, X	STA sysptr	LDA a+1, X	STA sysptr+1	JMP (sysptr)
 #define		_PHX		TXA: PHA
 #define		_PHY		TYA: PHA
 #define		_PLX		PLA: TAX
@@ -112,7 +102,7 @@ FILE_DEV	=	130
 #define		_STZX		LDX #0: STX
 #define		_STZY		LDY #0: STY
 #define		_STZA		LDA #0: STA
-; new instructions 20150606, implemented from www.6502.org/tutorials/65c02opcodes.html
+; new instructions implemented from www.6502.org/tutorials/65c02opcodes.html
 ; ...but they are not ATOMIC!!!
 #define		_TRB(a)		BIT a: PHP: PHA: EOR #$FF: AND a: STA a: PLA: PHP
 #define		_TSB(a)		BIT a: PHP: PHA: ORA a: STA a: PLA: PLP

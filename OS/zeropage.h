@@ -1,6 +1,6 @@
-; minimOS 0.5a5 zero-page system variables
+; minimOS 0.5.1a1 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160922-1351
+; last modified 20161003-1231
 
 .zero
 
@@ -8,44 +8,43 @@
 * = 0
 
 #ifndef	C64
-sysout		.byt	0	; default parent outout device (NOT for 6510)
-sys_in		.byt	0	; default parent input device (NOT for 6510)
+sysout		.byt	0		; default parent outout device (NOT for 6510)
+sys_in		.byt	0		; default parent input device (NOT for 6510)
 #else
-res6510:	.word	0	; reserved for 6510
+res6510:	.word	0		; reserved for 6510
 #endif
 
-z_used		.byt	0	; user-reserved space in ZP, not really used with _hardware_ multitasking
-user:user_zp:			; older labels for compatibility
-uz						; user context starts here, $03...$E3 newname 20150128,0206
+z_used		.byt	0		; user-reserved space in ZP, also available zeropage space at app startup
+user:user_zp:				; older labels for compatibility
+uz							; user context starts here, $03...$E3
 
 #ifdef	C64
-* = locals - 2			; just before local variables, hope it assembles OK!
-sysout		.byt	0	; default parent outout device (for 6510)
-sys_in		.byt	0	; default parent input device (for 6510)
+* = $E2						; just before local variables, see definition below
+sysout		.byt	0		; default parent outout device (for 6510)
+sys_in		.byt	0		; default parent input device (for 6510)
 #endif
 
 ; ** local variables for kernel functions **
-* = $E4						; new address 130603, hope it stays forever! 4 more bytes 150122
+* = $E4						; local variables standard start address
+
 locals:						; old label for compatibility
 
 ; *** include aliases here for local1/locpt1 ***
 da_ptr: ma_l: mm_sig:
-local1: locpt1	.dsb	4	; variables for kernel functions @ $E4, new name 150122, 150619
+local1: locpt1	.dsb	4	; variables for kernel functions @ $E4
 
 ; *** include aliases here for local2/locpt2 ***
 str_dev:
-local2: locpt2	.dsb	4	; variables for kernel functions @ $E8, new name 150122, 150619
+local2: locpt2	.dsb	4	; variables for kernel functions @ $E8
 
 ; *** include aliases here for local3/locpt3 ***
-local3: locpt3	.dsb	4	; variables for kernel functions @ $EC, new name 150122, 150619
+local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 
 
 ; ** kernel parameters **
-; new standardised aliases for ABI freedom 20160406
-
 ; *** include aliases here for zpar3/zaddr3 ***
 b_sig: ex_pt:
-z10:z10W:z10L:				; old labels for compatibility, new alias 20150615 for Ax registers on 680x0!
+z10:z10W:z10L:				; old labels for compatibility
 zpar3: zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
 
 ; *** include aliases here for zpar2/zaddr2 ***

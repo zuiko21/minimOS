@@ -1,5 +1,5 @@
 ; minimOS·16 generic Kernel API!
-; v0.5a1, should match kernel16.s
+; v0.5.1a1, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
 ; last modified 20160922-1439

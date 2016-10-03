@@ -1,5 +1,5 @@
 ; ISR for minimOS·16
-; v0.5a1, should match kernel16.s
+; v0.5.1a1, should match kernel16.s
 ; features TBD
 ; (c) 2016 Carlos J. Santisteban
 ; last modified 20161003-1109
