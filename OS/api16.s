@@ -2,7 +2,7 @@
 ; v0.5.1a1, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160922-1439
+; last modified 20161003-1340
 
 ; no way for standalone assembly...
 
@@ -14,7 +14,6 @@ unimplemented:		; placeholder here, not currently used
 
 ; *** COUT, output a character ***
 ; Y <- dev, io_c <- char
-; *** TO DO revise local default device *** 
 
 cout:
 	.as: .xs: SEP $30	; *** standard register size ***
@@ -47,19 +46,19 @@ co_phys:
 ; ** new direct indexing **
 	ASL					; convert to index (2+2)
 	TAX
-	JSR (drv_opt, X)	; direct CALL!!! driver might end in RTS as usual
+	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 cio_callend:
 	PLA					; extract previous status!
-	BCC co_notc			; no need to clear carry
+	BCC cio_notc		; no need to clear carry
 		ORA #1				; otherwise set it
-co_notc:
+cio_notc:
 	PHA					; replace stored flags
 	RTI					; end of call procedure
 cio_nfound:
 	_ERR(N_FOUND)		; unknown device
 
 
-; *** CIN, get a character *** revamped 20150209
+; *** CIN, get a character ***
 ; Y <- dev, io_c -> char, C = not available
 
 cin:
@@ -86,7 +85,7 @@ ci_port:
 ; ** continue event management ** REVISE
 ci_manage:
 ; check for binary mode
-	LDY cin_mode	; get flag, new sysvar 20150617
+	LDY cin_mode	; get flag
 	BEQ ci_event	; should process possible event
 		STZ cin_mode	; back to normal mode
 		_EXIT_OK		; and return whatever was received
@@ -116,7 +115,7 @@ ci_signal:
 	_KERNEL(GET_PID)	; as this will be a self-sent signal!
 	_KERNEL(B_SIGNAL)	; send signal to PID in Y
 ci_abort:
-	_ERR(EMPTY)		; no character was received
+	_ERR(EMPTY)			; no character was received
 
 ci_nph:
 	CMP #64			; first file-dev??? ***
@@ -147,7 +146,7 @@ ci_win:
 	_ERR(NO_RSRC)	; not yet implemented
 
 
-; *** MALLOC, reserve memory *** revamped 20150209
+; *** MALLOC, reserve memory ***
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory (16-bit so far, but put zeroes on high-size!)
 ; ** Up to 64K RAM supported so far **
 ; uses ma_l
@@ -158,7 +157,7 @@ malloc:
 	ORA ma_rs+3
 		BNE ma_nobank	; not YET supported
 	LDY #0			; reset index
-	_ENTER_CS		; this is dangerous! enter critical section, new 160119
+; default 816 API functions run on interrupts masked, thus no need for CS
 ma_scan:
 		LDA ram_stat, Y		; get state of current entry (4)
 ;		CMP #FREE_RAM		; looking for a free one (2) not needed if free is zero
@@ -167,7 +166,7 @@ ma_cont:
 		INY					; increase index (2)
 		CPY #MAX_LIST/2		; until the end (2+3)
 		BNE ma_scan
-	_EXIT_CS		; were off by 15*n, up to 240 clocks instead of 304
+; end of CS
 ma_nobank:
 	_ERR(FULL)		; no room for it!
 ma_found:
@@ -238,7 +237,7 @@ ma_ok:
 	STA ma_pt				; store output (3)
 	LDA ram_tab+1, X		; same for MSB (4+3)
 	STA ma_pt+1
-	_EXIT_CS				; end of critical section, new 160119
+	_EXIT_CS				; end of critical section
 	_EXIT_OK				; we're done
 
 
@@ -249,7 +248,7 @@ ma_ok:
 free:
 	.as: .xs: SEP $30	; *** standard register size ***
 	LDX #0			; reset indexes
-	_ENTER_CS		; supposedly dangerous
+; default 816 API functions run on interrupts masked, thus no need for CS
 fr_loop:
 		LDA ram_tab, X		; get entry LSB
 		CMP ma_pt			; compare
@@ -262,7 +261,7 @@ fr_next:
 		INX
 		CPX #MAX_LIST		; until the end
 		BCC fr_loop
-	_EXIT_CS
+; end of CS
 	_ERR(N_FOUND)			; no block to be freed!
 fr_found:
 	TXA				; get two-byte index
@@ -289,11 +288,11 @@ fr_opt:
 		_STZA ram_tab+3, X
 ; ** already optimized **
 fr_ok:
-	_EXIT_CS
+; end of CS, if still there
 	_EXIT_OK
 
 
-; *** OPEN_W, get I/O port or window *** interface revised 20150208
+; *** OPEN_W, get I/O port or window ***
 ; Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to window title!
 
 open_w:
@@ -314,14 +313,14 @@ free_w:					; doesn't do much, either
 	_EXIT_OK
 
 
-; *** UPTIME, get approximate uptime *** revised 20150208, corrected 20150318
+; *** UPTIME, get approximate uptime ***
 ; up_ticks -> fr-ticks
 ; up_sec -> 24-bit uptime in seconds
 
 uptime:
 	.as: .xs: SEP $30	; *** standard register size ***
 	LDX #1			; first go for remaining ticks (2 bytes) (2)
-	_ENTER_CS		; don't change while copying
+; default 816 API functions run on interrupts masked, thus no need for CS
 up_loop:
 		LDA ticks, X		; get system variable byte (not uptime, corrected 20150125) (4)
 		STA up_ticks, X		; and store them in output parameter (3)
@@ -333,11 +332,11 @@ up_upt:
 		STA up_sec, X		; and store it in output parameter (3) corrected 150610
 		DEX					; go for next (2+3/2)
 		BPL up_upt
-	_EXIT_CS		; disabled for 62 clocks, not 53...
+; end of CS
 	_EXIT_OK
 
 
-; *** B_FORK, get available PID *** properly interfaced 20150417
+; *** B_FORK, get available PID ***
 ; Y -> PID
 
 b_fork:
@@ -355,7 +354,7 @@ b_fork:
 #endif
 
 
-; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
+; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture
 ; uses str_dev for temporary braid storage, driver will pick it up!
@@ -376,7 +375,7 @@ b_exec:
 	BEQ exec_st		; OK for single-task system
 		_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
-; this is for 816 tasks ONLY, what to do with old 02 tasks, ending in RTS????
+; this should now work for both 02 and 816 apps
 	LDA cpu_ll		; check architecture
 	CMP #'V'		; check whether native 816 code (ending in RTL)
 	BEQ exec_816		; go for it
@@ -384,26 +383,23 @@ exec_st:
 		JSR (ex_pt, X)	; will end in RTS and return just here, lower 64K only
 		JMP cio_callend	; return whatever error code
 exec_816:
-	JSR jsr816		; expected to return here????
-	JMP cio_callend	; return error code
-jsr816:
-	LDA ex_pt+2		; destination bank address!!!
-	PHA				; put it on stack for 816 apps will end in RTI
-	LDA ex_pt+1		; get address MSB first
-	PHA				; put it on stack
-	LDA ex_pt		; same for LSB
-	PHA
-	PHP				; ready for RTI
-	RTI				; actual jump, won't return here
+; ** self-modified code for long indirect call! **
+	LDA #$22		; JSL opcode!!!
+	STA ex_pt-1		; put it just before destination address (uses last local byte)
+	LDA #$60		; RTS opcode
+	STA ex_pt+3		; to get back to API handler
+; now call the built wrapper and after app execution, back to calling braid
+	JSR ex_pt-1		; call SMC!!!
+	JMP cio_callend	; keep possible error code
 #endif
 
 
-; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
+; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
 ; ex_pt -> addr, str_pt <- *path, cpu_ll -> architecture
 ; *** only 64K RAM supported so far ***
 
 load_link:
-; *** assume path points to header, code begins +256 *** STILL A KLUDGE
+; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
 	.as: .xs: SEP $30	; *** standard register size ***
 	LDY #1			; offset for filetype
 	LDA (str_pt), Y	; check filetype
@@ -413,20 +409,19 @@ load_link:
 	LDA (str_pt), Y	; get it
 	CMP #'R'		; Rockwell is the only unsupported type!
 		BEQ ll_wrap
-	TAX				; save CPU type otherwise
+	STA cpu_ll		; set CPU type
 	LDA str_pt		; get pointer LSB
 	LDY str_pt+1	; and MSB
 	INY				; start from next page
 	STA ex_pt		; save execution pointer
 	STY ex_pt+1
 	STZ ex_pt+2		; invalidate bank... this far
-	STX cpu_ll		; set CPU type also
 	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
 
-; *** SU_POKE, write to protected addresses *** revised 20150208
+; *** SU_POKE, write to protected addresses ***
 ; might be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
 ; destroys A (and maybe Y on NMOS)
@@ -438,7 +433,7 @@ su_poke:
 	_EXIT_OK
 
 
-; *** SU_PEEK, read from protected addresses *** revised 20150208
+; *** SU_PEEK, read from protected addresses ***
 ; might be deprecated, not sure if of any use in other architectures
 ; Y -> value, zpar <- addr
 ; destroys A
@@ -450,7 +445,7 @@ su_peek:
 	_EXIT_OK
 
 
-; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
+; *** STRING, prints a C-string ***
 ; Y <- dev, str_pt <- *string (.w in current version)
 ; uses str_dev
 ; calls cout, but now directly at driver code *** great revision, scans ONCE for device driver
@@ -491,7 +486,7 @@ str_phys:
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
 str_loop:
-		_PHY				; save just in case COUT destroys it (3)
+		PHY					; save just in case COUT destroys it (3)
 		LDA (str_pt), Y		; get character from string, new approach (5)
 		BNE str_cont		; not terminated! (3/2)
 			PLA					; otherwise discard saved Y (4)
@@ -499,17 +494,18 @@ str_loop:
 str_cont:
 		STA io_c			; store output character for COUT (3)
 		JSR str_call		; indirect subroutine call (6...)
-		_PLY				; restore index (4)
+		PLY					; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
-	INC str_pt+1		; otherwise increase, parameter has changed!
-	_BRA str_loop		; continue, will check for termination later (3)
+	INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
+	BRA str_loop		; continue, will check for termination later (3)
 str_call:
 	LDX str_dev			; get driver pointer position (3)
-	JMP (drv_opt, X)	; go at stored pointer (...6)
+	JSR (drv_opt, X)	; go at stored pointer (...6)
+	JMP cio_callend		; eeeeeeeeeeek
 
 
-; *** SU_SEI, disable interrupts *** revised 20150209
+; *** SU_SEI, disable interrupts ***
 ; C -> not authorized (?)
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 su_sei:
@@ -517,7 +513,7 @@ su_sei:
 	_EXIT_OK		; no error so far
 
 
-; *** SU_CLI, enable interrupts *** revised 20150209
+; *** SU_CLI, enable interrupts ***
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 
 su_cli:				; not needed for 65xx, even with protection hardware
@@ -525,7 +521,7 @@ su_cli:				; not needed for 65xx, even with protection hardware
 	_EXIT_OK		; no error
 
 
-; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
+; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA ***
 ; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
 ; zpar.W <- dividing factor (times two?), C -> busy
@@ -567,14 +563,14 @@ fg_busy:
 	_ERR(BUSY)		; couldn't set
 
 
-; *** GO_SHELL, launch default shell *** new 20150604
+; *** GO_SHELL, launch default shell *** REVISE
 ; no interface needed
 go_shell:
 	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
 
 
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
-; Y <- subfunction code new ABI 20150603, 20160408
+; Y <- subfunction code
 ; C -> couldn't poweroff or reboot (?)
 
 shutdown:
@@ -616,13 +612,13 @@ sd_2nd:
 		BRK				; otherwise an error!
 		.asc	"{sched}", 0	; panic code
 sd_shut:
-	_SEI			; disable interrupts
+	SEI				; disable interrupts (forever)
 #ifdef	SAFE
-	_STZA dpoll_mx	; disable interrupt queues, just in case
-	_STZA dreq_mx
-	_STZA dsec_mx
+	STZ dpoll_mx	; disable interrupt queues, just in case
+	STZ dreq_mx
+	STZ dsec_mx
 #endif
-; call each driver's shutdown routine *** new system 20151015
+; call each driver's shutdown routine
 	LDX #0			; reset index
 ; first get the pointer to each driver table
 sd_loop:

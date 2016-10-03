@@ -1,12 +1,15 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161003-1041
+; last modified 20161003-1243
+
+; *** set some reasonable number of braids ***
+	-MAX_BRAIDS	= 16	; takes 8 kiB -- hope it is OK to define here!
 
 #ifndef		DRIVERS
 #include "options.h"
 #include "macros.h"
-#include "abi.h"		; new filename
+#include "abi.h"
 .zero
 #include "zeropage.h"
 .bss

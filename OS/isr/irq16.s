@@ -2,7 +2,7 @@
 ; v0.5.1a1, should match kernel16.s
 ; features TBD
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161003-1109
+; last modified 20161003-1249
 
 #define		ISR		_ISR
 
@@ -43,10 +43,10 @@ i_req:
 		PHX						; keep index! (3)
 		JSR (drv_async-2, X)	; call from table (6+...) expected to return in 8-bit size, at least indexes
 		PLX						; restore index (4)
-			BCC isr_done			; driver satisfied, thus go away NOW, BCC instead of BCS 20150320 (2/3)
+			BCC isr_done			; driver satisfied, thus go away NOW (2/3)
 		DEX						; go backwards to be faster! (2+2)
-		DEX						; decrease after processing, negative offset on call, less latency, 20151029
-		BNE i_req				; until zero is done (3/2)
+		DEX						; decrease after processing
+		BNE i_req				; until done (3/2)
 ir_done:					; otherwise is spurious, due to separate BRK handler on 65816
 isr_done:
 	.al: .xl: REP $30		; restore saved registers in full, just in case (3)
@@ -54,10 +54,6 @@ isr_done:
 	PLX
 	PLA
 	RTI						; this will restore appropriate register size
-
-; routines for indexed driver calling
-is_call:
-	_JMPX(drv_sec)
 
 ; *** here goes the periodic interrupt code *** (4)
 periodic:
@@ -83,7 +79,7 @@ ip_done:
 ; new 65816 code is 22+2 bytes, worse case 44+3 clocks, best 17 clocks!
 	.al: REP $20			; worth switching to 16-bit size (3)
 	DEC ticks				; decrement uptime count (8)
-	CMP #$FFFF				; wrapped? (3) is this correct of BNE will suffice???
+	CMP #$FFFF				; wrapped? (3) is this correct or BNE will suffice???
 		BNE isr_done			; no second completed yet *** revise for load balancing (3/2)
 	LDA irq_freq			; get whole word (5)
 	STA ticks				; jiffy counter lower word updated (5)
