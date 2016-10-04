@@ -2,7 +2,7 @@
 ; v0.5.1a1, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161003-1340
+; last modified 20161004-1240
 
 ; no way for standalone assembly...
 
@@ -241,9 +241,8 @@ ma_ok:
 	_EXIT_OK				; we're done
 
 
-; *** FREE, release memory *** revamped 20150209
+; *** FREE, release memory ***
 ; ma_pt <- addr
-; ** ONLY for systems over 128-byte RAM
 
 free:
 	.as: .xs: SEP $30	; *** standard register size ***
@@ -322,14 +321,14 @@ uptime:
 	LDX #1			; first go for remaining ticks (2 bytes) (2)
 ; default 816 API functions run on interrupts masked, thus no need for CS
 up_loop:
-		LDA ticks, X		; get system variable byte (not uptime, corrected 20150125) (4)
+		LDA ticks, X		; get system variable byte (4)
 		STA up_ticks, X		; and store them in output parameter (3)
 		DEX					; go for next (2+3/2)
 		BPL up_loop
 	LDX #2			; now for the uptime in seconds (3 bytes) (2)
 up_upt:
-		LDA ticks+2, X		; get system variable uptime, new 20150318 (4)
-		STA up_sec, X		; and store it in output parameter (3) corrected 150610
+		LDA ticks+2, X		; get system variable uptime (4)
+		STA up_sec, X		; and store it in output parameter (3)
 		DEX					; go for next (2+3/2)
 		BPL up_upt
 ; end of CS
@@ -428,8 +427,8 @@ ll_wrap:
 
 su_poke:
 	.as: .xs: SEP $30	; *** standard register size ***
-	TYA				; transfer value
-	_STAY(zpar)		; store value, macro for NMOS
+	TYA					; transfer value
+	STA (zpar)			; store value
 	_EXIT_OK
 
 
@@ -440,22 +439,24 @@ su_poke:
 
 su_peek:
 	.as: .xs: SEP $30	; *** standard register size ***
-	_LDAY(zpar)		; store value, macro for NMOS
-	TAY				; transfer value
+	LDA (zpar)			; store value
+	TAY					; transfer value
 	_EXIT_OK
 
 
-; *** STRING, prints a C-string ***
+; *** STRING, prints a C-string *** optimized loop 20161004, should port to ·65
 ; Y <- dev, str_pt <- *string (.w in current version)
 ; uses str_dev
-; calls cout, but now directly at driver code *** great revision, scans ONCE for device driver
+; calls cout, but now directly at driver code ***
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	.as: .xs: SEP $30	; *** standard register size ***
 	TYA				; for indexed comparisons (2)
 	BNE str_port	; not default (3/2)
-		LDA default_out	; default output device (4)
+		LDA sysout		; new per-process standard device ### apply this to ·65
+		BNE str_port	; already a valid device
+			LDA default_out	; otherwise get system global (4)
 str_port:
 	BMI str_phys	; not a logic device (3/2)
 		CMP #64			; first file-dev??? ***
@@ -488,21 +489,18 @@ str_phys:
 str_loop:
 		PHY					; save just in case COUT destroys it (3)
 		LDA (str_pt), Y		; get character from string, new approach (5)
-		BNE str_cont		; not terminated! (3/2)
-			PLA					; otherwise discard saved Y (4)
-			_EXIT_OK			; and go away!
-str_cont:
+			BEQ str_exit		; exit when terminated! (2/3)
 		STA io_c			; store output character for COUT (3)
-		JSR str_call		; indirect subroutine call (6...)
+		LDX str_dev			; get driver pointer position (3)
+		JSR (drv_opt, X)	; go at stored pointer (...6)
+			BCS str_err			; error from driver
 		PLY					; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
 	INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
 	BRA str_loop		; continue, will check for termination later (3)
-str_call:
-	LDX str_dev			; get driver pointer position (3)
-	JSR (drv_opt, X)	; go at stored pointer (...6)
-	JMP cio_callend		; eeeeeeeeeeek
+str_err:
+	JMP cio_callend		; otherwise return code eeeeeeeeeek^2
 
 
 ; *** SU_SEI, disable interrupts ***
@@ -558,7 +556,7 @@ fg_dis:
 	LDA old_t1+1
 	STA VIA+T1LH	; it's supposed to be running already
 ; *** TO_DO - restore standard quantum ***
-		_BRA fg_none
+		BRA fg_none
 fg_busy:
 	_ERR(BUSY)		; couldn't set
 
@@ -579,7 +577,7 @@ shutdown:
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_stat			; don't shutdown system then!
 	STY sd_flag			; store mode for later, first must do proper system shutdown
-; ask all braids to termmm_siginate
+; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
@@ -610,7 +608,7 @@ sd_2nd:
 	LDA sd_flag		; check what was pending
 	BNE sd_shut		; something to do
 		BRK				; otherwise an error!
-		.asc	"{sched}", 0	; panic code
+		.asc	"{sched}", 0	; panic code, or should I just reboot?
 sd_shut:
 	SEI				; disable interrupts (forever)
 #ifdef	SAFE
@@ -653,7 +651,7 @@ sd_next:
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
 	LDX sd_flag			; retrieve mode as index!
-	_JMPX(sd_tab)		; do as appropriate
+	JMP (sd_tab, X)		; do as appropriate
 
 sd_tab:					; check order in abi.h!
 	.word	sd_stat		; suspend
@@ -672,7 +670,7 @@ signal:
 #ifdef	MULTITASK
 	LDA #MM_SIGNAL	; subfunction code
 	STY mm_sig		; COUT shouldn't touch it anyway
-	_BRA yld_call	; go for the driver
+	BRA yld_call	; go for the driver
 ; ** if the driver fails, it will NEVER reach this point!!!! **
 #ifdef	SAFE
 sig_st:				; *** single-task interface, in case MM driver failed *** (repeated from below)
