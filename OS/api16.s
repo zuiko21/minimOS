@@ -2,7 +2,7 @@
 ; v0.5.1a1, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161004-1240
+; last modified 20161005-1718
 
 ; no way for standalone assembly...
 
@@ -493,8 +493,9 @@ str_loop:
 		STA io_c			; store output character for COUT (3)
 		LDX str_dev			; get driver pointer position (3)
 		JSR (drv_opt, X)	; go at stored pointer (...6)
-			BCS str_err			; error from driver
 		PLY					; restore index (4)
+
+			BCS str_err			; error from driver, but after restoring stack eeeeeek
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
 	INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
