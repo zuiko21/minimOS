@@ -19,7 +19,11 @@ For convenience, a *macro* for this is defined as `_KERNEL(function_number)`. Fu
 
 Since the firmware code at `k_call` is designed around a `JMP (fw_table, X)` instruction (or equivalent NMOS sequence, supplied as a *macro*), `function_number` is expected to be an **even** number, thus up to **128 system calls** are supported.
 
-**65C816 variant** has its own set of macros: `_KERN16(function_number)` (actually implemented as a `COP $FF` opcode), `_OK16` and `_ERR16(error_code)` but otherwise they offer very much the same interface. Suitable '816 firmware would then implement a compatible 8-bit call around a `COP: RTS` sequence ('816 API functions would obviously end on `RTI` instead of `RTS`).
+**65C816 variant** redefines the **same** set of macros: `_KERNEL` is actually implemented as a `CLC: COP $FF` sequence. Suitable '816 firmware would then implement a compatible 8-bit wrapper at $FFC0 around a `COP $FF: RTS` sequence. The '816 API functions would obviously end on `RTI` instead of `RTS`, and since **carry is *precleared* on call**, `_EXIT_OK` becomes a **mere RTI**, while `_ERR` updates the *already saved* carry flag via a (somewhat cumbersome) `PLP: SEC: PHP: RTI` sequence.
+
+Although older versions (up to 0.5, *without* '816 support) used the `_EXIT_OK` and `_ERR` macros everywhere (**all** routines ending in `RTS`), proper compatibility of 8-bit software is only achieved from the use of the proper set of macros; for *driver code* and other generic routines (which are **expected to be in bank zero** anyway) they're replaced by the new `_DR_OK` and `_DR_ERR` which otherwise are the same as the old 8-bit generic macros. **Application** and other executable binary blobs were expected to end in `RTS`; but '816 will use** `RTL` **instead, thus a new `_FINISH` and `_ABORT()` macro set *must* be used instead.
+
+*As of 0.5.1*, 6502-code is only able to run within the lowest 64 KB (bank zero) but **future plans** include a 64-byte *wrapper* at the end of any available bank for '02 *bank-agnostic* code to run.
 
 ###Parameter passing and return values
 These are done via the **Y** register and/or some *zeropage* locations. There are **12 bytes** for parameters (three 32-bit words) known as:
@@ -46,8 +50,8 @@ Full featured systems will have (currently) **241 bytes** *between $03 and $E3* 
 ###Reserved zeropage space
 Besides user space and locals/parameters area, there are some bytes usually reserved:
 
-* `$00: sysout` is the defult output device for the current task. *This is `res6510` on 6510 systems, and obviously **not** available here.*
-* `$01: sys_in` is the defult input device for the current task. *This is `res6510` on 6510 systems, and obviously **not** available here.*
+* `$00: sys_in` is the defult input device for the current task. *This is `res6510` on 6510 systems, and obviously **not** available here.*
+* `$01: sysout` is the defult output device for the current task.* **Not** available here for 6510 systems.*
 * `$02: z_used` is expected to indicate how many zeropage bytes (from `uz`) are actually used, for a faster *software-based* multitasking. *Otherwise (hardware-assisted or NO multitasking at all) is free*.
 * `$03: uz`is the first byte of the user's free zeropage space. Tasks start with the currently available bytes set on `z_used`.
 * `$E2-$E3` will be the usual location of `sysout` and `sys_in` of 6510 systems, otherwise free for user.
