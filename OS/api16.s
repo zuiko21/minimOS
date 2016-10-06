@@ -2,7 +2,7 @@
 ; v0.5.1a2, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161006-1039
+; last modified 20161006-1441
 
 ; no way for standalone assembly...
 
@@ -314,7 +314,7 @@ free_w:					; doesn't do much, either
 
 ; *** UPTIME, get approximate uptime ***
 ; up_ticks -> ticks, new standard format 20161006
-; up_sec -> 24-bit uptime in seconds
+; up_sec -> 32-bit uptime in seconds
 
 uptime:
 	.al: REP $20			; *** optimum 16-bit memory ***
@@ -323,8 +323,8 @@ uptime:
 		STA up_ticks		; and store them in output parameter (4)
 		LDA ticks+2			; get system variable uptime (5)
 		STA up_sec			; and store it in output parameter (4)
-		LDA ticks+4			; will get MSB plus an extra byte, but does not matter (5)
-		STA up_sec+2		; store them, not worth switching back to 8-bit (4)
+		LDA ticks+4			; another word, as per new format (5)
+		STA up_sec+2		; store that (4)
 ; end of CS
 	_EXIT_OK
 
@@ -363,7 +363,7 @@ b_exec:
 	JMP cio_callend	; return whatever error code
 #else
 ; non-multitasking version
-	CPY #0			; should be system reserved PID
+	TYA				; should be system reserved PID, best way
 	BEQ exec_st		; OK for single-task system
 		_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
@@ -371,7 +371,7 @@ exec_st:
 	LDA cpu_ll		; check architecture
 	CMP #'V'		; check whether native 816 code (ending in RTL)
 	BEQ exec_816		; go for it
-		LDX #0			; zero offset for indirect call!
+		TYX				; guaranteed zero offset for indirect call!
 		JSR (ex_pt, X)	; will end in RTS and return just here, lower 64K only
 		JMP cio_callend	; return whatever error code
 exec_816:
@@ -486,14 +486,14 @@ str_loop:
 		STA io_c			; store output character for COUT (3)
 		LDX str_dev			; get driver pointer position (3)
 		JSR (drv_opt, X)	; go at stored pointer (...6)
+			BCS str_err			; return error from driver
 		PLY					; restore index (4)
-
-			BCS str_err			; error from driver, but after restoring stack eeeeeek
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
 	INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
 	BRA str_loop		; continue, will check for termination later (3)
 str_err:
+	PLA					; discard saved Y while keeping error code eeeeeeeeeek^2
 	JMP cio_callend		; otherwise return code eeeeeeeeeek^2
 
 
@@ -576,8 +576,10 @@ shutdown:
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
 	_KERNEL(B_SIGNAL)	; ask braids to terminate
+	PLP					; original mask is buried in stack
 	CLI					; make sure all will keep running!
-	_EXIT_OK
+	PHP					; restore for subsequent RTI
+	_EXIT_OK			; actually RTI for 816
 
 ; firmware interface
 sd_off:
@@ -592,8 +594,9 @@ sd_cold:
 	LDY #PW_COLD		; cold boot
 	BNE sd_fw			; will reboot, shared code, no need for BRA
 sd_warm:
-	SEI					; maybe a better place to do it
-	CLD
+	SEP #9				; disable interrupts and set carry...
+	XCE					; ...to set emulation mode for a moment
+	CLD					; clear decimal mode
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
 ; the scheduler will wait for NO braids active

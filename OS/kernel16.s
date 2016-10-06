@@ -38,7 +38,7 @@ user_sram = *
 warm:
 ; assume interrupts off, binary mode and 65C816 in emulation mode!
 	CLC
-	XCE				; enter native mode! still 8 but regs, though
+	XCE				; enter native mode! still 8 bit regs, though
 
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD

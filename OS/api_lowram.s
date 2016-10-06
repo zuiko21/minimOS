@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5.1a1, must match kernel.s
+; v0.5.1a2, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161006-1114
+; last modified 20161006-1424
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -150,23 +150,23 @@ free_w:
 
 ; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
 ; up_ticks -> ticks, new format 20161006
-; up_sec -> 24-bit uptime in seconds
+; up_sec -> 32-bit uptime in seconds
 
 uptime:
-	LDX #1			; first go for remaining ticks (2 bytes) (2)
+	LDX #1			; first go for elapsed ticks (2 bytes) (2)
 	_ENTER_CS		; don't change while copying (2)
 up_loop:
 		LDA ticks, X	; get system variable byte (not uptime, corrected 20150125) (4)
 		STA up_ticks, X	; and store them in output parameter (3)
 		DEX				; go for next (2+3/2)
 		BPL up_loop
-	LDX #2			; now for the uptime in seconds (3 bytes) (2)
+	LDX #3			; now for the uptime in seconds (now 4 bytes) (2)
 up_upt:
 		LDA ticks+2, X	; get system variable uptime, new 20150318 (4)
 		STA up_sec, X	; and store it in output parameter (3) corrected 150610
 		DEX				; go for next (2+3/2)
 		BPL up_upt
-	_EXIT_CS		; disabled for 62 clocks?
+	_EXIT_CS
 	_EXIT_OK
 
 
@@ -176,7 +176,7 @@ up_upt:
 
 b_exec:
 ; non-multitasking version
-	CPY #0			; should be system reserved PID
+	TYA				; should be system reserved PID, best way
 	BEQ ex_st		; OK for single-task system
 		_ERR(NO_RSRC)	; no way without multitasking
 ex_st:
@@ -191,23 +191,46 @@ ex_jmp:
 	RTI				; actual jump, won't return here
 
 
-; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
+; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
 ; ex_pt -> addr, str_pt <- *path
 
 load_link:
-; *** assume path points to filename in header, code begins +248
-	CLC			; ready to add
-	LDA str_pt		; get LSB
-	ADC #248		; offset to actual code!
-	STA ex_pt		; store address LSB
-	LDA str_pt+1		; get MSB so far
-	ADC #0			; propagate carry!
-	STA ex_pt+1		; store address MSB
-	LDA #0			; NMOS only
-	STA ex_pt+2		; STZ, invalidate bank...
-	STA ex_pt+3		; ...just in case
-	BCS ll_wrap		; really unexpected error
-		_EXIT_OK
+; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
+	LDY #1			; offset for filetype
+	LDA (str_pt), Y	; check filetype
+	CMP #'m'		; must be minimOS app!
+		BNE ll_wrap		; error otherwise
+	INY				; next byte is CPU type
+	LDA (str_pt), Y	; get it
+; check compability of supplied code against present CPU
+	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
+	CPX #'R'		; is it a Rockwell/WDC CPU?
+		BEQ ll_rock		; from R down is OK
+	CPX #'B'		; generic 65C02?
+		BEQ ll_cmos		; from B down is OK
+	CPX #'V'		; 65816 is supported but no better than a generic 65C02
+		BEQ ll_cmos
+	CPX #'N'		; old NMOS?
+		BEQ ll_nmos		; only NMOS code will do
+	BRK				; *** should NEVER arrive here, unless firmware variables are corrupt! ***
+	.asc	"{CPU?}", 0
+ll_rock:
+	CMP #'R'		; code has Rockwell extensions?
+		BEQ ll_valid
+ll_cmos:
+	CMP #'B'		; generic 65C02 code?
+		BEQ ll_valid
+ll_nmos:
+	CMP #'N'		; every supported CPU can run NMOS code
+		BNE ll_wrap		; otherwise is code for another architecture!
+; present CPU is able to execute supplied code
+ll_valid:
+	LDA str_pt		; get pointer LSB
+	LDY str_pt+1	; and MSB
+	INY				; start from next page
+	STA ex_pt		; save execution pointer
+	STY ex_pt+1
+	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
 

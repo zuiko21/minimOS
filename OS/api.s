@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a1, must match kernel.s
+; v0.5.1a2, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161006-1113
+; last modified 20161006-1441
 
 ; no way for standalone assembly...
 
@@ -17,7 +17,9 @@ unimplemented:		; placeholder here, not currently used
 cout:
 	TYA				; for indexed comparisons (2)
 	BNE co_port		; not default (3/2)
-		LDA default_out	; default output device (4)
+		LDA sysout		; new per-process standard device ### apply this to ·65
+		BNE co_port		; already a valid device
+			LDA default_out	; otherwise get system global (4)
 co_port:
 	BMI co_phys		; not a logic device (3/2)
 		CMP #64			; first file-dev??? ***
@@ -54,7 +56,9 @@ cio_nfound:
 cin:
 	TYA				; for indexed comparisons
 	BNE ci_port		; specified
-		LDA default_in	; default input device
+		LDA sys_in		; new per-process standard device
+		BNE ci_port		; already a valid device
+			LDA default_in	; otherwise get system global
 ci_port:
 	BPL ci_nph		; logic device
 		JSR ci_phys		; check physical devices... but come back for events! new 20150617
@@ -80,7 +84,7 @@ ci_manage:
 	LDY cin_mode	; get flag, new sysvar 20150617
 	BEQ ci_event	; should process possible event
 		_STZY cin_mode	; back to normal mode
-		_BRA ci_exit	; and return whatever was received
+		RTS				; and return whatever was received
 ci_event:
 	CMP #16			; is it DLE?
 	BNE ci_notdle	; otherwise check next
@@ -302,23 +306,23 @@ free_w:					; doesn't do much, either
 
 ; *** UPTIME, get approximate uptime *** revised 20150208, corrected 20150318
 ; up_ticks -> ticks, new format 20161006
-; up_sec -> 24-bit uptime in seconds
+; up_sec -> 32-bit uptime in seconds
 
 uptime:
-	LDX #1			; first go for remaining ticks (2 bytes) (2)
+	LDX #1			; first go for elapsed ticks (2 bytes) (2)
 	_ENTER_CS		; don't change while copying
 up_loop:
 		LDA ticks, X		; get system variable byte (not uptime, corrected 20150125) (4)
 		STA up_ticks, X		; and store them in output parameter (3)
 		DEX					; go for next (2+3/2)
 		BPL up_loop
-	LDX #2			; now for the uptime in seconds (3 bytes) (2)
+	LDX #3			; now for the uptime in seconds (now 4 bytes) (2)
 up_upt:
 		LDA ticks+2, X		; get system variable uptime, new 20150318 (4)
 		STA up_sec, X		; and store it in output parameter (3) corrected 150610
 		DEX					; go for next (2+3/2)
 		BPL up_upt
-	_EXIT_CS		; disabled for 62 clocks, not 53...
+	_EXIT_CS
 	_EXIT_OK
 
 
@@ -354,7 +358,7 @@ b_exec:
 	RTS				; return previous error
 #else
 ; non-multitasking version
-	CPY #0			; should be system reserved PID
+	TYA				; should be system reserved PID, best way
 	BEQ exec_st		; OK for single-task system
 		_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
@@ -367,25 +371,82 @@ exec_st:
 #endif
 
 
-; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO TO_DO TO_DO *******************
+; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
 ; ex_pt -> addr, str_pt <- *path
 
 load_link:
-; *** assume path points to filename in header, code begins +248 *** KLUDGE
-	CLC				; ready to add
-	LDA str_pt		; get LSB
-	ADC #248		; offset to actual code!
-	STA ex_pt		; store address LSB
-	LDA str_pt+1	; get MSB so far
-	ADC #0			; propagate carry!
-	STA ex_pt+1		; store address MSB
-	LDA #0			; NMOS only
-	STA ex_pt+2		; STZ, invalidate bank...
-	STA ex_pt+3		; ...just in case
-	BCS ll_wrap		; really unexpected error
-		_EXIT_OK
+; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
+	LDY #1			; offset for filetype
+	LDA (str_pt), Y	; check filetype
+	CMP #'m'		; must be minimOS app!
+		BNE ll_wrap		; error otherwise
+	INY				; next byte is CPU type
+	LDA (str_pt), Y	; get it
+
+; ** generic CPU-type comparison code, this is 46 bytes long
+; loop for checking out CPU type, assume Y=2!!!
+;ll_ccpu:
+;		CMP ll_cpulst, Y	; is one of the listed CPUs?
+;			BEQ ll_dcpu			; detected type
+;		DEY					; otherwise try next
+;		BPL ll_ccpu			; until zero (included)
+;	BMI ll_wrap		; not suitable for this architecture!
+;ll_dcpu:
+;	LDX #3			; will scan physical CPU type
+;	LDA fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
+;ll_scpu:
+;		CMP ll_cpulst, X	; is one of the listed CPUs?
+;			BEQ ll_phcpu		; physical CPU detected
+;		DEY					; otherwise try next
+;		BPL ll_scpu			; until end
+;	BRK				; *** should never arrive here unless firmware vars corruption ***
+;	.asc	"{CPU}", 0
+;ll_phcpu:
+;	CPX #3			; is it a 65816?
+;	BNE ll_6502		; not!
+;		CPY #2			; if so, is it trying to execute Rockwell extensions?
+;			BEQ ll_wrap		; no way!
+;			BNE ll_valid	; otherwise, no problem
+;ll_6502:			; *** (40 bytes this far)
+;	STX ex_pt		; temporary storage of _physical_ CPU-type, or STY???
+;	CPY ex_pt		; compare against _code_ CPU-type, or CPX????
+;		BCC ll_wrap		; this was incompatible
+
+; ** alternative code (minus CPU-type table, this is 35 bytes only
+	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
+	CPX #'R'		; is it a Rockwell/WDC CPU?
+		BEQ ll_rock		; from R down is OK
+	CPX #'B'		; generic 65C02?
+		BEQ ll_cmos		; from B down is OK
+	CPX #'V'		; 65816 is supported but no better than a generic 65C02
+		BEQ ll_cmos
+	CPX #'N'		; old NMOS?
+		BEQ ll_nmos		; only NMOS code will do
+	BRK				; *** should NEVER arrive here, unless firmware variables are corrupt! ***
+	.asc	"{CPU?}", 0
+ll_rock:
+	CMP #'R'		; code has Rockwell extensions?
+		BEQ ll_valid
+ll_cmos:
+	CMP #'B'		; generic 65C02 code?
+		BEQ ll_valid
+ll_nmos:
+	CMP #'N'		; every supported CPU can run NMOS code
+		BNE ll_wrap		; otherwise is code for another architecture!
+; present CPU is able to execute supplied code
+ll_valid:
+	LDA str_pt		; get pointer LSB
+	LDY str_pt+1	; and MSB
+	INY				; start from next page
+	STA ex_pt		; save execution pointer
+	STY ex_pt+1
+	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
+
+; CPU type list for easier detection *** NO LONGER USED
+;ll_cpulst:
+;	.asc	"NBRV"	; NMOS, generic CMOS, Rockwell CMOS, then 65816 (for physical CPU only)
 
 
 ; *** SU_POKE, write to protected addresses *** revised 20150208
@@ -419,7 +480,9 @@ string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	TYA				; for indexed comparisons (2)
 	BNE str_port	; not default (3/2)
-		LDA default_out	; default output device (4)
+		LDA sysout		; new per-process standard device
+		BNE str_port	; already a valid device
+			LDA default_out	; otherwise get system global (4)
 str_port:
 	BMI str_phys	; not a logic device (3/2)
 		CMP #64			; first file-dev??? ***
@@ -460,13 +523,16 @@ str_cont:
 		JSR str_call		; indirect subroutine call (6...)
 		_PLY				; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
+			BCS str_err			; error from driver, but keeping Y eeeeeek
 		BNE str_loop		; still within same page
-	INC str_pt+1		; otherwise increase, parameter has changed!
+	INC str_pt+1		; otherwise increase, parameter has changed! will it have to restore parameter?
 	_BRA str_loop		; continue, will check for termination later (3)
 str_call:
 	LDX str_dev			; get driver pointer position (3)
 	_JMPX(drv_opt)		; go at stored pointer (...6)
-
+str_err:
+	PLA					; discard saved Y while keeping error code
+	RTS					; return whatever error code
 
 ; *** SU_SEI, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
@@ -542,7 +608,7 @@ shutdown:
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_stat			; don't shutdown system then!
 	STY sd_flag			; store mode for later, first must do proper system shutdown
-; ask all braids to termmm_siginate
+; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
