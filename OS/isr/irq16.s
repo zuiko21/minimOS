@@ -1,5 +1,5 @@
 ; ISR for minimOS·16
-; v0.5.1a1, should match kernel16.s
+; v0.5.1a2, should match kernel16.s
 ; features TBD
 ; (c) 2016 Carlos J. Santisteban
 ; last modified 20161003-1249
@@ -76,13 +76,13 @@ isr_sched_ret:					; *** take this standard address!!! ***
 		BNE i_poll				; until zero is done (3/2)
 ip_done:
 ; update uptime
-; new 65816 code is 22+2 bytes, worse case 44+3 clocks, best 17 clocks!
+; new 65816 code was 22+2 bytes, worst case 44+3 clocks, best 17 clocks!
+; now is 21+3 bytes, worst case 41+3 clocks, but best 19 clocks
 	.al: REP $20			; worth switching to 16-bit size (3)
-	DEC ticks				; decrement uptime count (8)
-	CMP #$FFFF				; wrapped? (3) is this correct or BNE will suffice???
-		BNE isr_done			; no second completed yet *** revise for load balancing (3/2)
-	LDA irq_freq			; get whole word (5)
-	STA ticks				; jiffy counter lower word updated (5)
+	INC ticks				; increment uptime count, new format 20161006 (8)
+	CMP irq_freq				; wrapped? (5)
+		BCC isr_done			; no second completed yet *** revise for load balancing (3/2)
+	STZ ticks				; jiffy counter lower word reset (5)
 	INC ticks+2				; one more second (8)
 		BNE second				; no wrap (3/2)
 	INC ticks+4				; 64k more seconds (8)

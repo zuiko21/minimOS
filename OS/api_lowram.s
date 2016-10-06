@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5b4, must match kernel.s
+; v0.5.1a1, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160425-1342
+; last modified 20161006-1114
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -149,7 +149,7 @@ free_w:
 
 
 ; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
-; up_ticks -> fr-ticks
+; up_ticks -> ticks, new format 20161006
 ; up_sec -> 24-bit uptime in seconds
 
 uptime:

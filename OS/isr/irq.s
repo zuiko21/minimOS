@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.5b4, should match kernel.s
+; v0.5.1a1, should match kernel.s
 ; features TBD
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160412-0952
+; last modified 20161006-1108
 
 #define		ISR		_ISR
 
@@ -95,19 +95,20 @@ isr_sched_ret:				; *** take this standard address!!! ***
 		_PLX				; restore index (4)
 		BNE i_poll			; until zero is done (3/2)
 ip_done:
-; update uptime (usually 15 up to 29, each second will be 53...66)
-	DEC ticks			; decrease uptime count (6)
-	LDA ticks			; get for comparison (4)
-	CMP #$FF			; wrapped? (2)
+; update uptime was usually 15 up to 29, each second will be 53...66, 45 bytes
+; new format 20161006 makes it 20-35, each second will be 51...64, but 43 bytes
+	INC ticks			; decrease uptime count (6)
+	BNE isr_nw			; did not wrap (3/2)
+		INC ticks+1			; otherwise carry (6)
+isr_nw:
+	LDA ticks			; check LSB first (4)
+	CMP irq_freq		; possible end? (4)
 		BNE isr_done		; no second completed yet *** revise for load balancing (3/2)
-	DEC ticks+1			; decrease MSB (6)
-	LDA ticks+1			; compare it (4)
-	CMP #$FF			; wrapped? (2)
+	LDA ticks+1			; go for MSB (4)
+	CMP irq_freq+1		; second completed? (4)
 		BNE isr_done		; no second completed yet *** revise for load balancing (3/2)
-	LDY irq_freq		; get final value (4)
-	LDA irq_freq+1		; same for MSB (4)
-	STY ticks			; set values (4+4)
-	STA ticks+1
+	_STZA ticks			; otherwise reset values (4+4)
+	_STZA ticks+1
 	INC ticks+2			; one more second (6)
 		BNE second			; no wrap (3/2)
 	INC ticks+3			; 256 more seconds (6)

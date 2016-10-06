@@ -1,8 +1,8 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a1, should match kernel16.s
+; v0.5.1a2, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161005-1718
+; last modified 20161006-1039
 
 ; no way for standalone assembly...
 
@@ -313,35 +313,28 @@ free_w:					; doesn't do much, either
 
 
 ; *** UPTIME, get approximate uptime ***
-; up_ticks -> fr-ticks
+; up_ticks -> ticks, new standard format 20161006
 ; up_sec -> 24-bit uptime in seconds
 
 uptime:
-	.as: .xs: SEP $30	; *** standard register size ***
-	LDX #1			; first go for remaining ticks (2 bytes) (2)
+	.al: REP $20			; *** optimum 16-bit memory ***
 ; default 816 API functions run on interrupts masked, thus no need for CS
-up_loop:
-		LDA ticks, X		; get system variable byte (4)
-		STA up_ticks, X		; and store them in output parameter (3)
-		DEX					; go for next (2+3/2)
-		BPL up_loop
-	LDX #2			; now for the uptime in seconds (3 bytes) (2)
-up_upt:
-		LDA ticks+2, X		; get system variable uptime (4)
-		STA up_sec, X		; and store it in output parameter (3)
-		DEX					; go for next (2+3/2)
-		BPL up_upt
+		LDA ticks			; get system variable word (5)
+		STA up_ticks		; and store them in output parameter (4)
+		LDA ticks+2			; get system variable uptime (5)
+		STA up_sec			; and store it in output parameter (4)
+		LDA ticks+4			; will get MSB plus an extra byte, but does not matter (5)
+		STA up_sec+2		; store them, not worth switching back to 8-bit (4)
 ; end of CS
 	_EXIT_OK
 
 
-; *** B_FORK, get available PID ***
+; *** B_FORK, reserve available PID ***
 ; Y -> PID
 
 b_fork:
 	.as: .xs: SEP $30	; *** standard register size ***
 #ifdef	MULTITASK
-; ** might be replaced with LDY pid on optimized builds **
 	LDA #MM_FORK	; subfunction code
 	STA io_c		; as fake parameter
 	LDY #TASK_DEV	; multitasking as device driver!
