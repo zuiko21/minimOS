@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.5.1a1
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1233
+; last modified 20161010-1342
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -181,30 +181,31 @@ std_nmi:
 #include "firmware/modules/std_nmi.s"
 
 
-; *** administrative functions *** CONTINUE REVAMP HERE ***** CONTINUE REVAMP HERE *****
+; *** administrative functions ***
 ; A0, install jump table
 ; kerntab <- address of supplied jump table
 fw_install:
 	LDY #0				; reset index (2)
 	_ENTER_CS			; disable interrupts! (5)
+	.al: REP #$20		; ** 16-bit memory ** (3)
 fwi_loop:
-		LDA (kerntab), Y	; get from table as supplied (5)
-		STA fw_table, Y		; copy where the firmware expects it (4+2)
+		LDA (kerntab), Y	; get word from table as supplied (6)
+		STA fw_table, Y		; copy where the firmware expects it (5)
+		INY					; advance two bytes (2+2)
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
-	_EXIT_CS			; restore interrupts if needed (4)
+	_EXIT_CS			; restore interrupts if needed, will restore size too (4)
 	_DR_OK				; all done (8)
 
 
 ; A2, set IRQ vector
 ; kerntab <- address of ISR
 fw_s_isr:
-	LDY kerntab				; get LSB, nicer (3)
-	LDA kerntab+1			; get MSB (3)
-	_ENTER_CS				; disable interrupts! (5)
-	STY fw_isr				; store for firmware (4+4)
-	STA fw_isr+1
-	_EXIT_CS				; restore interrupts if needed (4)
+	_ENTER_CS				; disable interrupts and save sizes! (5)
+	.al: REP #$20			; ** 16-bit memory ** (3)
+	LDA kerntab				; get pointer (4)
+	STY fw_isr				; store for firmware (5)
+	_EXIT_CS				; restore interrupts if needed, sizes too (4)
 	_DR_OK					; done (8)
 
 
@@ -225,6 +226,8 @@ fw_sn_chk:
 		DEX
 		BPL fw_sn_chk			; until all done
 #endif
+; transfer supplied pointer to firmware vector
+; not worth going 16-bit as will by 9b/19c instead of 10b/14c
 	LDY kerntab				; get LSB (3)
 	LDA kerntab+1			; get MSB (3)
 	STY fw_nmi				; store for firmware (4+4)
@@ -239,38 +242,37 @@ fw_patch:
 #ifdef		LOWRAM
 	_DR_ERR(UNAVAIL)		; no way to patch on 128-byte systems
 #else
-	LDY kerntab				; get LSB (3)
-	LDA kerntab+1			; same for MSB (3)
-	_ENTER_CS				; disable interrupts! (5)
-	STA fw_table, Y			; store where the firmware expects it (4+4)
-	STA fw_table+1, Y
-	_EXIT_CS				; restore interrupts if needed (4)
+; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
+	_ENTER_CS				; disable interrupts and save sizes! (5)
+	REP #$20				; ** 16-bit memory ** (3)
+	LDA kerntab				; get full pointer (4)
+	STA fw_table, Y			; store into firmware (5)
+	_EXIT_CS				; restore interrupts and sizes (4)
 	_DR_OK					; done (8)
 #endif
 
 
 ; A8, get system info, API TBD
-; zpar -> available pages of (kernel) SRAM (0 means 128-byte system)
+; zpar -> available pages of (kernel) SRAM
 ; zpar+2.W -> available BANKS of RAM
 ; zpar2.B -> speedcode
 ; zpar2+2.B -> CPU type
 ; zpar3.W/L -> points to a string with machine name
-; *** might change ABI/API ***
+; *** WILL change ABI/API ***
 fw_gestalt:
 	LDA himem		; get pages of kernel SRAM (4)
 	STA zpar		; store output (3)
-	_STZA zpar+2	; no bankswitched RAM yet (3+3)
-	_STZA zpar+3
-	_STZA zpar3+2	; same for string address (3+3)
-	_STZA zpar3+3
+	PHP				; keep sizes (3)
+	REP #$20		; ** 16-bit memory **
+	STZ zpar+2		; no bankswitched RAM yet (4)
+	STZ zpar3+2		; same for string address (4)
+	LDA #fw_mname	; get string pointer (3)
+	STA zpar3		; put it outside (4)
+	PLP				; restore sizes (4)
 	LDA #SPEED_CODE	; speed code as determined in options.h (2+3)
 	STA zpar2
 	LDA fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
 	STA zpar2+2
-	LDA #<fw_mname	; get string LSB (2+3)
-	STA zpar3
-	LDA #>fw_mname	; same for MSB (2+3)
-	STA zpar3+1
 	_DR_OK			; done (8)
 
 
@@ -278,11 +280,10 @@ fw_gestalt:
 ; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
 ; C -> not implemented
 fw_power:
-	TYA					; get subfunction offset
-	TAX					; use as index
-	_JMPX(fwp_func)		; select from jump table
+	TYX					; get subfunction offset as index
+	JMP (fwp_func, X)	; select from jump table
 
-fwp_off:
+fwp_off:	; ******** CONTINUE HERE ********* CONTINUE HERE *********
 #include "firmware/modules/poweroff.s"
 
 fwp_susp:
