@@ -1,25 +1,12 @@
 ; ISR for minimOS
-; v0.5.1a1, should match kernel.s
+; v0.5.1a2, should match kernel.s
 ; features TBD
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161006-1108
+; last modified 20161010-1317
 
 #define		ISR		_ISR
 
-; in case of standalone assembly from 'xa isr/irq.s'
-#ifndef		KERNEL
-#define		KERNEL	_IRQ
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"	; generic filename
-#include "sysvars.h"
-.text
-* = ROM_BASE
-#endif
+#include "usual.h"
 
 ; *** interrupt service routine performance ***
 ; _minimum_ overhead for periodic interrupt with no drivers in queue is 62 clocks, or 107 each second

@@ -1,13 +1,13 @@
 ; more-or-less generic firmware for minimOS·65
 ; v0.5.1a1
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1017
+; last modified 20161010-1218
 
 #define		FIRMWARE	_FIRMWARE
 
 #include "usual.h"
 
-	.align	256
+* = FW_BASE			; this will be page-aligned!
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
@@ -106,7 +106,7 @@ res_sec:
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
-remote_boot:
+-remote_boot:
 ;#include "firmware/modules/netboot.s"
 
 ; *** firmware ends, jump into the kernel ***
@@ -331,11 +331,11 @@ irq:
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
-	.dsb	panic-*, $FF
+	.dsb	lock-*, $FF
 #endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
-* = panic
+* = lock
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC

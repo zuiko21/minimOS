@@ -2,13 +2,13 @@
 ; v0.5.1a2, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161006-1441
+; last modified 20161010-1236
 
 ; no way for standalone assembly...
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	_ERR(UNAVAIL)	; go away!
 
 
@@ -16,7 +16,7 @@ unimplemented:		; placeholder here, not currently used
 ; Y <- dev, io_c <- char
 
 cout:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA				; for indexed comparisons (2)
 	BNE co_port		; not default (3/2)
 		LDA sysout		; new per-process standard device ### apply this to ·65
@@ -62,7 +62,7 @@ cio_nfound:
 ; Y <- dev, io_c -> char, C = not available
 
 cin:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA				; for indexed comparisons
 	BNE ci_port		; specified
 		LDA sys_in		; new per-process standard device ### apply this to ·65
@@ -152,7 +152,7 @@ ci_win:
 ; uses ma_l
 
 malloc:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA ma_rs+2		; asking over 64K?
 	ORA ma_rs+3
 		BNE ma_nobank	; not YET supported
@@ -245,7 +245,7 @@ ma_ok:
 ; ma_pt <- addr
 
 free:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #0			; reset indexes
 ; default 816 API functions run on interrupts masked, thus no need for CS
 fr_loop:
@@ -295,7 +295,7 @@ fr_ok:
 ; Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to window title!
 
 open_w:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA w_rect			; asking for some size?
 	ORA w_rect+1
 	BEQ ow_no_window	; wouldn't do it
@@ -317,7 +317,7 @@ free_w:					; doesn't do much, either
 ; up_sec -> 32-bit uptime in seconds
 
 uptime:
-	.al: REP $20			; *** optimum 16-bit memory ***
+	.al: REP #$20			; *** optimum 16-bit memory ***
 ; default 816 API functions run on interrupts masked, thus no need for CS
 		LDA ticks			; get system variable word (5)
 		STA up_ticks		; and store them in output parameter (4)
@@ -333,7 +333,7 @@ uptime:
 ; Y -> PID
 
 b_fork:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 #ifdef	MULTITASK
 	LDA #MM_FORK	; subfunction code
 	STA io_c		; as fake parameter
@@ -352,7 +352,7 @@ b_fork:
 ; uses str_dev for temporary braid storage, driver will pick it up!
 
 b_exec:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 #ifdef	MULTITASK
 ; ** might be repaced with driver code on optimized builds **
 	LDA #MM_EXEC	; subfunction code
@@ -392,7 +392,7 @@ exec_816:
 
 load_link:
 ; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	LDY #1			; offset for filetype
 	LDA (str_pt), Y	; check filetype
 	CMP #'m'		; must be minimOS app!
@@ -419,7 +419,7 @@ ll_wrap:
 ; destroys A (and maybe Y on NMOS)
 
 su_poke:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA					; transfer value
 	STA (zpar)			; store value
 	_EXIT_OK
@@ -431,7 +431,7 @@ su_poke:
 ; destroys A
 
 su_peek:
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA (zpar)			; store value
 	TAY					; transfer value
 	_EXIT_OK
@@ -444,7 +444,7 @@ su_peek:
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
-	.as: .xs: SEP $30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA				; for indexed comparisons (2)
 	BNE str_port	; not default (3/2)
 		LDA sysout		; new per-process standard device ### apply this to ·65
@@ -594,7 +594,7 @@ sd_cold:
 	LDY #PW_COLD		; cold boot
 	BNE sd_fw			; will reboot, shared code, no need for BRA
 sd_warm:
-	SEP #9				; disable interrupts and set carry...
+	SEP ##9				; disable interrupts and set carry...
 	XCE					; ...to set emulation mode for a moment
 	CLD					; clear decimal mode
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway

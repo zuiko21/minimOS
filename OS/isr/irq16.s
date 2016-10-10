@@ -2,32 +2,19 @@
 ; v0.5.1a2, should match kernel16.s
 ; features TBD
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161003-1249
+; last modified 20161010-1319
 
 #define		ISR		_ISR
 
-; in case of standalone assembly from 'xa isr/irq.s'
-#ifndef		KERNEL
-#define		KERNEL	_IRQ
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"	; generic filename
-#include "sysvars.h"
-.text
-* = ROM_BASE
-#endif
+#include "usual.h"
 
 ; performance for maximum priority async routine = 39 clocks!
 ; **** the ISR code **** (initial tasks take 18 clocks)
-	.al: .xl: REP $30		; status already saved, but save register contents in full (3)
+	.al: .xl: REP #$30		; status already saved, but save register contents in full (3)
 	PHA						; save registers (3x4)
 	PHX
 	PHY
-	.as: .xs: SEP $30		; back to 8-bit size (3)
+	.as: .xs: SEP #$30		; back to 8-bit size (3)
 
 ; *** place here HIGH priority async tasks, if required ***
 
@@ -49,7 +36,7 @@ i_req:
 		BNE i_req				; until done (3/2)
 ir_done:					; otherwise is spurious, due to separate BRK handler on 65816
 isr_done:
-	.al: .xl: REP $30		; restore saved registers in full, just in case (3)
+	.al: .xl: REP #$30		; restore saved registers in full, just in case (3)
 	PLY						; restore registers (3x5 + 6)
 	PLX
 	PLA
@@ -78,7 +65,7 @@ ip_done:
 ; update uptime
 ; new 65816 code was 22+2 bytes, worst case 44+3 clocks, best 17 clocks!
 ; now is 21+3 bytes, worst case 41+3 clocks, but best 19 clocks
-	.al: REP $20			; worth switching to 16-bit size (3)
+	.al: REP #$20			; worth switching to 16-bit size (3)
 	INC ticks				; increment uptime count, new format 20161006 (8)
 	CMP irq_freq				; wrapped? (5)
 		BCC isr_done			; no second completed yet *** revise for load balancing (3/2)
@@ -90,7 +77,7 @@ ip_done:
 ; execute D_SEC code if applies, take it much easier! (7 if none, 5+26*drivers, plus inner codes)
 ; to be done - balancing into, say, 8 time slots
 second:
-	.as: SEP $30			; back to 8-bit memory (and indexes, just in case)
+	.as: SEP #$30			; back to 8-bit memory (and indexes, just in case)
 	LDX dsec_mx				; get queue size (4)
 		BEQ isr_done			; no drivers to call (2/3)
 i_sec:

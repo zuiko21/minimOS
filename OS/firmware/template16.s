@@ -1,13 +1,13 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.5.1a1
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1106
+; last modified 20161010-1233
 
 #define		FIRMWARE	_FIRMWARE
 
 #include "usual.h"
 
-	.align	256
+* = FW_BASE			; this will be page-aligned!
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
@@ -91,7 +91,7 @@ post:
 	LDA #'V'			; 65816 only (2)
 	STA fw_cpu			; store variable (4)
 ; *** preset kernel start address (standard label from ROM file) ***
-	.al: REP $20		; ** 16-bit memory ** (3)
+	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA #kernel			; get full address (3)
 	STA fw_warm			; store in sysvars (5)
 
@@ -110,11 +110,11 @@ res_sec:
 	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
 	STX VIA_J + IER
 
-	.as: .xs: SEP $30	; all back to 8-bit, just in case, might be removed if no remote boot is used (3)
+	.as: .xs: SEP #$30	; all back to 8-bit, just in case, might be removed if no remote boot is used (3)
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
-remote_boot:
+-remote_boot:
 ;#include "firmware/modules/netboot.s"
 
 ; *** firmware ends, jump into the kernel ***
@@ -126,20 +126,20 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 nmi:
 ; save registers AND system pointers
-	.al: .xl: REP $30	; ** whole register size, just in case **
+	.al: .xl: REP #$30	; ** whole register size, just in case **
 	PHA					; save registers (3x4)
 	PHX
 	PHY
 ; make NMI reentrant, new 65816 specific code
 ; assume all registers in 16-bit size, this is 6+2 bytes, 16+2 clocks! (was 10b, 38c)
-	LDA sysptr			; get original word (4+4)
-	LDY systmp			; this will get sys_sp also!
-	PHA					; store them in similar order (4+4)
-	PHY
+	LDY sysptr			; get original word (4+4)
+	LDA systmp			; this will get sys_sp also!
+	PHY					; store them in similar order (4+4)
+	PHA
 ; prepare for next routine while regs are still 16-bit!
 	LDA fw_nmi			; copy vector to zeropage (5+4)
 	STA sysptr
-	.as: .xs: SEP $30	; ** back to 8-bit size! **
+	.as: .xs: SEP #$30	; ** back to 8-bit size! **
 ; check whether user NMI pointer is valid
 	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
 	LDY #0				; offset for NMI code pointer (2)
@@ -154,11 +154,11 @@ do_nmi:
 	JSR go_nmi			; call actual code, ending in RTS (6)
 ; *** here goes the former nmi_end routine ***
 nmi_end:
-	.al: .xl: REP $30	; ** whole register size to restore **
-	PLY					; retrieve saved vars (5+5)
-	PLA
-	STY systmp			; I suppose is safe to alter sys_sp too (4+4)
-	STA sysptr
+	.al: .xl: REP #$30	; ** whole register size to restore **
+	PLA					; retrieve saved vars (5+5)
+	PLY
+	STA systmp			; I suppose is safe to alter sys_sp too (4+4)
+	STY sysptr
 	PLY					; restore regular registers (3x5)
 	PLX
 	PLA
@@ -168,13 +168,13 @@ nmi_end:
 go_nmi:
 	JMP (fw_nmi)		; jump to code (and inocuous header) (5)
 
-; *** execute standard NMI handler ***
-rst_nmi:
-	JSR std_nmi			; call standard handler
-	BRA nmi_end			; and finish as usual
-
 fw_magic:
 	.asc	"*jNU"		; reversed magic string
+
+; *** execute standard NMI handler ***
+rst_nmi:
+	PEA nmi_end-1		; prepare return address
+; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
 
 ; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
 std_nmi:
@@ -335,11 +335,11 @@ irq:
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
-	.dsb	panic-*, $FF
+	.dsb	lock-*, $FF
 #endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
-* = panic
+* = lock
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC

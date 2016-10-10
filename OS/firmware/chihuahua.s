@@ -1,26 +1,13 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
 ; v0.9.1a1
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1017
+; last modified 20161010-1218
 
-#define		FIRMWARE	_FIRMWARE
+#define		FIRMWARE 	_FIRMWARE
 
-; in case of stand alone assembly
-#ifndef		ROM
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/chihuahua.h"
-#include "sysvars.h"
-.text
-kernel	= remote_boot	; in case no kernel is provided with firmware, try to download one forever
-*		= FW_BASE		; sample address
-#endif
+#include "usual.h"
 
-	.align	256
+* = FW_BASE			; this will be page-aligned!
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
@@ -112,7 +99,7 @@ res_sec:
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
-remote_boot:
+-remote_boot:
 ;#include "firmware/modules/netboot.s"
 
 ; *** firmware ends, jump into the kernel ***
@@ -333,11 +320,11 @@ irq:
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
-	.dsb	panic-*, $FF
+	.dsb	lock-*, $FF
 #endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
-* = panic
+* = lock
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC

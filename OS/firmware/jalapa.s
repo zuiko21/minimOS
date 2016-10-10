@@ -1,26 +1,13 @@
 ; firmware for minimOS on SDm/Jalapa (and maybe others)
 ; generic template v0.5.3a1, unrelated to LATER generic template 0.5.1
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1017
+; last modified 20161010-1225
 
 #define		FIRMWARE	_FIRMWARE
 
-; in case of stand alone assembly from 'xa firmware/template.s'
-#ifndef		KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
-.text
-kernel	= remote_boot	; in case no kernel is provided with firmware, try to download one forever
-* 		= FW_BASE		; sample address
-#endif
+#include "usual.h"
 
-	.align	256
+* = FW_BASE			; this will be page-aligned!
 
 ; *** first some ROM identification ***
 fw_start:
@@ -116,7 +103,7 @@ res_sec:
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
-remote_boot:
+-remote_boot:
 ;#include "firmware/modules/netboot.s"
 
 ; *** firmware ends, jump into the kernel ***
@@ -338,11 +325,11 @@ irq:
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
-	.dsb	panic-*, $FF
+	.dsb	lock-*, $FF
 #endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
-* = panic
+* = lock
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC

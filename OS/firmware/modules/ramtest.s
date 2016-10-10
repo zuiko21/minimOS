@@ -1,7 +1,7 @@
 ; firmware module for minimOS
-; RAMtest 0.5.2b1
+; RAMtest 0.5.2b2
 ; (c) 2015 Carlos J. Santisteban
-; last modified 20160331-1405
+; last modified 20161010-1216
 
 ; in case of stand alone assembly
 #ifndef		FIRMWARE
@@ -24,7 +24,7 @@ rt_fill:
 		STA z_used, X	; store different values, 6510-savvy
 		CMP z_used, X	; check if properly stored
 		BEQ ram_nfail
-			_PANIC			; serious RAM failure
+			JMP lock		; serious RAM failure
 ram_nfail:
 		DEX				; go to previous byte
 		_DEC			; change value, strange correction 20150309

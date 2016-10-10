@@ -1,6 +1,6 @@
 ; minimOS 0.5.1a2 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161010-0946
+; last modified 20161010-1209
 
 ; *** standard addresses ***
 
@@ -56,6 +56,7 @@ FILE_DEV	=	130
 #define		_EXIT_OK	RTI
 #define		_ABORT(a)	LDY #a: SEC: RTL
 #define		_ERR(a)		LDY #a: PLP: SEC: PHP: RTI
+#endif
 
 ; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
 
