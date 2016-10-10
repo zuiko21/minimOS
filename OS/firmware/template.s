@@ -1,32 +1,19 @@
-; firmware for minimOS on Chichuahua PLUS (and maybe others)
-; v0.9.1a1
+; more-or-less generic firmware for minimOS·65
+; v0.5.1a1
 ; (c)2015-2016 Carlos J. Santisteban
 ; last modified 20161010-1017
 
 #define		FIRMWARE	_FIRMWARE
 
-; in case of stand alone assembly
-#ifndef		ROM
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/chihuahua.h"
-#include "sysvars.h"
-.text
-kernel	= remote_boot	; in case no kernel is provided with firmware, try to download one forever
-*		= FW_BASE		; sample address
-#endif
+#include "usual.h"
 
 	.align	256
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
-	.asc 0, "mB", 13				; standard system file wrapper, new format 20161010, experimental type
+	.asc 0, "mB", 13				; standard system file wrapper, new 20161010, experimental type
 	.asc "boot", 0					; standard filename
-	.asc "0.9.1a1 firmware for "	; machine description as comment
+	.asc "0.5.1a1 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
@@ -37,12 +24,16 @@ fw_mname:
 reset:
 	SEI				; cold boot, best assume nothing (2)
 	CLD				; just in case, a must for NMOS (2)
-; chihuahua is unlikely to use a 65816...
-	LDX #$FF		; initial stack pointer, no low ram here, must be done in emulation for '816 (2)
+; * this is in case a 65816 is being used, but still compatible with all *
+	SEC				; would set back emulation mode on C816
+	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
+	ORA $0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
+; * end of 65816 specific code *
+	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
 ; disable all interrupt sources
 	LDA #$7F		; disable all interrupts (2+4)
-	STA VIA_J + IER
+	STA VIA_J + IER	; *** this is for single VIA systems ***
 
 ; and optionally check for VIA presence
 #ifdef	SAFE
@@ -61,6 +52,9 @@ via_ok:
 post:
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
+
+; some systems might copy ROM-in-RAM and continue at faster speed!
+;#include "firmware/modules/rominram.s"
 
 ; startup beep
 #include "firmware/modules/beep.s"	; basic standard beep
@@ -178,7 +172,7 @@ rst_nmi:
 fw_magic:
 	.asc	"*jNU"		; reversed magic string
 
-; *** default code for NMI handler, if not installed or invalid ***
+; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
 std_nmi:
 #include "firmware/modules/std_nmi.s"
 
@@ -238,6 +232,9 @@ fw_sn_chk:
 ; kerntab <- address of code
 ; Y <- function to be patched
 fw_patch:
+#ifdef		LOWRAM
+	_DR_ERR(UNAVAIL)		; no way to patch on 128-byte systems
+#else
 	LDY kerntab				; get LSB (3)
 	LDA kerntab+1			; same for MSB (3)
 	_ENTER_CS				; disable interrupts! (5)
@@ -245,6 +242,7 @@ fw_patch:
 	STA fw_table+1, Y
 	_EXIT_CS				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
+#endif
 
 
 ; A8, get system info, API TBD
@@ -281,10 +279,10 @@ fw_power:
 	_JMPX(fwp_func)		; select from jump table
 
 fwp_off:
-	_PANIC("{OFF}")		; stop execution! just in case is handled
+#include "firmware/modules/poweroff.s"
 
 fwp_susp:
-	_DR_ERR(UNAVAIL)	; just continue execution
+#include "firmware/modules/suspend.s"
 
 fwp_cold:
 	JMP ($FFFC)			; call 6502 vector, as firmware start will initialize as needed
@@ -314,7 +312,7 @@ fw_admin:
 
 ; *** minimOS function call primitive ($FFC0) ***
 * = kernel_call
-	_JMPX(fw_table)	; macro for NMOS compatibility (6)
+	_JMPX(fw_table)	; macro for NMOS compatibility (6) this will be a wrapper on 816 firmware!
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -343,14 +341,21 @@ panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
 	NOP					; padding for reserved C816 vectors
 
-; once again, CHIHUAHUA is very unlikely to use a 65816
-; filling for ready-to-blow ROM
-#ifdef	ROM
-	.dsb	$FFFA-*, $FF
-#endif
-
+; *** 65C816 ROM vectors ***
+* = $FFE4				; should be already at it
+	.word	fwp_cold	; native COP		@ $FFE4
+	.word	fwp_cold	; native BRK		@ $FFE6
+	.word	fwp_cold	; native ABORT		@ $FFE8
+	.word	fwp_cold	; native NMI		@ $FFEA
+	.word	$FFFF		; reserved			@ $FFEC
+	.word	fwp_cold	; native IRQ		@ $FFEE
+	.word	$FFFF		; reserved			@ $FFF0
+	.word	$FFFF		; reserved			@ $FFF2
+	.word	nmi			; emulated COP		@ $FFF4
+	.word	$FFFF		; reserved			@ $FFF6
+	.word	nmi			; emulated ABORT 	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; NMI	@ $FFFA
-	.word	reset		; RST	@ $FFFC
-	.word	irq			; IRQ	@ $FFFE
+	.word	nmi			; (emulated) NMI	@ $FFFA
+	.word	reset		; (emulated) RST	@ $FFFC
+	.word	irq			; (emulated) IRQ	@ $FFFE

@@ -1,11 +1,11 @@
 ; suspend firmware module for minimOS
-; v0.5a2
-; placeholder for SDD(+)
-; last modified 20160923
+; v0.5.1a1
+; generic placeholder
+; last modified 20161010
 
 	; *** things to do for suspend, should resume execution ***
 	NOP					; safety margin!
 	NOP
 	NOP
 	NOP
-	_FINISH				; back to business
+	_DR_OK				; back to business

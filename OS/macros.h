@@ -1,15 +1,14 @@
-; minimOS 0.5.1a1 MACRO definitions
+; minimOS 0.5.1a2 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160928-1215
+; last modified 20161010-0946
 
 ; *** standard addresses ***
 
 kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
-admin_call	=	$FFD8	; ending in RTS, no way to use a PHK wrapper eeeeeeek! JSL adm16_call & RTS instead
-adm16_call	=	$FFD0 	; ending in RTL, routines should push P for mode preservation in case is needed
+admin_call	=	$FFD0	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
 
-; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS
-panic		=	$FFE0	; more-or-less 816 savvy address
+; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS ** new name 20161010
+lock		=	$FFE0	; more-or-less 816 savvy address
 
 ; *** device numbers for optional pseudo-driver modules, TBD ***
 TASK_DEV	=	128
@@ -25,19 +24,19 @@ FILE_DEV	=	130
 ; *** common function calls ***
 
 ; system calling interface *** unified ·65 and ·16 macros
-; do apps (or any code outside bank 0) need to call firmware interface???
 
 #ifndef	C816
 #define		_KERNEL(a)		LDX #a: JSR kernel_call
-#define		_ADMIN(a)		LDX #a: JSR admin_call
 #else
 #define		_KERNEL(a)		LDX #a: CLC: COP #$FF
-#define		_ADMIN(a)		LDX #a:	JSL adm16_call
 #endif
 
-; * C816 routines ending in RTI and redefined EXIT_OK and ERR endings!
+; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings!
 ; * C02 wrapper then should be like			COP #$FF	RTS
-; * C816 firmware routines ending in RTL, see wrapper for 02 tasks above!
+
+; administrative calls unified for 6502 and 65816, all ending in RTS (use DR_OK and DR_ERR macros)
+#define		_ADMIN(a)		LDX #a: JSR admin_call
+
 
 ; new macro for filesystem calling, no specific kernel entries!
 ; ** revise for 816 systems ****
@@ -60,8 +59,8 @@ FILE_DEV	=	130
 
 ; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
 
-; driver init & I/O routine endings, for both 6502 and 816 (expected to be in bank zero anyway)
-; driver code without error signaling (eg. shutdown, jiffy interrupt) may just end on RTS no matter the CPU
+; most code endings (except kernel API and apps) for both 6502 and 816 (expected to be in bank zero anyway)
+; such code without error signaling (eg. shutdown, jiffy interrupt) may just end on RTS no matter the CPU
 #define		_DR_OK		CLC: RTS
 #define		_DR_ERR(a)	LDY #a: SEC: RTS
 
@@ -76,12 +75,8 @@ FILE_DEV	=	130
 
 ; ** interrupt enable/disable macros deprecated 20161003 and replaced by the above macros **
 
-; ** panic call, pretty much the same jump to standard address, JML for 816 just in case **
-#ifndef	C816
-#define		_PANIC		JMP panic
-#else
-#define		_PANIC		JML panic
-#endif
+; ** panic call, now using BRK in case of error display ** new BRK handled 20161010
+#define		_PANIC(a)	BRK: .asc a, 0
 
 ; *** conditional opcode assembly ***
 #ifdef	NMOS
