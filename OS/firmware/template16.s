@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.5.1a1
+; v0.5.1a2
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1342
+; last modified 20161010-1427
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -151,7 +151,8 @@ nmi_chkmag:
 		DEX					; internal string is read backwards (2)
 		BPL nmi_chkmag		; down to zero (3/2)
 do_nmi:
-	JSR go_nmi			; call actual code, ending in RTS (6)
+	LDX #0				; null offset
+	JSR (fw_nmi, X)		; call actual code, ending in RTS (6)
 ; *** here goes the former nmi_end routine ***
 nmi_end:
 	.al: .xl: REP #$30	; ** whole register size to restore **
@@ -163,10 +164,6 @@ nmi_end:
 	PLX
 	PLA
 	RTI					; resume normal execution and register size, hopefully
-
-; *** execute installed NMI handler ***
-go_nmi:
-	JMP (fw_nmi)		; jump to code (and inocuous header) (5)
 
 fw_magic:
 	.asc	"*jNU"		; reversed magic string
@@ -310,14 +307,35 @@ fw_admin:
 	.word	fw_gestalt
 	.word	fw_power
 
+; these already OK for 65816!
+; *** minimOS·16 BRK handler *** might go elsewhere
+brk_hndl:		; label from vector list
+; much like the ISR start
+	.al: .xl: REP #$30		; status already saved, but save register contents in full (3)
+	PHA						; save registers (3x4)
+	PHX
+	PHY
+	JSR brk_handler			; standard label from IRQ
+	.al: .xl: REP #$30		; just in case (3)
+	PLY						; restore status and return
+	PLX
+	PLA
+	RTI
+
+; *** minimOS·16 kernel call interface (COP) ***
+cop_hndl:		; label from vector list
+	JMP (fw_table, X)		; the old fashioned way
+
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kernel_call-*, $FF
 #endif
 
-; *** minimOS function call primitive ($FFC0) ***
+; *** minimOS·65 function call WRAPPER ($FFC0) ***
 * = kernel_call
-	_JMPX(fw_table)	; macro for NMOS compatibility (6) this will be a wrapper on 816 firmware!
+	CLC			; pre-clear carry
+	COP $FF		; wrapper on 816 firmware!
+	RTS			; return to caller
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -326,7 +344,7 @@ fw_admin:
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = admin_call
-	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+	JMP (fw_admin, X)		; takes 5 clocks
 
 
 ; *** vectored IRQ handler ***
@@ -348,12 +366,12 @@ panic_loop:
 
 ; *** 65C816 ROM vectors ***
 * = $FFE4				; should be already at it
-	.word	fwp_cold	; native COP		@ $FFE4
-	.word	fwp_cold	; native BRK		@ $FFE6
-	.word	fwp_cold	; native ABORT		@ $FFE8
-	.word	fwp_cold	; native NMI		@ $FFEA
+	.word	cop_hndl	; native COP		@ $FFE4
+	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
+	.word	nmi			; native ABORT		@ $FFE8, not yet supported
+	.word	nmi			; native NMI		@ $FFEA, unified this far
 	.word	$FFFF		; reserved			@ $FFEC
-	.word	fwp_cold	; native IRQ		@ $FFEE
+	.word	irq			; native IRQ		@ $FFEE, unified this far
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
 	.word	nmi			; emulated COP		@ $FFF4
