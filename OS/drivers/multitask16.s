@@ -9,7 +9,9 @@
 #ifndef		HEADERS
 #include "usual.h"
 ; specific header
+.bss
 #include "drivers/multitask16.h"
+.text
 #endif
 
 ; *** begins with sub-function addresses table, new format 20150323 ***
