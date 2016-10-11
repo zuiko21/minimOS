@@ -1,23 +1,15 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161003-1243
+; last modified 20161011-1105
 
 ; *** set some reasonable number of braids ***
 	-MAX_BRAIDS	= 16	; takes 8 kiB -- hope it is OK to define here!
 
-#ifndef		DRIVERS
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-#include "sysvars.h"
+#ifndef		HEADERS
+#include "usual.h"
 ; specific header
 #include "drivers/multitask16.h"
-.text
 #endif
 
 ; *** begins with sub-function addresses table, new format 20150323 ***
@@ -25,7 +17,7 @@
 	.byt	A_POLL		; polling scheduler this far, might get some I/O for API
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
-	.word	mm_end		; D_REQ does nothing
+	.word	mm_exit		; D_REQ does nothing
 	.word	mm_exit		; no input
 	.word	mm_cmd		; output will process all subfunctions!
 	.word	mm_rts		; no need for 1-second interrupt
@@ -53,16 +45,17 @@ mm_init:
 	LDA #<mm_context	; same for LSB... should be ZERO for performance reasons
 	TCD					; direct-page set for just-over-last context
 	LDX #MAX_BRAIDS		; reset backwards index
+	LDY #$FF			; original SP value, no need to skim on that
 mm_rsp:
 		XBA					; get accumulator MSB
 		DEC					; go for next context (contiguous)
 		XBA					; back to MSB
 		TCD					; set direct-page
-		LDY #$FF			; original SP value, no need to skim on that
 		STY sys_sp			; direct page storage of original SP
-		LDY #BR_FREE		; adequate value in two highest bits
-		STY mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
+		LDA #BR_FREE		; adequate value in two highest bits
+		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
 		STZ mm_treq-1, X	; set SIGTERM request flags to zero
+		LDA #<mm_context	; restore LSB... should be ZERO for performance reasons
 		DEX					; go for next
 		BNE mm_rsp			; continue until all done
 	LDA #1				; default task
@@ -147,7 +140,7 @@ mm_switch:
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
 	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
-		BNE mm_sigterm		; process it now! (2/3) *** careful! it ends on _FINISH instead of RTS
+		BNE mm_sigterm		; process it now! (2/3) *** careful! it ends on FINISH instead of RTS
 	RTS					; all done, continue ISR
 
 ; the actual SIGTERM routine execution, new 20150611
@@ -231,7 +224,7 @@ mm_exec:
 	LDA #0				; reset values
 	CLC
 mme_sp:
-		ADC #256/MAX_BRAIDS		; go for next stack space
+;		ADC #256/MAX_BRAIDS		; go for next stack space
 		DEY						; until desired PID
 		BNE mme_sp
 	TSX					; get current SP
@@ -329,7 +322,8 @@ mms_table:
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status (5)
-	STZ mm_treq-1, Y	; Clear unattended TERM signal, 20150617
+	LDA #0				; no STZ abs,Y
+	STA mm_treq-1, Y	; Clear unattended TERM signal, 20150617
 ; should probably free up all windows belonging to this PID...
 	_DR_OK
 
@@ -401,8 +395,8 @@ mm_prior:
 	_DR_OK				; placeholder
 
 ; emergency exit, should never arrive here!
-mm_exit:
-	_NEXT_ISR			; just in case
+;mm_emexit:
+;	_NEXT_ISR			; just in case
 
 ; *** subfuction addresses table ***
 mm_funct:
