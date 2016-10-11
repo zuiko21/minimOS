@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a2, must match kernel.s
+; v0.5.1a3, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161006-1441
+; last modified 20161011-1223
 
 ; no way for standalone assembly...
 
@@ -421,9 +421,8 @@ load_link:
 	CPX #'V'		; 65816 is supported but no better than a generic 65C02
 		BEQ ll_cmos
 	CPX #'N'		; old NMOS?
-		BEQ ll_nmos		; only NMOS code will do
-	BRK				; *** should NEVER arrive here, unless firmware variables are corrupt! ***
-	.asc	"{CPU?}", 0
+		BEQ ll_nmos			; only NMOS code will do
+		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
 ll_rock:
 	CMP #'R'		; code has Rockwell extensions?
 		BEQ ll_valid
@@ -638,8 +637,7 @@ sd_warm:
 sd_2nd:
 	LDA sd_flag		; check what was pending
 	BNE sd_shut		; something to do
-		BRK				; otherwise an error!
-		.asc	"{sched}", 0	; panic code
+		_PANIC("{sched}")	; otherwise an error!
 sd_shut:
 	_SEI			; disable interrupts
 #ifdef	SAFE

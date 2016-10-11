@@ -1,8 +1,8 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a2, should match kernel16.s
+; v0.5.1a3, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161010-1236
+; last modified 20161011-1222
 
 ; no way for standalone assembly...
 
@@ -355,8 +355,10 @@ b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
 #ifdef	MULTITASK
 ; ** might be repaced with driver code on optimized builds **
+	STY str_dev		; COUT shouldn't touch targeted PID
+	LDA cpu_ll		; get architecture eeeeeeeek
+	STA str_dev+1	; and COUT should NOT touch it
 	LDA #MM_EXEC	; subfunction code
-	STY str_dev		; COUT shouldn't touch it
 	STA io_c		; as fake parameter
 	LDY #TASK_DEV	; multitasking as device driver!
 	_KERNEL(COUT)	; call pseudo-driver
@@ -375,7 +377,7 @@ exec_st:
 		JSR (ex_pt, X)	; will end in RTS and return just here, lower 64K only
 		JMP cio_callend	; return whatever error code
 exec_816:
-; ** self-modified code for long indirect call! **
+; ** self-generated code for long indirect call! **
 	LDA #$22		; JSL opcode!!!
 	STA ex_pt-1		; put it just before destination address (uses last local byte)
 	LDA #$60		; RTS opcode
@@ -604,8 +606,7 @@ sd_warm:
 sd_2nd:
 	LDA sd_flag		; check what was pending
 	BNE sd_shut		; something to do
-		BRK				; otherwise an error!
-		.asc	"{sched}", 0	; panic code, or should I just reboot?
+		_PANIC("{sched}")	; otherwise an error!
 sd_shut:
 	SEI				; disable interrupts (forever)
 #ifdef	SAFE

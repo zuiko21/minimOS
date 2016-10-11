@@ -1,10 +1,10 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a1
+; v0.5.1a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161011-1105
+; last modified 20161011-1242
 
 ; *** set some reasonable number of braids ***
-	-MAX_BRAIDS	= 16	; takes 8 kiB -- hope it is OK to define here!
+-MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
 
 #ifndef		HEADERS
 #include "usual.h"
@@ -14,22 +14,22 @@
 .text
 #endif
 
-; *** begins with sub-function addresses table, new format 20150323 ***
+; *** begins with sub-function addresses table ***
 	.byt	TASK_DEV	; physical driver number D_ID (TBD)
 	.byt	A_POLL		; polling scheduler this far, might get some I/O for API
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
-	.word	mm_exit		; D_REQ does nothing
-	.word	mm_exit		; no input
+	.word	mm_nreq		; D_REQ does nothing
+	.word	mm_rts		; no input
 	.word	mm_cmd		; output will process all subfunctions!
 	.word	mm_rts		; no need for 1-second interrupt
 	.word	mm_exit		; no block input
 	.word	mm_exit		; no block output
 	.word	mm_bye		; shutdown procedure
-	.word	mm_info		; NEW, points to descriptor string
+	.word	mm_info		; points to descriptor string
 	.byt	0			; reserved, D_MEM
 
-; *** driver description, NEW 20150323 ***
+; *** driver description ***
 mm_info:
 	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5a2", 0
 
@@ -68,12 +68,7 @@ mm_rsp:
 	LDA sys_sp			; restored value (3)
 	TCS					; stack pointer updated!
 ; prepare first running task, as no standard B_FORK will be used
-	LDA #<mms_kill-1	; get default TERM handler LSB (will arrive via RTS, thus one byte before)
-	STA mm_term			; store in table
-	LDA #>mms_kill-1	; same for MSB
-	STA mm_term+1
-	LDA #BR_RUN			; will start "current" task
-	STA mm_flags		; no need for index, first entry anyway
+; ******* this will probably disappear altogether **********
 	
 ; get proper stack frame from kernel, new 20150507 *** REVISE THIS
 	_KERNEL(TS_INFO)	; get taskswitching info for needed stack frame
@@ -278,7 +273,7 @@ mme_sf:
 	LDY #z_used			; offset for user zero-page bytes EEEEEK!
 	LDA #0				; pre-execution has no context!
 	STA (sysptr), Y		; set null context for much faster startup
-	 
+	
 	LDY locals			; retrieve PID
 	LDA #BR_RUN			; will enable task
 	STA mm_flags-1, Y	; Y holds desired PID
@@ -397,8 +392,8 @@ mm_prior:
 	_DR_OK				; placeholder
 
 ; emergency exit, should never arrive here!
-;mm_emexit:
-;	_NEXT_ISR			; just in case
+mm_nreq:
+	_NEXT_ISR			; just in case
 
 ; *** subfuction addresses table ***
 mm_funct:

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a1
+; v0.5.1a2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160922-1206
+; last modified 20161011-1222
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -307,8 +307,7 @@ dr_ok:					; all drivers inited
 	LDY #PW_OFF			; after execution, shut down system (al least)
 	_ADMIN(POWEROFF)	; via firmware, will not return
 #else
-	BRK					; just in case...
-	.asc	"{EXIT}", 0	; if managed
+	_PANIC("{EXIT}")	; if managed
 #endif
 
 ; place here the shell code, must end in RTS
