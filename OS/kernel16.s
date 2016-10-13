@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a2
+; v0.5.1a3
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161013-1208
+; last modified 20161013-1434
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -40,6 +40,7 @@ warm:
 	CLC
 	XCE				; enter native mode! still 8 bit regs, though
 
+; worth going 16-bit for the install calls?
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
 	LDY #<k_vec		; get table address, nicer way (2+2)
@@ -93,178 +94,142 @@ mreset:
 
 ; set some labels, much neater this way
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
-tm_ptr	= sysptr		; temporary pointer for double-indirect addressing!
+; 16-bit revamp 20161013
 
-; driver full install is new 20150208
+dr_aut	= sysptr		; new storage for authorization code! 20161013
+
 	LDX #0				; reset driver index (2)
-	STX dpoll_mx		; reset all indexes, NMOS-savvy (4+4+4)
+	STX dpoll_mx		; reset all indexes (4+4+4)
 	STX dreq_mx
 	STX dsec_mx
 
+	.al: REP #$20		; *** 16-bit memory most of the time ***
 dr_clear:
-		LDA #<dr_error			; make unused entries point to a standard error routine, new 20160406 (2)
-		STA drv_opt, X			; set LSB for output (4)
-		STA drv_ipt, X			; and for input (4)
-		INX						; go for MSB (2)
-		LDA #>dr_error			; pretty much the same, not worth a loop (2)
-		STA drv_opt, X			; set MSB for output (4)
-		STA drv_ipt, X			; and for input (4)
-		INX						; next entry (2)
+		LDA #dr_error			; make unused entries point to a standard error routine (3)
+		STA drv_opt, X			; set full pointer for output (5)
+		STA drv_ipt, X			; and for input (5)
+		INX						; go for next entry (2+2)
+		INX
 		BNE dr_clear			; finish page (3/2)
 
 ; first get the pointer to each driver table
 dr_loop:
-		PHX					; keep current value, no longer drv_aix (3)
-		LDA drivers_ad+1, X	; get address MSB (4)
-		BNE dr_inst			; cannot be in zeropage, in case is too far for BEQ dr_ok (3/2)
+		PHX					; keep current value (3)
+		LDA drivers_ad, X	; get full address (5)
+		BNE dr_inst			; cannot be zero, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
-		STA da_ptr+1		; store pointer (3)
-		LDA drivers_ad, X	; same for LSB (4+3)
-		STA da_ptr
-; create entry on IDs table ** new 20150219
+		STA da_ptr			; store full pointer (4)
+; create entry on IO tables
 		LDY #D_ID			; offset for ID (2)
-		LDA (da_ptr), Y		; get ID code (5)
+		LDA (da_ptr), Y		; get ID code... plus extra byte (6)
 #ifdef	SAFE
-		BMI dr_phys			; only physical devices (3/2)
+		AND #$00FF			; just keep LSB (3)
+		CMP #$0080			; check sign (3)
+		BCS dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
 dr_phys:
 #endif
-
-		ASL					; use retrieved ID as index (2+2)
-		TAY
-		LDA drv_opt, Y		; check whether in use (4)
-		EOR drv_ipt, Y		; only the same if not installed! eeeeek
-		BEQ dr_lsb			; LSB was OK (3/2)
+		ASL					; convert to index, no matter the MSB (2+2)
+		TAX
+		LDA #dr_error		; will look for this address (3)
+		CMP drv_opt, X		; check whether in use (5)
+			BNE dr_busy			; pointer was not empty (2/3)
+		CMP drv_ipt, X		; now check input, just in case (5)
+		BEQ dr_empty		; it is OK to set (3/2)
+dr_busy:
 			JMP dr_abort		; already in use (3)
-dr_lsb:
-		LDA drv_opt, Y	; check MSB too (4+2)
-		EOR drv_ipt, Y		; only the same if not installed! eeeeek
-		BEQ dr_msb			; all OK then (3/2) 
-			JMP dr_abort		; already in use (3)
-dr_msb:
-		PHY					; save index! (3)
+dr_empty:
 		LDY #D_COUT			; offset for output routine (2)
-		JSR dr_gind			; get indirect address
-		PLY					; restore index (4)
-		LDA tm_ptr			; get driver table LSB (3)
-		STA drv_opt, Y		; store in table (4)
-		LDA tm_ptr+1		; same for MSB (3+4)
-		STA drv_opt+1, Y
-		PHY					; save index! (3)
+		LDA (da_ptr), Y		; get full address (6)
+		STA drv_opt, X		; store full pointer in table (5)
 		LDY #D_CIN			; same for input routine (2)
-		JSR dr_gind			; get indirect address
-		PLY					; restore index (4)
-		LDA tm_ptr			; get driver table LSB (3)
-		STA drv_ipt, Y		; store in table (4)
-		LDA tm_ptr+1		; same for MSB (3+4)
-		STA drv_ipt+1, Y
+		LDA (da_ptr), Y		; get full address (6)
+		STA drv_ipt, X		; store full pointer in table (5)
 
 ; register interrupt routines (as usual)
 		LDY #D_AUTH			; offset for feature code (2)
-		LDA (da_ptr), Y		; get auth code (5)
-		AND #A_POLL			; check whether D_POLL routine is avaliable (2)
-			BEQ dr_nopoll		; no D_POLL installed (2/3)
-		LDY #D_POLL			; get offset for periodic vector (2)
-		LDX dpoll_mx		; get destination index (4)
-		CPX #MAX_QUEUE		; compare against limit (2)
-			BCS dr_abort		; error registering driver! (2/3) eek
-dr_ploop:
-			LDA (da_ptr), Y		; get one byte (5)
-			STA drv_poll, X		; store in RAM (4)
-			INY					; increase indexes (2+2)
+		LDA (da_ptr), Y		; get auth code... plus extra byte (6)
+		STA dr_aut			; and keep for later! (4)
+		AND #A_POLL			; check whether D_POLL routine is avaliable (3)
+		BEQ dr_nopoll		; no D_POLL installed (2/3)
+			LDY #D_POLL			; get offset for periodic vector (2)
+			LDX dpoll_mx		; get destination index (4)
+			CPX #MAX_QUEUE		; compare against limit (2)
+				BCS dr_abort		; error registering driver! (2/3) eek
+			LDA (da_ptr), Y		; get full pointer bytes (6)
+			STA drv_poll, X		; store word in list (5)
+			INX					; increase index (2+2)
 			INX
-			CPY #D_POLL+2		; both bytes done? (2)
-			BCC dr_ploop		; if not, go for MSB (3/2) eek
-		STX dpoll_mx		; save updated index (4)
-		LDY #D_AUTH			; offset for feature code (2)
+			STX dpoll_mx		; save updated index (4)
+			LDY #D_AUTH			; offset for feature code (2)
 dr_nopoll:
-		LDA (da_ptr), Y		; get auth code (5)
-		AND #A_REQ			; check D_REQ presence (2)
-			BEQ dr_noreq		; no D_REQ installed (2/3)
-		LDY #D_REQ			; get offset for async vector (2)
-		LDX dreq_mx			; get destination index (4)
-		CPX #MAX_QUEUE		; compare against limit (2)
-			BCS dr_abort		; error registering driver! (2/3) eek
-dr_aloop:
-			LDA (da_ptr), Y		; get its LSB (5)
-			STA drv_async, X	; store in RAM (4)
-			INY					; increase indexes (2+2)
+		LDA da_aut			; get auth code... plus extra byte (4)
+		AND #A_REQ			; check D_REQ presence (3)
+		BEQ dr_noreq		; no D_REQ installed (2/3)
+			LDY #D_REQ			; get offset for async vector (2)
+			LDX dreq_mx			; get destination index (4)
+			CPX #MAX_QUEUE		; compare against limit (2)
+				BCS dr_abort		; error registering driver! (2/3) eek
+			LDA (da_ptr), Y		; get full pointer (6)
+			STA drv_async, X	; store word in list (5)
+			INX					; increase index (2+2)
 			INX
-			CPY #D_REQ+2		; both bytes done? (2)
-			BCC dr_aloop		; if not, go for MSB (3/2) eek
-		STX dreq_mx			; save updated index  (4)
-		LDY #D_AUTH			; offset for feature code (2)
+			STX dreq_mx			; save updated index  (4)
+			LDY #D_AUTH			; offset for feature code (2)
 dr_noreq:
-		LDA (da_ptr), Y		; get auth code (5)
+		LDA da_aut			; get auth code... plus extra byte (4)
 		AND #A_SEC			; check D_SEC (2)
-			BEQ dr_nosec		; no D_SEC installed (2/3)
-		LDY #D_SEC			; get offset for 1-sec vector (2)
-		LDX dsec_mx			; get destination index (4)
-		CPX #MAX_QUEUE		; compare against limit (2)
-			BCS dr_abort		; error registering driver! (2/3) eek
-dr_sloop:
-			LDA (da_ptr), Y		; get its LSB (5)
-			STA drv_sec, X		; store in RAM (4)
-			INY					; increase indexes (2+2)
+		BEQ dr_nosec		; no D_SEC installed (2/3)
+			LDY #D_SEC			; get offset for 1-sec vector (2)
+			LDX dsec_mx			; get destination index (4)
+			CPX #MAX_QUEUE		; compare against limit (2)
+				BCS dr_abort		; error registering driver! (2/3) eek
+			LDA (da_ptr), Y		; get full pointer (6)
+			STA drv_sec, X		; store word in list (5)
+			INX					; increase index (2+2)
 			INX
-			CPY #D_SEC+2		; both bytes done? (2)
-			BCC dr_sloop		; if not, go for MSB (3/2) eek
-		STX dsec_mx			; save updated index (4)
+			STX dsec_mx			; save updated index (4)
 dr_nosec: 
 ; continue initing drivers
-		JSR dr_icall	; call routine (6+...)
-			BCS dr_abort	; failed initialisation, new 20150320
+		JSR dr_icall		; call routine (6+...)
+		.al: REP #$20		; *** 16-bit memory again, just in case ***
+		.xs: SEP #$10		; *** 8-bit indexes, again just in case ***
+		BCC dr_next			; did not failed initialisation
+dr_abort:
+			LDY #D_ID			; offset for ID (2)
+			LDA (da_ptr), Y		; get ID code... plus extra (6)
+;				BPL dr_next			; nothing to delete (2/3)
+			ASL					; use retrieved ID as index (2+2)
+			TAY					; will keep LSB only
+			LDA #dr_error		; make deleted entries point to a standard error routine (3)
+			STA drv_opt, Y		; set full pointer for output (5)
+			STA drv_ipt, Y		; and for input (5)
 dr_next:
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
-		PLX				; retrieve saved index (4)
-		INX				; update ADDRESS index, even if unsuccessful (2)
-		INX				; eeeeeeeek! pointer arithmetic! (2)
-		JMP dr_loop		; go for next (3)
-dr_abort:
-		LDY #D_ID			; offset for ID (2)
-		LDA (da_ptr), Y		; get ID code (5)
-			BPL dr_next			; nothing to delete (2/3)
-		ASL					; use retrieved ID as index (2+2)
-		TAY
-		LDA #<dr_error			; make deleted entries point to a standard error routine, new 20160406 (2)
-		STA drv_opt, Y			; set LSB for output (4)
-		STA drv_ipt, Y			; and for input (4)
-		LDA #>dr_error			; pretty much the same, not worth a loop (2)
-		STA drv_opt+1, Y		; set MSB for output (4)
-		STA drv_ipt+1, Y		; and for input (4)
-		BRA dr_next				; go for next (3)
-
-; get indirect address from driver pointer table, 13 bytes, 33 clocks
-dr_gind:
-	LDA (da_ptr), Y		; get address LSB (5)
-	STA tm_ptr			; store temporarily (3)
-	INY					; same for MSB (2)
-	LDA (da_ptr), Y		; get MSB (5)
-	STA tm_ptr+1		; store temporarily (3)
-	RTS					; come back!!! (6)
+		PLX					; retrieve saved index (4)
+		INX					; update ADDRESS index, even if unsuccessful (2)
+		INX					; eeeeeeeek! pointer arithmetic! (2)
+		JMP dr_loop			; go for next (3)
 
 dr_error:
-	_ERR(N_FOUND)		; standard exit for non-existing drivers!
+	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
 dr_icall:
-	LDY #D_INIT			; original pointer (2)
-; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
-; compulsory 65C816 version!!! 20160922
-; took 10 bytes, 29 clocks#######
+	LDY #D_INIT			; original pointer offset (2)
+; *** generic driver call, pointer set at da_ptr, Y holds table offset
+; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
+; *** assume 16-bit memory and 8-bit indexes ***
 dr_call:
-	INY					; get MSB first (2)
-	LDA (da_ptr), Y		; destination pointer MSB (5)
-	PHA					; push it (3)
-	DEY					; go for LSB (2)
-	LDA (da_ptr), Y		; repeat procedure (5)
-	PHA					; push LSB (3)
-	PHP					; 816 is expected to be in emulation mode anyway (3)
-	RTI					; actual jump (6)
+	LDA (da_ptr), Y		; destination pointer MSB (6)
+	DEC					; one less for RTS (2)
+	PHA					; push it (4)
+	.as: SEP #$20		; make sure driver is called in 8-bit size (3)
+	RTS					; actual CORRECTED jump (6)
 
-dr_ok:					; all drivers inited
-	PLA					; discard stored X, no hassle for NMOS
+dr_ok:					; *** all drivers inited ***
+	PLX					; discard stored X, beware of 16-bit memory!
 
 ; **********************************
 ; ********* startup code ***********
@@ -277,53 +242,36 @@ dr_ok:					; all drivers inited
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
 #ifndef		MULTITASK
-	LDY #<sig_kill	; get default routine address LSB
-	LDA #>sig_kill	; same for MSB
-	STY mm_term		; store in new system variable
-	STA mm_term+1
+	LDA #sig_kill	; get default routine full address, we are still in 16-bit memory
+	STA mm_term		; store in new system variable
 #endif
 
 ; **********************************
 ; startup code, revise ASAP
 ; **********************************
 
-; *** set default I/O device ***
-	LDA #DEVICE		; as defined in options.h
-	STA default_out	; should check some devices
-	STA default_in
+; *** set default I/O device *** still in 16-bit memory
+	LDX #DEVICE		; as defined in options.h
+	STX default_out	; should check some devices
+	STX default_in
 ; do not forget setting local devices via B_EXEC???
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
-	CLI				; enable interrupts
 
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
 	_KERNEL(B_FORK)		; reserve first execution braid
-
-; until a proper B_EXEC is done, at least set available zeropage space!
-;	LDA #ZP_AVAIL		; available bytes
-;	STA z_used			; set environment variable
-;	JSR shell			; should be done this way, until a proper EXEC is made!
-
-	LDX #'V'			; assume shell code is 65816!!!
+	CLI					; enable interrupts, this is the right time
+	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
-	.al: REP #$20		; *** 16-bit memory ***
 	LDA #shell			; pointer to integrated shell!
-	STA ex_pt			; set execution address
+	STA ex_pt			; set execution full address
 	_KERNEL(B_EXEC)		; go for it!
 
-; after KERNEL call, should maybe just lock... with interrupts ON of course! scheduler will execute it!
+	JMP lock			; ...as the scheduler will detour execution
 
-; ****revise this, should do PROPER shutdown and keep waiting for the firmware to power OFF
-#ifndef		MULTITASK
-	LDY #PW_OFF			; after execution, shut down system (al least)
-	_ADMIN(POWEROFF)	; via firmware, will not return
-#else
-	_PANIC("{EXIT}")	; if managed
-#endif
-
-; place here the shell code, must end in RTS, or RTL as per architecture??? FINISH macro seems the way to go
+; place here the shell code, must end in FINISH macro
 shell:
 #include "shell/SHELL"
 

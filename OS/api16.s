@@ -2,7 +2,7 @@
 ; v0.5.1a3, should match kernel16.s
 ; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161011-1222
+; last modified 20161013-1438
 
 ; no way for standalone assembly...
 
@@ -638,9 +638,10 @@ sd_loop:
 			EOR drv_ipt, Y		; only the same if not installed!
 			BEQ sd_next			; nothing to shutoff
 sd_msb:
-		LDY #D_BYE+1		; shutdown MSB offset
+		LDY #D_BYE			; shutdown MSB offset
 		PHX					; save index for later
-		JSR dr_call			; call routine from generic code!!!
+		JSR dr_call			; call routine from generic code!!! eeeeeek (REVISE)
+; should probably set register size here...
 		PLX					; retrieve index
 sd_next:
 		INX					; advance to next entry (2+2)
