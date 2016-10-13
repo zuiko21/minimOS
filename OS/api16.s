@@ -1,8 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a3, should match kernel16.s
-; this is essentialy minimOS·65 0.5b4...
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161013-1438
+; last modified 20161013-1842
 
 ; no way for standalone assembly...
 
@@ -148,7 +147,7 @@ ci_win:
 
 ; *** MALLOC, reserve memory ***
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory (16-bit so far, but put zeroes on high-size!)
-; ** Up to 64K RAM supported so far **
+; ** Up to 64K RAM supported so far ** should be heavily revamped!
 ; uses ma_l
 
 malloc:
@@ -241,7 +240,7 @@ ma_ok:
 	_EXIT_OK				; we're done
 
 
-; *** FREE, release memory ***
+; *** FREE, release memory *** revamp along MALLOC
 ; ma_pt <- addr
 
 free:
@@ -295,12 +294,12 @@ fr_ok:
 ; Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to window title!
 
 open_w:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA w_rect			; asking for some size?
-	ORA w_rect+1
+	.al: REP #$20	; *** 16-bit memory size ***
+	LDA w_rect		; asking for some size? includes BOTH bytes
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 ow_no_window:
+	.xs: SEP #$10	; *** 8-bit register, just in case ***
 	LDY #DEVICE			; constant default device, REVISE
 ;	EXIT_OK on subsequent system calls!
 
@@ -349,7 +348,7 @@ b_fork:
 ; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture
-; uses str_dev for temporary braid storage, driver will pick it up!
+; uses str_dev for temporary braid AND architecture storage, driver will pick it up!
 
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -372,19 +371,32 @@ exec_st:
 ; this should now work for both 02 and 816 apps
 	LDA cpu_ll		; check architecture
 	CMP #'V'		; check whether native 816 code (ending in RTL)
-	BEQ exec_816		; go for it
-		TYX				; guaranteed zero offset for indirect call!
-		JSR (ex_pt, X)	; will end in RTS and return just here, lower 64K only
-		JMP cio_callend	; return whatever error code
-exec_816:
-; ** self-generated code for long indirect call! **
-	LDA #$22		; JSL opcode!!!
-	STA ex_pt-1		; put it just before destination address (uses last local byte)
-	LDA #$60		; RTS opcode
-	STA ex_pt+3		; to get back to API handler
+; older approach, adds 9 bytes and takes 15 clocks for 6502 code
+;	BEQ exec_816		; go for it
+;		TYX				; guaranteed zero offset for indirect call! (2)
+;		JSR (ex_pt, X)	; will end in RTS and return just here, lower 64K only (8)
+;		JMP cio_callend	; return whatever error code (3)
+
+; new approach, reusing 816 code! only adds 2 bytes, 6502 code takes 17 clocks
+	BNE exec_02		; skip bank return address for 8-bit CPU
+	
+; ** self-generated code for long indirect call! 14 bytes, 16+8+6+3= 33 clocks **
+;exec_816:
+;	LDA #$22		; JSL opcode!!!
+;	STA ex_pt-1		; put it just before destination address (uses last local byte)
+;	LDA #$60		; RTS opcode
+;	STA ex_pt+3		; to get back to API handler
 ; now call the built wrapper and after app execution, back to calling braid
-	JSR ex_pt-1		; call SMC!!!
-	JMP cio_callend	; keep possible error code
+;	JSR ex_pt-1		; call SMC!!!
+;	JMP cio_callend	; keep possible error code
+
+; ** alternative to self-generated code for long indirect call, 10 bytes, 17 clocks! **
+		PHK		; push program bank address (actually 0) (3)
+exec_02:
+	PEA #exec_ret-1		; push corrected return address (now long thanks to above instruction) (5)
+	JMP [ex_pt]		; not sure about syntax, forthcoming RTL will get back just here (6)
+exec_ret:
+	JMP cio_callend	; keep possible error code (3)
 #endif
 
 
@@ -409,7 +421,7 @@ load_link:
 	INY				; start from next page
 	STA ex_pt		; save execution pointer
 	STY ex_pt+1
-	STZ ex_pt+2		; invalidate bank... this far
+	STZ ex_pt+2		; invalidate bank... this far, this is important for 6502 code with new B_EXEC approach
 	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
@@ -568,6 +580,7 @@ go_shell:
 ; C -> couldn't poweroff or reboot (?)
 
 shutdown:
+	.as: .xs: SEP #$30	; *** standard register size ***
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
@@ -588,7 +601,7 @@ sd_off:
 	LDY #PW_OFF			; poweroff
 sd_fw:
 	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
-	RTS					; just in case was not implemented!
+	JMP cio_callend			; just in case was not implemented!
 sd_stat:
 	LDY #PW_STAT		; suspend
 	BNE sd_fw			; no need for BRA
@@ -596,7 +609,7 @@ sd_cold:
 	LDY #PW_COLD		; cold boot
 	BNE sd_fw			; will reboot, shared code, no need for BRA
 sd_warm:
-	SEP ##9				; disable interrupts and set carry...
+	SEP #9				; disable interrupts and set carry...
 	XCE					; ...to set emulation mode for a moment
 	CLD					; clear decimal mode
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
@@ -606,7 +619,7 @@ sd_warm:
 sd_2nd:
 	LDA sd_flag		; check what was pending
 	BNE sd_shut		; something to do
-		_PANIC("{sched}")	; otherwise an error!
+		_PANIC("{sched}")	; otherwise it is an error!
 sd_shut:
 	SEI				; disable interrupts (forever)
 #ifdef	SAFE
@@ -616,41 +629,39 @@ sd_shut:
 #endif
 ; call each driver's shutdown routine
 	LDX #0			; reset index
+	.al: REP #$20			; *** 16-bit memory ***
 ; first get the pointer to each driver table
 sd_loop:
 ; get address index
 		LDA drivers_ad, X	; get address from original list
-		STA sysptr			; store temporarily
-		LDA drivers_ad+1, X	; same for MSB
 			BEQ sd_done			; no more drivers to shutdown!
-		STA sysptr+1
+		STA sysptr			; store temporarily
 ; check here whether the driver was successfully installed, get ID as index for drv_opt/ipt
 		LDY #D_ID			; point to ID of driver
-		LDA (sysptr), Y		; get ID
+		LDA (sysptr), Y		; get ID... plus extra byte
 		ASL					; convert to index
-			BCC sd_next			; invalid device ID!
-		TAY					; use as index
-		LDA drv_opt, Y		; check LSB
-		EOR drv_ipt, Y		; only the same if not installed...
-		BNE sd_msb			; but check MSB too!
-			INY					; point to MSB
-			LDA drv_opt, Y		; check MSB
-			EOR drv_ipt, Y		; only the same if not installed!
-			BEQ sd_next			; nothing to shutoff
+;			BCC sd_next			; invalid device ID!
+		TAY					; use as index, LSB only
+		LDA #dr_error		; installed address at unused drivers
+		CMP drv_opt, Y		; check pointer
+		BNE sd_msb			; OK to shutdown
+			CMP drv_ipt, Y		; check if not installed!
+				BEQ sd_next		; nothing to shutoff
 sd_msb:
 		LDY #D_BYE			; shutdown MSB offset
 		PHX					; save index for later
-		JSR dr_call			; call routine from generic code!!! eeeeeek (REVISE)
-; should probably set register size here...
+		PHP					; and register size, just in case!
+		JSR dr_call			; call routine from generic code!!!
+		PLP					; back to original size
 		PLX					; retrieve index
 sd_next:
 		INX					; advance to next entry (2+2)
 		INX
-		BNE sd_loop			; repeat
+		BRA sd_loop			; repeat
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
 	LDX sd_flag			; retrieve mode as index!
-	JMP (sd_tab, X)		; do as appropriate
+	JMP (sd_tab-2, X)		; do as appropriate *** please note that X=0 means scheduler ran off of tasks!
 
 sd_tab:					; check order in abi.h!
 	.word	sd_stat		; suspend
@@ -658,14 +669,14 @@ sd_tab:					; check order in abi.h!
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; shutdown system
 
-; ***************************************************** REVAMP *************************************************+
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid
 ; uses locals[0] too
-; don't know of possible errors********
+; don't know of possible errors******** REVISE *************** REVISE ********************* REVISE
 
 signal:
+	.as: .xs: SEP #$30	; *** standard register size ***
 #ifdef	MULTITASK
 	LDA #MM_SIGNAL	; subfunction code
 	STY mm_sig		; COUT shouldn't touch it anyway
@@ -715,6 +726,7 @@ sig_call:
 ; don't know of possible errors
 
 status:
+	.as: .xs: SEP #$30	; *** standard register size ***
 #ifdef	MULTITASK
 	LDA #MM_STATUS	; subfunction code
 	;**************
@@ -738,6 +750,7 @@ stat_st:				; *** single-task interface, in case MM driver failed *** copied fro
 ; don't know of possible errors
 
 get_pid:
+	.as: .xs: SEP #$30	; *** standard register size ***
 #ifdef	MULTITASK
 	LDA #MM_PID		; subfunction code
 	_BRA yld_call	; go for the driver
@@ -759,24 +772,23 @@ pid_st:				; *** single-task interface, in case MM driver failed *** copied from
 ; bad PID is probably the only feasible error
 
 set_handler:
+	.as: .xs: SEP #$30	; *** standard register size ***
 #ifdef	MULTITASK
 	LDA #MM_HANDL	; subfunction code
 	_BRA yld_call	; go for the driver
 ; ** if the driver fails, it will NEVER reach this point!!!! **
 #ifdef	SAFE
 hndl_st:				; *** single-task interface, in case MM driver failed *** copied from below
-	LDA zpar2		; get LSB
+	.al: REP #$20	; *** 16-bit memory size ***
+	LDA zpar2		; get pointer
 	STA mm_term		; store in single variable (from unused table)
-	LDA zpar2+1		; same for MSB
-	STA mm_term+1
 	_EXIT_OK
 #endif
 #else
 ; *** single-task interface, copied above ***
-	LDA zpar2		; get LSB
-	STA mm_term	; store in single variable
-	LDA zpar2+1		; same for MSB
-	STA mm_term+1
+	.al: REP #$20	; *** 16-bit memory size ***
+	LDA zpar2		; get pointer
+	STA mm_term		; store in single variable (from unused table)
 	_EXIT_OK
 #endif
 
@@ -785,6 +797,7 @@ hndl_st:				; *** single-task interface, in case MM driver failed *** copied fro
 ; destroys like COUT and _TASK_DEV
 
 yield:
+	.as: .xs: SEP #$30	; *** standard register size ***
 #ifndef	MULTITASK
 	_EXIT_OK		; no one to give CPU time away!
 #else
@@ -829,6 +842,7 @@ yld_table:
 ; Y -> number of bytes, zpar... -> bytes of the proposed _reversed_ stack frame (originally 3)
 ; REVISE REVISE
 ts_info:
+	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA #0					; what will X hold? could be 0 as long as the multitasaking driver is the first one!
 	STA zpar+2				; store output value
 	LDA #>(isr_sched_ret-1)	; get return address MSB
@@ -875,3 +889,4 @@ k_vec:
 #include "drivers.h"
 user_sram = *			; the rest of SRAM
 #endif
+
