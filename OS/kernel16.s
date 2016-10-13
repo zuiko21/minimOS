@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1a2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161011-1222
+; last modified 20161013-1208
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -274,6 +274,7 @@ dr_ok:					; all drivers inited
 	STZ cin_mode	; reset binary mode flag, new 20150618
 
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
+; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
 #ifndef		MULTITASK
 	LDY #<sig_kill	; get default routine address LSB
@@ -290,6 +291,7 @@ dr_ok:					; all drivers inited
 	LDA #DEVICE		; as defined in options.h
 	STA default_out	; should check some devices
 	STA default_in
+; do not forget setting local devices via B_EXEC???
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 	CLI				; enable interrupts
@@ -297,11 +299,22 @@ dr_ok:					; all drivers inited
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
+	_KERNEL(B_FORK)		; reserve first execution braid
 
 ; until a proper B_EXEC is done, at least set available zeropage space!
-	LDA #ZP_AVAIL		; available bytes
-	STA z_used			; set environment variable
-	JSR shell			; should be done this way, until a proper EXEC is made!
+;	LDA #ZP_AVAIL		; available bytes
+;	STA z_used			; set environment variable
+;	JSR shell			; should be done this way, until a proper EXEC is made!
+
+	LDX #'V'			; assume shell code is 65816!!!
+	STX cpu_ll			; architecture parameter
+	.al: REP #$20		; *** 16-bit memory ***
+	LDA #shell			; pointer to integrated shell!
+	STA ex_pt			; set execution address
+	_KERNEL(B_EXEC)		; go for it!
+
+; after KERNEL call, should maybe just lock... with interrupts ON of course! scheduler will execute it!
+
 ; ****revise this, should do PROPER shutdown and keep waiting for the firmware to power OFF
 #ifndef		MULTITASK
 	LDY #PW_OFF			; after execution, shut down system (al least)
@@ -310,7 +323,7 @@ dr_ok:					; all drivers inited
 	_PANIC("{EXIT}")	; if managed
 #endif
 
-; place here the shell code, must end in RTS
+; place here the shell code, must end in RTS, or RTL as per architecture??? FINISH macro seems the way to go
 shell:
 #include "shell/SHELL"
 
