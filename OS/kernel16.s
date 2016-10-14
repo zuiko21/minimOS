@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a3
+; v0.5.1a4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161013-1434
+; last modified 20161014-1238
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -112,6 +112,12 @@ dr_clear:
 		INX
 		BNE dr_clear			; finish page (3/2)
 
+; *** in non-multitasking systems, install embedded TASK_DEV driver ***
+#ifndef	MULTITASK
+	LDA #st_taskdev		; pseudo-driver full address -- standard label on api16.s
+	STA drv_opt			; *** assuming TASK_DEV = 128, index otherwise
+#endif
+
 ; first get the pointer to each driver table
 dr_loop:
 		PHX					; keep current value (3)
@@ -132,11 +138,12 @@ dr_phys:
 #endif
 		ASL					; convert to index, no matter the MSB (2+2)
 		TAX
-		LDA #dr_error		; will look for this address (3)
-		CMP drv_opt, X		; check whether in use (5)
-			BNE dr_busy			; pointer was not empty (2/3)
-		CMP drv_ipt, X		; now check input, just in case (5)
-		BEQ dr_empty		; it is OK to set (3/2)
+		BEQ dr_est_taskdevmpty		; new 161014, TASK_DEV does NOT get checked, allowing default installation
+			LDA #dr_error		; will look for this address (3)
+			CMP drv_opt, X		; check whether in use (5)
+				BNE dr_busy			; pointer was not empty (2/3)
+			CMP drv_ipt, X		; now check input, just in case (5)
+			BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
 			JMP dr_abort		; already in use (3)
 dr_empty:

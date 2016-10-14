@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a3, should match kernel16.s
+; v0.5.1a4, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161013-1842
+; last modified 20161014-1245
 
 ; no way for standalone assembly...
 
@@ -333,16 +333,15 @@ uptime:
 
 b_fork:
 	.as: .xs: SEP #$30	; *** standard register size ***
-#ifdef	MULTITASK
 	LDA #MM_FORK	; subfunction code
 	STA io_c		; as fake parameter
 	LDY #TASK_DEV	; multitasking as device driver!
 	_KERNEL(COUT)	; call pseudo-driver
 	JMP cio_callend	; return whatever error code
-#else
+; *** for non-multitasking systems ***
+st_fork:
 	LDY #0			; no multitasking, system reserved PID
 	_EXIT_OK
-#endif
 
 
 ; *** B_EXEC, launch new loaded process ***
@@ -352,8 +351,6 @@ b_fork:
 
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
-#ifdef	MULTITASK
-; ** might be repaced with driver code on optimized builds **
 	STY str_dev		; COUT shouldn't touch targeted PID
 	LDA cpu_ll		; get architecture eeeeeeeek
 	STA str_dev+1	; and COUT should NOT touch it
@@ -362,8 +359,8 @@ b_exec:
 	LDY #TASK_DEV	; multitasking as device driver!
 	_KERNEL(COUT)	; call pseudo-driver
 	JMP cio_callend	; return whatever error code
-#else
-; non-multitasking version
+
+; ****** B_EXEC for non-multitasking version
 	TYA				; should be system reserved PID, best way
 	BEQ exec_st		; OK for single-task system
 		_ERR(NO_RSRC)	; no way without multitasking
@@ -397,7 +394,7 @@ exec_02:
 	JMP [ex_pt]		; not sure about syntax, forthcoming RTL will get back just here (6)
 exec_ret:
 	JMP cio_callend	; keep possible error code (3)
-#endif
+
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
