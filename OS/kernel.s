@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1a1
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161011-1228
+; last modified 20161017-1336
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -11,20 +11,14 @@
 ;#define		DOWNLOAD	_DOWNLOAD
 
 ; in case of standalone assembly
-#ifndef		ROM
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
+#ifndef	HEADERS
+#include "usual.h"
 .bss
-#include "firmware/ARCH.h"
 #ifdef		DOWNLOAD
 * = $0400				; safe address for patchable 2 kiB systems, change if required
 #else
-#include "sysvars.h"
 #include "drivers/config/DRIVER_PACK.h"
-user_sram = *
+-user_sram = *
 #include "drivers/config/DRIVER_PACK.s"
 * = ROM_BASE			; just a placeholder, no standardised address
 #endif

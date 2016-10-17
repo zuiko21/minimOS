@@ -1,7 +1,10 @@
 ; software multitasking module for minimOS
 ; v0.5a7
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160929-1114
+; last modified 20161017-1344
+
+#define	QUANTUM_COUNT	8
+#define	MAX_BRAIDS		4
 
 ; *** this makes sense for 02 only, but check newer interface ASAP *************************
 ; in case of standalone assembly from 'xa drivers/multitask.s'
@@ -19,12 +22,13 @@
 .text
 #endif
 
+
 ; *** begins with sub-function addresses table, new format 20150323 ***
 	.byt	TASK_DEV	; physical driver number D_ID (TBD)
 	.byt	A_POLL		; polling scheduler this far, might get some I/O for API
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
-	.word	mm_end		; D_REQ does nothing
+	.word	mm_eexit	; D_REQ does nothing
 	.word	mm_exit		; no input
 	.word	mm_cmd		; output will process all subfunctions!
 	.word	mm_rts		; no need for 1-second interrupt
@@ -123,7 +127,7 @@ mm_next:
 		RTS					; otherwise, nothing to do; no need for BRA (0/3)
 
 mm_lock:
-		_KERNEL()			; all tasks stopped, time for shutdown
+		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown
 
 ; arrived here in typically 39 clocks, if all braids were executable
 mm_switch:
@@ -394,13 +398,13 @@ mms_term:
 
 ; resume execution
 mms_cont:
-	_SEI				; this is delicate (2)
+	_ENTER_CS			; this is delicate (2)
 	LDA mm_flags-1, Y	; first check current state (5)
 	CMP #BR_STOP		; is it paused? (2)
 		BNE mms_kerr		; no way to resume it! (2/3)
 	LDA #BR_RUN			; resume (2)
 	STA mm_flags-1, Y	; store new status (5)
-	CLI					; were off for ...
+	_EXIT_CS			; were off for ...
 	_DR_OK
 
 ; pause execution
@@ -442,11 +446,11 @@ mm_hndl:
 #endif
 
 	LDA zpar2			; get pointer LSB (3)
-	_SEI				; this is delicate... (2)
+	_ENTER_CS			; this is delicate... (2)
 	STA mm_term, Y		; store in table (4)
 	LDA zpar2+1			; now for MSB (3+4)
 	STA mm_term+1, Y
-	CLI					; were off for 13 clocks (2)
+	_EXIT_CS			; were off for 13 clocks (2)
 	_DR_OK
 
 ; priorize braid, jump to it at once, really needed?
@@ -454,7 +458,7 @@ mm_prior:
 	_DR_OK				; placeholder
 
 ; emergency exit, should never arruive here!
-mm_exit:
+mm_eexit:
 	_NEXT_ISR			; just in case
 
 ; *** subfuction addresses table ***

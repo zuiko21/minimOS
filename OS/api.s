@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a3, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161011-1223
+; last modified 20161017-1345
 
 ; no way for standalone assembly...
 
@@ -639,7 +639,7 @@ sd_2nd:
 	BNE sd_shut		; something to do
 		_PANIC("{sched}")	; otherwise an error!
 sd_shut:
-	_SEI			; disable interrupts
+	SEI				; disable interrupts
 #ifdef	SAFE
 	_STZA dpoll_mx	; disable interrupt queues, just in case
 	_STZA dreq_mx
