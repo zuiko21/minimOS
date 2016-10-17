@@ -1,8 +1,9 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1a4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161017-1104
+; last modified 20161017-1311
 
+#define	C816	_C816
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
 
@@ -11,20 +12,14 @@
 ;#define		DOWNLOAD	_DOWNLOAD
 
 ; in case of standalone assembly
-#ifndef		ROM
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
+#ifndef	HEADERS
+#include "usual.h"
 .bss
-#include "firmware/ARCH.h"
 #ifdef		DOWNLOAD
 * = $0400				; safe address for patchable 2 kiB systems, change if required
 #else
-#include "sysvars.h"
 #include "drivers/config/DRIVER_PACK.h"
-user_sram = *
+-user_sram = *
 #include "drivers/config/DRIVER_PACK.s"
 * = ROM_BASE			; just a placeholder, no standardised address
 #endif
@@ -176,7 +171,7 @@ dr_empty:
 			STX dpoll_mx		; save updated index (4)
 			LDY #D_AUTH			; offset for feature code (2)
 dr_nopoll:
-		LDA da_aut			; get auth code... plus extra byte (4)
+		LDA dr_aut			; get auth code... plus extra byte (4)
 		AND #A_REQ			; check D_REQ presence (3)
 		BEQ dr_noreq		; no D_REQ installed (2/3)
 			LDY #D_REQ			; get offset for async vector (2)
@@ -190,7 +185,7 @@ dr_nopoll:
 			STX dreq_mx			; save updated index  (4)
 			LDY #D_AUTH			; offset for feature code (2)
 dr_noreq:
-		LDA da_aut			; get auth code... plus extra byte (4)
+		LDA dr_aut			; get auth code... plus extra byte (4)
 		AND #A_SEC			; check D_SEC (2)
 		BEQ dr_nosec		; no D_SEC installed (2/3)
 			LDY #D_SEC			; get offset for 1-sec vector (2)
@@ -277,6 +272,7 @@ dr_ok:					; *** all drivers inited ***
 	CLI					; enable interrupts, this is the right time
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
+.al						; I do not know why is this needed
 	LDA #shell			; pointer to integrated shell!
 	STA ex_pt			; set execution full address
 	_KERNEL(B_EXEC)		; go for it!

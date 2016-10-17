@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a4, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161017-1053
+; last modified 20161017-1309
 
 ; no way for standalone assembly...
 
@@ -153,7 +153,6 @@ ci_win:
 malloc:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA ma_rs+2		; asking over 64K?
-	ORA ma_rs+3
 		BNE ma_nobank	; not YET supported
 	LDY #0			; reset index
 ; default 816 API functions run on interrupts masked, thus no need for CS
@@ -169,6 +168,7 @@ ma_cont:
 ma_nobank:
 	_ERR(FULL)		; no room for it!
 ma_found:
+; might go 16-bit memory here...
 	TYA						; compute other index
 	ASL						; two times
 	TAX						; now indexing in words
@@ -236,7 +236,7 @@ ma_ok:
 	STA ma_pt				; store output (3)
 	LDA ram_tab+1, X		; same for MSB (4+3)
 	STA ma_pt+1
-	_EXIT_CS				; end of critical section
+; end of CS, no need for explicit macro in 65816 code
 	_EXIT_OK				; we're done
 
 
@@ -247,6 +247,7 @@ free:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #0			; reset indexes
 ; default 816 API functions run on interrupts masked, thus no need for CS
+; might go 16-bit memory...
 fr_loop:
 		LDA ram_tab, X		; get entry LSB
 		CMP ma_pt			; compare
@@ -280,10 +281,10 @@ fr_opt:
 		ADC ram_siz+3, X
 		LDA #UNAS_RAM		; create unassigned entry
 		STA ram_stat+1, Y	; **KLUDGE** just set entry as unassigned, instead of obliterating it
-		_STZA ram_siz+2, X	; clear size of it, so the KLUDGE might work
-		_STZA ram_siz+3, X
-		_STZA ram_tab+2, X	; same with address, so the KLUDGE might work
-		_STZA ram_tab+3, X
+		STZ ram_siz+2, X	; clear size of it, so the KLUDGE might work
+		STZ ram_siz+3, X
+		STZ ram_tab+2, X	; same with address, so the KLUDGE might work
+		STZ ram_tab+3, X
 ; ** already optimized **
 fr_ok:
 ; end of CS, if still there
@@ -294,12 +295,12 @@ fr_ok:
 ; Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to window title!
 
 open_w:
-	.al: REP #$20	; *** 16-bit memory size ***
-	LDA w_rect		; asking for some size? includes BOTH bytes
+	.al: REP #$20		; *** 16-bit memory size ***
+	.xs: SEP #$10		; *** 8-bit register, just in case ***
+	LDA w_rect			; asking for some size? includes BOTH bytes
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 ow_no_window:
-	.xs: SEP #$10	; *** 8-bit register, just in case ***
 	LDY #DEVICE			; constant default device, REVISE
 ;	EXIT_OK on subsequent system calls!
 
@@ -316,14 +317,14 @@ free_w:					; doesn't do much, either
 ; up_sec -> 32-bit uptime in seconds
 
 uptime:
-	.al: REP #$20			; *** optimum 16-bit memory ***
+	.al: REP #$20		; *** optimum 16-bit memory ***
 ; default 816 API functions run on interrupts masked, thus no need for CS
-		LDA ticks			; get system variable word (5)
-		STA up_ticks		; and store them in output parameter (4)
-		LDA ticks+2			; get system variable uptime (5)
-		STA up_sec			; and store it in output parameter (4)
-		LDA ticks+4			; another word, as per new format (5)
-		STA up_sec+2		; store that (4)
+		LDA ticks		; get system variable word (5)
+		STA up_ticks	; and store them in output parameter (4)
+		LDA ticks+2		; get system variable uptime (5)
+		STA up_sec		; and store it in output parameter (4)
+		LDA ticks+4		; another word, as per new format (5)
+		STA up_sec+2	; store that (4)
 ; end of CS
 	_EXIT_OK
 
@@ -333,15 +334,11 @@ uptime:
 
 b_fork:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #MM_FORK	; subfunction code
-	STA io_c		; as fake parameter
-	LDY #TASK_DEV	; multitasking as device driver!
-	_KERNEL(COUT)	; call pseudo-driver
-	JMP cio_callend	; return whatever error code
-; *** B_FORK for non-multitasking systems ***
-st_fork:
-	LDY #0			; no multitasking, system reserved PID
-	_EXIT_OK
+	LDA #MM_FORK		; subfunction code
+	STA io_c			; as fake parameter
+	LDY #TASK_DEV		; multitasking as device driver!
+	_KERNEL(COUT)		; call pseudo-driver
+	JMP cio_callend		; return whatever error code
 
 
 ; *** B_EXEC, launch new loaded process ***
@@ -351,50 +348,14 @@ st_fork:
 
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	STY str_dev		; COUT shouldn't touch targeted PID
-	LDA cpu_ll		; get architecture eeeeeeeek
-	STA str_dev+1	; and COUT should NOT touch it
-	LDA #MM_EXEC	; subfunction code
-	STA io_c		; as fake parameter
-	LDY #TASK_DEV	; multitasking as device driver!
-	_KERNEL(COUT)	; call pseudo-driver
-	JMP cio_callend	; return whatever error code
-
-; ****** B_EXEC for non-multitasking version
-	TYA				; should be system reserved PID, best way
-	BEQ exec_st		; OK for single-task system
-		_ERR(NO_RSRC)	; no way without multitasking
-exec_st:
-; this should now work for both 02 and 816 apps
-	LDA cpu_ll		; check architecture
-	CMP #'V'		; check whether native 816 code (ending in RTL)
-; older approach, adds 9 bytes and takes 15 clocks for 6502 code
-;	BEQ exec_816		; go for it
-;		TYX				; guaranteed zero offset for indirect call! (2)
-;		JSR (ex_pt, X)	; will end in RTS and return just here, lower 64K only (8)
-;		JMP cio_callend	; return whatever error code (3)
-
-; new approach, reusing 816 code! only adds 2 bytes, 6502 code takes 17 clocks
-	BNE exec_02		; skip bank return address for 8-bit CPU
-	
-; ** self-generated code for long indirect call! 14 bytes, 16+8+6+3= 33 clocks **
-;exec_816:
-;	LDA #$22		; JSL opcode!!!
-;	STA ex_pt-1		; put it just before destination address (uses last local byte)
-;	LDA #$60		; RTS opcode
-;	STA ex_pt+3		; to get back to API handler
-; now call the built wrapper and after app execution, back to calling braid
-;	JSR ex_pt-1		; call SMC!!!
-;	JMP cio_callend	; keep possible error code
-
-; ** alternative to self-generated code for long indirect call, 10 bytes, 17 clocks! **
-		PHK		; push program bank address (actually 0) (3)
-exec_02:
-	PEA #exec_ret-1		; push corrected return address (now long thanks to above instruction) (5)
-	JMP [ex_pt]		; not sure about syntax, forthcoming RTL will get back just here (6)
-exec_ret:
-	JMP cio_callend	; keep possible error code (3)
-
+	STY str_dev			; COUT shouldn't touch targeted PID
+	LDA cpu_ll			; get architecture eeeeeeeek
+	STA str_dev+1		; and COUT should NOT touch it
+	LDA #MM_EXEC		; subfunction code
+	STA io_c			; as fake parameter
+	LDY #TASK_DEV		; multitasking as device driver!
+	_KERNEL(COUT)		; call pseudo-driver
+	JMP cio_callend		; return whatever error code
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
@@ -404,24 +365,24 @@ exec_ret:
 load_link:
 ; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDY #1			; offset for filetype
-	LDA (str_pt), Y	; check filetype
-	CMP #'m'		; must be minimOS app!
-		BNE ll_wrap		; error otherwise
-	INY				; next byte is CPU type then
-	LDA (str_pt), Y	; get it
-	CMP #'R'		; Rockwell is the only unsupported type!
+	LDY #1				; offset for filetype
+	LDA (str_pt), Y		; check filetype
+	CMP #'m'			; must be minimOS app!
+		BNE ll_wrap			; error otherwise
+	INY					; next byte is CPU type then
+	LDA (str_pt), Y		; get it
+	CMP #'R'			; Rockwell is the only unsupported type!
 		BEQ ll_wrap
-	STA cpu_ll		; set CPU type
-	LDA str_pt		; get pointer LSB
-	LDY str_pt+1	; and MSB
-	INY				; start from next page
-	STA ex_pt		; save execution pointer
+	STA cpu_ll			; set CPU type
+	LDA str_pt			; get pointer LSB
+	LDY str_pt+1		; and MSB, not worth on 16-bit mode because of page increment
+	INY					; start from next page
+	STA ex_pt			; save execution pointer
 	STY ex_pt+1
-	STZ ex_pt+2		; invalidate bank... this far, this is important for 6502 code with new B_EXEC approach
+	STZ ex_pt+2			; invalidate bank... this far, this is important for 6502 code with new B_EXEC approach
 	_EXIT_OK
 ll_wrap:
-	_ERR(INVALID)	; something was wrong
+	_ERR(INVALID)		; something was wrong
 
 
 ; *** SU_POKE, write to protected addresses ***
@@ -456,34 +417,34 @@ su_peek:
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	.as: .xs: SEP #$30	; *** standard register size ***
-	TYA				; for indexed comparisons (2)
-	BNE str_port	; not default (3/2)
-		LDA sysout		; new per-process standard device ### apply this to ·65
-		BNE str_port	; already a valid device
-			LDA default_out	; otherwise get system global (4)
+	TYA					; for indexed comparisons (2)
+	BNE str_port		; not default (3/2)
+		LDA sysout			; new per-process standard device ### apply this to ·65
+		BNE str_port		; already a valid device
+			LDA default_out		; otherwise get system global (4)
 str_port:
-	BMI str_phys	; not a logic device (3/2)
-		CMP #64			; first file-dev??? ***
-			BCC str_win		; below that, should be window manager
+	BMI str_phys		; not a logic device (3/2)
+		CMP #64				; first file-dev??? ***
+			BCC str_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 		CMP #64+MAX_FILES	; still within file-devs?
-			BCS str_log		; that value or over, not a file
+			BCS str_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR(NO_RSRC)	; not yet implemented ***placeholder***
+		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
 str_log:
 ; investigate rest of logical devices
-		CMP #DEV_NULL	; lastly, ignore output
-			BNE str_nfound	; final error otherwise
+		CMP #DEV_NULL		; lastly, ignore output
+			BNE str_nfound		; final error otherwise
 str_exit:
-		_EXIT_OK		; "/dev/null" is always OK
+		_EXIT_OK			; "/dev/null" is always OK
 str_win:
 ; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)	; not yet implemented
+	_ERR(NO_RSRC)		; not yet implemented
 str_nfound:
-	_ERR(N_FOUND)	; unknown device
+	_ERR(N_FOUND)		; unknown device
 str_phys:
 ; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
@@ -614,19 +575,19 @@ sd_warm:
 ; the scheduler will wait for NO braids active
 ; now let's disable all drivers
 sd_2nd:
-	LDA sd_flag		; check what was pending
-	BNE sd_shut		; something to do
+	LDA sd_flag			; check what was pending
+	BNE sd_shut			; something to do
 		_PANIC("{sched}")	; otherwise it is an error!
 sd_shut:
-	SEI				; disable interrupts (forever)
+	SEI					; disable interrupts (forever)
 #ifdef	SAFE
-	STZ dpoll_mx	; disable interrupt queues, just in case
+	STZ dpoll_mx		; disable interrupt queues, just in case
 	STZ dreq_mx
 	STZ dsec_mx
 #endif
 ; call each driver's shutdown routine
-	LDX #0			; reset index
-	.al: REP #$20			; *** 16-bit memory ***
+	LDX #0				; reset index
+	.al: REP #$20		; *** 16-bit memory ***
 ; first get the pointer to each driver table
 sd_loop:
 ; get address index
@@ -643,7 +604,7 @@ sd_loop:
 		CMP drv_opt, Y		; check pointer
 		BNE sd_msb			; OK to shutdown
 			CMP drv_ipt, Y		; check if not installed!
-				BEQ sd_next		; nothing to shutoff
+				BEQ sd_next			; nothing to shutoff
 sd_msb:
 		LDY #D_BYE			; shutdown MSB offset
 		PHX					; save index for later
@@ -658,88 +619,39 @@ sd_next:
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
 	LDX sd_flag			; retrieve mode as index!
-	JMP (sd_tab-2, X)		; do as appropriate *** please note that X=0 means scheduler ran off of tasks!
+	JMP (sd_tab-2, X)	; do as appropriate *** please note that X=0 means scheduler ran off of tasks!
 
 sd_tab:					; check order in abi.h!
 	.word	sd_stat		; suspend
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
-	.word	sd_off		; shutdown system
+	.word	sd_off		; poweroff system
 
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid
 ; uses locals[0] too
-; don't know of possible errors******** REVISE *************** REVISE ********************* REVISE
+; don't know of possible errors
 
 signal:
 	.as: .xs: SEP #$30	; *** standard register size ***
-#ifdef	MULTITASK
-	LDA #MM_SIGNAL	; subfunction code
-	STY mm_sig		; COUT shouldn't touch it anyway
-	BRA yld_call	; go for the driver
-; ** if the driver fails, it will NEVER reach this point!!!! **
-#ifdef	SAFE
-sig_st:				; *** single-task interface, in case MM driver failed *** (repeated from below)
-	TYA				; check correct PID, really needed?
-		BNE sig_pid		; strange error?
-	LDY b_sig		; get the signal
-	CPY #SIGTERM	; clean shutoff
-		BEQ sig_term
-	CPY #SIGKILL	; suicide, makes any sense?
-		BEQ sig_kill
-sig_pid:			; placeholder...
-	_ERR(INVALID)	; unrecognised signal
-sig_term:
-	JSR sig_call	; call routine, RTS will get back here
-sig_kill:
-	_EXIT_OK		; *** don't know what to do here ***
-sig_call:
-	JMP (mm_term)	; jump to single-word vector, actually taken from an unused table!
-#endif
-#else
-; *** single task interface (copied above) ***
-	TYA				; check correct PID, really needed?
-		BNE sig_pid		; strange error?
-	LDY b_sig		; get the signal
-	CPY #SIGTERM	; clean shutoff
-		BEQ sig_term
-	CPY #SIGKILL	; suicide, makes any sense?
-		BEQ sig_kill
-sig_pid:			; placeholder...
-	_ERR(INVALID)	; unrecognised signal
-sig_term:
-	JSR sig_call	; call routine, RTS will get back here
-sig_kill:
-	_EXIT_OK		; *** don't know what to do here ***
-sig_call:
-	JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
-#endif
+	LDA #MM_SIGNAL		; subfunction code
+	STY mm_sig			; COUT shouldn't touch it anyway
+	BRA yld_call		; go for the driver
+
 
 ; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
 ; Y -> flags, TBD
 ; uses locals[0] too
-; don't know of possible errors
+; don't know of possible errors, maybe just a bad PID
 
 status:
 	.as: .xs: SEP #$30	; *** standard register size ***
-#ifdef	MULTITASK
-	LDA #MM_STATUS	; subfunction code
-	;**************
-	STY locals		; COUT shouldn't touch it anyway
-	_BRA yld_call	; go for the driver
-; ** if the driver fails, it will NEVER reach this point!!!! **
-#ifdef	SAFE
-stat_st:				; *** single-task interface, in case MM driver failed *** copied from below
-	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
-	_EXIT_OK
-#endif
-#else	
-; *** single-task interface, copied above ***
-	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
-	_EXIT_OK
-#endif
+	LDA #MM_STATUS		; subfunction code
+	STY locals			; input PID, COUT shouldn't touch it anyway
+	BRA yld_call		; go for the driver
+
 
 ; *** GET_PID, get current braid PID ***
 ; Y -> PID, TBD
@@ -748,92 +660,37 @@ stat_st:				; *** single-task interface, in case MM driver failed *** copied fro
 
 get_pid:
 	.as: .xs: SEP #$30	; *** standard register size ***
-#ifdef	MULTITASK
 	LDA #MM_PID		; subfunction code
-	_BRA yld_call	; go for the driver
-; ** if the driver fails, it will NEVER reach this point!!!! **
-#ifdef	SAFE
-pid_st:				; *** single-task interface, in case MM driver failed *** copied from below
-	LDY #0			; system-reserved PID for single-task execution
-	_EXIT_OK
-#endif
-#else
-; *** single-task interface, copied above ***
-	LDY #0			; system-reserved PID for single-task execution
-	_EXIT_OK
-#endif
+	BRA yld_call	; go for the driver
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; Y <- PID, zpar2.W <- SIGTERM handler routine (ending in RTS)
+; Y <- PID, ex_pt (was zpar2) <- SIGTERM handler routine (ending in RTS)
+; ** so far only bank 0 routines supported **
 ; uses locals[0] too
 ; bad PID is probably the only feasible error
 
 set_handler:
 	.as: .xs: SEP #$30	; *** standard register size ***
-#ifdef	MULTITASK
-	LDA #MM_HANDL	; subfunction code
-	_BRA yld_call	; go for the driver
-; ** if the driver fails, it will NEVER reach this point!!!! **
-#ifdef	SAFE
-hndl_st:				; *** single-task interface, in case MM driver failed *** copied from below
-	.al: REP #$20	; *** 16-bit memory size ***
-	LDA zpar2		; get pointer
-	STA mm_term		; store in single variable (from unused table)
-	_EXIT_OK
-#endif
-#else
-; *** single-task interface, copied above ***
-	.al: REP #$20	; *** 16-bit memory size ***
-	LDA zpar2		; get pointer
-	STA mm_term		; store in single variable (from unused table)
-	_EXIT_OK
-#endif
+	LDA #MM_HANDL		; subfunction code
+	BRA yld_call		; go for the driver
 
-; *** B_YIELD, Yield CPU time to next braid ***
+
+; *** B_YIELD, Yield CPU time to next braid *** REVISE
 ; supposedly no interface needed, don't think I need to tell if ignored
 ; destroys like COUT and _TASK_DEV
 
 yield:
 	.as: .xs: SEP #$30	; *** standard register size ***
-#ifndef	MULTITASK
-	_EXIT_OK		; no one to give CPU time away!
-#else
 #ifndef	AUTOBANK
-	_EXIT_OK		; if no multitasking assisting hardware is present, just ignore and stay
+	_EXIT_OK			; if no multitasking assisting hardware is present, just ignore and stay
 #else
-	LDA #MM_YIELD	; subfunction code
+	LDA #MM_YIELD		; subfunction code
 #endif
-yld_call:			; unified calling procedure
-	STA zpar		; subfunction as fake character
-	LDY #TASK_DEV	; multitasking driver ID
-	_KERNEL(COUT)	; call driver
-#ifdef	SAFE
-		BCS yld_failed	; in case multitasking driver was included but failed to register...
-#endif
-	RTS				; all done, keeping any errors from driver
-
-#ifdef	SAFE
-yld_failed:			; *** emergency single-task management ***
-	LDX zpar		; get subfunction code
-	CPX #MM_PRIOR	; first invalid code (this far)
-		BPL yld_err		; generic error
-	_JMPX(yld_table-4)	; go to appropriate label! note offset, since B_FORK and B_EXEC are already processed
-
-yld_st:
-		_EXIT_OK		; in case isn't defined elsewhere
-yld_err:
-		_ERR(INVALID)	; some generic error...
-
-; addresses of single-task routines, new procedure 20150610
-yld_table:
-;	0 = B_FORK, 2 = B_EXEC
-	.word	yld_st	; does nothing, actually
-	.word	sig_st	; single-task SIGNAL
-	.word	stat_st	; single-task STATUS
-	.word	pid_st	; single-task PID
-	.word	hndl_st	; single-task HANDL
-#endif
-#endif
+yld_call:				; * unified calling procedure, get subfunction code in A *
+	STA io_c			; subfunction as fake character
+	LDY #TASK_DEV		; multitasking driver ID
+	_KERNEL(COUT)		; call driver
+	JMP cio_callend		; all done, keeping any errors from driver
 
 ; *** TS_INFO, get taskswitching info for multitasking driver *** revamped 20150521
 ; Y -> number of bytes, zpar... -> bytes of the proposed _reversed_ stack frame (originally 3)
@@ -851,15 +708,86 @@ ts_info:
 
 ; *** end of kernel functions ***
 
-; ** pseudo-driver for non-multitasking systems! **
+; *** pseudo-driver for non-multitasking systems! ***
 st_taskdev:
 	LDX io_c			; get subfunction number as standard parameter
-	JMP (st_tdlist, X)	; jump to appropriate code
-	JMP cio_callend		; return whatever error code
+	JMP (st_tdlist, X)	; call appropriate code, will return to original COUT caller
 
 ; pointer list for single-task management routines
 st_tdlist:
-	.word
+	.word	st_fork		; reserve a free braid (will go BR_STOP for a moment)
+	.word	st_exec		; get code at some address running into a paused braid (will go BR_RUN)
+	.word	st_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
+	.word	st_signal	; send some signal to a braid
+	.word	st_status	; get execution flags for a braid
+	.word	st_getpid	; get current PID
+	.word	st_hndl		; set SIGTERM handler
+	.word	st_prior	;priorize braid, jump to it at once, really needed?
+
+; ** single-task management routines **
+
+; B_FORK for non-multitasking systems
+; GET_PID for non-multitasking systems
+st_fork:
+st_getpid:
+	LDY #0				; no multitasking, system reserved PID anytime
+; B_YIELD for non-multitasking systems
+st_yield:
+	_DR_OK				; YIELD has no other task to give CPU time to!
+
+; B_EXEC for non-multitasking systems
+st_exec:
+st_prior:
+#ifdef	SAFE
+	TYA					; should be system reserved PID, best way
+	BEQ exec_st			; OK for single-task system
+		_DR_ERR(NO_RSRC)	; no way without multitasking
+exec_st:
+#endif
+; this should now work for both 02 and 816 apps
+	LDA cpu_ll			; check architecture
+	CMP #'V'			; check whether native 816 code (ending in RTL)
+; new approach, reusing 816 code!
+	BNE exec_02			; skip return address for 8-bit code
+; ** alternative to self-generated code for long indirect call **
+		PHK					; push program bank address, actually zero (3)
+		PEA exec_ret-1		; push corrected return address (now long thanks to above instruction) (5)
+exec_02:
+	JMP [ex_pt]			; forthcoming RTL will get back just here, but 6502 RTS will go back to caller COUT
+exec_ret:
+	RTS					; keep possible error code (6)
+
+; SET_HNDL for single-task systems
+st_hndl:
+	.al: REP #$20		; *** 16-bit memory size ***
+	LDA ex_pt			; get pointer *** only bank zero addresses supported this far
+	STA mm_term			; store in single variable (from unused table)
+	_DR_OK
+
+; B_STATUS for single-task systems
+st_status:
+	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
+	_DR_OK
+
+; B_SIGNAL for single-task systems
+st_signal:
+#ifdef	SAFE
+	TYA					; check correct PID, really needed?
+		BNE sig_pid			; strange error?
+#endif
+	LDY b_sig			; get the signal
+	CPY #SIGTERM		; clean shutdown
+		BEQ sig_term
+	CPY #SIGKILL		; suicide, makes any sense?
+		BEQ sig_kill
+sig_pid:
+	_DR_ERR(INVALID)	; unrecognised signal
+sig_term:
+	TAX					; guaranteed zero index...
+	JSR (mm_term, X)	; indirect routine call, RTS will get back here *** bank zero only ***
+sig_kill:				; *** I do not know what to do in this case ***
+	_DR_OK				; generic exit, but check label above
+
 
 ; jump table, if not in separate 'jump' file
 #ifndef		DOWNLOAD
