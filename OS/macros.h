@@ -1,6 +1,6 @@
-; minimOS 0.5.1a2 MACRO definitions
+; minimOS 0.5.1a3 MACRO definitions
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161010-1209
+; last modified 20161017-1049
 
 ; *** standard addresses ***
 
@@ -12,7 +12,7 @@ lock		=	$FFE0	; more-or-less 816 savvy address
 
 ; *** device numbers for optional pseudo-driver modules, TBD ***
 TASK_DEV	=	128
-WIN_DEV		=	129
+WIND_DEV	=	129		; new name 20161017
 FILE_DEV	=	130
 
 ; *** considerations for minimOS·16 ***

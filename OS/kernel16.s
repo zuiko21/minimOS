@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1a4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161014-1238
+; last modified 20161017-1104
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -117,6 +117,7 @@ dr_clear:
 	LDA #st_taskdev		; pseudo-driver full address -- standard label on api16.s
 	STA drv_opt			; *** assuming TASK_DEV = 128, index otherwise
 #endif
+; might do something similar for WIND_DEV = 129...
 
 ; first get the pointer to each driver table
 dr_loop:
@@ -138,7 +139,11 @@ dr_phys:
 #endif
 		ASL					; convert to index, no matter the MSB (2+2)
 		TAX
-		BEQ dr_est_taskdevmpty		; new 161014, TASK_DEV does NOT get checked, allowing default installation
+; new 161014, TASK_DEV (128 turns into 0 as index) does NOT get checked, allowing default installation
+		BEQ dr_empty
+; alternative in case of WIND_DEV managed similarly
+;		CPX #4				; first index that will be managed normally
+;		BCC dr_empty		; 0 & 2 (TASK_DEV & WIND_DEV) will NOT be checked from default installation
 			LDA #dr_error		; will look for this address (3)
 			CMP drv_opt, X		; check whether in use (5)
 				BNE dr_busy			; pointer was not empty (2/3)

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a4, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161014-1245
+; last modified 20161017-1053
 
 ; no way for standalone assembly...
 
@@ -338,7 +338,7 @@ b_fork:
 	LDY #TASK_DEV	; multitasking as device driver!
 	_KERNEL(COUT)	; call pseudo-driver
 	JMP cio_callend	; return whatever error code
-; *** for non-multitasking systems ***
+; *** B_FORK for non-multitasking systems ***
 st_fork:
 	LDY #0			; no multitasking, system reserved PID
 	_EXIT_OK
@@ -850,6 +850,16 @@ ts_info:
 	_EXIT_OK
 
 ; *** end of kernel functions ***
+
+; ** pseudo-driver for non-multitasking systems! **
+st_taskdev:
+	LDX io_c			; get subfunction number as standard parameter
+	JMP (st_tdlist, X)	; jump to appropriate code
+	JMP cio_callend		; return whatever error code
+
+; pointer list for single-task management routines
+st_tdlist:
+	.word
 
 ; jump table, if not in separate 'jump' file
 #ifndef		DOWNLOAD
