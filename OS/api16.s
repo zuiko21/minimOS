@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a4, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161019-1102
+; last modified 20161019-1434
 
 ; no way for standalone assembly...
 
@@ -335,27 +335,21 @@ uptime:
 b_fork:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA #MM_FORK		; subfunction code
-	STA io_c			; as fake parameter
-	LDY #TASK_DEV		; multitasking as device driver!
-	_KERNEL(COUT)		; call pseudo-driver
-	JMP cio_callend		; return whatever error code
+	BRA yld_call		; go for the driver
 
 
 ; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture
-; uses str_dev for temporary braid AND architecture storage, driver will pick it up!
+; uses br_cpu for temporary braid AND architecture storage, driver will pick it up!
 
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	STY str_dev			; COUT shouldn't touch targeted PID
+	STY br_cpu			; COUT shouldn't touch targeted PID
 	LDA cpu_ll			; get architecture eeeeeeeek
-	STA str_dev+1		; and COUT should NOT touch it
+	STA br_cpu+1		; and COUT should NOT touch it
 	LDA #MM_EXEC		; subfunction code
-	STA io_c			; as fake parameter
-	LDY #TASK_DEV		; multitasking as device driver!
-	_KERNEL(COUT)		; call pseudo-driver
-	JMP cio_callend		; return whatever error code
+	BRA yld_call		; go for the driver
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
@@ -630,33 +624,31 @@ sd_tab:					; check order in abi.h!
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid
-; uses locals[0] too
+; uses br_cpu too
 ; don't know of possible errors
 
 signal:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA #MM_SIGNAL		; subfunction code
-	STY mm_sig			; COUT shouldn't touch it anyway
+	STY br_cpu			; COUT shouldn't touch it anyway
 	BRA yld_call		; go for the driver
 
 
 ; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
 ; Y -> flags, TBD
-; uses locals[0] too
+; uses br_cpu too
 ; don't know of possible errors, maybe just a bad PID
 
 status:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA #MM_STATUS		; subfunction code
-	STY locals			; input PID, COUT shouldn't touch it anyway
+	STY br_cpu			; input PID, COUT shouldn't touch it anyway
 	BRA yld_call		; go for the driver
 
 
 ; *** GET_PID, get current braid PID ***
 ; Y -> PID, TBD
-; uses locals[0] too ***revise
-; don't know of possible errors
 
 get_pid:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -664,7 +656,7 @@ get_pid:
 	BRA yld_call	; go for the driver
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; Y <- PID, ex_pt (was zpar2) <- SIGTERM handler routine (ending in RTS)
+; Y <- PID, ex_pt <- SIGTERM handler routine (ending in FINISH????)
 ; ** so far only bank 0 routines supported **
 ; uses locals[0] too
 ; bad PID is probably the only feasible error
@@ -681,12 +673,9 @@ set_handler:
 
 yield:
 	.as: .xs: SEP #$30	; *** standard register size ***
-#ifndef	AUTOBANK
-	_EXIT_OK			; if no multitasking assisting hardware is present, just ignore and stay
-#else
 	LDA #MM_YIELD		; subfunction code
-#endif
-yld_call:				; * unified calling procedure, get subfunction code in A *
+; * unified calling procedure, get subfunction code in A *
+yld_call:
 	STA io_c			; subfunction as fake character
 	LDY #TASK_DEV		; multitasking driver ID
 	_KERNEL(COUT)		; call driver
@@ -697,15 +686,22 @@ yld_call:				; * unified calling procedure, get subfunction code in A *
 ts_info:
 	.xs: SEP #$10			; *** standard index size ***
 	.al: REP #$20			; *** 16-bit memory ***
+#ifdef	MULTITASK
 	LDA #tsi_str			; pointer to proposed stack frame
 	STA ex_pt				; store output word
-	LDY #3					; number of bytes
+	LDY #tsi_end-tsi_str	; number of bytes
 	_EXIT_OK
+#else
+	_ERR(UNAVAIL)			; non-supporting kernel!
+#endif
 
 tsi_str:
-; pre-created stack frame for firing tasks up, regardless of multitasking driver implementation
-	.byt	0					; stored X value, best if multitasking driver is the first one
-	.word	isr_sched_ret-1		; corrected reentry address
+; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
+	.word	isr_sched_ret-1	; corrected reentry address **standard label**
+	.byt	0				; stored X value, best if multitasking driver is the first one
+	.word	0, 0, 0			; irrelevant Y, X, A values
+tsi_end:
+; end of stack frame for easier size computation
 
 ; *** end of kernel functions ***
 

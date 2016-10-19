@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a2
+; v0.5.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161019-1112
+; last modified 20161019-1439
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -31,7 +31,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5.1a2", 0
+	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5.1a3", 0
 
 ; *** initialisation code ***
 mm_init:
@@ -68,25 +68,14 @@ mm_rsp:
 	LDA sys_sp			; restored value (3)
 	TCS					; stack pointer updated!
 
-; get proper stack frame from kernel, new 20150507 *** REVISE THIS
-	_KERNEL(TS_INFO)	; get taskswitching info for needed stack frame
-
+; if needed, check whether proper stack frame is available from kernel
 #ifdef	SAFE
-	BCC mmi_tsok		; skip if no error eeeeeeeeeek
+	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
+	BCC mmi_exit		; skip if no error eeeeeeeeeek
 		_DR_ERR(UNAVAIL)	; error if not available
-mmi_tsok:
 #endif
-
-	STY mm_sfsiz		; store stack frame size! new 20150521
-	DEY					; use as offset!
-mm_tscp:
-		LDA (ex_pt), Y		; get output value, new API
-		STA mm_stack, Y		; store into private vars
-		DEY					; go for next byte
-		BPL mm_tscp
 mm_exit:
 	_DR_OK				; new interface for both 6502 and 816
-; ******************************* revising all of the above ***********************
 
 ; *** the scheduler code ***
 mm_sched:
@@ -111,7 +100,7 @@ mm_next:
 
 mm_lock:
 		LDY #PW_CLEAN		; special code to do proper shutdown
-		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown ****** revise interface
+		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown
 
 ; arrived here in typically 39 clocks, if all braids were executable
 mm_switch:
@@ -139,14 +128,14 @@ mm_switch:
 		BNE mm_sigterm		; process it now! (2/3) *** careful! it ends on FINISH instead of RTS
 	RTS					; all done, continue ISR
 
-; the actual SIGTERM routine execution, new 20150611
+; the actual SIGTERM routine execution, new 20150611 *****REVISE REVISE**********
 mm_sigterm:
 	STZ mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
 	DEX					; correct offset
 	TXA					; addressed braid (2)
 	ASL					; two times (2)
 	TAX					; proper offset in handler table (2)
-	JSR (mm_term, X)	; indexed indirect call! note it MUST be in bank zero!!!
+	JMP (mm_term, X)	; indexed indirect JUMP! expected to end in FINISH like any app
 	_FINISH				; term handler will return here, is this OK? ******* revise
 
 ; *** shutdown code TO DO ***
@@ -156,33 +145,31 @@ mm_rts:
 
 ; *** subfunction processing section ***
 mm_cmd:
-	LDX zpar			; get subfunction as index (3)
-
+	LDX io_c			; get subfunction as index (3)
 #ifdef	SAFE
 	CPX #MM_PRIOR+2		; check limits, put last subfunction as appropriate (2)
-		BPL mm_bad			; go away otherwise! (2/3)
+		BCS mm_bad			; go away otherwise! (2/3) eeeeeeeeek
 #endif
-
 	JMP (mm_funct, X)	; jump to appropriate routine (6)
 
 #ifdef	SAFE
 ; check PID within limits (21 clocks optimized 150514, was 23 clocks including JSR)
 mm_chkpid:
-	LDY locals			; eeeeeeeek! the place to do it (3)
+	LDY br_cpu			; eeeeeeeek^2 the place to do it (3)
 		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
 	CPY #MAX_BRAIDS+1	; check whether it's a valid PID (2) eeeeeek!
 		BPL mm_piderr		; way too much (2/3)
 	RTS					; back to business (6)
-
 mm_pidz:				; placeholder
 mm_piderr:
-	PLA					; discard return address, since called from a subroutine (4+4) **** check
+	PLA					; discard return address, since called from a subroutine (4+4)
 	PLA
 mm_bad:
-	_DR_ERR(INVALID)		; not a valid PID or subfunction code, worth checking
+	_DR_ERR(INVALID)	; not a valid PID or subfunction code, worth checking
 #endif
 
 ; reserve a free braid
+; Y -> PID
 mm_fork:
 	LDY #MAX_BRAIDS-1	; scan backwards is usually faster (2)
 ; ** assume interrupts are off via COP **
@@ -192,76 +179,59 @@ mmf_loop:
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
 		BPL mmf_loop		; until the bottom of the list (3/2)
-	_DR_ERR(FULL)			; no available braids! *** it is a kernel I/O call...
+	_DR_ERR(FULL)		; no available braids! *** it is a kernel I/O call...
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
 	STA mm_flags, Y		; reserve braid (4)
 	INY					; first PID is 1 (2)
-	_DR_OK			; this OK? it is a kernel I/O call...
+	_DR_OK				; this OK? it is a kernel I/O call...
 
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
+; Y <- PID, ex_pt <- addr, cpu_ll <- architecture
+; uses br_cpu for temporary braid AND architecture storage, driver will pick it up!
 mm_exec:
-
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
-	TYA					; use PID as MSB offset *** optimized 20150616
+	TYA					; will use as MSB
 #else
-	LDA locals			; supposedly valid PID! *** optimized 20150616
+	LDA br_cpu			; supposedly valid PID!
 #endif
+; rewriting function for 816!
+; create stack frame
+	ADC #>mm_stacks-1	; compute MSB, note offset as first PID is 1
+	XBA					; will be MSB
+	LDA #$FF			; always assume page-aligned stacks
+	TSX					; store older stack pointer!
+	STA sys_sp			; ** 816 ABI is OK for CS **
+	TCS					; future stack pointer foer easier frame construction
+	LDX #0				; canary and bank address of SIG_KILL handler, taken by FINISH
+	PHX					; bottom of stack!
+	PEA mms_suicide-1	; corrected 'return' address for definitive SIG_KILL handler
+	LDA ex_pt+2			; get bank address of starting point
+	PHA					; place in on stack
+	LDA ex_pt+1			; get MSB (minus bank) program address
+	PHA					; push it
+	LDA ex_pt+1			; get LSB (minus bank) program address
+	PHA					; RTI-savvy address placed
+	LDA #$30			; as status means 8-bit size, interrupts enabled!
+	PHA					; push fake status register!
+	_KERNEL(TS_INFO)	; get ISR-dependent stack frame, Y holds size
+	DEY					; correct index as will NEVER be empty!
+mmx_sfp:
+		LDA (ex_pt), Y		; get proposed stack frame byte
+		PHA					; push it
+		DEY					; go for next
+		BPL mmx_sfp			; will work for shorter-than-128 byte frames!
+	TSX					; keep destination stack pointer!
+; restore regular stack
+	LDA mm_pid			; get MSB
+	XBA					; switch bytes
+	LDA sys_sp			; saved value
+	TCS					; stack is restored
+; now prepare future task context, including the previously saved SP (in X)
+; ********** TO DO ********** TO DO ********** TO DO ********** TO DO **********
 
-; prepare storage pointer for later
-	DEC
-	CLC					; put after DEC, otherwise NMOS emulation might fail! 20150616
-	ADC #>mm_context	; compute final MSB, note first stored PID is 1!
-	STA sysptr+1		; store it
-	LDA #<mm_context	; LSB needs no offset
-	STA sysptr			; store it
-; compute shared stack address ****** SUPRESS THIS ********
-	LDA #0				; reset values
-	CLC
-mme_sp:
-;		ADC #256/MAX_BRAIDS		; go for next stack space
-		DEY						; until desired PID
-		BNE mme_sp
-	TSX					; get current SP
-	_ENTER_CS			; *** critical section begins ***
-	STX systmp			; will hold original SP
-	TAX					; computed value as destination SP
-	DEX					; initial value is one less from next one's start
-; *** CAUTION! will switch temporarily into destination stack space for easier creation of stack frame ***
-	TXS					; now into destination stack space! EEEEEK
-; *** create stack frame ***
-; first goes KILL handler, as braids are expected to end via RTS *** could be different for rendez-vous mode calls!
-	LDA #>mms_kill-1	; compute end-of-task MSB (will arrive via RTS, thus one byte before)
-	PHA
-	LDA #<mms_kill-1	; same for LSB
-	PHA
-; now the start address, no offset is needed if ending on RTI
-	LDA zpar2+1			; braid's starting MSB goes first
-	PHA
-	LDA zpar2			; same for LSB
-	PHA
-	LDA #$20			; fake PHP value for RTI, start interrupts
-	PHA
-; ISR will 'return' to pre-execution routine
-	LDA #>mm_pre_exec	; pre-execution routine's MSB goes first
-	PHA
-	LDA #<mm_pre_exec	; same for LSB
-	PHA
-	PHP					; don't care about interrupts here
-; now the usual interrupt stack frame
-	LDA #ZP_AVAIL		; value in A will be taken by pre-exec routine!
-	PHA
-	PHA					; irrelevant values for X, Y
-	PHA
-; the scheduler calling context! revamped 20150521, need _reversed_ stack frame at mm_stack
-	LDY mm_sfsiz		; bytes to copy
-mme_sf:
-		LDA mm_stack-1, Y	; get stored frame
-		PHA					; put it into stack
-		DEY					; whatever number of bytes
-		BNE mme_sf			; until done
-; *** stack frame done, now let's tidy up the pointers! ***
+; OLDER CODE ********** stack frame done, now let's tidy up the pointers! ***
 	TSX					; this is the foreign stack pointer
 	TXA					; temporary storage
 	LDX systmp			; retrive original value
@@ -278,14 +248,9 @@ mme_sf:
 	STA mm_flags-1, Y	; Y holds desired PID
 
 
-; pre-execution routine for faster task-switching first time!
-mm_pre_exec:	; ******** revise or delete altogether for 816 **********
-	STA z_used		; store maximum available zero-page bytes from A, for safety EEEEEEK
-	RTI				; 'return' to start of task! Much simpler, as long as a dummy PHP is done
-
-; switch to next braid
+; switch to next braid********
 mm_yield:
-	_DR_OK			; if no multitasking assisting hardware is present, just ignore and stay
+	_DR_OK				; if no multitasking assisting hardware is present, just ignore and stay
 
 ; send some signal to a braid
 mm_signal:
@@ -315,6 +280,9 @@ mms_table:
 	.word	mms_stop
 
 ; kill braid!
+mms_suicide:
+	.as: .xs: SEP #$30	; ** standard size for app exit **
+	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status (5)
