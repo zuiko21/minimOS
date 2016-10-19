@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a4, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161017-1309
+; last modified 20161019-1102
 
 ; no way for standalone assembly...
 
@@ -692,19 +692,20 @@ yld_call:				; * unified calling procedure, get subfunction code in A *
 	_KERNEL(COUT)		; call driver
 	JMP cio_callend		; all done, keeping any errors from driver
 
-; *** TS_INFO, get taskswitching info for multitasking driver *** revamped 20150521
-; Y -> number of bytes, zpar... -> bytes of the proposed _reversed_ stack frame (originally 3)
-; REVISE REVISE
+; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
+; Y -> number of bytes, ex_pt -> pointer to the proposed stack frame
 ts_info:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #0					; what will X hold? could be 0 as long as the multitasaking driver is the first one!
-	STA zpar+2				; store output value
-	LDA #>(isr_sched_ret-1)	; get return address MSB
-	STA zpar+1				; store it
-	LDA #<(isr_sched_ret-1)	; same for LSB
-	STA zpar
+	.xs: SEP #$10			; *** standard index size ***
+	.al: REP #$20			; *** 16-bit memory ***
+	LDA #tsi_str			; pointer to proposed stack frame
+	STA ex_pt				; store output word
 	LDY #3					; number of bytes
 	_EXIT_OK
+
+tsi_str:
+; pre-created stack frame for firing tasks up, regardless of multitasking driver implementation
+	.byt	0					; stored X value, best if multitasking driver is the first one
+	.word	isr_sched_ret-1		; corrected reentry address
 
 ; *** end of kernel functions ***
 
@@ -722,7 +723,7 @@ st_tdlist:
 	.word	st_status	; get execution flags for a braid
 	.word	st_getpid	; get current PID
 	.word	st_hndl		; set SIGTERM handler
-	.word	st_prior	;priorize braid, jump to it at once, really needed?
+	.word	st_prior	; priorize braid, jump to it at once, really needed?
 
 ; ** single-task management routines **
 

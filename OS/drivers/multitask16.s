@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161011-1242
+; last modified 20161019-1112
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -31,7 +31,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5a2", 0
+	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5.1a2", 0
 
 ; *** initialisation code ***
 mm_init:
@@ -67,9 +67,7 @@ mm_rsp:
 	XBA					; that was MSB
 	LDA sys_sp			; restored value (3)
 	TCS					; stack pointer updated!
-; prepare first running task, as no standard B_FORK will be used
-; ******* this will probably disappear altogether **********
-	
+
 ; get proper stack frame from kernel, new 20150507 *** REVISE THIS
 	_KERNEL(TS_INFO)	; get taskswitching info for needed stack frame
 
@@ -80,14 +78,15 @@ mmi_tsok:
 #endif
 
 	STY mm_sfsiz		; store stack frame size! new 20150521
+	DEY					; use as offset!
 mm_tscp:
-		LDA zpar-1, Y		; get output value (note offset)
-		STA mm_stack-1, Y	; store into private vars
+		LDA (ex_pt), Y		; get output value, new API
+		STA mm_stack, Y		; store into private vars
 		DEY					; go for next byte
-		BNE mm_tscp
+		BPL mm_tscp
 mm_exit:
 	_DR_OK				; new interface for both 6502 and 816
-; ******************************* revise all of the above ***********************
+; ******************************* revising all of the above ***********************
 
 ; *** the scheduler code ***
 mm_sched:
