@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161019-1439
+; last modified 20161020-1338
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -196,59 +196,75 @@ mm_exec:
 #else
 	LDA br_cpu			; supposedly valid PID!
 #endif
-; rewriting function for 816!
-; create stack frame
-	ADC #>mm_stacks-1	; compute MSB, note offset as first PID is 1
+	BNE mmx_br			; go for another braid
+		_DR_ERR(INVALID)	; rejects system PID, or execute within this braid??? *** REVISE
+mmx_br:
+; while still in 8-bit mode, compute new stack address
+	CLC					; eeeeeeeeeeek
+	ADC #(>mm_stacks)-1	; compute MSB, note offset as first PID is 1
 	XBA					; will be MSB
 	LDA #$FF			; always assume page-aligned stacks
+; create stack frame
+	.al: REP #$20		; *** 16-bit memory ***
+	LDA zpar3			; ***** get sys_in & sysout from somewhere ***** REVISE
+	PHA					; into stack, but BEFORE PID
+	PHY					; keep PID for later!
 	TSX					; store older stack pointer!
-	STA sys_sp			; ** 816 ABI is OK for CS **
-	TCS					; future stack pointer foer easier frame construction
+	STX sys_sp			; ** 816 ABI is OK for CS **
+; switch to future stack frame for easier creation
+	TCS					; future stack pointer for easier frame construction
 	LDX #0				; canary and bank address of SIG_KILL handler, taken by FINISH
 	PHX					; bottom of stack!
 	PEA mms_suicide-1	; corrected 'return' address for definitive SIG_KILL handler
-	LDA ex_pt+2			; get bank address of starting point
-	PHA					; place in on stack
-	LDA ex_pt+1			; get MSB (minus bank) program address
-	PHA					; push it
-	LDA ex_pt+1			; get LSB (minus bank) program address
+	LDX ex_pt+2			; get bank address of starting point
+	PHX					; place in on stack
+	LDA ex_pt			; get full (minus bank) program address
 	PHA					; RTI-savvy address placed
-	LDA #$30			; as status means 8-bit size, interrupts enabled!
-	PHA					; push fake status register!
+	LDX #$30			; as status means 8-bit size, interrupts enabled!
+	PHX					; push fake status register!
 	_KERNEL(TS_INFO)	; get ISR-dependent stack frame, Y holds size
 	DEY					; correct index as will NEVER be empty!
+	.as: SEP #$20		; *** back to 8-bit for a moment ***
 mmx_sfp:
 		LDA (ex_pt), Y		; get proposed stack frame byte
 		PHA					; push it
 		DEY					; go for next
 		BPL mmx_sfp			; will work for shorter-than-128 byte frames!
 	TSX					; keep destination stack pointer!
-; restore regular stack
-	LDA mm_pid			; get MSB
-	XBA					; switch bytes
+; back to regular stack
+	LDA mm_pid			; get current PID as MSB offset
+	CLC
+	ADC #mm_stacks-1	; first valid PID is 1
+	XBA					; that was MSB
 	LDA sys_sp			; saved value
 	TCS					; stack is restored
-; now prepare future task context, including the previously saved SP (in X)
-; ********** TO DO ********** TO DO ********** TO DO ********** TO DO **********
-
-; OLDER CODE ********** stack frame done, now let's tidy up the pointers! ***
-	TSX					; this is the foreign stack pointer
-	TXA					; temporary storage
-	LDX systmp			; retrive original value
-	TXS					; back to our own stack!
-	_EXIT_CS			; *** end of critical section ***
-	LDY #sys_sp			; get offset for stored SP
-	STA (sysptr), Y		; store into context
-	LDY #z_used			; offset for user zero-page bytes EEEEEK!
-	LDA #0				; pre-execution has no context!
-	STA (sysptr), Y		; set null context for much faster startup
-	
-	LDY locals			; retrieve PID
+; now prepare future task context, including the previously saved SP (in X), and PID pushed into stack
+	.al: REP #$20		; *** 16-bit memory ***
+	PLY					; get desired PID, 8-bit size
+	TYA					; also here, B get zeroes
+	XBA					; that will be MSB!
+	CLC					; eeeeeeeek
+	ADC #mm_context-256	; point to at that direct page
+	TCD					; switch to future direct page
+	STX sys_sp			; this is the computed stack pointer for the new braid
+	LDX #ZP_AVAIL		; standard available space
+	STX zp_used			; as required
+; now should poke sys_in & sysout from stack
+	PLA					; this was sysout & sys_in, little endian
+	STA sys_in			; assume sys_in is the LSB!!!
+	.as: SEP #$20		; *** back to 8-bit ***
 	LDA #BR_RUN			; will enable task
 	STA mm_flags-1, Y	; Y holds desired PID
+; switch back to original context!!! eeeeeeeeeek
+	TYA					; current PID
+	CLC
+	ADC #(>mm_context)-1	; first PID is 1, context MSB is ready
+	XBA					; now for LSB
+	LDA #<mm_context	; should be zero for optimum performance
+	TCD					; back to current direct page
+	_DR_OK				; done
 
-
-; switch to next braid********
+; switch to next braid******** TO DO ******** TO DO ******** TO DO ********
 mm_yield:
 	_DR_OK				; if no multitasking assisting hardware is present, just ignore and stay
 
