@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a3
+; v0.5.1a4
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161020-1338
+; last modified 20161021-0910
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -16,13 +16,13 @@
 
 ; *** begins with sub-function addresses table ***
 	.byt	TASK_DEV	; physical driver number D_ID (TBD)
-	.byt	A_POLL		; polling scheduler this far, might get some I/O for API
+	.byt	A_POLL+A_COUT	; polling scheduler this far, new architecture needs to enable output!
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
 	.word	mm_nreq		; D_REQ does nothing
 	.word	mm_rts		; no input
 	.word	mm_cmd		; output will process all subfunctions!
-	.word	mm_rts		; no need for 1-second interrupt
+	.word	mm_bye		; no need for 1-second interrupt
 	.word	mm_exit		; no block input
 	.word	mm_exit		; no block output
 	.word	mm_bye		; shutdown procedure
@@ -31,7 +31,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5.1a3", 0
+	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5.1a4", 0
 
 ; *** initialisation code ***
 mm_init:
@@ -65,13 +65,13 @@ mm_rsp:
 ; set current SP
 	LDA #>mm_stacks		; contextual stack area base pointer *** assume page-aligned!!!
 	XBA					; that was MSB
-	LDA sys_sp			; restored value (3)
+	LDA #$FF			; restored value, no need to skim on that (2)
 	TCS					; stack pointer updated!
 
 ; if needed, check whether proper stack frame is available from kernel
 #ifdef	SAFE
 	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
-	BCC mmi_exit		; skip if no error eeeeeeeeeek
+	BCC mm_exit			; skip if no error eeeeeeeeeek
 		_DR_ERR(UNAVAIL)	; error if not available
 #endif
 mm_exit:
@@ -95,8 +95,8 @@ mm_next:
 		BNE mm_scan				; zero means executable braid (3/2)
 ; an executable braid is found
 	CPX mm_pid			; is it the same as before? (4)
-	BNE mm_switch		; if not, go and switch braids (3/2)
-		RTS					; otherwise, nothing to do; no need for BRA (0/3)
+		BNE mm_switch		; if not, go and switch braids (3/2)
+	RTS					; otherwise, nothing to do; no need for BRA (0/3)
 
 mm_lock:
 		LDY #PW_CLEAN		; special code to do proper shutdown
@@ -110,13 +110,14 @@ mm_switch:
 	TSX					; get index MSB (2)
 	STX sys_sp			; store as usual (3)
 ; go into new braid
-	TDC					; get current zeropage pointer
-	XBA					; we will touch MSB only
+	LDA #>mm_context-256	; get pointer to direct pages eeeeeeeeeeek
 	CLC
 	ADC mm_pid			; compute offset within stored direct-pages
-	DEC					; first valid PID is 1!!!
+	XBA					; that was MSB
+	LDA #<mm_context	; should be zero
+	TCD					; new direct page is set
 ; set stack pointer to new context
-	LDA #>mm_stacks-1	; contextual stack area base pointer, assume page-aligned!!!
+	LDA #>mm_stacks-256	; contextual stack area base pointer, assume page-aligned!!!
 	CLC
 	ADC mm_pid			; add offset for new braid
 	XBA					; that was MSB
@@ -187,7 +188,7 @@ mmf_found:
 	_DR_OK				; this OK? it is a kernel I/O call...
 
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
-; Y <- PID, ex_pt <- addr, cpu_ll <- architecture
+; br_cpu <- PID, ex_pt <- addr, br_cpu+1 <- architecture, def_io <- sys_in & sysout
 ; uses br_cpu for temporary braid AND architecture storage, driver will pick it up!
 mm_exec:
 #ifdef	SAFE
@@ -201,12 +202,12 @@ mm_exec:
 mmx_br:
 ; while still in 8-bit mode, compute new stack address
 	CLC					; eeeeeeeeeeek
-	ADC #(>mm_stacks)-1	; compute MSB, note offset as first PID is 1
+	ADC #>mm_stacks-256	; compute MSB, note offset as first PID is 1
 	XBA					; will be MSB
 	LDA #$FF			; always assume page-aligned stacks
 ; create stack frame
 	.al: REP #$20		; *** 16-bit memory ***
-	LDA zpar3			; ***** get sys_in & sysout from somewhere ***** REVISE
+	LDA def_io			; get sys_in & sysout from parameter, revise ABI
 	PHA					; into stack, but BEFORE PID
 	PHY					; keep PID for later!
 	TSX					; store older stack pointer!
@@ -234,7 +235,7 @@ mmx_sfp:
 ; back to regular stack
 	LDA mm_pid			; get current PID as MSB offset
 	CLC
-	ADC #mm_stacks-1	; first valid PID is 1
+	ADC #>mm_stacks-256	; first valid PID is 1
 	XBA					; that was MSB
 	LDA sys_sp			; saved value
 	TCS					; stack is restored
@@ -248,7 +249,7 @@ mmx_sfp:
 	TCD					; switch to future direct page
 	STX sys_sp			; this is the computed stack pointer for the new braid
 	LDX #ZP_AVAIL		; standard available space
-	STX zp_used			; as required
+	STX z_used			; as required
 ; now should poke sys_in & sysout from stack
 	PLA					; this was sysout & sys_in, little endian
 	STA sys_in			; assume sys_in is the LSB!!!
@@ -258,15 +259,16 @@ mmx_sfp:
 ; switch back to original context!!! eeeeeeeeeek
 	TYA					; current PID
 	CLC
-	ADC #(>mm_context)-1	; first PID is 1, context MSB is ready
+	ADC #>mm_context-256	; first PID is 1, context MSB is ready
 	XBA					; now for LSB
 	LDA #<mm_context	; should be zero for optimum performance
 	TCD					; back to current direct page
 	_DR_OK				; done
 
-; switch to next braid******** TO DO ******** TO DO ******** TO DO ********
+; switch to next braid
 mm_yield:
-	_DR_OK				; if no multitasking assisting hardware is present, just ignore and stay
+	CLC					; for safety in case RTS is found (when no other braid is active)
+	JMP mm_sched		; just like the jiffy IRQ
 
 ; send some signal to a braid
 mm_signal:
@@ -295,15 +297,17 @@ mms_table:
 	.word	mms_cont
 	.word	mms_stop
 
-; kill braid!
+; kill itself!!! simple way to terminate after FINISH
 mms_suicide:
 	.as: .xs: SEP #$30	; ** standard size for app exit **
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
+	PEA mm_yield-1		; go into generic KILL and then just give way to remaining braids!
+; kill braid!
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status (5)
 	LDA #0				; no STZ abs,Y
-	STA mm_treq-1, Y	; Clear unattended TERM signal, 20150617
+	STA mm_treq-1, Y	; clear unattended TERM signal, 20150617
 ; should probably free up all windows belonging to this PID...
 	_DR_OK
 
@@ -315,13 +319,13 @@ mms_term:
 
 ; resume execution
 mms_cont:
-	_ENTER_CS			; this is delicate **** really needed?
+; CS not needed as per 816 ABI
 	LDA mm_flags-1, Y	; first check current state (5)
 	CMP #BR_STOP		; is it paused? (2)
 		BNE mms_kerr		; no way to resume it! (2/3)
 	LDA #BR_RUN			; resume (2)
 	STA mm_flags-1, Y	; store new status (5)
-	_EXIT_CS			; were off for ... ********** revise
+; here ends CS
 	_DR_OK
 
 ; pause execution
@@ -353,7 +357,7 @@ mm_getpid:
 	LDY mm_pid			; get PID (4)
 	_DR_OK
 
-; set SIGTERM handler
+; set SIGTERM handler ***** REVISE ***** REVISE ***** REVISE ***** REVISE ***** REVISE
 mm_hndl:
 
 #ifdef	SAFE

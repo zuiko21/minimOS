@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a4, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161019-1434
+; last modified 20161021-0911
 
 ; no way for standalone assembly...
 
@@ -340,9 +340,8 @@ b_fork:
 
 ; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture
+; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- sys_in & sysout
 ; uses br_cpu for temporary braid AND architecture storage, driver will pick it up!
-
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	STY br_cpu			; COUT shouldn't touch targeted PID

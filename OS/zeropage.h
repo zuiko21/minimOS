@@ -1,6 +1,6 @@
-; minimOS 0.5.1a4 zero-page system variables
+; minimOS 0.5.1a5 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161019-1238
+; last modified 20161021-0912
 
 .zero
 
@@ -51,6 +51,8 @@ zpar3: zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
 ma_pt: up_sec: str_pt: cpu_ll:
 z6:z6W:z6L:					; old labels for compatibility
 zpar2: zaddr2	.dsb	4	; up to 4 bytes, including older names @ $F4
+
+def_io	= cpu_ll+2			; *** special case ***
 
 ; *** include aliases here for zpar/zaddr ***
 io_c: ma_rs: w_rect: up_ticks:
