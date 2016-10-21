@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a4
+; v0.5.1a5
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161017-1311
+; last modified 20161021-0933
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -258,10 +258,9 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 
 ; *** set default I/O device *** still in 16-bit memory
-	LDX #DEVICE		; as defined in options.h
-	STX default_out	; should check some devices
-	STX default_in
-; do not forget setting local devices via B_EXEC???
+	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
+	STA default_in	; should check some devices, this assumes _in is LSB
+; do not forget setting local devices via B_EXEC
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
@@ -275,6 +274,8 @@ dr_ok:					; *** all drivers inited ***
 .al						; I do not know why is this needed
 	LDA #shell			; pointer to integrated shell!
 	STA ex_pt			; set execution full address
+	LDA #DEVICE*257			; revise as above *****
+	STA def_io			; default LOCAL I/O
 	_KERNEL(B_EXEC)		; go for it!
 
 	JMP lock			; ...as the scheduler will detour execution
