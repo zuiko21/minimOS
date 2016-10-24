@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a4, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161024-1302
+; last modified 20161024-1321
 
 ; no way for standalone assembly...
 
@@ -780,11 +780,17 @@ st_signal:
 sig_pid:
 	_DR_ERR(INVALID)	; unrecognised signal
 sig_term:
-	TAX					; guaranteed zero index...
 	PHK					; needed for new interface as will end in RTI!
 	PEA sig_kill		; correct return address
 	PHP					; eeeeeeeeeeeek
-	JMP (mm_term, X)	; indirect routine JUMP, RTS will get as indicated *** bank zero only ***
+	LDA mm_stbnk		; single task handler might be anywhere
+	PHA					; push bank address eeeeeeeeeeeek
+	LDA mm_term+1		; get handler MSB
+	PHA					; into stack
+	LDA mm_term			; same for LSB
+	PHA
+	PHP					; as required
+	RTI					; actual JUMP, RTS will get as indicated
 sig_kill:				; *** I do not know what to do in this case *** might release windows etc
 	_DR_OK				; generic exit, but check label above
 

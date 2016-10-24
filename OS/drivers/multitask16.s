@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161024-1304
+; last modified 20161024-1318
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -9,7 +9,7 @@
 #ifndef		HEADERS
 #include "usual.h"
 ; specific header
-.bss
+.bss1234
 #include "drivers/multitask16.h"
 .text
 #endif
@@ -142,14 +142,22 @@ mm_rts:
 
 ; the actual SIGTERM routine execution, new interface 161024, always ending in RTI
 mm_sigterm:
-	STZ mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
-	TXA					; addressed braid (2)
-	ASL					; two times (2)
-	TAX					; proper offset in handler table (2)
+	STZ mm_treq-1, X	; EEEEEEEK! clear received TERM signal
 	PHK					; push program bank as required by RTI in 816
 	PEA mm_rts			; correct return address after SIGTERM handler RTI
 	PHP					; eeeeeeeeeeeeeeeeeek
-	JMP (mm_term-2, X)	; indexed indirect jump! note offset, will return and continue ISR *** bank zero only ***
+; 24-bit indexed jump means the use of RTI
+	LDA mm_stbnk-1, X	; now get bank address
+	PHA					; needed for RTI at the end of the handler
+	TXA					; addressed braid (2)
+	ASL					; two times (2)
+	TAX					; proper offset in handler table (2)
+	LDA mm_term-1, X	; get MSB
+	PHA					; and push it
+	LDA mm_term-2, X	; same for LSB
+	PHA
+	PHP					; as needed by RTI
+	RTI					; actual jump, will return to an RTS and continue ISR
 
 ; *** shutdown code ***
 ; really not much to do... might check whether no active tasks remain
@@ -362,11 +370,18 @@ mm_hndl:
 	LDY br_cpu			; supposedly valid PID!
 #endif
 
-	LDA ex_pt			; get pointer LSB (3)
 ; CS not needed in 65816 ABI
-	STA mm_term-1, Y		; store in table (4)
+; needs 24-bit addressing!!!
+	LDA ex_pt+2			; bank address
+	STA mm_stbnk-1, Y	; store into new array
+; put rest of address in array!
+	TYA					; get index
+	ASL					; double as pointer eeeeeeeeeeeek
+	TAX					; any better this way?
+	LDA ex_pt			; get pointer LSB (3)
+	STA mm_term-2, X	; store in table (4)
 	LDA ex_pt+1			; now for MSB (3+4)
-	STA mm_term+1, Y
+	STA mm_term-1, X
 ; end of CS
 ; ** priorize braid, jump to it at once, really needed? **
 mm_prior:				; this is just a placeholder
