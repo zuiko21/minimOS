@@ -1,6 +1,6 @@
-; minimOS 0.5.1a5 zero-page system variables
+; minimOS 0.5.1a6 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161021-0912
+; last modified 20161024-1221
 
 .zero
 
@@ -8,8 +8,8 @@
 * = 0
 
 #ifndef	C64
-sys_in		.byt	0		; default parent input device (NOT for 6510)
-sysout		.byt	0		; default parent outout device (NOT for 6510)
+std_in		.byt	0		; default parent input device (NOT for 6510)
+stdout		.byt	0		; default parent outout device (NOT for 6510)
 #else
 res6510:	.word	0		; reserved for 6510
 #endif
@@ -20,8 +20,8 @@ uz							; user context starts here, $03...$E3
 
 #ifdef	C64
 * = $E2						; just before local variables, see definition below
-sys_in		.byt	0		; default parent input device (for 6510)
-sysout		.byt	0		; default parent outout device (for 6510)
+std_in		.byt	0		; default parent input device (for 6510)
+stdout		.byt	0		; default parent outout device (for 6510)
 #endif
 
 ; ** local variables for kernel functions **

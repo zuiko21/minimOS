@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a4, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161021-0911
+; last modified 20161024-1230
 
 ; no way for standalone assembly...
 
@@ -18,7 +18,7 @@ cout:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA				; for indexed comparisons (2)
 	BNE co_port		; not default (3/2)
-		LDA sysout		; new per-process standard device ### apply this to ·65
+		LDA stdout		; new per-process standard device ### apply this to ·65
 		BNE co_port		; already a valid device
 			LDA default_out	; otherwise get system global (4)
 co_port:
@@ -64,7 +64,7 @@ cin:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA				; for indexed comparisons
 	BNE ci_port		; specified
-		LDA sys_in		; new per-process standard device ### apply this to ·65
+		LDA std_in		; new per-process standard device ### apply this to ·65
 		BNE ci_port		; already a valid device
 			LDA default_in	; otherwise get system global
 ci_port:
@@ -340,7 +340,7 @@ b_fork:
 
 ; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- sys_in & sysout
+; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
 ; uses br_cpu for temporary braid AND architecture storage, driver will pick it up!
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -412,7 +412,7 @@ string:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA					; for indexed comparisons (2)
 	BNE str_port		; not default (3/2)
-		LDA sysout			; new per-process standard device ### apply this to ·65
+		LDA stdout			; new per-process standard device ### apply this to ·65
 		BNE str_port		; already a valid device
 			LDA default_out		; otherwise get system global (4)
 str_port:
@@ -654,8 +654,9 @@ get_pid:
 	LDA #MM_PID		; subfunction code
 	BRA yld_call	; go for the driver
 
+
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; Y <- PID, ex_pt <- SIGTERM handler routine (ending in FINISH????)
+; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTI)
 ; ** so far only bank 0 routines supported **
 ; uses locals[0] too
 ; bad PID is probably the only feasible error

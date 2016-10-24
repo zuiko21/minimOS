@@ -23,6 +23,8 @@ Since the firmware code at `k_call` is designed around a `JMP (fw_table, X)` ins
 
 Although older versions (up to 0.5, *without* '816 support) used the `_EXIT_OK` and `_ERR` macros everywhere (**all** routines ending in `RTS`), proper compatibility of 8-bit software is only achieved from the use of the proper set of macros; for *driver code* and other generic routines (which are **expected to be in bank zero** anyway) they're replaced by the new `_DR_OK` and `_DR_ERR` which otherwise are the same as the old 8-bit generic macros. **Application** and other executable binary blobs were expected to end in `RTS`; but '816 will use** `RTL` **instead, thus a new `_FINISH` and `_ABORT()` macro set *must* be used instead.
 
+A UNIX-like **SIGTERM handler** can be installed by any task via the `SET_HNDL` API call. *These routined give no error and could be located anywhere into the 16 MiB address space of a 65816*, thus will always end in **`RTI`**. By default, the preinstalled handler for any newly launched task equals `SIGKILL`.
+
 *As of 0.5.1*, 6502-code is only able to run within the lowest 64 KB (bank zero) but **future plans** include a 64-byte *wrapper* at the end of any available bank for '02 *bank-agnostic* code to run.
 
 ###Parameter passing and return values
@@ -50,11 +52,11 @@ Full featured systems will have (currently) **241 bytes** *between $03 and $E3* 
 ###Reserved zeropage space
 Besides user space and locals/parameters area, there are some bytes usually reserved:
 
-* `$00: sys_in` is the defult input device for the current task. *This is `res6510` on 6510 systems, and obviously **not** available here.*
-* `$01: sysout` is the defult output device for the current task.* **Not** available here for 6510 systems.*
+* `$00: std_in` is the defult input device for the current task. *This is `res6510` on 6510 systems, and obviously **not** available here.*
+* `$01: stdout` is the defult output device for the current task.* **Not** available here for 6510 systems.*
 * `$02: z_used` is expected to indicate how many zeropage bytes (from `uz`) are actually used, for a faster *software-based* multitasking. *Otherwise (hardware-assisted or NO multitasking at all) is free*.
 * `$03: uz`is the first byte of the user's free zeropage space. Tasks start with the currently available bytes set on `z_used`.
-* `$E2-$E3` will be the usual location of `sysout` and `sys_in` of 6510 systems, otherwise free for user.
+* `$E2-$E3` will be the usual location of `std_in` and `stdout` on 6510 systems, otherwise free for user.
 * `$E4` will (hopefully) stay as the beginning of local variables and kernel parameters (from `$F0`).
 * `$FC-$FD: sysptr` might be used by **interrupt tasks** anytime. Tinkering with these will do no harm, however values may change unexpectedly *if interrupts are enabled*.
 * `$FE: systmp` might be equally used by **interrupts**, which aren't expected to be reentrant anyway.

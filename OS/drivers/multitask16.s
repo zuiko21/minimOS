@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a4
+; v0.5.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161021-0910
+; last modified 20161024-1246
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -77,11 +77,21 @@ mm_rsp:
 mm_exit:
 	_DR_OK				; new interface for both 6502 and 816
 
+; kill itself!!! simple way to terminate after FINISH
+mms_suicide:
+	.as: .xs: SEP #$30	; ** standard size for app exit **
+	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
+	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
+; ...then go into B_YIELD as this will no longer be executable
+
+; switch to next braid
+mm_yield:
+	CLC					; for safety in case RTS is found (when no other braid is active)
+; ...then will go into the scheduler afterwards!
+
 ; *** the scheduler code ***
 mm_sched:
-; execute scheduler itself
 ; get next available PID
-
 	LDY #2				; to avoid deadlocks AND proper shutdown detection (2)
 	LDX mm_pid			; actual PID as index (4)
 mm_scan:
@@ -126,22 +136,23 @@ mm_switch:
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
 	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
-		BNE mm_sigterm		; process it now! (2/3) *** careful! it ends on FINISH instead of RTS
+		BNE mm_sigterm		; process it now! (2/3)
+mm_rts:
 	RTS					; all done, continue ISR
 
-; the actual SIGTERM routine execution, new 20150611 *****REVISE REVISE**********
+; the actual SIGTERM routine execution, new interface 161024, always ending in RTI
 mm_sigterm:
 	STZ mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
-	DEX					; correct offset
 	TXA					; addressed braid (2)
 	ASL					; two times (2)
 	TAX					; proper offset in handler table (2)
-	JMP (mm_term, X)	; indexed indirect JUMP! expected to end in FINISH like any app
-	_FINISH				; term handler will return here, is this OK? ******* revise
+	PHK					; push program bank as required by RTI in 816
+	PEA mm_rts			; correct return address after SIGTERM handler RTI
+	JMP (mm_term-2, X)	; indexed indirect jump! note offset, will return and continue ISR
 
-; *** shutdown code TO DO ***
+; *** shutdown code ***
+; really not much to do... might check whether no active tasks remain
 mm_bye:
-mm_rts:
 	RTS
 
 ; *** subfunction processing section ***
@@ -265,22 +276,17 @@ mmx_sfp:
 	TCD					; back to current direct page
 	_DR_OK				; done
 
-; switch to next braid
-mm_yield:
-	CLC					; for safety in case RTS is found (when no other braid is active)
-	JMP mm_sched		; just like the jiffy IRQ
-
 ; send some signal to a braid
 mm_signal:
 
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
 #else
-	LDY locals			; supposedly valid PID!
+	LDY br_cpu			; supposedly valid PID!
 #endif
 
 ; new code 20150611, needs new ABI but 21 bytes (or 13 if not SAFE) and 13 clocks at most
-	LDX zpar2			; get signal code (3)
+	LDX b_sig			; get signal code (3)
 
 #ifdef	SAFE
 	CPX #SIGCONT+1		; compare against last (2)
@@ -291,17 +297,12 @@ mm_signal:
 mms_jmp:
 	JMP (mms_table, X)	; jump to actual code
 
-mms_table:
-	.word	mms_kill
-	.word	mms_term
-	.word	mms_cont
-	.word	mms_stop
+; ask braid to terminate
+mms_term:
+	TXA					; should get something not zero! *** careful ***
+	STA mm_treq-1, Y	; set SIGTERM request for that braid
+	_DR_OK
 
-; kill itself!!! simple way to terminate after FINISH
-mms_suicide:
-	.as: .xs: SEP #$30	; ** standard size for app exit **
-	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
-	PEA mm_yield-1		; go into generic KILL and then just give way to remaining braids!
 ; kill braid!
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
@@ -309,13 +310,7 @@ mms_kill:
 	LDA #0				; no STZ abs,Y
 	STA mm_treq-1, Y	; clear unattended TERM signal, 20150617
 ; should probably free up all windows belonging to this PID...
-	_DR_OK
-
-; ask braid to terminate
-mms_term:
-	TXA					; should get something not zero!
-	STA mm_treq-1, Y	; set SIGTERM request for that braid
-	_DR_OK
+	_DR_OK				; return as appropriate
 
 ; resume execution
 mms_cont:
@@ -345,7 +340,7 @@ mm_status:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
 #else
-	LDY locals			; supposedly valid PID!
+	LDY br_cpu			; supposedly valid PID!
 #endif
 
 	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
@@ -357,26 +352,24 @@ mm_getpid:
 	LDY mm_pid			; get PID (4)
 	_DR_OK
 
-; set SIGTERM handler ***** REVISE ***** REVISE ***** REVISE ***** REVISE ***** REVISE
+; set SIGTERM handler
 mm_hndl:
 
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
 #else
-	LDY locals			; supposedly valid PID!
+	LDY br_cpu			; supposedly valid PID!
 #endif
 
-	LDA zpar2			; get pointer LSB (3)
-	_SEI				; this is delicate... (2)
-	STA mm_term, Y		; store in table (4)
-	LDA zpar2+1			; now for MSB (3+4)
+	LDA ex_pt			; get pointer LSB (3)
+; CS not needed in 65816 ABI
+	STA mm_term-1, Y		; store in table (4)
+	LDA ex_pt+1			; now for MSB (3+4)
 	STA mm_term+1, Y
-	CLI					; were off for 13 clocks (2)
+; end of CS
+; ** priorize braid, jump to it at once, really needed? **
+mm_prior:				; this is just a placeholder
 	_DR_OK
-
-; priorize braid, jump to it at once, really needed?
-mm_prior:
-	_DR_OK				; placeholder
 
 ; emergency exit, should never arrive here!
 mm_nreq:
@@ -392,3 +385,10 @@ mm_funct:
 	.word	mm_getpid	; get current PID
 	.word	mm_hndl		; set SIGTERM handler
 	.word	mm_prior	; priorize braid, jump to it at once, really needed?
+
+; *** signal routines addresses table ***
+mms_table:
+	.word	mms_kill
+	.word	mms_term
+	.word	mms_cont
+	.word	mms_stop
