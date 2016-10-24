@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a5
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161024-1246
+; last modified 20161024-1304
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -148,7 +148,8 @@ mm_sigterm:
 	TAX					; proper offset in handler table (2)
 	PHK					; push program bank as required by RTI in 816
 	PEA mm_rts			; correct return address after SIGTERM handler RTI
-	JMP (mm_term-2, X)	; indexed indirect jump! note offset, will return and continue ISR
+	PHP					; eeeeeeeeeeeeeeeeeek
+	JMP (mm_term-2, X)	; indexed indirect jump! note offset, will return and continue ISR *** bank zero only ***
 
 ; *** shutdown code ***
 ; really not much to do... might check whether no active tasks remain
