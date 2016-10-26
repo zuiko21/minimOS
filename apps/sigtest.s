@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
 ; v0.9a1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161025-1243
+; last modified 20161026-1118
 
 ; for standalone assembly, set path to OS/
 #include "usual.h"
@@ -15,20 +15,59 @@ sts_header:
 
 ; *** actual app code starts here ***
 sts_start:
+	LDA #0				; do not bother with STZ
+	STA z_used			; no threads launched this far
+	STA w_rect			; no window size, regular terminal
+	STA w_rect+1
+	_KERNEL(OPEN_W)		; get device
+	STY def_io			; set defaults (hope they remain!!!)
+	STY def_io+1
+sts_launch:
+		_KERNEL(B_FORK)		; reserve braid
+		TYA					; check result
+			BEQ sts_run			; no more free
+		INC z_used			; launch counter
+		LDX z_used			; as index
+		STY z_used, X		; store in list, correct ZP opcode
+		LDA #'N'			; NMOS code ** might be outside
+		STA cpu_ll			; set parameter
+		LDY #<sts_thread	; get thread pointer
+		LDA #>sts_thread
+		STY ex_pt			; store parameter
+		STA ex_pt+1
+; hopefully def_io is respected!
+		_KERNEL(B_EXEC)		; launch thread!
+		BCC sts_launch		; go for next
+; is this an error condition...?
+
+sts_run:
+	_KERNEL(UPTIME)		; check time
+	LDA up_sec			; get current second
+	CLC
+	ADC #3				; up to three seconds more
+sts_wait:
+		PHA					; keep destiny!
+		_KERNEL(B_YIELD)	; give CPU time
+		_KERNEL(UPTIME)		; check time again
+		PLA					; retrieve deadline
+		CMP up_sec			; arrived?
+		BNE sts_wait		; keep waiting
+; now send SIGTERM to every thread launched!
+
 
 
 ; ** code for each launched thread **
 sts_thread:
 	LDA #1				; number of needed bytes
 	STA z_used			; uses just one
+	LDA #0				; do not bother with STZ
+	STA uz				; reset the only flag
 	JSR sts_pid			; print PID...
 	LDY #<stx_intro		; ...and start info string
 	LDA #>stx_intro
 	STY str_pt			; store as parameter
 	STA str_pt+1
-	LDY #0				; default device
-	STY uz				; reset the only byte used (SIGTERM flag)
-	_KERNEL(STRING)		; print string
+	JSR sts_aystr		; print it
 sts_loop:
 			BIT uz				; check flag
 				BMI sts_rcv			; received SIGTERM! go away
@@ -40,19 +79,13 @@ sts_loop:
 		JSR sts_pid			; print PID...
 		LDY #<stx_alive		; ...and alive message
 		LDA #>stx_alive
-		STY str_pt			; set parameter
-		STA str_pt+1
-		LDY #0				; default device
-		_KERNEL(STRING)		; print
+		JSR sts_aystr		; print it
 		BCC sts_loop		; stay forever until SIGTERM arrives (or a strange error)
 sts_rcv:
 	JSR sts_pid			; print PID...
 	LDY #<stx_termrc	; ...and final string
 	LDA #>stx_termrc
-	STY str_pt			; set parameter
-	STA str_pt+1
-	LDY #0				; default print
-	_KERNEL(STRING)
+	JSR sts_aystr		; print it
 	_FINISH				; all done
 
 ; ** the supplied SIGTERM handler **
@@ -62,6 +95,14 @@ sts_sigterm:
 	RTI					; new end!
 
 ; *** useful routines ***
+; print string pointed by A.Y
+sts_aystr:
+	STY str_pt			; set parameter
+	STA str_pt+1
+	LDY #0				; default device
+	_KERNEL(STRING)		; print
+	RTS
+
 ; print X.A as two decimal ciphers (both below 10)
 sts_pr100:
 	PHA					; save LSD for a moment
