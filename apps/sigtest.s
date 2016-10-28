@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v0.9a1
+; v0.9a2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161027-1015
+; last modified 20161028-1407
 
 ; for standalone assembly, set path to OS/
 #include "usual.h"
@@ -86,19 +86,27 @@ sts_thread:
 	LDY #<stx_intro		; ...and start info string
 	LDA #>stx_intro
 	JSR sts_aystr		; print it
+sts_timer:
+	LDA #SPEED_CODE		; ** kludge, but makes it speed-independent **
+sts_ext:
+			LDY #12				; should take about 0.5 seconds
+			LDX #0				; for guaranteed execution time
 sts_loop:
-			BIT uz				; check flag
-				BMI sts_rcv			; received SIGTERM! go away
-			INX					; one counter
-			BNE sts_loop
-		INY					; and another one
-		BNE sts_loop
-; loops completed in less than 0.8s @ 1 MHz
+				BIT uz				; check flag
+					BMI sts_rcv			; received SIGTERM! go away
+				INX					; internal counter, 256 times*10 clocks
+				BNE sts_loop
+			DEY					; and another one, 12 iterations
+			BNE sts_loop		; will take about 30.7 ms
+		SEC
+		SBC #1				; decrement speed index
+		BEQ sts_ext			; until all done
+; loops completed, should take 0.5 seconds regardless of CPU speed!
 		JSR sts_pid			; print PID...
 		LDY #<stx_alive		; ...and alive message
 		LDA #>stx_alive
 		JSR sts_aystr		; print it
-		BCC sts_loop		; stay forever until SIGTERM arrives (or a strange I/O error)
+		BCC sts_timer		; stay forever until SIGTERM arrives (or a strange I/O error)
 sts_rcv:
 	JSR sts_pid			; print PID...
 	LDY #<stx_termrc	; ...and final string
