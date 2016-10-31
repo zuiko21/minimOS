@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a4, should match kernel16.s
+; v0.5.1a5, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161024-1321
+; last modified 20161031-2258
 
 ; no way for standalone assembly...
 
@@ -341,12 +341,8 @@ b_fork:
 ; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
-; uses br_cpu for temporary braid AND architecture storage, driver will pick it up!
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	STY br_cpu			; COUT shouldn't touch targeted PID
-	LDA cpu_ll			; get architecture eeeeeeeek
-	STA br_cpu+1		; and COUT should NOT touch it
 	LDA #MM_EXEC		; subfunction code
 	BRA yld_call		; go for the driver
 
@@ -623,26 +619,22 @@ sd_tab:					; check order in abi.h!
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid
-; uses br_cpu too
 ; don't know of possible errors
 
 signal:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA #MM_SIGNAL		; subfunction code
-	STY br_cpu			; COUT shouldn't touch it anyway
 	BRA yld_call		; go for the driver
 
 
 ; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
 ; Y -> flags, TBD
-; uses br_cpu too
 ; don't know of possible errors, maybe just a bad PID
 
 status:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDA #MM_STATUS		; subfunction code
-	STY br_cpu			; input PID, COUT shouldn't touch it anyway
 	BRA yld_call		; go for the driver
 
 
@@ -677,8 +669,8 @@ yield:
 ; * unified calling procedure, get subfunction code in A *
 yld_call:
 	STA io_c			; subfunction as fake character
-	LDY #TASK_DEV		; multitasking driver ID
-	_KERNEL(COUT)		; call driver
+	LDX #0    ; null offset!
+    JSR (drv_opt, X)    ; call pseudo-driver! New, lower overhead
 	JMP cio_callend		; all done, keeping any errors from driver
 
 ; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
