@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a5
+; v0.5.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161024-1318
+; last modified 20161031-2311
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -174,12 +174,12 @@ mm_cmd:
 	JMP (mm_funct, X)	; jump to appropriate routine (6)
 
 #ifdef	SAFE
-; check PID within limits (21 clocks optimized 150514, was 23 clocks including JSR)
+; check PID within limits (20 including call)
 mm_chkpid:
-	LDY br_cpu			; eeeeeeeek^2 the place to do it (3)
+	TYA			; eeeeeeeek^2 the place to do it, new format (2)
 		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
 	CPY #MAX_BRAIDS+1	; check whether it's a valid PID (2) eeeeeek!
-		BPL mm_piderr		; way too much (2/3)
+		BCS mm_piderr		; way too much (2/3) eeeek
 	RTS					; back to business (6)
 mm_pidz:				; placeholder
 mm_piderr:
@@ -192,19 +192,18 @@ mm_bad:
 ; reserve a free braid
 ; Y -> PID
 mm_fork:
-	LDY #MAX_BRAIDS-1	; scan backwards is usually faster (2)
+	LDY #MAX_BRAIDS	; scan backwards is usually faster (2)
 ; ** assume interrupts are off via COP **
 mmf_loop:
-		LDA mm_flags, Y		; get that braid's status (4)
+		LDA mm_flags-1, Y		; get that braid's status (4)
 		CMP #BR_FREE		; check whether available (2)
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
-		BPL mmf_loop		; until the bottom of the list (3/2)
+		BNE mmf_loop		; until the bottom of the list (3/2)
 	_DR_ERR(FULL)		; no available braids! *** it is a kernel I/O call...
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
-	STA mm_flags, Y		; reserve braid (4)
-	INY					; first PID is 1 (2)
+	STA mm_flags-1, Y		; reserve braid (4)
 	_DR_OK				; this OK? it is a kernel I/O call...
 
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
@@ -212,11 +211,9 @@ mmf_found:
 ; uses br_cpu for temporary braid AND architecture storage, driver will pick it up!
 mm_exec:
 #ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first (21)
-	TYA					; will use as MSB
-#else
-	LDA br_cpu			; supposedly valid PID!
+	JSR mm_chkpid		; check for a valid PID first ()
 #endif
+    TYA    ; new PID passing
 	BNE mmx_br			; go for another braid
 		_DR_ERR(INVALID)	; rejects system PID, or execute within this braid??? *** REVISE
 mmx_br:
@@ -289,9 +286,7 @@ mmx_sfp:
 mm_signal:
 
 #ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first (21)
-#else
-	LDY br_cpu			; supposedly valid PID!
+	JSR mm_chkpid		; check for a valid PID first ()
 #endif
 
 ; new code 20150611, needs new ABI but 21 bytes (or 13 if not SAFE) and 13 clocks at most
@@ -347,9 +342,7 @@ mms_kerr:
 mm_status:
 
 #ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first (21)
-#else
-	LDY br_cpu			; supposedly valid PID!
+	JSR mm_chkpid		; check for a valid PID first ()
 #endif
 
 	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
@@ -366,8 +359,6 @@ mm_hndl:
 
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
-#else
-	LDY br_cpu			; supposedly valid PID!
 #endif
 
 ; CS not needed in 65816 ABI
