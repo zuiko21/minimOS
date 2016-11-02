@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a5, should match kernel16.s
+; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161031-2258
+; last modified 20161102-1400
 
 ; no way for standalone assembly...
 
@@ -334,7 +334,7 @@ uptime:
 
 b_fork:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #MM_FORK		; subfunction code
+	LDX #MM_FORK		; subfunction code
 	BRA yld_call		; go for the driver
 
 
@@ -343,7 +343,7 @@ b_fork:
 ; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #MM_EXEC		; subfunction code
+	LDX #MM_EXEC		; subfunction code
 	BRA yld_call		; go for the driver
 
 
@@ -623,7 +623,7 @@ sd_tab:					; check order in abi.h!
 
 signal:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #MM_SIGNAL		; subfunction code
+	LDX #MM_SIGNAL		; subfunction code
 	BRA yld_call		; go for the driver
 
 
@@ -634,7 +634,7 @@ signal:
 
 status:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #MM_STATUS		; subfunction code
+	LDX #MM_STATUS		; subfunction code
 	BRA yld_call		; go for the driver
 
 
@@ -643,7 +643,7 @@ status:
 
 get_pid:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #MM_PID		; subfunction code
+	LDX #MM_PID		; subfunction code
 	BRA yld_call	; go for the driver
 
 
@@ -655,22 +655,20 @@ get_pid:
 
 set_handler:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #MM_HANDL		; subfunction code
+	LDX #MM_HANDL		; subfunction code
 	BRA yld_call		; go for the driver
 
 
 ; *** B_YIELD, Yield CPU time to next braid *** REVISE
 ; supposedly no interface needed, don't think I need to tell if ignored
-; destroys like COUT and _TASK_DEV
 
 yield:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA #MM_YIELD		; subfunction code
-; * unified calling procedure, get subfunction code in A *
+	LDX #MM_YIELD		; subfunction code
+; * unified calling procedure, get subfunction code in X * new faster interface 20161102
 yld_call:
-	STA io_c			; subfunction as fake character
-	LDX #0    ; null offset!
-    JSR (drv_opt, X)    ; call pseudo-driver! New, lower overhead
+	LDX #0			; null offset!
+	JSR (drv_opt, X)	; call pseudo-driver! New, lower overhead
 	JMP cio_callend		; all done, keeping any errors from driver
 
 ; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
@@ -699,8 +697,7 @@ tsi_end:
 
 ; *** pseudo-driver for non-multitasking systems! ***
 st_taskdev:
-	LDX io_c			; get subfunction number as standard parameter
-	JMP (st_tdlist, X)	; call appropriate code, will return to original COUT caller
+	JMP (st_tdlist, X)	; call appropriate code, will return to original caller
 
 ; pointer list for single-task management routines
 st_tdlist:
