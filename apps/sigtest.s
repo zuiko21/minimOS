@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v0.9a2
+; v0.9a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161028-1407
+; last modified 20161102-1111
 
 ; for standalone assembly, set path to OS/
 #include "usual.h"
@@ -86,6 +86,12 @@ sts_thread:
 	LDY #<stx_intro		; ...and start info string
 	LDA #>stx_intro
 	JSR sts_aystr		; print it
+	LDY #<sts_sigterm	; supply pointer routine
+	LDA #>sts_sigterm
+	STY ex_pt			; set parameter
+	_KERNEL(GET_PID)	; to myself
+	_KERNEL(SET_HNDL)	; set it!
+; might tell about successful installation
 sts_timer:
 	LDA #SPEED_CODE		; ** kludge, but makes it speed-independent **
 sts_ext:
