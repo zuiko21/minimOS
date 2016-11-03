@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161103-1418
+; last modified 20161103-1701
 
 ; no way for standalone assembly...
 
@@ -164,31 +164,39 @@ ma_nxpg:
 	LDA ma_rs+1			; get number of asked pages
 ; default 816 API functions run on interrupts masked, thus no need for CS
 	BNE ma_sized		; work on specific size
-		; *** otherwise check available space *** TO DO *** TO DO *** TO DO ***
-		LDX #0			; reset both indexes
+; otherwise check for biggest available block
+		LDX #0				; reset both indexes
 		TXY
-		STZ ma_l		; ...and found value eeeeeeeeek
+		STZ ma_l			; ...and found value eeeeeeeeek
 ma_biggest:
-			LDA ram_stat, Y	; get status of block plsu extra byte...
-			AND #$00FF		; filter LSB
-;			CMP #FREE_RAM	; not needed if FREE_RAM is zero!
-			BNE ma_nxbig	; continue search
-				LDA ram_pos+2, X	; get end position
+			LDA ram_stat, Y		; get status of block plus extra byte... (5)
+			AND #$00FF			; filter LSB (3)
+;			CMP #FREE_RAM		; not needed if FREE_RAM is zero! (3)
+			BNE ma_nxbig		; continue search (3/2)
+				LDA ram_pos+2, X	; get end position (5)
 				SEC
-				SBC ram_pos, X		; subtract current for size!
-				CMP ma_l			; compare against current maximum
-				BCC ma_nxbig		; this was not bigger
-					STA ma_l			; otherwise keep track of it...
-					STX ma_l+2			; ...and its index!
+				SBC ram_pos, X		; subtract current for size! (2+5)
+				CMP ma_l			; compare against current maximum (4)
+				BCC ma_nxbig		; this was not bigger (3/2)
+					STA ma_l			; otherwise keep track of it... (4)
+					STX ma_l+2			; ...and its index! (3)
 ma_nxbig:
-			INX				; advance indexes
+			INX					; advance indexes (2x3)
 			INX
 			INY
-			LDA ram_stat, Y	; peek next status
-			AND #$0FF		; filter LSB
-			CMP #END_RAM	; check whether at end
-			BNE ma_biggest	; or continue
-		; ***************** store found size and set X accordingly ********************
+			LDA ram_stat, Y		; peek next status (5)
+			AND #$00FF			; filter LSB (3)
+			CMP #END_RAM		; check whether at end (3)
+			BNE ma_biggest		; or continue (3/2)
+; is there at least one available block?
+		LDA ma_l			; should not be zero
+		BNE ma_fill			; there is at least one block to allocate
+			_ERR(FULL)			; otherwise no free memory!
+; report allocated size
+ma_fill:
+		STA ma_rs+1			; store allocated size! already computed
+		LDX ma_l+2			; retrieve index
+		BRA ma_updt			; nothing to scan, just update status and return address
 ma_sized:
 	LDY #0				; reset list index
 ma_scan:
@@ -203,71 +211,71 @@ ma_cont:
 		BNE ma_scan
 ; one end of CS
 ma_nobank:
-	_ERR(FULL)		; no room for it!
+	_ERR(FULL)			; no room for it!
 ma_found:
-	TYA						; compute other index (2)
-	ASL						; two times (2)
-	TAX						; now indexing in words, MSB is lost anyway (2)
-	LDA ram_pos+2, X		; get position of NEXT block (5)
+	TYA					; compute other index (2)
+	ASL					; two times (2)
+	TAX					; now indexing in words, MSB is lost anyway (2)
+	LDA ram_pos+2, X	; get position of NEXT block (5)
 	SEC
-	SBC ram_pos, X			; subtract current (FREE) block position, now A holds size in pages (2+5)
+	SBC ram_pos, X		; subtract current (FREE) block position, now A holds size in pages (2+5)
 #ifdef	SAFE
-	BCS ma_nobad			; no corruption was seen (3/2)
-		_PANIC("{RAMlist}")		; otherwise something went VERY wrong!
+	BCS ma_nobad		; no corruption was seen (3/2)
+		_PANIC("{RAMlist}")	; otherwise something went VERY wrong!
 ma_nobad:
 #endif
-	CMP ma_rs+1				; compare (5)
-		BCC ma_cont				; smaller, thus continue searching (2/3)
+	CMP ma_rs+1			; compare (5)
+		BCC ma_cont			; smaller, thus continue searching (2/3)
 ; here we go!
 ; first make room for new entry... if not exactly the same size
-	BEQ ma_updt				; was same size, will not generate new entry
+	BEQ ma_updt			; was same size, will not generate new entry
 ; make room for new entry
-		STX ma_l				; store index
-		TXA						; to half index...
+		STX ma_l			; store index
+		TXA					; to half index...
 		LSR
 		TAY
-		STY ma_l+1				; store halved version too
+		STY ma_l+1			; store halved version too
 ma_2end:
-			INY						; previous was free, thus check next
-			LDX ram_stat, Y			; check status of block
-			CPX #END_RAM			; scan for the end-of-memory marker
-			BNE ma_2end				; hopefully will end sometime!
-		STY ma_l+2				; this will help too
-		TYA						; back to full index...
+			INY					; previous was free, thus check next
+			LDX ram_stat, Y		; check status of block
+			CPX #END_RAM		; scan for the end-of-memory marker
+			BNE ma_2end			; hopefully will end sometime!
+		STY ma_l+2			; this will help too
+		TYA					; back to full index...
 		ASL
 		TAX
 ma_room:
-			LDA ram_pos, X			; get one block address
-			STA ram_pos+2, X		; one position forward
-			DEX						; down one entry
+			LDA ram_pos, X		; get one block address
+			STA ram_pos+2, X	; one position forward
+			DEX					; down one entry
 			DEX
-			CPX ma_l				; position of updated entry
-			BNE ma_room				; continue until done
-		LDY ma_l+2				; now let us do the status array
+			CPX ma_l			; position of updated entry
+			BNE ma_room			; continue until done
+		LDY ma_l+2			; now let us do the status array
 ma_stats:
-			LDX ram_stat, Y			; get one block status
-			STX ram_stat+1, Y		; advance it
-			DEY						; go backwards
-			CPY ma_l+1				; until the end
+			LDX ram_stat, Y		; get one block status
+			STX ram_stat+1, Y	; advance it
+			DEY					; go backwards
+			CPY ma_l+1			; until the end
 			BNE ma_stats
-		LDX ma_l				; get back full index!
+		LDX ma_l			; get back full index!
 ; create at the beginning of the moved block a FREE entry!
-		LDA ram_pos+2, X		; newly assigned slice will begin here
+		LDA ram_pos+2, X	; newly assigned slice will begin here
 		CLC
-		ADC ma_rs+1				; add number of assigned pages
-		STA ram_pos+2, X		; update value
-		LDX #FREE_RAM			; let us mark it as free
-		STX ram_stat+1, Y		; next to the assigned one
+		ADC ma_rs+1			; add number of assigned pages
+		STA ram_pos+2, X	; update value
+		LDX #FREE_RAM		; let us mark it as free
+		STX ram_stat+1, Y	; next to the assigned one
 ma_updt:
-	LDA ram_pos, X			; get address of block to be assigned
-	STA ma_pt+1				; note this is address of PAGE
-	LDY #0					; set byte address to zero, just in case
+	LDA ram_pos, X		; get address of block to be assigned
+	STA ma_pt+1			; note this is address of PAGE
+	LDY #0				; set byte address to zero, just in case
 	STY ma_pt
-	TXA						; back to half index, consider making sparse array
-	LSR						; halve it
-	TAY						; just like the other one
-	LDX #USED_RAM			; now is reserved
-	STX ram_stat, Y			; update table entry
+	TXA					; back to half index, consider making sparse array
+	LSR					; halve it
+	TAY					; just like the other one
+	LDX #USED_RAM		; now is reserved
+	STX ram_stat, Y		; update table entry
 ; theoretically we are done, end of CS
 	_EXIT_OK
 
