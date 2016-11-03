@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161103-1325
+; last modified 20161103-1418
 
 ; no way for standalone assembly...
 
@@ -146,11 +146,11 @@ ci_win:
 	_ERR(NO_RSRC)	; not yet implemented
 
 
-; *** MALLOC, reserve memory *** IN THE MAKING
+; *** MALLOC, reserve memory *** revamped 20161103
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory
 ; ma_rs = 0 means reserve as much memory as available!!!
 ; * this works on 24-bit addressing! *
-; uses ma_l
+; uses ma_l (3 bytes) as diverse temporary vars
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -165,6 +165,30 @@ ma_nxpg:
 ; default 816 API functions run on interrupts masked, thus no need for CS
 	BNE ma_sized		; work on specific size
 		; *** otherwise check available space *** TO DO *** TO DO *** TO DO ***
+		LDX #0			; reset both indexes
+		TXY
+		STZ ma_l		; ...and found value eeeeeeeeek
+ma_biggest:
+			LDA ram_stat, Y	; get status of block plsu extra byte...
+			AND #$00FF		; filter LSB
+;			CMP #FREE_RAM	; not needed if FREE_RAM is zero!
+			BNE ma_nxbig	; continue search
+				LDA ram_pos+2, X	; get end position
+				SEC
+				SBC ram_pos, X		; subtract current for size!
+				CMP ma_l			; compare against current maximum
+				BCC ma_nxbig		; this was not bigger
+					STA ma_l			; otherwise keep track of it...
+					STX ma_l+2			; ...and its index!
+ma_nxbig:
+			INX				; advance indexes
+			INX
+			INY
+			LDA ram_stat, Y	; peek next status
+			AND #$0FF		; filter LSB
+			CMP #END_RAM	; check whether at end
+			BNE ma_biggest	; or continue
+		; ***************** store found size and set X accordingly ********************
 ma_sized:
 	LDY #0				; reset list index
 ma_scan:
