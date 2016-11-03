@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161102-1400
+; last modified 20161103-0935
 
 ; no way for standalone assembly...
 
@@ -595,11 +595,11 @@ sd_loop:
 			CMP drv_ipt, Y		; check if not installed!
 				BEQ sd_next			; nothing to shutoff
 sd_msb:
-		LDY #D_BYE			; shutdown MSB offset
 		PHX					; save index for later
 		PHP					; and register size, just in case!
+		LDY #D_BYE			; shutdown MSB offset
 		JSR dr_call			; call routine from generic code!!!
-		PLP					; back to original size
+		PLP					; back to original size, will ignore error code anyway
 		PLX					; retrieve index
 sd_next:
 		INX					; advance to next entry (2+2)
@@ -667,9 +667,9 @@ yield:
 	LDX #MM_YIELD		; subfunction code
 ; * unified calling procedure, get subfunction code in X * new faster interface 20161102
 yld_call:
-	LDX #0			; null offset!
-	JSR (drv_opt, X)	; call pseudo-driver! New, lower overhead
-	JMP cio_callend		; all done, keeping any errors from driver
+; new code is 6 bytes, 10 clocks! old code was 8 bytes, 13 clocks
+	PEA cio_callend-1	; push correct return address!
+	JMP (drv_opt)		; as will be the first one in list, best to use non-indexed indirect
 
 ; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
 ; Y -> number of bytes, ex_pt -> pointer to the proposed stack frame

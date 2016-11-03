@@ -1,6 +1,6 @@
-; minimOS 0.5.1a6 zero-page system variables
+; minimOS 0.5.1a7 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161024-1221
+; last modified 20161103-0924
 
 .zero
 
@@ -30,11 +30,11 @@ stdout		.byt	0		; default parent outout device (for 6510)
 locals:						; old label for compatibility
 
 ; *** include aliases here for local1/locpt1 ***
-da_ptr: ma_l: mm_sig:
+dr_aut: ma_l: mm_sig:
 local1: locpt1	.dsb	4	; variables for kernel functions @ $E4
 
 ; *** include aliases here for local2/locpt2 ***
-str_dev: br_cpu:
+da_ptr: str_dev:
 local2: locpt2	.dsb	4	; variables for kernel functions @ $E8
 
 ; *** include aliases here for local3/locpt3 ***

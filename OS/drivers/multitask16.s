@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161102-1402
+; last modified 20161103-0923
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
@@ -208,7 +208,6 @@ mmf_found:
 
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
 ; Y <- PID, ex_pt <- addr, cpu_ll <- architecture, def_io <- sys_in & sysout
-; uses br_cpu for temporary braid AND architecture storage, driver will pick it up!
 mm_exec:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first ()

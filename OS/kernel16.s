@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a5
+; v0.5.1a6
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161021-0933
+; last modified 20161103-0900
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -31,6 +31,10 @@
 ; **************************************************
 
 warm:
+	CLI				; interrupts off, just in case
+	CLD				; do not assume anything
+	SEC
+	XCE				; set emulation mode for a moment! will reset to 8-bit registers
 ; assume interrupts off, binary mode and 65C816 in emulation mode!
 	CLC
 	XCE				; enter native mode! still 8 bit regs, though
@@ -89,9 +93,8 @@ mreset:
 
 ; set some labels, much neater this way
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
+; same with dr_aut, now independent kernel call savvy 20161103
 ; 16-bit revamp 20161013
-
-dr_aut	= sysptr		; new storage for authorization code! 20161013
 
 	LDX #0				; reset driver index (2)
 	STX dpoll_mx		; reset all indexes (4+4+4)
@@ -206,7 +209,10 @@ dr_nosec:
 dr_abort:
 			LDY #D_ID			; offset for ID (2)
 			LDA (da_ptr), Y		; get ID code... plus extra (6)
-;				BPL dr_next			; nothing to delete (2/3)
+#ifdef	SAFE
+			BIT #$0080			; check whether it was a valid physical device, negative LSB (
+				BEQ dr_next			; nothing to delete (2/3)
+#endif
 			ASL					; use retrieved ID as index (2+2)
 			TAY					; will keep LSB only
 			LDA #dr_error		; make deleted entries point to a standard error routine (3)
@@ -226,8 +232,8 @@ dr_error:
 dr_icall:
 	LDY #D_INIT			; original pointer offset (2)
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset
-; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
 ; *** assume 16-bit memory and 8-bit indexes ***
+; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
 dr_call:
 	LDA (da_ptr), Y		; destination pointer MSB (6)
 	DEC					; one less for RTS (2)
