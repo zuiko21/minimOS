@@ -1,6 +1,6 @@
-; minimOS 0.5.1a3 System Variables
+; minimOS 0.5.1a4 System Variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161024-1308
+; last modified 20161103-1049
 
 .bss
 
@@ -33,8 +33,7 @@ mm_stbnk	.dsb	MAX_BRAIDS		; bank addresses 20161024 eeeeeeeeeek
 ; new memory management table 150209
 ; should be revised...
 #ifndef		LOWRAM
-ram_tab		.dsb	MAX_LIST	; space for blocks
-ram_siz		.dsb	MAX_LIST	; size of blocks
+ram_pos		.dsb	MAX_LIST	; location of blocks, new var 20161103
 ram_stat	.dsb	MAX_LIST/2	; status of each block
 #endif
 

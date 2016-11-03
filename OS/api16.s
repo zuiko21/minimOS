@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161103-1014
+; last modified 20161103-1104
 
 ; no way for standalone assembly...
 
@@ -179,20 +179,33 @@ ma_cont:
 ; one end of CS
 ma_nobank:
 	_ERR(FULL)		; no room for it!
+ma_found:
+	TYA						; compute other index (2)
+	ASL						; two times (2)
+	TAX						; now indexing in words, MSB is lost anyway (2)
+	LDA ram_pos+2, X		; get position of NEXT block (5)
+	SEC
+	SBC ram_pos, X			; subtract current (FREE) block position, now A holds size in pages (2+5)
+#ifdef	SAFE
+	BCS ma_nobad			; no corruption was seen (3/2)
+		_PANIC("{RAMlist}")		; otherwise something went VERY wrong!
+ma_nobad:
+#endif
+	CMP ma_rs+1				; compare (5)
+		BCC ma_cont				; smaller, thus continue searching (2/3)
+; here we go!
+; first make room for new entry... if not exactly the same size
+	BEQ ma_updt				; was same size, will not generate new entry
+; *** TO DO, make room for new entry ***
+ma_updt:
+	TXA						; back to half index, consider making sparse array
+	LSR						; halve it
+	TAY						; just like the other one
+	LDX #USED_RAM			; now is reserved
+	STX ram_stat, Y			; update table entry
+; theoretically we are done, end of CS
 
 ; ********************************* OLD CODE ************************************
-ma_found:
-; might go 16-bit memory here...
-	TYA						; compute other index
-	ASL						; two times
-	TAX						; now indexing in words
-	LDA ram_siz+1, X		; get size MSB (4)
-	CMP ma_rs+1				; compare (3)
-		BCC ma_cont				; smaller, thus continue searching (2/3)
-	LDA ram_siz, X			; check LSB, just in case (4)
-	CMP ma_rs				; compare (3)
-		BCC ma_cont				; smaller, thus continue searching (2/3)
-; here we go
 	LDA ram_siz, X			; get current free block size LSB (4)
 	STA ma_l				; store it for later (3)
 	LDA ram_siz+1, X		; same for MSB (4+3)
