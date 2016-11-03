@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161103-0935
+; last modified 20161103-1014
 
 ; no way for standalone assembly...
 
@@ -145,28 +145,42 @@ ci_win:
 	_ERR(NO_RSRC)	; not yet implemented
 
 
-; *** MALLOC, reserve memory ***
-; ma_rs <- size, ma_pt -> addr, C = not enough memory (16-bit so far, but put zeroes on high-size!)
-; ** Up to 64K RAM supported so far ** should be heavily revamped!
-; uses ma_l
+; *** MALLOC, reserve memory *** IN THE MAKING
+; ma_rs <- size, ma_pt -> addr, C = not enough memory
+; ma_rs = 0 means reserve as much memory as available!!!
+; * this works on 24-bit addressing! *
+; uses ma_l?
 
 malloc:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA ma_rs+2		; asking over 64K?
-		BNE ma_nobank	; not YET supported
-	LDY #0			; reset index
+	.al: REP #$20		; *** 16-bit memory ***
+	.xs: SEP #$10		; *** 8-bit indexes ***
+	LDX ma_rs			; check individual bytes, just in case
+	BEQ ma_nxpg			; no extra page needed
+		INC	ma_rs+1			; otherwise increase number of pages
+;		LDX #0				; ...and just in case, clear asked bytes!
+;		STX ma_rs			; best not to change again register size
+ma_nxpg:
+	LDA ma_rs+1			; get number of asked pages
 ; default 816 API functions run on interrupts masked, thus no need for CS
+	BNE ma_sized		; work on specific size
+		; *** otherwise check available space *** TO DO *** TO DO *** TO DO ***
+ma_sized:
+	LDY #0				; reset list index
 ma_scan:
-		LDA ram_stat, Y		; get state of current entry (4)
+		LDX ram_stat, Y		; get state of current entry (4)
 ;		CMP #FREE_RAM		; looking for a free one (2) not needed if free is zero
 			BEQ ma_found		; got one (2/3)
+		CPX #END_RAM		; got already to the end? (2)
+			BEQ ma_nobank		; could not found anything suitable (2/3)
 ma_cont:
 		INY					; increase index (2)
 		CPY #MAX_LIST/2		; until the end (2+3)
 		BNE ma_scan
-; end of CS
+; one end of CS
 ma_nobank:
 	_ERR(FULL)		; no room for it!
+
+; ********************************* OLD CODE ************************************
 ma_found:
 ; might go 16-bit memory here...
 	TYA						; compute other index

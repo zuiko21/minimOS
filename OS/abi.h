@@ -1,6 +1,6 @@
-; minimOS 0.5.1a1 API/ABI
+; minimOS 0.5.1a2 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161003-1226
+; last modified 20161103-1009
 
 ; VIA 65(C)22 registers, just for convenience
 ; offsets from base address (add to base in options.h)
@@ -145,7 +145,7 @@ FS_CREATE	=  34	; format filesystem
 ; even number just in case indexed jump is used
 FREE_RAM	=	0
 USED_RAM	=	2
-UNAS_RAM	=	4
+END_RAM		=	4	; new label 20161103
 
 ; ** logic devices, TBD **
 DEV_RND		= 126	; get a random number
