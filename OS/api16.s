@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161103-1701
+; last modified 20161103-1943
 
 ; no way for standalone assembly...
 
@@ -173,7 +173,7 @@ ma_biggest:
 			AND #$00FF			; filter LSB (3)
 ;			CMP #FREE_RAM		; not needed if FREE_RAM is zero! (3)
 			BNE ma_nxbig		; continue search (3/2)
-				LDA ram_pos+2, X	; get end position (5)
+			LDA ram_pos+2, X	; get end position (5)
 				SEC
 				SBC ram_pos, X		; subtract current for size! (2+5)
 				CMP ma_l			; compare against current maximum (4)
@@ -181,7 +181,7 @@ ma_biggest:
 					STA ma_l			; otherwise keep track of it... (4)
 					STX ma_l+2			; ...and its index! (3)
 ma_nxbig:
-			INX					; advance indexes (2x3)
+			INX					; advance indexes (2+2+2)
 			INX
 			INY
 			LDA ram_stat, Y		; peek next status (5)
@@ -239,7 +239,7 @@ ma_2end:
 			INY					; previous was free, thus check next
 			LDX ram_stat, Y		; check status of block
 			CPX #END_RAM		; scan for the end-of-memory marker
-			BNE ma_2end			; hopefully will end sometime!
+			BNE ma_2end			; hopefully will eventually finish!
 		STY ma_l+2			; this will help too
 		TYA					; back to full index...
 		ASL
@@ -282,52 +282,37 @@ ma_updt:
 
 ; *** FREE, release memory *** revamp along MALLOC
 ; ma_pt <- addr
+; C -> no such block!
 
 free:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #0			; reset indexes
-; default 816 API functions run on interrupts masked, thus no need for CS
-; might go 16-bit memory...
+	.al: REP #$20		; *** 16-bit memory ***
+	.xs: SEP #$10		; *** 8-bit indexes ***
+	LDX #0				; reset indexes
+	TXY
 fr_loop:
-		LDA ram_tab, X		; get entry LSB
-		CMP ma_pt			; compare
-			BNE fr_next			; try other
-		LDA ram_tab+1, X	; same for MSB
-		CMP ma_pt+1
-			BEQ fr_found		; stop searching, much easier this way
-fr_next:
+		LDA ma_pt			; get comparison term
+		CMP ram_pos, X		; is what we are looking for?
+			BEQ fr_found		; go free it!
+		LDA ram_stat, Y		; otherwise check status
+		AND #$00FF			; remove extra byte
+		INX					; advance indexes
 		INX
-		INX
-		CPX #MAX_LIST		; until the end
-		BCC fr_loop
-; end of CS
-	_ERR(N_FOUND)			; no block to be freed!
+		INY
+		CMP #END_RAM		; no more in list?
+		BNE fr_loop			; continue until end
+; this could be one end of CS
+	_ERR(N_FOUND)		; no such block!
 fr_found:
-	TXA				; get two-byte index
-	CLC
-	LSR				; convert to byte index
-	TAY				; could be saved but no way with optimization...
-	LDA #FREE_RAM	; free block
-	STA ram_stat, Y	; unfortunately no STZ abs,Y
-; ** optimize list, highly recommended **
-fr_opt:
-		LDA ram_stat+1, Y	; get status of contiguous entry
-;		CMP #FREE_RAM		; was it free? no need if free is zero
-			BNE fr_ok			; was not free, so nothing to optimize
-		LDA ram_siz, X		; get actual size LSB
-		CLC
-		ADC ram_siz+2, X	; add following size
-		LDA ram_siz+1, X	; same with MSB
-		ADC ram_siz+3, X
-		LDA #UNAS_RAM		; create unassigned entry
-		STA ram_stat+1, Y	; **KLUDGE** just set entry as unassigned, instead of obliterating it
-		STZ ram_siz+2, X	; clear size of it, so the KLUDGE might work
-		STZ ram_siz+3, X
-		STZ ram_tab+2, X	; same with address, so the KLUDGE might work
-		STZ ram_tab+3, X
-; ** already optimized **
+	LDX #FREE_RAM		; most likely zero, but do not use STZ in 16-bit mode!!!
+	STX ram_stat, Y		; this block is now free, but...
+; really should join possible adjacent free blocks *** TO DO *** TO DO *** TO DO ***
+	LDX ram_stat+1, Y	; check status of following entry
+;	CPX #FREE_RAM		; was it free? could be supressed if value is zero
+	BNE fr_ok			; was not free, thus nothing to optimize
+		; ***** loop for obliterating the following empty entry ***** TO DO ***** TO DO *****
+
+; we are done
 fr_ok:
-; end of CS, if still there
 	_EXIT_OK
 
 
