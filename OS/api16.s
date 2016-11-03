@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161103-1104
+; last modified 20161103-1325
 
 ; no way for standalone assembly...
 
@@ -46,6 +46,7 @@ co_phys:
 	ASL					; convert to index (2+2)
 	TAX
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
+; ** important routine ending in order to preserve C status after thr RTI **
 cio_callend:
 	PLA					; extract previous status!
 	BCC cio_notc		; no need to clear carry
@@ -149,7 +150,7 @@ ci_win:
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory
 ; ma_rs = 0 means reserve as much memory as available!!!
 ; * this works on 24-bit addressing! *
-; uses ma_l?
+; uses ma_l
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -196,75 +197,55 @@ ma_nobad:
 ; here we go!
 ; first make room for new entry... if not exactly the same size
 	BEQ ma_updt				; was same size, will not generate new entry
-; *** TO DO, make room for new entry ***
+; make room for new entry
+		STX ma_l				; store index
+		TXA						; to half index...
+		LSR
+		TAY
+		STY ma_l+1				; store halved version too
+ma_2end:
+			INY						; previous was free, thus check next
+			LDX ram_stat, Y			; check status of block
+			CPX #END_RAM			; scan for the end-of-memory marker
+			BNE ma_2end				; hopefully will end sometime!
+		STY ma_l+2				; this will help too
+		TYA						; back to full index...
+		ASL
+		TAX
+ma_room:
+			LDA ram_pos, X			; get one block address
+			STA ram_pos+2, X		; one position forward
+			DEX						; down one entry
+			DEX
+			CPX ma_l				; position of updated entry
+			BNE ma_room				; continue until done
+		LDY ma_l+2				; now let us do the status array
+ma_stats:
+			LDX ram_stat, Y			; get one block status
+			STX ram_stat+1, Y		; advance it
+			DEY						; go backwards
+			CPY ma_l+1				; until the end
+			BNE ma_stats
+		LDX ma_l				; get back full index!
+; create at the beginning of the moved block a FREE entry!
+		LDA ram_pos+2, X		; newly assigned slice will begin here
+		CLC
+		ADC ma_rs+1				; add number of assigned pages
+		STA ram_pos+2, X		; update value
+		LDX #FREE_RAM			; let us mark it as free
+		STX ram_stat+1, Y		; next to the assigned one
 ma_updt:
+	LDA ram_pos, X			; get address of block to be assigned
+	STA ma_pt+1				; note this is address of PAGE
+	LDY #0					; set byte address to zero, just in case
+	STY ma_pt
 	TXA						; back to half index, consider making sparse array
 	LSR						; halve it
 	TAY						; just like the other one
 	LDX #USED_RAM			; now is reserved
 	STX ram_stat, Y			; update table entry
 ; theoretically we are done, end of CS
-
-; ********************************* OLD CODE ************************************
-	LDA ram_siz, X			; get current free block size LSB (4)
-	STA ma_l				; store it for later (3)
-	LDA ram_siz+1, X		; same for MSB (4+3)
-	STA ma_l+1
-	LDA ma_rs				; get size LSB (3)
-	STA ram_siz, X			; reduce entry (4)
-	LDA ma_rs+1				; same for MSB (3+4)
-	STA ram_siz+1, X
-	LDA #USED_RAM			; mark block as used (2) define elsewhere
-	STA ram_stat, Y			; indexed by byte (4)
-	LDA ma_l
-	ORA ma_l+1				; some space remaining? (3+3)
-	BEQ ma_ok				; nothing more to do (2/3)
-; ** make room for sub-entry, highly recommended **
-		STX ma_l+2				; store limit
-		LDY #MAX_LIST-2			; first origin (2)
-ma_opt:
-			LDA ram_tab, Y		; get origin
-			STA ram_tab+2, Y	; put destination, sure???
-			LDA ram_siz, Y		; same for ram_siz
-			STA ram_siz+2, Y
-			DEY					; next
-			CPY ma_l+2
-			BCS ma_opt
-		CLC
-		LSR ma_l+2			; do same for ram_stat
-		LDY #(MAX_LIST/2)-1
-ma_stat:
-			LDA ram_stat, Y
-			STA ram_stat+1, Y	; check too
-			DEY					; next
-			CPY ma_l+2
-			BCS ma_stat			; EEEK, was BPL, hope it is OK
-; now create new free entry
-		LDA ram_tab, X		; get current address
-		CLC
-		ADC ma_rs			; add size LSB
-		STA ram_tab+2, X	; set new entry, best not touching X!
-		LDA ram_tab+1, X	; same for MSB
-		ADC ma_rs+1
-		STA ram_tab+3, X
-		LDA ma_l			; get size LSB
-		SEC
-		SBC ma_rs			; substract size
-		STA ram_siz+2, X	; store in new entry, same as before
-		LDA ma_l+1			; same for MSB
-		SBC ma_rs+1
-		STA ram_siz+3, X
-		LDY ma_l+2			; Y is no longer valid, thus restore from stored X/2
-		LDA #FREE_RAM		; needed even if free is zero
-		STA ram_stat+1, Y	; set new entry as free, unfortunately no STZ abs,Y
-; ** optimization finished **
-ma_ok:
-	LDA ram_tab, X			; get address' LSB (4)
-	STA ma_pt				; store output (3)
-	LDA ram_tab+1, X		; same for MSB (4+3)
-	STA ma_pt+1
-; end of CS, no need for explicit macro in 65816 code
-	_EXIT_OK				; we're done
+	_EXIT_OK
 
 
 ; *** FREE, release memory *** revamp along MALLOC
