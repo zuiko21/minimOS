@@ -1,18 +1,21 @@
 ; SIGTERM test app for minimOS!
-; v0.9a3
+; v1.0b1
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161102-1111
+; last modified 20161104-1436
 
 ; for standalone assembly, set path to OS/
 #include "usual.h"
 
 ; *** first some executable header ***
 sts_header:
-	.asc 0, "mN", 13						; standard system file wrapper
+	.asc 0, "m", CPU_TYPE, 13				; standard system file wrapper
 sts_title:
 	.asc "SIGtest", 0						; filename
 	.asc "Test app for SIGTERM handling", 0	; description as comment
-	.dsb sts_header + $100 - *, $FF			; generate padding including end of linked list
+	.dsb sts_header + $FC - *, $FF			; generate padding
+sts_length = sts_end - sts_header			; *** compute actual file size ***
+	.asc <sts_length, >sts_length, 0, 0		; 32-bit relative offset to next header
+; *** en of minimOS executable header ***
 
 ; *** actual app code starts here ***
 sts_start:
@@ -30,11 +33,11 @@ sts_start:
 sts_launch:
 		_KERNEL(B_FORK)		; reserve braid
 		TYA					; check result
-			BEQ sts_run			; no more free
+			BEQ sts_run			; no more free... or running on a single-task system!
 		INC z_used			; launch counter
 		LDX z_used			; as index
 		STY z_used, X		; store in list, correct ZP opcode
-		LDA #'N'			; NMOS code ** might be outside
+		LDA #CPU_TYPE		; from options.h
 		STA cpu_ll			; set parameter
 		LDY #<sts_thread	; get thread pointer
 		LDA #>sts_thread
@@ -42,15 +45,30 @@ sts_launch:
 		STA ex_pt+1
 ; hopefully def_io is respected!
 		_KERNEL(B_EXEC)		; launch thread!
-		BCC sts_launch		; go for next
+	BCC sts_launch		; go for next
 ; this an error condition!
-	LDY #<stx_err		; get error pointer
-	LDA #>stx_err
-	JSR sts_aystr		; print it
-	JMP sts_timeout		; do not wait any longer!!!
+; * might free up that reserved braid via SIGKILL *
+		LDX z_used			; retrieve index eeeeeeeeeek
+		LDY z_used, X		; supposedly reserved PID
+		LDA #SIGKILL		; this one should be freed
+		STA b_sig			; store signal type
+		_KERNEL(B_SIGNAL)	; send that SIGKILL!
+; * braid is free, note error and continue execution of remaining threads *
+		DEC z_used			; this was not successful eeeeeeeeek
+		LDY #<stx_err		; get error pointer
+		LDA #>stx_err
+		JSR sts_aystr		; print it
+		JMP sts_timeout		; do not wait any longer!!!
 ; wait a few seconds with the threads running...
 sts_run:
-	_KERNEL(UPTIME)		; check time
+	LDA z_used			; check number of threads
+	BNE sts_mm			; some of them, multitasking is active
+		LDY #<stx_sts		; single-task system error pointer
+		LDA #>stx_sts
+		JSR sts_aystr		; print error message
+		_FINISH				; we are done
+sts_mm:
+	_KERNEL(UPTIME)		; otherwise check time
 	LDA up_sec			; get current second
 	CLC
 	ADC #3				; up to three seconds more
@@ -65,23 +83,39 @@ sts_wait:
 sts_timeout:
 	LDX z_used			; get index
 sts_terms:
-		PHX					; keep it!
+		_PHX				; keep it!
 		LDY z_used, X		; take PID from list
 		LDA #SIGTERM		; will ask to terminate
 		STA b_sig			; store as parameter
 		_KERNEL(B_SIGNAL)	; send signal!
-		PLX					; retrieve index
+		_PLX				; retrieve index
 		DEX					; one less to go
 		BNE sts_terms		; until all done
 ; now keep giving CPU time until all finished
-
+sts_shut:
+	_KERNEL(B_YIELD)	; give away CPU time! eeeeeeeeek
+	LDX z_used			; get task list index
+sts_cont:
+		LDY z_used, X		; get its PID
+		_PHX				; push X
+		PHA
+		_KERNEL(B_STATUS)	; check running state
+		_PLX				; retrieve X
+		CPY #BR_RUN			; is it running?
+; might print some progress, including X value for reference...
+			BEQ sts_shut		; still some running
+		DEX					; otherwise check next in list
+		BNE sts_cont		; until the list is exhausted
+	LDY #<stx_bye		; end-of-app message
+	LDA #>stx_bye
+	JSR sts_aystr		; print it
+	_FINISH
 
 ; ** code for each launched thread **
 sts_thread:
 	LDA #1				; number of needed bytes
 	STA z_used			; uses just one
-	LDA #0				; do not bother with STZ
-	STA uz				; reset the only flag
+	_STZA uz			; reset the only flag
 	JSR sts_pid			; print PID...
 	LDY #<stx_intro		; ...and start info string
 	LDA #>stx_intro
@@ -89,6 +123,7 @@ sts_thread:
 	LDY #<sts_sigterm	; supply pointer routine
 	LDA #>sts_sigterm
 	STY ex_pt			; set parameter
+	STA ex_pt+1
 	_KERNEL(GET_PID)	; to myself
 	_KERNEL(SET_HNDL)	; set it!
 ; might tell about successful installation
@@ -113,6 +148,7 @@ sts_loop:
 		LDA #>stx_alive
 		JSR sts_aystr		; print it
 		BCC sts_timer		; stay forever until SIGTERM arrives (or a strange I/O error)
+	_PANIC("{I/O}")		; something went VERY wrong
 sts_rcv:
 	JSR sts_pid			; print PID...
 	LDY #<stx_termrc	; ...and final string
@@ -177,3 +213,9 @@ stx_termrc:
 	.asc	" received SIGTERM", 13, 0	; SIGTERM received
 stx_err:
 	.asc	"B_EXEC error!", 13, 0		; error at launch
+stx_sts:
+	.asc	"No multitasking!", 13, 0	; could not launch anything
+stx_bye:
+	.asc	"All done!", 13, 0			; no threads remain
+
+sts_end:				; *** END OF FILE for size computation ***
