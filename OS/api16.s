@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a6, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161103-1943
+; last modified 20161104-0941
 
 ; no way for standalone assembly...
 
@@ -280,9 +280,10 @@ ma_updt:
 	_EXIT_OK
 
 
-; *** FREE, release memory *** revamp along MALLOC
+; *** FREE, release memory *** revamped 20161104
 ; ma_pt <- addr
 ; C -> no such block!
+; uses ma_l as diverse temporary vars
 
 free:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -310,7 +311,26 @@ fr_found:
 ;	CPX #FREE_RAM		; was it free? could be supressed if value is zero
 	BNE fr_ok			; was not free, thus nothing to optimize
 		; ***** loop for obliterating the following empty entry ***** TO DO ***** TO DO *****
-
+		STY ma_l			; store lower limit index
+fr_join:
+			INY					; go for next entry
+			LDX ram_stat+1, Y	; check status of following!
+			STX ram_stat, Y		; store one entry below
+			CPX #END_RAM		; end of list?
+			BNE fr_join			; repeat until done
+		TYA					; convert to double index
+		ASL
+		STA ma_l+1			; store other limit, plus extra byte
+		LDA ma_l			; get start point... half index and extra
+		ASL					; convert to double
+		TAX					; will snip MSB off!
+fr_join2:
+			INX					; advance to next
+			INX
+			LDA ram_pos+2, X	; get following address
+			STA ram_pos, X		; store one entry below
+			CPX ma_l+1			; already at last entry?
+			BNE fr_join2		; loop until done
 ; we are done
 fr_ok:
 	_EXIT_OK
@@ -844,4 +864,3 @@ k_vec:
 #include "drivers.h"
 user_sram = *			; the rest of SRAM
 #endif
-
