@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1a6
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161103-0900
+; last modified 20161104-1012
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -63,28 +63,17 @@ warm:
 ; *****************************
 ; *** memory initialisation ***
 ; *****************************
-; should be revised ASAP
-
-	LDA #UNAS_RAM		; unassigned space (2)
-	LDX #MAX_LIST		; depending on RAM size, corrected 20150326 (2)
-mreset:
-		STA ram_stat, X		; set entry as unassigned, essential (4)
-		DEX					; previous byte (2)
-		BNE mreset			; leaves first entry alone (3/2, is this OK?)
-; please note Jalapa special RAM addressing!
-	LDA #<user_sram		; get first entry LSB (2)
-	STA ram_tab			; create entry (4)
-	LDA #>user_sram		; same for MSB (2+4)
-	STA ram_tab+1
-;	LDA #FREE_RAM		; no longer needed if free is zero
-	_STZA ram_stat		; set free entry (4) otherwise STA
-	LDA #0				; compute free RAM (2+2)
-	SEC
-	SBC #<user_sram		; subtract LSB (2+4)
-	STA ram_siz
-	LDA himem			; get ram size MSB (4)
-	SBC #>user_sram		; subtract MSB (2)
-	STA ram_siz+1		; entry is OK (4)
+	.al: REP #$20	; *** 16-bit memory most of the time ***
+	LDA #FREE_RAM+256*END_RAM	; dirty trick setting both values at once!!!
+	STA ram_stat	; as it is the first (and second) entry, no index needed
+	LDA #>user_ram	; beginning of available ram, as defined... in rom.s
+	LDX #<user_ram	; check LSB
+	BEQ ram_init	; nothing to align
+		INC				; otherwise start at next page
+ram_init:
+	STA ram_pos		; store it
+	LDA #SRAM		; number of SRAM pages as defined in options.h
+	STA ram_pos+2	; store second entry and we are done!
 
 ; ******************************************************
 ; intialise drivers from their jump tables
@@ -100,8 +89,7 @@ mreset:
 	STX dpoll_mx		; reset all indexes (4+4+4)
 	STX dreq_mx
 	STX dsec_mx
-
-	.al: REP #$20		; *** 16-bit memory most of the time ***
+; already in 16-bit memory mode...
 dr_clear:
 		LDA #dr_error			; make unused entries point to a standard error routine (3)
 		STA drv_opt, X			; set full pointer for output (5)
