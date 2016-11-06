@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a7, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161106-1117
+; last modified 20161106-1535
 
 ; no way for standalone assembly...
 
@@ -150,8 +150,12 @@ ci_win:
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory
 ; ma_align <- mask for MSB (0=page or not aligned, 1=512b, $FF=bank aligned) new 161105 TO DO
 ; ma_rs = 0 means reserve as much memory as available!!!
+; ram_stat & ram_pid are interleaved (=ram_stat+1) in minimOS-16, but separate otherwise!
 ; * this works on 24-bit addressing! *
-; uses ma_l as diverse temporary vars
+; uses ma_l as diverse temporary vars, as defined below
+
+ma_siz	= ma_l
+ma_ix	= ma_l+2
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -166,7 +170,7 @@ ma_nxpg:
 ; default 816 API functions run on interrupts masked, thus no need for CS
 	BNE ma_scan		; work on specific size
 ; otherwise check for biggest available block -- new ram_stat word format 161105
-		STZ ma_l			; ...and found value eeeeeeeeek
+		STZ ma_siz		; ...and found value eeeeeeeeek
 ma_biggest:
 			LDY ram_stat, X		; get status of block (4)
 ;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (3)
@@ -175,10 +179,10 @@ ma_biggest:
 				SEC
 				SBC ram_pos, X		; subtract current for size! (2+5)
 				; *** should change the above op for alignment ***
-				CMP ma_l			; compare against current maximum (4)
+				CMP ma_siz		; compare against current maximum (4)
 				BCC ma_nxbig		; this was not bigger (3/2)
-					STA ma_l			; otherwise keep track of it... (4)
-					STX ma_l+2			; ...and its index! (3)
+					STA ma_siz		; otherwise keep track of it... (4)
+					STX ma_ix			; ...and its index! (3)
 ma_nxbig:
 			INX					; advance index (2+2)
 			INX
@@ -186,13 +190,13 @@ ma_nxbig:
 			CMP #END_RAM		; check whether at end (3)
 			BNE ma_biggest		; or continue (3/2)
 ; is there at least one available block?
-		LDA ma_l			; should not be zero
+		LDA ma_siz		; should not be zero
 		BNE ma_fill			; there is at least one block to allocate
 			_ERR(FULL)			; otherwise no free memory!
 ; report allocated size
 ma_fill:
 		STA ma_rs+1			; store allocated size! already computed
-		LDX ma_l+2			; retrieve index
+		LDX ma_ix			; retrieve index
 		BRA ma_updt			; nothing to scan, just update status and return address
 ma_scan:
 		LDY ram_stat, X		; get state of current entry (4)
@@ -231,7 +235,7 @@ ma_nobad:
 ; here we go!
 ; first make room for new entry... if not exactly the same size
 	BEQ ma_updt			; was same size, will not generate new entry
-		STX ma_l			; otherwise store index
+		STX ma_ix			; otherwise store index
 ma_2end:
 			INX					; previous was free, thus check next
 			INX
@@ -240,7 +244,6 @@ ma_2end:
 			LDY ram_stat, X		; check status of block
 			CPY #END_RAM		; scan for the end-of-memory marker
 			BNE ma_2end			; hopefully will eventually finish!
-;		STY ma_l+2			; this will help too
 ma_room:
 			LDA ram_pos, X		; get block address
 			STA ram_pos+2, X	; one position forward
@@ -248,7 +251,7 @@ ma_room:
 			STA ram_stat+2, X	; advance it **would use LDY/STY if not storing PID**
 			DEX					; down one entry
 			DEX
-			CPX ma_l			; position of updated entry
+			CPX ma_ix			; position of updated entry
 			BNE ma_room			; continue until done
 ; create at the beginning of the moved block a FREE entry!
 		LDA ram_pos+2, X	; newly assigned slice will begin here
@@ -268,7 +271,7 @@ ma_updt:
 	PHX			; will need this index
 	_KERNEL(GET_PID)	; who asked for this?
 	PLX			; retrieve index
-	STY ram_stat+1		; store PID, note offset!
+	STY ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
 	_EXIT_OK
 
@@ -276,7 +279,6 @@ ma_updt:
 ; *** FREE, release memory *** revamped 20161104 & 05
 ; ma_pt <- addr
 ; C -> no such block!
-; uses ma_l as diverse temporary vars
 
 free:
 	.al: REP #$20		; *** 16-bit memory ***
