@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a7, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161106-1535
+; last modified 20161106-1745
 
 ; no way for standalone assembly...
 
@@ -161,6 +161,7 @@ malloc:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
 	LDX #0				; reset index
+	STX ma_align+1		; **clear MSB in cass of a 16-bit BIT!**
 	LDY ma_rs			; check individual bytes, just in case
 	BEQ ma_nxpg			; no extra page needed
 		INC ma_rs+1			; otherwise increase number of pages
@@ -174,11 +175,8 @@ ma_nxpg:
 ma_biggest:
 			LDY ram_stat, X		; get status of block (4)
 ;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (3)
-			BNE ma_nxbig		; continue search (3/2)
-			LDA ram_pos+2, X	; get end position (5)
-				SEC
-				SBC ram_pos, X		; subtract current for size! (2+5)
-				; *** should change the above op for alignment ***
+			BNE ma_nxbig		; go for next as this one was not free (3/2)
+				JSR ma_alsiz		; **compute size according to alignment mask**
 				CMP ma_siz		; compare against current maximum (4)
 				BCC ma_nxbig		; this was not bigger (3/2)
 					STA ma_siz		; otherwise keep track of it... (4)
@@ -213,12 +211,9 @@ ma_cont:
 ma_nobank:
 	_ERR(FULL)			; no room for it!
 ma_found:
-	LDA ram_pos+2, X	; get position of NEXT block (5)
-	SEC
-	SBC ram_pos, X		; subtract current (FREE) block position, now A holds size in pages (2+5)
-	; *** should change the above op for alignment ***
+	JSR ma_alsiz		; **compute size according to alignment mask**
 #ifdef	SAFE
-	BCS ma_nobad		; no corruption was seen (3/2)
+	BMI ma_nobad		; no corruption was seen (3/2) **instead of BCS**
 		LDA #user_ram	; otherwise take beginning of user RAM...
 		LDX #USED_RAM	; ...that will become locked (maybe another value)
 		STA ram_pos		; create values
@@ -233,33 +228,12 @@ ma_nobad:
 	CMP ma_rs+1			; compare (5)
 		BCC ma_cont			; smaller, thus continue searching (2/3)
 ; here we go!
-; first make room for new entry... if not exactly the same size
+; **first of all create empty block for alignment**
+	JSR ma_adv			; advance and let repeated first entry!
+	;*********advance X somehow
+; make room for new entry... if not exactly the same size
 	BEQ ma_updt			; was same size, will not generate new entry
-		STX ma_ix			; otherwise store index
-ma_2end:
-			INX					; previous was free, thus check next
-			INX
-			CPX #MAX_LIST	; just in case, or should it be -1???
-				BCS ma_nobank	; cannot expand
-			LDY ram_stat, X		; check status of block
-			CPY #END_RAM		; scan for the end-of-memory marker
-			BNE ma_2end			; hopefully will eventually finish!
-ma_room:
-			LDA ram_pos, X		; get block address
-			STA ram_pos+2, X	; one position forward
-			LDA ram_stat, X		; get block status **plus new PID field, new 161106**
-			STA ram_stat+2, X	; advance it **would use LDY/STY if not storing PID**
-			DEX					; down one entry
-			DEX
-			CPX ma_ix			; position of updated entry
-			BNE ma_room			; continue until done
-; create at the beginning of the moved block a FREE entry!
-		LDA ram_pos+2, X	; newly assigned slice will begin here
-		CLC
-		ADC ma_rs+1			; add number of assigned pages
-		STA ram_pos+2, X	; update value
-		LDY #FREE_RAM		; let us mark it as free
-		STY ram_stat+2, X	; next to the assigned one
+	JSR ma_adv			; make room otherwise
 ma_updt:
 	LDA ram_pos, X		; get address of block to be assigned
 	STA ma_pt+1			; note this is address of PAGE
@@ -274,6 +248,56 @@ ma_updt:
 	STY ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
 	_EXIT_OK
+
+; routine for aligned-block size computation
+ma_alsiz:
+	LDA ram_pos, X		; get bottom address (5)
+	BIT ma_align		; check for set bits from mask (5)
+	BEQ ma_fit		; none was set, thus already aligned (3/2)
+		ORA ma_align		; set masked bits... (4)
+		INC				; ...and increase address for alignment (2)
+ma_fit:
+	EOR #$FFFF	; invert bits as will be subtracted to next entry (2)
+	SEC			; needs one more for twos-complement (2)
+	ADC ram_pos+2, X	; compute size from top ptr MINUS bottom one (5)
+	RTS
+; *** non-aligned version ***
+;	LDA ram_pos+2, X	; get end position (5)
+;	SEC
+;	SBC ram_pos, X		; subtract current for size! (2+5)
+; *** end of non-aligned version ***
+
+; routine for making room for an entry
+ma_adv:
+	STX ma_ix			; otherwise store index
+ma_2end:
+		INX					; previous was free, thus check next
+		INX
+		CPX #MAX_LIST	; just in case, or should it be -1???
+		BCC ma_notend	; could expand
+			PLA			; discard return address (still in 16-bit mode)
+			BRA ma_nobank	; notice error
+ma_notend:
+		LDY ram_stat, X		; check status of block
+		CPY #END_RAM		; scan for the end-of-memory marker
+		BNE ma_2end			; hopefully will eventually finish!
+ma_room:
+		LDA ram_pos, X		; get block address
+		STA ram_pos+2, X	; one position forward
+		LDA ram_stat, X		; get block status **plus new PID field, new 161106**
+		STA ram_stat+2, X	; advance it **would use LDY/STY if not storing PID**
+		DEX					; down one entry
+		DEX
+		CPX ma_ix			; position of updated entry
+		BNE ma_room			; continue until done
+; create at the beginning of the moved block a FREE entry!
+	LDA ram_pos+2, X	; newly assigned slice will begin here
+	CLC
+	ADC ma_rs+1			; add number of assigned pages
+	STA ram_pos+2, X	; update value
+	LDY #FREE_RAM		; let us mark it as free
+	STY ram_stat+2, X	; next to the assigned one
+	RTS
 
 
 ; *** FREE, release memory *** revamped 20161104 & 05
