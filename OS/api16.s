@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a7, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161106-1745
+; last modified 20161106-1827
 
 ; no way for standalone assembly...
 
@@ -165,7 +165,7 @@ malloc:
 	LDY ma_rs			; check individual bytes, just in case
 	BEQ ma_nxpg			; no extra page needed
 		INC ma_rs+1			; otherwise increase number of pages
-;		STX ma_rs				; ...and just in case, clear asked bytes!
+		STX ma_rs				; ...and just in case, clear asked bytes!
 ma_nxpg:
 	LDA ma_rs+1			; get number of asked pages
 ; default 816 API functions run on interrupts masked, thus no need for CS
@@ -228,17 +228,28 @@ ma_nobad:
 	CMP ma_rs+1			; compare (5)
 		BCC ma_cont			; smaller, thus continue searching (2/3)
 ; here we go!
-; **first of all create empty block for alignment**
-	JSR ma_adv			; advance and let repeated first entry!
-	;*********advance X somehow
+; **first of all create empty block for alignment, if needed**
+	PHA			; save current size
+	LDA ram_pos, X		; check current address
+	AND ma_align			; any misaligned bits set?
+	BEQ ma_aok			; already aligned, nothing needed
+		JSR ma_adv			; advance and let repeated first entry!
+		INX				; let the algnment blank and go for next
+		INX
+		LDA ram_pos, X	; get repeated address
+		ORA ma_align		; set disturbing bits...
+		INC				; ...and reset them after increasing the rest
+		STA ram_pos, X	; update pointer
+ma_aok:
+	PLA			; retrieve size
 ; make room for new entry... if not exactly the same size
+	CMP ma_rs				; compare this block with requested size
 	BEQ ma_updt			; was same size, will not generate new entry
-	JSR ma_adv			; make room otherwise
+		JSR ma_adv			; make room otherwise
 ma_updt:
+	STZ ma_pt			; clear pointer LSB... plus extra byte
 	LDA ram_pos, X		; get address of block to be assigned
 	STA ma_pt+1			; note this is address of PAGE
-	LDY #0				; set byte address to zero, just in case
-	STY ma_pt
 	LDY #USED_RAM		; now is reserved
 	STY ram_stat, X		; update table entry
 ; ** new 20161106, store PID of caller **
@@ -269,18 +280,18 @@ ma_fit:
 
 ; routine for making room for an entry
 ma_adv:
-	STX ma_ix			; otherwise store index
+	STX ma_ix			; store current index
 ma_2end:
 		INX					; previous was free, thus check next
 		INX
-		CPX #MAX_LIST	; just in case, or should it be -1???
+		CPX #MAX_LIST-1	; just in case, check offset!!!
 		BCC ma_notend	; could expand
 			PLA			; discard return address (still in 16-bit mode)
-			BRA ma_nobank	; notice error
+			JMP ma_nobank	; notice error
 ma_notend:
 		LDY ram_stat, X		; check status of block
 		CPY #END_RAM		; scan for the end-of-memory marker
-		BNE ma_2end			; hopefully will eventually finish!
+		BNE ma_2end			; hope will eventually finish!
 ma_room:
 		LDA ram_pos, X		; get block address
 		STA ram_pos+2, X	; one position forward
@@ -302,7 +313,7 @@ ma_room:
 
 ; *** FREE, release memory *** revamped 20161104 & 05
 ; ma_pt <- addr
-; C -> no such block!
+; C -> no such used block!
 
 free:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -318,8 +329,14 @@ fr_loop:
 		CPY #END_RAM		; no more in list?
 		BNE fr_loop			; continue until end
 ; this could be one end of CS
+fr_no:
 	_ERR(N_FOUND)		; no such block!
 fr_found:
+#ifdef	SAFE
+	LDY #USED_RAM		; only used blocks can be freed!
+	CPY ram_stat, X	; was it in use?
+		BNE fr_no				; if not, cannot free it!
+#endif
 	LDY #FREE_RAM		; most likely zero, but do not use STZ in 16-bit mode!!!
 	STY ram_stat, X		; this block is now free, but...
 ; really should join possible adjacent free blocks
