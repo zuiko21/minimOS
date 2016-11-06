@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a7, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161105-2251
+; last modified 20161106-1117
 
 ; no way for standalone assembly...
 
@@ -156,25 +156,25 @@ ci_win:
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
-	LDX ma_rs			; check individual bytes, just in case
+	LDX #0				; reset index
+	LDY ma_rs			; check individual bytes, just in case
 	BEQ ma_nxpg			; no extra page needed
 		INC ma_rs+1			; otherwise increase number of pages
-;		LDX #0				; ...and just in case, clear asked bytes!
-;		STX ma_rs			; best not to change again register size
+;		STX ma_rs				; ...and just in case, clear asked bytes!
 ma_nxpg:
 	LDA ma_rs+1			; get number of asked pages
 ; default 816 API functions run on interrupts masked, thus no need for CS
-	BNE ma_sized		; work on specific size
+	BNE ma_scan		; work on specific size
 ; otherwise check for biggest available block -- new ram_stat word format 161105
-		LDX #0				; reset index
 		STZ ma_l			; ...and found value eeeeeeeeek
 ma_biggest:
-			LDX ram_stat, Y		; get status of block (4)
-;			CMP #FREE_RAM		; not needed if FREE_RAM is zero! (3)
+			LDY ram_stat, X		; get status of block (4)
+;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (3)
 			BNE ma_nxbig		; continue search (3/2)
 			LDA ram_pos+2, X	; get end position (5)
 				SEC
 				SBC ram_pos, X		; subtract current for size! (2+5)
+				; *** should change the above op for alignment ***
 				CMP ma_l			; compare against current maximum (4)
 				BCC ma_nxbig		; this was not bigger (3/2)
 					STA ma_l			; otherwise keep track of it... (4)
@@ -194,13 +194,11 @@ ma_fill:
 		STA ma_rs+1			; store allocated size! already computed
 		LDX ma_l+2			; retrieve index
 		BRA ma_updt			; nothing to scan, just update status and return address
-ma_sized:
-	LDX #0				; reset list index
 ma_scan:
 		LDY ram_stat, X		; get state of current entry (4)
-;		CMP #FREE_RAM		; looking for a free one (2) not needed if free is zero
+;		CPY #FREE_RAM		; looking for a free one (2) not needed if free is zero
 			BEQ ma_found		; got one (2/3)
-		CPX #END_RAM		; got already to the end? (2)
+		CPY #END_RAM		; got already to the end? (2)
 			BEQ ma_nobank		; could not found anything suitable (2/3)
 ma_cont:
 		INX					; increase index (2+2)
@@ -214,12 +212,13 @@ ma_found:
 	LDA ram_pos+2, X	; get position of NEXT block (5)
 	SEC
 	SBC ram_pos, X		; subtract current (FREE) block position, now A holds size in pages (2+5)
+	; *** should change the above op for alignment ***
 #ifdef	SAFE
 	BCS ma_nobad		; no corruption was seen (3/2)
 		LDA #user_ram	; otherwise take beginning of user RAM...
 		LDX #USED_RAM	; ...that will become locked (maybe another value)
 		STA ram_pos		; create values
-		STX ram_stat
+		STX ram_stat		; **should it clear the PID field too???**
 		LDA #SRAM		; physical top of RAM...
 		LDX #END_RAM		; ...as non-plus-ultra
 		STA ram_pos+2		; create second set of values
@@ -232,8 +231,7 @@ ma_nobad:
 ; here we go!
 ; first make room for new entry... if not exactly the same size
 	BEQ ma_updt			; was same size, will not generate new entry
-; make room for new entry
-		STX ma_l			; store index
+		STX ma_l			; otherwise store index
 ma_2end:
 			INX					; previous was free, thus check next
 			INX
@@ -244,10 +242,10 @@ ma_2end:
 			BNE ma_2end			; hopefully will eventually finish!
 ;		STY ma_l+2			; this will help too
 ma_room:
-			LDA ram_pos, X		; get one block address
+			LDA ram_pos, X		; get block address
 			STA ram_pos+2, X	; one position forward
-			LDY ram_stat, X		; get one block status
-			STY ram_stat+1, X	; advance it
+			LDA ram_stat, X		; get block status **plus new PID field, new 161106**
+			STA ram_stat+2, X	; advance it **would use LDY/STY if not storing PID**
 			DEX					; down one entry
 			DEX
 			CPX ma_l			; position of updated entry
@@ -258,7 +256,7 @@ ma_room:
 		ADC ma_rs+1			; add number of assigned pages
 		STA ram_pos+2, X	; update value
 		LDY #FREE_RAM		; let us mark it as free
-		STY ram_stat+1, X	; next to the assigned one
+		STY ram_stat+2, X	; next to the assigned one
 ma_updt:
 	LDA ram_pos, X		; get address of block to be assigned
 	STA ma_pt+1			; note this is address of PAGE
@@ -266,6 +264,11 @@ ma_updt:
 	STY ma_pt
 	LDY #USED_RAM		; now is reserved
 	STY ram_stat, X		; update table entry
+; ** new 20161106, store PID of caller **
+	PHX			; will need this index
+	_KERNEL(GET_PID)	; who asked for this?
+	PLX			; retrieve index
+	STY ram_stat+1		; store PID, note offset!
 ; theoretically we are done, end of CS
 	_EXIT_OK
 
@@ -279,8 +282,8 @@ free:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
 	LDX #0				; reset index
+	LDA ma_pt			; get comparison term
 fr_loop:
-		LDA ma_pt			; get comparison term
 		CMP ram_pos, X		; is what we are looking for?
 			BEQ fr_found		; go free it!
 		LDY ram_stat, X		; otherwise check status
@@ -293,19 +296,19 @@ fr_loop:
 fr_found:
 	LDY #FREE_RAM		; most likely zero, but do not use STZ in 16-bit mode!!!
 	STY ram_stat, X		; this block is now free, but...
-; really should join possible adjacent free blocks *** TO DO *** TO DO *** TO DO ***
+; really should join possible adjacent free blocks
 	LDY ram_stat+2, X	; check status of following entry
 ;	CPY #FREE_RAM		; was it free? could be supressed if value is zero
 	BNE fr_ok			; was not free, thus nothing to optimize
-		; ***** loop for obliterating the following empty entry ***** TO DO ***** TO DO *****
-;		STY ma_l			; store lower limit index
+; loop for obliterating the following empty entry
 fr_join:
 			INX					; go for next entry
 			INX
 			LDA ram_pos+2, X	; get following address
 			STA ram_pos, X		; store one entry below
-			LDY ram_stat+2, X	; check status of following!
-			STY ram_stat, X		; store one entry below
+			LDA ram_stat+2, X	; check status of following! **but PID field too**
+			STA ram_stat, X		; store one entry below **otherwise LDY/STY**
+			TAY			; **will transfer just status, PID will be ripped off**
 			CPY #END_RAM		; end of list?
 			BNE fr_join			; repeat until done
 ; we are done
