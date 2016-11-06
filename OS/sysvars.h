@@ -1,6 +1,6 @@
-; minimOS 0.5.1a4 System Variables
+; minimOS 0.5.1a5 System Variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161103-1049
+; last modified 20161106-1547
 
 .bss
 
@@ -30,11 +30,17 @@ cin_mode	.byt	0			; CIN binary mode flag for event management, new 20150618
 mm_term		.dsb	2*MAX_BRAIDS	; unified space 20160406
 mm_stbnk	.dsb	MAX_BRAIDS		; bank addresses 20161024 eeeeeeeeeek
 
-; new memory management table 150209
-; should be revised...
+; new memory management table 150209, revamped 161106
 #ifndef		LOWRAM
+#ifdef		C816
+ram_pos		.dsb	MAX_LIST*2	; location of blocks, new var 20161103
+ram_stat	.dsb	MAX_LIST*2	; status of each block, interleaved with PID for 65816!
+ram_pid		= ram_stat + 1		; interleaved array!
+#else
 ram_pos		.dsb	MAX_LIST	; location of blocks, new var 20161103
-ram_stat	.dsb	MAX_LIST/2	; status of each block
+ram_stat	.dsb	MAX_LIST	; status of each block, non interleaved
+ram_pid		.dsb	MAX_LIST	; non-interleaved PID array
+#endif
 #endif
 
 ; these are the older variables, up to 150126
