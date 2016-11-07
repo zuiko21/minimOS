@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1a1
+; v0.5.1a2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161017-1336
+; last modified 20161107-1106
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -62,26 +62,18 @@ warm:
 
 #ifndef		LOWRAM
 ; ++++++
-	LDA #UNAS_RAM		; unassigned space (2)
-	LDX #MAX_LIST		; depending on RAM size, corrected 20150326 (2)
-mreset:
-		STA ram_stat, X		; set entry as unassigned, essential (4)
-		DEX					; previous byte (2)
-		BNE mreset			; leaves first entry alone (3/2, is this OK?)
-; please note Jalapa special RAM addressing!
-	LDA #<user_sram		; get first entry LSB (2)
-	STA ram_tab			; create entry (4)
-	LDA #>user_sram		; same for MSB (2+4)
-	STA ram_tab+1
-;	LDA #FREE_RAM		; no longer needed if free is zero
-	_STZA ram_stat		; set free entry (4) otherwise STA
-	LDA #0				; compute free RAM (2+2)
-	SEC
-	SBC #<user_sram		; subtract LSB (2+4)
-	STA ram_siz
-	LDA himem			; get ram size MSB (4)
-	SBC #>user_sram		; subtract MSB (2)
-	STA ram_siz+1		; entry is OK (4)
+	LDY #FREE_RAM	; get status of whole RAM
+	STY ram_stat	; as it is the first entry, no index needed
+	LDY #END_RAM	; also for end-of-memory marker
+	STY ram_stat+1	; second entry in array
+	LDX #>user_ram	; beginning of available ram, as defined... in rom.s
+	LDY #<user_ram	; LSB misaligned?
+	BEQ ram_init	; nothing to align
+		INX				; otherwise start at next page
+ram_init:
+	STX ram_pos		; store it, this is PAGE number
+	LDA #SRAM		; number of SRAM pages as defined in options.h
+	STA ram_pos+1	; store second entry and we are done!
 ; ++++++
 #endif
 
@@ -90,9 +82,9 @@ mreset:
 ; ******************************************************
 ; THINK about making API entries for this!
 
-; set some labels, much neater this way
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
-tm_ptr	= sysptr		; temporary pointer for double-indirect addressing!
+; same with dr_aut, now independent kernel call savvy 20161103
+
 
 ; driver full install is new 20150208
 	LDX #0				; reset driver index (2)
@@ -106,16 +98,24 @@ tm_ptr	= sysptr		; temporary pointer for double-indirect addressing!
 ; ------
 #else
 ; ++++++ new direct I/O tables for much faster access 20160406 ++++++
+	LDY #<dr_error			; make unused entries point to a standard error routine, new 20160406 (2)
+	LDA #>dr_error			; no need to put these inside the loop! (2) ### use on ·16 too
 dr_clear:
-		LDA #<dr_error			; make unused entries point to a standard error routine, new 20160406 (2)
-		STA drv_opt, X			; set LSB for output (4)
-		STA drv_ipt, X			; and for input (4)
+		STY drv_opt, X			; set LSB for output (4)
+		STY drv_ipt, X			; and for input (4)
 		INX						; go for MSB (2)
-		LDA #>dr_error			; pretty much the same, not worth a loop (2)
 		STA drv_opt, X			; set MSB for output (4)
 		STA drv_ipt, X			; and for input (4)
 		INX						; next entry (2)
 		BNE dr_clear			; finish page (3/2)
+; *** in non-multitasking systems, install embedded TASK_DEV driver ***
+#ifndef	MULTITASK
+	LDY #<st_taskdev		; pseudo-driver LSB -- standard label on api.s
+	LDA #>st_taskdev		; pseudo-driver MSB -- standard label on api.s
+	STY drv_opt				; *** assuming TASK_DEV = 128, index otherwise
+	STA drv_opt+1			; same for MSB
+#endif
+; might do something similar for WIND_DEV = 129...
 ; ++++++
 #endif
 
