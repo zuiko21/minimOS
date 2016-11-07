@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a5, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-1345
+; last modified 20161107-1431
 
 ; no way for standalone assembly...
 
@@ -829,9 +829,9 @@ st_prior:
 		_DR_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
 #endif
-; jump to code, will not return anyway???
+; jump to code, is this OK?
 	JMP (ex_pt)
-; revise *************
+
 
 ; SET_HNDL for single-task systems
 st_hndl:
@@ -856,16 +856,19 @@ st_signal:
 	CPY #SIGTERM		; clean shutdown
 		BEQ sig_term
 	CPY #SIGKILL		; suicide, makes any sense?
-		BEQ sig_kill
+		BEQ sig_rts			; *** I do not know what to do in this case *** might release MEMORY, windows etc
 sig_pid:
 	_DR_ERR(INVALID)	; unrecognised signal
 sig_term:
-	JSR sig_call		; will end on RTI
-	RTS					; keep error
-; *************************** ****************************
-sig_kill:				; *** I do not know what to do in this case *** might release windows etc
+	LDA sig_rts+1		; get routine MSB
+	PHA
+	LDA sig_rts			; same for LSB
+	PHA
+	PHP					; as requested by RTI
+	JMP (mm_term)		; execute handler, will return to sig_rts
+sig_rts:
 	_DR_OK				; generic exit, but check label above
-; ****** revise above as is 65816 code *****
+
 
 ; jump table, if not in separate 'jump' file
 #ifndef		DOWNLOAD
@@ -898,7 +901,7 @@ k_vec:
 #else
 #include "drivers.s"	; this package will be included with downloadable kernels
 .data
-#include "sysvars.h"	; donwloadable systems have all vars AND drivers after the kernel itself
+#include "sysvars.h"	; downloadable systems have all vars AND drivers after the kernel itself
 #include "drivers.h"
 user_sram = *			; the rest of SRAM
 #endif
