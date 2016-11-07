@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a7, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161106-1827
+; last modified 20161107-0954
 
 ; no way for standalone assembly...
 
@@ -167,30 +167,30 @@ malloc:
 		INC ma_rs+1			; otherwise increase number of pages
 		STX ma_rs				; ...and just in case, clear asked bytes!
 ma_nxpg:
-	LDA ma_rs+1			; get number of asked pages
 ; default 816 API functions run on interrupts masked, thus no need for CS
-	BNE ma_scan		; work on specific size
+	LDA ma_rs+1			; get number of asked pages
+	BNE ma_scan			; work on specific size
 ; otherwise check for biggest available block -- new ram_stat word format 161105
 		STZ ma_siz		; ...and found value eeeeeeeeek
 ma_biggest:
 			LDY ram_stat, X		; get status of block (4)
-;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (3)
+;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (2)
 			BNE ma_nxbig		; go for next as this one was not free (3/2)
 				JSR ma_alsiz		; **compute size according to alignment mask**
-				CMP ma_siz		; compare against current maximum (4)
+				CMP ma_siz			; compare against current maximum (4)
 				BCC ma_nxbig		; this was not bigger (3/2)
-					STA ma_siz		; otherwise keep track of it... (4)
+					STA ma_siz			; otherwise keep track of it... (4)
 					STX ma_ix			; ...and its index! (3)
 ma_nxbig:
 			INX					; advance index (2+2)
 			INX
 			LDY ram_stat, X		; peek next status (4)
-			CMP #END_RAM		; check whether at end (3)
+			CPY #END_RAM		; check whether at end (2)
 			BNE ma_biggest		; or continue (3/2)
 ; is there at least one available block?
-		LDA ma_siz		; should not be zero
+		LDA ma_siz			; should not be zero
 		BNE ma_fill			; there is at least one block to allocate
-			_ERR(FULL)			; otherwise no free memory!
+			_ERR(FULL)		; otherwise no free memory!
 ; report allocated size
 ma_fill:
 		STA ma_rs+1			; store allocated size! already computed
@@ -205,10 +205,10 @@ ma_scan:
 ma_cont:
 		INX					; increase index (2+2)
 		INX
-		CPX #MAX_LIST		; until the end (2+3)
+		CPX #MAX_LIST*2		; until the end (2+3)
 		BNE ma_scan
-; one end of CS
 ma_nobank:
+; one end of CS
 	_ERR(FULL)			; no room for it!
 ma_found:
 	JSR ma_alsiz		; **compute size according to alignment mask**
@@ -229,21 +229,21 @@ ma_nobad:
 		BCC ma_cont			; smaller, thus continue searching (2/3)
 ; here we go!
 ; **first of all create empty block for alignment, if needed**
-	PHA			; save current size
+	PHA					; save current size
 	LDA ram_pos, X		; check current address
-	AND ma_align			; any misaligned bits set?
+	AND ma_align		; any misaligned bits set?
 	BEQ ma_aok			; already aligned, nothing needed
 		JSR ma_adv			; advance and let repeated first entry!
-		INX				; let the algnment blank and go for next
+		INX					; let the algnment blank and go for next
 		INX
-		LDA ram_pos, X	; get repeated address
+		LDA ram_pos, X		; get repeated address
 		ORA ma_align		; set disturbing bits...
-		INC				; ...and reset them after increasing the rest
-		STA ram_pos, X	; update pointer
+		INC					; ...and reset them after increasing the rest
+		STA ram_pos, X		; update pointer
 ma_aok:
-	PLA			; retrieve size
+	PLA					; retrieve size
 ; make room for new entry... if not exactly the same size
-	CMP ma_rs				; compare this block with requested size
+	CMP ma_rs			; compare this block with requested size
 	BEQ ma_updt			; was same size, will not generate new entry
 		JSR ma_adv			; make room otherwise
 ma_updt:
@@ -253,9 +253,9 @@ ma_updt:
 	LDY #USED_RAM		; now is reserved
 	STY ram_stat, X		; update table entry
 ; ** new 20161106, store PID of caller **
-	PHX			; will need this index
+	PHX					; will need this index
 	_KERNEL(GET_PID)	; who asked for this?
-	PLX			; retrieve index
+	PLX					; retrieve index
 	STY ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
 	_EXIT_OK
@@ -264,12 +264,12 @@ ma_updt:
 ma_alsiz:
 	LDA ram_pos, X		; get bottom address (5)
 	BIT ma_align		; check for set bits from mask (5)
-	BEQ ma_fit		; none was set, thus already aligned (3/2)
+	BEQ ma_fit			; none was set, thus already aligned (3/2)
 		ORA ma_align		; set masked bits... (4)
-		INC				; ...and increase address for alignment (2)
+		INC					; ...and increase address for alignment (2)
 ma_fit:
-	EOR #$FFFF	; invert bits as will be subtracted to next entry (2)
-	SEC			; needs one more for twos-complement (2)
+	EOR #$FFFF			; invert bits as will be subtracted to next entry (3)
+	SEC					; needs one more for twos-complement (2)
 	ADC ram_pos+2, X	; compute size from top ptr MINUS bottom one (5)
 	RTS
 ; *** non-aligned version ***
@@ -284,10 +284,10 @@ ma_adv:
 ma_2end:
 		INX					; previous was free, thus check next
 		INX
-		CPX #MAX_LIST-1	; just in case, check offset!!!
-		BCC ma_notend	; could expand
-			PLA			; discard return address (still in 16-bit mode)
-			JMP ma_nobank	; notice error
+		CPX #MAX_LIST-1		; just in case, check offset!!!
+		BCC ma_notend		; could expand
+			PLA					; discard return address (still in 16-bit mode)
+			JMP ma_nobank		; notice error
 ma_notend:
 		LDY ram_stat, X		; check status of block
 		CPY #END_RAM		; scan for the end-of-memory marker

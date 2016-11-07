@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a3, must match kernel.s
+; v0.5.1a4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161017-1345
+; last modified 20161107-1007
 
 ; no way for standalone assembly...
 
@@ -17,7 +17,7 @@ unimplemented:		; placeholder here, not currently used
 cout:
 	TYA				; for indexed comparisons (2)
 	BNE co_port		; not default (3/2)
-		LDA sysout		; new per-process standard device ### apply this to ·65
+		LDA stdout		; new per-process standard device
 		BNE co_port		; already a valid device
 			LDA default_out	; otherwise get system global (4)
 co_port:
@@ -56,7 +56,7 @@ cio_nfound:
 cin:
 	TYA				; for indexed comparisons
 	BNE ci_port		; specified
-		LDA sys_in		; new per-process standard device
+		LDA std_in		; new per-process standard device
 		BNE ci_port		; already a valid device
 			LDA default_in	; otherwise get system global
 ci_port:
@@ -141,103 +141,172 @@ ci_win:
 
 
 ; *** MALLOC, reserve memory *** revamped 20150209
-; ma_rs <- size, ma_pt -> addr, C = not enough memory (16-bit so far, but put zeroes on high-size!)
-; ** ONLY for systems over 128-byte RAM **
-; uses ma_l
+; ma_rs <- size, ma_pt -> addr, C = not enough memory
+; ma_align <- mask for MSB (0=page or not aligned, 1=512b, $FF=bank aligned) new 161105 TO DO
+; ma_rs = 0 means reserve as much memory as available!!!
+; * this works on 16-bit addressing! *
+; uses ma_l as diverse temporary vars, as defined below
+
+ma_siz	= ma_l
+ma_ix	= ma_l+1
 
 malloc:
-;	LDA ma_rs+2		; asking over 64K?
-;	ORA ma_rs+3
-;		BNE ma_nobank	; most likely never available for 65C02
-	LDY #0			; reset index
-	_ENTER_CS		; this is dangerous! enter critical section, new 160119
+	LDX #0				; reset index
+	LDY ma_rs			; check individual bytes, just in case
+	BEQ ma_nxpg			; no extra page needed
+		INC ma_rs+1			; otherwise increase number of pages
+		STX ma_rs			; ...and just in case, clear asked bytes!
+ma_nxpg:
+	_ENTER_CS			; this is dangerous! enter critical section, new 160119
+	LDA ma_rs+1			; get number of asked pages
+	BNE ma_scan			; work on specific size
+; otherwise check for biggest available block
+		STX ma_siz			; clear found value eeeeeeeeek
+ma_biggest:
+			LDY ram_stat, X		; get status of block (4)
+;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (2)
+			BNE ma_nxbig		; go for next as this one was not free (3/2)
+				JSR ma_alsiz		; **compute size according to alignment mask**
+				CMP ma_siz			; compare against current maximum (3)
+				BCC ma_nxbig		; this was not bigger (3/2)
+					STA ma_siz			; otherwise keep track of it... (3)
+					STX ma_ix			; ...and its index! (3)
+ma_nxbig:
+			INX					; advance index (2)
+			LDY ram_stat, X		; peek next status (4)
+			CPY #END_RAM		; check whether at end (2)
+			BNE ma_biggest		; or continue (3/2)
+; is there at least one available block?
+		LDA ma_siz			; should not be zero
+		BNE ma_fill			; there is at least one block to allocate
+			_ERR(FULL)			; otherwise no free memory!
+; report allocated size
+ma_fill:
+		STA ma_rs+1			; store allocated size! already computed
+		LDX ma_ix			; retrieve index
+		_BRA ma_updt		; nothing to scan, just update status and return address
 ma_scan:
-		LDA ram_stat, Y		; get state of current entry (4)
+		LDY ram_stat, X		; get state of current entry (4)
 ;		CMP #FREE_RAM		; looking for a free one (2) not needed if free is zero
 			BEQ ma_found		; got one (2/3)
+		CPY #END_RAM		; got already to the end? (2)
+			BEQ ma_nobank		; could not found anything suitable (2/3)
 ma_cont:
-		INY					; increase index (2)
-		CPY #MAX_LIST/2		; until the end (2+3)
+		INX					; increase index (2)
+		CPX #MAX_LIST		; until the end (2+3)
 		BNE ma_scan
-	_EXIT_CS		; were off by 15*n, up to 240 clocks instead of 304
 ma_nobank:
-	_ERR(FULL)		; no room for it!
+	_EXIT_CS			; non-critical when aborting!
+	_ERR(FULL)			; no room for it!
 ma_found:
-	TYA						; compute other index
-	ASL						; two times
-	TAX						; now indexing in words
-	LDA ram_siz+1, X		; get size MSB (4)
-	CMP ma_rs+1				; compare (3)
-		BCC ma_cont				; smaller, thus continue searching (2/3)
-	LDA ram_siz, X			; check LSB, just in case (4)
-	CMP ma_rs				; compare (3)
-		BCC ma_cont				; smaller, thus continue searching (2/3)
-; here we go
-	LDA ram_siz, X			; get current free block size LSB (4)
-	STA ma_l				; store it for later (3)
-	LDA ram_siz+1, X		; same for MSB (4+3)
-	STA ma_l+1
-	LDA ma_rs				; get size LSB (3)
-	STA ram_siz, X			; reduce entry (4)
-	LDA ma_rs+1				; same for MSB (3+4)
-	STA ram_siz+1, X
-	LDA #USED_RAM			; mark block as used (2) define elsewhere
-	STA ram_stat, Y			; indexed by byte (4)
-	LDA ma_l
-	ORA ma_l+1				; some space remaining? (3+3)
-	BEQ ma_ok				; nothing more to do (2/3)
-; ** make room for sub-entry, highly recommended **
-		STX ma_l+2				; store limit
-		LDY #MAX_LIST-2			; first origin (2)
-ma_opt:
-			LDA ram_tab, Y		; get origin
-			STA ram_tab+2, Y	; put destination, sure???
-			LDA ram_siz, Y		; same for ram_siz
-			STA ram_siz+2, Y
-			DEY					; next
-			CPY ma_l+2
-			BCS ma_opt
-		CLC
-		LSR ma_l+2			; do same for ram_stat
-		LDY #(MAX_LIST/2)-1
-ma_stat:
-			LDA ram_stat, Y
-			STA ram_stat+1, Y	; check too
-			DEY					; next
-			CPY ma_l+2
-			BCS ma_stat			; EEEK, was BPL, hope it is OK
-; now create new free entry
-		LDA ram_tab, X		; get current address
-		CLC
-		ADC ma_rs			; add size LSB
-		STA ram_tab+2, X	; set new entry, best not touching X!
-		LDA ram_tab+1, X	; same for MSB
-		ADC ma_rs+1
-		STA ram_tab+3, X
-		LDA ma_l			; get size LSB
-		SEC
-		SBC ma_rs			; substract size
-		STA ram_siz+2, X	; store in new entry, same as before
-		LDA ma_l+1			; same for MSB
-		SBC ma_rs+1
-		STA ram_siz+3, X
-		LDY ma_l+2			; Y is no longer valid, thus restore from stored X/2
-		LDA #FREE_RAM		; needed even if free is zero
-		STA ram_stat+1, Y	; set new entry as free, unfortunately no STZ abs,Y
-; ** optimization finished **
-ma_ok:
-	LDA ram_tab, X			; get address' LSB (4)
-	STA ma_pt				; store output (3)
-	LDA ram_tab+1, X		; same for MSB (4+3)
-	STA ma_pt+1
-	_EXIT_CS				; end of critical section, new 160119
-	_EXIT_OK				; we're done
+#ifdef	SAFE
+	LDA ram_pos+1, X	; check next block position
+	SEC
+	SBC ram_pos, X		; and subtract current pointer
+	BCS ma_nobad		; this one should be lower!
+		LDA #user_ram		; otherwise take beginning of user RAM...
+		LDY #USED_RAM		; ...that will become locked (maybe another value)
+		STA ram_pos			; create values
+		STY ram_stat		; **should it clear the PID field too???**
+		LDA #SRAM			; physical top of RAM...
+		LDY #END_RAM		; ...as non-plus-ultra
+		STA ram_pos+1		; create second set of values
+		STY ram_stat+1
+		_ERR(CORRUPT)		; report but do not turn system down!
+ma_nobad:
+#endif
+	JSR ma_alsiz		; **compute size according to alignment mask**
+	CMP ma_rs+1			; compare (5)
+		BCC ma_cont			; smaller, thus continue searching (2/3)
+; here we go!
+; **first of all create empty block for alignment, if needed**
+	PHA					; save current size
+	LDA ram_pos, X		; check current address
+	AND ma_align		; any misaligned bits set?
+	BEQ ma_aok			; already aligned, nothing needed
+		JSR ma_adv			; advance and let repeated first entry!
+		INX					; let the algnment blank and go for next
+		LDA ram_pos, X		; get repeated address
+		ORA ma_align		; set disturbing bits...
+		_INC				; ...and reset them after increasing the rest
+		STA ram_pos, X		; update pointer
+ma_aok:
+	PLA					; retrieve size
+; make room for new entry... if not exactly the same size
+	CMP ma_rs			; compare this block with requested size
+	BEQ ma_updt			; was same size, will not generate new entry
+		JSR ma_adv			; make room otherwise
+ma_updt:
+	_STZA ma_pt			; clear pointer LSB
+	LDA ram_pos, X		; get address of block to be assigned
+	STA ma_pt+1			; note this is address of PAGE
+	LDY #USED_RAM		; now is reserved
+	STY ram_stat, X		; update table entry
+; ** new 20161106, store PID of caller **
+	_PHX				; will need this index
+	_KERNEL(GET_PID)	; who asked for this?
+	_PLX				; retrieve index
+	STY ram_pid, X		; store PID
+; theoretically we are done, end of CS
+	_EXIT_CS			; end of critical section, new 160119
+	_EXIT_OK			; we're done
+
+; routine for aligned-block size computation
+ma_alsiz:
+	LDA ram_pos, X		; get bottom address (4)
+	BIT ma_align		; check for set bits from mask (4)
+	BEQ ma_fit			; none was set, thus already aligned (3/2)
+		ORA ma_align		; set masked bits... (3)
+		_INC				; ...and increase address for alignment (2)
+ma_fit:
+	EOR #$FF			; invert bits as will be subtracted to next entry (2)
+	SEC					; needs one more for twos-complement (2)
+	ADC ram_pos+1, X	; compute size from top ptr MINUS bottom one (5)
+	RTS
+; *** non-aligned version ***
+;	LDA ram_pos+1, X	; get end position (4)
+;	SEC
+;	SBC ram_pos, X		; subtract current for size! (2+4)
+; *** end of non-aligned version ***
+
+; routine for making room for an entry
+ma_adv:
+	STX ma_ix			; store current index
+ma_2end:
+		INX					; previous was free, thus check next
+		CPX #MAX_LIST-1		; just in case, check offset!!!
+		BCC ma_notend		; could expand
+			PLA					; discard return address
+			PLA
+			JMP ma_nobank		; notice error
+ma_notend:
+		LDY ram_stat, X		; check status of block
+		CPY #END_RAM		; scan for the end-of-memory marker
+		BNE ma_2end			; hope will eventually finish!
+ma_room:
+		LDA ram_pos, X		; get block address
+		STA ram_pos+1, X	; one position forward
+		LDY ram_stat, X		; get block status
+		STY ram_stat+1, X	; advance it
+		LDY ram_pid, X		; same for PID, non-interleaved!
+		STY ram_pid+1, X	; advance it
+		DEX					; down one entry
+		CPX ma_ix			; position of updated entry
+		BNE ma_room			; continue until done
+; create at the beginning of the moved block a FREE entry!
+	LDA ram_pos+1, X	; newly assigned slice will begin here
+	CLC
+	ADC ma_rs+1			; add number of assigned pages
+	STA ram_pos+1, X	; update value
+	LDY #FREE_RAM		; let us mark it as free
+	STY ram_stat+1, X	; next to the assigned one
+	RTS
 
 
 ; *** FREE, release memory *** revamped 20150209
 ; ma_pt <- addr
 ; ** ONLY for systems over 128-byte RAM
-
+; ****** REVAMP ******* REVAMP ******** REVAMP *********
 free:
 	LDX #0			; reset indexes
 	_ENTER_CS		; supposedly dangerous

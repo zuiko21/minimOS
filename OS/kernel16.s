@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1a6
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161104-1012
+; last modified 20161107-0911
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -64,13 +64,16 @@ warm:
 ; *** memory initialisation ***
 ; *****************************
 	.al: REP #$20	; *** 16-bit memory most of the time ***
-	LDA #FREE_RAM+256*END_RAM	; dirty trick setting both values at once!!!
-	STA ram_stat	; as it is the first (and second) entry, no index needed
-	LDA #>user_ram	; beginning of available ram, as defined... in rom.s
-	LDX #<user_ram	; check LSB
+	LDY #FREE_RAM	; dirty trick no longer allowed...
+	STY ram_stat	; as it is the first entry, no index needed
+	LDY #END_RAM	; also for end-of-memory marker
+	STY ram_stat+2	; note offset for interleaved array!
+	LDX #>user_ram	; beginning of available ram, as defined... in rom.s
+	LDY #<user_ram	; LSB misaligned?
 	BEQ ram_init	; nothing to align
-		INC				; otherwise start at next page
+		INX				; otherwise start at next page
 ram_init:
+	TXA				; will set MSB as zero
 	STA ram_pos		; store it
 	LDA #SRAM		; number of SRAM pages as defined in options.h
 	STA ram_pos+2	; store second entry and we are done!
