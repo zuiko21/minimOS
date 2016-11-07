@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a4, must match kernel.s
+; v0.5.1a5, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-1035
+; last modified 20161107-1052
 
 ; no way for standalone assembly...
 
@@ -397,45 +397,18 @@ up_upt:
 ; Y -> PID
 
 b_fork:
-#ifdef	MULTITASK
 ; ** might be replaced with LDY pid on optimized builds **
-	LDA #MM_FORK	; subfunction code
-	STA io_c		; as fake parameter
-	LDY #TASK_DEV	; multitasking as device driver!
-	_KERNEL(COUT)	; call pseudo-driver
-	RTS				; return whatever error code
-#else
-	LDY #0			; no multitasking, system reserved PID
-	_EXIT_OK
-#endif
+	LDX #MM_FORK	; subfunction code
+	_BRA yld_call	; go for the driver
 
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr (was z2L)
-; uses str_dev for temporary braid storage, driver will pick it up!
+; Y <- PID, ex_pt <- addr, def_io <- std_in & stdout
 
 b_exec:
-#ifdef	MULTITASK
 ; ** might be repaced with driver code on optimized builds **
-	LDA #MM_EXEC	; subfunction code
-	STY str_dev		; COUT shouldn't touch it
-	STA io_c		; as fake parameter
-	LDY #TASK_DEV	; multitasking as device driver!
-	_KERNEL(COUT)	; call pseudo-driver
-	RTS				; return previous error
-#else
-; non-multitasking version
-	TYA				; should be system reserved PID, best way
-	BEQ exec_st		; OK for single-task system
-		_ERR(NO_RSRC)	; no way without multitasking
-exec_st:
-	LDA ex_pt+1		; get address MSB first
-	PHA				; put it on stack
-	LDA ex_pt		; same for LSB
-	PHA
-	PHP				; ready for RTI
-	RTI				; actual jump, won't return here
-#endif
+	LDX #MM_EXEC	; subfunction code
+	_BRA yld_call	; go for the driver
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
@@ -546,7 +519,7 @@ string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	TYA				; for indexed comparisons (2)
 	BNE str_port	; not default (3/2)
-		LDA sysout		; new per-process standard device
+		LDA stdout		; new per-process standard device
 		BNE str_port	; already a valid device
 			LDA default_out	; otherwise get system global (4)
 str_port:
@@ -755,185 +728,69 @@ sd_tab:					; check order in abi.h!
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; shutdown system
 
-; ***************************************************** REVAMP *************************************************+
-
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid
-; uses locals[0] too
-; don't know of possible errors********
 
 signal:
-#ifdef	MULTITASK
-	LDA #MM_SIGNAL	; subfunction code
-	STY mm_sig		; COUT shouldn't touch it anyway
+	LDX #MM_SIGNAL	; subfunction code
 	_BRA yld_call	; go for the driver
-; ** if the driver fails, it will NEVER reach this point!!!! **
-#ifdef	SAFE
-sig_st:				; *** single-task interface, in case MM driver failed *** (repeated from below)
-	TYA				; check correct PID, really needed?
-		BNE sig_pid		; strange error?
-	LDY b_sig		; get the signal
-	CPY #SIGTERM	; clean shutoff
-		BEQ sig_term
-	CPY #SIGKILL	; suicide, makes any sense?
-		BEQ sig_kill
-sig_pid:			; placeholder...
-	_ERR(INVALID)	; unrecognised signal
-sig_term:
-	JSR sig_call	; call routine, RTS will get back here
-sig_kill:
-	_EXIT_OK		; *** don't know what to do here ***
-sig_call:
-	JMP (mm_term)	; jump to single-word vector, actually taken from an unused table!
-#endif
-#else
-; *** single task interface (copied above) ***
-	TYA				; check correct PID, really needed?
-		BNE sig_pid		; strange error?
-	LDY b_sig		; get the signal
-	CPY #SIGTERM	; clean shutoff
-		BEQ sig_term
-	CPY #SIGKILL	; suicide, makes any sense?
-		BEQ sig_kill
-sig_pid:			; placeholder...
-	_ERR(INVALID)	; unrecognised signal
-sig_term:
-	JSR sig_call	; call routine, RTS will get back here
-sig_kill:
-	_EXIT_OK		; *** don't know what to do here ***
-sig_call:
-	JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
-#endif
 
 ; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
 ; Y -> flags, TBD
-; uses locals[0] too
-; don't know of possible errors
+; don't know of possible errors, maybe just a bad PID
 
 status:
-#ifdef	MULTITASK
-	LDA #MM_STATUS	; subfunction code
-	;**************
-	STY locals		; COUT shouldn't touch it anyway
+	LDX #MM_STATUS	; subfunction code
 	_BRA yld_call	; go for the driver
-; ** if the driver fails, it will NEVER reach this point!!!! **
-#ifdef	SAFE
-stat_st:				; *** single-task interface, in case MM driver failed *** copied from below
-	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
-	_EXIT_OK
-#endif
-#else	
-; *** single-task interface, copied above ***
-	LDY #BR_RUN		; single-task systems are always running, or should I make an error instead?
-	_EXIT_OK
-#endif
 
 ; *** GET_PID, get current braid PID ***
 ; Y -> PID, TBD
-; uses locals[0] too ***revise
-; don't know of possible errors
 
 get_pid:
-#ifdef	MULTITASK
-	LDA #MM_PID		; subfunction code
+	LDX #MM_PID		; subfunction code
 	_BRA yld_call	; go for the driver
-; ** if the driver fails, it will NEVER reach this point!!!! **
-#ifdef	SAFE
-pid_st:				; *** single-task interface, in case MM driver failed *** copied from below
-	LDY #0			; system-reserved PID for single-task execution
-	_EXIT_OK
-#endif
-#else
-; *** single-task interface, copied above ***
-	LDY #0			; system-reserved PID for single-task execution
-	_EXIT_OK
-#endif
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; Y <- PID, zpar2.W <- SIGTERM handler routine (ending in RTS)
-; uses locals[0] too
+; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTI!!!)
 ; bad PID is probably the only feasible error
 
 set_handler:
-#ifdef	MULTITASK
-	LDA #MM_HANDL	; subfunction code
+	LDX #MM_HANDL	; subfunction code
 	_BRA yld_call	; go for the driver
-; ** if the driver fails, it will NEVER reach this point!!!! **
-#ifdef	SAFE
-hndl_st:				; *** single-task interface, in case MM driver failed *** copied from below
-	LDA zpar2		; get LSB
-	STA mm_term		; store in single variable (from unused table)
-	LDA zpar2+1		; same for MSB
-	STA mm_term+1
-	_EXIT_OK
-#endif
-#else
-; *** single-task interface, copied above ***
-	LDA zpar2		; get LSB
-	STA mm_term	; store in single variable
-	LDA zpar2+1		; same for MSB
-	STA mm_term+1
-	_EXIT_OK
-#endif
 
 ; *** B_YIELD, Yield CPU time to next braid ***
 ; supposedly no interface needed, don't think I need to tell if ignored
-; destroys like COUT and _TASK_DEV
 
 yield:
-#ifndef	MULTITASK
-	_EXIT_OK		; no one to give CPU time away!
-#else
-#ifndef	AUTOBANK
-	_EXIT_OK		; if no multitasking assisting hardware is present, just ignore and stay
-#else
-	LDA #MM_YIELD	; subfunction code
-#endif
+	LDX #MM_YIELD	; subfunction code
+; * unified calling procedure, get subfunction code in X * new faster interface 20161102
 yld_call:			; unified calling procedure
-	STA zpar		; subfunction as fake character
-	LDY #TASK_DEV	; multitasking driver ID
-	_KERNEL(COUT)	; call driver
-#ifdef	SAFE
-		BCS yld_failed	; in case multitasking driver was included but failed to register...
-#endif
-	RTS				; all done, keeping any errors from driver
+	JMP (drv_opt)	; just enter into preinstalled driver, will exit with appropriate error code!
 
-#ifdef	SAFE
-yld_failed:			; *** emergency single-task management ***
-	LDX zpar		; get subfunction code
-	CPX #MM_PRIOR	; first invalid code (this far)
-		BPL yld_err		; generic error
-	_JMPX(yld_table-4)	; go to appropriate label! note offset, since B_FORK and B_EXEC are already processed
 
-yld_st:
-		_EXIT_OK		; in case isn't defined elsewhere
-yld_err:
-		_ERR(INVALID)	; some generic error...
-
-; addresses of single-task routines, new procedure 20150610
-yld_table:
-;	0 = B_FORK, 2 = B_EXEC
-	.word	yld_st	; does nothing, actually
-	.word	sig_st	; single-task SIGNAL
-	.word	stat_st	; single-task STATUS
-	.word	pid_st	; single-task PID
-	.word	hndl_st	; single-task HANDL
-#endif
-#endif
-
-; *** TS_INFO, get taskswitching info for multitasking driver *** revamped 20150521
-; Y -> number of bytes, zpar... -> bytes of the proposed _reversed_ stack frame (originally 3)
-; REVISE REVISE
+; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
+; Y -> number of bytes, ex_pt -> pointer to the proposed stack frame
 ts_info:
-	LDA #0					; what will X hold? could be 0 as long as the multitasaking driver is the first one!
-	STA zpar+2				; store output value
-	LDA #>(isr_sched_ret-1)	; get return address MSB
-	STA zpar+1				; store it
-	LDA #<(isr_sched_ret-1)	; same for LSB
-	STA zpar
-	LDY #3					; number of bytes
+#ifdef	MULTITASK
+	LDX #<tsi_str			; pointer to proposed stack frame
+	LDA #>tsi_str			; including MSB
+	STX ex_pt				; store LSB
+	STA ex_pt+1				; and MSB
+	LDY #tsi_end-tsi_str	; number of bytes
 	_EXIT_OK
+#else
+	_ERR(UNAVAIL)			; non-supporting kernel!
+#endif
+
+tsi_str:
+; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
+	.word	isr_sched_ret-1	; corrected reentry address **standard label**
+	.byt	0				; stored X value, best if multitasking driver is the first one
+	.byt	0, 0, 0			; irrelevant Y, X, A values
+tsi_end:
+; end of stack frame for easier size computation
+
 
 ; *** end of kernel functions ***
 
