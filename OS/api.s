@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a5, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-1052
+; last modified 20161107-1345
 
 ; no way for standalone assembly...
 
@@ -793,6 +793,79 @@ tsi_end:
 
 
 ; *** end of kernel functions ***
+
+; *** pseudo-driver for non-multitasking systems! *** 65816 ***** 65816
+st_taskdev:
+	JMP (st_tdlist, X)	; call appropriate code, will return to original caller
+
+; pointer list for single-task management routines
+st_tdlist:
+	.word	st_fork		; reserve a free braid (will go BR_STOP for a moment)
+	.word	st_exec		; get code at some address running into a paused braid (will go BR_RUN)
+	.word	st_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
+	.word	st_signal	; send some signal to a braid
+	.word	st_status	; get execution flags for a braid
+	.word	st_getpid	; get current PID
+	.word	st_hndl		; set SIGTERM handler
+	.word	st_prior	; priorize braid, jump to it at once, really needed?
+
+; ** single-task management routines **
+
+; B_FORK for non-multitasking systems
+; GET_PID for non-multitasking systems
+st_fork:
+st_getpid:
+	LDY #0				; no multitasking, system reserved PID anytime
+; B_YIELD for non-multitasking systems
+st_yield:
+	_DR_OK				; YIELD has no other task to give CPU time to!
+
+; B_EXEC for non-multitasking systems
+st_exec:
+st_prior:
+#ifdef	SAFE
+	TYA					; should be system reserved PID, best way
+	BEQ exec_st			; OK for single-task system
+		_DR_ERR(NO_RSRC)	; no way without multitasking
+exec_st:
+#endif
+; jump to code, will not return anyway???
+	JMP (ex_pt)
+; revise *************
+
+; SET_HNDL for single-task systems
+st_hndl:
+	LDY ex_pt			; get pointer
+	LDA ex_pt+1			; get pointer MSB
+	STY mm_term			; store in single variable (from unused table)
+	STA mm_term+1
+	_DR_OK
+
+; B_STATUS for single-task systems
+st_status:
+	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
+	_DR_OK
+
+; B_SIGNAL for single-task systems
+st_signal:
+#ifdef	SAFE
+	TYA					; check correct PID, really needed?
+		BNE sig_pid			; strange error?
+#endif
+	LDY b_sig			; get the signal
+	CPY #SIGTERM		; clean shutdown
+		BEQ sig_term
+	CPY #SIGKILL		; suicide, makes any sense?
+		BEQ sig_kill
+sig_pid:
+	_DR_ERR(INVALID)	; unrecognised signal
+sig_term:
+	JSR sig_call		; will end on RTI
+	RTS					; keep error
+; *************************** ****************************
+sig_kill:				; *** I do not know what to do in this case *** might release windows etc
+	_DR_OK				; generic exit, but check label above
+; ****** revise above as is 65816 code *****
 
 ; jump table, if not in separate 'jump' file
 #ifndef		DOWNLOAD
