@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a4, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-1007
+; last modified 20161107-1035
 
 ; no way for standalone assembly...
 
@@ -140,11 +140,11 @@ ci_win:
 	_ERR(NO_RSRC)	; not yet implemented
 
 
-; *** MALLOC, reserve memory *** revamped 20150209
+; *** MALLOC, reserve memory *** fully revamped 20161107
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory
 ; ma_align <- mask for MSB (0=page or not aligned, 1=512b, $FF=bank aligned) new 161105 TO DO
 ; ma_rs = 0 means reserve as much memory as available!!!
-; * this works on 16-bit addressing! *
+; this works on 16-bit addressing, thus single byte positions and non-interleaved status & PID arrays!
 ; uses ma_l as diverse temporary vars, as defined below
 
 ma_siz	= ma_l
@@ -305,48 +305,46 @@ ma_room:
 
 ; *** FREE, release memory *** revamped 20150209
 ; ma_pt <- addr
-; ** ONLY for systems over 128-byte RAM
-; ****** REVAMP ******* REVAMP ******** REVAMP *********
+; C -> no such used block!
+
 free:
-	LDX #0			; reset indexes
-	_ENTER_CS		; supposedly dangerous
+	LDX #0				; reset index
+	LDA ma_pt			; get comparison term
+	_ENTER_CS			; supposedly dangerous
 fr_loop:
-		LDA ram_tab, X		; get entry LSB
-		CMP ma_pt			; compare
-			BNE fr_next			; try other
-		LDA ram_tab+1, X	; same for MSB
-		CMP ma_pt+1
-			BEQ fr_found		; stop searching, much easier this way
-fr_next:
-		INX
-		INX
-		CPX #MAX_LIST		; until the end
-		BCC fr_loop
+		CMP ram_pos, X		; is what we are looking for?
+			BEQ fr_found		; go free it!
+		LDY ram_stat, X		; otherwise check status
+		INX					; advance index
+		CPY #END_RAM		; no more in list?
+		BNE fr_loop			; continue until end
+; was not found, thus exit CS and abort
+fr_no:
 	_EXIT_CS
-	_ERR(N_FOUND)			; no block to be freed!
+	_ERR(N_FOUND)		; no block to be freed!
 fr_found:
-	TXA				; get two-byte index
-	CLC
-	LSR				; convert to byte index
-	TAY				; could be saved but no way with optimization...
-	LDA #FREE_RAM	; free block
-	STA ram_stat, Y	; unfortunately no STZ abs,Y
-; ** optimize list, highly recommended **
-fr_opt:
-		LDA ram_stat+1, Y	; get status of contiguous entry
-;		CMP #FREE_RAM		; was it free? no need if free is zero
-			BNE fr_ok			; was not free, so nothing to optimize
-		LDA ram_siz, X		; get actual size LSB
-		CLC
-		ADC ram_siz+2, X	; add following size
-		LDA ram_siz+1, X	; same with MSB
-		ADC ram_siz+3, X
-		LDA #UNAS_RAM		; create unassigned entry
-		STA ram_stat+1, Y	; **KLUDGE** just set entry as unassigned, instead of obliterating it
-		_STZA ram_siz+2, X	; clear size of it, so the KLUDGE might work
-		_STZA ram_siz+3, X
-		_STZA ram_tab+2, X	; same with address, so the KLUDGE might work
-		_STZA ram_tab+3, X
+#ifdef	SAFE
+	LDY #USED_RAM		; only used blocks can be freed!
+	CPY ram_stat, X		; was it in use?
+		BNE fr_no			; if not, cannot free it!
+#endif
+	LDY #FREE_RAM		; most likely zero, but do not use STZ in 16-bit mode!!!
+	STY ram_stat, X		; this block is now free, but...
+; really should join possible adjacent free blocks
+	LDY ram_stat+1, X	; check status of following entry
+;	CPY #FREE_RAM		; was it free? could be supressed if value is zero
+	BNE fr_ok			; was not free, thus nothing to optimize
+; loop for obliterating the following empty entry
+fr_join:
+		INX					; go for next entry
+		LDA ram_pos+1, X	; get following address
+		STA ram_pos, X		; store one entry below
+		LDY ram_stat+1, X	; check status of following!
+		STY ram_stat, X		; store one entry below
+		LDA ram_pid+1, X	; copy PID of following, but keep status in Y!
+		STA ram_pid, X		; no longer interleaved
+		CPY #END_RAM		; end of list?
+		BNE fr_join			; repeat until done
 ; ** already optimized **
 fr_ok:
 	_EXIT_CS
