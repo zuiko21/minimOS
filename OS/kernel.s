@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1a2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-1106
+; last modified 20161107-1335
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -25,7 +25,8 @@
 .text
 #endif
 
-; **************************************************
+; *********************************Z $3456
+9E 3   5   abs,X ........ STZ*****************
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
 
@@ -73,7 +74,8 @@ warm:
 ram_init:
 	STX ram_pos		; store it, this is PAGE number
 	LDA #SRAM		; number of SRAM pages as defined in options.h
-	STA ram_pos+1	; store second entry and we are done!
+	STA ram_pos+1	; store second Z $3456
+9E 3   5   abs,X ........ STZentry and we are done!
 ; ++++++
 #endif
 
@@ -94,6 +96,7 @@ ram_init:
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------
+; ** maybe look for fast tables in ROM **
 	STX drv_num			; single index of, not necessarily SUCCESSFULLY, detected drivers, updated 20150318 (4)
 ; ------
 #else
@@ -126,7 +129,7 @@ dr_loop:
 		BNE dr_inst			; cannot be in zeropage, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
-		STA da_ptr+1		; store pointer (3)
+		STA da_ptr+1		; store pointer MSB (3)
 		LDA drivers_ad, X	; same for LSB (4+3)
 		STA da_ptr
 ; create entry on IDs table ** new 20150219
@@ -141,33 +144,37 @@ dr_phys:
 #ifndef	LOWRAM
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 		ASL					; use retrieved ID as index (2+2)
-		TAY
-		LDA drv_opt, Y		; check whether in use (4)
-		EOR drv_ipt, Y		; only the same if not installed! eeeeek
-		BEQ dr_lsb			; LSB was OK (3/2)
-			JMP dr_abort		; already in use (3)
-dr_lsb:
-		LDA drv_opt, Y	; check MSB too (4+2)
-		EOR drv_ipt, Y		; only the same if not installed! eeeeek
-		BEQ dr_msb			; all OK then (3/2) 
-			JMP dr_abort		; already in use (3)
-dr_msb:
-		_PHY				; save index! (3)
+		TAX					; was Y
+; new 161014, TASK_DEV (128 turns into 0 as index) does NOT get checked, allowing default installation
+		BEQ dr_empty
+; alternative in case of WIND_DEV managed similarly
+;			CPX #4				; first index that will be managed normally
+;				BCC dr_empty		; 0 & 2 (TASK_DEV & WIND_DEV) will NOT be checked from default installation
+			LDA #<dr_error		; pre-installed LSB (2)
+			CMP drv_opt, X		; check whether in use (4)
+				BNE dr_busy			; pointer was not empty (2/3)
+			CMP drv_ipt, X		; now check input, just in case (4)
+				BNE dr_busy			; pointer was not empty (2/3)
+			LDA #>dr_error		; now look for pre-installed MSB (2)
+			CMP drv_opt+1, X	; check whether in use (4)
+				BNE dr_busy			; pointer was not empty (2/3)
+			CMP drv_ipt+1, X	; now check input, just in case (4)
+			BEQ dr_empty		; it is OK to set (3/2)
+dr_busy:
+				JMP dr_abort		; already in use (3)
+dr_empty:
 		LDY #D_COUT			; offset for output routine (2)
 		JSR dr_gind			; get indirect address
-		_PLY				; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
-		STA drv_opt, Y		; store in table (4)
+		STA drv_opt, X		; store in table (4)
 		LDA tm_ptr+1		; same for MSB (3+4)
-		STA drv_opt+1, Y
-		_PHY				; save index! (3)
+		STA drv_opt+1, X
 		LDY #D_CIN			; same for input routine (2)
 		JSR dr_gind			; get indirect address
-		_PLY				; restore index (4)
 		LDA tm_ptr			; get driver table LSB (3)
-		STA drv_ipt, Y		; store in table (4)
+		STA drv_ipt, X		; store in table (4)
 		LDA tm_ptr+1		; same for MSB (3+4)
-		STA drv_ipt+1, Y
+		STA drv_ipt+1, X
 ; ++++++
 #else
 ; ------ IDs table filling for low-RAM systems ------
@@ -190,58 +197,98 @@ dr_limit:	CPY drv_num			; all done? (4)
 ; register interrupt routines (as usual)
 		LDY #D_AUTH			; offset for feature code (2)
 		LDA (da_ptr), Y		; get auth code (5)
+		STA dr_aut			; and keep for later! (3)
 		AND #A_POLL			; check whether D_POLL routine is avaliable (2)
-			BEQ dr_nopoll		; no D_POLL installed (2/3)
-		LDY #D_POLL			; get offset for periodic vector (2)
-		LDX dpoll_mx		; get destination index (4)
-		CPX #MAX_QUEUE		; compare against limit (2)
-			BCS dr_abort		; error registering driver! (2/3) eek
+		BEQ dr_nopoll		; no D_POLL installed (2/3)
+			LDY #D_POLL			; get offset for periodic vector (2)
+			LDX dpoll_mx		; get destination index (4)
+			CPX #MAX_QUEUE		; compare against limit (2)
+				BCS dr_abort		; error registering driver! (2/3) nothing was queued
 dr_ploop:
-			LDA (da_ptr), Y		; get one byte (5)
-			STA drv_poll, X		; store in RAM (4)
-			INY					; increase indexes (2+2)
-			INX
-			CPY #D_POLL+2		; both bytes done? (2)
-			BCC dr_ploop		; if not, go for MSB (3/2) eek
-		STX dpoll_mx		; save updated index (4)
-		LDY #D_AUTH			; offset for feature code (2)
+				LDA (da_ptr), Y		; get one byte (5)
+				STA drv_poll, X		; store in RAM (4)
+				INY					; increase indexes (2+2)
+				INX
+				CPY #D_POLL+2		; both bytes done? (2)
+				BNE dr_ploop		; if not, go for MSB (3/2) eek
+			STX dpoll_mx		; save updated index (4)
 dr_nopoll:
-		LDA (da_ptr), Y		; get auth code (5)
+		LDA dr_aut			; get auth code (3)
 		AND #A_REQ			; check D_REQ presence (2)
-			BEQ dr_noreq		; no D_REQ installed (2/3)
-		LDY #D_REQ			; get offset for async vector (2)
-		LDX dreq_mx			; get destination index (4)
-		CPX #MAX_QUEUE		; compare against limit (2)
-			BCS dr_abort		; error registering driver! (2/3) eek
+		BEQ dr_noreq		; no D_REQ installed (2/3)
+			LDY #D_REQ			; get offset for async vector (2)
+			LDX dreq_mx			; get destination index (4)
+			CPX #MAX_QUEUE		; compare against limit (2)
+				BCS dr_ab_p		; error registering driver! (2/3) check poll!
 dr_aloop:
-			LDA (da_ptr), Y		; get its LSB (5)
-			STA drv_async, X	; store in RAM (4)
-			INY					; increase indexes (2+2)
-			INX
-			CPY #D_REQ+2		; both bytes done? (2)
-			BCC dr_aloop		; if not, go for MSB (3/2) eek
-		STX dreq_mx			; save updated index  (4)
-		LDY #D_AUTH			; offset for feature code (2)
+				LDA (da_ptr), Y		; get its LSB (5)
+				STA drv_async, X	; store in RAM (4)
+				INY					; increase indexes (2+2)
+				INX
+				CPY #D_REQ+2		; both bytes done? (2)
+				BNE dr_aloop		; if not, go for MSB (3/2) eek
+			STX dreq_mx			; save updated index  (4)
 dr_noreq:
-		LDA (da_ptr), Y		; get auth code (5)
+		LDA dr_aut			; get auth code (3)
 		AND #A_SEC			; check D_SEC (2)
-			BEQ dr_nosec		; no D_SEC installed (2/3)
-		LDY #D_SEC			; get offset for 1-sec vector (2)
-		LDX dsec_mx			; get destination index (4)
-		CPX #MAX_QUEUE		; compare against limit (2)
-			BCS dr_abort		; error registering driver! (2/3) eek
+		BEQ dr_nosec		; no D_SEC installed (2/3)
+			LDY #D_SEC			; get offset for 1-sec vector (2)
+			LDX dsec_mx			; get destination index (4)
+			CPX #MAX_QUEUE		; compare against limit (2)
+				BCS dr_abpr		; error registering driver! (2/3) check poll & async!
 dr_sloop:
-			LDA (da_ptr), Y		; get its LSB (5)
-			STA drv_sec, X		; store in RAM (4)
-			INY					; increase indexes (2+2)
-			INX
-			CPY #D_SEC+2		; both bytes done? (2)
-			BCC dr_sloop		; if not, go for MSB (3/2) eek
-		STX dsec_mx			; save updated index (4)
+				LDA (da_ptr), Y		; get its LSB (5)
+				STA drv_sec, X		; store in RAM (4)
+				INY					; increase indexes (2+2)
+				INX
+				CPY #D_SEC+2		; both bytes done? (2)
+				BNE dr_sloop		; if not, go for MSB (3/2) eek
+			STX dsec_mx			; save updated index (4)
 dr_nosec: 
 ; continue initing drivers
-		JSR dr_icall	; call routine (6+...)
-			BCS dr_abort	; failed initialisation, new 20150320
+		JSR dr_icall		; call routine (6+...)
+		BCC dr_next			; did not failed initialisation
+#ifdef	LOWRAM
+; ------ low-RAM systems keep count of installed drivers ------
+dr_abort:
+			LDY drv_num			; get failed driver index (4)
+			LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
+			STA drivers_id, Y	; delete older value (4)
+; ------
+#else
+; ++++++
+			LDY #D_AUTH
+			LDA (da_ptr), Y		; get auth code... plus extra byte (6)
+			AND #A_SEC			; any slow?
+			BNE dr_abpr			; none to remove
+				DEC dsec_mx			; otherwise remove from queue!
+				DEC dsec_mx			; two-byte pointer
+				LDA (da_ptr), Y		; restore auth code
+dr_abpr:
+			AND #A_REQ			; any async?
+			BNE dr_ab_p			; none to remove
+				DEC dreq_mx			; otherwise remove from queue!
+				DEC dreq_mx			; two-byte pointer
+				LDA (da_ptr), Y		; restore auth code
+dr_ab_p:
+			AND #A_POLL			; any jiffy?
+			BNE dr_abort		; none to remove
+				DEC dpoll_mx		; otherwise remove from queue!
+				DEC dpoll_mx		; two-byte pointer
+dr_abort:
+			LDY #D_ID			; offset for ID (2)
+			LDA (da_ptr), Y		; get ID code (5)
+				BPL dr_next			; nothing to delete (2/3)
+			ASL					; use retrieved ID as index (2+2)
+			TAX					; was TAY
+			LDA #<dr_error			; make deleted entries point to a standard error routine, new 20160406 (2)
+			STA drv_opt, X			; set LSB for output (4)
+			STA drv_ipt, X			; and for input (4)
+			LDA #>dr_error			; pretty much the same, not worth a loop (2)
+			STA drv_opt+1, X		; set MSB for output (4)
+			STA drv_ipt+1, X		; and for input (4)
+; ++++++
+#endif
 dr_next:
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
@@ -254,29 +301,6 @@ dr_next:
 		INX				; update ADDRESS index, even if unsuccessful (2)
 		INX				; eeeeeeeek! pointer arithmetic! (2)
 		JMP dr_loop		; go for next (3)
-dr_abort:
-#ifdef	LOWRAM
-; ------ low-RAM systems keep count of installed drivers ------
-		LDY drv_num			; get failed driver index (4)
-		LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
-		STA drivers_id, Y	; delete older value (4)
-; ------
-#else
-; ++++++
-		LDY #D_ID			; offset for ID (2)
-		LDA (da_ptr), Y		; get ID code (5)
-			BPL dr_next			; nothing to delete (2/3)
-		ASL					; use retrieved ID as index (2+2)
-		TAY
-		LDA #<dr_error			; make deleted entries point to a standard error routine, new 20160406 (2)
-		STA drv_opt, Y			; set LSB for output (4)
-		STA drv_ipt, Y			; and for input (4)
-		LDA #>dr_error			; pretty much the same, not worth a loop (2)
-		STA drv_opt+1, Y		; set MSB for output (4)
-		STA drv_ipt+1, Y		; and for input (4)
-; ++++++
-#endif
-		_BRA dr_next			; go for next (3)
 
 ; get indirect address from driver pointer table, 13 bytes, 33 clocks
 dr_gind:
@@ -288,10 +312,10 @@ dr_gind:
 	RTS					; come back!!! (6)
 
 dr_error:
-	_ERR(N_FOUND)		; standard exit for non-existing drivers!
+	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
 dr_icall:
-	LDY #D_INIT			; original pointer (2)
+	LDY #D_INIT			; original pointer offset (2)
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
 ; takes 10 bytes, 29 clocks
 dr_call:
@@ -304,7 +328,7 @@ dr_call:
 	PHP					; 816 is expected to be in emulation mode anyway (3)
 	RTI					; actual jump (6)
 
-dr_ok:					; all drivers inited
+dr_ok:					; *** all drivers inited ***
 	PLA					; discard stored X, no hassle for NMOS
 #ifdef	LOWRAM
 ; ------ terminate ID list ------
@@ -321,6 +345,7 @@ dr_ok:					; all drivers inited
 	_STZA cin_mode	; reset binary mode flag, new 20150618
 
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
+; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
 #ifndef		MULTITASK
 	LDY #<sig_kill	; get default routine address LSB
@@ -339,25 +364,25 @@ dr_ok:					; all drivers inited
 	STA default_in
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
-	CLI				; enable interrupts
 
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
 
-; until a proper B_EXEC is done, at least set available zeropage space!
-	LDA #ZP_AVAIL		; available bytes
-	STA z_used			; set environment variable
-	JSR shell			; should be done this way, until a proper EXEC is made!
-; ****revise this, should do PROPER shutdown and keep waiting for the firmware to power OFF
-#ifndef		MULTITASK
-	LDY #PW_OFF			; after execution, shut down system (al least)
-	_ADMIN(POWEROFF)	; via firmware, will not return
-#else
-	_PANIC("{EXIT}")	; if managed
-#endif
+	_KERNEL(B_FORK)		; reserve first execution braid
+	CLI					; enable interrupts
+	LDY #<shell			; get pointer to built-in shell
+	LDA #>shell
+	STY ex_pt			; set execution address
+	STA ex_pt+1
+	LDA #DEVICE			; *** revise
+	STA def_io			; default local I/O
+	STA def_io+1
+	_KERNEL(B_EXEC)		; go for it!
 
-; place here the shell code, must end in RTS
+	JMP lock			; ...as the scheduler will detour execution
+
+; place here the shell code, must end in FINISH macro
 shell:
 #include "shell/SHELL"
 

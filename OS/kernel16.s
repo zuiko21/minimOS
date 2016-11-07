@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1a6
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-0911
+; last modified 20161107-1329
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -93,11 +93,11 @@ ram_init:
 	STX dreq_mx
 	STX dsec_mx
 ; already in 16-bit memory mode...
+	LDA #dr_error			; make unused entries point to a standard error routine (3)
 dr_clear:
-		LDA #dr_error			; make unused entries point to a standard error routine (3)
 		STA drv_opt, X			; set full pointer for output (5)
 		STA drv_ipt, X			; and for input (5)
-		INX						; go for next entry (2+2)
+		INX						; gANDo for next entry (2+2)
 		INX
 		BNE dr_clear			; finish page (3/2)
 
@@ -116,7 +116,7 @@ dr_loop:
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
 		STA da_ptr			; store full pointer (4)
-; create entry on IO tables
+; create entry on IDs table
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code... plus extra byte (6)
 #ifdef	SAFE
@@ -152,40 +152,38 @@ dr_empty:
 		LDY #D_AUTH			; offset for feature code (2)
 		LDA (da_ptr), Y		; get auth code... plus extra byte (6)
 		STA dr_aut			; and keep for later! (4)
-		AND #A_POLL			; check whether D_POLL routine is avaliable (3)
+		BIT #A_POLL			; check whether D_POLL routine is avaliable (2)
 		BEQ dr_nopoll		; no D_POLL installed (2/3)
 			LDY #D_POLL			; get offset for periodic vector (2)
 			LDX dpoll_mx		; get destination index (4)
 			CPX #MAX_QUEUE		; compare against limit (2)
-				BCS dr_abort		; error registering driver! (2/3) eek
+				BCS dr_abort		; error registering driver! (2/3) nothing was queued
 			LDA (da_ptr), Y		; get full pointer bytes (6)
 			STA drv_poll, X		; store word in list (5)
 			INX					; increase index (2+2)
 			INX
 			STX dpoll_mx		; save updated index (4)
-			LDY #D_AUTH			; offset for feature code (2)
+			LDA dr_aut			; get auth code... plus extra byte (4)
 dr_nopoll:
-		LDA dr_aut			; get auth code... plus extra byte (4)
-		AND #A_REQ			; check D_REQ presence (3)
+		BIT #A_REQ			; check D_REQ presence (2)
 		BEQ dr_noreq		; no D_REQ installed (2/3)
 			LDY #D_REQ			; get offset for async vector (2)
 			LDX dreq_mx			; get destination index (4)
 			CPX #MAX_QUEUE		; compare against limit (2)
-				BCS dr_abort		; error registering driver! (2/3) eek
+				BCS dr_ab_p			; error registering driver! (2/3) check poll!
 			LDA (da_ptr), Y		; get full pointer (6)
 			STA drv_async, X	; store word in list (5)
 			INX					; increase index (2+2)
 			INX
 			STX dreq_mx			; save updated index  (4)
-			LDY #D_AUTH			; offset for feature code (2)
+			LDA dr_aut			; get auth code... plus extra byte (4)
 dr_noreq:
-		LDA dr_aut			; get auth code... plus extra byte (4)
-		AND #A_SEC			; check D_SEC (2)
+		BIT #A_SEC			; check D_SEC (2)
 		BEQ dr_nosec		; no D_SEC installed (2/3)
 			LDY #D_SEC			; get offset for 1-sec vector (2)
 			LDX dsec_mx			; get destination index (4)
 			CPX #MAX_QUEUE		; compare against limit (2)
-				BCS dr_abort		; error registering driver! (2/3) eek
+				BCS dr_abpr		; error registering driver! (2/3) check poll & req!
 			LDA (da_ptr), Y		; get full pointer (6)
 			STA drv_sec, X		; store word in list (5)
 			INX					; increase index (2+2)
@@ -197,6 +195,22 @@ dr_nosec:
 		.al: REP #$20		; *** 16-bit memory again, just in case ***
 		.xs: SEP #$10		; *** 8-bit indexes, again just in case ***
 		BCC dr_next			; did not failed initialisation
+			LDY #D_AUTH
+			LDA (da_ptr), Y		; get auth code... plus extra byte (6)
+			BIT #A_SEC			; any slow?
+			BNE dr_abpr			; none to remove
+				DEC dsec_mx			; otherwise remove from queue!
+				DEC dsec_mx			; two-byte pointer
+dr_abpr:
+			BIT #A_REQ			; any async?
+			BNE dr_ab_p			; none to remove
+				DEC dreq_mx			; otherwise remove from queue!
+				DEC dreq_mx			; two-byte pointer
+dr_ab_p:
+			BIT #A_POLL			; any jiffy?
+			BNE dr_abort		; none to remove
+				DEC dpoll_mx		; otherwise remove from queue!
+				DEC dpoll_mx		; two-byte pointer
 dr_abort:
 			LDY #D_ID			; offset for ID (2)
 			LDA (da_ptr), Y		; get ID code... plus extra (6)
@@ -205,10 +219,10 @@ dr_abort:
 				BEQ dr_next			; nothing to delete (2/3)
 #endif
 			ASL					; use retrieved ID as index (2+2)
-			TAY					; will keep LSB only
+			TAX					; will keep LSB only
 			LDA #dr_error		; make deleted entries point to a standard error routine (3)
-			STA drv_opt, Y		; set full pointer for output (5)
-			STA drv_ipt, Y		; and for input (5)
+			STA drv_opt, X		; set full pointer for output (5)
+			STA drv_ipt, X		; and for input (5)
 dr_next:
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
