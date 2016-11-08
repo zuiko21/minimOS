@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1a6
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-1329
+; last modified 20161108-0949
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -39,7 +39,7 @@ warm:
 	CLC
 	XCE				; enter native mode! still 8 bit regs, though
 
-; worth going 16-bit for the install calls?
+; worth going 16-bit for the install calls? beware of firmware calls!
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
 	LDY #<k_vec		; get table address, nicer way (2+2)
@@ -68,8 +68,8 @@ warm:
 	STY ram_stat	; as it is the first entry, no index needed
 	LDY #END_RAM	; also for end-of-memory marker
 	STY ram_stat+2	; note offset for interleaved array!
-	LDX #>user_ram	; beginning of available ram, as defined... in rom.s
-	LDY #<user_ram	; LSB misaligned?
+	LDX #>user_sram	; beginning of available ram, as defined... in rom.s
+	LDY #<user_sram	; LSB misaligned?
 	BEQ ram_init	; nothing to align
 		INX				; otherwise start at next page
 ram_init:
@@ -83,7 +83,6 @@ ram_init:
 ; ******************************************************
 ; THINK about making API entries for this!
 
-; set some labels, much neater this way
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
 ; same with dr_aut, now independent kernel call savvy 20161103
 ; 16-bit revamp 20161013
@@ -93,13 +92,13 @@ ram_init:
 	STX dreq_mx
 	STX dsec_mx
 ; already in 16-bit memory mode...
-	LDA #dr_error			; make unused entries point to a standard error routine (3)
+	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
-		STA drv_opt, X			; set full pointer for output (5)
-		STA drv_ipt, X			; and for input (5)
-		INX						; gANDo for next entry (2+2)
+		STA drv_opt, X		; set full pointer for output (5)
+		STA drv_ipt, X		; and for input (5)
+		INX					; go for next entry (2+2)
 		INX
-		BNE dr_clear			; finish page (3/2)
+		BNE dr_clear		; finish page (3/2)
 
 ; *** in non-multitasking systems, install embedded TASK_DEV driver ***
 #ifndef	MULTITASK
@@ -248,6 +247,8 @@ dr_call:
 
 dr_ok:					; *** all drivers inited ***
 	PLX					; discard stored X, beware of 16-bit memory!
+
+	.al					; as outside dr_call routine will be doing 16-bit memory!
 
 ; **********************************
 ; ********* startup code ***********

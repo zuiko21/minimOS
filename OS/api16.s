@@ -1,14 +1,14 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a7, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161107-0954
+; last modified 20161108-0950
 
 ; no way for standalone assembly...
 
 ; *** dummy function, non implemented ***
-unimplemented:		; placeholder here, not currently used
+unimplemented:			; placeholder here, not currently used
 	.as: .xs: SEP #$30	; *** standard register size ***
-	_ERR(UNAVAIL)	; go away!
+	_ERR(UNAVAIL)		; go away!
 
 
 ; *** COUT, output a character ***
@@ -16,31 +16,31 @@ unimplemented:		; placeholder here, not currently used
 
 cout:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	TYA				; for indexed comparisons (2)
-	BNE co_port		; not default (3/2)
-		LDA stdout		; new per-process standard device ### apply this to ·65
-		BNE co_port		; already a valid device
-			LDA default_out	; otherwise get system global (4)
+	TYA					; for indexed comparisons (2)
+	BNE co_port			; not default (3/2)
+		LDA stdout			; new per-process standard device ### apply this to ·65
+		BNE co_port			; already a valid device
+			LDA default_out		; otherwise get system global (4)
 co_port:
-	BMI co_phys		; not a logic device (3/2)
-		CMP #64			; first file-dev??? ***
-			BCC co_win		; below that, should be window manager
+	BMI co_phys			; not a logic device (3/2)
+		CMP #64				; first file-dev??? ***
+			BCC co_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 		CMP #64+MAX_FILES	; still within file-devs?
-			BCS co_log		; that value or over, not a file
+			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR(NO_RSRC)	; not yet implemented ***placeholder***
+		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
 co_log:
 ; investigate rest of logical devices
-		CMP #DEV_NULL	; lastly, ignore output
-			BNE cio_nfound	; final error otherwise
-		_EXIT_OK		; "/dev/null" is always OK
+		CMP #DEV_NULL		; lastly, ignore output
+			BNE cio_nfound		; final error otherwise
+		_EXIT_OK			; "/dev/null" is always OK
 co_win:
 ; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)	; not yet implemented
+	_ERR(NO_RSRC)		; not yet implemented
 co_phys:
 ; ** new direct indexing **
 	ASL					; convert to index (2+2)
@@ -63,13 +63,13 @@ cio_nfound:
 
 cin:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	TYA				; for indexed comparisons
-	BNE ci_port		; specified
-		LDA std_in		; new per-process standard device ### apply this to ·65
-		BNE ci_port		; already a valid device
-			LDA default_in	; otherwise get system global
+	TYA					; for indexed comparisons
+	BNE ci_port			; specified
+		LDA std_in			; new per-process standard device ### apply this to ·65
+		BNE ci_port			; already a valid device
+			LDA default_in		; otherwise get system global
 ci_port:
-	BPL ci_nph		; logic device
+	BPL ci_nph			; logic device
 ; ** new direct indexing **
 		ASL					; convert to index (2+2)
 		TAX
@@ -77,39 +77,39 @@ ci_port:
 			BCS cio_callend		; if some error, send it back
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
-		LDA io_c		; get received character
-		CMP #' '		; printable?
-			BCC ci_manage	; if not, might be an event
+		LDA io_c			; get received character
+		CMP #' '			; printable?
+			BCC ci_manage		; if not, might be an event
 		_EXIT_OK			; generic macro, older trick NLA
 
 ; ** continue event management ** REVISE
 ci_manage:
 ; check for binary mode
-	LDY cin_mode	; get flag
-	BEQ ci_event	; should process possible event
-		STZ cin_mode	; back to normal mode
-		_EXIT_OK		; and return whatever was received
+	LDY cin_mode		; get flag
+	BEQ ci_event		; should process possible event
+		STZ cin_mode		; back to normal mode
+		_EXIT_OK			; and return whatever was received
 ci_event:
-	CMP #16			; is it DLE?
-	BNE ci_notdle	; otherwise check next
-		INC cin_mode	; set binary mode!
-		BNE ci_abort	; and supress received character, no need for BRA
+	CMP #16				; is it DLE?
+	BNE ci_notdle		; otherwise check next
+		INC cin_mode		; set binary mode!
+		BNE ci_abort		; and supress received character, no need for BRA
 ci_notdle:
-	CMP #3			; is it ^C? (TERM)
-	BNE ci_noterm	; otherwise check next
+	CMP #3				; is it ^C? (TERM)
+	BNE ci_noterm		; otherwise check next
 		LDA #SIGTERM
-		BNE ci_signal	; send signal, no need for BRA?
+		BNE ci_signal		; send signal, no need for BRA?
 ci_noterm:
-	CMP #4			; is it ^D? (KILL) somewhat dangerous...
-	BNE ci_nokill	; otherwise check next
+	CMP #4				; is it ^D? (KILL) somewhat dangerous...
+	BNE ci_nokill		; otherwise check next
 		LDA #SIGKILL
-		BNE ci_signal	; send signal, no need for BRA?
+		BNE ci_signal		; send signal, no need for BRA?
 ci_nokill:
-	CMP #26			; is it ^Z? (STOP)
-	BEQ ci_stop		; last signal to be sent
-		_EXIT_OK		; otherwise all done
+	CMP #26				; is it ^Z? (STOP)
+	BEQ ci_stop			; last signal to be sent
+		_EXIT_OK			; otherwise all done
 ci_stop:
-	LDA #SIGSTOP	; last signal to be sent
+	LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 	STA b_sig			; set signal as parameter
 	_KERNEL(GET_PID)	; as this will be a self-sent signal!
@@ -118,32 +118,32 @@ ci_abort:
 	_ERR(EMPTY)			; no character was received
 
 ci_nph:
-	CMP #64			; first file-dev??? ***
-		BCC ci_win		; below that, should be window manager
+	CMP #64				; first file-dev??? ***
+		BCC ci_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 	CMP #64+MAX_FILES	; still within file-devs?
-		BCS ci_log		; that or over, not a file
+		BCS ci_log			; that or over, not a file
 ; *** manage here input from open file ***
-	_ERR(NO_RSRC)	; not yet implemented ***placeholder***
+	_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
 
 ci_log:
-	CMP #DEV_RND	; getting a random number?
-		BEQ ci_rnd		; compute it!
-	CMP #DEV_NULL	; lastly, ignore input
-		BNE cio_nfound	; final error otherwise
-	_EXIT_OK		; "/dev/null" is always OK
+	CMP #DEV_RND		; getting a random number?
+		BEQ ci_rnd			; compute it!
+	CMP #DEV_NULL		; lastly, ignore input
+		BNE cio_nfound		; final error otherwise
+	_EXIT_OK			; "/dev/null" is always OK
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	LDY ticks		; simple placeholder
+	LDY ticks			; simple placeholder
 	_EXIT_OK
 
 ci_win:
 ; *** virtual window manager TO DO ***
-	_ERR(NO_RSRC)	; not yet implemented
+	_ERR(NO_RSRC)		; not yet implemented
 
 
 ; *** MALLOC, reserve memory *** revamped 20161103
@@ -214,7 +214,7 @@ ma_found:
 	JSR ma_alsiz		; **compute size according to alignment mask**
 #ifdef	SAFE
 	BMI ma_nobad		; no corruption was seen (3/2) **instead of BCS**
-		LDA #user_ram	; otherwise take beginning of user RAM...
+		LDA #user_sram	; otherwise take beginning of user RAM...
 		LDX #USED_RAM	; ...that will become locked (maybe another value)
 		STA ram_pos		; create values
 		STX ram_stat		; **should it clear the PID field too???**
@@ -250,15 +250,19 @@ ma_updt:
 	STZ ma_pt			; clear pointer LSB... plus extra byte
 	LDA ram_pos, X		; get address of block to be assigned
 	STA ma_pt+1			; note this is address of PAGE
-	LDY #USED_RAM		; now is reserved
-	STY ram_stat, X		; update table entry
+	LDA #USED_RAM		; now is reserved
+	STA ram_stat, X		; update table entry, will destroy PID temporarily but no STY abs,X!!!
 ; ** new 20161106, store PID of caller **
 	PHX					; will need this index
 	_KERNEL(GET_PID)	; who asked for this?
 	PLX					; retrieve index
-	STY ram_pid, X		; store PID, interleaved array will apply some offset
+	.as: SEP #$30		; *** back to 8-bit because interleaved array! ***
+	TYA					; get into A as no STY abs,X!!!
+	STA ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
 	_EXIT_OK
+
+	.al					; as routines will be called in 16-bit memory!!!
 
 ; routine for aligned-block size computation
 ma_alsiz:
@@ -306,8 +310,8 @@ ma_room:
 	CLC
 	ADC ma_rs+1			; add number of assigned pages
 	STA ram_pos+2, X	; update value
-	LDY #FREE_RAM		; let us mark it as free
-	STY ram_stat+2, X	; next to the assigned one
+	LDA #FREE_RAM		; let us mark it as free, PID is irrelevant!
+	STA ram_stat+2, X	; next to the assigned one, no STY abs,X!!!
 	RTS
 
 
@@ -333,12 +337,12 @@ fr_no:
 	_ERR(N_FOUND)		; no such block!
 fr_found:
 #ifdef	SAFE
-	LDY #USED_RAM		; only used blocks can be freed!
-	CPY ram_stat, X	; was it in use?
-		BNE fr_no				; if not, cannot free it!
+	LDY ram_stat, X		; only used blocks can be freed!
+	CPY #USED_RAM		; was it in use?
+		BNE fr_no			; if not, cannot free it!
 #endif
-	LDY #FREE_RAM		; most likely zero, but do not use STZ in 16-bit mode!!!
-	STY ram_stat, X		; this block is now free, but...
+	LDA #FREE_RAM		; most likely zero, could I use STZ in 16-bit mode??? irrelevant PID
+	STA ram_stat, X		; no STY abs,Y... this block is now free, but...
 ; really should join possible adjacent free blocks
 	LDY ram_stat+2, X	; check status of following entry
 ;	CPY #FREE_RAM		; was it free? could be supressed if value is zero
@@ -351,7 +355,7 @@ fr_join:
 			STA ram_pos, X		; store one entry below
 			LDA ram_stat+2, X	; check status of following! **but PID field too**
 			STA ram_stat, X		; store one entry below **otherwise LDY/STY**
-			TAY			; **will transfer just status, PID will be ripped off**
+			TAY					; **will transfer just status, PID will be ripped off**
 			CPY #END_RAM		; end of list?
 			BNE fr_join			; repeat until done
 ; we are done
@@ -395,24 +399,6 @@ uptime:
 		STA up_sec+2	; store that (4)
 ; end of CS
 	_EXIT_OK
-
-
-; *** B_FORK, reserve available PID ***
-; Y -> PID
-
-b_fork:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_FORK		; subfunction code
-	BRA yld_call		; go for the driver
-
-
-; *** B_EXEC, launch new loaded process ***
-; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
-b_exec:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_EXEC		; subfunction code
-	BRA yld_call		; go for the driver
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
@@ -530,16 +516,16 @@ str_err:
 ; C -> not authorized (?)
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 su_sei:
-	SEI				; disable interrupts
-	_EXIT_OK		; no error so far
+	SEI					; disable interrupts
+	_EXIT_OK			; no error so far
 
 
 ; *** SU_CLI, enable interrupts ***
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 
-su_cli:				; not needed for 65xx, even with protection hardware
-	CLI				; enable interrupts
-	_EXIT_OK		; no error
+su_cli:					; not needed for 65xx, even with protection hardware
+	CLI					; enable interrupts
+	_EXIT_OK			; no error
 
 
 ; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA ***
@@ -552,42 +538,42 @@ su_cli:				; not needed for 65xx, even with protection hardware
 set_fg:
 	LDA zpar
 	ORA zpar+1
-		BEQ fg_dis		; if zero, disable output
-	LDA VIA+ACR		; get current configuration
-		BMI fg_busy	; already in use
-	LDX VIA+T1LL	; get older T1 latch values
-	STX old_t1		; save them
+		BEQ fg_dis			; if zero, disable output
+	LDA VIA+ACR			; get current configuration
+		BMI fg_busy			; already in use
+	LDX VIA+T1LL		; get older T1 latch values
+	STX old_t1			; save them
 	LDX VIA+T1LH
 	STX old_t1+1
 ; *** TO_DO - should compare old and new values in order to adjust quantum size accordingly ***
 	LDX zpar			; get new division factor
-	STX VIA+T1LL	; store it
+	STX VIA+T1LL		; store it
 	LDX zpar+1
 	STX VIA+T1LH
-	STX VIA+T1CH	; get it running!
-	ORA #$C0		; enable free-run PB7 output
-	STA VIA+ACR		; update config
+	STX VIA+T1CH		; get it running!
+	ORA #$C0			; enable free-run PB7 output
+	STA VIA+ACR			; update config
 fg_none:
-	_EXIT_OK		; finish anyway
+	_EXIT_OK			; finish anyway
 fg_dis:
-	LDA VIA+ACR		; get current configuration
-		BPL fg_none	; it wasn't playing!
-	AND #$7F		; disable PB7 only
-	STA VIA+ACR		; update config
-	LDA old_t1		; older T1L_L
-	STA VIA+T1LL	; restore old value
+	LDA VIA+ACR			; get current configuration
+		BPL fg_none			; it wasn't playing!
+	AND #$7F			; disable PB7 only
+	STA VIA+ACR			; update config
+	LDA old_t1			; older T1L_L
+	STA VIA+T1LL		; restore old value
 	LDA old_t1+1
-	STA VIA+T1LH	; it's supposed to be running already
+	STA VIA+T1LH		; it's supposed to be running already
 ; *** TO_DO - restore standard quantum ***
 		BRA fg_none
 fg_busy:
-	_ERR(BUSY)		; couldn't set
+	_ERR(BUSY)			; couldn't set
 
 
 ; *** GO_SHELL, launch default shell *** REVISE
 ; no interface needed
 go_shell:
-	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
+	JMP shell			; simply... *** SHOULD initialise SP and other things anyway ***
 
 
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
@@ -683,6 +669,24 @@ sd_tab:					; check order in abi.h!
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system
+
+
+; *** B_FORK, reserve available PID ***
+; Y -> PID
+
+b_fork:
+	.as: .xs: SEP #$30	; *** standard register size ***
+	LDX #MM_FORK		; subfunction code
+	BRA yld_call		; go for the driver
+
+
+; *** B_EXEC, launch new loaded process ***
+; API still subject to change... (default I/O, rendez-vous mode TBD)
+; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
+b_exec:
+	.as: .xs: SEP #$30	; *** standard register size ***
+	LDX #MM_EXEC		; subfunction code
+	BRA yld_call		; go for the driver
 
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***

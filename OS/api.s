@@ -1,13 +1,13 @@
 ; minimOS generic Kernel API
 ; v0.5.1a5, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-1431
+; last modified 20161108-1011
 
 ; no way for standalone assembly...
 
 ; *** dummy function, non implemented ***
-unimplemented:		; placeholder here, not currently used
-	_ERR(UNAVAIL)	; go away!
+unimplemented:			; placeholder here, not currently used
+	_ERR(UNAVAIL)		; go away!
 
 
 ; *** COUT, output a character ***
@@ -204,7 +204,7 @@ ma_found:
 	SEC
 	SBC ram_pos, X		; and subtract current pointer
 	BCS ma_nobad		; this one should be lower!
-		LDA #user_ram		; otherwise take beginning of user RAM...
+		LDA #>user_sram		; otherwise take beginning of user RAM...
 		LDY #USED_RAM		; ...that will become locked (maybe another value)
 		STA ram_pos			; create values
 		STY ram_stat		; **should it clear the PID field too???**
@@ -240,13 +240,14 @@ ma_updt:
 	_STZA ma_pt			; clear pointer LSB
 	LDA ram_pos, X		; get address of block to be assigned
 	STA ma_pt+1			; note this is address of PAGE
-	LDY #USED_RAM		; now is reserved
-	STY ram_stat, X		; update table entry
+	LDA #USED_RAM		; now is reserved
+	STA ram_stat, X		; update table entry
 ; ** new 20161106, store PID of caller **
 	_PHX				; will need this index
 	_KERNEL(GET_PID)	; who asked for this?
 	_PLX				; retrieve index
-	STY ram_pid, X		; store PID
+	TYA					; unfortunately no STY abs,X
+	STA ram_pid, X		; store PID
 ; theoretically we are done, end of CS
 	_EXIT_CS			; end of critical section, new 160119
 	_EXIT_OK			; we're done
@@ -286,10 +287,10 @@ ma_notend:
 ma_room:
 		LDA ram_pos, X		; get block address
 		STA ram_pos+1, X	; one position forward
-		LDY ram_stat, X		; get block status
-		STY ram_stat+1, X	; advance it
-		LDY ram_pid, X		; same for PID, non-interleaved!
-		STY ram_pid+1, X	; advance it
+		LDA ram_stat, X		; get block status
+		STA ram_stat+1, X	; advance it
+		LDA ram_pid, X		; same for PID, non-interleaved!
+		STA ram_pid+1, X	; advance it
 		DEX					; down one entry
 		CPX ma_ix			; position of updated entry
 		BNE ma_room			; continue until done
@@ -298,8 +299,8 @@ ma_room:
 	CLC
 	ADC ma_rs+1			; add number of assigned pages
 	STA ram_pos+1, X	; update value
-	LDY #FREE_RAM		; let us mark it as free
-	STY ram_stat+1, X	; next to the assigned one
+	LDA #FREE_RAM		; let us mark it as free
+	STA ram_stat+1, X	; next to the assigned one
 	RTS
 
 
@@ -324,12 +325,12 @@ fr_no:
 	_ERR(N_FOUND)		; no block to be freed!
 fr_found:
 #ifdef	SAFE
-	LDY #USED_RAM		; only used blocks can be freed!
-	CPY ram_stat, X		; was it in use?
+	LDY ram_stat, X		; only used blocks can be freed!
+	CPY #USED_RAM		; was it in use?
 		BNE fr_no			; if not, cannot free it!
 #endif
-	LDY #FREE_RAM		; most likely zero, but do not use STZ in 16-bit mode!!!
-	STY ram_stat, X		; this block is now free, but...
+	LDA #FREE_RAM		; most likely zero, might use STZ instead
+	STA ram_stat, X		; this block is now free, but...
 ; really should join possible adjacent free blocks
 	LDY ram_stat+1, X	; check status of following entry
 ;	CPY #FREE_RAM		; was it free? could be supressed if value is zero
@@ -339,8 +340,8 @@ fr_join:
 		INX					; go for next entry
 		LDA ram_pos+1, X	; get following address
 		STA ram_pos, X		; store one entry below
-		LDY ram_stat+1, X	; check status of following!
-		STY ram_stat, X		; store one entry below
+		LDA ram_stat+1, X	; check status of following!
+		STA ram_stat, X		; store one entry below
 		LDA ram_pid+1, X	; copy PID of following, but keep status in Y!
 		STA ram_pid, X		; no longer interleaved
 		CPY #END_RAM		; end of list?
@@ -391,24 +392,6 @@ up_upt:
 		BPL up_upt
 	_EXIT_CS
 	_EXIT_OK
-
-
-; *** B_FORK, get available PID *** properly interfaced 20150417
-; Y -> PID
-
-b_fork:
-; ** might be replaced with LDY pid on optimized builds **
-	LDX #MM_FORK	; subfunction code
-	_BRA yld_call	; go for the driver
-
-; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
-; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr, def_io <- std_in & stdout
-
-b_exec:
-; ** might be repaced with driver code on optimized builds **
-	LDX #MM_EXEC	; subfunction code
-	_BRA yld_call	; go for the driver
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
@@ -728,6 +711,25 @@ sd_tab:					; check order in abi.h!
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; shutdown system
 
+
+; *** B_FORK, get available PID *** properly interfaced 20150417
+; Y -> PID
+
+b_fork:
+; ** might be replaced with LDY pid on optimized builds **
+	LDX #MM_FORK	; subfunction code
+	_BRA yld_call	; go for the driver
+
+; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
+; API still subject to change... (default I/O, rendez-vous mode TBD)
+; Y <- PID, ex_pt <- addr, def_io <- std_in & stdout
+
+b_exec:
+; ** might be repaced with driver code on optimized builds **
+	LDX #MM_EXEC	; subfunction code
+	_BRA yld_call	; go for the driver
+
+
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid
 
@@ -856,7 +858,7 @@ st_signal:
 	CPY #SIGTERM		; clean shutdown
 		BEQ sig_term
 	CPY #SIGKILL		; suicide, makes any sense?
-		BEQ sig_rts			; *** I do not know what to do in this case *** might release MEMORY, windows etc
+		BEQ sig_kill		; *** I do not know what to do in this case *** might release MEMORY, windows etc
 sig_pid:
 	_DR_ERR(INVALID)	; unrecognised signal
 sig_term:
@@ -866,6 +868,7 @@ sig_term:
 	PHA
 	PHP					; as requested by RTI
 	JMP (mm_term)		; execute handler, will return to sig_rts
+sig_kill:
 sig_rts:
 	_DR_OK				; generic exit, but check label above
 

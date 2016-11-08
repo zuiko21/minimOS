@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1a2
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161107-1335
+; last modified 20161108-0956
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -25,8 +25,7 @@
 .text
 #endif
 
-; *********************************Z $3456
-9E 3   5   abs,X ........ STZ*****************
+; **************************************************
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
 
@@ -36,46 +35,44 @@ warm:
 #ifndef	LOWRAM
 ; ++++++
 #ifndef		DOWNLOAD
-	LDY #<k_vec		; get table address, nicer way (2+2)
+	LDY #<k_vec			; get table address, nicer way (2+2)
 	LDA #>k_vec
-	STY ex_pt		; store parameter (3+3)
+	STY ex_pt			; store parameter (3+3)
 	STA ex_pt+1
-	_ADMIN(INSTALL)	; copy jump table (14...)
+	_ADMIN(INSTALL)		; copy jump table (14...)
 #endif
 ; ++++++
 #endif
 
 ; install ISR code (as defined in "isr/irq.s" below)
-	LDY #<k_isr		; get address, nicer way (2+2)
+	LDY #<k_isr			; get address, nicer way (2+2)
 	LDA #>k_isr
-	STY ex_pt		; no need to know about actual vector location (3)
+	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
-	_ADMIN(SET_ISR)	; install routine (14...)
+	_ADMIN(SET_ISR)		; install routine (14...)
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
-	_STZA sd_flag	; this is important to be clear (PW_STAT) or set as proper error handler
+	_STZA sd_flag		; this is important to be clear (PW_STAT) or set as proper error handler
 
 ; *****************************
 ; *** memory initialisation ***
 ; *****************************
-; should be revised ASAP
 
 #ifndef		LOWRAM
 ; ++++++
-	LDY #FREE_RAM	; get status of whole RAM
-	STY ram_stat	; as it is the first entry, no index needed
-	LDY #END_RAM	; also for end-of-memory marker
-	STY ram_stat+1	; second entry in array
-	LDX #>user_ram	; beginning of available ram, as defined... in rom.s
-	LDY #<user_ram	; LSB misaligned?
-	BEQ ram_init	; nothing to align
-		INX				; otherwise start at next page
+	LDY #FREE_RAM		; get status of whole RAM
+	STY ram_stat		; as it is the first entry, no index needed
+	LDY #END_RAM		; also for end-of-memory marker
+	STY ram_stat+1		; second entry in array
+	LDX #>user_sram		; beginning of available ram, as defined... in rom.s
+	LDY #<user_sram		; LSB misaligned?
+	BEQ ram_init		; nothing to align
+		INX					; otherwise start at next page
 ram_init:
-	STX ram_pos		; store it, this is PAGE number
-	LDA #SRAM		; number of SRAM pages as defined in options.h
-	STA ram_pos+1	; store second Z $3456
-9E 3   5   abs,X ........ STZentry and we are done!
+	STX ram_pos			; store it, this is PAGE number
+	LDA #SRAM			; number of SRAM pages as defined in options.h
+	STA ram_pos+1		; store second entry and we are done!
 ; ++++++
 #endif
 
@@ -101,22 +98,22 @@ ram_init:
 ; ------
 #else
 ; ++++++ new direct I/O tables for much faster access 20160406 ++++++
-	LDY #<dr_error			; make unused entries point to a standard error routine, new 20160406 (2)
-	LDA #>dr_error			; no need to put these inside the loop! (2) ### use on ·16 too
 dr_clear:
-		STY drv_opt, X			; set LSB for output (4)
-		STY drv_ipt, X			; and for input (4)
-		INX						; go for MSB (2)
-		STA drv_opt, X			; set MSB for output (4)
-		STA drv_ipt, X			; and for input (4)
-		INX						; next entry (2)
-		BNE dr_clear			; finish page (3/2)
+		LDA #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2)
+		STA drv_opt, X		; set LSB for output (4)
+		STA drv_ipt, X		; and for input (4)
+		INX					; go for MSB (2)
+		LDA #>dr_error		; had to keep it inside because no STY abs,X!!!
+		STA drv_opt, X		; set MSB for output (4)
+		STA drv_ipt, X		; and for input (4)
+		INX					; next entry (2)
+		BNE dr_clear		; finish page (3/2)
 ; *** in non-multitasking systems, install embedded TASK_DEV driver ***
 #ifndef	MULTITASK
-	LDY #<st_taskdev		; pseudo-driver LSB -- standard label on api.s
-	LDA #>st_taskdev		; pseudo-driver MSB -- standard label on api.s
-	STY drv_opt				; *** assuming TASK_DEV = 128, index otherwise
-	STA drv_opt+1			; same for MSB
+	LDY #<st_taskdev	; pseudo-driver LSB -- standard label on api.s
+	LDA #>st_taskdev	; pseudo-driver MSB -- standard label on api.s
+	STY drv_opt			; *** assuming TASK_DEV = 128, index otherwise
+	STA drv_opt+1		; same for MSB
 #endif
 ; might do something similar for WIND_DEV = 129...
 ; ++++++
@@ -165,23 +162,23 @@ dr_busy:
 dr_empty:
 		LDY #D_COUT			; offset for output routine (2)
 		JSR dr_gind			; get indirect address
-		LDA tm_ptr			; get driver table LSB (3)
+		LDA sysptr			; get driver table LSB (3)
 		STA drv_opt, X		; store in table (4)
-		LDA tm_ptr+1		; same for MSB (3+4)
+		LDA sysptr+1		; same for MSB (3+4)
 		STA drv_opt+1, X
 		LDY #D_CIN			; same for input routine (2)
 		JSR dr_gind			; get indirect address
-		LDA tm_ptr			; get driver table LSB (3)
+		LDA sysptr			; get driver table LSB (3)
 		STA drv_ipt, X		; store in table (4)
-		LDA tm_ptr+1		; same for MSB (3+4)
+		LDA sysptr+1		; same for MSB (3+4)
 		STA drv_ipt+1, X
 ; ++++++
 #else
 ; ------ IDs table filling for low-RAM systems ------
 #ifdef	SAFE
 ; check whether the ID is already in use
-		LDY #0			; reset index (2)
-		BEQ dr_limit	; check whether has something to check, no need for BRA (3)
+		LDY #0				; reset index (2)
+		BEQ dr_limit		; check whether has something to check, no need for BRA (3)
 dr_scan:
 			CMP drivers_id, Y	; compare with list entry (4)
 				BEQ dr_abort		; already in use, don't register! (2/3)
@@ -219,7 +216,7 @@ dr_nopoll:
 			LDY #D_REQ			; get offset for async vector (2)
 			LDX dreq_mx			; get destination index (4)
 			CPX #MAX_QUEUE		; compare against limit (2)
-				BCS dr_ab_p		; error registering driver! (2/3) check poll!
+				BCS dr_ab_p			; error registering driver! (2/3) check poll!
 dr_aloop:
 				LDA (da_ptr), Y		; get its LSB (5)
 				STA drv_async, X	; store in RAM (4)
@@ -235,7 +232,7 @@ dr_noreq:
 			LDY #D_SEC			; get offset for 1-sec vector (2)
 			LDX dsec_mx			; get destination index (4)
 			CPX #MAX_QUEUE		; compare against limit (2)
-				BCS dr_abpr		; error registering driver! (2/3) check poll & async!
+				BCS dr_abpr			; error registering driver! (2/3) check poll & async!
 dr_sloop:
 				LDA (da_ptr), Y		; get its LSB (5)
 				STA drv_sec, X		; store in RAM (4)
@@ -281,34 +278,35 @@ dr_abort:
 				BPL dr_next			; nothing to delete (2/3)
 			ASL					; use retrieved ID as index (2+2)
 			TAX					; was TAY
-			LDA #<dr_error			; make deleted entries point to a standard error routine, new 20160406 (2)
-			STA drv_opt, X			; set LSB for output (4)
-			STA drv_ipt, X			; and for input (4)
-			LDA #>dr_error			; pretty much the same, not worth a loop (2)
-			STA drv_opt+1, X		; set MSB for output (4)
-			STA drv_ipt+1, X		; and for input (4)
+; might save some space here and up, with a routine...
+			LDA #<dr_error		; make deleted entries point to a standard error routine, new 20160406 (2)
+			STA drv_opt, X		; set LSB for output (4)
+			STA drv_ipt, X		; and for input (4)
+			LDA #>dr_error		; pretty much the same, not worth a loop (2)
+			STA drv_opt+1, X	; set MSB for output (4)
+			STA drv_ipt+1, X	; and for input (4)
 ; ++++++
 #endif
 dr_next:
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
-		INC drv_num		; update SINGLE index (6)
+		INC drv_num			; update SINGLE index (6)
 ; ------
 #endif
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
-		_PLX			; retrieve saved index (4)
-		INX				; update ADDRESS index, even if unsuccessful (2)
-		INX				; eeeeeeeek! pointer arithmetic! (2)
-		JMP dr_loop		; go for next (3)
+		_PLX				; retrieve saved index (4)
+		INX					; update ADDRESS index, even if unsuccessful (2)
+		INX					; eeeeeeeek! pointer arithmetic! (2)
+		JMP dr_loop			; go for next (3)
 
 ; get indirect address from driver pointer table, 13 bytes, 33 clocks
 dr_gind:
 	LDA (da_ptr), Y		; get address LSB (5)
-	STA tm_ptr			; store temporarily (3)
+	STA sysptr			; store temporarily (3)
 	INY					; same for MSB (2)
 	LDA (da_ptr), Y		; get MSB (5)
-	STA tm_ptr+1		; store temporarily (3)
+	STA sysptr+1		; store temporarily (3)
 	RTS					; come back!!! (6)
 
 dr_error:
@@ -342,15 +340,15 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 
 ; reset several remaining flags
-	_STZA cin_mode	; reset binary mode flag, new 20150618
+	_STZA cin_mode		; reset binary mode flag, new 20150618
 
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
 #ifndef		MULTITASK
-	LDY #<sig_kill	; get default routine address LSB
-	LDA #>sig_kill	; same for MSB
-	STY mm_term		; store in new system variable
+	LDY #<sig_kill		; get default routine address LSB
+	LDA #>sig_kill		; same for MSB
+	STY mm_term			; store in new system variable
 	STA mm_term+1
 #endif
 
@@ -359,8 +357,8 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 
 ; *** set default I/O device ***
-	LDA #DEVICE		; as defined in options.h
-	STA default_out	; should check some devices
+	LDA #DEVICE			; as defined in options.h
+	STA default_out		; should check some devices
 	STA default_in
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
