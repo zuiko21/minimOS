@@ -1,15 +1,15 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a6
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161103-0923
+; last modified 20161108-1107
 
 ; *** set some reasonable number of braids ***
--MAX_BRAIDS	= 16		; takes 8 kiB -- hope it is OK to define here!
+-MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 #ifndef		HEADERS
 #include "usual.h"
 ; specific header
-.bss1234
+.bss
 #include "drivers/multitask16.h"
 .text
 #endif
@@ -20,25 +20,36 @@
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
 	.word	mm_nreq		; D_REQ does nothing
-	.word	mm_rts		; no input
+	.word	mm_abort	; no input
 	.word	mm_cmd		; output will process all subfunctions!
 	.word	mm_bye		; no need for 1-second interrupt
-	.word	mm_exit		; no block input
-	.word	mm_exit		; no block output
+	.word	mm_abort	; no block input
+	.word	mm_abort	; no block output
 	.word	mm_bye		; shutdown procedure
 	.word	mm_info		; points to descriptor string
 	.byt	0			; reserved, D_MEM
 
 ; *** driver description ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task 65816 Scheduler v0.5.1a4", 0
+	.asc	"16-task 65816 Scheduler v0.5.1a6", 0
 
 ; *** initialisation code ***
 mm_init:
+; if needed, check whether proper stack frame is available from kernel
+#ifdef	SAFE
 ; might check for bankswitching hardware and cause error, in order NOT to install BOTH schedulers!...
 ; hardware-assisted scheduler init code should do the opposite!
+;	LDY #0				; supposedly null PID
+;	_ADMIN(SWITCH)		; future use of hardware multitasking
+;	BCC mm_nohw			; no hardware detected, OK to proceed with soft
+;		_DR_ERR(INVALID)	; otherwise will not install, hope there is a hardware driver!
+;mm_nohw:
 ; remaining code assumes software scheduler only
-
+	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
+	BCC mm_cont			; skip if no error eeeeeeeeeek
+		_DR_ERR(UNAVAIL)	; error if not available
+mm_cont:
+#endif
 ; initialise stack pointers and flags table
 	LDA #>mm_context	; MSB of storage area
 	CLC
@@ -67,14 +78,8 @@ mm_rsp:
 	XBA					; that was MSB
 	LDA #$FF			; restored value, no need to skim on that (2)
 	TCS					; stack pointer updated!
-
-; if needed, check whether proper stack frame is available from kernel
-#ifdef	SAFE
-	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
-	BCC mm_exit			; skip if no error eeeeeeeeeek
-		_DR_ERR(UNAVAIL)	; error if not available
-#endif
-mm_exit:
+; *** shutdown code placeholder *** does not do much
+mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
 
 ; kill itself!!! simple way to terminate after FINISH
@@ -159,14 +164,8 @@ mm_sigterm:
 	PHP					; as needed by RTI
 	RTI					; actual jump, will return to an RTS and continue ISR
 
-; *** shutdown code ***
-; really not much to do... might check whether no active tasks remain
-mm_bye:
-	RTS
-
 ; *** subfunction processing section ***
 mm_cmd:
-	LDX io_c			; get subfunction as index (3)
 #ifdef	SAFE
 	CPX #MM_PRIOR+2		; check limits, put last subfunction as appropriate (2)
 		BCS mm_bad			; go away otherwise! (2/3) eeeeeeeeek
@@ -176,7 +175,7 @@ mm_cmd:
 #ifdef	SAFE
 ; check PID within limits (20 including call)
 mm_chkpid:
-	TYA			; eeeeeeeek^2 the place to do it, new format (2)
+	TYA					; eeeeeeeek^2 the place to do it, new format (2)
 		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
 	CPY #MAX_BRAIDS+1	; check whether it's a valid PID (2) eeeeeek!
 		BCS mm_piderr		; way too much (2/3) eeeek
@@ -195,7 +194,7 @@ mm_fork:
 	LDY #MAX_BRAIDS	; scan backwards is usually faster (2)
 ; ** assume interrupts are off via COP **
 mmf_loop:
-		LDA mm_flags-1, Y		; get that braid's status (4)
+		LDA mm_flags-1, Y	; get that braid's status (4)
 		CMP #BR_FREE		; check whether available (2)
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
@@ -203,7 +202,7 @@ mmf_loop:
 	_DR_ERR(FULL)		; no available braids! *** it is a kernel I/O call...
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
-	STA mm_flags-1, Y		; reserve braid (4)
+	STA mm_flags-1, Y	; reserve braid (4)
 	_DR_OK				; this OK? it is a kernel I/O call...
 
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
@@ -266,9 +265,9 @@ mmx_sfp:
 	STX sys_sp			; this is the computed stack pointer for the new braid
 	LDX #ZP_AVAIL		; standard available space
 	STX z_used			; as required
-; now should poke sys_in & sysout from stack
+; now should poke std_in & stdout from stack
 	PLA					; this was sysout & sys_in, little endian
-	STA sys_in			; assume sys_in is the LSB!!!
+	STA std_in			; assume sys_in is the LSB!!!
 	.as: SEP #$20		; *** back to 8-bit ***
 	LDA #BR_RUN			; will enable task
 	STA mm_flags-1, Y	; Y holds desired PID
@@ -312,7 +311,7 @@ mms_kill:
 	STA mm_flags-1, Y	; store new status (5)
 	LDA #0				; no STZ abs,Y
 	STA mm_treq-1, Y	; clear unattended TERM signal, 20150617
-; should probably free up all windows belonging to this PID...
+; should probably free up all MEMORY & windows belonging to this PID...
 	_DR_OK				; return as appropriate
 
 ; resume execution
@@ -380,6 +379,10 @@ mm_prior:				; this is just a placeholder
 ; emergency exit, should never arrive here!
 mm_nreq:
 	_NEXT_ISR			; just in case
+
+; placeholder for unimplemented features
+mm_abort:
+	_DR_ERR(EMPTY)
 
 ; *** subfuction addresses table ***
 mm_funct:

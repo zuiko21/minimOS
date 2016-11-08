@@ -1,23 +1,15 @@
 ; software multitasking module for minimOS
-; v0.5a7
+; v0.5.1a1
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161017-1344
+; last modified 20161108-1041
 
-#define	QUANTUM_COUNT	8
-#define	MAX_BRAIDS		4
+QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switching
+-MAX_BRAIDS		= 4		; reasonable number without too much overhead
 
-; *** this makes sense for 02 only, but check newer interface ASAP *************************
-; in case of standalone assembly from 'xa drivers/multitask.s'
-#ifndef		DRIVERS
-#include "options.h"
-#include "macros.h"
-#include "abi.h"		; new filename
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-#include "sysvars.h"
+#ifndef		HEADERS
+#include "usual.h"
 ; specific header
+.bss
 #include "drivers/multitask.h"
 .text
 #endif
@@ -25,7 +17,7 @@
 
 ; *** begins with sub-function addresses table, new format 20150323 ***
 	.byt	TASK_DEV	; physical driver number D_ID (TBD)
-	.byt	A_POLL		; polling scheduler this far, might get some I/O for API
+	.byt	A_POLL+A_COUT	; polling scheduler this far, new architecture needs to enable output!
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
 	.word	mm_eexit	; D_REQ does nothing
@@ -40,7 +32,7 @@
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5a7", 0
+	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a1", 0
 
 ; *** initialisation code ***
 mm_init:
