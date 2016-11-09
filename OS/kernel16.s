@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a6
+; v0.5.1a7
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161108-0949
+; last modified 20161109-1106
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -102,7 +102,7 @@ dr_clear:
 
 ; *** in non-multitasking systems, install embedded TASK_DEV driver ***
 #ifndef	MULTITASK
-	LDA #st_taskdev		; pseudo-driver full address -- standard label on api16.s
+	LDA #st_taskdev		; pseudo-driver full address
 	STA drv_opt			; *** assuming TASK_DEV = 128, index otherwise
 #endif
 ; might do something similar for WIND_DEV = 129...
@@ -286,7 +286,7 @@ dr_ok:					; *** all drivers inited ***
 .al						; I do not know why is this needed
 	LDA #shell			; pointer to integrated shell!
 	STA ex_pt			; set execution full address
-	LDA #DEVICE*257			; revise as above *****
+	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
 	_KERNEL(B_EXEC)		; go for it!
 
@@ -306,6 +306,95 @@ shell:
 #else
 #include "api_lowram.s"
 #endif
+
+; *** default single-task driver, new here 20161109 ***
+st_taskdev:
+	JMP (st_tdlist, X)	; call appropriate code, will return to original caller
+
+; pointer list for single-task management routines
+st_tdlist:
+	.word	st_fork		; reserve a free braid (will go BR_STOP for a moment)
+	.word	st_exec		; get code at some address running into a paused braid (will go BR_RUN)
+	.word	st_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
+	.word	st_signal	; send some signal to a braid
+	.word	st_status	; get execution flags for a braid
+	.word	st_getpid	; get current PID
+	.word	st_hndl		; set SIGTERM handler
+	.word	st_prior	; priorize braid, jump to it at once, really needed?
+
+; ** single-task management routines **
+
+; B_FORK for non-multitasking systems
+; GET_PID for non-multitasking systems
+st_fork:
+st_getpid:
+	LDY #0				; no multitasking, system reserved PID anytime
+; B_YIELD for non-multitasking systems
+st_yield:
+	_DR_OK				; YIELD has no other task to give CPU time to!
+
+; B_EXEC for non-multitasking systems
+st_exec:
+st_prior:
+#ifdef	SAFE
+	TYA					; should be system reserved PID, best way
+	BEQ exec_st			; OK for single-task system
+		_DR_ERR(NO_RSRC)	; no way without multitasking
+exec_st:
+#endif
+; this should now work for both 02 and 816 apps
+	LDA cpu_ll			; check architecture
+	CMP #'V'			; check whether native 816 code (ending in RTL)
+; new approach, reusing 816 code!
+	BNE exec_02			; skip return address for 8-bit code
+; ** alternative to self-generated code for long indirect call **
+		PHK					; push program bank address, actually zero (3)
+		PEA exec_ret-1		; push corrected return address (now long thanks to above instruction) (5)
+exec_02:
+	JMP [ex_pt]			; forthcoming RTL will get back just here, but 6502 RTS will go back to caller COUT
+exec_ret:
+	RTS					; keep possible error code (6)
+
+; SET_HNDL for single-task systems
+st_hndl:
+	.al: REP #$20		; *** 16-bit memory size ***
+	LDA ex_pt			; get pointer *** only bank zero addresses supported this far
+	STA mm_term			; store in single variable (from unused table)
+	_DR_OK
+
+; B_STATUS for single-task systems
+st_status:
+	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
+	_DR_OK
+
+; B_SIGNAL for single-task systems
+st_signal:
+#ifdef	SAFE
+	TYA					; check correct PID, really needed?
+		BNE sig_pid			; strange error?
+#endif
+	LDY b_sig			; get the signal
+	CPY #SIGTERM		; clean shutdown
+		BEQ sig_term
+	CPY #SIGKILL		; suicide, makes any sense?
+		BEQ sig_kill
+sig_pid:
+	_DR_ERR(INVALID)	; unrecognised signal
+sig_term:
+	PHK					; needed for new interface as will end in RTI!
+	PEA sig_kill		; correct return address
+	PHP					; eeeeeeeeeeeek
+	LDA mm_stbnk		; single task handler might be anywhere
+	PHA					; push bank address eeeeeeeeeeeek
+	LDA mm_term+1		; get handler MSB
+	PHA					; into stack
+	LDA mm_term			; same for LSB
+	PHA
+	PHP					; as required
+	RTI					; actual JUMP, RTS will get as indicated
+sig_kill:				; *** I do not know what to do in this case *** might release windows etc
+	_DR_OK				; generic exit, but check label above
+
 
 ; *** new, sorted out code 20150124 ***
 ; *** interrupt service routine ***
