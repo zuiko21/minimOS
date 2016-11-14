@@ -1,7 +1,7 @@
 ; software serial port emulator for minimOS!
-; v0.5b2, for generic 65C02 (65816-savvy)
+; v0.5b3, for generic 65C02 (65816-savvy)
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161114-1412
+; last modified 20161114-2140
 
 ; VIA bit functions
 ; Tx	= PA0 (any 0...5, set masks accordingly)
@@ -23,8 +23,8 @@
 ; *** begins with sub-function addresses table ***
 	.byt	232			; physical driver number D_ID (TBD)
 	.byt	A_COUT+A_CIN	; basic I/O driver, non-interrupt-driven
-	.word	srs_init	; initialize 'device', called by POST only
-	.word	srs_exit	; no periodinc interrupt
+	.word	srs_init	; initialise 'device', called by POST only
+	.word	srs_exit	; no periodic interrupt
 	.word	srs_nreq	; D_REQ does nothing
 	.word	srs_rcv		; read one byte from 'serial'
 	.word	srs_send	; output one byte to 'serial'
@@ -37,7 +37,7 @@
 
 ; *** driver description ***
 srs_info:
-	.asc	"Serial-port emulation v0.5b2", 0
+	.asc	"Serial-port emulation v0.5b3", 0
 
 ; *** some definitions ***
 zsr_vote	= sys_sp	; single local variable, could be elsewhere in zeropage
@@ -81,7 +81,7 @@ srss_cts:
 	LDX #9				; bits per byte incl. stop
 	SEC					; this will be the stop bit!
 ; now put the start bit
-	LDA #1				; mask for Tx, will be used anywhere (2)
+	LDA #TX_MASK			; mask for Tx, will be used anywhere (2)
 	TRB VIA1+IORA		; REset it! EEEEEEK (6)
 	PHA: PLA			; 7 extra clocks delay!
 	JSR srs_83us		; delay (83)
@@ -106,9 +106,10 @@ srss_sent:
 ; ************************
 srs_rcv:
 	_ENTER_CS			; disable interrupts
-	LDA #2				; mask for RTS
+	LDA #RTS_MASK		; mask for RTS
 	TRB VIA1+IORA		; enable reception!
-	LDX #136			; timeout counter ~1.5 mS
+	LDX #136			; timeout counter ~1.5 mS *** not for 1.8432 MHz ***
+;	LDX #251			; *** timeout constant for 1.8432 MHz systems ***
 ; wait until data is available
 srsr_wait:
 		BIT VIA1+IORA		; check input bits (4)
@@ -127,7 +128,9 @@ srsr_start:
 	STZ io_c			; clear received value (3)
 srsr_bit:
 		STZ zsr_vote		; clear sample counter (3)
-		LDY #3				; samples per bit (2)
+		LDY #3				; samples per bit (2) *** make it 5 at 1.8432 MHz ***
+		NOP					; fix sampling timing (2) *** NOT for 1.8432 MHz ***
+;		LDA zsr_vote		; *** put this for 1.8432 MHz (3) ***
 srsr_sample:
 			BIT VIA1+IORA		; check Rx (4)
 			BPL srsr_zero		; was clear (3/2)
@@ -137,11 +140,11 @@ srsr_zero:
 			DEC zsr_vote		; vote for 0 (5/0)
 			NOP					; equalise paths (2/0)
 srsr_took:
-			LDA $0100			; minimal delay! (4)
-			LDA zsr_vote		; a bit more (3)
+			PHA: PLA			; slight delay (7)
+;			PHA: PLA			; *** add this for 1.8432 MHz (7) ***
 			DEY					; next sample (2)
 			BNE srsr_sample		; vote again (3/2)
-		NOP					; now three samples took 79 uS! (2)
+; now three samples took 79 uS! (see NOP above) (or 164 clocks @ 1.8432)
 ; let us decide what the bit is according to votes
 		BIT zsr_vote		; check sign (3)
 		BPL srsr_one		; was set (3/2)
@@ -173,50 +176,28 @@ srsr_stop:
 
 ; ****************************************
 ; *** delay routines for 1 MHz systems ***
+; ***** note changes for 1.8432 MHz! *****
 ; ****************************************
 
-; * delay for a bit (83us incl JSR/RTS) *
+; * delay for a bit (83us incl JSR/RTS, or 171) *
 srs_83us:
-	LDY #14				; delay constant (2)
+;	LDY sys_sp			; for timing (3) *** 1.8432 only ***
+	LDY #14				; delay constant (2) *** 31 for 1.8432 ***
 srs83_loop:
 		DEY					; update countdown (2)
-		BNE srs83_loop		; until done (3/2) total 64 for 13 iterations
+		BNE srs83_loop		; until done (3/2)
 srs_exit:
 	RTS					; done (6)
 
-; * half-bit delay (41us incl JSR/RTS) *
+; * half-bit delay (41us incl JSR/RTS, or 85) *
 srs_41us:
-	LDY #5				; delay constant (2)
-	BRA srs83_loop		; continue with accurate timing (3)
+;	LDY $0100			; extra delay (4) *** 1.8432 only ***
+	LDY #5				; delay constant (2) *** 13 for 1.8432 ***
+	BRA srs83_loop		; continue with accurate timing (3+)
 
-; * full-bit delay (104uS) *
+; * full-bit delay (104uS or 192) *
 srs_fullbit:
-	LDY zsr_vote		; extra delay (3)
-	LDY #17				; for a 104uS delay
-	BRA srs83_loop		; continue delay (93)
-
-; ********************************************************
-; *** in case of 1.8432 MHz systems, use these instead ***
-; ********************************************************
-
-; * delay for a bit (171us incl JSR/RTS) *
-;srs_83us:
-;	LDY sys_sp			; for timing (3)
-;	LDY #31				; delay constant (2)
-;srs83_loop:
-;		DEY					; update countdown (2)
-;		BNE srs83_loop		; until done (3/2) total 5*y-1
-;srs_exit:
-;	RTS					; done (6)
-;
-; * half-bit delay (85us incl JSR/RTS) *
-;srs_41us:
-;	LDY $0100			; extra delay (4)
-;	LDY #13				; delay constant (2)
-;	BRA srs83_loop		; continue with accurate timing (3)
-;
-; * full-bit delay (192uS) *
-;srs_fullbit:
-;	LDY #34				; for a 192uS delay (2)
-;	LDA (zsr_vote, X)	; extra delay (6) hopefully will not screw I/O!!!
-;	BRA srs83_loop		; continue delay (178)
+	LDY zsr_vote		; correcting delay (3)
+;	LDY zsr_vote		; extra delay (3) *** 1.8432 only ***
+	LDY #17				; for a 104uS delay (2) *** 34 for 1.8432 ***
+	BRA srs83_loop		; continue delay (93 or 178)
