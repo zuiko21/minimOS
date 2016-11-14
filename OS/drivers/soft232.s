@@ -1,7 +1,7 @@
 ; software serial port emulator for minimOS!
 ; v0.5b2, for generic 65C02 (65816-savvy)
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161114-1339
+; last modified 20161114-1412
 
 ; VIA bit functions
 ; Tx	= PA0 (any 0...5, set masks accordingly)
@@ -171,14 +171,13 @@ srsr_stop:
 	_EXIT_CS			; no longer in a hurry
 	_DR_OK
 
-; ****************************
-; *** some useful routines ***
-; ****************************
+; ****************************************
+; *** delay routines for 1 MHz systems ***
+; ****************************************
 
 ; * delay for a bit (83us incl JSR/RTS) *
 srs_83us:
-	INC sys_sp			; for timing (5)
-	LDY #13				; delay constant (2)
+	LDY #14				; delay constant (2)
 srs83_loop:
 		DEY					; update countdown (2)
 		BNE srs83_loop		; until done (3/2) total 64 for 13 iterations
@@ -192,6 +191,32 @@ srs_41us:
 
 ; * full-bit delay (104uS) *
 srs_fullbit:
+	LDY zsr_vote		; extra delay (3)
 	LDY #17				; for a 104uS delay
-	LDA zsr_vote		; extra delay (3)
 	BRA srs83_loop		; continue delay (93)
+
+; ********************************************************
+; *** in case of 1.8432 MHz systems, use these instead ***
+; ********************************************************
+
+; * delay for a bit (171us incl JSR/RTS) *
+;srs_83us:
+;	LDY sys_sp			; for timing (3)
+;	LDY #31				; delay constant (2)
+;srs83_loop:
+;		DEY					; update countdown (2)
+;		BNE srs83_loop		; until done (3/2) total 5*y-1
+;srs_exit:
+;	RTS					; done (6)
+;
+; * half-bit delay (85us incl JSR/RTS) *
+;srs_41us:
+;	LDY $0100			; extra delay (4)
+;	LDY #13				; delay constant (2)
+;	BRA srs83_loop		; continue with accurate timing (3)
+;
+; * full-bit delay (192uS) *
+;srs_fullbit:
+;	LDY #34				; for a 192uS delay (2)
+;	LDA (zsr_vote, X)	; extra delay (6) hopefully will not screw I/O!!!
+;	BRA srs83_loop		; continue delay (178)
