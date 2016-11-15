@@ -1,6 +1,6 @@
-; minimOS 0.5.1a2 API/ABI
+; minimOS 0.5.1a3 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161103-1009
+; last modified 20161115-0951
 
 ; VIA 65(C)22 registers, just for convenience
 ; offsets from base address (add to base in options.h)
@@ -81,7 +81,8 @@ B_STATUS	=  40	; get execution flags of a braid
 GET_PID		=  42	; get current braid PID
 SET_HNDL	=  44	; set SIGTERM handler
 B_YIELD		=  46	; give away CPU time, not really needed but interesting anyway
-TS_INFO		=  48	; get taskswitching info for multitasking driver, to be revised
+TS_INFO		=  48	; get taskswitching info for multitasking driver
+RELEASE		=  50	; release ALL memory chuncks belonging to some PID, new 20161115
 
 ; ** optional multitasking subfunctions, TBD **
 MM_FORK		=  0	; reserve a free braid (will go BR_STOP for a moment)

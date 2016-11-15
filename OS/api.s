@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a6, must match kernel.s
+; v0.5.1a7, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161109-1107
+; last modified 20161115-1111
 
 ; no way for standalone assembly...
 
@@ -793,8 +793,37 @@ tsi_str:
 tsi_end:
 ; end of stack frame for easier size computation
 
-; *** end of kernel functions ***
+; *** RELEASE, release ALL memory for a PID, new 20161115
+; Y <- PID
 
+release:
+	TYA					; as no CPY abs,X
+	LDX #0				; reset index
+rls_loop:
+		LDY ram_stat, X		; will check stat of this block
+		CPY #USED_RAM
+			BNE rls_oth			; it is not in use
+		CMP ram_pid, X		; check whether mine!
+		BNE rls_oth			; it is not mine
+			PHA					; otherwise save status
+			_PHX
+			LDY ram_pos, X		; get pointer to targeted block
+			LDA ram_pos+1, X	; MSB too
+			STY ma_pt			; will be used by FREE
+			STA ma_pt+1
+			_KERNEL(FREE)		; release it!
+			_PLX				; retrieve status
+			PLA
+			BCC rls_next		; keep index IF current entry was deleted!
+rls_oth:
+		INX					; advance to next block
+rls_next:
+		LDY ram_stat, X		; look status only
+		CPY #END_RAM		; are we done?
+		BNE rls_loop		; continue if not yet
+	_EXIT_OK			; no errors...
+
+; *** end of kernel functions ***
 
 ; jump table, if not in separate 'jump' file
 #ifndef		DOWNLOAD

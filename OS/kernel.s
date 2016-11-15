@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1a3
+; v0.5.1a4
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161109-1107
+; last modified 20161115-0941
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -110,8 +110,8 @@ dr_clear:
 		BNE dr_clear		; finish page (3/2)
 ; *** in non-multitasking systems, install embedded TASK_DEV driver ***
 #ifndef	MULTITASK
-	LDY #<st_taskdev	; pseudo-driver LSB -- standard label on api.s
-	LDA #>st_taskdev	; pseudo-driver MSB -- standard label on api.s
+	LDY #<st_taskdev	; pseudo-driver LSB -- standard label on kernel.s
+	LDA #>st_taskdev	; pseudo-driver MSB
 	STY drv_opt			; *** assuming TASK_DEV = 128, index otherwise
 	STA drv_opt+1		; same for MSB
 #endif
@@ -392,6 +392,8 @@ shell:
 #endif
 
 ; *** pseudo-driver for non-multitasking systems! ***
+; only to be installed if no proper multitasking driver is present! 20161115
+#ifndef	MULTITASK
 st_taskdev:
 	JMP (st_tdlist, X)	; call appropriate code, will return to original caller
 
@@ -466,7 +468,7 @@ sig_term:
 sig_kill:
 sig_rts:
 	_DR_OK				; generic exit, but check label above
-
+#endif
 
 ; *** new, sorted out code 20150124 ***
 ; *** interrupt service routine ***

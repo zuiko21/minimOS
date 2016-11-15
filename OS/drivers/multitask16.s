@@ -1,7 +1,15 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a6
+; v0.5.1a7
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161108-1107
+; last modified 20161115-0950
+
+; will install only if no other multitasking driver is already present!
+#ifndef	MULTITASK
+#define		MULTITASK	_MULTITASK
+
+; ********************************
+; *** multitasking driver code ***
+; ********************************
 
 ; *** set some reasonable number of braids ***
 -MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
@@ -31,13 +39,14 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a6", 0
+	.asc	"16-task 65816 Scheduler v0.5.1a7", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
 mm_init:
 ; if needed, check whether proper stack frame is available from kernel
 #ifdef	SAFE
 ; might check for bankswitching hardware and cause error, in order NOT to install BOTH schedulers!...
+; ...or just ignore as only the first driver will install?
 ; hardware-assisted scheduler init code should do the opposite!
 ;	LDY #0				; supposedly null PID
 ;	_ADMIN(SWITCH)		; future use of hardware multitasking
@@ -312,6 +321,9 @@ mms_kill:
 	LDA #0				; no STZ abs,Y
 	STA mm_treq-1, Y	; clear unattended TERM signal, 20150617
 ; should probably free up all MEMORY & windows belonging to this PID...
+;	LDY mm_pid			; get current task number
+;	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
+; window release *** TO DO *** TO DO *** TO DO ***
 	_DR_OK				; return as appropriate
 
 ; resume execution
@@ -401,3 +413,5 @@ mms_table:
 	.word	mms_term
 	.word	mms_cont
 	.word	mms_stop
+
+#endif

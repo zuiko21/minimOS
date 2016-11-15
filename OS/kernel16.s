@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a7
+; v0.5.1a8
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161109-1106
+; last modified 20161115-0941
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -102,7 +102,7 @@ dr_clear:
 
 ; *** in non-multitasking systems, install embedded TASK_DEV driver ***
 #ifndef	MULTITASK
-	LDA #st_taskdev		; pseudo-driver full address
+	LDA #st_taskdev		; pseudo-driver full address, would be in kernel16.s
 	STA drv_opt			; *** assuming TASK_DEV = 128, index otherwise
 #endif
 ; might do something similar for WIND_DEV = 129...
@@ -308,6 +308,8 @@ shell:
 #endif
 
 ; *** default single-task driver, new here 20161109 ***
+; only to be installed if no multitasking driver already present! 20161115
+#ifndef	MULTITASK
 st_taskdev:
 	JMP (st_tdlist, X)	; call appropriate code, will return to original caller
 
@@ -394,7 +396,7 @@ sig_term:
 	RTI					; actual JUMP, RTS will get as indicated
 sig_kill:				; *** I do not know what to do in this case *** might release windows etc
 	_DR_OK				; generic exit, but check label above
-
+#endif
 
 ; *** new, sorted out code 20150124 ***
 ; *** interrupt service routine ***

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a8, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161109-1103
+; last modified 20161115-1051
 
 ; no way for standalone assembly...
 
@@ -10,10 +10,11 @@ unimplemented:			; placeholder here, not currently used
 	.as: .xs: SEP #$30	; *** standard register size ***
 	_ERR(UNAVAIL)		; go away!
 
-
+; ********************************
 ; *** COUT, output a character ***
-; Y <- dev, io_c <- char
-
+; ********************************
+; **** Y <- dev, io_c <- char ****
+; ********************************
 cout:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA					; for indexed comparisons (2)
@@ -57,10 +58,11 @@ cio_notc:
 cio_nfound:
 	_ERR(N_FOUND)		; unknown device
 
-
-; *** CIN, get a character ***
-; Y <- dev, io_c -> char, C = not available
-
+; *************************************************
+; ************* CIN,  get a character *************
+; *************************************************
+; *** Y <- dev, io_c -> char, C = not available ***
+; *************************************************
 cin:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	TYA					; for indexed comparisons
@@ -145,15 +147,16 @@ ci_win:
 ; *** virtual window manager TO DO ***
 	_ERR(NO_RSRC)		; not yet implemented
 
-
-; *** MALLOC, reserve memory *** revamped 20161103
-; ma_rs <- size, ma_pt -> addr, C = not enough memory
-; ma_align <- mask for MSB (0=page or not aligned, 1=512b, $FF=bank aligned) new 161105 TO DO
-; ma_rs = 0 means reserve as much memory as available!!!
-; ram_stat & ram_pid are interleaved (=ram_stat+1) in minimOS-16, but separate otherwise!
-; * this works on 24-bit addressing! *
-; uses ma_l as diverse temporary vars, as defined below
-
+; *******************************************************************************
+; *************************** MALLOC,  reserve memory ***************************
+; *******************************************************************************
+; ************* ma_rs <- size, ma_pt -> addr, C = not enough memory *************
+; *** ma_align <- mask for MSB (0=page/not aligned, 1=512b, $FF=bank aligned) ***
+; ************* ma_rs = 0 means reserve as much memory as available *************
+; ******* ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16 *******
+; *********************** this works on 24-bit addressing ***********************
+; ************ uses ma_l as diverse temporary vars, as defined below ************
+; *******************************************************************************
 ma_siz	= ma_l
 ma_ix	= ma_l+2
 
@@ -314,11 +317,12 @@ ma_room:
 	STA ram_stat+2, X	; next to the assigned one, no STY abs,X!!!
 	RTS
 
-
-; *** FREE, release memory *** revamped 20161104 & 05
-; ma_pt <- addr
-; C -> no such used block!
-
+; *******************************
+; **** FREE,  release memory ****
+; *******************************
+; ******** ma_pt <- addr ********
+; *** C -> no such used block ***
+; *******************************
 free:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
@@ -362,10 +366,11 @@ fr_join:
 fr_ok:
 	_EXIT_OK
 
-
-; *** OPEN_W, get I/O port or window ***
-; Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to window title!
-
+; ********************************************************************
+; ****************** OPEN_W, get I/O port or window ******************
+; ********************************************************************
+; *** Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to title ***
+; ********************************************************************
 open_w:
 	.al: REP #$20		; *** 16-bit memory size ***
 	.xs: SEP #$10		; *** 8-bit register, just in case ***
@@ -376,9 +381,12 @@ ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
 ;	EXIT_OK on subsequent system calls!
 
-; *** CLOSE_W, close window ***
+; ********************************************************
+; **************** CLOSE_W,  close window ****************
 ; *** FREE_W, release window, will be closed by kernel ***
-; Y <- dev
+; ********************************************************
+; *********************** Y <- dev ***********************
+; ********************************************************
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
 	_EXIT_OK
@@ -664,12 +672,6 @@ sd_done:
 	LDX sd_flag			; retrieve mode as index!
 	JMP (sd_tab-2, X)	; do as appropriate *** please note that X=0 means scheduler ran off of tasks!
 
-sd_tab:					; check order in abi.h!
-	.word	sd_stat		; suspend
-	.word	sd_warm		; warm boot direct by kernel
-	.word	sd_cold		; cold boot via firmware
-	.word	sd_off		; poweroff system
-
 
 ; *** B_FORK, reserve available PID ***
 ; Y -> PID
@@ -683,6 +685,7 @@ b_fork:
 ; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
+
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_EXEC		; subfunction code
@@ -745,6 +748,7 @@ yld_call:
 
 ; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
 ; Y -> number of bytes, ex_pt -> pointer to the proposed stack frame
+
 ts_info:
 #ifdef	MULTITASK
 	.xs: SEP #$10			; *** standard index size ***
@@ -758,6 +762,48 @@ ts_info:
 	_ERR(UNAVAIL)			; non-supporting kernel!
 #endif
 
+
+; *** RELEASE, release ALL memory for a PID, new 20161115
+; Y <- PID
+
+release:
+	.xs: SEP #$30		; *** 8-bit sizes ***
+	TYA					; as no CPY abs,X
+	XBA					; exchange...
+	LDA #USED_RAM		; the status we will be looking for! PID @ MSB
+	.al: REP #$20		; *** 16-bit memory ***
+	LDX #0				; reset index
+rls_loop:
+		CMP ram_stat, X		; will check both stat (LSB) AND PID (MSB) of this block
+		BNE rls_oth			; it is not mine and/or not in use
+			PHA					; otherwise save status
+			PHX
+			LDA ram_pos, X		; get pointer to targeted block
+			STA ma_pt			; will be used by FREE
+			_KERNEL(FREE)		; release it!
+			PLX					; retrieve status
+			PLA
+			BCC rls_next		; keep index IF current entry was deleted!
+rls_oth:
+		INX					; advance to next block
+		INX
+rls_next:
+		LDY ram_stat, X		; look status only
+		CPY #END_RAM		; are we done?
+		BNE rls_loop		; continue if not yet
+	_EXIT_OK			; no errors...
+
+; *******************************
+; *** end of kernel functions ***
+; *******************************
+
+; other data and pointers
+sd_tab:					; check order in abi.h!
+	.word	sd_stat		; suspend
+	.word	sd_warm		; warm boot direct by kernel
+	.word	sd_cold		; cold boot via firmware
+	.word	sd_off		; poweroff system
+
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
 	.word	isr_sched_ret-1	; corrected reentry address **standard label**
@@ -766,20 +812,20 @@ tsi_str:
 tsi_end:
 ; end of stack frame for easier size computation
 
-; *** end of kernel functions ***
+; **************************************************
+; *** jump table, if not in separate 'jump' file ***
+; **************************************************
 
-
-; jump table, if not in separate 'jump' file
 #ifndef		DOWNLOAD
 k_vec:
 	.word	cout		; output a character
 	.word	cin			; get a character
-	.word	malloc		; reserve memory (kludge!)
-	.word	free		; release memory (kludgest!)
+	.word	malloc		; reserve memory
+	.word	free		; release memory
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
-	.word	uptime		; approximate uptime in ticks (new)
+	.word	uptime		; approximate uptime in ticks
 	.word	b_fork		; get available PID
 	.word	b_exec		; launch new process
 	.word	load_link	; get addr. once in RAM/ROM
@@ -796,6 +842,7 @@ k_vec:
 	.word	set_handler	; set SIGTERM handler, new 20150417, renumbered 20150604
 	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
 	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
+	.word	release		; release ALL memory for a PID, new 20161115
 
 #else
 #include "drivers.s"	; this package will be included with downloadable kernels
