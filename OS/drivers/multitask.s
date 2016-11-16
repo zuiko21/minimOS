@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.5.1a2
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161116-1231
+; last modified 20161116-1440
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -23,7 +23,6 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 #include "drivers/multitask.h"
 .text
 #endif
-
 
 ; *** begins with sub-function addresses table *** REVISE
 	.byt	TASK_DEV	; physical driver number D_ID (TBD)
@@ -80,6 +79,7 @@ mm_rsp:
 	INX					; the first PID is 1
 	STX mm_pid			; set index as current PID
 ; do NOT set current SP as initialisation will crash! startup via scheduler will do anyway
+; *** shutdown code placeholder *** does not do much
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
 
@@ -93,6 +93,7 @@ mms_suicide:
 mm_yield:
 	CLC					; for safety in case RTS is found (when no other braid is active)
 ; ...then will go into the scheduler afterwards!
+; **** will this create a stack imbalance????? check 816 also! ****************
 
 ; *** the scheduler code ***
 mm_sched:
@@ -215,23 +216,23 @@ mm_stsav:
 		BEQ mm_loaded		; if nothing to retrieve
 #endif
 mm_load:
-		LDA (sysptr), Y		; store it (5)
+		LDA (sysptr), Y		; get it (5)
 #ifdef	C64
-		STA z_used, Y		; 6510 will skip port, but store it two bytes easlier
+		STA z_used, Y		; 6510 will skip port, but comes from two bytes easlier
 #else
 		STA 0, Y			; get byte from zeropage (4*)
 #endif
 		DEY					; previous byte (2)
-		BNE mm_save			; until first byte, but NOT included (3/2)
+		BNE mm_load			; until first byte, but NOT included (3/2)
 mm_saved:
 ; copy missing byte
-		LDA (sysptr), Y		; store it (5)
+		LDA (sysptr), Y		; get it (5)
 #ifdef	C64
-		STA z_used, Y		; 6510 will skip port, but store it two bytes easlier
+		STA z_used, Y		; 6510 will skip port, but comes from two bytes easlier
 #else
 		STA 0, Y			; get byte from zeropage (4*)
 #endif
-; save kernel local context also
+; load kernel local context also
 #ifdef	C64
 	LDY #std_in			; first byte of system context
 #else
@@ -264,59 +265,39 @@ mm_stload:
 		STA $0100, Y		; put stack contents
 		INY					; go for next
 		BNE mm_stload		; until the end
-
-
-
-; **********************OLD CODE****************
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
 	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
 		BNE mm_sigterm		; process it now! (2/3)
+mm_rts:
 	RTS					; all done, continue ISR
 
-; the actual SIGTERM routine execution, new 20150611
+; *** the actual SIGTERM routine execution, new 20150611 ***
 mm_sigterm:
 	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
-	JSR mms_tj			; should call handler and let it finish at some point (6+32)
-	_FINISH				; term handler will return here, is this OK?
-
-mms_tj:
-; ********* revise this for 816 ***********
-	TXA					; addressed braid (2)
-	ASL					; two times (2)
-	TAX					; proper offset in handler table, plus 2 (2)
-	LDA mm_term-1, X	; get MSB from table (4)
-	PHA					; put it on stack (3)
-	LDA mm_term-2, X	; now get the LSB, I can save both DEXs (4)
-	PHA					; address complete (3)
-	PHP					; ready for RTI (3)
-	RTI					; do jump to handler (6)
-
-; *** shutdown code TO DO ***
-mm_bye:
-mm_rts:
-	RTS
+	LDA #>mm_rts		; compute return address for RTI!
+	PHA					; into stack
+	LDA #<mm_rts		; same for LSB
+	PHA
+	PHP					; sigterm ends in RTI!
+	_JMPX(mm_term-2)	; indexed indirect jump, will return to RTS
 
 ; *** subfunction processing section ***
 mm_cmd:
-	LDX zpar			; get subfunction as index (3)
-
 #ifdef	SAFE
 	CPX #MM_PRIOR+2		; check limits, put last subfunction as appropriate (2)
-		BPL mm_bad			; go away otherwise! (2/3)
+		BCS mm_bad			; go away otherwise! (2/3) eeeeeek
 #endif
-
 	_JMPX(mm_funct)		; jump to appropriate routine (6)
 
 #ifdef	SAFE
 ; check PID within limits (21 clocks optimized 150514, was 23 clocks including JSR)
 mm_chkpid:
-	LDY locals			; eeeeeeeek! the place to do it (3)
+	TYA					; eeeeeeeek^2! the place to do it (3)
 		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
 	CPY #MAX_BRAIDS+1	; check whether it's a valid PID (2) eeeeeek!
-		BPL mm_piderr		; way too much (2/3)
+		BCS mm_piderr		; way too much (2/3) eeeeeeek
 	RTS					; back to business (6)
-
 mm_pidz:				; placeholder
 mm_piderr:
 	PLA					; discard return address, since called from a subroutine (4+4)
@@ -326,34 +307,34 @@ mm_bad:
 #endif
 
 ; reserve a free braid
+; Y -> PID
 mm_fork:
-	LDY #MAX_BRAIDS-1	; scan backwards is usually faster (2)
-	_SEI				; this is delicate (2)
+	LDY #MAX_BRAIDS		; scan backwards is usually faster (2)
+	_ENTER_CS			; this is delicate (5)
 mmf_loop:
-		LDA mm_flags, Y		; get that braid's status (4)
+		LDA mm_flags-1, Y	; get that braid's status (4)
 		CMP #BR_FREE		; check whether available (2)
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
-		BPL mmf_loop		; until the bottom of the list (3/2)
+		BNE mmf_loop		; until the bottom of the list (3/2)
 	CLI					; nothing was found (2)
 	_DR_ERR(FULL)			; no available braids!
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
-	STA mm_flags, Y		; reserve braid (4)
-	CLI					; end of risk (2)
-	INY					; first PID is 1 (2)
+	STA mm_flags-1, Y	; reserve braid (4)
+	_EXIT_CS			; end of risk (4)
 	_DR_OK
 
 ; get code at some address running into a paused (?) braid
+; Y <- PID, ex_pt <- addr, cpu_ll <- architecture, def_io <- sys_in & sysout
 mm_exec:
-
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
-	TYA					; use PID as MSB offset *** optimized 20150616
-#else
-	LDA locals			; supposedly valid PID! *** optimized 20150616
 #endif
-
+	TYA					; new PID passing
+	BNE mmx_br			; go for another braid
+		_DR_ERR(INVALID)	; rejects system PID, or execute within this braid??? *** REVISE
+mmx_br:
 ; prepare storage pointer for later
 	_DEC
 	CLC					; put after DEC, otherwise NMOS emulation might fail! 20150616
@@ -535,7 +516,7 @@ mm_hndl:
 mm_prior:
 	_DR_OK				; placeholder
 
-; emergency exit, should never arruive here!
+; emergency exit, should never arrive here!
 mm_eexit:
 	_NEXT_ISR			; just in case
 
