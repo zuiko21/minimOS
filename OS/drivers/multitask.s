@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.5.1a2
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161116-1114
+; last modified 20161116-1231
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -130,9 +130,6 @@ mm_lock:
 mm_switch:
 ; store previous status
 	STX systmp			; store new PID (3)
-; keep stack pointer!
-	TSX					; get index MSB (2)
-	STX sys_sp			; store as usual (3)
 ; *** save current context! ***
 ; first save both zeropage & stack from context as stated in mm_pid
 	LDA #<mm_context	; possibly zero
@@ -145,12 +142,14 @@ mm_switch:
 #ifndef	C64
 	INY					; take standard devices also!
 	INY
+#else
+		BEQ mm_saved		; if nothing to save
 #endif
 mm_save:
 #ifdef	C64
-		LDA 2, Y			; 6510 will skip port, but store it two bytes easlier
+		LDA z_used, Y		; 6510 will skip port, but store it two bytes easlier
 #else
-		LDA 0, Y			; get byte from zeropage (4*) will this wrap OK?
+		LDA 0, Y			; get byte from zeropage (4*)
 #endif
 		STA (sysptr), Y		; store it (5)
 		DEY					; previous byte (2)
@@ -158,52 +157,117 @@ mm_save:
 mm_saved:
 ; copy missing byte
 #ifdef	C64
-		LDA 2, Y			; 6510 will skip port, but store it two bytes easlier
+		LDA z_used			; 6510 will skip port, but store it two bytes earlier
 #else
-		LDA 0, Y			; get byte from zeropage (4*) will this wrap OK?
+		LDA 0				; get byte from zeropage (4*)
 #endif
 		STA (sysptr), Y		; store it (5)
-; **********************OLD CODE****************
-; go into new braid, saving previous context
-; then user-zeropage
-	LDA z_used			; actual bytes used on zeropage (3, 27 up to here)
-	_STAY(sysptr)		; store value
-	TAY					; use as index
-; finally the kernel context
-	LDY #locals			; beginning of variables (2)
+; save kernel local context also
+#ifdef	C64
+	LDY #std_in			; first byte of system context
+#else
+	LDY #locals			; system context
+#endif
 mm_kern:
 		LDA 0, Y			; get byte from locals and parameters (4*)
 		STA (sysptr), Y		; store in context area (5)
 		INY					; next byte (2)
+		CPY #sysptr			; this will not get copied (first byte of reserved arrea)
 		BNE mm_kern			; up to $FF (3/2, total 391)
-; now let's retrieve new task's context
+; keep stack pointer!
+	LDY #sys_sp			; will point to last 
+	TSX					; get index MSB (2)
+	TXA					; cannot indirect-index from X
+	STA (sysptr), Y		; store as usual (3)
+; *** now do the same with stack ***
+; A & X hold actual SP!
+	TAY					; common index
+	LDA #<mm_stacks		; get LSB first
+	STA sysptr			; prepare indirect pointer
+	LDA #>mm_stacks-256	; prepare new pointer
+	CLC
+	ADC mm_pid			; add page offset for this stack area
+	STA sysptr+1		; indirect pointer is ready!
+	INY					; point to top of stack (not first free byte)
+; no need to check for zero as stack would not be empty!
+mm_stsav:
+		LDA $0100, Y		; get stack contents
+		STA (sysptr), Y		; storage area
+		INY					; go for next
+		BNE mm_stsav		; until the end
+; *** now let's retrieve new task's context ***
 ; compute storage address
 	LDA systmp			; retrieve new PID (3)
 	STA mm_pid			; set new value, in the meanwhile (4+2)
 	CLC
 	ADC #>mm_context	; PID as MSB (full page for each context) (2)
-	STA sysptr+1		; store pointer MSB, LSB is still valid (3)
-; restore kernel context
-	LDY #locals			; beginning of variables (2, 16 up here)
-mm_rest:
-		LDA (sysptr), Y		; get from context area (5)
-		STA 0, Y			; store byte from locals and parameters (4*)
-		INY					; next byte (2)
-		BNE mm_rest			; up to $FF (3/2, total 391)
-; then user-zeropage
-	_LDAY(sysptr)		; stored z_used (5)
-	STA z_used			; restore in zero page
-		BEQ mm_loaded		; skip if possible
-	TAY					; actual bytes used on zeropage (2)
+	STA sysptr+1		; store pointer MSB (3)
+	LDA #<mm_context	; might be zero
+	STA sysptr			; indirect pointer ready!
+; retrieve zeropage
+	LDY #z_used			; offset to parameter
+	LDA (sysptr), Y		; actual bytes used on zeropage
+	TAY					; use as index!
+#ifndef	C64
+	INY					; take standard devices also!
+	INY
+#else
+		BEQ mm_loaded		; if nothing to retrieve
+#endif
 mm_load:
-		LDA (sysptr), Y		; get it, although two bytes earlier (5)
-		STA z_used, Y		; store byte in zeropage (4*)
+		LDA (sysptr), Y		; store it (5)
+#ifdef	C64
+		STA z_used, Y		; 6510 will skip port, but store it two bytes easlier
+#else
+		STA 0, Y			; get byte from zeropage (4*)
+#endif
 		DEY					; previous byte (2)
-		BNE mm_load			; until z_used but NOT copied itself (3/2, used*14+13, max 3163)
-mm_loaded:
-; finally get current stack pointer!
-	LDX sys_sp			; restored value (3)
-	TXS					; stack pointer updated! (2)
+		BNE mm_save			; until first byte, but NOT included (3/2)
+mm_saved:
+; copy missing byte
+		LDA (sysptr), Y		; store it (5)
+#ifdef	C64
+		STA z_used, Y		; 6510 will skip port, but store it two bytes easlier
+#else
+		STA 0, Y			; get byte from zeropage (4*)
+#endif
+; save kernel local context also
+#ifdef	C64
+	LDY #std_in			; first byte of system context
+#else
+	LDY #locals			; system context
+#endif
+mm_lkern:
+		LDA (sysptr), Y		; get from context area (5)
+		STA 0, Y			; get byte from locals and parameters (4*)
+		INY					; next byte (2)
+		CPY #sysptr			; this will not get copied (first byte of reserved arrea)
+		BNE mm_lkern		; until sysptr not included
+; retrieve stack pointer!
+	LDY #sys_sp			; will point to last 
+	LDA (sysptr), Y		; retrieve
+	TAX					; cannot set SP from A
+	TXS					; new stack pointer
+; *** now do the same with stack ***
+; A & X hold actual SP!
+	TAY					; common index
+	LDA #<mm_stacks		; get LSB first
+	STA sysptr			; prepare indirect pointer
+	LDA #>mm_stacks-256	; prepare new pointer
+	CLC
+	ADC mm_pid			; add page offset for this stack area
+	STA sysptr+1		; indirect pointer is ready!
+	INY					; point to top of stack (not first free byte)
+; no need to check for zero as stack would not be empty!
+mm_stload:
+		LDA (sysptr), Y		; from storage area
+		STA $0100, Y		; put stack contents
+		INY					; go for next
+		BNE mm_stload		; until the end
+
+
+
+; **********************OLD CODE****************
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
 	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
