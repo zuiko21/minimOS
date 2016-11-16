@@ -1,10 +1,20 @@
 ; software multitasking module for minimOS
-; v0.5.1a1
+; v0.5.1a2
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161108-1041
+; last modified 20161116-1114
 
-QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switching
+; will install only if no other multitasking driver is already present!
+#ifndef	MULTITASK
+#define		MULTITASK	_MULTITASK
+
+; ********************************
+; *** multitasking driver code ***
+; ********************************
+
+; *** set some reasonable number of braids ***
 -MAX_BRAIDS		= 4		; reasonable number without too much overhead
+; *** set delay counter for reasonable overhead ***
+QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switching
 
 #ifndef		HEADERS
 #include "usual.h"
@@ -15,7 +25,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 #endif
 
 
-; *** begins with sub-function addresses table, new format 20150323 ***
+; *** begins with sub-function addresses table *** REVISE
 	.byt	TASK_DEV	; physical driver number D_ID (TBD)
 	.byt	A_POLL+A_COUT	; polling scheduler this far, new architecture needs to enable output!
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
@@ -32,63 +42,57 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a1", 0
+	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a2", 0	; works as long as no more than 9 braids!
 
 ; *** initialisation code ***
 mm_init:
+#ifdef	SAFE
 ; might check for bankswitching hardware and cause error, in order NOT to install BOTH schedulers!...
+; ...or just ignore as only the first driver will install?
 ; hardware-assisted scheduler init code should do the opposite!
 ; remaining code assumes software scheduler only
+	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
+	BCC mm_cont			; skip if no error eeeeeeeeeek
+		_DR_ERR(UNAVAIL)	; error if not available
+mm_cont:
+#endif
+; initialise 6502-only delay counter
 	LDA #QUANTUM_COUNT
 	STA mm_qcnt			; init quantum counter
-; initialise stack pointers
+; initialise stack pointers and flags table
 	LDA #>mm_context	; MSB of storage area
+	CLC					; hope isn't needed anymore in the loop!
+	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily outside range...
 	STA sysptr+1		; store in pointer, will be increased
-	LDA #<mm_context	; same for LSB
+	LDA #<mm_context	; same for LSB, will not bother adding sys_sp
 	STA sysptr
 	LDY #sys_sp			; offset for sys_sp, just in case
-	CLC					; hope isn't needed anymore in the loop!
-	LDA #0				; reset index
 	LDX #MAX_BRAIDS		; set counter (much safer this way)
 mm_rsp:
-		ADC #256/MAX_BRAIDS-1	; compute initial SP value for that braid (will be 63 for 4 braids)
+		LDA #$FF			; original SP value, no need to skim on that
+		DEC sysptr+1		; move pointer to next storage area
 		STA (sysptr), Y		; store "register" in proper area
-		INC sysptr+1		; move pointer to next storage area
-		_INC				; increase pointer to next braid space
+		LDA #BR_FREE		; adequate value in two highest bits
+		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
+		_STZA mm_treq-1, X	; set SIGTERM request flags to zero, new 20150611, poorly optimized for NMOS macro
 		DEX					; one braid less (much safer this way)
 		BNE mm_rsp			; finish all braids (much safer this way)
-; initialise flags table
-	LDA #BR_FREE		; adequate value in two highest bits
-	LDX #MAX_BRAIDS		; last index of status array IF counting from 0
-mm_xsl:						; should take 35 clocks
-		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
-		_STZY mm_treq-1, X	; set SIGTERM request flags to zero, new 20150611, poorly optimized for NMOS macro
-		DEX					; backwards is faster, or at least saves a CPX
-		BNE mm_xsl			; all braids, including the first one
 	INX					; the first PID is 1
 	STX mm_pid			; set index as current PID
-; prepare first running task **** ?????
-	LDA #<mms_kill-1	; get default TERM handler LSB (will arrive via RTS, thus one byte before)
-	STA mm_term			; store in table
-	LDA #>mms_kill-1	; same for MSB
-	STA mm_term+1
-	LDA #BR_RUN			; will start "current" task **** 
-	STA mm_flags		; no need for index, first entry anyway
-; get proper stack frame from kernel, new 20150507
-	_KERNEL(TS_INFO)	; get taskswitching info for needed stack frame
-
-#ifdef	SAFE
-		_DR_ERR(UNAVAIL)	; error if not available
-#endif
-
-	STY mm_sfsiz		; store stack frame size! new 20150521
-mm_tscp:
-		LDA zpar-1, Y		; get output value (note offset)
-		STA mm_stack-1, Y	; store into private vars
-		DEY					; go for next byte
-		BNE mm_tscp
-mm_exit:
+; do NOT set current SP as initialisation will crash! startup via scheduler will do anyway
+mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
+
+; kill itself!!! simple way to terminate after FINISH
+mms_suicide:
+	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
+	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
+; ...then go into B_YIELD as this will no longer be executable
+
+; switch to next braid
+mm_yield:
+	CLC					; for safety in case RTS is found (when no other braid is active)
+; ...then will go into the scheduler afterwards!
 
 ; *** the scheduler code ***
 mm_sched:
@@ -115,38 +119,56 @@ mm_next:
 		BNE mm_scan				; zero means executable braid (3/2)
 ; an executable braid is found
 	CPX mm_pid			; is it the same as before? (4)
-	BNE mm_switch		; if not, go and switch braids (3/2)
-		RTS					; otherwise, nothing to do; no need for BRA (0/3)
+		BNE mm_switch		; if not, go and switch braids (3/2)
+	RTS					; otherwise, nothing to do; no need for BRA (0/3)
 
 mm_lock:
+		LDY #PW_CLEAN		; special code to do proper shutdown
 		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown
 
 ; arrived here in typically 39 clocks, if all braids were executable
 mm_switch:
-; go into new braid, saving previous context
-; this will be MUCH faster (9 clocks) with hardware-assisted context bankswitching...
-	STX systmp			; store new PID (3)
-	LDA mm_pid			; compute older PID's storage address (4+2)
-	CLC
-	ADC #>mm_context	; PID as MSB (full page for each context) (2)
-	STA sysptr+1		; store pointer MSB (3)
-	LDA #<mm_context	; fixed LSB (2+3)
-	STA sysptr
 ; store previous status
+	STX systmp			; store new PID (3)
 ; keep stack pointer!
-	TSX					; get index (2)
+	TSX					; get index MSB (2)
 	STX sys_sp			; store as usual (3)
+; *** save current context! ***
+; first save both zeropage & stack from context as stated in mm_pid
+	LDA #<mm_context	; possibly zero
+	STA sysptr			; set LSB
+	LDA #>mm_context-256	; get pointer to direct pages eeeeeeeeeeek
+	ADC mm_pid			; compute offset within stored direct-pages
+	STA sysptr+1		; indirect pointer is ready
+; save zeropage
+	LDY z_used			; actual bytes used on zeropage (3, 27 up to here)
+#ifndef	C64
+	INY					; take standard devices also!
+	INY
+#endif
+mm_save:
+#ifdef	C64
+		LDA 2, Y			; 6510 will skip port, but store it two bytes easlier
+#else
+		LDA 0, Y			; get byte from zeropage (4*) will this wrap OK?
+#endif
+		STA (sysptr), Y		; store it (5)
+		DEY					; previous byte (2)
+		BNE mm_save			; until first byte, but NOT included (3/2)
+mm_saved:
+; copy missing byte
+#ifdef	C64
+		LDA 2, Y			; 6510 will skip port, but store it two bytes easlier
+#else
+		LDA 0, Y			; get byte from zeropage (4*) will this wrap OK?
+#endif
+		STA (sysptr), Y		; store it (5)
+; **********************OLD CODE****************
+; go into new braid, saving previous context
 ; then user-zeropage
 	LDA z_used			; actual bytes used on zeropage (3, 27 up to here)
 	_STAY(sysptr)		; store value
-		BEQ mm_saved		; skip if nothing to save (+2/3)
 	TAY					; use as index
-mm_save:
-		LDA z_used, Y		; get byte from zeropage (4*)
-		STA (sysptr), Y		; store it, although two bytes earlier (5)
-		DEY					; previous byte (2)
-		BNE mm_save			; until z_used, but NOT copied itself (3/2, used*14, max 3150) eeek!
-mm_saved:
 ; finally the kernel context
 	LDY #locals			; beginning of variables (2)
 mm_kern:
@@ -463,3 +485,5 @@ mm_funct:
 	.word	mm_getpid	; get current PID
 	.word	mm_hndl		; set SIGTERM handler
 	.word	mm_prior	; priorize braid, jump to it at once, really needed?
+
+#endif

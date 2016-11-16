@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a7
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161115-0950
+; last modified 20161116-1047
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -80,13 +80,13 @@ mm_rsp:
 		LDA #<mm_context	; restore LSB... should be ZERO for performance reasons
 		DEX					; go for next
 		BNE mm_rsp			; continue until all done
-	LDA #1				; default task
-	STA mm_pid			; set as current PID
-; set current SP
-	LDA #>mm_stacks		; contextual stack area base pointer *** assume page-aligned!!!
-	XBA					; that was MSB
-	LDA #$FF			; restored value, no need to skim on that (2)
-	TCS					; stack pointer updated!
+	INX					; default task (will be 1)
+	STX mm_pid			; set as current PID
+; do NOT set current SP as initialisation will crash! startup via scheduler will do anyway
+;	LDA #>mm_stacks		; contextual stack area base pointer *** assume page-aligned!!!
+;	XBA					; that was MSB
+;	LDA #$FF			; restored value, no need to skim on that (2)
+;	TCS					; stack pointer updated!
 ; *** shutdown code placeholder *** does not do much
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
