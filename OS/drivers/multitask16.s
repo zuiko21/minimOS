@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a7
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161117-1350
+; last modified 20161117-1505
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -30,7 +30,7 @@
 	.word	mm_nreq		; D_REQ does nothing
 	.word	mm_abort	; no input
 	.word	mm_cmd		; output will process all subfunctions!
-	.word	mm_bye		; no need for 1-second interrupt
+	.word	mm_rts		; no need for 1-second interrupt
 	.word	mm_abort	; no block input
 	.word	mm_abort	; no block output
 	.word	mm_bye		; shutdown procedure
@@ -59,25 +59,27 @@ mm_init:
 		_DR_ERR(UNAVAIL)	; error if not available
 mm_cont:
 #endif
-; initialise stack pointers and flags table
+; initialise flags table (and stack pointers?)
+; at least, set direct page to current braid!
 	LDA #>mm_context	; MSB of storage area
-	CLC
-	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily outside range...
+;	CLC
+;	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily outside range...
 	XBA					; will be the rest of the pointer
 	LDA #<mm_context	; same for LSB... should be ZERO for performance reasons
-	TCD					; direct-page set for just-over-last context
+	TCD					; direct-page set for FIRST context
 	LDX #MAX_BRAIDS		; reset backwards index
-	LDY #$FF			; original SP value, no need to skim on that
+;	LDY #$FF			; original SP value, no need to skim on that
+	LDA #BR_FREE		; adequate value in two highest bits, outside loop b/c integrated mm_treq
 mm_rsp:
-		XBA					; get accumulator MSB
-		DEC					; go for next context (contiguous)
-		XBA					; back to MSB
-		TCD					; set direct-page
-		STY sys_sp			; direct page storage of original SP
-		LDA #BR_FREE		; adequate value in two highest bits
+;		XBA					; get accumulator MSB
+;		DEC					; go for next context (contiguous)
+;		XBA					; back to MSB
+;		TCD					; set direct-page
+;		STY sys_sp			; direct page storage of original SP
+;		LDA #BR_FREE		; adequate value in two highest bits
 		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
-		STZ mm_treq-1, X	; set SIGTERM request flags to zero
-		LDA #<mm_context	; restore LSB... should be ZERO for performance reasons
+;		STZ mm_treq-1, X	; set SIGTERM request flags to zero *** already integrated
+;		LDA #<mm_context	; restore LSB... should be ZERO for performance reasons
 		DEX					; go for next
 		BNE mm_rsp			; continue until all done
 	INX					; default task (will be 1)
@@ -91,17 +93,22 @@ mm_rsp:
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
 
+; switch to next braid
+mm_yield:
+	CLC					; for safety in case RTS is found (when no other braid is active)
+; 65816 calls already run with interrupts OFF!
+	JSR mm_sched		; ...then will CALL the scheduler!
+; interrupt status will be restored later
+	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
+
 ; kill itself!!! simple way to terminate after FINISH
 mms_suicide:
 	.as: .xs: SEP #$30	; ** standard size for app exit **
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
+	SEI					; this needs to be run with interrupts OFF, do not care current status
 	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
-; ...then go into B_YIELD as this will no longer be executable
-
-; switch to next braid
-mm_yield:
 	CLC					; for safety in case RTS is found (when no other braid is active)
-; ...then will go into the scheduler afterwards!
+; ...then go into the scheduler as this will no longer be executable
 
 ; *** the scheduler code ***
 mm_sched:
@@ -110,23 +117,27 @@ mm_sched:
 	LDX mm_pid			; actual PID as index (4)
 mm_scan:
 		DEX					; going backwards is faster (2)
-		BNE mm_next			; no wrap, remember first PID is 1 (3/2)
-			LDX #MAX_BRAIDS		; go to end instead, valid as last PID (2)
-			DEY					; and check is not forever (2)
-				BEQ mm_lock			; should only happen at shutdown time (2/3)
+			BEQ mm_wrap			; in case of wrap, remember first PID is 1 (2/3) faster implementation
 mm_next:
-		LDA mm_flags-1, X		; get status of entry, seems OK for first PID=1 (4)
-		BNE mm_scan				; zero means executable braid (3/2)
+		LDA mm_flags-1, X	; get status of entry (4)
+		AND #BR_MASK		; if SIGTERM flag is integrated here, this is mandatory, does not harm (2)
+		BNE mm_scan			; zero (now equal to BR_RUN) means executable braid (3/2)
 ; an executable braid is found
 	CPX mm_pid			; is it the same as before? (4)
-		BNE mm_switch		; if not, go and switch braids (3/2)
-	RTS					; otherwise, nothing to do; no need for BRA (0/3)
+	BNE mm_switch		; if not, go and switch braids (3/2)
+		RTS					; otherwise, nothing to do; no need for macro (0/3)
 
+; PID expired, try to wrap or shutdown if no more live tasks!
+mm_wrap:
+		LDX #MAX_BRAIDS		; go to end instead, valid as last PID (2)
+		DEY					; and check is not forever (2)
+			BNE mm_next			; otherwise should only happen at shutdown time (3/2)
 mm_lock:
 		LDY #PW_CLEAN		; special code to do proper shutdown
 		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown
+		_PANIC("{TASK}")	; if ever arrives here, it was wrong at so many levels...
 
-; arrived here in typically 39 clocks, if all braids were executable
+; arrived here in typically ? clocks, if all braids were executable
 mm_switch:
 ; store previous status
 	STX mm_pid			; will need to add that
@@ -149,14 +160,19 @@ mm_switch:
 	TCS					; stack pointer updated!
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
-	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
-		BNE mm_sigterm		; process it now! (2/3)
+	LDA mm_flags-1, X	; had it a SIGTERM request? (4)
+	LSR					; easier check of bit 0! (2)
+		BCS mm_sigterm2		; process it now! (2/3)
 mm_rts:
 	RTS					; all done, continue ISR
 
 ; the actual SIGTERM routine execution, new interface 161024, always ending in RTI
 mm_sigterm:
-	STZ mm_treq-1, X	; EEEEEEEK! clear received TERM signal
+	LDA mm_flags-1, X	; get remaining flags (4)
+	LSR					; clear flag...
+	ASL					; ...and restore value
+mm_sigterm2: 
+	STA mm_flags-1, X	; EEEEEEEK! clear received TERM signal, new format 20161117
 	PHK					; push program bank as required by RTI in 816
 	PEA mm_rts			; correct return address after SIGTERM handler RTI
 	PHP					; eeeeeeeeeeeeeeeeeek
@@ -204,6 +220,7 @@ mm_fork:
 ; ** assume interrupts are off via COP **
 mmf_loop:
 		LDA mm_flags-1, Y	; get that braid's status (4)
+		AND #BR_MASK		; mandatory now (2)
 		CMP #BR_FREE		; check whether available (2)
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
@@ -220,7 +237,7 @@ mm_exec:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first ()
 #endif
-	TYA		; new PID passing
+	TYA					; new PID passing
 	BNE mmx_br			; go for another braid
 		_DR_ERR(INVALID)	; rejects system PID, or execute within this braid??? *** REVISE
 mmx_br:
@@ -310,16 +327,17 @@ mms_jmp:
 
 ; ask braid to terminate
 mms_term:
-	TXA					; should get something not zero! *** careful ***
-	STA mm_treq-1, Y	; set SIGTERM request for that braid
+	LDA mm_flags-1, Y	; get original flags, now integrated! (4)
+	ORA #1				; set request (2)
+	STA mm_flags-1, Y	; set SIGTERM request for that braid (4)
 	_DR_OK
 
 ; kill braid!
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
-	STA mm_flags-1, Y	; store new status (5)
-	LDA #0				; no STZ abs,Y
-	STA mm_treq-1, Y	; clear unattended TERM signal, 20150617
+	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
+;	LDA #0				; no STZ abs,Y
+;	STA mm_treq-1, Y	; clear unattended TERM signal, 20150617
 ; should probably free up all MEMORY & windows belonging to this PID...
 	LDY mm_pid			; get current task number
 	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
@@ -330,20 +348,22 @@ mms_kill:
 mms_cont:
 ; CS not needed as per 816 ABI
 	LDA mm_flags-1, Y	; first check current state (5)
+	AND #BR_MASK		; mandatory as per integrated mm_treq (2)
 	CMP #BR_STOP		; is it paused? (2)
 		BNE mms_kerr		; no way to resume it! (2/3)
 	LDA #BR_RUN			; resume (2)
-	STA mm_flags-1, Y	; store new status (5)
+	STA mm_flags-1, Y	; store new status (5) again, TERM is lost
 ; here ends CS
 	_DR_OK
 
 ; pause execution
 mms_stop:
 	LDA mm_flags-1, Y	; first check current state (5)
+	AND #BR_MASK		; mandatory as mm_treq is integrated! *** note that a previous TERM signal is lost!
 	CMP #BR_RUN			; is it running? (2)
 		BNE mms_kerr		; no way to stop it! (2/3)
 	LDA #BR_STOP		; pause it (2)
-	STA mm_flags-1, Y	; store new status (5)
+	STA mm_flags-1, Y	; store new status (5) *** would like to restore somehow any previous TERM!
 	_DR_OK
 mms_kerr:
 	_DR_ERR(INVALID)	; not a valid PID

@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.5.1a3
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161117-1350
+; last modified 20161117-1454
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -29,12 +29,12 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 	.byt	A_POLL+A_COUT	; polling scheduler this far, new architecture needs to enable output!
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
-	.word	mm_eexit	; D_REQ does nothing
-	.word	mm_exit		; no input
+	.word	mm_nreq		; D_REQ does nothing
+	.word	mm_abort	; no input
 	.word	mm_cmd		; output will process all subfunctions!
 	.word	mm_rts		; no need for 1-second interrupt
-	.word	mm_exit		; no block input
-	.word	mm_exit		; no block output
+	.word	mm_abort	; no block input
+	.word	mm_abort	; no block output
 	.word	mm_bye		; shutdown procedure
 	.word	mm_info		; NEW, points to descriptor string
 	.byt	0			; reserved, D_MEM
@@ -98,9 +98,13 @@ mm_yield:
 ; kill itself!!! simple way to terminate after FINISH
 mms_suicide:
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
+	SEI					; this needs to be run with interrupts OFF, do not care current status
+	_STZA z_used		; *** optimise for faster switch!
+	LDX #$FF			; standard stack pointer *** optimise for faster switch!
+	TXS					; *** optimise for faster switch!
 	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
 	CLC					; for safety in case RTS is found (when no other braid is active)
-	_BRA mm_oksch		; ...then into scheduler code. Current context is irrelevant as will no longer be executable
+	_BRA mm_oksch		; ...then into scheduler code, current context is irrelevant as will no longer be executable
 
 ; *** the scheduler code ***
 mm_sched:
@@ -403,7 +407,7 @@ mme_sf:
 mm_pre_exec:
 	STA z_used		; store maximum available zero-page bytes from A, for safety EEEEEEK
 	RTI				; 'return' to start of task! Much simpler, as long as a dummy PHP is done
-
+; ********************????
 ; switch to next braid
 mm_yield:
 	_DR_OK			; if no multitasking assisting hardware is present, just ignore and stay, will RTS do?
@@ -413,12 +417,10 @@ mm_signal:
 
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
-#else
-	LDY locals			; supposedly valid PID!
 #endif
 
 ; new code 20150611, needs new ABI but 21 bytes (or 13 if not SAFE) and 13 clocks at most
-	LDX zpar2			; get signal code (3)
+	LDX b_sig			; get signal code (3)
 
 #ifdef	SAFE
 	CPX #SIGCONT+1		; compare against last (2)
@@ -429,19 +431,12 @@ mm_signal:
 mms_jmp:
 	_JMPX(mms_table)	; jump to actual code
 
-mms_table:
-	.word	mms_kill
-	.word	mms_term
-	.word	mms_cont
-	.word	mms_stop
-
 ; kill braid!
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
 ;	LDA #0				; STZ is not worth
 ;	STA mm_treq-1, Y	; Clear unattended TERM signal, 20150617
-; should probably free up all windows belonging to this PID...
 ; should probably free up all MEMORY & windows belonging to this PID...
 	LDY mm_pid			; get current task number
 	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
@@ -450,28 +445,31 @@ mms_kill:
 
 ; ask braid to terminate
 mms_term:
-	TXA					; should get something not zero!
-	STA mm_treq-1, Y	; set SIGTERM request for that braid
+	LDA mm_flags-1, Y	; get original flags, now integrated! (4)
+	ORA #1				; set request (2)
+	STA mm_flags-1, Y	; set SIGTERM request for that braid (4)
 	_DR_OK
 
 ; resume execution
 mms_cont:
 	_ENTER_CS			; this is delicate (2)
 	LDA mm_flags-1, Y	; first check current state (5)
+	AND #BR_MASK		; mandatory as per integrated mm_treq (2)
 	CMP #BR_STOP		; is it paused? (2)
 		BNE mms_kerr		; no way to resume it! (2/3)
 	LDA #BR_RUN			; resume (2)
-	STA mm_flags-1, Y	; store new status (5)
+	STA mm_flags-1, Y	; store new status (5) again, TERM is lost
 	_EXIT_CS			; were off for ...
 	_DR_OK
 
 ; pause execution
 mms_stop:
 	LDA mm_flags-1, Y	; first check current state (5)
+	AND #BR_MASK		; mandatory as mm_treq is integrated! *** note that a previous TERM signal is lost!
 	CMP #BR_RUN			; is it running? (2)
 		BNE mms_kerr		; no way to stop it! (2/3)
 	LDA #BR_STOP		; pause it (2)
-	STA mm_flags-1, Y	; store new status (5)
+	STA mm_flags-1, Y	; store new status (5) *** would like to restore somehow any previous TERM!
 	_DR_OK
 mms_kerr:
 	_DR_ERR(INVALID)	; not a valid PID
@@ -481,8 +479,6 @@ mm_status:
 
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
-#else
-	LDY locals			; supposedly valid PID!
 #endif
 
 	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
@@ -499,16 +495,14 @@ mm_hndl:
 
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
-#else
-	LDY locals			; supposedly valid PID!
 #endif
 
-	LDA zpar2			; get pointer LSB (3)
-	_ENTER_CS			; this is delicate... (2)
+	LDA ex_pt			; get pointer LSB (3)
+	_ENTER_CS			; this is delicate... (5)
 	STA mm_term, Y		; store in table (4)
-	LDA zpar2+1			; now for MSB (3+4)
+	LDA ex_pt+1			; now for MSB (3+4)
 	STA mm_term+1, Y
-	_EXIT_CS			; were off for 13 clocks (2)
+	_EXIT_CS			; were off for 13 clocks (4)
 ; priorize braid, jump to it at once, really needed? *** placeholder ***
 mm_prior:
 	_DR_OK
@@ -527,5 +521,12 @@ mm_funct:
 	.word	mm_getpid	; get current PID
 	.word	mm_hndl		; set SIGTERM handler
 	.word	mm_prior	; priorize braid, jump to it at once, really needed?
+
+; *** signal routines addresses table ***
+mms_table:
+	.word	mms_kill
+	.word	mms_term
+	.word	mms_cont
+	.word	mms_stop
 
 #endif
