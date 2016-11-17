@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.5.1a2
+; v0.5.1a3
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161116-1440
+; last modified 20161117-1242
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -41,7 +41,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a2", 0	; works as long as no more than 9 braids!
+	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a3", 0	; works as long as no more than 9 braids!
 
 ; *** initialisation code ***
 mm_init:
@@ -59,21 +59,25 @@ mm_cont:
 	LDA #QUANTUM_COUNT
 	STA mm_qcnt			; init quantum counter
 ; initialise stack pointers and flags table
-	LDA #>mm_context	; MSB of storage area
-	CLC					; hope isn't needed anymore in the loop!
-	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily outside range...
-	STA sysptr+1		; store in pointer, will be increased
-	LDA #<mm_context	; same for LSB, will not bother adding sys_sp
-	STA sysptr
-	LDY #sys_sp			; offset for sys_sp, just in case
+; *** SP possibly needs NOT to be intialised, neither sysptr set here... just flags? ***
+;	LDA #>mm_context	; MSB of storage area
+;	CLC					; hope isn't needed anymore in the loop!
+;	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily outside range...
+;	STA sysptr+1		; store in pointer, will be increased
+;	LDA #<mm_context	; same for LSB, will not bother adding sys_sp
+;	STA sysptr
+;	LDY #sys_sp			; offset for sys_sp, just in case
+	LDA #BR_FREE		; adequate value in two highest bits, if sys_sp does NOT get inited!
+;	LDY #0				; for safer STZ, in case SP is NOT inited! but not if mm_treq is integrated with mm_flags!
 	LDX #MAX_BRAIDS		; set counter (much safer this way)
 mm_rsp:
-		LDA #$FF			; original SP value, no need to skim on that
-		DEC sysptr+1		; move pointer to next storage area
-		STA (sysptr), Y		; store "register" in proper area
-		LDA #BR_FREE		; adequate value in two highest bits
-		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
-		_STZA mm_treq-1, X	; set SIGTERM request flags to zero, new 20150611, poorly optimized for NMOS macro
+;		DEC sysptr+1		; move pointer to next storage area
+;		LDA #$FF			; original SP value, no need to skim on that *** really needed?
+;		STA (sysptr), Y		; store "register" in proper area *** really needed?
+;		LDA #BR_FREE		; adequate value in two highest bits *** could be otside loop if sys_sp does NOT get inited!
+		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0 *** also resets integrated mm_treq
+;		STY mm_treq-1, X	; set SIGTERM request flags to zero, use this way in case SP does NOT get inited! but not if mm_treq is integrated with mm_flags!
+;		_STZA mm_treq-1, X	; set SIGTERM request flags to zero, new 20150611, poorly optimized for NMOS macro
 		DEX					; one braid less (much safer this way)
 		BNE mm_rsp			; finish all braids (much safer this way)
 	INX					; the first PID is 1
@@ -83,17 +87,18 @@ mm_rsp:
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
 
+; switch to next braid
+mm_yield:
+	CLC					; for safety in case RTS is found (when no other braid is active)
+	JSR mm_oksch		; ...then will CALL the scheduler! At once!
+	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
+
 ; kill itself!!! simple way to terminate after FINISH
 mms_suicide:
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
-; ...then go into B_YIELD as this will no longer be executable
-
-; switch to next braid
-mm_yield:
 	CLC					; for safety in case RTS is found (when no other braid is active)
-; ...then will go into the scheduler afterwards!
-; **** will this create a stack imbalance????? check 816 also! ****************
+	_BRA mm_oksch		; ...then into scheduler code. Current context is irrelevant as will no longer be executable
 
 ; *** the scheduler code ***
 mm_sched:
@@ -105,24 +110,26 @@ mm_do:
 ; execute scheduler itself
 	LDA #QUANTUM_COUNT	; get number of quantums to wait (2)
 	STA mm_qcnt			; restore counter for next time (4)
+mm_oksch:
 ; get next available PID
-
 	LDY #2				; to avoid deadlocks AND proper shutdown detection (2)
 	LDX mm_pid			; actual PID as index (4)
 mm_scan:
 		DEX					; going backwards is faster (2)
-		BNE mm_next			; no wrap, remember first PID is 1 (3/2)
-			LDX #MAX_BRAIDS		; go to end instead, valid as last PID (2)
-			DEY					; and check is not forever (2)
-				BEQ mm_lock			; should only happen at shutdown time (2/3)
-mm_next:
+			BEQ mm_wrap			; in case of wrap, remember first PID is 1 (2/3) faster implementation
 		LDA mm_flags-1, X		; get status of entry, seems OK for first PID=1 (4)
+;		CMP #BR_RUN				; if SIGTERM flag is integrated here, this is mandatory (2)
 		BNE mm_scan				; zero means executable braid (3/2)
 ; an executable braid is found
 	CPX mm_pid			; is it the same as before? (4)
 		BNE mm_switch		; if not, go and switch braids (3/2)
-	RTS					; otherwise, nothing to do; no need for BRA (0/3)
+	RTS					; otherwise, nothing to do; no need for macro (0/3)
 
+; PID expired, try to wrap or shutdown if no more live tasks!
+mm_wrap:
+		LDX #MAX_BRAIDS		; go to end instead, valid as last PID (2)
+		DEY					; and check is not forever (2)
+			BNE mm_next			; otherwise should only happen at shutdown time (3/2)
 mm_lock:
 		LDY #PW_CLEAN		; special code to do proper shutdown
 		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown
@@ -140,28 +147,18 @@ mm_switch:
 	STA sysptr+1		; indirect pointer is ready
 ; save zeropage
 	LDY z_used			; actual bytes used on zeropage (3, 27 up to here)
-#ifndef	C64
-	INY					; take standard devices also!
+	INY					; placed two bytes after, anyway
 	INY
-#else
-		BEQ mm_saved		; if nothing to save
-#endif
 mm_save:
-#ifdef	C64
-		LDA z_used, Y		; 6510 will skip port, but store it two bytes easlier
-#else
 		LDA 0, Y			; get byte from zeropage (4*)
-#endif
 		STA (sysptr), Y		; store it (5)
 		DEY					; previous byte (2)
-		BNE mm_save			; until first byte, but NOT included (3/2)
-mm_saved:
-; copy missing byte
 #ifdef	C64
-		LDA z_used			; 6510 will skip port, but store it two bytes earlier
-#else
-		LDA 0				; get byte from zeropage (4*)
+		CPY #z_used			; 6510 must skip built-in port!
 #endif
+		BNE mm_save			; until first byte, but NOT included (3/2)
+; copy missing byte
+		LDA 0, Y			; get byte from zeropage (4*)
 		STA (sysptr), Y		; store it (5)
 ; save kernel local context also
 #ifdef	C64
@@ -173,13 +170,13 @@ mm_kern:
 		LDA 0, Y			; get byte from locals and parameters (4*)
 		STA (sysptr), Y		; store in context area (5)
 		INY					; next byte (2)
-		CPY #sysptr			; this will not get copied (first byte of reserved arrea)
-		BNE mm_kern			; up to $FF (3/2, total 391)
+		CPY #sysptr			; this will not get copied (first byte of reserved area)
+		BNE mm_kern			; up to $FF (3/2)
 ; keep stack pointer!
 	LDY #sys_sp			; will point to last 
 	TSX					; get index MSB (2)
-	TXA					; cannot indirect-index from X
-	STA (sysptr), Y		; store as usual (3)
+	TXA					; cannot do indirect-indexed from X (2)
+	STA (sysptr), Y		; store as usual (5)
 ; *** now do the same with stack ***
 ; A & X hold actual SP!
 	TAY					; common index
@@ -209,29 +206,19 @@ mm_stsav:
 	LDY #z_used			; offset to parameter
 	LDA (sysptr), Y		; actual bytes used on zeropage
 	TAY					; use as index!
-#ifndef	C64
-	INY					; take standard devices also!
+	INY					; take standard devices anyway!
 	INY
-#else
-		BEQ mm_loaded		; if nothing to retrieve
-#endif
 mm_load:
 		LDA (sysptr), Y		; get it (5)
-#ifdef	C64
-		STA z_used, Y		; 6510 will skip port, but comes from two bytes easlier
-#else
 		STA 0, Y			; get byte from zeropage (4*)
-#endif
 		DEY					; previous byte (2)
+#ifdef	C64
+		CPY #z_used			; 6510 must skip built-in port!
+#endif
 		BNE mm_load			; until first byte, but NOT included (3/2)
-mm_saved:
 ; copy missing byte
 		LDA (sysptr), Y		; get it (5)
-#ifdef	C64
-		STA z_used, Y		; 6510 will skip port, but comes from two bytes easlier
-#else
 		STA 0, Y			; get byte from zeropage (4*)
-#endif
 ; load kernel local context also
 #ifdef	C64
 	LDY #std_in			; first byte of system context
@@ -267,14 +254,18 @@ mm_stload:
 		BNE mm_stload		; until the end
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
-	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
+;	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
+	LDA mm_flags-1, X	; had it a SIGTERM request? (4) in case of integrated mm_treq
+	AND #1				; in case of integrated mm_treq (2)
 		BNE mm_sigterm		; process it now! (2/3)
 mm_rts:
 	RTS					; all done, continue ISR
 
 ; *** the actual SIGTERM routine execution, new 20150611 ***
 mm_sigterm:
-	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
+;	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
+	LDA #1				; bit zero is integrated mm_treq in mm_flags
+	_TRB	; ******************* clear bit 0 ************************************************
 	LDA #>mm_rts		; compute return address for RTI!
 	PHA					; into stack
 	LDA #<mm_rts		; same for LSB
@@ -510,11 +501,9 @@ mm_hndl:
 	LDA zpar2+1			; now for MSB (3+4)
 	STA mm_term+1, Y
 	_EXIT_CS			; were off for 13 clocks (2)
-	_DR_OK
-
-; priorize braid, jump to it at once, really needed?
+; priorize braid, jump to it at once, really needed? *** placeholder ***
 mm_prior:
-	_DR_OK				; placeholder
+	_DR_OK
 
 ; emergency exit, should never arrive here!
 mm_eexit:
