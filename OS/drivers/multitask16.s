@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a7
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161116-1047
+; last modified 20161117-1350
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -321,8 +321,8 @@ mms_kill:
 	LDA #0				; no STZ abs,Y
 	STA mm_treq-1, Y	; clear unattended TERM signal, 20150617
 ; should probably free up all MEMORY & windows belonging to this PID...
-;	LDY mm_pid			; get current task number
-;	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
+	LDY mm_pid			; get current task number
+	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
 ; window release *** TO DO *** TO DO *** TO DO ***
 	_DR_OK				; return as appropriate
 

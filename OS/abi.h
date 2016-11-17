@@ -1,6 +1,6 @@
-; minimOS 0.5.1a3 API/ABI
+; minimOS 0.5.1a4 API/ABI
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161115-0951
+; last modified 20161117-1337
 
 ; VIA 65(C)22 registers, just for convenience
 ; offsets from base address (add to base in options.h)
@@ -100,6 +100,7 @@ BR_RUN		=   0	; active process, may get CPU time, should be zero for quick evalu
 BR_STOP		= 128	; paused process, will not get CPU until resumed
 BR_END		=  64	; ended task, waiting for rendez-vous
 ; might add a fifth state for forked-but-not-yet-loaded braids (in order NOT to start them abnormally)
+BR_MASK		= 192	; as it set both bits but NOT those for SIGTERM handler, new 20161117
 
 ; ** multitasking signals **
 SIGKILL		=  0	; immediately kill braid, will go BR_FREE
@@ -147,6 +148,7 @@ FS_CREATE	=  34	; format filesystem
 FREE_RAM	=	0
 USED_RAM	=	2
 END_RAM		=	4	; new label 20161103
+LOCK_RAM	=	6	; new label 20161117
 
 ; ** logic devices, TBD **
 DEV_RND		= 126	; get a random number
@@ -175,7 +177,7 @@ CORRUPT	=   9		; data corruption
 
 #ifndef	LOWRAM
 			MAX_QUEUE	=	16	; maximum number of drivers, and queue size (half the number of drivers)
-			MAX_LIST	=	16	; number of available RAM blocks
+			MAX_LIST	=	16	; number of available RAM blocks *** might increase this value in 65816 systems!
 #else
 			MAX_QUEUE	=	4	; much less available drivers in 128-byte systems
 			MAX_LIST	=	0	; no memory management for such systems

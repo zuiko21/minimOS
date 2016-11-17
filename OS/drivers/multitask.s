@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.5.1a3
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161117-1242
+; last modified 20161117-1350
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -90,7 +90,9 @@ mm_bye:
 ; switch to next braid
 mm_yield:
 	CLC					; for safety in case RTS is found (when no other braid is active)
+	_ENTER_CS			; eeeeeeek, scheduler is expected to run with interrupts OFF!
 	JSR mm_oksch		; ...then will CALL the scheduler! At once!
+	_EXIT_CS			; restore interrupt status, could be off anyway
 	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
 
 ; kill itself!!! simple way to terminate after FINISH
@@ -117,13 +119,14 @@ mm_oksch:
 mm_scan:
 		DEX					; going backwards is faster (2)
 			BEQ mm_wrap			; in case of wrap, remember first PID is 1 (2/3) faster implementation
-		LDA mm_flags-1, X		; get status of entry, seems OK for first PID=1 (4)
-;		CMP #BR_RUN				; if SIGTERM flag is integrated here, this is mandatory (2)
-		BNE mm_scan				; zero means executable braid (3/2)
+mm_next:
+		LDA mm_flags-1, X	; get status of entry, seems OK for first PID=1 (4)
+		AND #BR_MASK		; if SIGTERM flag is integrated here, this is mandatory, does not harm (2)
+		BNE mm_scan			; zero (now equal to BR_RUN) means executable braid (3/2)
 ; an executable braid is found
 	CPX mm_pid			; is it the same as before? (4)
-		BNE mm_switch		; if not, go and switch braids (3/2)
-	RTS					; otherwise, nothing to do; no need for macro (0/3)
+	BNE mm_switch		; if not, go and switch braids (3/2)
+		RTS					; otherwise, nothing to do; no need for macro (0/3)
 
 ; PID expired, try to wrap or shutdown if no more live tasks!
 mm_wrap:
@@ -133,6 +136,7 @@ mm_wrap:
 mm_lock:
 		LDY #PW_CLEAN		; special code to do proper shutdown
 		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown
+		_PANIC("{TASK}")	; if ever arrives here, it was wrong at so many levels...
 
 ; arrived here in typically 39 clocks, if all braids were executable
 mm_switch:
@@ -150,15 +154,15 @@ mm_switch:
 	INY					; placed two bytes after, anyway
 	INY
 mm_save:
-		LDA 0, Y			; get byte from zeropage (4*)
+		LDA 0, Y			; get byte from zeropage (4)
 		STA (sysptr), Y		; store it (5)
 		DEY					; previous byte (2)
 #ifdef	C64
-		CPY #z_used			; 6510 must skip built-in port!
+		CPY #z_used			; 6510 must skip built-in port! (2)
 #endif
 		BNE mm_save			; until first byte, but NOT included (3/2)
 ; copy missing byte
-		LDA 0, Y			; get byte from zeropage (4*)
+		LDA 0, Y			; get byte from zeropage (4) Y could be 2 in C64, otherwise LDA 0 will do
 		STA (sysptr), Y		; store it (5)
 ; save kernel local context also
 #ifdef	C64
@@ -167,7 +171,7 @@ mm_save:
 	LDY #locals			; system context
 #endif
 mm_kern:
-		LDA 0, Y			; get byte from locals and parameters (4*)
+		LDA 0, Y			; get byte from locals and parameters (4)
 		STA (sysptr), Y		; store in context area (5)
 		INY					; next byte (2)
 		CPY #sysptr			; this will not get copied (first byte of reserved area)
@@ -434,10 +438,14 @@ mms_table:
 ; kill braid!
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
-	STA mm_flags-1, Y	; store new status (5)
-	LDA #0				; STZ is not worth
-	STA mm_treq-1, Y	; Clear unattended TERM signal, 20150617
+	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
+;	LDA #0				; STZ is not worth
+;	STA mm_treq-1, Y	; Clear unattended TERM signal, 20150617
 ; should probably free up all windows belonging to this PID...
+; should probably free up all MEMORY & windows belonging to this PID...
+	LDY mm_pid			; get current task number
+	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
+; window release *** TO DO *** TO DO *** TO DO ***
 	_DR_OK
 
 ; ask braid to terminate

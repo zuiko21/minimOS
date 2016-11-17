@@ -1,11 +1,11 @@
 ; static variables for 65816 software multitasking module for minimOS·16
-; v0.5.1a2
+; v0.5.1a3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161116-1017
+; last modified 20161117-1351
 
 mm_pid		.byt	0				; current PID
 mm_flags	.dsb	MAX_BRAIDS		; status list, might be integrated with mm_treq???
-mm_treq		.dsb	MAX_BRAIDS		; table of SIGTERM requests, new 20150611
+;mm_treq	.dsb	MAX_BRAIDS		; table of SIGTERM requests, new 20150611 *** integrated on mm_flags 161117
 ; no longer using mm_sfsiz & mm_stack, as per new TS_INFO output format!
 ; no longer defining mm_term, now integrated on sysvars.h
 
