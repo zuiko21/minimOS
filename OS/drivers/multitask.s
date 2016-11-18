@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.5.1a4
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161118-1244
+; last modified 20161118-1440
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -331,7 +331,7 @@ mmf_found:
 	_DR_OK
 
 ; get code at some address running into a paused (?) braid
-; Y <- PID, ex_pt <- addr, cpu_ll <- architecture, def_io <- sys_in & sysout
+; Y <- PID, ex_pt <- addr, def_io <- sys_in & sysout ** no need for architecture
 mm_exec:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
@@ -341,88 +341,87 @@ mm_exec:
 		_DR_ERR(INVALID)	; rejects system PID, or execute within this braid??? *** REVISE
 mmx_br:
 	PHA					; save desired PID for later!
-; prepare storage pointer for new context (A=PID)
+; now should point to future stack space, no longer will switch regular stack!
+	CLC
+	ADC #>mm_stacks-256	; compute final MSB, note first stored PID is 1!
+	STA exec_p+1		; store it
+	LDA #<mm_stacks		; LSB needs no offset
+	STA exec_p			; store it
+	LDY #$FF			; standard stack bottom!
+; *** create stack frame *** maybe try to switch again to regular stack?
+; first goes KILL handler, as braids are expected to end via RTS *** could be different for rendez-vous mode calls!
+	LDA #>mms_suicide-1	; compute end-of-task MSB (will arrive via RTS, thus one byte before)
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+	LDA #<mms_suicide-1	; same for LSB
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+; now the start address, no offset is needed if ending on RTI
+	LDA ex_pt+1			; braid's starting MSB goes first
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+	LDA ex_pt			; same for LSB
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+	LDA #$20			; fake PHP value for RTI, start interrupts
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+; ISR will 'return' to pre-execution routine
+	LDA #>mm_pre_exec	; pre-execution routine's MSB goes first
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+	LDA #<mm_pre_exec	; same for LSB
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+	DEY					; irrelevant P (could be PHP)
+; now the usual interrupt stack frame
+	LDA #ZP_AVAIL		; value in A will be taken by pre-exec routine!
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+	DEY					; irrelevant values for X, Y
+	DEY
+	STY exe_sp			; save this for a moment
+; the scheduler calling context! new version 20161118, revise anyway
+	_KERNEL(TS_INFO)	; get standard stack frame (Y->bytes, ex_pt->addr)
+	DEY					; correct bytes as will never be empty!
+	STY exe_sp+1		; number of bytes in another local...
+mmx_sfp:
+		LDA (ex_pt), Y		; get proposed stack frame byte
+		DEY					; point to next
+		STY exe_sp+1		; keep index
+		LDY exe_sp			; get SP instead
+		STA (exec_p), Y		; push into virtual stack
+		DEY					; update SP
+		STY exe_sp
+		LDY exe_sp+1		; get index again
+		CPY #$FF			; upon real end!
+		BNE mmx_sfp			; will work always!
+; *** stack frame done, now let us set the initial environment ***
+;	_EXIT_CS			; no longer needs critical section as hardware stack remains intact
+; prepare storage pointer for new context
+	PLA					; recover PID
+	TAX					; stay saved
 	CLC
 	ADC #>mm_context-256	; compute final MSB, note first stored PID is 1!
 	STA sysptr+1		; store it *** could use one local for shorter critical section!
 	LDA #<mm_context	; LSB needs no offset
 	STA sysptr			; store it
+	_PHY				; keep definitive stack pointer!!!
 ; while we are on it, set standard I/O
 	LDA def_io			; get std_in
 	LDY #std_in			; offset for variable
-	STA (sysptr), Y		; store into context
+	STA (exec_p), Y		; store into context
 	LDA def_io+1		; this should be stdout
-	INY					; advance offset
-	STA (sysptr), Y		; context complete
-; now should point to future stack space, no longer will switch regular stack!
-	PLA					; recover PID
-	CLC
-	ADC #>mm_stacks-256	; compute final MSB, note first stored PID is 1!
-	STA sysptr+1		; store it
-	LDA #<mm_stacks		; LSB needs no offset
-	STA sysptr			; store it
-	
-; ****************OLD***************
-; compute shared stack address
-;	LDA #0				; reset values
-;	CLC
-;mme_sp:
-;		ADC #256/MAX_BRAIDS		; go for next stack space
-;		DEY						; until desired PID
-;		BNE mme_sp
-;	TSX					; get current SP
-	_ENTER_CS			; *** critical section begins ***
-	STX systmp			; will hold original SP
-	TAX					; computed value as destination SP
-	DEX					; initial value is one less from next one's start
-; *** CAUTION! will switch temporarily into destination stack space for easier creation of stack frame ***
-	TXS					; now into destination stack space! EEEEEK
-; *** create stack frame ***
-; first goes KILL handler, as braids are expected to end via RTS *** could be different for rendez-vous mode calls!
-	LDA #>mms_kill-1	; compute end-of-task MSB (will arrive via RTS, thus one byte before)
-	PHA
-	LDA #<mms_kill-1	; same for LSB
-	PHA
-; now the start address, no offset is needed if ending on RTI
-	LDA zpar2+1			; braid's starting MSB goes first
-	PHA
-	LDA zpar2			; same for LSB
-	PHA
-	LDA #$20			; fake PHP value for RTI, start interrupts
-	PHA
-; ISR will 'return' to pre-execution routine
-	LDA #>mm_pre_exec	; pre-execution routine's MSB goes first
-	PHA
-	LDA #<mm_pre_exec	; same for LSB
-	PHA
-	PHP					; don't care about interrupts here
-; now the usual interrupt stack frame
-	LDA #ZP_AVAIL		; value in A will be taken by pre-exec routine!
-	PHA
-	PHA					; irrelevant values for X, Y
-	PHA
-; the scheduler calling context! revamped 20150521, need _reversed_ stack frame at mm_stack
-	LDY mm_sfsiz		; bytes to copy
-mme_sf:
-		LDA mm_stack-1, Y	; get stored frame
-		PHA					; put it into stack
-		DEY					; whatever number of bytes
-		BNE mme_sf			; until done
-; *** stack frame done, now let's tidy up the pointers! ***
-	TSX					; this is the foreign stack pointer
-	TXA					; temporary storage
-	LDX systmp			; retrive original value
-	TXS					; back to our own stack!
-	_EXIT_CS			; *** end of critical section ***
+	INY					; advance offset to stdout
+	STA (exec_p), Y		; context complete
 	LDY #sys_sp			; get offset for stored SP
-	STA (sysptr), Y		; store into context
+	PLA					; retrieve that saved SP
+	STA (exec_p), Y		; store into context
 	LDY #z_used			; offset for user zero-page bytes EEEEEK!
 	LDA #0				; pre-execution has no context!
-	STA (sysptr), Y		; set null context for much faster startup
-	 
-	LDY locals			; retrieve PID
-	LDA #BR_RUN			; will enable task
-	STA mm_flags-1, Y	; Y holds desired PID
+	STA (exec_p), Y		; set null context for much faster startup
+	LDA #BR_RUN			; will enable task, no pending TERM!
+	STA mm_flags-1, X	; X holds desired PID
 
 
 ; pre-execution routine for faster task-switching first time!

@@ -1,6 +1,6 @@
-; minimOS 0.5.1a8 zero-page system variables
+; minimOS 0.5.1a9 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161115-1106
+; last modified 20161118-1436
 
 .zero
 
@@ -34,10 +34,11 @@ dr_aut: ma_l: mm_sig: rls_pid:
 local1: locpt1	.dsb	4	; variables for kernel functions @ $E4
 
 ; *** include aliases here for local2/locpt2 ***
-da_ptr: str_dev:
+da_ptr: str_dev: exec_p:
 local2: locpt2	.dsb	4	; variables for kernel functions @ $E8
 
 ; *** include aliases here for local3/locpt3 ***
+exe_sp:
 local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 
 
