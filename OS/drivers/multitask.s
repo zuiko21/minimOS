@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.5.1a3
+; v0.5.1a4
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161117-1454
+; last modified 20161118-1244
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -41,7 +41,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a3", 0	; works as long as no more than 9 braids!
+	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a4", 0	; works as long as no more than 9 braids!
 
 ; *** initialisation code ***
 mm_init:
@@ -100,7 +100,7 @@ mms_suicide:
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 	SEI					; this needs to be run with interrupts OFF, do not care current status
 	_STZA z_used		; *** optimise for faster switch!
-	LDX #$FF			; standard stack pointer *** optimise for faster switch!
+	LDX #$FE			; Do not let EMPTY! eeeeeeeeeek
 	TXS					; *** optimise for faster switch!
 	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
 	CLC					; for safety in case RTS is found (when no other braid is active)
@@ -126,13 +126,14 @@ mm_scan:
 mm_next:
 		LDA mm_flags-1, X	; get status of entry, seems OK for first PID=1 (4)
 		AND #BR_MASK		; if SIGTERM flag is integrated here, this is mandatory, does not harm (2)
+;		CMP #BR_RUN			; in case is not zero as recommended
 		BNE mm_scan			; zero (now equal to BR_RUN) means executable braid (3/2)
 ; an executable braid is found
 	CPX mm_pid			; is it the same as before? (4)
 	BNE mm_switch		; if not, go and switch braids (3/2)
 		RTS					; otherwise, nothing to do; no need for macro (0/3)
 
-; PID expired, try to wrap or shutdown if no more live tasks!
+; PID count ended, try to wrap or shutdown if no more alive tasks!
 mm_wrap:
 		LDX #MAX_BRAIDS		; go to end instead, valid as last PID (2)
 		DEY					; and check is not forever (2)
@@ -142,21 +143,23 @@ mm_lock:
 		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown
 		_PANIC("{TASK}")	; if ever arrives here, it was wrong at so many levels...
 
-; arrived here in typically 39 clocks, if all braids were executable
+; arrived here in typically 40 clocks, if all braids were executable
 mm_switch:
 ; store previous status
-	STX systmp			; store new PID (3)
+	STX systmp			; store temporarily new PID (3)
 ; *** save current context! ***
 ; first save both zeropage & stack from context as stated in mm_pid
-	LDA #<mm_context	; possibly zero
-	STA sysptr			; set LSB
-	LDA #>mm_context-256	; get pointer to direct pages eeeeeeeeeeek
-	ADC mm_pid			; compute offset within stored direct-pages
-	STA sysptr+1		; indirect pointer is ready
+	LDA #<mm_context	; possibly zero (2)
+	STA sysptr			; set LSB (3)
+	LDA #>mm_context-256	; get pointer to direct pages eeeeeeeeeeek (2)
+	CLC					; eeeeeeeeeeek (2)
+	ADC mm_pid			; compute current offset within stored direct-pages (4)
+	STA sysptr+1		; indirect pointer is ready (3)
 ; save zeropage
-	LDY z_used			; actual bytes used on zeropage (3, 27 up to here)
-	INY					; placed two bytes after, anyway
+	LDY z_used			; actual bytes used on zeropage (3)
+	INY					; placed two bytes after, anyway (2+2)
 	INY
+; before loop, +26 fixed clock cycles
 mm_save:
 		LDA 0, Y			; get byte from zeropage (4)
 		STA (sysptr), Y		; store it (5)
@@ -165,14 +168,15 @@ mm_save:
 		CPY #z_used			; 6510 must skip built-in port! (2)
 #endif
 		BNE mm_save			; until first byte, but NOT included (3/2)
-; copy missing byte
-		LDA 0, Y			; get byte from zeropage (4) Y could be 2 in C64, otherwise LDA 0 will do
+; after that loop, -1+z*14 (make it z*16 for 6510) worse case +3373 (+3823 for C64)
+; copy missing byte (+9)
+		LDA 0, Y			; get byte from zeropage (4) Y could be 2 in C64, otherwise LDA 0 will do (one cycle less)
 		STA (sysptr), Y		; store it (5)
-; save kernel local context also
+; save kernel local context also (+385)
 #ifdef	C64
-	LDY #std_in			; first byte of system context
+	LDY #std_in			; first byte of system context (2)
 #else
-	LDY #locals			; system context
+	LDY #locals			; system context (2)
 #endif
 mm_kern:
 		LDA 0, Y			; get byte from locals and parameters (4)
@@ -180,54 +184,55 @@ mm_kern:
 		INY					; next byte (2)
 		CPY #sysptr			; this will not get copied (first byte of reserved area)
 		BNE mm_kern			; up to $FF (3/2)
-; keep stack pointer!
-	LDY #sys_sp			; will point to last 
+; keep stack pointer! (+11)
+	LDY #sys_sp			; will point to last (2)
 	TSX					; get index MSB (2)
 	TXA					; cannot do indirect-indexed from X (2)
 	STA (sysptr), Y		; store as usual (5)
 ; *** now do the same with stack ***
-; A & X hold actual SP!
-	TAY					; common index
-	LDA #<mm_stacks		; get LSB first
-	STA sysptr			; prepare indirect pointer
-	LDA #>mm_stacks-256	; prepare new pointer
+; A & X hold actual SP! before loop, +20
+	TAY					; common index (2)
+	LDA #<mm_stacks		; get LSB first (2)
+	STA sysptr			; prepare indirect pointer (3)
+	LDA #>mm_stacks-256	; prepare new pointer (2+2)
 	CLC
-	ADC mm_pid			; add page offset for this stack area
-	STA sysptr+1		; indirect pointer is ready!
-	INY					; point to top of stack (not first free byte)
-; no need to check for zero as stack would not be empty!
+	ADC mm_pid			; add page offset for this stack area (4)
+	STA sysptr+1		; indirect pointer is ready! (3)
+	INY					; point to top of stack, not first free byte (2)
+; no need to check for zero as stack would not be empty! loop is -1+s*14, worse +3583, typical +349
 mm_stsav:
-		LDA $0100, Y		; get stack contents
-		STA (sysptr), Y		; storage area
-		INY					; go for next
-		BNE mm_stsav		; until the end
+		LDA $0100, Y		; get stack contents (4)
+		STA (sysptr), Y		; storage area (5)
+		INY					; go for next (2)
+		BNE mm_stsav		; until the end (3/2)
 ; *** now let's retrieve new task's context ***
-; compute storage address
+; compute storage address (+31 before the loop)
 	LDA systmp			; retrieve new PID (3)
 	STA mm_pid			; set new value, in the meanwhile (4+2)
 	CLC
 	ADC #>mm_context	; PID as MSB (full page for each context) (2)
 	STA sysptr+1		; store pointer MSB (3)
-	LDA #<mm_context	; might be zero
-	STA sysptr			; indirect pointer ready!
+	LDA #<mm_context	; might be zero (2)
+	STA sysptr			; indirect pointer ready! (3)
 ; retrieve zeropage
-	LDY #z_used			; offset to parameter
-	LDA (sysptr), Y		; actual bytes used on zeropage
-	TAY					; use as index!
-	INY					; take standard devices anyway!
+	LDY #z_used			; offset to parameter (2)
+	LDA (sysptr), Y		; actual bytes used on zeropage (5)
+	TAY					; use as index! (2)
+	INY					; take standard devices anyway! (2+2)
 	INY
+; loop takes -1+14*z (16*z in 6510) worse case +3373 (+3823 for C64)
 mm_load:
 		LDA (sysptr), Y		; get it (5)
-		STA 0, Y			; get byte from zeropage (4*)
+		STA 0, Y			; get byte from zeropage (4)
 		DEY					; previous byte (2)
 #ifdef	C64
 		CPY #z_used			; 6510 must skip built-in port!
 #endif
 		BNE mm_load			; until first byte, but NOT included (3/2)
-; copy missing byte
+; copy missing byte (9)
 		LDA (sysptr), Y		; get it (5)
-		STA 0, Y			; get byte from zeropage (4*)
-; load kernel local context also
+		STA 0, Y			; get byte from zeropage (4)
+; load kernel local context also (+385)
 #ifdef	C64
 	LDY #std_in			; first byte of system context
 #else
@@ -235,14 +240,14 @@ mm_load:
 #endif
 mm_lkern:
 		LDA (sysptr), Y		; get from context area (5)
-		STA 0, Y			; get byte from locals and parameters (4*)
+		STA 0, Y			; get byte from locals and parameters (4)
 		INY					; next byte (2)
-		CPY #sysptr			; this will not get copied (first byte of reserved arrea)
-		BNE mm_lkern		; until sysptr not included
-; retrieve stack pointer!
-	LDY #sys_sp			; will point to last 
-	LDA (sysptr), Y		; retrieve
-	TAX					; cannot set SP from A
+		CPY #sysptr			; this will not get copied (first byte of reserved area)
+		BNE mm_lkern		; until sysptr not included (3/2)
+; retrieve stack pointer! (+11)
+	LDY #sys_sp			; will point to last (2)
+	LDA (sysptr), Y		; retrieve (5)
+	TAX					; cannot set SP from A (2+2)
 	TXS					; new stack pointer
 ; *** now do the same with stack ***
 ; A & X hold actual SP!
@@ -264,16 +269,16 @@ mm_stload:
 	LDX mm_pid			; get current PID again (4)
 ;	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
 	LDA mm_flags-1, X	; had it a SIGTERM request? (4) in case of integrated mm_treq
-	AND #1				; in case of integrated mm_treq (2)
-		BNE mm_sigterm		; process it now! (2/3)
+	LSR					; easier check of bit 0! (2)
+	BCS mm_sigterm		; process it now! (2/3)
 mm_rts:
-	RTS					; all done, continue ISR
+		RTS					; all done, continue ISR
 
 ; *** the actual SIGTERM routine execution, new 20150611 ***
 mm_sigterm:
 ;	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
-	LDA #1				; bit zero is integrated mm_treq in mm_flags
-	_TRB	; ******************* clear bit 0 ************************************************
+	ASL					; ...and restore value with clear flag!
+	STA mm_flags-1, X	; EEEEEEEK! clear received TERM signal, new format 20161117
 	LDA #>mm_rts		; compute return address for RTI!
 	PHA					; into stack
 	LDA #<mm_rts		; same for LSB
@@ -312,6 +317,7 @@ mm_fork:
 	_ENTER_CS			; this is delicate (5)
 mmf_loop:
 		LDA mm_flags-1, Y	; get that braid's status (4)
+		AND #BR_MASK		; mandatory now, ignore TERM (2)
 		CMP #BR_FREE		; check whether available (2)
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
@@ -334,21 +340,37 @@ mm_exec:
 	BNE mmx_br			; go for another braid
 		_DR_ERR(INVALID)	; rejects system PID, or execute within this braid??? *** REVISE
 mmx_br:
-; prepare storage pointer for later
-	_DEC
-	CLC					; put after DEC, otherwise NMOS emulation might fail! 20150616
-	ADC #>mm_context	; compute final MSB, note first stored PID is 1!
-	STA sysptr+1		; store it
+	PHA					; save desired PID for later!
+; prepare storage pointer for new context (A=PID)
+	CLC
+	ADC #>mm_context-256	; compute final MSB, note first stored PID is 1!
+	STA sysptr+1		; store it *** could use one local for shorter critical section!
 	LDA #<mm_context	; LSB needs no offset
 	STA sysptr			; store it
-; compute shared stack address
-	LDA #0				; reset values
+; while we are on it, set standard I/O
+	LDA def_io			; get std_in
+	LDY #std_in			; offset for variable
+	STA (sysptr), Y		; store into context
+	LDA def_io+1		; this should be stdout
+	INY					; advance offset
+	STA (sysptr), Y		; context complete
+; now should point to future stack space, no longer will switch regular stack!
+	PLA					; recover PID
 	CLC
-mme_sp:
-		ADC #256/MAX_BRAIDS		; go for next stack space
-		DEY						; until desired PID
-		BNE mme_sp
-	TSX					; get current SP
+	ADC #>mm_stacks-256	; compute final MSB, note first stored PID is 1!
+	STA sysptr+1		; store it
+	LDA #<mm_stacks		; LSB needs no offset
+	STA sysptr			; store it
+	
+; ****************OLD***************
+; compute shared stack address
+;	LDA #0				; reset values
+;	CLC
+;mme_sp:
+;		ADC #256/MAX_BRAIDS		; go for next stack space
+;		DEY						; until desired PID
+;		BNE mme_sp
+;	TSX					; get current SP
 	_ENTER_CS			; *** critical section begins ***
 	STX systmp			; will hold original SP
 	TAX					; computed value as destination SP
