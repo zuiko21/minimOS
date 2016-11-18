@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a7
+; v0.5.1a8
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161117-1505
+; last modified 20161118-1006
 
 ; will install only if no other multitasking driver is already present!
 #ifndef	MULTITASK
@@ -162,16 +162,13 @@ mm_switch:
 	LDX mm_pid			; get current PID again (4)
 	LDA mm_flags-1, X	; had it a SIGTERM request? (4)
 	LSR					; easier check of bit 0! (2)
-		BCS mm_sigterm2		; process it now! (2/3)
+	BCS mm_sigterm		; process it now! (2/3)
 mm_rts:
-	RTS					; all done, continue ISR
+		RTS					; all done, continue ISR
 
 ; the actual SIGTERM routine execution, new interface 161024, always ending in RTI
 mm_sigterm:
-	LDA mm_flags-1, X	; get remaining flags (4)
-	LSR					; clear flag...
-	ASL					; ...and restore value
-mm_sigterm2: 
+	ASL					; ...and restore value with clear flag!
 	STA mm_flags-1, X	; EEEEEEEK! clear received TERM signal, new format 20161117
 	PHK					; push program bank as required by RTI in 816
 	PEA mm_rts			; correct return address after SIGTERM handler RTI
@@ -246,6 +243,7 @@ mmx_br:
 	ADC #>mm_stacks-256	; compute MSB, note offset as first PID is 1
 	XBA					; will be MSB
 	LDA #$FF			; always assume page-aligned stacks
+; ...will switch to future stack space a bit later!
 ; create stack frame
 	.al: REP #$20		; *** 16-bit memory ***
 	LDA def_io			; get sys_in & sysout from parameter, revise ABI
@@ -318,11 +316,9 @@ mm_signal:
 
 #ifdef	SAFE
 	CPX #SIGCONT+1		; compare against last (2)
-	BMI mms_jmp			; abort if wrong signal
-		_DR_ERR(INVALID)		; unrecognized signal!
+		BCC mms_kerr		; abort if wrong signal
 #endif
 
-mms_jmp:
 	JMP (mms_table, X)	; jump to actual code
 
 ; ask braid to terminate
@@ -348,10 +344,11 @@ mms_kill:
 mms_cont:
 ; CS not needed as per 816 ABI
 	LDA mm_flags-1, Y	; first check current state (5)
-	AND #BR_MASK		; mandatory as per integrated mm_treq (2)
-	CMP #BR_STOP		; is it paused? (2)
+	LSR					; keep integrated mm_treq in C! (2)
+	CMP #BR_STOP/2		; is it paused? note it was shifted (2)
 		BNE mms_kerr		; no way to resume it! (2/3)
-	LDA #BR_RUN			; resume (2)
+	LDA #BR_RUN/2		; resume, note shift (2)
+	ROL					; reinsert TERM flag from C! (2)
 	STA mm_flags-1, Y	; store new status (5) again, TERM is lost
 ; here ends CS
 	_DR_OK
@@ -359,14 +356,15 @@ mms_cont:
 ; pause execution
 mms_stop:
 	LDA mm_flags-1, Y	; first check current state (5)
-	AND #BR_MASK		; mandatory as mm_treq is integrated! *** note that a previous TERM signal is lost!
-	CMP #BR_RUN			; is it running? (2)
+	LSR					; keep integrated mm_treq in C! (2)
+	CMP #BR_RUN/2		; is it running? note shift (2)
 		BNE mms_kerr		; no way to stop it! (2/3)
-	LDA #BR_STOP		; pause it (2)
+	LDA #BR_STOP/2		; pause it, note shift (2)
+	ROL					; reinsert TERM flag from C! (2)
 	STA mm_flags-1, Y	; store new status (5) *** would like to restore somehow any previous TERM!
 	_DR_OK
 mms_kerr:
-	_DR_ERR(INVALID)	; not a valid PID
+	_DR_ERR(INVALID)	; not a running PID
 
 ; get execution flags for a braid
 mm_status:
