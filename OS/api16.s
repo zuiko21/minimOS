@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a8, should match kernel16.s
+; v0.5.1a9, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161115-1051
+; last modified 20161121-1344
 
 ; no way for standalone assembly...
 
@@ -17,6 +17,26 @@ unimplemented:			; placeholder here, not currently used
 ; ********************************
 cout:
 	.as: .xs: SEP #$30	; *** standard register size ***
+; new MUTEX for COUT, 20161121
+#ifdef	MULTITASK
+; CS not needed for MUTEX as per 65816 API
+co_loop:
+	LDA coutlock		; check whether in use (4)
+	BEQ co_lckd			; resume operation if free (3)
+; otherwise yield CPU time and repeat
+;		LDA io_c			; preserve char to print, really needed? (3)
+;		PHA					; save it (3)
+		PHY					; save device here! (3)
+		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
+		PLY					; restore previous status (4)
+;		PLA
+;		STA io_c			; restore character, just in case? (3)
+		BRA co_loop			; try again! (3)
+co_lckd:
+	STY coutlock		; reserve this (4)
+; 65816 API runs on interrupts off, thus no explicit CS exit
+#endif
+; continue with mutually exclusive COUT
 	TYA					; for indexed comparisons (2)
 	BNE co_port			; not default (3/2)
 		LDA stdout			; new per-process standard device ### apply this to ·65
@@ -47,7 +67,8 @@ co_phys:
 	ASL					; convert to index (2+2)
 	TAX
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
-; ** important routine ending in order to preserve C status after thr RTI **
+	STZ coutlock		; time to clear MUTEX!
+; ** important routine ending in order to preserve C status after the RTI **
 cio_callend:
 	PLA					; extract previous status!
 	BCC cio_notc		; no need to clear carry
@@ -55,6 +76,7 @@ cio_callend:
 cio_notc:
 	PHA					; replace stored flags
 	RTI					; end of call procedure
+
 cio_nfound:
 	_ERR(N_FOUND)		; unknown device
 
@@ -65,6 +87,31 @@ cio_nfound:
 ; *************************************************
 cin:
 	.as: .xs: SEP #$30	; *** standard register size ***
+; new MUTEX for CIN, 20161121
+#ifdef	MULTITASK
+; CS not needed for MUTEX as per 65816 API
+ci_loop:
+	LDA cin_lock		; check whether in use (4)
+	BEQ ci_lckd			; resume operation if free (3)
+; otherwise yield CPU time and repeat
+; but first check whether it was me (waiting on binary mode)
+		PHY					; **save device here!** (3)
+		_KERNEL(GET_PID)	; who am I?
+		CPY cin_lock		; it was me who locked? (4)
+		BNE ci_yield		; no, thus keep waiting (3/2)
+			PLY					; otherwise restore device (4)
+			BRA ci_lckdd		; and resume execution (3)
+ci_yield:
+; continue with regular mutex
+		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
+		PLY					; restore previous status (4)
+		BRA ci_loop			; try again! (3)
+ci_lckd:
+	STY cin_lock		; reserve this (4)
+ci_lckdd:
+; 65816 API runs on interrupts off, thus no explicit CS exit
+#endif
+; continue with mutually exclusive CIN
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
 		LDA std_in			; new per-process standard device ### apply this to ·65
@@ -76,46 +123,50 @@ ci_port:
 		ASL					; convert to index (2+2)
 		TAX
 		JSR (drv_ipt, X)	; direct CALL!!!
-			BCS cio_callend		; if some error, send it back
+		BCC ci_chkev		; no error, have a look at events
+ci_exit:
+			STZ cin_lock		; otherwise clear mutex!!! (4)
+			BRA cio_callend		; return whatever error!
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
+ci_chkev:
 		LDA io_c			; get received character
 		CMP #' '			; printable?
-			BCC ci_manage		; if not, might be an event
-		_EXIT_OK			; generic macro, older trick NLA
-
-; ** continue event management ** REVISE
-ci_manage:
-; check for binary mode
-	LDY cin_mode		; get flag
-	BEQ ci_event		; should process possible event
-		STZ cin_mode		; back to normal mode
-		_EXIT_OK			; and return whatever was received
+			BCS ci_exitOK		; if so, will not be an event, exit with NO error
+; otherwise might be an event ** REVISE
+; check for binary mode first
+		LDX cin_mode		; get flag
+		BEQ ci_event		; should process possible event
+			STZ cin_mode		; back to normal mode
+ci_exitOK:
+			STZ cin_lock		; otherwise clear mutex!!! (4)
+			_EXIT_OK			; all done without error!
 ci_event:
-	CMP #16				; is it DLE?
-	BNE ci_notdle		; otherwise check next
-		INC cin_mode		; set binary mode!
-		BNE ci_abort		; and supress received character, no need for BRA
+		CMP #16				; is it DLE?
+		BNE ci_notdle		; otherwise check next
+			STA cin_mode		; set binary mode! safer and faster!
+			_ERR(EMPTY)			; and supress received character, ***but will stau locked!
 ci_notdle:
-	CMP #3				; is it ^C? (TERM)
-	BNE ci_noterm		; otherwise check next
-		LDA #SIGTERM
-		BNE ci_signal		; send signal, no need for BRA?
+		CMP #3				; is it ^C? (TERM)
+		BNE ci_noterm		; otherwise check next
+			LDA #SIGTERM
+			BRA ci_signal		; send signal
 ci_noterm:
-	CMP #4				; is it ^D? (KILL) somewhat dangerous...
-	BNE ci_nokill		; otherwise check next
-		LDA #SIGKILL
-		BNE ci_signal		; send signal, no need for BRA?
+		CMP #4				; is it ^D? (KILL) somewhat dangerous...
+		BNE ci_nokill		; otherwise check next
+			LDA #SIGKILL
+			BRA ci_signal		; send signal
 ci_nokill:
-	CMP #26				; is it ^Z? (STOP)
-	BEQ ci_stop			; last signal to be sent
-		_EXIT_OK			; otherwise all done
+		CMP #26				; is it ^Z? (STOP)
+; *****************revise here
+		BEQ ci_stop			; last signal to be sent
+			_EXIT_OK			; otherwise all done
 ci_stop:
-	LDA #SIGSTOP		; last signal to be sent
+		LDA #SIGSTOP		; last signal to be sent
 ci_signal:
-	STA b_sig			; set signal as parameter
-	_KERNEL(GET_PID)	; as this will be a self-sent signal!
-	_KERNEL(B_SIGNAL)	; send signal to PID in Y
+		STA b_sig			; set signal as parameter
+		_KERNEL(GET_PID)	; as this will be a self-sent signal!
+		_KERNEL(B_SIGNAL)	; send signal to PID in Y
 ci_abort:
 	_ERR(EMPTY)			; no character was received
 

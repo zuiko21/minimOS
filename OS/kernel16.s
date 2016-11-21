@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a8
+; v0.5.1a9
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161115-0941
+; last modified 20161121-1329
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -91,6 +91,11 @@ ram_init:
 	STX dpoll_mx		; reset all indexes (4+4+4)
 	STX dreq_mx
 	STX dsec_mx
+; it is a good time to reset several other flags
+	STX cin_mode		; reset binary mode flag, new 20150618
+	STX cin_lock		; new MUTEX for I/O, 20161121
+	STX coutlock
+
 ; already in 16-bit memory mode...
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
@@ -253,9 +258,6 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
-
-; reset several remaining flags
-	STZ cin_mode	; reset binary mode flag, new 20150618
 
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
