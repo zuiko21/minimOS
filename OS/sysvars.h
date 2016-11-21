@@ -1,6 +1,6 @@
-; minimOS 0.5.1a5 System Variables
+; minimOS 0.5.1a6 System Variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161106-1547
+; last modified 20161121-1025
 
 .bss
 
@@ -23,6 +23,8 @@ dsec_mx		.byt	0			; bytes used for drivers with 1-sec routines
 drv_sec		.dsb	MAX_QUEUE	; space for 1-sec routines
 
 cin_mode	.byt	0			; CIN binary mode flag for event management, new 20150618
+cin_lock	.byt	0			; PID-reserved MUTEX for CIN & COUT, new 20161121
+coutlock	.byt	0
 
 ; integrated SIGTERM handler(s), no longer on driver memory!
 ; assume MAX_BRAIDS defined as 1 on non multitasking systems!
@@ -46,9 +48,9 @@ ram_pid		.dsb	MAX_LIST	; non-interleaved PID array
 ; these are the older variables, up to 150126
 irq_freq	.word	200	; IRQs per second (originally set from options.h)
 ticks		.dsb	6	; second fraction in jiffy IRQs, then approximate uptime in seconds (2+4 bytes) new format 161006
-default_in	.byt	0	; global default devices
+default_in	.byt	0	; GLOBAL default devices
 default_out	.byt	0
-old_t1		.word	0	; keep old T1 latch value for FG, revised 150208
+old_t1		.word	0	; keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 sd_flag		.byt	0	; default task upon no remaining braids! 160408
 
 ;driver-specific system variables come after this one, in main source
