@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a7, must match kernel.s
+; v0.5.1a8, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161115-1111
+; last modified 20161121-1042
 
 ; no way for standalone assembly...
 
@@ -15,6 +15,25 @@ unimplemented:			; placeholder here, not currently used
 ; LOWRAM version uses da_ptr!!!
 
 cout:
+#ifdef	MULTITASK
+	_ENTER_CS		; needed for a MUTEX (5)
+co_loop:
+	LDA coutlock	; check whether in use (4)
+		BEQ co_lckd		; resume operation if free (3)
+; otherwise yield CPU time and repeat
+	LDA io_c		; preserve char to print, really needed? (3)
+	PHA				; (3)
+	_PHY			; also device! (3)
+	_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
+	_PLY			; restore previous status (3)
+	PLA
+	STA io_c		; restore character, just in case? (3)
+	_BRA co_loop	; try again! (3)
+co_lckd:
+	STY coutlock	; reserve this (4)
+	_EXIT_CS		; proceed normally (4)
+#endif
+
 	TYA				; for indexed comparisons (2)
 	BNE co_port		; not default (3/2)
 		LDA stdout		; new per-process standard device
@@ -41,9 +60,14 @@ co_win:
 ; *** virtual windows manager TO DO ***
 	_ERR(NO_RSRC)	; not yet implemented
 co_phys:
-; ** new direct indexing **
+; ** new direct indexing, converted to subroutine because of MUTEX 20161121 **
 	ASL					; convert to index (2+2)
 	TAX
+	JSR co_call			; indirect indexed jump...
+	_STZA coutlock		; clear MUTEX! (4)
+	RTS					; respect error code
+
+co_call:
 	_JMPX(drv_opt)		; direct jump!!!
 
 cio_nfound:
