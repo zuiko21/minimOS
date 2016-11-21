@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a8, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161121-1325
+; last modified 20161121-1359
 
 ; no way for standalone assembly...
 
@@ -127,7 +127,7 @@ ci_chkev:
 ; check for binary mode first
 		LDX cin_mode		; get flag, new sysvar 20150617
 		BEQ ci_event		; not binary, should process possible event
-			_STZY cin_mode		; back to normal mode
+			_STZA cin_mode		; back to normal mode
 ci_exitOK:
 			_STZA cin_lock		; otherwise clear mutex!!! (4)
 			_EXIT_OK			; all done without error!
