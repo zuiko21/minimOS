@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a9, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161121-1344
+; last modified 20161121-1404
 
 ; no way for standalone assembly...
 
@@ -158,17 +158,15 @@ ci_noterm:
 			BRA ci_signal		; send signal
 ci_nokill:
 		CMP #26				; is it ^Z? (STOP)
-; *****************revise here
-		BEQ ci_stop			; last signal to be sent
-			_EXIT_OK			; otherwise all done
-ci_stop:
-		LDA #SIGSTOP		; last signal to be sent
+		BNE ci_exitOK		; otherwise there is no more to check
+			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
-		STA b_sig			; set signal as parameter
-		_KERNEL(GET_PID)	; as this will be a self-sent signal!
-		_KERNEL(B_SIGNAL)	; send signal to PID in Y
+			STA b_sig			; set signal as parameter
+			_KERNEL(GET_PID)	; as this will be a self-sent signal!
+			_KERNEL(B_SIGNAL)	; send signal to PID in Y
 ci_abort:
-	_ERR(EMPTY)			; no character was received
+		STZ cin_lock		; clear mutex!
+		_ERR(EMPTY)			; no character was received
 
 ci_nph:
 	CMP #64				; first file-dev??? ***
