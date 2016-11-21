@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a8, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161121-1042
+; last modified 20161121-1237
 
 ; no way for standalone assembly...
 
@@ -15,55 +15,56 @@ unimplemented:			; placeholder here, not currently used
 ; LOWRAM version uses da_ptr!!!
 
 cout:
+; new MUTEX for COUT, 20161121
 #ifdef	MULTITASK
-	_ENTER_CS		; needed for a MUTEX (5)
+	_ENTER_CS			; needed for a MUTEX (5)
 co_loop:
-	LDA coutlock	; check whether in use (4)
-		BEQ co_lckd		; resume operation if free (3)
+	LDA coutlock		; check whether in use (4)
+	BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-	LDA io_c		; preserve char to print, really needed? (3)
-	PHA				; (3)
-	_PHY			; also device! (3)
-	_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
-	_PLY			; restore previous status (3)
-	PLA
-	STA io_c		; restore character, just in case? (3)
-	_BRA co_loop	; try again! (3)
+;		LDA io_c			; preserve char to print, really needed? (3)
+;		PHA					; save it (3)
+		_PHY				; save device here! (3)
+		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
+		_PLY				; restore previous status (4)
+;		PLA
+;		STA io_c			; restore character, just in case? (3)
+		_BRA co_loop		; try again! (3)
 co_lckd:
-	STY coutlock	; reserve this (4)
-	_EXIT_CS		; proceed normally (4)
+	STY coutlock		; reserve this (4)
+	_EXIT_CS			; proceed normally (4)
 #endif
-
-	TYA				; for indexed comparisons (2)
-	BNE co_port		; not default (3/2)
-		LDA stdout		; new per-process standard device
-		BNE co_port		; already a valid device
-			LDA default_out	; otherwise get system global (4)
+; continue with mutually exclusive COUT
+	TYA					; for indexed comparisons (2)
+	BNE co_port			; not default (3/2)
+		LDA stdout			; new per-process standard device
+		BNE co_port			; already a valid device
+			LDA default_out		; otherwise get system global (4)
 co_port:
-	BMI co_phys		; not a logic device (3/2)
-		CMP #64			; first file-dev??? ***
-			BCC co_win		; below that, should be window manager
+	BMI co_phys			; not a logic device (3/2)
+		CMP #64				; first file-dev??? ***
+			BCC co_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 		CMP #64+MAX_FILES	; still within file-devs?
-			BCS co_log		; that value or over, not a file
+			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR(NO_RSRC)	; not yet implemented ***placeholder***
+		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
 co_log:
 ; investigate rest of logical devices
-		CMP #DEV_NULL	; lastly, ignore output
-			BNE cio_nfound	; final error otherwise
-		_EXIT_OK		; "/dev/null" is always OK
+		CMP #DEV_NULL		; lastly, ignore output
+			BNE cio_nfound		; final error otherwise
+		_EXIT_OK			; "/dev/null" is always OK
 co_win:
 ; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)	; not yet implemented
+	_ERR(NO_RSRC)		; not yet implemented
 co_phys:
 ; ** new direct indexing, converted to subroutine because of MUTEX 20161121 **
 	ASL					; convert to index (2+2)
 	TAX
-	JSR co_call			; indirect indexed jump...
+	JSR co_call			; indirect indexed CALL...
 	_STZA coutlock		; clear MUTEX! (4)
 	RTS					; respect error code
 
@@ -78,6 +79,31 @@ cio_nfound:
 ; Y <- dev, io_c -> char, C = not available
 
 cin:
+; new MUTEX for CIN, 20161121
+#ifdef	MULTITASK
+	_ENTER_CS			; needed for a MUTEX (5)
+ci_loop:
+	LDA cin_lock		; check whether in use (4)
+	BEQ ci_lckd			; resume operation if free (3)
+; otherwise yield CPU time and repeat
+; but first check whether it was me (waiting on binary mode)
+		_PHY				; **save device here!** (3)
+		_KERNEL(GET_PID)	; who am I?
+		CPY cin_lock		; it was me who locked? (4)
+		BNE ci_yield		; no, thus keep waiting (3/2)
+			_PLY				; otherwise restore device (4)
+			_BRA ci_lckdd		; and resume execution (3)
+ci_yield:
+; continue with regular mutex
+		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
+		_PLY				; restore previous status (4)
+		_BRA ci_loop		; try again! (3)
+ci_lckd:
+	STY cin_lock		; reserve this (4)
+ci_lckdd:
+	_EXIT_CS			; proceed normally (4)
+#endif
+; continue with mutually exclusive CIN
 	TYA				; for indexed comparisons
 	BNE ci_port		; specified
 		LDA std_in		; new per-process standard device
@@ -86,21 +112,27 @@ cin:
 ci_port:
 	BPL ci_nph		; logic device
 		JSR ci_phys		; check physical devices... but come back for events! new 20150617
-			BCS ci_exit		; some error, send it back
+		BCC ci_chkev	; no error, have a look at events
+ci_exit:
+			_STZA cin_lock	; otherwise clear mutex!!! (4)
+			RTS				; return whatever error!
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
+ci_chkev:
 		LDA io_c		; get received character
 		CMP #' '		; printable?
 			BCC ci_manage	; if not, might be an event
 ci_exitOK:
 		CLC				; above comparison would set carry
-ci_exit:
-		RTS				; cannot use macro because may need to keep Carry
+		BCC ci_exit		; clear error & mutex and go away, no need for bra
 ci_phys:
 ; ** new direct indexing **
 	ASL					; convert to index (2+2)
 	TAX
 	_JMPX(drv_ipt)		; direct jump!!!
+
+
+ci_call:
 
 ; ** continue event management ** REVISE
 ci_manage:
