@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a8, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161121-1237
+; last modified 20161121-1325
 
 ; no way for standalone assembly...
 
@@ -60,13 +60,14 @@ co_log:
 co_win:
 ; *** virtual windows manager TO DO ***
 	_ERR(NO_RSRC)		; not yet implemented
+
 co_phys:
 ; ** new direct indexing, converted to subroutine because of MUTEX 20161121 **
 	ASL					; convert to index (2+2)
 	TAX
 	JSR co_call			; indirect indexed CALL...
-	_STZA coutlock		; clear MUTEX! (4)
-	RTS					; respect error code
+	_STZA coutlock		; ...because I have to clear MUTEX! (4)
+	RTS					; respect error code anyway
 
 co_call:
 	_JMPX(drv_opt)		; direct jump!!!
@@ -104,87 +105,77 @@ ci_lckdd:
 	_EXIT_CS			; proceed normally (4)
 #endif
 ; continue with mutually exclusive CIN
-	TYA				; for indexed comparisons
-	BNE ci_port		; specified
-		LDA std_in		; new per-process standard device
-		BNE ci_port		; already a valid device
-			LDA default_in	; otherwise get system global
+	TYA					; for indexed comparisons
+	BNE ci_port			; specified
+		LDA std_in			; new per-process standard device
+		BNE ci_port			; already a valid device
+			LDA default_in		; otherwise get system global
 ci_port:
-	BPL ci_nph		; logic device
-		JSR ci_phys		; check physical devices... but come back for events! new 20150617
-		BCC ci_chkev	; no error, have a look at events
+	BPL ci_nph			; logic device
+		JSR ci_phys			; check physical devices... but come back for events! new 20150617
+		BCC ci_chkev		; no error, have a look at events
 ci_exit:
-			_STZA cin_lock	; otherwise clear mutex!!! (4)
-			RTS				; return whatever error!
+			_STZA cin_lock		; otherwise clear mutex!!! (4)
+			RTS					; return whatever error!
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
 ci_chkev:
-		LDA io_c		; get received character
-		CMP #' '		; printable?
-			BCC ci_manage	; if not, might be an event
+		LDA io_c			; get received character
+		CMP #' '			; printable?
+			BCS ci_exitOK		; if so, will not be an event, exit with NO error
+; otherwise might be an event ** REVISE
+; check for binary mode first
+		LDX cin_mode		; get flag, new sysvar 20150617
+		BEQ ci_event		; not binary, should process possible event
+			_STZY cin_mode		; back to normal mode
 ci_exitOK:
-		CLC				; above comparison would set carry
-		BCC ci_exit		; clear error & mutex and go away, no need for bra
-ci_phys:
-; ** new direct indexing **
-	ASL					; convert to index (2+2)
-	TAX
-	_JMPX(drv_ipt)		; direct jump!!!
-
-
-ci_call:
-
-; ** continue event management ** REVISE
-ci_manage:
-; check for binary mode
-	LDY cin_mode	; get flag, new sysvar 20150617
-	BEQ ci_event	; should process possible event
-		_STZY cin_mode	; back to normal mode
-		RTS				; and return whatever was received
+			_STZA cin_lock		; otherwise clear mutex!!! (4)
+			_EXIT_OK			; all done without error!
 ci_event:
-	CMP #16			; is it DLE?
-	BNE ci_notdle	; otherwise check next
-		INC cin_mode	; set binary mode!
-		BNE ci_abort	; and supress received character, no need for BRA
+		CMP #16				; is it DLE?
+		BNE ci_notdle		; otherwise check next
+			STA cin_mode		; set binary mode! safer and faster!
+			_ERR(EMPTY)			; and supress received character, ***but will stau locked!
 ci_notdle:
-	CMP #3			; is it ^C? (TERM)
-	BNE ci_noterm	; otherwise check next
-		LDA #SIGTERM
-		BNE ci_signal	; send signal, no need for BRA?
+		CMP #3				; is it ^C? (TERM)
+		BNE ci_noterm		; otherwise check next
+			LDA #SIGTERM
+			BNE ci_signal		; send signal, no need for BRA?
 ci_noterm:
-	CMP #4			; is it ^D? (KILL) somewhat dangerous...
-	BNE ci_nokill	; otherwise check next
-		LDA #SIGKILL
-		BNE ci_signal	; send signal, no need for BRA?
+		CMP #4				; is it ^D? (KILL) ***somewhat dangerous...
+		BNE ci_nokill		; otherwise check next
+			LDA #SIGKILL
+			BNE ci_signal		; send signal, no need for BRA?
 ci_nokill:
-	CMP #26			; is it ^Z? (STOP)
-	BNE ci_exitOK	; otherwise there's no more to check
-		LDA #SIGSTOP	; last signal to be sent
+		CMP #26				; is it ^Z? (STOP)
+		BNE ci_exitOK		; otherwise there's no more to check
+			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
-		STA b_sig			; set signal as parameter
-		_KERNEL(GET_PID)	; as this will be a self-sent signal!
-		_KERNEL(B_SIGNAL)	; send signal to PID in Y
+			STA b_sig			; set signal as parameter
+			_KERNEL(GET_PID)	; as this will be a self-sent signal!
+			_KERNEL(B_SIGNAL)	; send signal to PID in Y
 ci_abort:
-		_ERR(EMPTY)		; no character was received
+		_STZA cin_lock		; clear mutex!
+		_ERR(EMPTY)			; no character was received
 
 ci_nph:
-	CMP #64			; first file-dev??? ***
-		BCC ci_win		; below that, should be window manager
+	CMP #64				; first file-dev??? ***
+		BCC ci_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 	CMP #64+MAX_FILES	; still within file-devs?
-		BCS ci_log		; that or over, not a file
+		BCS ci_log			; that or over, not a file
 ; *** manage here input from open file ***
-	_ERR(NO_RSRC)	; not yet implemented ***placeholder***
+	_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
 
 ci_log:
-	CMP #DEV_RND	; getting a random number?
-		BEQ ci_rnd		; compute it!
-	CMP #DEV_NULL	; lastly, ignore input
-		BNE cio_nfound	; final error otherwise
-	_EXIT_OK		; "/dev/null" is always OK
+	CMP #DEV_RND		; getting a random number?
+		BEQ ci_rnd			; compute it!
+	CMP #DEV_NULL		; lastly, ignore input
+		BNE cio_nfound		; final error otherwise
+	_EXIT_OK			; "/dev/null" is always OK
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
@@ -195,6 +186,11 @@ ci_win:
 ; *** virtual window manager TO DO ***
 	_ERR(NO_RSRC)	; not yet implemented
 
+ci_phys:
+; ** new direct indexing **
+	ASL					; convert to index (2+2)
+	TAX
+	_JMPX(drv_ipt)		; direct jump!!!
 
 ; *** MALLOC, reserve memory *** fully revamped 20161107
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory

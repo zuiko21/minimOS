@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1a4
+; v0.5.1a5
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161115-0941
+; last modified 20161121-1318
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -90,6 +90,10 @@ ram_init:
 	STX dpoll_mx		; reset all indexes, NMOS-savvy (4+4+4)
 	STX dreq_mx
 	STX dsec_mx
+; it is a good time to reset several other flags in a NMOS-friendly way
+	STX cin_mode		; reset binary mode flag, new 20150618
+	STX cin_lock		; new MUTEX for I/O, 20161121
+	STX coutlock
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------
@@ -338,9 +342,6 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
-
-; reset several remaining flags
-	_STZA cin_mode		; reset binary mode flag, new 20150618
 
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
