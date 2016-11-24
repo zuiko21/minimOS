@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a9, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161124-1134
+; last modified 20161124-1238
 
 ; no way for standalone assembly...
 
@@ -64,12 +64,13 @@ co_phys:
 ; ** new direct indexing, converted to subroutine because of MUTEX 20161121 **
 	ASL					; convert to index (2+2)
 	TAX
+#ifdef	MULTITASK
 	JSR co_call			; indirect indexed CALL...
 	LDX iol_dev			; **need to clear new lock! (3)
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	RTS					; respect error code anyway
-
 co_call:
+#endif
 	_JMPX(drv_opt)		; direct jump!!!
 
 ; some common I/O calls
@@ -77,7 +78,7 @@ cio_nfound:
 	_ERR(N_FOUND)		; unknown device
 
 #ifdef	MULTITASK
-cio_getpid:
+cio_getpid:				; *******************could be always set, as might be used by CIN
 	LDX #GET_PID		; prepare FUTURE indirect indexed jump! (2)
 	JMP (drv_opt)		; go to fixed #128 driver (6)
 #endif
@@ -88,7 +89,6 @@ cio_getpid:
 cin:
 ; new MUTEX for CIN 161121, *per-driver based 161124 **added overhead
 #ifdef	MULTITASK
-; *************iol_dev should be set ALWAYS **********************************
 	STY iol_dev			; **keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
 ci_loop:
@@ -124,8 +124,10 @@ ci_port:
 		JSR ci_phys			; check physical devices... but come back for events! new 20150617
 		BCC ci_chkev		; no error, have a look at events
 ci_exit:
+#ifdef	MULTITASK
 			LDX iol_dev			; **use device as index! (3)
 			_STZA cin_lock, X	; *otherwise clear mutex!!! (4)
+#endif
 			RTS					; return whatever error!
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
@@ -137,6 +139,7 @@ ci_chkev:
 ; check for binary mode first
 		LDX cin_mode		; get flag, new sysvar 20150617
 		BEQ ci_event		; not binary, should process possible event
+; *********************** needs to be revised for single & multitask systems ********
 			LDX iol_dev			; **use device as index! (3)
 			_STZA cin_mode, X	; *back to normal mode
 ci_exitOK:
@@ -164,7 +167,7 @@ ci_nokill:
 			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 			STA b_sig			; set signal as parameter
-			_KERNEL(GET_PID)	; as this will be a self-sent signal!
+			_KERNEL(GET_PID)	; as this will be a self-sent signal!*****optimise!
 			_KERNEL(B_SIGNAL)	; send signal to PID in Y
 ci_abort:
 		_STZA cin_lock		; clear mutex!
