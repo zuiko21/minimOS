@@ -1,6 +1,6 @@
-; minimOS 0.5.1a6 System Variables
+; minimOS 0.5.1a7 System Variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161121-1025
+; last modified 20161124-1055
 
 .bss
 
@@ -22,9 +22,12 @@ drv_async	.dsb	MAX_QUEUE	; space for async routines
 dsec_mx		.byt	0			; bytes used for drivers with 1-sec routines
 drv_sec		.dsb	MAX_QUEUE	; space for 1-sec routines
 
-cin_mode	.byt	0			; CIN binary mode flag for event management, new 20150618
-cin_lock	.byt	0			; PID-reserved MUTEX for CIN & COUT, new 20161121
-coutlock	.byt	0
+#ifdef	MULTITASK
+cin_mode	.dsb	256			; CIN binary mode flag for event management, new 20150618, per-driver 161124
+cio_lock	.dsb	256			; PID-reserved MUTEX for CIN & COUT, new 20161121 per-driver 161124
+#else
+cin_mode	.byt	0			; flag always needed, singletask will not use locks!
+#endif
 
 ; integrated SIGTERM handler(s), no longer on driver memory!
 ; assume MAX_BRAIDS defined as 1 on non multitasking systems!

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a8, must match kernel.s
+; v0.5.1a9, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161121-1359
+; last modified 20161124-1134
 
 ; no way for standalone assembly...
 
@@ -15,23 +15,22 @@ unimplemented:			; placeholder here, not currently used
 ; LOWRAM version uses da_ptr!!!
 
 cout:
-; new MUTEX for COUT, 20161121
+; new MUTEX for COUT 161121, *per-driver based 161124 **added overhead
 #ifdef	MULTITASK
+	STY iol_dev			; **keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
 co_loop:
-	LDA coutlock		; check whether in use (4)
+	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-;		LDA io_c			; preserve char to print, really needed? (3)
-;		PHA					; save it (3)
-		_PHY				; save device here! (3)
-		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
-		_PLY				; restore previous status (4)
-;		PLA
-;		STA io_c			; restore character, just in case? (3)
+		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDY iol_dev			; restore previous status, *new style (3)
 		_BRA co_loop		; try again! (3)
 co_lckd:
-	STY coutlock		; reserve this (4)
+	JSR cio_getpid		; **shared call, 816 prefers indexed JSR
+	TYA					; **current PID in A (2)
+	LDY iol_dev			; **restore device number (3)
+	STA cio_lock, Y		; *reserve this (4)
 	_EXIT_CS			; proceed normally (4)
 #endif
 ; continue with mutually exclusive COUT
@@ -66,41 +65,51 @@ co_phys:
 	ASL					; convert to index (2+2)
 	TAX
 	JSR co_call			; indirect indexed CALL...
-	_STZA coutlock		; ...because I have to clear MUTEX! (4)
+	LDX iol_dev			; **need to clear new lock! (3)
+	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	RTS					; respect error code anyway
 
 co_call:
 	_JMPX(drv_opt)		; direct jump!!!
 
+; some common I/O calls
 cio_nfound:
-	_ERR(N_FOUND)	; unknown device
+	_ERR(N_FOUND)		; unknown device
 
+#ifdef	MULTITASK
+cio_getpid:
+	LDX #GET_PID		; prepare FUTURE indirect indexed jump! (2)
+	JMP (drv_opt)		; go to fixed #128 driver (6)
+#endif
 
 ; *** CIN, get a character *** revamped 20150209
 ; Y <- dev, io_c -> char, C = not available
 
 cin:
-; new MUTEX for CIN, 20161121
+; new MUTEX for CIN 161121, *per-driver based 161124 **added overhead
 #ifdef	MULTITASK
+; *************iol_dev should be set ALWAYS **********************************
+	STY iol_dev			; **keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
 ci_loop:
-	LDA cin_lock		; check whether in use (4)
+	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
-		_PHY				; **save device here!** (3)
-		_KERNEL(GET_PID)	; who am I?
-		CPY cin_lock		; it was me who locked? (4)
-		BNE ci_yield		; no, thus keep waiting (3/2)
-			_PLY				; otherwise restore device (4)
-			_BRA ci_lckdd		; and resume execution (3)
-ci_yield:
+		JSR cio_getpid		; *shared call, 816 prefers indexed JSR
+		TYA					; **current PID in A
+		LDY iol_dev			; **retrieve device as index
+		CMP cio_lock, Y		; *was it me who locked? (4)
+			BEQ ci_lckdd		; *if so, resume execution (3)
 ; continue with regular mutex
-		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
-		_PLY				; restore previous status (4)
+		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDY iol_dev			; *restore previous status (3)
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
-	STY cin_lock		; reserve this (4)
+	JSR cio_getpid		; **shared call, 816 prefers indexed JSR
+	TYA					; **current PID in A (2)
+	LDY iol_dev			; **restore device number (3)
+	STA cio_lock, Y		; *reserve this (4)
 ci_lckdd:
 	_EXIT_CS			; proceed normally (4)
 #endif
@@ -115,7 +124,8 @@ ci_port:
 		JSR ci_phys			; check physical devices... but come back for events! new 20150617
 		BCC ci_chkev		; no error, have a look at events
 ci_exit:
-			_STZA cin_lock		; otherwise clear mutex!!! (4)
+			LDX iol_dev			; **use device as index! (3)
+			_STZA cin_lock, X	; *otherwise clear mutex!!! (4)
 			RTS					; return whatever error!
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
@@ -127,9 +137,11 @@ ci_chkev:
 ; check for binary mode first
 		LDX cin_mode		; get flag, new sysvar 20150617
 		BEQ ci_event		; not binary, should process possible event
-			_STZA cin_mode		; back to normal mode
+			LDX iol_dev			; **use device as index! (3)
+			_STZA cin_mode, X	; *back to normal mode
 ci_exitOK:
-			_STZA cin_lock		; otherwise clear mutex!!! (4)
+			LDX iol_dev			; **use device as index! (3)
+			_STZA cin_lock, X	; *otherwise clear mutex!!! (4)
 			_EXIT_OK			; all done without error!
 ci_event:
 		CMP #16				; is it DLE?
