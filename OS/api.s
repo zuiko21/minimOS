@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a9, must match kernel.s
+; v0.5.1a10, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161125-0934
+; last modified 20161125-1234
 
 ; no way for standalone assembly...
 
@@ -27,7 +27,7 @@ co_loop:
 		LDY iol_dev			; restore previous status, *new style (3)
 		_BRA co_loop		; try again! (3)
 co_lckd:
-	JSR cio_getpid		; **shared call, 816 prefers indexed JSR... or use standard internal call
+	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -70,6 +70,7 @@ co_phys:
 	LDX iol_dev			; **need to clear new lock! (3)
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	RTS					; respect error code anyway
+
 co_call:
 #endif
 	_JMPX(drv_opt)		; direct jump!!!
@@ -78,11 +79,6 @@ co_call:
 cio_nfound:
 	_ERR(N_FOUND)		; unknown device
 
-#ifdef	MULTITASK
-cio_getpid:				; *** think about replacing this for the internal call!
-	LDX #GET_PID		; prepare FUTURE indirect indexed jump! (2)
-	JMP (drv_opt)		; go to fixed #128 driver (6)
-#endif
 
 ; *** CIN, get a character *** revamped 20150209
 ; Y <- dev, io_c -> char, C = not available
@@ -97,17 +93,18 @@ ci_loop:
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
-		JSR cio_getpid		; *shared call, 816 prefers indexed JSR
+		JSR get_pid			; *standard internal call, 816 prefers indexed JSR
 		TYA					; **current PID in A
 		LDY iol_dev			; **retrieve device as index
 		CMP cio_lock, Y		; *was it me who locked? (4)
 			BEQ ci_lckdd		; *if so, resume execution (3)
+; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
 		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
 		LDY iol_dev			; *restore previous status (3)
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
-	JSR get_pid			; or JSR cio_getpid, this is the standard internal call **shared call, 816 prefers indexed JSR
+	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -123,35 +120,49 @@ ci_lckdd:
 ci_port:
 	BPL ci_nph			; logic device
 		JSR ci_phys			; check physical devices... but come back for events! new 20150617
-		BCC ci_chkev		; no error, have a look at events
+		BCC ci_chkev		; no error, have a look at events ***could reduce overhead a bit with BCS!
 ci_exit:
 #ifdef	MULTITASK
 			LDX iol_dev			; **use device as index! (3)
-			_STZA cin_lock, X	; *otherwise clear mutex!!! (4)
+			_STZA cio_lock, X	; *otherwise clear mutex!!! (4)
 #endif
 			RTS					; return whatever error!
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
 ci_chkev:
+#ifdef	MULTITASK
+		LDX iol_dev			; **use device as index! worth doing here (3)
+#endif
 		LDA io_c			; get received character
 		CMP #' '			; printable?
 			BCS ci_exitOK		; if so, will not be an event, exit with NO error
 ; otherwise might be an event ** REVISE
 ; check for binary mode first
-		LDX cin_mode		; get flag, new sysvar 20150617
-		BEQ ci_event		; not binary, should process possible event
-; *********************** needs to be revised for single & multitask systems ********
-			LDX iol_dev			; **use device as index! (3)
+#ifdef	MULTITASK
+		LDY cin_mode, X		; *get flag, new sysvar 20150617
+#else
+		LDY cin_mode		; singletask systems
+#endif
+		BEQ ci_event		; not binary, should process possible event ***might reduce overhead with BNE
+#ifdef	MULTITASK
 			_STZA cin_mode, X	; *back to normal mode
+#else
+			_STZA cin_mode		; normal mode for singletask systems!
+#endif
 ci_exitOK:
-			LDX iol_dev			; **use device as index! (3)
-			_STZA cin_lock, X	; *otherwise clear mutex!!! (4)
+#ifdef	MULTITASK
+			_STZA cio_lock, X	; *clear mutex!!! (4)
+#endif
 			_EXIT_OK			; all done without error!
 ci_event:
 		CMP #16				; is it DLE?
 		BNE ci_notdle		; otherwise check next
-			STA cin_mode		; set binary mode! safer and faster!
-			_ERR(EMPTY)			; and supress received character, ***but will stau locked!
+#ifdef	MULTITASK
+			STA cin_mode, X		; *set binary mode! safer and faster!
+#else
+			STA cin_mode		; single task systems do not set X!!!
+#endif
+			_ERR(EMPTY)			; and supress received character, ***but will stay locked!
 ci_notdle:
 		CMP #3				; is it ^C? (TERM)
 		BNE ci_noterm		; otherwise check next
@@ -168,10 +179,13 @@ ci_nokill:
 			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 			STA b_sig			; set signal as parameter
-			_KERNEL(GET_PID)	; as this will be a self-sent signal!*****optimise!
-			_KERNEL(B_SIGNAL)	; send signal to PID in Y
+			JSR get_pid			; as this will be a self-sent signal! ***internal call
+			JSR signal			; send signal to PID in Y ***internal call
+			LDX iol_dev			; **as internal calls will destroy X
 ci_abort:
-		_STZA cin_lock		; clear mutex!
+#ifdef	MULTITASK
+		_STZA cio_lock, X	; *clear mutex!
+#endif
 		_ERR(EMPTY)			; no character was received
 
 ci_nph:
@@ -213,7 +227,7 @@ ci_phys:
 ; ma_align <- mask for MSB (0=page or not aligned, 1=512b, $FF=bank aligned) new 161105 TO DO
 ; ma_rs = 0 means reserve as much memory as available!!!
 ; this works on 16-bit addressing, thus single byte positions and non-interleaved status & PID arrays!
-; uses ma_l as diverse temporary vars, as defined below
+; uses ma_l as diverse temporary vars, as defined below *** might redefine in separate locals
 
 ma_siz	= ma_l
 ma_ix	= ma_l+1
@@ -786,7 +800,7 @@ sd_tab:					; check order in abi.h!
 b_fork:
 ; ** might be replaced with LDY pid on optimized builds **
 	LDX #MM_FORK	; subfunction code
-	_BRA yld_call	; go for the driver
+	_BRA sig_call	; go for the driver
 
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
@@ -795,7 +809,7 @@ b_fork:
 b_exec:
 ; ** might be repaced with driver code on optimized builds **
 	LDX #MM_EXEC	; subfunction code
-	_BRA yld_call	; go for the driver
+	_BRA sig_call	; go for the driver
 
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
@@ -803,7 +817,7 @@ b_exec:
 
 signal:
 	LDX #MM_SIGNAL	; subfunction code
-	_BRA yld_call	; go for the driver
+	_BRA sig_call	; go for the driver
 
 ; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
@@ -812,7 +826,7 @@ signal:
 
 status:
 	LDX #MM_STATUS	; subfunction code
-	_BRA yld_call	; go for the driver
+	_BRA sig_call	; go for the driver
 
 ; *** GET_PID, get current braid PID ***
 ; Y -> PID, TBD
@@ -820,7 +834,9 @@ status:
 
 get_pid:
 	LDX #MM_PID		; subfunction code
-	_BRA yld_call	; go for the driver
+; * unified calling procedure, get subfunction code in X * new faster interface 20161102
+sig_call:			; NEW unified calling procedure
+	JMP (drv_opt)	; just enter into preinstalled driver, will exit with appropriate error code!
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
 ; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTI!!!)
@@ -828,16 +844,14 @@ get_pid:
 
 set_handler:
 	LDX #MM_HANDL	; subfunction code
-	_BRA yld_call	; go for the driver
+	_BRA sig_call	; go for the driver
 
 ; *** B_YIELD, Yield CPU time to next braid ***
 ; supposedly no interface needed, don't think I need to tell if ignored
 
 yield:
 	LDX #MM_YIELD	; subfunction code
-; * unified calling procedure, get subfunction code in X * new faster interface 20161102
-yld_call:			; unified calling procedure
-	JMP (drv_opt)	; just enter into preinstalled driver, will exit with appropriate error code!
+	_BRA sig_call	; go for the driver
 
 
 ; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
@@ -856,7 +870,7 @@ ts_info:
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.word	isr_sched_ret-1	; corrected reentry address **standard label**
+	.word	isr_sched_ret-1	; corrected reentry address **standard label** REVISE REVISE************++
 	.byt	0				; stored X value, best if multitasking driver is the first one
 	.byt	0, 0, 0			; irrelevant Y, X, A values
 tsi_end:
@@ -892,9 +906,13 @@ rls_next:
 		BNE rls_loop		; continue if not yet
 	_EXIT_OK			; no errors...
 
+; *******************************
 ; *** end of kernel functions ***
+; *******************************
 
-; jump table, if not in separate 'jump' file
+; **************************************************
+; *** jump table, if not in separate 'jump' file ***
+; **************************************************
 #ifndef		DOWNLOAD
 k_vec:
 	.word	cout		; output a character
