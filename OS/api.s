@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a9, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161124-1238
+; last modified 20161125-0934
 
 ; no way for standalone assembly...
 
@@ -27,7 +27,7 @@ co_loop:
 		LDY iol_dev			; restore previous status, *new style (3)
 		_BRA co_loop		; try again! (3)
 co_lckd:
-	JSR cio_getpid		; **shared call, 816 prefers indexed JSR
+	JSR cio_getpid		; **shared call, 816 prefers indexed JSR... or use standard internal call
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -64,6 +64,7 @@ co_phys:
 ; ** new direct indexing, converted to subroutine because of MUTEX 20161121 **
 	ASL					; convert to index (2+2)
 	TAX
+; clear mutex ONLY if multitasking is in use!
 #ifdef	MULTITASK
 	JSR co_call			; indirect indexed CALL...
 	LDX iol_dev			; **need to clear new lock! (3)
@@ -78,7 +79,7 @@ cio_nfound:
 	_ERR(N_FOUND)		; unknown device
 
 #ifdef	MULTITASK
-cio_getpid:				; *******************could be always set, as might be used by CIN
+cio_getpid:				; *** think about replacing this for the internal call!
 	LDX #GET_PID		; prepare FUTURE indirect indexed jump! (2)
 	JMP (drv_opt)		; go to fixed #128 driver (6)
 #endif
@@ -106,7 +107,7 @@ ci_loop:
 		LDY iol_dev			; *restore previous status (3)
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
-	JSR cio_getpid		; **shared call, 816 prefers indexed JSR
+	JSR get_pid			; or JSR cio_getpid, this is the standard internal call **shared call, 816 prefers indexed JSR
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -815,6 +816,7 @@ status:
 
 ; *** GET_PID, get current braid PID ***
 ; Y -> PID, TBD
+; *****think about making this the direct call as is the fastest one!
 
 get_pid:
 	LDX #MM_PID		; subfunction code
