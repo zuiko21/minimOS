@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v1.0b1
+; v1.0b2
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161104-1436
+; last modified 20161128-1339
 
 ; for standalone assembly, set path to OS/
 #include "usual.h"
@@ -13,7 +13,7 @@ sts_title:
 	.asc "SIGtest", 0						; filename
 	.asc "Test app for SIGTERM handling", 0	; description as comment
 	.dsb sts_header + $FC - *, $FF			; generate padding
-sts_length = sts_end - sts_header			; *** compute actual file size ***
+sts_length = sts_end - sts_header			; *** compute actual file size INCLUDING HEADER ***
 	.asc <sts_length, >sts_length, 0, 0		; 32-bit relative offset to next header
 ; *** en of minimOS executable header ***
 
@@ -28,8 +28,15 @@ sts_start:
 	STY str_pt			; set parameter
 	STA str_pt+1
 	_KERNEL(OPEN_W)		; get device
+; hope default parameters are kept!
 	STY def_io			; set defaults (hope they remain!!!)
 	STY def_io+1
+	LDX #CPU_TYPE		; from options.h
+	STX cpu_ll			; set parameter
+	LDY #<sts_thread	; get thread pointer
+	LDA #>sts_thread
+	STY ex_pt			; store parameter
+	STA ex_pt+1
 sts_launch:
 		_KERNEL(B_FORK)		; reserve braid
 		TYA					; check result
@@ -37,13 +44,7 @@ sts_launch:
 		INC z_used			; launch counter
 		LDX z_used			; as index
 		STY z_used, X		; store in list, correct ZP opcode
-		LDA #CPU_TYPE		; from options.h
-		STA cpu_ll			; set parameter
-		LDY #<sts_thread	; get thread pointer
-		LDA #>sts_thread
-		STY ex_pt			; store parameter
-		STA ex_pt+1
-; hopefully def_io is respected!
+; hopefully defaults are respected!
 		_KERNEL(B_EXEC)		; launch thread!
 	BCC sts_launch		; go for next
 ; this an error condition!
@@ -55,18 +56,20 @@ sts_launch:
 		_KERNEL(B_SIGNAL)	; send that SIGKILL!
 ; * braid is free, note error and continue execution of remaining threads *
 		DEC z_used			; this was not successful eeeeeeeeek
-		LDY #<stx_err		; get error pointer
+		LDX #<stx_err		; get error pointer
 		LDA #>stx_err
-		JSR sts_aystr		; print it
+		LDY def_io			; retrieve parent device
+		JSR sts_print		; print it
 		JMP sts_timeout		; do not wait any longer!!!
 ; wait a few seconds with the threads running...
 sts_run:
 	LDA z_used			; check number of threads
 	BNE sts_mm			; some of them, multitasking is active
-		LDY #<stx_sts		; single-task system error pointer
+		LDX #<stx_sts		; single-task system error pointer
 		LDA #>stx_sts
-		JSR sts_aystr		; print error message
-		_FINISH				; we are done
+		LDY def_io			; retrieve parent device
+		JSR sts_print		; print error message
+		JMP sts_clw			; clean up and we are done
 sts_mm:
 	_KERNEL(UPTIME)		; otherwise check time
 	LDA up_sec			; get current second
@@ -98,7 +101,7 @@ sts_shut:
 sts_cont:
 		LDY z_used, X		; get its PID
 		_PHX				; push X
-		PHA
+; here was a stray PHA eeeeeeeeeeeek
 		_KERNEL(B_STATUS)	; check running state
 		_PLX				; retrieve X
 		CPY #BR_RUN			; is it running?
@@ -106,25 +109,28 @@ sts_cont:
 			BEQ sts_shut		; still some running
 		DEX					; otherwise check next in list
 		BNE sts_cont		; until the list is exhausted
-	LDY #<stx_bye		; end-of-app message
+	LDX #<stx_bye		; end-of-app message
 	LDA #>stx_bye
-	JSR sts_aystr		; print it
-	_FINISH
+	LDY def_io			; retrieve parent device
+	JSR sts_print		; print it
+	JMP sts_clw			; clean up and finish
 
+; ***********************************
 ; ** code for each launched thread **
+; ***********************************
 sts_thread:
 	LDA #1				; number of needed bytes
 	STA z_used			; uses just one
 	_STZA uz			; reset the only flag
 	JSR sts_pid			; print PID...
-	LDY #<stx_intro		; ...and start info string
+	LDX #<stx_intro		; ...and start info string
 	LDA #>stx_intro
-	JSR sts_aystr		; print it
+	JSR sts_axstr		; print it
 	LDY #<sts_sigterm	; supply pointer routine
 	LDA #>sts_sigterm
 	STY ex_pt			; set parameter
 	STA ex_pt+1
-	_KERNEL(GET_PID)	; to myself
+	_KERNEL(GET_PID)	; to myself *** this might be simplified to PID=0, but asking for it will not harm anyway
 	_KERNEL(SET_HNDL)	; set it!
 ; might tell about successful installation
 sts_timer:
@@ -144,16 +150,16 @@ sts_loop:
 		BEQ sts_ext			; until all done
 ; loops completed, should take 0.5 seconds regardless of CPU speed!
 		JSR sts_pid			; print PID...
-		LDY #<stx_alive		; ...and alive message
+		LDX #<stx_alive		; ...and alive message
 		LDA #>stx_alive
-		JSR sts_aystr		; print it
+		JSR sts_axstr		; print it
 		BCC sts_timer		; stay forever until SIGTERM arrives (or a strange I/O error)
 	_PANIC("{I/O}")		; something went VERY wrong
 sts_rcv:
 	JSR sts_pid			; print PID...
-	LDY #<stx_termrc	; ...and final string
+	LDX #<stx_termrc	; ...and final string
 	LDA #>stx_termrc
-	JSR sts_aystr		; print it
+	JSR sts_axstr		; print it
 	_FINISH				; all done
 
 ; ** the supplied SIGTERM handler **
@@ -163,11 +169,14 @@ sts_sigterm:
 	RTI					; new end!
 
 ; *** useful routines ***
-; * print string pointed by A.Y *
-sts_aystr:
-	STY str_pt			; set parameter
-	STA str_pt+1
+; * print string pointed by A.X *
+sts_axstr:
+; this will print at default (parent) device
 	LDY #0				; default device
+sts_print:
+; this will assume own device in Y
+	STX str_pt			; set parameter
+	STA str_pt+1
 	_KERNEL(STRING)		; print
 	RTS
 
@@ -203,6 +212,12 @@ sts_prdig:
 	LDY #0				; default device
 	_KERNEL(COUT)		; print it
 	RTS
+
+; * clean up window and finish * NO RETURN
+sts_clw:
+	LDY def_io			; hope this device number remains!
+	_KERNEL(FREE_W)		; no need to close in full
+	_FINISH
 
 ; *** common strings ***
 stx_intro:
