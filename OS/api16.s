@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a10, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161129-1052
+; last modified 20161129-1107
 
 ; no way for standalone assembly...
 
@@ -87,27 +87,30 @@ cio_notc:
 ; *************************************************
 cin:
 	.as: .xs: SEP #$30	; *** standard register size ***
-; new MUTEX for CIN, 20161121
+; new MUTEX for CIN, 20161121, *per-driver based 161129 **added overhead
 #ifdef	MULTITASK
+	STY iol_dev			; **keep device temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
-	LDA cin_lock		; check whether in use (4)
+	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
-		PHY					; **save device here!** (3)
-		_KERNEL(GET_PID)	; who am I?
-		CPY cin_lock		; it was me who locked? (4)
-		BNE ci_yield		; no, thus keep waiting (3/2)
-			PLY					; otherwise restore device (4)
-			BRA ci_lckdd		; and resume execution (3)
-ci_yield:
+		JSR get_pid			; *standard internal call, 816 prefers indexed JSR
+		TYA					; **current PID in A
+		LDY iol_dev			; **retrieve device as index
+		CMP cio_lock, Y		; *was it me who locked? (4)
+			BEQ ci_lckdd		; *if so, resume execution (3)
+; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
-		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
-		PLY					; restore previous status (4)
+		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDY iol_dev			; *restore previous status (3)
 		BRA ci_loop			; try again! (3)
 ci_lckd:
-	STY cin_lock		; reserve this (4)
+	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
+	TYA					; **current PID in A (2)
+	LDY iol_dev			; **restore device number (3)
+	STA cio_lock, Y		; *reserve this (4)
 ci_lckdd:
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 #endif
@@ -125,7 +128,10 @@ ci_port:
 		JSR (drv_ipt, X)	; direct CALL!!!
 		BCC ci_chkev		; no error, have a look at events
 ci_exit:
-			STZ cin_lock		; otherwise clear mutex!!! (4)
+#ifdef	MULTITASK
+			LDX iol_dev			; **use device as index! (3)
+			_STZA cio_lock, X	; *otherwise clear mutex!!! (4)
+#endif
 			BRA cio_callend		; return whatever error!
 
 cio_nfound:
@@ -134,21 +140,38 @@ cio_nfound:
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
 ci_chkev:
+#ifdef	MULTITASK
+		LDX iol_dev			; **use device as index! worth doing here (3)
+#endif
 		LDA io_c			; get received character
 		CMP #' '			; printable?
 			BCS ci_exitOK		; if so, will not be an event, exit with NO error
 ; otherwise might be an event ** REVISE
 ; check for binary mode first
-		LDX cin_mode		; get flag
+#ifdef	MULTITASK
+		LDY cin_mode, X		; *get flag, new sysvar 20150617
+#else
+		LDY cin_mode		; singletask systems
+#endif
 		BEQ ci_event		; should process possible event
-			STZ cin_mode		; back to normal mode
+#ifdef	MULTITASK
+			STZ cin_mode, X		; *back to normal mode
+#else
+			STZ cin_mode		; normal mode for singletask systems!
+#endif
 ci_exitOK:
-			STZ cin_lock		; otherwise clear mutex!!! (4)
+#ifdef	MULTITASK
+			STZ cio_lock		; *otherwise clear mutex!!! (4)
+#endif
 			_EXIT_OK			; all done without error!
 ci_event:
 		CMP #16				; is it DLE?
 		BNE ci_notdle		; otherwise check next
-			STA cin_mode		; set binary mode! safer and faster!
+#ifdef	MULTITASK
+			STA cin_mode, X		; *set binary mode! safer and faster!
+#else
+			STA cin_mode		; single task systems do not set X!!!
+#endif
 			_ERR(EMPTY)			; and supress received character, ***but will stau locked!
 ci_notdle:
 		CMP #3				; is it ^C? (TERM)
@@ -166,10 +189,13 @@ ci_nokill:
 			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 			STA b_sig			; set signal as parameter
-			_KERNEL(GET_PID)	; as this will be a self-sent signal!
-			_KERNEL(B_SIGNAL)	; send signal to PID in Y
+			JSR get_pid			; as this will be a self-sent signal! ***internal call
+			JSR signal			; send signal to PID in Y ***internal call
+			LDX iol_dev			; **as internal calls will destroy X
 ci_abort:
-		STZ cin_lock		; clear mutex!
+#ifdef	MULTITASK
+		STZ cio_lock, X		; *clear mutex!
+#endif
 		_ERR(EMPTY)			; no character was received
 
 ci_nph:

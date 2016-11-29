@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1a10
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161129-1043
+; last modified 20161129-1113
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -20,6 +20,7 @@
 #else
 #include "drivers/config/DRIVER_PACK.h"
 -user_sram = *
+.text
 #include "drivers/config/DRIVER_PACK.s"
 * = ROM_BASE			; just a placeholder, no standardised address
 #endif
@@ -269,15 +270,16 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 
 ; *** initialise new I/O locking ARRAYs ***
-#ifdef	MULTITASK
 	LDX #0
+#ifdef	MULTITASK
 lockio_l:
 		STZ cin_mode, X		; clear binary flags...
 		STZ cio_lock, X		; ...and I/O locks!
 		INX					; complete page
+		INX					; we are still in 16-bit STZ!!!
 		BNE lockio_l
 #else
-	STZ cin_mode		; single flag for non-multitasking systems
+	STX cin_mode		; single flag for non-multitasking systems, note 8-bit access!
 #endif
 
 
@@ -291,7 +293,7 @@ lockio_l:
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
-	_KERNEL(B_FORK)		; reserve first execution braid
+	JSR b_fork			; reserve first execution braid
 	CLI					; enable interrupts, this is the right time
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
@@ -300,7 +302,7 @@ lockio_l:
 	STA ex_pt			; set execution full address
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
-	_KERNEL(B_EXEC)		; go for it!
+	JSR b_exec			; go for it!
 
 	JMP lock			; ...as the scheduler will detour execution
 
