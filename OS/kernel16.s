@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a10
+; v0.5.1a11
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161129-1113
+; last modified 20161129-1336
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -76,13 +76,14 @@ warm:
 ram_init:
 	TXA				; will set MSB as zero
 	STA ram_pos		; store it
-	LDA #SRAM		; number of SRAM pages as defined in options.h
+	LDA #SRAM		; number of SRAM pages as defined in options.h *** revise
 	STA ram_pos+2	; store second entry and we are done!
 
 ; ******************************************************
 ; intialise drivers from their jump tables
 ; ******************************************************
 ; THINK about making API entries for this!
+; * will also initialise I/O lock arrays! * 20161129
 
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
 ; same with dr_aut, now independent kernel call savvy 20161103
@@ -93,10 +94,13 @@ ram_init:
 	STX dreq_mx
 	STX dsec_mx
 
-
 ; already in 16-bit memory mode...
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
+#ifdef	MULTITASK
+		STZ cio_lock, X		; clear I/O locks! (5)
+		STZ cin_mode, X		; and binary flags (5)
+#endif
 		STA drv_opt, X		; set full pointer for output (5)
 		STA drv_ipt, X		; and for input (5)
 		INX					; go for next entry (2+2)
@@ -257,35 +261,21 @@ dr_ok:					; *** all drivers inited ***
 ; ********* startup code ***********
 ; **********************************
 
+#ifndef		MULTITASK
+; in case no I/O lock arrays were initialised...
+	STZ cin_mode		; single flag for non-multitasking systems
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
-#ifndef		MULTITASK
-	LDA #sig_kill	; get default routine full address, we are still in 16-bit memory
-	STA mm_term		; store in new system variable
+	LDA #sig_kill		; get default routine full address, we are still in 16-bit memory
+	STA mm_term			; store in new system variable
 #endif
 
-; **********************************
 ; startup code, revise ASAP
-; **********************************
-
-; *** initialise new I/O locking ARRAYs ***
-	LDX #0
-#ifdef	MULTITASK
-lockio_l:
-		STZ cin_mode, X		; clear binary flags...
-		STZ cio_lock, X		; ...and I/O locks!
-		INX					; complete page
-		INX					; we are still in 16-bit STZ!!!
-		BNE lockio_l
-#else
-	STX cin_mode		; single flag for non-multitasking systems, note 8-bit access!
-#endif
-
 
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
-	STA default_in	; should check some devices, this assumes _in is LSB
+	STA default_in		; should check some devices, this assumes _in is LSB
 ; do not forget setting local devices via B_EXEC
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
@@ -293,7 +283,7 @@ lockio_l:
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
-	JSR b_fork			; reserve first execution braid
+	_KERNEL(B_FORK)		; reserve first execution braid
 	CLI					; enable interrupts, this is the right time
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
@@ -302,7 +292,7 @@ lockio_l:
 	STA ex_pt			; set execution full address
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
-	JSR b_exec			; go for it!
+	_KERNEL(B_EXEC)		; go for it!
 
 	JMP lock			; ...as the scheduler will detour execution
 

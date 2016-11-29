@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a10, must match kernel.s
+; v0.5.1a11, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161129-1014
+; last modified 20161129-1323
 
 ; no way for standalone assembly...
 
@@ -327,7 +327,7 @@ ma_updt:
 	STA ram_stat, X		; update table entry
 ; ** new 20161106, store PID of caller **
 	_PHX				; will need this index
-	_KERNEL(GET_PID)	; who asked for this?
+	JSR get_pid			; who asked for this?
 	_PLX				; retrieve index
 	TYA					; unfortunately no STY abs,X
 	STA ram_pid, X		; store PID
@@ -717,7 +717,7 @@ shutdown:
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
-	_KERNEL(B_SIGNAL)	; ask braids to terminate
+	JSR signal			; ask braids to terminate
 	CLI					; make sure all will keep running!
 	_EXIT_OK
 
@@ -895,7 +895,7 @@ rls_loop:
 			LDA ram_pos+1, X	; MSB too
 			STY ma_pt			; will be used by FREE
 			STA ma_pt+1
-			_KERNEL(FREE)		; release it!
+			JSR free			; release it!
 			_PLX				; retrieve status
 			PLA
 			BCC rls_next		; keep index IF current entry was deleted!
@@ -940,6 +940,7 @@ k_vec:
 	.word	set_handler	; set SIGTERM handler, new 20150417, renumbered 20150604
 	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
 	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
+	.word	release		; release ALL memory for a PID, new 20161115
 
 #else
 #include "drivers.s"	; this package will be included with downloadable kernels

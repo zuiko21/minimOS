@@ -1,9 +1,9 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a10, should match kernel16.s
+; v0.5.1a11, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161129-1107
+; last modified 20161129-1336
 
-; no way for standalone assembly...
+; no way for standalone assembly, neither internal calls...
 
 ; *** dummy function, non implemented ***
 unimplemented:			; placeholder here, not currently used
@@ -25,11 +25,11 @@ co_loop:
 	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
 		LDY iol_dev			; restore previous status, *new style (3)
 		BRA co_loop			; try again! (3)
 co_lckd:
-	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
+	_KERNEL(GET_PID)	; **NO internal call, 816 prefers indexed JSR
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -69,7 +69,7 @@ co_phys:
 ; clear mutex ONLY if multitasking is in use!
 #ifdef	MULTITASK
 	LDX iol_dev			; **need to clear new lock! (3)
-	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
+	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
 #endif
 ; ** important routine ending in order to preserve C status after the RTI **
 cio_callend:
@@ -96,18 +96,18 @@ ci_loop:
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
-		JSR get_pid			; *standard internal call, 816 prefers indexed JSR
+		_KERNEL(GET_PID)	; *NO internal call, 816 prefers indexed JSR
 		TYA					; **current PID in A
 		LDY iol_dev			; **retrieve device as index
 		CMP cio_lock, Y		; *was it me who locked? (4)
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
-		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
 		LDY iol_dev			; *restore previous status (3)
 		BRA ci_loop			; try again! (3)
 ci_lckd:
-	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
+	_KERNEL(B_YIELD)	; **NO internal call, 816 prefers indexed JSR
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -130,7 +130,7 @@ ci_port:
 ci_exit:
 #ifdef	MULTITASK
 			LDX iol_dev			; **use device as index! (3)
-			_STZA cio_lock, X	; *otherwise clear mutex!!! (4)
+			STZ cio_lock, X		; *otherwise clear mutex!!! (4)
 #endif
 			BRA cio_callend		; return whatever error!
 
@@ -189,9 +189,9 @@ ci_nokill:
 			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 			STA b_sig			; set signal as parameter
-			JSR get_pid			; as this will be a self-sent signal! ***internal call
-			JSR signal			; send signal to PID in Y ***internal call
-			LDX iol_dev			; **as internal calls will destroy X
+			_KERNEL(GET_PID)	; as this will be a self-sent signal! ***NO internal call
+			_KERNEL(B_SIGNAL)	; send signal to PID in Y ***NO internal call
+			LDX iol_dev			; **as calls will destroy X
 ci_abort:
 #ifdef	MULTITASK
 		STZ cio_lock, X		; *clear mutex!
@@ -758,7 +758,7 @@ sd_done:
 b_fork:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_FORK		; subfunction code
-	BRA yld_call		; go for the driver
+	BRA sig_call		; go for the driver
 
 
 ; *** B_EXEC, launch new loaded process ***
@@ -768,7 +768,7 @@ b_fork:
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_EXEC		; subfunction code
-	BRA yld_call		; go for the driver
+	BRA sig_call		; go for the driver
 
 
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
@@ -778,7 +778,7 @@ b_exec:
 signal:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_SIGNAL		; subfunction code
-	BRA yld_call		; go for the driver
+	BRA sig_call		; go for the driver
 
 
 ; *** B_STATUS, get execution flags of a braid ***
@@ -789,7 +789,7 @@ signal:
 status:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_STATUS		; subfunction code
-	BRA yld_call		; go for the driver
+	BRA sig_call		; go for the driver
 
 
 ; *** GET_PID, get current braid PID ***
@@ -798,7 +798,11 @@ status:
 get_pid:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_PID		; subfunction code
-	BRA yld_call	; go for the driver
+; * unified calling procedure, get subfunction code in X * new faster interface 20161102
+sig_call:
+; new code is 6 bytes, 10 clocks! old code was 8 bytes, 13 clocks
+	PEA cio_callend-1	; push correct return address!
+	JMP (drv_opt)		; as will be the first one in list, best to use non-indexed indirect
 
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
@@ -810,7 +814,7 @@ get_pid:
 set_handler:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_HANDL		; subfunction code
-	BRA yld_call		; go for the driver
+	BRA sig_call		; go for the driver
 
 
 ; *** B_YIELD, Yield CPU time to next braid *** REVISE
@@ -819,11 +823,7 @@ set_handler:
 yield:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_YIELD		; subfunction code
-; * unified calling procedure, get subfunction code in X * new faster interface 20161102
-yld_call:
-; new code is 6 bytes, 10 clocks! old code was 8 bytes, 13 clocks
-	PEA cio_callend-1	; push correct return address!
-	JMP (drv_opt)		; as will be the first one in list, best to use non-indexed indirect
+	BRA sig_call	; go for the driver
 
 ; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
 ; Y -> number of bytes, ex_pt -> pointer to the proposed stack frame

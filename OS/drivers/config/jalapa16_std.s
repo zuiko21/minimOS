@@ -2,7 +2,7 @@
 ; Jalapa16-specific configuration!
 ; v0.5a6
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161017
+; last modified 20161129
 
 #define		DRIVERS		_DRIVERS
 
@@ -18,10 +18,6 @@
 #include "sysvars.h"
 #include "drivers/config/DRIVER_PACK.h"	; generic access
 .text
-#endif
-
-#ifndef		FINAL
-	.asc	"<drvr>"	; for easier debugging
 #endif
 
 ; *** load appropriate drivers here ***
@@ -83,10 +79,7 @@ driverF:
 ; *** driver list in ROM ***
 ; only the addresses, in no particular order (watch out undefined drivers!)
 ; this might be generated in RAM in the future, allowing on-the-fly driver install
-
-#ifndef		FINAL
-	.asc	"<addr>"	; for easier debugging
-#endif
+; since I/O routines are directly called, this would onley be used during registration!
 
 drivers_ad:
 	.word	driver0		; generic list

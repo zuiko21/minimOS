@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1a6
+; v0.5.1a7
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161129-1018
+; last modified 20161129-1303
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -72,7 +72,7 @@ warm:
 		INX					; otherwise start at next page
 ram_init:
 	STX ram_pos			; store it, this is PAGE number
-	LDA #SRAM			; number of SRAM pages as defined in options.h
+	LDA #SRAM			; number of SRAM pages as defined in options.h *** revise
 	STA ram_pos+1		; store second entry and we are done!
 ; ++++++
 #endif
@@ -81,6 +81,7 @@ ram_init:
 ; intialise drivers from their jump tables
 ; ******************************************************
 ; THINK about making API entries for this!
+; * will also initialise I/O lock arrays! * 20161129
 
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
 ; same with dr_aut, now independent kernel call savvy 20161103
@@ -100,6 +101,12 @@ ram_init:
 #else
 ; ++++++ new direct I/O tables for much faster access 20160406 ++++++
 dr_clear:
+#ifdef	MULTITASK
+		_STZA cio_lock, X	; clear I/O locks! (4)
+		_STZA cin_mode, X	; and binary flags (4)
+		_STZA cio_lock+1, X	; will increase twice (4)
+		_STZA cin_mode+1, X	; same here (4)
+#endif
 		LDA #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2)
 		STA drv_opt, X		; set LSB for output (4)
 		STA drv_ipt, X		; and for input (4)
@@ -340,32 +347,20 @@ dr_ok:					; *** all drivers inited ***
 ; ********* startup code ***********
 ; **********************************
 
-; *** initialise new I/O locking ARRAYs ***
-	LDA #0				; STZ not worth
-#ifdef	MULTITASK
-	LDX #0
-lockio_l:
-		STA cin_mode, X		; clear binary flags...
-		STA cio_lock, X		; ...and I/O locks!
-		INX					; complete page
-		BNE lockio_l
-#else
-	STA cin_mode		; single flag for non-multitasking systems
-#endif
 
+#ifndef		MULTITASK
+; in case no I/O lock arrays were initialised...
+	_STZA cin_mode		; single flag for non-multitasking systems
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
-#ifndef		MULTITASK
 	LDY #<sig_kill		; get default routine address LSB
 	LDA #>sig_kill		; same for MSB
 	STY mm_term			; store in new system variable
 	STA mm_term+1
 #endif
 
-; **********************************
 ; startup code, revise ASAP
-; **********************************
 
 ; *** set default I/O device ***
 	LDA #DEVICE			; as defined in options.h
@@ -378,7 +373,7 @@ lockio_l:
 ; **** launch monitor/shell ****
 ; ******************************
 
-	_KERNEL(B_FORK)		; reserve first execution braid
+	JSR b_fork			; reserve first execution braid
 	CLI					; enable interrupts
 	LDY #<shell			; get pointer to built-in shell
 	LDA #>shell
@@ -387,7 +382,7 @@ lockio_l:
 	LDA #DEVICE			; *** revise
 	STA def_io			; default local I/O
 	STA def_io+1
-	_KERNEL(B_EXEC)		; go for it!
+	JSR b_exec			; go for it!
 
 	JMP lock			; ...as the scheduler will detour execution
 
