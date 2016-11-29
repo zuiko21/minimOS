@@ -1,6 +1,6 @@
 ; static variables for minimOS drivers
 ; (c) 2015 Carlos J. Santisteban
-; last modified 20160331-1324
+; last modified 20161129-1022
 
 ; optional multitasking
 #ifdef	MULTITASK

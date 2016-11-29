@@ -2,7 +2,7 @@
 ; Chihuahua PLUS specific configuration!
 ; v0.5a1
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160331-1207
+; last modified 20161129-1022
 
 #define		DRIVERS		1
 

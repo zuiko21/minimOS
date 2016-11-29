@@ -1,11 +1,8 @@
 ; software multitasking module for minimOS
-; v0.5.1a4
+; v0.5.1a5
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161118-1440
+; last modified 20161129-1010
 
-; will install only if no other multitasking driver is already present!
-#ifndef	MULTITASK
-#define		MULTITASK	_MULTITASK
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -29,7 +26,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 	.byt	A_POLL+A_COUT	; polling scheduler this far, new architecture needs to enable output!
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
-	.word	mm_nreq		; D_REQ does nothing
+	.word	mm_eexit	; D_REQ does nothing
 	.word	mm_abort	; no input
 	.word	mm_cmd		; output will process all subfunctions!
 	.word	mm_rts		; no need for 1-second interrupt
@@ -428,10 +425,6 @@ mmx_sfp:
 mm_pre_exec:
 	STA z_used		; store maximum available zero-page bytes from A, for safety EEEEEEK
 	RTI				; 'return' to start of task! Much simpler, as long as a dummy PHP is done
-; ********************????
-; switch to next braid
-mm_yield:
-	_DR_OK			; if no multitasking assisting hardware is present, just ignore and stay, will RTS do?
 
 ; send some signal to a braid
 mm_signal:
@@ -493,6 +486,7 @@ mms_stop:
 	STA mm_flags-1, Y	; store new status (5) *** would like to restore somehow any previous TERM!
 	_DR_OK
 mms_kerr:
+mm_abort:				; a bit of a placeholder...
 	_DR_ERR(INVALID)	; not a valid PID
 
 ; get execution flags for a braid
@@ -550,4 +544,3 @@ mms_table:
 	.word	mms_cont
 	.word	mms_stop
 
-#endif

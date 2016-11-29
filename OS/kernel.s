@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1a6
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161124-1100
+; last modified 20161129-1018
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -19,6 +19,7 @@
 #else
 #include "drivers/config/DRIVER_PACK.h"
 -user_sram = *
+.text
 #include "drivers/config/DRIVER_PACK.s"
 * = ROM_BASE			; just a placeholder, no standardised address
 #endif

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a10, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161125-1234
+; last modified 20161129-1014
 
 ; no way for standalone assembly...
 
@@ -75,10 +75,6 @@ co_call:
 #endif
 	_JMPX(drv_opt)		; direct jump!!!
 
-; some common I/O calls
-cio_nfound:
-	_ERR(N_FOUND)		; unknown device
-
 
 ; *** CIN, get a character *** revamped 20150209
 ; Y <- dev, io_c -> char, C = not available
@@ -127,6 +123,11 @@ ci_exit:
 			_STZA cio_lock, X	; *otherwise clear mutex!!! (4)
 #endif
 			RTS					; return whatever error!
+
+; some common I/O calls
+cio_nfound:
+	_ERR(N_FOUND)		; unknown device
+
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
 ci_chkev:
