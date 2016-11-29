@@ -1,6 +1,6 @@
 ; includes for minimOS drivers
 ; Chihuahua PLUS specific configuration!
-; v0.5a1
+; v0.5.1a1, bumped 161129
 ; (c) 2015-2016 Carlos J. Santisteban
 ; last modified 20161129-1022
 
@@ -52,6 +52,7 @@ driver4:
 ; *** driver list in ROM ***
 ; only the addresses, in no particular order (watch out undefined drivers!)
 ; this might be generated in RAM in the future, allowing on-the-fly driver install
+; since non LOWRAM systems call directly I/O routines, this is only used during registration
 
 drivers_ad:
 	.word	driver0		; generic list

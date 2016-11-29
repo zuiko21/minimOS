@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a9
+; v0.5.1a10
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161121-1329
+; last modified 20161129-1043
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -91,10 +91,7 @@ ram_init:
 	STX dpoll_mx		; reset all indexes (4+4+4)
 	STX dreq_mx
 	STX dsec_mx
-; it is a good time to reset several other flags
-	STX cin_mode		; reset binary mode flag, new 20150618
-	STX cin_lock		; new MUTEX for I/O, 20161121
-	STX coutlock
+
 
 ; already in 16-bit memory mode...
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
@@ -270,6 +267,19 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; startup code, revise ASAP
 ; **********************************
+
+; *** initialise new I/O locking ARRAYs ***
+#ifdef	MULTITASK
+	LDX #0
+lockio_l:
+		STZ cin_mode, X		; clear binary flags...
+		STZ cio_lock, X		; ...and I/O locks!
+		INX					; complete page
+		BNE lockio_l
+#else
+	STZ cin_mode		; single flag for non-multitasking systems
+#endif
+
 
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O

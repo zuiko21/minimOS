@@ -1,11 +1,8 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a8
+; v0.5.1a9
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161118-1006
+; last modified 20161129-1035
 
-; will install only if no other multitasking driver is already present!
-#ifndef	MULTITASK
-#define		MULTITASK	_MULTITASK
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -39,7 +36,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a7", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.5.1a9", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
 mm_init:
@@ -431,5 +428,3 @@ mms_table:
 	.word	mms_term
 	.word	mms_cont
 	.word	mms_stop
-
-#endif

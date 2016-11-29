@@ -38,7 +38,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a4", 0	; works as long as no more than 9 braids!
+	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a5", 0	; works as long as no more than 9 braids!
 
 ; *** initialisation code ***
 mm_init:

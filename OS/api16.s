@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a9, should match kernel16.s
+; v0.5.1a10, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161121-1404
+; last modified 20161129-1052
 
 ; no way for standalone assembly...
 
@@ -17,23 +17,22 @@ unimplemented:			; placeholder here, not currently used
 ; ********************************
 cout:
 	.as: .xs: SEP #$30	; *** standard register size ***
-; new MUTEX for COUT, 20161121
+; new MUTEX for COUT, 20161121, *per-driver based 161129 **added overhead
 #ifdef	MULTITASK
+	STY iol_dev			; **keep device temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
-	LDA coutlock		; check whether in use (4)
+	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-;		LDA io_c			; preserve char to print, really needed? (3)
-;		PHA					; save it (3)
-		PHY					; save device here! (3)
-		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed
-		PLY					; restore previous status (4)
-;		PLA
-;		STA io_c			; restore character, just in case? (3)
+		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDY iol_dev			; restore previous status, *new style (3)
 		BRA co_loop			; try again! (3)
 co_lckd:
-	STY coutlock		; reserve this (4)
+	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
+	TYA					; **current PID in A (2)
+	LDY iol_dev			; **restore device number (3)
+	STA cio_lock, Y		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 #endif
 ; continue with mutually exclusive COUT
@@ -67,7 +66,11 @@ co_phys:
 	ASL					; convert to index (2+2)
 	TAX
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
-	STZ coutlock		; time to clear MUTEX!
+; clear mutex ONLY if multitasking is in use!
+#ifdef	MULTITASK
+	LDX iol_dev			; **need to clear new lock! (3)
+	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
+#endif
 ; ** important routine ending in order to preserve C status after the RTI **
 cio_callend:
 	PLA					; extract previous status!
@@ -76,9 +79,6 @@ cio_callend:
 cio_notc:
 	PHA					; replace stored flags
 	RTI					; end of call procedure
-
-cio_nfound:
-	_ERR(N_FOUND)		; unknown device
 
 ; *************************************************
 ; ************* CIN,  get a character *************
@@ -127,6 +127,10 @@ ci_port:
 ci_exit:
 			STZ cin_lock		; otherwise clear mutex!!! (4)
 			BRA cio_callend		; return whatever error!
+
+cio_nfound:
+	_ERR(N_FOUND)		; unknown device
+
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
 ci_chkev:
