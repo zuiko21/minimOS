@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a11, should match kernel16.s
+; v0.5.1a12, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161129-1336
+; last modified 20161130-1110
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -25,11 +25,15 @@ co_loop:
 	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+;		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDX #MM_YIELD		; internal multitasking index (2)
+		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		LDY iol_dev			; restore previous status, *new style (3)
 		BRA co_loop			; try again! (3)
 co_lckd:
-	_KERNEL(GET_PID)	; **NO internal call, 816 prefers indexed JSR
+;	_KERNEL(GET_PID)	; **NO internal call, 816 prefers indexed JSR
+	LDX #MM_PID			; internal multitasking index (2)
+	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -50,23 +54,32 @@ co_port:
 		CMP #64+MAX_FILES	; still within file-devs?
 			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
+		LDY #NO_RSRC		; not yet implemented ***placeholder***
+		BRA cio_unlock		; notyfy error AND unlock device eeeeeek
 #endif
 ; ** end of filesystem access **
 co_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
 			BNE cio_nfound		; final error otherwise
+; /dev/null is always OK, might save some bytes doing CLC & BRA cio_unlock
+cio_exitOK:
+#ifdef	MULTITASK
+		LDX iol_dev			; retrieve driver index
+		STZ cio_lock, X		; clear mutex
+#endif
 		_EXIT_OK			; "/dev/null" is always OK
 co_win:
 ; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)		; not yet implemented
+	LDY #NO_RSRC		; not yet implemented
+	BRA cio_unlock		; notyfy error AND unlock device eeeeeek
 co_phys:
 ; ** new direct indexing **
 	ASL					; convert to index (2+2)
 	TAX
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 ; clear mutex ONLY if multitasking is in use!
+cio_unlock:
 #ifdef	MULTITASK
 	LDX iol_dev			; **need to clear new lock! (3)
 	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
@@ -96,18 +109,24 @@ ci_loop:
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
-		_KERNEL(GET_PID)	; *NO internal call, 816 prefers indexed JSR
+;		_KERNEL(GET_PID)	; *NO internal call, 816 prefers indexed JSR
+		LDX #MM_PID			; internal multitasking index (2)
+		JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		TYA					; **current PID in A
 		LDY iol_dev			; **retrieve device as index
 		CMP cio_lock, Y		; *was it me who locked? (4)
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
-		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+;		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDX #MM_YIELD		; internal multitasking index (2)
+		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		LDY iol_dev			; *restore previous status (3)
 		BRA ci_loop			; try again! (3)
 ci_lckd:
-	_KERNEL(B_YIELD)	; **NO internal call, 816 prefers indexed JSR
+;	_KERNEL(B_YIELD)	; **NO internal call, 816 prefers indexed JSR
+	LDX #MM_YIELD		; internal multitasking index (2)
+	JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -127,15 +146,11 @@ ci_port:
 		TAX
 		JSR (drv_ipt, X)	; direct CALL!!!
 		BCC ci_chkev		; no error, have a look at events
-ci_exit:
-#ifdef	MULTITASK
-			LDX iol_dev			; **use device as index! (3)
-			STZ cio_lock, X		; *otherwise clear mutex!!! (4)
-#endif
-			BRA cio_callend		; return whatever error!
+			BRA cio_unlock		; clear MUTEX and return whatever error!
 
 cio_nfound:
-	_ERR(N_FOUND)		; unknown device
+	LDY #N_FOUND		; unknown device
+	BRA cio_unlock		; notify error code AND unlock device!
 
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
@@ -161,7 +176,7 @@ ci_chkev:
 #endif
 ci_exitOK:
 #ifdef	MULTITASK
-			STZ cio_lock		; *otherwise clear mutex!!! (4)
+			STZ cio_lock, X		; *otherwise clear mutex!!! (4)
 #endif
 			_EXIT_OK			; all done without error!
 ci_event:
@@ -189,8 +204,40 @@ ci_nokill:
 			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 			STA b_sig			; set signal as parameter
-			_KERNEL(GET_PID)	; as this will be a self-sent signal! ***NO internal call
-			_KERNEL(B_SIGNAL)	; send signal to PID in Y ***NO internal call
+;			_KERNEL(GET_PID)	; as this will be a self-sent signal! ***NO internal call
+			LDX #MM_PID			; internal multitasking index (2)
+			JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
+;			_KERNEL(B_SIGNAL)	; send signal to PID in Y ***NO internal call
+			LDX #MM_SIGNAL		; internal multitasking index (2)
+			JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
+; a standard 65816 call does... 5 bytes & 12 clocks
+;	LDX #GET_PID	; (2) 2 bytes
+;	CLC				; (2) 1 byte
+;	COP #$FF		; (8) 2 bytes
+; while a 'direct' call goes... 9 bytes & 16 clocks
+;	PHK				; (3) 1 byte
+;	PEA ret_addr	; (5) 3 bytes
+;	CLC				; (2) 1 byte
+;	PHP				; (3) 1 byte
+;	JMP get_pid		; (3) 3 bytes
+; ** after any of these, kernel will do (going back thru cio_callend) **
+;	LDX #MM_PID			; (2)
+;	PEA cio_callend-1	; (5)
+;	JMP (drv_opt)		; (5) ...and maybe a BRA somewhere (3)
+; ****** definitely NOT worth in 65816 code! ******
+; OTOH the 6502 way is... 5 bytes & 8 clocks
+;	LDX #GET_PID	; (2) 2 bytes
+;	JSR k_call		; (6) 3 bytes
+; while its 'direct' call goes... 3 bytes & 6 clocks, well WORTH it!
+;	JSR get_pìd		; (6) 3 bytes
+; ** the kernel part will be **
+;	LDX #MM_PID			; (2)
+;	JMP (drv_opt)		; (6) ...and maybe a BRA somewhere (3)
+; ************************************************************
+; but what about indexed JSR to driver???
+;	LDX #MM_PID				; (2) 2 bytes, internal index!
+;	JSR (drv_opt-MM_PID, X)	; (8) 3 bytes, note de-indexing!
+; THIS was 5 bytes & 10 clocks MINUS 15/18 from SKIPPED kernel!!!
 			LDX iol_dev			; **as calls will destroy X
 ci_abort:
 #ifdef	MULTITASK
@@ -206,7 +253,8 @@ ci_nph:
 	CMP #64+MAX_FILES	; still within file-devs?
 		BCS ci_log			; that or over, not a file
 ; *** manage here input from open file ***
-	_ERR(NO_RSRC)		; not yet implemented ***placeholder***
+	LDY #NO_RSRC		; not yet implemented ***placeholder***
+	BRA cio_unlock		; unlock and notify
 #endif
 ; ** end of filesystem access **
 
@@ -215,16 +263,18 @@ ci_log:
 		BEQ ci_rnd			; compute it!
 	CMP #DEV_NULL		; lastly, ignore input
 		BNE cio_nfound		; final error otherwise
-	_EXIT_OK			; "/dev/null" is always OK
+	BRA ci_exitOK
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	LDY ticks			; simple placeholder
-	_EXIT_OK
+	LDA ticks			; simple placeholder
+	STA io_c			; eeeeeeeeeeeeeeeeek
+	BRA ci_exitOK
 
 ci_win:
 ; *** virtual window manager TO DO ***
-	_ERR(NO_RSRC)		; not yet implemented
+	LDY #NO_RSRC		; not yet implemented
+	JMP cio_unlock
 
 ; *******************************************************************************
 ; *************************** MALLOC,  reserve memory ***************************
@@ -237,7 +287,7 @@ ci_win:
 ; ************ uses ma_l as diverse temporary vars, as defined below ************
 ; *******************************************************************************
 ma_siz	= ma_l
-ma_ix	= ma_l+2
+ma_ix	= ma_l+2		; might revise this as other architectures prefer separate registers!
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -297,7 +347,7 @@ ma_found:
 #ifdef	SAFE
 	BMI ma_nobad		; no corruption was seen (3/2) **instead of BCS**
 		LDA #user_sram	; otherwise take beginning of user RAM...
-		LDX #USED_RAM	; ...that will become locked (maybe another value)
+		LDX #LOCK_RAM	; ...that will become locked (new value)
 		STA ram_pos		; create values
 		STX ram_stat		; **should it clear the PID field too???**
 		LDA #SRAM		; physical top of RAM...
@@ -336,7 +386,9 @@ ma_updt:
 	STA ram_stat, X		; update table entry, will destroy PID temporarily but no STY abs,X!!!
 ; ** new 20161106, store PID of caller **
 	PHX					; will need this index
-	_KERNEL(GET_PID)	; who asked for this?
+;	_KERNEL(GET_PID)	; who asked for this?
+	LDX #MM_PID			; internal multitasking index (2)
+	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	PLX					; retrieve index
 	.as: SEP #$30		; *** back to 8-bit because interleaved array! ***
 	TYA					; get into A as no STY abs,X!!!
@@ -432,15 +484,15 @@ fr_found:
 	BNE fr_ok			; was not free, thus nothing to optimize
 ; loop for obliterating the following empty entry
 fr_join:
-			INX					; go for next entry
-			INX
-			LDA ram_pos+2, X	; get following address
-			STA ram_pos, X		; store one entry below
-			LDA ram_stat+2, X	; check status of following! **but PID field too**
-			STA ram_stat, X		; store one entry below **otherwise LDY/STY**
-			TAY					; **will transfer just status, PID will be ripped off**
-			CPY #END_RAM		; end of list?
-			BNE fr_join			; repeat until done
+		INX					; go for next entry
+		INX
+		LDA ram_pos+2, X	; get following address
+		STA ram_pos, X		; store one entry below
+		LDA ram_stat+2, X	; check status of following! **but PID field too**
+		STA ram_stat, X		; store one entry below **otherwise LDY/STY**
+		TAY					; **will transfer just status, PID will be ripped off**
+		CPY #END_RAM		; end of list?
+		BNE fr_join			; repeat until done
 ; we are done
 fr_ok:
 	_EXIT_OK
@@ -541,12 +593,36 @@ su_peek:
 
 ; *** STRING, prints a C-string *** optimized loop 20161004, should port to ·65
 ; Y <- dev, str_pt <- *string (.w in current version)
-; uses str_dev
+; uses str_dev AND iol_dev
 ; calls cout, but now directly at driver code ***
+; included mutex 20161130 eeeeeeeeeeeeeek
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	.as: .xs: SEP #$30	; *** standard register size ***
+; new MUTEX eeeeeeek, *per-driver way **added overhead
+#ifdef	MULTITASK
+	STY iol_dev			; **keep device temporarily, worth doing here (3)
+; CS not needed for MUTEX as per 65816 API
+str_wait:
+	LDA cio_lock, Y		; *check whether THAT device in use (4)
+	BEQ str_lckd		; resume operation if free (3)
+; otherwise yield CPU time and repeat
+;		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDX #MM_YIELD		; internal multitasking index (2)
+		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		LDY iol_dev			; restore previous status, *new style (3)
+		BRA str_wait		; try again! (3)
+str_lckd:
+;	_KERNEL(GET_PID)	; **NO internal call, 816 prefers indexed JSR
+	LDX #MM_PID			; internal multitasking index (2)
+	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
+	TYA					; **current PID in A (2)
+	LDY iol_dev			; **restore device number (3)
+	STA cio_lock, Y		; *reserve this (4)
+; 65816 API runs on interrupts off, thus no explicit CS exit
+#endif
+; continue with mutually exclusive COUT code
 	TYA					; for indexed comparisons (2)
 	BNE str_port		; not default (3/2)
 		LDA stdout			; new per-process standard device ### apply this to ·65
@@ -561,7 +637,8 @@ str_port:
 		CMP #64+MAX_FILES	; still within file-devs?
 			BCS str_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
+		LDY #NO_RSRC		; not yet implemented ***placeholder***
+		BRA str_abort		; notify error code AND unlock device!
 #endif
 ; ** end of filesystem access **
 str_log:
@@ -569,12 +646,19 @@ str_log:
 		CMP #DEV_NULL		; lastly, ignore output
 			BNE str_nfound		; final error otherwise
 str_exit:
+#ifdef	MULTITASK
+		LDX iol_dev			; retrieve driver index
+		STZ cio_lock, X		; clear mutex
+#endif
 		_EXIT_OK			; "/dev/null" is always OK
 str_win:
 ; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)		; not yet implemented
+	LDY #NO_RSRC		; not yet implemented
+	BRA str_abort		; notify error code AND unlock device!
 str_nfound:
-	_ERR(N_FOUND)		; unknown device
+	LDY #N_FOUND		; unknown device
+	BRA str_abort		; notify error code AND unlock device!
+
 str_phys:
 ; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
@@ -596,7 +680,8 @@ str_loop:
 	BRA str_loop		; continue, will check for termination later (3)
 str_err:
 	PLA					; discard saved Y while keeping error code eeeeeeeeeek^2
-	JMP cio_callend		; otherwise return code eeeeeeeeeek^2
+str_abort:
+	JMP cio_unlock		; otherwise return code AND clear MUTEX eeeeeeeeeek^2
 
 
 ; *** SU_SEI, disable interrupts ***
@@ -678,7 +763,9 @@ shutdown:
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
-	_KERNEL(B_SIGNAL)	; ask braids to terminate
+;	_KERNEL(B_SIGNAL)	; ask braids to terminate
+	LDX #MM_SIGNAL		; internal multitasking index (2)
+	JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	PLP					; original mask is buried in stack
 	CLI					; make sure all will keep running!
 	PHP					; restore for subsequent RTI
@@ -859,7 +946,7 @@ rls_loop:
 			PHX
 			LDA ram_pos, X		; get pointer to targeted block
 			STA ma_pt			; will be used by FREE
-			_KERNEL(FREE)		; release it!
+			_KERNEL(FREE)		; release it! ***by NO means a direct call might be used here***
 			PLX					; retrieve status
 			PLA
 			BCC rls_next		; keep index IF current entry was deleted!

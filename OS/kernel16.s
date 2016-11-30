@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a11
+; v0.5.1a12
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161129-1336
+; last modified 20161130-1037
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -283,7 +283,9 @@ dr_ok:					; *** all drivers inited ***
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
-	_KERNEL(B_FORK)		; reserve first execution braid
+;	_KERNEL(B_FORK)		; reserve first execution braid
+	LDX #MM_FORK		; internal multitasking index (2)
+	JSR (drv_opt-MM_FORK, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	CLI					; enable interrupts, this is the right time
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
@@ -292,9 +294,13 @@ dr_ok:					; *** all drivers inited ***
 	STA ex_pt			; set execution full address
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
-	_KERNEL(B_EXEC)		; go for it!
-
-	JMP lock			; ...as the scheduler will detour execution
+;	_KERNEL(B_EXEC)		; go for it!
+	LDX #MM_EXEC		; internal multitasking index (2)
+	JSR (drv_opt-MM_EXEC, X)	; direct to driver skipping the kernel, note deindexing! (8)
+;	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** might be fine for 6502 too
+	LDX #MM_YIELD		; internal multitasking index (2)
+	JMP (drv_opt)		; do not care about present status as will never return (5)
+;	JMP lock			; ...as the scheduler will detour execution
 
 ; place here the shell code, must end in FINISH macro
 shell:
