@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a11, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161201-1106
+; last modified 20161201-1113
 
 ; no way for standalone assembly...
 
@@ -578,11 +578,31 @@ su_peek:
 
 ; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
 ; Y <- dev, str_pt <- *string (.w in current version)
-; uses str_dev
+; uses str_dev AND iol_dev
 ; calls cout, but now directly at driver code *** great revision, scans ONCE for device driver
+; included mutex 20161201 eeeeeeeeeeeeeek
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
+; new MUTEX 161201, *per-driver **added overhead
+#ifdef	MULTITASK
+	STY iol_dev			; **keep device temporarily, worth doing here (3)
+	_ENTER_CS			; needed for a MUTEX (5)
+str_loop:
+	LDA cio_lock, Y		; *check whether THAT device in use (4)
+	BEQ str_lckd		; resume operation if free (3)
+; otherwise yield CPU time and repeat
+		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDY iol_dev			; restore previous status, *new style (3)
+		_BRA str_loop		; try again! (3)
+str_lckd:
+	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
+	TYA					; **current PID in A (2)
+	LDY iol_dev			; **restore device number (3)
+	STA cio_lock, Y		; *reserve this (4)
+	_EXIT_CS			; proceed normally (4)
+#endif
+; continue with mutually exclusive COUT
 	TYA				; for indexed comparisons (2)
 	BNE str_port	; not default (3/2)
 		LDA stdout		; new per-process standard device
@@ -605,12 +625,20 @@ str_log:
 		CMP #DEV_NULL	; lastly, ignore output
 			BNE str_nfound	; final error otherwise
 str_exit:
+#ifdef	MULTITASK
+		LDX iol_dev			; retrieve driver index
+		_STZA cio_lock, X	; clear mutex
+#endif
 		_EXIT_OK		; "/dev/null" is always OK
 str_win:
 ; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)	; not yet implemented
+	LDY #NO_RSRC		; not yet implemented
+	SEC					; eeek
+	_BRA str_abort		; notify error code AND unlock device!
 str_nfound:
-	_ERR(N_FOUND)	; unknown device
+	LDY #N_FOUND		; unknown device
+	SEC					; eeeek
+	_BRA str_abort		; notify error code AND unlock device!
 str_phys:
 ; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
@@ -637,6 +665,11 @@ str_call:
 	_JMPX(drv_opt)		; go at stored pointer (...6)
 str_err:
 	PLA					; discard saved Y while keeping error code
+str_abort:
+#ifdef	MULTITASK
+	LDX iol_dev			; retrieve driver index
+	_STZA cio_lock, X	; clear mutex
+#endif
 	RTS					; return whatever error code
 
 ; *** SU_SEI, disable interrupts *** revised 20150209

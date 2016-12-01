@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a12, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161130-1110
+; last modified 20161201-1113
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -654,9 +654,11 @@ str_exit:
 str_win:
 ; *** virtual windows manager TO DO ***
 	LDY #NO_RSRC		; not yet implemented
+	SEC					; eeeek
 	BRA str_abort		; notify error code AND unlock device!
 str_nfound:
 	LDY #N_FOUND		; unknown device
+	SEC					; eeeek
 	BRA str_abort		; notify error code AND unlock device!
 
 str_phys:
