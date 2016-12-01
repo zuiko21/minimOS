@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a11, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161129-1323
+; last modified 20161201-1106
 
 ; no way for standalone assembly...
 
@@ -775,10 +775,10 @@ sd_loop:
 			EOR drv_ipt, Y		; only the same if not installed!
 			BEQ sd_next			; nothing to shutoff
 sd_msb:
-		LDY #D_BYE+1		; shutdown MSB offset
-		PHX					; save index for later
+		LDY #D_BYE			; shutdown LSB offset eeeeeeek
+		_PHX				; save index for later
 		JSR dr_call			; call routine from generic code!!!
-		PLX					; retrieve index
+		_PLX				; retrieve index
 sd_next:
 		INX					; advance to next entry (2+2)
 		INX
