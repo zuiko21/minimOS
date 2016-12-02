@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5a1
-; last modified 20161202-1227
+; last modified 20161202-1415
 ; (c) 2016 Carlos J. Santisteban
 
 #include "usual.h"
@@ -68,6 +68,8 @@ main_loop:
 			LDA #>xsh_err
 			JSR prnStr			; print it!
 			_BRA main_loop		; and try another
+xsh_ok:
+		
 
 ; *** useful routines ***
 

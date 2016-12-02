@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a11, must match kernel.s
+; v0.5.1a12, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161201-1113
+; last modified 20161202-1441
 
 ; no way for standalone assembly...
 
@@ -479,15 +479,52 @@ up_upt:
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
 ; ex_pt -> addr, str_pt <- *path
+; somewhat improved version, scans ROM headers looking for the _filename_ pointed by str_pt
+; no folders accepted!!!
+; will use rh_scan (local3)
 
 load_link:
+; *** first look for that filename in ROM headers ***
+; get initial address!
+	LDA #<ROM_BASE		; begin of ROM contents LSB
+	CLC
+	ADC #8				; add filename offset!!!
+	STA	rh_scan			; set local pointer.. although should be always 8!!!
+	LDA #>ROM_BASE		; same for MSB
+	SBC #0				; propagate carry, although probably not needed!
+	STA rh_scan+1		; corrected pointer set
+ll_geth:
+		LDY #0				; reset scanning index
+; might check whether we are on a valid header!!!
+ll_nloop:
+			LDA (rh_scan), Y	; get character in found name
+			TAX					; save for a bit later
+			CMP (str_pt), Y		; compare with what we are looking for
+				BNE ll_nthis		; difference found
+			TXA					; retrieve found char
+			ORA (str_pt), Y		; is this possible?
+				BEQ ll_found		; all were zero, both ended names are the same!
+			INY					; otherwise continue search
+			BNE ll_nloop		; will not do forever, no need for BRA
+ll_nthis:
+; not this one, correct local pointer for the next header
+		LDY #something		; relative offset to next-header-pointer
+		LDA (rh_scan), Y	; get number of pages for advance
+		CLC
+		ADC rh_scan+1		; add to previous value
+		STA rh_scan+1		; update pointer
+		BCC ll_geth			; inspect new header (if no overflow!)
+	_ERR(N_FOUND)		; all was scanned and the query was not found
+ll_found:
+; this was the original load_link code prior to 20161202, will be executed after the header was found!
 ; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
+; instead of the above, use a (re-corrected) rh_scan instead (based on zero)
 	LDY #1			; offset for filetype
-	LDA (str_pt), Y	; check filetype
+	LDA (rh_scan), Y	; check filetype
 	CMP #'m'		; must be minimOS app!
 		BNE ll_wrap		; error otherwise
 	INY				; next byte is CPU type
-	LDA (str_pt), Y	; get it
+	LDA (rh_scan), Y	; get it
 
 ; ** generic CPU-type comparison code, this is 46 bytes long
 ; loop for checking out CPU type, assume Y=2!!!
@@ -540,8 +577,8 @@ ll_nmos:
 		BNE ll_wrap		; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
-	LDA str_pt		; get pointer LSB
-	LDY str_pt+1	; and MSB
+	LDA rh_scan		; get pointer LSB
+	LDY rh_scan+1	; and MSB
 	INY				; start from next page
 	STA ex_pt		; save execution pointer
 	STY ex_pt+1
