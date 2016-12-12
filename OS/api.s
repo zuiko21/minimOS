@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a12, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161202-1441
+; last modified 20161212-1325
 
 ; no way for standalone assembly...
 
@@ -342,7 +342,8 @@ ma_alsiz:
 	BEQ ma_fit			; none was set, thus already aligned (3/2)
 		ORA ma_align		; set masked bits... (3)
 		_INC				; ...and increase address for alignment (2)
-ma_fit:
+ma_fit:			ORA (str_pt), Y		; is this possible?
+
 	EOR #$FF			; invert bits as will be subtracted to next entry (2)
 	SEC					; needs one more for twos-complement (2)
 	ADC ram_pos+1, X	; compute size from top ptr MINUS bottom one (5)
@@ -426,7 +427,8 @@ fr_join:
 		LDA ram_stat+1, X	; check status of following!
 		STA ram_stat, X		; store one entry below
 		LDA ram_pid+1, X	; copy PID of following, but keep status in Y!
-		STA ram_pid, X		; no longer interleaved
+		STA ram_pid, X		; 			ORA (str_pt), Y		; is this possible?
+no longer interleaved
 		CPY #END_RAM		; end of list?
 		BNE fr_join			; repeat until done
 ; ** already optimized **
@@ -480,40 +482,60 @@ up_upt:
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
 ; ex_pt -> addr, str_pt <- *path
 ; somewhat improved version, scans ROM headers looking for the _filename_ pointed by str_pt
+; *** modifies str_pt parameter ***
 ; no folders accepted!!!
 ; will use rh_scan (local3)
 
 load_link:
 ; *** first look for that filename in ROM headers ***
-; get initial address!
+; first of all, correct parameter pointer as will be aligned with header!
+	LDA str_pt			; get LSB
+	SEC
+	SBC #8				; subtract name position in header!
+	STA str_pt			; modified value
+	BCS ll_reset		; nothing else to do if no borrow
+		DEC str_pt			; otherwise will point to previous page
+ll_reset:
+; get initial address! beacuse of the above, no longer adds filename offset!
 	LDA #<ROM_BASE		; begin of ROM contents LSB
-	CLC
-	ADC #8				; add filename offset!!!
-	STA	rh_scan			; set local pointer.. although should be always 8!!!
+;	CLC
+;	ADC #8				; add filename offset!!!
+	STA	rh_scan			; set local pointer
 	LDA #>ROM_BASE		; same for MSB
-	SBC #0				; propagate carry, although probably not needed!
+;	ADC #0				; propagate carry, although probably not needed!
 	STA rh_scan+1		; corrected pointer set
 ll_geth:
-		LDY #0				; reset scanning index
-; might check whether we are on a valid header!!!
+; ** check whether we are on a valid header!!! **
+		LDY #0				; first of all should be a NUL
+		LDA (rh_scan), Y	; get first byte in header
+			BNE ll_nfound		; link was lost, no more to scan
+		LDY #7				; after type and size, a CR is expected
+		LDA (rh_scan), Y	; get eigth byte in header!
+		CMP #13				; was it a CR?
+			BNE ll_nfound		; if not, go away
+; look for the name
+		LDY #8				; reset scanning index (now at name position)
 ll_nloop:
 			LDA (rh_scan), Y	; get character in found name
-			TAX					; save for a bit later
 			CMP (str_pt), Y		; compare with what we are looking for
 				BNE ll_nthis		; difference found
-			TXA					; retrieve found char
-			ORA (str_pt), Y		; is this possible?
+			ORA (str_pt), Y		; otherwise check whether at EOL
 				BEQ ll_found		; all were zero, both ended names are the same!
 			INY					; otherwise continue search
 			BNE ll_nloop		; will not do forever, no need for BRA
 ll_nthis:
 ; not this one, correct local pointer for the next header
-		LDY #something		; relative offset to next-header-pointer
-		LDA (rh_scan), Y	; get number of pages for advance
-		CLC
+		LDY #252			; relative offset to next-header-pointer
+		LDA (rh_scan), Y	; this is $FF for end-of-volume, otherwise zero???
+		CMP #$FF			; end-of-volume?
+			BEQ ll_nfound		; if so, no more to scan *** might use BNE without CMP above
+		INY					; next byte is number of pages to skip
+		LDA (rh_scan), Y	; get number of pages to skip
+		SEC					; ...plus header itself! eeeeeeek
 		ADC rh_scan+1		; add to previous value
 		STA rh_scan+1		; update pointer
-		BCC ll_geth			; inspect new header (if no overflow!)
+		BCC ll_geth			; inspect new header (if no overflow! 16-bit addressing)
+ll_nfound:
 	_ERR(N_FOUND)		; all was scanned and the query was not found
 ll_found:
 ; this was the original load_link code prior to 20161202, will be executed after the header was found!
@@ -625,13 +647,13 @@ string:
 #ifdef	MULTITASK
 	STY iol_dev			; **keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
-str_loop:
+str_wait:
 	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
 		LDY iol_dev			; restore previous status, *new style (3)
-		_BRA str_loop		; try again! (3)
+		_BRA str_wait		; try again! (3)
 str_lckd:
 	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
 	TYA					; **current PID in A (2)
