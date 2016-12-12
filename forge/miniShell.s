@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5a1
-; last modified 20161202-1415
+; last modified 20161212-1343
 ; (c) 2016 Carlos J. Santisteban
 
 #include "usual.h"
@@ -11,8 +11,6 @@
 #define	BEL			7
 #define	BUFSIZ		16
 
-; ##### include minimOS headers and some other stuff #####
--shell:
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	iodev	= uz		; standard I/O device ##### minimOS specific #####
@@ -21,8 +19,34 @@
 ; ...some stuff goes here, update final label!!!
 	__last	= buffer+BUFSIZ	; ##### just for easier size check #####
 
-; *** initialise the shell ***
+; ##### include minimOS headers and some other stuff ##### REVISE
+#ifdef	FILESYSTEM
+shellHead:
+	BRK						; don't enter here! NUL marks beginning of header
+	.asc	"m"				; minimOS app!
+#ifdef	NMOS
+	.asc	"N"				; NMOS version
+#else
+	.asc	"B"				; basic CMOS version
+#endif
+	.asc	"****", 13		; some flags TBD
+	.asc	"miniShell", 0	; file name (mandatory)
+	.asc	0				; empty comment
 
+	.dsb	sysvol + $F4 - *, $FF			; for ready-to-blow ROM, advance to time/date field
+
+	.word	$4D80				; time, 09.45
+	.word	$488C				; date, 2016/04/12
+	
+shellSize	=	$10000 - shellHead	; compute size!
+
+	.byt	romsize/256			; ROM size in pages
+	.byt	0, 0, 0
+	.byt	$FF, $FF, $FF, $FF	; link, final item (appendable)
+#endif
+
+; *** initialise the shell ***
+-shell:
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -69,7 +93,14 @@ main_loop:
 			JSR prnStr			; print it!
 			_BRA main_loop		; and try another
 xsh_ok:
-		
+		_KERNEL(B_FORK)		; get a free braid
+		CPY #0				; what to do if none available?
+			BEQ xsh_single		; no multitasking, execute and restore status!
+		_KERNEL(B_EXEC)		; run on that braid
+		_BRA main_loop		; and continue asking for more
+xsh_single:
+	_KERNEL(B_EXEC)		; execute anyway...
+	_BRA shell			; ...but reset shell environment all the way!
 
 ; *** useful routines ***
 
@@ -135,4 +166,6 @@ prompt:
 	.asc	CR, "/sys/", 0
 
 xsh_err:
-	.asc	CR, "***
+	.asc	CR, "*** NOT executable ***", 0
+
+shellEnd:				; ### for easy size computation ###

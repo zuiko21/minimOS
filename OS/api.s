@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a12, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161212-1325
+; last modified 20161212-1340
 
 ; no way for standalone assembly...
 
@@ -525,11 +525,7 @@ ll_nloop:
 			BNE ll_nloop		; will not do forever, no need for BRA
 ll_nthis:
 ; not this one, correct local pointer for the next header
-		LDY #252			; relative offset to next-header-pointer
-		LDA (rh_scan), Y	; this is $FF for end-of-volume, otherwise zero???
-		CMP #$FF			; end-of-volume?
-			BEQ ll_nfound		; if so, no more to scan *** might use BNE without CMP above
-		INY					; next byte is number of pages to skip
+		LDY #253			; relative offset to number of pages to skip
 		LDA (rh_scan), Y	; get number of pages to skip
 		SEC					; ...plus header itself! eeeeeeek
 		ADC rh_scan+1		; add to previous value
