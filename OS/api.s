@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a12, must match kernel.s
+; v0.5.1a13, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161215-0958
+; last modified 20161215-1241
 
 ; no way for standalone assembly...
 
@@ -480,7 +480,7 @@ up_upt:
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
-; ex_pt -> addr, str_pt <- *path
+; ex_pt -> addr, str_pt <- *path, now will use cpu_ll for the highest bit (N if was non-XIP)
 ; somewhat improved version, scans ROM headers looking for the _filename_ pointed by str_pt
 ; *** modifies str_pt parameter ***
 ; no folders accepted!!!
@@ -542,7 +542,7 @@ ll_found:
 	CMP #'m'		; must be minimOS app!
 		BNE ll_wrap		; error otherwise
 	INY				; next byte is CPU type
-	LDA (rh_scan), Y	; get it
+	LDA (rh_scan), Y	; get it, should be positive!
 
 ; ** generic CPU-type comparison code, this is 46 bytes long
 ; loop for checking out CPU type, assume Y=2!!!
@@ -595,6 +595,7 @@ ll_nmos:
 		BNE ll_wrap		; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
+	STA cpu_ll		; store just to tell it is XIP!
 	LDA rh_scan		; get pointer LSB
 	LDY rh_scan+1	; and MSB
 	INY				; start from next page
