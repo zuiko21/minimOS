@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.5.1a5
+; v0.5.1a6
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161129-1010
+; last modified 20161215-0956
 
 
 ; ********************************
@@ -92,8 +92,18 @@ mm_yield:
 	_EXIT_CS			; restore interrupt status, could be off anyway
 	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
 
+; in case of non-XIP code (loaded file) FINISH must free its previously assigned block, taking address from stack!
+mm_oblit:
+	PLA					; take LSB from stack!
+	STA ma_pt			; parameter for FREE
+	PLA					; same for MSB
+	STA ma_pt+1
+	SEI					; certainly needs interrupts off!
+	_KERNEL(FREE)		; generic access
+; ...and get into mm_suicide
+
 ; kill itself!!! simple way to terminate after FINISH
-mms_suicide:
+mm_suicide:
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 	SEI					; this needs to be run with interrupts OFF, do not care current status
 	_STZA z_used		; *** optimise for faster switch!
@@ -329,6 +339,7 @@ mmf_found:
 
 ; get code at some address running into a paused (?) braid
 ; Y <- PID, ex_pt <- addr, def_io <- sys_in & sysout ** no need for architecture
+; *** should need some flag to indicate XIP or not! stack frame is different
 mm_exec:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
@@ -347,13 +358,31 @@ mmx_br:
 	LDY #$FF			; standard stack bottom!
 ; *** create stack frame *** maybe try to switch again to regular stack?
 ; first goes KILL handler, as braids are expected to end via RTS *** could be different for rendez-vous mode calls!
-	LDA #>mms_suicide-1	; compute end-of-task MSB (will arrive via RTS, thus one byte before)
+; this was only for XIP code, otherwise shoud push a different handler address AND below that the pointer to the assigned block (handler will take it for FREE)
+; ** check flag for XIP/non-XIP code and jump to mmx_nonxip if needed
+; ** XIP handler **
+	LDA #>mm_suicide-1	; compute end-of-task MSB (will arrive via RTS, thus one byte before)
 	STA (exec_p), Y		; these could be replaced by PHA...
 	DEY
-	LDA #<mms_suicide-1	; same for LSB
+	LDA #<mm_suicide-1	; same for LSB
 	STA (exec_p), Y		; these could be replaced by PHA...
 	DEY
+;		_BRA mmx_frame		; continue creating stack frame!
+; ** non-XIP handler **
+;mmx_nonxip:
+;	LDA ex_pt+1			; get MSB
+;	PHA					; push it
+;	LDA ex_pt			; same for LSB
+;	PHA
+;	LDA #>mm_oblit-1	; compute end-of-task MSB for non-XIP (will arrive via RTS, thus one byte before)
+;	STA (exec_p), Y		; these could be replaced by PHA...
+;	DEY
+;	LDA #<mm_oblit-1	; same for LSB
+;	STA (exec_p), Y		; these could be replaced by PHA...
+;	DEY
+; ** could jump to mmx_frame in case of optimisation **
 ; now the start address, no offset is needed if ending on RTI
+mmx_frame:
 	LDA ex_pt+1			; braid's starting MSB goes first
 	STA (exec_p), Y		; these could be replaced by PHA...
 	DEY

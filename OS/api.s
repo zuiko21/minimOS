@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1a12, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161212-1340
+; last modified 20161215-0958
 
 ; no way for standalone assembly...
 
@@ -894,6 +894,7 @@ b_fork:
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr, def_io <- std_in & stdout
+; *** should need some flag to indicate XIP or not! stack frame is different
 
 b_exec:
 ; ** might be repaced with driver code on optimized builds **
