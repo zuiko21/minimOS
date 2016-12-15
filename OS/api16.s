@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a12, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161201-1113
+; last modified 20161215-1106
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -771,7 +771,8 @@ shutdown:
 	PLP					; original mask is buried in stack
 	CLI					; make sure all will keep running!
 	PHP					; restore for subsequent RTI
-	_EXIT_OK			; actually RTI for 816
+	_EXIT_OK		; *** should need some flag to indicate XIP or not! stack frame is different
+	; actually RTI for 816
 
 ; firmware interface
 sd_off:
@@ -853,6 +854,7 @@ b_fork:
 ; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
+; *** should need some flag to indicate XIP or not! stack frame is different
 
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***

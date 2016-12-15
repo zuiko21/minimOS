@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a9
+; v0.5.1a10
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161129-1035
+; last modified 20161215-1106
 
 
 ; ********************************
@@ -36,7 +36,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a9", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.5.1a10", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
 mm_init:
@@ -98,8 +98,19 @@ mm_yield:
 ; interrupt status will be restored later
 	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
 
+; in case of non-XIP code (loaded file) FINISH must free its previously assigned block, taking address from stack!
+mm_oblit:
+	.al: REP #$20		; *** 16-bit memory ***
+	.xs: SEP #$14		; *** 8-bit index AND mask interrupts! ***
+	PLA					; take intra-bank address from stack!
+	STA ma_pt			; parameter for FREE
+	PLX					; same for bank address
+	STA ma_pt+2
+	_KERNEL(FREE)		; generic access
+; ...and get into mm_suicide
+
 ; kill itself!!! simple way to terminate after FINISH
-mms_suicide:
+mm_suicide:
 	.as: .xs: SEP #$30	; ** standard size for app exit **
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 	SEI					; this needs to be run with interrupts OFF, do not care current status
@@ -174,7 +185,7 @@ mm_sigterm:
 	LDA mm_stbnk-1, X	; now get bank address
 	PHA					; needed for RTI at the end of the handler
 	TXA					; addressed braid (2)
-	ASL					; two times (2)
+	ASL					; two times (2)mms_suicide
 	TAX					; proper offset in handler table (2)
 	LDA mm_term-1, X	; get MSB
 	PHA					; and push it
@@ -227,6 +238,7 @@ mmf_found:
 
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
 ; Y <- PID, ex_pt <- addr, cpu_ll <- architecture, def_io <- sys_in & sysout
+; *** should need some flag to indicate XIP or not! stack frame is different
 mm_exec:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first ()
@@ -250,9 +262,25 @@ mmx_br:
 	STX sys_sp			; ** 816 ABI is OK for CS **
 ; switch to future stack frame for easier creation
 	TCS					; future stack pointer for easier frame construction
+; this was only for XIP code, otherwise shoud push a different handler address AND below that the pointer to the assigned block (handler will take it for FREE)
+; ** check flag for XIP/non-XIP code and jump to mmx_nonxip if needed
+; ** XIP handler **
 	LDX #0				; canary and bank address of SIG_KILL handler, taken by FINISH
 	PHX					; bottom of stack!
-	PEA mms_suicide-1	; corrected 'return' address for definitive SIG_KILL handler
+	PEA mm_suicide-1	; corrected 'return' address for definitive SIG_KILL handler
+;		BRA mmx_frame		; continue creating stack frame!
+; ** non-XIP handler **
+;mmx_nonxip:
+;	LDX ex_pt+2			; get bank
+;	PĤX					; push it
+;	LDA ex_pt			; get address (16-bit)
+;	PHA					; push it
+;	LDX #0				; bank address of mm_oblit handler, taken by FINISH
+;	PHX					; just above starting pointer
+;	PEA mm_oblit-1		; compute end-of-task MSB for non-XIP (will arrive via RTL, thus one byte before)
+; ** could jump to mmx_frame in case of optimisation **
+; now the start address, no offset is needed if ending on RTI
+mmx_frame:
 	LDX ex_pt+2			; get bank address of starting point
 	PHX					; place in on stack
 	LDA ex_pt			; get full (minus bank) program address
