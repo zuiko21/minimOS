@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5a1
-; last modified 20161212-1343
+; v0.5a2
+; last modified 20161216-0910
 ; (c) 2016 Carlos J. Santisteban
 
 #include "usual.h"
@@ -13,15 +13,15 @@
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
-	iodev	= uz		; standard I/O device ##### minimOS specific #####
-	cursor	= iodev+1	; storage for X offset
-	buffer	= cursor+1	; storage for input line (BUFSIZ chars)
+	iodev	= uz			; standard I/O device ##### minimOS specific #####
+	cursor	= iodev+1		; storage for X offset
+	buffer	= cursor+1		; storage for input line (BUFSIZ chars)
 ; ...some stuff goes here, update final label!!!
 	__last	= buffer+BUFSIZ	; ##### just for easier size check #####
 
-; ##### include minimOS headers and some other stuff ##### REVISE
-#ifdef	FILESYSTEM
+; ##### include minimOS headers and some other stuff #####
 shellHead:
+; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
 	.asc	"m"				; minimOS app!
 #ifdef	NMOS
@@ -30,22 +30,30 @@ shellHead:
 	.asc	"B"				; basic CMOS version
 #endif
 	.asc	"****", 13		; some flags TBD
+
+; *** filename and optional comment ***
 	.asc	"miniShell", 0	; file name (mandatory)
+
 	.asc	0				; empty comment
 
-	.dsb	sysvol + $F4 - *, $FF			; for ready-to-blow ROM, advance to time/date field
+; advance to end of header
+	.dsb	shellHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
-	.word	$4D80				; time, 09.45
-	.word	$488C				; date, 2016/04/12
-	
-shellSize	=	$10000 - shellHead	; compute size!
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$4800			; time, 09.00
+	.word	$4990			; date, 2016/12/16
 
-	.byt	romsize/256			; ROM size in pages
-	.byt	0, 0, 0
-	.byt	$FF, $FF, $FF, $FF	; link, final item (appendable)
-#endif
+shellSize	=	shellEnd - shellHead -256	; compute size NOT including header!
 
+; filesize in top 32 bits NOT including header, new 20161216
+	.byt	<shellSize		; filesize LSB
+	.byt	>shellSize		; filesize MSB
+	.word	0				; 64K space does not use upper 16-bit
+; ##### end of minimOS executable header #####
+
+; ****************************
 ; *** initialise the shell ***
+; ****************************
 -shell:
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
@@ -166,6 +174,7 @@ prompt:
 	.asc	CR, "/sys/", 0
 
 xsh_err:
-	.asc	CR, "*** NOT executable ***", 0
+	.asc	CR, "*** NOT executable ***", CR, 0
 
+; ***** end of stuff *****
 shellEnd:				; ### for easy size computation ###
