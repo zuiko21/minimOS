@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a12, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161216-1055
+; last modified 20161216-1200
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -540,28 +540,29 @@ uptime:
 	_EXIT_OK
 
 
-; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
-; ex_pt -> addr, str_pt <- *path, cpu_ll -> architecture (N if was non-XIP)
+; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
+; ex_pt -> addr, str_pt <- *path, cpu_ll -> architecture (N if it was non-XIP)
+; now supports 24-bit addressing! but only for 65816 code
 
 load_link:
 ; *** first look for that filename in ROM headers ***
 	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$10	; *** standard index size ***
+	.xs: SEP #$10		; *** standard index size ***
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get whole pointer (minus bank)
 	SEC
 	SBC #8				; subtract name position in header!
 	STA str_pt			; modified value
 	BCS ll_reset		; nothing else to do if no borrow
-		DEC str_pt+1		; otherwise will point to previous BANK (may affect fourth byte)
+		DEC str_pt+2		; otherwise will point to previous BANK (may affect fourth byte)
 ll_reset:
 ; get initial address! beacuse of the above, no longer adds filename offset!
 	LDA #ROM_BASE		; begin of ROM contents
 	STA	rh_scan			; set local pointer
 	STZ rh_scan+2		; standard bank for long pointer!
-	.as: SEP #$20		; *** back to standard memory ***
 ll_geth:
 ; ** check whether we are on a valid header!!! **
+		.as: SEP #$20		; *** back to standard memory ***
 		LDA [rh_scan]		; get first byte in header
 			BNE ll_nfound		; link was lost, no more to scan
 		LDY #7				; after type and size, a CR is expected
@@ -571,7 +572,7 @@ ll_geth:
 ; look for the name
 		LDY #8				; reset scanning index (now at name position)
 ll_nloop:
-			LDA [rh_scan], Y	; get character in found name ****************CONTINUE CHECKING HERE*************
+			LDA [rh_scan], Y	; get character in found name
 			CMP [str_pt], Y		; compare with what we are looking for
 				BNE ll_nthis		; difference found
 			ORA [str_pt], Y		; otherwise check whether at EOL
@@ -580,37 +581,46 @@ ll_nloop:
 			BNE ll_nloop		; will not do forever, no need for BRA
 ll_nthis:
 ; not this one, correct local pointer for the next header
+		.al: REP #$20		; *** back to 16-bit memory for a moment ***
 		LDY #253			; relative offset to number of pages to skip
-		LDA (rh_scan), Y	; get number of pages to skip
+		LDA [rh_scan], Y	; get number of pages to skip (24-bit pointer)
 		SEC					; ...plus header itself! eeeeeeek
 		ADC rh_scan+1		; add to previous value
 		STA rh_scan+1		; update pointer
-		BCC ll_geth			; inspect new header (if no overflow! 16-bit addressing)
+		BCC ll_geth			; inspect new header (if no wrap! 24-bit addressing)
 ll_nfound:
 	_ERR(N_FOUND)		; all was scanned and the query was not found
 ll_found:
 ; this was the original load_link code prior to 20161202, will be executed after the header was found!
-
-; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDY #1				; offset for filetype
-	LDA (str_pt), Y		; check filetype
+	LDA [rh_scan], Y	; check filetype
 	CMP #'m'			; must be minimOS app!
 		BNE ll_wrap			; error otherwise
 	INY					; next byte is CPU type then
-	LDA (str_pt), Y		; get it
-	CMP #'R'			; Rockwell is the only unsupported type!
-		BEQ ll_wrap
-	STA cpu_ll			; set CPU type
-	LDA str_pt			; get pointer LSB
-	LDY str_pt+1		; and MSB, not worth on 16-bit mode because of page increment
-	INY					; start from next page
-	STA ex_pt			; save execution pointer
-	STY ex_pt+1
-	STZ ex_pt+2			; invalidate bank... this far, this is important for 6502 code with new B_EXEC approach
-	_EXIT_OK
+	LDA [rh_scan], Y	; get it
+	CMP #'V'			; Rockwell is the only unsupported type! but look for any other 65xx option
+		BEQ ll_native		; native 65816 is OK *AND* will allow 24-bit addressing this far 
+	CMP #'B'			; generic 65C02
+		BEQ ll_valid		; also OK but will NOT support 24-bit (for now)	
+	CMP #'N'			; old NMOS
+		BEQ ll_valid		; if neither this one, unsupported CPU type!
 ll_wrap:
-	_ERR(INVALID)		; something was wrong
+	_ERR(INVALID)		; unsupported CPU
+ll_valid:
+; CPU-type is compatible but has 8-bit code, should install 64-byte wrapper at end of bank, or limit to bank zero!
+	LDX rh_scan+2			; check THIRD byte, still not supported in 8-bit code
+	BEQ ll_native			; still in bank 0, OK to proceed
+		_ERR(FULL)				; somewhat confusing error...
+ll_native:
+; either is 65816 code or 02 into bank zero
+	STA cpu_ll			; set CPU type, positive because it is XIP!
+	.al: REP #$20		; *** 16-bit memory again ***
+	LDA rh_scan+1		; get pointer MSB+BANK
+	INC					; start from next page
+	STA ex_pt+1			; save execution pointer
+	STZ ex_pt			; *** assume all headers are page-aligned ***
+	_EXIT_OK
 
 
 ; *** SU_POKE, write to protected addresses ***
