@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a12, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161215-1106
+; last modified 20161216-1055
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -541,10 +541,56 @@ uptime:
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
-; ex_pt -> addr, str_pt <- *path, cpu_ll -> architecture
-; *** only 64K RAM supported so far ***
+; ex_pt -> addr, str_pt <- *path, cpu_ll -> architecture (N if was non-XIP)
 
 load_link:
+; *** first look for that filename in ROM headers ***
+	.al: REP #$20		; *** 16-bit memory ***
+	.xs: SEP #$10	; *** standard index size ***
+; first of all, correct parameter pointer as will be aligned with header!
+	LDA str_pt			; get whole pointer (minus bank)
+	SEC
+	SBC #8				; subtract name position in header!
+	STA str_pt			; modified value
+	BCS ll_reset		; nothing else to do if no borrow
+		DEC str_pt+1		; otherwise will point to previous BANK (may affect fourth byte)
+ll_reset:
+; get initial address! beacuse of the above, no longer adds filename offset!
+	LDA #ROM_BASE		; begin of ROM contents
+	STA	rh_scan			; set local pointer
+	STZ rh_scan+2		; standard bank for long pointer!
+	.as: SEP #$20		; *** back to standard memory ***
+ll_geth:
+; ** check whether we are on a valid header!!! **
+		LDA [rh_scan]		; get first byte in header
+			BNE ll_nfound		; link was lost, no more to scan
+		LDY #7				; after type and size, a CR is expected
+		LDA [rh_scan], Y	; get eigth byte in header!
+		CMP #13				; was it a CR?
+			BNE ll_nfound		; if not, go away
+; look for the name
+		LDY #8				; reset scanning index (now at name position)
+ll_nloop:
+			LDA [rh_scan], Y	; get character in found name ****************CONTINUE CHECKING HERE*************
+			CMP [str_pt], Y		; compare with what we are looking for
+				BNE ll_nthis		; difference found
+			ORA [str_pt], Y		; otherwise check whether at EOL
+				BEQ ll_found		; all were zero, both ended names are the same!
+			INY					; otherwise continue search
+			BNE ll_nloop		; will not do forever, no need for BRA
+ll_nthis:
+; not this one, correct local pointer for the next header
+		LDY #253			; relative offset to number of pages to skip
+		LDA (rh_scan), Y	; get number of pages to skip
+		SEC					; ...plus header itself! eeeeeeek
+		ADC rh_scan+1		; add to previous value
+		STA rh_scan+1		; update pointer
+		BCC ll_geth			; inspect new header (if no overflow! 16-bit addressing)
+ll_nfound:
+	_ERR(N_FOUND)		; all was scanned and the query was not found
+ll_found:
+; this was the original load_link code prior to 20161202, will be executed after the header was found!
+
 ; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDY #1				; offset for filetype
