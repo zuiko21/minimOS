@@ -1,36 +1,40 @@
 ; minimOS generic Kernel API
 ; v0.5.1a13, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161215-1241
+; last modified 20161216-1400
 
 ; no way for standalone assembly...
 
+; ***************************************
 ; *** dummy function, non implemented ***
+; ***************************************
+
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
 
 
+; ********************************
 ; *** COUT, output a character ***
+; ********************************
 ; Y <- dev, io_c <- char
 ; LOWRAM version uses da_ptr!!!
 
 cout:
-; new MUTEX for COUT 161121, *per-driver based 161124 **added overhead
 #ifdef	MULTITASK
-	STY iol_dev			; **keep device temporarily, worth doing here (3)
+	STY iol_dev			; keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
 co_loop:
-	LDA cio_lock, Y		; *check whether THAT device in use (4)
+	LDA cio_lock, Y		; check whether THAT device in use (4)
 	BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-		LDY iol_dev			; restore previous status, *new style (3)
+		LDY iol_dev			; restore previous status (3)
 		_BRA co_loop		; try again! (3)
 co_lckd:
 	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
-	TYA					; **current PID in A (2)
-	LDY iol_dev			; **restore device number (3)
-	STA cio_lock, Y		; *reserve this (4)
+	TYA					; current PID in A (2)
+	LDY iol_dev			; restore device number (3)
+	STA cio_lock, Y		; reserve this (4)
 	_EXIT_CS			; proceed normally (4)
 #endif
 ; continue with mutually exclusive COUT
@@ -76,34 +80,35 @@ co_call:
 	_JMPX(drv_opt)		; direct jump!!!
 
 
+; ****************************
 ; *** CIN, get a character *** revamped 20150209
+; ****************************
 ; Y <- dev, io_c -> char, C = not available
 
 cin:
-; new MUTEX for CIN 161121, *per-driver based 161124 **added overhead
 #ifdef	MULTITASK
-	STY iol_dev			; **keep device temporarily, worth doing here (3)
+	STY iol_dev			; keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
 ci_loop:
-	LDA cio_lock, Y		; *check whether THAT device in use (4)
+	LDA cio_lock, Y		; check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
 		JSR get_pid			; *standard internal call, 816 prefers indexed JSR
-		TYA					; **current PID in A
-		LDY iol_dev			; **retrieve device as index
-		CMP cio_lock, Y		; *was it me who locked? (4)
-			BEQ ci_lckdd		; *if so, resume execution (3)
+		TYA					; current PID in A
+		LDY iol_dev			; retrieve device as index
+		CMP cio_lock, Y		; was it me who locked? (4)
+			BEQ ci_lckdd		; if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
 		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-		LDY iol_dev			; *restore previous status (3)
+		LDY iol_dev			; restore previous status (3)
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
-	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
-	TYA					; **current PID in A (2)
-	LDY iol_dev			; **restore device number (3)
-	STA cio_lock, Y		; *reserve this (4)
+	JSR get_pid			; *standard internal call, 816 prefers indexed JSR
+	TYA					; current PID in A (2)
+	LDY iol_dev			; restore device number (3)
+	STA cio_lock, Y		; reserve this (4)
 ci_lckdd:
 	_EXIT_CS			; proceed normally (4)
 #endif
@@ -223,7 +228,10 @@ ci_phys:
 	TAX
 	_JMPX(drv_ipt)		; direct jump!!!
 
+
+; ******************************
 ; *** MALLOC, reserve memory *** fully revamped 20161107
+; ******************************
 ; ma_rs <- size, ma_pt -> addr, C = not enough memory
 ; ma_align <- mask for MSB (0=page or not aligned, 1=512b, $FF=bank aligned) new 161105 TO DO
 ; ma_rs = 0 means reserve as much memory as available!!!
@@ -342,17 +350,12 @@ ma_alsiz:
 	BEQ ma_fit			; none was set, thus already aligned (3/2)
 		ORA ma_align		; set masked bits... (3)
 		_INC				; ...and increase address for alignment (2)
-ma_fit:			ORA (str_pt), Y		; is this possible?
-
+ma_fit:
+	ORA (str_pt), Y		; is this possible? yeah!
 	EOR #$FF			; invert bits as will be subtracted to next entry (2)
 	SEC					; needs one more for twos-complement (2)
 	ADC ram_pos+1, X	; compute size from top ptr MINUS bottom one (5)
 	RTS
-; *** non-aligned version ***
-;	LDA ram_pos+1, X	; get end position (4)
-;	SEC
-;	SBC ram_pos, X		; subtract current for size! (2+4)
-; *** end of non-aligned version ***
 
 ; routine for making room for an entry
 ma_adv:
@@ -388,7 +391,9 @@ ma_room:
 	RTS
 
 
+; ****************************
 ; *** FREE, release memory *** revamped 20150209
+; ****************************
 ; ma_pt <- addr
 ; C -> no such used block!
 
@@ -437,7 +442,9 @@ fr_ok:
 	_EXIT_OK
 
 
+; **************************************
 ; *** OPEN_W, get I/O port or window *** interface revised 20150208
+; **************************************
 ; Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to window title!
 
 open_w:
@@ -449,15 +456,20 @@ ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
 ;	EXIT_OK on subsequent system calls!
 
-; *** CLOSE_W, close window ***
-; *** FREE_W, release window, will be closed by kernel ***
+; ******************************
+; *** CLOSE_W,  close window ***
+; *** FREE_W, release window *** will be closed by kernel
+; ******************************
 ; Y <- dev
+
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
 	_EXIT_OK
 
 
+; **************************************
 ; *** UPTIME, get approximate uptime *** revised 20150208, corrected 20150318
+; **************************************
 ; up_ticks -> ticks, new format 20161006
 ; up_sec -> 32-bit uptime in seconds
 
@@ -487,7 +499,7 @@ up_upt:
 ; will use rh_scan (local3)
 
 load_link:
-; *** first look for that filename in ROM headers ***
+; *** look for that filename in ROM headers ***
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get LSB
 	SEC
@@ -498,12 +510,9 @@ load_link:
 ll_reset:
 ; get initial address! beacuse of the above, no longer adds filename offset!
 	LDA #<ROM_BASE		; begin of ROM contents LSB
-;	CLC
-;	ADC #8				; add filename offset!!!
 	STA	rh_scan			; set local pointer
 	LDA #>ROM_BASE		; same for MSB
-;	ADC #0				; propagate carry, although probably not needed!
-	STA rh_scan+1		; corrected pointer set
+	STA rh_scan+1		; internal pointer set
 ll_geth:
 ; ** check whether we are on a valid header!!! **
 		LDY #0				; first of all should be a NUL
@@ -514,7 +523,7 @@ ll_geth:
 		CMP #13				; was it a CR?
 			BNE ll_nfound		; if not, go away
 ; look for the name
-		LDY #8				; reset scanning index (now at name position)
+		INY					; reset scanning index (now at name position, was @7)
 ll_nloop:
 			LDA (rh_scan), Y	; get character in found name
 			CMP (str_pt), Y		; compare with what we are looking for
@@ -535,45 +544,12 @@ ll_nfound:
 	_ERR(N_FOUND)		; all was scanned and the query was not found
 ll_found:
 ; this was the original load_link code prior to 20161202, will be executed after the header was found!
-; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
-; instead of the above, use a (re-corrected) rh_scan instead (based on zero)
 	LDY #1			; offset for filetype
 	LDA (rh_scan), Y	; check filetype
 	CMP #'m'		; must be minimOS app!
 		BNE ll_wrap		; error otherwise
 	INY				; next byte is CPU type
 	LDA (rh_scan), Y	; get it, should be positive!
-
-; ** generic CPU-type comparison code, this is 46 bytes long
-; loop for checking out CPU type, assume Y=2!!!
-;ll_ccpu:
-;		CMP ll_cpulst, Y	; is one of the listed CPUs?
-;			BEQ ll_dcpu			; detected type
-;		DEY					; otherwise try next
-;		BPL ll_ccpu			; until zero (included)
-;	BMI ll_wrap		; not suitable for this architecture!
-;ll_dcpu:
-;	LDX #3			; will scan physical CPU type
-;	LDA fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
-;ll_scpu:
-;		CMP ll_cpulst, X	; is one of the listed CPUs?
-;			BEQ ll_phcpu		; physical CPU detected
-;		DEY					; otherwise try next
-;		BPL ll_scpu			; until end
-;	BRK				; *** should never arrive here unless firmware vars corruption ***
-;	.asc	"{CPU}", 0
-;ll_phcpu:
-;	CPX #3			; is it a 65816?
-;	BNE ll_6502		; not!
-;		CPY #2			; if so, is it trying to execute Rockwell extensions?
-;			BEQ ll_wrap		; no way!
-;			BNE ll_valid	; otherwise, no problem
-;ll_6502:			; *** (40 bytes this far)
-;	STX ex_pt		; temporary storage of _physical_ CPU-type, or STY???
-;	CPY ex_pt		; compare against _code_ CPU-type, or CPX????
-;		BCC ll_wrap		; this was incompatible
-
-; ** alternative code (minus CPU-type table, this is 35 bytes only
 	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
 	CPX #'R'		; is it a Rockwell/WDC CPU?
 		BEQ ll_rock		; from R down is OK
@@ -605,13 +581,9 @@ ll_valid:
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
-; CPU type list for easier detection *** NO LONGER USED
-;ll_cpulst:
-;	.asc	"NBRV"	; NMOS, generic CMOS, Rockwell CMOS, then 65816 (for physical CPU only)
-
 
 ; *** SU_POKE, write to protected addresses *** revised 20150208
-; might be deprecated, not sure if of any use in other architectures
+; might be DEPRECATED, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
 ; destroys A (and maybe Y on NMOS)
 
@@ -622,7 +594,7 @@ su_poke:
 
 
 ; *** SU_PEEK, read from protected addresses *** revised 20150208
-; might be deprecated, not sure if of any use in other architectures
+; might be DEPRECATED, not sure if of any use in other architectures
 ; Y -> value, zpar <- addr
 ; destroys A
 
@@ -632,15 +604,14 @@ su_peek:
 	_EXIT_OK
 
 
+; *********************************
 ; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
+; *********************************
 ; Y <- dev, str_pt <- *string (.w in current version)
 ; uses str_dev AND iol_dev
-; calls cout, but now directly at driver code *** great revision, scans ONCE for device driver
-; included mutex 20161201 eeeeeeeeeeeeeek
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
-; new MUTEX 161201, *per-driver **added overhead
 #ifdef	MULTITASK
 	STY iol_dev			; **keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
@@ -884,7 +855,9 @@ sd_tab:					; check order in abi.h!
 	.word	sd_off		; shutdown system
 
 
+; *********************************
 ; *** B_FORK, get available PID *** properly interfaced 20150417
+; *********************************
 ; Y -> PID
 
 b_fork:
@@ -892,7 +865,10 @@ b_fork:
 	LDX #MM_FORK	; subfunction code
 	_BRA sig_call	; go for the driver
 
+
+; *****************************************
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
+; *****************************************
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr, def_io <- std_in & stdout
 ; *** should need some flag to indicate XIP or not! stack frame is different
@@ -903,23 +879,31 @@ b_exec:
 	_BRA sig_call	; go for the driver
 
 
+; **************************************************
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
+; **************************************************
 ; b_sig <- signal to be sent , Y <- addressed braid
 
 signal:
 	LDX #MM_SIGNAL	; subfunction code
 	_BRA sig_call	; go for the driver
 
+
+; ************************************************
 ; *** B_STATUS, get execution flags of a braid ***
+; ************************************************
 ; Y <- addressed braid
 ; Y -> flags, TBD
-; don't know of possible errors, maybe just a bad PID
+; do not know of possible errors, maybe just a bad PID
 
 status:
 	LDX #MM_STATUS	; subfunction code
 	_BRA sig_call	; go for the driver
 
+
+; **************************************
 ; *** GET_PID, get current braid PID ***
+; **************************************
 ; Y -> PID, TBD
 ; *****think about making this the direct call as is the fastest one!
 
@@ -929,7 +913,10 @@ get_pid:
 sig_call:			; NEW unified calling procedure
 	JMP (drv_opt)	; just enter into preinstalled driver, will exit with appropriate error code!
 
+
+; **************************************************************
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
+; **************************************************************
 ; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTI!!!)
 ; bad PID is probably the only feasible error
 
@@ -937,15 +924,20 @@ set_handler:
 	LDX #MM_HANDL	; subfunction code
 	_BRA sig_call	; go for the driver
 
+
+; *********************************************
 ; *** B_YIELD, Yield CPU time to next braid ***
-; supposedly no interface needed, don't think I need to tell if ignored
+; *********************************************
+; supposedly no interface needed, I do not think I need to tell if ignored
 
 yield:
 	LDX #MM_YIELD	; subfunction code
 	_BRA sig_call	; go for the driver
 
 
+; ***************************************************************
 ; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
+; ***************************************************************
 ; Y -> number of bytes, ex_pt -> pointer to the proposed stack frame
 ts_info:
 #ifdef	MULTITASK
@@ -967,6 +959,7 @@ tsi_str:
 tsi_end:
 ; end of stack frame for easier size computation
 
+; *********************************************************
 ; *** RELEASE, release ALL memory for a PID, new 20161115
 ; Y <- PID
 

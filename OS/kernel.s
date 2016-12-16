@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1a7
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161129-1303
+; last modified 20161216-1421
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -20,8 +20,8 @@
 #include "drivers/config/DRIVER_PACK.h"
 -user_sram = *
 .text
-#include "drivers/config/DRIVER_PACK.s"
 * = ROM_BASE			; just a placeholder, no standardised address
+#include "drivers/config/DRIVER_PACK.s"
 #endif
 .text
 #endif
@@ -32,6 +32,15 @@
 
 warm:
 ; assume interrupts off, binary mode and 65C816 in emulation mode!
+#ifdef	SAFE
+	SEI				; interrupts off, just in case (2)
+	CLD				; just in case, a must for NMOS (2)
+; * this is in case a 65816 is being used, but still compatible with all *
+	SEC				; would set back emulation mode on C816
+	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
+	ORA $0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
+; * end of 65816 specific code *
+#endif
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
 ; ++++++
@@ -77,7 +86,6 @@ ram_init:
 ; ++++++
 #endif
 
-; ******************************************************
 ; intialise drivers from their jump tables
 ; ******************************************************
 ; THINK about making API entries for this!
@@ -374,7 +382,7 @@ dr_ok:					; *** all drivers inited ***
 ; ******************************
 
 	JSR b_fork			; reserve first execution braid
-	CLI					; enable interrupts
+	CLI					; enable interrupts *** this is dangerous!
 	LDY #<shell			; get pointer to built-in shell
 	LDA #>shell
 	STY ex_pt			; set execution address
@@ -401,7 +409,7 @@ shell:
 ; only to be installed if no proper multitasking driver is present! 20161115
 #ifndef	MULTITASK
 st_taskdev:
-	JMP (st_tdlist, X)	; call appropriate code, will return to original caller
+	_JMPX(st_tdlist)	; call appropriate code, will return to original caller
 
 ; pointer list for single-task management routines
 st_tdlist:

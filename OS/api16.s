@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1a12, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161216-1200
+; last modified 20161216-1435
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -570,7 +570,7 @@ ll_geth:
 		CMP #13				; was it a CR?
 			BNE ll_nfound		; if not, go away
 ; look for the name
-		LDY #8				; reset scanning index (now at name position)
+		INY					; reset scanning index (now at name position, was @7)
 ll_nloop:
 			LDA [rh_scan], Y	; get character in found name
 			CMP [str_pt], Y		; compare with what we are looking for
