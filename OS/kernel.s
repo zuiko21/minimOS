@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1a7
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161216-1421
+; last modified 20161219-1241
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -264,6 +264,8 @@ dr_nosec:
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
 dr_abort:
+dr_ab_p:	; placeholder labels!!! REVISE
+dr_abpr:
 			LDY drv_num			; get failed driver index (4)
 			LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
 			STA drivers_id, Y	; delete older value (4)

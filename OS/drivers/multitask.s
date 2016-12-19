@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.5.1a6
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161215-0956
+; last modified 20161219-1237
 
 
 ; ********************************
@@ -74,7 +74,7 @@ mm_rsp:
 ;		LDA #BR_FREE		; adequate value in two highest bits *** could be otside loop if sys_sp does NOT get inited!
 		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0 *** also resets integrated mm_treq
 ;		STY mm_treq-1, X	; set SIGTERM request flags to zero, use this way in case SP does NOT get inited! but not if mm_treq is integrated with mm_flags!
-;		_STZA mm_treq-1, X	; set SIGTERM request flags to zero, new 20150611, poorly optimized for NMOS macro
+/*;		_STZA mm_treq-1, X	; set SIGTERM request flags to zero, new 20150611, poorly optimized for NMOS macro*/
 		DEX					; one braid less (much safer this way)
 		BNE mm_rsp			; finish all braids (much safer this way)
 	INX					; the first PID is 1
@@ -283,7 +283,7 @@ mm_rts:
 
 ; *** the actual SIGTERM routine execution, new 20150611 ***
 mm_sigterm:
-;	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal
+/*;	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal*/
 	ASL					; ...and restore value with clear flag!
 	STA mm_flags-1, X	; EEEEEEEK! clear received TERM signal, new format 20161117
 	LDA #>mm_rts		; compute return address for RTI!
