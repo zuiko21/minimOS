@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5.1a2, must match kernel.s
+; v0.5.1a3, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161006-1424
+; last modified 20161219-1302
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -173,6 +173,7 @@ up_upt:
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L)
+; REVISE *****************
 
 b_exec:
 ; non-multitasking version
@@ -193,6 +194,7 @@ ex_jmp:
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
 ; ex_pt -> addr, str_pt <- *path
+; REVISE *****************
 
 load_link:
 ; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
@@ -420,49 +422,30 @@ sd_tab:
 	.word	sd_cold	; cold boot via firmware
 	.word	sd_warm	; warm boot direct by kernel
 
-
+; low-ram signal processing must call st_taskdev!!!
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; b_sig <- signal to be sent , Y <- addressed braid (0 means ALL braids AND the only accepted value with singletasking)
 
 signal:
-	TYA				; check correct PID, really needed?
-		BNE sig_pid		; strange error?
-	LDY b_sig		; get the signal
-	CPY #SIGTERM	; clean shutoff
-	BNE sig_ncall	; call routine, RTS will return to caller
-		JMP (mm_term)	; jump to single-word vector, don't forget to init it somewhere!
-sig_ncall:
-	CPY #SIGKILL	; suicide
-	BNE sig_pid		; nothing else to do
-sig_kill:
-		_ADMIN(POWEROFF)	; suicide
-		BRK
-		.asc	"{KILL}", 0	; suicide!
-sig_pid:			; placeholder...
-	_ERR(INVALID)	; unrecognised signal
+	LDX #MM_SIGNAL	; subfunction code
+sig_call:			; standard procedure
+	JMP st_taskdev	; direct jump to built-in handler, will return with appropriate error code (NOT for 65816)
 
 ; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
 ; Y -> flags, TBD
 
 status:
-	TYA			; check correct PID, really needed?
-		BNE sig_pid	; strange error?
-	LDY #BR_RUN		; single-task systems are always running
-	_EXIT_OK
+	LDX #MM_STATUS	; subfunction code
+	_BRA sig_call	; continue as usual
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
 ; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTS) *** NEW address 20160425
 ; bad PID is probably the only feasible error
 
 set_handler:
-	TYA			; check correct PID, really needed?
-		BNE sig_pid	; strange error?
-	LDY ex_pt		; get LSB
-	LDA ex_pt+1		; same for MSB
-	STY mm_term		; store in single variable
-	STA mm_term+1
-	_EXIT_OK
+	LDX #MM_HANDL	; subfunction code
+	_BRA sig_call	; go for the driver
 
 ; *** end of kernel functions ***
 

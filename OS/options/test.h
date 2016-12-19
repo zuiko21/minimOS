@@ -7,12 +7,12 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-;#define		SAFE	_SAFE
-;#define		NMOS	_NMOS
-#define		LOWRAM	_LOWRAM
+#define		SAFE	_SAFE
+#define		NMOS	_NMOS
+;#define		LOWRAM	_LOWRAM
 
 ; some strange options for testing purposes
-;#define		MULTITASK	_MULTITASK
+#define		MULTITASK	_MULTITASK
 ;#define	C816		_C816
 
 ; *** machine specific info ***
@@ -31,11 +31,11 @@
 #define		MACHINE_ID		"test"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
-#define		ARCH			test
+#define		ARCH			test_fw
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK		test
+#define		DRIVER_PACK		test_drv
 
 ; *** Default files ***
 ; default shell from folder
