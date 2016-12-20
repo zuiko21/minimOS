@@ -1,7 +1,7 @@
 ; minimal firmware for minimOS (testing!)
 ; v1.0
 ; (c)2016 Carlos J. Santisteban
-; last modified 20161220-1212
+; last modified 20161220-1214
 
 ; common headers
 #ifndef	HEADERS
@@ -23,6 +23,10 @@ reset:
 	STY fw_warm			; store word
 	STA fw_warm+1
 	JMP (fw_warm)		; startup!
+
+; ***** remaining code *****
+fw_admin:
+; *** TO DO *** TO DO *** TO DO ***
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
