@@ -39,7 +39,7 @@
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		monitor.s
+#define		SHELL		miniMoDA.s
 
 ; default NMI, BRK etc TBD ***********
 

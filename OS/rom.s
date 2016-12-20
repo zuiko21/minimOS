@@ -1,11 +1,12 @@
 ; minimOS ROM template for SDm
-; v0.5b4, unified with kernel 20160412
+; v0.5b5, unified with kernel 20160412
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160412-0945
+; last modified 20161020-1111
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
 #define		KERNEL	_KERNEL
+#define		HEADERS	_HEADERS
 
 ; *** include files ***
 ; *** options.h is machine-dependent, copy or link appropriate file from options/ ***
