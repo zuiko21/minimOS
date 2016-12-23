@@ -773,7 +773,7 @@ rl_rcv:
 			BRA rl_echo			; and resume operation
 rl_nbs:
 		CPX ln_siz			; overflow?
-			BCS gl_l			; ignore if so
+			BCS rl_l			; ignore if so
 		STA [str_pt], Y		; store into buffer
 		INC	rl_cur			; update index
 rl_echo:
