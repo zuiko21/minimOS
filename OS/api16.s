@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a12, should match kernel16.s
+; v0.5.1a13, should match kernel16.s
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20161216-1435
+; last modified 20161223-0911
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -741,6 +741,53 @@ str_err:
 str_abort:
 	JMP cio_unlock		; otherwise return code AND clear MUTEX eeeeeeeeeek^2
 
+; ******************************
+; *** READLN, buffered input *** new 20161223
+; ******************************
+; Y <- dev, str_pt <- *buffer (24-bit mandatory), ln_siz <- max offset
+; uses iol_dev, rl_cur
+
+readLN:
+	.as: .xs: SEP #$30	; *** standard register size ***
+	STY iol_dev			; preset device ID!
+	STZ rl_cur			; reset variable
+rl_l:
+		LDY iol_dev			; use device
+		_KERNEL(CIN)		; get one character
+		BCC rl_rcv			; got something
+			CPY #EMPTY			; otherwise is just waiting?
+		BEQ rl_l			; continue then
+			LDA #0				; no indirect STZ
+			STA [str_pt]		; if any other error, terminate string at the beginning
+			JMP cio_callend		; and return whatever error
+rl_rcv:
+		LDA io_c			; get received
+		LDY rl_cur			; retrieve index
+		CMP #CR				; hit CR?
+			BEQ rl_cr			; all done then
+		CMP #BS				; is it backspace?
+		BNE rl_nbs			; delete then
+			TYA					; check index
+				BEQ rl_l			; ignore if already zero
+			DEC rl_cur			; otherwise reduce index
+			BRA rl_echo			; and resume operation
+rl_nbs:
+		CPX ln_siz			; overflow?
+			BCS gl_l			; ignore if so
+		STA [str_pt], Y		; store into buffer
+		INC	rl_cur			; update index
+rl_echo:
+		LDY iol_dev			; retrieve device
+		_KERNEL(COUT)		; echo received character
+		_BRA rl_l			; and continue
+rl_cr:
+	LDA #CR				; newline
+	LDY iol_dev			; retrieve device
+	_KERNEL(COUT)		; print newline (ignoring errors)
+	LDY rl_cur			; retrieve cursor!!!!!
+	LDA #0				; no STZ indirect indexed
+	STA [str_pt], Y		; terminate string
+	_EXIT_OK			; and all done!
 
 ; *** SU_SEI, disable interrupts ***
 ; C -> not authorized (?)

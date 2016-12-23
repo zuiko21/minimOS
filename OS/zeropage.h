@@ -1,6 +1,6 @@
-; minimOS 0.5.1a11 zero-page system variables
+; minimOS 0.5.1a12 zero-page system variables
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161202-1421
+; last modified 20161223-0848
 
 .zero
 
@@ -38,13 +38,13 @@ da_ptr: str_dev: exec_p:
 local2: locpt2	.dsb	4	; variables for kernel functions @ $E8
 
 ; *** include aliases here for local3/locpt3 ***
-exe_sp: rh_scan:
+exe_sp: rh_scan: rl_cur:
 local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 
 
 ; ** kernel parameters **
 ; *** include aliases here for zpar3/zaddr3 ***
-b_sig: ex_pt: kerntab: ma_align:
+b_sig: ex_pt: kerntab: ma_align: ln_siz:
 z10:z10W:z10L:				; old labels for compatibility
 zpar3: zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
 

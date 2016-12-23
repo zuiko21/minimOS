@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a13, must match kernel.s
+; v0.5.1a14, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161216-1400
+; last modified 20161223-0910
 
 ; no way for standalone assembly...
 
@@ -17,7 +17,7 @@ unimplemented:			; placeholder here, not currently used
 ; *** COUT, output a character ***
 ; ********************************
 ; Y <- dev, io_c <- char
-; LOWRAM version uses da_ptr!!!
+; LOWRAM version uses da_ptr!!! uses iol_dev
 
 cout:
 #ifdef	MULTITASK
@@ -699,6 +699,54 @@ str_abort:
 #endif
 	RTS					; return whatever error code
 
+; ******************************
+; *** READLN, buffered input *** new 20161223
+; ******************************
+; Y <- dev, str_pt <- *buffer (24-bit mandatory), ln_siz <- max offset
+; uses iol_dev, rl_cur
+
+readLN:
+	STY iol_dev			; preset device ID!
+	_STZY rl_cur		; reset variable
+rl_l:
+		LDY iol_dev			; use device
+		_KERNEL(CIN)		; get one character
+		BCC rl_rcv			; got something
+			CPY #EMPTY			; otherwise is just waiting?
+		BEQ rl_l			; continue then
+			LDA #0
+			_STAX(str_pt)		; if any other error, terminate string
+			RTS					; and return whatever error
+rl_rcv:
+		LDA io_c			; get received
+		LDY rl_cur			; retrieve index
+		CMP #CR				; hit CR?
+			BEQ rl_cr			; all done then
+		CMP #BS				; is it backspace?
+		BNE rl_nbs			; delete then
+			TYA					; check index
+				BEQ rl_l			; ignore if already zero
+			DEC rl_cur			; otherwise reduce index
+			_BRA rl_echo		; and resume operation
+rl_nbs:
+		CPX ln_siz			; overflow?
+			BCS gl_l			; ignore if so
+		STA (str_pt), Y		; store into buffer
+		INC	rl_cur			; update index
+rl_echo:
+		LDY iol_dev			; retrieve device
+		_KERNEL(COUT)		; echo received character
+		_BRA rl_l			; and continue
+rl_cr:
+	LDA #CR				; newline
+	LDY iol_dev			; retrieve device
+	_KERNEL(COUT)		; print newline (ignoring errors)
+	LDY rl_cur			; retrieve cursor!!!!!
+	LDA #0				; no STZ indirect indexed
+	STA (str_pt), Y		; terminate string
+	_EXIT_OK			; and all done!
+
+
 ; *** SU_SEI, disable interrupts *** revised 20150209
 ; C -> not authorized (?)
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
@@ -1013,6 +1061,7 @@ k_vec:
 	.word	su_poke		; write protected addresses
 	.word	su_peek		; read protected addresses
 	.word	string		; prints a C-string
+	.word	readLN		; buffered input, INSERTED 20161223
 	.word	su_sei		; disable interrupts, aka dis_int
 	.word	su_cli		; enable interrupts (not needed for 65xx) aka en_int
 	.word	set_fg		; enable frequency generator (VIA T1@PB7)
