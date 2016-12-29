@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5b1
-; last modified 20161227-2135
+; last modified 20161229-1937
 ; (c) 2016 Carlos J. Santisteban
 
 #include "usual.h"
@@ -239,4 +239,4 @@ pmt_pid:
 	.asc "$#", 0
 
 ; ***** end of stuff *****
-pmzpEnd:				; ### for easy size computation ###
+pmapEnd:				; ### for easy size computation ###
