@@ -2,12 +2,12 @@
 ; suitable for Kowalski simulator
 ; copy or link as options.h in root dir
 ; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160421-0915
+; last modified 20161230-2257
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-;#define		SAFE	_SAFE
+#define		SAFE	_SAFE
 ;#define		NMOS	_NMOS
 ;#define		LOWRAM	_LOWRAM
 
@@ -15,7 +15,11 @@
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
+#ifdef	NMOS
+#define		CPU_TYPE	'N'
+#else
 #define		CPU_TYPE	'B'
+#endif
 
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308

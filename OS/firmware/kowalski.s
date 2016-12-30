@@ -1,7 +1,7 @@
 ; firmware for minimOS on Kowalski simulator
-; v0.9a3
+; v0.9b1
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20160923-0955
+; last modified 20161230-2249
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -285,11 +285,11 @@ fw_admin:
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
-	.dsb	panic-*, $FF
+	.dsb	lock-*, $FF
 #endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
-* = panic
+* = lock
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC

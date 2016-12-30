@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1a7
+; v0.5.1b1
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161219-1241
+; last modified 20161230-2316
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,10 +35,12 @@ warm:
 #ifdef	SAFE
 	SEI				; interrupts off, just in case (2)
 	CLD				; just in case, a must for NMOS (2)
-; * this is in case a 65816 is being used, but still compatible with all *
+; * this is in case a 65816 is being used, but still compatible with all * EXCEPT Kowlaski
+#ifdef	C816
 	SEC				; would set back emulation mode on C816
 	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
 	ORA $0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
+#endif
 ; * end of 65816 specific code *
 #endif
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
@@ -383,8 +385,6 @@ dr_ok:					; *** all drivers inited ***
 ; **** launch monitor/shell ****
 ; ******************************
 
-	JSR b_fork			; reserve first execution braid
-	CLI					; enable interrupts *** this is dangerous!
 	LDY #<shell			; get pointer to built-in shell
 	LDA #>shell
 	STY ex_pt			; set execution address
@@ -392,6 +392,8 @@ dr_ok:					; *** all drivers inited ***
 	LDA #DEVICE			; *** revise
 	STA def_io			; default local I/O
 	STA def_io+1
+	JSR b_fork			; reserve first execution braid
+	CLI					; enable interrupts *** this is dangerous!
 	JSR b_exec			; go for it!
 
 	JMP lock			; ...as the scheduler will detour execution
@@ -444,6 +446,8 @@ st_prior:
 		_DR_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
 #endif
+	LDA #ZP_AVAIL		; eeeeeeek!
+	STA z_used			; otherwise SAFE will not work!
 ; jump to code, is this OK?
 	JMP (ex_pt)
 

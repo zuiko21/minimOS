@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1a14, must match kernel.s
+; v0.5.1b1, must match kernel.s
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161223-0910
+; last modified 20161230-2248
 
 ; no way for standalone assembly...
 
@@ -730,7 +730,7 @@ rl_rcv:
 			_BRA rl_echo		; and resume operation
 rl_nbs:
 		CPX ln_siz			; overflow?
-			BCS gl_l			; ignore if so
+			BCS rl_l			; ignore if so
 		STA (str_pt), Y		; store into buffer
 		INC	rl_cur			; update index
 rl_echo:

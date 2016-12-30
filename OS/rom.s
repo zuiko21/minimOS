@@ -1,41 +1,23 @@
 ; minimOS ROM template for SDm
-; v0.5b5, unified with kernel 20160412
+; v0.5.1b1, unified with kernel 20160412
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161020-1111
+; last modified 20161230-2247
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
 #define		KERNEL	_KERNEL
-#define		HEADERS	_HEADERS
+;#define		HEADERS	_HEADERS
 
 ; *** include files ***
 ; *** options.h is machine-dependent, copy or link appropriate file from options/ ***
-; generic definitions
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-
-; *** label definitions ***
-; zeropage
-.zero
-#include "zeropage.h"
-
-.bss
-; firmware specific variables, usually from $0200
-* = SYSRAM		; as defined in options.h
-sysram:
-#include "firmware/ARCH.h"
-
-; generic system variables
-sysvars:
-#include "sysvars.h"
+#include "usual.h"
 
 ; driver-specific system variables, label is new 20150128
 dr_vars:
 #include "drivers/config/DRIVER_PACK.h"
 
 ; points to the beginning of free SRAM
-user_sram:
+-user_sram:
 
 ; *** ROM contents ***
 .text
@@ -69,7 +51,7 @@ romsize	=	$10000 - ROM_BASE	; compute size!
 #endif
 
 ; *** the GENERIC kernel starts here ***
-kernel:
+-kernel:
 #include "kernel.s"
 
 ; *** I/O device drivers ***
