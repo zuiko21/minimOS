@@ -1,8 +1,10 @@
 ; line editor for minimOS!
 ; v0.5rc3
-; (c) 2016 Carlos J. Santisteban
-; last modified 20170106-1530
+; (c) 2016-2017 Carlos J. Santisteban
+; last modified 20170106-2227
+
 #include "usual.h"
+.(
 
 ; *** constants declaration ***
 #define	LBUFSIZ		80
@@ -438,6 +440,8 @@ l_prlp:
 
 ; might include this library when a portable, properly interfaced one is available!
 ;#include "libs/hexio.s"
+; ** OR put them inside an ifdef, to be included just once **
+; if such, add + before exportable labels!!!
 ; in the meanwhile, it takes these subroutines
 
 ; * print a character in A *
@@ -919,3 +923,4 @@ le_line:
 
 ; ***** end of stuff *****
 linedEnd:				; ### for easy size computation ###
+.)

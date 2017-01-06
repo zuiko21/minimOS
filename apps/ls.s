@@ -1,16 +1,16 @@
 ; ROM header listing for minimOS!
 ; v0.5b1
-; last modified 20161228-1545
-; (c) 2016 Carlos J. Santisteban
+; last modified 20170106-2228
+; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
-
+.(
 #define		CR		13
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	rompt		= uz			; scans ROM
-	
+
 ; ...some stuff goes here, update final label!!!
 	__last	= rompt+2	; ##### just for easier size check #####
 
@@ -35,8 +35,8 @@ lsHead:
 	.dsb	lsHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4800			; time, 09.00
-	.word	$4990			; date, 2016/12/16 ***** revise
+	.word	$B400			; time, 22.00
+	.word	$4A26			; date, 2017/1/6
 
 lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 
@@ -170,7 +170,7 @@ ls_size:
 ; compute size
 		LDY #253		; offset for size in pages (max 64k!)
 		LDA (rompt), Y
-; print pages/KB in decimal		
+; print pages/KB in decimal
 		CMP #4		; check whether below 1k
 		BCS ls_kb
 			JSR h2c_num	; will not be over 3
@@ -179,6 +179,7 @@ ls_size:
 ls_kb:
 		LSR			; divide by 4
 		LSR
+; if C add one! rounded value ** TO DO **
 ; print A in decimal and continue!
 		LDX #0		; decade counter
 lsb_div10:
@@ -215,6 +216,7 @@ ls_nfound:
 
 ; *** useful routines ***
 
+; ** these should go into a pseudolibrary, ifdef to be included once, with + on entry labels **
 ; * print binary in A as two hex ciphers *
 hex2char:
 	PHA			; keep whole value
@@ -249,6 +251,7 @@ prnStr:
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
 	RTS
+; ** end of usual pseudolibrary **
 
 ; *** strings and other data ***
 splash:
@@ -271,9 +274,10 @@ ls_cpus:
 
 ls_file:
 	.asc " -- ", 0
-	
+
 lst_lsb:
 	.asc "00 ", 0
 
 ; ***** end of stuff *****
 lsEnd:				; ### for easy size computation ###
+.)

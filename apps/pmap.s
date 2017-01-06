@@ -1,17 +1,17 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5b1
-; last modified 20161229-1937
-; (c) 2016 Carlos J. Santisteban
+; last modified 20170106-2237
+; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
-
+.(
 #define		CR		13
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	page		= uz			; start of current block
 	current	= page+1	; index storage
-	
+
 ; ...some stuff goes here, update final label!!!
 	__last	= current+1	; ##### just for easier size check #####
 
@@ -37,8 +37,8 @@ pmapHead:
 	.dsb	pmapHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4800			; time, 09.00
-	.word	$4990			; date, 2016/12/16 ***** revise
+	.word	$B400			; time, 22.30
+	.word	$4A26			; date, 2017/1/6
 
 pmapSize	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 
@@ -139,7 +139,7 @@ pkb_unit:
 	PLA			; retrieve units
 	JSR h2c_ascii	; convert & print
 	LDA #'K'
-	_BRA pmap_next	; print suffix, CR and go for next	
+	_BRA pmap_next	; print suffix, CR and go for next
 
 ; manage locked list
 pmap_lock:
@@ -173,6 +173,7 @@ pmap_tab:
 
 ; *** useful routines ***
 
+; ** these will go into a pseudolibrary **
 ; * print binary in A as two hex ciphers *
 hex2char:
 	PHA			; keep whole value
@@ -212,7 +213,7 @@ prnStr:
 ; *** strings and other data ***
 splash:
 	.asc	"pmap 0.5.1", CR
-	.asc	" (c) 2016 Carlos J. Santisteban", CR
+	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR
 	.asc "Addr. PID  Size", CR, 0		; header
 
 ; format as follows
@@ -231,7 +232,7 @@ pmt_lock:
 
 pmt_end:
 	.asc "[  END  ]", CR, 0
-	
+
 pmt_lsb:
 	.asc "00 ", 0
 
@@ -240,3 +241,4 @@ pmt_pid:
 
 ; ***** end of stuff *****
 pmapEnd:				; ### for easy size computation ###
+.)
