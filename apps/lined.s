@@ -1,8 +1,7 @@
 ; line editor for minimOS!
-; v0.5rc2
+; v0.5rc3
 ; (c) 2016 Carlos J. Santisteban
-; last modified 20160923-0928
-
+; last modified 20170106-1530
 #include "usual.h"
 
 ; *** constants declaration ***
@@ -22,6 +21,37 @@
 #define	SUBSTITUTE	'~'
 
 ; ##### include minimOS headers and some other stuff #####
+linedHead:
+; *** header identification ***
+	BRK						; do not enter here! NUL marks beginning of header
+	.asc	"m"				; minimOS app!
+#ifdef	NMOS
+	.asc	"N"				; NMOS version
+#else
+	.asc	"B"				; basic CMOS version
+#endif
+	.asc	"****", 13	; some flags TBD
+
+; *** filename and optional comment ***
+	.asc	"lined", 0	; file name (mandatory)
+
+	.asc	"Text Editor (for source code)", 0				; comment
+
+; advance to end of header
+	.dsb	linedHead + $F8 - *, $FF	; for ready-to-blow ROM
+
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$8000			; time, 16.00
+	.word	$4A26			; date, 2017/01/06
+
+linedSize	=	linedEnd - linedHead -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.byt	<linedSize		; filesize LSB
+	.byt	>linedSize		; filesize MSB
+	.word	0				; 64K space does not use upper 16-bit
+; ##### end of minimOS executable header #####
+
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
@@ -886,3 +916,6 @@ le_quit:
 	.asc	CR, "Quit? (Y/n):", 0
 le_line:
 	.asc	CR, "Line $", 0
+
+; ***** end of stuff *****
+linedEnd:				; ### for easy size computation ###
