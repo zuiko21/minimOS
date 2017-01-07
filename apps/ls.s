@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b1
-; last modified 20170106-2228
+; v0.5b2
+; last modified 20170107-2207
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -81,12 +81,15 @@ go_ls:
 ls_geth:
 ; ** check whether we are on a valid header!!! **
 		_LDAY(rompt)	; get first byte in header, should be NUL
-			BNE ls_nfound		; link was lost, no more to scan
+		BNE ls_nul
+			JMP ls_nfound		; link was lost, no more to scan
+ls_nul:
 		LDY #7				; after type and size, a CR is expected
 		LDA (rompt), Y	; get eigth byte in header!
 		CMP #13				; was it a CR?
-			BNE ls_nfound		; if not, go away
-
+		BNE ls_hok
+			JMP ls_nfound		; if not, go away
+ls_hok:
 ; * print address in hex *
 		LDA #'$'		; print hex radix
 		JSR prnChar
@@ -210,7 +213,8 @@ ls_cr:
 		SEC					; ...plus header itself! eeeeeeek
 		ADC rompt+1		; add to previous value
 		STA rompt+1		; update pointer
-		BCC ls_geth			; inspect new header (if no overflow! 16-bit addressing)
+			BCS ls_nfound		; end if overflow
+		JMP ls_geth			; inspect new header (if no overflow! 16-bit addressing)
 ls_nfound:
 	_FINISH
 

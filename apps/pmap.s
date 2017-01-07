@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5b1
-; last modified 20170106-2237
+; v0.5b2
+; last modified 20170107-2209
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -79,7 +79,7 @@ pmap_loop:
 		LDA #'$'		; print hex radix
 		JSR prnChar
 		LDY current		; retrieve index
-		LDA ram_siz, Y	; get this block address
+		LDA ram_pos, Y	; get this block address
 		STA page			; store for further size computation
 		JSR hex2char		; print MSB
 		LDY #<pmt_lsb	; string for trailing zeroes

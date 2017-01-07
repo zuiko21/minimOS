@@ -1,6 +1,6 @@
 ; SIGTERM test app for minimOS!
 ; v1.0b2
-; (c) 2016 Carlos J. Santisteban
+; (c) 2016-2017 Carlos J. Santisteban
 ; last modified 20161128-1339
 
 ; for standalone assembly, set path to OS/

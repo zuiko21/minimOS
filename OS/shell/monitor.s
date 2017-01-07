@@ -1,10 +1,11 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc10
-; last modified 20160923-1011
-; (c) 2016 Carlos J. Santisteban
+; v0.5rc11
+; last modified 20170107-2153
+; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
 
+.(
 ; *** uncomment for narrow (20-char) displays ***
 ;#define	NARROW	_NARROW
 
@@ -623,8 +624,8 @@ title:
 	.asc	"miniMonitor", 0
 
 splash:
-	.asc	"minimOS 0.5 monitor", CR
-	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
+	.asc	"minimOS 0.5.1 monitor", CR
+	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 
 
 ;err_mmod:
@@ -680,3 +681,4 @@ help_str:
 	.asc	"Z = poweroff", CR
 #endif
 	.byt	0
+.)

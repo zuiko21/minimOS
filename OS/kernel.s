@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1b2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 2017-1923
+; last modified 20170107-2130
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -501,9 +501,9 @@ st_signal:
 sig_pid:
 	_DR_ERR(INVALID)	; unrecognised signal
 sig_term:
-	LDA #>sig_yield		; get routine MSB eeeeeeek
+	LDA #>st_yield		; get routine MSB eeeeeeek
 	PHA
-	LDA #<sig_yield			; same for LSB
+	LDA #<st_yield			; same for LSB
 	PHA
 	PHP					; as required by RTI
 	JMP (mm_term)		; execute handler, will return to sig_yield

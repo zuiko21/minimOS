@@ -49,6 +49,7 @@ romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 #endif
 
 ; *** the GENERIC kernel starts here ***
+kernel = * + 256	; skip the header!
 #include "kernel.s"
 
 ; *** I/O device drivers ***
@@ -76,7 +77,7 @@ drv_end:		; for easier size computation
 ; *** include rest of the included software, each with its own header ***
 #include "../apps/ls.s"
 #include "../apps/pmap.s"
-#include "../apps/SIGtest.s"
+#include "../apps/sigtest.s"
 #include "../apps/lined.s"
 
 ; *** make separate room for firmware ***
