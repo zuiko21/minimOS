@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1b1
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161230-2316
+; v0.5.1b2
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 2017-1923
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -25,6 +25,28 @@
 #endif
 .text
 #endif
+
+; *** standard header, at least for testing ***
+kern_head:
+	BRK
+	.asc	"m"	; executable for testing TBD
+#ifdef	NMOS
+	.asc	"N"
+#else
+	.asc	"B"
+#endif
+	.asc	"****", 13	; flags TBD
+	.asc	"kernel", 0	; filename
+	.asc	"0.5.1b1", 0	; version in comment
+
+	.dsb	kern_head + $F8 - *, $FF	; padding
+
+	.word	$;
+	.word	$;
+
+kern_siz = kern_end - kern_head - $FF
+
+	.word	kern_siz, 0	; kernel size excluding header 
 
 ; **************************************************
 ; *** kernel begins here, much like a warm reset ***
@@ -384,8 +406,8 @@ dr_ok:					; *** all drivers inited ***
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
-
-	LDY #<shell			; get pointer to built-in shell
+sh_exec:
+	LDY #<shell			; get pointer to built-in shell, currently no header to skip
 	LDA #>shell
 	STY ex_pt			; set execution address
 	STA ex_pt+1
@@ -398,7 +420,7 @@ dr_ok:					; *** all drivers inited ***
 
 	JMP lock			; ...as the scheduler will detour execution
 
-; place here the shell code, must end in FINISH macro
+; place here the shell code, must end in FINISH macro, currently with NO header
 shell:
 #include "shell/SHELL"
 
@@ -448,7 +470,7 @@ exec_st:
 #endif
 	LDA #ZP_AVAIL		; eeeeeeek!
 	STA z_used			; otherwise SAFE will not work!
-; jump to code, is this OK?
+; jump to code, is this OK? could initialise stack
 	JMP (ex_pt)
 
 
@@ -479,15 +501,16 @@ st_signal:
 sig_pid:
 	_DR_ERR(INVALID)	; unrecognised signal
 sig_term:
-	LDA sig_rts+1		; get routine MSB
+	LDA #>sig_yield		; get routine MSB eeeeeeek
 	PHA
-	LDA sig_rts			; same for LSB
+	LDA #<sig_yield			; same for LSB
 	PHA
-	PHP					; as requested by RTI
-	JMP (mm_term)		; execute handler, will return to sig_rts
+	PHP					; as required by RTI
+	JMP (mm_term)		; execute handler, will return to sig_yield
 sig_kill:
-sig_rts:
-	_DR_OK				; generic exit, but check label above
+	LDY #0			; standard PID
+	JSR release		; free all memory eeeeeeeek
+	JMP sh_exec		; relaunch shell! eeeeek
 #endif
 
 ; *** new, sorted out code 20150124 ***
@@ -497,3 +520,4 @@ k_isr:
 #include "isr/irq.s"
 
 ; default NMI-ISR is on firmware!
+kern_end:		; for size computation

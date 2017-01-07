@@ -1,6 +1,6 @@
 ; minimOS basic I/O driver for Kowalski 6502 simulator
 ; v0.9b1
-; (c) 2016 Carlos J. Santisteban
+; (c) 2016-2017 Carlos J. Santisteban
 ; last modified 20160310-1310
 
 #ifndef		DRIVERS
@@ -29,7 +29,7 @@
 
 ; *** info string ***
 debug_info:
-	.asc	"Concsole I/O driver for Kowalski 6502 simulator, v0.9b1", 0
+	.asc	"Console I/O driver for Kowalski 6502 simulator, v0.9b1", 0
 
 ; *** output ***
 kow_cout:

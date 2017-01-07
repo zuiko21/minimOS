@@ -1,12 +1,10 @@
-; minimOS ROM template for SDm
-; v0.5.1b1, unified with kernel 20160412
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161230-2247
+; minimOS ROM template
+; v0.5.1b2, unified with kernel 20160412
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 20170107-1842
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
-#define		KERNEL	_KERNEL
-;#define		HEADERS	_HEADERS
 
 ; *** include files ***
 ; *** options.h is machine-dependent, copy or link appropriate file from options/ ***
@@ -25,6 +23,7 @@ dr_vars:
 
 ; * autobank no longer supported *
 ; *** minimOS volume header, new 20150604 ***
+; do not include as current (0.5.1) LOAD_LINK will not recognise it!
 ; should be included from somewhere else! but ONLY makes sense with filesystem
 
 #ifdef	FILESYSTEM
@@ -35,28 +34,50 @@ sysvol:
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
 version:
-	.asc	"minimOS 0.5b4 for ", MACHINE_NAME		; system version and machine
-	.asc	13, "20160412-0945", 0				; build date and time
+	.asc	"minimOS 0.5.1 for ", MACHINE_NAME		; system version and machine
+	.asc	13, "20170107-1810", 0				; build date and time
 
-	.dsb	sysvol + $F4 - *, $FF			; for ready-to-blow ROM, advance to time/date field
+	.dsb	sysvol + $F8 - *, $FF			; for ready-to-blow ROM, advance to time/date 
+field
 
-	.word	$4D80				; time, 09.45
-	.word	$488C				; date, 2016/04/12
-	
-romsize	=	$10000 - ROM_BASE	; compute size!
+	.word	$9000				; time, 18.00
+	.word	$4A27				; date, 2017/01/07
 
-	.byt	romsize/256			; ROM size in pages
-	.byt	0, 0, 0
-	.byt	$FF, $FF, $FF, $FF	; link, final item (appendable)
+romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
+
+	.byt	0, >romsize, 0, 0		; ROM size in pages
 #endif
 
 ; *** the GENERIC kernel starts here ***
--kernel:
 #include "kernel.s"
 
 ; *** I/O device drivers ***
-drivers:
+; should include a standard header here!
+drv_file:
+	BRK
+	.asc	"aD"	; driver pack file TBD
+	.asc	"****", 13	; flags TBD
+	.asc	"drivers", 0, 0	; filename & empty comment
+
+	.dsb	drv_file + $F8 - *, $FF	; padding
+
+	.word	$9000		; time, 18.00
+	.word	$4A27		; date, 2017/01/07
+
+drv_size = drv_end - drv_file - $100	; exclude header
+
+	.word	drv_size
+	.word	0
+
+; after header goes the binary blob
 #include "drivers/config/DRIVER_PACK.s"
+drv_end:		; for easier size computation
+
+; *** include rest of the included software, each with its own header ***
+#include "../apps/ls.s"
+#include "../apps/pmap.s"
+#include "../apps/SIGtest.s"
+#include "../apps/lined.s"
 
 ; *** make separate room for firmware ***
 	.dsb	FW_BASE - *, $FF	; for ready-to-blow ROM, skip to firmware area
