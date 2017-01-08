@@ -1,7 +1,6 @@
-; minimOS 0.5.1a4 API/ABI
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161117-1337
-
+; minimOS 0.5.1a5 API/ABI
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 20170108-1217
 ; VIA 65(C)22 registers, just for convenience
 ; offsets from base address (add to base in options.h)
 IORB	= $0
@@ -68,21 +67,22 @@ UPTIME		=  14	; give uptime in ticks and seconds *** no longer_hid_push!
 B_FORK		=  16	; reserve a free braid
 B_EXEC		=  18	; get code at some address running into a previously reserved braid
 LOAD_LINK	=  20	; get an executable from its path, and get it loaded into primary memory, maybe relocated
-SU_POKE		=  22	; access protected memory or I/O
-SU_PEEK		=  24	; access protected memory or I/O
+SU_POKE		=  22	; access protected memory or I/O ***deprecate
+SU_PEEK		=  24	; access protected memory or I/O ***deprecate
 STRING		=  26	; output a C-string via COUT
-SU_SEI		=  28	; disable interrupts, really needed?
-SU_CLI		=  30	; enable interrupts, really needed?
-SET_FG		=  32	; set PB7 frequency generator
-GO_SHELL	=  34	; launch default shell, probably needed
-SHUTDOWN	=  36	; proper shutdown, with or without power-off
-B_SIGNAL	=  38	; send UNIX_like signal to a braid
-B_STATUS	=  40	; get execution flags of a braid
-GET_PID		=  42	; get current braid PID
-SET_HNDL	=  44	; set SIGTERM handler
-B_YIELD		=  46	; give away CPU time, not really needed but interesting anyway
-TS_INFO		=  48	; get taskswitching info for multitasking driver
-RELEASE		=  50	; release ALL memory chuncks belonging to some PID, new 20161115
+READLN = 28 ; read input into supplied buffer, inserted 20170108
+SU_SEI		=  30	; disable interrupts, really needed? ***deprecate
+SU_CLI		=  32	; enable interrupts, really needed? ***deprecate
+SET_FG		=  34	; set PB7 frequency generator
+GO_SHELL	=  36	; launch default shell, probably needed ***revise or deprecate
+SHUTDOWN	=  38	; proper shutdown, with or without power-off
+B_SIGNAL	=  40	; send UNIX_like signal to a braid
+B_STATUS	=  42	; get execution flags of a braid
+GET_PID		=  44	; get current braid PID
+SET_HNDL	=  46	; set SIGTERM handler
+B_YIELD		=  48	; give away CPU time, not really needed but interesting anyway
+TS_INFO		=  50	; get taskswitching info for multitasking driver
+RELEASE		=  52	; release ALL memory chuncks belonging to some PID, new 20161115
 
 ; ** optional multitasking subfunctions, TBD **
 MM_FORK		=  0	; reserve a free braid (will go BR_STOP for a moment)
