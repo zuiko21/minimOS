@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5rc3
+; v0.5rc4
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170106-2227
+; last modified 20170108-1613
 
 #include "usual.h"
 .(
@@ -9,7 +9,6 @@
 ; *** constants declaration ***
 #define	LBUFSIZ		80
 
-#define	CR			13
 #define	SHOW		$14
 #define	EDIT		5
 #define	DELETE		$18
@@ -17,40 +16,31 @@
 #define	UP			$17
 #define	GOTO		7
 #define	QUIT		$11
-#define	BACKSPACE	8
-#define	TAB			9
-#define	ESCAPE		27
 #define	SUBSTITUTE	'~'
 
 ; ##### include minimOS headers and some other stuff #####
 linedHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"m"				; minimOS app!
-#ifdef	NMOS
-	.asc	"N"				; NMOS version
-#else
-	.asc	"B"				; basic CMOS version
-#endif
-	.asc	"****", 13	; some flags TBD
+	.asc	"m", CPU_TYPE				; minimOS app!
+	.asc	"****", CR	; some flags TBD
 
 ; *** filename and optional comment ***
 	.asc	"lined", 0	; file name (mandatory)
 
-	.asc	"Text Editor (for source code)", 0				; comment
+	.asc	"Text Editor 0.5 (for source code)", 0				; comment
 
 ; advance to end of header
 	.dsb	linedHead + $F8 - *, $FF	; for ready-to-blow ROM
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$8000			; time, 16.00
-	.word	$4A26			; date, 2017/01/06
+	.word	$4A28			; date, 2017/01/08
 
 linedSize	=	linedEnd - linedHead -256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.byt	<linedSize		; filesize LSB
-	.byt	>linedSize		; filesize MSB
+	.word	linedSize		; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; ##### end of minimOS executable header #####
 
@@ -388,7 +378,7 @@ lg_exit:
 			JSR l_prev			; otherwise back once
 			_BRA ldn_do			; indent, show, prompt and continue
 le_sw7:
-		CMP #ESCAPE			; was 'esc' key?
+		CMP #ESC			; was 'esc' key?
 		BNE le_sw8			; check next otherwise
 ; escape clears input buffer and prompt *** common ***
 le_cbp:
@@ -407,7 +397,7 @@ le_sw8:
 			BNE l_prlp			; if not, prompt again and continue
 				_FINISH				; otherwise exit to shell? new interface
 le_sw9:
-		CMP #BACKSPACE		; was 'backspace' key?
+		CMP #BS		; was 'backspace' key?
 		BNE le_def			; check default otherwise
 ; backspace
 			LDY key				; this is really the index for buffer
@@ -558,7 +548,7 @@ hexIn:					; read line asking for address, will set at tmp
 	STX tmp2			; new safer storage
 hxi_loop:
 		JSR lockCin			; wait until something is in A
-		CMP #BACKSPACE		; is it backspace?
+		CMP #BS		; is it backspace?
 		BNE hxi_nbs			; skip otherwise
 			LDX tmp2			; is there anything to delete?
 				BEQ hxi_loop		; ignore if empty
@@ -911,7 +901,7 @@ txtEnd:
 le_title:
 	.asc	"Line Editor", 0
 le_splash:
-	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
+	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 le_start:
 	.asc	CR, "{start}", 0
 le_end:

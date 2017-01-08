@@ -1,14 +1,11 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b1
-; last modified 20170108-1201
+; v0.5b2
+; last modified 20170108-1608
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
 .(
 ; *** constant definitions ***
-#define	CR			13
-#define	BS			8
-#define	BEL			7
 #define	BUFSIZ		16
 
 ; *** declare zeropage variables ***
@@ -40,14 +37,14 @@ title:
 shellSize	=	shellEnd - shellHead -256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	shellSize		; filesize 
+	.word	shellSize		; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; ##### end of minimOS executable header #####
 
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
-shell:
+mshell:
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -87,6 +84,7 @@ main_loop:
 		LDA #>buffer		; in zeropage, all MSBs are zero
 		STY str_pt			; set parameter
 		STA str_pt+1
+		STA str_pt+2		; ready for 24-bit
 		_KERNEL(LOAD_LINK)	; look for that file!
 		BCC xsh_ok			; it was found, thus go execute it
 			LDY #<xsh_err		; get error message pointer
@@ -94,14 +92,18 @@ main_loop:
 			JSR prnStr			; print it!
 			_BRA main_loop		; and try another
 xsh_ok:
+; something is ready to run, but set its default I/O first!!!
+		LDY iodev
+		STY def_io
+		STY def_io+1
 		_KERNEL(B_FORK)		; get a free braid
 		CPY #0				; what to do if none available?
-			BEQ xsh_single		; no multitasking, execute and restore status!
-		_KERNEL(B_EXEC)		; run on that braid
-		_BRA main_loop		; and continue asking for more
+		BEQ xsh_single		; no multitasking, execute and restore status!
+			_KERNEL(B_EXEC)		; run on that braid
+			_BRA main_loop		; and continue asking for more... or wait?
 xsh_single:
 	_KERNEL(B_EXEC)		; execute anyway...
-	_BRA shell			; ...but reset shell environment all the way!
+	_BRA mshell			; ...but reset shell environment! should not arrive here
 
 ; *** useful routines ***
 
@@ -123,35 +125,17 @@ prnStr:
 	RTS
 
 ; * get input line from device at fixed-address buffer *
-; minimOS should have one of these in API...
+; now using the one built-in into API
 getLine:
-	_STZX cursor			; reset variable
-gl_l:
-		LDY iodev			; use device
-		_KERNEL(CIN)		; get one character #####
-			BCS gl_l			; wait for something
-		LDA io_c			; get received
-		LDX cursor			; retrieve index
-		CMP #CR				; hit CR?
-			BEQ gl_cr			; all done then
-		CMP #BS				; is it backspace?
-		BNE gl_nbs			; delete then
-			CPX #0				; already 0?
-				BEQ gl_l			; ignore if so
-			DEC cursor			; reduce index
-			_BRA gl_echo		; resume operation
-gl_nbs:
-		CPX #BUFSIZ-1		; overflow?
-			BCS gl_l			; ignore if so
-		STA buffer, X		; store into buffer
-		INC	cursor			; update index
-gl_echo:
-		JSR prnChar			; echo!
-		_BRA gl_l			; and continue
-gl_cr:
-	JSR prnChar			; newline
-	LDX cursor			; retrieve cursor!!!!!
-	_STZA buffer, X		; terminate string
+	LDY #<buffer		; get buffer address in zp
+	LDA #>buffer		; MSB, should be zero already!
+	STY str_pt		; set kernel parameter
+	STA str_pt+1		; clear MSB, no need for STZ
+	STA str_pt+2		; also mandatory 24-bit addressing
+	LDX #BUFSIZ-1		; maximum offset
+	STX ln_siz
+	LDY iodev		; use standard device
+	_KERNEL(READLN)		; get string
 	RTS					; and all done!
 
 

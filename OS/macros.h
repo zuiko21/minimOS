@@ -1,13 +1,13 @@
-; minimOS 0.5.1a3 MACRO definitions
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161017-1049
+; minimOS 0.5.1a5 MACRO definitions
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 20170108-1555
 
 ; *** standard addresses ***
 
 kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
 admin_call	=	$FFD0	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
 
-; unified address (will lock at $FFEE-F anyway) for CMOS and NMOS ** new name 20161010
+; unified address (will lock at $FFE1-2 anyway) for CMOS and NMOS ** new name 20161010
 lock		=	$FFE0	; more-or-less 816 savvy address
 
 ; *** device numbers for optional pseudo-driver modules, TBD ***
@@ -31,8 +31,8 @@ FILE_DEV	=	130
 #define		_KERNEL(a)		LDX #a: CLC: COP #$FF
 #endif
 
-; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings!
-; * C02 wrapper then should be like			COP #$FF	RTS
+; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings! note pre-CLC
+; * C02 wrapper then should be like			CLC	COP #$FF	RTS
 
 ; administrative calls unified for 6502 and 65816, all ending in RTS (use DR_OK and DR_ERR macros)
 #define		_ADMIN(a)		LDX #a: JSR admin_call
@@ -79,6 +79,13 @@ FILE_DEV	=	130
 ; ** panic call, now using BRK in case of error display ** new BRK handled 20161010
 #define		_PANIC(a)	BRK: .asc a, 0
 
+; *** usual ASCII constants ***
+#define		CR	13
+#define		BS	8
+#define		TAB	9
+#define		BEL	7
+#define		ESC	27
+
 ; *** conditional opcode assembly ***
 #ifdef	NMOS
 #define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
@@ -94,7 +101,7 @@ FILE_DEV	=	130
 #define		_INC		CLC: ADC #1
 #define		_DEC		SEC: SBC #1
 #define		_BRA		JMP
-; faster than CLC-BVC and the very same size, but no longer position-independent
+; faster than CLC-BCC and the very same size, but no longer position-independent
 #define		_STZX		LDX #0: STX
 #define		_STZY		LDY #0: STY
 #define		_STZA		LDA #0: STA

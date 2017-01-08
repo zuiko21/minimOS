@@ -1,6 +1,6 @@
 ; minimOS 0.5.1a5 API/ABI
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170108-1217
+; last modified 20170108-1553
 ; VIA 65(C)22 registers, just for convenience
 ; offsets from base address (add to base in options.h)
 IORB	= $0
@@ -70,7 +70,7 @@ LOAD_LINK	=  20	; get an executable from its path, and get it loaded into primar
 SU_POKE		=  22	; access protected memory or I/O ***deprecate
 SU_PEEK		=  24	; access protected memory or I/O ***deprecate
 STRING		=  26	; output a C-string via COUT
-READLN = 28 ; read input into supplied buffer, inserted 20170108
+READLN		=  28	; read input into supplied buffer, inserted 20170108
 SU_SEI		=  30	; disable interrupts, really needed? ***deprecate
 SU_CLI		=  32	; enable interrupts, really needed? ***deprecate
 SET_FG		=  34	; set PB7 frequency generator
@@ -103,7 +103,7 @@ BR_END		=  64	; ended task, waiting for rendez-vous
 BR_MASK		= 192	; as it set both bits but NOT those for SIGTERM handler, new 20161117
 
 ; ** multitasking signals **
-SIGKILL		=  0	; immediately kill braid, will go BR_FREE
+SIGKILL		=  0	; immediately kill braid, will go BR_FREE... maybe after BR_END
 SIGTERM		=  2	; ask braid to terminate in an orderly fashion, default handler is SIGKILL
 SIGSTOP		=  4	; pause braid, will go BR_STOP
 SIGCONT		=  6	; resume a previously paused braid, will go BR_RUN
@@ -211,3 +211,4 @@ DEV_VGA		= 192	; integrated VGA-compatible Tijuana, NEW 20160331
 ; rtc 146818 (pseudo-driver?) = 208
 ; duart 2681-1 = 235 (or 227)
 ; duart 2681-2 = 227 (or 235)
+

@@ -21,6 +21,7 @@ unimplemented:			; placeholder here, not currently used
 
 cout:
 #ifdef	MULTITASK
+; this should be done for physical devs only, 0.5.2+
 	STY iol_dev			; keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
 co_loop:
