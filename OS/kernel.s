@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1b2
+; v0.5.1b3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170107-2130
+; last modified 20170108-1158
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -29,20 +29,15 @@
 ; *** standard header, at least for testing ***
 kern_head:
 	BRK
-	.asc	"m"	; executable for testing TBD
-#ifdef	NMOS
-	.asc	"N"
-#else
-	.asc	"B"
-#endif
+	.asc	"m", CPU_TYPE	; executable for testing TBD
 	.asc	"****", 13	; flags TBD
 	.asc	"kernel", 0	; filename
-	.asc	"0.5.1b1", 0	; version in comment
+	.asc	"0.5.1b3", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$;
-	.word	$;
+	.word	$6000	; time, 12.00
+	.word	$4A28	; date, 2017/1/8
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -407,8 +402,8 @@ dr_ok:					; *** all drivers inited ***
 ; **** launch monitor/shell ****
 ; ******************************
 sh_exec:
-	LDY #<shell			; get pointer to built-in shell, currently no header to skip
-	LDA #>shell
+	LDY #<shell			; get pointer to built-in shell
+	LDA #>shell+256			; skip header!
 	STY ex_pt			; set execution address
 	STA ex_pt+1
 	LDA #DEVICE			; *** revise
@@ -419,10 +414,6 @@ sh_exec:
 	JSR b_exec			; go for it!
 
 	JMP lock			; ...as the scheduler will detour execution
-
-; place here the shell code, must end in FINISH macro, currently with NO header
-shell:
-#include "shell/SHELL"
 
 ; *** generic kernel routines, now in separate file 20150924 *** new filenames
 #ifndef		LOWRAM
@@ -521,3 +512,7 @@ k_isr:
 
 ; default NMI-ISR is on firmware!
 kern_end:		; for size computation
+
+; *** place here the shell code, must end in FINISH macro, currently with header ***
+shell:
+#include "shell/SHELL"

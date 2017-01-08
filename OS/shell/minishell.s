@@ -1,10 +1,10 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5a2
-; last modified 20161216-0910
-; (c) 2016 Carlos J. Santisteban
+; v0.5b1
+; last modified 20170108-1201
+; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
-
+.(
 ; *** constant definitions ***
 #define	CR			13
 #define	BS			8
@@ -23,38 +23,31 @@
 shellHead:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"m"				; minimOS app!
-#ifdef	NMOS
-	.asc	"N"				; NMOS version
-#else
-	.asc	"B"				; basic CMOS version
-#endif
+	.asc	"m", CPU_TYPE				; minimOS app!
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
-	.asc	"miniShell", 0	; file name (mandatory)
-
-	.asc	0				; empty comment
+title:
+	.asc	"miniShell", 0, 0	; file name (mandatory) and empty comment
 
 ; advance to end of header
 	.dsb	shellHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4800			; time, 09.00
-	.word	$4990			; date, 2016/12/16
+	.word	$6000			; time, 12.00
+	.word	$4A28			; date, 2017/1/8
 
 shellSize	=	shellEnd - shellHead -256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.byt	<shellSize		; filesize LSB
-	.byt	>shellSize		; filesize MSB
+	.word	shellSize		; filesize 
 	.word	0				; 64K space does not use upper 16-bit
 ; ##### end of minimOS executable header #####
 
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
--shell:
+shell:
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -163,12 +156,10 @@ gl_cr:
 
 
 ; *** strings and other data ***
-title:
-	.asc	"miniShell", 0
 
 splash:
-	.asc	"minimOS 0.5 shell", CR
-	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
+	.asc	"minimOS 0.5.1 shell", CR
+	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 
 prompt:
 	.asc	CR, "/sys/", 0
@@ -178,3 +169,4 @@ xsh_err:
 
 ; ***** end of stuff *****
 shellEnd:				; ### for easy size computation ###
+.)
