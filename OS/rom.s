@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.5.1b2, unified with kernel 20160412
+; v0.5.1b3, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170107-1842
+; last modified 20170108-1720
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -54,6 +54,7 @@ kernel = * + 256	; skip the header!
 
 ; *** I/O device drivers ***
 ; should include a standard header here!
+	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
 drv_file:
 	BRK
 	.asc	"aD"	; driver pack file TBD
@@ -75,9 +76,13 @@ drv_size = drv_end - drv_file - $100	; exclude header
 drv_end:		; for easier size computation
 
 ; *** include rest of the included software, each with its own header ***
+	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
 #include "../apps/ls.s"
+	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
 #include "../apps/pmap.s"
+	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
 #include "../apps/sigtest.s"
+	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
 #include "../apps/lined.s"
 
 ; *** make separate room for firmware ***

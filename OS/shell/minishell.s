@@ -1,18 +1,18 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b2
-; last modified 20170108-1608
+; v0.5b3
+; last modified 20170108-1632
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
 .(
 ; *** constant definitions ***
-#define	BUFSIZ		16
+#define	BUFSIZ		32
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	iodev	= uz			; standard I/O device ##### minimOS specific #####
-	cursor	= iodev+1		; storage for X offset
-	buffer	= cursor+1		; storage for input line (BUFSIZ chars)
+	pid	= iodev+1		; storage for launched PID, cursor no longer needed
+	buffer	= pid+1		; storage for input line (BUFSIZ chars)
 ; ...some stuff goes here, update final label!!!
 	__last	= buffer+BUFSIZ	; ##### just for easier size check #####
 
@@ -99,8 +99,14 @@ xsh_ok:
 		_KERNEL(B_FORK)		; get a free braid
 		CPY #0				; what to do if none available?
 		BEQ xsh_single		; no multitasking, execute and restore status!
+			STY pid			; save as will look for it later
 			_KERNEL(B_EXEC)		; run on that braid
-			_BRA main_loop		; and continue asking for more... or wait?
+xsh_wait:
+				LDY pid			; retrieve launched PID
+				_KERNEL(B_STATUS)	; check its current state
+				CPY #BR_FREE		; until ended (relies on B_STATUS hiding BR_END!!!)
+				BNE xsh_wait		; do not interact until ended (no '&' yet)
+			BEQ main_loop		; then continue asking for more
 xsh_single:
 	_KERNEL(B_EXEC)		; execute anyway...
 	_BRA mshell			; ...but reset shell environment! should not arrive here

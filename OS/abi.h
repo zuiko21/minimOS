@@ -1,6 +1,6 @@
-; minimOS 0.5.1a5 API/ABI
+; minimOS 0.5.1a6 API/ABI
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170108-1553
+; last modified 20170108-1639
 ; VIA 65(C)22 registers, just for convenience
 ; offsets from base address (add to base in options.h)
 IORB	= $0
@@ -45,7 +45,9 @@ A_BLIN	= %00000100	; D_BLIN capability
 A_BLOUT	= %00000010	; D_BLOUT capability
 A_MEM	= %00000001	; D_MEM dynamically linked, on-the-fly loadable driver
 
+; ************************************
 ; ** firmware interface calls (TBD) **
+; ************************************
 INSTALL		=  0	; copy jump table
 SET_ISR		=  2	; set IRQ vector
 SET_NMI		=  4	; set (magic preceded) NMI routine
@@ -54,8 +56,11 @@ GESTALT		=  8	; get system info (renumbered)
 POWEROFF	= 10	; power-off, suspend or cold boot
 CONTEXT		= 12	; context bankswitching
 JIFFY		= 14	; set jiffy IRQ speed, ** TBD **
+; to do IRQ_SOURCE for totla independence, return pointer offset in X
 
+; *************************************************************
 ; ***** ***** kernel function codes for system call ***** *****
+; *************************************************************
 COUT		=   0	; character output
 CIN			=   2	; character input
 MALLOC		=   4	; allocate memory
@@ -73,7 +78,7 @@ STRING		=  26	; output a C-string via COUT
 READLN		=  28	; read input into supplied buffer, inserted 20170108
 SU_SEI		=  30	; disable interrupts, really needed? ***deprecate
 SU_CLI		=  32	; enable interrupts, really needed? ***deprecate
-SET_FG		=  34	; set PB7 frequency generator
+SET_FG		=  34	; set PB7 frequency generator ***firmware implementation
 GO_SHELL	=  36	; launch default shell, probably needed ***revise or deprecate
 SHUTDOWN	=  38	; proper shutdown, with or without power-off
 B_SIGNAL	=  40	; send UNIX_like signal to a braid
@@ -154,8 +159,10 @@ LOCK_RAM	=	6	; new label 20161117
 DEV_RND		= 126	; get a random number
 DEV_NULL	= 127	; ignore I/O
 
+; ***********************************
 ; ***** ***** error codes ***** *****
-OK		=   0		; not needed on 65xx, CLC instead
+; ***********************************
+END_OK	=   0		; not needed on 65xx, CLC instead
 UNAVAIL	=   1		; unavailable on this version
 TIMEOUT	=   2		; try later
 FULL	=   3		; not enough memory, try less
