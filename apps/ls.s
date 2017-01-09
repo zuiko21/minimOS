@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b2
-; last modified 20170107-2207
+; v0.5b3
+; last modified 20170109-1232
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -35,8 +35,8 @@ lsHead:
 	.dsb	lsHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$B400			; time, 22.00
-	.word	$4A26			; date, 2017/1/6
+	.word	$6800			; time, 13.00
+	.word	$4A29			; date, 2017/1/9
 
 lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 
@@ -75,8 +75,8 @@ go_ls:
 ; get initial address
 	LDA #<ROM_BASE		; begin of ROM contents LSB
 	STA rompt			; set local pointer
-	LDA #>ROM_BASE		; same for MSB
-	STA rompt+1		; internal pointer set
+	LDA #>ROM_BASE+1	; same for MSB *** note trick for volume header support!
+	STA rompt+1			; internal pointer set
 
 ls_geth:
 ; ** check whether we are on a valid header!!! **
@@ -208,13 +208,20 @@ ls_cr:
 		JSR prnChar
 
 ; * scan for next header *
-		LDY #253			; relative offset to number of pages to skip
-		LDA (rompt), Y	; get number of pages to skip
-		SEC					; ...plus header itself! eeeeeeek
+		LDY #253		; relative offset to number of pages
+		LDA (rompt), Y	; get it now
+		TAX				; save for a while
+		DEY				; relative offset to FILE SIZE eeeeek
+		LDA (rompt), Y	; check whether crosses boundary
+		BEQ ls_bound	; if it does not, do not advance page
+			INX				; otherwise goes into next page
+ls_bound:
+		TXA				; retrieve number of pages to skip...
+		SEC				; ...plus header itself! eeeeeeek
 		ADC rompt+1		; add to previous value
 		STA rompt+1		; update pointer
-			BCS ls_nfound		; end if overflow
-		JMP ls_geth			; inspect new header (if no overflow! 16-bit addressing)
+			BCS ls_nfound	; end if overflow
+		JMP ls_geth		; inspect new header (if no overflow! 16-bit addressing)
 ls_nfound:
 	_FINISH
 

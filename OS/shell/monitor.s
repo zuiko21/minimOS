@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc11
-; last modified 20170107-2153
+; v0.5rc12
+; last modified 20170109-1202
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -11,9 +11,6 @@
 
 ; *** constant definitions ***
 #define	BUFSIZ		16
-#define	CR			13
-#define	BS			8
-#define	BEL			7
 ; bytes per line in dumps 4 or 8/16
 #ifdef	NARROW
 #define		PERLINE		4
@@ -22,7 +19,30 @@
 #endif
 
 ; ##### include minimOS headers and some other stuff #####
--shell:
+mon_head:
+; *** header identification ***
+	BRK						; don't enter here! NUL marks beginning of header
+	.asc	"m", CPU_TYPE	; minimOS app!
+	.asc	"****", 13		; some flags TBD
+
+; *** filename and optional comment ***
+	.asc	"monitor", 0, 0	; file name (mandatory) and empty comment
+
+; advance to end of header
+	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$6000			; time, 12.00
+	.word	$4A29			; date, 2017/1/9
+
+monSize	=	mon_end - mon_head -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	monSize		; filesize
+	.word	0				; 64K space does not use upper 16-bit
+; ##### end of minimOS executable header #####
+
+
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	ptr		= uz		; current address pointer
@@ -681,4 +701,5 @@ help_str:
 	.asc	"Z = poweroff", CR
 #endif
 	.byt	0
+mon_end:				; for size computation
 .)

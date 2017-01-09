@@ -78,7 +78,7 @@ DEVICE	=	DEV_CONIO		; standard I/O device
 
 ; SRAM pages, just in case of mirroring/bus error * NOT YET USED
 #ifndef	LOWRAM
-SRAM =	191		; 48 KiB available this far
+SRAM =	192		; 48 KiB available this far
 
 SPTR		=	$FF		; general case stack pointer, new name 20160308
 SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM

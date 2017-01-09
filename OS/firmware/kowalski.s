@@ -1,7 +1,7 @@
 ; firmware for minimOS on Kowalski simulator
-; v0.9b1
+; v0.9b2
 ; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161230-2249
+; last modified 20170109-1250
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -10,21 +10,31 @@
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
-#ifdef	FILESYSTEM
-	.asc 0, "aS****", 13	; standard system file wrapper, new 20160309
-	.asc "0.9b1 firmware for "
-#endif
-
+	.asc	0, "m", CPU_TYPE, "****", CR	; standard system file wrapper, new 20160309
+	.asc	"boot", 0						; mandatory filename for firmware
+fw_splash:
+	.asc	"0.9b2 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
-#ifdef	FILESYSTEM
-	.dsb	fw_start + $FC - *, $FF	; generate padding to link
-	.asc	$FF,$FF,$FF,$FF			; undefined ending???
-#endif
+; advance to end of header
+	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$6800			; time, 13.00
+	.word	$4A29			; date, 2017/1/9
+
+fwSize	=	$10000 - fw_start -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	fwSize		; filesize
+	.word	0				; 64K space does not use upper 16-bit
+; *** end of standard header ***
+
+; ********************
 ; *** cold restart ***
+; ********************
 ; basic init
 reset:
 #ifdef	SAFE
@@ -66,6 +76,10 @@ res_sec:
 		_STZA ticks+1, X	; reset byte, note special offset
 		DEX					; next byte backwards
 		BNE res_sec
+
+; ** just before booting, print an exclamation mark for testing! **
+	LDA #'!'
+	STA IO_BASE+1		; direct print!
 
 ; *** firmware ends, jump into the kernel ***
 start_kernel:

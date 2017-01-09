@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1b4
+; v0.5.1b6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170109-1108
+; last modified 20170109-1309
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -31,12 +31,13 @@ kern_head:
 	BRK
 	.asc	"m", CPU_TYPE	; executable for testing TBD
 	.asc	"****", 13	; flags TBD
+kern_splash:
 	.asc	"kernel", 0	; filename
 	.asc	"0.5.1b3", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$6000	; time, 12.00
+	.word	$6800	; time, 13.00
 	.word	$4A28	; date, 2017/1/8
 
 kern_siz = kern_end - kern_head - $FF
@@ -279,7 +280,7 @@ dr_sloop:
 dr_nosec: 
 ; continue initing drivers
 		JSR dr_icall		; call routine (6+...)
-		BCC dr_next			; did not failed initialisation
+		BCC dr_next			; did not failedstr_pt initialisation
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
 dr_abort:
@@ -398,6 +399,18 @@ dr_ok:					; *** all drivers inited ***
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
+; new, show a splash message ever the kernel is restarted!
+	LDY #<kern_splash	; get pointer
+	LDA #>kern_splash
+	STY str_pt			; set parameter
+	STA str_pt+1
+	LDY #DEVICE			; eeeeeek
+	_KERNEL(STRING)		; print it!
+	LDA #CR				; newline
+	STA io_c
+	LDY #DEVICE
+	_KERNEL(COUT)		; print it
+
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
@@ -459,6 +472,10 @@ st_prior:
 		_DR_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
 #endif
+	LDA #>sig_kill-1	; get routine MSB, corrected for RTS eeeeeeek
+	PHA
+	LDA #<sig_kill-1	; same for LSB
+	PHA
 	LDA #ZP_AVAIL		; eeeeeeek!
 	STA z_used			; otherwise SAFE will not work!
 ; jump to code, is this OK? could initialise stack
