@@ -1,21 +1,30 @@
 ; SIGTERM test app for minimOS!
-; v1.0b2
+; v1.0b3
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20161128-1339
+; last modified 20170109-1121
 
 ; for standalone assembly, set path to OS/
 #include "usual.h"
 
 ; *** first some executable header ***
 sts_header:
-	.asc 0, "m", CPU_TYPE, 13				; standard system file wrapper
+	.asc 0, "m", CPU_TYPE, "****", 13		; standard system file wrapper EEEEK
 sts_title:
 	.asc "SIGtest", 0						; filename
 	.asc "Test app for SIGTERM handling", 0	; description as comment
-	.dsb sts_header + $FC - *, $FF			; generate padding
-sts_length = sts_end - sts_header			; *** compute actual file size INCLUDING HEADER ***
-	.asc <sts_length, >sts_length, 0, 0		; 32-bit relative offset to next header
-; *** en of minimOS executable header ***
+; advance to end of header
+	.dsb	sts_header + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$6000			; time, 12.00
+	.word	$4A29			; date, 2017/1/9
+
+stsSize	=	sts_end - sts_header -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	stsSize			; filesize
+	.word	0				; 64K space does not use upper 16-bit
+; ##### end of minimOS executable header #####
 
 ; *** actual app code starts here ***
 sts_start:

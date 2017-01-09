@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1b3
+; v0.5.1b4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170108-1158
+; last modified 20170109-1108
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -514,5 +514,6 @@ k_isr:
 kern_end:		; for size computation
 
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 shell:
 #include "shell/SHELL"

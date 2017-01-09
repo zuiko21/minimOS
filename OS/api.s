@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1b2, must match kernel.s
+; v0.5.1b3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170109-1037
+; last modified 20170109-1136
 
 ; no way for standalone assembly...
 
@@ -506,7 +506,7 @@ load_link:
 	SBC #8				; subtract name position in header!
 	STA str_pt			; modified value
 	BCS ll_reset		; nothing else to do if no borrow
-		DEC str_pt			; otherwise will point to previous page
+		DEC str_pt+1		; otherwise will point to previous PAGE eeeeeeek
 ll_reset:
 ; get initial address! beacuse of the above, no longer adds filename offset!
 	LDA #<ROM_BASE		; begin of ROM contents LSB
@@ -520,7 +520,7 @@ ll_geth:
 			BNE ll_nfound		; link was lost, no more to scan
 		LDY #7				; after type and size, a CR is expected
 		LDA (rh_scan), Y	; get eigth byte in header!
-		CMP #13				; was it a CR?
+		CMP #CR				; was it a CR?
 			BNE ll_nfound		; if not, go away
 ; look for the name
 		INY					; reset scanning index (now at name position, was @7)
