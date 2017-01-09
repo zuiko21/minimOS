@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b3
-; last modified 20170108-1632
+; v0.5b4
+; last modified 20170109-1050
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -87,8 +87,15 @@ main_loop:
 		STA str_pt+2		; ready for 24-bit
 		_KERNEL(LOAD_LINK)	; look for that file!
 		BCC xsh_ok			; it was found, thus go execute it
-			LDY #<xsh_err		; get error message pointer
-			LDA #>xsh_err
+			CPY #INVALID		; found but not compatible?
+			BNE ms_nf
+				LDY #<xsh_err		; get incompatible message pointer
+				LDA #>xsh_err
+				BNE ms_err			; and print error, no need for BRA
+ms_nf:
+			LDY #<xsh_not		; get not found message pointer
+			LDA #>xsh_not
+ms_err:
 			JSR prnStr			; print it!
 			_BRA main_loop		; and try another
 xsh_ok:
@@ -109,7 +116,7 @@ xsh_wait:
 			BEQ main_loop		; then continue asking for more
 xsh_single:
 	_KERNEL(B_EXEC)		; execute anyway...
-	_BRA mshell			; ...but reset shell environment! should not arrive here
+	JMP mshell			; ...but reset shell environment! should not arrive here
 
 ; *** useful routines ***
 
@@ -156,6 +163,9 @@ prompt:
 
 xsh_err:
 	.asc	CR, "*** NOT executable ***", CR, 0
+
+xsh_not:
+	.asc	CR, "Not found", CR, 0
 
 ; ***** end of stuff *****
 shellEnd:				; ### for easy size computation ###

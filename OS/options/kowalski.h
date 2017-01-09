@@ -36,12 +36,12 @@
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		monitor.s
+#define		SHELL		minishell.s
 
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **
-ROM_BASE	=	$E000	; skip I/O
+ROM_BASE	=	$C000	; enough for package
 
 ; ** position of firmware, usually skipping I/O area **
 FW_BASE		=	$F800	; simple firmware expected on Kowalski simulator

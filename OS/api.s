@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1b1, must match kernel.s
+; v0.5.1b2, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20161230-2248
+; last modified 20170109-1037
 
 ; no way for standalone assembly...
 
@@ -433,8 +433,7 @@ fr_join:
 		LDA ram_stat+1, X	; check status of following!
 		STA ram_stat, X		; store one entry below
 		LDA ram_pid+1, X	; copy PID of following, but keep status in Y!
-		STA ram_pid, X		; 			ORA (str_pt), Y		; is this possible?
-no longer interleaved
+		STA ram_pid, X		; no longer interleaved (?)
 		CPY #END_RAM		; end of list?
 		BNE fr_join			; repeat until done
 ; ** already optimized **
@@ -535,8 +534,15 @@ ll_nloop:
 			BNE ll_nloop		; will not do forever, no need for BRA
 ll_nthis:
 ; not this one, correct local pointer for the next header
-		LDY #253			; relative offset to number of pages to skip
-		LDA (rh_scan), Y	; get number of pages to skip
+		LDY #253			; relative offset to number of pages
+		LDA (rh_scan), Y	; get it now
+		TAX					; save for a while
+		DEY					; relative offset to FILE SIZE eeeeek
+		LDA (rh_scan), Y	; check whether crosses boundary
+		BEQ ll_bound		; if it does not, do not advance page
+			INX					; otherwise goes into next page
+ll_bound:
+		TXA					; retrieve number of pages to skip...
 		SEC					; ...plus header itself! eeeeeeek
 		ADC rh_scan+1		; add to previous value
 		STA rh_scan+1		; update pointer

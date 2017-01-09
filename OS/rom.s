@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.5.1b3, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170108-1720
+; last modified 20170109-0944
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -26,27 +26,28 @@ dr_vars:
 ; do not include as current (0.5.1) LOAD_LINK will not recognise it!
 ; should be included from somewhere else! but ONLY makes sense with filesystem
 
-#ifdef	FILESYSTEM
 sysvol:
 	BRK					; don't enter here! NUL marks beginning of header
 	.asc	"aV"		; minimOS system volume ID, TBD
-	.asc	"****", 13	; some flags TBD
+	.asc	"****", CR	; some flags TBD
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
 version:
-	.asc	"minimOS 0.5.1 for ", MACHINE_NAME		; system version and machine
-	.asc	13, "20170107-1810", 0				; build date and time
+	.asc	"minimOS 0.5.1 for ", MACHINE_NAME	; system version and machine
+	.asc	13, "20170109-1000", 0				; build date and time
 
-	.dsb	sysvol + $F8 - *, $FF			; for ready-to-blow ROM, advance to time/date 
+	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date 
 field
 
-	.word	$9000				; time, 18.00
-	.word	$4A27				; date, 2017/01/07
+	.word	$5000				; time, 09.00
+	.word	$4A29				; date, 2017/01/09
 
 romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 
-	.byt	0, >romsize, 0, 0		; ROM size in pages
-#endif
+;	.word	romsize				; volume size (for future support)
+;	.word	0					; ROM size in pages
+; FAKE file "size" in order to be LOAD_LINK savvy...
+	.word	0, 0				; nothing inside, skip to adjacent header
 
 ; *** the GENERIC kernel starts here ***
 kernel = * + 256	; skip the header!
@@ -54,17 +55,18 @@ kernel = * + 256	; skip the header!
 
 ; *** I/O device drivers ***
 ; should include a standard header here!
-	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 drv_file:
 	BRK
-	.asc	"aD"	; driver pack file TBD
-	.asc	"****", 13	; flags TBD
-	.asc	"drivers", 0, 0	; filename & empty comment
+	.asc	"aD"						; driver pack file TBD
+	.asc	"****", CR					; flags TBD
+	.asc	"drivers", 0				; filename
+	.asc	"simple Kowalski I/O", 0	; comment
 
-	.dsb	drv_file + $F8 - *, $FF	; padding
+	.dsb	drv_file + $F8 - *, $FF		; padding
 
-	.word	$9000		; time, 18.00
-	.word	$4A27		; date, 2017/01/07
+	.word	$5000				; time, 09.00
+	.word	$4A29				; date, 2017/01/09
 
 drv_size = drv_end - drv_file - $100	; exclude header
 
@@ -76,13 +78,13 @@ drv_size = drv_end - drv_file - $100	; exclude header
 drv_end:		; for easier size computation
 
 ; *** include rest of the included software, each with its own header ***
-	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/ls.s"
-	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/pmap.s"
-	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/sigtest.s"
-	.dsb	$100 - (* & $FF)	; page alignment!!! eeeeek
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/lined.s"
 
 ; *** make separate room for firmware ***
