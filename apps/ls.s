@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
 ; v0.5b3
-; last modified 20170109-1232
+; last modified 20170109-2240
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -81,7 +81,7 @@ go_ls:
 ls_geth:
 ; ** check whether we are on a valid header!!! **
 		_LDAY(rompt)	; get first byte in header, should be NUL
-		BNE ls_nul
+		BEQ ls_nul
 			JMP ls_nfound		; link was lost, no more to scan
 ls_nul:
 		LDY #7				; after type and size, a CR is expected
