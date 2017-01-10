@@ -1,21 +1,18 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b7
-; last modified 20160923-1013
-; (c) 2016 Carlos J. Santisteban
+; last modified 20170110-1217
+; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
 #include "usual.h"
+.(
 
 ; *** uncomment for narrow (20-char) displays ***
 ;#define	NARROW	_NARROW
 
 ; *** constant definitions ***
 #define	BUFSIZ		16
-#define	CR			13
-#define	TAB			9
-#define	BS			8
-#define	BEL			7
 #define	COLON		58
 
 ; bytes per line in dumps 4 or 8/16
@@ -26,7 +23,31 @@
 #endif
 
 ; ##### include minimOS headers and some other stuff #####
--shell:
+mon_head:
+; *** header identification ***
+	BRK						; don't enter here! NUL marks beginning of header
+	.asc	"m", CPU_TYPE	; minimOS app!
+	.asc	"****", 13		; some flags TBD
+
+; *** filename and optional comment ***
+title:
+	.asc	"miniMoDA", 0, 0	; file name (mandatory) and empty comment
+
+; advance to end of header
+	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$6000			; time, 12.00
+	.word	$4A29			; date, 2017/1/9
+
+monSize	=	mon_end - mon_head -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	monSize		; filesize
+	.word	0				; 64K space does not use upper 16-bit
+; ##### end of minimOS executable header #####
+
+
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	ptr		= uz		; current address pointer, would be filled by NMI/BRK handler
@@ -77,21 +98,21 @@ open_da:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 
+; splash message just shown once
+	LDA #>splash		; address of splash message
+	LDY #<splash
+	JSR prnStr			; print the string!
+; *** store current stack pointer as it will be restored upon JSR/JMP ***
+; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
+get_sp:
+	TSX					; get current stack pointer
+	STX _sp				; store original value
 ; global variables
 ; will no longer set ptr, as should be done by BRK/NMI handler as _pc
 	LDA #4				; standard number of lines
 	STA lines			; set variable
 	STA siz				; also default transfer size
 	_STZA siz+1			; clear copy/transfer size MSB
-	LDA #>splash		; address of splash message
-	LDY #<splash
-	JSR prnStr			; print the string!
-
-; *** store current stack pointer as it will be restored upon JSR/JMP ***
-; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
-get_sp:
-	TSX					; get current stack pointer
-	STX _sp				; store original value
 
 ; *** begin things ***
 main_loop:
@@ -1151,12 +1172,9 @@ cmd_ptr:
 	.word	poweroff		; .Z
 
 ; *** strings and other data ***
-title:
-	.asc	"miniMoDA", 0
-
 splash:
-	.asc	"minimOS 0.5 monitor/debugger/assembler", CR
-	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
+	.asc	"minimOS 0.5.1 monitor/debugger/assembler", CR
+	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 
 err_mmod:
 	.asc	"***Missing module***", CR, 0
@@ -1220,3 +1238,5 @@ help_str:
 
 ; include opcode list
 #include "shell/data/opcodes.s"
+mon_end:
+.)
