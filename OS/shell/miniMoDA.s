@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b7
-; last modified 20170110-1217
+; last modified 20170110-1243
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -989,37 +989,17 @@ ph_n:
 ; ** end of inline library **
 
 ; * get input line from device at fixed-address buffer *
-; minimOS should have one of these in API...
 ; new movable buffer!
 getLine:
-	_STZA cursor			; reset variable
-gl_l:
-		LDY iodev			; use device
-		_KERNEL(CIN)		; get one character #####
-			BCS gl_l			; wait for something
-		LDA io_c			; get received
-		LDY cursor			; retrieve index
-		CMP #CR				; hit CR?
-			BEQ gl_cr			; all done then
-		CMP #BS				; is it backspace?
-		BNE gl_nbs			; delete then
-			CPY #0				; already 0?
-				BEQ gl_l			; ignore if so
-			DEC cursor			; reduce index
-			_BRA gl_echo		; resume operation
-gl_nbs:
-		CPY #BUFSIZ-1		; overflow?
-			BCS gl_l			; ignore if so
-		STA (bufpt), Y		; store into buffer
-		INC	cursor			; update index
-gl_echo:
-		JSR prnChar			; echo!
-		_BRA gl_l			; and continue
-gl_cr:
-	JSR prnChar			; newline
-	LDY cursor			; retrieve cursor!!!!!
-	LDA #0				; sorry, no STZ for indirect-indexed!
-	STA (bufpt), Y		; terminate string
+	LDY bufpt			; get buffer address
+	LDA bufpt+1			; likely 0!
+	STY str_pt			; set parameter
+	STA str_pt+1
+	_STZA str_pt+2		; to be safe, 24-bit
+	LDX #BUFSIZ-1		; max index
+	STX ln_siz			; set value
+	LDY iodev			; use device
+	_KERNEL(READLN)		; get line
 	RTS					; and all done!
 
 ; * get clean character from NEW buffer in A, (return) offset at Y *
