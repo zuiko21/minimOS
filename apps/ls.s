@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b4
-; last modified 20170110-0954
+; v0.5b5
+; last modified 20170110-1100
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -74,7 +74,7 @@ go_ls:
 
 ; get initial address
 	LDY #<ROM_BASE		; begin of ROM contents LSB
-	LDA #>ROM_BASE	; same for MSB *** note trick for volume header support!
+	LDA #>ROM_BASE		; same for MSB, will read volume header (zero size!)
 	STY rompt			; set local pointer
 	STA rompt+1			; internal pointer set
 
@@ -87,7 +87,7 @@ ls_nul:
 		LDY #7				; after type and size, a CR is expected
 		LDA (rompt), Y	; get eigth byte in header!
 		CMP #13				; was it a CR?
-		BNE ls_hok
+		BEQ ls_hok			; eeeeeeeeeeeeeeeeeeeeeeeeek
 			JMP ls_nfound		; if not, go away
 ls_hok:
 ; * print address in hex *
@@ -136,17 +136,17 @@ ls_type:
 		JSR prnStr
 		_BRA ls_size	; end line with file size
 ls_exec:
-		INY			; advance to CPU type (was 1)
+		INY				; advance to CPU type (was 1)
 		LDA (rompt), Y	; get it
 		LDX #20			; default type offset is like generic file
 		CMP #'N'		; NMOS?
 		BNE ls_nnmos
-			LDX #0		; offset for NMOS string
-			BEQ ls_cprn	; no need for BRA
+			LDX #0			; offset for NMOS string
+			BEQ ls_cprn		; no need for BRA
 ls_nnmos:
 		CMP #'B'		; plain 65C02?
 		BNE ls_ncmos
-			LDX #5		; offset for it
+			LDX #5			; offset for it
 			BNE ls_cprn
 ls_ncmos:
 		CMP #'R'		; Rockwell?
@@ -155,16 +155,16 @@ ls_ncmos:
 			BNE ls_cprn
 ls_nrock:
 		CMP #'V'		; 65816?
-		BNE ls_cprn	; if neither, unrecognised CPU
-			LDX #15		; offset for 65816
+		BNE ls_cprn		; if neither, unrecognised CPU
+			LDX #15			; offset for 65816
 ls_cprn:
-		TXA			; prepare to add offset
+		TXA				; prepare to add offset
 		CLC
 		ADC #<ls_cpus	; base offset
-		TAY			; will be LSB
+		TAY				; will be LSB
 		LDA #>ls_cpus	; base page
 		ADC #0			; propagate carry
-		JSR prnStr	; and print selected label
+		JSR prnStr		; and print selected label
 
 ; * print size, pages or KB *
 ls_size:
@@ -174,15 +174,17 @@ ls_size:
 		LDY #253		; offset for size in pages (max 64k!)
 		LDA (rompt), Y
 ; print pages/KB in decimal
-		CMP #4		; check whether below 1k
+		CMP #4			; check whether below 1k
 		BCS ls_kb
-			JSR h2c_num	; will not be over 3
-			LDA #'p'	; page suffix
-			BNE ls_next	; print suffix, CR and go for next, no need for BRA
+			JSR h2c_num		; will not be over 3
+			LDA #'p'		; page suffix
+			BNE ls_next		; print suffix, CR and go for next, no need for BRA
 ls_kb:
-		LSR			; divide by 4
+		LSR				; divide by 4
 		LSR
-; if C add one! rounded value ** TO DO **
+		BCC ls_nround	; if C, round up!
+			_INC
+ls_nround:
 ; print A in decimal and continue!
 		LDX #0		; decade counter
 lsb_div10:
@@ -279,15 +281,15 @@ splash:
 
 ls_cpus:
 	.asc	"NMOS", 0
-	.asc "'C02", 0
-	.asc "R65C", 0
-	.asc "'816", 0
+	.asc	"'C02", 0
+	.asc	"R65C", 0
+	.asc	"'816", 0
 
 ls_file:
-	.asc " -- ", 0
+	.asc	" -- ", 0
 
 lst_lsb:
-	.asc "00 ", 0
+	.asc	"00 ", 0
 
 ; ***** end of stuff *****
 lsEnd:				; ### for easy size computation ###
