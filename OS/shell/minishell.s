@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b4
-; last modified 20170109-1050
+; v0.5b5
+; last modified 20170110-0920
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -20,7 +20,7 @@
 shellHead:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE				; minimOS app!
+	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
@@ -31,8 +31,8 @@ title:
 	.dsb	shellHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6000			; time, 12.00
-	.word	$4A28			; date, 2017/1/8
+	.word	$4800			; time, 9.00
+	.word	$4A2A			; date, 2017/1/10
 
 shellSize	=	shellEnd - shellHead -256	; compute size NOT including header!
 
@@ -70,9 +70,9 @@ open_xsh:
 ; ##### end of minimOS specific stuff #####
 
 ; initialise stuff
-	LDA #>splash		; address of splash message
-	LDY #<splash
-	JSR prnStr			; print the string!
+;	LDA #>splash		; address of splash message
+;	LDY #<splash
+;	JSR prnStr			; print the string!
 ; *** begin things ***
 main_loop:
 		LDA #>prompt		; address of prompt message (currently fixed)
@@ -155,17 +155,17 @@ getLine:
 ; *** strings and other data ***
 
 splash:
-	.asc	"minimOS 0.5.1 shell", CR
-	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
+;	.asc	"minimOS 0.5.1 shell", CR
+;	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 
 prompt:
 	.asc	CR, "/sys/", 0
 
 xsh_err:
-	.asc	CR, "*** NOT executable ***", CR, 0
+	.asc	"*** NOT executable ***", CR, 0
 
 xsh_not:
-	.asc	CR, "Not found", CR, 0
+	.asc	"Not found", CR, 0
 
 ; ***** end of stuff *****
 shellEnd:				; ### for easy size computation ###

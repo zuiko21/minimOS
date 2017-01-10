@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1b6
+; v0.5.1b7
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170109-1309
+; last modified 20170110-0948
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -30,15 +30,15 @@
 kern_head:
 	BRK
 	.asc	"m", CPU_TYPE	; executable for testing TBD
-	.asc	"****", 13	; flags TBD
+	.asc	"****", 13		; flags TBD
+	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"kernel", 0	; filename
-	.asc	"0.5.1b3", 0	; version in comment
+	.asc	"minimOS 0.5.1b4", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$6800	; time, 13.00
-	.word	$4A28	; date, 2017/1/8
+	.word	$4800	; time, 9.00
+	.word	$4A2A	; date, 2017/1/10
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -400,16 +400,14 @@ dr_ok:					; *** all drivers inited ***
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
 ; new, show a splash message ever the kernel is restarted!
+	JSR ks_cr			; leading newline
 	LDY #<kern_splash	; get pointer
 	LDA #>kern_splash
 	STY str_pt			; set parameter
 	STA str_pt+1
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
-	LDA #CR				; newline
-	STA io_c
-	LDY #DEVICE
-	_KERNEL(COUT)		; print it
+	JSR ks_cr			; trailing newline
 
 ; ******************************
 ; **** launch monitor/shell ****
@@ -427,6 +425,14 @@ sh_exec:
 	JSR b_exec			; go for it!
 
 	JMP lock			; ...as the scheduler will detour execution
+
+; a quick way to print a newline on standard device
+ks_cr:
+	LDA #CR				; leading newline
+	STA io_c
+	LDY #DEVICE
+	_KERNEL(COUT)		; print it
+	RTS
 
 ; *** generic kernel routines, now in separate file 20150924 *** new filenames
 #ifndef		LOWRAM
@@ -472,15 +478,18 @@ st_prior:
 		_DR_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
 #endif
+; initialise stack EEEEEEK
+	LDX #$FF
+	TXS					; eeeeeeeeeek
+; push return address towards KILL routine
 	LDA #>sig_kill-1	; get routine MSB, corrected for RTS eeeeeeek
 	PHA
 	LDA #<sig_kill-1	; same for LSB
 	PHA
 	LDA #ZP_AVAIL		; eeeeeeek!
 	STA z_used			; otherwise SAFE will not work!
-; jump to code, is this OK? could initialise stack
+; jump to code!
 	JMP (ex_pt)
-
 
 ; SET_HNDL for single-task systems
 st_hndl:

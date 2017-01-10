@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1b3, must match kernel.s
+; v0.5.1b4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170109-1136
+; last modified 20170110-1020
 
 ; no way for standalone assembly...
 
@@ -515,8 +515,7 @@ ll_reset:
 	STA rh_scan+1		; internal pointer set
 ll_geth:
 ; ** check whether we are on a valid header!!! **
-		LDY #0				; first of all should be a NUL
-		LDA (rh_scan), Y	; get first byte in header
+		_LDAY(rh_scan)		; first of all should be a NUL
 			BNE ll_nfound		; link was lost, no more to scan
 		LDY #7				; after type and size, a CR is expected
 		LDA (rh_scan), Y	; get eigth byte in header!

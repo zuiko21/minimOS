@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b3
-; last modified 20170109-2240
+; v0.5b4
+; last modified 20170110-0954
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -29,14 +29,14 @@ lsHead:
 ; *** filename and optional comment ***
 	.asc	"ls", 0	; file name (mandatory)
 
-	.asc	"List ROM contents", 0				; comment
+	.asc	"Lists ROM contents", 0		; comment
 
 ; advance to end of header
 	.dsb	lsHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6800			; time, 13.00
-	.word	$4A29			; date, 2017/1/9
+	.word	$5000			; time, 10.00
+	.word	$4A2A			; date, 2017/1/10
 
 lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 
@@ -73,15 +73,15 @@ go_ls:
 ; ********************
 
 ; get initial address
-	LDA #<ROM_BASE		; begin of ROM contents LSB
-	STA rompt			; set local pointer
-	LDA #>ROM_BASE+1	; same for MSB *** note trick for volume header support!
+	LDY #<ROM_BASE		; begin of ROM contents LSB
+	LDA #>ROM_BASE	; same for MSB *** note trick for volume header support!
+	STY rompt			; set local pointer
 	STA rompt+1			; internal pointer set
 
 ls_geth:
 ; ** check whether we are on a valid header!!! **
 		_LDAY(rompt)	; get first byte in header, should be NUL
-		BEQ ls_nul
+		BEQ ls_nul		; eeeeeeeeeeeeeeeeeeeeeeeeeek
 			JMP ls_nfound		; link was lost, no more to scan
 ls_nul:
 		LDY #7				; after type and size, a CR is expected
