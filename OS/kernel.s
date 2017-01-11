@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1b7
+; v0.5.1b8
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170110-0948
+; last modified 20170111-0914
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -514,7 +514,7 @@ st_signal:
 	CPY #SIGTERM		; clean shutdown
 		BEQ sig_term
 	CPY #SIGKILL		; suicide, makes any sense?
-		BEQ sig_kill		; *** I do not know what to do in this case *** might release MEMORY, windows etc
+		BEQ sig_kill		; release MEMORY, windows etc
 sig_pid:
 	_DR_ERR(INVALID)	; unrecognised signal
 sig_term:
@@ -525,9 +525,17 @@ sig_term:
 	PHP					; as required by RTI
 	JMP (mm_term)		; execute handler, will return to sig_yield
 sig_kill:
-	LDY #0			; standard PID
-	JSR release		; free all memory eeeeeeeek
-	JMP sh_exec		; relaunch shell! eeeeek
+; first, free up all memory from previous task
+;	LDY #0				; standard PID
+;	JSR release			; free all memory eeeeeeeek
+; new, check whether a shutdown command was issued
+	LDA sd_flag			; some action pending?
+	BEQ rst_shell		; if not, just restart shell
+		LDY #PW_CLEAN		; otherwise, complete ordered shutdown
+		_KERNEL(SHUTDOWN)
+rst_shell:
+; at last, restart shell!
+	JMP sh_exec			; relaunch shell! eeeeek
 #endif
 
 ; *** new, sorted out code 20150124 ***

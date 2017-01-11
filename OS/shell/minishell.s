@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5b5
-; last modified 20170110-0920
+; last modified 20170111-0904
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -79,6 +79,8 @@ main_loop:
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
 		JSR getLine			; input a line
+		LDA buffer			; check whether empty line
+			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
 		LDY #<buffer		; just to make sure it is the LSB only
 		LDA #>buffer		; in zeropage, all MSBs are zero

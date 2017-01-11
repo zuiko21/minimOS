@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1b4, must match kernel.s
+; v0.5.1b5, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170110-1020
+; last modified 20170111-1020
 
 ; no way for standalone assembly...
 
@@ -871,17 +871,17 @@ sd_shut:
 sd_loop:
 ; get address index
 		LDA drivers_ad, X	; get address from original list
-		STA sysptr			; store temporarily
+		STA da_ptr			; store temporarily eeeeeek
 		LDA drivers_ad+1, X	; same for MSB
 			BEQ sd_done			; no more drivers to shutdown!
-		STA sysptr+1
+		STA da_ptr+1
 ; check here whether the driver was successfully installed, get ID as index for drv_opt/ipt
 		LDY #D_ID			; point to ID of driver
-		LDA (sysptr), Y		; get ID
+		LDA (da_ptr), Y		; get ID
 		ASL					; convert to index
 			BCC sd_next			; invalid device ID!
 		TAY					; use as index
-		LDA drv_opt, Y		; check LSB
+		LDA drv_opt, Y		; check LSB****revise
 		EOR drv_ipt, Y		; only the same if not installed...
 		BNE sd_msb			; but check MSB too!
 			INY					; point to MSB

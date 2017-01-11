@@ -1,7 +1,7 @@
 ; firmware for minimOS on Kowalski simulator
 ; v0.9b2
-; (c)2015-2016 Carlos J. Santisteban
-; last modified 20170109-1250
+; (c)2015-2017 Carlos J. Santisteban
+; last modified 20170111-0856
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -245,7 +245,7 @@ fw_gestalt:
 	_FINISH			; done (8)
 
 ; A10, poweroff etc
-; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
+; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
 ; C -> not implemented
 fw_power:
 	TYA					; get subfunction offset
@@ -253,11 +253,10 @@ fw_power:
 	_JMPX(fwp_func)		; select from jump table
 
 fwp_off:
-	BRK					; stop simulation!
-	.asc	"{OFF}", 0	; just in case is handled
+	_PANIC("{OFF}")		; just in case is handled
 
 fwp_susp:
-	_EXIT_OK			; just continue execution
+	_DR_OK				; just continue execution
 
 fwp_cold:
 	JMP ($FFFC)			; call 6502 vector, not really needed here but...
