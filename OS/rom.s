@@ -109,6 +109,8 @@ afterIO = $E000
 ; more software
 #include "shell/miniMoDA.s"
 	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
+#include "shell/monitor.s"
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/sigtest.s"
 ; ...could add more software up to $F800
 

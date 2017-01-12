@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b5
-; last modified 20170111-0904
+; v0.5b6
+; last modified 20170112-0958
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -11,8 +11,8 @@
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	iodev	= uz			; standard I/O device ##### minimOS specific #####
-	pid	= iodev+1		; storage for launched PID, cursor no longer needed
-	buffer	= pid+1		; storage for input line (BUFSIZ chars)
+	pid		= iodev+1		; storage for launched PID, cursor no longer needed
+	buffer	= pid+1			; storage for input line (BUFSIZ chars)
 ; ...some stuff goes here, update final label!!!
 	__last	= buffer+BUFSIZ	; ##### just for easier size check #####
 
@@ -31,10 +31,10 @@ title:
 	.dsb	shellHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4800			; time, 9.00
-	.word	$4A2A			; date, 2017/1/10
+	.word	$5000			; time, 10.00
+	.word	$4A2C			; date, 2017/1/12
 
-shellSize	=	shellEnd - shellHead -256	; compute size NOT including header!
+shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	shellSize		; filesize
@@ -111,7 +111,8 @@ xsh_ok:
 			STY pid			; save as will look for it later
 			_KERNEL(B_EXEC)		; run on that braid
 xsh_wait:
-				LDY pid			; retrieve launched PID
+				_KERNEL(B_YIELD)	; do not waste CPU time!
+				LDY pid				; retrieve launched PID
 				_KERNEL(B_STATUS)	; check its current state
 				CPY #BR_FREE		; until ended (relies on B_STATUS hiding BR_END!!!)
 				BNE xsh_wait		; do not interact until ended (no '&' yet)

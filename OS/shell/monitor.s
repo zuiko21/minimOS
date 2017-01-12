@@ -35,7 +35,7 @@ mon_head:
 	.word	$6000			; time, 12.00
 	.word	$4A29			; date, 2017/1/9
 
-monSize	=	mon_end - mon_head -256	; compute size NOT including header!
+-monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	monSize		; filesize

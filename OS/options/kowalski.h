@@ -44,7 +44,7 @@
 ROM_BASE	=	$C000	; enough for package
 
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$F800	; simple firmware expected on Kowalski simulator
+FW_BASE		=	$FC00	; simple firmware expected on Kowalski simulator
 
 
 ; ** I/O definitions **
