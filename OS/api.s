@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1b5, must match kernel.s
+; v0.5.1b6, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170111-1020
+; last modified 20170112-1110
 
 ; no way for standalone assembly...
 
@@ -715,8 +715,9 @@ readLN:
 	STY iol_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
+		JSR yield			; always useful!
 		LDY iol_dev			; use device
-		_KERNEL(CIN)		; get one character
+		JSR cin				; get one character
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
@@ -741,12 +742,12 @@ rl_nbs:
 		INC	rl_cur			; update index
 rl_echo:
 		LDY iol_dev			; retrieve device
-		_KERNEL(COUT)		; echo received character
+		JSR cout			; echo received character
 		_BRA rl_l			; and continue
 rl_cr:
 	LDA #CR				; newline
 	LDY iol_dev			; retrieve device
-	_KERNEL(COUT)		; print newline (ignoring errors)
+	JSR cout			; print newline (ignoring errors)
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string

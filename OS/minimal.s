@@ -1,8 +1,8 @@
 ; MINIMAL support for minimOS components
 ; on Kowalski's 6502 simulator
-; v0.9.1b6
-; (c)2016 Carlos J. Santisteban
-; last modified 20160921-1352
+; v0.9.2a1
+; (c)2016-2017 Carlos J. Santisteban
+; last modified 20170112-1111
 
 #include "usual.h"
 
@@ -32,7 +32,7 @@ canary:
 	BRK				; end execution
 ;************************ module under testing **********************************
 module:
-#include "shell/loader.s"		; here goes the code
+#include "shell/miniMoDA.s"		; here goes the code
 ;********************************************************************************
 	RTS				; just in case
 
@@ -101,6 +101,11 @@ str_loop:
 			INC str_pt+1		; page crossing!
 		BNE str_loop		; continue
 str_end:
+	_EXIT_OK
+
+; *** readln *** TO DO TO DO TO DO
+readln:
+	_STZA str_pt	; *****placeholder**********
 	_EXIT_OK
 
 ; *** shutdown ***
@@ -175,11 +180,12 @@ fw_kern:
 	.word	unimpl		; 22
 	.word	unimpl		; 24
 	.word	string		; STRING 26
-	.word	unimpl		; 28
+	.word	unimpl		; READLN 28
 	.word	unimpl		; 30
 	.word	unimpl		; 32
 	.word	unimpl		; 34
-	.word	shutdn		; SHUTDOWN 36
+	.word	unimpl		; 36
+	.word	shutdn		; SHUTDOWN 38
 
 ; filling for ready-to-blow ROM
 	.dsb	kernel_call-3-*, $FF
@@ -207,10 +213,10 @@ bad_call:
 	JMP shutdn			; valid so far
 
 ; filling for ready-to-blow ROM
-	.dsb	panic-*, $FF
+	.dsb	lock-*, $FF
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
-* = panic
+* = lock
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
