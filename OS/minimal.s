@@ -60,6 +60,7 @@ kow_err:
 kow_cin:
 	CPY #0			; default device?
 		BNE kow_err		; abort I/O otherwise
+kci_dir:
 	LDA IO_BASE+4	; get input from I/O window
 	BEQ kow_empty	; nothing available
 		STA io_c		; store result otherwise
@@ -103,10 +104,43 @@ str_loop:
 str_end:
 	_EXIT_OK
 
-; *** readln *** TO DO TO DO TO DO
+; *** readln ***
 readln:
-	_STZA str_pt	; *****placeholder**********
-	_EXIT_OK
+	CPY #0			; default device?
+		BNE kow_err		; abort I/O otherwise
+		LDY #0			; reset index
+rl_l:
+		JSR kci_dir			; get one character
+		BCC rl_rcv			; got something
+			CPY #EMPTY			; otherwise is just waiting?
+		BEQ rl_l			; continue then
+			LDA #0
+			_STAX(str_pt)		; if any other error, terminate string
+			RTS					; and return whatever error
+rl_rcv:
+		CMP #CR				; hit CR?
+			BEQ rl_cr			; all done then
+		CMP #BS				; is it backspace?
+		BNE rl_nbs			; delete then
+			TYA					; check index
+				BEQ rl_l			; ignore if already zero
+			DEY					; otherwise reduce index
+			_BRA rl_echo		; and resume operation
+rl_nbs:
+		CPY ln_siz			; overflow?
+			BCS rl_l			; ignore if so
+		STA (str_pt), Y		; store into buffer
+		INY					; update index
+rl_echo:
+		LDA io_c
+		JSR kco_dir			; echo received character
+		_BRA rl_l			; and continue
+rl_cr:
+	LDA #CR				; newline
+	JSR kco_dir			; print newline (ignoring errors)
+	LDA #0				; no STZ indirect indexed
+	STA (str_pt), Y		; terminate string
+	_EXIT_OK			; and all done!
 
 ; *** shutdown ***
 shutdn:
