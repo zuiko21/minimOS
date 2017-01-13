@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1a13, should match kernel16.s
-; (c) 2016 Carlos J. Santisteban
-; last modified 20161223-0911
+; v0.5.1b1, should match kernel16.s
+; (c) 2016-2017 Carlos J. Santisteban
+; last modified 20170113-0902
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -752,6 +752,7 @@ readLN:
 	STY iol_dev			; preset device ID!
 	STZ rl_cur			; reset variable
 rl_l:
+		_KERNEL(YIELD)		; always useful
 		LDY iol_dev			; use device
 		_KERNEL(CIN)		; get one character
 		BCC rl_rcv			; got something
@@ -772,7 +773,7 @@ rl_rcv:
 			DEC rl_cur			; otherwise reduce index
 			BRA rl_echo			; and resume operation
 rl_nbs:
-		CPX ln_siz			; overflow?
+		CPY ln_siz			; overflow? eeeeeeeeeeeek
 			BCS rl_l			; ignore if so
 		STA [str_pt], Y		; store into buffer
 		INC	rl_cur			; update index
@@ -1105,6 +1106,7 @@ k_vec:
 	.word	su_poke		; write protected addresses
 	.word	su_peek		; read protected addresses
 	.word	string		; prints a C-string
+	.word	readLN		; buffered input, INSERTED 20170113
 	.word	su_sei		; disable interrupts, aka dis_int
 	.word	su_cli		; enable interrupts (not needed for 65xx) aka en_int
 	.word	set_fg		; enable frequency generator (VIA T1@PB7)
