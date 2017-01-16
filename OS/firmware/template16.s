@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.5.1a4
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170116-0950
+; last modified 20170116-0958
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -222,6 +222,7 @@ fw_sn_chk:
 		CMP fw_magic, X			; compare against reversed string
 		BEQ fw_sn_ok			; no problem this far...
 			_DR_ERR(CORRUPT)		; ...or invalid NMI handler
+fw_sn_ok:
 		INY						; try next one
 		DEX
 		BPL fw_sn_chk			; until all done
