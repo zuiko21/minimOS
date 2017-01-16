@@ -7,11 +7,16 @@ boot:
 ; init
 	LDX #0
 loop:
-		LDA splash, X
-			BEQ lock
-		PHX
-		JSR $FFEE
-		PLX
+		JSR $c0bf	; input?
+			TAY
+			BEQ loop
+;		LDA splash, X
+;			BEQ lock
+;		PHX
+		JSR $c0c2
+		LDA #'!'
+		JSR $c0c2
+;		PLX
 		INX
 		BRA loop
 lock:

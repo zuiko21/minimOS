@@ -2,7 +2,7 @@
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170116-0856
+; last modified 20170116-1037
 
 ; *** set conditional assembly ***
 
@@ -45,7 +45,7 @@ FW_BASE		=	$FC00	; simple firmware expected on BBC simulator
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-IO_BASE		=	$FE00	; as expected on real BBC
+IO_BASE		=	$C000	; as per EhBASIC I/O
 
 ; missing hardware declarations...
 ; * VIA 65(C)22 Base address, machine dependent *

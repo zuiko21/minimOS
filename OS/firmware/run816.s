@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9b1
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170116-0959
+; last modified 20170116-1040
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -100,7 +100,7 @@ res_sec:
 
 ; ** just before booting, print an exclamation mark for testing! **
 	LDA #'!'
-	JSR $FFEE			; direct print!
+	JSR $c0c2			; direct print!
 
 ; *** firmware ends, jump into the kernel ***
 start_kernel:

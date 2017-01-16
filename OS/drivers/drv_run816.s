@@ -1,7 +1,7 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
 ; v0.9b1
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170116-0855
+; last modified 20170116-1039
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -37,18 +37,18 @@ kow_cout:
 	CMP #13			; carriage return?
 	BNE kow_ncr		; if so, should generate CR+LF
 		LDA #10			; LF first
-		JSR $FFEE		; print it
+		JSR $c0c2		; print it
 		LDA #13			; back to original CR
 kow_ncr:
-	JSR $FFEE		; print it
+	JSR $c0c2		; print it
 kow_rts:
 	_DR_OK
 
 ; *** input *** TO DO TO DO TO DO
 kow_cin:
-;	JSR $FFE0		; will this work???
-;	BCS kow_empty	; nothing available
-;		STA io_c		; store result otherwise
-;		_DR_OK
+	JSR $c0bf		; will this work???
+	BCS kow_empty	; nothing available
+		STA io_c		; store result otherwise
+		_DR_OK
 kow_empty:
 	_DR_ERR(EMPTY)		; nothing yet
