@@ -1,28 +1,43 @@
-; more-or-less generic firmware for minimOS·16
-; v0.5.1a4
-; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170116-0950
+; firmware for minimOS on run65816 BBC simulator
+; v0.9b1
+; (c)2017 Carlos J. Santisteban
+; last modified 20170116-0914
 
 #define		FIRMWARE	_FIRMWARE
 
+; in case of standalone assembly
 #include "usual.h"
-
-* = FW_BASE			; this will be page-aligned!
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
-	.asc 0, "mV", 13					; standard system file wrapper, new 20161010, experimental type
-	.asc "boot", 0						; standard filename
-	.asc "65816 0.5.1a4 firmware for "	; machine description as comment
+	.asc	0, "m", CPU_TYPE, "****", CR	; standard system file wrapper, new 20160309
+	.asc	"boot", 0						; mandatory filename for firmware
+fw_splash:
+	.asc	"0.9b1 firmware for "
+; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
-	.dsb	fw_start + $100 - *, $FF	; generate padding including end of linked list
+; advance to end of header
+	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$4800			; time, 9.00
+	.word	$4A30			; date, 2017/	SEC					; emulation mode for a moment (2+2)
+
+fwSize	=	$10000 - fw_start -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	fwSize			; filesize
+	.word	0				; 64K space does not use upper 16-bit
+; *** end of standard header ***
+
+; ********************
 ; *** cold restart ***
+; ********************
 ; basic init
 reset:
-	SEI				; cold boot, best assume nothing (2)
+	SEI				; cold boot (2) not needed for simulator?
 	CLD				; just in case, a must for NMOS (2)
 ; * this is in case a 65816 is being used, but still compatible with all *
 	SEC				; would set back emulation mode on C816
@@ -31,18 +46,6 @@ reset:
 ; * end of 65816 specific code *
 	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
-; disable all interrupt sources
-	LDA #$7F		; disable all interrupts (2+4)
-	STA VIA_J + IER	; *** this is for single VIA systems ***
-
-; and optionally check for VIA presence
-#ifdef	SAFE
-	LDA VIA_J + IER	; check VIA presence, NEW 20150118 (4)
-	CMP #$80		; should read $80 (2)
-	BEQ via_ok		; panic otherwise! (slight modification 20150121 and 0220) (3/2)
-		JMP lock		; no other way to tell the world... (3)
-via_ok:
-#endif
 
 ; as this firmware should be 65816-only, check for its presence or nothing!
 ; derived from the work of David Empson, Oct. '94
@@ -65,28 +68,14 @@ fw_cpuOK:
 ; it can be assumed 65816 from this point on
 
 ; *** optional firmware modules ***
-; optional boot selector
-#include "firmware/modules/bootoff.s"
-
-; ***continue power-on self-test***
 post:
+
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
-; some systems might copy ROM-in-RAM and continue at faster speed!
-;#include "firmware/modules/rominram.s"
-
-; startup beep
-#include "firmware/modules/beep16.s"	; typical 816 standard beep
-
 ; SRAM test
-#include "firmware/modules/ramtest.s"
+;#include "firmware/modules/ramtest.s"
 
-; *** VIA initialisation (and stop beeping) ***
-	LDA #%11000010		; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
-	STA VIA_J + PCR
-	LDA #%01000000		; T1 cont, no PB7, no SR, no latch (so far) (2+4)
-	STA VIA_J + ACR
 ; *** set default CPU type ***
 	LDA #'V'			; 65816 only (2)
 	STA fw_cpu			; store variable (4)
@@ -95,36 +84,29 @@ post:
 	LDA #kernel			; get full address (3)
 	STA fw_warm			; store in sysvars (5)
 
-; *** maybe this is the place for final interrupt setup *** 20150605
-; first of all, compute Timer 1 division factor, out from options.h 20160407
-	LDA #IRQ_FREQ		; interrupts per second
-	STA irq_freq		; store speed... 
+	LDA #IRQ_FREQ	; interrupts per second
+	STA irq_freq	; store speed... 
 
-T1_DIV = PHI2/IRQ_FREQ-2
-
-	LDA	#T1_DIV			; set IRQ frequency divisor LSB, still in 16-bit (3)
-	STA VIA_J + T1CL	; put value into latches (will start counting!) (5)
 	LDX #4				; max WORD offset in uptime seconds AND ticks, assume contiguous (2)
 res_sec:
 		STZ ticks, X		; reset word (5)
 		DEX					; next word backwards (2+2)
 		DEX
 		BPL res_sec			; zero is included
-	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
-	STX VIA_J + IER
+;	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
+;	STX VIA_J + IER
 
 	.as: .xs: SEP #$30	; all back to 8-bit, just in case, might be removed if no remote boot is used (3)
 
-; *** optional network booting ***
-; might modify the contents of fw_warm
--remote_boot:
-;#include "firmware/modules/netboot.s"
+; ** just before booting, print an exclamation mark for testing! **
+	LDA #'!'
+	JSR $FFEE			; direct print!
 
 ; *** firmware ends, jump into the kernel ***
 start_kernel:
 	SEC					; emulation mode for a moment (2+2)
 	XCE
-	JMP (fw_warm)		; (5)
+	JMP (fw_warm)		; (6)
 
 ; *** vectored NMI handler with magic number ***
 nmi:
@@ -234,7 +216,6 @@ fw_sn_chk:
 	STA fw_nmi+1
 	_DR_OK					; done (8)
 
-
 ; A6, patch single function
 ; kerntab <- address of code
 ; Y <- function to be patched
@@ -263,7 +244,7 @@ fw_gestalt:
 	LDA himem		; get pages of kernel SRAM (4)
 	STA zpar		; store output (3)
 	PHP				; keep sizes (3)
-	.al: REP #$20	; ** 16-bit memory **
+	REP #$20		; ** 16-bit memory **
 	STZ zpar+2		; no bankswitched RAM yet (4)
 	STZ zpar3+2		; same for string address (4)
 	LDA #fw_mname	; get string pointer (3)
@@ -275,33 +256,32 @@ fw_gestalt:
 	STA zpar2+2
 	_DR_OK			; done (8)
 
-
 ; A10, poweroff etc
-; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
+; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
 ; C -> not implemented
 fw_power:
-	TYX					; get subfunction offset as index
-	JMP (fwp_func, X)	; select from jump table
+	TYA					; get subfunction offset
+	TAX					; use as index
+	_JMPX(fwp_func)		; select from jump table
 
-fwp_off:	; ******** CONTINUE HERE ********* CONTINUE HERE *********
-#include "firmware/modules/poweroff.s"
+fwp_off:
+	_PANIC("{OFF}")		; just in case is handled
 
 fwp_susp:
-#include "firmware/modules/suspend.s"
+	_DR_OK				; just continue execution
 
 fwp_cold:
-	JMP ($FFFC)			; call 6502 vector, as firmware start will initialize as needed
+	JMP ($FFFC)			; call 6502 vector, not really needed here but...
 
-; sub-function jump table
+; sub-function jump table (eeeek)
 fwp_func:
-	.word	fwp_off		; poweroff	+FW_OFF
 	.word	fwp_susp	; suspend	+FW_STAT
-	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	kernel		; shouldn't use this, just in case
+	.word	fwp_cold	; coldboot	+FW_COLD
+	.word	fwp_off		; poweroff	+FW_OFF
 
 ; *** administrative jump table ***
-; might go elsewhere as it may grow, especially on NMOS
-; WILL CHANGE ORDER
+; PLEASE CHANGE ORDER ASAP
 fw_admin:
 	.word	fw_install
 	.word	fw_s_isr
@@ -310,50 +290,23 @@ fw_admin:
 	.word	fw_gestalt
 	.word	fw_power
 
-; these already OK for 65816!
-; *** minimOS·16 BRK handler *** might go elsewhere
-brk_hndl:		; label from vector list
-; much like the ISR start
-	.al: .xl: REP #$30		; status already saved, but save register contents in full (3)
-	PHA						; save registers (3x4)
-	PHX
-	PHY
-	JSR brk_handler			; standard label from IRQ
-	.al: .xl: REP #$30		; just in case (3)
-	PLY						; restore status and return
-	PLX
-	PLA
-	RTI
-
-; *** minimOS·16 kernel call interface (COP) ***
-cop_hndl:		; label from vector list
-	JMP (fw_table, X)		; the old fashioned way
-
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kernel_call-*, $FF
 #endif
 
-; *** minimOS·65 function call WRAPPER ($FFC0) ***
+; *** minimOS function call primitive ($FFC0) ***
 * = kernel_call
-	CLC			; pre-clear carry
-	COP $FF		; wrapper on 816 firmware!
-	RTS			; return to caller
+	_JMPX(fw_table)	; macro for NMOS compatibility (6)
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	admin_call-*, $FF
 #endif
 
-; *** administrative meta-kernel call primitive ($FFD0) ***
+; *** administrative meta-kernel call primitive ($FFD8) ***
 * = admin_call
-	JMP (fw_admin, X)		; takes 5 clocks
-
-
-; *** vectored IRQ handler ***
-; might go elsewhere, especially on NMOS systems
-irq:
-	JMP (fw_isr)	; vectored ISR (6)
+	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -365,21 +318,18 @@ irq:
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
-	NOP					; padding for reserved C816 vectors
 
-; *** 65C816 ROM vectors ***
-* = $FFE4				; should be already at it
-	.word	cop_hndl	; native COP		@ $FFE4
-	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
-	.word	nmi			; native ABORT		@ $FFE8, not yet supported
-	.word	nmi			; native NMI		@ $FFEA, unified this far
-	.word	$FFFF		; reserved			@ $FFEC
-	.word	irq			; native IRQ		@ $FFEE, unified this far
-	.word	$FFFF		; reserved			@ $FFF0
-	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4
-	.word	$FFFF		; reserved			@ $FFF6
-	.word	nmi			; emulated ABORT 	@ $FFF8
+; no 65816 vectors on simulator!
+
+; *** vectored IRQ handler ***
+irq:
+	JMP (fw_isr)	; vectored ISR (6)
+
+; filling for ready-to-blow ROM
+#ifdef	ROM
+	.dsb	$FFFA-*, $FF
+#endif
+
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
 	.word	nmi			; (emulated) NMI	@ $FFFA
