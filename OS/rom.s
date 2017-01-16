@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.5.1b4, unified with kernel 20160412
+; v0.5.1b5, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170109-1258
+; last modified 20170116-1127
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -51,7 +51,11 @@ romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 
 ; *** the GENERIC kernel starts here ***
 kernel = * + 256	; skip the header!
+#ifndef	C816
 #include "kernel.s"
+#else
+#include "kernel16.s"
+#endif
 	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 
 ; *** I/O device drivers ***
@@ -61,7 +65,7 @@ drv_file:
 	.asc	"aD"						; driver pack file TBD
 	.asc	"****", CR					; flags TBD
 	.asc	"drivers", 0				; filename
-	.asc	"simple Kowalski I/O", 0	; comment
+	.asc	"driver package", 0			; comment
 
 	.dsb	drv_file + $F8 - *, $FF		; padding
 

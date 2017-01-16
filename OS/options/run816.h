@@ -45,7 +45,7 @@ FW_BASE		=	$FC00	; simple firmware expected on BBC simulator
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-IO_BASE		=	$C000	; as per EhBASIC I/O
+IO_BASE		=	$8000	; ???????as per EhBASIC I/O
 
 ; missing hardware declarations...
 ; * VIA 65(C)22 Base address, machine dependent *

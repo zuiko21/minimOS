@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1a12
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161130-1037
+; v0.5.1b1
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 20170116-1213
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -26,6 +26,24 @@
 #endif
 .text
 #endif
+
+; *** standard header, at least for testing ***
+kern_head:
+	BRK
+	.asc	"mV"			; executable for testing TBD
+	.asc	"****", 13		; flags TBD
+	.asc	"kernel", 0		; filename
+kern_splash:
+	.asc	"minimOS-16 0.5.1b1", 0	; version in comment
+
+	.dsb	kern_head + $F8 - *, $FF	; padding
+
+	.word	$6000	; time, 12.00
+	.word	$4A30	; date, 2017/1/16
+
+kern_siz = kern_end - kern_head - $FF
+
+	.word	kern_siz, 0	; kernel size excluding header 
 
 ; **************************************************
 ; *** kernel begins here, much like a warm reset ***
@@ -279,13 +297,21 @@ dr_ok:					; *** all drivers inited ***
 ; do not forget setting local devices via B_EXEC
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
+; new, show a splash message ever the kernel is restarted!
+	JSR ks_cr			; leading newline
+	LDA #kern_splash	; get pointer to string
+	STA str_pt			; set parameter
+	LDY #DEVICE			; eeeeeek
+	_KERNEL(STRING)		; print it!
+	JSR ks_cr			; trailing newline
+
 
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
-;	_KERNEL(B_FORK)		; reserve first execution braid
-	LDX #MM_FORK		; internal multitasking index (2)
-	JSR (drv_opt-MM_FORK, X)	; direct to driver skipping the kernel, note deindexing! (8)
+	_KERNEL(B_FORK)		; reserve first execution braid
+;	LDX #MM_FORK		; internal multitasking index (2)
+;	JSR (drv_opt-MM_FORK, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	CLI					; enable interrupts, this is the right time
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
@@ -294,27 +320,27 @@ dr_ok:					; *** all drivers inited ***
 	STA ex_pt			; set execution full address
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
-;	_KERNEL(B_EXEC)		; go for it!
-	LDX #MM_EXEC		; internal multitasking index (2)
-	JSR (drv_opt-MM_EXEC, X)	; direct to driver skipping the kernel, note deindexing! (8)
-;	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** might be fine for 6502 too
-	LDX #MM_YIELD		; internal multitasking index (2)
-	JMP (drv_opt)		; do not care about present status as will never return (5)
+	_KERNEL(B_EXEC)		; go for it!
+;	LDX #MM_EXEC		; internal multitasking index (2)
+;	JSR (drv_opt-MM_EXEC, X)	; direct to driver skipping the kernel, note deindexing! (8)
+	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** might be fine for 6502 too
+;	LDX #MM_YIELD		; internal multitasking index (2)
+;	JMP (drv_opt)		; do not care about present status as will never return (5)
 ;	JMP lock			; ...as the scheduler will detour execution
 
-; place here the shell code, must end in FINISH macro
-shell:
-#include "shell/SHELL"
+; a quick way to print a newline on standard device
+ks_cr:
+	LDY #CR				; leading newline, 8-bit
+	STY io_c
+	LDY #DEVICE
+	_KERNEL(COUT)		; print it
+	RTS
 
 ; *** generic kernel routines, now in separate file 20150924 *** new filenames
-#ifndef	LOWRAM
 #ifndef		C816
 #include "api.s"
 #else
 #include "api16.s"
-#endif
-#else
-#include "api_lowram.s"
 #endif
 
 ; *** default single-task driver, new here 20161109 ***
@@ -335,6 +361,8 @@ st_tdlist:
 	.word	st_prior	; priorize braid, jump to it at once, really needed?
 
 ; ** single-task management routines **
+
+.as:.xs					; all of these will be called from API!
 
 ; B_FORK for non-multitasking systems
 ; GET_PID for non-multitasking systems
@@ -373,6 +401,7 @@ st_hndl:
 	LDA ex_pt			; get pointer *** only bank zero addresses supported this far
 	STA mm_term			; store in single variable (from unused table)
 	_DR_OK
+.as
 
 ; B_STATUS for single-task systems
 st_status:
@@ -419,3 +448,9 @@ k_isr:
 #endif
 
 ; default NMI-ISR is on firmware!
+kern_end:		; for size computation
+
+; *** place here the shell code, must end in FINISH macro, currently with header ***
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
+shell:
+#include "shell/SHELL"

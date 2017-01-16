@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9b1
+; v0.9b2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170116-1040
+; last modified 20170116-1123
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -10,10 +10,10 @@
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
-	.asc	0, "m", CPU_TYPE, "****", CR	; standard system file wrapper, new 20160309
-	.asc	"boot", 0						; mandatory filename for firmware
+	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
+	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9b1 firmware for "
+	.asc	"0.9b2 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -23,7 +23,7 @@ fw_mname:
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$4800			; time, 9.00
-	.word	$4A30			; date, 2017/	SEC					; emulation mode for a moment (2+2)
+	.word	$4A30			; date, 2017/1/16
 
 fwSize	=	$10000 - fw_start -256	; compute size NOT including header!
 
@@ -46,6 +46,8 @@ reset:
 ; * end of 65816 specific code *
 	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
+LDA #'&'
+JSR $c0c2
 
 ; as this firmware should be 65816-only, check for its presence or nothing!
 ; derived from the work of David Empson, Oct. '94
@@ -61,11 +63,23 @@ reset:
 	TYX					; TYX, 65802 instruction will clear Z, NOP on all 65C02s will not
 	BNE fw_cpuOK		; Branch only on 65802/816
 cpu_bad:
+LDA #'?'
+JSR $c0c2
 		JMP lock			; cannot handle BRK, alas
 fw_cpuOK:
 #endif
 
 ; it can be assumed 65816 from this point on
+; debug code, direct print some string
+	LDX #0				; reset index
+fws_loop:
+		LDA fw_splash, X	; get char
+			BEQ post			; no more to print
+		PHX					; keep reg (not really needed)
+		JSR $c0c2			; Eh output
+		PLX
+		INX					; next char
+		BRA fws_loop
 
 ; *** optional firmware modules ***
 post:
@@ -291,46 +305,77 @@ fw_admin:
 	.word	fw_gestalt
 	.word	fw_power
 
+; these already OK for 65816!
+; *** minimOS·16 BRK handler *** might go elsewhere
+brk_hndl:		; label from vector list
+; much like the ISR start
+	.al: .xl: REP #$30		; status already saved, but save register contents in full (3)
+	PHA						; save registers (3x4)
+	PHX
+	PHY
+;	JSR brk_handler			; standard label from IRQ
+	.al: .xl: REP #$30		; just in case (3)
+	PLY						; restore status and return
+	PLX
+	PLA
+	RTI
+
+; *** minimOS·16 kernel call interface (COP) ***
+cop_hndl:		; label from vector list
+	JMP (fw_table, X)		; the old fashioned way
+
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kernel_call-*, $FF
 #endif
 
-; *** minimOS function call primitive ($FFC0) ***
+; *** minimOS·65 function call WRAPPER ($FFC0) ***
 * = kernel_call
-	_JMPX(fw_table)	; macro for NMOS compatibility (6)
+	CLC			; pre-clear carry
+	COP #$FF	; wrapper on 816 firmware!
+	RTS			; return to caller
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	admin_call-*, $FF
 #endif
 
-; *** administrative meta-kernel call primitive ($FFD8) ***
+; *** administrative meta-kernel call primitive ($FFD0) ***
 * = admin_call
-	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+	JMP (fw_admin, X)		; takes 5 clocks
+
+
+; *** vectored IRQ handler ***
+; might go elsewhere, especially on NMOS systems
+irq:
+	JMP (fw_isr)	; vectored ISR (6)
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	lock-*, $FF
 #endif
 
+
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = lock
 	SEC					; unified procedure 20150410, was CLV
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
+	NOP					; padding for reserved C816 vectors
 
-; no 65816 vectors on simulator!
-
-; *** vectored IRQ handler ***
-irq:
-	JMP (fw_isr)	; vectored ISR (6)
-
-; filling for ready-to-blow ROM
-#ifdef	ROM
-	.dsb	$FFFA-*, $FF
-#endif
-
+; *** 65C816 ROM vectors ***
+* = $FFE4				; should be already at it
+	.word	cop_hndl	; native COP		@ $FFE4
+	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
+	.word	nmi			; native ABORT		@ $FFE8, not yet supported
+	.word	nmi			; native NMI		@ $FFEA, unified this far
+	.word	$FFFF		; reserved			@ $FFEC
+	.word	irq			; native IRQ		@ $FFEE, unified this far
+	.word	$FFFF		; reserved			@ $FFF0
+	.word	$FFFF		; reserved			@ $FFF2
+	.word	nmi			; emulated COP		@ $FFF4
+	.word	$3412		; reserved			@ $FFF6
+	.word	nmi			; emulated ABORT 	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
 	.word	nmi			; (emulated) NMI	@ $FFFA

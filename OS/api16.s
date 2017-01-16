@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b1, should match kernel16.s
+; v0.5.1b2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170113-0902
+; last modified 20170116-1129
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -752,7 +752,7 @@ readLN:
 	STY iol_dev			; preset device ID!
 	STZ rl_cur			; reset variable
 rl_l:
-		_KERNEL(YIELD)		; always useful
+		_KERNEL(B_YIELD)	; always useful
 		LDY iol_dev			; use device
 		_KERNEL(CIN)		; get one character
 		BCC rl_rcv			; got something
