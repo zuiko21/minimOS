@@ -1,6 +1,6 @@
-; minimOS 0.5.1a5 MACRO definitions
+; minimOS 0.5.1a6 MACRO definitions
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170108-1555
+; last modified 20170117-1128
 
 ; *** standard addresses ***
 
@@ -81,6 +81,7 @@ FILE_DEV	=	130
 
 ; *** usual ASCII constants ***
 #define		CR	13
+#define		LF	10
 #define		BS	8
 #define		TAB	9
 #define		BEL	7

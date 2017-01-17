@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170116-1129
+; last modified 20170117-1201
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -375,7 +375,7 @@ ma_nobad:
 ma_aok:
 	PLA					; retrieve size
 ; make room for new entry... if not exactly the same size
-	CMP ma_rs			; compare this block with requested size
+	CMP ma_rs			; str_devcompare this block with requested size
 	BEQ ma_updt			; was same size, will not generate new entry
 		JSR ma_adv			; make room otherwise
 ma_updt:
@@ -507,7 +507,7 @@ open_w:
 	.xs: SEP #$10		; *** 8-bit register, just in case ***
 	LDA w_rect			; asking for some size? includes BOTH bytes
 	BEQ ow_no_window	; wouldn't do it
-		_ERR(NO_RSRC)
+		_ERR(NO_RSRC)str_dev
 ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
 ;	EXIT_OK on subsequent system calls!
@@ -653,6 +653,7 @@ su_peek:
 ; calls cout, but now directly at driver code ***
 ; included mutex 20161130 eeeeeeeeeeeeeek
 
+; ***************REVISE REVISE*********** BREAKS SOMETHING**********
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	.as: .xs: SEP #$30	; *** standard register size ***

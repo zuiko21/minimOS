@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9b2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170116-1123
+; last modified 20170117-1149
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -46,8 +46,6 @@ reset:
 ; * end of 65816 specific code *
 	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
-LDA #'&'
-JSR $c0c2
 
 ; as this firmware should be 65816-only, check for its presence or nothing!
 ; derived from the work of David Empson, Oct. '94
@@ -63,23 +61,15 @@ JSR $c0c2
 	TYX					; TYX, 65802 instruction will clear Z, NOP on all 65C02s will not
 	BNE fw_cpuOK		; Branch only on 65802/816
 cpu_bad:
-LDA #'?'
-JSR $c0c2
+		LDA #'?'	; *** some debug code for run65816, just in case ***
+		JSR $c0c2	; *** direct print via run65816 ********************
 		JMP lock			; cannot handle BRK, alas
 fw_cpuOK:
 #endif
 
 ; it can be assumed 65816 from this point on
-; debug code, direct print some string
-	LDX #0				; reset index
-fws_loop:
-		LDA fw_splash, X	; get char
-			BEQ post			; no more to print
-		PHX					; keep reg (not really needed)
-		JSR $c0c2			; Eh output
-		PLX
-		INX					; next char
-		BRA fws_loop
+	CLC					; set NATIVE mode eeeeeeeeeeek
+	XCE					; still with 8-bit registers
 
 ; *** optional firmware modules ***
 post:
@@ -112,9 +102,20 @@ res_sec:
 
 	.as: .xs: SEP #$30	; all back to 8-bit, just in case, might be removed if no remote boot is used (3)
 
-; ** just before booting, print an exclamation mark for testing! **
-	LDA #'!'
-	JSR $c0c2			; direct print!
+; ******* debug code, direct print some string *******
+	LDX #0				; reset index
+fws_loop:
+		LDA fw_splash, X	; get char
+			BEQ fws_cr			; no more to print
+		PHX					; keep reg (not really needed)
+		JSR $c0c2			; Eh output
+		PLX
+		INX					; next char
+		BRA fws_loop
+fws_cr:
+	LDA #LF				; trailing CR, needed by console!
+	JSR $c0c2			; direct print
+; ******* end of debug code **************************
 
 ; *** firmware ends, jump into the kernel ***
 start_kernel:
@@ -181,9 +182,10 @@ std_nmi:
 ; A0, install jump table
 ; kerntab <- address of supplied jump table
 fw_install:
-	LDY #0				; reset index (2)
 	_ENTER_CS			; disable interrupts! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
+	.xs: SEP #$10		; ** just in case, 8-bit indexes ** (3)
+	LDY #0				; reset index (2)
 fwi_loop:
 		LDA (kerntab), Y	; get word from table as supplied (6)
 		STA fw_table, Y		; copy where the firmware expects it (5)
@@ -210,6 +212,7 @@ fw_s_isr:
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected
 fw_s_nmi:
+	.as: .xs: SEP #$30		; *** standard size ***
 #ifdef	SAFE
 	LDX #3					; offset to reversed magic string
 	LDY #0					; reset supplied pointer

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b1
+; v0.5.1b2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170116-1213
+; last modified 20170117-1151
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -34,7 +34,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.5.1b1", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b2", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -63,8 +63,8 @@ warm:
 #ifndef		DOWNLOAD
 	LDY #<k_vec		; get table address, nicer way (2+2)
 	LDA #>k_vec
-	STY ex_pt		; store parameter (3+3)
-	STA ex_pt+1
+	STY kerntab		; store parameter (3+3)
+	STA kerntab+1
 	_ADMIN(INSTALL)	; copy jump table (14...)
 #endif
 
@@ -289,7 +289,7 @@ dr_ok:					; *** all drivers inited ***
 	STA mm_term			; store in new system variable
 #endif
 
-; startup code, revise ASAP
+; startup code
 
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
@@ -304,7 +304,6 @@ dr_ok:					; *** all drivers inited ***
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
-
 
 ; ******************************
 ; **** launch monitor/shell ****
@@ -331,10 +330,14 @@ dr_ok:					; *** all drivers inited ***
 ; a quick way to print a newline on standard device
 ks_cr:
 	LDY #CR				; leading newline, 8-bit
+ksc_pry:
 	STY io_c
 	LDY #DEVICE
 	_KERNEL(COUT)		; print it
 	RTS
+debug:
+	LDY #'!'			; *** debug mark ****
+	BRA ksc_pry			; *** go print it ***
 
 ; *** generic kernel routines, now in separate file 20150924 *** new filenames
 #ifndef		C816
