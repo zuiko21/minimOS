@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b2
+; v0.5.1b3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170117-1151
+; last modified 20170118-0944
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -38,8 +38,8 @@ kern_splash:
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$6000	; time, 12.00
-	.word	$4A30	; date, 2017/1/16
+	.word	$5000	; time, 10.00
+	.word	$4A32	; date, 2017/1/18
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -50,41 +50,39 @@ kern_siz = kern_end - kern_head - $FF
 ; **************************************************
 
 warm:
-	CLI				; interrupts off, just in case
-	CLD				; do not assume anything
+#ifdef	SAFE
+	SEI					; interrupts off, just in case
+	CLD					; do not assume anything
 	SEC
-	XCE				; set emulation mode for a moment! will reset to 8-bit registers
+	XCE					; set emulation mode for a moment! will reset to 8-bit registers
+#endif
 ; assume interrupts off, binary mode and 65C816 in emulation mode!
 	CLC
-	XCE				; enter native mode! still 8 bit regs, though
+	XCE					; enter native mode! still 8 bit regs, though
 
 ; worth going 16-bit for the install calls? beware of firmware calls!
+	.al: REP #$20		; *** 16-bit memory most of the time ***
+
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
-	LDY #<k_vec		; get table address, nicer way (2+2)
-	LDA #>k_vec
-	STY kerntab		; store parameter (3+3)
-	STA kerntab+1
-	_ADMIN(INSTALL)	; copy jump table (14...)
+	LDA #k_vec			; get table address, nicer way (3)
+	STA kerntab			; store parameter (4)
+	_ADMIN(INSTALL)		; copy jump table, will respect register sizes
 #endif
 
 ; install ISR code (as defined in "isr/irq.s" below)
-	LDY #<k_isr		; get address, nicer way (2+2)
-	LDA #>k_isr
-	STY ex_pt		; no need to know about actual vector location (3)
-	STA ex_pt+1
-	_ADMIN(SET_ISR)	; install routine (14...)
+	LDA #k_isr			; get address, nicer way (3)
+	STA ex_pt			; no need to know about actual vector location (4)
+	_ADMIN(SET_ISR)		; install routine, will respect sizes
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
-
-	STZ sd_flag		; this is important to be clear (PW_STAT) or set as proper error handler
 
 ; *****************************
 ; *** memory initialisation ***
 ; *****************************
-	.al: REP #$20	; *** 16-bit memory most of the time ***
-	LDY #FREE_RAM	; dirty trick no longer allowed...
+	LDY #FREE_RAM	; dirty trick no longer allowed... should be zero
 	STY ram_stat	; as it is the first entry, no index needed
+	STY sd_flag		; only if FREE_RAM is zero, STZ otherwise *** this is important to be clear (PW_STAT) or set as proper error handler
 	LDY #END_RAM	; also for end-of-memory marker
 	STY ram_stat+2	; note offset for interleaved array!
 	LDX #>user_sram	; beginning of available ram, as defined... in rom.s
@@ -161,7 +159,7 @@ dr_phys:
 			CMP drv_opt, X		; check whether in use (5)
 				BNE dr_busy			; pointer was not empty (2/3)
 			CMP drv_ipt, X		; now check input, just in case (5)
-			BEQ dr_empty		; it is OK to set (3/2)
+				BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
 			JMP dr_abort		; already in use (3)
 dr_empty:
@@ -267,7 +265,7 @@ dr_call:
 	LDA (da_ptr), Y		; destination pointer MSB (6)
 	DEC					; one less for RTS (2)
 	PHA					; push it (4)
-	.as: SEP #$20		; make sure driver is called in 8-bit size (3)
+	.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
 	RTS					; actual CORRECTED jump (6)
 
 dr_ok:					; *** all drivers inited ***
@@ -281,7 +279,8 @@ dr_ok:					; *** all drivers inited ***
 
 #ifndef		MULTITASK
 ; in case no I/O lock arrays were initialised...
-	STZ cin_mode		; single flag for non-multitasking systems
+	LDX #0				; beware of 16-bit memory!
+	STX cin_mode		; single flag for non-multitasking systems
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
@@ -308,26 +307,27 @@ dr_ok:					; *** all drivers inited ***
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
-	_KERNEL(B_FORK)		; reserve first execution braid
-;	LDX #MM_FORK		; internal multitasking index (2)
-;	JSR (drv_opt-MM_FORK, X)	; direct to driver skipping the kernel, note deindexing! (8)
-	CLI					; enable interrupts, this is the right time
+sh_exec:
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
 .al						; I do not know why is this needed
-	LDA #shell			; pointer to integrated shell!
+	LDA #shell+256		; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
+	_KERNEL(B_FORK)		; reserve first execution braid
+;	LDX #MM_FORK		; internal multitasking index (2)
+;	JSR (drv_opt-MM_FORK, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	_KERNEL(B_EXEC)		; go for it!
 ;	LDX #MM_EXEC		; internal multitasking index (2)
 ;	JSR (drv_opt-MM_EXEC, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** might be fine for 6502 too
 ;	LDX #MM_YIELD		; internal multitasking index (2)
 ;	JMP (drv_opt)		; do not care about present status as will never return (5)
-;	JMP lock			; ...as the scheduler will detour execution
+here:
+	BRA here			; ...as the scheduler will detour execution
 
-; a quick way to print a newline on standard device
+; a quick way to print a newline (or a debugging '!') on standard device
 ks_cr:
 	LDY #CR				; leading newline, 8-bit
 ksc_pry:
@@ -385,18 +385,26 @@ st_prior:
 		_DR_ERR(NO_RSRC)	; no way without multitasking
 exec_st:
 #endif
+; initialise stack EEEEEEK
+	LDA #1				; standard stack page
+	XBA					; use as MSB
+	LDA #$FF			; initial stack pointer
+	TCS					; eeeeeeeeeek
 ; this should now work for both 02 and 816 apps
+; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 	CMP #'V'			; check whether native 816 code (ending in RTL)
 ; new approach, reusing 816 code!
-	BNE exec_02			; skip return address for 8-bit code
+;	BNE exec_02			; skip return address for 8-bit code
 ; ** alternative to self-generated code for long indirect call **
 		PHK					; push program bank address, actually zero (3)
-		PEA exec_ret-1		; push corrected return address (now long thanks to above instruction) (5)
 exec_02:
-	JMP [ex_pt]			; forthcoming RTL will get back just here, but 6502 RTS will go back to caller COUT
-exec_ret:
-	RTS					; keep possible error code (6)
+	PEA sig_kill-1		; push corrected return address (5)
+; set context space!
+	LDA #ZP_AVAIL		; eeeeeeek!
+	STA z_used			; otherwise SAFE will not work!
+; jump to code!
+	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
 
 ; SET_HNDL for single-task systems
 st_hndl:
@@ -404,7 +412,7 @@ st_hndl:
 	LDA ex_pt			; get pointer *** only bank zero addresses supported this far
 	STA mm_term			; store in single variable (from unused table)
 	_DR_OK
-.as
+.as						; back to regular API call
 
 ; B_STATUS for single-task systems
 st_status:
@@ -421,23 +429,32 @@ st_signal:
 	CPY #SIGTERM		; clean shutdown
 		BEQ sig_term
 	CPY #SIGKILL		; suicide, makes any sense?
-		BEQ sig_kill
+		BEQ sig_kill		; release MEMORY, windows etc
 sig_pid:
 	_DR_ERR(INVALID)	; unrecognised signal
 sig_term:
 	PHK					; needed for new interface as will end in RTI!
-	PEA sig_kill		; correct return address
+	PEA st_yield		; correct return address
 	PHP					; eeeeeeeeeeeek
-	LDA mm_stbnk		; single task handler might be anywhere
+	LDA mm_stbnk		; *** single task handler might be anywhere ***
 	PHA					; push bank address eeeeeeeeeeeek
-	LDA mm_term+1		; get handler MSB
-	PHA					; into stack
-	LDA mm_term			; same for LSB
-	PHA
+	PEA mm_term			; push handler address (minus bank)
 	PHP					; as required
-	RTI					; actual JUMP, RTS will get as indicated
-sig_kill:				; *** I do not know what to do in this case *** might release windows etc
-	_DR_OK				; generic exit, but check label above
+	RTI					; actual JUMP, will return to sig_yield
+sig_kill:
+; since it could arrive here from the end of a task, restore register sizes!
+	.as: .xs: SEP #$30	; *** standard sizes ***
+; then, free up all memory from previous task
+;	LDY #0				; standard PID
+;	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+; new, check whether a shutdown command was issued
+	LDA sd_flag			; some action pending?
+	BEQ rst_shell		; if not, just restart shell
+		LDY #PW_CLEAN		; otherwise, complete ordered shutdown
+		_KERNEL(SHUTDOWN)
+rst_shell:
+; at last, restart shell!
+	JMP sh_exec			; relaunch shell! eeeeek
 #endif
 
 ; *** new, sorted out code 20150124 ***

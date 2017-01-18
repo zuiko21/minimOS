@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1b7, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170113-0900
+; last modified 20170118-1035
 
 ; no way for standalone assembly...
 
@@ -687,9 +687,9 @@ str_loop:
 str_cont:
 		STA io_c			; store output character for COUT (3)
 		JSR str_call		; indirect subroutine call (6...)
+			BCS str_err			; error from driver, but keeping Y eeeeeek^2
 		_PLY				; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
-			BCS str_err			; error from driver, but keeping Y eeeeeek
 		BNE str_loop		; still within same page
 	INC str_pt+1		; otherwise increase, parameter has changed! will it have to restore parameter?
 	_BRA str_loop		; continue, will check for termination later (3)

@@ -192,7 +192,7 @@ dr_phys:
 			CMP drv_opt+1, X	; check whether in use (4)
 				BNE dr_busy			; pointer was not empty (2/3)
 			CMP drv_ipt+1, X	; now check input, just in case (4)
-			BEQ dr_empty		; it is OK to set (3/2)
+				BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
 				JMP dr_abort		; already in use (3)
 dr_empty:
@@ -423,8 +423,8 @@ sh_exec:
 	JSR b_fork			; reserve first execution braid
 	CLI					; enable interrupts *** this is dangerous!
 	JSR b_exec			; go for it!
-
-	JMP lock			; ...as the scheduler will detour execution
+here:
+	_BRA here			; ...as the scheduler will detour execution
 
 ; a quick way to print a newline on standard device
 ks_cr:
@@ -486,6 +486,7 @@ exec_st:
 	PHA
 	LDA #<sig_kill-1	; same for LSB
 	PHA
+; set context space!
 	LDA #ZP_AVAIL		; eeeeeeek!
 	STA z_used			; otherwise SAFE will not work!
 ; jump to code!
@@ -520,7 +521,7 @@ sig_pid:
 sig_term:
 	LDA #>st_yield		; get routine MSB eeeeeeek
 	PHA
-	LDA #<st_yield			; same for LSB
+	LDA #<st_yield		; same for LSB
 	PHA
 	PHP					; as required by RTI
 	JMP (mm_term)		; execute handler, will return to sig_yield
@@ -532,7 +533,7 @@ sig_kill:
 	LDA sd_flag			; some action pending?
 	BEQ rst_shell		; if not, just restart shell
 		LDY #PW_CLEAN		; otherwise, complete ordered shutdown
-		_KERNEL(SHUTDOWN)
+		_KERNEL(SHUTDOWN)	; *** could use direct call???
 rst_shell:
 ; at last, restart shell!
 	JMP sh_exec			; relaunch shell! eeeeek

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b2, should match kernel16.s
+; v0.5.1b3, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170117-1201
+; last modified 20170118-1035
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -727,7 +727,10 @@ str_phys:
 str_loop:
 		PHY					; save just in case COUT destroys it (3)
 		LDA (str_pt), Y		; get character from string, new approach (5)
-			BEQ str_exit		; exit when terminated! (2/3)
+		BNE str_cont		; not terminated! (3/2)
+			PLA					; otherwise discard saved Y (4) eeeeeeeek
+			BRA str_exit		; and go away!
+str_cont:
 		STA io_c			; store output character for COUT (3)
 		LDX str_dev			; get driver pointer position (3)
 		JSR (drv_opt, X)	; go at stored pointer (...6)
