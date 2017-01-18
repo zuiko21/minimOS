@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
 ; v0.5b5
-; last modified 20170110-1100
+; last modified 20170118-1105
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -18,12 +18,7 @@
 lsHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"m"				; minimOS app!
-#ifdef	NMOS
-	.asc	"N"				; NMOS version
-#else
-	.asc	"B"				; basic CMOS version
-#endif
+	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
@@ -41,8 +36,7 @@ lsHead:
 lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.byt	<lsSize		; filesize LSB
-	.byt	>lsSize		; filesize MSB
+	.word	lsSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; ##### end of minimOS executable header #####
 

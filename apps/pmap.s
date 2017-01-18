@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5b2
-; last modified 20170107-2209
+; last modified 20170118-1104
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -19,19 +19,14 @@
 pmapHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"m"				; minimOS app!
-#ifdef	NMOS
-	.asc	"N"				; NMOS version
-#else
-	.asc	"B"				; basic CMOS version
-#endif
+	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
 	.asc	"pmap", 0	; file name (mandatory)
 
 	.asc	"Display memory map", CR				; comment
-	.asc "8-bit minimOS 0.5.1 only!!!", 0
+	.asc	"8-bit minimOS 0.5.1 only!!!", 0
 
 ; advance to end of header
 	.dsb	pmapHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
@@ -43,8 +38,7 @@ pmapHead:
 pmapSize	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.byt	<pmapSize		; filesize LSB
-	.byt	>pmapSize		; filesize MSB
+	.word	pmapSize		; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; ##### end of minimOS executable header #####
 
