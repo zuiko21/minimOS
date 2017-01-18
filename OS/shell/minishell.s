@@ -79,6 +79,7 @@ main_loop:
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
 		JSR getLine			; input a line
+jsr debug
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
