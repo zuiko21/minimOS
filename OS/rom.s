@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.5.1b5, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170116-1127
+; last modified 20170120-1345
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -109,7 +109,7 @@ emptySize	=	afterIO - empty_head -256	; compute size NOT including header!
 afterIO = $E000
 	.dsb	afterIO - *, $FF	; skip I/O and page alignment!!!
 
-* = afterIO
+;* = afterIO
 ; more software
 #include "shell/miniMoDA.s"
 	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek

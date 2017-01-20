@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b7
-; last modified 20170110-1243
+; last modified 20170120-1343
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -23,7 +23,7 @@
 #endif
 
 ; ##### include minimOS headers and some other stuff #####
-mon_head:
+mmd_head:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
 	.asc	"m", CPU_TYPE	; minimOS app!
@@ -34,17 +34,17 @@ title:
 	.asc	"miniMoDA", 0, 0	; file name (mandatory) and empty comment
 
 ; advance to end of header
-	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6000			; time, 12.00
-	.word	$4A29			; date, 2017/1/9
+	.word	$6000		; time, 12.00
+	.word	$4A29		; date, 2017/1/9
 
-monSize	=	mon_end - mon_head -256	; compute size NOT including header!
+	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	monSize		; filesize
-	.word	0				; 64K space does not use upper 16-bit
+	.word	mmdsize		; filesize
+	.word	0			; 64K space does not use upper 16-bit
 ; ##### end of minimOS executable header #####
 
 
@@ -1218,5 +1218,5 @@ help_str:
 
 ; include opcode list
 #include "shell/data/opcodes.s"
-mon_end:
+mmd_end:
 .)

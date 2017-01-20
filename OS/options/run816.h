@@ -7,7 +7,7 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
 ; hard to multitask on this...
 
@@ -102,5 +102,5 @@ SS_SPEED =	30		; 15625 bps @ 1 MHz
 ; could be PHI2/31250-2
 
 ; ** speed code in fixed-point format, new 20150129 **
-SPEED_CODE =	$10		; 1 MHz system
+SPEED_CODE =	$20		; 1 MHz system
 ; could be computed as PHI2*16/1000000

@@ -1,7 +1,7 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9b3
+; v0.9b4
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170120-0845
+; last modified 20170120-1413
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -46,9 +46,12 @@ kow_rts:
 
 ; *** input ***
 kow_cin:
-jsr debug
 	JSR $c0bf		; will this work???
 ;	BCS kow_empty	; nothing available
+		CMP #LF			; linux-like LF?
+		BNE kow_emit	; do not process
+			LDA #CR			; or convert to CR
+kow_emit:
 		STA io_c		; store result otherwise
 		_DR_OK
 kow_empty:

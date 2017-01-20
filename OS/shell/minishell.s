@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b6
-; last modified 20170112-0958
+; v0.5b7
+; last modified 20170120-1434
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -147,7 +147,7 @@ getLine:
 	LDA #>buffer		; MSB, should be zero already!
 	STY str_pt			; set kernel parameter
 	STA str_pt+1		; clear MSB, no need for STZ
-	STA str_pt+2		; also mandatory 24-bit addressing
+	_STZA str_pt+2		; also mandatory 24-bit addressing
 	LDX #BUFSIZ-1		; maximum offset
 	STX ln_siz
 	LDY iodev			; use standard device

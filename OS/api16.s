@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b4, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170120-0911
+; last modified 20170120-1438
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -756,12 +756,35 @@ readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 
 	STY iol_dev			; preset device ID!
+lda #'&'
+sta io_c
+ldy iol_dev
+_KERNEL(COUT)
 	STZ rl_cur			; reset variable
 rl_l:
 ;		_KERNEL(B_YIELD)	; always useful
-		LDY iol_dev			; use device
-		_KERNEL(CIN)		; get one character
-bcs rl_l
+espera:
+ldy iol_dev
+_KERNEL(CIN)
+bcs espera
+
+lda io_c
+pha
+
+lda #'>'
+sta io_c
+ldy iol_dev
+_KERNEL(COUT)
+;ldy iol_dev
+;_KERNEL(STRING)
+
+pla
+sta io_c
+ldy iol_dev
+_KERNEL(COUT)
+clc
+;		LDY iol_dev			; use device
+;		_KERNEL(CIN)		; get one character
 /*		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
@@ -795,6 +818,16 @@ rl_cr:
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA [str_pt], Y		; terminate string
+lda #'*'
+sta io_c
+ldy iol_dev
+_KERNEL(COUT)
+ldy iol_dev
+_KERNEL(STRING)
+lda #CR
+sta io_c
+ldy iol_dev
+_KERNEL(COUT)
 	_EXIT_OK			; and all done!
 
 ; *** SU_SEI, disable interrupts ***
