@@ -1,7 +1,7 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9b2
+; v0.9b3
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170116-1039
+; last modified 20170120-0845
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -29,7 +29,7 @@
 
 ; *** info string ***
 debug_info:
-	.asc	"Console I/O driver for run65816 BBC simulator, v0.9b1", 0
+	.asc	"Console I/O driver for run65816 BBC simulator, v0.9b3", 0
 
 ; *** output ***
 kow_cout:
@@ -46,8 +46,9 @@ kow_rts:
 
 ; *** input ***
 kow_cin:
+jsr debug
 	JSR $c0bf		; will this work???
-	BCS kow_empty	; nothing available
+;	BCS kow_empty	; nothing available
 		STA io_c		; store result otherwise
 		_DR_OK
 kow_empty:

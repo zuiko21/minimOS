@@ -79,7 +79,6 @@ main_loop:
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
 		JSR getLine			; input a line
-jsr debug
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
@@ -146,12 +145,12 @@ prnStr:
 getLine:
 	LDY #<buffer		; get buffer address in zp
 	LDA #>buffer		; MSB, should be zero already!
-	STY str_pt		; set kernel parameter
+	STY str_pt			; set kernel parameter
 	STA str_pt+1		; clear MSB, no need for STZ
 	STA str_pt+2		; also mandatory 24-bit addressing
 	LDX #BUFSIZ-1		; maximum offset
 	STX ln_siz
-	LDY iodev		; use standard device
+	LDY iodev			; use standard device
 	_KERNEL(READLN)		; get string
 	RTS					; and all done!
 

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b3, should match kernel16.s
+; v0.5.1b4, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170118-1035
+; last modified 20170120-0911
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -150,6 +150,7 @@ ci_port:
 
 cio_nfound:
 	LDY #N_FOUND		; unknown device
+	SEC					; eeeeeeeeeeek
 	BRA cio_unlock		; notify error code AND unlock device!
 
 ; ** EVENT management **
@@ -753,18 +754,20 @@ str_abort:
 
 readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
+
 	STY iol_dev			; preset device ID!
 	STZ rl_cur			; reset variable
 rl_l:
-		_KERNEL(B_YIELD)	; always useful
+;		_KERNEL(B_YIELD)	; always useful
 		LDY iol_dev			; use device
 		_KERNEL(CIN)		; get one character
-		BCC rl_rcv			; got something
+bcs rl_l
+/*		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
 			LDA #0				; no indirect STZ
 			STA [str_pt]		; if any other error, terminate string at the beginning
-			JMP cio_callend		; and return whatever error
+			JMP cio_callend		; and return whatever error*/
 rl_rcv:
 		LDA io_c			; get received
 		LDY rl_cur			; retrieve index
@@ -784,7 +787,7 @@ rl_nbs:
 rl_echo:
 		LDY iol_dev			; retrieve device
 		_KERNEL(COUT)		; echo received character
-		_BRA rl_l			; and continue
+		BRA rl_l			; and continue
 rl_cr:
 	LDA #CR				; newline
 	LDY iol_dev			; retrieve device

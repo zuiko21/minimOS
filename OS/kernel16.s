@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170118-0944
+; last modified 20170120-0841
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -297,6 +297,7 @@ dr_ok:					; *** all drivers inited ***
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 ; new, show a splash message ever the kernel is restarted!
+; assume 16-bit memory
 	JSR ks_cr			; leading newline
 	LDA #kern_splash	; get pointer to string
 	STA str_pt			; set parameter
