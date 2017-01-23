@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170123-1012
+; last modified 20170123-1112
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -576,7 +576,6 @@ ll_geth:
 		INY					; reset scanning index (now at name position, was @7)
 ll_nloop:
 			LDA [rh_scan], Y	; get character in found name
-jsr $c0c2
 			CMP [str_pt], Y		; compare with what we are looking for
 				BNE ll_nthis		; difference found
 			ORA [str_pt], Y		; otherwise check whether at EOL
@@ -585,26 +584,19 @@ jsr $c0c2
 			BNE ll_nloop		; will not do forever, no need for BRA
 ll_nthis:
 ; not this one, correct local pointer for the next header
-lda#'*'
-jsr $c0c2
-lda#10
-jsr $c0c2
+		LDY #252			; relative offset to size eeeeeeeek
+		LDA [rh_scan], Y	; get LSB
+		TAX					; keep it
+		INY					; advance to number of pages!
 		.al: REP #$20		; *** back to 16-bit memory for a moment ***
-		LDY #253			; relative offset to number of pages to skip
 		LDA [rh_scan], Y	; get number of pages to skip (24-bit pointer)
+		TXY					; check that LSB
+		BEQ ll_nwad			; if page is not full...
+			INC					; ...advance to next boundary EEEEEEEEK
+ll_nwad:
 		SEC					; ...plus header itself! eeeeeeek
 		ADC rh_scan+1		; add to previous value
 		STA rh_scan+1		; update pointer
-; ******SOMETHING OF THE ABOVE IS WRONG, OR BAD KERNEL HEADER??????
-php
-.as:sep#$20
-lda rh_scan+1
-jsr $c0c2
-lda rh_scan+2
-jsr $c0c2
-lda#'~'
-jsr $c0c2
-plp
 		BCC ll_geth			; inspect new header (if no wrap! 24-bit addressing)
 ll_nfound:
 	_ERR(N_FOUND)		; all was scanned and the query was not found
@@ -774,36 +766,16 @@ readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 
 	STY iol_dev			; preset device ID!
-lda #'&'
+lda #'&';why is this print needed?????
 sta io_c
 ldy iol_dev
 _KERNEL(COUT)
 	STZ rl_cur			; reset variable
 rl_l:
-;		_KERNEL(B_YIELD)	; always useful
-espera:
-ldy iol_dev
-_KERNEL(CIN)
-bcs espera
-
-lda io_c
-pha
-
-lda #'>'
-sta io_c
-ldy iol_dev
-_KERNEL(COUT)
-;ldy iol_dev
-;_KERNEL(STRING)
-
-pla
-sta io_c
-ldy iol_dev
-_KERNEL(COUT)
-clc
-;		LDY iol_dev			; use device
-;		_KERNEL(CIN)		; get one character
-/*		BCC rl_rcv			; got something ****THIS IS DEFINITELY WRONG
+		_KERNEL(B_YIELD)	; always useful
+		LDY iol_dev			; use device
+		_KERNEL(CIN)		; get one character
+		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
 			LDA #0				; no indirect STZ
@@ -836,16 +808,6 @@ rl_cr:
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA [str_pt], Y		; terminate string
-/*lda #'*'
-sta io_c
-ldy iol_dev
-_KERNEL(COUT)
-ldy iol_dev
-_KERNEL(STRING)
-lda #CR
-sta io_c
-ldy iol_dev
-_KERNEL(COUT)*/
 	_EXIT_OK			; and all done!
 
 ; *** SU_SEI, disable interrupts ***
@@ -1128,6 +1090,27 @@ rls_next:
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
+
+; ****debug code*****
+hexdebug:		; print A in hex
+.as:sep#$20
+	PHA			; keep whole value
+	LSR			; shift right four times (just the MSB)
+	LSR
+	LSR
+	LSR
+	JSR hxd_ascii	; convert and print this cipher
+	PLA			; retrieve full value
+	AND #$0F	; keep just the LSB... and repeat procedure
+hxd_ascii:
+	CMP #10		; will be a letter?
+	BCC hxd_num	; just a number
+		ADC #6			; convert to letter (plus carry)
+hxd_num:
+	ADC #'0'	; convert to ASCII (carry is clear)
+	JSR $c0c2	; direct print
+	RTS
+; *******************
 
 ; other data and pointers
 sd_tab:					; check order in abi.h!

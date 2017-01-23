@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170123-1000
+; last modified 20170123-1109
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -41,7 +41,7 @@ kern_splash:
 	.word	$5000	; time, 10.00
 	.word	$4A32	; date, 2017/1/18
 
-kern_siz = kern_end - kern_head - $FF
+kern_siz = kern_end - kern_head - 256
 
 	.word	kern_siz, 0	; kernel size excluding header 
 
@@ -82,7 +82,6 @@ warm:
 ; *****************************
 	LDY #FREE_RAM	; dirty trick no longer allowed... should be zero
 	STY ram_stat	; as it is the first entry, no index needed
-	STY sd_flag		; only if FREE_RAM is zero, STZ otherwise *** this is important to be clear (PW_STAT) or set as proper error handler
 	LDY #END_RAM	; also for end-of-memory marker
 	STY ram_stat+2	; note offset for interleaved array!
 	LDX #>user_sram	; beginning of available ram, as defined... in rom.s
@@ -106,6 +105,7 @@ ram_init:
 ; 16-bit revamp 20161013
 
 	LDX #0				; reset driver index (2)
+	STX sd_flag			; *** this is important to be clear (PW_STAT) or set as proper error handler
 	STX dpoll_mx		; reset all indexes (4+4+4)
 	STX dreq_mx
 	STX dsec_mx
