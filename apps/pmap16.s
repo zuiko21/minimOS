@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b1
-; last modified 20170123-1320
+; last modified 20170123-1342
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -214,7 +214,7 @@ prnStr:
 splash:
 	.asc	"pmap16 0.5.1", CR
 	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR
-	.asc "Addr. PID  Size", CR, 0		; header
+	.asc	" Addr.  PID  Size", CR, 0		; header
 
 ; format as follows
 ; 0123456789012345-789 (16 & 20 char)
