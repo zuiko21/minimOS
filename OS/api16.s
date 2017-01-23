@@ -664,7 +664,6 @@ su_peek:
 ; calls cout, but now directly at driver code ***
 ; included mutex 20161130 eeeeeeeeeeeeeek
 
-; ***************REVISE REVISE*********** BREAKS SOMETHING**********
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	.as: .xs: SEP #$30	; *** standard register size ***

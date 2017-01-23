@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9b2
+; v0.9b3
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170117-1149
+; last modified 20170123-1149
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -13,7 +13,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9b2 firmware for "
+	.asc	"0.9b3 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -22,10 +22,10 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4800			; time, 9.00
-	.word	$4A30			; date, 2017/1/16
+	.word	$6000			; time, 12.00
+	.word	$4A37			; date, 2017/1/23
 
-fwSize	=	$10000 - fw_start -256	; compute size NOT including header!
+fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	fwSize			; filesize
@@ -284,12 +284,13 @@ fw_power:
 
 fwp_off:
 	_PANIC("{OFF}")		; just in case is handled
-
-fwp_susp:
-	_DR_OK				; just continue execution
+	.byt	$42			; WDM will show up on BBC emulator... and cold boot!
 
 fwp_cold:
 	JMP ($FFFC)			; call 6502 vector, not really needed here but...
+
+fwp_susp:
+	_DR_OK				; just continue execution
 
 ; sub-function jump table (eeeek)
 fwp_func:

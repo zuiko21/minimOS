@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170123-1109
+; last modified 20170123-1209
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -34,12 +34,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.5.1b2", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b4", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$5000	; time, 10.00
-	.word	$4A32	; date, 2017/1/18
+	.word	$6000	; time, 12.00
+	.word	$4A37	; date, 2017/1/23
 
 kern_siz = kern_end - kern_head - 256
 
@@ -271,11 +271,11 @@ dr_call:
 dr_ok:					; *** all drivers inited ***
 	PLX					; discard stored X, beware of 16-bit memory!
 
-	.al					; as outside dr_call routine will be doing 16-bit memory!
-
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
+
+	.al					; as outside dr_call routine will be doing 16-bit memory!
 
 #ifndef		MULTITASK
 ; in case no I/O lock arrays were initialised...
@@ -311,7 +311,7 @@ dr_ok:					; *** all drivers inited ***
 sh_exec:
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
-.al						; I do not know why is this needed
+	.al: REP #$20		; will be needed anyway upon restart
 	LDA #shell+256		; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
 	LDA #DEVICE*257		; revise as above *****
@@ -319,7 +319,7 @@ sh_exec:
 	_KERNEL(B_FORK)		; reserve first execution braid
 ;	LDX #MM_FORK		; internal multitasking index (2)
 ;	JSR (drv_opt-MM_FORK, X)	; direct to driver skipping the kernel, note deindexing! (8)
-	CLI					; should enable interrupts somewhen... eeeeeeeek
+	CLI					; should enable interrupts at some point... eeeeeeeek
 	_KERNEL(B_EXEC)		; go for it!
 ;	LDX #MM_EXEC		; internal multitasking index (2)
 ;	JSR (drv_opt-MM_EXEC, X)	; direct to driver skipping the kernel, note deindexing! (8)
