@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc13
-; last modified 20170123-1339
+; v0.5.1b1
+; last modified 20170123-1420
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -26,13 +26,14 @@ mon_head:
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
-	.asc	"monitor", 0, 0	; file name (mandatory) and empty comment
+	.asc	"monitor", 0	; file name (mandatory)
+	.asc	"816-savvy", 0	; comment
 
 ; advance to end of header
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6800		; time, 13.00
+	.word	$7000		; time, 14.00
 	.word	$4A37		; date, 2017/1/23
 
 	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
@@ -52,8 +53,12 @@ mon_head:
 	_a		= _pc+2		; A register
 	_x		= _a+1		; X register
 	_y		= _x+1		; Y register
-	_sp		= _y+1		; stack pointer
-	_psr	= _sp+1		; status register
+	_sp		= _y+1		; stack pointer (will take 2 bytes in 816 version)
+#ifdef	C816
+	_psr	= _sp+2		; status register, leave space as above
+#else
+	_psr	= _sp+1		; status register, regular 8-bit size
+#endif
 	cursor	= _psr+1	; storage for X offset
 	buffer	= cursor+1		; storage for input line (BUFSIZ chars)
 	tmp		= buffer+BUFSIZ	; temporary storage
@@ -103,9 +108,16 @@ open_mon:
 
 ; *** store current stack pointer as it will be restored upon JSR/JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
+; specially tailored code for 816-savvy version!
 get_sp:
+#ifdef	C816
+	.xl: REP #$10		; *** 16-bit index ***
+#endif
 	TSX					; get current stack pointer
 	STX _sp				; store original value
+#ifdef	C816
+	.xs: .as: SEP #$30	; *** regular size ***
+#endif
 
 ; *** begin things ***
 main_loop:
@@ -167,10 +179,15 @@ call_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
 ; restore stack pointer... and forget return address (will jump anyway)
-;	LDX _sp				; get stored value
-;	TXS					; set new pointer...
+
+#ifdef	C816
+	.xl: REP #$10		; *** essential 16-bit index ***
+#endif
+	LDX _sp				; get stored value
+	TXS					; set new pointer...
 ; SP restored
 	JSR do_call			; set regs and jump!
+.as: .xs
 ; ** should record actual registers here **
 	STA _a
 	STX _x
@@ -178,20 +195,25 @@ call_address:
 	PHP					; get current status
 	PLA					; A was already saved
 	STA _psr
-;	PLA					; discard main loop return address EEEEEEEEK
-;	PLA
-;	JMP get_sp			; hopefully context is OK
-	RTS
+	PLA					; discard main loop return address EEEEEEEEK
+	PLA
+	JMP get_sp			; hopefully context is OK
 
 jump_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
 ; restore stack pointer...
+#ifdef	C816
+	.xl: REP #$10		; *** essential 16-bit index ***
+#endif
 	LDX _sp				; get stored value
 	TXS					; set new pointer...
 ; SP restored
 ; restore registers and jump
 do_call:
+#ifdef	C816
+	.xs: .as: SEP #$30	; *** make certain about standard size ***
+#endif
 	LDX _x				; retrieve registers
 	LDY _y
 	LDA _psr			; status is different
@@ -271,7 +293,7 @@ ex_npb:
 
 set_SP:
 	JSR fetch_byte		; get operand in A
-	STA _sp				; set stack pointer
+	STA _sp				; set stack pointer (LSB only)
 	RTS
 
 help:
@@ -658,9 +680,9 @@ err_bad:
 
 regs_head:
 #ifdef	NARROW
-	.asc	"PC: A:X:Y:S:NV-bDIZC", CR, 0	; for 20-char devices
+	.asc	"PC: A:X:Y:S:NVmxDIZC", CR, 0	; for 20-char devices
 #else
-	.asc	"PC:  A: X: Y: S: NV-bDIZC", CR, 0
+	.asc	"PC:  A: X: Y: S: NVmxDIZC", CR, 0
 #endif
 
 dump_in:
