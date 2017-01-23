@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b7
-; last modified 20170120-1434
+; v0.5b8
+; last modified 20170123-0934
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -106,7 +106,7 @@ xsh_ok:
 		STY def_io
 		STY def_io+1
 		_KERNEL(B_FORK)		; get a free braid
-		CPY #0				; what to do if none available?
+		TYA					; check PID at Y, what to do if none available?
 		BEQ xsh_single		; no multitasking, execute and restore status!
 			STY pid			; save as will look for it later
 			_KERNEL(B_EXEC)		; run on that braid

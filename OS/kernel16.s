@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b3
+; v0.5.1b4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170120-0841
+; last modified 20170123-1000
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -319,6 +319,7 @@ sh_exec:
 	_KERNEL(B_FORK)		; reserve first execution braid
 ;	LDX #MM_FORK		; internal multitasking index (2)
 ;	JSR (drv_opt-MM_FORK, X)	; direct to driver skipping the kernel, note deindexing! (8)
+	CLI					; should enable interrupts somewhen... eeeeeeeek
 	_KERNEL(B_EXEC)		; go for it!
 ;	LDX #MM_EXEC		; internal multitasking index (2)
 ;	JSR (drv_opt-MM_EXEC, X)	; direct to driver skipping the kernel, note deindexing! (8)
@@ -396,7 +397,7 @@ exec_st:
 	LDA cpu_ll			; check architecture
 	CMP #'V'			; check whether native 816 code (ending in RTL)
 ; new approach, reusing 816 code!
-;	BNE exec_02			; skip return address for 8-bit code
+	BNE exec_02			; skip return address for 8-bit code
 ; ** alternative to self-generated code for long indirect call **
 		PHK					; push program bank address, actually zero (3)
 exec_02:

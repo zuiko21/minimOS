@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b4, should match kernel16.s
+; v0.5.1b5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170120-1438
+; last modified 20170123-1012
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -85,12 +85,14 @@ cio_unlock:
 	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
 #endif
 ; ** important routine ending in order to preserve C status after the RTI **
+; current version is 6 bytes, 3/11 t minus RTI
+; older version was 7 bytes, 10/11 t minus RTI
 cio_callend:
-	PLA					; extract previous status!
 	BCC cio_notc		; no need to clear carry
-		ORA #1				; otherwise set it
+		PLP
+		SEC					; otherwise set stored carry
+		PHP
 cio_notc:
-	PHA					; replace stored flags
 	RTI					; end of call procedure
 
 ; *************************************************
@@ -574,6 +576,7 @@ ll_geth:
 		INY					; reset scanning index (now at name position, was @7)
 ll_nloop:
 			LDA [rh_scan], Y	; get character in found name
+jsr $c0c2
 			CMP [str_pt], Y		; compare with what we are looking for
 				BNE ll_nthis		; difference found
 			ORA [str_pt], Y		; otherwise check whether at EOL
@@ -582,12 +585,26 @@ ll_nloop:
 			BNE ll_nloop		; will not do forever, no need for BRA
 ll_nthis:
 ; not this one, correct local pointer for the next header
+lda#'*'
+jsr $c0c2
+lda#10
+jsr $c0c2
 		.al: REP #$20		; *** back to 16-bit memory for a moment ***
 		LDY #253			; relative offset to number of pages to skip
 		LDA [rh_scan], Y	; get number of pages to skip (24-bit pointer)
 		SEC					; ...plus header itself! eeeeeeek
 		ADC rh_scan+1		; add to previous value
 		STA rh_scan+1		; update pointer
+; ******SOMETHING OF THE ABOVE IS WRONG, OR BAD KERNEL HEADER??????
+php
+.as:sep#$20
+lda rh_scan+1
+jsr $c0c2
+lda rh_scan+2
+jsr $c0c2
+lda#'~'
+jsr $c0c2
+plp
 		BCC ll_geth			; inspect new header (if no wrap! 24-bit addressing)
 ll_nfound:
 	_ERR(N_FOUND)		; all was scanned and the query was not found
@@ -620,7 +637,8 @@ ll_native:
 	LDA rh_scan+1		; get pointer MSB+BANK
 	INC					; start from next page
 	STA ex_pt+1			; save execution pointer
-	STZ ex_pt			; *** assume all headers are page-aligned ***
+	LDX #0				; eeeeeeeeeeeeeeek
+	STX ex_pt			; *** assume all headers are page-aligned *** do not touch second byte!
 	_EXIT_OK
 
 
@@ -785,7 +803,7 @@ _KERNEL(COUT)
 clc
 ;		LDY iol_dev			; use device
 ;		_KERNEL(CIN)		; get one character
-/*		BCC rl_rcv			; got something
+/*		BCC rl_rcv			; got something ****THIS IS DEFINITELY WRONG
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
 			LDA #0				; no indirect STZ
@@ -818,7 +836,7 @@ rl_cr:
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA [str_pt], Y		; terminate string
-lda #'*'
+/*lda #'*'
 sta io_c
 ldy iol_dev
 _KERNEL(COUT)
@@ -827,7 +845,7 @@ _KERNEL(STRING)
 lda #CR
 sta io_c
 ldy iol_dev
-_KERNEL(COUT)
+_KERNEL(COUT)*/
 	_EXIT_OK			; and all done!
 
 ; *** SU_SEI, disable interrupts ***
@@ -1153,6 +1171,7 @@ k_vec:
 	.word	go_shell	; launch default shell, INSERTED 20150604
 	.word	shutdown	; proper shutdown procedure, new 20150409, renumbered 20150604
 	.word	signal		; send UNIX-like signal to a braid, new 20150415, renumbered 20150604
+	.word	status		; get execution flags of a braid, EEEEEEEEEEEEEEEK
 	.word	get_pid		; get PID of current braid, new 20150415, renumbered 20150604
 	.word	set_handler	; set SIGTERM handler, new 20150417, renumbered 20150604
 	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
