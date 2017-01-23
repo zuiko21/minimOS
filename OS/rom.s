@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.5.1b5, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170120-1345
+; last modified 20170123-1309
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -85,7 +85,7 @@ drv_end:		; for easier size computation
 ; *** include rest of the included software, each with its own header ***
 #include "../apps/ls.s"
 	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
-#include "../apps/pmap.s"
+#include "../apps/pmap16.s"
 	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/lined.s"
 	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek

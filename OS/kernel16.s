@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170123-1240
+; last modified 20170123-1255
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -60,13 +60,7 @@ warm:
 	CLC
 	XCE					; enter native mode! still 8 bit regs, though
 
-; worth going 16-bit for the insteeeeeeeeeeeek
-	LDA mm_stbnk		; *** single task handler might be anywhere ***
-	PHA					; push bank address eeeeeeeeeeeek
-	PEA mm_term			; push handler address (minus bank)
-	PHP					; as required
-	RTI					; actual JUMP, will return to sig_yield
-sig_kill:all calls? beware of firmware calls!
+; worth going 16-bit for the install calls!
 	.al: REP #$20		; *** 16-bit memory most of the time ***
 
 ; install kernel jump table if not previously loaded
@@ -447,7 +441,7 @@ sig_term:
 	LDX mm_stbnk		; *** single task handler might be anywhere ***
 	PHX					; push bank address eeeeeeeeeeeek
 	.al: REP #$20		; *** best going 16-bit ***
-	LDA (mm_term)		; get handler address, no index needed as singletasking eeeeeeek
+	LDA mm_term			; get handler address, no index needed as singletasking eeeeeeek
 	PHA					; push handler address (minus bank)
 	.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
 	PHP					; as required

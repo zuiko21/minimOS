@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5rc12
-; last modified 20170120-1340
+; v0.5rc13
+; last modified 20170123-1339
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -32,8 +32,8 @@ mon_head:
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6000		; time, 12.00
-	.word	$4A29		; date, 2017/1/9
+	.word	$6800		; time, 13.00
+	.word	$4A37		; date, 2017/1/23
 
 	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
 
@@ -167,8 +167,8 @@ call_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
 ; restore stack pointer... and forget return address (will jump anyway)
-	LDX _sp				; get stored value
-	TXS					; set new pointer...
+;	LDX _sp				; get stored value
+;	TXS					; set new pointer...
 ; SP restored
 	JSR do_call			; set regs and jump!
 ; ** should record actual registers here **
@@ -178,8 +178,10 @@ call_address:
 	PHP					; get current status
 	PLA					; A was already saved
 	STA _psr
-	JMP get_sp			; hopefully context is OK
-
+;	PLA					; discard main loop return address EEEEEEEEK
+;	PLA
+;	JMP get_sp			; hopefully context is OK
+	RTS
 
 jump_address:
 	JSR fetch_word		; get operand address
