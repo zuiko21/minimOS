@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b1
-; last modified 20170123-1420
+; v0.5.1b2
+; last modified 20170124-1234
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -111,7 +111,7 @@ open_mon:
 ; specially tailored code for 816-savvy version!
 get_sp:
 #ifdef	C816
-	.xl: REP #$10		; *** 16-bit index ***
+	.xl: .al: REP #$30	; *** 16-bit index AND memory ***
 #endif
 	TSX					; get current stack pointer
 	STX _sp				; store original value
@@ -184,10 +184,10 @@ call_address:
 	.xl: REP #$10		; *** essential 16-bit index ***
 #endif
 	LDX _sp				; get stored value
-	TXS					; set new pointer...
+;	TXS					; set new pointer...***CHECK
 ; SP restored
 	JSR do_call			; set regs and jump!
-.as: .xs
+	.xs: .as: SEP #$30	; *** make certain about standard size ***
 ; ** should record actual registers here **
 	STA _a
 	STX _x
@@ -195,8 +195,8 @@ call_address:
 	PHP					; get current status
 	PLA					; A was already saved
 	STA _psr
-	PLA					; discard main loop return address EEEEEEEEK
-	PLA
+; no need to discard return address as it was discarded by setting S eeeeeeek^2
+rts	; *** cannot set SP, thus just return without updating ***
 	JMP get_sp			; hopefully context is OK
 
 jump_address:
@@ -207,7 +207,7 @@ jump_address:
 	.xl: REP #$10		; *** essential 16-bit index ***
 #endif
 	LDX _sp				; get stored value
-	TXS					; set new pointer...
+;	TXS					; set new pointer...***CHECK
 ; SP restored
 ; restore registers and jump
 do_call:
