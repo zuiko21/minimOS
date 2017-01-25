@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b2
-; last modified 20170124-1234
+; v0.5.1b3
+; last modified 20170125-0913
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -93,20 +93,12 @@ open_mon:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 
-; global variables
-	LDA #>user_sram		; initial address ##### provided by rom.s, but may be changed #####
-	LDY #<user_sram
-	STY ptr				; store LSB
-	STA ptr+1			; and MSB
-	LDA #4				; standard number of lines
-	STA lines			; set variable
-	STA siz				; also default transfer size
-	_STZA siz+1			; clear copy/transfer size MSB
+; print splash message, just the first time!
 	LDA #>splash		; address of splash message
 	LDY #<splash
 	JSR prnStr			; print the string!
 
-; *** store current stack pointer as it will be restored upon JSR/JMP ***
+; *** store current stack pointer as it will be restored upon JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
 ; specially tailored code for 816-savvy version!
 get_sp:
@@ -118,6 +110,15 @@ get_sp:
 #ifdef	C816
 	.xs: .as: SEP #$30	; *** regular size ***
 #endif
+; does not really need to set PC/ptr
+; these ought to be initialised after calling a routine!
+	LDA #__last-uz		; zeropage space needed (again)
+	STA z_used			; set needed ZP space as required by minimOS ####
+; global variables
+	LDA #4				; standard number of lines
+	STA lines			; set variable
+	STA siz				; also default transfer size
+	_STZA siz+1			; clear copy/transfer size MSB
 
 ; *** begin things ***
 main_loop:
@@ -178,14 +179,9 @@ sb_end:
 call_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
-; restore stack pointer... and forget return address (will jump anyway)
-
-#ifdef	C816
-	.xl: REP #$10		; *** essential 16-bit index ***
-#endif
-	LDX _sp				; get stored value
-;	TXS					; set new pointer...***CHECK
-; SP restored
+; setting SP upon call makes little sense...
+	LDA iodev			; *** must push default device for later ***
+	PHA
 	JSR do_call			; set regs and jump!
 	.xs: .as: SEP #$30	; *** make certain about standard size ***
 ; ** should record actual registers here **
@@ -195,9 +191,13 @@ call_address:
 	PHP					; get current status
 	PLA					; A was already saved
 	STA _psr
-; no need to discard return address as it was discarded by setting S eeeeeeek^2
-rts	; *** cannot set SP, thus just return without updating ***
-	JMP get_sp			; hopefully context is OK
+; hopefully no stack imbalance was caused, otherwise will not resume monitor!
+	PLA					; must discard previous return address, as will reinitialise stuff!
+	PLA
+	PLA					; this will take previously saved default device
+	STA iodev			; store device!!!
+;rts
+	JMP get_sp			; hopefully context is OK, will restore as needed
 
 jump_address:
 	JSR fetch_word		; get operand address
@@ -206,8 +206,8 @@ jump_address:
 #ifdef	C816
 	.xl: REP #$10		; *** essential 16-bit index ***
 #endif
-	LDX _sp				; get stored value
-;	TXS					; set new pointer...***CHECK
+	LDX _sp				; get stored value (word)
+	TXS					; set new pointer...
 ; SP restored
 ; restore registers and jump
 do_call:
