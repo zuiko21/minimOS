@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b3
-; last modified 20170125-0913
+; v0.5.1b4
+; last modified 20170125-1530
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -33,8 +33,8 @@ mon_head:
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7000		; time, 14.00
-	.word	$4A37		; date, 2017/1/23
+	.word	$7800		; time, 15.00
+	.word	$4A39		; date, 2017/1/25
 
 	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
 
@@ -100,10 +100,12 @@ open_mon:
 
 ; *** store current stack pointer as it will be restored upon JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
+	LDA #%00110000		; 8-bit sizes eeeeeeeek
+	STA _psr		; *** essential, at least while not previously set ***
 ; specially tailored code for 816-savvy version!
 get_sp:
 #ifdef	C816
-	.xl: .al: REP #$30	; *** 16-bit index AND memory ***
+	.xl: REP #$10		; *** 16-bit index ***
 #endif
 	TSX					; get current stack pointer
 	STX _sp				; store original value
@@ -133,7 +135,7 @@ main_loop:
 		LDX #$FF			; getNextChar will advance it to zero!
 		JSR gnc_do			; get first character on string, without the variable
 		TAY					; just in case...
-			BEQ main_loop		; ignore blank lines! 
+			BEQ main_loop		; ignore blank lines!
 ;		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 ;			BNE not_mcmd		; not a monitor command
 ;		JSR gnc_do			; get into command byte otherwise
@@ -196,7 +198,6 @@ call_address:
 	PLA
 	PLA					; this will take previously saved default device
 	STA iodev			; store device!!!
-;rts
 	JMP get_sp			; hopefully context is OK, will restore as needed
 
 jump_address:
