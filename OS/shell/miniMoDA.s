@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b8
-; last modified 20170126-1010
+; last modified 20170126-1040
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -567,11 +567,13 @@ po_nbyt:
 po_nwd:
 		JSR prnChar			; just print it
 		INC count			; yet another char
+		BNE po_char			; eeeeeeeeek
 po_done:
 		TXA					; increase of number of chars
 		CLC
 		ADC count			; add to previous value
 		STA count			; update value
+po_char:
 		LDY temp			; get scan index
 		LDA (scan), Y		; get current char again
 			BMI po_end			; opcode ended, no more to show
