@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b7
-; last modified 20170120-1343
+; v0.5b8
+; last modified 20170126-1010
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -31,14 +31,15 @@ mmd_head:
 
 ; *** filename and optional comment ***
 title:
-	.asc	"miniMoDA", 0, 0	; file name (mandatory) and empty comment
+	.asc	"miniMoDA", 0	; file name (mandatory)
+	.asc	"816-savvy", 0	; comment
 
 ; advance to end of header
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6000		; time, 12.00
-	.word	$4A29		; date, 2017/1/9
+	.word	$5000		; time, 10.00
+	.word	$4A3A		; date, 2017/1/26
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -56,7 +57,11 @@ title:
 	_x		= _a+1		; X register
 	_y		= _x+1		; Y register
 	_sp		= _y+1		; stack pointer
-	_psr	= _sp+1		; status register
+#ifdef	C816
+	_psr	= _sp+2		; status register, leave space as above
+#else
+	_psr	= _sp+1		; status register, regular 8-bit size
+#endif
 	siz		= _psr+1	; number of bytes to copy or transfer ('n')
 	lines	= siz+2		; lines to dump ('u')
 	cursor	= lines+1	; storage for cursor offset, now on Y
@@ -102,13 +107,26 @@ open_da:
 	LDA #>splash		; address of splash message
 	LDY #<splash
 	JSR prnStr			; print the string!
+
 ; *** store current stack pointer as it will be restored upon JSR/JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
+	LDA #%00110000		; 8-bit sizes eeeeeeeek
+	STA _psr		; *** essential, at least while not previously set ***
+; specially tailored code for 816-savvy version!
 get_sp:
+#ifdef	C816
+	.xl: REP #$10		; *** 16-bit index ***
+#endif
 	TSX					; get current stack pointer
 	STX _sp				; store original value
+#ifdef	C816
+	.xs: .as: SEP #$30	; *** regular size ***
+#endif
+; does not really need to set PC/ptr
+; these ought to be initialised after calling a routine!
+	LDA #__last-uz		; zeropage space needed (again)
+	STA z_used			; set needed ZP space as required by minimOS ####
 ; global variables
-; will no longer set ptr, as should be done by BRK/NMI handler as _pc
 	LDA #4				; standard number of lines
 	STA lines			; set variable
 	STA siz				; also default transfer size
@@ -369,11 +387,11 @@ sb_end:
 call_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
-; restore stack pointer... and forget return address (will jump anyway)
-	LDX _sp				; get stored value
-	TXS					; set new pointer...
-; SP restored
+; setting SP upon call makes little sense...
+	LDA iodev			; *** must push default device for later ***
+	PHA
 	JSR do_call			; set regs and jump!
+	.xs: .as: SEP #$30	; *** make certain about standard size ***
 ; ** should record actual registers here **
 	STA _a
 	STX _x
@@ -381,18 +399,29 @@ call_address:
 	PHP					; get current status
 	PLA					; A was already saved
 	STA _psr
-	JMP get_sp			; hopefully context is OK
+; hopefully no stack imbalance was caused, otherwise will not resume monitor!
+	PLA					; this (eeeeek) will take previously saved default device
+	STA iodev			; store device!!!
+	PLA					; must discard previous return address, as will reinitialise stuff!
+	PLA
+	JMP get_sp			; hopefully context is OK, will restore as needed
 
 ; ** .J = jump to an address **
 jump_address:
 	JSR fetch_word		; get operand address
 ; now ignoring operand errors!
 ; restore stack pointer...
-	LDX _sp				; get stored value
+#ifdef	C816
+	.xl: REP #$10		; *** essential 16-bit index ***
+#endif
+	LDX _sp				; get stored value (word)
 	TXS					; set new pointer...
 ; SP restored
 ; restore registers and jump
 do_call:
+#ifdef	C816
+	.xs: .as: SEP #$30	; *** make certain about standard size ***
+#endif
 	LDX _x				; retrieve registers
 	LDY _y
 	LDA _psr			; status is different

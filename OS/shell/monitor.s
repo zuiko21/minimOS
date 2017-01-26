@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b4
-; last modified 20170125-1530
+; v0.5.1b5
+; last modified 20170126-0957
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -33,8 +33,8 @@ mon_head:
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7800		; time, 15.00
-	.word	$4A39		; date, 2017/1/25
+	.word	$5000		; time, 10.00
+	.word	$4A3A		; date, 2017/1/26
 
 	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
 
@@ -194,10 +194,10 @@ call_address:
 	PLA					; A was already saved
 	STA _psr
 ; hopefully no stack imbalance was caused, otherwise will not resume monitor!
+	PLA					; this (eeeeek) will take previously saved default device
+	STA iodev			; store device!!!
 	PLA					; must discard previous return address, as will reinitialise stuff!
 	PLA
-	PLA					; this will take previously saved default device
-	STA iodev			; store device!!!
 	JMP get_sp			; hopefully context is OK, will restore as needed
 
 jump_address:
