@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b6, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170127-1227
+; last modified 20170127-1430
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -363,24 +363,32 @@ ma_nobad:
 	CMP ma_rs+1			; compare (5)
 		BCC ma_cont			; smaller, thus continue searching (2/3)
 ; here we go!
-; **first of all create empty block for alignment, if needed**
 	PHA					; save current size
-	LDA ram_pos, X		; check current address
-	AND ma_align		; any misaligned bits set?
+; **first of all check whether aligned or not**
+	LDA ram_pos, X		; check start address for alignment failure
+	BIT ma_align		; any offending bits?
 	BEQ ma_aok			; already aligned, nothing needed
-		JSR ma_adv			; advance and let repeated first entry!
-		INX					; let the algnment blank and go for next
-		INX
-		LDA ram_pos, X		; get repeated address
 		ORA ma_align		; set disturbing bits...
 		INC					; ...and reset them after increasing the rest
-		STA ram_pos, X		; update pointer
+		PHA					; need to keep the new aligned pointer!
+		INX					; skip the alignment blank
+		INX
+		JSR ma_adv			; create room for assigned block (leave alignment block alone)
+		PLA					; retrieve aligned address
+		STA ram_pos, X		; update pointer on assigned block
 ma_aok:
-	PLA					; retrieve size
+	PLA					; retrieve created blank size (skipped possible alignment block)
 ; make room for new entry... if not exactly the same size
-	CMP ma_rs			; str_devcompare this block with requested size
+	CMP ma_rs			; compare this block with requested size
 	BEQ ma_updt			; was same size, will not generate new entry
-		JSR ma_adv			; make room otherwise
+		JSR ma_adv			; make room otherwise, and set the following one as free padding
+; create after the assigned block a FREE entry!
+		LDA ram_pos, X		; newly assigned slice will begin there eeeeeeeeeek
+		CLC
+		ADC ma_rs+1			; add number of assigned pages
+		STA ram_pos+2, X	; update value
+		LDA #FREE_RAM		; let us mark it as free, PID is irrelevant!
+		STA ram_stat+2, X	; next to the assigned one, no STY abs,X!!!
 ma_updt:
 	STZ ma_pt			; clear pointer LSB... plus extra byte
 	LDA ram_pos, X		; get address of block to be assigned
@@ -442,13 +450,6 @@ ma_room:
 		DEX
 		CPX ma_ix			; position of updated entry
 		BNE ma_room			; continue until done
-; create at the beginning of the moved block a FREE entry!
-	LDA ram_pos+2, X	; newly assigned slice will begin here
-	CLC
-	ADC ma_rs+1			; add number of assigned pages
-	STA ram_pos+2, X	; update value
-	LDA #FREE_RAM		; let us mark it as free, PID is irrelevant!
-	STA ram_stat+2, X	; next to the assigned one, no STY abs,X!!!
 	RTS
 
 ; *******************************
@@ -461,13 +462,13 @@ free:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
 	LDX #0				; reset index
-	LDA ma_pt			; get comparison term
+	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
 			BEQ fr_found		; go free it!
-		LDY ram_stat, X		; otherwise check status
 		INX					; advance index
 		INX
+		LDY ram_stat, X		; anyway check status
 		CPY #END_RAM		; no more in list?
 		BNE fr_loop			; continue until end
 ; this could be one end of CS
