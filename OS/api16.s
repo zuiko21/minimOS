@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b5, should match kernel16.s
+; v0.5.1b6, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170123-1112
+; last modified 20170127-1227
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -348,7 +348,7 @@ ma_nobank:
 ma_found:
 	JSR ma_alsiz		; **compute size according to alignment mask**
 #ifdef	SAFE
-	BMI ma_nobad		; no corruption was seen (3/2) **instead of BCS**
+	BPL ma_nobad		; no corruption was seen (3/2) **instead of BCS** eeeeeek
 		LDA #user_sram	; otherwise take beginning of user RAM...
 		LDX #LOCK_RAM	; ...that will become locked (new value)
 		STA ram_pos		; create values
