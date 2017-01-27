@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b1
-; last modified 20170123-1342
+; v0.5.1b2
+; last modified 20170127-0900
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -32,8 +32,8 @@ pmapHead:
 	.dsb	pmapHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6800			; time, 13.00
-	.word	$4A37			; date, 2017/1/23
+	.word	$46c0			; time, 08.54
+	.word	$4A3B			; date, 2017/1/27
 
 pmap16Size	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 
@@ -78,9 +78,9 @@ pmap_loop:
 		PHA					; keep for later
 		LDA ram_pos+1, Y	; same for bank!
 		STA page+1
-		JSR hex2char		; print bank...
+		JSR byte2hex		; print bank...
 		PLA					; ...retrieve MSB...
-		JSR hex2char		; ...then print it
+		JSR byte2hex		; ...then print it
 		LDY #<pmt_lsb		; string for trailing zeroes
 		LDA #>pmt_lsb
 		JSR prnStr
@@ -103,7 +103,7 @@ pmap_used:
 	JSR prnStr
 	LDY current			; restore index
 	LDA ram_pid, Y		; get corresponding PID
-	JSR hex2char		; print it
+	JSR byte2hex		; print it
 ; ...and finish line with block size
 
 ; * common ending with printed size, pages or KB *
@@ -118,12 +118,16 @@ pmap_size:
 	SBC page			; subtract start of block
 	CMP #4				; check whether below 1k
 	BCS pmap_kb
-		JSR h2c_num			; will not be over 3
+		_INC				; round up pages!
+		JSR b2h_num			; will not be over 4
 		LDA #'p'			; page suffix
 		BRA pmap_next		; print suffix, CR and go for next
 pmap_kb:
 	LSR					; divide by 4
 	LSR
+		BCC pm_nround	; if C, round up!
+			_INC
+pm_nround:
 ; print A in decimal and continue!
 	LDX #0				; decade counter
 pkb_div10:
@@ -135,9 +139,9 @@ pkb_div10:
 pkb_unit:
 	PHA					; save units
 	TXA					; decades will not be over 6
-	JSR h2c_num			; print ASCII
+	JSR b2h_num			; print ASCII
 	PLA					; retrieve units
-	JSR h2c_ascii		; convert & print
+	JSR b2h_ascii		; convert & print
 	LDA #'K'
 	BRA pmap_next		; print suffix, CR and go for next
 
@@ -175,20 +179,20 @@ pmap_tab:
 
 ; ** these will go into a pseudolibrary **
 ; * print binary in A as two hex ciphers *
-hex2char:
+byte2hex:
 	PHA			; keep whole value
 	LSR			; shift right four times (just the MSB)
 	LSR
 	LSR
 	LSR
-	JSR h2c_ascii	; convert and print this cipher
+	JSR b2h_ascii	; convert and print this cipher
 	PLA			; retrieve full value
 	AND #$0F	; keep just the LSB... and repeat procedure
-h2c_ascii:
+b2h_ascii:
 	CMP #10		; will be a letter?
-	BCC h2c_num	; just a number
+	BCC b2h_num	; just a number
 		ADC #6			; convert to letter (plus carry)
-h2c_num:
+b2h_num:
 	ADC #'0'	; convert to ASCII (carry is clear)
 ; ...and print it (will return somewhere)
 
@@ -225,10 +229,10 @@ splash:
 ; $0400 **LOCKED**
 
 pmt_free:
-	.asc	"FREE", 0
+	.asc	"Free", 0
 
 pmt_lock:
-	.asc "**LOCKED**", 0
+	.asc "LOCK", 0
 
 pmt_end:
 	.asc "[  END  ]", CR, 0
@@ -237,7 +241,7 @@ pmt_lsb:
 	.asc "00 ", 0
 
 pmt_pid:
-	.asc "$#", 0
+	.asc "#$", 0
 
 ; ***** end of stuff *****
 pmapEnd:				; ### for easy size computation ###

@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b5
-; last modified 20170118-1105
+; v0.5b6
+; last modified 20170127
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -30,8 +30,8 @@ lsHead:
 	.dsb	lsHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5000			; time, 10.00
-	.word	$4A2A			; date, 2017/1/10
+	.word	$4960			; time, 9.11
+	.word	$4A3B			; date, 2017/1/27
 
 lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 
@@ -170,6 +170,7 @@ ls_size:
 ; print pages/KB in decimal
 		CMP #4			; check whether below 1k
 		BCS ls_kb
+			_INC			; round up pages!
 			JSR h2c_num		; will not be over 3
 			LDA #'p'		; page suffix
 			BNE ls_next		; print suffix, CR and go for next, no need for BRA

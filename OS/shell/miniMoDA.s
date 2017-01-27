@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b8
-; last modified 20170126-1040
+; v0.5b9
+; last modified 20170127-0841
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -936,6 +936,24 @@ _unrecognised:
 ;#include "libs/hexio.s"
 ; in the meanwhile, it takes these subroutines
 
+; * print a byte in A as two hex ciphers *
+prnHex:
+	PHA					; keep whole value
+	LSR					; shift right four times (just the MSB)
+	LSR
+	LSR
+	LSR
+	JSR ph_b2a			; convert and print this cipher
+	PLA					; retrieve full value
+	AND #$0F			; keep just the LSB... and repeat procedure
+ph_b2a:
+	CMP #10				; will be a letter?
+	BCC ph_n			; just a number
+		ADC #6				; convert to letter (plus carry)
+ph_n:
+	ADC #'0'			; convert to ASCII (carry is clear)
+; ...and print it (will return somewhere)
+
 ; * print a character in A *
 prnChar:
 	STA io_c			; store character
@@ -953,7 +971,8 @@ prnStr:
 ; currently ignoring any errors...
 	RTS
 
-; * convert two hex ciphers into byte@value, A is current char, Y is cursor from NEW buffer *
+; * convert two hex ciphers into byte@value
+; A is current char, Y is cursor from NEW buffer *
 hex2byte:
 	LDX #0				; reset loop counter
 	STX value			; also reset value
@@ -986,35 +1005,6 @@ h2b_err:
 		JSR backChar		; will try to reprocess former char
 h2b_exit:
 	SEC					; indicate error
-	RTS
-
-; * print a byte in A as two hex ciphers *
-; uses value.w
-prnHex:
-	JSR ph_conv			; first get the ciphers done
-	LDA value			; get cipher for MSB
-	JSR prnChar			; print it!
-	LDA value+1			; same for LSB
-	JMP prnChar			; will return
-ph_conv:
-	STA value+1			; keep for later
-	AND #$F0			; mask for MSB
-	LSR					; convert to value
-	LSR
-	LSR
-	LSR
-	LDX #0				; this is first value
-	JSR ph_b2a			; convert this cipher
-	LDA value+1			; get again
-	AND #$0F			; mask for LSB
-	INX					; this will be second cipher
-ph_b2a:
-	CMP #10				; will be letter?
-	BCC ph_n			; numbers do not need this
-		ADC #'A'-'9'-2		; turn into letter, C was set
-ph_n:
-	ADC #'0'			; turn into ASCII
-	STA value, X		; this became 816-savvy!
 	RTS
 
 ; ** end of inline library **
@@ -1140,19 +1130,6 @@ fetch_word:
 	JSR backChar
 	RTS
 
-; * abort command execution and return stack cleanup (remove X bytes) * NOT CURRENTLY USED
-;abort:
-;#ifdef	SAFE
-;	TXA					; nothing to discard?
-;	BNE do_abort		; otherwise proceed normally
-;		RTS					; if not, just return quietly
-;#endif
-;do_abort:	
-;		PLA					; discard one byte
-;		DEX					; decrease counter
-;		BNE do_abort		; until all done
-;	JMP bad_cmd			; and show generic error
-
 ; *** pointers to command routines ***
 cmd_ptr:
 	.word	set_A			; .A
@@ -1200,7 +1177,7 @@ err_ovf:
 	.asc	"*** Out of range ***", CR, 0
 
 regs_head:
-	.asc	"A: X: Y: S: NV-bDIZC", CR, 0
+	.asc	"A: X: Y: S: NVxmDIZC", CR, 0
 
 dump_in:
 #ifdef	NARROW
