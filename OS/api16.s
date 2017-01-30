@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170130-0917
+; last modified 20170130-1337
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -308,6 +308,10 @@ ma_nxpg:
 ; otherwise check for biggest available block -- new ram_stat word format 161105
 		STZ ma_siz		; ...and found value eeeeeeeeek
 ma_biggest:
+#ifdef	SAFE
+			CPX #MAX_LIST*2		; already past?
+				BEQ ma_corrupt		; something was wrong!!!
+#endif
 			LDY ram_stat, X		; get status of block (4)
 ;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (2)
 			BNE ma_nxbig		; go for next as this one was not free (3/2)
@@ -349,15 +353,16 @@ ma_found:
 	JSR ma_alsiz		; **compute size according to alignment mask**
 #ifdef	SAFE
 	BPL ma_nobad		; no corruption was seen (3/2) **instead of BCS** eeeeeek
-		LDA #user_sram	; otherwise take beginning of user RAM...
-		LDX #LOCK_RAM	; ...that will become locked (new value)
-		STA ram_pos		; create values
+ma_corrupt:
+		LDA #user_sram		; otherwise take beginning of user RAM...
+		LDX #LOCK_RAM		; ...that will become locked (new value)
+		STA ram_pos			; create values
 		STX ram_stat		; **should it clear the PID field too???**
-		LDA #SRAM		; physical top of RAM...
+		LDA #SRAM			; physical top of RAM...
 		LDX #END_RAM		; ...as non-plus-ultra
 		STA ram_pos+2		; create second set of values
 		STX ram_stat+2
-		_ERR(CORRUPT)	; report but do not turn system down
+		_ERR(CORRUPT)		; report but do not turn system down
 ma_nobad:
 #endif
 	CMP ma_rs+1			; compare (5)
@@ -433,7 +438,7 @@ ma_adv:
 ma_2end:
 		INX					; previous was free, thus check next
 		INX
-		CPX #MAX_LIST-1		; just in case, check offset!!!
+		CPX #MAX_LIST*2		; just in case, check offset!!! eeeeeeek^2
 		BCC ma_notend		; could expand
 			PLA					; discard return address (still in 16-bit mode)
 			JMP ma_nobank		; notice error
@@ -491,6 +496,8 @@ fr_found:
 		PLX					; retrieve position
 	BEQ fr_ok			; if the first block, cannot look back eeeeeeeeeek
 fr_notafter:
+	TXY					; check whether it was the first block
+		BEQ fr_ok			; do not even try to look back eeeeeeeeeeek
 	DEX					; let us have a look to the previous block
 	DEX
 	LDY ram_stat, X		; is this one free?
@@ -781,7 +788,7 @@ readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 
 	STY iol_dev			; preset device ID!
-lda #'&';why is this print needed?????
+lda #' ';why is this print needed?????
 sta io_c
 ldy iol_dev
 _KERNEL(COUT)

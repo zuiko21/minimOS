@@ -184,7 +184,7 @@ CORRUPT	=   9		; data corruption
 
 #ifndef	LOWRAM
 			MAX_QUEUE	=	16	; maximum number of drivers, and queue size (half the number of drivers)
-			MAX_LIST	=	16	; number of available RAM blocks *** might increase this value in 65816 systems!
+			MAX_LIST	=	32	; number of available RAM blocks *** might increase this value in 65816 systems!
 #else
 			MAX_QUEUE	=	4	; much less available drivers in 128-byte systems
 			MAX_LIST	=	0	; no memory management for such systems
