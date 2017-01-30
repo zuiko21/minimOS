@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b6, should match kernel16.s
+; v0.5.1b7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170127-1430
+; last modified 20170130-0917
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -485,8 +485,23 @@ fr_found:
 ; really should join possible adjacent free blocks
 	LDY ram_stat+2, X	; check status of following entry
 ;	CPY #FREE_RAM		; was it free? could be supressed if value is zero
-	BNE fr_ok			; was not free, thus nothing to optimize
-; loop for obliterating the following empty entry
+	BNE fr_notafter		; was not free, thus nothing to optimise forward
+		PHX					; keep actual position eeeeeeeek
+		JSR fr_join			; integrate following free block
+		PLX					; retrieve position
+	BEQ fr_ok			; if the first block, cannot look back eeeeeeeeeek
+fr_notafter:
+	DEX					; let us have a look to the previous block
+	DEX
+	LDY ram_stat, X		; is this one free?
+;	CPY #FREE_RAM		; could be supressed if value is zero
+	BNE fr_ok			; nothing to optimise backwards
+		JSR fr_join			; otherwise integrate it too
+fr_ok:
+; we are done
+	_EXIT_OK
+
+; routine for obliterating the following empty entry
 fr_join:
 		INX					; go for next entry
 		INX
@@ -497,9 +512,9 @@ fr_join:
 		TAY					; **will transfer just status, PID will be ripped off**
 		CPY #END_RAM		; end of list?
 		BNE fr_join			; repeat until done
-; we are done
-fr_ok:
-	_EXIT_OK
+	DEX					; return to previous position
+	DEX
+	RTS
 
 ; ********************************************************************
 ; ****************** OPEN_W, get I/O port or window ******************
