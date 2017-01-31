@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170131-0905
+; last modified 20170131-1223
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -25,13 +25,13 @@ co_loop:
 	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-;		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
 		LDX #MM_YIELD		; internal multitasking index (2)
 		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		LDY iol_dev			; restore previous status, *new style (3)
 		BRA co_loop			; try again! (3)
 co_lckd:
-;	_KERNEL(GET_PID)	; **NO internal call, 816 prefers indexed JSR
+;	KERNEL(GET_PID)		; **NO internal call, 816 prefers indexed JSR
 	LDX #MM_PID			; internal multitasking index (2)
 	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	TYA					; **current PID in A (2)
@@ -111,7 +111,7 @@ ci_loop:
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
-;		_KERNEL(GET_PID)	; *NO internal call, 816 prefers indexed JSR
+;		KERNEL(GET_PID)		; *NO internal call, 816 prefers indexed JSR
 		LDX #MM_PID			; internal multitasking index (2)
 		JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		TYA					; **current PID in A
@@ -120,13 +120,13 @@ ci_loop:
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
-;		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
 		LDX #MM_YIELD		; internal multitasking index (2)
 		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		LDY iol_dev			; *restore previous status (3)
 		BRA ci_loop			; try again! (3)
 ci_lckd:
-;	_KERNEL(B_YIELD)	; **NO internal call, 816 prefers indexed JSR
+;	KERNEL(B_YIELD)		; **NO internal call, 816 prefers indexed JSR
 	LDX #MM_YIELD		; internal multitasking index (2)
 	JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	TYA					; **current PID in A (2)
@@ -207,10 +207,10 @@ ci_nokill:
 			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 			STA b_sig			; set signal as parameter
-;			_KERNEL(GET_PID)	; as this will be a self-sent signal! ***NO internal call
+;			KERNEL(GET_PID)		; as this will be a self-sent signal! ***NO internal call
 			LDX #MM_PID			; internal multitasking index (2)
 			JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
-;			_KERNEL(B_SIGNAL)	; send signal to PID in Y ***NO internal call
+;			KERNEL(B_SIGNAL)	; send signal to PID in Y ***NO internal call
 			LDX #MM_SIGNAL		; internal multitasking index (2)
 			JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
 ; a standard 65816 call does... 5 bytes & 12 clocks
@@ -344,20 +344,12 @@ ma_scan:
 ma_cont:
 		INX					; increase index (2+2)
 		INX
-phx
-txa
-clc
-adc #'A'
-jsr $c0c2
-plx
 		CPX #MAX_LIST*2		; until the end (2+3)
 		BNE ma_scan
 ma_nobank:
 ; one end of CS
 	_ERR(FULL)			; no room for it!
 ma_found:
-lda#'!'
-jsr$c0c2
 	JSR ma_alsiz		; **compute size according to alignment mask**
 #ifdef	SAFE
 	BPL ma_nobad		; no corruption was seen (3/2) **instead of BCS** eeeeeek
@@ -374,17 +366,9 @@ ma_corrupt:
 ma_nobad:
 #endif
 	CMP ma_rs+1			; compare (5)
-		BCS xxx
-pha
-lda#'~'
-jsr$c0c2
-pla
-		BRA ma_cont			; smaller, thus continue searching (2/3)
-xxx:
+		BCC ma_cont			; smaller, thus continue searching (2/3)
 ; here we go!
 	PHA					; save current size
-lda#'@'
-jsr$c0c2
 ; **first of all check whether aligned or not**
 	LDA ram_pos, X		; check start address for alignment failure
 	BIT ma_align		; any offending bits?
@@ -418,7 +402,7 @@ ma_updt:
 	STA ram_stat, X		; update table entry, will destroy PID temporarily but no STY abs,X!!!
 ; ** new 20161106, store PID of caller **
 	PHX					; will need this index
-;	_KERNEL(GET_PID)	; who asked for this?
+; who asked for this? KERNEL(GET_PID)
 	LDX #MM_PID			; internal multitasking index (2)
 	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	PLX					; retrieve index
@@ -714,13 +698,13 @@ str_wait:
 	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-;		_KERNEL(B_YIELD)	; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
 		LDX #MM_YIELD		; internal multitasking index (2)
 		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		LDY iol_dev			; restore previous status, *new style (3)
 		BRA str_wait		; try again! (3)
 str_lckd:
-;	_KERNEL(GET_PID)	; **NO internal call, 816 prefers indexed JSR
+;	KERNEL(GET_PID)		; **NO internal call, 816 prefers indexed JSR
 	LDX #MM_PID			; internal multitasking index (2)
 	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	TYA					; **current PID in A (2)
@@ -804,10 +788,6 @@ readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 
 	STY iol_dev			; preset device ID!
-lda #' ';why is this print needed?????
-sta io_c
-ldy iol_dev
-_KERNEL(COUT)
 	STZ rl_cur			; reset variable
 rl_l:
 		_KERNEL(B_YIELD)	; always useful
@@ -927,7 +907,7 @@ shutdown:
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
-;	_KERNEL(B_SIGNAL)	; ask braids to terminate
+;	KERNEL(B_SIGNAL)	; ask braids to terminate
 	LDX #MM_SIGNAL		; internal multitasking index (2)
 	JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	PLP					; original mask is buried in stack

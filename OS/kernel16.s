@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b4
+; v0.5.1b5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170123-1255
+; last modified 20170131-1240
 
 #define	C816	_C816
 ; avoid standalone definitions
@@ -34,12 +34,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.5.1b4", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b5", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$6000	; time, 12.00
-	.word	$4A37	; date, 2017/1/23
+	.word	$6460	; time, 12.35
+	.word	$4A3F	; date, 2017/1/23
 
 kern_siz = kern_end - kern_head - 256
 
@@ -323,7 +323,7 @@ sh_exec:
 	_KERNEL(B_EXEC)		; go for it!
 ;	LDX #MM_EXEC		; internal multitasking index (2)
 ;	JSR (drv_opt-MM_EXEC, X)	; direct to driver skipping the kernel, note deindexing! (8)
-	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** might be fine for 6502 too
+	_KERNEL(B_YIELD)		; ** get into the working code ASAP! ** might be fine for 6502 too
 ;	LDX #MM_YIELD		; internal multitasking index (2)
 ;	JMP (drv_opt)		; do not care about present status as will never return (5)
 here:
@@ -450,8 +450,8 @@ sig_kill:
 ; since it could arrive here from the end of a task, restore register sizes!
 	.as: .xs: SEP #$30	; *** standard sizes ***
 ; then, free up all memory from previous task
-;	LDY #0				; standard PID
-;	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+	LDY #0				; standard PID
+	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; new, check whether a shutdown command was issued
 	LDA sd_flag			; some action pending?
 	BEQ rst_shell		; if not, just restart shell
