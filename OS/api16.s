@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b7, should match kernel16.s
+; v0.5.1b8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170130-1337
+; last modified 20170131-0905
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -334,7 +334,7 @@ ma_nxbig:
 ma_fill:
 		STA ma_rs+1			; store allocated size! already computed
 		LDX ma_ix			; retrieve index
-		BRA ma_updt			; nothing to scan, just update status and return address
+		jmp ma_updt			; nothing to scan, just update status and return address
 ma_scan:
 		LDY ram_stat, X		; get state of current entry (4)
 ;		CPY #FREE_RAM		; looking for a free one (2) not needed if free is zero
@@ -344,12 +344,20 @@ ma_scan:
 ma_cont:
 		INX					; increase index (2+2)
 		INX
+phx
+txa
+clc
+adc #'A'
+jsr $c0c2
+plx
 		CPX #MAX_LIST*2		; until the end (2+3)
 		BNE ma_scan
 ma_nobank:
 ; one end of CS
 	_ERR(FULL)			; no room for it!
 ma_found:
+lda#'!'
+jsr$c0c2
 	JSR ma_alsiz		; **compute size according to alignment mask**
 #ifdef	SAFE
 	BPL ma_nobad		; no corruption was seen (3/2) **instead of BCS** eeeeeek
@@ -366,9 +374,17 @@ ma_corrupt:
 ma_nobad:
 #endif
 	CMP ma_rs+1			; compare (5)
-		BCC ma_cont			; smaller, thus continue searching (2/3)
+		BCS xxx
+pha
+lda#'~'
+jsr$c0c2
+pla
+		BRA ma_cont			; smaller, thus continue searching (2/3)
+xxx:
 ; here we go!
 	PHA					; save current size
+lda#'@'
+jsr$c0c2
 ; **first of all check whether aligned or not**
 	LDA ram_pos, X		; check start address for alignment failure
 	BIT ma_align		; any offending bits?
