@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b8, should match kernel16.s
+; v0.5.1b9, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170131-1223
+; last modified 20170201-1112
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -334,7 +334,7 @@ ma_nxbig:
 ma_fill:
 		STA ma_rs+1			; store allocated size! already computed
 		LDX ma_ix			; retrieve index
-		jmp ma_updt			; nothing to scan, just update status and return address
+		BRA ma_updt			; nothing to scan, just update status and return address
 ma_scan:
 		LDY ram_stat, X		; get state of current entry (4)
 ;		CPY #FREE_RAM		; looking for a free one (2) not needed if free is zero
@@ -467,6 +467,10 @@ free:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
 	LDX #0				; reset index
+#ifdef	SAFE
+	LDY ma_pt			; LSB currently not implemented
+		BNE fr_no			; could not find
+#endif
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
@@ -480,11 +484,9 @@ fr_loop:
 fr_no:
 	_ERR(N_FOUND)		; no such block!
 fr_found:
-#ifdef	SAFE
 	LDY ram_stat, X		; only used blocks can be freed!
 	CPY #USED_RAM		; was it in use?
 		BNE fr_no			; if not, cannot free it!
-#endif
 	LDA #FREE_RAM		; most likely zero, could I use STZ in 16-bit mode??? irrelevant PID
 	STA ram_stat, X		; no STY abs,Y... this block is now free, but...
 ; really should join possible adjacent free blocks
@@ -1079,27 +1081,66 @@ ts_info:
 ; Y <- PID
 
 release:
-	.xs: SEP #$30		; *** 8-bit sizes ***
+	.as: .xs: SEP #$30	; *** 8-bit sizes ***
 	TYA					; as no CPY abs,X
 	XBA					; exchange...
 	LDA #USED_RAM		; the status we will be looking for! PID @ MSB
 	.al: REP #$20		; *** 16-bit memory ***
+pha
+clc
+adc#'0'
+jsr$c0c2
+xba
+clc
+adc#'0'
+jsr$c0c2
+pla
+rl_st:
+pha
+lda#'-'
+jsr$c0c2
+pla
 	LDX #0				; reset index
 rls_loop:
+pha
+lda#'?'
+jsr$c0c2
+lda ram_stat,x
+clc
+adc#'0'
+jsr$c0c2
+pla
 		CMP ram_stat, X		; will check both stat (LSB) AND PID (MSB) of this block
 		BNE rls_oth			; it is not mine and/or not in use
 			PHA					; otherwise save status
+lda#'@'
+jsr$c0c2
 			PHX
 			LDA ram_pos, X		; get pointer to targeted block
-			STA ma_pt			; will be used by FREE
+			STZ ma_pt			; using PAGE addresses beware of 16-bit memory eeeeeeeeek^2
+			STA ma_pt+1			; will be used by FREE eeeeeeeeek
+clc
+adc#' '
+jsr$c0c2
 			_KERNEL(FREE)		; release it! ***by NO means a direct call might be used here***
 			PLX					; retrieve status
 			PLA
-			BCC rls_next		; keep index IF current entry was deleted!
+			BCC rl_st
+;			BCS rls_oth			; keep index IF current entry was deleted!
+;				TXY					; check for zero!
+;					BEQ rls_next		; in case it was the first one!
+;				DEX					; back to original
+;				DEX
+;				DEX					; try to get one before
+;				DEX
 rls_oth:
+lda#'+'
+jsr$c0c2
 		INX					; advance to next block
 		INX
 rls_next:
+lda#'.'
+jsr$c0c2
 		LDY ram_stat, X		; look status only
 		CPY #END_RAM		; are we done?
 		BNE rls_loop		; continue if not yet
