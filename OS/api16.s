@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b9, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170201-1112
+; last modified 20170203-1442
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -1086,46 +1086,75 @@ release:
 	XBA					; exchange...
 	LDA #USED_RAM		; the status we will be looking for! PID @ MSB
 	.al: REP #$20		; *** 16-bit memory ***
-pha
-clc
-adc#'0'
-jsr$c0c2
-xba
-clc
-adc#'0'
-jsr$c0c2
-pla
-rl_st:
+rls_again:
 pha
 lda#'-'
 jsr$c0c2
 pla
 	LDX #0				; reset index
 rls_loop:
+
 pha
+
+pha
+lda#'('
+jsr$c0c2
+pla
+
+clc
+adc#'0'
+jsr$c0c2
+lda#'#'
+jsr$c0c2
+xba
+clc
+adc#'0'
+jsr$c0c2
+
+pha
+lda#')'
+jsr$c0c2
+pla
+
 lda#'?'
 jsr$c0c2
+txa
+clc
+adc#'a'
+jsr$c0c2
 lda ram_stat,x
+clc
+adc#'0'
+jsr$c0c2
+lda#'#'
+jsr$c0c2
+xba
 clc
 adc#'0'
 jsr$c0c2
 pla
 		CMP ram_stat, X		; will check both stat (LSB) AND PID (MSB) of this block
 		BNE rls_oth			; it is not mine and/or not in use
-			PHA					; otherwise save status
+			PHA					; otherwise save registers
 lda#'@'
 jsr$c0c2
 			PHX
+txa
+clc
+adc#'A'
+jsr$c0c2
 			LDA ram_pos, X		; get pointer to targeted block
+pha
+clc
+adc#'0'
+jsr$c0c2
+pla
 			STZ ma_pt			; using PAGE addresses beware of 16-bit memory eeeeeeeeek^2
 			STA ma_pt+1			; will be used by FREE eeeeeeeeek
-clc
-adc#' '
-jsr$c0c2
 			_KERNEL(FREE)		; release it! ***by NO means a direct call might be used here***
 			PLX					; retrieve status
 			PLA
-			BCC rl_st
+			BCC rls_again
 ;			BCS rls_oth			; keep index IF current entry was deleted!
 ;				TXY					; check for zero!
 ;					BEQ rls_next		; in case it was the first one!
@@ -1139,8 +1168,8 @@ jsr$c0c2
 		INX					; advance to next block
 		INX
 rls_next:
-lda#'.'
-jsr$c0c2
+;lda#'.'
+;jsr$c0c2
 		LDY ram_stat, X		; look status only
 		CPY #END_RAM		; are we done?
 		BNE rls_loop		; continue if not yet
