@@ -451,7 +451,7 @@ sig_kill:
 	.as: .xs: SEP #$30	; *** standard sizes ***
 ; then, free up all memory from previous task
 	LDY #0				; standard PID
-	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+;	KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; new, check whether a shutdown command was issued
 	LDA sd_flag			; some action pending?
 	BEQ rst_shell		; if not, just restart shell
