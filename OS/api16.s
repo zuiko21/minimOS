@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b9, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170206-1005
+; last modified 20170206-1343
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -312,13 +312,22 @@ ma_biggest:
 			CPX #MAX_LIST*2		; already past?
 				BEQ ma_corrupt		; something was wrong!!!
 #endif
+lda#'?'
+jsr$c0c2
 			LDY ram_stat, X		; get status of block (4)
 ;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (2)
 			BNE ma_nxbig		; go for next as this one was not free (3/2)
 				JSR ma_alsiz		; **compute size according to alignment mask**
+pha
+jsr hexdebug
+pla
 				CMP ma_siz			; compare against current maximum (4)
 				BCC ma_nxbig		; this was not bigger (3/2)
 					STA ma_siz			; otherwise keep track of it... (4)
+txa
+jsr hexdebug
+lda#'^'
+jsr$c0c2
 					STX ma_ix			; ...and its index! (3)
 ma_nxbig:
 			INX					; advance index (2+2)
@@ -334,8 +343,10 @@ ma_nxbig:
 ma_fill:
 		STA ma_rs+1			; store allocated size! already computed
 		LDX ma_ix			; retrieve index
-		BRA ma_updt			; nothing to scan, just update status and return address
+		jmp ma_updt			; nothing to scan, just update status and return address
 ma_scan:
+lda#'.'
+jsr$c0c2
 		LDY ram_stat, X		; get state of current entry (4)
 ;		CPY #FREE_RAM		; looking for a free one (2) not needed if free is zero
 			BEQ ma_found		; got one (2/3)
@@ -350,10 +361,15 @@ ma_nobank:
 ; one end of CS
 	_ERR(FULL)			; no room for it!
 ma_found:
+lda#'!'
+jsr$c0c2
 	JSR ma_alsiz		; **compute size according to alignment mask**
 #ifdef	SAFE
-	BPL ma_nobad		; no corruption was seen (3/2) **instead of BCS** eeeeeek
+	BEQ ma_corrupt		; no way for an empty block!
+	BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
 ma_corrupt:
+lda#'~'
+jsr$c0c2
 		LDA #user_sram		; otherwise take beginning of user RAM...
 		LDX #LOCK_RAM		; ...that will become locked (new value)
 		STA ram_pos			; create values
@@ -373,9 +389,14 @@ ma_nobad:
 	LDA ram_pos, X		; check start address for alignment failure
 	BIT ma_align		; any offending bits?
 	BEQ ma_aok			; already aligned, nothing needed
+pha
+lda#'%'
+jsr$c0c2
+pla
 		ORA ma_align		; set disturbing bits...
 		INC					; ...and reset them after increasing the rest
 		PHA					; need to keep the new aligned pointer!
+jsr hexdebug
 		INX					; skip the alignment blank
 		INX
 		JSR ma_adv			; create room for assigned block (leave alignment block alone)
@@ -403,8 +424,9 @@ ma_updt:
 ; ** new 20161106, store PID of caller **
 	PHX					; will need this index
 ; who asked for this? KERNEL(GET_PID)
-	LDX #MM_PID			; internal multitasking index (2)
-	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
+	_KERNEL(GET_PID)
+;	LDX #MM_PID			; internal multitasking index (2)
+;	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	PLX					; retrieve index
 	.as: SEP #$30		; *** back to 8-bit because interleaved array! ***
 	TYA					; get into A as no STY abs,X!!!
@@ -1114,7 +1136,8 @@ rls_oth:
 
 ; ****debug code*****
 hexdebug:		; print A in hex
-.as:sep#$20
+.al:rep#$20
+.xs:sep#$10
 	PHA			; keep whole value
 	LSR			; shift right four times (just the MSB)
 	LSR
