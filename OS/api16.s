@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b9, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170203-1442
+; last modified 20170206-1002
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -1079,6 +1079,48 @@ ts_info:
 
 ; *** RELEASE, release ALL memory for a PID, new 20161115
 ; Y <- PID
+rls_debug:
+.al:.xs
+pha
+
+pha
+lda#'('		;searched '(stat#PID)'
+jsr$c0c2
+pla
+
+clc
+adc#'0'
+jsr$c0c2	; 0=free, 2=used
+lda#'#'
+jsr$c0c2
+xba
+clc
+adc#'0'
+jsr$c0c2	; PID
+
+
+lda#')'
+jsr$c0c2
+
+
+lda#'?'		;current '?n stat#PID'
+jsr$c0c2
+txa
+clc
+adc#'a'
+jsr$c0c2	; index a,c,e...
+lda ram_stat,x
+clc
+adc#'0'
+jsr$c0c2	; 0=free, 2=used
+lda#'#'
+jsr$c0c2
+xba
+clc
+adc#'0'
+jsr$c0c2	; PID
+pla
+rts
 
 release:
 	.as: .xs: SEP #$30	; *** 8-bit sizes ***
@@ -1093,50 +1135,11 @@ jsr$c0c2
 pla
 	LDX #0				; reset index
 rls_loop:
-
-pha
-
-pha
-lda#'('
-jsr$c0c2
-pla
-
-clc
-adc#'0'
-jsr$c0c2
-lda#'#'
-jsr$c0c2
-xba
-clc
-adc#'0'
-jsr$c0c2
-
-pha
-lda#')'
-jsr$c0c2
-pla
-
-lda#'?'
-jsr$c0c2
-txa
-clc
-adc#'a'
-jsr$c0c2
-lda ram_stat,x
-clc
-adc#'0'
-jsr$c0c2
-lda#'#'
-jsr$c0c2
-xba
-clc
-adc#'0'
-jsr$c0c2
-pla
+jsr rls_debug
 		CMP ram_stat, X		; will check both stat (LSB) AND PID (MSB) of this block
 		BNE rls_oth			; it is not mine and/or not in use
 			PHA					; otherwise save registers
-lda#'@'
+lda#'@'		; found erasable block @N
 jsr$c0c2
 			PHX
 txa
@@ -1146,7 +1149,7 @@ jsr$c0c2
 			LDA ram_pos, X		; get pointer to targeted block
 pha
 clc
-adc#'0'
+adc#'0'		; page LSB
 jsr$c0c2
 pla
 			STZ ma_pt			; using PAGE addresses beware of 16-bit memory eeeeeeeeek^2
@@ -1163,8 +1166,10 @@ pla
 ;				DEX					; try to get one before
 ;				DEX
 rls_oth:
+pha
 lda#'+'
 jsr$c0c2
+pla
 		INX					; advance to next block
 		INX
 rls_next:
