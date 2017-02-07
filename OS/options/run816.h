@@ -2,14 +2,17 @@
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170116-1037
+; last modified 20170207-1008
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
 
-; hard to multitask on this...
+; enable in order to remove headers, not LOAD_LINK savvy!
+;#define	NOHEAD	_NOHEAD
+; enable multitasking support... hopefully! *** might be defined upon multitasking driver
+;#define	MULTITASK	_MULTITASK
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -73,8 +76,7 @@ DEVICE	=	DEV_CONIO		; standard I/O device
 
 ; SRAM pages, just in case of mirroring/bus error * NOT YET USED
 #ifndef	LOWRAM
-SRAM =	128				; 32 KiB available as standard
-
+SRAM		=	128		; 32 KiB available as standard
 SPTR		=	$FF		; general case stack pointer, new name 20160308
 SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
 ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp

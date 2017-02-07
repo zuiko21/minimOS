@@ -1,33 +1,32 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170131-1240
+; last modified 20170207-1056
 
-#define	C816	_C816
+; just in case
+#define		C816	_C816
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
 
 ; uncomment in case of separate, downloadable jump & boot files
 ; should assume standalone assembly!!! (will get drivers anyway)
-;#define		DOWNLOAD	_DOWNLOAD
+#define		DOWNLOAD	_DOWNLOAD
 
 ; in case of standalone assembly
 #ifndef	HEADERS
 #include "usual.h"
-.bss
-#ifdef		DOWNLOAD
+#ifdef	DOWNLOAD
 * = $0400				; safe address for patchable 2 kiB systems, change if required
 #else
-#include "drivers/config/DRIVER_PACK.h"
--user_sram = *
-.text
+; standalone kernels need to keep track of drivers_ad label!
+.data
 #include "drivers/config/DRIVER_PACK.s"
-* = ROM_BASE			; just a placeholder, no standardised address
-#endif
 .text
+#endif
 #endif
 
-; *** standard header, at least for testing ***
+; ##### standard header, at least for testing #####
+#ifndef	NOHEAD
 kern_head:
 	BRK
 	.asc	"mV"			; executable for testing TBD
@@ -44,15 +43,17 @@ kern_splash:
 kern_siz = kern_end - kern_head - 256
 
 	.word	kern_siz, 0	; kernel size excluding header 
+#endif
+; ##### end of minimOS header #####
 
 ; **************************************************
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
-
+-kernel:
 warm:
-#ifdef	SAFE
 	SEI					; interrupts off, just in case
 	CLD					; do not assume anything
+#ifdef	SAFE
 	SEC
 	XCE					; set emulation mode for a moment! will reset to 8-bit registers
 #endif
@@ -476,6 +477,18 @@ k_isr:
 kern_end:		; for size computation
 
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 shell:
 #include "shell/SHELL"
+
+; ****** Downloaded kernels add driver staff at the end ******
+#ifdef	DOWNLOAD
+#include "drivers/config/DRIVER_PACK.s"	; this package will be included with downloadable kernels
+.data
+; downloadable system have ALL system & driver variables AFTER the kernel/API
+sysvars:
+#include "sysvars.h"
+; driver-specific system variables, located here 20170207
+dr_vars:
+#include "drivers/config/DRIVER_PACK.h"
+-user_sram = *			; the rest of SRAM
+#endif

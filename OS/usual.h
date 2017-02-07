@@ -1,5 +1,5 @@
 ; usual header includes for minimOS
-; last modified 20170207-0858
+; last modified 20170207-1031
 ; (c) 2012-2017 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -15,15 +15,18 @@
 * = SYSRAM				; as defined in options.h
 ; firmware and system variables
 #include "firmware/ARCH.h"
+#ifndef	DOWNLOAD
+sysvars:
 #include "sysvars.h"
 ; driver-specific system variables, located here 20170207
 dr_vars:
 #include "drivers/config/DRIVER_PACK.h"
+#endif
 ; points to the beginning of free SRAM
 -user_sram:
+.text
 #ifndef	ROM
 ; extra labels for standalone assembly
-.text
 *				= ROM_BASE
 -remote_boot	= *
 -kernel			= *

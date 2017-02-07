@@ -39,7 +39,7 @@ FILE_DEV	=	130
 
 
 ; new macro for filesystem calling, no specific kernel entries!
-; ** revise for 816 systems ****
+; ** revise for 816 systems **** TO DO TO DO TO DO
 #define		_FILESYS(a)		STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
 
 ; *** function endings ***
@@ -80,12 +80,12 @@ FILE_DEV	=	130
 #define		_PANIC(a)	BRK: .asc a, 0
 
 ; *** usual ASCII constants ***
-#define		CR	13
-#define		LF	10
-#define		BS	8
-#define		TAB	9
-#define		BEL	7
-#define		ESC	27
+#define		CR		13
+#define		LF		10
+#define		BS		8
+#define		TAB		9
+#define		BEL		7
+#define		ESC		27
 
 ; *** conditional opcode assembly ***
 #ifdef	NMOS

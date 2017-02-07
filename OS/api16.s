@@ -1204,11 +1204,4 @@ k_vec:
 	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
 	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
 	.word	release		; release ALL memory for a PID, new 20161115
-
-#else
-#include "drivers.s"	; this package will be included with downloadable kernels
-.data
-#include "sysvars.h"	; donwloadable systems have all vars AND drivers after the kernel itself
-#include "drivers.h"
-user_sram = *			; the rest of SRAM
 #endif
