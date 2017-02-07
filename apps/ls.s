@@ -1,12 +1,10 @@
 ; ROM header listing for minimOS!
 ; v0.5b7
-; last modified 20170127-1221
+; last modified 20170207-1235
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
 .(
-#define		CR		13
-
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	rompt		= uz			; scans ROM
@@ -15,6 +13,7 @@
 	__last	= rompt+3	; ##### just for easier size check ##### could be +2 for 65c02
 
 ; ##### include minimOS headers and some other stuff #####
+#ifndef	NOHEAD
 	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 lsHead:
 ; *** header identification ***
@@ -39,6 +38,7 @@ lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	lsSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
+#endif
 ; ##### end of minimOS executable header #####
 
 ; ************************
@@ -311,6 +311,7 @@ prnStr:
 banner:
 #ifdef	C816
 	.asc	"  "		; two extra spaces for bank address
+#endif
 	.asc	"Addr. Name       CPU  Size", CR, 0		; header
 
 ; format as follows

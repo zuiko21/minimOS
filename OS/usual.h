@@ -1,5 +1,5 @@
 ; usual header includes for minimOS
-; last modified 20170207-1031
+; last modified 20170207-1215
 ; (c) 2012-2017 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -26,9 +26,8 @@ dr_vars:
 -user_sram:
 .text
 #ifndef	ROM
-; extra labels for standalone assembly
-*				= ROM_BASE
--remote_boot	= *
--kernel			= *
+; placeholder for standalone assembly
+*		= ROM_BASE
+-kernel	= *
 #endif
 #endif

@@ -1,16 +1,23 @@
 ; SIGTERM test app for minimOS!
 ; v1.0b3
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170109-1121
+; last modified 20170207-1240
 
 ; for standalone assembly, set path to OS/
 #include "usual.h"
 
 ; *** first some executable header ***
+#ifndef	NOHEAD
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 sts_header:
 	.asc 0, "m", CPU_TYPE, "****", 13		; standard system file wrapper EEEEK
+#endif
+
+; leave title at least
 sts_title:
 	.asc "SIGtest", 0						; filename
+
+#ifndef	NOHEAD
 	.asc "Test app for SIGTERM handling", 0	; description as comment
 ; advance to end of header
 	.dsb	sts_header + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
@@ -24,6 +31,7 @@ stsSize	=	sts_end - sts_header -256	; compute size NOT including header!
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	stsSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
+#endif
 ; ##### end of minimOS executable header #####
 
 ; *** actual app code starts here ***

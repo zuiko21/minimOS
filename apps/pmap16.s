@@ -1,12 +1,10 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b2
-; last modified 20170127-0900
+; last modified 20170207-1237
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
 .(
-#define		CR		13
-
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	page	= uz		; start of current block
@@ -16,6 +14,8 @@
 	__last	= current+1	; ##### just for easier size check #####
 
 ; ##### include minimOS headers and some other stuff #####
+#ifndef	NOHEAD
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 pmapHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
@@ -40,6 +40,7 @@ pmap16Size	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	pmap16Size		; filesize
 	.word	0				; 64K space does not use upper 16-bit
+#endif
 ; ##### end of minimOS executable header #####
 
 ; ************************

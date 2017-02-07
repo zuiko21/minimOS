@@ -10,7 +10,7 @@
 #define		SAFE	_SAFE
 
 ; enable in order to remove headers, not LOAD_LINK savvy!
-;#define	NOHEAD	_NOHEAD
+;#define		NOHEAD	_NOHEAD
 ; enable multitasking support... hopefully! *** might be defined upon multitasking driver
 ;#define	MULTITASK	_MULTITASK
 

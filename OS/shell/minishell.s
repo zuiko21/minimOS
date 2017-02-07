@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5b8
-; last modified 20170123-0934
+; last modified 20170207-1202
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -24,11 +24,14 @@ shellHead:
 	BRK						; don't enter here! NUL marks beginning of header
 	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
+#endif
 
 ; *** filename and optional comment ***
+; keep string as window title at least
 title:
 	.asc	"miniShell", 0, 0	; file name (mandatory) and empty comment
 
+#ifndef	NOHEAD
 ; advance to end of header
 	.dsb	shellHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 

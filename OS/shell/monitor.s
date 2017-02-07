@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.5.1b5
-; last modified 20170126-0957
+; last modified 20170207-1238
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -19,6 +19,8 @@
 #endif
 
 ; ##### include minimOS headers and some other stuff #####
+#ifndef	NOHEAD
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 mon_head:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
@@ -41,8 +43,8 @@ mon_head:
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	monSize		; filesize
 	.word	0			; 64K space does not use upper 16-bit
+#endif
 ; ##### end of minimOS executable header #####
-
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
@@ -82,8 +84,8 @@ go_mon:
 	STA z_used			; set needed ZP space as required by minimOS
 	_STZA w_rect		; no screen size required
 	_STZA w_rect+1		; neither MSB
-	LDY #<title			; LSB of window title
-	LDA #>title			; MSB of window title
+	LDY #<montitle		; LSB of window title
+	LDA #>montitle		; MSB of window title
 	STY str_pt			; set parameter
 	STA str_pt+1
 	_KERNEL(OPEN_W)		; ask for a character I/O device
@@ -665,7 +667,7 @@ cmd_ptr:
 	.word	poweroff		; .Z
 
 ; *** strings and other data ***
-title:
+montitle:
 	.asc	"miniMonitor", 0
 
 splash:
@@ -726,5 +728,6 @@ help_str:
 	.asc	"Z = poweroff", CR
 #endif
 	.byt	0
+
 mon_end:				; for size computation
 .)

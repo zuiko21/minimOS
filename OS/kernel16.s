@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170207-1056
+; last modified 20170207-1233
 
 ; just in case
 #define		C816	_C816
@@ -10,13 +10,16 @@
 
 ; uncomment in case of separate, downloadable jump & boot files
 ; should assume standalone assembly!!! (will get drivers anyway)
-#define		DOWNLOAD	_DOWNLOAD
+; ROMable kernels cannot be downloaded, though
+#ifndef	ROM
+;#define		DOWNLOAD	_DOWNLOAD
+#endif
 
 ; in case of standalone assembly
 #ifndef	HEADERS
 #include "usual.h"
 #ifdef	DOWNLOAD
-* = $0400				; safe address for patchable 2 kiB systems, change if required
+* = $0600				; safe address for patchable 2 kiB systems, change if required
 #else
 ; standalone kernels need to keep track of drivers_ad label!
 .data
@@ -32,9 +35,13 @@ kern_head:
 	.asc	"mV"			; executable for testing TBD
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
+#endif
+
+; keep version string wven if no headers present!
 kern_splash:
 	.asc	"minimOS-16 0.5.1b5", 0	; version in comment
 
+#ifndef	NOHEAD
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$6460	; time, 12.35
@@ -313,20 +320,18 @@ sh_exec:
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
 	.al: REP #$20		; will be needed anyway upon restart
+#ifndef	NOHEAD
 	LDA #shell+256		; pointer to integrated shell! eeeeeek
+#else
+	LDA #shell			; no header to skip in this case, but what about splash string?
+#endif
 	STA ex_pt			; set execution full address
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
-	_KERNEL(B_FORK)		; reserve first execution braid
-;	LDX #MM_FORK		; internal multitasking index (2)
-;	JSR (drv_opt-MM_FORK, X)	; direct to driver skipping the kernel, note deindexing! (8)
+	_KERNEL(B_FORK)		; reserve first execution braid, no direct deindexed call because of 16-bit memory!
 	CLI					; should enable interrupts at some point... eeeeeeeek
-	_KERNEL(B_EXEC)		; go for it!
-;	LDX #MM_EXEC		; internal multitasking index (2)
-;	JSR (drv_opt-MM_EXEC, X)	; direct to driver skipping the kernel, note deindexing! (8)
-	_KERNEL(B_YIELD)		; ** get into the working code ASAP! ** might be fine for 6502 too
-;	LDX #MM_YIELD		; internal multitasking index (2)
-;	JMP (drv_opt)		; do not care about present status as will never return (5)
+	_KERNEL(B_EXEC)		; go for it! no direct deindexed call because of 16-bit memory!
+	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** might be fine for 6502 too
 here:
 	BRA here			; ...as the scheduler will detour execution
 
@@ -465,6 +470,7 @@ rst_shell:
 
 ; *** new, sorted out code 20150124 ***
 ; *** interrupt service routine ***
+; will include BRK handler!
 
 k_isr:
 #ifndef	C816
@@ -472,9 +478,12 @@ k_isr:
 #else
 #include "isr/irq16.s"
 #endif
-
 ; default NMI-ISR is on firmware!
+
 kern_end:		; for size computation
+; ***********************************************
+; ***** end of kernel file plus API and IRQ *****
+; ***********************************************
 
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
 shell:
@@ -490,5 +499,6 @@ sysvars:
 ; driver-specific system variables, located here 20170207
 dr_vars:
 #include "drivers/config/DRIVER_PACK.h"
--user_sram = *			; the rest of SRAM
+.text					; eeeeeek
+-user_sram = *			; the rest of available SRAM
 #endif
