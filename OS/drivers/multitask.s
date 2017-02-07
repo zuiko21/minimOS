@@ -1,8 +1,8 @@
 ; software multitasking module for minimOS
-; v0.5.1a6
-; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161219-1237
-
+; v0.5.1a7
+; (c) 2015-2017 Carlos J. Santisteban
+; last modified 20170207-0900
+; *** TO BE HEAVILY REVISED ***
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -38,7 +38,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a6", 0	; works as long as no more than 9 braids!
+	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a7", 0	; works as long as no more than 9 braids!
 
 ; *** initialisation code ***
 mm_init:
@@ -63,9 +63,7 @@ mm_cont:
 ;	STA sysptr+1		; store in pointer, will be increased
 ;	LDA #<mm_context	; same for LSB, will not bother adding sys_sp
 ;	STA sysptr
-;	LDY #sys_sp			; offset for sys_sp, just in case
 	LDA #BR_FREE		; adequate value in two highest bits, if sys_sp does NOT get inited!
-;	LDY #0				; for safer STZ, in case SP is NOT inited! but not if mm_treq is integrated with mm_flags!
 	LDX #MAX_BRAIDS		; set counter (much safer this way)
 mm_rsp:
 ;		DEC sysptr+1		; move pointer to next storage area
@@ -73,8 +71,6 @@ mm_rsp:
 ;		STA (sysptr), Y		; store "register" in proper area *** really needed?
 ;		LDA #BR_FREE		; adequate value in two highest bits *** could be otside loop if sys_sp does NOT get inited!
 		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0 *** also resets integrated mm_treq
-;		STY mm_treq-1, X	; set SIGTERM request flags to zero, use this way in case SP does NOT get inited! but not if mm_treq is integrated with mm_flags!
-/*;		_STZA mm_treq-1, X	; set SIGTERM request flags to zero, new 20150611, poorly optimized for NMOS macro*/
 		DEX					; one braid less (much safer this way)
 		BNE mm_rsp			; finish all braids (much safer this way)
 	INX					; the first PID is 1
@@ -171,20 +167,23 @@ mm_save:
 		LDA 0, Y			; get byte from zeropage (4)
 		STA (sysptr), Y		; store it (5)
 		DEY					; previous byte (2)
-#ifdef	C64
+
+#ifdef	CBM64
 		CPY #z_used			; 6510 must skip built-in port! (2)
 #endif
+
 		BNE mm_save			; until first byte, but NOT included (3/2)
 ; after that loop, -1+z*14 (make it z*16 for 6510) worse case +3373 (+3823 for C64)
 ; copy missing byte (+9)
 		LDA 0, Y			; get byte from zeropage (4) Y could be 2 in C64, otherwise LDA 0 will do (one cycle less)
 		STA (sysptr), Y		; store it (5)
 ; save kernel local context also (+385)
-#ifdef	C64
+#ifdef	CBM64
 	LDY #std_in			; first byte of system context (2)
 #else
 	LDY #locals			; system context (2)
 #endif
+
 mm_kern:
 		LDA 0, Y			; get byte from locals and parameters (4)
 		STA (sysptr), Y		; store in context area (5)
@@ -232,19 +231,22 @@ mm_load:
 		LDA (sysptr), Y		; get it (5)
 		STA 0, Y			; get byte from zeropage (4)
 		DEY					; previous byte (2)
-#ifdef	C64
+
+#ifdef	CBM64
 		CPY #z_used			; 6510 must skip built-in port!
 #endif
+
 		BNE mm_load			; until first byte, but NOT included (3/2)
 ; copy missing byte (9)
 		LDA (sysptr), Y		; get it (5)
 		STA 0, Y			; get byte from zeropage (4)
 ; load kernel local context also (+385)
-#ifdef	C64
+#ifdef	CBM64
 	LDY #std_in			; first byte of system context
 #else
 	LDY #locals			; system context
 #endif
+
 mm_lkern:
 		LDA (sysptr), Y		; get from context area (5)
 		STA 0, Y			; get byte from locals and parameters (4)
@@ -274,7 +276,6 @@ mm_stload:
 		BNE mm_stload		; until the end
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
-;	LDA mm_treq-1, X	; had it a SIGTERM request? (4)
 	LDA mm_flags-1, X	; had it a SIGTERM request? (4) in case of integrated mm_treq
 	LSR					; easier check of bit 0! (2)
 	BCS mm_sigterm		; process it now! (2/3)
@@ -283,7 +284,6 @@ mm_rts:
 
 ; *** the actual SIGTERM routine execution, new 20150611 ***
 mm_sigterm:
-/*;	_STZA mm_treq-1, X	; EEEEEEEK! Clear received TERM signal*/
 	ASL					; ...and restore value with clear flag!
 	STA mm_flags-1, X	; EEEEEEEK! clear received TERM signal, new format 20161117
 	LDA #>mm_rts		; compute return address for RTI!
@@ -478,8 +478,6 @@ mms_jmp:
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
-;	LDA #0				; STZ is not worth
-;	STA mm_treq-1, Y	; Clear unattended TERM signal, 20150617
 ; should probably free up all MEMORY & windows belonging to this PID...
 	LDY mm_pid			; get current task number
 	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115

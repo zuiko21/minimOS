@@ -15,6 +15,7 @@
 	__last	= rompt+3	; ##### just for easier size check ##### could be +2 for 65c02
 
 ; ##### include minimOS headers and some other stuff #####
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 lsHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header

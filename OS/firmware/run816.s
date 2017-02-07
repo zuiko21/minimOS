@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9b3
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170123-1149
+; last modified 20170207-0912
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -9,15 +9,21 @@
 #include "usual.h"
 
 ; *** first some ROM identification *** new 20150612
+; this is expected to be loaded at an aligned address anyway
+#ifndef	NOHEAD
 fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
 	.asc	"0.9b3 firmware for "
+#endif
+
 ; at least, put machine name as needed by firmware!
+; this cannot be waived by the NOHEAD option
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
+#ifndef	NOHEAD
 ; advance to end of header
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
@@ -31,6 +37,7 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 	.word	fwSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; *** end of standard header ***
+#endif
 
 ; ********************
 ; *** cold restart ***

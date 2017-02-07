@@ -17,6 +17,8 @@
 	__last	= buffer+BUFSIZ	; ##### just for easier size check #####
 
 ; ##### include minimOS headers and some other stuff #####
+#ifndef	NOHEAD
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 shellHead:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
@@ -39,6 +41,7 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	shellSize		; filesize
 	.word	0				; 64K space does not use upper 16-bit
+#endif
 ; ##### end of minimOS executable header #####
 
 ; ****************************

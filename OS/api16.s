@@ -1020,7 +1020,7 @@ b_fork:
 ; *** B_EXEC, launch new loaded process ***
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
-; *** should need some flag to indicate XIP or not! stack frame is different
+; no need to indicate XIP or not! will push start address at bottom of stack anyway
 
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***

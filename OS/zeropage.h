@@ -1,13 +1,13 @@
-; minimOS 0.5.1a12 zero-page system variables
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161223-0848
+; minimOS 0.5.1a13 zero-page system variables
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 20170207-0852
 
 .zero
 
 ; ** user space **
 * = 0
 
-#ifndef	C64
+#ifndef	CBM64
 std_in		.byt	0		; default parent input device (NOT for 6510)
 stdout		.byt	0		; default parent outout device (NOT for 6510)
 #else
@@ -18,7 +18,7 @@ z_used		.byt	0		; user-reserved space in ZP, also available zeropage space at ap
 user:user_zp:				; older labels for compatibility
 uz							; user context starts here, $03...$E3
 
-#ifdef	C64
+#ifdef	CBM64
 * = $E2						; just before local variables, see definition below
 std_in		.byt	0		; default parent input device (for 6510)
 stdout		.byt	0		; default parent outout device (for 6510)
@@ -28,7 +28,7 @@ stdout		.byt	0		; default parent outout device (for 6510)
 * = $E4						; local variables standard start address
 
 locals:						; old label for compatibility
-
+; ** should add somewhere a pointer for execution parameters/registers **
 ; *** include aliases here for local1/locpt1 ***
 dr_aut: ma_l: mm_sig: rls_pid: iol_dev:
 local1: locpt1	.dsb	4	; variables for kernel functions @ $E4
@@ -53,10 +53,8 @@ ma_pt: up_sec: str_pt: cpu_ll:
 z6:z6W:z6L:					; old labels for compatibility
 zpar2: zaddr2	.dsb	4	; up to 4 bytes, including older names @ $F4
 
-def_io	= cpu_ll+2			; *** special case ***
-
 ; *** include aliases here for zpar/zaddr ***
-io_c: ma_rs: w_rect: up_ticks:
+io_c: ma_rs: w_rect: up_ticks: def_io:
 z2:z2W:z2L:					; old labels for compatibility
 zpar: zaddr		.dsb	4	; up to 4 bytes, including older names @ $F8
 

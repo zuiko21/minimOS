@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.5.1b5, unified with kernel 20160412
+; v0.5.1b6, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170123-1309
+; last modified 20170207-0834
 
 ; avoid further standalone definitions
 #define		ROM		_ROM
@@ -10,22 +10,15 @@
 ; *** options.h is machine-dependent, copy or link appropriate file from options/ ***
 #include "usual.h"
 
-; driver-specific system variables, label is new 20150128
-dr_vars:
-#include "drivers/config/DRIVER_PACK.h"
-
-; points to the beginning of free SRAM
--user_sram:
-
 ; *** ROM contents ***
 .text
 * = ROM_BASE		; as defined in options.h
 
-; * autobank no longer supported *
 ; *** minimOS volume header, new 20150604 ***
-; do not include as current (0.5.1) LOAD_LINK will not recognise it!
-; should be included from somewhere else! but ONLY makes sense with filesystem
+; not final as current (0.5.1) LOAD_LINK will not recognise it!
+; might use NOHEAD option for systems without any filesystem, but current LOAD_LINK needs it
 
+#ifndef	NOHEAD
 sysvol:
 	BRK					; don't enter here! NUL marks beginning of header
 	.asc	"aV"		; minimOS system volume ID, TBD
@@ -34,20 +27,20 @@ sysvol:
 ; *** ROM identification string as comment (highly recommended) ***
 version:
 	.asc	"minimOS 0.5.1 for ", MACHINE_NAME	; system version and machine
-	.asc	13, "20170109-1000", 0				; build date and time
+	.asc	13, "20170207-0830", 0				; build date and time
 
-	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date 
-field
+	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date field
 
-	.word	$5000				; time, 09.00
-	.word	$4A29				; date, 2017/01/09
+	.word	$43C0				; time, 08.30
+	.word	$4A47				; date, 2017/02/07
 
-romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
+;romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 
 ;	.word	romsize				; volume size (for future support)
 ;	.word	0					; ROM size in pages
 ; FAKE file "size" in order to be LOAD_LINK savvy...
 	.word	0, 0				; nothing inside, skip to adjacent header
+#endif
 
 ; *** the GENERIC kernel starts here ***
 kernel = * + 256	; skip the header!
@@ -56,10 +49,10 @@ kernel = * + 256	; skip the header!
 #else
 #include "kernel16.s"
 #endif
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 
 ; *** I/O device drivers ***
 ; should include a standard header here!
+	.dsb	$100 - (* & $FF), $FF		; page alignment!!! eeeeek
 drv_file:
 	BRK
 	.asc	"aD"						; driver pack file TBD
@@ -69,8 +62,8 @@ drv_file:
 
 	.dsb	drv_file + $F8 - *, $FF		; padding
 
-	.word	$5000				; time, 09.00
-	.word	$4A29				; date, 2017/01/09
+	.word	$5000						; time, 09.00
+	.word	$4A29						; date, 2017/01/09
 
 drv_size = drv_end - drv_file - $100	; exclude header
 
@@ -80,21 +73,19 @@ drv_size = drv_end - drv_file - $100	; exclude header
 ; after header goes the binary blob
 #include "drivers/config/DRIVER_PACK.s"
 drv_end:		; for easier size computation
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 
 ; *** include rest of the included software, each with its own header ***
+; these must be page aligned!!!
 #include "../apps/ls.s"
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/pmap16.s"
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/lined.s"
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 
 ; *** skip I/O area for more ***
 ; ##### empty header #####
+	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 empty_head:
 	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"aF****", CR	; just free space
+	.asc	"aS****", CR	; just reserved system space
 	.asc	"[I/O]", 0, 0	; file name (mandatory) and empty comment
 ; advance to end of header
 	.dsb	empty_head + $FC - *, $FF	; for ready-to-blow ROM, advance to size
@@ -112,9 +103,7 @@ afterIO = $E000
 ;* = afterIO
 ; more software
 #include "shell/miniMoDA.s"
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "shell/monitor.s"
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
 #include "../apps/sigtest.s"
 ; ...could add more software up to $F800
 
