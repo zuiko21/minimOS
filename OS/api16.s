@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b9, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170208-1114
+; last modified 20170208-1435
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -386,9 +386,9 @@ pla
 php
 jsr hexdebug
 plp
+		JSR ma_adv			; create room for assigned block (BEFORE advancing eeeeeeeek)
 		INX					; skip the alignment blank
 		INX
-		JSR ma_adv			; create room for assigned block (leave alignment block alone)
 		PLA					; retrieve aligned address
 		STA ram_pos, X		; update pointer on assigned block
 ma_aok:
