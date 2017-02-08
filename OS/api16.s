@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b9, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170206-1343
+; last modified 20170208-1114
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -312,22 +312,13 @@ ma_biggest:
 			CPX #MAX_LIST*2		; already past?
 				BEQ ma_corrupt		; something was wrong!!!
 #endif
-lda#'?'
-jsr$c0c2
 			LDY ram_stat, X		; get status of block (4)
 ;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (2)
 			BNE ma_nxbig		; go for next as this one was not free (3/2)
 				JSR ma_alsiz		; **compute size according to alignment mask**
-pha
-jsr hexdebug
-pla
 				CMP ma_siz			; compare against current maximum (4)
 				BCC ma_nxbig		; this was not bigger (3/2)
 					STA ma_siz			; otherwise keep track of it... (4)
-txa
-jsr hexdebug
-lda#'^'
-jsr$c0c2
 					STX ma_ix			; ...and its index! (3)
 ma_nxbig:
 			INX					; advance index (2+2)
@@ -345,8 +336,6 @@ ma_fill:
 		LDX ma_ix			; retrieve index
 		jmp ma_updt			; nothing to scan, just update status and return address
 ma_scan:
-lda#'.'
-jsr$c0c2
 		LDY ram_stat, X		; get state of current entry (4)
 ;		CPY #FREE_RAM		; looking for a free one (2) not needed if free is zero
 			BEQ ma_found		; got one (2/3)
@@ -361,8 +350,6 @@ ma_nobank:
 ; one end of CS
 	_ERR(FULL)			; no room for it!
 ma_found:
-lda#'!'
-jsr$c0c2
 	JSR ma_alsiz		; **compute size according to alignment mask**
 #ifdef	SAFE
 	BEQ ma_corrupt		; no way for an empty block!
@@ -396,7 +383,9 @@ pla
 		ORA ma_align		; set disturbing bits...
 		INC					; ...and reset them after increasing the rest
 		PHA					; need to keep the new aligned pointer!
+php
 jsr hexdebug
+plp
 		INX					; skip the alignment blank
 		INX
 		JSR ma_adv			; create room for assigned block (leave alignment block alone)
@@ -407,7 +396,9 @@ ma_aok:
 ; make room for new entry... if not exactly the same size
 	CMP ma_rs			; compare this block with requested size
 	BEQ ma_updt			; was same size, will not generate new entry
+; **in safe mode should push 16 bits into stack for proper address discarding!
 		JSR ma_adv			; make room otherwise, and set the following one as free padding
+; **in safe mode should toss the previoulsy stacked word
 ; create after the assigned block a FREE entry!
 		LDA ram_pos, X		; newly assigned slice will begin there eeeeeeeeeek
 		CLC
