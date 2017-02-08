@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5rc4
+; v0.5rc5
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170208-1011
+; last modified 20170208-1047
 
 #include "usual.h"
 .(
@@ -12,10 +12,13 @@
 #define	SHOW		$14
 #define	EDIT		5
 #define	DELETE		$18
-#define	DOWN		$12
-#define	UP			$17
+; down was ^S ($12) but set to ^F ($6) for run816 compatibility
+#define	DOWN		6
+; up was ^W ($17) but set to ^B ($2) for run816 compatibility
+#define	UP			2
 #define	GOTO		7
-#define	QUIT		$11
+; quit was ^Q ($11) but set to ^Y ($19) for run816 compatibility
+#define	QUIT		$19
 #define	SUBSTITUTE	'~'
 
 ; ##### include minimOS headers and some other stuff #####
@@ -24,7 +27,7 @@
 linedHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE				; minimOS app!
+	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", CR		; some flags TBD
 
 ; *** filename and optional comment ***
