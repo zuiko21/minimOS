@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5b8
-; last modified 20170207-1202
+; last modified 20170208-1019
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -18,20 +18,17 @@
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 shellHead:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
 	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
-#endif
 
 ; *** filename and optional comment ***
-; keep string as window title at least
 title:
 	.asc	"miniShell", 0, 0	; file name (mandatory) and empty comment
 
-#ifndef	NOHEAD
 ; advance to end of header
 	.dsb	shellHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
@@ -50,7 +47,7 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
-mshell:
++shell:					; **** mandatory external label ****
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -125,7 +122,7 @@ xsh_wait:
 			BEQ main_loop		; then continue asking for more
 xsh_single:
 	_KERNEL(B_EXEC)		; execute anyway...
-	JMP mshell			; ...but reset shell environment! should not arrive here
+	JMP shell			; ...but reset shell environment! should not arrive here
 
 ; *** useful routines ***
 
@@ -175,6 +172,11 @@ xsh_err:
 
 xsh_not:
 	.asc	"Not found", CR, 0
+
+#ifdef	NOHEAD
+title:
+	.asc	"miniShell", 0	; for headerless builds
+#endif
 
 ; ***** end of stuff *****
 shellEnd:				; ### for easy size computation ###

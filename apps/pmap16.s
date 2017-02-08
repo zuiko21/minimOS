@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b2
-; last modified 20170207-1237
+; last modified 20170208-0950
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -15,7 +15,7 @@
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 pmapHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
@@ -23,9 +23,8 @@ pmapHead:
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
-	.asc	"pmap16", 0	; file name (mandatory)
-
-	.asc	"Display memory map", CR				; comment
+	.asc	"pmap16", 0		; file name (mandatory)
+	.asc	"Display memory map", CR			; comment
 	.asc	"16-bit minimOS 0.5.1 only!!!", 0
 
 ; advance to end of header

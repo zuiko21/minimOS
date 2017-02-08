@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
 ; v0.5b7
-; last modified 20170207-1235
+; last modified 20170208-0950
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -14,7 +14,7 @@
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 lsHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
@@ -22,8 +22,7 @@ lsHead:
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
-	.asc	"ls", 0	; file name (mandatory)
-
+	.asc	"ls", 0			; file name (mandatory)
 	.asc	"Lists ROM contents", 0		; comment
 
 ; advance to end of header

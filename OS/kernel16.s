@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b5
+; v0.5.1b6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170207-1233
+; last modified 20170208-0951
 
 ; just in case
 #define		C816	_C816
@@ -30,6 +30,7 @@
 
 ; ##### standard header, at least for testing #####
 #ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 kern_head:
 	BRK
 	.asc	"mV"			; executable for testing TBD
@@ -39,13 +40,13 @@ kern_head:
 
 ; keep version string wven if no headers present!
 kern_splash:
-	.asc	"minimOS-16 0.5.1b5", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b6", 0	; version in comment
 
 #ifndef	NOHEAD
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$6460	; time, 12.35
-	.word	$4A3F	; date, 2017/1/23
+	.word	$4D00	; time, 8.40
+	.word	$4A48	; date, 2017/2/08
 
 kern_siz = kern_end - kern_head - 256
 
@@ -320,11 +321,7 @@ sh_exec:
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 	STX cpu_ll			; architecture parameter
 	.al: REP #$20		; will be needed anyway upon restart
-#ifndef	NOHEAD
-	LDA #shell+256		; pointer to integrated shell! eeeeeek
-#else
-	LDA #shell			; no header to skip in this case, but what about splash string?
-#endif
+	LDA #shell			; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
@@ -486,7 +483,7 @@ kern_end:		; for size computation
 ; ***********************************************
 
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
-shell:
+; must include external shell label!!!
 #include "shell/SHELL"
 
 ; ****** Downloaded kernels add driver staff at the end ******

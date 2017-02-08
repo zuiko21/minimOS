@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5rc4
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170108-1613
+; last modified 20170208-1011
 
 #include "usual.h"
 .(
@@ -19,16 +19,17 @@
 #define	SUBSTITUTE	'~'
 
 ; ##### include minimOS headers and some other stuff #####
+#ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 linedHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
 	.asc	"m", CPU_TYPE				; minimOS app!
-	.asc	"****", CR	; some flags TBD
+	.asc	"****", CR		; some flags TBD
 
 ; *** filename and optional comment ***
-	.asc	"lined", 0	; file name (mandatory)
-
-	.asc	"Text Editor 0.5 (for source code)", 0				; comment
+	.asc	"lined", 0		; file name (mandatory)
+	.asc	"Text Editor 0.5 (for source code)", 0	; comment
 
 ; advance to end of header
 	.dsb	linedHead + $F8 - *, $FF	; for ready-to-blow ROM
@@ -42,8 +43,8 @@ linedSize	=	linedEnd - linedHead -256	; compute size NOT including header!
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	linedSize		; filesize
 	.word	0				; 64K space does not use upper 16-bit
+#endif
 ; ##### end of minimOS executable header #####
-
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####

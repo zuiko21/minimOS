@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.5.1b5
-; last modified 20170207-1238
+; last modified 20170208-0950
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -20,7 +20,7 @@
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 mon_head:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header

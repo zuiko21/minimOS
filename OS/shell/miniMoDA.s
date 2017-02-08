@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b9
-; last modified 20170207-1238
+; last modified 20170208-0948
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -24,19 +24,15 @@
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 mmd_head:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
 	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
-#endif
-
 ; *** filename and optional comment ***
 title:
 	.asc	"miniMoDA", 0	; file name (mandatory)
-
-#ifndef	NOHEAD
 	.asc	"816-savvy", 0	; comment
 
 ; advance to end of header
@@ -1229,7 +1225,12 @@ help_str:
 #endif
 	.byt	0
 
+#ifdef	NOHEAD
+title:
+	.asc	"miniMoDA", 0	; headerless builds
+#endif
+
 ; include opcode list
 #include "shell/data/opcodes.s"
-mmd_end:
+mmd_end:					; size computation
 .)

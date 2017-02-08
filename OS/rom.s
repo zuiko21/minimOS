@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.5.1b6, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170207-1038
+; last modified 20170208-1002
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -27,14 +27,13 @@ sysvol:
 	.asc	"****", CR	; some flags TBD
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
-version:
 	.asc	"minimOS 0.5.1 for ", MACHINE_NAME	; system version and machine
-	.asc	13, "20170207-0830", 0				; build date and time
+	.asc	13, "20170208-0954", 0				; build date and time
 
 	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date field
 
-	.word	$43C0				; time, 08.30
-	.word	$4A47				; date, 2017/02/07
+	.word	$4EC0				; time, 09.54
+	.word	$4A48				; date, 2017/02/08
 
 ;romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 
@@ -47,7 +46,9 @@ version:
 ; **************************************
 ; *** the GENERIC kernel starts here ***
 ; **************************************
-kernel = * + 256	; skip the header!
+; mandatory kernel label internally defined!
+; includes appropriate shell with its own header
+
 #ifndef	C816
 #include "kernel.s"
 #else
@@ -59,7 +60,7 @@ kernel = * + 256	; skip the header!
 ; **************************
 ; ### should include a standard header here! ###
 #ifndef	NOHEAD
-	.dsb	$100 - (* & $FF), $FF		; page alignment!!! eeeeek
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 drv_file:
 	BRK
 	.asc	"aD"						; driver pack file TBD
@@ -82,10 +83,10 @@ drv_size = drv_end - drv_file - $100	; exclude header
 #include "drivers/config/DRIVER_PACK.s"
 drv_end:		; for easier size computation
 
-; ***********************************************************************
-; *** include rest of the supplied software, each with its own header ***
-; ***********************************************************************
-; these must be page aligned!!!
+; *********************************************
+; *** include rest of the supplied software ***
+; *********************************************
+; with their own headers, these must be page aligned!!!
 #include "../apps/ls.s"
 #include "../apps/pmap16.s"
 #include "../apps/lined.s"
@@ -93,7 +94,7 @@ drv_end:		; for easier size computation
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
 #ifndef	NOHEAD
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 empty_head:
 	BRK						; don't enter here! NUL marks beginning of header
 	.asc	"aS****", CR	; just reserved SYSTEM space
@@ -109,11 +110,14 @@ emptySize	=	afterIO - empty_head -256	; compute size NOT including header!
 #endif
 ; ##### end of minimOS header #####
 
-afterIO = $E000					; assuming I/O area at $DF00
+; *** blank space for I/O area skipping ***
+afterIO		= $E000				; assume I/O ends at $DFFF
 	.dsb	afterIO - *, $FF	; skip I/O and page alignment!!!
-* = afterIO
+;* = afterIO					; should be already there
 
-; ****** more software ******
+; *************************************
+; ****** more software after I/O ******
+; *************************************
 #include "shell/miniMoDA.s"
 #include "shell/monitor.s"
 #include "../apps/sigtest.s"
@@ -123,8 +127,9 @@ afterIO = $E000					; assuming I/O area at $DF00
 ; *** make separate room for firmware ***
 ; ***************************************
 	.dsb	FW_BASE - *, $FF	; for ready-to-blow ROM, skip to firmware area
-* = FW_BASE						; skip I/O area for firmware
+;* = FW_BASE					; should be already there
 
+; ***********************************
 ; *** hardware-dependent firmware ***
-firmware:
+; ***********************************
 #include "firmware/ARCH.s"
