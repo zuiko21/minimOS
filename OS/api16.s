@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b10, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170209-0946
+; last modified 20170209-1012
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -306,7 +306,6 @@ ma_nxpg:
 	LDA ma_rs+1			; get number of asked pages
 	BNE ma_scan			; work on specific size
 ; otherwise check for biggest available block -- new ram_stat word format 161105
-		STZ ma_siz		; ...and found value eeeeeeeeek
 ma_biggest:
 #ifdef	SAFE
 			CPX #MAX_LIST*2		; already past?
@@ -316,9 +315,9 @@ ma_biggest:
 ;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (2)
 			BNE ma_nxbig		; go for next as this one was not free (3/2)
 				JSR ma_alsiz		; **compute size according to alignment mask**
-				CMP ma_siz			; compare against current maximum (4)
+				CMP ma_rs+1			; compare against current maximum (4)
 				BCC ma_nxbig		; this was not bigger (3/2)
-					STA ma_siz			; otherwise keep track of it... (4)
+					STA ma_rs+1			; otherwise keep track of it... (4)
 					STX ma_ix			; ...and its index! (3)
 ma_nxbig:
 			INX					; advance index (2+2)
@@ -327,14 +326,13 @@ ma_nxbig:
 			CPY #END_RAM		; check whether at end (2)
 			BNE ma_biggest		; or continue (3/2)
 ; is there at least one available block?
-		LDA ma_siz			; should not be zero
+		LDA ma_rs+1			; should not be zero
 		BNE ma_fill			; there is at least one block to allocate
 			_ERR(FULL)		; otherwise no free memory!
 ; report allocated size
 ma_fill:
-		STA ma_rs+1			; store allocated size! already computed
 		LDX ma_ix			; retrieve index
-		jmp ma_updt			; nothing to scan, just update status and return address
+		BRA ma_falgn		; nothing to scan, only if aligned eeeeeek
 ma_scan:
 		LDY ram_stat, X		; get state of current entry (4)
 ;		CPY #FREE_RAM		; looking for a free one (2) not needed if free is zero
@@ -355,8 +353,8 @@ ma_found:
 	BEQ ma_corrupt		; no way for an empty block!
 	BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
 ma_corrupt:
-lda#'~'
-jsr$c0c2
+;lda#'~'
+;jsr$c0c2
 		LDX #>user_sram		; beginning of available ram, as defined... in rom.s
 		LDY #<user_sram		; LSB misaligned?
 		BEQ ma_zlsb			; nothing to align
@@ -375,22 +373,15 @@ ma_nobad:
 #endif
 	CMP ma_rs+1			; compare (5)
 		BCC ma_cont			; smaller, thus continue searching (2/3)
-; here we go!
+; here we go! first of all check whether aligned or not
+ma_falgn:
 	PHA					; save current size
-; **first of all check whether aligned or not**
 	LDA ram_pos, X		; check start address for alignment failure
 	BIT ma_align		; any offending bits?
 	BEQ ma_aok			; already aligned, nothing needed
-pha
-lda#'%'
-jsr$c0c2
-pla
 		ORA ma_align		; set disturbing bits...
 		INC					; ...and reset them after increasing the rest
 		PHA					; need to keep the new aligned pointer!
-php
-jsr hexdebug
-plp
 		JSR ma_adv			; create room for assigned block (BEFORE advancing eeeeeeeek)
 		INX					; skip the alignment blank
 		INX
@@ -424,7 +415,7 @@ ma_updt:
 ;	LDX #MM_PID			; internal multitasking index (2)
 ;	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	PLX					; retrieve index
-	.as: SEP #$30		; *** back to 8-bit because interleaved array! ***
+	.as: SEP #$20		; *** back to 8-bit because interleaved array! ***
 	TYA					; get into A as no STY abs,X!!!
 	STA ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
@@ -433,6 +424,7 @@ ma_updt:
 	.al					; as routines will be called in 16-bit memory!!!
 
 ; routine for aligned-block size computation
+; returns found size in A, sets C if OK, error otherwise (C clear!)
 ma_alsiz:
 	LDA ram_pos, X		; get bottom address (5)
 	BIT ma_align		; check for set bits from mask (5)
