@@ -1,20 +1,30 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b10, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170209-1012
+; last modified 20170209-1115
 
 ; no way for standalone assembly, neither internal calls...
 
-; *** dummy function, non implemented ***
+; ***************************************
+; *** dummy function, not implemented ***
+; ***************************************
+
 unimplemented:			; placeholder here, not currently used
-	.as: .xs: SEP #$30	; *** standard register size ***
+	.as: .xs: SEP #$30	; standard register size for a moment
 	_ERR(UNAVAIL)		; go away!
+
 
 ; ********************************
 ; *** COUT, output a character ***
 ; ********************************
-; **** Y <- dev, io_c <- char ****
-; ********************************
+;		INPUT
+; Y		= dev
+; io_c	= char
+;		OUTPUT
+; C = I/O error
+;		USES iol_dev, plus whatever the driver takes
+; cio_lock is a kernel structure
+
 cout:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; new MUTEX for COUT, 20161121, *per-driver based 161129 **added overhead
@@ -95,14 +105,22 @@ cio_callend:
 cio_notc:
 	RTI					; end of call procedure
 
-; *************************************************
-; ************* CIN,  get a character *************
-; *************************************************
-; *** Y <- dev, io_c -> char, C = not available ***
-; *************************************************
+
+; *****************************
+; *** CIN,  get a character ***
+; *****************************
+;		INPUT
+; Y = dev
+;		OUTPUT
+; io_c	= char
+; C		= not available
+;		USES iol_dev, and whatever the driver takes
+; cio_lock & cin_mode are kernel structures
+
 cin:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; new MUTEX for CIN, 20161121, *per-driver based 161129 **added overhead
+; *** TO DO *** MUTEX for physical devices only, after resolving!
 #ifdef	MULTITASK
 	STY iol_dev			; **keep device temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
@@ -213,34 +231,6 @@ ci_signal:
 ;			KERNEL(B_SIGNAL)	; send signal to PID in Y ***NO internal call
 			LDX #MM_SIGNAL		; internal multitasking index (2)
 			JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
-; a standard 65816 call does... 5 bytes & 12 clocks
-;	LDX #GET_PID	; (2) 2 bytes
-;	CLC				; (2) 1 byte
-;	COP #$FF		; (8) 2 bytes
-; while a 'direct' call goes... 9 bytes & 16 clocks
-;	PHK				; (3) 1 byte
-;	PEA ret_addr	; (5) 3 bytes
-;	CLC				; (2) 1 byte
-;	PHP				; (3) 1 byte
-;	JMP get_pid		; (3) 3 bytes
-; ** after any of these, kernel will do (going back thru cio_callend) **
-;	LDX #MM_PID			; (2)
-;	PEA cio_callend-1	; (5)
-;	JMP (drv_opt)		; (5) ...and maybe a BRA somewhere (3)
-; ****** definitely NOT worth in 65816 code! ******
-; OTOH the 6502 way is... 5 bytes & 8 clocks
-;	LDX #GET_PID	; (2) 2 bytes
-;	JSR k_call		; (6) 3 bytes
-; while its 'direct' call goes... 3 bytes & 6 clocks, well WORTH it!
-;	JSR get_pìd		; (6) 3 bytes
-; ** the kernel part will be **
-;	LDX #MM_PID			; (2)
-;	JMP (drv_opt)		; (6) ...and maybe a BRA somewhere (3)
-; ************************************************************
-; but what about indexed JSR to driver???
-;	LDX #MM_PID				; (2) 2 bytes, internal index!
-;	JSR (drv_opt-MM_PID, X)	; (8) 3 bytes, note de-indexing!
-; THIS was 5 bytes & 10 clocks MINUS 15/18 from SKIPPED kernel!!!
 			LDX iol_dev			; **as calls will destroy X
 ci_abort:
 #ifdef	MULTITASK
@@ -279,18 +269,19 @@ ci_win:
 	LDY #NO_RSRC		; not yet implemented
 	JMP cio_unlock
 
-; *******************************************************************************
-; *************************** MALLOC,  reserve memory ***************************
-; *******************************************************************************
-; ************* ma_rs <- size, ma_pt -> addr, C = not enough memory *************
-; *** ma_align <- mask for MSB (0=page/not aligned, 1=512b, $FF=bank aligned) ***
-; ************* ma_rs = 0 means reserve as much memory as available *************
-; ******* ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16 *******
-; *********************** this works on 24-bit addressing ***********************
-; ************ uses ma_l as diverse temporary vars, as defined below ************
-; *******************************************************************************
-ma_siz	= ma_l
-ma_ix	= ma_l+2		; might revise this as other architectures prefer separate registers!
+
+; ******************************
+; *** MALLOC, reserve memory ***
+; ******************************
+;		INPUT
+; ma_rs		= size (0 means reserve as much memory as available)
+; ma_align	= page mask (0=page/not aligned, 1=512b, $FF=bank aligned)
+;		OUTPUT
+; ma_pt	= pointer to reserved block
+; ma_rs	= actual size (esp. if ma_rs was 0, but check LSB too)
+; C		= not enough memory/corruption detected
+;		USES ma_l.b
+; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -353,8 +344,6 @@ ma_found:
 	BEQ ma_corrupt		; no way for an empty block!
 	BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
 ma_corrupt:
-;lda#'~'
-;jsr$c0c2
 		LDX #>user_sram		; beginning of available ram, as defined... in rom.s
 		LDY #<user_sram		; LSB misaligned?
 		BEQ ma_zlsb			; nothing to align
@@ -467,12 +456,17 @@ ma_room:
 		BNE ma_room			; continue until done
 	RTS
 
+
 ; *******************************
 ; **** FREE,  release memory ****
 ; *******************************
-; ******** ma_pt <- addr ********
-; *** C -> no such used block ***
-; *******************************
+;		INPUT
+; ma_pt = addr
+;		OUTPUT
+; C = no such used block
+;
+; ram_pos & ram_stat are kernel structures
+
 free:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
@@ -535,11 +529,18 @@ fr_join:
 	DEX
 	RTS
 
-; ********************************************************************
-; ****************** OPEN_W, get I/O port or window ******************
-; ********************************************************************
-; *** Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to title ***
-; ********************************************************************
+
+; **************************************
+; *** OPEN_W, get I/O port or window ***
+; **************************************
+;		INPUT
+; w_rect	= size VV.HH
+; w_rect+2	= pos VV.HH
+; str_pt	= pointer to title string
+;		OUTPUT
+; Y = dev
+; C = not supported/not available
+
 open_w:
 	.al: REP #$20		; *** 16-bit memory size ***
 	.xs: SEP #$10		; *** 8-bit register, just in case ***
@@ -548,22 +549,25 @@ open_w:
 		_ERR(NO_RSRC)str_dev
 ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
-;	EXIT_OK on subsequent system calls!
+; ***** EXIT_OK on subsequent system calls!!! *****
 
 ; ********************************************************
-; **************** CLOSE_W,  close window ****************
+; *** CLOSE_W,  close window *****************************
 ; *** FREE_W, release window, will be closed by kernel ***
 ; ********************************************************
-; *********************** Y <- dev ***********************
-; ********************************************************
+;		INPUT
+; Y = dev
+
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
 	_EXIT_OK
 
-
+; **************************************
 ; *** UPTIME, get approximate uptime ***
-; up_ticks -> ticks, new standard format 20161006
-; up_sec -> 32-bit uptime in seconds
+; **************************************
+;		OUTPUT
+; up_ticks	= ticks, new standard format 20161006
+; up_sec	= 32-bit uptime in seconds
 
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
@@ -578,8 +582,16 @@ uptime:
 	_EXIT_OK
 
 
+; ***************************************************************
 ; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
-; ex_pt -> addr, str_pt <- *path, cpu_ll -> architecture (N if it was non-XIP)
+; ***************************************************************
+;		INPUT
+; str_pt = points to filename path (will be altered!)
+;		OUTPUT
+; ex_pt		= pointer to executable code
+; cpu_ll	= architecture
+;		USES rh_scan
+;
 ; now supports 24-bit addressing! but only for 65816 code
 
 load_link:
@@ -659,18 +671,17 @@ ll_valid:
 		_ERR(FULL)				; somewhat confusing error...
 ll_native:
 ; either is 65816 code or 02 into bank zero
-	STA cpu_ll			; set CPU type, positive because it is XIP!
+	STA cpu_ll			; set CPU type, now will not matter whether XIP or not!
 	.al: REP #$20		; *** 16-bit memory again ***
 	LDA rh_scan+1		; get pointer MSB+BANK
-	INC					; start from next page
-	STA ex_pt+1			; save execution pointer
-	LDX #0				; eeeeeeeeeeeeeeek
-	STX ex_pt			; *** assume all headers are page-aligned *** do not touch second byte!
+	INC					; start from next page (skip header)
+	STZ ex_pt			; *** assume all headers are page-aligned *** eeeeek
+	STA ex_pt+1			; save rest of execution pointer
 	_EXIT_OK
 
 
 ; *** SU_POKE, write to protected addresses ***
-; might be deprecated, not sure if of any use in other architectures
+; WILL be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
 ; destroys A (and maybe Y on NMOS)
 
@@ -680,9 +691,8 @@ su_poke:
 	STA (zpar)			; store value
 	_EXIT_OK
 
-
 ; *** SU_PEEK, read from protected addresses ***
-; might be deprecated, not sure if of any use in other architectures
+; WILL be deprecated, not sure if of any use in other architectures
 ; Y -> value, zpar <- addr
 ; destroys A
 
@@ -693,16 +703,23 @@ su_peek:
 	_EXIT_OK
 
 
-; *** STRING, prints a C-string *** optimized loop 20161004, should port to ·65
-; Y <- dev, str_pt <- *string (.w in current version)
-; uses str_dev AND iol_dev
-; calls cout, but now directly at driver code ***
-; included mutex 20161130 eeeeeeeeeeeeeek
+; *********************************
+; *** STRING, prints a C-string ***
+; *********************************
+;		INPUT
+; Y			= dev
+; str_pt	= pointer to string (might be altered!)
+;		OUTPUT
+; C = device error
+;		USES str_dev, iol_dev and whatever the driver takes
+;
+; cio_lock is a kernel structure
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; new MUTEX eeeeeeek, *per-driver way **added overhead
+; ** TO DO ** apply MUTEX only to physical devices!
 #ifdef	MULTITASK
 	STY iol_dev			; **keep device temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
@@ -790,11 +807,17 @@ str_err:
 str_abort:
 	JMP cio_unlock		; otherwise return code AND clear MUTEX eeeeeeeeeek^2
 
+
 ; ******************************
-; *** READLN, buffered input *** new 20161223
+; *** READLN, buffered input ***
 ; ******************************
-; Y <- dev, str_pt <- *buffer (24-bit mandatory), ln_siz <- max offset
-; uses iol_dev, rl_cur
+;		INPUT
+; Y			= dev
+; str_pt	= pointer to buffer (24-bit mandatory)
+; ln_siz	= max offset
+;		OUTPUT
+; C = some error
+;		USES iol_dev, rl_cur
 
 readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -839,6 +862,7 @@ rl_cr:
 	LDA #0				; no STZ indirect indexed
 	STA [str_pt], Y		; terminate string
 	_EXIT_OK			; and all done!
+
 
 ; *** SU_SEI, disable interrupts ***
 ; C -> not authorized (?)
