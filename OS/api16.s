@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b9, should match kernel16.s
+; v0.5.1b10, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170208-1435
+; last modified 20170209-0946
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -357,7 +357,12 @@ ma_found:
 ma_corrupt:
 lda#'~'
 jsr$c0c2
-		LDA #user_sram		; otherwise take beginning of user RAM...
+		LDX #>user_sram		; beginning of available ram, as defined... in rom.s
+		LDY #<user_sram		; LSB misaligned?
+		BEQ ma_zlsb			; nothing to align
+			INX					; otherwise start at next page
+ma_zlsb:
+		TXA					; will set MSB (bank) as zero
 		LDX #LOCK_RAM		; ...that will become locked (new value)
 		STA ram_pos			; create values
 		STX ram_stat		; **should it clear the PID field too???**

@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b2
-; last modified 20170208-0950
+; v0.5.1b3
+; last modified 20170209-0925
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -31,8 +31,8 @@ pmapHead:
 	.dsb	pmapHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$46c0			; time, 08.54
-	.word	$4A3B			; date, 2017/1/27
+	.word	$4B60			; time, 09.27
+	.word	$4A49			; date, 2017/2/09
 
 pmap16Size	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 
@@ -150,8 +150,7 @@ pmap_lock:
 	LDY #<pmt_lock		; string for locked label
 	LDA #>pmt_lock
 	JSR prnStr
-	INC current			; will arrive to end label
-	BRA pmap_cr			; just newline
+	BRA pmap_size		; finish line with block size
 
 ; manage free block
 pmap_free:
@@ -222,26 +221,26 @@ splash:
 
 ; format as follows
 ; 0123456789012345-789 (16 & 20 char)
-; Addr. PID  Size
-; $1200 #$07 3p
-; $5600 FREE 15K
-; $8000 [  END  ]
-; $0400 **LOCKED**
+;  Addr.  PID  Size
+; $001200 #$07 3p
+; $005600 FREE 15K
+; $000400 LOCK 31K
+; $008000 [  END  ]
 
 pmt_free:
 	.asc	"Free", 0
 
 pmt_lock:
-	.asc "LOCK", 0
+	.asc	"LOCK", 0
 
 pmt_end:
-	.asc "[  END  ]", CR, 0
+	.asc	"[  END  ]", CR, 0
 
 pmt_lsb:
-	.asc "00 ", 0
+	.asc	"00 ", 0
 
 pmt_pid:
-	.asc "#$", 0
+	.asc	"#$", 0
 
 ; ***** end of stuff *****
 pmapEnd:				; ### for easy size computation ###
