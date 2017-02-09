@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b10, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170209-1115
+; last modified 20170209-1236
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -562,6 +562,7 @@ close_w:				; doesn't do much
 free_w:					; doesn't do much, either
 	_EXIT_OK
 
+
 ; **************************************
 ; *** UPTIME, get approximate uptime ***
 ; **************************************
@@ -871,7 +872,6 @@ su_sei:
 	SEI					; disable interrupts
 	_EXIT_OK			; no error so far
 
-
 ; *** SU_CLI, enable interrupts ***
 ; probably not needed on 65xx, _CS macros are much more interesting anyway
 
@@ -880,13 +880,17 @@ su_cli:					; not needed for 65xx, even with protection hardware
 	_EXIT_OK			; no error
 
 
-; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA ***
-; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
+; **************************************************
+; *** SET_FG, enable/disable frequency generator *** TO BE REVISED
+; **************************************************
+;		INPUT
+; zpar.w = dividing factor (times two?)
+;		OUTPUT
+; C = busy
+;
+; should use some firmware interface, just in case it doesn't affect jiffy-IRQ!
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
-; zpar.W <- dividing factor (times two?), C -> busy
-; destroys A, X...
 
-; *******TO BE REVISED*********
 set_fg:
 	LDA zpar
 	ORA zpar+1
@@ -922,15 +926,22 @@ fg_busy:
 	_ERR(BUSY)			; couldn't set
 
 
-; *** GO_SHELL, launch default shell *** REVISE
+; *** GO_SHELL, launch default shell *** probably DEPRECATE
 ; no interface needed
 go_shell:
 	JMP shell			; simply... *** SHOULD initialise SP and other things anyway ***
 
 
+; ***********************************************************
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
-; Y <- subfunction code
-; C -> couldn't poweroff or reboot (?)
+; ***********************************************************
+;		INPUT
+; Y = subfunction code ()
+;		OUTPUT
+; C = couldn't poweroff or reboot (?)
+;		USES b_sig (calls B_SIGNAL)
+;
+; sd_flag is a kernel variable
 
 shutdown:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -949,7 +960,7 @@ shutdown:
 	PLP					; original mask is buried in stack
 	CLI					; make sure all will keep running!
 	PHP					; restore for subsequent RTI
-	_EXIT_OK		; *** should need some flag to indicate XIP or not! stack frame is different
+	_EXIT_OK			; unified stack frame makes irrelevant whether XIP or not
 	; actually RTI for 816
 
 ; firmware interface
@@ -965,7 +976,7 @@ sd_cold:
 	LDY #PW_COLD		; cold boot
 	BNE sd_fw			; will reboot, shared code, no need for BRA
 sd_warm:
-	SEP #9				; disable interrupts and set carry...
+	SEP #%00001001		; disable interrupts and set carry...
 	XCE					; ...to set emulation mode for a moment
 	CLD					; clear decimal mode
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
@@ -1020,8 +1031,13 @@ sd_done:
 	JMP (sd_tab-2, X)	; do as appropriate *** please note that X=0 means scheduler ran off of tasks!
 
 
+; *************************************
 ; *** B_FORK, reserve available PID ***
-; Y -> PID
+; *************************************
+;		OUTPUT
+; Y = PID (0 means either singletask system or no more available braids)
+;
+; uses common code from GET_PID
 
 b_fork:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1029,10 +1045,18 @@ b_fork:
 	BRA sig_call		; go for the driver
 
 
+; *****************************************
 ; *** B_EXEC, launch new loaded process ***
-; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr (was z2L), cpu_ll <- architecture, def_io <- std_in & stdout
+; *****************************************
+;		INPUT
+; Y			= PID
+; ex_pt		= execution pointer (was z2L)
+; cpu_ll	= architecture
+; def_io	= default std_in (LSB) & stdout (MSB)
+;
+; uses common code from GET_PID
 ; no need to indicate XIP or not! will push start address at bottom of stack anyway
+; API still subject to change... (rendez-vous mode TBD)
 
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1040,9 +1064,16 @@ b_exec:
 	BRA sig_call		; go for the driver
 
 
+; **************************************************
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
-; b_sig <- signal to be sent , Y <- addressed braid
-; don't know of possible errors
+; **************************************************
+;		INPUT
+; b_sig	= signal to be sent
+; Y		= PID
+;		OUTPUT
+; C = invalid PID
+;
+; uses common code from GET_PID
 
 signal:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1050,10 +1081,16 @@ signal:
 	BRA sig_call		; go for the driver
 
 
+; ************************************************
 ; *** B_STATUS, get execution flags of a braid ***
-; Y <- addressed braid
-; Y -> flags, TBD
-; don't know of possible errors, maybe just a bad PID
+; ************************************************
+;		INPUT
+; Y = addressed braid
+;		OUTPUT
+; Y = flags ***TBD
+; C = invalid PID
+;
+; uses common code from GET_PID
 
 status:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1061,8 +1098,11 @@ status:
 	BRA sig_call		; go for the driver
 
 
+; **************************************
 ; *** GET_PID, get current braid PID ***
-; Y -> PID, TBD
+; **************************************
+;		OUTPUT
+; Y = PID (0 means singletask system)
 
 get_pid:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1074,11 +1114,17 @@ sig_call:
 	JMP (drv_opt)		; as will be the first one in list, best to use non-indexed indirect
 
 
+; **************************************************************
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTI)
-; ** so far only bank 0 routines supported **
-; uses locals[0] too
-; bad PID is probably the only feasible error
+; **************************************************************
+;		INPUT
+; Y		= PID
+; ex_pt = SIGTERM handler routine (ending in RTI!) MANDATORY 24-bit addressing
+;		OUTPUT
+; C = bad PID
+;
+; uses common code from GET_PID
+; revise as might be processed without driver!
 
 set_handler:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1086,16 +1132,25 @@ set_handler:
 	BRA sig_call		; go for the driver
 
 
-; *** B_YIELD, Yield CPU time to next braid *** REVISE
-; supposedly no interface needed, don't think I need to tell if ignored
+; *********************************************
+; *** B_YIELD, Yield CPU time to next braid ***
+; *********************************************
+; (no interface needed)
+;
+; uses common code from GET_PID
 
 yield:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_YIELD		; subfunction code
-	BRA sig_call	; go for the driver
+	BRA sig_call		; go for the driver
 
-; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
-; Y -> number of bytes, ex_pt -> pointer to the proposed stack frame
+
+; ***************************************************************
+; *** TS_INFO, get taskswitching info for multitasking driver *** REVISE ASAP ******
+; ***************************************************************
+;		OUTPUT
+; Y		= number of bytes
+; ex_pt = pointer to the proposed stack frame
 
 ts_info:
 #ifdef	MULTITASK
@@ -1111,8 +1166,12 @@ ts_info:
 #endif
 
 
-; *** RELEASE, release ALL memory for a PID, new 20161115
-; Y <- PID
+; *********************************************
+; *** RELEASE, release ALL memory for a PID ***
+; *********************************************
+;		INPUT
+; Y = PID
+;		USES ma_pt and whatever takes FREE (will call it)
 
 release:
 	.as: .xs: SEP #$30	; *** 8-bit sizes ***
@@ -1177,7 +1236,7 @@ sd_tab:					; check order in abi.h!
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.word	isr_sched_ret-1	; corrected reentry address **standard label**
+	.word	isr_sched_ret-1	; corrected reentry address **standard label** REVISE REVISE
 	.byt	0				; stored X value, best if multitasking driver is the first one
 	.word	0, 0, 0			; irrelevant Y, X, A values
 tsi_end:
