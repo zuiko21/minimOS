@@ -1,7 +1,7 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9b4
+; v0.9b5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170120-1413
+; last modified 20170209-1400
 
 #ifndef		DRIVERS
 #include "options.h"
@@ -20,7 +20,8 @@
 	.word	kow_rts		; req, this one can't generate IRQs, thus CLC+RTS
 	.word	kow_cin		; cin, input from keyboard
 	.word	kow_cout	; cout, output to display
-	.word	kow_rts		; 1-sec, no need for 1-second interrupt
+;.word	kow_rts		; 1-sec, no need for 1-second interrupt
+	.word	kow_poll	; ****** print a dot every second, for testing purposes only ******
 	.word	kow_rts		; sin, no block input
 	.word	kow_rts		; sout, no block output
 	.word	kow_rts		; bye, no shutdown procedure
@@ -36,9 +37,9 @@ kow_cout:
 	LDA io_c		; get char in case is control
 	CMP #13			; carriage return?
 	BNE kow_ncr		; if so, should generate CR+LF
-		LDA #10			; LF first
-		JSR $c0c2		; print it
-		LDA #13			; back to original CR
+		LDA #10			; LF first (and only)
+;		JSR $c0c2		; print it
+;		LDA #13			; back to original CR
 kow_ncr:
 	JSR $c0c2		; print it
 kow_rts:
@@ -56,3 +57,9 @@ kow_emit:
 		_DR_OK
 kow_empty:
 	_DR_ERR(EMPTY)		; nothing yet
+
+; *** TESTING ***
+kow_poll:
+	LDA #'.'			; print a dot!
+	JSR $c0c2
+	_DR_OK
