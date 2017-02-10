@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b4
-; last modified 20170210-0903
+; last modified 20170210-1235
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -139,20 +139,35 @@ unsigned divu10(unsigned n) {
     return q + (r > 9);
 }
 */
-	LDX #0				; decade counter
+	LDY #0				; this is the number of ciphers (2)
+pkb_x10:
+	LDX #0				; decade counter (2)
 pkb_div10:
-		CMP #10				; something to count?
-			BCC pkb_unit		; less than 10
-		SBC #10				; otherwise subtract 10 (carry was set)
-		INX					; and increase decade
-		BRA pkb_div10		; until exit above
+		CMP #10				; something to count? (3**)
+			BCC pkb_unit		; less than 10 (2**+1)
+		SBC #10				; otherwise subtract 10 (carry was set) (3**)
+		INX					; and increase decade (2**)
+		BRA pkb_div10		; until exit above (3**)
 pkb_unit:
-	PHA					; save units
-	TXA					; decades will not be over 6*****
-;	JSR b2h_numW		; print ASCII
-	JSR b2h_asciiW		; convert & print
-	PLA					; retrieve units
-	JSR b2h_asciiW		; convert & print
+	PHA					; save units (4**)
+	INY					; yet another cipher! (2*)
+	CPX #10				; more than 10 decades? (3*)
+	BCC pkb_prn			; if less, time to start printing (2*+1)
+		TXA					; otherwise, these are the new units (3*)
+		BRA pkb_x10			; ...to be divided by ten again (3*)
+pkb_prn:
+	CPX #0				; any decades?
+	BEQ pkn_ltt			; less than ten, do not print X
+		TXA 				; otherwise, this will be printed first
+		PHA					; into stack, not PHX because 16-bit ciphers are expected...
+		INY					; one more to print
+pkn_ltt:
+		PLA					; get cipher from stack
+		PHY					; keep this again
+		JSR b2h_asciiW		; filtered printing
+		PLY
+		DEY					; one less
+		BNE pkb_ltt			; go for next until done
 	LDX #'K'
 	BRA pmap_next		; print suffix, CR and go for next
 
