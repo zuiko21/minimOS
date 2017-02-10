@@ -1,6 +1,6 @@
 ; minimOS 0.5.1a13 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170207-0852
+; last modified 20170210-0832
 
 .zero
 * = 0
@@ -36,7 +36,7 @@ locals:						; old label for compatibility
 ; TO DO TO DO ** should add somewhere a pointer for execution parameters/registers **
 
 ; *** include aliases here for local1/locpt1 ***
-dr_aut: ma_l: mm_sig: rls_pid: iol_dev:
+dr_aut: ma_ix: mm_sig: rls_pid: iol_dev:
 local1: locpt1	.dsb	4	; variables for kernel functions @ $E4
 
 ; *** include aliases here for local2/locpt2 ***

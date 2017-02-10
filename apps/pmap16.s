@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b4
-; last modified 20170209-1438
+; last modified 20170210-0903
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -19,7 +19,7 @@
 pmapHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"mV", CPU_TYPE	; minimOS app! 65c816 only
+	.asc	"mV"			; minimOS app! 65c816 only
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
@@ -59,8 +59,8 @@ go_pmap:
 	STA z_used			; set needed ZP space as required by minimOS
 ; will not use iodev as will work on default device
 ; ##### end of minimOS specific stuff #####
+
 	.al: REP #$20		; *** 16-bit memory ***
-	
 	LDA #splash			; address of splash message (plus column header)
 	JSR prnStrW			; print the string!
 
@@ -77,9 +77,9 @@ pmap_loop:
 		LDA ram_pos, Y		; get this block address
 		STA page			; store for further size computation
 		XBA					; let us look the bank address before
-		JSR byte2hex		; print bank...
-		XBA					; ...and switch to page address
-		JSR byte2hex
+		JSR byte2hexW		; print bank...
+		LDA page			; ...and switch back to page address, was destroyed
+		JSR byte2hexW
 		LDA #pmt_lsb		; string for trailing zeroes
 		JSR prnStrW
 		LDY current			; index again, needed?
@@ -100,7 +100,7 @@ pmap_used:
 	JSR prnStrW
 	LDY current			; restore index
 	LDA ram_pid, Y		; get corresponding PID
-	JSR byte2hex		; print it
+	JSR byte2hexW		; print it
 ; ...and finish line with block size
 
 ; * common ending with printed size, pages or KB *
@@ -117,7 +117,7 @@ pmap_size:
 	CMP #4				; check whether below 1k
 	BCS pmap_kb
 		INC					; round up pages!
-		JSR b2h_num			; will not be over 4
+		JSR b2h_numW		; will not be over 4
 		LDX #'p'			; page suffix
 		BRA pmap_next		; print suffix, CR and go for next
 pmap_kb:
@@ -149,9 +149,10 @@ pkb_div10:
 pkb_unit:
 	PHA					; save units
 	TXA					; decades will not be over 6*****
-	JSR b2h_num			; print ASCII
+;	JSR b2h_numW		; print ASCII
+	JSR b2h_asciiW		; convert & print
 	PLA					; retrieve units
-	JSR b2h_ascii		; convert & print
+	JSR b2h_asciiW		; convert & print
 	LDX #'K'
 	BRA pmap_next		; print suffix, CR and go for next
 
@@ -163,9 +164,8 @@ pmap_lock:
 
 ; manage free block
 pmap_free:
-	LDY #<pmt_free		; string for free label
-	LDA #>pmt_free
-	JSR prnStr
+	LDA #pmt_free		; string for free label
+	JSR prnStrW
 	BRA pmap_size		; finish line with block size
 
 ; manage end of list
@@ -186,25 +186,25 @@ pmap_tab:
 
 ; ** these will go into a pseudolibrary **
 ; * print binary in A as two hex ciphers *
-byte2hex:
+byte2hexW:
 	PHA			; keep whole value
 	LSR			; shift right four times (just the MSN)
 	LSR
 	LSR
 	LSR
-	JSR b2h_ascii	; convert and print this cipher
+	JSR b2h_asciiW	; convert and print this cipher
 	PLA			; retrieve full value
+b2h_asciiW:
 	AND #$000F	; keep just the LSN... and repeat procedure
-b2h_ascii:
 	CMP #10		; will be a letter?
-	BCC b2h_num	; just a number
+	BCC b2h_numW	; just a number
 		ADC #6			; convert to letter (plus carry)
-b2h_num:
+b2h_numW:
 	ADC #'0'	; convert to ASCII (carry is clear)
 ; ...and print it (will return somewhere)
 	TAX			; where the following function expects it
 
-; * print a character in A *
+; * print a character in X *
 prnCharW:
 	STX io_c			; store character
 	LDY #0				; use default device
@@ -212,7 +212,7 @@ prnCharW:
 ; ignoring possible I/O errors
 	RTS
 
-; * print a NULL-terminated string pointed by $AAYY *
+; * print a NULL-terminated string pointed by A.w *
 prnStrW:
 	STA str_pt			; store full pointer
 	LDY #0				; standard device
@@ -253,3 +253,4 @@ pmt_pid:
 ; ***** end of stuff *****
 pmapEnd:				; ### for easy size computation ###
 .)
+.as						; eeeeeeeeeeeeeek

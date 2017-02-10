@@ -20,8 +20,8 @@
 	.word	kow_rts		; req, this one can't generate IRQs, thus CLC+RTS
 	.word	kow_cin		; cin, input from keyboard
 	.word	kow_cout	; cout, output to display
-;.word	kow_rts		; 1-sec, no need for 1-second interrupt
-	.word	kow_poll	; ****** print a dot every second, for testing purposes only ******
+.word	kow_rts		; 1-sec, no need for 1-second interrupt
+;	.word	kow_poll	; ****** print a dot every second, for testing purposes only ******
 	.word	kow_rts		; sin, no block input
 	.word	kow_rts		; sout, no block output
 	.word	kow_rts		; bye, no shutdown procedure

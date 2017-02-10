@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b10, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170209-1236
+; last modified 20170210-0832
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -280,7 +280,7 @@ ci_win:
 ; ma_pt	= pointer to reserved block
 ; ma_rs	= actual size (esp. if ma_rs was 0, but check LSB too)
 ; C		= not enough memory/corruption detected
-;		USES ma_l.b
+;		USES ma_ix.b
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
 
 malloc:
