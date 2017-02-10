@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b4
-; last modified 20170210-1235
+; v0.5.1b5
+; last modified 20170210-1349
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -8,10 +8,10 @@
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	page	= uz		; start of current block
-	current	= page+2	; index storage
+	current	= page+2	; index storage (now 16-bit)
 
 ; ...some stuff goes here, update final label!!!
-	__last	= current+1	; ##### just for easier size check #####
+	__last	= current+2	; ##### just for easier size check #####
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
@@ -60,7 +60,7 @@ go_pmap:
 ; will not use iodev as will work on default device
 ; ##### end of minimOS specific stuff #####
 
-	.al: REP #$20		; *** 16-bit memory ***
+	.al: .xl: REP #$30	; *** full 16-bit ***
 	LDA #splash			; address of splash message (plus column header)
 	JSR prnStrW			; print the string!
 
@@ -68,12 +68,14 @@ go_pmap:
 ; *** begin things ***
 ; ********************
 
-	LDY #0				; reset index
-	STY current			; avoid 16-bit STZ
+	STZ current			; reset index, 16-bit anyway
 pmap_loop:
 		LDX #'$'			; print hex radix
 		JSR prnCharW
 		LDY current			; retrieve index
+		LDA ram_stat, Y		; check status of this
+		AND #$0006			; danger! it is a 16-bit number!
+		PHA					; will use as index later
 		LDA ram_pos, Y		; get this block address
 		STA page			; store for further size computation
 		XBA					; let us look the bank address before
@@ -82,8 +84,7 @@ pmap_loop:
 		JSR byte2hexW
 		LDA #pmt_lsb		; string for trailing zeroes
 		JSR prnStrW
-		LDY current			; index again, needed?
-		LDX ram_stat, Y		; check status of this, use as index
+		PLX					; use as index
 		JMP (pmap_tab, X)	; process as appropriate
 
 ; * print suffix in X, new line and complete loop *
@@ -157,11 +158,11 @@ pkb_unit:
 		BRA pkb_x10			; ...to be divided by ten again (3*)
 pkb_prn:
 	CPX #0				; any decades?
-	BEQ pkn_ltt			; less than ten, do not print X
+	BEQ pkb_ltt			; less than ten, do not print X
 		TXA 				; otherwise, this will be printed first
 		PHA					; into stack, not PHX because 16-bit ciphers are expected...
 		INY					; one more to print
-pkn_ltt:
+pkb_ltt:
 		PLA					; get cipher from stack
 		PHY					; keep this again
 		JSR b2h_asciiW		; filtered printing
@@ -198,6 +199,8 @@ pmap_tab:
 	.word	pmap_lock
 
 ; *** useful routines ***
+
+;	.al: xl		; as these will be called in 16-bit mode
 
 ; ** these will go into a pseudolibrary **
 ; * print binary in A as two hex ciphers *
@@ -268,4 +271,5 @@ pmt_pid:
 ; ***** end of stuff *****
 pmapEnd:				; ### for easy size computation ###
 .)
-.as						; eeeeeeeeeeeeeek
+.as: .xs:				; eeeeeeeeeeeeeek
+
