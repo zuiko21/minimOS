@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b10, should match kernel16.s
+; v0.5.1b11, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170210-0832
+; last modified 20170213-1106
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -301,6 +301,11 @@ ma_biggest:
 #ifdef	SAFE
 			CPX #MAX_LIST*2		; already past?
 				BEQ ma_corrupt		; something was wrong!!!
+; *** self-healing feature for full memory assignment! ***
+			LDA ram_pos+2, X	; get end position (5)
+			SEC
+			SBC ram_pos, X		; subtract current for size! (2+5)
+				BCC ma_corrupt		; corruption detected!
 #endif
 			LDY ram_stat, X		; get status of block (4)
 ;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (2)
@@ -325,6 +330,32 @@ ma_fill:
 		LDX ma_ix			; retrieve index
 		BRA ma_falgn		; nothing to scan, only if aligned eeeeeek
 ma_scan:
+; *** this is the place for the self-healing feature! ***
+#ifdef	SAFE
+		CPX #MAX_LIST*2		; already past?
+			BEQ ma_corrupt		; something was wrong!!!
+; check UNALIGNED size for self-healing feature! worth a routine?
+		LDA ram_pos+2, X	; get end position (5)
+		SEC
+		SBC ram_pos, X		; subtract current for size! (2+5)
+		BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
+ma_corrupt:
+			LDX #>user_sram		; beginning of available ram, as defined... in rom.s
+			LDY #<user_sram		; LSB misaligned?
+			BEQ ma_zlsb			; nothing to align
+				INX					; otherwise start at next page
+ma_zlsb:
+			TXA					; will set MSB (bank) as zero
+			LDX #LOCK_RAM		; ...that will become locked (new value)
+			STA ram_pos			; create values
+			STX ram_stat		; **should it clear the PID field too???**
+			LDA #SRAM			; physical top of RAM...
+			LDX #END_RAM		; ...as non-plus-ultra
+			STA ram_pos+2		; create second set of values
+			STX ram_stat+2
+			_ERR(CORRUPT)		; report but do not turn system down
+ma_nobad:
+#endif
 		LDY ram_stat, X		; get state of current entry (4)
 ;		CPY #FREE_RAM		; looking for a free one (2) not needed if free is zero
 			BEQ ma_found		; got one (2/3)
@@ -340,26 +371,6 @@ ma_nobank:
 	_ERR(FULL)			; no room for it!
 ma_found:
 	JSR ma_alsiz		; **compute size according to alignment mask**
-#ifdef	SAFE
-	BEQ ma_corrupt		; no way for an empty block!
-	BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
-ma_corrupt:
-		LDX #>user_sram		; beginning of available ram, as defined... in rom.s
-		LDY #<user_sram		; LSB misaligned?
-		BEQ ma_zlsb			; nothing to align
-			INX					; otherwise start at next page
-ma_zlsb:
-		TXA					; will set MSB (bank) as zero
-		LDX #LOCK_RAM		; ...that will become locked (new value)
-		STA ram_pos			; create values
-		STX ram_stat		; **should it clear the PID field too???**
-		LDA #SRAM			; physical top of RAM...
-		LDX #END_RAM		; ...as non-plus-ultra
-		STA ram_pos+2		; create second set of values
-		STX ram_stat+2
-		_ERR(CORRUPT)		; report but do not turn system down
-ma_nobad:
-#endif
 	CMP ma_rs+1			; compare (5)
 		BCC ma_cont			; smaller, thus continue searching (2/3)
 ; here we go! first of all check whether aligned or not
