@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b5
-; last modified 20170210-1349
+; last modified 20170213-1202
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -117,7 +117,7 @@ pmap_size:
 	SBC page			; subtract start of block
 	CMP #4				; check whether below 1k
 	BCS pmap_kb
-		INC					; round up pages!
+;		INC					; round up pages!
 		JSR b2h_numW		; will not be over 4
 		LDX #'p'			; page suffix
 		BRA pmap_next		; print suffix, CR and go for next

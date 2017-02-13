@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b9
-; last modified 20170208-0948
+; last modified 20170213-1201
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -12,7 +12,7 @@
 ;#define	NARROW	_NARROW
 
 ; *** constant definitions ***
-#define	BUFSIZ		16
+#define	BUFSIZ		80
 #define	COLON		58
 
 ; bytes per line in dumps 4 or 8/16
