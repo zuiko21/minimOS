@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1b7, must match kernel.s
+; v0.5.1b8, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170118-1035
+; last modified 20170213-1342
 
 ; no way for standalone assembly...
 
@@ -16,8 +16,14 @@ unimplemented:			; placeholder here, not currently used
 ; ********************************
 ; *** COUT, output a character ***
 ; ********************************
-; Y <- dev, io_c <- char
-; LOWRAM version uses da_ptr!!! uses iol_dev
+;		INPUT
+; Y		= dev
+; io_c	= char
+;		OUTPUT
+; C = I/O error
+;		USES iol_dev, plus whatever the driver takes
+; cio_lock is a kernel structure
+; LOWRAM version uses da_ptr!!!
 
 cout:
 #ifdef	MULTITASK
@@ -82,11 +88,18 @@ co_call:
 
 
 ; ****************************
-; *** CIN, get a character *** revamped 20150209
+; *** CIN, get a character ***
 ; ****************************
-; Y <- dev, io_c -> char, C = not available
+;		INPUT
+; Y = dev
+;		OUTPUT
+; io_c	= char
+; C		= not available
+;		USES iol_dev, and whatever the driver takes
+; cio_lock & cin_mode are kernel structures
 
 cin:
+; *** TO DO *** MUTEX for physical devices only, after resolving!
 #ifdef	MULTITASK
 	STY iol_dev			; keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
@@ -216,12 +229,13 @@ ci_log:
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	LDY ticks		; simple placeholder
+	LDY ticks			; simple placeholder
+	STA io_c			; eeeeeeeeeeeeeeeeek
 	_EXIT_OK
 
 ci_win:
 ; *** virtual window manager TO DO ***
-	_ERR(NO_RSRC)	; not yet implemented
+	_ERR(NO_RSRC)		; not yet implemented
 
 ci_phys:
 ; ** new direct indexing **
@@ -231,16 +245,17 @@ ci_phys:
 
 
 ; ******************************
-; *** MALLOC, reserve memory *** fully revamped 20161107
+; *** MALLOC, reserve memory ***
 ; ******************************
-; ma_rs <- size, ma_pt -> addr, C = not enough memory
-; ma_align <- mask for MSB (0=page or not aligned, 1=512b, $FF=bank aligned) new 161105 TO DO
-; ma_rs = 0 means reserve as much memory as available!!!
-; this works on 16-bit addressing, thus single byte positions and non-interleaved status & PID arrays!
-; uses ma_l as diverse temporary vars, as defined below *** might redefine in separate locals
-
-ma_siz	= ma_l
-ma_ix	= ma_l+1
+;		INPUT
+; ma_rs		= size (0 means reserve as much memory as available)
+; ma_align	= page mask (0=page/not aligned, 1=512b, $FF=bank aligned)
+;		OUTPUT
+; ma_pt	= pointer to reserved block
+; ma_rs	= actual size (esp. if ma_rs was 0, but check LSB too)
+; C		= not enough memory/corruption detected
+;		USES ma_ix.b
+; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
 
 malloc:
 	LDX #0				; reset index
@@ -253,15 +268,23 @@ ma_nxpg:
 	LDA ma_rs+1			; get number of asked pages
 	BNE ma_scan			; work on specific size
 ; otherwise check for biggest available block
-		STX ma_siz			; clear found value eeeeeeeeek
 ma_biggest:
+#ifdef	SAFE
+			CPX #MAX_LIST		; already past?
+				BEQ ma_corrupt		; something was wrong!!!
+; *** self-healing feature for full memory assignment! ***
+			LDA ram_pos+1, X	; get end position (4)
+			SEC
+			SBC ram_pos, X		; subtract current for size! (2+4)
+				BCC ma_corrupt		; corruption detected!
+#endif
 			LDY ram_stat, X		; get status of block (4)
 ;			CPY #FREE_RAM		; not needed if FREE_RAM is zero! (2)
 			BNE ma_nxbig		; go for next as this one was not free (3/2)
 				JSR ma_alsiz		; **compute size according to alignment mask**
-				CMP ma_siz			; compare against current maximum (3)
+				CMP ma_rs+1			; compare against current maximum (3)
 				BCC ma_nxbig		; this was not bigger (3/2)
-					STA ma_siz			; otherwise keep track of it... (3)
+					STA ma_rs+1			; otherwise keep track of it... (3)
 					STX ma_ix			; ...and its index! (3)
 ma_nxbig:
 			INX					; advance index (2)
@@ -269,15 +292,40 @@ ma_nxbig:
 			CPY #END_RAM		; check whether at end (2)
 			BNE ma_biggest		; or continue (3/2)
 ; is there at least one available block?
-		LDA ma_siz			; should not be zero
+		LDA ma_rs+1			; should not be zero
 		BNE ma_fill			; there is at least one block to allocate
 			_ERR(FULL)			; otherwise no free memory!
 ; report allocated size
 ma_fill:
-		STA ma_rs+1			; store allocated size! already computed
 		LDX ma_ix			; retrieve index
-		_BRA ma_updt		; nothing to scan, just update status and return address
+		_BRA ma_falgn		; nothing to scan, only if aligned eeeeeek
 ma_scan:
+; *** this is the place for the self-healing feature! ***
+#ifdef	SAFE
+		CPX #MAX_LIST		; already past?
+			BEQ ma_corrupt		; something was wrong!!!
+; check UNALIGNED size for self-healing feature! worth a routine?
+		LDA ram_pos+1, X	; get end position (4)
+		SEC
+		SBC ram_pos, X		; subtract current for size! (2+4)
+		BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
+ma_corrupt:
+			LDX #>user_sram		; otherwise take beginning of user RAM...
+			LDY #<user_sram		; LSB misaligned?
+			BEQ ma_zlsb			; nothing to align
+				INX					; otherwise start at next page
+ma_zlsb:
+			LDY #LOCK_RAM		; ...that will become locked (new value)
+			STX ram_pos			; create values
+			STY ram_stat		; **should it clear the PID field too???**
+			LDA #SRAM			; physical top of RAM...
+			LDY #END_RAM		; ...as non-plus-ultra
+			STA ram_pos+1		; create second set of values
+			STY ram_stat+1
+			_EXIT_CS			; eeeeeeeeeek
+			_ERR(CORRUPT)		; report but do not turn system down
+ma_nobad:
+#endif
 		LDY ram_stat, X		; get state of current entry (4)
 ;		CMP #FREE_RAM		; looking for a free one (2) not needed if free is zero
 			BEQ ma_found		; got one (2/3)
@@ -291,43 +339,37 @@ ma_nobank:
 	_EXIT_CS			; non-critical when aborting!
 	_ERR(FULL)			; no room for it!
 ma_found:
-#ifdef	SAFE
-	LDA ram_pos+1, X	; check next block position
-	SEC
-	SBC ram_pos, X		; and subtract current pointer
-	BCS ma_nobad		; this one should be lower!
-		LDA #>user_sram		; otherwise take beginning of user RAM...
-		LDY #USED_RAM		; ...that will become locked (maybe another value)
-		STA ram_pos			; create values
-		STY ram_stat		; **should it clear the PID field too???**
-		LDA #SRAM			; physical top of RAM...
-		LDY #END_RAM		; ...as non-plus-ultra
-		STA ram_pos+1		; create second set of values
-		STY ram_stat+1
-		_ERR(CORRUPT)		; report but do not turn system down!
-ma_nobad:
-#endif
 	JSR ma_alsiz		; **compute size according to alignment mask**
 	CMP ma_rs+1			; compare (5)
 		BCC ma_cont			; smaller, thus continue searching (2/3)
-; here we go!
-; **first of all create empty block for alignment, if needed**
+; here we go! first of all check whether aligned or not
+ma_falgn:
 	PHA					; save current size
-	LDA ram_pos, X		; check current address
-	AND ma_align		; any misaligned bits set?
+	LDA ram_pos, X		; check start address for alignment failure
+	BIT ma_align		; any offending bits?
 	BEQ ma_aok			; already aligned, nothing needed
-		JSR ma_adv			; advance and let repeated first entry!
-		INX					; let the algnment blank and go for next
-		LDA ram_pos, X		; get repeated address
 		ORA ma_align		; set disturbing bits...
 		_INC				; ...and reset them after increasing the rest
-		STA ram_pos, X		; update pointer
+		PHA					; need to keep the new aligned pointer!
+		JSR ma_adv			; create room for assigned block (BEFORE advancing eeeeeeeek)
+		INX					; skip the alignment blank
+		PLA					; retrieve aligned address
+		STA ram_pos, X		; update pointer on assigned block
 ma_aok:
 	PLA					; retrieve size
 ; make room for new entry... if not exactly the same size
 	CMP ma_rs			; compare this block with requested size
 	BEQ ma_updt			; was same size, will not generate new entry
-		JSR ma_adv			; make room otherwise
+; **should I correct stack balance for safe mode?
+		JSR ma_adv			; make room otherwisemake room otherwise, and set the following one as free padding
+; **should I correct stack balance for safe mode?
+; create after the assigned block a FREE entry!
+		LDA ram_pos, X		; newly assigned slice will begin there eeeeeeeeeek
+		CLC
+		ADC ma_rs+1			; add number of assigned pages
+		STA ram_pos+1, X	; update value
+		LDA #FREE_RAM		; let us mark it as free, PID is irrelevant!
+		STA ram_stat+1, X	; next to the assigned one, no STY abs,X!!!
 ma_updt:
 	_STZA ma_pt			; clear pointer LSB
 	LDA ram_pos, X		; get address of block to be assigned
@@ -344,7 +386,8 @@ ma_updt:
 	_EXIT_CS			; end of critical section, new 160119
 	_EXIT_OK			; we're done
 
-; routine for aligned-block size computation
+; **** routine for aligned-block size computation ****
+; returns found size in A, sets C if OK, error otherwise (C clear!)
 ma_alsiz:
 	LDA ram_pos, X		; get bottom address (4)
 	BIT ma_align		; check for set bits from mask (4)
@@ -352,23 +395,25 @@ ma_alsiz:
 		ORA ma_align		; set masked bits... (3)
 		_INC				; ...and increase address for alignment (2)
 ma_fit:
-	ORA (str_pt), Y		; is this possible? yeah!
+; how could an ORA (str_pt), Y arrive here????
 	EOR #$FF			; invert bits as will be subtracted to next entry (2)
 	SEC					; needs one more for twos-complement (2)
 	ADC ram_pos+1, X	; compute size from top ptr MINUS bottom one (5)
 	RTS
 
-; routine for making room for an entry
+; **** routine for making room for an entry ****
 ma_adv:
 	STX ma_ix			; store current index
 ma_2end:
 		INX					; previous was free, thus check next
-		CPX #MAX_LIST-1		; just in case, check offset!!!
+#ifdef	SAFE
+		CPX #MAX_LIST-1		; just in case, check offset!!! (needs -1?)
 		BCC ma_notend		; could expand
 			PLA					; discard return address
 			PLA
 			JMP ma_nobank		; notice error
 ma_notend:
+#endif
 		LDY ram_stat, X		; check status of block
 		CPY #END_RAM		; scan for the end-of-memory marker
 		BNE ma_2end			; hope will eventually finish!
@@ -382,70 +427,93 @@ ma_room:
 		DEX					; down one entry
 		CPX ma_ix			; position of updated entry
 		BNE ma_room			; continue until done
-; create at the beginning of the moved block a FREE entry!
-	LDA ram_pos+1, X	; newly assigned slice will begin here
-	CLC
-	ADC ma_rs+1			; add number of assigned pages
-	STA ram_pos+1, X	; update value
-	LDA #FREE_RAM		; let us mark it as free
-	STA ram_stat+1, X	; next to the assigned one
+; no longer creates at the beginning of the moved block a FREE entry!
 	RTS
 
 
 ; ****************************
 ; *** FREE, release memory *** revamped 20150209
 ; ****************************
-; ma_pt <- addr
-; C -> no such used block!
+;		INPUT
+; ma_pt = addr
+;		OUTPUT
+; C = no such used block
+;
+; ram_pos & ram_stat are kernel structures
 
 free:
+#ifdef	SAFE
+	LDY ma_pt			; LSB currently not implemented
+		BNE fr_nos			; could not find
+#endif
 	LDX #0				; reset index
-	LDA ma_pt			; get comparison term
+	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 	_ENTER_CS			; supposedly dangerous
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
 			BEQ fr_found		; go free it!
-		LDY ram_stat, X		; otherwise check status
 		INX					; advance index
+		LDY ram_stat, X		; anyway check status
 		CPY #END_RAM		; no more in list?
 		BNE fr_loop			; continue until end
 ; was not found, thus exit CS and abort
 fr_no:
 	_EXIT_CS
+fr_nos:
 	_ERR(N_FOUND)		; no block to be freed!
 fr_found:
-#ifdef	SAFE
 	LDY ram_stat, X		; only used blocks can be freed!
 	CPY #USED_RAM		; was it in use?
 		BNE fr_no			; if not, cannot free it!
-#endif
 	LDA #FREE_RAM		; most likely zero, might use STZ instead
 	STA ram_stat, X		; this block is now free, but...
 ; really should join possible adjacent free blocks
 	LDY ram_stat+1, X	; check status of following entry
 ;	CPY #FREE_RAM		; was it free? could be supressed if value is zero
-	BNE fr_ok			; was not free, thus nothing to optimize
-; loop for obliterating the following empty entry
-fr_join:
-		INX					; go for next entry
-		LDA ram_pos+1, X	; get following address
-		STA ram_pos, X		; store one entry below
-		LDA ram_stat+1, X	; check status of following!
-		STA ram_stat, X		; store one entry below
-		LDA ram_pid+1, X	; copy PID of following, but keep status in Y!
-		STA ram_pid, X		; no longer interleaved (?)
-		CPY #END_RAM		; end of list?
-		BNE fr_join			; repeat until done
+	BNE fr_notafter		; was not free, thus nothing to optimise forward
+		PHX					; keep actual position eeeeeeeek
+		JSR fr_join			; integrate following free block
+		PLX					; retrieve position
+	BEQ fr_ok			; if the first block, cannot look back eeeeeeeeeek
+fr_notafter:
+	TXA					; check whether it was the first block
+		BEQ fr_ok			; do not even try to look back eeeeeeeeeeek
+	DEX					; let us have a look to the previous block
+	LDY ram_stat, X		; is this one free?
+;	CPY #FREE_RAM		; could be supressed if value is zero
+	BNE fr_ok			; nothing to optimise backwards
+		JSR fr_join			; otherwise integrate it too
+
 ; ** already optimized **
 fr_ok:
 	_EXIT_CS
 	_EXIT_OK
 
+; routine for obliterating the following empty entry
+fr_join:
+		INX					; go for next entry
+		LDA ram_pos+1, X	; get following address
+		STA ram_pos, X		; store one entry below
+		LDA ram_pid+1, X	; copy PID of following, but keep status for last!
+		STA ram_pid, X		; no longer interleaved
+		LDA ram_stat+1, X	; check status of following!
+		STA ram_stat, X		; store one entry below
+		CMP #END_RAM		; end of list?
+		BNE fr_join			; repeat until done
+	DEX					; return to previous position
+	RTS
+
 
 ; **************************************
-; *** OPEN_W, get I/O port or window *** interface revised 20150208
+; *** OPEN_W, get I/O port or window ***
 ; **************************************
-; Y -> dev, w_rect <- size+pos*64K, str_pt <- pointer to window title!
+;		INPUT
+; w_rect	= size VV.HH
+; w_rect+2	= pos VV.HH
+; str_pt	= pointer to title string
+;		OUTPUT
+; Y = dev
+; C = not supported/not available
 
 open_w:
 	LDA w_rect			; asking for some size?
@@ -454,13 +522,14 @@ open_w:
 		_ERR(NO_RSRC)
 ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
-;	EXIT_OK on subsequent system calls!
+; ***** EXIT_OK on subsequent system calls!!! *****
 
-; ******************************
-; *** CLOSE_W,  close window ***
-; *** FREE_W, release window *** will be closed by kernel
-; ******************************
-; Y <- dev
+; ********************************************************
+; *** CLOSE_W,  close window *****************************
+; *** FREE_W, release window, will be closed by kernel ***
+; ********************************************************
+;		INPUT
+; Y = dev
 
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
@@ -470,8 +539,9 @@ free_w:					; doesn't do much, either
 ; **************************************
 ; *** UPTIME, get approximate uptime *** revised 20150208, corrected 20150318
 ; **************************************
-; up_ticks -> ticks, new format 20161006
-; up_sec -> 32-bit uptime in seconds
+;		OUTPUT
+; up_ticks	= ticks, new standard format 20161006
+; up_sec	= 32-bit uptime in seconds
 
 uptime:
 	LDX #1			; first go for elapsed ticks (2 bytes) (2)
@@ -491,12 +561,14 @@ up_upt:
 	_EXIT_OK
 
 
-; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
-; ex_pt -> addr, str_pt <- *path, now will use cpu_ll for the highest bit (N if was non-XIP)
-; somewhat improved version, scans ROM headers looking for the _filename_ pointed by str_pt
-; *** modifies str_pt parameter ***
-; no folders accepted!!!
-; will use rh_scan (local3)
+; ***************************************************************
+; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
+; ***************************************************************
+;		INPUT
+; str_pt = points to filename path (will be altered!)
+;		OUTPUT
+; ex_pt		= pointer to executable code
+;		USES rh_scan
 
 load_link:
 ; *** look for that filename in ROM headers ***
@@ -509,7 +581,7 @@ load_link:
 		DEC str_pt+1		; otherwise will point to previous PAGE eeeeeeek
 ll_reset:
 ; get initial address! beacuse of the above, no longer adds filename offset!
-	LDA #<ROM_BASE		; begin of ROM contents LSB
+	LDA #<ROM_BASE		; begin of ROM contents LSB, most likely zero
 	STA	rh_scan			; set local pointer
 	LDA #>ROM_BASE		; same for MSB
 	STA rh_scan+1		; internal pointer set
@@ -555,7 +627,7 @@ ll_found:
 	CMP #'m'		; must be minimOS app!
 		BNE ll_wrap		; error otherwise
 	INY				; next byte is CPU type
-	LDA (rh_scan), Y	; get it, should be positive!
+	LDA (rh_scan), Y	; get it
 	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
 	CPX #'R'		; is it a Rockwell/WDC CPU?
 		BEQ ll_rock		; from R down is OK
@@ -577,19 +649,19 @@ ll_nmos:
 		BNE ll_wrap		; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
-	STA cpu_ll		; store just to tell it is XIP!
-	LDA rh_scan		; get pointer LSB
+;	STA cpu_ll		; store just to tell it is XIP!
+;	LDA rh_scan		; get pointer LSB, most likely zero
 	LDY rh_scan+1	; and MSB
 	INY				; start from next page
-	STA ex_pt		; save execution pointer
-	STY ex_pt+1
+	_STZA ex_pt		; *** assume all headers are page-aligned ***
+	STY ex_pt+1		; save rest of execution pointer
 	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
 
-; *** SU_POKE, write to protected addresses *** revised 20150208
-; might be DEPRECATED, not sure if of any use in other architectures
+; *** SU_POKE, write to protected addresses ***
+; WILL be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
 ; destroys A (and maybe Y on NMOS)
 
@@ -598,9 +670,8 @@ su_poke:
 	_STAY(zpar)		; store value, macro for NMOS
 	_EXIT_OK
 
-
-; *** SU_PEEK, read from protected addresses *** revised 20150208
-; might be DEPRECATED, not sure if of any use in other architectures
+; *** SU_PEEK, read from protected addresses ***
+; WILL be deprecated, not sure if of any use in other architectures
 ; Y -> value, zpar <- addr
 ; destroys A
 
@@ -611,13 +682,20 @@ su_peek:
 
 
 ; *********************************
-; *** STRING, prints a C-string *** revised 20150208, revamped 20151015, complete rewrite 20160120
+; *** STRING, prints a C-string ***
 ; *********************************
-; Y <- dev, str_pt <- *string (.w in current version)
-; uses str_dev AND iol_dev
+;		INPUT
+; Y			= dev
+; str_pt	= pointer to string (might be altered!) 24-bit mandatory
+;		OUTPUT
+; C = device error
+;		USES str_dev, iol_dev and whatever the driver takes
+;
+; cio_lock is a kernel structure
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
+; ** TO DO ** apply MUTEX only to physical devices!
 #ifdef	MULTITASK
 	STY iol_dev			; **keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
@@ -678,6 +756,7 @@ str_phys:
 	STA str_dev			; store for indexed call! (3)
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
+; ******* CONTINUE HERE **************** CONTINUE HERE *********
 str_loop:
 		_PHY				; save just in case COUT destroys it (3)
 		LDA (str_pt), Y		; get character from string, new approach (5)

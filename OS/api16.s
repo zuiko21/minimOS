@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b11, should match kernel16.s
+; v0.5.1b12, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170213-1106
+; last modified 20170213-1341
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -29,19 +29,20 @@ cout:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; new MUTEX for COUT, 20161121, *per-driver based 161129 **added overhead
 #ifdef	MULTITASK
+; this should be done for physical devs only, 0.5.2+
 	STY iol_dev			; **keep device temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
 	LDA cio_lock, Y		; *check whether THAT device in use (4)
 	BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+; faster KERNEL(B_YIELD)
 		LDX #MM_YIELD		; internal multitasking index (2)
 		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		LDY iol_dev			; restore previous status, *new style (3)
 		BRA co_loop			; try again! (3)
 co_lckd:
-;	KERNEL(GET_PID)		; **NO internal call, 816 prefers indexed JSR
+; faster KERNEL(GET_PID)
 	LDX #MM_PID			; internal multitasking index (2)
 	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	TYA					; **current PID in A (2)
@@ -129,7 +130,7 @@ ci_loop:
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
-;		KERNEL(GET_PID)		; *NO internal call, 816 prefers indexed JSR
+; faster KERNEL(GET_PID)
 		LDX #MM_PID			; internal multitasking index (2)
 		JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		TYA					; **current PID in A
@@ -138,15 +139,15 @@ ci_loop:
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
-;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+; faster KERNEL(B_YIELD)
 		LDX #MM_YIELD		; internal multitasking index (2)
 		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		LDY iol_dev			; *restore previous status (3)
 		BRA ci_loop			; try again! (3)
 ci_lckd:
-;	KERNEL(B_YIELD)		; **NO internal call, 816 prefers indexed JSR
-	LDX #MM_YIELD		; internal multitasking index (2)
-	JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
+; faster KERNEL(B_YIELD)
+	LDX #MM_PID			; internal multitasking index (2) eeeeeeeeek
+	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8) eeeeeek
 	TYA					; **current PID in A (2)
 	LDY iol_dev			; **restore device number (3)
 	STA cio_lock, Y		; *reserve this (4)
@@ -225,10 +226,10 @@ ci_nokill:
 			LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 			STA b_sig			; set signal as parameter
-;			KERNEL(GET_PID)		; as this will be a self-sent signal! ***NO internal call
+; faster KERNEL(GET_PID)
 			LDX #MM_PID			; internal multitasking index (2)
 			JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
-;			KERNEL(B_SIGNAL)	; send signal to PID in Y ***NO internal call
+; faster KERNEL(B_SIGNAL)
 			LDX #MM_SIGNAL		; internal multitasking index (2)
 			JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
 			LDX iol_dev			; **as calls will destroy X
@@ -410,10 +411,9 @@ ma_updt:
 	STA ram_stat, X		; update table entry, will destroy PID temporarily but no STY abs,X!!!
 ; ** new 20161106, store PID of caller **
 	PHX					; will need this index
-; who asked for this? KERNEL(GET_PID)
-	_KERNEL(GET_PID)
-;	LDX #MM_PID			; internal multitasking index (2)
-;	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
+; who asked for this? faster KERNEL(GET_PID) hope all is OK
+	LDX #MM_PID			; internal multitasking index (2)
+	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
 	PLX					; retrieve index
 	.as: SEP #$20		; *** back to 8-bit because interleaved array! ***
 	TYA					; get into A as no STY abs,X!!!
@@ -423,7 +423,7 @@ ma_updt:
 
 	.al					; as routines will be called in 16-bit memory!!!
 
-; routine for aligned-block size computation
+; **** routine for aligned-block size computation ****
 ; returns found size in A, sets C if OK, error otherwise (C clear!)
 ma_alsiz:
 	LDA ram_pos, X		; get bottom address (5)
@@ -436,23 +436,20 @@ ma_fit:
 	SEC					; needs one more for twos-complement (2)
 	ADC ram_pos+2, X	; compute size from top ptr MINUS bottom one (5)
 	RTS
-; *** non-aligned version ***
-;	LDA ram_pos+2, X	; get end position (5)
-;	SEC
-;	SBC ram_pos, X		; subtract current for size! (2+5)
-; *** end of non-aligned version ***
 
-; routine for making room for an entry
+; **** routine for making room for an entry ****
 ma_adv:
 	STX ma_ix			; store current index
 ma_2end:
 		INX					; previous was free, thus check next
 		INX
+#ifdef	SAFE
 		CPX #MAX_LIST*2		; just in case, check offset!!! eeeeeeek^2
 		BCC ma_notend		; could expand
 			PLA					; discard return address (still in 16-bit mode)
 			JMP ma_nobank		; notice error
 ma_notend:
+#endif
 		LDY ram_stat, X		; check status of block
 		CPY #END_RAM		; scan for the end-of-memory marker
 		BNE ma_2end			; hope will eventually finish!
@@ -481,11 +478,11 @@ ma_room:
 free:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
-	LDX #0				; reset index
 #ifdef	SAFE
 	LDY ma_pt			; LSB currently not implemented
 		BNE fr_no			; could not find
 #endif
+	LDX #0				; reset index
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
@@ -557,7 +554,7 @@ open_w:
 	.xs: SEP #$10		; *** 8-bit register, just in case ***
 	LDA w_rect			; asking for some size? includes BOTH bytes
 	BEQ ow_no_window	; wouldn't do it
-		_ERR(NO_RSRC)str_dev
+		_ERR(NO_RSRC)
 ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
 ; ***** EXIT_OK on subsequent system calls!!! *****
@@ -629,7 +626,7 @@ ll_geth:
 			BNE ll_nfound		; link was lost, no more to scan
 		LDY #7				; after type and size, a CR is expected
 		LDA [rh_scan], Y	; get eigth byte in header!
-		CMP #13				; was it a CR?
+		CMP #CR				; was it a CR?
 			BNE ll_nfound		; if not, go away
 ; look for the name
 		INY					; reset scanning index (now at name position, was @7)
@@ -720,7 +717,7 @@ su_peek:
 ; *********************************
 ;		INPUT
 ; Y			= dev
-; str_pt	= pointer to string (might be altered!)
+; str_pt	= pointer to string (might be altered!) 24-bit ready!
 ;		OUTPUT
 ; C = device error
 ;		USES str_dev, iol_dev and whatever the driver takes
@@ -800,7 +797,7 @@ str_phys:
 ; ** the actual printing loop **
 str_loop:
 		PHY					; save just in case COUT destroys it (3)
-		LDA (str_pt), Y		; get character from string, new approach (5)
+		LDA [str_pt], Y		; get character from string, new approach, now 24-bit!
 		BNE str_cont		; not terminated! (3/2)
 			PLA					; otherwise discard saved Y (4) eeeeeeeek
 			BRA str_exit		; and go away!
