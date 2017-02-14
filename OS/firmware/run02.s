@@ -2,7 +2,7 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9b1
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170214-1908
+; last modified 20170214-1950
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -94,23 +94,24 @@ post:
 	LDA #'V'			; 65816 installed (2)
 	STA fw_cpu			; store variable (4)
 ; *** preset kernel start address (standard label from ROM file) ***
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	LDA #kernel			; get full address (3)
-	STA fw_warm			; store in sysvars (5)
+	LDA #>kernel			; get full address
+	LDY #<kernel
+	STA fw_warm+1			; store in sysvars
+	STY fw_warm
 
-	LDA #IRQ_FREQ	; interrupts per second
-	STA irq_freq	; store speed... 
+	LDA #>IRQ_FREQ	; interrupts per second
+	LDY #<IRQ_FREQ
+	STA irq_freq+1	; store speed...
+	STY irq_freq
 
 	LDX #4				; max WORD offset in uptime seconds AND ticks, assume contiguous (2)
 res_sec:
 		STZ ticks, X		; reset word (5)
-		DEX					; next word backwards (2+2)
-		DEX
+		DEX					; next backwards
 		BPL res_sec			; zero is included
 ;	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
 ;	STX VIA_J + IER
 
-	.as: .xs: SEP #$30	; all back to 8-bit, just in case, might be removed if no remote boot is used (3)
 
 ; ******* debug code, direct print some string *******
 	LDX #0				; reset index
@@ -136,7 +137,6 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 nmi:
 ; save registers AND system pointers
-;	.al: .xl: REP #$30	; ** whole register size, just in case **emulation
 	PHA					; save registers
 	PHX
 	PHY

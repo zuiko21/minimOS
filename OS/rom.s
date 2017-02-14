@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.5.1b6, unified with kernel 20160412
+; v0.5.1b7, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170208-1002
+; last modified 20170214-1943
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -88,7 +88,11 @@ drv_end:		; for easier size computation
 ; *********************************************
 ; with their own headers, these must be page aligned!!!
 #include "../apps/ls.s"
+#ifdef C816
 #include "../apps/pmap16.s"
+#else
+#include "../apps/pmap.s"
+#endif
 #include "../apps/lined.s"
 
 ; ****** skip I/O area for more ******
