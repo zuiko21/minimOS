@@ -1,12 +1,10 @@
 ; memory map for minimOS! KLUDGE
-; v0.5b2
-; last modified 20170118-1104
+; v0.5b3
+; last modified 20170214-1824
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
 .(
-#define		CR		13
-
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	page		= uz			; start of current block
@@ -16,6 +14,7 @@
 	__last	= current+1	; ##### just for easier size check #####
 
 ; ##### include minimOS headers and some other stuff #####
+	.dsb	$100*((* & $FF)<> 0) - (* & $FF), $FF	; page aligned
 pmapHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
@@ -140,8 +139,7 @@ pmap_lock:
 	LDY #<pmt_lock	; string for locked label
 	LDA #>pmt_lock
 	JSR prnStr
-	INC current	; will arrive to end label
-	_BRA pmap_cr	; just newline
+	_BRA pmap_size	; tell block size too
 
 ; manage free block
 pmap_free:
@@ -209,30 +207,30 @@ prnStr:
 splash:
 	.asc	"pmap 0.5.1", CR
 	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR
-	.asc "Addr. PID  Size", CR, 0		; header
+	.asc	"Addr. PID  Size", CR, 0		; header
 
 ; format as follows
 ; 0123456789012345-789 (16 & 20 char)
 ; Addr. PID  Size
 ; $1200 #$07 3p
-; $5600 FREE 15K
+; $5600 Free 15K
 ; $8000 [  END  ]
-; $0400 **LOCKED**
+; $0400 LOCK 31K
 
 pmt_free:
-	.asc	"FREE", 0
+	.asc	"Free", 0
 
 pmt_lock:
-	.asc "**LOCKED**", 0
+	.asc	"LOCK", 0
 
 pmt_end:
-	.asc "[  END  ]", CR, 0
+	.asc	"[  END  ]", CR, 0
 
 pmt_lsb:
-	.asc "00 ", 0
+	.asc	"00 ", 0
 
 pmt_pid:
-	.asc "$#", 0
+	.asc	"$#", 0
 
 ; ***** end of stuff *****
 pmapEnd:				; ### for easy size computation ###

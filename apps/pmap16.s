@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b6
-; last modified 20170214-0845
+; v0.5.1b7
+; last modified 20170214-1828
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -20,10 +20,10 @@ pmapHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
 	.asc	"mV"			; minimOS app! 65c816 only
-	.asc	"****", 13		; some flags TBD
+	.asc	"****", CR		; some flags TBD
 
 ; *** filename and optional comment ***
-	.asc	"pmap16", 0		; file name (mandatory)
+	.asc	"pmap", 0		; file name (mandatory) will never coexist with pmap8
 	.asc	"Display memory map", CR			; comment
 	.asc	"16-bit minimOS 0.5.1 only!!!", 0
 
