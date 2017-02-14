@@ -1,6 +1,6 @@
-; minimOS 0.5.1a13 zero-page system variables
+; minimOS 0.5.1a14 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170210-0832
+; last modified 20170214-1026
 
 .zero
 * = 0
@@ -52,17 +52,24 @@ local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 ; ***********************
 
 ; *** include aliases here for zpar3/zaddr3 ***
-b_sig: ex_pt: kerntab: ma_align: ln_siz:
+b_sig: kerntab: ma_align: ln_siz:
+ex_pt: 						; mandatory 24-bit size
+
 z10:z10W:z10L:				; old labels for compatibility
 zpar3: zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
 
 ; *** include aliases here for zpar2/zaddr2 ***
-ma_pt: up_sec: str_pt: cpu_ll:
+up_ticks: cpu_ll:
+ma_pt: str_pt:				; mandatory 24-bit size
+
 z6:z6W:z6L:					; old labels for compatibility
 zpar2: zaddr2	.dsb	4	; up to 4 bytes, including older names @ $F4
 
 ; *** include aliases here for zpar/zaddr ***
-io_c: ma_rs: w_rect: up_ticks: def_io:
+io_c: w_rect: def_io:
+ma_rs:						; mandatory 24-bit
+up_sec:						; 32-bit
+
 z2:z2W:z2L:					; old labels for compatibility
 zpar: zaddr		.dsb	4	; up to 4 bytes, including older names @ $F8
 

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b12, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170213-1341
+; last modified 20170214-0941
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -275,11 +275,11 @@ ci_win:
 ; *** MALLOC, reserve memory ***
 ; ******************************
 ;		INPUT
-; ma_rs		= size (0 means reserve as much memory as available)
+; ma_rs		= 24b size (0 means reserve as much memory as available)
 ; ma_align	= page mask (0=page/not aligned, 1=512b, $FF=bank aligned)
 ;		OUTPUT
-; ma_pt	= pointer to reserved block
-; ma_rs	= actual size (esp. if ma_rs was 0, but check LSB too)
+; ma_pt	= 24b pointer to reserved block
+; ma_rs	= 24b actual size (esp. if ma_rs was 0, but check LSB too)
 ; C		= not enough memory/corruption detected
 ;		USES ma_ix.b
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
@@ -469,7 +469,7 @@ ma_room:
 ; **** FREE,  release memory ****
 ; *******************************
 ;		INPUT
-; ma_pt = addr
+; ma_pt = 24b addr
 ;		OUTPUT
 ; C = no such used block
 ;
@@ -542,9 +542,9 @@ fr_join:
 ; *** OPEN_W, get I/O port or window ***
 ; **************************************
 ;		INPUT
-; w_rect	= size VV.HH
-; w_rect+2	= pos VV.HH
-; str_pt	= pointer to title string
+; w_rect	= 16b size VV.HH
+; w_rect+2	= 16b pos VV.HH
+; str_pt	= 24b pointer to title string
 ;		OUTPUT
 ; Y = dev
 ; C = not supported/not available
@@ -575,8 +575,8 @@ free_w:					; doesn't do much, either
 ; *** UPTIME, get approximate uptime ***
 ; **************************************
 ;		OUTPUT
-; up_ticks	= ticks, new standard format 20161006
-; up_sec	= 32-bit uptime in seconds
+; up_ticks	= 16b ticks, new standard format 20161006
+; up_sec	= 32b uptime in seconds
 
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
@@ -595,9 +595,9 @@ uptime:
 ; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
 ; ***************************************************************
 ;		INPUT
-; str_pt = points to filename path (will be altered!)
+; str_pt = 24b pointer to filename path (will be altered!)
 ;		OUTPUT
-; ex_pt		= pointer to executable code
+; ex_pt		= 24b pointer to executable code
 ; cpu_ll	= architecture
 ;		USES rh_scan
 ;
@@ -717,7 +717,7 @@ su_peek:
 ; *********************************
 ;		INPUT
 ; Y			= dev
-; str_pt	= pointer to string (might be altered!) 24-bit ready!
+; str_pt	= 24b pointer to string (might be altered!) 24-bit ready!
 ;		OUTPUT
 ; C = device error
 ;		USES str_dev, iol_dev and whatever the driver takes
@@ -822,7 +822,7 @@ str_abort:
 ; ******************************
 ;		INPUT
 ; Y			= dev
-; str_pt	= pointer to buffer (24-bit mandatory)
+; str_pt	= 24b pointer to buffer (24-bit mandatory)
 ; ln_siz	= max offset
 ;		OUTPUT
 ; C = some error
@@ -1058,9 +1058,9 @@ b_fork:
 ; *****************************************
 ;		INPUT
 ; Y			= PID
-; ex_pt		= execution pointer (was z2L)
+; ex_pt		= 24b execution pointer (was z2L)
 ; cpu_ll	= architecture
-; def_io	= default std_in (LSB) & stdout (MSB)
+; def_io	= 16b default std_in (LSB) & stdout (MSB)
 ;
 ; uses common code from GET_PID
 ; no need to indicate XIP or not! will push start address at bottom of stack anyway
@@ -1127,7 +1127,7 @@ sig_call:
 ; **************************************************************
 ;		INPUT
 ; Y		= PID
-; ex_pt = SIGTERM handler routine (ending in RTI!) MANDATORY 24-bit addressing
+; ex_pt = 24b SIGTERM handler routine (ending in RTI!)
 ;		OUTPUT
 ; C = bad PID
 ;
@@ -1158,7 +1158,7 @@ yield:
 ; ***************************************************************
 ;		OUTPUT
 ; Y		= number of bytes
-; ex_pt = pointer to the proposed stack frame
+; ex_pt = 24b pointer to the proposed stack frame
 
 ts_info:
 #ifdef	MULTITASK
