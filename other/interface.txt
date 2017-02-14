@@ -1,0 +1,148 @@
+; *** COUT, output a character ***
+; ********************************
+;		INPUT
+; Y		= dev
+; io_c	= char
+;		OUTPUT
+; C = I/O error
+;		USES iol_dev, plus whatever the driver takes
+
+; *** CIN,  get a character ***
+; *****************************
+;		INPUT
+; Y = dev
+;		OUTPUT
+; io_c	= char
+; C		= not available
+;		USES iol_dev, and whatever the driver takes
+
+; *** MALLOC, reserve memory ***
+; ******************************
+;		INPUT
+; ma_rs		= 24b size (0 means reserve as much memory as available)
+; ma_align	= page mask (0=page/not aligned, 1=512b, $FF=bank aligned)
+;		OUTPUT
+; ma_pt	= 24b pointer to reserved block
+; ma_rs	= 24b actual size (esp. if ma_rs was 0, but check LSB too)
+; C		= not enough memory/corruption detected
+;		USES ma_ix.b
+
+; **** FREE,  release memory ****
+; *******************************
+;		INPUT
+; ma_pt = 24b addr
+;		OUTPUT
+; C = no such used block
+
+; *** OPEN_W, get I/O port or window ***
+; **************************************
+;		INPUT
+; w_rect	= 16b size VV.HH
+; w_rect+2	= 16b pos VV.HH
+; str_pt	= 24b pointer to title string
+;		OUTPUT
+; Y = dev
+; C = not supported/not available
+
+; *** CLOSE_W,  close window *****************************
+; *** FREE_W, release window, will be closed by kernel ***
+; ********************************************************
+;		INPUT
+; Y = dev
+
+; *** UPTIME, get approximate uptime ***
+; **************************************
+;		OUTPUT
+; up_ticks	= 16b ticks, new standard format 20161006
+; up_sec	= 32b uptime in seconds
+
+; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
+; ***************************************************************
+;		INPUT
+; str_pt = 24b pointer to filename path (will be altered!)
+;		OUTPUT
+; ex_pt		= 24b pointer to executable code
+; cpu_ll	= architecture
+;		USES rh_scan
+
+; *** STRING, prints a C-string ***
+; *********************************
+;		INPUT
+; Y			= dev
+; str_pt	= 24b pointer to string (might be altered!) 24-bit ready!
+;		OUTPUT
+; C = device error
+;		USES str_dev, iol_dev and whatever the driver takes
+
+; *** READLN, buffered input ***
+; ******************************
+;		INPUT
+; Y			= dev
+; str_pt	= 24b pointer to buffer (24-bit mandatory)
+; ln_siz	= max offset
+;		OUTPUT
+; C = some error
+;		USES iol_dev, rl_cur
+
+; *** SHUTDOWN, proper shutdown, with or without poweroff ***
+; ***********************************************************
+;		INPUT
+; Y = subfunction code ()
+;		OUTPUT
+; C = couldn't poweroff or reboot (?)
+;		USES b_sig (calls B_SIGNAL)
+
+; *** B_FORK, reserve available PID ***
+; *************************************
+;		OUTPUT
+; Y = PID (0 means either singletask system or no more available braids)
+
+; *** B_EXEC, launch new loaded process ***
+; *****************************************
+;		INPUT
+; Y			= PID
+; ex_pt		= 24b execution pointer (was z2L)
+; cpu_ll	= architecture
+; def_io	= 16b default std_in (LSB) & stdout (MSB)
+
+; *** B_SIGNAL, send UNIX-like signal to a braid ***
+; **************************************************
+;		INPUT
+; b_sig	= signal to be sent
+; Y		= PID
+;		OUTPUT
+; C = invalid PID
+
+; *** B_STATUS, get execution flags of a braid ***
+; ************************************************
+;		INPUT
+; Y = addressed braid
+;		OUTPUT
+; Y = flags ***TBD
+; C = invalid PID
+
+; *** GET_PID, get current braid PID ***
+; **************************************
+;		OUTPUT
+; Y = PID (0 means singletask system)
+
+; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
+; **************************************************************
+;		INPUT
+; Y		= PID
+; ex_pt = 24b SIGTERM handler routine (ending in RTI!)
+;		OUTPUT
+; C = bad PID
+
+; *** TS_INFO, get taskswitching info for multitasking driver *** REVISE ASAP ******
+; ***************************************************************
+;		OUTPUT
+; Y		= number of bytes
+; ex_pt = 24b pointer to the proposed stack frame
+
+; *** RELEASE, release ALL memory for a PID ***
+; *********************************************
+;		INPUT
+; Y = PID
+;		USES ma_pt and whatever takes FREE (will call it)
+
