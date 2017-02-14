@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b7
-; last modified 20170208-0950
+; v0.5b8
+; last modified 20170214-0849
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -300,6 +300,7 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
+	_STZA str_pt+2		; clear bank!
 	LDY #0				; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...

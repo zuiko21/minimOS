@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b5
-; last modified 20170208-0950
+; v0.5.1b6
+; last modified 20170214-0847
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -494,6 +494,7 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
+	_STZA str_pt+2		; clear bank! ****
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...

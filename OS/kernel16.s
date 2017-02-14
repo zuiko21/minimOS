@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b7
+; v0.5.1b8
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170210-1341
+; last modified 20170214-0844
 
 ; just in case
 #define		C816	_C816
@@ -310,6 +310,7 @@ dr_ok:					; *** all drivers inited ***
 	JSR ks_cr			; leading newline
 	LDA #kern_splash	; get pointer to string
 	STA str_pt			; set parameter
+	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline

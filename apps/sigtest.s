@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v1.0b3
+; v1.0b4
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170208-1012
+; last modified 20170214-0850
 
 
 ; for standalone assembly, set path to OS/
@@ -191,6 +191,7 @@ sts_print:
 ; this will assume own device in Y
 	STX str_pt			; set parameter
 	STA str_pt+1
+	_STZA str_pt+2		; clear bank****
 	_KERNEL(STRING)		; print
 	RTS
 
