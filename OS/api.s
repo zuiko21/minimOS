@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1b9, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170215-0927
+; last modified 20170215-1034
 
 ; no way for standalone assembly...
 
@@ -256,7 +256,6 @@ ci_phys:
 ; C		= not enough memory/corruption detected
 ;		USES ma_ix.b
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
-
 malloc:
 	LDX #0				; reset index
 	LDY ma_rs			; check individual bytes, just in case
@@ -294,6 +293,7 @@ ma_nxbig:
 ; is there at least one available block?
 		LDA ma_rs+1			; should not be zero
 		BNE ma_fill			; there is at least one block to allocate
+			_EXIT_CS			; eeeeeeek! we are going
 			_ERR(FULL)			; otherwise no free memory!
 ; report allocated size
 ma_fill:
@@ -333,8 +333,8 @@ ma_nobad:
 			BEQ ma_nobank		; could not found anything suitable (2/3)
 ma_cont:
 		INX					; increase index (2)
-		CPX #MAX_LIST		; until the end (2+3)
-		BNE ma_scan
+;		CPX #MAX_LIST		; until the end (2)
+		BNE ma_scan			; will not be zero anyway (3)
 ma_nobank:
 	_EXIT_CS			; non-critical when aborting!
 	_ERR(FULL)			; no room for it!
@@ -358,7 +358,7 @@ ma_falgn:
 ma_aok:
 	PLA					; retrieve size
 ; make room for new entry... if not exactly the same size
-	CMP ma_rs			; compare this block with requested size
+	CMP ma_rs+1			; compare this block with requested size eeeeeeeek
 	BEQ ma_updt			; was same size, will not generate new entry
 ; **should I correct stack balance for safe mode?
 		JSR ma_adv			; make room otherwisemake room otherwise, and set the following one as free padding
@@ -1155,8 +1155,8 @@ hxd_num:
 k_vec:
 	.word	cout		; output a character
 	.word	cin			; get a character
-	.word	malloc		; reserve memory (kludge!)
-	.word	free		; release memory (kludgest!)
+	.word	malloc		; reserve memory
+	.word	free		; release memory
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
@@ -1179,11 +1179,4 @@ k_vec:
 	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
 	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
 	.word	release		; release ALL memory for a PID, new 20161115
-
-#else
-#include "drivers.s"	; this package will be included with downloadable kernels
-.data
-#include "sysvars.h"	; downloadable systems have all vars AND drivers after the kernel itself
-#include "drivers.h"
-user_sram = *			; the rest of SRAM
 #endif

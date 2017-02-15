@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b12, should match kernel16.s
+; v0.5.1b13, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170214-1842
+; last modified 20170215-1020
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -392,7 +392,7 @@ ma_falgn:
 ma_aok:
 	PLA					; retrieve created blank size (skipped possible alignment block)
 ; make room for new entry... if not exactly the same size
-	CMP ma_rs			; compare this block with requested size
+	CMP ma_rs+1			; compare this block with requested size eeeeek
 	BEQ ma_updt			; was same size, will not generate new entry
 ; **in safe mode should push 16 bits into stack for proper address discarding!
 		JSR ma_adv			; make room otherwise, and set the following one as free padding
