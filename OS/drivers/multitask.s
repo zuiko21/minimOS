@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.5.1a7
+; v0.5.1a8
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170207-0900
+; last modified 20170215-1358
 ; *** TO BE HEAVILY REVISED ***
 
 ; ********************************
@@ -38,7 +38,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a7", 0	; works as long as no more than 9 braids!
+	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a8", 0	; works as long as no more than 9 braids!
 
 ; *** initialisation code ***
 mm_init:
@@ -329,8 +329,9 @@ mmf_loop:
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
 		BNE mmf_loop		; until the bottom of the list (3/2)
-	CLI					; nothing was found (2)
-	_DR_ERR(FULL)			; no available braids!
+	_EXIT_CS			; nothing was found (4)
+;	_DR_ERR(FULL)		; no available braids!
+	_DR_OK				; use system-reserved braid, is this OK?
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
 	STA mm_flags-1, Y	; reserve braid (4)
@@ -339,7 +340,7 @@ mmf_found:
 
 ; get code at some address running into a paused (?) braid
 ; Y <- PID, ex_pt <- addr, def_io <- sys_in & sysout ** no need for architecture
-; *** should need some flag to indicate XIP or not! stack frame is different
+; no longer should need some flag to indicate XIP or not! code start address always at stack bottom
 mm_exec:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
@@ -357,6 +358,7 @@ mmx_br:
 	STA exec_p			; store it
 	LDY #$FF			; standard stack bottom!
 ; *** create stack frame *** maybe try to switch again to regular stack?
+; *****place starting address at the very bottom of stack, even in XIP code
 ; first goes KILL handler, as braids are expected to end via RTS *** could be different for rendez-vous mode calls!
 ; this was only for XIP code, otherwise shoud push a different handler address AND below that the pointer to the assigned block (handler will take it for FREE)
 ; ** check flag for XIP/non-XIP code and jump to mmx_nonxip if needed
@@ -404,7 +406,7 @@ mmx_frame:
 	LDA #ZP_AVAIL		; value in A will be taken by pre-exec routine!
 	STA (exec_p), Y		; these could be replaced by PHA...
 	DEY
-	DEY					; irrelevant values for X, Y
+	DEY					; irrelevant values for X, Y*****or taken as per future interface
 	DEY
 	STY exe_sp			; save this for a moment
 ; the scheduler calling context! new version 20161118, revise anyway
@@ -570,4 +572,3 @@ mms_table:
 	.word	mms_term
 	.word	mms_cont
 	.word	mms_stop
-
