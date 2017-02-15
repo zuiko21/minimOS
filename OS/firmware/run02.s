@@ -2,7 +2,7 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9b1
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170214-1950
+; last modified 20170215-0930
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -78,8 +78,8 @@ fw_cpuOK:
 #endif
 
 ; it can be assumed 65816 from this point on
-	CLC					; set NATIVE mode eeeeeeeeeeek
-	XCE					; still with 8-bit registers
+;	CLC					; set NATIVE mode eeeeeeeeeeek
+;	XCE					; still with 8-bit registers
 
 ; *** optional firmware modules ***
 post:
@@ -271,12 +271,12 @@ fw_patch:
 fw_gestalt:
 	LDA himem		; get pages of kernel SRAM (4)
 	STA zpar		; store output (3)
-	PHP				; keep sizes (3)
 	STZ zpar+2		; no bankswitched RAM yet (4)
 	STZ zpar3+2		; same for string address (4)
-	LDA #fw_mname	; get string pointer (3)
-	STA zpar3		; put it outside (4)
-	PLP				; restore sizes (4)
+	LDA #>fw_mname	; get string pointer
+	LDY #<fw_mname
+	STA zpar3+1		; put it outside
+	STY zpar3
 	LDA #SPEED_CODE	; speed code as determined in options.h (2+3)
 	STA zpar2
 	LDA fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
@@ -325,7 +325,7 @@ brk_hndl:		; label from vector list
 	PHA						; save registers
 	PHX
 	PHY
-;	JSR brk_handler			; standard label from IRQ
+	JSR brk_handler			; standard label from IRQ
 	PLY						; restore status and return
 	PLX
 	PLA

@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b8
-; last modified 20170208-1019
+; v0.5b9
+; last modified 20170215-0920
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -12,7 +12,7 @@
 ; ##### uz is first available zeropage byte #####
 	iodev	= uz			; standard I/O device ##### minimOS specific #####
 	pid		= iodev+1		; storage for launched PID, cursor no longer needed
-	buffer	= pid+1			; storage for input line (BUFSIZ chars)
+	buffer	= pid+4			; storage for input line (BUFSIZ chars) ***extra space in order to avoid LOAD_LINK wrap!!!
 ; ...some stuff goes here, update final label!!!
 	__last	= buffer+BUFSIZ	; ##### just for easier size check #####
 
@@ -33,8 +33,8 @@ title:
 	.dsb	shellHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5000			; time, 10.00
-	.word	$4A2C			; date, 2017/1/12
+	.word	$4C00			; time, 9.30
+	.word	$4A4F			; date, 2017/2/15
 
 shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 
@@ -49,6 +49,8 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; ****************************
 +shell:					; **** mandatory external label ****
 ; ##### minimOS specific stuff #####
+	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
+	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
@@ -89,7 +91,6 @@ main_loop:
 		LDA #>buffer		; in zeropage, all MSBs are zero
 		STY str_pt			; set parameter
 		STA str_pt+1
-		STA str_pt+2		; ready for 24-bit
 		_KERNEL(LOAD_LINK)	; look for that file!
 		BCC xsh_ok			; it was found, thus go execute it
 			CPY #INVALID		; found but not compatible?
@@ -138,7 +139,6 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
-	_STZA str_pt+2		; clear bank! ****
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
@@ -151,7 +151,6 @@ getLine:
 	LDA #>buffer		; MSB, should be zero already!
 	STY str_pt			; set kernel parameter
 	STA str_pt+1		; clear MSB, no need for STZ
-	_STZA str_pt+2		; also mandatory 24-bit addressing
 	LDX #BUFSIZ-1		; maximum offset
 	STX ln_siz
 	LDY iodev			; use standard device

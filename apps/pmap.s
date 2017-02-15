@@ -1,19 +1,20 @@
 ; memory map for minimOS! KLUDGE
-; v0.5b3
-; last modified 20170214-1824
+; v0.5b4
+; last modified 20170215-0931
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
 .(
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
-	page		= uz			; start of current block
+	page	= uz			; start of current block
 	current	= page+1	; index storage
 
 ; ...some stuff goes here, update final label!!!
 	__last	= current+1	; ##### just for easier size check #####
 
 ; ##### include minimOS headers and some other stuff #####
+#ifndef	NOHEAD
 	.dsb	$100*((* & $FF)<> 0) - (* & $FF), $FF	; page aligned
 pmapHead:
 ; *** header identification ***
@@ -39,6 +40,7 @@ pmapSize	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	pmapSize		; filesize
 	.word	0				; 64K space does not use upper 16-bit
+#endif
 ; ##### end of minimOS executable header #####
 
 ; ************************
@@ -117,6 +119,9 @@ pmap_size:
 pmap_kb:
 	LSR			; divide by 4
 	LSR
+		BCC pm_nround	; if C, round up!
+			INC
+pm_nround:
 ; print A in decimal and continue!
 	LDX #0		; decade counter
 pkb_div10:

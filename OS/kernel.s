@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1b8
+; v0.5.1b9
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170111-0914
+; last modified 20170215-0838
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -33,12 +33,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.5.1b4", 0	; version in comment
+	.asc	"minimOS 0.5.1b9", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 9.00
-	.word	$4A2A	; date, 2017/1/10
+	.word	$4A4F	; date, 2017/2/15
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -48,6 +48,7 @@ kern_siz = kern_end - kern_head - $FF
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
 
+-kernel:
 warm:
 ; assume interrupts off, binary mode and 65C816 in emulation mode!
 #ifdef	SAFE
@@ -414,7 +415,7 @@ dr_ok:					; *** all drivers inited ***
 ; ******************************
 sh_exec:
 	LDY #<shell			; get pointer to built-in shell
-	LDA #>shell+256			; skip header!
+	LDA #>shell			; as per mandatory label, no header to skip!
 	STY ex_pt			; set execution address
 	STA ex_pt+1
 	LDA #DEVICE			; *** revise
@@ -423,6 +424,7 @@ sh_exec:
 	JSR b_fork			; reserve first execution braid
 	CLI					; enable interrupts *** this is dangerous!
 	JSR b_exec			; go for it!
+	JSR yield			; run ASAP
 here:
 	_BRA here			; ...as the scheduler will detour execution
 
@@ -541,14 +543,30 @@ rst_shell:
 
 ; *** new, sorted out code 20150124 ***
 ; *** interrupt service routine ***
+; will include BRK handler!
 
 k_isr:
 #include "isr/irq.s"
-
 ; default NMI-ISR is on firmware!
 kern_end:		; for size computation
+; ***********************************************
+; ***** end of kernel file plus API and IRQ *****
+; ***********************************************
 
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
-	.dsb	$100 - (* & $FF), $FF	; page alignment!!! eeeeek
-shell:
+; must include external shell label!!!
 #include "shell/SHELL"
+
+; ****** Downloaded kernels add driver staff at the end ******
+#ifdef	DOWNLOAD
+#include "drivers/config/DRIVER_PACK.s"	; this package will be included with downloadable kernels
+.data
+; downloadable system have ALL system & driver variables AFTER the kernel/API
+sysvars:
+#include "sysvars.h"
+; driver-specific system variables, located here 20170207
+dr_vars:
+#include "drivers/config/DRIVER_PACK.h"
+.text					; eeeeeek
+-user_sram = *			; the rest of available SRAM
+#endif

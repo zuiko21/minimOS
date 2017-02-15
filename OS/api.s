@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1b8, must match kernel.s
+; v0.5.1b9, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170213-1342
+; last modified 20170215-0927
 
 ; no way for standalone assembly...
 
@@ -575,7 +575,7 @@ load_link:
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get LSB
 	SEC
-	SBC #8				; subtract name position in header!
+	SBC #8				; subtract name position in header! beware of 816 non-wrapping!
 	STA str_pt			; modified value
 	BCS ll_reset		; nothing else to do if no borrow
 		DEC str_pt+1		; otherwise will point to previous PAGE eeeeeeek
@@ -1127,6 +1127,26 @@ rls_next:
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
+
+; ****debug code*****
+hexdebug:		; print A in hex
+	PHA			; keep whole value
+	LSR			; shift right four times (just the MSB)
+	LSR
+	LSR
+	LSR
+	JSR hxd_ascii	; convert and print this cipher
+	PLA			; retrieve full value
+	AND #$0F	; keep just the LSB... and repeat procedure
+hxd_ascii:
+	CMP #10		; will be a letter?
+	BCC hxd_num	; just a number
+		ADC #6			; convert to letter (plus carry)
+hxd_num:
+	ADC #'0'	; convert to ASCII (carry is clear)
+	JSR $c0c2	; direct print
+	RTS
+; *******************
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
