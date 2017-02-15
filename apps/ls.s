@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
 ; v0.5b9
-; last modified 20170215-0935
+; last modified 20170215-1059
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -302,7 +302,11 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
-	_STZA str_pt+2		; clear bank!
+#ifdef	C816
+	PHB					; get current bank eeeeeeeek
+	PLA					; retreive
+	STA str_pt+2		; and set accordingly
+#endif
 	LDY #0				; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...

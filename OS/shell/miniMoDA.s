@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b9
-; last modified 20170213-1201
+; last modified 20170215-1100
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -81,6 +81,8 @@ title:
 ; *** initialise the monitor ***
 
 ; ##### minimOS specific stuff #####
+	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
+	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE

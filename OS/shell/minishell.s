@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5b9
-; last modified 20170215-0920
+; last modified 20170215-1057
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -50,7 +50,6 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 +shell:					; mandatory label
 ; ##### minimOS specific stuff #####
 	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
-	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
@@ -91,6 +90,7 @@ main_loop:
 		LDA #>buffer		; in zeropage, all MSBs are zero
 		STY str_pt			; set parameter
 		STA str_pt+1
+		STA str_pt+2		; as might be altered from HiROM
 		_KERNEL(LOAD_LINK)	; look for that file!
 		BCC xsh_ok			; it was found, thus go execute it
 			CPY #INVALID		; found but not compatible?
@@ -139,6 +139,11 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
+#ifdef	C816
+	PHB					; get current bank eeeeeeeek
+	PLA					; retreive
+	STA str_pt+2		; and set accordingly
+#endif
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
@@ -151,6 +156,7 @@ getLine:
 	LDA #>buffer		; MSB, should be zero already!
 	STY str_pt			; set kernel parameter
 	STA str_pt+1		; clear MSB, no need for STZ
+	STA str_pt+2		; and set bank accordingly***
 	LDX #BUFSIZ-1		; maximum offset
 	STX ln_siz
 	LDY iodev			; use standard device

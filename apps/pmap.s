@@ -48,6 +48,8 @@ pmapSize	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 ; ************************
 
 ; ##### minimOS specific stuff #####
+	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
+	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE

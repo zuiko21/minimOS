@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b6
-; last modified 20170214-0847
+; v0.5.1b7
+; last modified 20170215-1100
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -72,6 +72,8 @@ mon_head:
 ; *** initialise the monitor ***
 
 ; ##### minimOS specific stuff #####
+	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
+	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE

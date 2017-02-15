@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v1.0b4
+; v1.0b5
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170214-0850
+; last modified 20170215-1101
 
 
 ; for standalone assembly, set path to OS/
@@ -33,6 +33,8 @@ stsSize	=	sts_end - sts_header -256	; compute size NOT including header!
 
 ; *** actual app code starts here ***
 sts_start:
+	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
+	_STZA z24b2
 	LDA #0				; do not bother with STZ
 	STA z_used			; no threads launched this far
 	STA w_rect			; no window size, regular terminal
