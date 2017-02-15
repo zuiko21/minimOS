@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a10
-; (c) 2016 Carlos J. Santisteban
-; last modified 20161215-1106
+; v0.5.1a11
+; (c) 2016-2017 Carlos J. Santisteban
+; last modified 20170215-1411
 
 
 ; ********************************
@@ -36,7 +36,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a10", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.5.1a11", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
 mm_init:
@@ -230,15 +230,18 @@ mmf_loop:
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
 		BNE mmf_loop		; until the bottom of the list (3/2)
-	_DR_ERR(FULL)		; no available braids! *** it is a kernel I/O call...
+; nothing was found, no need to exit from CS
+;	_DR_ERR(FULL)		; no available braids! *** it is a kernel I/O call...
+	_DR_OK				; use system-reserved braid, is this OK?
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
 	STA mm_flags-1, Y	; reserve braid (4)
+; exit from CS
 	_DR_OK				; this OK? it is a kernel I/O call...
 
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
 ; Y <- PID, ex_pt <- addr, cpu_ll <- architecture, def_io <- sys_in & sysout
-; *** should need some flag to indicate XIP or not! stack frame is different
+; no longer should need some flag to indicate XIP or not! code start address always at stack bottom
 mm_exec:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first ()
@@ -254,6 +257,7 @@ mmx_br:
 	LDA #$FF			; always assume page-aligned stacks
 ; ...will switch to future stack space a bit later!
 ; create stack frame
+; *****should place at the very bottom the (full) starting address, in case of non-XIP
 	.al: REP #$20		; *** 16-bit memory ***
 	LDA def_io			; get sys_in & sysout from parameter, revise ABI
 	PHA					; into stack, but BEFORE PID
@@ -287,6 +291,7 @@ mmx_frame:
 	PHA					; RTI-savvy address placed
 	LDX #$30			; as status means 8-bit size, interrupts enabled!
 	PHX					; push fake status register!
+; *****please put actual register contents as per future interface
 	_KERNEL(TS_INFO)	; get ISR-dependent stack frame, Y holds size
 	DEY					; correct index as will NEVER be empty!
 	.as: SEP #$20		; *** back to 8-bit for a moment ***
