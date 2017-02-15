@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b8
+; v0.5.1b9
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170215-0946
+; last modified 20170215-1331
 
 ; just in case
 #define		C816	_C816
@@ -40,13 +40,13 @@ kern_head:
 
 ; keep version string wven if no headers present!
 kern_splash:
-	.asc	"minimOS-16 0.5.1b8", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b9", 0	; version in comment
 
 #ifndef	NOHEAD
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$4580	; time, 8.44
-	.word	$4A4E	; date, 2017/2/14
+	.word	$6800	; time, 13.00
+	.word	$4A4F	; date, 2017/2/15
 
 kern_siz = kern_end - kern_head - 256
 
@@ -123,7 +123,7 @@ ram_init:
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
 #ifdef	MULTITASK
-		STZ cio_lock, X		; clear I/O locks! (5)
+		STZ cio_lock, X		; clear I/O locks! (5) *** these should be into the driver!
 		STZ cin_mode, X		; and binary flags (5)
 #endif
 		STA drv_opt, X		; set full pointer for output (5)
@@ -132,11 +132,9 @@ dr_clear:
 		INX
 		BNE dr_clear		; finish page (3/2)
 
-; *** in non-multitasking systems, install embedded TASK_DEV driver ***
-#ifndef	MULTITASK
+; *** in non-multitasking systems, install embedded TASK_DEV driver anyway, a suitable driver will replace it
 	LDA #st_taskdev		; pseudo-driver full address, would be in kernel16.s
 	STA drv_opt			; *** assuming TASK_DEV = 128, index otherwise
-#endif
 ; might do something similar for WIND_DEV = 129...
 
 ; first get the pointer to each driver table
@@ -151,9 +149,11 @@ dr_inst:
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code... plus extra byte (6)
 #ifdef	SAFE
-		AND #$00FF			; just keep LSB (3)
-		CMP #$0080			; check sign (3)
-		BCS dr_phys			; only physical devices (3/2)
+;		AND #$00FF			; just keep LSB (3)
+;		CMP #$0080			; check sign (3)
+;		BCS dr_phys			; only physical devices (3/2)
+		TAX					; check sign, faster! (2)
+		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
 dr_phys:
 #endif
@@ -319,7 +319,11 @@ dr_ok:					; *** all drivers inited ***
 ; **** launch monitor/shell ****
 ; ******************************
 sh_exec:
+#ifdef	NOHEAD
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
+#else
+	LDX shell-254		; get ACTUAL CPU type from executable header!
+#endif
 	STX cpu_ll			; architecture parameter
 	.al: REP #$20		; will be needed anyway upon restart
 	LDA #shell			; pointer to integrated shell! eeeeeek
@@ -333,6 +337,7 @@ sh_exec:
 here:
 	BRA here			; ...as the scheduler will detour execution
 
+; ***** debug code *****
 ; a quick way to print a newline (or a debugging '!') on standard device
 ks_cr:
 	LDY #CR				; leading newline, 8-bit
@@ -367,7 +372,7 @@ st_tdlist:
 	.word	st_status	; get execution flags for a braid
 	.word	st_getpid	; get current PID
 	.word	st_hndl		; set SIGTERM handler
-	.word	st_prior	; priorize braid, jump to it at once, really needed?
+	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
 
 ; ** single-task management routines **
 
@@ -416,7 +421,9 @@ exec_02:
 st_hndl:
 	.al: REP #$20		; *** 16-bit memory size ***
 	LDA ex_pt			; get pointer *** only bank zero addresses supported this far
+	LDX ex_pt+2			; please, take bank too
 	STA mm_term			; store in single variable (from unused table)
+	STX mm_stbnk		; bank stored in another place
 	_DR_OK
 .as						; back to regular API call
 
@@ -442,6 +449,7 @@ sig_term:
 	PHK					; needed for new interface as will end in RTI!
 	PEA st_yield		; correct return address
 	PHP					; eeeeeeeeeeeek
+; think about putting mm_stbnk just after mm_term word, remaining code would reduce to SEP #$30 & JMP[mm_term]
 	LDX mm_stbnk		; *** single task handler might be anywhere ***
 	PHX					; push bank address eeeeeeeeeeeek
 	.al: REP #$20		; *** best going 16-bit ***
@@ -455,7 +463,7 @@ sig_kill:
 	.as: .xs: SEP #$30	; *** standard sizes ***
 ; then, free up all memory from previous task
 	LDY #0				; standard PID
-;	KERNEL(RELEASE)	; free all memory eeeeeeeek
+;	KERNEL(RELEASE)		; free all memory eeeeeeeek
 ; new, check whether a shutdown command was issued
 	LDA sd_flag			; some action pending?
 	BEQ rst_shell		; if not, just restart shell
