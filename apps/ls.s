@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b8
-; last modified 20170214-0849
+; v0.5b9
+; last modified 20170215-0935
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -29,8 +29,8 @@ lsHead:
 	.dsb	lsHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6000			; time, 12.00
-	.word	$4A3B			; date, 2017/1/27
+	.word	$4C00			; time, 9.32
+	.word	$4A4F			; date, 2017/2/15
 
 lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 
@@ -45,6 +45,8 @@ lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 ; ************************
 
 ; ##### minimOS specific stuff #####
+	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
+	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE

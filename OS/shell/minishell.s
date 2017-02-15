@@ -47,7 +47,7 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
-+shell:					; **** mandatory external label ****
++shell:					; mandatory label
 ; ##### minimOS specific stuff #####
 	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
 	_STZA z24b2
