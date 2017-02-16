@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.5.1b7, unified with kernel 20160412
+; v0.5.1b8, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170214-1943
+; last modified 20170216-1049
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -126,6 +126,25 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 #include "shell/monitor.s"
 #include "../apps/sigtest.s"
 ; ...could add more software up to $FC00
+
+; ****** skip rest of unused ROM until firmware ******
+; ##### empty header #####
+#ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+free_head:
+	BRK						; don't enter here! NUL marks beginning of header
+	.asc	"aS****", CR	; just reserved SYSTEM space
+	.asc	"ROM", 0, 0		; file name (mandatory) and empty comment
+; advance to end of header
+	.dsb	free_head + $FC - *, $FF	; for ready-to-blow ROM, advance to size
+; *** no valid date & time ***
+freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	freeSize		; filesize
+	.word	0				; 64K space does not use upper 16-bit
+#endif
+; ##### end of minimOS header #####
 
 ; ***************************************
 ; *** make separate room for firmware ***

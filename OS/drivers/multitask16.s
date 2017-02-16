@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a11
+; v0.5.1a12
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170215-1411
+; last modified 20170216-1112
 
 
 ; ********************************
@@ -36,7 +36,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a11", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.5.1a12", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
 mm_init:
@@ -46,9 +46,9 @@ mm_init:
 ; ...or just ignore as only the first driver will install?
 ; hardware-assisted scheduler init code should do the opposite!
 ;	LDY #0				; supposedly null PID
-;	_ADMIN(SWITCH)		; future use of hardware multitasking
+;	ADMIN(SWITCH)		; future use of hardware multitasking
 ;	BCC mm_nohw			; no hardware detected, OK to proceed with soft
-;		_DR_ERR(INVALID)	; otherwise will not install, hope there is a hardware driver!
+;		DR_ERR(INVALID)		; otherwise will not install, hope there is a hardware driver!
 ;mm_nohw:
 ; remaining code assumes software scheduler only
 	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
@@ -59,33 +59,18 @@ mm_cont:
 ; initialise flags table (and stack pointers?)
 ; at least, set direct page to current braid!
 	LDA #>mm_context	; MSB of storage area
-;	CLC
-;	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily outside range...
 	XBA					; will be the rest of the pointer
 	LDA #<mm_context	; same for LSB... should be ZERO for performance reasons
 	TCD					; direct-page set for FIRST context
 	LDX #MAX_BRAIDS		; reset backwards index
-;	LDY #$FF			; original SP value, no need to skim on that
 	LDA #BR_FREE		; adequate value in two highest bits, outside loop b/c integrated mm_treq
 mm_rsp:
-;		XBA					; get accumulator MSB
-;		DEC					; go for next context (contiguous)
-;		XBA					; back to MSB
-;		TCD					; set direct-page
-;		STY sys_sp			; direct page storage of original SP
-;		LDA #BR_FREE		; adequate value in two highest bits
 		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
-;		STZ mm_treq-1, X	; set SIGTERM request flags to zero *** already integrated
-;		LDA #<mm_context	; restore LSB... should be ZERO for performance reasons
 		DEX					; go for next
 		BNE mm_rsp			; continue until all done
 	INX					; default task (will be 1)
 	STX mm_pid			; set as current PID
 ; do NOT set current SP as initialisation will crash! startup via scheduler will do anyway
-;	LDA #>mm_stacks		; contextual stack area base pointer *** assume page-aligned!!!
-;	XBA					; that was MSB
-;	LDA #$FF			; restored value, no need to skim on that (2)
-;	TCS					; stack pointer updated!
 ; *** shutdown code placeholder *** does not do much
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
@@ -178,6 +163,7 @@ mm_rts:
 mm_sigterm:
 	ASL					; ...and restore value with clear flag!
 	STA mm_flags-1, X	; EEEEEEEK! clear received TERM signal, new format 20161117
+; stack return address upon end of SIGTERM handler
 	PHK					; push program bank as required by RTI in 816
 	PEA mm_rts			; correct return address after SIGTERM handler RTI
 	PHP					; eeeeeeeeeeeeeeeeeek
@@ -186,6 +172,9 @@ mm_sigterm:
 	PHA					; needed for RTI at the end of the handler
 	TXA					; addressed braid (2)
 	ASL					; two times (2)mms_suicide
+; in case a table of 24-bit pointers is used, do the following
+; STX temp, CLC, ADC temp will multiply older X by three!
+; then push the three bytes in a row (do not do the previous PHA from mm_stbnk)
 	TAX					; proper offset in handler table (2)
 	LDA mm_term-1, X	; get MSB
 	PHA					; and push it
@@ -211,6 +200,7 @@ mm_chkpid:
 		BCS mm_piderr		; way too much (2/3) eeeek
 	RTS					; back to business (6)
 mm_pidz:				; placeholder
+; should check whether X means a 0-compatible subfunction (B_EXEC for this, B_SIGNAL for all)
 mm_piderr:
 	PLA					; discard return address, since called from a subroutine (4+4)
 	PLA

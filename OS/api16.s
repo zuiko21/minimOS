@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b13, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170215-1020
+; last modified 20170216-1041
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -284,6 +284,7 @@ ci_win:
 ;		USES ma_ix.b
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
 ;***MUST receive cpu_ll in order to limit 6502 blocks to "current" bank!!!
+; or determine it via new B_INFO?
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
