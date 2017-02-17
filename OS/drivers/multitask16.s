@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a12
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170216-1112
+; last modified 20170217-1232
 
 
 ; ********************************
@@ -84,18 +84,11 @@ mm_yield:
 	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
 
 ; in case of non-XIP code (loaded file) FINISH must free its previously assigned block, taking address from stack!
-mm_oblit:
-	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$14		; *** 8-bit index AND mask interrupts! ***
-	PLA					; take intra-bank address from stack!
-	STA ma_pt			; parameter for FREE
-	PLX					; same for bank address
-	STA ma_pt+2
-	_KERNEL(FREE)		; generic access
-; ...and get into mm_suicide
-
-; kill itself!!! simple way to terminate after FINISH
+; will take address anyhow, FREE will quietly fail if no block was assigned to that pointer
+; kill itself!!! simple way to terminate after FINISH, but also after SIGKILL
 mm_suicide:
+;REVISE REVISE REVISE
+; (re)set SP to the bottom-stored address, may take that pointer somewhere else
 	.as: .xs: SEP #$30	; ** standard size for app exit **
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 	SEI					; this needs to be run with interrupts OFF, do not care current status
@@ -352,13 +345,31 @@ mms_term:
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
-;	LDA #0				; no STZ abs,Y
-;	STA mm_treq-1, Y	; clear unattended TERM signal, 20150617
-; should probably free up all MEMORY & windows belonging to this PID...
-	LDY mm_pid			; get current task number
+	PHY					; keep targeted PID for a moment
+; free up all MEMORY & windows belonging to this PID...
+; Y currently set to desired PID
 	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
+; now it is time to release memory assigned for non-XIP executable!
+	PLA					; retrieve desired PID... as LSB
+	CLC
+	ADC #>mm_stacks-256	; contextual stack area base pointer, assume page-aligned!!!
+	XBA					; this is MSB
+	LDA #$FC			; make it point to just below stored address, LSB only *** assume page-aligned!!!
+	TCS					; set as temporary stack pointer!!!
+	.al: REP #$20		; *** now 16-bit memory ***
+	PLA					; take intra-bank address from stack!
+	STA ma_pt			; parameter for FREE
+	PLX					; same for bank address (8 bit)
+	STX ma_pt+2			; eeeeeeeeeeek
+	_KERNEL(FREE)		; try to release the executable block
+; do not care if FREE succeeded or not...
 ; window release *** TO DO *** TO DO *** TO DO ***
+; *** now switch to another braid as this one is dead!
+; no need to clear z_used as 65816 do not need to manually copy zeropage contents, stack is already empty!
+	_KERNEL(YIELD)		; continue with another one, forget this context as will never be executed again!
 	_DR_OK				; return as appropriate
+
+	.as					; remaining routines are called in 8-bit mode
 
 ; resume execution
 mms_cont:
