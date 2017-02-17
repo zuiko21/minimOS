@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a12
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170217-1232
+; last modified 20170217-1440
 
 
 ; ********************************
@@ -428,10 +428,15 @@ mm_hndl:
 	TYA					; get index
 	ASL					; double as pointer eeeeeeeeeeeek
 	TAX					; any better this way?
-	LDA ex_pt			; get pointer LSB (3)
-	STA mm_term-2, X	; store in table (4)
-	LDA ex_pt+1			; now for MSB (3+4)
-	STA mm_term-1, X
+; staying in 8-bit mode takes 10b, 14t
+;	LDA ex_pt			; get pointer LSB (3)
+;	STA mm_term-2, X	; store in table (4)
+;	LDA ex_pt+1			; now for MSB (3+4)
+;	STA mm_term-1, X
+; going 16-bit takes 7b, 12t (9b, 15t if actually needed to go back into 8-bit)
+	.al: REP #$20		; *** 16-bit memory *** (3)
+	LDA ex_pt			; get pointer (4)
+	STA mm_term-2, X	; store in table (5)
 ; end of CS
 ; ** priorize braid, jump to it at once, really needed? **
 mm_prior:				; this is just a placeholder
