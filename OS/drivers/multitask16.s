@@ -1,8 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a12
+; v0.5.1a13
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170217-1440
-
+; last modified 20170218-2038
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -36,7 +35,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a12", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.5.1a13", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
 mm_init:
@@ -83,16 +82,15 @@ mm_yield:
 ; interrupt status will be restored later
 	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
 
-; in case of non-XIP code (loaded file) FINISH must free its previously assigned block, taking address from stack!
-; will take address anyhow, FREE will quietly fail if no block was assigned to that pointer
-; kill itself!!! simple way to terminate after FINISH, but also after SIGKILL
+; kill itself!!! simple way to terminate after FINISH
 mm_suicide:
-;REVISE REVISE REVISE
-; (re)set SP to the bottom-stored address, may take that pointer somewhere else
 	.as: .xs: SEP #$30	; ** standard size for app exit **
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 	SEI					; this needs to be run with interrupts OFF, do not care current status
 	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
+; *** now switch to another braid as this one is dead! ***
+; forget this context as will never be executed again!
+; no need to clear z_used as 65816 do not need to manually copy zeropage contents, stack is already empty!
 	CLC					; for safety in case RTS is found (when no other braid is active)
 ; ...then go into the scheduler as this will no longer be executable
 
@@ -353,20 +351,41 @@ mms_kill:
 	PLA					; retrieve desired PID... as LSB
 	CLC
 	ADC #>mm_stacks-256	; contextual stack area base pointer, assume page-aligned!!!
-	XBA					; this is MSB
-	LDA #$FC			; make it point to just below stored address, LSB only *** assume page-aligned!!!
-	TCS					; set as temporary stack pointer!!!
-	.al: REP #$20		; *** now 16-bit memory ***
-	PLA					; take intra-bank address from stack!
-	STA ma_pt			; parameter for FREE
-	PLX					; same for bank address (8 bit)
-	STX ma_pt+2			; eeeeeeeeeeek
+; this version for pointer copying takes 18b/29t until call
+;	STA mk_nxpt+1			; this is MSB, stored in local pointer
+;	LDA #$FD			; make it point at stored address, LSB only *** assume page-aligned!!!
+;	STA mk_nxpt		; store local pointer to bottom of stack
+;	LDA (mk_nxpt) 	; get first pointer byte from stack
+;	STA ma_pt		; store as zp parameter
+;	REP #$20		; *** 16-bit memory ***
+;	LDY #1			; move index, not worth a loop
+;	LDA (mk_nxpt), Y 	; get last pointer word from stack
+;	STA ma_pt+1		; store as zp parameter
+; alternative code is 16b/30t until call and saves local
+	XBA				; that was MSB
+	LDA #$FD			; make it point at stored address, LSB only *** assume page-aligned!!!
+	.xl: .al: REP #$30	; *** all 16-bit ***
+	TAX				; offset is full address
+	LDA $0, X			; get base word
+	STA ma_pt			; store as zp parameter
+	LDY $2, X			; 6800-like indexing! gets extra byte
+	.xs: .as: SEP #$30	; *** back to 8-bit ***
+	STA ma_pt+2			; store bank byte
+; another version is 16b/33t
+;	XBA				; that was MSB
+;	LDA #0			; make it point at whole stack space *** assume page-aligned!!!
+;	PHD					; keep direct pointer!
+;	TCD					; temporarily at stack space!
+;	REP #$20	; *** 16-bit memory ***
+;	LDA #$FD				; get word, note offset
+;	LDY #$FF				; get bank
+;	PLD					; restore direct page
+;	STA ma_pt			; store word as zp parameter
+;	STY ma_pt+2			; store bank as zp parameter
+; will take address anyhow, FREE will quietly fail if no block was assigned to that pointer
 	_KERNEL(FREE)		; try to release the executable block
 ; do not care if FREE succeeded or not...
 ; window release *** TO DO *** TO DO *** TO DO ***
-; *** now switch to another braid as this one is dead!
-; no need to clear z_used as 65816 do not need to manually copy zeropage contents, stack is already empty!
-	_KERNEL(YIELD)		; continue with another one, forget this context as will never be executed again!
 	_DR_OK				; return as appropriate
 
 	.as					; remaining routines are called in 8-bit mode
