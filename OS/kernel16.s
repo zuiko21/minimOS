@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b9
+; v0.5.1b10
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170215-1331
+; last modified 20170220-1013
 
 ; just in case
 #define		C816	_C816
@@ -45,8 +45,8 @@ kern_splash:
 #ifndef	NOHEAD
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$6800	; time, 13.00
-	.word	$4A4F	; date, 2017/2/15
+	.word	$4800	; time, 9.00
+	.word	$4A54	; date, 2017/2/20
 
 kern_siz = kern_end - kern_head - 256
 
@@ -64,11 +64,12 @@ warm:
 #ifdef	SAFE
 	SEC
 	XCE					; set emulation mode for a moment! will reset to 8-bit registers
+	PHK					; this pushes a zero into stack
+	PLB					; ...and resets data bank eeeeeeeeeek
 #endif
 ; assume interrupts off, binary mode and 65C816 in emulation mode!
 	CLC
 	XCE					; enter native mode! still 8 bit regs, though
-
 ; worth going 16-bit for the install calls!
 	.al: REP #$20		; *** 16-bit memory most of the time ***
 
@@ -76,12 +77,14 @@ warm:
 #ifndef		DOWNLOAD
 	LDA #k_vec			; get table address, nicer way (3)
 	STA kerntab			; store parameter (4)
+; as kernels must reside in bank 0, no need for 24-bit addressing
 	_ADMIN(INSTALL)		; copy jump table, will respect register sizes
 #endif
 
 ; install ISR code (as defined in "isr/irq.s" below)
 	LDA #k_isr			; get address, nicer way (3)
 	STA ex_pt			; no need to know about actual vector location (4)
+; as kernels must reside in bank 0, no need for 24-bit addressing
 	_ADMIN(SET_ISR)		; install routine, will respect sizes
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
@@ -89,6 +92,7 @@ warm:
 ; *****************************
 ; *** memory initialisation ***
 ; *****************************
+; THINK about making API entries for this!
 	LDY #FREE_RAM	; dirty trick no longer allowed... should be zero
 	STY ram_stat	; as it is the first entry, no index needed
 	LDY #END_RAM	; also for end-of-memory marker
@@ -107,7 +111,7 @@ ram_init:
 ; intialise drivers from their jump tables
 ; ******************************************************
 ; THINK about making API entries for this!
-; * will also initialise I/O lock arrays! * 20161129
+; no longer initialises I/O lock arrays! but API must provide a function to do so!
 
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
 ; same with dr_aut, now independent kernel call savvy 20161103
@@ -122,6 +126,7 @@ ram_init:
 ; already in 16-bit memory mode...
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
+; ***in the meanwhile, waiting for proper API about this...
 #ifdef	MULTITASK
 		STZ cio_lock, X		; clear I/O locks! (5) *** these should be into the driver!
 		STZ cin_mode, X		; and binary flags (5)
@@ -149,9 +154,6 @@ dr_inst:
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code... plus extra byte (6)
 #ifdef	SAFE
-;		AND #$00FF			; just keep LSB (3)
-;		CMP #$0080			; check sign (3)
-;		BCS dr_phys			; only physical devices (3/2)
 		TAX					; check sign, faster! (2)
 		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
@@ -222,6 +224,7 @@ dr_noreq:
 			STX dsec_mx			; save updated index (4)
 dr_nosec: 
 ; continue initing drivers
+; ***maybe best to do this BEFORE installing queues, aborted drivers will be easier to reset
 		JSR dr_icall		; call routine (6+...)
 		.al: REP #$20		; *** 16-bit memory again, just in case ***
 		.xs: SEP #$10		; *** 8-bit indexes, again just in case ***
@@ -251,7 +254,12 @@ dr_abort:
 #endif
 			ASL					; use retrieved ID as index (2+2)
 			TAX					; will keep LSB only
-			LDA #dr_error		; make deleted entries point to a standard error routine (3)
+			BEQ dr_abmm			; aborted multitasking will revert to supplied single-task driver!!!
+				LDA #dr_error		; make deleted entries point to a standard error routine (3)
+				BRA dr_abptr		; set standard pointer
+dr_abmm:
+			LDA #st_taskdev		; a multitasking effort was aborted
+dr_abptr:
 			STA drv_opt, X		; set full pointer for output (5)
 			STA drv_ipt, X		; and for input (5)
 dr_next:
@@ -270,6 +278,7 @@ dr_icall:
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset
 ; *** assume 16-bit memory and 8-bit indexes ***
 ; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
+; make certain about DBR in calls...
 dr_call:
 	LDA (da_ptr), Y		; destination pointer MSB (6)
 	DEC					; one less for RTS (2)
@@ -286,16 +295,15 @@ dr_ok:					; *** all drivers inited ***
 
 	.al					; as outside dr_call routine will be doing 16-bit memory!
 
-#ifndef		MULTITASK
 ; in case no I/O lock arrays were initialised...
 	LDX #0				; beware of 16-bit memory!
-	STX cin_mode		; single flag for non-multitasking systems
+	STX cin_smode		; single flag for non-multitasking systems
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
 	LDA #sig_kill		; get default routine full address, we are still in 16-bit memory
-	STA mm_term			; store in new system variable
-#endif
+	STA mm_sterm		; store in new system variable
+	STX mm_sterm+2		; clear default bank!!!
 
 ; startup code
 
@@ -328,6 +336,8 @@ sh_exec:
 	.al: REP #$20		; will be needed anyway upon restart
 	LDA #shell			; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
+	LDX #0				; default bank for integrated shell! eeeeek
+	STX ex_pt+2			; mandatory 24-bit addressing
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct deindexed call because of 16-bit memory!
@@ -375,6 +385,7 @@ st_tdlist:
 	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
 
 ; ** single-task management routines **
+; called from API, make certain about DBR or use long addressing!!!
 
 .as:.xs					; all of these will be called from API!
 
@@ -414,22 +425,32 @@ exec_02:
 ; set context space!
 	LDA #ZP_AVAIL		; eeeeeeek!
 	STA z_used			; otherwise SAFE will not work!
+; right now should set DBR as there is no scheduler to preload it! eeeeeeek
+	LDA ex_pt+2			; get actual bank address
+	PHA					; into stack for a moment
+	PLB					; ...and now properly set for the task
 ; jump to code!
+; already in full 8-bit mode as assumed
 	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
 
 ; SET_HNDL for single-task systems
 st_hndl:
 	.al: REP #$20		; *** 16-bit memory size ***
-	LDA ex_pt			; get pointer *** only bank zero addresses supported this far
+	LDA ex_pt			; get pointer
+; ***must check for 02 code in order to get bank from current DBR!
 	LDX ex_pt+2			; please, take bank too
-	STA mm_term			; store in single variable (from unused table)
-	STX mm_stbnk		; bank stored in another place
+; ***otherwise do like PHB, PLX
+	STA @mm_sterm		; store in single variable, 24-bit addr!
+	.as: SEP #$20		; *** back to 8-bit ***
+	TXA					; no long STX...
+	STA @mm_sterm+2		; bank stored just after regular pointer, 24-bit addr!
 	_DR_OK
 .as						; back to regular API call
 
 ; B_STATUS for single-task systems
 st_status:
 	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
+; ***might need to add CPU info inside
 	_DR_OK
 
 ; B_SIGNAL for single-task systems
@@ -450,10 +471,10 @@ sig_term:
 	PEA st_yield		; correct return address
 	PHP					; eeeeeeeeeeeek
 ; think about putting mm_stbnk just after mm_term word, remaining code would reduce to SEP #$30 & JMP[mm_term]
-	LDX mm_stbnk		; *** single task handler might be anywhere ***
-	PHX					; push bank address eeeeeeeeeeeek
+	LDA @mm_sterm+2		; *** single task handler might be anywhere *** 24-bit!
+	PHA					; push bank address eeeeeeeeeeeek
 	.al: REP #$20		; *** best going 16-bit ***
-	LDA mm_term			; get handler address, no index needed as singletasking eeeeeeek
+	LDA @mm_sterm		; get handler address, separate singletasking value
 	PHA					; push handler address (minus bank)
 	.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
 	PHP					; as required
@@ -465,7 +486,7 @@ sig_kill:
 	LDY #0				; standard PID
 ;	KERNEL(RELEASE)		; free all memory eeeeeeeek
 ; new, check whether a shutdown command was issued
-	LDA sd_flag			; some action pending?
+	LDA @sd_flag		; some action pending? 24-bit!
 	BEQ rst_shell		; if not, just restart shell
 		LDY #PW_CLEAN		; otherwise, complete ordered shutdown
 		_KERNEL(SHUTDOWN)

@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a13
+; v0.5.1a14
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170218-2038
+; last modified 20170220-0952
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -55,6 +55,7 @@ mm_init:
 		_DR_ERR(UNAVAIL)	; error if not available
 mm_cont:
 #endif
+; should ASK kernel to initialise I/O locks and separate CIN status!
 ; initialise flags table (and stack pointers?)
 ; at least, set direct page to current braid!
 	LDA #>mm_context	; MSB of storage area

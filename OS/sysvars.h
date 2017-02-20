@@ -1,6 +1,6 @@
-; minimOS 0.5.1a8 System Variables
+; minimOS 0.5.1a9 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170207-0952
+; last modified 20170220-0953
 
 .bss
 
@@ -15,11 +15,12 @@ drivers_id	.dsb	MAX_DRIVERS	; space for reasonable number of drivers
 #endif
 
 ; ** I/O flags and locks **
+; ****these should go into driver memory. In the meanwhile...
 #ifdef	MULTITASK
 cin_mode	.dsb	256			; CIN binary mode flag for event management, new 20150618, per-driver 161124
 cio_lock	.dsb	256			; PID-reserved MUTEX for CIN & COUT, new 20161121 per-driver 161124 *** might integrate with above as PID is irrelevant as long as it is locked?
-#else
-cin_mode	.byt	0			; flag always needed, singletask will not use locks!
+mm_term		.dsb	MAX_BRAIDS*2
+mm_stbank
 #endif
 
 ; **** interrupt queues ****
@@ -30,11 +31,12 @@ drv_async	.dsb	MAX_QUEUE	; space for async routines
 dsec_mx		.byt	0			; bytes used for drivers with 1-sec routines
 drv_sec		.dsb	MAX_QUEUE	; space for 1-sec routines
 
-; **** integrated SIGTERM handler(s), no longer on driver memory! ****
-; assume MAX_BRAIDS defined as 1 on non multitasking systems!
-mm_term		.dsb	2*MAX_BRAIDS	; unified space 20160406
+; *** single-task sigterm handler separate again! ***
+; multitasking should provide appropriate space! also for I/O locks
 #ifdef	C816
-mm_stbnk	.dsb	MAX_BRAIDS		; bank addresses 20161024 eeeeeeeeeek
+mm_sterm	.dsb	3			; including bank address just after the pointer
+#else
+mm_sterm	.dsb	2			; 16-bit pointer
 #endif
 
 ; **** new memory management table 150209, revamped 161106 ****
@@ -59,5 +61,6 @@ default_in	.byt	0	; GLOBAL default devices
 default_out	.byt	0
 old_t1		.word	0	; keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 sd_flag		.byt	0	; *** default task upon no remaining braids! 160408 ***
+cin_smode	.byt	0	; flag always needed, singletask will not use locks!
 
 ; ** driver-specific system variables come after this one, in main source **
