@@ -1,6 +1,6 @@
 ; minimOS 0.5.1a9 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170220-0953
+; last modified 20170220-1325
 
 .bss
 
@@ -15,13 +15,9 @@ drivers_id	.dsb	MAX_DRIVERS	; space for reasonable number of drivers
 #endif
 
 ; ** I/O flags and locks **
-; ****these should go into driver memory. In the meanwhile...
-#ifdef	MULTITASK
-cin_mode	.dsb	256			; CIN binary mode flag for event management, new 20150618, per-driver 161124
-cio_lock	.dsb	256			; PID-reserved MUTEX for CIN & COUT, new 20161121 per-driver 161124 *** might integrate with above as PID is irrelevant as long as it is locked?
-mm_term		.dsb	MAX_BRAIDS*2
-mm_stbank
-#endif
+; mandatory order!!!
+cio_lock	.dsb	256			; PID-reserved MUTEX for CIN & COUT, per-phys-driver & interleaved with CIN binary mode flag for event management 170220
+cin_mode	= cio_lock + 1		; interleaved
 
 ; **** interrupt queues ****
 dpoll_mx	.byt	0			; bytes used for drivers with polling routines, might make things faster
@@ -32,11 +28,16 @@ dsec_mx		.byt	0			; bytes used for drivers with 1-sec routines
 drv_sec		.dsb	MAX_QUEUE	; space for 1-sec routines
 
 ; *** single-task sigterm handler separate again! ***
-; multitasking should provide appropriate space! also for I/O locks
+; multitasking should provide appropriate space!
 #ifdef	C816
 mm_sterm	.dsb	3			; including bank address just after the pointer
 #else
 mm_sterm	.dsb	2			; 16-bit pointer
+#endif
+; *** these should go into driver memory with appropriate ABI??? ***
+#ifdef	MULTITASK
+mm_term		.dsb	MAX_BRAIDS*2
+mm_stbank
 #endif
 
 ; **** new memory management table 150209, revamped 161106 ****
@@ -61,6 +62,5 @@ default_in	.byt	0	; GLOBAL default devices
 default_out	.byt	0
 old_t1		.word	0	; keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 sd_flag		.byt	0	; *** default task upon no remaining braids! 160408 ***
-cin_smode	.byt	0	; flag always needed, singletask will not use locks!
 
 ; ** driver-specific system variables come after this one, in main source **

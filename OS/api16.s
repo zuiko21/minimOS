@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b13, should match kernel16.s
+; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170216-1041
+; last modified 20170220-1343
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -27,31 +27,13 @@ unimplemented:			; placeholder here, not currently used
 
 cout:
 	.as: .xs: SEP #$30	; *** standard register size ***
-; new MUTEX for COUT, 20161121, *per-driver based 161129 **added overhead
-#ifdef	MULTITASK
-; this should be done for physical devs only, 0.5.2+
-	STY iol_dev			; **keep device temporarily, worth doing here (3)
-; CS not needed for MUTEX as per 65816 API
-co_loop:
-	LDA cio_lock, Y		; *check whether THAT device in use (4)
-	BEQ co_lckd			; resume operation if free (3)
-; otherwise yield CPU time and repeat
-; faster KERNEL(B_YIELD)
-		LDX #MM_YIELD		; internal multitasking index (2)
-		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
-		LDY iol_dev			; restore previous status, *new style (3)
-		BRA co_loop			; try again! (3)
-co_lckd:
-; faster KERNEL(GET_PID)
-	LDX #MM_PID			; internal multitasking index (2)
-	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
-	TYA					; **current PID in A (2)
-	LDY iol_dev			; **restore device number (3)
-	STA cio_lock, Y		; *reserve this (4)
-; 65816 API runs on interrupts off, thus no explicit CS exit
-#endif
-; continue with mutually exclusive COUT
-	TYA					; for indexed comparisons (2)
+; switch DBR as it accesses a lot of kernel data!
+	PHB					; eeeeeeeeek
+	LDA #0				; this will work on bank 0
+	PHA					; into stack
+	PLB					; set DBR! do not forget another PLB upon end!
+; proceed
+	TYA					; update flags upon dev number (2)
 	BNE co_port			; not default (3/2)
 		LDA stdout			; new per-process standard device ### apply this to ·65
 		BNE co_port			; already a valid device
@@ -66,7 +48,7 @@ co_port:
 			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
 		LDY #NO_RSRC		; not yet implemented ***placeholder***
-		BRA cio_unlock		; notyfy error AND unlock device eeeeeek
+		BRA cio_abort		; notify error ONLY
 #endif
 ; ** end of filesystem access **
 co_log:
@@ -75,36 +57,61 @@ co_log:
 			BNE cio_nfound		; final error otherwise
 ; /dev/null is always OK, might save some bytes doing CLC & BRA cio_unlock
 cio_exitOK:
-#ifdef	MULTITASK
-		LDX iol_dev			; retrieve driver index
+		LDX iol_dev			; retrieve driver index in any case!
 		STZ cio_lock, X		; clear mutex
-#endif
+		PLB					; restore bank!!!
 		_EXIT_OK			; "/dev/null" is always OK
 co_win:
 ; *** virtual windows manager TO DO ***
 	LDY #NO_RSRC		; not yet implemented
-	BRA cio_unlock		; notyfy error AND unlock device eeeeeek
+	BRA cio_abort		; notify error ONLY
 co_phys:
-; ** new direct indexing **
-	ASL					; convert to index (2+2)
-	TAX
+; arrived here with dev # in A
+; new per-phys-device MUTEX for COUT, no matter if singletask!
+	ASL					; convert to proper physdev index (2)
+	STA iol_dev			; keep device-index temporarily, worth doing here (3)
+; CS not needed for MUTEX as per 65816 API
+co_loop:
+		LDX iol_dev			; retrieve index!
+		LDA cio_lock, X		; check whether THAT device is in use (4) 24-bit!
+			BEQ co_lckd			; resume operation if free (3)
+; otherwise yield CPU time and repeat
+; faster KERNEL(B_YIELD)
+		LDX #MM_YIELD		; internal multitasking index (2)
+		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		BRA co_loop			; try again! (3)
+co_lckd:
+; faster KERNEL(GET_PID)
+	LDX #MM_PID			; internal multitasking index (2)
+	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
+	TYA					; **current PID in A (2)
+	BNE co_mm			; valid PID, no need to simulate
+		INC					; pseudo PID=1 for singletask systems
+co_mm:
+	LDX iol_dev			; **restore device number (3)
+	STA cio_lock, X		; *reserve this (4)
+; 65816 API runs on interrupts off, thus no explicit CS exit
+; direct driver call, proper physdev index in X
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
-; clear mutex ONLY if multitasking is in use!
 cio_unlock:
-#ifdef	MULTITASK
 	LDX iol_dev			; **need to clear new lock! (3)
 	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
-#endif
+	PLB					; we are leaving... should this be included into cio_callend?
 ; ** important routine ending in order to preserve C status after the RTI **
 ; current version is 6 bytes, 3/11 t minus RTI
-; older version was 7 bytes, 10/11 t minus RTI
+; may be called from whatever register size!
 cio_callend:
 	BCC cio_notc		; no need to clear carry
+cio_setc:
 		PLP
 		SEC					; otherwise set stored carry
 		PHP
 cio_notc:
 	RTI					; end of call procedure
+
+cio_abort:
+	PLB					; restore!!!
+	BRA cio_setc		; nothing to check as an error is for sure
 
 
 ; *****************************
@@ -120,41 +127,12 @@ cio_notc:
 
 cin:
 	.as: .xs: SEP #$30	; *** standard register size ***
-; new MUTEX for CIN, 20161121, *per-driver based 161129 **added overhead
-; *** TO DO *** MUTEX for physical devices only, after resolving!
-#ifdef	MULTITASK
-	STY iol_dev			; **keep device temporarily, worth doing here (3)
-; CS not needed for MUTEX as per 65816 API
-ci_loop:
-	LDA cio_lock, Y		; *check whether THAT device in use (4)
-	BEQ ci_lckd			; resume operation if free (3)
-; otherwise yield CPU time and repeat
-; but first check whether it was me (waiting on binary mode)
-; faster KERNEL(GET_PID)
-		LDX #MM_PID			; internal multitasking index (2)
-		JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
-		TYA					; **current PID in A
-		LDY iol_dev			; **retrieve device as index
-		CMP cio_lock, Y		; *was it me who locked? (4)
-			BEQ ci_lckdd		; *if so, resume execution (3)
-; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
-; continue with regular mutex
-; faster KERNEL(B_YIELD)
-		LDX #MM_YIELD		; internal multitasking index (2)
-		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
-		LDY iol_dev			; *restore previous status (3)
-		BRA ci_loop			; try again! (3)
-ci_lckd:
-; faster KERNEL(B_YIELD)
-	LDX #MM_PID			; internal multitasking index (2) eeeeeeeeek
-	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8) eeeeeek
-	TYA					; **current PID in A (2)
-	LDY iol_dev			; **restore device number (3)
-	STA cio_lock, Y		; *reserve this (4)
-ci_lckdd:
-; 65816 API runs on interrupts off, thus no explicit CS exit
-#endif
-; continue with mutually exclusive CIN
+; switch DBR as it accesses a lot of kernel data!
+	PHB					; eeeeeeeeek
+	LDA #0				; this will work on bank 0
+	PHA					; into stack
+	PLB					; set DBR! do not forget another PLB upon end!
+; proceed
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
 		LDA std_in			; new per-process standard device ### apply this to ·65
@@ -162,9 +140,45 @@ ci_lckdd:
 			LDA default_in		; otherwise get system global
 ci_port:
 	BPL ci_nph			; logic device
+; new MUTEX for CIN
+	ASL					; convert to proper physdev index (2)
+	STA iol_dev			; keep device-index temporarily, worth doing here (3)
+; CS not needed for MUTEX as per 65816 API
+ci_loop:
+	LDX iol_dev			; *restore previous status (3)
+	LDA cio_lock, X		; *check whether THAT device in use (4)
+	BEQ ci_lckd			; resume operation if free (3)
+; otherwise yield CPU time and repeat
+; but first check whether it was me (waiting on binary mode)
+; faster KERNEL(GET_PID)
+		LDX #MM_PID			; internal multitasking index (2)
+		JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		TYA					; **current PID in A
+		BNE ci_mm			; valid PID, no need to simulate
+			INC					; pseudo PID=1 for singletask systems
+ci_mm:
+		LDX iol_dev			; **retrieve device as index
+		CMP cio_lock, X		; *was it me who locked? (4)
+			BEQ ci_lckdd		; *if so, resume execution (3)
+; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
+; continue with regular mutex
+; faster KERNEL(B_YIELD)
+		LDX #MM_YIELD		; internal multitasking index (2)
+		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		BRA ci_loop			; try again! (3)
+ci_lckd:
+; faster KERNEL(B_YIELD)
+	LDX #MM_PID			; internal multitasking index (2) eeeeeeeeek
+	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8) eeeeeek
+	TYA					; **current PID in A (2)
+	BNE ci_mm2			; valid PID, no need to simulate
+		INC					; pseudo PID=1 for singletask systems
+ci_mm2:
+	LDX iol_dev			; **restore device number (3)
+	STA cio_lock, X		; *reserve this (4)
+ci_lckdd:
+; 65816 API runs on interrupts off, thus no explicit CS exit
 ; ** new direct indexing **
-		ASL					; convert to index (2+2)
-		TAX
 		JSR (drv_ipt, X)	; direct CALL!!!
 		BCC ci_chkev		; no error, have a look at events
 			BRA cio_unlock		; clear MUTEX and return whatever error!
@@ -185,30 +199,17 @@ ci_chkev:
 			BCS ci_exitOK		; if so, will not be an event, exit with NO error
 ; otherwise might be an event ** REVISE
 ; check for binary mode first
-#ifdef	MULTITASK
 		LDY cin_mode, X		; *get flag, new sysvar 20150617
-#else
-		LDY cin_mode		; singletask systems
 #endif
 		BEQ ci_event		; should process possible event
-#ifdef	MULTITASK
 			STZ cin_mode, X		; *back to normal mode
-#else
-			STZ cin_mode		; normal mode for singletask systems!
-#endif
 ci_exitOK:
-#ifdef	MULTITASK
 			STZ cio_lock, X		; *otherwise clear mutex!!! (4)
-#endif
 			_EXIT_OK			; all done without error!
 ci_event:
 		CMP #16				; is it DLE?
 		BNE ci_notdle		; otherwise check next
-#ifdef	MULTITASK
 			STA cin_mode, X		; *set binary mode! safer and faster!
-#else
-			STA cin_mode		; single task systems do not set X!!!
-#endif
 			_ERR(EMPTY)			; and supress received character, ***but will stau locked!
 ci_notdle:
 		CMP #3				; is it ^C? (TERM)
@@ -830,6 +831,7 @@ str_abort:
 ; C = some error
 ;		USES iol_dev, rl_cur
 
+; ***should lock upon iol_dev and use direct drv_ipt! 0.5.2
 readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b10
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170220-1013
+; last modified 20170220-1327
 
 ; just in case
 #define		C816	_C816
@@ -126,19 +126,15 @@ ram_init:
 ; already in 16-bit memory mode...
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
-; ***in the meanwhile, waiting for proper API about this...
-#ifdef	MULTITASK
-		STZ cio_lock, X		; clear I/O locks! (5) *** these should be into the driver!
-		STZ cin_mode, X		; and binary flags (5)
-#endif
+		STZ cio_lock, X		; clear I/O locks and interleaved binary flags! (5)
 		STA drv_opt, X		; set full pointer for output (5)
 		STA drv_ipt, X		; and for input (5)
 		INX					; go for next entry (2+2)
 		INX
 		BNE dr_clear		; finish page (3/2)
 
-; *** in non-multitasking systems, install embedded TASK_DEV driver anyway, a suitable driver will replace it
-	LDA #st_taskdev		; pseudo-driver full address, would be in kernel16.s
+; install embedded single TASK_DEV driver anyway, a suitable driver would replace it
+	LDA #st_taskdev		; pseudo-driver full address, would be in this file
 	STA drv_opt			; *** assuming TASK_DEV = 128, index otherwise
 ; might do something similar for WIND_DEV = 129...
 
@@ -295,14 +291,12 @@ dr_ok:					; *** all drivers inited ***
 
 	.al					; as outside dr_call routine will be doing 16-bit memory!
 
-; in case no I/O lock arrays were initialised...
-	LDX #0				; beware of 16-bit memory!
-	STX cin_smode		; single flag for non-multitasking systems
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
 ; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
 ; could be done always, will not harm anyway
 	LDA #sig_kill		; get default routine full address, we are still in 16-bit memory
 	STA mm_sterm		; store in new system variable
+	LDX #0				; beware of 16-bit memory!
 	STX mm_sterm+2		; clear default bank!!!
 
 ; startup code
