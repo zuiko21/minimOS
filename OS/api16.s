@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170221-1025
+; last modified 20170221-1219
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -93,15 +93,20 @@ co_mm:
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper physdev index in X
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
+
+; *** common I/O routines ***
+
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
 	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
-	PLB					; we are leaving... should this be included into cio_callend?
+	PLB					; we are leaving... into cio_callend
+
 ; ** important routine ending in order to preserve C status after the RTI **
 ; current version is 6 bytes, 3/11 t minus RTI
 ; may be called from whatever register size!
 cio_callend:
 	BCC cio_notc		; no need to clear carry
+; alternative exit for precomputed error codes
 cio_setc:
 		PLP
 		SEC					; otherwise set stored carry
@@ -200,17 +205,19 @@ ci_chkev:
 ; otherwise might be an event ** REVISE
 ; check for binary mode first
 		LDY cin_mode, X		; *get flag, new sysvar 20150617
-#endif
 		BEQ ci_event		; should process possible event
 			STZ cin_mode, X		; *back to normal mode
 ci_exitOK:
 			STZ cio_lock, X		; *otherwise clear mutex!!! (4)
+			PLB					; essential!
 			_EXIT_OK			; all done without error!
 ci_event:
 		CMP #16				; is it DLE?
 		BNE ci_notdle		; otherwise check next
 			STA cin_mode, X		; *set binary mode! safer and faster!
-			_ERR(EMPTY)			; and supress received character, ***but will stau locked!
+			LDY #EMPTY			; and supress received character
+			PLB					; essential!
+			BRA cio_setc		; but will stay locked!
 ci_notdle:
 		CMP #3				; is it ^C? (TERM)
 		BNE ci_noterm		; otherwise check next
@@ -235,10 +242,8 @@ ci_signal:
 			JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
 			LDX iol_dev			; **as calls will destroy X
 ci_abort:
-#ifdef	MULTITASK
-		STZ cio_lock, X		; *clear mutex!
-#endif
-		_ERR(EMPTY)			; no character was received
+		LDY #EMPTY			; no character was received
+		JMP cio_unlock		; release device and exit!
 
 ci_nph:
 	CMP #64				; first file-dev??? ***
@@ -730,6 +735,12 @@ su_peek:
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
 	.as: .xs: SEP #$30	; *** standard register size ***
+; switch DBR as it accesses a lot of kernel data!
+	PHB					; eeeeeeeeek
+	LDA #0				; this will work on bank 0
+	PHA					; into stack
+	PLB					; set DBR! do not forget another PLB upon end!
+; proceed
 ; new MUTEX eeeeeeek, *per-driver way **added overhead
 ; ** TO DO ** apply MUTEX only to physical devices!
 #ifdef	MULTITASK
@@ -777,20 +788,16 @@ str_log:
 		CMP #DEV_NULL		; lastly, ignore output
 			BNE str_nfound		; final error otherwise
 str_exit:
-#ifdef	MULTITASK
-		LDX iol_dev			; retrieve driver index
-		STZ cio_lock, X		; clear mutex
-#endif
-		_EXIT_OK			; "/dev/null" is always OK
+		JMP cio_exitOK		; /dev/nul is always OK
 str_win:
 ; *** virtual windows manager TO DO ***
 	LDY #NO_RSRC		; not yet implemented
 	SEC					; eeeek
-	BRA str_abort		; notify error code AND unlock device!
+	JMP cio_unlock		; notify error code AND unlock device!
 str_nfound:
 	LDY #N_FOUND		; unknown device
 	SEC					; eeeek
-	BRA str_abort		; notify error code AND unlock device!
+	JMP cio_unlock		; notify error code AND unlock device!
 
 str_phys:
 ; ** new direct indexing, revamped 20160407 **
@@ -816,7 +823,6 @@ str_cont:
 	BRA str_loop		; continue, will check for termination later (3)
 str_err:
 	PLA					; discard saved Y while keeping error code eeeeeeeeeek^2
-str_abort:
 	JMP cio_unlock		; otherwise return code AND clear MUTEX eeeeeeeeeek^2
 
 
@@ -829,24 +835,25 @@ str_abort:
 ; ln_siz	= max offset
 ;		OUTPUT
 ; C = some error
-;		USES iol_dev, rl_cur
+;		USES rl_dev, rl_cur
 
 ; ***should lock upon iol_dev and use direct drv_ipt! 0.5.2
 readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
-
-	STY iol_dev			; preset device ID!
+; no need to switch DBR as regular I/O calls would do it
+	STY rl_dev			; preset device ID!
 	STZ rl_cur			; reset variable
 rl_l:
 		_KERNEL(B_YIELD)	; always useful
-		LDY iol_dev			; use device
+		LDY rl_dev			; use device
 		_KERNEL(CIN)		; get one character
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
+rl_abort:
 			LDA #0				; no indirect STZ
 			STA [str_pt]		; if any other error, terminate string at the beginning
-			JMP cio_callend		; and return whatever error*/
+			JMP cio_callend		; and return whatever error
 rl_rcv:
 		LDA io_c			; get received
 		LDY rl_cur			; retrieve index
@@ -864,12 +871,11 @@ rl_nbs:
 		STA [str_pt], Y		; store into buffer
 		INC	rl_cur			; update index
 rl_echo:
-		LDY iol_dev			; retrieve device
+		LDY rl_dev			; retrieve device
 		_KERNEL(COUT)		; echo received character
 		BRA rl_l			; and continue
 rl_cr:
-	LDA #CR				; newline
-	LDY iol_dev			; retrieve device
+	LDY rl_dev			; retrieve device
 	_KERNEL(COUT)		; print newline (ignoring errors)
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
