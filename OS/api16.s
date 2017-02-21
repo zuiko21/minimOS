@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170220-1343
+; last modified 20170221-1025
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -113,6 +113,11 @@ cio_abort:
 	PLB					; restore!!!
 	BRA cio_setc		; nothing to check as an error is for sure
 
+cio_nfound:
+	LDY #N_FOUND		; unknown device
+	SEC					; eeeeeeeeeeek
+	BRA cio_unlock		; notify error code AND unlock device!
+
 
 ; *****************************
 ; *** CIN,  get a character ***
@@ -183,11 +188,6 @@ ci_lckdd:
 		BCC ci_chkev		; no error, have a look at events
 			BRA cio_unlock		; clear MUTEX and return whatever error!
 
-cio_nfound:
-	LDY #N_FOUND		; unknown device
-	SEC					; eeeeeeeeeeek
-	BRA cio_unlock		; notify error code AND unlock device!
-
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
 ci_chkev:
@@ -257,8 +257,8 @@ ci_log:
 	CMP #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
 	CMP #DEV_NULL		; lastly, ignore input
-		BNE cio_nfound		; final error otherwise
-	BRA ci_exitOK
+		BEQ ci_exitOK
+	JMP cio_nfound		; final error otherwise
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
