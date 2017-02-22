@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170222-1106
+; last modified 20170222-1113
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -760,6 +760,13 @@ string:
 	LDA #0				; this will work on bank 0
 	PHA					; into stack
 	PLB					; set DBR! do not forget another PLB upon end!
+; check architecture in order to discard bank address
+	BIT run_arch		; will be zero for native 65816
+	BEQ str_24b			; 24-bit enabled
+		PLX					; otherwise get stored caller bank...
+		PHX					; ...restore it...
+		STX str_pt+2		; ...and use as default
+str_24b:
 ; proceed
 	TYA					; set flags upon devnum (2)
 	BNE str_port		; not default (3/2)
