@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b10
+; v0.5.1b11
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170220-1327
+; last modified 20170222-0945
 
 ; just in case
 #define		C816	_C816
@@ -298,6 +298,9 @@ dr_ok:					; *** all drivers inited ***
 	STA mm_sterm		; store in new system variable
 	LDX #0				; beware of 16-bit memory!
 	STX mm_sterm+2		; clear default bank!!!
+; clear some other bytes
+	STX run_pid			; new 170222, set default running PID
+	STX run_arch		; assume native 65816
 
 ; startup code
 

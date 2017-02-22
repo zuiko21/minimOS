@@ -1,6 +1,6 @@
-; minimOS 0.5.1a7 API/ABI
+; minimOS 0.5.1a8 API/ABI
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170207-1003
+; last modified 20170222-0840
 
 ; *************************************************************
 ; *************************************************************
@@ -34,6 +34,7 @@ SET_HNDL	=  46	; set SIGTERM handler
 B_YIELD		=  48	; give away CPU time, not really needed but interesting anyway
 TS_INFO		=  50	; get taskswitching info for multitasking driver
 RELEASE		=  52	; release ALL memory chuncks belonging to some PID, new 20161115
+SET_CURR	=  54	; set internal kernel info for running task (PID & architecture) new 20170222
 
 ; ***********************************
 ; ***********************************

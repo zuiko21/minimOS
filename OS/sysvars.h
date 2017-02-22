@@ -1,6 +1,6 @@
-; minimOS 0.5.1a9 System Variables
+; minimOS 0.5.1a10 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170220-1325
+; last modified 20170222-0838
 
 .bss
 
@@ -62,5 +62,13 @@ default_in	.byt	0	; GLOBAL default devices
 default_out	.byt	0
 old_t1		.word	0	; keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 sd_flag		.byt	0	; *** default task upon no remaining braids! 160408 ***
+run_pid		.byt	0	; current PID running for easy kernel access, will be set by new SET_CURR
+
+; ********************************
+; *** some 65816 specific vars ***
+; ********************************
+#ifdef	C816
+run_arch	.byt	0	; current braid CPU type, 0=65816, 2=Rockwell, 4=65C02, 6=NMOS
+#endif
 
 ; ** driver-specific system variables come after this one, in main source **

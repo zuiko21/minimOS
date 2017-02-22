@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170221-1241
+; last modified 20170222-0957
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -10,7 +10,7 @@
 ; ***************************************
 
 unimplemented:			; placeholder here, not currently used
-	.as: .xs: SEP #$30	; standard register size for a moment
+	.xs: SEP #$10		; standard index size for a moment
 	_ERR(UNAVAIL)		; go away!
 
 
@@ -26,43 +26,44 @@ unimplemented:			; placeholder here, not currently used
 ; cio_lock is a kernel structure
 
 cout:
-	.as: .xs: SEP #$30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size *** (3)
 ; switch DBR as it accesses a lot of kernel data!
-	PHB					; eeeeeeeeek
-	LDA #0				; this will work on bank 0
-	PHA					; into stack
-	PLB					; set DBR! do not forget another PLB upon end!
+	PHB					; eeeeeeeeek (3)
+	LDA #0				; this will work on bank 0 (2)
+	PHA					; into stack (3)
+	PLB					; set DBR! do not forget another PLB upon end! (4)
 ; proceed
 	TYA					; update flags upon dev number (2)
 	BNE co_port			; not default (3/2)
-		LDA stdout			; new per-process standard device ### apply this to ·65
-		BNE co_port			; already a valid device
+		LDA stdout			; new per-process standard device (3)
+		BNE co_port			; already a valid device (3/2)
 			LDA default_out		; otherwise get system global (4)
 co_port:
 	BMI co_phys			; not a logic device (3/2)
-		CMP #64				; first file-dev??? ***
-			BCC co_win			; below that, should be window manager
+		CMP #64				; first file-dev??? (2)
+			BCC co_win			; below that, should be window manager (3/2)
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 		CMP #64+MAX_FILES	; still within file-devs?
 			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		LDY #NO_RSRC		; not yet implemented ***placeholder***
-		BRA cio_abort		; notify error ONLY
 #endif
+; *** virtual windows manager TO DO ***
+co_win:
+		LDY #NO_RSRC		; not yet implemented ***placeholder***
+		PLB					; restore DBR!!!
+		BRA cio_setc		; direct error notify
 ; ** end of filesystem access **
 co_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
-			BNE cio_nfound		; final error otherwise
-; /dev/null is always OK
-cio_exitOK:
-		CLC					; no error
-		BRA cio_unlock		; proper restore & exit
-co_win:
-; *** virtual windows manager TO DO ***
-	LDY #NO_RSRC		; not yet implemented
-	BRA cio_abort		; notify error ONLY
+		BEQ co_ok			; /dev/null is always OK
+; final error otherwise
+			LDY #N_FOUND		; unknown device
+			BRA cio_abort		; restore & notify
+co_ok:
+		PLB					; restore!!!
+		RTI					; end of function without errors
 co_phys:
 ; arrived here with dev # in A
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
@@ -85,14 +86,20 @@ co_lckd:
 ; direct driver call, proper physdev index in X
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 
+; ***************************
 ; *** common I/O routines ***
+; ***************************
+
+; ** cio_unlock **
+; gets physdevnum and clears its mutex, restores DBR and exit with proper error code if C set
+; must be called in all 8-bit size!!!
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
 	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
 	PLB					; we are leaving... into cio_callend
 
-; ** important routine ending in order to preserve C status after the RTI **
-; current version is 6 bytes, 3/11 t minus RTI
+; ** cio_callend **
+; preserve C status after the RTI, signaling error to caller
 ; may be called from whatever register size!
 cio_callend:
 	BCC cio_notc		; no need to clear carry
@@ -104,26 +111,24 @@ cio_setc:
 cio_notc:
 	RTI					; end of call procedure
 
-; precomputed error while restoring DBR
+; ** cio_abort **
+; will restore DBR and then notify error directly...
+; likely to become inline
 cio_abort:
-	PLB					; restore!!!
-	BRA cio_setc		; nothing to check as an error is for sure
+	PLB					; restore DBR!!!
+	BRA cio_setc		; direct notify error
 
-cio_nfound:
-	LDY #N_FOUND		; unknown device
-	SEC					; eeeeeeeeeeek
-	BRA cio_unlock		; notify error code AND unlock device!
-
+; ** cio_pid **
+; return ASAP running PID of this task, uses new SET_CURR interface
+; might become inline as is much smaller and faster code!
+; * needs 8-bit memory *
 cio_pid:
-; faster KERNEL(GET_PID)
-	LDX #MM_PID			; internal multitasking index (2)
-	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
-	TYA					; **current PID in A (2)
-	BNE co_mm			; valid PID, no need to simulate
-		INC					; pseudo PID=1 for singletask systems
+; much faster KERNEL(GET_PID)
+	LDA run_pid			; get internally stored PID (4)
+	BNE co_mm			; valid PID, no need to simulate (3/2)
+		INC					; pseudo PID=1 for singletask systems (0/2)
 co_mm:
-	LDX iol_dev			; **restore device number (3)
-	RTS
+	RTS					; all done, X and Y were preserved (6)
 
 ; *****************************
 ; *** CIN,  get a character ***
@@ -137,23 +142,23 @@ co_mm:
 ; cio_lock & cin_mode are kernel structures
 
 cin:
-	.as: .xs: SEP #$30	; *** standard register size ***
+	.as: .xs: SEP #$30	; *** standard register size *** (3)
 ; switch DBR as it accesses a lot of kernel data!
-	PHB					; eeeeeeeeek
-	LDA #0				; this will work on bank 0
-	PHA					; into stack
-	PLB					; set DBR! do not forget another PLB upon end!
+	PHB					; eeeeeeeeek (3)
+	LDA #0				; this will work on bank 0 (2)
+	PHA					; into stack (3)
+	PLB					; set DBR! do not forget another PLB upon end! (4)
 ; proceed
-	TYA					; for indexed comparisons
-	BNE ci_port			; specified
-		LDA std_in			; new per-process standard device ### apply this to ·65
-		BNE ci_port			; already a valid device
-			LDA default_in		; otherwise get system global
+	TYA					; set flags upon devnum (2)
+	BNE ci_port			; specified (3/2)
+		LDA std_in			; new per-process standard device (3)
+		BNE ci_port			; already a valid device (3/2)
+			LDA default_in		; otherwise get system global (0/4)
 ci_port:
-	BPL ci_nph			; logic device
+	BPL ci_nph			; logic device (2/3)
 ; new MUTEX for CIN
 	ASL					; convert to proper physdev index (2)
-	STA iol_dev			; keep device-index temporarily, worth doing here (3)
+	STA iol_dev			; keep physdev temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
 	LDX iol_dev			; *restore previous status (3)
@@ -181,7 +186,7 @@ ci_lckdd:
 
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
-		LDX iol_dev			; **use device as index! worth doing here (3)
+		LDX iol_dev			; **use physdev as index! worth doing here (3)
 		LDA io_c			; get received character
 		CMP #' '			; printable?
 			BCS ci_exitOK		; if so, will not be an event, exit with NO error
@@ -199,7 +204,7 @@ ci_event:
 		BNE ci_notdle		; otherwise check next
 			STA cin_mode, X		; *set binary mode! safer and faster!
 			LDY #EMPTY			; and supress received character
-			BRA cio_abort		; but will stay locked!
+			BRA cio_abort		; restore & notify (will stay locked!)
 ci_notdle:
 		CMP #3				; is it ^C? (TERM)
 		BNE ci_noterm		; otherwise check next
@@ -216,14 +221,14 @@ ci_nokill:
 		LDA #SIGSTOP		; last signal to be sent
 ci_signal:
 		STA b_sig			; set signal as parameter
-; faster KERNEL(GET_PID)
-		LDX #MM_PID			; internal multitasking index (2)
-		JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
+; much faster KERNEL(GET_PID)
+		JSR cio_pid			; internal PID in A
+		TAY					; as needed by B_SIGNAL
 ; faster KERNEL(B_SIGNAL)
 		LDX #MM_SIGNAL		; internal multitasking index (2)
 		JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		LDY #EMPTY			; no character was received
-		SEC					; indicate error
+		SEC					; eeeeeeeek
 		JMP cio_unlock		; release device and exit!
 
 ci_nph:
@@ -234,28 +239,25 @@ ci_nph:
 	CMP #64+MAX_FILES	; still within file-devs?
 		BCS ci_log			; that or over, not a file
 ; *** manage here input from open file ***
-	LDY #NO_RSRC		; not yet implemented ***placeholder***
-	BRA cio_unlock		; unlock and notify
 #endif
-; ** end of filesystem access **
-
+; *** virtual window manager TO DO ***
+ci_win:
+	LDY #NO_RSRC		; not yet implemented ***placeholder***
+	JMP cio_abort		; restore & notify
+; manage logical devices...
 ci_log:
 	CMP #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
 	CMP #DEV_NULL		; lastly, ignore input
 		BEQ ci_exitOK
-	JMP cio_nfound		; final error otherwise
+	LDY #N_FOUND		; unknown device
+	JMP cio_abort		; restore & notify
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
 	LDA ticks			; simple placeholder
 	STA io_c			; eeeeeeeeeeeeeeeeek
 	BRA ci_exitOK
-
-ci_win:
-; *** virtual window manager TO DO ***
-	LDY #NO_RSRC		; not yet implemented
-	JMP cio_unlock
 
 
 ; ******************************
@@ -271,17 +273,20 @@ ci_win:
 ;		USES ma_ix.b
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
 ;***MUST receive cpu_ll in order to limit 6502 blocks to "current" bank!!!
-; or determine it via new B_INFO?
+; determined via run_arch kernel variable
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
+	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index
+	PHX					; put one zero byte into stack
+	PLB					; preset DBR as default zero!
 	STX ma_align+1		; **clear MSB in cass of a 16-bit BIT!**
 	LDY ma_rs			; check individual bytes, just in case
 	BEQ ma_nxpg			; no extra page needed
 		INC ma_rs+1			; otherwise increase number of pages
-		STX ma_rs				; ...and just in case, clear asked bytes!
+		STX ma_rs			; ...and just in case, clear asked bytes!
 ma_nxpg:
 ; default 816 API functions run on interrupts masked, thus no need for CS
 	LDA ma_rs+1			; get number of asked pages
@@ -314,6 +319,7 @@ ma_nxbig:
 ; is there at least one available block?
 		LDA ma_rs+1			; should not be zero
 		BNE ma_fill			; there is at least one block to allocate
+			PLB				; restore!
 			_ERR(FULL)		; otherwise no free memory!
 ; report allocated size
 ma_fill:
@@ -343,6 +349,7 @@ ma_zlsb:
 			LDX #END_RAM		; ...as non-plus-ultra
 			STA ram_pos+2		; create second set of values
 			STX ram_stat+2
+			PLB					; restore!
 			_ERR(CORRUPT)		; report but do not turn system down
 ma_nobad:
 #endif
@@ -358,6 +365,7 @@ ma_cont:
 		BNE ma_scan
 ma_nobank:
 ; one end of CS
+	PLB					; restore!
 	_ERR(FULL)			; no room for it!
 ma_found:
 	JSR ma_alsiz		; **compute size according to alignment mask**
@@ -399,15 +407,11 @@ ma_updt:
 	LDA #USED_RAM		; now is reserved
 	STA ram_stat, X		; update table entry, will destroy PID temporarily but no STY abs,X!!!
 ; ** new 20161106, store PID of caller **
-	PHX					; will need this index
-; who asked for this? faster KERNEL(GET_PID) hope all is OK
-	LDX #MM_PID			; internal multitasking index (2)
-	JSR (drv_opt-MM_PID, X)	; direct to driver skipping the kernel, note deindexing! (8)
-	PLX					; retrieve index
 	.as: SEP #$20		; *** back to 8-bit because interleaved array! ***
-	TYA					; get into A as no STY abs,X!!!
+	LDA run_pid			; get uncorrected PID in A
 	STA ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
+	PLB					; restore!
 	_EXIT_OK
 
 	.al					; as routines will be called in 16-bit memory!!!
@@ -471,7 +475,16 @@ free:
 	LDY ma_pt			; LSB currently not implemented
 		BNE fr_no			; could not find
 #endif
+	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index
+	PHX					; put one zero byte into stack
+	PLB					; preset DBR as default zero!
+; check architecture in order to discard bank address
+	BIT run_arch		; will be zero for native 65816
+	BEQ fr_24b			; 24-bit enabled
+		PLX					; otherwise get stored caller bank...
+		PHX					; ...restore it...
+		STX ma_pt+2			; ...and use as default
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
@@ -483,6 +496,7 @@ fr_loop:
 		BNE fr_loop			; continue until end
 ; this could be one end of CS
 fr_no:
+	PLB					; restore!
 	_ERR(N_FOUND)		; no such block!
 fr_found:
 	LDY ram_stat, X		; only used blocks can be freed!
@@ -509,6 +523,7 @@ fr_notafter:
 		JSR fr_join			; otherwise integrate it too
 fr_ok:
 ; we are done
+	PLB					; restore!
 	_EXIT_OK
 
 ; routine for obliterating the following empty entry
@@ -722,25 +737,7 @@ string:
 	PHA					; into stack
 	PLB					; set DBR! do not forget another PLB upon end!
 ; proceed
-; new MUTEX eeeeeeek, *per-driver way **added overhead
-; ** TO DO ** apply MUTEX only to physical devices!
-	STY iol_dev			; **keep device temporarily, worth doing here (3)
-; CS not needed for MUTEX as per 65816 API
-str_wait:
-	LDA cio_lock, Y		; *check whether THAT device in use (4)
-	BEQ str_lckd		; resume operation if free (3)
-; otherwise yield CPU time and repeat
-;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-		LDX #MM_YIELD		; internal multitasking index (2)
-		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
-		LDY iol_dev			; restore previous status, *new style (3)
-		BRA str_wait		; try again! (3)
-str_lckd:
-	JSR cio_pid			; who am I?
-	STA cio_lock, X		; *reserve this (4)
-; 65816 API runs on interrupts off, thus no explicit CS exit
-; continue with mutually exclusive COUT code
-	TYA					; for indexed comparisons (2)
+	TYA					; set flags upon devnum (2)
 	BNE str_port		; not default (3/2)
 		LDA stdout			; new per-process standard device ### apply this to ·65
 		BNE str_port		; already a valid device
@@ -754,27 +751,45 @@ str_port:
 		CMP #64+MAX_FILES	; still within file-devs?
 			BCS str_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		LDY #NO_RSRC		; not yet implemented ***placeholder***
-		BRA str_abort		; notify error code AND unlock device!
 #endif
-; ** end of filesystem access **
+; *** virtual windows manager TO DO ***
+str_win:
+		LDY #NO_RSRC		; not yet implemented ***placeholder***
+		BRA str_abort		; restore and notify
+; ** end of filesystem/window access **
 str_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
 			BNE str_nfound		; final error otherwise
+; /dev/null is always OK
 str_exit:
-		JMP cio_exitOK		; /dev/nul is always OK
-str_win:
-; *** virtual windows manager TO DO ***
-	LDY #NO_RSRC		; not yet implemented
-	SEC					; eeeek
-	JMP cio_unlock		; notify error code AND unlock device!
+		PLB					; restore!!!
+		RTI					; end of function without errors
 str_nfound:
 	LDY #N_FOUND		; unknown device
-	SEC					; eeeek
-	JMP cio_unlock		; notify error code AND unlock device!
+str_abort:
+	PLB					; restore!
+	JMP cio_setc		; notify error directly
 
 str_phys:
+; new MUTEX eeeeeeek, *per-driver way **added overhead
+; ** TO DO ** apply MUTEX only to physical devices!
+	STY iol_dev			; **keep device temporarily, worth doing here (3)
+; CS not needed for MUTEX as per 65816 API
+str_wait:
+	LDX iol_dev			; restore previous status, *new style (3)
+	LDA cio_lock, X		; *check whether THAT device in use (4)
+	BEQ str_lckd		; resume operation if free (3)
+; otherwise yield CPU time and repeat
+;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		LDX #MM_YIELD		; internal multitasking index (2)
+		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		BRA str_wait		; try again! (3)
+str_lckd:
+	JSR cio_pid			; who am I?
+	STA cio_lock, X		; *reserve this (4)
+; 65816 API runs on interrupts off, thus no explicit CS exit
+; continue with mutually exclusive COUT code
 ; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
 	STA str_dev			; store for indexed call! (3)
@@ -1194,6 +1209,22 @@ rls_oth:
 		BNE rls_loop		; continue if not yet
 	_EXIT_OK			; no errors...
 
+
+; ***********************************************************
+; *** SET_CURR, set internal kernel info for running task ***
+; ***********************************************************
+;		INPUT
+; Y			= PID
+; cpu_ll	= architecture (0=65816, 2=Rockwell, 4=65C02, 6=NMOS)
+; affects internal sysvars run_pid & run_arch
+
+set_curr:
+	.as: .xs: SEP #$30	; *** 8-bit sizes ***
+	STY run_pid			; store PID into kernel variables
+	LDA cpu_ll			; get architecture from multitasking driver
+	STA run_arch		; and store it for kernel use
+	_EXIT_OK
+
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
@@ -1268,4 +1299,5 @@ k_vec:
 	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
 	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
 	.word	release		; release ALL memory for a PID, new 20161115
+	.word	set_curr	; set internal kernel info for running task (PID & architecture)
 #endif
