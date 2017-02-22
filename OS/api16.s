@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170222-0957
+; last modified 20170222-1014
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -270,7 +270,7 @@ ci_rnd:
 ; ma_pt	= 24b pointer to reserved block
 ; ma_rs	= 24b actual size (esp. if ma_rs was 0, but check LSB too)
 ; C		= not enough memory/corruption detected
-;		USES ma_ix.b
+;		USES ma_ix.b, ma_lim
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
 ;***MUST receive cpu_ll in order to limit 6502 blocks to "current" bank!!!
 ; determined via run_arch kernel variable
@@ -283,6 +283,20 @@ malloc:
 	PHX					; put one zero byte into stack
 	PLB					; preset DBR as default zero!
 	STX ma_align+1		; **clear MSB in cass of a 16-bit BIT!**
+; detect caller architecture in order to enable 24-bit addressing
+	BIT run_arch		; zero for native 65816
+	BEQ ma_24b			; OK for 24b addressing
+		STX ma_rs+2			; just in case!
+		PLX					; otherwise get saved bank...
+		PHX					; ...restore it...
+		STX ma_lim			; ...and set as only feasible bank
+		STX ma_lim+1		; maximum (MSB) is the same as minimum (LSB)
+		BRA ma_go			; continue
+ma_24b:
+	LDA #$FF00			; full range of banks
+	STA ma_lim			; set unrestricted limits
+ma_go:
+; limits set, proceed as usual
 	LDY ma_rs			; check individual bytes, just in case
 	BEQ ma_nxpg			; no extra page needed
 		INC ma_rs+1			; otherwise increase number of pages
@@ -471,20 +485,21 @@ ma_room:
 free:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
-#ifdef	SAFE
-	LDY ma_pt			; LSB currently not implemented
-		BNE fr_no			; could not find
-#endif
 	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index
 	PHX					; put one zero byte into stack
 	PLB					; preset DBR as default zero!
+#ifdef	SAFE
+	LDY ma_pt			; LSB currently not implemented
+		BNE fr_no			; could not find
+#endif
 ; check architecture in order to discard bank address
 	BIT run_arch		; will be zero for native 65816
 	BEQ fr_24b			; 24-bit enabled
 		PLX					; otherwise get stored caller bank...
 		PHX					; ...restore it...
 		STX ma_pt+2			; ...and use as default
+fr_24b:
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
