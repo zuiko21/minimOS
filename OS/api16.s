@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170222-1113
+; last modified 20170222-1401
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -24,6 +24,7 @@ unimplemented:			; placeholder here, not currently used
 ; C = I/O error
 ;		USES iol_dev, plus whatever the driver takes
 ; cio_lock is a kernel structure
+; * 8-bit savvy *
 
 cout:
 	.as: .xs: SEP #$30	; *** standard register size *** (3)
@@ -119,7 +120,7 @@ cio_abort:
 	BRA cio_setc		; direct notify error
 
 ; ** cio_pid **
-; return ASAP running PID of this task, uses new SET_CURR interface
+; return ASAP running (corrected) PID of this task, uses new SET_CURR interface
 ; might become inline as is much smaller and faster code!
 ; * needs 8-bit memory *
 cio_pid:
@@ -140,6 +141,7 @@ co_mm:
 ; C		= not available
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock & cin_mode are kernel structures
+; * 8-bit savvy *
 
 cin:
 	.as: .xs: SEP #$30	; *** standard register size *** (3)
@@ -272,8 +274,9 @@ ci_rnd:
 ; C		= not enough memory/corruption detected
 ;		USES ma_ix.b, ma_lim
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
-;***MUST receive cpu_ll in order to limit 6502 blocks to "current" bank!!!
-; determined via run_arch kernel variable
+; * MUST limit 6502 blocks to "current" bank!!! * TO DO * TO DO
+; otherwise it is 02-savvy already
+; think about managing the multiple exit points as this is a rather slow function
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -284,13 +287,13 @@ malloc:
 	PLB					; preset DBR as default zero!
 	STX ma_align+1		; **clear MSB in cass of a 16-bit BIT!**
 ; detect caller architecture in order to enable 24-bit addressing
-	LDY run_arch		; zero for native 65816
+	LDY run_arch		; zero for native 65816, respect X as it holds zero
 	BEQ ma_24b			; OK for 24b addressing
 		STX ma_rs+2			; clear it just in case!
-		PLX					; otherwise get saved bank...
-		PHX					; ...restore it...
-		STX ma_lim			; ...and set as only feasible bank
-		STX ma_lim+1		; maximum (MSB) is the same as minimum (LSB)
+		PLY					; otherwise get saved bank, respecting X...
+		PHY					; ...restore it...
+		STY ma_lim			; ...and set as only feasible bank
+		STY ma_lim+1		; maximum (MSB) is the same as minimum (LSB)
 		BRA ma_go			; continue
 ma_24b:
 	LDA #$FF00			; full range of banks
@@ -481,6 +484,7 @@ ma_room:
 ; C = no such used block
 ;
 ; ram_pos & ram_stat are kernel structures
+; * 8-bit savvy *
 
 free:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -494,11 +498,11 @@ free:
 		BNE fr_no			; could not find
 #endif
 ; check architecture in order to discard bank address
-	LDY run_arch		; will be zero for native 65816
+	LDY run_arch		; will be zero for native 65816, please respect X!
 	BEQ fr_24b			; 24-bit enabled
-		PLX					; otherwise get stored caller bank...
-		PHX					; ...restore it...
-		STX ma_pt+2			; ...and use as default
+		PLY					; otherwise get stored caller bank...
+		PHY					; ...restore it...
+		STY ma_pt+2			; ...and use as default
 fr_24b:
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 fr_loop:
@@ -567,6 +571,7 @@ fr_join:
 ;		OUTPUT
 ; Y = dev
 ; C = not supported/not available
+; * 8-bit savvy *
 
 open_w:
 	.al: REP #$20		; *** 16-bit memory size ***
@@ -576,7 +581,7 @@ open_w:
 		_ERR(NO_RSRC)
 ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
-; ***** EXIT_OK on subsequent system calls!!! *****
+; EXIT_OK on subsequent system calls!!!
 
 ; ********************************************************
 ; *** CLOSE_W,  close window *****************************
@@ -584,6 +589,7 @@ ow_no_window:
 ; ********************************************************
 ;		INPUT
 ; Y = dev
+; * 8-bit savvy *
 
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
@@ -596,6 +602,7 @@ free_w:					; doesn't do much, either
 ;		OUTPUT
 ; up_ticks	= 16b ticks, new standard format 20161006
 ; up_sec	= 32b uptime in seconds
+; * 8-bit savvy *
 
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
@@ -622,6 +629,7 @@ uptime:
 ;		USES rh_scan
 ;
 ; now supports 24-bit addressing! but only for 65816 code
+; otherwise, 8-bit savvy
 
 load_link:
 ; *** first look for that filename in ROM headers ***
@@ -646,7 +654,7 @@ ll_reset:
 ; get initial address! beacuse of the above, no longer adds filename offset!
 	LDA #ROM_BASE		; begin of ROM contents
 	STA	rh_scan			; set local pointer
-	STZ rh_scan+2		; standard bank for long pointer!
+	STZ rh_scan+2		; standard bank for long pointer into kernel function!
 ll_geth:
 ; ** check whether we are on a valid header!!! **
 		.as: SEP #$20		; *** back to standard memory ***
@@ -717,29 +725,6 @@ ll_native:
 	_EXIT_OK
 
 
-; *** SU_POKE, write to protected addresses ***
-; WILL be deprecated, not sure if of any use in other architectures
-; Y <- value, zpar <- addr
-; destroys A (and maybe Y on NMOS)
-
-su_poke:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	TYA					; transfer value
-	STA (zpar)			; store value
-	_EXIT_OK
-
-; *** SU_PEEK, read from protected addresses ***
-; WILL be deprecated, not sure if of any use in other architectures
-; Y -> value, zpar <- addr
-; destroys A
-
-su_peek:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA (zpar)			; store value
-	TAY					; transfer value
-	_EXIT_OK
-
-
 ; *********************************
 ; *** STRING, prints a C-string ***
 ; *********************************
@@ -748,9 +733,10 @@ su_peek:
 ; str_pt	= 24b pointer to string (might be altered!) 24-bit ready!
 ;		OUTPUT
 ; C = device error
-;		USES str_dev, iol_dev and whatever the driver takes
+;		USES str_dev and whatever the driver takes
 ;
 ; cio_lock is a kernel structure
+; * 8-bit savvy *
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
@@ -802,13 +788,14 @@ str_abort:
 	PLB					; restore!
 	JMP cio_setc		; notify error directly
 
+; proceed with a physical device number
 str_phys:
-; new MUTEX eeeeeeek, *per-driver way **added overhead
-; ** TO DO ** apply MUTEX only to physical devices!
-	STY iol_dev			; **keep device temporarily, worth doing here (3)
+; new MUTEX eeeeeeek
+	ASL					; convert to index (2)
+	STA str_dev			; store for indexed call! (3)
 ; CS not needed for MUTEX as per 65816 API
 str_wait:
-	LDX iol_dev			; restore previous status, *new style (3)
+	LDX str_dev			; restore previous status, *new style (3)
 	LDA cio_lock, X		; *check whether THAT device in use (4)
 	BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
@@ -821,9 +808,6 @@ str_lckd:
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; continue with mutually exclusive COUT code
-; ** new direct indexing, revamped 20160407 **
-	ASL					; convert to index (2+2)
-	STA str_dev			; store for indexed call! (3)
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
 str_loop:
@@ -856,12 +840,19 @@ str_err:
 ; ln_siz	= max offset
 ;		OUTPUT
 ; C = some error
-;		USES rl_dev, rl_cur
+;		USES rl_dev, rl_cur and whatever CIN/COUT take
+; * 8-bit savvy *
 
-; ***should lock upon rl_dev and use direct drv_ipt! 0.5.2
 readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; no need to switch DBR as regular I/O calls would do it
+; check architecture in order to discard bank address
+	BIT run_arch		; will be zero for native 65816
+	BEQ rl_24b			; 24-bit enabled
+		PHB					; otherwise get (current) caller bank...
+		PLA					; ...get its value...
+		STA str_pt+2		; ...and use as default in pointer
+rl_24b:
 	STY rl_dev			; preset device ID!
 	STZ rl_cur			; reset variable
 rl_l:
@@ -904,21 +895,6 @@ rl_cr:
 	_EXIT_OK			; and all done!
 
 
-; *** SU_SEI, disable interrupts ***
-; C -> not authorized (?)
-; probably not needed on 65xx, _CS macros are much more interesting anyway
-su_sei:
-	SEI					; disable interrupts
-	_EXIT_OK			; no error so far
-
-; *** SU_CLI, enable interrupts ***
-; probably not needed on 65xx, _CS macros are much more interesting anyway
-
-su_cli:					; not needed for 65xx, even with protection hardware
-	CLI					; enable interrupts
-	_EXIT_OK			; no error
-
-
 ; **************************************************
 ; *** SET_FG, enable/disable frequency generator *** TO BE REVISED
 ; **************************************************
@@ -929,46 +905,52 @@ su_cli:					; not needed for 65xx, even with protection hardware
 ;
 ; should use some firmware interface, just in case it doesn't affect jiffy-IRQ!
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
+; *** TO DO *** temporarily made 8-bit savvy
 
 set_fg:
-	LDA zpar
-	ORA zpar+1
+	.al: REP #$20		; *** 16-bit memory ***
+	.xs: SEP #$10		; *** 8-bit indexes ***
+; switch DBR as it accesses a lot of kernel data!
+	PHB					; eeeeeeeeek (3)
+	LDX #0				; this will work on bank 0 (2)
+	PHX					; into stack (3)
+	PLB					; set DBR! do not forget another PLB upon end! (4)
+; proceed	
+	LDA zpar			; take whole word
 		BEQ fg_dis			; if zero, disable output
-	LDA VIA+ACR			; get current configuration
+	LDX VIA+ACR		; get current configuration byte
 		BMI fg_busy			; already in use
-	LDX VIA+T1LL		; get older T1 latch values
-	STX old_t1			; save them
-	LDX VIA+T1LH
-	STX old_t1+1
+	LDA VIA+T1LL		; get older T1 latch values
+	STA old_t1			; save them
 ; *** TO_DO - should compare old and new values in order to adjust quantum size accordingly ***
-	LDX zpar			; get new division factor
-	STX VIA+T1LL		; store it
-	LDX zpar+1
-	STX VIA+T1LH
-	STX VIA+T1CH		; get it running!
+	LDA zpar			; get new division factor
+	STA VIA+T1LL		; store it
+	STA VIA+T1CH		; get it running!
+	.as: SEP #$20		; *** back to 8-bit memory ***
+	TXA					; process configuration
 	ORA #$C0			; enable free-run PB7 output
 	STA VIA+ACR			; update config
 fg_none:
+	PLB					; restore!
 	_EXIT_OK			; finish anyway
+
+	.al					; called from above
+
 fg_dis:
-	LDA VIA+ACR			; get current configuration
+	LDX VIA+ACR			; get current configuration
 		BPL fg_none			; it wasn't playing!
-	AND #$7F			; disable PB7 only
-	STA VIA+ACR			; update config
-	LDA old_t1			; older T1L_L
+	TXA					; process configuration
+	AND #$007F			; disable PB7 only
+	TAX					; please respect 2nd byte!
+	STX VIA+ACR			; update config
+	LDA old_t1			; older T1L
 	STA VIA+T1LL		; restore old value
-	LDA old_t1+1
-	STA VIA+T1LH		; it's supposed to be running already
 ; *** TO_DO - restore standard quantum ***
-		BRA fg_none
+	PLB					; restore!
+	_EXIT_OK
 fg_busy:
+	PLB					; restore!
 	_ERR(BUSY)			; couldn't set
-
-
-; *** GO_SHELL, launch default shell *** probably DEPRECATE
-; no interface needed
-go_shell:
-	JMP shell			; simply... *** SHOULD initialise SP and other things anyway ***
 
 
 ; ***********************************************************
@@ -979,16 +961,22 @@ go_shell:
 ;		OUTPUT
 ; C = couldn't poweroff or reboot (?)
 ;		USES b_sig (calls B_SIGNAL)
-;
 ; sd_flag is a kernel variable
+; * 8-bit savvy (I hope) *
 
 shutdown:
 	.as: .xs: SEP #$30	; *** standard register size ***
+; switch DBR as it accesses some kernel data!
+	PHB					; eeeeeeeeek
+	LDA #0				; this will work on bank 0
+	PHA					; into stack
+	PLB					; set DBR! do not forget another PLB upon end!
+; proceed
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
-		BEQ sd_stat			; don't shutdown system then!
-	STY sd_flag			; store mode for later, first must do proper system shutdown
+		BEQ sd_stat			; do not shutdown system then!
+	STY sd_flag			; store mode for later, first must do proper system shutdown, note long addressing
 ; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
@@ -996,11 +984,12 @@ shutdown:
 ;	KERNEL(B_SIGNAL)	; ask braids to terminate
 	LDX #MM_SIGNAL		; internal multitasking index (2)
 	JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
-	PLP					; original mask is buried in stack
+	PLB					; restore before further tinkering!!!
+	PLP					; original mask is buried in stack, no DBR was saved!
 	CLI					; make sure all will keep running!
 	PHP					; restore for subsequent RTI
 	_EXIT_OK			; unified stack frame makes irrelevant whether XIP or not
-	; actually RTI for 816
+; actually RTI for 816
 
 ; firmware interface
 sd_off:
@@ -1010,10 +999,10 @@ sd_fw:
 	JMP cio_callend			; just in case was not implemented!
 sd_stat:
 	LDY #PW_STAT		; suspend
-	BNE sd_fw			; no need for BRA
+	BRA sd_fw			; shared code
 sd_cold:
 	LDY #PW_COLD		; cold boot
-	BNE sd_fw			; will reboot, shared code, no need for BRA
+	BRA sd_fw
 sd_warm:
 	SEP #%00001001		; disable interrupts and set carry...
 	XCE					; ...to set emulation mode for a moment
@@ -1035,9 +1024,9 @@ sd_shut:
 #endif
 ; call each driver's shutdown routine
 	LDX #0				; reset index
-	.al: REP #$20		; *** 16-bit memory ***
 ; first get the pointer to each driver table
 sd_loop:
+		.al: REP #$20		; *** 16-bit memory *** as might be reset by dr_call!
 ; get address index
 		LDA drivers_ad, X	; get address from original list
 			BEQ sd_done			; no more drivers to shutdown!
@@ -1058,6 +1047,7 @@ sd_msb:
 		PHP					; and register size, just in case!
 		LDY #D_BYE			; shutdown MSB offset
 		JSR dr_call			; call routine from generic code!!!
+		.xs: SEP #$10		; just in case... memory size will be reset later
 		PLP					; back to original size, will ignore error code anyway
 		PLX					; retrieve index
 sd_next:
@@ -1077,6 +1067,7 @@ sd_done:
 ; Y = PID (0 means either singletask system or no more available braids)
 ;
 ; uses common code from GET_PID
+; * 8-bit savvy * verify driver anyway
 
 b_fork:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1096,6 +1087,7 @@ b_fork:
 ; uses common code from GET_PID
 ; no need to indicate XIP or not! will push start address at bottom of stack anyway
 ; API still subject to change... (rendez-vous mode TBD)
+; * 8-bit savvy * verify driver anyway
 
 b_exec:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1113,6 +1105,7 @@ b_exec:
 ; C = invalid PID
 ;
 ; uses common code from GET_PID
+; * 8-bit savvy * verify driver anyway
 
 signal:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1130,6 +1123,7 @@ signal:
 ; C = invalid PID
 ;
 ; uses common code from GET_PID
+; * 8-bit savvy * verify driver anyway
 
 status:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1142,10 +1136,12 @@ status:
 ; **************************************
 ;		OUTPUT
 ; Y = PID (0 means singletask system)
+; * 8-bit savvy * verify driver anyway
+; note that there is a faster, unsafer version for internal kernel use (run_pid)
 
 get_pid:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_PID		; subfunction code
+	LDX #MM_PID			; subfunction code
 ; * unified calling procedure, get subfunction code in X * new faster interface 20161102
 sig_call:
 ; new code is 6 bytes, 10 clocks! old code was 8 bytes, 13 clocks
@@ -1164,6 +1160,7 @@ sig_call:
 ;
 ; uses common code from GET_PID
 ; revise as might be processed without driver!
+; * 8-bit savvy * verify driver anyway
 
 set_handler:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1177,6 +1174,7 @@ set_handler:
 ; (no interface needed)
 ;
 ; uses common code from GET_PID
+; * 8-bit savvy * verify driver anyway
 
 yield:
 	.as: .xs: SEP #$30	; *** standard register size ***
@@ -1189,18 +1187,18 @@ yield:
 ; ***************************************************************
 ;		OUTPUT
 ; Y		= number of bytes
-; ex_pt = 24b pointer to the proposed stack frame
+; ex_pt = 24b pointer to the proposed stack frame (likeky in bank 0)
+; ***** REVISE ASAP ****** REVISE ASAP ***** MULTITASK label to be deprecated
 
 ts_info:
-#ifdef	MULTITASK
 	.xs: SEP #$10			; *** standard index size ***
+#ifdef	MULTITASK
 	.al: REP #$20			; *** 16-bit memory ***
 	LDA #tsi_str			; pointer to proposed stack frame
 	STA ex_pt				; store output word
 	LDY #tsi_end-tsi_str	; number of bytes
 	_EXIT_OK
 #else
-	.xs: REP #$10			; *** standard index size for error handling ***
 	_ERR(UNAVAIL)			; non-supporting kernel!
 #endif
 
@@ -1211,9 +1209,23 @@ ts_info:
 ;		INPUT
 ; Y = PID
 ;		USES ma_pt and whatever takes FREE (will call it)
+; this is NOT intended to be called by apps, kernel & multitasking driver only, thus do not care about architecture
+; but make certain that FREE calls are 24-bit enabled!
+; * 8-bit savvy, I think *
 
 release:
 	.as: .xs: SEP #$30	; *** 8-bit sizes ***
+; switch DBR as it accesses a lot of kernel data!
+	PHB					; eeeeeeeeek
+	LDA #0				; this will work on bank 0
+	PHA					; into stack
+	PLB					; set DBR! do not forget another PLB upon end!
+; proceed
+; ** not sure if I really need to save this value... **
+	LDX run_arch		; "current" (?) architecture
+	PHX					; save it!
+	STA run_arch		; clear this to make it 24-bit enabled (was zero)
+; continue as usual
 	TYA					; as no CPY abs,X
 	XBA					; exchange...
 	LDA #USED_RAM		; the status we will be looking for! PID @ MSB
@@ -1226,7 +1238,7 @@ rls_loop:
 			PHA					; otherwise save registers
 			PHX
 			LDA ram_pos, X		; get pointer to targeted block
-			STZ ma_pt			; using PAGE addresses beware of 16-bit memory eeeeeeeeek^2
+			STZ ma_pt			; clearing PAGE addresses, beware of order on 16-bit accesses!!!
 			STA ma_pt+1			; will be used by FREE eeeeeeeeek
 			_KERNEL(FREE)		; release it! ***by NO means a direct call might be used here***
 			PLX					; retrieve status
@@ -1238,6 +1250,10 @@ rls_oth:
 		LDY ram_stat, X		; look status only
 		CPY #END_RAM		; are we done?
 		BNE rls_loop		; continue if not yet
+; ** since run_arch was saved and destroyed, maybe I should restore it here **
+	PLX					; take a byte from stack
+	STX run_arch		; restore value, just in case
+	PLB					; restore!
 	_EXIT_OK			; no errors...
 
 
@@ -1248,13 +1264,59 @@ rls_oth:
 ; Y			= PID
 ; cpu_ll	= architecture (0=65816, 2=Rockwell, 4=65C02, 6=NMOS)
 ; affects internal sysvars run_pid & run_arch
+; * 8-bit savvy *
 
 set_curr:
 	.as: .xs: SEP #$30	; *** 8-bit sizes ***
-	STY run_pid			; store PID into kernel variables
-	LDA cpu_ll			; get architecture from multitasking driver
-	STA run_arch		; and store it for kernel use
+	STY @run_pid		; store PID into kernel variables (5)
+	LDA cpu_ll			; get architecture from multitasking driver (3)
+	STA @run_arch		; and store it for kernel use (5)
 	_EXIT_OK
+
+
+
+; ****** space for deprecated functions ******
+; *** SU_POKE, write to protected addresses ***
+; WILL be deprecated, not sure if of any use in other architectures
+; Y <- value, zpar <- addr
+; destroys A (and maybe Y on NMOS)
+
+su_poke:
+	.as: .xs: SEP #$30	; *** standard register size ***
+	TYA					; transfer value
+	STA (zpar)			; store value
+	_EXIT_OK
+
+; *** SU_PEEK, read from protected addresses ***
+; WILL be deprecated, not sure if of any use in other architectures
+; Y -> value, zpar <- addr
+; destroys A
+
+su_peek:
+	.as: .xs: SEP #$30	; *** standard register size ***
+	LDA (zpar)			; store value
+	TAY					; transfer value
+	_EXIT_OK
+
+; *** SU_SEI, disable interrupts ***
+; C -> not authorized (?)
+; probably not needed on 65xx, _CS macros are much more interesting anyway
+su_sei:
+	SEI					; disable interrupts
+	_EXIT_OK			; no error so far
+
+; *** SU_CLI, enable interrupts ***
+; probably not needed on 65xx, _CS macros are much more interesting anyway
+
+su_cli:					; not needed for 65xx, even with protection hardware
+	CLI					; enable interrupts
+	_EXIT_OK			; no error
+
+; *** GO_SHELL, launch default shell *** probably DEPRECATE
+; no interface needed
+go_shell:
+	JMP shell			; simply... *** SHOULD initialise SP and other things anyway ***
+
 
 ; *******************************
 ; *** end of kernel functions ***
@@ -1296,6 +1358,7 @@ tsi_str:
 	.word	0, 0, 0			; irrelevant Y, X, A values
 tsi_end:
 ; end of stack frame for easier size computation
+
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
