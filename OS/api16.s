@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170222-1014
+; last modified 20170222-1106
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -284,9 +284,9 @@ malloc:
 	PLB					; preset DBR as default zero!
 	STX ma_align+1		; **clear MSB in cass of a 16-bit BIT!**
 ; detect caller architecture in order to enable 24-bit addressing
-	BIT run_arch		; zero for native 65816
+	LDY run_arch		; zero for native 65816
 	BEQ ma_24b			; OK for 24b addressing
-		STX ma_rs+2			; just in case!
+		STX ma_rs+2			; clear it just in case!
 		PLX					; otherwise get saved bank...
 		PHX					; ...restore it...
 		STX ma_lim			; ...and set as only feasible bank
@@ -494,7 +494,7 @@ free:
 		BNE fr_no			; could not find
 #endif
 ; check architecture in order to discard bank address
-	BIT run_arch		; will be zero for native 65816
+	LDY run_arch		; will be zero for native 65816
 	BEQ fr_24b			; 24-bit enabled
 		PLX					; otherwise get stored caller bank...
 		PHX					; ...restore it...
@@ -600,11 +600,12 @@ free_w:					; doesn't do much, either
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
 ; default 816 API functions run on interrupts masked, thus no need for CS
-		LDA ticks		; get system variable word (5)
+; not worth setting DBR, note long addressing
+		LDA @ticks		; get system variable word (5)
 		STA up_ticks	; and store them in output parameter (4)
-		LDA ticks+2		; get system variable uptime (5)
+		LDA @ticks+2	; get system variable uptime (5)
 		STA up_sec		; and store it in output parameter (4)
-		LDA ticks+4		; another word, as per new format (5)
+		LDA @ticks+4	; another word, as per new format (5)
 		STA up_sec+2	; store that (4)
 ; end of CS
 	_EXIT_OK
@@ -626,6 +627,14 @@ load_link:
 ; *** first look for that filename in ROM headers ***
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** standard index size ***
+; no need to set DBR
+; check architecture in order to discard bank address
+	LDX run_arch		; will be zero for native 65816
+	BEQ ll_24b			; 24-bit enabled
+		PLX					; otherwise get stored caller bank...
+		PHX					; ...restore it...
+		STZ str_pt+2		; ...and use as default (extra byte is cleared)
+ll_24b:
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get whole pointer (minus bank)
 	SEC
