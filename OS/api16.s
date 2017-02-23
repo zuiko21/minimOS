@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170222-1401
+; last modified 20170223-1103
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -827,7 +827,7 @@ str_cont:
 	INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
 	BRA str_loop		; continue, will check for termination later (3)
 str_err:
-	PLA					; discard saved Y while keeping error code eeeeeeeeeek^2
+	PLX					; discard saved Y while keeping error code eeeeeeeeeek^2
 	JMP cio_unlock		; otherwise return code AND clear MUTEX eeeeeeeeeek^2
 
 

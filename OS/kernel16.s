@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b11
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170222-0945
+; last modified 20170223-1111
 
 ; just in case
 #define		C816	_C816
@@ -40,7 +40,7 @@ kern_head:
 
 ; keep version string wven if no headers present!
 kern_splash:
-	.asc	"minimOS-16 0.5.1b9", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b11", 0	; version in comment
 
 #ifndef	NOHEAD
 	.dsb	kern_head + $F8 - *, $FF	; padding
@@ -317,7 +317,7 @@ dr_ok:					; *** all drivers inited ***
 	STA str_pt			; set parameter
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
-	_KERNEL(STRING)		; print it!
+//	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
 
 ; ******************************
@@ -381,6 +381,12 @@ st_tdlist:
 	.word	st_hndl		; set SIGTERM handler
 	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
 
+; diverse driver data
+arch_tab:
+	.asc	"NBRV"		; 65xx codes are NMOS, CMOS, Rockwell & 65816
+run_tab:
+	.byt	6, 4, 2, 0	; easier computation
+
 ; ** single-task management routines **
 ; called from API, make certain about DBR or use long addressing!!!
 
@@ -412,10 +418,24 @@ exec_st:
 ; this should now work for both 02 and 816 apps
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
-	CMP #'V'			; check whether native 816 code (ending in RTL)
+; set run_arch as per architecture!
+	LDX #0				; reset index
+arch_loop:
+		CMP @arch_tab, X	; compare with list item
+			BEQ arch_ok			; detected!
+		INX					; next
+		CPX #4				; supported limit?
+		BNE arch_loop		; still to go
+	_PANIC("{code}")	; cannot execute this! should be a mere error
+arch_ok:
+	LDA @run_tab, X		; get equivalent code
+	STA run_arch		; set as current
+;	LDA cpu_ll			; restore original code ** native is already zero!
+;	CMP #'V'			; check whether native 816 code (ending in RTL)
 ; new approach, reusing 816 code!
 	BNE exec_02			; skip return address for 8-bit code
 ; ** alternative to self-generated code for long indirect call **
+		STZ run_arch		; this is native code!!!
 		PHK					; push program bank address, actually zero (3)
 exec_02:
 	PEA sig_kill-1		; push corrected return address (5)

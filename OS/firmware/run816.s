@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9b3
+; v0.9b4
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170207-1159
+; last modified 20170223-1101
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9b3 firmware for "
+	.asc	"0.9b4 firmware for "
 #else
 fw_splash:
 #endif
@@ -139,16 +139,22 @@ nmi:
 	PHA					; save registers (3x4)
 	PHX
 	PHY
+	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeek
 ; make NMI reentrant, new 65816 specific code
 ; assume all registers in 16-bit size, this is 6+2 bytes, 16+2 clocks! (was 10b, 38c)
 	LDY sysptr			; get original word (4+4)
 	LDA systmp			; this will get sys_sp also!
 	PHY					; store them in similar order (4+4)
 	PHA
-; prepare for next routine while regs are still 16-bit!
+; switch DBR to bank zero!!!!
+	.xs: SEP #$10		; ** 8-bit indexes ** as I need to push a single byte
+	LDX #0
+	PHX					; push a zero...
+	PLB					; ...as current data bank!
+; prepare for next routine while memory is still 16-bit!
 	LDA fw_nmi			; copy vector to zeropage (5+4)
 	STA sysptr
-	.as: .xs: SEP #$30	; ** back to 8-bit size! **
+	.as: SEP #$20		; ** back to 8-bit size all the way! **
 ; check whether user NMI pointer is valid
 	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
 	LDY #0				; offset for NMI code pointer (2)
@@ -169,6 +175,7 @@ nmi_end:
 	PLY
 	STA systmp			; I suppose is safe to alter sys_sp too (4+4)
 	STY sysptr
+	PLB					; eeeeeeeeeeeeeeek
 	PLY					; restore regular registers (3x5)
 	PLX
 	PLA
@@ -190,6 +197,8 @@ std_nmi:
 ; *** administrative functions ***
 ; A0, install jump table
 ; kerntab <- address of supplied jump table
+; * 8-bit savvy *
+
 fw_install:
 	_ENTER_CS			; disable interrupts! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
@@ -197,7 +206,7 @@ fw_install:
 	LDY #0				; reset index (2)
 fwi_loop:
 		LDA (kerntab), Y	; get word from table as supplied (6)
-		STA fw_table, Y		; copy where the firmware expects it (5)
+		STA @fw_table, Y	; copy where the firmware expects it (5) ***faster if switching DBR but heavier
 		INY					; advance two bytes (2+2)
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
@@ -211,7 +220,7 @@ fw_s_isr:
 	_ENTER_CS				; disable interrupts and save sizes! (5)
 	.al: REP #$20			; ** 16-bit memory ** (3)
 	LDA kerntab				; get pointer (4)
-	STY fw_isr				; store for firmware (5)
+	STA @fw_isr				; store for firmware, note long addressing (6)
 	_EXIT_CS				; restore interrupts if needed, sizes too (4)
 	_DR_OK					; done (8)
 
@@ -221,13 +230,14 @@ fw_s_isr:
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected
 fw_s_nmi:
+; ***might need to save sizes, like entering CS!
 	.as: .xs: SEP #$30		; *** standard size ***
 #ifdef	SAFE
 	LDX #3					; offset to reversed magic string
 	LDY #0					; reset supplied pointer
 fw_sn_chk:
 		LDA (kerntab), Y		; get pointed handler string char
-		CMP fw_magic, X			; compare against reversed string
+		CMP @fw_magic, X		; compare against reversed string, note long addressing
 		BEQ fw_sn_ok			; no problem this far...
 			_DR_ERR(CORRUPT)		; ...or invalid NMI handler
 fw_sn_ok:
@@ -236,11 +246,11 @@ fw_sn_ok:
 		BPL fw_sn_chk			; until all done
 #endif
 ; transfer supplied pointer to firmware vector
-; not worth going 16-bit as will by 9b/19c instead of 10b/14c
+; not worth going 16-bit as will by 9b/19c instead of 12b/16c
 	LDY kerntab				; get LSB (3)
 	LDA kerntab+1			; get MSB (3)
-	STY fw_nmi				; store for firmware (4+4)
-	STA fw_nmi+1
+	STY @fw_nmi				; store for firmware, note long addressing (5+5)
+	STA @fw_nmi+1
 	_DR_OK					; done (8)
 
 ; A6, patch single function
@@ -254,7 +264,8 @@ fw_patch:
 	_ENTER_CS				; disable interrupts and save sizes! (5)
 	.al: REP #$20			; ** 16-bit memory ** (3)
 	LDA kerntab				; get full pointer (4)
-	STA fw_table, Y			; store into firmware (5)
+	TYX						; no Y-indexed long addressing! (2)
+	STA @fw_table, X		; store into firmware, note long addressing (6)
 	_EXIT_CS				; restore interrupts and sizes (4)
 	_DR_OK					; done (8)
 #endif
@@ -268,28 +279,29 @@ fw_patch:
 ; zpar3.W/L -> points to a string with machine name
 ; *** WILL change ABI/API ***
 fw_gestalt:
-	LDA himem		; get pages of kernel SRAM (4)
-	STA zpar		; store output (3)
 	PHP				; keep sizes (3)
 	REP #$20		; ** 16-bit memory **
-	STZ zpar+2		; no bankswitched RAM yet (4)
+	SEP #$10		; ** 8-bit indexes **
+	LDX himem		; get pages of kernel SRAM (4)
+	STX zpar		; store output (3)
+	STZ zpar+2		; no bankswitched RAM yet (4) 16-bit
 	STZ zpar3+2		; same for string address (4)
+; must revise ABI as per new 24-bit pointers!!!
 	LDA #fw_mname	; get string pointer (3)
 	STA zpar3		; put it outside (4)
+	LDX #SPEED_CODE	; speed code as determined in options.h (2+3)
+	STX zpar2
+	LDX fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
+	STX zpar2+2
 	PLP				; restore sizes (4)
-	LDA #SPEED_CODE	; speed code as determined in options.h (2+3)
-	STA zpar2
-	LDA fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
-	STA zpar2+2
 	_DR_OK			; done (8)
 
 ; A10, poweroff etc
 ; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
 ; C -> not implemented
 fw_power:
-	TYA					; get subfunction offset
-	TAX					; use as index
-	_JMPX(fwp_func)		; select from jump table
+	TYX					; get subfunction offset as index
+	JMP(fwp_func, X)	; select from jump table
 
 fwp_off:
 	_PANIC("{OFF}")		; just in case is handled
@@ -326,8 +338,10 @@ brk_hndl:		; label from vector list
 	PHA						; save registers (3x4)
 	PHX
 	PHY
+	PHB						; eeeeeeeeeek
 ;	JSR brk_handler			; standard label from IRQ
 	.al: .xl: REP #$30		; just in case (3)
+	PLB						; eeeeeeeeeeeek
 	PLY						; restore status and return
 	PLX
 	PLA
