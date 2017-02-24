@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b9
-; last modified 20170215-1059
+; v0.5b10
+; last modified 20170224-0846
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -45,8 +45,6 @@ lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
 ; ************************
 
 ; ##### minimOS specific stuff #####
-	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
-	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
@@ -213,7 +211,7 @@ ls_kb:
 		BCC ls_nround		; if C, round up!
 			_INC
 ls_nround:
-; print A in decimal and continue!
+; print A in decimal and continue! never more than 64k!!!
 		LDX #0				; decade counter
 lsb_div10:
 			CMP #10				; something to count?
@@ -262,7 +260,7 @@ ls_bound:
 		JMP ls_geth
 ls_carry:
 #ifdef	C816
-		INC rompt+1			; next bank for 24-bit addressing
+		INC rompt+2			; next bank for 24-bit addressing eeeeeeek
 			BEQ ls_nfound		; abort if full wraparound
 		JMP ls_geth			; or continue otherwise
 #endif

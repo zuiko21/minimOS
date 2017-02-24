@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5b4
-; last modified 20170215-0931
+; v0.5b5
+; last modified 20170224-0847
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -19,7 +19,7 @@
 pmapHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE	; minimOS app!
+	.asc	"mB"			; minimOS 65C02 app!
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
@@ -48,8 +48,6 @@ pmapSize	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 ; ************************
 
 ; ##### minimOS specific stuff #####
-	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
-	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
@@ -124,7 +122,7 @@ pmap_kb:
 		BCC pm_nround	; if C, round up!
 			INC
 pm_nround:
-; print A in decimal and continue!
+; print A in decimal and continue! no more than 64!
 	LDX #0		; decade counter
 pkb_div10:
 		CMP #10		; something to count?
@@ -203,7 +201,6 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
-	_STZA str_pt+2		; clear bank****
 	LDY #0				; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...

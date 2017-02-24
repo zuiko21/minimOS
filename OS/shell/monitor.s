@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b7
-; last modified 20170215-1100
+; v0.5.1b8
+; last modified 20170224-0913
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -29,7 +29,7 @@ mon_head:
 
 ; *** filename and optional comment ***
 	.asc	"monitor", 0	; file name (mandatory)
-	.asc	"816-savvy", 0	; comment
+	.asc	"NMOS & 816-savvy", 0	; comment
 
 ; advance to end of header
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
@@ -72,8 +72,6 @@ mon_head:
 ; *** initialise the monitor ***
 
 ; ##### minimOS specific stuff #####
-	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
-	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
@@ -102,11 +100,12 @@ open_mon:
 	LDY #<splash
 	JSR prnStr			; print the string!
 
-; *** store current stack pointer as it will be restored upon JMP ***
+; *** initialise relevant registers ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
 	LDA #%00110000		; 8-bit sizes eeeeeeeek
-	STA _psr		; *** essential, at least while not previously set ***
-; specially tailored code for 816-savvy version!
+	STA _psr			; *** essential, at least while not previously set ***
+; *** store current stack pointer as it will be restored upon JMP ***
+; * specially tailored code for 816-savvy version! *
 get_sp:
 #ifdef	C816
 	.xl: REP #$10		; *** 16-bit index ***
@@ -114,7 +113,7 @@ get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
 #ifdef	C816
-	.xs: .as: SEP #$30	; *** regular size ***
+	.xs: SEP #$10		; *** regular size ***
 #endif
 ; does not really need to set PC/ptr
 ; these ought to be initialised after calling a routine!
@@ -496,7 +495,11 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
-	_STZA str_pt+2		; clear bank! ****
+#ifdef	C816
+		PHB					; get current bank
+		PLA					; pick it up
+		STA str_pt+2		; set accordingly
+#endif
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
@@ -532,6 +535,7 @@ h2b_err:
 	RTS
 
 ; * print a byte in A as two hex ciphers *
+; pretty old version, should be quickly replaced by future library!
 prnHex:
 	JSR ph_conv			; first get the ciphers done
 	LDA tmp				; get cipher for MSB
@@ -563,6 +567,7 @@ ph_n:
 
 ; * get input line from device at fixed-address buffer *
 ; minimOS should have one of these in API...
+; fortunately this has no problem with zero-page bank settings...
 getLine:
 	_STZX cursor			; reset variable
 gl_l:
