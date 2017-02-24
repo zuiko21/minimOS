@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b7
-; last modified 20170214-1828
+; v0.5.1b8
+; last modified 20170224-1427
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -233,7 +233,9 @@ prnCharW:
 ; * print a NULL-terminated string pointed by A.w *
 prnStrW:
 	STA str_pt			; store full pointer
-	STZ str_pt+2		; clear bank! should be properly determined...
+	PHB					; determine current bank!
+	PLX					; retrieve it...
+	STX str_pt+2		; ...and set it!
 	LDY #0				; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...

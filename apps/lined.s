@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5rc6
+; v0.5rc7
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170214-0848
+; last modified 20170224-1429
 
 #include "usual.h"
 .(
@@ -27,7 +27,7 @@
 linedHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE	; minimOS app!
+	.asc	"mB"			; minimOS 65C02 app!
 	.asc	"****", CR		; some flags TBD
 
 ; *** filename and optional comment ***
@@ -450,7 +450,6 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
-	_STZA str_pt+2		; clear bank! ****
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...

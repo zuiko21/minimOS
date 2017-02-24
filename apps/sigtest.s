@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
 ; v1.0b5
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170215-1101
+; last modified 20170224-1432
 
 
 ; for standalone assembly, set path to OS/
@@ -12,7 +12,7 @@
 #ifndef	NOHEAD
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 sts_header:
-	.asc 0, "m", CPU_TYPE, "****", 13		; standard system file wrapper EEEEK
+	.asc 0, "mB****", 13					; standard system file wrapper EEEEK
 sts_title:
 	.asc "SIGtest", 0						; filename
 	.asc "Test app for SIGTERM handling", 0	; description as comment
@@ -33,8 +33,6 @@ stsSize	=	sts_end - sts_header -256	; compute size NOT including header!
 
 ; *** actual app code starts here ***
 sts_start:
-	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
-	_STZA z24b2
 	LDA #0				; do not bother with STZ
 	STA z_used			; no threads launched this far
 	STA w_rect			; no window size, regular terminal
@@ -60,6 +58,8 @@ sts_launch:
 		INC z_used			; launch counter
 		LDX z_used			; as index
 		STY z_used, X		; store in list, correct ZP opcode
+		LDA #'B'			; regular 65C02
+		STA cpu_ll			; requested parameter for B_EXEC, no LOAD_LINK for setting it!
 ; hopefully defaults are respected!
 		_KERNEL(B_EXEC)		; launch thread!
 	BCC sts_launch		; go for next
@@ -193,7 +193,6 @@ sts_print:
 ; this will assume own device in Y
 	STX str_pt			; set parameter
 	STA str_pt+1
-	_STZA str_pt+2		; clear bank****
 	_KERNEL(STRING)		; print
 	RTS
 

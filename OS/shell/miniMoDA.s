@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b9
-; last modified 20170215-1100
+; v0.5b10
+; last modified 20170224-1422
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -81,8 +81,6 @@ title:
 ; *** initialise the monitor ***
 
 ; ##### minimOS specific stuff #####
-	_STZA z24b1			; *** mandatory minimOS-16 compliance ***
-	_STZA z24b2
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
@@ -394,7 +392,9 @@ call_address:
 	LDA iodev			; *** must push default device for later ***
 	PHA
 	JSR do_call			; set regs and jump!
+#ifdef	C816
 	.xs: .as: SEP #$30	; *** make certain about standard size ***
+#endif
 ; ** should record actual registers here **
 	STA _a
 	STX _x
@@ -969,7 +969,12 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
-	_STZA str_pt+2		; clear bank***
+; 16-bit version should set bank!
+#ifdef	C816
+	PHB					; get current DBR
+	PLA					; into A
+	STA str_pt+2		; set bank
+#endif
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
@@ -1020,7 +1025,12 @@ getLine:
 	LDA bufpt+1			; likely 0!
 	STY str_pt			; set parameter
 	STA str_pt+1
-	_STZA str_pt+2		; to be safe, 24-bit
+; 16-bit version should set bank!
+#ifdef	C816
+	PHB					; get current DBR
+	PLA					; into A
+	STA str_pt+2		; set bank
+#endif
 	LDX #BUFSIZ-1		; max index
 	STX ln_siz			; set value
 	LDY iodev			; use device

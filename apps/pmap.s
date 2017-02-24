@@ -1,5 +1,5 @@
 ; memory map for minimOS! KLUDGE
-; v0.5b5
+; v0.5.1b5
 ; last modified 20170224-0847
 ; (c) 2016-2017 Carlos J. Santisteban
 
