@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b11
+; v0.5.1b12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170223-1111
+; last modified 20170227-1559
 
 ; just in case
 #define		C816	_C816
@@ -40,7 +40,7 @@ kern_head:
 
 ; keep version string wven if no headers present!
 kern_splash:
-	.asc	"minimOS-16 0.5.1b11", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b12", 0	; version in comment
 
 #ifndef	NOHEAD
 	.dsb	kern_head + $F8 - *, $FF	; padding
@@ -111,7 +111,6 @@ ram_init:
 ; intialise drivers from their jump tables
 ; ******************************************************
 ; THINK about making API entries for this!
-; no longer initialises I/O lock arrays! but API must provide a function to do so!
 
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
 ; same with dr_aut, now independent kernel call savvy 20161103
@@ -218,7 +217,7 @@ dr_noreq:
 			INX					; increase index (2+2)
 			INX
 			STX dsec_mx			; save updated index (4)
-dr_nosec: 
+dr_nosec:
 ; continue initing drivers
 ; ***maybe best to do this BEFORE installing queues, aborted drivers will be easier to reset
 		JSR dr_icall		; call routine (6+...)
@@ -317,7 +316,7 @@ dr_ok:					; *** all drivers inited ***
 	STA str_pt			; set parameter
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
-//	_KERNEL(STRING)		; print it!
+	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
 
 ; ******************************
@@ -333,8 +332,7 @@ sh_exec:
 	.al: REP #$20		; will be needed anyway upon restart
 	LDA #shell			; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
-	LDX #0				; default bank for integrated shell! eeeeek
-	STX ex_pt+2			; mandatory 24-bit addressing
+	STZ ex_pt+2			; 24-bit addressing, clears 4th byte too
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct deindexed call because of 16-bit memory!
@@ -419,6 +417,7 @@ exec_st:
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 ; set run_arch as per architecture!
+; might just do EOR #'V' to detect 65816!
 	LDX #0				; reset index
 arch_loop:
 		CMP @arch_tab, X	; compare with list item
@@ -429,14 +428,14 @@ arch_loop:
 	_PANIC("{code}")	; cannot execute this! should be a mere error
 arch_ok:
 	LDA @run_tab, X		; get equivalent code
+; could just store the EOR result, see above
 	STA run_arch		; set as current
 ;	LDA cpu_ll			; restore original code ** native is already zero!
 ;	CMP #'V'			; check whether native 816 code (ending in RTL)
 ; new approach, reusing 816 code!
 	BNE exec_02			; skip return address for 8-bit code
 ; ** alternative to self-generated code for long indirect call **
-		STZ run_arch		; this is native code!!!
-		PHK					; push program bank address, actually zero (3)
+		PHK					; push return bank address, actually zero (3)
 exec_02:
 	PEA sig_kill-1		; push corrected return address (5)
 ; set context space!

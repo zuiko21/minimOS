@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.5.1a3, should match kernel16.s
+; v0.5.1a4, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170215-1250
+; last modified 20170227-1552
 
 #define		ISR		_ISR
 
@@ -17,9 +17,8 @@
 	PHY
 	PHB						; eeeeeeeeeeeeeek (3)
 	.as: .xs: SEP #$30		; back to 8-bit size (3)
-; should preset DBR !!! (9)
-	LDA #0					; a zero (2)
-	PHA						; into the stack (3)
+; should preset DBR !!! (7)
+	PHK						; zero into the stack (3)
 	PLB						; no other way to set it (4)
 ; *** place here HIGH priority async tasks, if required ***
 
