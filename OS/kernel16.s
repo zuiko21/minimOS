@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170227-1559
+; last modified 20170227-2216
 
 ; just in case
 #define		C816	_C816
@@ -380,6 +380,7 @@ st_tdlist:
 	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
 
 ; diverse driver data
+; these tables could be suppressed via the EOR on CPU code
 arch_tab:
 	.asc	"NBRV"		; 65xx codes are NMOS, CMOS, Rockwell & 65816
 run_tab:
@@ -414,26 +415,29 @@ exec_st:
 	LDA #$FF			; initial stack pointer
 	TCS					; eeeeeeeeeek
 ; this should now work for both 02 and 816 apps
+	LDY ex_pt+2		; get bank first! keep it
+; ***first push the 24-bit pointer, when non-XIP is available
+;	PHY			; push it
+;	PEI ex_pt		; push the rest of the pointer
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 ; set run_arch as per architecture!
 ; might just do EOR #'V' to detect 65816!
-	LDX #0				; reset index
-arch_loop:
-		CMP @arch_tab, X	; compare with list item
-			BEQ arch_ok			; detected!
-		INX					; next
-		CPX #4				; supported limit?
-		BNE arch_loop		; still to go
-	_PANIC("{code}")	; cannot execute this! should be a mere error
-arch_ok:
-	LDA @run_tab, X		; get equivalent code
+;	LDX #0				; reset index
+;arch_loop:
+;		CMP @arch_tab, X	; compare with list item
+;			BEQ arch_ok			; detected!
+;		INX					; next
+;		CPX #4				; supported limit?
+;		BNE arch_loop		; still to go
+;	PANIC("{code}")	; cannot execute this! should be a mere error
+;arch_ok:
+;	LDA @run_tab, X		; get equivalent code
 ; could just store the EOR result, see above
+	EOR #'V'		; will be zero only for native
 	STA run_arch		; set as current
-;	LDA cpu_ll			; restore original code ** native is already zero!
-;	CMP #'V'			; check whether native 816 code (ending in RTL)
 ; new approach, reusing 816 code!
-	BNE exec_02			; skip return address for 8-bit code
+	BNE exec_02			; skip return bank address for 8-bit code
 ; ** alternative to self-generated code for long indirect call **
 		PHK					; push return bank address, actually zero (3)
 exec_02:
@@ -442,9 +446,9 @@ exec_02:
 	LDA #ZP_AVAIL		; eeeeeeek!
 	STA z_used			; otherwise SAFE will not work!
 ; right now should set DBR as there is no scheduler to preload it! eeeeeeek
-	LDA ex_pt+2			; get actual bank address
-	PHA					; into stack for a moment
+	PHY					; push bank into stack for a moment
 	PLB					; ...and now properly set for the task
+; somehow should set registers, API TBD...
 ; jump to code!
 ; already in full 8-bit mode as assumed
 	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
@@ -453,9 +457,15 @@ exec_02:
 st_hndl:
 	.al: REP #$20		; *** 16-bit memory size ***
 	LDA ex_pt			; get pointer
-; ***must check for 02 code in order to get bank from current DBR!
+; must check for 02 code in order to get bank from current DBR!
+	LDY run_arch		; check current code
+	BEQ st_sh16		; if native, bank is set
+		PHB					; otherwise get current
+		PLX					; get it on reg
+		BRA st_shset			; no need to load
+st_sh16:
 	LDX ex_pt+2			; please, take bank too
-; ***otherwise do like PHB, PLX
+st_shset:
 	STA @mm_sterm		; store in single variable, 24-bit addr!
 	.as: SEP #$20		; *** back to 8-bit ***
 	TXA					; no long STX...
@@ -501,6 +511,7 @@ sig_kill:
 ; then, free up all memory from previous task
 	LDY #0				; standard PID
 ;	KERNEL(RELEASE)		; free all memory eeeeeeeek
+; *** when non-XIP is available, try to free address from stack bottom
 ; new, check whether a shutdown command was issued
 	LDA @sd_flag		; some action pending? 24-bit!
 	BEQ rst_shell		; if not, just restart shell
