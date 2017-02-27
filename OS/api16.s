@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b14, should match kernel16.s
+; v0.5.1b15, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170223-1103
+; last modified 20170227-2235
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -30,8 +30,7 @@ cout:
 	.as: .xs: SEP #$30	; *** standard register size *** (3)
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
-	LDA #0				; this will work on bank 0 (2)
-	PHA					; into stack (3)
+	PHK					; bank zero into stack (3)
 	PLB					; set DBR! do not forget another PLB upon end! (4)
 ; proceed
 	TYA					; update flags upon dev number (2)
@@ -147,8 +146,7 @@ cin:
 	.as: .xs: SEP #$30	; *** standard register size *** (3)
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
-	LDA #0				; this will work on bank 0 (2)
-	PHA					; into stack (3)
+	PHK					; bank zero into stack (3)
 	PLB					; set DBR! do not forget another PLB upon end! (4)
 ; proceed
 	TYA					; set flags upon devnum (2)
@@ -308,6 +306,7 @@ ma_nxpg:
 ; default 816 API functions run on interrupts masked, thus no need for CS
 	LDA ma_rs+1			; get number of asked pages
 	BNE ma_scan			; work on specific size
+; ***TO DO check limits
 ; otherwise check for biggest available block -- new ram_stat word format 161105
 ma_biggest:
 #ifdef	SAFE
@@ -637,6 +636,7 @@ load_link:
 	.xs: SEP #$10		; *** standard index size ***
 ; no need to set DBR
 ; check architecture in order to discard bank address
+; *****this is wrong and lacks direct-page savvyness
 	LDX run_arch		; will be zero for native 65816
 	BEQ ll_24b			; 24-bit enabled
 		PLX					; otherwise get stored caller bank...
