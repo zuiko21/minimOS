@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b15, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170227-2235
+; last modified 20170228-1211
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -500,6 +500,8 @@ free:
 	LDY run_arch		; will be zero for native 65816, please respect X!
 	BEQ fr_24b			; 24-bit enabled
 		PLY					; otherwise get stored caller bank...
+; was that OK? What if another task sends a SIGKILL???
+; if the other task is 816, all should be OK, pointer fully set
 		PHY					; ...restore it...
 		STY ma_pt+2			; ...and use as default
 fr_24b:
@@ -566,7 +568,7 @@ fr_join:
 ;		INPUT
 ; w_rect	= 16b size VV.HH
 ; w_rect+2	= 16b pos VV.HH
-; str_pt	= 24b pointer to title string
+; str_pt	= 24b pointer to title string, NONE yet used
 ;		OUTPUT
 ; Y = dev
 ; C = not supported/not available
@@ -636,13 +638,20 @@ load_link:
 	.xs: SEP #$10		; *** standard index size ***
 ; no need to set DBR
 ; check architecture in order to discard bank address
-; *****this is wrong and lacks direct-page savvyness
 	LDX run_arch		; will be zero for native 65816
 	BEQ ll_24b			; 24-bit enabled
-		PLX					; otherwise get stored caller bank...
-		PHX					; ...restore it...
-		STZ str_pt+2		; ...and use as default (extra byte is cleared)
+		PHB					; otherwise get caller data bank...
+		PLX					; ...pick it up...
+		STX str_pt+2		; ...and use as default bank
 ll_24b:
+; beware of direct-page pointers
+	LDX str_pt+1			; get MSB without bank!
+; ***should avoid allocating memory just after bank boundaries, perhaps for 65x02 code only?
+	BNE ll_nz			; only dp pointers will be corrected
+		TDC					; current context location
+		ADC str_pt		; compute actual address (C was clear per ABI)
+		STA str_pt		; store corrected value
+ll_nz:
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get whole pointer (minus bank)
 	SEC
@@ -710,7 +719,7 @@ ll_found:
 ll_wrap:
 	_ERR(INVALID)		; unsupported CPU
 ll_valid:
-; CPU-type is compatible but has 8-bit code, should install 64-byte wrapper at end of bank, or limit to bank zero!
+; ***CPU-type is compatible but has 8-bit code, should install 64-byte wrapper at end of bank, or limit to bank zero!
 	LDX rh_scan+2			; check THIRD byte, still not supported in 8-bit code
 	BEQ ll_native			; still in bank 0, OK to proceed
 		_ERR(FULL)				; somewhat confusing error...
