@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b15, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170228-1211
+; last modified 20170228-1248
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -752,16 +752,23 @@ string:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek
-	LDA #0				; this will work on bank 0
-	PHA					; into stack
+	PHK					; zero into stack
 	PLB					; set DBR! do not forget another PLB upon end!
 ; check architecture in order to discard bank address
-	BIT run_arch		; will be zero for native 65816
+	LDA run_arch		; will be zero for native 65816
 	BEQ str_24b			; 24-bit enabled
 		PLX					; otherwise get stored caller bank...
 		PHX					; ...restore it...
 		STX str_pt+2		; ...and use as default
 str_24b:
+	LDX str_pt+1			; check MSB, beware of allocations after bank boundaries...
+	BNE str_ndp			; not direct page is already OK
+		.al: REP #$20			; *** 16-bit memory ***
+		TDC
+		ADC str_pt+1
+		STA str_pt+1
+		.as: SEP #$20			; *** back to 8-bit ***
+str_ndp:
 ; proceed
 	TYA					; set flags upon devnum (2)
 	BNE str_port		; not default (3/2)
@@ -856,20 +863,28 @@ readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; no need to switch DBR as regular I/O calls would do it
 ; check architecture in order to discard bank address
-	BIT run_arch		; will be zero for native 65816
+	LDA run_arch		; will be zero for native 65816
 	BEQ rl_24b			; 24-bit enabled
 		PHB					; otherwise get (current) caller bank...
 		PLA					; ...get its value...
-		STA str_pt+2		; ...and use as default in pointer
+		STA str_pt+2			; ...and use as default in pointer
 rl_24b:
-	STY rl_dev			; preset device ID!
-	STZ rl_cur			; reset variable
+	LDX str_pt+1		; check MSB, beware of allocation after bank boundaries
+        BNE rl_ndp		; not direct page is already OK
+                .al: REP #$20		; *** 16-bit memory ***
+		TDC				; current context
+		ADC str_pt+1		; compute address, C was clear
+		STA str_pt+1		; update pointer
+		.as: SEP #$20		; *** back to 8-bit ***
+rl_ndp:
+	STY rl_dev		; preset device ID!
+	STZ rl_cur		; reset variable
 rl_l:
 		_KERNEL(B_YIELD)	; always useful
-		LDY rl_dev			; use device
+		LDY rl_dev		; use device
 		_KERNEL(CIN)		; get one character
-		BCC rl_rcv			; got something
-			CPY #EMPTY			; otherwise is just waiting?
+		BCC rl_rcv		; got something
+			CPY #EMPTY		; otherwise is just waiting?
 		BEQ rl_l			; continue then
 rl_abort:
 			LDA #0				; no indirect STZ
