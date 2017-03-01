@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170227-2216
+; last modified 20170301-0822
 
 ; just in case
 #define		C816	_C816
@@ -316,7 +316,7 @@ dr_ok:					; *** all drivers inited ***
 	STA str_pt			; set parameter
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
-	_KERNEL(STRING)		; print it!
+//	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
 
 ; ******************************
@@ -329,10 +329,10 @@ sh_exec:
 	LDX shell-254		; get ACTUAL CPU type from executable header!
 #endif
 	STX cpu_ll			; architecture parameter
+	STZ ex_pt+2			; 24-bit addressing for forthcoming EXEC
 	.al: REP #$20		; will be needed anyway upon restart
 	LDA #shell			; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
-	STZ ex_pt+2			; 24-bit addressing, clears 4th byte too
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct deindexed call because of 16-bit memory!
@@ -434,7 +434,7 @@ exec_st:
 ;arch_ok:
 ;	LDA @run_tab, X		; get equivalent code
 ; could just store the EOR result, see above
-	EOR #'V'		; will be zero only for native
+	EOR #'V'			; will be zero only for native
 	STA run_arch		; set as current
 ; new approach, reusing 816 code!
 	BNE exec_02			; skip return bank address for 8-bit code
@@ -451,6 +451,10 @@ exec_02:
 ; somehow should set registers, API TBD...
 ; jump to code!
 ; already in full 8-bit mode as assumed
+lda run_arch
+clc
+adc#'!'
+jsr$c0c2
 	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
 
 ; SET_HNDL for single-task systems
@@ -460,7 +464,7 @@ st_hndl:
 ; must check for 02 code in order to get bank from current DBR!
 	LDY run_arch		; check current code
 	BEQ st_sh16		; if native, bank is set
-		PHB					; otherwise get current
+		PHB					; otherwise get current *** find another way for multitasking!
 		PLX					; get it on reg
 		BRA st_shset			; no need to load
 st_sh16:

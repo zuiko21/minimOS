@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b15, should match kernel16.s
+; v0.5.1b16, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170228-1248
+; last modified 20170301-0834
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -69,6 +69,8 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 	ASL					; convert to proper physdev index (2)
 	STA iol_dev			; keep device-index temporarily, worth doing here (3)
+tax;****************
+bra co_lckd
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
 		LDX iol_dev			; retrieve index!
@@ -159,6 +161,8 @@ ci_port:
 ; new MUTEX for CIN
 	ASL					; convert to proper physdev index (2)
 	STA iol_dev			; keep physdev temporarily, worth doing here (3)
+tax;******************
+bra ci_lckdd
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
 	LDX iol_dev			; *restore previous status (3)
@@ -757,12 +761,16 @@ string:
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
 	BEQ str_24b			; 24-bit enabled
+lda#'#'
+jsr$c0c2
 		PLX					; otherwise get stored caller bank...
 		PHX					; ...restore it...
 		STX str_pt+2		; ...and use as default
 str_24b:
 	LDX str_pt+1			; check MSB, beware of allocations after bank boundaries...
 	BNE str_ndp			; not direct page is already OK
+lda#'z'
+jsr$c0c2
 		.al: REP #$20			; *** 16-bit memory ***
 		TDC
 		ADC str_pt+1
@@ -809,6 +817,8 @@ str_phys:
 ; new MUTEX eeeeeeek
 	ASL					; convert to index (2)
 	STA str_dev			; store for indexed call! (3)
+tax;**********
+bra str_lckd
 ; CS not needed for MUTEX as per 65816 API
 str_wait:
 	LDX str_dev			; restore previous status, *new style (3)
@@ -830,7 +840,7 @@ str_loop:
 		PHY					; save just in case COUT destroys it (3)
 		LDA [str_pt], Y		; get character from string, new approach, now 24-bit!
 		BNE str_cont		; not terminated! (3/2)
-			PLA					; otherwise discard saved Y (4) eeeeeeeek
+			PLY					; otherwise discard saved Y (4) eeeeeeeek
 			BRA str_exit		; and go away!
 str_cont:
 		STA io_c			; store output character for COUT (3)
@@ -841,7 +851,9 @@ str_cont:
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
 	INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
-	BRA str_loop		; continue, will check for termination later (3)
+		BNE str_loop		; continue, will check for termination later (3)
+	INC str_pt+2		; in case of bank boundary crossing!
+	BRA str_loop
 str_err:
 	PLX					; discard saved Y while keeping error code eeeeeeeeeek^2
 	JMP cio_unlock		; otherwise return code AND clear MUTEX eeeeeeeeeek^2
@@ -865,14 +877,18 @@ readLN:
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
 	BEQ rl_24b			; 24-bit enabled
+lda#'c'
+jsr$c0c2
 		PHB					; otherwise get (current) caller bank...
 		PLA					; ...get its value...
 		STA str_pt+2			; ...and use as default in pointer
 rl_24b:
 	LDX str_pt+1		; check MSB, beware of allocation after bank boundaries
-        BNE rl_ndp		; not direct page is already OK
-                .al: REP #$20		; *** 16-bit memory ***
-		TDC				; current context
+	BNE rl_ndp			; not direct page is already OK
+lda#'Z'
+jsr$c0c2
+		.al: REP #$20		; *** 16-bit memory ***
+		TDC					; current context
 		ADC str_pt+1		; compute address, C was clear
 		STA str_pt+1		; update pointer
 		.as: SEP #$20		; *** back to 8-bit ***

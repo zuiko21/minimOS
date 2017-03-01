@@ -1,7 +1,7 @@
 ; line editor for minimOS!
-; v0.5rc7
+; v0.5rc8
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170224-1429
+; last modified 20170301-0940
 
 #include "usual.h"
 .(
@@ -539,8 +539,7 @@ lockCin:
 			BCC lci_ok			; already got a valid char!
 		CPY #EMPTY			; if not, this is the only expected error
 		BEQ lockCin			; continue waiting
-			BRK					; abort execution!
-			.asc	"I/O error", 0		; just in case is handled
+			_PANIC("I/O error")	; abort otherwise
 #endif
 lci_ok:
 	LDA io_c			; get char in A
