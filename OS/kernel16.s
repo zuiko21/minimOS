@@ -316,7 +316,7 @@ dr_ok:					; *** all drivers inited ***
 	STA str_pt			; set parameter
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
-//	_KERNEL(STRING)		; print it!
+	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
 
 ; ******************************
@@ -454,7 +454,7 @@ exec_02:
 lda run_arch
 clc
 adc#'!'
-jsr$c0c2
+;jsr$c0c2
 	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
 
 ; SET_HNDL for single-task systems

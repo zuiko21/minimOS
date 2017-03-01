@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b16, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170301-0834
+; last modified 20170301-1029
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -69,8 +69,10 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 	ASL					; convert to proper physdev index (2)
 	STA iol_dev			; keep device-index temporarily, worth doing here (3)
-tax;****************
+
+tax
 bra co_lckd
+
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
 		LDX iol_dev			; retrieve index!
@@ -161,8 +163,6 @@ ci_port:
 ; new MUTEX for CIN
 	ASL					; convert to proper physdev index (2)
 	STA iol_dev			; keep physdev temporarily, worth doing here (3)
-tax;******************
-bra ci_lckdd
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
 	LDX iol_dev			; *restore previous status (3)
@@ -746,7 +746,7 @@ ll_native:
 ; str_pt	= 24b pointer to string (might be altered!) 24-bit ready!
 ;		OUTPUT
 ; C = device error
-;		USES str_dev and whatever the driver takes
+;		USES iol_dev and whatever the driver takes
 ;
 ; cio_lock is a kernel structure
 ; * 8-bit savvy *
@@ -816,12 +816,14 @@ str_abort:
 str_phys:
 ; new MUTEX eeeeeeek
 	ASL					; convert to index (2)
-	STA str_dev			; store for indexed call! (3)
-tax;**********
+	STA iol_dev			; store for indexed call! (3)
+
+tax
 bra str_lckd
+
 ; CS not needed for MUTEX as per 65816 API
 str_wait:
-	LDX str_dev			; restore previous status, *new style (3)
+	LDX iol_dev			; restore previous status, *new style (3)
 	LDA cio_lock, X		; *check whether THAT device in use (4)
 	BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
@@ -844,7 +846,7 @@ str_loop:
 			BRA str_exit		; and go away!
 str_cont:
 		STA io_c			; store output character for COUT (3)
-		LDX str_dev			; get driver pointer position (3)
+		LDX iol_dev			; get driver pointer position (3)
 		JSR (drv_opt, X)	; go at stored pointer (...6)
 			BCS str_err			; return error from driver
 		PLY					; restore index (4)

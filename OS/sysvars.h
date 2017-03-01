@@ -1,6 +1,6 @@
-; minimOS 0.5.1a10 System Variables
+; minimOS 0.5.1a11 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170222-0838
+; last modified 20170301-0954
 
 .bss
 
@@ -37,7 +37,7 @@ mm_sterm	.dsb	2			; 16-bit pointer
 ; *** these should go into driver memory with appropriate ABI??? ***
 #ifdef	MULTITASK
 mm_term		.dsb	MAX_BRAIDS*2
-mm_stbank
+mm_stbank	.dsb	MAX_BRAIDS
 #endif
 
 ; **** new memory management table 150209, revamped 161106 ****
