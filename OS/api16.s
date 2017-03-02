@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b16, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170301-1029
+; last modified 20170302-0823
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -70,8 +70,8 @@ co_phys:
 	ASL					; convert to proper physdev index (2)
 	STA iol_dev			; keep device-index temporarily, worth doing here (3)
 
-tax
-bra co_lckd
+;tax;disable MUTEX for testing purposes
+;bra co_lckd
 
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
@@ -129,8 +129,8 @@ cio_abort:
 cio_pid:
 ; much faster KERNEL(GET_PID)
 	LDA run_pid			; get internally stored PID (4)
-	BNE co_mm			; valid PID, no need to simulate (3/2)
-		INC					; pseudo PID=1 for singletask systems (0/2)
+;	BNE co_mm			; valid PID, no need to simulate (3/2)
+;		INC					; pseudo PID=1 for singletask systems (0/2)
 co_mm:
 	RTS					; all done, X and Y were preserved (6)
 
@@ -818,8 +818,8 @@ str_phys:
 	ASL					; convert to index (2)
 	STA iol_dev			; store for indexed call! (3)
 
-tax
-bra str_lckd
+;tax
+;bra str_lckd
 
 ; CS not needed for MUTEX as per 65816 API
 str_wait:
