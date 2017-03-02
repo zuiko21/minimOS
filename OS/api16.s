@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b16, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170302-0823
+; last modified 20170302-1005
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -761,16 +761,16 @@ string:
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
 	BEQ str_24b			; 24-bit enabled
-lda#'#'
-jsr$c0c2
+;lda#'#'
+;jsr$c0c2
 		PLX					; otherwise get stored caller bank...
 		PHX					; ...restore it...
 		STX str_pt+2		; ...and use as default
 str_24b:
 	LDX str_pt+1			; check MSB, beware of allocations after bank boundaries...
 	BNE str_ndp			; not direct page is already OK
-lda#'z'
-jsr$c0c2
+;lda#'z'
+;jsr$c0c2
 		.al: REP #$20			; *** 16-bit memory ***
 		TDC
 		ADC str_pt+1
@@ -879,16 +879,16 @@ readLN:
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
 	BEQ rl_24b			; 24-bit enabled
-lda#'c'
-jsr$c0c2
+;lda#'c'
+;jsr$c0c2
 		PHB					; otherwise get (current) caller bank...
 		PLA					; ...get its value...
 		STA str_pt+2			; ...and use as default in pointer
 rl_24b:
 	LDX str_pt+1		; check MSB, beware of allocation after bank boundaries
 	BNE rl_ndp			; not direct page is already OK
-lda#'Z'
-jsr$c0c2
+;lda#'Z'
+;jsr$c0c2
 		.al: REP #$20		; *** 16-bit memory ***
 		TDC					; current context
 		ADC str_pt+1		; compute address, C was clear

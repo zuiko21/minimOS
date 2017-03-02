@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v1.0b5
+; v1.0b6
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170224-1432
+; last modified 20170302-1002
 
 
 ; for standalone assembly, set path to OS/
@@ -45,7 +45,7 @@ sts_start:
 ; hope default parameters are kept!
 	STY def_io			; set defaults (hope they remain!!!)
 	STY def_io+1
-	LDX #CPU_TYPE		; from options.h
+	LDX #'B'			; standard CPU type, NOT from options!
 	STX cpu_ll			; set parameter
 	LDY #<sts_thread	; get thread pointer
 	LDA #>sts_thread
@@ -57,16 +57,17 @@ sts_launch:
 			BEQ sts_run			; no more free... or running on a single-task system!
 		INC z_used			; launch counter
 		LDX z_used			; as index
-		STY z_used, X		; store in list, correct ZP opcode
-		LDA #'B'			; regular 65C02
-		STA cpu_ll			; requested parameter for B_EXEC, no LOAD_LINK for setting it!
+		STA z_used, X		; store in list, correct ZP opcode ***already in A, made it 816-savvy!
+;		LDA #'B'			; regular 65C02
+;		STA cpu_ll			; requested parameter for B_EXEC, no LOAD_LINK for setting it!
 ; hopefully defaults are respected!
 		_KERNEL(B_EXEC)		; launch thread!
 	BCC sts_launch		; go for next
 ; this an error condition!
 ; * might free up that reserved braid via SIGKILL *
 		LDX z_used			; retrieve index eeeeeeeeeek
-		LDY z_used, X		; supposedly reserved PID
+		LDA z_used, X		; supposedly reserved PID ***816-savvy
+		TAY
 		LDA #SIGKILL		; this one should be freed
 		STA b_sig			; store signal type
 		_KERNEL(B_SIGNAL)	; send that SIGKILL!
@@ -103,7 +104,8 @@ sts_timeout:
 	LDX z_used			; get index
 sts_terms:
 		_PHX				; keep it!
-		LDY z_used, X		; take PID from list
+		LDA z_used, X		; take PID from list ***816-savvy!
+		TAY
 		LDA #SIGTERM		; will ask to terminate
 		STA b_sig			; store as parameter
 		_KERNEL(B_SIGNAL)	; send signal!
