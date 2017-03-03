@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170301-0822
+; last modified 20170303-0858
 
 ; just in case
 #define		C816	_C816
@@ -436,9 +436,13 @@ exec_st:
 ; could just store the EOR result, see above
 	EOR #'V'			; will be zero only for native
 	STA run_arch		; set as current
+	TYX					; check bank for a moment
+	BNE exec_long		; beyond bank 0 is looking for RTL
 ; new approach, reusing 816 code!
+	TAX					; recheck architecture
 	BNE exec_02			; skip return bank address for 8-bit code
 ; ** alternative to self-generated code for long indirect call **
+exec_long:
 		PHK					; push return bank address, actually zero (3)
 exec_02:
 	PEA sig_kill-1		; push corrected return address (5)

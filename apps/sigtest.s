@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
 ; v1.0b6
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170302-1002
+; last modified 20170302-10102
 
 
 ; for standalone assembly, set path to OS/
@@ -33,20 +33,20 @@ stsSize	=	sts_end - sts_header -256	; compute size NOT including header!
 
 ; *** actual app code starts here ***
 sts_start:
-	LDA #0				; do not bother with STZ
-	STA z_used			; no threads launched this far
-	STA w_rect			; no window size, regular terminal
-	STA w_rect+1
-	LDY #<sts_title		; pointer of title string (filename)
-	LDA #>sts_title
-	STY str_pt			; set parameter
-	STA str_pt+1
-	_KERNEL(OPEN_W)		; get device
+	LDY #0				; do not bother with STZ
+	STY z_used			; no threads launched this far
+;	STA w_rect			; no window size, regular terminal
+;	STA w_rect+1
+;	LDY #<sts_title		; pointer of title string (filename)
+;	LDA #>sts_title
+;	STY str_pt			; set parameter
+;	STA str_pt+1
+;	_KERNEL(OPEN_W)		; get device
 ; hope default parameters are kept!
 	STY def_io			; set defaults (hope they remain!!!)
 	STY def_io+1
-	LDX #'B'			; standard CPU type, NOT from options!
-	STX cpu_ll			; set parameter
+;	LDX #'B'			; standard CPU type, NOT from options!
+;	STX cpu_ll			; set parameter
 	LDY #<sts_thread	; get thread pointer
 	LDA #>sts_thread
 	STY ex_pt			; store parameter
@@ -58,8 +58,8 @@ sts_launch:
 		INC z_used			; launch counter
 		LDX z_used			; as index
 		STA z_used, X		; store in list, correct ZP opcode ***already in A, made it 816-savvy!
-;		LDA #'B'			; regular 65C02
-;		STA cpu_ll			; requested parameter for B_EXEC, no LOAD_LINK for setting it!
+		LDA #'B'			; regular 65C02
+		STA cpu_ll			; requested parameter for B_EXEC, no LOAD_LINK for setting it!
 ; hopefully defaults are respected!
 		_KERNEL(B_EXEC)		; launch thread!
 	BCC sts_launch		; go for next
@@ -233,8 +233,8 @@ sts_prdig:
 
 ; * clean up window and finish * NO RETURN
 sts_clw:
-	LDY def_io			; hope this device number remains!
-	_KERNEL(FREE_W)		; no need to close in full
+;	LDY def_io			; hope this device number remains!
+;	_KERNEL(FREE_W)		; no need to close in full
 	_FINISH
 
 ; *** common strings ***
