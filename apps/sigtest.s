@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v1.0b6
+; v1.0b7
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170302-10102
+; last modified 20170304-1219
 
 
 ; for standalone assembly, set path to OS/
@@ -12,8 +12,14 @@
 #ifndef	NOHEAD
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 sts_header:
-	.asc 0, "mB****", 13					; standard system file wrapper EEEEK
-sts_title:
+	.asc 0, "m"				; minimOS app
+#ifdef	C816
+	.asc "V"				; native 816 macros
+#else
+	.asc CPU_TYPE				; standard 6502 macros
+#endif
+	.asc "****", 13					; future flags
+
 	.asc "SIGtest", 0						; filename
 	.asc "Test app for SIGTERM handling", 0	; description as comment
 ; advance to end of header
@@ -21,7 +27,7 @@ sts_title:
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$6000			; time, 12.00
-	.word	$4A29			; date, 2017/1/9
+	.word	$4A64			; date, 2017/3/4
 
 stsSize	=	sts_end - sts_header -256	; compute size NOT including header!
 
@@ -33,34 +39,22 @@ stsSize	=	sts_end - sts_header -256	; compute size NOT including header!
 
 ; *** actual app code starts here ***
 sts_start:
-	LDY #0				; do not bother with STZ
-	STY z_used			; no threads launched this far
-;	STA w_rect			; no window size, regular terminal
-;	STA w_rect+1
-;	LDY #<sts_title		; pointer of title string (filename)
-;	LDA #>sts_title
-;	STY str_pt			; set parameter
-;	STA str_pt+1
-;	_KERNEL(OPEN_W)		; get device
-; hope default parameters are kept!
-	STY def_io			; set defaults (hope they remain!!!)
-	STY def_io+1
-;	LDX #'B'			; standard CPU type, NOT from options!
-;	STX cpu_ll			; set parameter
-	LDY #<sts_thread	; get thread pointer
-	LDA #>sts_thread
-	STY ex_pt			; store parameter
-	STA ex_pt+1
+	_STZA z_used			; no threads launched this far
 sts_launch:
 		_KERNEL(B_FORK)		; reserve braid
-		TYA					; check result
+		TYA					; check result, make certain Y is kept!
 			BEQ sts_run			; no more free... or running on a single-task system!
 		INC z_used			; launch counter
 		LDX z_used			; as index
 		STA z_used, X		; store in list, correct ZP opcode ***already in A, made it 816-savvy!
 		LDA #'B'			; regular 65C02
 		STA cpu_ll			; requested parameter for B_EXEC, no LOAD_LINK for setting it!
-; hopefully defaults are respected!
+		_STZA def_io			; set defaults
+		_STZA def_io+1
+		LDX #<sts_thread	; get thread pointer
+		LDA #>sts_thread
+		STX ex_pt			; store parameter
+		STA ex_pt+1
 		_KERNEL(B_EXEC)		; launch thread!
 	BCC sts_launch		; go for next
 ; this an error condition!
@@ -75,7 +69,6 @@ sts_launch:
 		DEC z_used			; this was not successful eeeeeeeeek
 		LDX #<stx_err		; get error pointer
 		LDA #>stx_err
-		LDY def_io			; retrieve parent device
 		JSR sts_print		; print it
 		JMP sts_timeout		; do not wait any longer!!!
 ; wait a few seconds with the threads running...
@@ -84,14 +77,13 @@ sts_run:
 	BNE sts_mm			; some of them, multitasking is active
 		LDX #<stx_sts		; single-task system error pointer
 		LDA #>stx_sts
-		LDY def_io			; retrieve parent device
 		JSR sts_print		; print error message
-		JMP sts_clw			; clean up and we are done
+		_FINISH			; we are done
 sts_mm:
 	_KERNEL(UPTIME)		; otherwise check time
 	LDA up_sec			; get current second
-	CLC
-	ADC #3				; up to three seconds more
+;	CLC
+	ADC #3				; up to three or four seconds more
 sts_wait:
 		PHA					; keep destiny!
 		_KERNEL(B_YIELD)	; give CPU time
@@ -118,20 +110,20 @@ sts_shut:
 	LDX z_used			; get task list index
 sts_cont:
 		LDY z_used, X		; get its PID
-		_PHX				; push X
+		_PHX				; save index
 ; here was a stray PHA eeeeeeeeeeeek
 		_KERNEL(B_STATUS)	; check running state
-		_PLX				; retrieve X
-		CPY #BR_RUN			; is it running?
+		_PLX				; retrieve index
+		TYA				; no longer alone eeeeeeek
+		CMP #BR_RUN			; is it running?
 ; might print some progress, including X value for reference...
 			BEQ sts_shut		; still some running
 		DEX					; otherwise check next in list
 		BNE sts_cont		; until the list is exhausted
 	LDX #<stx_bye		; end-of-app message
 	LDA #>stx_bye
-	LDY def_io			; retrieve parent device
 	JSR sts_print		; print it
-	JMP sts_clw			; clean up and finish
+	_FINISH
 
 ; ***********************************
 ; ** code for each launched thread **
@@ -162,7 +154,7 @@ sts_loop:
 				INX					; internal counter, 256 times*10 clocks
 				BNE sts_loop
 			DEY					; and another one, 12 iterations
-			BNE sts_loop		; will take about 30.7 ms
+			BNE sts_loop		; will take about 30.8 ms
 		SEC
 		SBC #1				; decrement speed index
 		BEQ sts_ext			; until all done
@@ -172,7 +164,7 @@ sts_loop:
 		LDA #>stx_alive
 		JSR sts_axstr		; print it
 		BCC sts_timer		; stay forever until SIGTERM arrives (or a strange I/O error)
-	_PANIC("{I/O}")		; something went VERY wrong
+	_FINISH				; something went wrong, just end quietly
 sts_rcv:
 	JSR sts_pid			; print PID...
 	LDX #<stx_termrc	; ...and final string
@@ -189,10 +181,8 @@ sts_sigterm:
 ; *** useful routines ***
 ; * print string pointed by A.X *
 sts_axstr:
-; this will print at default (parent) device
-	LDY #0				; default device
 sts_print:
-; this will assume own device in Y
+	LDY #0				; default device
 	STX str_pt			; set parameter
 	STA str_pt+1
 	_KERNEL(STRING)		; print
@@ -200,6 +190,10 @@ sts_print:
 
 ; * get PID and print it in decimal *
 sts_pid:
+	LDA #'#'		; radix
+	STA io_c		; parameter
+	LDY #0			; default device
+	_KERNEL(COUT)		; print #
 	_KERNEL(GET_PID)	; get actual braid number
 	TYA					; into A
 ; ...continue to convert to decimal and print PID, return to whatever caller
@@ -220,7 +214,7 @@ sts_pr100:
 	PHA					; save LSD for a moment
 	TXA					; get MSD
 	BEQ sts_units		; only one cipher
-	JSR sts_prdig		; print as ASCII
+		JSR sts_prdig		; print as ASCII
 sts_units:
 	PLA					; retrieve LSD
 sts_prdig:
@@ -231,29 +225,19 @@ sts_prdig:
 	_KERNEL(COUT)		; print it
 	RTS
 
-; * clean up window and finish * NO RETURN
-sts_clw:
-;	LDY def_io			; hope this device number remains!
-;	_KERNEL(FREE_W)		; no need to close in full
-	_FINISH
-
 ; *** common strings ***
 stx_intro:
-	.asc	" started...", 13, 0		; begin-of-thread message
+	.asc	" started.", 13, 0		; begin-of-thread message
 stx_alive:
-	.asc	" alive", 13, 0				; message while running
+	.asc	" alive...", 13, 0				; message while running
 stx_termrc:
 	.asc	" received SIGTERM", 13, 0	; SIGTERM received
 stx_err:
-	.asc	"B_EXEC error!", 13, 0		; error at launch
+	.asc	"B_EXEC error!!!", 13, 0		; error at launch
 stx_sts:
 	.asc	"No multitasking!", 13, 0	; could not launch anything
 stx_bye:
 	.asc	"All done!", 13, 0			; no threads remain
 
-#ifdef	NOHEAD
-sts_title:
-	.asc "SIGtest", 0					; headerless builds
-#endif
 sts_end:				; *** END OF FILE for size computation ***
 .)

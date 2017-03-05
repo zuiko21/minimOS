@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b16, should match kernel16.s
+; v0.5.1b17, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170302-1005
+; last modified 20170305-1814
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -84,7 +84,7 @@ co_loop:
 		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		BRA co_loop			; try again! (3)
 co_lckd:
-	JSR cio_pid			; get ours in A, corrected for singletask systems!
+	LDA run_pid			; get ours in A, faster!
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper physdev index in X
@@ -122,17 +122,6 @@ cio_abort:
 	PLB					; restore DBR!!!
 	BRA cio_setc		; direct notify error
 
-; ** cio_pid **
-; return ASAP running (corrected) PID of this task, uses new SET_CURR interface
-; might become inline as is much smaller and faster code!
-; * needs 8-bit memory *
-cio_pid:
-; much faster KERNEL(GET_PID)
-	LDA run_pid			; get internally stored PID (4)
-;	BNE co_mm			; valid PID, no need to simulate (3/2)
-;		INC					; pseudo PID=1 for singletask systems (0/2)
-co_mm:
-	RTS					; all done, X and Y were preserved (6)
 
 ; *****************************
 ; *** CIN,  get a character ***
@@ -170,7 +159,7 @@ ci_loop:
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
-		JSR cio_pid			; who am I?
+		LDA run_pid			; who am I?
 		CMP cio_lock, X		; *was it me who locked? (4)
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
@@ -180,7 +169,7 @@ ci_loop:
 		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		BRA ci_loop			; try again! (3)
 ci_lckd:
-	JSR cio_pid			; who is me?
+	LDA run_pid			; who is me?
 	STA cio_lock, X		; *reserve this (4)
 ci_lckdd:
 ; 65816 API runs on interrupts off, thus no explicit CS exit
@@ -761,22 +750,18 @@ string:
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
 	BEQ str_24b			; 24-bit enabled
-;lda#'#'
-;jsr$c0c2
 		PLX					; otherwise get stored caller bank...
 		PHX					; ...restore it...
 		STX str_pt+2		; ...and use as default
 str_24b:
-	LDX str_pt+1			; check MSB, beware of allocations after bank boundaries...
+	.al: REP #$20			; *** 16-bit memory ***
+	LDA str_pt+1			; check MSB, beware of bank!
 	BNE str_ndp			; not direct page is already OK
-;lda#'z'
-;jsr$c0c2
-		.al: REP #$20			; *** 16-bit memory ***
 		TDC
 		ADC str_pt+1
 		STA str_pt+1
-		.as: SEP #$20			; *** back to 8-bit ***
 str_ndp:
+	.as: SEP #$20			; *** back to 8-bit ***
 ; proceed
 	TYA					; set flags upon devnum (2)
 	BNE str_port		; not default (3/2)
@@ -818,9 +803,6 @@ str_phys:
 	ASL					; convert to index (2)
 	STA iol_dev			; store for indexed call! (3)
 
-;tax
-;bra str_lckd
-
 ; CS not needed for MUTEX as per 65816 API
 str_wait:
 	LDX iol_dev			; restore previous status, *new style (3)
@@ -832,7 +814,7 @@ str_wait:
 		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
 		BRA str_wait		; try again! (3)
 str_lckd:
-	JSR cio_pid			; who am I?
+	LDA run_pid			; who am I?
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; continue with mutually exclusive COUT code
@@ -879,22 +861,18 @@ readLN:
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
 	BEQ rl_24b			; 24-bit enabled
-;lda#'c'
-;jsr$c0c2
 		PHB					; otherwise get (current) caller bank...
 		PLA					; ...get its value...
 		STA str_pt+2			; ...and use as default in pointer
 rl_24b:
-	LDX str_pt+1		; check MSB, beware of allocation after bank boundaries
+	.al: REP #$20		; *** 16-bit memory ***
+	LDA str_pt+1		; check MSB, beware of bank anyway
 	BNE rl_ndp			; not direct page is already OK
-;lda#'Z'
-;jsr$c0c2
-		.al: REP #$20		; *** 16-bit memory ***
 		TDC					; current context
 		ADC str_pt+1		; compute address, C was clear
 		STA str_pt+1		; update pointer
-		.as: SEP #$20		; *** back to 8-bit ***
 rl_ndp:
+	.as: SEP #$20		; *** back to 8-bit ***
 	STY rl_dev		; preset device ID!
 	STZ rl_cur		; reset variable
 rl_l:
@@ -954,10 +932,9 @@ set_fg:
 	.xs: SEP #$10		; *** 8-bit indexes ***
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
-	LDX #0				; this will work on bank 0 (2)
-	PHX					; into stack (3)
+	PHK					; bank zero into stack (3)
 	PLB					; set DBR! do not forget another PLB upon end! (4)
-; proceed	
+; proceed
 	LDA zpar			; take whole word
 		BEQ fg_dis			; if zero, disable output
 	LDX VIA+ACR		; get current configuration byte
@@ -1010,8 +987,7 @@ shutdown:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; switch DBR as it accesses some kernel data!
 	PHB					; eeeeeeeeek
-	LDA #0				; this will work on bank 0
-	PHA					; into stack
+	PHK					; bank 0 into stack
 	PLB					; set DBR! do not forget another PLB upon end!
 ; proceed
 	CPY #PW_CLEAN		; from scheduler only!
@@ -1108,7 +1084,7 @@ sd_done:
 ;		OUTPUT
 ; Y = PID (0 means either singletask system or no more available braids)
 ;
-; uses common code from GET_PID
+; uses common code
 ; * 8-bit savvy * verify driver anyway
 
 b_fork:
@@ -1121,12 +1097,12 @@ b_fork:
 ; *** B_EXEC, launch new loaded process ***
 ; *****************************************
 ;		INPUT
-; Y			= PID
+; Y			= PID (0 for singletask only)
 ; ex_pt		= 24b execution pointer (was z2L)
 ; cpu_ll	= architecture
 ; def_io	= 16b default std_in (LSB) & stdout (MSB)
 ;
-; uses common code from GET_PID
+; uses common code
 ; no need to indicate XIP or not! will push start address at bottom of stack anyway
 ; API still subject to change... (rendez-vous mode TBD)
 ; * 8-bit savvy * verify driver anyway
@@ -1142,11 +1118,9 @@ b_exec:
 ; **************************************************
 ;		INPUT
 ; b_sig	= signal to be sent
-; Y		= PID
-;		OUTPUT
-; C = invalid PID
+; Y		= PID (0 means TO ALL)
 ;
-; uses common code from GET_PID
+; uses common code
 ; * 8-bit savvy * verify driver anyway
 
 signal:
@@ -1164,26 +1138,11 @@ signal:
 ; Y = flags ***TBD
 ; C = invalid PID
 ;
-; uses common code from GET_PID
-; * 8-bit savvy * verify driver anyway
+; * 8-bit savvy *
 
 status:
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDX #MM_STATUS		; subfunction code
-	BRA sig_call		; go for the driver
-
-
-; **************************************
-; *** GET_PID, get current braid PID ***
-; **************************************
-;		OUTPUT
-; Y = PID (0 means singletask system)
-; * 8-bit savvy * verify driver anyway
-; note that there is a faster, unsafer version for internal kernel use (run_pid)
-
-get_pid:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_PID			; subfunction code
 ; * unified calling procedure, get subfunction code in X * new faster interface 20161102
 sig_call:
 ; new code is 6 bytes, 10 clocks! old code was 8 bytes, 13 clocks
@@ -1191,16 +1150,30 @@ sig_call:
 	JMP (drv_opt)		; as will be the first one in list, best to use non-indexed indirect
 
 
+; **************************************
+; *** GET_PID, get current braid PID ***
+; **************************************
+;		OUTPUT
+; Y = PID (0 means singletask system)
+; * 8-bit savvy * fastest direct method
+
+get_pid:
+	.as: .xs: SEP #$30	; *** standard register size ***
+	LDA @run_pid			; fastest way, long addressing
+	TAY					; as output value
+	_EXIT_OK
+
+
 ; **************************************************************
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
 ; **************************************************************
 ;		INPUT
-; Y		= PID
+; Y		= PID (0 means to myself)
 ; ex_pt = 24b SIGTERM handler routine (ending in RTI!)
 ;		OUTPUT
 ; C = bad PID
 ;
-; uses common code from GET_PID
+; uses common code
 ; revise as might be processed without driver!
 ; * 8-bit savvy * verify driver anyway
 
@@ -1215,7 +1188,7 @@ set_handler:
 ; *********************************************
 ; (no interface needed)
 ;
-; uses common code from GET_PID
+; uses common code
 ; * 8-bit savvy * verify driver anyway
 
 yield:
@@ -1234,15 +1207,12 @@ yield:
 
 ts_info:
 	.xs: SEP #$10			; *** standard index size ***
-#ifdef	MULTITASK
 	.al: REP #$20			; *** 16-bit memory ***
 	LDA #tsi_str			; pointer to proposed stack frame
 	STA ex_pt				; store output word
+;	STZ ex_pt+2				; clear if needed
 	LDY #tsi_end-tsi_str	; number of bytes
 	_EXIT_OK
-#else
-	_ERR(UNAVAIL)			; non-supporting kernel!
-#endif
 
 
 ; *********************************************
@@ -1259,14 +1229,13 @@ release:
 	.as: .xs: SEP #$30	; *** 8-bit sizes ***
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek
-	LDA #0				; this will work on bank 0
-	PHA					; into stack
+	PHK					; bank 0 into stack
 	PLB					; set DBR! do not forget another PLB upon end!
 ; proceed
 ; ** not sure if I really need to save this value... **
 	LDX run_arch		; "current" (?) architecture
 	PHX					; save it!
-	STA run_arch		; clear this to make it 24-bit enabled (was zero)
+	STZ run_arch		; clear this to make it 24-bit enabled
 ; continue as usual
 	TYA					; as no CPY abs,X
 	XBA					; exchange...
@@ -1318,6 +1287,7 @@ set_curr:
 
 
 ; ****** space for deprecated functions ******
+
 ; *** SU_POKE, write to protected addresses ***
 ; WILL be deprecated, not sure if of any use in other architectures
 ; Y <- value, zpar <- addr
