@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b17, should match kernel16.s
+; v0.5.1b18, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170306-0820
+; last modified 20170306-1323
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -1274,12 +1274,15 @@ rls_oth:
 ;		INPUT
 ; Y			= PID
 ; cpu_ll	= architecture (0=65816, 2=Rockwell, 4=65C02, 6=NMOS)
+;		OUTPUT
+; Y			= preset PID (must respect it!)
 ; affects internal sysvars run_pid & run_arch
 ; * 8-bit savvy *
 
 set_curr:
 	.as: .xs: SEP #$30	; *** 8-bit sizes ***
-	STY @run_pid		; store PID into kernel variables (5)
+	TYA					; eeeeek, no long STY (2)
+	STA @run_pid		; store PID into kernel variables (5)
 	LDA cpu_ll			; get architecture from multitasking driver (3)
 	STA @run_arch		; and store it for kernel use (5)
 	_EXIT_OK

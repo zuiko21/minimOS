@@ -7,7 +7,6 @@ mm_pid		.byt	0				; current PID
 mm_flags	.dsb	MAX_BRAIDS		; status list, might be integrated with mm_treq???
 ; no longer using mm_sfsiz & mm_stack, as per new TS_INFO output format!
 ; but again gets mm_term here, together with specific mm_bank
-; *** these should go into driver memory with appropriate ABI??? ***
 mm_term		.dsb	MAX_BRAIDS*2
 mm_stbank	.dsb	MAX_BRAIDS
 

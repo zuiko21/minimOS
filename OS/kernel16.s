@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b13
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170306-1231
+; last modified 20170306-1308
 
 ; just in case
 #define		C816	_C816
@@ -385,9 +385,7 @@ st_tdlist:
 ; diverse driver data
 ; these tables could be suppressed via the EOR on CPU code
 ;arch_tab:
-;	.asc	"NBRV"		; 65xx codes are NMOS, CMOS, Rockwell & 65816
-;run_tab:
-;	.byt	6, 4, 2, 0	; easier computation
+;	.asc	"VRBN"		; 65xx codes are 65816, Rockwell, CMOS & NMOS (new order)
 
 ; ** single-task management routines **
 ; called from API, make certain about DBR or use long addressing!!!
@@ -425,7 +423,7 @@ exec_st:
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 ; set run_arch as per architecture!
-; might just do EOR #'V' to detect 65816!
+; * might just do EOR #'V' to detect 65816! *
 ;	LDX #0				; reset index
 ;arch_loop:
 ;		CMP @arch_tab, X	; compare with list item
@@ -435,10 +433,12 @@ exec_st:
 ;		BNE arch_loop		; still to go
 ;	PANIC("{code}")	; cannot execute this! should be a mere error
 ;arch_ok:
-;	LDA @run_tab, X		; get equivalent code
+;	TXA					; make equivalent code from index!
+;	ASL					; two times to make it SIGterm flag savvy!
+; ...and store at run_arch
 ; could just store the EOR result, see above
-	EOR #'V'			; will be zero only for native
-	STA run_arch		; set as current
+	EOR #'V'			; ** will be zero only for native **
+	STA @run_arch		; set as current, note long addressing eeeeeeek
 	TYX					; check bank for a moment
 	BNE exec_long		; beyond bank 0 is looking for RTL
 ; new approach, reusing 816 code!

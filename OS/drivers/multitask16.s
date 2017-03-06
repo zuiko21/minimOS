@@ -1,14 +1,14 @@
 ; software multitasking module for minimOS·16
 ; v0.5.1a14
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170220-0952
+; last modified 20170306-1308
 
 ; ********************************
 ; *** multitasking driver code ***
 ; ********************************
 
 ; *** set some reasonable number of braids ***
--MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
+MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 #ifndef		HEADERS
 #include "usual.h"
@@ -35,7 +35,7 @@
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a13", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.5.1a14", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
 mm_init:
@@ -71,6 +71,9 @@ mm_rsp:
 	INX					; default task (will be 1)
 	STX mm_pid			; set as current PID
 ; do NOT set current SP as initialisation will crash! startup via scheduler will do anyway
+	TXY					; current temporary PID
+	STZ cpu_ll			; native 65816, of course
+	_KERNEL(SET_CURR)	; avoids possible crash upon shell startup
 ; *** shutdown code placeholder *** does not do much
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
@@ -127,7 +130,7 @@ mm_switch:
 ; store previous status
 	STX mm_pid			; will need to add that
 ; keep stack pointer!
-	TSX					; get index MSB (2)
+	TSX					; get index LSB (2)
 	STX sys_sp			; store as usual (3)
 ; go into new braid
 	LDA #>mm_context-256	; get pointer to direct pages eeeeeeeeeeek
@@ -144,34 +147,56 @@ mm_switch:
 	LDA sys_sp			; restored value (3) *** should add LSB if not page-aligned?
 	TCS					; stack pointer updated!
 ; now it's time to check whether SIGTERM was sent! new 20150611
-	LDX mm_pid			; get current PID again (4)
-	LDA mm_flags-1, X	; had it a SIGTERM request? (4)
+	LDY mm_pid			; get current PID again (4) new reg
+	LDA mm_flags-1, Y	; had it a SIGTERM request? (4)
+; ...but first set running arch & PID!
+	PHA					; keep it for arch bits! (2)
+	AND #%00000110		; mask for CPU-type bits (2)
+	STA cpu_ll			; proper CPU code (3)
+	_KERNEL(SET_CURR)	; update system variables, keeps Y which already had the PID
+	PLA					; but first restore full flags (4)
+; continue SIGTERM checking
 	LSR					; easier check of bit 0! (2)
-	BCS mm_sigterm		; process it now! (2/3)
+		BCS mm_sigterm		; process it now! (2/3)
 mm_rts:
-		RTS					; all done, continue ISR
+	RTS					; all done, continue ISR
 
 ; the actual SIGTERM routine execution, new interface 161024, always ending in RTI
+; needs older SHIFTED flags in A, PID in Y!!!
 mm_sigterm:
 	ASL					; ...and restore value with clear flag!
-	STA mm_flags-1, X	; EEEEEEEK! clear received TERM signal, new format 20161117
+	STA mm_flags-1, Y	; EEEEEEEK! clear received TERM signal, new format 20161117
 ; stack return address upon end of SIGTERM handler
 	PHK					; push program bank as required by RTI in 816
 	PEA mm_rts			; correct return address after SIGTERM handler RTI
 	PHP					; eeeeeeeeeeeeeeeeeek
 ; 24-bit indexed jump means the use of RTI
-	LDA mm_stbnk-1, X	; now get bank address
-	PHA					; needed for RTI at the end of the handler
-	TXA					; addressed braid (2)
-	ASL					; two times (2)mms_suicide
+; original approach, 15b, 27t
+	LDA mm_stbnk-1, Y	; now get bank address (4)
+	PHA					; needed for RTI at the end of the handler (3)
+	TYA					; addressed braid (2)
+	ASL					; two times for use as index (2)
 ; in case a table of 24-bit pointers is used, do the following
 ; STX temp, CLC, ADC temp will multiply older X by three!
 ; then push the three bytes in a row (do not do the previous PHA from mm_stbnk)
 	TAX					; proper offset in handler table (2)
-	LDA mm_term-1, X	; get MSB
-	PHA					; and push it
-	LDA mm_term-2, X	; same for LSB
+	LDA mm_term-1, X	; get MSB (4)
+	PHA					; and push it (3)
+	LDA mm_term-2, X	; same for LSB (4+3)
 	PHA
+; sample 24-bit code is 20b, 35t
+;	TYA					; operate with PID (2)
+;	STA systmp			; keep original (3)
+;	ASL					; x2 (2)
+;	CLC
+;	ADC systmp			; x3 (2+3)
+;	TAY					; use as new index (2)
+;	LDA mm_term-1, Y	; get one byte (4)
+;	PHA					; push it (3)
+;	LDA mm_term-2, Y	; get one byte (4)
+;	PHA					; push it (3)
+;	LDA mm_term-3, Y	; get one byte (4)
+;	PHA					; push it (3)
 	PHP					; as needed by RTI
 	RTI					; actual jump, will return to an RTS and continue ISR
 
@@ -305,7 +330,19 @@ mmx_sfp:
 	PLA					; this was sysout & sys_in, little endian
 	STA std_in			; assume sys_in is the LSB!!!
 	.as: SEP #$20		; *** back to 8-bit ***
-	LDA #BR_RUN			; will enable task
+; set architecture into flags!
+	LDX #0				; reset index
+arch_loop:
+		CMP arch_tab, X		; compare with list item
+			BEQ arch_ok			; detected!
+		INX					; next
+		CPX #4				; supported limit?
+		BNE arch_loop		; still to go
+	_DR_ERR(INVALID)	; cannot execute this! should be a mere error
+arch_ok:
+	TXA					; make equivalent code from index!
+	ASL					; two times to make it SIGterm flag savvy!
+	ORA #BR_RUN			; will enable task
 	STA mm_flags-1, Y	; Y holds desired PID
 ; switch back to original context!!! eeeeeeeeeek
 	TYA					; current PID
@@ -371,15 +408,15 @@ mms_kill:
 	STA ma_pt			; store as zp parameter
 	LDY $2, X			; 6800-like indexing! gets extra byte
 	.xs: .as: SEP #$30	; *** back to 8-bit ***
-	STA ma_pt+2			; store bank byte
-; another version is 16b/33t
-;	XBA				; that was MSB
-;	LDA #0			; make it point at whole stack space *** assume page-aligned!!!
+	STY ma_pt+2			; store bank byte eeeeeeek
+; another version is 16b/33t eeeeeeeek
+;	XBA					; that was MSB
+;	LDA #0				; make it point at whole stack space *** assume page-aligned!!!
 ;	PHD					; keep direct pointer!
 ;	TCD					; temporarily at stack space!
-;	REP #$20	; *** 16-bit memory ***
-;	LDA #$FD				; get word, note offset
-;	LDY #$FF				; get bank
+;	REP #$20			; *** 16-bit memory ***
+;	LDA $FD				; get word, note offset eeeeeeek
+;	LDY $FF				; get bank
 ;	PLD					; restore direct page
 ;	STA ma_pt			; store word as zp parameter
 ;	STY ma_pt+2			; store bank as zp parameter
@@ -428,7 +465,7 @@ mm_status:
 	TAY					; return value (2) *** might want to write it somewhere for faster BIT
 	_DR_OK
 
-; get current PID
+; get current PID **might be deprecated as directly handled in API
 mm_getpid:
 	LDY mm_pid			; get PID (4)
 	_DR_OK
@@ -469,6 +506,10 @@ mm_nreq:
 ; placeholder for unimplemented features
 mm_abort:
 	_DR_ERR(EMPTY)
+
+; *********************************
+; *** diverse data and pointers ***
+; *********************************
 
 ; *** subfuction addresses table ***
 mm_funct:
