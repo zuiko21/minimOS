@@ -1,7 +1,6 @@
-; minimOS 0.5.1a11 System Variables
+; minimOS 0.5.1a12 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170301-0954
-
+; last modified 20170306-1211
 .bss
 
 ; **** I/O management ****
@@ -34,11 +33,7 @@ mm_sterm	.dsb	3			; including bank address just after the pointer
 #else
 mm_sterm	.dsb	2			; 16-bit pointer
 #endif
-; *** these should go into driver memory with appropriate ABI??? ***
-#ifdef	MULTITASK
-mm_term		.dsb	MAX_BRAIDS*2
-mm_stbank	.dsb	MAX_BRAIDS
-#endif
+; no longer mm_term et al here!
 
 ; **** new memory management table 150209, revamped 161106 ****
 #ifndef		LOWRAM
@@ -69,6 +64,7 @@ run_pid		.byt	0	; current PID running for easy kernel access, will be set by new
 ; ********************************
 #ifdef	C816
 run_arch	.byt	0	; current braid CPU type, 0=65816, 2=Rockwell, 4=65C02, 6=NMOS
+; or maybe any other format (EOR #'V'), just make sure native 65816 is 0! (Rokcwell
 #endif
 
 ; ** driver-specific system variables come after this one, in main source **

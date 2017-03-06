@@ -1,6 +1,6 @@
-; minimOS 0.5.1a8 API/ABI
+; minimOS 0.5.1a9 API/ABI
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170222-0840
+; last modified 20170306-1215
 
 ; *************************************************************
 ; *************************************************************
@@ -139,8 +139,8 @@ MM_FORK		=  0	; reserve a free braid (will go BR_STOP for a moment)
 MM_EXEC		=  2	; get code at some address running into a paused braid (will go BR_RUN)
 MM_YIELD	=  4	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
 MM_SIGNAL	=  6	; send some signal to a braid
-MM_STATUS	=  8	; get execution flags for a braid, new 20150413
-MM_PID		= 10	; get current PID, new 20150413
+MM_STATUS	=  8	; get execution flags for a braid, new 20150413 *** might include arch info!
+MM_PID		= 10	; get current PID, new 20150413 *** might be depercated
 MM_HANDL	= 12	; set TERM handler, new 20150416
 MM_PRIOR	= 14	; priorize braid, jump to it at once, really needed? new 20150413, renumbered 20150416
 
@@ -161,10 +161,8 @@ SIGCONT		=  6	; resume a previously paused braid, will go BR_RUN
 ; MAX_BRAIDS should be system variable, as defined by firmware and/or multitasking driver
 ; default updateable value = 1 (no multitasking)
 ; if defined in firmware, think about a gestalt-like function for reading/setting it!
-
--MAX_BRAIDS	=	1	; no multitasking *** should be redefined later ***
-
 ; QUANTUM_COUNT no longer defined here
+
 ; *********************************************************
 ; ** power control values, valid for kernel and firmware **
 ; *********************************************************

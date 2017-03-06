@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5rc8
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170301-0940
+; last modified 20170306-1158
 
 #include "usual.h"
 .(
@@ -27,7 +27,7 @@
 linedHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"mB"			; minimOS 65C02 app!
+	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", CR		; some flags TBD
 
 ; *** filename and optional comment ***

@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
 ; v1.0b7
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170304-1219
+; last modified 20170306-1159
 
 
 ; for standalone assembly, set path to OS/
@@ -12,12 +12,7 @@
 #ifndef	NOHEAD
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 sts_header:
-	.asc 0, "m"				; minimOS app
-#ifdef	C816
-	.asc "V"				; native 816 macros
-#else
-	.asc CPU_TYPE				; standard 6502 macros
-#endif
+	.asc 0, "m", CPU_TYPE			; minimOS app
 	.asc "****", 13					; future flags
 
 	.asc "SIGtest", 0						; filename

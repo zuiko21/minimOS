@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b12
+; v0.5.1b13
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170303-0858
+; last modified 20170306-1231
 
 ; just in case
 #define		C816	_C816
@@ -19,7 +19,7 @@
 #ifndef	HEADERS
 #include "usual.h"
 #ifdef	DOWNLOAD
-* = $0600				; safe address for patchable 2 kiB systems, change if required
+* = $0400				; safe address for patchable 2 kiB systems, change if required
 #else
 ; standalone kernels need to keep track of drivers_ad label!
 .data
@@ -36,17 +36,12 @@ kern_head:
 	.asc	"mV"			; executable for testing TBD
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
-#endif
-
-; keep version string wven if no headers present!
 kern_splash:
-	.asc	"minimOS-16 0.5.1b12", 0	; version in comment
-
-#ifndef	NOHEAD
+	.asc	"minimOS-16 0.5.1b13", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$4800	; time, 9.00
-	.word	$4A54	; date, 2017/2/20
+	.word	$63C0	; time, 12.30
+	.word	$4A66	; date, 2017/3/6
 
 kern_siz = kern_end - kern_head - 256
 
@@ -117,6 +112,9 @@ ram_init:
 ; 16-bit revamp 20161013
 
 	LDX #0				; reset driver index (2)
+; clear some other bytes
+	STX run_arch		; assume native 65816
+	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
 	STX sd_flag			; *** this is important to be clear (PW_STAT) or set as proper error handler
 	STX dpoll_mx		; reset all indexes (4+4+4)
 	STX dreq_mx
@@ -296,10 +294,7 @@ dr_ok:					; *** all drivers inited ***
 	LDA #sig_kill		; get default routine full address, we are still in 16-bit memory
 	STA mm_sterm		; store in new system variable
 	LDX #0				; beware of 16-bit memory!
-	STX mm_sterm+2		; clear default bank!!!
-; clear some other bytes
-	STX run_pid			; new 170222, set default running PID
-	STX run_arch		; assume native 65816
+	STX mm_sterm+2		; clear default bank!!! just before pointer for easy 24-bit addressing
 
 ; startup code
 
@@ -362,7 +357,15 @@ debug:
 #include "api16.s"
 #endif
 
+; in case of no headers, keep splash ID string
+#ifdef	NOHEAD
+kern_splash:
+	.asc	"minimOS-16 0.5.1b13", 0	; version in comment
+#endif
+
+; *****************************************************
 ; *** default single-task driver, new here 20161109 ***
+; *****************************************************
 ; only to be installed if no multitasking driver already present! 20161115
 #ifndef	MULTITASK
 st_taskdev:
@@ -381,10 +384,10 @@ st_tdlist:
 
 ; diverse driver data
 ; these tables could be suppressed via the EOR on CPU code
-arch_tab:
-	.asc	"NBRV"		; 65xx codes are NMOS, CMOS, Rockwell & 65816
-run_tab:
-	.byt	6, 4, 2, 0	; easier computation
+;arch_tab:
+;	.asc	"NBRV"		; 65xx codes are NMOS, CMOS, Rockwell & 65816
+;run_tab:
+;	.byt	6, 4, 2, 0	; easier computation
 
 ; ** single-task management routines **
 ; called from API, make certain about DBR or use long addressing!!!
@@ -455,10 +458,6 @@ exec_02:
 ; somehow should set registers, API TBD...
 ; jump to code!
 ; already in full 8-bit mode as assumed
-lda run_arch
-clc
-adc#'!'
-;jsr$c0c2
 	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
 
 ; SET_HNDL for single-task systems

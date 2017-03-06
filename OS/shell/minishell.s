@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5b10
-; last modified 20170224-0837
+; last modified 20170306-1201
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -22,7 +22,7 @@
 shellHead:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"mB"			; minimOS 65C02 app!
+	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
