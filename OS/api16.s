@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b17, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170305-1814
+; last modified 20170306-0820
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -215,7 +215,7 @@ ci_nokill:
 ci_signal:
 		STA b_sig			; set signal as parameter
 ; much faster KERNEL(GET_PID)
-		JSR cio_pid			; internal PID in A
+		LDA run_pid			; internal PID in A
 		TAY					; as needed by B_SIGNAL
 ; faster KERNEL(B_SIGNAL)
 		LDX #MM_SIGNAL		; internal multitasking index (2)
