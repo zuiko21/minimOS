@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.5.1b8, unified with kernel 20160412
+; v0.5.1b9, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170216-1049
+; last modified 20170307-1220
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -88,12 +88,15 @@ drv_end:		; for easier size computation
 ; *********************************************
 ; with their own headers, these must be page aligned!!!
 #include "../apps/ls.s"
+
+; select specific pmap version according to architecture!
 #ifdef C816
 #include "../apps/pmap16.s"
 #else
 #include "../apps/pmap.s"
 #endif
-#include "../apps/lined.s"
+
+;#include "../apps/lined.s"
 
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
@@ -156,3 +159,8 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; *** hardware-dependent firmware ***
 ; ***********************************
 #include "firmware/ARCH.s"
+
+; *******************************************
+; *** SPECIAL TEST, soft after kernel ROM ***
+; *******************************************
+#include "../apps/lined.s"

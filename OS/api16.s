@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b18, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170306-1323
+; last modified 20170307-1230
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -715,7 +715,7 @@ ll_valid:
 ; ***CPU-type is compatible but has 8-bit code, should install 64-byte wrapper at end of bank, or limit to bank zero!
 	LDX rh_scan+2			; check THIRD byte, still not supported in 8-bit code
 	BEQ ll_native			; still in bank 0, OK to proceed
-		_ERR(FULL)				; somewhat confusing error...
+		_ERR(INVALID)				; somewhat confusing error...
 ll_native:
 ; either is 65816 code or 02 into bank zero
 	STA cpu_ll			; set CPU type, now will not matter whether XIP or not!

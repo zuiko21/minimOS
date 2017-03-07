@@ -192,7 +192,7 @@ byte MEM_readMem(word32 address, word32 timestamp, word32 flags)
 
   if( (flags & EMUL_PIN_SYNC) == 0 ){
     // not an opcode fetch so no further processing
-//    return addressSpace[address];
+    return addressSpace[address];
   }
 
   // The remainder handles opcode fetches
@@ -297,7 +297,7 @@ void LoadROMs( void )
         {   
             fread( &addressSpace[ loadAddress.I ], 1, 1, fh );
             // printf( ".M %04lX %02lX\n", loadAddress.I, addressSpace[ loadAddress.I ] );
-            loadAddress.I = (loadAddress.I+1) & 0xFFFF;
+            loadAddress.I = (loadAddress.I+1);	// & 0xFFFF;	//allow over 64k
         }   
 
         fclose( fh );
@@ -357,7 +357,7 @@ static int load(word32 address, const char *path)
 {
   FILE  *file= 0;
   int    count= 0;
-  size_t max= 0x10000 - address;
+  size_t max= 0x100000 - address;	// 16x original value!!!
   if (!(file= fopen(path, "rb")))
     return 0;
   fprintf(stderr, "loading ROM file %s\n", path);
