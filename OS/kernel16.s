@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b13
+; v0.5.1b14
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170306-1308
+; last modified 20170307-1217
 
 ; just in case
 #define		C816	_C816
@@ -439,16 +439,25 @@ exec_st:
 ; could just store the EOR result, see above
 	EOR #'V'			; ** will be zero only for native **
 	STA @run_arch		; set as current, note long addressing eeeeeeek
-	TYX					; check bank for a moment
-	BNE exec_long		; beyond bank 0 is looking for RTL
 ; new approach, reusing 816 code!
 	TAX					; recheck architecture
-	BNE exec_02			; skip return bank address for 8-bit code
+		BEQ exec_long		; native 816 will always push standard return bank
+; here is to manage 65xx02 code **temporarily limited to bank zero
+	TYX					; check bank for a moment
+	BEQ exec_long		; already in bank zero means no need to install wrapper *** ***
+; *** *** in case 6502 code is running beyond bank zero, setup wrapper here! *** ***
+; after that, push alternative (wrapper) return address
+;		PHY					; push target bank
+;		PEA $FFC4			; sample return address, will point to a JML sig_kill
+;		BRA exec_retset		; all done?
+; *** *** in the meanwhile, just reject the request
+		_DR_ERR(INVALID)	; 6502 code not yet supported on that address
 ; ** alternative to self-generated code for long indirect call **
 exec_long:
-		PHK					; push return bank address, actually zero (3)
-exec_02:
+	PHK					; push return bank address, actually zero (3) no matter the architecture!
 	PEA sig_kill-1		; push corrected return address (5)
+; ** if an alternative return address (wrapper) was pushed, jump here
+exec_retset:
 ; set context space!
 	LDA #ZP_AVAIL		; eeeeeeek!
 	STA z_used			; otherwise SAFE will not work!
@@ -481,6 +490,7 @@ st_shset:
 .as						; back to regular API call
 
 ; B_STATUS for single-task systems
+; ***this one does not provide CPU-type flags!!!
 st_status:
 	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
 ; ***might need to add CPU info inside

@@ -18,7 +18,7 @@
 lsHead:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE	; minimOS app!
+	.asc	"m", CPU_TYPE	; minimOS app! it is 816 savvy
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
