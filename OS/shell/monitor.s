@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b8
-; last modified 20170224-0913
+; v0.5.1b9
+; last modified 20170308-0825
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -164,7 +164,7 @@ d_error:
 
 ; *** call command routine ***
 call_mcmd:
-	_JMPX(cmd_ptr)		; indexed jump macro
+	_JMPX(cmd_ptr & $FFFF)	; indexed jump macro, bank agnostic!
 
 ; *** command routines, named as per pointer table ***
 set_A:

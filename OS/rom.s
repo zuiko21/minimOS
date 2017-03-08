@@ -89,14 +89,13 @@ drv_end:		; for easier size computation
 ; with their own headers, these must be page aligned!!!
 #include "../apps/ls.s"
 
-; select specific pmap version according to architecture!
 #ifdef C816
 #include "../apps/pmap16.s"
 #else
 #include "../apps/pmap.s"
 #endif
-
-;#include "../apps/lined.s"
+; select specific pmap version according to architecture!
+#include "../apps/lined.s"
 
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
@@ -125,10 +124,10 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; *************************************
 ; ****** more software after I/O ******
 ; *************************************
+; ...could add more software up to $FC00
 #include "shell/miniMoDA.s"
 #include "shell/monitor.s"
 #include "../apps/sigtest.s"
-; ...could add more software up to $FC00
 
 ; ****** skip rest of unused ROM until firmware ******
 ; ##### empty header #####
@@ -163,4 +162,3 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; *******************************************
 ; *** SPECIAL TEST, soft after kernel ROM ***
 ; *******************************************
-#include "../apps/lined.s"

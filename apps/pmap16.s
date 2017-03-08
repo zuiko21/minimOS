@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b9
-; last modified 20170301-0917
+; v0.5.1b10
+; last modified 20170308-0933
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -61,7 +61,7 @@ go_pmap:
 ; ##### end of minimOS specific stuff #####
 
 	.al: .xl: REP #$30	; *** full 16-bit ***
-	LDA #splash			; address of splash message (plus column header)
+	LDA #splash & $FFFF	; address of splash message (plus column header)
 	JSR prnStrW			; print the string!
 
 ; ********************
@@ -82,10 +82,10 @@ pmap_loop:
 		JSR byte2hexW		; print bank...
 		LDA page			; ...and switch back to page address, was destroyed
 		JSR byte2hexW
-		LDA #pmt_lsb		; string for trailing zeroes
+		LDA #pmt_lsb & $FFFF	; string for trailing zeroes
 		JSR prnStrW
 		PLX					; use as index
-		JMP (pmap_tab, X)	; process as appropriate
+		JMP (pmap_tab & $FFFF, X)	; process as appropriate
 
 ; * print suffix in X, new line and complete loop *
 pmap_next:
@@ -97,7 +97,7 @@ pmap_cr:
 
 ; manage used block
 pmap_used:
-	LDA #pmt_pid		; string for PID prefix
+	LDA #pmt_pid & $FFFF	; string for PID prefix
 	JSR prnStrW
 	LDY current			; restore index
 	LDA ram_pid, Y		; get corresponding PID
@@ -174,19 +174,19 @@ pkb_ltt:
 
 ; manage locked list
 pmap_lock:
-	LDA #pmt_lock		; string for locked label
+	LDA #pmt_lock & $FFFF	; string for locked label
 	JSR prnStrW
 	BRA pmap_size		; finish line with block size
 
 ; manage free block
 pmap_free:
-	LDA #pmt_free		; string for free label
+	LDA #pmt_free & $FFFF	; string for free label
 	JSR prnStrW
 	BRA pmap_size		; finish line with block size
 
 ; manage end of list
 pmap_end:
-	LDA #pmt_end		; string for end label
+	LDA #pmt_end & $FFFF	; string for end label
 	JSR prnStrW
 	_FINISH				; *** all done ***
 
@@ -234,7 +234,7 @@ prnCharW:
 prnStrW:
 	STA str_pt			; store full pointer
 	PHK					; dummy MSB!!!!!! eeeeeeeeek
-	PHB					; determine current bank!
+	PHK					; determine current bank!
 	PLX					; retrieve it...
 	STX str_pt+2		; ...and set it! will do TWO bytes!
 	LDY #0				; standard device

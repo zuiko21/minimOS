@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b10
-; last modified 20170307-1200
+; v0.5b11
+; last modified 20170308-0851
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -22,7 +22,7 @@
 shellHead:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"mB"			; minimOS 65C02 app!
+	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
@@ -65,6 +65,11 @@ go_xsh:
 	LDA #>title			; MSB of window title
 	STY str_pt			; set parameter
 	STA str_pt+1
+#ifdef	C816
+	PHK					; current bank eeeeeeek
+	PLA					; get it
+	STA str_pt+2		; and set parameter
+#endif
 	_KERNEL(OPEN_W)		; ask for a character I/O device
 	BCC open_xsh		; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
@@ -116,6 +121,8 @@ xsh_wait:
 				_KERNEL(B_YIELD)	; do not waste CPU time!
 				LDY pid				; retrieve launched PID
 				_KERNEL(B_STATUS)	; check its current state
+				TYA					; cannot operate on Y...
+				AND #BR_MASK		; filter relevant bits eeeeeeeeek
 				CPY #BR_FREE		; until ended (relies on B_STATUS hiding BR_END!!!)
 				BNE xsh_wait		; do not interact until ended (no '&' yet)
 			BEQ main_loop		; then continue asking for more
@@ -137,6 +144,11 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
+#ifdef	C816
+	PHK					; current bank eeeeeeek
+	PLA					; get it
+	STA str_pt+2		; and set parameter
+#endif
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
@@ -149,6 +161,9 @@ getLine:
 	LDA #>buffer		; MSB, should be zero already!
 	STY str_pt			; set kernel parameter
 	STA str_pt+1		; clear MSB, no need for STZ
+#ifdef	C816
+	STZ str_pt+2		; this buffer is in zeropage!
+#endif
 	LDX #BUFSIZ-1		; maximum offset
 	STX ln_siz
 	LDY iodev			; use standard device

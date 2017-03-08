@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9b4
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170223-1101
+; last modified 20170308-0841
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -346,6 +346,8 @@ brk_hndl:		; label from vector list
 	PLX
 	PLA
 	RTI
+
+.as:.xs:					; otherwise might prevent code after ROM!
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list

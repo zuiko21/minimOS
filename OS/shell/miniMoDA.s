@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b10
-; last modified 20170224-1422
+; v0.5b11
+; last modified 20170308-0826
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -365,7 +365,7 @@ main_nnul:
 
 ; *** call command routine ***
 call_mcmd:
-	_JMPX(cmd_ptr)		; indexed jump macro
+	_JMPX(cmd_ptr & $FFFF)	; indexed jump macro, bank agnostic!
 
 ; *** command routines, named as per pointer table ***
 ; ** .A = set accumulator **

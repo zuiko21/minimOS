@@ -32,7 +32,7 @@ lsHead:
 	.word	$4C00			; time, 9.32
 	.word	$4A4F			; date, 2017/2/15
 
-lsSize	=	lsEnd - lsHead -256	; compute size NOT including header!
+lsSize	=	lsEnd - lsHead -$100	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	lsSize			; filesize
@@ -57,7 +57,6 @@ go_ls:
 	STA z_used			; set needed ZP space as required by minimOS
 ; will not use iodev as will work on default device
 ; ##### end of minimOS specific stuff #####
-
 	LDA #>banner		; address of banner message (column header)
 	LDY #<banner
 	JSR prnStr			; print the string!
@@ -301,7 +300,7 @@ prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
 #ifdef	C816
-	PHB					; get current bank eeeeeeeek
+	PHK					; get current bank eeeeeeeek
 	PLA					; retreive
 	STA str_pt+2		; and set accordingly
 #endif
