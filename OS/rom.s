@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.5.1b9, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170307-1220
+; last modified 20170309-0854
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -89,13 +89,6 @@ drv_end:		; for easier size computation
 ; with their own headers, these must be page aligned!!!
 #include "../apps/ls.s"
 
-#ifdef C816
-#include "../apps/pmap16.s"
-#else
-#include "../apps/pmap.s"
-#endif
-; select specific pmap version according to architecture!
-#include "../apps/lined.s"
 
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
@@ -125,7 +118,6 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; ****** more software after I/O ******
 ; *************************************
 ; ...could add more software up to $FC00
-#include "shell/miniMoDA.s"
 #include "shell/monitor.s"
 #include "../apps/sigtest.s"
 
@@ -162,3 +154,12 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; *******************************************
 ; *** SPECIAL TEST, soft after kernel ROM ***
 ; *******************************************
+* = $10000
+#include "shell/miniMoDA.s"
+#ifdef C816
+#include "../apps/pmap16.s"
+#else
+#include "../apps/pmap.s"
+#endif
+; select specific pmap version according to architecture!
+#include "../apps/lined.s"
