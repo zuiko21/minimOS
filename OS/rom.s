@@ -96,6 +96,7 @@ drv_end:		; for easier size computation
 #include "../apps/pmap.s"
 #endif
 
+#include "../apps/lined.s"
 
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
@@ -127,7 +128,6 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; ...could add more software up to $FC00
 #include "shell/monitor.s"
 #include "../apps/sigtest.s"
-#include "shell/miniMoDA.s"
 
 ; ****** skip rest of unused ROM until firmware ******
 ; ##### empty header #####
@@ -162,7 +162,6 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; *******************************************
 ; *** SPECIAL TEST, soft after kernel ROM ***
 ; *******************************************
-* = $10000
-.as:.xs:
 
-#include "../apps/lined.s"
+#include "shell/miniMoDA.s"
+

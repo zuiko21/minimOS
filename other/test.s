@@ -33,10 +33,16 @@ testSize	=	testEnd - testHead - 256	; compute size NOT including header!
 #endif
 
 ; *** real code here ***
-	.al: REP #$20
-	LDA #testSize
-	LDA #testEnd & $FFFF
-	JMP (testTable & $FFFF, X)
+	NOP
+	JMP `!testTable
+	JMP !testTable
+	JMP testTable
+	JMP @testTable			; this should be the only JML
+	JMP testTable & $FFFF	; OK
+	JSR !testEnd
+	JSR testEnd
+	JSR @testEnd			; this should be the only JSL
+	JSR testEnd & $FFFF		; OK
 testTable:
 	.word	testHead
 	.word	testEnd

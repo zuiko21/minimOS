@@ -1,6 +1,6 @@
 ; minimOS 0.5.1a7 MACRO definitions
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170120-0910
+; last modified 20170309-1320
 
 ; *** standard addresses ***
 
@@ -113,7 +113,8 @@ FILE_DEV	=	130
 #define		_TSB(a)		BIT a: PHP: PHA: ORA a: STA a: PLA: PLP
 #else
 ; standard CMOS opcodes
-#define		_JMPX(a)	JMP (a, X)
+; note JMP workaround for xa bug outside bank 0!!!
+#define		_JMPX(a)	JMP (a & $FFFF, X)
 #define		_PHX		PHX
 #define		_PHY		PHY
 #define		_PLX		PLX

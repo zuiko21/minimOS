@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5rc8
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170307-1205
+; last modified 20170309-1254
 
 #include "usual.h"
 .(
@@ -323,9 +323,7 @@ le_sw4:
 			ORA cur+1			; do not forget MSB!
 			BNE lu_yes			; OK to back off another one
 lu_no:
-nop
 				JMP le_clbuf		; otherwise complain etc
-nop
 lu_yes:
 			JSR l_prev			; ...and previous
 			_BRA ldn_do			; indent, show, prompt and continue!
