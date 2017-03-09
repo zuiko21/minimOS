@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b11
-; last modified 20170308-0826
+; last modified 20170309-1341
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -107,7 +107,7 @@ open_da:
 ; splash message just shown once
 	LDA #>splash		; address of splash message
 	LDY #<splash
-	JSR prnStr			; print the string!
+	JSR $FFFF &  prnStr			; print the string!
 
 ; *** store current stack pointer as it will be restored upon JSR/JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
@@ -143,16 +143,16 @@ main_loop:
 		STA bufpt+1
 ; put current address before prompt
 		LDA ptr+1			; MSB goes first
-		JSR prnHex			; print it
+		JSR $FFFF &  prnHex			; print it
 		LDA ptr				; same for LSB
-		JSR prnHex
+		JSR $FFFF &  prnHex
 		LDA #'>'			; prompt character
-		JSR prnChar			; print it
-		JSR getLine			; input a line
+		JSR $FFFF &  prnChar			; print it
+		JSR $FFFF &  getLine			; input a line
 ; execute single command (or assemble opcode) from buffer
 cli_loop:
 		LDY #$FF			; getNextChar will advance it to zero!
-		JSR gnc_do			; get first character on string, without the variable
+		JSR $FFFF &  gnc_do			; get first character on string, without the variable
 		TAX					; set status for A
 			BEQ main_loop		; ignore blank lines! 
 		CMP #COLON			; end of instruction?
@@ -161,15 +161,15 @@ cli_loop:
 			BEQ cli_chk
 		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 			BNE not_mcmd		; not a monitor command
-		JSR gnc_do			; get into command byte otherwise
+		JSR $FFFF &  gnc_do			; get into command byte otherwise
 		CMP #'Z'+1			; past last command?
 			BCS bad_cmd			; unrecognised
 		SBC #'A'-1			; first available command (had borrow)
 			BCC bad_cmd			; cannot be lower
 		ASL					; times two to make it index
 		TAX					; use as index
-		JSR call_mcmd		; call monitor command
-		JSR getNextChar		; should be done but check whether in direct mode
+		JSR $FFFF &  call_mcmd		; call monitor command
+		JSR $FFFF &  getNextChar		; should be done but check whether in direct mode
 		BCC cmd_term		; no more commands in line (or directly to main loop?)
 cli_chk:
 			TYA					; otherwise advance pointer
@@ -185,7 +185,7 @@ bad_cmd:
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
 d_error:
-	JSR prnStr			; display error
+	JSR $FFFF &  prnStr			; display error
 	_BRA main_loop		; restore
 overflow:
 	LDA #>err_ovf		; address of overflow message
@@ -202,15 +202,15 @@ not_mcmd:
 	STA scan+1
 sc_in:
 		DEC cursor			; every single option will do it anyway
-		JSR getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
+		JSR $FFFF &  getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
 ; (removed debug code)
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
 ;			BEQ sc_sbyt			; *** currently no different from single-byte ***
-			JSR fetch_word		; will pick up a couple of bytes
+			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 			BCC srel_ok			; no errors, go translate into relative offset 
-				JMP no_match		; no address, not OK
+				JMP $FFFF &  no_match		; no address, not OK
 srel_ok:
 			LDY #1				; standard branch operands
 			LDA count			; check opcode for a moment
@@ -246,15 +246,15 @@ srel_2nd:
 			BEQ srel_bak		; if zero, was backwards branch, no other positive accepted!
 				CMP #$FF			; otherwise, only $FF valid for forward branch
 				BEQ srel_fwd		; possibly valid forward branch
-					JMP overflow		; overflow otherwise
+					JMP $FFFF &  overflow		; overflow otherwise
 srel_fwd:
 				LDA oper+1			; check stored offset
 				BPL srel_done		; positive is OK
-					JMP overflow		; slight overflow otherwise
+					JMP $FFFF &  overflow		; slight overflow otherwise
 srel_bak:
 			LDA oper+1			; check stored offset
 			BMI srel_done		; this has to be negative
-				JMP overflow		; slight overflow otherwise
+				JMP $FFFF &  overflow		; slight overflow otherwise
 srel_done:
 			INC bytes			; one operand was really detected
 			_BRA sc_adv			; continue decoding
@@ -263,24 +263,24 @@ sc_nrel:
 		BNE sc_nsbyt
 ; try to get a single byte operand
 ;sc_sbyt:					; *** temporary label ***
-			JSR fetch_byte		; currently it is a single byte...
+			JSR $FFFF &  fetch_byte		; currently it is a single byte...
 				BCS no_match		; could not get operand
 			STA oper			; store value to be poked *** here
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
-			JSR fetch_byte		; this one should NOT succeed
+			JSR $FFFF &  fetch_byte		; this one should NOT succeed
 			BCS sbyt_ok			; OK if no other number found
-				JSR backChar		; otherwise is an error, forget previous byte!!!
-				JSR backChar
+				JSR $FFFF &  backChar		; otherwise is an error, forget previous byte!!!
+				JSR $FFFF &  backChar
 				BCC no_match		; reject
 sbyt_ok:
-			JSR backChar		; reject tested char! eeeeeeeek
+			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; one operand was detected
 			_BRA sc_adv			; continue decoding
 sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
 ; try to get a word-sized operand
-			JSR fetch_word		; will pick up a couple of bytes
+			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 				BCS no_match		; not if no number found?
 			LDY value				; get computed value
 			LDA value+1
@@ -292,7 +292,7 @@ sc_nsbyt:
 sc_nwrd:
 ; regular char in list, compare with input
 		STA temp			; store list contents eeeeeeeek!
-		JSR getNextChar		; reload char from buffer eeeeeeeek^2
+		JSR $FFFF &  getNextChar		; reload char from buffer eeeeeeeek^2
 		CMP temp			; list coincides with input?
 		BEQ sc_adv			; if so, continue scanning input
 sc_skip:
@@ -313,13 +313,13 @@ no_match:
 ; (removed debug code *)
 			INC count			; try next opcode
 			BEQ bad_opc			; no more to try!
-				JMP sc_in			; there is another opcode to try
+				JMP $FFFF &  sc_in			; there is another opcode to try
 bad_opc:
 			LDA #>err_opc		; address of wrong opcode message
 			LDY #<err_opc
-			JMP d_error			; display and restore
+			JMP $FFFF &  d_error			; display and restore
 sc_adv:
-		JSR getNextChar		; get another valid char, in case it has ended
+		JSR $FFFF &  getNextChar		; get another valid char, in case it has ended
 		TAX					; check A flags... and keep c!
 		BNE sc_nterm		; if end of buffer, sentence ends too
 			SEC					; just like a colon, instruction ended
@@ -330,7 +330,7 @@ sc_nterm:
 			BCC no_match		; only opcode complete, keep trying! eeeeek
 sc_rem:
 		BCS sc_skip			; instruction is shorter, usually non-indexed indirect eeeeeeek^3
-		JMP sc_in			; neither opcode nor instruction ended, continue matching
+		JMP $FFFF &  sc_in			; neither opcode nor instruction ended, continue matching
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
@@ -357,26 +357,26 @@ poke_opc:
 main_nw:
 		TXA					; retrieve c, what was NEXT in buffer eeeeeeek^3
 		BNE main_nnul		; termination will return to exterior main loop
-			JMP main_loop		; and continue forever
+			JMP $FFFF &  main_loop		; and continue forever
 main_nnul:
 		LDY cursor			; eeeeeeeeek
-		JMP cli_chk			; otherwise continue parsing line eeeeeeeeeek
+		JMP $FFFF &  cli_chk			; otherwise continue parsing line eeeeeeeeeek
 ; *** this is the end of main loop ***
 
 ; *** call command routine ***
 call_mcmd:
-	_JMPX(cmd_ptr)		; indexed jump macro, bank agnostic!
+	_JMPX(cmd_ptr & $FFFF)		; indexed jump macro, bank agnostic!
 
 ; *** command routines, named as per pointer table ***
 ; ** .A = set accumulator **
 set_A:
-	JSR fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _a				; set accumulator
 	RTS
 
 ; ** .B = store byte **
 store_byte:
-	JSR fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A
 	_STAY(ptr)			; set byte in memory
 	INC ptr				; advance pointer
 	BNE sb_end			; all done if no wrap
@@ -386,12 +386,12 @@ sb_end:
 
 ; ** .C = call address **
 call_address:
-	JSR fetch_word		; get operand address
+	JSR $FFFF &  fetch_word		; get operand address
 ; now ignoring operand errors!
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
-	JSR do_call			; set regs and jump!
+	JSR $FFFF &  do_call			; set regs and jump!
 #ifdef	C816
 	.xs: .as: SEP #$30	; *** make certain about standard size ***
 #endif
@@ -407,11 +407,11 @@ call_address:
 	STA iodev			; store device!!!
 	PLA					; must discard previous return address, as will reinitialise stuff!
 	PLA
-	JMP get_sp			; hopefully context is OK, will restore as needed
+	JMP $FFFF &  get_sp			; hopefully context is OK, will restore as needed
 
 ; ** .J = jump to an address **
 jump_address:
-	JSR fetch_word		; get operand address
+	JSR $FFFF &  fetch_word		; get operand address
 ; now ignoring operand errors!
 ; restore stack pointer...
 #ifdef	C816
@@ -435,7 +435,7 @@ do_call:
 
 ; ** .D = disassemble 'u' lines **
 disassemble:
-	JSR fetch_word		; get address
+	JSR $FFFF &  fetch_word		; get address
 	LDY value			; save value elsewhere
 	LDA value+1
 	STY oper
@@ -444,7 +444,7 @@ disassemble:
 das_l:
 		_PHX				; save counters
 ; time to show the opcode and trailing spaces until 20 chars
-		JSR disOpcode		; dissassemble one opcode @oper (will print it)
+		JSR $FFFF &  disOpcode		; dissassemble one opcode @oper (will print it)
 		_PLX				; retrieve counter
 		DEX					; one line less
 		BNE das_l			; continue until done
@@ -479,21 +479,21 @@ do_set:
 do_found:
 	STY scan			; restore pointer
 ; this is a fully defined opcode, when symbolic assembler is available!
-	JMP prnOpcode		; show all and return
+	JMP $FFFF &  prnOpcode		; show all and return
 
 ; decode opcode and print hex dump
 prnOpcode:
 ; first goes the current address in label style
 	LDA #'_'			; make it self-hosting
-	JSR prnChar
+	JSR $FFFF &  prnChar
 	LDA oper+1			; address MSB *** this may go into printOpcode
-	JSR prnHex			; print it
+	JSR $FFFF &  prnHex			; print it
 	LDA oper			; same for LSB
-	JSR prnHex
+	JSR $FFFF &  prnHex
 	LDA #$3A			; code of the colon character
-	JSR prnChar
+	JSR $FFFF &  prnChar
 	LDA #' '			; leading space, might use string
-	JSR prnChar
+	JSR $FFFF &  prnChar
 ; then extract the opcode string from scan
 	LDY #0				; scan increase, temporarily stored in temp
 	STY bytes			; number of bytes to be dumped (-1)
@@ -507,7 +507,7 @@ po_loop:
 ; put here specific code for relative arguments!
 ;			_BRA po_sbyte		; *** placeholder
 			LDA #'$'			; hex radix
-			JSR prnChar
+			JSR $FFFF &  prnChar
 			_LDAY(oper)			; check opocde for a moment
 			LDY #1				; standard branch offset
 			LDX #0				; reset offset sign extention
@@ -530,9 +530,9 @@ po_fwd:
 			PHA					; this is the LSB, now check for the MSB
 			TXA					; get sign extention
 			ADC oper+1			; add current position MSB plus ocassional carry
-			JSR prnHex			; show as two ciphers
+			JSR $FFFF &  prnHex			; show as two ciphers
 			PLA					; previously computed LSB
-			JSR prnHex			; another two
+			JSR $FFFF &  prnHex			; another two
 			LDX #5				; five more chars
 			_BRA po_done		; update and continue
 po_nrel:
@@ -541,12 +541,12 @@ po_nrel:
 ; could check also for undefined references!!!
 po_sbyte:
 			LDA #'$'			; hex radix
-			JSR prnChar
+			JSR $FFFF &  prnChar
 			LDY bytes			; retrieve instruction index
 			INY					; point to operand!
 			LDA (oper), Y		; get whatever byte
 			STY bytes			; correct index
-			JSR prnHex			; show in hex
+			JSR $FFFF &  prnHex			; show in hex
 			LDX #3				; number of chars to add
 			_BRA po_done		; update count and continue
 po_nbyt:
@@ -554,21 +554,21 @@ po_nbyt:
 		BNE po_nwd			; otherwise is normal char
 ; could check also for undefined references!!!
 			LDA #'$'			; hex radix
-			JSR prnChar
+			JSR $FFFF &  prnChar
 			LDY bytes			; retrieve instruction index
 			INY					; point to operand MSB!
 			INY
 			STY bytes			; save here as will back off for LSB
 			LDA (oper), Y		; get whatever byte
-			JSR prnHex			; show in hex
+			JSR $FFFF &  prnHex			; show in hex
 			LDY bytes			; retrieve final index
 			DEY					; back to LSB
 			LDA (oper), Y		; get whatever byte
-			JSR prnHex			; show in hex
+			JSR $FFFF &  prnHex			; show in hex
 			LDX #5				; five more chars
 			_BRA po_done		; update count and continue
 po_nwd:
-		JSR prnChar			; just print it
+		JSR $FFFF &  prnChar			; just print it
 		INC count			; yet another char
 		BNE po_char			; eeeeeeeeek
 po_done:
@@ -581,28 +581,28 @@ po_char:
 		LDA (scan), Y		; get current char again
 			BMI po_end			; opcode ended, no more to show
 		INY					; go for next char otherwise
-		JMP po_loop			; BNE would work as no opcode string near 256 bytes long, but too far...
+		JMP $FFFF &  po_loop			; BNE would work as no opcode string near 256 bytes long, but too far...
 po_end:
 ; add spaces until 20 chars!
 		LDA #13				; number of chars after the initial 7
 		CMP count			; already done?
 	BCC po_dump			; go for dump then, even if over
 		LDA #' '			; otherwise print a space
-		JSR prnChar
+		JSR $FFFF &  prnChar
 		INC count			; eeeeeeeeeeeek
 		BNE po_end			; until complete, again no need for BRA
 ; print hex dump as a comment!
 po_dump:
 	LDA #';'			; semicolon as comment introducer
-	JSR prnChar
+	JSR $FFFF &  prnChar
 	LDY #0				; reset index
 	STY temp			; save index (no longer scan)
 po_dbyt:
 		LDA #' '			; leading space
-		JSR prnChar
+		JSR $FFFF &  prnChar
 		LDY temp			; retrieve index
 		LDA (oper), Y		; get current byte in instruction
-		JSR prnHex			; show as hex
+		JSR $FFFF &  prnHex			; show as hex
 		INC temp			; next
 		LDX bytes			; get limit (-1)
 		INX					; correct for post-increased
@@ -617,11 +617,11 @@ po_dbyt:
 		INC oper+1
 po_nowr:
 	LDA #CR				; final newline
-	JMP prnChar			; print it and return
+	JMP $FFFF &  prnChar			; print it and return
 
 ; ** .E = examine 'u' lines of memory **
 examine:
-	JSR fetch_word		; get address
+	JSR $FFFF &  fetch_word		; get address
 	LDY value			; save value elsewhere
 	LDA value+1
 	STY oper
@@ -630,12 +630,12 @@ examine:
 ex_l:
 		_PHX				; save counters
 		LDA oper+1			; address MSB
-		JSR prnHex			; print it
+		JSR $FFFF &  prnHex			; print it
 		LDA oper			; same for LSB
-		JSR prnHex
+		JSR $FFFF &  prnHex
 		LDA #>dump_in		; address of separator
 		LDY #<dump_in
-		JSR prnStr			; print it
+		JSR $FFFF &  prnStr			; print it
 		; loop for 4/8 hex bytes
 		LDY #0				; reset offset
 ex_h:
@@ -645,19 +645,19 @@ ex_h:
 			BEQ ex_ns			; no space if the first one
 				_PHY				; please keep Y!
 				LDA #' '			; print space, not in 20-char
-				JSR prnChar
+				JSR $FFFF &  prnChar
 				_PLY				; retrieve Y!
 ex_ns:
 #endif
 			LDA (oper), Y		; get byte
-			JSR prnHex			; print it in hex
+			JSR $FFFF &  prnHex			; print it in hex
 			_PLY				; retrieve index
 			INY					; next byte
 			CPY #PERLINE		; bytes per line (8 if not 20-char)
 			BNE ex_h			; continue line
 		LDA #>dump_out		; address of separator
 		LDY #<dump_out
-		JSR prnStr			; print it
+		JSR $FFFF &  prnStr			; print it
 		; loop for 4/8 ASCII
 		LDY #0				; reset offset
 ex_a:
@@ -670,13 +670,13 @@ ex_a:
 			_BRA ex_pr			; it is printable
 ex_np:
 				LDA #'.'			; substitute
-ex_pr:		JSR prnChar			; print it
+ex_pr:		JSR $FFFF &  prnChar			; print it
 			_PLY				; retrieve index
 			INY					; next byte
 			CPY #PERLINE		; bytes per line (8 if not 20-char)
 			BNE ex_a			; continue line
 		LDA #CR				; print newline
-		JSR prnChar
+		JSR $FFFF &  prnChar
 		LDA oper			; get pointer LSB
 		CLC
 		ADC #PERLINE		; add shown bytes (8 if not 20-char)
@@ -691,7 +691,7 @@ ex_npb:
 
 ; ** .G = set stack pointer **
 set_SP:
-	JSR fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _sp				; set stack pointer
 	RTS
 
@@ -699,7 +699,7 @@ set_SP:
 help:
 	LDA #>help_str		; help string
 	LDY #<help_str
-	JMP prnStr			; print it, and return to main loop
+	JMP $FFFF &  prnStr			; print it, and return to main loop
 
 ; ** .I = show symbol table ***
 symbol_table:
@@ -734,7 +734,7 @@ load_bytes:
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
 
-	JSR fetch_word		; get operand word
+	JSR $FFFF &  fetch_word		; get operand word
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
 		BEQ mv_l			; go to second stage if zero
@@ -760,7 +760,7 @@ mv_end:
 
 ; ** .N = set 'n' value **
 set_count:
-	JSR fetch_word		; get operand word
+	JSR $FFFF &  fetch_word		; get operand word
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	STY siz				; into destination variable
@@ -769,7 +769,7 @@ set_count:
 
 ; ** .O = set origin **
 origin:
-	JSR fetch_word		; get operand word
+	JSR $FFFF &  fetch_word		; get operand word
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	STY ptr				; into destination variable
@@ -778,7 +778,7 @@ origin:
 
 ; ** .P = set status register **
 set_PSR:
-	JSR fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _psr			; set status
 	RTS
 
@@ -834,16 +834,16 @@ sstr_end:
 asm_source:
 	PLA					; discard return address as will jump inside cli_loop
 	PLA
-	JSR fetch_word		; get desired address
+	JSR $FFFF &  fetch_word		; get desired address
 	LDY value			; fetch result
 	LDA value+1
 	STY bufpt			; this will be new buffer
 	STA bufpt+1
-	JMP cli_loop		; execute as commands!
+	JMP $FFFF &  cli_loop		; execute as commands!
 
 ; ** .U = set 'u' number of lines/instructions **
 set_lines:
-	JSR fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A
 	STA lines			; set number of lines
 	RTS
 
@@ -851,17 +851,17 @@ set_lines:
 view_regs:
 	LDA #>regs_head		; print header
 	LDY #<regs_head
-	JSR prnStr
+	JSR $FFFF &  prnStr
 ; since _pc and ptr are the same, no need to print it!
 
 	LDX #0				; reset counter
 vr_l:
 		_PHX				; save index!
 		LDA _a, X			; get value from regs
-		JSR prnHex			; show value in hex
+		JSR $FFFF &  prnHex			; show value in hex
 ; without PC being shown, narrow displays will also put regular spacing
 		LDA #' '			; space, not for 20-char
-		JSR prnChar			; print it
+		JSR $FFFF &  prnChar			; print it
 		_PLX				; restore index
 		INX					; next reg
 		CPX #4				; all regs done?
@@ -876,15 +876,15 @@ vr_sb:
 		BCC vr_off			; was off
 			_INC				; otherwise turns into '!'
 vr_off:
-		JSR prnChar			; prints bit
+		JSR $FFFF &  prnChar			; prints bit
 		DEC value			; one less
 		BNE vr_sb			; until done
 	LDA #CR				; print newline
-	JMP prnChar			; will return
+	JMP $FFFF &  prnChar			; will return
 
 ; ** .W = store word **
 store_word:
-	JSR fetch_word		; get operand word
+	JSR $FFFF &  fetch_word		; get operand word
 	LDA value			; get LSB
 	_STAY(ptr)			; store in memory
 	INC ptr				; next byte
@@ -901,13 +901,13 @@ sw_end:
 
 ; ** .X = set X register **
 set_X:
-	JSR fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _x				; set register
 	RTS
 
 ; ** .Y = set Y register **
 set_Y:
-	JSR fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _y				; set register
 	RTS
 
@@ -930,7 +930,7 @@ fw_shut:
 _unrecognised:
 	PLA					; discard main loop return address
 	PLA
-	JMP bad_cmd			; show error message and continue
+	JMP $FFFF &  bad_cmd			; show error message and continue
 
 ; *** useful routines ***
 ; ** basic output and hexadecimal handling **
@@ -946,7 +946,7 @@ prnHex:
 	LSR
 	LSR
 	LSR
-	JSR ph_b2a			; convert and print this cipher
+	JSR $FFFF &  ph_b2a			; convert and print this cipher
 	PLA					; retrieve full value
 	AND #$0F			; keep just the LSB... and repeat procedure
 ph_b2a:
@@ -1004,14 +1004,14 @@ h2b_num:
 		INX					; loop counter
 		CPX #2				; two ciphers per byte
 			BEQ h2b_end			; all done
-		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
+		JSR $FFFF &  gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
 		_BRA h2b_l			; process it
 h2b_end:
 	CLC: RTS			; clear carry, value is valid! macro NLA
 h2b_err:
 	DEX					; at least one cipher processed?
 	BMI h2b_exit		; no need to correct
-		JSR backChar		; will try to reprocess former char
+		JSR $FFFF &  backChar		; will try to reprocess former char
 h2b_exit:
 	SEC					; indicate error
 	RTS
@@ -1126,22 +1126,22 @@ cend_ok:
 
 ; * fetch one byte from buffer, value in A and @value *
 fetch_byte:
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
+	JSR $FFFF &  getNextChar		; go to operand
+	JSR $FFFF &  hex2byte		; convert value
 	LDA value			; converted byte
 fetch_abort:
 	RTS
 
 ; * fetch two bytes from hex input buffer, value @value.w *
 fetch_word:
-	JSR fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A
 		BCS fetch_abort		; new, do not keep trying if error, not sure if needed
 	STA value+1			; leave room for next
-	JSR gnc_do			; get next char!!!
-	JSR hex2byte		; get second byte, value is little-endian now
+	JSR $FFFF &  gnc_do			; get next char!!!
+	JSR $FFFF &  hex2byte		; get second byte, value is little-endian now
 		BCC fetch_abort		; actually OK!!!
-	JSR backChar		; should discard previous byte!
-	JSR backChar
+	JSR $FFFF &  backChar		; should discard previous byte!
+	JSR $FFFF &  backChar
 	RTS
 
 ; *** pointers to command routines ***
