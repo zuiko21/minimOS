@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.5.1b9
-; last modified 20170308-0825
+; last modified 20170310-0912
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -28,6 +28,7 @@ mon_head:
 	.asc	"****", 13		; some flags TBD
 
 ; *** filename and optional comment ***
+montitle:
 	.asc	"monitor", 0	; file name (mandatory)
 	.asc	"NMOS & 816-savvy", 0	; comment
 
@@ -675,8 +676,10 @@ cmd_ptr:
 	.word	poweroff		; .Z
 
 ; *** strings and other data ***
+#ifdef	NOHEAD
 montitle:
 	.asc	"miniMonitor", 0
+#endif
 
 splash:
 	.asc	"minimOS 0.5.1 monitor", CR
