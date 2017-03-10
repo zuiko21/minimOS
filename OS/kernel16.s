@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b14
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170310-0900
+; last modified 20170310-1314
 
 ; just in case
 #define		C816	_C816
@@ -102,9 +102,9 @@ ram_init:
 	LDA #SRAM		; number of SRAM pages as defined in options.h *** revise
 	STA ram_pos+2	; store second entry and we are done!
 
-; ******************************************************
-; intialise drivers from their jump tables
-; ******************************************************
+; ************************************************
+; *** intialise drivers from their jump tables ***
+; ************************************************
 ; THINK about making API entries for this!
 
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
@@ -112,13 +112,13 @@ ram_init:
 ; 16-bit revamp 20161013
 
 	LDX #0				; reset driver index (2)
+	STX dpoll_mx		; reset all indexes (4+4+4)
+	STX dreq_mx
+	STX dsec_mx
 ; clear some other bytes
 	STX run_arch		; assume native 65816
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
 	STX sd_flag			; *** this is important to be clear (PW_STAT) or set as proper error handler
-	STX dpoll_mx		; reset all indexes (4+4+4)
-	STX dreq_mx
-	STX dsec_mx
 
 ; already in 16-bit memory mode...
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
@@ -146,12 +146,14 @@ dr_inst:
 ; create entry on IDs table
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code... plus extra byte (6)
+
 #ifdef	SAFE
 		TAX					; check sign, faster! (2)
 		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
 dr_phys:
 #endif
+
 		ASL					; convert to index, no matter the MSB (2+2)
 		TAX
 ; new 161014, TASK_DEV (128 turns into 0 as index) does NOT get checked, allowing default installation
@@ -163,7 +165,7 @@ dr_phys:
 			CMP drv_opt, X		; check whether in use (5)
 				BNE dr_busy			; pointer was not empty (2/3)
 			CMP drv_ipt, X		; now check input, just in case (5)
-				BEQ dr_empty		; it is OK to set (3/2)
+			BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
 			JMP dr_abort		; already in use (3)
 dr_empty:

@@ -1,48 +1,51 @@
 ; minimOS generic Kernel
-; v0.5.1b9
+; v0.5.1b10
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170215-0838
+; last modified 20170310-1439
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
 
 ; uncomment in case of separate, downloadable jump & boot files
 ; should assume standalone assembly!!! (will get drivers anyway)
+; ROMable kernels cannot be downloaded, though
+#ifndef	ROM
 ;#define		DOWNLOAD	_DOWNLOAD
+#endif
 
 ; in case of standalone assembly
 #ifndef	HEADERS
 #include "usual.h"
-.bss
 #ifdef		DOWNLOAD
 * = $0400				; safe address for patchable 2 kiB systems, change if required
 #else
-#include "drivers/config/DRIVER_PACK.h"
--user_sram = *
-.text
-* = ROM_BASE			; just a placeholder, no standardised address
+; standalone kernels need to keep track of drivers_ad label!
+.data
 #include "drivers/config/DRIVER_PACK.s"
-#endif
 .text
+#endif
 #endif
 
 ; *** standard header, at least for testing ***
+#ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 kern_head:
 	BRK
 	.asc	"m", CPU_TYPE	; executable for testing TBD
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.5.1b9", 0	; version in comment
+	.asc	"minimOS 0.5.1b10", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$4800	; time, 9.00
-	.word	$4A4F	; date, 2017/2/15
+	.word	$6800	; time, 13.00
+	.word	$4A6A	; date, 2017/3/10
 
 kern_siz = kern_end - kern_head - $FF
 
 	.word	kern_siz, 0	; kernel size excluding header 
+#endif
 
 ; **************************************************
 ; *** kernel begins here, much like a warm reset ***
@@ -50,10 +53,9 @@ kern_siz = kern_end - kern_head - $FF
 
 -kernel:
 warm:
-; assume interrupts off, binary mode and 65C816 in emulation mode!
-#ifdef	SAFE
 	SEI				; interrupts off, just in case (2)
 	CLD				; just in case, a must for NMOS (2)
+#ifdef	SAFE
 ; * this is in case a 65816 is being used, but still compatible with all * EXCEPT Kowlaski
 #ifdef	C816
 	SEC				; would set back emulation mode on C816
@@ -62,6 +64,7 @@ warm:
 #endif
 ; * end of 65816 specific code *
 #endif
+; assume interrupts off, binary mode and 65C816 in emulation mode!
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
 ; ++++++
@@ -84,8 +87,6 @@ warm:
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
-	_STZA sd_flag		; this is important to be clear (PW_STAT) or set as proper error handler
-
 ; *****************************
 ; *** memory initialisation ***
 ; *****************************
@@ -107,20 +108,24 @@ ram_init:
 ; ++++++
 #endif
 
-; intialise drivers from their jump tables
-; ******************************************************
+; ************************************************
+; *** intialise drivers from their jump tables ***
+; ************************************************
 ; THINK about making API entries for this!
 ; * will also initialise I/O lock arrays! * 20161129
 
 ; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
 ; same with dr_aut, now independent kernel call savvy 20161103
 
-
 ; driver full install is new 20150208
 	LDX #0				; reset driver index (2)
 	STX dpoll_mx		; reset all indexes, NMOS-savvy (4+4+4)
 	STX dreq_mx
 	STX dsec_mx
+; clear some other bytes
+; runarch not used here as no API/ABI differences
+	STX sd_flag			; this is important to be clear (PW_STAT) or set as proper error handler
+	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------
@@ -130,12 +135,8 @@ ram_init:
 #else
 ; ++++++ new direct I/O tables for much faster access 20160406 ++++++
 dr_clear:
-#ifdef	MULTITASK
 		_STZA cio_lock, X	; clear I/O locks! (4)
-		_STZA cin_mode, X	; and binary flags (4)
-		_STZA cio_lock+1, X	; will increase twice (4)
-		_STZA cin_mode+1, X	; same here (4)
-#endif
+		_STZA cin_mode, X	; and binary flags, actually next address (4)
 		LDA #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2)
 		STA drv_opt, X		; set LSB for output (4)
 		STA drv_ipt, X		; and for input (4)
@@ -146,12 +147,10 @@ dr_clear:
 		INX					; next entry (2)
 		BNE dr_clear		; finish page (3/2)
 ; *** in non-multitasking systems, install embedded TASK_DEV driver ***
-#ifndef	MULTITASK
 	LDY #<st_taskdev	; pseudo-driver LSB -- standard label on kernel.s
 	LDA #>st_taskdev	; pseudo-driver MSB
 	STY drv_opt			; *** assuming TASK_DEV = 128, index otherwise
 	STA drv_opt+1		; same for MSB
-#endif
 ; might do something similar for WIND_DEV = 129...
 ; ++++++
 #endif
@@ -169,6 +168,7 @@ dr_inst:
 ; create entry on IDs table ** new 20150219
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code (5)
+
 #ifdef	SAFE
 		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
@@ -181,9 +181,9 @@ dr_phys:
 		TAX					; was Y
 ; new 161014, TASK_DEV (128 turns into 0 as index) does NOT get checked, allowing default installation
 		BEQ dr_empty
-; alternative in case of WIND_DEV managed similarly
-;			CPX #4				; first index that will be managed normally
-;				BCC dr_empty		; 0 & 2 (TASK_DEV & WIND_DEV) will NOT be checked from default installation
+; ** alternative in case of WIND_DEV managed similarly **
+;		CPX #4				; first phys-index that will be managed normally
+;		BCC dr_empty		; 0 & 2 (TASK_DEV & WIND_DEV) will NOT be checked from default installation
 			LDA #<dr_error		; pre-installed LSB (2)
 			CMP drv_opt, X		; check whether in use (4)
 				BNE dr_busy			; pointer was not empty (2/3)
@@ -193,9 +193,9 @@ dr_phys:
 			CMP drv_opt+1, X	; check whether in use (4)
 				BNE dr_busy			; pointer was not empty (2/3)
 			CMP drv_ipt+1, X	; now check input, just in case (4)
-				BEQ dr_empty		; it is OK to set (3/2)
+			BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
-				JMP dr_abort		; already in use (3)
+			JMP dr_abort		; already in use (3)
 dr_empty:
 		LDY #D_COUT			; offset for output routine (2)
 		JSR dr_gind			; get indirect address
@@ -238,6 +238,20 @@ dr_limit:	CPY drv_num			; all done? (4)
 			LDX dpoll_mx		; get destination index (4)
 			CPX #MAX_QUEUE		; compare against limit (2)
 				BCS dr_abort		; error registering driver! (2/3) nothing was queued
+; loops for these are 11b/35t instead of 13b/24t if directly assigned (saving last INY)
+; ****think about a generic routine
+; enter with table offset in Y
+;	STY da_tmp		; temporary storage
+;	LDA doff_tab, Y		; where is each queue depending on dr.offset!
+;	TAX			; use as other index
+;	SEC			; queue after length!
+;	ADC #<drv_queues	; address LSB of first of queues!
+;	SBC da_tmp		; deindex! do not know what to do with carry...
+;	STA da_que		; new local for indirect pointer
+;	LDA #>drv_queues	; same with MSB
+;	ADC #0			; just with propagated carry
+;	STA da_que
+;dr_xloop:
 dr_ploop:
 				LDA (da_ptr), Y		; get one byte (5)
 				STA drv_poll, X		; store in RAM (4)
@@ -247,7 +261,7 @@ dr_ploop:
 				BNE dr_ploop		; if not, go for MSB (3/2) eek
 			STX dpoll_mx		; save updated index (4)
 dr_nopoll:
-		LDA dr_aut			; get auth code (3)
+		LDA dr_aut			; reget auth code (3)
 		AND #A_REQ			; check D_REQ presence (2)
 		BEQ dr_noreq		; no D_REQ installed (2/3)
 			LDY #D_REQ			; get offset for async vector (2)
@@ -263,7 +277,7 @@ dr_aloop:
 				BNE dr_aloop		; if not, go for MSB (3/2) eek
 			STX dreq_mx			; save updated index  (4)
 dr_noreq:
-		LDA dr_aut			; get auth code (3)
+		LDA dr_aut			; reget auth code (3)
 		AND #A_SEC			; check D_SEC (2)
 		BEQ dr_nosec		; no D_SEC installed (2/3)
 			LDY #D_SEC			; get offset for 1-sec vector (2)
