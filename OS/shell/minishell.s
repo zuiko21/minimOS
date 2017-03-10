@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5b11
-; last modified 20170308-0851
+; last modified 20170310-0903
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -47,7 +47,7 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
-+shell:					; mandatory label
+;+shell:					; mandatory label
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space

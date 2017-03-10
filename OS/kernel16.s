@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b14
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170307-1217
+; last modified 20170310-0900
 
 ; just in case
 #define		C816	_C816
@@ -37,11 +37,11 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.5.1b13", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b14", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$63C0	; time, 12.30
-	.word	$4A66	; date, 2017/3/6
+	.word	$4A67	; date, 2017/3/7
 
 kern_siz = kern_end - kern_head - 256
 
@@ -360,7 +360,7 @@ debug:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.5.1b13", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b14", 0	; version in comment
 #endif
 
 ; *****************************************************
@@ -557,7 +557,15 @@ kern_end:		; for size computation
 ; ***********************************************
 
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
-; must include external shell label!!!
+; must NOT include external shell label!!!
+shellcode:
+; first determine actual shell address, no longer internally defined!
+#ifdef	NOHEAD
+shell	= shellcode			; no header to skip
+#else
+shell	= shellcode+256		; skip header
+#endif
+
 #include "shell/SHELL"
 
 ; ****** Downloaded kernels add driver staff at the end ******
