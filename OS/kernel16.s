@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b14
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170310-1314
+; last modified 20170313-1323
 
 ; just in case
 #define		C816	_C816
@@ -385,7 +385,7 @@ st_tdlist:
 	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
 
 ; diverse driver data
-; these tables could be suppressed via the EOR on CPU code
+; this table could be suppressed via EOR on CPU-flagging code
 ;arch_tab:
 ;	.asc	"VRBN"		; 65xx codes are 65816, Rockwell, CMOS & NMOS (new order)
 
@@ -418,10 +418,10 @@ exec_st:
 	LDA #$FF			; initial stack pointer
 	TCS					; eeeeeeeeeek
 ; this should now work for both 02 and 816 apps
-	LDY ex_pt+2		; get bank first! keep it
+	LDY ex_pt+2			; get bank first! keep it
 ; ***first push the 24-bit pointer, when non-XIP is available
-;	PHY			; push it
-;	PEI ex_pt		; push the rest of the pointer
+;	PHY					; push it
+;	PEI ex_pt			; push the rest of the pointer
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 ; set run_arch as per architecture!
@@ -477,10 +477,10 @@ st_hndl:
 	LDA ex_pt			; get pointer
 ; must check for 02 code in order to get bank from current DBR!
 	LDY run_arch		; check current code
-	BEQ st_sh16		; if native, bank is set
+	BEQ st_sh16			; if native, bank is set
 		PHB					; otherwise get current *** find another way for multitasking!
 		PLX					; get it on reg
-		BRA st_shset			; no need to load
+		BRA st_shset		; no need to load
 st_sh16:
 	LDX ex_pt+2			; please, take bank too
 st_shset:

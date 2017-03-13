@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b19, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170313-1316
+; last modified 20170313-1338
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -1404,9 +1404,11 @@ sd_tab:					; check order in abi.h!
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.word	isr_sched_ret-1	; corrected reentry address **standard label** REVISE REVISE
+	.byt	<isr_sched_ret-1	; corrected reentry address **standard label**
+	.byt	>isr_sched_ret-1	; note reversed pointer eeeeeeeeeeek
 	.byt	0				; stored X value, best if multitasking driver is the first one
-	.word	0, 0, 0			; irrelevant Y, X, A values
+	.byt	0				; space for saved data Bank register, load from API?
+	.word	0, 0, 0			; irrelevant Y, X, A values, load from API?
 tsi_end:
 ; end of stack frame for easier size computation
 
