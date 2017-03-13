@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b18, should match kernel16.s
+; v0.5.1b19, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170307-1230
+; last modified 20170313-0848
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -420,6 +420,18 @@ ma_updt:
 	LDA run_pid			; get uncorrected PID in A
 	STA ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
+; ****** temporary code for limiting 6502 requests to bank zero! ******
+	LDA run_arch		; get architecture
+	BEQ ma_bankOK		; native 65816 means no trouble
+		LDA ma_pt+2			; otherwise check out assigned bank
+		BEQ ma_bankOK		; bank zero is OK for everyone
+			PHA					; otherwise set data bank temprorarily...
+			PLB					; ...as will be taken by FREE from 8-bit code
+			_KERNEL(FREE)		; release what was wrongly assigned
+			PLB					; 6502 cannot currently run outside bank zero!
+			_ERR(FULL)			; and exit with no suitable memory available
+ma_bankOK:
+; **** end of temporary code, remove as soon as properly handled!! ****
 	PLB					; restore!
 	_EXIT_OK
 
