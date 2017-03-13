@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b19, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170313-0848
+; last modified 20170313-1000
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -263,9 +263,9 @@ ci_rnd:
 ; ma_pt	= 24b pointer to reserved block
 ; ma_rs	= 24b actual size (esp. if ma_rs was 0, but check LSB too)
 ; C		= not enough memory/corruption detected
-;		USES ma_ix.b, ma_lim
+;		USES ma_ix.b and, in the future, ma_lim
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
-; * MUST limit 6502 blocks to "current" bank!!! * TO DO * TO DO
+; * MUST limit 6502 blocks to "current" bank!!! * TO DO * currently limits to bank zero
 ; otherwise it is 02-savvy already
 ; think about managing the multiple exit points as this is a rather slow function
 
@@ -273,22 +273,23 @@ malloc:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
 	PHB					; eeeeeeeek! do not forget to restore
-	LDX #0				; reset index
-	PHX					; put one zero byte into stack
+	LDX #0				; reset index (can be used for storing any 8-bit zero)
+	PHX					; put one zero byte into stack (no need for PHK as this X is needed afterwards)
 	PLB					; preset DBR as default zero!
-	STX ma_align+1		; **clear MSB in cass of a 16-bit BIT!**
+	STX ma_align+1		; **clear MSB for the 16-bit BIT!**
 ; detect caller architecture in order to enable 24-bit addressing
-	LDY run_arch		; zero for native 65816, respect X as it holds zero
-	BEQ ma_24b			; OK for 24b addressing
-		STX ma_rs+2			; clear it just in case!
-		PLY					; otherwise get saved bank, respecting X...
-		PHY					; ...restore it...
-		STY ma_lim			; ...and set as only feasible bank
-		STY ma_lim+1		; maximum (MSB) is the same as minimum (LSB)
-		BRA ma_go			; continue
-ma_24b:
-	LDA #$FF00			; full range of banks
-	STA ma_lim			; set unrestricted limits
+; *** since currently just limits 6502 requests to bank zero, no need to preset the unimplemented limits ***
+;	LDY run_arch		; zero for native 65816, respect X as it holds zero
+;	BEQ ma_24b			; OK for 24b addressing
+;		STX ma_rs+2			; clear it just in case!
+;		PLY					; otherwise get saved bank, respecting X...
+;		PHY					; ...restore it...
+;		STY ma_lim			; ...and set as only feasible bank
+;		STY ma_lim+1		; maximum (MSB) is the same as minimum (LSB)
+;		BRA ma_go			; continue
+;ma_24b:
+;	LDA #$FF00			; full range of banks
+;	STA ma_lim			; set unrestricted limits
 ma_go:
 ; limits set, proceed as usual
 	LDY ma_rs			; check individual bytes, just in case
@@ -494,8 +495,8 @@ free:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
 	PHB					; eeeeeeeek! do not forget to restore
-	LDX #0				; reset index
-	PHX					; put one zero byte into stack
+	LDX #0				; reset index (will be used afterwards)
+	PHX					; put one zero byte into stack (no need for PHK)
 	PLB					; preset DBR as default zero!
 #ifdef	SAFE
 	LDY ma_pt			; LSB currently not implemented
@@ -505,8 +506,6 @@ free:
 	LDY run_arch		; will be zero for native 65816, please respect X!
 	BEQ fr_24b			; 24-bit enabled
 		PLY					; otherwise get stored caller bank...
-; was that OK? What if another task sends a SIGKILL???
-; if the other task is 816, all should be OK, pointer fully set
 		PHY					; ...restore it...
 		STY ma_pt+2			; ...and use as default
 fr_24b:
@@ -521,8 +520,8 @@ fr_loop:
 		BNE fr_loop			; continue until end
 ; this could be one end of CS
 fr_no:
-	PLB					; restore!
-	_ERR(N_FOUND)		; no such block!
+		PLB					; restore!
+		_ERR(N_FOUND)		; no such block!
 fr_found:
 	LDY ram_stat, X		; only used blocks can be freed!
 	CPY #USED_RAM		; was it in use?
@@ -648,15 +647,22 @@ load_link:
 		PHB					; otherwise get caller data bank...
 		PLX					; ...pick it up...
 		STX str_pt+2		; ...and use as default bank
+; *** special corrections are needed in case the pointer is in direct page! ***
+		LDY str_pt+1		; get page number without bank also...
+		BNE ll_nz			; outside DP, nothing more to correct
+			STY str_pt+2		; otherwise clear bank (Y is 0)
+			BRA ll_dp			; we know we asked for direct page
 ll_24b:
-; beware of direct-page pointers
-	LDX str_pt+1			; get MSB without bank!
-; ***should avoid allocating memory just after bank boundaries, perhaps for 65x02 code only?
+; *** beware of direct-page pointers ***
+	LDA str_pt+1		; get MSB _WITH_ bank!
 	BNE ll_nz			; only dp pointers will be corrected
+; compute actual address of context
+ll_dp:
 		TDC					; current context location
-		ADC str_pt		; compute actual address (C was clear per ABI)
-		STA str_pt		; store corrected value
+		ADC str_pt			; compute actual address (C was clear per ABI)
+		STA str_pt			; store corrected value
 ll_nz:
+; *** above was for staying safe of direct page references ***
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get whole pointer (minus bank)
 	SEC
@@ -724,10 +730,11 @@ ll_found:
 ll_wrap:
 	_ERR(INVALID)		; unsupported CPU
 ll_valid:
-; ***CPU-type is compatible but has 8-bit code, should install 64-byte wrapper at end of bank, or limit to bank zero!
+; *** CPU-type is compatible but has 8-bit code, should install 64-byte wrapper at end of bank, or limit to bank zero! ***
+; currently limited to bank zero
 	LDX rh_scan+2			; check THIRD byte, still not supported in 8-bit code
 	BEQ ll_native			; still in bank 0, OK to proceed
-		_ERR(INVALID)				; somewhat confusing error...
+		_ERR(INVALID)			; somewhat confusing error...
 ll_native:
 ; either is 65816 code or 02 into bank zero
 	STA cpu_ll			; set CPU type, now will not matter whether XIP or not!
@@ -765,15 +772,23 @@ string:
 		PLX					; otherwise get stored caller bank...
 		PHX					; ...restore it...
 		STX str_pt+2		; ...and use as default
+; *** special corrections are needed in case the pointer is in direct page! ***
+		LDX str_pt+1		; get page number without bank...
+		BNE str_ndp			; outside DP, nothing more to correct
+			STZ str_pt+2		; otherwise clear bank (STX will do)
+; 8-bit optimised code, see below for older alternative
+			BRA str_dp			; we know we asked for direct page
 str_24b:
-	.al: REP #$20			; *** 16-bit memory ***
-	LDA str_pt+1			; check MSB, beware of bank!
+	LDA str_pt+1		; check MSB
+	ORA str_pt+2		; beware of bank!
 	BNE str_ndp			; not direct page is already OK
-		TDC
-		ADC str_pt+1
-		STA str_pt+1
+str_dp:
+		.al: REP #$20		; *** 16-bit memory ***
+		TDC					; context address
+		ADC str_pt			; add to requested offset (C is clear)
+		STA str_pt			; correct pointer
+		.as: SEP #$20		; *** back to 8-bit ***
 str_ndp:
-	.as: SEP #$20			; *** back to 8-bit ***
 ; proceed
 	TYA					; set flags upon devnum (2)
 	BNE str_port		; not default (3/2)
@@ -875,24 +890,44 @@ readLN:
 	BEQ rl_24b			; 24-bit enabled
 		PHB					; otherwise get (current) caller bank...
 		PLA					; ...get its value...
-		STA str_pt+2			; ...and use as default in pointer
+		STA str_pt+2		; ...and use as default in pointer
+; *** special corrections are needed in case the pointer is in direct page! ***
+		LDX str_pt+1		; get page number without bank... respecting Y!
+		BNE rl_ndp			; outside DP, nothing more to correct
+			STZ str_pt+2		; otherwise clear bank (STX will do)
+; older code switched to 16-bit here...
+			BRA rl_dp			; we know we asked for direct page
+; alternative 8-bit code is 15-2b, 9/24t -3t for 6502
 rl_24b:
-	.al: REP #$20		; *** 16-bit memory ***
-	LDA str_pt+1		; check MSB, beware of bank anyway
-	BNE rl_ndp			; not direct page is already OK
+	LDA str_pt+1		; get MSB...
+	ORA str_pt+2		; ...and include bank, searching for direct page
+	BNE rl_ndp			; not DP, all OK
+rl_dp:
+		.al: REP #$20		; *** 16-bit memory ***
 		TDC					; current context
-		ADC str_pt+1		; compute address, C was clear
-		STA str_pt+1		; update pointer
+		ADC str_pt			; compute address, C was clear
+		STA str_pt			; update pointer
+		.as: SEP #$20		; *** back to 8-bit ***
+; older code from 16-bit rountines was 13b, 13/22t up to ndp2
+;rl_24b:
+;	.al: ;REP #$20		; *** 16-bit memory ***
+;	LDA str_pt+1		; check MSB, beware of bank anyway
+;	BNE rl_ndp8			; not direct page is already OK
+;rl_dp:
+;		TDC					; current context
+;		ADC str_pt			; compute address, C was clear
+;		STA str_pt			; update pointer
+;rl_ndp8:
+;	.as: ;SEP #$20		; *** back to 8-bit ***
 rl_ndp:
-	.as: SEP #$20		; *** back to 8-bit ***
-	STY rl_dev		; preset device ID!
-	STZ rl_cur		; reset variable
+	STY rl_dev			; preset device ID!
+	STZ rl_cur			; reset variable
 rl_l:
 		_KERNEL(B_YIELD)	; always useful
-		LDY rl_dev		; use device
+		LDY rl_dev			; use device
 		_KERNEL(CIN)		; get one character
-		BCC rl_rcv		; got something
-			CPY #EMPTY		; otherwise is just waiting?
+		BCC rl_rcv			; got something
+			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
 rl_abort:
 			LDA #0				; no indirect STZ
