@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1b19, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170313-1000
+; last modified 20170313-1316
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -642,15 +642,16 @@ load_link:
 	.xs: SEP #$10		; *** standard index size ***
 ; no need to set DBR
 ; check architecture in order to discard bank address
-	LDX run_arch		; will be zero for native 65816
+	LDA @run_arch		; will be zero for native 65816 but with extra byte!
+	TAX					; filter out MSB to get proper value eeeeeeeeeek
 	BEQ ll_24b			; 24-bit enabled
 		PHB					; otherwise get caller data bank...
 		PLX					; ...pick it up...
 		STX str_pt+2		; ...and use as default bank
 ; *** special corrections are needed in case the pointer is in direct page! ***
-		LDY str_pt+1		; get page number without bank also...
+		LDX str_pt+1		; get page number without bank...
 		BNE ll_nz			; outside DP, nothing more to correct
-			STY str_pt+2		; otherwise clear bank (Y is 0)
+			STX str_pt+2		; otherwise clear bank (X is 0)
 			BRA ll_dp			; we know we asked for direct page
 ll_24b:
 ; *** beware of direct-page pointers ***
@@ -776,7 +777,6 @@ string:
 		LDX str_pt+1		; get page number without bank...
 		BNE str_ndp			; outside DP, nothing more to correct
 			STZ str_pt+2		; otherwise clear bank (STX will do)
-; 8-bit optimised code, see below for older alternative
 			BRA str_dp			; we know we asked for direct page
 str_24b:
 	LDA str_pt+1		; check MSB
@@ -886,7 +886,7 @@ readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; no need to switch DBR as regular I/O calls would do it
 ; check architecture in order to discard bank address
-	LDA run_arch		; will be zero for native 65816
+	LDA @run_arch		; will be zero for native 65816 eeeeeeeeeek
 	BEQ rl_24b			; 24-bit enabled
 		PHB					; otherwise get (current) caller bank...
 		PLA					; ...get its value...
@@ -895,30 +895,18 @@ readLN:
 		LDX str_pt+1		; get page number without bank... respecting Y!
 		BNE rl_ndp			; outside DP, nothing more to correct
 			STZ str_pt+2		; otherwise clear bank (STX will do)
-; older code switched to 16-bit here...
+			.al: REP #$20		; *** 16-bit memory ***
 			BRA rl_dp			; we know we asked for direct page
-; alternative 8-bit code is 15-2b, 9/24t -3t for 6502
 rl_24b:
-	LDA str_pt+1		; get MSB...
-	ORA str_pt+2		; ...and include bank, searching for direct page
-	BNE rl_ndp			; not DP, all OK
+	.al: REP #$20		; *** 16-bit memory ***
+	LDA str_pt+1		; check MSB, beware of bank anyway
+	BNE rl_ndp8			; not direct page is already OK
 rl_dp:
-		.al: REP #$20		; *** 16-bit memory ***
 		TDC					; current context
 		ADC str_pt			; compute address, C was clear
 		STA str_pt			; update pointer
-		.as: SEP #$20		; *** back to 8-bit ***
-; older code from 16-bit rountines was 13b, 13/22t up to ndp2
-;rl_24b:
-;	.al: ;REP #$20		; *** 16-bit memory ***
-;	LDA str_pt+1		; check MSB, beware of bank anyway
-;	BNE rl_ndp8			; not direct page is already OK
-;rl_dp:
-;		TDC					; current context
-;		ADC str_pt			; compute address, C was clear
-;		STA str_pt			; update pointer
-;rl_ndp8:
-;	.as: ;SEP #$20		; *** back to 8-bit ***
+rl_ndp8:
+	.as: SEP #$20		; *** back to 8-bit ***
 rl_ndp:
 	STY rl_dev			; preset device ID!
 	STZ rl_cur			; reset variable
@@ -1206,7 +1194,7 @@ sig_call:
 
 get_pid:
 	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA @run_pid			; fastest way, long addressing
+	LDA @run_pid		; fastest way, long addressing
 	TAY					; as output value
 	_EXIT_OK
 
@@ -1280,8 +1268,9 @@ release:
 	PLB					; set DBR! do not forget another PLB upon end!
 ; proceed
 ; ** not sure if I really need to save this value... **
-	LDX run_arch		; "current" (?) architecture
-	PHX					; save it!
+; supposedly this will be called upon task death!
+;	LDX run_arch		; "current" (?) architecture
+;	PHX					; save it!
 	STZ run_arch		; clear this to make it 24-bit enabled
 ; continue as usual
 	TYA					; as no CPY abs,X
@@ -1309,8 +1298,8 @@ rls_oth:
 		CPY #END_RAM		; are we done?
 		BNE rls_loop		; continue if not yet
 ; ** since run_arch was saved and destroyed, maybe I should restore it here **
-	PLX					; take a byte from stack
-	STX run_arch		; restore value, just in case
+;	PLX					; take a byte from stack
+;	STX run_arch		; restore value, just in case
 	PLB					; restore!
 	_EXIT_OK			; no errors...
 
