@@ -420,8 +420,8 @@ exec_st:
 ; this should now work for both 02 and 816 apps
 	LDY ex_pt+2			; get bank first! keep it
 ; ***first push the 24-bit pointer, when non-XIP is available
-;	PHY					; push it
-;	PEI ex_pt			; push the rest of the pointer
+	PHY					; push it
+	PEI ex_pt			; push the rest of the pointer
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 ; set run_arch as per architecture!
@@ -489,7 +489,7 @@ st_shset:
 	TXA					; no long STX...
 	STA @mm_sterm+2		; bank stored just after regular pointer, 24-bit addr!
 	_DR_OK
-.as						; back to regular API call
+.as						; back to regular API call, just in case
 
 ; B_STATUS for single-task systems
 ; ***this one does not provide CPU-type flags!!!
@@ -524,6 +524,13 @@ sig_kill:
 	LDY #0				; standard PID
 	KERNEL(RELEASE)		; free all memory eeeeeeeek
 ; *** when non-XIP is available, try to free address from stack bottom
+	LDX #3				; number of bytes for pointer
+sk_loop:				; *** this code valid for singletask 816 ***
+		LDA @$01FC, X		; get byte from bottom of stack
+		STA ma_pt, X		; set pointer
+		DEX					; previous byte
+		BNE sk_loop			; until all done
+	_KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
 ; new, check whether a shutdown command was issued
 	LDA @sd_flag		; some action pending? 24-bit!
 	BEQ rst_shell		; if not, just restart shell
