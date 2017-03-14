@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b14
+; v0.5.1b15
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170313-1323
+; last modified 20170314-1233
 
 ; just in case
 #define		C816	_C816
@@ -515,21 +515,14 @@ sig_term:
 	PHK					; needed for new interface as will end in RTI!
 	PEA st_yield		; correct return address
 	PHP					; eeeeeeeeeeeek
-; think about putting mm_stbnk just after mm_term word, remaining code would reduce to SEP #$30 & JMP[mm_term]
-	LDA @mm_sterm+2		; *** single task handler might be anywhere *** 24-bit!
-	PHA					; push bank address eeeeeeeeeeeek
-	.al: REP #$20		; *** best going 16-bit ***
-	LDA @mm_sterm		; get handler address, separate singletasking value
-	PHA					; push handler address (minus bank)
 	.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
-	PHP					; as required
-	RTI					; actual JUMP, will return to sig_yield
+	JMP [mm_term]		; actual JUMP, will return to sig_yield
 sig_kill:
 ; since it could arrive here from the end of a task, restore register sizes!
 	.as: .xs: SEP #$30	; *** standard sizes ***
 ; then, free up all memory from previous task
 	LDY #0				; standard PID
-;	KERNEL(RELEASE)		; free all memory eeeeeeeek
+	KERNEL(RELEASE)		; free all memory eeeeeeeek
 ; *** when non-XIP is available, try to free address from stack bottom
 ; new, check whether a shutdown command was issued
 	LDA @sd_flag		; some action pending? 24-bit!
