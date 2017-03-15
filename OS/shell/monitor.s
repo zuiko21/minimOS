@@ -82,6 +82,7 @@ montitle:
 		_ABORT(FULL)		; not enough memory otherwise (rare) new interface
 go_mon:
 #endif
+; proceed normally
 	STA z_used			; set needed ZP space as required by minimOS
 	_STZA w_rect		; no screen size required
 	_STZA w_rect+1		; neither MSB

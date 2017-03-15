@@ -421,7 +421,7 @@ exec_st:
 	LDY ex_pt+2			; get bank first! keep it
 ; ***first push the 24-bit pointer, when non-XIP is available
 	PHY					; push it
-	PEI ex_pt			; push the rest of the pointer
+	PEI (ex_pt)			; push the rest of the pointer
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 ; set run_arch as per architecture!
@@ -516,13 +516,13 @@ sig_term:
 	PEA st_yield		; correct return address
 	PHP					; eeeeeeeeeeeek
 	.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
-	JMP [mm_term]		; actual JUMP, will return to sig_yield
+	JMP [mm_sterm]		; actual JUMP, will return to sig_yield
 sig_kill:
 ; since it could arrive here from the end of a task, restore register sizes!
 	.as: .xs: SEP #$30	; *** standard sizes ***
 ; then, free up all memory from previous task
 	LDY #0				; standard PID
-	KERNEL(RELEASE)		; free all memory eeeeeeeek
+	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** when non-XIP is available, try to free address from stack bottom
 	LDX #3				; number of bytes for pointer
 sk_loop:				; *** this code valid for singletask 816 ***
