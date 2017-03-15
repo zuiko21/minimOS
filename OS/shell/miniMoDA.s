@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b12
-; last modified 20170315-1020
+; last modified 20170315-1046
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -435,9 +435,11 @@ call_address:
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
-	JSR $FFFF &  do_call			; set regs and jump!
 #ifdef	C816
+	JSR @do_call		; *** must end in RTL!!! ***
 	.xs: .as: SEP #$30	; *** make certain about standard size ***
+#else
+	JSR $FFFF &  do_call			; set regs and jump!
 #endif
 ; ** should record actual registers here **
 	STA _a
