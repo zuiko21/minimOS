@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b12
-; last modified 20170315-0933
+; last modified 20170315-1020
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -151,13 +151,14 @@ get_sp:
 
 ; *** begin things ***
 main_loop:
-;		_STZA cursor		; eeeeeeeeeek... but really needed?
+		_STZA cursor		; eeeeeeeeeek... but really needed?
 ; *** NEW variable buffer setting ***
 #ifdef	C816
 		TDC					; get direct page pointer!
-		CLC
-		ADC #<buffer		; compute offset (could be just LDA #)
-		TAY					; pointer LSB
+;		CLC
+;		ADC #<buffer		; compute offset (could be just LDA #)
+;		TAY					; pointer LSB
+		LDY #<buffer		; *** assume D is page-aligned
 		XBA					; now A holds MSB
 #else
 		LDY #<buffer		; get LSB that is full address in zeropage
@@ -343,7 +344,7 @@ sc_seek:
 			BCC no_match		; and try another opcode
 				INC scan+1			; in case of page crossing
 #ifdef	C816
-			BCC no_match		; there was no bank crossing either!
+			BNE no_match		; there was no bank crossing either!
 				INC scan+2			; otherwise proceed as expected
 #endif
 no_match:
@@ -474,7 +475,12 @@ do_call:
 	PHA					; will be set via PLP
 	LDA _a				; lastly retrieve accumulator
 	PLP					; restore status
+#ifdef	C816
+	STZ value+2			; will destroy some irrelevant value
+	JMP [value]			; eeeeeeeeek
+#else
 	JMP (value)			; go! might return somewhere else
+#endif
 
 ; ** .D = disassemble 'u' lines **
 disassemble:
@@ -1325,6 +1331,7 @@ title:
 #endif
 
 ; include opcode list
+da_oclist:
 #include "shell/data/opcodes.s"
 mmd_end:					; size computation
 .)
