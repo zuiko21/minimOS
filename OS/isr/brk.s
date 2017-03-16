@@ -1,7 +1,7 @@
 ; minimOS BRK handler
-; v0.5.1a1
-; (c) Carlos J. Santisteban
-; last modified 20161010-1311
+; v0.5.1a2
+; (c) 2016-2017 Carlos J. Santisteban
+; last modified 20170316-1245
 
 #include "usual.h"
 ; this is currently a panic/crash routine!
@@ -20,9 +20,9 @@
 		_DEC			; otherwise correct MSB
 #else
 ; 65816 code saves... one byte
-	LDA 7, s		; get buried LSB
+	LDA 11, s		; get buried LSB eeeeeeeeeeeeeeeek
 	TAX				; hold it
-	LDA 8, s		; get buried MSB
+	LDA 12, s		; get buried MSB
 	TXY				; prepare for later
 	BNE brk_nw		; will not wrap upon decrement!
 		DEC				; otherwise correct MSB
@@ -32,6 +32,7 @@ brk_nw:
 ; A/Y points to beginning of string
 	STA sysptr+1	; prepare internal pointer, should it be saved for reentrancy?
 	STY sysptr
+	LDY #0			; eeeeeeeeeeeeeeeeeek
 brk_ploop:
 		_PHY			; save cursor
 		LDA (sysptr), Y	; get current char
@@ -39,12 +40,10 @@ brk_ploop:
 			PLA				; otherwise discard saved counter
 			_BRA brk_term	; and finish printed line
 brk_prn:
-		LDY #0			; default device
-		STA io_c		; eeeeeeek
-		_KERNEL(COUT)	; print it
+		JSR brk_out		; send out character! saves 6 bytes
 		_PLY			; restore counter
 		INY				; next in string
-		_BRA brk_ploop
+		BNE brk_ploop	; this version will not print over 256 chars!
 brk_term:
 	JSR brk_cr		; another newline
 ; we are done, should call debugger if desired, otherwise we will just lock
@@ -53,8 +52,9 @@ brk_term:
 
 ; send a newline to default device
 brk_cr:
-	LDY #0			; default
 	LDA #13			; CR
+brk_out:
+	LDY #0			; default
 	STA io_c		; kernel parameter
 	_KERNEL(COUT)	; system call
 	RTS
