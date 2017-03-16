@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b15
+; v0.5.1b16
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170314-1233
+; last modified 20170316-1834
 
 ; just in case
 #define		C816	_C816
@@ -37,11 +37,11 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.5.1b14", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b16", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$63C0	; time, 12.30
-	.word	$4A67	; date, 2017/3/7
+	.word	$9000	; time, 18.00
+	.word	$4A70	; date, 2017/3/16
 
 kern_siz = kern_end - kern_head - 256
 
@@ -362,7 +362,7 @@ debug:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.5.1b14", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b16", 0	; version in comment
 #endif
 
 ; *****************************************************
@@ -382,7 +382,7 @@ st_tdlist:
 	.word	st_status	; get execution flags for a braid
 	.word	st_getpid	; get current PID
 	.word	st_hndl		; set SIGTERM handler
-	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
+;	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
 
 ; diverse driver data
 ; this table could be suppressed via EOR on CPU-flagging code
@@ -405,7 +405,7 @@ st_yield:
 
 ; B_EXEC for non-multitasking systems
 st_exec:
-st_prior:
+;st_prior:
 #ifdef	SAFE
 	TYA					; should be system reserved PID, best way
 	BEQ exec_st			; OK for single-task system
@@ -419,13 +419,15 @@ exec_st:
 	TCS					; eeeeeeeeeek
 ; this should now work for both 02 and 816 apps
 	LDY ex_pt+2			; get bank first! keep it
-; ***first push the 24-bit pointer, when non-XIP is available
-	PHY					; push it
-	PEI (ex_pt)			; push the rest of the pointer
+; *** as this version has no non-XIP support, no real need for the following ***
+; *** first push the 24-bit pointer, when non-XIP is available
+;	PHY					; push it
+;	PEI (ex_pt)			; push the rest of the pointer
+; *** the above for non-XIP support ***
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 ; set run_arch as per architecture!
-; * might just do EOR #'V' to detect 65816! *
+; *** might just do EOR #'V' to detect 65816! ***
 ;	LDX #0				; reset index
 ;arch_loop:
 ;		CMP @arch_tab, X	; compare with list item
@@ -433,28 +435,31 @@ exec_st:
 ;		INX					; next
 ;		CPX #4				; supported limit?
 ;		BNE arch_loop		; still to go
-;	PANIC("{code}")	; cannot execute this! should be a mere error
+; No valid code found, should try to free non-XIP allocated RAM
+;	_DR_ERR(INVALID)	; cannot execute this! should be a mere error
 ;arch_ok:
 ;	TXA					; make equivalent code from index!
 ;	ASL					; two times to make it SIGterm flag savvy!
 ; ...and store at run_arch
-; could just store the EOR result, see above
+; *** could just store the EOR result, see above ***
 	EOR #'V'			; ** will be zero only for native **
 	STA @run_arch		; set as current, note long addressing eeeeeeek
 ; new approach, reusing 816 code!
 	TAX					; recheck architecture
 		BEQ exec_long		; native 816 will always push standard return bank
-; here is to manage 65xx02 code **temporarily limited to bank zero
+; here is to manage 65xx02 code ***temporarily limited to bank zero
 	TYX					; check bank for a moment
 	BEQ exec_long		; already in bank zero means no need to install wrapper *** ***
-; *** *** in case 6502 code is running beyond bank zero, setup wrapper here! *** ***
+; *** in case 6502 code is running beyond bank zero, setup wrapper here! ***
 ; after that, push alternative (wrapper) return address
 ;		PHY					; push target bank
+; *** is the above needed for 02 code? should not harm anyway ***
 ;		PEA $FFC4			; sample return address, will point to a JML sig_kill
 ;		BRA exec_retset		; all done?
-; *** *** in the meanwhile, just reject the request
+; *** in the meanwhile, just reject the request ***
+; should deallocate resources, just like an invalid CPU!
 		_DR_ERR(INVALID)	; 6502 code not yet supported on that address
-; ** alternative to self-generated code for long indirect call **
+; long indirect call, just push the proper return address, both RTS & RTL savvy
 exec_long:
 	PHK					; push return bank address, actually zero (3) no matter the architecture!
 	PEA sig_kill-1		; push corrected return address (5)
@@ -496,6 +501,9 @@ st_shset:
 st_status:
 	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
 ; ***might need to add CPU info inside
+;	LDA #BR_RUN
+;	ORA run_arch			; only if properly set, EOR hack is NOT allowed!
+;	TAY
 	_DR_OK
 
 ; B_SIGNAL for single-task systems
@@ -524,13 +532,13 @@ sig_kill:
 	LDY #0				; standard PID
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** when non-XIP is available, try to free address from stack bottom
-	LDX #3				; number of bytes for pointer
-sk_loop:				; *** this code valid for singletask 816 ***
-		LDA @$01FC, X		; get byte from bottom of stack
-		STA ma_pt, X		; set pointer
-		DEX					; previous byte
-		BNE sk_loop			; until all done
-	_KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
+;	LDX #3				; number of bytes for pointer
+;sk_loop:				; *** this code valid for singletask 816 ***
+;		LDA @$01FC, X		; get byte from bottom of stack
+;		STA ma_pt, X		; set pointer
+;		DEX					; previous byte
+;		BNE sk_loop			; until all done
+;	_KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
 ; new, check whether a shutdown command was issued
 	LDA @sd_flag		; some action pending? 24-bit!
 	BEQ rst_shell		; if not, just restart shell
