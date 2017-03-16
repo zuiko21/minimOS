@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a14
+; v0.5.1a15
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170306-1308
+; last modified 20170316-1838
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -35,7 +35,7 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a14", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.5.1a15", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
 mm_init:

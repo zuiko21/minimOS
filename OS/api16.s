@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b19, should match kernel16.s
+; v0.5.1b20, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170313-1338
+; last modified 20170316-1905
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -279,15 +279,15 @@ malloc:
 	STX ma_align+1		; **clear MSB for the 16-bit BIT!**
 ; detect caller architecture in order to enable 24-bit addressing
 ; *** since currently just limits 6502 requests to bank zero, no need to preset the unimplemented limits ***
-;	LDY run_arch		; zero for native 65816, respect X as it holds zero
-;	BEQ ma_24b			; OK for 24b addressing
-;		STX ma_rs+2			; clear it just in case!
+	LDY run_arch		; zero for native 65816, respect X as it holds zero
+	BEQ ma_24b			; OK for 24b addressing
 ;		PLY					; otherwise get saved bank, respecting X...
 ;		PHY					; ...restore it...
 ;		STY ma_lim			; ...and set as only feasible bank
 ;		STY ma_lim+1		; maximum (MSB) is the same as minimum (LSB)
-;		BRA ma_go			; continue
-;ma_24b:
+		STX ma_rs+2			; clear bank just in case!
+		BRA ma_go			; continue
+ma_24b:
 ;	LDA #$FF00			; full range of banks
 ;	STA ma_lim			; set unrestricted limits
 ma_go:
@@ -630,7 +630,7 @@ uptime:
 ; str_pt = 24b pointer to filename path (will be altered!)
 ;		OUTPUT
 ; ex_pt		= 24b pointer to executable code
-; cpu_ll	= architecture
+; cpu_ll	= architecture (as stated in headers!)
 ;		USES rh_scan
 ;
 ; now supports 24-bit addressing! but only for 65816 code
@@ -731,7 +731,7 @@ ll_found:
 ll_wrap:
 	_ERR(INVALID)		; unsupported CPU
 ll_valid:
-; *** CPU-type is compatible but has 8-bit code, should install 64-byte wrapper at end of bank, or limit to bank zero! ***
+; *** CPU-type is compatible but has 8-bit code, this (or B_EXEC?) should install 64-byte wrapper at end of bank, or limit to bank zero! ***
 ; currently limited to bank zero
 	LDX rh_scan+2			; check THIRD byte, still not supported in 8-bit code
 	BEQ ll_native			; still in bank 0, OK to proceed
@@ -874,7 +874,7 @@ str_err:
 ; *** READLN, buffered input ***
 ; ******************************
 ;		INPUT
-; Y			= dev
+; Y			= device
 ; str_pt	= 24b pointer to buffer (24-bit mandatory)
 ; ln_siz	= max offset
 ;		OUTPUT
@@ -1237,8 +1237,7 @@ yield:
 ; ***************************************************************
 ;		OUTPUT
 ; Y		= number of bytes
-; ex_pt = 24b pointer to the proposed stack frame (likeky in bank 0)
-; ***** REVISE ASAP ****** REVISE ASAP ***** MULTITASK label to be deprecated
+; ex_pt = pointer to the proposed stack frame (surely in bank 0)
 
 ts_info:
 	.xs: SEP #$10			; *** standard index size ***
@@ -1404,11 +1403,9 @@ sd_tab:					; check order in abi.h!
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.byt	<isr_sched_ret-1	; corrected reentry address **standard label**
-	.byt	>isr_sched_ret-1	; note reversed pointer eeeeeeeeeeek
+	.byt	>isr_sched_ret-1	; corrected reentry address **standard label**
+	.byt	<isr_sched_ret-1	; note reversed pointer eeeeeeeeeeek
 	.byt	0				; stored X value, best if multitasking driver is the first one
-	.byt	0				; space for saved data Bank register, load from API?
-	.word	0, 0, 0			; irrelevant Y, X, A values, load from API?
 tsi_end:
 ; end of stack frame for easier size computation
 
