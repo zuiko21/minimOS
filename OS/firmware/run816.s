@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9b4
+; v0.9b5
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170308-0841
+; last modified 20170316-1226
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9b4 firmware for "
+	.asc	"0.9b5 firmware for "
 #else
 fw_splash:
 #endif
@@ -30,8 +30,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6000			; time, 12.00
-	.word	$4A37			; date, 2017/1/23
+	.word	$63C0	; time, 12.30
+	.word	$4A70	; date, 2017/3/16
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -130,7 +130,7 @@ fws_cr:
 start_kernel:
 	SEC					; emulation mode for a moment (2+2)
 	XCE
-	JMP (fw_warm)		; (6)
+	JMP (fw_warm)		; (5)
 
 ; *** vectored NMI handler with magic number ***
 nmi:
@@ -338,11 +338,11 @@ brk_hndl:		; label from vector list
 	PHA						; save registers (3x4)
 	PHX
 	PHY
-	PHB						; eeeeeeeeeek
-;	JSR brk_handler			; standard label from IRQ
+	PHB						; eeeeeeeeeek (3)
+	JSR brk_handler			; standard label from IRQ
 	.al: .xl: REP #$30		; just in case (3)
-	PLB						; eeeeeeeeeeeek
-	PLY						; restore status and return
+	PLB						; eeeeeeeeeeeek (4)
+	PLY						; restore status and return (3x5)
 	PLX
 	PLA
 	RTI
@@ -363,6 +363,15 @@ cop_hndl:		; label from vector list
 	CLC			; pre-clear carry
 	COP #$FF	; wrapper on 816 firmware!
 	RTS			; return to caller
+; ****** sample for wrapper outside bank zero for minimOS·65 ******
+; ** should be at $xxFFC4 **
+;	JMP @sig_kill	; program end arrives here via RTS
+
+; ****** idea for 65816 admin-call interface from apps! ******
+; ** should be at $00FFC8 **
+;	JSR admin_call		; get into firmware interface (returns via RTS)
+;	RTL					; get back into original task (called via JSL $00FFC8)
+; ****** likely to end at $00FFCD ******
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
