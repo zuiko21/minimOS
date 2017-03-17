@@ -1,10 +1,11 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b16
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170316-1834
+; last modified 20170317-0841
 
 ; just in case
 #define		C816	_C816
+
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
 
@@ -436,7 +437,7 @@ exec_st:
 ;		CPX #4				; supported limit?
 ;		BNE arch_loop		; still to go
 ; No valid code found, should try to free non-XIP allocated RAM
-;	_DR_ERR(INVALID)	; cannot execute this! should be a mere error
+;	DR_ERR(INVALID)	; cannot execute this! should be a mere error
 ;arch_ok:
 ;	TXA					; make equivalent code from index!
 ;	ASL					; two times to make it SIGterm flag savvy!
@@ -538,7 +539,7 @@ sig_kill:
 ;		STA ma_pt, X		; set pointer
 ;		DEX					; previous byte
 ;		BNE sk_loop			; until all done
-;	_KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
+;	KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
 ; new, check whether a shutdown command was issued
 	LDA @sd_flag		; some action pending? 24-bit!
 	BEQ rst_shell		; if not, just restart shell
