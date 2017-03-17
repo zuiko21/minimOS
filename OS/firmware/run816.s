@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9b5
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170316-1226
+; last modified 20170317-0912
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -339,7 +339,7 @@ brk_hndl:		; label from vector list
 	PHX
 	PHY
 	PHB						; eeeeeeeeeek (3)
-	JSR brk_handler			; standard label from IRQ
+;	JSR brk_handler			; standard label from IRQ
 	.al: .xl: REP #$30		; just in case (3)
 	PLB						; eeeeeeeeeeeek (4)
 	PLY						; restore status and return (3x5)
