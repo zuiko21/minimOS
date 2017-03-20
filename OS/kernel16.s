@@ -41,8 +41,8 @@ kern_splash:
 	.asc	"minimOS-16 0.5.1b17", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$9000	; time, 18.00
-	.word	$4A70	; date, 2017/3/16
+	.word	$5160	; time, 10.11
+	.word	$4A74	; date, 2017/3/20
 
 kern_siz = kern_end - kern_head - 256
 
@@ -423,8 +423,8 @@ exec_st:
 	LDY ex_pt+2			; get bank first! keep it
 ; ***** as this version has no non-XIP support, no real need for the following *****
 ; *** first push the 24-bit pointer, when non-XIP is available
-	PHY					; push it
-	PEI (ex_pt)			; push the rest of the pointer
+;	PHY					; push it
+;	PEI (ex_pt)			; push the rest of the pointer
 ; ***** uncomment the above for non-XIP support *****
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
@@ -534,13 +534,13 @@ sig_kill:
 	LDY #0				; standard PID
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; ***** when non-XIP is available, try to free address from stack bottom *****
-	LDX #3				; number of bytes for pointer
+;	LDX #3				; number of bytes for pointer
 sk_loop:				; *** this code valid for singletask 816 ***
-		LDA @$01FC, X		; get byte from bottom of stack
-		STA ma_pt, X		; set pointer
-		DEX					; previous byte
-		BNE sk_loop			; until all done
-	_KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
+;		LDA @$01FC, X		; get byte from bottom of stack
+;		STA ma_pt, X		; set pointer
+;		DEX					; previous byte
+;		BNE sk_loop			; until all done
+;	KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
 ; ***** uncomment the above for non-XIP support *****
 ; new, check whether a shutdown command was issued
 	LDA @sd_flag		; some action pending? 24-bit!
