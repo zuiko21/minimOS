@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.5.1b16", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b17", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$9000	; time, 18.00
@@ -276,7 +276,7 @@ dr_icall:
 ; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
 ; make certain about DBR in calls...
 dr_call:
-	LDA (da_ptr), Y		; destination pointer MSB (6)
+	LDA (da_ptr), Y		; destination pointer (6)
 	DEC					; one less for RTS (2)
 	PHA					; push it (4)
 	.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
@@ -309,13 +309,14 @@ dr_ok:					; *** all drivers inited ***
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 ; new, show a splash message ever the kernel is restarted!
 ; assume 16-bit memory
+
 	JSR ks_cr			; leading newline
 	LDA #kern_splash	; get pointer to string
 	STA str_pt			; set parameter
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
-	_KERNEL(STRING)		; why do I have to print it twice??? It only appears once
+	_KERNEL(STRING)		; *****why do I have to print it twice??? It only appears once
 	JSR ks_cr			; trailing newline
 
 ; ******************************
@@ -364,7 +365,7 @@ debug:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.5.1b16", 0	; version in comment
+	.asc	"minimOS-16 0.5.1b17", 0	; version in comment
 #endif
 
 ; *****************************************************

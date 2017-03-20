@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9b6
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170320-0933
+; last modified 20170320-0914
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -206,7 +206,7 @@ fw_install:
 	LDY #0				; reset index (2)
 fwi_loop:
 		LDA (kerntab), Y	; get word from table as supplied (6)
-		STA @fw_table, Y	; copy where the firmware expects it (5) ***faster if switching DBR but heavier
+		STA @fw_table, Y	; copy where the firmware expects it (6) ***faster if switching DBR but heavier
 		INY					; advance two bytes (2+2)
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
@@ -219,6 +219,7 @@ fwi_loop:
 fw_s_isr:
 	_ENTER_CS				; disable interrupts and save sizes! (5)
 	.al: REP #$20			; ** 16-bit memory ** (3)
+	.xs: SEP #$20			; ** 8-bit indexes, no ABI to set that! **
 	LDA kerntab				; get pointer (4)
 	STA @fw_isr				; store for firmware, note long addressing (6)
 	_EXIT_CS				; restore interrupts if needed, sizes too (4)
@@ -230,7 +231,7 @@ fw_s_isr:
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected
 fw_s_nmi:
-; ***might need to save sizes, like entering CS!
+	PHP						; save sizes, just in case, CS not needed
 	.as: .xs: SEP #$30		; *** standard size ***
 #ifdef	SAFE
 	LDX #3					; offset to reversed magic string
@@ -239,8 +240,13 @@ fw_sn_chk:
 		LDA (kerntab), Y		; get pointed handler string char
 		CMP @fw_magic, X		; compare against reversed string, note long addressing
 		BEQ fw_sn_ok			; no problem this far...
-			_DR_ERR(CORRUPT)		; ...or invalid NMI handler
+; ***** due to error handling cannot use DR_ERR macro *****
+			LDY #CORRUPT			; error code (8-bit size)
+			PLP						; *** restore sizes eeeeeeeeek ***
+			SEC						; time to flag error!
+			RTS
 fw_sn_ok:
+		.as: .xs				; just in case...
 		INY						; try next one
 		DEX
 		BPL fw_sn_chk			; until all done
@@ -251,6 +257,7 @@ fw_sn_ok:
 	LDA kerntab+1			; get MSB (3)
 	STY @fw_nmi				; store for firmware, note long addressing (5+5)
 	STA @fw_nmi+1
+	PLP						; restore sizes!
 	_DR_OK					; done (8)
 
 ; A6, patch single function
@@ -263,6 +270,7 @@ fw_patch:
 ; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
 	_ENTER_CS				; disable interrupts and save sizes! (5)
 	.al: REP #$20			; ** 16-bit memory ** (3)
+	.xs: SEP #$20			; ** 8-bit indexes, no ABI to set that! **
 	LDA kerntab				; get full pointer (4)
 	TYX						; no Y-indexed long addressing! (2)
 	STA @fw_table, X		; store into firmware, note long addressing (6)
@@ -295,6 +303,8 @@ fw_gestalt:
 	STX zpar2+2
 	PLP				; restore sizes (4)
 	_DR_OK			; done (8)
+
+	.as				; likely to be needed as previously set
 
 ; A10, poweroff etc
 ; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
