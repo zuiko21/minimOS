@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b12
-; last modified 20170315-1046
+; v0.5b13
+; last modified 20170320-0956
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -580,6 +580,7 @@ po_loop:
 		BNE po_nrel			; currently the same as single byte!
 ; put here specific code for relative arguments!
 ;			_BRA po_sbyte		; *** placeholder
+; *** some bug was found here, BRA $FE @ $C396 is rendered as BRA $C297 ***
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
 			_LDAY(oper)			; check opocde for a moment

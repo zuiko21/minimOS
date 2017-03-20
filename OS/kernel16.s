@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.5.1b17
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170320-0842
+; last modified 20170320-1001
 
 ; just in case
 #define		C816	_C816
@@ -79,7 +79,7 @@ warm:
 
 ; install ISR code (as defined in "isr/irq.s" below)
 	LDA #k_isr			; get address, nicer way (3)
-	STA ex_pt			; no need to know about actual vector location (4)
+	STA kerntab			; no need to know about actual vector location (4)
 ; as kernels must reside in bank 0, no need for 24-bit addressing
 	_ADMIN(SET_ISR)		; install routine, will respect sizes
 
@@ -181,7 +181,7 @@ dr_empty:
 		LDY #D_AUTH			; offset for feature code (2)
 		LDA (da_ptr), Y		; get auth code... plus extra byte (6)
 		STA dr_aut			; and keep for later! (4)
-		BIT #A_POLL			; check whether D_POLL routine is avaliable (2)
+		BIT #A_POLL			; check whether D_POLL routine is avaliable (3)
 		BEQ dr_nopoll		; no D_POLL installed (2/3)
 			LDY #D_POLL			; get offset for periodic vector (2)
 			LDX dpoll_mx		; get destination index (4)
@@ -194,7 +194,7 @@ dr_empty:
 			STX dpoll_mx		; save updated index (4)
 			LDA dr_aut			; get auth code... plus extra byte (4)
 dr_nopoll:
-		BIT #A_REQ			; check D_REQ presence (2)
+		BIT #A_REQ			; check D_REQ presence (3)
 		BEQ dr_noreq		; no D_REQ installed (2/3)
 			LDY #D_REQ			; get offset for async vector (2)
 			LDX dreq_mx			; get destination index (4)
@@ -207,7 +207,7 @@ dr_nopoll:
 			STX dreq_mx			; save updated index  (4)
 			LDA dr_aut			; get auth code... plus extra byte (4)
 dr_noreq:
-		BIT #A_SEC			; check D_SEC (2)
+		BIT #A_SEC			; check D_SEC (3)
 		BEQ dr_nosec		; no D_SEC installed (2/3)
 			LDY #D_SEC			; get offset for 1-sec vector (2)
 			LDX dsec_mx			; get destination index (4)
@@ -316,7 +316,6 @@ dr_ok:					; *** all drivers inited ***
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
-	_KERNEL(STRING)		; *****why do I have to print it twice??? It only appears once
 	JSR ks_cr			; trailing newline
 
 ; ******************************
@@ -422,11 +421,11 @@ exec_st:
 	TCS					; eeeeeeeeeek
 ; this should now work for both 02 and 816 apps
 	LDY ex_pt+2			; get bank first! keep it
-; *** as this version has no non-XIP support, no real need for the following ***
+; ***** as this version has no non-XIP support, no real need for the following *****
 ; *** first push the 24-bit pointer, when non-XIP is available
-;	PHY					; push it
-;	PEI (ex_pt)			; push the rest of the pointer
-; *** the above for non-XIP support ***
+	PHY					; push it
+	PEI (ex_pt)			; push the rest of the pointer
+; ***** uncomment the above for non-XIP support *****
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
 ; set run_arch as per architecture!
@@ -453,13 +452,13 @@ exec_st:
 ; here is to manage 65xx02 code ***temporarily limited to bank zero
 	TYX					; check bank for a moment
 	BEQ exec_long		; already in bank zero means no need to install wrapper *** ***
-; *** in case 6502 code is running beyond bank zero, setup wrapper here! ***
+; ***** in case 6502 code is running beyond bank zero, setup wrapper here! *****
 ; after that, push alternative (wrapper) return address
 ;		PHY					; push target bank
 ; *** is the above needed for 02 code? should not harm anyway ***
 ;		PEA $FFC4			; sample return address, will point to a JML sig_kill
 ;		BRA exec_retset		; all done?
-; *** in the meanwhile, just reject the request ***
+; ***** in the meanwhile, just reject the request *****
 ; should deallocate resources, just like an invalid CPU!
 		_DR_ERR(INVALID)	; 6502 code not yet supported on that address
 ; long indirect call, just push the proper return address, both RTS & RTL savvy
@@ -534,14 +533,15 @@ sig_kill:
 ; then, free up all memory from previous task
 	LDY #0				; standard PID
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
-; *** when non-XIP is available, try to free address from stack bottom
-;	LDX #3				; number of bytes for pointer
-;sk_loop:				; *** this code valid for singletask 816 ***
-;		LDA @$01FC, X		; get byte from bottom of stack
-;		STA ma_pt, X		; set pointer
-;		DEX					; previous byte
-;		BNE sk_loop			; until all done
-;	KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
+; ***** when non-XIP is available, try to free address from stack bottom *****
+	LDX #3				; number of bytes for pointer
+sk_loop:				; *** this code valid for singletask 816 ***
+		LDA @$01FC, X		; get byte from bottom of stack
+		STA ma_pt, X		; set pointer
+		DEX					; previous byte
+		BNE sk_loop			; until all done
+	_KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
+; ***** uncomment the above for non-XIP support *****
 ; new, check whether a shutdown command was issued
 	LDA @sd_flag		; some action pending? 24-bit!
 	BEQ rst_shell		; if not, just restart shell
@@ -571,6 +571,10 @@ kern_end:		; for size computation
 
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
 ; must NOT include external shell label!!!
+; but MUST make page alignment HERE, the bulit-in one into shell file will fo nothing as already algined
+
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+
 shellcode:
 ; first determine actual shell address, no longer internally defined!
 #ifdef	NOHEAD
