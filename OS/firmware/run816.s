@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9b5
+; v0.9b6
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170317-0912
+; last modified 20170320-0933
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -316,7 +316,7 @@ fwp_susp:
 ; sub-function jump table (eeeek)
 fwp_func:
 	.word	fwp_susp	; suspend	+FW_STAT
-	.word	kernel		; shouldn't use this, just in case
+	.word	kernel		; should not use this, just in case
 	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	fwp_off		; poweroff	+FW_OFF
 
@@ -358,12 +358,12 @@ cop_hndl:		; label from vector list
 	.dsb	kernel_call-*, $FF
 #endif
 
-; *** minimOS·65 function call WRAPPER ($FFC0) ***
+; *** minimOS-65 function call WRAPPER ($FFC0) ***
 * = kernel_call
 	CLC			; pre-clear carry
 	COP #$FF	; wrapper on 816 firmware!
 	RTS			; return to caller
-; ****** sample for wrapper outside bank zero for minimOS·65 ******
+; ****** sample for wrapper outside bank zero for minimOS-65 ******
 ; ** should be at $xxFFC4 **
 ;	JMP @sig_kill	; program end arrives here via RTS
 

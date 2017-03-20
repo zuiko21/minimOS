@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b16
+; v0.5.1b17
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170317-0841
+; last modified 20170320-0842
 
 ; just in case
 #define		C816	_C816
@@ -315,6 +315,7 @@ dr_ok:					; *** all drivers inited ***
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
+	_KERNEL(STRING)		; why do I have to print it twice??? It only appears once
 	JSR ks_cr			; trailing newline
 
 ; ******************************
