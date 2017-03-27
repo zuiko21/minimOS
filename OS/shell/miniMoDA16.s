@@ -1,6 +1,6 @@
-; Monitor-debugger-assembler shell for minimOS!
-; v0.5b13
-; last modified 20170320-0956
+; Monitor-debugger-assembler shell for minimOS·16!
+; v0.5b1
+; last modified 20170327-1002
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -28,19 +28,19 @@
 mmd_head:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE	; minimOS app!
+	.asc	"mV"			; minimOS 65816 app!
 	.asc	"****", 13		; some flags TBD
 ; *** filename and optional comment ***
 title:
 	.asc	"miniMoDA", 0	; file name (mandatory)
-	.asc	"816-savvy", 0	; comment
+	.asc	"takes 65816 opcodes, at least", 0	; comment
 
 ; advance to end of header
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5000		; time, 10.00
-	.word	$4A3A		; date, 2017/1/26
+	.word	$4800		; time, 9.00
+	.word	$4A7B		; date, 2017/3/27
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -54,28 +54,21 @@ title:
 ; ##### uz is first available zeropage byte #####
 	ptr		= uz		; current address pointer, would be filled by NMI/BRK handler
 	_pc		= ptr		; ***unified variables, keep both names for compatibility***
-	_a		= _pc+2		; A register
-	_x		= _a+1		; X register
-	_y		= _x+1		; Y register
-	_sp		= _y+1		; stack pointer
-#ifdef	C816
+	_a		= _pc+3		; A register, these are 16-bit ready (note 24b PC, should be K)
+	_x		= _a+2		; X register
+	_y		= _x+2		; Y register
+; *** should also make room for B & D registers! ***
+	_sp		= _y+2		; stack pointer, this is 16-bit
 	_psr	= _sp+2		; status register, leave space as above
-#else
-	_psr	= _sp+1		; status register, regular 8-bit size
-#endif
 	siz		= _psr+1	; number of bytes to copy or transfer ('n')
 	lines	= siz+2		; lines to dump ('u')
 	cursor	= lines+1	; storage for cursor offset, now on Y
 	buffer	= cursor+1	; storage for direct input line (BUFSIZ chars)
-	value	= buffer+BUFSIZ	; fetched values
-	oper	= value+2	; operand storage
-	temp	= oper+2	; temporary storage, also for indexes
+	value	= buffer+BUFSIZ	; fetched values, now 24b ready
+	oper	= value+3	; operand storage, now 24b ready
+	temp	= oper+3	; temporary storage, also for indexes
 	scan	= temp+1	; pointer to opcode list, size is architecture dependent!
-#ifdef	C816
-	bufpt	= scan+3	; NEW pointer to variable buffer, scan is 24-bit
-#else
-	bufpt	= scan+2	; NEW pointer to variable buffer, regular sizes
-#endif
+	bufpt	= scan+3	; NEW pointer to variable buffer, scan is 24-bit, maybe this one too!
 	count	= bufpt+2	; char count for screen formatting, also opcode count
 	bytes	= count+1	; bytes per instruction
 	iodev	= bytes+1	; standard I/O ##### minimOS specific #####
@@ -86,11 +79,10 @@ title:
 
 ; ##### minimOS specific stuff #####
 ; needed tweak, clear B register as will only operate on bank 0, no matter where the code runs!
-#ifdef	C816
+; future versions should be able to set it properly
 	LDA #0				; put a zero...
 	PHA					; ...into the stack...
 	PLB					; ...as the new B register value!
-#endif
 ; standard minimOS initialisation
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -102,17 +94,15 @@ title:
 go_da:
 #endif
 	STA z_used			; set needed ZP space as required by minimOS
-	_STZA w_rect		; no screen size required
-	_STZA w_rect+1		; neither MSB
+	STZ w_rect			; no screen size required
+	STZ w_rect+1		; neither MSB
 	LDY #<title			; LSB of window title
 	LDA #>title			; MSB of window title
 	STY str_pt			; set parameter
 	STA str_pt+1
-#ifdef	C816
 	PHK					; get current bank for string...
 	PLA					; ...into A...
 	STA str_pt+2		; ...and set parameter
-#endif
 	_KERNEL(OPEN_W)		; ask for a character I/O device
 	BCC open_da			; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
@@ -131,14 +121,10 @@ open_da:
 	STA _psr		; *** essential, at least while not previously set ***
 ; specially tailored code for 816-savvy version!
 get_sp:
-#ifdef	C816
 	.xl: REP #$10		; *** 16-bit index ***
-#endif
 	TSX					; get current stack pointer
 	STX _sp				; store original value
-#ifdef	C816
 	.xs: .as: SEP #$30	; *** regular size ***
-#endif
 ; does not really need to set PC/ptr
 ; these ought to be initialised after calling a routine!
 	LDA #__last-uz		; zeropage space needed (again)
@@ -147,23 +133,18 @@ get_sp:
 	LDA #4				; standard number of lines
 	STA lines			; set variable
 	STA siz				; also default transfer size
-	_STZA siz+1			; clear copy/transfer size MSB
+	STZ siz+1			; clear copy/transfer size MSB
 
 ; *** begin things ***
 main_loop:
-		_STZA cursor		; eeeeeeeeeek... but really needed?
+		STZ cursor			; eeeeeeeeeek... but really needed?
 ; *** NEW variable buffer setting ***
-#ifdef	C816
 		TDC					; get direct page pointer!
 ;		CLC
 ;		ADC #<buffer		; compute offset (could be just LDA #)
 ;		TAY					; pointer LSB
 		LDY #<buffer		; *** assume D is page-aligned
 		XBA					; now A holds MSB
-#else
-		LDY #<buffer		; get LSB that is full address in zeropage
-		LDA #0				; ### in case of 65816 should be TDC, XBA!!! ###
-#endif
 		STY bufpt			; set new movable pointer
 		STA bufpt+1
 ; put current address before prompt
@@ -203,7 +184,7 @@ cli_chk:
 			STA bufpt			; update pointer
 			BCC cli_loop		; MSB OK means try another right now
 				INC bufpt+1			; otherwise wrap!
-			_BRA cli_loop		; and try another (BCS or BNE might do as well)
+			BRA cli_loop		; and try another (BCS or BNE might do as well)
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
 bad_cmd:
@@ -211,26 +192,24 @@ bad_cmd:
 	LDY #<err_bad
 d_error:
 	JSR $FFFF &  prnStr			; display error
-	_BRA main_loop		; restore
+		BRA main_loop		; restore
 overflow:
 	LDA #>err_ovf		; address of overflow message
 	LDY #<err_ovf
-	_BRA d_error		; display and restore
+	BRA d_error		; display and restore
 
 not_mcmd:
 ; ** try to assemble the opcode! **
-	_STZA count			; reset opcode counter
-	_STZA bytes			; eeeeeeeeek
+	STZ count			; reset opcode counter
+	STZ bytes			; eeeeeeeeek
 	LDY #<da_oclist-1	; get list address, notice trick
 	LDA #>da_oclist-1
 	STY scan			; store pointer from Y eeeeeeeeeeek
 	STA scan+1
 ; to be bank-agnostic, should set this 24-bit pointer
-#ifdef	C816
 	PHK					; current execution bank
 	PLA					; get value
 	STA scan+2			; and use it as opcode list bank pointer
-#endif
 ; proceed normally, but 65816 must use long addressing for scan pointer
 sc_in:
 		DEC cursor			; every single option will do it anyway
@@ -289,7 +268,7 @@ srel_bak:
 				JMP $FFFF &  overflow		; slight overflow otherwise
 srel_done:
 			INC bytes			; one operand was really detected
-			_BRA sc_adv			; continue decoding
+			BRA sc_adv			; continue decoding
 sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
@@ -307,7 +286,7 @@ sc_nrel:
 sbyt_ok:
 			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; one operand was detected
-			_BRA sc_adv			; continue decoding
+			BRA sc_adv			; continue decoding
 sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
@@ -320,7 +299,7 @@ sc_nsbyt:
 			STA oper+1
 			INC bytes			; two operands were detected
 			INC bytes
-			_BRA sc_adv			; continue decoding
+			BRA sc_adv			; continue decoding
 sc_nwrd:
 ; regular char in list, compare with input
 		STA temp			; store list contents eeeeeeeek!
@@ -331,11 +310,7 @@ sc_skip:
 			LDY #$FF			; otherwise seek end of current opcode
 sc_seek:
 				INY					; advance in list (optimised)
-#ifdef	C816
 				LDA [scan], Y		; look at opcode list, 24b
-#else
-				LDA (scan), Y		; look at opcode list
-#endif
 				BPL sc_seek			; until the end
 			TYA					; get offset
 			CLC					; stay at the end
@@ -348,8 +323,8 @@ sc_seek:
 				INC scan+2			; otherwise proceed as expected
 #endif
 no_match:
-			_STZA cursor		; back to beginning of instruction
-			_STZA bytes			; also no operands detected! eeeeek
+			STZ cursor			; back to beginning of instruction
+			STZ bytes			; also no operands detected! eeeeek
 ; (removed debug code *)
 			INC count			; try next opcode
 			BEQ bad_opc			; no more to try!
@@ -364,11 +339,7 @@ sc_adv:
 		BNE sc_nterm		; if end of buffer, sentence ends too
 			SEC					; just like a colon, instruction ended
 sc_nterm:
-#ifdef	C816
 		LDA [scan]			; what it being pointed in list? 24b
-#else
-		_LDAY(scan)			; what it being pointed in list?
-#endif
 		BPL sc_rem			; opcode not complete
 			BCS valid_oc		; both opcode and instruction ended
 			BCC no_match		; only opcode complete, keep trying! eeeeek
@@ -382,7 +353,7 @@ valid_oc:
 		BEQ poke_opc		; no operands
 poke_loop:
 			LDA oper-1, X		; get argument, note trick, 816-savvy
-			STA (ptr), Y		; store in RAM
+			STA (ptr), Y		; store in RAM *** check out bank!
 			DEY					; next byte
 			DEX
 			BNE poke_loop		; could start on zero
@@ -409,10 +380,11 @@ main_nnul:
 
 ; *** call command routine ***
 call_mcmd:
-	_JMPX(cmd_ptr & $FFFF)		; indexed jump macro, bank agnostic!
+	JMPX(cmd_ptr & $FFFF, X)	; indexed jump macro, bank agnostic!
 
 ; *** command routines, named as per pointer table ***
 ; ** .A = set accumulator **
+; * currently 8-bit only *
 set_A:
 	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _a				; set accumulator
@@ -421,7 +393,7 @@ set_A:
 ; ** .B = store byte **
 store_byte:
 	JSR $FFFF &  fetch_byte		; get operand in A
-	_STAY(ptr)			; set byte in memory
+	STA (ptr)			; set byte in memory *** check bank
 	INC ptr				; advance pointer
 	BNE sb_end			; all done if no wrap
 		INC ptr+1			; increase MSB otherwise
@@ -435,18 +407,15 @@ call_address:
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
-#ifdef	C816
-	JSR @do_call		; *** must end in RTL!!! ***
-	.xs: .as: SEP #$30	; *** make certain about standard size ***
-#else
-	JSR $FFFF &  do_call			; set regs and jump!
-#endif
+	JSR @do_call		; *** actually JSL, must end in RTL!!! ***
+	PHP					; get current status BEFORE switching sizes!
+	.xl: .al: REP #$30	; *** store full size registers, just in case ***
 ; ** should record actual registers here **
 	STA _a
 	STX _x
 	STY _y
-	PHP					; get current status
-	PLA					; A was already saved
+	.xs: .as: SEP #$30	; *** back to standard size ***
+	PLA					; this was previous PSR, A was already saved
 	STA _psr
 ; hopefully no stack imbalance was caused, otherwise will not resume monitor!
 	PLA					; this (eeeeek) will take previously saved default device
@@ -460,29 +429,22 @@ jump_address:
 	JSR $FFFF &  fetch_word		; get operand address
 ; now ignoring operand errors!
 ; restore stack pointer...
-#ifdef	C816
 	.xl: REP #$10		; *** essential 16-bit index ***
-#endif
 	LDX _sp				; get stored value (word)
 	TXS					; set new pointer...
 ; SP restored
 ; restore registers and jump
 do_call:
-#ifdef	C816
-	.xs: .as: SEP #$30	; *** make certain about standard size ***
-#endif
-	LDX _x				; retrieve registers
-	LDY _y
 	LDA _psr			; status is different
 	PHA					; will be set via PLP
+	.xl: .al: REP #$30	; *** set registers in full size ***
+	LDX _x				; retrieve registers
+	LDY _y
 	LDA _a				; lastly retrieve accumulator
 	PLP					; restore status
-#ifdef	C816
+; *** future versions should pick the whole 24-bit address ***
 	STZ value+2			; will destroy some irrelevant value
 	JMP [value]			; eeeeeeeeek
-#else
-	JMP (value)			; go! might return somewhere else
-#endif
 
 ; ** .D = disassemble 'u' lines **
 disassemble:
@@ -493,56 +455,46 @@ disassemble:
 	STA oper+1
 	LDX lines			; get counter
 das_l:
-		_PHX				; save counters
+		PHX					; save counters
 ; time to show the opcode and trailing spaces until 20 chars
 		JSR $FFFF &  disOpcode		; dissassemble one opcode @oper (will print it)
-		_PLX				; retrieve counter
+		PLX					; retrieve counter
 		DEX					; one line less
 		BNE das_l			; continue until done
 	RTS
 
 ; disassemble one opcode and print it
 disOpcode:
-	_LDAY(oper)			; check pointed opcode
+	LDA (oper)			; check pointed opcode *** check bank in future versions
 	STA count			; keep for comparisons
 	LDY #<da_oclist		; get address of opcode list
 	LDA #>da_oclist
-	_STZX scan			; indirect-indexed pointer, NMOS use X eeeeeeek
+	STZ scan			; indirect-indexed pointer
 	STA scan+1
 ; to be bank-agnostic, should set this 24-bit pointer
-#ifdef	C816
 	PHK					; current execution bank
 	PLA					; get value
 	STA scan+2			; and use it as opcode list bank pointer
-#endif
 ; proceed normally, but 65816 must use long addressing for scan pointer
 	LDX #0				; counter of skipped opcodes
 do_chkopc:
 		CPX count			; check if desired opcode already pointed
 			BEQ do_found		; no more to skip
 do_skip:
-#ifdef	C816
 			LDA [scan], Y		; get char in list, 24b
-#else
-			LDA (scan), Y		; get char in list
-#endif
 			BMI do_other		; found end-of-opcode mark (bit 7)
 			INY
 			BNE do_skip			; next char in list if not crossed
 				INC scan+1			; otherwise correct MSB
-#ifdef	C816
 			BNE do_skip			; if bank boundary was crossed...
 				INC scan+2			; ...correct 24b pointer
-#endif
-			_BRA do_skip
+			BRA do_skip
 do_other:
 		INY					; needs to point to actual opcode, not previous end eeeeeek!
 		BNE do_set			; if not crossed
 			INC scan+1			; otherwise correct MSB
-#ifdef	C816
 		BNE do_set			; if bank boundary was crossed...
 			INC scan+2			; ...correct 24b pointer
-#endif
 do_set:
 		INX					; yet another opcode skipped
 		BNE do_chkopc		; until list is done ***should not arrive here***
@@ -569,21 +521,17 @@ prnOpcode:
 	STY bytes			; number of bytes to be dumped (-1)
 	STY count			; printed chars for proper formatting
 po_loop:
-#ifdef	C816
 		LDA [scan], Y		; get char in opcode list, 24b
-#else
-		LDA (scan), Y		; get char in opcode list
-#endif
 		STY temp			; keep index as will be destroyed
 		AND #$7F			; filter out possible end mark
 		CMP #'%'			; relative addressing
 		BNE po_nrel			; currently the same as single byte!
 ; put here specific code for relative arguments!
-;			_BRA po_sbyte		; *** placeholder
+;			BRA po_sbyte		; *** placeholder
 ; *** some bug was found here, BRA $FE @ $C396 is rendered as BRA $C297 ***
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
-			_LDAY(oper)			; check opocde for a moment
+			LDA (oper)			; check opocde for a moment
 			LDY #1				; standard branch offset
 			LDX #0				; reset offset sign extention
 			AND #$0F			; watch low-nibble on opcode
@@ -718,19 +666,19 @@ ex_l:
 		; loop for 4/8 hex bytes
 		LDY #0				; reset offset
 ex_h:
-			_PHY				; save offset
+			PHY					; save offset
 ; space only when wider than 20 char AND if not the first
 #ifndef	NARROW
 			BEQ ex_ns			; no space if the first one
-				_PHY				; please keep Y!
+				PHY					; please keep Y!
 				LDA #' '			; print space, not in 20-char
 				JSR $FFFF &  prnChar
-				_PLY				; retrieve Y!
+				PLY					; retrieve Y!
 ex_ns:
 #endif
 			LDA (oper), Y		; get byte
 			JSR $FFFF &  prnHex			; print it in hex
-			_PLY				; retrieve index
+			PLY					; retrieve index
 			INY					; next byte
 			CPY #PERLINE		; bytes per line (8 if not 20-char)
 			BNE ex_h			; continue line
@@ -740,17 +688,17 @@ ex_ns:
 		; loop for 4/8 ASCII
 		LDY #0				; reset offset
 ex_a:
-			_PHY				; save offset BEFORE!
+			PHY					; save offset BEFORE!
 			LDA (oper), Y		; get byte
 			CMP #127			; check whether printable
 				BCS ex_np
 			CMP #' '
 				BCC ex_np
-			_BRA ex_pr			; it is printable
+			BRA ex_pr			; it is printable
 ex_np:
 				LDA #'.'			; substitute
 ex_pr:		JSR $FFFF &  prnChar			; print it
-			_PLY				; retrieve index
+			PLY					; retrieve index
 			INY					; next byte
 			CPY #PERLINE		; bytes per line (8 if not 20-char)
 			BNE ex_a			; continue line
@@ -763,14 +711,14 @@ ex_pr:		JSR $FFFF &  prnChar			; print it
 		BCC ex_npb			; skip if within same page
 			INC oper+1			; next page
 ex_npb:
-		_PLX				; retrieve counter!!!!
+		PLX					; retrieve counter!!!!
 		DEX					; one line less
 		BNE ex_l			; continue until done
 	RTS
 
 ; ** .G = set stack pointer **
 set_SP:
-	JSR $FFFF &  fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A *** currently 8-bit
 	STA _sp				; set stack pointer
 	RTS
 
@@ -874,10 +822,7 @@ store_str:
 sst_loop:
 		INY					; skip the S and increase
 		LDA (bufpt), Y		; get raw character
-		_STAX(ptr)			; store in place, respect Y but now X is OK to use in NMOS
-#ifdef	NMOS
-		TAY					; update flags altered by macro!
-#endif
+		STA (ptr)			; store in place
 			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
 			BEQ sstr_cr			; terminate and exit
@@ -888,10 +833,10 @@ sst_loop:
 		INC ptr				; advance destination
 		BNE sst_loop		; boundary not crossed
 	INC ptr+1			; next page otherwise
-	_BRA sst_loop		; continue, might use BNE
+	BRA sst_loop		; continue, might use BNE
 sstr_com:
 	LDA #0				; no STZ indirect
-	_STAX(ptr)			; terminate string in memory Eeeeeeeeek
+	STA (ptr)			; terminate string in memory Eeeeeeeeek
 sstr_cloop:
 		INY					; advance
 		LDA (bufpt), Y		; check whatever
@@ -903,7 +848,7 @@ sstr_cloop:
 		BNE sstr_cloop		; otherwise continue discarding, no need for BRA
 sstr_cr:
 	LDA #0				; no STZ indirect
-	_STAX(ptr)			; terminate string in memory Eeeeeeeeek
+	STA (ptr)			; terminate string in memory Eeeeeeeeek
 sstr_end:
 	DEY					; will call getNextChar afterwards eeeeeeeeek
 	STY cursor			; update optimised index!
@@ -935,13 +880,13 @@ view_regs:
 
 	LDX #0				; reset counter
 vr_l:
-		_PHX				; save index!
+		PHX					; save index!
 		LDA _a, X			; get value from regs
 		JSR $FFFF &  prnHex			; show value in hex
 ; without PC being shown, narrow displays will also put regular spacing
 		LDA #' '			; space, not for 20-char
 		JSR $FFFF &  prnChar			; print it
-		_PLX				; restore index
+		PLX					; restore index
 		INX					; next reg
 		CPX #4				; all regs done?
 		BNE vr_l			; continue otherwise
@@ -953,7 +898,7 @@ vr_sb:
 		ASL value+1			; get highest bit
 		LDA #' '			; default is off (space)
 		BCC vr_off			; was off
-			_INC				; otherwise turns into '!'
+			INC					; otherwise turns into '!'
 vr_off:
 		JSR $FFFF &  prnChar			; prints bit
 		DEC value			; one less
@@ -964,41 +909,39 @@ vr_off:
 ; ** .W = store word **
 store_word:
 	JSR $FFFF &  fetch_word		; get operand word
-	LDA value			; get LSB
-	_STAY(ptr)			; store in memory
-	INC ptr				; next byte
-	BNE sw_nw			; no wrap
-		INC ptr+1			; otherwise increment pointer MSB
-sw_nw:
-	LDA value+1			; same for MSB
-	_STAY(ptr)
-	INC ptr				; next byte
-	BNE sw_end			; no wrap
-		INC ptr+1			; otherwise increment pointer MSB
-sw_end:
+; 8-bit code minus RTS was 16/20b, 29-33/32-40
+; 16-bit code is 12/16b, 30/33-37t
+	.al: REP #$20		; *** worth going 16-bit memory ***
+	LDA value			; get word
+	STA (ptr)			; store in full
+	INC ptr				; advance two bytes!
+	INC ptr				; MSB will be OK anyway
+	.as: SEP #$20		; *** back to 8-bit ***
+;	BNE sw_nw			; any bank boundary?
+;		INC ptr+2			; wrap it
 	RTS
 
 ; ** .X = set X register **
 set_X:
-	JSR $FFFF &  fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A *** 8-bit
 	STA _x				; set register
 	RTS
 
 ; ** .Y = set Y register **
 set_Y:
-	JSR $FFFF &  fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_byte		; get operand in A *** 8-bit
 	STA _y				; set register
 	RTS
 
 ; ** .F = force cold boot
 force:
 	LDY #PW_COLD		; cold boot request ** minimOS specific **
-	_BRA fw_shut		; call firmware
+	BRA fw_shut			; call firmware
 
 ; ** .R = warm boot **
 reboot:
 	LDY #PW_WARM		; warm boot request ** minimOS specific **
-	_BRA fw_shut		; call firmware
+	BRA fw_shut			; call firmware
 
 ; ** .Z = shutdown **
 poweroff:
@@ -1049,11 +992,9 @@ prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
 ; 16-bit version should set bank!
-#ifdef	C816
 	PHK					; get current bank, much better this way!
 	PLA					; into A
 	STA str_pt+2		; set bank
-#endif
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
@@ -1084,9 +1025,10 @@ h2b_num:
 		CPX #2				; two ciphers per byte
 			BEQ h2b_end			; all done
 		JSR $FFFF &  gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
-		_BRA h2b_l			; process it
+		BRA h2b_l			; process it
 h2b_end:
-	CLC: RTS			; clear carry, value is valid! macro NLA
+	CLC					; clear carry, value is valid!
+	RTS					; macro NLA
 h2b_err:
 	DEX					; at least one cipher processed?
 	BMI h2b_exit		; no need to correct
@@ -1106,9 +1048,8 @@ getLine:
 	STA str_pt+1
 ; 16-bit version should set bank!
 ; but since this only operates on bank 0, that is the value to be set
-#ifdef	C816
+; *** future versions should check this
 	STZ str_pt+2		; set bank, input is either zeropage or bank zero
-#endif
 	LDX #BUFSIZ-1		; max index
 	STX ln_siz			; set value
 	LDY iodev			; use device
@@ -1179,23 +1120,13 @@ getListChar:
 		INC scan			; try next
 		BNE glc_do			; if did not wrap
 			INC scan+1			; otherwise carry on
-#ifdef	C816
 		BNE glc_do			; if bank boundary was crossed...
 			INC scan+2			; ...correct 24b pointer
-#endif
 glc_do:
-#ifdef	C816
 		LDA [scan]			; get current, 24b
-#else
-		_LDAY(scan)			; get current
-#endif
 		CMP #' '			; is it blank? will never end an opcode, though
 		BEQ getListChar		; nothing interesting yet
-#ifdef	C816
 	LDA [scan]			; recheck bit 7, 24b
-#else
-	_LDAY(scan)			; recheck bit 7
-#endif
 	CLC					; normally not the end
 	BPL glc_end			; it was not
 		SEC					; otherwise do x=128
@@ -1335,6 +1266,6 @@ title:
 
 ; include opcode list
 da_oclist:
-#include "shell/data/opcodes.s"
+#include "shell/data/opcodes16.s"
 mmd_end:					; size computation
 .)
