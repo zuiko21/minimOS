@@ -441,9 +441,10 @@ do_call:
 	LDX _x				; retrieve registers
 	LDY _y
 	LDA _a				; lastly retrieve accumulator
+.as:.xs					; most likely values... needed for the remaining code!
 	PLP					; restore status
 ; *** future versions should pick the whole 24-bit address ***
-	STZ value+2			; will destroy some irrelevant value
+	STZ value+2			; MIGHT destroy some irrelevant value
 	JMP [value]			; eeeeeeeeek
 
 ; ** .D = disassemble 'u' lines **
