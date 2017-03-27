@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5b1
-; last modified 20170327-1002
+; v0.5b2
+; last modified 20170327-1111
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -601,11 +601,7 @@ po_done:
 		STA count			; update value
 po_char:
 		LDY temp			; get scan index
-#ifdef	C816
 		LDA [scan], Y		; get current char again, 24b
-#else
-		LDA (scan), Y		; get current char again
-#endif
 			BMI po_end			; opcode ended, no more to show
 		INY					; go for next char otherwise
 		JMP $FFFF &  po_loop			; BNE would work as no opcode string near 256 bytes long, but too far...
