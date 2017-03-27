@@ -1,13 +1,13 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170327-1212
+; last modified 20170327-1301
 
 ; Opcode list as bit-7 terminated strings
 ; @ expects single byte, & expects word
 ; % expects RELATIVE addressing
-; + expects 24-bit address
+; = expects 24-bit address
 ; ! will take 8 or 16 bits depending on X flag
-; ~ will take 8 or 16 bits depending on M flag
+; ? will take 8 or 16 bits depending on M flag
 ; 65C816 version!
 ; will be used by the assembler module too
 
@@ -22,13 +22,13 @@
 	.asc	"ASL ", '@'+$80	; $06=ASL zp
 	.asc	"ORA [@", ']'+$80	; $07=ORA [zp]	65816
 	.asc	"PH", 'P'+$80	; $08=PHP
-	.asc	"ORA #", '~'+$80	; $09=ORA #
+	.asc	"ORA #", '?'+$80	; $09=ORA #
 	.asc	"AS", 'L'+$80	; $0A=ASL
 	.asc	"PH", 'D'+$80	; $0B=PHD		65816
 	.asc	"TSB ", '&'+$80	; $0C=TSB abs	CMOS
 	.asc	"ORA ", '&'+$80	; $0D=ORA abs
 	.asc	"ASL ", '&'+$80	; $0E=ASL abs
-	.asc	"ORA ", '+'+$80	; $0F=ORA long	65816
+	.asc	"ORA ", '='+$80	; $0F=ORA long	65816
 	.asc	"BPL ", '%'+$80	; $10=BPL rel
 	.asc	"ORA (@), ", 'Y'+$80	; $11=ORA (zp),Y
 	.asc	"ORA (@", ')'+$80	; $12=ORA (zp)	CMOS
@@ -44,23 +44,23 @@
 	.asc	"TRB ", '&'+$80	; $1C=TRB abs	CMOS
 	.asc	"ORA &, ", 'X'+$80	; $1D=ORA abs,X
 	.asc	"ASL &, ", 'X'+$80	; $1E=ASL abs,X
-	.asc	"ORA +, ", 'X'+$80	; $1F=ORA long,X	65816
+	.asc	"ORA =, ", 'X'+$80	; $1F=ORA long,X	65816
 	.asc	"JSR ", '&'+$80	; $20=JSR abs
 	.asc	"AND (@, X", ')'+$80	; $21=AND (zp,X)
-	.asc	"JSL ", '+'+$80	; $22=JSL long		65816
+	.asc	"JSL ", '='+$80	; $22=JSL long		65816
 	.asc	"AND @, ", 'S'+$80	; $23=AND s		65816
 	.asc	"BIT ", '@'+$80	; $24=BIT zp
 	.asc	"AND ", '@'+$80	; $25=AND zp
 	.asc	"ROL ", '@'+$80	; $26=ROL zp
 	.asc	"AND [@", ']'+$80	; $27=AND [zp]	65816
 	.asc	"PL", 'P'+$80	; $28=PLP
-	.asc	"AND #", '~'+$80	; $29=AND #
+	.asc	"AND #", '?'+$80	; $29=AND #
 	.asc	"RO", 'L'+$80	; $2A=ROL
 	.asc	"PL", 'D'+$80	; $2B=PLD		65816
 	.asc	"BIT ", '&'+$80	; $2C=BIT abs
 	.asc	"AND ", '&'+$80	; $2D=AND abs
 	.asc	"ROL ", '&'+$80	; $2E=ROL abs
-	.asc	"AND ", '+'+$80	; $2F=AND long	65816
+	.asc	"AND ", '='+$80	; $2F=AND long	65816
 	.asc	"BMI ", '%'+$80	; $30=BMI rel
 	.asc	"AND (@), ", 'Y'+$80	; $31=AND (zp),Y
 	.asc	"AND (@", ')'+$80	; $32=AND (zp)	CMOS
@@ -76,7 +76,7 @@
 	.asc	"BIT &, ", 'X'+$80	; $3C=BIT abs,X	CMOS
 	.asc	"AND &, ", 'X'+$80	; $3D=AND abs,X
 	.asc	"ROL &, ", 'X'+$80	; $3E=ROL abs,X
-	.asc	"AND +, ", 'X'+$80	; $3F=AND long,X	65816
+	.asc	"AND =, ", 'X'+$80	; $3F=AND long,X	65816
 	.asc	"RT", 'I'+$80	; $40=RTI
 	.asc	"EOR (@, X", ')'+$80	; $41=EOR (zp,X)
 	.asc	"WD", 'M'+$80	; $42=WDM		65816
@@ -86,13 +86,13 @@
 	.asc	"LSR ", '@'+$80	; $46=LSR zp
 	.asc	"EOR [@", ']'+$80	; $47=EOR [zp]	65816
 	.asc	"PH", 'A'+$80	; $48=PHA
-	.asc	"EOR #", '~'+$80	; $49=EOR #
+	.asc	"EOR #", '?'+$80	; $49=EOR #
 	.asc	"LS", 'R'+$80	; $4A=LSR
 	.asc	"PH", 'K'+$80	; $4B=PHK		65816
 	.asc	"JMP ", '&'+$80	; $4C=JMP abs
 	.asc	"EOR ", '&'+$80	; $4D=EOR abs
 	.asc	"LSR ", '&'+$80	; $4E=LSR abs
-	.asc	"EOR ", '+'+$80	; $4F=EOR long	65816
+	.asc	"EOR ", '='+$80	; $4F=EOR long	65816
 	.asc	"BVC ", '%'+$80	; $50=BVC rel
 	.asc	"EOR (@), ", 'Y'+$80	; $51=EOR (zp),Y
 	.asc	"EOR (@", ')'+$80	; $52=EOR (zp)	CMOS
@@ -105,10 +105,10 @@
 	.asc	"EOR &, ", 'Y'+$80	; $59=EOR abs,Y
 	.asc	"PH", 'Y'+$80	; $5A=PHY		CMOS
 	.asc	"TC", 'D'+$80	; $5B=TCD		65816
-	.asc	"JML ", '+'+$80	; $5C=JML long		65816
+	.asc	"JML ", '='+$80	; $5C=JML long		65816
 	.asc	"EOR &, ", 'X'+$80	; $5D=EOR abs,X
 	.asc	"LSR &, ", 'X'+$80	; $5E=LSR abs,X
-	.asc	"EOR +, ", 'X'+$80	; $5F=EOR long,X	65816
+	.asc	"EOR =, ", 'X'+$80	; $5F=EOR long,X	65816
 	.asc	"RT", 'S'+$80	; $60=RTS
 	.asc	"ADC (@, X", ')'+$80	; $61=ADC (zp,X)
 	.asc	"PER ", '%'+$80	; $62=PER rel	65816
@@ -118,13 +118,13 @@
 	.asc	"ROR ", '@'+$80	; $66=ROR zp
 	.asc	"ADC [@", ']'+$80	; $67=ADC [zp]	65816
 	.asc	"PL", 'A'+$80	; $68=PLA
-	.asc	"ADC #", '~'+$80	; $69=ADC #
+	.asc	"ADC #", '?'+$80	; $69=ADC #
 	.asc	"RO", 'R'+$80	; $6A=ROR
 	.asc	"RT", 'L'+$80	; $6B=RTL		65816
 	.asc	"JMP (&", ')'+$80	; $6C=JMP (abs)
 	.asc	"ADC ", '&'+$80	; $6D=ADC abs
 	.asc	"ROR ", '&'+$80	; $6E=ROR abs
-	.asc	"ADC ", '+'+$80	; $6F=ADC long	65816
+	.asc	"ADC ", '='+$80	; $6F=ADC long	65816
 	.asc	"BVS ", '%'+$80	; $70=BVS rel
 	.asc	"ADC (@), ", 'Y'+$80	; $71=ADC (zp),Y
 	.asc	"ADC (@", ')'+$80	; $72=ADC (zp)	CMOS
@@ -140,7 +140,7 @@
 	.asc	"JMP (&, X", ')'+$80	; $7C=JMP (abs,X)	CMOS
 	.asc	"ADC &, ", 'X'+$80	; $7D=ADC abs, X
 	.asc	"ROR &, ", 'X'+$80	; $7E=ROR abs, X
-	.asc	"ADC +, ", 'X'+$80	; $7F=ADC long,X	65816
+	.asc	"ADC =, ", 'X'+$80	; $7F=ADC long,X	65816
 	.asc	"BRA ", '%'+$80	; $80=BRA rel	CMOS
 	.asc	"STA (@, X", ')'+$80	; $81=STA (zp,X)
 	.asc	"BRL ", '%'+$80	; $82=BRL		65816
@@ -148,15 +148,15 @@
 	.asc	"STY ", '@'+$80	; $84=STY zp
 	.asc	"STA ", '@'+$80	; $85=STA zp
 	.asc	"STX ", '@'+$80	; $86=STX zp	CMOS
-	.asc	"SMB0 ", '@'+$80	; $87=SMB0 zp	CMOS Rockwell
+	.asc	"STA [@", ']'+$80	; $87=ADC [zp]	65816
 	.asc	"DE", 'Y'+$80	; $88=DEY
-	.asc	"BIT #", '~'+$80	; $89=BIT #
+	.asc	"BIT #", '?'+$80	; $89=BIT #
 	.asc	"TX", 'A'+$80	; $8A=TXA
 	.asc	"PH", 'B'+$80	; $8B=PHB		65816
 	.asc	"STY ", '&'+$80	; $8C=STY abs
 	.asc	"STA ", '&'+$80	; $8D=STA abs
 	.asc	"STX ", '&'+$80	; $8E=STX abs
-	.asc	"STA ", '+'+$80	; $8F=STA long	65816
+	.asc	"STA ", '='+$80	; $8F=STA long	65816
 	.asc	"BCC ", '%'+$80	; $90=BCC rel
 	.asc	"STA (@), ", 'Y'+$80	; $91=STA (zp),Y
 	.asc	"STA (@", ')'+$80	; $92=STA (zp)	CMOS
@@ -172,7 +172,7 @@
 	.asc	"STZ ", '&'+$80	; $9C=STZ abs	CMOS
 	.asc	"STA &, ", 'X'+$80	; $9D=STA abs,X
 	.asc	"STZ &, ", 'X'+$80	; $9E=STZ abs,X	CMOS
-	.asc	"STA +, ", 'X'+$80	; $9F=STA long,X	65816
+	.asc	"STA =, ", 'X'+$80	; $9F=STA long,X	65816
 	.asc	"LDY #", '!'+$80	; $A0=LDY #
 	.asc	"LDA (@, X", ')'+$80	; $A1=LDA (zp,X)
 	.asc	"LDX #", '!'+$80	; $A2=LDX #
@@ -180,15 +180,15 @@
 	.asc	"LDY ", '@'+$80	; $A4=LDY zp
 	.asc	"LDA ", '@'+$80	; $A5=LDA zp
 	.asc	"LDX ", '@'+$80	; $A6=LDX zp
-	.asc	"SMB2 ", '@'+$80	; $A7=SMB2 zp	CMOS Rockwell
+	.asc	"LDA [@", ']'+$80	; $A7=LDA [zp]	65816
 	.asc	"TA", 'Y'+$80	; $A8=TAY
-	.asc	"LDA #", '~'+$80	; $A9=LDA #
+	.asc	"LDA #", '?'+$80	; $A9=LDA #
 	.asc	"TA", 'X'+$80	; $AA=TAX
 	.asc	"PL", 'B'+$80	; $AB=PLB		65816
 	.asc	"LDY ", '&'+$80	; $AC=LDY abs
 	.asc	"LDA ", '&'+$80	; $AD=LDA abs
 	.asc	"LDX ", '&'+$80	; $AE=LDX abs
-	.asc	"LDA ", '+'+$80	; $AF=LDA long	65816
+	.asc	"LDA ", '='+$80	; $AF=LDA long	65816
 	.asc	"BCS ", '%'+$80	; $B0=BCS rel
 	.asc	"LDA (@), ", 'Y'+$80	; $B1=LDA (zp),Y
 	.asc	"LDA (@", ')'+$80	; $B2=LDA (zp)	CMOS
@@ -204,7 +204,7 @@
 	.asc	"LDY &, ", 'X'+$80	; $BC=LDY abs,X
 	.asc	"LDA &, ", 'X'+$80	; $BD=LDA abs,X
 	.asc	"LDX &, ", 'Y'+$80	; $BE=LDX abs,Y
-	.asc	"LDA +, ", 'X'+$80	; $BF=LDA long,X	65816
+	.asc	"LDA =, ", 'X'+$80	; $BF=LDA long,X	65816
 	.asc	"CPY #", '!'+$80	; $C0=CPY #
 	.asc	"CMP (@, X", ')'+$80	; $C1=CMP (zp,X)
 	.asc	"REP #", '@'+$80	; $C2=REP #		65816
@@ -212,15 +212,15 @@
 	.asc	"CPY ", '@'+$80	; $C4=CPY zp
 	.asc	"CMP ", '@'+$80	; $C5=CMP zp
 	.asc	"DEC ", '@'+$80	; $C6=DEC zp
-	.asc	"SMB4 ", '@'+$80	; $C7=SMB4 zp	CMOS Rockwell
+	.asc	"CMP [@", ']'+$80	; $C7=CMP [zp]	65816
 	.asc	"IN", 'Y'+$80	; $C8=INY
-	.asc	"CMP #", '~'+$80	; $C9=CMP #
+	.asc	"CMP #", '?'+$80	; $C9=CMP #
 	.asc	"DE", 'X'+$80	; $CA=DEX
 	.asc	"WA", 'I'+$80	; $CB=WAI	CMOS WDC
 	.asc	"CPY ", '&'+$80	; $CC=CPY abs
 	.asc	"CMP ", '&'+$80	; $CD=CMP abs
 	.asc	"DEC ", '&'+$80	; $CE=DEC abs
-	.asc	"CMP ", '+'+$80	; $CF=CMP long	65816
+	.asc	"CMP ", '='+$80	; $CF=CMP long	65816
 	.asc	"BNE ", '%'+$80	; $D0=BNE rel
 	.asc	"CMP (@), ", 'Y'+$80	; $D1=CMP (zp),Y
 	.asc	"CMP (@", ')'+$80	; $D2=CMP (zp)	CMOS
@@ -236,7 +236,7 @@
 	.asc	"JML [&", ']'+$80	; $DC=JML [abs]		65816
 	.asc	"CMP &, ", 'X'+$80	; $DD=CMP abs,X
 	.asc	"DEC &, ", 'X'+$80	; $DE=DEC abs,X
-	.asc	"CMP +, ", 'X'+$80	; $DF=CMP long,X	65816
+	.asc	"CMP =, ", 'X'+$80	; $DF=CMP long,X	65816
 	.asc	"CPX #", '!'+$80	; $E0=CPX #
 	.asc	"SBC (@, X", ')'+$80	; $E1=SBC (zp,X)
 	.asc	"SEP #", '@'+$80	; $E2=SEP #		65816
@@ -244,15 +244,15 @@
 	.asc	"CPX ", '@'+$80	; $E4=CPX zp
 	.asc	"SBC ", '@'+$80	; $E5=SBC zp
 	.asc	"INC ", '@'+$80	; $E6=INC zp
-	.asc	"SMB6 ", '@'+$80	; $E7=SMB6 zp	CMOS Rockwell
+	.asc	"SBC [@", ']'+$80	; $E7=SBC [zp]	65816
 	.asc	"IN", 'X'+$80	; $E8=INX
-	.asc	"SBC #", '~'+$80	; $E9=SBC #
+	.asc	"SBC #", '?'+$80	; $E9=SBC #
 	.asc	"NO", 'P'+$80	; $EA=NOP
 	.asc	"XB", 'A'+$80	; $EB=XBA		65816
 	.asc	"CPX ", '&'+$80	; $EC=CPX abs
 	.asc	"SBC ", '&'+$80	; $ED=SBC abs
 	.asc	"INC ", '&'+$80	; $EE=INC abs
-	.asc	"SBC ", '+'+$80	; $EF=SBC long	65816
+	.asc	"SBC ", '='+$80	; $EF=SBC long	65816
 	.asc	"BEQ ", '%'+$80	; $F0=BEQ rel
 	.asc	"SBC (@), ", 'Y'+$80	; $F1=SBC (zp),Y
 	.asc	"SBC (@", ')'+$80	; $F2=SBC (zp)	CMOS
@@ -268,5 +268,5 @@
 	.asc	"JSR (&, X", ')'+$80	; $FC=JSR (abs,X)	65816
 	.asc	"SBC &, ", 'X'+$80	; $FD=SBC abs,X
 	.asc	"INC &, ", 'X'+$80	; $FE=INC abs,X
-	.asc	"SBC +, ", 'X'+$80	; $FF=SBC long,X	65816
+	.asc	"SBC =, ", 'X'+$80	; $FF=SBC long,X	65816
 #endif

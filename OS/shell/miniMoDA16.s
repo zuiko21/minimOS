@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5b2
-; last modified 20170327-1111
+; last modified 20170327-1344
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -60,7 +60,8 @@ title:
 ; *** should also make room for B & D registers! ***
 	_sp		= _y+2		; stack pointer, this is 16-bit
 	_psr	= _sp+2		; status register, leave space as above
-	siz		= _psr+1	; number of bytes to copy or transfer ('n')
+	sflags	= _psr		; ****** TEMPORARY ******
+	siz		= _psr+1	; number of bytes to copy or transfer ('n')***
 	lines	= siz+2		; lines to dump ('u')
 	cursor	= lines+1	; storage for cursor offset, now on Y
 	buffer	= cursor+1	; storage for direct input line (BUFSIZ chars)
@@ -215,6 +216,47 @@ sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR $FFFF &  getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
 ; (removed debug code)
+; manage here new operand sizes!!!!!
+		CMP #'='			; 24-bit addressing?
+		BNE sc_nlong
+; try to get a word-sized operand FIRST (will be BANK+MSB)
+			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
+			BCC sc_oklong
+				JMP no_match & $FFFF		; not if no number found?
+sc_oklong:
+			LDY value				; get computed value
+			LDA value+1
+			STY oper+1			; store in safer place, LEAVE ROOM
+			STA oper+2
+; ...and then try to get a single byte operand (LSB)
+			JSR $FFFF &  fetch_byte		; currently it is a single byte...
+			BCC sc_okbank
+				JMP no_match & $FFFF		; could not get operand
+sc_okbank:
+;			LDA value			; eeeeeeeeeeek
+			STA oper			; store value to be poked *** here
+			INC bytes			; three operand bytes were detected
+			INC bytes
+			INC bytes
+			JMP sc_adv & $FFFF			; continue decoding
+sc_nlong:
+		CMP #'?'			; depending on M flag?
+		BNE sc_nmflag
+			LDA #$20			; mask for M flag
+sc_flchk:
+			AND sflags			; get special site for flags!!!
+			BEQ sc_fl0			; 16-bit mode!
+				LDA #'@'			; otherwise is an 8-bit amount
+				BRA sc_nrel			; proceed as usual
+sc_fl0:
+			LDA #'&'			; expecting word size
+			BRA sc_nrel			; as usual
+sc_nmflag:
+		CMP #'!'			; depending on X flag?
+		BNE sc_nxflag
+			LDA #$10			; mask for X flag
+			BRA sc_flchk		; check appropriate flag
+sc_nxflag:
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
@@ -269,6 +311,7 @@ srel_bak:
 srel_done:
 			INC bytes			; one operand was really detected
 			BRA sc_adv			; continue decoding
+; *** jump here to check flag-dependent sizes ***
 sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
@@ -297,6 +340,14 @@ sc_nsbyt:
 			LDA value+1
 			STY oper			; store in safer place, endianness was ok
 			STA oper+1
+; should try a THIRD one which must FAIL, otherwise get back just in case comes later
+			JSR $FFFF &  fetch_byte		; this one should NOT succeed
+			BCS swrd_ok			; OK if no other number found
+				JSR $FFFF &  backChar		; otherwise is an error, forget previous byte!!!
+				JSR $FFFF &  backChar
+				BCC no_match		; reject
+swrd_ok:
+			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; two operands were detected
 			INC bytes
 			BRA sc_adv			; continue decoding
@@ -318,10 +369,8 @@ sc_seek:
 			STA scan			; update LSB
 			BCC no_match		; and try another opcode
 				INC scan+1			; in case of page crossing
-#ifdef	C816
 			BNE no_match		; there was no bank crossing either!
 				INC scan+2			; otherwise proceed as expected
-#endif
 no_match:
 			STZ cursor			; back to beginning of instruction
 			STZ bytes			; also no operands detected! eeeeek
