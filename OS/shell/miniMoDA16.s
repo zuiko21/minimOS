@@ -380,7 +380,7 @@ main_nnul:
 
 ; *** call command routine ***
 call_mcmd:
-	JMPX(cmd_ptr & $FFFF, X)	; indexed jump macro, bank agnostic!
+	JMP (cmd_ptr & $FFFF, X)	; indexed jump macro, bank agnostic!
 
 ; *** command routines, named as per pointer table ***
 ; ** .A = set accumulator **
