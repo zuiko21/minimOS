@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5b3
-; last modified 20170328-1205
+; last modified 20170328-1658
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -216,7 +216,8 @@ sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR $FFFF &  getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
 ; (removed debug code)
-; manage here new operand sizes!!!!!
+; ***manage here new operand sizes!!!!!
+;		JSR $FFFF & adrmodes			; check NEW addressing modes in list, return with standard marker in A
 		CMP #'='			; 24-bit addressing?
 		BNE sc_nlong
 ; try to get a word-sized operand FIRST (will be BANK+MSB)
@@ -240,6 +241,7 @@ sc_okbank:
 			INC bytes
 			JMP sc_adv & $FFFF			; continue decoding
 sc_nlong:
+; ***here was themanagement of flag-dependent sizes...
 		CMP #'?'			; depending on M flag?
 		BNE sc_nmflag
 			LDA #$20			; mask for M flag
@@ -257,6 +259,7 @@ sc_nmflag:
 			LDA #$10			; mask for X flag
 			BRA sc_flchk		; check appropriate flag
 sc_nxflag:
+; ***flag checking could arrive here with @ or & in A
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
