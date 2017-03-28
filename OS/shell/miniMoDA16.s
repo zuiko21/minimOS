@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5b2
-; last modified 20170327-1344
+; v0.5b3
+; last modified 20170328-1106
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -233,7 +233,7 @@ sc_oklong:
 			BCC sc_okbank
 				JMP no_match & $FFFF		; could not get operand
 sc_okbank:
-;			LDA value			; eeeeeeeeeeek
+			LDA value			; eeeeeeeeeeek
 			STA oper			; store value to be poked *** here
 			INC bytes			; three operand bytes were detected
 			INC bytes
@@ -574,6 +574,13 @@ po_loop:
 		LDA [scan], Y		; get char in opcode list, 24b
 		STY temp			; keep index as will be destroyed
 		AND #$7F			; filter out possible end mark
+; *** check special 65816 modes too ***
+		CMP #'!'			; 16-bit index?
+		BNE po_xflag
+			LDA #$10			; X flag mask
+			BRA po_chkfl		; determine size according to flag
+po_xflag:
+;****************************************************************CONTINUE***
 		CMP #'%'			; relative addressing
 		BNE po_nrel			; currently the same as single byte!
 ; put here specific code for relative arguments!
