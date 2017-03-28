@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5b3
-; last modified 20170328-1106
+; last modified 20170328-1205
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -39,8 +39,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4800		; time, 9.00
-	.word	$4A7B		; date, 2017/3/27
+	.word	$6000		; time, 12.00
+	.word	$4A7C		; date, 2017/3/28
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
