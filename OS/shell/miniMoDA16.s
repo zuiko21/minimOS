@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5b3
-; last modified 20170329-1019
+; v0.5b4
+; last modified 20170329-1109
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -8,16 +8,16 @@
 #include "usual.h"
 
 .(
-; *** uncomment for narrow (20-char) displays ***
-;#define	NARROW	_NARROW
+; *** uncomment for wide (80-char?) displays ***
+#define	WIDE	_WIDE
 
 ; *** constant definitions ***
 #define	BUFSIZ		80
 #define	COLON		58
 
 ; bytes per line in dumps 4 or 8/16
-#ifdef	NARROW
-#define		PERLINE		4
+#ifdef	WIDE
+#define		PERLINE		16
 #else
 #define		PERLINE		8
 #endif
@@ -57,9 +57,11 @@ title:
 	_a		= _pc+3		; A register, these are 16-bit ready (note 24b PC, should be K)
 	_x		= _a+2		; X register
 	_y		= _x+2		; Y register
-; *** should also make room for B & D registers! ***
 	_sp		= _y+2		; stack pointer, this is 16-bit
-	_psr	= _sp+2		; status register, leave space as above
+	_dp		= _sp+2		; direct page register
+; remaining registers are 8-bit only
+	_dbr	= _dp+2		; data bank register, K supposedly into ptr
+	_psr	= _dbr+1	; status register, leave space as above
 	sflags	= _psr		; ****** TEMPORARY ******
 	siz		= _psr+1	; number of bytes to copy or transfer ('n')***
 	lines	= siz+2		; lines to dump ('u')
@@ -70,7 +72,7 @@ title:
 	temp	= oper+3	; temporary storage, also for indexes
 	scan	= temp+1	; pointer to opcode list, size is architecture dependent!
 	bufpt	= scan+3	; NEW pointer to variable buffer, scan is 24-bit, maybe this one too!
-	count	= bufpt+2	; char count for screen formatting, also opcode count
+	count	= bufpt+3	; char count for screen formatting, also opcode count
 	bytes	= count+1	; bytes per instruction
 	iodev	= bytes+1	; standard I/O ##### minimOS specific #####
 
@@ -148,6 +150,7 @@ main_loop:
 		XBA					; now A holds MSB
 		STY bufpt			; set new movable pointer
 		STA bufpt+1
+		STZ bufpt+2			; this is a 24b pointer from zeropage
 ; put current address before prompt
 		LDA ptr+1			; MSB goes first
 		JSR $FFFF &  prnHex			; print it
@@ -185,6 +188,7 @@ cli_chk:
 			STA bufpt			; update pointer
 			BCC cli_loop		; MSB OK means try another right now
 				INC bufpt+1			; otherwise wrap!
+; bufpt not expected to wrap?
 			BRA cli_loop		; and try another (BCS or BNE might do as well)
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
@@ -446,7 +450,12 @@ call_address:
 	STA _a
 	STX _x
 	STY _y
+	TDC					; new, get DP value
+	STA _dp
 	.xs: .as: SEP #$30	; *** back to standard size ***
+	PHB					; ...and actual DBR
+	PLA
+	STA _dbr			; this is an 8-bit value
 	PLA					; this was previous PSR, A was already saved
 	STA _psr
 ; hopefully no stack imbalance was caused, otherwise will not resume monitor!
@@ -473,6 +482,7 @@ do_call:
 	LDX _x				; retrieve registers
 	LDY _y
 	LDA _a				; lastly retrieve accumulator
+; ***most likely should set DBR, DP...
 .as:.xs					; most likely values... needed for the remaining code!
 	PLP					; restore status
 ; *** future versions should pick the whole 24-bit address ***
@@ -708,30 +718,26 @@ ex_l:
 		LDA #>dump_in		; address of separator
 		LDY #<dump_in
 		JSR $FFFF &  prnStr			; print it
-		; loop for 4/8 hex bytes
+		; loop for 8/16 hex bytes
 		LDY #0				; reset offset
 ex_h:
 			PHY					; save offset
-; ***narrow mode probably no longer supported!
-; space only when wider than 20 char AND if not the first
-#ifndef	NARROW
 			BEQ ex_ns			; no space if the first one
 				PHY					; please keep Y!
-				LDA #' '			; print space, not in 20-char
+				LDA #' '			; print space
 				JSR $FFFF &  prnChar
 				PLY					; retrieve Y!
 ex_ns:
-#endif
 			LDA [oper], Y		; get byte
 			JSR $FFFF &  prnHex			; print it in hex
 			PLY					; retrieve index
 			INY					; next byte
-			CPY #PERLINE		; bytes per line (8 if not 20-char)
+			CPY #PERLINE		; bytes per line (8 if not wide)
 			BNE ex_h			; continue line
 		LDA #>dump_out		; address of separator
 		LDY #<dump_out
 		JSR $FFFF &  prnStr			; print it
-		; loop for 4/8 ASCII
+		; loop for 8/16 ASCII
 		LDY #0				; reset offset
 ex_a:
 			PHY					; save offset BEFORE!
@@ -746,13 +752,13 @@ ex_np:
 ex_pr:		JSR $FFFF &  prnChar			; print it
 			PLY					; retrieve index
 			INY					; next byte
-			CPY #PERLINE		; bytes per line (8 if not 20-char)
+			CPY #PERLINE		; bytes per line
 			BNE ex_a			; continue line
 		LDA #CR				; print newline
 		JSR $FFFF &  prnChar
 		LDA oper			; get pointer LSB
 		CLC
-		ADC #PERLINE		; add shown bytes (8 if not 20-char)
+		ADC #PERLINE		; add shown bytes
 		STA oper			; update pointer
 		BCC ex_npb			; skip if within same page
 			INC oper+1			; next page
@@ -867,7 +873,7 @@ store_str:
 	LDY cursor			; allows NMOS macro!
 sst_loop:
 		INY					; skip the S and increase
-		LDA (bufpt), Y		; get raw character
+		LDA [bufpt], Y		; get raw character
 		STA (ptr)			; store in place
 			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
@@ -885,7 +891,7 @@ sstr_com:
 	STA (ptr)			; terminate string in memory Eeeeeeeeek
 sstr_cloop:
 		INY					; advance
-		LDA (bufpt), Y		; check whatever
+		LDA [bufpt], Y		; check whatever
 			BEQ sstr_end		; terminator ends
 		CMP #CR				; newline ends too
 			BEQ sstr_end
@@ -900,7 +906,7 @@ sstr_end:
 	STY cursor			; update optimised index!
 	RTS
 
-; ** .T = assemble from source **
+; ** .T = assemble from source ** currently 16b address
 asm_source:
 	PLA					; discard return address as will jump inside cli_loop
 	PLA
@@ -909,6 +915,7 @@ asm_source:
 	LDA value+1
 	STY bufpt			; this will be new buffer
 	STA bufpt+1
+	STZ bufpt+2			;****revise bank
 	JMP $FFFF &  cli_loop		; execute as commands!
 
 ; ** .U = set 'u' number of lines/instructions **
@@ -927,15 +934,21 @@ view_regs:
 	LDX #0				; reset counter
 vr_l:
 		PHX					; save index!
-		LDA _a, X			; get value from regs
+		LDA _a+1, X			; get MSB value from regs
 		JSR $FFFF &  prnHex			; show value in hex
-; without PC being shown, narrow displays will also put regular spacing
-		LDA #' '			; space, not for 20-char
+		PLX
+vr_l8:
+		PHX
+		LDA _a, X			; get LSB value from regs
+		JSR $FFFF &  prnHex			; show value in hex
+		LDA #' '			; space
 		JSR $FFFF &  prnChar			; print it
 		PLX					; restore index
-		INX					; next reg
-		CPX #4				; all regs done?
-		BNE vr_l			; continue otherwise
+		INX					; next reg, note they are 16b
+		INX
+		CPX #10				; all 16-bit regs done?
+		BCC vr_l			; continue otherwise
+		BEQ vr_l8			; ...or print last 8-bit reg
 	LDX #8				; number of bits
 	STX value			; temp counter
 	LDA _psr			; copy original value
@@ -1127,7 +1140,7 @@ getNextChar:
 	LDY cursor			; retrieve index
 gnc_do:
 	INY					; advance!
-	LDA (bufpt), Y		; get raw character
+	LDA [bufpt], Y		; get raw character
 		BEQ gn_ok			; go away if ended
 	CMP #' '			; white space?
 		BEQ gnc_do			; skip it!
@@ -1154,7 +1167,7 @@ gn_ok:
 	BCC gn_end			; save and exit, no need for BRA
 gn_fin:
 		INY				; skip another character in comment
-		LDA (bufpt), Y	; get pointed char
+		LDA [bufpt], Y	; get pointed char
 			BEQ gn_ok		; completely finish if already at terminator
 		CMP #COLON		; colon ends just this sentence
 			BEQ gn_exit
@@ -1171,7 +1184,7 @@ backChar:
 	LDY cursor			; get current position
 bc_loop:
 		DEY					; back once
-		LDA (bufpt), Y		; check what is pointed
+		LDA [bufpt], Y		; check what is pointed
 		CMP #' '			; blank?
 			BEQ bc_loop			; once more
 		CMP #TAB			; tabulation?
@@ -1204,7 +1217,7 @@ glc_do:
 checkEnd:
 	CLC					; prepare!
 	LDY cursor			; otherwise set offset
-	LDA (bufpt), Y		; ...and check buffer contents
+	LDA [bufpt], Y		; ...and check buffer contents
 		BEQ cend_ok			; end of buffer means it is OK to finish opcode
 	CMP #COLON			; end of sentence
 		BEQ cend_ok			; also OK
@@ -1279,14 +1292,10 @@ err_ovf:
 	.asc	"*** Out of range ***", CR, 0
 
 regs_head:
-	.asc	"A:   X:   Y:   S: NVxmDIZC", CR, 0
+	.asc	"A:   X:   Y:   SP:  DP:  B: NVxmDIZC", CR, 0
 
 dump_in:
-#ifdef	NARROW
-	.asc	"[", 0		; for 20-char version
-#else
 	.asc	" [", 0
-#endif
 
 dump_out:
 	.asc	"] ", 0
