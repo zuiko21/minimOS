@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5b3
-; last modified 20170329-0829
+; last modified 20170329-1019
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -215,6 +215,7 @@ not_mcmd:
 sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR $FFFF &  getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
+; ...but C will be lost upon further comparisons!
 ; manage new 65816 operand formats
 		JSR $FFFF & adrmodes			; check NEW addressing modes in list, return with standard marker in A
 		CMP #'='			; 24-bit addressing?
@@ -244,7 +245,6 @@ sc_nlong:
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; try to get a relative operand
-;			BEQ sc_sbyt			; *** currently no different from single-byte ***
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 			BCC srel_ok			; no errors, go translate into relative offset 
 				JMP $FFFF &  no_match		; no address, not OK
@@ -569,7 +569,6 @@ po_loop:
 		CMP #'%'			; relative addressing
 		BNE po_nrel			; currently the same as single byte!
 ; put here specific code for relative arguments!
-;			BRA po_sbyte		; *** placeholder
 ; *** some bug was found here, BRA $FE @ $C396 is rendered as BRA $C297 ***
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
@@ -1182,7 +1181,8 @@ bc_loop:
 	STY cursor				; otherwise we are done
 	RTS
 
-; * get clean NEXT character from opcode list, set Carry if last one! *
+; * get clean NEXT character from opcode list *
+; no point on setting Carry if last one!
 getListChar:
 		INC scan			; try next
 		BNE glc_do			; if did not wrap
@@ -1193,11 +1193,11 @@ glc_do:
 		LDA [scan]			; get current, 24b
 		CMP #' '			; is it blank? will never end an opcode, though
 		BEQ getListChar		; nothing interesting yet
-	LDA [scan]			; recheck bit 7, 24b
-	CLC					; normally not the end
-	BPL glc_end			; it was not
-		SEC					; otherwise do x=128
-glc_end:
+;	LDA [scan]			; recheck bit 7, 24b
+;	CLC					; normally not the end
+;	BPL glc_end			; it was not
+;		SEC					; otherwise do x=128
+;glc_end:
 	AND #$7F			; most convenient!
 	RTS
 
