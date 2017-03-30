@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5b4
-; last modified 20170329-1109
+; last modified 20170330-1240
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -52,18 +52,19 @@ title:
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
-	ptr		= uz		; current address pointer, would be filled by NMI/BRK handler
+	ptr		= uz		; PC & current 24b address pointer, would be filled by NMI/BRK handler
 	_pc		= ptr		; ***unified variables, keep both names for compatibility***
-	_a		= _pc+3		; A register, these are 16-bit ready (note 24b PC, should be K)
+	_k		= _pc+2		; K register, alias from PC/ptr
+	_a		= _pc+3		; A register, these are 16-bit ready
 	_x		= _a+2		; X register
 	_y		= _x+2		; Y register
-	_sp		= _y+2		; stack pointer, this is 16-bit
+	_sp		= _y+2		; stack pointer, these are 16-bit too
 	_dp		= _sp+2		; direct page register
 ; remaining registers are 8-bit only
-	_dbr	= _dp+2		; data bank register, K supposedly into ptr
-	_psr	= _dbr+1	; status register, leave space as above
-	sflags	= _psr		; ****** TEMPORARY ******
-	siz		= _psr+1	; number of bytes to copy or transfer ('n')***
+	_dbr	= _dp+2		; data bank register
+	_psr	= _dbr+1	; status register
+	sflags	= _psr+1	; current status of M & X bits ***
+	siz		= sflags+1	; number of bytes to copy or transfer ('n')
 	lines	= siz+2		; lines to dump ('u')
 	cursor	= lines+1	; storage for cursor offset, now on Y
 	buffer	= cursor+1	; storage for direct input line (BUFSIZ chars)
@@ -83,9 +84,11 @@ title:
 ; ##### minimOS specific stuff #####
 ; needed tweak, clear B register as will only operate on bank 0, no matter where the code runs!
 ; future versions should be able to set it properly
-	LDA #0				; put a zero...
-	PHA					; ...into the stack...
-	PLB					; ...as the new B register value!
+;	LDA #0				; put a zero...
+;	PHA					; ...into the stack...
+;	PLB					; ...as the new B register value!
+; **apparently will not use B as all pointers are 24b now!
+
 ; standard minimOS initialisation
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -122,6 +125,7 @@ open_da:
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
 	LDA #%00110000		; 8-bit sizes eeeeeeeek
 	STA _psr			; *** essential, at least while not previously set ***
+	STA sflags			; also initial (dis)assembler status!
 ; specially tailored code for 816-savvy version!
 get_sp:
 	.xl: REP #$10		; *** 16-bit index ***
@@ -133,7 +137,7 @@ get_sp:
 	LDA #__last-uz		; zeropage space needed (again)
 	STA z_used			; set needed ZP space as required by minimOS ####
 ; global variables
-	LDA #4				; standard number of lines
+	LDA #16				; standard number of lines, bigger value
 	STA lines			; set variable
 	STA siz				; also default transfer size
 	STZ siz+1			; clear copy/transfer size MSB
@@ -150,8 +154,10 @@ main_loop:
 		XBA					; now A holds MSB
 		STY bufpt			; set new movable pointer
 		STA bufpt+1
-		STZ bufpt+2			; this is a 24b pointer from zeropage
+		STZ bufpt+2			; this is a 24b pointer from zeropage, thus always in bank zero
 ; put current address before prompt
+		LDA ptr+2			; BANK goes first
+		JSR $FFFF &  prnHex			; print it
 		LDA ptr+1			; MSB goes first
 		JSR $FFFF &  prnHex			; print it
 		LDA ptr				; same for LSB
@@ -224,22 +230,26 @@ sc_in:
 		JSR $FFFF & adrmodes			; check NEW addressing modes in list, return with standard marker in A
 		CMP #'='			; 24-bit addressing?
 		BNE sc_nlong
-; try to get a word-sized operand FIRST (will be BANK+MSB)
-			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
+; *** get a long-sized operand! ***
+; no need to pick a word (BANK+MSB) first, then a byte!
+			JSR $FFFF &  fetch_long		; get three bytes in a row
+;			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 			BCC sc_oklong
 				JMP no_match & $FFFF		; not if no number found?
 sc_oklong:
 			LDY value			; get computed value
 			LDA value+1
-			STY oper+1			; store in safer place, LEAVE ROOM
-			STA oper+2
-; ...and then try to get a single byte operand (LSB)
-			JSR $FFFF &  fetch_byte		; currently it is a single byte...
-			BCC sc_okbank
-				JMP no_match & $FFFF		; could not get operand
-sc_okbank:
-			LDA value			; eeeeeeeeeeek
-			STA oper			; store value to be poked *** here
+			LDX value+2			; third byte in a row
+			STY oper			; store in safer place, no need to make room for LSB!
+			STA oper+1
+			STX oper+2
+; NO LONGER try to get a single byte operand (LSB)
+;			JSR $FFFF &  fetch_byte		; currently it is a single byte...
+;			BCC sc_okbank
+;				JMP no_match & $FFFF		; could not get operand
+;sc_okbank:
+;			LDA value			; eeeeeeeeeeek
+;			STA oper			; store value to be poked *** here
 			INC bytes			; three operand bytes were detected
 			INC bytes
 			INC bytes
@@ -248,8 +258,8 @@ sc_okbank:
 sc_nlong:
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
-; try to get a relative operand
-			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
+; *** try to get a relative operand *** REVISE
+			JSR $FFFF &  fetch_word		; will pick up a couple of bytes***or three, as this is an address?
 			BCC srel_ok			; no errors, go translate into relative offset 
 				JMP $FFFF &  no_match		; no address, not OK
 srel_ok:
@@ -299,11 +309,10 @@ srel_bak:
 srel_done:
 			INC bytes			; one operand was really detected
 			BRA sc_adv			; continue decoding
-; *** jump here to check flag-dependent sizes ***
 sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
-; try to get a single byte operand
+; *** try to get a single byte operand ***
 			JSR $FFFF &  fetch_byte		; currently it is a single byte...
 				BCS no_match		; could not get operand
 			STA oper			; store value to be poked *** here
@@ -320,7 +329,7 @@ sbyt_ok:
 sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
-; try to get a word-sized operand
+; *** try to get a word-sized operand ***
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 				BCS no_match		; not if no number found?
 			LDY value				; get computed value
@@ -356,7 +365,7 @@ sc_seek:
 			STA scan			; update LSB
 			BCC no_match		; and try another opcode
 				INC scan+1			; in case of page crossing
-			BNE no_match		; there was no bank crossing either!
+			BNE no_match		; there was no bank crossing either! probably not needed
 				INC scan+2			; otherwise proceed as expected
 no_match:
 			STZ cursor			; back to beginning of instruction
@@ -371,10 +380,11 @@ bad_opc:
 			JMP $FFFF &  d_error			; display and restore
 sc_adv:
 		JSR $FFFF &  getNextChar		; get another valid char, in case it has ended
-		TAX					; check A flags... and keep c!
+		TAX					; check A flags... X will not last!
 		BNE sc_nterm		; if end of buffer, sentence ends too
 			SEC					; just like a colon, instruction ended
 sc_nterm:
+		XBA					; store old A value into the other accumulator!
 		LDA [scan]			; what it being pointed in list? 24b
 		BPL sc_rem			; opcode not complete
 			BCS valid_oc		; both opcode and instruction ended
@@ -385,17 +395,17 @@ sc_rem:
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
-		LDX bytes			; to be 816-savvy...
+		TYX					; to be 816-savvy...
 		BEQ poke_opc		; no operands
 poke_loop:
 			LDA oper-1, X		; get argument, note trick, 816-savvy
-			STA (ptr), Y		; store in RAM *** check out bank!
+			STA [ptr], Y		; store in RAM *** check out bank!
 			DEY					; next byte
 			DEX
 			BNE poke_loop		; could start on zero
 poke_opc:
 		LDA count			; matching opcode as computed
-		STA (ptr), Y		; poke it, Y guaranteed to be zero here
+		STA [ptr], Y		; poke it, Y guaranteed to be zero here
 ; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!
 ; **** to do above ****
 ; advance pointer and continue execution
@@ -406,7 +416,10 @@ poke_opc:
 		BCC main_nw			; check for wrap
 			INC ptr+1			; in case of page crossing
 main_nw:
-		TXA					; retrieve c, what was NEXT in buffer eeeeeeek^3
+		BNE main_nbb		; check for bank boundary
+			INC ptr+2			; in case of bank crossing
+main_nbb:
+		XBA					; what was NEXT in buffer, X was NOT respected eeeeeeek^4
 		BNE main_nnul		; termination will return to exterior main loop
 			JMP $FFFF &  main_loop		; and continue forever
 main_nnul:
@@ -429,10 +442,12 @@ set_A:
 ; ** .B = store byte **
 store_byte:
 	JSR $FFFF &  fetch_byte		; get operand in A
-	STA (ptr)			; set byte in memory *** check bank
-	INC ptr				; advance pointer
-	BNE sb_end			; all done if no wrap
-		INC ptr+1			; increase MSB otherwise
+	STA [ptr]			; set byte in memory *** check bank
+	.al: REP #$20		; *** 16-bit memory ***
+	INC ptr				; advance pointer (+MSB)
+	.as: SEP #$20		; *** back to 8-bit ***
+	BNE sb_end			; all done if no BANK wrap
+		INC ptr+2			; increase K otherwise
 sb_end:
 	RTS
 
@@ -478,25 +493,28 @@ jump_address:
 do_call:
 	LDA _psr			; status is different
 	PHA					; will be set via PLP
+	LDA _dbr			; preset B
+	PHA					; push it for a moment...
+	PLB					; ...as will be set now
 	.xl: .al: REP #$30	; *** set registers in full size ***
 	LDX _x				; retrieve registers
 	LDY _y
 	LDA _a				; lastly retrieve accumulator
-; ***most likely should set DBR, DP...
+; ***most likely should set DP...
 .as:.xs					; most likely values... needed for the remaining code!
 	PLP					; restore status
-; *** future versions should pick the whole 24-bit address ***
-	STZ value+2			; MIGHT destroy some irrelevant value
+;	STZ value+2			; MIGHT destroy some irrelevant value
 	JMP [value]			; eeeeeeeeek
 
 ; ** .D = disassemble 'u' lines **
 disassemble:
-	JSR $FFFF &  fetch_word		; get address
+	JSR $FFFF &  fetch_long		; get address
 	LDY value			; save value elsewhere
 	LDA value+1
+	LDX value+2
 	STY oper
 	STA oper+1
-	STZ oper+2			; ***ready for 24b addresses
+	STX oper+2			; 24b addresses
 	LDX lines			; get counter
 das_l:
 		PHX					; save counters
@@ -509,7 +527,7 @@ das_l:
 
 ; disassemble one opcode and print it
 disOpcode:
-	LDA [oper]			; check pointed opcode *** check bank in future versions
+	LDA [oper]			; check pointed opcode
 	STA count			; keep for comparisons
 	LDY #<da_oclist		; get address of opcode list
 	LDA #>da_oclist
@@ -530,15 +548,15 @@ do_skip:
 			INY
 			BNE do_skip			; next char in list if not crossed
 				INC scan+1			; otherwise correct MSB
-			BNE do_skip			; if bank boundary was crossed...
-				INC scan+2			; ...correct 24b pointer
+;			BNE do_skip			; if bank boundary was crossed... (probably NOT needed)
+;				INC scan+2			; ...correct 24b pointer
 			BRA do_skip
 do_other:
 		INY					; needs to point to actual opcode, not previous end eeeeeek!
 		BNE do_set			; if not crossed
 			INC scan+1			; otherwise correct MSB
-		BNE do_set			; if bank boundary was crossed...
-			INC scan+2			; ...correct 24b pointer
+;		BNE do_set			; if bank boundary was crossed... (probably NOT needed)
+;			INC scan+2			; ...correct 24b pointer
 do_set:
 		INX					; yet another opcode skipped
 		BNE do_chkopc		; until list is done ***should not arrive here***
@@ -700,12 +718,14 @@ po_nowr:
 
 ; ** .E = examine 'u' lines of memory **
 examine:
-	JSR $FFFF &  fetch_word		; get address
+	JSR $FFFF &  fetch_long		; get address
 	LDY value			; save value elsewhere
 	LDA value+1
+	LDX value+2
 	STY oper
 	STA oper+1
-	STZ oper+2			; ***make it bank-agnostic, currently set in bank zero
+	STX oper+2
+; *******************************CONTINUE HERE******************************
 	LDX lines			; get counter
 ex_l:
 		PHX					; save counters
@@ -818,8 +838,8 @@ move:
 	LDX siz+1			; check n MSB
 		BEQ mv_l			; go to second stage if zero
 mv_hl:
-		LDA (ptr), Y		; get source byte
-		STA (value), Y		; copy at destination
+		LDA [ptr], Y		; get source byte
+		STA [value], Y		; copy at destination
 		INY					; next byte
 		BNE mv_hl			; until a page is done
 	INC ptr+1			; next page
@@ -829,8 +849,8 @@ mv_hl:
 	LDA siz				; check LSB
 		BEQ mv_end			; nothing to copy!
 mv_l:
-		LDA (ptr), Y		; get source byte
-		STA (value), Y		; copy at destination
+		LDA [ptr], Y		; get source byte
+		STA [value], Y		; copy at destination
 		INY					; next byte
 		CPY siz				; compare with LSB
 		BNE mv_l			; continue until done
@@ -1200,8 +1220,8 @@ getListChar:
 		INC scan			; try next
 		BNE glc_do			; if did not wrap
 			INC scan+1			; otherwise carry on
-		BNE glc_do			; if bank boundary was crossed...
-			INC scan+2			; ...correct 24b pointer
+;		BNE glc_do			; if bank boundary was crossed...
+;			INC scan+2			; ...correct 24b pointer
 glc_do:
 		LDA [scan]			; get current, 24b
 		CMP #' '			; is it blank? will never end an opcode, though
@@ -1345,4 +1365,3 @@ da_oclist:
 #include "shell/data/opcodes16.s"
 mmd_end:					; size computation
 .)
-
