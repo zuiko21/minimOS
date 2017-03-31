@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5b4
-; last modified 20170330-1240
+; v0.5b5
+; last modified 20170331-0909
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -263,14 +263,9 @@ sc_nlong:
 			BCC srel_ok			; no errors, go translate into relative offset 
 				JMP $FFFF &  no_match		; no address, not OK
 srel_ok:
-			LDY #1				; standard branch operands
-			LDA count			; check opcode for a moment
-			AND #$0F			; watch low-nibble on opcode
-			CMP #$0F			; is it BBR/BBS?
-			BNE sc_nobbx		; if not, keep standard offset
-				INY					; otherwise needs one more byte!
-sc_nobbx:
-			TYA					; get branch operand size
+			LDA #1				; standard branch operand offset
+; no BBR/BBS on 65816, thus no alternative offset
+			TAY					; is this really needed???
 ; --- at this point, (ptr)+Y+1 is the address of next instruction
 ; --- should offset be zero, the branch will just arrive there
 ; --- (value) holds the desired address
@@ -725,7 +720,6 @@ examine:
 	STY oper
 	STA oper+1
 	STX oper+2
-; *******************************CONTINUE HERE******************************
 	LDX lines			; get counter
 ex_l:
 		PHX					; save counters
@@ -1079,6 +1073,37 @@ prnStr:
 ; currently ignoring any errors...
 	RTS
 
+; * new approach for hex conversion *
+; * add one nibble from hex in current char!
+; A is current char, returns result in value[0...2]
+; MUST reset value previously!
+hex2nib:
+	SEC					; prepare for subtract
+	SBC #'0'			; convert from ASCII
+		BCC h2n_err			; below number!
+	CMP #10				; already OK?
+	BCC h2n_num			; do not convert from letter
+		CMP #23				; otherwise should be a valid hex
+			BCS h2n_rts			; or not! exits with C set
+		SBC #6				; convert from hex (C is clear!)
+h2n_num:
+	LDX #4				; shifts counter
+h2n_loop:
+		ASL value			; current value will be times 16
+		ROL value+1
+		ROL value+2			; including bank!
+		DEX					; next iteration
+		BNE h2n_loop
+	ORA value			; combine with older value
+	STA value
+	CLC					; all done without error
+h2n_rts:
+	RTS					; usual exit
+h2n_err:
+	SEC					; notify error!
+	RTS
+
+
 ; * convert two hex ciphers into byte@value
 ; A is current char, Y is cursor from NEW buffer *
 hex2byte:
@@ -1245,19 +1270,48 @@ checkEnd:
 cend_ok:
 	RTS
 
-; * fetch one byte from buffer, value in A and @value *
+; * fetch one byte from buffer, value in A and @value.b *
+; newer approach as interface for hex2nib
 fetch_byte:
-	JSR $FFFF &  getNextChar		; go to operand
-	JSR $FFFF &  hex2byte		; convert value
-	LDA value			; converted byte
-fetch_abort:
+	STZ value			; clear original!
+ftb_add:
+	JSR $FFFF &  getNextChar		; go to operand first cipher!
+	JSR $FFFF &  hex2nib			; process one char
+		BCS fetch_back1					; discard this byte and exit!
+	JSR $FFFF &  getNextChar		; go to operand second cipher!
+	JSR $FFFF &  hex2nib			; process one char
+		BCS fetch_back2					; discard both bytes and exit!
+	LDA value			; read converted byte for convenience
+	RTS
+fetch_back2:
+	JSR $FFFF &  backChar		; should discard previous byte!
+fetch_back1:
+	JSR $FFFF &  backChar		; should discard previous nibble!
+	SEC					; notify error?
 	RTS
 
 ; * fetch two bytes from hex input buffer, value @value.w *
+; can this be generic???
 fetch_word:
+	STZ value			; clear result
+	STZ value+1
+	LDX #2				; number of bytes
+ftw_loop:
+		PHX					; save counter
+		JSR $FFFF & ftb_add			; compute byte without clearing
+		PLX					; retrieve
+			BCS fetch_abort		; an error happened!
+		DEX					; next byte
+		BNE ftw_loop
+fetch_abort:
+	RTS					; is this OK???
+
+; * fetch three bytes from hex input buffer, value @value.l *
+; TO DO TO DO with new approach *******************
+fetch_long:
 	JSR $FFFF &  fetch_byte		; get operand in A
 		BCS fetch_abort		; new, do not keep trying if error, not sure if needed
-	STA value+1			; leave room for next
+	STA value+2			; leave room for next word!
 	JSR $FFFF &  gnc_do			; get next char!!!
 	JSR $FFFF &  hex2byte		; get second byte, value is little-endian now
 		BCC fetch_abort		; actually OK!!!
