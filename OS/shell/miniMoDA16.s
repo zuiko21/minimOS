@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5b5
-; last modified 20170331-1331
+; last modified 20170331-1408
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -255,28 +255,27 @@ sc_nlong:
 			BCC srel_ok			; no errors, go translate into relative offset 
 				JMP $FFFF &  no_match		; no address, not OK
 srel_ok:
-			LDA #1				; standard branch operand offset
 ; no BBR/BBS on 65816, thus no alternative offset
-			TAY					; is this really needed???
-; --- at this point, (ptr)+Y+1 is the address of next instruction
+; --- at this point, (ptr)+Y+1 is the address of next instruction (+2, really)
 ; --- should offset be zero, the branch will just arrive there
 ; --- (value) holds the desired address
 ; --- (value) minus that previously computed address is the proper offset
 ; --- offset MUST fit in a signed byte! overflow otherwise
-; --- alternatively, bad_opc(ptr)+Y - (value), then EOR #$FF
+; --- alternatively, bad_opc(ptr)+Y - (value), then EOR #$FF (make that +1 instead of Y)
 ; --- how to check bounds then? same sign on MSB & LSB!
 ; --- but MSB can ONLY be 0 or $FF!
-			CLC					; prepare
-			ADC ptr				; A = ptr + Y
+			LDA ptr				; A must be ptr + 1
+			INC
 			SEC					; now for the subtraction
 			SBC value			; one's complement of result
 			EOR #$FF			; the actual offset!
 ; will poke offset first, then check bounds
-			LDX bytes			; check whether the first operand!
-			BNE srel_2nd		; otherwise do not overwrite previous
-				STA oper			; normal storage
-srel_2nd:
-			STA oper+1			; storage for BBR/BBS
+; as BBR/BBS no longer available, this must be simplified somehow...
+;			LDX bytes			; check whether the first operand!
+;			BNE srel_2nd		; otherwise do not overwrite previous
+;				STA oper			; normal storage
+;srel_2nd:
+			STA oper+1			; storage for BBR/BBS*** seems the standard value
 ; check whether within branching range
 ; first compute MSB (no need to complement)
 			LDA ptr+1			; get original position
@@ -587,15 +586,7 @@ po_loop:
 ; *** some bug was found here, BRA $FE @ $C396 is rendered as BRA $C297 ***
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
-			LDA [oper]			; check opocde for a moment
-			LDY #1				; standard branch offset
 			LDX #0				; reset offset sign extention
-			AND #$0F			; watch low-nibble on opcode
-			CMP #$0F			; is it BBR/BBS?
-			BNE po_nobbx		; if not, keep standard offset
-				INY					; otherwise needs one more byte!
-po_nobbx:
-			STY value			; store now as will be added later
 			LDY bytes			; retrieve instruction index
 			INY					; point to operand!
 			LDA [oper], Y		; get offset!
@@ -604,7 +595,7 @@ po_nobbx:
 				DEX					; puts $FF otherwise
 po_fwd:
 			SEC					; plus opcode...
-			ADC value			; ...and displacement...
+			ADC #1				; ...and displacement...
 			ADC oper			; ...from current position
 			PHA					; this is the LSB, now check for the MSB
 			TXA					; get sign extention
