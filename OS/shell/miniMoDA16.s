@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5b5
-; last modified 20170331-0909
+; last modified 20170331-1331
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -233,7 +233,6 @@ sc_in:
 ; *** get a long-sized operand! ***
 ; no need to pick a word (BANK+MSB) first, then a byte!
 			JSR $FFFF &  fetch_long		; get three bytes in a row
-;			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 			BCC sc_oklong
 				JMP no_match & $FFFF		; not if no number found?
 sc_oklong:
@@ -243,13 +242,6 @@ sc_oklong:
 			STY oper			; store in safer place, no need to make room for LSB!
 			STA oper+1
 			STX oper+2
-; NO LONGER try to get a single byte operand (LSB)
-;			JSR $FFFF &  fetch_byte		; currently it is a single byte...
-;			BCC sc_okbank
-;				JMP no_match & $FFFF		; could not get operand
-;sc_okbank:
-;			LDA value			; eeeeeeeeeeek
-;			STA oper			; store value to be poked *** here
 			INC bytes			; three operand bytes were detected
 			INC bytes
 			INC bytes
@@ -428,10 +420,11 @@ call_mcmd:
 
 ; *** command routines, named as per pointer table ***
 ; ** .A = set accumulator **
-; * currently 8-bit only *
 set_A:
-	JSR $FFFF &  fetch_byte		; get operand in A
+	JSR $FFFF &  fetch_word		; get operand in A
+	LDX value+1			; pick MSB up
 	STA _a				; set accumulator
+	STX _a+1
 	RTS
 
 ; ** .B = store byte **
@@ -448,7 +441,7 @@ sb_end:
 
 ; ** .C = call address **
 call_address:
-	JSR $FFFF &  fetch_word		; get operand address
+	JSR $FFFF &  fetch_long		; get operand address
 ; now ignoring operand errors!
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
@@ -498,7 +491,6 @@ do_call:
 ; ***most likely should set DP...
 .as:.xs					; most likely values... needed for the remaining code!
 	PLP					; restore status
-;	STZ value+2			; MIGHT destroy some irrelevant value
 	JMP [value]			; eeeeeeeeek
 
 ; ** .D = disassemble 'u' lines **
@@ -827,7 +819,7 @@ load_bytes:
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
 
-	JSR $FFFF &  fetch_word		; get operand word
+	JSR $FFFF &  fetch_long		; get operand address
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
 		BEQ mv_l			; go to second stage if zero
@@ -862,11 +854,13 @@ set_count:
 
 ; ** .O = set origin **
 origin:
-	JSR $FFFF &  fetch_word		; get operand word
+	JSR $FFFF &  fetch_long		; get operand word
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
+	LDX value+2			; and BANK!!!
 	STY ptr				; into destination variable
 	STA ptr+1
+	STX ptr+2
 	RTS
 
 ; ** .P = set status register **
@@ -924,12 +918,13 @@ sstr_end:
 asm_source:
 	PLA					; discard return address as will jump inside cli_loop
 	PLA
-	JSR $FFFF &  fetch_word		; get desired address
+	JSR $FFFF &  fetch_long		; get desired address
 	LDY value			; fetch result
 	LDA value+1
+	LDX value+2
 	STY bufpt			; this will be new buffer
 	STA bufpt+1
-	STZ bufpt+2			;****revise bank
+	STX bufpt+2
 	JMP $FFFF &  cli_loop		; execute as commands!
 
 ; ** .U = set 'u' number of lines/instructions **
@@ -996,14 +991,18 @@ store_word:
 
 ; ** .X = set X register **
 set_X:
-	JSR $FFFF &  fetch_byte		; get operand in A *** 8-bit
-	STA _x				; set register
+	JSR $FFFF &  fetch_word		; get operand in A
+	LDX value+1			; pick MSB up
+	STA _x				; set X
+	STX _x+1
 	RTS
 
 ; ** .Y = set Y register **
 set_Y:
-	JSR $FFFF &  fetch_byte		; get operand in A *** 8-bit
-	STA _y				; set register
+	JSR $FFFF &  fetch_word		; get operand in A
+	LDX value+1			; pick MSB up
+	STA _y				; set Y
+	STX _y+1
 	RTS
 
 ; ** .F = force cold boot
@@ -1076,6 +1075,7 @@ prnStr:
 ; * new approach for hex conversion *
 ; * add one nibble from hex in current char!
 ; A is current char, returns result in value[0...2]
+; does NOT advance any cursor (neither reads char from nowhere)
 ; MUST reset value previously!
 hex2nib:
 	SEC					; prepare for subtract
@@ -1103,43 +1103,42 @@ h2n_err:
 	SEC					; notify error!
 	RTS
 
-
 ; * convert two hex ciphers into byte@value
 ; A is current char, Y is cursor from NEW buffer *
-hex2byte:
-	LDX #0				; reset loop counter
-	STX value			; also reset value
-h2b_l:
-		SEC					; prepare
-		SBC #'0'			; convert to value
-			BCC h2b_err			; below number!
-		CMP #10				; already OK?
-		BCC h2b_num			; do not shift letter value
-			CMP #23				; should be a valid hex
-				BCS h2b_err			; not!
-			SBC #6				; convert from hex (had CLC before!)
-h2b_num:
-		ASL value			; older value times 16
-		ASL value
-		ASL value
-		ASL value
-		ORA value			; add computed nibble
-		STA value			; and store full byte
-		INX					; loop counter
-		CPX #2				; two ciphers per byte
-			BEQ h2b_end			; all done
-		JSR $FFFF &  gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
-		BRA h2b_l			; process it
-h2b_end:
-	CLC					; clear carry, value is valid!
-	RTS					; macro NLA
-h2b_err:
-	DEX					; at least one cipher processed?
-	BMI h2b_exit		; no need to correct
-		JSR $FFFF &  backChar		; will try to reprocess former char
-h2b_exit:
-	SEC					; indicate error
-	RTS
+;hex2byte:
+;	LDX #0				; reset loop counter
+;	STX value			; also reset value
+;h2b_l:
+;		SEC					; prepare
+;		SBC #'0'			; convert to value
+;			BCC h2b_err			; below number!
+;		CMP #10				; already OK?
+;		BCC h2b_num			; do not shift letter value
+;			CMP #23				; should be a valid hex
+;				BCS h2b_err			; not!
+;			SBC #6				; convert from hex (had CLC before!)
+;h2b_num:
+;		ASL value			; older value times 16
+;		ASL value
+;		ASL value
+;		ASL value
+;		ORA value			; add computed nibble
+;		STA value			; and store full byte
+;		INX					; loop counter
+;		CPX #2				; two ciphers per byte
+;			BEQ h2b_end			; all done
+;		JSR $FFFF &  gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
+;		BRA h2b_l			; process it
+;h2b_end:
+;	CLC					; clear carry, value is valid!
+;	RTS					; macro NLA
+;h2b_err:
+;	DEX					; at least one cipher processed?
+;	BMI h2b_exit		; no need to correct
+;		JSR $FFFF &  backChar		; will try to reprocess former char
+;h2b_exit:
+;	SEC					; indicate error
+;	RTS
 
 ; ** end of inline library **
 
@@ -1273,51 +1272,43 @@ cend_ok:
 ; * fetch one byte from buffer, value in A and @value.b *
 ; newer approach as interface for hex2nib
 fetch_byte:
+	LDY #2				; number of hex CHARS
+ftb_clear:
 	STZ value			; clear original!
 ftb_add:
-	JSR $FFFF &  getNextChar		; go to operand first cipher!
-	JSR $FFFF &  hex2nib			; process one char
-		BCS fetch_back1					; discard this byte and exit!
-	JSR $FFFF &  getNextChar		; go to operand second cipher!
-	JSR $FFFF &  hex2nib			; process one char
-		BCS fetch_back2					; discard both bytes and exit!
+	STZ temp			; count processed chars in case of discard
+ftb_loop:
+		PHY					; save this counter
+		JSR $FFFF &  getNextChar		; go to operand first cipher!
+		JSR $FFFF &  hex2nib			; process one char
+		INC temp			; one more char
+			BCS fetch_back		; discard processed bytes and exit!
+		PLY					; restore counter
+		DEY					; next char, if any
+		BNE ftb_loop
 	LDA value			; read converted byte for convenience
 	RTS
-fetch_back2:
-	JSR $FFFF &  backChar		; should discard previous byte!
-fetch_back1:
-	JSR $FFFF &  backChar		; should discard previous nibble!
+fetch_back:
+	PLA					; eeeeeeeeeeeeeek
+ftb_back:
+		JSR $FFFF &  backChar		; should discard previous byte!
+		DEC temp			; one less to go
+		BNE ftb_back		; continue until all was discarded
 	SEC					; notify error?
 	RTS
 
 ; * fetch two bytes from hex input buffer, value @value.w *
-; can this be generic???
 fetch_word:
-	STZ value			; clear result
-	STZ value+1
-	LDX #2				; number of bytes
-ftw_loop:
-		PHX					; save counter
-		JSR $FFFF & ftb_add			; compute byte without clearing
-		PLX					; retrieve
-			BCS fetch_abort		; an error happened!
-		DEX					; next byte
-		BNE ftw_loop
-fetch_abort:
-	RTS					; is this OK???
+	LDY #4				; number of chars
+	BRA ftl_msb			; continue with generic routine
 
 ; * fetch three bytes from hex input buffer, value @value.l *
-; TO DO TO DO with new approach *******************
 fetch_long:
-	JSR $FFFF &  fetch_byte		; get operand in A
-		BCS fetch_abort		; new, do not keep trying if error, not sure if needed
-	STA value+2			; leave room for next word!
-	JSR $FFFF &  gnc_do			; get next char!!!
-	JSR $FFFF &  hex2byte		; get second byte, value is little-endian now
-		BCC fetch_abort		; actually OK!!!
-	JSR $FFFF &  backChar		; should discard previous byte!
-	JSR $FFFF &  backChar
-	RTS
+	LDY #6				; number of chars
+	STZ value+2			; clear bank
+ftl_msb:
+	STZ value+1			; clear msb
+	BRA ftb_clear			; continue with generic routine
 
 ; *** pointers to command routines ***
 cmd_ptr:
@@ -1380,31 +1371,32 @@ help_str:
 	.asc	"---Command list---", CR
 	.asc	"(d = 2 hex char.)", CR
 	.asc	"(a = 4 hex char.)", CR
+	.asc	"(l = 6 hex char.)", CR
 	.asc	"(s = raw string)", CR
-	.asc	"Ad = set A reg.", CR
+	.asc	"Aa = set A reg.", CR
 	.asc	"Bd = store byte", CR
-	.asc	"Ca = call subr.", CR
-	.asc	"Da =disass. 'u' opc.", CR
-	.asc	"Ea = dump 'u' lines", CR
+	.asc	"Cl = call subr.", CR
+	.asc	"Dl =disass. 'u' opc.", CR
+	.asc	"El = dump 'u' lines", CR
 	.asc	"F = cold boot", CR
-	.asc	"Gd = set SP reg.", CR
+	.asc	"Ga = set SP reg.", CR
 	.asc	"H = show this list", CR
-	.asc	"Ja = jump", CR
+	.asc	"Jl = jump", CR
 	.asc	"K = save 'n' bytes", CR
 	.asc	"L = load up to 'n'", CR
-	.asc	"Ma =copy n byt. to a", CR
-	.asc	"Na = set 'n' bytes", CR
-	.asc	"Oa = set address", CR
+	.asc	"Ml =copy n byt. to a", CR
+	.asc	"Na = set 'n' value", CR
+	.asc	"Ol = set address", CR
 	.asc	"Pd = set Status reg.", CR
 	.asc	"Q = quit", CR
 	.asc	"R = reboot", CR
 	.asc	"Ss = put raw string", CR
-	.asc	"Ta = assemble source", CR
+	.asc	"Tl = assemble source", CR
 	.asc	"Ud = set 'u' lines", CR
 	.asc	"V = view registers", CR
 	.asc	"Wa = store word", CR
-	.asc	"Xd = set X reg.", CR
-	.asc	"Yd = set Y reg.", CR
+	.asc	"Xa = set X reg.", CR
+	.asc	"Ya = set Y reg.", CR
 	.asc	"Z = poweroff", CR
 #endif
 	.byt	0
