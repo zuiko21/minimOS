@@ -126,6 +126,15 @@ open_da:
 	LDA #%00110000		; 8-bit sizes eeeeeeeek
 	STA _psr			; *** essential, at least while not previously set ***
 	STA sflags			; also initial (dis)assembler status!
+; while a proper debugger interface is done, better preset ptr to a safe area
+	LDX #>user_sram		; beginning of available ram, as defined... in rom.s
+	LDY #<user_sram		; LSB misaligned?
+	BEQ ptr_init		; nothing to align
+		INX					; otherwise start at next page
+ptr_init:
+	STX ptr+1			; set MSB
+	STZ ptr+2			; and bank!
+	STZ ptr				; page aligned
 ; specially tailored code for 816-savvy version!
 get_sp:
 	.xl: REP #$10		; *** 16-bit index ***
