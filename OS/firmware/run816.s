@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9b6
+; v0.9b7
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170320-0914
+; last modified 20170403-0925
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -79,6 +79,12 @@ fw_cpuOK:
 ; it can be assumed 65816 from this point on
 	CLC					; set NATIVE mode eeeeeeeeeeek
 	XCE					; still with 8-bit registers
+; ***** do I really need to (re)set DP and DBR??? *****
+	PHK					; stacks a zero
+	PLB					; reset this value
+	PHK					; stack two zeroes
+	PHK
+	PLD					; simpler than TCD et al
 
 ; *** optional firmware modules ***
 post:

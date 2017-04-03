@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5b5
-; last modified 20170331-1408
+; last modified 20170403-0941
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -131,6 +131,12 @@ get_sp:
 	.xl: REP #$10		; *** 16-bit index ***
 	TSX					; get current stack pointer
 	STX _sp				; store original value
+	PHD					; check also direct page register
+	PLX					; retrieve 16-bit value!
+	STX _dp				; store current value
+	PHB					; data bank register is 8-bit only, but worth doing here
+	PLA					; get 8 bits only
+	STA _dbr			; store current, no need to reset it! 
 	.xs: .as: SEP #$30	; *** regular size ***
 ; does not really need to set PC/ptr
 ; these ought to be initialised after calling a routine!
@@ -445,21 +451,29 @@ call_address:
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
+	PHD					; ** needs to push DP or might be lost! **
 	JSR @do_call		; *** actually JSL, must end in RTL!!! ***
 	PHP					; get current status BEFORE switching sizes!
 	.xl: .al: REP #$30	; *** store full size registers, just in case ***
+	PHA					; need to save this first in order to get DP deep from the stack!!!
+; ** first of all, try to restore original DP!!! **
+	LDA 4, S			; depth of orginally stored DP
+	TCD					; now ready to save into zeropage!
+	STA _dp				; can store this right now
+	PLA					; retrieve A value upon return
 ; ** should record actual registers here **
 	STA _a
 	STX _x
 	STY _y
-	TDC					; new, get DP value
-	STA _dp
 	.xs: .as: SEP #$30	; *** back to standard size ***
 	PHB					; ...and actual DBR
 	PLA
 	STA _dbr			; this is an 8-bit value
 	PLA					; this was previous PSR, A was already saved
 	STA _psr
+; ** needs to discard deeply stored DP **
+	PLA					; discard a 16-bit value over stored iodev
+	PLA
 ; hopefully no stack imbalance was caused, otherwise will not resume monitor!
 	PLA					; this (eeeeek) will take previously saved default device
 	STA iodev			; store device!!!
@@ -484,9 +498,12 @@ do_call:
 	PHA					; push it for a moment...
 	PLB					; ...as will be set now
 	.xl: .al: REP #$30	; *** set registers in full size ***
+	LDA _dp				; ** get 16-bit value **
+	PHA					; ** into stack to be taken later **
 	LDX _x				; retrieve registers
 	LDY _y
 	LDA _a				; lastly retrieve accumulator
+	PLD					; ** must set DP after all readings **
 ; ***most likely should set DP...
 .as:.xs					; most likely values... needed for the remaining code!
 	PLP					; restore status
