@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5b5
-; last modified 20170403-0941
+; v0.5.1b6
+; last modified 20170404-1159
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -33,14 +33,14 @@ mmd_head:
 ; *** filename and optional comment ***
 title:
 	.asc	"miniMoDA", 0	; file name (mandatory)
-	.asc	"takes 65816 opcodes, at least", 0	; comment
+	.asc	"65816 version", 0	; comment
 
 ; advance to end of header
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4000		; time, 8.00
-	.word	$4A7D		; date, 2017/3/29
+	.word	$6000		; time, 12.00
+	.word	$4A84		; date, 2017/4/4
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
