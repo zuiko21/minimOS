@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b6
-; last modified 20170404-1159
+; last modified 20170404-1243
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -836,7 +836,7 @@ load_bytes:
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
 
-	JSR $FFFF &  fetch_long		; get operand address
+	JSR $FFFF &  fetch_value		; get operand address
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
 		BEQ mv_l			; go to second stage if zero
@@ -871,7 +871,7 @@ set_count:
 
 ; ** .O = set origin **
 origin:
-	JSR $FFFF &  fetch_long		; get operand word
+	JSR $FFFF &  fetch_value		; get up to 3 bytes, unchecked
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	LDX value+2			; and BANK!!!
@@ -1120,43 +1120,6 @@ h2n_err:
 	SEC					; notify error!
 	RTS
 
-; * convert two hex ciphers into byte@value
-; A is current char, Y is cursor from NEW buffer *
-;hex2byte:
-;	LDX #0				; reset loop counter
-;	STX value			; also reset value
-;h2b_l:
-;		SEC					; prepare
-;		SBC #'0'			; convert to value
-;			BCC h2b_err			; below number!
-;		CMP #10				; already OK?
-;		BCC h2b_num			; do not shift letter value
-;			CMP #23				; should be a valid hex
-;				BCS h2b_err			; not!
-;			SBC #6				; convert from hex (had CLC before!)
-;h2b_num:
-;		ASL value			; older value times 16
-;		ASL value
-;		ASL value
-;		ASL value
-;		ORA value			; add computed nibble
-;		STA value			; and store full byte
-;		INX					; loop counter
-;		CPX #2				; two ciphers per byte
-;			BEQ h2b_end			; all done
-;		JSR $FFFF &  gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
-;		BRA h2b_l			; process it
-;h2b_end:
-;	CLC					; clear carry, value is valid!
-;	RTS					; macro NLA
-;h2b_err:
-;	DEX					; at least one cipher processed?
-;	BMI h2b_exit		; no need to correct
-;		JSR $FFFF &  backChar		; will try to reprocess former char
-;h2b_exit:
-;	SEC					; indicate error
-;	RTS
-
 ; ** end of inline library **
 
 ; * convert flag-dependent size markers to standard ones *
@@ -1287,45 +1250,60 @@ cend_ok:
 	RTS
 
 ; * fetch one byte from buffer, value in A and @value.b *
-; newer approach as interface for hex2nib
+; newest approach as interface for fetch_value
 fetch_byte:
-	LDY #2				; number of hex CHARS
-ftb_clear:
-	STZ value			; clear original!
-ftb_add:
-	STZ temp			; count processed chars in case of discard
-ftb_loop:
-		PHY					; save this counter
-		JSR $FFFF &  getNextChar		; go to operand first cipher!
-		JSR $FFFF &  hex2nib			; process one char
-		INC temp			; one more char
-			BCS fetch_back		; discard processed bytes and exit!
-		PLY					; restore counter
-		DEY					; next char, if any
-		BNE ftb_loop
-	LDA value			; read converted byte for convenience
-	RTS
-fetch_back:
-	PLA					; eeeeeeeeeeeeeek
-ftb_back:
-		JSR $FFFF &  backChar		; should discard previous byte!
-		DEC temp			; one less to go
-		BNE ftb_back		; continue until all was discarded
-	SEC					; notify error?
-	RTS
+	JSR $FFFF &  fetch_value		; get whatever
+	LDA temp			; how many bytes will fit?
+	CMP #1				; strictly one?
+	BRA ft_check		; common check
 
 ; * fetch two bytes from hex input buffer, value @value.w *
 fetch_word:
-	LDY #4				; number of chars
-	BRA ftl_msb			; continue with generic routine
+; another approach using fetch_value
+	JSR $FFFF &  fetch_value		; get whatever
+	LDA temp			; how many bytes will fit?
+	CMP #2				; strictly two?
+; common fetch error check
+ft_check:
+	BNE ft_err
+		CLC					; if so, all OK
+		LDA value			; convenient!!!
+		RTS
+; common fetch error discard routine
+ft_err:
+		JSR $FFFF &  backChar		; should discard previous char!
+		DEC temp			; one less to go
+		BNE ft_err			; continue until all was discarded
+	SEC					; there was an error
+	RTS
 
 ; * fetch three bytes from hex input buffer, value @value.l *
 fetch_long:
-	LDY #6				; number of chars
-	STZ value+2			; clear bank
-ftl_msb:
-	STZ value+1			; clear msb
-	BRA ftb_clear			; continue with generic routine
+;	newst approach
+	JSR $FFFF &  fetch_value		; get whatever
+	LDA temp			; how many bytes will fit?
+	CMP #3				; strictly three?
+	BRA ft_check		; common check
+
+; * fetch typed value, no matter the number of chars *
+fetch_value:
+	STZ value			; clear full result
+	STZ value+1
+	STZ value+2
+	STZ temp			; no chars processed yet
+; could check here for symbolic references...
+ftv_loop:
+		JSR $FFFF &  getNextChar		; go to operand first cipher!
+		JSR $FFFF &  hex2nib			; process one char
+			BCS ftv_bad			; no more valid chars
+		INC temp			; otherwise count one
+		BRA ftv_loop		; until no more valid
+ftv_bad:
+	JSR $FFFF &  backChar		; should discard very last char! eeeeeeeek
+	INC temp			; round up chars...
+	LSR temp			; ...and convert to bytes
+	CLC					; always check temp=0 for errors!
+	RTS
 
 ; *** pointers to command routines ***
 cmd_ptr:
