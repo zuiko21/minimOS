@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b6
-; last modified 20170404-1243
+; last modified 20170405-0954
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -435,9 +435,10 @@ call_mcmd:
 ; *** command routines, named as per pointer table ***
 ; ** .A = set accumulator **
 set_A:
-	JSR $FFFF &  fetch_word		; get operand in A
+	JSR $FFFF &  fetch_value		; get operand
+	LDA value			; needs to pick LSB!
 	LDX value+1			; pick MSB up
-	STA _a				; set accumulator
+	STA _a				; set 16b accumulator
 	STX _a+1
 	RTS
 
@@ -455,8 +456,9 @@ sb_end:
 
 ; ** .C = call address **
 call_address:
-	JSR $FFFF &  fetch_long		; get operand address
-; now ignoring operand errors!
+	JSR $FFFF &  fetch_value		; get operand address
+	LDA temp			; was it able to pick at least one hex char?
+		BEQ sb_end			; quietly ignore erratic address, do not jump to zero!
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
@@ -465,9 +467,11 @@ call_address:
 	PHP					; get current status BEFORE switching sizes!
 	.xl: .al: REP #$30	; *** store full size registers, just in case ***
 	PHA					; need to save this first in order to get DP deep from the stack!!!
+	PHD					; this is the value of DP upon exit!!!
 ; ** first of all, try to restore original DP!!! **
-	LDA 4, S			; depth of orginally stored DP
-	TCD					; now ready to save into zeropage!
+	LDA 6, S			; depth of orginally stored DP, new offset
+	TCD					; now it is safe for zeropage accesses!
+	PLA					; get 'current' DP value, now that it can be saved!
 	STA _dp				; can store this right now
 	PLA					; retrieve A value upon return
 ; ** should record actual registers here **
@@ -492,8 +496,9 @@ call_address:
 
 ; ** .J = jump to an address **
 jump_address:
-	JSR $FFFF &  fetch_word		; get operand address
-; now ignoring operand errors!
+	JSR $FFFF &  fetch_value		; get operand address
+	LDA temp			; was it able to pick at least one hex char?
+		BEQ sb_end			; quietly ignore erratic address, do not jump to zero!
 ; restore stack pointer...
 	.xl: REP #$10		; *** essential 16-bit index ***
 	LDX _sp				; get stored value (word)
@@ -520,7 +525,8 @@ do_call:
 
 ; ** .D = disassemble 'u' lines **
 disassemble:
-	JSR $FFFF &  fetch_long		; get address
+	JSR $FFFF &  fetch_value		; get address
+; ignoring operand error...
 	LDY value			; save value elsewhere
 	LDA value+1
 	LDX value+2
@@ -722,7 +728,8 @@ po_nowr:
 
 ; ** .E = examine 'u' lines of memory **
 examine:
-	JSR $FFFF &  fetch_long		; get address
+	JSR $FFFF &  fetch_value		; get address
+; ignoring operand error...
 	LDY value			; save value elsewhere
 	LDA value+1
 	LDX value+2
@@ -793,8 +800,10 @@ ex_npb:
 
 ; ** .G = set stack pointer **
 set_SP:
-	JSR $FFFF &  fetch_byte		; get operand in A *** currently 8-bit
+	JSR $FFFF &  fetch_word		; get 16b operand
 	STA _sp				; set stack pointer
+	LDA value+1			; MSB too!
+	STA _sp+1
 	RTS
 
 ; ** .H = show commands **
@@ -837,6 +846,9 @@ move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
 
 	JSR $FFFF &  fetch_value		; get operand address
+	LDA temp			; at least one?
+		BEQ mv_end			; quietly abort operation
+; the real stuff begins *** should use MVN, MVP
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
 		BEQ mv_l			; go to second stage if zero
@@ -862,16 +874,19 @@ mv_end:
 
 ; ** .N = set 'n' value **
 set_count:
-	JSR $FFFF &  fetch_word		; get operand word
+	JSR $FFFF &  fetch_value		; get operand
+	LDA temp			; at least one?
+		BEQ mv_end			; quietly abort operation
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	STY siz				; into destination variable
-	STA siz+1
+	STA siz+1			; only 16b are taken
 	RTS
 
 ; ** .O = set origin **
 origin:
 	JSR $FFFF &  fetch_value		; get up to 3 bytes, unchecked
+; ignore error as will show up in prompt
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	LDX value+2			; and BANK!!!
@@ -935,7 +950,9 @@ sstr_end:
 asm_source:
 	PLA					; discard return address as will jump inside cli_loop
 	PLA
-	JSR $FFFF &  fetch_long		; get desired address
+	JSR $FFFF &  fetch_value		; get desired address
+	LDA temp			; at least one?
+		BEQ mv_end			; quietly abort operation
 	LDY value			; fetch result
 	LDA value+1
 	LDX value+2
@@ -945,6 +962,7 @@ asm_source:
 	JMP $FFFF &  cli_loop		; execute as commands!
 
 ; ** .U = set 'u' number of lines/instructions **
+; might replace this for an autoscroll feature
 set_lines:
 	JSR $FFFF &  fetch_byte		; get operand in A
 	STA lines			; set number of lines
@@ -993,12 +1011,12 @@ vr_off:
 
 ; ** .W = store word **
 store_word:
-	JSR $FFFF &  fetch_word		; get operand word
+	JSR $FFFF &  fetch_value		; get operand, do not force 3-4 hex chars
 ; 8-bit code minus RTS was 16/20b, 29-33/32-40
 ; 16-bit code is 12/16b, 30/33-37t
 	.al: REP #$20		; *** worth going 16-bit memory ***
-	LDA value			; get word
-	STA (ptr)			; store in full
+	LDA value			; get 16b word
+	STA [ptr]			; store in full eeeeeeeeeek
 	INC ptr				; advance two bytes!
 	INC ptr				; MSB will be OK anyway
 	.as: SEP #$20		; *** back to 8-bit ***
@@ -1008,7 +1026,8 @@ store_word:
 
 ; ** .X = set X register **
 set_X:
-	JSR $FFFF &  fetch_word		; get operand in A
+	JSR $FFFF &  fetch_value		; get operand
+	LDA value			; needs to pick LSB!
 	LDX value+1			; pick MSB up
 	STA _x				; set X
 	STX _x+1
@@ -1016,7 +1035,8 @@ set_X:
 
 ; ** .Y = set Y register **
 set_Y:
-	JSR $FFFF &  fetch_word		; get operand in A
+	JSR $FFFF &  fetch_value		; get operand
+	LDA value			; needs to pick LSB!
 	LDX value+1			; pick MSB up
 	STA _y				; set Y
 	STX _y+1
