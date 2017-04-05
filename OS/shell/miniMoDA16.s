@@ -1372,7 +1372,7 @@ err_ovf:
 	.asc	"*** Out of range ***", CR, 0
 
 regs_head:
-	.asc	"A:   X:   Y:   SP:  DP:  B: NVxmDIZC", CR, 0
+	.asc	"A:   X:   Y:   SP:  DP:  B: NVmxDIZC", CR, 0
 
 dump_in:
 	.asc	" [", 0
