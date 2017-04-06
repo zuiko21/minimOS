@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b7
-; last modified 20170406-1053
+; last modified 20170406-1112
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -253,10 +253,11 @@ sc_in:
 sc_oklong:
 			LDY value			; get computed value
 			LDA value+1
-			LDX value+2			; third byte in a row
 			STY oper			; store in safer place, no need to make room for LSB!
 			STA oper+1
-			STX oper+2
+			LDA value+2			; third byte in a row
+			STA oper+2
+; report operand size
 			INC bytes			; three operand bytes were detected
 			INC bytes
 			INC bytes
@@ -324,7 +325,7 @@ sc_nrel:
 				JSR $FFFF &  backChar
 				BCC no_match		; reject
 sbyt_ok:
-			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
+;			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; one operand was detected
 			BRA sc_adv			; continue decoding
 sc_nsbyt:
@@ -344,7 +345,7 @@ sc_nsbyt:
 				JSR $FFFF &  backChar
 				BCC no_match		; reject
 swrd_ok:
-			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
+;			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; two operands were detected
 			INC bytes
 			BRA sc_adv			; continue decoding
