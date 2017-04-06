@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b6
-; last modified 20170405-0954
+; v0.5.1b7
+; last modified 20170406-1053
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -689,8 +689,8 @@ po_char:
 		INY					; go for next char otherwise
 		JMP $FFFF &  po_loop			; BNE would work as no opcode string near 256 bytes long, but too far...
 po_end:
-; add spaces until 20 chars!
-		LDA #11				; number of chars after the initial 9
+; add spaces until 22 chars!
+		LDA #13				; number of chars after the initial 9
 		CMP count			; already done?
 	BCC po_dump			; go for dump then, even if over
 		LDA #' '			; otherwise print a space
@@ -1250,6 +1250,7 @@ glc_do:
 		LDA [scan]			; get current, 24b
 		CMP #' '			; is it blank? will never end an opcode, though
 		BEQ getListChar		; nothing interesting yet
+; I do not think I need to set C
 ;	LDA [scan]			; recheck bit 7, 24b
 ;	CLC					; normally not the end
 ;	BPL glc_end			; it was not
