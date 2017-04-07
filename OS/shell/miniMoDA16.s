@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b7
-; last modified 20170406-1112
+; v0.5.1b8
+; last modified 20170407-1258
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -459,7 +459,9 @@ sb_end:
 call_address:
 	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; was it able to pick at least one hex char?
-		BEQ sb_end			; quietly ignore erratic address, do not jump to zero!
+	BNE ca_ok		; do not jump to zero!
+		JMP bad_opr		; reject zero loudly
+ca_ok:
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
