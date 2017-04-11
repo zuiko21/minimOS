@@ -1,6 +1,6 @@
-; Monitor-debugger-assembler shell for minimOS·16!
+v; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b8
-; last modified 20170407-1258
+; last modified 20170411-1731
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -126,6 +126,16 @@ open_da:
 	LDA #%00110000		; 8-bit sizes eeeeeeeek
 	STA _psr			; *** essential, at least while not previously set ***
 	STA sflags			; also initial (dis)assembler status!
+; first time will pick up DP & DBR values, not via get_sp eeeeeek
+; might go 16-bit for this...
+	PHD					; check direct page register
+	PLY					; retrieve 16-bit value!
+	PLX					; MSB too
+	STY _dp				; store current value
+	STX _dp+1
+	PHB					; data bank register is 8-bit only, but worth doing here
+	PLA					; get 8 bits only
+	STA _dbr			; store current, no need to reset it!
 ; while a proper debugger interface is done, better preset ptr to a safe area
 	LDX #>user_sram		; beginning of available ram, as defined... in rom.s
 	LDY #<user_sram		; LSB misaligned?
@@ -136,16 +146,11 @@ ptr_init:
 	STZ ptr+2			; and bank!
 	STZ ptr				; page aligned
 ; specially tailored code for 816-savvy version!
+; this is the return point after a call!
 get_sp:
 	.xl: REP #$10		; *** 16-bit index ***
 	TSX					; get current stack pointer
 	STX _sp				; store original value
-	PHD					; check also direct page register
-	PLX					; retrieve 16-bit value!
-	STX _dp				; store current value
-	PHB					; data bank register is 8-bit only, but worth doing here
-	PLA					; get 8 bits only
-	STA _dbr			; store current, no need to reset it! 
 	.xs: .as: SEP #$30	; *** regular size ***
 ; does not really need to set PC/ptr
 ; these ought to be initialised after calling a routine!
@@ -501,7 +506,9 @@ ca_ok:
 jump_address:
 	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; was it able to pick at least one hex char?
-		BEQ sb_end			; quietly ignore erratic address, do not jump to zero!
+	BNE jm_ok
+		JMP bad_opr		; reject zero loudly
+jm_ok:
 ; restore stack pointer...
 	.xl: REP #$10		; *** essential 16-bit index ***
 	LDX _sp				; get stored value (word)
@@ -850,7 +857,10 @@ move:
 
 	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; at least one?
-		BEQ mv_end			; quietly abort operation
+	BNE mv_ok
+		JMP bad_opr		; reject zero loudly
+mv_ok:
+operation
 ; the real stuff begins *** should use MVN, MVP
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
@@ -955,7 +965,9 @@ asm_source:
 	PLA
 	JSR $FFFF &  fetch_value		; get desired address
 	LDA temp			; at least one?
-		BEQ mv_end			; quietly abort operation
+	BNE ta_ok
+		JMP bad_opr		; reject zero loudly
+ta_ok:
 	LDY value			; fetch result
 	LDA value+1
 	LDX value+2
