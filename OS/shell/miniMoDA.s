@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b14
-; last modified 20170413-1134
+; last modified 20170415-1706
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -1167,7 +1167,7 @@ err_ovf:
 	.asc	"*** Out of range ***", CR, 0
 
 regs_head:
-	.asc	"A: X: Y: S: NVxmDIZC", CR, 0
+	.asc	"A: X: Y: S: NV-bDIZC", CR, 0
 
 dump_in:
 #ifdef	NARROW

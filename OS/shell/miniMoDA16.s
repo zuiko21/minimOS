@@ -1,6 +1,6 @@
-v; Monitor-debugger-assembler shell for minimOS·16!
+; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b8
-; last modified 20170411-1731
+; last modified 20170415-1649
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -39,8 +39,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6000		; time, 12.00
-	.word	$4A84		; date, 2017/4/4
+	.word	$8000		; time, 16.00
+	.word	$4A8F		; date, 2017/4/15
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -219,6 +219,7 @@ cli_chk:
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
 bad_cmd:
+bad_opr:		; placeholder label
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
 d_error:
