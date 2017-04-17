@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b8
-; last modified 20170415-1649
+; v0.5.1b9
+; last modified 20170417-1051
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -39,8 +39,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$8000		; time, 16.00
-	.word	$4A8F		; date, 2017/4/15
+	.word	$5800		; time, 11.00
+	.word	$4A91		; date, 2017/4/17
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -327,9 +327,7 @@ sc_nrel:
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
 			JSR $FFFF &  fetch_byte		; this one should NOT succeed
 			BCS sbyt_ok			; OK if no other number found
-				JSR $FFFF &  backChar		; otherwise is an error, forget previous byte!!!
-				JSR $FFFF &  backChar
-				BCC no_match		; reject
+				BRA no_match		; reject otherwise
 sbyt_ok:
 ;			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; one operand was detected
@@ -347,9 +345,7 @@ sc_nsbyt:
 ; should try a THIRD one which must FAIL, otherwise get back just in case comes later
 			JSR $FFFF &  fetch_byte		; this one should NOT succeed
 			BCS swrd_ok			; OK if no other number found
-				JSR $FFFF &  backChar		; otherwise is an error, forget previous byte!!!
-				JSR $FFFF &  backChar
-				BCC no_match		; reject
+				BRA no_match		; reject otherwise
 swrd_ok:
 ;			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; two operands were detected
@@ -700,8 +696,8 @@ po_char:
 		INY					; go for next char otherwise
 		JMP $FFFF &  po_loop			; BNE would work as no opcode string near 256 bytes long, but too far...
 po_end:
-; add spaces until 22 chars!
-		LDA #13				; number of chars after the initial 9
+; add spaces until 23 chars!
+		LDA #14				; number of chars after the initial 9
 		CMP count			; already done?
 	BCC po_dump			; go for dump then, even if over
 		LDA #' '			; otherwise print a space
