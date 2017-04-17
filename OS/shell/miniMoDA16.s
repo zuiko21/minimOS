@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b9
-; last modified 20170417-1051
+; last modified 20170417-1107
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -292,12 +292,7 @@ srel_ok:
 			SBC value			; one's complement of result
 			EOR #$FF			; the actual offset!
 ; will poke offset first, then check bounds
-; as BBR/BBS no longer available, this must be simplified somehow...
-;			LDX bytes			; check whether the first operand!
-;			BNE srel_2nd		; otherwise do not overwrite previous
-;				STA oper			; normal storage
-;srel_2nd:
-			STA oper+1			; storage for BBR/BBS*** seems the standard value
+			STA oper+1			; storage for what seems the standard value
 ; check whether within branching range
 ; first compute MSB (no need to complement)
 			LDA ptr+1			; get original position
@@ -327,9 +322,8 @@ sc_nrel:
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
 			JSR $FFFF &  fetch_byte		; this one should NOT succeed
 			BCS sbyt_ok			; OK if no other number found
-				BRA no_match		; reject otherwise
+				BRA no_match		; reject otherwise**could optimise
 sbyt_ok:
-;			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; one operand was detected
 			BRA sc_adv			; continue decoding
 sc_nsbyt:
@@ -345,9 +339,8 @@ sc_nsbyt:
 ; should try a THIRD one which must FAIL, otherwise get back just in case comes later
 			JSR $FFFF &  fetch_byte		; this one should NOT succeed
 			BCS swrd_ok			; OK if no other number found
-				BRA no_match		; reject otherwise
+				BRA no_match		; reject otherwise**could optimise
 swrd_ok:
-;			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
 			INC bytes			; two operands were detected
 			INC bytes
 			BRA sc_adv			; continue decoding
@@ -1220,7 +1213,7 @@ gnc_low:
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
 	CLC					; new, will signal buffer is done
-	BCC gn_end			; save and exit, no need for BRA
+	BRA gn_end			; save and exit
 gn_fin:
 		INY				; skip another character in comment
 		LDA [bufpt], Y	; get pointed char
@@ -1262,12 +1255,6 @@ glc_do:
 		LDA [scan]			; get current, 24b
 		CMP #' '			; is it blank? will never end an opcode, though
 		BEQ getListChar		; nothing interesting yet
-; I do not think I need to set C
-;	LDA [scan]			; recheck bit 7, 24b
-;	CLC					; normally not the end
-;	BPL glc_end			; it was not
-;		SEC					; otherwise do x=128
-;glc_end:
 	AND #$7F			; most convenient!
 	RTS
 
@@ -1287,6 +1274,8 @@ cend_ok:
 fetch_byte:
 	JSR $FFFF &  fetch_value		; get whatever
 	LDA temp			; how many bytes will fit?
+	INC					; round up chars...
+	LSR					; ...and convert to bytes
 	CMP #1				; strictly one?
 	BRA ft_check		; common check
 
@@ -1295,6 +1284,8 @@ fetch_word:
 ; another approach using fetch_value
 	JSR $FFFF &  fetch_value		; get whatever
 	LDA temp			; how many bytes will fit?
+	INC					; round up chars...
+	LSR					; ...and convert to bytes
 	CMP #2				; strictly two?
 ; common fetch error check
 ft_check:
@@ -1315,6 +1306,8 @@ fetch_long:
 ;	newst approach
 	JSR $FFFF &  fetch_value		; get whatever
 	LDA temp			; how many bytes will fit?
+	INC					; round up chars...
+	LSR					; ...and convert to bytes
 	CMP #3				; strictly three?
 	BRA ft_check		; common check
 
@@ -1333,8 +1326,8 @@ ftv_loop:
 		BRA ftv_loop		; until no more valid
 ftv_bad:
 	JSR $FFFF &  backChar		; should discard very last char! eeeeeeeek
-	INC temp			; round up chars...
-	LSR temp			; ...and convert to bytes
+;	INC temp			; round up chars...
+;	LSR temp			; ...and convert to bytes
 	CLC					; always check temp=0 for errors!
 	RTS
 
