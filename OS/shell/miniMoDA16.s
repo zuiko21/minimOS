@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b9
-; last modified 20170417-1107
+; last modified 20170418-1205
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -53,9 +53,7 @@ title:
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	ptr		= uz		; PC & current 24b address pointer, would be filled by NMI/BRK handler
-	_pc		= ptr		; ***unified variables, keep both names for compatibility***
-	_k		= _pc+2		; K register, alias from PC/ptr
-	_a		= _pc+3		; A register, these are 16-bit ready
+	_a		= ptr+3		; A register, these are 16-bit ready
 	_x		= _a+2		; X register
 	_y		= _x+2		; Y register
 	_sp		= _y+2		; stack pointer, these are 16-bit too
@@ -255,7 +253,7 @@ sc_in:
 ; no need to pick a word (BANK+MSB) first, then a byte!
 			JSR $FFFF &  fetch_long		; get three bytes in a row
 			BCC sc_oklong
-				JMP no_match & $FFFF		; not if no number found?
+				JMP no_match & $FFFF		; not if no number found
 sc_oklong:
 			LDY value			; get computed value
 			LDA value+1
@@ -402,7 +400,7 @@ poke_loop:
 			BNE poke_loop		; could start on zero
 poke_opc:
 		LDA count			; matching opcode as computed
-		STA [ptr], Y		; poke it, Y guaranteed to be zero here
+		STA [ptr]			; poke it without offset
 ; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!
 ; **** to do above ****
 ; advance pointer and continue execution
