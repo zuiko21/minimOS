@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b9
-; last modified 20170418-1222
+; last modified 20170418-1237
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -245,6 +245,15 @@ sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR $FFFF &  getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
 ; ...but C will be lost upon further comparisons!
+pha
+phx
+phy
+sta io_c
+ldy#0
+_KERNEL(COUT)
+ply
+plx
+pla
 ; manage new 65816 operand formats
 		JSR $FFFF & adrmodes			; check NEW addressing modes in list, return with standard marker in A
 		CMP #'='			; 24-bit addressing?
@@ -365,7 +374,6 @@ sc_seek:
 no_match:
 			STZ cursor			; back to beginning of instruction
 			STZ bytes			; also no operands detected! eeeeek
-; (removed debug code *)
 			INC count			; try next opcode
 			BEQ bad_opc			; no more to try!
 				JMP $FFFF &  sc_in			; there is another opcode to try
@@ -380,7 +388,7 @@ sc_adv:
 			SEC					; just like a colon, instruction ended
 sc_nterm:
 		XBA					; store old A value into the other accumulator!
-		LDA [scan]			; what it being pointed in list? 24b
+		LDA [scan]			; what is being pointed in list? 24b
 		BPL sc_rem			; opcode not complete
 			BCS valid_oc		; both opcode and instruction ended
 			BCC no_match		; only opcode complete, keep trying! eeeeek
