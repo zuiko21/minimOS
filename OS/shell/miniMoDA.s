@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b14
-; last modified 20170419-0845
+; v0.5b15
+; last modified 20170419-0955
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -1089,16 +1089,17 @@ glc_end:
 	AND #$7F			; most convenient!
 	RTS
 
-checkEnd:
-	CLC					; prepare!
-	LDY cursor			; otherwise set offset
-	LDA (bufpt), Y		; ...and check buffer contents
-		BEQ cend_ok			; end of buffer means it is OK to finish opcode
-	CMP #COLON			; end of sentence
-		BEQ cend_ok			; also OK
-	SEC					; otherwise set carry
-cend_ok:
-	RTS
+; this was NEVER used!!!
+;checkEnd:
+;	CLC					; prepare!
+;	LDY cursor			; otherwise set offset
+;	LDA (bufpt), Y		; ...and check buffer contents
+;		BEQ cend_ok			; end of buffer means it is OK to finish opcode
+;	CMP #COLON			; end of sentence
+;		BEQ cend_ok			; also OK
+;	SEC					; otherwise set carry
+;cend_ok:
+;	RTS
 
 ; * fetch one byte from buffer, value in A and @value *
 fetch_byte:

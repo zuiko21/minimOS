@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b9
-; last modified 20170419-0834
+; last modified 20170419-0951
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -248,6 +248,10 @@ sc_in:
 pha
 phx
 phy
+cmp#0
+bne debug_nz
+lda#'*'
+debug_nz:
 sta io_c
 ldy#0
 _KERNEL(COUT)
@@ -327,10 +331,10 @@ sc_nrel:
 				BCS no_match		; could not get operand
 			STA oper			; store value to be poked *** here
 ; should try a SECOND one which must FAIL, otherwise get back just in case comes later
-			JSR $FFFF &  fetch_byte		; this one should NOT succeed
-			BCS sbyt_ok			; OK if no other number found
-				BRA no_match		; reject otherwise**could optimise
-sbyt_ok:
+;			JSR $FFFF &  fetch_byte		; this one should NOT succeed
+;			BCS sbyt_ok			; OK if no other number found
+;				BRA no_match		; reject otherwise**could optimise
+;sbyt_ok:
 			INC bytes			; one operand was detected
 			BRA sc_adv			; continue decoding
 sc_nsbyt:
@@ -344,10 +348,10 @@ sc_nsbyt:
 			STY oper			; store in safer place, endianness was ok
 			STA oper+1
 ; should try a THIRD one which must FAIL, otherwise get back just in case comes later
-			JSR $FFFF &  fetch_byte		; this one should NOT succeed
-			BCS swrd_ok			; OK if no other number found
-				BRA no_match		; reject otherwise**could optimise
-swrd_ok:
+;			JSR $FFFF &  fetch_byte		; this one should NOT succeed
+;			BCS swrd_ok			; OK if no other number found
+;				BRA no_match		; reject otherwise**could optimise
+;swrd_ok:
 			INC bytes			; two operands were detected
 			INC bytes
 			BRA sc_adv			; continue decoding
@@ -372,6 +376,16 @@ sc_seek:
 			BNE no_match		; there was no bank crossing either! probably not needed
 				INC scan+2			; otherwise proceed as expected
 no_match:
+pha
+phx
+phy
+lda#13
+sta io_c
+ldy#0
+_KERNEL(COUT)
+ply
+plx
+pla
 			STZ cursor			; back to beginning of instruction
 			STZ bytes			; also no operands detected! eeeeek
 			INC count			; try next opcode
@@ -383,11 +397,11 @@ bad_opc:
 			JMP $FFFF &  d_error			; display and restore
 sc_adv:
 		JSR $FFFF &  getNextChar		; get another valid char, in case it has ended
-		TAX					; check A flags... X will not last!*****
+		TAX					; check A flags... X will not last!
 		BNE sc_nterm		; if end of buffer, sentence ends too
 			SEC					; just like a colon, instruction ended
 sc_nterm:
-;		XBA					; store old A value into the other accumulator!
+		XBA					; store old A value into the other accumulator!
 		LDA [scan]			; what is being pointed in list? 24b
 		BPL sc_rem			; opcode not complete
 			BCS valid_oc		; both opcode and instruction ended
@@ -398,7 +412,7 @@ sc_rem:
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
-		PHX					; try to preserve X, no longer XBA*****
+;		PHX					; try to preserve X, no longer XBA*****
 		TYX					; to be 816-savvy...
 		BEQ poke_opc		; no operands
 poke_loop:
@@ -423,8 +437,8 @@ main_nw:
 		BNE main_nbb		; check for bank boundary
 			INC ptr+2			; in case of bank crossing
 main_nbb:
-;		XBA					; what was NEXT in buffer, X was NOT respected eeeeeeek^4
-		PLX					; let us try this way*******
+		XBA					; what was NEXT in buffer, X was NOT respected eeeeeeek^4
+;		PLX					; let us try this way*******
 		BNE main_nnul		; termination will return to exterior main loop
 			JMP $FFFF &  main_loop		; and continue forever
 main_nnul:
@@ -1266,16 +1280,17 @@ glc_do:
 	AND #$7F			; most convenient!
 	RTS
 
-checkEnd:
-	CLC					; prepare!
-	LDY cursor			; otherwise set offset
-	LDA [bufpt], Y		; ...and check buffer contents
-		BEQ cend_ok			; end of buffer means it is OK to finish opcode
-	CMP #COLON			; end of sentence
-		BEQ cend_ok			; also OK
-	SEC					; otherwise set carry
-cend_ok:
-	RTS
+; this was NEVER used!!!
+;checkEnd:
+;	CLC					; prepare!
+;	LDY cursor			; otherwise set offset
+;	LDA [bufpt], Y		; ...and check buffer contents
+;		BEQ cend_ok			; end of buffer means it is OK to finish opcode
+;	CMP #COLON			; end of sentence
+;		BEQ cend_ok			; also OK
+;	SEC					; otherwise set carry
+;cend_ok:
+;	RTS
 
 ; * fetch one byte from buffer, value in A and @value.b *
 ; newest approach as interface for fetch_value
@@ -1303,9 +1318,13 @@ ft_check:
 		RTS
 ; common fetch error discard routine
 ft_err:
+	LDA temp			; check how many chars were processed eeeeeeek
+	BEQ ft_clean		; nothing to discard eeeeeeeeek
+ft_disc:
 		JSR $FFFF &  backChar		; should discard previous char!
 		DEC temp			; one less to go
-		BNE ft_err			; continue until all was discarded
+		BNE ft_disc			; continue until all was discarded
+ft_clean:
 	SEC					; there was an error
 	RTS
 
