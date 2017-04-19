@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5b14
-; last modified 20170415-1706
+; last modified 20170419-0845
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -322,13 +322,13 @@ sc_rem:
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
-		LDX bytes			; to be 816-savvy...
+;		LDX bytes			; to be 816-savvy...
 		BEQ poke_opc		; no operands
 poke_loop:
-			LDA oper-1, X		; get argument, note trick, 816-savvy
+			LDA oper-1, Y		; get argument, note trick, use X for 816-savvy
 			STA (ptr), Y		; store in RAM
 			DEY					; next byte
-			DEX
+;			DEX
 			BNE poke_loop		; could start on zero
 poke_opc:
 		LDA count			; matching opcode as computed

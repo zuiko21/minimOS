@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b9
-; last modified 20170418-1237
+; last modified 20170419-0834
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -39,8 +39,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5800		; time, 11.00
-	.word	$4A91		; date, 2017/4/17
+	.word	$4800		; time, 9.00
+	.word	$4A93		; date, 2017/4/19
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -383,21 +383,22 @@ bad_opc:
 			JMP $FFFF &  d_error			; display and restore
 sc_adv:
 		JSR $FFFF &  getNextChar		; get another valid char, in case it has ended
-		TAX					; check A flags... X will not last!
+		TAX					; check A flags... X will not last!*****
 		BNE sc_nterm		; if end of buffer, sentence ends too
 			SEC					; just like a colon, instruction ended
 sc_nterm:
-		XBA					; store old A value into the other accumulator!
+;		XBA					; store old A value into the other accumulator!
 		LDA [scan]			; what is being pointed in list? 24b
 		BPL sc_rem			; opcode not complete
 			BCS valid_oc		; both opcode and instruction ended
-			BCC no_match		; only opcode complete, keep trying! eeeeek
+			BRA no_match		; only opcode complete, keep trying! eeeeek
 sc_rem:
 		BCS sc_skip			; instruction is shorter, usually non-indexed indirect eeeeeeek^3
 		JMP $FFFF &  sc_in			; neither opcode nor instruction ended, continue matching
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
+		PHX					; try to preserve X, no longer XBA*****
 		TYX					; to be 816-savvy...
 		BEQ poke_opc		; no operands
 poke_loop:
@@ -422,7 +423,8 @@ main_nw:
 		BNE main_nbb		; check for bank boundary
 			INC ptr+2			; in case of bank crossing
 main_nbb:
-		XBA					; what was NEXT in buffer, X was NOT respected eeeeeeek^4
+;		XBA					; what was NEXT in buffer, X was NOT respected eeeeeeek^4
+		PLX					; let us try this way*******
 		BNE main_nnul		; termination will return to exterior main loop
 			JMP $FFFF &  main_loop		; and continue forever
 main_nnul:
