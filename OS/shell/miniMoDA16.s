@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b9
-; last modified 20170419-0951
+; last modified 20170419-1025
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -245,19 +245,6 @@ sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR $FFFF &  getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
 ; ...but C will be lost upon further comparisons!
-pha
-phx
-phy
-cmp#0
-bne debug_nz
-lda#'*'
-debug_nz:
-sta io_c
-ldy#0
-_KERNEL(COUT)
-ply
-plx
-pla
 ; manage new 65816 operand formats
 		JSR $FFFF & adrmodes			; check NEW addressing modes in list, return with standard marker in A
 		CMP #'='			; 24-bit addressing?
@@ -265,9 +252,7 @@ pla
 ; *** get a long-sized operand! ***
 ; no need to pick a word (BANK+MSB) first, then a byte!
 			JSR $FFFF &  fetch_long		; get three bytes in a row
-			BCC sc_oklong
-				JMP no_match & $FFFF		; not if no number found
-sc_oklong:
+				BCS sc_skip					; no such operand eeeeeeeek
 			LDY value			; get computed value
 			LDA value+1
 			STY oper			; store in safer place, no need to make room for LSB!
@@ -283,7 +268,7 @@ sc_oklong:
 sc_nlong:
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
-; *** try to get a relative operand *** REVISE
+; *** try to get a relative operand ***
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes***or three, as this is an address?
 			BCC srel_ok			; no errors, go translate into relative offset 
 				JMP $FFFF &  no_match		; no address, not OK
@@ -297,13 +282,13 @@ srel_ok:
 ; --- alternatively, bad_opc(ptr)+Y - (value), then EOR #$FF (make that +1 instead of Y)
 ; --- how to check bounds then? same sign on MSB & LSB!
 ; --- but MSB can ONLY be 0 or $FF!
-			LDA ptr				; A must be ptr + 1
-			INC
+			LDA ptr				; A = ptr...
+			INC					; ...+ Y
 			SEC					; now for the subtraction
 			SBC value			; one's complement of result
 			EOR #$FF			; the actual offset!
 ; will poke offset first, then check bounds
-			STA oper+1			; storage for what seems the standard value
+			STA oper			; storage for what seems the standard value
 ; check whether within branching range
 ; first compute MSB (no need to complement)
 			LDA ptr+1			; get original position
@@ -313,11 +298,11 @@ srel_ok:
 				BEQ srel_fwd		; possibly valid forward branch
 					JMP $FFFF &  overflow		; overflow otherwise
 srel_fwd:
-				LDA oper+1			; check stored offset
+				LDA oper			; check stored offset
 				BPL srel_done		; positive is OK
 					JMP $FFFF &  overflow		; slight overflow otherwise
 srel_bak:
-			LDA oper+1			; check stored offset
+			LDA oper			; check stored offset
 			BMI srel_done		; this has to be negative
 				JMP $FFFF &  overflow		; slight overflow otherwise
 srel_done:
@@ -328,13 +313,8 @@ sc_nrel:
 		BNE sc_nsbyt
 ; *** try to get a single byte operand ***
 			JSR $FFFF &  fetch_byte		; currently it is a single byte...
-				BCS no_match		; could not get operand
+				BCS sc_skip			; could not get operand eeeeeeeek
 			STA oper			; store value to be poked *** here
-; should try a SECOND one which must FAIL, otherwise get back just in case comes later
-;			JSR $FFFF &  fetch_byte		; this one should NOT succeed
-;			BCS sbyt_ok			; OK if no other number found
-;				BRA no_match		; reject otherwise**could optimise
-;sbyt_ok:
 			INC bytes			; one operand was detected
 			BRA sc_adv			; continue decoding
 sc_nsbyt:
@@ -342,16 +322,11 @@ sc_nsbyt:
 		BNE sc_nwrd
 ; *** try to get a word-sized operand ***
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
-				BCS no_match		; not if no number found?
-			LDY value				; get computed value
+				BCS sc_skip			; not if no number found eeeeeeeek
+			LDY value			; get computed value
 			LDA value+1
 			STY oper			; store in safer place, endianness was ok
 			STA oper+1
-; should try a THIRD one which must FAIL, otherwise get back just in case comes later
-;			JSR $FFFF &  fetch_byte		; this one should NOT succeed
-;			BCS swrd_ok			; OK if no other number found
-;				BRA no_match		; reject otherwise**could optimise
-;swrd_ok:
 			INC bytes			; two operands were detected
 			INC bytes
 			BRA sc_adv			; continue decoding
@@ -376,16 +351,6 @@ sc_seek:
 			BNE no_match		; there was no bank crossing either! probably not needed
 				INC scan+2			; otherwise proceed as expected
 no_match:
-pha
-phx
-phy
-lda#13
-sta io_c
-ldy#0
-_KERNEL(COUT)
-ply
-plx
-pla
 			STZ cursor			; back to beginning of instruction
 			STZ bytes			; also no operands detected! eeeeek
 			INC count			; try next opcode
@@ -412,7 +377,6 @@ sc_rem:
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
-;		PHX					; try to preserve X, no longer XBA*****
 		TYX					; to be 816-savvy...
 		BEQ poke_opc		; no operands
 poke_loop:
@@ -438,7 +402,7 @@ main_nw:
 			INC ptr+2			; in case of bank crossing
 main_nbb:
 		XBA					; what was NEXT in buffer, X was NOT respected eeeeeeek^4
-;		PLX					; let us try this way*******
+		BNE main_nnul		; termination will return to exterior main loop
 		BNE main_nnul		; termination will return to exterior main loop
 			JMP $FFFF &  main_loop		; and continue forever
 main_nnul:
