@@ -269,7 +269,9 @@ sc_nlong:
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
 ; *** try to get a relative operand ***
-			JSR $FFFF &  fetch_word		; will pick up a couple of bytes***or three, as this is an address?
+			JSR $FFFF &  fetch_value		; will pick up some bytes, as this is an address?
+			LDA temp			; how many chars?
+			
 			BCC srel_ok			; no errors, go translate into relative offset 
 				JMP $FFFF &  no_match		; no address, not OK
 srel_ok:
