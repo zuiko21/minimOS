@@ -1,10 +1,11 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170327-1301
+; last modified 20170420-0958
 
 ; Opcode list as bit-7 terminated strings
 ; @ expects single byte, & expects word
 ; % expects RELATIVE addressing
+; * expects LONG RELATIVE addressing (new)
 ; = expects 24-bit address
 ; ! will take 8 or 16 bits depending on X flag
 ; ? will take 8 or 16 bits depending on M flag
@@ -111,7 +112,7 @@
 	.asc	"EOR =, ", 'X'+$80	; $5F=EOR long,X	65816
 	.asc	"RT", 'S'+$80	; $60=RTS
 	.asc	"ADC (@, X", ')'+$80	; $61=ADC (zp,X)
-	.asc	"PER ", '%'+$80	; $62=PER rel	65816
+	.asc	"PER ", '*'+$80	; $62=PER rlong	65816
 	.asc	"ADC @, ", 'S'+$80	; $63=ADC s		65816
 	.asc	"STZ ", '@'+$80	; $64=STZ zp	CMOS
 	.asc	"ADC ", '@'+$80	; $65=ADC zp
@@ -143,7 +144,7 @@
 	.asc	"ADC =, ", 'X'+$80	; $7F=ADC long,X	65816
 	.asc	"BRA ", '%'+$80	; $80=BRA rel	CMOS
 	.asc	"STA (@, X", ')'+$80	; $81=STA (zp,X)
-	.asc	"BRL ", '%'+$80	; $82=BRL		65816
+	.asc	"BRL ", '*'+$80	; $82=BRL rlong		65816
 	.asc	"STA @, ", 'S'+$80	; $83=STA s		65816
 	.asc	"STY ", '@'+$80	; $84=STY zp
 	.asc	"STA ", '@'+$80	; $85=STA zp

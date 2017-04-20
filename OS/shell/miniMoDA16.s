@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b9
-; last modified 20170419-1025
+; v0.5.1b10
+; last modified 20170420-1001
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -318,8 +318,11 @@ sc_nrel:
 			INC bytes			; one operand was detected
 			BRA sc_adv			; continue decoding
 sc_nsbyt:
+		CMP #'*'			; LONG relative addressing?
+			BEQ sc_word			; *****PLACEHOLDER, currently as absolute 16-bit value
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
+sc_word:
 ; *** try to get a word-sized operand ***
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 				BCS sc_skip			; not if no number found eeeeeeeek
@@ -632,8 +635,11 @@ po_nrel:
 			LDX #3				; number of chars to add
 			BRA po_disp			; display value
 po_nbyt:
+		CMP #'*'			; LONG relative operand
+			BEQ po_word			; *****PLACEHOLDER
 		CMP #'&'			; word operand
 		BNE po_nwd			; otherwise check new long operand
+po_word:
 			LDY #2				; number of bytes minus one
 			LDX #5				; number of chars to add
 			BRA po_disp			; display value
