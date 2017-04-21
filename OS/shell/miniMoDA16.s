@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b10
-; last modified 20170421-1415
+; last modified 20170421-1438
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -554,7 +554,7 @@ disassemble:
 	LDX lines			; get counter
 das_l:
 		PHX					; save counters
-; time to show the opcode and trailing spaces until 20 chars
+; time to show the opcode and trailing spaces until 20* chars
 		JSR $FFFF &  disOpcode		; dissassemble one opcode @oper (will print it)
 		PLX					; retrieve counter
 		DEX					; one line less
@@ -660,7 +660,7 @@ po_fwd8:
 			XBA					; 16-bit offset!
 			.al: REP #$20		; *** 16-bit memory ***
 			SEC					; plus opcode...
-			ADC #1				; ...and displacement...
+			INC					; ...and displacement...
 				BRA po_xtnd			; proceed with sign properly extended
 ; specific part for 16-bit relative operands
 po_16rel:
@@ -672,7 +672,8 @@ po_fwd16:
 			INY					; skip another byte?
 			STY bytes			; correct index, generic is OK???
 			SEC					; plus opcode...
-			ADC #2				; ...and displacement...
+			INC					; ...and displacement...
+			INC
 ; common ending for 8 & 16 bit relative operands
 po_xtnd:
 			ADC oper			; ...from current position
