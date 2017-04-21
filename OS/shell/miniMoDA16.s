@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b10
-; last modified 20170420-1001
+; last modified 20170421-0913
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -252,7 +252,9 @@ sc_in:
 ; *** get a long-sized operand! ***
 ; no need to pick a word (BANK+MSB) first, then a byte!
 			JSR $FFFF &  fetch_long		; get three bytes in a row
-				BCS sc_skip					; no such operand eeeeeeeek
+			BCC sc_long
+				JMP sc_skip  & $FFFF				; no such operand eeeeeeeek
+sc_long:
 			LDY value			; get computed value
 			LDA value+1
 			STY oper			; store in safer place, no need to make room for LSB!
@@ -264,51 +266,64 @@ sc_in:
 			INC bytes
 			INC bytes
 			JMP sc_adv & $FFFF			; continue decoding
-; continue with classic operand formats
+; continue with classic operand formats (but add 16-bit relative!)
 sc_nlong:
+		CMP #'*'			; long relative?
+		BNE sc_nrlong		; check also short relative
+			LDY #2				; 16-bit relative
+			BRA sc_relat		; continue unified relative processing
+sc_nrlong:
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
+			LDY #1				; 8-bit relative operand
 ; *** try to get a relative operand ***
+; --- Y will be loaded with 1 for short rel, 2 for long rel (BRL, PER)
+sc_relat:
+			PHY					; save this!
 			JSR $FFFF &  fetch_value		; will pick up some bytes, as this is an address?
 			LDA temp			; how many chars?
-			
-			BCC srel_ok			; no errors, go translate into relative offset 
-				JMP $FFFF &  no_match		; no address, not OK
-srel_ok:
+				BEQ sc_skip			; no address, not OK
+			PLY					; retrieve operand size
 ; no BBR/BBS on 65816, thus no alternative offset
-; --- at this point, (ptr)+Y+1 is the address of next instruction (+2, really)
+; but a similar technique is to be used for MVN/MVP!
+; --- at this point, (ptr)+Y+1 is the address of next instruction (+2 or +3)
 ; --- should offset be zero, the branch will just arrive there
 ; --- (value) holds the desired address
 ; --- (value) minus that previously computed address is the proper offset
-; --- offset MUST fit in a signed byte! overflow otherwise
-; --- alternatively, bad_opc(ptr)+Y - (value), then EOR #$FF (make that +1 instead of Y)
-; --- how to check bounds then? same sign on MSB & LSB!
-; --- but MSB can ONLY be 0 or $FF!
-			LDA ptr				; A = ptr...
-			INC					; ...+ Y
+; --- alternatively, (ptr)+Y - (value), then invert all bits!
+			.al: REP #$20		; *** 16-bit memory ***
+			TYA					; get operand size and clear MSB!
+			ADC ptr				; add computed word
 			SEC					; now for the subtraction
 			SBC value			; one's complement of result
-			EOR #$FF			; the actual offset!
+			EOR #$FFFF			; the actual 16-bit offset!
+; note that I totally ignored bank!!!
 ; will poke offset first, then check bounds
-			STA oper			; storage for what seems the standard value
-; check whether within branching range
-; first compute MSB (no need to complement)
-			LDA ptr+1			; get original position
-			SBC value+1			; subtract MSB
-			BEQ srel_bak		; if zero, was backwards branch, no other positive accepted!
-				CMP #$FF			; otherwise, only $FF valid for forward branch
-				BEQ srel_fwd		; possibly valid forward branch
-					JMP $FFFF &  overflow		; overflow otherwise
-srel_fwd:
-				LDA oper			; check stored offset
-				BPL srel_done		; positive is OK
-					JMP $FFFF &  overflow		; slight overflow otherwise
-srel_bak:
-			LDA oper			; check stored offset
-			BMI srel_done		; this has to be negative
-				JMP $FFFF &  overflow		; slight overflow otherwise
+			STA oper			; storage at standard location (could be 8 or 16-bit)
+; --- overflow should be checked properly, as will be computed in 16-bit mode
+; --- how to check bounds then? same sign on MSB & LSB! if 8-bit mode
+; --- but MSB can ONLY be 0 or $FF!
+; Y holds MSB offset, could be transferred to X as index
+; ---
+			CPY #1				; 8-bit relative?
+			BEQ srel_chk8		; go for it
+; *****16-bit bound checking TO BE DONE ******
+srel_chk8:
+			CMP #0				; get sign of MSB!!!
+			BMI srel_back		; was backwards
+				TAX					; check LSB sign (must be plus)
+				BMI overflow		; no way
+				BRA srel_done
+srel_back:
+			TAX					; check LSB sign (this time must be minus)
+			BPL overflow		; no way
+; common ending for all relative modes
 srel_done:
-			INC bytes			; one operand was really detected
+			.as: SEP #$20		; *** back to 8-bit mode ***
+			TYA					; detect operand bytes! 1 or 2
+			CLC
+			ADC bytes			; count them
+			STA bytes			; and update value
 			BRA sc_adv			; continue decoding
 sc_nrel:
 		CMP #'@'			; single byte operand?
@@ -320,8 +335,8 @@ sc_nrel:
 			INC bytes			; one operand was detected
 			BRA sc_adv			; continue decoding
 sc_nsbyt:
-		CMP #'*'			; LONG relative addressing?
-			BEQ sc_word			; *****PLACEHOLDER, currently as absolute 16-bit value
+;		CMP #'*'			; LONG relative addressing?
+;			BEQ sc_word			; *****PLACEHOLDER, currently as absolute 16-bit value
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
 sc_word:
