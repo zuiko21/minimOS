@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b10
-; last modified 20170421-1003
+; last modified 20170421-1318
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -223,10 +223,6 @@ bad_opr:		; placeholder label
 d_error:
 	JSR $FFFF &  prnStr			; display error
 		BRA main_loop		; restore
-overflow:
-	LDA #>err_ovf		; address of overflow message
-	LDY #<err_ovf
-	BRA d_error			; display and restore
 
 not_mcmd:
 ; ** try to assemble the opcode! **
@@ -266,6 +262,13 @@ sc_long:
 			INC bytes
 			INC bytes
 			JMP sc_adv & $FFFF			; continue decoding
+
+; some room here for the overflow error message!
+overflow:
+		LDA #>err_ovf		; address of overflow message
+		LDY #<err_ovf
+		BRA d_error			; display and restore
+
 ; continue with classic operand formats (but add 16-bit relative!)
 sc_nlong:
 		CMP #'*'			; long relative?
@@ -284,7 +287,7 @@ sc_relat:
 ;			PLX					; retrieve operand size eeeeeek
 			LDA temp			; how many chars?
 				BEQ sc_skip			; no address, not OK
- no BBR/BBS on 65816, thus no alternative offset
+; no BBR/BBS on 65816, thus no alternative offset
 ; but a similar technique is to be used for MVN/MVP!
 ; --- at this point, (ptr)+X+1 is the address of next instruction (+2 or +3)
 ; --- should offset be zero, the branch will just arrive there
@@ -299,6 +302,7 @@ sc_relat:
 			LDY ptr+2			; get base bank
 			BCC sc_rbnk			; experimental bank address operation
 				INY					; propagate carry
+sc_rbnk:
 ; now Y holds the third byte of accumulator!
 			SEC					; now for the subtraction
 			SBC value			; one's complement of result!
