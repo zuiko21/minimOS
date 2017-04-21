@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b11
-; last modified 20170421-1812
+; last modified 20170421-2337
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -80,11 +80,6 @@ title:
 ; *** initialise the monitor ***
 
 ; ##### minimOS specific stuff #####
-; needed tweak, clear B register as will only operate on bank 0, no matter where the code runs!
-; future versions should be able to set it properly
-;	LDA #0				; put a zero...
-;	PHA					; ...into the stack...
-;	PLB					; ...as the new B register value!
 ; **apparently will not use B as all pointers are 24b now!
 
 ; standard minimOS initialisation
@@ -150,7 +145,6 @@ get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
 	.xs: .as: SEP #$30	; *** regular size ***
-; does not really need to set PC/ptr
 ; these ought to be initialised after calling a routine!
 	LDA #__last-uz		; zeropage space needed (again)
 	STA z_used			; set needed ZP space as required by minimOS ####
@@ -282,9 +276,7 @@ sc_nrlong:
 ; *** try to get a relative operand ***
 ; --- X will be loaded with 1 for short rel, 2 for long rel (BRL, PER)
 sc_relat:
-;			PHX					; save this! but fetch_value no longer stains X
 			JSR $FFFF &  fetch_value		; will pick up some bytes, as this is an address
-;			PLX					; retrieve operand size eeeeeek
 			LDA temp			; how many chars?
 				BEQ sc_skip			; no address, not OK
 ; no BBR/BBS on 65816, thus no alternative offset
@@ -536,7 +528,6 @@ do_call:
 	LDY _y
 	LDA _a				; lastly retrieve accumulator
 	PLD					; ** must set DP after all readings **
-; ***most likely should set DP...
 .as:.xs					; most likely values... needed for the remaining code!
 	PLP					; restore status
 	JMP [value]			; eeeeeeeeek
@@ -970,7 +961,7 @@ store_str:
 sst_loop:
 		INY					; skip the S and increase
 		LDA [bufpt], Y		; get raw character
-		STA (ptr)			; store in place
+		STA [ptr]			; store in place
 			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
 			BEQ sstr_cr			; terminate and exit
@@ -984,7 +975,7 @@ sst_loop:
 	BRA sst_loop		; continue, might use BNE
 sstr_com:
 	LDA #0				; no STZ indirect
-	STA (ptr)			; terminate string in memory Eeeeeeeeek
+	STA [ptr]			; terminate string in memory Eeeeeeeeek
 sstr_cloop:
 		INY					; advance
 		LDA [bufpt], Y		; check whatever
@@ -996,7 +987,7 @@ sstr_cloop:
 		BNE sstr_cloop		; otherwise continue discarding, no need for BRA
 sstr_cr:
 	LDA #0				; no STZ indirect
-	STA (ptr)			; terminate string in memory Eeeeeeeeek
+	STA [ptr]			; terminate string in memory Eeeeeeeeek
 sstr_end:
 	DEY					; will call getNextChar afterwards eeeeeeeeek
 	STY cursor			; update optimised index!
@@ -1176,7 +1167,7 @@ hex2nib:
 	SEC					; prepare for subtract
 	SBC #'0'			; convert from ASCII
 		BCC h2n_err			; below number!
-	PHY				; ***do I need this???
+;	PHY				; ***do I need this???
 	CMP #10				; already OK?
 	BCC h2n_num			; do not convert from letter
 		CMP #23				; otherwise should be a valid hex
@@ -1194,7 +1185,7 @@ h2n_loop:
 	STA value
 	CLC					; all done without error
 h2n_rts:
-	PLY					;***restore
+;	PLY					;***restore
 	RTS					; usual exit
 h2n_err:
 	SEC					; notify error!
