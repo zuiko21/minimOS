@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b10
-; last modified 20170421-1318
+; last modified 20170421-1415
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -629,32 +629,66 @@ po_loop:
 		AND #$7F			; filter out possible end mark
 ; *** check special flag-dependent markers ***
 		JSR $FFFF & adrmodes		; in case a flag-dependent size is found
-; continue with regular markers
+; continue with regular markers (but include lond relative addressing)
+		CMP #'*'			; LONG relative operand
+		BNE po_nlrel		; not quite, check for 8-bit relative
+			PER po_16rel-1		; push corrected address of specific 16-bit ending
+			BRA po_xrel			; common processing code
+po_nlrel:
 		CMP #'%'			; relative addressing
-		BNE po_nrel			; currently the same as single byte!
-; put here specific code for relative arguments!
-; *** some bug was found here, BRA $FE @ $C396 is rendered as BRA $C297 ***
+		BNE po_nrel			; no longer the same as single byte!
+; put here specific code for 8-bit relative arguments!
+			PER po_8rel-1		; push corrected address
+; generic relative operand management
+po_xrel:
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
 			LDX #0				; reset offset sign extention
 			LDY bytes			; retrieve instruction index
 			INY					; point to operand!
-			LDA [oper], Y		; get offset!
-			STY bytes			; correct index
-			BPL po_fwd			; forward jump does not extend sign
+; Y is offset pointing to operand (LSB), still unknown if will read a byte or a word from it
+			RTS					; will actually JUMP to specific routine!!!
+; specific part for 8-bit relative operands
+po_8rel:
+			LDA [oper], Y		; get offset byte!
+			STY bytes			; correct index, generic is OK???
+			BPL po_fwd8			; forward jump does not extend sign
 				DEX					; puts $FF otherwise
-po_fwd:
+po_fwd8:
+			XBA					; switch to MSB
+			TXA					; store extention
+			XBA					; 16-bit offset!
+			.al: REP #$20		; *** 16-bit memory ***
 			SEC					; plus opcode...
 			ADC #1				; ...and displacement...
+				BRA po_xtnd			; proceed with sign properly extended
+; specific part for 16-bit relative operands
+po_16rel:
+			.al: REP #$20		; *** 16-bit accumulator ***
+			LDA [oper], Y		; get offset WORD!
+			BPL po_fwd16		; forward jump does not extend sign
+				DEX					; puts $FF otherwise
+po_fwd16:
+			INY					; skip another byte?
+			STY bytes			; correct index, generic is OK???
+			SEC					; plus opcode...
+			ADC #2				; ...and displacement...
+; common ending for 8 & 16 bit relative operands
+po_xtnd:
 			ADC oper			; ...from current position
-			PHA					; this is the LSB, now check for the MSB
-			TXA					; get sign extention
-			ADC oper+1			; add current position MSB plus ocassional carry
-; **should it check third byte?
-			JSR $FFFF &  prnHex			; show as two ciphers
-			PLA					; previously computed LSB
+			XBA					; notice trick...
+			PHA					; ...will push LSB first!!!
+			.as: SEP #$20		; *** back to 8-bit ***
+			TXA					; another extention
+			ADC oper+2			; also with bank address
+; will arrive with bank in A, and in stack previously pushed LSB, then MSB
+			JSR $FFFF &  prnHex			; show as two ciphers, initially BANK
+			PLA					; previously computed MSB!
 			JSR $FFFF &  prnHex			; another two
-			LDA #5				; five more chars
+			PLA					; previously computed LSB!
+			JSR $FFFF &  prnHex			; and another two
+; opcode showing done, signal character count and proceed with hex dump
+			LDA #7				; five more chars
 			BRA po_done			; update and continue
 po_nrel:
 		CMP #'@'			; single byte operand
@@ -664,11 +698,8 @@ po_nrel:
 			LDX #3				; number of chars to add
 			BRA po_disp			; display value
 po_nbyt:
-		CMP #'*'			; LONG relative operand
-			BEQ po_word			; *****PLACEHOLDER
 		CMP #'&'			; word operand
 		BNE po_nwd			; otherwise check new long operand
-po_word:
 			LDY #2				; number of bytes minus one
 			LDX #5				; number of chars to add
 			BRA po_disp			; display value
