@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b10
-; last modified 20170421-1438
+; v0.5.1b11
+; last modified 20170421-1812
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -1176,6 +1176,7 @@ hex2nib:
 	SEC					; prepare for subtract
 	SBC #'0'			; convert from ASCII
 		BCC h2n_err			; below number!
+	PHY				; ***do I need this???
 	CMP #10				; already OK?
 	BCC h2n_num			; do not convert from letter
 		CMP #23				; otherwise should be a valid hex
@@ -1193,6 +1194,7 @@ h2n_loop:
 	STA value
 	CLC					; all done without error
 h2n_rts:
+	PLY					;***restore
 	RTS					; usual exit
 h2n_err:
 	SEC					; notify error!
