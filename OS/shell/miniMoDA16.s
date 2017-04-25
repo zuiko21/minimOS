@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b11
-; last modified 20170421-2337
+; v0.5.1b12
+; last modified 20170425-1241
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -336,9 +336,14 @@ sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
 ; *** try to get a single byte operand ***
+; this needs to check for MVN/MVP woth double operand!!!
 			JSR $FFFF &  fetch_byte		; currently it is a single byte...
 				BCS sc_skip			; could not get operand eeeeeeeek
-			STA oper			; store value to be poked *** here
+			LDY bytes			; any operands yet?
+			BNE sc_sbyt			; if second one, do not overwrite first!
+				STA oper			; store value to be poked, for the first one
+sc_sbyt:
+			STA oper+1			; second operand, might be skipped, will not harm anyway
 			INC bytes			; one operand was detected
 			BRA sc_adv			; continue decoding
 sc_nsbyt:
@@ -556,6 +561,12 @@ das_l:
 disOpcode:
 	LDA [oper]			; check pointed opcode
 	STA count			; keep for comparisons
+;	AND #%11101111		; filter for MVN/MVP
+;	CMP #$44			; one of these?
+;	BNE do_notnv		; proceed normally
+;		LDA #2				; preset value
+;		STA flag			; store for operand display counter!
+;do_notnv:
 	LDY #<da_oclist		; get address of opcode list
 	LDA #>da_oclist
 	STZ scan			; indirect-indexed pointer
@@ -709,6 +720,16 @@ po_disp:
 			JSR $FFFF &  prnChar
 po_dloop:
 				LDY bytes			; retrieve operand index
+; *** should check here for MVN/MVP and process second operand via INY ***
+; *** likely to need some flag ***
+;				LDA [oper]			; check opcode
+;				AND #%11101111		; mask out differences
+;				CMP #$44			; MVN or MVP only
+;				BNE po_notmv		; if not, proceed normally
+;					DEC flag			; some flag set to 2 upon MVN, MVP
+;					BNE po_notmv		; first operand, nothing to correct
+;						INY					; otherwise go for second operand
+;po_notmv:
 				LDA [oper], Y		; get whatever byte
 				JSR $FFFF &  prnHex			; show in hex
 				DEC bytes			; go back one byte
