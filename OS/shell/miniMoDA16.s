@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b12
-; last modified 20170426-0905
+; last modified 20170426-0940
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -280,8 +280,6 @@ sc_relat:
 			JSR $FFFF &  fetch_value		; will pick up some bytes, as this is an address
 			LDA temp			; how many chars?
 				BEQ sc_skip			; no address, not OK
-; no BBR/BBS on 65816, thus no alternative offset
-; but a similar technique is to be used for MVN/MVP!
 ; --- at this point, (ptr)+X+1 is the address of next instruction (+2 or +3)
 ; --- should offset be zero, the branch will just arrive there
 ; --- (value) holds the desired address
@@ -418,6 +416,9 @@ poke_loop:
 poke_opc:
 		LDA count			; matching opcode as computed
 		STA [ptr]			; poke it without offset
+; should check here for REP/SEP in order to update status flags!
+		LDX oper			; get operand just in case
+		JSR sflag_chk  & $FFFF		; possible flag update!
 ; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!
 ; **** to do above ****
 ; advance pointer and continue execution
@@ -1219,7 +1220,30 @@ h2n_err:
 
 ; ** end of inline library **
 
+; * check whether opcode is REP/SEP in order to update size flags
+; A=opcode, X=operand, destroys Y
+sflag_chk:
+	TAY					; keep for later
+	AND #%11011111		; filter out differences
+	CMP #$C2			; is it REP/SEP?
+	BNE schk_done		; no flags to correct
+		TYA					; recheck opcode
+		AND #%00100000		; one for SEP, zero for REP
+		BEQ schk_rep
+			TXA					; get operand to be set...
+			ORA sflags			; ...onto current status
+			STA sflags			; updated!
+			RTS
+schk_rep:
+		TXA					; get operand to REset...
+		EOR #$FF			; ...generating a mask...
+		AND sflags			; ...applied to current status
+		STA sflags			; updated!
+schk_done:
+	RTS
+
 ; * convert flag-dependent size markers to standard ones *
+; A=operand marker, will return standard type
 adrmodes:
 	CMP #'!'			; depending on X flag?
 	BNE sc_nxflag
