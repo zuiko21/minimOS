@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b12
-; last modified 20170426-0940
+; last modified 20170426-0950
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -766,12 +766,19 @@ po_end:
 		JSR $FFFF &  prnChar
 		INC count			; eeeeeeeeeeeek
 		BNE po_end			; until complete, again no need for BRA
-; print hex dump as a comment!
 po_dump:
+; print hex dump, but check for MVP/MVN extra operands first
 	LDX movop			; was it a move instruction?
 	BNE po_dnmv			; nope, nothing to correct
 		INC bytes			; otherwise there is one more operand
 po_dnmv:
+; check also if a REP/SEP was issued
+	LDY #1				; byte operand offset
+	LDA [oper], Y		; get operand...
+	TAX					; ...in X
+	LDA [oper]			; and opcode in A
+	JSR sflag_chk  & $FFFF		; check if sflags are to be updated
+; now print hex dump as a comment!
 	LDA #';'			; semicolon as comment introducer
 	JSR $FFFF &  prnChar
 	LDY #0				; reset index
