@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b12
-; last modified 20170426-0950
+; last modified 20170426-1109
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -193,7 +193,7 @@ cli_loop:
 		JSR $FFFF &  gnc_do			; get into command byte otherwise
 		CMP #'Z'+1			; past last command?
 			BCS bad_cmd			; unrecognised
-		SBC #'A'-1			; first available command (had borrow)
+		SBC #'?'-1			; first available command (had borrow)
 			BCC bad_cmd			; cannot be lower
 		ASL					; times two to make it index
 		TAX					; use as index
@@ -446,6 +446,20 @@ call_mcmd:
 	JMP (cmd_ptr & $FFFF, X)	; indexed jump macro, bank agnostic!
 
 ; *** command routines, named as per pointer table ***
+; ** .? = show commands **
+help:
+	LDA #>help_str		; help string
+	LDY #<help_str
+	JMP $FFFF &  prnStr			; print it, and return to main loop
+
+
+; ** .@ = set Data Bank register *
+set_DBR:
+	JSR $FFFF &  fetch_byte		; get operand in A
+	STA _dbr			; set register
+	RTS
+
+
 ; ** .A = set accumulator **
 set_A:
 	JSR $FFFF &  fetch_value		; get operand
@@ -454,6 +468,7 @@ set_A:
 	STA _a				; set 16b accumulator
 	STX _a+1
 	RTS
+
 
 ; ** .B = store byte **
 store_byte:
@@ -466,6 +481,7 @@ store_byte:
 		INC ptr+2			; increase K otherwise
 sb_end:
 	RTS
+
 
 ; ** .C = call address **
 call_address:
@@ -509,6 +525,7 @@ ca_ok:
 	PLA
 	JMP $FFFF &  get_sp			; hopefully context is OK, will restore as needed
 
+
 ; ** .J = jump to an address **
 jump_address:
 	JSR $FFFF &  fetch_value		; get operand address
@@ -538,6 +555,7 @@ do_call:
 .as:.xs					; most likely values... needed for the remaining code!
 	PLP					; restore status
 	JMP [value]			; eeeeeeeeek
+
 
 ; ** .D = disassemble 'u' lines **
 disassemble:
@@ -878,6 +896,7 @@ ex_npb:
 		BNE ex_l			; continue until done
 	RTS
 
+
 ; ** .G = set stack pointer **
 set_SP:
 	JSR $FFFF &  fetch_word		; get 16b operand
@@ -886,11 +905,6 @@ set_SP:
 	STA _sp+1
 	RTS
 
-; ** .H = show commands **
-help:
-	LDA #>help_str		; help string
-	LDY #<help_str
-	JMP $FFFF &  prnStr			; print it, and return to main loop
 
 ; ** .I = show symbol table ***
 symbol_table:
@@ -901,9 +915,10 @@ symbol_table:
 	_KERNEL(COUT)
 	RTS		; ***** TO DO ****** TO DO ******
 
-; ** .K = keep (save) **
+
+; ** .K = keep (load or save) **
 ; ### highly system dependent ###
-save_bytes:
+ext_bytes:
 ;***********placeholder*************
 	LDA #'!'
 	STA io_c
@@ -911,15 +926,10 @@ save_bytes:
 	_KERNEL(COUT)
 	RTS		; ***** TO DO ****** TO DO ******
 
-; ** .L = load **
+
+; ** .L =  **
 ; ### highly system dependent ###
-load_bytes:
-;***********placeholder*************
-	LDA #'@'
-	STA io_c
-	LDY iodev
-	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
+
 
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
@@ -955,6 +965,7 @@ mv_l:
 mv_end:
 	RTS
 
+
 ; ** .N = set 'n' value **
 set_count:
 	JSR $FFFF &  fetch_value		; get operand
@@ -965,6 +976,7 @@ set_count:
 	STY siz				; into destination variable
 	STA siz+1			; only 16b are taken
 	RTS
+
 
 ; ** .O = set origin **
 origin:
@@ -978,11 +990,13 @@ origin:
 	STX ptr+2
 	RTS
 
+
 ; ** .P = set status register **
 set_PSR:
 	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _psr			; set status
 	RTS
+
 
 ; ** .Q = standard quit **
 quit:
@@ -990,6 +1004,51 @@ quit:
 	PLA					; discard main loop return address
 	PLA
 	_FINISH				; exit to minimOS, proper error code, new interface
+
+
+; ** .R = reboot or shutdown **
+reboot:
+	LDA #>shut_str		; asking string
+	LDY #<shut_str
+	JSR $FFFF &  prnStr			; print it
+; ### minimOS specific non-locking key check ###
+rb_chk:
+		LDY iodev			; get device
+		_KERNEL(CIN)		; get char ##### minimOS #####
+			BCC rb_key			; char is available
+		CPY #EMPTY			; still waiting for a key?
+		BEQ rb_chk
+	RTS					; fail quietly in case of I/O error...
+rb_key:
+	LDA io_c			; get pressed key ### minimOS ###
+	AND #%11011111		; as uppercase
+	CMP #'W'			; asking for warm boot?
+	BNE rb_notw
+;		LDA #>str_warm		; acknowledge command
+;		LDY #<str_warm
+;		JSR prnStr & $FFFF
+		LDY #PW_WARM		; warm boot request ## minimOS specific ##
+		BRA fw_shut			; call firmware
+rb_notw:
+	CMP #'C'			; asking for cold boot?
+	BNE rb_notc
+;		LDA #>str_cold		; acknowledge command
+;		LDY #<str_cold
+;		JSR prnStr & $FFFF
+		LDY #PW_COLD		; cold boot request ## minimOS specific ##
+		BRA fw_shut			; call firmware
+rb_notc:
+	CMP #'S'			; asking for shutdown?
+	BNE rb_exit			; otherwise abort quietly
+;		LDA #>str_shut		; acknowledge command
+;		LDY #<str_shut
+;		JSR prnStr & $FFFF
+		LDY #PW_OFF			; poweroff request ## minimOS specific ##
+fw_shut:
+		_KERNEL(SHUTDOWN)	; unified firmware call
+rb_exit:
+	RTS					; needs to return and wait for the complete shutdown!
+
 
 ; ** .S = store raw string **
 store_str:
@@ -1029,7 +1088,8 @@ sstr_end:
 	STY cursor			; update optimised index!
 	RTS
 
-; ** .T = assemble from source ** currently 16b address
+
+; ** .T = assemble from source **
 asm_source:
 	PLA					; discard return address as will jump inside cli_loop
 	PLA
@@ -1046,6 +1106,7 @@ ta_ok:
 	STX bufpt+2
 	JMP $FFFF &  cli_loop		; execute as commands!
 
+
 ; ** .U = set 'u' number of lines/instructions **
 ; might replace this for an autoscroll feature
 set_lines:
@@ -1053,13 +1114,13 @@ set_lines:
 	STA lines			; set number of lines
 	RTS
 
+
 ; ** .V = view register values **
 view_regs:
 	LDA #>regs_head		; print header
 	LDY #<regs_head
 	JSR $FFFF &  prnStr
 ; since _pc and ptr are the same, no need to print it!
-
 	LDX #0				; reset counter
 vr_l:
 		PHX					; save index!
@@ -1094,6 +1155,7 @@ vr_off:
 	LDA #CR				; print newline
 	JMP $FFFF &  prnChar			; will return
 
+
 ; ** .W = store word **
 store_word:
 	JSR $FFFF &  fetch_value		; get operand, do not force 3-4 hex chars
@@ -1109,6 +1171,7 @@ store_word:
 ;		INC ptr+2			; wrap it
 	RTS
 
+
 ; ** .X = set X register **
 set_X:
 	JSR $FFFF &  fetch_value		; get operand
@@ -1117,6 +1180,7 @@ set_X:
 	STA _x				; set X
 	STX _x+1
 	RTS
+
 
 ; ** .Y = set Y register **
 set_Y:
@@ -1127,21 +1191,15 @@ set_Y:
 	STX _y+1
 	RTS
 
-; ** .F = force cold boot
-force:
-	LDY #PW_COLD		; cold boot request ** minimOS specific **
-	BRA fw_shut			; call firmware
 
-; ** .R = warm boot **
-reboot:
-	LDY #PW_WARM		; warm boot request ** minimOS specific **
-	BRA fw_shut			; call firmware
-
-; ** .Z = shutdown **
-poweroff:
-	LDY #PW_OFF			; poweroff request ** minimOS specific **
-fw_shut:
-	_KERNEL(SHUTDOWN)
+; ** .Z = set DP (new) **
+set_DP:
+	JSR $FFFF &  fetch_value		; get operand
+	LDA value			; needs to pick LSB!
+	LDX value+1			; pick MSB up
+	STA _dp				; set DP
+	STX _dp+1
+	RTS
 
 _unrecognised:
 	PLA					; discard main loop return address
@@ -1424,20 +1482,22 @@ ftv_bad:
 	CLC					; always check temp=0 for errors!
 	RTS
 
-; *** pointers to command routines ***
+; *** pointers to command routines (? to Z) ***
 cmd_ptr:
+	.word	help			; .?
+	.word	set_DBR			; .@
 	.word	set_A			; .A
 	.word	store_byte		; .B
 	.word	call_address	; .C
 	.word	disassemble		; .D
 	.word	examine			; .E
-	.word	force			; .F
+	.word		_unrecognised	; .F
 	.word	set_SP			; .G
-	.word	help			; .H
+	.word		_unrecognised	; .H
 	.word	symbol_table	; .I
 	.word	jump_address	; .J
-	.word	save_bytes		; .K
-	.word	load_bytes		; .L
+	.word	ext_bytes		; .K
+	.word		_unrecognised	; .L
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
@@ -1451,12 +1511,13 @@ cmd_ptr:
 	.word	store_word		; .W
 	.word	set_X			; .X
 	.word	set_Y			; .Y
-	.word	poweroff		; .Z
+	.word	set_DP			; .Z
 
 ; *** strings and other data ***
 splash:
 	.asc	"minimOS 0.5.1 monitor/debugger/assembler", CR
-	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
+	.asc	"(c) 2016-2017 Carlos Santisteban", CR
+	.asc	"Type opcodes or .command, .? for help", CR, 0
 
 err_mmod:
 	.asc	"***Missing module***", CR, 0
@@ -1479,39 +1540,49 @@ dump_in:
 dump_out:
 	.asc	"] ", 0
 
+shut_str:
+	.asc	"Cold, Warm, Shutdown?", CR, 0
+
+;***debug strings***
+;str_cold:
+;	.asc	"COLD!", 0
+;str_warm:
+;	.asc	"WARM!", 0
+;str_shut:
+;	.asc	"SHUTDOWN!", 0
+
 ; online help only available under the SAFE option!
 help_str:
 #ifdef	SAFE
 	.asc	"---Command list---", CR
-	.asc	"(d = 2 hex char.)", CR
-	.asc	"(a = 4 hex char.)", CR
-	.asc	"(l = 6 hex char.)", CR
-	.asc	"(s = raw string)", CR
-	.asc	"Aa = set A reg.", CR
-	.asc	"Bd = store byte", CR
-	.asc	"Cl = call subr.", CR
-	.asc	"Dl =disass. 'u' opc.", CR
-	.asc	"El = dump 'u' lines", CR
-	.asc	"F = cold boot", CR
-	.asc	"Ga = set SP reg.", CR
-	.asc	"H = show this list", CR
-	.asc	"Jl = jump", CR
-	.asc	"K = save 'n' bytes", CR
-	.asc	"L = load up to 'n'", CR
-	.asc	"Ml =copy n byt. to a", CR
-	.asc	"Na = set 'n' value", CR
-	.asc	"Ol = set address", CR
-	.asc	"Pd = set Status reg.", CR
-	.asc	"Q = quit", CR
-	.asc	"R = reboot", CR
-	.asc	"Ss = put raw string", CR
-	.asc	"Tl = assemble source", CR
-	.asc	"Ud = set 'u' lines", CR
-	.asc	"V = view registers", CR
-	.asc	"Wa = store word", CR
-	.asc	"Xa = set X reg.", CR
-	.asc	"Ya = set Y reg.", CR
-	.asc	"Z = poweroff", CR
+	.asc	"(d, a, l => 2, 4, 6 hex char.)", CR
+	.asc	"(* => up to 6 hex char.)", CR
+	.asc	"(s => raw string, ends at CR)", CR
+	.asc	".? = show this list", CR
+	.asc	".@d = set Data Bank reg.", CR
+	.asc	".A* = set A reg. (16-bit)", CR
+	.asc	".Bd = store byte", CR
+	.asc	".C* = call subroutine", CR
+	.asc	".D* = disassemble 'u' opcodes", CR
+	.asc	".E* = dump 'u' lines", CR
+	.asc	".Ga = set SP reg.", CR
+	.asc	".J* = jump to address", CR
+	.asc	".K* = load or save 'n' bytes", CR
+	.asc	".L* = line editor (**TO DO**)", CR
+	.asc	".Ml=copy n bytes from curr. to l", CR
+	.asc	".N* = set 'n' value (16-bit)", CR
+	.asc	".O* = set origin address", CR
+	.asc	".Pd = set Status reg.", CR
+	.asc	".Q = quit", CR
+	.asc	".R = reboot or poweroff", CR
+	.asc	".Ss = store raw string", CR
+	.asc	".T* = assemble source", CR
+	.asc	".Ud = set 'u' lines", CR
+	.asc	".V = view registers", CR
+	.asc	".Wa = store word", CR
+	.asc	".X* = set X reg. (16-bit)", CR
+	.asc	".Y* = set Y reg. (16-bit)", CR
+	.asc	".Z* = set Direct Page (16-bit)", CR
 #endif
 	.byt	0
 
