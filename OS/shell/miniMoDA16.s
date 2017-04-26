@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b12
-; last modified 20170425-1241
+; last modified 20170426-0905
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -40,7 +40,7 @@ title:
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$4800		; time, 9.00
-	.word	$4A93		; date, 2017/4/19
+	.word	$4A9A		; date, 2017/4/26
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -69,7 +69,8 @@ title:
 	value	= buffer+BUFSIZ	; fetched values, now 24b ready
 	oper	= value+3	; operand storage, now 24b ready
 	temp	= oper+3	; temporary storage, also for indexes
-	scan	= temp+1	; pointer to opcode list, size is architecture dependent!
+	movop	= temp+1	; temporary operand count for MVP/MVN, new
+	scan	= movop+1	; pointer to opcode list, size is architecture dependent!
 	bufpt	= scan+3	; NEW pointer to variable buffer, scan is 24-bit, maybe this one too!
 	count	= bufpt+3	; char count for screen formatting, also opcode count
 	bytes	= count+1	; bytes per instruction
@@ -561,12 +562,14 @@ das_l:
 disOpcode:
 	LDA [oper]			; check pointed opcode
 	STA count			; keep for comparisons
-;	AND #%11101111		; filter for MVN/MVP
-;	CMP #$44			; one of these?
-;	BNE do_notnv		; proceed normally
-;		LDA #2				; preset value
-;		STA flag			; store for operand display counter!
-;do_notnv:
+; check whether it is MVN/MVP for double operand selection!
+	LDX #$FF			; standard flag value, NOT zero
+	AND #%11101111		; filter for MVN/MVP
+	CMP #$44			; one of these?
+	BNE do_notnv		; proceed normally
+		LDX #2				; preset special value
+do_notnv:
+	STX movop			; store for operand display counter!
 	LDY #<da_oclist		; get address of opcode list
 	LDA #>da_oclist
 	STZ scan			; indirect-indexed pointer
@@ -721,15 +724,15 @@ po_disp:
 po_dloop:
 				LDY bytes			; retrieve operand index
 ; *** should check here for MVN/MVP and process second operand via INY ***
-; *** likely to need some flag ***
-;				LDA [oper]			; check opcode
-;				AND #%11101111		; mask out differences
-;				CMP #$44			; MVN or MVP only
-;				BNE po_notmv		; if not, proceed normally
-;					DEC flag			; some flag set to 2 upon MVN, MVP
-;					BNE po_notmv		; first operand, nothing to correct
-;						INY					; otherwise go for second operand
-;po_notmv:
+				LDA [oper]			; check opcode
+				AND #%11101111		; mask out differences
+				CMP #$44			; MVN or MVP only
+				BNE po_notmv		; if not, proceed normally
+					DEC movop			; some flag set to 2 upon MVN, MVP
+					BNE po_notmv		; first operand, nothing to correct
+						INY					; otherwise go for second operand
+po_notmv:
+; regular operand processing loop
 				LDA [oper], Y		; get whatever byte
 				JSR $FFFF &  prnHex			; show in hex
 				DEC bytes			; go back one byte
@@ -764,6 +767,10 @@ po_end:
 		BNE po_end			; until complete, again no need for BRA
 ; print hex dump as a comment!
 po_dump:
+	LDX movop			; was it a move instruction?
+	BNE po_dnmv			; nope, nothing to correct
+		INC bytes			; otherwise there is one more operand
+po_dnmv:
 	LDA #';'			; semicolon as comment introducer
 	JSR $FFFF &  prnChar
 	LDY #0				; reset index
@@ -1188,7 +1195,6 @@ hex2nib:
 	SEC					; prepare for subtract
 	SBC #'0'			; convert from ASCII
 		BCC h2n_err			; below number!
-;	PHY				; ***do I need this???
 	CMP #10				; already OK?
 	BCC h2n_num			; do not convert from letter
 		CMP #23				; otherwise should be a valid hex
@@ -1206,7 +1212,6 @@ h2n_loop:
 	STA value
 	CLC					; all done without error
 h2n_rts:
-;	PLY					;***restore
 	RTS					; usual exit
 h2n_err:
 	SEC					; notify error!
@@ -1238,13 +1243,12 @@ sc_stdm:
 ; new movable buffer!
 getLine:
 	LDY bufpt			; get buffer address
-	LDA bufpt+1			; likely 0!
+	LDA bufpt+1			; likely 0 for the direct buffer
+	LDX bufpt+2			; could assemble text from anywhere!
 	STY str_pt			; set parameter
 	STA str_pt+1
 ; 16-bit version should set bank!
-; but since this only operates on bank 0, that is the value to be set
-; *** future versions should check this
-	STZ str_pt+2		; set bank, input is either zeropage or bank zero
+	STX str_pt+2		; set bank, .t could assemble from anywhere
 	LDX #BUFSIZ-1		; max index
 	STX ln_siz			; set value
 	LDY iodev			; use device
@@ -1325,18 +1329,6 @@ glc_do:
 	AND #$7F			; most convenient!
 	RTS
 
-; this was NEVER used!!!
-;checkEnd:
-;	CLC					; prepare!
-;	LDY cursor			; otherwise set offset
-;	LDA [bufpt], Y		; ...and check buffer contents
-;		BEQ cend_ok			; end of buffer means it is OK to finish opcode
-;	CMP #COLON			; end of sentence
-;		BEQ cend_ok			; also OK
-;	SEC					; otherwise set carry
-;cend_ok:
-;	RTS
-
 ; * fetch one byte from buffer, value in A and @value.b *
 ; newest approach as interface for fetch_value
 fetch_byte:
@@ -1374,8 +1366,8 @@ ft_clean:
 	RTS
 
 ; * fetch three bytes from hex input buffer, value @value.l *
+;	newest approach
 fetch_long:
-;	newst approach
 	JSR $FFFF &  fetch_value		; get whatever
 	LDA temp			; how many bytes will fit?
 	INC					; round up chars...
@@ -1398,8 +1390,6 @@ ftv_loop:
 		BRA ftv_loop		; until no more valid
 ftv_bad:
 	JSR $FFFF &  backChar		; should discard very last char! eeeeeeeek
-;	INC temp			; round up chars...
-;	LSR temp			; ...and convert to bytes
 	CLC					; always check temp=0 for errors!
 	RTS
 
