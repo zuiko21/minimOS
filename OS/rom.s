@@ -128,7 +128,7 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; ...could add more software up to $FC00
 #include "shell/monitor.s"
 #include "../apps/sigtest.s"
-;#include "shell/miniMoDA.s"
+#include "shell/miniMoDA.s"
 
 ; ****** skip rest of unused ROM until firmware ******
 ; ##### empty header #####
@@ -163,7 +163,7 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; *******************************************
 ; *** SPECIAL TEST, soft after kernel ROM ***
 ; *******************************************
-#include "shell/miniMoDA16.s"
+;#include "shell/miniMoDA16.s"
 
 
 

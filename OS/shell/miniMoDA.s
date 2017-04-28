@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5.1b1
-; last modified 20170428-1313
+; v0.5.1b2
+; last modified 20170428-1341
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -116,7 +116,8 @@ open_da:
 ptr_init:
 	STX ptr+1			; set MSB
 	_STZA ptr			; page aligned
-	_STZA _psr			; some placeholder...
+	LDA #$30			; *** best to guarantee 8-biut sizes if running on a 65816 ***
+	STA _psr			; acceptable initial status
 get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
@@ -176,9 +177,13 @@ cli_chk:
 				INC bufpt+1			; otherwise wrap!
 			_BRA cli_loop		; and try another (BCS or BNE might do as well)
 cmd_term:
-		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
+		BEQ main_loop		; no more on buffer, restore direct mode
+	BNE bad_cmd			; otherwise has garbage! No need for BRA
+
+bad_opr:				; *** this entry point has to discard return address as will be issued as command ***
+		PLA
+		PLA
 bad_cmd:
-bad_opr:				; placeholder label
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
 d_error:
