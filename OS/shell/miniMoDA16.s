@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b14
-; last modified 20170428-1438
+; last modified 20170428-1832
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -945,47 +945,43 @@ mv_ok:
 	BCC mv_up			; destination is before origin, must copy forward!
 		LDX #$44			; otherwise get MVP opcode!
 		JSR mv_smc			; poke all that
-; PREPARE INDEXES-....
-	BRA mv_do			; prepare indexes and go
+		.xl:				; routine returns with 16-bit index!
+		CLC
+		ADC siz				; plus size...
+		DEC				; convert to last address in block!
+		TAX				; this was origin
+		LDA value			; destination address
+		CLC
+		ADC siz				; plus size...
+		DEC				; convert to last address in block!
+		TAY				; this was destination
+	BRA mv_do			; go for it
 mv_up:
+		.xs:
 		LDX #$54			; opcode for MVN
 		JSR mv_smc			; poke all that
-
-mv_smc:
-	STX local			; supposedly safe place for self-modifying code
-	LDX #$6B			; opcode for RTL
-	STX local+3			; place it
-	LDA siz				; get transfer size (16-bit already)
-	RTS
-
-	.xl: REP #$10		; *** now use 16-bit indexes too ***
-	LDX
-
-; preliminary version goes forward only, modifies ptr.MSB and X!
-; ***** THIS MUST BE DONE VIA SMC WITH MVN/MVP OPCODES!!!!! ************
-; the real stuff begins *** should use MVN, MVP
-	LDY #0				; reset offset
-	LDX siz+1			; check n MSB
-		BEQ mv_l			; go to second stage if zero
-mv_hl:
-		LDA [ptr], Y		; get source byte
-		STA [value], Y		; copy at destination
-		INY					; next byte
-		BNE mv_hl			; until a page is done
-	INC ptr+1			; next page
-	INC value+1
-	DEX					; one less to go
-		BNE mv_hl			; stay in first stage until the last page
-	LDA siz				; check LSB
-		BEQ mv_end			; nothing to copy!
-mv_l:
-		LDA [ptr], Y		; get source byte
-		STA [value], Y		; copy at destination
-		INY					; next byte
-		CPY siz				; compare with LSB
-		BNE mv_l			; continue until done
+		.xl:
+		LDX value			; source address
+		LDY value			; destination address
+mv_do:
+	LDA siz				; get total size...
+	DEC				; ...minus one
+	JSL @local			; execute!
+	.as: .xs: SEP #$30		; *** regular sizes ***
 mv_end:
 	RTS
+mv_smc:
+	.al:
+	STX local			; supposedly safe place for self-modifying code
+	LDX _ptr+2			; origin bank
+	STX local+1
+	LDX value+2			; destination bank
+	STX local+2
+	LDX #$6B			; opcode for RTL
+	STX local+3			; place it
+	.xl: REP #$10		; *** now use 16-bit indexes too ***
+	RTS
+	.as: .xs:
 
 
 ; ** .N = set 'n' value **
