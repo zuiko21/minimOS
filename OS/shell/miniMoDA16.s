@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b12
-; last modified 20170428-1010
+; v0.5.1b13
+; last modified 20170428-1159
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -1004,8 +1004,11 @@ quit:
 ; ** .R = reboot or shutdown **
 reboot:
 ; might try to get an extra char for non-interactive function selection
-	JSR $FFFF &  fetch_byte		; get extra in A
-		BCC rb_cmd			; no need to ask user!
+	JSR $FFFF &  getNextChar		; is there an extra character?
+		BCS rb_ask			; end of sentence, needs to ask user!
+	TAX					; check whether end of buffer
+		BNE rb_cmd			; no need to ask!
+rb_ask:
 	LDA #>shut_str		; asking string
 	LDY #<shut_str
 	JSR $FFFF &  prnStr			; print it
@@ -1019,8 +1022,8 @@ rb_chk:
 	RTS					; fail quietly in case of I/O error...
 rb_key:
 	LDA io_c			; get pressed key ### minimOS ###
-rb_cmd:
 	AND #%11011111		; as uppercase
+rb_cmd:
 	CMP #'W'			; asking for warm boot?
 	BNE rb_notw
 ;		LDA #>str_warm		; acknowledge command

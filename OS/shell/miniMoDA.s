@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.5.1a3
-; last modified 20170428-1013
+; last modified 20170428-1211
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -32,7 +32,7 @@ mmd_head:
 	.asc	"****", 13		; some flags TBD
 ; *** filename and optional comment ***
 title:
-	.asc	"miniMoDA", 0	; file name (mandatory)
+	.asc	"miniMoDA8", 0	; file name (mandatory)******
 	.asc	"NOT for 65816", 0	; comment
 
 ; advance to end of header
@@ -42,10 +42,10 @@ title:
 	.word	$43C0		; time, 8.30
 	.word	$4A9C		; date, 2017/4/28
 
-	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
+	mmdsiz8	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	mmdsize		; filesize
+	.word	mmdsiz8		; filesize
 	.word	0			; 64K space does not use upper 16-bit
 #endif
 ; ##### end of minimOS executable header #####
@@ -115,7 +115,8 @@ open_da:
 		INX					; otherwise start at next page
 ptr_init:
 	STX ptr+1			; set MSB
-	STZ ptr				; page aligned
+	_STZA ptr			; page aligned
+	_STZA _psr			; some placeholder...
 get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
@@ -177,6 +178,7 @@ cli_chk:
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
 bad_cmd:
+bad_opr:				; placeholder label
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
 d_error:
@@ -487,7 +489,7 @@ prnOpcode:
 	JSR $FFFF &  prnHex			; print it
 	LDA oper			; same for LSB
 	JSR $FFFF &  prnHex
-	LDA #$COLON			; code of the colon character
+	LDA #COLON			; code of the colon character
 	JSR $FFFF &  prnChar
 	LDA #' '			; leading space, might use string
 	JSR $FFFF &  prnChar
@@ -789,8 +791,11 @@ quit:
 ; ** .R = reboot or shutdown **
 reboot:
 ; might try to get an extra char for non-interactive function selection
-	JSR $FFFF &  fetch_byte		; get extra in A
-		BCC rb_cmd			; no need to ask user!
+	JSR $FFFF &  getNextChar		; is there an extra character?
+		BCS rb_ask			; end of sentence, needs to ask user!
+	TAX					; check whether end of buffer
+		BNE rb_cmd			; no need to ask!
+rb_ask:
 	LDA #>shut_str		; asking string
 	LDY #<shut_str
 	JSR $FFFF &  prnStr			; print it
@@ -804,8 +809,8 @@ rb_chk:
 	RTS					; fail quietly in case of I/O error...
 rb_key:
 	LDA io_c			; get pressed key ### minimOS ###
-rb_cmd:
 	AND #%11011111		; as uppercase
+rb_cmd:
 	CMP #'W'			; asking for warm boot?
 	BNE rb_notw
 ;		LDA #>str_warm		; acknowledge command
@@ -1009,46 +1014,39 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
-; 16-bit version should set bank!
 	LDY iodev			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
 	RTS
 
-; * convert two hex ciphers into byte@value
-; A is current char, Y is cursor from NEW buffer *
-hex2byte:
-	LDX #0				; reset loop counter
-	STX value			; also reset value
-h2b_l:
-		SEC					; prepare
-		SBC #'0'			; convert to value
-			BCC h2b_err			; below number!
-		CMP #10				; already OK?
-		BCC h2b_num			; do not shift letter value
-			CMP #23				; should be a valid hex
-				BCS h2b_err			; not!
-			SBC #6				; convert from hex (had CLC before!)
-h2b_num:
-		ASL value			; older value times 16
-		ASL value
-		ASL value
-		ASL value
-		ORA value			; add computed nibble
-		STA value			; and store full byte
-		INX					; loop counter
-		CPX #2				; two ciphers per byte
-			BEQ h2b_end			; all done
-		JSR $FFFF &  gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
-		_BRA h2b_l			; process it
-h2b_end:
-	CLC: RTS			; clear carry, value is valid! macro NLA
-h2b_err:
-	DEX					; at least one cipher processed?
-	BMI h2b_exit		; no need to correct
-		JSR $FFFF &  backChar		; will try to reprocess former char
-h2b_exit:
-	SEC					; indicate error
+; * new approach for hex conversion *
+; * add one nibble from hex in current char!
+; A is current char, returns result in value[0...1]
+; does NOT advance any cursor (neither reads char from nowhere)
+; MUST reset value previously!
+hex2nib:
+	SEC					; prepare for subtract
+	SBC #'0'			; convert from ASCII
+		BCC h2n_err			; below number!
+	CMP #10				; already OK?
+	BCC h2n_num			; do not convert from letter
+		CMP #23				; otherwise should be a valid hex
+			BCS h2n_rts			; or not! exits with C set
+		SBC #6				; convert from hex (C is clear!)
+h2n_num:
+	LDY #4				; shifts counter, no longer X in order to save some pushing!
+h2n_loop:
+		ASL value			; current value will be times 16
+		ROL value+1
+		DEY					; next iteration
+		BNE h2n_loop
+	ORA value			; combine with older value
+	STA value
+	CLC					; all done without error
+h2n_rts:
+	RTS					; usual exit
+h2n_err:
+	SEC					; notify error!
 	RTS
 
 ; ** end of inline library **
@@ -1060,11 +1058,6 @@ getLine:
 	LDA bufpt+1			; likely 0!
 	STY str_pt			; set parameter
 	STA str_pt+1
-; 16-bit version should set bank!
-; but since this only operates on bank 0, that is the value to be set
-#ifdef	C816
-	STZ str_pt+2		; set bank, input is either zeropage or bank zero
-#endif
 	LDX #BUFSIZ-1		; max index
 	STX ln_siz			; set value
 	LDY iodev			; use device
@@ -1131,6 +1124,7 @@ bc_loop:
 	RTS
 
 ; * get clean NEXT character from opcode list, set Carry if last one! *
+; no point on setting Carry if last one!
 getListChar:
 		INC scan			; try next
 		BNE glc_do			; if did not wrap
@@ -1139,44 +1133,60 @@ glc_do:
 		_LDAY(scan)			; get current
 		CMP #' '			; is it blank? will never end an opcode, though
 		BEQ getListChar		; nothing interesting yet
-	_LDAY(scan)			; recheck bit 7
-	CLC					; normally not the end
-	BPL glc_end			; it was not
-		SEC					; otherwise do x=128
-glc_end:
 	AND #$7F			; most convenient!
 	RTS
 
-; this was NEVER used!!!
-;checkEnd:
-;	CLC					; prepare!
-;	LDY cursor			; otherwise set offset
-;	LDA (bufpt), Y		; ...and check buffer contents
-;		BEQ cend_ok			; end of buffer means it is OK to finish opcode
-;	CMP #COLON			; end of sentence
-;		BEQ cend_ok			; also OK
-;	SEC					; otherwise set carry
-;cend_ok:
-;	RTS
-
-; * fetch one byte from buffer, value in A and @value *
+; * fetch one byte from buffer, value in A and @value.b *
+; newest approach as interface for fetch_value
 fetch_byte:
-	JSR $FFFF &  getNextChar		; go to operand
-	JSR $FFFF &  hex2byte		; convert value
-	LDA value			; converted byte
-fetch_abort:
-	RTS
+	JSR $FFFF &  fetch_value		; get whatever
+	LDA temp			; how many bytes will fit?
+	INC					; round up chars...
+	LSR					; ...and convert to bytes
+	CMP #1				; strictly one?
+	BRA ft_check		; common check
 
 ; * fetch two bytes from hex input buffer, value @value.w *
 fetch_word:
-	JSR $FFFF &  fetch_byte		; get operand in A
-		BCS fetch_abort		; new, do not keep trying if error, not sure if needed
-	STA value+1			; leave room for next
-	JSR $FFFF &  gnc_do			; get next char!!!
-	JSR $FFFF &  hex2byte		; get second byte, value is little-endian now
-		BCC fetch_abort		; actually OK!!!
-	JSR $FFFF &  backChar		; should discard previous byte!
-	JSR $FFFF &  backChar
+; another approach using fetch_value
+	JSR $FFFF &  fetch_value		; get whatever
+	LDA temp			; how many bytes will fit?
+	INC					; round up chars...
+	LSR					; ...and convert to bytes
+	CMP #2				; strictly two?
+; common fetch error check
+ft_check:
+	BNE ft_err
+		CLC					; if so, all OK
+		LDA value			; convenient!!!
+		RTS
+; common fetch error discard routine
+ft_err:
+	LDA temp			; check how many chars were processed eeeeeeek
+	BEQ ft_clean		; nothing to discard eeeeeeeeek
+ft_disc:
+		JSR $FFFF &  backChar		; should discard previous char!
+		DEC temp			; one less to go
+		BNE ft_disc			; continue until all was discarded
+ft_clean:
+	SEC					; there was an error
+	RTS
+
+; * fetch typed value, no matter the number of chars *
+fetch_value:
+	STZ value			; clear full result
+	STZ value+1
+	STZ temp			; no chars processed yet
+; could check here for symbolic references...
+ftv_loop:
+		JSR $FFFF &  getNextChar		; go to operand first cipher!
+		JSR $FFFF &  hex2nib			; process one char
+			BCS ftv_bad			; no more valid chars
+		INC temp			; otherwise count one
+		BRA ftv_loop		; until no more valid
+ftv_bad:
+	JSR $FFFF &  backChar		; should discard very last char! eeeeeeeek
+	CLC					; always check temp=0 for errors!
 	RTS
 
 ; *** pointers to command routines (? to Y) ***
@@ -1238,6 +1248,9 @@ dump_in:
 
 dump_out:
 	.asc	"] ", 0
+
+shut_str:
+	.asc	"Cold, Warm, Shutdown?", CR, 0
 
 ; online help only available under the SAFE option!
 help_str:
