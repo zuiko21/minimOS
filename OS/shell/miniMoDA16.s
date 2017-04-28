@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b13
-; last modified 20170428-1312
+; last modified 20170428-1334
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -210,9 +210,13 @@ cli_chk:
 ; bufpt not expected to wrap?
 			BRA cli_loop		; and try another (BCS or BNE might do as well)
 cmd_term:
-		BEQ main_loop		; no more on buffer, restore direct mode, otherwise has garbage!
+		BEQ main_loop		; no more on buffer, restore direct mode
+	BNE bad_cmd			; otherwise has garbage! No need for BRA
+
+bad_opr:				; *** this entry point has to discard return address as will be issued as command ***
+		PLA
+		PLA
 bad_cmd:
-bad_opr:		; placeholder label
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
 d_error:
