@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5b15
-; last modified 20170419-0955
+; v0.5.1a1
+; last modified 20170428-0913
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -39,8 +39,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5800		; time, 11.00
-	.word	$4A8D		; date, 2017/4/13
+	.word	$43C0		; time, 8.30
+	.word	$4A9C		; date, 2017/4/28
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -108,6 +108,14 @@ open_da:
 
 ; *** store current stack pointer as it will be restored upon JSR/JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
+; while a proper debugger interface is done, better preset ptr to a safe area
+	LDX #>user_sram		; beginning of available ram, as defined... in rom.s
+	LDY #<user_sram		; LSB misaligned?
+	BEQ ptr_init		; nothing to align
+		INX					; otherwise start at next page
+ptr_init:
+	STX ptr+1			; set MSB
+	STZ ptr				; page aligned
 get_sp:
 	TSX					; get current stack pointer
 	STX _sp				; store original value
@@ -126,9 +134,8 @@ main_loop:
 		_STZA cursor		; eeeeeeeeeek... but really needed?
 ; *** NEW variable buffer setting ***
 		LDY #<buffer		; get LSB that is full address in zeropage
-		LDA #0				; ### in case of 65816 should be TDC, XBA!!! ###
 		STY bufpt			; set new movable pointer
-		STA bufpt+1
+		_STZA bufpt+1
 ; put current address before prompt
 		LDA ptr+1			; MSB goes first
 		JSR $FFFF &  prnHex			; print it
@@ -150,9 +157,9 @@ cli_loop:
 		CMP #'.'			; command introducer (not used nor accepted if monitor only)
 			BNE not_mcmd		; not a monitor command
 		JSR $FFFF &  gnc_do			; get into command byte otherwise
-		CMP #'Z'+1			; past last command?
+		CMP #'Y'+1			; past last command?
 			BCS bad_cmd			; unrecognised
-		SBC #'A'-1			; first available command (had borrow)
+		SBC #'?'-1			; first available command (had borrow)
 			BCC bad_cmd			; cannot be lower
 		ASL					; times two to make it index
 		TAX					; use as index
@@ -175,6 +182,8 @@ bad_cmd:
 d_error:
 	JSR $FFFF &  prnStr			; display error
 	_BRA main_loop		; restore
+
+; some room here for the overflow error message!
 overflow:
 	LDA #>err_ovf		; address of overflow message
 	LDY #<err_ovf
@@ -192,10 +201,10 @@ not_mcmd:
 sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR $FFFF &  getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
-; (removed debug code)
+; ...but C will be lost upon further comparisons!
 		CMP #'%'			; relative addressing?
 		BNE sc_nrel
-; try to get a relative operand
+; *** try to get a relative operand ***
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 			BCC srel_ok			; no errors, go translate into relative offset 
 				JMP $FFFF &  no_match		; no address, not OK
@@ -249,19 +258,11 @@ srel_done:
 sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
-; try to get a single byte operand
-;sc_sbyt:					; *** temporary label ***
+; *** try to get a single byte operand ***
 			JSR $FFFF &  fetch_byte		; currently it is a single byte...
-				BCS no_match		; could not get operand
+				BCS sc_skip			; could not get operand eeeeeeeek
 			STA oper			; store value to be poked *** here
-; should try a SECOND one which must FAIL, otherwise get back just in case comes later
-			JSR $FFFF &  fetch_byte		; this one should NOT succeed
-			BCS sbyt_ok			; OK if no other number found
-				JSR $FFFF &  backChar		; otherwise is an error, forget previous byte!!!
-				JSR $FFFF &  backChar
-				BCC no_match		; reject
-sbyt_ok:
-			JSR $FFFF &  backChar		; reject tested char! eeeeeeeek
+; no longer tries a SECOND one which must FAIL
 			INC bytes			; one operand was detected
 			_BRA sc_adv			; continue decoding
 sc_nsbyt:
@@ -269,7 +270,7 @@ sc_nsbyt:
 		BNE sc_nwrd
 ; try to get a word-sized operand
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
-				BCS no_match		; not if no number found?
+				BCS sc_skip			; not if no number found eeeeeeeek
 			LDY value				; get computed value
 			LDA value+1
 			STY oper			; store in safer place, endianness was ok
@@ -298,7 +299,6 @@ sc_seek:
 no_match:
 			_STZA cursor		; back to beginning of instruction
 			_STZA bytes			; also no operands detected! eeeeek
-; (removed debug code *)
 			INC count			; try next opcode
 			BEQ bad_opc			; no more to try!
 				JMP $FFFF &  sc_in			; there is another opcode to try
@@ -312,7 +312,7 @@ sc_adv:
 		BNE sc_nterm		; if end of buffer, sentence ends too
 			SEC					; just like a colon, instruction ended
 sc_nterm:
-		_LDAY(scan)			; what it being pointed in list?
+		_LDAY(scan)			; what is being pointed in list?
 		BPL sc_rem			; opcode not complete
 			BCS valid_oc		; both opcode and instruction ended
 			BCC no_match		; only opcode complete, keep trying! eeeeek
@@ -322,13 +322,11 @@ sc_rem:
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
-;		LDX bytes			; to be 816-savvy...
 		BEQ poke_opc		; no operands
 poke_loop:
-			LDA oper-1, Y		; get argument, note trick, use X for 816-savvy
+			LDA oper-1, Y		; get argument, note trick, actually absolute-indexed!
 			STA (ptr), Y		; store in RAM
 			DEY					; next byte
-;			DEX
 			BNE poke_loop		; could start on zero
 poke_opc:
 		LDA count			; matching opcode as computed
@@ -356,11 +354,19 @@ call_mcmd:
 	_JMPX(cmd_ptr & $FFFF)		; indexed jump macro, bank agnostic!
 
 ; *** command routines, named as per pointer table ***
+; ** .? = show commands **
+help:
+	LDA #>help_str		; help string
+	LDY #<help_str
+	JMP $FFFF &  prnStr			; print it, and return to main loop
+
+
 ; ** .A = set accumulator **
 set_A:
 	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _a				; set accumulator
 	RTS
+
 
 ; ** .B = store byte **
 store_byte:
@@ -372,10 +378,14 @@ store_byte:
 sb_end:
 	RTS
 
+
 ; ** .C = call address **
 call_address:
-	JSR $FFFF &  fetch_word		; get operand address
-; now ignoring operand errors!
+	JSR $FFFF &  fetch_value		; get operand address
+	LDA temp			; was it able to pick at least one hex char?
+	BNE ca_ok		; do not jump to zero!
+		JMP bad_opr		; reject zero loudly
+ca_ok:
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
@@ -394,6 +404,8 @@ call_address:
 	PLA
 	JMP $FFFF &  get_sp			; hopefully context is OK, will restore as needed
 
+
+; ********************************continue here**********************
 ; ** .J = jump to an address **
 jump_address:
 	JSR $FFFF &  fetch_word		; get operand address
@@ -1121,20 +1133,22 @@ fetch_word:
 	JSR $FFFF &  backChar
 	RTS
 
-; *** pointers to command routines ***
+; *** pointers to command routines (? to Y) ***
 cmd_ptr:
+	.word	help			; .?
+	.word		_unrecognised	; .@
 	.word	set_A			; .A
 	.word	store_byte		; .B
 	.word	call_address	; .C
 	.word	disassemble		; .D
 	.word	examine			; .E
-	.word	force			; .F
+	.word		_unrecognised	; .F
 	.word	set_SP			; .G
-	.word	help			; .H
+	.word		_unrecognised	; .H
 	.word	symbol_table	; .I
 	.word	jump_address	; .J
-	.word	save_bytes		; .K
-	.word	load_bytes		; .L
+	.word	ext_bytes		; .K
+	.word		_unrecognised	; .L
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
@@ -1148,7 +1162,6 @@ cmd_ptr:
 	.word	store_word		; .W
 	.word	set_X			; .X
 	.word	set_Y			; .Y
-	.word	poweroff		; .Z
 
 ; *** strings and other data ***
 splash:
@@ -1184,34 +1197,33 @@ dump_out:
 help_str:
 #ifdef	SAFE
 	.asc	"---Command list---", CR
-	.asc	"(d = 2 hex char.)", CR
-	.asc	"(a = 4 hex char.)", CR
-	.asc	"(s = raw string)", CR
-	.asc	"Ad = set A reg.", CR
-	.asc	"Bd = store byte", CR
-	.asc	"Ca = call subr.", CR
-	.asc	"Da =disass. 'u' opc.", CR
-	.asc	"Ea = dump 'u' lines", CR
-	.asc	"F = cold boot", CR
-	.asc	"Gd = set SP reg.", CR
-	.asc	"H = show this list", CR
-	.asc	"Ja = jump", CR
-	.asc	"K = save 'n' bytes", CR
-	.asc	"L = load up to 'n'", CR
-	.asc	"Ma =copy n byt. to a", CR
-	.asc	"Na = set 'n' bytes", CR
-	.asc	"Oa = set address", CR
-	.asc	"Pd = set Status reg.", CR
-	.asc	"Q = quit", CR
-	.asc	"R = reboot", CR
-	.asc	"Ss = put raw string", CR
-	.asc	"Ta = assemble source", CR
-	.asc	"Ud = set 'u' lines", CR
-	.asc	"V = view registers", CR
-	.asc	"Wa = store word", CR
-	.asc	"Xd = set X reg.", CR
-	.asc	"Yd = set Y reg.", CR
-	.asc	"Z = poweroff", CR
+	.asc	"(d => 2 hex char.)", CR
+	.asc	"(a => 4 hex char.)", CR
+	.asc	"(* => up to 4 char.)", CR
+	.asc	"(s => raw string)", CR
+	.asc	".? = show this list", CR
+	.asc	".Ad = set A reg.", CR
+	.asc	".Bd = store byte", CR
+	.asc	".C* = call subroutine", CR
+	.asc	".D* = dis. 'u' instr", CR
+	.asc	".E* = dump 'u' lines", CR
+	.asc	".Gd = set SP reg.", CR
+	.asc	".J* = jump to address", CR
+	.asc	".K*=load/save n byt.", CR
+	.asc	".L* = line editor (**TO DO**)", CR
+	.asc	".Ma=copy n byt. to a", CR
+	.asc	".N* = set 'n' value", CR
+	.asc	".O* = set origin", CR
+	.asc	".Pd = set Status reg", CR
+	.asc	".Q = quit", CR
+	.asc	".R = reboot/poweroff", CR
+	.asc	".Ss = put raw string", CR
+	.asc	".T* = assemble src.", CR
+	.asc	".Ud = set 'u' lines", CR
+	.asc	".V = view registers", CR
+	.asc	".Wa = store word", CR
+	.asc	".Xd = set X reg.", CR
+	.asc	".Yd = set Y reg.", CR
 #endif
 	.byt	0
 

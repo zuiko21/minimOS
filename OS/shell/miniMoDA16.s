@@ -171,7 +171,7 @@ main_loop:
 ; put current address before prompt
 		LDA ptr+2			; BANK goes first
 		JSR $FFFF &  prnHex			; print it
-		LDA ptr+1			; MSB goes first
+		LDA ptr+1			; then MSB goes
 		JSR $FFFF &  prnHex			; print it
 		LDA ptr				; same for LSB
 		JSR $FFFF &  prnHex
@@ -433,7 +433,6 @@ main_nw:
 			INC ptr+2			; in case of bank crossing
 main_nbb:
 		XBA					; what was NEXT in buffer, X was NOT respected eeeeeeek^4
-		BNE main_nnul		; termination will return to exterior main loop
 		BNE main_nnul		; termination will return to exterior main loop
 			JMP $FFFF &  main_loop		; and continue forever
 main_nnul:
