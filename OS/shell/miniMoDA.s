@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5.1a3
-; last modified 20170428-1211
+; v0.5.1b1
+; last modified 20170428-1313
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -397,6 +397,7 @@ ca_ok:
 	STX _x
 	STY _y
 	PHP					; get current status
+	CLD					; eeeeeeeeeeeeeek
 	PLA					; A was already saved
 	STA _psr
 ; hopefully no stack imbalance was caused, otherwise will not resume monitor!

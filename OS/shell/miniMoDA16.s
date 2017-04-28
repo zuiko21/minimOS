@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b13
-; last modified 20170428-1159
+; last modified 20170428-1312
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -495,7 +495,7 @@ ca_ok:
 	PHD					; ** needs to push DP or might be lost! **
 	JSR @do_call		; *** actually JSL, must end in RTL!!! ***
 	PHP					; get current status BEFORE switching sizes!
-	.xl: .al: REP #$30	; *** store full size registers, just in case ***
+	.xl: .al: REP #$38	; *** store full size registers AND clear decimal, just in case ***
 	PHA					; need to save this first in order to get DP deep from the stack!!!
 	PHD					; this is the value of DP upon exit!!!
 ; ** first of all, try to restore original DP!!! **
@@ -1559,7 +1559,7 @@ help_str:
 	.asc	"---Command list---", CR
 	.asc	"(d, a, l => 2, 4, 6 hex char.)", CR
 	.asc	"(* => up to 6 hex char.)", CR
-	.asc	"(s => raw string, ends at CR)", CR
+	.asc	"(s => raw string, ends at C", "R)", CR
 	.asc	".? = show this list", CR
 	.asc	".@d = set Data Bank reg.", CR
 	.asc	".A* = set A reg. (16-bit)", CR
