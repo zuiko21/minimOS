@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5.1a1
-; last modified 20170428-0913
+; v0.5.1a3
+; last modified 20170428-1013
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -405,11 +405,13 @@ ca_ok:
 	JMP $FFFF &  get_sp			; hopefully context is OK, will restore as needed
 
 
-; ********************************continue here**********************
 ; ** .J = jump to an address **
 jump_address:
-	JSR $FFFF &  fetch_word		; get operand address
-; now ignoring operand errors!
+	JSR $FFFF &  fetch_value		; get operand address
+	LDA temp			; was it able to pick at least one hex char?
+	BNE jm_ok
+		JMP bad_opr		; reject zero loudly
+jm_ok:
 ; restore stack pointer...
 	LDX _sp				; get stored value (word)
 	TXS					; set new pointer...
@@ -425,9 +427,11 @@ do_call:
 	JMP (value)			; go! might return somewhere else
 #endif
 
+
 ; ** .D = disassemble 'u' lines **
 disassemble:
-	JSR $FFFF &  fetch_word		; get address
+	JSR $FFFF &  fetch_value		; get address
+; ignoring operand error...
 	LDY value			; save value elsewhere
 	LDA value+1
 	STY oper
@@ -450,7 +454,7 @@ disOpcode:
 	LDA #>da_oclist
 	_STZX scan			; indirect-indexed pointer, NMOS use X eeeeeeek
 	STA scan+1
-; proceed normally, but 65816 must use long addressing for scan pointer
+; proceed normally now
 	LDX #0				; counter of skipped opcodes
 do_chkopc:
 		CPX count			; check if desired opcode already pointed
@@ -479,11 +483,11 @@ prnOpcode:
 ; first goes the current address in label style
 	LDA #'_'			; make it self-hosting
 	JSR $FFFF &  prnChar
-	LDA oper+1			; address MSB *** this may go into printOpcode
+	LDA oper+1			; address MSB
 	JSR $FFFF &  prnHex			; print it
 	LDA oper			; same for LSB
 	JSR $FFFF &  prnHex
-	LDA #$3A			; code of the colon character
+	LDA #$COLON			; code of the colon character
 	JSR $FFFF &  prnChar
 	LDA #' '			; leading space, might use string
 	JSR $FFFF &  prnChar
@@ -498,8 +502,6 @@ po_loop:
 		CMP #'%'			; relative addressing
 		BNE po_nrel			; currently the same as single byte!
 ; put here specific code for relative arguments!
-;			_BRA po_sbyte		; *** placeholder
-; *** some bug was found here, BRA $FE @ $C396 is rendered as BRA $C297 ***
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
 			_LDAY(oper)			; check opocde for a moment
@@ -518,7 +520,8 @@ po_nobbx:
 			BPL po_fwd			; forward jump does not extend sign
 				DEX					; puts $FF otherwise
 po_fwd:
-			SEC					; plus opcode...
+			_INC				; plus opcode...
+			CLC					; (will this and the above instead of SEC fix the error???)
 			ADC value			; ...and displacement...
 			ADC oper			; ...from current position
 			PHA					; this is the LSB, now check for the MSB
@@ -532,41 +535,39 @@ po_fwd:
 po_nrel:
 		CMP #'@'			; single byte operand
 		BNE po_nbyt			; otherwise check word-sized operand
-; could check also for undefined references!!!
-po_sbyte:
-			LDA #'$'			; hex radix
-			JSR $FFFF &  prnChar
-			LDY bytes			; retrieve instruction index
-			INY					; point to operand!
-			LDA (oper), Y		; get whatever byte
-			STY bytes			; correct index
-			JSR $FFFF &  prnHex			; show in hex
+; *** unified 1 and 2-byte operand management ***
+			LDY #1				; number of bytes minus one
 			LDX #3				; number of chars to add
-			_BRA po_done		; update count and continue
+			_BRA po_disp		; display value
 po_nbyt:
 		CMP #'&'			; word operand
 		BNE po_nwd			; otherwise is normal char
-; could check also for undefined references!!!
+			LDY #2				; number of bytes minus one
+			LDX #5				; number of chars to add
+po_disp:
+; could check HERE for undefined references!!!
+			_PHX				; save values, chars to add
+			_PHY				; these are the operand bytes
+			STY bytes			; set counter
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
-			LDY bytes			; retrieve instruction index
-			INY					; point to operand MSB!
-			INY
-			STY bytes			; save here as will back off for LSB
-			LDA (oper), Y		; get whatever byte
-			JSR $FFFF &  prnHex			; show in hex
-			LDY bytes			; retrieve final index
-			DEY					; back to LSB
-			LDA (oper), Y		; get whatever byte
-			JSR $FFFF &  prnHex			; show in hex
-			LDX #5				; five more chars
-			_BRA po_done		; update count and continue
+po_dloop:
+				LDY bytes			; retrieve operand index
+				LDA (oper), Y		; get whatever byte
+				JSR $FFFF &  prnHex			; show in hex
+				DEC bytes			; go back one byte
+				BNE po_dloop
+			_PLY				; restore original operand size
+			STY bytes
+			PLA					; number of chars to add
+			_BRA po_adv			; update count (direct from A) and continue
 po_nwd:
 		JSR $FFFF &  prnChar			; just print it
 		INC count			; yet another char
-		BNE po_char			; eeeeeeeeek
+		BNE po_char			; eeeeeeeeek, or should it be BRA?
 po_done:
 		TXA					; increase of number of chars
+po_adv:
 		CLC
 		ADC count			; add to previous value
 		STA count			; update value
@@ -613,9 +614,11 @@ po_nowr:
 	LDA #CR				; final newline
 	JMP $FFFF &  prnChar			; print it and return
 
+
 ; ** .E = examine 'u' lines of memory **
 examine:
-	JSR $FFFF &  fetch_word		; get address
+	JSR $FFFF &  fetch_value		; get address
+; ignoring operand error...
 	LDY value			; save value elsewhere
 	LDA value+1
 	STY oper
@@ -683,17 +686,13 @@ ex_npb:
 		BNE ex_l			; continue until done
 	RTS
 
+
 ; ** .G = set stack pointer **
 set_SP:
 	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _sp				; set stack pointer
 	RTS
 
-; ** .H = show commands **
-help:
-	LDA #>help_str		; help string
-	LDY #<help_str
-	JMP $FFFF &  prnStr			; print it, and return to main loop
 
 ; ** .I = show symbol table ***
 symbol_table:
@@ -704,9 +703,10 @@ symbol_table:
 	_KERNEL(COUT)
 	RTS		; ***** TO DO ****** TO DO ******
 
-; ** .K = keep (save) **
+
+; ** .K = keep (load or save) **
 ; ### highly system dependent ###
-save_bytes:
+ext_bytes:
 ;***********placeholder*************
 	LDA #'!'
 	STA io_c
@@ -714,21 +714,16 @@ save_bytes:
 	_KERNEL(COUT)
 	RTS		; ***** TO DO ****** TO DO ******
 
-; ** .L = load **
-; ### highly system dependent ###
-load_bytes:
-;***********placeholder*************
-	LDA #'@'
-	STA io_c
-	LDY iodev
-	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
 
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
-
-	JSR $FFFF &  fetch_word		; get operand word
+	JSR $FFFF &  fetch_value		; get operand address
+	LDA temp			; at least one?
+	BNE mv_ok
+		JMP bad_opr		; reject zero loudly
+mv_ok:
+; the real stuff begins
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
 		BEQ mv_l			; go to second stage if zero
@@ -752,23 +747,29 @@ mv_l:
 mv_end:
 	RTS
 
+
 ; ** .N = set 'n' value **
 set_count:
-	JSR $FFFF &  fetch_word		; get operand word
+	JSR $FFFF &  fetch_value		; get operand
+	LDA temp			; at least one?
+		BEQ mv_end			; quietly abort operation
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	STY siz				; into destination variable
 	STA siz+1
 	RTS
 
+
 ; ** .O = set origin **
 origin:
-	JSR $FFFF &  fetch_word		; get operand word
+	JSR $FFFF &  fetch_value		; get up to 2 bytes, unchecked
+; ignore error as will show up in prompt
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	STY ptr				; into destination variable
 	STA ptr+1
 	RTS
+
 
 ; ** .P = set status register **
 set_PSR:
@@ -776,12 +777,62 @@ set_PSR:
 	STA _psr			; set status
 	RTS
 
+
 ; ** .Q = standard quit **
 quit:
 ; will not check any pending issues
 	PLA					; discard main loop return address
 	PLA
 	_FINISH				; exit to minimOS, proper error code, new interface
+
+
+; ** .R = reboot or shutdown **
+reboot:
+; might try to get an extra char for non-interactive function selection
+	JSR $FFFF &  fetch_byte		; get extra in A
+		BCC rb_cmd			; no need to ask user!
+	LDA #>shut_str		; asking string
+	LDY #<shut_str
+	JSR $FFFF &  prnStr			; print it
+; ### minimOS specific non-locking key check ###
+rb_chk:
+		LDY iodev			; get device
+		_KERNEL(CIN)		; get char ##### minimOS #####
+			BCC rb_key			; char is available
+		CPY #EMPTY			; still waiting for a key?
+		BEQ rb_chk
+	RTS					; fail quietly in case of I/O error...
+rb_key:
+	LDA io_c			; get pressed key ### minimOS ###
+rb_cmd:
+	AND #%11011111		; as uppercase
+	CMP #'W'			; asking for warm boot?
+	BNE rb_notw
+;		LDA #>str_warm		; acknowledge command
+;		LDY #<str_warm
+;		JSR prnStr & $FFFF
+		LDY #PW_WARM		; warm boot request ## minimOS specific ##
+		BRA fw_shut			; call firmware
+rb_notw:
+	CMP #'C'			; asking for cold boot?
+	BNE rb_notc
+;		LDA #>str_cold		; acknowledge command
+;		LDY #<str_cold
+;		JSR prnStr & $FFFF
+		LDY #PW_COLD		; cold boot request ## minimOS specific ##
+		BRA fw_shut			; call firmware
+rb_notc:
+	CMP #'S'			; asking for shutdown?
+	BNE rb_exit			; otherwise abort quietly
+;		LDA #>str_shut		; acknowledge command
+;		LDY #<str_shut
+;		JSR prnStr & $FFFF
+		LDY #PW_OFF			; poweroff request ## minimOS specific ##
+fw_shut:
+		_KERNEL(SHUTDOWN)	; unified firmware call
+rb_exit:
+	RTS					; needs to return and wait for the complete shutdown!
+
 
 ; ** .S = store raw string **
 store_str:
@@ -824,22 +875,30 @@ sstr_end:
 	STY cursor			; update optimised index!
 	RTS
 
+
 ; ** .T = assemble from source **
 asm_source:
 	PLA					; discard return address as will jump inside cli_loop
 	PLA
-	JSR $FFFF &  fetch_word		; get desired address
+	JSR $FFFF &  fetch_value		; get desired address
+	LDA temp			; at least one?
+	BNE ta_ok
+		JMP bad_opr		; reject zero loudly
+ta_ok:
 	LDY value			; fetch result
 	LDA value+1
 	STY bufpt			; this will be new buffer
 	STA bufpt+1
 	JMP $FFFF &  cli_loop		; execute as commands!
 
+
 ; ** .U = set 'u' number of lines/instructions **
+; might replace this for an autoscroll feature
 set_lines:
 	JSR $FFFF &  fetch_byte		; get operand in A
 	STA lines			; set number of lines
 	RTS
+
 
 ; ** .V = view register values **
 view_regs:
@@ -847,7 +906,6 @@ view_regs:
 	LDY #<regs_head
 	JSR $FFFF &  prnStr
 ; since _pc and ptr are the same, no need to print it!
-
 	LDX #0				; reset counter
 vr_l:
 		_PHX				; save index!
@@ -876,9 +934,10 @@ vr_off:
 	LDA #CR				; print newline
 	JMP $FFFF &  prnChar			; will return
 
+
 ; ** .W = store word **
 store_word:
-	JSR $FFFF &  fetch_word		; get operand word
+	JSR $FFFF &  fetch_value		; get operand, do not force 3-4 hex chars
 	LDA value			; get LSB
 	_STAY(ptr)			; store in memory
 	INC ptr				; next byte
@@ -893,11 +952,13 @@ sw_nw:
 sw_end:
 	RTS
 
+
 ; ** .X = set X register **
 set_X:
 	JSR $FFFF &  fetch_byte		; get operand in A
 	STA _x				; set register
 	RTS
+
 
 ; ** .Y = set Y register **
 set_Y:
@@ -905,21 +966,6 @@ set_Y:
 	STA _y				; set register
 	RTS
 
-; ** .F = force cold boot
-force:
-	LDY #PW_COLD		; cold boot request ** minimOS specific **
-	_BRA fw_shut		; call firmware
-
-; ** .R = warm boot **
-reboot:
-	LDY #PW_WARM		; warm boot request ** minimOS specific **
-	_BRA fw_shut		; call firmware
-
-; ** .Z = shutdown **
-poweroff:
-	LDY #PW_OFF			; poweroff request ** minimOS specific **
-fw_shut:
-	_KERNEL(SHUTDOWN)
 
 _unrecognised:
 	PLA					; discard main loop return address

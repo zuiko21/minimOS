@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b12
-; last modified 20170426-1109
+; last modified 20170428-1010
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -823,6 +823,7 @@ po_nowr:
 	LDA #CR				; final newline
 	JMP $FFFF &  prnChar			; print it and return
 
+
 ; ** .E = examine 'u' lines of memory **
 examine:
 	JSR $FFFF &  fetch_value		; get address
@@ -926,20 +927,15 @@ ext_bytes:
 	RTS		; ***** TO DO ****** TO DO ******
 
 
-; ** .L =  **
-; ### highly system dependent ###
-
-
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
-
+; ***** THIS MUST BE DONE VIA SMC WITH MVN/MVP OPCODES!!!!! ************
 	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; at least one?
 	BNE mv_ok
 		JMP bad_opr		; reject zero loudly
 mv_ok:
-operation
 ; the real stuff begins *** should use MVN, MVP
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
@@ -1007,6 +1003,9 @@ quit:
 
 ; ** .R = reboot or shutdown **
 reboot:
+; might try to get an extra char for non-interactive function selection
+	JSR $FFFF &  fetch_byte		; get extra in A
+		BCC rb_cmd			; no need to ask user!
 	LDA #>shut_str		; asking string
 	LDY #<shut_str
 	JSR $FFFF &  prnStr			; print it
@@ -1020,6 +1019,7 @@ rb_chk:
 	RTS					; fail quietly in case of I/O error...
 rb_key:
 	LDA io_c			; get pressed key ### minimOS ###
+rb_cmd:
 	AND #%11011111		; as uppercase
 	CMP #'W'			; asking for warm boot?
 	BNE rb_notw
