@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b13
-; last modified 20170428-1334
+; v0.5.1b14
+; last modified 20170428-1438
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -933,13 +933,36 @@ ext_bytes:
 
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
-; preliminary version goes forward only, modifies ptr.MSB and X!
-; ***** THIS MUST BE DONE VIA SMC WITH MVN/MVP OPCODES!!!!! ************
 	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; at least one?
 	BNE mv_ok
 		JMP bad_opr		; reject zero loudly
 mv_ok:
+; destination address is now @value.l
+	.al: REP #$20		; *** 16-bit memory, for now ***
+	LDA _ptr			; this is the origin address (minus bank)
+	CMP value			; compare against destination
+	BCC mv_up			; destination is before origin, must copy forward!
+		LDX #$44			; otherwise get MVP opcode!
+		JSR mv_smc			; poke all that
+; PREPARE INDEXES-....
+	BRA mv_do			; prepare indexes and go
+mv_up:
+		LDX #$54			; opcode for MVN
+		JSR mv_smc			; poke all that
+
+mv_smc:
+	STX local			; supposedly safe place for self-modifying code
+	LDX #$6B			; opcode for RTL
+	STX local+3			; place it
+	LDA siz				; get transfer size (16-bit already)
+	RTS
+
+	.xl: REP #$10		; *** now use 16-bit indexes too ***
+	LDX
+
+; preliminary version goes forward only, modifies ptr.MSB and X!
+; ***** THIS MUST BE DONE VIA SMC WITH MVN/MVP OPCODES!!!!! ************
 ; the real stuff begins *** should use MVN, MVP
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB

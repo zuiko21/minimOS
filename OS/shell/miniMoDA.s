@@ -39,7 +39,7 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$43C0		; time, 8.30
+	.word	$7000		; time, 14.00
 	.word	$4A9C		; date, 2017/4/28
 
 	mmdsiz8	=	mmd_end - mmd_head - 256	; compute size NOT including header!
