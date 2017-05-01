@@ -1,7 +1,7 @@
 ; 6800 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5b1
-; last modified 20170501-1151
+; v0.5b2
+; last modified 20170501-1631
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -29,7 +29,7 @@
 a68_head:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE	; minimOS app!
+	.asc	"mB"	; minimOS app! (make 02 calls detectable)
 	.asc	"****", 13		; some flags TBD
 ; *** filename and optional comment ***
 title:
@@ -103,7 +103,8 @@ ptr_init:
 	STA lines			; set variable
 	STA siz				; also default transfer size
 	_STZA siz+1			; clear copy/transfer size MSB
-
+lda#'m'
+jsr$c0c2
 ; *** begin things ***
 main_loop:
 		_STZA cursor		; eeeeeeeeeek... but really needed?
@@ -112,6 +113,8 @@ main_loop:
 		STY bufpt			; set new movable pointer
 		_STZA bufpt+1
 ; put current address before prompt
+lda#'a'
+jsr$c0c2
 		LDA ptr+1			; MSB goes first
 		JSR $FFFF &  prnHex			; print it
 		LDA ptr				; same for LSB
@@ -119,6 +122,8 @@ main_loop:
 		LDA #'>'			; prompt character
 		JSR $FFFF &  prnChar			; print it
 		JSR $FFFF &  getLine			; input a line
+lda#'c'
+jsr$c0c2
 ; execute single command (or assemble opcode) from buffer
 cli_loop:
 		LDY #$FF			; getNextChar will advance it to zero!
@@ -290,6 +295,7 @@ sc_rem:
 		JMP $FFFF &  sc_in			; neither opcode nor instruction ended, continue matching
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
+		_PHX				; ***** eeeeeek *****
 		LDX #0				; ***** needed for bigendianness *****
 		LDY bytes			; set pointer to last argument
 		BEQ poke_opc		; no operands
@@ -300,6 +306,7 @@ poke_loop:
 			DEY					; next byte
 			BNE poke_loop		; could start on zero
 poke_opc:
+		_PLX				; ***** restore saved value *****
 		LDA count			; matching opcode as computed
 		STA (ptr), Y		; poke it, Y guaranteed to be zero here
 ; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!

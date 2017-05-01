@@ -164,7 +164,7 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; *******************************************
 ; *** SPECIAL TEST, soft after kernel ROM ***
 ; *******************************************
-#include "shell/miniMoDA16.s"
+;#include "shell/miniMoDA16.s"
 
 
 
