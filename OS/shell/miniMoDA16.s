@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b14
-; last modified 20170428-1832
+; v0.5.1b15
+; last modified 20170501-1608
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -940,7 +940,7 @@ move:
 mv_ok:
 ; destination address is now @value.l
 	.al: REP #$20		; *** 16-bit memory, for now ***
-	LDA _ptr			; this is the origin address (minus bank)
+	LDA ptr			; this is the origin address (minus bank)
 	CMP value			; compare against destination
 	BCC mv_up			; destination is before origin, must copy forward!
 		LDX #$44			; otherwise get MVP opcode!
@@ -966,19 +966,19 @@ mv_up:
 mv_do:
 	LDA siz				; get total size...
 	DEC				; ...minus one
-	JSL @local			; execute!
+	JSR @locals			; execute! JSL, alas...
 	.as: .xs: SEP #$30		; *** regular sizes ***
 mv_end:
 	RTS
 mv_smc:
 	.al:
-	STX local			; supposedly safe place for self-modifying code
-	LDX _ptr+2			; origin bank
-	STX local+1
+	STX locals			; supposedly safe place for self-modifying code
+	LDX ptr+2			; origin bank
+	STX locals+1
 	LDX value+2			; destination bank
-	STX local+2
+	STX locals+2
 	LDX #$6B			; opcode for RTL
-	STX local+3			; place it
+	STX locals+3			; place it
 	.xl: REP #$10		; *** now use 16-bit indexes too ***
 	RTS
 	.as: .xs:
