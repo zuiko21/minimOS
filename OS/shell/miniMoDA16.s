@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b15
-; last modified 20170501-1608
+; last modified 20170502-0855
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -933,7 +933,7 @@ ext_bytes:
 
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
-	JSR $FFFF &  fetch_value		; get operand address
+/*	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; at least one?
 	BNE mv_ok
 		JMP bad_opr		; reject zero loudly
@@ -982,17 +982,17 @@ mv_smc:
 	.xl: REP #$10		; *** now use 16-bit indexes too ***
 	RTS
 	.as: .xs:
-
-
+*/
 ; ** .N = set 'n' value **
 set_count:
 	JSR $FFFF &  fetch_value		; get operand
 	LDA temp			; at least one?
-		BEQ mv_end			; quietly abort operation
+		BEQ nn_end			; quietly abort operation
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	STY siz				; into destination variable
 	STA siz+1			; only 16b are taken
+nn_end:
 	RTS
 
 
