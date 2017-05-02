@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b15
-; last modified 20170502-0855
+; last modified 20170502-0912
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -933,7 +933,7 @@ ext_bytes:
 
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
-/*	JSR $FFFF &  fetch_value		; get operand address
+	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; at least one?
 	BNE mv_ok
 		JMP bad_opr		; reject zero loudly
@@ -942,37 +942,13 @@ mv_ok:
 	.al: REP #$20		; *** 16-bit memory, for now ***
 	LDA ptr			; this is the origin address (minus bank)
 	CMP value			; compare against destination
-	BCC mv_up			; destination is before origin, must copy forward!
-		LDX #$44			; otherwise get MVP opcode!
-		JSR mv_smc			; poke all that
-		.xl:				; routine returns with 16-bit index!
-		CLC
-		ADC siz				; plus size...
-		DEC				; convert to last address in block!
-		TAX				; this was origin
-		LDA value			; destination address
-		CLC
-		ADC siz				; plus size...
-		DEC				; convert to last address in block!
-		TAY				; this was destination
-	BRA mv_do			; go for it
+	BCS mv_up			; avoid overwriting!
+		LDY #$44			; otherwise get MVP opcode!
+		BRA mv_smc			; poke all that
 mv_up:
-		.xs:
-		LDX #$54			; opcode for MVN
-		JSR mv_smc			; poke all that
-		.xl:
-		LDX value			; source address
-		LDY value			; destination address
-mv_do:
-	LDA siz				; get total size...
-	DEC				; ...minus one
-	JSR @locals			; execute! JSL, alas...
-	.as: .xs: SEP #$30		; *** regular sizes ***
-mv_end:
-	RTS
+		LDY #$54			; opcode for MVN
 mv_smc:
-	.al:
-	STX locals			; supposedly safe place for self-modifying code
+	STY locals			; supposedly safe place for self-modifying code
 	LDX ptr+2			; origin bank
 	STX locals+1
 	LDX value+2			; destination bank
@@ -980,9 +956,29 @@ mv_smc:
 	LDX #$6B			; opcode for RTL
 	STX locals+3			; place it
 	.xl: REP #$10		; *** now use 16-bit indexes too ***
+	CPY #$54			; check opcode again (16-bit)
+	BEQ mv_n			; was MVN, do not recompute indexes
+		CLC					; A had the origin address...
+		ADC siz				; ...plus size...
+		DEC					; ...and convert it to last address in block!
+		TAX					; this is origin
+		LDA value			; now get destination address...
+		CLC
+		ADC siz				; ...plus size...
+		DEC					; ...and convert it to last address in block!
+		TAY					; this is destination
+	BRA mv_do			; go for it
+mv_n:
+		TAX					; source address, unmodified
+		LDY value			; destination address
+mv_do:
+	LDA siz				; get total size...
+	DEC					; ...minus one
+	JSR @locals			; execute! JSL, alas...
+	.as: .xs: SEP #$30	; *** regular sizes ***
 	RTS
-	.as: .xs:
-*/
+
+
 ; ** .N = set 'n' value **
 set_count:
 	JSR $FFFF &  fetch_value		; get operand
