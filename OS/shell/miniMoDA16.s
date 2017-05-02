@@ -1542,7 +1542,10 @@ cmd_ptr:
 splash:
 	.asc	"minimOS 0.5.1 monitor/debugger/assembler", CR
 	.asc	"(c) 2016-2017 Carlos Santisteban", CR
-	.asc	"Type opcodes or .command, .? for help", CR, 0
+#ifdef	SAFE
+	.asc	"Type opcodes or .command, .? for help", CR
+#endif
+	.asc	0
 
 err_mmod:
 	.asc	"***Missing module***", CR, 0
@@ -1580,8 +1583,8 @@ shut_str:
 help_str:
 #ifdef	SAFE
 	.asc	"---Command list---", CR
-	.asc	"(d, a, l => 2, 4, 6 hex char.)", CR
-	.asc	"(* => up to 6 hex char.)", CR
+	.asc	"(d, a, l => 2, 4, 6 hex char)", CR
+	.asc	"(* => up to 6 hex char)", CR
 	.asc	"(s => raw string, ends at C", "R)", CR
 	.asc	".? = show this list", CR
 	.asc	".@d = set Data Bank reg.", CR
@@ -1593,7 +1596,7 @@ help_str:
 	.asc	".Ga = set SP reg.", CR
 	.asc	".J* = jump to address", CR
 	.asc	".K* = load or save 'n' bytes", CR
-	.asc	".L* = line editor (**TO DO**)", CR
+	.asc	".L* = line editor **TO DO**", CR
 	.asc	".Ml=copy n bytes from curr. to l", CR
 	.asc	".N* = set 'n' value (16-bit)", CR
 	.asc	".O* = set origin address", CR

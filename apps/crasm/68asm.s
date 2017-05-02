@@ -1,7 +1,7 @@
 ; 6800 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5b2
-; last modified 20170501-1631
+; v0.5b3
+; last modified 20170502-0845
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -103,8 +103,6 @@ ptr_init:
 	STA lines			; set variable
 	STA siz				; also default transfer size
 	_STZA siz+1			; clear copy/transfer size MSB
-lda#'m'
-jsr$c0c2
 ; *** begin things ***
 main_loop:
 		_STZA cursor		; eeeeeeeeeek... but really needed?
@@ -113,8 +111,6 @@ main_loop:
 		STY bufpt			; set new movable pointer
 		_STZA bufpt+1
 ; put current address before prompt
-lda#'a'
-jsr$c0c2
 		LDA ptr+1			; MSB goes first
 		JSR $FFFF &  prnHex			; print it
 		LDA ptr				; same for LSB
@@ -122,8 +118,6 @@ jsr$c0c2
 		LDA #'>'			; prompt character
 		JSR $FFFF &  prnChar			; print it
 		JSR $FFFF &  getLine			; input a line
-lda#'c'
-jsr$c0c2
 ; execute single command (or assemble opcode) from buffer
 cli_loop:
 		LDY #$FF			; getNextChar will advance it to zero!
@@ -209,7 +203,7 @@ srel_ok:
 			SBC value			; one's complement of result
 			EOR #$FF			; the actual offset!
 ; will poke offset first, then check bounds
-			STA oper+1			; standard storage
+			STA oper			; standard storage
 ; check whether within branching range
 ; first compute MSB (no need to complement)
 			LDA ptr+1			; get original position
@@ -219,11 +213,11 @@ srel_ok:
 				BEQ srel_fwd		; possibly valid forward branch
 					JMP $FFFF &  overflow		; overflow otherwise
 srel_fwd:
-				LDA oper+1			; check stored offset
+				LDA oper			; check stored offset
 				BPL srel_done		; positive is OK
 					JMP $FFFF &  overflow		; slight overflow otherwise
 srel_bak:
-			LDA oper+1			; check stored offset
+			LDA oper			; check stored offset
 			BMI srel_done		; this has to be negative
 				JMP $FFFF &  overflow		; slight overflow otherwise
 srel_done:
@@ -498,7 +492,7 @@ po_char:
 		JMP $FFFF &  po_loop			; BNE would work as no opcode string near 256 bytes long, but too far...
 po_end:
 ; add spaces until 20 chars!
-		LDA #13				; number of chars after the initial 7
+		LDA #12				; number of chars after the initial 7
 		CMP count			; already done?
 	BCC po_dump			; go for dump then, even if over
 		LDA #' '			; otherwise print a space
@@ -1050,16 +1044,16 @@ dump_out:
 help_str:
 #ifdef	SAFE
 	.asc	"---Command list---", CR
-	.asc	"(d => 2 hex char.)", CR
-	.asc	"(a => 4 hex char.)", CR
-	.asc	"(* => up to 4 char.)", CR
+	.asc	"(d => 2 hex char)", CR
+	.asc	"(a => 4 hex char)", CR
+	.asc	"(* => up to 4 char)", CR
 	.asc	"(s => raw string)", CR
 	.asc	".? = show this list", CR
 	.asc	".Bd = store byte", CR
 	.asc	".D* = dis. 'u' instr", CR
 	.asc	".E* = dump 'u' lines", CR
 	.asc	".K*=load/save n byt.", CR
-	.asc	".L* = line editor (**TO DO**)", CR
+	.asc	".L* = line editor **TO DO**", CR
 	.asc	".Ma=copy n byt. to a", CR
 	.asc	".N* = set 'n' value", CR
 	.asc	".O* = set origin", CR
@@ -1073,6 +1067,6 @@ help_str:
 
 ; include opcode list
 da_oclist:
-#include "../apps/68asm/data/opc6800.s"
+#include "../apps/crasm/data/opc6800.s"
 a68_end:					; size computation
 .)
