@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b16
-; last modified 20170503-0937
+; last modified 20170503-1017
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -921,13 +921,45 @@ set_SP:
 ; ### highly system dependent ###
 ; placeholder will send/read raw data to/from indicated I/O device
 ext_bytes:
+	JSR $FFFF &  getNextChar		; check for subcommand
+	BCC ex_noni			; no need to ask user
+ex_it:
+; might turn into interactive mode here
+		RTS					; fail silently
+ex_noni:
+	CMP #'-'			; is it save? (MARATHON MAN)
+	BNE ex_load:
+; save raw bytes
+		JSR $FFFF &  ex_devset		; take desired device and set everything
+		LDA #'S':JSR $FFFF &  prnChar
+		BRA ex_ok
+ex_load:
+	CMP #'+'			; load otherwise?
+	BNE ex_abort		; else I do not know what to do
+; load raw bytes
+		JSR $FFFF &  ex_devset		; take desired device and set everything
+		LDA #'L':JSR $FFFF &  prnChar
+ex_ok:
+; transfer ended, show results
+	LDA #'$'			; print hex radix
+	JSR $FFFF &  prnChar
+	LDA temp+1			; get MSB
+	JSR $FFFF &  prnHex			; and show it in hex
+	LDA temp			; same for LSB
+	JSR $FFFF &  prnHex
+	LDA #>ex_trok		; get pointer to string
+	LDY #<ex_trok
+	JMP $FFFF &  prnStr			; and print it! eeeeeek return also
 
-	LDA #'!'
-	STA io_c
-	LDY iodev
-	_KERNEL(COUT)
-	RTS
-
+ex_devset:
+	JSR $FFFF &  fetch_byte		; take desired device
+		BCS ex_abort		; could not get it
+	TAY					; set as I/O channel
+	LDA 
+ex_abort:
+	PLA					; discard this routine return address
+	PLA
+	RTS					; and back directly to caller... or make it an error
 
 ; ** .L = invoke line editor ***
 ; ***** TO DO ****** TO DO ******
@@ -1589,6 +1621,9 @@ shut_str:
 
 set_str:
 	.asc	" = $", 0
+
+ex_trok:
+	.asc	" bytes transferred", CR, 0
 
 ;***debug strings***
 ;str_cold:
