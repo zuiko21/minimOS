@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b15
-; last modified 20170502-0912
+; v0.5.1b16
+; last modified 20170503-0928
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -33,14 +33,15 @@ mmd_head:
 ; *** filename and optional comment ***
 title:
 	.asc	"miniMoDA", 0	; file name (mandatory)
-	.asc	"65816 version", 0	; comment
+	.asc	"Monitor/Debugger/Assembler, "	; comments
+	.asc	"65816 version", 0
 
 ; advance to end of header
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4800		; time, 9.00
-	.word	$4A9A		; date, 2017/4/26
+	.word	$4580		; time, 8.44
+	.word	$4AA3		; date, 2017/5/3
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -160,9 +161,6 @@ main_loop:
 		STZ cursor			; eeeeeeeeeek... but really needed?
 ; *** NEW variable buffer setting ***
 		TDC					; get direct page pointer!
-;		CLC
-;		ADC #<buffer		; compute offset (could be just LDA #)
-;		TAY					; pointer LSB
 		LDY #<buffer		; *** assume D is page-aligned
 		XBA					; now A holds MSB
 		STY bufpt			; set new movable pointer
@@ -213,9 +211,11 @@ cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode
 	BNE bad_cmd			; otherwise has garbage! No need for BRA
 
-bad_opr:				; *** this entry point has to discard return address as will be issued as command ***
+; *** this entry point has to discard return address as will be issued as command ***
+bad_opr:
 		PLA
 		PLA
+; *** standard entry point for syntax error (within monitor commands) ***
 bad_cmd:
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
@@ -223,6 +223,7 @@ d_error:
 	JSR $FFFF &  prnStr			; display error
 		BRA main_loop		; restore
 
+; ***** ASSEMBLER MODULE *****
 not_mcmd:
 ; ** try to assemble the opcode! **
 	STZ count			; reset opcode counter
@@ -262,7 +263,7 @@ sc_long:
 			INC bytes
 			JMP sc_adv & $FFFF			; continue decoding
 
-; some room here for the overflow error message!
+; ** some room here for the overflow error handling! **
 overflow:
 		LDA #>err_ovf		; address of overflow message
 		LDY #<err_ovf
@@ -340,13 +341,11 @@ sc_nrel:
 		BNE sc_nsbyt
 ; *** try to get a single byte operand ***
 ; this needs to check for MVN/MVP woth double operand!!!
+; new generic approach, what was I thinking!
 			JSR $FFFF &  fetch_byte		; currently it is a single byte...
 				BCS sc_skip			; could not get operand eeeeeeeek
-			LDY bytes			; any operands yet?
-			BNE sc_sbyt			; if second one, do not overwrite first!
-				STA oper			; store value to be poked, for the first one
-sc_sbyt:
-			STA oper+1			; second operand, might be skipped, will not harm anyway
+			LDX bytes			; operands detected this far
+			STA oper, X			; will poke it where appropriated!
 			INC bytes			; one operand was detected
 			BRA sc_adv			; continue decoding
 sc_nsbyt:
@@ -427,7 +426,7 @@ poke_opc:
 ; **** to do above ****
 ; advance pointer and continue execution
 		LDA bytes			; add number of operands...
-		SEC					; ...plus opcode itself... (will be included? CLC then)
+		SEC					; ...plus opcode itself...
 		ADC ptr				; ...to current address
 		STA ptr				; update LSB
 		BCC main_nw			; check for wrap
@@ -459,6 +458,7 @@ help:
 ; ** .@ = set Data Bank register *
 set_DBR:
 	JSR $FFFF &  fetch_byte		; get operand in A
+; no need to complain if zero, pretty reasonable
 	STA _dbr			; set register
 	RTS
 
@@ -788,17 +788,17 @@ po_end:
 		INC count			; eeeeeeeeeeeek
 		BNE po_end			; until complete, again no need for BRA
 po_dump:
-; print hex dump, but check for MVP/MVN extra operands first
+; print hex dump, ** but check for MVP/MVN extra operands first **
 	LDX movop			; was it a move instruction?
 	BNE po_dnmv			; nope, nothing to correct
 		INC bytes			; otherwise there is one more operand
 po_dnmv:
-; check also if a REP/SEP was issued
+; ** check also if a REP/SEP was issued **
 	LDY #1				; byte operand offset
 	LDA [oper], Y		; get operand...
 	TAX					; ...in X
 	LDA [oper]			; and opcode in A
-	JSR sflag_chk  & $FFFF		; check if sflags are to be updated
+	JSR $FFFF &  sflag_chk		; check if sflags are to be updated
 ; now print hex dump as a comment!
 	LDA #';'			; semicolon as comment introducer
 	JSR $FFFF &  prnChar
@@ -823,7 +823,9 @@ po_dbyt:
 	BCC po_nowr			; in case of page crossing
 		INC oper+1
 po_nowr:
-; ***might check third byte of pointer
+	BNE po_cr			; in case of bank boundary crossing
+		INC oper+2
+po_cr:
 	LDA #CR				; final newline
 	JMP $FFFF &  prnChar			; print it and return
 
@@ -886,8 +888,7 @@ ex_pr:		JSR $FFFF &  prnChar			; print it
 			INY					; next byte
 			CPY #PERLINE		; bytes per line
 			BNE ex_a			; continue line
-		LDA #CR				; print newline
-		JSR $FFFF &  prnChar
+		JSR $FFFF &  po_cr			; print GENERIC newline
 		LDA oper			; get pointer LSB
 		CLC
 		ADC #PERLINE		; add shown bytes
@@ -911,24 +912,23 @@ set_SP:
 
 
 ; ** .I = show symbol table ***
-symbol_table:
-;***********placeholder*************
-	LDA #'?'
-	STA io_c
-	LDY iodev
-	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
+; ***** TO DO ****** TO DO ******
 
 
 ; ** .K = keep (load or save) **
 ; ### highly system dependent ###
+; placeholder will send/read raw data to/from indicated I/O device
 ext_bytes:
-;***********placeholder*************
+
 	LDA #'!'
 	STA io_c
 	LDY iodev
 	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
+	RTS
+
+
+; ** .L = invoke line editor ***
+; ***** TO DO ****** TO DO ******
 
 
 ; ** .M = move (copy) 'n' bytes of memory **
@@ -982,14 +982,24 @@ mv_do:
 ; ** .N = set 'n' value **
 set_count:
 	JSR $FFFF &  fetch_value		; get operand
-	LDA temp			; at least one?
+	LDA value			; check preset value
+	ORA value+1			; was it zero?
 		BEQ nn_end			; quietly abort operation
 	LDY value			; copy LSB
 	LDA value+1			; and MSB
 	STY siz				; into destination variable
 	STA siz+1			; only 16b are taken
 nn_end:
-	RTS
+	LDA #'N'			; let us print some message
+	JSR $FFFF &  prnChar		; print variable name
+	LDA #>set_str		; pointer to rest of message
+	LDY #<set_str
+	JSR $FFFF &  prnStr			; print that
+	LDA siz+1			; check current or updated value MSB
+	JSR $FFFF &  prnHex			; show in hex
+	LDA siz				; same for LSB
+	JSR $FFFF &  prnHex			; show in hex
+	JMP $FFFF &  po_cr			; print trailing newline and return!
 
 
 ; ** .O = set origin **
@@ -1132,8 +1142,18 @@ ta_ok:
 ; might replace this for an autoscroll feature
 set_lines:
 	JSR $FFFF &  fetch_byte		; get operand in A
-	STA lines			; set number of lines
-	RTS
+	TAX					; anything set?
+	BEQ sl_show			; fail quietly if zero
+		STA lines			; set number of lines
+sl_show:
+	LDA #'U'			; let us print some message
+	JSR $FFFF &  prnChar		; print variable name
+	LDA #>set_str		; pointer to rest of message
+	LDY #<set_str
+	JSR $FFFF &  prnStr			; print that
+	LDA lines			; check current or updated value
+	JSR $FFFF &  prnHex			; show in hex
+	JMP $FFFF &  po_cr			; print trailing newline and return!
 
 
 ; ** .V = view register values **
@@ -1173,8 +1193,7 @@ vr_off:
 		JSR $FFFF &  prnChar			; prints bit
 		DEC value			; one less
 		BNE vr_sb			; until done
-	LDA #CR				; print newline
-	JMP $FFFF &  prnChar			; will return
+	JMP $FFFF &  po_cr	; print trailing newline and return!
 
 
 ; ** .W = store word **
@@ -1216,12 +1235,14 @@ set_Y:
 ; ** .Z = set DP (new) **
 set_DP:
 	JSR $FFFF &  fetch_value		; get operand
+; no need to complain if zero, pretty reasonable
 	LDA value			; needs to pick LSB!
 	LDX value+1			; pick MSB up
 	STA _dp				; set DP
 	STX _dp+1
 	RTS
 
+; **** Unrecognised command ****
 _unrecognised:
 	PLA					; discard main loop return address
 	PLA
@@ -1515,10 +1536,10 @@ cmd_ptr:
 	.word		_unrecognised	; .F
 	.word	set_SP			; .G
 	.word		_unrecognised	; .H
-	.word	symbol_table	; .I
+	.word		_unrecognised	; .I will be symbol_table
 	.word	jump_address	; .J
 	.word	ext_bytes		; .K
-	.word		_unrecognised	; .L
+	.word		_unrecognised	; .L will invoke line editor
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
@@ -1543,9 +1564,6 @@ splash:
 #endif
 	.asc	0
 
-err_mmod:
-	.asc	"***Missing module***", CR, 0
-
 err_bad:
 	.asc	"*** Bad command ***", CR, 0
 
@@ -1567,6 +1585,9 @@ dump_out:
 shut_str:
 	.asc	"Cold, Warm, Shutdown?", CR, 0
 
+set_str:
+	.asc	" = $", 0
+
 ;***debug strings***
 ;str_cold:
 ;	.asc	"COLD!", 0
@@ -1578,10 +1599,10 @@ shut_str:
 ; online help only available under the SAFE option!
 help_str:
 #ifdef	SAFE
+	.asc	"(d, a, l => 2, 4, 6 hex chars)", CR
+	.asc	"(* => up to 6 hex chars)", CR
+	.asc	"(s => raw string, ends on C", "R)", CR
 	.asc	"---Command list---", CR
-	.asc	"(d, a, l => 2, 4, 6 hex char)", CR
-	.asc	"(* => up to 6 hex char)", CR
-	.asc	"(s => raw string, ends at C", "R)", CR
 	.asc	".? = show this list", CR
 	.asc	".@d = set Data Bank reg.", CR
 	.asc	".A* = set A reg. (16-bit)", CR
@@ -1591,9 +1612,9 @@ help_str:
 	.asc	".E* = dump 'u' lines", CR
 	.asc	".Ga = set SP reg.", CR
 	.asc	".J* = jump to address", CR
-	.asc	".K* = load or save 'n' bytes", CR
-	.asc	".L* = line editor **TO DO**", CR
-	.asc	".Ml=copy n bytes from curr. to l", CR
+	.asc	".K+d = load n bytes from dev. d", CR
+	.asc	".K-d = save n bytes to device d", CR
+	.asc	".Ml = copy 'n' bytes to l", CR
 	.asc	".N* = set 'n' value (16-bit)", CR
 	.asc	".O* = set origin address", CR
 	.asc	".Pd = set Status reg.", CR
