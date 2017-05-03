@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b16
-; last modified 20170503-1017
+; last modified 20170503-1058
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -931,7 +931,25 @@ ex_noni:
 	BNE ex_load:
 ; save raw bytes
 		JSR $FFFF &  ex_devset		; take desired device and set everything
-		LDA #'S':JSR $FFFF &  prnChar
+ex_sloop:
+			LDA [ptr], Y		; get source data
+			PHY					; save index
+			STA io_c			; set parameter
+			LDY temp			; get target device
+			_KERNEL(COUT)		; send raw byte!
+				BCS ex_ok			; aborted!
+			PLY					; restore index
+			INY					; go for next
+			BNE esl_nw			; no wrap
+				INC ptr+1
+			BNE esl_nw			; no bank boundary
+				INC ptr+2
+esl_nw:
+			.al: REP #$20		; *** worth 16-bit ***
+			DEC oper			; one less to go
+			.as: SEP #$20		; *** OK here? ***
+			BNE ex_sloop		; continue until done
+;		LDA #'S':JSR $FFFF &  prnChar
 		BRA ex_ok
 ex_load:
 	CMP #'+'			; load otherwise?
@@ -954,12 +972,17 @@ ex_ok:
 ex_devset:
 	JSR $FFFF &  fetch_byte		; take desired device
 		BCS ex_abort		; could not get it
-	TAY					; set as I/O channel
-	LDA 
+	STA temp			; set as I/O channel
+	LDA siz				; get desired transfer size
+	LDX siz+1
+	STA oper			; store temporarily
+	STX oper+1
+	RTS
 ex_abort:
 	PLA					; discard this routine return address
 	PLA
 	RTS					; and back directly to caller... or make it an error
+
 
 ; ** .L = invoke line editor ***
 ; ***** TO DO ****** TO DO ******
