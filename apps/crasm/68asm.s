@@ -1,7 +1,7 @@
 ; 6800 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5b3
-; last modified 20170502-0845
+; v0.5b4
+; last modified 20170503-0952
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -40,8 +40,8 @@ title:
 	.dsb	a68_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5800		; time, 11.00
-	.word	$4AA1		; date, 2017/5/1
+	.word	$4D40		; time, 9.42
+	.word	$4AA3		; date, 2017/5/3
 
 	a68siz	=	a68_end - a68_head - 256	; compute size NOT including header!
 
@@ -521,9 +521,9 @@ po_dbyt:
 	SEC					; skip current opcode...
 	ADC bytes			; ...plus number of operands
 	STA oper
-	BCC po_nowr			; in case of page crossing
+	BCC po_cr			; in case of page crossing
 		INC oper+1
-po_nowr:
+po_cr:
 	LDA #CR				; final newline
 	JMP $FFFF &  prnChar			; print it and return
 
@@ -585,8 +585,7 @@ ex_pr:		JSR $FFFF &  prnChar			; print it
 			INY					; next byte
 			CPY #PERLINE		; bytes per line (8 if not 20-char)
 			BNE ex_a			; continue line
-		LDA #CR				; print newline
-		JSR $FFFF &  prnChar
+		JSR $FFFF &  po_cr			; print trailing newline
 		LDA oper			; get pointer LSB
 		CLC
 		ADC #PERLINE		; add shown bytes (8 if not 20-char)
@@ -601,13 +600,7 @@ ex_npb:
 
 
 ; ** .I = show symbol table ***
-symbol_table:
-;***********placeholder*************
-	LDA #'?'
-	STA io_c
-	LDY #0
-	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
+; ***** TO DO ****** TO DO ******
 
 
 ; ** .K = keep (load or save) **
@@ -619,6 +612,10 @@ ext_bytes:
 	LDY #0
 	_KERNEL(COUT)
 	RTS		; ***** TO DO ****** TO DO ******
+
+
+; ** .L = invoke line editor ***
+; ***** TO DO ****** TO DO ******
 
 
 ; ** .M = move (copy) 'n' bytes of memory **
@@ -657,13 +654,24 @@ mv_end:
 ; ** .N = set 'n' value **
 set_count:
 	JSR $FFFF &  fetch_value		; get operand
-	LDA temp			; at least one?
-		BEQ mv_end			; quietly abort operation
-	LDY value			; copy LSB
-	LDA value+1			; and MSB
-	STY siz				; into destination variable
-	STA siz+1
-	RTS
+	LDA value			; check whether zero
+	ORA value+1
+	BEQ nn_end			; quietly abort operation
+		LDY value			; copy LSB
+		LDA value+1			; and MSB
+		STY siz				; into destination variable
+		STA siz+1
+nn_end:
+	LDA #'N'			; let us print some message
+	JSR $FFFF &  prnChar		; print variable name
+	LDA #>set_str		; pointer to rest of message
+	LDY #<set_str
+	JSR $FFFF &  prnStr			; print that
+	LDA siz+1			; check current or updated value MSB
+	JSR $FFFF &  prnHex			; show in hex
+	LDA siz				; same for LSB
+	JSR $FFFF &  prnHex			; show in hex
+	JMP $FFFF &  po_cr			; print trailing newline and return!
 
 
 ; ** .O = set origin **
@@ -746,8 +754,18 @@ ta_ok:
 ; might replace this for an autoscroll feature
 set_lines:
 	JSR $FFFF &  fetch_byte		; get operand in A
-	STA lines			; set number of lines
-	RTS
+	TAX					; anything set?
+	BEQ sl_show			; fail quietly if zero
+		STA lines			; set number of lines
+sl_show:
+	LDA #'U'			; let us print some message
+	JSR $FFFF &  prnChar		; print variable name
+	LDA #>set_str		; pointer to rest of message
+	LDY #<set_str
+	JSR $FFFF &  prnStr			; print that
+	LDA lines			; check current or updated value
+	JSR $FFFF &  prnHex			; show in hex
+	JMP $FFFF &  po_cr			; print trailing newline and return!
 
 
 ; ** .W = store word **
@@ -768,6 +786,7 @@ sw_end:
 	RTS
 
 
+; **** Unrecognised command ****
 _unrecognised:
 	PLA					; discard main loop return address
 	PLA
@@ -816,7 +835,7 @@ prnStr:
 	RTS
 
 ; * new approach for hex conversion *
-; * add one nibble from hex in current char!
+; add one nibble from hex in current char!
 ; A is current char, returns result in value[0...1]
 ; does NOT advance any cursor (neither reads char from nowhere)
 ; MUST reset value previously!
@@ -997,10 +1016,10 @@ cmd_ptr:
 	.word		_unrecognised	; .F
 	.word		_unrecognised	; .G
 	.word		_unrecognised	; .H
-	.word	symbol_table	; .I
+	.word		_unrecognised	; .I will be symbol_table
 	.word		_unrecognised	; .J
 	.word	ext_bytes		; .K
-	.word		_unrecognised	; .L
+	.word		_unrecognised	; .L will invoke line editor
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
@@ -1016,10 +1035,11 @@ cmd_ptr:
 ; *** strings and other data ***
 splash:
 	.asc	"MC6800 cross-assembler 0.5", CR
-	.asc	"(c) 2017 Carlos J. Santisteban", CR, 0
-
-err_mmod:
-	.asc	"***Missing module***", CR, 0
+	.asc	"(c) 2017 Carlos J. Santisteban", CR
+#ifdef	SAFE
+	.asc	"Type 6800 opcodes or .commands,", CR
+	.asc	".? for help", CR
+	.asc	0
 
 err_bad:
 	.asc	"*** Bad command ***", CR, 0
@@ -1040,20 +1060,23 @@ dump_in:
 dump_out:
 	.asc	"] ", 0
 
+set_str:
+	.asc	" = $", 0
+
 ; online help only available under the SAFE option!
 help_str:
 #ifdef	SAFE
-	.asc	"---Command list---", CR
-	.asc	"(d => 2 hex char)", CR
-	.asc	"(a => 4 hex char)", CR
-	.asc	"(* => up to 4 char)", CR
+	.asc	"(d => 2 hex chars)", CR
+	.asc	"(a => 4 hex chars)", CR
+	.asc	"(* => up to 4 chars)", CR
 	.asc	"(s => raw string)", CR
+	.asc	"---Command list---", CR
 	.asc	".? = show this list", CR
 	.asc	".Bd = store byte", CR
 	.asc	".D* = dis. 'u' instr", CR
 	.asc	".E* = dump 'u' lines", CR
-	.asc	".K*=load/save n byt.", CR
-	.asc	".L* = line editor **TO DO**", CR
+	.asc	".K+d=load n byt. @#d", CR
+	.asc	".K-d=save n byt. @#d", CR
 	.asc	".Ma=copy n byt. to a", CR
 	.asc	".N* = set 'n' value", CR
 	.asc	".O* = set origin", CR

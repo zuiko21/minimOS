@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b16
-; last modified 20170503-0928
+; last modified 20170503-0937
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -205,8 +205,10 @@ cli_chk:
 			STA bufpt			; update pointer
 			BCC cli_loop		; MSB OK means try another right now
 				INC bufpt+1			; otherwise wrap!
-; bufpt not expected to wrap?
-			BRA cli_loop		; and try another (BCS or BNE might do as well)
+; assembly from text might cross bank boundaries (sources over 64K)!
+			BNE cli_loop		; try another if no crossing
+				INC bufpt+2			; otherwise set 24b pointer
+			BRA cli_loop		; and try another
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode
 	BNE bad_cmd			; otherwise has garbage! No need for BRA
@@ -984,11 +986,11 @@ set_count:
 	JSR $FFFF &  fetch_value		; get operand
 	LDA value			; check preset value
 	ORA value+1			; was it zero?
-		BEQ nn_end			; quietly abort operation
-	LDY value			; copy LSB
-	LDA value+1			; and MSB
-	STY siz				; into destination variable
-	STA siz+1			; only 16b are taken
+	BEQ nn_end			; quietly abort operation
+		LDY value			; copy LSB
+		LDA value+1			; and MSB
+		STY siz				; into destination variable
+		STA siz+1			; only 16b are taken
 nn_end:
 	LDA #'N'			; let us print some message
 	JSR $FFFF &  prnChar		; print variable name
@@ -1295,7 +1297,7 @@ prnStr:
 	RTS
 
 ; * new approach for hex conversion *
-; * add one nibble from hex in current char!
+; add one nibble from hex in current char!
 ; A is current char, returns result in value[0...2]
 ; does NOT advance any cursor (neither reads char from nowhere)
 ; MUST reset value previously!
