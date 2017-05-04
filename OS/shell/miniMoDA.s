@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5.1b2
-; last modified 20170428-1341
+; v0.5.1b3
+; last modified 20170504-0952
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -39,8 +39,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7000		; time, 14.00
-	.word	$4A9C		; date, 2017/4/28
+	.word	$4DC0		; time, 9.46
+	.word	$4AA4		; date, 2017/5/4
 
 	mmdsiz8	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -616,9 +616,9 @@ po_dbyt:
 	SEC					; skip current opcode...
 	ADC bytes			; ...plus number of operands
 	STA oper
-	BCC po_nowr			; in case of page crossing
+	BCC po_cr			; in case of page crossing
 		INC oper+1
-po_nowr:
+po_cr:
 	LDA #CR				; final newline
 	JMP $FFFF &  prnChar			; print it and return
 
@@ -714,13 +714,95 @@ symbol_table:
 
 ; ** .K = keep (load or save) **
 ; ### highly system dependent ###
+; placeholder will send/read raw data to/from indicated I/O device
 ext_bytes:
-;***********placeholder*************
-	LDA #'!'
-	STA io_c
-	LDY iodev
-	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
+	JSR $FFFF &  getNextChar		; check for subcommand
+	BCC ex_noni			; no need to ask user
+; might turn into interactive mode here
+		RTS					; fail silently
+ex_noni:
+; subcommand is OK, let us check target device ###placeholder
+	STA count			; first save the subcommand!
+	JSR $FFFF &  fetch_byte		; read desired device
+		BCS ex_abort		; could not get it
+	STA temp			; set as I/O channel
+	LDY #0				; reset counter!
+	STY oper			; also reset forward counter, decrement is too clumsy!
+	STY oper+1
+; decide what to do
+	LDA count			; restore subcommand
+	CMP #'-'			; is it save? (MARATHON MAN)
+		BEQ ex_save			; OK to continue
+	CMP #'+'			; load otherwise?
+		BEQ ex_load			; OK then
+ex_abort:
+	JMP $FFFF &  _unrecognised	; else I do not know what to do
+ex_save:
+; save raw bytes
+		LDA (ptr), Y		; get source data
+		STA io_c			; set parameter
+		_PHY				; save index
+		LDY temp			; get target device
+		_KERNEL(COUT)		; send raw byte!
+		_PLY				; restore index eeeeeeeeeek
+			BCS ex_err			; aborted!
+		INY					; go for next
+		BNE esl_nw			; no wrap
+			INC ptr+1
+esl_nw:
+; 16-bit INcrement
+		INC oper			; one more
+		BNE ex_sinc			; no wrap
+			INC oper+1
+ex_sinc:
+		LDA oper			; check LSB
+		CMP siz				; compare against desired size
+			BNE ex_save			; continue until done
+		LDA oper+1			; check MSB, just in case
+		CMP siz+1			; against size
+		BNE ex_save			; continue until done
+	BEQ ex_ok			; done! no need for BRA
+ex_load:
+; load raw bytes
+		_PHY				; save index
+		LDY temp			; get target device
+		_KERNEL(CIN)		; get raw byte!
+		_PLY				; restore index
+			BCS ex_err			; aborted!
+		LDA io_c			; get parameter
+		STA (ptr), Y		; write destination data
+		INY					; go for next
+		BNE ell_nw			; no wrap
+			INC ptr+1
+ell_nw:
+; 16-bit INcrement
+		INC oper			; one more
+		BNE ex_linc			; no wrap
+			INC oper+1
+ex_linc:
+		LDA oper			; check LSB
+		CMP siz				; compare against desired size
+			BNE ex_load			; continue until done
+		LDA oper+1			; check MSB, just in case
+		CMP siz+1			; against size
+		BNE ex_load			; continue until done
+	BRA ex_ok			; done!
+ex_err:
+; an I/O error occurred during transfer!
+	LDA #>io_err		; set message pointer
+	LDY #<io_err
+	JSR $FFFF &  prnStr			; print it and finish function
+ex_ok:
+; transfer ended, show results
+	LDA #'$'			; print hex radix
+	JSR $FFFF &  prnChar
+	LDA oper+1			; get MSB
+	JSR $FFFF &  prnHex			; and show it in hex
+	LDA oper			; same for LSB
+	JSR $FFFF &  prnHex
+	LDA #>ex_trok		; get pointer to string
+	LDY #<ex_trok
+	JMP $FFFF &  prnStr			; and print it! eeeeeek return also
 
 
 ; ** .M = move (copy) 'n' bytes of memory **
@@ -759,13 +841,24 @@ mv_end:
 ; ** .N = set 'n' value **
 set_count:
 	JSR $FFFF &  fetch_value		; get operand
-	LDA temp			; at least one?
-		BEQ mv_end			; quietly abort operation
-	LDY value			; copy LSB
-	LDA value+1			; and MSB
-	STY siz				; into destination variable
-	STA siz+1
-	RTS
+	LDA value			; check preset value
+	ORA value+1			; was it zero?
+	BEQ nn_end			; quietly abort operation
+		LDY value			; copy LSB
+		LDA value+1			; and MSB
+		STY siz				; into destination variable
+		STA siz+1			; only 16b are taken
+nn_end:
+	LDA #'N'			; let us print some message
+	JSR $FFFF &  prnChar		; print variable name
+	LDA #>set_str		; pointer to rest of message
+	LDY #<set_str
+	JSR $FFFF &  prnStr			; print that
+	LDA siz+1			; check current or updated value MSB
+	JSR $FFFF &  prnHex			; show in hex
+	LDA siz				; same for LSB
+	JSR $FFFF &  prnHex			; show in hex
+	JMP $FFFF &  po_cr			; print trailing newline and return!
 
 
 ; ** .O = set origin **
@@ -907,8 +1000,18 @@ ta_ok:
 ; might replace this for an autoscroll feature
 set_lines:
 	JSR $FFFF &  fetch_byte		; get operand in A
-	STA lines			; set number of lines
-	RTS
+	TAX					; anything set?
+	BEQ sl_show			; fail quietly if zero
+		STA lines			; set number of lines
+sl_show:
+	LDA #'U'			; let us print some message
+	JSR $FFFF &  prnChar		; print variable name
+	LDA #>set_str		; pointer to rest of message
+	LDY #<set_str
+	JSR $FFFF &  prnStr			; print that
+	LDA lines			; check current or updated value
+	JSR $FFFF &  prnHex			; show in hex
+	JMP $FFFF &  po_cr			; print trailing newline and return!
 
 
 ; ** .V = view register values **
@@ -1257,6 +1360,15 @@ dump_out:
 
 shut_str:
 	.asc	"Cold, Warm, Shutdown?", CR, 0
+
+io_err:
+	.asc	"*** I/O error ***", CR, 0
+
+set_str:
+	.asc	" = $", 0
+
+ex_trok:
+	.asc	" bytes transferred", CR, 0
 
 ; online help only available under the SAFE option!
 help_str:

@@ -1,7 +1,7 @@
 ; 6800 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5b4
-; last modified 20170503-0952
+; v0.5b5
+; last modified 20170504-0956
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -605,13 +605,95 @@ ex_npb:
 
 ; ** .K = keep (load or save) **
 ; ### highly system dependent ###
+; placeholder will send/read raw data to/from indicated I/O device
 ext_bytes:
-;***********placeholder*************
-	LDA #'!'
-	STA io_c
-	LDY #0
-	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
+	JSR $FFFF &  getNextChar		; check for subcommand
+	BCC ex_noni			; no need to ask user
+; might turn into interactive mode here
+		RTS					; fail silently
+ex_noni:
+; subcommand is OK, let us check target device ###placeholder
+	STA count			; first save the subcommand!
+	JSR $FFFF &  fetch_byte		; read desired device
+		BCS ex_abort		; could not get it
+	STA temp			; set as I/O channel
+	LDY #0				; reset counter!
+	STY oper			; also reset forward counter, decrement is too clumsy!
+	STY oper+1
+; decide what to do
+	LDA count			; restore subcommand
+	CMP #'-'			; is it save? (MARATHON MAN)
+		BEQ ex_save			; OK to continue
+	CMP #'+'			; load otherwise?
+		BEQ ex_load			; OK then
+ex_abort:
+	JMP $FFFF &  _unrecognised	; else I do not know what to do
+ex_save:
+; save raw bytes
+		LDA (ptr), Y		; get source data
+		STA io_c			; set parameter
+		_PHY				; save index
+		LDY temp			; get target device
+		_KERNEL(COUT)		; send raw byte!
+		_PLY				; restore index eeeeeeeeeek
+			BCS ex_err			; aborted!
+		INY					; go for next
+		BNE esl_nw			; no wrap
+			INC ptr+1
+esl_nw:
+; 16-bit INcrement
+		INC oper			; one more
+		BNE ex_sinc			; no wrap
+			INC oper+1
+ex_sinc:
+		LDA oper			; check LSB
+		CMP siz				; compare against desired size
+			BNE ex_save			; continue until done
+		LDA oper+1			; check MSB, just in case
+		CMP siz+1			; against size
+		BNE ex_save			; continue until done
+	BEQ ex_ok			; done! no need for BRA
+ex_load:
+; load raw bytes
+		_PHY				; save index
+		LDY temp			; get target device
+		_KERNEL(CIN)		; get raw byte!
+		_PLY				; restore index
+			BCS ex_err			; aborted!
+		LDA io_c			; get parameter
+		STA (ptr), Y		; write destination data
+		INY					; go for next
+		BNE ell_nw			; no wrap
+			INC ptr+1
+ell_nw:
+; 16-bit INcrement
+		INC oper			; one more
+		BNE ex_linc			; no wrap
+			INC oper+1
+ex_linc:
+		LDA oper			; check LSB
+		CMP siz				; compare against desired size
+			BNE ex_load			; continue until done
+		LDA oper+1			; check MSB, just in case
+		CMP siz+1			; against size
+		BNE ex_load			; continue until done
+	BRA ex_ok			; done!
+ex_err:
+; an I/O error occurred during transfer!
+	LDA #>io_err		; set message pointer
+	LDY #<io_err
+	JSR $FFFF &  prnStr			; print it and finish function
+ex_ok:
+; transfer ended, show results
+	LDA #'$'			; print hex radix
+	JSR $FFFF &  prnChar
+	LDA oper+1			; get MSB
+	JSR $FFFF &  prnHex			; and show it in hex
+	LDA oper			; same for LSB
+	JSR $FFFF &  prnHex
+	LDA #>ex_trok		; get pointer to string
+	LDY #<ex_trok
+	JMP $FFFF &  prnStr			; and print it! eeeeeek return also
 
 
 ; ** .L = invoke line editor ***
@@ -1060,8 +1142,14 @@ dump_in:
 dump_out:
 	.asc	"] ", 0
 
+io_err:
+	.asc	"*** I/O error ***", CR, 0
+
 set_str:
 	.asc	" = $", 0
+
+ex_trok:
+	.asc	" bytes transferred", CR, 0
 
 ; online help only available under the SAFE option!
 help_str:
