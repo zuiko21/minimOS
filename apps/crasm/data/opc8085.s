@@ -1,12 +1,12 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170504-1116
+; last modified 20170504-1214
 
 ; ***** for 80asm i8080/8085 cross assembler *****
 ; 8085 set
 ; Opcode list as bit-7 terminated strings
 ; @ expects single byte, & expects word
-; % expects RELATIVE addressing
+; NO RELATIVE addressing
 
 	.asc	"NO", 'P'+$80		; $00=NOP
 	.asc	"LXI B, ", '&'+$80	; $01=LXI B
@@ -228,4 +228,54 @@
 	.asc	"CALL ", '&'+$80	; $CD=CALL
 	.asc	"ACI ", '@'+$80		; $CE=ACI
 	.asc	"RST ", '1'+$80		; $CF=RST 1
-; SEGUIR EN http://pastraiser.com/cpu/i8085/i8085_opcodes.html
+
+	.asc	"RN", 'C'+$80		; $D0=RNC
+	.asc	"POP ", 'D'+$80		; $D1=POP D
+	.asc	"JNC ", '&'+$80		; $D2=JNC
+	.asc	"OUT ", '@'+$80		; $D3=OUT
+	.asc	"CNC ", '&'+$80		; $D4=CNC
+	.asc	"PUSH ", 'D'+$80	; $D5=PUSH D
+	.asc	"SUI ", '@'+$80		; $D6=SUI
+	.asc	"RST ", '2'+$80		; $D7=RST 2
+	.asc	"R", 'C'+$80		; $D8=RC
+	.asc	"?", ' '+$80		; $D9=*SHLX		UNDOCUMENTED!
+	.asc	"JC ", '&'+$80		; $DA=JC
+	.asc	"IN ", '@'+$80		; $DB=IN
+	.asc	"CC ", '&'+$80		; $DC=CC
+	.asc	"? ", '&'+$80		; $DD=*JNK		UNDOCUMENTED!
+	.asc	"SBI ", '@'+$80		; $DE=SBI
+	.asc	"RST ", '3'+$80		; $DF=RST 3
+
+	.asc	"RP", 'O'+$80		; $E0=RPO
+	.asc	"POP ", 'H'+$80		; $E1=POP H
+	.asc	"JPO ", '&'+$80		; $E2=JPO
+	.asc	"XTH ", 'L'+$80		; $E3=XTHL
+	.asc	"CPO ", '&'+$80		; $E4=CPO
+	.asc	"PUSH ", 'H'+$80	; $E5=PUSH H
+	.asc	"ANI ", '@'+$80		; $E6=ANI
+	.asc	"RST ", '4'+$80		; $E7=RST 4
+	.asc	"RP", 'E'+$80		; $E8=RPE
+	.asc	"PCH", 'L'+$80		; $E9=PCHL
+	.asc	"JPE ", '&'+$80		; $EA=JPE
+	.asc	"XCH", 'G'+$80		; $EB=XCHG
+	.asc	"CPE ", '&'+$80		; $EC=CPE
+	.asc	"?", ' '+$80		; $ED=*LXHL		UNDOCUMENTED!
+	.asc	"XRI ", '@'+$80		; $EE=XRI
+	.asc	"RST ", '5'+$80		; $EF=RST 5
+
+	.asc	"R", 'P'+$80		; $F0=RP
+	.asc	"POP ", 'PSW'+$80	; $F1=POP PSW
+	.asc	"JP ", '&'+$80		; $F2=JP
+	.asc	"D", 'I'+$80		; $F3=DI
+	.asc	"CP ", '&'+$80		; $F4=CP
+	.asc	"PUSH ", 'PSW'+$80	; $F5=PUSH PSW
+	.asc	"ORI ", '@'+$80		; $F6=ORI
+	.asc	"RST ", '6'+$80		; $F7=RST 6
+	.asc	"R", 'M'+$80		; $F8=RM
+	.asc	"SPH", 'L'+$80		; $F9=SPHL
+	.asc	"JM ", '&'+$80		; $FA=JM
+	.asc	"E", 'I'+$80		; $FB=EI
+	.asc	"CM ", '&'+$80		; $FC=CM
+	.asc	"? ", '&'+$80		; $FD=*JK		UNDOCUMENTED!
+	.asc	"CPI ", '@'+$80		; $FE=CPI
+	.asc	"RST ", '7'+$80		; $FF=RST 7
