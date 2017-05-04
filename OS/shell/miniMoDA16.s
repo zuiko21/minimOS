@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.5.1b16
-; last modified 20170503-1058
+; last modified 20170504-0927
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -214,9 +214,10 @@ cmd_term:
 	BNE bad_cmd			; otherwise has garbage! No need for BRA
 
 ; *** this entry point has to discard return address as will be issued as command ***
-bad_opr:
-		PLA
-		PLA
+; could be just replaced by jumping to _unrecognised
+;bad_opr:
+;		PLA
+;		PLA
 ; *** standard entry point for syntax error (within monitor commands) ***
 bad_cmd:
 	LDA #>err_bad		; address of error message
@@ -493,7 +494,8 @@ call_address:
 	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; was it able to pick at least one hex char?
 	BNE ca_ok		; do not jump to zero!
-		JMP bad_opr		; reject zero loudly
+;		JMP bad_opr
+		JMP $FFFF &  _unrecognised	; reject zero loudly
 ca_ok:
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
@@ -536,7 +538,8 @@ jump_address:
 	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; was it able to pick at least one hex char?
 	BNE jm_ok
-		JMP bad_opr		; reject zero loudly
+;		JMP bad_opr
+		JMP $FFFF &  _unrecognised	; reject zero loudly
 jm_ok:
 ; restore stack pointer...
 	.xl: REP #$10		; *** essential 16-bit index ***
@@ -923,65 +926,89 @@ set_SP:
 ext_bytes:
 	JSR $FFFF &  getNextChar		; check for subcommand
 	BCC ex_noni			; no need to ask user
-ex_it:
 ; might turn into interactive mode here
 		RTS					; fail silently
 ex_noni:
-	CMP #'-'			; is it save? (MARATHON MAN)
-	BNE ex_load:
-; save raw bytes
-		JSR $FFFF &  ex_devset		; take desired device and set everything
-ex_sloop:
-			LDA [ptr], Y		; get source data
-			PHY					; save index
-			STA io_c			; set parameter
-			LDY temp			; get target device
-			_KERNEL(COUT)		; send raw byte!
-				BCS ex_ok			; aborted!
-			PLY					; restore index
-			INY					; go for next
-			BNE esl_nw			; no wrap
-				INC ptr+1
-			BNE esl_nw			; no bank boundary
-				INC ptr+2
-esl_nw:
-			.al: REP #$20		; *** worth 16-bit ***
-			DEC oper			; one less to go
-			.as: SEP #$20		; *** OK here? ***
-			BNE ex_sloop		; continue until done
-;		LDA #'S':JSR $FFFF &  prnChar
-		BRA ex_ok
-ex_load:
-	CMP #'+'			; load otherwise?
-	BNE ex_abort		; else I do not know what to do
-; load raw bytes
-		JSR $FFFF &  ex_devset		; take desired device and set everything
-		LDA #'L':JSR $FFFF &  prnChar
-ex_ok:
-; transfer ended, show results
-	LDA #'$'			; print hex radix
-	JSR $FFFF &  prnChar
-	LDA temp+1			; get MSB
-	JSR $FFFF &  prnHex			; and show it in hex
-	LDA temp			; same for LSB
-	JSR $FFFF &  prnHex
-	LDA #>ex_trok		; get pointer to string
-	LDY #<ex_trok
-	JMP $FFFF &  prnStr			; and print it! eeeeeek return also
-
-ex_devset:
-	JSR $FFFF &  fetch_byte		; take desired device
+; subcommand is OK, let us check target device ###placeholder
+	STA count			; first save the subcommand!
+	JSR $FFFF &  fetch_byte		; read desired device
 		BCS ex_abort		; could not get it
 	STA temp			; set as I/O channel
 	LDA siz				; get desired transfer size
 	LDX siz+1
 	STA oper			; store temporarily
 	STX oper+1
-	RTS
+	LDY #0				; reset counter!
+; decide what to do
+	LDA count			; restore subcommand
+	CMP #'-'			; is it save? (MARATHON MAN)
+		BEQ ex_save			; OK to continue
+	CMP #'+'			; load otherwise?
+		BEQ ex_load			; OK then
 ex_abort:
-	PLA					; discard this routine return address
-	PLA
-	RTS					; and back directly to caller... or make it an error
+	JMP $FFFF &  _unrecognised	; else I do not know what to do
+ex_save:
+; save raw bytes
+		LDA [ptr], Y		; get source data
+		STA io_c			; set parameter
+		PHY					; save index
+		LDY temp			; get target device
+		_KERNEL(COUT)		; send raw byte!
+		PLY					; restore index eeeeeeeeeek
+			BCS ex_err			; aborted!
+		INY					; go for next
+		BNE esl_nw			; no wrap
+			INC ptr+1
+		BNE esl_nw			; no bank boundary
+			INC ptr+2
+esl_nw:
+		.al: REP #$20		; *** worth 16-bit ***
+		DEC oper			; one less to go
+		.as: SEP #$20		; *** OK here? ***
+		BNE ex_save			; continue until done
+	BRA ex_ok			; done!
+ex_load:
+; load raw bytes
+		PHY					; save index
+		LDY temp			; get target device
+		_KERNEL(CIN)		; get raw byte!
+		PLY					; restore index
+			BCS ex_err			; aborted!
+		LDA io_c			; get parameter
+		STA [ptr], Y		; write destination data
+		INY					; go for next
+		BNE ell_nw			; no wrap
+			INC ptr+1
+		BNE ell_nw			; no bank boundary
+			INC ptr+2
+ell_nw:
+		.al: REP #$20		; *** worth 16-bit ***
+		DEC oper			; one less to go
+		.as: SEP #$20		; *** OK here? ***
+		BNE ex_load			; continue until done
+	BRA ex_ok			; done!
+ex_err:
+; an I/O error occurred during transfer!
+	LDA #>io_err		; set message pointer
+	LDY #<io_err
+	JSR $FFFF &  prnStr			; print it and finish function
+ex_ok:
+; transfer ended, show results
+	LDA #'$'			; print hex radix
+	JSR $FFFF &  prnChar
+	.al: REP #$20		; *** 16-bit for a moment ***
+	LDA siz				; desired size...
+	SEC
+	SBC oper			; ...minus remaining bytes...
+	STA value			; ...are the actually transferred bytes!
+	.as: SEP #$20		; *** back to 8-bit ***
+	LDA value+1			; get MSB
+	JSR $FFFF &  prnHex			; and show it in hex
+	LDA value			; same for LSB
+	JSR $FFFF &  prnHex
+	LDA #>ex_trok		; get pointer to string
+	LDY #<ex_trok
+	JMP $FFFF &  prnStr			; and print it! eeeeeek return also
 
 
 ; ** .L = invoke line editor ***
@@ -993,7 +1020,8 @@ move:
 	JSR $FFFF &  fetch_value		; get operand address
 	LDA temp			; at least one?
 	BNE mv_ok
-		JMP bad_opr		; reject zero loudly
+;		JMP bad_opr
+		JMP $FFFF &  _unrecognised	; reject zero loudly
 mv_ok:
 ; destination address is now @value.l
 	.al: REP #$20		; *** 16-bit memory, for now ***
@@ -1184,7 +1212,8 @@ asm_source:
 	JSR $FFFF &  fetch_value		; get desired address
 	LDA temp			; at least one?
 	BNE ta_ok
-		JMP bad_opr		; reject zero loudly
+;		JMP bad_opr
+		JMP $FFFF &  _unrecognised	; reject zero loudly
 ta_ok:
 	LDY value			; fetch result
 	LDA value+1
@@ -1641,6 +1670,9 @@ dump_out:
 
 shut_str:
 	.asc	"Cold, Warm, Shutdown?", CR, 0
+
+io_err:
+	.asc	"*** I/O error ***", CR, 0
 
 set_str:
 	.asc	" = $", 0
