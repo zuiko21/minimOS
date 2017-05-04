@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170504-1231
+; last modified 20170504-2025
 
 ; ***** for 80asm i8080/8085 cross assembler *****
 ; 8085 set
@@ -62,15 +62,15 @@
 	.asc	"SI ", 'M'+$80		; $30=SIM
 	.asc	"LXI SP, ", '&'+$80	; $31=LXI SP
 	.asc	"STA ", '&'+$80		; $32=STA
-	.asc	"INX ", 'SP'+$80	; $33=INX SP
+	.asc	"INX S", 'P'+$80	; $33=INX SP
 	.asc	"INR ", 'M'+$80		; $34=INR M
 	.asc	"DCR ", 'M'+$80		; $35=DCR M
 	.asc	"MVI M, ", '@'+$80	; $36=MVI M
 	.asc	"ST", 'C'+$80		; $37=STC
 	.asc	"? ", '@'+$80		; $38=*LDSI		UNDOCUMENTED!
-	.asc	"DAD", 'SP'+$80		; $39=DAD SP
+	.asc	"DAD S", 'P'+$80		; $39=DAD SP
 	.asc	"LDA ", '&'+$80		; $3A=LDA
-	.asc	"DCX ", 'SP'+$80	; $3B=DCX SP
+	.asc	"DCX S", 'P'+$80	; $3B=DCX SP
 	.asc	"INR ", 'A'+$80		; $3C=INR A
 	.asc	"DCR ", 'A'+$80		; $3D=DCR A
 	.asc	"MVI A, ", '@'+$80	; $3E=MVI A
@@ -264,11 +264,11 @@
 	.asc	"RST ", '5'+$80		; $EF=RST 5
 
 	.asc	"R", 'P'+$80		; $F0=RP
-	.asc	"POP ", 'PSW'+$80	; $F1=POP PSW
+	.asc	"POP PS", 'W'+$80	; $F1=POP PSW
 	.asc	"JP ", '&'+$80		; $F2=JP
 	.asc	"D", 'I'+$80		; $F3=DI
 	.asc	"CP ", '&'+$80		; $F4=CP
-	.asc	"PUSH ", 'PSW'+$80	; $F5=PUSH PSW
+	.asc	"PUSH PS", 'W'+$80	; $F5=PUSH PSW
 	.asc	"ORI ", '@'+$80		; $F6=ORI
 	.asc	"RST ", '6'+$80		; $F7=RST 6
 	.asc	"R", 'M'+$80		; $F8=RM
