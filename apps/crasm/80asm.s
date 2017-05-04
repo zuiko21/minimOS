@@ -1,7 +1,7 @@
 ; 8080/8085 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5b1
-; last modified 20170504-1008
+; v0.5b2
+; last modified 20170504-1218
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -40,8 +40,8 @@ title:
 	.dsb	a80_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5000		; time, 10.00
-	.word	$4AA3		; date, 2017/5/3
+	.word	$5000		; time, 12.00
+	.word	$4AA4		; date, 2017/5/4
 
 	a80siz	=	a80_end - a80_head - 256	; compute size NOT including header!
 
@@ -181,49 +181,7 @@ sc_in:
 		DEC cursor			; every single option will do it anyway
 		JSR $FFFF &  getListChar		; will return NEXT c in A and x as carry bit, notice trick above for first time!
 ; ...but C will be lost upon further comparisons!
-		CMP #'%'			; relative addressing?
-		BNE sc_nrel
-; *** try to get a relative operand ***
-			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
-			BCC srel_ok			; no errors, go translate into relative offset 
-				JMP $FFFF &  no_match		; no address, not OK
-srel_ok:
-			LDA #1				; standard branch operands
-; --- at this point, (ptr)+A+1 is the address of next instruction
-; --- should offset be zero, the branch will just arrive there
-; --- (value) holds the desired address
-; --- (value) minus that previously computed address is the proper offset
-; --- offset MUST fit in a signed byte! overflow otherwise
-; --- alternatively, bad_opc(ptr)+A - (value), then EOR #$FF
-; --- how to check bounds then? same sign on MSB & LSB!
-; --- but MSB can ONLY be 0 or $FF!
-			CLC					; prepare
-			ADC ptr				; A = ptr + Y
-			SEC					; now for the subtraction
-			SBC value			; one's complement of result
-			EOR #$FF			; the actual offset!
-; will poke offset first, then check bounds
-			STA oper			; standard storage
-; check whether within branching range
-; first compute MSB (no need to complement)
-			LDA ptr+1			; get original position
-			SBC value+1			; subtract MSB
-			BEQ srel_bak		; if zero, was backwards branch, no other positive accepted!
-				CMP #$FF			; otherwise, only $FF valid for forward branch
-				BEQ srel_fwd		; possibly valid forward branch
-					JMP $FFFF &  overflow		; overflow otherwise
-srel_fwd:
-				LDA oper			; check stored offset
-				BPL srel_done		; positive is OK
-					JMP $FFFF &  overflow		; slight overflow otherwise
-srel_bak:
-			LDA oper			; check stored offset
-			BMI srel_done		; this has to be negative
-				JMP $FFFF &  overflow		; slight overflow otherwise
-srel_done:
-			INC bytes			; one operand was really detected
-			_BRA sc_adv			; continue decoding
-sc_nrel:
+; NO RELATIVE ADDRESSING!
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
 ; *** try to get a single byte operand ***
@@ -411,34 +369,7 @@ po_loop:
 		LDA (scan), Y		; get char in opcode list
 		STY temp			; keep index as will be destroyed
 		AND #$7F			; filter out possible end mark
-		CMP #'%'			; relative addressing
-		BNE po_nrel			; currently the same as single byte!
-; put here specific code for relative arguments!
-			LDA #'$'			; hex radix
-			JSR $FFFF &  prnChar
-			LDY #1				; standard branch offset
-			LDX #0				; reset offset sign extention
-			STY value			; store now as will be added later
-			LDY bytes			; retrieve instruction index
-			INY					; point to operand!
-			LDA (oper), Y		; get offset!
-			STY bytes			; correct index
-			BPL po_fwd			; forward jump does not extend sign
-				DEX					; puts $FF otherwise
-po_fwd:
-			_INC				; plus opcode...
-			CLC					; (will this and the above instead of SEC fix the error???)
-			ADC value			; ...and displacement...
-			ADC oper			; ...from current position
-			PHA					; this is the LSB, now check for the MSB
-			TXA					; get sign extention
-			ADC oper+1			; add current position MSB plus ocassional carry
-			JSR $FFFF &  prnHex			; show as two ciphers
-			PLA					; previously computed LSB
-			JSR $FFFF &  prnHex			; another two
-			LDX #5				; five more chars
-			_BRA po_done		; update and continue
-po_nrel:
+; no relative addressing!!!
 		CMP #'@'			; single byte operand
 		BNE po_nbyt			; otherwise check word-sized operand
 ; *** unified 1 and 2-byte operand management ***
