@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170504-1214
+; last modified 20170504-1231
 
 ; ***** for 80asm i8080/8085 cross assembler *****
 ; 8085 set
@@ -144,73 +144,73 @@
 	.asc	"MOV A, ", 'M'+$80	; $7E=MOV A,M
 	.asc	"MOV A, ", 'A'+$80	; $7F=MOV A,A
 
-	.asc	"ADD  ", 'B'+$80	; $80=ADD B
-	.asc	"ADD  ", 'C'+$80	; $81=ADD C
-	.asc	"ADD  ", 'D'+$80	; $82=ADD D
-	.asc	"ADD  ", 'E'+$80	; $83=ADD E
-	.asc	"ADD  ", 'H'+$80	; $84=ADD H
-	.asc	"ADD  ", 'L'+$80	; $85=ADD L
-	.asc	"ADD  ", 'M'+$80	; $86=ADD M
-	.asc	"ADD  ", 'A'+$80	; $87=ADD A
-	.asc	"ADC  ", 'B'+$80	; $88=ADC B
-	.asc	"ADC  ", 'C'+$80	; $89=ADC C
-	.asc	"ADC  ", 'D'+$80	; $8A=ADC D
-	.asc	"ADC  ", 'E'+$80	; $8B=ADC E
-	.asc	"ADC  ", 'H'+$80	; $8C=ADC H
-	.asc	"ADC  ", 'L'+$80	; $8D=ADC L
-	.asc	"ADC  ", 'M'+$80	; $8E=ADC M
-	.asc	"ADC  ", 'A'+$80	; $8F=ADC A
+	.asc	"ADD ", 'B'+$80		; $80=ADD B
+	.asc	"ADD ", 'C'+$80		; $81=ADD C
+	.asc	"ADD ", 'D'+$80		; $82=ADD D
+	.asc	"ADD ", 'E'+$80		; $83=ADD E
+	.asc	"ADD ", 'H'+$80		; $84=ADD H
+	.asc	"ADD ", 'L'+$80		; $85=ADD L
+	.asc	"ADD ", 'M'+$80		; $86=ADD M
+	.asc	"ADD ", 'A'+$80		; $87=ADD A
+	.asc	"ADC ", 'B'+$80		; $88=ADC B
+	.asc	"ADC ", 'C'+$80		; $89=ADC C
+	.asc	"ADC ", 'D'+$80		; $8A=ADC D
+	.asc	"ADC ", 'E'+$80		; $8B=ADC E
+	.asc	"ADC ", 'H'+$80		; $8C=ADC H
+	.asc	"ADC ", 'L'+$80		; $8D=ADC L
+	.asc	"ADC ", 'M'+$80		; $8E=ADC M
+	.asc	"ADC ", 'A'+$80		; $8F=ADC A
 
-	.asc	"SUB  ", 'B'+$80	; $90=SUB B
-	.asc	"SUB  ", 'C'+$80	; $91=SUB C
-	.asc	"SUB  ", 'D'+$80	; $92=SUB D
-	.asc	"SUB  ", 'E'+$80	; $93=SUB E
-	.asc	"SUB  ", 'H'+$80	; $94=SUB H
-	.asc	"SUB  ", 'L'+$80	; $95=SUB L
-	.asc	"SUB  ", 'M'+$80	; $96=SUB M
-	.asc	"SUB  ", 'A'+$80	; $97=SUB A
-	.asc	"SBB  ", 'B'+$80	; $98=SBB B
-	.asc	"SBB  ", 'C'+$80	; $99=SBB C
-	.asc	"SBB  ", 'D'+$80	; $9A=SBB D
-	.asc	"SBB  ", 'E'+$80	; $9B=SBB E
-	.asc	"SBB  ", 'H'+$80	; $9C=SBB H
-	.asc	"SBB  ", 'L'+$80	; $9D=SBB L
-	.asc	"SBB  ", 'M'+$80	; $9E=SBB M
-	.asc	"SBB  ", 'A'+$80	; $9F=SBB A
+	.asc	"SUB ", 'B'+$80		; $90=SUB B
+	.asc	"SUB ", 'C'+$80		; $91=SUB C
+	.asc	"SUB ", 'D'+$80		; $92=SUB D
+	.asc	"SUB ", 'E'+$80		; $93=SUB E
+	.asc	"SUB ", 'H'+$80		; $94=SUB H
+	.asc	"SUB ", 'L'+$80		; $95=SUB L
+	.asc	"SUB ", 'M'+$80		; $96=SUB M
+	.asc	"SUB ", 'A'+$80		; $97=SUB A
+	.asc	"SBB ", 'B'+$80		; $98=SBB B
+	.asc	"SBB ", 'C'+$80		; $99=SBB C
+	.asc	"SBB ", 'D'+$80		; $9A=SBB D
+	.asc	"SBB ", 'E'+$80		; $9B=SBB E
+	.asc	"SBB ", 'H'+$80		; $9C=SBB H
+	.asc	"SBB ", 'L'+$80		; $9D=SBB L
+	.asc	"SBB ", 'M'+$80		; $9E=SBB M
+	.asc	"SBB ", 'A'+$80		; $9F=SBB A
 
-	.asc	"ANA  ", 'B'+$80	; $A0=ANA B
-	.asc	"ANA  ", 'C'+$80	; $A1=ANA C
-	.asc	"ANA  ", 'D'+$80	; $A2=ANA D
-	.asc	"ANA  ", 'E'+$80	; $A3=ANA E
-	.asc	"ANA  ", 'H'+$80	; $A4=ANA H
-	.asc	"ANA  ", 'L'+$80	; $A5=ANA L
-	.asc	"ANA  ", 'M'+$80	; $A6=ANA M
-	.asc	"ANA  ", 'A'+$80	; $A7=ANA A
-	.asc	"XRA  ", 'B'+$80	; $A8=XRA B
-	.asc	"XRA  ", 'C'+$80	; $A9=XRA C
-	.asc	"XRA  ", 'D'+$80	; $AA=XRA D
-	.asc	"XRA  ", 'E'+$80	; $AB=XRA E
-	.asc	"XRA  ", 'H'+$80	; $AC=XRA H
-	.asc	"XRA  ", 'L'+$80	; $AD=XRA L
-	.asc	"XRA  ", 'M'+$80	; $AE=XRA M
-	.asc	"XRA  ", 'A'+$80	; $AF=XRA A
+	.asc	"ANA ", 'B'+$80		; $A0=ANA B
+	.asc	"ANA ", 'C'+$80		; $A1=ANA C
+	.asc	"ANA ", 'D'+$80		; $A2=ANA D
+	.asc	"ANA ", 'E'+$80		; $A3=ANA E
+	.asc	"ANA ", 'H'+$80		; $A4=ANA H
+	.asc	"ANA ", 'L'+$80		; $A5=ANA L
+	.asc	"ANA ", 'M'+$80		; $A6=ANA M
+	.asc	"ANA ", 'A'+$80		; $A7=ANA A
+	.asc	"XRA ", 'B'+$80		; $A8=XRA B
+	.asc	"XRA ", 'C'+$80		; $A9=XRA C
+	.asc	"XRA ", 'D'+$80		; $AA=XRA D
+	.asc	"XRA ", 'E'+$80		; $AB=XRA E
+	.asc	"XRA ", 'H'+$80		; $AC=XRA H
+	.asc	"XRA ", 'L'+$80		; $AD=XRA L
+	.asc	"XRA ", 'M'+$80		; $AE=XRA M
+	.asc	"XRA ", 'A'+$80		; $AF=XRA A
 
-	.asc	"ORA  ", 'B'+$80	; $B0=ORA B
-	.asc	"ORA  ", 'C'+$80	; $B1=ORA C
-	.asc	"ORA  ", 'D'+$80	; $B2=ORA D
-	.asc	"ORA  ", 'E'+$80	; $B3=ORA E
-	.asc	"ORA  ", 'H'+$80	; $B4=ORA H
-	.asc	"ORA  ", 'L'+$80	; $B5=ORA L
-	.asc	"ORA  ", 'M'+$80	; $B6=ORA M
-	.asc	"ORA  ", 'A'+$80	; $B7=ORA A
-	.asc	"CMP  ", 'B'+$80	; $B8=CMP B
-	.asc	"CMP  ", 'C'+$80	; $B9=CMP C
-	.asc	"CMP  ", 'D'+$80	; $BA=CMP D
-	.asc	"CMP  ", 'E'+$80	; $BB=CMP E
-	.asc	"CMP  ", 'H'+$80	; $BC=CMP H
-	.asc	"CMP  ", 'L'+$80	; $BD=CMP L
-	.asc	"CMP  ", 'M'+$80	; $BE=CMP M
-	.asc	"CMP  ", 'A'+$80	; $BF=CMP A
+	.asc	"ORA ", 'B'+$80		; $B0=ORA B
+	.asc	"ORA ", 'C'+$80		; $B1=ORA C
+	.asc	"ORA ", 'D'+$80		; $B2=ORA D
+	.asc	"ORA ", 'E'+$80		; $B3=ORA E
+	.asc	"ORA ", 'H'+$80		; $B4=ORA H
+	.asc	"ORA ", 'L'+$80		; $B5=ORA L
+	.asc	"ORA ", 'M'+$80		; $B6=ORA M
+	.asc	"ORA ", 'A'+$80		; $B7=ORA A
+	.asc	"CMP ", 'B'+$80		; $B8=CMP B
+	.asc	"CMP ", 'C'+$80		; $B9=CMP C
+	.asc	"CMP ", 'D'+$80		; $BA=CMP D
+	.asc	"CMP ", 'E'+$80		; $BB=CMP E
+	.asc	"CMP ", 'H'+$80		; $BC=CMP H
+	.asc	"CMP ", 'L'+$80		; $BD=CMP L
+	.asc	"CMP ", 'M'+$80		; $BE=CMP M
+	.asc	"CMP ", 'A'+$80		; $BF=CMP A
 
 	.asc	"RN", 'Z'+$80		; $C0=RNZ
 	.asc	"POP ", 'B'+$80		; $C1=POP B
