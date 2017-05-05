@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170505-1819
+; last modified 20170505-2152
 
 ; ***** for 68asm MC6800 cross assembler *****
 ; Hitachi 6301/6303 set
@@ -128,17 +128,17 @@
 	.asc	"CLR @, ", 'X'+$80	; $6F=CLR idx
 
 	.asc	"NEG ", '&'+$80	; $70=NEG ext
-	.asc	"?", ' '+$80	; $71=?
-	.asc	"?", ' '+$80	; $72=?
+	.asc	"AIM #@, ", '@'+$80	; $71=AIM # dir	HD6301
+	.asc	"OIM #@, ", '@'+$80	; $72=OIM # dir	HD6301
 	.asc	"COM ", '&'+$80	; $73=COM ext
 	.asc	"LSR ", '&'+$80	; $74=LSR ext
-	.asc	"?", ' '+$80	; $75=?
+	.asc	"EIM #@, ", '@'+$80	; $75=EIM # dir	HD6301
 	.asc	"ROR ", '&'+$80	; $76=ROR ext
 	.asc	"ASR ", '&'+$80	; $77=ASR ext
 	.asc	"ASL ", '&'+$80	; $78=ASL ext
 	.asc	"ROL ", '&'+$80	; $79=ROL ext
 	.asc	"DEC ", '&'+$80	; $7A=DEC ext
-	.asc	"?", ' '+$80	; $7B=?
+	.asc	"AIM #@, ", '@'+$80	; $7B=AIM # dir	HD6301
 	.asc	"INC ", '&'+$80	; $7C=INC ext
 	.asc	"TST ", '&'+$80	; $7D=TST ext
 	.asc	"JMP ", '&'+$80	; $7E=JMP ext
@@ -147,7 +147,7 @@
 	.asc	"SUB A #", '@'+$80	; $80=SUB A #
 	.asc	"CMP A #", '@'+$80	; $81=CMP A #
 	.asc	"SBC A #", '@'+$80	; $82=SBC A #
-	.asc	"?", ' '+$80	; $83=?
+	.asc	"SUBD #", '&'+$80	; $83=SUBD #	MC6801
 	.asc	"AND A #", '@'+$80	; $84=AND A #
 	.asc	"BIT A #", '@'+$80	; $85=BIT A #
 	.asc	"LDA A #", '@'+$80	; $86=LDA A #
@@ -164,7 +164,7 @@
 	.asc	"SUB A ", '@'+$80	; $90=SUB A dir
 	.asc	"CMP A ", '@'+$80	; $91=CMP A dir
 	.asc	"SBC A ", '@'+$80	; $92=SBC A dir
-	.asc	"?", ' '+$80	; $93=?
+	.asc	"SUBD ", '@'+$80	; $93=SUBD dir	MC6801
 	.asc	"AND A ", '@'+$80	; $94=AND A dir
 	.asc	"BIT A ", '@'+$80	; $95=BIT A dir
 	.asc	"LDA A ", '@'+$80	; $96=LDA A dir
@@ -174,14 +174,14 @@
 	.asc	"ORA A ", '@'+$80	; $9A=ORA A dir
 	.asc	"ADD A ", '@'+$80	; $9B=ADD A dir
 	.asc	"CPX ", '@'+$80	; $9C=CPX dir
-	.asc	"?HCF", '!'+$80	; $9D=HCF	UNDOCUMENTED!
+	.asc	"JSR ", '@'+$80	; $9D=JSR dir	MC6801
 	.asc	"LDS ", '@'+$80	; $9E=LDS dir
 	.asc	"STS ", '@'+$80	; $9F=STS dir
 
 	.asc	"SUB A @, ", 'X'+$80	; $A0=SUB A idx
 	.asc	"CMP A @, ", 'X'+$80	; $A1=CMP A idx
 	.asc	"SBC A @, ", 'X'+$80	; $A2=SBC A idx
-	.asc	"?", ' '+$80	; $A3=?
+	.asc	"SUBD @, ", 'X'+$80	; $A3=SUBD idx	MC6801
 	.asc	"AND A @, ", 'X'+$80	; $A4=AND A idx
 	.asc	"BIT A @, ", 'X'+$80	; $A5=BIT A idx
 	.asc	"LDA A @, ", 'X'+$80	; $A6=LDA A idx
@@ -198,7 +198,7 @@
 	.asc	"SUB A ", '&'+$80	; $B0=SUB A ext
 	.asc	"CMP A ", '&'+$80	; $B1=CMP A ext
 	.asc	"SBC A ", '&'+$80	; $B2=SBC A ext
-	.asc	"?", ' '+$80	; $B3=?
+	.asc	"SUBD ", '&'+$80	; $B3=SUBD ext	MC6801
 	.asc	"AND A ", '&'+$80	; $B4=AND A ext
 	.asc	"BIT A ", '&'+$80	; $B5=BIT A ext
 	.asc	"LDA A ", '&'+$80	; $B6=LDA A ext
@@ -215,7 +215,7 @@
 	.asc	"SUB B #", '@'+$80	; $C0=SUB B #
 	.asc	"CMP B #", '@'+$80	; $C1=CMP B #
 	.asc	"SBC B #", '@'+$80	; $C2=SBC B #
-	.asc	"?", ' '+$80	; $C3=?
+	.asc	"ADDD #", '&'+$80	; $C3=ADDD #	MC6801
 	.asc	"AND B #", '@'+$80	; $C4=AND B #
 	.asc	"BIT B #", '@'+$80	; $C5=BIT B #
 	.asc	"LDA B #", '@'+$80	; $C6=LDA B #
@@ -224,7 +224,7 @@
 	.asc	"ADC B #", '@'+$80	; $C9=ADC B #
 	.asc	"ORA B #", '@'+$80	; $CA=ORA B #
 	.asc	"ADD B #", '@'+$80	; $CB=ADD B #
-	.asc	"?", ' '+$80	; $CC=?
+	.asc	"LDD #", '&'+$80	; $CC=LDD #	MC6801
 	.asc	"?", ' '+$80	; $CD=?
 	.asc	"LDX #", '&'+$80	; $CE=LDX #
 	.asc	"?", ' '+$80	; $CF=?
@@ -232,7 +232,7 @@
 	.asc	"SUB B ", '@'+$80	; $D0=SUB B dir
 	.asc	"CMP B ", '@'+$80	; $D1=CMP B dir
 	.asc	"SBC B ", '@'+$80	; $D2=SBC B dir
-	.asc	"?", ' '+$80	; $D3=?
+	.asc	"ADDD ", '@'+$80	; $D3=ADDD dir	MC6801
 	.asc	"AND B ", '@'+$80	; $D4=AND B dir
 	.asc	"BIT B ", '@'+$80	; $D5=BIT B dir
 	.asc	"LDA B ", '@'+$80	; $D6=LDA B dir
@@ -241,15 +241,15 @@
 	.asc	"ADC B ", '@'+$80	; $D9=ADC B dir
 	.asc	"ORA B ", '@'+$80	; $DA=ORA B dir
 	.asc	"ADD B ", '@'+$80	; $DB=ADD B dir
-	.asc	"?", ' '+$80	; $DC=?
-	.asc	"?HCF", '!'+$80	; $DD=HCF	UNDOCUMENTED!
+	.asc	"LDD ", '@'+$80	; $DC=LDD dir	MC6801
+	.asc	"STD ", '@'+$80	; $DD=STD dir	MC6801
 	.asc	"LDX ", '@'+$80	; $DE=LDX dir
 	.asc	"STX ", '@'+$80	; $DF=STX dir
 
 	.asc	"SUB B @, ", 'X'+$80	; $E0=SUB B idx
 	.asc	"CMP B @, ", 'X'+$80	; $E1=CMP B idx
 	.asc	"SBC B @, ", 'X'+$80	; $E2=SBC B idx
-	.asc	"?", ' '+$80	; $E3=?
+	.asc	"ADDD @, ", 'X'+$80	; $E3=ADDD idx	MC6801
 	.asc	"AND B @, ", 'X'+$80	; $E4=AND B idx
 	.asc	"BIT B @, ", 'X'+$80	; $E5=BIT B idx
 	.asc	"LDA B @, ", 'X'+$80	; $E6=LDA B idx
@@ -258,15 +258,15 @@
 	.asc	"ADC B @, ", 'X'+$80	; $E9=ADC B idx
 	.asc	"ORA B @, ", 'X'+$80	; $EA=ORA B idx
 	.asc	"ADD B @, ", 'X'+$80	; $EB=ADD B idx
-	.asc	"?", ' '+$80	; $EC=?
-	.asc	"?", ' '+$80	; $ED=?
+	.asc	"LDD @, ", 'X'+$80	; $EC=LDD idx	MC6801
+	.asc	"STD @, ", 'X'+$80	; $ED=STD idx	MC6801
 	.asc	"LDX @, ", 'X'+$80	; $EE=LDX idx
 	.asc	"STX @, ", 'X'+$80	; $EF=STX idx
 
 	.asc	"SUB B ", '&'+$80	; $F0=SUB B ext
 	.asc	"CMP B ", '&'+$80	; $F1=CMP B ext
 	.asc	"SBC B ", '&'+$80	; $F2=SBC B ext
-	.asc	"?", ' '+$80	; $F3=?
+	.asc	"ADDD ", '&'+$80	; $F3=ADDD ext	MC6801
 	.asc	"AND B ", '&'+$80	; $F4=AND B ext
 	.asc	"BIT B ", '&'+$80	; $F5=BIT B ext
 	.asc	"LDA B ", '&'+$80	; $F6=LDA B ext
@@ -275,7 +275,7 @@
 	.asc	"ADC B ", '&'+$80	; $F9=ADC B ext
 	.asc	"ORA B ", '&'+$80	; $FA=ORA B ext
 	.asc	"ADD B ", '&'+$80	; $FB=ADD B ext
-	.asc	"?", ' '+$80	; $FC=?
-	.asc	"?", ' '+$80	; $FD=?
+	.asc	"LDD ", '&'+$80	; $FC=LDD ext	MC6801
+	.asc	"STD ", '&'+$80	; $FD=STD ext	MC6801
 	.asc	"LDX B ", '&'+$80	; $FE=LDX B ext
 	.asc	"STX B ", '&'+$80	; $FF=STX B ext
