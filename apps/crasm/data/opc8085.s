@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170504-2025
+; last modified 20170505-0829
 
 ; ***** for 80asm i8080/8085 cross assembler *****
 ; 8085 set
@@ -17,7 +17,7 @@
 	.asc	"MVI B, ", '@'+$80	; $06=MVI B
 	.asc	"RL", 'C'+$80		; $07=RLC
 	.asc	"?", ' '+$80		; $08=*DSUB		UNDOCUMENTED!
-	.asc	"DAD", 'B'+$80		; $09=DAD B
+	.asc	"DAD ", 'B'+$80		; $09=DAD B
 	.asc	"LDAX ", 'B'+$80	; $0A=LDAX B
 	.asc	"DCX ", 'B'+$80		; $0B=DCX B
 	.asc	"INR ", 'C'+$80		; $0C=INR C
@@ -34,7 +34,7 @@
 	.asc	"MVI D, ", '@'+$80	; $16=MVI D
 	.asc	"RA", 'L'+$80		; $17=RAL
 	.asc	"?", ' '+$80		; $18=*RDEL		UNDOCUMENTED!
-	.asc	"DAD", 'D'+$80		; $19=DAD D
+	.asc	"DAD ", 'D'+$80		; $19=DAD D
 	.asc	"LDAX ", 'D'+$80	; $1A=LDAX D
 	.asc	"DCX ", 'D'+$80		; $1B=DCX D
 	.asc	"INR ", 'E'+$80		; $1C=INR E
@@ -51,7 +51,7 @@
 	.asc	"MVI H, ", '@'+$80	; $26=MVI H
 	.asc	"DA", 'A'+$80		; $27=DAA
 	.asc	"? ", '@'+$80		; $28=*LDHI		UNDOCUMENTED!
-	.asc	"DAD", 'H'+$80		; $29=DAD H
+	.asc	"DAD ", 'H'+$80		; $29=DAD H
 	.asc	"LDHL ", '&'+$80	; $2A=LDHL
 	.asc	"DCX ", 'H'+$80		; $2B=DCX H
 	.asc	"INR ", 'L'+$80		; $2C=INR L

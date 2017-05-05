@@ -1,7 +1,7 @@
 ; 8080/8085 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5b2
-; last modified 20170504-1218
+; v0.5b3
+; last modified 20170505-0847
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -147,7 +147,7 @@ cli_chk:
 			STA bufpt			; update pointer
 			BCC cli_loop		; MSB OK means try another right now
 				INC bufpt+1			; otherwise wrap!
-			_BRA cli_loop		; and try another (BCS or BNE might do as well)
+			BCS cli_loop		; and try another (instead of BRA)
 cmd_term:
 		BEQ main_loop		; no more on buffer, restore direct mode
 	BNE bad_cmd			; otherwise has garbage! No need for BRA
@@ -190,20 +190,19 @@ sc_in:
 			STA oper			; store value to be poked *** here
 ; no longer tries a SECOND one which must FAIL
 			INC bytes			; one operand was detected
-			_BRA sc_adv			; continue decoding
+			BNE sc_adv			; continue decoding, no need for BRA
 sc_nsbyt:
 		CMP #'&'			; word-sized operand? hope it is OK
 		BNE sc_nwrd
 ; try to get a word-sized operand
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 				BCS sc_skip			; not if no number found eeeeeeeek
-			LDY value				; get computed value
-			LDA value+1
-			STY oper			; store in safer place, endianness was ok
-			STA oper+1
+			LDY value+1				; get computed value, LSB already loaded!
+			STA oper			; store in safer place, endianness was ok
+			STY oper+1
 			INC bytes			; two operands were detected
 			INC bytes
-			_BRA sc_adv			; continue decoding
+			BNE sc_adv			; continue decoding, no need for BRA
 sc_nwrd:
 ; regular char in list, compare with input
 		STA temp			; store list contents eeeeeeeek!
@@ -248,10 +247,12 @@ sc_rem:
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		LDY bytes			; set pointer to last argument
+		LDX bytes			; *** to be 65816 savvy! eeeeeeeeek
 		BEQ poke_opc		; no operands
 poke_loop:
-			LDA oper, Y		; get operand
+			LDA oper, X		; get operand *** 65816 savvy eeeeeeeek
 			STA (ptr), Y		; store in RAM
+			DEX					; *** 65816 savvy eeeeeeeeek
 			DEY					; next byte
 			BNE poke_loop		; could start on zero
 poke_opc:
@@ -335,7 +336,7 @@ do_skip:
 			INY
 			BNE do_skip			; next char in list if not crossed
 				INC scan+1			; otherwise correct MSB
-			_BRA do_skip
+			_BRA do_skip		; might use BNE as well
 do_other:
 		INY					; needs to point to actual opcode, not previous end eeeeeek!
 		BNE do_set			; if not crossed
@@ -375,7 +376,7 @@ po_loop:
 ; *** unified 1 and 2-byte operand management ***
 			LDY #1				; number of bytes minus one
 			LDX #3				; number of chars to add
-			_BRA po_disp		; display value
+			BNE po_disp			; display value, no need for BRA
 po_nbyt:
 		CMP #'&'			; word operand
 		BNE po_nwd			; otherwise is normal char
@@ -401,7 +402,7 @@ po_dloop:
 po_nwd:
 		JSR $FFFF &  prnChar			; just print it
 		INC count			; yet another char
-		BNE po_char			; eeeeeeeeek, or should it be BRA?
+		BNE po_char			; eeeeeeeeek, do not think needs BRA
 po_done:
 		TXA					; increase of number of chars
 po_adv:
@@ -500,8 +501,7 @@ ex_a:
 			CMP #127			; check whether printable
 				BCS ex_np
 			CMP #' '
-				BCC ex_np
-			_BRA ex_pr			; it is printable
+			BCS ex_pr			; it is printable
 ex_np:
 				LDA #'.'			; substitute
 ex_pr:		JSR $FFFF &  prnChar			; print it
@@ -601,7 +601,7 @@ ex_linc:
 		LDA oper+1			; check MSB, just in case
 		CMP siz+1			; against size
 		BNE ex_load			; continue until done
-	BRA ex_ok			; done!
+	BEQ ex_ok			; done! no need for BRA
 ex_err:
 ; an I/O error occurred during transfer!
 	LDA #>io_err		; set message pointer
@@ -718,7 +718,7 @@ sst_loop:
 		INC ptr				; advance destination
 		BNE sst_loop		; boundary not crossed
 	INC ptr+1			; next page otherwise
-	_BRA sst_loop		; continue, might use BNE
+	_BRA sst_loop		; continue, might use BNE?
 sstr_com:
 	LDA #0				; no STZ indirect
 	_STAX(ptr)			; terminate string in memory Eeeeeeeeek
@@ -962,17 +962,17 @@ glc_do:
 fetch_byte:
 	JSR $FFFF &  fetch_value		; get whatever
 	LDA temp			; how many bytes will fit?
-	INC					; round up chars...
+	_INC				; round up chars...
 	LSR					; ...and convert to bytes
 	CMP #1				; strictly one?
-	BRA ft_check		; common check
+	_BRA ft_check		; common check
 
 ; * fetch two bytes from hex input buffer, value @value.w *
 fetch_word:
 ; another approach using fetch_value
 	JSR $FFFF &  fetch_value		; get whatever
 	LDA temp			; how many bytes will fit?
-	INC					; round up chars...
+	_INC				; round up chars...
 	LSR					; ...and convert to bytes
 	CMP #2				; strictly two?
 ; common fetch error check
@@ -1004,7 +1004,7 @@ ftv_loop:
 		JSR $FFFF &  hex2nib			; process one char
 			BCS ftv_bad			; no more valid chars
 		INC temp			; otherwise count one
-		BRA ftv_loop		; until no more valid
+		BNE ftv_loop		; until no more valid, no need for BRA
 ftv_bad:
 	JSR $FFFF &  backChar		; should discard very last char! eeeeeeeek
 	CLC					; always check temp=0 for errors!
