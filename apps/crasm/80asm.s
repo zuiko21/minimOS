@@ -1,7 +1,7 @@
 ; 8080/8085 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
 ; v0.5b3
-; last modified 20170505-0847
+; last modified 20170505-0859
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -250,7 +250,7 @@ valid_oc:
 		LDX bytes			; *** to be 65816 savvy! eeeeeeeeek
 		BEQ poke_opc		; no operands
 poke_loop:
-			LDA oper, X		; get operand *** 65816 savvy eeeeeeeek
+			LDA oper-1, X		; get operand *** 65816 savvy eeeeeeeek^2
 			STA (ptr), Y		; store in RAM
 			DEX					; *** 65816 savvy eeeeeeeeek
 			DEY					; next byte
@@ -1040,7 +1040,7 @@ cmd_ptr:
 
 ; *** strings and other data ***
 splash:
-	.asc	"MC6800 cross-assembler 0.5", CR
+	.asc	"i8085 cross-assembler 0.5", CR
 	.asc	"(c) 2017 Carlos J. Santisteban", CR
 #ifdef	SAFE
 	.asc	"Type 8085 opcodes or .commands,", CR
