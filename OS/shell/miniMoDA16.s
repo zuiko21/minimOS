@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b16
-; last modified 20170504-0927
+; v0.5.1b17
+; last modified 20170506-1237
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -70,8 +70,7 @@ title:
 	value	= buffer+BUFSIZ	; fetched values, now 24b ready
 	oper	= value+3	; operand storage, now 24b ready
 	temp	= oper+3	; temporary storage, also for indexes
-	movop	= temp+1	; temporary operand count for MVP/MVN, new
-	scan	= movop+1	; pointer to opcode list, size is architecture dependent!
+	scan	= temp+1	; pointer to opcode list, size is architecture dependent!
 	bufpt	= scan+3	; NEW pointer to variable buffer, scan is 24-bit, maybe this one too!
 	count	= bufpt+3	; char count for screen formatting, also opcode count
 	bytes	= count+1	; bytes per instruction
@@ -590,13 +589,14 @@ disOpcode:
 	LDA [oper]			; check pointed opcode
 	STA count			; keep for comparisons
 ; check whether it is MVN/MVP for double operand selection!
-	LDX #$FF			; standard flag value, NOT zero
-	AND #%11101111		; filter for MVN/MVP
-	CMP #$44			; one of these?
-	BNE do_notnv		; proceed normally
-		LDX #2				; preset special value
-do_notnv:
-	STX movop			; store for operand display counter!
+; *** will use new method from 68asm ***
+;	LDX #$FF			; standard flag value, NOT zero
+;	AND #%11101111		; filter for MVN/MVP
+;	CMP #$44			; one of these?
+;	BNE do_notnv		; proceed normally
+;		LDX #2				; preset special value
+;do_notnv:
+;	STX movop			; store for operand display counter!
 	LDY #<da_oclist		; get address of opcode list
 	LDA #>da_oclist
 	STZ scan			; indirect-indexed pointer
@@ -655,6 +655,7 @@ po_adlab:
 	LDY #0				; scan increase, temporarily stored in temp
 	STY bytes			; number of bytes to be dumped (-1)
 	STY count			; printed chars for proper formatting
+	STY value+1			; *** for double operand MVN/MVP, could use value+1 ***
 po_loop:
 		LDA [scan], Y		; get char in opcode list, 24b
 		STY temp			; keep index as will be destroyed
@@ -748,22 +749,31 @@ po_disp:
 			STY bytes			; set counter
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
+			LDY bytes			; retrieve original value eeeeeeeeeek
+; *** check for double-operand opcodes, new method ***
+			LDX value+1			; *** could use value+1 as well ***
+			BEQ po_dloop		; proceed normally if first or only
+				INY					; or point to second one otherwise!
 po_dloop:
-				LDY bytes			; retrieve operand index
+;				LDY bytes			; retrieve operand index
 ; *** should check here for MVN/MVP and process second operand via INY ***
-				LDA [oper]			; check opcode
-				AND #%11101111		; mask out differences
-				CMP #$44			; MVN or MVP only
-				BNE po_notmv		; if not, proceed normally
-					DEC movop			; some flag set to 2 upon MVN, MVP
-					BNE po_notmv		; first operand, nothing to correct
-						INY					; otherwise go for second operand
-po_notmv:
+;				LDA [oper]			; check opcode
+;				AND #%11101111		; mask out differences
+;				CMP #$44			; MVN or MVP only
+;				BNE po_notmv		; if not, proceed normally
+;					DEC movop			; some flag set to 2 upon MVN, MVP
+;					BNE po_notmv		; first operand, nothing to correct
+;						INY					; otherwise go for second operand
+;po_notmv:
 ; regular operand processing loop
+				PHY					; save current index!
 				LDA [oper], Y		; get whatever byte
 				JSR $FFFF &  prnHex			; show in hex
+				PLY					; restore index
+				DEY					; might go into LSB, or end
 				DEC bytes			; go back one byte
 				BNE po_dloop
+			INC value+1			; *** operand count, might use value+1 ***
 			BRA po_adv			; update count and continue
 po_nlong:
 		JSR $FFFF &  prnChar			; just print it
@@ -794,7 +804,8 @@ po_end:
 		BNE po_end			; until complete, again no need for BRA
 po_dump:
 ; print hex dump, ** but check for MVP/MVN extra operands first **
-	LDX movop			; was it a move instruction?
+	LDX value+1			; was it a move instruction? *** could use value+1 as well ***
+	CPX #2				; *** special operand count ***
 	BNE po_dnmv			; nope, nothing to correct
 		INC bytes			; otherwise there is one more operand
 po_dnmv:
