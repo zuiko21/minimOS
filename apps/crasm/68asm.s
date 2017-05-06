@@ -1,7 +1,7 @@
 ; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
 ; v0.5b7
-; last modified 20170506-1045
+; last modified 20170506-1201
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -54,7 +54,7 @@ title:
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	ptr		= uz		; current address pointer, would be filled by NMI/BRK handler
-	siz		= ptr+2	; number of bytes to copy or transfer ('n')
+	siz		= ptr+2		; number of bytes to copy or transfer ('n')
 	lines	= siz+2		; lines to dump ('u')
 	cursor	= lines+1	; storage for cursor offset, now on Y
 	buffer	= cursor+1	; storage for direct input line (BUFSIZ chars)
@@ -230,8 +230,8 @@ sc_nrel:
 ; * please note that Hitachi 6301/6303 may use double operand opcodes *
 			JSR $FFFF &  fetch_byte		; currently it is a single byte...
 				BCS sc_skip			; could not get operand eeeeeeeek
-			LDX bytes			; operands detected this far
-			STA oper, X			; will poke it where appropriated!
+			LDX bytes			; *** operands detected this far *** Hitachi only
+			STA oper, X			; will poke it where appropriated! *** indexed for Hitachi
 ; no longer tries a SECOND one which must FAIL
 			INC bytes			; one operand was detected
 			BNE sc_adv			; continue decoding, no need for BRA
@@ -297,7 +297,7 @@ valid_oc:
 poke_loop:
 			LDA oper-1, X		; ***** endianness previously corrected, 816-savvy ***** eeeeeek
 			STA (ptr), Y		; store in RAM
-			DEX			; ***** independent index is 816-savvy *****
+			DEX					; ***** independent index is 816-savvy *****
 			DEY					; next byte
 			BNE poke_loop		; could start on zero
 poke_opc:
@@ -412,6 +412,7 @@ prnOpcode:
 	LDY #0				; scan increase, temporarily stored in temp
 	STY bytes			; number of bytes to be dumped (-1)
 	STY count			; printed chars for proper formatting
+	STY value+1			; *** reset operand count because of Hitachi opcodes ***
 po_loop:
 		LDA (scan), Y		; get char in opcode list
 		STY temp			; keep index as will be destroyed
@@ -463,6 +464,10 @@ po_disp:
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
 			LDY #1				; ***** big endian operand index *****
+; ***** should check here for double-operand opcodes (Hitachi only), then INY *****
+			LDX value+1			; how many operands already processed?
+			BEQ po_dloop		; if first or only, just proceed
+				INY					; otherwise advance to next!
 po_dloop:
 				_PHY				; ***** need to save it *****
 				LDA (oper), Y		; get whatever byte
@@ -473,6 +478,7 @@ po_dloop:
 				BNE po_dloop
 			_PLY				; restore original operand size
 			STY bytes
+			INC value+1			; *** increment number of operands (for Hitachi) ***
 			PLA					; number of chars to add
 			_BRA po_adv			; update count (direct from A) and continue
 po_nwd:
@@ -506,6 +512,11 @@ po_dump:
 	JSR $FFFF &  prnChar
 	LDY #0				; reset index
 	STY temp			; save index (no longer scan)
+; *** care for Hitachi double-operand opcodes! ***
+	LDX value+1			; get detected operands
+	CPX #2				; one of these?
+	BNE po_dbyt			; if not, proceed normally
+		INC bytes			; otherwise takes one more byte!
 po_dbyt:
 		LDA #' '			; leading space
 		JSR $FFFF &  prnChar
