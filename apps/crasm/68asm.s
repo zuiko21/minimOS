@@ -1,7 +1,7 @@
-; 6800 cross-assembler for minimOS 6502
+; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5b6
-; last modified 20170505-0908
+; v0.5b7
+; last modified 20170506-1045
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -34,7 +34,7 @@ a68_head:
 ; *** filename and optional comment ***
 title:
 	.asc	"68asm", 0	; file name (mandatory)
-	.asc	"6800 cross-assembler for 6502", 0	; comment
+	.asc	"6800/6801/6301 cross-assembler for 6502", 0	; comment
 
 ; advance to end of header
 	.dsb	a68_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
@@ -227,9 +227,11 @@ sc_nrel:
 		CMP #'@'			; single byte operand?
 		BNE sc_nsbyt
 ; *** try to get a single byte operand ***
+; * please note that Hitachi 6301/6303 may use double operand opcodes *
 			JSR $FFFF &  fetch_byte		; currently it is a single byte...
 				BCS sc_skip			; could not get operand eeeeeeeek
-			STA oper			; store value to be poked *** here
+			LDX bytes			; operands detected this far
+			STA oper, X			; will poke it where appropriated!
 ; no longer tries a SECOND one which must FAIL
 			INC bytes			; one operand was detected
 			BNE sc_adv			; continue decoding, no need for BRA
@@ -239,9 +241,8 @@ sc_nsbyt:
 ; try to get a word-sized operand
 			JSR $FFFF &  fetch_word		; will pick up a couple of bytes
 				BCS sc_skip			; not if no number found eeeeeeeek
-			LDY value				; get computed value
-			LDA value+1
-			STY oper			; store in safer place, endianness was ok
+			LDY value+1			; get computed value, LSB already in A
+			STY oper			; store in safer place ***** endianness corrected *****
 			STA oper+1
 			INC bytes			; two operands were detected
 			INC bytes
@@ -290,13 +291,13 @@ sc_rem:
 valid_oc:
 ; opcode successfully recognised, let us poke it in memory
 		_PHX				; ***** eeeeeek *****
-		LDX #0				; ***** needed for bigendianness *****
 		LDY bytes			; set pointer to last argument
+		LDX bytes			; ***** this is done for 65816 savvyness *****
 		BEQ poke_opc		; no operands
 poke_loop:
-			LDA oper, X		; ***** get operand in reverse order because of endianness *****
+			LDA oper-1, X		; ***** endianness previously corrected, 816-savvy ***** eeeeeek
 			STA (ptr), Y		; store in RAM
-			INX			; ***** independent index for big endian targets *****
+			DEX			; ***** independent index is 816-savvy *****
 			DEY					; next byte
 			BNE poke_loop		; could start on zero
 poke_opc:
@@ -1177,6 +1178,7 @@ help_str:
 
 ; include opcode list
 da_oclist:
-#include "../apps/crasm/data/opc6800.s"
+; this is the full 6301/6303 list
+#include "../apps/crasm/data/opc6301.s"
 a68_end:					; size computation
 .)
