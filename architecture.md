@@ -29,17 +29,26 @@ Perhaps this achieved goal was the key to CP/M's success. This OS had three main
 - **BDOS** (Basic Disk OS)
 - **CCP** (Console Command Processor)
 
-Please note that unlike the BIOS, which was provided *customised* by the computer's maker, 
+Unlike the BIOS, which was provided *customised* by the computer's maker, 
 all the remaining components were **generic**, as supplied by Digital Research. Of course, 
-other commands or the *application software* was run by temporarily replacing the CCP, as this 
-was a single task, single user OS.
+other commands or the *application software* were run by temporarily replacing the CCP, as this 
+was a single task, single user OS. As soon as the task was completed, the *shell* (CCP) 
+was reloaded and the user was prompted for another command.
 
 Alas, this scheme is not complete: usally, these components were provided on some kind of mass-storage
 media (often *diskettes*) that had to be *loaded* into RAM somehow, as no CPU has any means to execute code
 *directly* from **secondary memory**. Thus, a small piece of **ROM** or any other *non-volatile **primary** memory* 
 was needed in order to load and run the Operating System. This was often a **bootloader** (generically known as 
 **firmware**) whose main purpose, besides perhaps some initial setup and hardware tests (*POST, Power-On Self Test*)
-was merely copying those three files in RAM and ordering the CPU to jump at their code.
+was merely copying those three files in RAM and ordering the CPU to jump at their code. Obviously, 
+this firmware was part of the computer maker's package, and had nothing to do with CP/M, save 
+for being designed to boot from such system files. 
+
+Apart from such firmware design, having an **Intel 8080** CPU or compatible (the only one 
+initially supported by CP/M) and at least 16 KiB RAM *starting at address $0*\* (plus some 
+kind of disk drive for the DOS to work on) were the only requisites to any computer 
+maker to have a **CP/M compatible* machine. With its notable software base, CP/M was *the* 
+choice for many computers, at least in the office environment.
 
 Back in the day, the **I/O** capabilites of computers were rather limited: assume a *keyboard*, an *output device*
 (could be a text CRT screen, but a *teletype* would do) and/or a *printer*, plus some *mass-storage* devices, 
