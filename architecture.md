@@ -7,17 +7,17 @@
 **minimOS** (or *mOS* for short) is intended as a **development platform** for computers 
 with *modest resources*. Its main goals are **modularity** (you choose whatever set of 
 features you need) and **portability**: originally targeted to computers based on 
-[**6502** CPU](https://en.wikipedia.org/wiki/) 
+[**6502** CPU](https://en.wikipedia.org/wiki/MOS_Technology_6502) 
 and derivatives, either commercial or home-made by retrocomputing enthusiasts, might 
 be equally ported for almost any CPU out there including, but not limited to, Motorola 
-[**6800**](), 
-[**6809**]() & 
-[**680x0**](), 
-Intel [**8080**]()/
-[8085]()/
-[Zilog **Z80**]() 
-and the popular [**x86**](), 
-plus the ubiquitous [**ARM**]().
+[**6800**](https://en.wikipedia.org/wiki/Motorola_6800), 
+[**6809**](https://en.wikipedia.org/wiki/Motorola_6809) & 
+[**680x0**](https://en.wikipedia.org/wiki/Motorola_68000_series), 
+Intel [**8080**](https://en.wikipedia.org/wiki/Intel_8080)/
+[**8085**](https://en.wikipedia.org/wiki/Intel_8085)/
+[Zilog **Z80**](https://en.wikipedia.org/wiki/Zilog_Z80) 
+and the popular [**x86**](https://en.wikipedia.org/wiki/X86), 
+plus the ubiquitous [**ARM**](https://en.wikipedia.org/wiki/ARM_architecture).
 
 These goals will define most of its design features.
 
@@ -26,7 +26,7 @@ These goals will define most of its design features.
 ### Inspiration from CP/M and *home* computers
 
 The *portability* goal takes some inspiration from the once popular 
-[**CP/M**](), 
+[**CP/M**](https://en.wikipedia.org/wiki/CP/M)/
 the then *de facto* standard OS for microcomputers. While the original target (65xx) is 
 contemporary with those systems, present-day computing expectations lead to several 
 differences.
@@ -38,10 +38,10 @@ Perhaps this achieved goal was the key to CP/M's success. This OS had three main
 - **CCP** (Console Command Processor)
 
 Unlike the 
-[BIOS](), 
+[**BIOS**](https://en.wikipedia.org/wiki/BIOS), 
 which was provided *customised* by the computer's maker, 
 all the remaining components were **generic**, as supplied by 
-[Digital Research](). 
+[Digital Research](https://en.wikipedia.org/wiki/Digital_Research). 
 Of course, other commands or the *application software* were run atop of this, probably by 
 temporarily *replacing the CCP* for increased available RAM, as this 
 was a **single task**, single user OS. As soon as the task was completed, the *shell* (CCP) 
@@ -49,13 +49,13 @@ was reloaded and the user was prompted for another command.
 
 Alas, this scheme is not complete: usually, these components were provided on some kind of mass-storage
 media (often 
-[*diskettes*]()) 
+[*diskettes*](https://en.wikipedia.org/wiki/Floppy_disk)) 
 that had to be *loaded* into RAM somehow, as no CPU has any means to execute code *directly* from 
-[**secondary memory**](). 
+[**secondary memory**](https://en.wikipedia.org/wiki/Auxiliary_memory). 
 Thus, a small piece of **ROM** or any other *non-volatile 
-[**primary** memory]()* 
+[**primary** memory](https://en.wikipedia.org/wiki/Computer_memory)* 
 was needed in order to load and run the Operating System. This was often a 
-[**bootloader**](https://en.wikipedia.org/wiki/Booting) 
+[**bootloader**](https://en.wikipedia.org/wiki/Bootstrapping#Computing) 
 (generically known as 
 [**firmware**](https://en.wikipedia.org/wiki/Firmware)) 
 whose main purpose, besides perhaps some initial setup and hardware tests 
@@ -149,5 +149,5 @@ This limited machine
 played little role into the troubled waters of home computers, but made a point on the 
 **extreme efficiency** of the little known Forth language.
 
-*more in a few minutes*
+*more coming soon*
 
