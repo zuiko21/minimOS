@@ -13,8 +13,8 @@ be equally ported for almost any CPU out there including, but not limited to, Mo
 [**6800**](https://en.wikipedia.org/wiki/Motorola_6800), 
 [**6809**](https://en.wikipedia.org/wiki/Motorola_6809) & 
 [**680x0**](https://en.wikipedia.org/wiki/Motorola_68000_series), 
-Intel [**8080**](https://en.wikipedia.org/wiki/Intel_8080)/
-[**8085**](https://en.wikipedia.org/wiki/Intel_8085)/
+Intel [**8080**](https://en.wikipedia.org/wiki/Intel_8080) /
+[**8085**](https://en.wikipedia.org/wiki/Intel_8085) /
 [Zilog **Z80**](https://en.wikipedia.org/wiki/Zilog_Z80) 
 and the popular [**x86**](https://en.wikipedia.org/wiki/X86), 
 plus the ubiquitous [**ARM**](https://en.wikipedia.org/wiki/ARM_architecture).
@@ -101,7 +101,7 @@ leading to a
 whenever a *different from IBM's (copyrighted) BIOS* was used, but this soon ceased 
 to be a problem. *The rest is history...*
 
-## The home-computer market
+### The home-computer market
 
 On the other hand, the late seventies witnessed the birth of an unexpected computer 
 market: the 
