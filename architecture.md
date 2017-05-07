@@ -7,7 +7,7 @@
 **minimOS** (or *mOS* for short) is intended as a **development platform** for computers 
 with *modest resources*. Its main goals are **modularity** (you choose whatever set of 
 features you need) and **portability**: originally targeted to computers based on 
-[**6502** CPU]() 
+[**6502** CPU](https://en.wikipedia.org/wiki/) 
 and derivatives, either commercial or home-made by retrocomputing enthusiasts, might 
 be equally ported for almost any CPU out there including, but not limited to, Motorola 
 [**6800**](), 
@@ -55,11 +55,11 @@ that had to be *loaded* into RAM somehow, as no CPU has any means to execute cod
 Thus, a small piece of **ROM** or any other *non-volatile 
 [**primary** memory]()* 
 was needed in order to load and run the Operating System. This was often a 
-[**bootloader**]() 
+[**bootloader**](https://en.wikipedia.org/wiki/Booting) 
 (generically known as 
-[**firmware**]()) 
+[**firmware**](https://en.wikipedia.org/wiki/Firmware)) 
 whose main purpose, besides perhaps some initial setup and hardware tests 
-([*POST, Power-On Self Test*]())
+([*POST, Power-On Self-Test*](https://en.wikipedia.org/wiki/Power-on_self-test))
 was merely copying those three files in RAM and ordering the CPU to jump at their code. Obviously, 
 this firmware was part of the computer maker's package, and had nothing to do with CP/M, save 
 for being designed to boot from such system files. 
@@ -76,15 +76,15 @@ thus some means to *switch off* ROM access from the bottom of the address map (o
 the firmware has done its task, of course) has to be provided to achieve CP/M compatibility... 
 unless you want to *manually* program the initial RAM bytes via toggle-switches! Anyway, 
 that simple 
-[*bank-switching*]() 
+[*bank-switching*](https://en.wikipedia.org/wiki/Bank_switching) 
 feature was easily implemented, as demonstrated by CP/M's popularity.
 
 Back in the day, the **I/O** capabilites of computers were rather limited: assume a *keyboard*, an *output device*
 (could be a text CRT screen, but a 
-[*teletype*]() 
+[*teletype*](https://en.wikipedia.org/wiki/Teleprinter) 
 would do) and/or a *printer*, plus some *mass-storage* devices, 
 and you were set. Thus, the concept of modular 
-[device **drivers**]() 
+[device **drivers**](https://en.wikipedia.org/wiki/Device_driver) 
 as separate pieces of software was not relevant, and adapting your system to different 
 peripherals meant the aforementioned **BIOS customisation** -- it wasn't *that* hard, anyway.
 
