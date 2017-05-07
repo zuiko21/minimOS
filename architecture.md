@@ -89,15 +89,15 @@ as separate pieces of software was not relevant, and adapting your system to dif
 peripherals meant the aforementioned **BIOS customisation** -- it wasn't *that* hard, anyway.
 
 After the hayday of CP/M came the *x86-based* 
-[**IBM PC**]() 
-running [**MS-DOS**](), 
+[**IBM PC**](https://en.wikipedia.org/wiki/IBM_Personal_Computer) 
+running [**MS-DOS**](https://en.wikipedia.org/wiki/MS-DOS), 
 itself pretty much inspired by CP/M, although the BIOS was somehow integrated into the firmware, as 
 was definitely part of the (heaviliy standardised) machine. For compatibility, a 
-[**jump table**]() 
+[**jump table**](https://en.wikipedia.org/wiki/Branch_table) 
 was provided for easily calling BIOS routines, no matter their actual 
 locations in ROM; for additional performance, some software *skipped* this jump table, 
 leading to a 
-[plethora of incompatibilities]() 
+[plethora of incompatibilities](https://en.wikipedia.org/wiki/Influence_of_the_IBM_PC_on_the_personal_computer_market) 
 whenever a *different from IBM's (copyrighted) BIOS* was used, but this soon ceased 
 to be a problem. *The rest is history...*
 
@@ -105,44 +105,46 @@ to be a problem. *The rest is history...*
 
 On the other hand, the late seventies witnessed the birth of an unexpected computer 
 market: the 
-[*home computer*]() 
+[*home computer*](https://en.wikipedia.org/wiki/Home_computer) 
 which, despite the performance impairment, made computing affordable for the masses.
 
 But bereft of the portability/standardisation features of CP/M (and later MS-DOS) machines, 
 these were **closed, incompatible systems**, each platform gathering its base of loyal 
 users. Despite this diversity, many systems became quite popular indeed: the 
-[**TRS-80**](),
-the [**Commodore PET**]() 
-and the [**Apple \]\[**]() 
+[**TRS-80**](https://en.wikipedia.org/wiki/TRS-80),
+the [**Commodore PET**](https://en.wikipedia.org/wiki/Commodore_PET) 
+and the [**Apple \]\[**](https://en.wikipedia.org/wiki/Apple_II) 
 in USA; 
-the [**ZX Spectrum**]() 
-and (a bit later) the [**Amstrad CPC**]() 
+the [**ZX Spectrum**](https://en.wikipedia.org/wiki/ZX_Spectrum),
+the powerful [**BBC Micro**](https://en.wikipedia.org/wiki/BBC_Micro) 
+(especially in UK schools) and, a bit later, the 
+[**Amstrad CPC**](https://en.wikipedia.org/wiki/Amstrad_CPC) 
 at the other side of the pond... plus the 
-[**Commodore 64**]() 
-(and its predecessor [**VIC-20**]()
+[**Commodore 64**](https://en.wikipedia.org/wiki/Commodore_64) 
+(and its predecessor [**VIC-20**](https://en.wikipedia.org/wiki/Commodore_VIC-20)
 ) anywhere in the world, to mention the most relevant.
 
 Despite their alleged technological advantage, the *Japanese* were off from this 
 fierce price war (essential parameter of the targeted market) but they tried to make 
 an *standardised* platform for it: the ill-fated 
-[**MSX**]() 
+[**MSX**](https://en.wikipedia.org/wiki/MSX) 
 systems had some popularity in 
 Japan, but much less in Europe and almost zero in America.
 
 Substituting home cassette players for (then expensive) disk drives, these systems had 
 a relatively ample ROM with not only the essential firmware and *kernel/BIOS* (sort-of), 
 but usually a 
-[**BASIC language interpreter**]() 
+[**BASIC language interpreter**](https://en.wikipedia.org/wiki/BASIC) 
 was built-in, thus after booting (in just *a couple of seconds!*) one could simply 
 start typing programs. *Many of us were taught Computer Programming (leading to later 
 Computer Science formal education) this way...*
 
 A pretty odd exception to this rule (in the UK) was the 
-[**Jupiter ACE**](), 
+[**Jupiter ACE**](https://en.wikipedia.org/wiki/Jupiter_Ace), 
 somewhat related to 
-[*Sinclair*]() 
+[*Sinclair*](https://en.wikipedia.org/wiki/Sinclair_Research) 
 computers, but meant to be programmed... in 
-[**Forth**](). 
+[**Forth**](https://en.wikipedia.org/wiki/Forth_(programming_language)). 
 This limited machine 
 played little role into the troubled waters of home computers, but made a point on the 
 **extreme efficiency** of the little known Forth language.
