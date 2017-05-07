@@ -1,8 +1,8 @@
-#minimOS architecture
+# minimOS architecture
 
 *Last update: 2017-05-07*
 
-##Rationale
+## Rationale
 
 **minimOS** (or *mOS* for short) is intended as a development platform for computers 
 with modest resources. Its main goals are **modularity** (you choose whatever set of 
@@ -11,9 +11,9 @@ CPU and derivatives, either commercial or home-made by retrocomputing enthusiast
 be equally ported for almos any CPU out there including, but not limited to, Motorola 
 6800, 6809 & 680x0, Intel 8080/8085/Zilog Z80 and the popular x86).
 
-These goals define most of its design features.
+These goals will define most of its design features.
 
-##Architecture
+## Architecture
 
 The *portability* goal takes some inspiration from the once popular **CP/M**, the then 
 *de facto* standard OS for microcomputers. While the original target (65xx) is 
