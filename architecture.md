@@ -23,10 +23,10 @@ These goals will define most of its design features.
 
 ## Architecture
 
-### Inspiration from CP/M and *home* computers
+### Inspiration from CP/M and *home computers*
 
 The *portability* goal takes some inspiration from the once popular 
-[**CP/M**](https://en.wikipedia.org/wiki/CP/M)/
+[**CP/M**](https://en.wikipedia.org/wiki/CP/M),
 the then *de facto* standard OS for microcomputers. While the original target (65xx) is 
 contemporary with those systems, present-day computing expectations lead to several 
 differences.
@@ -70,12 +70,12 @@ kind of **disk drive** for the DOS to work on) were the only requisites to any c
 maker to have a **CP/M compatible** machine. With its notable software base, CP/M was *the* 
 choice for many computer makers, at least in the office environment.
 
-\*) A quick *hardware* note: since the i8080 CPU starts executing code *from address 0* 
-also, some **non-volatile** ROM is expected to be accesible there. But CP/M *needs* RAM there, 
+\*) A quick *hardware* note: since the i8080 CPU starts executing code *from address 0*, 
+some **non-volatile** ROM is expected to be accesible at that address. But CP/M *needs* RAM there, 
 thus some means to *switch off* ROM access from the bottom of the address map (once 
 the firmware has done its task, of course) has to be provided to achieve CP/M compatibility... 
 unless you want to *manually* program the initial RAM bytes via toggle-switches! Anyway, 
-that simple 
+such a simple 
 [*bank-switching*](https://en.wikipedia.org/wiki/Bank_switching) 
 feature was easily implemented, as demonstrated by CP/M's popularity.
 
@@ -91,8 +91,8 @@ peripherals meant the aforementioned **BIOS customisation** -- it wasn't *that* 
 After the hayday of CP/M came the *x86-based* 
 [**IBM PC**](https://en.wikipedia.org/wiki/IBM_Personal_Computer) 
 running [**MS-DOS**](https://en.wikipedia.org/wiki/MS-DOS), 
-itself pretty much inspired by CP/M, although the BIOS was somehow integrated into the firmware, as 
-was definitely part of the (heaviliy standardised) machine. For compatibility, a 
+itself pretty much inspired by CP/M, although the BIOS was somehow integrated into the firmware,
+at least in an OS-independent fashion. For compatibility reasons, a 
 [**jump table**](https://en.wikipedia.org/wiki/Branch_table) 
 was provided for easily calling BIOS routines, no matter their actual 
 locations in ROM; for additional performance, some software *skipped* this jump table, 
