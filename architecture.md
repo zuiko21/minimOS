@@ -149,5 +149,17 @@ This limited machine
 played little role into the troubled waters of home computers, but made a point on the 
 **extreme efficiency** of the little known Forth language.
 
+Eventually, these home computers evolved 
+into 16 or even 32-bit processors, like the 
+[Apple IIgs](), 
+[Atari ST]() &
+[Commodore Amiga](),
+although they were somewhat less popular as 
+regular x86 PCs became less and less expensive.
+
+## Generic minimOS architecture
+At first glance, minimOS architecture might 
+look similar to that of CP/M.
+
 *more coming soon*
 
