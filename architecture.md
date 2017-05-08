@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-05-07*
+*Last update: 2017-05-08*
 
 ## Rationale
 
@@ -21,9 +21,9 @@ plus the ubiquitous [**ARM**](https://en.wikipedia.org/wiki/ARM_architecture).
 
 These goals will define most of its design features.
 
-## Architecture
+## Background
 
-### Inspiration from CP/M and *home computers*
+### Inspiration from CP/M
 
 The *portability* goal takes some inspiration from the once popular 
 [**CP/M**](https://en.wikipedia.org/wiki/CP/M),
@@ -151,15 +151,24 @@ played little role into the troubled waters of home computers, but made a point 
 
 Eventually, these home computers evolved 
 into 16 or even 32-bit processors, like the 
-[Apple IIgs](), 
-[Atari ST]() &
-[Commodore Amiga](),
+[Apple IIgs](https://en.wikipedia.org/wiki/Apple_IIGS), 
+[Atari ST](https://en.wikipedia.org/wiki/Atari_ST) &
+[Commodore Amiga](https://en.wikipedia.org/wiki/Amiga),
 although they were somewhat less popular as 
 regular x86 PCs became less and less expensive.
 
 ## Generic minimOS architecture
-At first glance, minimOS architecture might 
-look similar to that of CP/M.
+At first glance, **minimOS** architecture might look similar to that of CP/M,
+but there are significant differences:
+
+![minimOS architecture](pics/mOS-arch.jpeg)
+
+Apparently, the **firmware** looks like the generic term for CP/M's *BIOS* -- together with the device **drivers**, 
+which were implemented via *customisation*.
+
+On the other hand, the **Kernel/API** seems certainly related to the *BDOS*, as is hardware-independent and 
+providing the only interface *application software* is supposed to use... This component is probably the closest to
+CP/M's design, in both form and function.
 
 *more coming soon*
 
