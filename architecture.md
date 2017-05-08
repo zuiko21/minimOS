@@ -161,7 +161,7 @@ regular x86 PCs became less and less expensive.
 At first glance, **minimOS** architecture might look similar to that of CP/M,
 but there are significant differences:
 
-![minimOS architecture](pics/mOS-arch.jpeg)
+![minimOS architecture](mOS-arch.jpeg)
 
 Apparently, the **firmware** looks like the generic term for CP/M's *BIOS* -- together with the device **drivers**, 
 which were implemented via *customisation*.
