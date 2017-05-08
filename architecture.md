@@ -159,7 +159,7 @@ regular x86 PCs became less and less expensive.
 
 ## Generic minimOS architecture
 At first glance, **minimOS** architecture might look similar to that of CP/M,
-but there are significant differences:
+but there are significant differences. Have a look at this graph:
 
 ![minimOS architecture](mOS-arch.jpeg)
 
@@ -167,8 +167,14 @@ Apparently, the **firmware** looks like the generic term for CP/M's *BIOS* -- to
 which were implemented via *customisation*.
 
 On the other hand, the **Kernel/API** seems certainly related to the *BDOS*, as is hardware-independent and 
-providing the only interface *application software* is supposed to use... This component is probably the closest to
-CP/M's design, in both form and function.
+providing the only interface *application software* is supposed to use... This component is probably the 
+**closest one to CP/M's design**, in both form and function.
+
+However, unlike CP/M's *BIOS*, minimOS' firmware, as of 2017-05-08, **has no I/O capabilities**, being restricted to 
+*Kernel instalation/configuration* issues, plus providing a **standard interface to some hardware-dependent features** 
+(say, power management). As this OS is intended to run on a wide spectrum of machines, from a simple embedded system 
+to a quasi-full-featured desktop computer, *there is no previous guarantee of I/O device availability* at such early stage.
+But it seems interesting...
 
 *more coming soon*
 
