@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-05-08*
+*Last update: 2017-05-10*
 
 ## Rationale
 
@@ -174,7 +174,8 @@ providing the only interface *application software* is supposed to use... This c
 However, unlike CP/M's *BIOS*, minimOS' firmware (as of 2017-05-08) has **no I/O capabilities**, being restricted to 
 **Kernel instalation/configuration** issues, plus providing a **standard interface to some hardware-dependent features** 
 (say, *power management*). As this OS is intended to run on a wide spectrum of machines, from a simple embedded system 
-to a quasi-full-featured desktop computer, **there is no guarantee of I/O device availability** at such low level.
+to a quasi-full-featured desktop computer, **there is no guarantee of I/O device availability** at such low level. 
+You can think of this as a ***Hardware Abstraction Layer***
 
 On second thought, in case of a *Kernel and/or driver failure*, it would be nice to have 
 an *emergency* I/O channel available for **debugging purposes**, provided the hardware 
@@ -204,6 +205,12 @@ in use, but in any case they'll bear a **header** containing this kind of inform
 - Pointer to a **description string** in human-readable form
 - Number of ***dynamically allocated* bytes**, if loadable *on-the-fly* (TBD)
 
+UPDATE 2017-05-10: The *jiffy* and *slow* interrupt tasks might be unified into a single *periodic interrupt queue*, adding a **frequency** parameter specifying how many 
+*ticks* (jiffy interrupts) must wait in order to call the routine. For instance, 
+a value of 200 would be equivalent to the *slow* interrupt task (5*200=1000 ms). 
+*This is likely to be part of the standard for v0.6 and beyond*.
+(END OF UPDATE)
+
 *I/O routines* need little explanation, although **block** transfers haven't been used 
 this far (2017-05-08). Details for them are TBD, and could serve as a **configuration** 
 settings interface.
@@ -217,7 +224,7 @@ routine will be called, although any error condition makes little sense now, thu
 required.
 
 Of special interest are the **interrupt routines**. The **jiffy** and **slow** tasks are 
-called **periodically**; while 5 ms and 1 second, respectively, are the *recommended* 
+called **periodically**; while 5 ms and 1 second (*see update below*), respectively, are the *recommended* 
 values, the actual timing **cannot be guaranteed**. While the latter are obviously 
 useful for infrequent tasks (disk auto-mount, long-lasting timers), the other may 
 replace the [**daemons**](https://en.wikipedia.org/wiki/Daemon_(computing)) 
@@ -233,13 +240,34 @@ is called, if a *periodic* interrupt was the cause, the *jiffy* queue will be sc
 calling each entry sequentially (ditto for the *slow* queue, whenever some amount of 
 jiffy IRQs happened).
 
+UPDATE 2017-05-10: although *jiffy* & *slow* queues are to be unified, it's still worth 
+keeping a separate *asynchronous* queue for **lower interrupt latency**. The new *adjustable frequency* method allows easy implementation of tasks that do not need to be executed *every* single jiffy IRQ. However, in case a driver needs 
+*both* jiffy and slow interrupts, the unified interrupt task may start like this:
+
+```
+DEC delay          ; some internal counter
+BNE fast_task      ; not expired, just execute jiffy task
+    LDA #max_delay ; number of jiffys to be executed before the slow task
+    STA delay
+    JSR slow_task  ; execute slow task...
+fast_task:         ; ...and continue with the usual jiffy task
+```
+
+For instance, in a system with 5 ms jiffy IRQ, a driver executing a periodic task every 20 ms *and* a slow task every second, would use `frequency = 4` and `max_delay = 50`.
+
+A similar piece of code had to be used with "jiffy" tasks that hadn't to be 
+executed every periodic IRQ, the new *frequency* parameter makes that **innecessary**.
+
+Another improvement to this method would be the possibiliy of **temporarily disabling a certain interrupt task** when not needed, for better system performance.
+(END OF UPDATE)
+
 For the **asynchronous interrupts**, a similar procedure may be used, but each task 
 must return an *error code* signaling whether the IRQ was acknowledged by that handler 
 or not. This code **may or may not** be ignored by the ISR, depending on performance 
 considerations or the chance of simaltaneous interrupts.
 
-Please note that this system was designed with the (rather simple) interrupt system of 
-65xx processors. *Hardware with more sophisticated interrupt management could use more 
+Please note that this system was designed with the (rather simple) interrupt system of 65xx processors in mind. 
+*Hardware with more sophisticated interrupt management could use more 
 queues to match their capabilities*.
 
 In any case, the ocassional *interrupt masking* when entering 
@@ -252,7 +280,15 @@ The problem is in *driver variables*, which are **statically allocated**.
 *Future versions will allow loading drivers from mass storage, even on a 
 running system **without rebooting***. For this to be achieved, *dynamic allocation* of 
 variable space is needed, thus a parameter in driver header asks for a certain memory 
-size. Details for passing the allocated space *pointer* to the asking driver are TBD.
+size. Details for passing the allocated space *pointer* to the asking driver are TBD, (UPDATE 2017-05-10) 
+but a feasible method in 65xx architectures would be **setting `sysptr`** 
+reserved zeropage location prior to any interrupt task execution, pointing it to the 
+beginning of allocated space. *Indirect indexed addressing* would have to be used 
+by the drivers in order to access its (dynamically allocated) variable space. 
+Alternatively, a *relocation* scheme (**not yet implemented** as of 2017-05-10, in any way) may be used for better runtime performance; even (for the 65816) moving 
+*Direct Page* to the reserved area for the task execution, although that may 
+interfere with *kernel calls* and general system operation, if not carefully crafted 
+(interrupts **off**, and make sure NMI sets/restores DP accordingly).
 
 ---
  
