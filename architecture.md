@@ -308,7 +308,7 @@ The arrows in the previous graphic tell the *expected* calls between components.
 - **Drivers** will interact with *hardware*, either directly or thru *firmware*
 - **Firmware** is of course *hardware-specific*, but may call some *Kernel* functions
 
-Eagle-eyed reader may have noticed the **yellow fringing** around the *apps-to-kernel* arrow... while user apps are not 
+Eagle-eyed readers may have noticed the **yellow fringing** around the *apps-to-kernel* arrow... while user apps are not 
 *expected* to call the Firmware *directly*, there is nothing preventing it. Actually, a "plain" 6502 may do it without 
 effort, as the firmware's [ABI](https://en.wikipedia.org/wiki/Application_binary_interface) is pretty much the same as 
 the Kernel's (call via `JSR` and ending in `RTS`). The 65816 makes it more difficult, as the Kernel uses a different 
@@ -332,7 +332,7 @@ This is an architecture-dependent issue, but will usually include:
 
 Depending of the CPU used, this context can be totally or partially stored in **zero-page** (for 65xx and 68xx families), 
 **registers** (680x0) or some appropriately pointed RAM area. Together with the 
-[stack](https://en.wikipedia.org/wiki/Stack_%28abstract_data_type%29) area, this will be saved upon **context switches** 
+[stack](https://en.wikipedia.org/wiki/Stack_\(abstract_data_type\)) area, this will be saved upon **context switches** 
 (typically under *multitasking*) with probably the *system reserved variables* as a notable exception (NMIs should preserve 
 that too for total **transparency**)
 
