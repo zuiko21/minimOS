@@ -242,7 +242,7 @@ jiffy IRQs happened).
 
 UPDATE 2017-05-10: although *jiffy* & *slow* queues are to be unified, it's still worth 
 keeping a separate *asynchronous* queue for **lower interrupt latency**. The new *adjustable frequency* method allows easy implementation of tasks that do not need to be executed *every* single jiffy IRQ. However, in case a driver needs 
-*both* jiffy and slow interrupts, the unified interrupt task may start like this:
+*both* jiffy and slow interrupts, the unified interrupt task may start (in 6502 fashion) like this:
 
 ```
 DEC delay          ; some internal counter
@@ -285,11 +285,58 @@ but a feasible method in 65xx architectures would be **setting `sysptr`**
 reserved zeropage location prior to any interrupt task execution, pointing it to the 
 beginning of allocated space. *Indirect indexed addressing* would have to be used 
 by the drivers in order to access its (dynamically allocated) variable space. 
-Alternatively, a *relocation* scheme (**not yet implemented** as of 2017-05-10, in any way) may be used for better runtime performance; even (for the 65816) moving 
+Alternatively, a *relocation* scheme (**not yet implemented** as of 2017-05-10, in any way) may be used for better runtime performance; even (for the **65816**) moving 
 *Direct Page* to the reserved area for the task execution, although that may 
 interfere with *kernel calls* and general system operation, if not carefully crafted 
-(interrupts **off**, and make sure NMI sets/restores DP accordingly).
+(interrupts **off**, and make sure [NMI](https://en.wikipedia.org/wiki/Non-maskable_interrupt) 
+handler sets/restores DP accordingly).
 
+### Access privileges
+
+This is always a tough question, as there are some *psychological* reasons against a robust, **highly protected** system -- 
+it may lead to **buggier** user software under the *fake security* impression that userland crashes won't affect the *rest* 
+of the system... but there are certain situations where adequate protection is **a must**. Thus, by concept, minimOS *neither 
+requires nor prevent protection techniques*. Development is made with *cleanliness* and *functional separation* in mind, but 
+access privileges are just **recommended paths**, as 65xx CPUs have no protection facilities whatsoever, and **may be skipped** 
+altogether if *performance concerns* require so. The aforementioned functional separation would allow other CPUs with privilege 
+support to strictly enforce such "correct" access procedures.
+
+The arrows in the previous graphic tell the *expected* calls between components. In a nutshell:
+
+- **User apps** may just call the *Kernel/API*
+- **Kernel** will use *drivers* and *firmware* functions, but **not** the *hardware*
+- **Drivers** will interact with *hardware*, either directly or thru *firmware*
+- **Firmware** is of course *hardware-specific*, but may call some *Kernel* functions
+
+Eagle-eyed reader may have noticed the **yellow fringing** around the *apps-to-kernel* arrow... while user apps are not 
+*expected* to call the Firmware *directly*, there is nothing preventing it. Actually, a "plain" 6502 may do it without 
+effort, as the firmware's [ABI](https://en.wikipedia.org/wiki/Application_binary_interface) is pretty much the same as 
+the Kernel's (call via `JSR` and ending in `RTS`). The 65816 makes it more difficult, as the Kernel uses a different 
+interface (call via `COP` which must end in **`RTI`**) and the Firmware is expected to be called *from bank zero* (where the 
+Kernel & drivers must reside); but anyway, a **wrapper** will be provided for enabling the user apps to **directly** call the 
+firmware via `RTL` (from any bank)... *if you know what you're doing* (register sizes, etc)
+
+The desired *cleanliness* is responsible for the creation of some *apparently unneeded* Kernel functions (`TS_INFO`, `RELEASE`, 
+`SET_CURR`...) that will be discussed in due time, particularly affecting **multitasking** implementation.
+
+### Task context
+
+This is an architecture-dependent issue, but will usually include:
+
+- Standard *per task* Input and Output device, allowing easy **redirection**
+- Some available **space** for the user task, doesn't need to be allocated
+- Probably an indication of available user space. *This could be updated with the **actually** used bytes from that space*.
+- **Local variables** for kernel functions (should *not* be touched by user code)
+- **Kernel parameters** for function calling
+- **System reserved variables** which, at least on 65xx machines, *may* be used harmlessly but would certainly change upon interrupts or context switches
+
+Depending of the CPU used, this context can be totally or partially stored in **zero-page** (for 65xx and 68xx families), 
+**registers** (680x0) or some appropriately pointed RAM area. Together with the 
+[stack](https://en.wikipedia.org/wiki/Stack_%28abstract_data_type%29) area, this will be saved upon **context switches** 
+(typically under *multitasking*) with probably the *system reserved variables* as a notable exception (NMIs should preserve 
+that too for total **transparency**)
+
+Some hardware may make this area **protected** from other processes' access. Even on 65xx architectures, ***bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
 ---
  
 *more coming soon*
