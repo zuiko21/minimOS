@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5.1rc1
-; last modified 20170511-1039
+; v0.5.1rc2
+; last modified 20170511-1402
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -358,7 +358,7 @@ main_nnul:
 
 ; *** call command routine ***
 call_mcmd:
-	_JMPX(cmd_ptr & $FFFF)		; indexed jump macro, bank agnostic!
+	_JMPX(cmd_ptr)			; indexed jump macro
 
 ; ****************************************************
 ; *** command routines, named as per pointer table ***
@@ -777,7 +777,7 @@ ex_linc:
 		LDA oper+1			; check MSB, just in case
 		CMP siz+1			; against size
 		BNE ex_load			; continue until done
-	BRA ex_ok			; done!
+	BEQ ex_ok			; done! no need for BRA
 ex_err:
 ; an I/O error occurred during transfer!
 	LDA #>io_err		; set message pointer
@@ -904,12 +904,12 @@ rb_cmd:
 	CMP #'W'			; asking for warm boot?
 	BNE rb_notw
 		LDY #PW_WARM		; warm boot request ## minimOS specific ##
-		BRA fw_shut			; call firmware
+		_BRA fw_shut		; call firmware, could use BNE?
 rb_notw:
 	CMP #'C'			; asking for cold boot?
 	BNE rb_notc
 		LDY #PW_COLD		; cold boot request ## minimOS specific ##
-		BRA fw_shut			; call firmware
+		_BRA fw_shut		; call firmware, could use BNE?
 rb_notc:
 	CMP #'S'			; asking for shutdown?
 	BNE rb_exit			; otherwise abort quietly
@@ -1232,17 +1232,17 @@ glc_do:
 fetch_byte:
 	JSR $FFFF &  fetch_value		; get whatever
 	LDA temp			; how many bytes will fit?
-	INC					; round up chars...
+	_INC				; round up chars...
 	LSR					; ...and convert to bytes
 	CMP #1				; strictly one?
-	BRA ft_check		; common check
+	_BRA ft_check		; common check
 
 ; * fetch two bytes from hex input buffer, value @value.w *
 fetch_word:
 ; another approach using fetch_value
 	JSR $FFFF &  fetch_value		; get whatever
 	LDA temp			; how many bytes will fit?
-	INC					; round up chars...
+	_INC				; round up chars...
 	LSR					; ...and convert to bytes
 	CMP #2				; strictly two?
 ; common fetch error check
@@ -1265,16 +1265,16 @@ ft_clean:
 
 ; * fetch typed value, no matter the number of chars *
 fetch_value:
-	STZ value			; clear full result
-	STZ value+1
-	STZ temp			; no chars processed yet
+	_STZA value			; clear full result
+	_STZA value+1
+	_STZA temp			; no chars processed yet
 ; could check here for symbolic references...
 ftv_loop:
 		JSR $FFFF &  getNextChar		; go to operand first cipher!
 		JSR $FFFF &  hex2nib			; process one char
 			BCS ftv_bad			; no more valid chars
 		INC temp			; otherwise count one
-		BRA ftv_loop		; until no more valid
+		_BRA ftv_loop		; until no more valid
 ftv_bad:
 	JSR $FFFF &  backChar		; should discard very last char! eeeeeeeek
 	CLC					; always check temp=0 for errors!

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1b9, must match kernel.s
+; v0.5.1rc2, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170215-1034
+; last modified 20170511-1350
 
 ; no way for standalone assembly...
 
@@ -26,25 +26,6 @@ unimplemented:			; placeholder here, not currently used
 ; LOWRAM version uses da_ptr!!!
 
 cout:
-#ifdef	MULTITASK
-; this should be done for physical devs only, 0.5.2+
-	STY iol_dev			; keep device temporarily, worth doing here (3)
-	_ENTER_CS			; needed for a MUTEX (5)
-co_loop:
-	LDA cio_lock, Y		; check whether THAT device in use (4)
-	BEQ co_lckd			; resume operation if free (3)
-; otherwise yield CPU time and repeat
-		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-		LDY iol_dev			; restore previous status (3)
-		_BRA co_loop		; try again! (3)
-co_lckd:
-	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
-	TYA					; current PID in A (2)
-	LDY iol_dev			; restore device number (3)
-	STA cio_lock, Y		; reserve this (4)
-	_EXIT_CS			; proceed normally (4)
-#endif
-; continue with mutually exclusive COUT
 	TYA					; for indexed comparisons (2)
 	BNE co_port			; not default (3/2)
 		LDA stdout			; new per-process standard device
@@ -72,16 +53,34 @@ co_win:
 	_ERR(NO_RSRC)		; not yet implemented
 
 co_phys:
-; ** new direct indexing, converted to subroutine because of MUTEX 20161121 **
+; arrived here with dev # in A
+; new per-phys-device MUTEX for COUT, no matter if singletask!
 	ASL					; convert to index (2+2)
-	TAX
-; clear mutex ONLY if multitasking is in use!
-#ifdef	MULTITASK
-	JSR co_call			; indirect indexed CALL...
+	STA iol_dev			; keep device-index temporarily, worth doing here (3)
+	_ENTER_CS			; needed for a MUTEX (5)
+co_loop:
+		LDX iol_dev			; retrieve index!
+		LDA cio_lock, X		; check whether THAT device is in use (4)
+			BEQ co_lckd			; resume operation if free (3)
+; otherwise yield CPU time and repeat
+; faster KERNEL(B_YIELD)
+		LDX #MM_YIELD		; internal multitasking index (2)
+		JSR yield			; direct to driver skipping the kernel (6)
+		_BRA co_loop		; try again! (3)
+co_lckd:
+	LDA run_pid			; get ours in A, faster!
+	STA cio_lock, X		; *reserve this (4)
+	_EXIT_CS
+; continue with mutually exclusive COUT
+	JSR co_call			; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
+
+; *** common I/O calls ***
+cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
-	RTS					; respect error code anyway
+	RTS					; exit with whatever error code
 
+; *** for 02 systems without indexed CALL ***
 co_call:
 #endif
 	_JMPX(drv_opt)		; direct jump!!!
@@ -471,9 +470,9 @@ fr_found:
 	LDY ram_stat+1, X	; check status of following entry
 ;	CPY #FREE_RAM		; was it free? could be supressed if value is zero
 	BNE fr_notafter		; was not free, thus nothing to optimise forward
-		PHX					; keep actual position eeeeeeeek
+		_PHX				; keep actual position eeeeeeeek
 		JSR fr_join			; integrate following free block
-		PLX					; retrieve position
+		_PLX				; retrieve position
 	BEQ fr_ok			; if the first block, cannot look back eeeeeeeeeek
 fr_notafter:
 	TXA					; check whether it was the first block
@@ -689,13 +688,12 @@ su_peek:
 ; str_pt	= pointer to string (might be altered!) 24-bit mandatory
 ;		OUTPUT
 ; C = device error
-;		USES str_dev, iol_dev and whatever the driver takes
+;		USES iol_dev and whatever the driver takes
 ;
 ; cio_lock is a kernel structure
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
-; ** TO DO ** apply MUTEX only to physical devices!
 #ifdef	MULTITASK
 	STY iol_dev			; **keep device temporarily, worth doing here (3)
 	_ENTER_CS			; needed for a MUTEX (5)
@@ -753,10 +751,9 @@ str_nfound:
 str_phys:
 ; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
-	STA str_dev			; store for indexed call! (3)
+	STA iol_dev			; store for indexed call! (3)
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
-; ******* CONTINUE HERE **************** CONTINUE HERE *********
 str_loop:
 		_PHY				; save just in case COUT destroys it (3)
 		LDA (str_pt), Y		; get character from string, new approach (5)
@@ -773,7 +770,7 @@ str_cont:
 	INC str_pt+1		; otherwise increase, parameter has changed! will it have to restore parameter?
 	_BRA str_loop		; continue, will check for termination later (3)
 str_call:
-	LDX str_dev			; get driver pointer position (3)
+	LDX iol_dev			; get driver pointer position (3)
 	_JMPX(drv_opt)		; go at stored pointer (...6)
 str_err:
 	PLA					; discard saved Y while keeping error code
@@ -788,14 +785,14 @@ str_abort:
 ; *** READLN, buffered input *** new 20161223
 ; ******************************
 ; Y <- dev, str_pt <- *buffer (24-bit mandatory), ln_siz <- max offset
-; uses iol_dev, rl_cur
+; uses rl_dev, rl_cur
 
 readLN:
-	STY iol_dev			; preset device ID!
+	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
 		JSR yield			; always useful!
-		LDY iol_dev			; use device
+		LDY rl_dev			; use device
 		JSR cin				; get one character
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
@@ -820,12 +817,12 @@ rl_nbs:
 		STA (str_pt), Y		; store into buffer
 		INC	rl_cur			; update index
 rl_echo:
-		LDY iol_dev			; retrieve device
+		LDY rl_dev			; retrieve device
 		JSR cout			; echo received character
 		_BRA rl_l			; and continue
 rl_cr:
 	LDA #CR				; newline
-	LDY iol_dev			; retrieve device
+	LDY rl_dev			; retrieve device
 	JSR cout			; print newline (ignoring errors)
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
@@ -1127,26 +1124,6 @@ rls_next:
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
-
-; ****debug code*****
-hexdebug:		; print A in hex
-	PHA			; keep whole value
-	LSR			; shift right four times (just the MSB)
-	LSR
-	LSR
-	LSR
-	JSR hxd_ascii	; convert and print this cipher
-	PLA			; retrieve full value
-	AND #$0F	; keep just the LSB... and repeat procedure
-hxd_ascii:
-	CMP #10		; will be a letter?
-	BCC hxd_num	; just a number
-		ADC #6			; convert to letter (plus carry)
-hxd_num:
-	ADC #'0'	; convert to ASCII (carry is clear)
-	JSR $c0c2	; direct print
-	RTS
-; *******************
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***

@@ -7,18 +7,7 @@
 #define		DRIVERS		_DRIVERS
 
 ; in case of standalone assembly
-#ifndef		KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
-#include "drivers/config/DRIVER_PACK.h"	; generic access
-.text
-#endif
+#include	"usual.h"
 
 ; *** load appropriate drivers here ***
 driver0:

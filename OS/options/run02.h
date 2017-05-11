@@ -1,9 +1,9 @@
 ; default options for minimOS and other modules
 ; suitable for run816 BBC simulator
-; fot 8-bit kernel testing!
+; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170214-1911
+; last modified 20170511-1403
 
 ; *** set conditional assembly ***
 
@@ -17,12 +17,17 @@
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
+;#define		NMOS	_NMOS
+#ifdef	NMOS
+#define		CPU_TYPE	'N'
+#else
 #define		CPU_TYPE	'B'
+#endif
 
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
 
-#define		MACHINE_NAME	"BBC simulator02"
+#define		MACHINE_NAME	"BBC simulator '02"
 #define		MACHINE_ID		"run6502"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/

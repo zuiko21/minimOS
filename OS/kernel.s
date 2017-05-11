@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1b10
+; v0.5.1rc1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170310-1439
+; last modified 20170511-1312
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,12 +35,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.5.1b10", 0	; version in comment
+	.asc	"minimOS 0.5.1rc1", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$6800	; time, 13.00
-	.word	$4A6A	; date, 2017/3/10
+	.word	$6980	; time, 13.12
+	.word	$4AAB	; date, 2017/5/11
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -401,8 +401,8 @@ dr_ok:					; *** all drivers inited ***
 ; could be done always, will not harm anyway
 	LDY #<sig_kill		; get default routine address LSB
 	LDA #>sig_kill		; same for MSB
-	STY mm_term			; store in new system variable
-	STA mm_term+1
+	STY mm_sterm		; store in new system variable
+	STA mm_sterm+1
 #endif
 
 ; startup code, revise ASAP
@@ -512,8 +512,8 @@ exec_st:
 st_hndl:
 	LDY ex_pt			; get pointer
 	LDA ex_pt+1			; get pointer MSB
-	STY mm_term			; store in single variable (from unused table)
-	STA mm_term+1
+	STY mm_sterm		; store in single variable (from unused table)
+	STA mm_sterm+1
 	_DR_OK
 
 ; B_STATUS for single-task systems
@@ -540,7 +540,7 @@ sig_term:
 	LDA #<st_yield		; same for LSB
 	PHA
 	PHP					; as required by RTI
-	JMP (mm_term)		; execute handler, will return to sig_yield
+	JMP (mm_sterm)		; execute handler, will return to sig_yield
 sig_kill:
 ; first, free up all memory from previous task
 ;	LDY #0				; standard PID
@@ -568,7 +568,19 @@ kern_end:		; for size computation
 ; ***********************************************
 
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
-; must include external shell label!!!
+; must NOT include external shell label!!!
+; but MUST make page alignment HERE, the bulit-in one into shell file will fo nothing as already algined
+
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+
+shellcode:
+; first determine actual shell address, no longer internally defined!
+#ifdef	NOHEAD
+shell	= shellcode			; no header to skip
+#else
+shell	= shellcode+256		; skip header
+#endif
+
 #include "shell/SHELL"
 
 ; ****** Downloaded kernels add driver staff at the end ******

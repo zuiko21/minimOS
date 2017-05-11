@@ -1,7 +1,7 @@
 ; 8080/8085 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5rc1
-; last modified 20170511-1048
+; v0.5rc2
+; last modified 20170511-1420
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -40,7 +40,7 @@ title:
 	.dsb	a80_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5600		; time, 10.48
+	.word	$7200		; time, 14.16
 	.word	$4AAB		; date, 2017/5/11
 
 	a80siz	=	a80_end - a80_head - 256	; compute size NOT including header!
@@ -278,7 +278,7 @@ main_nnul:
 
 ; *** call command routine ***
 call_mcmd:
-	_JMPX(cmd_ptr & $FFFF)		; indexed jump macro, bank agnostic!
+	_JMPX(cmd_ptr)		; indexed jump macro, for bank 0 at least
 
 ; ****************************************************
 ; *** command routines, named as per pointer table ***
@@ -995,9 +995,9 @@ ft_clean:
 
 ; * fetch typed value, no matter the number of chars *
 fetch_value:
-	STZ value			; clear full result
-	STZ value+1
-	STZ temp			; no chars processed yet
+	_STZA value			; clear full result
+	_STZA value+1
+	_STZA temp			; no chars processed yet
 ; could check here for symbolic references...
 ftv_loop:
 		JSR $FFFF &  getNextChar		; go to operand first cipher!

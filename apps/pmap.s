@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b5
-; last modified 20170224-0847
+; v0.5.1rc1
+; last modified 20170511-1351
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -32,8 +32,8 @@ pmapHead:
 	.dsb	pmapHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$B400			; time, 22.30
-	.word	$4A26			; date, 2017/1/6
+	.word	$6E60			; time, 1351
+	.word	$4AAB			; date, 2017/5/11
 
 pmapSize	=	pmapEnd - pmapHead -256	; compute size NOT including header!
 
@@ -120,7 +120,7 @@ pmap_kb:
 	LSR			; divide by 4
 	LSR
 		BCC pm_nround	; if C, round up!
-			INC
+			_INC
 pm_nround:
 ; print A in decimal and continue! no more than 64!
 	LDX #0		; decade counter

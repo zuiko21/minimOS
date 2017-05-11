@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1rc1
-; last modified 20170511-1037
+; v0.5.1rc3
+; last modified 20170511-1416
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -36,7 +36,7 @@ montitle:
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5340		; time, 10.26
+	.word	$7200		; time, 14.16
 	.word	$4AAB		; date, 2017/5/11
 
 	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
@@ -159,7 +159,7 @@ d_error:
 
 ; *** call command routine ***
 call_mcmd:
-	_JMPX(cmd_ptr & $FFFF)	; indexed jump macro, bank agnostic!
+	_JMPX(cmd_ptr)		; indexed jump macro, supposedly from bank 0 only!
 
 ; *** command routines, named as per pointer table ***
 set_A:
@@ -183,7 +183,9 @@ call_address:
 	LDA iodev			; *** must push default device for later ***
 	PHA
 	JSR do_call			; set regs and jump!
+#ifdef	C816
 	.xs: .as: SEP #$30	; *** make certain about standard size ***
+#endif
 ; ** should record actual registers here **
 	STA _a
 	STX _x

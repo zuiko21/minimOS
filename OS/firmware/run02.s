@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9b1
+; v0.9rc2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170215-0930
+; last modified 20170511-1409
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -13,26 +13,20 @@
 ; this is expected to be loaded at an aligned address anyway
 #ifndef	NOHEAD
 fw_start:
-	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
-	.asc	"boot", 0				; mandatory filename for firmware
+	.asc	0, "m", CPU_TYPE	; special system wrapper
+	.asc	"****", CR			; flags TBD
+	.asc	"boot", 0			; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9b1 firmware for "
-#else
-fw_splash:
-#endif
-
-; at least, put machine name as needed by firmware!
-; this cannot be waived by the NOHEAD option
+	.asc	"0.9 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
-#ifndef	NOHEAD
 ; advance to end of header
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6000			; time, 12.00
-	.word	$4A37			; date, 2017/1/23
+	.word	$6800			; time, 13.00
+	.word	$4AAD			; date, 2017/5/11
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -57,30 +51,6 @@ reset:
 	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
 
-; as this firmware should be 65816-only, check for its presence or nothing!
-; derived from the work of David Empson, Oct. '94
-#ifdef	SAFE
-	SED					; decimal mode
-	LDA #$99			; load highest BCD number (sets N too)
-	CLC					; prepare to add
-	ADC #$02			; will wrap around in Decimal mode (should clear N)
-	CLD					; back to binary
-		BMI cpu_bad			; NMOS, N flag not affected by decimal add
-	TAY					; let us preload Y with 1 from above
-	LDX #$00			; sets Z temporarily
-	TYX					; TYX, 65802 instruction will clear Z, NOP on all 65C02s will not
-	BNE fw_cpuOK		; Branch only on 65802/816
-cpu_bad:
-		LDA #'?'	; *** some debug code for run65816, just in case ***
-		JSR $c0c2	; *** direct print via run65816 ********************
-		JMP lock			; cannot handle BRK, alas
-fw_cpuOK:
-#endif
-
-; it can be assumed 65816 from this point on
-;	CLC					; set NATIVE mode eeeeeeeeeeek
-;	XCE					; still with 8-bit registers
-
 ; *** optional firmware modules ***
 post:
 
@@ -93,6 +63,9 @@ post:
 ; *** set default CPU type ***
 	LDA #'V'			; 65816 installed (2)
 	STA fw_cpu			; store variable (4)
+; ...but check it for real afterwards
+#include	"firmware/modules/cpu_check.s"
+
 ; *** preset kernel start address (standard label from ROM file) ***
 	LDA #>kernel			; get full address
 	LDY #<kernel
@@ -106,7 +79,7 @@ post:
 
 	LDX #4				; max WORD offset in uptime seconds AND ticks, assume contiguous (2)
 res_sec:
-		STZ ticks, X		; reset word (5)
+		_STZA ticks, X		; reset word (5)
 		DEX					; next backwards
 		BPL res_sec			; zero is included
 ;	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
@@ -118,11 +91,14 @@ res_sec:
 fws_loop:
 		LDA fw_splash, X	; get char
 			BEQ fws_cr			; no more to print
-		PHX					; keep reg (not really needed)
+		_PHX				; keep reg (not really needed)
+#ifdef	NMOS
+		LDA fw_splash, X	; get char AGAIN
+#endif
 		JSR $c0c2			; Eh output
-		PLX
+		_PLX
 		INX					; next char
-		BRA fws_loop
+		BNE fws_loop		; no need for BRA
 fws_cr:
 	LDA #LF				; trailing CR, needed by console!
 	JSR $c0c2			; direct print
@@ -130,22 +106,20 @@ fws_cr:
 
 ; *** firmware ends, jump into the kernel ***
 start_kernel:
-	SEC					; emulation mode, should stay (2+2)
-	XCE
 	JMP (fw_warm)		; (5)
 
 ; *** vectored NMI handler with magic number ***
 nmi:
 ; save registers AND system pointers
 	PHA					; save registers
-	PHX
-	PHY
+	_PHX
+	_PHY
 ; make NMI reentrant
 	LDY sysptr			; get original word 
 	LDX sysptr+1
 	LDA systmp			; this byte only
-	PHY					; store them in similar order
-	PHX
+	_PHY					; store them in similar order
+	_PHX
 	PHA
 ; prepare for next routine
 	LDA fw_nmi			; copy vector to zeropage
@@ -164,26 +138,32 @@ nmi_chkmag:
 		BPL nmi_chkmag		; down to zero (3/2)
 do_nmi:
 	LDX #0				; null offset
-	JSR (fw_nmi, X)		; call actual code, ending in RTS (6)
+	JSR nmi_call		; in case no 816 is used!
 ; *** here goes the former nmi_end routine ***
 nmi_end:
 	PLA					; retrieve saved vars
-	PLX
-	PLY
+	_PLX
+	_PLY
 	STA systmp			; only this byte
 	STX sysptr+1
 	STY sysptr
-	PLY					; restore regular registers (3x5)
-	PLX
+	_PLY				; restore regular registers (3x5)
+	_PLX
 	PLA
 	RTI					; resume normal execution and register size, hopefully
+
+nmi_call:
+	_JMPX(fw_nmi)		; call actual code, ending in RTS (6)
 
 fw_magic:
 	.asc	"*jNU"		; reversed magic string
 
 ; *** execute standard NMI handler ***
 rst_nmi:
-	PEA nmi_end-1		; prepare return address
+	LDA #>nmi_end-1		; prepare return address
+	PHA
+	LDA #<nmi_end-1		; now LSB (safer than PEA)
+	PHA
 ; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
 
 ; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
@@ -271,8 +251,8 @@ fw_patch:
 fw_gestalt:
 	LDA himem		; get pages of kernel SRAM (4)
 	STA zpar		; store output (3)
-	STZ zpar+2		; no bankswitched RAM yet (4)
-	STZ zpar3+2		; same for string address (4)
+	_STZX zpar+2	; no bankswitched RAM yet (4)
+	_STZX zpar3+2	; same for string address (4)
 	LDA #>fw_mname	; get string pointer
 	LDY #<fw_mname
 	STA zpar3+1		; put it outside
@@ -318,18 +298,25 @@ fw_admin:
 	.word	fw_gestalt
 	.word	fw_power
 
-; these already OK for 65816!
-; *** minimOS·16 BRK handler *** might go elsewhere
+; *** minimOS BRK handler *** might go elsewhere
 brk_hndl:		; label from vector list
 ; much like the ISR start
 	PHA						; save registers
-	PHX
-	PHY
+	_PHX
+	_PHY
 	JSR brk_handler			; standard label from IRQ
-	PLY						; restore status and return
-	PLX
+	_PLY					; restore status and return
+	_PLX
 	PLA
 	RTI
+
+; if case of no headers, at least keep machine name somewhere
+#ifdef	NOHEAD
+fw_splash:
+	.asc	"0.9 firmware for "
+fw_mname:
+	.asc	MACHINE_NAME, 0
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -339,7 +326,7 @@ brk_hndl:		; label from vector list
 ; *** minimOS·65 function call WRAPPER ($FFC0) ***
 * = kernel_call
 cop_hndl:		; label from vector list
-	JMP (fw_table, X)		; the old fashioned way
+	_JMPX(fw_table)		; the old fashioned way
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -348,7 +335,7 @@ cop_hndl:		; label from vector list
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = admin_call
-	JMP (fw_admin, X)		; takes 5 clocks
+	_JMPX(fw_admin)		; takes 5 clocks
 
 
 ; *** vectored IRQ handler ***

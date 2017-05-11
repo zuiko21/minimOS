@@ -1,8 +1,8 @@
 ; firmware CPU determining code for minimOS
-; version 0.9b1
+; version 0.9rc1
 ; (c) 2015-2016 Carlos J. Santisteban
 ; essentially from the work of David Empson, Oct. '94
-; last modified 20160308-1413
+; last modified 20170511-1357
 
 	LDY #$00			; by default, NMOS 6502
 	SED					; decimal mode
@@ -18,12 +18,12 @@
 	LDX $EA				; save contents of $EA, really needed???
 	DEY					; try now with Rockwell
 	STY $EA				; store '2' there
-	RMB #1, $EA			; Rockwell R65C02 instruction ***xa65 syntax***
+	.byt	$17, $EA	; RMB1 $EA, Rockwell R65C02 instruction
 	CPY $EA				; Location $EA unaffected on other 65C02
 	STX $EA				; restore contents, really needed???
 		BNE cpuck_set		; Branch only on Rockwell R65C02 (test CPY)
 	DEY					; revert to generic 65C02
-		BRA cpuck_set		; It's some form of 65C02, thus BRA is available
+		BNE cpuck_set		; It's some form of 65C02, thus Y>0 (safer)
 cpuck_list:
 	.asc	"NBRV"		; codes for NMOS (N), generic CMOS (B), Rockwell 65C02 (R?) and 65816/65802 (V)
 cpuck_set:

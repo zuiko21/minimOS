@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.5.1rc1, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170511-1026
+; last modified 20170511-1332
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -69,10 +69,6 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 	ASL					; convert to proper physdev index (2)
 	STA iol_dev			; keep device-index temporarily, worth doing here (3)
-
-;tax;disable MUTEX for testing purposes
-;bra co_lckd
-
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
 		LDX iol_dev			; retrieve index!
