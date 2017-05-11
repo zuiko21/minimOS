@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1b17
-; last modified 20170506-1237
+; v0.5.1rc1
+; last modified 20170511-1048
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -40,8 +40,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4580		; time, 8.44
-	.word	$4AA3		; date, 2017/5/3
+	.word	$5600		; time, 10.48
+	.word	$4AAB		; date, 2017/5/11
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -449,7 +449,10 @@ main_nnul:
 call_mcmd:
 	JMP (cmd_ptr & $FFFF, X)	; indexed jump macro, bank agnostic!
 
+; ****************************************************
 ; *** command routines, named as per pointer table ***
+; ****************************************************
+
 ; ** .? = show commands **
 help:
 	LDA #>help_str		; help string
@@ -588,15 +591,6 @@ das_l:
 disOpcode:
 	LDA [oper]			; check pointed opcode
 	STA count			; keep for comparisons
-; check whether it is MVN/MVP for double operand selection!
-; *** will use new method from 68asm ***
-;	LDX #$FF			; standard flag value, NOT zero
-;	AND #%11101111		; filter for MVN/MVP
-;	CMP #$44			; one of these?
-;	BNE do_notnv		; proceed normally
-;		LDX #2				; preset special value
-;do_notnv:
-;	STX movop			; store for operand display counter!
 	LDY #<da_oclist		; get address of opcode list
 	LDA #>da_oclist
 	STZ scan			; indirect-indexed pointer
@@ -655,7 +649,7 @@ po_adlab:
 	LDY #0				; scan increase, temporarily stored in temp
 	STY bytes			; number of bytes to be dumped (-1)
 	STY count			; printed chars for proper formatting
-	STY value+1			; *** for double operand MVN/MVP, could use value+1 ***
+	STY value+1			; for double operand MVN/MVP
 po_loop:
 		LDA [scan], Y		; get char in opcode list, 24b
 		STY temp			; keep index as will be destroyed
@@ -750,22 +744,10 @@ po_disp:
 			LDA #'$'			; hex radix
 			JSR $FFFF &  prnChar
 			LDY bytes			; retrieve original value eeeeeeeeeek
-; *** check for double-operand opcodes, new method ***
-			LDX value+1			; *** could use value+1 as well ***
+			LDX value+1			; check for double-operand opcodes
 			BEQ po_dloop		; proceed normally if first or only
 				INY					; or point to second one otherwise!
 po_dloop:
-;				LDY bytes			; retrieve operand index
-; *** should check here for MVN/MVP and process second operand via INY ***
-;				LDA [oper]			; check opcode
-;				AND #%11101111		; mask out differences
-;				CMP #$44			; MVN or MVP only
-;				BNE po_notmv		; if not, proceed normally
-;					DEC movop			; some flag set to 2 upon MVN, MVP
-;					BNE po_notmv		; first operand, nothing to correct
-;						INY					; otherwise go for second operand
-;po_notmv:
-; regular operand processing loop
 				PHY					; save current index!
 				LDA [oper], Y		; get whatever byte
 				JSR $FFFF &  prnHex			; show in hex
@@ -773,7 +755,7 @@ po_dloop:
 				DEY					; might go into LSB, or end
 				DEC bytes			; go back one byte
 				BNE po_dloop
-			INC value+1			; *** operand count, might use value+1 ***
+			INC value+1			; operand count
 			BRA po_adv			; update count and continue
 po_nlong:
 		JSR $FFFF &  prnChar			; just print it
@@ -804,7 +786,7 @@ po_end:
 		BNE po_end			; until complete, again no need for BRA
 po_dump:
 ; print hex dump, ** but check for MVP/MVN extra operands first **
-	LDX value+1			; was it a move instruction? *** could use value+1 as well ***
+	LDX value+1			; was it a move instruction?
 	CPX #2				; *** special operand count ***
 	BNE po_dnmv			; nope, nothing to correct
 		INC bytes			; otherwise there is one more operand
@@ -1151,25 +1133,16 @@ rb_key:
 rb_cmd:
 	CMP #'W'			; asking for warm boot?
 	BNE rb_notw
-;		LDA #>str_warm		; acknowledge command
-;		LDY #<str_warm
-;		JSR prnStr & $FFFF
 		LDY #PW_WARM		; warm boot request ## minimOS specific ##
 		BRA fw_shut			; call firmware
 rb_notw:
 	CMP #'C'			; asking for cold boot?
 	BNE rb_notc
-;		LDA #>str_cold		; acknowledge command
-;		LDY #<str_cold
-;		JSR prnStr & $FFFF
 		LDY #PW_COLD		; cold boot request ## minimOS specific ##
 		BRA fw_shut			; call firmware
 rb_notc:
 	CMP #'S'			; asking for shutdown?
 	BNE rb_exit			; otherwise abort quietly
-;		LDA #>str_shut		; acknowledge command
-;		LDY #<str_shut
-;		JSR prnStr & $FFFF
 		LDY #PW_OFF			; poweroff request ## minimOS specific ##
 fw_shut:
 		_KERNEL(SHUTDOWN)	; unified firmware call
@@ -1690,14 +1663,6 @@ set_str:
 
 ex_trok:
 	.asc	" bytes transferred", CR, 0
-
-;***debug strings***
-;str_cold:
-;	.asc	"COLD!", 0
-;str_warm:
-;	.asc	"WARM!", 0
-;str_shut:
-;	.asc	"SHUTDOWN!", 0
 
 ; online help only available under the SAFE option!
 help_str:

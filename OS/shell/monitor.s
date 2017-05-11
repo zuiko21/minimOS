@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1b9
-; last modified 20170310-0912
+; v0.5.1rc1
+; last modified 20170511-1037
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -36,8 +36,8 @@ montitle:
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5000		; time, 10.00
-	.word	$4A3A		; date, 2017/1/26
+	.word	$5340		; time, 10.26
+	.word	$4AAB		; date, 2017/5/11
 
 	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
 
@@ -141,9 +141,6 @@ main_loop:
 		JSR gnc_do			; get first character on string, without the variable
 		TAY					; just in case...
 			BEQ main_loop		; ignore blank lines!
-;		CMP #'.'			; command introducer (not used nor accepted if monitor only)
-;			BNE not_mcmd		; not a monitor command
-;		JSR gnc_do			; get into command byte otherwise
 		STX cursor			; save cursor!
 		CMP #'Z'+1			; past last command?
 			BCS bad_cmd			; unrecognised
@@ -153,10 +150,6 @@ main_loop:
 		TAX					; use as index
 		JSR call_mcmd		; call monitor command
 		_BRA main_loop		; continue forever
-;not_mcmd:
-;	LDA #>err_mmod		; address of error message
-;	LDY #<err_mmod
-;	_BRA d_error		; display error
 bad_cmd:
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
@@ -362,7 +355,6 @@ quit:
 	_FINISH				; exit to minimOS, proper error code
 
 store_str:
-;	LDY cursor				; use as offset
 sstr_l:
 		INC cursor			; skip the S and increase, not INY
 		LDY cursor			; allows NMOS macro!
@@ -611,8 +603,6 @@ gnc_do:
 		BEQ gnc_do			; skip it!
 	CMP #'$'			; ignored radix?
 		BEQ gnc_do			; skip it!
-;	CMP #';'			; is it a comment?
-;		BEQ gn_fin			; forget until the end
 	CMP #'a'			; not lowercase?
 		BCC gn_ok			; all done!
 	CMP #'z'+1			; still within lowercase?
@@ -620,15 +610,6 @@ gnc_do:
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
 	RTS
-;gn_fin:
-;		INX				; skip another character in comment
-;		LDA buffer, X	; get pointed char
-;			BEQ gn_ok		; finish if already at terminator
-;		CMP #58			; colon ends sentence
-;			BEQ gn_ok
-;		CMP #CR			; newline ends too
-;			BNE gn_fin
-;	RTS
 
 
 ; * fetch one byte from buffer, value in A *
@@ -679,16 +660,13 @@ cmd_ptr:
 ; *** strings and other data ***
 #ifdef	NOHEAD
 montitle:
-	.asc	"miniMonitor", 0
+	.asc	"monitor", 0
 #endif
 
 splash:
 	.asc	"minimOS 0.5.1 monitor", CR
 	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 
-
-;err_mmod:
-;	.asc	"***Missing module***", CR, 0
 
 err_bad:
 	.asc	"*** Bad command ***", CR, 0

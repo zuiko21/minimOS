@@ -1,4 +1,4 @@
-; minimOS 0.5.1a13 System Variables
+; minimOS 0.5.1rc1 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
 ; last modified 20170313-1335
 .bss

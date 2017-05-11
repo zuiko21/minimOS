@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.5.1b3
-; last modified 20170504-0952
+; v0.5.1rc1
+; last modified 20170511-1039
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -39,8 +39,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4DC0		; time, 9.46
-	.word	$4AA4		; date, 2017/5/4
+	.word	$54E0		; time, 10.39
+	.word	$4AAB		; date, 2017/5/11
 
 	mmdsiz8	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -360,7 +360,10 @@ main_nnul:
 call_mcmd:
 	_JMPX(cmd_ptr & $FFFF)		; indexed jump macro, bank agnostic!
 
+; ****************************************************
 ; *** command routines, named as per pointer table ***
+; ****************************************************
+
 ; ** .? = show commands **
 help:
 	LDA #>help_str		; help string
@@ -483,8 +486,6 @@ do_set:
 		BNE do_chkopc		; until list is done ***should not arrive here***
 do_found:
 	STY scan			; restore pointer
-; this is a fully defined opcode, when symbolic assembler is available!
-;	JMP $FFFF &  prnOpcode		; show all and return
 
 ; decode opcode and print hex dump
 prnOpcode:
@@ -702,16 +703,6 @@ set_SP:
 	RTS
 
 
-; ** .I = show symbol table ***
-symbol_table:
-;***********placeholder*************
-	LDA #'?'
-	STA io_c
-	LDY iodev
-	_KERNEL(COUT)
-	RTS		; ***** TO DO ****** TO DO ******
-
-
 ; ** .K = keep (load or save) **
 ; ### highly system dependent ###
 ; placeholder will send/read raw data to/from indicated I/O device
@@ -912,25 +903,16 @@ rb_key:
 rb_cmd:
 	CMP #'W'			; asking for warm boot?
 	BNE rb_notw
-;		LDA #>str_warm		; acknowledge command
-;		LDY #<str_warm
-;		JSR prnStr & $FFFF
 		LDY #PW_WARM		; warm boot request ## minimOS specific ##
 		BRA fw_shut			; call firmware
 rb_notw:
 	CMP #'C'			; asking for cold boot?
 	BNE rb_notc
-;		LDA #>str_cold		; acknowledge command
-;		LDY #<str_cold
-;		JSR prnStr & $FFFF
 		LDY #PW_COLD		; cold boot request ## minimOS specific ##
 		BRA fw_shut			; call firmware
 rb_notc:
 	CMP #'S'			; asking for shutdown?
 	BNE rb_exit			; otherwise abort quietly
-;		LDA #>str_shut		; acknowledge command
-;		LDY #<str_shut
-;		JSR prnStr & $FFFF
 		LDY #PW_OFF			; poweroff request ## minimOS specific ##
 fw_shut:
 		_KERNEL(SHUTDOWN)	; unified firmware call
@@ -1310,7 +1292,7 @@ cmd_ptr:
 	.word		_unrecognised	; .F
 	.word	set_SP			; .G
 	.word		_unrecognised	; .H
-	.word	symbol_table	; .I
+	.word		_unrecognised	; .I
 	.word	jump_address	; .J
 	.word	ext_bytes		; .K
 	.word		_unrecognised	; .L
@@ -1332,9 +1314,6 @@ cmd_ptr:
 splash:
 	.asc	"minimOS 0.5.1 monitor/debugger/assembler", CR
 	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
-
-err_mmod:
-	.asc	"***Missing module***", CR, 0
 
 err_bad:
 	.asc	"*** Bad command ***", CR, 0
@@ -1387,7 +1366,6 @@ help_str:
 	.asc	".Gd = set SP reg.", CR
 	.asc	".J* = jump to address", CR
 	.asc	".K*=load/save n byt.", CR
-	.asc	".L* = line editor (**TO DO**)", CR
 	.asc	".Ma=copy n byt. to a", CR
 	.asc	".N* = set 'n' value", CR
 	.asc	".O* = set origin", CR

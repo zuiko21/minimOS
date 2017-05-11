@@ -1,4 +1,4 @@
-; minimOS 0.5.1a9 API/ABI
+; minimOS 0.5.1rc1 API/ABI
 ; (c) 2012-2017 Carlos J. Santisteban
 ; last modified 20170306-1215
 

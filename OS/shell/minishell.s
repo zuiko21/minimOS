@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5b11
-; last modified 20170310-0903
+; v0.5rc1
+; last modified 20170511-1039
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -33,8 +33,8 @@ title:
 	.dsb	shellHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4C00			; time, 9.30
-	.word	$4A4F			; date, 2017/2/15
+	.word	$54E0			; time, 10.39
+	.word	$4AAB			; date, 2017/5/11
 
 shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 
@@ -47,7 +47,6 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
-;+shell:					; mandatory label
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -77,10 +76,6 @@ open_xsh:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 
-; initialise stuff
-;	LDA #>splash		; address of splash message
-;	LDY #<splash
-;	JSR prnStr			; print the string!
 ; *** begin things ***
 main_loop:
 		LDA #>prompt		; address of prompt message (currently fixed)
@@ -172,10 +167,6 @@ getLine:
 
 
 ; *** strings and other data ***
-
-splash:
-;	.asc	"minimOS 0.5.1 shell", CR
-;	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 
 prompt:
 	.asc	CR, "/sys/", 0

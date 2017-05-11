@@ -1,4 +1,4 @@
-; minimOS 0.5.1a18 zero-page system variables
+; minimOS 0.5.1rc1 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
 ; last modified 20170301-1031
 

@@ -1,5 +1,5 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9b7
+; v0.9rc1
 ; (c)2017 Carlos J. Santisteban
 ; last modified 20170403-0925
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9b5 firmware for "
+	.asc	"0.9 firmware for "
 #else
 fw_splash:
 #endif

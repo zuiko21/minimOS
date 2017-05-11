@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1b20, should match kernel16.s
+; v0.5.1rc1, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170317-0841
+; last modified 20170511-1026
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -1371,28 +1371,6 @@ go_shell:
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
-
-; ****debug code*****
-hexdebug:		; print A in hex
-.al:rep#$20
-.xs:sep#$10
-	PHA			; keep whole value
-	LSR			; shift right four times (just the MSB)
-	LSR
-	LSR
-	LSR
-	JSR hxd_ascii	; convert and print this cipher
-	PLA			; retrieve full value
-	AND #$0F	; keep just the LSB... and repeat procedure
-hxd_ascii:
-	CMP #10		; will be a letter?
-	BCC hxd_num	; just a number
-		ADC #6			; convert to letter (plus carry)
-hxd_num:
-	ADC #'0'	; convert to ASCII (carry is clear)
-	JSR $c0c2	; direct print
-	RTS
-; *******************
 
 ; other data and pointers
 sd_tab:					; check order in abi.h!

@@ -1,4 +1,4 @@
-; minimOS 0.5.1a7 MACRO definitions
+; minimOS 0.5.1rc1 MACRO definitions
 ; (c) 2012-2017 Carlos J. Santisteban
 ; last modified 20170309-1320
 

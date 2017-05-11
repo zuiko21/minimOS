@@ -1,7 +1,7 @@
 ; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5b7
-; last modified 20170506-1201
+; v0.5rc1
+; last modified 20170511-1048
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -40,8 +40,8 @@ title:
 	.dsb	a68_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4D40		; time, 9.42
-	.word	$4AA3		; date, 2017/5/3
+	.word	$5600		; time, 10.48
+	.word	$4AAB		; date, 2017/5/11
 
 	a68siz	=	a68_end - a68_head - 256	; compute size NOT including header!
 
@@ -326,7 +326,10 @@ main_nnul:
 call_mcmd:
 	_JMPX(cmd_ptr & $FFFF)		; indexed jump macro, bank agnostic!
 
+; ****************************************************
 ; *** command routines, named as per pointer table ***
+; ****************************************************
+
 ; ** .? = show commands **
 help:
 	LDA #>help_str		; help string
@@ -1127,10 +1130,11 @@ cmd_ptr:
 
 ; *** strings and other data ***
 splash:
-	.asc	"MC6800 cross-assembler 0.5", CR
+	.asc	"MC6800/6801/6301 cross-assembler", CR
+	.asc	"for 6502, v0.5", CR
 	.asc	"(c) 2017 Carlos J. Santisteban", CR
 #ifdef	SAFE
-	.asc	"Type 6800 opcodes or .commands,", CR
+	.asc	"Type 680x opcodes or .commands,", CR
 	.asc	".? for help", CR
 	.asc	0
 

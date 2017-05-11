@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1b17
+; v0.5.1rc1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170320-1001
+; last modified 20170511-1023
 
 ; just in case
 #define		C816	_C816
@@ -38,11 +38,11 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.5.1b17", 0	; version in comment
+	.asc	"minimOS-16 0.5.1rc1", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$5160	; time, 10.11
-	.word	$4A74	; date, 2017/3/20
+	.word	$52E0	; time, 10.23
+	.word	$4AAB	; date, 2017/5/11
 
 kern_siz = kern_end - kern_head - 256
 
