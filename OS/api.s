@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1rc3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170512-1245
+; last modified 20170512-1345
 
 ; no way for standalone assembly...
 
@@ -362,7 +362,6 @@ ma_alsiz:
 		ORA ma_align		; set masked bits... (3)
 		_INC				; ...and increase address for alignment (2)
 ma_fit:
-; how could an ORA (str_pt), Y arrive here????
 	EOR #$FF			; invert bits as will be subtracted to next entry (2)
 	SEC					; needs one more for twos-complement (2)
 	ADC ram_pos+1, X	; compute size from top ptr MINUS bottom one (5)
@@ -450,7 +449,6 @@ fr_notafter:
 ;	CPY #FREE_RAM		; could be supressed if value is zero
 	BNE fr_ok			; nothing to optimise backwards
 		JSR fr_join			; otherwise integrate it too
-
 ; ** already optimized **
 fr_ok:
 	_EXIT_CS
