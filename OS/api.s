@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1rc2, must match kernel.s
+; v0.5.1rc3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170511-1350
+; last modified 20170512-0915
 
 ; no way for standalone assembly...
 
@@ -80,11 +80,8 @@ cio_unlock:
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	RTS					; exit with whatever error code
 
-; *** for 02 systems without indexed CALL ***
-co_call:
-#endif
-	_JMPX(drv_opt)		; direct jump!!!
-
+cio_nfound:
+	_ERR(N_FOUND)		; unknown device
 
 ; ****************************
 ; *** CIN, get a character ***
@@ -98,34 +95,6 @@ co_call:
 ; cio_lock & cin_mode are kernel structures
 
 cin:
-; *** TO DO *** MUTEX for physical devices only, after resolving!
-#ifdef	MULTITASK
-	STY iol_dev			; keep device temporarily, worth doing here (3)
-	_ENTER_CS			; needed for a MUTEX (5)
-ci_loop:
-	LDA cio_lock, Y		; check whether THAT device in use (4)
-	BEQ ci_lckd			; resume operation if free (3)
-; otherwise yield CPU time and repeat
-; but first check whether it was me (waiting on binary mode)
-		JSR get_pid			; *standard internal call, 816 prefers indexed JSR
-		TYA					; current PID in A
-		LDY iol_dev			; retrieve device as index
-		CMP cio_lock, Y		; was it me who locked? (4)
-			BEQ ci_lckdd		; if so, resume execution (3)
-; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
-; continue with regular mutex
-		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-		LDY iol_dev			; restore previous status (3)
-		_BRA ci_loop		; try again! (3)
-ci_lckd:
-	JSR get_pid			; *standard internal call, 816 prefers indexed JSR
-	TYA					; current PID in A (2)
-	LDY iol_dev			; restore device number (3)
-	STA cio_lock, Y		; reserve this (4)
-ci_lckdd:
-	_EXIT_CS			; proceed normally (4)
-#endif
-; continue with mutually exclusive CIN
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
 		LDA std_in			; new per-process standard device
@@ -133,80 +102,89 @@ ci_lckdd:
 			LDA default_in		; otherwise get system global
 ci_port:
 	BPL ci_nph			; logic device
-		JSR ci_phys			; check physical devices... but come back for events! new 20150617
-		BCC ci_chkev		; no error, have a look at events ***could reduce overhead a bit with BCS!
-ci_exit:
-#ifdef	MULTITASK
-			LDX iol_dev			; **use device as index! (3)
-			_STZA cio_lock, X	; *otherwise clear mutex!!! (4)
-#endif
-			RTS					; return whatever error!
-
-; some common I/O calls
-cio_nfound:
-	_ERR(N_FOUND)		; unknown device
+; new MUTEX for CIN, physical devs only!
+	ASL					; convert to proper physdev index (2)
+	STA iol_dev			; keep physdev temporarily, worth doing here (3)
+; * this has to be done atomic! *
+	_ENTER_CS
+ci_loop:
+	LDX iol_dev			; *restore previous status (3)
+	LDA cio_lock, X		; *check whether THAT device in use (4)
+	BEQ ci_lckd			; resume operation if free (3)
+; otherwise yield CPU time and repeat
+; but first check whether it was me (waiting on binary mode)
+		LDA run_pid			; who am I?
+		CMP cio_lock, X		; *was it me who locked? (4)
+			BEQ ci_lckdd		; *if so, resume execution (3)
+; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
+; continue with regular mutex
+; faster KERNEL(B_YIELD)
+		LDX #MM_YIELD		; internal multitasking index (2)
+		JSR yield			; direct to driver skipping the kernel (6+)
+		_BRA ci_loop		; try again! (3)
+ci_lckd:
+	LDA run_pid			; who is me?
+	STA cio_lock, X		; *reserve this (4)
+ci_lckdd:
+	_EXIT_CS
+; * end of atomic operation *
+		JSR ci_call			; direct CALL!!!
+			BCS cio_unlock		; clear MUTEX and return whatever error!
 
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
-ci_chkev:
-#ifdef	MULTITASK
-		LDX iol_dev			; **use device as index! worth doing here (3)
-#endif
+		LDX iol_dev			; **use physdev as index! worth doing here (3)
 		LDA io_c			; get received character
 		CMP #' '			; printable?
 			BCS ci_exitOK		; if so, will not be an event, exit with NO error
 ; otherwise might be an event ** REVISE
 ; check for binary mode first
-#ifdef	MULTITASK
 		LDY cin_mode, X		; *get flag, new sysvar 20150617
-#else
-		LDY cin_mode		; singletask systems
-#endif
-		BEQ ci_event		; not binary, should process possible event ***might reduce overhead with BNE
-#ifdef	MULTITASK
+		BEQ ci_event		; should process possible event
 			_STZA cin_mode, X	; *back to normal mode
-#else
-			_STZA cin_mode		; normal mode for singletask systems!
-#endif
 ci_exitOK:
-#ifdef	MULTITASK
-			_STZA cio_lock, X	; *clear mutex!!! (4)
-#endif
-			_EXIT_OK			; all done without error!
+			CLC					; *otherwise mark no error... (2)
+			BCC cio_unlock		; ...clear mutex and exit, no need for BRA (3)
 ci_event:
 		CMP #16				; is it DLE?
 		BNE ci_notdle		; otherwise check next
-#ifdef	MULTITASK
-			STA cin_mode, X		; *set binary mode! safer and faster!
-#else
-			STA cin_mode		; single task systems do not set X!!!
-#endif
-			_ERR(EMPTY)			; and supress received character, ***but will stay locked!
+			STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
+			_ERR(EMPTY)			; and supress received character (will stay locked!)
 ci_notdle:
 		CMP #3				; is it ^C? (TERM)
 		BNE ci_noterm		; otherwise check next
 			LDA #SIGTERM
-			BNE ci_signal		; send signal, no need for BRA?
+			BRA ci_signal		; send signal
 ci_noterm:
-		CMP #4				; is it ^D? (KILL) ***somewhat dangerous...
+		CMP #4				; is it ^D? (KILL) somewhat dangerous...
 		BNE ci_nokill		; otherwise check next
 			LDA #SIGKILL
-			BNE ci_signal		; send signal, no need for BRA?
+			BRA ci_signal		; send signal
 ci_nokill:
 		CMP #26				; is it ^Z? (STOP)
-		BNE ci_exitOK		; otherwise there's no more to check
-			LDA #SIGSTOP		; last signal to be sent
+			BNE ci_exitOK		; otherwise there is no more to check
+		LDA #SIGSTOP		; last signal to be sent
 ci_signal:
-			STA b_sig			; set signal as parameter
-			JSR get_pid			; as this will be a self-sent signal! ***internal call
-			JSR signal			; send signal to PID in Y ***internal call
-			LDX iol_dev			; **as internal calls will destroy X
-ci_abort:
-#ifdef	MULTITASK
-		_STZA cio_lock, X	; *clear mutex!
-#endif
-		_ERR(EMPTY)			; no character was received
+		STA b_sig			; set signal as parameter
+		LDY run_pid			; faster GET_PID
+; faster KERNEL(B_SIGNAL)
+		LDX #MM_SIGNAL		; internal multitasking index (2)
+		JSR signal			; usual API entry
+; continue after having filtered the error
+		LDY #EMPTY			; no character was received
+		SEC					; eeeeeeeek
+		BCS cio_unlock		; release device and exit!
 
+; *** some common I/O calls ***
+
+; *** for 02 systems without indexed CALL ***
+co_call:
+	_JMPX(drv_opt)		; direct jump to output routine
+
+ci_call:
+	_JMPX(drv_ipt)		; direct jump to input routine
+
+; logical devices management, * placeholder *
 ci_nph:
 	CMP #64				; first file-dev??? ***
 		BCC ci_win			; below that, should be window manager
@@ -215,32 +193,24 @@ ci_nph:
 	CMP #64+MAX_FILES	; still within file-devs?
 		BCS ci_log			; that or over, not a file
 ; *** manage here input from open file ***
-	_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 #endif
-; ** end of filesystem access **
-
+; *** virtual window manager TO DO ***
+ci_win:
+	_ERR(NO_RSRC)		; not yet implemented ***placeholder***
+; manage logical devices...
 ci_log:
 	CMP #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
 	CMP #DEV_NULL		; lastly, ignore input
-		BNE cio_nfound		; final error otherwise
-	_EXIT_OK			; "/dev/null" is always OK
+		BEQ ci_ok			; "/dev/null" is always OK
+	JMP cio_nfound		; final error otherwise
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
 	LDY ticks			; simple placeholder
 	STA io_c			; eeeeeeeeeeeeeeeeek
+ci_ok:
 	_EXIT_OK
-
-ci_win:
-; *** virtual window manager TO DO ***
-	_ERR(NO_RSRC)		; not yet implemented
-
-ci_phys:
-; ** new direct indexing **
-	ASL					; convert to index (2+2)
-	TAX
-	_JMPX(drv_ipt)		; direct jump!!!
 
 
 ; ******************************
