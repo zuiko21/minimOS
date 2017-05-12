@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1rc3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170512-0915
+; last modified 20170512-1245
 
 ; no way for standalone assembly...
 
@@ -40,18 +40,16 @@ co_port:
 		CMP #64+MAX_FILES	; still within file-devs?
 			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 #endif
 ; ** end of filesystem access **
+co_win:
+; *** virtual windows manager TO DO ***
+		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 co_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
 			BNE cio_nfound		; final error otherwise
 		_EXIT_OK			; "/dev/null" is always OK
-co_win:
-; *** virtual windows manager TO DO ***
-	_ERR(NO_RSRC)		; not yet implemented
-
 co_phys:
 ; arrived here with dev # in A
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
@@ -663,65 +661,48 @@ su_peek:
 ; cio_lock is a kernel structure
 
 string:
-; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
-#ifdef	MULTITASK
-	STY iol_dev			; **keep device temporarily, worth doing here (3)
-	_ENTER_CS			; needed for a MUTEX (5)
-str_wait:
-	LDA cio_lock, Y		; *check whether THAT device in use (4)
-	BEQ str_lckd		; resume operation if free (3)
-; otherwise yield CPU time and repeat
-		JSR yield			; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-		LDY iol_dev			; restore previous status, *new style (3)
-		_BRA str_wait		; try again! (3)
-str_lckd:
-	JSR get_pid			; **standard internal call, 816 prefers indexed JSR
-	TYA					; **current PID in A (2)
-	LDY iol_dev			; **restore device number (3)
-	STA cio_lock, Y		; *reserve this (4)
-	_EXIT_CS			; proceed normally (4)
-#endif
-; continue with mutually exclusive COUT
-	TYA				; for indexed comparisons (2)
-	BNE str_port	; not default (3/2)
-		LDA stdout		; new per-process standard device
-		BNE str_port	; already a valid device
-			LDA default_out	; otherwise get system global (4)
+	TYA					; set flags upon devnum (2)
+	BNE str_port		; not default (3/2)
+		LDA stdout			; new per-process standard device
+		BNE str_port		; already a valid device
+			LDA default_out		; otherwise get system global (4)
 str_port:
-	BMI str_phys	; not a logic device (3/2)
-		CMP #64			; first file-dev??? ***
-			BCC str_win		; below that, should be window manager
+	BMI str_phys		; not a logic device (3/2)
+		CMP #64				; within window handler range?
+			BCC str_win			; below that, should go to window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
 		CMP #64+MAX_FILES	; still within file-devs?
-			BCS str_log		; that value or over, not a file
+			BCS str_log			; that value or over, not a file
 ; *** manage here output to open file ***
-		_ERR(NO_RSRC)	; not yet implemented ***placeholder***
 #endif
-; ** end of filesystem access **
+; *** virtual windows manager TO DO ***
+str_win:
+		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
+; ** end of filesystem/window access **
 str_log:
 ; investigate rest of logical devices
-		CMP #DEV_NULL	; lastly, ignore output
-			BNE str_nfound	; final error otherwise
-str_exit:
-#ifdef	MULTITASK
-		LDX iol_dev			; retrieve driver index
-		_STZA cio_lock, X	; clear mutex
-#endif
-		_EXIT_OK		; "/dev/null" is always OK
-str_win:
-; *** virtual windows manager TO DO ***
-	LDY #NO_RSRC		; not yet implemented
-	SEC					; eeek
-	_BRA str_abort		; notify error code AND unlock device!
-str_nfound:
-	LDY #N_FOUND		; unknown device
-	SEC					; eeeek
-	_BRA str_abort		; notify error code AND unlock device!
+		CMP #DEV_NULL		; lastly, ignore output
+			BEQ str_found		; /dev/null is always OK
+		_ERR(N_FOUND)		; final error otherwise
 str_phys:
 ; ** new direct indexing, revamped 20160407 **
 	ASL					; convert to index (2+2)
 	STA iol_dev			; store for indexed call! (3)
+; MUTEX for physical devices only!
+	_ENTER_CS
+str_wait:
+	LDX iol_dev			; restore previous status, *new style (3)
+	LDA cio_lock, X		; *check whether THAT device in use (4)
+	BEQ str_lckd		; resume operation if free (3)
+; otherwise yield CPU time and repeat
+;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+		JSR yield			; direct call the usual way (6)
+		_BRA str_wait		; try again! (3)
+str_lckd:
+	LDA run_pid			; who am I?
+	STA cio_lock, X		; *reserve this (4)
+; proceed with mutually-exclusive routine
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
 str_loop:
@@ -729,7 +710,7 @@ str_loop:
 		LDA (str_pt), Y		; get character from string, new approach (5)
 		BNE str_cont		; not terminated! (3/2)
 			PLA					; otherwise discard saved Y (4)
-			_EXIT_OK			; and go away!
+			_EXIT_OK			; and go away!**********BAD and also on m16************
 str_cont:
 		STA io_c			; store output character for COUT (3)
 		JSR str_call		; indirect subroutine call (6...)
@@ -745,10 +726,8 @@ str_call:
 str_err:
 	PLA					; discard saved Y while keeping error code
 str_abort:
-#ifdef	MULTITASK
 	LDX iol_dev			; retrieve driver index
 	_STZA cio_lock, X	; clear mutex
-#endif
 	RTS					; return whatever error code
 
 ; ******************************
