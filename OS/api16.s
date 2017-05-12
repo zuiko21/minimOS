@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1rc1, should match kernel16.s
+; v0.5.1rc2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170511-1332
+; last modified 20170512-1737
 
 ; no way for standalone assembly, neither internal calls...
 

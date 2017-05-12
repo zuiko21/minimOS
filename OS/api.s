@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.5.1rc3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170512-1345
+; last modified 20170512-1735
 
 ; no way for standalone assembly...
 
@@ -62,8 +62,7 @@ co_loop:
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; faster KERNEL(B_YIELD)
-		LDX #MM_YIELD		; internal multitasking index (2)
-		JSR yield			; direct to driver skipping the kernel (6)
+		JSR yield			; direct call skipping firmware (6)
 		_BRA co_loop		; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
@@ -117,8 +116,7 @@ ci_loop:
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
 ; faster KERNEL(B_YIELD)
-		LDX #MM_YIELD		; internal multitasking index (2)
-		JSR yield			; direct to driver skipping the kernel (6+)
+		JSR yield			; direct to kernel skipping firmware (6)
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
@@ -166,7 +164,6 @@ ci_signal:
 		STA b_sig			; set signal as parameter
 		LDY run_pid			; faster GET_PID
 ; faster KERNEL(B_SIGNAL)
-		LDX #MM_SIGNAL		; internal multitasking index (2)
 		JSR signal			; usual API entry
 ; continue after having filtered the error
 		LDY #EMPTY			; no character was received
@@ -184,7 +181,7 @@ ci_call:
 
 ; logical devices management, * placeholder *
 ci_nph:
-	CMP #64				; first file-dev??? ***
+	CMP #64				; within window devices?
 		BCC ci_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
@@ -651,7 +648,7 @@ su_peek:
 ; *********************************
 ;		INPUT
 ; Y			= dev
-; str_pt	= pointer to string (might be altered!) 24-bit mandatory
+; str_pt	= pointer to string (might be altered!)
 ;		OUTPUT
 ; C = device error
 ;		USES iol_dev and whatever the driver takes
@@ -708,7 +705,7 @@ str_loop:
 		LDA (str_pt), Y		; get character from string, new approach (5)
 		BNE str_cont		; not terminated! (3/2)
 			PLA					; otherwise discard saved Y (4)
-			_EXIT_OK			; and go away!**********BAD and also on m16************
+			_BRA str_exit			; and go away
 str_cont:
 		STA io_c			; store output character for COUT (3)
 		JSR str_call		; indirect subroutine call (6...)
@@ -717,22 +714,30 @@ str_cont:
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
 	INC str_pt+1		; otherwise increase, parameter has changed! will it have to restore parameter?
-	_BRA str_loop		; continue, will check for termination later (3)
+	BNE str_loop		; continue, will check for termination later, no need for BRA (3)
 str_call:
 	LDX iol_dev			; get driver pointer position (3)
 	_JMPX(drv_opt)		; go at stored pointer (...6)
 str_err:
 	PLA					; discard saved Y while keeping error code
+	_BRA str_abort			; unlock and exit
+str_exit:
+	CLC					; unlock and exit without error
 str_abort:
 	LDX iol_dev			; retrieve driver index
 	_STZA cio_lock, X	; clear mutex
 	RTS					; return whatever error code
 
+
 ; ******************************
 ; *** READLN, buffered input *** new 20161223
 ; ******************************
-; Y <- dev, str_pt <- *buffer (24-bit mandatory), ln_siz <- max offset
-; uses rl_dev, rl_cur
+;		INPUT
+; Y		= dev
+; str_pt	= buffer address
+; ln_siz	= max offset (byte)
+;		USES rl_dev, rl_cur
+;
 
 readLN:
 	STY rl_dev			; preset device ID!
@@ -841,9 +846,13 @@ go_shell:
 	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
 
 
+; ***********************************************************
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
-; Y <- subfunction code new ABI 20150603, 20160408
-; C -> couldn't poweroff or reboot (?)
+; ***********************************************************
+;		INPUT
+; Y		= subfunction code new ABI 20150603, 20160408
+;		OUTPUT
+; C		= couldn't poweroff or reboot (?)
 
 shutdown:
 	CPY #PW_CLEAN		; from scheduler only!
@@ -936,10 +945,10 @@ sd_tab:					; check order in abi.h!
 ; *********************************
 ; *** B_FORK, get available PID *** properly interfaced 20150417
 ; *********************************
-; Y -> PID
+;		OUTPUT
+; Y		= PID, 0 means not available
 
 b_fork:
-; ** might be replaced with LDY pid on optimized builds **
 	LDX #MM_FORK	; subfunction code
 	_BRA sig_call	; go for the driver
 
@@ -947,9 +956,12 @@ b_fork:
 ; *****************************************
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; *****************************************
-; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr, def_io <- std_in & stdout
-; *** should need some flag to indicate XIP or not! stack frame is different
+;		INPUT
+; Y		= PID, 0 means execute within this braid (destructive)
+; ex_pt		= address of code to be executed (can be a mere subroutine)
+; def_io	= std_in & stdout
+;
+; API still subject to change... (register values, rendez-vous mode TBD)
 
 b_exec:
 ; ** might be repaced with driver code on optimized builds **
@@ -960,7 +972,9 @@ b_exec:
 ; **************************************************
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
 ; **************************************************
-; b_sig <- signal to be sent , Y <- addressed braid
+;		INPUT
+; b_sig		= signal to be sent
+; Y		= addressed braid, 0 means send to all?
 
 signal:
 	LDX #MM_SIGNAL	; subfunction code
@@ -970,8 +984,11 @@ signal:
 ; ************************************************
 ; *** B_STATUS, get execution flags of a braid ***
 ; ************************************************
-; Y <- addressed braid
-; Y -> flags, TBD
+;		INPUT
+; Y		= addressed braid, 0 means mysrlf?
+;		OUTPUT
+; Y		= flags, TBD, might include architecture
+;
 ; do not know of possible errors, maybe just a bad PID
 
 status:
@@ -982,8 +999,11 @@ status:
 ; **************************************
 ; *** GET_PID, get current braid PID ***
 ; **************************************
-; Y -> PID, TBD
-; *****think about making this the direct call as is the fastest one!
+;		OUTPUT
+; Y		= PID, 0 on singletask systems
+;
+; might be replaced with LDY pid on optimized builds...
+; ...or the new run_pid system variable!
 
 get_pid:
 	LDX #MM_PID		; subfunction code
@@ -995,7 +1015,10 @@ sig_call:			; NEW unified calling procedure
 ; **************************************************************
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
 ; **************************************************************
-; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTI!!!)
+;		INPUT
+; Y		= PID, 0 means myself?
+; ex_pt		= SIGTERM handler routine (ending in RTI!!!)
+;
 ; bad PID is probably the only feasible error
 
 set_handler:
@@ -1016,30 +1039,32 @@ yield:
 ; ***************************************************************
 ; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
 ; ***************************************************************
-; Y -> number of bytes, ex_pt -> pointer to the proposed stack frame
+;		OUTPUT
+; Y		= number of bytes
+; ex_pt		= pointer to the proposed stack frame
+
 ts_info:
-#ifdef	MULTITASK
 	LDX #<tsi_str			; pointer to proposed stack frame
 	LDA #>tsi_str			; including MSB
 	STX ex_pt				; store LSB
 	STA ex_pt+1				; and MSB
 	LDY #tsi_end-tsi_str	; number of bytes
 	_EXIT_OK
-#else
-	_ERR(UNAVAIL)			; non-supporting kernel!
-#endif
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.word	isr_sched_ret-1	; corrected reentry address **standard label** REVISE REVISE************++
-	.byt	0				; stored X value, best if multitasking driver is the first one
-	.byt	0, 0, 0			; irrelevant Y, X, A values
+	.word	isr_sched_ret-1	; corrected reentry address, standard label from ISR
+	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
+	.byt	0, 0, 0			; irrelevant Y, X, A values?
 tsi_end:
 ; end of stack frame for easier size computation
 
+
 ; *********************************************************
 ; *** RELEASE, release ALL memory for a PID, new 20161115
-; Y <- PID
+; *********************************************************
+;		INPUT
+; Y		= PID, 0 means myself?
 
 release:
 	TYA					; as no CPY abs,X
