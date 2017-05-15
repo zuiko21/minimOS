@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1rc4
+; v0.5.1rc5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170515-1250
+; last modified 20170515-1912
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -292,10 +292,10 @@ dr_sloop:
 				CPY #D_SEC+2		; both bytes done? (2)
 				BNE dr_sloop		; if not, go for MSB (3/2) eek
 			STX dsec_mx			; save updated index (4)
-dr_nosec: 
+dr_nosec:
 ; continue initing drivers
 		JSR dr_icall		; call routine (6+...)
-		BCC dr_next			; did not failedstr_pt initialisation
+		BCC dr_next			; did not fail initialisation
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
 dr_abort:
@@ -308,19 +308,19 @@ dr_abpr:
 #else
 ; ++++++
 			LDY #D_AUTH
-			LDA (da_ptr), Y		; get auth code... plus extra byte (6)
+			LDA (da_ptr), Y		; get auth code (5)
 			AND #A_SEC			; any slow?
 			BNE dr_abpr			; none to remove
 				DEC dsec_mx			; otherwise remove from queue!
 				DEC dsec_mx			; two-byte pointer
-				LDA (da_ptr), Y		; restore auth code
 dr_abpr:
+			LDA (da_ptr), Y		; get auth code... AGAIN (5)
 			AND #A_REQ			; any async?
 			BNE dr_ab_p			; none to remove
 				DEC dreq_mx			; otherwise remove from queue!
 				DEC dreq_mx			; two-byte pointer
-				LDA (da_ptr), Y		; restore auth code
 dr_ab_p:
+			LDA (da_ptr), Y		; get auth code... AGAIN (5)
 			AND #A_POLL			; any jiffy?
 			BNE dr_abort		; none to remove
 				DEC dpoll_mx		; otherwise remove from queue!
@@ -391,7 +391,6 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
-
 
 #ifndef		MULTITASK
 ; in case no I/O lock arrays were initialised...
@@ -495,7 +494,7 @@ st_prior:
 exec_st:
 #endif
 ; initialise stack EEEEEEK
-	LDX #$FF
+	LDX #SPTR
 	TXS					; eeeeeeeeeek
 ; push return address towards KILL routine
 	LDA #>sig_kill-1	; get routine MSB, corrected for RTS eeeeeeek
