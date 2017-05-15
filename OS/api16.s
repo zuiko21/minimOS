@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1rc2, should match kernel16.s
+; v0.5.1rc3, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170512-1737
+; last modified 20170515-1940
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -51,8 +51,7 @@ co_port:
 ; *** virtual windows manager TO DO ***
 co_win:
 		LDY #NO_RSRC		; not yet implemented ***placeholder***
-		PLB					; restore DBR!!!
-		BRA cio_setc		; direct error notify
+		BRA cio_abort		; restore DBR and notify error
 ; ** end of filesystem access **
 co_log:
 ; investigate rest of logical devices
@@ -85,6 +84,7 @@ co_lckd:
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper physdev index in X
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
+; ...and the into cio_unlock
 
 ; ***************************
 ; *** common I/O routines ***
@@ -1084,7 +1084,8 @@ sd_loop:
 		LDY #D_ID			; point to ID of driver
 		LDA (sysptr), Y		; get ID... plus extra byte
 		ASL					; convert to index
-;			BCC sd_next			; invalid device ID!
+		BIT #$0100				; any carry from LSB? eeeeeek
+			BEQ sd_next			; invalid device ID!
 		TAY					; use as index, LSB only
 		LDA #dr_error		; installed address at unused drivers
 		CMP drv_opt, Y		; check pointer
@@ -1379,7 +1380,7 @@ tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
 	.byt	>isr_sched_ret-1	; corrected reentry address **standard label**
 	.byt	<isr_sched_ret-1	; note reversed pointer eeeeeeeeeeek
-	.byt	0				; stored X value, best if multitasking driver is the first one
+	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEK
 tsi_end:
 ; end of stack frame for easier size computation
 
