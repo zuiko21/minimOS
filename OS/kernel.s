@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1rc1
+; v0.5.1rc4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170511-1312
+; last modified 20170515-1250
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,12 +35,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.5.1rc1", 0	; version in comment
+	.asc	"minimOS 0.5.1rc4", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$6980	; time, 13.12
-	.word	$4AAB	; date, 2017/5/11
+	.word	$4AAF	; date, 2017/5/15
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -406,7 +406,6 @@ dr_ok:					; *** all drivers inited ***
 #endif
 
 ; startup code, revise ASAP
-
 ; *** set default I/O device ***
 	LDA #DEVICE			; as defined in options.h
 	STA default_out		; should check some devices
@@ -436,8 +435,8 @@ sh_exec:
 	STA def_io			; default local I/O
 	STA def_io+1
 	JSR b_fork			; reserve first execution braid
-	CLI					; enable interrupts *** this is dangerous!
-	JSR b_exec			; go for it!
+;	CLI					; enable interrupts *** this is dangerous!
+	JSR b_exec			; go for it! EXEC should enable interrupts from launched process anyway
 	JSR yield			; run ASAP
 here:
 	_BRA here			; ...as the scheduler will detour execution
@@ -452,6 +451,7 @@ ks_cr:
 
 ; *** generic kernel routines, now in separate file 20150924 *** new filenames
 #ifndef		LOWRAM
+	.asc	"<API>"		; debug only
 #include "api.s"
 #else
 #include "api_lowram.s"
@@ -506,6 +506,7 @@ exec_st:
 	LDA #ZP_AVAIL		; eeeeeeek!
 	STA z_used			; otherwise SAFE will not work!
 ; jump to code!
+	CLI					; the place to do it???
 	JMP (ex_pt)
 
 ; SET_HNDL for single-task systems
@@ -567,17 +568,18 @@ kern_end:		; for size computation
 ; ***** end of kernel file plus API and IRQ *****
 ; ***********************************************
 
+; **********************************************************************************
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
+; **********************************************************************************
 ; must NOT include external shell label!!!
 ; but MUST make page alignment HERE, the bulit-in one into shell file will fo nothing as already algined
 
-	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
-
-shellcode:
 ; first determine actual shell address, no longer internally defined!
 #ifdef	NOHEAD
-shell	= shellcode			; no header to skip
+shell:					; no header to skip
 #else
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+shellcode:
 shell	= shellcode+256		; skip header
 #endif
 

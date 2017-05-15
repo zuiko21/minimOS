@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1rc3, must match kernel.s
+; v0.5.1rc4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170512-1735
+; last modified 20170515-1311
 
 ; no way for standalone assembly...
 
@@ -48,8 +48,13 @@ co_win:
 co_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
-			BNE cio_nfound		; final error otherwise
-		_EXIT_OK			; "/dev/null" is always OK
+		BNE cio_nfound		; final error otherwise
+			_EXIT_OK			; "/dev/null" is always OK
+; *** common I/O call ***
+cio_nfound:
+	_ERR(N_FOUND)		; unknown device
+
+; * stuff begins here *
 co_phys:
 ; arrived here with dev # in A
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
@@ -71,14 +76,11 @@ co_lckd:
 ; continue with mutually exclusive COUT
 	JSR co_call			; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 
-; *** common I/O calls ***
+; *** common I/O call ***
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	RTS					; exit with whatever error code
-
-cio_nfound:
-	_ERR(N_FOUND)		; unknown device
 
 ; ****************************
 ; *** CIN, get a character ***
@@ -169,8 +171,6 @@ ci_signal:
 		LDY #EMPTY			; no character was received
 		SEC					; eeeeeeeek
 		BCS cio_unlock		; release device and exit!
-
-; *** some common I/O calls ***
 
 ; *** for 02 systems without indexed CALL ***
 co_call:
@@ -325,8 +325,7 @@ ma_aok:
 	CMP ma_rs+1			; compare this block with requested size eeeeeeeek
 	BEQ ma_updt			; was same size, will not generate new entry
 ; **should I correct stack balance for safe mode?
-		JSR ma_adv			; make room otherwisemake room otherwise, and set the following one as free padding
-; **should I correct stack balance for safe mode?
+		JSR ma_adv			; make room otherwise, and set the following one as free padding
 ; create after the assigned block a FREE entry!
 		LDA ram_pos, X		; newly assigned slice will begin there eeeeeeeeeek
 		CLC
@@ -341,10 +340,7 @@ ma_updt:
 	LDA #USED_RAM		; now is reserved
 	STA ram_stat, X		; update table entry
 ; ** new 20161106, store PID of caller **
-	_PHX				; will need this index
-	JSR get_pid			; who asked for this?
-	_PLX				; retrieve index
-	TYA					; unfortunately no STY abs,X
+	LDA run_pid			; who asked for this? FASTER
 	STA ram_pid, X		; store PID
 ; theoretically we are done, end of CS
 	_EXIT_CS			; end of critical section, new 160119
@@ -374,7 +370,7 @@ ma_2end:
 		BCC ma_notend		; could expand
 			PLA					; discard return address
 			PLA
-			JMP ma_nobank		; notice error
+			_BRA ma_nobank		; notice error
 ma_notend:
 #endif
 		LDY ram_stat, X		; check status of block
@@ -678,25 +674,28 @@ str_win:
 str_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
-			BEQ str_found		; /dev/null is always OK
+		BEQ str_nfound		; is it NULL?
+			_EXIT_OK			; /dev/null is always OK
+str_nfound:
 		_ERR(N_FOUND)		; final error otherwise
 str_phys:
 ; ** new direct indexing, revamped 20160407 **
-	ASL					; convert to index (2+2)
+	ASL					; convert to index (2)
 	STA iol_dev			; store for indexed call! (3)
 ; MUTEX for physical devices only!
 	_ENTER_CS
 str_wait:
-	LDX iol_dev			; restore previous status, *new style (3)
-	LDA cio_lock, X		; *check whether THAT device in use (4)
-	BEQ str_lckd		; resume operation if free (3)
+		LDX iol_dev			; restore previous status, *new style (3)
+		LDA cio_lock, X		; *check whether THAT device in use (4)
+		BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-		JSR yield			; direct call the usual way (6)
-		_BRA str_wait		; try again! (3)
+;			KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
+			JSR yield			; direct call the usual way (6)
+			_BRA str_wait		; try again! (3)
 str_lckd:
 	LDA run_pid			; who am I?
 	STA cio_lock, X		; *reserve this (4)
+	_EXIT_CS			; eeeeeeeeeeeeeeeeeeeek
 ; proceed with mutually-exclusive routine
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
@@ -720,9 +719,9 @@ str_call:
 	_JMPX(drv_opt)		; go at stored pointer (...6)
 str_err:
 	PLA					; discard saved Y while keeping error code
-	_BRA str_abort			; unlock and exit
+	_BRA str_abort		; unlock and exit
 str_exit:
-	CLC					; unlock and exit without error
+		CLC					; unlock and exit without error
 str_abort:
 	LDX iol_dev			; retrieve driver index
 	_STZA cio_lock, X	; clear mutex

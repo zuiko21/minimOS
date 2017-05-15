@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.5.1rc1, unified with kernel 20160412
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170511-1026
+; last modified 20170515-1315
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -28,12 +28,12 @@ sysvol:
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
 	.asc	"minimOS 0.5.1 for ", MACHINE_NAME	; system version and machine
-	.asc	13, "20170511-1026", 0				; build date and time
+	.asc	13, "20170515-1300", 0				; build date and time
 
 	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date field
 
-	.word	$5340				; time, 10.26
-	.word	$4AAB				; date, 2017/05/11
+	.word	$6800				; time, 13.00
+	.word	$4AAF				; date, 2017/05/15
 
 ;romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 
@@ -140,7 +140,7 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 free_head:
 	BRK						; don't enter here! NUL marks beginning of header
 	.asc	"aS****", CR	; just reserved SYSTEM space
-	.asc	"ROM", 0, 0		; file name (mandatory) and empty comment
+	.asc	"[R", "OM]", 0, 0	; file name (mandatory) and empty comment *** note macro savvy
 ; advance to end of header
 	.dsb	free_head + $FC - *, $FF	; for ready-to-blow ROM, advance to size
 ; *** no valid date & time ***

@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5b10
-; last modified 20170224-0846
+; v0.5rc1
+; last modified 20170515-1313
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -29,8 +29,8 @@ lsHead:
 	.dsb	lsHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4C00			; time, 9.32
-	.word	$4A4F			; date, 2017/2/15
+	.word	$6800			; time, 13.00
+	.word	$4AAF			; date, 2017/5/15
 
 lsSize	=	lsEnd - lsHead -$100	; compute size NOT including header!
 
@@ -327,7 +327,7 @@ banner:
 ; $F800 picture     --  1K
 
 ls_cpus:
-	.asc	"NMOS", 0
+	.asc	"N", "MOS", 0	; macro alert!!!
 	.asc	"'C02", 0
 	.asc	"R65C", 0
 	.asc	"'816", 0
