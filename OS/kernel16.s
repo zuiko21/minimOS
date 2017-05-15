@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.5.1rc1
+; v0.5.1rc3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170511-1023
+; last modified 20170515-2013
 
 ; just in case
 #define		C816	_C816
@@ -38,11 +38,11 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.5.1rc1", 0	; version in comment
+	.asc	"minimOS-16 0.5.1rc3", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$52E0	; time, 10.23
-	.word	$4AAB	; date, 2017/5/11
+	.word	$A000	; time, 2000
+	.word	$4AAF	; date, 2017/5/15
 
 kern_siz = kern_end - kern_head - 256
 
@@ -335,36 +335,28 @@ sh_exec:
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct deindexed call because of 16-bit memory!
-	CLI					; should enable interrupts at some point... eeeeeeeek
+;	CLI					; should enable interrupts at some point... eeeeeeeek
 	_KERNEL(B_EXEC)		; go for it! no direct deindexed call because of 16-bit memory!
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** might be fine for 6502 too
 here:
 	BRA here			; ...as the scheduler will detour execution
 
-; ***** debug code *****
-; a quick way to print a newline (or a debugging '!') on standard device
+; a quick way to print a newline on standard device
 ks_cr:
 	LDY #CR				; leading newline, 8-bit
-ksc_pry:
 	STY io_c
 	LDY #DEVICE
 	_KERNEL(COUT)		; print it
 	RTS
-debug:
-	LDY #'!'			; *** debug mark ****
-	BRA ksc_pry			; *** go print it ***
 
-; *** generic kernel routines, now in separate file 20150924 *** new filenames
-#ifndef		C816
-#include "api.s"
-#else
+; *** generic kernel routines ***
+	.asc	"<API>"				; for debug only
 #include "api16.s"
-#endif
 
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.5.1b17", 0	; version in comment
+	.asc	"minimOS-16 0.5.1rc3", 0	; version in comment
 #endif
 
 ; *****************************************************
@@ -417,7 +409,7 @@ exec_st:
 ; initialise stack EEEEEEK
 	LDA #1				; standard stack page
 	XBA					; use as MSB
-	LDA #$FF			; initial stack pointer
+	LDA #$FF			; initial stack pointer, not using SPTR
 	TCS					; eeeeeeeeeek
 ; this should now work for both 02 and 816 apps
 	LDY ex_pt+2			; get bank first! keep it
@@ -476,6 +468,7 @@ exec_retset:
 ; somehow should set registers, API TBD...
 ; jump to code!
 ; already in full 8-bit mode as assumed
+	CLI				; eeeeeeeeek
 	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
 
 ; SET_HNDL for single-task systems
@@ -557,11 +550,7 @@ rst_shell:
 ; will include BRK handler!
 
 k_isr:
-#ifndef	C816
-#include "isr/irq.s"
-#else
 #include "isr/irq16.s"
-#endif
 ; default NMI-ISR is on firmware!
 
 kern_end:		; for size computation
@@ -573,14 +562,13 @@ kern_end:		; for size computation
 ; must NOT include external shell label!!!
 ; but MUST make page alignment HERE, the bulit-in one into shell file will fo nothing as already algined
 
-	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 
-shellcode:
 ; first determine actual shell address, no longer internally defined!
 #ifdef	NOHEAD
-shell	= shellcode			; no header to skip
+shell:			; no header to skip
 #else
-shell	= shellcode+256		; skip header
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+shell	= * + 256		; skip header
 #endif
 
 #include "shell/SHELL"

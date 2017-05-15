@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1rc5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170515-1912
+; last modified 20170515-2017
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,11 +35,11 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.5.1rc4", 0	; version in comment
+	.asc	"minimOS 0.5.1rc5", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$6980	; time, 13.12
+	.word	$A000	; time, 20.00
 	.word	$4AAF	; date, 2017/5/15
 
 kern_siz = kern_end - kern_head - $FF
@@ -239,19 +239,7 @@ dr_limit:	CPY drv_num			; all done? (4)
 			CPX #MAX_QUEUE		; compare against limit (2)
 				BCS dr_abort		; error registering driver! (2/3) nothing was queued
 ; loops for these are 11b/35t instead of 13b/24t if directly assigned (saving last INY)
-; ****think about a generic routine
-; enter with table offset in Y
-;	STY da_tmp		; temporary storage
-;	LDA doff_tab, Y		; where is each queue depending on dr.offset!
-;	TAX			; use as other index
-;	SEC			; queue after length!
-;	ADC #<drv_queues	; address LSB of first of queues!
-;	SBC da_tmp		; deindex! do not know what to do with carry...
-;	STA da_que		; new local for indirect pointer
-;	LDA #>drv_queues	; same with MSB
-;	ADC #0			; just with propagated carry
-;	STA da_que
-;dr_xloop:
+; **** 0.6 will use a much simpler/better approach
 dr_ploop:
 				LDA (da_ptr), Y		; get one byte (5)
 				STA drv_poll, X		; store in RAM (4)
@@ -314,12 +302,14 @@ dr_abpr:
 				DEC dsec_mx			; otherwise remove from queue!
 				DEC dsec_mx			; two-byte pointer
 dr_abpr:
+			LDY #D_AUTH
 			LDA (da_ptr), Y		; get auth code... AGAIN (5)
 			AND #A_REQ			; any async?
 			BNE dr_ab_p			; none to remove
 				DEC dreq_mx			; otherwise remove from queue!
 				DEC dreq_mx			; two-byte pointer
 dr_ab_p:
+			LDY #D_AUTH
 			LDA (da_ptr), Y		; get auth code... AGAIN (5)
 			AND #A_POLL			; any jiffy?
 			BNE dr_abort		; none to remove
@@ -456,6 +446,12 @@ ks_cr:
 #include "api_lowram.s"
 #endif
 
+; in headerless builds, keep at least the splash string
+#ifdef	NOHEAD
+kern_splash:
+	.asc	"minimOS 0.5.1rc5", 0
+#endif
+
 ; *** pseudo-driver for non-multitasking systems! ***
 ; only to be installed if no proper multitasking driver is present! 20161115
 #ifndef	MULTITASK
@@ -578,8 +574,7 @@ kern_end:		; for size computation
 shell:					; no header to skip
 #else
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
-shellcode:
-shell	= shellcode+256		; skip header
+shell	= * + 256		; skip header
 #endif
 
 #include "shell/SHELL"
