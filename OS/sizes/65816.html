@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>minimOS build sizes (65816)</title>
+		<style type="text/css">
+			body {
+				color: black;
+				background-color: white;
+			}
+			table, tr, th, td {
+				margin: 4px;
+				padding: 2px;
+			}
+			tr, td, th {
+				border: 1px solid black;
+			}
+			table {
+				border: 4px outset black;
+			}
+			td {
+				text-align: center;
+			}
+			.ayuda {
+				background-color: yellow;
+			}
+		</style>
+	</head>
+	<body>
+		<table>
+			<tr>
+				<th colspan="6"><i>minimOS<span style="color:red;">·16</span></i> build sizes</th>
+			</tr>
+			<tr>
+				<th colspan="2" style="color: blue;">v0.5.1</th>
+				<th style="color: #007700;">Standard</th>
+				<th style="color: #AA0000;">SAFE option</th>
+			</tr>
+			<tr>
+				<th rowspan="2">Kernel</th>
+				<th><i>init</i></th>
+				<td>399</td>
+				<td>414</td>
+			</tr>
+			<tr>
+				<th>API</th>
+				<td>1713</td>
+				<td>1804</td>
+			</tr>
+			<tr>
+				<th colspan="2">miniShell</th>
+				<td>221</td>
+				<td>231</td>
+			</tr>
+			<tr style="background-color: lightblue;">
+				<th colspan="2"><i>drivers</i></th>
+				<td colspan="2">118</td>
+			</tr>
+			<tr>
+				<th colspan="2">ls</th>
+				<td>355</td>
+				<td>365</td>
+			</tr>
+			<tr>
+				<th colspan="2">pmap</th>
+				<td>344</td>
+				<td>354</td>
+			</tr>
+			<tr style="background-color: lightblue;">
+				<th colspan="2">lined</th>
+				<td>1313</td>
+				<td>1338</td>
+			</tr>
+			<tr>
+				<th colspan="2">monitor</th>
+				<td>908</td>
+				<td class="ayuda">1335</td>
+			</tr>
+			<tr style="background-color: lightblue;">
+				<th colspan="2">SIGtest</th>
+				<td colspan="2">387</td>
+			</tr>
+			<tr>
+				<th colspan="2">miniMoDA</th>
+				<td>3943</td>
+				<td class="ayuda">4682</td>
+			</tr>
+			<tr style="background-color: lightblue;">
+				<th colspan="2">80asm</th>
+				<td>2942</td>
+				<td class="ayuda">3359</td>
+			</tr>
+			<tr style="background-color: lightblue;">
+				<th colspan="2">68asm</th>
+				<td>3186</td>
+				<td class="ayuda">3603</td>
+			</tr>
+			<tr">
+				<th colspan="2"><i>boot</i></th>
+				<td>299</td>
+				<td>343</td>
+			</tr>
+		</table>
+	</body>
+</html>

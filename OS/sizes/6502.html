@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>minimOS build sizes (6502/65C02)</title>
+		<style type="text/css">
+			body {
+				color: black;
+				background-color: white;
+			}
+			table, tr, th, td {
+				margin: 4px;
+				padding: 2px;
+			}
+			tr, td, th {
+				border: 1px solid black;
+			}
+			table {
+				border: 4px outset black;
+			}
+			td {
+				text-align: center;
+			}
+			.ayuda {
+				background-color: yellow;
+			}
+		</style>
+	</head>
+	<body>
+		<table>
+			<tr>
+				<th colspan="6"><i>minimOS·65</i> build sizes</th>
+			</tr>
+			<tr>
+				<th colspan="2" style="color: blue;">v0.5.1</th>
+				<th style="color: #007700;">CMOS</th>
+				<th>Safe CMOS</th>
+				<th>NMOS</th>
+				<th style="color: #AA0000;">Safe NMOS</th>
+			</tr>
+			<tr>
+				<th rowspan="2">Kernel</th>
+				<th><i>init</i></th>
+				<td>461</td>
+				<td>466</td>
+				<td>470</td>
+				<td>475</td>
+			</tr>
+			<tr>
+				<th>API</th>
+				<td>1457</td>
+				<td>1544</td>
+				<td>1580</td>
+				<td>1674</td>
+			</tr>
+			<tr>
+				<th colspan="2">miniShell</th>
+				<td>211</td>
+				<td>221</td>
+				<td>216</td>
+				<td>226</td>
+			</tr>
+			<tr>
+				<th colspan="2"><i>drivers</i></th>
+				<td colspan="4">118</td>
+			</tr>
+			<tr>
+				<th colspan="2">ls</th>
+				<td>335</td>
+				<td>345</td>
+				<td>347</td>
+				<td>357</td>
+			</tr>
+			<tr>
+				<th colspan="2">pmap</th>
+				<td>291</td>
+				<td>301</td>
+				<td>308</td>
+				<td>318</td>
+			</tr>
+			<tr>
+				<th colspan="2">lined</th>
+				<td>1313</td>
+				<td>1338</td>
+				<td>1387</td>
+				<td>1412</td>
+			</tr>
+			<tr>
+				<th colspan="2">monitor</th>
+				<td>894</td>
+				<td class="ayuda">1321</td>
+				<td>942</td>
+				<td class="ayuda">1369</td>
+			</tr>
+			<tr>
+				<th colspan="2">SIGtest</th>
+				<td colspan="2">387</td>
+				<td colspan="2">399</td>
+			</tr>
+			<tr>
+				<th colspan="2">miniMoDA</th>
+				<td>3446</td>
+				<td class="ayuda">3973</td>
+				<td>3595</td>
+				<td class="ayuda">4072</td>
+			</tr>
+			<tr>
+				<th colspan="2">80asm</th>
+				<td>2942</td>
+				<td class="ayuda">3359</td>
+				<td>3019</td>
+				<td class="ayuda">3436</td>
+			</tr>
+			<tr>
+				<th colspan="2">68asm</th>
+				<td>3186</td>
+				<td class="ayuda">3603</td>
+				<td>3269</td>
+				<td class="ayuda">3686</td>
+			</tr>
+			<tr>
+				<th colspan="2"><i>boot</i></th>
+				<td>321</td>
+				<td>340</td>
+				<td>358</td>
+				<td>378</td>
+			</tr>
+		</table>
+	</body>
+</html>
