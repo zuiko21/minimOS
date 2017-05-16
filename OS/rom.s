@@ -93,10 +93,10 @@ drv_end:		; for easier size computation
 #ifdef C816
 #include "../apps/pmap16.s"
 #else
-#include "../apps/pmap.s"
+;#include "../apps/pmap.s"
 #endif
 
-#include "../apps/lined.s"
+;#include "../apps/lined.s"
 
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
@@ -127,11 +127,11 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; *************************************
 ; ...could add more software up to $FC00
 #include "shell/monitor.s"
-#include "../apps/sigtest.s"
+;#include "../apps/sigtest.s"
 ;#include "../apps/crasm/80asm.s"
 ;#include "../apps/crasm/68asm.s"
 #ifndef	C816
-#include "shell/miniMoDA.s"
+;#include "shell/miniMoDA.s"
 #endif
 ; ****** skip rest of unused ROM until firmware ******
 ; ##### empty header #####

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1rc5
+; v0.5.1rc6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170515-2017
+; last modified 20170516-1241
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -125,7 +125,9 @@ ram_init:
 ; clear some other bytes
 ; runarch not used here as no API/ABI differences
 	STX sd_flag			; this is important to be clear (PW_STAT) or set as proper error handler
+#ifndef	LOWRAM
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
+#endif
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------

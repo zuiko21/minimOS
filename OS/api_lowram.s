@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5.1b1
+; v0.5.1rc1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170516-1111
+; last modified 20170516-1241
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -263,7 +263,7 @@ su_peek:
 ; calls COUT
 
 string:
-	STY str_dev		; save Y
+	STY iol_dev		; save Y
 	LDY #0			; reset new index
 ;	LDA str_pt+1	; get older MSB in case it changes
 ;	PHA				; save it somewhere!
@@ -272,7 +272,7 @@ str_loop:
 			BEQ str_end			; NUL = end-of-string
 		STA io_c			; store output character for COUT
 		_PHY				; save current index
-		LDY str_dev			; retrieve device number
+		LDY iol_dev			; retrieve device number
 		_KERNEL(COUT)		; call routine
 #ifdef	SAFE
 		BCC str_nerr		; extra check
