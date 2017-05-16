@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5.1a3, must match kernel.s
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20161219-1302
+; v0.5.1b1
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 20170516-1111
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -101,7 +101,7 @@ ci_notdle:
 		LDA #SIGTERM
 		STA b_sig		; set signal as parameter
 		LDY #0			; sent to all, this is the only one
-		_KERNEL(B_SIGNAL)	; send signal
+		JSR signal		; send signal FASTER
 ci_abort:
 		_ERR(EMPTY)		; no character was received
 
@@ -115,7 +115,8 @@ ci_nph:
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	LDY ticks		; simple placeholder
+	LDA ticks		; simple placeholder
+	STA io_c		; eeeeeeek
 	_EXIT_OK
 
 
@@ -181,15 +182,12 @@ b_exec:
 	BEQ ex_st		; OK for single-task system
 		_ERR(NO_RSRC)	; no way without multitasking
 ex_st:
+	LDX #SPTR		; init stack
+	TXS
 	JSR ex_jmp		; call supplied address
-	_EXIT_OK		; back to shell?
+	JMP shell		; back to shell?
 ex_jmp:
-	LDA ex_pt+1		; get address MSB first
-	PHA				; put it on stack
-	LDA ex_pt		; same for LSB
-	PHA
-	PHP				; ready for RTI
-	RTI				; actual jump, won't return here
+	JMP (ex_pt)		; DUH...
 
 
 ; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
