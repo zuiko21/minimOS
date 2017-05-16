@@ -126,12 +126,12 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; ****** more software after I/O ******
 ; *************************************
 ; ...could add more software up to $FC00
-;#include "shell/monitor.s"
-;#include "../apps/sigtest.s"
+#include "shell/monitor.s"
+#include "../apps/sigtest.s"
 ;#include "../apps/crasm/80asm.s"
-#include "../apps/crasm/68asm.s"
+;#include "../apps/crasm/68asm.s"
 #ifndef	C816
-;#include "shell/miniMoDA.s"
+#include "shell/miniMoDA.s"
 #endif
 ; ****** skip rest of unused ROM until firmware ******
 ; ##### empty header #####
