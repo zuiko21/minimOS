@@ -1,46 +1,63 @@
-; minimOS 0.5.1rc1 API/ABI
+; minimOS 0.6a1 API/ABI
+; *** not binary-compatibly with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170306-1215
+; last modified 20170517-1233
 
-; *************************************************************
-; *************************************************************
-; ***** ***** kernel function codes for system call ***** *****
-; *************************************************************
-; *************************************************************
+; *************************************************
+; *************************************************
+; ***** kernel function codes for system call *****
+; *************************************************
+; *************************************************
+
+; basic I/O
 COUT		=   0	; character output
 CIN			=   2	; character input
-MALLOC		=   4	; allocate memory
-FREE		=   6	; release memory
+STRING		=   4	; output a C-string via COUT
+READLN		=   6	; read input into supplied buffer
+
+; basic windowing system
 OPEN_W		=   8	; open window or get I/O devices
 CLOSE_W		=  10	; close a window or release device and its buffer
 FREE_W		=  12	; release a window but let it on screen, keeping its buffer, may be closed by kernel
-UPTIME		=  14	; give uptime in ticks and seconds *** no longer_hid_push!
-B_FORK		=  16	; reserve a free braid
-B_EXEC		=  18	; get code at some address running into a previously reserved braid
-LOAD_LINK	=  20	; get an executable from its path, and get it loaded into primary memory, maybe relocated
-SU_POKE		=  22	; access protected memory or I/O ***deprecate
-SU_PEEK		=  24	; access protected memory or I/O ***deprecate
-STRING		=  26	; output a C-string via COUT
-READLN		=  28	; read input into supplied buffer, inserted 20170108
-SU_SEI		=  30	; disable interrupts, really needed? ***deprecate
-SU_CLI		=  32	; enable interrupts, really needed? ***deprecate
-SET_FG		=  34	; set PB7 frequency generator ***firmware implementation
-GO_SHELL	=  36	; launch default shell, probably needed ***revise or deprecate
-SHUTDOWN	=  38	; proper shutdown, with or without power-off
-B_SIGNAL	=  40	; send UNIX_like signal to a braid
-B_STATUS	=  42	; get execution flags of a braid
-GET_PID		=  44	; get current braid PID
-SET_HNDL	=  46	; set SIGTERM handler
-B_YIELD		=  48	; give away CPU time, not really needed but interesting anyway
-TS_INFO		=  50	; get taskswitching info for multitasking driver
-RELEASE		=  52	; release ALL memory chuncks belonging to some PID, new 20161115
-SET_CURR	=  54	; set internal kernel info for running task (PID & architecture) new 20170222
 
-; ***********************************
-; ***********************************
-; ***** ***** error codes ***** *****
-; ***********************************
-; ***********************************
+; other generic functions
+UPTIME		=  14	; give uptime in ticks and seconds *** no longer_hid_push!
+SET_FG		=  16	; set PB7 frequency generator ***firmware implementation
+SHUTDOWN	=  18	; proper shutdown, with or without power-off
+LOAD_LINK	=  20	; get an executable from its path, and get it loaded into primary memory, maybe relocated
+
+; for multitask main use, but also with reduced single task management
+B_FORK		=  22	; reserve a free braid
+B_EXEC		=  24	; get code at some address running into a previously reserved braid
+B_SIGNAL	=  26	; send UNIX_like signal to a braid
+B_STATUS	=  28	; get execution flags of a braid
+GET_PID		=  30	; get current braid PID
+SET_HNDL	=  32	; set SIGTERM handler
+B_YIELD		=  34	; give away CPU time, not really needed but interesting anyway
+
+; some new functionalities, perhaps OK with LOWRAM systems
+AQ_MANAGE	=  36	; get asyncronous task status, or enable/disable it!
+PQ_MANAGE	=  38	; get periodic task status, enable/disable it or set frequency!
+
+; *** TBD subfunction codes for the above ***
+TQ_STAT		=   0	; read status (and frequency)
+TQ_EN		=   2	; enable task
+TQ_DIS		=   4	; disable task
+TQ_FREQ		=   6	; set task frequency (periodic tasks only)
+
+; not for LOWRAM systems
+MALLOC		=  40	; allocate memory
+FREE		=  42	; release memory
+RELEASE		=  44	; release ALL memory chuncks belonging to some PID, new 20161115
+TS_INFO		=  46	; get taskswitching info for multitasking driver
+SET_CURR	=  48	; set internal kernel info for running task (PID & architecture) new 20170222
+
+
+; ***********************
+; ***********************
+; ***** error codes *****
+; ***********************
+; ***********************
 END_OK	=   0		; not needed on 65xx, CLC instead
 UNAVAIL	=   1		; unavailable on this version
 TIMEOUT	=   2		; try later
@@ -53,41 +70,51 @@ BUSY	=   8		; cannot use it now, free it or wait
 CORRUPT	=   9		; data corruption
 
 ; ************************************
+; ************************************
 ; ** firmware interface calls (TBD) **
 ; ************************************
-INSTALL		=  0	; copy jump table
+; ************************************
+
+; generic functions, esp. interrupt related
+GESTALT		=  0	; get system info (renumbered)
 SET_ISR		=  2	; set IRQ vector
 SET_NMI		=  4	; set (magic preceded) NMI routine
-PATCH		=  6	; patch single function (renumbered)
-GESTALT		=  8	; get system info (renumbered)
-POWEROFF	= 10	; power-off, suspend or cold boot
-CONTEXT		= 12	; context bankswitching
-JIFFY		= 14	; set jiffy IRQ speed, ** TBD **
-; to do IRQ_SOURCE for total independence, return pointer offset in X
+SET_BRK		=  6	; set debugger, new 20170517
+JIFFY		=  8	; set jiffy IRQ speed, ** TBD **
+IRQ_SOURCE	= 10	; get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+POWEROFF	= 12	; power-off, suspend or cold boot
+FREQ_GEN	= 14	; frequency generator hardware interface, TBD
+
+; not for LOWRAM systems
+INSTALL		= 16	; copy jump table
+PATCH		= 18	; patch single function (renumbered)
+CONTEXT		= 20	; context bankswitching
 
 ; **************************
 ; ** Driver table offsets **
 ; **************************
 D_ID	=  0		; driver ID
-D_AUTH	=  1		; authorization code
-D_INIT	=  2		; device reset
+D_AUTH	=  1		; authorization mask
+D_INIT	=  2		; device reset procedure
 D_POLL	=  4		; periodic interrupt task
-D_REQ	=  6		; asynchronous interrupt request
-D_CIN	=  8		; character input
-D_COUT	= 10		; character output
-D_SEC	= 12		; 1-second interrupt
+D_REQ	=  6		; asynchronous interrupt task
+D_CIN	=  8		; character input code
+D_COUT	= 10		; character output code
+D_FREQ	= 12		; frequency for periodic task, new 20170517
 D_BLIN	= 14		; block input, new names 20150304, also for control purposes
 D_BLOUT	= 16		; block output, new names 20150304, also for control purposes
 D_BYE	= 18		; shutdown procedure
 D_INFO	= 20		; points to a C-string with driver info
-D_MEM	= 22		; NEW, required variable space (if relocatable)
+D_MEM	= 22		; NEW, required variable space (if relocatable) (WORD)
 
 ; ** Driver feature mask values **
 A_POLL	= %10000000	; D_POLL routine available
 A_REQ	= %01000000	; D_REQ routine available
 A_CIN	= %00100000	; D_CIN capability
 A_COUT	= %00010000	; D_COUT capability
-A_SEC	= %00001000	; D_SEC routine available
+;A_SEC	= %00001000	; *** no longer available, RESERVED ***
 A_BLIN	= %00000100	; D_BLIN capability
 A_BLOUT	= %00000010	; D_BLOUT capability
 A_MEM	= %00000001	; D_MEM dynamically linked, on-the-fly loadable driver
@@ -123,26 +150,16 @@ LOCK_RAM	=	6	; new label 20161117
 
 ; some kernel-related definitions
 #ifndef	LOWRAM
-			MAX_QUEUE	=	16	; maximum queue size (for half the number of routines)
+			MAX_QUEUE	=	16	; maximum interrupt task queue size
 			MAX_DRIVERS	=	16	; maximum number of drivers, independent as of 20170207
 			MAX_LIST	=	32	; number of available RAM blocks *** might increase this value in 65816 systems!
 #else
-			MAX_QUEUE	=	4	; much smaller queues in 128-byte systems
+			MAX_QUEUE	=	6	; much smaller queues in 128-byte systems, note unified jiffy & slow queues!
 			MAX_DRIVERS	=	4	; maximum number of drivers, independent as of 20170207
 			MAX_LIST	=	0	; no memory management for such systems
 #endif
 
-; *********************************************
-; ** optional multitasking subfunctions, TBD **
-; *********************************************
-MM_FORK		=  0	; reserve a free braid (will go BR_STOP for a moment)
-MM_EXEC		=  2	; get code at some address running into a paused braid (will go BR_RUN)
-MM_YIELD	=  4	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
-MM_SIGNAL	=  6	; send some signal to a braid
-MM_STATUS	=  8	; get execution flags for a braid, new 20150413 *** might include arch info!
-MM_PID		= 10	; get current PID, new 20150413 *** might be depercated
-MM_HANDL	= 12	; set TERM handler, new 20150416
-MM_PRIOR	= 14	; priorize braid, jump to it at once, really needed? new 20150413, renumbered 20150416
+; multitasking subfunctions, no longer needed as will patch regular kernel!
 
 ; ** multitasking status values **
 BR_FREE		= 192	; free slot, non-executable
@@ -223,7 +240,7 @@ DEV_ACIA	= 236	; ACIA, currently 6551
 DEV_SS22	= 250	; SS-22 port
 DEV_ASCII	= 241	; ASCII keyboard on VIAport, TO_DO
 DEV_DEBUG	= 255	; Bus sniffer, NEW 20150323
-DEV_CONIO	= 132	; for Kowalski simulator, NEW 20160308
+DEV_CONIO	= 132	; for Kowalski & run816 simulator, NEW 20160308
 DEV_VGA		= 192	; integrated VGA-compatible Tijuana, NEW 20160331
 
 ; more temporary IDs

@@ -1,19 +1,20 @@
-; minimOS 0.5.1rc1 MACRO definitions
+; minimOS 0.6a1 MACRO definitions
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170309-1320
+; last modified 20170517-1159
 
 ; *** standard addresses ***
 
 kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
 admin_call	=	$FFD0	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
+admin_appc	=	$FFD8	; special interface for 65816 firmware call from USER software!
 
 ; unified address (will lock at $FFE1-2 anyway) for CMOS and NMOS ** new name 20161010
 lock		=	$FFE0	; more-or-less 816 savvy address
 
 ; *** device numbers for optional pseudo-driver modules, TBD ***
-TASK_DEV	=	128
-WIND_DEV	=	129		; new name 20161017
-FILE_DEV	=	130
+;TASK_DEV	=	128		; no longer needed, may displace the following
+WIND_DEV	=	129		; new name 20161017, might suffer the same fate!
+FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries for it! Perhaps #128
 
 ; *** considerations for minimOS·16 ***
 ; kernel return is via RTI (note CLC trick)

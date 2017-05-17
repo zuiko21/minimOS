@@ -1,6 +1,6 @@
-; minimOS 0.5.1rc1 zero-page system variables
+; minimOS 0.6a1 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170301-1031
+; last modified 20170517-1233
 
 .zero
 * = 0
