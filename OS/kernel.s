@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.5.1rc6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170516-1241
+; last modified 20170517-0851
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -456,7 +456,7 @@ kern_splash:
 
 ; *** pseudo-driver for non-multitasking systems! ***
 ; only to be installed if no proper multitasking driver is present! 20161115
-#ifndef	MULTITASK
+#ifndef	LOWRAM
 st_taskdev:
 	_JMPX(st_tdlist)	; call appropriate code, will return to original caller
 

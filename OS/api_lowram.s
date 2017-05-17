@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5.1rc1
+; v0.5.1rc2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170516-1241
+; last modified 20170517-0925
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -174,34 +174,142 @@ up_upt:
 ; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
 ; API still subject to change... (default I/O, rendez-vous mode TBD)
 ; Y <- PID, ex_pt <- addr (was z2L)
-; REVISE *****************
 
 b_exec:
 ; non-multitasking version
+#ifdef	SAFE
 	TYA				; should be system reserved PID, best way
 	BEQ ex_st		; OK for single-task system
+sig_pid:
 		_ERR(NO_RSRC)	; no way without multitasking
 ex_st:
+#endif
 	LDX #SPTR		; init stack
 	TXS
 	JSR ex_jmp		; call supplied address
-	JMP shell		; back to shell?
+sig_kill:
+	LDX #SPTR		; init stack again
+	TXS
+	JMP sh_exec		; back to shell!
 ex_jmp:
+	LDA #ZP_AVAIL	; eeeeeeeeeeek
+	STA z_used		; otherwise SAFE will not work
+	CLI				; time to do it!
 	JMP (ex_pt)		; DUH...
 
 
-; *** LOAD_LINK, get address once in RAM/ROM (kludge!) *** TO_DO
+; *** B_SIGNAL, send UNIX-like signal to a braid ***
+; b_sig <- signal to be sent , Y <- addressed braid (0 means ALL braids AND the only accepted value with singletasking)
+
+signal:
+#ifdef	SAFE
+	TYA					; check correct PID, really needed?
+		BNE sig_pid			; strange error?
+#endif
+	LDY b_sig			; get the signal
+	CPY #SIGTERM		; clean shutdown?
+	BNE sig_suic
+		LDA #>sig_exit		; set standard return address
+		PHA
+		LDA #<sig_exit		; same for LSB
+		PHA
+		PHP					; as required by RTI
+		JMP (mm_sterm)		; execute handler, will return to sig_exit
+sig_suic:
+	CPY #SIGKILL		; suicide, makes any sense?
+		BEQ sig_kill
+	_ERR(INVALID)		; unrecognised signal
+
+; *** B_STATUS, get execution flags of a braid ***
+; Y <- addressed braid
+; Y -> flags, TBD
+
+status:
+#ifdef	SAFE
+	TYA					; check PID
+		BNE sig_pid			; only 0 accepted
+#endif
+	LDY #BR_RUN			; single-task systems are always running
+sig_exit:
+	_EXIT_OK
+
+; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
+; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTS) *** NEW address 20160425
+; bad PID is probably the only feasible error
+
+set_handler:
+#ifdef	SAFE
+	TYA					; check PID
+		BNE sig_pid			; only 0 accepted
+#endif
+	LDY ex_pt			; get pointer
+	LDA ex_pt+1			; get pointer MSB
+	STY mm_sterm		; store in single variable (from unused table)
+	STA mm_sterm+1
+	_EXIT_OK
+
+
+; *** LOAD_LINK, get address once in RAM/ROM (kludge!)
 ; ex_pt -> addr, str_pt <- *path
-; REVISE *****************
 
 load_link:
-; *** assume *path points to header, code begins +256 *** STILL A KLUDGE
-	LDY #1			; offset for filetype
-	LDA (str_pt), Y	; check filetype
-	CMP #'m'		; must be minimOS app!
+; *** look for that filename in ROM headers ***
+; first of all, correct parameter pointer as will be aligned with header!
+	LDA str_pt			; get LSB
+	SEC
+	SBC #8				; subtract name position in header! beware of 816 non-wrapping!
+	STA str_pt			; modified value
+	BCS ll_reset		; nothing else to do if no borrow
+		DEC str_pt+1		; otherwise will point to previous PAGE eeeeeeek
+ll_reset:
+; get initial address! beacuse of the above, no longer adds filename offset!
+	LDA #<ROM_BASE		; begin of ROM contents LSB, most likely zero
+	STA	rh_scan			; set local pointer
+	LDA #>ROM_BASE		; same for MSB
+	STA rh_scan+1		; internal pointer set
+ll_geth:
+; ** check whether we are on a valid header!!! **
+		_LDAY(rh_scan)		; first of all should be a NUL
+			BNE ll_nfound		; link was lost, no more to scan
+		LDY #7				; after type and size, a CR is expected
+		LDA (rh_scan), Y	; get eigth byte in header!
+		CMP #CR				; was it a CR?
+			BNE ll_nfound		; if not, go away
+; look for the name
+		INY					; reset scanning index (now at name position, was @7)
+ll_nloop:
+			LDA (rh_scan), Y	; get character in found name
+			CMP (str_pt), Y		; compare with what we are looking for
+				BNE ll_nthis		; difference found
+			ORA (str_pt), Y		; otherwise check whether at EOL
+				BEQ ll_found		; all were zero, both ended names are the same!
+			INY					; otherwise continue search
+			BNE ll_nloop		; will not do forever, no need for BRA
+ll_nthis:
+; not this one, correct local pointer for the next header
+		LDY #253			; relative offset to number of pages
+		LDA (rh_scan), Y	; get it now
+		TAX					; save for a while
+		DEY					; relative offset to FILE SIZE eeeeek
+		LDA (rh_scan), Y	; check whether crosses boundary
+		BEQ ll_bound		; if it does not, do not advance page
+			INX					; otherwise goes into next page
+ll_bound:
+		TXA					; retrieve number of pages to skip...
+		SEC					; ...plus header itself! eeeeeeek
+		ADC rh_scan+1		; add to previous value
+		STA rh_scan+1		; update pointer
+		BCC ll_geth			; inspect new header (if no overflow! 16-bit addressing)
+ll_nfound:
+	_ERR(N_FOUND)		; all was scanned and the query was not found
+ll_found:
+; original LOADLINK code
+	LDY #1				; offset for filetype
+	LDA (rh_scan), Y	; check filetype
+	CMP #'m'			; must be minimOS app!
 		BNE ll_wrap		; error otherwise
-	INY				; next byte is CPU type
-	LDA (str_pt), Y	; get it
+	INY					; next byte is CPU type
+	LDA (rh_scan), Y	; get it
 ; check compability of supplied code against present CPU
 	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
 	CPX #'R'		; is it a Rockwell/WDC CPU?
@@ -211,9 +319,8 @@ load_link:
 	CPX #'V'		; 65816 is supported but no better than a generic 65C02
 		BEQ ll_cmos
 	CPX #'N'		; old NMOS?
-		BEQ ll_nmos		; only NMOS code will do
-	BRK				; *** should NEVER arrive here, unless firmware variables are corrupt! ***
-	.asc	"{CPU?}", 0
+	BEQ ll_nmos		; only NMOS code will do
+		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
 ll_rock:
 	CMP #'R'		; code has Rockwell extensions?
 		BEQ ll_valid
@@ -225,8 +332,8 @@ ll_nmos:
 		BNE ll_wrap		; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
-	LDA str_pt		; get pointer LSB
-	LDY str_pt+1	; and MSB
+	LDA rh_scan		; get pointer LSB
+	LDY rh_scan+1	; and MSB
 	INY				; start from next page
 	STA ex_pt		; save execution pointer
 	STY ex_pt+1
@@ -291,6 +398,57 @@ str_exit:
 ;	PLA		; get MSB back
 ;	STA str_pt+1	; restore it
 	RTS		; return error code
+
+; ******************************
+; *** READLN, buffered input *** new 20161223
+; ******************************
+;		INPUT
+; Y			= dev
+; str_pt	= buffer address
+; ln_siz	= max offset (byte)
+;		USES rl_dev, rl_cur
+
+readLN:
+	STY rl_dev			; preset device ID!
+	_STZY rl_cur		; reset variable
+rl_l:
+		JSR yield			; always useful!
+		LDY rl_dev			; use device
+		JSR cin				; get one character
+		BCC rl_rcv			; got something
+			CPY #EMPTY			; otherwise is just waiting?
+		BEQ rl_l			; continue then
+			LDA #0
+			_STAX(str_pt)		; if any other error, terminate string
+			RTS					; and return whatever error
+rl_rcv:
+		LDA io_c			; get received
+		LDY rl_cur			; retrieve index
+		CMP #CR				; hit CR?
+			BEQ rl_cr			; all done then
+		CMP #BS				; is it backspace?
+		BNE rl_nbs			; delete then
+			TYA					; check index
+				BEQ rl_l			; ignore if already zero
+			DEC rl_cur			; otherwise reduce index
+			_BRA rl_echo		; and resume operation
+rl_nbs:
+		CPY ln_siz			; overflow? EEEEEEEEEEK
+			BCS rl_l			; ignore if so
+		STA (str_pt), Y		; store into buffer
+		INC	rl_cur			; update index
+rl_echo:
+		LDY rl_dev			; retrieve device
+		JSR cout			; echo received character
+		_BRA rl_l			; and continue
+rl_cr:
+	LDA #CR				; newline
+	LDY rl_dev			; retrieve device
+	JSR cout			; print newline (ignoring errors)
+	LDY rl_cur			; retrieve cursor!!!!!
+	LDA #0				; no STZ indirect indexed
+	STA (str_pt), Y		; terminate string
+	_EXIT_OK			; and all done!
 
 
 ; *** SU_SEI, disable interrupts *** revised 20150209
@@ -420,32 +578,9 @@ sd_tab:
 	.word	sd_cold	; cold boot via firmware
 	.word	sd_warm	; warm boot direct by kernel
 
-; low-ram signal processing must call st_taskdev!!!
-; *** B_SIGNAL, send UNIX-like signal to a braid ***
-; b_sig <- signal to be sent , Y <- addressed braid (0 means ALL braids AND the only accepted value with singletasking)
-
-signal:
-	LDX #MM_SIGNAL	; subfunction code
-sig_call:			; standard procedure
-	JMP st_taskdev	; direct jump to built-in handler, will return with appropriate error code (NOT for 65816)
-
-; *** B_STATUS, get execution flags of a braid ***
-; Y <- addressed braid
-; Y -> flags, TBD
-
-status:
-	LDX #MM_STATUS	; subfunction code
-	_BRA sig_call	; continue as usual
-
-; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTS) *** NEW address 20160425
-; bad PID is probably the only feasible error
-
-set_handler:
-	LDX #MM_HANDL	; subfunction code
-	_BRA sig_call	; go for the driver
-
+; *******************************
 ; *** end of kernel functions ***
+; *******************************
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -453,26 +588,26 @@ set_handler:
 k_vec:
 	.word	cout		; output a character
 	.word	cin			; get a character
-	.word	malloc		; reserve memory (kludge!)
-	.word	free		; release memory (kludgest!)
+	.word	malloc		; reserve memory ***unavailable
+	.word	free		; release memory ***unavailable
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
 	.word	uptime		; approximate uptime in ticks (new)
-	.word	b_fork		; get available PID
-	.word	b_exec		; launch new process
+	.word	b_fork		; get available PID ***returns 0
+	.word	b_exec		; launch new process ***simpler
 	.word	load_link	; get addr. once in RAM/ROM
-	.word	su_poke		; write protected addresses
-	.word	su_peek		; read protected addresses
+	.word	su_poke		; write protected addresses ***deprecate
+	.word	su_peek		; read protected addresses ***deprecate
 	.word	string		; prints a C-string
-	.word	su_sei		; disable interrupts, aka dis_int
-	.word	su_cli		; enable interrupts (not needed for 65xx) aka en_int
+	.word	readLN		; buffered input, INSERTED 20161223
+	.word	su_sei		; disable interrupts, aka dis_int ***deprecate
+	.word	su_cli		; enable interrupts (not needed for 65xx) aka en_int ***deprecate
 	.word	set_fg		; enable frequency generator (VIA T1@PB7)
-	.word	go_shell	; launch default shell, INSERTED 20150604
+	.word	go_shell	; launch default shell ***deprecate
 	.word	shutdown	; proper shutdown procedure, new 20150409, renumbered 20150604
-	.word	signal		; send UNIX-like signal to a braid, new 20150415, renumbered 20150604
-	.word	get_pid		; get PID of current braid, new 20150415, renumbered 20150604
+	.word	signal		; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	get_pid		; get PID of current braid ***returns 0
 	.word	set_handler	; set SIGTERM handler, new 20150417, renumbered 20150604
-	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
-	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
+	.word	yield		; give away CPU time for I/O-bound process ***does nothing
 
