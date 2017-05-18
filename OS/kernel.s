@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170518-1111
+; last modified 20170518-1445
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -161,20 +161,21 @@ dr_inst:
 ; create entry on IDs table ** new 20150219
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code (5)
-		PHA					; keep this as will be converted into index later!
+		STA dr_id			; keep in local variable as will be often used
 #ifdef	SAFE
 		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
 dr_phys:
 #endif
+		LDY #D_AUTH			; let us get the provided features
+		LDA (da_ptr), Y
+		STA dr_feat			; another commonly used value
+		STA dr_aut			; also into temporary variable for checking
 
-; *** first of all, check whether the driver COULD be successfully installed ***
+; *** before registering, check whether the driver COULD be successfully installed ***
 ; that means 1) there must be room enough on the interrupt queues for its tasks, if provided
 ; and 2) the D_INIT routine succeeded as usual
 ; otherwise, skip the installing procedure altogether for that driver
-		LDY #D_AUTH			; let us get the provided features
-		LDA (da_ptr), Y
-		STA dr_aut			; temporary variable
 		LDX #2				; number of queues
 dr_chk:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
@@ -188,12 +189,9 @@ dr_ntsk:
 ; if arrived here, there is room for interrupt tasks, but check init code
 		JSR dr_icall		; call routine (6+...)
 			BCS dr_abort		; now way, forget about this
+; *** 3) driver is OK to install, just check whether this ID was not in use ***
+		LDA dr_id			: retrieve saved ID
 
-; *** 3) driver is OK to install, proceed ***
-		PLA					; retrieve saved ID as index!
-; after this, going into dr_abort NEEDS to push something as will be pulled
-
-; *** 4) just before, check whether this ID was not in use ***
 #ifndef	LOWRAM
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 		ASL					; use retrieved ID as index (2+2)
@@ -210,7 +208,6 @@ dr_ntsk:
 		CMP drv_ipt+1, X	; now check input, just in case (4)
 		BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
-			PHA					; required by new scheme! (3)
 			JMP dr_abort		; already in use (3)
 dr_empty:
 ; might check here whether I/O are provided!
@@ -251,76 +248,73 @@ dr_limit:	CPY drv_num			; all done? (4)
 ; ------
 #endif
 
-; *** 5) register interrupt routines *** new, much simpler approach
-		LDY #D_AUTH			; offset for feature code (2)
-		LDA (da_ptr), Y		; get auth code (5)
+; *** 4) register interrupt routines *** new, much simpler approach
+		LDA dr_feat			; get original auth code (3)
 		STA dr_aut			; and keep for later! (3)
-		LDX #2				; index is number of queues! (2)
+; time to get a pointer to the-block-of-pointers (source)
+		LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_REQ)
+		JSR dr_gind			; get the pointer into sysptr (move to locals?)
+; also a temporary pointer to the particular queue
+		LDA #<drv_poll		; must be the first one!
+		STA dq_ptr			; store temporarily
+		LDA #>drv_poll		; MSB too
+		STA dq_ptr+1
+		LDX #2				; index is number of queues (2)
 dr_task:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
-			BCC dr_nextsk		; skip installation if task not enabled
-				LDA queues_mx-1, X	; get index of free entry!
-				INC queues_mx-1, X	; add another task in queue
-				INC queues_mx-1, X	; pointer takes two bytes
-				
-				
-				
-				
-dr_nextsk:
+			BCC dr_noten		; skip installation if task not enabled
+; prepare another entry into queue
+				INC queues_mx, X	; add another task in queue
+				INC queues_mx, X	; pointer takes two bytes
+; read pointer from header
+dr_copyq:
+				LDY #1				; reset offset (note order)
+				LDA (sysptr), Y		; get MSB from header
+				PHA					; stack it!
+				_LDAY(sysptr)		; non-indexed indirect, get LSB in A
+; write pointer into queue
+				LDY queues_mx, X	; get index of free entry!
+				STA (dq_ptr), Y		; store into reserved place!
+				INY					; go for MSB
+				PLA					; was stacked!
+				STA (dq_ptr), Y
+; do not know if it was periodic, should skip the ASL as is related queue
+				JSR dr_nextq		; switch to next queue
+				LDA dq_ptr			; check current feature for a moment
+				CMP #<drv_freq		; just did the periodic?
+					BEQ dr_copyq		; simply copy the frquency, then
+					BNE dr_nxque		; or go for last one!
+dr_noten:
+			JSR dr_nextq		; switch to next queue
+			LDA dq_ptr			; check current feature for a moment
+			CMP #<drv_freq		; periodic was not enabled?
+				BEQ dr_noten		; then skip frequency queue ***clumsy way, saves some bytes***
+dr_nxque:
 			DEX					; let us check next feature
-			BNE dr_task
+			BPL dr_task
+				
+; * routine for advancing to next queue *		
+dr_nextq:
+	LDA dq_ptr			; get original queue pointer
+	CLC
+	ADC #MAX_QUEUE		; go to next queue
+	STA dq_ptr
+	BCC dnq_nw			; no carry...
+		INC dq_ptr+1		; ...or update MSB
+dnq_nw:
+	LDA sysptr			; increment the origin pointer!
+	CLC
+	ADC #2				; next pointer in header
+	BCC dnq_snw			; no carry...
+		INC sysptr+1		; ...or update MSB
+	RTS
 
 
 
-		AND #A_POLL			; check whether D_POLL routine is avaliable (2)
-		BEQ dr_nopoll		; no D_POLL installed (2/3)
-			LDY #D_POLL			; get offset for periodic vector (2)
-			LDX dpoll_mx		; get destination index (4)
-			CPX #MAX_QUEUE		; compare against limit (2)
-				BCS dr_abort		; error registering driver! (2/3) nothing was queued
-; loops for these are 11b/35t instead of 13b/24t if directly assigned (saving last INY)
-; **** 0.6 will use a much simpler/better approach
-dr_ploop:
-				LDA (da_ptr), Y		; get one byte (5)
-				STA drv_poll, X		; store in RAM (4)
-				INY					; increase indexes (2+2)
-				INX
-				CPY #D_POLL+2		; both bytes done? (2)
-				BNE dr_ploop		; if not, go for MSB (3/2) eek
-			STX dpoll_mx		; save updated index (4)
-dr_nopoll:
-		LDA dr_aut			; reget auth code (3)
-		AND #A_REQ			; check D_REQ presence (2)
-		BEQ dr_noreq		; no D_REQ installed (2/3)
-			LDY #D_REQ			; get offset for async vector (2)
-			LDX dreq_mx			; get destination index (4)
-			CPX #MAX_QUEUE		; compare against limit (2)
-				BCS dr_ab_p			; error registering driver! (2/3) check poll!
-dr_aloop:
-				LDA (da_ptr), Y		; get its LSB (5)
-				STA drv_async, X	; store in RAM (4)
-				INY					; increase indexes (2+2)
-				INX
-				CPY #D_REQ+2		; both bytes done? (2)
-				BNE dr_aloop		; if not, go for MSB (3/2) eek
-			STX dreq_mx			; save updated index  (4)
-dr_noreq:
-		LDA dr_aut			; reget auth code (3)
-		AND #A_SEC			; check D_SEC (2)
-		BEQ dr_nosec		; no D_SEC installed (2/3)
-			LDY #D_SEC			; get offset for 1-sec vector (2)
-			LDX dsec_mx			; get destination index (4)
-			CPX #MAX_QUEUE		; compare against limit (2)
-				BCS dr_abpr			; error registering driver! (2/3) check poll & async!
-dr_sloop:
-				LDA (da_ptr), Y		; get its LSB (5)
-				STA drv_sec, X		; store in RAM (4)
-				INY					; increase indexes (2+2)
-				INX
-				CPY #D_SEC+2		; both bytes done? (2)
-				BNE dr_sloop		; if not, go for MSB (3/2) eek
-			STX dsec_mx			; save updated index (4)
-dr_nosec:
+
+
+
+
 
 
 ; continue initing drivers
@@ -338,39 +332,15 @@ dr_abpr:
 ; ------
 #else
 ; ++++++
-			LDY #D_AUTH
-			LDA (da_ptr), Y		; get auth code (5)
-			AND #A_SEC			; any slow?
-			BNE dr_abpr			; none to remove
-				DEC dsec_mx			; otherwise remove from queue!
-				DEC dsec_mx			; two-byte pointer
-dr_abpr:
-			LDY #D_AUTH
-			LDA (da_ptr), Y		; get auth code... AGAIN (5)
-			AND #A_REQ			; any async?
-			BNE dr_ab_p			; none to remove
-				DEC dreq_mx			; otherwise remove from queue!
-				DEC dreq_mx			; two-byte pointer
-dr_ab_p:
-			LDY #D_AUTH
-			LDA (da_ptr), Y		; get auth code... AGAIN (5)
-			AND #A_POLL			; any jiffy?
-			BNE dr_abort		; none to remove
-				DEC dpoll_mx		; otherwise remove from queue!
-				DEC dpoll_mx		; two-byte pointer
+
+
+
 dr_abort:
 			LDY #D_ID			; offset for ID (2)
 			LDA (da_ptr), Y		; get ID code (5)
 				BPL dr_next			; nothing to delete (2/3)
 			ASL					; use retrieved ID as index (2+2)
 			TAX					; was TAY
-; might save some space here and up, with a routine...
-			LDA #<dr_error		; make deleted entries point to a standard error routine, new 20160406 (2)
-			STA drv_opt, X		; set LSB for output (4)
-			STA drv_ipt, X		; and for input (4)
-			LDA #>dr_error		; pretty much the same, not worth a loop (2)
-			STA drv_opt+1, X	; set MSB for output (4)
-			STA drv_ipt+1, X	; and for input (4)
 ; ++++++
 #endif
 dr_next:
