@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170518-1445
+; last modified 20170518-2022
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -259,8 +259,9 @@ dr_limit:	CPY drv_num			; all done? (4)
 		STA dq_ptr			; store temporarily
 		LDA #>drv_poll		; MSB too
 		STA dq_ptr+1
-		LDX #2				; index is number of queues (2)
+		LDX #1				; index is number of queues MINUS ONE (2)
 dr_task:
+			LDY #0					; not zero if feature is enabled
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
@@ -292,8 +293,10 @@ dr_noten:
 dr_nxque:
 			DEX					; let us check next feature
 			BPL dr_task
-				
-; * routine for advancing to next queue *		
+
+
+
+; * routine for advancing to next queue *
 dr_nextq:
 	LDA dq_ptr			; get original queue pointer
 	CLC
@@ -305,6 +308,7 @@ dnq_nw:
 	LDA sysptr			; increment the origin pointer!
 	CLC
 	ADC #2				; next pointer in header
+	STA sysptr			; eeeeeeeeeeek
 	BCC dnq_snw			; no carry...
 		INC sysptr+1		; ...or update MSB
 	RTS
@@ -320,7 +324,6 @@ dnq_nw:
 ; continue initing drivers
 		BCC dr_next			; did not fail initialisation
 ; *** if arrived here, driver initialisation failed in some way! ***
-			PLA					; discard saved ID...
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
 dr_abort:
