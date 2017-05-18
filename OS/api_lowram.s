@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5.1rc2
+; v0.5.1rc3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170517-0925
+; last modified 20170518-0907
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -188,6 +188,11 @@ ex_st:
 	TXS
 	JSR ex_jmp		; call supplied address
 sig_kill:
+	LDA sd_flag		; some pending action?
+	BEQ rst_shell	; if not, just restart the shell
+		LDY #PW_CLEAN	; or go into second phase...
+		JSR shutdown	; ...of shutdown procedure (could use JMP)
+rst_shell:
 	LDX #SPTR		; init stack again
 	TXS
 	JMP sh_exec		; back to shell!
@@ -214,11 +219,12 @@ signal:
 		LDA #<sig_exit		; same for LSB
 		PHA
 		PHP					; as required by RTI
-		JMP (mm_sterm)		; execute handler, will return to sig_exit
+		JMP (mm_sterm)		; execute handler, will return to EXIT_OK
 sig_suic:
-	CPY #SIGKILL		; suicide, makes any sense?
-		BEQ sig_kill
-	_ERR(INVALID)		; unrecognised signal
+	CPY #SIGKILL		; suicide?
+		BEQ sig_kill		; like the end of B_EXEC
+	_ERR(INVALID)		; otherwise unrecognised signal
+
 
 ; *** B_STATUS, get execution flags of a braid ***
 ; Y <- addressed braid
@@ -232,6 +238,7 @@ status:
 	LDY #BR_RUN			; single-task systems are always running
 sig_exit:
 	_EXIT_OK
+
 
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
 ; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTS) *** NEW address 20160425
@@ -525,13 +532,7 @@ shutdown:
 ; ** the real stuff starts here **
 ; now let's disable all drivers
 	SEI			; disable interrupts
-
-#ifdef	SAFE
-	_STZA dpoll_mx	; disable interrupt queues, just in case
-	_STZA dreq_mx
-	_STZA dsec_mx
-#endif
-
+; no need to clear interrupt queues, I think
 ; call each driver's shutdown routine
 	LDA drv_num		; get number of installed drivers
 	ASL				; twice the value as a pointer
