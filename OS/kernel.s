@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.5.1rc6
+; v0.6a1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170517-0851
+; last modified 20170518-1010
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,12 +35,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.5.1rc5", 0	; version in comment
+	.asc	"minimOS 0.6a1", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$A000	; time, 20.00
-	.word	$4AAF	; date, 2017/5/15
+	.word	$5000	; time, 10.00
+	.word	$4AB2	; date, 2017/5/18
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -111,23 +111,16 @@ ram_init:
 ; ************************************************
 ; *** intialise drivers from their jump tables ***
 ; ************************************************
-; THINK about making API entries for this!
+; sometime will create API entries for these, but new format is urgent!
 ; * will also initialise I/O lock arrays! * 20161129
-
-; globally defined da_ptr is a pointer for indirect addressing, new CIN/COUT compatible 20150619, revised 20160413
-; same with dr_aut, now independent kernel call savvy 20161103
 
 ; driver full install is new 20150208
 	LDX #0				; reset driver index (2)
-	STX dpoll_mx		; reset all indexes, NMOS-savvy (4+4+4)
-	STX dreq_mx
-	STX dsec_mx
+	STX queues_mx		; reset all indexes, NMOS-savvy (4+4+4)
+	STX queues_mx+1
 ; clear some other bytes
 ; runarch not used here as no API/ABI differences
 	STX sd_flag			; this is important to be clear (PW_STAT) or set as proper error handler
-#ifndef	LOWRAM
-	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
-#endif
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------
@@ -136,6 +129,7 @@ ram_init:
 ; ------
 #else
 ; ++++++ new direct I/O tables for much faster access 20160406 ++++++
+	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
 dr_clear:
 		_STZA cio_lock, X	; clear I/O locks! (4)
 		_STZA cin_mode, X	; and binary flags, actually next address (4)
@@ -148,12 +142,7 @@ dr_clear:
 		STA drv_ipt, X		; and for input (4)
 		INX					; next entry (2)
 		BNE dr_clear		; finish page (3/2)
-; *** in non-multitasking systems, install embedded TASK_DEV driver ***
-	LDY #<st_taskdev	; pseudo-driver LSB -- standard label on kernel.s
-	LDA #>st_taskdev	; pseudo-driver MSB
-	STY drv_opt			; *** assuming TASK_DEV = 128, index otherwise
-	STA drv_opt+1		; same for MSB
-; might do something similar for WIND_DEV = 129...
+; TASKDEV is no longer a thing...
 ; ++++++
 #endif
 
@@ -170,32 +159,59 @@ dr_inst:
 ; create entry on IDs table ** new 20150219
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code (5)
-
 #ifdef	SAFE
 		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
 dr_phys:
 #endif
+		PHA					; keep this as will be converted into index later!
 
+; ***** first of all, check whether the driver COULD be successfully installed *****
+; that means 1) there must be room enough on the interrupt queues for its tasks, if provided
+; and 2) the D_INIT routine succeeded as usual
+; otherwise, skip the installing procedure altogether for that driver
+		LDY #D_AUTH			; let us get the provided features
+		LDA (da_ptr), Y
+		STA systmp			; temporary variable, should move to locals
+		LDX #2				; number of queues
+dr_chk:
+			ASL systmp			; extract MSB (will be A_POLL first, then A_REQ)
+			BCC dr_ntsk			; skip verification if task not enabled
+				LDY queues_mx-1, X	; get current tasks in queue
+				CPY #MAX_QUEUE		; room for another?
+				BCC dr_ntsk			; checked OK, do not abort
+					PLA					; dispose of saved ID!!!
+					JMP dr_abort		; and try next one
+dr_ntsk:
+			DEX					; let us check next feature
+			BNE dr_chk
+; if arrived here, there is room for interrupt tasks, but check init code
+		JSR dr_icall		; call routine (6+...)
+			BCS dr_abort		; *******should discard pushed ID, worth it
+			
+			
+			
+			
+			
+			
+			
+; *** continue with standard installation ***
+		PLA					; retrieve saved ID as index!
 #ifndef	LOWRAM
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 		ASL					; use retrieved ID as index (2+2)
 		TAX					; was Y
-; new 161014, TASK_DEV (128 turns into 0 as index) does NOT get checked, allowing default installation
-		BEQ dr_empty
-; ** alternative in case of WIND_DEV managed similarly **
-;		CPX #4				; first phys-index that will be managed normally
-;		BCC dr_empty		; 0 & 2 (TASK_DEV & WIND_DEV) will NOT be checked from default installation
-			LDA #<dr_error		; pre-installed LSB (2)
-			CMP drv_opt, X		; check whether in use (4)
-				BNE dr_busy			; pointer was not empty (2/3)
-			CMP drv_ipt, X		; now check input, just in case (4)
-				BNE dr_busy			; pointer was not empty (2/3)
-			LDA #>dr_error		; now look for pre-installed MSB (2)
-			CMP drv_opt+1, X	; check whether in use (4)
-				BNE dr_busy			; pointer was not empty (2/3)
-			CMP drv_ipt+1, X	; now check input, just in case (4)
-			BEQ dr_empty		; it is OK to set (3/2)
+; new 170518, TASK_DEV is nothing to be checked
+		LDA #<dr_error		; pre-installed LSB (2)
+		CMP drv_opt, X		; check whether in use (4)
+			BNE dr_busy			; pointer was not empty (2/3)
+		CMP drv_ipt, X		; now check input, just in case (4)
+			BNE dr_busy			; pointer was not empty (2/3)
+		LDA #>dr_error		; now look for pre-installed MSB (2)
+		CMP drv_opt+1, X	; check whether in use (4)
+			BNE dr_busy			; pointer was not empty (2/3)
+		CMP drv_ipt+1, X	; now check input, just in case (4)
+		BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
 			JMP dr_abort		; already in use (3)
 dr_empty:
@@ -230,7 +246,7 @@ dr_limit:	CPY drv_num			; all done? (4)
 ; ------
 #endif
 
-; register interrupt routines (as usual)
+; register interrupt routines *** new, much simpler approach
 		LDY #D_AUTH			; offset for feature code (2)
 		LDA (da_ptr), Y		; get auth code (5)
 		STA dr_aut			; and keep for later! (3)
@@ -284,7 +300,6 @@ dr_sloop:
 			STX dsec_mx			; save updated index (4)
 dr_nosec:
 ; continue initing drivers
-		JSR dr_icall		; call routine (6+...)
 		BCC dr_next			; did not fail initialisation
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
@@ -448,12 +463,6 @@ ks_cr:
 #include "api_lowram.s"
 #endif
 
-; in headerless builds, keep at least the splash string
-#ifdef	NOHEAD
-kern_splash:
-	.asc	"minimOS 0.5.1rc5", 0
-#endif
-
 ; *** pseudo-driver for non-multitasking systems! ***
 ; only to be installed if no proper multitasking driver is present! 20161115
 #ifndef	LOWRAM
@@ -593,4 +602,10 @@ dr_vars:
 #include "drivers/config/DRIVER_PACK.h"
 .text					; eeeeeek
 -user_sram = *			; the rest of available SRAM
+#endif
+
+; in headerless builds, keep at least the splash string
+#ifdef	NOHEAD
+kern_splash:
+	.asc	"minimOS 0.6a1", 0
 #endif
