@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170518-1010
+; last modified 20170518-1111
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -114,6 +114,7 @@ ram_init:
 ; sometime will create API entries for these, but new format is urgent!
 ; * will also initialise I/O lock arrays! * 20161129
 
+; *** 1) initialise stuff ***
 ; driver full install is new 20150208
 	LDX #0				; reset driver index (2)
 	STX queues_mx		; reset all indexes, NMOS-savvy (4+4+4)
@@ -146,6 +147,7 @@ dr_clear:
 ; ++++++
 #endif
 
+; *** 2) prepare access to each driver header ***
 ; first get the pointer to each driver table
 dr_loop:
 		_PHX				; keep current value, no longer drv_aix (3)
@@ -159,44 +161,39 @@ dr_inst:
 ; create entry on IDs table ** new 20150219
 		LDY #D_ID			; offset for ID (2)
 		LDA (da_ptr), Y		; get ID code (5)
+		PHA					; keep this as will be converted into index later!
 #ifdef	SAFE
 		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
 dr_phys:
 #endif
-		PHA					; keep this as will be converted into index later!
 
-; ***** first of all, check whether the driver COULD be successfully installed *****
+; *** first of all, check whether the driver COULD be successfully installed ***
 ; that means 1) there must be room enough on the interrupt queues for its tasks, if provided
 ; and 2) the D_INIT routine succeeded as usual
 ; otherwise, skip the installing procedure altogether for that driver
 		LDY #D_AUTH			; let us get the provided features
 		LDA (da_ptr), Y
-		STA systmp			; temporary variable, should move to locals
+		STA dr_aut			; temporary variable
 		LDX #2				; number of queues
 dr_chk:
-			ASL systmp			; extract MSB (will be A_POLL first, then A_REQ)
+			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_ntsk			; skip verification if task not enabled
 				LDY queues_mx-1, X	; get current tasks in queue
 				CPY #MAX_QUEUE		; room for another?
-				BCC dr_ntsk			; checked OK, do not abort
-					PLA					; dispose of saved ID!!!
-					JMP dr_abort		; and try next one
+					BCS dr_abort			; did not checked OK
 dr_ntsk:
 			DEX					; let us check next feature
 			BNE dr_chk
 ; if arrived here, there is room for interrupt tasks, but check init code
 		JSR dr_icall		; call routine (6+...)
-			BCS dr_abort		; *******should discard pushed ID, worth it
-			
-			
-			
-			
-			
-			
-			
-; *** continue with standard installation ***
+			BCS dr_abort		; now way, forget about this
+
+; *** 3) driver is OK to install, proceed ***
 		PLA					; retrieve saved ID as index!
+; after this, going into dr_abort NEEDS to push something as will be pulled
+
+; *** 4) just before, check whether this ID was not in use ***
 #ifndef	LOWRAM
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 		ASL					; use retrieved ID as index (2+2)
@@ -213,20 +210,28 @@ dr_ntsk:
 		CMP drv_ipt+1, X	; now check input, just in case (4)
 		BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
+			PHA					; required by new scheme! (3)
 			JMP dr_abort		; already in use (3)
 dr_empty:
-		LDY #D_COUT			; offset for output routine (2)
-		JSR dr_gind			; get indirect address
-		LDA sysptr			; get driver table LSB (3)
-		STA drv_opt, X		; store in table (4)
-		LDA sysptr+1		; same for MSB (3+4)
-		STA drv_opt+1, X
-		LDY #D_CIN			; same for input routine (2)
-		JSR dr_gind			; get indirect address
-		LDA sysptr			; get driver table LSB (3)
-		STA drv_ipt, X		; store in table (4)
-		LDA sysptr+1		; same for MSB (3+4)
-		STA drv_ipt+1, X
+; might check here whether I/O are provided!
+;		ASL dr_aut			; look for CIN (5)
+;		BCC dr_seto			; no input for this!
+			LDY #D_CIN			; same for input routine (2)
+			JSR dr_gind			; get indirect address
+			LDA sysptr			; get driver table LSB (3)
+			STA drv_ipt, X		; store in table (4)
+			LDA sysptr+1		; same for MSB (3+4)
+			STA drv_ipt+1, X
+dr_seto:
+;		ASL dr_aut			; look for COUT (5)
+;		BCC dr_nout			; no output for this!
+			LDY #D_COUT			; offset for output routine (2)
+			JSR dr_gind			; get indirect address
+			LDA sysptr			; get driver table LSB (3)
+			STA drv_opt, X		; store in table (4)
+			LDA sysptr+1		; same for MSB (3+4)
+			STA drv_opt+1, X
+dr_nout:
 ; ++++++
 #else
 ; ------ IDs table filling for low-RAM systems ------
@@ -246,10 +251,27 @@ dr_limit:	CPY drv_num			; all done? (4)
 ; ------
 #endif
 
-; register interrupt routines *** new, much simpler approach
+; *** 5) register interrupt routines *** new, much simpler approach
 		LDY #D_AUTH			; offset for feature code (2)
 		LDA (da_ptr), Y		; get auth code (5)
 		STA dr_aut			; and keep for later! (3)
+		LDX #2				; index is number of queues! (2)
+dr_task:
+			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
+			BCC dr_nextsk		; skip installation if task not enabled
+				LDA queues_mx-1, X	; get index of free entry!
+				INC queues_mx-1, X	; add another task in queue
+				INC queues_mx-1, X	; pointer takes two bytes
+				
+				
+				
+				
+dr_nextsk:
+			DEX					; let us check next feature
+			BNE dr_task
+
+
+
 		AND #A_POLL			; check whether D_POLL routine is avaliable (2)
 		BEQ dr_nopoll		; no D_POLL installed (2/3)
 			LDY #D_POLL			; get offset for periodic vector (2)
@@ -299,8 +321,12 @@ dr_sloop:
 				BNE dr_sloop		; if not, go for MSB (3/2) eek
 			STX dsec_mx			; save updated index (4)
 dr_nosec:
+
+
 ; continue initing drivers
 		BCC dr_next			; did not fail initialisation
+; *** if arrived here, driver initialisation failed in some way! ***
+			PLA					; discard saved ID...
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
 dr_abort:
