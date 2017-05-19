@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.5.1rc4, must match kernel.s
+; v0.6a2, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170515-1311
+; last modified 20170519-1435
 
 ; no way for standalone assembly...
 
@@ -81,6 +81,7 @@ cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	RTS					; exit with whatever error code
+
 
 ; ****************************
 ; *** CIN, get a character ***
@@ -220,6 +221,7 @@ ci_ok:
 ; C		= not enough memory/corruption detected
 ;		USES ma_ix.b
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
+
 malloc:
 	LDX #0				; reset index
 	LDY ma_rs			; check individual bytes, just in case
@@ -391,7 +393,7 @@ ma_room:
 
 
 ; ****************************
-; *** FREE, release memory *** revamped 20150209
+; *** FREE, release memory ***
 ; ****************************
 ;		INPUT
 ; ma_pt = addr
@@ -495,27 +497,170 @@ free_w:					; doesn't do much, either
 
 
 ; **************************************
-; *** UPTIME, get approximate uptime *** revised 20150208, corrected 20150318
+; *** UPTIME, get approximate uptime ***
 ; **************************************
 ;		OUTPUT
 ; up_ticks	= ticks, new standard format 20161006
 ; up_sec	= 32-bit uptime in seconds
+; this is 23b / 83t
 
 uptime:
-	LDX #1			; first go for elapsed ticks (2 bytes) (2)
-	_ENTER_CS		; don't change while copying
+	LDX #1			; first go for elapsed ticks, 2 bytes (2)
+	_ENTER_CS		; don't change while copying (5)
 up_loop:
-		LDA ticks, X		; get system variable byte (not uptime, corrected 20150125) (4)
+		LDA ticks, X		; get system variable byte (4)
 		STA up_ticks, X		; and store them in output parameter (3)
 		DEX					; go for next (2+3/2)
 		BPL up_loop
-	LDX #3			; now for the uptime in seconds (now 4 bytes) (2)
+	LDX #3			; now for the uptime in seconds,now 4 bytes (2)
 up_upt:
-		LDA ticks+2, X		; get system variable uptime, new 20150318 (4)
-		STA up_sec, X		; and store it in output parameter (3) corrected 150610
+		LDA ticks+2, X		; get system variable uptime (4)
+		STA up_sec, X		; and store it in output parameter (3)
 		DEX					; go for next (2+3/2)
 		BPL up_upt
-	_EXIT_CS
+	_EXIT_CS			; (4)
+	_EXIT_OK
+
+
+; *********************************
+; *** B_FORK, get available PID ***
+; *********************************
+;		OUTPUT
+; Y		= PID, 0 means not available
+
+b_fork:
+	LDY #0				; standard single task value
+; ...and go into subsequent EXIT_OK from B_YIELD
+
+; *********************************************
+; *** B_YIELD, Yield CPU time to next braid ***
+; *********************************************
+; (no interface needed)
+
+yield:
+	_EXIT_OK
+
+
+; *****************************************
+; *** B_EXEC, launch new loaded process ***
+; *****************************************
+;		INPUT
+; Y			= PID, 0 means execute within this braid (destructive)
+; ex_pt		= address of code to be executed (can be a mere subroutine)
+; def_io	= std_in & stdout
+;
+; API still subject to change... (register values, rendez-vous mode TBD)
+
+b_exec:
+; non-multitasking version
+#ifdef	SAFE
+	TYA				; should be system reserved PID, best way
+	BEQ ex_st		; OK for single-task system
+sig_pid:
+		_ERR(NO_RSRC)	; no way without multitasking
+ex_st:
+#endif
+	LDX #SPTR		; init stack
+	TXS
+	JSR ex_jmp		; call supplied address
+sig_kill:
+; first, free up all memory from previous task
+	LDY #0				; standard PID
+	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+; then, check for any shutdown command
+	LDA sd_flag		; some pending action?
+	BEQ rst_shell	; if not, just restart the shell
+		LDY #PW_CLEAN	; or go into second phase...
+		JSR shutdown	; ...of shutdown procedure (could use JMP)
+; if none of the above, a single task system can only restart the shell!
+rst_shell:
+	LDX #SPTR		; init stack again
+	TXS
+	JMP sh_exec		; back to shell!
+; this is how a task should replace the shell
+ex_jmp:
+	LDA #ZP_AVAIL	; eeeeeeeeeeek
+	STA z_used		; otherwise SAFE will not work
+	CLI				; time to do it!
+	JMP (ex_pt)		; DUH...
+
+
+; **************************************************
+; *** B_SIGNAL, send UNIX-like signal to a braid ***
+; **************************************************
+;		INPUT
+; b_sig	= signal to be sent
+; Y		= PID (0 means TO ALL)
+
+signal:
+#ifdef	SAFE
+	TYA					; check correct PID, really needed?
+		BNE sig_pid			; strange error?
+#endif
+	LDY b_sig			; get the signal
+	CPY #SIGTERM		; clean shutdown?
+	BNE sig_suic
+		LDA #>sig_exit		; set standard return address
+		PHA
+		LDA #<sig_exit		; same for LSB
+		PHA
+		PHP					; as required by RTI
+		JMP (mm_sterm)		; execute handler, will return to sig_exit
+sig_suic:
+	CPY #SIGKILL		; suicide, makes any sense?
+		BEQ sig_kill
+	_ERR(INVALID)		; unrecognised signal
+
+
+; ************************************************
+; *** B_STATUS, get execution flags of a braid ***
+; ************************************************
+;		INPUT
+; Y = addressed braid
+;		OUTPUT
+; Y = flags ***TBD, might include architecture
+; C = invalid PID
+
+status:
+#ifdef	SAFE
+	TYA					; check PID
+		BNE sig_pid			; only 0 accepted
+#endif
+	LDY #BR_RUN			; single-task systems are always running
+sig_exit:
+	_EXIT_OK
+
+
+; **************************************************************
+; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
+; **************************************************************
+;		INPUT
+; Y		= PID (0 means to myself)
+; ex_pt = SIGTERM handler routine (ending in RTI!)
+;		OUTPUT
+; C		= bad PID
+
+set_handler:
+#ifdef	SAFE
+	TYA					; check PID
+		BNE sig_pid			; only 0 accepted
+#endif
+	LDY ex_pt			; get pointer
+	LDA ex_pt+1			; get pointer MSB
+	STY mm_sterm		; store in single variable (from unused table)
+	STA mm_sterm+1
+	_EXIT_OK
+
+
+; **************************************
+; *** GET_PID, get current braid PID ***
+; **************************************
+;		OUTPUT
+; Y		= PID, 0 on singletask systems
+; may not need to be patched in multitasking systems!
+
+get_pid:
+	LDY run_pid			; new kernel variable
 	_EXIT_OK
 
 
@@ -586,7 +731,11 @@ ll_found:
 		BNE ll_wrap		; error otherwise
 	INY				; next byte is CPU type
 	LDA (rh_scan), Y	; get it
+
+; ******* I have to get rid of this HACK as soon as possible *******
 	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
+; ******************************************************************
+
 	CPX #'R'		; is it a Rockwell/WDC CPU?
 		BEQ ll_rock		; from R down is OK
 	CPX #'B'		; generic 65C02?
@@ -607,8 +756,6 @@ ll_nmos:
 		BNE ll_wrap		; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
-;	STA cpu_ll		; store just to tell it is XIP!
-;	LDA rh_scan		; get pointer LSB, most likely zero
 	LDY rh_scan+1	; and MSB
 	INY				; start from next page
 	_STZA ex_pt		; *** assume all headers are page-aligned ***
@@ -616,27 +763,6 @@ ll_valid:
 	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
-
-
-; *** SU_POKE, write to protected addresses ***
-; WILL be deprecated, not sure if of any use in other architectures
-; Y <- value, zpar <- addr
-; destroys A (and maybe Y on NMOS)
-
-su_poke:
-	TYA				; transfer value
-	_STAY(zpar)		; store value, macro for NMOS
-	_EXIT_OK
-
-; *** SU_PEEK, read from protected addresses ***
-; WILL be deprecated, not sure if of any use in other architectures
-; Y -> value, zpar <- addr
-; destroys A
-
-su_peek:
-	_LDAY(zpar)		; store value, macro for NMOS
-	TAY				; transfer value
-	_EXIT_OK
 
 
 ; *********************************
@@ -689,8 +815,7 @@ str_wait:
 		LDA cio_lock, X		; *check whether THAT device in use (4)
 		BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-;			KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-			JSR yield			; direct call the usual way (6)
+			JSR yield			; direct call the usual way, faster B_YIELD (6)
 			_BRA str_wait		; try again! (3)
 str_lckd:
 	LDA run_pid			; who am I?
@@ -781,22 +906,6 @@ rl_cr:
 	_EXIT_OK			; and all done!
 
 
-; *** SU_SEI, disable interrupts *** revised 20150209
-; C -> not authorized (?)
-; probably not needed on 65xx, _CS macros are much more interesting anyway
-su_sei:
-	SEI				; disable interrupts
-	_EXIT_OK		; no error so far
-
-
-; *** SU_CLI, enable interrupts *** revised 20150209
-; probably not needed on 65xx, _CS macros are much more interesting anyway
-
-su_cli:				; not needed for 65xx, even with protection hardware
-	CLI				; enable interrupts
-	_EXIT_OK		; no error
-
-
 ; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
 ; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
@@ -837,12 +946,6 @@ fg_dis:
 		_BRA fg_none
 fg_busy:
 	_ERR(BUSY)		; couldn't set
-
-
-; *** GO_SHELL, launch default shell *** new 20150604
-; no interface needed
-go_shell:
-	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
 
 
 ; ***********************************************************
@@ -941,105 +1044,11 @@ sd_tab:					; check order in abi.h!
 	.word	sd_off		; shutdown system
 
 
-; *********************************
-; *** B_FORK, get available PID *** properly interfaced 20150417
-; *********************************
-;		OUTPUT
-; Y		= PID, 0 means not available
-
-b_fork:
-	LDX #MM_FORK	; subfunction code
-	_BRA sig_call	; go for the driver
-
-
-; *****************************************
-; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
-; *****************************************
-;		INPUT
-; Y		= PID, 0 means execute within this braid (destructive)
-; ex_pt		= address of code to be executed (can be a mere subroutine)
-; def_io	= std_in & stdout
-;
-; API still subject to change... (register values, rendez-vous mode TBD)
-
-b_exec:
-; ** might be repaced with driver code on optimized builds **
-	LDX #MM_EXEC	; subfunction code
-	_BRA sig_call	; go for the driver
-
-
-; **************************************************
-; *** B_SIGNAL, send UNIX-like signal to a braid ***
-; **************************************************
-;		INPUT
-; b_sig		= signal to be sent
-; Y		= addressed braid, 0 means send to all?
-
-signal:
-	LDX #MM_SIGNAL	; subfunction code
-	_BRA sig_call	; go for the driver
-
-
-; ************************************************
-; *** B_STATUS, get execution flags of a braid ***
-; ************************************************
-;		INPUT
-; Y		= addressed braid, 0 means mysrlf?
-;		OUTPUT
-; Y		= flags, TBD, might include architecture
-;
-; do not know of possible errors, maybe just a bad PID
-
-status:
-	LDX #MM_STATUS	; subfunction code
-	_BRA sig_call	; go for the driver
-
-
-; **************************************
-; *** GET_PID, get current braid PID ***
-; **************************************
-;		OUTPUT
-; Y		= PID, 0 on singletask systems
-;
-; might be replaced with LDY pid on optimized builds...
-; ...or the new run_pid system variable!
-
-get_pid:
-	LDX #MM_PID		; subfunction code
-; * unified calling procedure, get subfunction code in X * new faster interface 20161102
-sig_call:			; NEW unified calling procedure
-	JMP (drv_opt)	; just enter into preinstalled driver, will exit with appropriate error code!
-
-
-; **************************************************************
-; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; **************************************************************
-;		INPUT
-; Y		= PID, 0 means myself?
-; ex_pt		= SIGTERM handler routine (ending in RTI!!!)
-;
-; bad PID is probably the only feasible error
-
-set_handler:
-	LDX #MM_HANDL	; subfunction code
-	_BRA sig_call	; go for the driver
-
-
-; *********************************************
-; *** B_YIELD, Yield CPU time to next braid ***
-; *********************************************
-; supposedly no interface needed, I do not think I need to tell if ignored
-
-yield:
-	LDX #MM_YIELD	; subfunction code
-	_BRA sig_call	; go for the driver
-
-
 ; ***************************************************************
-; *** TS_INFO, get taskswitching info for multitasking driver *** new API 20161019
+; *** TS_INFO, get taskswitching info for multitasking driver ***
 ; ***************************************************************
 ;		OUTPUT
-; Y		= number of bytes
+; Y			= number of bytes
 ; ex_pt		= pointer to the proposed stack frame
 
 ts_info:
@@ -1067,6 +1076,9 @@ tsi_end:
 
 release:
 	TYA					; as no CPY abs,X
+	BNE rls_pid			; was it a valid PID?
+		LDA run_pid			; otherwise, get mine
+rls_pid:
 	LDX #0				; reset index
 rls_loop:
 		LDY ram_stat, X		; will check stat of this block
@@ -1092,6 +1104,22 @@ rls_next:
 		BNE rls_loop		; continue if not yet
 	_EXIT_OK			; no errors...
 
+
+; ***********************************************************
+; *** SET_CURR, set internal kernel info for running task ***
+; ***********************************************************
+;		INPUT
+; Y			= PID
+;		OUTPUT
+; Y			= preset PID (must respect it!)
+; affects internal sysvar run_pid
+; run_arch not supported in 8-bit mode
+
+set_curr:
+	TYA					; eeeeek, no long STY (2)
+	STA run_pid			; store PID into kernel variables (4)
+	_EXIT_OK
+
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
@@ -1101,30 +1129,35 @@ rls_next:
 ; **************************************************
 #ifndef		DOWNLOAD
 k_vec:
+; basic I/O
 	.word	cout		; output a character
 	.word	cin			; get a character
-	.word	malloc		; reserve memory
-	.word	free		; release memory
+	.word	string		; prints a C-string
+	.word	readLN		; buffered input
+; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
-	.word	uptime		; approximate uptime in ticks (new)
-	.word	b_fork		; get available PID
-	.word	b_exec		; launch new process
-	.word	load_link	; get addr. once in RAM/ROM
-	.word	su_poke		; write protected addresses
-	.word	su_peek		; read protected addresses
-	.word	string		; prints a C-string
-	.word	readLN		; buffered input, INSERTED 20161223
-	.word	su_sei		; disable interrupts, aka dis_int
-	.word	su_cli		; enable interrupts (not needed for 65xx) aka en_int
+; other generic functions
+	.word	uptime		; approximate uptime in ticks
 	.word	set_fg		; enable frequency generator (VIA T1@PB7)
-	.word	go_shell	; launch default shell, INSERTED 20150604
-	.word	shutdown	; proper shutdown procedure, new 20150409, renumbered 20150604
-	.word	signal		; send UNIX-like signal to a braid, new 20150415, renumbered 20150604
-	.word	get_pid		; get PID of current braid, new 20150415, renumbered 20150604
-	.word	set_handler	; set SIGTERM handler, new 20150417, renumbered 20150604
-	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
-	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
-	.word	release		; release ALL memory for a PID, new 20161115
+	.word	shutdown	; proper shutdown procedure
+	.word	load_link	; get addr. once in RAM/ROM
+; simplified task management
+	.word	b_fork		; get available PID ***returns 0
+	.word	b_exec		; launch new process ***simpler
+	.word	signal		; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	status		; get execution flags of a task ***eeeeeeeeeek
+	.word	get_pid		; get PID of current braid ***returns 0
+	.word	set_handler	; set SIGTERM handler
+	.word	yield		; give away CPU time for I/O-bound process ***does nothing
+; new functionalities TBD
+	.word	aqmanage	; manage asynchronous task queue
+	.word	pqmanage	; manage periodic task queue
+; only for systems with enough RAM
+	.word	malloc		; reserve memory
+	.word	free		; release memory
+	.word	release		; release ALL memory for a PID
+	.word	ts_info		; get taskswitching info
+	.word	set_curr	; set internal kernel info for running task
 #endif

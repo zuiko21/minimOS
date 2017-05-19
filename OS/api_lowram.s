@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6a1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1341
+; last modified 20170519-1423
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -184,6 +184,7 @@ free_w:
 ;		OUTPUT
 ; up_ticks	= 16b ticks, new standard format 20161006
 ; up_sec	= 32b uptime in seconds
+; new version is 22b / 113t
 
 uptime:
 	LDX #7			; end of destination offset (2)
@@ -191,10 +192,10 @@ uptime:
 	_ENTER_CS		; don't change while copying (5)
 up_loop:
 		LDA ticks, Y	; get system variable byte (4)
-		STA up_ticks, X	; and store them in output parameter (3)
+		STA up_ticks, X	; and store them in output parameter (4)
 		DEX				; back one byte (2)
 		CPX #3			; already did seconds? (2)
-		BNE up_nosec	; do not skip to ticks... (3)
+		BNE up_nosec	; do not skip to ticks... (3/2)
 			LDX #1			; ...until seconds are done (2)
 up_nosec:
 		DEY				; go for next (2)
@@ -644,7 +645,7 @@ k_vec:
 	.word	signal		; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
 	.word	status		; get execution flags of a task ***eeeeeeeeeek
 	.word	get_pid		; get PID of current braid ***returns 0
-	.word	set_handler	; set SIGTERM handler, new 20150417, renumbered 20150604
+	.word	set_handler	; set SIGTERM handler
 	.word	yield		; give away CPU time for I/O-bound process ***does nothing
 ; new functionalities TBD
 	.word	aqmanage	; manage asynchronous task queue
