@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1002
+; last modified 20170519-1345
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -39,7 +39,7 @@ kern_splash:
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$5000	; time, 10.00
+	.word	$7000	; time, 14.00
 	.word	$4AB3	; date, 2017/5/19
 
 kern_siz = kern_end - kern_head - $FF
@@ -55,15 +55,17 @@ kern_siz = kern_end - kern_head - $FF
 warm:
 	SEI				; interrupts off, just in case (2)
 	CLD				; just in case, a must for NMOS (2)
-#ifdef	SAFE
+
 ; * this is in case a 65816 is being used, but still compatible with all * EXCEPT Kowlaski
 #ifdef	C816
+#ifdef	SAFE
 	SEC				; would set back emulation mode on C816
 	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
 	ORA $0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
 #endif
-; * end of 65816 specific code *
 #endif
+; * end of 65816 specific code *
+
 ; assume interrupts off, binary mode and 65C816 in emulation mode!
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
@@ -86,6 +88,11 @@ warm:
 	_ADMIN(SET_ISR)		; install routine (14...)
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
+
+; *** default action in case the scheduler runs out of tasks ***
+; as supplied (PW_COLD) will reboot as a sort-of watchdog, change as required
+	LDA #PW_COLD		; default action upon complete task death
+	STA sd_flag			; this is important to be clear (PW_STAT) or set as proper error handler
 
 ; *****************************
 ; *** memory initialisation ***
@@ -115,13 +122,10 @@ ram_init:
 ; * will also initialise I/O lock arrays! * 20161129
 
 ; *** 1) initialise stuff ***
-; driver full install is new 20150208
+; clear some bytes
 	LDX #0				; reset driver index (2)
 	STX queues_mx		; reset all indexes, NMOS-savvy (4+4+4)
 	STX queues_mx+1
-; clear some other bytes
-; runarch not used here as no API/ABI differences
-	STX sd_flag			; this is important to be clear (PW_STAT) or set as proper error handler
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------
@@ -452,8 +456,8 @@ sh_exec:
 	STA def_io			; default local I/O
 	STA def_io+1
 	JSR b_fork			; reserve first execution braid
-;	CLI					; enable interrupts *** this is dangerous!
 	JSR b_exec			; go for it! EXEC should enable interrupts from launched process anyway
+; singletask systems will not arrive here, ever!
 	JSR yield			; run ASAP
 here:
 	_BRA here			; ...as the scheduler will detour execution
@@ -466,7 +470,9 @@ ks_cr:
 	_KERNEL(COUT)		; print it
 	RTS
 
-; *** generic kernel routines, now in separate file 20150924 *** new filenames
+; ***********************************************
+; *** generic kernel routines, separate files ***
+; ***********************************************
 #ifndef		LOWRAM
 	.asc	"<API>"		; debug only
 #include "api.s"
@@ -474,116 +480,28 @@ ks_cr:
 #include "api_lowram.s"
 #endif
 
-; *** pseudo-driver for non-multitasking systems! ***
-; only to be installed if no proper multitasking driver is present! 20161115
-#ifndef	LOWRAM
-st_taskdev:
-	_JMPX(st_tdlist)	; call appropriate code, will return to original caller
-
-; pointer list for single-task management routines
-st_tdlist:
-	.word	st_fork		; reserve a free braid (will go BR_STOP for a moment)
-	.word	st_exec		; get code at some address running into a paused braid (will go BR_RUN)
-	.word	st_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
-	.word	st_signal	; send some signal to a braid
-	.word	st_status	; get execution flags for a braid
-	.word	st_getpid	; get current PID
-	.word	st_hndl		; set SIGTERM handler
-	.word	st_prior	; priorize braid, jump to it at once, really needed?
-
-; ** single-task management routines **
-
-; B_FORK for non-multitasking systems
-; GET_PID for non-multitasking systems
-st_fork:
-st_getpid:
-	LDY #0				; no multitasking, system reserved PID anytime
-; B_YIELD for non-multitasking systems
-st_yield:
-	_DR_OK				; YIELD has no other task to give CPU time to!
-
-; B_EXEC for non-multitasking systems
-st_exec:
-st_prior:
-#ifdef	SAFE
-	TYA					; should be system reserved PID, best way
-	BEQ exec_st			; OK for single-task system
-		_DR_ERR(NO_RSRC)	; no way without multitasking
-exec_st:
-#endif
-; initialise stack EEEEEEK
-	LDX #SPTR
-	TXS					; eeeeeeeeeek
-; push return address towards KILL routine
-	LDA #>sig_kill-1	; get routine MSB, corrected for RTS eeeeeeek
-	PHA
-	LDA #<sig_kill-1	; same for LSB
-	PHA
-; set context space!
-	LDA #ZP_AVAIL		; eeeeeeek!
-	STA z_used			; otherwise SAFE will not work!
-; jump to code!
-	CLI					; the place to do it???
-	JMP (ex_pt)
-
-; SET_HNDL for single-task systems
-st_hndl:
-	LDY ex_pt			; get pointer
-	LDA ex_pt+1			; get pointer MSB
-	STY mm_sterm		; store in single variable (from unused table)
-	STA mm_sterm+1
-	_DR_OK
-
-; B_STATUS for single-task systems
-st_status:
-	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
-	_DR_OK
-
-; B_SIGNAL for single-task systems
-st_signal:
-#ifdef	SAFE
-	TYA					; check correct PID, really needed?
-		BNE sig_pid			; strange error?
-#endif
-	LDY b_sig			; get the signal
-	CPY #SIGTERM		; clean shutdown
-		BEQ sig_term
-	CPY #SIGKILL		; suicide, makes any sense?
-		BEQ sig_kill		; release MEMORY, windows etc
-sig_pid:
-	_DR_ERR(INVALID)	; unrecognised signal
-sig_term:
-	LDA #>st_yield		; get routine MSB eeeeeeek
-	PHA
-	LDA #<st_yield		; same for LSB
-	PHA
-	PHP					; as required by RTI
-	JMP (mm_sterm)		; execute handler, will return to sig_yield
-sig_kill:
-; first, free up all memory from previous task
-;	LDY #0				; standard PID
-;	JSR release			; free all memory eeeeeeeek
-; new, check whether a shutdown command was issued
-	LDA sd_flag			; some action pending?
-	BEQ rst_shell		; if not, just restart shell
-		LDY #PW_CLEAN		; otherwise, complete ordered shutdown
-		_KERNEL(SHUTDOWN)	; *** could use direct call???
-rst_shell:
-; at last, restart shell!
-	JMP sh_exec			; relaunch shell! eeeeek
-#endif
-
-; *** new, sorted out code 20150124 ***
+; *********************************
 ; *** interrupt service routine ***
+; *********************************
 ; will include BRK handler!
 
 k_isr:
 #include "isr/irq.s"
 ; default NMI-ISR is on firmware!
+
+
+; in headerless builds, keep at least the splash string
+#ifdef	NOHEAD
+kern_splash:
+	.asc	"minimOS 0.6a2", 0
+#endif
+
 kern_end:		; for size computation
 ; ***********************************************
 ; ***** end of kernel file plus API and IRQ *****
 ; ***********************************************
+
+; **********************************************************************************
 
 ; **********************************************************************************
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
@@ -601,7 +519,9 @@ shell	= * + 256		; skip header
 
 #include "shell/SHELL"
 
+; ************************************************************
 ; ****** Downloaded kernels add driver staff at the end ******
+; ************************************************************
 #ifdef	DOWNLOAD
 #include "drivers/config/DRIVER_PACK.s"	; this package will be included with downloadable kernels
 .data
@@ -613,10 +533,4 @@ dr_vars:
 #include "drivers/config/DRIVER_PACK.h"
 .text					; eeeeeek
 -user_sram = *			; the rest of available SRAM
-#endif
-
-; in headerless builds, keep at least the splash string
-#ifdef	NOHEAD
-kern_splash:
-	.asc	"minimOS 0.6a2", 0
 #endif

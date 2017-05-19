@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6a1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1233
+; last modified 20170519-1341
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -308,8 +308,14 @@ set_handler:
 	_EXIT_OK
 
 
-; *** LOAD_LINK, get address once in RAM/ROM (kludge!)
-; ex_pt -> addr, str_pt <- *path
+; ***************************************************************
+; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
+; ***************************************************************
+;		INPUT
+; str_pt	= pointer to filename path (will be altered!)
+;		OUTPUT
+; ex_pt		= pointer to executable code
+;		USES rh_scan
 
 load_link:
 ; *** look for that filename in ROM headers ***
@@ -401,10 +407,15 @@ ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
 
-; *** STRING, prints a C-string *** revised 20150208
-; Y <- dev, str_pt <- *string (.w in current version)
-; uses str_dev
-; calls COUT
+; *********************************
+; *** STRING, prints a C-string ***
+; *********************************
+;		INPUT
+; Y			= dev
+; str_pt	= 24b pointer to string (might be altered!) 24-bit ready!
+;		OUTPUT
+; C = device error
+;		USES iol_dev and whatever COUT takes
 
 string:
 	STY iol_dev		; save Y
@@ -444,7 +455,7 @@ str_exit:
 ; Y			= dev
 ; str_pt	= buffer address
 ; ln_siz	= max offset (byte)
-;		USES rl_dev, rl_cur
+;		USES rl_dev, rl_cur and whatever CIN takes
 
 readLN:
 	STY rl_dev			; preset device ID!
@@ -489,12 +500,16 @@ rl_cr:
 	_EXIT_OK			; and all done!
 
 
-; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
-; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
+; **************************************************
+; *** SET_FG, enable/disable frequency generator *** TO BE REVISED
+; **************************************************
+;		INPUT
+; zpar.w = dividing factor (times two?)
+;		OUTPUT
+; C = busy
+;
+; should use some firmware interface, just in case it doesn't affect jiffy-IRQ!
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
-; zpar.W <- dividing factor (times two?), C -> busy
-; destroys A, X...
-
 ; *******TO BE REVISED*********
 set_fg:
 	LDA zpar
@@ -531,28 +546,35 @@ fg_busy:
 	_ERR(BUSY)		; couldn't set
 
 
+; ***********************************************************
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
-; Y <- subfunction code (0=shutdown, 2=suspend, 6=warmboot, 4=coldboot) new API 20150603
-; C -> couldn't poweroff or reboot (?)
+; ***********************************************************
+;		INPUT
+; Y = subfunction code
+;		OUTPUT
+; C = not implemented?
+;		USES b_sig (calls B_SIGNAL)
+; sd_flag is a kernel variable
 
 shutdown:
-	CPY #PW_STAT	; is it going to suspend?
-		BEQ sd_stat		; don't shutdown system then!
-	_PHY				; store mode for later, first must do proper system shutdown
+	CPY #PW_STAT		; is it going to suspend?
+		BEQ sd_stat			; don't shutdown system then!
+	CPY #PW_CLEAN		; from end of main task
+		BEQ sd_2nd			; continue with second stage
+	STY sd_flag			; store mode for later, first must do proper system shutdown, note long addressing
+; ask THE braid to terminate
+	LDY #0				; PID=0 means ALL braids
+	LDA #SIGTERM		; will be asked to terminate
+	STA b_sig			; store signal type
+	JMP signal			; ask braids to terminate, needs to return to task until the end
 ; ** the real stuff starts here **
+sd_2nd:
 ; now let's disable all drivers
-	SEI			; disable interrupts
-
-#ifdef	SAFE
-	_STZA dpoll_mx	; disable interrupt queues, just in case
-	_STZA dreq_mx
-	_STZA dsec_mx
-#endif
-
+	SEI					; disable interrupts
 ; call each driver's shutdown routine
-	LDA drv_num		; get number of installed drivers
-	ASL				; twice the value as a pointer
-	TAX				; use as index
+	LDA drv_num			; get number of installed drivers
+	ASL					; twice the value as a pointer
+	TAX					; use as index
 ; first get the pointer to each driver table
 sd_loop:
 ; get address index
@@ -563,24 +585,24 @@ sd_loop:
 		STA da_ptr+1		; store pointer (3)
 		LDA drivers_ad, X	; same for LSB (4+3)
 		STA da_ptr
-		_PHX			; save index for later
-		LDY #D_BYE		; offset for shutdown routine --- eeeeeek!
-		JSR dr_call		; call routine from generic code!
-		_PLX			; retrieve index
-		BNE sd_loop		; repeat until zero
+		_PHX				; save index for later
+		LDY #D_BYE			; offset for shutdown routine --- eeeeeek!
+		JSR dr_call			; call routine from generic code!
+		_PLX				; retrieve index
+		BNE sd_loop			; repeat until zero
 ; ** system cleanly shut, time to let the firmware turn-off or reboot **
 sd_done:
-	_PLX				; retrieve mode as index!
-	_JMPX(sd_tab)	; do as appropriate
+	LDX sd_flag			; retrieve mode as index!
+	_JMPX(sd_tab)		; do as appropriate
 
 ; firmware interface
-sd_off:
-	LDY #PW_OFF			; poweroff
-sd_fw:
-	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
-	RTS					; just in case was not implemented!
 sd_stat:
 	LDY #PW_STAT		; suspend
+sd_fw:
+	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
+	RTS					; for suspend or not implemented
+sd_off:
+	LDY #PW_OFF			; poweroff
 	BNE sd_fw			; no need for BRA
 sd_cold:
 	LDY #PW_COLD		; cold boot
@@ -589,10 +611,10 @@ sd_warm:
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
 sd_tab:
-	.word	sd_off		; shutdown call
-	.word	sd_stat	; suspend, shouldn't arrive here anyway
-	.word	sd_cold	; cold boot via firmware
-	.word	sd_warm	; warm boot direct by kernel
+	.word	sd_stat		; suspend
+	.word	sd_warm		; warm boot direct by kernel
+	.word	sd_cold		; cold boot via firmware
+	.word	sd_off		; poweroff system
 
 ; *******************************
 ; *** end of kernel functions ***
