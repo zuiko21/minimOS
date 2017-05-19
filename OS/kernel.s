@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-0912
+; last modified 20170519-1002
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -172,7 +172,7 @@ dr_phys:
 		STA dr_feat			; another commonly used value
 		STA dr_aut			; also into temporary variable for checking
 
-; *** before registering, check whether the driver COULD be successfully installed ***
+; *** 3) before registering, check whether the driver COULD be successfully installed ***
 ; that means 1) there must be room enough on the interrupt queues for its tasks, if provided
 ; and 2) the D_INIT routine succeeded as usual
 ; otherwise, skip the installing procedure altogether for that driver
@@ -189,7 +189,7 @@ dr_ntsk:
 ; if arrived here, there is room for interrupt tasks, but check init code
 		JSR dr_icall		; call routine (6+...)
 			BCS dr_abort		; now way, forget about this
-; *** 3) driver is OK to install, just check whether this ID was not in use ***
+; *** 4) driver should be OK to install, just check whether this ID was not in use ***
 		LDA dr_id			: retrieve saved ID
 
 #ifndef	LOWRAM
@@ -210,6 +210,8 @@ dr_ntsk:
 dr_busy:
 			JMP dr_abort		; already in use (3)
 dr_empty:
+
+; *** 4b) Set I/O pointers (if memory allows) ***
 ; can do this in a loop, just advancing the pointers... now 38b
 ; might check here whether I/O are provided!
 ;		ASL dr_aut			; look for CIN (5)
@@ -249,7 +251,7 @@ dr_limit:	CPY drv_num			; all done? (4)
 ; ------
 #endif
 
-; *** 4) register interrupt routines *** new, much simpler approach
+; *** 5) register interrupt routines *** new, much simpler approach
 		LDA dr_feat			; get original auth code (3)
 		STA dr_aut			; and keep for later! (3)
 ; time to get a pointer to the-block-of-pointers (source)
@@ -260,45 +262,58 @@ dr_limit:	CPY drv_num			; all done? (4)
 		STA dq_ptr			; store temporarily
 		LDA #>drv_poll		; MSB too
 		STA dq_ptr+1
+; new functionality 170519, pointer to (interleaved) task enabling queues
+		LDA #<drv_p_en		; this is the second one, will be decremented for async
+		STA dte_ptr			; yet another temporary pointer...
+		LDA #>drv_p_en		; same for MSB
+		STA dte_ptr+1
 ; all set now, now easier to use a loop
 		LDX #1				; index for periodic queue (2)
 dr_iqloop:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_noten		; skip installation if task not enabled
+; prepare another entry into queue
+				LDY queues_mx, X	; get index of free entry!
+				STY dq_off			; worth saving on a local variable				
+				INC queues_mx, X	; add another task in queue
+				INC queues_mx, X	; pointer takes two bytes
+; install entry into queue
 				JSR dr_itask		; install into queue
+; save for frequency queue, flags must be enabled for this task!
+				LDY dq_off			; get index of free entry!
+				LDA dr_id			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
+				STA (dte_ptr), Y	; set default flags
+; let us see if we are doing periodic task, in case frequency must be set also
 				TXA					; doing periodic?
 					BEQ dr_reqdone		; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 				JSR dr_nextq		; advance to next queue (frequencies)
-				JSR dr_itask		; same for frquency queue
+				JSR dr_itask		; same for frequency queue
 				_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
-			JSR dr_nextq		; if periodic was not enabled, this will skip frquencies queue
+			JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
 dr_doreq:
+; as this will get into async, switch enabling queue
+			LDA dte_ptr			; check previous LSB
+			BNE dr_neqnw		; will wrap upon decrement?
+				DEC dte_ptr+1		; if so, precorrect MSB
+dr_neqnw:
+			DEC dte_ptr			; one before as it is interleaved
+; continue into async queue
 			JSR dr_nextq		; go for next queue
 			DEX					; now 0, index for async queue (2)
 			JPL dr_iqloop
 dr_reqdone:
-; continue initing drivers
-		_BRA dr_next		; did not fail initialisation
+; *** 6) continue initing drivers ***
+		_BRA dr_next		; if arrived here, did not fail initialisation
 
-; ********************REVISE HERE^************************
+dr_abort:
 ; *** if arrived here, driver initialisation failed in some way! ***
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
-dr_abort:
 			LDY drv_num			; get failed driver index (4)
 			LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
 			STA drivers_id, Y	; delete older value (4)
 ; ------
-#else
-; ++++++
-dr_abort:
-			LDY #D_ID			; offset for ID (2)
-			LDA (da_ptr), Y		; get ID code (5)
-				BPL dr_next			; nothing to delete (2/3)
-			ASL					; use retrieved ID as index (2+2)
-			TAX					; was TAY
-; ++++++
 #endif
 dr_next:
 #ifdef	LOWRAM
@@ -313,6 +328,9 @@ dr_next:
 		INX					; eeeeeeeek! pointer arithmetic! (2)
 		JMP dr_loop			; go for next (3)
 
+; ***************************
+; *** points of no return ***
+; ***************************
 dr_error:
 	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
@@ -330,16 +348,9 @@ dr_call:
 	PHP					; 816 is expected to be in emulation mode anyway (3)
 	RTI					; actual jump (6)
 
-dr_ok:					; *** all drivers inited ***
-	PLA					; discard stored X, no hassle for NMOS
-#ifdef	LOWRAM
-; ------ terminate ID list ------
-	LDX drv_num			; retrieve single index (4)
-	_STZA drivers_id, X	; terminate list, and we are done! (4)
-; ------
-#endif
-
+; *****************************************
 ; *** some driver installation routines ***
+; *****************************************
 
 ; * get indirect address from driver pointer table, 13 bytes, 33 clocks *
 ; da_ptr pointing to header, Y has the offset in table, returns pointer in sysptr
@@ -370,31 +381,37 @@ dnq_nw:
 	RTS
 
 ; * routine for copying a pointer from header into a table *
-; X is 0 for async, 1 for periodic, sysptr & dq_ptr set as usual
+; X is 0 for async, 1 for periodic, sysptr, dq_off & dq_ptr set as usual
 dr_itask:
-; prepare another entry into queue
-	INC queues_mx, X	; add another task in queue
-	INC queues_mx, X	; pointer takes two bytes
 ; read pointer from header
 dr_copyq:
-	LDY #1				; reset offset (note order)
+	LDY #1				; preset offset
 	LDA (sysptr), Y		; get MSB from header
 	PHA					; stack it!
 	_LDAY(sysptr)		; non-indexed indirect, get LSB in A
 ; write pointer into queue
-	LDY queues_mx, X	; get index of free entry!
+	LDY dq_off			; get index of free entry!
 	STA (dq_ptr), Y		; store into reserved place!
 	INY					; go for MSB
 	PLA					; was stacked!
 	STA (dq_ptr), Y
 	RTS
 
+; *** drivers already installed, clean up thigns and continue ***
+dr_ok:					; *** all drivers inited ***
+	PLA					; discard stored X, no hassle for NMOS
+#ifdef	LOWRAM
+; ------ terminate ID list ------ is this REALLY necessary?
+	LDX drv_num			; retrieve single index (4)
+	_STZA drivers_id, X	; terminate list, and we are done! (4) 
+; ------
+#endif
+
 
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
 
-#ifndef		MULTITASK
 ; in case no I/O lock arrays were initialised...
 	_STZA cin_mode		; single flag for non-multitasking systems
 ; *** set default SIGTERM handler for single-task systems, new 20150514 ***
@@ -404,7 +421,6 @@ dr_copyq:
 	LDA #>sig_kill		; same for MSB
 	STY mm_sterm		; store in new system variable
 	STA mm_sterm+1
-#endif
 
 ; startup code, revise ASAP
 ; *** set default I/O device ***
