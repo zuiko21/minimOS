@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a1
+; v0.6a2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170518-2022
+; last modified 20170519-0912
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,12 +35,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a1", 0	; version in comment
+	.asc	"minimOS 0.6a2", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 10.00
-	.word	$4AB2	; date, 2017/5/18
+	.word	$4AB3	; date, 2017/5/19
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -210,6 +210,7 @@ dr_ntsk:
 dr_busy:
 			JMP dr_abort		; already in use (3)
 dr_empty:
+; can do this in a loop, just advancing the pointers... now 38b
 ; might check here whether I/O are provided!
 ;		ASL dr_aut			; look for CIN (5)
 ;		BCC dr_seto			; no input for this!
@@ -259,85 +260,38 @@ dr_limit:	CPY drv_num			; all done? (4)
 		STA dq_ptr			; store temporarily
 		LDA #>drv_poll		; MSB too
 		STA dq_ptr+1
-		LDX #1				; index is number of queues MINUS ONE (2)
-dr_task:
-			LDY #0					; not zero if feature is enabled
+; all set now, now easier to use a loop
+		LDX #1				; index for periodic queue (2)
+dr_iqloop:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_noten		; skip installation if task not enabled
-; prepare another entry into queue
-				INC queues_mx, X	; add another task in queue
-				INC queues_mx, X	; pointer takes two bytes
-; read pointer from header
-dr_copyq:
-				LDY #1				; reset offset (note order)
-				LDA (sysptr), Y		; get MSB from header
-				PHA					; stack it!
-				_LDAY(sysptr)		; non-indexed indirect, get LSB in A
-; write pointer into queue
-				LDY queues_mx, X	; get index of free entry!
-				STA (dq_ptr), Y		; store into reserved place!
-				INY					; go for MSB
-				PLA					; was stacked!
-				STA (dq_ptr), Y
-; do not know if it was periodic, should skip the ASL as is related queue
-				JSR dr_nextq		; switch to next queue
-				LDA dq_ptr			; check current feature for a moment
-				CMP #<drv_freq		; just did the periodic?
-					BEQ dr_copyq		; simply copy the frquency, then
-					BNE dr_nxque		; or go for last one!
+				JSR dr_itask		; install into queue
+				TXA					; doing periodic?
+					BEQ dr_reqdone		; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
+				JSR dr_nextq		; advance to next queue (frequencies)
+				JSR dr_itask		; same for frquency queue
+				_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
-			JSR dr_nextq		; switch to next queue
-			LDA dq_ptr			; check current feature for a moment
-			CMP #<drv_freq		; periodic was not enabled?
-				BEQ dr_noten		; then skip frequency queue ***clumsy way, saves some bytes***
-dr_nxque:
-			DEX					; let us check next feature
-			BPL dr_task
-
-
-
-; * routine for advancing to next queue *
-dr_nextq:
-	LDA dq_ptr			; get original queue pointer
-	CLC
-	ADC #MAX_QUEUE		; go to next queue
-	STA dq_ptr
-	BCC dnq_nw			; no carry...
-		INC dq_ptr+1		; ...or update MSB
-dnq_nw:
-	LDA sysptr			; increment the origin pointer!
-	CLC
-	ADC #2				; next pointer in header
-	STA sysptr			; eeeeeeeeeeek
-	BCC dnq_snw			; no carry...
-		INC sysptr+1		; ...or update MSB
-	RTS
-
-
-
-
-
-
-
-
-
+			JSR dr_nextq		; if periodic was not enabled, this will skip frquencies queue
+dr_doreq:
+			JSR dr_nextq		; go for next queue
+			DEX					; now 0, index for async queue (2)
+			JPL dr_iqloop
+dr_reqdone:
 ; continue initing drivers
-		BCC dr_next			; did not fail initialisation
+		_BRA dr_next		; did not fail initialisation
+
+; ********************REVISE HERE^************************
 ; *** if arrived here, driver initialisation failed in some way! ***
 #ifdef	LOWRAM
 ; ------ low-RAM systems keep count of installed drivers ------
 dr_abort:
-dr_ab_p:	; placeholder labels!!! REVISE
-dr_abpr:
 			LDY drv_num			; get failed driver index (4)
 			LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
 			STA drivers_id, Y	; delete older value (4)
 ; ------
 #else
 ; ++++++
-
-
-
 dr_abort:
 			LDY #D_ID			; offset for ID (2)
 			LDA (da_ptr), Y		; get ID code (5)
@@ -358,15 +312,6 @@ dr_next:
 		INX					; update ADDRESS index, even if unsuccessful (2)
 		INX					; eeeeeeeek! pointer arithmetic! (2)
 		JMP dr_loop			; go for next (3)
-
-; get indirect address from driver pointer table, 13 bytes, 33 clocks
-dr_gind:
-	LDA (da_ptr), Y		; get address LSB (5)
-	STA sysptr			; store temporarily (3)
-	INY					; same for MSB (2)
-	LDA (da_ptr), Y		; get MSB (5)
-	STA sysptr+1		; store temporarily (3)
-	RTS					; come back!!! (6)
 
 dr_error:
 	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
@@ -393,6 +338,57 @@ dr_ok:					; *** all drivers inited ***
 	_STZA drivers_id, X	; terminate list, and we are done! (4)
 ; ------
 #endif
+
+; *** some driver installation routines ***
+
+; * get indirect address from driver pointer table, 13 bytes, 33 clocks *
+; da_ptr pointing to header, Y has the offset in table, returns pointer in sysptr
+dr_gind:
+	LDA (da_ptr), Y		; get address LSB (5)
+	STA sysptr			; store temporarily (3)
+	INY					; same for MSB (2)
+	LDA (da_ptr), Y		; get MSB (5)
+	STA sysptr+1		; store temporarily (3)
+	RTS					; come back!!! (6)
+
+; * routine for advancing to next queue *
+; both pointers in dq_ptr (whole queue) and sysptr (pointer in header)
+dr_nextq:
+	LDA dq_ptr			; get original queue pointer
+	CLC
+	ADC #MAX_QUEUE		; go to next queue
+	STA dq_ptr
+	BCC dnq_nw			; no carry...
+		INC dq_ptr+1		; ...or update MSB
+dnq_nw:
+	LDA sysptr			; increment the origin pointer!
+	CLC
+	ADC #2				; next pointer in header
+	STA sysptr			; eeeeeeeeeeek
+	BCC dnq_snw			; no carry...
+		INC sysptr+1		; ...or update MSB
+	RTS
+
+; * routine for copying a pointer from header into a table *
+; X is 0 for async, 1 for periodic, sysptr & dq_ptr set as usual
+dr_itask:
+; prepare another entry into queue
+	INC queues_mx, X	; add another task in queue
+	INC queues_mx, X	; pointer takes two bytes
+; read pointer from header
+dr_copyq:
+	LDY #1				; reset offset (note order)
+	LDA (sysptr), Y		; get MSB from header
+	PHA					; stack it!
+	_LDAY(sysptr)		; non-indexed indirect, get LSB in A
+; write pointer into queue
+	LDY queues_mx, X	; get index of free entry!
+	STA (dq_ptr), Y		; store into reserved place!
+	INY					; go for MSB
+	PLA					; was stacked!
+	STA (dq_ptr), Y
+	RTS
+
 
 ; **********************************
 ; ********* startup code ***********
@@ -606,5 +602,5 @@ dr_vars:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a1", 0
+	.asc	"minimOS 0.6a2", 0
 #endif
