@@ -1,7 +1,7 @@
-; minimOS 0.6a1 API/ABI
+; minimOS 0.6a2 API/ABI
 ; *** not binary-compatibly with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170517-1233
+; last modified 20170519-1204
 
 ; *************************************************
 ; *************************************************
@@ -38,12 +38,6 @@ B_YIELD		=  34	; give away CPU time, not really needed but interesting anyway
 ; some new functionalities, perhaps OK with LOWRAM systems
 AQ_MANAGE	=  36	; get asyncronous task status, or enable/disable it!
 PQ_MANAGE	=  38	; get periodic task status, enable/disable it or set frequency!
-
-; *** TBD subfunction codes for the above ***
-TQ_STAT		=   0	; read status (and frequency)
-TQ_EN		=   2	; enable task
-TQ_DIS		=   4	; disable task
-TQ_FREQ		=   6	; set task frequency (periodic tasks only)
 
 ; not for LOWRAM systems
 MALLOC		=  40	; allocate memory
@@ -97,12 +91,12 @@ CONTEXT		= 20	; context bankswitching
 ; **************************
 D_ID	=  0		; driver ID
 D_AUTH	=  1		; authorization mask
-D_INIT	=  2		; device reset procedure
-D_POLL	=  4		; periodic interrupt task
-D_REQ	=  6		; asynchronous interrupt task
-D_CIN	=  8		; character input code
-D_COUT	= 10		; character output code
-D_FREQ	= 12		; frequency for periodic task, new 20170517
+D_CIN	=  2		; character input code
+D_COUT	=  4		; character output code
+D_INIT	=  6		; device reset procedure
+D_POLL	=  8		; periodic interrupt task
+D_FREQ	= 10		; frequency for periodic task, new 20170517
+D_REQ	= 12		; asynchronous interrupt task
 D_BLIN	= 14		; block input, new names 20150304, also for control purposes
 D_BLOUT	= 16		; block output, new names 20150304, also for control purposes
 D_BYE	= 18		; shutdown procedure
@@ -114,9 +108,9 @@ A_POLL	= %10000000	; D_POLL routine available
 A_REQ	= %01000000	; D_REQ routine available
 A_CIN	= %00100000	; D_CIN capability
 A_COUT	= %00010000	; D_COUT capability
-;A_SEC	= %00001000	; *** no longer available, RESERVED ***
-A_BLIN	= %00000100	; D_BLIN capability
-A_BLOUT	= %00000010	; D_BLOUT capability
+A_BLIN	= %00001000	; D_BLIN capability
+A_BLOUT	= %00000100	; D_BLOUT capability
+A_SEC	= %00000010	; *** no longer available, RESERVED ***
 A_MEM	= %00000001	; D_MEM dynamically linked, on-the-fly loadable driver
 
 ; ** VIA 65(C)22 registers, just for convenience **
@@ -179,6 +173,14 @@ SIGCONT		=  6	; resume a previously paused braid, will go BR_RUN
 ; default updateable value = 1 (no multitasking)
 ; if defined in firmware, think about a gestalt-like function for reading/setting it!
 ; QUANTUM_COUNT no longer defined here
+
+; ********************************************************
+; *** subfunction codes for task queues management TBR ***
+; ********************************************************
+TQ_STAT		=   0	; read status (and frequency)
+TQ_EN		=   2	; enable task
+TQ_DIS		=   4	; disable task
+TQ_FREQ		=   6	; set task frequency (periodic tasks only)
 
 ; *********************************************************
 ; ** power control values, valid for kernel and firmware **

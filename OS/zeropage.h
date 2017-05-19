@@ -1,12 +1,13 @@
-; minimOS 0.6a1 zero-page system variables
+; minimOS 0.6a2 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170517-1233
+; last modified 20170519-1151
 
 .zero
 * = 0
 
 ; ** default I/O devices (except for C64) **
 #ifndef	CBM64
+; these will serve as GLOBAL default devices on LOWRAM systems
 std_in		.byt	0		; default parent input device (NOT for 6510)
 stdout		.byt	0		; default parent outout device (NOT for 6510)
 #else
@@ -39,12 +40,18 @@ locals:						; old label for compatibility
 dr_aut: ma_ix: mm_sig: rls_pid: iol_dev:
 local1: locpt1	.dsb	4	; variables for kernel functions @ $E4
 
+dq_off	= dr_aut+1
+dq_ptr	= dr_aut+2
+
 ; *** include aliases here for local2/locpt2 ***
 da_ptr: exec_p: rl_dev: ma_lim:
 local2: locpt2	.dsb	4	; variables for kernel functions @ $E8
 
+dr_id	= da_ptr+2
+dr_feat	= da_ptr+3
+
 ; *** include aliases here for local3/locpt3 ***
-exe_sp: rh_scan: rl_cur:
+dte_ptr: exe_sp: rh_scan: rl_cur:
 local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 
 ; ***********************

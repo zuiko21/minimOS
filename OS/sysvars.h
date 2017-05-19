@@ -1,6 +1,6 @@
-; minimOS 0.6a1 System Variables
+; minimOS 0.6a2 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170518-0943
+; last modified 20170519-1155
 .bss
 
 ; **** I/O management ****
@@ -24,9 +24,9 @@ cin_mode	.dsb	1			; only this for low ram systems
 
 ; **** interrupt queues **** new format 20170518
 queues_mx	.word	0			; array with max offset for both Periodic[1] & Async[0] queues
-drv_async	.dsb	MAX_QUEUE	; space for async task pointers
 drv_poll	.dsb	MAX_QUEUE	; space for periodic task pointers
 drv_freq	.dsb	MAX_QUEUE	; array of periodic task frequencies (word?)
+drv_async	.dsb	MAX_QUEUE	; space for async task pointers
 drv_a_en	.dsb	MAX_QUEUE	; interleaved array of async interrupt task flags
 drv_p_en	= drv_a_en + 1		; ditto for periodic tasks (interleaved)
 
@@ -57,15 +57,14 @@ ram_pid		.dsb	MAX_LIST	; non-interleaved PID array
 ; *************************************************
 irq_freq	.word	200	; IRQs per second (originally set from options.h)
 ticks		.dsb	6	; second fraction in jiffy IRQs, then approximate uptime in seconds (2+4 bytes) new format 161006
-default_in	.byt	0	; GLOBAL default devices
-default_out	.byt	0
 sd_flag		.byt	0	; default task upon no remaining braids! 160408
-old_t1		.word	0	; *** keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
-
-; no way for multitasking in low ram systems
 #ifndef	LOWRAM
+default_in	.byt	0	; GLOBAL default devices, EXCEPT for LOWRAM systems
+default_out	.byt	0
+; no way for multitasking in LOWRAM systems
 run_pid		.byt	0	; current PID running for easy kernel access, will be set by new SET_CURR
 #endif
+old_t1		.word	0	; *** keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 
 ; ********************************
 ; *** some 65816 specific vars ***

@@ -1,22 +1,32 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.5.1rc2
+; v0.6a1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170517-0925
+; last modified 20170519-1233
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
 ; *** MALLOC, reserve memory ***
 ; *** FREE, release memory ***
+; *** RELEASE, release ALL memory for a PID ***
 ; *** TS_INFO, get taskswitching info for multitasking driver ***
+; *** SET_CURR, set internal kernel info for running task ***
 ; not for 128-byte systems
 malloc:
 free:
+release:
 ts_info:
+set_curr:
 	_ERR(UNAVAIL)	; go away!
 
-; *** COUT, output a character *** revamped 20150208
-; Y <- dev, io_c <- char
-; uses da_ptr
+; ********************************
+; *** COUT, output a character ***
+; ********************************
+;		INPUT
+; Y		= dev
+; io_c	= char
+;		OUTPUT
+; C = I/O error
+;		USES da_ptr, iol_dev, plus whatever the driver takes
 
 cio_of = da_ptr		; parameter switching between CIN and COUT
 ; da_ptr globally defined, cio_of not needed upon calling dr_call!
@@ -26,7 +36,7 @@ cout:
 	STA cio_of		; store for further indexing (3)
 	TYA				; for indexed comparisons (2)
 	BNE co_port		; not default (3/2)
-		LDA default_out	; default output device (4)
+		LDA std_out		; default output device (3)
 co_port:
 	BMI cio_phys	; not a logic device (3/2)
 ; no need to check for windows or filesystem
@@ -34,10 +44,8 @@ co_port:
 		CMP #DEV_NULL	; lastly, ignore output
 			BNE cio_nfound	; final error otherwise
 		_EXIT_OK		; "/dev/null" is always OK
-; optimised backwards loop 20150318, 13 bytes (+1), 5+11*n if not found, 13 if the LAST one
-; old forward loop was 16 bytes, 9+17*n if not found, 15 if the first one
 cio_phys:
-	LDX drv_num		; number of drivers (4)
+	LDX drv_num		; number of drivers (3)
 		BEQ cio_nfound	; no drivers at all! (2/3)
 cio_loop:
 		CMP drivers_id-1, X	; get ID from list, notice trick (4)
@@ -59,17 +67,23 @@ cio_dev:
 	STA da_ptr+1		; cannot use neater way but no longer needs cio_of!
 	JMP dr_call			; re-use routine (3...)
 
-; *** CIN, get a character *** revamped 20150209
-; Y <- dev, io_c -> char, C = not available
-; uses da_ptr
-; ** shares code with cout **
+; *****************************
+; *** CIN,  get a character ***
+; *****************************
+;		INPUT
+; Y = dev
+;		OUTPUT
+; io_c	= char
+; C		= not available
+;		USES iol_dev, and whatever the driver takes
+; cin_mode is a kernel variable
 
 cin:
 	LDA #D_CIN		; only difference from cout
 	STA cio_of		; store for further addition
 	TYA				; for indexed comparisons
 	BNE ci_port		; specified
-		LDA default_in	; default input device
+		LDA std_in		; default input device
 ci_port:
 	BPL ci_nph		; logic device
 		JSR cio_phys	; check physical devices... but come back for events! new 20150617
@@ -120,9 +134,16 @@ ci_rnd:
 	_EXIT_OK
 
 
-; *** OPEN_W, get I/O port or window *** interface revised 20150208
-; Y -> dev, w_rect.l <- size+pos*64K, zpar3 <- pointer to window title!
-; destroys A
+; **************************************
+; *** OPEN_W, get I/O port or window ***
+; **************************************
+;		INPUT
+; w_rect	= 16b size VV.HH
+; w_rect+2	= 16b pos VV.HH
+; str_pt	= 24b pointer to title string, NONE yet used
+;		OUTPUT
+; Y = dev
+; C = not supported/not available
 
 open_w:
 	LDA w_rect			; asking for some size?
@@ -130,14 +151,22 @@ open_w:
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 
-; *** GET_PID, get current PID *** properly interfaced 20150417
-; *** B_FORK, reserve braid, just the same as GET_PID on single task systems! ***
-; Y -> PID (always 0)
+; *************************************
+; ***** GET_PID, get current PID ******
+; *** B_FORK, reserve available PID ***
+; *************************************
+;		OUTPUT
+; Y = PID (0 means singletask system)
+; *********************************************
 ; *** B_YIELD, Yield CPU time to next braid ***
-; supposedly no interface needed, don't think I need to tell if ignored
-; *** CLOSE_W, close window ***
+; *********************************************
+; (no interface needed)
+; ********************************************************
+; *** CLOSE_W,  close window *****************************
 ; *** FREE_W, release window, will be closed by kernel ***
-; Y <- dev, these will not do much anyway
+; ********************************************************
+;		INPUT
+; Y = dev
 
 ow_no_window:
 get_pid:
@@ -149,31 +178,40 @@ free_w:
 	_EXIT_OK
 
 
-; *** UPTIME, get approximate uptime, NEW in 0.4.1 *** revised 20150208, corrected 20150318
-; up_ticks -> ticks, new format 20161006
-; up_sec -> 32-bit uptime in seconds
+; **************************************
+; *** UPTIME, get approximate uptime ***
+; **************************************
+;		OUTPUT
+; up_ticks	= 16b ticks, new standard format 20161006
+; up_sec	= 32b uptime in seconds
 
 uptime:
-	LDX #1			; first go for elapsed ticks (2 bytes) (2)
-	_ENTER_CS		; don't change while copying (2)
+	LDX #7			; end of destination offset (2)
+	LDY #5			; end of source pointer (2)
+	_ENTER_CS		; don't change while copying (5)
 up_loop:
-		LDA ticks, X	; get system variable byte (not uptime, corrected 20150125) (4)
+		LDA ticks, Y	; get system variable byte (4)
 		STA up_ticks, X	; and store them in output parameter (3)
-		DEX				; go for next (2+3/2)
-		BPL up_loop
-	LDX #3			; now for the uptime in seconds (now 4 bytes) (2)
-up_upt:
-		LDA ticks+2, X	; get system variable uptime, new 20150318 (4)
-		STA up_sec, X	; and store it in output parameter (3) corrected 150610
-		DEX				; go for next (2+3/2)
-		BPL up_upt
-	_EXIT_CS
+		DEX				; back one byte (2)
+		CPX #3			; already did seconds? (2)
+		BNE up_nosec	; do not skip to ticks... (3)
+			LDX #1			; ...until seconds are done (2)
+up_nosec:
+		DEY				; go for next (2)
+		BPL up_loop		; (3/2)
+	_EXIT_CS		; (4)
 	_EXIT_OK
 
 
-; *** B_EXEC, launch new loaded process *** properly interfaced 20150417 with changed API!
-; API still subject to change... (default I/O, rendez-vous mode TBD)
-; Y <- PID, ex_pt <- addr (was z2L)
+; *****************************************
+; *** B_EXEC, launch new loaded process ***
+; *****************************************
+;		INPUT
+; Y			= PID (0 for singletask only)
+; ex_pt		= execution pointer
+; def_io	= 16b default std_in (LSB) & stdout (MSB)
+;
+; API still subject to change... (rendez-vous mode TBD)
 
 b_exec:
 ; non-multitasking version
@@ -188,6 +226,11 @@ ex_st:
 	TXS
 	JSR ex_jmp		; call supplied address
 sig_kill:
+	LDA sd_flag		; some pending action?
+	BEQ rst_shell	; if not, just restart the shell
+		LDY #PW_CLEAN	; or go into second phase...
+		JSR shutdown	; ...of shutdown procedure (could use JMP)
+rst_shell:
 	LDX #SPTR		; init stack again
 	TXS
 	JMP sh_exec		; back to shell!
@@ -198,8 +241,12 @@ ex_jmp:
 	JMP (ex_pt)		; DUH...
 
 
+; **************************************************
 ; *** B_SIGNAL, send UNIX-like signal to a braid ***
-; b_sig <- signal to be sent , Y <- addressed braid (0 means ALL braids AND the only accepted value with singletasking)
+; **************************************************
+;		INPUT
+; b_sig	= signal to be sent
+; Y		= PID (0 means TO ALL)
 
 signal:
 #ifdef	SAFE
@@ -220,9 +267,15 @@ sig_suic:
 		BEQ sig_kill
 	_ERR(INVALID)		; unrecognised signal
 
+
+; ************************************************
 ; *** B_STATUS, get execution flags of a braid ***
-; Y <- addressed braid
-; Y -> flags, TBD
+; ************************************************
+;		INPUT
+; Y = addressed braid
+;		OUTPUT
+; Y = flags ***TBD
+; C = invalid PID
 
 status:
 #ifdef	SAFE
@@ -233,9 +286,15 @@ status:
 sig_exit:
 	_EXIT_OK
 
+
+; **************************************************************
 ; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; Y <- PID, ex_pt <- SIGTERM handler routine (ending in RTS) *** NEW address 20160425
-; bad PID is probably the only feasible error
+; **************************************************************
+;		INPUT
+; Y		= PID (0 means to myself)
+; ex_pt = SIGTERM handler routine (ending in RTI!)
+;		OUTPUT
+; C = bad PID
 
 set_handler:
 #ifdef	SAFE
@@ -342,28 +401,6 @@ ll_wrap:
 	_ERR(INVALID)	; something was wrong
 
 
-; *** SU_POKE, write to protected addresses *** revised 20150208
-; might be deprecated, not sure if of any use in other architectures
-; Y <- value, zpar <- addr
-; destroys A (and maybe Y on NMOS)
-
-su_poke:
-	TYA				; transfer value
-	_STAY(zpar)		; store value, macro for NMOS
-	_EXIT_OK
-
-
-; *** SU_PEEK, read from protected addresses *** revised 20150208
-; might be deprecated, not sure if of any use in other architectures
-; Y -> value, zpar <- addr
-; destroys A
-
-su_peek:
-	_LDAY(zpar)		; store value, macro for NMOS
-	TAY				; transfer value
-	_EXIT_OK
-
-
 ; *** STRING, prints a C-string *** revised 20150208
 ; Y <- dev, str_pt <- *string (.w in current version)
 ; uses str_dev
@@ -398,6 +435,7 @@ str_exit:
 ;	PLA		; get MSB back
 ;	STA str_pt+1	; restore it
 	RTS		; return error code
+
 
 ; ******************************
 ; *** READLN, buffered input *** new 20161223
@@ -451,23 +489,6 @@ rl_cr:
 	_EXIT_OK			; and all done!
 
 
-; *** SU_SEI, disable interrupts *** revised 20150209
-; C -> not authorized (?)
-; probably not needed on 65xx, _CS macros are much more interesting anyway
-
-su_sei:
-	SEI				; disable interrupts
-	_EXIT_OK		; no error so far
-
-
-; *** SU_CLI, enable interrupts *** revised 20150209
-; probably not needed on 65xx, _CS macros are much more interesting anyway
-
-su_cli:				; not needed for 65xx, even with protection hardware
-	CLI				; enable interrupts
-	_EXIT_OK		; no error
-
-
 ; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
 ; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
@@ -509,10 +530,6 @@ fg_dis:
 fg_busy:
 	_ERR(BUSY)		; couldn't set
 
-; *** GO_SHELL, launch default shell *** new 20150604
-; no interface needed
-go_shell:
-	JMP shell		; simply... *** SHOULD initialise SP and other things anyway ***
 
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
 ; Y <- subfunction code (0=shutdown, 2=suspend, 6=warmboot, 4=coldboot) new API 20150603
@@ -556,7 +573,6 @@ sd_done:
 	_PLX				; retrieve mode as index!
 	_JMPX(sd_tab)	; do as appropriate
 
-
 ; firmware interface
 sd_off:
 	LDY #PW_OFF			; poweroff
@@ -586,28 +602,36 @@ sd_tab:
 ; *** order MUST match abi.h ***
 -fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
 k_vec:
+; basic I/O
 	.word	cout		; output a character
 	.word	cin			; get a character
-	.word	malloc		; reserve memory ***unavailable
-	.word	free		; release memory ***unavailable
+	.word	string		; prints a C-string
+	.word	readLN		; buffered input
+; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
-	.word	uptime		; approximate uptime in ticks (new)
+; other generic functions
+	.word	uptime		; approximate uptime in ticks
+	.word	set_fg		; enable frequency generator (VIA T1@PB7)
+	.word	shutdown	; proper shutdown procedure
+	.word	load_link	; get addr. once in RAM/ROM
+; simplified task management
 	.word	b_fork		; get available PID ***returns 0
 	.word	b_exec		; launch new process ***simpler
-	.word	load_link	; get addr. once in RAM/ROM
-	.word	su_poke		; write protected addresses ***deprecate
-	.word	su_peek		; read protected addresses ***deprecate
-	.word	string		; prints a C-string
-	.word	readLN		; buffered input, INSERTED 20161223
-	.word	su_sei		; disable interrupts, aka dis_int ***deprecate
-	.word	su_cli		; enable interrupts (not needed for 65xx) aka en_int ***deprecate
-	.word	set_fg		; enable frequency generator (VIA T1@PB7)
-	.word	go_shell	; launch default shell ***deprecate
-	.word	shutdown	; proper shutdown procedure, new 20150409, renumbered 20150604
 	.word	signal		; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	status		; get execution flags of a task ***eeeeeeeeeek
 	.word	get_pid		; get PID of current braid ***returns 0
 	.word	set_handler	; set SIGTERM handler, new 20150417, renumbered 20150604
 	.word	yield		; give away CPU time for I/O-bound process ***does nothing
-
+; new functionalities TBD
+	.word	aqmanage	; manage asynchronous task queue
+	.word	pqmanage	; manage periodic task queue
+; *** unimplemented functions ***
+#ifdef	SAFE
+	.word	malloc		; reserve memory
+	.word	free		; release memory
+	.word	release		; release ALL memory for a PID
+	.word	ts_info		; get taskswitching info
+	.word	set_curr	; set internal kernel info for running task
+#endif
