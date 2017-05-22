@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-05-10*
+*Last update: 2017-05-22*
 
 ## Rationale
 
@@ -188,7 +188,7 @@ firmware I/O to work thru it. These won't be as reliable as the built-in devices
 heavily crashed environments, but it's better than nothing. *The concept of separate 
 **firmware drivers** has been considered*, but deemed too complicated.
 
-### Device Drivers
+### Device Drivers (0.6 version)
 
 As an essential feature of such device-agnostic OS, minimOS **driver architecture** has 
 been carefully crafted for **versatility**. The details may vary depending on the CPU 
@@ -200,16 +200,72 @@ in use, but in any case they'll bear a **header** containing this kind of inform
 - Pointers to *character* **Input** and **Output** routines (when available)
 - Pointers to ***block* Input** and **Output** routines (when available, TBD)
 - Pointer to an **Asynchronous Interrupt Handler** (called *by request*, if enabled)
-- Pointer to a ***Jiffy* Interrupt Handler** (called each ~5 ms, if enabled)
-- Pointer to a ***Slow* Interrupt Handler** (called each ~1 s, if enabled)
+- Pointer to a **Periodic Interrupt Handler** (called every "n" *jiffy* interrupts, if enabled)
+- **Frequency** value for the *periodic* task described above (the *n* value for the above)
 - Pointer to a **description string** in human-readable form
 - Number of ***dynamically allocated* bytes**, if loadable *on-the-fly* (TBD)
 
-UPDATE 2017-05-10: The *jiffy* and *slow* interrupt tasks might be unified into a single *periodic interrupt queue*, adding a **frequency** parameter specifying how many 
-*ticks* (jiffy interrupts) must wait in order to call the routine. For instance, 
-a value of 200 would be equivalent to the *slow* interrupt task (5*200=1000 ms). 
-*This is likely to be part of the standard for v0.6 and beyond*.
-(END OF UPDATE)
+Of special interest are the **interrupt routines**. The (now unified) **periodic** queue handles
+those tasks at *multiples* of the **jiffy** IRQ period; while **5 ms** is the *recommended*  
+value, the actual timing **cannot be guaranteed**. Plus, the ocassional *interrupt masking* 
+when entering 
+[critical sections](https://en.wikipedia.org/wiki/Critical_section) may cause further 
+delays. This mechanism is particularly suited to  
+replace the [**daemons**](https://en.wikipedia.org/wiki/Daemon_(computing)) 
+commonly seen on UNIX-like systems, perhaps with better responsiveness (quite an asset on 
+low-spec machines) or even with no form of **multitasking** (which is, in any 
+case, another *driver*) available! On the other hand, for those cases of obviously 
+**infrequent** tasks (disk auto-mount, long-lasting timers), a suitably larger *frequency* 
+parameter is to be used.
+
+Older versions (before 0.6) had the **periodic tasks** separated into *jiffy* and *slow* 
+interrupt tasks, with no *frequency* parameter whatsoever, being complete responsability of 
+the task to count whatever *ticks* (jiffy interrupts) must wait in order to call the routine.
+Within the current **unified periodic queue** (and assuming a *recommended* **5 ms** IRQ period) 
+a *frequency* value of 200 would be equivalent 
+to the older *slow* interrupt task (5*200=1000 ms), while the standard **1** value will serve 
+just like the old *jiffy* task. In case a driver needs *both* the jiffy and slow interrupt tasks, 
+code for the former shoud handle an internal **counter** for the appropriate delay, *as was already 
+being done for may interrupt tasks not requiring being executed at **every** single jiffy IRQ*. 
+On such cases, the unified interrupt task may start (in 6502 fashion) like this:
+
+```
+DEC delay          ; some internal counter
+BNE fast_task      ; not expired, just execute jiffy task
+    LDA #max_delay ; number of jiffys to be executed before the slow task
+    STA delay
+    JSR slow_task  ; execute slow task...
+fast_task:         ; ...and continue with the usual jiffy task
+```
+
+For instance, in a system with 5 ms jiffy IRQ, a driver executing a periodic task **every 20 ms** 
+*and* a slow task every full second, would use `frequency = 4` and `max_delay = 50`. 
+A similar piece of code had to be used with "jiffy" tasks that hadn't to be 
+executed every periodic IRQ, as mentioned above.
+
+Another improvement to the old method is the possibiliy of **temporarily disabling a certain 
+interrupt task** when not needed, for better system performance (and, of course, **re-enabling** it 
+at any time, when needed). ***API functions** will be provided to **enable/disable** a particular task, 
+modify its **frequency** value or simply **checking** its current settings*.
+
+On the other hand, with *asynchronous interrupts* it's still worth keeping them in a 
+*separate queue* for **lower interrupt latency**. *Frequency* is meaningless here, but the idea 
+of **enabling/disabling** them at will remains interesting. Such on-the-fly check adds very little 
+overhead, thus way worth it.
+
+Actual implementation may vary, but probably the most efficient way is having separate 
+**interrupt queues** (one for each kind: periodic/async) filled up at boot time *if* 
+a driver provides such kind of interupt task *and* was succesfully initialised. Please note that 
+this system was designed with the (rather simple) interrupt system of 65xx processors in mind. 
+*Hardware with more sophisticated interrupt management could use more 
+queues to match their capabilities*. In any case, 
+whenever the [ISR](https://en.wikipedia.org/wiki/Interrupt_handler) 
+is called, if a *periodic* interrupt was the cause, the *periodic* queue will be scanned, 
+calling each entry sequentially (ditto for the *slow* queue, whenever some amount of 
+jiffy IRQs happened). For the **asynchronous tasks**, as similar procedure may be used, 
+but each task must return an *error code* signaling whether the IRQ was **acknowledged** 
+by that handler or not. This code **may or may not** be ignored by the ISR, depending on 
+performance considerations or the chance of simaltaneous interrupts.
 
 *I/O routines* need little explanation, although **block** transfers haven't been used 
 this far (2017-05-08). Details for them are TBD, and could serve as a **configuration** 
@@ -222,57 +278,6 @@ succesfully initialised or not (e.g. device not present), the latter condition m
 **unavailable** for further I/O operation. Similarly, at shutdown/reboot every *shutdown* 
 routine will be called, although any error condition makes little sense now, thus is not 
 required.
-
-Of special interest are the **interrupt routines**. The **jiffy** and **slow** tasks are 
-called **periodically**; while 5 ms and 1 second (*see update below*), respectively, are the *recommended* 
-values, the actual timing **cannot be guaranteed**. While the latter are obviously 
-useful for infrequent tasks (disk auto-mount, long-lasting timers), the other may 
-replace the [**daemons**](https://en.wikipedia.org/wiki/Daemon_(computing)) 
-commonly seen on UNIX-like systems, perhaps with better responsiveness (quite an asset on 
-low-spec machines) or even with no form of **multitasking** (which is, in any 
-case, another *driver*) available!
-
-Actual implementation may vary, but probably the most efficient way is having three 
-**interrupt queues** (one for each kind: jiffy/slow/async) filled up at boot time *if* 
-a driver provides such kind of interupt task *and* was succesfully initialised. Then, 
-whenever the [ISR](https://en.wikipedia.org/wiki/Interrupt_handler) 
-is called, if a *periodic* interrupt was the cause, the *jiffy* queue will be scanned, 
-calling each entry sequentially (ditto for the *slow* queue, whenever some amount of 
-jiffy IRQs happened).
-
-UPDATE 2017-05-10: although *jiffy* & *slow* queues are to be unified, it's still worth 
-keeping a separate *asynchronous* queue for **lower interrupt latency**. The new *adjustable frequency* method allows easy implementation of tasks that do not need to be executed *every* single jiffy IRQ. However, in case a driver needs 
-*both* jiffy and slow interrupts, the unified interrupt task may start (in 6502 fashion) like this:
-
-```
-DEC delay          ; some internal counter
-BNE fast_task      ; not expired, just execute jiffy task
-    LDA #max_delay ; number of jiffys to be executed before the slow task
-    STA delay
-    JSR slow_task  ; execute slow task...
-fast_task:         ; ...and continue with the usual jiffy task
-```
-
-For instance, in a system with 5 ms jiffy IRQ, a driver executing a periodic task every 20 ms *and* a slow task every second, would use `frequency = 4` and `max_delay = 50`.
-
-A similar piece of code had to be used with "jiffy" tasks that hadn't to be 
-executed every periodic IRQ, the new *frequency* parameter makes that **innecessary**.
-
-Another improvement to this method would be the possibiliy of **temporarily disabling a certain interrupt task** when not needed, for better system performance.
-(END OF UPDATE)
-
-For the **asynchronous interrupts**, a similar procedure may be used, but each task 
-must return an *error code* signaling whether the IRQ was acknowledged by that handler 
-or not. This code **may or may not** be ignored by the ISR, depending on performance 
-considerations or the chance of simaltaneous interrupts.
-
-Please note that this system was designed with the (rather simple) interrupt system of 65xx processors in mind. 
-*Hardware with more sophisticated interrupt management could use more 
-queues to match their capabilities*.
-
-In any case, the ocassional *interrupt masking* when entering 
-[critical sections](https://en.wikipedia.org/wiki/Critical_section) may cause further 
-delays. 
 
 As of 2017-05-08, drivers **cannot be loaded *on-the-fly***, 
 being **assembled together** with the Kernel, firmware etc. 
