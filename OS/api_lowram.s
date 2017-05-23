@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a1
+; v0.6a2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1423
+; last modified 20170523-1055
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -231,11 +231,18 @@ sig_kill:
 	BEQ rst_shell	; if not, just restart the shell
 		LDY #PW_CLEAN	; or go into second phase...
 		JSR shutdown	; ...of shutdown procedure (could use JMP)
+; if none of the above, a single task system can only restart the shell!
 rst_shell:
 	LDX #SPTR		; init stack again
 	TXS
 	JMP sh_exec		; back to shell!
 ex_jmp:
+; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
+	LDA #>sig_kill	; get MSB
+	LDY #<sig_kill	; and LSB
+	STY mm_sterm	; set variable
+	STA mm_sterm+1
+; this is how a task should replace the shell
 	LDA #ZP_AVAIL	; eeeeeeeeeeek
 	STA z_used		; otherwise SAFE will not work
 	CLI				; time to do it!

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.5.1rc3, should match kernel16.s
+; v0.6a1, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170515-1940
+; last modified 20170523-1107
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -617,6 +617,202 @@ uptime:
 		STA up_sec+2	; store that (4)
 ; end of CS
 	_EXIT_OK
+
+
+
+; older singletask driver-16
+; *****************************************************
+; *** default single-task driver, new here 20161109 ***
+; *****************************************************
+; only to be installed if no multitasking driver already present! 20161115
+#ifndef	MULTITASK
+st_taskdev:
+	JMP (st_tdlist, X)	; call appropriate code, will return to original caller
+
+; pointer list for single-task management routines
+st_tdlist:
+	.word	st_fork		; reserve a free braid (will go BR_STOP for a moment)
+	.word	st_exec		; get code at some address running into a paused braid (will go BR_RUN)
+	.word	st_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
+	.word	st_signal	; send some signal to a braid
+	.word	st_status	; get execution flags for a braid
+	.word	st_getpid	; get current PID
+	.word	st_hndl		; set SIGTERM handler
+;	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
+
+; diverse driver data
+; this table could be suppressed via EOR on CPU-flagging code
+;arch_tab:
+;	.asc	"VRBN"		; 65xx codes are 65816, Rockwell, CMOS & NMOS (new order)
+
+; ** single-task management routines **
+; called from API, make certain about DBR or use long addressing!!!
+
+.as:.xs					; all of these will be called from API!
+
+; B_FORK for non-multitasking systems
+; GET_PID for non-multitasking systems
+st_fork:
+st_getpid:
+	LDY #0				; no multitasking, system reserved PID anytime
+; B_YIELD for non-multitasking systems
+st_yield:
+	_DR_OK				; YIELD has no other task to give CPU time to!
+
+; B_EXEC for non-multitasking systems
+st_exec:
+;st_prior:
+#ifdef	SAFE
+	TYA					; should be system reserved PID, best way
+	BEQ exec_st			; OK for single-task system
+		_DR_ERR(NO_RSRC)	; no way without multitasking
+exec_st:
+#endif
+; initialise stack EEEEEEK
+	LDA #1				; standard stack page
+	XBA					; use as MSB
+	LDA #$FF			; initial stack pointer, not using SPTR
+	TCS					; eeeeeeeeeek
+; this should now work for both 02 and 816 apps
+	LDY ex_pt+2			; get bank first! keep it
+; ***** as this version has no non-XIP support, no real need for the following *****
+; *** first push the 24-bit pointer, when non-XIP is available
+;	PHY					; push it
+;	PEI (ex_pt)			; push the rest of the pointer
+; ***** uncomment the above for non-XIP support *****
+; check architecture, 6502 code currently on bank zero only!
+	LDA cpu_ll			; check architecture
+; set run_arch as per architecture!
+; *** might just do EOR #'V' to detect 65816! ***
+;	LDX #0				; reset index
+;arch_loop:
+;		CMP @arch_tab, X	; compare with list item
+;			BEQ arch_ok			; detected!
+;		INX					; next
+;		CPX #4				; supported limit?
+;		BNE arch_loop		; still to go
+; No valid code found, should try to free non-XIP allocated RAM
+;	DR_ERR(INVALID)	; cannot execute this! should be a mere error
+;arch_ok:
+;	TXA					; make equivalent code from index!
+;	ASL					; two times to make it SIGterm flag savvy!
+; ...and store at run_arch
+; *** could just store the EOR result, see above ***
+	EOR #'V'			; ** will be zero only for native **
+	STA @run_arch		; set as current, note long addressing eeeeeeek
+; new approach, reusing 816 code!
+	TAX					; recheck architecture
+		BEQ exec_long		; native 816 will always push standard return bank
+; here is to manage 65xx02 code ***temporarily limited to bank zero
+	TYX					; check bank for a moment
+	BEQ exec_long		; already in bank zero means no need to install wrapper *** ***
+; ***** in case 6502 code is running beyond bank zero, setup wrapper here! *****
+; after that, push alternative (wrapper) return address
+;		PHY					; push target bank
+; *** is the above needed for 02 code? should not harm anyway ***
+;		PEA $FFC4			; sample return address, will point to a JML sig_kill
+;		BRA exec_retset		; all done?
+; ***** in the meanwhile, just reject the request *****
+; should deallocate resources, just like an invalid CPU!
+		_DR_ERR(INVALID)	; 6502 code not yet supported on that address
+; long indirect call, just push the proper return address, both RTS & RTL savvy
+exec_long:
+	PHK					; push return bank address, actually zero (3) no matter the architecture!
+	PEA sig_kill-1		; push corrected return address (5)
+; ** if an alternative return address (wrapper) was pushed, jump here
+exec_retset:
+; set context space!
+	LDA #ZP_AVAIL		; eeeeeeek!
+	STA z_used			; otherwise SAFE will not work!
+; right now should set DBR as there is no scheduler to preload it! eeeeeeek
+	PHY					; push bank into stack for a moment
+	PLB					; ...and now properly set for the task
+; somehow should set registers, API TBD...
+; jump to code!
+; already in full 8-bit mode as assumed
+	CLI				; eeeeeeeeek
+	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
+
+; SET_HNDL for single-task systems
+st_hndl:
+	.al: REP #$20		; *** 16-bit memory size ***
+	LDA ex_pt			; get pointer
+; must check for 02 code in order to get bank from current DBR!
+	LDY run_arch		; check current code
+	BEQ st_sh16			; if native, bank is set
+		PHB					; otherwise get current *** find another way for multitasking!
+		PLX					; get it on reg
+		BRA st_shset		; no need to load
+st_sh16:
+	LDX ex_pt+2			; please, take bank too
+st_shset:
+	STA @mm_sterm		; store in single variable, 24-bit addr!
+	.as: SEP #$20		; *** back to 8-bit ***
+	TXA					; no long STX...
+	STA @mm_sterm+2		; bank stored just after regular pointer, 24-bit addr!
+	_DR_OK
+.as						; back to regular API call, just in case
+
+; B_STATUS for single-task systems
+; ***this one does not provide CPU-type flags!!!
+st_status:
+	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
+; ***might need to add CPU info inside
+;	LDA #BR_RUN
+;	ORA run_arch			; only if properly set, EOR hack is NOT allowed!
+;	TAY
+	_DR_OK
+
+; B_SIGNAL for single-task systems
+st_signal:
+#ifdef	SAFE
+	TYA					; check correct PID, really needed?
+		BNE sig_pid			; strange error?
+#endif
+	LDY b_sig			; get the signal
+	CPY #SIGTERM		; clean shutdown
+		BEQ sig_term
+	CPY #SIGKILL		; suicide, makes any sense?
+		BEQ sig_kill		; release MEMORY, windows etc
+sig_pid:
+	_DR_ERR(INVALID)	; unrecognised signal
+sig_term:
+	PHK					; needed for new interface as will end in RTI!
+	PEA st_yield		; correct return address
+	PHP					; eeeeeeeeeeeek
+	.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
+	JMP [mm_sterm]		; actual JUMP, will return to sig_yield
+sig_kill:
+; since it could arrive here from the end of a task, restore register sizes!
+	.as: .xs: SEP #$30	; *** standard sizes ***
+; then, free up all memory from previous task
+	LDY #0				; standard PID
+	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+; ***** when non-XIP is available, try to free address from stack bottom *****
+;	LDX #3				; number of bytes for pointer
+sk_loop:				; *** this code valid for singletask 816 ***
+;		LDA @$01FC, X		; get byte from bottom of stack
+;		STA ma_pt, X		; set pointer
+;		DEX					; previous byte
+;		BNE sk_loop			; until all done
+;	KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
+; ***** uncomment the above for non-XIP support *****
+; new, check whether a shutdown command was issued
+	LDA @sd_flag		; some action pending? 24-bit!
+	BEQ rst_shell		; if not, just restart shell
+		LDY #PW_CLEAN		; otherwise, complete ordered shutdown
+		_KERNEL(SHUTDOWN)
+rst_shell:
+; at last, restart shell!
+	JMP sh_exec			; relaunch shell! eeeeek
+#endif
+
+; convert the above into clean API calls!!!!
+
+
+
+
+
 
 
 ; ***************************************************************

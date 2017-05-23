@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a2
+; v0.6a3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1345
+; last modified 20170523-1040
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -98,6 +98,8 @@ warm:
 ; *** memory initialisation ***
 ; *****************************
 
+; this should take a basic memory map from firmware, perhaps via the GESTALT function
+
 #ifndef		LOWRAM
 ; ++++++
 	LDY #FREE_RAM		; get status of whole RAM
@@ -192,9 +194,9 @@ dr_ntsk:
 			BNE dr_chk
 ; if arrived here, there is room for interrupt tasks, but check init code
 		JSR dr_icall		; call routine (6+...)
-			BCS dr_abort		; now way, forget about this
+			BCS dr_abort		; no way, forget about this
 ; *** 4) driver should be OK to install, just check whether this ID was not in use ***
-		LDA dr_id			: retrieve saved ID
+		LDA dr_id			; retrieve saved ID
 
 #ifndef	LOWRAM
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
@@ -255,7 +257,7 @@ dr_limit:	CPY drv_num			; all done? (4)
 ; ------
 #endif
 
-; *** 5) register interrupt routines *** new, much simpler approach
+; *** 5) register interrupt routines *** new, much cleaner approach
 		LDA dr_feat			; get original auth code (3)
 		STA dr_aut			; and keep for later! (3)
 ; time to get a pointer to the-block-of-pointers (source)
@@ -278,7 +280,7 @@ dr_iqloop:
 			BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
 				LDY queues_mx, X	; get index of free entry!
-				STY dq_off			; worth saving on a local variable				
+				STY dq_off			; worth saving on a local variable
 				INC queues_mx, X	; add another task in queue
 				INC queues_mx, X	; pointer takes two bytes
 ; install entry into queue
@@ -289,7 +291,7 @@ dr_iqloop:
 				STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also
 				TXA					; doing periodic?
-					BEQ dr_reqdone		; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
+					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 				JSR dr_nextq		; advance to next queue (frequencies)
 				JSR dr_itask		; same for frequency queue
 				_BRA dr_doreq		; nothing to skip, go for async queue
@@ -306,7 +308,7 @@ dr_neqnw:
 			JSR dr_nextq		; go for next queue
 			DEX					; now 0, index for async queue (2)
 			JPL dr_iqloop
-dr_reqdone:
+
 ; *** 6) continue initing drivers ***
 		_BRA dr_next		; if arrived here, did not fail initialisation
 
@@ -388,7 +390,6 @@ dnq_nw:
 ; X is 0 for async, 1 for periodic, sysptr, dq_off & dq_ptr set as usual
 dr_itask:
 ; read pointer from header
-dr_copyq:
 	LDY #1				; preset offset
 	LDA (sysptr), Y		; get MSB from header
 	PHA					; stack it!
@@ -401,7 +402,9 @@ dr_copyq:
 	STA (dq_ptr), Y
 	RTS
 
-; *** drivers already installed, clean up thigns and continue ***
+; ***************************************************************
+; *** drivers already installed, clean up things and continue ***
+; ***************************************************************
 dr_ok:					; *** all drivers inited ***
 	PLA					; discard stored X, no hassle for NMOS
 #ifdef	LOWRAM
@@ -416,15 +419,10 @@ dr_ok:					; *** all drivers inited ***
 ; ********* startup code ***********
 ; **********************************
 
-; in case no I/O lock arrays were initialised...
+; in case no I/O lock arrays were initialised... only for LOWRAM
+#ifdef	LOWRAM
 	_STZA cin_mode		; single flag for non-multitasking systems
-; *** set default SIGTERM handler for single-task systems, new 20150514 ***
-; **** since shell will be launched via proper B_FORK & B_EXEC, do not think is needed any longer!
-; could be done always, will not harm anyway
-	LDY #<sig_kill		; get default routine address LSB
-	LDA #>sig_kill		; same for MSB
-	STY mm_sterm		; store in new system variable
-	STA mm_sterm+1
+#endif
 
 ; startup code, revise ASAP
 ; *** set default I/O device ***
@@ -455,10 +453,10 @@ sh_exec:
 	LDA #DEVICE			; *** revise
 	STA def_io			; default local I/O
 	STA def_io+1
-	JSR b_fork			; reserve first execution braid
-	JSR b_exec			; go for it! EXEC should enable interrupts from launched process anyway
+	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
+	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
-	JSR yield			; run ASAP
+	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
 here:
 	_BRA here			; ...as the scheduler will detour execution
 

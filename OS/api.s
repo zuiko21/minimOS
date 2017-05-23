@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a2, must match kernel.s
+; v0.6a3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1435
+; last modified 20170523-1055
 
 ; no way for standalone assembly...
 
@@ -577,8 +577,13 @@ rst_shell:
 	LDX #SPTR		; init stack again
 	TXS
 	JMP sh_exec		; back to shell!
-; this is how a task should replace the shell
 ex_jmp:
+; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
+	LDA #>sig_kill	; get MSB
+	LDY #<sig_kill	; and LSB
+	STY mm_sterm	; set variable
+	STA mm_sterm+1
+; this is how a task should replace the shell
 	LDA #ZP_AVAIL	; eeeeeeeeeeek
 	STA z_used		; otherwise SAFE will not work
 	CLI				; time to do it!
