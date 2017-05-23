@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a1, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170523-1107
+; last modified 20170523-1236
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -619,55 +619,48 @@ uptime:
 	_EXIT_OK
 
 
+; *********************************
+; *** B_FORK, get available PID ***
+; *********************************
+;		OUTPUT
+; Y		= PID, 0 means not available or singletask
 
-; older singletask driver-16
-; *****************************************************
-; *** default single-task driver, new here 20161109 ***
-; *****************************************************
-; only to be installed if no multitasking driver already present! 20161115
-#ifndef	MULTITASK
-st_taskdev:
-	JMP (st_tdlist, X)	; call appropriate code, will return to original caller
-
-; pointer list for single-task management routines
-st_tdlist:
-	.word	st_fork		; reserve a free braid (will go BR_STOP for a moment)
-	.word	st_exec		; get code at some address running into a paused braid (will go BR_RUN)
-	.word	st_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
-	.word	st_signal	; send some signal to a braid
-	.word	st_status	; get execution flags for a braid
-	.word	st_getpid	; get current PID
-	.word	st_hndl		; set SIGTERM handler
-;	.word	st_prior	; priorize braid, jump to it at once, really needed? *** might deprecate for B_INFO or so
-
-; diverse driver data
-; this table could be suppressed via EOR on CPU-flagging code
-;arch_tab:
-;	.asc	"VRBN"		; 65xx codes are 65816, Rockwell, CMOS & NMOS (new order)
-
-; ** single-task management routines **
-; called from API, make certain about DBR or use long addressing!!!
-
-.as:.xs					; all of these will be called from API!
-
-; B_FORK for non-multitasking systems
-; GET_PID for non-multitasking systems
-st_fork:
-st_getpid:
+b_fork:
+	.as: .xs: SEP #$30	; *** standard register size *** (3)
 	LDY #0				; no multitasking, system reserved PID anytime
-; B_YIELD for non-multitasking systems
-st_yield:
-	_DR_OK				; YIELD has no other task to give CPU time to!
+; ...and go into subsequent EXIT_OK from B_YIELD
 
-; B_EXEC for non-multitasking systems
-st_exec:
-;st_prior:
+; *********************************************
+; *** B_YIELD, Yield CPU time to next braid ***
+; *********************************************
+; (no interface needed)
+
+yield:
+	_EXIT_OK
+
+
+; *****************************************
+; *** B_EXEC, launch new loaded process ***
+; *****************************************
+;		INPUT
+; Y			= PID (0 for singletask only)
+; ex_pt		= 24b execution pointer
+; cpu_ll	= architecture
+; def_io	= 16b default std_in (LSB) & stdout (MSB)
+;
+; API still subject to change... (register values, rendez-vous mode TBD)
+; * 8-bit savvy *
+
+b_exec:
+; non-multitasking version
+	.as: .xs: SEP #$30	; *** standard register size *** (3)
 #ifdef	SAFE
 	TYA					; should be system reserved PID, best way
 	BEQ exec_st			; OK for single-task system
-		_DR_ERR(NO_RSRC)	; no way without multitasking
+		_ERR(NO_RSRC)		; no way without multitasking
 exec_st:
 #endif
+; ********************* revise ********************* revise *********************
 ; initialise stack EEEEEEK
 	LDA #1				; standard stack page
 	XBA					; use as MSB
@@ -714,7 +707,7 @@ exec_st:
 ;		BRA exec_retset		; all done?
 ; ***** in the meanwhile, just reject the request *****
 ; should deallocate resources, just like an invalid CPU!
-		_DR_ERR(INVALID)	; 6502 code not yet supported on that address
+		_ERR(INVALID)		; 6502 code not yet supported on that address
 ; long indirect call, just push the proper return address, both RTS & RTL savvy
 exec_long:
 	PHK					; push return bank address, actually zero (3) no matter the architecture!
@@ -733,55 +726,7 @@ exec_retset:
 	CLI				; eeeeeeeeek
 	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
 
-; SET_HNDL for single-task systems
-st_hndl:
-	.al: REP #$20		; *** 16-bit memory size ***
-	LDA ex_pt			; get pointer
-; must check for 02 code in order to get bank from current DBR!
-	LDY run_arch		; check current code
-	BEQ st_sh16			; if native, bank is set
-		PHB					; otherwise get current *** find another way for multitasking!
-		PLX					; get it on reg
-		BRA st_shset		; no need to load
-st_sh16:
-	LDX ex_pt+2			; please, take bank too
-st_shset:
-	STA @mm_sterm		; store in single variable, 24-bit addr!
-	.as: SEP #$20		; *** back to 8-bit ***
-	TXA					; no long STX...
-	STA @mm_sterm+2		; bank stored just after regular pointer, 24-bit addr!
-	_DR_OK
-.as						; back to regular API call, just in case
-
-; B_STATUS for single-task systems
-; ***this one does not provide CPU-type flags!!!
-st_status:
-	LDY #BR_RUN			; single-task systems are always running, or should I make an error instead?
-; ***might need to add CPU info inside
-;	LDA #BR_RUN
-;	ORA run_arch			; only if properly set, EOR hack is NOT allowed!
-;	TAY
-	_DR_OK
-
-; B_SIGNAL for single-task systems
-st_signal:
-#ifdef	SAFE
-	TYA					; check correct PID, really needed?
-		BNE sig_pid			; strange error?
-#endif
-	LDY b_sig			; get the signal
-	CPY #SIGTERM		; clean shutdown
-		BEQ sig_term
-	CPY #SIGKILL		; suicide, makes any sense?
-		BEQ sig_kill		; release MEMORY, windows etc
-sig_pid:
-	_DR_ERR(INVALID)	; unrecognised signal
-sig_term:
-	PHK					; needed for new interface as will end in RTI!
-	PEA st_yield		; correct return address
-	PHP					; eeeeeeeeeeeek
-	.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
-	JMP [mm_sterm]		; actual JUMP, will return to sig_yield
+; SIGKILL is integrated after EXEC on singletask systems
 sig_kill:
 ; since it could arrive here from the end of a task, restore register sizes!
 	.as: .xs: SEP #$30	; *** standard sizes ***
@@ -805,14 +750,108 @@ sk_loop:				; *** this code valid for singletask 816 ***
 rst_shell:
 ; at last, restart shell!
 	JMP sh_exec			; relaunch shell! eeeeek
+
+; ******************** revise above ***************** revise above **********************
+
+
+; **************************************************
+; *** B_SIGNAL, send UNIX-like signal to a braid ***
+; **************************************************
+;		INPUT
+; b_sig	= signal to be sent
+; Y		= PID (0 means TO ALL)
+
+signal:
+	.as: .xs: SEP #$30	; *** standard register size *** (3)
+#ifdef	SAFE
+	TYA					; check correct PID
+		BNE sig_pid			; invalid braid
 #endif
+	LDY b_sig			; get the signal
+	CPY #SIGTERM		; clean shutdown?
+		BEQ sig_term		; call supplied routine (SIGKILL by default)
+	CPY #SIGKILL		; suicide?
+		BEQ sig_kill		; release MEMORY, windows etc
+sig_pid:
+	_ERR(INVALID)		; unrecognised signal, notify error
+sig_term:
+	PHK					; needed for new interface as will end in RTI!
+	PEA yield			; correct return address
+	PHP					; eeeeeeeeeeeek
+	.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
+	JMP [mm_sterm]		; actual JUMP, will return to B_YIELD
 
-; convert the above into clean API calls!!!!
+
+; ************************************************
+; *** B_STATUS, get execution flags of a braid ***
+; ************************************************
+;		INPUT
+; Y = addressed braid
+;		OUTPUT
+; Y = flags ***TBD, might include architecture
+; C = invalid PID
+
+status:
+	.as: .xs: SEP #$30	; *** standard register size *** (3)
+#ifdef	SAFE
+	TYA					; check PID
+		BNE sig_pid			; only 0 accepted
+#endif
+	LDY #BR_RUN			; single-task systems are always running
+; *** might need to add CPU info inside ***
+;	LDA run_arch		; get running arch
+;	EOR #$FF			; EOR trick reversed!
+;	ORA #BR_RUN			; add mandatory flags
+;	TAY
+sig_exit:
+	_EXIT_OK
 
 
+; **************************************************************
+; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
+; **************************************************************
+;		INPUT
+; Y		= PID (0 means to myself)
+; ex_pt = 24b SIGTERM handler routine (ending in RTI!)
+;		OUTPUT
+; C		= bad PID
+
+set_handler:
+	.al: REP #$20		; *** 16-bit memory size ***
+	.xs: SEP #$10		; *** 8-bit indexes *** eeeeeeeeek
+#ifdef	SAFE
+	TYX					; check PID
+		BNE sig_pid			; only 0 accepted
+#endif
+	LDA ex_pt			; get pointer
+; must check for 02 code in order to get bank from current DBR!
+	LDY run_arch		; check current code
+	BEQ st_sh16			; if native, bank is set
+		PHB					; otherwise get current *** find another way for multitasking!
+		PLX					; get it on reg
+		BRA st_shset		; no need to load
+st_sh16:
+	LDX ex_pt+2			; please, take bank too
+st_shset:
+	STA @mm_sterm		; store in single variable, 24-bit addr!
+	.as: SEP #$20		; *** back to 8-bit ***
+	TXA					; no long STX...
+	STA @mm_sterm+2		; bank stored just after regular pointer, 24-bit addr!
+	_EXIT_OK
+.as						; back to regular API call, just in case
 
 
+; **************************************
+; *** GET_PID, get current braid PID ***
+; **************************************
+;		OUTPUT
+; Y		= PID, 0 on singletask systems
+; may not need to be patched in multitasking systems!
 
+get_pid:
+	.as: .xs: SEP #$30	; *** standard register size *** (3)
+	LDY run_pid			; new kernel variable
+	_EXIT_OK
 
 
 ; ***************************************************************
@@ -1306,125 +1345,6 @@ sd_done:
 	JMP (sd_tab-2, X)	; do as appropriate *** please note that X=0 means scheduler ran off of tasks!
 
 
-; *************************************
-; *** B_FORK, reserve available PID ***
-; *************************************
-;		OUTPUT
-; Y = PID (0 means either singletask system or no more available braids)
-;
-; uses common code
-; * 8-bit savvy * verify driver anyway
-
-b_fork:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_FORK		; subfunction code
-	BRA sig_call		; go for the driver
-
-
-; *****************************************
-; *** B_EXEC, launch new loaded process ***
-; *****************************************
-;		INPUT
-; Y			= PID (0 for singletask only)
-; ex_pt		= 24b execution pointer (was z2L)
-; cpu_ll	= architecture
-; def_io	= 16b default std_in (LSB) & stdout (MSB)
-;
-; uses common code
-; no need to indicate XIP or not! will push start address at bottom of stack anyway
-; API still subject to change... (rendez-vous mode TBD)
-; * 8-bit savvy * verify driver anyway
-
-b_exec:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_EXEC		; subfunction code
-	BRA sig_call		; go for the driver
-
-
-; **************************************************
-; *** B_SIGNAL, send UNIX-like signal to a braid ***
-; **************************************************
-;		INPUT
-; b_sig	= signal to be sent
-; Y		= PID (0 means TO ALL)
-;
-; uses common code
-; * 8-bit savvy * verify driver anyway
-
-signal:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_SIGNAL		; subfunction code
-	BRA sig_call		; go for the driver
-
-
-; ************************************************
-; *** B_STATUS, get execution flags of a braid ***
-; ************************************************
-;		INPUT
-; Y = addressed braid
-;		OUTPUT
-; Y = flags ***TBD
-; C = invalid PID
-;
-; * 8-bit savvy *
-
-status:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_STATUS		; subfunction code
-; * unified calling procedure, get subfunction code in X * new faster interface 20161102
-sig_call:
-; new code is 6 bytes, 10 clocks! old code was 8 bytes, 13 clocks
-	PEA cio_callend-1	; push correct return address!
-	JMP (drv_opt)		; as will be the first one in list, best to use non-indexed indirect
-
-
-; **************************************
-; *** GET_PID, get current braid PID ***
-; **************************************
-;		OUTPUT
-; Y = PID (0 means singletask system)
-; * 8-bit savvy * fastest direct method
-
-get_pid:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA @run_pid		; fastest way, long addressing
-	TAY					; as output value
-	_EXIT_OK
-
-
-; **************************************************************
-; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
-; **************************************************************
-;		INPUT
-; Y		= PID (0 means to myself)
-; ex_pt = 24b SIGTERM handler routine (ending in RTI!)
-;		OUTPUT
-; C = bad PID
-;
-; uses common code
-; revise as might be processed without driver!
-; * 8-bit savvy * verify driver anyway
-
-set_handler:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_HANDL		; subfunction code
-	BRA sig_call		; go for the driver
-
-
-; *********************************************
-; *** B_YIELD, Yield CPU time to next braid ***
-; *********************************************
-; (no interface needed)
-;
-; uses common code
-; * 8-bit savvy * verify driver anyway
-
-yield:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDX #MM_YIELD		; subfunction code
-	BRA sig_call		; go for the driver
-
-
 ; ***************************************************************
 ; *** TS_INFO, get taskswitching info for multitasking driver *** REVISE ASAP ******
 ; ***************************************************************
@@ -1515,52 +1435,6 @@ set_curr:
 	STA @run_arch		; and store it for kernel use (5)
 	_EXIT_OK
 
-
-
-; ****** space for deprecated functions ******
-
-; *** SU_POKE, write to protected addresses ***
-; WILL be deprecated, not sure if of any use in other architectures
-; Y <- value, zpar <- addr
-; destroys A (and maybe Y on NMOS)
-
-su_poke:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	TYA					; transfer value
-	STA (zpar)			; store value
-	_EXIT_OK
-
-; *** SU_PEEK, read from protected addresses ***
-; WILL be deprecated, not sure if of any use in other architectures
-; Y -> value, zpar <- addr
-; destroys A
-
-su_peek:
-	.as: .xs: SEP #$30	; *** standard register size ***
-	LDA (zpar)			; store value
-	TAY					; transfer value
-	_EXIT_OK
-
-; *** SU_SEI, disable interrupts ***
-; C -> not authorized (?)
-; probably not needed on 65xx, _CS macros are much more interesting anyway
-su_sei:
-	SEI					; disable interrupts
-	_EXIT_OK			; no error so far
-
-; *** SU_CLI, enable interrupts ***
-; probably not needed on 65xx, _CS macros are much more interesting anyway
-
-su_cli:					; not needed for 65xx, even with protection hardware
-	CLI					; enable interrupts
-	_EXIT_OK			; no error
-
-; *** GO_SHELL, launch default shell *** probably DEPRECATE
-; no interface needed
-go_shell:
-	JMP shell			; simply... *** SHOULD initialise SP and other things anyway ***
-
-
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
@@ -1580,6 +1454,9 @@ tsi_str:
 tsi_end:
 ; end of stack frame for easier size computation
 
+; *******************************
+; *** end of kernel functions ***
+; *******************************
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1587,32 +1464,35 @@ tsi_end:
 
 #ifndef		DOWNLOAD
 k_vec:
+; basic I/O
 	.word	cout		; output a character
 	.word	cin			; get a character
-	.word	malloc		; reserve memory
-	.word	free		; release memory
+	.word	string		; prints a C-string
+	.word	readLN		; buffered input
+; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
+; other generic functions
 	.word	uptime		; approximate uptime in ticks
-	.word	b_fork		; get available PID
-	.word	b_exec		; launch new process
-	.word	load_link	; get addr. once in RAM/ROM
-	.word	su_poke		; write protected addresses
-	.word	su_peek		; read protected addresses
-	.word	string		; prints a C-string
-	.word	readLN		; buffered input, INSERTED 20170113
-	.word	su_sei		; disable interrupts, aka dis_int
-	.word	su_cli		; enable interrupts (not needed for 65xx) aka en_int
 	.word	set_fg		; enable frequency generator (VIA T1@PB7)
-	.word	go_shell	; launch default shell, INSERTED 20150604
-	.word	shutdown	; proper shutdown procedure, new 20150409, renumbered 20150604
-	.word	signal		; send UNIX-like signal to a braid, new 20150415, renumbered 20150604
-	.word	status		; get execution flags of a braid, EEEEEEEEEEEEEEEK
-	.word	get_pid		; get PID of current braid, new 20150415, renumbered 20150604
-	.word	set_handler	; set SIGTERM handler, new 20150417, renumbered 20150604
-	.word	yield		; give away CPU time for I/O-bound process, new 20150415, renumbered 20150604
-	.word	ts_info		; get taskswitching info, new 20150507-08, renumbered 20150604
-	.word	release		; release ALL memory for a PID, new 20161115
-	.word	set_curr	; set internal kernel info for running task (PID & architecture)
+	.word	shutdown	; proper shutdown procedure
+	.word	load_link	; get addr. once in RAM/ROM
+; simplified task management
+	.word	b_fork		; get available PID ***returns 0
+	.word	b_exec		; launch new process ***simpler
+	.word	signal		; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	status		; get execution flags of a task ***eeeeeeeeeek
+	.word	get_pid		; get PID of current braid ***returns 0
+	.word	set_handler	; set SIGTERM handler
+	.word	yield		; give away CPU time for I/O-bound process ***does nothing
+; new functionalities TBD
+	.word	aqmanage	; manage asynchronous task queue
+	.word	pqmanage	; manage periodic task queue
+; memory and multitasking only
+	.word	malloc		; reserve memory
+	.word	free		; release memory
+	.word	release		; release ALL memory for a PID
+	.word	ts_info		; get taskswitching info
+	.word	set_curr	; set internal kernel info for running task
 #endif
