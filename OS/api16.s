@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a3, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170524-0959
+; last modified 20170524-1110
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -663,9 +663,12 @@ exec_st:
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer, not using SPTR
 	TCS					; eeeeeeeeeek
+	LDY ex_pt+2			; get bank in Y *** needed elsewhere ***
+
+; perhaps, before trying to execute anything, must check architecture
+
 ; as before, the 16-bit version makes simpler to simulate a call, thus no JSL here
 ; *** non-XIP code must push the block address at the very bottom of stack ***
-;	LDY ex_pt+2			; get bank in Y
 ;	PHY					; bank goes first! eeeeeeek
 ;	PEI (ex_pt)			; 65816 fashion!
 ; *** end of non-XIP code, will not harm anyway ***
@@ -676,23 +679,36 @@ exec_st:
 	STA mm_sterm		; set variable...
 	STZ mm_sterm+2		; ...plus bank
 ; this is how a task should replace the shell
-	LDY #ZP_AVAIL		; eeeeeeeeeeek, use 8-bit only
-	STY z_used			; otherwise SAFE will not work
+	LDX #ZP_AVAIL		; eeeeeeeeeeek, use 8-bit only but RESPECT bank!
+	STX z_used			; otherwise SAFE will not work
 ; and set default devices!!! eeeeeeeeeeeeeeeeeeeeeeek
 	LDA def_io			; standard I/O
 	STA std_in			; set as defaults
+; right now should set DBR as there is no scheduler to preload it! eeeeeeek
+	PHY					; push bank into stack for a moment
+	PLB					; ...and now properly set for the task
 ; *** soon will preset registers according to new API ***
 ; at last, launch code
 	.as: .xs: SEP #$30	; default 8-bit launch!
 	CLI					; time to do it!
+; assume the stack is already preloaded with SIGKILL address
 	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
 
 ; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
 sig_kill:
+	.as: .xs: SEP #$30	; *** standard size, in case a task was killed ***
 ; first, free up all memory from previous task
 	LDY #0				; standard PID
+; should this correct DP, just in case?
+#ifdef	SAFE
+	TYA					; use that zero as standard DP
+	XBA					; that was MSB
+	TYA					; and this the LSB
+	TCD					; set proper zeropage for singletask systems!
+#endif
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
+; what about 6502 wrappers???
 ; * assume 8-bit sizes *
 ;	LDX #3				; number of bytes for pointer
 ;sk_loop:				; *** this code valid for singletask 816 ***
@@ -700,21 +716,21 @@ sig_kill:
 ;		STA ma_pt-1, X		; set pointer eeeeeeeeeeeek
 ;		DEX					; previous byte
 ;		BNE sk_loop			; until all done
-; previous RELEASE marked pointer as 24b valid!
+; previous RELEASE marked pointer as 24b valid! otherwise STZ run_arch
 ;	KERNEL(FREE)		; free it or fail quietly
 ; *** end of non-XIP code, will not harm anyway ***
 ; then, check for any shutdown command
 	LDA sd_flag			; some pending action?
 	BEQ rst_shell		; if not, just restart the shell
 		LDY #PW_CLEAN		; or go into second phase...
-		JSR shutdown		; ...of shutdown procedure (could use JMP)
+		_KERNEL(SHUTDOWN)	; ...of shutdown procedure (no direct call)
 ; if none of the above, a single task system can only restart the shell!
 ; * make certain it arrives here in 8-bit memory mode *
 rst_shell:
 	LDA #1				; standard stack page
 	XBA					; use as MSB
-	LDA #$FF			; initial stack pointer, not using SPTR
-	TCS					; init stack again (in case SIGKILL was called)
+	LDA #$FF			; initial stack pointer LSB, not using SPTR
+	TCS					; init SP again (in case SIGKILL was called)
 	JMP sh_exec			; back to kernel shell!
 
 
