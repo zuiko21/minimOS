@@ -1,17 +1,19 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a3
+; v0.6a4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-0932
+; last modified 20170524-0957
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
 ; *** MALLOC, reserve memory ***
+; *** MEMLOCK, reserve some address ***
 ; *** FREE, release memory ***
 ; *** RELEASE, release ALL memory for a PID ***
 ; *** TS_INFO, get taskswitching info for multitasking driver ***
 ; *** SET_CURR, set internal kernel info for running task ***
 ; not for 128-byte systems
 malloc:
+memlock:
 free:
 release:
 ts_info:
@@ -660,6 +662,7 @@ k_vec:
 ; *** unimplemented functions ***
 #ifdef	SAFE
 	.word	malloc		; reserve memory
+	.word	memlock		; reserve some address
 	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
 	.word	ts_info		; get taskswitching info

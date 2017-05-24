@@ -1,13 +1,15 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a2, should match kernel16.s
+; v0.6a3, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170524-0952
+; last modified 20170524-0959
 
 ; no way for standalone assembly, neither internal calls...
 
 ; ***************************************
 ; *** dummy function, not implemented ***
 ; ***************************************
+
+memlock:				; *** FUTURE IMPLEMENTATION ***
 
 unimplemented:			; placeholder here, not currently used
 	.xs: SEP #$10		; standard index size for a moment
@@ -1471,6 +1473,7 @@ k_vec:
 	.word	pqmanage	; manage periodic task queue
 ; memory and multitasking only
 	.word	malloc		; reserve memory
+	.word	memlock		; reserve some address
 	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
 	.word	ts_info		; get taskswitching info

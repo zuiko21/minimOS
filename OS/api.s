@@ -1,13 +1,15 @@
 ; minimOS generic Kernel API
 ; v0.6a4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-0951
+; last modified 20170524-0958
 
 ; no way for standalone assembly...
 
 ; ***************************************
 ; *** dummy function, non implemented ***
 ; ***************************************
+
+memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
@@ -1138,6 +1140,7 @@ k_vec:
 	.word	pqmanage	; manage periodic task queue
 ; only for systems with enough RAM
 	.word	malloc		; reserve memory
+	.word	memlock		; reserve some address
 	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
 	.word	ts_info		; get taskswitching info

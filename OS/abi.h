@@ -1,7 +1,7 @@
-; minimOS 0.6a2 API/ABI
+; minimOS 0.6a3 API/ABI
 ; *** not binary-compatibly with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1204
+; last modified 20170524-0955
 
 ; *************************************************
 ; *************************************************
@@ -41,10 +41,11 @@ PQ_MANAGE	=  38	; get periodic task status, enable/disable it or set frequency!
 
 ; not for LOWRAM systems
 MALLOC		=  40	; allocate memory
-FREE		=  42	; release memory
-RELEASE		=  44	; release ALL memory chuncks belonging to some PID, new 20161115
-TS_INFO		=  46	; get taskswitching info for multitasking driver
-SET_CURR	=  48	; set internal kernel info for running task (PID & architecture) new 20170222
+MEMLOCK		=  42	; allocate memory at a certain address, new 20170524
+FREE		=  44	; release memory block
+RELEASE		=  46	; release ALL memory blocks belonging to some PID, new 20161115
+TS_INFO		=  48	; get taskswitching info for multitasking driver
+SET_CURR	=  50	; set internal kernel info for running task (PID & architecture) new 20170222
 
 
 ; ***********************
