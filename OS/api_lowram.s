@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a2
+; v0.6a3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170523-1055
+; last modified 20170524-0850
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -601,7 +601,7 @@ sd_loop:
 ; ** system cleanly shut, time to let the firmware turn-off or reboot **
 sd_done:
 	LDX sd_flag			; retrieve mode as index!
-	_JMPX(sd_tab)		; do as appropriate
+	_JMPX(sd_tab-2)		; do as appropriate *** note offset as sd_stat will not be called from here
 
 ; firmware interface
 sd_stat:
@@ -619,7 +619,7 @@ sd_warm:
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
 sd_tab:
-	.word	sd_stat		; suspend
+;	.word	sd_stat		; suspend *** no needed as will be called directly, check offset above
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system

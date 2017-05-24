@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a1, should match kernel16.s
+; v0.6a2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170523-1236
+; last modified 20170524-0907
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -657,7 +657,7 @@ b_exec:
 #ifdef	SAFE
 	TYA					; should be system reserved PID, best way
 	BEQ exec_st			; OK for single-task system
-		_ERR(NO_RSRC)		; no way without multitasking
+		_ERR(NO_RSRC)		; no way without multitasking *** or INVALID from sig_pid?
 exec_st:
 #endif
 ; ********************* revise ********************* revise *********************
@@ -707,6 +707,7 @@ exec_st:
 ;		BRA exec_retset		; all done?
 ; ***** in the meanwhile, just reject the request *****
 ; should deallocate resources, just like an invalid CPU!
+; *** if this error is kept, use sig_pid as below!
 		_ERR(INVALID)		; 6502 code not yet supported on that address
 ; long indirect call, just push the proper return address, both RTS & RTL savvy
 exec_long:
@@ -962,7 +963,7 @@ ll_found:
 ll_wrap:
 	_ERR(INVALID)		; unsupported CPU
 ll_valid:
-; *** CPU-type is compatible but has 8-bit code, this (or B_EXEC?) should install 64-byte wrapper at end of bank, or limit to bank zero! ***
+; *** CPU-type is compatible but has 8-bit code, this should install 64-byte wrapper at end of bank, or limit to bank zero! ***
 ; currently limited to bank zero
 	LDX rh_scan+2			; check THIRD byte, still not supported in 8-bit code
 	BEQ ll_native			; still in bank 0, OK to proceed
@@ -1242,7 +1243,7 @@ fg_busy:
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
 ; ***********************************************************
 ;		INPUT
-; Y = subfunction code ()
+; Y = subfunction code
 ;		OUTPUT
 ; C = couldn't poweroff or reboot (?)
 ;		USES b_sig (calls B_SIGNAL)
@@ -1265,9 +1266,7 @@ shutdown:
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
-;	KERNEL(B_SIGNAL)	; ask braids to terminate
-	LDX #MM_SIGNAL		; internal multitasking index (2)
-	JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
+	_KERNEL(B_SIGNAL)	; ask braids to terminate *** no longer deindexing call as could be patched!
 	PLB					; restore before further tinkering!!!
 	PLP					; original mask is buried in stack, no DBR was saved!
 	CLI					; make sure all will keep running!
@@ -1276,21 +1275,24 @@ shutdown:
 ; actually RTI for 816
 
 ; firmware interface
-sd_off:
-	LDY #PW_OFF			; poweroff
-sd_fw:
-	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
-	JMP cio_callend			; just in case was not implemented!
 sd_stat:
 	LDY #PW_STAT		; suspend
+sd_fw:
+	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
+	JMP cio_callend		; return successfully (suspend) or notify error
+sd_off:
+	LDY #PW_OFF			; poweroff
 	BRA sd_fw			; shared code
 sd_cold:
 	LDY #PW_COLD		; cold boot
 	BRA sd_fw
 sd_warm:
-	SEP #%00001001		; disable interrupts and set carry...
+; current status may vary widely, thus clean up some things a bit
+	SEC					; set carry...
 	XCE					; ...to set emulation mode for a moment
-	CLD					; clear decimal mode
+	PHK					; a zero on stack...
+	PLB					; ...will be current data bank, not guaranteed elsewhere!
+; SEI & CLD is always done by kernel
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
 ; the scheduler will wait for NO braids active
@@ -1301,38 +1303,21 @@ sd_2nd:
 		_PANIC("{sched}")	; otherwise it is an error!
 sd_shut:
 	SEI					; disable interrupts (forever)
-#ifdef	SAFE
-	STZ dpoll_mx		; disable interrupt queues, just in case
-	STZ dreq_mx
-	STZ dsec_mx
-#endif
+; no real need to disable interrupt queues
 ; call each driver's shutdown routine
 	LDX #0				; reset index
 ; first get the pointer to each driver table
+	.al: REP #$20		; *** 16-bit memory ***
 sd_loop:
-		.al: REP #$20		; *** 16-bit memory *** as might be reset by dr_call!
 ; get address index
 		LDA drivers_ad, X	; get address from original list
 			BEQ sd_done			; no more drivers to shutdown!
 		STA sysptr			; store temporarily
-; check here whether the driver was successfully installed, get ID as index for drv_opt/ipt
-		LDY #D_ID			; point to ID of driver
-		LDA (sysptr), Y		; get ID... plus extra byte
-		ASL					; convert to index
-		BIT #$0100				; any carry from LSB? eeeeeek
-			BEQ sd_next			; invalid device ID!
-		TAY					; use as index, LSB only
-		LDA #dr_error		; installed address at unused drivers
-		CMP drv_opt, Y		; check pointer
-		BNE sd_msb			; OK to shutdown
-			CMP drv_ipt, Y		; check if not installed!
-				BEQ sd_next			; nothing to shutoff
-sd_msb:
+; will no longer check for successful installation, BYE routine gets called anyway
 		PHX					; save index for later
 		PHP					; and register size, just in case!
 		LDY #D_BYE			; shutdown MSB offset
 		JSR dr_call			; call routine from generic code!!!
-		.xs: SEP #$10		; just in case... memory size will be reset later
 		PLP					; back to original size, will ignore error code anyway
 		PLX					; retrieve index
 sd_next:
@@ -1342,7 +1327,7 @@ sd_next:
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
 	LDX sd_flag			; retrieve mode as index!
-	JMP (sd_tab-2, X)	; do as appropriate *** please note that X=0 means scheduler ran off of tasks!
+	JMP (sd_tab-2, X)	; do as appropriate *** note offset as sd_stat will not be called from here
 
 
 ; ***************************************************************
@@ -1441,7 +1426,7 @@ set_curr:
 
 ; other data and pointers
 sd_tab:					; check order in abi.h!
-	.word	sd_stat		; suspend
+;	.word	sd_stat		; suspend *** no needed as will be called directly, check offset above
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system

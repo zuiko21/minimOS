@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a3, must match kernel.s
+; v0.6a4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170523-1055
+; last modified 20170524-0858
 
 ; no way for standalone assembly...
 
@@ -960,6 +960,8 @@ fg_busy:
 ; Y		= subfunction code new ABI 20150603, 20160408
 ;		OUTPUT
 ; C		= couldn't poweroff or reboot (?)
+;		USES b_sig (calls B_SIGNAL)
+; sd_flag is a kernel variable
 
 shutdown:
 	CPY #PW_CLEAN		; from scheduler only!
@@ -971,25 +973,24 @@ shutdown:
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
-	JSR signal			; ask braids to terminate
+	_KERNEL(B_SIGNAL)	; ask braids to terminate *** no longer direct call as could be patched!
 	CLI					; make sure all will keep running!
 	_EXIT_OK
 
 ; firmware interface
-sd_off:
-	LDY #PW_OFF			; poweroff
+sd_stat:
+	LDY #PW_STAT		; suspend
 sd_fw:
 	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
 	RTS					; just in case was not implemented!
-sd_stat:
-	LDY #PW_STAT		; suspend
+sd_off:
+	LDY #PW_OFF			; poweroff
 	BNE sd_fw			; no need for BRA
 sd_cold:
 	LDY #PW_COLD		; cold boot
 	BNE sd_fw			; will reboot, shared code, no need for BRA
 sd_warm:
-	SEI					; maybe a better place to do it
-	CLD
+; kernel start will do the usual SEI, CLD
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
 ; the scheduler will wait for NO braids active
@@ -1000,12 +1001,7 @@ sd_2nd:
 		_PANIC("{sched}")	; otherwise an error!
 sd_shut:
 	SEI				; disable interrupts
-#ifdef	SAFE
-	_STZA dpoll_mx	; disable interrupt queues, just in case
-	_STZA dreq_mx
-	_STZA dsec_mx
-#endif
-; call each driver's shutdown routine *** new system 20151015
+; call each driver's shutdown routine
 	LDX #0			; reset index
 ; first get the pointer to each driver table
 sd_loop:
@@ -1015,20 +1011,7 @@ sd_loop:
 		LDA drivers_ad+1, X	; same for MSB
 			BEQ sd_done			; no more drivers to shutdown!
 		STA da_ptr+1
-; check here whether the driver was successfully installed, get ID as index for drv_opt/ipt
-		LDY #D_ID			; point to ID of driver
-		LDA (da_ptr), Y		; get ID
-		ASL					; convert to index
-			BCC sd_next			; invalid device ID!
-		TAY					; use as index
-		LDA drv_opt, Y		; check LSB****revise
-		EOR drv_ipt, Y		; only the same if not installed...
-		BNE sd_msb			; but check MSB too!
-			INY					; point to MSB
-			LDA drv_opt, Y		; check MSB
-			EOR drv_ipt, Y		; only the same if not installed!
-			BEQ sd_next			; nothing to shutoff
-sd_msb:
+; will no longer check for successful installation, BYE routine gets called anyway
 		LDY #D_BYE			; shutdown LSB offset eeeeeeek
 		_PHX				; save index for later
 		JSR dr_call			; call routine from generic code!!!
@@ -1036,14 +1019,14 @@ sd_msb:
 sd_next:
 		INX					; advance to next entry (2+2)
 		INX
-		BNE sd_loop			; repeat
+		BNE sd_loop			; repeat, no need for BRA
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
 	LDX sd_flag			; retrieve mode as index!
-	_JMPX(sd_tab)		; do as appropriate
+	_JMPX(sd_tab-2)		; do as appropriate *** note offset as sd_stat will not be called from here
 
 sd_tab:					; check order in abi.h!
-	.word	sd_stat		; suspend
+;	.word	sd_stat		; suspend *** no needed as will be called directly, check offset above
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; shutdown system
