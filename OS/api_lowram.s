@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6a4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-0957
+; last modified 20170524-1005
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -228,15 +228,16 @@ ex_st:
 	TXS
 	JSR ex_jmp		; call supplied address
 sig_kill:
+; systems without memory management have nothing to free...
 	LDA sd_flag		; some pending action?
 	BEQ rst_shell	; if not, just restart the shell
 		LDY #PW_CLEAN	; or go into second phase...
 		JSR shutdown	; ...of shutdown procedure (could use JMP)
 ; if none of the above, a single task system can only restart the shell!
 rst_shell:
-	LDX #SPTR		; init stack again
+	LDX #SPTR		; init stack again (in case SIGKILL was called)
 	TXS
-	JMP sh_exec		; back to shell!
+	JMP sh_exec		; back to kernel shell!
 ex_jmp:
 ; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
 	LDA #>sig_kill	; get MSB

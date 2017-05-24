@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-0958
+; last modified 20170524-1013
 
 ; no way for standalone assembly...
 
@@ -552,39 +552,52 @@ yield:
 b_exec:
 ; non-multitasking version
 #ifdef	SAFE
-	TYA				; should be system reserved PID, best way
-	BEQ ex_st		; OK for single-task system
-		_ERR(NO_RSRC)	; no way without multitasking
+	TYA					; should be system reserved PID, best way
+	BEQ ex_st			; OK for single-task system
+		_ERR(NO_RSRC)		; no way without multitasking
 ex_st:
 #endif
-	LDX #SPTR		; init stack
+	LDX #SPTR			; init stack
 	TXS
-	JSR ex_jmp		; call supplied address
+	JSR ex_jmp			; call supplied address
 sig_kill:
 ; first, free up all memory from previous task
 	LDY #0				; standard PID
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+; *** non-XIP code should release its own block! ***
+;	PLA					; get stacked pointer of block...
+;	STA ma_pt			; ...to be freed
+;	PLA					; same for MSB
+;	STA ma_pt+1
+;	_KERNEL(FREE)		; free it or fail quietly
+; *** end of non-XIP code, will not harm anyway ***
 ; then, check for any shutdown command
-	LDA sd_flag		; some pending action?
-	BEQ rst_shell	; if not, just restart the shell
-		LDY #PW_CLEAN	; or go into second phase...
-		JSR shutdown	; ...of shutdown procedure (could use JMP)
+	LDA sd_flag			; some pending action?
+	BEQ rst_shell		; if not, just restart the shell
+		LDY #PW_CLEAN		; or go into second phase...
+		JSR shutdown		; ...of shutdown procedure (could use JMP)
 ; if none of the above, a single task system can only restart the shell!
 rst_shell:
-	LDX #SPTR		; init stack again
+	LDX #SPTR			; init stack again (in case SIGKILL was called)
 	TXS
-	JMP sh_exec		; back to shell!
+	JMP sh_exec			; back to kernel shell!
 ex_jmp:
+; *** non-XIP code must push the block address at the very bottom of stack ***
+;	LDA ex_pt+1			; get MSB...
+;	PHA					; ...into stack
+;	LDA ex_pt			; same for LSB, this way is NMOS savvy
+;	PHA
+; *** end of non-XIP code, will not harm anyway ***
 ; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
-	LDA #>sig_kill	; get MSB
-	LDY #<sig_kill	; and LSB
-	STY mm_sterm	; set variable
+	LDA #>sig_kill		; get MSB
+	LDY #<sig_kill		; and LSB
+	STY mm_sterm		; set variable
 	STA mm_sterm+1
 ; this is how a task should replace the shell
-	LDA #ZP_AVAIL	; eeeeeeeeeeek
-	STA z_used		; otherwise SAFE will not work
-	CLI				; time to do it!
-	JMP (ex_pt)		; DUH...
+	LDA #ZP_AVAIL		; eeeeeeeeeeek
+	STA z_used			; otherwise SAFE will not work
+	CLI					; time to do it!
+	JMP (ex_pt)			; DUH...
 
 
 ; **************************************************
