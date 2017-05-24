@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1021
+; last modified 20170524-1050
 
 ; no way for standalone assembly...
 
@@ -560,14 +560,17 @@ ex_st:
 	LDX #SPTR			; init stack
 	TXS
 	JSR ex_jmp			; call supplied address
+
+; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
 sig_kill:
 ; first, free up all memory from previous task
 	LDY #0				; standard PID
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
-;	PLA					; get stacked pointer of block...
-;	STA ma_pt			; ...to be freed
-;	PLA					; same for MSB
+; cannot just pull from stack as SIGKILL may be executed at any time
+;	LDY $FF+SPTR		; get stacked pointer of block...
+;	LDA $100+SPTR		; ...MSB too...
+;	STY ma_pt			; ...to be freed
 ;	STA ma_pt+1
 ;	_KERNEL(FREE)		; free it or fail quietly
 ; *** end of non-XIP code, will not harm anyway ***

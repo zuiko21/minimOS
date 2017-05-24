@@ -638,7 +638,7 @@ yield:
 
 
 ; *****************************************
-; *** B_EXEC, launch new loaded process ***
+; *** B_EXEC, launch new loaded process *** revamped 20170524
 ; *****************************************
 ;		INPUT
 ; Y			= PID (0 for singletask only)
@@ -658,18 +658,71 @@ b_exec:
 		_ERR(NO_RSRC)		; no way without multitasking *** or INVALID from sig_pid?
 exec_st:
 #endif
-; ********************* revise ********************* revise *********************
 ; initialise stack EEEEEEK
 	LDA #1				; standard stack page
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer, not using SPTR
 	TCS					; eeeeeeeeeek
+; as before, the 16-bit version makes simpler to simulate a call, thus no JSL here
+; *** non-XIP code must push the block address at the very bottom of stack ***
+;	LDY ex_pt+2			; get bank in Y
+;	PHY					; bank goes first! eeeeeeek
+;	PEI (ex_pt)			; 65816 fashion!
+; *** end of non-XIP code, will not harm anyway ***
+
+; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
+	.al: REP #$20		; *** worth going 16-bit memory ***
+	LDA #sig_kill		; get full address
+	STA mm_sterm		; set variable...
+	STZ mm_sterm+2		; ...plus bank
+; this is how a task should replace the shell
+	LDY #ZP_AVAIL		; eeeeeeeeeeek, use 8-bit only
+	STY z_used			; otherwise SAFE will not work
+; and set default devices!!! eeeeeeeeeeeeeeeeeeeeeeek
+	LDA def_io			; standard I/O
+	STA std_in			; set as defaults
+; *** soon will preset registers according to new API ***
+; at last, launch code
+	.as: .xs: SEP #$30	; default 8-bit launch!
+	CLI					; time to do it!
+	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
+
+; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
+sig_kill:
+; first, free up all memory from previous task
+	LDY #0				; standard PID
+	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+; *** non-XIP code should release its own block! ***
+; * assume 8-bit sizes *
+;	LDX #3				; number of bytes for pointer
+;sk_loop:				; *** this code valid for singletask 816 ***
+;		LDA @$01FC, X		; get byte from bottom of stack
+;		STA ma_pt-1, X		; set pointer eeeeeeeeeeeek
+;		DEX					; previous byte
+;		BNE sk_loop			; until all done
+; previous RELEASE marked pointer as 24b valid!
+;	KERNEL(FREE)		; free it or fail quietly
+; *** end of non-XIP code, will not harm anyway ***
+; then, check for any shutdown command
+	LDA sd_flag			; some pending action?
+	BEQ rst_shell		; if not, just restart the shell
+		LDY #PW_CLEAN		; or go into second phase...
+		JSR shutdown		; ...of shutdown procedure (could use JMP)
+; if none of the above, a single task system can only restart the shell!
+; * make certain it arrives here in 8-bit memory mode *
+rst_shell:
+	LDA #1				; standard stack page
+	XBA					; use as MSB
+	LDA #$FF			; initial stack pointer, not using SPTR
+	TCS					; init stack again (in case SIGKILL was called)
+	JMP sh_exec			; back to kernel shell!
+
+
+; OLD CODE ***************** OLD CODE ****************
+
 ; this should now work for both 02 and 816 apps
 	LDY ex_pt+2			; get bank first! keep it
 ; ***** as this version has no non-XIP support, no real need for the following *****
-; *** first push the 24-bit pointer, when non-XIP is available
-;	PHY					; push it
-;	PEI (ex_pt)			; push the rest of the pointer
 ; ***** uncomment the above for non-XIP support *****
 ; check architecture, 6502 code currently on bank zero only!
 	LDA cpu_ll			; check architecture
@@ -733,13 +786,6 @@ sig_kill:
 	LDY #0				; standard PID
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; ***** when non-XIP is available, try to free address from stack bottom *****
-;	LDX #3				; number of bytes for pointer
-sk_loop:				; *** this code valid for singletask 816 ***
-;		LDA @$01FC, X		; get byte from bottom of stack
-;		STA ma_pt, X		; set pointer
-;		DEX					; previous byte
-;		BNE sk_loop			; until all done
-;	KERNEL(FREE)		; try to release non-XIP code block! ***check out bank byte
 ; ***** uncomment the above for non-XIP support *****
 ; new, check whether a shutdown command was issued
 	LDA @sd_flag		; some action pending? 24-bit!
