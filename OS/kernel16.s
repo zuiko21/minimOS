@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a1
+; v0.6a2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170523-1109
+; last modified 20170524-1238
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS·16 0.6a1", 0	; version in comment
+	.asc	"minimOS-16 0.6a2", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -68,6 +68,9 @@ warm:
 	XCE					; enter native mode! still 8 bit regs, though
 ; worth going 16-bit for the install calls!
 	.al: REP #$20		; *** 16-bit memory most of the time ***
+lda#'@'
+jsr$c0c2
+bra*-2
 
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
@@ -167,7 +170,8 @@ dr_chk:
 			BCC dr_ntsk			; skip verification if task not enabled
 				LDY queues_mx-1, X	; get current tasks in queue
 				CPY #MAX_QUEUE		; room for another?
-					BCS dr_abort8		; did not checked OK (from 8-bit segment!)
+				BCC dr_ntsk			; there is
+					JMP dr_abort8		; did not checked OK (from 8-bit segment!)
 dr_ntsk:
 			DEX					; let us check next feature
 			BNE dr_chk
@@ -261,7 +265,7 @@ dr_doreq:
 ; continue into async queue
 			JSR dr_nextq		; go for next queue
 			DEX					; now 0, index for async queue (2)
-			JPL dr_iqloop
+			BPL dr_iqloop
 		BRA dr_next			; if arrived here, did not fail initialisation
 
 ; *** error handling ***
@@ -406,7 +410,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS·16 0.6a1", 0	; version in comment
+	.asc	"minimOS-16 0.6a1", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

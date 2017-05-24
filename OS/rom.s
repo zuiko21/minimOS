@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.5.1rc1, unified with kernel 20160412
+; v0.6a1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170515-1315
+; last modified 20170524-1247
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -17,7 +17,7 @@
 * = ROM_BASE			; as defined in options.h
 
 ; *** minimOS volume header, new 20150604 ***
-; not final as current (0.5.1) LOAD_LINK will not recognise it!
+; not final as current (0.6) LOAD_LINK will not recognise it!
 ; might use NOHEAD option for systems without any filesystem, but current LOAD_LINK needs it
 
 #ifndef	NOHEAD
@@ -27,13 +27,13 @@ sysvol:
 	.asc	"****", CR	; some flags TBD
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
-	.asc	"minimOS 0.5.1 for ", MACHINE_NAME	; system version and machine
-	.asc	13, "20170515-1300", 0				; build date and time
+	.asc	"minimOS 0.6 for ", MACHINE_NAME	; system version and machine
+	.asc	13, "20170524-1300", 0				; build date and time
 
 	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date field
 
 	.word	$6800				; time, 13.00
-	.word	$4AAF				; date, 2017/05/15
+	.word	$4AB8				; date, 2017/05/24
 
 ;romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 
@@ -96,7 +96,7 @@ drv_end:		; for easier size computation
 ;#include "../apps/pmap.s"
 #endif
 
-;#include "../apps/lined.s"
+#include "../apps/lined.s"
 
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
@@ -170,4 +170,5 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 #include "shell/miniMoDA16.s"
 #endif
 
-
+; now there is some support for 02 code outside bank 0!
+#include "../apps/crasm/68asm.s"

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6a4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1019
+; last modified 20170524-1241
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -18,6 +18,11 @@ free:
 release:
 ts_info:
 set_curr:
+
+; *** FUTURE IMPLEMENTATION ***
+aqmanage:
+pqmanage:
+
 	_ERR(UNAVAIL)	; go away!
 
 ; ********************************

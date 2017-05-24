@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a4, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170524-1233
+; last modified 20170524-1239
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -10,6 +10,8 @@
 ; ***************************************
 
 memlock:				; *** FUTURE IMPLEMENTATION ***
+aqmanage:
+pqmanage:
 
 unimplemented:			; placeholder here, not currently used
 	.xs: SEP #$10		; standard index size for a moment
@@ -1071,9 +1073,7 @@ str_wait:
 	LDA cio_lock, X		; *check whether THAT device in use (4)
 	BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-;		KERNEL(B_YIELD)		; give way... scheduler would switch on interrupts as needed *** direct internal API call!
-		LDX #MM_YIELD		; internal multitasking index (2)
-		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		_KERNEL(B_YIELD)		; give way... *** could be patched
 		BRA str_wait		; try again! (3)
 str_lckd:
 	LDA run_pid			; who am I?

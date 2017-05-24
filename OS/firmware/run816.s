@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6a1
+; v0.9.6a2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170524-1227
+; last modified 20170524-1305
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -336,15 +336,26 @@ fwp_func:
 	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	fwp_off		; poweroff	+FW_OFF
 
-; *** administrative jump table ***
-; PLEASE CHANGE ORDER ASAP
+; *********************************
+; *** administrative jump table *** changing
+; *********************************
 fw_admin:
-	.word	fw_install
-	.word	fw_s_isr
-	.word	fw_s_nmi
-	.word	fw_patch	; new order 20150409
-	.word	fw_gestalt
-	.word	fw_power
+; generic functions, esp. interrupt related
+	.word	fw_gestalt	; GESTALT get system info (renumbered)
+	.word	fw_s_isr	; SET_ISR set IRQ vector
+	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
+	.word	unimplemented	; *** SET_BRK set debugger, new 20170517
+	.word	unimplemented	; *** JIFFY set jiffy IRQ speed, ** TBD **
+	.word	unimplemented	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	fw_power	; POWEROFF power-off, suspend or cold boot
+	.word	unimplemented	; *** FREQ_GEN	frequency generator hardware interface, TBD
+
+; not for LOWRAM systems
+	.word	fw_install	; INSTALL copy jump table
+	.word	fw_patch	; PATCH patch single function (renumbered)
+	.word	unimplemented	; CONTEXT context bankswitching
 
 ; these already OK for 65816!
 ; *** minimOS·16 BRK handler *** might go elsewhere

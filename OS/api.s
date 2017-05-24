@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1050
+; last modified 20170524-1241
 
 ; no way for standalone assembly...
 
@@ -10,6 +10,8 @@
 ; ***************************************
 
 memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
+aqmanage:
+pqmanage:
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
