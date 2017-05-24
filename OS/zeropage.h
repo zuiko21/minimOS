@@ -1,6 +1,6 @@
 ; minimOS 0.6a2 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1151
+; last modified 20170519-1213
 
 .zero
 * = 0
@@ -51,7 +51,7 @@ dr_id	= da_ptr+2
 dr_feat	= da_ptr+3
 
 ; *** include aliases here for local3/locpt3 ***
-dte_ptr: exe_sp: rh_scan: rl_cur:
+dte_ptr: exe_sp: rh_scan: rl_cur: ex_wr:
 local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 
 ; ***********************

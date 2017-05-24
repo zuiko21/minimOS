@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9rc1
+; v0.9.6a1
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170403-0925
+; last modified 20170524-1227
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9 firmware for "
+	.asc	"0.9.6 firmware for "
 #else
 fw_splash:
 #endif
@@ -376,12 +376,12 @@ cop_hndl:		; label from vector list
 
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
 * = kernel_call
-	CLC			; pre-clear carry
-	COP #$FF	; wrapper on 816 firmware!
-	RTS			; return to caller
-; ****** sample for wrapper outside bank zero for minimOS-65 ******
+	CLC					; pre-clear carry
+	COP #$FF			; wrapper on 816 firmware!
+	RTS					; return to caller
+; ****** sample for wrapper outside bank zero for minimOS·65 ******
 ; ** should be at $xxFFC4 **
-;	JMP @sig_kill	; program end arrives here via RTS
+	RTL					; much simpler approach, just push $FFC4 above regular SIGKILL address
 
 ; ****** idea for 65816 admin-call interface from apps! ******
 ; ** should be at $00FFC8 **

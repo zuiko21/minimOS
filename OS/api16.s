@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a3, should match kernel16.s
+; v0.6a4, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170524-1110
+; last modified 20170524-1233
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -663,36 +663,61 @@ exec_st:
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer, not using SPTR
 	TCS					; eeeeeeeeeek
-	LDY ex_pt+2			; get bank in Y *** needed elsewhere ***
-
-; perhaps, before trying to execute anything, must check architecture
-
 ; as before, the 16-bit version makes simpler to simulate a call, thus no JSL here
+	LDX ex_pt+2			; get bank in Y *** needed elsewhere ***
 ; *** non-XIP code must push the block address at the very bottom of stack ***
-;	PHY					; bank goes first! eeeeeeek
-;	PEI (ex_pt)			; 65816 fashion!
+	PHX					; bank goes first! eeeeeeek
+	PEI (ex_pt)			; 65816 fashion!
 ; *** end of non-XIP code, will not harm anyway ***
-
+; now will push the (standard 816) return address, as 02 wrapper will go ABOVE it
+	PHK					; push return bank address, actually zero (3) no matter the architecture!
+	PEA sig_kill-1		; push corrected return address (5)
+; set architecture, will behave differently for 65xx02 code
+	LDA cpu_ll			; check architecture
+; *** do the EOR trick for easy API architecture detection ***
+	EOR #'V'			; ** will be zero only for native **
+	STA @run_arch		; set as current, note long addressing eeeeeeek
+	BEQ exec_long		; native 816 is OK with standard return address
+; should somehow check whether a suitable wrapper is already installed at that bank!
+; perhaps this is the place for the installation code!
+; *** TO DO *** reserve that page if not already in use *** TO DO ***
+		TXA					; check bank for a moment
+			BEQ exec_pea		; wrapper already installed in ROM!
+		STX ex_wr+2			; bank for destination pointer
+		LDA #$FF			; fixed MSB
+		LDY #$C0			; fixed LSB eeeeek
+		STA ex_wr+1			; store pointer
+		STY ex_wr
+		LDY #4				; max wrapper offset
+ex_wloop:
+			LDA @kernel_call, Y	; get sample, copied from suitable firmware! *** beware of multikernels!
+			STA [ex_wr], Y		; copy it
+			DEY					; next
+			BPL ex_wloop
+; *** end of wrapper installing code ***
+exec_pea:
+		PEA $FFC4			; sample return address, will point to a RTL!!! no bank needed for RTS
+exec_long:
 ; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
 	.al: REP #$20		; *** worth going 16-bit memory ***
 	LDA #sig_kill		; get full address
-	STA mm_sterm		; set variable...
-	STZ mm_sterm+2		; ...plus bank
+	STA @mm_sterm		; set variable...
+	STZ @mm_sterm+2		; ...plus bank
 ; this is how a task should replace the shell
-	LDX #ZP_AVAIL		; eeeeeeeeeeek, use 8-bit only but RESPECT bank!
-	STX z_used			; otherwise SAFE will not work
+	LDY #ZP_AVAIL		; eeeeeeeeeeek, use 8-bit only but RESPECT bank!
+	STY z_used			; otherwise SAFE will not work
 ; and set default devices!!! eeeeeeeeeeeeeeeeeeeeeeek
 	LDA def_io			; standard I/O
 	STA std_in			; set as defaults
 ; right now should set DBR as there is no scheduler to preload it! eeeeeeek
-	PHY					; push bank into stack for a moment
+	PHX					; push bank into stack for a moment
 	PLB					; ...and now properly set for the task
 ; *** soon will preset registers according to new API ***
 ; at last, launch code
 	.as: .xs: SEP #$30	; default 8-bit launch!
 	CLI					; time to do it!
-; assume the stack is already preloaded with SIGKILL address
-	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
+; assume the stack is already preloaded with SIGKILL address (or wrapper RTL above that)
+	JMP [ex_pt]			; forthcoming RTL will end via SIGKILL
 
 ; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
 sig_kill:
@@ -710,17 +735,17 @@ sig_kill:
 ; *** non-XIP code should release its own block! ***
 ; what about 6502 wrappers???
 ; * assume 8-bit sizes *
-;	LDX #3				; number of bytes for pointer
-;sk_loop:				; *** this code valid for singletask 816 ***
-;		LDA @$01FC, X		; get byte from bottom of stack
-;		STA ma_pt-1, X		; set pointer eeeeeeeeeeeek
-;		DEX					; previous byte
-;		BNE sk_loop			; until all done
+	LDX #3				; number of bytes for pointer
+sk_loop:				; *** this code valid for singletask 816 ***
+		LDA @$01FC, X		; get byte from bottom of stack
+		STA ma_pt-1, X		; set pointer eeeeeeeeeeeek
+		DEX					; previous byte
+		BNE sk_loop			; until all done
 ; previous RELEASE marked pointer as 24b valid! otherwise STZ run_arch
-;	KERNEL(FREE)		; free it or fail quietly
+	_KERNEL(FREE)		; free it or fail quietly
 ; *** end of non-XIP code, will not harm anyway ***
 ; then, check for any shutdown command
-	LDA sd_flag			; some pending action?
+	LDA @sd_flag		; some pending action?
 	BEQ rst_shell		; if not, just restart the shell
 		LDY #PW_CLEAN		; or go into second phase...
 		_KERNEL(SHUTDOWN)	; ...of shutdown procedure (no direct call)
@@ -732,87 +757,6 @@ rst_shell:
 	LDA #$FF			; initial stack pointer LSB, not using SPTR
 	TCS					; init SP again (in case SIGKILL was called)
 	JMP sh_exec			; back to kernel shell!
-
-
-; OLD CODE ***************** OLD CODE ****************
-
-; this should now work for both 02 and 816 apps
-	LDY ex_pt+2			; get bank first! keep it
-; ***** as this version has no non-XIP support, no real need for the following *****
-; ***** uncomment the above for non-XIP support *****
-; check architecture, 6502 code currently on bank zero only!
-	LDA cpu_ll			; check architecture
-; set run_arch as per architecture!
-; *** might just do EOR #'V' to detect 65816! ***
-;	LDX #0				; reset index
-;arch_loop:
-;		CMP @arch_tab, X	; compare with list item
-;			BEQ arch_ok			; detected!
-;		INX					; next
-;		CPX #4				; supported limit?
-;		BNE arch_loop		; still to go
-; No valid code found, should try to free non-XIP allocated RAM
-;	DR_ERR(INVALID)	; cannot execute this! should be a mere error
-;arch_ok:
-;	TXA					; make equivalent code from index!
-;	ASL					; two times to make it SIGterm flag savvy!
-; ...and store at run_arch
-; *** could just store the EOR result, see above ***
-	EOR #'V'			; ** will be zero only for native **
-	STA @run_arch		; set as current, note long addressing eeeeeeek
-; new approach, reusing 816 code!
-	TAX					; recheck architecture
-		BEQ exec_long		; native 816 will always push standard return bank
-; here is to manage 65xx02 code ***temporarily limited to bank zero
-	TYX					; check bank for a moment
-	BEQ exec_long		; already in bank zero means no need to install wrapper *** ***
-; ***** in case 6502 code is running beyond bank zero, setup wrapper here! *****
-; after that, push alternative (wrapper) return address
-;		PHY					; push target bank
-; *** is the above needed for 02 code? should not harm anyway ***
-;		PEA $FFC4			; sample return address, will point to a JML sig_kill
-;		BRA exec_retset		; all done?
-; ***** in the meanwhile, just reject the request *****
-; should deallocate resources, just like an invalid CPU!
-; *** if this error is kept, use sig_pid as below!
-		_ERR(INVALID)		; 6502 code not yet supported on that address
-; long indirect call, just push the proper return address, both RTS & RTL savvy
-exec_long:
-	PHK					; push return bank address, actually zero (3) no matter the architecture!
-	PEA sig_kill-1		; push corrected return address (5)
-; ** if an alternative return address (wrapper) was pushed, jump here
-exec_retset:
-; set context space!
-	LDA #ZP_AVAIL		; eeeeeeek!
-	STA z_used			; otherwise SAFE will not work!
-; right now should set DBR as there is no scheduler to preload it! eeeeeeek
-	PHY					; push bank into stack for a moment
-	PLB					; ...and now properly set for the task
-; somehow should set registers, API TBD...
-; jump to code!
-; already in full 8-bit mode as assumed
-	CLI				; eeeeeeeeek
-	JMP [ex_pt]			; forthcoming RTL (or RTS) will end via SIGKILL
-
-; SIGKILL is integrated after EXEC on singletask systems
-sig_kill:
-; since it could arrive here from the end of a task, restore register sizes!
-	.as: .xs: SEP #$30	; *** standard sizes ***
-; then, free up all memory from previous task
-	LDY #0				; standard PID
-	_KERNEL(RELEASE)	; free all memory eeeeeeeek
-; ***** when non-XIP is available, try to free address from stack bottom *****
-; ***** uncomment the above for non-XIP support *****
-; new, check whether a shutdown command was issued
-	LDA @sd_flag		; some action pending? 24-bit!
-	BEQ rst_shell		; if not, just restart shell
-		LDY #PW_CLEAN		; otherwise, complete ordered shutdown
-		_KERNEL(SHUTDOWN)
-rst_shell:
-; at last, restart shell!
-	JMP sh_exec			; relaunch shell! eeeeek
-
-; ******************** revise above ***************** revise above **********************
 
 
 ; **************************************************
@@ -1483,7 +1427,9 @@ set_curr:
 ; *** end of kernel functions ***
 ; *******************************
 
-; other data and pointers
+; *******************************
+; *** other data and pointers ***
+; *******************************
 sd_tab:					; check order in abi.h!
 ;	.word	sd_stat		; suspend *** no needed as will be called directly, check offset above
 	.word	sd_warm		; warm boot direct by kernel
