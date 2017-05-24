@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6a4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1005
+; last modified 20170524-1019
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -247,6 +247,14 @@ ex_jmp:
 ; this is how a task should replace the shell
 	LDA #ZP_AVAIL	; eeeeeeeeeeek
 	STA z_used		; otherwise SAFE will not work
+; and set default devices!!! eeeeeeeeeeeeeeeeeeeeeeek
+; in case of LOWRAM, this will alter default global devices, is that OK?
+	LDA def_io		; standard input
+	STA std_in		; set at GLOBAL
+	LDA def_io+1	; same for output
+	STA stdout
+; *** soon will preset registers according to new API ***
+; at last, launch code
 	CLI				; time to do it!
 	JMP (ex_pt)		; DUH...
 

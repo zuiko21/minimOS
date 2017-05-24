@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1013
+; last modified 20170524-1021
 
 ; no way for standalone assembly...
 
@@ -596,6 +596,13 @@ ex_jmp:
 ; this is how a task should replace the shell
 	LDA #ZP_AVAIL		; eeeeeeeeeeek
 	STA z_used			; otherwise SAFE will not work
+; and set default devices!!! eeeeeeeeeeeeeeeeeeeeeeek
+	LDA def_io			; standard input
+	STA std_in			; set as default
+	LDA def_io+1		; same for output
+	STA stdout
+; *** soon will preset registers according to new API ***
+; at last, launch code
 	CLI					; time to do it!
 	JMP (ex_pt)			; DUH...
 
