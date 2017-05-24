@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-0858
+; last modified 20170524-0951
 
 ; no way for standalone assembly...
 
@@ -23,7 +23,6 @@ unimplemented:			; placeholder here, not currently used
 ; C = I/O error
 ;		USES iol_dev, plus whatever the driver takes
 ; cio_lock is a kernel structure
-; LOWRAM version uses da_ptr!!!
 
 cout:
 	TYA					; for indexed comparisons (2)
@@ -66,8 +65,7 @@ co_loop:
 		LDA cio_lock, X		; check whether THAT device is in use (4)
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-; faster KERNEL(B_YIELD)
-		JSR yield			; direct call skipping firmware (6)
+		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		_BRA co_loop		; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
@@ -118,8 +116,7 @@ ci_loop:
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
-; faster KERNEL(B_YIELD)
-		JSR yield			; direct to kernel skipping firmware (6)
+		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
@@ -166,8 +163,7 @@ ci_nokill:
 ci_signal:
 		STA b_sig			; set signal as parameter
 		LDY run_pid			; faster GET_PID
-; faster KERNEL(B_SIGNAL)
-		JSR signal			; usual API entry
+		_KERNEL(B_SIGNAL)	; send signal to myself
 ; continue after having filtered the error
 		LDY #EMPTY			; no character was received
 		SEC					; eeeeeeeek
@@ -203,7 +199,7 @@ ci_log:
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	LDY ticks			; simple placeholder
+	LDA ticks			; simple placeholder eeeeeeek
 	STA io_c			; eeeeeeeeeeeeeeeeek
 ci_ok:
 	_EXIT_OK
@@ -556,7 +552,6 @@ b_exec:
 #ifdef	SAFE
 	TYA				; should be system reserved PID, best way
 	BEQ ex_st		; OK for single-task system
-sig_pid:
 		_ERR(NO_RSRC)	; no way without multitasking
 ex_st:
 #endif
@@ -599,8 +594,8 @@ ex_jmp:
 
 signal:
 #ifdef	SAFE
-	TYA					; check correct PID, really needed?
-		BNE sig_pid			; strange error?
+	TYA					; check correct PID
+		BNE sig_pid			; just 0 for singletasking
 #endif
 	LDY b_sig			; get the signal
 	CPY #SIGTERM		; clean shutdown?
@@ -612,8 +607,9 @@ signal:
 		PHP					; as required by RTI
 		JMP (mm_sterm)		; execute handler, will return to sig_exit
 sig_suic:
-	CPY #SIGKILL		; suicide, makes any sense?
+	CPY #SIGKILL		; suicide?
 		BEQ sig_kill
+sig_pid:
 	_ERR(INVALID)		; unrecognised signal
 
 
@@ -652,7 +648,7 @@ set_handler:
 #endif
 	LDY ex_pt			; get pointer
 	LDA ex_pt+1			; get pointer MSB
-	STY mm_sterm		; store in single variable (from unused table)
+	STY mm_sterm		; store in single variable
 	STA mm_sterm+1
 	_EXIT_OK
 
@@ -819,8 +815,7 @@ str_wait:
 		LDX iol_dev			; restore previous status, *new style (3)
 		LDA cio_lock, X		; *check whether THAT device in use (4)
 		BEQ str_lckd		; resume operation if free (3)
-; otherwise yield CPU time and repeat
-			JSR yield			; direct call the usual way, faster B_YIELD (6)
+			_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 			_BRA str_wait		; try again! (3)
 str_lckd:
 	LDA run_pid			; who am I?
@@ -1060,7 +1055,8 @@ tsi_end:
 ; *** RELEASE, release ALL memory for a PID, new 20161115
 ; *********************************************************
 ;		INPUT
-; Y		= PID, 0 means myself?
+; Y		= PID, 0 means myself
+;		USES ma_pt and whatever takes FREE (will call it)
 
 release:
 	TYA					; as no CPY abs,X
@@ -1080,7 +1076,7 @@ rls_loop:
 			LDA ram_pos+1, X	; MSB too
 			STY ma_pt			; will be used by FREE
 			STA ma_pt+1
-			JSR free			; release it!
+			JSR free			; release it! *** direct call but if patched, this one should be too ***
 			_PLX				; retrieve status
 			PLA
 			BCC rls_next		; keep index IF current entry was deleted!
@@ -1098,14 +1094,12 @@ rls_next:
 ; ***********************************************************
 ;		INPUT
 ; Y			= PID
-;		OUTPUT
-; Y			= preset PID (must respect it!)
 ; affects internal sysvar run_pid
 ; run_arch not supported in 8-bit mode
 
 set_curr:
-	TYA					; eeeeek, no long STY (2)
-	STA run_pid			; store PID into kernel variables (4)
+; does not check for valid PID... hopefully the multitasking driver (the only one expected to call this) does
+	STY run_pid			; store PID into kernel variables (4)
 	_EXIT_OK
 
 ; *******************************

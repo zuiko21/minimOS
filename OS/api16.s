@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170524-0907
+; last modified 20170524-0952
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -73,10 +73,7 @@ co_loop:
 		LDX iol_dev			; retrieve index!
 		LDA cio_lock, X		; check whether THAT device is in use (4) 24-bit!
 			BEQ co_lckd			; resume operation if free (3)
-; otherwise yield CPU time and repeat
-; faster KERNEL(B_YIELD)
-		LDX #MM_YIELD		; internal multitasking index (2)
-		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		BRA co_loop			; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
@@ -160,9 +157,7 @@ ci_loop:
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
-; faster KERNEL(B_YIELD)
-		LDX #MM_YIELD		; internal multitasking index (2)
-		JSR (drv_opt-MM_YIELD, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		BRA ci_loop			; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
@@ -211,11 +206,8 @@ ci_nokill:
 ci_signal:
 		STA b_sig			; set signal as parameter
 ; much faster KERNEL(GET_PID)
-		LDA run_pid			; internal PID in A
-		TAY					; as needed by B_SIGNAL
-; faster KERNEL(B_SIGNAL)
-		LDX #MM_SIGNAL		; internal multitasking index (2)
-		JSR (drv_opt-MM_SIGNAL, X)	; direct to driver skipping the kernel, note deindexing! (8)
+		LDY run_pid			; internal PID in Y...
+		_KERNEL(B_SIGNAL)	; send signal to myself *** could be patched!
 		LDY #EMPTY			; no character was received
 		SEC					; eeeeeeeek
 		JMP cio_unlock		; release device and exit!
@@ -432,6 +424,9 @@ ma_bankOK:
 	PLB					; restore!
 	_EXIT_OK
 
+; ******************************
+; *** common MALLOC routines ***
+; ******************************
 	.al					; as routines will be called in 16-bit memory!!!
 
 ; **** routine for aligned-block size computation ****
@@ -607,6 +602,7 @@ free_w:					; doesn't do much, either
 
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
+; as no indexes are used, not even for errors, no need to (re)set X flag!
 ; default 816 API functions run on interrupts masked, thus no need for CS
 ; not worth setting DBR, note long addressing
 		LDA @ticks		; get system variable word (5)
@@ -839,7 +835,6 @@ st_shset:
 	TXA					; no long STX...
 	STA @mm_sterm+2		; bank stored just after regular pointer, 24-bit addr!
 	_EXIT_OK
-.as						; back to regular API call, just in case
 
 
 ; **************************************
@@ -1351,7 +1346,7 @@ ts_info:
 ; *** RELEASE, release ALL memory for a PID ***
 ; *********************************************
 ;		INPUT
-; Y = PID
+; Y		= PID, 0 means myself
 ;		USES ma_pt and whatever takes FREE (will call it)
 ; this is NOT intended to be called by apps, kernel & multitasking driver only, thus do not care about architecture
 ; but make certain that FREE calls are 24-bit enabled!
@@ -1439,9 +1434,9 @@ tsi_str:
 tsi_end:
 ; end of stack frame for easier size computation
 
-; *******************************
-; *** end of kernel functions ***
-; *******************************
+; ****************************
+; *** end of kernel tables ***
+; ****************************
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***

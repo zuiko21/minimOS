@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6a3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-0850
+; last modified 20170524-0932
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -219,7 +219,6 @@ b_exec:
 #ifdef	SAFE
 	TYA				; should be system reserved PID, best way
 	BEQ ex_st		; OK for single-task system
-sig_pid:
 		_ERR(NO_RSRC)	; no way without multitasking
 ex_st:
 #endif
@@ -273,6 +272,7 @@ signal:
 sig_suic:
 	CPY #SIGKILL		; suicide, makes any sense?
 		BEQ sig_kill
+sig_pid:
 	_ERR(INVALID)		; unrecognised signal
 
 
