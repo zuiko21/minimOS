@@ -1,20 +1,20 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6a2
+; v0.9.6a3
 ; *** new format for mOS 0.6 compatibility ***
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170524-1235
+; last modified 20170524-1311
 
 #include	"usual.h"
 .(
 ; *** begins with sub-function addresses table ***
 	.byt	DEV_CONIO	; D_ID, new values 20150323
 	.byt	A_CIN | A_COUT	; character I/O only, non relocatable
-	.word	kow_rts		; initialize device, called by POST only
-	.word	kow_rts		; poll, NOT USED
-	.word	kow_rts		; req, this one can't generate IRQs, thus CLC+RTS
 	.word	kow_cin		; cin, input from keyboard
 	.word	kow_cout	; cout, output to display
+	.word	kow_rts		; initialize device, called by POST only
+	.word	kow_rts		; poll, NOT USED
 	.word	1			; irrelevant value as no polled interrupts
+	.word	kow_rts		; req, this one can't generate IRQs, thus CLC+RTS
 	.word	kow_rts		; sin, no block input
 	.word	kow_rts		; sout, no block output
 	.word	kow_rts		; bye, no shutdown procedure

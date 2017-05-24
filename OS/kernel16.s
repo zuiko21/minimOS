@@ -68,9 +68,6 @@ warm:
 	XCE					; enter native mode! still 8 bit regs, though
 ; worth going 16-bit for the install calls!
 	.al: REP #$20		; *** 16-bit memory most of the time ***
-lda#'@'
-jsr$c0c2
-bra*-2
 
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
@@ -228,6 +225,8 @@ dr_nout:
 ; all set now, now easier to use a loop
 		LDX #1				; index for periodic queue (2)
 dr_iqloop:
+lda#'@'
+jsr$c0c2
 			ASL dr_aut-1		; extract MSB (will be A_POLL first, then A_REQ) note trick again
 			BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
