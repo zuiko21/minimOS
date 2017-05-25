@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a4, should match kernel16.s
+; v0.6a5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170524-1239
+; last modified 20170525-1109
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -960,21 +960,18 @@ ll_found:
 	INY					; next byte is CPU type then
 	LDA [rh_scan], Y	; get it
 	CMP #'V'			; Rockwell is the only unsupported type! but look for any other 65xx option
-		BEQ ll_native		; native 65816 is OK *AND* will allow 24-bit addressing this far 
+		BEQ ll_native		; native 65816 is OK! 
 	CMP #'B'			; generic 65C02
-		BEQ ll_valid		; also OK but will NOT support 24-bit (for now)	
+		BEQ ll_valid		; also OK but will need a suitable wrapper
 	CMP #'N'			; old NMOS
 		BEQ ll_valid		; if neither this one, unsupported CPU type!
 ll_wrap:
 	_ERR(INVALID)		; unsupported CPU
 ll_valid:
 ; *** CPU-type is compatible but has 8-bit code, this should install 64-byte wrapper at end of bank, or limit to bank zero! ***
-; currently limited to bank zero
-	LDX rh_scan+2			; check THIRD byte, still not supported in 8-bit code
-	BEQ ll_native			; still in bank 0, OK to proceed
-		_ERR(INVALID)			; somewhat confusing error...
+; no longer limited to bank zero...
 ll_native:
-; either is 65816 code or 02 into bank zero
+; either is 65816 code or 02 with a suitable wrapper
 	STA cpu_ll			; set CPU type, now will not matter whether XIP or not!
 	.al: REP #$20		; *** 16-bit memory again ***
 	LDA rh_scan+1		; get pointer MSB+BANK

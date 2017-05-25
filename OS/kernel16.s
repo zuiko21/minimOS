@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a2
+; v0.6a3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1238
+; last modified 20170525-1059
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6a2", 0	; version in comment
+	.asc	"minimOS-16 0.6a3", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -208,7 +208,6 @@ dr_seto:
 			LDA (da_ptr), Y		; get full address (6)
 			STA drv_opt, X		; store full pointer in table (5)
 dr_nout:
-
 ; *** 5) register interrupt routines *** new, much cleaner approach
 		LDX dr_feat			; get original auth code (3)
 		STX dr_aut			; and keep for later! (3)
@@ -224,9 +223,8 @@ dr_nout:
 		STA dte_ptr			; yet another temporary pointer...
 ; all set now, now easier to use a loop
 		LDX #1				; index for periodic queue (2)
+/*
 dr_iqloop:
-lda#'@'
-jsr$c0c2
 			ASL dr_aut-1		; extract MSB (will be A_POLL first, then A_REQ) note trick again
 			BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
@@ -265,6 +263,7 @@ dr_doreq:
 			JSR dr_nextq		; go for next queue
 			DEX					; now 0, index for async queue (2)
 			BPL dr_iqloop
+*/
 		BRA dr_next			; if arrived here, did not fail initialisation
 
 ; *** error handling ***
@@ -409,7 +408,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.6a1", 0	; version in comment
+	.asc	"minimOS-16 0.6a3", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
