@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a5, should match kernel16.s
+; v0.6a6, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170526-0859
+; last modified 20170526-0912
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -1140,6 +1140,7 @@ rl_24b:
 	LDA str_pt+1		; check MSB, beware of bank anyway
 	BNE rl_ndp8			; not direct page is already OK
 rl_dp:
+		CLC					; eeeeeeeeeeeeeeeeeeeeeeeeeek
 		TDC					; current context
 		ADC str_pt			; compute address, C was clear
 		STA str_pt			; update pointer
