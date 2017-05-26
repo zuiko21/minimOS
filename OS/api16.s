@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170525-1109
+; last modified 20170526-0859
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -660,51 +660,57 @@ b_exec:
 		_ERR(NO_RSRC)		; no way without multitasking *** or INVALID from sig_pid?
 exec_st:
 #endif
+; set data bank, as some ops will need it, singletasking means this is a point of no return
+	PHK					; push 0
+	PLB					; work on data from bank 0
 ; initialise stack EEEEEEK
 	LDA #1				; standard stack page
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer, not using SPTR
 	TCS					; eeeeeeeeeek
 ; as before, the 16-bit version makes simpler to simulate a call, thus no JSL here
-	LDX ex_pt+2			; get bank in Y *** needed elsewhere ***
-; *** non-XIP code must push the block address at the very bottom of stack ***
+	LDX ex_pt+2			; get bank in X *** needed elsewhere ***
+; *** in case of non-XIP code, push the block address at the very bottom of stack ***
 	PHX					; bank goes first! eeeeeeek
 	PEI (ex_pt)			; 65816 fashion!
 ; *** end of non-XIP code, will not harm anyway ***
-; now will push the (standard 816) return address, as 02 wrapper will go ABOVE it
-	PHK					; push return bank address, actually zero (3) no matter the architecture!
-	PEA sig_kill-1		; push corrected return address (5)
 ; set architecture, will behave differently for 65xx02 code
 	LDA cpu_ll			; check architecture
 ; *** do the EOR trick for easy API architecture detection ***
 	EOR #'V'			; ** will be zero only for native **
-	STA @run_arch		; set as current, note long addressing eeeeeeek
+	STA run_arch		; set as current, no longer long addressing!
 	BEQ exec_long		; native 816 is OK with standard return address
+; 02 code, unless running on bank 0, will push the special wrapper return
+		TXA					; check bank for a moment
+		BEQ exec_long		; no use for wrapper as already running in bank 0
 ; should somehow check whether a suitable wrapper is already installed at that bank!
 ; perhaps this is the place for the installation code!
 ; *** TO DO *** reserve that page if not already in use *** TO DO ***
-		TXA					; check bank for a moment
-			BEQ exec_pea		; wrapper already installed in ROM!
-		STX ex_wr+2			; bank for destination pointer
-		LDA #$FF			; fixed MSB
-		LDY #$C0			; fixed LSB eeeeek
-		STA ex_wr+1			; store pointer
-		STY ex_wr
-		LDY #4				; max wrapper offset
+			STX ex_wr+2			; bank for destination pointer
+			LDA #$FF			; fixed MSB
+			LDY #$C0			; fixed LSB eeeeek
+			STA ex_wr+1			; store pointer
+			STY ex_wr
+			LDY #wrap_end-wrapper-1	; max wrapper offset
 ex_wloop:
-			LDA @kernel_call, Y	; get sample, copied from suitable firmware! *** beware of multikernels!
-			STA [ex_wr], Y		; copy it
-			DEY					; next
-			BPL ex_wloop
+				LDA wrapper, Y			; get sample, cannot use long! *** multikernel-savvy
+				STA [ex_wr], Y			; copy into wrapper
+				DEY						; next
+				BPL ex_wloop
 ; *** end of wrapper installing code ***
-exec_pea:
-		PEA $FFC4			; sample return address, will point to a RTL!!! no bank needed for RTS
+		PHX					; in case 6502 blob was assembled for 816, RTL will need bank
+		PEA $FFC3			; ONE LESS from return address, will return to a LONG jump to SIGKILL
+		BRA exec_pea		; stack is ready
 exec_long:
+; now will push the standard SIGKILL return address
+	PHK					; push return bank address, actually zero (3) no matter the architecture!
+	PEA sig_kill-1		; push corrected return address (5)
+exec_pea:
 ; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
+	STZ mm_sterm+2		; clear standard bank, but respect hibyte!
 	.al: REP #$20		; *** worth going 16-bit memory ***
 	LDA #sig_kill		; get full address
-	STA @mm_sterm		; set variable...
-	STZ @mm_sterm+2		; ...plus bank
+	STA mm_sterm		; set variable (bank already set)
 ; this is how a task should replace the shell
 	LDY #ZP_AVAIL		; eeeeeeeeeeek, use 8-bit only but RESPECT bank!
 	STY z_used			; otherwise SAFE will not work
@@ -739,7 +745,7 @@ sig_kill:
 ; * assume 8-bit sizes *
 	LDX #3				; number of bytes for pointer
 sk_loop:				; *** this code valid for singletask 816 ***
-		LDA @$01FC, X		; get byte from bottom of stack
+		LDA @$1FC, X		; get byte from bottom of stack
 		STA ma_pt-1, X		; set pointer eeeeeeeeeeeek
 		DEX					; previous byte
 		BNE sk_loop			; until all done
@@ -1440,6 +1446,14 @@ tsi_str:
 	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEK
 tsi_end:
 ; end of stack frame for easier size computation
+
+wrapper:
+; function-call entry point for 6502 code running outside bank 0
+	CLC					; standard firmware wrapper, not worth taking from firmware
+	COP #$FF
+	RTS
+	JMP @sig_kill		; direct jump to sigkill routine, MUST be at $FFC4
+wrap_end:				; for size computation
 
 ; ****************************
 ; *** end of kernel tables ***
