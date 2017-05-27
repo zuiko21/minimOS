@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170528-1551
+; last modified 20170528-1709
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -258,7 +258,7 @@ ci_rnd:
 ;		USES ma_ix.b and, in the future, ma_lim
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
 ; MUST limit 6502 blocks to bank zero
-; 02-savvy, then
+; 02-savvy, but should check ma_lim properly
 ; think about managing the multiple exit points as this is a rather slow function
 
 malloc:
@@ -269,6 +269,8 @@ malloc:
 	PHX					; put one zero byte into stack (no need for PHK as this X is needed afterwards)
 	PLB					; preset DBR as default zero!
 	STX ma_align+1		; **clear MSB for the 16-bit BIT!**
+
+#ifdef	SUPPORT
 ; detect caller architecture in order to enable 24-bit addressing
 ; *** since currently just limits 6502 requests to bank zero, no need to preset the unimplemented limits ***
 	LDY run_arch		; zero for native 65816, respect X as it holds zero
@@ -281,6 +283,8 @@ ma_24b:
 ma_go:
 ; limits set, proceed as usual
 	STY ma_lim			; set limit
+#endif
+
 	LDY ma_rs			; check individual bytes, just in case
 	BEQ ma_nxpg			; no extra page needed
 		INC ma_rs+1			; otherwise increase number of pages
@@ -411,7 +415,9 @@ ma_updt:
 	LDA run_pid			; get uncorrected PID in A
 	STA ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
+
 ; ****** temporary code for limiting 6502 requests to bank zero! ******
+#ifdef	SUPPORT
 ; should stop loops somewhere upon exceeding ma_lim
 ; in case of  size 0, set as 1 bank!
 	LDA run_arch		; get architecture
@@ -424,6 +430,7 @@ ma_updt:
 			PLB					; 6502 cannot currently run outside bank zero!
 			_ERR(FULL)			; and exit with no suitable memory available
 ma_bankOK:
+#endif
 ; **** end of temporary code, remove as soon as properly handled!! ****
 	PLB					; restore!
 	_EXIT_OK
@@ -493,15 +500,20 @@ free:
 	LDX #0				; reset index (will be used afterwards)
 	PHX					; put one zero byte into stack (no need for PHK)
 	PLB					; preset DBR as default zero!
+
 #ifdef	SAFE
 	LDY ma_pt			; LSB currently not implemented
 		BNE fr_no			; could not find
 #endif
+
+#ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDY run_arch		; will be zero for native 65816, please respect X!
 	BEQ fr_24b			; 24-bit enabled
 		STZ ma_pt+2			; otherwise is bank 0!
 fr_24b:
+#endif
+
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
@@ -814,11 +826,15 @@ set_handler:
 #endif
 	LDA ex_pt			; get pointer
 	LDX ex_pt+2			; please, take bank too
-; must check for 02 code in order to get bank from current DBR!
+
+#ifdef	SUPPORT
+; must check for 02 code in order to preset bank!
 	LDY run_arch		; check current code
 	BEQ st_shset			; if native, bank is set
 		LDX #0				; otherwise is in bank 0!
 st_shset:
+#endif
+
 	STA @mm_sterm		; store in single variable, 24-bit addr!
 	.as: SEP #$20		; *** back to 8-bit ***
 	TXA					; no long STX...
@@ -843,7 +859,7 @@ get_pid:
 ; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
 ; ***************************************************************
 ;		INPUT
-; str_pt = 24b pointer to filename path (will be altered!)
+; str_pt = 24b pointer to filename path, ZP corrected (will be altered!)
 ;		OUTPUT
 ; ex_pt		= 24b pointer to executable code
 ; cpu_ll	= architecture (as stated in headers!)
@@ -857,29 +873,23 @@ load_link:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** standard index size ***
 ; no need to set DBR
+
+#ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816 but with extra byte!
 	TAX					; filter out MSB to get proper value eeeeeeeeeek
 	BEQ ll_24b			; 24-bit enabled
-		PHB					; otherwise get caller data bank...
-		PLX					; ...pick it up...
+		LDX #0					; ...or take a 0...
 		STX str_pt+2		; ...and use as default bank
 ; *** special corrections are needed in case the pointer is in direct page! ***
 		LDX str_pt+1		; get page number without bank...
-		BNE ll_nz			; outside DP, nothing more to correct
-			STX str_pt+2		; otherwise clear bank (X is 0)
-			BRA ll_dp			; we know we asked for direct page
+		BNE ll_24b			; outside DP, nothing more to correct
+			TDC					; current context location
+			ADC str_pt			; compute actual address (C was clear per ABI)
+			STA str_pt			; store corrected value
 ll_24b:
-; *** beware of direct-page pointers ***
-	LDA str_pt+1		; get MSB _WITH_ bank!
-	BNE ll_nz			; only dp pointers will be corrected
-; compute actual address of context
-ll_dp:
-		TDC					; current context location
-		ADC str_pt			; compute actual address (C was clear per ABI)
-		STA str_pt			; store corrected value
-ll_nz:
-; *** above was for staying safe of direct page references ***
+#endif
+
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get whole pointer (minus bank)
 	SEC
@@ -940,16 +950,24 @@ ll_found:
 	LDA [rh_scan], Y	; get it
 	CMP #'V'			; Rockwell is the only unsupported type! but look for any other 65xx option
 		BEQ ll_native		; native 65816 is OK!
+
+#ifdef	SUPPORT
 	CMP #'B'			; generic 65C02
 		BEQ ll_valid		; also OK but bank 0 only
 	CMP #'N'			; old NMOS
 		BEQ ll_valid		; if neither this one, unsupported CPU type!
+#endif
+
 ll_wrap:
 	_ERR(INVALID)		; unsupported CPU
+
+#ifdef	SUPPORT
 ll_valid:
 ; *** CPU-type is compatible but has 8-bit code, this would only work at bank zero! ***
 	LDX ex_pt+2		; check bank
 		BNE ll_wrap		; outside 0, not for this!
+#endif
+
 ll_native:
 ; either is 65816 code or 02 in bank 0
 	STA cpu_ll			; set CPU type, now will not matter whether XIP or not!
@@ -966,7 +984,7 @@ ll_native:
 ; *********************************
 ;		INPUT
 ; Y			= dev
-; str_pt	= 24b pointer to string (might be altered!) 24-bit ready!
+; str_pt	= 24b pointer to string (might be altered!) ZP corrected!
 ;		OUTPUT
 ; C = device error
 ;		USES iol_dev and whatever the driver takes
@@ -981,12 +999,23 @@ string:
 	PHB					; eeeeeeeeek
 	PHK					; zero into stack
 	PLB					; set DBR! do not forget another PLB upon end!
+
+#ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
 	BEQ str_24b			; 24-bit enabled
 		STZ str_pt+2		; ...or bank 0!
-; *** special corrections no longer needed in case the pointer is in direct page! ***
+		LDA str_pt+1		; was zeropage?
+		BNE str_24b		; no, proceed
+			TDC			; ...or get context
+;			ADC str_pt		; add base if not aligned, C was clear
+;			STA str_pt		; store pointer LSB
+			XBA			; MSB only, assume page-aligned
+;			ADC #0			; progagate carry and reclear C
+			STA str_pt+1		; correct pointer
 str_24b:
+#endif
+
 ; proceed
 	TYA					; set flags upon devnum (2)
 	BNE str_port		; not default (3/2)
@@ -1071,7 +1100,7 @@ str_err:
 ; ******************************
 ;		INPUT
 ; Y			= device
-; str_pt	= 24b pointer to buffer (24-bit mandatory)
+; str_pt	= 24b pointer to buffer, ZP corrected
 ; ln_siz	= max offset
 ;		OUTPUT
 ; C = some error
@@ -1081,12 +1110,23 @@ str_err:
 readLN:
 	.as: .xs: SEP #$30	; *** standard register size ***
 ; no need to switch DBR as regular I/O calls would do it
+
+#ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816 eeeeeeeeeek
 	BEQ rl_24b			; 24-bit enabled
 		STZ str_pt+2		; ...or bank 0 only
-; *** special corrections no longer needed in case the pointer is in direct page! ***
+		LDA str_pt+1		; zeropage?
+		BNE rl_24b		; do not correct...
+			TDC			; ...or get context
+;			ADC str_pt		; add base if not aligned, C was clear
+;			STA str_pt		; set LSB
+			XBA			; MSB only (assume page aligned)
+;			ADC #0			; propagate carry, C will clear
+			STA str_pt+1		; correct pointer
 rl_24b:
+#endif
+
 	STY rl_dev			; preset device ID!
 	STZ rl_cur			; reset variable
 rl_l:
