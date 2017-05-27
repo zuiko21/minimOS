@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.5.1rc1
-; last modified 20170511-1048
+; v0.6a1
+; last modified 20170527-1553
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -213,10 +213,10 @@ cmd_term:
 	BNE bad_cmd			; otherwise has garbage! No need for BRA
 
 ; *** this entry point has to discard return address as will be issued as command ***
-; could be just replaced by jumping to _unrecognised
+_unrecognised:
 ;bad_opr:
-;		PLA
-;		PLA
+		PLA
+		PLA
 ; *** standard entry point for syntax error (within monitor commands) ***
 bad_cmd:
 	LDA #>err_bad		; address of error message
@@ -1312,11 +1312,6 @@ set_DP:
 	STX _dp+1
 	RTS
 
-; **** Unrecognised command ****
-_unrecognised:
-	PLA					; discard main loop return address
-	PLA
-	JMP $FFFF &  bad_cmd			; show error message and continue
 
 ; *** useful routines ***
 ; ** basic output and hexadecimal handling **
@@ -1627,7 +1622,7 @@ cmd_ptr:
 
 ; *** strings and other data ***
 splash:
-	.asc	"minimOS 0.5.1 monitor/debugger/assembler", CR
+	.asc	"minimOS 0.6a1 monitor/debugger/assembler", CR
 	.asc	"(c) 2016-2017 Carlos Santisteban", CR
 #ifdef	SAFE
 	.asc	"Type opcodes or .command, .? for help", CR

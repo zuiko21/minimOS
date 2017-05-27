@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.5.1rc3
-; last modified 20170511-1416
+; v0.6a1
+; last modified 20170527-1603
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -36,8 +36,8 @@ montitle:
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7200		; time, 14.16
-	.word	$4AAB		; date, 2017/5/11
+	.word	$8000		; time, 16.00
+	.word	$4ABB		; date, 2017/5/27
 
 	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
 

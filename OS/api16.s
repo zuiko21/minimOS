@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a6, should match kernel16.s
+; v0.6a7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170526-0912
+; last modified 20170528-1551
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -257,8 +257,8 @@ ci_rnd:
 ; C		= not enough memory/corruption detected
 ;		USES ma_ix.b and, in the future, ma_lim
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
-; * MUST limit 6502 blocks to "current" bank!!! * TO DO * currently limits to bank zero
-; otherwise it is 02-savvy already
+; MUST limit 6502 blocks to bank zero
+; 02-savvy, then
 ; think about managing the multiple exit points as this is a rather slow function
 
 malloc:
@@ -273,17 +273,14 @@ malloc:
 ; *** since currently just limits 6502 requests to bank zero, no need to preset the unimplemented limits ***
 	LDY run_arch		; zero for native 65816, respect X as it holds zero
 	BEQ ma_24b			; OK for 24b addressing
-;		PLY					; otherwise get saved bank, respecting X...
-;		PHY					; ...restore it...
-;		STY ma_lim			; ...and set as only feasible bank
-;		STY ma_lim+1		; maximum (MSB) is the same as minimum (LSB)
+		LDY #0				; ...or just 0 for 6502
 		STX ma_rs+2			; clear bank just in case!
 		BRA ma_go			; continue
 ma_24b:
-;	LDA #$FF00			; full range of banks
-;	STA ma_lim			; set unrestricted limits
+	LDY #$FF			; full range of banks
 ma_go:
 ; limits set, proceed as usual
+	STY ma_lim			; set limit
 	LDY ma_rs			; check individual bytes, just in case
 	BEQ ma_nxpg			; no extra page needed
 		INC ma_rs+1			; otherwise increase number of pages
@@ -338,6 +335,7 @@ ma_scan:
 		SBC ram_pos, X		; subtract current for size! (2+5)
 		BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
 ma_corrupt:
+; recreate a valid memory map, should use GESTALT instead
 			LDX #>user_sram		; beginning of available ram, as defined... in rom.s
 			LDY #<user_sram		; LSB misaligned?
 			BEQ ma_zlsb			; nothing to align
@@ -414,6 +412,8 @@ ma_updt:
 	STA ram_pid, X		; store PID, interleaved array will apply some offset
 ; theoretically we are done, end of CS
 ; ****** temporary code for limiting 6502 requests to bank zero! ******
+; should stop loops somewhere upon exceeding ma_lim
+; in case of  size 0, set as 1 bank!
 	LDA run_arch		; get architecture
 	BEQ ma_bankOK		; native 65816 means no trouble
 		LDA ma_pt+2			; otherwise check out assigned bank
@@ -500,9 +500,7 @@ free:
 ; check architecture in order to discard bank address
 	LDY run_arch		; will be zero for native 65816, please respect X!
 	BEQ fr_24b			; 24-bit enabled
-		PLY					; otherwise get stored caller bank...
-		PHY					; ...restore it...
-		STY ma_pt+2			; ...and use as default
+		STZ ma_pt+2			; otherwise is bank 0!
 fr_24b:
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
 fr_loop:
@@ -679,33 +677,10 @@ exec_st:
 ; *** do the EOR trick for easy API architecture detection ***
 	EOR #'V'			; ** will be zero only for native **
 	STA run_arch		; set as current, no longer long addressing!
-	BEQ exec_long		; native 816 is OK with standard return address
-; 02 code, unless running on bank 0, will push the special wrapper return
-		TXA					; check bank for a moment
-		BEQ exec_long		; no use for wrapper as already running in bank 0
-; should somehow check whether a suitable wrapper is already installed at that bank!
-; perhaps this is the place for the installation code!
-; *** TO DO *** reserve that page if not already in use *** TO DO ***
-			STX ex_wr+2			; bank for destination pointer
-			LDA #$FF			; fixed MSB
-			LDY #$C0			; fixed LSB eeeeek
-			STA ex_wr+1			; store pointer
-			STY ex_wr
-			LDY #wrap_end-wrapper-1	; max wrapper offset
-ex_wloop:
-				LDA wrapper, Y			; get sample, cannot use long! *** multikernel-savvy
-				STA [ex_wr], Y			; copy into wrapper
-				DEY						; next
-				BPL ex_wloop
-; *** end of wrapper installing code ***
-		PHX					; in case 6502 blob was assembled for 816, RTL will need bank
-		PEA $FFC3			; ONE LESS from return address, will return to a LONG jump to SIGKILL
-		BRA exec_pea		; stack is ready
-exec_long:
+; as 6502 code will not run beyond bank 0, no need for wrappers etc!
 ; now will push the standard SIGKILL return address
 	PHK					; push return bank address, actually zero (3) no matter the architecture!
 	PEA sig_kill-1		; push corrected return address (5)
-exec_pea:
 ; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
 	STZ mm_sterm+2		; clear standard bank, but respect hibyte!
 	.al: REP #$20		; *** worth going 16-bit memory ***
@@ -741,7 +716,6 @@ sig_kill:
 #endif
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
-; what about 6502 wrappers???
 ; * assume 8-bit sizes *
 	LDX #3				; number of bytes for pointer
 sk_loop:				; *** this code valid for singletask 816 ***
@@ -813,7 +787,9 @@ status:
 	LDY #BR_RUN			; single-task systems are always running
 ; *** might need to add CPU info inside ***
 ;	LDA run_arch		; get running arch
-;	EOR #$FF			; EOR trick reversed!
+;	EOR #'V'			; EOR trick reversed!
+;	ASL				; SIGTERM flag savvy?
+;	AND #%00111111			; room for status flags
 ;	ORA #BR_RUN			; add mandatory flags
 ;	TAY
 sig_exit:
@@ -837,14 +813,11 @@ set_handler:
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDA ex_pt			; get pointer
+	LDX ex_pt+2			; please, take bank too
 ; must check for 02 code in order to get bank from current DBR!
 	LDY run_arch		; check current code
-	BEQ st_sh16			; if native, bank is set
-		PHB					; otherwise get current *** find another way for multitasking!
-		PLX					; get it on reg
-		BRA st_shset		; no need to load
-st_sh16:
-	LDX ex_pt+2			; please, take bank too
+	BEQ st_shset			; if native, bank is set
+		LDX #0				; otherwise is in bank 0!
 st_shset:
 	STA @mm_sterm		; store in single variable, 24-bit addr!
 	.as: SEP #$20		; *** back to 8-bit ***
@@ -966,18 +939,19 @@ ll_found:
 	INY					; next byte is CPU type then
 	LDA [rh_scan], Y	; get it
 	CMP #'V'			; Rockwell is the only unsupported type! but look for any other 65xx option
-		BEQ ll_native		; native 65816 is OK! 
+		BEQ ll_native		; native 65816 is OK!
 	CMP #'B'			; generic 65C02
-		BEQ ll_valid		; also OK but will need a suitable wrapper
+		BEQ ll_valid		; also OK but bank 0 only
 	CMP #'N'			; old NMOS
 		BEQ ll_valid		; if neither this one, unsupported CPU type!
 ll_wrap:
 	_ERR(INVALID)		; unsupported CPU
 ll_valid:
-; *** CPU-type is compatible but has 8-bit code, this should install 64-byte wrapper at end of bank, or limit to bank zero! ***
-; no longer limited to bank zero...
+; *** CPU-type is compatible but has 8-bit code, this would only work at bank zero! ***
+	LDX ex_pt+2		; check bank
+		BNE ll_wrap		; outside 0, not for this!
 ll_native:
-; either is 65816 code or 02 with a suitable wrapper
+; either is 65816 code or 02 in bank 0
 	STA cpu_ll			; set CPU type, now will not matter whether XIP or not!
 	.al: REP #$20		; *** 16-bit memory again ***
 	LDA rh_scan+1		; get pointer MSB+BANK
@@ -1010,25 +984,9 @@ string:
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
 	BEQ str_24b			; 24-bit enabled
-		PLX					; otherwise get stored caller bank...
-		PHX					; ...restore it...
-		STX str_pt+2		; ...and use as default
-; *** special corrections are needed in case the pointer is in direct page! ***
-		LDX str_pt+1		; get page number without bank...
-		BNE str_ndp			; outside DP, nothing more to correct
-			STZ str_pt+2		; otherwise clear bank (STX will do)
-			BRA str_dp			; we know we asked for direct page
+		STZ str_pt+2		; ...or bank 0!
+; *** special corrections no longer needed in case the pointer is in direct page! ***
 str_24b:
-	LDA str_pt+1		; check MSB
-	ORA str_pt+2		; beware of bank!
-	BNE str_ndp			; not direct page is already OK
-str_dp:
-		.al: REP #$20		; *** 16-bit memory ***
-		TDC					; context address
-		ADC str_pt			; add to requested offset (C is clear)
-		STA str_pt			; correct pointer
-		.as: SEP #$20		; *** back to 8-bit ***
-str_ndp:
 ; proceed
 	TYA					; set flags upon devnum (2)
 	BNE str_port		; not default (3/2)
@@ -1126,27 +1084,9 @@ readLN:
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816 eeeeeeeeeek
 	BEQ rl_24b			; 24-bit enabled
-		PHB					; otherwise get (current) caller bank...
-		PLA					; ...get its value...
-		STA str_pt+2		; ...and use as default in pointer
-; *** special corrections are needed in case the pointer is in direct page! ***
-		LDX str_pt+1		; get page number without bank... respecting Y!
-		BNE rl_ndp			; outside DP, nothing more to correct
-			STZ str_pt+2		; otherwise clear bank (STX will do)
-			.al: REP #$20		; *** 16-bit memory ***
-			BRA rl_dp			; we know we asked for direct page
+		STZ str_pt+2		; ...or bank 0 only
+; *** special corrections no longer needed in case the pointer is in direct page! ***
 rl_24b:
-	.al: REP #$20		; *** 16-bit memory ***
-	LDA str_pt+1		; check MSB, beware of bank anyway
-	BNE rl_ndp8			; not direct page is already OK
-rl_dp:
-		CLC					; eeeeeeeeeeeeeeeeeeeeeeeeeek
-		TDC					; current context
-		ADC str_pt			; compute address, C was clear
-		STA str_pt			; update pointer
-rl_ndp8:
-	.as: SEP #$20		; *** back to 8-bit ***
-rl_ndp:
 	STY rl_dev			; preset device ID!
 	STZ rl_cur			; reset variable
 rl_l:
@@ -1447,14 +1387,6 @@ tsi_str:
 	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEK
 tsi_end:
 ; end of stack frame for easier size computation
-
-wrapper:
-; function-call entry point for 6502 code running outside bank 0
-	CLC					; standard firmware wrapper, not worth taking from firmware
-	COP #$FF
-	RTS
-	JMP @sig_kill		; direct jump to sigkill routine, MUST be at $FFC4
-wrap_end:				; for size computation
 
 ; ****************************
 ; *** end of kernel tables ***
