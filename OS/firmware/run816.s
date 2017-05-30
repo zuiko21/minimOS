@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6a2
+; v0.9.6a3
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170524-1305
+; last modified 20170530-1957
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -344,18 +344,18 @@ fw_admin:
 	.word	fw_gestalt	; GESTALT get system info (renumbered)
 	.word	fw_s_isr	; SET_ISR set IRQ vector
 	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
-	.word	unimplemented	; *** SET_BRK set debugger, new 20170517
-	.word	unimplemented	; *** JIFFY set jiffy IRQ speed, ** TBD **
-	.word	unimplemented	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
+	.word	fw_s_brk	; *** SET_BRK set debugger, new 20170517
+	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
+	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
 	.word	fw_power	; POWEROFF power-off, suspend or cold boot
-	.word	unimplemented	; *** FREQ_GEN	frequency generator hardware interface, TBD
+	.word	fw_fgen		; *** FREQ_GEN frequency generator hardware interface, TBD
 
 ; not for LOWRAM systems
 	.word	fw_install	; INSTALL copy jump table
 	.word	fw_patch	; PATCH patch single function (renumbered)
-	.word	unimplemented	; CONTEXT context bankswitching
+	.word	fw_ctx		; *** CONTEXT context bankswitching
 
 ; these already OK for 65816!
 ; *** minimOS·16 BRK handler *** might go elsewhere
@@ -366,6 +366,7 @@ brk_hndl:		; label from vector list
 	PHX
 	PHY
 	PHB						; eeeeeeeeeek (3)
+; must use some new indirect jump, as set by new SET_BRK
 ;	JSR brk_handler			; standard label from IRQ
 	.al: .xl: REP #$30		; just in case (3)
 	PLB						; eeeeeeeeeeeek (4)
@@ -390,12 +391,10 @@ cop_hndl:		; label from vector list
 	CLC					; pre-clear carry
 	COP #$FF			; wrapper on 816 firmware!
 	RTS					; return to caller
-; ****** sample for wrapper outside bank zero for minimOS·65 ******
-; ** should be at $xxFFC4 **
-	RTL					; much simpler approach, just push $FFC4 above regular SIGKILL address
+; *** no longer a wrapper outside bank zero for minimOS·65 ***
 
 ; ****** idea for 65816 admin-call interface from apps! ******
-; ** should be at $00FFC8 **
+; ** could be at $00FFC8 **
 ;	JSR admin_call		; get into firmware interface (returns via RTS)
 ;	RTL					; get back into original task (called via JSL $00FFC8)
 ; ****** likely to end at $00FFCD ******
