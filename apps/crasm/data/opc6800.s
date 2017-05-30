@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170501-1558
+; last modified 20170530-1936
 
 ; ***** for 68asm MC6800 cross assembler *****
 ; basic 6800 set
@@ -277,5 +277,5 @@
 	.asc	"ADD B ", '&'+$80	; $FB=ADD B ext
 	.asc	"?", ' '+$80	; $FC=?
 	.asc	"?", ' '+$80	; $FD=?
-	.asc	"LDX B ", '&'+$80	; $FE=LDX B ext
-	.asc	"STX B ", '&'+$80	; $FF=STX B ext
+	.asc	"LDX ", '&'+$80	; $FE=LDX ext
+	.asc	"STX ", '&'+$80	; $FF=STX ext

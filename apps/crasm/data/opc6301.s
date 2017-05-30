@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170506-1036
+; last modified 20170530-1937
 
 ; ***** for 68asm MC6800 cross assembler *****
 ; Hitachi 6301/6303 set
@@ -277,5 +277,5 @@
 	.asc	"ADD B ", '&'+$80	; $FB=ADD B ext
 	.asc	"LDD ", '&'+$80		; $FC=LDD ext	MC6801
 	.asc	"STD ", '&'+$80		; $FD=STD ext	MC6801
-	.asc	"LDX B ", '&'+$80	; $FE=LDX B ext
-	.asc	"STX B ", '&'+$80	; $FF=STX B ext
+	.asc	"LDX ", '&'+$80	; $FE=LDX ext
+	.asc	"STX ", '&'+$80	; $FF=STX ext
