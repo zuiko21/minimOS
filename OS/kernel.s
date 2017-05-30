@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a3
+; v0.6a4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170523-1040
+; last modified 20170530-1109
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a3", 0	; version in comment
+	.asc	"minimOS 0.6a4", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -188,13 +188,15 @@ dr_chk:
 			BCC dr_ntsk			; skip verification if task not enabled
 				LDY queues_mx-1, X	; get current tasks in queue
 				CPY #MAX_QUEUE		; room for another?
-					BCS dr_abort			; did not checked OK
+				BCC dr_ntsk			; yeah!
+dr_nabort:
+					JMP dr_abort		; or did not checked OK
 dr_ntsk:
 			DEX					; let us check next feature
 			BNE dr_chk
 ; if arrived here, there is room for interrupt tasks, but check init code
 		JSR dr_icall		; call routine (6+...)
-			BCS dr_abort		; no way, forget about this
+			BCS dr_nabort		; no way, forget about this
 ; *** 4) driver should be OK to install, just check whether this ID was not in use ***
 		LDA dr_id			; retrieve saved ID
 
@@ -275,6 +277,7 @@ dr_limit:	CPY drv_num			; all done? (4)
 		STA dte_ptr+1
 ; all set now, now easier to use a loop
 		LDX #1				; index for periodic queue (2)
+/*
 dr_iqloop:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_noten		; skip installation if task not enabled
@@ -307,8 +310,8 @@ dr_neqnw:
 ; continue into async queue
 			JSR dr_nextq		; go for next queue
 			DEX					; now 0, index for async queue (2)
-			JPL dr_iqloop
-
+			BPL dr_iqloop		; eeeeek
+*/
 ; *** 6) continue initing drivers ***
 		_BRA dr_next		; if arrived here, did not fail initialisation
 
@@ -384,6 +387,7 @@ dnq_nw:
 	STA sysptr			; eeeeeeeeeeek
 	BCC dnq_snw			; no carry...
 		INC sysptr+1		; ...or update MSB
+dnq_snw:
 	RTS
 
 ; * routine for copying a pointer from header into a table *
@@ -491,7 +495,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a3", 0
+	.asc	"minimOS 0.6a4", 0
 #endif
 
 kern_end:		; for size computation

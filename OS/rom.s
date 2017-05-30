@@ -169,6 +169,3 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 #ifdef	C816
 #include "shell/miniMoDA16.s"
 #endif
-
-; now there is some support for 02 code outside bank 0!
-#include "../apps/crasm/68asm.s"

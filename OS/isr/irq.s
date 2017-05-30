@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.5.1a3, should match kernel.s
+; v0.6a1, should match kernel.s
 ; features TBD
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170316-1220
+; last modified 20170530-1107
 
 #define		ISR		_ISR
 
@@ -30,7 +30,8 @@
 
 ; *** async interrupt otherwise ***
 ; execute D_REQ in drivers (7 if nothing to do, 3+28*number of drivers until one replies, plus inner codes)
-	LDX dreq_mx		; get queue size (4)
+; *** should be rewritten for new 0.6 functionality ***
+	LDX queues_mx	; get queue size (4)
 	BEQ ir_done		; no drivers to call (2/3)
 i_req:
 		_PHX				; keep index! (3)
@@ -48,6 +49,7 @@ ir_done:
 	BEQ isr_done		; spurious interrupt! (2/3)
 		JSR brk_handler		; BRK otherwise (6/0)
 ; go away (18 total)
+second:
 isr_done:
 	_PLY	; restore registers (3x4 + 6)
 	_PLX
@@ -59,8 +61,6 @@ ir_call:
 	_JMPX(drv_async-2)	; address already computed, no return here, new offset 20151029
 ip_call:
 	_JMPX(drv_poll)
-is_call:
-	_JMPX(drv_sec)
 
 ; *** here goes the periodic interrupt code *** (4)
 periodic:
@@ -70,7 +70,7 @@ periodic:
 
 ; execute D_POLL code in drivers
 ; 7 if nothing to do, typically 6+26 clocks per entry (not 62!) plus inner codes
-	LDX dpoll_mx		; get queue size (4)
+	LDX queues_mx+1		; get queue size (4)
 	BEQ ip_done			; no drivers to call (2/3)
 i_poll:
 		DEX					; go backwards to be faster! (2+2)
@@ -101,19 +101,7 @@ isr_nw:
 	INC ticks+3			; 256 more seconds (6)
 		BNE second			; no wrap (3/2)
 	INC ticks+4			; 64k more seconds (6)
-; execute D_SEC code if applies, take it much easier! (7 if none, 5+26*drivers, plus inner codes)
-; to be done - balancing into, say, 8 time slots
-second:
-	LDX dsec_mx			; get queue size (4)
-		BEQ isr_done		; no drivers to call (2/3)
-i_sec:
-		DEX					; go backwards to be faster! (2x2)
-		DEX
-		_PHX				; keep index! (3)
-		JSR is_call			; call from table (12...)
-		_PLX				; restore index (4)
-		BNE i_sec			; until zero is done (3/2)
-	BEQ isr_done		; go away, no need for BRA if not called from elsewhere (3)
+	_BRA isr_done		; go away (3)
 
 ; *** BRK handler ***
 brk_handler:			; should end in RTS anyway, 20160310

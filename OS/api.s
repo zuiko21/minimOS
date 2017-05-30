@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a5, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170530-1001
+; last modified 20170530-1102
 
 ; no way for standalone assembly...
 
@@ -171,14 +171,7 @@ ci_signal:
 ; continue after having filtered the error
 		LDY #EMPTY			; no character was received
 		SEC					; eeeeeeeek
-		BCS cio_unlock		; release device and exit!
-
-; *** for 02 systems without indexed CALL ***
-co_call:
-	_JMPX(drv_opt)		; direct jump to output routine
-
-ci_call:
-	_JMPX(drv_ipt)		; direct jump to input routine
+		JMP cio_unlock		; release device and exit!
 
 ; logical devices management, * placeholder *
 ci_nph:
@@ -207,6 +200,13 @@ ci_rnd:
 	STA io_c			; eeeeeeeeeeeeeeeeek
 ci_ok:
 	_EXIT_OK
+
+; *** for 02 systems without indexed CALL ***
+co_call:
+	_JMPX(drv_opt)		; direct jump to output routine
+
+ci_call:
+	_JMPX(drv_ipt)		; direct jump to input routine
 
 
 ; ******************************
