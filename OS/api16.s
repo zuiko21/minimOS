@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a7, should match kernel16.s
+; v0.6a8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170528-1709
+; last modified 20170530-0906
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -272,11 +272,10 @@ malloc:
 
 #ifdef	SUPPORT
 ; detect caller architecture in order to enable 24-bit addressing
-; *** since currently just limits 6502 requests to bank zero, no need to preset the unimplemented limits ***
 	LDY run_arch		; zero for native 65816, respect X as it holds zero
 	BEQ ma_24b			; OK for 24b addressing
-		LDY #0				; ...or just 0 for 6502
-		STX ma_rs+2			; clear bank just in case!
+		LDY #0				; ...or just bank 0 for 6502
+		STX ma_rs+2			; clear number of banks just in case!
 		BRA ma_go			; continue
 ma_24b:
 	LDY #$FF			; full range of banks
@@ -432,6 +431,7 @@ ma_updt:
 ma_bankOK:
 #endif
 ; **** end of temporary code, remove as soon as properly handled!! ****
+
 	PLB					; restore!
 	_EXIT_OK
 
@@ -486,7 +486,7 @@ ma_room:
 ; **** FREE,  release memory ****
 ; *******************************
 ;		INPUT
-; ma_pt = 24b addr
+; ma_pt = 24b addr (cannot point to direct page)
 ;		OUTPUT
 ; C = no such used block
 ;
@@ -577,7 +577,7 @@ fr_join:
 ;		INPUT
 ; w_rect	= 16b size VV.HH
 ; w_rect+2	= 16b pos VV.HH
-; str_pt	= 24b pointer to title string, NONE yet used
+; str_pt	= 24b pointer to title string, NONE yet used (SHOULD be DP-savvy)
 ;		OUTPUT
 ; Y = dev
 ; C = not supported/not available
@@ -813,7 +813,7 @@ sig_exit:
 ; **************************************************************
 ;		INPUT
 ; Y		= PID (0 means to myself)
-; ex_pt = 24b SIGTERM handler routine (ending in RTI!)
+; ex_pt = 24b SIGTERM handler routine ending in RTI!
 ;		OUTPUT
 ; C		= bad PID
 
@@ -825,7 +825,7 @@ set_handler:
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDA ex_pt			; get pointer
-	LDX ex_pt+2			; please, take bank too
+	LDX ex_pt+2			; 65816 takes bank too
 
 #ifdef	SUPPORT
 ; must check for 02 code in order to preset bank!
@@ -879,14 +879,14 @@ load_link:
 	LDA @run_arch		; will be zero for native 65816 but with extra byte!
 	TAX					; filter out MSB to get proper value eeeeeeeeeek
 	BEQ ll_24b			; 24-bit enabled
-		LDX #0					; ...or take a 0...
+		LDX #0				; ...or take a 0...
 		STX str_pt+2		; ...and use as default bank
 ; *** special corrections are needed in case the pointer is in direct page! ***
 		LDX str_pt+1		; get page number without bank...
 		BNE ll_24b			; outside DP, nothing more to correct
 			TDC					; current context location
 			ADC str_pt			; compute actual address (C was clear per ABI)
-			STA str_pt			; store corrected value
+			STA str_pt			; store corrected value, 6502 caller should update its local MSB at least!
 ll_24b:
 #endif
 
@@ -949,7 +949,7 @@ ll_found:
 	INY					; next byte is CPU type then
 	LDA [rh_scan], Y	; get it
 	CMP #'V'			; Rockwell is the only unsupported type! but look for any other 65xx option
-		BEQ ll_native		; native 65816 is OK!
+		BEQ ll_native		; native 65816 is fine!
 
 #ifdef	SUPPORT
 	CMP #'B'			; generic 65C02
@@ -964,12 +964,12 @@ ll_wrap:
 #ifdef	SUPPORT
 ll_valid:
 ; *** CPU-type is compatible but has 8-bit code, this would only work at bank zero! ***
-	LDX ex_pt+2		; check bank
-		BNE ll_wrap		; outside 0, not for this!
+	LDX ex_pt+2			; check bank
+		BNE ll_wrap			; outside 0, not for this kind of code!
 #endif
 
 ll_native:
-; either is 65816 code or 02 in bank 0
+; either is 65816 code anywhere, or 6502 in bank 0
 	STA cpu_ll			; set CPU type, now will not matter whether XIP or not!
 	.al: REP #$20		; *** 16-bit memory again ***
 	LDA rh_scan+1		; get pointer MSB+BANK
@@ -1006,12 +1006,12 @@ string:
 	BEQ str_24b			; 24-bit enabled
 		STZ str_pt+2		; ...or bank 0!
 		LDA str_pt+1		; was zeropage?
-		BNE str_24b		; no, proceed
-			TDC			; ...or get context
-;			ADC str_pt		; add base if not aligned, C was clear
-;			STA str_pt		; store pointer LSB
-			XBA			; MSB only, assume page-aligned
-;			ADC #0			; progagate carry and reclear C
+		BNE str_24b			; no, proceed
+			TDC					; ...or get context
+;			ADC str_pt			; add base if not aligned, C was clear
+;			STA str_pt			; store pointer LSB
+			XBA					; MSB only, assume page-aligned
+;			ADC #0				; progagate carry and reclear C *** is this really needed???
 			STA str_pt+1		; correct pointer
 str_24b:
 #endif
@@ -1063,13 +1063,13 @@ str_wait:
 	LDA cio_lock, X		; *check whether THAT device in use (4)
 	BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-		_KERNEL(B_YIELD)		; give way... *** could be patched
+		_KERNEL(B_YIELD)	; give way... *** could be patched
 		BRA str_wait		; try again! (3)
 str_lckd:
 	LDA run_pid			; who am I?
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
-; continue with mutually exclusive COUT code
+; continue with mutually exclusive code
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
 str_loop:
@@ -1100,7 +1100,7 @@ str_err:
 ; ******************************
 ;		INPUT
 ; Y			= device
-; str_pt	= 24b pointer to buffer, ZP corrected
+; str_pt	= 24b pointer to buffer, ZP corrected!
 ; ln_siz	= max offset
 ;		OUTPUT
 ; C = some error
@@ -1117,12 +1117,12 @@ readLN:
 	BEQ rl_24b			; 24-bit enabled
 		STZ str_pt+2		; ...or bank 0 only
 		LDA str_pt+1		; zeropage?
-		BNE rl_24b		; do not correct...
-			TDC			; ...or get context
-;			ADC str_pt		; add base if not aligned, C was clear
-;			STA str_pt		; set LSB
-			XBA			; MSB only (assume page aligned)
-;			ADC #0			; propagate carry, C will clear
+		BNE rl_24b			; do not correct...
+			TDC					; ...or get context
+;			ADC str_pt			; add base if not aligned, C was clear
+;			STA str_pt			; set LSB
+			XBA					; MSB only (assume page aligned)
+;			ADC #0				; propagate carry, C will clear *** is this really needed???
 			STA str_pt+1		; correct pointer
 rl_24b:
 #endif
@@ -1299,7 +1299,7 @@ sd_loop:
 ; get address index
 		LDA drivers_ad, X	; get address from original list
 			BEQ sd_done			; no more drivers to shutdown!
-		STA sysptr			; store temporarily
+		STA sysptr			; store temporarily (as needed by dr_call)
 ; will no longer check for successful installation, BYE routine gets called anyway
 		PHX					; save index for later
 		PHP					; and register size, just in case!
@@ -1318,11 +1318,11 @@ sd_done:
 
 
 ; ***************************************************************
-; *** TS_INFO, get taskswitching info for multitasking driver *** REVISE ASAP ******
+; *** TS_INFO, get taskswitching info for multitasking driver ***
 ; ***************************************************************
 ;		OUTPUT
 ; Y		= number of bytes
-; ex_pt = pointer to the proposed stack frame (surely in bank 0)
+; ex_pt = 16b pointer to the proposed stack frame (certainly in bank 0)
 
 ts_info:
 	.xs: SEP #$10			; *** standard index size ***
@@ -1393,7 +1393,7 @@ rls_oth:
 ; ***********************************************************
 ;		INPUT
 ; Y			= PID
-; cpu_ll	= architecture (0=65816, 2=Rockwell, 4=65C02, 6=NMOS)
+; cpu_ll	= architecture (0=65816, 2=Rockwell, 4=65C02, 6=NMOS... or at least 0 for 65816)
 ;		OUTPUT
 ; Y			= preset PID (must respect it!)
 ; affects internal sysvars run_pid & run_arch
@@ -1422,9 +1422,9 @@ sd_tab:					; check order in abi.h!
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.byt	>isr_sched_ret-1	; corrected reentry address **standard label**
-	.byt	<isr_sched_ret-1	; note reversed pointer eeeeeeeeeeek
-	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEK
+	.word	isr_sched_ret-1	; corrected reentry address, standard label from ISR
+	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
+;	.word	0, 0, 0			; irrelevant register values
 tsi_end:
 ; end of stack frame for easier size computation
 

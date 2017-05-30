@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1241
+; last modified 20170530-0941
 
 ; no way for standalone assembly...
 
@@ -1073,7 +1073,7 @@ tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
 	.word	isr_sched_ret-1	; corrected reentry address, standard label from ISR
 	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
-	.byt	0, 0, 0			; irrelevant Y, X, A values?
+;	.byt	0, 0, 0			; irrelevant Y, X, A values?
 tsi_end:
 ; end of stack frame for easier size computation
 
