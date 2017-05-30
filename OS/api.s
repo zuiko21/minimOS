@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a4, must match kernel.s
+; v0.6a5, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170530-0941
+; last modified 20170530-1001
 
 ; no way for standalone assembly...
 
@@ -798,7 +798,7 @@ ll_wrap:
 ; *********************************
 ;		INPUT
 ; Y			= dev
-; str_pt	= pointer to string (might be altered!)
+; str_pt	= pointer to string
 ;		OUTPUT
 ; C = device error
 ;		USES iol_dev and whatever the driver takes
@@ -828,7 +828,7 @@ str_win:
 str_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
-		BEQ str_nfound		; is it NULL?
+		BNE str_nfound		; is it NULL?
 			_EXIT_OK			; /dev/null is always OK
 str_nfound:
 		_ERR(N_FOUND)		; final error otherwise
@@ -849,6 +849,8 @@ str_lckd:
 	STA cio_lock, X		; *reserve this (4)
 	_EXIT_CS			; eeeeeeeeeeeeeeeeeeeek
 ; proceed with mutually-exclusive routine
+	LDA str_pt+1		; MSB of pointer might be changed
+	PHA					; save it for later!
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
 str_loop:
@@ -864,7 +866,7 @@ str_cont:
 		_PLY				; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
-	INC str_pt+1		; otherwise increase, parameter has changed! will it have to restore parameter?
+	INC str_pt+1		; otherwise increase, parameter has changed! MUST be restored later
 	BNE str_loop		; continue, will check for termination later, no need for BRA (3)
 str_call:
 	LDX iol_dev			; get driver pointer position (3)
@@ -877,6 +879,8 @@ str_exit:
 str_abort:
 	LDX iol_dev			; retrieve driver index
 	_STZA cio_lock, X	; clear mutex
+	PLA					; restore saved MSB
+	STA str_pt+1		; needed for new API/ABI
 	RTS					; return whatever error code
 
 
@@ -888,7 +892,6 @@ str_abort:
 ; str_pt	= buffer address
 ; ln_siz	= max offset (byte)
 ;		USES rl_dev, rl_cur
-;
 
 readLN:
 	STY rl_dev			; preset device ID!

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170530-0906
+; last modified 20170530-1021
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -1011,7 +1011,7 @@ string:
 ;			ADC str_pt			; add base if not aligned, C was clear
 ;			STA str_pt			; store pointer LSB
 			XBA					; MSB only, assume page-aligned
-;			ADC #0				; progagate carry and reclear C *** is this really needed???
+;			ADC #0				; progagate carry and reclear C
 			STA str_pt+1		; correct pointer
 str_24b:
 #endif
@@ -1040,59 +1040,65 @@ str_win:
 str_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
-			BNE str_nfound		; final error otherwise
+		BNE str_nfound		; final error otherwise
 ; /dev/null is always OK
-str_exit:
-		PLB					; restore!!!
-		RTI					; end of function without errors
+			PLB					; restore!!!
+			RTI					; end of function without errors
 str_nfound:
-	LDY #N_FOUND		; unknown device
+		LDY #N_FOUND		; unknown device
 str_abort:
-	PLB					; restore!
-	JMP cio_setc		; notify error directly
+		PLB					; restore!
+		JMP cio_setc		; notify error directly
 
 ; proceed with a physical device number
 str_phys:
 ; new MUTEX eeeeeeek
 	ASL					; convert to index (2)
 	STA iol_dev			; store for indexed call! (3)
-
 ; CS not needed for MUTEX as per 65816 API
 str_wait:
-	LDX iol_dev			; restore previous status, *new style (3)
-	LDA cio_lock, X		; *check whether THAT device in use (4)
-	BEQ str_lckd		; resume operation if free (3)
+		LDX iol_dev			; restore previous status, *new style (3)
+		LDA cio_lock, X		; *check whether THAT device in use (4)
+		BEQ str_lckd		; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-		_KERNEL(B_YIELD)	; give way... *** could be patched
-		BRA str_wait		; try again! (3)
+			_KERNEL(B_YIELD)	; give way... *** could be patched
+			BRA str_wait		; try again! (3)
 str_lckd:
 	LDA run_pid			; who am I?
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; continue with mutually exclusive code
+	LDA str_pt+1		; must save MSB address in case it is modified!
+	LDX str_pt+2		; bank too
+	PHX					; put them into stack, standard order
+	PHA
 	LDY #0				; eeeeeeeek! (2)
 ; ** the actual printing loop **
 str_loop:
 		PHY					; save just in case COUT destroys it (3)
 		LDA [str_pt], Y		; get character from string, new approach, now 24-bit!
 		BNE str_cont		; not terminated! (3/2)
-			PLY					; otherwise discard saved Y (4) eeeeeeeek
+			CLC					; otherwise make sure no error is marked
 			BRA str_exit		; and go away!
 str_cont:
 		STA io_c			; store output character for COUT (3)
 		LDX iol_dev			; get driver pointer position (3)
 		JSR (drv_opt, X)	; go at stored pointer (...6)
-			BCS str_err			; return error from driver
+			BCS str_exit		; return error from driver
 		PLY					; restore index (4)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
-	INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
+			INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
 		BNE str_loop		; continue, will check for termination later (3)
-	INC str_pt+2		; in case of bank boundary crossing!
-	BRA str_loop
-str_err:
+			INC str_pt+2		; in case of bank boundary crossing!
+		BRA str_loop
+str_exit:
 	PLX					; discard saved Y while keeping error code eeeeeeeeeek^2
-	JMP cio_unlock		; otherwise return code AND clear MUTEX eeeeeeeeeek^2
+	PLA					; pop saved pointer from stack
+	PLX
+	STA str_pt+1		; must restore MSB address in case it is modified!
+	STX str_pt+2		; bank too
+	JMP cio_unlock		; return possible error code AND clear MUTEX eeeeeeeeeek^2
 
 
 ; ******************************
@@ -1122,7 +1128,7 @@ readLN:
 ;			ADC str_pt			; add base if not aligned, C was clear
 ;			STA str_pt			; set LSB
 			XBA					; MSB only (assume page aligned)
-;			ADC #0				; propagate carry, C will clear *** is this really needed???
+;			ADC #0				; propagate carry, C will clear
 			STA str_pt+1		; correct pointer
 rl_24b:
 #endif

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a4
+; v0.6a5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1241
+; last modified 20170530-1048
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -35,37 +35,37 @@ pqmanage:
 ; C = I/O error
 ;		USES da_ptr, iol_dev, plus whatever the driver takes
 
-cio_of = da_ptr		; parameter switching between CIN and COUT
+cio_of = da_ptr			; parameter switching between CIN and COUT
 ; da_ptr globally defined, cio_of not needed upon calling dr_call!
 
 cout:
-	LDA #D_COUT		; only difference from cin (2)
-	STA cio_of		; store for further indexing (3)
-	TYA				; for indexed comparisons (2)
-	BNE co_port		; not default (3/2)
-		LDA std_out		; default output device (3)
+	LDA #D_COUT			; only difference from cin (2)
+	STA cio_of			; store for further indexing (3)
+	TYA					; for indexed comparisons (2)
+	BNE co_port			; not default (3/2)
+		LDA std_out			; default output device (3)
 co_port:
-	BMI cio_phys	; not a logic device (3/2)
+	BMI cio_phys		; not a logic device (3/2)
 ; no need to check for windows or filesystem
 ; investigate rest of logical devices
-		CMP #DEV_NULL	; lastly, ignore output
-			BNE cio_nfound	; final error otherwise
-		_EXIT_OK		; "/dev/null" is always OK
+		CMP #DEV_NULL		; lastly, ignore output
+			BNE cio_nfound		; final error otherwise
+		_EXIT_OK			; "/dev/null" is always OK
 cio_phys:
-	LDX drv_num		; number of drivers (3)
-		BEQ cio_nfound	; no drivers at all! (2/3)
+	LDX drv_num			; number of drivers (3)
+		BEQ cio_nfound		; no drivers at all! (2/3)
 cio_loop:
 		CMP drivers_id-1, X	; get ID from list, notice trick (4)
-			BEQ cio_dev		; device found! (2/3)
-		DEX				; go back one (2)
-		BNE cio_loop	; repeat until end, will reach not_found otherwise (3/2)
+			BEQ cio_dev			; device found! (2/3)
+		DEX					; go back one (2)
+		BNE cio_loop		; repeat until end, will reach not_found otherwise (3/2)
 cio_nfound:
-	_ERR(N_FOUND)	; unknown device, needed before cio_dev in case of optimized loop
+	_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:
-	DEX				; needed because of backwards optimized loop (2)
-	TXA				; get index in list (2)
-	ASL				; two times (2)
-	TAX				; index for address table!
+	DEX					; needed because of backwards optimized loop (2)
+	TXA					; get index in list (2)
+	ASL					; two times (2)
+	TAX					; index for address table!
 ; unified version is 15 bytes, 20 + 29 clocks
 	LDY cio_of			; get offset (3)
 	LDA drivers_ad, X	; take table LSB (4)
@@ -86,58 +86,60 @@ cio_dev:
 ; cin_mode is a kernel variable
 
 cin:
-	LDA #D_CIN		; only difference from cout
-	STA cio_of		; store for further addition
-	TYA				; for indexed comparisons
-	BNE ci_port		; specified
-		LDA std_in		; default input device
+	LDA #D_CIN			; only difference from cout
+	STA cio_of			; store for further addition
+	TYA					; for indexed comparisons
+	BNE ci_port			; specified
+		LDA std_in			; default input device
 ci_port:
-	BPL ci_nph		; logic device
-		JSR cio_phys	; check physical devices... but come back for events! new 20150617
-			BCS ci_exit		; some error, send it back
+	BPL ci_nph			; logic device
+		JSR cio_phys		; check physical devices... but come back for events! new 20150617
+			BCS ci_exit			; some error, send it back
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
-		LDA io_c		; get received character
-		CMP #' '		; printable?
-			BCC ci_manage	; if not, might be an event
+		LDA io_c			; get received character
+		CMP #' '			; printable?
+			BCC ci_manage		; if not, might be an event
 ci_exitOK:
-		CLC				; otherwise, no error --- eeeeeeeek!
+		CLC					; otherwise, no error --- eeeeeeeek!
 ci_exit:
-		RTS				; above comparison would set carry
+		RTS					; above comparison would set carry
 ; ** continue event management **
 ci_manage:
 ; check for binary mode
-	LDY cin_mode	; get flag, new sysvar 20150617
-	BEQ ci_event	; should process possible event
-		_STZY cin_mode	; back to normal mode
-		_BRA ci_exit	; and return whatever was received
+	LDY cin_mode		; get flag, new sysvar 20150617
+	BEQ ci_event		; should process possible event
+		_STZY cin_mode		; back to normal mode
+		_BRA ci_exit		; and return whatever was received
 ci_event:
-	CMP #16			; is it DLE?
-	BNE ci_notdle	; otherwise check next
-		INC cin_mode	; set binary mode!
-		BNE ci_abort	; and supress received character, no need for BRA
+	CMP #16				; is it DLE?
+	BNE ci_notdle		; otherwise check next
+		STA cin_mode		; set binary mode! SAFER!
+		BNE ci_abort		; and supress received character, no need for BRA
 ci_notdle:
-	CMP #3			; is it ^C? (TERM)
-	BNE ci_exitOK	; otherwise there's no more to check -- only signal for single-task systems!
+	CMP #3				; is it ^C? (TERM)
+	BNE ci_exitOK		; otherwise there's no more to check -- only signal for single-task systems!
 		LDA #SIGTERM
-		STA b_sig		; set signal as parameter
-		LDY #0			; sent to all, this is the only one
-		JSR signal		; send signal FASTER
+		STA b_sig			; set signal as parameter
+#ifdef	SAFE
+		LDY #0				; sent to all, this is the only one (skimming a couple of bytes!)
+#endif
+		JSR signal			; send signal FASTER
 ci_abort:
-		_ERR(EMPTY)		; no character was received
+		_ERR(EMPTY)			; no character was received
 
 ci_nph:
 ; only logical devs, no need to check for windows or filesystem
-	CMP #DEV_RND	; getting a random number?
-		BEQ ci_rnd		; compute it!
-	CMP #DEV_NULL	; lastly, ignore input
-		BNE cio_nfound	; final error otherwise
-	_EXIT_OK		; "/dev/null" is always OK
+	CMP #DEV_RND		; getting a random number?
+		BEQ ci_rnd			; compute it!
+	CMP #DEV_NULL		; lastly, ignore input
+		BNE cio_nfound		; final error otherwise
+	_EXIT_OK			; "/dev/null" is always OK
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	LDA ticks		; simple placeholder
-	STA io_c		; eeeeeeek
+	LDA ticks			; simple placeholder
+	STA io_c			; eeeeeeek
 	_EXIT_OK
 
 
@@ -178,7 +180,7 @@ open_w:
 ow_no_window:
 get_pid:
 b_fork:
-	LDY #0			; no multitasking, system reserved PID
+	LDY #0				; no multitasking, system reserved PID
 yield:
 close_w:
 free_w:
@@ -194,20 +196,20 @@ free_w:
 ; new version is 22b / 113t
 
 uptime:
-	LDX #7			; end of destination offset (2)
-	LDY #5			; end of source pointer (2)
-	_ENTER_CS		; don't change while copying (5)
+	LDX #7				; end of destination offset (2)
+	LDY #5				; end of source pointer (2)
+	_ENTER_CS			; do not change while copying (5)
 up_loop:
-		LDA ticks, Y	; get system variable byte (4)
-		STA up_ticks, X	; and store them in output parameter (4)
-		DEX				; back one byte (2)
-		CPX #3			; already did seconds? (2)
-		BNE up_nosec	; do not skip to ticks... (3/2)
-			LDX #1			; ...until seconds are done (2)
+		LDA ticks, Y		; get system variable byte (4)
+		STA up_ticks, X		; and store them in output parameter (4)
+		DEX					; back one byte (2)
+		CPX #3				; already did seconds? (2)
+		BNE up_nosec		; do not skip to ticks... (3/2)
+			LDX #1				; ...until seconds are done (2)
 up_nosec:
-		DEY				; go for next (2)
-		BPL up_loop		; (3/2)
-	_EXIT_CS		; (4)
+		DEY					; go for next (2)
+		BPL up_loop			; (3/2)
+	_EXIT_CS			; (4)
 	_EXIT_OK
 
 
@@ -224,44 +226,46 @@ up_nosec:
 b_exec:
 ; non-multitasking version
 #ifdef	SAFE
-	TYA				; should be system reserved PID, best way
-	BEQ ex_st		; OK for single-task system
-		_ERR(NO_RSRC)	; no way without multitasking
+	TYA					; should be system reserved PID, best way
+	BEQ ex_st			; OK for single-task system
+		_ERR(NO_RSRC)		; no way without multitasking
 ex_st:
 #endif
-	LDX #SPTR		; init stack
+	LDX #SPTR			; init stack
 	TXS
-	JSR ex_jmp		; call supplied address
+	JSR ex_jmp			; call supplied address
+; *** SIGKILL standard handler ***
 sig_kill:
 ; systems without memory management have nothing to free...
-	LDA sd_flag		; some pending action?
-	BEQ rst_shell	; if not, just restart the shell
-		LDY #PW_CLEAN	; or go into second phase...
-		JSR shutdown	; ...of shutdown procedure (could use JMP)
+	LDA sd_flag			; some pending action?
+	BEQ rst_shell		; if not, just restart the shell
+		LDY #PW_CLEAN		; or go into second phase...
+		JSR shutdown		; ...of shutdown procedure (could use JMP)
 ; if none of the above, a single task system can only restart the shell!
 rst_shell:
-	LDX #SPTR		; init stack again (in case SIGKILL was called)
+	LDX #SPTR			; init stack again (in case SIGKILL was called)
 	TXS
-	JMP sh_exec		; back to kernel shell!
+	JMP sh_exec			; back to kernel shell!
+
 ex_jmp:
 ; set default SIGTERM handler! eeeeeeeeeeeeeeeeeeeeek
-	LDA #>sig_kill	; get MSB
-	LDY #<sig_kill	; and LSB
-	STY mm_sterm	; set variable
+	LDA #>sig_kill		; get MSB
+	LDY #<sig_kill		; and LSB
+	STY mm_sterm		; set variable
 	STA mm_sterm+1
 ; this is how a task should replace the shell
-	LDA #ZP_AVAIL	; eeeeeeeeeeek
-	STA z_used		; otherwise SAFE will not work
+	LDA #ZP_AVAIL		; eeeeeeeeeeek
+	STA z_used			; otherwise SAFE will not work
 ; and set default devices!!! eeeeeeeeeeeeeeeeeeeeeeek
 ; in case of LOWRAM, this will alter default global devices, is that OK?
-	LDA def_io		; standard input
-	STA std_in		; set at GLOBAL
-	LDA def_io+1	; same for output
+	LDA def_io			; standard input
+	STA std_in			; set at GLOBAL
+	LDA def_io+1		; same for output
 	STA stdout
 ; *** soon will preset registers according to new API ***
 ; at last, launch code
-	CLI				; time to do it!
-	JMP (ex_pt)		; DUH...
+	CLI					; time to do it!
+	JMP (ex_pt)			; DUH...
 
 
 ; **************************************************
@@ -286,7 +290,7 @@ signal:
 		PHP					; as required by RTI
 		JMP (mm_sterm)		; execute handler, will return to sig_exit
 sig_suic:
-	CPY #SIGKILL		; suicide, makes any sense?
+	CPY #SIGKILL		; suicide?
 		BEQ sig_kill
 sig_pid:
 	_ERR(INVALID)		; unrecognised signal
@@ -400,35 +404,35 @@ ll_found:
 	INY					; next byte is CPU type
 	LDA (rh_scan), Y	; get it
 ; check compability of supplied code against present CPU
-	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
-	CPX #'R'		; is it a Rockwell/WDC CPU?
-		BEQ ll_rock		; from R down is OK
-	CPX #'B'		; generic 65C02?
-		BEQ ll_cmos		; from B down is OK
-	CPX #'V'		; 65816 is supported but no better than a generic 65C02
+	LDX fw_cpu			; *** UGLY HACK, this is a FIRMWARE variable ***
+	CPX #'R'			; is it a Rockwell/WDC CPU?
+		BEQ ll_rock			; from R down is OK
+	CPX #'B'			; generic 65C02?
+		BEQ ll_cmos			; from B down is OK
+	CPX #'V'			; 65816 is supported but no better than a generic 65C02
 		BEQ ll_cmos
-	CPX #'N'		; old NMOS?
-	BEQ ll_nmos		; only NMOS code will do
+	CPX #'N'			; old NMOS?
+	BEQ ll_nmos			; only NMOS code will do
 		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
 ll_rock:
-	CMP #'R'		; code has Rockwell extensions?
+	CMP #'R'			; code has Rockwell extensions?
 		BEQ ll_valid
 ll_cmos:
-	CMP #'B'		; generic 65C02 code?
+	CMP #'B'			; generic 65C02 code?
 		BEQ ll_valid
 ll_nmos:
-	CMP #'N'		; every supported CPU can run NMOS code
-		BNE ll_wrap		; otherwise is code for another architecture!
+	CMP #'N'			; every supported CPU can run NMOS code
+		BNE ll_wrap			; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
-	LDA rh_scan		; get pointer LSB
-	LDY rh_scan+1	; and MSB
-	INY				; start from next page
-	STA ex_pt		; save execution pointer
+	LDA rh_scan			; get pointer LSB
+	LDY rh_scan+1		; and MSB
+	INY					; start from next page
+	STA ex_pt			; save execution pointer
 	STY ex_pt+1
 	_EXIT_OK
 ll_wrap:
-	_ERR(INVALID)	; something was wrong
+	_ERR(INVALID)		; something was wrong
 
 
 ; *********************************
@@ -442,10 +446,10 @@ ll_wrap:
 ;		USES iol_dev and whatever COUT takes
 
 string:
-	STY iol_dev		; save Y
-	LDY #0			; reset new index
-;	LDA str_pt+1	; get older MSB in case it changes
-;	PHA				; save it somewhere!
+	STY iol_dev			; save Y
+	LDY #0				; reset new index
+	LDA str_pt+1		; get older MSB in case it changes
+	PHA					; save it somewhere!
 str_loop:
 		LDA (str_pt), Y		; get character, new approach
 			BEQ str_end			; NUL = end-of-string
@@ -455,7 +459,7 @@ str_loop:
 		_KERNEL(COUT)		; call routine
 #ifdef	SAFE
 		BCC str_nerr		; extra check
-			PLA				; cleanup stack
+			PLA					; cleanup stack
 			_BRA str_exit		; return error code (and restore pointer)
 str_nerr:
 #endif
@@ -465,11 +469,11 @@ str_nerr:
 	INC str_pt+1		; next page, unfortunately
 	BNE str_loop		; no need for BRA
 str_end:
-	CLC		; no errors
+	CLC					; no errors
 str_exit:
-;	PLA		; get MSB back
-;	STA str_pt+1	; restore it
-	RTS		; return error code
+	PLA					; get MSB back
+	STA str_pt+1		; restore it
+	RTS					; return error code
 
 
 ; ******************************
