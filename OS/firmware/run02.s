@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9rc2
+; v0.9.6a1
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170511-1409
+; last modified 20170531-1014
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -17,7 +17,7 @@ fw_start:
 	.asc	"****", CR			; flags TBD
 	.asc	"boot", 0			; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9 firmware for "
+	.asc	"0.9.6 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
@@ -281,6 +281,15 @@ fwp_cold:
 fwp_susp:
 	_DR_OK				; just continue execution
 
+; *** temporary labels for unimplemented functions ***
+fw_s_brk:
+fw_jiffy:
+fw_i_src:
+fw_fgen:
+fw_ctx:
+	_DR_ERR(UNAVAIL)	; not yet implemented
+; *** end of temporary labels ***
+
 ; sub-function jump table (eeeek)
 fwp_func:
 	.word	fwp_susp	; suspend	+FW_STAT
@@ -288,15 +297,26 @@ fwp_func:
 	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	fwp_off		; poweroff	+FW_OFF
 
-; *** administrative jump table ***
-; PLEASE CHANGE ORDER ASAP
+; *********************************
+; *** administrative jump table *** changing
+; *********************************
 fw_admin:
-	.word	fw_install
-	.word	fw_s_isr
-	.word	fw_s_nmi
-	.word	fw_patch	; new order 20150409
-	.word	fw_gestalt
-	.word	fw_power
+; generic functions, esp. interrupt related
+	.word	fw_gestalt	; GESTALT get system info (renumbered)
+	.word	fw_s_isr	; SET_ISR set IRQ vector
+	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
+	.word	fw_s_brk	; *** SET_BRK set debugger, new 20170517
+	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
+	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	fw_power	; POWEROFF power-off, suspend or cold boot
+	.word	fw_fgen		; *** FREQ_GEN frequency generator hardware interface, TBD
+
+; not for LOWRAM systems
+	.word	fw_install	; INSTALL copy jump table
+	.word	fw_patch	; PATCH patch single function (renumbered)
+	.word	fw_ctx		; *** CONTEXT context bankswitching
 
 ; *** minimOS BRK handler *** might go elsewhere
 brk_hndl:		; label from vector list
@@ -313,7 +333,7 @@ brk_hndl:		; label from vector list
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9 firmware for "
+	.asc	"0.9.6 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif

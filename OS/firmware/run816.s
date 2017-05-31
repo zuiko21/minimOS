@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6a3
+; v0.9.6a4
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170530-1957
+; last modified 20170531-1014
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -16,16 +16,10 @@ fw_start:
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
 	.asc	"0.9.6 firmware for "
-#else
-fw_splash:
-#endif
-
 ; at least, put machine name as needed by firmware!
-; this cannot be waived by the NOHEAD option
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
-#ifndef	NOHEAD
 ; advance to end of header
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
@@ -329,6 +323,15 @@ fwp_cold:
 fwp_susp:
 	_DR_OK				; just continue execution
 
+; *** temporary labels for unimplemented functions ***
+fw_s_brk:
+fw_jiffy:
+fw_i_src:
+fw_fgen:
+fw_ctx:
+	_DR_ERR(UNAVAIL)	; not yet implemented
+; *** end of temporary labels ***
+
 ; sub-function jump table (eeeek)
 fwp_func:
 	.word	fwp_susp	; suspend	+FW_STAT
@@ -376,6 +379,14 @@ brk_hndl:		; label from vector list
 	RTI
 
 .as:.xs:					; otherwise might prevent code after ROM!
+
+; if case of no headers, at least keep machine name somewhere
+#ifdef	NOHEAD
+fw_splash:
+	.asc	"0.9.6 firmware for "
+fw_mname:
+	.asc	MACHINE_NAME, 0
+#endif
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
