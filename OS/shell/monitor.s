@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a2
-; last modified 20170531-1057
+; v0.6a3
+; last modified 20170531-1225
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -141,14 +141,18 @@ main_loop:
 		TAY					; just in case...
 			BEQ main_loop		; ignore blank lines!
 		STX cursor			; save cursor!
-		CMP #'Z'+1			; past last command?
+		CMP #'Y'+1			; past last command?
 			BCS bad_cmd			; unrecognised
-		SBC #'A'-1			; first available command (had borrow)
+		SBC #'?'-1			; first available command (had borrow)
 			BCC bad_cmd			; cannot be lower
 		ASL					; times two to make it index
 		TAX					; use as index
 		JSR call_mcmd		; call monitor command
 		_BRA main_loop		; continue forever
+; *** generic error handling ***
+_unrecognised:
+	PLA					; discard main loop return address
+	PLA
 bad_cmd:
 	LDA #>err_bad		; address of error message
 	LDY #<err_bad
@@ -161,11 +165,14 @@ call_mcmd:
 	_JMPX(cmd_ptr)		; indexed jump macro, supposedly from bank 0 only!
 
 ; *** command routines, named as per pointer table ***
+
+; ** .A = set accumulator **
 set_A:
 	JSR fetch_byte		; get operand in A
 	STA _a				; set accumulator
 	RTS
 
+; ** .B = store byte **
 store_byte:
 	JSR fetch_byte		; get operand in A
 	_STAY(ptr)			; set byte in memory
@@ -175,9 +182,10 @@ store_byte:
 sb_end:
 	RTS
 
+; ** .C = call address **
 call_address:
-	JSR fetch_word		; get operand address
-; now ignoring operand errors!
+	JSR fetch_value		; get operand address
+; *** please check whether at least one char was typed ***
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
@@ -199,9 +207,10 @@ call_address:
 	PLA
 	JMP get_sp			; hopefully context is OK, will restore as needed
 
+; ** .J = jump to an address **
 jump_address:
-	JSR fetch_word		; get operand address
-; now ignoring operand errors!
+	JSR fetch_value		; get operand address
+; *** please check whether at least one char was typed ***
 ; restore stack pointer...
 #ifdef	C816
 	.xl: REP #$10		; *** essential 16-bit index ***
@@ -222,6 +231,7 @@ do_call:
 	PLP					; restore status
 	JMP (tmp)			; go! might return somewhere else
 
+; ** .E = examine 'u' lines of memory **
 examine:
 	JSR fetch_word		; get address
 	LDY tmp				; save tmp elsewhere
@@ -291,16 +301,19 @@ ex_npb:
 		BNE ex_l			; continue until done
 	RTS
 
+; ** .G = set stack pointer **
 set_SP:
 	JSR fetch_byte		; get operand in A
 	STA _sp				; set stack pointer (LSB only)
 	RTS
 
+; ** .? = show commands **
 help:
 	LDA #>help_str		; help string
 	LDY #<help_str
 	JMP prnStr			; print it, and return to main loop
 
+; ** .M = move (copy) 'n' bytes of memory **
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
 
@@ -328,14 +341,29 @@ mv_l:
 mv_end:
 	RTS
 
+; ** .N = set 'n' value **
 set_count:
 	JSR fetch_word		; get operand word
-	LDY tmp				; copy LSB
+	LDA tmp				; copy LSB
+	STA siz				; into destination variable
+	PHA					; for common ending!
 	LDA tmp+1			; and MSB
-	STY siz				; into destination variable
 	STA siz+1
-	RTS
+	PHA					; to be displayed right now...
 
+; *** common ending for .N and .U ***
+; 16-bit REVERSED value on stack!
+nu_end:
+	LDA #>set_str		; pointer to rest of message
+	LDY #<set_str
+	JSR prnStr			; print that
+	PLA					; check current or updated value MSB
+	JSR prnHex			; show in hex
+	PLA					; same for LSB
+	JSR prnHex			; show in hex
+	JMP po_cr			; print trailing newline and return!
+
+; ** .O = set origin **
 origin:
 	JSR fetch_word		; get operand word
 	LDY tmp				; copy LSB
@@ -344,17 +372,21 @@ origin:
 	STA ptr+1
 	RTS
 
+; ** .P = set status register **
 set_PSR:
 	JSR fetch_byte		; get operand in A
+	ORA #$30			; *** let X & M set on 65816 ***
 	STA _psr			; set status
 	RTS
 
+; ** .Q = standard quit **
 quit:
 ; will not check any pending issues
 	PLA					; discard main loop return address
 	PLA
 	_FINISH				; exit to minimOS, proper error code
 
+; ** .S = store raw string **
 store_str:
 sstr_l:
 		INC cursor			; skip the S and increase, not INY
@@ -376,37 +408,29 @@ sstr_cr:
 sstr_end:
 	RTS
 
+; ** .U = set 'u' number of lines/instructions **
 set_lines:
 	JSR fetch_byte		; get operand in A
 	STA lines			; set number of lines
-	RTS
+	PHA					; to be displayed
+	LDA #0				; no MSB
+	PHA
+	_BRA nu_end
 
+; ** .V = view register values **
 view_regs:
 	LDA #>regs_head		; print header
 	LDY #<regs_head
 	JSR prnStr
-; PC might get printed by loop below in 20-char version
-	LDA _pc+1			; get PC MSB
-	JSR prnHex			; show it
-	LDA _pc				; same for LSB
-	JSR prnHex
-
-#ifndef	NARROW
-	LDA #' '			; space (not used in 20-char version)
-	JSR prnChar			; print it
-#endif
-
+; since _pc and ptr are the same, no need to print it!
 	LDX #0				; reset counter
 vr_l:
 		_PHX				; save index!
 		LDA _a, X			; get value from regs
 		JSR prnHex			; show value in hex
-
-#ifndef	NARROW
+; without PC being shown, narrow displays will also put regular spacing
 		LDA #' '			; space, not for 20-char
 		JSR prnChar			; print it
-#endif
-
 		_PLX				; restore index
 		INX					; next reg
 		CPX #4				; all regs done?
@@ -424,9 +448,11 @@ vr_off:
 		JSR prnChar			; prints bit
 		DEC tmp				; one less
 		BNE vr_sb			; until done
+po_cr:
 	LDA #CR				; print newline
 	JMP prnChar			; will return
 
+; ** .W = store word **
 store_word:
 	JSR fetch_word		; get operand word
 	LDA tmp				; get LSB
@@ -443,20 +469,20 @@ sw_nw:
 sw_end:
 	RTS
 
+; ** .X = set X register **
 set_X:
 	JSR fetch_byte		; get operand in A
 	STA _x				; set register
 	RTS
 
+; ** .Y = set Y register **
 set_Y:
 	JSR fetch_byte		; get operand in A
 	STA _y				; set register
 	RTS
 
-force:
-	LDY #PW_COLD		; cold boot request ** minimOS specific **
-	_BRA fw_shut		; call firmware
 
+; ** .R = reboot or shutdown **
 reboot:
 	LDY #PW_WARM		; warm boot request ** minimOS specific **
 	_BRA fw_shut		; call firmware
@@ -466,10 +492,6 @@ poweroff:
 fw_shut:
 	_KERNEL(SHUTDOWN)
 
-_unrecognised:
-	PLA					; discard main loop return address
-	PLA
-	JMP bad_cmd			; show error message and continue
 
 ; *** useful routines ***
 ; ** basic output and hexadecimal handling **
@@ -561,36 +583,16 @@ ph_n:
 ; ** end of inline library **
 
 ; * get input line from device at fixed-address buffer *
-; minimOS should have one of these in API...
-; fortunately this has no problem with zero-page bank settings...
+; new from API!
 getLine:
-	_STZX cursor			; reset variable
-gl_l:
-		LDY iodev			; use device
-		_KERNEL(CIN)		; get one character #####
-			BCS gl_l			; wait for something
-		LDA io_c			; get received
-		LDX cursor			; retrieve index
-		CMP #CR				; hit CR?
-			BEQ gl_cr			; all done then
-		CMP #BS				; is it backspace?
-		BNE gl_nbs			; delete then
-			CPX #0				; already 0?
-				BEQ gl_l			; ignore if so
-			DEC cursor			; reduce index
-			_BRA gl_echo		; resume operation
-gl_nbs:
-		CPX #BUFSIZ-1		; overflow?
-			BCS gl_l			; ignore if so
-		STA buffer, X		; store into buffer
-		INC	cursor			; update index
-gl_echo:
-		JSR prnChar			; echo!
-		_BRA gl_l			; and continue
-gl_cr:
-	JSR prnChar			; newline
-	LDX cursor			; retrieve cursor!!!!!
-	_STZA buffer, X		; terminate string
+	LDY #<buffer		; get buffer address
+	STY str_pt			; set parameter
+	_STZA str_pt+1		; it IS in zeropage!
+	LDX #BUFSIZ-1		; max index
+	STX ln_siz			; set value
+	LDY iodev			; use device
+	_KERNEL(READLN)		; get line
+; *** 16-bit API would resolve, but access from here is thru ZP opcodes ***
 	RTS					; and all done!
 
 ; * get clean character from buffer in A, cursor at X *
@@ -622,27 +624,30 @@ fetch_byte:
 
 ; * fetch more than one byte from hex input buffer *
 fetch_word:
+fetch_value:	; ****** TEMPORARY ******
 	JSR fetch_byte		; get operand in A
 	STA tmp+1			; leave room for next
 	DEX					; as will increment...
 	JSR gnc_do			; get next char!!!
 	JMP hex2byte		; get second byte, tmp is little-endian now, will return
 
-
-; *** pointers to command routines ***
+ext_bytes:
+; *** pointers to command routines (? to Y) ***
 cmd_ptr:
+	.word	help			; .?
+	.word		_unrecognised	; .@
 	.word	set_A			; .A
 	.word	store_byte		; .B
 	.word	call_address	; .C
-	.word	_unrecognised	; .D
+	.word		_unrecognised	; .D
 	.word	examine			; .E
-	.word	force			; .F
+	.word		_unrecognised	; .F
 	.word	set_SP			; .G
-	.word	help			; .H
-	.word	_unrecognised	; .I
+	.word		_unrecognised	; .H
+	.word		_unrecognised	; .I
 	.word	jump_address	; .J
-	.word	_unrecognised	; .K
-	.word	_unrecognised	; .L
+	.word	ext_bytes		; .K
+	.word		_unrecognised	; .L
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
@@ -650,13 +655,13 @@ cmd_ptr:
 	.word	quit			; .Q
 	.word	reboot			; .R
 	.word	store_str		; .S
-	.word	_unrecognised	; .T
+	.word		_unrecognised	; .T
 	.word	set_lines		; .U
 	.word	view_regs		; .V
 	.word	store_word		; .W
 	.word	set_X			; .X
 	.word	set_Y			; .Y
-	.word	poweroff		; .Z
+
 
 ; *** strings and other data ***
 #ifdef	NOHEAD
@@ -665,7 +670,7 @@ montitle:
 #endif
 
 mon_splash:
-	.asc	"minimOS 0.5.1 monitor", CR
+	.asc	"minimOS 0.6 monitor", CR
 	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 
 
@@ -673,11 +678,7 @@ err_bad:
 	.asc	"*** Bad command ***", CR, 0
 
 regs_head:
-#ifdef	NARROW
-	.asc	"PC: A:X:Y:S:NVmxDIZC", CR, 0	; for 20-char devices
-#else
-	.asc	"PC:  A: X: Y: S: NVmxDIZC", CR, 0
-#endif
+	.asc	"A: X: Y: S: NV-bDIZC", CR, 0
 
 dump_in:
 #ifdef	NARROW
@@ -689,34 +690,37 @@ dump_in:
 dump_out:
 	.asc	"] ", 0
 
+set_str:
+	.asc	"-> $", 0
+
 ; online help only available under the SAFE option!
 help_str:
 #ifdef	SAFE
 	.asc	"---Command list---", CR
-	.asc	"(d = 2 hex char.)", CR
-	.asc	"(a = 4 hex char.)", CR
-	.asc	"(s = raw string)", CR
+	.asc	"(d => 2 hex char.)", CR
+	.asc	"(a => 4 hex char.)", CR
+	.asc	"(* => up to 4 char.)", CR
+	.asc	"(s => raw string)", CR
+	.asc	"? = show this list", CR
 	.asc	"Ad = set A reg.", CR
 	.asc	"Bd = store byte", CR
-	.asc	"Ca = call subr.", CR
-	.asc	"Ea = dump 'u' lines", CR
-	.asc	"F = cold boot", CR
+	.asc	"C* = call subroutine", CR
+	.asc	"E* = dump 'u' lines", CR
 	.asc	"Gd = set SP reg.", CR
-	.asc	"H = show this list", CR
-	.asc	"Ja = jump", CR
+	.asc	"J* = jump to address", CR
+	.asc	"K* =load/save n byt.", CR
 	.asc	"Ma =copy n byt. to a", CR
-	.asc	"Na = set 'n' bytes", CR
-	.asc	"Oa = set address", CR
-	.asc	"Pd = set Status reg.", CR
+	.asc	"N* = set 'n' value", CR
+	.asc	"O* = set origin", CR
+	.asc	"Pd = set Status reg", CR
 	.asc	"Q = quit", CR
-	.asc	"R = reboot", CR
+	.asc	"R = reboot/poweroff", CR
 	.asc	"Ss = put raw string", CR
 	.asc	"Ud = set 'u' lines", CR
 	.asc	"V = view registers", CR
 	.asc	"Wa = store word", CR
 	.asc	"Xd = set X reg.", CR
 	.asc	"Yd = set Y reg.", CR
-	.asc	"Z = poweroff", CR
 #endif
 	.byt	0
 
