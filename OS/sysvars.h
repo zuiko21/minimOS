@@ -1,6 +1,6 @@
-; minimOS 0.6a2 System Variables
+; minimOS 0.6a3 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170519-1155
+; last modified 20170531-1025
 .bss
 
 ; **** I/O management ****
@@ -63,6 +63,9 @@ default_in	.byt	0	; GLOBAL default devices, EXCEPT for LOWRAM systems
 default_out	.byt	0
 ; no way for multitasking in LOWRAM systems
 run_pid		.byt	0	; current PID running for easy kernel access, will be set by new SET_CURR
+#else
+default_in	= std_in	; in LOWRAM systems, both global and local standard devices are the same!
+default_out	= stdout
 #endif
 old_t1		.word	0	; *** keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 

@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a1
-; last modified 20170527-1603
+; v0.6a2
+; last modified 20170531-1057
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -96,10 +96,9 @@ go_mon:
 open_mon:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
-
 ; print splash message, just the first time!
-	LDA #>splash		; address of splash message
-	LDY #<splash
+	LDA #>mon_splash	; address of splash message
+	LDY #<mon_splash
 	JSR prnStr			; print the string!
 
 ; *** initialise relevant registers ***
@@ -136,6 +135,8 @@ main_loop:
 		JSR prnHex
 		LDA #'>'		; prompt character
 		JSR prnChar			; print it
+lda#'#'
+jsr$c0c2
 		JSR getLine			; input a line
 		LDX #$FF			; getNextChar will advance it to zero!
 		JSR gnc_do			; get first character on string, without the variable
@@ -665,7 +666,7 @@ montitle:
 	.asc	"monitor", 0
 #endif
 
-splash:
+mon_splash:
 	.asc	"minimOS 0.5.1 monitor", CR
 	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 

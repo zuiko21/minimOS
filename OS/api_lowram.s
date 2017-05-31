@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a5
+; v0.6a6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170530-1048
+; last modified 20170531-1053
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -43,7 +43,7 @@ cout:
 	STA cio_of			; store for further indexing (3)
 	TYA					; for indexed comparisons (2)
 	BNE co_port			; not default (3/2)
-		LDA std_out			; default output device (3)
+		LDA stdout			; default output device (3)
 co_port:
 	BMI cio_phys		; not a logic device (3/2)
 ; no need to check for windows or filesystem

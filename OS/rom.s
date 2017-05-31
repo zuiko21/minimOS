@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6a1
+; v0.6a2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-1247
+; last modified 20170531-1026
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -90,10 +90,10 @@ drv_end:		; for easier size computation
 #include "../apps/ls.s"
 
 ; select specific pmap version according to architecture!
-#ifdef C816
-#include "../apps/pmap16.s"
-#else
-;#include "../apps/pmap.s"
+#ifndef C816
+#ifndef		LOWRAM
+#include "../apps/pmap.s"
+#endif
 #endif
 
 #include "../apps/lined.s"
@@ -131,7 +131,7 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ;#include "../apps/crasm/80asm.s"
 ;#include "../apps/crasm/68asm.s"
 #ifndef	C816
-;#include "shell/miniMoDA.s"
+#include "shell/miniMoDA.s"
 #endif
 ; ****** skip rest of unused ROM until firmware ******
 ; ##### empty header #####
@@ -168,4 +168,5 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; *******************************************
 #ifdef	C816
 #include "shell/miniMoDA16.s"
+#include "../apps/pmap16.s"
 #endif

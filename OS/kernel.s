@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170530-1109
+; last modified 20170531-1033
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -90,8 +90,7 @@ warm:
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
 ; *** default action in case the scheduler runs out of tasks ***
-; as supplied (PW_COLD) will reboot as a sort-of watchdog, change as required
-	LDA #PW_COLD		; default action upon complete task death
+	LDA #PW_STAT		; default action upon complete task death
 	STA sd_flag			; this is important to be clear (PW_STAT) or set as proper error handler
 
 ; *****************************

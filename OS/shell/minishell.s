@@ -1,6 +1,6 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5rc1
-; last modified 20170511-1039
+; v0.5.1a1
+; last modified 20170531-1040
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -123,6 +123,18 @@ xsh_wait:
 			BEQ main_loop		; then continue asking for more
 xsh_single:
 	_KERNEL(B_EXEC)		; execute anyway...
+/*
+; *** DUH! singletasking systems will not arrive here ***
+	BCC xsh_success		; no runtime errors!
+		TYA					; otherwise get error code
+		CLC
+		ADC #'0'			; convert to number
+		JSR prnChar			; print it
+		LDY #<xsh_abrt		; and now the string
+		LDA #>xsh_abrt
+		JSR prnStr			; print it
+xsh_success:
+*/
 	JMP shell			; ...but reset shell environment! should not arrive here
 
 ; *** useful routines ***
@@ -176,6 +188,9 @@ xsh_err:
 
 xsh_not:
 	.asc	"Not found", CR, 0
+
+xsh_abrt:
+	.asc	" ERROR!", CR, 0
 
 #ifdef	NOHEAD
 title:
