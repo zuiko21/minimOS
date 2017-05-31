@@ -7,7 +7,7 @@
 
 .(
 ; *** uncomment for narrow (20-char) displays ***
-;#define	NARROW	_NARROW
+#define	NARROW	_NARROW
 
 ; *** constant definitions ***
 #define	BUFSIZ		16
