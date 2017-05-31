@@ -10,7 +10,7 @@
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
 
-#define		LOWRAM	_LOWRAM
+;#define		LOWRAM	_LOWRAM
 
 ; enable in order to remove headers, not LOAD_LINK savvy!
 ;#define		NOHEAD	_NOHEAD

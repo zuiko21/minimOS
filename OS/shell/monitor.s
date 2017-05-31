@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a3
-; last modified 20170531-1225
+; v0.6a4
+; last modified 20170531-1434
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -185,7 +185,12 @@ sb_end:
 ; ** .C = call address **
 call_address:
 	JSR fetch_value		; get operand address
-; *** please check whether at least one char was typed ***
+#ifdef	SAFE
+	LDA tmp2			; at least one?
+	BNE cl_ok
+		JMP bad_cmd		; reject zero loudly
+cl_ok:
+#endif
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
 	PHA
@@ -198,6 +203,7 @@ call_address:
 	STX _x
 	STY _y
 	PHP					; get current status
+	CLD					; eeeeeeeeeeeeeek
 	PLA					; A was already saved
 	STA _psr
 ; hopefully no stack imbalance was caused, otherwise will not resume monitor!
@@ -210,7 +216,12 @@ call_address:
 ; ** .J = jump to an address **
 jump_address:
 	JSR fetch_value		; get operand address
-; *** please check whether at least one char was typed ***
+#ifdef	SAFE
+	LDA tmp2			; at least one?
+	BNE jp_ok
+		JMP bad_cmd		; reject zero loudly
+jp_ok:
+#endif
 ; restore stack pointer...
 #ifdef	C816
 	.xl: REP #$10		; *** essential 16-bit index ***
@@ -318,7 +329,12 @@ move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
 
 	JSR fetch_value		; get operand word
-; *** check size! ***
+#ifdef	SAFE
+	LDA tmp2			; at least one?
+	BNE mv_ok
+		JMP bad_cmd		; reject zero loudly
+mv_ok:
+#endif
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
 		BEQ mv_l			; go to second stage if zero
@@ -346,7 +362,14 @@ mv_end:
 set_count:
 	JSR fetch_value		; get operand word
 	LDA tmp				; copy LSB
+#ifdef	SAFE
+	BNE sc_ok			; not zero is OK
+		LDX tmp+1			; check MSB otherwise
+		BEQ sc_z			; there was nothing!
+sc_ok:
+#endif
 	STA siz				; into destination variable
+sc_z:
 	PHA					; for common ending!
 	LDA tmp+1			; and MSB
 	STA siz+1
@@ -389,7 +412,6 @@ quit:
 
 ; ** .S = store raw string **
 store_str:
-sstr_l:
 		INC cursor			; skip the S and increase, not INY
 		LDY cursor			; allows NMOS macro!
 		LDA buffer, Y		; get raw character
@@ -401,9 +423,9 @@ sstr_l:
 		CMP #CR				; newline also accepted, just in case
 			BEQ sstr_cr			; terminate and exit
 		INC ptr				; advance destination
-		BNE sstr_l			; boundary not crossed
+		BNE store_str		; boundary not crossed
 	INC ptr+1			; next page otherwise
-	_BRA sstr_l			; continue
+	BNE store_str		; continue, no real need for BRA
 sstr_cr:
 	_STZA buffer, X		; terminate string
 sstr_end:
@@ -412,7 +434,12 @@ sstr_end:
 ; ** .U = set 'u' number of lines/instructions **
 set_lines:
 	JSR fetch_byte		; get operand in A
+#ifdef	SAFE
+	TAX					; check value
+		BEQ sl_z			; nothing to set
+#endif
 	STA lines			; set number of lines
+sl_z:
 	PHA					; to be displayed
 	LDA #0				; no MSB
 	PHA
@@ -482,16 +509,28 @@ set_Y:
 	STA _y				; set register
 	RTS
 
-
 ; ** .R = reboot or shutdown **
 reboot:
-	LDY #PW_WARM		; warm boot request ** minimOS specific **
-	_BRA fw_shut		; call firmware
-
-poweroff:
-	LDY #PW_OFF			; poweroff request ** minimOS specific **
+	JSR getNextChar		; is there an extra character?
+	TAX					; check whether end of buffer
+		BEQ rb_exit			; no interactive option
+	CMP #'W'			; asking for warm boot?
+	BNE rb_notw
+		LDY #PW_WARM		; warm boot request ## minimOS specific ##
+		_BRA fw_shut		; call firmware, could use BNE?
+rb_notw:
+	CMP #'C'			; asking for cold boot?
+	BNE rb_notc
+		LDY #PW_COLD		; cold boot request ## minimOS specific ##
+		_BRA fw_shut		; call firmware, could use BNE?
+rb_notc:
+	CMP #'S'			; asking for shutdown?
+	BNE rb_exit			; otherwise abort quietly
+		LDY #PW_OFF			; poweroff request ## minimOS specific ##
 fw_shut:
-	_KERNEL(SHUTDOWN)
+		_KERNEL(SHUTDOWN)	; unified firmware call
+rb_exit:
+	RTS					; needs to return and wait for the complete shutdown!
 
 
 ; *** useful routines ***
@@ -572,35 +611,6 @@ h2n_err:
 	SEC					; notify error!
 	RTS
 
-; *** OLD ROUTINE ***
-hex2byte:
-	LDY #0				; reset loop counter
-	STY tmp				; also reset value
-h2b_l:
-		SEC					; prepare
-		SBC #'0'			; convert to value
-			BCC h2b_err			; below number!
-		CMP #10				; already OK?
-		BCC h2b_num			; do not shift letter value
-			CMP #23			; should be a valid hex
-				BCS h2b_err			; not!
-			SBC #6			; convert from hex (had CLC before!)
-h2b_num:
-		ASL tmp				; older value times 16
-		ASL tmp
-		ASL tmp
-		ASL tmp
-		ORA tmp				; add computed nibble
-		STA tmp				; and store full byte
-		JSR gnc_do			; go for next hex cipher *** THIS IS OUTSIDE THE LIB ***
-		INY					; loop counter
-		CPY #2				; two ciphers per byte
-		BNE h2b_l			; until done
-	RTS					; value is at tmp
-h2b_err:
-	DEX					; will try to reprocess this char
-	RTS
-
 ; ** end of inline library **
 
 ; * get input line from device at fixed-address buffer *
@@ -633,6 +643,7 @@ gnc_do:
 		BCS gn_ok			; otherwise do not correct!
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
+	STX cursor			; eeeeeeeeeeeeeeeeeeeeek
 ext_bytes:	; ********************** TO DO **********************
 	RTS
 
@@ -673,7 +684,7 @@ fetch_word:
 ft_check:
 	BNE ft_err
 		CLC					; if so, all OK
-		LDA tmp			; convenient!!!
+		LDA tmp				; convenient!!!
 		RTS
 ; common fetch error discard routine
 ft_err:
@@ -698,7 +709,7 @@ ftv_loop:
 		JSR hex2nib			; process one char
 			BCS ftv_bad			; no more valid chars
 		INC tmp2			; otherwise count one
-		_BRA ftv_loop		; until no more valid
+		BNE ftv_loop		; until no more valid, no real need for BRA
 ftv_bad:
 	JSR backChar		; should discard very last char! eeeeeeeek
 	CLC					; always check temp=0 for errors!
