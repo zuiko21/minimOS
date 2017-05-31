@@ -7,7 +7,7 @@
 
 .(
 ; *** uncomment for narrow (20-char) displays ***
-#define	NARROW	_NARROW
+;#define	NARROW	_NARROW
 
 ; *** constant definitions ***
 #define	BUFSIZ		16
@@ -36,8 +36,8 @@ montitle:
 	.dsb	mon_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$8000		; time, 16.00
-	.word	$4ABB		; date, 2017/5/27
+	.word	$6800		; time, 13.00
+	.word	$4ABF		; date, 2017/5/31
 
 	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
 
@@ -233,7 +233,7 @@ do_call:
 
 ; ** .E = examine 'u' lines of memory **
 examine:
-	JSR fetch_word		; get address
+	JSR fetch_value		; get address
 	LDY tmp				; save tmp elsewhere
 	LDA tmp+1
 	STY tmp2
@@ -317,7 +317,8 @@ help:
 move:
 ; preliminary version goes forward only, modifies ptr.MSB and X!
 
-	JSR fetch_word		; get operand word
+	JSR fetch_value		; get operand word
+; *** check size! ***
 	LDY #0				; reset offset
 	LDX siz+1			; check n MSB
 		BEQ mv_l			; go to second stage if zero
@@ -343,7 +344,7 @@ mv_end:
 
 ; ** .N = set 'n' value **
 set_count:
-	JSR fetch_word		; get operand word
+	JSR fetch_value		; get operand word
 	LDA tmp				; copy LSB
 	STA siz				; into destination variable
 	PHA					; for common ending!
@@ -365,7 +366,7 @@ nu_end:
 
 ; ** .O = set origin **
 origin:
-	JSR fetch_word		; get operand word
+	JSR fetch_value		; get operand word
 	LDY tmp				; copy LSB
 	LDA tmp+1			; and MSB
 	STY ptr				; into destination variable
@@ -454,7 +455,7 @@ po_cr:
 
 ; ** .W = store word **
 store_word:
-	JSR fetch_word		; get operand word
+	JSR fetch_value		; get operand word
 	LDA tmp				; get LSB
 	_STAY(ptr)			; store in memory
 	INC ptr				; next byte
@@ -500,6 +501,24 @@ fw_shut:
 ;#include "libs/hexio.s"
 ; in the meanwhile, it takes these subroutines
 
+; * print a byte in A as two hex ciphers *
+prnHex:
+	PHA					; keep whole value
+	LSR					; shift right four times (just the MSB)
+	LSR
+	LSR
+	LSR
+	JSR ph_b2a			; convert and print this cipher
+	PLA					; retrieve full value
+	AND #$0F			; keep just the LSB... and repeat procedure
+ph_b2a:
+	CMP #10				; will be a letter?
+	BCC ph_n			; just a number
+		ADC #6				; convert to letter (plus carry)
+ph_n:
+	ADC #'0'			; convert to ASCII (carry is clear)
+; ...and print it (will return somewhere)
+
 ; * print a character in A *
 prnChar:
 	STA io_c			; store character
@@ -513,7 +532,7 @@ prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
 #ifdef	C816
-		PHB					; get current bank
+		PHK					; get current bank
 		PLA					; pick it up
 		STA str_pt+2		; set accordingly
 #endif
@@ -523,6 +542,37 @@ prnStr:
 	RTS
 
 ; * convert two hex ciphers into byte@tmp, A is current char, X is cursor *
+; * new approach for hex conversion *
+; * add one nibble from hex in current char!
+; A is current char, returns result in value[0...1]
+; does NOT advance any cursor (neither reads char from nowhere)
+; MUST reset value previously!
+hex2nib:
+	SEC					; prepare for subtract
+	SBC #'0'			; convert from ASCII
+		BCC h2n_err			; below number!
+	CMP #10				; already OK?
+	BCC h2n_num			; do not convert from letter
+		CMP #23				; otherwise should be a valid hex
+			BCS h2n_rts			; or not! exits with C set
+		SBC #6				; convert from hex (C is clear!)
+h2n_num:
+	LDY #4				; shifts counter, no longer X in order to save some pushing!
+h2n_loop:
+		ASL tmp				; current value will be times 16
+		ROL tmp+1
+		DEY					; next iteration
+		BNE h2n_loop
+	ORA tmp				; combine with older value
+	STA tmp
+	CLC					; all done without error
+h2n_rts:
+	RTS					; usual exit
+h2n_err:
+	SEC					; notify error!
+	RTS
+
+; *** OLD ROUTINE ***
 hex2byte:
 	LDY #0				; reset loop counter
 	STY tmp				; also reset value
@@ -549,35 +599,6 @@ h2b_num:
 	RTS					; value is at tmp
 h2b_err:
 	DEX					; will try to reprocess this char
-	RTS
-
-; * print a byte in A as two hex ciphers *
-; pretty old version, should be quickly replaced by future library!
-prnHex:
-	JSR ph_conv			; first get the ciphers done
-	LDA tmp				; get cipher for MSB
-	JSR prnChar			; print it!
-	LDA tmp+1			; same for LSB
-	JMP prnChar  ; will return
-ph_conv:
-	STA tmp+1			; keep for later
-	AND #$F0			; mask for MSB
-	LSR					; convert to value
-	LSR
-	LSR
-	LSR
-	LDY #0				; this is first value
-	JSR ph_b2a			; convert this cipher
-	LDA tmp+1			; get again
-	AND #$0F			; mask for LSB
-	INY					; this will be second cipher
-ph_b2a:
-	CMP #10				; will be letter?
-	BCC ph_n			; numbers do not need this
-		ADC #'A'-'9'-2		; turn into letter, C was set
-ph_n:
-	ADC #'0'			; turn into ASCII
-	STA tmp, Y
 	RTS
 
 ; ** end of inline library **
@@ -612,26 +633,77 @@ gnc_do:
 		BCS gn_ok			; otherwise do not correct!
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
+ext_bytes:	; ********************** TO DO **********************
 	RTS
 
+; * back off one character, skipping whitespace, use instead of DEC cursor! *
+backChar:
+	LDX cursor			; get current position
+bc_loop:
+		DEX					; back once
+		LDA buffer, X		; check what is pointed
+		CMP #' '			; blank?
+			BEQ bc_loop			; once more
+		CMP #TAB			; tabulation?
+			BEQ bc_loop			; ignore
+		CMP #'$'			; ignored radix?
+			BEQ bc_loop			; also ignore
+	STX cursor				; otherwise we are done
+	RTS
 
-; * fetch one byte from buffer, value in A *
+; * fetch one byte from buffer, value in A and @value.b *
+; newest approach as interface for fetch_value
 fetch_byte:
-	JSR getNextChar		; go to operand
-	JSR hex2byte		; convert value
-	LDA tmp				; converted byte
+	JSR fetch_value		; get whatever
+	LDA tmp2			; how many bytes will fit?
+	_INC				; round up chars...
+	LSR					; ...and convert to bytes
+	CMP #1				; strictly one?
+	_BRA ft_check		; common check
+
+; * fetch two bytes from hex input buffer, value @value.w *
+fetch_word:
+; another approach using fetch_value
+	JSR fetch_value		; get whatever
+	LDA tmp2			; how many bytes will fit?
+	_INC				; round up chars...
+	LSR					; ...and convert to bytes
+	CMP #2				; strictly two?
+; common fetch error check
+ft_check:
+	BNE ft_err
+		CLC					; if so, all OK
+		LDA tmp			; convenient!!!
+		RTS
+; common fetch error discard routine
+ft_err:
+	LDA tmp2			; check how many chars were processed eeeeeeek
+	BEQ ft_clean		; nothing to discard eeeeeeeeek
+ft_disc:
+		JSR backChar		; should discard previous char!
+		DEC tmp2			; one less to go
+		BNE ft_disc			; continue until all was discarded
+ft_clean:
+	SEC					; there was an error
 	RTS
 
-; * fetch more than one byte from hex input buffer *
-fetch_word:
-fetch_value:	; ****** TEMPORARY ******
-	JSR fetch_byte		; get operand in A
-	STA tmp+1			; leave room for next
-	DEX					; as will increment...
-	JSR gnc_do			; get next char!!!
-	JMP hex2byte		; get second byte, tmp is little-endian now, will return
+; * fetch typed value, no matter the number of chars *
+fetch_value:
+	_STZA tmp			; clear full result
+	_STZA tmp+1
+	_STZA tmp2			; no chars processed yet
+; could check here for symbolic references...
+ftv_loop:
+		JSR getNextChar		; go to operand first cipher!
+		JSR hex2nib			; process one char
+			BCS ftv_bad			; no more valid chars
+		INC tmp2			; otherwise count one
+		_BRA ftv_loop		; until no more valid
+ftv_bad:
+	JSR backChar		; should discard very last char! eeeeeeeek
+	CLC					; always check temp=0 for errors!
+	RTS
 
-ext_bytes:
 ; *** pointers to command routines (? to Y) ***
 cmd_ptr:
 	.word	help			; .?
