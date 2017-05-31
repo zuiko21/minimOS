@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a6
+; v0.6a7
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170531-1053
+; last modified 20170531-1153
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -44,6 +44,8 @@ cout:
 	TYA					; for indexed comparisons (2)
 	BNE co_port			; not default (3/2)
 		LDA stdout			; default output device (3)
+		BNE co_port			; eeeeeeeeeek
+			LDA #DEVICE			; *** somewhat ugly hack ***
 co_port:
 	BMI cio_phys		; not a logic device (3/2)
 ; no need to check for windows or filesystem
@@ -91,6 +93,8 @@ cin:
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
 		LDA std_in			; default input device
+		BNE ci_port			; eeeeeeeeeek
+			LDA #DEVICE			; *** somewhat ugly hack ***
 ci_port:
 	BPL ci_nph			; logic device
 		JSR cio_phys		; check physical devices... but come back for events! new 20150617

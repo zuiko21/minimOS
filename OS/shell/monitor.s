@@ -135,8 +135,6 @@ main_loop:
 		JSR prnHex
 		LDA #'>'		; prompt character
 		JSR prnChar			; print it
-lda#'#'
-jsr$c0c2
 		JSR getLine			; input a line
 		LDX #$FF			; getNextChar will advance it to zero!
 		JSR gnc_do			; get first character on string, without the variable
