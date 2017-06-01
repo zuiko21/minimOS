@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a5
-; last modified 20170601-1004
+; v0.6a6
+; last modified 20170601-1048
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -334,7 +334,7 @@ help:
 ; placeholder will send (-) or read (+) raw data to/from indicated I/O device
 ext_bytes:
 ; *** set labels from miniMoDA ***
-count	= tmp2+1		; safe temporary space
+count	= tmp2+1		; subcommand
 temp	= cursor		; will store I/O channel
 oper	= tmp			; 16-bit counter
 ; try to get subcommand, then device
@@ -352,13 +352,20 @@ ex_noni:
 	LDY #0				; reset counter!
 	STY oper			; also reset forward counter, decrement is too clumsy!
 	STY oper+1
+; check subcommand
+#ifdef	SAFE
+	LDA count			; restore subcommand
+	CMP #'+'			; is it load?
+		BEQ ex_do			; OK then
+	CMP #'-'			; is it save? (MARATHON MAN)
+		BNE ex_abort		; if not, complain
+#endif
+ex_do:
 ; decide what to do
 	LDA count			; restore subcommand
 	CMP #'+'			; is it load?
-		BEQ ex_load			; OK then
-	CMP #'-'			; is it save? (MARATHON MAN)
-		BNE ex_abort		; if not, complain
-ex_save:
+	BEQ ex_load			; OK then
+; otherwise assume save!
 ; save raw bytes
 		LDA (ptr), Y		; get source data
 		STA io_c			; set parameter
@@ -367,24 +374,9 @@ ex_save:
 		_KERNEL(COUT)		; send raw byte!
 		_PLY				; restore index eeeeeeeeeek
 			BCS ex_err			; aborted!
-		INY					; go for next
-		BNE esl_nw			; no wrap
-			INC ptr+1
-esl_nw:
-; 16-bit INcrement
-		INC oper			; one more
-		BNE ex_sinc			; no wrap
-			INC oper+1
-ex_sinc:
-		LDA oper			; check LSB
-		CMP siz				; compare against desired size
-			BNE ex_save			; continue until done
-		LDA oper+1			; check MSB, just in case
-		CMP siz+1			; against size
-		BNE ex_save			; continue until done
-	BEQ ex_ok			; done! no need for BRA
-ex_load:
+		BCC ex_next			; otherwise continue, no need for BRA
 ; load raw bytes
+ex_load:
 		_PHY				; save index
 		LDY temp			; get target device
 		_KERNEL(CIN)		; get raw byte!
@@ -392,30 +384,41 @@ ex_load:
 			BCS ex_err			; aborted!
 		LDA io_c			; get parameter
 		STA (ptr), Y		; write destination data
+; go for next byte in any case
+ex_next:
 		INY					; go for next
-		BNE ell_nw			; no wrap
+		BNE ex_nw			; no wrap
 			INC ptr+1
-ell_nw:
-; 16-bit INcrement
+ex_nw:
+; 16-bit counter INcrement
 		INC oper			; one more
-		BNE ex_linc			; no wrap
+		BNE ex_sinc			; no wrap
 			INC oper+1
-ex_linc:
+ex_sinc:
+; have we finished yet?
 		LDA oper			; check LSB
 		CMP siz				; compare against desired size
-			BNE ex_load			; continue until done
-		LDA oper+1			; check MSB, just in case
-		CMP siz+1			; against size
-		BNE ex_load			; continue until done
+		BNE ex_do			; continue until done
+			LDA oper+1			; check MSB, just in case
+			CMP siz+1			; against size
+		BNE ex_do			; continue until done
 	BEQ ex_ok			; done! no need for BRA
 ex_err:
 ; an I/O error occurred during transfer!
 #ifdef	SAFE
-	LDA #>io_err		; set message pointer
-	LDY #<io_err
-	JSR prnStr			; print it and finish function
+		LDA #>io_err		; set message pointer
+		LDY #<io_err
+		JSR prnStr			; print it and finish function afterwards
 #endif
 ex_ok:
+; update PC LSB!
+	TYA					; current offset
+	CLC
+	ADC ptr				; add base LSB
+	STA ptr				; update
+	BCC ex_show			; no wrap
+		INC ptr+1			; or carry to MSB
+ex_show:
 ; transfer ended, show results
 	LDA oper			; get LSB
 	PHA					; into stack
