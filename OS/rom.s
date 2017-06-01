@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6a2
+; v0.6a3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170531-1026
+; last modified 20170601-0949
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -97,6 +97,7 @@ drv_end:		; for easier size computation
 #endif
 
 #include "../apps/lined.s"
+#include "../apps/sigtest.s"
 
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
@@ -127,7 +128,6 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; *************************************
 ; ...could add more software up to $FC00
 #include "shell/monitor.s"
-#include "../apps/sigtest.s"
 ;#include "../apps/crasm/80asm.s"
 ;#include "../apps/crasm/68asm.s"
 #ifndef	C816

@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a4
-; last modified 20170531-1434
+; v0.6a5
+; last modified 20170601-1004
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -143,7 +143,11 @@ main_loop:
 		STX cursor			; save cursor!
 		CMP #'Y'+1			; past last command?
 			BCS bad_cmd			; unrecognised
+#ifdef	SAFE
 		SBC #'?'-1			; first available command (had borrow)
+#else
+		SBC #'A'-1			; first available command (had borrow)
+#endif
 			BCC bad_cmd			; cannot be lower
 		ASL					; times two to make it index
 		TAX					; use as index
@@ -187,9 +191,7 @@ call_address:
 	JSR fetch_value		; get operand address
 #ifdef	SAFE
 	LDA tmp2			; at least one?
-	BNE cl_ok
-		JMP bad_cmd		; reject zero loudly
-cl_ok:
+		BEQ _unrecognised	; reject zero loudly
 #endif
 ; setting SP upon call makes little sense...
 	LDA iodev			; *** must push default device for later ***
@@ -218,9 +220,10 @@ jump_address:
 	JSR fetch_value		; get operand address
 #ifdef	SAFE
 	LDA tmp2			; at least one?
-	BNE jp_ok
-		JMP bad_cmd		; reject zero loudly
-jp_ok:
+		BEQ _unrecognised	; reject zero loudly
+;	BNE jp_ok
+;		JMP _unrecognised	; reject zero loudly
+;jp_ok:
 #endif
 ; restore stack pointer...
 #ifdef	C816
@@ -319,10 +322,106 @@ set_SP:
 	RTS
 
 ; ** .? = show commands **
+#ifdef	SAFE
 help:
 	LDA #>help_str		; help string
 	LDY #<help_str
 	JMP prnStr			; print it, and return to main loop
+#endif
+
+; ** .K = keep (load or save) **
+; ### highly system dependent ###
+; placeholder will send (-) or read (+) raw data to/from indicated I/O device
+ext_bytes:
+; *** set labels from miniMoDA ***
+count	= tmp2+1		; safe temporary space
+temp	= cursor		; will store I/O channel
+oper	= tmp			; 16-bit counter
+; try to get subcommand, then device
+	JSR getNextChar		; check for subcommand
+	TAY					; already at the end?
+	BNE ex_noni			; not yet
+ex_abort:
+		JMP _unrecognised			; fail loudly otherwise
+ex_noni:
+; subcommand is OK, let us check target device ###placeholder
+	STA count			; first save the subcommand!
+	JSR fetch_byte		; read desired device
+		BCS ex_abort		; could not get it
+	STA temp			; set as I/O channel
+	LDY #0				; reset counter!
+	STY oper			; also reset forward counter, decrement is too clumsy!
+	STY oper+1
+; decide what to do
+	LDA count			; restore subcommand
+	CMP #'+'			; is it load?
+		BEQ ex_load			; OK then
+	CMP #'-'			; is it save? (MARATHON MAN)
+		BNE ex_abort		; if not, complain
+ex_save:
+; save raw bytes
+		LDA (ptr), Y		; get source data
+		STA io_c			; set parameter
+		_PHY				; save index
+		LDY temp			; get target device
+		_KERNEL(COUT)		; send raw byte!
+		_PLY				; restore index eeeeeeeeeek
+			BCS ex_err			; aborted!
+		INY					; go for next
+		BNE esl_nw			; no wrap
+			INC ptr+1
+esl_nw:
+; 16-bit INcrement
+		INC oper			; one more
+		BNE ex_sinc			; no wrap
+			INC oper+1
+ex_sinc:
+		LDA oper			; check LSB
+		CMP siz				; compare against desired size
+			BNE ex_save			; continue until done
+		LDA oper+1			; check MSB, just in case
+		CMP siz+1			; against size
+		BNE ex_save			; continue until done
+	BEQ ex_ok			; done! no need for BRA
+ex_load:
+; load raw bytes
+		_PHY				; save index
+		LDY temp			; get target device
+		_KERNEL(CIN)		; get raw byte!
+		_PLY				; restore index
+			BCS ex_err			; aborted!
+		LDA io_c			; get parameter
+		STA (ptr), Y		; write destination data
+		INY					; go for next
+		BNE ell_nw			; no wrap
+			INC ptr+1
+ell_nw:
+; 16-bit INcrement
+		INC oper			; one more
+		BNE ex_linc			; no wrap
+			INC oper+1
+ex_linc:
+		LDA oper			; check LSB
+		CMP siz				; compare against desired size
+			BNE ex_load			; continue until done
+		LDA oper+1			; check MSB, just in case
+		CMP siz+1			; against size
+		BNE ex_load			; continue until done
+	BEQ ex_ok			; done! no need for BRA
+ex_err:
+; an I/O error occurred during transfer!
+#ifdef	SAFE
+	LDA #>io_err		; set message pointer
+	LDY #<io_err
+	JSR prnStr			; print it and finish function
+#endif
+ex_ok:
+; transfer ended, show results
+	LDA oper			; get LSB
+	PHA					; into stack
+	LDA oper+1			; get MSB
+	PHA					; same
+	JMP nu_end			; and print it! eeeeeek return also
 
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
@@ -332,7 +431,7 @@ move:
 #ifdef	SAFE
 	LDA tmp2			; at least one?
 	BNE mv_ok
-		JMP bad_cmd		; reject zero loudly
+		JMP _unrecognised	; reject zero loudly
 mv_ok:
 #endif
 	LDY #0				; reset offset
@@ -644,7 +743,6 @@ gnc_do:
 	AND #%11011111		; remove bit 5 to uppercase
 gn_ok:
 	STX cursor			; eeeeeeeeeeeeeeeeeeeeek
-ext_bytes:	; ********************** TO DO **********************
 	RTS
 
 ; * back off one character, skipping whitespace, use instead of DEC cursor! *
@@ -717,8 +815,10 @@ ftv_bad:
 
 ; *** pointers to command routines (? to Y) ***
 cmd_ptr:
+#ifdef	SAFE
 	.word	help			; .?
 	.word		_unrecognised	; .@
+#endif
 	.word	set_A			; .A
 	.word	store_byte		; .B
 	.word	call_address	; .C
@@ -758,7 +858,7 @@ mon_splash:
 
 
 err_bad:
-	.asc	"*** Bad command ***", CR, 0
+	.asc	"** Bad command **", CR, 0
 
 regs_head:
 	.asc	"A: X: Y: S: NV-bDIZC", CR, 0
@@ -776,14 +876,14 @@ dump_out:
 set_str:
 	.asc	"-> $", 0
 
+#ifdef	SAFE
+; I/O error message stripped on non-SAFE version
+io_err:
+	.asc	"*** I/O error ***", CR, 0
+
 ; online help only available under the SAFE option!
 help_str:
-#ifdef	SAFE
 	.asc	"---Command list---", CR
-	.asc	"(d => 2 hex char.)", CR
-	.asc	"(a => 4 hex char.)", CR
-	.asc	"(* => up to 4 char.)", CR
-	.asc	"(s => raw string)", CR
 	.asc	"? = show this list", CR
 	.asc	"Ad = set A reg.", CR
 	.asc	"Bd = store byte", CR
@@ -791,7 +891,8 @@ help_str:
 	.asc	"E* = dump 'u' lines", CR
 	.asc	"Gd = set SP reg.", CR
 	.asc	"J* = jump to address", CR
-	.asc	"K* =load/save n byt.", CR
+	.asc	"Kcd=load/save n byt.", CR
+	.asc	"   from/to device #d", CR
 	.asc	"Ma =copy n byt. to a", CR
 	.asc	"N* = set 'n' value", CR
 	.asc	"O* = set origin", CR
@@ -804,6 +905,14 @@ help_str:
 	.asc	"Wa = store word", CR
 	.asc	"Xd = set X reg.", CR
 	.asc	"Yd = set Y reg.", CR
+	.asc	"--- values ---", CR
+	.asc	"d => 2 hex char.", CR
+	.asc	"a => 4 hex char.", CR
+	.asc	"* => up to 4 char.", CR
+	.asc	"s => raw string", CR
+	.asc	"c = +(load)/ -(save)", CR
+	.asc	"x=Cold/Warm/Shutdown", CR
+
 #endif
 	.byt	0
 
