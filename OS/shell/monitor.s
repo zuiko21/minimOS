@@ -344,7 +344,7 @@ oper	= tmp			; 16-bit counter
 ex_abort:
 		JMP _unrecognised			; fail loudly otherwise
 ex_noni:
-; subcommand is OK, let us check target device ###placeholder
+; there is subcommand, let us check target device ###placeholder
 	STA count			; first save the subcommand!
 	JSR fetch_byte		; read desired device
 		BCS ex_abort		; could not get it
