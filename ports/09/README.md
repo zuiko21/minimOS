@@ -1,3 +1,7 @@
-##minimOS port for the Motorola 6809 / Hitachi 6309
+# minimOS·09
 
-*To be done...*
+*minimOS* port for the **Motorola 6809** and its *Hitachi* CMOS derivative (**6309**).
+As these interesting CPUs, unlike the 6502/65816 breed, are **not** interoperable with other members
+of the [Motorola 6800 series](../63), they need their own specific port.
+
+All **minimOS·09** code *will be available* on [a separate repository](https://github.com/zuiko21/minimOS-09).
