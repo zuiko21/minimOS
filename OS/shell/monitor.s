@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a6
-; last modified 20170601-1048
+; v0.6a7
+; last modified 20170602-0845
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -402,14 +402,6 @@ ex_sinc:
 			LDA oper+1			; check MSB, just in case
 			CMP siz+1			; against size
 		BNE ex_do			; continue until done
-	BEQ ex_ok			; done! no need for BRA
-ex_err:
-; an I/O error occurred during transfer!
-#ifdef	SAFE
-		LDA #>io_err		; set message pointer
-		LDY #<io_err
-		JSR prnStr			; print it and finish function afterwards
-#endif
 ex_ok:
 ; update PC LSB!
 	TYA					; current offset
@@ -420,11 +412,22 @@ ex_ok:
 		INC ptr+1			; or carry to MSB
 ex_show:
 ; transfer ended, show results
+#ifndef	SAFE
+ex_err:					; without I/O error message, indicate 0 bytes transferred
+#endif
 	LDA oper			; get LSB
 	PHA					; into stack
 	LDA oper+1			; get MSB
 	PHA					; same
 	JMP nu_end			; and print it! eeeeeek return also
+#ifdef	SAFE
+ex_err:
+; an I/O error occurred during transfer!
+	LDA #>io_err		; set message pointer
+	LDY #<io_err
+	JSR prnStr			; print it and finish function afterwards
+	_BRA ex_show		; there is nothing to increment!
+#endif
 
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
@@ -901,7 +904,7 @@ help_str:
 	.asc	"O* = set origin", CR
 	.asc	"Pd = set Status reg", CR
 	.asc	"Q = quit", CR
-	.asc	"R = reboot/poweroff", CR
+	.asc	"Rx = reboot/poweroff", CR
 	.asc	"Ss = put raw string", CR
 	.asc	"Ud = set 'u' lines", CR
 	.asc	"V = view registers", CR

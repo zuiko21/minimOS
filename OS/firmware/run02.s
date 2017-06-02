@@ -1,8 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6a1
+; *** use as sort-of template ***
+; v0.9.6a2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170531-1014
+; last modified 20170602-0904
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -25,8 +26,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6800			; time, 13.00
-	.word	$4AAD			; date, 2017/5/11
+	.word	$4800			; time, 9.00
+	.word	$4AC2			; date, 2017/6/2
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -72,10 +73,18 @@ post:
 	STA fw_warm+1			; store in sysvars
 	STY fw_warm
 
+; *** preset jiffy irq *** this should be done by installed kernel!
 	LDA #>IRQ_FREQ	; interrupts per second
 	LDY #<IRQ_FREQ
 	STA irq_freq+1	; store speed...
 	STY irq_freq
+
+; *** preset default BRK & NMI handlers ***
+	LDA #>brk_handler	; standard label from IRQ file
+	LDY #<brk_handler
+	STY fw_brk			; store default handler
+	STA fw_brk+1
+; since the NMI handler is validated, no need to install a default
 
 	LDX #4				; max WORD offset in uptime seconds AND ticks, assume contiguous (2)
 res_sec:
@@ -171,22 +180,35 @@ std_nmi:
 #include "firmware/modules/std_nmi.s"
 
 
+; ********************************
 ; *** administrative functions ***
-; A0, install jump table
-; kerntab <- address of supplied jump table
-fw_install:
-	_ENTER_CS			; disable interrupts! (5)
-	LDY #0				; reset index (2)
-fwi_loop:
-		LDA (kerntab), Y	; get word from table as supplied (5)
-		STA fw_table, Y		; copy where the firmware expects it (4)
-		INY					; advance one byte
-		BNE fwi_loop		; until whole page is done (3/2)
-	_EXIT_CS			; restore interrupts if needed, will restore size too (4)
-	_DR_OK				; all done (8)
+; ********************************
 
+; *** generic functions ***
 
-; A2, set IRQ vector
+; GESTALT, get system info, API TBD
+; zpar -> available pages of (kernel) SRAM
+; zpar+2.W -> available BANKS of RAM
+; zpar2.B -> speedcode
+; zpar2+2.B -> CPU type
+; zpar3.W/L -> points to a string with machine name
+; *** WILL change ABI/API ***REVISE
+fw_gestalt:
+	LDA himem		; get pages of kernel SRAM (4)
+	STA zpar		; store output (3)
+	_STZX zpar+2	; no bankswitched RAM yet (4)
+	_STZX zpar3+2	; same for string address (4)
+	LDA #>fw_mname	; get string pointer
+	LDY #<fw_mname
+	STA zpar3+1		; put it outside
+	STY zpar3
+	LDA #SPEED_CODE	; speed code as determined in options.h (2+3)
+	STA zpar2
+	LDA fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
+	STA zpar2+2
+	_DR_OK			; done (8)
+
+; SET_ISR, set IRQ vector
 ; kerntab <- address of ISR
 fw_s_isr:
 	_ENTER_CS				; disable interrupts and save sizes! (5)
@@ -197,8 +219,7 @@ fw_s_isr:
 	_EXIT_CS				; restore interrupts if needed
 	_DR_OK					; done (8)
 
-
-; A4, set NMI vector
+; SET_NMI, set NMI vector
 ; kerntab <- address of NMI code (including magic string)
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected
@@ -223,47 +244,22 @@ fw_sn_ok:
 	STA fw_nmi+1
 	_DR_OK					; done (8)
 
-; A6, patch single function
-; kerntab <- address of code
-; Y <- function to be patched
-fw_patch:
-#ifdef		LOWRAM
-	_DR_ERR(UNAVAIL)		; no way to patch on 128-byte systems
-#else
-	_ENTER_CS				; disable interrupts and save sizes! (5)
-	LDA kerntab				; get full pointer
-	LDX kerntab+1
-	STA fw_table, Y			; store into firmware
-	TXA
-	STA fw_table+1, Y
-	_EXIT_CS				; restore interrupts and sizes (4)
-	_DR_OK					; done (8)
-#endif
+; SET_BRK, set BRK handler
+fw_s_brk:
+; ****** TO BE DONE ******
 
+; JIFFY, set jiffy IRQ frequency
+fw_jiffy:
+; ****** TO BE DONE ******
 
-; A8, get system info, API TBD
-; zpar -> available pages of (kernel) SRAM
-; zpar+2.W -> available BANKS of RAM
-; zpar2.B -> speedcode
-; zpar2+2.B -> CPU type
-; zpar3.W/L -> points to a string with machine name
-; *** WILL change ABI/API ***REVISE
-fw_gestalt:
-	LDA himem		; get pages of kernel SRAM (4)
-	STA zpar		; store output (3)
-	_STZX zpar+2	; no bankswitched RAM yet (4)
-	_STZX zpar3+2	; same for string address (4)
-	LDA #>fw_mname	; get string pointer
-	LDY #<fw_mname
-	STA zpar3+1		; put it outside
-	STY zpar3
-	LDA #SPEED_CODE	; speed code as determined in options.h (2+3)
-	STA zpar2
-	LDA fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
-	STA zpar2+2
-	_DR_OK			; done (8)
+; IRQ_SOURCE, set jiffy IRQ frequency
+fw_i_src:
+; ****** TO BE DONE ******
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
-; A10, poweroff etc
+; *** hardware specific ***
+
+; POWEROFF, poweroff etc
 ; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
 ; C -> not implemented
 fw_power:
@@ -281,13 +277,51 @@ fwp_cold:
 fwp_susp:
 	_DR_OK				; just continue execution
 
-; *** temporary labels for unimplemented functions ***
-fw_s_brk:
-fw_jiffy:
-fw_i_src:
+; FREQ_GEN, frequency generator hardware interface, TBD
 fw_fgen:
-fw_ctx:
+; ****** TO BE DONE ******
 	_DR_ERR(UNAVAIL)	; not yet implemented
+
+; *** for higher-specced systems ***
+
+#ifndef	LOWRAM
+; INSTALL, copy jump table
+; kerntab <- address of supplied jump table
+fw_install:
+	_ENTER_CS			; disable interrupts! (5)
+	LDY #0				; reset index (2)
+fwi_loop:
+		LDA (kerntab), Y	; get word from table as supplied (5)
+		STA fw_table, Y		; copy where the firmware expects it (4)
+		INY					; advance one byte
+		BNE fwi_loop		; until whole page is done (3/2)
+	_EXIT_CS			; restore interrupts if needed, will restore size too (4)
+	_DR_OK				; all done (8)
+
+; PATCH, patch single function
+; kerntab <- address of code
+; Y <- function to be patched
+fw_patch:
+#ifdef		LOWRAM
+	_DR_ERR(UNAVAIL)		; no way to patch on 128-byte systems
+#else
+	_ENTER_CS				; disable interrupts and save sizes! (5)
+	LDA kerntab				; get full pointer
+	LDX kerntab+1
+	STA fw_table, Y			; store into firmware
+	TXA
+	STA fw_table+1, Y
+	_EXIT_CS				; restore interrupts and sizes (4)
+	_DR_OK					; done (8)
+#endif
+
+; CONTEXT, zeropage & stack bankswitching
+fw_ctx:
+; ****** TO BE DONE ******
+	_DR_ERR(UNAVAIL)	; not yet implemented
+
+#endif
+
 ; *** end of temporary labels ***
 
 ; sub-function jump table (eeeek)
@@ -324,11 +358,14 @@ brk_hndl:		; label from vector list
 	PHA						; save registers
 	_PHX
 	_PHY
-	JSR brk_handler			; standard label from IRQ
+;	JSR brk_handler			; standard label from IRQ
+	JSR brk_call			; indirect call
 	_PLY					; restore status and return
 	_PLX
 	PLA
 	RTI
+brk_call:
+	JMP (fw_brk)			; vectored handler
 
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
@@ -343,7 +380,7 @@ fw_mname:
 	.dsb	kernel_call-*, $FF
 #endif
 
-; *** minimOS·65 function call WRAPPER ($FFC0) ***
+; *** minimOS·65 function call interface ($FFC0) ***
 * = kernel_call
 cop_hndl:		; label from vector list
 	_JMPX(fw_table)		; the old fashioned way
