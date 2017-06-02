@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6a2
+; v0.9.6a3
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170602-0904
+; last modified 20170602-1249
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -37,29 +37,36 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 ; *** end of standard header ***
 #endif
 
-; ********************
-; *** cold restart ***
-; ********************
+; **************************
+; **************************
+; ****** cold restart ******
+; **************************
+; **************************
 ; basic init
 reset:
-	SEI				; cold boot (2) not needed for simulator?
-	CLD				; just in case, a must for NMOS (2)
+	SEI					; cold boot (2) not needed for simulator?
+	CLD					; just in case, a must for NMOS (2)
 ; * this is in case a 65816 is being used, but still compatible with all *
-	SEC				; would set back emulation mode on C816
-	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA $0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
+	SEC					; would set back emulation mode on C816
+	.byt	$FB			; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
+	ORA $0				; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
 ; * end of 65816 specific code *
-	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
-	TXS				; initialise stack (2)
+	LDX #SPTR			; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
+	TXS					; initialise stack (2)
 
+; *********************************
 ; *** optional firmware modules ***
+; *********************************
 post:
-
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
 ; SRAM test
 ;#include "firmware/modules/ramtest.s"
+
+; ***********************************
+; *** firmware parameter settings ***
+; ***********************************
 
 ; *** set default CPU type ***
 	LDA #'V'			; 65816 installed (2)
@@ -67,74 +74,88 @@ post:
 ; ...but check it for real afterwards
 #include	"firmware/modules/cpu_check.s"
 
-; *** preset kernel start address (standard label from ROM file) ***
-	LDA #>kernel			; get full address
+; *** preset kernel start address (standard label from ROM file, unless downloaded) ***
+	LDA #>kernel		; get full address
 	LDY #<kernel
-	STA fw_warm+1			; store in sysvars
+	STA fw_warm+1		; store in sysvars
 	STY fw_warm
 
-; *** preset jiffy irq *** this should be done by installed kernel!
-	LDA #>IRQ_FREQ	; interrupts per second
-	LDY #<IRQ_FREQ
-	STA irq_freq+1	; store speed...
-	STY irq_freq
+; *** preset jiffy irq requency ***
+; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
+	_STZA irq_freq		; store null speed... IRQ not set
+	_STZA irq_freq+1
 
 ; *** preset default BRK & NMI handlers ***
-	LDA #>brk_handler	; standard label from IRQ file
-	LDY #<brk_handler
+	LDA #>std_nmi		; default like the standard NMI
+	LDY #<std_nmi
 	STY fw_brk			; store default handler
 	STA fw_brk+1
 ; since the NMI handler is validated, no need to install a default
 
+; *** reset jiffy count ***
 	LDX #4				; max WORD offset in uptime seconds AND ticks, assume contiguous (2)
 res_sec:
 		_STZA ticks, X		; reset word (5)
 		DEX					; next backwards
 		BPL res_sec			; zero is included
+
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
 ;	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
 ;	STX VIA_J + IER
 
 
-; ******* debug code, direct print some string *******
+; **********************************
+; *** direct print splash string ***
+; **********************************
 	LDX #0				; reset index
 fws_loop:
 		LDA fw_splash, X	; get char
 			BEQ fws_cr			; no more to print
-		_PHX				; keep reg (not really needed)
-#ifdef	NMOS
-		LDA fw_splash, X	; get char AGAIN
-#endif
-		JSR $c0c2			; Eh output
-		_PLX
+; as direct print uses no regs, nothing to save and reload
+		JSR $c0c2			; *** EhBASIC output ***
 		INX					; next char
 		BNE fws_loop		; no need for BRA
 fws_cr:
 	LDA #LF				; trailing CR, needed by console!
 	JSR $c0c2			; direct print
-; ******* end of debug code **************************
 
-; *** firmware ends, jump into the kernel ***
+; *** could download a kernel here, updating fw_warm accordingly ***
+
+; ************************
+; *** start the kernel ***
+; ************************
 start_kernel:
-	JMP (fw_warm)		; (5)
+	JMP (fw_warm)		; (5/6)
 
+; ********************************
+; ********************************
+; ****** interrupt handlers ******
+; ********************************
+; ********************************
+
+; **********************************************
 ; *** vectored NMI handler with magic number ***
+; **********************************************
 nmi:
 ; save registers AND system pointers
-	PHA					; save registers
+	PHA					; save registers (3x3)
 	_PHX
 	_PHY
 ; make NMI reentrant
-	LDY sysptr			; get original word 
-	LDX sysptr+1
-	LDA systmp			; this byte only
-	_PHY					; store them in similar order
+	LDX sysptr			; get original word  (3+3)
+	LDY sysptr+1
+	_PHY				; store them in similar order (3+3)
 	_PHX
+	LDA systmp			; this byte too (3+3)
 	PHA
 ; prepare for next routine
-	LDA fw_nmi			; copy vector to zeropage
-	LDY fw_nmi+1
-	STA sysptr
-	STY sysptr+1
+	LDY fw_nmi			; copy vector... (4+4)
+	LDA fw_nmi+1
+	STY sysptr			; ...on zeropage (3+3)
+	STA sysptr+1
+#ifdef	SAFE
 ; check whether user NMI pointer is valid
 	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
 	LDY #0				; offset for NMI code pointer (2)
@@ -145,24 +166,23 @@ nmi_chkmag:
 		INY					; another byte (2)
 		DEX					; internal string is read backwards (2)
 		BPL nmi_chkmag		; down to zero (3/2)
-do_nmi:
-	LDX #0				; null offset
-	JSR nmi_call		; in case no 816 is used!
-; *** here goes the former nmi_end routine ***
+#endif
+	JSR nmi_call		; will do indirect call (6...)
+; *** here goes the former nmi_end routine, restore and exit ***
 nmi_end:
-	PLA					; retrieve saved vars
-	_PLX
-	_PLY
+	PLA					; retrieve saved vars (4+3)
 	STA systmp			; only this byte
-	STX sysptr+1
-	STY sysptr
-	_PLY				; restore regular registers (3x5)
+	_PLX				; sysptr... (4+4)
+	_PLY
+	STX sysptr			; ...is also restored (3+3)
+	STY sysptr+1
+	_PLY				; restore regular registers (3x4)
 	_PLX
 	PLA
-	RTI					; resume normal execution and register size, hopefully
+	RTI					; resume normal execution, hopefully (6)
 
 nmi_call:
-	_JMPX(fw_nmi)		; call actual code, ending in RTS (6)
+	JMP (fw_nmi)		; call actual code, ending in RTS, DUH (5/6...)
 
 fw_magic:
 	.asc	"*jNU"		; reversed magic string
@@ -186,76 +206,126 @@ std_nmi:
 
 ; *** generic functions ***
 
-; GESTALT, get system info, API TBD
-; zpar -> available pages of (kernel) SRAM
-; zpar+2.W -> available BANKS of RAM
-; zpar2.B -> speedcode
-; zpar2+2.B -> CPU type
-; zpar3.W/L -> points to a string with machine name
-; *** WILL change ABI/API ***REVISE
+; GESTALT, get system info, API TBR
+;		OUTPUT
+; cpu_ll	= CPU type
+; c_speed	= speed code
+; str_pt	= points to a string with machine name
+; ex_pt		= points to a map of default memory conf ???
+; k_ram		= available pages of (kernel) SRAM
+; b_ram		= available BANKS of "high" RAM
+
 fw_gestalt:
-	LDA himem		; get pages of kernel SRAM (4)
-	STA zpar		; store output (3)
-	_STZX zpar+2	; no bankswitched RAM yet (4)
-	_STZX zpar3+2	; same for string address (4)
-	LDA #>fw_mname	; get string pointer
+	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4+3)
+	LDA #SPEED_CODE		; speed code as determined in options.h (2+3)
+	STY cpu_ll			; set outputs
+	STA c_speed
+	LDA himem			; get pages of kernel SRAM (4) ????
+	STA k_ram			; store output (3)
+	_STZA b_ram			; no "high" RAM (4)
+	LDA #>fw_mname		; get string pointer
 	LDY #<fw_mname
-	STA zpar3+1		; put it outside
-	STY zpar3
-	LDA #SPEED_CODE	; speed code as determined in options.h (2+3)
-	STA zpar2
-	LDA fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
-	STA zpar2+2
-	_DR_OK			; done (8)
+	STA str_pt+1		; put it outside
+	STY str_pt
+	LDA #>fw_map		; pointer to standard map TBD ????
+	LDY #<fw_map
+	STY ex_pt			; set output
+	STA ex_pt+1
+	_DR_OK				; done
+
+fw_map:
+; *** do not know what to do here ***
 
 ; SET_ISR, set IRQ vector
-; kerntab <- address of ISR
+;		INPUT
+; kerntab	= address of ISR
+
 fw_s_isr:
-	_ENTER_CS				; disable interrupts and save sizes! (5)
-	LDY kerntab				; get pointer
+	_ENTER_CS			; disable interrupts! (5)
+	LDY kerntab			; get pointer
 	LDA kerntab+1
-	STY fw_isr				; store for firmware
+	STY fw_isr			; store for firmware
 	STA fw_isr+1
-	_EXIT_CS				; restore interrupts if needed
-	_DR_OK					; done (8)
+	_EXIT_CS			; restore interrupts if needed
+	_DR_OK				; done (8)
 
 ; SET_NMI, set NMI vector
 ; kerntab <- address of NMI code (including magic string)
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected
+
 fw_s_nmi:
 #ifdef	SAFE
-	LDX #3					; offset to reversed magic string
-	LDY #0					; reset supplied pointer
+	LDX #3				; offset to reversed magic string
+	LDY #0				; reset supplied pointer
 fw_sn_chk:
-		LDA (kerntab), Y		; get pointed handler string char
-		CMP fw_magic, X			; compare against reversed string
-		BEQ fw_sn_ok			; no problem this far...
-			_DR_ERR(CORRUPT)		; ...or invalid NMI handler
+		LDA (kerntab), Y	; get pointed handler string char
+		CMP fw_magic, X		; compare against reversed string
+		BEQ fw_sn_ok		; no problem this far...
+			_DR_ERR(CORRUPT)	; ...or invalid NMI handler
 fw_sn_ok:
-		INY						; try next one
+		INY					; try next one
 		DEX
-		BPL fw_sn_chk			; until all done
+		BPL fw_sn_chk		; until all done
 #endif
 ; transfer supplied pointer to firmware vector
-	LDY kerntab				; get LSB (3)
-	LDA kerntab+1			; get MSB (3)
-	STY fw_nmi				; store for firmware (4+4)
+	LDY kerntab			; get LSB (3)
+	LDA kerntab+1		; get MSB (3)
+	STY fw_nmi			; store for firmware (4+4)
 	STA fw_nmi+1
-	_DR_OK					; done (8)
+	_DR_OK				; done (8)
 
 ; SET_BRK, set BRK handler
+;		INPUT
+; kerntab	= address of ISR
+
 fw_s_brk:
-; ****** TO BE DONE ******
+	_ENTER_CS			; disable interrupts! (5)
+	LDY kerntab			; get pointer
+	LDA kerntab+1
+	STY fw_brk			; store for firmware
+	STA fw_brk+1
+	_EXIT_CS			; restore interrupts if needed
+	_DR_OK				; done
 
 ; JIFFY, set jiffy IRQ frequency
-fw_jiffy:
-; ****** TO BE DONE ******
+;		INPUT
+; irq_hz	= frequency in Hz (0 means no change)
+;		OUTPUT
+; irq_hz	= actually set frequency (in case of error or no change)
+; C			= could not set (not here)
 
-; IRQ_SOURCE, set jiffy IRQ frequency
+fw_jiffy:
+	LDA irq_hz+1		; get input values
+	LDY irq_hz
+		BNE fj_set			; not just checking
+	CMP #0				; MSB also 0?
+		BNE fj_set			; not checking
+	LDA irq_freq+1		; get current frequency
+	LDY irq_freq
+	STA irq_hz+1		; set return values
+	STY irq_hz
+fj_end:
+	_DR_OK
+fj_set:
+	STA irq_freq+1		; store in sysvars
+	STY irq_freq
+	_BRA fj_end			; all done
+
+; IRQ_SOURCE, investigate source of interrupt
+;		OUTPUT
+; *** X	= 0 (periodic), 2 (async IRQ @ 65xx) ***
+; *** notice NON-standard output register for faster indexed jump! ***
+; other even values hardware dependent
+
 fw_i_src:
-; ****** TO BE DONE ******
-	_DR_ERR(UNAVAIL)	; not yet implemented
+	BIT VIA_J+IFR		; much better than LDA + ASL + BPL! (4)
+	BVS fis_per			; from T1 (3/2)
+		LDX #2				; standard async otherwise (2)
+		RTS					; no error handling for speed! (6)
+fis_per:
+	LDX #0				; standard value for jiffy IRQ
+	_DR_OK
 
 ; *** hardware specific ***
 
