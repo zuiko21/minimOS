@@ -53,7 +53,6 @@ kern_siz = kern_end - kern_head - 256
 ; **************************************************
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
--kernel:
 warm:
 	SEI					; interrupts off, just in case
 	CLD					; do not assume anything

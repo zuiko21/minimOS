@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6a3
+; v0.6a4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170601-0949
+; last modified 20170602-1318
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -46,9 +46,15 @@ sysvol:
 ; **************************************
 ; *** the GENERIC kernel starts here ***
 ; **************************************
-; mandatory kernel label internally defined!
-; includes appropriate shell with its own header
 
+; mandatory kernel label now defined HERE!
+#ifdef	NOHEAD
+kernel	= *
+#else
+kernel	= * + 256	; skip header
+#endif
+
+; includes appropriate shell with its own header
 #ifndef	C816
 #include "kernel.s"
 #else

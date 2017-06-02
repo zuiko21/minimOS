@@ -51,7 +51,6 @@ kern_siz = kern_end - kern_head - $FF
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
 
--kernel:
 warm:
 	SEI				; interrupts off, just in case (2)
 	CLD				; just in case, a must for NMOS (2)
