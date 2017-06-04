@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170530-1937
+; last modified 20170604-1919
 
 ; ***** for 68asm MC6800 cross assembler *****
 ; Hitachi 6301/6303 set
@@ -138,7 +138,7 @@
 	.asc	"ASL ", '&'+$80		; $78=ASL ext
 	.asc	"ROL ", '&'+$80		; $79=ROL ext
 	.asc	"DEC ", '&'+$80		; $7A=DEC ext
-	.asc	"AIM #@, ", '@'+$80	; $7B=AIM # dir	HD6301
+	.asc	"TIM #@, ", '@'+$80	; $7B=TIM # dir	HD6301
 	.asc	"INC ", '&'+$80		; $7C=INC ext
 	.asc	"TST ", '&'+$80		; $7D=TST ext
 	.asc	"JMP ", '&'+$80		; $7E=JMP ext
