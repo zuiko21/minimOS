@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6a5
+; v0.9.6a6
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170602-1435
+; last modified 20170609-1343
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -27,7 +27,7 @@ fw_mname:
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$7000			; time, 14.00
-	.word	$4AC2			; date, 2017/6/2
+	.word	$4AC9			; date, 2017/6/9
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -44,12 +44,12 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 ; **************************
 ; basic init
 reset:
-	SEI					; cold boot (2) not needed for simulator?
+	SEI					; cold boot (2)
 	CLD					; just in case, a must for NMOS (2)
 ; * this is in case a 65816 is being used, but still compatible with all *
-	SEC					; would set back emulation mode on C816
-	.byt	$FB			; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA $0				; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
+	SEC					; would set back emulation mode on C816 (2)
+	.byt	$FB			; XCE on 816 (2), NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
+	ORA $0				; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS (3)
 ; * end of 65816 specific code *
 	LDX #SPTR			; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS					; initialise stack (2)
@@ -72,55 +72,53 @@ post:
 	LDA #'V'			; 65816 installed (2)
 	STA fw_cpu			; store variable (4)
 ; ...but check it for real afterwards
-
-; *** actual CPU check ***
 #include	"firmware/modules/cpu_check.s"
 
 ; *** preset kernel start address (standard label from ROM file, unless downloaded) ***
-	LDA #>kernel		; get full address
+	LDA #>kernel		; get full address (2+2)
 	LDY #<kernel
-	STA fw_warm+1		; store in sysvars
+	STA fw_warm+1		; store in sysvars (4+4)
 	STY fw_warm
+
+; *** preset default BRK & NMI handlers ***
+	LDA #>std_nmi		; default like the standard NMI (2+2)
+	LDY #<std_nmi
+	STY fw_brk			; store default handler (4+4)
+	STA fw_brk+1
+; since the NMI handler is validated, no need to install a default
 
 ; *** preset jiffy irq frequency ***
 ; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
-	_STZA irq_freq		; store null speed... IRQ not set
+	_STZA irq_freq		; store null speed... IRQ not set (4+4)
 	_STZA irq_freq+1
-
-; *** preset default BRK & NMI handlers ***
-	LDA #>std_nmi		; default like the standard NMI
-	LDY #<std_nmi
-	STY fw_brk			; store default handler
-	STA fw_brk+1
-; since the NMI handler is validated, no need to install a default
 
 ; *** reset jiffy count ***
 	LDX #5				; max offset in uptime seconds AND ticks, assume contiguous (2) eeeeek
 res_sec:
 		_STZA ticks, X		; reset BYTE (5)
-		DEX					; next backwards
-		BPL res_sec			; zero is included
+		DEX					; next backwards (2)
+		BPL res_sec			; zero is included (3/2)
 
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
 ;	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
 ;	STX VIA_J + IER
-
+; should also get the counter running etc
 
 ; **********************************
 ; *** direct print splash string ***
 ; **********************************
-	LDX #0				; reset index
+	LDX #0				; reset index (2)
 fws_loop:
-		LDA fw_splash, X	; get char
-			BEQ fws_cr			; no more to print
+		LDA fw_splash, X	; get char (4)
+			BEQ fws_cr			; no more to print (2/3)
 ; as direct print uses no regs, nothing to save and reload
 		JSR $c0c2			; *** EhBASIC output ***
-		INX					; next char
-		BNE fws_loop		; no need for BRA
+		INX					; next char (2)
+		BNE fws_loop		; no need for BRA, as long as no more tha 255 chars (3/2)
 fws_cr:
-	LDA #LF				; trailing CR, needed by console!
+	LDA #LF				; trailing CR, needed by console! (2)
 	JSR $c0c2			; direct print
 
 ; *** could download a kernel here, updating fw_warm accordingly ***
@@ -152,7 +150,7 @@ nmi:
 	_PHX
 	LDA systmp			; this byte too (3+3)
 	PHA
-; prepare for next routine
+; prepare for routine checking
 	LDY fw_nmi			; copy vector... (4+4)
 	LDA fw_nmi+1
 	STY sysptr			; ...on zeropage (3+3)
@@ -215,20 +213,20 @@ std_nmi:
 ; b_ram		= available BANKS of "high" RAM
 
 fw_gestalt:
-	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4+3)
-	LDA #SPEED_CODE		; speed code as determined in options.h (2+3)
-	STY cpu_ll			; set outputs
+	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4)
+	LDA #SPEED_CODE		; speed code as determined in options.h (2)
+	STY cpu_ll			; set outputs (3+3)
 	STA c_speed
 	LDA himem			; get pages of kernel SRAM (4) ????
 	STA k_ram			; store output (3)
 	_STZA b_ram			; no "high" RAM (4)
-	LDA #>fw_mname		; get string pointer
+	LDA #>fw_mname		; get string pointer (2+2)
 	LDY #<fw_mname
-	STA str_pt+1		; put it outside
+	STA str_pt+1		; put it outside (3+3)
 	STY str_pt
-	LDA #>fw_map		; pointer to standard map TBD ????
+	LDA #>fw_map		; pointer to standard map TBD (2+2) ????
 	LDY #<fw_map
-	STY ex_pt			; set output
+	STY ex_pt			; set output (3+3)
 	STA ex_pt+1
 	_DR_OK				; done
 
@@ -237,12 +235,12 @@ fw_gestalt:
 ; kerntab	= address of ISR (will take care of all necessary registers)
 
 fw_s_isr:
-	_ENTER_CS			; disable interrupts! (5)
-	LDY kerntab			; get pointer
+	LDY kerntab			; get pointer (3+3)
 	LDA kerntab+1
-	STY fw_isr			; store for firmware
+	_ENTER_CS			; disable interrupts! (5)
+	STY fw_isr			; store for firmware (4+4)
 	STA fw_isr+1
-	_EXIT_CS			; restore interrupts if needed
+	_EXIT_CS			; restore interrupts if needed (4)
 	_DR_OK				; done (8)
 
 ; SET_NMI, set NMI vector
