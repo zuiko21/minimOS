@@ -30,7 +30,7 @@ whether a particular code chunk is able to be executed on that particular machin
 *MC68**05**/68HC05/68HC**08**. This is going to be a pretty **limited** port,
 due to restricted performance on this MCU family*
 - **J**: *Motorola* 6805 microcontroller
-- **C**: *CMOS* 68**HC**05, includes `SLP`
+- **C**: *CMOS* 68**HC**05, 146805 too, includes `STOP` and `WAIT`
 - **O**: 68HC**08**, notably improved version of the above
 
 ## [minimOS·80]()
@@ -51,6 +51,6 @@ due to restricted performance on this MCU family*
 - **L**: 80**386**
 ...
 
-*Last modified: 2017-06-09*
+*Last modified: 2017-06-10*
 
 
