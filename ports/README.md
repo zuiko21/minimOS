@@ -9,7 +9,8 @@ Planned so far are:
 ## [minimOS·65](../OS)
 It's the standard, original version, available at the OS directory within this repository!
 Will support **NMOS** 6502, generic CMOS **65C02** plus the **Rockwell/WDC** extensions
-(R65C02/W65C02S). It now *integrates* the port previously known as **minimOS·16** 
+(R65C02/W65C02S). It now *integrates* the port previously known as
+[**minimOS·16**](16.md) 
 for the **65C816** CPU, which is able to execute 65(C)02 code *in native mode* (albeit
 restricted to *bank zero*. The only 65xx apps unable to run on the '816 are those
 specifically written for the R65C02 --- no RMB/SMB/BBR/BBS opcodes on the '816!
@@ -24,6 +25,19 @@ Currently seems to implement only a *restricted API* (up to 85 system calls inst
 ## [minimOS·09](09.md)
 For Motorola **6809** and the much improved **Hitachi 6309**.
 *Details for this port are mostly TBD*, although it **won't** be compatible with *-63* code.
+
+## [minimOS·05](05.md)
+For Motorola's 68**05**/146805/68**HC05**/68**HC08** *medium performance* microcontrollers.
+*This is going to be a rather **limited port** because of restricted performance on 
+these MCUs*.
+
+Please note that, as '05 family is considered *legacy* and they have *no external bus* 
+connections (with the exception of the ROM-less 146805**E2**), only those models with
+*EPROM* (68**7**05, 1468**7**05, 68HC**7**05) or *EEPROM* (68HC**8**05) instead of
+*mask ROM* could be used.
+
+I'm not sure if ordering a mask ROM based 68HC**08** is profitable or even feasible,
+although the *Flash* based versions (68HC**9**08) seem suitable.   
 
 ## [minimOS·68](68.md)
 For Motorola **680x0** series, long ago thought of.
