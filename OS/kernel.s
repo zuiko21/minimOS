@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a4
+; v0.6a5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170531-1033
+; last modified 20170621-1401
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a4", 0	; version in comment
+	.asc	"minimOS 0.6a5", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -295,6 +295,7 @@ dr_iqloop:
 					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 				JSR dr_nextq		; advance to next queue (frequencies)
 				JSR dr_itask		; same for frequency queue
+; *** must copy here original frequency into drv_count ****** PLUS 256 ******
 				_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 			JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
@@ -493,7 +494,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a4", 0
+	.asc	"minimOS 0.6a5", 0
 #endif
 
 kern_end:		; for size computation

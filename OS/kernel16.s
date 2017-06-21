@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a3
+; v0.6a4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170525-1059
+; last modified 20170621-1403
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6a3", 0	; version in comment
+	.asc	"minimOS-16 0.6a4", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -252,6 +252,7 @@ dr_iqloop:
 ; write VALUE into queue
 				LDY dq_off			; get index of free entry!
 				STA (dq_ptr), Y		; store into reserved place!
+; *** and copy A into drv_count, unmodified! ***
 				BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 			JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
@@ -407,7 +408,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.6a3", 0	; version in comment
+	.asc	"minimOS-16 0.6a4", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

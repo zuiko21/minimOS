@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
 ; v0.6a2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170621-1350
+; last modified 20170621-1401
 
 #define		ISR		_ISR
 
@@ -73,6 +73,8 @@ i_poll:
 		.al: REP #$20			; *** 16-bit memory for counters ***
 		DEC drv_count, X		; otherwise continue with countdown
 		BNE i_pnx				; did not expire, do not execute yet
+			LDA drv_freq, X			; otherwise get original value...
+			STA drv_count, X		; ...and reset it! eeeeeeeeeeeeeeek
 			.as: .xs: SEP #$30		; make sure...
 			PHX						; keep index! (3)
 			JSR (drv_poll, X)		; call from table (8...)
