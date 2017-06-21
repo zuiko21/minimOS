@@ -1,6 +1,6 @@
-; minimOS 0.6a3 System Variables
+; minimOS 0.6a4 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170531-1025
+; last modified 20170621-1343
 .bss
 
 ; **** I/O management ****
@@ -29,6 +29,7 @@ drv_freq	.dsb	MAX_QUEUE	; array of periodic task frequencies (word?)
 drv_async	.dsb	MAX_QUEUE	; space for async task pointers
 drv_a_en	.dsb	MAX_QUEUE	; interleaved array of async interrupt task flags
 drv_p_en	= drv_a_en + 1		; ditto for periodic tasks (interleaved)
+drv_count	.dsb	MAX_QUEUE	; current P-task counters eeeeeeeeeeeeeeeeeeeeek
 
 ; *** single-task sigterm handler separate again! ***
 ; multitasking should provide appropriate space!

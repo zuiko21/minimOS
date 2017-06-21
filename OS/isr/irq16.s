@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.6a1, should match kernel16.s
+; v0.6a2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170524-1243
+; last modified 20170621-1350
 
 #define		ISR		_ISR
 
@@ -30,15 +30,17 @@ BIT VIA_J+IFR			; much better than LDA + ASL + BPL! (4)
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 36 clocks)
 ; *********************************
-; execute D_REQ in drivers (7 if nothing to do, 6+22*number of drivers until one replies, plus inner codes)
-; *** should be rewritten for new 0.6 functionality ***
+; execute D_REQ in drivers (7 if nothing to do, ?+?*number of drivers until one replies, plus inner codes)
 	LDX queues_mx			; get async queue size (4)
 	BEQ ir_done				; no drivers to call (2/3)
 i_req:
-		PHX						; keep index! (3)
-		JSR (drv_async-2, X)	; call from table (8+...) expected to return in 8-bit size, at least indexes
-		PLX						; restore index (4)
-			BCC isr_done			; driver satisfied, thus go away NOW (2/3)
+		LDA drv_r_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
+		BPL i_rnx			; *** if disabled, skip this task ***
+			PHX						; keep index! (3)
+			JSR (drv_async-2, X)	; call from table (8+...) expected to return in 8-bit size, at least indexes
+			PLX						; restore index (4)
+				BCC isr_done			; driver satisfied, thus go away NOW (2/3)
+i_rnx:
 		DEX						; go backwards to be faster! (2+2)
 		DEX						; decrease after processing
 		BNE i_req				; until done (3/2)
@@ -60,18 +62,24 @@ periodic:
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
 ; execute D_POLL code in drivers
-; *** should be rewritten for new 0.6 functionality ***
-; 7 if nothing to do, typically 6+26 clocks per entry (not 62!) plus inner codes
+; 7 if nothing to do, typically ? clocks per entry (not 62!) plus inner codes
 	LDX queues_mx+1			; get queue size (4)
 	BEQ ip_done				; no drivers to call (2/3)
 i_poll:
 		DEX						; go backwards to be faster! (2+2)
 		DEX						; no improvement with offset, all of them will be called anyway
-		PHX						; keep index! (3)
-		JSR (drv_poll, X)		; call from table (8...)
+		LDY drv_p_en, X			; *** check whether enabled, new in 0.6 ***
+			BPL i_pnx				; *** if disabled, skip this task ***
+		.al: REP #$20			; *** 16-bit memory for counters ***
+		DEC drv_count, X		; otherwise continue with countdown
+		BNE i_pnx				; did not expire, do not execute yet
+			.as: .xs: SEP #$30		; make sure...
+			PHX						; keep index! (3)
+			JSR (drv_poll, X)		; call from table (8...)
 ; *** here is the return point needed for B_EXEC in order to create the stack frame ***
 isr_sched_ret:					; *** take this standard address!!! ***
-		PLX						; restore index (4)
+			PLX						; restore index (4)
+i_pnx:
 		BNE i_poll				; until zero is done (3/2)
 ip_done:
 ; update uptime
@@ -87,6 +95,6 @@ ip_done:
 	INC ticks+4				; 64k more seconds (8)
 	BRA isr_done			; go away (3)
 
-; *** BRK handler ***
+; *** BRK handler *** REVISE
 brk_handler:				; this has a separate handler, check compatible label in firmware
 #include "isr/brk16.s"

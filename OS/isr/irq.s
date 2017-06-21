@@ -1,17 +1,17 @@
 ; ISR for minimOS
-; v0.6a1, should match kernel.s
+; v0.6a2, should match kernel.s
 ; features TBD
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170530-1107
+; last modified 20170621-1344
 
 #define		ISR		_ISR
 
 #include "usual.h"
 
 ; *** interrupt service routine performance ***
-; _minimum_ overhead for periodic interrupt with no drivers in queue is 62 clocks, or 107 each second
-; fastest asynchronous interrupt is reached in 42 clocks
-; BRK is handled within 37 clocks, and spurious interrupts take 35, all if no drivers in async queue
+; _minimum_ overhead for periodic interrupt with no drivers in queue is * clocks, or * each second
+; fastest asynchronous interrupt is reached in * clocks
+; BRK is handled within * clocks, and spurious interrupts take *, all if no drivers in async queue
 ; *********************************************
 
 ; **** the ISR code **** (11)
@@ -30,14 +30,16 @@
 
 ; *** async interrupt otherwise ***
 ; execute D_REQ in drivers (7 if nothing to do, 3+28*number of drivers until one replies, plus inner codes)
-; *** should be rewritten for new 0.6 functionality ***
 	LDX queues_mx	; get queue size (4)
 	BEQ ir_done		; no drivers to call (2/3)
 i_req:
-		_PHX				; keep index! (3)
-		JSR ir_call			; call from table (12...)
-		_PLX				; restore index (4)
-			BCC isr_done		; driver satisfied, thus go away NOW, BCC instead of BCS 20150320 (2/3)
+		LDA drv_r_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
+		BPL i_rnx			; *** if disabled, skip this task ***
+			_PHX				; keep index! (3)
+			JSR ir_call			; call from table (12...)
+			_PLX				; restore index (4)
+				BCC isr_done		; driver satisfied, thus go away NOW, BCC instead of BCS 20150320 (2/3)
+i_rnx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; decrease after processing, negative offset on call, less latency, 20151029
 		BNE i_req			; until zero is done (3/2)
@@ -69,17 +71,28 @@ periodic:
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
 ; execute D_POLL code in drivers
-; 7 if nothing to do, typically 6+26 clocks per entry (not 62!) plus inner codes
+; 7 if nothing to do, typically ? clocks per entry (not 62!) plus inner codes
 	LDX queues_mx+1		; get queue size (4)
 	BEQ ip_done			; no drivers to call (2/3)
 i_poll:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; no improvement with offset, all of them will be called anyway
-		_PHX				; keep index! (3)
-		JSR ip_call			; call from table (12...)
-; *** here is the return point needed for B_EXEC in order to create the stack frame ***
-isr_sched_ret:				; *** take this standard address!!! ***
-		_PLX				; restore index (4)
+		LDA drv_p_en, X		; *** check whether enabled, new in 0.6 ***
+			BPL i_pnx			; *** if disabled, skip this task ***
+		DEC drv_count, X	; otherwise continue with countdown
+			BNE i_pnx			; LSB did not expire, do not execute yet
+		DEC drv_count+1, X	; check now MSB, note value should be ONE more!
+		BNE i_pnx			; keep waiting...
+			LDY drv_freq, X		; ...or pick original value...
+			LDA drv_freq+1, X
+			STY drv_count, X	; ...and reset it!
+			STA drv_count+1, X
+			_PHX				; keep index! (3)
+			JSR ip_call			; call from table (12...)
+	; *** here is the return point needed for B_EXEC in order to create the stack frame ***
+	isr_sched_ret:				; *** take this standard address!!! ***
+			_PLX				; restore index (4)
+i_pnx:
 		BNE i_poll			; until zero is done (3/2)
 ip_done:
 ; update uptime was usually 15 up to 29, each second will be 53...66, 45 bytes
