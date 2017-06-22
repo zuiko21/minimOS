@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a5
+; v0.6a6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170621-1401
+; last modified 20170622-1236
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,12 +35,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a5", 0	; version in comment
+	.asc	"minimOS 0.6a6", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$7000	; time, 14.00
-	.word	$4AB3	; date, 2017/5/19
+	.word	$6000	; time, 12.00
+	.word	$4AD6	; date, 2017/6/22
 
 kern_siz = kern_end - kern_head - $FF
 
@@ -295,7 +295,14 @@ dr_iqloop:
 					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 				JSR dr_nextq		; advance to next queue (frequencies)
 				JSR dr_itask		; same for frequency queue
-; *** must copy here original frequency into drv_count ****** PLUS 256 ******
+; *** must copy here original frequency (PLUS 256) into drv_count ***
+				LDA (dq_ptr), Y		; get MSB
+				_INC				; plus 1
+				STA drv_count, Y	; store copy...
+				STA (dq_ptr), Y		; ...and correct original value
+				DEY					; go for LSB
+				LDA (dq_ptr), Y		; get original...
+				STA drv_count, Y	; ...and store unmodified
 				_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 			JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
@@ -494,7 +501,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a5", 0
+	.asc	"minimOS 0.6a6", 0
 #endif
 
 kern_end:		; for size computation
