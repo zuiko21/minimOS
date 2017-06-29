@@ -1,4 +1,4 @@
-* Jalapa-II
+# Jalapa-II
 
 The **Jalapa** project, originally intended to be a 65C02 machine with a *coarse*
 bankswitching feature (loewr 16K, including *zeropage* & *stack*) for reasonable
@@ -6,7 +6,7 @@ bankswitching feature (loewr 16K, including *zeropage* & *stack*) for reasonable
 **65C816** with a simple architecture, but still powerful enough for future *minimOS*
 versions.
 
-** Specs
+## Specs
 
 Still within design phase, here's an outline of its basic specs:
 
