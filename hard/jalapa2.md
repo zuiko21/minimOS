@@ -39,7 +39,8 @@ which is the maximum size available in *hobbyist-friendly*, 5v DIP packages.
 The usual need in 65816 systems of some ROM in *bank zero* is waived by *remapping
 the upper 32 or 16k (configurable) of the first bank of ROM into bank zero. As the upper
 4 address bits are not connected, this map will *repeat* every 16 banks, note the `x` as
-*don't care* in the indicated addresses.
+*don't care* in the indicated addresses. No provision is made to avoid *mirroring*,
+thus suitable firmware should take that into account.
 
 A typically configured machine goes as follows:
 
@@ -57,12 +58,50 @@ down to 2kiB are possible) and the **I/O page** can be freely located anywhere w
 *the upper 32K of bank zero*, although it **must overlap *kernel* ROM area**, otherwise
 bad things may happen (unaccessible I/O, bus contention...) 
 
+Actually, I/O space is just **128 bytes**... as it is hardwired to the upper 32K (see
+above), the LSB on the '688 comparator goes to A7, thus being able to select *either
+half* of the page. As the MSB goes with A14, A15 is kept as a non-selectable option
+one the previous comparator, for *kernel-ROM* selection. 
+
 ## Glue-logic implementation
 
 As usual in my designs, some component choices were determined by my stock... This may
 lead to somewhat sub-optimal designs, although at aimed speeds shouldn't be a problem.
-In any case, replacing the 74HCxx ICs by *faster* 74ACT/FCT logic will improve performance
-significantly.
+In any case, replacing the 74HCxx ICs by faster **74ACT/FCT** logic will improve performance
+significantly. Since HC logic seems good in this design for **up to ~2.5 MHz**, the
+initial goal is attained. At the *nominal 2.304 MHz*, **250 ns memories** are
+suitable.
 
-*Last modified: 2017-07-01*
+As usual in 65816 talk, `D0`...`D7` and `A0`...`A15` are the **direct** data and address 
+lines (pinout shared with the *6502*) while `BA16`...`BA23` are the outputs from the
+*transparent **latch*** as usually done (note `BA20` to `BA23` are **not** used)
+
+### RDY implementation
+
+Still under research is the fact **whether an RDY-halted 65816 *multiplexes* bank
+addresses on the data bus or not**. Should this assumption be *true*, this perhaps will
+*not* be an issue, because:
+
+- While *reading*, the selected address will remain valid, and the recommended **74HC245**
+will just isolate the CPU data bus from the outside, while the addressed device is
+(slowly) *building* the data bits. As long as it reaches a stable configuration prior
+to the *setup time* on the **last** Phi-2 cycle, all will be fine.
+- During *writes*, the output data from CPU will arrive *intermittently* to the slow
+device; it seems that *most RAMs actually **latch** the current data just upon /WE going
+**up*** and, unless its *setup time* is longer than half the clock cycle.
+- Even if the previous SRAM assumption is *false*, the *data bus capacitance* is most
+likely to **keep the output data stable** when the 74xx245 shuts off during Phi-1 with
+its outputs in *high-Z* state. *Weak pull-downs* are even allowed, but with all the
+mirroring on this machine there seems to be little use for such a **BRK-generating
+device** which will disable execution on *undecoded* areas.
+
+Otherwise (the bank address does *not* get multiplexed during RDY pauses) the
+WDC-suggested circuit **must** be modified in order to avoid *latching **invalid** bank
+addresses*. Another option would be the use of **clock-stretching** and leaving RDY
+*gently* pulled up and indisturbed.
+
+Note that this machine *does **not** negate RDY* by itself, although this capability
+should be provided for **expansion bus** use.
+
+*Last modified: 2017-07-10*
  
