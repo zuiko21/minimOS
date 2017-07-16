@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a5
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170713-1727
+; last modified 20170716-2206
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -128,25 +128,12 @@ res_sec:
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
-;	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
-;	STX VIA_J + IER
+	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
+	STX VIA_J + IER
 
 	.as: .xs: SEP #$30	; *** all back to 8-bit, just in case, might be removed if no remote boot is used (3) ***
 
-; **********************************
-; *** direct print splash string ***
-; **********************************
-	LDX #0				; reset index
-fws_loop:
-		LDA fw_splash, X	; get char
-			BEQ fws_cr			; no more to print
-; as direct print uses no regs, nothing to save and reload
-		JSR $c0c2			; *** EhBASIC output ***
-		INX					; next char
-		BRA fws_loop
-fws_cr:
-	LDA #LF				; trailing CR, needed by console!
-	JSR $c0c2			; direct print
+; NO direct print splash string ***
 
 ; *** could download a kernel here, updating fw_warm accordingly ***
 
@@ -509,6 +496,21 @@ fw_mname:
 cop_hndl:		; label from vector list
 	JMP (fw_table, X)		; the old fashioned way
 
+; new lock routine blinking E-mode LED!
+led_lock:
+	SEC
+led_switch:
+	XCE
+led_loop:
+			DEX
+			BNE led_loop
+		DEY
+		BNE	led_loop
+	BCS led_lock
+		CLC
+	BRA led_switch
+
+
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kernel_call-*, $FF
@@ -550,9 +552,9 @@ irq:
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = lock
-	NOP					; same address as 6502
+	SEI					; same address as 6502
 panic_loop:
-	BRA panic_loop		; OK as this is 65816 only
+	BRA led_lock		; OK as this is 65816 only
 	NOP					; padding for reserved C816 vectors
 
 ; *** 65C816 ROM vectors ***
