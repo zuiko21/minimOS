@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a5
+; v0.9.6a6
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170716-2206
+; last modified 20170717-2229
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -496,19 +496,24 @@ fw_mname:
 cop_hndl:		; label from vector list
 	JMP (fw_table, X)		; the old fashioned way
 
+; *************************************
 ; new lock routine blinking E-mode LED!
+; *************************************
 led_lock:
-	SEC
+	CLC			; ensure native mode...
+	XCE			; ...for a moment
+	SEC			; will start in Emulation with C clear
 led_switch:
-	XCE
+		XCE			; switch between native and emulation mode
+		LDA #4			; suitable delay
 led_loop:
-			DEX
+					INX
+					BNE led_loop
+				INY
+				BNE led_loop
+			DEC
 			BNE led_loop
-		DEY
-		BNE	led_loop
-	BCS led_lock
-		CLC
-	BRA led_switch
+		BRA led_switch
 
 
 ; filling for ready-to-blow ROM
