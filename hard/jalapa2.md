@@ -47,30 +47,33 @@ A typically configured machine goes as follows:
 - $x00000-$x07FFF: RAM (all configs)
 - $x08000-$x0BFFF: EPROM (if set to 32K, RAM otherwise) *from $x88000-$x8BFFF*
 - $xC0000-$x0DEFF: EPROM (if set to 32 or 16K, RAM otherwise) *from $x8C000-$x8DEFF*
-- $x0DF00-$x0DFFF: I/O (not valid if 8K or less assigned to ROM)
+- $x0DF00-$x0DFFF: I/O (not valid if 8K or less assigned to ROM, see note below)
 - $x0E000-$x0FFFF: EPROM (on standard configs) *from $x8E000-x$8FFFF*
 - $x10000-$x1FFFF: RAM (both 128 & 512K models)
 - $x20000-$x7FFFF: RAM (512K model only)
 - $x80000-$xFFFFF: "high" ROM (includes *kernel* ROM as mentioned)
 
 Configuration jumpers select the ***kernel* ROM size** (usually 32 or 16K, but smaller sizes
-down to 2kiB are possible) and the **I/O page** can be freely located anywhere within
+down to 2 kiB are possible) and the **I/O page** can be freely located anywhere within
 *the upper 32K of bank zero*, although it **must overlap *kernel* ROM area**, otherwise
 bad things may happen (unaccessible I/O, bus contention...) 
 
-Actually, I/O space is just **128 bytes**... as it is hardwired to the upper 32K (see
+Actually, *I/O space* is just **128 bytes**... as it is hardwired to the upper 32K (see
 above), the LSB on the '688 comparator goes to A7, thus being able to select *either
 half* of the page. As the MSB goes with A14, A15 is kept as a non-selectable option
-one the previous comparator, for *kernel-ROM* selection. 
+one the previous comparator, for *kernel-ROM* selection. **This method seems OK
+*if an expansion bus provides means to disable internal decoding***, otherwise will
+limit the expansion capabilities. On the other hand, "borrowing" the whole page for
+I/O will need to disable the internal '139 for the unused half-page. 
 
 ## Glue-logic implementation
 
 As usual in my designs, some component choices were determined by my stock... This may
-lead to somewhat sub-optimal designs, although at aimed speeds shouldn't be a problem.
-In any case, replacing the 74HCxx ICs by faster **74ACT/FCT** logic will improve performance
-significantly. Since HC logic seems good in this design for **up to ~2.5 MHz**, the
-initial goal is attained. At the *nominal 2.304 MHz*, **250 ns memories** are
-suitable.
+lead to somewhat *sub-optimal* designs, although at such *pedestrian* speeds shouldn't
+be a problem. In any case, replacing the 74HCxx ICs by faster **74ACT/FCT** logic will
+allow significantly faster clock rates. Since HC logic seems good in this design for
+**up to ~2.5 MHz**, the initial goal is attained. At the *nominal 2.304 MHz*,
+**250 ns memories** are suitable.
 
 As usual in 65816 talk, `D0`...`D7` and `A0`...`A15` are the **direct** data and address 
 lines (pinout shared with the *6502*) while `BA16`...`BA23` are the outputs from the
@@ -103,5 +106,19 @@ addresses*. Another option would be the use of **clock-stretching** and leaving 
 Note that this machine *does **not** negate RDY* by itself, although this capability
 should be provided for **expansion bus** use.
 
-*Last modified: 2017-07-10*
+### Chip Selection
+
+While the moderate clock speed does not ask for an extremely efficient *address
+decoding*, keeping circuitry **as simple as possible** will reduce the build effort...
+
+- **`RAM /CS`** is as simple as **negated `BA19`** (the lowest 512K of each megabyte).
+*Note that RAM is **always** written*, although its *output* will be disabled when
+overlapping with (kernel) EPROM or I/O. *No clock is taken for this signal*, writes
+will be Phi2-validated via `/WE`, as usual
+- **`ROM /CS`**, on the other hand, cannot just be the opposite, because it has to be
+enabled whenever the ***kernel* area** is accessed (below $x10000, with `BA19` low).
+A NAND gate is to be used for this signal, from both `BA19` and the (active *high*)
+result of a '688 detecting the configured *kernel* area.
+
+*Last modified: 2017-07-21*
  
