@@ -1,23 +1,33 @@
 ; minimOS•16 firmware module
 ; ROM size estimation (allows mirroring)
 ; 20-bit Jalapa version
-; v0.6a1
+; v0.6a2
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170703-2144
+; last modified 20170721-1752
 
-	LDA #$FA		; standard vector location LSB
-	STA uz			; set pointer
-	LDA #$FF		; standard vector location MSB
+	STZ uz			; clear LSB, needs at least 256-byte ROM!
+	LDA #$FF		; initial MSB
 	STA uz+1		; set pointer
-	LDA #$F8		; base bank ($80 for 24-bit)
+	LDA #$F8		; base bank for high ROM
 	STA uz+2		; pointer is complete
-	SEC			; insert 1 from left
+	LDA #$5A		; initial value (will swap with $A5)
 rs_shft:
-		ROR uz+2		; shift bank
-			BCS rs_small		; tiny ROM!
-		JSR rs_cmp		; check whether vectors are found there
-		BCS rs_shft		; there is mirroring, try half size
-; *** size detected ***
+			STA (uz)		; store current value
+			CMP (uz)		; is correct?
+				BNE rs_not		; not, it must be ROM
+			EOR #$FF		; otherwise switch value...
+			BMI rs_shft		; ...until both done
+		ASL uz+1		; shift page
+		BNE rs_shft		; try half size
+; *** size detected, or already 32K ***
+
+; *** no longer in RAM, but check whether decoded? ***
+rs_not:
+#ifdef	SAFE
+#endif
+	SEC
+	ROR uz+1		; recover lost bit
+;******************continue...
 	LDA #1			; we will subtract to the end
 	SBC uz+2		; subtract selected bank (C was clear)
 	LDY #0			; no partial banks!
