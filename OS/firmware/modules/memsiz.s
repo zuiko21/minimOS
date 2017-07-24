@@ -1,26 +1,36 @@
 ; minimOS•16 firmware module
-; ROM size estimation (allows mirroring)
+; memory size estimation (needs mirroring, undecoded areas not allowed)
 ; 20-bit Jalapa version
-; v0.6a2
+; v0.6a3
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170721-1752
+; last modified 20170724-2116
 
-	STZ uz			; clear LSB, needs at least 256-byte ROM!
 	LDA #$FF		; initial MSB
-	STA uz+1		; set pointer
-	LDA #$F8		; base bank for high ROM
+	STA uz			; set pointer LSB
+	LSR			; will point inside the lower 32k of each bank
+	STA uz+1		; set pointer MSB
+	LDA #$07		; base bank for high RAM
 	STA uz+2		; pointer is complete
+rs_hiram:
+		STA [uz]		; store current bank
+		LSR			; shift to half size...
+		STA uz+2		; ...and update pointer
+		BNE rs_hiram		; repeat until bank 0
+	STZ $7FFF		; in case 64K or less
+	LDA @$77FFF		; *** number of RAM banks ***
+
+
 	LDA #$5A		; initial value (will swap with $A5)
 rs_shft:
-			STA (uz)		; store current value
-			CMP (uz)		; is correct?
+			STA [uz]		; store current value
+			CMP [uz]		; is correct?
 				BNE rs_not		; not, it must be ROM
 			EOR #$FF		; otherwise switch value...
 			BMI rs_shft		; ...until both done
-		ASL uz+1		; shift page
+		LSR uz+2		; shift bank
 		BNE rs_shft		; try half size
-; *** size detected, or already 32K ***
-
+; *** size detected, or no more than 64K ***
+;
 ; *** no longer in RAM, but check whether decoded? ***
 rs_not:
 #ifdef	SAFE
