@@ -1,7 +1,7 @@
-; minimOS 0.6a3 API/ABI
+; minimOS 0.6a4 API/ABI
 ; *** not binary-compatibly with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170524-0955
+; last modified 20170801-1805
 
 ; *************************************************
 ; *************************************************
@@ -9,43 +9,49 @@
 ; *************************************************
 ; *************************************************
 
-; basic I/O
-COUT		=   0	; character output
-CIN			=   2	; character input
-STRING		=   4	; output a C-string via COUT
-READLN		=   6	; read input into supplied buffer
+; legacy basic I/O
+COUT		= 0	; character output, interface for BOUT
+CIN			= COUT + 2	; character input, interface for BLIN
+STRING		= CIN + 2	; output a C-string
+READLN		= STRING + 2	; read input into supplied buffer
+
+; block-oriented I/O
+BOUT		= READLN + 2	; block output
+BLIN		= BOUT + 2	; block input
+B_CNFG		= BLIN + 2	; configuration settings, new TBD
+B_STAT		= B_CNFG + 2	; device status report, new TBD
 
 ; basic windowing system
-OPEN_W		=   8	; open window or get I/O devices
-CLOSE_W		=  10	; close a window or release device and its buffer
-FREE_W		=  12	; release a window but let it on screen, keeping its buffer, may be closed by kernel
+OPEN_W		= B_CNFG + 2	; open window or get I/O device
+CLOSE_W		= OPEN_W + 2	; close a window or release device and its buffer
+FREE_W		= CLOSE_W + 2	; release a window but let it on screen, keeping its buffer, may be closed by kernel
 
 ; other generic functions
-UPTIME		=  14	; give uptime in ticks and seconds *** no longer_hid_push!
-SET_FG		=  16	; set PB7 frequency generator ***firmware implementation
-SHUTDOWN	=  18	; proper shutdown, with or without power-off
-LOAD_LINK	=  20	; get an executable from its path, and get it loaded into primary memory, maybe relocated
+UPTIME		= FREE_W + 2	; give uptime in ticks and seconds
+SET_FG		= UPTIME + 2	; set PB7 frequency generator *** interface for firmware
+SHUTDOWN	= SET_FG + 2	; proper shutdown, with or without power-off
+LOAD_LINK	= SHUTDOWN + 2	; get an executable from its path, and get it loaded into primary memory, maybe relocated
 
 ; for multitask main use, but also with reduced single task management
-B_FORK		=  22	; reserve a free braid
-B_EXEC		=  24	; get code at some address running into a previously reserved braid
-B_SIGNAL	=  26	; send UNIX_like signal to a braid
-B_STATUS	=  28	; get execution flags of a braid
-GET_PID		=  30	; get current braid PID
-SET_HNDL	=  32	; set SIGTERM handler
-B_YIELD		=  34	; give away CPU time, not really needed but interesting anyway
+B_FORK		= LOAD_LINK + 2	; reserve a free braid
+B_EXEC		= B_FORK + 2	; get code at some address running into a previously reserved braid
+B_SIGNAL	= B_EXEC + 2	; send UNIX_like signal to a braid
+B_STATUS	= B_SIGNAL + 2	; get execution flags of a braid
+GET_PID		= B_STATUS + 2	; get current braid PID
+SET_HNDL	= GET_PID + 2	; set SIGTERM handler
+B_YIELD		= SET_HNDL + 2	; give away CPU time, not really needed but interesting anyway
 
 ; some new functionalities, perhaps OK with LOWRAM systems
-AQ_MANAGE	=  36	; get asyncronous task status, or enable/disable it!
-PQ_MANAGE	=  38	; get periodic task status, enable/disable it or set frequency!
+AQ_MANAGE	= B_YIELD + 2	; get asyncronous task status, or enable/disable it!
+PQ_MANAGE	= AQ_MANAGE + 2	; get periodic task status, enable/disable it or set frequency!
 
 ; not for LOWRAM systems
-MALLOC		=  40	; allocate memory
-MEMLOCK		=  42	; allocate memory at a certain address, new 20170524
-FREE		=  44	; release memory block
-RELEASE		=  46	; release ALL memory blocks belonging to some PID, new 20161115
-TS_INFO		=  48	; get taskswitching info for multitasking driver
-SET_CURR	=  50	; set internal kernel info for running task (PID & architecture) new 20170222
+MALLOC		= PQ_MANAGE + 2	; allocate memory
+MEMLOCK		= MALLOC + 2	; allocate memory at a certain address, new 20170524
+FREE		= MEMLOCK + 2	; release memory block
+RELEASE		= FREE + 2	; release ALL memory blocks belonging to some PID, new 20161115
+TS_INFO		= RELEASE + 2	; get taskswitching info for multitasking driver
+SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & architecture) new 20170222
 
 
 ; ***********************
@@ -71,35 +77,35 @@ CORRUPT	=   9		; data corruption
 ; ************************************
 
 ; generic functions, esp. interrupt related
-GESTALT		=  0	; get system info (renumbered)
-SET_ISR		=  2	; set IRQ vector
-SET_NMI		=  4	; set (magic preceded) NMI routine
-SET_BRK		=  6	; set debugger, new 20170517
-JIFFY		=  8	; set jiffy IRQ speed, ** TBD **
-IRQ_SOURCE	= 10	; get interrupt source in X for total ISR independence
+GESTALT		= 0		; get system info (renumbered)
+SET_ISR		= GESTALT + 2	; set IRQ vector
+SET_NMI		= SET_ISR + 2	; set (magic preceded) NMI routine
+SET_BRK		= SET_NMI + 2	; set debugger, new 20170517
+JIFFY		= SET_BRK + 2	; set jiffy IRQ speed, ** TBD **
+IRQ_SOURCE	= JIFFY + 2	; get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
-POWEROFF	= 12	; power-off, suspend or cold boot
-FREQ_GEN	= 14	; frequency generator hardware interface, TBD
+POWEROFF	= IRQ_SOURCE +2	; power-off, suspend or cold boot
+FREQ_GEN	= POWEROFF + 2	; frequency generator hardware interface, TBD
 
 ; not for LOWRAM systems
-INSTALL		= 16	; copy jump table
-PATCH		= 18	; patch single function (renumbered)
-CONTEXT		= 20	; context bankswitching
+INSTALL		= FREQ_GEN + 2	; copy jump table
+PATCH		= INSTALL + 2	; patch single function (renumbered)
+CONTEXT		= PATCH + 2	; context bankswitching
 
 ; **************************
 ; ** Driver table offsets **
 ; **************************
 D_ID	=  0		; driver ID
 D_AUTH	=  1		; authorization mask
-D_CIN	=  2		; character input code
-D_COUT	=  4		; character output code
+D_BLIN	=  2		; BLOCK input code
+D_BOUT	=  4		; BLOCK output code
 D_INIT	=  6		; device reset procedure
 D_POLL	=  8		; periodic interrupt task
 D_FREQ	= 10		; frequency for periodic task, new 20170517
 D_REQ	= 12		; asynchronous interrupt task
-D_BLIN	= 14		; block input, new names 20150304, also for control purposes
-D_BLOUT	= 16		; block output, new names 20150304, also for control purposes
+D_CNFG	= 14		; device configuration, TBD
+D_STAT	= 16		; device status, TBD
 D_BYE	= 18		; shutdown procedure
 D_INFO	= 20		; points to a C-string with driver info
 D_MEM	= 22		; NEW, required variable space (if relocatable) (WORD)
@@ -107,11 +113,11 @@ D_MEM	= 22		; NEW, required variable space (if relocatable) (WORD)
 ; ** Driver feature mask values **
 A_POLL	= %10000000	; D_POLL routine available
 A_REQ	= %01000000	; D_REQ routine available
-A_CIN	= %00100000	; D_CIN capability
-A_COUT	= %00010000	; D_COUT capability
-A_BLIN	= %00001000	; D_BLIN capability
-A_BLOUT	= %00000100	; D_BLOUT capability
-A_SEC	= %00000010	; *** no longer available, RESERVED ***
+A_BLIN	= %00100000	; D_BLIN capability
+A_BOUT	= %00010000	; D_BOUT capability
+A_CNFG	= %00001000	; D_CNFG capability
+A_STAT	= %00000100	; D_STAT capability
+A_RSVD	= %00000010	; *** no longer available, RESERVED ***
 A_MEM	= %00000001	; D_MEM dynamically linked, on-the-fly loadable driver
 
 ; ** VIA 65(C)22 registers, just for convenience **
