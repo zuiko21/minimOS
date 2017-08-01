@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a5, must match kernel.s
+; v0.6a7, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170530-1102
+; last modified 20170801-1825
 
 ; no way for standalone assembly...
 
@@ -12,10 +12,31 @@
 memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
 aqmanage:
 pqmanage:
+bl_config:
+bl_status:
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
 
+
+; ****************************
+; *** CIN, get a character ***
+; ****************************
+;		INPUT
+; Y = dev
+;		OUTPUT
+; io_c	= char
+; C		= not available
+;		USES whatever BLIN takes
+
+cin:
+	LDA #io_c			; will point to old parameter
+	STA bl_pt			; set pointer
+	_STZA bl_pt+1
+	LDA #1				; transfer a single byte
+	STA bl_siz			; set size
+	_STZA bl_siz+1
+	JMP bl_in			; get small block...
 
 ; ********************************
 ; *** COUT, output a character ***
@@ -25,10 +46,31 @@ unimplemented:			; placeholder here, not currently used
 ; io_c	= char
 ;		OUTPUT
 ; C = I/O error
-;		USES iol_dev, plus whatever the driver takes
-; cio_lock is a kernel structure
+;		USES whatever BOUT takes
 
 cout:
+	LDA #io_c			; will point to old parameter
+	STA bl_pt			; set pointer
+	_STZA bl_pt+1
+	LDA #1				; transfer a single byte
+	STA bl_siz			; set size
+	_STZA bl_siz+1
+; ...and fall into BOUT
+
+; **************************
+; *** BOUT, block output ***
+; **************************
+;		INPUT
+; Y		= dev
+; bl_pt		= pointer to block
+; bl_siz	= number of bytes (16b)
+
+;		OUTPUT
+; C = I/O error
+;		USES iol_dev plus whatever the driver takes
+; cio_lock is a kernel structure
+
+bl_out:
 	TYA					; for indexed comparisons (2)
 	BNE co_port			; not default (3/2)
 		LDA stdout			; new per-process standard device
@@ -85,9 +127,9 @@ cio_unlock:
 	RTS					; exit with whatever error code
 
 
-; ****************************
-; *** CIN, get a character ***
-; ****************************
+; ***********************
+; *** BLIN, get block ***
+; ***********************
 ;		INPUT
 ; Y = dev
 ;		OUTPUT
@@ -96,7 +138,7 @@ cio_unlock:
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock & cin_mode are kernel structures
 
-cin:
+bl_in:
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
 		LDA std_in			; new per-process standard device
@@ -133,6 +175,7 @@ ci_lckdd:
 
 ; ** EVENT management **
 ; this might be revised, or supressed altogether!
+; ****** MUST be revised for block I/O ******
 		LDX iol_dev			; **use physdev as index! worth doing here (3)
 		LDA io_c			; get received character
 		CMP #' '			; printable?
@@ -804,6 +847,7 @@ ll_wrap:
 ;		USES iol_dev and whatever the driver takes
 ;
 ; cio_lock is a kernel structure
+; ****** MUST be revised for block io ******
 
 string:
 	TYA					; set flags upon devnum (2)
@@ -899,7 +943,7 @@ readLN:
 rl_l:
 		JSR yield			; always useful!
 		LDY rl_dev			; use device
-		JSR cin				; get one character
+		JSR cin				; get one character***
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
@@ -1146,6 +1190,11 @@ k_vec:
 	.word	cin			; get a character
 	.word	string		; prints a C-string
 	.word	readLN		; buffered input
+; block-oriented I/O
+	.word	bl_out		; block output
+	.word	bl_in		; block input
+	.word	bl_config	; I/O config, new
+	.word	bl_status	; I/O query, new
 ; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
