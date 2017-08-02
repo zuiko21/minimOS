@@ -1,7 +1,11 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a8, should match kernel16.s
+; v0.6a9, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170530-1021
+; last modified 20170802-2138
+
+; assumes 8-bit sizes...
+
+.as: .xs:
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -14,7 +18,6 @@ aqmanage:
 pqmanage:
 
 unimplemented:			; placeholder here, not currently used
-	.xs: SEP #$10		; standard index size for a moment
 	_ERR(UNAVAIL)		; go away!
 
 
@@ -31,7 +34,6 @@ unimplemented:			; placeholder here, not currently used
 ; * 8-bit savvy *
 
 cout:
-	.as: .xs: SEP #$30	; *** standard register size *** (3)
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -133,7 +135,6 @@ cio_abort:
 ; * 8-bit savvy *
 
 cin:
-	.as: .xs: SEP #$30	; *** standard register size *** (3)
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -263,7 +264,6 @@ ci_rnd:
 
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$10		; *** 8-bit indexes ***
 	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index (can be used for storing any 8-bit zero)
 	PHX					; put one zero byte into stack (no need for PHK as this X is needed afterwards)
@@ -481,6 +481,7 @@ ma_room:
 		BNE ma_room			; continue until done
 	RTS
 
+	.as				; back to normal...
 
 ; *******************************
 ; **** FREE,  release memory ****
@@ -495,7 +496,6 @@ ma_room:
 
 free:
 	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$10		; *** 8-bit indexes ***
 	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index (will be used afterwards)
 	PHX					; put one zero byte into stack (no need for PHK)
@@ -570,6 +570,7 @@ fr_join:
 	DEX
 	RTS
 
+	.as				; back to normal...
 
 ; **************************************
 ; *** OPEN_W, get I/O port or window ***
@@ -585,7 +586,6 @@ fr_join:
 
 open_w:
 	.al: REP #$20		; *** 16-bit memory size ***
-	.xs: SEP #$10		; *** 8-bit register, just in case ***
 	LDA w_rect			; asking for some size? includes BOTH bytes
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
@@ -605,6 +605,7 @@ close_w:				; doesn't do much
 free_w:					; doesn't do much, either
 	_EXIT_OK
 
+	.as				; back to normal...
 
 ; **************************************
 ; *** UPTIME, get approximate uptime ***
@@ -616,7 +617,6 @@ free_w:					; doesn't do much, either
 
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
-; as no indexes are used, not even for errors, no need to (re)set X flag!
 ; default 816 API functions run on interrupts masked, thus no need for CS
 ; not worth setting DBR, note long addressing
 		LDA @ticks		; get system variable word (5)
@@ -628,6 +628,7 @@ uptime:
 ; end of CS
 	_EXIT_OK
 
+	.as				; back to normal...
 
 ; *********************************
 ; *** B_FORK, get available PID ***
@@ -636,7 +637,6 @@ uptime:
 ; Y		= PID, 0 means not available or singletask
 
 b_fork:
-	.as: .xs: SEP #$30	; *** standard register size *** (3)
 	LDY #0				; no multitasking, system reserved PID anytime
 ; ...and go into subsequent EXIT_OK from B_YIELD
 
@@ -663,7 +663,6 @@ yield:
 
 b_exec:
 ; non-multitasking version
-	.as: .xs: SEP #$30	; *** standard register size *** (3)
 #ifdef	SAFE
 	TYA					; should be system reserved PID, best way
 	BEQ exec_st			; OK for single-task system
@@ -761,7 +760,6 @@ rst_shell:
 ; Y		= PID (0 means TO ALL)
 
 signal:
-	.as: .xs: SEP #$30	; *** standard register size *** (3)
 #ifdef	SAFE
 	TYA					; check correct PID
 		BNE sig_pid			; invalid braid
@@ -791,7 +789,6 @@ sig_term:
 ; C = invalid PID
 
 status:
-	.as: .xs: SEP #$30	; *** standard register size *** (3)
 #ifdef	SAFE
 	TYA					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -819,7 +816,6 @@ sig_exit:
 
 set_handler:
 	.al: REP #$20		; *** 16-bit memory size ***
-	.xs: SEP #$10		; *** 8-bit indexes *** eeeeeeeeek
 #ifdef	SAFE
 	TYX					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -850,7 +846,6 @@ st_shset:
 ; may not need to be patched in multitasking systems!
 
 get_pid:
-	.as: .xs: SEP #$30	; *** standard register size *** (3)
 	LDY run_pid			; new kernel variable
 	_EXIT_OK
 
@@ -871,7 +866,6 @@ get_pid:
 load_link:
 ; *** first look for that filename in ROM headers ***
 	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$10		; *** standard index size ***
 ; no need to set DBR
 
 #ifdef	SUPPORT
@@ -978,6 +972,7 @@ ll_native:
 	STA ex_pt+1			; save rest of execution pointer
 	_EXIT_OK
 
+	.as
 
 ; *********************************
 ; *** STRING, prints a C-string ***
@@ -994,7 +989,6 @@ ll_native:
 
 string:
 ; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
-	.as: .xs: SEP #$30	; *** standard register size ***
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek
 	PHK					; zero into stack
@@ -1114,7 +1108,6 @@ str_exit:
 ; * 8-bit savvy *
 
 readLN:
-	.as: .xs: SEP #$30	; *** standard register size ***
 ; no need to switch DBR as regular I/O calls would do it
 
 #ifdef	SUPPORT
@@ -1189,7 +1182,6 @@ rl_cr:
 
 set_fg:
 	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$10		; *** 8-bit indexes ***
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -1231,6 +1223,7 @@ fg_busy:
 	PLB					; restore!
 	_ERR(BUSY)			; couldn't set
 
+	.as
 
 ; ***********************************************************
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
@@ -1244,7 +1237,6 @@ fg_busy:
 ; * 8-bit savvy (I hope) *
 
 shutdown:
-	.as: .xs: SEP #$30	; *** standard register size ***
 ; switch DBR as it accesses some kernel data!
 	PHB					; eeeeeeeeek
 	PHK					; bank 0 into stack
@@ -1322,6 +1314,7 @@ sd_done:
 	LDX sd_flag			; retrieve mode as index!
 	JMP (sd_tab-2, X)	; do as appropriate *** note offset as sd_stat will not be called from here
 
+	.as
 
 ; ***************************************************************
 ; *** TS_INFO, get taskswitching info for multitasking driver ***
@@ -1331,7 +1324,6 @@ sd_done:
 ; ex_pt = 16b pointer to the proposed stack frame (certainly in bank 0)
 
 ts_info:
-	.xs: SEP #$10			; *** standard index size ***
 	.al: REP #$20			; *** 16-bit memory ***
 	LDA #tsi_str			; pointer to proposed stack frame
 	STA ex_pt				; store output word
@@ -1339,6 +1331,7 @@ ts_info:
 	LDY #tsi_end-tsi_str	; number of bytes
 	_EXIT_OK
 
+	.as
 
 ; *********************************************
 ; *** RELEASE, release ALL memory for a PID ***
@@ -1351,7 +1344,6 @@ ts_info:
 ; * 8-bit savvy, I think *
 
 release:
-	.as: .xs: SEP #$30	; *** 8-bit sizes ***
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek
 	PHK					; bank 0 into stack
@@ -1393,6 +1385,7 @@ rls_oth:
 	PLB					; restore!
 	_EXIT_OK			; no errors...
 
+	.as
 
 ; ***********************************************************
 ; *** SET_CURR, set internal kernel info for running task ***
@@ -1406,7 +1399,6 @@ rls_oth:
 ; * 8-bit savvy *
 
 set_curr:
-	.as: .xs: SEP #$30	; *** 8-bit sizes ***
 	TYA					; eeeeek, no long STY (2)
 	STA @run_pid		; store PID into kernel variables (5)
 	LDA cpu_ll			; get architecture from multitasking driver (3)

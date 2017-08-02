@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a7
+; v0.9.6a8
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170802-1841
+; last modified 20170802-2138
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -496,6 +496,7 @@ fw_mname:
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
 	CLC					; pre-clear carry HERE
+	.as: .xs: SEP #$30		; default sizes!
 	JMP (fw_table, X)		; the old fashioned way
 
 ; *************************************
