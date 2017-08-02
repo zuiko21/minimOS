@@ -1,9 +1,9 @@
 ; minimOS•16 firmware module
 ; memory size estimation (needs mirroring, undecoded areas not allowed)
 ; 20-bit Jalapa version
-; v0.6a3
+; v0.6a4
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170725-1948
+; last modified 20170802-1907
 
 	LDA #$FF		; initial MSB
 	STA uz			; set pointer LSB
@@ -19,8 +19,9 @@ rs_hiram:
 	STZ $7FFF		; in case 64K or less
 	LDA @$77FFF		; *** number of RAM banks ***
 ; store somewhere...
-	STZ uz			; ROM lsb
-	LDA #$80		; buggest ROM
+	LDA #$0E		; in case a VIA is found will arrive at IER
+	STA uz			; ROM LSB, VIA savvy
+	LDA #$80		; biggest ROM
 	LDA #$5A		; initial value (will swap with $A5)
 rs_shft:
 			STA (uz)		; store current value
