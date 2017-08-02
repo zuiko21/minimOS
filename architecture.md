@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-05-22*
+*Last update: 2017-08-02*
 
 ## Rationale
 
@@ -197,13 +197,28 @@ in use, but in any case they'll bear a **header** containing this kind of inform
 - A device **ID** (currently 128-255, as *logical* devices use up to 127)
 - A **feature mask** indicating the availability of some of the following
 - Pointers to **initialisation** and **shutdown** routines (mandatory)
-- Pointers to *character* **Input** and **Output** routines (when available)
-- Pointers to ***block* Input** and **Output** routines (when available, TBD)
+- Pointers to ***block* Input** and **Output** routines (when available)
+- Pointer to a **configuration** routine (when available)
+- Pointer to a **status report** routine (when available)
 - Pointer to an **Asynchronous Interrupt Handler** (called *by request*, if enabled)
 - Pointer to a **Periodic Interrupt Handler** (called every "n" *jiffy* interrupts, if enabled)
 - **Frequency** value for the *periodic* task described above (the *n* value for the above)
-- Pointer to a **description string** in human-readable form
+- Pointer to a **description *C-*string** in human-readable form
 - Number of ***dynamically allocated* bytes**, if loadable *on-the-fly* (TBD)
+
+A last-minute change in 0.6 is the **block-oriented I/O**. This was foreseen on older
+versions, but drivers were *character-oriented*. This also leaves room for separate
+**configuration** and **status report** features, previously integrated within block I/O.
+Note that, for compatibility reasons, *the Kernel still provides legacy **character**-
+oriented I/O*, as mere interfaces setting a fixed single-byte *block size* prior to
+calling the generic block routines.
+
+The primitive **event management** this far expected certain *control characters*
+(^C for `SIGTERM`, ^Z for `SIGSTOP`, etc) to be received and processed via `CIN`.
+Since managing these events *within a block transfer* seems unconvenient to say the
+least, the new approach will manage them **thru the *legacy* `CIN` routine**, which is
+anyway expected to be used for human iteraction. Note that current (0.6) `READLN`
+impementation does use `CIN` internally, thus event-savvy.
 
 Of special interest are the **interrupt routines**. The (now unified) **periodic** queue handles
 those tasks at *multiples* of the **jiffy** IRQ period; while **5 ms** is the *recommended*  
@@ -267,9 +282,9 @@ but each task must return an *error code* signaling whether the IRQ was **acknow
 by that handler or not. This code **may or may not** be ignored by the ISR, depending on 
 performance considerations or the chance of simaltaneous interrupts.
 
-*I/O routines* need little explanation, although **block** transfers haven't been used 
-this far (2017-05-08). Details for them are TBD, and could serve as a **configuration** 
-settings interface.
+*I/O routines* need little explanation, now that **block** transfers are the
+standard form. Old *character-oriented* code will now need to integrate a loop for
+repeatedly executing the single byte transfer. 
 
 At boot time, the *initialisation* routine of each registered driver is **unconditionally** 
 called -- if not needed, must point to an existing *Return from Subroutine* instruction. 
@@ -279,18 +294,19 @@ succesfully initialised or not (e.g. device not present), the latter condition m
 routine will be called, although any error condition makes little sense now, thus is not 
 required.
 
-As of 2017-05-08, drivers **cannot be loaded *on-the-fly***, 
+As of 2017-08-02, drivers **cannot be loaded *on-the-fly***, 
 being **assembled together** with the Kernel, firmware etc. 
 The problem is in *driver variables*, which are **statically allocated**. 
 *Future versions will allow loading drivers from mass storage, even on a 
 running system **without rebooting***. For this to be achieved, *dynamic allocation* of 
 variable space is needed, thus a parameter in driver header asks for a certain memory 
-size. Details for passing the allocated space *pointer* to the asking driver are TBD, (UPDATE 2017-05-10) 
+size. Details for passing the allocated space *pointer* to the asking driver are TBD,
 but a feasible method in 65xx architectures would be **setting `sysptr`** 
 reserved zeropage location prior to any interrupt task execution, pointing it to the 
 beginning of allocated space. *Indirect indexed addressing* would have to be used 
 by the drivers in order to access its (dynamically allocated) variable space. 
-Alternatively, a *relocation* scheme (**not yet implemented** as of 2017-05-10, in any way) may be used for better runtime performance; even (for the **65816**) moving 
+Alternatively, a *relocation* scheme (**not yet implemented**  in any way) may be used
+for better runtime performance; even (for the **65816**) moving 
 *Direct Page* to the reserved area for the task execution, although that may 
 interfere with *kernel calls* and general system operation, if not carefully crafted 
 (interrupts **off**, and make sure [NMI](https://en.wikipedia.org/wiki/Non-maskable_interrupt) 
@@ -317,9 +333,10 @@ Eagle-eyed readers may have noticed the **yellow fringing** around the *apps-to-
 *expected* to call the Firmware *directly*, there is nothing preventing it. Actually, a "plain" 6502 may do it without 
 effort, as the firmware's [ABI](https://en.wikipedia.org/wiki/Application_binary_interface) is pretty much the same as 
 the Kernel's (call via `JSR` and ending in `RTS`). The 65816 makes it more difficult, as the Kernel uses a different 
-interface (call via `COP` which must end in **`RTI`**) and the Firmware is expected to be called *from bank zero* (where the 
-Kernel & drivers must reside); but anyway, a **wrapper** will be provided for enabling the user apps to **directly** call the 
-firmware via `RTL` (from any bank)... *if you know what you're doing* (register sizes, etc)
+interface (call via `COP` which must end in **`RTI`**) while the Firmware
+is expected to be called *from bank zero* (where the 
+Kernel & drivers must reside); but anyway, a **wrapper** is now provided for enabling the user apps to **directly** call
+the firmware via `JSL` (from any bank)... *if you know what you're doing* (register sizes, etc)
 
 The desired *cleanliness* is responsible for the creation of some *apparently unneeded* Kernel functions (`TS_INFO`, `RELEASE`, 
 `SET_CURR`...) that will be discussed in due time, particularly affecting **multitasking** implementation.
@@ -345,4 +362,3 @@ Some hardware may make this area **protected** from other processes' access. Eve
 ---
  
 *more coming soon*
-
