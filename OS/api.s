@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a7, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170801-1825
+; last modified 20170802-2121
 
 ; no way for standalone assembly...
 
@@ -36,7 +36,49 @@ cin:
 	LDA #1				; transfer a single byte
 	STA bl_siz			; set size
 	_STZA bl_siz+1
-	JMP bl_in			; get small block...
+	JSR bl_in			; get small block...
+; ...and check for events! **********************************************REVISE
+	BCC ci_nerror			; got something...
+		RTS				; ...or keep error code from BLIN
+ci_nerror:
+	LDX iol_dev			; **use physdev as index! worth doing here (3)
+	LDA io_c			; get received character
+	CMP #' '			; printable?
+		BCS ci_exitOK		; if so, will not be an event, exit with NO error
+; otherwise might be an event ** REVISE
+; check for binary mode first
+	LDY cin_mode, X		; *get flag, new sysvar 20150617
+	BEQ ci_event		; should process possible event
+		_STZA cin_mode, X	; *back to normal mode
+ci_exitOK:
+		_EXIT_OK		; *otherwise mark no error and exit
+ci_event:
+	CMP #16				; is it DLE?
+	BNE ci_notdle		; otherwise check next
+		STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
+		_ERR(EMPTY)			; and supress received character (will NOT stay locked!)******************
+ci_notdle:
+	CMP #3				; is it ^C? (TERM)
+	BNE ci_noterm		; otherwise check next
+		LDA #SIGTERM
+		BRA ci_signal		; send signal
+ci_noterm:
+	CMP #4				; is it ^D? (KILL) somewhat dangerous...
+	BNE ci_nokill		; otherwise check next
+		LDA #SIGKILL
+		BRA ci_signal		; send signal
+ci_nokill:
+	CMP #26				; is it ^Z? (STOP)
+		BNE ci_exitOK		; otherwise there is no more to check
+	LDA #SIGSTOP		; last signal to be sent
+ci_signal:
+	STA b_sig			; set signal as parameter
+	LDY run_pid			; faster GET_PID
+	_KERNEL(B_SIGNAL)	; send signal to myself
+; continue after having filtered the error
+ci_error:
+	_ERR(EMPTY)			; no character was received
+
 
 ; ********************************
 ; *** COUT, output a character ***
@@ -173,50 +215,9 @@ ci_lckdd:
 		JSR ci_call			; direct CALL!!!
 			BCS cio_unlock		; clear MUTEX and return whatever error!
 
-; ** EVENT management **
-; this might be revised, or supressed altogether!
-; ****** MUST be revised for block I/O ******
-		LDX iol_dev			; **use physdev as index! worth doing here (3)
-		LDA io_c			; get received character
-		CMP #' '			; printable?
-			BCS ci_exitOK		; if so, will not be an event, exit with NO error
-; otherwise might be an event ** REVISE
-; check for binary mode first
-		LDY cin_mode, X		; *get flag, new sysvar 20150617
-		BEQ ci_event		; should process possible event
-			_STZA cin_mode, X	; *back to normal mode
-ci_exitOK:
-			CLC					; *otherwise mark no error... (2)
-			BCC cio_unlock		; ...clear mutex and exit, no need for BRA (3)
-ci_event:
-		CMP #16				; is it DLE?
-		BNE ci_notdle		; otherwise check next
-			STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
-			_ERR(EMPTY)			; and supress received character (will stay locked!)
-ci_notdle:
-		CMP #3				; is it ^C? (TERM)
-		BNE ci_noterm		; otherwise check next
-			LDA #SIGTERM
-			BRA ci_signal		; send signal
-ci_noterm:
-		CMP #4				; is it ^D? (KILL) somewhat dangerous...
-		BNE ci_nokill		; otherwise check next
-			LDA #SIGKILL
-			BRA ci_signal		; send signal
-ci_nokill:
-		CMP #26				; is it ^Z? (STOP)
-			BNE ci_exitOK		; otherwise there is no more to check
-		LDA #SIGSTOP		; last signal to be sent
-ci_signal:
-		STA b_sig			; set signal as parameter
-		LDY run_pid			; faster GET_PID
-		_KERNEL(B_SIGNAL)	; send signal to myself
-; continue after having filtered the error
-		LDY #EMPTY			; no character was received
-		SEC					; eeeeeeeek
-		JMP cio_unlock		; release device and exit!
+; ** EVENT management no longer here **
 
-; logical devices management, * placeholder *
+; logical devices management, * placeholder *****************REVISE FOR BLOCK IO
 ci_nph:
 	CMP #64				; within window devices?
 		BCC ci_win			; below that, should be window manager
@@ -239,8 +240,27 @@ ci_log:
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	LDA ticks			; simple placeholder eeeeeeek
-	STA io_c			; eeeeeeeeeeeeeeeeek
+; ****** sample code for block input besides driver ******
+	LDY #0				; reset index
+	LDX bl_siz+1
+	LDA bl_siz			; get original size, will keep as completed
+	BEQ cirn_pa			; page aligned means keep MSB...
+		INX				; ...or increment it for easier DEC
+cirn_pa:
+	STA bl_cnt			; store locally
+	STX bl_cnt+1
+cirn_loop:
+		LDA ticks			; simple placeholder******* eeeeeeek
+		STA (bl_ptr), Y			; store in buffer
+		DEC bl_cnt			; one less to go
+		BNE cirn_next			; no boundary crossing...
+			DEC bl_cnt+1			; ...or propagate...
+			BEQ ci_ok			; ...until the end
+ci_next:
+		INY				; update index
+		BNE cirn_loop			; continue...
+			INC bl_ptr+1			; ...or next page*****
+		BNE cirn_loop			; no need for BRA
 ci_ok:
 	_EXIT_OK
 
@@ -844,87 +864,28 @@ ll_wrap:
 ; str_pt	= pointer to string
 ;		OUTPUT
 ; C = device error
-;		USES iol_dev and whatever the driver takes
-;
-; cio_lock is a kernel structure
-; ****** MUST be revised for block io ******
+;		USES ...
 
 string:
-	TYA					; set flags upon devnum (2)
-	BNE str_port		; not default (3/2)
-		LDA stdout			; new per-process standard device
-		BNE str_port		; already a valid device
-			LDA default_out		; otherwise get system global (4)
-str_port:
-	BMI str_phys		; not a logic device (3/2)
-		CMP #64				; within window handler range?
-			BCC str_win			; below that, should go to window manager
-; ** optional filesystem access **
-#ifdef	FILESYSTEM
-		CMP #64+MAX_FILES	; still within file-devs?
-			BCS str_log			; that value or over, not a file
-; *** manage here output to open file ***
-#endif
-; *** virtual windows manager TO DO ***
-str_win:
-		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
-; ** end of filesystem/window access **
-str_log:
-; investigate rest of logical devices
-		CMP #DEV_NULL		; lastly, ignore output
-		BNE str_nfound		; is it NULL?
-			_EXIT_OK			; /dev/null is always OK
-str_nfound:
-		_ERR(N_FOUND)		; final error otherwise
-str_phys:
-; ** new direct indexing, revamped 20160407 **
-	ASL					; convert to index (2)
-	STA iol_dev			; store for indexed call! (3)
-; MUTEX for physical devices only!
-	_ENTER_CS
-str_wait:
-		LDX iol_dev			; restore previous status, *new style (3)
-		LDA cio_lock, X		; *check whether THAT device in use (4)
-		BEQ str_lckd		; resume operation if free (3)
-			_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
-			_BRA str_wait		; try again! (3)
-str_lckd:
-	LDA run_pid			; who am I?
-	STA cio_lock, X		; *reserve this (4)
-	_EXIT_CS			; eeeeeeeeeeeeeeeeeeeek
-; proceed with mutually-exclusive routine
+; not very efficient... measure string and call BOUT
+	_PHY				; must keep device eeeeeeek
 	LDA str_pt+1		; MSB of pointer might be changed
 	PHA					; save it for later!
 	LDY #0				; eeeeeeeek! (2)
-; ** the actual printing loop **
+	STY bl_siz+1			; reset MSB of measured size
 str_loop:
-		_PHY				; save just in case COUT destroys it (3)
 		LDA (str_pt), Y		; get character from string, new approach (5)
-		BNE str_cont		; not terminated! (3/2)
-			PLA					; otherwise discard saved Y (4)
-			_BRA str_exit			; and go away
-str_cont:
-		STA io_c			; store output character for COUT (3)
-		JSR str_call		; indirect subroutine call (6...)
-			BCS str_err			; error from driver, but keeping Y eeeeeek^2
-		_PLY				; restore index (4)
+			BEQ str_ncont		; terminated! (3/2)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
-	INC str_pt+1		; otherwise increase, parameter has changed! MUST be restored later
-	BNE str_loop		; continue, will check for termination later, no need for BRA (3)
-str_call:
-	LDX iol_dev			; get driver pointer position (3)
-	_JMPX(drv_opt)		; go at stored pointer (...6)
-str_err:
-	PLA					; discard saved Y while keeping error code
-	_BRA str_abort		; unlock and exit
-str_exit:
-		CLC					; unlock and exit without error
-str_abort:
-	LDX iol_dev			; retrieve driver index
-	_STZA cio_lock, X	; clear mutex
+			INC str_pt+1		; otherwise increase, parameter has changed! MUST be restored later
+			INC bl_siz+1		; one more page
+		BNE str_loop		; continue, no need for BRA (3)
 	PLA					; restore saved MSB
 	STA str_pt+1		; needed for new API/ABI
+	STY bl_siz		; record size LSB
+	_PLY			; restore device
+	_KERNEL(BOUT)		; call usual (could be patched)
 	RTS					; return whatever error code
 
 
