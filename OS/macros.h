@@ -1,14 +1,16 @@
-; minimOS 0.6a1 MACRO definitions
+; minimOS 0.6a2 MACRO definitions
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170517-1159
+; last modified 20170802-1812
 
 ; *** standard addresses ***
 
-kernel_call	=	$FFC0	; ending in RTS, 816 will use COP handler and a COP,RTS wrapper for 02
+kernel_call	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
 admin_call	=	$FFD0	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
 admin_appc	=	$FFD8	; special interface for 65816 firmware call from USER software!
+; usually pointing to JSR admin_call, then RTL
 
 ; unified address (will lock at $FFE1-2 anyway) for CMOS and NMOS ** new name 20161010
+; some machines will lock somewhere else, like blinking the Emulation LED!
 lock		=	$FFE0	; more-or-less 816 savvy address
 
 ; *** device numbers for optional pseudo-driver modules, TBD ***
@@ -17,9 +19,9 @@ WIND_DEV	=	129		; new name 20161017, might suffer the same fate!
 FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries for it! Perhaps #128
 
 ; *** considerations for minimOS·16 ***
-; kernel return is via RTI (note CLC trick)
+; kernel return is via RTI (note CLC trick, now into firmware)
 ; kernel functions are expected to be in bank zero!
-; 6502 apps might work bank-agnostic, binaries should use wrapper JSR pointer, RTL
+; 6502 apps CANNOT work bank-agnostic, bank zero only
 ; driver routines are expected to be in bank zero too... standard JSR/RTS, must return to kernel!
 
 ; *** common function calls ***
@@ -29,16 +31,20 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #ifndef	C816
 #define		_KERNEL(a)		LDX #a: JSR kernel_call
 #else
-; new COP signature as per WDC reccomendations
-#define		_KERNEL(a)		LDX #a: CLC: COP #$7F
+; new COP signature as per WDC reccomendations, CLC now into firmware!
+#define		_KERNEL(a)		LDX #a: COP #$7F
 #endif
 
 ; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings! note pre-CLC
-; * C02 wrapper then should be like			CLC	COP #$FF	RTS
 
 ; administrative calls unified for 6502 and 65816, all ending in RTS (use DR_OK and DR_ERR macros)
 #define		_ADMIN(a)		LDX #a: JSR admin_call
-
+; specific user-mode firmware call, needed for 65816
+#ifdef	C816
+#define		_U_ADM(a)		LDX #a: JSL admin_appc
+#else
+#define		_U_ADM(a)		LDX #a: JSR admin_call
+#endif
 
 ; new macro for filesystem calling, no specific kernel entries!
 ; ** revise for 816 systems **** TO DO TO DO TO DO

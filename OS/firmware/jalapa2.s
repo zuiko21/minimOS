@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a6
+; v0.9.6a7
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170717-2229
+; last modified 20170802-1841
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -438,6 +438,7 @@ fwp_func:
 	.word	kernel		; should not use this, just in case
 	.word	reset		; coldboot	+FW_COLD
 	.word	fwp_off		; poweroff	+FW_OFF
+; might include here the BRK/NMI invocation codes
 
 fw_map:
 ; *** do not know what to do here ***
@@ -494,6 +495,7 @@ fw_mname:
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
+	CLC					; pre-clear carry HERE
 	JMP (fw_table, X)		; the old fashioned way
 
 ; *************************************
@@ -523,16 +525,18 @@ led_loop:
 
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
 * = kernel_call
-	CLC					; pre-clear carry
-	COP #$FF			; wrapper on 816 firmware!
+	COP #$7F			; wrapper on 816 firmware, will do CLC!
 	RTS					; return to caller
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
 
-; ****** idea for 65816 admin-call interface from apps! ******
-; ** could be at $00FFC8 **
-;	JSR admin_call		; get into firmware interface (returns via RTS)
-;	RTL					; get back into original task (called via JSL $00FFC8)
-; ****** likely to end at $00FFCD ******
+#ifdef		ROM
+	.dsb	admin_appc-*, $FF
+#endif
+; *** idea for 65816 admin-call interface from apps! ***
+* = admin_appc
+	JSR admin_call		; get into firmware interface (returns via RTS)
+	RTL					; get back into original task (called via JSL $00FFC8)
+; ****** likely to end at $00FFCC ******
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -547,7 +551,7 @@ led_loop:
 ; *** vectored IRQ handler ***
 ; might go elsewhere, especially on NMOS systems
 irq:
-	JMP (fw_isr)	; vectored ISR (6)
+	JMP (fw_isr)	; vectored ISR (5)
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM

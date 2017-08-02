@@ -1,6 +1,6 @@
-; minimOS 0.6a5 zero-page system variables
+; minimOS 0.6a6 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170607-1225
+; last modified 20170802-1815
 
 .zero
 * = 0
@@ -61,7 +61,7 @@ local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 
 ; *** include aliases here for zpar3/zaddr3 ***
 b_sig: kerntab: ln_siz:
-ex_pt: ma_rs:				; mandatory 24-bit size
+ex_pt: ma_rs: bl_ptr:			; mandatory 24-bit size
 
 z10:z10W:z10L:				; old labels for compatibility
 zpar3: zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
@@ -71,7 +71,7 @@ b_ram	= ma_rs+3			; Banks of "high" memory (65816 only)
 
 ; *** include aliases here for zpar2/zaddr2 ***
 up_ticks: def_io: irq_hz
-ma_pt: str_pt:				; mandatory 24-bit size
+ma_pt: str_pt: bl_ptr:			; mandatory 24-bit size
 
 z6:z6W:z6L:					; old labels for compatibility
 zpar2: zaddr2	.dsb	4	; up to 4 bytes, including older names @ $F4

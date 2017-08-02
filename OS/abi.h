@@ -1,7 +1,7 @@
 ; minimOS 0.6a4 API/ABI
 ; *** not binary-compatibly with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170801-1805
+; last modified 20170802-1825
 
 ; *************************************************
 ; *************************************************
@@ -151,13 +151,13 @@ LOCK_RAM	=	6	; new label 20161117
 
 ; some kernel-related definitions
 #ifndef	LOWRAM
-			MAX_QUEUE	=	16	; maximum interrupt task queue size
-			MAX_DRIVERS	=	16	; maximum number of drivers, independent as of 20170207
-			MAX_LIST	=	32	; number of available RAM blocks *** might increase this value in 65816 systems!
+MAX_QUEUE	=	16	; maximum interrupt task queue size
+MAX_DRIVERS	=	16	; maximum number of drivers, independent as of 20170207
+MAX_LIST	=	32	; number of available RAM blocks *** might increase this value in 65816 systems!
 #else
-			MAX_QUEUE	=	6	; much smaller queues in 128-byte systems, note unified jiffy & slow queues!
-			MAX_DRIVERS	=	4	; maximum number of drivers, independent as of 20170207
-			MAX_LIST	=	0	; no memory management for such systems
+MAX_QUEUE	=	6	; much smaller queues in 128-byte systems, note unified jiffy & slow queues!
+MAX_DRIVERS	=	4	; maximum number of drivers, independent as of 20170207
+MAX_LIST	=	0	; no memory management for such systems
 #endif
 
 ; multitasking subfunctions, no longer needed as will patch regular kernel!
@@ -182,7 +182,7 @@ SIGCONT		=  6	; resume a previously paused braid, will go BR_RUN
 ; QUANTUM_COUNT no longer defined here
 
 ; ********************************************************
-; *** subfunction codes for task queues management TBR ***
+; *** subfunction codes for task queues management TBD ***
 ; ********************************************************
 TQ_STAT		=   0	; read status (and frequency)
 TQ_EN		=   2	; enable task
@@ -197,6 +197,9 @@ PW_WARM		=  2	; warm reset (needs no firmware) renumbered 150603
 PW_COLD		=  4	; cold reset (needed for compatibility with other architectures) renumbered 150603
 PW_OFF		=  6	; power off
 PW_CLEAN	=  8	; scheduler detected system is clean for poweroff! new 20160408
+; might include here invocation codes for debug/BRK
+PW_DEBUG	= 10	; invoke debugger (BRK, most needed for 6502)
+PW_MONIT	= 12	; trigger hardware interrupt (like NMI)
 
 ; *******************************************
 ; ** optional windowing system values, TBD **
