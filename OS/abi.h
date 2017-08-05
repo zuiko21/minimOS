@@ -1,7 +1,8 @@
-; minimOS 0.6a4 API/ABI
-; *** not binary-compatibly with earlier versions ***
+; minimOS 0.6a5 API/ABI
+; *** not compatibly with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170802-1825
+; some renaming 20170805
+; last modified 20170805-1209
 
 ; *************************************************
 ; *************************************************
@@ -30,10 +31,10 @@ FREE_W		= CLOSE_W + 2	; release a window but let it on screen, keeping its buffe
 UPTIME		= FREE_W + 2	; give uptime in ticks and seconds
 SET_FG		= UPTIME + 2	; set PB7 frequency generator *** interface for firmware
 SHUTDOWN	= SET_FG + 2	; proper shutdown, with or without power-off
-LOAD_LINK	= SHUTDOWN + 2	; get an executable from its path, and get it loaded into primary memory, maybe relocated
+LOADLINK	= SHUTDOWN + 2	; get an executable from its path, and get it loaded into primary memory, maybe relocated
 
 ; for multitask main use, but also with reduced single task management
-B_FORK		= LOAD_LINK + 2	; reserve a free braid
+B_FORK		= LOADLINK + 2	; reserve a free braid
 B_EXEC		= B_FORK + 2	; get code at some address running into a previously reserved braid
 B_SIGNAL	= B_EXEC + 2	; send UNIX_like signal to a braid
 B_STATUS	= B_SIGNAL + 2	; get execution flags of a braid
@@ -42,14 +43,19 @@ SET_HNDL	= GET_PID + 2	; set SIGTERM handler
 B_YIELD		= SET_HNDL + 2	; give away CPU time, not really needed but interesting anyway
 
 ; some new functionalities, perhaps OK with LOWRAM systems
-AQ_MANAGE	= B_YIELD + 2	; get asyncronous task status, or enable/disable it!
-PQ_MANAGE	= AQ_MANAGE + 2	; get periodic task status, enable/disable it or set frequency!
+AQ_MNG		= B_YIELD + 2	; get asyncronous task status, or enable/disable it!
+PQ_MNG		= AQ_MNG + 2	; get periodic task status, enable/disable it or set frequency!
 
 ; not for LOWRAM systems
-MALLOC		= PQ_MANAGE + 2	; allocate memory
+; drivers...
+DR_INST		= PQ_MNG + 2	; install driver
+DR_SHUT		= DR_INST + 2	; shutdown driver
+; memory...
+MALLOC		= DR_SHUT + 2	; allocate memory
 MEMLOCK		= MALLOC + 2	; allocate memory at a certain address, new 20170524
 FREE		= MEMLOCK + 2	; release memory block
 RELEASE		= FREE + 2	; release ALL memory blocks belonging to some PID, new 20161115
+; multitasking...
 TS_INFO		= RELEASE + 2	; get taskswitching info for multitasking driver
 SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & architecture) new 20170222
 
@@ -80,12 +86,12 @@ CORRUPT	=   9		; data corruption
 GESTALT		= 0		; get system info (renumbered)
 SET_ISR		= GESTALT + 2	; set IRQ vector
 SET_NMI		= SET_ISR + 2	; set (magic preceded) NMI routine
-SET_BRK		= SET_NMI + 2	; set debugger, new 20170517
-JIFFY		= SET_BRK + 2	; set jiffy IRQ speed, ** TBD **
-IRQ_SOURCE	= JIFFY + 2	; get interrupt source in X for total ISR independence
+SET_DBG		= SET_NMI + 2	; set debugger, new 20170517
+JIFFY		= SET_DBG + 2	; set jiffy IRQ speed, ** TBD **
+IRQ_SRC		= JIFFY + 2	; get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
-POWEROFF	= IRQ_SOURCE +2	; power-off, suspend or cold boot
+POWEROFF	= IRQ_SRC +2	; power-off, suspend or cold boot
 FREQ_GEN	= POWEROFF + 2	; frequency generator hardware interface, TBD
 
 ; not for LOWRAM systems
@@ -132,7 +138,7 @@ T1LL	= $6
 T1LH	= $7
 T2CL	= $8
 T2CH	= $9
-SR		= $A
+VSR		= $A	; renamed 20170805
 ACR		= $B
 PCR		= $C
 IFR		= $D
@@ -149,14 +155,14 @@ USED_RAM	=	2
 END_RAM		=	4	; new label 20161103
 LOCK_RAM	=	6	; new label 20161117
 
-; some kernel-related definitions
+; some kernel-related definitions *** renamed
 #ifndef	LOWRAM
-MAX_QUEUE	=	16	; maximum interrupt task queue size
-MAX_DRIVERS	=	16	; maximum number of drivers, independent as of 20170207
+MX_QUEUE	=	16	; maximum interrupt task queue size
+MX_DRVRS	=	16	; maximum number of drivers, independent as of 20170207
 MAX_LIST	=	32	; number of available RAM blocks *** might increase this value in 65816 systems!
 #else
-MAX_QUEUE	=	6	; much smaller queues in 128-byte systems, note unified jiffy & slow queues!
-MAX_DRIVERS	=	4	; maximum number of drivers, independent as of 20170207
+MX_QUEUE	=	6	; much smaller queues in 128-byte systems, note unified jiffy & slow queues!
+MX_DRVRS	=	4	; maximum number of drivers, independent as of 20170207
 MAX_LIST	=	0	; no memory management for such systems
 #endif
 
@@ -230,7 +236,7 @@ FS_NAME		=  26	; rename file or directory
 FS_FREE		=  28	; get free space on current volume
 FS_MOUNT	=  30	; mount (all?) volumes on a device
 FS_UNMNT	=  32	; unmount volume
-FS_CREATE	=  34	; format filesystem
+FS_CREAT	=  34	; format filesystem
 
 ; optional filesystem limits, TBD
 ; again, this might be defined elsewhere
@@ -250,9 +256,9 @@ DEV_LED		= 252	; LED keypad on VIAport
 DEV_LCD		= 210	; Hitachi LCD module, TO_DO
 DEV_ACIA	= 236	; ACIA, currently 6551
 DEV_SS22	= 250	; SS-22 port
-DEV_ASCII	= 241	; ASCII keyboard on VIAport, TO_DO
-DEV_DEBUG	= 255	; Bus sniffer, NEW 20150323
-DEV_CONIO	= 132	; for Kowalski & run816 simulator, NEW 20160308
+DEV_ASC		= 241	; ASCII keyboard on VIAport, TO_DO
+DEV_DBG		= 255	; Bus sniffer, NEW 20150323
+DEV_CNIO	= 132	; for Kowalski & run816 simulator, NEW 20160308
 DEV_VGA		= 192	; integrated VGA-compatible Tijuana, NEW 20160331
 
 ; more temporary IDs

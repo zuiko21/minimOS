@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a7, must match kernel.s
+; v0.6a8, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170802-2121
+; last modified 20170805-1246
 
 ; no way for standalone assembly...
 
@@ -12,6 +12,8 @@
 memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
 aqmanage:
 pqmanage:
+dr_install:
+dr_shutdown:
 bl_config:
 bl_status:
 
@@ -108,7 +110,8 @@ cout:
 ; bl_siz	= number of bytes (16b)
 
 ;		OUTPUT
-; C = I/O error
+; bl_siz	= actually transferred bytes
+; C		= I/O error
 ;		USES iol_dev plus whatever the driver takes
 ; cio_lock is a kernel structure
 
@@ -173,10 +176,12 @@ cio_unlock:
 ; *** BLIN, get block ***
 ; ***********************
 ;		INPUT
-; Y = dev
+; Y		= dev
+; bl_ptr	= buffer address
+; bl_siz	= maximum transfer size
 ;		OUTPUT
-; io_c	= char
-; C		= not available
+; bl_siz	= actually transferred bytes
+; C		= I/O error
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock & cin_mode are kernel structures
 
@@ -1173,14 +1178,19 @@ k_vec:
 	.word	get_pid		; get PID of current braid ***returns 0
 	.word	set_handler	; set SIGTERM handler
 	.word	yield		; give away CPU time for I/O-bound process ***does nothing
-; new functionalities TBD
+; new driver functionalities TBD
 	.word	aqmanage	; manage asynchronous task queue
 	.word	pqmanage	; manage periodic task queue
 ; only for systems with enough RAM
+; drrivers...
+	.word	dr_install	; install driver
+	.word	dr_shutdown	; shutdown driver
+; memory...
 	.word	malloc		; reserve memory
 	.word	memlock		; reserve some address
 	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
+; multitasking...
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
 #endif

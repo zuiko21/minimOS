@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a9, should match kernel16.s
+; v0.6a10, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170802-2138
+; last modified 20170805-1300
 
 ; assumes 8-bit sizes...
 
@@ -16,6 +16,10 @@
 memlock:				; *** FUTURE IMPLEMENTATION ***
 aqmanage:
 pqmanage:
+dr_install:
+dr_shutdown:
+bl_config:
+bl_status:
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
@@ -29,11 +33,37 @@ unimplemented:			; placeholder here, not currently used
 ; io_c	= char
 ;		OUTPUT
 ; C = I/O error
-;		USES iol_dev, plus whatever the driver takes
+;		USES BOUT
 ; cio_lock is a kernel structure
 ; * 8-bit savvy *
 
 cout:
+	PHD			; where is direct page?
+	PLA			; this is LSB, discard if zero!
+	PLA			; current page
+	STA bl_ptr+1		; set on pointer
+	LDA #io_c		; point to ZP parameter
+	STA bl_ptr		; ready, will not need to resolve!
+	LDA #1			; single byte
+	STA bl_siz		; set size
+	STZ bl_siz+1
+; ...and fall into BOUT
+
+; **************************
+; *** BOUT, block output ***
+; **************************
+;		INPUT
+; Y		= dev
+; bl_ptr	= buffer address
+; bl_siz	= block size
+;		OUTPUT
+; bl_siz	= actually transferred bytes
+; C		= I/O error
+;		USES iol_dev, plus whatever the driver takes
+; cio_lock is a kernel structure
+; * 8-bit savvy *
+
+bl_out:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -135,6 +165,23 @@ cio_abort:
 ; * 8-bit savvy *
 
 cin:
+
+; ***********************
+; *** BLIN, get block ***
+; ***********************
+;		INPUT
+; Y		= dev
+; bl_ptr	= buffer address
+; bl_siz	= maximum transfer size
+;		OUTPUT
+; bl_siz	= actually transferred bytes
+; C		= I/O error
+
+;		USES iol_dev, and whatever the driver takes
+; cio_lock & cin_mode are kernel structures
+; * 8-bit savvy *
+
+bl_in:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -850,9 +897,9 @@ get_pid:
 	_EXIT_OK
 
 
-; ***************************************************************
-; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
-; ***************************************************************
+; **************************************************************
+; *** LOADLINK, get address once in RAM/ROM (in development) ***
+; **************************************************************
 ;		INPUT
 ; str_pt = 24b pointer to filename path, ZP corrected (will be altered!)
 ;		OUTPUT
@@ -993,7 +1040,7 @@ string:
 	PHB					; eeeeeeeeek
 	PHK					; zero into stack
 	PLB					; set DBR! do not forget another PLB upon end!
-
+;****************************** REVISE!!!
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA run_arch		; will be zero for native 65816
@@ -1006,93 +1053,9 @@ string:
 ;			STA str_pt			; store pointer LSB
 			XBA					; MSB only, assume page-aligned
 ;			ADC #0				; progagate carry and reclear C
-			STA str_pt+1		; correct pointer
+			STA str_pt+1
 str_24b:
 #endif
-
-; proceed
-	TYA					; set flags upon devnum (2)
-	BNE str_port		; not default (3/2)
-		LDA stdout			; new per-process standard device ### apply this to ·65
-		BNE str_port		; already a valid device
-			LDA default_out		; otherwise get system global (4)
-str_port:
-	BMI str_phys		; not a logic device (3/2)
-		CMP #64				; first file-dev??? ***
-			BCC str_win			; below that, should be window manager
-; ** optional filesystem access **
-#ifdef	FILESYSTEM
-		CMP #64+MAX_FILES	; still within file-devs?
-			BCS str_log			; that value or over, not a file
-; *** manage here output to open file ***
-#endif
-; *** virtual windows manager TO DO ***
-str_win:
-		LDY #NO_RSRC		; not yet implemented ***placeholder***
-		BRA str_abort		; restore and notify
-; ** end of filesystem/window access **
-str_log:
-; investigate rest of logical devices
-		CMP #DEV_NULL		; lastly, ignore output
-		BNE str_nfound		; final error otherwise
-; /dev/null is always OK
-			PLB					; restore!!!
-			RTI					; end of function without errors
-str_nfound:
-		LDY #N_FOUND		; unknown device
-str_abort:
-		PLB					; restore!
-		JMP cio_setc		; notify error directly
-
-; proceed with a physical device number
-str_phys:
-; new MUTEX eeeeeeek
-	ASL					; convert to index (2)
-	STA iol_dev			; store for indexed call! (3)
-; CS not needed for MUTEX as per 65816 API
-str_wait:
-		LDX iol_dev			; restore previous status, *new style (3)
-		LDA cio_lock, X		; *check whether THAT device in use (4)
-		BEQ str_lckd		; resume operation if free (3)
-; otherwise yield CPU time and repeat
-			_KERNEL(B_YIELD)	; give way... *** could be patched
-			BRA str_wait		; try again! (3)
-str_lckd:
-	LDA run_pid			; who am I?
-	STA cio_lock, X		; *reserve this (4)
-; 65816 API runs on interrupts off, thus no explicit CS exit
-; continue with mutually exclusive code
-	LDA str_pt+1		; must save MSB address in case it is modified!
-	LDX str_pt+2		; bank too
-	PHX					; put them into stack, standard order
-	PHA
-	LDY #0				; eeeeeeeek! (2)
-; ** the actual printing loop **
-str_loop:
-		PHY					; save just in case COUT destroys it (3)
-		LDA [str_pt], Y		; get character from string, new approach, now 24-bit!
-		BNE str_cont		; not terminated! (3/2)
-			CLC					; otherwise make sure no error is marked
-			BRA str_exit		; and go away!
-str_cont:
-		STA io_c			; store output character for COUT (3)
-		LDX iol_dev			; get driver pointer position (3)
-		JSR (drv_opt, X)	; go at stored pointer (...6)
-			BCS str_exit		; return error from driver
-		PLY					; restore index (4)
-		INY					; eeeeeeeeeeeek (2)
-		BNE str_loop		; still within same page
-			INC str_pt+1		; otherwise increase, parameter has changed! should I save it?
-		BNE str_loop		; continue, will check for termination later (3)
-			INC str_pt+2		; in case of bank boundary crossing!
-		BRA str_loop
-str_exit:
-	PLX					; discard saved Y while keeping error code eeeeeeeeeek^2
-	PLA					; pop saved pointer from stack
-	PLX
-	STA str_pt+1		; must restore MSB address in case it is modified!
-	STX str_pt+2		; bank too
-	JMP cio_unlock		; return possible error code AND clear MUTEX eeeeeeeeeek^2
 
 
 ; ******************************
@@ -1441,6 +1404,11 @@ k_vec:
 	.word	cin			; get a character
 	.word	string		; prints a C-string
 	.word	readLN		; buffered input
+; block I/O
+	.word	bl_out		; block output
+	.word	bl_in		; block input
+	.word	bl_config	; configure device
+	.word	bl_status	; device status
 ; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
@@ -1458,14 +1426,17 @@ k_vec:
 	.word	get_pid		; get PID of current braid ***returns 0
 	.word	set_handler	; set SIGTERM handler
 	.word	yield		; give away CPU time for I/O-bound process ***does nothing
-; new functionalities TBD
+; new driver functionalities TBD
 	.word	aqmanage	; manage asynchronous task queue
 	.word	pqmanage	; manage periodic task queue
-; memory and multitasking only
+	.word	dr_install	; install driver
+	.word	dr_shutdown	; remove driver
+; memory management
 	.word	malloc		; reserve memory
 	.word	memlock		; reserve some address
 	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
+; multitasking only
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
 #endif

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a7
+; v0.6a8
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170531-1153
+; last modified 20170805-1218
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -18,6 +18,8 @@ free:
 release:
 ts_info:
 set_curr:
+dr_install:
+dr_shutdown:
 
 ; *** FUTURE IMPLEMENTATION ***
 aqmanage:
@@ -33,13 +35,33 @@ pqmanage:
 ; io_c	= char
 ;		OUTPUT
 ; C = I/O error
+;		USER BOUT
+
+cout:
+	LDA #io_c			; will point to parameter
+	STA bl_ptr			; set pointer
+	_STZA bl_ptr+1
+	LDA #1				; single byte
+	STA bl_siz			; set counter
+	_STZA bl_siz+1
+; ...and fall into BOUT
+
+; **************************
+; *** BOUT, block output ***
+; **************************
+;		INPUT
+; Y		= dev
+; bl_ptr	= pointer to block
+; bl_siz	= block size
+;		OUTPUT
+; C = I/O error
 ;		USES da_ptr, iol_dev, plus whatever the driver takes
 
 cio_of = da_ptr			; parameter switching between CIN and COUT
 ; da_ptr globally defined, cio_of not needed upon calling dr_call!
 
-cout:
-	LDA #D_COUT			; only difference from cin (2)
+bl_out:
+	LDA #D_BOUT			; only difference from blin (2)
 	STA cio_of			; store for further indexing (3)
 	TYA					; for indexed comparisons (2)
 	BNE co_port			; not default (3/2)
@@ -84,11 +106,25 @@ cio_dev:
 ;		OUTPUT
 ; io_c	= char
 ; C		= not available
+;		USES BLIN
+
+cin:
+
+; *************************
+; *** BLIN, block input ***
+; *************************
+;		INPUT
+; Y		= dev
+; bl_ptr	= buffer address
+; bl_siz	= maximum transfer size
+;		OUTPUT
+; bl_siz	= actual transfer size
+; C		= nothing available
 ;		USES iol_dev, and whatever the driver takes
 ; cin_mode is a kernel variable
 
-cin:
-	LDA #D_CIN			; only difference from cout
+bl_in:
+	LDA #D_BLIN			; only difference from bout
 	STA cio_of			; store for further addition
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
@@ -99,7 +135,7 @@ ci_port:
 	BPL ci_nph			; logic device
 		JSR cio_phys		; check physical devices... but come back for events! new 20150617
 			BCS ci_exit			; some error, send it back
-; ** EVENT management **
+; ** EVENT management ***************************************
 ; this might be revised, or supressed altogether!
 		LDA io_c			; get received character
 		CMP #' '			; printable?
@@ -340,9 +376,9 @@ set_handler:
 	_EXIT_OK
 
 
-; ***************************************************************
-; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
-; ***************************************************************
+; **************************************************************
+; *** LOADLINK, get address once in RAM/ROM (in development) ***
+; **************************************************************
 ;		INPUT
 ; str_pt	= pointer to filename path (will be altered!)
 ;		OUTPUT
@@ -447,36 +483,28 @@ ll_wrap:
 ; str_pt	= 24b pointer to string (might be altered!) 24-bit ready!
 ;		OUTPUT
 ; C = device error
-;		USES iol_dev and whatever COUT takes
+;		USES iol_dev and whatever BOUT takes
 
 string:
 	STY iol_dev			; save Y
 	LDY #0				; reset new index
+	STY bl_siz+1		; reset counter
 	LDA str_pt+1		; get older MSB in case it changes
 	PHA					; save it somewhere!
 str_loop:
 		LDA (str_pt), Y		; get character, new approach
 			BEQ str_end			; NUL = end-of-string
-		STA io_c			; store output character for COUT
-		_PHY				; save current index
-		LDY iol_dev			; retrieve device number
-		_KERNEL(COUT)		; call routine
-#ifdef	SAFE
-		BCC str_nerr		; extra check
-			PLA					; cleanup stack
-			_BRA str_exit		; return error code (and restore pointer)
-str_nerr:
-#endif
-		_PLY				; retrieve index
 		INY					; eeeeeeeek!
 		BNE str_loop		; repeat, will later check for termination
 	INC str_pt+1		; next page, unfortunately
+	INC bl_siz+1
 	BNE str_loop		; no need for BRA
 str_end:
-	CLC					; no errors
-str_exit:
 	PLA					; get MSB back
 	STA str_pt+1		; restore it
+	STY bl_siz		; complete counter
+	LDY iol_dev		; retrieve device
+	_KERNEL(BOUT)		; standard block out (could be patched)
 	RTS					; return error code
 
 
@@ -661,6 +689,9 @@ k_vec:
 	.word	cin			; get a character
 	.word	string		; prints a C-string
 	.word	readLN		; buffered input
+; block I/O
+	.word	bl_out		; block output
+	.word	bl_in		; block input
 ; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
@@ -683,6 +714,8 @@ k_vec:
 	.word	pqmanage	; manage periodic task queue
 ; *** unimplemented functions ***
 #ifdef	SAFE
+	.word	dr_install	; install driver
+	.word	dr_shutdown	; shutdown driver
 	.word	malloc		; reserve memory
 	.word	memlock		; reserve some address
 	.word	free		; release memory
