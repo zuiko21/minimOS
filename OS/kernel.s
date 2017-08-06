@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a6
+; v0.6a7
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170622-1236
+; last modified 20170806-1934
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a6", 0	; version in comment
+	.asc	"minimOS 0.6a7", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -44,7 +44,7 @@ kern_splash:
 
 kern_siz = kern_end - kern_head - $FF
 
-	.word	kern_siz, 0	; kernel size excluding header 
+	.word	kern_siz, 0	; kernel size excluding header
 #endif
 
 ; **************************************************
@@ -185,7 +185,7 @@ dr_chk:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_ntsk			; skip verification if task not enabled
 				LDY queues_mx-1, X	; get current tasks in queue
-				CPY #MAX_QUEUE		; room for another?
+				CPY #MX_QUEUE		; room for another?
 				BCC dr_ntsk			; yeah!
 dr_nabort:
 					JMP dr_abort		; or did not checked OK
@@ -222,7 +222,7 @@ dr_empty:
 ; might check here whether I/O are provided!
 ;		ASL dr_aut			; look for CIN (5)
 ;		BCC dr_seto			; no input for this!
-			LDY #D_CIN			; same for input routine (2)
+			LDY #D_BLIN			; same for input routine (2)
 			JSR dr_gind			; get indirect address
 			LDA sysptr			; get driver table LSB (3)
 			STA drv_ipt, X		; store in table (4)
@@ -231,7 +231,7 @@ dr_empty:
 dr_seto:
 ;		ASL dr_aut			; look for COUT (5)
 ;		BCC dr_nout			; no output for this!
-			LDY #D_COUT			; offset for output routine (2)
+			LDY #D_BOUT			; offset for output routine (2)
 			JSR dr_gind			; get indirect address
 			LDA sysptr			; get driver table LSB (3)
 			STA drv_opt, X		; store in table (4)
@@ -382,7 +382,7 @@ dr_gind:
 dr_nextq:
 	LDA dq_ptr			; get original queue pointer
 	CLC
-	ADC #MAX_QUEUE		; go to next queue
+	ADC #MX_QUEUE		; go to next queue
 	STA dq_ptr
 	BCC dnq_nw			; no carry...
 		INC dq_ptr+1		; ...or update MSB
@@ -456,6 +456,7 @@ dr_ok:					; *** all drivers inited ***
 ; **** launch monitor/shell ****
 ; ******************************
 sh_exec:
+; should use LOADLINK instead, unless NOHEAD
 	LDY #<shell			; get pointer to built-in shell
 	LDA #>shell			; as per mandatory label, no header to skip!
 	STY ex_pt			; set execution address
@@ -501,7 +502,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a6", 0
+	.asc	"minimOS 0.6a7", 0
 #endif
 
 kern_end:		; for size computation

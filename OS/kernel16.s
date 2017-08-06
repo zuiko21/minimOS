@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a5
+; v0.6a6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170622-1238
+; last modified 20170806-1944
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6a4", 0	; version in comment
+	.asc	"minimOS•16 0.6a5", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -46,7 +46,7 @@ kern_splash:
 
 kern_siz = kern_end - kern_head - 256
 
-	.word	kern_siz, 0	; kernel size excluding header 
+	.word	kern_siz, 0	; kernel size excluding header
 #endif
 ; ##### end of minimOS header #####
 
@@ -165,7 +165,7 @@ dr_chk:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ) best done in 8-bit!
 			BCC dr_ntsk			; skip verification if task not enabled
 				LDY queues_mx-1, X	; get current tasks in queue
-				CPY #MAX_QUEUE		; room for another?
+				CPY #MX_QUEUE		; room for another?
 				BCC dr_ntsk			; there is
 					JMP dr_abort8		; did not checked OK (from 8-bit segment!)
 dr_ntsk:
@@ -197,13 +197,13 @@ dr_empty:
 ; might check here whether I/O are provided!
 ;		ASL dr_aut-1		; look for CIN, note trick as not worth going 8-bit!!!
 ;		BCC dr_seto			; no input for this!
-			LDY #D_CIN			; offset for input routine (2)
+			LDY #D_BLIN			; offset for input routine (2)
 			LDA (da_ptr), Y		; get full address (6)
 			STA drv_ipt, X		; store full pointer in table (5)
 dr_seto:
 ;		ASL dr_aut-1		; look for COUT, note trick as not worth going 8-bit!!!
 ;		BCC dr_nout			; no output for this!
-			LDY #D_COUT			; offset for output routine (2)
+			LDY #D_BOUT			; offset for output routine (2)
 			LDA (da_ptr), Y		; get full address (6)
 			STA drv_opt, X		; store full pointer in table (5)
 dr_nout:
@@ -311,7 +311,7 @@ dr_call:
 dr_nextq:
 	LDA dq_ptr			; get original queue pointer
 	CLC
-	ADC #MAX_QUEUE		; go to next queue
+	ADC #MX_QUEUE		; go to next queue
 	STA dq_ptr
 	LDA sysptr			; increment the origin pointer!
 	INC
@@ -364,6 +364,7 @@ dr_ok:					; *** all drivers inited ***
 ; **** launch monitor/shell ****
 ; ******************************
 sh_exec:
+; should use LOADLINK
 #ifdef	NOHEAD
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 #else
@@ -409,7 +410,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.6a5", 0	; version in comment
+	.asc	"minimOS•16 0.6a6", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
