@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a8
+; v0.9.6a9
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170802-2138
+; last modified 20170806-1952
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6 firmware for "
+	.asc	"0.9.6a9 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -230,9 +230,6 @@ std_nmi:
 
 fw_gestalt:
 	PHP					; save sizes!
-;	PHB					; in case is called outside bank 0?
-;	PHK					; use bank zero...
-;	PLB					; ...for data
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
 	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4+3)
@@ -247,7 +244,6 @@ fw_gestalt:
 	LDA #fw_map			; pointer to standard map TBD ????
 	STA ex_pt			; set output
 ; some separate map for high RAM???
-;	PLB					; restore data bank?
 	_DR_OK				; done
 
 ; SET_ISR, set IRQ vector
@@ -339,7 +335,7 @@ fj_set:
 
 	.as: .xs			; just in case...
 
-; IRQ_SOURCE, investigate source of interrupt
+; IRQ_SRC, investigate source of interrupt
 ;		OUTPUT
 ; *** X	= 0 (periodic), 2 (async IRQ @ 65xx) ***
 ; *** notice NON-standard output register for faster indexed jump! ***
@@ -473,8 +469,9 @@ brk_hndl:		; label from vector list
 	PHX
 	PHY
 	PHB						; eeeeeeeeeek (3)
+; should I return to 8-bit?
 ; must use some new indirect jump, as set by new SET_BRK
-;	JSR brk_handler			; standard label from IRQ
+	JSR brk_handler			; standard label from IRQ
 ; ************************************ CONTINUE HERE ***************************
 	.al: .xl: REP #$30		; just in case (3)
 	PLB						; eeeeeeeeeeeek (4)
@@ -488,7 +485,7 @@ brk_hndl:		; label from vector list
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6 firmware for "
+	.asc	"0.9.6a9 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
