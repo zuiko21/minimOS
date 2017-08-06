@@ -1,9 +1,9 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a10, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170805-1300
+; last modified 20170806-1930
 
-; assumes 8-bit sizes...
+; assumes 8-bit sizes upon call...
 
 .as: .xs:
 
@@ -38,12 +38,21 @@ unimplemented:			; placeholder here, not currently used
 ; * 8-bit savvy *
 
 cout:
-	PHD			; where is direct page?
-	PLA			; this is LSB, discard if zero!
-	PLA			; current page
+; if every zp is page-aligned as recommended, use this code
+	TDC			; where is direct page?
+	XBA			; switch to MSB
 	STA bl_ptr+1		; set on pointer
 	LDA #io_c		; point to ZP parameter
 	STA bl_ptr		; ready, will not need to resolve!
+; otherwise add LSB like this
+;	TDC			; where is direct page?
+;	CLC
+;	ADC #io_c		; point to ZP parameter
+;	STA bl_ptr		; LSB ready
+;	XBA			; switch to MSB
+;	ADC #0			; propagate carry
+;	STA bl_ptr+1		; set on pointer
+; set fixed size and proceed
 	LDA #1			; single byte
 	STA bl_siz		; set size
 	STZ bl_siz+1
