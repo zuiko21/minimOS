@@ -1,13 +1,13 @@
-; minimOS 0.6a2 MACRO definitions
+; minimOS 0.6a3 MACRO definitions
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170802-1812
+; last modified 20170810-1255
 
 ; *** standard addresses ***
 
-kernel_call	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
-admin_call	=	$FFD0	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
-admin_appc	=	$FFD8	; special interface for 65816 firmware call from USER software!
-; usually pointing to JSR admin_call, then RTL
+kerncall	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
+adm_call	=	$FFD0	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
+adm_appc	=	$FFD8	; special interface for 65816 firmware call from USER software!
+; usually pointing to JSR adm_call, then RTL
 
 ; unified address (will lock at $FFE1-2 anyway) for CMOS and NMOS ** new name 20161010
 ; some machines will lock somewhere else, like blinking the Emulation LED!
@@ -29,7 +29,7 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 ; system calling interface *** unified ·65 and ·16 macros
 
 #ifndef	C816
-#define		_KERNEL(a)		LDX #a: JSR kernel_call
+#define		_KERNEL(a)		LDX #a: JSR kerncall
 #else
 ; new COP signature as per WDC reccomendations, CLC now into firmware!
 #define		_KERNEL(a)		LDX #a: COP #$7F
@@ -38,12 +38,12 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 ; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings! note pre-CLC
 
 ; administrative calls unified for 6502 and 65816, all ending in RTS (use DR_OK and DR_ERR macros)
-#define		_ADMIN(a)		LDX #a: JSR admin_call
+#define		_ADMIN(a)		LDX #a: JSR adm_call
 ; specific user-mode firmware call, needed for 65816
 #ifdef	C816
-#define		_U_ADM(a)		LDX #a: JSL admin_appc
+#define		_U_ADM(a)		LDX #a: JSL adm_appc
 #else
-#define		_U_ADM(a)		LDX #a: JSR admin_call
+#define		_U_ADM(a)		LDX #a: JSR adm_call
 #endif
 
 ; new macro for filesystem calling, no specific kernel entries!
@@ -74,13 +74,13 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #define		_DR_ERR(a)	LDY #a: SEC: RTS
 
 ; new exit for asynchronous driver routines when not satisfied
-#define		_NEXT_ISR	SEC: RTS
-#define		_ISR_DONE	CLC: RTS
+#define		_NXT_ISR	SEC: RTS
+#define		_ISR_OK		CLC: RTS
 ; can no longer use EXIT_OK because of 65816 reimplementation!!! check drivers!
 
 ; new macros for critical sections, do not just rely on SEI/CLI
-#define		_ENTER_CS	PHP: SEI
-#define		_EXIT_CS	PLP
+#define		_CRITIC		PHP: SEI
+#define		_NO_CRIT	PLP
 
 ; ** interrupt enable/disable macros deprecated 20161003 and replaced by the above macros **
 
@@ -91,7 +91,8 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #define		CR		13
 #define		LF		10
 #define		BS		8
-#define		TAB		9
+; renamed TAB for 6800 compatibility!
+#define		HTAB		9
 #define		BEL		7
 #define		ESC		27
 
