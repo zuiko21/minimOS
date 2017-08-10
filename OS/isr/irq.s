@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6a2, should match kernel.s
+; v0.6a3, should match kernel.s
 ; features TBD
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170621-1344
+; last modified 20170810-1428
 
 #define		ISR		_ISR
 
@@ -60,7 +60,7 @@ isr_done:
 
 ; routines for indexed driver calling
 ir_call:
-	_JMPX(drv_async-2)	; address already computed, no return here, new offset 20151029
+	_JMPX(drv_asyn-2)	; address already computed, no return here, new offset 20151029
 ip_call:
 	_JMPX(drv_poll)
 
@@ -72,25 +72,25 @@ periodic:
 
 ; execute D_POLL code in drivers
 ; 7 if nothing to do, typically ? clocks per entry (not 62!) plus inner codes
-	LDX queues_mx+1		; get queue size (4)
+	LDX queue_mx+1		; get queue size (4)
 	BEQ ip_done			; no drivers to call (2/3)
 i_poll:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; no improvement with offset, all of them will be called anyway
 		LDA drv_p_en, X		; *** check whether enabled, new in 0.6 ***
 			BPL i_pnx			; *** if disabled, skip this task ***
-		DEC drv_count, X	; otherwise continue with countdown
+		DEC drv_cnt, X		; otherwise continue with countdown
 			BNE i_pnx			; LSB did not expire, do not execute yet
-		DEC drv_count+1, X	; check now MSB, note value should be ONE more!
+		DEC drv_cnt+1, X	; check now MSB, note value should be ONE more!
 		BNE i_pnx			; keep waiting...
 			LDY drv_freq, X		; ...or pick original value...
 			LDA drv_freq+1, X
-			STY drv_count, X	; ...and reset it!
-			STA drv_count+1, X
+			STY drv_cnt, X		; ...and reset it!
+			STA drv_cnt+1, X
 			_PHX				; keep index! (3)
 			JSR ip_call			; call from table (12...)
 	; *** here is the return point needed for B_EXEC in order to create the stack frame ***
-	isr_sched_ret:				; *** take this standard address!!! ***
+isr_schd:				; *** take this standard address!!! ***
 			_PLX				; restore index (4)
 i_pnx:
 		BNE i_poll			; until zero is done (3/2)
@@ -118,6 +118,7 @@ isr_nw:
 
 ; *** BRK handler ***
 brk_handler:			; should end in RTS anyway, 20160310
+; ********** should use new firmware interface  ***********
 #include "isr/brk.s"
 
 

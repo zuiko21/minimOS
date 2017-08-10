@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.6a2, should match kernel16.s
+; v0.6a3, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170621-1401
+; last modified 20170810-1432
 
 #define		ISR		_ISR
 
@@ -23,21 +23,21 @@
 ; *** place here HIGH priority async tasks, if required ***
 
 ; check whether jiffy or async (7 if periodic, 6 if async)
-; might use (future) firmware call IRQ_SOURCE for complete generic kernel!
-BIT VIA_J+IFR			; much better than LDA + ASL + BPL! (4)
+; might use firmware call IRQ_SRC for complete generic kernel!
+	BIT VIA_J+IFR			; much better than LDA + ASL + BPL! (4)
 		BVS periodic			; from T1 (3/2)
 
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 36 clocks)
 ; *********************************
 ; execute D_REQ in drivers (7 if nothing to do, ?+?*number of drivers until one replies, plus inner codes)
-	LDX queues_mx			; get async queue size (4)
+	LDX queue_mx			; get async queue size (4)
 	BEQ ir_done				; no drivers to call (2/3)
 i_req:
 		LDA drv_r_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
 		BPL i_rnx			; *** if disabled, skip this task ***
 			PHX						; keep index! (3)
-			JSR (drv_async-2, X)	; call from table (8+...) expected to return in 8-bit size, at least indexes
+			JSR (drv_asyn-2, X)	; call from table (8+...) expected to return in 8-bit size, at least indexes
 			PLX						; restore index (4)
 				BCC isr_done			; driver satisfied, thus go away NOW (2/3)
 i_rnx:
@@ -57,7 +57,7 @@ isr_done:
 ; *** here goes the periodic interrupt code *** (4)
 ; *********************************************
 periodic:
-	LDA VIA_J+T1CL			; acknowledge periodic interrupt!!! (4) *** IRQ_SOURCE should have done it already, if used
+	LDA VIA_J+T1CL			; acknowledge periodic interrupt!!! (4) *** IRQ_SRC should have done it already, if used
 
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
@@ -79,7 +79,7 @@ i_poll:
 			PHX						; keep index! (3)
 			JSR (drv_poll, X)		; call from table (8...)
 ; *** here is the return point needed for B_EXEC in order to create the stack frame ***
-isr_sched_ret:					; *** take this standard address!!! ***
+isr_schd:					; *** take this standard address!!! ***
 			PLX						; restore index (4)
 i_pnx:
 		BNE i_poll				; until zero is done (3/2)

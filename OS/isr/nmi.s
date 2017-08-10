@@ -1,3 +1,5 @@
+; ******************************* deprecated **********************
+
 ; NMI module for minimOS
 ; v0.5a3
 ; (c) 2015-2016 Carlos J. Santisteban
