@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a8
+; v0.6a9
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170805-1218
+; last modified 20170810-1404
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -24,6 +24,8 @@ dr_shutdown:
 ; *** FUTURE IMPLEMENTATION ***
 aqmanage:
 pqmanage:
+bl_config:
+bl_status:
 
 	_ERR(UNAVAIL)	; go away!
 
@@ -54,6 +56,7 @@ cout:
 ; bl_ptr	= pointer to block
 ; bl_siz	= block size
 ;		OUTPUT
+; bl_siz	= remaining bytes
 ; C = I/O error
 ;		USES da_ptr, iol_dev, plus whatever the driver takes
 
@@ -74,12 +77,14 @@ co_port:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
 			BNE cio_nfound		; final error otherwise
+		_STZA bl_siz			; null transfers always complete
+		_STZA bl_siz+1			; null transfers always complete
 		_EXIT_OK			; "/dev/null" is always OK
 cio_phys:
 	LDX drv_num			; number of drivers (3)
 		BEQ cio_nfound		; no drivers at all! (2/3)
 cio_loop:
-		CMP drivers_id-1, X	; get ID from list, notice trick (4)
+		CMP drvrs_id-1, X	; get ID from list, notice trick (4)
 			BEQ cio_dev			; device found! (2/3)
 		DEX					; go back one (2)
 		BNE cio_loop		; repeat until end, will reach not_found otherwise (3/2)
@@ -92,9 +97,9 @@ cio_dev:
 	TAX					; index for address table!
 ; unified version is 15 bytes, 20 + 29 clocks
 	LDY cio_of			; get offset (3)
-	LDA drivers_ad, X	; take table LSB (4)
+	LDA drvrs_ad, X		; take table LSB (4)
 	STA da_ptr			; store pointer (3)
-	LDA drivers_ad+1, X	; same for LSB (4+3)
+	LDA drvrs_ad+1, X	; same for LSB (4+3)
 	STA da_ptr+1		; cannot use neater way but no longer needs cio_of!
 	JMP dr_call			; re-use routine (3...)
 
@@ -109,6 +114,7 @@ cio_dev:
 ;		USES BLIN
 
 cin:
+;************ extract here event management... *************
 
 ; *************************
 ; *** BLIN, block input ***
@@ -118,7 +124,7 @@ cin:
 ; bl_ptr	= buffer address
 ; bl_siz	= maximum transfer size
 ;		OUTPUT
-; bl_siz	= actual transfer size
+; bl_siz	= remaining bytes
 ; C		= nothing available
 ;		USES iol_dev, and whatever the driver takes
 ; cin_mode is a kernel variable
@@ -174,13 +180,30 @@ ci_nph:
 		BEQ ci_rnd			; compute it!
 	CMP #DEV_NULL		; lastly, ignore input
 		BNE cio_nfound		; final error otherwise
+	_STZA bl_siz			; null transfers always complete
+ci_compl:
+	_STZA bl_siz+1			; null & rnd transfers always complete
 	_EXIT_OK			; "/dev/null" is always OK
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	LDA ticks			; simple placeholder
-	STA io_c			; eeeeeeek
-	_EXIT_OK
+	LDY #0
+	LDX bl_ptr+1
+cirn_l:
+		LDA ticks			; simple placeholder
+		STA (bl_ptr), Y			; eeeeeeek
+		INY
+		BNE cirn_nx
+			INC bl_ptr+1
+cirn_nx:
+		DEC bl_siz
+		BNE cirn_l
+			DEC bl_siz+1
+			LDA bl_siz+1
+			CMP #$FF
+		BNE cirn_l
+	STX bl_ptr+1
+	BEQ ci_compl
 
 
 ; **************************************
@@ -238,7 +261,7 @@ free_w:
 uptime:
 	LDX #7				; end of destination offset (2)
 	LDY #5				; end of source pointer (2)
-	_ENTER_CS			; do not change while copying (5)
+	_CRITIC				; do not change while copying (5)
 up_loop:
 		LDA ticks, Y		; get system variable byte (4)
 		STA up_ticks, X		; and store them in output parameter (4)
@@ -249,7 +272,7 @@ up_loop:
 up_nosec:
 		DEY					; go for next (2)
 		BPL up_loop			; (3/2)
-	_EXIT_CS			; (4)
+	_NO_CRIT			; (4)
 	_EXIT_OK
 
 
@@ -444,7 +467,9 @@ ll_found:
 	INY					; next byte is CPU type
 	LDA (rh_scan), Y	; get it
 ; check compability of supplied code against present CPU
-	LDX fw_cpu			; *** UGLY HACK, this is a FIRMWARE variable ***
+;	LDX fw_cpu			; *** UGLY HACK, this is a FIRMWARE variable ***
+	_ADMIN(GESTALT)			; get sys info, proper way
+	LDX cpu_ll			; installed CPU
 	CPX #'R'			; is it a Rockwell/WDC CPU?
 		BEQ ll_rock			; from R down is OK
 	CPX #'B'			; generic 65C02?
@@ -486,22 +511,20 @@ ll_wrap:
 ;		USES iol_dev and whatever BOUT takes
 
 string:
-	STY iol_dev			; save Y
+	STY iol_dev			; save Y device
 	LDY #0				; reset new index
 	STY bl_siz+1		; reset counter
-	LDA str_pt+1		; get older MSB in case it changes
-	PHA					; save it somewhere!
+	LDX str_pt+1		; get older MSB in case it changes
 str_loop:
 		LDA (str_pt), Y		; get character, new approach
 			BEQ str_end			; NUL = end-of-string
 		INY					; eeeeeeeek!
-		BNE str_loop		; repeat, will later check for termination
-	INC str_pt+1		; next page, unfortunately
-	INC bl_siz+1
-	BNE str_loop		; no need for BRA
+		BNE str_loop		; no wrap
+			INC str_pt+1		; next page, unfortunately
+			INC bl_siz+1
+		BNE str_loop		; no need for BRA
 str_end:
-	PLA					; get MSB back
-	STA str_pt+1		; restore it
+	STX str_pt+1		; restore pointer
 	STY bl_siz		; complete counter
 	LDY iol_dev		; retrieve device
 	_KERNEL(BOUT)		; standard block out (could be patched)
@@ -640,10 +663,10 @@ sd_loop:
 ; get address index
 		DEX					; go back one address
 		DEX
-		LDA drivers_ad+1, X	; get address MSB (4)
+		LDA drvrs_ad+1, X	; get address MSB (4)
 		BEQ sd_done			; not in zeropage
 		STA da_ptr+1		; store pointer (3)
-		LDA drivers_ad, X	; same for LSB (4+3)
+		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
 		_PHX				; save index for later
 		LDY #D_BYE			; offset for shutdown routine --- eeeeeek!
@@ -692,6 +715,8 @@ k_vec:
 ; block I/O
 	.word	bl_out		; block output
 	.word	bl_in		; block input
+	.word	bl_config	; configure device
+	.word	bl_stat		; device status
 ; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window

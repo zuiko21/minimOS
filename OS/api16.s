@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a10, should match kernel16.s
+; v0.6a11, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170806-1930
+; last modified 20170810-1425
 
 ; assumes 8-bit sizes upon call...
 
@@ -66,7 +66,7 @@ cout:
 ; bl_ptr	= buffer address
 ; bl_siz	= block size
 ;		OUTPUT
-; bl_siz	= actually transferred bytes
+; bl_siz	= remaining bytes
 ; C		= I/O error
 ;		USES iol_dev, plus whatever the driver takes
 ; cio_lock is a kernel structure
@@ -82,14 +82,14 @@ bl_out:
 	BNE co_port			; not default (3/2)
 		LDA stdout			; new per-process standard device (3)
 		BNE co_port			; already a valid device (3/2)
-			LDA default_out		; otherwise get system global (4)
+			LDA defltout		; otherwise get system global (4)
 co_port:
 	BMI co_phys			; not a logic device (3/2)
 		CMP #64				; first file-dev??? (2)
 			BCC co_win			; below that, should be window manager (3/2)
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
-		CMP #64+MAX_FILES	; still within file-devs?
+		CMP #64+MX_FILES	; still within file-devs?
 			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
 #endif
@@ -106,6 +106,8 @@ co_log:
 			LDY #N_FOUND		; unknown device
 			BRA cio_abort		; restore & notify
 co_ok:
+		STZ bl_siz		; /dev/null transfers are complete
+		STZ bl_siz+1		; /dev/null transfers are complete
 		PLB					; restore!!!
 		RTI					; end of function without errors
 co_phys:
@@ -125,6 +127,7 @@ co_lckd:
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper physdev index in X
+; ****** MUST check pointer in case is in direct page!!! ******
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 ; ...and the into cio_unlock
 
@@ -174,6 +177,7 @@ cio_abort:
 ; * 8-bit savvy *
 
 cin:
+;**************  move event management here ***************
 
 ; ***********************
 ; *** BLIN, get block ***
@@ -183,7 +187,7 @@ cin:
 ; bl_ptr	= buffer address
 ; bl_siz	= maximum transfer size
 ;		OUTPUT
-; bl_siz	= actually transferred bytes
+; bl_siz	= remaining bytes
 ; C		= I/O error
 
 ;		USES iol_dev, and whatever the driver takes
@@ -290,13 +294,14 @@ ci_win:
 ci_log:
 	CMP #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
-	CMP #DEV_NULL		; lastly, ignore input
+	CMP #DEV_NULL		; lastly, ignore input****** clear remaining!!!
 		BEQ ci_exitOK
 	LDY #N_FOUND		; unknown device
 	JMP cio_abort		; restore & notify
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
+; must copy here a suitable loop******************************
 	LDA ticks			; simple placeholder
 	STA io_c			; eeeeeeeeeeeeeeeeek
 	BRA ci_exitOK
@@ -395,8 +400,8 @@ ma_scan:
 		BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
 ma_corrupt:
 ; recreate a valid memory map, should use GESTALT instead
-			LDX #>user_sram		; beginning of available ram, as defined... in rom.s
-			LDY #<user_sram		; LSB misaligned?
+			LDX #>user_ram		; beginning of available ram, as defined... in rom.s
+			LDY #<user_ram		; LSB misaligned?
 			BEQ ma_zlsb			; nothing to align
 				INX					; otherwise start at next page
 ma_zlsb:
@@ -929,7 +934,7 @@ load_link:
 	LDA @run_arch		; will be zero for native 65816 but with extra byte!
 	TAX					; filter out MSB to get proper value eeeeeeeeeek
 	BEQ ll_24b			; 24-bit enabled
-		LDX #0				; ...or take a 0...
+		LDX #0				; ...or take a 0...*****REVISE
 		STX str_pt+2		; ...and use as default bank
 ; *** special corrections are needed in case the pointer is in direct page! ***
 		LDX str_pt+1		; get page number without bank...
@@ -1392,7 +1397,7 @@ sd_tab:					; check order in abi.h!
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.word	isr_sched_ret-1	; corrected reentry address, standard label from ISR
+	.word	isr_schd-1	; corrected reentry address, standard label from ISR
 	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
 ;	.word	0, 0, 0			; irrelevant register values
 tsi_end:

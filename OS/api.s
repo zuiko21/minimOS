@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a8, must match kernel.s
+; v0.6a9, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170805-1246
+; last modified 20170810-1338
 
 ; no way for standalone assembly...
 
@@ -110,7 +110,7 @@ cout:
 ; bl_siz	= number of bytes (16b)
 
 ;		OUTPUT
-; bl_siz	= actually transferred bytes
+; bl_siz	= remaining bytes
 ; C		= I/O error
 ;		USES iol_dev plus whatever the driver takes
 ; cio_lock is a kernel structure
@@ -120,14 +120,14 @@ bl_out:
 	BNE co_port			; not default (3/2)
 		LDA stdout			; new per-process standard device
 		BNE co_port			; already a valid device
-			LDA default_out		; otherwise get system global (4)
+			LDA defltout		; otherwise get system global (4)
 co_port:
 	BMI co_phys			; not a logic device (3/2)
 		CMP #64				; first file-dev??? ***
 			BCC co_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
-		CMP #64+MAX_FILES	; still within file-devs?
+		CMP #64+MX_FILES	; still within file-devs?
 			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
 #endif
@@ -150,7 +150,7 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 	ASL					; convert to index (2+2)
 	STA iol_dev			; keep device-index temporarily, worth doing here (3)
-	_ENTER_CS			; needed for a MUTEX (5)
+	_CRITIC				; needed for a MUTEX (5)
 co_loop:
 		LDX iol_dev			; retrieve index!
 		LDA cio_lock, X		; check whether THAT device is in use (4)
@@ -161,7 +161,7 @@ co_loop:
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
 	STA cio_lock, X		; *reserve this (4)
-	_EXIT_CS
+	_NO_CRIT
 ; continue with mutually exclusive COUT
 	JSR co_call			; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 
@@ -180,7 +180,7 @@ cio_unlock:
 ; bl_ptr	= buffer address
 ; bl_siz	= maximum transfer size
 ;		OUTPUT
-; bl_siz	= actually transferred bytes
+; bl_siz	= remaining bytes
 ; C		= I/O error
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock & cin_mode are kernel structures
@@ -190,14 +190,14 @@ bl_in:
 	BNE ci_port			; specified
 		LDA std_in			; new per-process standard device
 		BNE ci_port			; already a valid device
-			LDA default_in		; otherwise get system global
+			LDA deflt_in		; otherwise get system global
 ci_port:
 	BPL ci_nph			; logic device
 ; new MUTEX for CIN, physical devs only!
 	ASL					; convert to proper physdev index (2)
 	STA iol_dev			; keep physdev temporarily, worth doing here (3)
 ; * this has to be done atomic! *
-	_ENTER_CS
+	_CRITIC
 ci_loop:
 	LDX iol_dev			; *restore previous status (3)
 	LDA cio_lock, X		; *check whether THAT device in use (4)
@@ -215,7 +215,7 @@ ci_lckd:
 	LDA run_pid			; who is me?
 	STA cio_lock, X		; *reserve this (4)
 ci_lckdd:
-	_EXIT_CS
+	_NO_CRIT
 ; * end of atomic operation *
 		JSR ci_call			; direct CALL!!!
 			BCS cio_unlock		; clear MUTEX and return whatever error!
@@ -228,7 +228,7 @@ ci_nph:
 		BCC ci_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
-	CMP #64+MAX_FILES	; still within file-devs?
+	CMP #64+MX_FILES	; still within file-devs?
 		BCS ci_log			; that or over, not a file
 ; *** manage here input from open file ***
 #endif
@@ -245,28 +245,25 @@ ci_log:
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-; ****** sample code for block input besides driver ******
 	LDY #0				; reset index
-	LDX bl_siz+1
-	LDA bl_siz			; get original size, will keep as completed
-	BEQ cirn_pa			; page aligned means keep MSB...
-		INX				; ...or increment it for easier DEC
-cirn_pa:
-	STA bl_cnt			; store locally
-	STX bl_cnt+1
+	LDX bl_ptr+1			; keep MSB just in case***
 cirn_loop:
 		LDA ticks			; simple placeholder******* eeeeeeek
 		STA (bl_ptr), Y			; store in buffer
-		DEC bl_cnt			; one less to go
-		BNE cirn_next			; no boundary crossing...
-			DEC bl_cnt+1			; ...or propagate...
-			BEQ ci_ok			; ...until the end
-ci_next:
-		INY				; update index
-		BNE cirn_loop			; continue...
+		INY				; go for next
+		BNE cirn_nw			; no wrap...
 			INC bl_ptr+1			; ...or next page*****
-		BNE cirn_loop			; no need for BRA
+cirn_nw:
+		DEC bl_siz			; one less to go
+		BNE cirn_loop			; no boundary crossing...
+			DEC bl_siz+1			; ...or propagate...
+			LDA bl_siz+1			; ...and check value...
+			CMP #$FF			; ...whether wrapped...
+		BNE cirn_loop			; ...until the end
+	STX bl_ptr+1			; restore pointer***
 ci_ok:
+	_STZA bl_siz+1			; make sure transfer is done in full
+	_STZA bl_siz			; only needed for /dev/null
 	_EXIT_OK
 
 ; *** for 02 systems without indexed CALL ***
@@ -297,7 +294,7 @@ malloc:
 		INC ma_rs+1			; otherwise increase number of pages
 		STX ma_rs			; ...and just in case, clear asked bytes!
 ma_nxpg:
-	_ENTER_CS			; this is dangerous! enter critical section, new 160119
+	_CRITIC			; this is dangerous! enter critical section, new 160119
 	LDA ma_rs+1			; get number of asked pages
 	BNE ma_scan			; work on specific size
 ; otherwise check for biggest available block
@@ -327,7 +324,7 @@ ma_nxbig:
 ; is there at least one available block?
 		LDA ma_rs+1			; should not be zero
 		BNE ma_fill			; there is at least one block to allocate
-			_EXIT_CS			; eeeeeeek! we are going
+			_NO_CRIT			; eeeeeeek! we are going
 			_ERR(FULL)			; otherwise no free memory!
 ; report allocated size
 ma_fill:
@@ -344,8 +341,8 @@ ma_scan:
 		SBC ram_pos, X		; subtract current for size! (2+4)
 		BCS ma_nobad		; no corruption was seen (3/2) **instead of BPL** eeeeeek
 ma_corrupt:
-			LDX #>user_sram		; otherwise take beginning of user RAM...
-			LDY #<user_sram		; LSB misaligned?
+			LDX #>user_ram		; otherwise take beginning of user RAM...
+			LDY #<user_ram		; LSB misaligned?
 			BEQ ma_zlsb			; nothing to align
 				INX					; otherwise start at next page
 ma_zlsb:
@@ -356,7 +353,7 @@ ma_zlsb:
 			LDY #END_RAM		; ...as non-plus-ultra
 			STA ram_pos+1		; create second set of values
 			STY ram_stat+1
-			_EXIT_CS			; eeeeeeeeeek
+			_NO_CRIT			; eeeeeeeeeek
 			_ERR(CORRUPT)		; report but do not turn system down
 ma_nobad:
 #endif
@@ -370,7 +367,7 @@ ma_cont:
 ;		CPX #MAX_LIST		; until the end (2)
 		BNE ma_scan			; will not be zero anyway (3)
 ma_nobank:
-	_EXIT_CS			; non-critical when aborting!
+	_NO_CRIT			; non-critical when aborting!
 	_ERR(FULL)			; no room for it!
 ma_found:
 	JSR ma_alsiz		; **compute size according to alignment mask**
@@ -413,7 +410,7 @@ ma_updt:
 	LDA run_pid			; who asked for this? FASTER
 	STA ram_pid, X		; store PID
 ; theoretically we are done, end of CS
-	_EXIT_CS			; end of critical section, new 160119
+	_NO_CRIT			; end of critical section, new 160119
 	_EXIT_OK			; we're done
 
 ; **** routine for aligned-block size computation ****
@@ -477,7 +474,7 @@ free:
 #endif
 	LDX #0				; reset index
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
-	_ENTER_CS			; supposedly dangerous
+	_CRITIC			; supposedly dangerous
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
 			BEQ fr_found		; go free it!
@@ -487,7 +484,7 @@ fr_loop:
 		BNE fr_loop			; continue until end
 ; was not found, thus exit CS and abort
 fr_no:
-	_EXIT_CS
+	_NO_CRIT
 fr_nos:
 	_ERR(N_FOUND)		; no block to be freed!
 fr_found:
@@ -514,7 +511,7 @@ fr_notafter:
 		JSR fr_join			; otherwise integrate it too
 ; ** already optimized **
 fr_ok:
-	_EXIT_CS
+	_NO_CRIT
 	_EXIT_OK
 
 ; routine for obliterating the following empty entry
@@ -574,7 +571,7 @@ free_w:					; doesn't do much, either
 
 uptime:
 	LDX #1			; first go for elapsed ticks, 2 bytes (2)
-	_ENTER_CS		; don't change while copying (5)
+	_CRITIC			; don't change while copying (5)
 up_loop:
 		LDA ticks, X		; get system variable byte (4)
 		STA up_ticks, X		; and store them in output parameter (3)
@@ -586,7 +583,7 @@ up_upt:
 		STA up_sec, X		; and store it in output parameter (3)
 		DEX					; go for next (2+3/2)
 		BPL up_upt
-	_EXIT_CS			; (4)
+	_NO_CRIT			; (4)
 	_EXIT_OK
 
 
@@ -760,9 +757,9 @@ get_pid:
 	_EXIT_OK
 
 
-; ***************************************************************
-; *** LOAD_LINK, get address once in RAM/ROM (in development) ***
-; ***************************************************************
+; **************************************************************
+; *** LOADLINK, get address once in RAM/ROM (in development) ***
+; **************************************************************
 ;		INPUT
 ; str_pt = points to filename path (will be altered!)
 ;		OUTPUT
@@ -829,9 +826,11 @@ ll_found:
 	LDA (rh_scan), Y	; get it
 
 ; ******* I have to get rid of this HACK as soon as possible *******
-	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
-; ******************************************************************
-
+;	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
+; ******* here is the proper way ***********************************
+	_ADMIN(GESTALT)		; get full system info
+	LDX cpu_ll		; installed CPU
+; *******
 	CPX #'R'		; is it a Rockwell/WDC CPU?
 		BEQ ll_rock		; from R down is OK
 	CPX #'B'		; generic 65C02?
@@ -874,20 +873,19 @@ ll_wrap:
 string:
 ; not very efficient... measure string and call BOUT
 	_PHY				; must keep device eeeeeeek
-	LDA str_pt+1		; MSB of pointer might be changed
-	PHA					; save it for later!
+	LDX str_pt+1		; MSB of pointer might be changed
 	LDY #0				; eeeeeeeek! (2)
 	STY bl_siz+1			; reset MSB of measured size
 str_loop:
 		LDA (str_pt), Y		; get character from string, new approach (5)
-			BEQ str_ncont		; terminated! (3/2)
+			BEQ str_term		; terminated! (3/2)
 		INY					; eeeeeeeeeeeek (2)
 		BNE str_loop		; still within same page
 			INC str_pt+1		; otherwise increase, parameter has changed! MUST be restored later
 			INC bl_siz+1		; one more page
 		BNE str_loop		; continue, no need for BRA (3)
-	PLA					; restore saved MSB
-	STA str_pt+1		; needed for new API/ABI
+str_term:
+	STX str_pt+1		; restore pointer, needed for new API/ABI
 	STY bl_siz		; record size LSB
 	_PLY			; restore device
 	_KERNEL(BOUT)		; call usual (could be patched)
@@ -934,12 +932,12 @@ rl_nbs:
 		INC	rl_cur			; update index
 rl_echo:
 		LDY rl_dev			; retrieve device
-		JSR cout			; echo received character
+		JSR cout			; echo received character***
 		_BRA rl_l			; and continue
 rl_cr:
 	LDA #CR				; newline
 	LDY rl_dev			; retrieve device
-	JSR cout			; print newline (ignoring errors)
+	JSR cout			; print newline (ignoring errors)***
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
@@ -1084,7 +1082,7 @@ ts_info:
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.word	isr_sched_ret-1	; corrected reentry address, standard label from ISR
+	.word	isr_schd-1	; corrected reentry address, NEW standard label from ISR
 	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
 ;	.byt	0, 0, 0			; irrelevant Y, X, A values?
 tsi_end:
