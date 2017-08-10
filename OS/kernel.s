@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a7
+; v0.6a8
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170806-1934
+; last modified 20170810-1247
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a7", 0	; version in comment
+	.asc	"minimOS 0.6a8", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -104,8 +104,8 @@ warm:
 	STY ram_stat		; as it is the first entry, no index needed
 	LDY #END_RAM		; also for end-of-memory marker
 	STY ram_stat+1		; second entry in array
-	LDX #>user_sram		; beginning of available ram, as defined... in rom.s
-	LDY #<user_sram		; LSB misaligned?
+	LDX #>user_ram		; beginning of available ram, as defined... in rom.s
+	LDY #<user_ram		; LSB misaligned?
 	BEQ ram_init		; nothing to align
 		INX					; otherwise start at next page
 ram_init:
@@ -124,8 +124,8 @@ ram_init:
 ; *** 1) initialise stuff ***
 ; clear some bytes
 	LDX #0				; reset driver index (2)
-	STX queues_mx		; reset all indexes, NMOS-savvy (4+4+4)
-	STX queues_mx+1
+	STX queue_mx		; reset all indexes, NMOS-savvy (4+4+4)
+	STX queue_mx+1
 
 #ifdef LOWRAM
 ; ------ low-RAM systems have no direct tables to reset ------
@@ -155,12 +155,12 @@ dr_clear:
 ; first get the pointer to each driver table
 dr_loop:
 		_PHX				; keep current value, no longer drv_aix (3)
-		LDA drivers_ad+1, X	; get address MSB (4)
+		LDA drvrs_ad+1, X		; get address MSB (4)
 		BNE dr_inst			; cannot be in zeropage, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
 		STA da_ptr+1		; store pointer MSB (3)
-		LDA drivers_ad, X	; same for LSB (4+3)
+		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
 ; create entry on IDs table ** new 20150219
 		LDY #D_ID			; offset for ID (2)
@@ -184,7 +184,7 @@ dr_phys:
 dr_chk:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_ntsk			; skip verification if task not enabled
-				LDY queues_mx-1, X	; get current tasks in queue
+				LDY queue_mx-1, X	; get current tasks in queue
 				CPY #MX_QUEUE		; room for another?
 				BCC dr_ntsk			; yeah!
 dr_nabort:
@@ -246,14 +246,14 @@ dr_nout:
 		LDY #0				; reset index (2)
 		BEQ dr_limit		; check whether has something to check, no need for BRA (3)
 dr_scan:
-			CMP drivers_id, Y	; compare with list entry (4)
+			CMP drvrs_id, Y		; compare with list entry (4)
 				BEQ dr_abort		; already in use, don't register! (2/3)
 			INY					; go for next (2)
 dr_limit:	CPY drv_num			; all done? (4)
 			BNE dr_scan			; go for next (3/2)
 #endif
 		LDX drv_num			; retrieve single offset (4)
-		STA drivers_id, X	; store in list, now in RAM (4)
+		STA drvrs_id, X		; store in list, now in RAM (4)
 ; ------
 #endif
 
@@ -280,10 +280,10 @@ dr_iqloop:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
-				LDY queues_mx, X	; get index of free entry!
+				LDY queue_mx, X		; get index of free entry!
 				STY dq_off			; worth saving on a local variable
-				INC queues_mx, X	; add another task in queue
-				INC queues_mx, X	; pointer takes two bytes
+				INC queue_mx, X		; add another task in queue
+				INC queue_mx, X		; pointer takes two bytes
 ; install entry into queue
 				JSR dr_itask		; install into queue
 ; save for frequency queue, flags must be enabled for this task!
@@ -295,10 +295,10 @@ dr_iqloop:
 					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 				JSR dr_nextq		; advance to next queue (frequencies)
 				JSR dr_itask		; same for frequency queue
-; *** must copy here original frequency (PLUS 256) into drv_count ***
+; *** must copy here original frequency (PLUS 256) into drv_cnt ***
 				LDA (dq_ptr), Y		; get MSB
 				_INC				; plus 1
-				STA drv_count, Y	; store copy...
+				STA drv_cnt, Y		; store copy...
 				STA (dq_ptr), Y		; ...and correct original value
 				DEY					; go for LSB
 				LDA (dq_ptr), Y		; get original...
@@ -327,7 +327,7 @@ dr_abort:
 ; ------ low-RAM systems keep count of installed drivers ------
 			LDY drv_num			; get failed driver index (4)
 			LDA #DEV_NULL		; make it unreachable, any positive value (logic device) will do (2)
-			STA drivers_id, Y	; delete older value (4)
+			STA drvrs_id, Y		; delete older value (4)
 ; ------
 #endif
 dr_next:
@@ -420,7 +420,7 @@ dr_ok:					; *** all drivers inited ***
 #ifdef	LOWRAM
 ; ------ terminate ID list ------ is this REALLY necessary?
 	LDX drv_num			; retrieve single index (4)
-	_STZA drivers_id, X	; terminate list, and we are done! (4) 
+	_STZA drvrs_id, X	; terminate list, and we are done! (4)
 ; ------
 #endif
 
@@ -437,8 +437,8 @@ dr_ok:					; *** all drivers inited ***
 ; startup code, revise ASAP
 ; *** set default I/O device ***
 	LDA #DEVICE			; as defined in options.h
-	STA default_out		; should check some devices
-	STA default_in
+	STA defltout		; should check some devices
+	STA deflt_in
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
@@ -502,7 +502,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a7", 0
+	.asc	"minimOS 0.6a8", 0
 #endif
 
 kern_end:		; for size computation
@@ -541,5 +541,5 @@ sysvars:
 dr_vars:
 #include "drivers/config/DRIVER_PACK.h"
 .text					; eeeeeek
--user_sram = *			; the rest of available SRAM
+-user_ram = *			; the rest of available SRAM
 #endif

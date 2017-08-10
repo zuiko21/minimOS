@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a6
+; v0.6a7
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170806-1944
+; last modified 20170810-1242
 
 ; just in case
 #define		C816	_C816
@@ -94,8 +94,8 @@ warm:
 	STY ram_stat	; as it is the first entry, no index needed
 	LDY #END_RAM	; also for end-of-memory marker
 	STY ram_stat+2	; note offset for interleaved array!
-	LDX #>user_sram	; beginning of available ram, as defined... in rom.s
-	LDY #<user_sram	; LSB misaligned?
+	LDX #>user_ram	; beginning of available ram, as defined... in rom.s
+	LDY #<user_ram	; LSB misaligned?
 	BEQ ram_init	; nothing to align
 		INX				; otherwise start at next page
 ram_init:
@@ -113,7 +113,7 @@ ram_init:
 ; *** 1) initialise stuff ***
 ; clear some bytes
 	LDX #0				; reset driver index (2)
-	STZ queues_mx		; reset all indexes, 16-bit already set
+	STZ queue_mx		; reset all indexes, 16-bit already set
 ; clear some other bytes
 	STX run_arch		; assume native 65816
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
@@ -135,7 +135,7 @@ dr_clear:
 ; first get the pointer to each driver table
 dr_loop:
 		PHX					; keep current value (3)
-		LDA drivers_ad, X	; get full address (5)
+		LDA drvrs_ad, X		; get full address (5)
 		BNE dr_inst			; cannot be zero, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
@@ -164,7 +164,7 @@ dr_phys:
 dr_chk:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ) best done in 8-bit!
 			BCC dr_ntsk			; skip verification if task not enabled
-				LDY queues_mx-1, X	; get current tasks in queue
+				LDY queue_mx-1, X	; get current tasks in queue
 				CPY #MX_QUEUE		; room for another?
 				BCC dr_ntsk			; there is
 					JMP dr_abort8		; did not checked OK (from 8-bit segment!)
@@ -227,10 +227,10 @@ dr_iqloop:
 			ASL dr_aut-1		; extract MSB (will be A_POLL first, then A_REQ) note trick again
 			BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
-				LDY queues_mx, X	; get index of free entry!
+				LDY queue_mx, X		; get index of free entry!
 				STY dq_off			; worth saving on a local variable
-				INC queues_mx, X	; add another task in queue
-				INC queues_mx, X	; pointer takes two bytes
+				INC queue_mx, X		; add another task in queue
+				INC queue_mx, X		; pointer takes two bytes
 ; install entry into queue
 ; read pointer from header (inline version of dr_itask)
 				LDA (sysptr)		; non-indexed indirect
@@ -253,7 +253,7 @@ dr_iqloop:
 				LDY dq_off			; get index of free entry!
 				STA (dq_ptr), Y		; store into reserved place!
 ; *** and copy A into drv_count, unmodified! ***
-				STA drv_count, Y	; simply!
+				STA drv_cnt, Y		; simply!
 				BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 			JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
@@ -345,7 +345,7 @@ dr_ok:					; *** all drivers inited ***
 
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
-	STA default_in		; should check some devices, this assumes _in is LSB
+	STA deflt_in		; should check some devices, this assumes _in is LSB
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
@@ -364,7 +364,7 @@ dr_ok:					; *** all drivers inited ***
 ; **** launch monitor/shell ****
 ; ******************************
 sh_exec:
-; should use LOADLINK
+; should use LOADLINK...
 #ifdef	NOHEAD
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 #else
@@ -410,7 +410,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6a6", 0	; version in comment
+	.asc	"minimOS•16 0.6a7", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
@@ -449,5 +449,5 @@ sysvars:
 dr_vars:
 #include "drivers/config/DRIVER_PACK.h"
 .text					; eeeeeek
--user_sram = *			; the rest of available SRAM
+-user_ram = *			; the rest of available SRAM
 #endif

@@ -1,6 +1,6 @@
-; minimOS 0.6a4 System Variables
+; minimOS 0.6a5 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170621-1343
+; last modified 20170810-1246
 .bss
 
 ; **** I/O management ****
@@ -10,7 +10,7 @@ drv_opt		.dsb	256			; full page of output driver pointers, new direct scheme 160
 drv_ipt		.dsb	256			; full page of input driver pointers, new direct scheme 160406
 #else
 drv_num		.byt	0			; number of installed drivers
-drivers_id	.dsb	MAX_DRIVERS	; space for reasonable number of drivers
+drvrs_id	.dsb	MAX_DRIVERS	; space for reasonable number of drivers
 #endif
 
 ; ** I/O flags and locks **
@@ -23,13 +23,13 @@ cin_mode	.dsb	1			; only this for low ram systems
 #endif
 
 ; **** interrupt queues **** new format 20170518
-queues_mx	.word	0			; array with max offset for both Periodic[1] & Async[0] queues
+queue_mx	.word	0			; array with max offset for both Periodic[1] & Async[0] queues
 drv_poll	.dsb	MAX_QUEUE	; space for periodic task pointers
 drv_freq	.dsb	MAX_QUEUE	; array of periodic task frequencies (word?)
-drv_async	.dsb	MAX_QUEUE	; space for async task pointers
+drv_asyn	.dsb	MAX_QUEUE	; space for async task pointers
 drv_a_en	.dsb	MAX_QUEUE	; interleaved array of async interrupt task flags
 drv_p_en	= drv_a_en + 1		; ditto for periodic tasks (interleaved)
-drv_count	.dsb	MAX_QUEUE	; current P-task counters eeeeeeeeeeeeeeeeeeeeek
+drv_cnt		.dsb	MAX_QUEUE	; current P-task counters eeeeeeeeeeeeeeeeeeeeek
 
 ; *** single-task sigterm handler separate again! ***
 ; multitasking should provide appropriate space!
@@ -60,13 +60,13 @@ irq_freq	.word	200	; IRQs per second (originally set from options.h)
 ticks		.dsb	6	; second fraction in jiffy IRQs, then approximate uptime in seconds (2+4 bytes) new format 161006
 sd_flag		.byt	0	; default task upon no remaining braids! 160408
 #ifndef	LOWRAM
-default_in	.byt	0	; GLOBAL default devices, EXCEPT for LOWRAM systems
-default_out	.byt	0
+deflt_in	.byt	0	; GLOBAL default devices, EXCEPT for LOWRAM systems
+defltout	.byt	0
 ; no way for multitasking in LOWRAM systems
 run_pid		.byt	0	; current PID running for easy kernel access, will be set by new SET_CURR
 #else
-default_in	= std_in	; in LOWRAM systems, both global and local standard devices are the same!
-default_out	= stdout
+deflt_in	= std_in	; in LOWRAM systems, both global and local standard devices are the same!
+defltout	= stdout
 #endif
 old_t1		.word	0	; *** keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 
