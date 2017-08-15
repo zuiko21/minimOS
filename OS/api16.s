@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a12, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170815-1350
+; last modified 20170815-1630
 
 ; assumes 8-bit sizes upon call...
 
@@ -1224,7 +1224,7 @@ shutdown:
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_fw			; do not shutdown system then!
 ; interrupt invoking, although for internal use
-	CPY #PW_SOFT		; some invoking?
+	CPY #PW_HARD		; some invoking?
 		BCS sd_fw			; just pass to FW
 	STY sd_flag			; store mode for later, first must do proper system shutdown, note long addressing
 ; ask all braids to terminate
@@ -1251,6 +1251,8 @@ sd_cold:
 	BRA sd_fw
 sd_warm:
 ; current status may vary widely, thus clean up some things a bit
+; not sure about keeping this as SAFE mode already does it on kernel...
+; ...thus just put .word warm on table!
 	SEC					; set carry...
 	XCE					; ...to set emulation mode for a moment
 	PHK					; a zero on stack...
@@ -1392,7 +1394,7 @@ set_curr:
 ; *******************************
 sd_tab:					; check order in abi.h!
 ; no more sd_stat!
-	.word	sd_warm		; warm boot direct by kernel
+	.word	sd_warm		; warm boot direct by kernel ***or just 'warm'
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system
 

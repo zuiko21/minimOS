@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a9
+; v0.6a10
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170810-1404
+; last modified 20170815-1624
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -641,7 +641,9 @@ fg_busy:
 
 shutdown:
 	CPY #PW_STAT		; is it going to suspend?
-		BEQ sd_stat			; don't shutdown system then!
+		BEQ sd_fw			; don't shutdown system then!
+	CPY #PW_HARD		; some interrupt invoked?
+		BCS sd_fw			; just pass to FW
 	CPY #PW_CLEAN		; from end of main task
 		BEQ sd_2nd			; continue with second stage
 	STY sd_flag			; store mode for later, first must do proper system shutdown, note long addressing
@@ -679,8 +681,6 @@ sd_done:
 	_JMPX(sd_tab-2)		; do as appropriate *** note offset as sd_stat will not be called from here
 
 ; firmware interface
-sd_stat:
-	LDY #PW_STAT		; suspend
 sd_fw:
 	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
 	RTS					; for suspend or not implemented
@@ -694,7 +694,7 @@ sd_warm:
 	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
 sd_tab:
-;	.word	sd_stat		; suspend *** no needed as will be called directly, check offset above
+; *** no needed for suspend as will be called directly, check offset above
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system

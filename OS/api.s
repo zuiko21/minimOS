@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a10, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170815-1350
+; last modified 20170815-1628
 
 ; no way for standalone assembly...
 
@@ -1002,7 +1002,7 @@ shutdown:
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_fw			; do not shutdown system then!
 ; new, interrupt invoking
-	CPY #PW_SOFT		; soft or hard interrupt?
+	CPY #PW_HARD		; soft or hard interrupt?
 		BCS sd_fw			; do not shutdown, just pass to FW
 	STY sd_flag			; store mode for later, first must do proper system shutdown
 ; ask all braids to terminate
