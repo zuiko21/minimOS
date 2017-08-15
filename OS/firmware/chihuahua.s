@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
 ; v0.9.6a1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170815-1224
+; last modified 20170815-1242
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -154,6 +154,7 @@ nmi_save:
 		INX					; go forward (2)
 		CPX #3				; number of bytes to save, makes retrieving simpler (2)
 		BNE nmi_save		; until the end (3/2, total loop is 38 clocks)
+#ifdef	SAFE
 ; check whether user NMI pointer is valid
 ;	LDX #3				; offset for (reversed) magic string (2) ** already loaded from earlier step
 	LDY fw_nmi			; copy vector to zeropage (corrected 20150118) (4+4+3+3)
@@ -168,6 +169,7 @@ nmi_chkmag:
 		INY					; another byte (2)
 		DEX					; internal string is read backwards (2)
 		BPL nmi_chkmag		; down to zero (3/2)
+#endif
 do_nmi:
 	JSR go_nmi			; call actual code, ending in RTS (6)
 ; *** here goes the former nmi_end routine ***
@@ -230,24 +232,10 @@ fw_gestalt:
 	STA ex_pt+1
 	_DR_OK
 
+; SET_ISR, set IRQ vector
+;	INPUT
+; kerntab	= vector
 
-
-; A0, install jump table
-; kerntab <- address of supplied jump table
-fw_install:
-	LDY #0				; reset index (2)
-	_CRITIC				; disable interrupts! (5)
-fwi_loop:
-		LDA (kerntab), Y	; get from table as supplied (5)
-		STA fw_table, Y		; copy where the firmware expects it (4+2)
-		INY
-		BNE fwi_loop		; until whole page is done (3/2)
-	_NO_CRIT			; restore interrupts if needed (4)
-	_DR_OK				; all done (8)
-
-
-; A2, set IRQ vector
-; kerntab <- address of ISR
 fw_s_isr:
 	LDY kerntab				; get LSB, nicer (3)
 	LDA kerntab+1			; get MSB (3)
@@ -257,11 +245,13 @@ fw_s_isr:
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
 
-
-; A4, set NMI vector
-; kerntab <- address of NMI code (including magic string)
+; SET_NMI, set NMI handler routine
 ; might check whether the pointed code starts with the magic string
-; no need to disable interrupts as a partially set pointer would be rejected
+; no need to disable interrupts as a partially set pointer would be rejected...
+; ...unless SAFE is not selected (will not check upon NMI)
+;	INPUT
+; kerntab	= vector
+
 fw_s_nmi:
 #ifdef	SAFE
 	LDX #3					; offset to reversed magic string
@@ -281,6 +271,107 @@ fw_sn_chk:
 	STA fw_nmi+1
 	_DR_OK					; done (8)
 
+; SET_DBG, set BRK vector
+;	INPUT
+; kerntab	= vector
+
+fw_s_brk:
+	LDY kerntab				; get LSB, nicer (3)
+	LDA kerntab+1			; get MSB (3)
+	_CRITIC					; disable interrupts! (5)
+	STY fw_brk				; store for firmware (4+4)
+	STA fw_brk+1
+	_NO_CRIT				; restore interrupts if needed (4)
+	_DR_OK					; done (8)
+
+; JIFFY, set/check IRQ speed
+;		INPUT
+; irq_hz	= desired frequency in Hz (0 means no change)
+;		OUTPUT
+; irq_hz	= actually set freq (if error or no change)
+; C		= error, did not set
+
+fw_jiffy:
+	_CRITIC		; this is serious
+	LDA irq_hz	; check LSB
+	TAY		; save for later
+	ORA irq_hz+1	; any bit set?
+	BNE fj_set	; will adjust new value
+		LDY irq_freq	; otherwise get current
+		LDA irq_freq+1
+		STY irq_hz	; set output
+		STA irq_hz+1
+fj_end:
+		_NO_CRIT	; all safe now
+		_DR_OK		; will work always on this machine!
+fj_set:
+	STY irq_freq	; set value
+	STA irq_freq+1
+	_BRA fj_end	; all done, nothing to update
+
+; IRQ_SRC, investigate source of interrupt
+;		OUTPUT
+; *** X = 0 (periodic), 2 (async IRQ @ 65XX) ***
+; *** notice NON-standard output register for faster indexed jump! ***
+; other even values will be hardware-dependent
+
+fw_i_src:
+	BIT VIA_J+IFR		; much better than LDA, ASL, BPL!
+	BVS fis_per		; from T1
+		LDX #2			; standard async otherwise
+		RTS			; fastest!
+fis_per:
+	LDA VIA_J+T1CL		; acknowledge periodic interrupt
+	LDX #0			; standard jiffy value
+	_DR_OK
+
+; *** hardware specific ***
+
+; POWEROFF, shutdown etc
+;		INPUT
+; Y = mode (0=suspend, 2=warmboot, 4=coldboot, 6=power off)
+fw_power:
+	TYA					; get subfunction offset
+	TAX					; use as index
+	_JMPX(fwp_func)		; select from jump table
+
+fwp_off:
+	.byt $DB		; in case a WDC CPU is used
+	_PANIC("{OFF}")		; stop execution! just in case is handled
+
+fwp_susp:
+	_DR_ERR(UNAVAIL)	; just continue execution
+; could switch off VIA IRQ and use SEI/WAI for WDC use...
+
+; sub-function jump table
+fwp_func:
+	.word	fwp_susp	; suspend	+FW_STAT
+	.word	start_kernel	; shouldn't use this, just in case
+	.word	reset		; coldboot	+FW_COLD
+	.word	fwp_off		; poweroff	+FW_OFF
+; must include BRK/NMI invocation codes
+
+
+
+
+; A0, install jump table
+; kerntab <- address of supplied jump table
+fw_install:
+	LDY #0				; reset index (2)
+	_CRITIC				; disable interrupts! (5)
+fwi_loop:
+		LDA (kerntab), Y	; get from table as supplied (5)
+		STA fw_table, Y		; copy where the firmware expects it (4+2)
+		INY
+		BNE fwi_loop		; until whole page is done (3/2)
+	_NO_CRIT			; restore interrupts if needed (4)
+	_DR_OK				; all done (8)
+
+
+
+; A4, set NMI vector
+; kerntab <- address of NMI code (including magic string)
+
 
 ; A6, patch single function
 ; kerntab <- address of code
@@ -299,26 +390,6 @@ fw_patch:
 ; A10, poweroff etc
 ; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
 ; C -> not implemented
-fw_power:
-	TYA					; get subfunction offset
-	TAX					; use as index
-	_JMPX(fwp_func)		; select from jump table
-
-fwp_off:
-	_PANIC("{OFF}")		; stop execution! just in case is handled
-
-fwp_susp:
-	_DR_ERR(UNAVAIL)	; just continue execution
-
-fwp_cold:
-	JMP ($FFFC)			; call 6502 vector, as firmware start will initialize as needed
-
-; sub-function jump table
-fwp_func:
-	.word	fwp_off		; poweroff	+FW_OFF
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	fwp_cold	; coldboot	+FW_COLD
-	.word	kernel		; shouldn't use this, just in case
 
 ; *** administrative jump table ***
 ; might go elsewhere as it may grow, especially on NMOS
