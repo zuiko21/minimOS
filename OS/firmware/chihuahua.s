@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
 ; v0.9.6a1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170815-1138
+; last modified 20170815-1224
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -202,6 +202,36 @@ std_nmi:
 ; ********************************
 ; *** administrative functions ***
 ; ********************************
+
+; *** generic functions ***
+
+; GESTALT, get system info, API TBD
+;		OUTPUT
+; cpu_ll	= CPU type
+; c_speed	= speed code
+; str_pt	= *machine name
+; ex_pt		= *memory map
+; k_ram		= pages of RAM
+
+fw_gestalt:
+	LDA himem		; number of pages???
+	LDX #SPEED_CODE		; CPU speed
+	LDY fw_cpu		; CPU type
+	STA k_ram		; set outputs
+	STX c_speed
+	STY cpu_ll
+	LDY #<fw_mname		; get pointer to name
+	LDA #>fw_mname
+	STY str_pt		; set output
+	STA str_pt+1
+	LDY #<fw_map		; get pointer to map
+	LDA #>fw_map
+	STY ex_pt		; set output
+	STA ex_pt+1
+	_DR_OK
+
+
+
 ; A0, install jump table
 ; kerntab <- address of supplied jump table
 fw_install:
@@ -264,30 +294,6 @@ fw_patch:
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
 
-
-; A8, get system info, API TBD
-; zpar -> available pages of (kernel) SRAM (0 means 128-byte system)
-; zpar+2.W -> available BANKS of RAM
-; zpar2.B -> speedcode
-; zpar2+2.B -> CPU type
-; zpar3.W/L -> points to a string with machine name
-; *** might change ABI/API ***
-fw_gestalt:
-	LDA himem		; get pages of kernel SRAM (4)
-	STA zpar		; store output (3)
-	_STZA zpar+2	; no bankswitched RAM yet (3+3)
-	_STZA zpar+3
-	_STZA zpar3+2	; same for string address (3+3)
-	_STZA zpar3+3
-	LDA #SPEED_CODE	; speed code as determined in options.h (2+3)
-	STA zpar2
-	LDA fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
-	STA zpar2+2
-	LDA #<fw_mname	; get string LSB (2+3)
-	STA zpar3
-	LDA #>fw_mname	; same for MSB (2+3)
-	STA zpar3+1
-	_DR_OK			; done (8)
 
 
 ; A10, poweroff etc
