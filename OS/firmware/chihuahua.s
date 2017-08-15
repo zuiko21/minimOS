@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
 ; v0.9.6a1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170815-1101
+; last modified 20170815-1138
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -61,12 +61,6 @@ post:
 ; SRAM test
 #include "firmware/modules/ramtest.s"
 
-; *** VIA initialisation (and stop beeping) ***
-	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
-	STA VIA_J + PCR
-	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
-	STA VIA_J + ACR
-
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
@@ -100,16 +94,26 @@ fw_cpuOK:
 ; *** preset defaul BRK & NMI handlers ***
 	LDY #<std_nmi			; defaul BRK like NMI
 	LDA #>std_nmi
-	STY _;***********
+	STY fw_brk			; set vector
+	STA fw_brk+1
+; no need to set NMI as it's validated
 
-
-
-; *** maybe this is the place for final interrupt setup *** 20150605
+; *** reset jiffy count ***
 	LDX #5				; max offset in uptime seconds AND ticks (assume contiguous)
 res_sec:
 		_STZA ticks, X		; reset byte
 		DEX					; next byte backwards
 		BPL res_sec			; zero is included
+
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+; *** VIA initialisation (and stop beeping) ***
+	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
+	STA VIA_J + PCR
+	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
+	STA VIA_J + ACR
+
 	LDA #$C0			; enable T1 (jiffy) interrupt only (2+4)
 	STA VIA_J + IER
 
@@ -118,11 +122,21 @@ res_sec:
 -remote_boot:
 ;#include "firmware/modules/netboot.s"
 
+; *******************************************
 ; *** firmware ends, jump into the kernel ***
+; *******************************************
 start_kernel:
 	JMP (fw_warm)		; (6)
 
+; ********************************
+; ********************************
+; ****** interrupt handlers ******
+; ********************************
+; ********************************
+
+; **********************************************
 ; *** vectored NMI handler with magic number ***
+; **********************************************
 nmi:
 
 #ifdef	NMOS
@@ -185,19 +199,20 @@ fw_magic:
 std_nmi:
 #include "firmware/modules/std_nmi.s"
 
-
+; ********************************
 ; *** administrative functions ***
+; ********************************
 ; A0, install jump table
 ; kerntab <- address of supplied jump table
 fw_install:
 	LDY #0				; reset index (2)
-	_ENTER_CS			; disable interrupts! (5)
+	_CRITIC				; disable interrupts! (5)
 fwi_loop:
 		LDA (kerntab), Y	; get from table as supplied (5)
 		STA fw_table, Y		; copy where the firmware expects it (4+2)
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
-	_EXIT_CS			; restore interrupts if needed (4)
+	_NO_CRIT			; restore interrupts if needed (4)
 	_DR_OK				; all done (8)
 
 
@@ -206,10 +221,10 @@ fwi_loop:
 fw_s_isr:
 	LDY kerntab				; get LSB, nicer (3)
 	LDA kerntab+1			; get MSB (3)
-	_ENTER_CS				; disable interrupts! (5)
+	_CRITIC					; disable interrupts! (5)
 	STY fw_isr				; store for firmware (4+4)
 	STA fw_isr+1
-	_EXIT_CS				; restore interrupts if needed (4)
+	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
 
 
@@ -243,10 +258,10 @@ fw_sn_chk:
 fw_patch:
 	LDY kerntab				; get LSB (3)
 	LDA kerntab+1			; same for MSB (3)
-	_ENTER_CS				; disable interrupts! (5)
+	_CRITIC					; disable interrupts! (5)
 	STA fw_table, Y			; store where the firmware expects it (4+4)
 	STA fw_table+1, Y
-	_EXIT_CS				; restore interrupts if needed (4)
+	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
 
 
@@ -312,20 +327,20 @@ fw_admin:
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	kernel_call-*, $FF
+	.dsb	kerncall-*, $FF
 #endif
 
 ; *** minimOS function call primitive ($FFC0) ***
-* = kernel_call
+* = kerncall
 	_JMPX(fw_table)	; macro for NMOS compatibility (6)
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	admin_call-*, $FF
+	.dsb	adm_call-*, $FF
 #endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
-* = admin_call
+* = adm_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
 

@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a10
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170815-1053
+; last modified 20170815-1223
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -251,12 +251,12 @@ fw_gestalt:
 ; kerntab	= address of ISR (will take care of all necessary registers)
 
 fw_s_isr:
-	_ENTER_CS			; disable interrupts and save sizes! (5)
+	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$20		; ** 8-bit indexes, no ABI to set that! **
 	LDA kerntab			; get pointer (4)
 	STA @fw_isr			; store for firmware, note long addressing (6)
-	_EXIT_CS			; restore interrupts if needed, sizes too (4)
+	_NO_CRIT			; restore interrupts if needed, sizes too (4)
 	_DR_OK				; done (8)
 
 ; SET_NMI, set NMI vector
@@ -268,7 +268,7 @@ fw_s_isr:
 ; ...unless SAFE mode is NOT selected (will not check upon NMI)
 
 fw_s_nmi:
-	_ENTER_CS			; save sizes, just in case CS is needed...
+	_CRITIC				; save sizes, just in case CS is needed...
 	.as: .xs: SEP #$30	; *** standard sizes ***
 #ifdef	SAFE
 	LDX #3				; offset to reversed magic string
@@ -291,7 +291,7 @@ fw_sn_ok:
 	.al: REP #$20		; *** 16-bit memory ***
 	LDA kerntab			; get pointer (4)
 	STA @fw_nmi			; store for firmware, note long addressing (6)
-	_EXIT_CS			; restore sizes!
+	_NO_CRIT			; restore sizes!
 	_DR_OK				; done (8)
 
 	.as: .xs			; just in case...
@@ -301,11 +301,11 @@ fw_sn_ok:
 ; kerntab	= address of BRK routine (ending in RTS)
 
 fw_s_brk:
-	_ENTER_CS			; disable interrupts and save sizes! (5)
+	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA kerntab			; get pointer (4)
 	STA @fw_brk			; store for firmware, note long addressing (6)
-	_EXIT_CS			; restore interrupts if needed, sizes too (4)
+	_NO_CRIT			; restore interrupts if needed, sizes too (4)
 	_DR_OK				; done
 
 	.as: .xs			; just in case...
@@ -320,14 +320,14 @@ fw_s_brk:
 fw_jiffy:
 ; this is generic
 ; if could not change, then just set return parameter and C
-	_ENTER_CS			; disable interrupts and save sizes! (5)
+	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA irq_hz			; get input value
 	BNE fj_set			; not just checking
 		LDA @irq_freq		; get current frequency
 		STA irq_hz			; set return values
 fj_end:
-		_EXIT_CS			; eeeeeeeeek
+		_NO_CRIT			; eeeeeeeeek
 		_DR_OK
 fj_set:
 	STA @irq_freq		; store in sysvars
@@ -365,8 +365,8 @@ fw_power:
 	JMP (fwp_func, X)	; select from jump table
 
 fwp_off:
+	.byt	$DB			; STP in case a WDC CPU is used
 	_PANIC("{OFF}")		; just in case is handled
-	.byt	$42			; WDM will show up on BBC emulator... and cold boot!
 
 fwp_susp:
 	PLP					; restore sizes
@@ -384,7 +384,7 @@ fw_fgen:
 ; kerntab	= address of supplied pointer table
 
 fw_install:
-	_ENTER_CS			; disable interrupts! (5)
+	_CRITIC				; disable interrupts! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$10		; ** just in case, 8-bit indexes ** (3)
 	LDY #0				; reset index (2)
@@ -394,7 +394,7 @@ fwi_loop:
 		INY					; advance two bytes (2+2)
 		INY
 		BNE fwi_loop		; until whole page is done (3/2)
-	_EXIT_CS			; restore interrupts if needed, will restore size too (4)
+	_NO_CRIT			; restore interrupts if needed, will restore size too (4)
 	_DR_OK				; all done (8)
 
 ; PATCH, patch single function
@@ -417,7 +417,7 @@ fw_patch:
 ; CONTEXT, zeropage & stack bankswitching
 fw_ctx:
 ; ****** TO BE DONE ******
-	_DR_ERR(UNAVAIL)	; not yet implemented
+	_DR_ERR(UNAVAIL)	; not yet implemented, Jalapa does not use it
 
 
 ; ****************************
@@ -447,7 +447,7 @@ fw_admin:
 	.word	fw_gestalt	; GESTALT get system info (renumbered)
 	.word	fw_s_isr	; SET_ISR set IRQ vector
 	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
-	.word	fw_s_brk	; *** SET_BRK set debugger, new 20170517
+	.word	fw_s_brk	; *** SET_DBG set debugger, new 20170517
 	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
 	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
 
@@ -464,15 +464,20 @@ fw_admin:
 ; *** minimOS·16 BRK handler *** might go elsewhere
 brk_hndl:		; label from vector list
 ; much like the ISR start
-	.al: .xl: REP #$30		; status already saved, but save register contents in full (3)
+	.al: .xl: REP #$38		; status already saved, but save register contents in full, decimal off just in case (3)
 	PHA						; save registers (3x4)
 	PHX
 	PHY
 	PHB						; eeeeeeeeeek (3)
-; should I return to 8-bit?
+; make sure we work on bank zero eeeeeeeeek
+	PHK				; stack a 0...
+	PLB				; ...for data bank
+; return to 8-bit
+	.as: .xs: SEP #$30
 ; must use some new indirect jump, as set by new SET_BRK
-	JSR brk_handler			; standard label from IRQ
-; ************************************ CONTINUE HERE ***************************
+	LDX #0				; no offset
+	JSR (fw_brk, X)			; new vector
+; restore full status and exit
 	.al: .xl: REP #$30		; just in case (3)
 	PLB						; eeeeeeeeeeeek (4)
 	PLY						; restore status and return (3x5)
