@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a10
+; v0.9.6a11
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170815-1223
+; last modified 20170815-1838
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a10 firmware for "
+	.asc	"0.9.6a11 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -363,14 +363,25 @@ fw_power:
 	.as: .xs: SEP #$30	; *** all 8-bit ***
 	TYX					; get subfunction offset as index
 	JMP (fwp_func, X)	; select from jump table
-
 fwp_off:
+; include here shutdown code
 	.byt	$DB			; STP in case a WDC CPU is used
 	_PANIC("{OFF}")		; just in case is handled
-
 fwp_susp:
+; might use a SEI/WAI in case a WDC CPU is used...
+fwp_end:
 	PLP					; restore sizes
 	_DR_OK				; just continue execution
+fwp_nmi:
+	PHK				; always in bank 0
+	PEA fwp_end			; push correct return
+	PHP				; will end in RTI
+	JMP nmi				; handle as usual
+fwp_brk:
+	PHK				; always in bank 0
+	PEA fwp_end			; push correct return
+	PHP				; will end in RTI
+	JMP brk_hndl			; handle as usual
 
 ; FREQ_GEN, frequency generator hardware interface, TBD
 fw_fgen:
@@ -435,6 +446,10 @@ fwp_func:
 	.word	reset		; coldboot	+FW_COLD
 	.word	fwp_off		; poweroff	+FW_OFF
 ; might include here the BRK/NMI invocation codes
+	.word	fwp_nmi		; PW_CLEAN not allowed here!
+	.word	fwp_nmi		; simulate NMI
+	.word	fwp_brk		; execute BRK, not sure if needed
+
 
 fw_map:
 ; *** do not know what to do here ***
@@ -490,7 +505,7 @@ brk_hndl:		; label from vector list
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a10 firmware for "
+	.asc	"0.9.6a11 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif

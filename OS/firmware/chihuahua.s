@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
-; v0.9.6a1
+; v0.9.6a2
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170815-1242
+; last modified 20170815-1826
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -330,6 +330,7 @@ fis_per:
 ; POWEROFF, shutdown etc
 ;		INPUT
 ; Y = mode (0=suspend, 2=warmboot, 4=coldboot, 6=power off)
+; *** new interrupt invoke codes (10=NMI, 12=BRK) ***
 fw_power:
 	TYA					; get subfunction offset
 	TAX					; use as index
@@ -338,10 +339,18 @@ fw_power:
 fwp_off:
 	.byt $DB		; in case a WDC CPU is used
 	_PANIC("{OFF}")		; stop execution! just in case is handled
-
+fwp_brk:
+	JMP (fw_brk)		; call installed routine, perhaps will return
 fwp_susp:
-	_DR_ERR(UNAVAIL)	; just continue execution
 ; could switch off VIA IRQ and use SEI/WAI for WDC use...
+	_DR_ERR(UNAVAIL)	; just continue execution
+fwp_nmi:
+	LDY #<fw_ret		; get correct return address
+	LDA #>fw_ret
+	PHA			; stack it in order
+	_PHY
+	PHP			; will end in RTI
+	JMP nmi			; handle as usual
 
 ; sub-function jump table
 fwp_func:
@@ -349,8 +358,10 @@ fwp_func:
 	.word	start_kernel	; shouldn't use this, just in case
 	.word	reset		; coldboot	+FW_COLD
 	.word	fwp_off		; poweroff	+FW_OFF
+	.word	fwp_nmi		; PW_CLEAN is not allowed here!
 ; must include BRK/NMI invocation codes
-
+	.word	fwp_nmi		; simulated NMI
+	.word	fwp_brk		; execute handler
 
 
 
