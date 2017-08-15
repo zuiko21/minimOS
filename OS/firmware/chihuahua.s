@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
 ; v0.9.6a2
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170815-1826
+; last modified 20170815-2213
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -13,7 +13,7 @@
 fw_start:
 	.asc 0, "mB", 13				; standard system file wrapper, new format 20161010, experimental type
 	.asc "boot", 0					; standard filename
-	.asc "0.9.6a1 firmware for "	; machine description as comment
+	.asc "0.9.6a2 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
@@ -207,7 +207,9 @@ std_nmi:
 
 ; *** generic functions ***
 
+; *********************************
 ; GESTALT, get system info, API TBD
+; *********************************
 ;		OUTPUT
 ; cpu_ll	= CPU type
 ; c_speed	= speed code
@@ -232,7 +234,9 @@ fw_gestalt:
 	STA ex_pt+1
 	_DR_OK
 
+; ***********************
 ; SET_ISR, set IRQ vector
+; ***********************
 ;	INPUT
 ; kerntab	= vector
 
@@ -245,7 +249,9 @@ fw_s_isr:
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
 
+; ********************************
 ; SET_NMI, set NMI handler routine
+; ********************************
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected...
 ; ...unless SAFE is not selected (will not check upon NMI)
@@ -271,7 +277,9 @@ fw_sn_chk:
 	STA fw_nmi+1
 	_DR_OK					; done (8)
 
+; ***********************
 ; SET_DBG, set BRK vector
+; ***********************
 ;	INPUT
 ; kerntab	= vector
 
@@ -284,7 +292,9 @@ fw_s_brk:
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
 
+; **************************
 ; JIFFY, set/check IRQ speed
+; **************************
 ;		INPUT
 ; irq_hz	= desired frequency in Hz (0 means no change)
 ;		OUTPUT
@@ -309,7 +319,9 @@ fj_set:
 	STA irq_freq+1
 	_BRA fj_end	; all done, nothing to update
 
+; ****************************************
 ; IRQ_SRC, investigate source of interrupt
+; ****************************************
 ;		OUTPUT
 ; *** X = 0 (periodic), 2 (async IRQ @ 65XX) ***
 ; *** notice NON-standard output register for faster indexed jump! ***
@@ -327,17 +339,20 @@ fis_per:
 
 ; *** hardware specific ***
 
+; **********************
 ; POWEROFF, shutdown etc
+; **********************
 ;		INPUT
 ; Y = mode (0=suspend, 2=warmboot, 4=coldboot, 6=power off)
 ; *** new interrupt invoke codes (10=NMI, 12=BRK) ***
+
 fw_power:
 	TYA					; get subfunction offset
 	TAX					; use as index
 	_JMPX(fwp_func)		; select from jump table
 
 fwp_off:
-	.byt $DB		; in case a WDC CPU is used
+	.byt	$DB		; in case a WDC CPU is used
 	_PANIC("{OFF}")		; stop execution! just in case is handled
 fwp_brk:
 	JMP (fw_brk)		; call installed routine, perhaps will return
@@ -363,10 +378,19 @@ fwp_func:
 	.word	fwp_nmi		; simulated NMI
 	.word	fwp_brk		; execute handler
 
+; ***********************************
+; FREQ_GEN, generate frequency at PB7
+; ***********************************
+; ****** T B D ******
+fw_fgen:
+	_DR_ERR(UNAVAIL)		; not supported
 
+; **************************
+; INSTALL, supply jump table
+; **************************
+;		INPUT
+; kerntab	= address of supplied jump table
 
-; A0, install jump table
-; kerntab <- address of supplied jump table
 fw_install:
 	LDY #0				; reset index (2)
 	_CRITIC				; disable interrupts! (5)
@@ -378,40 +402,47 @@ fwi_loop:
 	_NO_CRIT			; restore interrupts if needed (4)
 	_DR_OK				; all done (8)
 
+; ****************************
+; PATCH, patch single function
+; ****************************
+;		INPUT
+; kerntab	= address of code
+; Y		= function to be patched
 
-
-; A4, set NMI vector
-; kerntab <- address of NMI code (including magic string)
-
-
-; A6, patch single function
-; kerntab <- address of code
-; Y <- function to be patched
 fw_patch:
-	LDY kerntab				; get LSB (3)
-	LDA kerntab+1			; same for MSB (3)
+	LDA kerntab				; get LSB (3)
+	LDX kerntab+1			; same for MSB (3)
 	_CRITIC					; disable interrupts! (5)
 	STA fw_table, Y			; store where the firmware expects it (4+4)
+	TXA					; eeeeeeeeeeeek
 	STA fw_table+1, Y
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
 
+; ****************************
+; CONTEXT, not supported here!
+; ****************************
 
+f_unavail:
+	_DR_ERR(UNAVAIL)		; not supported
 
-; A10, poweroff etc
-; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
-; C -> not implemented
-
+; WILL CHANGE O
 ; *** administrative jump table ***
 ; might go elsewhere as it may grow, especially on NMOS
-; WILL CHANGE ORDER
 fw_admin:
-	.word	fw_install
+	.word	fw_gestalt
 	.word	fw_s_isr
 	.word	fw_s_nmi
-	.word	fw_patch	; new order 20150409
-	.word	fw_gestalt
+	.word	fw_s_brk
+	.word	fw_jiffy
+	.word	fw_i_src
 	.word	fw_power
+	.word	fw_fgen
+	.word	fw_install
+	.word	fw_patch
+#ifdef	SAFE
+	.word	f_unavail
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
