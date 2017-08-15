@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a11, should match kernel16.s
+; v0.6a12, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170810-1425
+; last modified 20170815-1350
 
 ; assumes 8-bit sizes upon call...
 
@@ -1222,7 +1222,10 @@ shutdown:
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
-		BEQ sd_stat			; do not shutdown system then!
+		BEQ sd_fw			; do not shutdown system then!
+; interrupt invoking, although for internal use
+	CPY #PW_SOFT		; some invoking?
+		BCS sd_fw			; just pass to FW
 	STY sd_flag			; store mode for later, first must do proper system shutdown, note long addressing
 ; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
@@ -1237,8 +1240,6 @@ shutdown:
 ; actually RTI for 816
 
 ; firmware interface
-sd_stat:
-	LDY #PW_STAT		; suspend
 sd_fw:
 	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
 	JMP cio_callend		; return successfully (suspend) or notify error
@@ -1390,7 +1391,7 @@ set_curr:
 ; *** other data and pointers ***
 ; *******************************
 sd_tab:					; check order in abi.h!
-;	.word	sd_stat		; suspend *** no needed as will be called directly, check offset above
+; no more sd_stat!
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system

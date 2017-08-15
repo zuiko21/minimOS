@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a9, must match kernel.s
+; v0.6a10, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170810-1338
+; last modified 20170815-1350
 
 ; no way for standalone assembly...
 
@@ -1000,7 +1000,10 @@ shutdown:
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
-		BEQ sd_stat			; don't shutdown system then!
+		BEQ sd_fw			; do not shutdown system then!
+; new, interrupt invoking
+	CPY #PW_SOFT		; soft or hard interrupt?
+		BCS sd_fw			; do not shutdown, just pass to FW
 	STY sd_flag			; store mode for later, first must do proper system shutdown
 ; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
@@ -1011,8 +1014,6 @@ shutdown:
 	_EXIT_OK
 
 ; firmware interface
-sd_stat:
-	LDY #PW_STAT		; suspend
 sd_fw:
 	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
 	RTS					; just in case was not implemented!
@@ -1022,9 +1023,6 @@ sd_off:
 sd_cold:
 	LDY #PW_COLD		; cold boot
 	BNE sd_fw			; will reboot, shared code, no need for BRA
-sd_warm:
-; kernel start will do the usual SEI, CLD
-	JMP warm			; firmware no longer should take pointer, generic kernel knows anyway
 
 ; the scheduler will wait for NO braids active
 ; now let's disable all drivers
@@ -1056,11 +1054,11 @@ sd_next:
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
 	LDX sd_flag			; retrieve mode as index!
-	_JMPX(sd_tab-2)		; do as appropriate *** note offset as sd_stat will not be called from here
+	_JMPX(sd_tab-2)		; do as appropriate *** note offset as STAT will not be called from here
 
-sd_tab:					; check order in abi.h!
-;	.word	sd_stat		; suspend *** no needed as will be called directly, check offset above
-	.word	sd_warm		; warm boot direct by kernel
+sd_tab:					; check order in abi.h
+; *** no needed for suspend as will be called directly, check offset above ***
+	.word	warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; shutdown system
 
