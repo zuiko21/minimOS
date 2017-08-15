@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a8
+; v0.6a9
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170810-1247
+; last modified 20170815-1745
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a8", 0	; version in comment
+	.asc	"minimOS 0.6a9", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -85,6 +85,13 @@ warm:
 	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
 	_ADMIN(SET_ISR)		; install routine (14...)
+
+; install BRK code (as defined in "isr/brk.s" loaded from IRQ)
+	LDY #<supplied_brk		; get address, nicer way (2+2)
+	LDA #>supplied_brk
+	STY ex_pt			; no need to know about actual vector location (3)
+	STA ex_pt+1
+	_ADMIN(SET_DBG)		; install routine (14...)
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
@@ -497,12 +504,12 @@ ks_cr:
 k_isr:
 #include "isr/irq.s"
 ; default NMI-ISR is on firmware!
-
+; will include supplied BRK handler, although called by firmware
 
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a8", 0
+	.asc	"minimOS 0.6a9", 0
 #endif
 
 kern_end:		; for size computation

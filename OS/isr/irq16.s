@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.6a3, should match kernel16.s
+; v0.6a4, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170810-1432
+; last modified 20170815-1742
 
 #define		ISR		_ISR
 
@@ -11,7 +11,7 @@
 ; **********************
 ; **** the ISR code **** (initial tasks take 21 clocks)
 ; **********************
-	.al: .xl: REP #$30		; status already saved, but save register contents in full (3)
+	.al: .xl: REP #$38		; status already saved, but save register contents in full (3)
 	PHA						; save registers (3x4)
 	PHX
 	PHY
@@ -27,10 +27,18 @@
 	BIT VIA_J+IFR			; much better than LDA + ASL + BPL! (4)
 		BVS periodic			; from T1 (3/2)
 
+; ** generic alternative **
+;	_ADMIN(IRQ_SRC)			; get source in X
+;	JMP (irq_tab, X)		; do as appropriate
+;irq_tab:
+;	.word	periodic
+;	.word	asynchronous
+
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 36 clocks)
 ; *********************************
 ; execute D_REQ in drivers (7 if nothing to do, ?+?*number of drivers until one replies, plus inner codes)
+asynchronous:
 	LDX queue_mx			; get async queue size (4)
 	BEQ ir_done				; no drivers to call (2/3)
 i_req:
@@ -97,6 +105,8 @@ ip_done:
 	INC ticks+4				; 64k more seconds (8)
 	BRA isr_done			; go away (3)
 
-; *** BRK handler *** REVISE
-brk_handler:				; this has a separate handler, check compatible label in firmware
+; *******************
+; *** BRK handler ***
+; *******************
+supplied_brk:				; this has a separate handler on FW, ends in RTS
 #include "isr/brk16.s"

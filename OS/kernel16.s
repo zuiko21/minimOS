@@ -1,5 +1,5 @@
 ; minimOS·16 generic Kernel
-; v0.6a7
+; v0.6a8
 ; (c) 2012-2017 Carlos J. Santisteban
 ; last modified 20170810-1242
 
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6a5", 0	; version in comment
+	.asc	"minimOS•16 0.6a8", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -76,11 +76,17 @@ warm:
 	_ADMIN(INSTALL)		; copy jump table, will respect register sizes
 #endif
 
-; install ISR code (as defined in "isr/irq.s" below)
+; install ISR code (as defined in "isr/irq16.s" below)
 	LDA #k_isr			; get address, nicer way (3)
 	STA kerntab			; no need to know about actual vector location (4)
 ; as kernels must reside in bank 0, no need for 24-bit addressing
 	_ADMIN(SET_ISR)		; install routine, will respect sizes
+
+; install BRK code (as defined in "isr/brk16.s", currently from IRQ)
+	LDA #supplied_brk		; get address, nicer way (3)
+	STA kerntab			; no need to know about actual vector location (4)
+; as kernels must reside in bank 0, no need for 24-bit addressing
+	_ADMIN(SET_DBG)		; install routine, will respect sizes
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
@@ -410,7 +416,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6a7", 0	; version in comment
+	.asc	"minimOS•16 0.6a8", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

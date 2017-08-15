@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6a3, should match kernel.s
+; v0.6a4, should match kernel.s
 ; features TBD
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170810-1428
+; last modified 20170815-1736
 
 #define		ISR		_ISR
 
@@ -25,11 +25,20 @@
 ; *** place here HIGH priority async tasks, if required ***
 
 ; check whether from VIA, BRK... (7 if periodic, 6 if async)
+
+;	ADMIN(IRQ_SRC)			; check source, **generic way**
+;	JMPX(irq_tab)			; do as appropriate
+;irq_tab:
+;	.word periodic			; standard jiffy
+;	.word asyncronous		; async otherwise
+
+; optimised, non-portable code
 	BIT VIA+IFR				; much better than LDA + ASL + BPL! (4)
 		BVS periodic		; from T1 (3/2)
 
 ; *** async interrupt otherwise ***
 ; execute D_REQ in drivers (7 if nothing to do, 3+28*number of drivers until one replies, plus inner codes)
+asynchronous:
 	LDX queues_mx	; get queue size (4)
 	BEQ ir_done		; no drivers to call (2/3)
 i_req:
@@ -49,7 +58,8 @@ ir_done:
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
 	BEQ isr_done		; spurious interrupt! (2/3)
-		JSR brk_handler		; BRK otherwise (6/0)
+		LDY #PW_SOFT		; BRK otherwise (firmware interface)
+		_ADMIN(POWEROFF)
 ; go away (18 total)
 second:
 isr_done:
@@ -116,9 +126,10 @@ isr_nw:
 	INC ticks+4			; 64k more seconds (6)
 	_BRA isr_done		; go away (3)
 
+; *******************
 ; *** BRK handler ***
-brk_handler:			; should end in RTS anyway, 20160310
-; ********** should use new firmware interface  ***********
+; *******************
+; will be called via firmware interface
+
+supplied_brk:			; should end in RTS anyway, 20160310
 #include "isr/brk.s"
-
-
