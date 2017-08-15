@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a9
+; v0.9.6a10
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170806-1952
+; last modified 20170815-1053
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a9 firmware for "
+	.asc	"0.9.6a10 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -485,7 +485,7 @@ brk_hndl:		; label from vector list
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a9 firmware for "
+	.asc	"0.9.6a10 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
@@ -518,31 +518,31 @@ led_loop:
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	kernel_call-*, $FF
+	.dsb	kerncall-*, $FF
 #endif
 
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
-* = kernel_call
+* = kerncall
 	COP #$7F			; wrapper on 816 firmware, will do CLC!
 	RTS					; return to caller
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
 
 #ifdef		ROM
-	.dsb	admin_appc-*, $FF
+	.dsb	adm_appc-*, $FF
 #endif
 ; *** idea for 65816 admin-call interface from apps! ***
-* = admin_appc
-	JSR admin_call		; get into firmware interface (returns via RTS)
+* = adm_appc
+	JSR adm_call		; get into firmware interface (returns via RTS)
 	RTL					; get back into original task (called via JSL $00FFC8)
 ; ****** likely to end at $00FFCC ******
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	admin_call-*, $FF
+	.dsb	adm_call-*, $FF
 #endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
-* = admin_call
+* = adm_call
 	JMP (fw_admin, X)		; takes 5 clocks
 
 
