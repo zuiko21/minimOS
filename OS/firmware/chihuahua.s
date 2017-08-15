@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
-; v0.9.1a1
-; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1218
+; v0.9.6a1
+; (c)2015-2017 Carlos J. Santisteban
+; last modified 20170815-1101
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -13,13 +13,17 @@
 fw_start:
 	.asc 0, "mB", 13				; standard system file wrapper, new format 20161010, experimental type
 	.asc "boot", 0					; standard filename
-	.asc "0.9.1a1 firmware for "	; machine description as comment
+	.asc "0.9.6a1 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 
 	.dsb	fw_start + $100 - *, $FF	; generate padding including end of linked list
 
+; ********************
+; ********************
 ; *** cold restart ***
+; ********************
+; ********************
 ; basic init
 reset:
 	SEI				; cold boot, best assume nothing (2)
@@ -40,7 +44,9 @@ reset:
 via_ok:
 #endif
 
+; *********************************
 ; *** optional firmware modules ***
+; *********************************
 ; optional boot selector
 #include "firmware/modules/bootoff.s"
 
@@ -60,35 +66,45 @@ post:
 	STA VIA_J + PCR
 	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
 	STA VIA_J + ACR
+
+; ***********************************
+; *** firmware parameter settings ***
+; ***********************************
 ; *** preset kernel start address (standard label from ROM file) ***
 	LDY #<kernel	; get LSB, nicer (2)
 	LDA #>kernel	; same for MSB (2)
 	STY fw_warm		; store in sysvars (4+4)
 	STA fw_warm+1
-; *** set default CPU type ***
-	LDA #CPU_TYPE	; constant from options.h (2)
-	STA fw_cpu		; store variable (4)
 
+; *** set default CPU type ***
+;	LDA #CPU_TYPE	; constant from options.h, remove if tested (2)
 ; might check out here for the actual CPU type...
+; should just get CPU type in A
 #include "firmware/modules/cpu_check.s"
+	STA fw_cpu		; store variable (4) redundant if stored from module
+
 #ifdef	SAFE
 #ifndef	NMOS
-;	LDA fw_cpu		; already in A, but may change
-	CMP #'N'		; is it NMOS? not supported!
+	CMP #'N'		; is it NMOS? not supported on this build!
 	BNE fw_cpuOK	; otherwise continue
 		JMP lock		; cannot handle BRK, alas
 fw_cpuOK:
 #endif
 #endif
 
-; *** maybe this is the place for final interrupt setup *** 20150605
-; first of all, compute Timer 1 division factor, out from options.h 20160407
-T1_DIV = PHI2/IRQ_FREQ-2
+; *** preset jiffy IRQ frequency ***
+; this must be done by kernel, but at least clear it for 0.5.x compatibility
+	_STZA irq_freq			; null speed... IRQ not set
+	_STZA irq_freq+1
 
-	LDY	#<T1_DIV		; set IRQ frequency divisor LSB ** revised 20150220 (2)
-	LDA #>T1_DIV		; same for MSB, nicer (2)
-	STY VIA_J + T1CL	; put value into latch (write to counter) (4)
-	STA VIA_J + T1CH	; start counting! (4)
+; *** preset defaul BRK & NMI handlers ***
+	LDY #<std_nmi			; defaul BRK like NMI
+	LDA #>std_nmi
+	STY _;***********
+
+
+
+; *** maybe this is the place for final interrupt setup *** 20150605
 	LDX #5				; max offset in uptime seconds AND ticks (assume contiguous)
 res_sec:
 		_STZA ticks, X		; reset byte
