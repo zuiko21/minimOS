@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a11
+; v0.9.6a12
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170815-1838
+; last modified 20170816-1804
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a11 firmware for "
+	.asc	"0.9.6a12 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -42,13 +42,14 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 ; **************************
 ; basic init
 reset:
-	SEI					; cold boot (2) not needed for simulator?
-	CLD					; just in case, a must for NMOS (2)
+	SEI					; cold boot (2)
+	CLD					; just in case of rebooting (2)
 ; reset the 65816 to emulation mode, just in case
 	SEC					; would set back emulation mode on C816
 	XCE					; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA $0				; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
-	LDX #SPTR			; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
+	ORA 0				; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
+; now we are surely into emulation mode, initialise basic stack at $1FF
+	LDX #SPTR			; initial stack pointer, must be done in emulation for '816 (2)
 	TXS					; initialise stack (2)
 
 ; ***************************
@@ -61,11 +62,11 @@ reset:
 	SED					; decimal mode
 	LDA #$99			; load highest BCD number (sets N too)
 	CLC					; prepare to add
-	ADC #$02			; will wrap around in Decimal mode (should clear N)
+	ADC #2				; will wrap around in Decimal mode (should clear N)
 	CLD					; back to binary
 		BMI cpu_bad			; NMOS, N flag not affected by decimal add
 	TAY					; let us preload Y with 1 from above
-	LDX #$00			; sets Z temporarily
+	LDX #0				; sets Z temporarily
 	TYX					; TYX, 65802 instruction will clear Z, NOP on all 65C02s will not
 	BNE fw_cpuOK		; Branch only on 65802/816
 cpu_bad:
@@ -76,7 +77,7 @@ fw_cpuOK:
 ; it can be assumed 65816 from this point on
 	CLC					; set NATIVE mode eeeeeeeeeeek
 	XCE					; still with 8-bit registers
-; ***** do I really need to (re)set DP and DBR??? *****
+; seems I really need to (re)set DP and DBR if rebooting
 	PHK					; stacks a zero
 	PLB					; reset this value
 	PHK					; stack two zeroes
@@ -93,6 +94,7 @@ post:
 ; SRAM test
 ;#include "firmware/modules/ramtest.s"
 ; MUST probe for RAM size, anyway... and skip the ROM
+#include "firmware/modules/memsiz.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -161,22 +163,23 @@ nmi:
 	PHX
 	PHY
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeek
-; should I save and reset DP???
 ; make NMI reentrant, new 65816 specific code
-; assume all registers in 16-bit size
-	LDY sysptr			; get original word (4+4)
-	LDA systmp			; this will get sys_sp also!
-	PHA					; store them in similar order (4+4)
-	PHY
+; assume A in 16-bit size with 8-bit indexes
+	.xs: SEP #$10		; *** back to 8-bit indexes ***
+	LDA sysptr			; get original word (4)
+	LDX systmp			; get byte (3)
+	PHX					; store them in similar order (4+4)
+	PHA
 ; switch DBR to bank zero!!!!
 	PHK					; push a zero...
 	PLB					; ...as current data bank!
 ; prepare for next routine while memory is still 16-bit!
 	LDA fw_nmi			; copy vector to zeropage (5+4)
 	STA sysptr
-	.as: SEP #$20		; *** back to 8-bit size all the way! ***
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
+; faster approach
+; older approach was 14b, 
 	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
 	LDY #0				; offset for NMI code pointer (2)
 nmi_chkmag:
@@ -505,7 +508,7 @@ brk_hndl:		; label from vector list
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a11 firmware for "
+	.asc	"0.9.6a12 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
