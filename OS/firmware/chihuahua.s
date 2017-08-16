@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
 ; v0.9.6a3
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170816-1311
+; last modified 20170816-1319
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -385,7 +385,7 @@ fw_power:
 
 fwp_off:
 	.byt	$DB		; STP in case a WDC CPU is used
-	NOP			; avoid DCP abs,Y or equivalent NOP
+	NOP			; avoid DCP abs,Y on NMOS
 	NOP
 	_PANIC("{OFF}")		; stop execution! just in case is handled
 fwp_brk:
@@ -395,7 +395,7 @@ fwp_susp:
 #ifndef	NMOS
 	_CRITIC			; disable interrupts...
 	.byt	$CB		; WAI in case of WDC CPU
-	NOP			; 2-byte NOP on other CMOS...
+	NOP			; # not used on other CMOS, but helpful anyway
 	_NO_CRIT		; ...and back to business
 	_DR_OK
 #else
