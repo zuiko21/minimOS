@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
-; v0.9.6a2
+; v0.9.6a3
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170815-2213
+; last modified 20170816-1311
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -11,12 +11,12 @@
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
-	.asc 0, "mB", 13				; standard system file wrapper, new format 20161010, experimental type
+	.asc 0, "m", CPU_TYPE, 13		; standard system file wrapper, new format 20161010, experimental type
 	.asc "boot", 0					; standard filename
-	.asc "0.9.6a2 firmware for "	; machine description as comment
+	.asc "0.9.6a3 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
-
+; no size or timestamp on firmware header!
 	.dsb	fw_start + $100 - *, $FF	; generate padding including end of linked list
 
 ; ********************
@@ -24,6 +24,7 @@ fw_mname:
 ; *** cold restart ***
 ; ********************
 ; ********************
+
 ; basic init
 reset:
 	SEI				; cold boot, best assume nothing (2)
@@ -47,16 +48,17 @@ via_ok:
 ; *********************************
 ; *** optional firmware modules ***
 ; *********************************
+
 ; optional boot selector
-#include "firmware/modules/bootoff.s"
+;#include "firmware/modules/bootoff.s"
 
 ; ***continue power-on self-test***
 post:
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
-; startup beep
-#include "firmware/modules/beep.s"	; basic standard beep
+; basic startup beep
+#include "firmware/modules/beep.s"
 
 ; SRAM test
 #include "firmware/modules/ramtest.s"
@@ -64,6 +66,7 @@ post:
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
+
 ; *** preset kernel start address (standard label from ROM file) ***
 	LDY #<kernel	; get LSB, nicer (2)
 	LDA #>kernel	; same for MSB (2)
@@ -72,9 +75,12 @@ post:
 
 ; *** set default CPU type ***
 ;	LDA #CPU_TYPE	; constant from options.h, remove if tested (2)
+
 ; might check out here for the actual CPU type...
 ; should just get CPU type in A
 #include "firmware/modules/cpu_check.s"
+
+; after cpu_check, A holds CPU type (or previous LDA #)
 	STA fw_cpu		; store variable (4) redundant if stored from module
 
 #ifdef	SAFE
@@ -91,12 +97,12 @@ fw_cpuOK:
 	_STZA irq_freq			; null speed... IRQ not set
 	_STZA irq_freq+1
 
-; *** preset defaul BRK & NMI handlers ***
-	LDY #<std_nmi			; defaul BRK like NMI
+; *** preset default BRK & NMI handlers ***
+	LDY #<std_nmi			; default BRK like NMI
 	LDA #>std_nmi
 	STY fw_brk			; set vector
 	STA fw_brk+1
-; no need to set NMI as it's validated
+; no need to set NMI as it will be validated
 
 ; *** reset jiffy count ***
 	LDX #5				; max offset in uptime seconds AND ticks (assume contiguous)
@@ -108,12 +114,13 @@ res_sec:
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
+
 ; *** VIA initialisation (and stop beeping) ***
 	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
 	STA VIA_J + PCR
 	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
 	STA VIA_J + ACR
-
+; supposedly will not start counting until writing to counters!
 	LDA #$C0			; enable T1 (jiffy) interrupt only (2+4)
 	STA VIA_J + IER
 
@@ -147,40 +154,63 @@ nmi:
 	PHA					; save registers (3x3)
 	_PHX
 	_PHY
-	LDX #0				; have to save systmp and sysptr, new 20150326 (2)
-nmi_save:
-		LDA sysptr, X		; get original byte (3)
-		PHA					; put it on stack (3)
-		INX					; go forward (2)
-		CPX #3				; number of bytes to save, makes retrieving simpler (2)
-		BNE nmi_save		; until the end (3/2, total loop is 38 clocks)
+; have to save systmp and sysptr, new faster (18 vs 41t) way, just one more byte!
+	LDA sysptr			; get original byte (3)
+	PHA					; put it on stack (3)
+	LDA sysptr+1			; same with other bytes (3*4)
+	PHA
+	LDA systmp
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
-;	LDX #3				; offset for (reversed) magic string (2) ** already loaded from earlier step
+; alternative faster way 39b, 58t
 	LDY fw_nmi			; copy vector to zeropage (corrected 20150118) (4+4+3+3)
 	LDA fw_nmi+1
 	STY sysptr			; nicer way 20160407
 	STA sysptr+1
 	LDY #0				; offset for NMI code pointer (2)
-nmi_chkmag:
-		LDA (sysptr), Y		; get code byte (5)
-		CMP fw_magic, X		; compare with string (4)
-			BNE rst_nmi			; not a valid routine (2/3)
-		INY					; another byte (2)
-		DEX					; internal string is read backwards (2)
-		BPL nmi_chkmag		; down to zero (3/2)
+	LDA (sysptr), Y		; get code byte (5)
+	CMP #'U'			; match? (2)
+		BNE rst_nmi			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (sysptr), Y		; get code byte (5)
+	CMP #'N'			; match? (2)
+		BNE rst_nmi			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (sysptr), Y		; get code byte (5)
+	CMP #'j'			; match? (2)
+		BNE rst_nmi			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (sysptr), Y		; get code byte (5)
+	CMP #'*'			; match? (2)
+		BNE rst_nmi			; not a valid routine (2/3)
+; classic way was 29 bytes, 89t
+;	LDX #3 				; offset for (reversed) magic string (2)
+;	LDY fw_nmi			; copy vector to zeropage (4+4+3+3)
+;	LDA fw_nmi+1
+;	STY sysptr			; nicer way 20160407
+;	STA sysptr+1
+;	LDY #0				; offset for NMI code pointer (2)
+;nmi_chkmag:
+;		LDA (sysptr), Y		; get code byte (5)
+;		CMP fw_magic, X		; compare with string (4)
+;			BNE rst_nmi			; not a valid routine (2/3)
+;		INY					; another byte (2)
+;		DEX					; internal string is read backwards (2)
+;		BPL nmi_chkmag		; down to zero (3/2)
 #endif
 do_nmi:
 	JSR go_nmi			; call actual code, ending in RTS (6)
 ; *** here goes the former nmi_end routine ***
 nmi_end:
-	LDX #2				; have to retrieve systmp and sysptr, new 20150326 (2)
-nmi_restore:
-		PLA					; get byte from stack (4)
-		STA sysptr, X		; restore it (3)
-		DEX					; go backwards (2)
-		BPL nmi_restore		; offset zero included (3/2, total loop is 35 clocks)
-	_PLY				; restore regular registers
+; restore temporary vars, faster way is 9b, 24t (vs. 8b/40t)
+	PLA					; get byte from stack (4)
+	STA systmp		; restore it (4)
+	PLA					; get byte from stack (4)
+	STA sysptr+1		; restore it (4)
+	PLA					; get byte from stack (4)
+	STA sysptr		; restore it (4)
+; restore registers
+	_PLY
 	_PLX
 	PLA
 	RTI					; resume normal execution, hopefully
@@ -194,8 +224,9 @@ rst_nmi:
 	JSR std_nmi			; call standard handler
 	_BRA nmi_end		; and finish as usual
 
-fw_magic:
-	.asc	"*jNU"		; reversed magic string
+; magic string no longer needed...
+;fw_magic:
+;	.asc	"*jNU"		; reversed magic string
 
 ; *** default code for NMI handler, if not installed or invalid ***
 std_nmi:
@@ -317,6 +348,7 @@ fj_end:
 fj_set:
 	STY irq_freq	; set value
 	STA irq_freq+1
+; ***** MUST compute period and set VIA counters accordingly!!! *****
 	_BRA fj_end	; all done, nothing to update
 
 ; ****************************************
@@ -352,13 +384,23 @@ fw_power:
 	_JMPX(fwp_func)		; select from jump table
 
 fwp_off:
-	.byt	$DB		; in case a WDC CPU is used
+	.byt	$DB		; STP in case a WDC CPU is used
+	NOP			; avoid DCP abs,Y or equivalent NOP
+	NOP
 	_PANIC("{OFF}")		; stop execution! just in case is handled
 fwp_brk:
 	JMP (fw_brk)		; call installed routine, perhaps will return
 fwp_susp:
 ; could switch off VIA IRQ and use SEI/WAI for WDC use...
-	_DR_ERR(UNAVAIL)	; just continue execution
+#ifndef	NMOS
+	_CRITIC			; disable interrupts...
+	.byt	$CB		; WAI in case of WDC CPU
+	NOP			; 2-byte NOP on other CMOS...
+	_NO_CRIT		; ...and back to business
+	_DR_OK
+#else
+	_DR_ERR(UNAVAIL)	; avoid AXS# on NMOS
+#endif
 fwp_nmi:
 	LDY #<fw_ret		; get correct return address
 	LDA #>fw_ret
