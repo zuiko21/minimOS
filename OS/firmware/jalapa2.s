@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a12
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170816-1804
+; last modified 20170817-2323
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -164,7 +164,7 @@ nmi:
 	PHY
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeek
 ; make NMI reentrant, new 65816 specific code
-; assume A in 16-bit size with 8-bit indexes
+; A in 16-bit size with 8-bit indexes
 	.xs: SEP #$10		; *** back to 8-bit indexes ***
 	LDA sysptr			; get original word (4)
 	LDX systmp			; get byte (3)
@@ -179,26 +179,35 @@ nmi:
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
 ; faster approach
-; older approach was 14b, 
-	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
-	LDY #0				; offset for NMI code pointer (2)
-nmi_chkmag:
-		LDA (sysptr), Y		; get code byte (5)
-		CMP fw_magic, X		; compare with string (4)
+	LDA (sysptr)			; get first word (6)
+	CMP #'U'+256*'N'		; correct? (3)
 			BNE rst_nmi			; not a valid routine (2/3)
-		INY					; another byte (2)
-		DEX					; internal string is read backwards (2)
-		BPL nmi_chkmag		; down to zero (3/2)
+	LDY #2				; point to second word (2)
+	LDA (sysptr), Y			; get that (6)
+	CMP #'j'+256*'*'		; correct? (3)
+			BNE rst_nmi			; not a valid routine (2/3)
+	.as: SEP #$20			; code is exwecuted in 8-bit sizes
+; older approach was 15+4b, 75t
+;	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
+;	LDY #0				; offset for NMI code pointer (2)
+;nmi_chkmag:
+;		LDA (sysptr), Y		; get code byte (5)
+;		CMP fw_magic, X		; compare with string (4)
+;			BNE rst_nmi			; not a valid routine (2/3)
+;		INY					; another byte (2)
+;		DEX					; internal string is read backwards (2)
+;		BPL nmi_chkmag		; down to zero (3/2)
 #endif
 	LDX #0				; null offset (2)
 	JSR (fw_nmi, X)		; call actual code, ending in RTS (8) enters in 8-bit sizes
 ; *** here goes the former nmi_end routine ***
 nmi_end:
-	.al: .xl: REP #$30	; ** whole register size to restore **
-	PLY					; retrieve saved vars (5+5)
-	PLA
-	STY sysptr			; restore values (4+4)
-	STA systmp			; I suppose is safe to alter sys_sp too
+	.al: REP #$20	; ** whole register size to restore **
+	PLA					; retrieve saved vars (5+4)
+	PLX
+	STX systmp			; restore values (3+4)
+	STA sysptr
+	.xl: REP #$10	; ** whole register size to restore **
 ; if DP was reset, time to restore it
 	PLB					; eeeeeeeeeeeeeeek
 	PLY					; restore regular registers (3x5)
@@ -208,6 +217,7 @@ nmi_end:
 
 ; *** execute standard NMI handler ***
 rst_nmi:
+	.as: SEP #$20			; code is exwecuted in 8-bit sizes
 	PEA nmi_end-1		; prepare return address
 ; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
 
