@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a12
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170817-2323
+; last modified 20170817-2344
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -164,10 +164,8 @@ nmi:
 	PHY
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeek
 ; make NMI reentrant, new 65816 specific code
-; A in 16-bit size with 8-bit indexes
-	.xs: SEP #$10		; *** back to 8-bit indexes ***
-	LDA sysptr			; get original word (4)
-	LDX systmp			; get byte (3)
+	LDA sysptr			; get original words (4+4)
+	LDX systmp			; get sys_sp too!
 	PHX					; store them in similar order (4+4)
 	PHA
 ; switch DBR to bank zero!!!!
@@ -178,7 +176,8 @@ nmi:
 	STA sysptr
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
-; faster approach
+; faster approach 20+2b, 30t
+	.xs: SEP #$10		; *** back to 8-bit indexes ***
 	LDA (sysptr)			; get first word (6)
 	CMP #'U'+256*'N'		; correct? (3)
 			BNE rst_nmi			; not a valid routine (2/3)
@@ -187,7 +186,8 @@ nmi:
 	CMP #'j'+256*'*'		; correct? (3)
 			BNE rst_nmi			; not a valid routine (2/3)
 	.as: SEP #$20			; code is exwecuted in 8-bit sizes
-; older approach was 15+4b, 75t
+; older approach was 17+4b, 78t
+;	.xs: SEP #$30		; *** back to 8-bit ***
 ;	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
 ;	LDY #0				; offset for NMI code pointer (2)
 ;nmi_chkmag:
@@ -202,12 +202,11 @@ nmi:
 	JSR (fw_nmi, X)		; call actual code, ending in RTS (8) enters in 8-bit sizes
 ; *** here goes the former nmi_end routine ***
 nmi_end:
-	.al: REP #$20	; ** whole register size to restore **
-	PLA					; retrieve saved vars (5+4)
+	.al: .xl: REP #$30	; ** whole register size to restore **
+	PLA					; retrieve saved vars (5+5)
 	PLX
-	STX systmp			; restore values (3+4)
+	STX systmp			; restore values (4+4)
 	STA sysptr
-	.xl: REP #$10	; ** whole register size to restore **
 ; if DP was reset, time to restore it
 	PLB					; eeeeeeeeeeeeeeek
 	PLY					; restore regular registers (3x5)
@@ -217,7 +216,8 @@ nmi_end:
 
 ; *** execute standard NMI handler ***
 rst_nmi:
-	.as: SEP #$20			; code is exwecuted in 8-bit sizes
+	.xs:
+	.as: SEP #$20			; code is executed in 8-bit sizes
 	PEA nmi_end-1		; prepare return address
 ; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
 
@@ -448,9 +448,9 @@ fw_ctx:
 ; *** some firmware tables ***
 ; ****************************
 
-; magic string for NMI handler
-fw_magic:
-	.asc	"*jNU"		; REVERSED magic string
+; magic string for NMI handler, NO LONGER NEEDED
+;fw_magic:
+;	.asc	"*jNU"		; REVERSED magic string
 
 ; sub-function jump table (eeeek)
 fwp_func:
