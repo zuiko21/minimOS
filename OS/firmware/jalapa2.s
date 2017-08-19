@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a12
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170817-2344
+; last modified 20170819-1726
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -257,6 +257,7 @@ fw_gestalt:
 	LDA #fw_map			; pointer to standard map TBD ????
 	STA ex_pt			; set output
 ; some separate map for high RAM???
+	PLP					; restore sizes eeeek
 	_DR_OK				; done
 
 ; SET_ISR, set IRQ vector
@@ -282,30 +283,28 @@ fw_s_isr:
 
 fw_s_nmi:
 	_CRITIC				; save sizes, just in case CS is needed...
-	.as: .xs: SEP #$30	; *** standard sizes ***
+	.xs: SEP #$10			; *** standard index size ***
+	.al: REP #$20			; *** 16-bit memory ***
 #ifdef	SAFE
-	LDX #3				; offset to reversed magic string
-	LDY #0				; reset supplied pointer
-fw_sn_chk:
-		LDA (kerntab), Y	; get pointed handler string char
-		CMP @fw_magic, X	; compare against reversed string, note long addressing
-		BEQ fw_sn_ok		; no problem this far...
-; ***** due to error handling cannot use DR_ERR macro *****
-			LDY #CORRUPT		; error code (8-bit size)
-			PLP					; *** restore sizes eeeeeeeeek ***
-			SEC					; time to flag error!
-			RTS
-fw_sn_ok:
-		INY					; try next one
-		DEX
-		BPL fw_sn_chk		; until all done
+	LDA (kerntab)		; get pointed handler string word
+	CMP #'U'+256*'N'	; valid?
+		BNE fw_snerr		; error!
+	LDY #2				; point to next word
+	LDA (kerntab), Y	; get pointed handler string word
+	CMP #'k'+256*'*'	; valid?
+		BNE fw_snerr		; error!
 #endif
 ; transfer supplied pointer to firmware vector
-	.al: REP #$20		; *** 16-bit memory ***
 	LDA kerntab			; get pointer (4)
 	STA @fw_nmi			; store for firmware, note long addressing (6)
+; could it be outside bank zero???
 	_NO_CRIT			; restore sizes!
 	_DR_OK				; done (8)
+fw_snerr:
+	LDY #CORRUPT			; preload error code
+	_NO_CRIT			; restore sizes...
+	SEC					; ...but mark error
+	RTS					; firmware exit
 
 	.as: .xs			; just in case...
 
@@ -344,6 +343,7 @@ fj_end:
 		_DR_OK
 fj_set:
 	STA @irq_freq		; store in sysvars
+; *** compute and set VIA counters accordingly ***
 	BRA fj_end			; all done, no need to update as will be OK
 
 	.as: .xs			; just in case...
@@ -440,7 +440,7 @@ fw_patch:
 
 ; CONTEXT, zeropage & stack bankswitching
 fw_ctx:
-; ****** TO BE DONE ******
+; ****** TO BE DONE ****** not on unexpanded Jalapa
 	_DR_ERR(UNAVAIL)	; not yet implemented, Jalapa does not use it
 
 
