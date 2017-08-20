@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a9
+; v0.6a10
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170815-1745
+; last modified 20170820-2248
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a9", 0	; version in comment
+	.asc	"minimOS 0.6a10", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -94,6 +94,13 @@ warm:
 	_ADMIN(SET_DBG)		; install routine (14...)
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
+
+; it is time to set the interrupt frequency/period
+	LDY #<IRQ_FREQ		; get value from options (2+2)
+	LDA #>IRQ_FREQ
+	STY irq_hz			; set (3)
+	STA irq_hz+1
+	_ADMIN(JIFFY)
 
 ; *** default action in case the scheduler runs out of tasks ***
 	LDA #PW_STAT		; default action upon complete task death

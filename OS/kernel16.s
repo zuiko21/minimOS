@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a9
+; v0.6a10
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170820-1953
+; last modified 20170820-2259
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6a9", 0	; version in comment
+	.asc	"minimOS•16 0.6a10", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -89,6 +89,11 @@ warm:
 	_ADMIN(SET_DBG)		; install routine, will respect sizes
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
+
+; set IRQ frequency/period
+	LDA #IRQ_FREQ		; value from options
+	STA irq_hz
+	_ADMIN(JIFFY)
 
 ; *****************************
 ; *** memory initialisation ***
