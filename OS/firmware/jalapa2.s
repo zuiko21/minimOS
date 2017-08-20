@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a12
+; v0.9.6a13
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170819-1726
+; last modified 20170820-1914
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a12 firmware for "
+	.asc	"0.9.6a13 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -117,6 +117,7 @@ post:
 ; *** preset default BRK & NMI handlers ***
 	LDA #std_nmi		; default like the standard NMI
 	STA fw_brk			; store default handler
+	STZ fw_brk+2		; this is in bank 0, new
 ; since the NMI handler is validated, no need to install a default
 
 ; *** reset jiffy count ***
@@ -172,34 +173,28 @@ nmi:
 	PHK					; push a zero...
 	PLB					; ...as current data bank!
 ; prepare for next routine while memory is still 16-bit!
-	LDA fw_nmi			; copy vector to zeropage (5+4)
-	STA sysptr
+	.xs: SEP #$10		; *** back to 8-bit indexes ***
+	LDA fw_nmi			; copy vector to zeropage, now 24b (5)
+	LDX fw_nmi+2		; bank too, new (4)
+	STA sysptr		; store all (4+3)
+	STX sysptr+2
+; let us get ready for the return address
+	PHK				; return bank is zero (3)
+	PEA nmi_end-1		; prepare return address
+
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
-; faster approach 20+2b, 30t
-	.xs: SEP #$10		; *** back to 8-bit indexes ***
-	LDA (sysptr)			; get first word (6)
+	LDA [sysptr]			; get first word (7)
 	CMP #'U'+256*'N'		; correct? (3)
 			BNE rst_nmi			; not a valid routine (2/3)
 	LDY #2				; point to second word (2)
-	LDA (sysptr), Y			; get that (6)
+	LDA [sysptr], Y			; get that (7)
 	CMP #'j'+256*'*'		; correct? (3)
 			BNE rst_nmi			; not a valid routine (2/3)
-	.as: SEP #$20			; code is exwecuted in 8-bit sizes
-; older approach was 17+4b, 78t
-;	.xs: SEP #$30		; *** back to 8-bit ***
-;	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
-;	LDY #0				; offset for NMI code pointer (2)
-;nmi_chkmag:
-;		LDA (sysptr), Y		; get code byte (5)
-;		CMP fw_magic, X		; compare with string (4)
-;			BNE rst_nmi			; not a valid routine (2/3)
-;		INY					; another byte (2)
-;		DEX					; internal string is read backwards (2)
-;		BPL nmi_chkmag		; down to zero (3/2)
-#endif
-	LDX #0				; null offset (2)
-	JSR (fw_nmi, X)		; call actual code, ending in RTS (8) enters in 8-bit sizes
+	.as: SEP #$20			; *** code is executed in 8-bit sizes ***
+; jump to user-supplied handler! *** all in 8-bit
+; return address already set, but DBR is 0! No need to save it, though
+	JMP [fw_nmi]		; will return upon RTS (8)
 ; *** here goes the former nmi_end routine ***
 nmi_end:
 	.al: .xl: REP #$30	; ** whole register size to restore **
@@ -207,7 +202,7 @@ nmi_end:
 	PLX
 	STX systmp			; restore values (4+4)
 	STA sysptr
-; if DP was reset, time to restore it
+; as DBR was reset, time to restore it
 	PLB					; eeeeeeeeeeeeeeek
 	PLY					; restore regular registers (3x5)
 	PLX
@@ -216,9 +211,9 @@ nmi_end:
 
 ; *** execute standard NMI handler ***
 rst_nmi:
-	.xs:
-	.as: SEP #$20			; code is executed in 8-bit sizes
-	PEA nmi_end-1		; prepare return address
+	.xs:					; we came from 8-bit indexes
+	.as: SEP #$20			; handler is executed in full 8-bit sizes
+; return address already set!
 ; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
 
 ; *** default code for NMI handler, 8-bit sizes, if not installed or invalid, should end in RTS ***
@@ -262,20 +257,32 @@ fw_gestalt:
 
 ; SET_ISR, set IRQ vector
 ;		INPUT
-; kerntab	= address of ISR (will take care of all necessary registers)
-
+; kerntab	= 24b address of ISR (will take care of all necessary registers)
+;		zero means RETURN actual value! new 20170820
 fw_s_isr:
 	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$20		; ** 8-bit indexes, no ABI to set that! **
-	LDA kerntab			; get pointer (4)
-	STA @fw_isr			; store for firmware, note long addressing (6)
+	LDA kerntab+1			; get pointer highest... (4)
+;	BIT kerntab		; cleanly check whether zero *** could be supressed as not allowed in zeropage (4)
+		BEQ fw_r_isr			; read instead! (2/3)
+	STA @fw_isr+1			; store for firmware, note long addressing (6)
+	LDA kerntab		; copy lowest too (4+6)
+	STA @fw_isr		; will recopy middle byte, no long STX...
+fwsi_end:
 	_NO_CRIT			; restore interrupts if needed, sizes too (4)
 	_DR_OK				; done (8)
+fw_r_isr:
+	LDA @fw_isr		; get previous value... (6)
+	STA kerntab		; ...and store it (4)
+	LDA @fw_isr+2		; get bank and garbage! (6)
+	STA kerntab+2		; will not hurt anyway (4)
+	BRA fwsi_end
 
 ; SET_NMI, set NMI vector
 ;		INPUT
-; kerntab	= address of NMI code (including magic string, ends in RTS)
+; kerntab	= 24b address of NMI code (including magic string, ends in RTS)
+;		zero means RETURN actual value! new 20170820
 
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected...
@@ -285,19 +292,25 @@ fw_s_nmi:
 	_CRITIC				; save sizes, just in case CS is needed...
 	.xs: SEP #$10			; *** standard index size ***
 	.al: REP #$20			; *** 16-bit memory ***
+; first check whether read or set
+	LDA kerntab+1			; get pointer highest... (4)
+;	BIT kerntab		; cleanly check whether zero *** could be supressed as not allowed in zeropage (4)
+		BEQ fw_r_nmi			; read instead! (2/3)
 #ifdef	SAFE
-	LDA (kerntab)		; get pointed handler string word
+	LDA [kerntab]		; get pointed handler string word
 	CMP #'U'+256*'N'	; valid?
 		BNE fw_snerr		; error!
 	LDY #2				; point to next word
-	LDA (kerntab), Y	; get pointed handler string word
+	LDA [kerntab], Y	; get pointed handler string word
 	CMP #'k'+256*'*'	; valid?
 		BNE fw_snerr		; error!
 #endif
 ; transfer supplied pointer to firmware vector
-	LDA kerntab			; get pointer (4)
-	STA @fw_nmi			; store for firmware, note long addressing (6)
-; could it be outside bank zero???
+	LDA kerntab+1			; get pointer highest again (4)
+	STA @fw_nmi+1			; store for firmware, note long addressing (6)
+	LDA kerntab		; copy lowest too (4+6)
+	STA @fw_nmi		; will recopy middle byte, no long STX...
+fwsn_end:
 	_NO_CRIT			; restore sizes!
 	_DR_OK				; done (8)
 fw_snerr:
@@ -305,20 +318,39 @@ fw_snerr:
 	_NO_CRIT			; restore sizes...
 	SEC					; ...but mark error
 	RTS					; firmware exit
+fw_r_nmi:
+	LDA @fw_nmi		; get previous value... (6)
+	STA kerntab		; ...and store it (4)
+	LDA @fw_nmi+2		; get bank and garbage! (6)
+	STA kerntab+2		; will not hurt anyway (4)
+	BRA fwsn_end
 
 	.as: .xs			; just in case...
 
 ; SET_BRK, set BRK handler
 ;		INPUT
-; kerntab	= address of BRK routine (ending in RTS)
+; kerntab	= 24b address of BRK routine (ending in RTS)
+;		zero means RETURN actual value! new 20170820
 
 fw_s_brk:
-	_CRITIC				; disable interrupts and save sizes! (5)
+	PHP					; save sizes! (3)
 	.al: REP #$20		; ** 16-bit memory ** (3)
-	LDA kerntab			; get pointer (4)
-	STA @fw_brk			; store for firmware, note long addressing (6)
-	_NO_CRIT			; restore interrupts if needed, sizes too (4)
+; first check whether read or set
+	LDA kerntab+1			; get pointer highest... (4)
+;	BIT kerntab		; cleanly check whether zero *** could be supressed as not allowed in zeropage (4)
+		BEQ fw_r_brk			; read instead! (2/3)
+	STA @fw_brk+1			; store for firmware, note long addressing (6)
+	LDA kerntab			; get pointer lowest (4)
+	STA @fw_brk			; sets middle byte too, no problem (6)
+fwb_end:
+	PLP					; restore sizes (4)
 	_DR_OK				; done
+fw_r_brk:
+	LDA @fw_brk		; get previous value... (6)
+	STA kerntab		; ...and store it (4)
+	LDA @fw_brk+2		; get bank and garbage! (6)
+	STA kerntab+2		; will not hurt anyway (4)
+	BRA fwb_end
 
 	.as: .xs			; just in case...
 
@@ -343,7 +375,7 @@ fj_end:
 		_DR_OK
 fj_set:
 	STA @irq_freq		; store in sysvars
-; *** compute and set VIA counters accordingly ***
+; *** compute and set VIA counters accordingly!!!!! ***
 	BRA fj_end			; all done, no need to update as will be OK
 
 	.as: .xs			; just in case...
@@ -448,10 +480,6 @@ fw_ctx:
 ; *** some firmware tables ***
 ; ****************************
 
-; magic string for NMI handler, NO LONGER NEEDED
-;fw_magic:
-;	.asc	"*jNU"		; REVERSED magic string
-
 ; sub-function jump table (eeeek)
 fwp_func:
 	.word	fwp_susp	; suspend	+FW_STAT
@@ -503,8 +531,8 @@ brk_hndl:		; label from vector list
 ; return to 8-bit
 	.as: .xs: SEP #$30
 ; must use some new indirect jump, as set by new SET_BRK
-	LDX #0				; no offset
-	JSR (fw_brk, X)			; new vector
+; arrives in 8-bit, DBR=0 (no need to save it)
+	JSR @brk_call			; JSL new indirect
 ; restore full status and exit
 	.al: .xl: REP #$30		; just in case (3)
 	PLB						; eeeeeeeeeeeek (4)
@@ -512,13 +540,15 @@ brk_hndl:		; label from vector list
 	PLX
 	PLA
 	RTI
+brk_call:
+	JMP [fw_brk]			; will return
 
 .as:.xs:					; otherwise might prevent code after ROM!
 
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a12 firmware for "
+	.asc	"0.9.6a13 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
@@ -580,9 +610,8 @@ led_loop:
 
 
 ; *** vectored IRQ handler ***
-; might go elsewhere, especially on NMOS systems
 irq:
-	JMP (fw_isr)	; vectored ISR (5)
+	JMP [fw_isr]	; long vectored ISR (6)
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
