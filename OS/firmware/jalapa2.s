@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a13
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170820-1914
+; last modified 20170820-2243
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -116,17 +116,15 @@ post:
 
 ; *** preset default BRK & NMI handlers ***
 	LDA #std_nmi		; default like the standard NMI
+	STZ fw_brk+1		; this is in bank 0, also clears MSB
 	STA fw_brk			; store default handler
-	STZ fw_brk+2		; this is in bank 0, new
 ; since the NMI handler is validated, no need to install a default
 
 ; *** reset jiffy count ***
-	LDX #4				; max WORD offset in uptime seconds AND ticks, assume contiguous (2)
-res_sec:
-		STZ ticks, X		; reset word (5)
-		DEX					; next word backwards (2+2)
-		DEX
-		BPL res_sec			; zero is included
+; loops uses the same number of bytes but 15t vs 37!
+	STZ ticks		; clear words (5+5+5)
+	STZ ticks+2		; no longer needs consecutive!
+	STZ ticks+4
 
 ; ********************************
 ; *** hardware interrupt setup ***
@@ -174,13 +172,19 @@ nmi:
 	PLB					; ...as current data bank!
 ; prepare for next routine while memory is still 16-bit!
 	.xs: SEP #$10		; *** back to 8-bit indexes ***
-	LDA fw_nmi			; copy vector to zeropage, now 24b (5)
+; in case an unaware 6502 app installs a handler ending in RTS,
+; stack imbalance will happen, best keep SP and compare afterwards
+#ifdef	SUPPORT
+	TSX			; get stack pointer LSB
+	STX sys_sp		; best place as will not switch
+#endif
+	LDA fw_nmi		; copy vector to zeropage, now 24b (5)
 	LDX fw_nmi+2		; bank too, new (4)
 	STA sysptr		; store all (4+3)
-	STX sysptr+2
+	STX sysptr+2		; actually systmp
 ; let us get ready for the return address
 	PHK				; return bank is zero (3)
-	PEA nmi_end-1		; prepare return address
+	PEA nmi_end-1		; prepare return address (5)
 
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
@@ -192,9 +196,18 @@ nmi:
 	CMP #'j'+256*'*'		; correct? (3)
 			BNE rst_nmi			; not a valid routine (2/3)
 	.as: SEP #$20			; *** code is executed in 8-bit sizes ***
-; jump to user-supplied handler! *** all in 8-bit
-; return address already set, but DBR is 0! No need to save it, though
-	JMP [fw_nmi]		; will return upon RTS (8)
+; jump to user-supplied handler!
+; return address already set, but DBR is 0! No need to save it as only DP is accessed afterwards
+; MUST respect DP, though
+	JMP [fw_nmi]		; will return upon RTL (8)
+; 6502 handlers will end in RTS causing stack imbalance
+; must reset SP to previous value
+#ifdef	SUPPORT
+	.as: SEP #$20		; ** 8-bit memory for a moment **
+	TSC			; the whole stack pointer, will not mess with B
+	LDA sys_sp		; will replace the LSB with the stored value
+	TCS			; all set!
+#endif
 ; *** here goes the former nmi_end routine ***
 nmi_end:
 	.al: .xl: REP #$30	; ** whole register size to restore **
@@ -214,7 +227,7 @@ rst_nmi:
 	.xs:					; we came from 8-bit indexes
 	.as: SEP #$20			; handler is executed in full 8-bit sizes
 ; return address already set!
-; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
+; ...will continue thru subsequent standard handler, its RTS/RTL will get back to ISR exit
 
 ; *** default code for NMI handler, 8-bit sizes, if not installed or invalid, should end in RTS ***
 std_nmi:
@@ -261,10 +274,16 @@ fw_gestalt:
 ;		zero means RETURN actual value! new 20170820
 fw_s_isr:
 	_CRITIC				; disable interrupts and save sizes! (5)
+#ifdef	SUPPORT
+	.xs: SEP #$10		; ** 8-bit indexes **
+	LDY run_arch		; called from unaware 6502 code?
+	BEQ fw_si24		; no, all set...
+		STZ kerntab+2		; ...or clear bank
+fw_si24:
+#endif
 	.al: REP #$20		; ** 16-bit memory ** (3)
-	.xs: SEP #$20		; ** 8-bit indexes, no ABI to set that! **
 	LDA kerntab+1			; get pointer highest... (4)
-;	BIT kerntab		; cleanly check whether zero *** could be supressed as not allowed in zeropage (4)
+; no ISRs on PAGE zero... BIT is not suitable
 		BEQ fw_r_isr			; read instead! (2/3)
 	STA @fw_isr+1			; store for firmware, note long addressing (6)
 	LDA kerntab		; copy lowest too (4+6)
@@ -290,11 +309,17 @@ fw_r_isr:
 
 fw_s_nmi:
 	_CRITIC				; save sizes, just in case CS is needed...
+#ifdef	SUPPORT
 	.xs: SEP #$10			; *** standard index size ***
+	LDY run_arch		; called from unaware 6502 code?
+	BEQ fw_sn24		; no, all set...
+		STZ kerntab+2		; ...or clear bank
+fw_sn24:
+#endif
 	.al: REP #$20			; *** 16-bit memory ***
 ; first check whether read or set
 	LDA kerntab+1			; get pointer highest... (4)
-;	BIT kerntab		; cleanly check whether zero *** could be supressed as not allowed in zeropage (4)
+; no ISRs on zeropage!
 		BEQ fw_r_nmi			; read instead! (2/3)
 #ifdef	SAFE
 	LDA [kerntab]		; get pointed handler string word
@@ -334,10 +359,17 @@ fw_r_nmi:
 
 fw_s_brk:
 	PHP					; save sizes! (3)
+#ifdef	SUPPORT
+	.xs: SEP #$10			; *** standard index size ***
+	LDY run_arch		; called from unaware 6502 code?
+	BEQ fw_sb24		; no, all set...
+		STZ kerntab+2		; ...or clear bank
+fw_sb24:
+#endif
 	.al: REP #$20		; ** 16-bit memory ** (3)
 ; first check whether read or set
 	LDA kerntab+1			; get pointer highest... (4)
-;	BIT kerntab		; cleanly check whether zero *** could be supressed as not allowed in zeropage (4)
+; no ISRs on page zero!
 		BEQ fw_r_brk			; read instead! (2/3)
 	STA @fw_brk+1			; store for firmware, note long addressing (6)
 	LDA kerntab			; get pointer lowest (4)
@@ -354,11 +386,11 @@ fw_r_brk:
 
 	.as: .xs			; just in case...
 
-; JIFFY, set jiffy IRQ frequency
+; JIFFY, set jiffy IRQ period
 ;		INPUT
-; irq_hz	= frequency in Hz (0 means no change)
+; irq_hz	= PERIOD in uS (0 means READ current)
 ;		OUTPUT
-; irq_hz	= actually set frequency (in case of error or no change)
+; irq_hz	= actually set period (in case of error or no change)
 ; C			= could not set (not here)
 
 fw_jiffy:
