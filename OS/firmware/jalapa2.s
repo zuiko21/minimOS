@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a13
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170821-1345
+; last modified 20170821-1532
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -96,6 +96,9 @@ post:
 ; MUST probe for RAM size, anyway... and skip the ROM
 #include "firmware/modules/memsiz.s"
 
+; startup beep, droplet style
+#include "firmware/modules/droplet.s"
+
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
@@ -121,7 +124,7 @@ post:
 ; since the NMI handler is validated, no need to install a default
 
 ; *** reset jiffy count ***
-; loops uses the same number of bytes but 15t vs 37!
+; loop uses the same number of bytes but this is 15t vs 37!
 	STZ ticks		; clear words (5+5+5)
 	STZ ticks+2		; no longer needs consecutive!
 	STZ ticks+4
@@ -129,6 +132,10 @@ post:
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
+	LDX #%11000010		; CB2 low, Cx1 negative, CA2 indep. neg.
+	STX VIA_J + PCR
+	LDX #%01000000		; T1 cont, no PB7, no SR, no latch
+	STX VIA_J + ACR
 	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
 	STX VIA_J + IER
 
@@ -195,10 +202,12 @@ nmi:
 	LDA [sysptr], Y			; get that (7)
 	CMP #'j'+256*'*'		; correct? (3)
 			BNE rst_nmi			; not a valid routine (2/3)
+#endif
+
 	.as: SEP #$20			; *** code is executed in 8-bit sizes ***
 ; jump to user-supplied handler!
 ; return address already set, but DBR is 0! No need to save it as only DP is accessed afterwards
-; MUST respect DP, though
+; MUST respect DP and sys_sp, though
 	JMP [fw_nmi]		; will return upon RTL (8)
 nmi_end:
 ; 6502 handlers will end in RTS causing stack imbalance
@@ -283,7 +292,7 @@ fw_si24:
 #endif
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA kerntab+1			; get pointer highest... (4)
-; no ISRs on PAGE zero... BIT is not suitable
+; no ISRs on PAGE zero... BIT is not suitablex
 		BEQ fw_r_isr			; read instead! (2/3)
 	STA @fw_isr+1			; store for firmware, note long addressing (6)
 	LDA kerntab		; copy lowest too (4+6)
@@ -427,7 +436,7 @@ fw_i_src:
 fis_per:
 	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
 	LDX #0				; standard value for jiffy IRQ (2)
-	_DR_OK
+	RTS				; return ASAP, all OK
 
 ; *** hardware specific ***
 
