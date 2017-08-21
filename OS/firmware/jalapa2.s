@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a13
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170820-2243
+; last modified 20170821-1345
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -200,6 +200,7 @@ nmi:
 ; return address already set, but DBR is 0! No need to save it as only DP is accessed afterwards
 ; MUST respect DP, though
 	JMP [fw_nmi]		; will return upon RTL (8)
+nmi_end:
 ; 6502 handlers will end in RTS causing stack imbalance
 ; must reset SP to previous value
 #ifdef	SUPPORT
@@ -209,7 +210,6 @@ nmi:
 	TCS			; all set!
 #endif
 ; *** here goes the former nmi_end routine ***
-nmi_end:
 	.al: .xl: REP #$30	; ** whole register size to restore **
 	PLA					; retrieve saved vars (5+5)
 	PLX
@@ -352,7 +352,7 @@ fw_r_nmi:
 
 	.as: .xs			; just in case...
 
-; SET_BRK, set BRK handler
+; SET_DBG, set BRK handler
 ;		INPUT
 ; kerntab	= 24b address of BRK routine (ending in RTS)
 ;		zero means RETURN actual value! new 20170820
@@ -560,11 +560,27 @@ brk_hndl:		; label from vector list
 ; make sure we work on bank zero eeeeeeeeek
 	PHK				; stack a 0...
 	PLB				; ...for data bank
-; return to 8-bit
-	.as: .xs: SEP #$30
+; in case an unaware 6502 app installs a handler ending in RTS,
+; stack imbalance will happen, best keep SP and compare afterwards
+#ifdef	SUPPORT
+	.xs: SEP #$10		; *** back to 8-bit indexes ***
+	TSX			; get stack pointer LSB
+	STX sys_sp		; best place as will not switch
+	.as: SEP #$20		; now all in 8-bit
+#else
+	.as: .xs: SEP #$30	; all 8-bit
+#endif
 ; must use some new indirect jump, as set by new SET_BRK
 ; arrives in 8-bit, DBR=0 (no need to save it)
 	JSR @brk_call			; JSL new indirect
+; 6502 handlers will end in RTS causing stack imbalance
+; must reset SP to previous value
+#ifdef	SUPPORT
+	.as: SEP #$20		; ** 8-bit memory for a moment **
+	TSC			; the whole stack pointer, will not mess with B
+	LDA sys_sp		; will replace the LSB with the stored value
+	TCS			; all set!
+#endif
 ; restore full status and exit
 	.al: .xl: REP #$30		; just in case (3)
 	PLB						; eeeeeeeeeeeek (4)
@@ -621,11 +637,15 @@ led_loop:
 	COP #$7F			; wrapper on 816 firmware, will do CLC!
 	RTS					; return to caller
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
+; alternative multikernel FW may use an indirect jump...
+; ...will point to either the above wrapper (16-bit kernel)...
+; ...or the usual indirect-indexed jump (8-bit)...
+; ...without pre-CLC or size setting!
 
 #ifdef		ROM
 	.dsb	adm_appc-*, $FF
 #endif
-; *** idea for 65816 admin-call interface from apps! ***
+; *** idea for 65816 admin-call interface from apps! ($FFC8) ***
 * = adm_appc
 	JSR adm_call		; get into firmware interface (returns via RTS)
 	RTL					; get back into original task (called via JSL $00FFC8)
@@ -640,8 +660,8 @@ led_loop:
 * = adm_call
 	JMP (fw_admin, X)		; takes 5 clocks
 
-
 ; *** vectored IRQ handler ***
+; could be elsewhere
 irq:
 	JMP [fw_isr]	; long vectored ISR (6)
 
@@ -649,7 +669,6 @@ irq:
 #ifdef	ROM
 	.dsb	lock-*, $FF
 #endif
-
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = lock
