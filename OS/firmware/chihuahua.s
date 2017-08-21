@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
-; v0.9.6a3
+; v0.9.6a4
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170816-1319
+; last modified 20170821-1529
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -13,7 +13,7 @@
 fw_start:
 	.asc 0, "m", CPU_TYPE, 13		; standard system file wrapper, new format 20161010, experimental type
 	.asc "boot", 0					; standard filename
-	.asc "0.9.6a3 firmware for "	; machine description as comment
+	.asc "0.9.6a4 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; no size or timestamp on firmware header!
@@ -98,7 +98,7 @@ fw_cpuOK:
 	_STZA irq_freq+1
 
 ; *** preset default BRK & NMI handlers ***
-	LDY #<std_nmi			; default BRK like NMI
+	LDY #<std_nmi			; default BRK like standard NMI
 	LDA #>std_nmi
 	STY fw_brk			; set vector
 	STA fw_brk+1
@@ -160,9 +160,10 @@ nmi:
 	LDA sysptr+1			; same with other bytes (3*4)
 	PHA
 	LDA systmp
+	PHA				; eeeeeeeeek
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
-; alternative faster way 39b, 58t
+; alternative faster way 39b, 58t (was 29b, 89t)
 	LDY fw_nmi			; copy vector to zeropage (corrected 20150118) (4+4+3+3)
 	LDA fw_nmi+1
 	STY sysptr			; nicer way 20160407
@@ -183,20 +184,6 @@ nmi:
 	LDA (sysptr), Y		; get code byte (5)
 	CMP #'*'			; match? (2)
 		BNE rst_nmi			; not a valid routine (2/3)
-; classic way was 29 bytes, 89t
-;	LDX #3 				; offset for (reversed) magic string (2)
-;	LDY fw_nmi			; copy vector to zeropage (4+4+3+3)
-;	LDA fw_nmi+1
-;	STY sysptr			; nicer way 20160407
-;	STA sysptr+1
-;	LDY #0				; offset for NMI code pointer (2)
-;nmi_chkmag:
-;		LDA (sysptr), Y		; get code byte (5)
-;		CMP fw_magic, X		; compare with string (4)
-;			BNE rst_nmi			; not a valid routine (2/3)
-;		INY					; another byte (2)
-;		DEX					; internal string is read backwards (2)
-;		BPL nmi_chkmag		; down to zero (3/2)
 #endif
 do_nmi:
 	JSR go_nmi			; call actual code, ending in RTS (6)
@@ -224,9 +211,7 @@ rst_nmi:
 	JSR std_nmi			; call standard handler
 	_BRA nmi_end		; and finish as usual
 
-; magic string no longer needed...
-;fw_magic:
-;	.asc	"*jNU"		; reversed magic string
+; magic string no longer needed!
 
 ; *** default code for NMI handler, if not installed or invalid ***
 std_nmi:
@@ -270,15 +255,24 @@ fw_gestalt:
 ; ***********************
 ;	INPUT
 ; kerntab	= vector
+; 0 means READ current
 
 fw_s_isr:
 	LDY kerntab				; get LSB, nicer (3)
-	LDA kerntab+1			; get MSB (3)
 	_CRITIC					; disable interrupts! (5)
+	LDA kerntab+1			; get MSB (3)
+		BEQ fw_r_isr				; will read instead (2/3)
 	STY fw_isr				; store for firmware (4+4)
 	STA fw_isr+1
+fwsi_end:
 	_NO_CRIT				; restore interrupts if needed (4)
-	_DR_OK					; done (8)
+	_DR_OK						; done (8)
+fw_r_isr:
+	LDY fw_isr				; get current if read (4+4)
+	LDA fw_isr+1
+	STY kerntab				; store result (3+3)
+	STA kerntab+1
+	_BRA fwsi_end
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
@@ -288,40 +282,67 @@ fw_s_isr:
 ; ...unless SAFE is not selected (will not check upon NMI)
 ;	INPUT
 ; kerntab	= vector
+; 0 means read current
+; routine ending in RTS, regs already saved, but MUST respect sys_sp
 
 fw_s_nmi:
+	LDA kerntab+1			; get MSB (3)
+		BEQ fw_r_nmi				; read instead (2/3)
 #ifdef	SAFE
-	LDX #3					; offset to reversed magic string
-	LDY #0					; reset supplied pointer
-fw_sn_chk:
-		LDA (kerntab), Y		; get pointed handler string char
-		CMP fw_magic, X			; compare against reversed string
-		BEQ fw_sn_ok			; no problem this far...
-			_DR_ERR(CORRUPT)		; ...or invalid NMI handler
-		INY						; try next one
-		DEX
-		BPL fw_sn_chk			; until all done
+	LDY #0				; offset for NMI code pointer (2)
+	LDA (kerntab), Y		; get code byte (5)
+	CMP #'U'			; match? (2)
+		BNE fw_nerr			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (kerntab), Y		; get code byte (5)
+	CMP #'N'			; match? (2)
+		BNE fw_nerr			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (kerntab), Y		; get code byte (5)
+	CMP #'j'			; match? (2)
+		BNE fw_nerr			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (kerntab), Y		; get code byte (5)
+	CMP #'*'			; match? (2)
+		BNE fw_nerr			; not a valid routine (2/3)
 #endif
 	LDY kerntab				; get LSB (3)
-	LDA kerntab+1			; get MSB (3)
 	STY fw_nmi				; store for firmware (4+4)
 	STA fw_nmi+1
 	_DR_OK					; done (8)
+fw_r_nmi:
+	LDY fw_nmi				; get current if read (4+4)
+	LDA fw_nmi+1
+	STY kerntab				; store result (3+3)
+	STA kerntab+1
+	_DR_OK
+fw_nerr:
+	_DR_ERR(CORRUPT)		; invalid magic string!
 
 ; ***********************
 ; SET_DBG, set BRK vector
 ; ***********************
 ;	INPUT
 ; kerntab	= vector
+; 0 means read current
+; routine ending in RTS, regs already saved, but MUST respect sys_sp
 
 fw_s_brk:
 	LDY kerntab				; get LSB, nicer (3)
-	LDA kerntab+1			; get MSB (3)
 	_CRITIC					; disable interrupts! (5)
+	LDA kerntab+1			; get MSB (3)
+		BEQ fw_r_brk				; read instead (2/3)
 	STY fw_brk				; store for firmware (4+4)
 	STA fw_brk+1
+fwsb_end:
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
+fw_r_brk:
+	LDY fw_brk				; get current if read (4+4)
+	LDA fw_brk+1
+	STY kerntab				; store result (3+3)
+	STA kerntab+1
+	_BRA fwsb_end
 
 ; **************************
 ; JIFFY, set/check IRQ speed
@@ -367,7 +388,7 @@ fw_i_src:
 fis_per:
 	LDA VIA_J+T1CL		; acknowledge periodic interrupt
 	LDX #0			; standard jiffy value
-	_DR_OK
+	RTS			; should be always good...
 
 ; *** hardware specific ***
 
@@ -397,10 +418,11 @@ fwp_susp:
 	.byt	$CB		; WAI in case of WDC CPU
 	NOP			; # not used on other CMOS, but helpful anyway
 	_NO_CRIT		; ...and back to business
-	_DR_OK
 #else
 	_DR_ERR(UNAVAIL)	; avoid AXS# on NMOS
 #endif
+fw_ret:
+	_DR_OK			; for NMI call eeeek
 fwp_nmi:
 	LDY #<fw_ret		; get correct return address
 	LDA #>fw_ret
@@ -494,6 +516,8 @@ fw_admin:
 ; *** minimOS function call primitive ($FFC0) ***
 * = kerncall
 	_JMPX(fw_table)	; macro for NMOS compatibility (6)
+
+; as 8-bit systems use std call for U_ADM, no $FFC8 wrapper
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
