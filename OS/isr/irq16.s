@@ -1,15 +1,14 @@
 ; ISR for minimOS·16
-; v0.6a4, should match kernel16.s
+; v0.6a5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170815-1742
+; last modified 20170822-1907
 
 #define		ISR		_ISR
 
 #include "usual.h"
 
-; fastest async routine runs after 53 clocks!
 ; **********************
-; **** the ISR code **** (initial tasks take 21 clocks)
+; **** the ISR code **** (initial tasks take 28 cycles)
 ; **********************
 	.al: .xl: REP #$38		; status already saved, but save register contents in full (3)
 	PHA						; save registers (3x4)
@@ -35,7 +34,7 @@
 ;	.word	asynchronous
 
 ; *********************************
-; *** async interrupt otherwise *** (arrives here in 36 clocks)
+; *** async interrupt otherwise *** (arrives here in 34 cycles if optimised)
 ; *********************************
 ; execute D_REQ in drivers (7 if nothing to do, ?+?*number of drivers until one replies, plus inner codes)
 asynchronous:
@@ -92,21 +91,15 @@ isr_schd:					; *** take this standard address!!! ***
 i_pnx:
 		BNE i_poll				; until zero is done (3/2)
 ip_done:
-; update uptime
-; new 65816 code was 22+2 bytes, worst case 44+3 clocks, best 17 clocks!
-; now is 21+3 bytes, worst case 41+3 clocks, but best 19 clocks
+; update uptime, new simpler format is 12b, 14 or 24 cycles!
 	.al: REP #$20			; worth switching to 16-bit size (3)
 	INC ticks				; increment uptime count, new format 20161006 (8)
-	CMP irq_freq				; wrapped? (5)
-		BCC isr_done			; no second completed yet *** revise for load balancing (3/2)
-	STZ ticks				; jiffy counter lower word reset (5)
-	INC ticks+2				; one more second (8)
-		BNE isr_done			; no wrap (3/2)
-	INC ticks+4				; 64k more seconds (8)
-	BRA isr_done			; go away (3)
+		BNE isr_done			; no wrap yet *** revise for load balancing (3/2)
+	INC ticks+2				; increment the rest (8)
+ 	BRA isr_done			; go away (3)
 
 ; *******************
-; *** BRK handler ***
+; *** BRK handler *** should move this to kernel or rom.s
 ; *******************
 supplied_brk:				; this has a separate handler on FW, ends in RTS
 #include "isr/brk16.s"

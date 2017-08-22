@@ -1,18 +1,12 @@
 ; ISR for minimOS
-; v0.6a4, should match kernel.s
+; v0.6a5, should match kernel.s
 ; features TBD
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170815-1736
+; last modified 20170822-1849
 
 #define		ISR		_ISR
 
 #include "usual.h"
-
-; *** interrupt service routine performance ***
-; _minimum_ overhead for periodic interrupt with no drivers in queue is * clocks, or * each second
-; fastest asynchronous interrupt is reached in * clocks
-; BRK is handled within * clocks, and spurious interrupts take *, all if no drivers in async queue
-; *********************************************
 
 ; **** the ISR code **** (11)
 #ifdef	NMOS
@@ -61,7 +55,6 @@ ir_done:
 		LDY #PW_SOFT		; BRK otherwise (firmware interface)
 		_ADMIN(POWEROFF)
 ; go away (18 total)
-second:
 isr_done:
 	_PLY	; restore registers (3x4 + 6)
 	_PLX
@@ -81,7 +74,6 @@ periodic:
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
 ; execute D_POLL code in drivers
-; 7 if nothing to do, typically ? clocks per entry (not 62!) plus inner codes
 	LDX queue_mx+1		; get queue size (4)
 	BEQ ip_done			; no drivers to call (2/3)
 i_poll:
@@ -99,37 +91,26 @@ i_poll:
 			STA drv_cnt+1, X
 			_PHX				; keep index! (3)
 			JSR ip_call			; call from table (12...)
-	; *** here is the return point needed for B_EXEC in order to create the stack frame ***
+; *** here is the return point needed for B_EXEC in order to create the stack frame ***
 isr_schd:				; *** take this standard address!!! ***
 			_PLX				; restore index (4)
 i_pnx:
 		BNE i_poll			; until zero is done (3/2)
 ip_done:
-; update uptime was usually 15 up to 29, each second will be 53...66, 45 bytes
-; new format 20161006 makes it 20-35, each second will be 51...64, but 43 bytes
-	INC ticks			; decrease uptime count (6)
-	BNE isr_nw			; did not wrap (3/2)
-		INC ticks+1			; otherwise carry (6)
-isr_nw:
-	LDA ticks			; check LSB first (4)
-	CMP irq_freq		; possible end? (4)
-		BNE isr_done		; no second completed yet *** revise for load balancing (3/2)
-	LDA ticks+1			; go for MSB (4)
-	CMP irq_freq+1		; second completed? (4)
-		BNE isr_done		; no second completed yet *** revise for load balancing (3/2)
-	_STZA ticks			; otherwise reset values (4+4)
-	_STZA ticks+1
-	INC ticks+2			; one more second (6)
-		BNE second			; no wrap (3/2)
-	INC ticks+3			; 256 more seconds (6)
-		BNE second			; no wrap (3/2)
-	INC ticks+4			; 64k more seconds (6)
+; update uptime, much faster new format
+	INC ticks			; increment uptime count (6)
+		BNE isr_done			; did not wrap (3/2)
+	INC ticks+1			; otherwise carry (6)
+		BNE isr_done			; did not wrap (3/2)
+	INC ticks+2			; otherwise carry (6)
+		BNE isr_done			; did not wrap (3/2)
+	INC ticks+3			; otherwise carry (6)
 	_BRA isr_done		; go away (3)
 
 ; *******************
 ; *** BRK handler ***
 ; *******************
-; will be called via firmware interface
+; will be called via firmware interface, should be moved to kernel or rom.s
 
 supplied_brk:			; should end in RTS anyway, 20160310
 #include "isr/brk.s"
