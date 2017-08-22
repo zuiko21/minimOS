@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a10
+; v0.6a11
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170820-2259
+; last modified 20170822-1624
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6a10", 0	; version in comment
+	.asc	"minimOS•16 0.6a11", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -90,16 +90,16 @@ warm:
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
-; set IRQ frequency/period
-	LDA #IRQ_FREQ		; value from options
-	STA irq_hz
-	_ADMIN(JIFFY)
+; will not try to set jiffy, assumed by firmware
+
+	LDX #PW_STAT		; default cmd upon lack of tasks
+	STX sd_flag		; must be done here as will no longer be done on driver init code!
 
 ; *****************************
 ; *** memory initialisation ***
 ; *****************************
 
-; this should take a basic memory map from firmware, perhaps via the GESTALT function
+; ***this should take a basic memory map from firmware, perhaps via the GESTALT function
 
 	LDY #FREE_RAM	; dirty trick no longer allowed... should be zero
 	STY ram_stat	; as it is the first entry, no index needed
@@ -128,7 +128,6 @@ ram_init:
 ; clear some other bytes
 	STX run_arch		; assume native 65816
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
-	STX sd_flag			; *** this is important to be clear (PW_STAT) or set as proper error handler
 
 ; already in 16-bit memory mode...
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
@@ -421,7 +420,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6a9", 0	; version in comment
+	.asc	"minimOS•16 0.6a11", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

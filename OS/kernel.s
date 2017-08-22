@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a10
+; v0.6a11
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170820-2248
+; last modified 20170822-1622
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a10", 0	; version in comment
+	.asc	"minimOS 0.6a11", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -56,16 +56,14 @@ warm:
 	CLD				; just in case, a must for NMOS (2)
 
 ; * this is in case a 65816 is being used, but still compatible with all * EXCEPT Kowlaski
-#ifdef	C816
 #ifdef	SAFE
 	SEC				; would set back emulation mode on C816
 	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA $0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
-#endif
+	ORA 0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
 #endif
 ; * end of 65816 specific code *
 
-; assume interrupts off, binary mode and 65C816 in emulation mode!
+; assume interrupts off, binary mode and 65816 in emulation mode!
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
 ; ++++++
@@ -74,7 +72,7 @@ warm:
 	LDA #>k_vec
 	STY ex_pt			; store parameter (3+3)
 	STA ex_pt+1
-	_ADMIN(INSTALL)		; copy jump table (14...)
+	_ADMIN(INSTALL)		; copy jump table
 #endif
 ; ++++++
 #endif
@@ -84,23 +82,18 @@ warm:
 	LDA #>k_isr
 	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
-	_ADMIN(SET_ISR)		; install routine (14...)
+	_ADMIN(SET_ISR)		; install routine
 
 ; install BRK code (as defined in "isr/brk.s" loaded from IRQ)
 	LDY #<supplied_brk		; get address, nicer way (2+2)
 	LDA #>supplied_brk
 	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
-	_ADMIN(SET_DBG)		; install routine (14...)
+	_ADMIN(SET_DBG)		; install routine
 
 ; Kernel no longer supplies default NMI, but could install it otherwise
 
-; it is time to set the interrupt frequency/period
-	LDY #<IRQ_FREQ		; get value from options (2+2)
-	LDA #>IRQ_FREQ
-	STY irq_hz			; set (3)
-	STA irq_hz+1
-	_ADMIN(JIFFY)
+; jiffy already set by firmware
 
 ; *** default action in case the scheduler runs out of tasks ***
 	LDA #PW_STAT		; default action upon complete task death
@@ -110,7 +103,7 @@ warm:
 ; *** memory initialisation ***
 ; *****************************
 
-; this should take a basic memory map from firmware, perhaps via the GESTALT function
+; ***this should take a basic memory map from firmware, perhaps via the GESTALT function
 
 #ifndef		LOWRAM
 ; ++++++
@@ -132,7 +125,7 @@ ram_init:
 ; ************************************************
 ; *** intialise drivers from their jump tables ***
 ; ************************************************
-; sometime will create API entries for these, but new format is urgent!
+; ***** sometime will create API entries for these, but new format is urgent!
 ; * will also initialise I/O lock arrays! * 20161129
 
 ; *** 1) initialise stuff ***
@@ -516,7 +509,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a9", 0
+	.asc	"minimOS 0.6a11", 0
 #endif
 
 kern_end:		; for size computation
