@@ -1,6 +1,6 @@
-; minimOS 0.6a5 System Variables
+; minimOS 0.6a6 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170810-1246
+; last modified 20170822-1523
 .bss
 
 ; **** I/O management ****
@@ -56,8 +56,8 @@ ram_pid		.dsb	MAX_LIST	; non-interleaved PID array
 ; *************************************************
 ; ** these are the older variables, up to 150126 **
 ; *************************************************
-irq_freq	.word	200	; IRQs per second (originally set from options.h)
-ticks		.dsb	6	; second fraction in jiffy IRQs, then approximate uptime in seconds (2+4 bytes) new format 161006
+; IRQs per second no longer here, now in firmware if suitable
+ticks		.dsb	4	; jiffy IRQ count (4 bytes) newest format 170822
 sd_flag		.byt	0	; default task upon no remaining braids! 160408
 #ifndef	LOWRAM
 deflt_in	.byt	0	; GLOBAL default devices, EXCEPT for LOWRAM systems
