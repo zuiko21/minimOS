@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a14
+; v0.9.6a15
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170822-1743
+; last modified 20170822-1947
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a14 firmware for "
+	.asc	"0.9.6a15 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -415,9 +415,50 @@ fj_end:
 fj_set:
 	STA @irq_freq		; store in sysvars
 ; *** compute and set VIA counters accordingly!!!!! ***
-	LDA #IRQ_PER*PHI2/1000000-2	; compute value***placeholder
+;	LDA #IRQ_PER*PHI2/1000000-2	; compute value***placeholder
+; multiply irq_hz (already in C) by SPD_CODE/4096
+	STA local1		; this copy will shift left...
+	STZ local1+2		; ...thus clear MSBs
+	LDA #SPD_CODE		; hardware speed (might take from FW var)
+	EOR #$FFFF		; inverted bits make things easier
+	STA local2		; this shifts right until clear
+	STZ local3		; clear 32-bit result
+	STZ local3+2
+fj_mul:
+		LSR local2		; get 2nd factor lsb
+		BCS fj_next		; if was 0, do not add
+			LDA local1		; otherwise take 1st factor...
+			ADC local3		; ...and add to result (C was clear!)
+			STA local3		; update!
+			LDA local1+2		; same for MSW
+			ADC local3+2
+			STA local3+2
+; if C is set... error! TBD
+fj_next:
+		ASL local1		; shift 1st factor left
+		ROL local1+2
+		LDA local2		; check next factor...
+		BNE fj_mul		; ...until no more bits
+; now local3 holds the full result, must be shifted right 12 bits
+; just discard the LSB, shift 4 bits and simply keep the middle two!
+	LDX #4			; bits to shift
+fj_shft:
+		ASL local3+2		; shift amount
+		ROL local3
+		DEX			; until done
+		BNE fj_shft
+	LDA local3+1		; note offset
+; MSB must be zero, otherwise overflow!
+	LDY local3+3		; highest byte
+		BNE fj_err		; handle this********
+	SEC
+	SBC #2			; correct value for VIA T1
+; in case of overflow, set to 0 or $FFFF with error code?
+; C has the proper 16-bit value for VIA T1 (subtracted 2 from result!)
 	STA VIA_J+T1CL			; start running!
-	BRA fj_end			; all done, no need to update as will be OK
+		BCC fj_end			; all done, no need to update as will be OK
+;****recompute actual value... or just reject without setting?****
+	_DR_ERR(INVALID);
 
 	.as: .xs			; just in case...
 
@@ -605,7 +646,7 @@ brk_call:
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a14 firmware for "
+	.asc	"0.9.6a15 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
