@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a12, should match kernel16.s
+; v0.6a13, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170815-1630
+; last modified 20170815-1708
 
 ; assumes 8-bit sizes upon call...
 
@@ -672,20 +672,18 @@ free_w:					; doesn't do much, either
 ; *** UPTIME, get approximate uptime ***
 ; **************************************
 ;		OUTPUT
-; up_ticks	= 16b ticks, new standard format 20161006
-; up_sec	= 32b uptime in seconds
+; up_ticks	= 32b tick counter, new format 20170822
+; up_sec	= 24b approximate uptime in seconds for API compatibility
 ; * 8-bit savvy *
 
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
 ; default 816 API functions run on interrupts masked, thus no need for CS
 ; not worth setting DBR, note long addressing
-		LDA @ticks		; get system variable word (5)
+		LDA @ticks		; get system variable word (6)
 		STA up_ticks	; and store them in output parameter (4)
-		LDA @ticks+2	; get system variable uptime (5)
-		STA up_sec		; and store it in output parameter (4)
-		LDA @ticks+4	; another word, as per new format (5)
-		STA up_sec+2	; store that (4)
+		LDA @ticks+2	; get system variable uptime (6)
+		STA up_ticks+2		; and store it in output parameter (4)
 ; end of CS
 	_EXIT_OK
 
@@ -789,12 +787,21 @@ sig_kill:
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
 ; * assume 8-bit sizes *
+; this code is 11b, 43t
 	LDX #3				; number of bytes for pointer
 sk_loop:				; *** this code valid for singletask 816 ***
 		LDA @$1FC, X		; get byte from bottom of stack
 		STA ma_pt-1, X		; set pointer eeeeeeeeeeeek
 		DEX					; previous byte
 		BNE sk_loop			; until all done
+;*****alternative direct way, 16b, 24t
+;	.al: REP #$20			; *** 16-bit memory *** (3)
+;	LDA @$1FD			; get word from stack bottom... (6)
+;	STA ma_pt			; store pointer (3)
+;	LDA @$1FF			; get bank (and garbage) from stack bottom... (6)
+;	STA ma_pt+2			; extra will not harm (3)
+;	.as: SEP #$20			; *** 8-bit memory *** (3)
+
 ; previous RELEASE marked pointer as 24b valid! otherwise STZ run_arch
 	_KERNEL(FREE)		; free it or fail quietly
 ; *** end of non-XIP code, will not harm anyway ***
@@ -833,6 +840,7 @@ signal:
 sig_pid:
 	_ERR(INVALID)		; unrecognised signal, notify error
 sig_term:
+; needs to end in RTI???
 	PHK					; needed for new interface as will end in RTI!
 	PEA yield			; correct return address
 	PHP					; eeeeeeeeeeeek

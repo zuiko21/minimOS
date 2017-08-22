@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a10, must match kernel.s
+; v0.6a11, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170815-1628
+; last modified 20170822-1649
 
 ; no way for standalone assembly...
 
@@ -38,7 +38,7 @@ cin:
 	LDA #1				; transfer a single byte
 	STA bl_siz			; set size
 	_STZA bl_siz+1
-	JSR bl_in			; get small block...
+	_KERNEL(BLIN)			; get small block...
 ; ...and check for events! **********************************************REVISE
 	BCC ci_nerror			; got something...
 		RTS				; ...or keep error code from BLIN
@@ -565,25 +565,18 @@ free_w:					; doesn't do much, either
 ; *** UPTIME, get approximate uptime ***
 ; **************************************
 ;		OUTPUT
-; up_ticks	= ticks, new standard format 20161006
-; up_sec	= 32-bit uptime in seconds
-; this is 23b / 83t
+; up_sec	= approximate 24-bit uptime in secs for API compatibility
+; up_ticks	= 32-bit uptime in ticks, new format 20170822
 
 uptime:
-	LDX #1			; first go for elapsed ticks, 2 bytes (2)
+	LDX #3			; max offset, count backwards (2)
 	_CRITIC			; don't change while copying (5)
 up_loop:
 		LDA ticks, X		; get system variable byte (4)
 		STA up_ticks, X		; and store them in output parameter (3)
 		DEX					; go for next (2+3/2)
 		BPL up_loop
-	LDX #3			; now for the uptime in seconds,now 4 bytes (2)
-up_upt:
-		LDA ticks+2, X		; get system variable uptime (4)
-		STA up_sec, X		; and store it in output parameter (3)
-		DEX					; go for next (2+3/2)
-		BPL up_upt
-	_NO_CRIT			; (4)
+	_NO_CRIT			; done (4)
 	_EXIT_OK
 
 
@@ -645,7 +638,7 @@ sig_kill:
 	LDA sd_flag			; some pending action?
 	BEQ rst_shell		; if not, just restart the shell
 		LDY #PW_CLEAN		; or go into second phase...
-		JSR shutdown		; ...of shutdown procedure (could use JMP)
+		JSR shutdown		; ...of shutdown procedure (could use JMP)*** what of patched???
 ; if none of the above, a single task system can only restart the shell!
 rst_shell:
 	LDX #SPTR			; init stack again (in case SIGKILL was called)
@@ -692,6 +685,7 @@ signal:
 	LDY b_sig			; get the signal
 	CPY #SIGTERM		; clean shutdown?
 	BNE sig_suic
+; why TERM handlers need to end in RTI???
 		LDA #>sig_exit		; set standard return address
 		PHA
 		LDA #<sig_exit		; same for LSB
@@ -824,13 +818,9 @@ ll_found:
 		BNE ll_wrap		; error otherwise
 	INY				; next byte is CPU type
 	LDA (rh_scan), Y	; get it
-
-; ******* I have to get rid of this HACK as soon as possible *******
-;	LDX fw_cpu		; *** UGLY HACK, this is a FIRMWARE variable ***
-; ******* here is the proper way ***********************************
+; this is done instead of LDX fw_cpu
 	_ADMIN(GESTALT)		; get full system info
 	LDX cpu_ll		; installed CPU
-; *******
 	CPX #'R'		; is it a Rockwell/WDC CPU?
 		BEQ ll_rock		; from R down is OK
 	CPX #'B'		; generic 65C02?
@@ -905,9 +895,10 @@ readLN:
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
-		JSR yield			; always useful!
+; always useful to yield CPU time, but could be patched...
+		_KERNEL(B_YIELD)
 		LDY rl_dev			; use device
-		JSR cin				; get one character***
+		_KERNEL(CIN)			; get one character
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
@@ -932,12 +923,12 @@ rl_nbs:
 		INC	rl_cur			; update index
 rl_echo:
 		LDY rl_dev			; retrieve device
-		JSR cout			; echo received character***
+		_KERNEL(COUT)			; echo received character
 		_BRA rl_l			; and continue
 rl_cr:
 	LDA #CR				; newline
 	LDY rl_dev			; retrieve device
-	JSR cout			; print newline (ignoring errors)***
+	_KERNEL(COUT)			; print newline (ignoring errors)
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
@@ -1112,7 +1103,7 @@ rls_loop:
 			LDA ram_pos+1, X	; MSB too
 			STY ma_pt			; will be used by FREE
 			STA ma_pt+1
-			JSR free			; release it! *** direct call but if patched, this one should be too ***
+			_KERNEL(FREE)			; release it!
 			_PLX				; retrieve status
 			PLA
 			BCC rls_next		; keep index IF current entry was deleted!
