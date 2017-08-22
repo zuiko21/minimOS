@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a13
+; v0.9.6a14
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170821-1532
+; last modified 20170822-1743
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a13 firmware for "
+	.asc	"0.9.6a14 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -113,10 +113,6 @@ post:
 	LDA #kernel			; get full address (3)
 	STA fw_warm			; store in sysvars (5)
 
-; *** preset jiffy irq frequency ***
-; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
-	STZ irq_freq		; store null speed... IRQ not set
-
 ; *** preset default BRK & NMI handlers ***
 	LDA #std_nmi		; default like the standard NMI
 	STZ fw_brk+1		; this is in bank 0, also clears MSB
@@ -124,10 +120,8 @@ post:
 ; since the NMI handler is validated, no need to install a default
 
 ; *** reset jiffy count ***
-; loop uses the same number of bytes but this is 15t vs 37!
-	STZ ticks		; clear words (5+5+5)
+	STZ ticks		; clear words (5+5)
 	STZ ticks+2		; no longer needs consecutive!
-	STZ ticks+4
 
 ; ********************************
 ; *** hardware interrupt setup ***
@@ -138,6 +132,10 @@ post:
 	STX VIA_J + ACR
 	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
 	STX VIA_J + IER
+; *** preset jiffy irq frequency ***
+	LDA #IRQ_PER		; get period from options
+	STA irq_hz		; set old parameter
+	JSR fw_jiffy		; start counters and update var!
 
 	.as: .xs: SEP #$30	; *** all back to 8-bit, just in case, might be removed if no remote boot is used (3) ***
 
@@ -262,10 +260,10 @@ fw_gestalt:
 	PHP					; save sizes!
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
-	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4+3)
-	LDX #SPEED_CODE		; speed code as determined in options.h (2+3)
-	STY cpu_ll			; set outputs
-	STX c_speed
+	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4)
+	LDA #SPD_CODE		; speed code as determined in options.h (3)
+	STY cpu_ll			; set outputs (3+4)
+	STA c_speed
 	LDY himem			; get pages of kernel SRAM (4) ????
 	STY k_ram			; store output (3)
 	STZ b_ram			; no "high" RAM??? (4) *** TO DO ***
@@ -417,6 +415,8 @@ fj_end:
 fj_set:
 	STA @irq_freq		; store in sysvars
 ; *** compute and set VIA counters accordingly!!!!! ***
+	LDA #IRQ_PER*PHI2/1000000-2	; compute value***placeholder
+	STA VIA_J+T1CL			; start running!
 	BRA fj_end			; all done, no need to update as will be OK
 
 	.as: .xs			; just in case...
@@ -605,7 +605,7 @@ brk_call:
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a13 firmware for "
+	.asc	"0.9.6a14 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
