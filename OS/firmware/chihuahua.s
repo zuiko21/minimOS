@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chichuahua PLUS (and maybe others)
-; v0.9.6a4
+; v0.9.6a5
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170821-1529
+; last modified 20170822-1739
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -13,7 +13,7 @@
 fw_start:
 	.asc 0, "m", CPU_TYPE, 13		; standard system file wrapper, new format 20161010, experimental type
 	.asc "boot", 0					; standard filename
-	.asc "0.9.6a4 firmware for "	; machine description as comment
+	.asc "0.9.6a5 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; no size or timestamp on firmware header!
@@ -92,11 +92,6 @@ fw_cpuOK:
 #endif
 #endif
 
-; *** preset jiffy IRQ frequency ***
-; this must be done by kernel, but at least clear it for 0.5.x compatibility
-	_STZA irq_freq			; null speed... IRQ not set
-	_STZA irq_freq+1
-
 ; *** preset default BRK & NMI handlers ***
 	LDY #<std_nmi			; default BRK like standard NMI
 	LDA #>std_nmi
@@ -105,7 +100,7 @@ fw_cpuOK:
 ; no need to set NMI as it will be validated
 
 ; *** reset jiffy count ***
-	LDX #5				; max offset in uptime seconds AND ticks (assume contiguous)
+	LDX #3				; max offset in uptime (assume contiguous)
 res_sec:
 		_STZA ticks, X		; reset byte
 		DEX					; next byte backwards
@@ -123,6 +118,12 @@ res_sec:
 ; supposedly will not start counting until writing to counters!
 	LDA #$C0			; enable T1 (jiffy) interrupt only (2+4)
 	STA VIA_J + IER
+; *** preset jiffy IRQ frequency *** new interface
+	LDY #<IRQ_PER		; get period from options
+	LDA #>IRQ_PER
+	STY irq_hz		; set parameter
+	SRA irq_hz+1
+	JSR fw_jiffy		; start counters and update var!
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
@@ -228,18 +229,20 @@ std_nmi:
 ; *********************************
 ;		OUTPUT
 ; cpu_ll	= CPU type
-; c_speed	= speed code
+; c_speed	= speed code (now 16b)
 ; str_pt	= *machine name
 ; ex_pt		= *memory map
 ; k_ram		= pages of RAM
 
 fw_gestalt:
-	LDA himem		; number of pages???
-	LDX #SPEED_CODE		; CPU speed
+	LDX #<SPD_CODE		; CPU speed
+	LDA #>SPD_CODE
 	LDY fw_cpu		; CPU type
-	STA k_ram		; set outputs
-	STX c_speed
+	STX c_speed		; set word
+	STA c_speed+1
 	STY cpu_ll
+	LDA himem		; number of pages???
+	STA k_ram		; set outputs
 	LDY #<fw_mname		; get pointer to name
 	LDA #>fw_mname
 	STY str_pt		; set output
@@ -348,9 +351,9 @@ fw_r_brk:
 ; JIFFY, set/check IRQ speed
 ; **************************
 ;		INPUT
-; irq_hz	= desired frequency in Hz (0 means no change)
+; irq_hz	= desired period in uS (0 means no change)
 ;		OUTPUT
-; irq_hz	= actually set freq (if error or no change)
+; irq_hz	= actually set period (if error or no change)
 ; C		= error, did not set
 
 fw_jiffy:
@@ -369,7 +372,13 @@ fj_end:
 fj_set:
 	STY irq_freq	; set value
 	STA irq_freq+1
-; ***** MUST compute period and set VIA counters accordingly!!! *****
+; *** compute period and set VIA counters accordingly!!! ***
+; placeholder for 1 MHz systems*****
+	LDY #<IRQ_PER-2	; get period from options
+	LDA #>IRQ_PER-2
+; start VIA counter
+	STY VIA_J+T1CL	; set computed period...
+	STA VIA_J+T1CH	; ...and start counting!
 	_BRA fj_end	; all done, nothing to update
 
 ; ****************************************
