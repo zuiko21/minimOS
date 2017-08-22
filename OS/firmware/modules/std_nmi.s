@@ -1,7 +1,7 @@
 ; standard NMI handler for minimOS firmware
-; v0.6a1
+; v0.6a2
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170602-0859
+; last modified 20170822-1846
 
 ; in case of standalone assembly
 #ifndef		FIRMWARE
@@ -16,3 +16,4 @@
 	AND #%11110011	; remove interrupt mask & decimal mode bits
 	STA $010A, X	; ints will be restored upon exit
 	RTS				; back to handler end, hopefully everything settled now
+; 65816 should use RTL but as long as it is in bank 0, it is OK

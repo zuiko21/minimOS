@@ -1,8 +1,10 @@
 ; BRK handler for minimOS·16
-; v0.6a1
+; v0.6a2
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170815-1757
+; last modified 20170822-1841
 
 ; old handler as a placeholder, should end in RTS
-	.as: .xs: SEP #$30		; back to old 8-bit size, just in case
+; RTL is the proper ending for 65816 BRK handlers,
+; but as long as it is in bank 0, no problem
+	.as: .xs		; already set in 8-bit sizes
 #include "isr/brk.s"
