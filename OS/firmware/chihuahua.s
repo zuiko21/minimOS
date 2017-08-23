@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6a6
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170823-1850
+; last modified 20170823-2014
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -375,7 +375,7 @@ fj_end:
 		_DR_OK		; will work always on this machine!
 fj_set:
 ; *** compute VIA T1 values from uS at parameter ***
-; * multiply 16x16=32 bits, A.Y x SPD_CODE *
+; ** multiply 16x16=32 bits, A.Y x SPD_CODE **
 ; * will return 16b, result is shifted 12b right *
 	STY local1		; set local copy of 1st factor
 	STA local1+1
@@ -423,10 +423,11 @@ fj_shift:
 		ROR local3+1
 		DEX			; one less to go
 		BNE fj_shift
+; if last shift gets C, should add one for accuracy! or subtract just one
 ; really must subtract 2 for VIA operation, LSB discarded
 	LDA local3+1		; temporary LSB
-	SEC
-	SBC #2			; minus 2
+; will not preset C and subtract just 1
+	SBC #1			; minus 2 if C was clear
 	TAY			; definitive LSB
 	LDA local3+2		; this will be MSB
 	SBC #0			; propagate borrow
