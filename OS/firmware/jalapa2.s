@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a15
+; v0.9.6a16
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170822-1947
+; last modified 20170823-1747
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a15 firmware for "
+	.asc	"0.9.6a16 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -443,8 +443,8 @@ fj_next:
 ; just discard the LSB, shift 4 bits and simply keep the middle two!
 	LDX #4			; bits to shift
 fj_shft:
-		ASL local3+2		; shift amount
-		ROL local3
+		LSR local3+2		; shift amount RIGHT eeeeek
+		ROR local3
 		DEX			; until done
 		BNE fj_shft
 	LDA local3+1		; note offset
@@ -646,7 +646,7 @@ brk_call:
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a15 firmware for "
+	.asc	"0.9.6a16 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
