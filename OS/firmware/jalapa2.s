@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a16
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170823-1747
+; last modified 20170823-2047
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -398,10 +398,9 @@ fw_r_brk:
 ; irq_hz	= PERIOD in uS (0 means READ current)
 ;		OUTPUT
 ; irq_hz	= actually set period (in case of error or no change)
-; C			= could not set (not here)
+; C			= could not set
 
 fw_jiffy:
-; this is generic
 ; if could not change, then just set return parameter and C
 	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
@@ -410,31 +409,32 @@ fw_jiffy:
 		LDA @irq_freq		; get current frequency
 		STA irq_hz			; set return values
 fj_end:
+		LDA irq_hz			; get asked value
+		STA @irq_freq		; set current frequency
 		_NO_CRIT			; eeeeeeeeek
 		_DR_OK
 fj_set:
-	STA @irq_freq		; store in sysvars
 ; *** compute and set VIA counters accordingly!!!!! ***
 ;	LDA #IRQ_PER*PHI2/1000000-2	; compute value***placeholder
 ; multiply irq_hz (already in C) by SPD_CODE/4096
 	STA local1		; this copy will shift left...
 	STZ local1+2		; ...thus clear MSBs
 	LDA #SPD_CODE		; hardware speed (might take from FW var)
-	EOR #$FFFF		; inverted bits make things easier
 	STA local2		; this shifts right until clear
 	STZ local3		; clear 32-bit result
 	STZ local3+2
 fj_mul:
 		LSR local2		; get 2nd factor lsb
-		BCS fj_next		; if was 0, do not add
+		BCC fj_next		; if was 0, do not add
+			CLC
 			LDA local1		; otherwise take 1st factor...
 			ADC local3		; ...and add to result (C was clear!)
 			STA local3		; update!
 			LDA local1+2		; same for MSW
 			ADC local3+2
 			STA local3+2
-; if C is set... error! TBD
 fj_next:
+;			BCS fw_over		; if C is set... error! is it possible?
 		ASL local1		; shift 1st factor left
 		ROL local1+2
 		LDA local2		; check next factor...
@@ -447,18 +447,19 @@ fj_shft:
 		ROR local3
 		DEX			; until done
 		BNE fj_shft
+; should subtract 2 for proper VIA T1 value, but only 1 if C!
 	LDA local3+1		; note offset
+; do not preset carry...
+	SBC #1			; ...minus 2 if C was clear
 ; MSB must be zero, otherwise overflow!
-	LDY local3+3		; highest byte
-		BNE fj_err		; handle this********
-	SEC
-	SBC #2			; correct value for VIA T1
-; in case of overflow, set to 0 or $FFFF with error code?
-; C has the proper 16-bit value for VIA T1 (subtracted 2 from result!)
-	STA VIA_J+T1CL			; start running!
-		BCC fj_end			; all done, no need to update as will be OK
-;****recompute actual value... or just reject without setting?****
-	_DR_ERR(INVALID);
+	LDY local3+3		; is MSB zero?
+	BNE fj_over		; no, outside range
+; accumulator has the proper 16-bit value for VIA T1
+		STA VIA_J+T1CL			; start running!
+		BRA fj_end			; successful
+fj_over:
+	_NO_CRIT			; eeeeeeeek
+	_DR_ERR(INVALID)
 
 	.as: .xs			; just in case...
 
