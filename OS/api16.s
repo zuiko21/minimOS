@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a13, should match kernel16.s
+; v0.6a14, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170815-1708
+; last modified 20170827-1753
 
 ; assumes 8-bit sizes upon call...
 
@@ -173,8 +173,6 @@ cio_abort:
 ; io_c	= char
 ; C		= not available
 ;		USES iol_dev, and whatever the driver takes
-; cio_lock & cin_mode are kernel structures
-; * 8-bit savvy *
 
 cin:
 ;**************  move event management here ***************
@@ -294,10 +292,21 @@ ci_win:
 ci_log:
 	CMP #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
-	CMP #DEV_NULL		; lastly, ignore input****** clear remaining!!!
-		BEQ ci_exitOK
+	CMP #DEV_NULL		; lastly, clear buffer!!!
+		BEQ ci_null
 	LDY #N_FOUND		; unknown device
 	JMP cio_abort		; restore & notify
+ci_null:
+	LDY #0			; reset index, will be complete
+	TYA			; filling value as above
+	.xl: REP #$10		; *** 16-bit index ***
+		LDX bl_siz		; get size in full
+ci_nll:
+			BEQ ci_exitOK		; nothing else
+		STA [bl_ptr], Y		; clear byte in buffer
+		INY			; go for next
+		DEX			; one less to go
+		BRA ci_nll
 
 ci_rnd:
 ; *** generate random number (TO DO) ***

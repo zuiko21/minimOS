@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a11, must match kernel.s
+; v0.6a12, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170822-1649
+; last modified 20170827-1740W
 
 ; no way for standalone assembly...
 
@@ -139,6 +139,8 @@ co_log:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
 		BNE cio_nfound		; final error otherwise
+			_STZA bl_siz			; transfer fullfilled eeeeeek
+			_STZA bl_siz+1
 			_EXIT_OK			; "/dev/null" is always OK
 ; *** common I/O call ***
 cio_nfound:
@@ -262,8 +264,28 @@ cirn_nw:
 		BNE cirn_loop			; ...until the end
 	STX bl_ptr+1			; restore pointer***
 ci_ok:
-	_STZA bl_siz+1			; make sure transfer is done in full
-	_STZA bl_siz			; only needed for /dev/null
+	_EXIT_OK
+ci_null:
+; reading from DEV_NULL works like /dev/zero, must fill buffer with zeroes!
+		LDX bl_siz		; LSB as offset
+			BEQ ci_nlw		; empty perhaps?
+		LDA #0			; fill buffer with this
+		TAY			; reset ascending offset
+ci_nll:
+			STA (bl_ptr), Y		; put a zero into buffer
+			INY			; try one more
+			BNE ci_ny		; no wrap yet
+				INC bl_ptr+1		; or increment MSB*** but save it!!
+ci_nw:
+			DEC bl_siz		; one less to go
+			BNE cl_nll
+ci_nlw:
+		LDX bl_siz+1		; check MSB
+			BEQ ci_nle		; all done!
+		DEC bl_siz+1		; or continue
+		_BRA ci_nll
+ci_nle:
+; placeholder exit, must restore altered pointer
 	_EXIT_OK
 
 ; *** for 02 systems without indexed CALL ***
