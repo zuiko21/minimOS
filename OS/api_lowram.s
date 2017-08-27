@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a10
+; v0.6a11
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170815-1624
+; last modified 20170827-1809
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -180,7 +180,26 @@ ci_nph:
 		BEQ ci_rnd			; compute it!
 	CMP #DEV_NULL		; lastly, ignore input
 		BNE cio_nfound		; final error otherwise
-	_STZA bl_siz			; null transfers always complete
+; must behave like /dev/zero!
+	LDX bl_siz		; how many?
+		BEQ ci_nlw		; empty perhaps?
+	LDA #0			; filling value
+	TAY			; reset index
+ci_nll:
+		STA (bl_ptr), Y		; store a zero in buffer
+		INY			; next
+		BNE ci_ny		; no wrap
+			INC bl_ptr+1		; increment MSB ***must be saved!
+ci_ny:
+		DEC bl_siz		; one less
+		BNE ci_nll
+ci_nlw:
+	LDX bl_siz+1		; check pages remaining
+		BEQ ci_nle		; all done!
+	DEC bl_siz+1		; or continue
+	_BRA ci_nll
+ci_nle:
+; placeholder*** must restore pointer
 ci_compl:
 	_STZA bl_siz+1			; null & rnd transfers always complete
 	_EXIT_OK			; "/dev/null" is always OK

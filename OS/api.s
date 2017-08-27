@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a12, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170827-1740W
+; last modified 20170827-1811
 
 ; no way for standalone assembly...
 
@@ -276,7 +276,7 @@ ci_nll:
 			INY			; try one more
 			BNE ci_ny		; no wrap yet
 				INC bl_ptr+1		; or increment MSB*** but save it!!
-ci_nw:
+ci_ny:
 			DEC bl_siz		; one less to go
 			BNE cl_nll
 ci_nlw:
