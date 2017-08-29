@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.6a1
-; last modified 20170601-1110
+; v0.6a2
+; last modified 20170829-1320
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -727,19 +727,14 @@ ex_noni:
 	STY oper			; also reset forward counter, decrement is too clumsy!
 	STY oper+1
 ; check subcommand
-#ifdef	SAFE
 	LDA count			; restore subcommand
 	CMP #'+'			; is it load?
-		BEQ ex_do			; OK then
+		BEQ ex_load			; OK then
+#ifdef	SAFE
 	CMP #'-'			; is it save? (MARATHON MAN)
 		BNE ex_abort		; if not, complain
 #endif
-ex_do:
-; decide what to do
-	LDA count			; restore subcommand
-	CMP #'+'			; is it load?
-	BEQ ex_load			; OK then
-; otherwise assume save!
+; assume save!
 ; save raw bytes
 		LDA (ptr), Y		; get source data
 		STA io_c			; set parameter
