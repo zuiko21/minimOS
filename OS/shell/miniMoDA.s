@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.6a2
-; last modified 20170829-1320
+; last modified 20170829-1341
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -1153,7 +1153,7 @@ gnc_do:
 		BEQ gn_ok			; go away if ended
 	CMP #' '			; white space?
 		BEQ gnc_do			; skip it!
-	CMP #TAB			; tabulations will be skipped too
+	CMP #HTAB			; tabulations will be skipped too
 		BEQ gnc_do
 	CMP #'$'			; ignored radix?
 		BEQ gnc_do			; skip it!
@@ -1196,7 +1196,7 @@ bc_loop:
 		LDA (bufpt), Y		; check what is pointed
 		CMP #' '			; blank?
 			BEQ bc_loop			; once more
-		CMP #TAB			; tabulation?
+		CMP #HTAB			; tabulation?
 			BEQ bc_loop			; ignore
 		CMP #'$'			; ignored radix?
 			BEQ bc_loop			; also ignore

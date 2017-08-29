@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.6a8
-; last modified 20170829-1254
+; last modified 20170829-1340
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -753,7 +753,7 @@ bc_loop:
 		LDA buffer, X		; check what is pointed
 		CMP #' '			; blank?
 			BEQ bc_loop			; once more
-		CMP #TAB			; tabulation?
+		CMP #HTAB			; tabulation?
 			BEQ bc_loop			; ignore
 		CMP #'$'			; ignored radix?
 			BEQ bc_loop			; also ignore

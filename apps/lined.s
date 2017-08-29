@@ -1,7 +1,8 @@
 ; line editor for minimOS!
-; v0.5rc8
+; v0.5.1rc1
+; same as 0.5 with 0.6 ABI/API compatibility
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170309-1254
+; last modified 20170829-1339
 
 #include "usual.h"
 .(
@@ -19,7 +20,7 @@
 #define	GOTO		7
 ; quit was ^Q ($11) but set to ^Y ($19) for run816 compatibility
 #define	QUIT		$19
-#define	SUBSTITUTE	'~'
+#define	SBSTIT		'~'
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
@@ -32,7 +33,7 @@ linedHead:
 
 ; *** filename and optional comment ***
 	.asc	"lined", 0		; file name (mandatory)
-	.asc	"Text Editor 0.5 (for source code)", 0	; comment
+	.asc	"Text Editor 0.5.1 (for source code)", 0	; comment
 
 ; advance to end of header
 	.dsb	linedHead + $F8 - *, $FF	; for ready-to-blow ROM
@@ -418,9 +419,9 @@ le_def:
 		JSR l_valid			; check for a valid key
 			BCS le_loop2		; was not
 		STA l_buff, X		; store into buffer, 816-savvy!
-		CMP #TAB			; was a tabulator?
+		CMP #HTAB			; was a tabulator?
 		BNE ldf_prn			; regular char, do not convert
-			LDA #SUBSTITUTE		; substitution char
+			LDA #SBSTIT		; substitution char
 ldf_prn:
 		JSR prnChar			; print 
 		INC key				; another char in buffer
@@ -633,7 +634,7 @@ li_loop:
 		LDA (ptr), Y		; get first char
 		CMP #' '			; check whether space
 		BEQ li_do			; will be accepted
-			CMP #TAB			; or tabulation
+			CMP #HTAB			; or tabulation
 				BNE li_exit			; stop otherwise
 li_do:
 		STA l_buff, X		; put data on buffer, 816-savvy!
@@ -712,9 +713,9 @@ lpm_loop:
 		_PHX				; save index, NMOS compatibility needs to be here
 		LDA l_buff, X		; get char from buffer, 816-savvy!
 			BEQ lpm_exit		; abort upon terminator, do not forget stacked index!
-		CMP #TAB			; is it a tabulation?
+		CMP #HTAB			; is it a tabulation?
 		BNE lpm_prn			; print directly otherwise
-			LDA #SUBSTITUTE		; or show equivalence! eeeeeeek!
+			LDA #SBSTIT		; or show equivalence! eeeeeeek!
 lpm_prn:
 		JSR prnChar			; print it
 		_PLX				; restore index
@@ -880,7 +881,7 @@ mu_sp:
 l_valid:
 	CMP #' '			; printable char?
 		BCS lv_ok			; say OK
-	CMP #TAB			; or is it a tabulation?
+	CMP #HTAB			; or is it a tabulation?
 		BEQ lv_ok			; OK too
 	SEC				; otherwise is NOT valid
 	RTS
@@ -902,7 +903,7 @@ txtEnd:
 
 ; *** strings and data ***
 le_title:
-	.asc	"Line Editor", 0
+	.asc	"Line Editor 0.5.1", 0
 le_splash:
 	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
 le_start:
