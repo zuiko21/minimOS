@@ -1,7 +1,7 @@
 ; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5rc3
-; last modified 20170515-1246
+; v0.5.1b1
+; last modified 20170829-1415
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -34,7 +34,7 @@ a68_head:
 ; *** filename and optional comment ***
 title:
 	.asc	"68asm", 0	; file name (mandatory)
-	.asc	"6800/6801/6301 cross-assembler for 6502", 0	; comment
+	.asc	"6800/6801/6301 cross-assembler for 6502, v0.5.1", 0	; comment
 
 ; advance to end of header
 	.dsb	a68_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
@@ -984,7 +984,7 @@ gnc_do:
 		BEQ gn_ok			; go away if ended
 	CMP #' '			; white space?
 		BEQ gnc_do			; skip it!
-	CMP #TAB			; tabulations will be skipped too
+	CMP #HTAB			; tabulations will be skipped too
 		BEQ gnc_do
 	CMP #'$'			; ignored radix?
 		BEQ gnc_do			; skip it!
@@ -1027,7 +1027,7 @@ bc_loop:
 		LDA (bufpt), Y		; check what is pointed
 		CMP #' '			; blank?
 			BEQ bc_loop			; once more
-		CMP #TAB			; tabulation?
+		CMP #HTAB			; tabulation?
 			BEQ bc_loop			; ignore
 		CMP #'$'			; ignored radix?
 			BEQ bc_loop			; also ignore
@@ -1131,7 +1131,7 @@ cmd_ptr:
 ; *** strings and other data ***
 splash:
 	.asc	"MC6800/6801/6301 cross-assembler", CR
-	.asc	"for 6502, v0.5", CR
+	.asc	"for 6502, v0.5.1", CR
 	.asc	"(c) 2017 Carlos J. Santisteban", CR
 #ifdef	SAFE
 	.asc	"Type 680x opcodes or .commands,", CR
