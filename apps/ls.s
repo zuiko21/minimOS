@@ -23,7 +23,7 @@ lsHead:
 
 ; *** filename and optional comment ***
 	.asc	"ls", 0			; file name (mandatory)
-	.asc	"Lists ROM contents", 0		; comment
+	.asc	"Lists ROM contents, v0.5", 0		; comment
 
 ; advance to end of header
 	.dsb	lsHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field

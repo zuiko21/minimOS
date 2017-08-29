@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v1.0b7
+; v1.1b1, for minimOS 0.6 and up
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170307-1204
+; last modified 20170829-1400
 
 
 ; for standalone assembly, set path to OS/
@@ -139,7 +139,7 @@ sts_thread:
 	_KERNEL(SET_HNDL)	; set it!
 ; might tell about successful installation
 sts_timer:
-	LDA #SPEED_CODE		; ** kludge, but makes it speed-independent **
+	LDA #>SPD_CODE		; ** kludge, but makes it speed-independent **
 sts_ext:
 			LDY #12				; should take about 0.5 seconds
 			LDX #0				; for guaranteed execution time
