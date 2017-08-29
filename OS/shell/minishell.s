@@ -1,6 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5.1a1
-; last modified 20170531-1040
+; v0.5.2a1
+; like 0.5.1 for 0.6 ABI/API!
+; last modified 20170829-1309
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -89,7 +90,7 @@ main_loop:
 		LDA #>buffer		; in zeropage, all MSBs are zero
 		STY str_pt			; set parameter
 		STA str_pt+1
-		_KERNEL(LOAD_LINK)	; look for that file!
+		_KERNEL(LOADLINK)	; look for that file!
 		BCC xsh_ok			; it was found, thus go execute it
 			CPY #INVALID		; found but not compatible?
 			BNE ms_nf

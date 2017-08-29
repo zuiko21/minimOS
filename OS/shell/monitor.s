@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a7
-; last modified 20170602-0845
+; v0.6a8
+; last modified 20170829-1254
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -353,19 +353,14 @@ ex_noni:
 	STY oper			; also reset forward counter, decrement is too clumsy!
 	STY oper+1
 ; check subcommand
-#ifdef	SAFE
 	LDA count			; restore subcommand
 	CMP #'+'			; is it load?
-		BEQ ex_do			; OK then
+		BEQ ex_load			; OK then
+#ifdef	SAFE
 	CMP #'-'			; is it save? (MARATHON MAN)
 		BNE ex_abort		; if not, complain
 #endif
-ex_do:
-; decide what to do
-	LDA count			; restore subcommand
-	CMP #'+'			; is it load?
-	BEQ ex_load			; OK then
-; otherwise assume save!
+; assume save!
 ; save raw bytes
 		LDA (ptr), Y		; get source data
 		STA io_c			; set parameter
@@ -410,24 +405,23 @@ ex_ok:
 	STA ptr				; update
 	BCC ex_show			; no wrap
 		INC ptr+1			; or carry to MSB
-ex_show:
 ; transfer ended, show results
-#ifndef	SAFE
-ex_err:					; without I/O error message, indicate 0 bytes transferred
+#ifdef	SAFE
+	_BRA ex_show			; skip error msg
 #endif
+ex_err:
+#ifdef	SAFE
+; an I/O error occurred during transfer!
+	LDA #>io_err		; set message pointer
+	LDY #<io_err
+	JSR prnStr			; print it and finish function afterwards
+#endif
+ex_show:
 	LDA oper			; get LSB
 	PHA					; into stack
 	LDA oper+1			; get MSB
 	PHA					; same
 	JMP nu_end			; and print it! eeeeeek return also
-#ifdef	SAFE
-ex_err:
-; an I/O error occurred during transfer!
-	LDA #>io_err		; set message pointer
-	LDY #<io_err
-	JSR prnStr			; print it and finish function afterwards
-	_BRA ex_show		; there is nothing to increment!
-#endif
 
 ; ** .M = move (copy) 'n' bytes of memory **
 move:
