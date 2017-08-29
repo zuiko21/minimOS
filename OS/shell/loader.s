@@ -1,7 +1,7 @@
 ; Basic loader for minimOS (simple version)
 ; v0.5rc8
 ; last modified 20160923-0928
-; (c) 2016 Carlos J. Santisteban
+; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
 

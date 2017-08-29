@@ -1,7 +1,8 @@
 ; Monitor shell with disassembler for minimOS
 ; v0.5rc3
 ; last modified 20160923-0926
-; (c) 2016 Carlos J. Santisteban
+; (c) 2016-2017 Carlos J. Santisteban
+; somehow deprecated...
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
