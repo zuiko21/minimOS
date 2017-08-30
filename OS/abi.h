@@ -1,8 +1,8 @@
-; minimOS 0.6a7 API/ABI
+; minimOS 0.6a8 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
 ; some renaming 20170805
-; last modified 20170815-1334
+; last modified 20170830-1723
 
 ; *************************************************
 ; *************************************************
@@ -109,7 +109,7 @@ D_BOUT	=  4		; BLOCK output code
 D_INIT	=  6		; device reset procedure
 D_POLL	=  8		; periodic interrupt task
 D_FREQ	= 10		; frequency for periodic task, new 20170517
-D_REQ	= 12		; asynchronous interrupt task
+D_ASYN	= 12		; asynchronous interrupt task
 D_CNFG	= 14		; device configuration, TBD
 D_STAT	= 16		; device status, TBD
 D_BYE	= 18		; shutdown procedure

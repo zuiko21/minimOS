@@ -1,26 +1,34 @@
-; 0.5 dummy driver for minimOS
-; as originally supplied with minimOS 0.4b4LK4
-; new ABI 20150323
-; (c) Carlos J. Santisteban
-; last modified 20150928-1047
+; 0.6 dummy driver for minimOS
+; new 0.6 ABI 20170830
+; (c) 2013-2017 Carlos J. Santisteban
+; last modified 20170830-1723
 
 ; *** dummy device driver ***
-	.byt	0				; +D_ID, reserved for alignment (device number!)
-	.byt	0				; +D_AUTH, feature authorization code (new), dummy driver does nothing
-	.word	void_routine	; +D_INIT, device reset
-	.word	void_routine	; +D_POLL, device poll, called periodically
-	.word	void_routine	; +D_REQ, asynchronous interrupt request by device (should verify source)
-	.word	void_routine	; +D_CIN, device input, get character from device or buffer
-	.word	void_routine	; +D_COUT, device output, buffered or not
-	.word	void_routine	; +D_SEC, one second periodic interrupt
-	.word	void_routine	; +D_SIN, device input, block transfer
-	.word	void_routine	; +D_SOUT, device output, block transfer
+	.byt	255		; +D_ID, reserved for alignment (device number!)
+	.byt	0		; +D_AUTH, feature authorization code (new), dummy driver does nothing
+	.word	empty_routine	; +D_BLIN, block input (new) will work like /dev/null instead of /dev/zero
+	.word	empty_routine	; +D_BOUT, block output (new)
+	.word	void_routine	; +D_INIT, initialisation procedure
+	.word	void_routine	; +D_POLL, periodic interrupt request
+	.word	0		; +D_FREQ, execution frequency for the above (in jiffys)
+	.word	next_routine	; +D_ASYN, asynchronous interrupt request by device (should verify source)
+	.word	err_routine	; +D_CNFG, device configuration TBD
+	.word	err_routine	; +D_STAT, device status TBD
 	.word	void_routine	; +D_BYE, shutdown procedure
-	.word	void_info		; +D_INFO, new info string
-	.byt	0				; +D_MEM, reserved relocatable bytes
+	.word	void_info	; +D_INFO, info C-string
+	.word	0		; +D_MEM, reserved relocatable bytes
 
 void_info:
 	.asc	"DUMMY", 0
 
+empty_routine:
+	_STZA bl_siz		; clear remainjng size!
+	_STZA bl_siz+1
 void_routine:
-	_DR_OK					; essentially RTS, new interface
+	_DR_OK			; essentially RTS, new interface
+
+err_routine:
+	_DR_ERR(UNAVAIL)	; feature not available
+
+next_routine:
+	_NXT_ISR		; cannot handle any interrupt, try another

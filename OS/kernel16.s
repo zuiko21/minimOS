@@ -221,7 +221,7 @@ dr_nout:
 		LDX dr_feat			; get original auth code (3)
 		STX dr_aut			; and keep for later! (3)
 ; time to get a pointer to the-block-of-pointers (source)
-		LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_REQ)
+		LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
 		LDA (da_ptr), Y		; get full address (6)
 		STA sysptr			; get the pointer into sysptr (move to locals?)
 ; also a temporary pointer to the particular queue
