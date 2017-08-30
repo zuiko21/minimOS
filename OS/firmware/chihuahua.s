@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6a6
+; v0.9.6a7
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170823-2014
+; last modified 20170830-1605
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -13,7 +13,7 @@
 fw_start:
 	.asc 0, "m", CPU_TYPE, 13		; standard system file wrapper, new format 20161010, experimental type
 	.asc "boot", 0					; standard filename
-	.asc "0.9.6a6 firmware for "	; machine description as comment
+	.asc "0.9.6a7 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; no size or timestamp on firmware header!
@@ -217,6 +217,28 @@ rst_nmi:
 ; *** default code for NMI handler, if not installed or invalid ***
 std_nmi:
 #include "firmware/modules/std_nmi.s"
+
+; *********************************************
+; *** experimental blinking of CapsLock LED ***
+; *********************************************
+led_lock:
+; make sure PB3 is output and device $Bx is selected, just in case
+	LDA VIA_U+DDRB		; original direction
+	ORA #%11111001		; desired outputs
+	STA VIA_U+DDRB		; set on VIA
+; intial value selects $D8 device (LCD on keyboard, E down and LED on)
+	LDA #%11011000
+ll_tog:
+		STA VIA_U+IORB		; turn LED on, LCD will not disturb
+ll_loop:
+				INX			; inner loop (2)
+				NOP			; add some delay (2+2)
+				NOP
+				BNE ll_loop		; inner takes 2303t (3)
+			INY			; outer loop (2)
+			BNE ll_loop		; full loop is ~0.59s @ 1 MHz (3)
+		EOR #%00001000		; toggle PB3
+		_BRA ll_tog		; switch and continue forever
 
 ; ********************************
 ; *** administrative functions ***
@@ -610,18 +632,21 @@ irq:
 #endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
+; alternatively, blink CapsLock LED!
 * = lock
-	SEC					; unified procedure 20150410, was CLV
+	SEI					; unified procedure like 6800
+; classic way
 panic_loop:
-	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
-	NOP					; padding for reserved C816 vectors
+	_BRA panic_loop		; no problem if /SO is used
+; ** alternative way **
+;	JMP led_lock		; start CapsLock blinking!
 
-; once again, CHIHUAHUA is very unlikely to use a 65816
 ; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	$FFFA-*, $FF
 #endif
 
+; once again, CHIHUAHUA is very unlikely to use a 65816
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
 	.word	nmi			; NMI	@ $FFFA
