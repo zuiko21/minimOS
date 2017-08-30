@@ -1,4 +1,6 @@
-#Driver architecture in minimOS·65
+# Driver architecture in minimOS·65
+
+## ***OBSOLETE**: see the newer [architecture docs](../../architecture.md) for preliminary details.* 
 Generically speaking, a driver is a pack of **I/O routines** and/or some **interrupt tasks**. This architecture uses a **binary header** in front of each package, describing driver's features and pointing to the particular routines, rendering an uniform interface for easy installation and access.
 
 Current header format (as of 0.5a) is as follows:
