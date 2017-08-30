@@ -1,7 +1,7 @@
 ; software serial port emulator for minimOS!
-; v0.5b3, for generic 65C02 (65816-savvy)
-; (c) 2016 Carlos J. Santisteban
-; last modified 20161114-2140
+; v0.6a1, for generic 65C02 (65816-savvy)
+; (c) 2016-2017 Carlos J. Santisteban
+; last modified 20170830-1832
 
 ; VIA bit functions
 ; Tx	= PA0 (any 0...5, set masks accordingly)
@@ -9,35 +9,36 @@
 ; /CTS	= PA6 (or PA7 for easy checking)
 ; /RTS	= PA1 (or any 0...5)
 
+; new VIA-connected device ID is $23, will go imtp PB
+
 ; initially designed for 9600,n,1 on 1 MHz systems (Chihuahua)
 ; 104.167 clocks/bit!!!
 ; would be EXACTLY 192 cycles at 1.8432 MHz
-
+; would be EXACTLY 240 cycles at 2.304 MHz
+;
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-#ifndef		HEADERS
 #include "usual.h"
-#endif
 
 ; *** begins with sub-function addresses table ***
-	.byt	232			; physical driver number D_ID (TBD)
-	.byt	A_COUT+A_CIN	; basic I/O driver, non-interrupt-driven
+	.byt	232		; physical driver number D_ID (TBD)
+	.byt	A_BOUT|A_BLIN	; basic I/O driver, non-interrupt-driven
+	.word	srs_rcvN	; read N bytes from 'serial'
+	.word	srs_sendN	; output N bytes to 'serial'
 	.word	srs_init	; initialise 'device', called by POST only
 	.word	srs_exit	; no periodic interrupt
-	.word	srs_nreq	; D_REQ does nothing
-	.word	srs_rcv		; read one byte from 'serial'
-	.word	srs_send	; output one byte to 'serial'
-	.word	srs_exit	; no need for 1-second interrupt
-	.word	srs_nreq	; no block input
-	.word	srs_nreq	; no block output
+	.word	0		; frequency makes no sense
+	.word	srs_nreq	; D_ASYN does nothing
+	.word	srs_nreq	; no config
+	.word	srs_nreq	; no status
 	.word	srs_exit	; shutdown procedure, leave VIA as it was...
 	.word	srs_info	; points to descriptor string
-	.byt	0			; reserved, D_MEM
+	.word	0			; reserved, D_MEM
 
 ; *** driver description ***
 srs_info:
-	.asc	"Serial-port emulation v0.5b3", 0
+	.asc	"Serial-port emulation v0.6a1", 0
 
 ; *** some definitions ***
 zsr_vote	= sys_sp	; single local variable, could be elsewhere in zeropage
@@ -47,6 +48,54 @@ OUT_MASK	= %00000011	; PA0-1 as output
 TX_MASK		= %00000001	; mask for Tx (PA0)
 RTS_MASK	= %00000010	; mask for /RTS (PA1)
 INIT_MASK	= TX_MASK + RTS_MASK	; set Tx (idle) and negate RTS (disable reception)
+
+; ***************************************************************
+; *** this header will enable classic character routines within block procedures ***
+; ***************************************************************
+srs_rcvN:
+	LDA bl_ptr+1		; get pointer MSB
+	PHA			; in case gets modified...
+	LDY #0			; reset index
+srsr_l:
+		PHY			; keep this
+		JSR srs_rcv		; *** get one byte ***
+			BCS blck_err		; any error ends transfer!
+		PLY			; restore index
+		LDA io_c		; received byte...
+		STA (bl_ptr), Y		; ...goes into buffer
+		INY			; go for next
+		DEC bl_siz		; one less to go
+			BNE srsr_l		; no wrap, continue
+		LDA bl_siz		; check MSB otherwise
+			BEQ blck_end		; no more!
+		DEC bl_siz+1		; ...or one page less
+		BRA srsr_l
+blck_err:
+	PLA			; was Y, but must respect error code!
+blck_end:
+	PLA			; gets pointer MSB back...
+	STA bl_ptr+1		; ...and restores it
+	RTS			; respect whatever error code
+
+srs_sendN:
+	LDA bl_ptr+1		; get pointer MSB
+	PHA			; in case gets modified...
+	LDY #0			; reset index
+srss_l:
+		LDA (bl_ptr), Y		; buffer contents...
+		STA io_c		; ...will be sent
+		PHY			; keep this
+		JSR srs_send		; *** send one byte ***
+			BCS blck_err		; any error ends transfer!
+		PLY			; restore index
+		INY			; go for next
+		DEC bl_siz		; one less to go
+			BNE srss_l		; no wrap, continue
+		LDA bl_siz		; check MSB otherwise
+			BEQ blck_end		; no more!
+		DEC bl_siz+1		; ...or one page less
+		BRA srss_l
+
 
 ; ************************
 ; *** initialise stuff ***
@@ -65,7 +114,7 @@ srs_init:
 ; *** send one byte in io_c ***
 ; *****************************
 srs_send:
-	_ENTER_CS			; disable interrupts
+	_CRITIC				; disable interrupts
 	LDX #30				; timeout counter ~1.5 mS
 ; wait until receiver is available
 srss_wait:
@@ -74,7 +123,7 @@ srss_wait:
 		JSR srs_41us		; half bit wait (41 incl JSR/RTS)
 		DEX					; keep waiting (2)
 		BNE srss_wait		; until timeout (3/2)
-	_EXIT_CS			; restore interrupts if needed
+	_NO_CRIT			; restore interrupts if needed
 	_DR_ERR(TIMEOUT)	; could not send in a timely fashion
 srss_cts:
 ; ready to go, prepare some values
@@ -98,14 +147,14 @@ srss_sent:
 		JSR srs_83us		; delay (83)
 		DEX					; next bit (2)
 		BNE srss_bit		; until done (3/2)
-	_EXIT_CS			; restore interrupts
+	_NO_CRIT			; restore interrupts if needed
 	_DR_OK				; succeeded
 
 ; ************************
 ; *** receive one byte ***
 ; ************************
 srs_rcv:
-	_ENTER_CS			; disable interrupts
+	_CRITIC			; disable interrupts
 	LDA #RTS_MASK		; mask for RTS
 	TRB VIA1+IORA		; enable reception!
 	LDX #136			; timeout counter ~1.5 mS *** not for 1.8432 MHz ***
@@ -116,7 +165,7 @@ srsr_wait:
 			BPL srsr_start		; exit loop upon start bit reception (2/3)
 		DEX					; keep waiting (2)
 		BNE srsr_wait		; until timeout (3/2)
-	_EXIT_CS			; restore previous interrupt state
+	_NO_CRIT			; restore previous interrupt state
 ; nreq for unexpected interrupt tasks! meaningless error, instead of NEXT_ISR
 srs_nreq:
 	_DR_ERR(EMPTY)		; could not receive anything within time frame
@@ -164,14 +213,14 @@ srsr_carry:
 	BMI srsr_stop		; looks like a stop bit
 		LDA #RTS_MASK		; otherwise something went wrong
 		TSB VIA1+IORA		; disable reception!
-		_EXIT_CS			; restore interrupts first eeeeeeeeeek
+		_NO_CRIT			; restore interrupts first eeeeeeeeeek
 		_DR_ERR(CORRUPT)	; notify error
 ; disable receiver and finish
 srsr_stop:
 	JSR srs_41us		; wait a bit more (really needed?)
 	LDA #RTS_MASK		; mask for /RTS
 	TSB VIA1+IORA		; disable reception!
-	_EXIT_CS			; no longer in a hurry
+	_NO_CRIT			; no longer in a hurry
 	_DR_OK
 
 ; ****************************************
