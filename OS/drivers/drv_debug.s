@@ -1,63 +1,59 @@
 ; DEBUG bus-sniffer driver for minimOS
-; v0.9.2
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20150605-1411
-; revised 20160928-1054 FOR NEW INTERFACE
+; v0.9.3b1, makeshift single-byte size version
+; 0.6 API version 20170831
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 20170831-1418
 
-#ifndef		DRIVERS
-#include "options.h"
-#include "macros.h"
-#include "abi.h"		; new filename
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-#include "sysvars.h"
-.text
-#endif
+#include "usual.h"
 
 ; *** begins with sub-function addresses table ***
-	.byt	DEV_DEBUG					; D_ID, new values 20150323
-	.byt	A_POLL + A_CIN + A_COUT		; poll, no req., I/O, no 1-sec and neither block transfers, non relocatable (NEWEST HERE)
+	.byt	DEV_DEBUG				; D_ID, new values 20150323
+	.byt	A_POLL | A_BOUT	; poll, no async., Output only, no config/status, non relocatable (NEWEST HERE)
+	.word	dled_err	; no input
+	.word	dled_coutN	; output N to display
 	.word	dled_reset	; initialize device and appropiate systmps, called by POST only
 	.word	dled_get	; poll, read keypad into buffer (called by ISR)
-	.word	ledg_rts	; req, this one can't generate IRQs, thus CLC+RTS
-	.word	dled_cin	; cin, input from buffer
-	.word	dled_cout	; cout, output to display
-	.word	ledg_rts	; NEW, 1-sec, no need for 1-second interrupt
-	.word	ledg_rts	; NEW, sin, no block input
-	.word	ledg_rts	; NEW, sout, no block output
-	.word	ledg_rts	; NEWER, bye, no shutdown procedure
-	.word	debug_info	; NEWEST info string
-	.byt	0			; reserved for D_MEM
+	.word	200		; actually will toggle CB2 each ~1 sec
+	.word	dled_err	; req, this one can't generate IRQs, must at least set C
+	.word	dled_err	; no config
+	.word	dled_err	; no status
+	.word	ledg_rts	; bye, no shutdown procedure
+	.word	debug_info	; info string
+	.word	0		; reserved for D_MEM
 
 ; *** info string ***
 debug_info:
-	.asc	"DEBUG VIAport driver v0.9.1", 0
+	.asc	"DEBUG VIAport driver v0.9.3", 0
 
 ; *** output ***
+dled_blout:
+; placeholder version, admits no more than 255 chars!!!
+	LDA bl_siz	; check size
+	BEQ ledg_rts	; nothing to print
+	LDY #0		; reset index
 dled_cout:
-	LDA z2			; get char in case is control
+	LDA (bl_ptr), Y		; get char in case is control
 	CMP #13			; carriage return? (shouldn't just clear, but wait for next char instead...)
 	BNE no_blank	; if so, clear LED display
-	STZ VIA+IORA
-	STZ VIA+IORB
+	_STZA VIA+IORA
+	_STZA VIA+IORB
 	BEQ dled_end	; no need for BRA, otherwise much like 150323
 no_blank:
 	LDX VIA+IORA	; take last char
 	STX VIA+IORB	; scroll to the left
 	STA VIA+IORA	; 'print' character
 dled_end:
+	INY		; go for next
+	DEC bl_siz	; one less
+	BNE dled_cout	; continue until done
 	_DR_OK
 
-; *** input ***
-dled_cin:
-	_DR_ERR(EMPTY)	; mild error, so far
+; *** input not implemented ***
+dled_err:
+	_DR_ERR(UNAVAIL)	; mild error, so far
 
 ; *** poll ***
 dled_get:
-	INC systmp		; interrupt counter, every 1.28 seconds
-	BNE dled_end		; not much to do in the while
 	LDA VIA+PCR	; get CB2 status
 	EOR #%00100000	; toggle CB2
 	STA VIA+PCR	; set CB2 status
@@ -71,5 +67,4 @@ dled_reset:
 	LDA #$FF		; all output
 	STA VIA+DDRA	; set direction
 	STA VIA+DDRB
-	_STZA systmp	; some more odd init code
 	_DR_OK
