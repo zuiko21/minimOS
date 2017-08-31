@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a11
+; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170827-1809
+; last modified 20170831-2159
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -64,6 +64,13 @@ cio_of = da_ptr			; parameter switching between CIN and COUT
 ; da_ptr globally defined, cio_of not needed upon calling dr_call!
 
 bl_out:
+#ifdef	SAFE
+	LDA bl_siz			; check size
+	ORA bl_siz+1
+	BNE blo_do			; not empty
+		_EXIT_OK			; or nothing to do
+blo_do:
+#endif
 	LDA #D_BOUT			; only difference from blin (2)
 	STA cio_of			; store for further indexing (3)
 	TYA					; for indexed comparisons (2)
@@ -114,38 +121,18 @@ cio_dev:
 ;		USES BLIN
 
 cin:
-;************ extract here event management... *************
-
-; *************************
-; *** BLIN, block input ***
-; *************************
-;		INPUT
-; Y		= dev
-; bl_ptr	= buffer address
-; bl_siz	= maximum transfer size
-;		OUTPUT
-; bl_siz	= remaining bytes
-; C		= nothing available
-;		USES iol_dev, and whatever the driver takes
-; cin_mode is a kernel variable
-
-bl_in:
-	LDA #D_BLIN			; only difference from bout
-	STA cio_of			; store for further addition
-	TYA					; for indexed comparisons
-	BNE ci_port			; specified
-		LDA std_in			; default input device
-		BNE ci_port			; eeeeeeeeeek
-			LDA #DEVICE			; *** somewhat ugly hack ***
-ci_port:
-	BPL ci_nph			; logic device
-		JSR cio_phys		; check physical devices... but come back for events! new 20150617
-			BCS ci_exit			; some error, send it back
-; ** EVENT management ***************************************
-; this might be revised, or supressed altogether!
-		LDA io_c			; get received character
-		CMP #' '			; printable?
-			BCC ci_manage		; if not, might be an event
+	LDA #io_c			; will point to parameter
+	STA bl_ptr			; set pointer
+	_STZA bl_ptr+1
+	LDA #1				; single byte
+	STA bl_siz			; set counter
+	_STZA bl_siz+1
+	JSR bl_in			; proceed...
+		BCS ci_exit			; ...or return error
+; ** EVENT management **
+	LDA io_c			; get received character
+	CMP #' '			; printable?
+	BCC ci_manage		; if not, might be an event
 ci_exitOK:
 		CLC					; otherwise, no error --- eeeeeeeek!
 ci_exit:
@@ -174,6 +161,40 @@ ci_notdle:
 ci_abort:
 		_ERR(EMPTY)			; no character was received
 
+
+; *************************
+; *** BLIN, block input ***
+; *************************
+;		INPUT
+; Y		= dev
+; bl_ptr	= buffer address
+; bl_siz	= maximum transfer size
+;		OUTPUT
+; bl_siz	= remaining bytes
+; C		= nothing available
+;		USES iol_dev, and whatever the driver takes
+; cin_mode is a kernel variable
+
+bl_in:
+#ifdef	SAFE
+	LDA bl_siz		; how many?
+	ORA bl_siz+1
+	BEQ bli_ok		; empty perhaps? eeeeeek
+		_EXIT_OK		; nithing to do
+bli_ok:
+#endif
+	LDA #D_BLIN			; only difference from bout
+	STA cio_of			; store for further addition
+	TYA					; for indexed comparisons
+	BNE ci_port			; specified
+		LDA std_in			; default input device
+		BNE ci_port			; eeeeeeeeeek
+			LDA #DEVICE			; *** somewhat ugly hack ***
+ci_port:
+	BPL ci_nph			; logic device
+		JSR cio_phys		; check physical devices... but come back for events! new 20150617
+			BCS ci_exit			; some error, send it back
+
 ci_nph:
 ; only logical devs, no need to check for windows or filesystem
 	CMP #DEV_RND		; getting a random number?
@@ -181,27 +202,24 @@ ci_nph:
 	CMP #DEV_NULL		; lastly, ignore input
 		BNE cio_nfound		; final error otherwise
 ; must behave like /dev/zero!
-	LDX bl_siz		; how many?
-		BEQ ci_nlw		; empty perhaps?
+	LDX bl_ptr+1		; pointer might change
 	LDA #0			; filling value
 	TAY			; reset index
 ci_nll:
 		STA (bl_ptr), Y		; store a zero in buffer
 		INY			; next
 		BNE ci_ny		; no wrap
-			INC bl_ptr+1		; increment MSB ***must be saved!
+			INC bl_ptr+1		; increment MSB
 ci_ny:
 		DEC bl_siz		; one less
-		BNE ci_nll
+			BNE ci_nll
 ci_nlw:
-	LDX bl_siz+1		; check pages remaining
-		BEQ ci_nle		; all done!
-	DEC bl_siz+1		; or continue
-	_BRA ci_nll
-ci_nle:
-; placeholder*** must restore pointer
+		CMP bl_siz+1		; check pages remaining
+			BEQ ci_compl		; all done!
+		DEC bl_siz+1		; or continue
+		_BRA ci_nll
 ci_compl:
-	_STZA bl_siz+1			; null & rnd transfers always complete
+	STX bl_ptr+1		; restore original pointer!
 	_EXIT_OK			; "/dev/null" is always OK
 
 ci_rnd:
@@ -216,13 +234,11 @@ cirn_l:
 			INC bl_ptr+1
 cirn_nx:
 		DEC bl_siz
-		BNE cirn_l
-			DEC bl_siz+1
-			LDA bl_siz+1
-			CMP #$FF
-		BNE cirn_l
-	STX bl_ptr+1
-	BEQ ci_compl
+			BNE cirn_l
+		LDA bl_siz+1
+			BEQ ci_compl
+		DEC bl_siz+1
+		_BRA cirn_l
 
 
 ; **************************************
@@ -273,23 +289,17 @@ free_w:
 ; *** UPTIME, get approximate uptime ***
 ; **************************************
 ;		OUTPUT
-; up_ticks	= 16b ticks, new standard format 20161006
-; up_sec	= 32b uptime in seconds
-; new version is 22b / 113t
+; up_ticks	= 32b ticks, new format
+; up_sec	= 24b approximate uptime in seconds for compatibility
+; takes 13b / 62t
 
 uptime:
-	LDX #7				; end of destination offset (2)
-	LDY #5				; end of source pointer (2)
+	LDX #3				; max offset (2)
 	_CRITIC				; do not change while copying (5)
 up_loop:
-		LDA ticks, Y		; get system variable byte (4)
+		LDA ticks, X		; get system variable byte (4)
 		STA up_ticks, X		; and store them in output parameter (4)
 		DEX					; back one byte (2)
-		CPX #3				; already did seconds? (2)
-		BNE up_nosec		; do not skip to ticks... (3/2)
-			LDX #1				; ...until seconds are done (2)
-up_nosec:
-		DEY					; go for next (2)
 		BPL up_loop			; (3/2)
 	_NO_CRIT			; (4)
 	_EXIT_OK
@@ -413,8 +423,10 @@ set_handler:
 #endif
 	LDY ex_pt			; get pointer
 	LDA ex_pt+1			; get pointer MSB
+	_CRITIC
 	STY mm_sterm		; store in single variable (from unused table)
 	STA mm_sterm+1
+	_NO_CRIT
 	_EXIT_OK
 
 
@@ -546,8 +558,7 @@ str_end:
 	STX str_pt+1		; restore pointer
 	STY bl_siz		; complete counter
 	LDY iol_dev		; retrieve device
-	_KERNEL(BOUT)		; standard block out (could be patched)
-	RTS					; return error code
+	JMP bl_out		; standard block out... and return
 
 
 ; ******************************

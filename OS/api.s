@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a12, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170827-1811
+; last modified 20170831-1916
 
 ; no way for standalone assembly...
 
@@ -22,7 +22,7 @@ unimplemented:			; placeholder here, not currently used
 
 
 ; ****************************
-; *** CIN, get a character ***
+; *** CIN, get a character *** and manage events!
 ; ****************************
 ;		INPUT
 ; Y = dev
@@ -39,7 +39,7 @@ cin:
 	STA bl_siz			; set size
 	_STZA bl_siz+1
 	_KERNEL(BLIN)			; get small block...
-; ...and check for events! **********************************************REVISE
+; ...and check for events!
 	BCC ci_nerror			; got something...
 		RTS				; ...or keep error code from BLIN
 ci_nerror:
@@ -47,7 +47,7 @@ ci_nerror:
 	LDA io_c			; get received character
 	CMP #' '			; printable?
 		BCS ci_exitOK		; if so, will not be an event, exit with NO error
-; otherwise might be an event ** REVISE
+; otherwise might be an event
 ; check for binary mode first
 	LDY cin_mode, X		; *get flag, new sysvar 20150617
 	BEQ ci_event		; should process possible event
@@ -224,7 +224,7 @@ ci_lckdd:
 
 ; ** EVENT management no longer here **
 
-; logical devices management, * placeholder *****************REVISE FOR BLOCK IO
+; logical devices management, * placeholder
 ci_nph:
 	CMP #64				; within window devices?
 		BCC ci_win			; below that, should be window manager
@@ -241,8 +241,8 @@ ci_win:
 ci_log:
 	CMP #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
-	CMP #DEV_NULL		; lastly, ignore input
-		BEQ ci_ok			; "/dev/null" is always OK
+	CMP #DEV_NULL		; lastly, ignore input...
+		BEQ ci_ok			; but work like "/dev/zero"
 	JMP cio_nfound		; final error otherwise
 
 ci_rnd:

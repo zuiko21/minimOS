@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a14, should match kernel16.s
+; v0.6a15, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170827-1753
+; last modified 20170831-2041
 
 ; assumes 8-bit sizes upon call...
 
@@ -35,7 +35,6 @@ unimplemented:			; placeholder here, not currently used
 ; C = I/O error
 ;		USES BOUT
 ; cio_lock is a kernel structure
-; * 8-bit savvy *
 
 cout:
 ; if every zp is page-aligned as recommended, use this code
@@ -44,6 +43,7 @@ cout:
 	STA bl_ptr+1		; set on pointer
 	LDA #io_c		; point to ZP parameter
 	STA bl_ptr		; ready, will not need to resolve!
+	STZ bl_ptr+2		; always in bank zero! eeeeeeeeeek
 ; otherwise add LSB like this
 ;	TDC			; where is direct page?
 ;	CLC
@@ -77,6 +77,18 @@ bl_out:
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
 	PLB					; set DBR! do not forget another PLB upon end! (4)
+; ****** from 8-bit code MUST check pointer in case is in direct page!!! ******
+#ifdef	SUPPORT
+	LDX run_arch				; from 6502 code?
+	BEQ blo_24b				; no, nothing to correct
+		STZ bl_ptr+2				; 6502 always in bank zero
+		LDA bl_ptr+1				; check page
+		BNE blo_24b				; all OK
+			TDC					; where is direct page?
+			XBA					; go for MSB (assume page-aligned!)
+			STA bl_ptr+1				; physical address
+blo_24b:
+#endif
 ; proceed
 	TYA					; update flags upon dev number (2)
 	BNE co_port			; not default (3/2)
@@ -127,7 +139,6 @@ co_lckd:
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper physdev index in X
-; ****** MUST check pointer in case is in direct page!!! ******
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 ; ...and the into cio_unlock
 
@@ -165,7 +176,7 @@ cio_abort:
 
 
 ; *****************************
-; *** CIN,  get a character ***
+; *** CIN,  get a character *** and manage events
 ; *****************************
 ;		INPUT
 ; Y = dev
@@ -175,7 +186,64 @@ cio_abort:
 ;		USES iol_dev, and whatever the driver takes
 
 cin:
-;**************  move event management here ***************
+; if every zp is page-aligned as recommended, use this code
+	TDC			; where is direct page?
+	XBA			; switch to MSB
+	STA bl_ptr+1		; set on pointer
+	LDA #io_c		; point to ZP parameter
+	STA bl_ptr		; ready, will not need to resolve!
+	STZ bl_ptr+2		; always bank zero! eeeeeeek
+; set fixed size and proceed
+	LDA #1			; single byte
+	STA bl_siz		; set size
+	STZ bl_siz+1
+	_KERNEL(BLIN)
+; worth switching back DBR
+	PHB					; eeeeeeeeek (3)
+	PHK					; bank zero into stack (3)
+	PLB					; set DBR! do not forget another PLB upon end! (4)
+; ** EVENT management **
+	LDX iol_dev			; **use physdev as index! worth doing here (3)
+	LDA io_c			; get received character
+	CMP #' '			; printable?
+		BCS ci_exitOK		; if so, will not be an event, exit with NO error
+; otherwise might be an event
+; check for binary mode first
+	LDY cin_mode, X		; *get flag, new sysvar 20150617
+	BEQ ci_event		; should process possible event
+		STZ cin_mode, X		; *back to normal mode
+ci_exitOK:
+		STZ cio_lock, X		; *otherwise clear mutex!!! (4)
+		PLB					; essential!
+		_EXIT_OK			; all done without error!
+ci_event:
+	CMP #16				; is it DLE?
+	BNE ci_notdle		; otherwise check next
+		STA cin_mode, X		; *set binary mode! safer and faster!
+		LDY #EMPTY			; and supress received character
+		BRA cio_abort		; restore & notify (will stay locked!)
+ci_notdle:
+	CMP #3				; is it ^C? (TERM)
+	BNE ci_noterm		; otherwise check next
+		LDA #SIGTERM
+		BRA ci_signal		; send signal
+ci_noterm:
+	CMP #4				; is it ^D? (KILL) somewhat dangerous...
+	BNE ci_nokill		; otherwise check next
+		LDA #SIGKILL
+		BRA ci_signal		; send signal
+ci_nokill:
+	CMP #26				; is it ^Z? (STOP)
+		BNE ci_exitOK		; otherwise there is no more to check
+	LDA #SIGSTOP		; last signal to be sent
+ci_signal:
+	STA b_sig			; set signal as parameter
+; much faster KERNEL(GET_PID)
+	LDY run_pid			; internal PID in Y...
+	_KERNEL(B_SIGNAL)	; send signal to myself *** could be patched!
+	LDY #EMPTY			; no character was received
+	SEC					; eeeeeeeek
+	JMP cio_unlock		; release device and exit!
 
 ; ***********************
 ; *** BLIN, get block ***
@@ -190,13 +258,23 @@ cin:
 
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock & cin_mode are kernel structures
-; * 8-bit savvy *
 
 bl_in:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
 	PLB					; set DBR! do not forget another PLB upon end! (4)
+#ifdef	SUPPORT
+	LDX run_arch				; from 6502 code?
+	BEQ bli_24b				; no, nothing to correct
+		STZ bl_ptr+2				; 6502 always in bank zero
+		LDA bl_ptr+1				; check page
+		BNE bli_24b				; all OK
+			TDC					; where is direct page?
+			XBA					; go for MSB (assume page-aligned!)
+			STA bl_ptr+1				; physical address
+bli_24b:
+#endif
 ; proceed
 	TYA					; set flags upon devnum (2)
 	BNE ci_port			; specified (3/2)
@@ -231,50 +309,6 @@ ci_lckdd:
 		JSR (drv_ipt, X)	; direct CALL!!!
 			BCS cio_unlock		; clear MUTEX and return whatever error!
 
-; ** EVENT management **
-; this might be revised, or supressed altogether!
-		LDX iol_dev			; **use physdev as index! worth doing here (3)
-		LDA io_c			; get received character
-		CMP #' '			; printable?
-			BCS ci_exitOK		; if so, will not be an event, exit with NO error
-; otherwise might be an event ** REVISE
-; check for binary mode first
-		LDY cin_mode, X		; *get flag, new sysvar 20150617
-		BEQ ci_event		; should process possible event
-			STZ cin_mode, X		; *back to normal mode
-ci_exitOK:
-			STZ cio_lock, X		; *otherwise clear mutex!!! (4)
-			PLB					; essential!
-			_EXIT_OK			; all done without error!
-ci_event:
-		CMP #16				; is it DLE?
-		BNE ci_notdle		; otherwise check next
-			STA cin_mode, X		; *set binary mode! safer and faster!
-			LDY #EMPTY			; and supress received character
-			BRA cio_abort		; restore & notify (will stay locked!)
-ci_notdle:
-		CMP #3				; is it ^C? (TERM)
-		BNE ci_noterm		; otherwise check next
-			LDA #SIGTERM
-			BRA ci_signal		; send signal
-ci_noterm:
-		CMP #4				; is it ^D? (KILL) somewhat dangerous...
-		BNE ci_nokill		; otherwise check next
-			LDA #SIGKILL
-			BRA ci_signal		; send signal
-ci_nokill:
-		CMP #26				; is it ^Z? (STOP)
-			BNE ci_exitOK		; otherwise there is no more to check
-		LDA #SIGSTOP		; last signal to be sent
-ci_signal:
-		STA b_sig			; set signal as parameter
-; much faster KERNEL(GET_PID)
-		LDY run_pid			; internal PID in Y...
-		_KERNEL(B_SIGNAL)	; send signal to myself *** could be patched!
-		LDY #EMPTY			; no character was received
-		SEC					; eeeeeeeek
-		JMP cio_unlock		; release device and exit!
-
 ci_nph:
 	CMP #64				; first file-dev??? ***
 		BCC ci_win			; below that, should be window manager
@@ -296,6 +330,7 @@ ci_log:
 		BEQ ci_null
 	LDY #N_FOUND		; unknown device
 	JMP cio_abort		; restore & notify
+; fill buffer with zeroes like "/dev/zero"
 ci_null:
 	LDY #0			; reset index, will be complete
 	TYA			; filling value as above
@@ -310,10 +345,18 @@ ci_nll:
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
-; must copy here a suitable loop******************************
-	LDA ticks			; simple placeholder
-	STA io_c			; eeeeeeeeeeeeeeeeek
-	BRA ci_exitOK
+	.xs:
+	LDY #0			; reset index, will be complete
+	.xl: REP #$10		; *** 16-bit index ***
+	LDX bl_siz		; get size in full
+ci_rndl:
+		BEQ ci_exitOK		; nothing else
+; load some random number in A
+	LDA ticks		; simple placeholder***
+	STA [bl_ptr], Y		; clear byte in buffer
+	INY			; go for next
+	DEX			; one less to go
+	BRA ci_rndl
 
 
 ; ******************************
@@ -338,22 +381,23 @@ malloc:
 	LDX #0				; reset index (can be used for storing any 8-bit zero)
 	PHX					; put one zero byte into stack (no need for PHK as this X is needed afterwards)
 	PLB					; preset DBR as default zero!
-	STX ma_align+1		; **clear MSB for the 16-bit BIT!**
+	STZ ma_align+1		; **clear MSB for the 16-bit BIT!**
 
 #ifdef	SUPPORT
 ; detect caller architecture in order to enable 24-bit addressing
 	LDY run_arch		; zero for native 65816, respect X as it holds zero
 	BEQ ma_24b			; OK for 24b addressing
-		LDY #0				; ...or just bank 0 for 6502
+		TXY			; ...or just bank 0 (was in X) for 6502
 		STX ma_rs+2			; clear number of banks just in case!
-		BRA ma_go			; continue
+		BRA ma_lset
 ma_24b:
 	LDY #$FF			; full range of banks
-ma_go:
-; limits set, proceed as usual
-	STY ma_lim			; set limit
+ma_lset:
+#else
+	LDY #$FF			; full range of banks
 #endif
-
+	STY ma_lim			; set limit
+; limits set, proceed as usual
 	LDY ma_rs			; check individual bytes, just in case
 	BEQ ma_nxpg			; no extra page needed
 		INC ma_rs+1			; otherwise increase number of pages
@@ -562,7 +606,6 @@ ma_room:
 ; C = no such used block
 ;
 ; ram_pos & ram_stat are kernel structures
-; * 8-bit savvy *
 
 free:
 	.al: REP #$20		; *** 16-bit memory ***
@@ -652,7 +695,6 @@ fr_join:
 ;		OUTPUT
 ; Y = dev
 ; C = not supported/not available
-; * 8-bit savvy *
 
 open_w:
 	.al: REP #$20		; *** 16-bit memory size ***
@@ -662,6 +704,7 @@ open_w:
 ow_no_window:
 	LDY #DEVICE			; constant default device, REVISE
 ; EXIT_OK on subsequent system calls!!!
+	.as				; back to normal...
 
 ; ********************************************************
 ; *** CLOSE_W,  close window *****************************
@@ -669,13 +712,11 @@ ow_no_window:
 ; ********************************************************
 ;		INPUT
 ; Y = dev
-; * 8-bit savvy *
 
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
 	_EXIT_OK
 
-	.as				; back to normal...
 
 ; **************************************
 ; *** UPTIME, get approximate uptime ***
@@ -683,7 +724,6 @@ free_w:					; doesn't do much, either
 ;		OUTPUT
 ; up_ticks	= 32b tick counter, new format 20170822
 ; up_sec	= 24b approximate uptime in seconds for API compatibility
-; * 8-bit savvy *
 
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
@@ -727,7 +767,6 @@ yield:
 ; def_io	= 16b default std_in (LSB) & stdout (MSB)
 ;
 ; API still subject to change... (register values, rendez-vous mode TBD)
-; * 8-bit savvy *
 
 b_exec:
 ; non-multitasking version
@@ -937,30 +976,25 @@ get_pid:
 ; ex_pt		= 24b pointer to executable code
 ; cpu_ll	= architecture (as stated in headers!)
 ;		USES rh_scan
-;
-; now supports 24-bit addressing! but only for 65816 code
-; otherwise, 8-bit savvy
 
 load_link:
 ; *** first look for that filename in ROM headers ***
-	.al: REP #$20		; *** 16-bit memory ***
 ; no need to set DBR
 
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
-	LDA @run_arch		; will be zero for native 65816 but with extra byte!
-	TAX					; filter out MSB to get proper value eeeeeeeeeek
+	LDA @run_arch		; will be zero for native 65816
 	BEQ ll_24b			; 24-bit enabled
-		LDX #0				; ...or take a 0...*****REVISE
-		STX str_pt+2		; ...and use as default bank
+		STZ str_pt+2		; ..or zero as default bank
 ; *** special corrections are needed in case the pointer is in direct page! ***
-		LDX str_pt+1		; get page number without bank...
+		LDX str_pt+1		; get page numberk...
 		BNE ll_24b			; outside DP, nothing more to correct
-			TDC					; current context location
-			ADC str_pt			; compute actual address (C was clear per ABI)
-			STA str_pt			; store corrected value, 6502 caller should update its local MSB at least!
+			TDC			; current context location
+			XBA			; assume page-aligned!
+			STA str_pt+1		; store corrected value, 6502 caller should update its local MSB at least!
 ll_24b:
 #endif
+	.al: REP #$20		; *** 16-bit memory ***
 
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get whole pointer (minus bank)
@@ -972,7 +1006,7 @@ ll_24b:
 ll_reset:
 ; get initial address! beacuse of the above, no longer adds filename offset!
 	LDA #ROM_BASE		; begin of ROM contents
-	STA	rh_scan			; set local pointer
+	STA rh_scan		; set local pointer
 	STZ rh_scan+2		; standard bank for long pointer into kernel function!
 ll_geth:
 ; ** check whether we are on a valid header!!! **
@@ -1063,18 +1097,11 @@ ll_native:
 ;		USES iol_dev and whatever the driver takes
 ;
 ; cio_lock is a kernel structure
-; * 8-bit savvy *
 
 string:
-; ** actual code from COUT here, might save space using a common routine, but adds a bit of overhead
-; switch DBR as it accesses a lot of kernel data!
-	PHB					; eeeeeeeeek
-	PHK					; zero into stack
-	PLB					; set DBR! do not forget another PLB upon end!
-;****************************** REVISE!!!
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
-	LDA run_arch		; will be zero for native 65816
+	LDA @run_arch		; will be zero for native 65816
 	BEQ str_24b			; 24-bit enabled
 		STZ str_pt+2		; ...or bank 0!
 		LDA str_pt+1		; was zeropage?
@@ -1087,6 +1114,17 @@ string:
 			STA str_pt+1
 str_24b:
 #endif
+	LDY #0			; will be fully cleared...
+	.xl: REP #$10		; *** 16-bit indexes ***
+str_loop:
+		LDA [str_pt], Y		; check pointed char
+			BEQ str_end		; NULL terminates
+		INY			; continue
+		BRA str_loop
+str_end:
+	STX bl_siz		; simply store size!
+	_KERNEL(BOUT)		; and call block output (could be patched)
+	JMP cio_callend		; will return proper error
 
 
 ; ******************************
@@ -1099,7 +1137,6 @@ str_24b:
 ;		OUTPUT
 ; C = some error
 ;		USES rl_dev, rl_cur and whatever CIN/COUT take
-; * 8-bit savvy *
 
 readLN:
 ; no need to switch DBR as regular I/O calls would do it
@@ -1119,7 +1156,6 @@ readLN:
 			STA str_pt+1		; correct pointer
 rl_24b:
 #endif
-
 	STY rl_dev			; preset device ID!
 	STZ rl_cur			; reset variable
 rl_l:
@@ -1228,7 +1264,6 @@ fg_busy:
 ; C = couldn't poweroff or reboot (?)
 ;		USES b_sig (calls B_SIGNAL)
 ; sd_flag is a kernel variable
-; * 8-bit savvy (I hope) *
 
 shutdown:
 ; switch DBR as it accesses some kernel data!
@@ -1393,7 +1428,6 @@ rls_oth:
 ;		OUTPUT
 ; Y			= preset PID (must respect it!)
 ; affects internal sysvars run_pid & run_arch
-; * 8-bit savvy *
 
 set_curr:
 	TYA					; eeeeek, no long STY (2)
