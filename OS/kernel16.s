@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a11
+; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170822-1624
+; last modified 20170901-1315
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6a11", 0	; version in comment
+	.asc	"minimOS•16 0.6a12", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -56,11 +56,14 @@ kern_siz = kern_end - kern_head - 256
 warm:
 	SEI					; interrupts off, just in case
 	CLD					; do not assume anything
-#ifdef	SAFE
+#ifdef		SAFE
 	SEC
 	XCE					; set emulation mode for a moment! will reset to 8-bit registers
 	PHK					; this pushes a zero into stack
 	PLB					; ...and resets data bank eeeeeeeeeek
+	PHK					; stack two zeroes to reset DP
+	PHK					; worth it instead of TCD et al
+	PLD					; even if it was done on firmware!
 #endif
 ; assume interrupts off, binary mode and 65C816 in emulation mode!
 	CLC
@@ -70,20 +73,20 @@ warm:
 
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
-	LDA #k_vec			; get table address, nicer way (3)
+	LDA #k_vec			; get table address (3)
 	STA kerntab			; store parameter (4)
 ; as kernels must reside in bank 0, no need for 24-bit addressing
 	_ADMIN(INSTALL)		; copy jump table, will respect register sizes
 #endif
 
 ; install ISR code (as defined in "isr/irq16.s" below)
-	LDA #k_isr			; get address, nicer way (3)
+	LDA #k_isr			; get address (3)
 	STA kerntab			; no need to know about actual vector location (4)
 	STZ kerntab+2		; required 24b
 	_ADMIN(SET_ISR)		; install routine, will respect sizes
 
-; install BRK code (as defined in "isr/brk16.s", currently from IRQ)
-	LDA #supplied_brk		; get address, nicer way (3)
+; install BRK code (as defined in "isr/brk16.s", currently from IRQ, might move to rom.s)
+	LDA #supplied_brk		; get address (3)
 	STA kerntab			; no need to know about actual vector location (4)
 	STZ kerntab+2		; required 24b
 	_ADMIN(SET_DBG)		; install routine, will respect sizes
@@ -92,6 +95,7 @@ warm:
 
 ; will not try to set jiffy, assumed by firmware
 
+; what to do if scheduler run out if tasks? set here
 	LDX #PW_STAT		; default cmd upon lack of tasks
 	STX sd_flag		; must be done here as will no longer be done on driver init code!
 
@@ -112,7 +116,7 @@ warm:
 ram_init:
 	TXA				; will set MSB as zero
 	STA ram_pos		; store it
-	LDA #SRAM		; number of SRAM pages as defined in options.h *** revise
+	LDA #SRAM		; number of SRAM pages as defined in options.h
 	STA ram_pos+2	; store second entry and we are done!
 
 ; ************************************************
@@ -122,14 +126,13 @@ ram_init:
 ; * will also initialise I/O lock arrays! * 20161129
 
 ; *** 1) initialise stuff ***
-; clear some bytes
 	LDX #0				; reset driver index (2)
+; clear some bytes
 	STZ queue_mx		; reset all indexes, 16-bit already set
-; clear some other bytes
 	STX run_arch		; assume native 65816
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
 
-; already in 16-bit memory mode...
+; init all I/O pointers and flags
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
 		STZ cio_lock, X		; clear I/O locks and interleaved binary flags! (5)
@@ -137,62 +140,45 @@ dr_clear:
 		STA drv_ipt, X		; and for input (5)
 		INX					; go for next entry (2+2)
 		INX
+; might compare against a max-ID and save some RAM, perhaps for 8-bit systems
 		BNE dr_clear		; finish page (3/2)
 
 ; TASKDEV is no longer a thing...
 
 ; *** 2) prepare access to each driver header ***
-; first get the pointer to each driver table
 dr_loop:
 		PHX					; keep current value (3)
+; first create a pointer to it
 		LDA drvrs_ad, X		; get full address (5)
 		BNE dr_inst			; cannot be zero, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
 		STA da_ptr			; store full pointer (4)
-; create entry on IDs table
-		LDY #D_ID			; offset for ID (2)
-		LDA (da_ptr), Y		; get ID code... plus extra byte (6)
-		TAX					; check sign, but also filter extra byte from ID (2)
-		STX dr_id			; keep in local variable as will be often used (3)
+; get some info from header
+		.as: SEP #$20		; *** back to 8-bit memory for a while ***
+; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
+;		LDY #D_ID			; offset for ID (2)
+;		LDA (da_ptr), Y		; get ID code (5)
+;		STA dr_id			; keep in local variable as will be often used (3)
 #ifdef	SAFE
 		BMI dr_phys			; only physical devices (3/2)
-			JMP dr_abort		; reject logical devices (3)
+			JMP dr_abort8		; reject logical devices, from 8-bit code (3)
 dr_phys:
 #endif
-		.as: SEP #$20		; *** back to 8-bit memory for a while ***
-		LDY #D_AUTH			; let us get the provided features
-		LDA (da_ptr), Y		; picking also extra byte...
-		STA dr_feat			; another commonly used value
-		STA dr_aut			; also into temporary variable for checking
 
 ; *** 3) before registering, check whether the driver COULD be successfully installed ***
-; that means 1) there must be room enough on the interrupt queues for its tasks, if provided
-; and 2) the D_INIT routine succeeded as usual
+; that means 1.the ID is not already in use eeeeeeeek
+; 2.there must be room enough on the interrupt queues for its tasks, if provided
+; and 3.the D_INIT routine succeeded as usual
 ; otherwise, skip the installing procedure altogether for that driver
-		LDX #2				; number of queues
-dr_chk:
-			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ) best done in 8-bit!
-			BCC dr_ntsk			; skip verification if task not enabled
-				LDY queue_mx-1, X	; get current tasks in queue
-				CPY #MX_QUEUE		; room for another?
-				BCC dr_ntsk			; there is
-					JMP dr_abort8		; did not checked OK (from 8-bit segment!)
-dr_ntsk:
-			DEX					; let us check next feature
-			BNE dr_chk
-; if arrived here, there is room for interrupt tasks, but check init code
-		.al: REP #$20		; *** 16-bit memory as required by dr_icall ***
-		JSR dr_icall		; call routine (6+...)
-		.al: REP #$20		; *** 16-bit memory again, just in case ***
-		.xs: SEP #$10		; *** 8-bit indexes, again just in case ***
-			BCS dr_abort		; no way, forget about this
 
-; *** 4) driver should be OK to install, just check whether this ID was not in use ***
-		LDA dr_id			; retrieve saved ID (picks extra byte)
-		ASL					; convert to index, no matter the MSB (2+2)
+; *** 3.1) first check whether this ID was not in use ***
+; since I/O pointers are always set, pseudo-drivers are detected too!
+		LDA (da_ptr)			; get ID, not worth a variable (5)
+		ASL					; convert to index (2+2)
 		TAX
 ; new 170523, TASK_DEV is nothing to be checked
+		.al: REP #$20		; *** 16-bit memory *** (3)
 		LDA #dr_error		; will look for this address (3)
 		CMP drv_opt, X		; check whether in use (5)
 			BNE dr_busy			; pointer was not empty (2/3)
@@ -202,24 +188,41 @@ dr_busy:
 			JMP dr_abort		; already in use (3)
 dr_empty:
 
-; *** 4b) Set I/O pointers (if memory allows) ***
-; can do this in a loop, just advancing the pointers...
-; might check here whether I/O are provided!
-;		ASL dr_aut-1		; look for CIN, note trick as not worth going 8-bit!!!
-;		BCC dr_seto			; no input for this!
-			LDY #D_BLIN			; offset for input routine (2)
-			LDA (da_ptr), Y		; get full address (6)
-			STA drv_ipt, X		; store full pointer in table (5)
-dr_seto:
-;		ASL dr_aut-1		; look for COUT, note trick as not worth going 8-bit!!!
-;		BCC dr_nout			; no output for this!
-			LDY #D_BOUT			; offset for output routine (2)
-			LDA (da_ptr), Y		; get full address (6)
-			STA drv_opt, X		; store full pointer in table (5)
-dr_nout:
+; 3.2) check room in queues, where needed
+		.as: SEP #$20			; *** 8-bit memory again *** (3)
+		LDY #D_AUTH			; let us get the provided features (2)
+		LDA (da_ptr), Y			; will be checked in a non-destructive way (5)
+		STA dr_aut			; also a commonly used value (3)
+		LDX #1				; last queue (2)
+dr_chk:
+			ASL				; extract MSB (will be A_POLL first, then A_REQ) best done in 8-bit! (2)
+			BCC dr_ntsk			; skip verification if task not enabled (3/2)
+				LDY queue_mx, X		; get current tasks in queue, no offset (4)
+				CPY #MX_QUEUE		; room for another? (2)
+				BCC dr_ntsk			; there is (3/2)
+					JMP dr_abort8		; or no way OK (3)
+dr_ntsk:
+			DEX					; check next feature (2)
+			BPL dr_chk			; zero included (3/2)
+; 3.3) if arrived here, it is possible to install, but run init code to check
+		.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)
+		JSR dr_icall		; call routine (6+...)
+		.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
+		.xs: SEP #$10		; *** 8-bit indexes, again just in case *** (3)
+			BCS dr_abort		; no way, forget about this (2/3)
+
+; *** 4) Set I/O pointers (if memory allows) ***
+; no longer checks I/O as any driver must provide at least dummy pointers!
+; thus not worth a loop...
+		LDY #D_BLIN			; offset for input routine (2)
+		LDA (da_ptr), Y		; get full address (6)
+		STA drv_ipt, X		; store full pointer in table (5)
+		LDY #D_BOUT			; offset for output routine (2)
+		LDA (da_ptr), Y		; get full address (6)
+		STA drv_opt, X		; store full pointer in table (5)
+
 ; *** 5) register interrupt routines *** new, much cleaner approach
-		LDX dr_feat			; get original auth code (3)
-		STX dr_aut			; and keep for later! (3)
+; dr_aut is now kept intact...
 ; time to get a pointer to the-block-of-pointers (source)
 		LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
 		LDA (da_ptr), Y		; get full address (6)
@@ -318,6 +321,7 @@ dr_call:
 ; * routine for advancing to next queue *
 ; both pointers in dq_ptr (whole queue) and sysptr (pointer in header)
 ; A in 16-bit mode
+	.al:
 dr_nextq:
 	LDA dq_ptr			; get original queue pointer
 	CLC
@@ -420,7 +424,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6a11", 0	; version in comment
+	.asc	"minimOS•16 0.6a12", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
