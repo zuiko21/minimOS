@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170901-1315
+; last modified 20170901-1558
 
 ; just in case
 #define		C816	_C816
@@ -161,6 +161,7 @@ dr_inst:
 ;		LDA (da_ptr), Y		; get ID code (5)
 ;		STA dr_id			; keep in local variable as will be often used (3)
 #ifdef	SAFE
+		LDA (da_ptr)			; check ID if no longer stored above
 		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort8		; reject logical devices, from 8-bit code (3)
 dr_phys:
@@ -211,8 +212,8 @@ dr_ntsk:
 		.xs: SEP #$10		; *** 8-bit indexes, again just in case *** (3)
 			BCS dr_abort		; no way, forget about this (2/3)
 
-; *** 4) Set I/O pointers (if memory allows) ***
-; no longer checks I/O as any driver must provide at least dummy pointers!
+; *** 4) Set I/O pointers ***
+; no longer checks I/O availability as any driver must provide at least dummy pointers!
 ; thus not worth a loop...
 		LDY #D_BLIN			; offset for input routine (2)
 		LDA (da_ptr), Y		; get full address (6)
@@ -224,9 +225,12 @@ dr_ntsk:
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; dr_aut is now kept intact...
 ; time to get a pointer to the-block-of-pointers (source)
+
+pfa_ptr	= sysptr			; *** temporary, should move to locals
+
 		LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
 		LDA (da_ptr), Y		; get full address (6)
-		STA sysptr			; get the pointer into sysptr (move to locals?)
+		STA pfa_ptr		; get the pointer
 ; also a temporary pointer to the particular queue
 		LDA #drv_poll		; must be the first one!
 		STA dq_ptr			; store temporarily
@@ -235,40 +239,43 @@ dr_ntsk:
 		STA dte_ptr			; yet another temporary pointer...
 ; all set now, now easier to use a loop
 		LDX #1				; index for periodic queue (2)
-/*
+; *** suspicious code follows ***
 dr_iqloop:
-			ASL dr_aut-1		; extract MSB (will be A_POLL first, then A_REQ) note trick again
+			.as: SEP #$20		; *** 8-bit shift *** eeeeeeeeeeeeeeek
+			ASL dr_aut		; extract MSB (will be A_POLL first, then A_REQ) eeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 			BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
 				LDY queue_mx, X		; get index of free entry!
-				STY dq_off			; worth saving on a local variable
+;				STY dq_off			; worth saving on a local variable
 				INC queue_mx, X		; add another task in queue
 				INC queue_mx, X		; pointer takes two bytes
 ; install entry into queue
 ; read pointer from header (inline version of dr_itask)
-				LDA (sysptr)		; non-indexed indirect
+				al: REP #$20		; *** 16-bit memory ***
+				LDA (pfa_ptr)		; get pointer
 ; write pointer into queue
-				LDY dq_off			; get index of free entry!
+;				LDY dq_off			; get index of free entry!
 				STA (dq_ptr), Y		; store into reserved place!
 ; save for frequency queue, flags must be enabled for this task!
-				LDY dq_off			; get index of free entry!
-				LDA dr_id			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
+;				LDY dq_off			; get index of free entry!
 				.as: SEP #$20		; *** needs to go into 8-bit mode for a moment ***
+				LDA (da_ptr)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
 				STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also
+				.al: REP #$20		; *** back to 16-bit, flags unaffected *** eeeeeeeeeeeeeeek
 				TXA					; doing periodic?
-				.as: SEP #$20		; *** back to 16-bit, flags unaffected ***
 					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 				JSR dr_nextq		; advance to next queue (frequencies)
 ; read VALUE from header (inline version of dr_itask)
-				LDA (sysptr)		; non-indexed indirect
+				LDA (pfa_ptr)		; non-indexed indirect
 ; write VALUE into queue
-				LDY dq_off			; get index of free entry!
+;				LDY dq_off			; get index of free entry!
 				STA (dq_ptr), Y		; store into reserved place!
 ; *** and copy A into drv_count, unmodified! ***
 				STA drv_cnt, Y		; simply!
 				BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
+			.al: REP #$20		; needed for subsequent routine
 			JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
 dr_doreq:
 ; as this will get into async, switch enabling queue
@@ -277,27 +284,40 @@ dr_doreq:
 			JSR dr_nextq		; go for next queue
 			DEX					; now 0, index for async queue (2)
 			BPL dr_iqloop
-*/
+; *** end of suspicious code ***
 		BRA dr_next			; if arrived here, did not fail initialisation
 
-; *** error handling ***
-; something went wrong, 8-bit mode entry point
-dr_abort8:
-		.al: REP #$20		; *** 16-bit memory in most of the code ***
-; something went wrong, here in 16-bit Memory
-dr_abort:
-; no longer a difference between dr_abort and dr_next? no LOWRAM option here...
-dr_next:
-; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
-; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
-		PLX					; retrieve saved index (4)
-		INX					; update ADDRESS index, even if unsuccessful (2)
-		INX					; eeeeeeeek! pointer arithmetic! (2)
-		JMP dr_loop			; go for next (3)
+; *****************************************
+; *** some driver installation routines ***
+; *****************************************
 
-; ***************************
-; *** points of no return ***
-; ***************************
+; * routine for advancing to next queue *
+; both pointers in dq_ptr (whole queue) and sysptr (pointer in header)
+; A in 16-bit mode
+
+dr_nextq:
+	LDA dq_ptr			; get original queue pointer
+	CLC
+	ADC #MX_QUEUE		; go to next queue
+	STA dq_ptr
+	INC pfa_ptr			; increment the origin pointer!
+	INC pfa_ptr			; not worth the old way
+	RTS
+
+; * routine for copying a pointer from header into a table *
+; X is 0 for async, 1 for periodic, sysptr, dq_off & dq_ptr set as usual
+; WAY simpler as works in 16-bit memory mode!
+dr_itask:
+; read pointer from header
+	LDA (pfa_ptr)		; non-indexed indirect, get LSB in A
+; write pointer into queue
+	LDY dq_off			; get index of free entry!
+	STA (dq_ptr), Y		; store into reserved place!
+	RTS
+
+; ******************************************
+; *** other driver installation routines ***
+; ******************************************
 dr_error:
 	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
@@ -314,39 +334,30 @@ dr_call:
 	.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
 	RTS					; actual CORRECTED jump (6)
 
-; *****************************************
-; *** some driver installation routines ***
-; *****************************************
+; **********************
+; *** error handling ***
+; **********************
+; something went wrong, 8-bit mode entry point
+dr_abort8:
+		.al: REP #$20		; *** 16-bit memory in most of the code ***
+; something went wrong, here in 16-bit Memory
+dr_abort:
+; no longer a difference between dr_abort and dr_next? no LOWRAM option here...
 
-; * routine for advancing to next queue *
-; both pointers in dq_ptr (whole queue) and sysptr (pointer in header)
-; A in 16-bit mode
-	.al:
-dr_nextq:
-	LDA dq_ptr			; get original queue pointer
-	CLC
-	ADC #MX_QUEUE		; go to next queue
-	STA dq_ptr
-	LDA sysptr			; increment the origin pointer!
-	INC
-	INC					; next pointer in header
-	STA sysptr			; eeeeeeeeeeek
-	RTS
+; *******************************
+; *** prepare for next driver ***
+; *******************************
+dr_next:
+; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
+; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
+		PLX					; retrieve saved index (4)
+		INX					; update ADDRESS index, even if unsuccessful (2)
+		INX					; eeeeeeeek! pointer arithmetic! (2)
+		JMP dr_loop			; go for next (3)
 
-; * routine for copying a pointer from header into a table *
-; X is 0 for async, 1 for periodic, sysptr, dq_off & dq_ptr set as usual
-; WAY simpler as works in 16-bit memory mode!
-dr_itask:
-; read pointer from header
-	LDA (sysptr)		; non-indexed indirect, get LSB in A
-; write pointer into queue
-	LDY dq_off			; get index of free entry!
-	STA (dq_ptr), Y		; store into reserved place!
-	RTS
-
-; ***************************************************************
-; *** drivers already installed, clean up things and continue ***
-; ***************************************************************
+; *********************************************************************
+; *** drivers already installed, clean up things and finish booting ***
+; *********************************************************************
 dr_ok:					; *** all drivers inited ***
 	PLX					; discard stored X, beware of 16-bit memory!
 
@@ -354,8 +365,6 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
-
-	.al					; as outside dr_call routine will be doing 16-bit memory!
 
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
