@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a11
+; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170822-1622
+; last modified 20170901-2239
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a11", 0	; version in comment
+	.asc	"minimOS 0.6a12", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -60,6 +60,7 @@ warm:
 	SEC				; would set back emulation mode on C816
 	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
 	ORA 0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
+; should clear DBR & DP...
 #endif
 ; * end of 65816 specific code *
 
@@ -153,8 +154,10 @@ dr_clear:
 		STA drv_opt, X		; set MSB for output (4)
 		STA drv_ipt, X		; and for input (4)
 		INX					; next entry (2)
+; might save RAM comparing against a limit of IDs...
 		BNE dr_clear		; finish page (3/2)
 ; TASKDEV is no longer a thing...
+;	LDX #0			; ...but reset X if using restricted ID array!!!
 ; ++++++
 #endif
 
@@ -169,41 +172,26 @@ dr_inst:
 		STA da_ptr+1		; store pointer MSB (3)
 		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
-; create entry on IDs table ** new 20150219
-		LDY #D_ID			; offset for ID (2)
-		LDA (da_ptr), Y		; get ID code (5)
-		STA dr_id			; keep in local variable as will be often used
+; get some info from header
+; as D_ID is zero, simply indirect will do without variable (not much used anyway)
+;		LDY #D_ID			; offset for ID (2)
+;		LDA (da_ptr), Y		; get ID code (5)
+;		STA dr_id			; keep in local variable as will be often used
 #ifdef	SAFE
+		_LDAY(da_ptr)			; get ID if not stored above
 		BMI dr_phys			; only physical devices (3/2)
 			JMP dr_abort		; reject logical devices (3)
 dr_phys:
 #endif
-		LDY #D_AUTH			; let us get the provided features
-		LDA (da_ptr), Y
-		STA dr_feat			; another commonly used value
-		STA dr_aut			; also into temporary variable for checking
 
 ; *** 3) before registering, check whether the driver COULD be successfully installed ***
-; that means 1) there must be room enough on the interrupt queues for its tasks, if provided
-; and 2) the D_INIT routine succeeded as usual
+; that means 1.the ID must not be in use eeeeeek
+; 2.there must be room enough on the interrupt queues for its tasks, if provided
+; and 3.the D_INIT routine succeeded as usual
 ; otherwise, skip the installing procedure altogether for that driver
-		LDX #2				; number of queues
-dr_chk:
-			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
-			BCC dr_ntsk			; skip verification if task not enabled
-				LDY queue_mx-1, X	; get current tasks in queue
-				CPY #MX_QUEUE		; room for another?
-				BCC dr_ntsk			; yeah!
-dr_nabort:
-					JMP dr_abort		; or did not checked OK
-dr_ntsk:
-			DEX					; let us check next feature
-			BNE dr_chk
-; if arrived here, there is room for interrupt tasks, but check init code
-		JSR dr_icall		; call routine (6+...)
-			BCS dr_nabort		; no way, forget about this
-; *** 4) driver should be OK to install, just check whether this ID was not in use ***
-		LDA dr_id			; retrieve saved ID
+
+; 3.1) first check whether this ID was not in use ***
+		_LDAY (da_ptr)			; retrieve ID
 
 #ifndef	LOWRAM
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
@@ -223,27 +211,50 @@ dr_ntsk:
 dr_busy:
 			JMP dr_abort		; already in use (3)
 dr_empty:
+		STX dr_id			; must keep this eeeeeeeeek
+; ++++++
+#endif
 
-; *** 4b) Set I/O pointers (if memory allows) ***
-; can do this in a loop, just advancing the pointers... now 38b
-; might check here whether I/O are provided!
-;		ASL dr_aut			; look for CIN (5)
-;		BCC dr_seto			; no input for this!
-			LDY #D_BLIN			; same for input routine (2)
-			JSR dr_gind			; get indirect address
-			LDA sysptr			; get driver table LSB (3)
-			STA drv_ipt, X		; store in table (4)
-			LDA sysptr+1		; same for MSB (3+4)
-			STA drv_ipt+1, X
+; 3.2) check room in queues, if needed
+; first get and store requested features
+		LDY #D_AUTH			; let us get the provided features
+		LDA (da_ptr), Y
+		STA dr_aut			; a commonly used value
+; check space in queues
+		LDX #1				; max queue index
+dr_chk:
+			ASL				; extract MSB (will be A_POLL first, then A_REQ)
+			BCC dr_ntsk			; skip verification if task not enabled
+				LDY queue_mx, X		; get current tasks in queue
+				CPY #MX_QUEUE		; room for another?
+				BCC dr_ntsk			; yeah!
+dr_nabort:
+					JMP dr_abort		; or did not checked OK
+dr_ntsk:
+			DEX					; let us check next feature
+			BNE dr_chk
+
+; 3.3) if arrived here, there is room for interrupt tasks, but check init code
+		JSR dr_icall		; call routine (6+...)
+			BCS dr_nabort		; no way, forget about this
+#ifndef	LOWRAM
+; ++++++ 4) Set I/O pointers (if memory allows) ++++++
+; no need to check I/O availability as any driver must supply at least dummy pointers!
+; thus not worth a loop, I think...
+		LDX dr_id			; eeeeeeeeeeeeeeeek (3)
+		LDY #D_BLIN			; input routine (2)
+		JSR dr_gind			; get indirect address
+		LDA sysptr			; get driver table LSB (3)
+		STA drv_ipt, X		; store in table (4)
+		LDA sysptr+1		; same for MSB (3+4)
+		STA drv_ipt+1, X
 dr_seto:
-;		ASL dr_aut			; look for COUT (5)
-;		BCC dr_nout			; no output for this!
-			LDY #D_BOUT			; offset for output routine (2)
-			JSR dr_gind			; get indirect address
-			LDA sysptr			; get driver table LSB (3)
-			STA drv_opt, X		; store in table (4)
-			LDA sysptr+1		; same for MSB (3+4)
-			STA drv_opt+1, X
+		LDY #D_BOUT			; offset for output routine (2)
+		JSR dr_gind			; get indirect address
+		LDA sysptr			; get driver table LSB (3)
+		STA drv_opt, X		; store in table (4)
+		LDA sysptr+1		; same for MSB (3+4)
+		STA drv_opt+1, X
 dr_nout:
 ; ++++++
 #else
@@ -265,8 +276,7 @@ dr_limit:	CPY drv_num			; all done? (4)
 #endif
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
-		LDA dr_feat			; get original auth code (3)
-		STA dr_aut			; and keep for later! (3)
+		LDA dr_aut			; get original auth code (3)
 ; time to get a pointer to the-block-of-pointers (source)
 		LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
 		JSR dr_gind			; get the pointer into sysptr (move to locals?)
@@ -282,7 +292,7 @@ dr_limit:	CPY drv_num			; all done? (4)
 		STA dte_ptr+1
 ; all set now, now easier to use a loop
 		LDX #1				; index for periodic queue (2)
-/*
+; *** suspicious code ***
 dr_iqloop:
 			ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 			BCC dr_noten		; skip installation if task not enabled
@@ -294,8 +304,8 @@ dr_iqloop:
 ; install entry into queue
 				JSR dr_itask		; install into queue
 ; save for frequency queue, flags must be enabled for this task!
+				_LDAY(dr_id)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
 				LDY dq_off			; get index of free entry!
-				LDA dr_id			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
 				STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also
 				TXA					; doing periodic?
@@ -324,7 +334,8 @@ dr_neqnw:
 			JSR dr_nextq		; go for next queue
 			DEX					; now 0, index for async queue (2)
 			BPL dr_iqloop		; eeeeek
-*/
+; *** end of suspicious code ***
+
 ; *** 6) continue initing drivers ***
 		_BRA dr_next		; if arrived here, did not fail initialisation
 
@@ -509,7 +520,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a11", 0
+	.asc	"minimOS 0.6a12", 0
 #endif
 
 kern_end:		; for size computation
