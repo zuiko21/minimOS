@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170901-1558
+; last modified 20170901-1733
 
 ; just in case
 #define		C816	_C816
@@ -178,6 +178,7 @@ dr_phys:
 		LDA (da_ptr)			; get ID, not worth a variable (5)
 		ASL					; convert to index (2+2)
 		TAX
+		STX dr_id			; keep this eeeeeeeek
 ; new 170523, TASK_DEV is nothing to be checked
 		.al: REP #$20		; *** 16-bit memory *** (3)
 		LDA #dr_error		; will look for this address (3)
@@ -215,6 +216,7 @@ dr_ntsk:
 ; *** 4) Set I/O pointers ***
 ; no longer checks I/O availability as any driver must provide at least dummy pointers!
 ; thus not worth a loop...
+		LDX dr_id		; retrieve this eeeeeeeeek
 		LDY #D_BLIN			; offset for input routine (2)
 		LDA (da_ptr), Y		; get full address (6)
 		STA drv_ipt, X		; store full pointer in table (5)
