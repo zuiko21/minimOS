@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170831-2159
+; last modified 20170902-2125
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -91,7 +91,7 @@ cio_phys:
 	LDX drv_num			; number of drivers (3)
 		BEQ cio_nfound		; no drivers at all! (2/3)
 cio_loop:
-		CMP drvrs_id-1, X	; get ID from list, notice trick (4)
+		CMP id_list-1, X	; get ID from list, notice trick (4)
 			BEQ cio_dev			; device found! (2/3)
 		DEX					; go back one (2)
 		BNE cio_loop		; repeat until end, will reach not_found otherwise (3/2)

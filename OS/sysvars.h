@@ -1,6 +1,6 @@
-; minimOS 0.6a6 System Variables
+; minimOS 0.6a7 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170822-1523
+; last modified 20170902-2123
 .bss
 
 ; **** I/O management ****
@@ -10,7 +10,7 @@ drv_opt		.dsb	256			; full page of output driver pointers, new direct scheme 160
 drv_ipt		.dsb	256			; full page of input driver pointers, new direct scheme 160406
 #else
 drv_num		.byt	0			; number of installed drivers
-drvrs_id	.dsb	MAX_DRIVERS	; space for reasonable number of drivers
+id_list		.dsb	MAX_DRIVERS	; space for reasonable number of drivers
 #endif
 
 ; ** I/O flags and locks **

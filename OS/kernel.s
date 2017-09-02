@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170902-2024
+; last modified 20170902-2048
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -469,7 +469,7 @@ dr_ntsk:
 		LDY #0				; reset index (2)
 		BEQ dr_limit		; check whether has something to check, no need for BRA (3)
 dr_scan:
-			CMP drvrs_id, Y		; compare with list entry (4)
+			CMP id_list, Y		; compare with list entry (4)
 				BEQ dr_abort		; already in use, don't register! (2/3)
 			INY					; go for next (2)
 dr_limit:	CPY drv_num			; all done? (4)
@@ -478,7 +478,7 @@ dr_limit:	CPY drv_num			; all done? (4)
 ; if arrived here, succeeded, thus include ID in list
 		_LDAY(da_ptr)		; get ID eeeeeeeeek
 		LDX drv_num			; retrieve single offset (4)
-		STA drvrs_id, X		; store in list, now in RAM (4)
+		STA id_list, X		; store in list, now in RAM (4)
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
@@ -548,7 +548,7 @@ dr_abort:
 ; invalidate ID on list
 			LDY drv_num		; get failed driver index
 			LDA #DEV_NULL		; positive value is unreachable
-			STA drvrs_id, Y		; invalidate entry
+			STA id_list, Y		; invalidate entry
 dr_next:
 ; LOWRAM system keep count of installed drivers
 		INC drv_num		; update count
