@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170901-1733
+; last modified 20170903-1055
 
 ; just in case
 #define		C816	_C816
@@ -124,6 +124,7 @@ ram_init:
 ; ************************************************
 ; sometime will create API entries for these, but new format is urgent!
 ; * will also initialise I/O lock arrays! * 20161129
+; obviously enters in 16-bit memory size!
 
 ; *** 1) initialise stuff ***
 	LDX #0				; reset driver index (2)
@@ -154,6 +155,9 @@ dr_loop:
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
 		STA da_ptr			; store full pointer (4)
+; *** here will begin the future DRV_INST function ***
+; da_ptr will be a kernel parameter
+
 ; get some info from header
 		.as: SEP #$20		; *** back to 8-bit memory for a while ***
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
@@ -163,6 +167,7 @@ dr_inst:
 #ifdef	SAFE
 		LDA (da_ptr)			; check ID if no longer stored above
 		BMI dr_phys			; only physical devices (3/2)
+; logical devices cannot be installed this way, function should return INVALID error
 			JMP dr_abort8		; reject logical devices, from 8-bit code (3)
 dr_phys:
 #endif
@@ -187,6 +192,7 @@ dr_phys:
 		CMP drv_ipt, X		; now check input, just in case (5)
 		BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
+; already in use, function should return FULL error code
 			JMP dr_abort		; already in use (3)
 dr_empty:
 
@@ -194,7 +200,7 @@ dr_empty:
 		.as: SEP #$20			; *** 8-bit memory again *** (3)
 		LDY #D_AUTH			; let us get the provided features (2)
 		LDA (da_ptr), Y			; will be checked in a non-destructive way (5)
-		STA dr_aut			; also a commonly used value (3)
+		STA dr_aut			; also saved for later (3)
 		LDX #1				; last queue (2)
 dr_chk:
 			ASL				; extract MSB (will be A_POLL first, then A_REQ) best done in 8-bit! (2)
@@ -202,16 +208,20 @@ dr_chk:
 				LDY queue_mx, X		; get current tasks in queue, no offset (4)
 				CPY #MX_QUEUE		; room for another? (2)
 				BCC dr_ntsk			; there is (3/2)
+; again, no room for driver, return FULL error code
 					JMP dr_abort8		; or no way OK (3)
 dr_ntsk:
 			DEX					; check next feature (2)
 			BPL dr_chk			; zero included (3/2)
-; 3.3) if arrived here, it is possible to install, but run init code to check
+; 3.3) if arrived here, it is possible to install, but run init code to confirm
 		.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)
 		JSR dr_icall		; call routine (6+...)
-		.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
 		.xs: SEP #$10		; *** 8-bit indexes, again just in case *** (3)
-			BCS dr_abort		; no way, forget about this (2/3)
+; as 816 function exit does not care about *memory* size, just return some error here...
+		.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
+			BCS dr_abort		; no way, forget about this (2/3) see above for function implementation
+
+; if arrived here, it is OK to install the driver!
 
 ; *** 4) Set I/O pointers ***
 ; no longer checks I/O availability as any driver must provide at least dummy pointers!
@@ -228,8 +238,8 @@ dr_ntsk:
 ; dr_aut is now kept intact...
 ; time to get a pointer to the-block-of-pointers (source)
 
-pfa_ptr	= sysptr			; *** temporary, should move to locals
-
+; pfa_ptr moved to locals, ready to become a kernel function!
+;pfa_ptr	= sysptr		; *** temporary, should move to locals
 		LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
 		LDA (da_ptr), Y		; get full address (6)
 		STA pfa_ptr		; get the pointer
@@ -267,10 +277,11 @@ dr_iqloop:
 				.al: REP #$20		; *** back to 16-bit, flags unaffected *** eeeeeeeeeeeeeeek
 				TXA					; doing periodic?
 					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
+; future DEV_INST should just return successfully if BEQ above gets executed...
 				JSR dr_nextq		; advance to next queue (frequencies)
-; read VALUE from header (inline version of dr_itask)
+; read frequency value from header (inline version of dr_itask)
 				LDA (pfa_ptr)		; non-indexed indirect
-; write VALUE into queue
+; write unmodified value into its queue
 ;				LDY dq_off			; get index of free entry!
 				STA (dq_ptr), Y		; store into reserved place!
 ; *** and copy A into drv_count, unmodified! ***
@@ -288,13 +299,14 @@ dr_doreq:
 			BPL dr_iqloop
 ; *** end of suspicious code ***
 		BRA dr_next			; if arrived here, did not fail initialisation
+; function arriving here will simply exit successfully
 
 ; *****************************************
 ; *** some driver installation routines ***
 ; *****************************************
 
 ; * routine for advancing to next queue *
-; both pointers in dq_ptr (whole queue) and sysptr (pointer in header)
+; both pointers in dq_ptr (destination queue) and pfa_ptr (pointer to header)
 ; A in 16-bit mode
 
 dr_nextq:
@@ -306,16 +318,7 @@ dr_nextq:
 	INC pfa_ptr			; not worth the old way
 	RTS
 
-; * routine for copying a pointer from header into a table *
-; X is 0 for async, 1 for periodic, sysptr, dq_off & dq_ptr set as usual
-; WAY simpler as works in 16-bit memory mode!
-dr_itask:
-; read pointer from header
-	LDA (pfa_ptr)		; non-indexed indirect, get LSB in A
-; write pointer into queue
-	LDY dq_off			; get index of free entry!
-	STA (dq_ptr), Y		; store into reserved place!
-	RTS
+; dr_itask is now inlined, and has dq_off already in Y!
 
 ; ******************************************
 ; *** other driver installation routines ***
@@ -328,7 +331,7 @@ dr_icall:
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset
 ; *** assume 16-bit memory and 8-bit indexes ***
 ; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
-; make certain about DBR in calls...
+; make certain about DBR in calls... but should be for kernel/API only
 dr_call:
 	LDA (da_ptr), Y		; destination pointer (6)
 	DEC					; one less for RTS (2)
@@ -349,6 +352,7 @@ dr_abort:
 ; *******************************
 ; *** prepare for next driver ***
 ; *******************************
+; this will remain in kernel loop when DRV_INST is used
 dr_next:
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
@@ -362,7 +366,6 @@ dr_next:
 ; *********************************************************************
 dr_ok:					; *** all drivers inited ***
 	PLX					; discard stored X, beware of 16-bit memory!
-
 
 ; **********************************
 ; ********* startup code ***********
