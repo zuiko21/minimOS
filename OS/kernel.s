@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170902-2048
+; last modified 20170903-1933
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -233,8 +233,6 @@ dr_ntsk:
 ; 4) Set I/O pointers
 ; no need to check I/O availability as any driver must supply at least dummy pointers!
 ; thus not worth a loop, I think...
-
-pfa_ptr	= sysptr			; temporary var, move to locals!!!
 		LDX dr_id			; eeeeeeeeeeeeeeeek (3)
 		LDY #D_BLIN			; input routine (2)
 		JSR dr_gind			; get indirect address
@@ -277,7 +275,7 @@ dr_iqloop:
 ; install entry into queue
 				JSR dr_itask		; install into queue
 ; save for frequency queue, flags must be enabled for this task!
-				_LDAY(dr_id)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
+				_LDAY(da_ptr)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default eeeeeeek
 				LDY dq_off			; get index of free entry!
 				STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also

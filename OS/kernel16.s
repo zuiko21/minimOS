@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6a12
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170903-1055
+; last modified 20170903-1932
 
 ; just in case
 #define		C816	_C816
@@ -239,7 +239,6 @@ dr_ntsk:
 ; time to get a pointer to the-block-of-pointers (source)
 
 ; pfa_ptr moved to locals, ready to become a kernel function!
-;pfa_ptr	= sysptr		; *** temporary, should move to locals
 		LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
 		LDA (da_ptr), Y		; get full address (6)
 		STA pfa_ptr		; get the pointer

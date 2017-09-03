@@ -1,6 +1,6 @@
-; minimOS 0.6a7 zero-page system variables
+; minimOS 0.6a8 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170822-1601
+; last modified 20170903-1939
 
 .zero
 * = 0
@@ -37,22 +37,31 @@ locals:						; old label for compatibility
 ; TO DO TO DO ** should add somewhere a pointer for execution parameters/registers **
 
 ; *** include aliases here for local1/locpt1 ***
-dr_aut: ma_ix: mm_sig: iol_dev:
+dr_aut: ma_ix: mm_sig: iol_dev:		; 8 bit
+
+dq_off	= dr_aut+1			; 8b
+dq_ptr	= dr_aut+2			; 16b
+
 local1: locpt1	.dsb	4	; variables for kernel functions @ $E4
 
-dq_off	= dr_aut+1
-dq_ptr	= dr_aut+2
-
 ; *** include aliases here for local2/locpt2 ***
-da_ptr: exec_p: ma_lim:
+ma_lim:					; 8 bit
+pfa_ptr:				; 16 bit
+
+; exec_p no longer used???
+
+rl_dev	= pfa_ptr+2			; 8b
+dr_id	= rl_dev			; 8b
+
 local2: locpt2	.dsb	4	; variables for kernel functions @ $E8
 
-dr_id	= da_ptr+2
-dr_feat	= da_ptr+3
-rl_dev	= dr_id
-
 ; *** include aliases here for local3/locpt3 ***
-dte_ptr: exe_sp: rh_scan: rl_cur: ex_wr:
+rl_cur:					; 8 bit
+dte_ptr:				; 16 bit
+rh_scan:				; 16/24 bit
+
+; exe_sp & ex_wr no longer used???
+
 local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 
 ; ***********************
@@ -60,31 +69,33 @@ local3: locpt3	.dsb	4	; variables for kernel functions @ $EC
 ; ***********************
 
 ; *** include aliases here for zpar3/zaddr3 ***
-b_sig: kerntab: ln_siz:
-ex_pt: ma_rs: bl_ptr:			; mandatory 24-bit size
+b_sig:					; 8 bit
+ma_rs:					; 8/16 bit
+ln_siz: bl_siz: da_ptr:			; 16 bit
+ex_pt:					; 16/24 bit
+
+k_ram	= ma_rs+2			; 8b, Kernel RAM pages (0 = 128 byte system)
+b_ram	= ma_rs+3			; 8b, Banks of "high" memory (65816 only)
 
 z10:z10W:z10L:				; old labels for compatibility
 zpar3: zaddr3	.dsb	4	; up to 4 bytes, including older names @ $F0
 
-k_ram	= ma_rs+2			; Kernel RAM pages (0 = 128 byte system)
-b_ram	= ma_rs+3			; Banks of "high" memory (65816 only)
-
 ; *** include aliases here for zpar2/zaddr2 ***
-def_io: irq_hz
-ma_pt: str_pt: bl_ptr:			; mandatory 24-bit size
+def_io: irq_hz: da_ptr: kernptr:	; 16 bit
+ma_pt: str_pt: bl_ptr:			; 16/24 bit
 
-z6:z6W:z6L:					; old labels for compatibility
+z6:z6W:z6L:				; old labels for compatibility
 zpar2: zaddr2	.dsb	4	; up to 4 bytes, including older names @ $F4
 
 ; *** include aliases here for zpar/zaddr ***
-up_ticks: io_c: ma_align: cpu_ll:
-w_rect:				; 32-bit
+io_c: ma_align: cpu_ll:			; 8 bit
+w_rect:	up_ticks:			; 32 bit
 
-z2:z2W:z2L:					; old labels for compatibility
-zpar: zaddr		.dsb	4	; up to 4 bytes, including older names @ $F8
+c_speed	= cpu_ll+1			; 8b
+up_sec	= up_ticks+1			; 24b, new source-compatible format
 
-c_speed	= cpu_ll+1
-up_sec	= up_ticks+1		; new source-compatible format
+z2:z2W:z2L:				; old labels for compatibility
+zpar: zaddr	.dsb	4	; up to 4 bytes, including older names @ $F8
 
 ; ***********************************************
 ; ** reserved for system use during interrupts **
