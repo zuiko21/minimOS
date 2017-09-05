@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
-; v0.6a1
+; v0.6a2
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170905-2114
+; last modified 20170905-2318
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -131,9 +131,9 @@ vdu_prn:
 	PHA			; in case gets modified...
 	LDY #0			; reset index
 vp_l:
+		_PHY			; keep this
 		LDA (bl_ptr), Y		; buffer contents...
 		STA io_c		; ...will be sent
-		_PHY			; keep this
 		JSR vdu_char		; *** print one byte ***
 			BCS vdu_exit		; any error ends transfer!
 		_PLY			; restore index
@@ -141,11 +141,12 @@ vp_l:
 		DEC bl_siz		; one less to go
 			BNE vp_l		; no wrap, continue
 		LDA bl_siz+1		; check MSB otherwise
-			BEQ vdu_rts		; no more!
+			BEQ vdu_end		; no more!
 		DEC bl_siz+1		; ...or one page less
-		BRA _l
+		BRA vp_l
 vdu_exit:
 	PLA			; discard saved index
+vdu_end:
 	PLA			; get saved MSB...
 	STA bl_ptr+1		; ...and restore it
 vdu_rts:
@@ -155,6 +156,36 @@ vdu_rts:
 ; *** print one char in io_c ***
 ; ******************************
 vdu_char:
+; first check whether control char or printable
+	LDA io_c		; get char
+	CMP #FORMFEED		; clear screen?
+	BNE vch_nff		; not
+		JMP vdu_cls		; ...or clear and return!
+vch_nff:
+
+; convert ASCII into pointer offset, needs 11bit
+	_STZA io_c+1		; clear MSB
+	LDX #3			; will shift 3 bits left
+vch_sh:
+		ASL io_c		; shift left
+		ROL io_c+1
+		DEX			; next shift
+		BNE vch_sh
+; add offset to font base address
+	LDA #<vdu_font		; add to base...
+	CLC
+	ADC io_c		; ...the computed offset
+	STA local1		; store locally
+	LDA #>vdu_font		; same for MSB
+	ADC io_c+1
+	STA local1+1		; local1 is source pointer
+; create local destination pointer
+	LDY vdu_cur		; get current position
+	LDA vdu_cur+1
+	STY local2		; local2 will be destination pointer
+	STA local2+1
+; copy from font (+1...) to VRAM (+1024...)
+	
 
 
 ; ********************
