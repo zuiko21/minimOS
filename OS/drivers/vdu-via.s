@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
-; v0.6a2
+; v0.6a3
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170905-2318
+; last modified 20170906-2213
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -42,7 +42,7 @@
 
 ; *** driver description ***
 srs_info:
-	.asc	"32 char VIA-VDU v0.6a1", 0
+	.asc	"32 char VIA-VDU v0.6a3", 0
 
 vdu_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
@@ -157,19 +157,27 @@ vdu_rts:
 ; ******************************
 vdu_char:
 ; first check whether control char or printable
-	LDA io_c		; get char
-	CMP #FORMFEED		; clear screen?
-	BNE vch_nff		; not
-		JMP vdu_cls		; ...or clear and return!
+	LDA io_c		; get char (3)
+	CMP #' '		; printable? (2)
+	BCS vch_prn		; it is! skip further comparisons (3)
+		CMP #FORMFEED		; clear screen?
+		BNE vch_nff		; not
+			JMP vdu_cls		; ...or clear and return!
 vch_nff:
-
+		CMP #CR			; newline?
+		BNE vxh_ncr		; not
+			JMP vdu_cr		; ...or modify pointers and return
+vch_ncr:
+		CMP #HTAB
+; ************************* TO BE DONE **********************
+vch_prn:
 ; convert ASCII into pointer offset, needs 11bit
-	_STZA io_c+1		; clear MSB
-	LDX #3			; will shift 3 bits left
+	_STZA io_c+1		; clear MSB (3)
+	LDX #3			; will shift 3 bits left (2)
 vch_sh:
-		ASL io_c		; shift left
+		ASL io_c		; shift left (5+5)
 		ROL io_c+1
-		DEX			; next shift
+		DEX			; next shift (2+3)
 		BNE vch_sh
 ; add offset to font base address
 	LDA #<vdu_font		; add to base...
@@ -184,9 +192,48 @@ vch_sh:
 	LDA vdu_cur+1
 	STY local2		; local2 will be destination pointer
 	STA local2+1
+; get VIA ready, assume all outputs
+	LDA VIA_U+IORB		; current PB (4)
+	AND #%00001000		; respect PB3 only (2)
+	ORA #$D1		; command = latch LOW address (2)
+	STA VIA_U+IORB		; set command $D1/D9... (4)
+	LDX local2		; get destination LSB (3)
+	STX VIA_U+IORA		; as data to be latched... (4)
+	DEC VIA_U+IORB		; ...now! ready for MSB (6)
+	TXA			; current command (2)
+	DEX			; worth keeping this value for terminating writes (2)
+	_INC			; also interesting as most used commands are not contiguous (2)
+	STA local2+2		; keep here as run out of registers (3)
 ; copy from font (+1...) to VRAM (+1024...)
-	
-
+	LDY #0			; scanline counter
+vch_pl:
+; transfer byte from glyph data to VRAM thru VIA...
+		LDA local2+1		; get destination MSB (3)
+		STA VIA_U+IORA		; as data to be latched... (4)
+		LDA local2+2		; stored Write command (3)
+		STA VIA_U+IORB		; ...now! ready for data write (4)
+		LDA (local1), Y		; get glyph data (5)
+		STA VIA_U+IORA		; as data to be latched... (4)
+		STX VIA_U+IORB		; ...now! quick return to LatchH (4)
+; advance to next scanline
+		LDA local2+1		; get current MSB (3)
+		CLC
+		ADC #4			; offset for next scanline is 1024 (2+2)
+		STA local2+1		; update (3)
+		INY			; next scanline (2)
+		CPY #8			; all done? (2)
+		BNE vch_pl		; continue otherwise (3)
+; printing is done, now advance current position
+vch_adv:
+	INC vdu_cur		; advance to next character (6)
+	BNE vch_ok		; all done, no wrap (3)
+		INC vdu_cur+1		; or increment MSB (6)
+		LDA vdu_cur+1		; check position (4)
+		CMP #>VR_BASE+1024	; all lines done? (2)
+		BCC vch_ok		; no, just exit (3)
+; otherwise must scroll... via CRTC *********** TBD
+vch_ok:
+	_DR_OK
 
 ; ********************
 ; *** several data ***
