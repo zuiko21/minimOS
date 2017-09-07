@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170906-2213
+; last modified 20170907-2254
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -67,7 +67,7 @@ vi_crl:
 		STX VIA_U+IORA		; desired register
 		INC VIA_U+IORB		; pulse E, latch address...
 		INC VIA_U+IORB		; ...and set RS=1
-		LDA vdu_tab, X		; get value for it
+		LDA vdu_data, X		; get value for it
 		STA VIA_U+IORA		; on data port
 		INC VIA_U+IORB		; pulse E, set register...
 		STY VIA_U+IORB		; ...and back to idle!
@@ -77,10 +77,6 @@ vi_crl:
 ; for easier wrapping and expansion, 8 KiB goes $E000-$FFFF
 	VR_BASE	=	$E000
 
-	LDA #>VR_BASE		; base address
-	LDY #<VR_BASE
-	STY vdu_ba		; set standard start point
-	STA vdu_ba+1
 ; software cursor will be set by CLS routine!
 ; clear all VRAM!
 	JSR vdu_cls		; reuse code upon Form Feed
@@ -90,14 +86,20 @@ vi_crl:
 ; ***************************************
 ; *** routine for clearing the screen ***
 ; ***************************************
-; takes ((27x256)+34)x32+33 ~ 222kt
+; takes ((27x256)+34)x32+29 ~ 222kt
 vdu_cls:
-	LDY vdu_ba		; get current base from vars (4+4)
-	LDA vdu_ba+1
+	LDA #>VR_BASE		; base address
+	LDY #<VR_BASE
+	STY vdu_ba		; set standard start point
+	STA vdu_ba+1
 	STY local1		; set local pointer... (3+3)
 	STA local1+1
 	STY vdu_cur		; ...and restore home position (4+4)
 	STA vdu_cur+1
+; new, preset scrolling limit
+	CLC
+	ADC #4			; 4*256 visible chars
+	STA vdu_sch		; sst new var
 ; get VIA ready, assume all outputs
 	LDA VIA_U+IORB		; current PB (4)
 	AND #%00001000		; respect PB3 only (2)
@@ -165,11 +167,18 @@ vdu_char:
 			JMP vdu_cls		; ...or clear and return!
 vch_nff:
 		CMP #CR			; newline?
-		BNE vxh_ncr		; not
+		BNE vch_ncr		; not
 			JMP vdu_cr		; ...or modify pointers and return
 vch_ncr:
-		CMP #HTAB
-; ************************* TO BE DONE **********************
+		CMP #HTAB		; tab?
+		BNE vch_ntb
+			JMP vdu_tab		; advance cursor
+vch_ntb:
+		CMP #BS			; backspace?
+		BNE vch_nbs
+			JMP vdu_bs		; backspace
+vch_nbs:
+
 vch_prn:
 ; convert ASCII into pointer offset, needs 11bit
 	_STZA io_c+1		; clear MSB (3)
@@ -228,17 +237,43 @@ vch_adv:
 	INC vdu_cur		; advance to next character (6)
 	BNE vch_ok		; all done, no wrap (3)
 		INC vdu_cur+1		; or increment MSB (6)
+; check whether scrolling is needed
+vch_sck:
 		LDA vdu_cur+1		; check position (4)
-		CMP #>VR_BASE+1024	; all lines done? (2)
-		BCC vch_ok		; no, just exit (3)
+		CMP #>vdu_sch		; all lines done? (2)
+		BNE vch_ok		; no, just exit (3)
 ; otherwise must scroll... via CRTC *********** TBD
+; update vdu_sch***********
 vch_ok:
 	_DR_OK
+
+; *** carriage return ***
+; quite easy as 32 char per line
+vdu_cr:
+	LDA vdu_cur		; get LSB
+	AND #%11100000		; modulo 32
+	CLC
+	ADC #32			; increment line
+vcr_chc:
+	BCC vch_ok		; seems OK
+		INC vdu_cur+1		; or propagate carry...
+		_BRA vch_sck		; ...and check for scrolling
+
+; *** tab ***
+; ************************* TO BE DONE **********************
+; placeholder without clearing, 8 stops
+vdu_tab:
+	LDA vdu_cur		; get LSB
+	AND #%11111000		; modulo 8
+	CLC
+	ADC #8			; increment position
+	_BRA vcr_chc		; ...and check for scrolling as usual
+
 
 ; ********************
 ; *** several data ***
 ; ********************
 
 ; CRTC registers initial values
-vdu_tab:
+vdu_data:
 	.byt
