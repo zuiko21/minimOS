@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170907-2254
+; last modified 20170908-1442
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -269,6 +269,8 @@ vdu_tab:
 	ADC #8			; increment position
 	_BRA vcr_chc		; ...and check for scrolling as usual
 
+; *** backspace ***
+vdu_bs:
 
 ; ********************
 ; *** several data ***
