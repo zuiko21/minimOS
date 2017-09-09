@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a12
+; v0.6a13
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170903-1932
+; last modified 20170909-1613
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6a12", 0	; version in comment
+	.asc	"minimOS•16 0.6a13", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -168,7 +168,7 @@ dr_inst:
 		LDA (da_ptr)			; check ID if no longer stored above
 		BMI dr_phys			; only physical devices (3/2)
 ; logical devices cannot be installed this way, function should return INVALID error
-			JMP dr_abort8		; reject logical devices, from 8-bit code (3)
+			JMP dr_iabort		; reject logical devices (3)
 dr_phys:
 #endif
 
@@ -192,8 +192,8 @@ dr_phys:
 		CMP drv_ipt, X		; now check input, just in case (5)
 		BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
-; already in use, function should return FULL error code
-			JMP dr_abort		; already in use (3)
+; already in use, function should return BUSY error code
+			JMP dr_babort		; already in use (3)
 dr_empty:
 
 ; 3.2) check room in queues, where needed
@@ -209,7 +209,7 @@ dr_chk:
 				CPY #MX_QUEUE		; room for another? (2)
 				BCC dr_ntsk			; there is (3/2)
 ; again, no room for driver, return FULL error code
-					JMP dr_abort8		; or no way OK (3)
+					JMP dr_fabort		; or no way OK (3)
 dr_ntsk:
 			DEX					; check next feature (2)
 			BPL dr_chk			; zero included (3/2)
@@ -217,9 +217,9 @@ dr_ntsk:
 		.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)
 		JSR dr_icall		; call routine (6+...)
 		.xs: SEP #$10		; *** 8-bit indexes, again just in case *** (3)
-; as 816 function exit does not care about *memory* size, just return some error here...
+; as 816 function exit does not care about *memory* size, just return some error here... UNIMPLEMENTED
+			BCS dr_uabort		; no way, forget about this (2/3) see above for function implementation
 		.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
-			BCS dr_abort		; no way, forget about this (2/3) see above for function implementation
 
 ; if arrived here, it is OK to install the driver!
 
@@ -275,7 +275,7 @@ dr_iqloop:
 ; let us see if we are doing periodic task, in case frequency must be set also
 				.al: REP #$20		; *** back to 16-bit, flags unaffected *** eeeeeeeeeeeeeeek
 				TXA					; doing periodic?
-					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
+					BEQ dr_ended		; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 ; future DEV_INST should just return successfully if BEQ above gets executed...
 				JSR dr_nextq		; advance to next queue (frequencies)
 ; read frequency value from header (inline version of dr_itask)
@@ -297,8 +297,21 @@ dr_doreq:
 			DEX					; now 0, index for async queue (2)
 			BPL dr_iqloop
 ; *** end of suspicious code ***
-		BRA dr_next			; if arrived here, did not fail initialisation
+		BRA dr_ended		; if arrived here, did not fail initialisation
 ; function arriving here will simply exit successfully
+
+; **********************
+; *** error handling ***
+; **********************
+; logical devices cannot be installed
+dr_iabort:
+
+dr_fabort:
+dr_babort:
+dr_uabort:
+	_DR_ERR
+; no longer a difference between dr_abort and dr_next? no LOWRAM option here...
+dr_ended:
 
 ; *****************************************
 ; *** some driver installation routines ***
@@ -337,16 +350,6 @@ dr_call:
 	PHA					; push it (4)
 	.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
 	RTS					; actual CORRECTED jump (6)
-
-; **********************
-; *** error handling ***
-; **********************
-; something went wrong, 8-bit mode entry point
-dr_abort8:
-		.al: REP #$20		; *** 16-bit memory in most of the code ***
-; something went wrong, here in 16-bit Memory
-dr_abort:
-; no longer a difference between dr_abort and dr_next? no LOWRAM option here...
 
 ; *******************************
 ; *** prepare for next driver ***
@@ -437,7 +440,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6a12", 0	; version in comment
+	.asc	"minimOS•16 0.6a13", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
