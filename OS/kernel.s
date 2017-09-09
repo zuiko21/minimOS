@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a12
+; v0.6a13
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170903-1933
+; last modified 20170909-2242
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a12", 0	; version in comment
+	.asc	"minimOS 0.6a13", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -175,7 +175,8 @@ dr_inst:
 #ifdef	SAFE
 		_LDAY(da_ptr)			; get ID if not stored above
 		BMI dr_phys			; only physical devices (3/2)
-			JMP dr_abort		; reject logical devices (3)
+; separate function issues INVALID error
+			JMP dr_iabort		; reject logical devices (3)
 dr_phys:
 #endif
 
@@ -203,7 +204,8 @@ dr_phys:
 		CMP drv_ipt+1, X	; now check input, just in case (4)
 		BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
-			JMP dr_abort		; already in use (3)
+; separate function issues BUSY error
+			JMP dr_babort		; already in use (3)
 dr_empty:
 		STX dr_id			; must keep this eeeeeeeeek
 
@@ -221,14 +223,18 @@ dr_chk:
 				CPY #MX_QUEUE		; room for another?
 				BCC dr_ntsk			; yeah!
 dr_nabort:
-					JMP dr_abort		; or did not checked OK
+; separate function issues FULL error
+					JMP dr_fabort		; or did not checked OK
 dr_ntsk:
 			DEX					; let us check next feature
 			BNE dr_chk
 
 ; 3.3) if arrived here, there is room for interrupt tasks, but check init code
 		JSR dr_icall		; call routine (6+...)
-			BCS dr_nabort		; no way, forget about this
+		BCC dr_succ		; success
+; separate function issues UNAVAIL error
+			JMP dr_uabort		; no way, forget about this
+dr_succ:
 
 ; 4) Set I/O pointers
 ; no need to check I/O availability as any driver must supply at least dummy pointers!
@@ -280,7 +286,7 @@ dr_iqloop:
 				STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also
 				TXA					; doing periodic?
-					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
+					BEQ dr_done			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 				JSR dr_nextq		; advance to next queue (frequencies)
 				JSR dr_itask		; same for frequency queue
 ; *** must copy here original frequency (PLUS 256) into drv_cnt ***
@@ -306,13 +312,20 @@ dr_neqnw:
 			DEX					; now 0, index for async queue (2)
 			BPL dr_iqloop		; eeeeek
 ; *** end of suspicious code ***
+		BRA dr_done
+; *** error handling ***
+dr_iabort:
+dr_fabort:
+dr_babort:
+dr_nabort:
+dr_next:
+; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
+
+dr_done:
+; successful installation! end of function
 
 ; *** 6) continue initing drivers ***
 
-dr_abort:
-; *** if arrived here, driver initialisation failed in some way! ***
-dr_next:
-; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
 		_PLX				; retrieve saved index (4)
 		INX					; update ADDRESS index, even if unsuccessful (2)
@@ -425,7 +438,7 @@ dr_inst:
 #ifdef	SAFE
 		_LDAY(da_ptr)			; get ID as not stored above
 		BMI dr_phys			; only physical devices (3/2)
-			JMP dr_abort		; reject logical devices (3)
+			JMP dr_iabort		; reject logical devices (3)
 dr_phys:
 #endif
 
@@ -451,7 +464,7 @@ dr_chk:
 				CPY #MX_QUEUE		; room for another?
 				BCC dr_ntsk			; yeah!
 dr_nabort:
-					JMP dr_abort		; or did not checked OK
+					JMP dr_fabort		; or did not checked OK
 dr_ntsk:
 			DEX					; let us check next feature
 			BNE dr_chk
@@ -468,7 +481,7 @@ dr_ntsk:
 		BEQ dr_limit		; check whether has something to check, no need for BRA (3)
 dr_scan:
 			CMP id_list, Y		; compare with list entry (4)
-				BEQ dr_abort		; already in use, don't register! (2/3)
+				BEQ dr_babort		; already in use, do not register! (2/3)
 			INY					; go for next (2)
 dr_limit:	CPY drv_num			; all done? (4)
 			BNE dr_scan			; go for next (3/2)
@@ -511,7 +524,7 @@ dr_iqloop:
 				STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also
 				TXA					; doing periodic?
-					BEQ dr_next			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
+					BEQ dr_done			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 				JSR dr_nextq		; advance to next queue (frequencies)
 				JSR dr_itask		; same for frequency queue
 ; *** must copy here original frequency (PLUS 256) into drv_cnt ***
@@ -539,17 +552,32 @@ dr_neqnw:
 ; *** end of suspicious code ***
 
 ; *** 6) continue initing drivers ***
-		_BRA dr_next		; if arrived here, did not fail
+		_BRA dr_ended		; if arrived here, did not fail
 
-dr_abort:
+; *** error handling ***
+dr_iabort:
+	LDY #INVALID
+	_BRA dr_abort
+dr_babort:
+	LDY #INVALID
+	_BRA dr_abort
+dr_fabort:
+	LDY #FULL
+	_BRA dr_abort
+dr_uabort:
+	LDY #UNAVAIL
 ; *** if arrived here, driver initialisation failed in anyway ***
 ; invalidate ID on list
-			LDY drv_num		; get failed driver index
-			LDA #DEV_NULL		; positive value is unreachable
-			STA id_list, Y		; invalidate entry
-dr_next:
+dr_abort:
+	SEC
+	LDX drv_num		; get failed driver index
+	LDA #DEV_NULL		; positive value is unreachable
+	STA id_list, X		; invalidate entry
+dr_ended:
 ; LOWRAM system keep count of installed drivers
-		INC drv_num		; update count
+	INC drv_num		; update count
+; success! end of function
+
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
 		_PLX				; retrieve saved index (4)
@@ -709,7 +737,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a12", 0
+	.asc	"minimOS 0.6a13", 0
 #endif
 
 kern_end:		; for size computation
