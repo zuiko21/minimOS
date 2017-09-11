@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a13
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170909-2242
+; last modified 20170911-2145
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -167,6 +167,9 @@ dr_inst:
 		STA da_ptr+1		; store pointer MSB (3)
 		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
+; *** here comes the call to API function ***
+;		KERNEL(DRV_INST)	; try to install this driver
+; *** code for separate API function ***
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 ;		LDY #D_ID			; offset for ID (2)
@@ -312,17 +315,31 @@ dr_neqnw:
 			DEX					; now 0, index for async queue (2)
 			BPL dr_iqloop		; eeeeek
 ; *** end of suspicious code ***
-		BRA dr_done
+dr_done:
+		BRA dr_next		; ***remove in function
+; function will exit successfully here
+;	EXIT_OK
+
 ; *** error handling ***
 dr_iabort:
+	LDY #INVALID
+	_BRA dr_abort
 dr_fabort:
+	LDY #FULL
+	_BRA dr_abort
 dr_babort:
-dr_nabort:
-dr_next:
-; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
-
+	LDY #BUSY
+	_BRA dr_abort
+dr_uabort:
+	LDY #INVALID
+dr_abort:
+; standard error exit, no macro here
+;	SEC
+;	RTS
 dr_done:
-; successful installation! end of function
+; *** end of API function ***
+dr_next:
+; successful installation!
 
 ; *** 6) continue initing drivers ***
 
@@ -433,6 +450,9 @@ dr_inst:
 		STA da_ptr+1		; store pointer MSB (3)
 		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
+; *** here comes the call to API function ***
+;		KERNEL(DRV_INST)	; try to install this driver
+; *** code for separate API function ***
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 #ifdef	SAFE
@@ -554,41 +574,9 @@ dr_neqnw:
 ; *** 6) continue initing drivers ***
 		_BRA dr_ended		; if arrived here, did not fail
 
-; *** error handling ***
-dr_iabort:
-	LDY #INVALID
-	_BRA dr_abort
-dr_babort:
-	LDY #INVALID
-	_BRA dr_abort
-dr_fabort:
-	LDY #FULL
-	_BRA dr_abort
-dr_uabort:
-	LDY #UNAVAIL
-; *** if arrived here, driver initialisation failed in anyway ***
-; invalidate ID on list
-dr_abort:
-	SEC
-	LDX drv_num		; get failed driver index
-	LDA #DEV_NULL		; positive value is unreachable
-	STA id_list, X		; invalidate entry
-dr_ended:
-; LOWRAM system keep count of installed drivers
-	INC drv_num		; update count
-; success! end of function
-
-; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
-; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
-		_PLX				; retrieve saved index (4)
-		INX					; update ADDRESS index, even if unsuccessful (2)
-		INX					; eeeeeeeek! pointer arithmetic! (2)
-		JMP dr_loop			; go for next (3)
-
-; ***************************
-; *** points of no return ***
-; ***************************
-
+; *****************************************
+; *** some driver installation routines ***
+; *****************************************
 dr_icall:
 	LDY #D_INIT			; original pointer offset (2)
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
@@ -602,10 +590,6 @@ dr_call:
 	PHA					; push LSB (3)
 	PHP					; 816 is expected to be in emulation mode anyway (3)
 	RTI					; actual jump (6)
-
-; *****************************************
-; *** some driver installation routines ***
-; *****************************************
 
 ; * get indirect address from driver pointer table, 13 bytes, 33 clocks *
 ; da_ptr pointing to header, Y has the offset in table, returns pointer in sysptr
@@ -651,6 +635,45 @@ dr_itask:
 	PLA					; was stacked!
 	STA (dq_ptr), Y
 	RTS
+
+; **********************
+; *** error handling ***
+; **********************
+dr_iabort:
+	LDY #INVALID
+	_BRA dr_abort
+dr_babort:
+	LDY #BUSY
+	_BRA dr_abort
+dr_fabort:
+	LDY #FULL
+	_BRA dr_abort
+dr_uabort:
+	LDY #UNAVAIL
+
+; *** if arrived here, driver initialisation failed in anyway ***
+; invalidate ID on list
+dr_abort:
+	LDX drv_num		; get failed driver index
+	LDA #DEV_NULL		; positive value is unreachable
+	STA id_list, X		; invalidate entry
+;	SEC
+;	RTS			; no macro needed as Carry was set
+; *** function exits here if failed ***
+
+dr_ended:
+; LOWRAM system keep count of installed drivers
+	INC drv_num		; update count
+; success!
+;	EXIT_OK
+; ***** end of function *****
+
+; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
+; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
+		_PLX				; retrieve saved index (4)
+		INX					; update ADDRESS index, even if unsuccessful (2)
+		INX					; eeeeeeeek! pointer arithmetic! (2)
+		JMP dr_loop			; go for next (3)
 
 ; ***************************************************************
 ; *** drivers already installed, clean up things and continue ***
