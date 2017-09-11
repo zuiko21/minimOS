@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a13
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170911-2145
+; last modified 20170911-2159
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -316,42 +316,13 @@ dr_neqnw:
 			BPL dr_iqloop		; eeeeek
 ; *** end of suspicious code ***
 dr_done:
-		BRA dr_next		; ***remove in function
+		_BRA dr_next		; ***remove in function
 ; function will exit successfully here
 ;	EXIT_OK
 
-; *** error handling ***
-dr_iabort:
-	LDY #INVALID
-	_BRA dr_abort
-dr_fabort:
-	LDY #FULL
-	_BRA dr_abort
-dr_babort:
-	LDY #BUSY
-	_BRA dr_abort
-dr_uabort:
-	LDY #INVALID
-dr_abort:
-; standard error exit, no macro here
-;	SEC
-;	RTS
-dr_done:
-; *** end of API function ***
-dr_next:
-; successful installation!
-
-; *** 6) continue initing drivers ***
-
-; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
-		_PLX				; retrieve saved index (4)
-		INX					; update ADDRESS index, even if unsuccessful (2)
-		INX					; eeeeeeeek! pointer arithmetic! (2)
-		JMP dr_loop			; go for next (3)
-
-; ***************************
-; *** points of no return ***
-; ***************************
+; *****************************************
+; *** some driver installation routines ***
+; *****************************************
 dr_error:
 	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
@@ -368,10 +339,6 @@ dr_call:
 	PHA					; push LSB (3)
 	PHP					; 816 is expected to be in emulation mode anyway (3)
 	RTI					; actual jump (6)
-
-; *****************************************
-; *** some driver installation routines ***
-; *****************************************
 
 ; * get indirect address from driver pointer table, 13 bytes, 33 clocks *
 ; da_ptr pointing to header, Y has the offset in table, returns pointer in sysptr
@@ -417,6 +384,37 @@ dr_itask:
 	PLA					; was stacked!
 	STA (dq_ptr), Y
 	RTS
+
+; **********************
+; *** error handling ***
+; **********************
+dr_iabort:
+	LDY #INVALID
+	_BRA dr_abort
+dr_fabort:
+	LDY #FULL
+	_BRA dr_abort
+dr_babort:
+	LDY #BUSY
+	_BRA dr_abort
+dr_uabort:
+	LDY #INVALID
+dr_abort:
+; standard error exit, no macro here
+;	SEC
+;	RTS
+dr_done:
+; *** end of API function ***
+dr_next:
+; successful installation!
+
+; *** 6) continue initing drivers ***
+
+; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
+		_PLX				; retrieve saved index (4)
+		INX					; update ADDRESS index, even if unsuccessful (2)
+		INX					; eeeeeeeek! pointer arithmetic! (2)
+		JMP dr_loop			; go for next (3)
 
 ; ***************************************************************
 ; *** drivers already installed, clean up things and continue ***
