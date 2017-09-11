@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6a13
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170909-1613
+; last modified 20170911-1827
 
 ; just in case
 #define		C816	_C816
@@ -154,11 +154,16 @@ dr_loop:
 		BNE dr_inst			; cannot be zero, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
 dr_inst:
-		STA da_ptr			; store full pointer (4)
-; *** here will begin the future DRV_INST function ***
 ; da_ptr will be a kernel parameter
-
+		STA da_ptr			; store full pointer (4)
+; *** call API function ***
+;		KERNEL(DRV_INST)		; try to install this driver
+; *** here will begin the future DRV_INST function ***
+; make sure we work on bank zero!
+;	PHK			; zero...
+;	PLB			; ...is the bank!
 ; get some info from header
+; minimOS•16 API defaults to 8 bit sizes, code below not needed for function
 		.as: SEP #$20		; *** back to 8-bit memory for a while ***
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
 ;		LDY #D_ID			; offset for ID (2)
@@ -288,7 +293,7 @@ dr_iqloop:
 				BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 			.al: REP #$20		; needed for subsequent routine
-			JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
+			JSR dr_ended		; if periodic was not enabled, this will skip frequencies queue
 dr_doreq:
 ; as this will get into async, switch enabling queue
 			DEC dte_ptr			; one before as it is interleaved
@@ -297,21 +302,29 @@ dr_doreq:
 			DEX					; now 0, index for async queue (2)
 			BPL dr_iqloop
 ; *** end of suspicious code ***
-		BRA dr_ended		; if arrived here, did not fail initialisation
+dr_ended:
 ; function arriving here will simply exit successfully
+;		PLB			; *** make sure apps can call this from anywhere ***
+;		EXIT_OK		; if arrived here, did not fail initialisation
+		BRA dr_next		; *** remove as not needed in function ***
 
 ; **********************
 ; *** error handling ***
 ; **********************
-; logical devices cannot be installed
 dr_iabort:
-
+	LDY #INVALID		; logical devices cannot be installed
+	BRA dr_abort
 dr_fabort:
+	LDY #INVALID		; logical devices cannot be installed
+	BRA dr_abort
 dr_babort:
+	LDY #INVALID		; logical devices cannot be installed
+	BRA dr_abort
 dr_uabort:
-	_DR_ERR
-; no longer a difference between dr_abort and dr_next? no LOWRAM option here...
-dr_ended:
+	LDY #INVALID		; logical devices cannot be installed
+dr_abort:
+;	PLB			; *** make sure apps can call this from anywhere ***
+;	JMP cio_setc		; * shared error exit *
 
 ; *****************************************
 ; *** some driver installation routines ***
@@ -335,8 +348,6 @@ dr_nextq:
 ; ******************************************
 ; *** other driver installation routines ***
 ; ******************************************
-dr_error:
-	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
 dr_icall:
 	LDY #D_INIT			; original pointer offset (2)
@@ -362,6 +373,10 @@ dr_next:
 		INX					; update ADDRESS index, even if unsuccessful (2)
 		INX					; eeeeeeeek! pointer arithmetic! (2)
 		JMP dr_loop			; go for next (3)
+
+; *** default error routine, just for kernel init... but also for DRV_SHUT
+dr_error:
+	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
 ; *********************************************************************
 ; *** drivers already installed, clean up things and finish booting ***
