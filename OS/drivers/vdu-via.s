@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170912-1816
+; last modified 20170912-1841
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -47,6 +47,14 @@ srs_info:
 vdu_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
 
+; *** define some constants ***
+	VV_OTH	= %00001000	; bits to be kept, PB3 only
+	VV_LH	= $D0		; mask for 'Latch High' command
+	VV_LL	= $D1		; mask for 'Latch Low' command
+	VV_WR	= $D2		; mask for 'Write VRAM' command
+	VV_RD	= $D3		; mask for 'Read VRAM' command
+	VV_CRTC	= $C0		; mask for CRTC access (E=RS=/WR = 0)
+
 ; ************************
 ; *** initialise stuff ***
 ; ************************
@@ -54,8 +62,8 @@ vdu_init:
 ; must set up CRTC first
 ; set up VIA...
 	LDA VIA_U+IORB		; original PB value on user VIA (new var)
-	AND #%00001000		; clear device, E, RS and set to write, leave PB3
-	ORA #$C0		; CRTC mode
+	AND #VV_OTH		; clear device, leave PB3
+	ORA #VV_CRTC		; CRTC mode
 	STA VIA_U+IORB		; ready to write in 6845 addr reg
 	TAY			; keep this status as 'idle' E=RS=0
 	LDX #$FF		; all outputs...
@@ -102,8 +110,8 @@ vdu_cls:
 	STA vdu_sch		; sst new var
 ; get VIA ready, assume all outputs
 	LDA VIA_U+IORB		; current PB (4)
-	AND #%00001000		; respect PB3 only (2)
-	ORA #$D0		; command = latch high address (2)
+	AND #%VV_OTH		; respect PB3 only (2)
+	ORA #$VV_LH		; command = latch high address (2)
 	STA VIA_U+IORB		; set command $D0/D8... (4)
 vcl_lh:
 		LDA local1+1		; get MSB (3)
@@ -203,8 +211,8 @@ vch_sh:
 	STA local2+1
 ; get VIA ready, assume all outputs
 	LDA VIA_U+IORB		; current PB (4)
-	AND #%00001000		; respect PB3 only (2)
-	ORA #$D1		; command = latch LOW address (2)
+	AND #VV_OTH		; respect PB3 only (2)
+	ORA #VV_LL		; command = latch LOW address (2)
 	STA VIA_U+IORB		; set command $D1/D9... (4)
 	LDX local2		; get destination LSB (3)
 	STX VIA_U+IORA		; as data to be latched... (4)
