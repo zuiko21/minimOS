@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170908-1442
+; last modified 20170912-1808
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -12,8 +12,8 @@
 ; (PB3 must be left as controls the CapsLock LED)
 ;
 ;	in VRAM mode, PB0-PB1 go to a '139 to decode...
-; %00	= Latch address MSB on trailing edge (or idle)
-; %01	= Latch address LSB on trailing edge (most frequent)
+; %00	= Latch address MSB on trailing edge (or idle) -- perhaps exchange with LSB?
+; %01	= Latch address LSB on trailing edge (most frequent) -- see above
 ; %10	= Write data (perhaps internally pulsed ~300nS for lower noise)
 ; %11	= Read data (really needed?)
 ; PB2 should be set to ZERO, for compatibility with future expansion
@@ -271,6 +271,33 @@ vdu_tab:
 
 ; *** backspace ***
 vdu_bs:
+; first get cursor one position back...
+	JSR vbs_bk		; will call it again at the end
+; ...then print a space, the regular way...
+	LDA #' '		; code of space
+	STA io_c		; store as single char...
+	JSR vdu_prn		; print whatever is in io_c
+; ...and back again!
+vbs_bk:
+	DEC vdu_cur		; one position back
+	LDA vdu_char		; check for carry
+	CMP #$FF		; did it wrap?
+	BNE vbs_end		; no, return or end function
+		DEC vbs_cur+1		; yes, propagate carry
+; really ought to check for possible scroll-UP...
+; at least, avoid being outside feasible values
+		LDA vbs_cur+1		; where are we?
+		CMP #>VR_BASE		; cannot be below VRAM base
+		BCS vbs_end		; no borrow, all OK
+			LDY #<VR_BASE		; get base address
+			LDA #>VR_BASE		; MSB too
+			STY vdu_cur		; set current
+			STA vdu_cur+1
+			PLA			; discard return address, as nothing to print
+			PLA
+			_DR_ERR(EMPTY)		; try to complain, just in case
+vbs_end:
+	_DR_OK			; all done, CLC will not harm at first call
 
 ; ********************
 ; *** several data ***
