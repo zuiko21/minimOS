@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
-; v0.6a3
+; v0.6a4
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170912-1841
+; last modified 20170913-1644
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -42,7 +42,7 @@
 
 ; *** driver description ***
 srs_info:
-	.asc	"32 char VIA-VDU v0.6a3", 0
+	.asc	"32 char VIA-VDU v0.6a4", 0
 
 vdu_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
@@ -268,16 +268,21 @@ vcr_chc:
 		INC vdu_cur+1		; or propagate carry...
 		_BRA vch_sck		; ...and check for scrolling
 
-; *** tab ***
-; ************************* TO BE DONE **********************
-; placeholder without clearing, 8 stops
+; *** tab (8 spaces) ***
 vdu_tab:
 	LDA vdu_cur		; get LSB
 	AND #%11111000		; modulo 8
 	CLC
 	ADC #8			; increment position
-	STA vdu_cur		; eeeeeeeeeek
-	_BRA vcr_chc		; ...and check for scrolling as usual
+vtb_l:
+		PHA			; save desired position
+		LDA #' '		; will print spaces
+		STA io_c
+		JSR vch_prn		; direct space printing, A holds 32 too
+		PLA			; recover desired address
+		CMP vdu_cur		; reached?
+		BNE vtb_l		; no, continue
+	_DR_OK			; yes, all done
 
 ; *** backspace ***
 vdu_bs:
