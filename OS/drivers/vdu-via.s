@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a4
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170913-1644
+; last modified 20170914-2101
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -88,6 +88,8 @@ vi_crl:
 ; software cursor will be set by CLS routine!
 ; clear all VRAM!
 	JSR vdu_cls		; reuse code upon Form Feed
+; reset inverse video mask!
+	_STZA vdu_xor		; clear mask is true video
 ; all done!
 	_DR_OK			; succeeded
 
@@ -186,7 +188,18 @@ vch_ntb:
 		BNE vch_nbs
 			JMP vdu_bs		; backspace
 vch_nbs:
-
+		CMP #14			; shift out?
+		BNE vch_nso
+			LDA #$FF		; mask for reverse video
+			_BRA vso_xor		; set mask and finish
+vch_nso:
+		CMP #15			; shift out?
+		BNE vch_nsi
+			LDA #$FF		; mask for true video
+vso_xor:
+			STA vdu_xor		; set new mask
+			RTS			; all done for this char
+vch_nsi:
 vch_prn:
 ; convert ASCII into pointer offset, needs 11bit
 	_STZA io_c+1		; clear MSB (3)
@@ -230,6 +243,7 @@ vch_pl:
 		LDA local2+2		; stored Write command (3)
 		STA VIA_U+IORB		; ...now! ready for data write (4)
 		LDA (local1), Y		; get glyph data (5)
+		EOR vdu_xor		; apply mask! (4)
 		STA VIA_U+IORA		; as data to be latched... (4)
 		STX VIA_U+IORB		; ...now! quick return to LatchH (4)
 ; advance to next scanline
