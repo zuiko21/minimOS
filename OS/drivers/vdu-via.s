@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a4
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170914-2101
+; last modified 20170917-1759
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -332,6 +332,23 @@ vbs_end:
 ; *** several data ***
 ; ********************
 
-; CRTC registers initial values
 vdu_data:
-	.byt
+; CRTC registers initial values
+
+; values for 32x32, CCIR, 24.576 MHz dot clock
+	.byt 48		; R0, horizontal total chars - 1
+	.byt 32		; R1, horizontal displayed chars
+	.byt 37		; R2, HSYNC position - 1
+	.byt 132	; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 38		; R4, vertical total chars - 1
+	.byt 0		; R5, total raster adjust
+	.byt 32		; R6, vertical displayed chars
+	.byt 34		; R7, VSYNC position - 1
+	.byt 0		; R8, interlaced mode
+	.byt 7		; R9, maximum raster - 1
+	.byt 32		; R10, cursor start raster & blink/disable (off)
+	.byt 7		; R11, cursor end raster
+	.byt 0		; R12/13, start address (big endian)
+	.byt 0
+	.byt 0		; R14/15, cursor position (big endian)
+	.byt 0
