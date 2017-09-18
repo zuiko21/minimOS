@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a16, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170918-1230
+; last modified 20170918-1656
 
 ; assumes 8-bit sizes upon call...
 
@@ -1358,8 +1358,8 @@ dr_install:
 ; make sure we work on bank zero!
 	PHK					; zero...
 	PLB					; ...is the bank!
-; get some info from header
 ; minimOS•16 API defaults to 8 bit sizes
+; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
 #ifdef	SAFE
 	LDA (da_ptr)		; check ID, no longer stored above
@@ -1371,7 +1371,7 @@ dr_phys:
 
 ; *** before registering, check whether the driver COULD be successfully installed ***
 ; that means 1.the ID is not already in use eeeeeeeek
-; 2.there must be room enough on the interrupt queues for its tasks, if provided
+; 2.there must be room enough on the interrupt queues for its tasks, if supplied
 ; and 3.the D_INIT routine succeeded as usual
 ; otherwise, skip the installing procedure altogether for that driver
 
@@ -1434,14 +1434,12 @@ dr_ntsk:
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...
 ; time to get a pointer to the-block-of-pointers (source)
-
-; pfa_ptr moved to locals, ready to become a kernel function!
 	LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
 	LDA (da_ptr), Y		; get full address (6)
-	STA pfa_ptr			; get the pointer
+	STA pfa_ptr			; get the source pointer
 ; also a temporary pointer to the particular queue
-	LDA #drv_poll		; must be the first one!
-	STA dq_ptr			; store temporarily
+	LDA #drv_poll		; must be the first queue!
+	STA dq_ptr			; store queue pointer
 ; new functionality 170519, pointer to (interleaved) task enabling queues
 	LDA #drv_p_en		; this is the second one, will be decremented for async
 	STA dte_ptr			; yet another temporary pointer...
@@ -1453,19 +1451,16 @@ dr_iqloop:
 		ASL dr_aut		; extract MSB (will be A_POLL first, then A_REQ) eeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
-			LDY queue_mx, X		; get index of free entry!
-;			STY dq_off			; worth saving on a local variable
+			LDY queue_mx, X		; get index of free entry, will stay!
 			INC queue_mx, X		; add another task in queue
 			INC queue_mx, X		; pointer takes two bytes
 ; install entry into queue
 ; read pointer from header (inline version of dr_itask)
 			al: REP #$20		; *** 16-bit memory ***
-			LDA (pfa_ptr)		; get pointer
+			LDA (pfa_ptr)		; get source pointer
 ; write pointer into queue
-;			LDY dq_off			; get index of free entry!
 			STA (dq_ptr), Y		; store into reserved place!
 ; save for frequency queue, flags must be enabled for this task!
-;			LDY dq_off			; get index of free entry!
 			.as: SEP #$20		; *** needs to go into 8-bit mode for a moment ***
 			LDA (da_ptr)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
 			STA (dte_ptr), Y	; set default flags
@@ -1478,16 +1473,13 @@ dr_iqloop:
 ; read frequency value from header (inline version of dr_itask)
 			LDA (pfa_ptr)		; non-indexed indirect
 ; write unmodified value into its queue
-;			LDY dq_off			; get index of free entry!
 			STA (dq_ptr), Y		; store into reserved place!
 ; *** and copy A into drv_count, unmodified! ***
 			STA drv_cnt, Y		; simply!
 			BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
-; ************************************* WTF WTF WTF ***************************
 		.al: REP #$20		; needed for subsequent routine
-		JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue????
-; *****************************************************************************
+		JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
 dr_doreq:
 ; as this will get into async, switch enabling queue
 		DEC dte_ptr			; one before as it is interleaved
@@ -1508,13 +1500,13 @@ dr_iabort:
 	LDY #INVALID		; logical devices cannot be installed
 	BRA dr_abort
 dr_fabort:
-	LDY #INVALID		; logical devices cannot be installed
+	LDY #FULL		; no room on queue
 	BRA dr_abort
 dr_babort:
-	LDY #INVALID		; logical devices cannot be installed
+	LDY #BUSY		; ID already in use
 	BRA dr_abort
 dr_uabort:
-	LDY #INVALID		; logical devices cannot be installed
+	LDY #UNAVAIL		; init failed
 dr_abort:
 	PLB					; *** make sure apps can call this from anywhere ***
 	JMP cio_setc		; * shared error exit *
@@ -1537,10 +1529,6 @@ dr_nextq:
 	RTS
 
 ; dr_itask is now inlined, and has dq_off already in Y!
-
-; ******************************************
-; *** other driver installation routines ***
-; ******************************************
 
 dr_icall:
 	LDY #D_INIT			; original pointer offset (2)
