@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a12, must match kernel.s
+; v0.6a13, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170831-1916
+; last modified 20170918-1211
 
 ; no way for standalone assembly...
 
@@ -12,8 +12,6 @@
 memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
 aqmanage:
 pqmanage:
-dr_install:
-dr_shutdown:
 bl_config:
 bl_status:
 
@@ -1074,6 +1072,24 @@ sd_tab:					; check order in abi.h
 	.word	warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; shutdown system
+
+; *******************************
+; *** DR_INST, install driver ***
+; *******************************
+;		INPUT
+; da_ptr	= pointer to the proposed driver header
+;		OUTPUT
+; C			= could not install driver (ID in use or invalid, queue full, init failed)
+
+dr_install:
+
+; ******************************
+; *** DR_SHUT, remove driver ***
+; ******************************
+; interface TBD ****
+
+dr_shutdown:
+	_ERR(UNAVAIL)		; go away! PLACEHOLDER ********* TBD
 
 
 ; ***************************************************************

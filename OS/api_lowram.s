@@ -18,7 +18,7 @@ free:
 release:
 ts_info:
 set_curr:
-dr_install:
+dr_install:			; no way to install these?
 dr_shutdown:
 
 ; *** FUTURE IMPLEMENTATION ***

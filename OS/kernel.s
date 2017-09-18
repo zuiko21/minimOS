@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a13
+; v0.6a14
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170911-2159
+; last modified 20170918-1212
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
