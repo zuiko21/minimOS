@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6a13", 0	; version in comment
+	.asc	"minimOS•16 0.6a14", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -250,7 +250,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6a13", 0	; version in comment
+	.asc	"minimOS•16 0.6a14", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
