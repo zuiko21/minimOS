@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a13, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170918-1211
+; last modified 20170918-1236
 
 ; no way for standalone assembly...
 
@@ -1082,6 +1082,235 @@ sd_tab:					; check order in abi.h
 ; C			= could not install driver (ID in use or invalid, queue full, init failed)
 
 dr_install:
+; get some info from header
+; as D_ID is zero, simply indirect will do without variable (not much used anyway)
+#ifdef	SAFE
+	_LDAY(da_ptr)			; get ID if not stored above
+	BMI dr_phys			; only physical devices (3/2)
+; separate function issues INVALID error
+		JMP dr_iabort		; reject logical devices (3)
+dr_phys:
+#endif
+
+; *** before registering, check whether the driver COULD be successfully installed ***
+; that means 1.the ID must not be in use eeeeeek
+; 2.there must be room enough on the interrupt queues for its tasks, if provided
+; and 3.the D_INIT routine succeeded as usual
+; otherwise, skip the installing procedure altogether for that driver
+
+; 1) first check whether this ID was not in use ***
+	_LDAY (da_ptr)			; retrieve ID
+
+; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
+	ASL					; use retrieved ID as index (2+2)
+	TAX					; was Y
+; new 170518, TASK_DEV is nothing to be checked
+	LDA #<dr_error		; pre-installed LSB (2)
+	CMP drv_opt, X		; check whether in use (4)
+		BNE dr_busy			; pointer was not empty (2/3)
+	CMP drv_ipt, X		; now check input, just in case (4)
+		BNE dr_busy			; pointer was not empty (2/3)
+	LDA #>dr_error		; now look for pre-installed MSB (2)
+	CMP drv_opt+1, X	; check whether in use (4)
+		BNE dr_busy			; pointer was not empty (2/3)
+	CMP drv_ipt+1, X	; now check input, just in case (4)
+	BEQ dr_empty		; it is OK to set (3/2)
+dr_busy:
+; separate function issues BUSY error
+		JMP dr_babort		; already in use (3)
+dr_empty:
+	STX dr_id			; must keep this eeeeeeeeek
+
+; 2) check room in queues, if needed
+; first get and store requested features
+	LDY #D_AUTH			; let us get the provided features
+	LDA (da_ptr), Y
+	STA dr_aut			; a commonly used value
+; check space in queues
+	LDX #1				; max queue index
+dr_chk:
+		ASL				; extract MSB (will be A_POLL first, then A_REQ)
+		BCC dr_ntsk			; skip verification if task not enabled
+			LDY queue_mx, X		; get current tasks in queue
+			CPY #MX_QUEUE		; room for another?
+			BCC dr_ntsk			; yeah!
+dr_nabort:
+; separate function issues FULL error
+				JMP dr_fabort		; or did not checked OK
+dr_ntsk:
+		DEX					; let us check next feature
+		BNE dr_chk
+
+; 3) if arrived here, there is room for interrupt tasks, but check init code
+	JSR dr_icall		; call routine (6+...)
+	BCC dr_succ		; success
+; separate function issues UNAVAIL error
+		JMP dr_uabort		; no way, forget about this
+dr_succ:
+
+; 4) Set I/O pointers
+; no need to check I/O availability as any driver must supply at least dummy pointers!
+; thus not worth a loop, I think...
+	LDX dr_id			; eeeeeeeeeeeeeeeek (3)
+	LDY #D_BLIN			; input routine (2)
+	JSR dr_gind			; get indirect address
+	LDA pfa_ptr			; get driver table LSB (3)
+	STA drv_ipt, X		; store in table (4)
+	LDA pfa_ptr+1		; same for MSB (3+4)
+	STA drv_ipt+1, X
+	LDY #D_BOUT			; offset for output routine (2)
+	JSR dr_gind			; get indirect address
+	LDA pfa_ptr			; get driver table LSB (3)
+	STA drv_opt, X		; store in table (4)
+	LDA pfa_ptr+1		; same for MSB (3+4)
+	STA drv_opt+1, X
+
+; *** 5) register interrupt routines *** new, much cleaner approach
+; time to get a pointer to the-block-of-pointers (source)
+	LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
+	JSR dr_gind			; get the pointer into pfa_ptr)
+; also a temporary pointer to the particular queue
+	LDA #<drv_poll		; must be the first one!
+	STA dq_ptr			; store temporarily
+	LDA #>drv_poll		; MSB too
+	STA dq_ptr+1
+; new functionality 170519, pointer to (interleaved) task enabling queues
+	LDA #<drv_p_en		; this is the second one, will be decremented for async
+	STA dte_ptr			; yet another temporary pointer...
+	LDA #>drv_p_en		; same for MSB
+	STA dte_ptr+1
+; all set now, now easier to use a loop
+	LDX #1				; index for periodic queue (2)
+; *** suspicious code ***
+dr_iqloop:
+		ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
+		BCC dr_noten		; skip installation if task not enabled
+; prepare another entry into queue
+			LDY queue_mx, X		; get index of free entry!
+			STY dq_off			; worth saving on a local variable
+			INC queue_mx, X		; add another task in queue
+			INC queue_mx, X		; pointer takes two bytes
+; install entry into queue
+			JSR dr_itask		; install into queue
+; save for frequency queue, flags must be enabled for this task!
+			_LDAY(da_ptr)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default eeeeeeek
+			LDY dq_off			; get index of free entry!
+			STA (dte_ptr), Y	; set default flags
+; let us see if we are doing periodic task, in case frequency must be set also
+			TXA					; doing periodic?
+				BEQ dr_done			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
+			JSR dr_nextq		; advance to next queue (frequencies)
+			JSR dr_itask		; same for frequency queue
+; *** must copy here original frequency (PLUS 256) into drv_cnt ***
+			LDA (dq_ptr), Y		; get MSB
+			_INC				; plus 1
+			STA drv_cnt, Y		; store copy...
+			STA (dq_ptr), Y		; ...and correct original value
+			DEY					; go for LSB
+			LDA (dq_ptr), Y		; get original...
+			STA drv_count, Y	; ...and store unmodified
+			_BRA dr_doreq		; nothing to skip, go for async queue
+dr_noten:
+		JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
+dr_doreq:
+; as this will get into async, switch enabling queue
+		LDA dte_ptr			; check previous LSB
+		BNE dr_neqnw		; will wrap upon decrement?
+			DEC dte_ptr+1		; if so, precorrect MSB
+dr_neqnw:
+		DEC dte_ptr			; one before as it is interleaved
+; continue into async queue
+		JSR dr_nextq		; go for next queue
+		DEX					; now 0, index for async queue (2)
+		BPL dr_iqloop		; eeeeek
+; *** end of suspicious code ***
+dr_done:
+; function will exit successfully here
+	EXIT_OK
+
+; *****************************************
+; *** some driver installation routines ***
+; *****************************************
+dr_error:
+	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers! could keep on kernel...
+
+dr_icall:
+	LDY #D_INIT			; original pointer offset (2)
+; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
+; takes 10 bytes, 29 clocks
+dr_call:
+	INY					; get MSB first (2)
+	LDA (da_ptr), Y		; destination pointer MSB (5)
+	PHA					; push it (3)
+	DEY					; go for LSB (2)
+	LDA (da_ptr), Y		; repeat procedure (5)
+	PHA					; push LSB (3)
+	PHP					; 816 is expected to be in emulation mode anyway (3)
+	RTI					; actual jump (6)
+
+; * get indirect address from driver pointer table, 13 bytes, 33 clocks *
+; da_ptr pointing to header, Y has the offset in table, returns pointer in sysptr
+dr_gind:
+	LDA (da_ptr), Y		; get address LSB (5)
+	STA pfa_ptr			; store temporarily (3)
+	INY					; same for MSB (2)
+	LDA (da_ptr), Y		; get MSB (5)
+	STA pfa_ptr+1		; store temporarily (3)
+	RTS					; come back!!! (6)
+
+; * routine for advancing to next queue *
+; both pointers in dq_ptr (whole queue) and pfa_ptr (pointer in header)
+dr_nextq:
+	LDA dq_ptr			; get original queue pointer
+	CLC
+	ADC #MX_QUEUE		; go to next queue
+	STA dq_ptr
+	BCC dnq_nw			; no carry...
+		INC dq_ptr+1		; ...or update MSB
+dnq_nw:
+	LDA pfa_ptr			; increment the origin pointer!
+	CLC
+	ADC #2				; next pointer in header
+	STA pfa_ptr			; eeeeeeeeeeek
+	BCC dnq_snw			; no carry...
+		INC pfa_ptr+1		; ...or update MSB
+dnq_snw:
+	RTS
+
+; * routine for copying a pointer from header into a table *
+; X is 0 for async, 1 for periodic, pfa_ptr, dq_off & dq_ptr set as usual
+dr_itask:
+; read pointer from header
+	LDY #1				; preset offset
+	LDA (pfa_ptr), Y		; get MSB from header
+	PHA					; stack it!
+	_LDAY(pfa_ptr)		; non-indexed indirect, get LSB in A
+; write pointer into queue
+	LDY dq_off			; get index of free entry!
+	STA (dq_ptr), Y		; store into reserved place!
+	INY					; go for MSB
+	PLA					; was stacked!
+	STA (dq_ptr), Y
+	RTS
+
+; **********************
+; *** error handling ***
+; **********************
+dr_iabort:
+	LDY #INVALID
+	_BRA dr_abort
+dr_fabort:
+	LDY #FULL
+	_BRA dr_abort
+dr_babort:
+	LDY #BUSY
+	_BRA dr_abort
+dr_uabort:
+	LDY #INVALID
+dr_abort:
+; standard error exit, no macro here
+	SEC
+	RTS
 
 ; ******************************
 ; *** DR_SHUT, remove driver ***
