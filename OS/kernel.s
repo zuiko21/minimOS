@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a14
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170918-1236
+; last modified 20170918-1711
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -131,7 +131,7 @@ ram_init:
 ; separared LOWRAM & standard versions 20170902
 
 #ifndef	LOWRAM
-; ++++++ ++++++ complete standard version ++++++ ++++++
+; ++++++ ++++++ standard version ++++++ ++++++
 
 ; *** initialise stuff ***
 ; clear some bytes
@@ -161,23 +161,24 @@ dr_clear:
 dr_loop:
 		_PHX				; keep current value, no longer drv_aix (3)
 		LDA drvrs_ad+1, X		; get address MSB (4)
-		BNE dr_inst			; cannot be in zeropage, in case is too far for BEQ dr_ok (3/2)
-			JMP dr_ok			; all done otherwise (0/4)
-dr_inst:
+			BEQ dr_ok			; cannot be in zeropage, all done otherwise
 		STA da_ptr+1		; store pointer MSB (3)
 		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
 
+; *** call new API install ***
 		_KERNEL(DRV_INST)	; try to install this driver
 
-dr_next:
-; *** 6) continue initing drivers ***
-
+; *** continue initing drivers ***
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
 		_PLX				; retrieve saved index (4)
 		INX					; update ADDRESS index, even if unsuccessful (2)
 		INX					; eeeeeeeek! pointer arithmetic! (2)
-		JMP dr_loop			; go for next (3)
+		BNE dr_loop			; go for next, no need for BRA? (3)
+
+; *** generic error routine ***
+dr_error:
+	_DR_ERR(UNAVAIL)		; uninstalled device
 
 ; ***************************************************************
 ; *** drivers already installed, clean up things and continue ***
@@ -402,7 +403,7 @@ dr_itask:
 ; **********************
 dr_iabort:
 	LDY #INVALID
-	_BRA dr_abort
+	_BRA dr_abort			; could use BNE instead of BRA
 dr_babort:
 	LDY #BUSY
 	_BRA dr_abort

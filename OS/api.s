@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a13, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170918-1236
+; last modified 20170918-1711
 
 ; no way for standalone assembly...
 
@@ -1226,14 +1226,11 @@ dr_neqnw:
 ; *** end of suspicious code ***
 dr_done:
 ; function will exit successfully here
-	EXIT_OK
+	_EXIT_OK
 
 ; *****************************************
 ; *** some driver installation routines ***
 ; *****************************************
-dr_error:
-	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers! could keep on kernel...
-
 dr_icall:
 	LDY #D_INIT			; original pointer offset (2)
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
@@ -1298,7 +1295,7 @@ dr_itask:
 ; **********************
 dr_iabort:
 	LDY #INVALID
-	_BRA dr_abort
+	_BRA dr_abort			; could use BNE instead of BRA
 dr_fabort:
 	LDY #FULL
 	_BRA dr_abort
