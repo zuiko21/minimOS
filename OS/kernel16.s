@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6a14
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170918-1231
+; last modified 20170918-1703
 
 ; just in case
 #define		C816	_C816
@@ -126,7 +126,7 @@ ram_init:
 ; * will also initialise I/O lock arrays! * 20161129
 ; obviously enters in 16-bit memory size!
 
-; *** 1) initialise stuff ***
+; *** initialise stuff ***
 	LDX #0				; reset driver index (2)
 ; clear some bytes
 	STZ queue_mx		; reset all indexes, 16-bit already set
@@ -146,30 +146,28 @@ dr_clear:
 
 ; TASKDEV is no longer a thing...
 
-; *** 2) prepare access to each driver header ***
+; *** prepare access to each driver header ***
 dr_loop:
 		PHX					; keep current value (3)
 ; first create a pointer to it
 		LDA drvrs_ad, X		; get full address (5)
-		BNE dr_inst			; cannot be zero, in case is too far for BEQ dr_ok (3/2)
-			JMP dr_ok			; all done otherwise (0/4)
-dr_inst:
+			BEQ dr_ok			; cannot be zero, all done otherwise
 		STA da_ptr			; store full pointer (4)
 
-; *** call API function ***
+; *** call new API function ***
 		_KERNEL(DRV_INST)	; try to install this driver
 
 ; *** prepare for next driver ***
-; this will remain in kernel loop when DRV_INST is used
-dr_next:
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
 		PLX					; retrieve saved index (4)
 		INX					; update ADDRESS index, even if unsuccessful (2)
 		INX					; eeeeeeeek! pointer arithmetic! (2)
-		JMP dr_loop			; go for next (3)
+		BRA dr_loop			; go for next (3)
 
-; *** default error routine, just for kernel init... but also for DRV_SHUT
+; ****************************************************************************
+; *** default error routine, just for kernel init... but also for DRV_SHUT ***
+; ****************************************************************************
 dr_error:
 	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
