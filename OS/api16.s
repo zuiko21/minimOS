@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a16, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170918-1656
+; last modified 20170922-1913
 
 ; assumes 8-bit sizes upon call...
 
@@ -648,9 +648,7 @@ fr_found:
 	LDY ram_stat+2, X	; check status of following entry
 ;	CPY #FREE_RAM		; was it free? could be supressed if value is zero
 	BNE fr_notafter		; was not free, thus nothing to optimise forward
-		PHX					; keep actual position eeeeeeeek
 		JSR fr_join			; integrate following free block
-		PLX					; retrieve position
 	BEQ fr_ok			; if the first block, cannot look back eeeeeeeeeek
 fr_notafter:
 	TXY					; check whether it was the first block
@@ -668,17 +666,13 @@ fr_ok:
 
 ; routine for obliterating the following empty entry
 fr_join:
-		INX					; go for next entry
-		INX
-		LDA ram_pos+2, X	; get following address
-		STA ram_pos, X		; store one entry below
-		LDA ram_stat+2, X	; check status of following! **but PID field too**
-		STA ram_stat, X		; store one entry below **otherwise LDY/STY**
+		LDA ram_pos+4, X	; get following address
+		STA ram_pos+2, X		; store one entry below
+		LDA ram_stat+4, X	; check status of following! **but PID field too**
+		STA ram_stat+2, X		; store one entry below **otherwise LDY/STY**
 		TAY					; **will transfer just status, PID will be ripped off**
 		CPY #END_RAM		; end of list?
 		BNE fr_join			; repeat until done
-	DEX					; return to previous position
-	DEX
 	RTS
 
 	.as				; back to normal...
