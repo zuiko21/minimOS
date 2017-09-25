@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a13, must match kernel.s
+; v0.6a14, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170922-1911
+; last modified 20170925-1748
 
 ; no way for standalone assembly...
 
@@ -1360,15 +1360,19 @@ rls_loop:
 			PHA					; otherwise save status
 			_PHX
 			LDY ram_pos, X		; get pointer to targeted block
-			LDA ram_pos+1, X	; MSB too
 			STY ma_pt			; will be used by FREE
-			STA ma_pt+1
+			_STZA ma_pt+1
 			_KERNEL(FREE)			; release it!
 			_PLX				; retrieve status
 			PLA
 			BCC rls_next		; keep index IF current entry was deleted!
 rls_oth:
 		INX					; advance to next block
+#ifdef	SAFE
+		CPX #MAX_LIST		; all scanned?
+		BNE rls_next		; no, keep looking
+			_ERR(CORRUPT)		; something was really wrong...
+#endif
 rls_next:
 		LDY ram_stat, X		; look status only
 		CPY #END_RAM		; are we done?
