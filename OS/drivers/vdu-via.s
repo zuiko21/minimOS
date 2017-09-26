@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170926-1704
+; last modified 20170926-1708
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -221,6 +221,7 @@ vch_sh:
 	STA local1		; store locally
 	LDA #>vdu_font		; same for MSB
 	ADC io_c+1
+;	_DEC			; in case the font has no non-printable glyphs
 	STA local1+1		; local1 is source pointer
 ; create local destination pointer
 	LDY vdu_cur		; get current position
@@ -296,7 +297,7 @@ vsc_nw:
 	INC VIA_U+IORB		; ...now!
 	STX VIA_U+IORB		; back to idle
 ; update vdu_sch
-	LDA vdu_******
+	LDA vdu_sch
 vch_ok:
 	_DR_OK
 
