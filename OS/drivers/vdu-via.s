@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170926-1708
+; last modified 20170926-1736
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -111,7 +111,8 @@ vdu_cls:
 	STA vdu_cur+1
 ; new, preset scrolling limit
 	LDA #V_SCRLIM		; original limit, will wrap around this constant
-	STA vdu_sch		; set new var
+	STA vdu_sch+1		; set new var
+	_STZA vdu_sch		; hopefully VRAM will be page-aligned!
 ; get VIA ready, assume all outputs
 	LDA VIA_U+IORB		; current PB (4)
 	AND #%VV_OTH		; respect PB3 only (2)
@@ -258,18 +259,23 @@ vch_pl:
 		ADC #4			; offset for next scanline is 1024 (2+2)
 		STA local2+1		; update (3)
 		INY			; next scanline (2)
-		CPY #V_SCANL			; all done? (2)
+		CPY #V_SCANL		; all done? (2)
 		BNE vch_pl		; continue otherwise (3)
 ; printing is done, now advance current position
 vch_adv:
 	INC vdu_cur		; advance to next character (6)
 	BNE vch_ok		; all done, no wrap (3)
 		INC vdu_cur+1		; or increment MSB (6)
+; should set CRTC cursor accordingly
+
 ; check whether scrolling is needed
 vch_sck:
 		LDA vdu_cur+1		; check position (4)
-		CMP vdu_sch		; all lines done? (4)
+		CMP vdu_sch+1		; all lines done? (4)
 		BNE vch_ok		; no, just exit (3)
+		LDA vdu_cur		; check LSB too...
+		CMP vdu_sch
+		BNE vch_ok
 ; otherwise must scroll... via CRTC
 ; first preset CRTC idle command
 	LDA VIA_U+IORB		; original port B value
@@ -297,7 +303,19 @@ vsc_nw:
 	INC VIA_U+IORB		; ...now!
 	STX VIA_U+IORB		; back to idle
 ; update vdu_sch
-	LDA vdu_sch
+	LDA vdu_sch		; get LSB
+	LDX vdu_sch+1		; see MSB
+	CPX #V_SCRLIM		; already at limit?
+	BNE vsc_blim		; not, just increment
+		CMP #V_SLOW		; also LSB, just in case?******
+	BNE vsc_blim		; not, just increment
+		LDX #>VR_BASE		; yes, wrap to 2nd line
+		LDA #<VR_BASE		; add one line to this
+vsc_blim:
+	CLC
+	ADC #32			; full line length
+	STA vdu_sch		; update variable
+	STX vdu_sch+1
 vch_ok:
 	_DR_OK
 
