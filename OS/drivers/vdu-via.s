@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170926-1345
+; last modified 20170926-1704
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -202,6 +202,9 @@ vso_xor:
 			STA vdu_xor		; set new mask
 			RTS			; all done for this char
 vch_nsi:
+; non-printable neither accepted control, thus use substitution character
+		LDA #'?'		; unrecognised char
+		STA io_c		; store as required
 vch_prn:
 ; convert ASCII into pointer offset, needs 11bit
 	_STZA io_c+1		; clear MSB (3)
