@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170926-1736
+; last modified 20170926-1753
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -264,10 +264,27 @@ vch_pl:
 ; printing is done, now advance current position
 vch_adv:
 	INC vdu_cur		; advance to next character (6)
-	BNE vch_ok		; all done, no wrap (3)
+	BNE vch_scs		; all done, no wrap (3)
 		INC vdu_cur+1		; or increment MSB (6)
 ; should set CRTC cursor accordingly
-
+vch_scs:
+		LDA VIA_U+IORB		; original port B value
+		AND #VV_OTH		; keep reserved bits, others...
+		ORA #VV_CRTC		; ...with idle command for CRTC...
+		TAX			; ...worth keeping...
+		LDA vdu_cur		; value LSB is first loaded
+		LDY #15			; cur_l register on CRTC
+vcur_l:
+			STX VIA_U+IORB		; set! now will select register
+			STY VIA_U+IORA		; select this address...
+			INC VIA_U+IORB		; ...now!
+			INC VIA_U+IORB		; RS=1, will provide value for register
+			STA VIA_U+IORA		; here is the loaded value...
+			INC VIA_U+IORB		; ...now!
+			LDA vdu_cur+1		; get MSB for next
+			DEY			; previous reg
+			CPY #13			; cur_h already done?
+			BNE vcur_l		; no, go for MSB
 ; check whether scrolling is needed
 vch_sck:
 		LDA vdu_cur+1		; check position (4)
@@ -330,7 +347,7 @@ vdu_cr:
 vcr_chc:
 	BCC vch_ok		; seems OK
 		INC vdu_cur+1		; or propagate carry...
-		_BRA vch_sck		; ...and check for scrolling
+		_BRA vch_scs		; ...update cursor and check for scrolling
 
 ; *** tab (8 spaces) ***
 vdu_tab:
@@ -398,7 +415,7 @@ vdu_data:
 	.byt 7		; R9, maximum raster - 1
 	.byt 32		; R10, cursor start raster & blink/disable (off)
 	.byt 7		; R11, cursor end raster
-	.byt 0		; R12/13, start address (big endian)
+	.byt 224	; R12/13, start address (big endian)
 	.byt 0
-	.byt 0		; R14/15, cursor position (big endian)
+	.byt 224	; R14/15, cursor position (big endian)
 	.byt 0
