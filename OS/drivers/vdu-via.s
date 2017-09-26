@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
-; v0.6a4
+; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170917-1759
+; last modified 20170926-1345
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -42,7 +42,7 @@
 
 ; *** driver description ***
 srs_info:
-	.asc	"32 char VIA-VDU v0.6a4", 0
+	.asc	"32 char VIA-VDU v0.6a5", 0
 
 vdu_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
@@ -54,6 +54,12 @@ vdu_err:
 	VV_WR	= $D2		; mask for 'Write VRAM' command
 	VV_RD	= $D3		; mask for 'Read VRAM' command
 	VV_CRTC	= $C0		; mask for CRTC access (E=RS=/WR = 0)
+
+	V_SCANL	= 8		; number of scanlines (pretty hardwired)
+
+; for easier wrapping and expansion, 8 KiB goes $E000-$FFFF
+	VR_BASE		= $E000
+	V_SCRLIM	= >VR_BASE+1024	; base plus 32x32 chars
 
 ; ************************
 ; *** initialise stuff ***
@@ -81,12 +87,9 @@ vi_crl:
 		STY VIA_U+IORB		; ...and back to idle!
 		CPX #$F			; last register done?
 		BNE vi_crl		; continue otherwise
-; preset some sysvars
-; for easier wrapping and expansion, 8 KiB goes $E000-$FFFF
-	VR_BASE	=	$E000
 
-; software cursor will be set by CLS routine!
 ; clear all VRAM!
+; software cursor will be set by CLS routine!
 	JSR vdu_cls		; reuse code upon Form Feed
 ; reset inverse video mask!
 	_STZA vdu_xor		; clear mask is true video
@@ -107,9 +110,8 @@ vdu_cls:
 	STY vdu_cur		; ...and restore home position (4+4)
 	STA vdu_cur+1
 ; new, preset scrolling limit
-	CLC
-	ADC #4			; 4*256 visible chars
-	STA vdu_sch		; sst new var
+	LDA #V_SCRLIM		; original limit, will wrap around this constant
+	STA vdu_sch		; set new var
 ; get VIA ready, assume all outputs
 	LDA VIA_U+IORB		; current PB (4)
 	AND #%VV_OTH		; respect PB3 only (2)
@@ -252,7 +254,7 @@ vch_pl:
 		ADC #4			; offset for next scanline is 1024 (2+2)
 		STA local2+1		; update (3)
 		INY			; next scanline (2)
-		CPY #8			; all done? (2)
+		CPY #V_SCANL			; all done? (2)
 		BNE vch_pl		; continue otherwise (3)
 ; printing is done, now advance current position
 vch_adv:
@@ -262,10 +264,36 @@ vch_adv:
 ; check whether scrolling is needed
 vch_sck:
 		LDA vdu_cur+1		; check position (4)
-		CMP #>vdu_sch		; all lines done? (2)
+		CMP vdu_sch		; all lines done? (4)
 		BNE vch_ok		; no, just exit (3)
-; otherwise must scroll... via CRTC *********** TBD
-; update vdu_sch***********
+; otherwise must scroll... via CRTC
+; first preset CRTC idle command
+	LDA VIA_U+IORB		; original port B value
+	AND #VV_OTH		; keep reserved bits, others...
+	ORA #VV_CRTC		; ...with idle command for CRTC...
+	TAX			; ...worth keeping...
+	STA VIA_U+IORB		; set! now will select register
+	LDA #12			; start_h register on CRTC
+	STA VIA_U+IORA		; select this address...
+	INC VIA_U+IORB		; ...now!
+	INC VIA_U+IORB		; RS=1, will provide value for register
+; increment base address, wrapping if needed
+	CLC
+	LDA vdu_ba		; get current base...
+	ADC #32			; ...and add one line
+	STA vdu_ba		; update variable LSB
+	LDA vdu_ba+1		; now for MSB
+	ADC #0			; propagate carry
+	CMP #V_SCRLIM		; did it wrap?
+	BNE vsc_nw		; no, just set CRTC and local
+		LDA #>VR_BASE		; or yes, wrap value around
+vsc_nw:
+	STA vdu_ba+1		; update variable MSB...
+	STA VIA_U+IORA		; ...and CRTC register...
+	INC VIA_U+IORB		; ...now!
+	STX VIA_U+IORB		; back to idle
+; update vdu_sch
+	LDA vdu_******
 vch_ok:
 	_DR_OK
 
