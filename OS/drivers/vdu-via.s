@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170927-1240
+; last modified 20170927-1427
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -106,8 +106,11 @@ vdu_cls:
 	STA vdu_sch+1		; set new var
 	_STZA vdu_sch		; hopefully VRAM will be page-aligned!
 ; get VIA ready, assume all outputs
-; set up VIA... (worth a subroutine)
-	JSR crtc_rst		; ready to control CRTC
+; set up VIA... for VRAM access!!!
+	LDA VIA_U+IORB		; current PB (4)
+	AND #VV_OTH			; respect PB3 only (2)
+	ORA #VV_LH			; command = latch high address (2)
+	STA VIA_U+IORB		; set command $D0/D8... (4)
 vcl_lh:
 		LDA local1+1		; get MSB (3)
 		STA VIA_U+IORA		; is data to be latched... (4)
@@ -220,7 +223,7 @@ vch_sh:
 	STY local2			; local2 will be destination pointer
 	STA local2+1
 ; get VIA ready, assume all outputs
-; set up VIA... (worth a subroutine)*******
+; set up VIA... for VRAM access!
 	LDA VIA_U+IORB		; current PB (4)
 	AND #VV_OTH			; respect PB3 only (2)
 	ORA #VV_LL			; command = latch LOW address (2)
@@ -259,26 +262,22 @@ vch_adv:
 		INC vdu_cur+1		; or increment MSB (6)
 ; should set CRTC cursor accordingly
 vch_scs:
-; set up VIA... (worth a subroutine, OR NOT)
-		LDA VIA_U+IORB		; original port B value
-		AND #VV_OTH			; keep reserved bits, others...
-		ORA #VV_CRTC		; ...with idle command for CRTC...
-		TAX					; ...worth keeping...
-		LDA vdu_cur			; value LSB is first loaded
-		LDY #15				; cur_l register on CRTC
+; set up VIA... (worth a subroutine)
+	JSR crtc_rst		; ready to control CRTC
+	LDA vdu_cur			; value LSB is first loaded
+	LDY #15				; cur_l register on CRTC
 vcur_l:
-			STX VIA_U+IORB		; set! now will select register
-			STY VIA_U+IORA		; select this address...
-			INC VIA_U+IORB		; ...now!
-			INC VIA_U+IORB		; RS=1, will provide value for register
-			STA VIA_U+IORA		; here is the loaded value...
-			INC VIA_U+IORB		; ...now!
-			LDA vdu_cur+1		; get MSB for next
-			DEY					; previous reg
-			CPY #13				; cur_h already done?
-			BNE vcur_l			; no, go for MSB
+		STY VIA_U+IORA		; select this address...
+		INC VIA_U+IORB		; ...now!
+		INC VIA_U+IORB		; RS=1, will provide value for register
+		STA VIA_U+IORA		; here is the loaded value...
+		INC VIA_U+IORB		; ...now!
+		STX VIA_U+IORB		; go idle ASAP
+		LDA vdu_cur+1		; get MSB for next
+		DEY					; previous reg
+		CPY #13				; cur_h already done?
+		BNE vcur_l			; no, go for MSB
 ; check whether scrolling is needed
-vch_sck:
 		LDA vdu_cur+1		; check position (4)
 		CMP vdu_sch+1		; all lines done? (4)
 		BNE vch_ok			; no, just exit (3)
@@ -286,13 +285,6 @@ vch_sck:
 		CMP vdu_sch
 		BNE vch_ok
 ; otherwise must scroll... via CRTC
-; first preset CRTC idle command
-; set up VIA... (worth a subroutine)
-	JSR crtc_rst		; ready to control CRTC
-	LDA #12				; start_h register on CRTC
-	STA VIA_U+IORA		; select this address...
-	INC VIA_U+IORB		; ...now!
-	INC VIA_U+IORB		; RS=1, will provide value for register
 ; increment base address, wrapping if needed
 	CLC
 	LDA vdu_ba			; get current base...
@@ -305,9 +297,21 @@ vch_sck:
 		LDA #>VR_BASE		; or yes, wrap value around
 vsc_nw:
 	STA vdu_ba+1		; update variable MSB...
-	STA VIA_U+IORA		; ...and CRTC register...
-	INC VIA_U+IORB		; ...now!
-	STX VIA_U+IORB		; back to idle
+; ...and CRTC registerSSSSSS!!!!
+; VIA already set for CRTC control IDLE!
+	LDY #12				; start_h register on CRTC
+vsc_upd:
+		STY VIA_U+IORA		; select this address...
+		INC VIA_U+IORB		; ...now!
+		INC VIA_U+IORB		; RS=1, will provide value for register
+		STA VIA_U+IORA		; ...and CRTC register...
+		INC VIA_U+IORB		; ...now!
+		STX VIA_U+IORB		; back to idle
+; LSB too! eeeeeeeeeeeeek
+		LDA vdu_ba			; get LSB
+		INY					; following register
+		CPY #14				; all done?
+		BNE vsc_upd			; no, go for LSB then
 ; update vdu_sch
 	LDA vdu_sch			; get LSB
 	LDX vdu_sch+1		; see MSB
