@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170927-1427
+; last modified 20170927-1430
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -70,13 +70,9 @@ vdu_init:
 ; load CRTC registers
 vi_crl:
 		INY					; next address
-		STY VIA_U+IORA		; desired register
-		INC VIA_U+IORB		; pulse E, latch address...
-		INC VIA_U+IORB		; ...and set RS=1
 		LDA vdu_data, Y		; get value for it
-		STA VIA_U+IORA		; on data port
-		INC VIA_U+IORB		; pulse E, set register...
-		STX VIA_U+IORB		; ...and back to idle!
+; set address (Y)/value (A) pair, then idle
+		JSR crtc_set
 		CPY #$F				; last register done?
 		BNE vi_crl			; continue otherwise
 
@@ -267,12 +263,9 @@ vch_scs:
 	LDA vdu_cur			; value LSB is first loaded
 	LDY #15				; cur_l register on CRTC
 vcur_l:
-		STY VIA_U+IORA		; select this address...
-		INC VIA_U+IORB		; ...now!
-		INC VIA_U+IORB		; RS=1, will provide value for register
-		STA VIA_U+IORA		; here is the loaded value...
-		INC VIA_U+IORB		; ...now!
-		STX VIA_U+IORB		; go idle ASAP
+; set address (Y)/value (A) pair, then idle
+		JSR crtc_set
+; go for next
 		LDA vdu_cur+1		; get MSB for next
 		DEY					; previous reg
 		CPY #13				; cur_h already done?
@@ -301,12 +294,8 @@ vsc_nw:
 ; VIA already set for CRTC control IDLE!
 	LDY #12				; start_h register on CRTC
 vsc_upd:
-		STY VIA_U+IORA		; select this address...
-		INC VIA_U+IORB		; ...now!
-		INC VIA_U+IORB		; RS=1, will provide value for register
-		STA VIA_U+IORA		; ...and CRTC register...
-		INC VIA_U+IORB		; ...now!
-		STX VIA_U+IORB		; back to idle
+; set address (Y)/value (A) pair, then idle
+		JSR crtc_set
 ; LSB too! eeeeeeeeeeeeek
 		LDA vdu_ba			; get LSB
 		INY					; following register
@@ -401,6 +390,16 @@ crtc_rst:
 	ORA #VV_CRTC		; CRTC mode
 	TAX					; keep this status as 'idle' E=RS=0
 	STA VIA_U+IORB		; ready to write in 6845 addr reg
+	RTS
+
+; set address (Y)/value (A) pair, then idle (X)
+crtc_set:
+	STY VIA_U+IORA		; select this address...
+	INC VIA_U+IORB		; ...now!
+	INC VIA_U+IORB		; RS=1, will provide value for register
+	STA VIA_U+IORA		; here is the loaded value...
+	INC VIA_U+IORB		; ...now!
+	STX VIA_U+IORB		; go idle ASAP
 	RTS
 
 ; ********************
