@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170927-1232
+; last modified 20170927-1240
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -66,26 +66,18 @@ vdu_err:
 ; ************************
 vdu_init:
 ; must set up CRTC first
-; set up VIA...
-	LDA VIA_U+IORB		; original PB value on user VIA (new var)
-	AND #VV_OTH			; clear device, leave PB3
-	ORA #VV_CRTC		; CRTC mode
-	STA VIA_U+IORB		; ready to write in 6845 addr reg
-	TAY					; keep this status as 'idle' E=RS=0
-	LDX #$FF			; all outputs...
-	STX VIA_U+DDRB		; ...just in case
-	STX VIA_U+DDRA		; data will be sent
+	JSR crtc_rst		; ready to control CRTC
 ; load CRTC registers
 vi_crl:
-		INX					; next address
-		STX VIA_U+IORA		; desired register
+		INY					; next address
+		STY VIA_U+IORA		; desired register
 		INC VIA_U+IORB		; pulse E, latch address...
 		INC VIA_U+IORB		; ...and set RS=1
-		LDA vdu_data, X		; get value for it
+		LDA vdu_data, Y		; get value for it
 		STA VIA_U+IORA		; on data port
 		INC VIA_U+IORB		; pulse E, set register...
-		STY VIA_U+IORB		; ...and back to idle!
-		CPX #$F				; last register done?
+		STX VIA_U+IORB		; ...and back to idle!
+		CPY #$F				; last register done?
 		BNE vi_crl			; continue otherwise
 
 ; clear all VRAM!
@@ -114,10 +106,8 @@ vdu_cls:
 	STA vdu_sch+1		; set new var
 	_STZA vdu_sch		; hopefully VRAM will be page-aligned!
 ; get VIA ready, assume all outputs
-	LDA VIA_U+IORB		; current PB (4)
-	AND #VV_OTH			; respect PB3 only (2)
-	ORA #VV_LH			; command = latch high address (2)
-	STA VIA_U+IORB		; set command $D0/D8... (4)
+; set up VIA... (worth a subroutine)
+	JSR crtc_rst		; ready to control CRTC
 vcl_lh:
 		LDA local1+1		; get MSB (3)
 		STA VIA_U+IORA		; is data to be latched... (4)
@@ -230,6 +220,7 @@ vch_sh:
 	STY local2			; local2 will be destination pointer
 	STA local2+1
 ; get VIA ready, assume all outputs
+; set up VIA... (worth a subroutine)*******
 	LDA VIA_U+IORB		; current PB (4)
 	AND #VV_OTH			; respect PB3 only (2)
 	ORA #VV_LL			; command = latch LOW address (2)
@@ -268,6 +259,7 @@ vch_adv:
 		INC vdu_cur+1		; or increment MSB (6)
 ; should set CRTC cursor accordingly
 vch_scs:
+; set up VIA... (worth a subroutine, OR NOT)
 		LDA VIA_U+IORB		; original port B value
 		AND #VV_OTH			; keep reserved bits, others...
 		ORA #VV_CRTC		; ...with idle command for CRTC...
@@ -295,11 +287,8 @@ vch_sck:
 		BNE vch_ok
 ; otherwise must scroll... via CRTC
 ; first preset CRTC idle command
-	LDA VIA_U+IORB		; original port B value
-	AND #VV_OTH			; keep reserved bits, others...
-	ORA #VV_CRTC		; ...with idle command for CRTC...
-	TAX					; ...worth keeping...
-	STA VIA_U+IORB		; set! now will select register
+; set up VIA... (worth a subroutine)
+	JSR crtc_rst		; ready to control CRTC
 	LDA #12				; start_h register on CRTC
 	STA VIA_U+IORA		; select this address...
 	INC VIA_U+IORB		; ...now!
@@ -394,6 +383,21 @@ vbs_bk:
 			_DR_ERR(EMPTY)		; try to complain, just in case
 vbs_end:
 	_DR_OK				; all done, CLC will not harm at first call
+
+; *** generic routines ***
+; set up VIA... (worth a subroutine) X=idle, Y=$FF
+crtc_rst:
+	LDA VIA_U+DDRB		; control port...
+	ORA #%11110111		; ...with required outputs...
+	STA VIA_U+DDRB		; ...just in case
+	LDY #$FF			; all outputs...
+	STY VIA_U+DDRA		; ...for data port
+	LDA VIA_U+IORB		; original PB value on user VIA (new var)
+	AND #VV_OTH			; clear device, leave PB3
+	ORA #VV_CRTC		; CRTC mode
+	TAX					; keep this status as 'idle' E=RS=0
+	STA VIA_U+IORB		; ready to write in 6845 addr reg
+	RTS
 
 ; ********************
 ; *** several data ***
