@@ -1,6 +1,6 @@
-; minimOS 0.6a7 System Variables
+; minimOS 0.6a8 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170902-2123
+; last modified 20170927-1436
 .bss
 
 ; **** I/O management ****
@@ -10,7 +10,7 @@ drv_opt		.dsb	256			; full page of output driver pointers, new direct scheme 160
 drv_ipt		.dsb	256			; full page of input driver pointers, new direct scheme 160406
 #else
 drv_num		.byt	0			; number of installed drivers
-id_list		.dsb	MAX_DRIVERS	; space for reasonable number of drivers
+id_list		.dsb	MX_DRVRS	; space for reasonable number of drivers
 #endif
 
 ; ** I/O flags and locks **
@@ -24,12 +24,12 @@ cin_mode	.dsb	1			; only this for low ram systems
 
 ; **** interrupt queues **** new format 20170518
 queue_mx	.word	0			; array with max offset for both Periodic[1] & Async[0] queues
-drv_poll	.dsb	MAX_QUEUE	; space for periodic task pointers
-drv_freq	.dsb	MAX_QUEUE	; array of periodic task frequencies (word?)
-drv_asyn	.dsb	MAX_QUEUE	; space for async task pointers
-drv_a_en	.dsb	MAX_QUEUE	; interleaved array of async interrupt task flags
+drv_poll	.dsb	MX_QUEUE	; space for periodic task pointers
+drv_freq	.dsb	MX_QUEUE	; array of periodic task frequencies (word?)
+drv_asyn	.dsb	MX_QUEUE	; space for async task pointers
+drv_a_en	.dsb	MX_QUEUE	; interleaved array of async interrupt task flags
 drv_p_en	= drv_a_en + 1		; ditto for periodic tasks (interleaved)
-drv_cnt		.dsb	MAX_QUEUE	; current P-task counters eeeeeeeeeeeeeeeeeeeeek
+drv_cnt		.dsb	MX_QUEUE	; current P-task counters eeeeeeeeeeeeeeeeeeeeek
 
 ; *** single-task sigterm handler separate again! ***
 ; multitasking should provide appropriate space!

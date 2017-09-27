@@ -23,7 +23,7 @@
 ; *** minimOS headers ***
 ; ***********************
 #include "usual.h"
-
+#include "drivers/vdu-via.h"	; for testing
 .(
 ; *** begins with sub-function addresses table ***
 	.byt	205			; physical driver number D_ID (TBD)
@@ -426,3 +426,6 @@ vdu_data:
 	.byt 0
 	.byt 224			; R14/15, cursor position (big endian)
 	.byt 0
+
+.)
+
