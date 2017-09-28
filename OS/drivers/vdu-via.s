@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170928-1404
+; last modified 20170928-1420
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -93,8 +93,8 @@ vdu_cls:
 	LDY #<VR_BASE
 	STY vdu_ba			; set standard start point
 	STA vdu_ba+1
-	STY local1			; set local pointer... (3+3)
-	STA local1+1
+	STY v_dest			; set local pointer... (3+3)
+	STA v_dest+1
 	STY vdu_cur			; ...and restore home position (4+4)
 	STA vdu_cur+1
 ; new, preset scrolling limit
@@ -108,22 +108,22 @@ vdu_cls:
 	ORA #VV_LH			; command = latch high address (2)
 	STA VIA_U+IORB		; set command $D0/D8... (4)
 vcl_lh:
-		LDA local1+1		; get MSB (3)
+		LDA v_dest+1		; get MSB (3)
 		STA VIA_U+IORA		; is data to be latched... (4)
 		INC VIA_U+IORB		; ...now! PB goes to $D1/D9 (6)
 		LDA VIA_U+IORB		; worth keeping setL (4)
 		TAX					; will be Write too... (2)
 		INX					; ...$D2/DA (2)
 vcl_ll:
-			LDY local1			; get LSB (3)
+			LDY v_dest			; get LSB (3)
 			STY VIA_U+IORA		; is data to be latched... (4)
 			STX VIA_U+IORB		; ...now! went to $D2/DA, faster than INC (4)
 			_STZY VIA_U+IORA	; clear output data... (4)
 			STA VIA_U+IORB		; ...now! back to $D1/D9, faster than DEC (4)
-			INC local1			; next byte (5)
+			INC v_dest			; next byte (5)
 			BNE vcl_ll			; continue page (3, total 27)
 		DEC VIA_U+IORB		; back to setH command $D0/D8 (6)
-		INC local1+1		; next page! (5)
+		INC v_dest+1		; next page! (5)
 		BNE vcl_lh			; continue until end (3)
 	RTS
 
@@ -208,46 +208,46 @@ vch_sh:
 	LDA #<vdu_font		; add to base...
 	CLC
 	ADC io_c			; ...the computed offset
-	STA local1			; store locally
+	STA v_src			; store locally
 	LDA #>vdu_font		; same for MSB
 	ADC io_c+1
 ;	_DEC				; in case the font has no non-printable glyphs
-	STA local1+1		; local1 is source pointer
+	STA v_src+1			; is source pointer
 ; create local destination pointer
 	LDY vdu_cur			; get current position
 	LDA vdu_cur+1
-	STY local2			; local2 will be destination pointer
-	STA local2+1
+	STY v_dest			; will be destination pointer
+	STA v_dest+1
 ; get VIA ready, assume all outputs
 ; set up VIA... for VRAM access!
 	LDA VIA_U+IORB		; current PB (4)
 	AND #VV_OTH			; respect PB3 only (2)
 	ORA #VV_LL			; command = latch LOW address (2)
 	STA VIA_U+IORB		; set command $D1/D9... (4)
-	LDX local2			; get destination LSB (3)
+	LDX v_dest			; get destination LSB (3)
 	STX VIA_U+IORA		; as data to be latched... (4)
 	DEC VIA_U+IORB		; ...now! ready for MSB (6)
 	TXA					; current command (2)
 	DEX					; worth keeping this value for terminating writes (2)
 	_INC				; also interesting as most used commands are not contiguous (2)
-	STA local2+2		; keep here as run out of registers (3)
+	STA v_dest+2		; keep here as run out of registers (3)
 ; copy from font (+1...) to VRAM (+1024...)
 	LDY #0				; scanline counter
 vch_pl:
 ; transfer byte from glyph data to VRAM thru VIA...
-		LDA local2+1		; get destination MSB (3)
+		LDA v_dest+1		; get destination MSB (3)
 		STA VIA_U+IORA		; as data to be latched... (4)
-		LDA local2+2		; stored Write command (3)
+		LDA v_dest+2		; stored Write command (3)
 		STA VIA_U+IORB		; ...now! ready for data write (4)
-		LDA (local1), Y		; get glyph data (5)
+		LDA (v_src), Y		; get glyph data (5)
 		EOR vdu_xor			; apply mask! (4)
 		STA VIA_U+IORA		; as data to be latched... (4)
 		STX VIA_U+IORB		; ...now! quick return to LatchH (4)
 ; advance to next scanline
-		LDA local2+1		; get current MSB (3)
+		LDA v_dest+1		; get current MSB (3)
 		CLC
 		ADC #4				; offset for next scanline is 1024 (2+2)
-		STA local2+1		; update (3)
+		STA v_dest+1		; update (3)
 		INY					; next scanline (2)
 		CPY #V_SCANL		; all done? (2)
 		BNE vch_pl			; continue otherwise (3)
@@ -269,14 +269,14 @@ vcur_l:
 		LDA vdu_cur+1		; get MSB for next
 		DEY					; previous reg
 		CPY #13				; cur_h already done?
-		BNE vcur_l			; no, go for MSB
+			BNE vcur_l			; no, go for MSB
 ; check whether scrolling is needed
 		LDA vdu_cur+1		; check position (4)
 		CMP vdu_sch+1		; all lines done? (4)
-		BNE vch_ok			; no, just exit (3)
+			BNE vch_ok			; no, just exit (3)
 		LDA vdu_cur			; check LSB too...
 		CMP vdu_sch
-		BNE vch_ok
+			BNE vch_ok
 ; otherwise must scroll... via CRTC
 ; increment base address, wrapping if needed
 	CLC
