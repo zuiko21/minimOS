@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170927-1430
+; last modified 20170928-1404
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -59,7 +59,7 @@ vdu_err:
 
 ; for easier wrapping and expansion, 8 KiB goes $E000-$FFFF
 	VR_BASE		= $E000
-	V_SCRLIM	= >VR_BASE+1024	; base plus 32x32 chars
+	V_SCRLIM	= VR_BASE+1024	; base plus 32x32 chars, 16-bit in case is needed
 
 ; ************************
 ; *** initialise stuff ***
@@ -98,7 +98,7 @@ vdu_cls:
 	STY vdu_cur			; ...and restore home position (4+4)
 	STA vdu_cur+1
 ; new, preset scrolling limit
-	LDA #V_SCRLIM		; original limit, will wrap around this constant
+	LDA #>V_SCRLIM		; original limit, will wrap around this constant
 	STA vdu_sch+1		; set new var
 	_STZA vdu_sch		; hopefully VRAM will be page-aligned!
 ; get VIA ready, assume all outputs
@@ -283,13 +283,18 @@ vcur_l:
 	LDA vdu_ba			; get current base...
 	ADC #32				; ...and add one line
 	STA vdu_ba			; update variable LSB
+;	TAX					; keep in case is needed
 	LDA vdu_ba+1		; now for MSB
 	ADC #0				; propagate carry
-	CMP #V_SCRLIM		; did it wrap?
+	CMP #>V_SCRLIM		; did it wrap?
 	BNE vsc_nw			; no, just set CRTC and local
+;	CPX #<V_SCRLIM		; all 16-bits coincide?
+;	BNE vsc_nw			; no, just set CRTC and local
 		LDA #>VR_BASE		; or yes, wrap value around
+;		LDX #<VR_BASE		; is this needed for MSB comparison???
 vsc_nw:
 	STA vdu_ba+1		; update variable MSB...
+;	STX vdu_ba			; see above!
 ; ...and CRTC registerSSSSSS!!!!
 ; VIA already set for CRTC control IDLE!
 	LDY #12				; start_h register on CRTC
@@ -304,10 +309,10 @@ vsc_upd:
 ; update vdu_sch
 	LDA vdu_sch			; get LSB
 	LDX vdu_sch+1		; see MSB
-	CPX #V_SCRLIM		; already at limit?
+	CPX #>V_SCRLIM		; already at limit?
 	BNE vsc_blim		; not, just increment
-		CMP #V_SLOW			; also LSB, just in case?******
-	BNE vsc_blim		; not, just increment
+;	CMP #<V_SCRLIM		; LSB already at limit too?
+;	BNE vsc_blim		; not, just increment
 		LDX #>VR_BASE		; yes, wrap to 2nd line
 		LDA #<VR_BASE		; add one line to this
 vsc_blim:
@@ -378,7 +383,7 @@ vbs_end:
 	_DR_OK				; all done, CLC will not harm at first call
 
 ; *** generic routines ***
-; set up VIA... (worth a subroutine) X=idle, Y=$FF
+; set up VIA... for CRTC settings (exit as X=idle, Y=$FF)
 crtc_rst:
 	LDA VIA_U+DDRB		; control port...
 	ORA #%11110111		; ...with required outputs...
@@ -392,7 +397,7 @@ crtc_rst:
 	STA VIA_U+IORB		; ready to write in 6845 addr reg
 	RTS
 
-; set address (Y)/value (A) pair, then idle (X)
+; set address (Y)/value (A) pair, then back to idle (X)
 crtc_set:
 	STY VIA_U+IORA		; select this address...
 	INC VIA_U+IORB		; ...now!
@@ -428,4 +433,3 @@ vdu_data:
 	.byt 0
 
 .)
-
