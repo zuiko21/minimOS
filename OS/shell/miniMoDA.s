@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.6a2
-; last modified 20170829-1341
+; last modified 20170929-0910
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -27,26 +27,26 @@
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 mmd_head:
 ; *** header identification ***
-	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE	; minimOS app!
-	.asc	"****", 13		; some flags TBD
+	BRK							; don't enter here! NUL marks beginning of header
+	.asc	"m", CPU_TYPE		; minimOS app!
+	.asc	"****", 13			; some flags TBD
 ; *** filename and optional comment ***
 title:
-	.asc	"miniMoDA8", 0	; file name (mandatory)******
+	.asc	"miniMoDA", 0		; file name (mandatory)******
 	.asc	"NOT for 65816", 0	; comment
 
 ; advance to end of header
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$54E0		; time, 10.39
-	.word	$4AAB		; date, 2017/5/11
+	.word	$54E0				; time, 10.39
+	.word	$4AAB				; date, 2017/5/11
 
 	mmdsiz8	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	mmdsiz8		; filesize
-	.word	0			; 64K space does not use upper 16-bit
+	.word	mmdsiz8				; filesize
+	.word	0					; 64K space does not use upper 16-bit
 #endif
 ; ##### end of minimOS executable header #####
 
@@ -109,14 +109,14 @@ open_da:
 ; *** store current stack pointer as it will be restored upon JSR/JMP ***
 ; hopefully the remaining registers will be stored by NMI/BRK handler, especially PC!
 ; while a proper debugger interface is done, better preset ptr to a safe area
-	LDX #>user_sram		; beginning of available ram, as defined... in rom.s
-	LDY #<user_sram		; LSB misaligned?
+	LDX #>user_ram		; beginning of available ram, as defined... in rom.s
+	LDY #<user_ram		; LSB misaligned?
 	BEQ ptr_init		; nothing to align
 		INX					; otherwise start at next page
 ptr_init:
 	STX ptr+1			; set MSB
 	_STZA ptr			; page aligned
-	LDA #$30			; *** best to guarantee 8-biut sizes if running on a 65816 ***
+	LDA #$30			; *** best to guarantee 8-bit sizes if running on a 65816 ***
 	STA _psr			; acceptable initial status
 get_sp:
 	TSX					; get current stack pointer
