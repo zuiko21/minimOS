@@ -1,6 +1,6 @@
 ; Monitor shell with disassembler for minimOS
 ; v0.5rc3
-; last modified 20160923-0926
+; last modified 20170930-1917
 ; (c) 2016-2017 Carlos J. Santisteban
 ; somehow deprecated...
 
@@ -75,8 +75,8 @@ open_da:
 ; ##### end of minimOS specific stuff #####
 
 ; global variables
-	LDA #>user_sram		; initial address ##### provided by rom.s, but may be changed #####
-	LDY #<user_sram
+	LDA #>user_ram		; initial address ##### provided by rom.s, but may be changed #####
+	LDY #<user_ram
 	STY ptr				; store LSB
 	STA ptr+1			; and MSB
 	LDA #4				; standard number of lines

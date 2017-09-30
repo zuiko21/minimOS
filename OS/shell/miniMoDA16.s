@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.6a2
-; last modified 20170829-1342
+; last modified 20170930-1916
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -131,8 +131,8 @@ open_da:
 	PLA					; get 8 bits only
 	STA _dbr			; store current, no need to reset it!
 ; while a proper debugger interface is done, better preset ptr to a safe area
-	LDX #>user_sram		; beginning of available ram, as defined... in rom.s
-	LDY #<user_sram		; LSB misaligned?
+	LDX #>user_ram		; beginning of available ram, as defined... in rom.s
+	LDY #<user_ram		; LSB misaligned?
 	BEQ ptr_init		; nothing to align
 		INX					; otherwise start at next page
 ptr_init:
