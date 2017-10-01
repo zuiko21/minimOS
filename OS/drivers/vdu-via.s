@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
-; v0.6a5
+; v0.6a6
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170928-1420
+; last modified 20171001-1609
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -42,7 +42,7 @@
 
 ; *** driver description ***
 srs_info:
-	.asc	"32 char VIA-VDU v0.6a5", 0
+	.asc	"32 char VIA-VDU v0.6a6", 0
 
 vdu_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
@@ -89,18 +89,18 @@ vi_crl:
 ; ***************************************
 ; takes ((27x256)+34)x32+29 ~ 222kt
 vdu_cls:
-	LDA #>VR_BASE		; base address
+	LDA #>VR_BASE		; base address (2+2)
 	LDY #<VR_BASE
-	STY vdu_ba			; set standard start point
+	STY vdu_ba			; set standard start point (4+4)
 	STA vdu_ba+1
 	STY v_dest			; set local pointer... (3+3)
 	STA v_dest+1
 	STY vdu_cur			; ...and restore home position (4+4)
 	STA vdu_cur+1
 ; new, preset scrolling limit
-	LDA #>V_SCRLIM		; original limit, will wrap around this constant
-	STA vdu_sch+1		; set new var
-	_STZA vdu_sch		; hopefully VRAM will be page-aligned!
+	LDA #>V_SCRLIM		; original limit, will wrap around this constant (2)
+	STA vdu_sch+1		; set new var (4)
+	_STZA vdu_sch		; hopefully VRAM will be page-aligned! (4)
 ; get VIA ready, assume all outputs
 ; set up VIA... for VRAM access!!!
 	LDA VIA_U+IORB		; current PB (4)
@@ -205,18 +205,18 @@ vch_sh:
 		DEX					; next shift (2+3)
 		BNE vch_sh
 ; add offset to font base address
-	LDA #<vdu_font		; add to base...
+	LDA #<vdu_font		; add to base... (2+2)
 	CLC
-	ADC io_c			; ...the computed offset
-	STA v_src			; store locally
-	LDA #>vdu_font		; same for MSB
+	ADC io_c			; ...the computed offset (3)
+	STA v_src			; store locally (3)
+	LDA #>vdu_font		; same for MSB (2+3)
 	ADC io_c+1
 ;	_DEC				; in case the font has no non-printable glyphs
-	STA v_src+1			; is source pointer
+	STA v_src+1			; is source pointer (3)
 ; create local destination pointer
-	LDY vdu_cur			; get current position
+	LDY vdu_cur			; get current position (4+4)
 	LDA vdu_cur+1
-	STY v_dest			; will be destination pointer
+	STY v_dest			; will be destination pointer (3+3)
 	STA v_dest+1
 ; get VIA ready, assume all outputs
 ; set up VIA... for VRAM access!
@@ -232,7 +232,7 @@ vch_sh:
 	_INC				; also interesting as most used commands are not contiguous (2)
 	STA v_dest+2		; keep here as run out of registers (3)
 ; copy from font (+1...) to VRAM (+1024...)
-	LDY #0				; scanline counter
+	LDY #0				; scanline counter (2)
 vch_pl:
 ; transfer byte from glyph data to VRAM thru VIA...
 		LDA v_dest+1		; get destination MSB (3)
@@ -244,9 +244,9 @@ vch_pl:
 		STA VIA_U+IORA		; as data to be latched... (4)
 		STX VIA_U+IORB		; ...now! quick return to LatchH (4)
 ; advance to next scanline
-		LDA v_dest+1		; get current MSB (3)
+		LDA v_dest+1		; get current MSB (3+2)
 		CLC
-		ADC #4				; offset for next scanline is 1024 (2+2)
+		ADC #4				; offset for next scanline is 1024 (2)
 		STA v_dest+1		; update (3)
 		INY					; next scanline (2)
 		CPY #V_SCANL		; all done? (2)
@@ -259,66 +259,66 @@ vch_adv:
 ; should set CRTC cursor accordingly
 vch_scs:
 ; set up VIA... (worth a subroutine)
-	JSR crtc_rst		; ready to control CRTC
-	LDA vdu_cur			; value LSB is first loaded
-	LDY #15				; cur_l register on CRTC
+	JSR crtc_rst		; ready to control CRTC (...)
+	LDA vdu_cur			; value LSB is first loaded (4)
+	LDY #15				; cur_l register on CRTC (2)
 vcur_l:
 ; set address (Y)/value (A) pair, then idle
-		JSR crtc_set
+		JSR crtc_set			; (...)
 ; go for next
-		LDA vdu_cur+1		; get MSB for next
-		DEY					; previous reg
-		CPY #13				; cur_h already done?
-			BNE vcur_l			; no, go for MSB
+		LDA vdu_cur+1		; get MSB for next (4)
+		DEY					; previous reg (2)
+		CPY #13				; cur_h already done? (2)
+			BNE vcur_l			; no, go for MSB (3/2)
 ; check whether scrolling is needed
 		LDA vdu_cur+1		; check position (4)
 		CMP vdu_sch+1		; all lines done? (4)
-			BNE vch_ok			; no, just exit (3)
-		LDA vdu_cur			; check LSB too...
+			BNE vch_ok			; no, just exit (3/2)
+		LDA vdu_cur			; check LSB too... (4+4)
 		CMP vdu_sch
-			BNE vch_ok
+			BNE vch_ok			; (3/2)
 ; otherwise must scroll... via CRTC
 ; increment base address, wrapping if needed
 	CLC
-	LDA vdu_ba			; get current base...
-	ADC #32				; ...and add one line
-	STA vdu_ba			; update variable LSB
-;	TAX					; keep in case is needed
-	LDA vdu_ba+1		; now for MSB
-	ADC #0				; propagate carry
-	CMP #>V_SCRLIM		; did it wrap?
-	BNE vsc_nw			; no, just set CRTC and local
-;	CPX #<V_SCRLIM		; all 16-bits coincide?
-;	BNE vsc_nw			; no, just set CRTC and local
-		LDA #>VR_BASE		; or yes, wrap value around
-;		LDX #<VR_BASE		; is this needed for MSB comparison???
+	LDA vdu_ba			; get current base... (2+4)
+	ADC #32				; ...and add one line (2)
+	STA vdu_ba			; update variable LSB (4)
+;	TAX					; keep in case is needed (2)
+	LDA vdu_ba+1		; now for MSB (4)
+	ADC #0				; propagate carry (2)
+	CMP #>V_SCRLIM		; did it wrap? (2)
+	BNE vsc_nw			; no, just set CRTC and local (3/2)
+;	CPX #<V_SCRLIM		; all 16-bits coincide? (2)
+;	BNE vsc_nw			; no, just set CRTC and local (3/2)
+		LDA #>VR_BASE		; or yes, wrap value around (2)
+;		LDX #<VR_BASE		; is this needed for MSB comparison??? (2)
 vsc_nw:
-	STA vdu_ba+1		; update variable MSB...
-;	STX vdu_ba			; see above!
+	STA vdu_ba+1		; update variable MSB... (4)
+;	STX vdu_ba			; see above! (4)
 ; ...and CRTC registerSSSSSS!!!!
 ; VIA already set for CRTC control IDLE!
-	LDY #12				; start_h register on CRTC
+	LDY #12				; start_h register on CRTC (2)
 vsc_upd:
 ; set address (Y)/value (A) pair, then idle
-		JSR crtc_set
+		JSR crtc_set			; (...)
 ; LSB too! eeeeeeeeeeeeek
-		LDA vdu_ba			; get LSB
-		INY					; following register
-		CPY #14				; all done?
-		BNE vsc_upd			; no, go for LSB then
+		LDA vdu_ba			; get LSB (4)
+		INY					; following register (2)
+		CPY #14				; all done? (2)
+		BNE vsc_upd			; no, go for LSB then (3/2)
 ; update vdu_sch
-	LDA vdu_sch			; get LSB
-	LDX vdu_sch+1		; see MSB
-	CPX #>V_SCRLIM		; already at limit?
-	BNE vsc_blim		; not, just increment
-;	CMP #<V_SCRLIM		; LSB already at limit too?
-;	BNE vsc_blim		; not, just increment
-		LDX #>VR_BASE		; yes, wrap to 2nd line
-		LDA #<VR_BASE		; add one line to this
+	LDA vdu_sch			; get LSB (4)
+	LDX vdu_sch+1		; see MSB (4)
+	CPX #>V_SCRLIM		; already at limit? (2)
+	BNE vsc_blim		; not, just increment (3/2)
+;	CMP #<V_SCRLIM		; LSB already at limit too? (2)
+;	BNE vsc_blim		; not, just increment (3/2)
+		LDX #>VR_BASE		; yes, wrap to 2nd line (2)
+		LDA #<VR_BASE		; add one line to this (2)
 vsc_blim:
 	CLC
-	ADC #32				; full line length
-	STA vdu_sch			; update variable
+	ADC #32				; full line length (2+2)
+	STA vdu_sch			; update variable (4+4)
 	STX vdu_sch+1
 vch_ok:
 	_DR_OK
@@ -326,57 +326,57 @@ vch_ok:
 ; *** carriage return ***
 ; quite easy as 32 char per line
 vdu_cr:
-	LDA vdu_cur			; get LSB
-	AND #%11100000		; modulo 32
+	LDA vdu_cur			; get LSB (4)
+	AND #%11100000		; modulo 32 (2+2)
 	CLC
-	ADC #32				; increment line
-	STA vdu_cur			; eeeeeeeeek
+	ADC #32				; increment line (2)
+	STA vdu_cur			; eeeeeeeeek (4)
 vcr_chc:
-	BCC vch_ok			; seems OK
-		INC vdu_cur+1		; or propagate carry...
-		BNE vch_scs			; ...update cursor and check for scrolling, no need for BRA
+	BCC vch_ok			; seems OK (3/2)
+		INC vdu_cur+1		; or propagate carry... (6)
+		BNE vch_scs			; ...update cursor and check for scrolling, no need for BRA (3/2)
 
 ; *** tab (8 spaces) ***
 vdu_tab:
-	LDA vdu_cur			; get LSB
-	AND #%11111000		; modulo 8
+	LDA vdu_cur			; get LSB (4)
+	AND #%11111000		; modulo 8 (2+2)
 	CLC
-	ADC #8				; increment position
+	ADC #8				; increment position (2)
 vtb_l:
-		PHA					; save desired position
-		LDA #' '			; will print spaces
+		PHA					; save desired position (3)
+		LDA #' '			; will print spaces (2+3)
 		STA io_c
-		JSR vch_prn			; direct space printing, A holds 32 too
-		PLA					; recover desired address
-		CMP vdu_cur			; reached?
-		BNE vtb_l			; no, continue
+		JSR vch_prn			; direct space printing, A holds 32 too (...)
+		PLA					; recover desired address (4)
+		CMP vdu_cur			; reached? (4)
+		BNE vtb_l			; no, continue (3/2)
 	_DR_OK				; yes, all done
 
 ; *** backspace ***
 vdu_bs:
 ; first get cursor one position back...
-	JSR vbs_bk			; will call it again at the end
+	JSR vbs_bk			; will call it again at the end (...)
 ; ...then print a space, the regular way...
-	LDA #' '			; code of space
-	STA io_c			; store as single char...
-	JSR vdu_prn			; print whatever is in io_c
+	LDA #' '			; code of space (2)
+	STA io_c			; store as single char... (3)
+	JSR vdu_prn			; print whatever is in io_c (...)
 ; ...and back again!
 vbs_bk:
-	DEC vdu_cur			; one position back
-	LDA vdu_char		; check for carry
-	CMP #$FF			; did it wrap?
-	BNE vbs_end			; no, return or end function
-		DEC vbs_cur+1		; yes, propagate carry
+	DEC vdu_cur			; one position back (6)
+	LDA vdu_char		; check for carry (4)
+	CMP #$FF			; did it wrap? (2)
+	BNE vbs_end			; no, return or end function (3/2)
+		DEC vbs_cur+1		; yes, propagate carry (6)
 ; really ought to check for possible scroll-UP...
 ; at least, avoid being outside feasible values
-		LDA vbs_cur+1		; where are we?
-		CMP #>VR_BASE		; cannot be below VRAM base
-		BCS vbs_end			; no borrow, all OK
-			LDY #<VR_BASE		; get base address
-			LDA #>VR_BASE		; MSB too
-			STY vdu_cur			; set current
+		LDA vbs_cur+1		; where are we? (4)
+		CMP #>VR_BASE		; cannot be below VRAM base (2)
+		BCS vbs_end			; no borrow, all OK (3/2)
+			LDY #<VR_BASE		; get base address (2)
+			LDA #>VR_BASE		; MSB too (2)
+			STY vdu_cur			; set current (4+4)
 			STA vdu_cur+1
-			PLA					; discard return address, as nothing to print
+			PLA					; discard return address, as nothing to print (4+4)
 			PLA
 			_DR_ERR(EMPTY)		; try to complain, just in case
 vbs_end:
@@ -385,26 +385,26 @@ vbs_end:
 ; *** generic routines ***
 ; set up VIA... for CRTC settings (exit as X=idle, Y=$FF)
 crtc_rst:
-	LDA VIA_U+DDRB		; control port...
-	ORA #%11110111		; ...with required outputs...
-	STA VIA_U+DDRB		; ...just in case
-	LDY #$FF			; all outputs...
-	STY VIA_U+DDRA		; ...for data port
-	LDA VIA_U+IORB		; original PB value on user VIA (new var)
-	AND #VV_OTH			; clear device, leave PB3
-	ORA #VV_CRTC		; CRTC mode
-	TAX					; keep this status as 'idle' E=RS=0
-	STA VIA_U+IORB		; ready to write in 6845 addr reg
+	LDA VIA_U+DDRB		; control port... (4)
+	ORA #%11110111		; ...with required outputs... (2)
+	STA VIA_U+DDRB		; ...just in case (4)
+	LDY #$FF			; all outputs... (2)
+	STY VIA_U+DDRA		; ...for data port (4)
+	LDA VIA_U+IORB		; original PB value on user VIA (new var) (4)
+	AND #VV_OTH			; clear device, leave PB3 (2)
+	ORA #VV_CRTC		; CRTC mode (2)
+	TAX					; keep this status as 'idle' E=RS=0 (2)
+	STA VIA_U+IORB		; ready to write in 6845 addr reg (4)
 	RTS
 
 ; set address (Y)/value (A) pair, then back to idle (X)
 crtc_set:
-	STY VIA_U+IORA		; select this address...
-	INC VIA_U+IORB		; ...now!
-	INC VIA_U+IORB		; RS=1, will provide value for register
-	STA VIA_U+IORA		; here is the loaded value...
-	INC VIA_U+IORB		; ...now!
-	STX VIA_U+IORB		; go idle ASAP
+	STY VIA_U+IORA		; select this address... (4)
+	INC VIA_U+IORB		; ...now! (4)
+	INC VIA_U+IORB		; RS=1, will provide value for register (4)
+	STA VIA_U+IORA		; here is the loaded value... (4)
+	INC VIA_U+IORB		; ...now! (4)
+	STX VIA_U+IORB		; go idle ASAP (4)
 	RTS
 
 ; ********************
