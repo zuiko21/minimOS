@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a6
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171001-1609
+; last modified 20171002-2219
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -12,8 +12,8 @@
 ; (PB3 must be left as controls the CapsLock LED)
 ;
 ;	in VRAM mode, PB0-PB1 go to a '139 to decode...
-; %00	= Latch address MSB on trailing edge (or idle) -- perhaps exchange with LSB?
-; %01	= Latch address LSB on trailing edge (most frequent) -- see above
+; %00	= Latch address LSB on trailing edge (or idle) -- was MSB
+; %01	= Latch address MSB on trailing edge (most frequent) -- see above
 ; %10	= Write data (perhaps internally pulsed ~300nS for lower noise)
 ; %11	= Read data (really needed?)
 ; PB2 should be set to ZERO, for compatibility with future expansion
@@ -49,8 +49,8 @@ vdu_err:
 
 ; *** define some constants ***
 	VV_OTH	= %00001000	; bits to be kept, PB3 only
-	VV_LH	= $D0		; mask for 'Latch High' command
-	VV_LL	= $D1		; mask for 'Latch Low' command
+	VV_LH	= $D1		; mask for 'Latch High' command
+	VV_LL	= $D0		; mask for 'Latch Low' command
 	VV_WR	= $D2		; mask for 'Write VRAM' command
 	VV_RD	= $D3		; mask for 'Read VRAM' command
 	VV_CRTC	= $C0		; mask for CRTC access (E=RS=/WR = 0)
