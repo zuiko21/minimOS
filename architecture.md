@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-08-30*
+*Last update: 2017-10-03*
 
 ## Rationale
 
@@ -311,6 +311,9 @@ for better runtime performance; even (for the **65816**) moving
 interfere with *kernel calls* and general system operation, if not carefully crafted 
 (interrupts **off**, and make sure [NMI](https://en.wikipedia.org/wiki/Non-maskable_interrupt) 
 handler sets/restores DP accordingly).
+
+IDs were chosen in a random fashion, but they're likely to be grouped into batches
+of generic devices...
 
 ### Access privileges
 
