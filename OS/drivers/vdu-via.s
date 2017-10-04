@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a6
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171002-2219
+; last modified 20171004-2223
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -49,8 +49,8 @@ vdu_err:
 
 ; *** define some constants ***
 	VV_OTH	= %00001000	; bits to be kept, PB3 only
-	VV_LH	= $D1		; mask for 'Latch High' command
 	VV_LL	= $D0		; mask for 'Latch Low' command
+	VV_LH	= $D1		; mask for 'Latch High' command
 	VV_WR	= $D2		; mask for 'Write VRAM' command
 	VV_RD	= $D3		; mask for 'Read VRAM' command
 	VV_CRTC	= $C0		; mask for CRTC access (E=RS=/WR = 0)
@@ -88,6 +88,7 @@ vi_crl:
 ; *** routine for clearing the screen ***
 ; ***************************************
 ; takes ((27x256)+34)x32+29 ~ 222kt
+; ********* must be adapted to new order!!!!!!!!! ***********
 vdu_cls:
 	LDA #>VR_BASE		; base address (2+2)
 	LDY #<VR_BASE
@@ -223,22 +224,19 @@ vch_sh:
 	LDA VIA_U+IORB		; current PB (4)
 	AND #VV_OTH			; respect PB3 only (2)
 	ORA #VV_LL			; command = latch LOW address (2)
-	STA VIA_U+IORB		; set command $D1/D9... (4)
+	STA VIA_U+IORB		; set command... (4)
 	LDX v_dest			; get destination LSB (3)
 	STX VIA_U+IORA		; as data to be latched... (4)
-	DEC VIA_U+IORB		; ...now! ready for MSB (6)
-	TXA					; current command (2)
-	DEX					; worth keeping this value for terminating writes (2)
-	_INC				; also interesting as most used commands are not contiguous (2)
-	STA v_dest+2		; keep here as run out of registers (3)
+	INC VIA_U+IORB		; ...now! ready for MSB (6)
+	TAX					; previous command LL (2) eeeeeeek
+	INX				; for quick return to current LH (2)
 ; copy from font (+1...) to VRAM (+1024...)
 	LDY #0				; scanline counter (2)
 vch_pl:
 ; transfer byte from glyph data to VRAM thru VIA...
 		LDA v_dest+1		; get destination MSB (3)
 		STA VIA_U+IORA		; as data to be latched... (4)
-		LDA v_dest+2		; stored Write command (3)
-		STA VIA_U+IORB		; ...now! ready for data write (4)
+		INC VIA_U+IORB		; ...now! ready for data write (4)
 		LDA (v_src), Y		; get glyph data (5)
 		EOR vdu_xor			; apply mask! (4)
 		STA VIA_U+IORA		; as data to be latched... (4)
