@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a6
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171005-2218
+; last modified 20171006-1101
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -87,8 +87,8 @@ vi_crl:
 ; ***************************************
 ; *** routine for clearing the screen ***
 ; ***************************************
-; takes ((27x256)+34)x32+29 ~ 222kt
-; ********* must be adapted to new order!!!!!!!!! ***********
+; took ((27x256)+34)x32+29 ~ 222kt
+; new order takes...
 vdu_cls:
 	LDA #>VR_BASE		; base address (2+2)
 	LDY #<VR_BASE
@@ -112,19 +112,19 @@ vcl_lh:
 		LDX v_dest+1		; get MSB (3)
 		STX VIA_U+IORA		; is data to be latched... (4)
 		DEC VIA_U+IORB		; ...now! PB goes to $D0/D8, setL (6)
-		LDA VIA_U+IORB		; worth keeping setL (4)
-		TAX
+		LDA VIA_U+IORB		; worth keeping setL in A (4)
+		TAX					; X will be Write (2)
 		INX					; will compute Write too... (2)
 		INX					; ...$D2/DA (2)
 vcl_ll:
 			LDY v_dest			; get LSB (3)
 			STY VIA_U+IORA		; is data to be latched... (4)
-			STX VIA_U+IORB		; ...now! went to WRITE, faster than INC (4)
+			STX VIA_U+IORB		; ...now! went to WRITE (4)
 			_STZY VIA_U+IORA	; clear output data... (4)
 			STA VIA_U+IORB		; ...now! back to SETL, faster than DEC (4)
 			INC v_dest			; next byte (5)
 			BNE vcl_ll			; continue page (3, total 27)
-		DEC VIA_U+IORB		; back to setH command $D0/D8 (6)
+		INC VIA_U+IORB		; back to setH command $D1/D9 (6)
 		INC v_dest+1		; next page! (5)
 		BNE vcl_lh			; continue until end (3)
 	RTS
