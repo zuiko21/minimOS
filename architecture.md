@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-10-03*
+*Last update: 2017-10-07*
 
 ## Rationale
 
@@ -313,7 +313,8 @@ interfere with *kernel calls* and general system operation, if not carefully cra
 handler sets/restores DP accordingly).
 
 IDs were chosen in a random fashion, but they're likely to be grouped into batches
-of generic devices...
+of generic devices... thus, drivers would include any ID in the generic range, and the
+OS will try to find a place for him, perhaps with another suitable ID. 
 
 ### Access privileges
 
