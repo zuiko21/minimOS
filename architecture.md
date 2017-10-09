@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-10-08*
+*Last update: 2017-10-09*
 
 ## Rationale
 
@@ -321,6 +321,15 @@ a fixed ID of 232, no matter whether driving a 6551, 6850, 16C550 or bit-banged 
 upon install, the kernel would try to use the 232 entry. If busy, try everyone else up
 to 239; if no free entry is found, complain as `BUSY`, otherwise install it. Might try
 first with the supplied ID first (232-239) just in case.*
+
+About **logical** device IDs, as of 2017-10-09 only three are supported:
+
+- **#0** as the (task-defined or global) **default** device (like UNIX's `stdin` & `stdout`)
+- **#126** as **`DEV_RND`** (still under development)
+- **#127** as **`DEV_NULL`** (more like UNIX's `/dev/zero`)
+
+Device IDs in the range 1...63 are intended as **window** numbers, while 64 and up could
+be assigned to open **file handlers**.
 
 ### Access privileges
 
