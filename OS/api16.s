@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a16, should match kernel16.s
+; v0.6a17, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170922-1913
+; last modified 20171010-1835
 
 ; assumes 8-bit sizes upon call...
 
@@ -1356,7 +1356,8 @@ dr_install:
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
 #ifdef	SAFE
-	LDA (da_ptr)		; check ID, no longer stored above
+	LDA (da_ptr)		; check ID...
+	STA dr_id		; once again stored above, in case is changed
 	BMI dr_phys			; only physical devices (3/2)
 ; logical devices cannot be installed this way, function should return INVALID error
 		JMP dr_iabort		; reject logical devices (3)
@@ -1371,10 +1372,10 @@ dr_phys:
 
 ; * 1) first check whether this ID was not in use *
 ; since I/O pointers are always set, pseudo-drivers are detected too!
-	LDA (da_ptr)		; get ID, not worth a variable (5)
+	LDA dr_id		; get ID (3)
 	ASL					; convert to index (2+2)
 	TAX
-	STX dr_id			; keep this eeeeeeeek
+	STX dr_iid			; keep this eeeeeeeek
 ; new 170523, TASK_DEV is nothing to be checked
 	.al: REP #$20		; *** 16-bit memory *** (3)
 	LDA #dr_error		; will look for this address (3)
@@ -1417,7 +1418,7 @@ dr_ntsk:
 ; * 4) Set I/O pointers *
 ; no longer checks I/O availability as any driver must provide at least dummy pointers!
 ; thus not worth a loop...
-	LDX dr_id			; retrieve this eeeeeeeeek
+	LDX dr_iid			; retrieve this eeeeeeeeek
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
 	STA drv_ipt, X		; store full pointer in table (5)
@@ -1456,7 +1457,7 @@ dr_iqloop:
 			STA (dq_ptr), Y		; store into reserved place!
 ; save for frequency queue, flags must be enabled for this task!
 			.as: SEP #$20		; *** needs to go into 8-bit mode for a moment ***
-			LDA (da_ptr)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
+			LDA dr_id			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
 			STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also
 			.al: REP #$20		; *** back to 16-bit, flags unaffected *** eeeeeeeeeeeeeeek
