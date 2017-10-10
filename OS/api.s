@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a14, must match kernel.s
+; v0.6a15, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170925-1748
+; last modified 20171010-1832
 
 ; no way for standalone assembly...
 
@@ -1096,7 +1096,8 @@ dr_phys:
 
 ; 1) first check whether this ID was not in use ***
 	_LDAY (da_ptr)			; retrieve ID
-
+; ****** will store ID as might change within device type if busy ******
+	STA dr_id			; will use instead of non-indexed indirect
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 	ASL					; use retrieved ID as index (2+2)
 	TAX					; was Y
@@ -1115,7 +1116,7 @@ dr_busy:
 ; separate function issues BUSY error
 		JMP dr_babort		; already in use (3)
 dr_empty:
-	STX dr_id			; must keep this eeeeeeeeek
+	STX dr_iid			; must keep this eeeeeeeeek
 
 ; 2) check room in queues, if needed
 ; first get and store requested features
@@ -1147,7 +1148,7 @@ dr_succ:
 ; 4) Set I/O pointers
 ; no need to check I/O availability as any driver must supply at least dummy pointers!
 ; thus not worth a loop, I think...
-	LDX dr_id			; eeeeeeeeeeeeeeeek (3)
+	LDX dr_iid			; eeeeeeeeeeeeeeeek (3)
 	LDY #D_BLIN			; input routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
@@ -1189,7 +1190,8 @@ dr_iqloop:
 ; install entry into queue
 			JSR dr_itask		; install into queue
 ; save for frequency queue, flags must be enabled for this task!
-			_LDAY(da_ptr)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default eeeeeeek
+			LDA dr_id			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default eeeeeeek
+; ****** might replace above by LDAY if inmutable IDs ******
 			LDY dq_off			; get index of free entry!
 			STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also

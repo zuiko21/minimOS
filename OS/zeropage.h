@@ -1,6 +1,6 @@
-; minimOS 0.6a9 zero-page system variables
+; minimOS 0.6a10 zero-page system variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170928-1422
+; last modified 20171010-1833
 
 .zero
 * = 0
@@ -55,6 +55,7 @@ local2: locpt2	.dsb	4	; variables for kernel functions @ $E8
 
 rl_dev	= pfa_ptr+2			; 8b
 dr_id	= rl_dev			; 8b
+dr_iid	= dr_id+1
 
 ; *** include aliases here for local3/locpt3 ***
 rl_cur:					; 8 bit
