@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a14
+; v0.6a15
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170918-1703
+; last modified 20171011-1426
 
 ; just in case
 #define		C816	_C816
@@ -137,6 +137,7 @@ ram_init:
 	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
 		STZ cio_lock, X		; clear I/O locks and interleaved binary flags! (5)
+		STZ drv_ads, X		; ****** clear array for mutable IDs (5)
 		STA drv_opt, X		; set full pointer for output (5)
 		STA drv_ipt, X		; and for input (5)
 		INX					; go for next entry (2+2)

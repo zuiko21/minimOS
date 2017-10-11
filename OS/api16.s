@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a17, should match kernel16.s
+; v0.6a18, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171010-1835
+; last modified 20171011-1429
 
 ; assumes 8-bit sizes upon call...
 
@@ -1484,6 +1484,11 @@ dr_doreq:
 		BPL dr_iqloop
 ; *** end of suspicious code ***
 dr_ended:
+; ****** as all was OK, include this driver address into new array, at actually assigned ID
+	LDX dr_iid			; ID *with* pointer arithmetic (3)
+	LDA da_ptr			; get header pointer, we were in 16-bit A (4)
+	STA drv_ads, X		; store in proper entry (5)
+; ****** end of optional code
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
 	EXIT_OK				; if arrived here, did not fail initialisation
