@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a14
+; v0.6a15
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170918-1711
+; last modified 20171011-1416
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -143,6 +143,8 @@ ram_init:
 dr_clear:
 		_STZA cio_lock, X	; clear I/O locks! (4)
 		_STZA cin_mode, X	; and binary flags, actually next address (4)
+		_STZA drv_ads, X	; ****** in case of mutable driver IDs, clear pointer array first (4+4)
+		_STZA drv_ads+1, X	; ****** could just clear MSB...
 		LDA #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2)
 		STA drv_opt, X		; set LSB for output (4)
 		STA drv_ipt, X		; and for input (4)

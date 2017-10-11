@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a15, must match kernel.s
+; v0.6a16, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171010-1832
+; last modified 20171011-1418
 
 ; no way for standalone assembly...
 
@@ -1223,6 +1223,14 @@ dr_neqnw:
 		BPL dr_iqloop		; eeeeek
 ; *** end of suspicious code ***
 dr_done:
+; ****** as all was OK, include this driver address into new array, at actually assigned ID
+	LDX dr_iid			; ID *with* pointer arithmetic (3)
+	LDY da_ptr			; get header pointer (3+3)
+	LDA da_ptr+1
+	STA drv_ads+1, X	; store MSB in proper entry (4)
+	TYA					; unfortunately no STY abs,X (2)
+	STA drv_ads, X		; store LSB (4)
+; ****** end of optional code
 ; function will exit successfully here
 	_EXIT_OK
 
