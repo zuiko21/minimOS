@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a16, must match kernel.s
+; v0.6a17, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171011-1418
+; last modified 20171013-2242
 
 ; no way for standalone assembly...
 
@@ -1097,27 +1097,44 @@ dr_phys:
 ; 1) first check whether this ID was not in use ***
 	_LDAY (da_ptr)			; retrieve ID
 ; ****** will store ID as might change within device type if busy ******
-	STA dr_id			; will use instead of non-indexed indirect
+;	STA dr_id			; will use instead of non-indexed indirect
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 	ASL					; use retrieved ID as index (2+2)
 	TAX					; was Y
+; new 171013, mutable IDs have a pointer array for easier checking
+	LDY drv_ads+1, X	; check MSB
+	BEQ dr_empty		; already OK
+		AND #%11110000		; filter 8 devs each kind
+		TAX
+		LDY #8			; 8 devs per kind
+dr_nxid:
+			LDA drv_ads+1, X	; check MSB
+				BEQ dr_empty		; already OK
+			INX			; try next
+			INX
+			DEY			; one less to go
+			BNE dr_nxid
+; otherwise, no room for it!
 ; new 170518, TASK_DEV is nothing to be checked
-	LDA #<dr_error		; pre-installed LSB (2)
-	CMP drv_opt, X		; check whether in use (4)
-		BNE dr_busy			; pointer was not empty (2/3)
-	CMP drv_ipt, X		; now check input, just in case (4)
-		BNE dr_busy			; pointer was not empty (2/3)
-	LDA #>dr_error		; now look for pre-installed MSB (2)
-	CMP drv_opt+1, X	; check whether in use (4)
-		BNE dr_busy			; pointer was not empty (2/3)
-	CMP drv_ipt+1, X	; now check input, just in case (4)
-	BEQ dr_empty		; it is OK to set (3/2)
+;	LDA #<dr_error		; pre-installed LSB (2)
+;	CMP drv_opt, X		; check whether in use (4)
+;		BNE dr_busy			; pointer was not empty (2/3)
+;	CMP drv_ipt, X		; now check input, just in case (4)
+;		BNE dr_busy			; pointer was not empty (2/3)
+;	LDA #>dr_error		; now look for pre-installed MSB (2)
+;	CMP drv_opt+1, X	; check whether in use (4)
+;		BNE dr_busy			; pointer was not empty (2/3)
+;	CMP drv_ipt+1, X	; now check input, just in case (4)
+;	BEQ dr_empty		; it is OK to set (3/2)
 dr_busy:
 ; separate function issues BUSY error
 		JMP dr_babort		; already in use (3)
 dr_empty:
 	STX dr_iid			; must keep this eeeeeeeeek
-
+	TXA				; mutable ID must be recomputed
+	SEC
+	ROR				; convert to standard ID
+	STA dr_id			; update new value
 ; 2) check room in queues, if needed
 ; first get and store requested features
 	LDY #D_AUTH			; let us get the provided features
