@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a17, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171013-2242
+; last modified 20171014-2229
 
 ; no way for standalone assembly...
 
@@ -1249,6 +1249,7 @@ dr_done:
 	STA drv_ads, X		; store LSB (4)
 ; ****** end of optional code
 ; function will exit successfully here
+	LDY dr_id
 	_EXIT_OK
 
 ; *****************************************

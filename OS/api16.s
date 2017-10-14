@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a19, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171013-2255
+; last modified 20171014-2228
 
 ; assumes 8-bit sizes upon call...
 
@@ -1509,6 +1509,7 @@ dr_ended:
 ; ****** end of optional code
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
+	LDY dr_id
 	EXIT_OK				; if arrived here, did not fail initialisation
 
 ; **********************
