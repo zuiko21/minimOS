@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a19, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171014-2228
+; last modified 20171018-0839
 
 ; assumes 8-bit sizes upon call...
 
@@ -1346,6 +1346,7 @@ sd_done:
 ;		INPUT
 ; da_ptr	= 16b pointer to the proposed driver header (certainly in bank 0)
 ;		OUTPUT
+; Y			= actually assigned ID (if mutable)
 ; C			= could not install driver (ID in use or invalid, queue full, init failed)
 
 dr_install:
@@ -1509,7 +1510,7 @@ dr_ended:
 ; ****** end of optional code
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
-	LDY dr_id
+	LDY dr_id			; must return actual ID, as might be mutable!
 	EXIT_OK				; if arrived here, did not fail initialisation
 
 ; **********************
