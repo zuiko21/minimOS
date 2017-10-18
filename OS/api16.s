@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a19, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171018-0839
+; last modified 20171018-0856
 
 ; assumes 8-bit sizes upon call...
 
@@ -1357,7 +1357,7 @@ dr_install:
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
 	LDA (da_ptr)		; check ID...
-;	STA dr_id		; once again stored above, in case is changed
+;	STA dr_id			; once again stored above, in case is changed
 #ifdef	SAFE
 	BMI dr_phys			; only physical devices (3/2)
 ; logical devices cannot be installed this way, function should return INVALID error
@@ -1373,41 +1373,42 @@ dr_phys:
 
 ; * 1) first check whether this ID was not in use *
 ; since I/O pointers are always set, pseudo-drivers are detected too!
-	LDA dr_id		; get ID (3)
+;	LDA dr_id			; get ID (3) already in A
 	ASL					; convert to index (2+2)
 	TAX
 ; new 170523, TASK_DEV is nothing to be checked
-	.al: REP #$20		; *** 16-bit memory *** (3)
+; older routine, no longer needed as new drv_ads array eases it!
+;	.al: REP #$20		; *** 16-bit memory *** (3)
 ;	LDA #dr_error		; will look for this address (3)
 ;	CMP drv_opt, X		; check whether in use (5)
 ;		BNE dr_busy			; pointer was not empty (2/3)
 ;	CMP drv_ipt, X		; now check input, just in case (5)
 ;	BEQ dr_empty		; it is OK to set (3/2)
 ; new system for mutable IDs, 171013
-	LDY drv_ads, X		; already in use?
+	LDY drv_ads+1, X	; already in use? checking MSB will suffice
 	BEQ dr_empty		; no, all done
 ; otherwise filter bits and scan possible IDs for this kind of device
-		LDA dr_id		; original ID... plus extra byte
-		AND #$00F0		; filter relevant
-		TAX			; base offset
+;		LDA dr_id		; original ID... must be already in A
+		AND #$F0		; filter relevant
+		TAX				; base offset
 		LDY #8			; devs per kind
 dr_nxid:
-			LDA drv_ads, X		; in use?
+			LDA drv_ads+1, X	; in use? MSB is just fine
 				BEQ dr_empty		; no, all OK
-			INX			; yes, go for next
+			INX				; yes, go for next
 			INX
-			DEY			; one less
+			DEY				; one less to go
 			BNE dr_nxid
 dr_busy:
 ; already in use, function should return BUSY error code
 		JMP dr_babort		; already in use (3)
 dr_empty:
 	STX dr_iid			; keep this eeeeeeeek
-	.as: SEP #$20		; *** 8-bit memory again *** (3)
+;	.as: SEP #$20		; *** 8-bit memory again *** (3) did not change
 	TXA
-	SEC
-	ROR			; standard ID
-	STA dr_id		; update, just in case
+	SEC					; will generate negative (physical) ID
+	ROR					; non-index standard ID
+	STA dr_id			; update, just in case
 ; * 2) check room in queues, where needed *
 	LDY #D_AUTH			; let us get the provided features (2)
 	LDA (da_ptr), Y		; will be checked in a non-destructive way (5)
