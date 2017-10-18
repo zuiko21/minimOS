@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a17, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171014-2229
+; last modified 20171018-0837
 
 ; no way for standalone assembly...
 
@@ -1075,7 +1075,8 @@ sd_tab:					; check order in abi.h
 ;		INPUT
 ; da_ptr	= pointer to the proposed driver header
 ;		OUTPUT
-; C			= could not install driver (ID in use or invalid, queue full, init failed)
+; Y		= actually assigned ID (if mutable)
+; C		= could not install driver (ID in use or invalid, queue full, init failed)
 
 dr_install:
 ; get some info from header
@@ -1249,7 +1250,7 @@ dr_done:
 	STA drv_ads, X		; store LSB (4)
 ; ****** end of optional code
 ; function will exit successfully here
-	LDY dr_id
+	LDY dr_id		; must return actual ID, as might be mutable!
 	_EXIT_OK
 
 ; *****************************************
