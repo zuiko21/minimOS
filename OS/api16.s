@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a19, should match kernel16.s
+; v0.6a20, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171018-0856
+; last modified 20171020-1558
 
 ; assumes 8-bit sizes upon call...
 
@@ -1357,7 +1357,7 @@ dr_install:
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
 	LDA (da_ptr)		; check ID...
-;	STA dr_id			; once again stored above, in case is changed
+	STA dr_id			; once again stored above, in case is changed
 #ifdef	SAFE
 	BMI dr_phys			; only physical devices (3/2)
 ; logical devices cannot be installed this way, function should return INVALID error
@@ -1373,17 +1373,18 @@ dr_phys:
 
 ; * 1) first check whether this ID was not in use *
 ; since I/O pointers are always set, pseudo-drivers are detected too!
-;	LDA dr_id			; get ID (3) already in A
 	ASL					; convert to index (2+2)
 	TAX
 ; new 170523, TASK_DEV is nothing to be checked
+#ifndef		MUTABLE
 ; older routine, no longer needed as new drv_ads array eases it!
-;	.al: REP #$20		; *** 16-bit memory *** (3)
-;	LDA #dr_error		; will look for this address (3)
-;	CMP drv_opt, X		; check whether in use (5)
-;		BNE dr_busy			; pointer was not empty (2/3)
-;	CMP drv_ipt, X		; now check input, just in case (5)
-;	BEQ dr_empty		; it is OK to set (3/2)
+	.al: REP #$20		; *** 16-bit memory *** (3)
+	LDA #dr_error		; will look for this address (3)
+	CMP drv_opt, X		; check whether in use (5)
+		BNE dr_busy			; pointer was not empty (2/3)
+	CMP drv_ipt, X		; now check input, just in case (5)
+	BEQ dr_empty		; no, all done
+#else
 ; new system for mutable IDs, 171013
 	LDY drv_ads+1, X	; already in use? checking MSB will suffice
 	BEQ dr_empty		; no, all done
@@ -1399,16 +1400,20 @@ dr_nxid:
 			INX
 			DEY				; one less to go
 			BNE dr_nxid
+#endif
 dr_busy:
 ; already in use, function should return BUSY error code
 		JMP dr_babort		; already in use (3)
 dr_empty:
 	STX dr_iid			; keep this eeeeeeeek
-;	.as: SEP #$20		; *** 8-bit memory again *** (3) did not change
+#ifndef		MUTABLE
+	.as: SEP #$20		; *** 8-bit memory again *** (3) did not change
+#else
 	TXA
 	SEC					; will generate negative (physical) ID
 	ROR					; non-index standard ID
 	STA dr_id			; update, just in case
+#endif
 ; * 2) check room in queues, where needed *
 	LDY #D_AUTH			; let us get the provided features (2)
 	LDA (da_ptr), Y		; will be checked in a non-destructive way (5)
@@ -1504,11 +1509,13 @@ dr_doreq:
 		BPL dr_iqloop
 ; *** end of suspicious code ***
 dr_ended:
+#ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
 	LDX dr_iid			; ID *with* pointer arithmetic (3)
 	LDA da_ptr			; get header pointer, we were in 16-bit A (4)
 	STA drv_ads, X		; store in proper entry (5)
 ; ****** end of optional code
+#endif
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
 	LDY dr_id			; must return actual ID, as might be mutable!

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a17, must match kernel.s
+; v0.6a18, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171018-0837
+; last modified 20171020-1548
 
 ; no way for standalone assembly...
 
@@ -1081,12 +1081,12 @@ sd_tab:					; check order in abi.h
 dr_install:
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
+; ...but will be stored anyway for mutable option
 #ifdef	SAFE
 	_LDAY(da_ptr)			; get ID if not stored above
 	BMI dr_phys			; only physical devices (3/2)
 ; separate function issues INVALID error
 		JMP dr_iabort		; reject logical devices (3)
-dr_phys:
 #endif
 
 ; *** before registering, check whether the driver COULD be successfully installed ***
@@ -1097,11 +1097,13 @@ dr_phys:
 
 ; 1) first check whether this ID was not in use ***
 	_LDAY (da_ptr)			; retrieve ID
+dr_phys:
 ; ****** will store ID as might change within device type if busy ******
 ;	STA dr_id			; will use instead of non-indexed indirect
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 	ASL					; use retrieved ID as index (2+2)
 	TAX					; was Y
+#ifdef	MUTABLE
 ; new 171013, mutable IDs have a pointer array for easier checking
 	LDY drv_ads+1, X	; check MSB
 	BEQ dr_empty		; already OK
@@ -1116,17 +1118,19 @@ dr_nxid:
 			DEY			; one less to go
 			BNE dr_nxid
 ; otherwise, no room for it!
+#else
 ; new 170518, TASK_DEV is nothing to be checked
-;	LDA #<dr_error		; pre-installed LSB (2)
-;	CMP drv_opt, X		; check whether in use (4)
-;		BNE dr_busy			; pointer was not empty (2/3)
-;	CMP drv_ipt, X		; now check input, just in case (4)
-;		BNE dr_busy			; pointer was not empty (2/3)
-;	LDA #>dr_error		; now look for pre-installed MSB (2)
-;	CMP drv_opt+1, X	; check whether in use (4)
-;		BNE dr_busy			; pointer was not empty (2/3)
-;	CMP drv_ipt+1, X	; now check input, just in case (4)
-;	BEQ dr_empty		; it is OK to set (3/2)
+	LDA #<dr_error		; pre-installed LSB (2)
+	CMP drv_opt, X		; check whether in use (4)
+		BNE dr_busy			; pointer was not empty (2/3)
+	CMP drv_ipt, X		; now check input, just in case (4)
+		BNE dr_busy			; pointer was not empty (2/3)
+	LDA #>dr_error		; now look for pre-installed MSB (2)
+	CMP drv_opt+1, X	; check whether in use (4)
+		BNE dr_busy			; pointer was not empty (2/3)
+	CMP drv_ipt+1, X	; now check input, just in case (4)
+	BEQ dr_empty		; it is OK to set (3/2)
+#endif
 dr_busy:
 ; separate function issues BUSY error
 		JMP dr_babort		; already in use (3)
@@ -1241,6 +1245,7 @@ dr_neqnw:
 		BPL dr_iqloop		; eeeeek
 ; *** end of suspicious code ***
 dr_done:
+#ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
 	LDX dr_iid			; ID *with* pointer arithmetic (3)
 	LDY da_ptr			; get header pointer (3+3)
@@ -1249,6 +1254,7 @@ dr_done:
 	TYA					; unfortunately no STY abs,X (2)
 	STA drv_ads, X		; store LSB (4)
 ; ****** end of optional code
+#endif
 ; function will exit successfully here
 	LDY dr_id		; must return actual ID, as might be mutable!
 	_EXIT_OK
