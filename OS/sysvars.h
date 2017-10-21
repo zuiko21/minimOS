@@ -1,6 +1,6 @@
-; minimOS 0.6a9 System Variables
+; minimOS 0.6a10 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171011-1408
+; last modified 20171021-2232
 .bss
 
 ; **** I/O management ****
@@ -9,7 +9,9 @@
 drv_opt		.dsb	256			; full page of output driver pointers, new direct scheme 160406
 drv_ipt		.dsb	256			; full page of input driver pointers, new direct scheme 160406
 ; ****** in case of mutable driver IDs
+#ifdef	MUTABLE
 drv_ads		.dsb	256			; address of headers from actually assigned IDs, new 171011
+#endif
 #else
 ; ****** this will change
 drv_num		.byt	0			; number of installed drivers
