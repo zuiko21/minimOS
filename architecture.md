@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-10-09*
+*Last update: 2017-10-23*
 
 ## Rationale
 
@@ -312,7 +312,7 @@ interfere with *kernel calls* and general system operation, if not carefully cra
 (interrupts **off**, and make sure [NMI](https://en.wikipedia.org/wiki/Non-maskable_interrupt) 
 handler sets/restores DP accordingly).
 
-IDs were chosen in a random fashion, but they're likely to be grouped into batches
+IDs *were* chosen in a random fashion, but they're likely to be grouped into batches
 of generic devices... thus, drivers would include any ID in the generic range, and the
 OS will try to find a place for him, perhaps with another suitable ID. *For instance,
 ther could be up to 8 **asynchronous serial** devices `as0` to `as7`, corresponding
@@ -320,7 +320,9 @@ to IDs 232 to 239... thus, **most** if not all of these drivers would be supplie
 a fixed ID of 232, no matter whether driving a 6551, 6850, 16C550 or bit-banged VIA;
 upon install, the kernel would try to use the 232 entry. If busy, try everyone else up
 to 239; if no free entry is found, complain as `BUSY`, otherwise install it. Might try
-first with the supplied ID first (232-239) just in case.*
+first with the supplied ID first (232-239) just in case.* As of 2017-10-23, a new
+`MUTABLE` option switches on this feature, which will take (yet) another 256-byte array
+from `sysvars.h`.
 
 About **logical** device IDs, as of 2017-10-09 only three are supported:
 
@@ -360,6 +362,10 @@ the firmware via `JSL` (from any bank)... *if you know what you're doing* (regis
 The desired *cleanliness* is responsible for the creation of some *apparently unneeded* Kernel functions (`TS_INFO`, `RELEASE`, 
 `SET_CURR`...) that will be discussed in due time, particularly affecting **multitasking** implementation.
 
+Note that *future* optimisation options will render kernel & firmware calls as **direct `JSR` calls**
+(or some suitable 65816 replacement, including `PLP:RTL` instead of `RTI`) removing
+the need for *jump tables* and the time-consuming interface that was needed for **binary compatibility**.
+
 ### Task context
 
 This is an architecture-dependent issue, but will usually include:
@@ -369,7 +375,8 @@ This is an architecture-dependent issue, but will usually include:
 - Probably an indication of available user space. *This could be updated with the **actually** used bytes from that space*.
 - **Local variables** for kernel functions (should *not* be touched by user code)
 - **Kernel parameters** for function calling
-- **System reserved variables** which, at least on 65xx machines, *may* be used harmlessly but would certainly change upon interrupts or context switches
+- **System reserved variables** which, at least on 65xx machines, *may* be used harmlessly but would certainly change
+upon interrupts or context switches.
 
 Depending of the CPU used, this context can be totally or partially stored in **zero-page** (for 65xx and 68xx families), 
 **registers** (680x0) or some appropriately pointed RAM area. Together with the 
