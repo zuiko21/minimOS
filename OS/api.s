@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a18, must match kernel.s
+; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171020-1548
+; last modified 20171024-1042
 
 ; no way for standalone assembly...
 
@@ -49,13 +49,13 @@ ci_nerror:
 ; check for binary mode first
 	LDY cin_mode, X		; *get flag, new sysvar 20150617
 	BEQ ci_event		; should process possible event
-		_STZA cin_mode, X	; *back to normal mode
+		_STZA cin_mode-2, X	; *back to normal mode, note sparse offset
 ci_exitOK:
 		_EXIT_OK		; *otherwise mark no error and exit
 ci_event:
 	CMP #16				; is it DLE?
 	BNE ci_notdle		; otherwise check next
-		STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
+		STA cin_mode-2, X		; *set binary mode! puts 16, safer and faster! note sparse offset
 		_ERR(EMPTY)			; and supress received character (will NOT stay locked!)******************
 ci_notdle:
 	CMP #3				; is it ^C? (TERM)
@@ -114,11 +114,13 @@ cout:
 ; cio_lock is a kernel structure
 
 bl_out:
-	TYA					; for indexed comparisons (2)
+	TYA					; basic ID check (2)
 	BNE co_port			; not default (3/2)
 		LDA stdout			; new per-process standard device
+		TAY					; for new sparse arrays...
 		BNE co_port			; already a valid device
 			LDA defltout		; otherwise get system global (4)
+			TAY
 co_port:
 	BMI co_phys			; not a logic device (3/2)
 		CMP #64				; first file-dev??? ***
@@ -148,19 +150,22 @@ cio_nfound:
 co_phys:
 ; arrived here with dev # in A
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
-	ASL					; convert to index (2+2)
+;	ASL					; convert to index (2)
+; new indirect-sparse array system!
+	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
+; newly computed index is stored as usual
 	STA iol_dev			; keep device-index temporarily, worth doing here (3)
 	_CRITIC				; needed for a MUTEX (5)
 co_loop:
 		LDX iol_dev			; retrieve index!
-		LDA cio_lock, X		; check whether THAT device is in use (4)
+		LDA cio_lock-2, X	; check whether THAT device is in use (4) note sparse offset
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		_BRA co_loop		; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
-	STA cio_lock, X		; *reserve this (4)
+	STA cio_lock-2, X	; *reserve this (4) note sparse offset
 	_NO_CRIT
 ; continue with mutually exclusive COUT
 	JSR co_call			; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
@@ -168,7 +173,7 @@ co_lckd:
 ; *** common I/O call ***
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
-	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
+	_STZA cio_lock-2, X	; ...because I have to clear MUTEX! *new indexed form (4) note sparse offset
 	RTS					; exit with whatever error code
 
 
@@ -189,23 +194,28 @@ bl_in:
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
 		LDA std_in			; new per-process standard device
+		TAY					; for new sparse arrays...
 		BNE ci_port			; already a valid device
 			LDA deflt_in		; otherwise get system global
+			TAY
 ci_port:
 	BPL ci_nph			; logic device
 ; new MUTEX for CIN, physical devs only!
-	ASL					; convert to proper physdev index (2)
+;	ASL					; convert to proper physdev index (2)
+; new indirect-sparse array system!
+	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
+; newly computed index is stored as usual
 	STA iol_dev			; keep physdev temporarily, worth doing here (3)
 ; * this has to be done atomic! *
 	_CRITIC
 ci_loop:
 	LDX iol_dev			; *restore previous status (3)
-	LDA cio_lock, X		; *check whether THAT device in use (4)
+	LDA cio_lock-2, X	; *check whether THAT device in use (4) note sparse offset
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
 		LDA run_pid			; who am I?
-		CMP cio_lock, X		; *was it me who locked? (4)
+		CMP cio_lock-2, X	; *was it me who locked? (4) note sparse offset
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
@@ -213,7 +223,7 @@ ci_loop:
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
-	STA cio_lock, X		; *reserve this (4)
+	STA cio_lock-2, X	; *reserve this (4) note sparse offset
 ci_lckdd:
 	_NO_CRIT
 ; * end of atomic operation *
@@ -288,10 +298,10 @@ ci_nle:
 
 ; *** for 02 systems without indexed CALL ***
 co_call:
-	_JMPX(drv_opt)		; direct jump to output routine
+	_JMPX(drv_opt-2)	; direct jump to output routine, note sparse offset
 
 ci_call:
-	_JMPX(drv_ipt)		; direct jump to input routine
+	_JMPX(drv_ipt-2)	; direct jump to input routine, note sparse offset
 
 
 ; ******************************
