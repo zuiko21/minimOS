@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a21, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171024-1056
+; last modified 20171024-1234
 
 ; assumes 8-bit sizes upon call...
 
@@ -1448,21 +1448,37 @@ dr_ntsk:
 		BCS dr_uabort		; no way, forget about this (2/3)
 
 ; if arrived here, it is OK to install the driver!
+
+; all checked OK, do actual driver installation!
+; *** now adapted for new sparse arrays! ***
+; time to look for an empty entry on sparse array
+	LDX #2				; currently will not assing index 0 (2)
+dr_ios:
+		LDA drv_opt-1, X	; check MSB of entry (4)
+			BEQ dr_sarr			; found a free entry (2/3)
+		CPX #MX_DRVRS		; otherwise, is there room for more? (2)
+		BNE dr_snx			; yes, try next (3)
+			JMP dr_fabort		; no, complain (3)
+dr_snx:
+		INX					; go for next (2+2)
+		INX
+		BRA dr_ios			; continue (3)
+; sequential index is computed, store it into direct array
+	TXA					; alas, no STX abs,Y (2)
+	STA dr_ind-128, Y	; store sparse index (4)
+; proper index already in X and A
+
 	.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
 
 ; * 4) Set I/O pointers *
 ; no longer checks I/O availability as any driver must provide at least dummy pointers!
 ; thus not worth a loop...
-;	LDX dr_iid			; retrieve this eeeeeeeeek
-	LDY dr_id			; original direct ID
-	LDX dr_ind-128, Y	; convert to sparse index
-; ***** WRONG, must CREATE entry here *****
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-	STA drv_ipt, X		; store full pointer in table (5)
+	STA drv_ipt-2, X	; store full pointer in table (5) note sparse offset
 	LDY #D_BOUT			; offset for output routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-	STA drv_opt, X		; store full pointer in table (5)
+	STA drv_opt-2, X	; store full pointer in table (5) note sparse offset
 
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...
@@ -1525,7 +1541,6 @@ dr_ended:
 	LDY dr_id			; must return actual ID, as might be mutable!
 #ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
-;	LDX dr_iid			; ID *with* pointer arithmetic (3)
 	LDX dr_ind-128, Y	; convert to sparse index!
 	LDA da_ptr			; get header pointer, we were in 16-bit A (4)
 	STA drv_ads, X		; store in proper entry (5)
