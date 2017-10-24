@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171024-1058
+; last modified 20171024-1228
 
 ; no way for standalone assembly...
 
@@ -1177,26 +1177,39 @@ dr_ntsk:
 		JMP dr_uabort		; no way, forget about this
 dr_succ:
 
+; all checked OK, do actual driver installation!
+; *** now adapted for new sparse arrays! ***
+; time to look for an empty entry on sparse array
+	LDX #2				; currently will not assing index 0 (2)
+dr_ios:
+		LDA drv_opt-1, X	; check MSB of entry (4)
+			BEQ dr_sarr			; found a free entry (2/3)
+		CPX #MX_DRVRS		; otherwise, is there room for more? (2)
+		BNE dr_snx			; yes, try next (3)
+			JMP dr_fabort		; no, complain (3)
+dr_snx:
+		INX					; go for next (2+2)
+		INX
+		BNE dr_ios			; no need for BRA (3)
+; sequential index is computed, store it into direct array
+	TXA					; alas, no STX abs,Y (2)
+	STA dr_ind-128, Y	; store sparse index (4)
+; proper index already in X and A
 ; 4) Set I/O pointers
 ; no need to check I/O availability as any driver must supply at least dummy pointers!
 ; thus not worth a loop, I think...
-; *** now adapted for new sparse arrays! ***
-	LDY dr_iid			; original ID (3)
-	LDX dr_ind-128, Y	; get sparse ID (4)
-; *** that was WRONG, must SCAN sparse array and create entry in direct table ***
-;	LDX dr_iid			; eeeeeeeeeeeeeeeek (3)
 	LDY #D_BLIN			; input routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
-	STA drv_ipt, X		; store in table (4)
+	STA drv_ipt-2, X	; store in table (4) note sparse offset
 	LDA pfa_ptr+1		; same for MSB (3+4)
-	STA drv_ipt+1, X
+	STA drv_ipt-1, X	; note sparse offset
 	LDY #D_BOUT			; offset for output routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
-	STA drv_opt, X		; store in table (4)
+	STA drv_opt-2, X	; store in table (4) note sparse offset
 	LDA pfa_ptr+1		; same for MSB (3+4)
-	STA drv_opt+1, X
+	STA drv_opt-1, X	; note sparse offset
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
