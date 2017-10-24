@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a21, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171024-1042
+; last modified 20171024-1056
 
 ; assumes 8-bit sizes upon call...
 
@@ -1453,7 +1453,10 @@ dr_ntsk:
 ; * 4) Set I/O pointers *
 ; no longer checks I/O availability as any driver must provide at least dummy pointers!
 ; thus not worth a loop...
-	LDX dr_iid			; retrieve this eeeeeeeeek
+;	LDX dr_iid			; retrieve this eeeeeeeeek
+	LDY dr_id			; original direct ID
+	LDX dr_ind-128, Y	; convert to sparse index
+; ***** WRONG, must CREATE entry here *****
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
 	STA drv_ipt, X		; store full pointer in table (5)
@@ -1519,16 +1522,17 @@ dr_doreq:
 		BPL dr_iqloop
 ; *** end of suspicious code ***
 dr_ended:
+	LDY dr_id			; must return actual ID, as might be mutable!
 #ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
-	LDX dr_iid			; ID *with* pointer arithmetic (3)
+;	LDX dr_iid			; ID *with* pointer arithmetic (3)
+	LDX dr_ind-128, Y	; convert to sparse index!
 	LDA da_ptr			; get header pointer, we were in 16-bit A (4)
 	STA drv_ads, X		; store in proper entry (5)
 ; ****** end of optional code
 #endif
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
-	LDY dr_id			; must return actual ID, as might be mutable!
 	EXIT_OK				; if arrived here, did not fail initialisation
 
 ; **********************

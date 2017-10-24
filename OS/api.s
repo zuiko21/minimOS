@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171024-1042
+; last modified 20171024-1058
 
 ; no way for standalone assembly...
 
@@ -1180,7 +1180,11 @@ dr_succ:
 ; 4) Set I/O pointers
 ; no need to check I/O availability as any driver must supply at least dummy pointers!
 ; thus not worth a loop, I think...
-	LDX dr_iid			; eeeeeeeeeeeeeeeek (3)
+; *** now adapted for new sparse arrays! ***
+	LDY dr_iid			; original ID (3)
+	LDX dr_ind-128, Y	; get sparse ID (4)
+; *** that was WRONG, must SCAN sparse array and create entry in direct table ***
+;	LDX dr_iid			; eeeeeeeeeeeeeeeek (3)
 	LDY #D_BLIN			; input routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
@@ -1255,18 +1259,17 @@ dr_neqnw:
 		BPL dr_iqloop		; eeeeek
 ; *** end of suspicious code ***
 dr_done:
+	LDY dr_id		; must return actual ID, as might be mutable!
 #ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
-	LDX dr_iid			; ID *with* pointer arithmetic (3)
-	LDY da_ptr			; get header pointer (3+3)
-	LDA da_ptr+1
-	STA drv_ads+1, X	; store MSB in proper entry (4)
-	TYA					; unfortunately no STY abs,X (2)
-	STA drv_ads, X		; store LSB (4)
+	LDX dr_ind-128, Y	; now it is a proper index for sparse array! (4)
+	LDA da_ptr			; get header pointer (3)
+	STA drv_ads-2, X	; store LSB (4) note sparse offset
+	LDA da_ptr+1		; same for MSB (3)
+	STA drv_ads-1, X	; store MSB in proper entry (4) note sparse offset
 ; ****** end of optional code
 #endif
 ; function will exit successfully here
-	LDY dr_id		; must return actual ID, as might be mutable!
 	_EXIT_OK
 
 ; *****************************************
