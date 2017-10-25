@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171025-1233
+; last modified 20171025-1430
 
 ; no way for standalone assembly...
 
@@ -1105,24 +1105,37 @@ dr_phys:
 ; ****** will store ID as might change within device type if busy ******
 ;	STA dr_id			; will use instead of non-indexed indirect
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
-	ASL					; use retrieved ID as index (2+2)
-	TAX					; was Y
+;	ASL					; use retrieved ID as index (2) **** NO LONGER NEEDED for sparse arrays
+	TAX					; was Y (2)
 #ifdef	MUTABLE
 ; new 171013, mutable IDs have a pointer array for easier checking
+;	LDY drv_ads+1, X	; check MSB
+;	BEQ dr_empty		; already OK
+;		AND #%11110000		; filter 8 devs each kind
+;		TAX
+;		LDY #8			; 8 devs per kind
+;dr_nxid:
+;			LDA drv_ads+1, X	; check MSB
+;				BEQ dr_empty		; already OK
+;			INX			; try next
+;			INX
+;			DEY			; one less to go
+;			BNE dr_nxid
 ; ****** must prepare for sparse array!!!! *********
-	LDY drv_ads+1, X	; check MSB
-	BEQ dr_empty		; already OK
-		AND #%11110000		; filter 8 devs each kind
+	LDA dr_ind-128, X	; check original ID
+;	CMP #$FF			; is this entry free? (or zero in leaded arrays)
+	BEQ dr_empty		; yes, go for it (3)
+		AND #%11110000		; no, filter 8 devs each kind
 		TAX
-		LDY #8			; 8 devs per kind
+		LDY #8				; 8 devs per kind
 dr_nxid:
-			LDA drv_ads+1, X	; check MSB
-				BEQ dr_empty		; already OK
-			INX			; try next
-			INX
-			DEY			; one less to go
-			BNE dr_nxid
-; otherwise, no room for it!
+			LDA dr_ind-128, X	; check that other ID
+;			CMP #$FF			; empty value? (2)
+				BEQ dr_empty		; yes, already OK (3)
+			INX					; no, try next (2)
+			DEY					; one less to go (2)
+			BNE dr_nxid			; until no more available (3)
+; otherwise, no room for it! new ID in X
 #else
 ; new 170518, TASK_DEV is nothing to be checked
 	LDA #<dr_error		; pre-installed LSB (2)
@@ -1140,11 +1153,10 @@ dr_busy:
 ; separate function issues BUSY error
 		JMP dr_babort		; already in use (3)
 dr_empty:
-	STX dr_iid			; must keep this eeeeeeeeek
-	TXA					; mutable ID must be recomputed
-	SEC
-	ROR					; convert to standard ID
-	STA dr_id			; update new value
+	STX dr_id			; this is the mutable new ID
+	TXA					; time to recompute the index
+	ASL
+	STA dr_iid			; update new value
 ; 2) check room in queues, if needed
 ; first get and store requested features
 	LDY #D_AUTH			; let us get the provided features
@@ -1175,7 +1187,7 @@ dr_succ:
 ; all checked OK, do actual driver installation!
 ; *** now adapted for new sparse arrays! ***
 ; time to look for an empty entry on sparse array
-	LDX #2				; currently will not assing index 0 (2)
+	LDX #2				; currently will not use index 0 (2)
 dr_ios:
 		LDA drv_opt+1, X	; check MSB of entry (4)
 			BEQ dr_sarr			; found a free entry (2/3)
@@ -1187,6 +1199,7 @@ dr_snx:
 		INX
 		BNE dr_ios			; no need for BRA (3)
 ; sequential index is computed, store it into direct array
+	LDY dr_id			; get direct, mutable ID eeeeeeeeeeeeeeek (3)
 	TXA					; alas, no STX abs,Y (2)
 	STA dr_ind-128, Y	; store sparse index (4)
 ; proper index already in X and A
@@ -1272,9 +1285,9 @@ dr_done:
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
 	LDX dr_ind-128, Y	; now it is a proper index for sparse array! (4)
 	LDA da_ptr			; get header pointer (3)
-	STA drv_ads-2, X	; store LSB (4) note sparse offset
+	STA drv_ads, X		; store LSB (4)
 	LDA da_ptr+1		; same for MSB (3)
-	STA drv_ads-1, X	; store MSB in proper entry (4) note sparse offset
+	STA drv_ads+1, X	; store MSB in proper entry (4)
 ; ****** end of optional code
 #endif
 ; function will exit successfully here
