@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a21, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171024-1234
+; last modified 20171025-1224
 
 ; assumes 8-bit sizes upon call...
 
@@ -133,16 +133,16 @@ co_phys:
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
 		LDX iol_dev			; retrieve index!
-		LDA cio_lock-2, X	; check whether THAT device is in use (4) 24-bit! note sparse offset
+		LDA cio_lock, X		; check whether THAT device is in use (4) 24-bit!
 			BEQ co_lckd			; resume operation if free (3)
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		BRA co_loop			; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
-	STA cio_lock-2, X	; *reserve this (4) note sparse offset
+	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper physdev index in X
-	JSR (drv_opt-2, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros, note sparse offset
+	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 ; ...and the into cio_unlock
 
 ; ***************************
@@ -154,7 +154,7 @@ co_lckd:
 ; must be called in all 8-bit size!!!
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
-	STZ cio_lock-2, X	; ...because I have to clear MUTEX! *new indexed form (4) note sparse offset
+	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
 	PLB					; we are leaving... into cio_callend
 
 ; ** cio_callend **
@@ -214,15 +214,15 @@ cin:
 ; check for binary mode first
 	LDY cin_mode, X		; *get flag, new sysvar 20150617
 	BEQ ci_event		; should process possible event
-		STZ cin_mode-2, X	; *back to normal mode, note sparse offset
+		STZ cin_mode, X		; *back to normal mode
 ci_exitOK:
-		STZ cio_lock-2, X	; *otherwise clear mutex!!! (4) note sparse offset
+		STZ cio_lock, X		; *otherwise clear mutex!!! (4)
 		PLB					; essential!
 		_EXIT_OK			; all done without error!
 ci_event:
 	CMP #16				; is it DLE?
 	BNE ci_notdle		; otherwise check next
-		STA cin_mode-2, X	; *set binary mode! safer and faster! note sparse offset
+		STA cin_mode, X		; *set binary mode! safer and faster!
 		LDY #EMPTY			; and supress received character
 		BRA cio_abort		; restore & notify (will stay locked!)
 ci_notdle:
@@ -297,12 +297,12 @@ ci_port:
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
 	LDX iol_dev			; *restore previous status (3)
-	LDA cio_lock-2, X		; *check whether THAT device in use (4) note sparse offset
+	LDA cio_lock, X		; *check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
 		LDA run_pid			; who am I?
-		CMP cio_lock-2, X	; *was it me who locked? (4) note sparse offset
+		CMP cio_lock, X		; *was it me who locked? (4)
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
@@ -310,7 +310,7 @@ ci_loop:
 		BRA ci_loop			; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
-	STA cio_lock-2, X	; *reserve this (4) note sparse offset
+	STA cio_lock, X		; *reserve this (4)
 ci_lckdd:
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; ** new direct indexing **
@@ -1454,7 +1454,7 @@ dr_ntsk:
 ; time to look for an empty entry on sparse array
 	LDX #2				; currently will not assing index 0 (2)
 dr_ios:
-		LDA drv_opt-1, X	; check MSB of entry (4)
+		LDA drv_opt+1, X	; check MSB of entry (4)
 			BEQ dr_sarr			; found a free entry (2/3)
 		CPX #MX_DRVRS		; otherwise, is there room for more? (2)
 		BNE dr_snx			; yes, try next (3)
@@ -1475,10 +1475,10 @@ dr_snx:
 ; thus not worth a loop...
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-	STA drv_ipt-2, X	; store full pointer in table (5) note sparse offset
+	STA drv_ipt, X		; store full pointer in table (5)
 	LDY #D_BOUT			; offset for output routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-	STA drv_opt-2, X	; store full pointer in table (5) note sparse offset
+	STA drv_opt, X		; store full pointer in table (5)
 
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...

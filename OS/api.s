@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171024-1228
+; last modified 20171025-1220
 
 ; no way for standalone assembly...
 
@@ -49,13 +49,13 @@ ci_nerror:
 ; check for binary mode first
 	LDY cin_mode, X		; *get flag, new sysvar 20150617
 	BEQ ci_event		; should process possible event
-		_STZA cin_mode-2, X	; *back to normal mode, note sparse offset
+		_STZA cin_mode, X	; *back to normal mode
 ci_exitOK:
 		_EXIT_OK		; *otherwise mark no error and exit
 ci_event:
 	CMP #16				; is it DLE?
 	BNE ci_notdle		; otherwise check next
-		STA cin_mode-2, X		; *set binary mode! puts 16, safer and faster! note sparse offset
+		STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
 		_ERR(EMPTY)			; and supress received character (will NOT stay locked!)******************
 ci_notdle:
 	CMP #3				; is it ^C? (TERM)
@@ -158,14 +158,14 @@ co_phys:
 	_CRITIC				; needed for a MUTEX (5)
 co_loop:
 		LDX iol_dev			; retrieve index!
-		LDA cio_lock-2, X	; check whether THAT device is in use (4) note sparse offset
+		LDA cio_lock, X		; check whether THAT device is in use (4)
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		_BRA co_loop		; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
-	STA cio_lock-2, X	; *reserve this (4) note sparse offset
+	STA cio_lock, X		; *reserve this (4) note sparse offset
 	_NO_CRIT
 ; continue with mutually exclusive COUT
 	JSR co_call			; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
@@ -173,7 +173,7 @@ co_lckd:
 ; *** common I/O call ***
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
-	_STZA cio_lock-2, X	; ...because I have to clear MUTEX! *new indexed form (4) note sparse offset
+	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	RTS					; exit with whatever error code
 
 
@@ -210,12 +210,12 @@ ci_port:
 	_CRITIC
 ci_loop:
 	LDX iol_dev			; *restore previous status (3)
-	LDA cio_lock-2, X	; *check whether THAT device in use (4) note sparse offset
+	LDA cio_lock, X		; *check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
 		LDA run_pid			; who am I?
-		CMP cio_lock-2, X	; *was it me who locked? (4) note sparse offset
+		CMP cio_lock, X		; *was it me who locked? (4)
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
@@ -223,7 +223,7 @@ ci_loop:
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
-	STA cio_lock-2, X	; *reserve this (4) note sparse offset
+	STA cio_lock, X		; *reserve this (4)
 ci_lckdd:
 	_NO_CRIT
 ; * end of atomic operation *
@@ -298,10 +298,10 @@ ci_nle:
 
 ; *** for 02 systems without indexed CALL ***
 co_call:
-	_JMPX(drv_opt-2)	; direct jump to output routine, note sparse offset
+	_JMPX(drv_opt)		; direct jump to output routine
 
 ci_call:
-	_JMPX(drv_ipt-2)	; direct jump to input routine, note sparse offset
+	_JMPX(drv_ipt)		; direct jump to input routine
 
 
 ; ******************************
@@ -1115,6 +1115,7 @@ dr_phys:
 	TAX					; was Y
 #ifdef	MUTABLE
 ; new 171013, mutable IDs have a pointer array for easier checking
+; ****** must prepare for sparse array!!!! *********
 	LDY drv_ads+1, X	; check MSB
 	BEQ dr_empty		; already OK
 		AND #%11110000		; filter 8 devs each kind
@@ -1146,9 +1147,9 @@ dr_busy:
 		JMP dr_babort		; already in use (3)
 dr_empty:
 	STX dr_iid			; must keep this eeeeeeeeek
-	TXA				; mutable ID must be recomputed
+	TXA					; mutable ID must be recomputed
 	SEC
-	ROR				; convert to standard ID
+	ROR					; convert to standard ID
 	STA dr_id			; update new value
 ; 2) check room in queues, if needed
 ; first get and store requested features
@@ -1182,7 +1183,7 @@ dr_succ:
 ; time to look for an empty entry on sparse array
 	LDX #2				; currently will not assing index 0 (2)
 dr_ios:
-		LDA drv_opt-1, X	; check MSB of entry (4)
+		LDA drv_opt+1, X	; check MSB of entry (4)
 			BEQ dr_sarr			; found a free entry (2/3)
 		CPX #MX_DRVRS		; otherwise, is there room for more? (2)
 		BNE dr_snx			; yes, try next (3)
@@ -1201,15 +1202,15 @@ dr_snx:
 	LDY #D_BLIN			; input routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
-	STA drv_ipt-2, X	; store in table (4) note sparse offset
+	STA drv_ipt, X		; store in table (4)
 	LDA pfa_ptr+1		; same for MSB (3+4)
-	STA drv_ipt-1, X	; note sparse offset
+	STA drv_ipt+1, X
 	LDY #D_BOUT			; offset for output routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
-	STA drv_opt-2, X	; store in table (4) note sparse offset
+	STA drv_opt, X		; store in table (4)
 	LDA pfa_ptr+1		; same for MSB (3+4)
-	STA drv_opt-1, X	; note sparse offset
+	STA drv_opt+1, X
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
