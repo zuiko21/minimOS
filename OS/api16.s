@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a21, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171025-1238
+; last modified 20171025-1439
 
 ; assumes 8-bit sizes upon call...
 
@@ -1362,7 +1362,7 @@ dr_install:
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
 	LDA (da_ptr)		; check ID...
-	STA dr_id			; once again stored above, in case is changed
+;	STA dr_id			; once again stored above, in case is changed
 #ifdef	SAFE
 	BMI dr_phys			; only physical devices (3/2)
 ; logical devices cannot be installed this way, function should return INVALID error
@@ -1378,7 +1378,7 @@ dr_phys:
 
 ; * 1) first check whether this ID was not in use *
 ; since I/O pointers are always set, pseudo-drivers are detected too!
-	ASL					; convert to index (2+2)
+;	ASL					; convert to index (2+2)
 	TAX
 ; new 170523, TASK_DEV is nothing to be checked
 #ifndef		MUTABLE
@@ -1391,10 +1391,26 @@ dr_phys:
 	BEQ dr_empty		; no, all done
 #else
 ; new system for mutable IDs, 171013
-	LDY drv_ads+1, X	; already in use? checking MSB will suffice
+	LDY dr_ind-128, X	; already in use?
+;	CPY #$FF			; in case 0 si useable
 	BEQ dr_empty		; no, all done
 ; otherwise filter bits and scan possible IDs for this kind of device
-;		LDA dr_id		; original ID... must be already in A
+; original ID... must be already in A
+		AND #$F0		; filter relevant
+		TAX				; base offset
+;		LDY #8			; devs per kind
+;dr_nxid:
+			LDA drv_ads+1, X	; in use? MSB is just fine
+;				BEQ dr_empty		; no, all OK
+;			INX				; yes, go for next
+;			INX
+;			DEY				; one less to go
+;			BNE dr_nxid
+; **** must adapt to sparse array! *****
+;	LDY drv_ads+1, X	; already in use? checking MSB will suffice
+;	BEQ dr_empty		; no, all done
+; otherwise filter bits and scan possible IDs for this kind of device
+; original ID... must be already in A
 		AND #$F0		; filter relevant
 		TAX				; base offset
 		LDY #8			; devs per kind

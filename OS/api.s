@@ -1086,8 +1086,8 @@ dr_install:
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 ; ...but will be stored anyway for mutable option
+	_LDAY (da_ptr)			; retrieve ID
 #ifdef	SAFE
-	_LDAY(da_ptr)			; get ID if not stored above
 	BMI dr_phys			; only physical devices (3/2)
 ; separate function issues INVALID error
 		JMP dr_iabort		; reject logical devices (3)
@@ -1100,7 +1100,6 @@ dr_install:
 ; otherwise, skip the installing procedure altogether for that driver
 
 ; 1) first check whether this ID was not in use ***
-	_LDAY (da_ptr)			; retrieve ID
 dr_phys:
 ; ****** will store ID as might change within device type if busy ******
 ;	STA dr_id			; will use instead of non-indexed indirect
