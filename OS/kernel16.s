@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6a15
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171022-2159
+; last modified 20171025-1242
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6a14", 0	; version in comment
+	.asc	"minimOS•16 0.6a15", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$4800	; time, 0900
@@ -144,11 +144,11 @@ dr_clear:
 		STA drv_ipt, X		; and for input (5)
 		INX					; go for next entry (2+2)
 		INX
-; might compare against a max-ID and save some RAM, perhaps for 8-bit systems
+		CPX #MX_DRVRS		; all done? needed for sparse arrays (2)
 		BNE dr_clear		; finish page (3/2)
 
 ; TASKDEV is no longer a thing...
-
+	LDX #0				; needed! (2)
 ; *** prepare access to each driver header ***
 dr_loop:
 		PHX					; keep current value (3)
@@ -251,7 +251,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6a14", 0	; version in comment
+	.asc	"minimOS•16 0.6a15", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

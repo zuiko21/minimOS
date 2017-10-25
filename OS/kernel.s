@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a15
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171022-2158
+; last modified 20171025-1238
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a14", 0	; version in comment
+	.asc	"minimOS 0.6a15", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -155,10 +155,10 @@ dr_clear:
 		STA drv_opt, X		; set MSB for output (4)
 		STA drv_ipt, X		; and for input (4)
 		INX					; next entry (2)
-; might save RAM comparing against a limit of IDs...
+		CPX #MX_DRVRS		; all done? needed for sparse arrays (2)
 		BNE dr_clear		; finish page (3/2)
 ; TASKDEV is no longer a thing...
-;	LDX #0			; ...but reset X if using restricted ID array!!!
+	LDX #0				; ...but reset X if using restricted or sparse ID array!!!
 
 ; *** prepare access to each driver header ***
 ; first get the pointer to it
@@ -526,7 +526,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a14", 0
+	.asc	"minimOS 0.6a15", 0
 #endif
 
 kern_end:		; for size computation
