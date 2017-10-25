@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a21, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171025-1224
+; last modified 20171025-1238
 
 ; assumes 8-bit sizes upon call...
 
@@ -90,18 +90,16 @@ blo_24b:
 ; proceed
 	TYA					; update flags upon dev number (2)
 	BNE co_port			; not default (3/2)
-		LDA stdout			; new per-process standard device (3)
-		TAY					; for sparse arrays... (2)
+		LDY stdout			; new per-process standard device (3)
 		BNE co_port			; already a valid device (3/2)
-			LDA defltout		; otherwise get system global (4)
-			TAY
+			LDY defltout		; otherwise get system global (4)
 co_port:
 	BMI co_phys			; not a logic device (3/2)
-		CMP #64				; first file-dev??? (2)
+		CPY #64				; first file-dev??? (2)
 			BCC co_win			; below that, should be window manager (3/2)
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
-		CMP #64+MX_FILES	; still within file-devs?
+		CPY #64+MX_FILES	; still within file-devs?
 			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
 #endif
@@ -112,7 +110,7 @@ co_win:
 ; ** end of filesystem access **
 co_log:
 ; investigate rest of logical devices
-		CMP #DEV_NULL		; lastly, ignore output
+		CPY #DEV_NULL		; lastly, ignore output
 		BEQ co_ok			; /dev/null is always OK
 ; final error otherwise
 			LDY #N_FOUND		; unknown device
@@ -123,9 +121,8 @@ co_ok:
 		PLB					; restore!!!
 		RTI					; end of function without errors
 co_phys:
-; arrived here with dev # in A
+; arrived here with dev # in Y!
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
-;	ASL					; convert to proper physdev index (2)
 ; new indirect-sparse array system!
 	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
 ; newly computed index is stored as usual
@@ -206,7 +203,7 @@ cin:
 	PHK					; bank zero into stack (3)
 	PLB					; set DBR! do not forget another PLB upon end! (4)
 ; ** EVENT management **
-	LDX iol_dev			; **use physdev as index! worth doing here (3)
+	LDX iol_dev			; **use physdev as index! (3)
 	LDA io_c			; get received character
 	CMP #' '			; printable?
 		BCS ci_exitOK		; if so, will not be an event, exit with NO error
@@ -281,11 +278,9 @@ bli_24b:
 ; proceed
 	TYA					; set flags upon devnum (2)
 	BNE ci_port			; specified (3/2)
-		LDA std_in			; new per-process standard device (3)
-		TAY					; for new sparse arrays...
+		LDY std_in			; new per-process standard device (3)
 		BNE ci_port			; already a valid device (3/2)
-			LDA default_in		; otherwise get system global (0/4)
-			TAY
+			LDY default_in		; otherwise get system global (0/4)
 ci_port:
 	BPL ci_nph			; logic device (2/3)
 ; new MUTEX for CIN
@@ -293,7 +288,7 @@ ci_port:
 ; new indirect-sparse array system!
 	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
 ; newly computed index is stored as usual
-	STA iol_dev			; keep physdev temporarily, worth doing here (3)
+	STA iol_dev			; keep sparse physdev temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
 	LDX iol_dev			; *restore previous status (3)
@@ -318,11 +313,11 @@ ci_lckdd:
 			BCS cio_unlock		; clear MUTEX and return whatever error!
 
 ci_nph:
-	CMP #64				; first file-dev??? ***
+	CPY #64				; first file-dev??? ***
 		BCC ci_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
-	CMP #64+MAX_FILES	; still within file-devs?
+	CPY #64+MAX_FILES	; still within file-devs?
 		BCS ci_log			; that or over, not a file
 ; *** manage here input from open file ***
 #endif
@@ -332,9 +327,9 @@ ci_win:
 	JMP cio_abort		; restore & notify
 ; manage logical devices...
 ci_log:
-	CMP #DEV_RND		; getting a random number?
+	CPY #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
-	CMP #DEV_NULL		; lastly, clear buffer!!!
+	CPY #DEV_NULL		; lastly, clear buffer!!!
 		BEQ ci_null
 	LDY #N_FOUND		; unknown device
 	JMP cio_abort		; restore & notify

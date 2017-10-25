@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171025-1220
+; last modified 20171025-1233
 
 ; no way for standalone assembly...
 
@@ -116,18 +116,16 @@ cout:
 bl_out:
 	TYA					; basic ID check (2)
 	BNE co_port			; not default (3/2)
-		LDA stdout			; new per-process standard device
-		TAY					; for new sparse arrays...
+		LDY stdout			; new per-process standard device
 		BNE co_port			; already a valid device
-			LDA defltout		; otherwise get system global (4)
-			TAY
+			LDY defltout		; otherwise get system global (4)
 co_port:
 	BMI co_phys			; not a logic device (3/2)
-		CMP #64				; first file-dev??? ***
+		CPY #64				; first file-dev??? ***
 			BCC co_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
-		CMP #64+MX_FILES	; still within file-devs?
+		CPY #64+MX_FILES	; still within file-devs?
 			BCS co_log			; that value or over, not a file
 ; *** manage here output to open file ***
 #endif
@@ -137,7 +135,7 @@ co_win:
 		_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 co_log:
 ; investigate rest of logical devices
-		CMP #DEV_NULL		; lastly, ignore output
+		CPY #DEV_NULL		; lastly, ignore output
 		BNE cio_nfound		; final error otherwise
 			_STZA bl_siz			; transfer fullfilled eeeeeek
 			_STZA bl_siz+1
@@ -148,9 +146,8 @@ cio_nfound:
 
 ; * stuff begins here *
 co_phys:
-; arrived here with dev # in A
+; arrived here with dev # in Y eeeeeek
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
-;	ASL					; convert to index (2)
 ; new indirect-sparse array system!
 	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
 ; newly computed index is stored as usual
@@ -191,21 +188,18 @@ cio_unlock:
 ; cio_lock & cin_mode are kernel structures
 
 bl_in:
-	TYA					; for indexed comparisons
+	TYA					; update flags from Y contents
 	BNE ci_port			; specified
-		LDA std_in			; new per-process standard device
-		TAY					; for new sparse arrays...
+		LDY std_in			; new per-process standard device
 		BNE ci_port			; already a valid device
-			LDA deflt_in		; otherwise get system global
-			TAY
+			LDY deflt_in		; otherwise get system global
 ci_port:
 	BPL ci_nph			; logic device
-; new MUTEX for CIN, physical devs only!
-;	ASL					; convert to proper physdev index (2)
+; new MUTEX for CIN, physical devs only! ID arrives in Y!
 ; new indirect-sparse array system!
 	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
 ; newly computed index is stored as usual
-	STA iol_dev			; keep physdev temporarily, worth doing here (3)
+	STA iol_dev			; keep sparse-physdev temporarily, worth doing here (3)
 ; * this has to be done atomic! *
 	_CRITIC
 ci_loop:
@@ -234,11 +228,11 @@ ci_lckdd:
 
 ; logical devices management, * placeholder
 ci_nph:
-	CMP #64				; within window devices?
+	CPY #64				; within window devices?
 		BCC ci_win			; below that, should be window manager
 ; ** optional filesystem access **
 #ifdef	FILESYSTEM
-	CMP #64+MX_FILES	; still within file-devs?
+	CPY #64+MX_FILES	; still within file-devs?
 		BCS ci_log			; that or over, not a file
 ; *** manage here input from open file ***
 #endif
@@ -247,9 +241,9 @@ ci_win:
 	_ERR(NO_RSRC)		; not yet implemented ***placeholder***
 ; manage logical devices...
 ci_log:
-	CMP #DEV_RND		; getting a random number?
+	CPY #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
-	CMP #DEV_NULL		; lastly, ignore input...
+	CPY #DEV_NULL		; lastly, ignore input...
 		BEQ ci_ok			; but work like "/dev/zero"
 	JMP cio_nfound		; final error otherwise
 
