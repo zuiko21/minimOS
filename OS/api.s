@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171026-1410
+; last modified 20171026-1416
 
 ; no way for standalone assembly...
 
@@ -1121,8 +1121,8 @@ dr_phys:
 ;			DEY			; one less to go
 ;			BNE dr_nxid
 ; ****** must prepare for sparse array!!!! *********
-	LDA dr_ind-128, X	; check original ID
-;	CMP #$FF			; is this entry free? (or zero in leaded arrays)
+	LDY dr_ind-128, X	; check original ID
+;	CPY #$FF			; is this entry free? (or zero in leaded arrays)
 	BEQ dr_empty		; yes, go for it (3)
 		AND #%11110000		; no, filter 8 devs each kind
 		TAX
