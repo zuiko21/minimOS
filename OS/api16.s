@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a21, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171025-1439
+; last modified 20171026-1435
 
 ; assumes 8-bit sizes upon call...
 
@@ -1378,8 +1378,8 @@ dr_phys:
 
 ; * 1) first check whether this ID was not in use *
 ; since I/O pointers are always set, pseudo-drivers are detected too!
-;	ASL					; convert to index (2+2)
-	TAX
+;	ASL					; convert to index (2)
+	TAX					; definitive ID must end here, just in case (2)
 ; new 170523, TASK_DEV is nothing to be checked
 #ifndef		MUTABLE
 ; older routine, no longer needed as new drv_ads array eases it!
@@ -1392,15 +1392,15 @@ dr_phys:
 #else
 ; new system for mutable IDs, 171013
 	LDY dr_ind-128, X	; already in use?
-;	CPY #$FF			; in case 0 si useable
+;	CPY #$FF			; in case 0 is useable
 	BEQ dr_empty		; no, all done
 ; otherwise filter bits and scan possible IDs for this kind of device
 ; original ID... must be already in A
-		AND #$F0		; filter relevant
-		TAX				; base offset
+;		AND #$F0		; filter relevant
+;		TAX				; base offset
 ;		LDY #8			; devs per kind
 ;dr_nxid:
-			LDA drv_ads+1, X	; in use? MSB is just fine
+;			LDA drv_ads+1, X	; in use? MSB is just fine
 ;				BEQ dr_empty		; no, all OK
 ;			INX				; yes, go for next
 ;			INX
@@ -1411,30 +1411,27 @@ dr_phys:
 ;	BEQ dr_empty		; no, all done
 ; otherwise filter bits and scan possible IDs for this kind of device
 ; original ID... must be already in A
-		AND #$F0		; filter relevant
-		TAX				; base offset
-		LDY #8			; devs per kind
+		AND #$F0			; filter relevant
+		TAX					; base offset
+		LDY #8				; devs per kind
 dr_nxid:
-			LDA drv_ads+1, X	; in use? MSB is just fine
-				BEQ dr_empty		; no, all OK
-			INX				; yes, go for next
-			INX
-			DEY				; one less to go
+			LDA dr_ind+128, X	; ID in use?
+;			CMP #$FF			; in case 0 is useable
+				BEQ dr_empty		; no, all OK now
+			INX					; yes, try next
+			DEY					; one less to go
 			BNE dr_nxid
 #endif
 dr_busy:
 ; already in use, function should return BUSY error code
 		JMP dr_babort		; already in use (3)
 dr_empty:
-	STX dr_iid			; keep this eeeeeeeek
+	STX dr_id			; keep updated ID
+
 #ifndef		MUTABLE
-	.as: SEP #$20		; *** 8-bit memory again *** (3) did not change
-#else
-	TXA
-	SEC					; will generate negative (physical) ID
-	ROR					; non-index standard ID
-	STA dr_id			; update, just in case
+	.as: SEP #$20		; *** 8-bit memory again *** (3)
 #endif
+
 ; * 2) check room in queues, where needed *
 	LDY #D_AUTH			; let us get the provided features (2)
 	LDA (da_ptr), Y		; will be checked in a non-destructive way (5)
@@ -1465,15 +1462,13 @@ dr_ntsk:
 ; time to look for an empty entry on sparse array
 	LDX #2				; currently will not assing index 0 (2)
 dr_ios:
-		LDA drv_opt+1, X	; check MSB of entry (4)
+		LDA drv_opt+1, X	; check MSB of entry, non-output drivers must provide dummy error routine anyway (4)
 			BEQ dr_sarr			; found a free entry (2/3)
-		CPX #MX_DRVRS		; otherwise, is there room for more? (2)
-		BNE dr_snx			; yes, try next (3)
-			JMP dr_fabort		; no, complain (3)
-dr_snx:
 		INX					; go for next (2+2)
 		INX
-		BRA dr_ios			; continue (3)
+		CPX #MX_DRVRS+2		; otherwise, is there room for more? (2) note offset
+		BNE dr_ios			; yes, continue (3)
+	JMP dr_fabort		; no, complain (3)
 ; sequential index is computed, store it into direct array
 	TXA					; alas, no STX abs,Y (2)
 	STA dr_ind-128, Y	; store sparse index (4)
