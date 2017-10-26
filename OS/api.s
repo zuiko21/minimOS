@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171026-1416
+; last modified 20171026-1430
 
 ; no way for standalone assembly...
 
@@ -1154,9 +1154,7 @@ dr_busy:
 		JMP dr_babort		; already in use (3)
 dr_empty:
 	STX dr_id			; this is the mutable new ID
-	TXA					; time to recompute the index
-	ASL
-	STA dr_iid			; set new index
+
 ; 2) check room in queues, if needed
 ; first get and store requested features
 	LDY #D_AUTH			; let us get the provided features
