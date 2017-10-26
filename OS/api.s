@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171025-1430
+; last modified 20171026-1410
 
 ; no way for standalone assembly...
 
@@ -1137,6 +1137,7 @@ dr_nxid:
 ; otherwise, no room for it! new ID in X
 #else
 ; new 170518, TASK_DEV is nothing to be checked
+; ***** perhaps non-mutable IDs might take sparse arrays...
 	LDA #<dr_error		; pre-installed LSB (2)
 	CMP drv_opt, X		; check whether in use (4)
 		BNE dr_busy			; pointer was not empty (2/3)
@@ -1155,7 +1156,7 @@ dr_empty:
 	STX dr_id			; this is the mutable new ID
 	TXA					; time to recompute the index
 	ASL
-	STA dr_iid			; update new value
+	STA dr_iid			; set new index
 ; 2) check room in queues, if needed
 ; first get and store requested features
 	LDY #D_AUTH			; let us get the provided features
@@ -1188,19 +1189,18 @@ dr_succ:
 ; time to look for an empty entry on sparse array
 	LDX #2				; currently will not use index 0 (2)
 dr_ios:
-		LDA drv_opt+1, X	; check MSB of entry (4)
+		LDA drv_opt+1, X	; check MSB of entry, non-output drivers must provide dummy error routine anyway (4)
 			BEQ dr_sarr			; found a free entry (2/3)
-		CPX #MX_DRVRS		; otherwise, is there room for more? (2)
-		BNE dr_snx			; yes, try next (3)
-			JMP dr_fabort		; no, complain (3)
-dr_snx:
 		INX					; go for next (2+2)
 		INX
-		BNE dr_ios			; no need for BRA (3)
+		CPX #MX_DRVRS+2		; otherwise, is there room for more? (2) note offset
+		BNE dr_ios			; yes, no need for BRA (3)
+	JMP dr_fabort		; no, complain (3)
+dr_sarr:
 ; sequential index is computed, store it into direct array
 	LDY dr_id			; get direct, mutable ID eeeeeeeeeeeeeeek (3)
-	TXA					; alas, no STX abs,Y (2)
-	STA dr_ind-128, Y	; store sparse index (4)
+	TXA					; get spare entry index (2)
+	STA dr_ind-128, Y	; store sparse index for that ID, alas, no STX abs,Y (4)
 ; proper index already in X and A
 ; 4) Set I/O pointers
 ; no need to check I/O availability as any driver must supply at least dummy pointers!
