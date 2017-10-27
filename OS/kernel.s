@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a15
+; v0.6a16
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171025-1238
+; last modified 20171027-1013
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -146,17 +146,25 @@ dr_clear:
 #ifdef	MUTABLE
 		_STZA drv_ads, X	; ****** in case of mutable driver IDs, clear pointer array first (4+4)
 		_STZA drv_ads+1, X	; ****** could just clear MSB...
-#endif
+#else
 		LDA #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2)
 		STA drv_opt, X		; set LSB for output (4)
 		STA drv_ipt, X		; and for input (4)
-		INX					; go for MSB (2)
 		LDA #>dr_error		; had to keep it inside because no STY abs,X!!!
-		STA drv_opt, X		; set MSB for output (4)
-		STA drv_ipt, X		; and for input (4)
-		INX					; next entry (2)
-		CPX #MX_DRVRS		; all done? needed for sparse arrays (2)
+		STA drv_opt+1, X	; set MSB for output (4)
+		STA drv_ipt+1, X	; and for input (4)
+#endif
+		INX					; next entry (2+2)
+		INX
+		CPX #MX_DRVRS*2		; all done? needed for sparse arrays (2)
 		BNE dr_clear		; finish page (3/2)
+; sparse arrays need their index inited...
+	LDX #128				; initial offset (2)
+	LDA #0					; ***** or 255, if needed ***** best to define a constant!
+dr_spars:
+		STA dr_ind-128, X		; clear entry
+		INX
+		BNE dr_spars
 ; TASKDEV is no longer a thing...
 	LDX #0				; ...but reset X if using restricted or sparse ID array!!!
 
