@@ -1,16 +1,18 @@
-; minimOS 0.6a10 System Variables
+; minimOS 0.6a11 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171021-2232
+; last modified 20171027-0956
 .bss
 
 ; **** I/O management ****
 ; ** pointer tables for drivers, new order suggested for alternative version **
 #ifndef	LOWRAM
-drv_opt		.dsb	256			; full page of output driver pointers, new direct scheme 160406
-drv_ipt		.dsb	256			; full page of input driver pointers, new direct scheme 160406
+drv_opt		.dsb	MX_DRVRS*2	; full page of output driver pointers, new direct scheme 160406
+drv_ipt		.dsb	MX_DRVRS*2	; full page of input driver pointers, new direct scheme 160406
+; ***** new direct array for sparse indexes *****
+dr_ind		.dsb	128			; index for sparse array
 ; ****** in case of mutable driver IDs
 #ifdef	MUTABLE
-drv_ads		.dsb	256			; address of headers from actually assigned IDs, new 171011
+drv_ads		.dsb	MX_DRVRS*2	; address of headers from actually assigned IDs, new 171011, now sparse
 #endif
 #else
 ; ****** this will change
@@ -21,7 +23,7 @@ id_list		.dsb	MX_DRVRS	; space for reasonable number of drivers
 ; ** I/O flags and locks **
 ; mandatory order!!!
 #ifndef	LOWRAM
-cio_lock	.dsb	256			; PID-reserved MUTEX for CIN & COUT, per-phys-driver & interleaved with CIN binary mode flag for event management 170220
+cio_lock	.dsb	MX_DRVRS*2	; PID-reserved MUTEX for CIN & COUT, per-phys-driver & interleaved with CIN binary mode flag for event management 170220
 cin_mode	= cio_lock + 1		; interleaved
 #else
 cin_mode	.dsb	1			; only this for low ram systems
