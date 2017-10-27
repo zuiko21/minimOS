@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a21, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171026-1435
+; last modified 20171027-1007
 
 ; assumes 8-bit sizes upon call...
 
@@ -1362,7 +1362,7 @@ dr_install:
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
 	LDA (da_ptr)		; check ID...
-;	STA dr_id			; once again stored above, in case is changed
+; will be stored later, in case is changed
 #ifdef	SAFE
 	BMI dr_phys			; only physical devices (3/2)
 ; logical devices cannot be installed this way, function should return INVALID error
@@ -1378,8 +1378,8 @@ dr_phys:
 
 ; * 1) first check whether this ID was not in use *
 ; since I/O pointers are always set, pseudo-drivers are detected too!
-;	ASL					; convert to index (2)
-	TAX					; definitive ID must end here, just in case (2)
+; sparse arrays will not convert ID to index yet...
+	TAX					; definitive ID must end here, just in case, but also in A (2)
 ; new 170523, TASK_DEV is nothing to be checked
 #ifndef		MUTABLE
 ; older routine, no longer needed as new drv_ads array eases it!
@@ -1396,26 +1396,11 @@ dr_phys:
 	BEQ dr_empty		; no, all done
 ; otherwise filter bits and scan possible IDs for this kind of device
 ; original ID... must be already in A
-;		AND #$F0		; filter relevant
-;		TAX				; base offset
-;		LDY #8			; devs per kind
-;dr_nxid:
-;			LDA drv_ads+1, X	; in use? MSB is just fine
-;				BEQ dr_empty		; no, all OK
-;			INX				; yes, go for next
-;			INX
-;			DEY				; one less to go
-;			BNE dr_nxid
-; **** must adapt to sparse array! *****
-;	LDY drv_ads+1, X	; already in use? checking MSB will suffice
-;	BEQ dr_empty		; no, all done
-; otherwise filter bits and scan possible IDs for this kind of device
-; original ID... must be already in A
 		AND #$F0			; filter relevant
 		TAX					; base offset
 		LDY #8				; devs per kind
 dr_nxid:
-			LDA dr_ind+128, X	; ID in use?
+			LDA dr_ind-128, X	; ID in use?
 ;			CMP #$FF			; in case 0 is useable
 				BEQ dr_empty		; no, all OK now
 			INX					; yes, try next
@@ -1466,7 +1451,7 @@ dr_ios:
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #MX_DRVRS+2		; otherwise, is there room for more? (2) note offset
+		CPX #2-MX_DRVRS+2	; otherwise, is there room for more? (2) note offset
 		BNE dr_ios			; yes, continue (3)
 	JMP dr_fabort		; no, complain (3)
 ; sequential index is computed, store it into direct array
