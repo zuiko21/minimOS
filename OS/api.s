@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a19, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171026-1430
+; last modified 20171027-1003
 
 ; no way for standalone assembly...
 
@@ -1101,26 +1101,12 @@ dr_install:
 
 ; 1) first check whether this ID was not in use ***
 dr_phys:
-; ****** will store ID as might change within device type if busy ******
-;	STA dr_id			; will use instead of non-indexed indirect
+; ****** will store ID as might change within device type if busy (already in A) ******
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
-;	ASL					; use retrieved ID as index (2) **** NO LONGER NEEDED for sparse arrays
-	TAX					; was Y (2)
+	TAX					; was Y, also in A (2)
 #ifdef	MUTABLE
 ; new 171013, mutable IDs have a pointer array for easier checking
-;	LDY drv_ads+1, X	; check MSB
-;	BEQ dr_empty		; already OK
-;		AND #%11110000		; filter 8 devs each kind
-;		TAX
-;		LDY #8			; 8 devs per kind
-;dr_nxid:
-;			LDA drv_ads+1, X	; check MSB
-;				BEQ dr_empty		; already OK
-;			INX			; try next
-;			INX
-;			DEY			; one less to go
-;			BNE dr_nxid
-; ****** must prepare for sparse array!!!! *********
+; sparse array ready
 	LDY dr_ind-128, X	; check original ID
 ;	CPY #$FF			; is this entry free? (or zero in leaded arrays)
 	BEQ dr_empty		; yes, go for it (3)
@@ -1191,7 +1177,7 @@ dr_ios:
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #MX_DRVRS+2		; otherwise, is there room for more? (2) note offset
+		CPX #2*MX_DRVRS+2	; otherwise, is there room for more? (2) note offset
 		BNE dr_ios			; yes, no need for BRA (3)
 	JMP dr_fabort		; no, complain (3)
 dr_sarr:
@@ -1277,7 +1263,7 @@ dr_neqnw:
 		BPL dr_iqloop		; eeeeek
 ; *** end of suspicious code ***
 dr_done:
-	LDY dr_id		; must return actual ID, as might be mutable!
+	LDY dr_id			; must return actual ID, as might be mutable!
 #ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
 	LDX dr_ind-128, Y	; now it is a proper index for sparse array! (4)
