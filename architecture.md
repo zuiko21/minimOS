@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-10-23*
+*Last update: 2017-10-28*
 
 ## Rationale
 
@@ -284,7 +284,9 @@ performance considerations or the chance of simaltaneous interrupts.
 
 *I/O routines* need little explanation, now that **block** transfers are the
 standard form. Old *character-oriented* code will now need to integrate a loop for
-repeatedly executing the single byte transfer. 
+repeatedly executing the single byte transfer. Note that drivers lacking input and/or
+output capabilities **must** provide anyway a pointer to a valid *error routine*, as
+the MSB might be checked in some implementations. 
 
 At boot time, the *initialisation* routine of each registered driver is **unconditionally** 
 called -- if not needed, must point to an existing *Return from Subroutine* instruction. 
