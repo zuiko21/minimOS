@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-10-28*
+*Last update: 2017-10-29*
 
 ## Rationale
 
@@ -187,6 +187,28 @@ particular computer lacks such convenient devices, a **suitable driver** provide
 firmware I/O to work thru it. These won't be as reliable as the built-in devices in 
 heavily crashed environments, but it's better than nothing. *The concept of separate 
 **firmware drivers** has been considered*, but deemed too complicated.
+
+### The LOWRAM option
+
+With an eye into **microcontrolers**, *minimOS* should be able to run on the most humble
+devices. Most interestingly, application (source) code for these devices should run
+**unmodified** on suitable bigger machines, for ease of development. With the
+inspiration coming from an *exposure time meter* project (using a 650**3** and an
+otherwise nearly-useless 6810 IC (**128-byte SRAM**), plus also from the attractive
+**6301/6303** Hitachi MCUs, it is reasonable to design a *reduced feature set* with
+particularly **low RAM usage**.
+
+Initially devised as a *separate fork*, 0.5.x version gave birth to the `LOWRAM`
+version. In order to reduce RAM usage, this option produces the following changes:
+
+- Non-patchable kernel calls
+- Reduced number of available drivers
+- No multitasking option
+- No windowing system option
+- No filesystem
+
+Newer options are due for 0.6, like replacing generic calls with direct JSRs,
+and many more *(to be completed)*
 
 ### Device Drivers (0.6 version)
 
