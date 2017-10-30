@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6a15
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171025-1242
+; last modified 20171030-0941
 
 ; just in case
 #define		C816	_C816
@@ -158,7 +158,7 @@ dr_loop:
 		STA da_ptr			; store full pointer (4)
 
 ; *** call new API function ***
-		_KERNEL(DRV_INST)	; try to install this driver
+		_KERNEL(DR_INST)	; try to install this driver
 
 ; *** prepare for next driver ***
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
@@ -186,7 +186,7 @@ dr_ok:					; *** all drivers inited ***
 
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
-	STA deflt_in		; should check some devices, this assumes _in is LSB
+	STA dflt_in			; should check some devices, this assumes _in is LSB
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 

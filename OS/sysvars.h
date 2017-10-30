@@ -1,6 +1,6 @@
-; minimOS 0.6a11 System Variables
+; minimOS 0.6a12 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171027-0956
+; last modified 20171030-0940
 .bss
 
 ; **** I/O management ****
@@ -67,13 +67,13 @@ ram_pid		.dsb	MAX_LIST	; non-interleaved PID array
 ticks		.dsb	4	; jiffy IRQ count (4 bytes) newest format 170822
 sd_flag		.byt	0	; default task upon no remaining braids! 160408
 #ifndef	LOWRAM
-deflt_in	.byt	0	; GLOBAL default devices, EXCEPT for LOWRAM systems
-defltout	.byt	0
+dflt_in		.byt	0	; GLOBAL default devices, EXCEPT for LOWRAM systems
+dfltout		.byt	0
 ; no way for multitasking in LOWRAM systems
 run_pid		.byt	0	; current PID running for easy kernel access, will be set by new SET_CURR
 #else
-deflt_in	= std_in	; in LOWRAM systems, both global and local standard devices are the same!
-defltout	= stdout
+dflt_in		= std_in	; in LOWRAM systems, both global and local standard devices are the same!
+dfltout		= stdout
 #endif
 old_t1		.word	0	; *** keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 

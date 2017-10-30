@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6a16
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171027-1013
+; last modified 20171030-0941
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -179,7 +179,7 @@ dr_loop:
 		STA da_ptr
 
 ; *** call new API install ***
-		_KERNEL(DRV_INST)	; try to install this driver
+		_KERNEL(DR_INST)	; try to install this driver
 
 ; *** continue initing drivers ***
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
@@ -225,7 +225,7 @@ dr_inst:
 		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
 ; *** here comes the call to API function ***
-;		KERNEL(DRV_INST)	; try to install this driver
+;		KERNEL(DR_INST)	; try to install this driver
 ; *** code for separate API function ***
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
@@ -469,8 +469,8 @@ dr_ok:					; *** all drivers inited ***
 ; startup code, revise ASAP
 ; *** set default I/O device ***
 	LDA #DEVICE			; as defined in options.h
-	STA defltout		; should check some devices
-	STA deflt_in
+	STA dfltout			; should check some devices
+	STA dflt_in
 
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
