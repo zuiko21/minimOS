@@ -1,8 +1,8 @@
-; minimOS 0.6a8 API/ABI
+; minimOS 0.6a9 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
-; some renaming 20170805
-; last modified 20170830-1723
+; some renaming 20170805, 20171030
+; last modified 20171030-0851
 
 ; *************************************************
 ; *************************************************
@@ -17,13 +17,13 @@ STRING		= CIN + 2	; output a C-string
 READLN		= STRING + 2	; read input into supplied buffer
 
 ; block-oriented I/O
-BOUT		= READLN + 2	; block output
-BLIN		= BOUT + 2	; block input
-B_CNFG		= BLIN + 2	; configuration settings, new TBD
-B_STAT		= B_CNFG + 2	; device status report, new TBD
+BLOUT		= READLN + 2	; block output
+BLIN		= BLOUT + 2	; block input
+BL_CNFG		= BLIN + 2	; configuration settings, new TBD
+BL_STAT		= BL_CNFG + 2	; device status report, new TBD
 
 ; basic windowing system
-OPEN_W		= B_CNFG + 2	; open window or get I/O device
+OPEN_W		= BL_STAT + 2	; open window or get I/O device
 CLOSE_W		= OPEN_W + 2	; close a window or release device and its buffer
 FREE_W		= CLOSE_W + 2	; release a window but let it on screen, keeping its buffer, may be closed by kernel
 
@@ -37,8 +37,8 @@ LOADLINK	= SHUTDOWN + 2	; get an executable from its path, and get it loaded int
 B_FORK		= LOADLINK + 2	; reserve a free braid
 B_EXEC		= B_FORK + 2	; get code at some address running into a previously reserved braid
 B_SIGNAL	= B_EXEC + 2	; send UNIX_like signal to a braid
-B_STATUS	= B_SIGNAL + 2	; get execution flags of a braid
-GET_PID		= B_STATUS + 2	; get current braid PID
+B_FLAGS		= B_SIGNAL + 2	; get execution flags of a braid
+GET_PID		= B_FLAGS + 2	; get current braid PID
 SET_HNDL	= GET_PID + 2	; set SIGTERM handler
 B_YIELD		= SET_HNDL + 2	; give away CPU time, not really needed but interesting anyway
 

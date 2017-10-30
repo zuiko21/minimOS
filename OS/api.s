@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a19, must match kernel.s
+; v0.6a20, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171027-1003
+; last modified 20171030-0912
 
 ; no way for standalone assembly...
 
@@ -10,10 +10,10 @@
 ; ***************************************
 
 memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
-aqmanage:
-pqmanage:
-bl_config:
-bl_status:
+aq_mng:
+pq_mng:
+b_cnfg:
+b_stat:
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
@@ -88,7 +88,7 @@ ci_error:
 ; io_c	= char
 ;		OUTPUT
 ; C = I/O error
-;		USES whatever BOUT takes
+;		USES whatever BLOUT takes
 
 cout:
 	LDA #io_c			; will point to old parameter
@@ -99,9 +99,9 @@ cout:
 	_STZA bl_siz+1
 ; ...and fall into BOUT
 
-; **************************
-; *** BOUT, block output ***
-; **************************
+; ***************************
+; *** BLOUT, block output ***
+; ***************************
 ;		INPUT
 ; Y		= dev
 ; bl_pt		= pointer to block
@@ -113,7 +113,7 @@ cout:
 ;		USES iol_dev plus whatever the driver takes
 ; cio_lock is a kernel structure
 
-bl_out:
+blout:
 	TYA					; basic ID check (2)
 	BNE co_port			; not default (3/2)
 		LDY stdout			; new per-process standard device
@@ -187,7 +187,7 @@ cio_unlock:
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock & cin_mode are kernel structures
 
-bl_in:
+blin:
 	TYA					; update flags from Y contents
 	BNE ci_port			; specified
 		LDY std_in			; new per-process standard device
@@ -572,12 +572,14 @@ ow_no_window:
 ; ********************************************************
 ; *** CLOSE_W,  close window *****************************
 ; *** FREE_W, release window, will be closed by kernel ***
+; *** B_YIELD, Yield CPU time to next braid **************
 ; ********************************************************
 ;		INPUT
 ; Y = dev
 
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
+b_yield:
 	_EXIT_OK
 
 
@@ -609,14 +611,6 @@ up_loop:
 b_fork:
 	LDY #0				; standard single task value
 ; ...and go into subsequent EXIT_OK from B_YIELD
-
-; *********************************************
-; *** B_YIELD, Yield CPU time to next braid ***
-; *********************************************
-; (no interface needed)
-
-yield:
-	_EXIT_OK
 
 
 ; *****************************************
@@ -697,7 +691,7 @@ ex_jmp:
 ; b_sig	= signal to be sent
 ; Y		= PID (0 means TO ALL)
 
-signal:
+b_signal:
 #ifdef	SAFE
 	TYA					; check correct PID
 		BNE sig_pid			; just 0 for singletasking
@@ -719,16 +713,16 @@ sig_pid:
 	_ERR(INVALID)		; unrecognised signal
 
 
-; ************************************************
-; *** B_STATUS, get execution flags of a braid ***
-; ************************************************
+; ***********************************************
+; *** B_FLAGS, get execution flags of a braid ***
+; ***********************************************
 ;		INPUT
 ; Y = addressed braid
 ;		OUTPUT
 ; Y = flags ***TBD, might include architecture
 ; C = invalid PID
 
-status:
+b_flags:
 #ifdef	SAFE
 	TYA					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -747,7 +741,7 @@ sig_exit:
 ;		OUTPUT
 ; C		= bad PID
 
-set_handler:
+set_hndl:
 #ifdef	SAFE
 	TYA					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -780,7 +774,7 @@ get_pid:
 ; ex_pt		= pointer to executable code
 ;		USES rh_scan
 
-load_link:
+loadlink:
 ; *** look for that filename in ROM headers ***
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get LSB
@@ -831,7 +825,7 @@ ll_bound:
 ll_nfound:
 	_ERR(N_FOUND)		; all was scanned and the query was not found
 ll_found:
-; this was the original load_link code prior to 20161202, will be executed after the header was found!
+; this was the original loadlink code prior to 20161202, will be executed after the header was found!
 	LDY #1			; offset for filetype
 	LDA (rh_scan), Y	; check filetype
 	CMP #'m'		; must be minimOS app!
@@ -878,7 +872,7 @@ ll_wrap:
 ; str_pt	= pointer to string
 ;		OUTPUT
 ; C = device error
-;		USES ...
+;		USES BLOUT...
 
 string:
 ; not very efficient... measure string and call BOUT
@@ -896,9 +890,9 @@ str_loop:
 		BNE str_loop		; continue, no need for BRA (3)
 str_term:
 	STX str_pt+1		; restore pointer, needed for new API/ABI
-	STY bl_siz		; record size LSB
-	_PLY			; restore device
-	_KERNEL(BOUT)		; call usual (could be patched)
+	STY bl_siz			; record size LSB
+	_PLY				; restore device
+	_KERNEL(BLOUT)		; call usual (could be patched)
 	RTS					; return whatever error code
 
 
@@ -911,7 +905,7 @@ str_term:
 ; ln_siz	= max offset (byte)
 ;		USES rl_dev, rl_cur
 
-readLN:
+readln:
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
@@ -1082,7 +1076,7 @@ sd_tab:					; check order in abi.h
 ; Y		= actually assigned ID (if mutable)
 ; C		= could not install driver (ID in use or invalid, queue full, init failed)
 
-dr_install:
+dr_inst:
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 ; ...but will be stored anyway for mutable option
@@ -1362,7 +1356,7 @@ dr_abort:
 ; ******************************
 ; interface TBD ****
 
-dr_shutdown:
+dr_shut:
 	_ERR(UNAVAIL)		; go away! PLACEHOLDER ********* TBD
 
 
@@ -1458,12 +1452,12 @@ k_vec:
 	.word	cout		; output a character
 	.word	cin			; get a character
 	.word	string		; prints a C-string
-	.word	readLN		; buffered input
+	.word	readln		; buffered input
 ; block-oriented I/O
-	.word	bl_out		; block output
-	.word	bl_in		; block input
-	.word	bl_config	; I/O config, new
-	.word	bl_status	; I/O query, new
+	.word	blout		; block output
+	.word	blin		; block input
+	.word	bl_cnfg		; I/O config, new
+	.word	bl_stat		; I/O query, new
 ; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
@@ -1472,22 +1466,22 @@ k_vec:
 	.word	uptime		; approximate uptime in ticks
 	.word	set_fg		; enable frequency generator (VIA T1@PB7)
 	.word	shutdown	; proper shutdown procedure
-	.word	load_link	; get addr. once in RAM/ROM
+	.word	loadlink	; get addr. once in RAM/ROM
 ; simplified task management
 	.word	b_fork		; get available PID ***returns 0
 	.word	b_exec		; launch new process ***simpler
-	.word	signal		; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
-	.word	status		; get execution flags of a task ***eeeeeeeeeek
+	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
 	.word	get_pid		; get PID of current braid ***returns 0
-	.word	set_handler	; set SIGTERM handler
-	.word	yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	set_hndl	; set SIGTERM handler
+	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
 ; new driver functionalities TBD
-	.word	aqmanage	; manage asynchronous task queue
-	.word	pqmanage	; manage periodic task queue
+	.word	aq_mng		; manage asynchronous task queue
+	.word	pq_mng		; manage periodic task queue
 ; only for systems with enough RAM
-; drrivers...
-	.word	dr_install	; install driver
-	.word	dr_shutdown	; shutdown driver
+; drivers...
+	.word	dr_inst		; install driver
+	.word	dr_shut		; shutdown driver
 ; memory...
 	.word	malloc		; reserve memory
 	.word	memlock		; reserve some address

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a21, should match kernel16.s
+; v0.6a22, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171027-1007
+; last modified 20171030-0847
 
 ; assumes 8-bit sizes upon call...
 
@@ -1723,12 +1723,12 @@ k_vec:
 	.word	cout		; output a character
 	.word	cin			; get a character
 	.word	string		; prints a C-string
-	.word	readLN		; buffered input
+	.word	readln		; buffered input
 ; block I/O
-	.word	bl_out		; block output
-	.word	bl_in		; block input
-	.word	bl_config	; configure device
-	.word	bl_status	; device status
+	.word	blout		; block output
+	.word	blin		; block input
+	.word	bl_cnfg		; configure device
+	.word	bl_stat		; device status
 ; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
@@ -1737,20 +1737,20 @@ k_vec:
 	.word	uptime		; approximate uptime in ticks
 	.word	set_fg		; enable frequency generator (VIA T1@PB7)
 	.word	shutdown	; proper shutdown procedure
-	.word	load_link	; get addr. once in RAM/ROM
+	.word	loadlink	; get addr. once in RAM/ROM
 ; simplified task management
 	.word	b_fork		; get available PID ***returns 0
 	.word	b_exec		; launch new process ***simpler
-	.word	signal		; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
-	.word	status		; get execution flags of a task ***eeeeeeeeeek
+	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
 	.word	get_pid		; get PID of current braid ***returns 0
-	.word	set_handler	; set SIGTERM handler
-	.word	yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	set_hndl	; set SIGTERM handler
+	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
 ; new driver functionalities TBD
-	.word	aqmanage	; manage asynchronous task queue
-	.word	pqmanage	; manage periodic task queue
-	.word	dr_install	; install driver
-	.word	dr_shutdown	; remove driver
+	.word	aq_mng		; manage asynchronous task queue
+	.word	pq_mng		; manage periodic task queue
+	.word	dr_inst		; install driver
+	.word	dr_shut		; remove driver
 ; memory management
 	.word	malloc		; reserve memory
 	.word	memlock		; reserve some address

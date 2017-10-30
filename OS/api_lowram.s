@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a12
+; v0.6a13
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170902-2125
+; last modified 20171030-0924
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -18,14 +18,14 @@ free:
 release:
 ts_info:
 set_curr:
-dr_install:			; no way to install these?
-dr_shutdown:
+dr_inst:			; no way to install these?
+dr_shut:
 
 ; *** FUTURE IMPLEMENTATION ***
-aqmanage:
-pqmanage:
-bl_config:
-bl_status:
+aq_mng:
+pq_mng:
+b_cnfg:
+b_stat:
 
 	_ERR(UNAVAIL)	; go away!
 
@@ -37,7 +37,7 @@ bl_status:
 ; io_c	= char
 ;		OUTPUT
 ; C = I/O error
-;		USER BOUT
+;		USES BLOUT
 
 cout:
 	LDA #io_c			; will point to parameter
@@ -46,11 +46,11 @@ cout:
 	LDA #1				; single byte
 	STA bl_siz			; set counter
 	_STZA bl_siz+1
-; ...and fall into BOUT
+; ...and fall into BLOUT
 
-; **************************
-; *** BOUT, block output ***
-; **************************
+; ***************************
+; *** BLOUT, block output ***
+; ***************************
 ;		INPUT
 ; Y		= dev
 ; bl_ptr	= pointer to block
@@ -63,7 +63,7 @@ cout:
 cio_of = da_ptr			; parameter switching between CIN and COUT
 ; da_ptr globally defined, cio_of not needed upon calling dr_call!
 
-bl_out:
+bout:
 #ifdef	SAFE
 	LDA bl_siz			; check size
 	ORA bl_siz+1
@@ -127,7 +127,7 @@ cin:
 	LDA #1				; single byte
 	STA bl_siz			; set counter
 	_STZA bl_siz+1
-	JSR bl_in			; proceed...
+	JSR blin			; proceed...
 		BCS ci_exit			; ...or return error
 ; ** EVENT management **
 	LDA io_c			; get received character
@@ -157,7 +157,7 @@ ci_notdle:
 #ifdef	SAFE
 		LDY #0				; sent to all, this is the only one (skimming a couple of bytes!)
 #endif
-		JSR signal			; send signal FASTER
+		JSR b_signal		; send signal FASTER
 ci_abort:
 		_ERR(EMPTY)			; no character was received
 
@@ -175,7 +175,7 @@ ci_abort:
 ;		USES iol_dev, and whatever the driver takes
 ; cin_mode is a kernel variable
 
-bl_in:
+blin:
 #ifdef	SAFE
 	LDA bl_siz		; how many?
 	ORA bl_siz+1
@@ -259,15 +259,18 @@ open_w:
 		_ERR(NO_RSRC)
 
 ; *************************************
-; ***** GET_PID, get current PID ******
+; *** GET_PID, get current PID ********
 ; *** B_FORK, reserve available PID ***
 ; *************************************
 ;		OUTPUT
 ; Y = PID (0 means singletask system)
-; *********************************************
-; *** B_YIELD, Yield CPU time to next braid ***
-; *********************************************
-; (no interface needed)
+ow_no_window:
+
+get_pid:
+b_fork:
+	LDY #0				; no multitasking or standard device
+; ********************************************************
+; *** B_YIELD, yield CPU time to next braid **************
 ; ********************************************************
 ; *** CLOSE_W,  close window *****************************
 ; *** FREE_W, release window, will be closed by kernel ***
@@ -275,11 +278,7 @@ open_w:
 ;		INPUT
 ; Y = dev
 
-ow_no_window:
-get_pid:
-b_fork:
-	LDY #0				; no multitasking, system reserved PID
-yield:
+b_yield:
 close_w:
 free_w:
 	_EXIT_OK
@@ -367,7 +366,7 @@ ex_jmp:
 ; b_sig	= signal to be sent
 ; Y		= PID (0 means TO ALL)
 
-signal:
+b_signal:
 #ifdef	SAFE
 	TYA					; check correct PID, really needed?
 		BNE sig_pid			; strange error?
@@ -388,16 +387,16 @@ sig_pid:
 	_ERR(INVALID)		; unrecognised signal
 
 
-; ************************************************
-; *** B_STATUS, get execution flags of a braid ***
-; ************************************************
+; ***********************************************
+; *** B_FLAGS, get execution flags of a braid ***
+; ***********************************************
 ;		INPUT
 ; Y = addressed braid
 ;		OUTPUT
 ; Y = flags ***TBD
 ; C = invalid PID
 
-status:
+b_flags:
 #ifdef	SAFE
 	TYA					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -416,7 +415,7 @@ sig_exit:
 ;		OUTPUT
 ; C = bad PID
 
-set_handler:
+set_hndl:
 #ifdef	SAFE
 	TYA					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -439,7 +438,7 @@ set_handler:
 ; ex_pt		= pointer to executable code
 ;		USES rh_scan
 
-load_link:
+loadlink:
 ; *** look for that filename in ROM headers ***
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get LSB
@@ -558,7 +557,7 @@ str_end:
 	STX str_pt+1		; restore pointer
 	STY bl_siz		; complete counter
 	LDY iol_dev		; retrieve device
-	JMP bl_out		; standard block out... and return
+	JMP bout		; standard block out... and return
 
 
 ; ******************************
@@ -570,7 +569,7 @@ str_end:
 ; ln_siz	= max offset (byte)
 ;		USES rl_dev, rl_cur and whatever CIN takes
 
-readLN:
+readln:
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
@@ -681,7 +680,7 @@ shutdown:
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
-	JMP signal			; ask braids to terminate, needs to return to task until the end
+	JMP b_signal		; ask braids to terminate, needs to return to task until the end
 ; ** the real stuff starts here **
 sd_2nd:
 ; now let's disable all drivers
@@ -741,11 +740,11 @@ k_vec:
 	.word	cout		; output a character
 	.word	cin			; get a character
 	.word	string		; prints a C-string
-	.word	readLN		; buffered input
+	.word	readln		; buffered input
 ; block I/O
-	.word	bl_out		; block output
-	.word	bl_in		; block input
-	.word	bl_config	; configure device
+	.word	blout		; block output
+	.word	blin		; block input
+	.word	bl_cnfg		; configure device
 	.word	bl_stat		; device status
 ; simple windowing system (placeholders)
 	.word	open_w		; get I/O port or window
@@ -755,22 +754,22 @@ k_vec:
 	.word	uptime		; approximate uptime in ticks
 	.word	set_fg		; enable frequency generator (VIA T1@PB7)
 	.word	shutdown	; proper shutdown procedure
-	.word	load_link	; get addr. once in RAM/ROM
+	.word	loadlink	; get addr. once in RAM/ROM
 ; simplified task management
 	.word	b_fork		; get available PID ***returns 0
 	.word	b_exec		; launch new process ***simpler
-	.word	signal		; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
-	.word	status		; get execution flags of a task ***eeeeeeeeeek
+	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek***RENAMED
 	.word	get_pid		; get PID of current braid ***returns 0
-	.word	set_handler	; set SIGTERM handler
-	.word	yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	set_hndl	; set SIGTERM handler
+	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
 ; new functionalities TBD
-	.word	aqmanage	; manage asynchronous task queue
-	.word	pqmanage	; manage periodic task queue
+	.word	aq_mng		; manage asynchronous task queue
+	.word	pq_mng		; manage periodic task queue
 ; *** unimplemented functions ***
 #ifdef	SAFE
-	.word	dr_install	; install driver
-	.word	dr_shutdown	; shutdown driver
+	.word	dr_inst		; install driver
+	.word	dr_shut		; shutdown driver
 	.word	malloc		; reserve memory
 	.word	memlock		; reserve some address
 	.word	free		; release memory
