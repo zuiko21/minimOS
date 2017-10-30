@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a20, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171030-0912
+; last modified 20171030-0928
 
 ; no way for standalone assembly...
 
@@ -14,8 +14,11 @@ aq_mng:
 pq_mng:
 b_cnfg:
 b_stat:
+; *** DR_SHUT, remove driver ***
+; interface TBD ****
+dr_shut:
 
-unimplemented:			; placeholder here, not currently used
+unimplemented:			; placeholder here
 	_ERR(UNAVAIL)		; go away!
 
 
@@ -566,13 +569,19 @@ open_w:
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 ow_no_window:
-	LDY #DEVICE			; constant default device, REVISE
+; *********************************
+; *** B_FORK, get available PID ***
+; *********************************
+;		OUTPUT
+; Y		= PID, 0 means not available
+b_fork:
+	LDY #0				; constant default device or standard single task
 ; ***** EXIT_OK on subsequent system calls!!! *****
 
 ; ********************************************************
 ; *** CLOSE_W,  close window *****************************
 ; *** FREE_W, release window, will be closed by kernel ***
-; *** B_YIELD, Yield CPU time to next braid **************
+; *** B_YIELD, yield CPU time to next braid **************
 ; ********************************************************
 ;		INPUT
 ; Y = dev
@@ -600,17 +609,6 @@ up_loop:
 		BPL up_loop
 	_NO_CRIT			; done (4)
 	_EXIT_OK
-
-
-; *********************************
-; *** B_FORK, get available PID ***
-; *********************************
-;		OUTPUT
-; Y		= PID, 0 means not available
-
-b_fork:
-	LDY #0				; standard single task value
-; ...and go into subsequent EXIT_OK from B_YIELD
 
 
 ; *****************************************
@@ -1352,11 +1350,6 @@ dr_abort:
 	RTS
 
 ; ******************************
-; *** DR_SHUT, remove driver ***
-; ******************************
-; interface TBD ****
-
-dr_shut:
 	_ERR(UNAVAIL)		; go away! PLACEHOLDER ********* TBD
 
 

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6a22, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171030-0847
+; last modified 20171030-0937
 
 ; assumes 8-bit sizes upon call...
 
@@ -14,10 +14,13 @@
 ; ***************************************
 
 memlock:				; *** FUTURE IMPLEMENTATION ***
-aqmanage:
-pqmanage:
-bl_config:
-bl_status:
+aq_mng:
+pq_mng:
+bl_cnfg:
+bl_stat:
+; *** DR_SHUT, remove driver ***
+; interface TBD ****
+dr_shut:
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
@@ -31,7 +34,7 @@ unimplemented:			; placeholder here, not currently used
 ; io_c	= char
 ;		OUTPUT
 ; C = I/O error
-;		USES BOUT
+;		USES BLOUT
 ; cio_lock is a kernel structure
 
 cout:
@@ -54,10 +57,10 @@ cout:
 	LDA #1			; single byte
 	STA bl_siz		; set size
 	STZ bl_siz+1
-; ...and fall into BOUT
+; ...and fall into BLOUT
 
 ; **************************
-; *** BOUT, block output ***
+; *** BLOUT, block output ***
 ; **************************
 ;		INPUT
 ; Y		= dev
@@ -70,7 +73,7 @@ cout:
 ; cio_lock is a kernel structure
 ; * 8-bit savvy *
 
-bl_out:
+blout:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -259,7 +262,7 @@ ci_signal:
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock & cin_mode are kernel structures
 
-bl_in:
+blin:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -699,10 +702,19 @@ open_w:
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 ow_no_window:
-	LDY #DEVICE			; constant default device, REVISE
-; EXIT_OK on subsequent system calls!!!
-	.as				; back to normal...
 
+; *********************************
+; *** B_FORK, get available PID ***
+; *********************************
+;		OUTPUT
+; Y		= PID, 0 means not available or singletask
+
+b_fork:
+	LDY #0				; standard device or single task PID
+; EXIT_OK on subsequent system calls!!!
+
+; ********************************************************
+; *** B_YIELD, yield CPU time to next braid **************
 ; ********************************************************
 ; *** CLOSE_W,  close window *****************************
 ; *** FREE_W, release window, will be closed by kernel ***
@@ -710,10 +722,12 @@ ow_no_window:
 ;		INPUT
 ; Y = dev
 
+b_yield:
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
 	_EXIT_OK
 
+	.as					; back to normal...
 
 ; **************************************
 ; *** UPTIME, get approximate uptime ***
@@ -734,24 +748,6 @@ uptime:
 	_EXIT_OK
 
 	.as				; back to normal...
-
-; *********************************
-; *** B_FORK, get available PID ***
-; *********************************
-;		OUTPUT
-; Y		= PID, 0 means not available or singletask
-
-b_fork:
-	LDY #0				; no multitasking, system reserved PID anytime
-; ...and go into subsequent EXIT_OK from B_YIELD
-
-; *********************************************
-; *** B_YIELD, Yield CPU time to next braid ***
-; *********************************************
-; (no interface needed)
-
-yield:
-	_EXIT_OK
 
 
 ; *****************************************
@@ -872,7 +868,7 @@ rst_shell:
 ; b_sig	= signal to be sent
 ; Y		= PID (0 means TO ALL)
 
-signal:
+b_signal:
 #ifdef	SAFE
 	TYA					; check correct PID
 		BNE sig_pid			; invalid braid
@@ -894,7 +890,7 @@ sig_term:
 
 
 ; ************************************************
-; *** B_STATUS, get execution flags of a braid ***
+; *** B_FLAGS, get execution flags of a braid ***
 ; ************************************************
 ;		INPUT
 ; Y = addressed braid
@@ -902,7 +898,7 @@ sig_term:
 ; Y = flags ***TBD, might include architecture
 ; C = invalid PID
 
-status:
+b_flags:
 #ifdef	SAFE
 	TYA					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -928,7 +924,7 @@ sig_exit:
 ;		OUTPUT
 ; C		= bad PID
 
-set_handler:
+set_hndl:
 	.al: REP #$20		; *** 16-bit memory size ***
 #ifdef	SAFE
 	TYX					; check PID
@@ -974,7 +970,7 @@ get_pid:
 ; cpu_ll	= architecture (as stated in headers!)
 ;		USES rh_scan
 
-load_link:
+loadlink:
 ; *** first look for that filename in ROM headers ***
 ; no need to set DBR
 
@@ -1043,7 +1039,7 @@ ll_nwad:
 ll_nfound:
 	_ERR(N_FOUND)		; all was scanned and the query was not found
 ll_found:
-; this was the original load_link code prior to 20161202, will be executed after the header was found!
+; this was the original loadlink code prior to 20161202, will be executed after the header was found!
 	.as: .xs: SEP #$30	; *** standard register size ***
 	LDY #1				; offset for filetype
 	LDA [rh_scan], Y	; check filetype
@@ -1111,16 +1107,16 @@ string:
 			STA str_pt+1
 str_24b:
 #endif
-	LDY #0			; will be fully cleared...
+	LDY #0				; will be fully cleared...
 	.xl: REP #$10		; *** 16-bit indexes ***
 str_loop:
 		LDA [str_pt], Y		; check pointed char
 			BEQ str_end		; NULL terminates
-		INY			; continue
+		INY					; continue
 		BRA str_loop
 str_end:
-	STX bl_siz		; simply store size!
-	_KERNEL(BOUT)		; and call block output (could be patched)
+	STX bl_siz			; simply store size!
+	_KERNEL(BLOUT)		; and call block output (could be patched)
 	JMP cio_callend		; will return proper error
 
 
@@ -1135,7 +1131,7 @@ str_end:
 ; C = some error
 ;		USES rl_dev, rl_cur and whatever CIN/COUT take
 
-readLN:
+readln:
 ; no need to switch DBR as regular I/O calls would do it
 
 #ifdef	SUPPORT
@@ -1354,7 +1350,7 @@ sd_done:
 ; Y			= actually assigned ID (if mutable)
 ; C			= could not install driver (ID in use or invalid, queue full, init failed)
 
-dr_install:
+dr_inst:
 ; make sure we work on bank zero!
 	PHK					; zero...
 	PLB					; ...is the bank!
@@ -1591,14 +1587,6 @@ dr_call:
 	.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
 	RTS					; actual CORRECTED jump (6)
 
-
-; ******************************
-; *** DR_SHUT, remove driver ***
-; ******************************
-; interface TBD ****
-
-dr_shutdown:
-	_ERR(UNAVAIL)		; go away! PLACEHOLDER ********* TBD
 
 ; ***************************************************************
 ; *** TS_INFO, get taskswitching info for multitasking driver ***
