@@ -1,7 +1,7 @@
 ; SIGTERM test app for minimOS!
-; v1.1b1, for minimOS 0.6 and up
+; v1.1b2, for minimOS 0.6 and up
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170829-1400
+; last modified 20171030-0948
 
 
 ; for standalone assembly, set path to OS/
@@ -107,7 +107,7 @@ sts_cont:
 		LDY z_used, X		; get its PID
 		_PHX				; save index
 ; here was a stray PHA eeeeeeeeeeeek
-		_KERNEL(B_STATUS)	; check running state
+		_KERNEL(B_FLAGS)	; check running state
 		_PLX				; retrieve index
 		TYA				; no longer alone eeeeeeek
 		CMP #BR_RUN			; is it running?
@@ -171,7 +171,7 @@ sts_rcv:
 sts_sigterm:
 	DEC uz				; just turn zeropage flag into all ones
 ; better do NOT print anything as kernel is NOT really reentrant within the same context
-	RTI					; new end!
+	RTI					; new end!*****
 
 ; *** useful routines ***
 ; * print string pointed by A.X *

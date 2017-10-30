@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5.2a1
+; v0.5.2a2
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20170829-1309
+; last modified 20171030-0945
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -116,7 +116,7 @@ xsh_ok:
 xsh_wait:
 				_KERNEL(B_YIELD)	; do not waste CPU time!
 				LDY pid				; retrieve launched PID
-				_KERNEL(B_STATUS)	; check its current state
+				_KERNEL(B_FLAGS)	; check its current state
 				TYA					; cannot operate on Y...
 				AND #BR_MASK		; filter relevant bits eeeeeeeeek
 				CPY #BR_FREE		; until ended (relies on B_STATUS hiding BR_END!!!)
