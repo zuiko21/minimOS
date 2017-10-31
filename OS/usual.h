@@ -1,5 +1,5 @@
 ; usual header includes for minimOS
-; last modified 20170207-1215
+; last modified 20171031-1017
 ; (c) 2012-2017 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -23,7 +23,7 @@ dr_vars:
 #include "drivers/config/DRIVER_PACK.h"
 #endif
 ; points to the beginning of free SRAM
--user_sram:
+-user_ram:
 .text
 #ifndef	ROM
 ; placeholder for standalone assembly

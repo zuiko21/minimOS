@@ -3,7 +3,7 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170511-1403
+; last modified 20171031-1057
 
 ; *** set conditional assembly ***
 
@@ -76,7 +76,7 @@ ACIA1	=	IO_BASE + $20	; fake ACIA address, should not be checked!
 ACIA	=	ACIA1			; for increased compatibility
 
 ; *** set standard device *** new 20160331 
-DEVICE	=	DEV_CONIO		; standard I/O device
+DEVICE	=	DEV_CNIO		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220
@@ -111,5 +111,5 @@ SS_SPEED =	30		; 15625 bps @ 1 MHz
 ; could be PHI2/31250-2
 
 ; ** speed code in fixed-point format, new 20150129 **
-SPEED_CODE =	$20		; 1 MHz system
+SPD_CODE =	$20		; 1 MHz system
 ; could be computed as PHI2*16/1000000

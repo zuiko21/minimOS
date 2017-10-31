@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6a6
+; v0.9.6a7
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170609-1343
+; last modified 20171031-1054
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -214,7 +214,7 @@ std_nmi:
 
 fw_gestalt:
 	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4)
-	LDA #SPEED_CODE		; speed code as determined in options.h (2)
+	LDA #SPD_CODE		; speed code as determined in options.h (2)
 	STY cpu_ll			; set outputs (3+3)
 	STA c_speed
 	LDA himem			; get pages of kernel SRAM (4) ????
@@ -237,10 +237,10 @@ fw_gestalt:
 fw_s_isr:
 	LDY kerntab			; get pointer (3+3)
 	LDA kerntab+1
-	_ENTER_CS			; disable interrupts! (5)
+	_CRITIC			; disable interrupts! (5)
 	STY fw_isr			; store for firmware (4+4)
 	STA fw_isr+1
-	_EXIT_CS			; restore interrupts if needed (4)
+	_NO_CRIT			; restore interrupts if needed (4)
 	_DR_OK				; done (8)
 
 ; SET_NMI, set NMI vector
@@ -265,7 +265,7 @@ fw_sn_ok:
 		DEX
 		BPL fw_sn_chk		; until all done
 #else
-	_ENTER_CS			; as will NOT check upon NMI, do not let partial settings
+	_CRITIC			; as will NOT check upon NMI, do not let partial settings
 #endif
 ; transfer supplied pointer to firmware vector
 	LDY kerntab			; get LSB (3)
@@ -273,7 +273,7 @@ fw_sn_ok:
 	STY fw_nmi			; store for firmware (4+4)
 	STA fw_nmi+1
 #ifndef	SAFE
-	_EXIT_CS			; had to shut off interrupts in case of no further checking!
+	_NO_CRIT			; had to shut off interrupts in case of no further checking!
 #endif
 	_DR_OK				; done (8)
 
@@ -282,12 +282,12 @@ fw_sn_ok:
 ; kerntab	= address of BRK routine (ending in RTS)
 
 fw_s_brk:
-	_ENTER_CS			; disable interrupts! (5)
+	_CRITIC			; disable interrupts! (5)
 	LDY kerntab			; get pointer
 	LDA kerntab+1
 	STY fw_brk			; store for firmware
 	STA fw_brk+1
-	_EXIT_CS			; restore interrupts if needed
+	_NO_CRIT			; restore interrupts if needed
 	_DR_OK				; done
 
 ; JIFFY, set jiffy IRQ frequency
@@ -363,14 +363,14 @@ fw_fgen:
 ; kerntab	= address of supplied pointer table
 
 fw_install:
-	_ENTER_CS			; disable interrupts! (5)
+	_CRITIC			; disable interrupts! (5)
 	LDY #0				; reset index (2)
 fwi_loop:
 		LDA (kerntab), Y	; get word from table as supplied (5)
 		STA fw_table, Y		; copy where the firmware expects it (4)
 		INY					; advance one byte
 		BNE fwi_loop		; until whole page is done (3/2)
-	_EXIT_CS			; restore interrupts if needed, will restore size too (4)
+	_NO_CRIT			; restore interrupts if needed, will restore size too (4)
 	_DR_OK				; all done (8)
 
 ; PATCH, patch single function
@@ -378,13 +378,13 @@ fwi_loop:
 ; Y <- function to be patched
 
 fw_patch:
-	_ENTER_CS				; disable interrupts and save sizes! (5)
+	_CRITIC				; disable interrupts and save sizes! (5)
 	LDA kerntab				; get full pointer
 	LDX kerntab+1
 	STA fw_table, Y			; store into firmware
 	TXA
 	STA fw_table+1, Y
-	_EXIT_CS				; restore interrupts and sizes (4)
+	_NO_CRIT				; restore interrupts and sizes (4)
 	_DR_OK					; done (8)
 
 ; CONTEXT, zeropage & stack bankswitching
@@ -477,7 +477,7 @@ cop_hndl:				; label from vector list
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	kernel_call-*, $FF
+	.dsb	kerncall-*, $FF
 #endif
 
 ; ******************************
@@ -485,16 +485,16 @@ cop_hndl:				; label from vector list
 ; ******************************
 
 ; *** minimOS·65 function call interface ($FFC0) ***
-* = kernel_call
+* = kerncall
 	_JMPX(fw_table)		; the old fashioned way
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	admin_call-*, $FF
+	.dsb	adm_call-*, $FF
 #endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
-* = admin_call
+* = adm_call
 	_JMPX(fw_admin)		; takes 5/6 clocks
 
 ; ****** taking up some unused space ******

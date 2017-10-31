@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a20, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171030-0928
+; last modified 20171031-1058
 
 ; no way for standalone assembly...
 
@@ -34,8 +34,8 @@ unimplemented:			; placeholder here
 
 cin:
 	LDA #io_c			; will point to old parameter
-	STA bl_pt			; set pointer
-	_STZA bl_pt+1
+	STA bl_ptr			; set pointer
+	_STZA bl_ptr+1
 	LDA #1				; transfer a single byte
 	STA bl_siz			; set size
 	_STZA bl_siz+1
@@ -95,8 +95,8 @@ ci_error:
 
 cout:
 	LDA #io_c			; will point to old parameter
-	STA bl_pt			; set pointer
-	_STZA bl_pt+1
+	STA bl_ptr			; set pointer
+	_STZA bl_ptr+1
 	LDA #1				; transfer a single byte
 	STA bl_siz			; set size
 	_STZA bl_siz+1
@@ -121,7 +121,7 @@ blout:
 	BNE co_port			; not default (3/2)
 		LDY stdout			; new per-process standard device
 		BNE co_port			; already a valid device
-			LDY defltout		; otherwise get system global (4)
+			LDY dfltout			; otherwise get system global (4)
 co_port:
 	BMI co_phys			; not a logic device (3/2)
 		CPY #64				; first file-dev??? ***
@@ -195,7 +195,7 @@ blin:
 	BNE ci_port			; specified
 		LDY std_in			; new per-process standard device
 		BNE ci_port			; already a valid device
-			LDY deflt_in		; otherwise get system global
+			LDY dflt_in			; otherwise get system global
 ci_port:
 	BPL ci_nph			; logic device
 ; new MUTEX for CIN, physical devs only! ID arrives in Y!
@@ -283,7 +283,7 @@ ci_nll:
 				INC bl_ptr+1		; or increment MSB*** but save it!!
 ci_ny:
 			DEC bl_siz		; one less to go
-			BNE cl_nll
+			BNE ci_nll
 ci_nlw:
 		LDX bl_siz+1		; check MSB
 			BEQ ci_nle		; all done!
@@ -1078,7 +1078,7 @@ dr_inst:
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 ; ...but will be stored anyway for mutable option
-	_LDAY (da_ptr)			; retrieve ID
+	_LDAY(da_ptr)			; retrieve ID
 #ifdef	SAFE
 	BMI dr_phys			; only physical devices (3/2)
 ; separate function issues INVALID error

@@ -2,7 +2,7 @@
 ; v0.6a5, should match kernel.s
 ; features TBD
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170822-1849
+; last modified 20171031-1052
 
 #define		ISR		_ISR
 
@@ -33,10 +33,10 @@
 ; *** async interrupt otherwise ***
 ; execute D_REQ in drivers (7 if nothing to do, 3+28*number of drivers until one replies, plus inner codes)
 asynchronous:
-	LDX queues_mx	; get queue size (4)
+	LDX queue_mx	; get queue size (4)
 	BEQ ir_done		; no drivers to call (2/3)
 i_req:
-		LDA drv_r_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
+		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
 		BPL i_rnx			; *** if disabled, skip this task ***
 			_PHX				; keep index! (3)
 			JSR ir_call			; call from table (12...)
@@ -85,9 +85,9 @@ i_poll:
 			BNE i_pnx			; LSB did not expire, do not execute yet
 		DEC drv_cnt+1, X	; check now MSB, note value should be ONE more!
 		BNE i_pnx			; keep waiting...
-			LDY drv_freq, X		; ...or pick original value...
+			LDA drv_freq, X		; ...or pick original value...
+			STA drv_cnt, X		; ...and reset it!
 			LDA drv_freq+1, X
-			STY drv_cnt, X		; ...and reset it!
 			STA drv_cnt+1, X
 			_PHX				; keep index! (3)
 			JSR ip_call			; call from table (12...)
