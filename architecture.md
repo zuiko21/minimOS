@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-10-29*
+*Last update: 2017-11-01*
 
 ## Rationale
 
@@ -202,10 +202,14 @@ Initially devised as a *separate fork*, 0.5.x version gave birth to the `LOWRAM`
 version. In order to reduce RAM usage, this option produces the following changes:
 
 - Non-patchable kernel calls
+- No memory management (besides zeropage/**context** area)
 - Reduced number of available drivers
 - No multitasking option
 - No windowing system option
 - No filesystem
+
+As there is no RAM to load programs (or drivers) on, there will not be any *relocation*
+features.
 
 Newer options are due for 0.6, like replacing generic calls with direct JSRs,
 and many more *(to be completed)*
