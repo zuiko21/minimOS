@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6a20, must match kernel.s
+; v0.6a21, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171031-1058
+; last modified 20171102-1912
 
 ; no way for standalone assembly...
 
@@ -697,12 +697,11 @@ b_signal:
 	LDY b_sig			; get the signal
 	CPY #SIGTERM		; clean shutdown?
 	BNE sig_suic
-; why TERM handlers need to end in RTI???
-		LDA #>sig_exit		; set standard return address
-		PHA
-		LDA #<sig_exit		; same for LSB
-		PHA
-		PHP					; as required by RTI
+; TERM handlers no longer end in RTI!!!
+		JSR sig_term		; will call... and return here
+sig_exit:
+		_EXIT_OK		; standard exit, resume execution after calling handler
+sig_term:
 		JMP (mm_sterm)		; execute handler, will return to sig_exit
 sig_suic:
 	CPY #SIGKILL		; suicide?
@@ -726,7 +725,6 @@ b_flags:
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDY #BR_RUN			; single-task systems are always running
-sig_exit:
 	_EXIT_OK
 
 
@@ -735,7 +733,7 @@ sig_exit:
 ; **************************************************************
 ;		INPUT
 ; Y		= PID (0 means to myself)
-; ex_pt = SIGTERM handler routine (ending in RTI!)
+; ex_pt = SIGTERM handler routine (ending in RTS!!!!)
 ;		OUTPUT
 ; C		= bad PID
 
