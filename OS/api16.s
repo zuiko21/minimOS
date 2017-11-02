@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a22, should match kernel16.s
+; v0.6a23, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171030-0937
+; last modified 20171102-1921
 
 ; assumes 8-bit sizes upon call...
 
@@ -875,18 +875,18 @@ b_signal:
 #endif
 	LDY b_sig			; get the signal
 	CPY #SIGTERM		; clean shutdown?
-		BEQ sig_term		; call supplied routine (SIGKILL by default)
+	BNE sig_suic		; if so, call supplied routine (SIGKILL by default)
+; needs to end in RTI???
+		.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
+		JSL sig_term		; indirect long call
+		_EXIT_OK		; return to caller
+sig_suic:
 	CPY #SIGKILL		; suicide?
 		BEQ sig_kill		; release MEMORY, windows etc
 sig_pid:
 	_ERR(INVALID)		; unrecognised signal, notify error
 sig_term:
-; needs to end in RTI???
-	PHK					; needed for new interface as will end in RTI!
-	PEA yield			; correct return address
-	PHP					; eeeeeeeeeeeek
-	.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
-	JMP [mm_sterm]		; actual JUMP, will return to B_YIELD
+	JMP [mm_sterm]		; actual JUMP, will return as usual
 
 
 ; ************************************************
