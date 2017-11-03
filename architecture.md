@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-11-01*
+*Last update: 2017-11-03*
 
 ## Rationale
 
@@ -211,7 +211,12 @@ version. In order to reduce RAM usage, this option produces the following change
 As there is no RAM to load programs (or drivers) on, there will not be any *relocation*
 features.
 
-Newer options are due for 0.6, like replacing generic calls with direct JSRs,
+Newer options are due for 0.6, like:
+
+- replacing generic calls with direct JSRs
+- using I/O arrays in ROM
+- *adding* an array for driver enabling (whether `D_INIT` succeeded)
+
 and many more *(to be completed)*
 
 ### Device Drivers (0.6 version)
