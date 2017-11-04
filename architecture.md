@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-11-03*
+*Last update: 2017-11-04*
 
 ## Rationale
 
@@ -234,7 +234,7 @@ in use, but in any case they'll bear a **header** containing this kind of inform
 - Pointer to an **Asynchronous Interrupt Handler** (called *by request*, if enabled)
 - Pointer to a **Periodic Interrupt Handler** (called every "n" *jiffy* interrupts, if enabled)
 - **Frequency** value for the *periodic* task described above (the *n* value for the above)
-- Pointer to a **description *C-*string** in human-readable form
+- Pointer to a **description *C-string*** in human-readable form
 - Number of ***dynamically allocated* bytes**, if loadable *on-the-fly* (TBD)
 
 A last-minute change in 0.6 is the **block-oriented I/O**. This was foreseen on older
@@ -414,8 +414,8 @@ upon interrupts or context switches.
 Depending of the CPU used, this context can be totally or partially stored in **zero-page** (for 65xx and 68xx families), 
 **registers** (680x0) or some appropriately pointed RAM area. Together with the 
 [stack](https://en.wikipedia.org/wiki/Stack_\(abstract_data_type\)) area, this will be saved upon **context switches** 
-(typically under *multitasking*) with probably the *system reserved variables* as a notable exception (NMIs should preserve 
-that too for total **transparency**)
+(typically under *multitasking*) with probably the *system reserved variables* as a notable exception -- NMIs should preserve 
+that too for total **transparency**
 
 Some hardware may make this area **protected** from other processes. Even on 65xx architectures, ***bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
 ---
