@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-11-04*
+*Last update: 2017-11-05*
 
 ## Rationale
 
@@ -204,6 +204,7 @@ version. In order to reduce RAM usage, this option produces the following change
 - Non-patchable kernel calls
 - No memory management (besides zeropage/**context** area)
 - Reduced number of available drivers
+- Compact driver ID range (no *sparse* arrays)
 - No multitasking option
 - No windowing system option
 - No filesystem
