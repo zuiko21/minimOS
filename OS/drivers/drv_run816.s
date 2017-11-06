@@ -2,12 +2,12 @@
 ; v0.9.6a4
 ; *** new format for mOS 0.6 compatibility ***
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170831-1551
+; last modified 20171106-1010
 
 #include	"usual.h"
 .(
 ; *** begins with sub-function addresses table ***
-	.byt	DEV_CONIO	; D_ID, new values 20150323
+	.byt	DEV_CNIO	; D_ID, new values 20150323
 	.byt	A_BLIN | A_BOUT	; I/O only, non relocatable
 	.word	kow_blin	; block? input from keyboard
 	.word	kow_bout	; block output to display

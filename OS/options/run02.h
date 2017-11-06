@@ -3,7 +3,7 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171031-1057
+; last modified 20171106-1004
 
 ; *** set conditional assembly ***
 

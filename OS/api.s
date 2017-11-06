@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6a21, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171102-1912
+; last modified 20171106-1011
 
 ; no way for standalone assembly...
 
@@ -12,8 +12,8 @@
 memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
 aq_mng:
 pq_mng:
-b_cnfg:
-b_stat:
+bl_cnfg:
+bl_stat:
 ; *** DR_SHUT, remove driver ***
 ; interface TBD ****
 dr_shut:
@@ -1038,9 +1038,9 @@ sd_shut:
 ; first get the pointer to each driver table
 sd_loop:
 ; get address index
-		LDA drivers_ad, X	; get address from original list
+		LDA drvrs_ad, X	; get address from original list
 		STA da_ptr			; store temporarily eeeeeek
-		LDA drivers_ad+1, X	; same for MSB
+		LDA drvrs_ad+1, X	; same for MSB
 			BEQ sd_done			; no more drivers to shutdown!
 		STA da_ptr+1
 ; will no longer check for successful installation, BYE routine gets called anyway
@@ -1236,7 +1236,7 @@ dr_iqloop:
 			STA (dq_ptr), Y		; ...and correct original value
 			DEY					; go for LSB
 			LDA (dq_ptr), Y		; get original...
-			STA drv_count, Y	; ...and store unmodified
+			STA drv_cnt, Y		; ...and store unmodified
 			_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 		JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
