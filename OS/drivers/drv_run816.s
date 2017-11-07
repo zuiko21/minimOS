@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6a4
+; v0.9.6a5
 ; *** new format for mOS 0.6 compatibility ***
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171106-1010
+; last modified 20171107-1049
 
 #include	"usual.h"
 .(
@@ -60,7 +60,7 @@ kow_rts:
 	_DR_OK
 
 ; *** input *** will only get one!
-kow_cin:
+kow_blin:
 #ifdef	SAFE
 	LDA bl_siz		; check size in case is zero
 	ORA bl_siz+1

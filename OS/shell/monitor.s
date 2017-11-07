@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a8
-; last modified 20170829-1340
+; v0.6a9
+; last modified 20171107-1053
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -353,6 +353,7 @@ ex_noni:
 	STY oper			; also reset forward counter, decrement is too clumsy!
 	STY oper+1
 ; check subcommand
+ex_do:
 	LDA count			; restore subcommand
 	CMP #'+'			; is it load?
 		BEQ ex_load			; OK then

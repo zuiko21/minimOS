@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.6a2
-; last modified 20170929-0910
+; v0.6a3
+; last modified 20171107-1052
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -727,6 +727,7 @@ ex_noni:
 	STY oper			; also reset forward counter, decrement is too clumsy!
 	STY oper+1
 ; check subcommand
+ex_do:
 	LDA count			; restore subcommand
 	CMP #'+'			; is it load?
 		BEQ ex_load			; OK then
