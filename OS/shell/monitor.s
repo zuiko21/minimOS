@@ -1,5 +1,5 @@
 ; Monitor shell for minimOS (simple version)
-; v0.6a9
+; v0.6b1
 ; last modified 20171107-1053
 ; (c) 2016-2017 Carlos J. Santisteban
 

@@ -1,5 +1,5 @@
 ; minimOS generic Kernel
-; v0.6a17
+; v0.6b1
 ; (c) 2012-2017 Carlos J. Santisteban
 ; last modified 20171108-1238
 
