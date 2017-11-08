@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5.2a2
+; v0.5.2b1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20171030-0945
+; last modified 20171108-1407
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"

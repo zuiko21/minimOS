@@ -465,7 +465,6 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
-
 ; startup code, revise ASAP
 ; *** set default I/O device ***
 	LDA #DEVICE			; as defined in options.h

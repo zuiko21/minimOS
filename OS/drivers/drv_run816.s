@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6a5
+; v0.9.6b1
 ; *** new format for mOS 0.6 compatibility ***
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171107-1049
+; last modified 20171108-1351
 
 #include	"usual.h"
 .(
@@ -50,12 +50,12 @@ kow_ncr:
 		DEC bl_siz+1		; or one page less
 kow_blk:
 	INY			; point to next
-	BNE kow_bout		; did not wrap
+	BNE kow_cout		; did not wrap EEEEEEEEEK
 		INC bl_ptr+1		; or update MSB
-		_BRA kow_bout		; and continue
+		_BRA kow_cout		; and continue EEEEEEEEEEEK
 kow_end:
-	PLA			; retrieve saved MSB
-	STA bl_siz+1
+	PLA					; retrieve saved MSB
+	STA bl_ptr+1		; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 kow_rts:
 	_DR_OK
 

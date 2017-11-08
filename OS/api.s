@@ -871,6 +871,7 @@ ll_wrap:
 ;		USES BLOUT...
 
 string:
+
 ; not very efficient... measure string and call BOUT
 	_PHY				; must keep device eeeeeeek
 	LDX str_pt+1		; MSB of pointer might be changed
