@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6a16
+; v0.6a17
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171031-1014
+; last modified 20171108-1238
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -71,8 +71,8 @@ warm:
 #ifndef		DOWNLOAD
 	LDY #<k_vec			; get table address, nicer way (2+2)
 	LDA #>k_vec
-	STY ex_pt			; store parameter (3+3)
-	STA ex_pt+1
+	STY kerntab			; store parameter (3+3)
+	STA kerntab+1
 	_ADMIN(INSTALL)		; copy jump table
 #endif
 ; ++++++
@@ -81,15 +81,15 @@ warm:
 ; install ISR code (as defined in "isr/irq.s" below)
 	LDY #<k_isr			; get address, nicer way (2+2)
 	LDA #>k_isr
-	STY ex_pt			; no need to know about actual vector location (3)
-	STA ex_pt+1
+	STY kerntab			; no need to know about actual vector location (3)
+	STA kerntab+1
 	_ADMIN(SET_ISR)		; install routine
 
 ; install BRK code (as defined in "isr/brk.s" loaded from IRQ)
 	LDY #<supplied_brk		; get address, nicer way (2+2)
 	LDA #>supplied_brk
-	STY ex_pt			; no need to know about actual vector location (3)
-	STA ex_pt+1
+	STY kerntab			; no need to know about actual vector location (3)
+	STA kerntab+1
 	_ADMIN(SET_DBG)		; install routine
 
 ; Kernel no longer supplies default NMI, but could install it otherwise

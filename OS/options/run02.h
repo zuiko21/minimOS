@@ -3,7 +3,7 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171106-1004
+; last modified 20171108-1240
 
 ; *** set conditional assembly ***
 
@@ -11,6 +11,9 @@
 #define		SAFE	_SAFE
 
 ;#define		LOWRAM	_LOWRAM
+
+; new option for mutable IDs, most likely mandatory!
+#define		MUTABLE		_MUTABLE
 
 ; enable in order to remove headers, not LOAD_LINK savvy!
 ;#define		NOHEAD	_NOHEAD
