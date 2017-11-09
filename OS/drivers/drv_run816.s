@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6b1
+; v0.9.6b2
 ; *** new format for mOS 0.6 compatibility ***
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171108-1351
+; last modified 20171109-1337
 
 #include	"usual.h"
 .(
@@ -77,6 +77,8 @@ kow_emit:
 		LDA bl_siz
 		CMP #$FF		; will it wrap?
 		BNE kow_rts		; not
+			LDA bl_siz+1		; any more?
+		BEQ kow_rts		; not, just finished!
 			DEC bl_siz+1		; or update MSB
 		_DR_OK			; perhaps some special error code...
 ;kow_empty:
