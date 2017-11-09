@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6b1, must match kernel.s
+; v0.6b2, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171106-1011
+; last modified 20171109-1334
 
 ; no way for standalone assembly...
 
@@ -33,7 +33,7 @@ unimplemented:			; placeholder here
 ;		USES whatever BLIN takes
 
 cin:
-	LDA #io_c			; will point to old parameter
+	LDA #<io_c			; will point to old parameter
 	STA bl_ptr			; set pointer
 	_STZA bl_ptr+1
 	LDA #1				; transfer a single byte
@@ -94,7 +94,7 @@ ci_error:
 ;		USES whatever BLOUT takes
 
 cout:
-	LDA #io_c			; will point to old parameter
+	LDA #<io_c			; will point to old parameter
 	STA bl_ptr			; set pointer
 	_STZA bl_ptr+1
 	LDA #1				; transfer a single byte
