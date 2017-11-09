@@ -2,7 +2,7 @@
 ; v0.9.6b2
 ; *** new format for mOS 0.6 compatibility ***
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171109-1337
+; last modified 20171109-1437
 
 #include	"usual.h"
 .(
@@ -23,7 +23,7 @@
 
 ; *** info string ***
 debug_info:
-	.asc	"Console I/O driver for run65816 BBC simulator, v0.9.6a4", 0
+	.asc	"Console I/O driver for run65816 BBC simulator, v0.9.6b2", 0
 
 ; *** output ***
 kow_bout:
@@ -82,7 +82,7 @@ kow_emit:
 			DEC bl_siz+1		; or update MSB
 		_DR_OK			; perhaps some special error code...
 ;kow_empty:
-;	_DR_ERR(EMPTY)		; nothing yet
+;	DR_ERR(EMPTY)		; nothing yet
 kow_err:
 	_DR_ERR(UNAVAIL);
 .)
