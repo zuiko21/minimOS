@@ -1,5 +1,5 @@
 ; software serial port emulator for minimOS!
-; v0.6a1, for generic 65C02 (65816-savvy)
+; v0.6b1, for generic 65C02 (65816-savvy)
 ; (c) 2016-2017 Carlos J. Santisteban
 ; last modified 20170830-1832
 
@@ -38,7 +38,7 @@
 
 ; *** driver description ***
 srs_info:
-	.asc	"Serial-port emulation v0.6a1", 0
+	.asc	"Serial-port emulation v0.6b1", 0
 
 ; *** some definitions ***
 zsr_vote	= sys_sp	; single local variable, could be elsewhere in zeropage

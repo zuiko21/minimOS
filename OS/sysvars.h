@@ -1,6 +1,6 @@
-; minimOS 0.6a12 System Variables
+; minimOS 0.6b1 System Variables
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171030-0940
+; last modified 20171110-2059
 .bss
 
 ; **** I/O management ****
