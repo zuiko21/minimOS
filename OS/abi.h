@@ -2,7 +2,7 @@
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
 ; some renaming 20170805, 20171030
-; last modified 20171110-2100
+; last modified 20171112-1144
 
 ; *************************************************
 ; *************************************************
@@ -260,6 +260,7 @@ DEV_ASC		= 241	; ASCII keyboard on VIAport, TO_DO
 DEV_DBG		= 255	; Bus sniffer, NEW 20150323
 DEV_CNIO	= 132	; for Kowalski & run816 simulator, NEW 20160308
 DEV_VGA		= 192	; integrated VGA-compatible Tijuana, NEW 20160331
+SOFT232		= 232	; VIA-bit banged serial
 
 ; more temporary IDs
 
