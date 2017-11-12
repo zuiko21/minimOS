@@ -12,8 +12,6 @@
 ;#define		NMOS	_NMOS
 ;#define		LOWRAM	_LOWRAM
 
-; uncomment to enable (software) multitasking
-;#define		MULTITASK	_MULTITASK
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -22,7 +20,7 @@
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
 
-#define		MACHINE_NAME	"SDd"
+#define		MACHINE_NAME	"Sistema de Desarrollo didáctico"
 #define		MACHINE_ID		"sdd"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
