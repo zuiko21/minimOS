@@ -1,9 +1,9 @@
 ; includes for minimOS drivers
 ; SDd with emulated serial specific configuration!
 ; ***** Jornada HackLabAlmería en El Ejido 2017 *****
-; v0.6a1
+; v0.6b1
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171112-1147
+; last modified 20171112-1646
 
 #define		DRIVERS		1
 
@@ -27,7 +27,7 @@
 driver0:
 ; *** standard drivers ***
 ; Emulated serial
-#include "drivers/soft_232.s"
+#include "drivers/soft232.s"
 
 ; no more for this demo...
 
@@ -36,7 +36,7 @@ driver0:
 ; this might be generated in RAM in the future, allowing on-the-fly driver install
 ; since non LOWRAM systems call directly I/O routines, this is only used during registration
 
-drivers_ad:
+drvrs_ad:
 	.word	driver0		; generic list, actually a single driver
 
 	.word	0		; ***** TERMINATE LIST ***** (essential since 0.5a2)
