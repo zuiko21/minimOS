@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6a7
+; v0.9.6b1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170830-1605
+; last modified 20171112-1202
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -13,7 +13,7 @@
 fw_start:
 	.asc 0, "m", CPU_TYPE, 13		; standard system file wrapper, new format 20161010, experimental type
 	.asc "boot", 0					; standard filename
-	.asc "0.9.6a7 firmware for "	; machine description as comment
+	.asc "0.9.6b1 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; no size or timestamp on firmware header!

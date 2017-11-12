@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; RAMtest 0.5.2b2
-; (c) 2015 Carlos J. Santisteban
+; (c) 2015-2017 Carlos J. Santisteban
 ; last modified 20161010-1216
 
 ; in case of stand alone assembly

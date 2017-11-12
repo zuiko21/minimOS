@@ -1,8 +1,8 @@
 ; firmware CPU determining code for minimOS
-; version 0.9.6a1
+; version 0.9.6b1
 ; (c) 2015-2017 Carlos J. Santisteban
 ; essentially from the work of David Empson, Oct. '94
-; last modified 20170721-1720
+; last modified 20171112-1213
 
 	LDY #$00			; by default, NMOS 6502 (0)
 	SED					; decimal mode
@@ -26,5 +26,5 @@ cpuck_list:
 	.asc	"NBRV"		; codes for NMOS (N), generic CMOS (B), Rockwell 65C02 (R?) and 65816/65802 (V)
 cpuck_set:
 	LDA cpuck_list, Y	; get proper code from investigation
-	STA fw_cpu			; store in variable ** firmware standard label
-
+;	STA fw_cpu			; store in variable ** firmware standard label
+; will just return type in A

@@ -1,7 +1,7 @@
 ; firmware module for most minimOS machines
 ; startup beep code 0.9.2b1
 ; 0.9 originally supplied with minimOS 0.4rc
-; (c) Carlos J. Santisteban 2013-2016
+; (c) Carlos J. Santisteban 2013-2017
 ; last modified 20150223-1056
 ; revised 20160115 for commit with new filenames
 
@@ -14,7 +14,7 @@
 #endif
 
 ; *** initial beep (500Hz/MHz) during test ***
-	LDA #%11100010	; CB2 *high*, Cx1 negative edge, CA2 indep. neg.	
+	LDA #%11100010	; CB2 *high*, Cx1 negative edge, CA2 indep. neg.
 	STA VIA+PCR		; sound output is enabled
 	LDA #%11000000	; T1 cont, PB7 squarewave, no SR, no latch (so far)
 	STA VIA+ACR
