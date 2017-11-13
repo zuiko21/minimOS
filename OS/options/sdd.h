@@ -3,18 +3,18 @@
 ; ***** Jornadas HackLabAlmería en El Ejido 2017 *****
 ; copy or link as options.h in root dir
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171113-0939
+; last modified 20171113-1007
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
 ;#define		NMOS	_NMOS
 
 ; commenting these will increase ROM usage
 ;#define		LOWRAM	_LOWRAM
-;#define		NOHEAD	_NOHEAD
+#define		NOHEAD	_NOHEAD
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -44,10 +44,10 @@
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **
-ROM_BASE	=	$E000	; classic SDd 4 kiB EPROM
+ROM_BASE	=	$F000	; classic SDd 4 kiB EPROM
 
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$F000	; standard value
+FW_BASE		=	$F800	; ***** irrelevant if NOHEAD option is used *****
 
 
 ; ** I/O definitions **

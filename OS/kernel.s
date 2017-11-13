@@ -537,7 +537,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6a16", 0
+	.asc	"minimOS 0.6b1", 0
 #endif
 
 kern_end:		; for size computation

@@ -157,7 +157,6 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	freeSize		; filesize
 	.word	0				; 64K space does not use upper 16-bit
-#endif
 ; ##### end of minimOS header #####
 
 ; ***************************************
@@ -165,6 +164,7 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; ***************************************
 	.dsb	FW_BASE - *, $FF	; for ready-to-blow ROM, skip to firmware area
 ;* = FW_BASE					; should be already there
+#endif
 
 ; ***********************************
 ; *** hardware-dependent firmware ***

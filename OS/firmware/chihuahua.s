@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171113-0922
+; last modified 20171113-1009
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -9,6 +9,7 @@
 
 ;* = FW_BASE			; this will be page-aligned!
 
+#ifndef	NOHEAD
 ; *** first some ROM identification *** new 20150612
 fw_start:
 	.asc 0, "m", CPU_TYPE, 13		; standard system file wrapper, new format 20161010, experimental type
@@ -29,6 +30,10 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 	.word	fwSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; *** end of standard header ***
+#else
+fw_mname:
+	.asc	MACHINE_NAME, 0		; store the name at least
+#endif
 
 ; ********************
 ; ********************
