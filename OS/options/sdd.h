@@ -3,20 +3,26 @@
 ; ***** Jornadas HackLabAlmería en El Ejido 2017 *****
 ; copy or link as options.h in root dir
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171113-0840
+; last modified 20171113-0939
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-;#define		SAFE	_SAFE
+#define		SAFE	_SAFE
 
 ;#define		NMOS	_NMOS
+
+; commenting these will increase ROM usage
 ;#define		LOWRAM	_LOWRAM
-#define		NOHEAD	_NOHEAD
+;#define		NOHEAD	_NOHEAD
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
+#ifndef	NMOS
 #define		CPU_TYPE	'B'
+#else
+#define		CPU_TYPE	'N'
+#endif
 
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308

@@ -1,7 +1,7 @@
 ; software serial port emulator for minimOS!
-; v0.6b1, for generic 65C02 (65816-savvy)
+; v0.6b2, will assemble on NMOS but wrong timing! Use 65C02 *always*
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170830-1832
+; last modified 20171113-0949
 
 ; VIA bit functions
 ; Tx	= PA0 (any 0...5, set masks accordingly)
@@ -54,47 +54,47 @@ INIT_MASK	= TX_MASK + RTS_MASK	; set Tx (idle) and negate RTS (disable reception
 ; ***************************************************************
 srs_rcvN:
 	LDA bl_ptr+1		; get pointer MSB
-	PHA			; in case gets modified...
-	LDY #0			; reset index
+	PHA					; in case gets modified...
+	LDY #0				; reset index
 srsr_l:
-		PHY			; keep this
-		JSR srs_rcv		; *** get one byte ***
+		_PHY				; keep this
+		JSR srs_rcv			; *** get one byte ***
 			BCS blck_err		; any error ends transfer!
-		PLY			; restore index
-		LDA io_c		; received byte...
+		_PLY				; restore index
+		LDA io_c			; received byte...
 		STA (bl_ptr), Y		; ...goes into buffer
-		INY			; go for next
-		DEC bl_siz		; one less to go
-			BNE srsr_l		; no wrap, continue
-		LDA bl_siz		; check MSB otherwise
+		INY					; go for next
+		DEC bl_siz			; one less to go
+			BNE srsr_l			; no wrap, continue
+		LDA bl_siz			; check MSB otherwise
 			BEQ blck_end		; no more!
 		DEC bl_siz+1		; ...or one page less
-		BRA srsr_l
+		_BRA srsr_l
 blck_err:
-	PLA			; was Y, but must respect error code!
+	PLA					; was Y, but must respect error code!
 blck_end:
-	PLA			; gets pointer MSB back...
+	PLA					; gets pointer MSB back...
 	STA bl_ptr+1		; ...and restores it
-	RTS			; respect whatever error code
+	RTS					; respect whatever error code
 
 srs_sendN:
 	LDA bl_ptr+1		; get pointer MSB
-	PHA			; in case gets modified...
-	LDY #0			; reset index
+	PHA					; in case gets modified...
+	LDY #0				; reset index
 srss_l:
 		LDA (bl_ptr), Y		; buffer contents...
-		STA io_c		; ...will be sent
-		PHY			; keep this
+		STA io_c			; ...will be sent
+		_PHY				; keep this
 		JSR srs_send		; *** send one byte ***
 			BCS blck_err		; any error ends transfer!
-		PLY			; restore index
-		INY			; go for next
-		DEC bl_siz		; one less to go
-			BNE srss_l		; no wrap, continue
-		LDA bl_siz		; check MSB otherwise
+		_PLY				; restore index
+		INY					; go for next
+		DEC bl_siz			; one less to go
+			BNE srss_l			; no wrap, continue
+		LDA bl_siz			; check MSB otherwise
 			BEQ blck_end		; no more!
 		DEC bl_siz+1		; ...or one page less
-		BRA srss_l
+		_BRA srss_l
 
 
 ; ************************
@@ -130,18 +130,18 @@ srss_cts:
 	LDX #9				; bits per byte incl. stop
 	SEC					; this will be the stop bit!
 ; now put the start bit
-	LDA #TX_MASK			; mask for Tx, will be used anywhere (2)
-	TRB VIA1+IORA		; REset it! EEEEEEK (6)
+	LDA #TX_MASK		; mask for Tx, will be used anywhere (2)
+	_TRB(VIA1+IORA)		; REset it! EEEEEEK (6)
 	PHA: PLA			; 7 extra clocks delay!
 	JSR srs_83us		; delay (83)
 ; still on until next bit is read
 srss_bit:
 		ROR io_c			; put bit to send in C (5)
 		BCC srss_nzero		; was one (3/2)
-			TRB VIA1+IORA		; otherwise put 0 (0/6) one clock early from start, but was 0 anyway
-			BRA srss_sent		; this is done (0/3)
+			_TRB(VIA1+IORA)		; otherwise put 0 (0/6) one clock early from start, but was 0 anyway
+			_BRA srss_sent		; this is done (0/3)
 srss_nzero:
-		TSB VIA1+IORA		; it is a one (6/0) accurate from start
+		_TSB(VIA1+IORA)		; it is a one (6/0) accurate from start
 		NOP					; this should equalise paths! (2/0)
 srss_sent:
 		JSR srs_83us		; delay (83)
@@ -154,9 +154,9 @@ srss_sent:
 ; *** receive one byte ***
 ; ************************
 srs_rcv:
-	_CRITIC			; disable interrupts
+	_CRITIC				; disable interrupts
 	LDA #RTS_MASK		; mask for RTS
-	TRB VIA1+IORA		; enable reception!
+	_TRB(VIA1+IORA)		; enable reception!
 	LDX #136			; timeout counter ~1.5 mS *** not for 1.8432 MHz ***
 ;	LDX #251			; *** timeout constant for 1.8432 MHz systems ***
 ; wait until data is available
@@ -174,9 +174,9 @@ srsr_start:
 	JSR srs_fullbit		; full-bit wait (104)
 ; let us read one byte
 	LDX #8				; bits per byte (2)
-	STZ io_c			; clear received value (3)
+	_STZA io_c			; clear received value (3)
 srsr_bit:
-		STZ zsr_vote		; clear sample counter (3)
+		_STZA zsr_vote		; clear sample counter (3)
 		LDY #3				; samples per bit (2) *** make it 5 at 1.8432 MHz ***
 		NOP					; fix sampling timing (2) *** NOT for 1.8432 MHz ***
 ;		LDA zsr_vote		; *** put this for 1.8432 MHz (3) ***
@@ -184,13 +184,14 @@ srsr_sample:
 			BIT VIA1+IORA		; check Rx (4)
 			BPL srsr_zero		; was clear (3/2)
 				INC zsr_vote		; otherwise vote for 1 (0/5)
-				BRA srsr_took		; just took this (0/3)
+				_BRA srsr_took		; just took this (0/3)
 srsr_zero:
 			DEC zsr_vote		; vote for 0 (5/0)
 			NOP					; equalise paths (2/0)
 srsr_took:
 			PHA: PLA			; slight delay (7)
-;			PHA: PLA			; *** add this for 1.8432 MHz (7) ***
+;			PHA					; *** add this for 1.8432 MHz (7) ***
+;			PLA					; *** avoiding commented colon!!!!! ***
 			DEY					; next sample (2)
 			BNE srsr_sample		; vote again (3/2)
 ; now three samples took 79 uS! (see NOP above) (or 164 clocks @ 1.8432)
@@ -198,7 +199,7 @@ srsr_took:
 		BIT zsr_vote		; check sign (3)
 		BPL srsr_one		; was set (3/2)
 			CLC					; otherwise clear bit (0/2)
-			BRA srsr_carry		; insert it (0/3)
+			_BRA srsr_carry		; insert it (0/3)
 srsr_one:
 		SEC					; set bit (2/0)
 		NOP					; equal lengths (2/0)
@@ -212,14 +213,14 @@ srsr_carry:
 	BIT VIA1+IORA		; check Rx line
 	BMI srsr_stop		; looks like a stop bit
 		LDA #RTS_MASK		; otherwise something went wrong
-		TSB VIA1+IORA		; disable reception!
+		_TSB(VIA1+IORA)		; disable reception!
 		_NO_CRIT			; restore interrupts first eeeeeeeeeek
 		_DR_ERR(CORRUPT)	; notify error
 ; disable receiver and finish
 srsr_stop:
 	JSR srs_41us		; wait a bit more (really needed?)
 	LDA #RTS_MASK		; mask for /RTS
-	TSB VIA1+IORA		; disable reception!
+	_TSB(VIA1+IORA)		; disable reception!
 	_NO_CRIT			; no longer in a hurry
 	_DR_OK
 
@@ -242,11 +243,11 @@ srs_exit:
 srs_41us:
 ;	LDY $0100			; extra delay (4) *** 1.8432 only ***
 	LDY #5				; delay constant (2) *** 13 for 1.8432 ***
-	BRA srs83_loop		; continue with accurate timing (3+)
+	_BRA srs83_loop		; continue with accurate timing (3+)
 
 ; * full-bit delay (104uS or 192) *
 srs_fullbit:
 	LDY zsr_vote		; correcting delay (3)
 ;	LDY zsr_vote		; extra delay (3) *** 1.8432 only ***
 	LDY #17				; for a 104uS delay (2) *** 34 for 1.8432 ***
-	BRA srs83_loop		; continue delay (93 or 178)
+	_BRA srs83_loop		; continue delay (93 or 178)

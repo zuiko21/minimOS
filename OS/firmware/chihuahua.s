@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171113-0826
+; last modified 20171113-0922
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -16,8 +16,19 @@ fw_start:
 	.asc "0.9.6b1 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
-; no size or timestamp on firmware header!
-	.dsb	fw_start + $100 - *, $FF	; generate padding including end of linked list
+; advance to end of header
+	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$7000	; time, 13.00
+	.word	$4AC2	; date, 2017/6/2
+
+fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	fwSize			; filesize
+	.word	0				; 64K space does not use upper 16-bit
+; *** end of standard header ***
 
 ; ********************
 ; ********************
@@ -540,6 +551,9 @@ fwp_func:
 fw_fgen:
 	_DR_ERR(UNAVAIL)		; not supported
 
+; these are for systems with enough RAM
+
+#ifndef		LOWRAM
 ; **************************
 ; INSTALL, supply jump table
 ; **************************
@@ -569,7 +583,7 @@ fw_patch:
 	LDX kerntab+1			; same for MSB (3)
 	_CRITIC					; disable interrupts! (5)
 	STA fw_table, Y			; store where the firmware expects it (4+4)
-	TXA					; eeeeeeeeeeeek
+	TXA						; eeeeeeeeeeeek
 	STA fw_table+1, Y
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
@@ -581,6 +595,8 @@ fw_patch:
 f_unavail:
 	_DR_ERR(UNAVAIL)		; not supported
 
+#endif
+
 ; WILL CHANGE
 
 ; **** some strange data ****
@@ -590,19 +606,30 @@ fw_map:
 ; *** administrative jump table ***
 ; might go elsewhere as it may grow, especially on NMOS
 fw_admin:
+; generic functions, esp. interrupt related
 	.word	fw_gestalt
 	.word	fw_s_isr
 	.word	fw_s_nmi
 	.word	fw_s_brk
 	.word	fw_jiffy
 	.word	fw_i_src
+
+; pretty hardware specific
 	.word	fw_power
 	.word	fw_fgen
+
+; not for LOWRAM systems
+#ifndef	LOWRAM
 	.word	fw_install
 	.word	fw_patch
 #ifdef	SAFE
 	.word	f_unavail
 #endif
+#endif
+
+; ******************************************************************
+; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
+; ******************************************************************
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -656,3 +683,5 @@ panic_loop:
 	.word	nmi			; NMI	@ $FFFA
 	.word	reset		; RST	@ $FFFC
 	.word	irq			; IRQ	@ $FFFE
+
+fw_end:					; for size computation

@@ -64,12 +64,12 @@ ci_notdle:
 	CMP #3				; is it ^C? (TERM)
 	BNE ci_noterm		; otherwise check next
 		LDA #SIGTERM
-		BRA ci_signal		; send signal
+		_BRA ci_signal		; send signal
 ci_noterm:
 	CMP #4				; is it ^D? (KILL) somewhat dangerous...
 	BNE ci_nokill		; otherwise check next
 		LDA #SIGKILL
-		BRA ci_signal		; send signal
+		_BRA ci_signal		; send signal
 ci_nokill:
 	CMP #26				; is it ^Z? (STOP)
 		BNE ci_exitOK		; otherwise there is no more to check

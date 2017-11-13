@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6b1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171108-1238
+; last modified 20171113-0954
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6a16", 0	; version in comment
+	.asc	"minimOS 0.6b1", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -218,9 +218,9 @@ dr_ok:					; *** all drivers inited ***
 dr_loop:
 		_PHX				; keep current value, no longer drv_aix (3)
 		LDA drvrs_ad+1, X		; get address MSB (4)
-		BNE dr_inst			; cannot be in zeropage, in case is too far for BEQ dr_ok (3/2)
+		BNE dr_doins			; cannot be in zeropage, in case is too far for BEQ dr_ok (3/2)
 			JMP dr_ok			; all done otherwise (0/4)
-dr_inst:
+dr_doins:
 		STA da_ptr+1		; store pointer MSB (3)
 		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
@@ -268,7 +268,7 @@ dr_ntsk:
 			BCS dr_nabort		; no way, forget about this
 ; 4) LOWRAM kernel has no I/O pointers...
 ; finally add ID to list
-		_LDAY (da_ptr)			; retrieve ID eeeeeek
+		_LDAY(da_ptr)			; retrieve ID eeeeeek
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
 		LDY #0				; reset index (2)
@@ -328,7 +328,7 @@ dr_iqloop:
 				STA (dq_ptr), Y		; ...and correct original value
 				DEY					; go for LSB
 				LDA (dq_ptr), Y		; get original...
-				STA drv_count, Y	; ...and store unmodified
+				STA drv_cnt, Y		; ...and store unmodified
 				_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 			JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
@@ -344,9 +344,16 @@ dr_neqnw:
 			DEX					; now 0, index for async queue (2)
 			BPL dr_iqloop		; eeeeek
 ; *** end of suspicious code ***
-
+dr_done:
 ; *** 6) continue initing drivers ***
 		_BRA dr_ended		; if arrived here, did not fail
+
+; **********************
+; *** error handling ***
+; **********************
+dr_babort:
+	LDY #BUSY
+	BNE dr_abort
 
 ; *****************************************
 ; *** some driver installation routines ***
@@ -415,13 +422,10 @@ dr_itask:
 ; **********************
 dr_iabort:
 	LDY #INVALID
-	_BRA dr_abort			; could use BNE instead of BRA
-dr_babort:
-	LDY #BUSY
-	_BRA dr_abort
+	BNE dr_abort
 dr_fabort:
 	LDY #FULL
-	_BRA dr_abort
+	BNE dr_abort
 dr_uabort:
 	LDY #UNAVAIL
 

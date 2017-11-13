@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6a13
+; v0.6b1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171030-0924
+; last modified 20171113-0902
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -24,8 +24,8 @@ dr_shut:
 ; *** FUTURE IMPLEMENTATION ***
 aq_mng:
 pq_mng:
-b_cnfg:
-b_stat:
+bl_cnfg:
+bl_stat:
 
 	_ERR(UNAVAIL)	; go away!
 
@@ -63,7 +63,7 @@ cout:
 cio_of = da_ptr			; parameter switching between CIN and COUT
 ; da_ptr globally defined, cio_of not needed upon calling dr_call!
 
-bout:
+blout:
 #ifdef	SAFE
 	LDA bl_siz			; check size
 	ORA bl_siz+1
@@ -557,7 +557,7 @@ str_end:
 	STX str_pt+1		; restore pointer
 	STY bl_siz		; complete counter
 	LDY iol_dev		; retrieve device
-	JMP bout		; standard block out... and return
+	JMP blout		; standard block out... and return
 
 
 ; ******************************
@@ -573,7 +573,7 @@ readln:
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
-		JSR yield			; always useful!
+		JSR b_yield			; always useful!
 		LDY rl_dev			; use device
 		JSR cin				; get one character
 		BCC rl_rcv			; got something
