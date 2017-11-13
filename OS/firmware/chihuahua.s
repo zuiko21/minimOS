@@ -1,13 +1,13 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171112-1202
+; last modified 20171113-0826
 
 #define		FIRMWARE 	_FIRMWARE
 
 #include "usual.h"
 
-* = FW_BASE			; this will be page-aligned!
+;* = FW_BASE			; this will be page-aligned!
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
@@ -99,6 +99,11 @@ fw_cpuOK:
 	STA fw_brk+1
 ; no need to set NMI as it will be validated
 
+; *** preset jiffy irq frequency ***
+; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
+	_STZA irq_freq		; store null speed... IRQ not set
+	_STZA irq_freq+1
+
 ; *** reset jiffy count ***
 	LDX #3				; max offset in uptime (assume contiguous)
 res_sec:
@@ -118,12 +123,6 @@ res_sec:
 ; supposedly will not start counting until writing to counters!
 	LDA #$C0			; enable T1 (jiffy) interrupt only (2+4)
 	STA VIA_J + IER
-; *** preset jiffy IRQ frequency *** new interface
-	LDY #<IRQ_PER		; get period from options
-	LDA #>IRQ_PER
-	STY irq_hz		; set parameter
-	SRA irq_hz+1
-	JSR fw_jiffy		; start counters and update var!
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
@@ -582,7 +581,12 @@ fw_patch:
 f_unavail:
 	_DR_ERR(UNAVAIL)		; not supported
 
-; WILL CHANGE O
+; WILL CHANGE
+
+; **** some strange data ****
+fw_map:
+	.word	0		; PLACEHOLDER FOR MEMORY MAP
+
 ; *** administrative jump table ***
 ; might go elsewhere as it may grow, especially on NMOS
 fw_admin:

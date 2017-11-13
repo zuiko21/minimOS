@@ -3,15 +3,16 @@
 ; ***** Jornadas HackLabAlmería en El Ejido 2017 *****
 ; copy or link as options.h in root dir
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171112-1136
+; last modified 20171113-0840
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
+
 ;#define		NMOS	_NMOS
 ;#define		LOWRAM	_LOWRAM
-
+#define		NOHEAD	_NOHEAD
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -37,10 +38,10 @@
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **
-ROM_BASE	=	$F000	; classic SDd 4 kiB EPROM
+ROM_BASE	=	$E000	; classic SDd 4 kiB EPROM
 
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$F800	; standard value
+FW_BASE		=	$F000	; standard value
 
 
 ; ** I/O definitions **
@@ -57,10 +58,12 @@ VIA		=	VIA1			; for compatibility with older code
 ; VIA_J is the one which does the jiffy IRQ, most likely the main one
 ; VIA_FG is the one for audio generation (/PB7 & CB2)
 ; VIA_SS is the one for SS-22 interface
+; VIA_U is the one with user port
 
 VIA_J	=	VIA1
 VIA_FG	=	VIA1
 VIA_SS	=	VIA1
+VIA_U	=	VIA1
 
 
 ; *** set standard device *** new 20160331
@@ -88,9 +91,9 @@ IRQ_FREQ =	200			; general case
 ; could be PHI2/IRQ_FREQ-2
 
 ; ** initial speed for SS-22 link, begin no faster than 15625 bps **
-SS_SPEED =	30		; 15625 bps @ 1 MHz
+SS_SPEED =	30			; 15625 bps @ 1 MHz
 ; could be PHI2/31250-2
 
 ; speed code in fixed-point format, new 20150129
-SPEED_CODE =	$10		; 1 MHz system
+SPD_CODE =	$10			; 1 MHz system
 ; could be computed as PHI2*16/1000000

@@ -135,7 +135,7 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; ****** more software after I/O ******
 ; *************************************
 ; ...could add more software up to $FC00
-#include "shell/monitor.s"
+;#include "shell/monitor.s"
 ;#include "../apps/crasm/80asm.s"
 ;#include "../apps/crasm/68asm.s"
 #ifndef	C816

@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.6b1
-; last modified 20171107-1053
+; last modified 20171113-0822
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -39,10 +39,8 @@ montitle:
 	.word	$6800		; time, 13.00
 	.word	$4ABF		; date, 2017/5/31
 
-	monSize	=	mon_end - mon_head - 256	; compute size NOT including header!
-
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	monSize		; filesize
+	.word	mon_end - mon_head - 256	; filesize
 	.word	0			; 64K space does not use upper 16-bit
 #endif
 ; ##### end of minimOS executable header #####
