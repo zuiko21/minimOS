@@ -1,8 +1,8 @@
-; minimOS 0.6b1 API/ABI
+; minimOS 0.6b2 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
 ; some renaming 20170805, 20171030
-; last modified 20171112-1144
+; last modified 20171114-0928
 
 ; *************************************************
 ; *************************************************
@@ -59,6 +59,8 @@ RELEASE		= FREE + 2	; release ALL memory blocks belonging to some PID, new 20161
 TS_INFO		= RELEASE + 2	; get taskswitching info for multitasking driver
 SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & architecture) new 20170222
 
+; define the jump-table size for more efficient memory usage!
+LAST_API	= SET_CURR + 2	; *** set just after the LAST API call ***
 
 ; ***********************
 ; ***********************

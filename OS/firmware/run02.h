@@ -1,13 +1,13 @@
 ; firmware variables for minimOS on run65816 BBC simulator
 ; 8-bit kernels!
-; v0.9.6a2
+; v0.9.6b2
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170822-1548
+; last modified 20171114-0932
 
 -sysram:
 ; lowram option for testing only
 #ifndef	LOWRAM
-fw_table	.dsb	256, $0		; new address 150204, avoid speed penalty, move towards the end otherwise, NOT available in 128-byte systems
+fw_table	.dsb	LAST_API, $0	; more efficient usage 171114, NOT available in 128-byte systems
 #endif
 fw_isr		.word	0			; ISR vector
 fw_nmi		.word	0			; NMI vector, fortunately checks for integrity
