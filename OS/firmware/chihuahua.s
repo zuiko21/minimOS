@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171113-1009
+; last modified 20171114-0949
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -14,6 +14,7 @@
 fw_start:
 	.asc 0, "m", CPU_TYPE, 13		; standard system file wrapper, new format 20161010, experimental type
 	.asc "boot", 0					; standard filename
+	.asc "HackLabAL @ El Ejido", 13	; *** special name ***
 	.asc "0.9.6b1 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -33,6 +34,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
+	.asc "HackLabAL @ El Ejido", 0	; *** special name ***
 #endif
 
 ; ********************

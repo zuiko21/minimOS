@@ -3,17 +3,22 @@
 ; ***** Jornadas HackLabAlmería en El Ejido 2017 *****
 ; copy or link as options.h in root dir
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171113-1007
+; last modified 20171114-0951
 
 ; *** set conditional assembly ***
 
+; ** these options may increase memory usage **
 ; comment for optimized code without optional checks
 ;#define		SAFE	_SAFE
-
+; uncomment for (inefficient) NMOS compatibility
 ;#define		NMOS	_NMOS
+; allow mutable driver IDs
+;#define		MUTABLE	_MUTABLE
 
-; commenting these will increase ROM usage
+; ** commenting these will increase memory usage **
+; limit functionality to fit into 128-byte RAM!
 ;#define		LOWRAM	_LOWRAM
+; supress headers, LOWLINK will no longer be useable
 #define		NOHEAD	_NOHEAD
 
 ; *** machine specific info ***
@@ -27,7 +32,7 @@
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
 
-#define		MACHINE_NAME	"Sistema de Desarrollo didáctico"
+#define		MACHINE_NAME	"Sistema de Desarrollo didactico"
 #define		MACHINE_ID		"sdd"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
