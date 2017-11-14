@@ -13,7 +13,7 @@
 ; uncomment for (inefficient) NMOS compatibility
 ;#define		NMOS	_NMOS
 ; allow mutable driver IDs
-;#define		MUTABLE	_MUTABLE
+#define		MUTABLE	_MUTABLE
 
 ; ** commenting these will increase memory usage **
 ; limit functionality to fit into 128-byte RAM!
