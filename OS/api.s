@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6b2, must match kernel.s
+; v0.6b1, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171109-1334
+; last modified 20171114-0958
 
 ; no way for standalone assembly...
 
@@ -771,6 +771,8 @@ get_pid:
 ;		USES rh_scan
 
 loadlink:
+; this will ONLY work if NOHEAD option is NOT enabled!
+#ifndef	NOHEAD
 ; *** look for that filename in ROM headers ***
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get LSB
@@ -858,7 +860,9 @@ ll_valid:
 	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
-
+#else
+	_ERR(UNAVAIL)	; no headers to scan
+#endif
 
 ; *********************************
 ; *** STRING, prints a C-string ***

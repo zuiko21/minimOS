@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6a15
+; v0.6b1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171030-0941
+; last modified 20171114-1009
 
 ; just in case
 #define		C816	_C816
@@ -38,11 +38,11 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6a15", 0	; version in comment
+	.asc	"minimOS•16 0.6b1", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$4800	; time, 0900
-	.word	$4AB7	; date, 2017/5/23
+	.word	$5000	; time, 1000
+	.word	$4B6E	; date, 2017/11/14
 
 kern_siz = kern_end - kern_head - 256
 
@@ -251,7 +251,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6a15", 0	; version in comment
+	.asc	"minimOS•16 0.6b1", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

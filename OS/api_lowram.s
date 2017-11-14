@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6b1
+; v0.6b2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171113-0902
+; last modified 20171114-0903
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -440,6 +440,7 @@ set_hndl:
 
 loadlink:
 ; *** look for that filename in ROM headers ***
+#ifndef	NOHEAD
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get LSB
 	SEC
@@ -528,6 +529,9 @@ ll_valid:
 	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)		; something was wrong
+#else
+	_ERR(UNAVAIL)		; no headers to scan
+#endif
 
 
 ; *********************************

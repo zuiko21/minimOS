@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6a23, should match kernel16.s
+; v0.6b1, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171102-1921
+; last modified 20171114-1003
 
 ; assumes 8-bit sizes upon call...
 
@@ -836,12 +836,14 @@ sk_loop:				; *** this code valid for singletask 816 ***
 		DEX					; previous byte
 		BNE sk_loop			; until all done
 ;*****alternative direct way, 16b, 24t
-;	.al: REP #$20			; *** 16-bit memory *** (3)
+;	.al
+;	REP #$20			; *** 16-bit memory *** (3)
 ;	LDA @$1FD			; get word from stack bottom... (6)
 ;	STA ma_pt			; store pointer (3)
 ;	LDA @$1FF			; get bank (and garbage) from stack bottom... (6)
 ;	STA ma_pt+2			; extra will not harm (3)
-;	.as: SEP #$20			; *** 8-bit memory *** (3)
+;	.as
+;	SEP #$20			; *** 8-bit memory *** (3)
 
 ; previous RELEASE marked pointer as 24b valid! otherwise STZ run_arch
 	_KERNEL(FREE)		; free it or fail quietly
@@ -974,6 +976,8 @@ loadlink:
 ; *** first look for that filename in ROM headers ***
 ; no need to set DBR
 
+#ifndef	NOHEAD
+; LOADLINK only useful with ROM headers!
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816
@@ -1076,8 +1080,11 @@ ll_native:
 	STZ ex_pt			; *** assume all headers are page-aligned *** eeeeek
 	STA ex_pt+1			; save rest of execution pointer
 	_EXIT_OK
+#else
+	_ERR(UNAVAIL)		; no headers to scan
+#endif
 
-	.as
+	.as					; just in case
 
 ; *********************************
 ; *** STRING, prints a C-string ***
