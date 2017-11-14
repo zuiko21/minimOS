@@ -3,7 +3,7 @@
 ; *** use as sort-of template ***
 ; v0.9.6b1
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171031-1054
+; last modified 20171114-1100
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -69,10 +69,11 @@ post:
 ; ***********************************
 
 ; *** set default CPU type ***
-	LDA #'V'			; 65816 installed (2)
-	STA fw_cpu			; store variable (4)
+;	LDA #'V'			; 65816 installed (2) REDUNDANT if actual test is done
 ; ...but check it for real afterwards
 #include	"firmware/modules/cpu_check.s"
+; module will no longer store value
+	STA fw_cpu			; store variable (4)
 
 ; *** preset kernel start address (standard label from ROM file, unless downloaded) ***
 	LDA #>kernel		; get full address (2+2)

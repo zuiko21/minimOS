@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6b1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171114-1008
+; last modified 20171114-1110
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -78,7 +78,6 @@ warm:
 #endif
 ; ++++++
 #endif
-
 ; install ISR code (as defined in "isr/irq.s" below)
 	LDY #<k_isr			; get address, nicer way (2+2)
 	LDA #>k_isr
@@ -480,6 +479,7 @@ dr_ok:					; *** all drivers inited ***
 
 ; new, show a splash message ever the kernel is restarted!
 	JSR ks_cr			; leading newline
+lda#'%':jsr$c0c2
 	LDY #<kern_splash	; get pointer
 	LDA #>kern_splash
 	STY str_pt			; set parameter

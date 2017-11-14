@@ -3,7 +3,7 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171108-1240
+; last modified 20171114-1101
 
 ; *** set conditional assembly ***
 
@@ -15,7 +15,7 @@
 ; new option for mutable IDs, most likely mandatory!
 #define		MUTABLE		_MUTABLE
 
-; enable in order to remove headers, not LOAD_LINK savvy!
+; enable in order to remove headers, not LOADLINK savvy!
 ;#define		NOHEAD	_NOHEAD
 ; enable multitasking support... hopefully! *** might be defined upon multitasking driver
 ;#define	MULTITASK	_MULTITASK
