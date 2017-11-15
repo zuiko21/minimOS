@@ -918,6 +918,7 @@ rl_l:
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
 			_PHY				; otherwise, save error code...
+lda#'v':jsr$c0c2:tya:adc#31:jsr$c0c2
 			LDA #0
 			LDY rl_cur			; current position (new)
 			STA (str_pt), Y		; if any other error, terminate string... without clearing?
@@ -926,6 +927,7 @@ rl_l:
 rl_rcv:
 		LDA io_c			; get received
 		LDY rl_cur			; retrieve index
+cpy#0:bne*+7:pha:lda#'.':jsr$c0c2:pla
 		CMP #CR				; hit CR?
 			BEQ rl_cr			; all done then
 		CMP #BS				; is it backspace?
@@ -936,7 +938,7 @@ rl_rcv:
 			_BRA rl_echo		; and resume operation
 rl_nbs:
 		CPY ln_siz			; overflow? EEEEEEEEEEK
-			BCS rl_l			; ignore if so
+			BEQ rl_l			; ignore if so (was BCS)
 		STA (str_pt), Y		; store into buffer
 		INC	rl_cur			; update index
 rl_echo:
@@ -950,6 +952,7 @@ rl_cr:
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
+lda#'=':jsr$c0c2:ldy#$0:nop:nop:lda(str_pt),y:beq*+8:jsr$c0c2:iny:bne*-11:nop:nop:nop:nop
 	_EXIT_OK			; and all done!
 
 
