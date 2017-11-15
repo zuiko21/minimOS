@@ -33,7 +33,7 @@ unimplemented:			; placeholder here
 ;		USES whatever BLIN takes
 
 cin:
-	LDA #<io_c			; will point to old parameter
+	LDA #io_c			; will point to old parameter
 	STA bl_ptr			; set pointer
 	_STZA bl_ptr+1
 	LDA #1				; transfer a single byte
@@ -94,7 +94,7 @@ ci_error:
 ;		USES whatever BLOUT takes
 
 cout:
-	LDA #<io_c			; will point to old parameter
+	LDA #io_c			; will point to old parameter
 	STA bl_ptr			; set pointer
 	_STZA bl_ptr+1
 	LDA #1				; transfer a single byte
@@ -161,7 +161,6 @@ co_loop:
 		LDA cio_lock, X		; check whether THAT device is in use (4)
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
-lda#'+':jsr$c0c2
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		_BRA co_loop		; try again! (3)
 co_lckd:
@@ -225,8 +224,8 @@ ci_lckd:
 ci_lckdd:
 	_NO_CRIT
 ; * end of atomic operation *
-		JSR ci_call			; direct CALL!!!
-			BCS cio_unlock		; clear MUTEX and return whatever error!
+	JSR ci_call			; direct CALL!!!
+	_BRA cio_unlock		; clear MUTEX and return whatever error!
 
 ; ** EVENT management no longer here **
 
@@ -918,8 +917,11 @@ rl_l:
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
+			_PHY				; otherwise, save error code...
 			LDA #0
-			_STAX(str_pt)		; if any other error, terminate string
+			LDY rl_cur			; current position (new)
+			STA (str_pt), Y		; if any other error, terminate string... without clearing?
+			_PLY				; retrieve error code
 			RTS					; and return whatever error
 rl_rcv:
 		LDA io_c			; get received
@@ -928,7 +930,7 @@ rl_rcv:
 			BEQ rl_cr			; all done then
 		CMP #BS				; is it backspace?
 		BNE rl_nbs			; delete then
-			TYA					; check index
+			TYA					; otherwise check index
 				BEQ rl_l			; ignore if already zero
 			DEC rl_cur			; otherwise reduce index
 			_BRA rl_echo		; and resume operation
