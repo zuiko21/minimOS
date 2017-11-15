@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6b1
+; v0.6b2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171114-1110
+; last modified 20171115-1338
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6b1", 13
+	.asc	"minimOS 0.6b2", 13
 	.asc	"HackLabAL @ El Ejido", 0	; version in comment ***special name**
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
@@ -146,6 +146,8 @@ dr_clear:
 #ifdef	MUTABLE
 		_STZA drv_ads, X	; ****** in case of mutable driver IDs, clear pointer array first (4+4)
 		_STZA drv_ads+1, X	; ****** could just clear MSB...
+		_STZA drv_opt+1, X	; clear at least pointer MSB eeeeeeeeeeeeeeeek
+		_STZA drv_ipt+1, X	; clear at least pointer MSB eeeeeeeeeeeeeeeek
 #else
 		LDA #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2)
 		STA drv_opt, X		; set LSB for output (4)
@@ -479,7 +481,6 @@ dr_ok:					; *** all drivers inited ***
 
 ; new, show a splash message ever the kernel is restarted!
 	JSR ks_cr			; leading newline
-lda#'%':jsr$c0c2
 	LDY #<kern_splash	; get pointer
 	LDA #>kern_splash
 	STY str_pt			; set parameter
@@ -538,7 +539,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6b1", 0
+	.asc	"minimOS 0.6b2", 0
 #endif
 
 kern_end:		; for size computation

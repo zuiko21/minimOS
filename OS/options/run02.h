@@ -40,7 +40,7 @@
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK		run816_std
+#define		DRIVER_PACK		run02_std
 
 ; *** Default files ***
 ; default shell from folder

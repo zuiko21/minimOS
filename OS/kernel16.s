@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b1
+; v0.6b2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171114-1009
+; last modified 20171115-1341
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6b1", 0	; version in comment
+	.asc	"minimOS•16 0.6b2", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -139,9 +139,12 @@ dr_clear:
 		STZ cio_lock, X		; clear I/O locks and interleaved binary flags! (5)
 #ifdef	MUTABLE
 		STZ drv_ads, X		; ****** clear array for mutable IDs (5)
-#endif
+		STZ drv_opt, X		; eeeeeeeeeeeek (5)
+		STZ drv_ipt, X		; eeeeeeeeeeeek (5)
+#else
 		STA drv_opt, X		; set full pointer for output (5)
 		STA drv_ipt, X		; and for input (5)
+#endif
 		INX					; go for next entry (2+2)
 		INX
 		CPX #MX_DRVRS		; all done? needed for sparse arrays (2)
@@ -251,7 +254,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6b1", 0	; version in comment
+	.asc	"minimOS•16 0.6b2", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

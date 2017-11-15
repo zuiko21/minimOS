@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6b1, must match kernel.s
+; v0.6b2, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171114-0958
+; last modified 20171115-1331
 
 ; no way for standalone assembly...
 
@@ -161,6 +161,7 @@ co_loop:
 		LDA cio_lock, X		; check whether THAT device is in use (4)
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
+lda#'+':jsr$c0c2
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		_BRA co_loop		; try again! (3)
 co_lckd:
@@ -1099,12 +1100,12 @@ dr_phys:
 ; ****** will store ID as might change within device type if busy (already in A) ******
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 	TAX					; was Y, also in A (2)
-#ifdef	MUTABLE
-; new 171013, mutable IDs have a pointer array for easier checking
 ; sparse array ready
 	LDY dr_ind-128, X	; check original ID
 ;	CPY #$FF			; is this entry free? (or zero in leaded arrays)
 	BEQ dr_empty		; yes, go for it (3)
+#ifdef	MUTABLE
+; new 171013, mutable IDs have a pointer array for easier checking
 		AND #%11110000		; no, filter 8 devs each kind
 		TAX
 		LDY #8				; 8 devs per kind

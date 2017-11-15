@@ -141,9 +141,9 @@ co_lckd:
 	LDA run_pid			; get ours in A, faster!
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
-; direct driver call, proper physdev index in X
+; direct driver call, proper sparse physdev index in X
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
-; ...and the into cio_unlock
+; ...and then into cio_unlock
 
 ; ***************************
 ; *** common I/O routines ***
