@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
 ; v0.9.6b2
-; *** new format for mOS 0.6 compatibility *** 16-bit version
+; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171115-1309
+; last modified 20171115-1310
 
 #include	"usual.h"
 .(
@@ -23,7 +23,7 @@
 
 ; *** info string ***
 debug_info:
-	.asc	"Console I/O driver for run65816 BBC simulator (16-bit), v0.9.6b2", 0
+	.asc	"Console I/O driver for run65816 BBC simulator (8-bit), v0.9.6b2", 0
 
 ; *** output ***
 kow_bout:
@@ -37,7 +37,7 @@ kow_bout:
 ; all checked, do block output!
 	LDY #0			; reset index
 kow_cout:
-	LDA [bl_ptr], Y		; get char in case is control ***24-bit addressing
+	LDA (bl_ptr), Y		; get char in case is control
 	CMP #13			; carriage return?
 	BNE kow_ncr		; if so, should generate LF instead
 		LDA #10			; LF first (and only)
@@ -52,7 +52,7 @@ kow_blk:
 	INY			; point to next
 	BNE kow_cout		; did not wrap EEEEEEEEEK
 		INC bl_ptr+1		; or update MSB
-		BRA kow_cout		; and continue EEEEEEEEEEEK
+		_BRA kow_cout		; and continue EEEEEEEEEEEK
 kow_end:
 	PLA					; retrieve saved MSB
 	STA bl_ptr+1		; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
@@ -72,7 +72,7 @@ kow_blin:
 		BNE kow_emit	; do not process
 			LDA #CR			; or convert to CR
 kow_emit:
-		STA [bl_ptr]		; store result otherwise ***24-bit addressing
+		_STAY(bl_ptr)		; store result otherwise
 		DEC bl_siz		; one less
 		LDA bl_siz
 		CMP #$FF		; will it wrap?
@@ -84,5 +84,5 @@ kow_emit:
 ;kow_empty:
 ;	DR_ERR(EMPTY)		; nothing yet
 kow_err:
-	_DR_ERR(UNAVAIL)
+	_DR_ERR(UNAVAIL);
 .)
