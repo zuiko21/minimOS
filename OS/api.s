@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6b2, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171115-1331
+; last modified 20171116-1656
 
 ; no way for standalone assembly...
 
@@ -952,7 +952,9 @@ rl_cr:
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
-lda#'=':jsr$c0c2:ldy#$0:nop:nop:lda(str_pt),y:beq*+8:jsr$c0c2:iny:bne*-11:nop:nop:nop:nop
+lda#'=':jsr$c0c2:ldy#$0
+lda(str_pt),y:beq*+6
+jsr$c0c2:iny:bne*-10
 	_EXIT_OK			; and all done!
 
 
