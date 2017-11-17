@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6b2, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171116-1656
+; last modified 20171117-1102
 
 ; no way for standalone assembly...
 
@@ -918,7 +918,7 @@ rl_l:
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
 			_PHY				; otherwise, save error code...
-lda#'v':jsr$c0c2:tya:adc#31:jsr$c0c2
+lda#'#':jsr$c0c2:tya:adc#31:jsr$c0c2
 			LDA #0
 			LDY rl_cur			; current position (new)
 			STA (str_pt), Y		; if any other error, terminate string... without clearing?
@@ -940,6 +940,7 @@ rl_nbs:
 		CPY ln_siz			; overflow? EEEEEEEEEEK
 			BEQ rl_l			; ignore if so (was BCS)
 		STA (str_pt), Y		; store into buffer
+lda#'+':jsr$c0c2
 		INC	rl_cur			; update index
 rl_echo:
 		LDY rl_dev			; retrieve device
@@ -952,9 +953,12 @@ rl_cr:
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
+/*
 lda#'=':jsr$c0c2:ldy#$0
 lda(str_pt),y:beq*+6
 jsr$c0c2:iny:bne*-10
+*/
+lda#'n':jsr$c0c2:tya:clc:adc#'0':jsr$c0c2:lda#13:jsr$c0c2
 	_EXIT_OK			; and all done!
 
 
