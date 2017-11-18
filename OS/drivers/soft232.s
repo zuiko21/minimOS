@@ -1,15 +1,15 @@
 ; software serial port emulator for minimOS!
-; v0.6b2, will assemble on NMOS but wrong timing! Use 65C02 *always*
+; v0.6b3, will assemble on NMOS but wrong timing! Use 65C02 *always*
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171113-0949
+; last modified 20171118-2041
 
 ; VIA bit functions
 ; Tx	= PA0 (any 0...5, set masks accordingly)
 ; Rx	= PA7 (or PA6 for easy checking)
-; /CTS	= PA6 (or PA7 for easy checking)
-; /RTS	= PA1 (or any 0...5)
+; /CTS	= PA6 (or PA7 for easy checking) *temporarily disabled
+; /RTS	= PA1 (or any 0...5) *temporarily disabled
 
-; new VIA-connected device ID is $23, will go imtp PB
+; new VIA-connected device ID is $23, will go into PB
 
 ; initially designed for 9600,n,1 on 1 MHz systems (Chihuahua)
 ; 104.167 clocks/bit!!!
@@ -43,10 +43,10 @@ srs_info:
 ; *** some definitions ***
 zsr_vote	= sys_sp	; single local variable, could be elsewhere in zeropage
 
-IN_MASK		= %00111111	; PA6-7 as input
-OUT_MASK	= %00000011	; PA0-1 as output
+IN_MASK		= %01111111	; PA6-7 as input *PA6 disabled
+OUT_MASK	= %00000001	; PA0-1 as output *PA1 disabled
 TX_MASK		= %00000001	; mask for Tx (PA0)
-RTS_MASK	= %00000010	; mask for /RTS (PA1)
+RTS_MASK	= %00000000	; mask for /RTS (PA1) *disabled
 INIT_MASK	= TX_MASK + RTS_MASK	; set Tx (idle) and negate RTS (disable reception)
 
 ; ***************************************************************
@@ -64,9 +64,12 @@ srsr_l:
 		LDA io_c			; received byte...
 		STA (bl_ptr), Y		; ...goes into buffer
 		INY					; go for next
+		BNE srsr_nw			; still within page
+			INC bl_ptr+1			; ...or increment MSB
+srsr_nw:
 		DEC bl_siz			; one less to go
 			BNE srsr_l			; no wrap, continue
-		LDA bl_siz			; check MSB otherwise
+		LDA bl_siz+1			; check MSB otherwise EEEEEK
 			BEQ blck_end		; no more!
 		DEC bl_siz+1		; ...or one page less
 		_BRA srsr_l
@@ -89,9 +92,12 @@ srss_l:
 			BCS blck_err		; any error ends transfer!
 		_PLY				; restore index
 		INY					; go for next
+		BNE srss_nw			; still within page
+			INC bl_ptr+1			; ...or increment MSB
+srss_nw:
 		DEC bl_siz			; one less to go
 			BNE srss_l			; no wrap, continue
-		LDA bl_siz			; check MSB otherwise
+		LDA bl_siz+1			; check MSB otherwise
 			BEQ blck_end		; no more!
 		DEC bl_siz+1		; ...or one page less
 		_BRA srss_l
@@ -105,8 +111,8 @@ srs_init:
 	ORA #INIT_MASK		; set Tx (idle) and negate RTS (disable reception)
 	STA VIA1+IORA		; set initial status
 	LDA VIA1+DDRA		; get I/O config
-	AND #IN_MASK		; PA6-7 as input
-	ORA #OUT_MASK		; PA0-1 as output
+	AND #IN_MASK		; PA6-7 as input *PA7 only
+	ORA #OUT_MASK		; PA0-1 as output *PA0 only
 	STA VIA1+DDRA		; set config
 	_DR_OK				; succeeded
 
@@ -115,7 +121,8 @@ srs_init:
 ; *****************************
 srs_send:
 	_CRITIC				; disable interrupts
-	LDX #30				; timeout counter ~1.5 mS
+/*
+	LDX #30				; timeout counter ~1.5 mS *not used
 ; wait until receiver is available
 srss_wait:
 		BIT VIA1+IORA		; check input bits (4)
@@ -126,6 +133,7 @@ srss_wait:
 	_NO_CRIT			; restore interrupts if needed
 	_DR_ERR(TIMEOUT)	; could not send in a timely fashion
 srss_cts:
+*/
 ; ready to go, prepare some values
 	LDX #9				; bits per byte incl. stop
 	SEC					; this will be the stop bit!
@@ -155,14 +163,18 @@ srss_sent:
 ; ************************
 srs_rcv:
 	_CRITIC				; disable interrupts
-	LDA #RTS_MASK		; mask for RTS
+	LDA #RTS_MASK		; mask for RTS *not yet used
 	_TRB(VIA1+IORA)		; enable reception!
 	LDX #136			; timeout counter ~1.5 mS *** not for 1.8432 MHz ***
 ;	LDX #251			; *** timeout constant for 1.8432 MHz systems ***
+; *will use a much longer timeout...
+		LDY #0		; inner loop
 ; wait until data is available
 srsr_wait:
 		BIT VIA1+IORA		; check input bits (4)
 			BPL srsr_start		; exit loop upon start bit reception (2/3)
+		DEY		; *inner loop
+		BNE srsr_wait		; until timeout (3/2)
 		DEX					; keep waiting (2)
 		BNE srsr_wait		; until timeout (3/2)
 	_NO_CRIT			; restore previous interrupt state
@@ -219,7 +231,7 @@ srsr_carry:
 ; disable receiver and finish
 srsr_stop:
 	JSR srs_41us		; wait a bit more (really needed?)
-	LDA #RTS_MASK		; mask for /RTS
+	LDA #RTS_MASK		; mask for /RTS *not used
 	_TSB(VIA1+IORA)		; disable reception!
 	_NO_CRIT			; no longer in a hurry
 	_DR_OK
