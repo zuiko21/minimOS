@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2b2
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20171119-2130
+; last modified 20171119-2205
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -83,7 +83,7 @@ main_loop:
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
 		JSR getLine			; input a line
-bcs*+5:lda#'?':jsr$c0c2
+bcs*+7:lda#'?':jsr$c0c2
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
