@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6b3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171120-0828
+; last modified 20171120-0920
 
 ; no way for standalone assembly...
 
@@ -878,6 +878,8 @@ string:
 
 ; not very efficient... measure string and call BOUT
 	_PHY				; must keep device eeeeeeek
+	LDA str_pt			; get LSB of pointer...
+	STA bl_ptr			; ...as new parameter
 	LDX str_pt+1		; MSB of pointer might be changed
 	LDY #0				; eeeeeeeek! (2)
 	STY bl_siz+1			; reset MSB of measured size
@@ -891,6 +893,7 @@ str_loop:
 		BNE str_loop		; continue, no need for BRA (3)
 str_term:
 	STX str_pt+1		; restore pointer, needed for new API/ABI
+	STX bl_ptr+1		; ...and new parameter eeeeeek
 	STY bl_siz			; record size LSB
 	_PLY				; restore device
 	_KERNEL(BLOUT)		; call usual (could be patched)
@@ -938,17 +941,21 @@ rl_rcv:
 rl_nbs:
 		CPY ln_siz			; overflow? EEEEEEEEEEK
 			BEQ rl_l			; ignore if so (was BCS)
+pha:lda#'+':jsr$c0c2:pla:jsr$c0c2
 		STA (str_pt), Y		; store into buffer
-lda#'+':jsr$c0c2
 		INC	rl_cur			; update index
 rl_echo:
 		LDY rl_dev			; retrieve device
-		_KERNEL(COUT)			; echo received character
+		_KERNEL(COUT)		; echo received character
 		_BRA rl_l			; and continue
 rl_cr:
-	LDA #CR				; newline
+; a CR is already stored at io_c
 	LDY rl_dev			; retrieve device
-	_KERNEL(COUT)			; print newline (ignoring errors)
+	_KERNEL(COUT)		; print newline (ignoring errors)
+lda#'C':jsr$c0c2
+lda#'R':jsr$c0c2
+lda#'@':jsr$c0c2
+lda rl_cur:clc:adc#'0':jsr$c0c2
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string

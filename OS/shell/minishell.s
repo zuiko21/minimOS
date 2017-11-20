@@ -83,8 +83,14 @@ main_loop:
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
 		JSR getLine			; input a line
+
 bcc*+7:lda#'?':jsr$c0c2
-lda#'$':jsr$c0c2:lda buffer:clc:adc#33:jsr$c0c2
+lda#'$':jsr$c0c2:ldx#0
+lda buffer,x:pha:lsr:lsr:lsr:lsr:clc:adc#48:jsr$c0c2
+pla:and#$0f:clc:adc#48:jsr$c0c2
+inx:cpx#32:bne*-25
+lda#13:jsr$c0c2
+
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
@@ -104,6 +110,7 @@ ms_nf:
 			LDA #>xsh_not
 ms_err:
 			JSR prnStr			; print it!
+main_loopN:
 			_BRA main_loop		; and try another
 xsh_ok:
 ; something is ready to run, but set its default I/O first!!!
@@ -123,7 +130,7 @@ xsh_wait:
 				AND #BR_MASK		; filter relevant bits eeeeeeeeek
 				CPY #BR_FREE		; until ended (relies on B_STATUS hiding BR_END!!!)
 				BNE xsh_wait		; do not interact until ended (no '&' yet)
-			BEQ main_loop		; then continue asking for more
+			BEQ main_loopN		; then continue asking for more
 xsh_single:
 	_KERNEL(B_EXEC)		; execute anyway...
 /*
