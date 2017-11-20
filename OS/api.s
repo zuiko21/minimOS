@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6b2, must match kernel.s
+; v0.6b3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171117-1102
+; last modified 20171120-0828
 
 ; no way for standalone assembly...
 
@@ -927,7 +927,6 @@ lda#'#':jsr$c0c2:tya:adc#31:jsr$c0c2
 rl_rcv:
 		LDA io_c			; get received
 		LDY rl_cur			; retrieve index
-cpy#0:bne*+7:pha:lda#'.':jsr$c0c2:pla
 		CMP #CR				; hit CR?
 			BEQ rl_cr			; all done then
 		CMP #BS				; is it backspace?
@@ -953,12 +952,10 @@ rl_cr:
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
-/*
 lda#'=':jsr$c0c2:ldy#$0
-lda(str_pt),y:beq*+6
-jsr$c0c2:iny:bne*-10
-*/
-lda#'n':jsr$c0c2:tya:clc:adc#'0':jsr$c0c2:lda#13:jsr$c0c2
+lda(str_pt),y:beq*+8
+jsr$c0c2:iny:bne*-8
+lda#13:jsr$c0c2
 	_EXIT_OK			; and all done!
 
 
