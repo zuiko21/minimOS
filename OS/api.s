@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6b3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171120-0920
+; last modified 20171120-1009
 
 ; no way for standalone assembly...
 
@@ -831,8 +831,9 @@ ll_found:
 	INY				; next byte is CPU type
 	LDA (rh_scan), Y	; get it
 ; this is done instead of LDX fw_cpu
-	_ADMIN(GESTALT)		; get full system info
-	LDX cpu_ll		; installed CPU
+;	ADMIN(GESTALT)		; get full system info
+;	LDX cpu_ll		; installed CPU
+	LDX fw_cpu		; ********************* HACK AGAIN. MUST REVISE GESTALT INTERFACE ************************
 	CPX #'R'		; is it a Rockwell/WDC CPU?
 		BEQ ll_rock		; from R down is OK
 	CPX #'B'		; generic 65C02?
@@ -921,9 +922,6 @@ rl_l:
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
 			_PHY				; otherwise, save error code...
-/*
-lda#'#':jsr$c0c2:tya:adc#31:jsr$c0c2
-*/
 			LDA #0
 			LDY rl_cur			; current position (new)
 			STA (str_pt), Y		; if any other error, terminate string... without clearing?
@@ -943,9 +941,6 @@ rl_rcv:
 rl_nbs:
 		CPY ln_siz			; overflow? EEEEEEEEEEK
 			BEQ rl_l			; ignore if so (was BCS)
-
-pha:lda#'+':jsr$c0c2:pla:jsr$c0c2
-
 		STA (str_pt), Y		; store into buffer
 		INC	rl_cur			; update index
 rl_echo:
@@ -954,26 +949,11 @@ rl_echo:
 		_BRA rl_l			; and continue
 rl_cr:
 ; a CR is already stored at io_c
-
-lda#'C':jsr$c0c2
-lda#'R':jsr$c0c2
-
 	LDY rl_dev			; retrieve device
-tya:clc:adc#48:jsr$c0c2
-/*	_KERNEL(COUT)		; print newline (ignoring errors)
-
-lda#'@':jsr$c0c2
-lda rl_cur:clc:adc#'0':jsr$c0c2
-*/
+	_KERNEL(COUT)		; print newline (ignoring errors)
 	LDY rl_cur			; retrieve cursor!!!!!
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
-/*
-lda#'=':jsr$c0c2:ldy#$0
-lda(str_pt),y:beq*+8
-jsr$c0c2:iny:bne*-8
-lda#13:jsr$c0c2
-*/
 	_EXIT_OK			; and all done!
 
 

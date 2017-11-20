@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2b3
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20171120-0832
+; last modified 20171120-1007
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -83,14 +83,6 @@ main_loop:
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
 		JSR getLine			; input a line
-
-bcc*+7:lda#'?':jsr$c0c2
-lda#'$':jsr$c0c2:ldx#0
-lda buffer,x:pha:lsr:lsr:lsr:lsr:clc:adc#48:jsr$c0c2
-pla:and#$0f:clc:adc#48:jsr$c0c2
-inx:cpx#32:bne*-25
-lda#13:jsr$c0c2
-
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
@@ -99,6 +91,18 @@ lda#13:jsr$c0c2
 		STY str_pt			; set parameter
 		STA str_pt+1
 		_KERNEL(LOADLINK)	; look for that file!
+php
+bcc*+7:lda#'C':jsr$c0c2
+lda#'&':jsr$c0c2
+lda ex_pt+1:pha:lsr:lsr:lsr:lsr
+clc:adc#'0':cmp#57:bcc*+4:adc#6:jsr$c0c2
+pla:and#$0f
+clc:adc#'0':cmp#57:bcc*+4:adc#6:jsr$c0c2
+lda ex_pt:pha:lsr:lsr:lsr:lsr
+clc:adc#'0':cmp#57:bcc*+4:adc#6:jsr$c0c2
+pla:and#$0f
+clc:adc#'0':cmp#57:bcc*+4:adc#6:jsr$c0c2
+plp
 		BCC xsh_ok			; it was found, thus go execute it
 			CPY #INVALID		; found but not compatible?
 			BNE ms_nf
@@ -111,8 +115,11 @@ ms_nf:
 ms_err:
 			JSR prnStr			; print it!
 main_loopN:
-			_BRA main_loop		; and try another
+			JMP main_loop		; and try another ***was _BRA without debug code
 xsh_ok:
+lda#'O':jsr$c0c2
+lda#'K':jsr$c0c2
+jmp main_loop
 ; something is ready to run, but set its default I/O first!!!
 		LDY iodev
 		STY def_io
@@ -120,6 +127,7 @@ xsh_ok:
 		_KERNEL(B_FORK)		; get a free braid
 		TYA					; check PID at Y, what to do if none available?
 		BEQ xsh_single		; no multitasking, execute and restore status!
+lda#'M':jsr$c0c2
 			STY pid			; save as will look for it later
 			_KERNEL(B_EXEC)		; run on that braid
 xsh_wait:
@@ -132,8 +140,8 @@ xsh_wait:
 				BNE xsh_wait		; do not interact until ended (no '&' yet)
 			BEQ main_loopN		; then continue asking for more
 xsh_single:
-	_KERNEL(B_EXEC)		; execute anyway...
-/*
+/*	_KERNEL(B_EXEC)		; execute anyway...
+
 ; *** DUH! singletasking systems will not arrive here ***
 	BCC xsh_success		; no runtime errors!
 		TYA					; otherwise get error code
