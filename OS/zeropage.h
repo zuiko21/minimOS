@@ -44,6 +44,7 @@ local1: locpt1	.dsb	4			; variables for kernel functions @ $E4
 
 dq_off	= dr_aut+1					; 8b
 dq_ptr	= dr_aut+2					; 16b
+; **********************************************
 
 ; *** include aliases here for local2/locpt2 ***
 ma_lim:								; 8 bit
@@ -55,6 +56,7 @@ local2: locpt2	.dsb	4			; variables for kernel functions @ $E8
 rl_dev	= pfa_ptr+2					; 8b
 dr_id	= rl_dev					; 8b
 ; dr_iid no longer used
+; **********************************************
 
 ; *** include aliases here for local3/locpt3 ***
 rl_cur:								; 8 bit
@@ -63,6 +65,7 @@ rh_scan:							; 16/24 bit
 ; exe_sp & ex_wr no longer used
 
 local3: locpt3	.dsb	4			; variables for kernel functions @ $EC
+; **********************************************
 
 ; ***********************
 ; ** kernel parameters **
@@ -98,7 +101,7 @@ z2:z2W:z2L:							; old labels for compatibility
 zpar: zaddr	.dsb	4				; up to 4 bytes, including older names @ $F8
 
 c_speed	= cpu_ll+1					; 8b
-bl_siz	= io_c+2					; 16b
+bl_siz	= io_c-2					; 16b***
 up_sec	= up_ticks+1				; 24b, new source-compatible format
 ; *******************************************
 
