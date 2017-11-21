@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2b3
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20171121-0928
+; last modified 20171121-1026
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -137,7 +137,8 @@ xsh_single:
 		JSR prnStr			; print it
 xsh_success:
 */
-;	JMP shell			; ...but reset shell environment! should not arrive here
+	_PANIC("{exit}")	; temporary check
+	JMP shell			; ...but reset shell environment! should not arrive here
 
 ; *** useful routines ***
 

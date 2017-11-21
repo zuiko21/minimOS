@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6a5
+; v0.9.6b1
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170602-1440
+; last modified 20171121-1034
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -411,7 +411,8 @@ fwi_loop:
 		STA @fw_table, Y	; copy where the firmware expects it (6) ***faster if switching DBR but heavier
 		INY					; advance two bytes (2+2)
 		INY
-		BNE fwi_loop		; until whole page is done (3/2)
+		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
+		BCC fwi_loop		; until whole TABLE is done (3/2)***might corrupt fw vars!
 	_EXIT_CS			; restore interrupts if needed, will restore size too (4)
 	_DR_OK				; all done (8)
 

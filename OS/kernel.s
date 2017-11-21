@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6b3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171121-1000
+; last modified 20171121-1024
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -69,7 +69,6 @@ warm:
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
 ; ++++++
-lda fw_cpu:jsr$c0c2:lda#10:jsr$c0c2
 #ifndef		DOWNLOAD
 	LDY #<k_vec			; get table address, nicer way (2+2)
 	LDA #>k_vec
@@ -77,7 +76,6 @@ lda fw_cpu:jsr$c0c2:lda#10:jsr$c0c2
 	STA kerntab+1
 	_ADMIN(INSTALL)		; copy jump table
 #endif
-lda fw_cpu:jsr$c0c2:lda#10:jsr$c0c2
 ; ++++++
 #endif
 ; install ISR code (as defined in "isr/irq.s" below)

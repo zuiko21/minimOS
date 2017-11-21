@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b1
+; v0.9.6b2
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171114-0949
+; last modified 20171121-1030
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -574,6 +574,7 @@ fwi_loop:
 		LDA (kerntab), Y	; get from table as supplied (5)
 		STA fw_table, Y		; copy where the firmware expects it (4+2)
 		INY
+		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 		BNE fwi_loop		; until whole page is done (3/2)
 	_NO_CRIT			; restore interrupts if needed (4)
 	_DR_OK				; all done (8)
