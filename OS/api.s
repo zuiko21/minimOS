@@ -828,13 +828,22 @@ ll_found:
 	LDA (rh_scan), Y	; check filetype
 	CMP #'m'		; must be minimOS app!
 		BNE ll_wrap		; error otherwise
-_EXIT_OK
 	INY				; next byte is CPU type
 	LDA (rh_scan), Y	; get it
 ; this is done instead of LDX fw_cpu
 ;	ADMIN(GESTALT)		; get full system info
 ;	LDY cpu_ll		; installed CPU *** should return it in Y!
 	LDY fw_cpu		; ********************* HACK AGAIN. MUST REVISE GESTALT INTERFACE ************************
+pha
+lda#'C':jsr$c0c2
+lda#'P':jsr$c0c2
+lda#'U':jsr$c0c2
+lda#'$':jsr$c0c2
+tya:pha
+lsr:lsr:lsr:lsr:clc:adc#48:jsr$c0c2
+pla:and#$0f:clc:adc#48:jsr$c0c2
+lda#10:jsr$c0c2
+pla
 	CPY #'R'		; is it a Rockwell/WDC CPU?
 		BEQ ll_rock		; from R down is OK
 	CPY #'B'		; generic 65C02?
@@ -843,6 +852,8 @@ _EXIT_OK
 		BEQ ll_cmos
 	CPY #'N'		; old NMOS?
 		BEQ ll_nmos			; only NMOS code will do
+lda#'?':jsr$c0c2
+lda#10:jsr$c0c2
 		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
 ll_rock:
 	CMP #'R'		; code has Rockwell extensions?
@@ -855,6 +866,7 @@ ll_nmos:
 		BNE ll_wrap		; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
+_EXIT_OK
 	LDY rh_scan+1	; and MSB
 	INY				; start from next page
 	_STZA ex_pt		; *** assume all headers are page-aligned ***
