@@ -92,7 +92,6 @@ main_loop:
 		STA str_pt+1
 		_KERNEL(LOADLINK)	; look for that file!
 		BCC xsh_ok			; it was found, thus go execute it
-lda#'C':jsr$c0c2
 			CPY #INVALID		; found but not compatible?
 			BNE ms_nf
 				LDY #<xsh_err		; get incompatible message pointer
@@ -106,22 +105,13 @@ ms_err:
 main_loopN:
 			JMP main_loop		; and try another ***was _BRA without debug code
 xsh_ok:
-lda#'O':jsr$c0c2
-lda#'K':jsr$c0c2
-lda#10:jsr$c0c2
 ; something is ready to run, but set its default I/O first!!!
 		LDY iodev
 		STY def_io
 		STY def_io+1
-;		KERNEL(B_FORK)		; get a free braid
-ldy#0
-lda#'Y':jsr$c0c2
-lda#'=':jsr$c0c2
-tya:clc:adc#48:jsr$c0c2
-lda#10:jsr$c0c2
+		_KERNEL(B_FORK)		; get a free braid
 		TYA					; check PID at Y, what to do if none available?
 		BEQ xsh_single		; no multitasking, execute and restore status!
-lda#'M':jsr$c0c2
 			STY pid			; save as will look for it later
 			_KERNEL(B_EXEC)		; run on that braid
 xsh_wait:
@@ -135,7 +125,6 @@ xsh_wait:
 			BEQ main_loopN		; then continue asking for more
 xsh_single:
 	_KERNEL(B_EXEC)		; execute anyway...
-lda#'x':jsr$c0c2:jmp main_loop
 /*
 ; *** DUH! singletasking systems will not arrive here ***
 	BCC xsh_success		; no runtime errors!

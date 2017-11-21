@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6b3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171121-0928
+; last modified 20171121-1021
 
 ; no way for standalone assembly...
 
@@ -644,7 +644,7 @@ sig_kill:
 ;	LDA $100+SPTR		; ...MSB too...
 ;	STY ma_pt			; ...to be freed
 ;	STA ma_pt+1
-;	_KERNEL(FREE)		; free it or fail quietly
+;	KERNEL(FREE)		; free it or fail quietly
 ; *** end of non-XIP code, will not harm anyway ***
 ; then, check for any shutdown command
 	LDA sd_flag			; some pending action?
@@ -834,16 +834,6 @@ ll_found:
 ;	ADMIN(GESTALT)		; get full system info
 ;	LDY cpu_ll		; installed CPU *** should return it in Y!
 	LDY fw_cpu		; ********************* HACK AGAIN. MUST REVISE GESTALT INTERFACE ************************
-pha
-lda#'C':jsr$c0c2
-lda#'P':jsr$c0c2
-lda#'U':jsr$c0c2
-lda#'$':jsr$c0c2
-tya:pha
-lsr:lsr:lsr:lsr:clc:adc#48:jsr$c0c2
-pla:and#$0f:clc:adc#48:jsr$c0c2
-lda#10:jsr$c0c2
-pla
 	CPY #'R'		; is it a Rockwell/WDC CPU?
 		BEQ ll_rock		; from R down is OK
 	CPY #'B'		; generic 65C02?
@@ -852,8 +842,6 @@ pla
 		BEQ ll_cmos
 	CPY #'N'		; old NMOS?
 		BEQ ll_nmos			; only NMOS code will do
-lda#'?':jsr$c0c2
-lda#10:jsr$c0c2
 		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
 ll_rock:
 	CMP #'R'		; code has Rockwell extensions?
