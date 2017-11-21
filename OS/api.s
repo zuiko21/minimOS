@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6b3, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171120-1022
+; last modified 20171121-0928
 
 ; no way for standalone assembly...
 
@@ -828,6 +828,7 @@ ll_found:
 	LDA (rh_scan), Y	; check filetype
 	CMP #'m'		; must be minimOS app!
 		BNE ll_wrap		; error otherwise
+_EXIT_OK
 	INY				; next byte is CPU type
 	LDA (rh_scan), Y	; get it
 ; this is done instead of LDX fw_cpu
@@ -854,13 +855,11 @@ ll_nmos:
 		BNE ll_wrap		; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
-/*
 	LDY rh_scan+1	; and MSB
 	INY				; start from next page
 	_STZA ex_pt		; *** assume all headers are page-aligned ***
 	STY ex_pt+1		; save rest of execution pointer
-*/
-_EXIT_OK
+	_EXIT_OK
 ll_wrap:
 	_ERR(INVALID)	; something was wrong
 #else

@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2b3
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20171120-1007
+; last modified 20171121-0928
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -91,19 +91,8 @@ main_loop:
 		STY str_pt			; set parameter
 		STA str_pt+1
 		_KERNEL(LOADLINK)	; look for that file!
-php
-bcc*+7:lda#'C':jsr$c0c2
-lda#'&':jsr$c0c2
-lda ex_pt+1:pha:lsr:lsr:lsr:lsr
-clc:adc#'0':cmp#57:bcc*+4:adc#6:jsr$c0c2
-pla:and#$0f
-clc:adc#'0':cmp#57:bcc*+4:adc#6:jsr$c0c2
-lda ex_pt:pha:lsr:lsr:lsr:lsr
-clc:adc#'0':cmp#57:bcc*+4:adc#6:jsr$c0c2
-pla:and#$0f
-clc:adc#'0':cmp#57:bcc*+4:adc#6:jsr$c0c2
-plp
 		BCC xsh_ok			; it was found, thus go execute it
+lda#'C':jsr$c0c2
 			CPY #INVALID		; found but not compatible?
 			BNE ms_nf
 				LDY #<xsh_err		; get incompatible message pointer
@@ -119,12 +108,17 @@ main_loopN:
 xsh_ok:
 lda#'O':jsr$c0c2
 lda#'K':jsr$c0c2
-jmp main_loop
+lda#10:jsr$c0c2
 ; something is ready to run, but set its default I/O first!!!
 		LDY iodev
 		STY def_io
 		STY def_io+1
-		_KERNEL(B_FORK)		; get a free braid
+;		KERNEL(B_FORK)		; get a free braid
+ldy#0
+lda#'Y':jsr$c0c2
+lda#'=':jsr$c0c2
+tya:clc:adc#48:jsr$c0c2
+lda#10:jsr$c0c2
 		TYA					; check PID at Y, what to do if none available?
 		BEQ xsh_single		; no multitasking, execute and restore status!
 lda#'M':jsr$c0c2
@@ -140,8 +134,9 @@ xsh_wait:
 				BNE xsh_wait		; do not interact until ended (no '&' yet)
 			BEQ main_loopN		; then continue asking for more
 xsh_single:
-/*	_KERNEL(B_EXEC)		; execute anyway...
-
+;	KERNEL(B_EXEC)		; execute anyway...
+lda#'x':jsr$c0c2:jmp main_loop
+/*
 ; *** DUH! singletasking systems will not arrive here ***
 	BCC xsh_success		; no runtime errors!
 		TYA					; otherwise get error code
@@ -153,7 +148,7 @@ xsh_single:
 		JSR prnStr			; print it
 xsh_success:
 */
-	JMP shell			; ...but reset shell environment! should not arrive here
+;	JMP shell			; ...but reset shell environment! should not arrive here
 
 ; *** useful routines ***
 
