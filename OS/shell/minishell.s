@@ -134,7 +134,7 @@ xsh_wait:
 				BNE xsh_wait		; do not interact until ended (no '&' yet)
 			BEQ main_loopN		; then continue asking for more
 xsh_single:
-;	KERNEL(B_EXEC)		; execute anyway...
+	_KERNEL(B_EXEC)		; execute anyway...
 lda#'x':jsr$c0c2:jmp main_loop
 /*
 ; *** DUH! singletasking systems will not arrive here ***

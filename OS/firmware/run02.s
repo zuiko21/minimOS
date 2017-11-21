@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6b1
+; v0.9.6b2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171114-1100
+; last modified 20171121-1016
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -370,6 +370,7 @@ fwi_loop:
 		LDA (kerntab), Y	; get word from table as supplied (5)
 		STA fw_table, Y		; copy where the firmware expects it (4)
 		INY					; advance one byte
+		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 		BNE fwi_loop		; until whole page is done (3/2)
 	_NO_CRIT			; restore interrupts if needed, will restore size too (4)
 	_DR_OK				; all done (8)

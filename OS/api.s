@@ -866,7 +866,6 @@ ll_nmos:
 		BNE ll_wrap		; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
-_EXIT_OK
 	LDY rh_scan+1	; and MSB
 	INY				; start from next page
 	_STZA ex_pt		; *** assume all headers are page-aligned ***

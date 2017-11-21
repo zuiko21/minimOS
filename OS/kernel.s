@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6b2
+; v0.6b3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171115-1338
+; last modified 20171121-1000
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6b2", 13
+	.asc	"minimOS 0.6b3", 13
 	.asc	"HackLabAL @ El Ejido", 0	; version in comment ***special name**
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
@@ -69,6 +69,7 @@ warm:
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
 ; ++++++
+lda fw_cpu:jsr$c0c2:lda#10:jsr$c0c2
 #ifndef		DOWNLOAD
 	LDY #<k_vec			; get table address, nicer way (2+2)
 	LDA #>k_vec
@@ -76,6 +77,7 @@ warm:
 	STA kerntab+1
 	_ADMIN(INSTALL)		; copy jump table
 #endif
+lda fw_cpu:jsr$c0c2:lda#10:jsr$c0c2
 ; ++++++
 #endif
 ; install ISR code (as defined in "isr/irq.s" below)
@@ -168,7 +170,7 @@ dr_spars:
 		INX
 		BNE dr_spars
 ; TASKDEV is no longer a thing...
-	LDX #0				; ...but reset X if using restricted or sparse ID array!!!
+;	LDX #0				; ...but reset X if using restricted or sparse ID array!!!
 
 ; *** prepare access to each driver header ***
 ; first get the pointer to it
@@ -539,7 +541,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6b2", 0
+	.asc	"minimOS 0.6b3", 0
 #endif
 
 kern_end:		; for size computation

@@ -25,18 +25,7 @@
 cpuck_list:
 	.asc	"NBRV"		; codes for NMOS (N), generic CMOS (B), Rockwell 65C02 (R?) and 65816/65802 (V)
 cpuck_set:
-lda#'Y':jsr$c0c2
-lda#'=':jsr$c0c2
-tya:clc:adc#48:jsr$c0c2
-lda#10:jsr$c0c2
-lda#'u':jsr$c0c2
-lda#'P':jsr$c0c2
-lda#'$':jsr$c0c2
 	LDA cpuck_list, Y	; get proper code from investigation
 pha:pha
-lsr:lsr:lsr:lsr:clc:adc#48:jsr$c0c2
-pla:and#$0f:clc:adc#48:jsr$c0c2
-lda#10:jsr$c0c2
-pla
 ;	STA fw_cpu			; store in variable ** firmware standard label
 ; will just return type in A
