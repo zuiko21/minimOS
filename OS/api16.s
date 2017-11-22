@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6b1, should match kernel16.s
+; v0.6b2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171122-1207
+; last modified 20171122-1236
 
 ; assumes 8-bit sizes upon call...
 
@@ -190,6 +190,22 @@ co_ok:
 		PLB					; restore!!!
 		RTI					; end of function without errors
 
+; *** some common routines ***
+ci_nevent:
+	STZ cin_mode, X		; *back to normal mode
+ci_exitOK:
+	STZ cio_lock, X		; *otherwise clear mutex!!! (4)
+	PLB					; essential!
+	_EXIT_OK			; all done without error!
+
+; ** cio_abort **
+; will restore DBR and then notify error directly...
+; likely to become inline
+cio_abort:
+	PLB					; restore DBR!!!
+	BRA cio_setc		; direct notify error
+
+; *** continue ***
 co_phys:
 ; arrived here with dev # in Y!
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
@@ -237,21 +253,6 @@ cio_setc:
 		PHP
 cio_notc:
 	RTI					; end of call procedure
-
-; *** some common routines ***
-ci_nevent:
-	STZ cin_mode, X		; *back to normal mode
-ci_exitOK:
-	STZ cio_lock, X		; *otherwise clear mutex!!! (4)
-	PLB					; essential!
-	_EXIT_OK			; all done without error!
-
-; ** cio_abort **
-; will restore DBR and then notify error directly...
-; likely to become inline
-cio_abort:
-	PLB					; restore DBR!!!
-	BRA cio_setc		; direct notify error
 
 
 ; ***********************
@@ -347,13 +348,15 @@ ci_null:
 	LDY #0			; reset index, will be complete
 	TYA			; filling value as above
 	.xl: REP #$10		; *** 16-bit index ***
-		LDX bl_siz		; get size in full
+	LDX bl_siz			; get size in full
+	BNE ci_nulend		; nothing to do
 ci_nll:
-			BEQ ci_exitOK		; nothing else
 		STA [bl_ptr], Y		; clear byte in buffer
-		INY			; go for next
-		DEX			; one less to go
-		BRA ci_nll
+		INY					; go for next
+		DEX					; one less to go
+		BNE ci_nll
+ci_nulend:
+	JMP ci_exitOK		; nothing else
 
 ci_rnd:
 ; *** generate random number (TO DO) ***
@@ -361,7 +364,7 @@ ci_rnd:
 	LDY #0				; reset index, will be complete
 	.xl: REP #$10		; *** 16-bit index ***
 	LDX bl_siz			; get size in full
-	BNE ci_rndend		; nothing else
+	BNE ci_rndend		; nothing to do
 ; load some random number in A
 ci_rndl:
 		LDA ticks		; simple placeholder***
