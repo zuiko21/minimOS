@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6b1
+; v0.9.6b2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171121-1034
+; last modified 20171122-1204
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -269,12 +269,12 @@ fw_gestalt:
 ; kerntab	= address of ISR (will take care of all necessary registers)
 
 fw_s_isr:
-	_ENTER_CS			; disable interrupts and save sizes! (5)
+	_CRITIC			; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$20		; ** 8-bit indexes, no ABI to set that! **
 	LDA kerntab			; get pointer (4)
 	STA @fw_isr			; store for firmware, note long addressing (6)
-	_EXIT_CS			; restore interrupts if needed, sizes too (4)
+	_NO_CRIT			; restore interrupts if needed, sizes too (4)
 	_DR_OK				; done (8)
 
 ; SET_NMI, set NMI vector
@@ -286,7 +286,7 @@ fw_s_isr:
 ; ...unless SAFE mode is NOT selected (will not check upon NMI)
 
 fw_s_nmi:
-	_ENTER_CS			; save sizes, just in case CS is needed...
+	_CRITIC			; save sizes, just in case CS is needed...
 	.as: .xs: SEP #$30	; *** standard sizes ***
 #ifdef	SAFE
 	LDX #3				; offset to reversed magic string
@@ -309,7 +309,7 @@ fw_sn_ok:
 	.al: REP #$20		; *** 16-bit memory ***
 	LDA kerntab			; get pointer (4)
 	STA @fw_nmi			; store for firmware, note long addressing (6)
-	_EXIT_CS			; restore sizes!
+	_NO_CRIT			; restore sizes!
 	_DR_OK				; done (8)
 
 	.as: .xs			; just in case...
@@ -319,11 +319,11 @@ fw_sn_ok:
 ; kerntab	= address of BRK routine (ending in RTS)
 
 fw_s_brk:
-	_ENTER_CS			; disable interrupts and save sizes! (5)
+	_CRITIC			; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA kerntab			; get pointer (4)
 	STA @fw_brk			; store for firmware, note long addressing (6)
-	_EXIT_CS			; restore interrupts if needed, sizes too (4)
+	_NO_CRIT			; restore interrupts if needed, sizes too (4)
 	_DR_OK				; done
 
 	.as: .xs			; just in case...
@@ -338,14 +338,14 @@ fw_s_brk:
 fw_jiffy:
 ; this is generic
 ; if could not change, then just set return parameter and C
-	_ENTER_CS			; disable interrupts and save sizes! (5)
+	_CRITIC			; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA irq_hz			; get input value
 	BNE fj_set			; not just checking
 		LDA @irq_freq		; get current frequency
 		STA irq_hz			; set return values
 fj_end:
-		_EXIT_CS			; eeeeeeeeek
+		_NO_CRIT			; eeeeeeeeek
 		_DR_OK
 fj_set:
 	STA @irq_freq		; store in sysvars
@@ -402,7 +402,7 @@ fw_fgen:
 ; kerntab	= address of supplied pointer table
 
 fw_install:
-	_ENTER_CS			; disable interrupts! (5)
+	_CRITIC			; disable interrupts! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$10		; ** just in case, 8-bit indexes ** (3)
 	LDY #0				; reset index (2)
@@ -413,7 +413,7 @@ fwi_loop:
 		INY
 		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 		BCC fwi_loop		; until whole TABLE is done (3/2)***might corrupt fw vars!
-	_EXIT_CS			; restore interrupts if needed, will restore size too (4)
+	_NO_CRIT			; restore interrupts if needed, will restore size too (4)
 	_DR_OK				; all done (8)
 
 ; PATCH, patch single function
@@ -422,13 +422,13 @@ fwi_loop:
 
 fw_patch:
 ; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
-	_ENTER_CS				; disable interrupts and save sizes! (5)
+	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20			; ** 16-bit memory ** (3)
 	.xs: SEP #$20			; ** 8-bit indexes, no ABI to set that! **
 	LDA kerntab				; get full pointer (4)
 	TYX						; no Y-indexed long addressing! (2)
 	STA @fw_table, X		; store into firmware, note long addressing (6)
-	_EXIT_CS				; restore interrupts and sizes (4)
+	_NO_CRIT				; restore interrupts and sizes (4)
 	_DR_OK					; done (8)
 
 	.as: .xs				; just in case...
@@ -513,11 +513,11 @@ cop_hndl:		; label from vector list
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	kernel_call-*, $FF
+	.dsb	kerncall-*, $FF
 #endif
 
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
-* = kernel_call
+* = kerncall
 	CLC					; pre-clear carry
 	COP #$FF			; wrapper on 816 firmware!
 	RTS					; return to caller
@@ -525,17 +525,17 @@ cop_hndl:		; label from vector list
 
 ; ****** idea for 65816 admin-call interface from apps! ******
 ; ** could be at $00FFC8 **
-;	JSR admin_call		; get into firmware interface (returns via RTS)
+;	JSR adm_call		; get into firmware interface (returns via RTS)
 ;	RTL					; get back into original task (called via JSL $00FFC8)
 ; ****** likely to end at $00FFCD ******
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	admin_call-*, $FF
+	.dsb	adm_call-*, $FF
 #endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
-* = admin_call
+* = adm_call
 	JMP (fw_admin, X)		; takes 5 clocks
 
 

@@ -2,12 +2,12 @@
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20170207-1008
+; last modified 20171122-1205
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
 ; enable in order to remove headers, not LOAD_LINK savvy!
 ;#define		NOHEAD	_NOHEAD
@@ -69,7 +69,7 @@ ACIA1	=	IO_BASE + $20	; fake ACIA address, should not be checked!
 ACIA	=	ACIA1			; for increased compatibility
 
 ; *** set standard device *** new 20160331 
-DEVICE	=	DEV_CONIO		; standard I/O device
+DEVICE	=	DEV_CNIO		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b1, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171114-1003
+; last modified 20171122-1207
 
 ; assumes 8-bit sizes upon call...
 
@@ -24,6 +24,72 @@ dr_shut:
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
+
+
+; *****************************
+; *** CIN,  get a character *** and manage events
+; *****************************
+;		INPUT
+; Y = dev
+;		OUTPUT
+; io_c	= char
+; C		= not available
+;		USES iol_dev, and whatever the driver takes
+
+cin:
+; if every zp is page-aligned as recommended, use this code
+	TDC			; where is direct page?
+	XBA			; switch to MSB
+	STA bl_ptr+1		; set on pointer
+	LDA #io_c		; point to ZP parameter
+	STA bl_ptr		; ready, will not need to resolve!
+	STZ bl_ptr+2		; always bank zero! eeeeeeek
+; set fixed size and proceed
+	LDA #1			; single byte
+	STA bl_siz		; set size
+	STZ bl_siz+1
+	_KERNEL(BLIN)
+; worth switching back DBR
+	PHB					; eeeeeeeeek (3)
+	PHK					; bank zero into stack (3)
+	PLB					; set DBR! do not forget another PLB upon end! (4)
+; ** EVENT management **
+	LDX iol_dev			; **use physdev as index! (3)
+	LDA io_c			; get received character
+	CMP #' '			; printable?
+		BCS ci_exitOK		; if so, will not be an event, exit with NO error
+; otherwise might be an event
+; check for binary mode first
+	LDY cin_mode, X		; *get flag, new sysvar 20150617
+	BNE ci_nevent		; otherwise should process possible event
+; *** event processing ***
+		CMP #16				; is it DLE?
+		BNE ci_notdle		; otherwise check next
+			STA cin_mode, X		; *set binary mode! safer and faster!
+			LDY #EMPTY			; and supress received character
+			BRA cio_abort		; restore & notify (will stay locked!)
+ci_notdle:
+		CMP #3				; is it ^C? (TERM)
+		BNE ci_noterm		; otherwise check next
+			LDA #SIGTERM
+			BRA ci_signal		; send signal
+ci_noterm:
+		CMP #4				; is it ^D? (KILL) somewhat dangerous...
+		BNE ci_nokill		; otherwise check next
+			LDA #SIGKILL
+			BRA ci_signal		; send signal
+ci_nokill:
+		CMP #26				; is it ^Z? (STOP)
+			BNE ci_exitOK		; otherwise there is no more to check
+		LDA #SIGSTOP		; last signal to be sent
+ci_signal:
+		STA b_sig			; set signal as parameter
+; much faster KERNEL(GET_PID)
+		LDY run_pid			; internal PID in Y...
+		_KERNEL(B_SIGNAL)	; send signal to myself *** could be patched!
+		LDY #EMPTY			; no character was received
+		SEC					; eeeeeeeek
+		JMP cio_unlock		; release device and exit!
 
 
 ; ********************************
@@ -95,7 +161,7 @@ blo_24b:
 	BNE co_port			; not default (3/2)
 		LDY stdout			; new per-process standard device (3)
 		BNE co_port			; already a valid device (3/2)
-			LDY defltout		; otherwise get system global (4)
+			LDY dfltout			; otherwise get system global (4)
 co_port:
 	BMI co_phys			; not a logic device (3/2)
 		CPY #64				; first file-dev??? (2)
@@ -123,6 +189,7 @@ co_ok:
 		STZ bl_siz+1		; /dev/null transfers are complete
 		PLB					; restore!!!
 		RTI					; end of function without errors
+
 co_phys:
 ; arrived here with dev # in Y!
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
@@ -137,6 +204,16 @@ co_loop:
 			BEQ co_lckd			; resume operation if free (3)
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		BRA co_loop			; try again! (3)
+
+; *** some common routines ***
+ci_nevent:
+	STZ cin_mode, X		; *back to normal mode
+ci_exitOK:
+	STZ cio_lock, X		; *otherwise clear mutex!!! (4)
+	PLB					; essential!
+	_EXIT_OK			; all done without error!
+
+; *** continue BLOUT ***
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
 	STA cio_lock, X		; *reserve this (4)
@@ -148,6 +225,13 @@ co_lckd:
 ; ***************************
 ; *** common I/O routines ***
 ; ***************************
+
+; ** cio_abort **
+; will restore DBR and then notify error directly...
+; likely to become inline
+cio_abort:
+	PLB					; restore DBR!!!
+	BRA cio_setc		; direct notify error
 
 ; ** cio_unlock **
 ; gets physdevnum and clears its mutex, restores DBR and exit with proper error code if C set
@@ -170,83 +254,6 @@ cio_setc:
 cio_notc:
 	RTI					; end of call procedure
 
-; ** cio_abort **
-; will restore DBR and then notify error directly...
-; likely to become inline
-cio_abort:
-	PLB					; restore DBR!!!
-	BRA cio_setc		; direct notify error
-
-
-; *****************************
-; *** CIN,  get a character *** and manage events
-; *****************************
-;		INPUT
-; Y = dev
-;		OUTPUT
-; io_c	= char
-; C		= not available
-;		USES iol_dev, and whatever the driver takes
-
-cin:
-; if every zp is page-aligned as recommended, use this code
-	TDC			; where is direct page?
-	XBA			; switch to MSB
-	STA bl_ptr+1		; set on pointer
-	LDA #io_c		; point to ZP parameter
-	STA bl_ptr		; ready, will not need to resolve!
-	STZ bl_ptr+2		; always bank zero! eeeeeeek
-; set fixed size and proceed
-	LDA #1			; single byte
-	STA bl_siz		; set size
-	STZ bl_siz+1
-	_KERNEL(BLIN)
-; worth switching back DBR
-	PHB					; eeeeeeeeek (3)
-	PHK					; bank zero into stack (3)
-	PLB					; set DBR! do not forget another PLB upon end! (4)
-; ** EVENT management **
-	LDX iol_dev			; **use physdev as index! (3)
-	LDA io_c			; get received character
-	CMP #' '			; printable?
-		BCS ci_exitOK		; if so, will not be an event, exit with NO error
-; otherwise might be an event
-; check for binary mode first
-	LDY cin_mode, X		; *get flag, new sysvar 20150617
-	BEQ ci_event		; should process possible event
-		STZ cin_mode, X		; *back to normal mode
-ci_exitOK:
-		STZ cio_lock, X		; *otherwise clear mutex!!! (4)
-		PLB					; essential!
-		_EXIT_OK			; all done without error!
-ci_event:
-	CMP #16				; is it DLE?
-	BNE ci_notdle		; otherwise check next
-		STA cin_mode, X		; *set binary mode! safer and faster!
-		LDY #EMPTY			; and supress received character
-		BRA cio_abort		; restore & notify (will stay locked!)
-ci_notdle:
-	CMP #3				; is it ^C? (TERM)
-	BNE ci_noterm		; otherwise check next
-		LDA #SIGTERM
-		BRA ci_signal		; send signal
-ci_noterm:
-	CMP #4				; is it ^D? (KILL) somewhat dangerous...
-	BNE ci_nokill		; otherwise check next
-		LDA #SIGKILL
-		BRA ci_signal		; send signal
-ci_nokill:
-	CMP #26				; is it ^Z? (STOP)
-		BNE ci_exitOK		; otherwise there is no more to check
-	LDA #SIGSTOP		; last signal to be sent
-ci_signal:
-	STA b_sig			; set signal as parameter
-; much faster KERNEL(GET_PID)
-	LDY run_pid			; internal PID in Y...
-	_KERNEL(B_SIGNAL)	; send signal to myself *** could be patched!
-	LDY #EMPTY			; no character was received
-	SEC					; eeeeeeeek
-	JMP cio_unlock		; release device and exit!
 
 ; ***********************
 ; *** BLIN, get block ***
@@ -283,7 +290,7 @@ bli_24b:
 	BNE ci_port			; specified (3/2)
 		LDY std_in			; new per-process standard device (3)
 		BNE ci_port			; already a valid device (3/2)
-			LDY default_in		; otherwise get system global (0/4)
+			LDY dflt_in			; otherwise get system global (0/4)
 ci_port:
 	BPL ci_nph			; logic device (2/3)
 ; new MUTEX for CIN
@@ -880,7 +887,7 @@ b_signal:
 	BNE sig_suic		; if so, call supplied routine (SIGKILL by default)
 ; needs to end in RTI???
 		.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
-		JSL sig_term		; indirect long call
+		JSR @sig_term		; indirect long call, JSL actually
 		_EXIT_OK		; return to caller
 sig_suic:
 	CPY #SIGKILL		; suicide?
@@ -1327,7 +1334,7 @@ sd_shut:
 	.al: REP #$20		; *** 16-bit memory ***
 sd_loop:
 ; get address index
-		LDA drivers_ad, X	; get address from original list
+		LDA drvrs_ad, X		; get address from original list
 			BEQ sd_done			; no more drivers to shutdown!
 		STA sysptr			; store temporarily (as needed by dr_call)
 ; will no longer check for successful installation, BYE routine gets called anyway
@@ -1454,9 +1461,10 @@ dr_ios:
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #2-MX_DRVRS+2	; otherwise, is there room for more? (2) note offset
+		CPX #MX_DRVRS+2		; otherwise, is there room for more? (2) note offset
 		BNE dr_ios			; yes, continue (3)
 	JMP dr_fabort		; no, complain (3)
+dr_sarr:
 ; sequential index is computed, store it into direct array
 	TXA					; alas, no STX abs,Y (2)
 	STA dr_ind-128, Y	; store sparse index (4)

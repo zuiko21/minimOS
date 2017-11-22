@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b2
+; v0.6b3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171115-1341
+; last modified 20171122-1216
 
 ; just in case
 #define		C816	_C816
@@ -147,7 +147,7 @@ dr_clear:
 #endif
 		INX					; go for next entry (2+2)
 		INX
-		CPX #MX_DRVRS		; all done? needed for sparse arrays (2)
+		CPX #MX_DRVRS*2		; all done? needed for sparse arrays (2) EEEEEEEEEK
 		BNE dr_clear		; finish page (3/2)
 
 ; TASKDEV is no longer a thing...
@@ -186,6 +186,9 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
+lda#'O':jsr$c0c2
+lda#'K':jsr$c0c2
+lda#10:jsr$c0c2
 
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O

@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.6a5, should match kernel16.s
+; v0.6b1, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170822-1907
+; last modified 20171122-1208
 
 #define		ISR		_ISR
 
@@ -41,7 +41,7 @@ asynchronous:
 	LDX queue_mx			; get async queue size (4)
 	BEQ ir_done				; no drivers to call (2/3)
 i_req:
-		LDA drv_r_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
+		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
 		BPL i_rnx			; *** if disabled, skip this task ***
 			PHX						; keep index! (3)
 			JSR (drv_asyn-2, X)	; call from table (8+...) expected to return in 8-bit size, at least indexes
@@ -70,7 +70,7 @@ periodic:
 
 ; execute D_POLL code in drivers
 ; 7 if nothing to do, typically ? clocks per entry (not 62!) plus inner codes
-	LDX queues_mx+1			; get queue size (4)
+	LDX queue_mx+1			; get queue size (4)
 	BEQ ip_done				; no drivers to call (2/3)
 i_poll:
 		DEX						; go backwards to be faster! (2+2)
@@ -78,10 +78,10 @@ i_poll:
 		LDY drv_p_en, X			; *** check whether enabled, new in 0.6 ***
 			BPL i_pnx				; *** if disabled, skip this task ***
 		.al: REP #$20			; *** 16-bit memory for counters ***
-		DEC drv_count, X		; otherwise continue with countdown
+		DEC drv_cnt, X			; otherwise continue with countdown
 		BNE i_pnx				; did not expire, do not execute yet
 			LDA drv_freq, X			; otherwise get original value...
-			STA drv_count, X		; ...and reset it! eeeeeeeeeeeeeeek
+			STA drv_cnt, X			; ...and reset it! eeeeeeeeeeeeeeek
 			.as: .xs: SEP #$30		; make sure...
 			PHX						; keep index! (3)
 			JSR (drv_poll, X)		; call from table (8...)
