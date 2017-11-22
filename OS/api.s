@@ -100,7 +100,7 @@ cout:
 	LDA #1				; transfer a single byte
 	STA bl_siz			; set size
 	_STZA bl_siz+1
-; ...and fall into BOUT
+; ...and fall into BLOUT
 
 ; ***************************
 ; *** BLOUT, block output ***

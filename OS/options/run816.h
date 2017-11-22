@@ -2,7 +2,7 @@
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171122-1205
+; last modified 20171122-1219
 
 ; *** set conditional assembly ***
 
@@ -11,6 +11,8 @@
 
 ; enable in order to remove headers, not LOAD_LINK savvy!
 ;#define		NOHEAD	_NOHEAD
+; enable to allow 8-bit apps!
+#define		SUPPORT		_SUPPORT
 ; enable multitasking support... hopefully! *** might be defined upon multitasking driver
 ;#define	MULTITASK	_MULTITASK
 

@@ -205,15 +205,6 @@ co_loop:
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		BRA co_loop			; try again! (3)
 
-; *** some common routines ***
-ci_nevent:
-	STZ cin_mode, X		; *back to normal mode
-ci_exitOK:
-	STZ cio_lock, X		; *otherwise clear mutex!!! (4)
-	PLB					; essential!
-	_EXIT_OK			; all done without error!
-
-; *** continue BLOUT ***
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
 	STA cio_lock, X		; *reserve this (4)
@@ -225,13 +216,6 @@ co_lckd:
 ; ***************************
 ; *** common I/O routines ***
 ; ***************************
-
-; ** cio_abort **
-; will restore DBR and then notify error directly...
-; likely to become inline
-cio_abort:
-	PLB					; restore DBR!!!
-	BRA cio_setc		; direct notify error
 
 ; ** cio_unlock **
 ; gets physdevnum and clears its mutex, restores DBR and exit with proper error code if C set
@@ -253,6 +237,21 @@ cio_setc:
 		PHP
 cio_notc:
 	RTI					; end of call procedure
+
+; *** some common routines ***
+ci_nevent:
+	STZ cin_mode, X		; *back to normal mode
+ci_exitOK:
+	STZ cio_lock, X		; *otherwise clear mutex!!! (4)
+	PLB					; essential!
+	_EXIT_OK			; all done without error!
+
+; ** cio_abort **
+; will restore DBR and then notify error directly...
+; likely to become inline
+cio_abort:
+	PLB					; restore DBR!!!
+	BRA cio_setc		; direct notify error
 
 
 ; ***********************
@@ -359,17 +358,19 @@ ci_nll:
 ci_rnd:
 ; *** generate random number (TO DO) ***
 	.xs:
-	LDY #0			; reset index, will be complete
+	LDY #0				; reset index, will be complete
 	.xl: REP #$10		; *** 16-bit index ***
-	LDX bl_siz		; get size in full
-ci_rndl:
-		BEQ ci_exitOK		; nothing else
+	LDX bl_siz			; get size in full
+	BNE ci_rndend		; nothing else
 ; load some random number in A
-	LDA ticks		; simple placeholder***
-	STA [bl_ptr], Y		; clear byte in buffer
-	INY			; go for next
-	DEX			; one less to go
-	BRA ci_rndl
+ci_rndl:
+		LDA ticks		; simple placeholder***
+		STA [bl_ptr], Y		; clear byte in buffer
+		INY				; go for next
+		DEX				; one less to go
+		BNE ci_rndl
+ci_rndend:
+	JMP ci_exitOK		; nothing else
 
 
 ; ******************************
