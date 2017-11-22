@@ -1,5 +1,5 @@
 ; minimOS generic Kernel API
-; v0.6b3, must match kernel.s
+; v0.6rc1, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
 ; last modified 20171121-1021
 

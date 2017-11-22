@@ -1,4 +1,4 @@
-; minimOS 0.6b2 API/ABI
+; minimOS 0.6rc1 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
 ; some renaming 20170805, 20171030

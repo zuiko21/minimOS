@@ -1,5 +1,5 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5.2b3
+; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
 ; last modified 20171121-1026
 ; (c) 2016-2017 Carlos J. Santisteban
