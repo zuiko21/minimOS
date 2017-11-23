@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6b2, should match kernel16.s
+; v0.6b3, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171122-1236
+; last modified 20171123-1406
 
 ; assumes 8-bit sizes upon call...
 
@@ -1443,7 +1443,7 @@ dr_chk:
 			CPY #MX_QUEUE		; room for another? (2)
 			BCC dr_ntsk			; there is (3/2)
 ; again, no room for driver, return FULL error code
-				JMP dr_fabort		; or no way OK (3)
+				JMP dr_fabort		; or no way OK (3) ***BNE works on 8-bit, but does NOT check A_REQ!
 dr_ntsk:
 		DEX					; check next feature (2)
 		BPL dr_chk			; zero included (3/2)
