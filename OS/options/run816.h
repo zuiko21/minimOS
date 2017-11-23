@@ -2,7 +2,7 @@
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171122-1219
+; last modified 20171123-1424
 
 ; *** set conditional assembly ***
 
@@ -13,6 +13,7 @@
 ;#define		NOHEAD	_NOHEAD
 ; enable to allow 8-bit apps!
 #define		SUPPORT		_SUPPORT
+#define		MUTABLE		_MUTABLE
 ; enable multitasking support... hopefully! *** might be defined upon multitasking driver
 ;#define	MULTITASK	_MULTITASK
 
