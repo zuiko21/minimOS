@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b3, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171123-1406
+; last modified 20171124-1040
 
 ; assumes 8-bit sizes upon call...
 
@@ -1452,8 +1452,9 @@ dr_ntsk:
 	JSR dr_icall		; call routine (6+...)
 	.xs: SEP #$10		; *** 8-bit indexes, again just in case *** (3)
 ; as 816 function exit does not care about *memory* size, just return some error here...
-		BCS dr_uabort		; no way, forget about this (2/3)
-
+	BCC dr_isuc			; init was successful, proceed
+		JMP dr_uabort		; no way, forget about this (2/3)
+dr_isuc:
 ; if arrived here, it is OK to install the driver!
 
 ; all checked OK, do actual driver installation!
