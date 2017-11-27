@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b4, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171127-1003
+; last modified 20171127-1005
 
 ; assumes 8-bit sizes upon call...
 
@@ -42,6 +42,10 @@ _EXIT_OK
 ;		USES iol_dev, and whatever the driver takes
 
 cin:
+; ************************debug code
+jsr$c0bf
+sta io_c
+_EXIT_OK
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
 	XBA			; switch to MSB
@@ -108,6 +112,7 @@ ci_signal:
 ;		USES BLOUT
 ; cio_lock is a kernel structure
 
+; ********************commented label for debugging
 ;cout:
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
