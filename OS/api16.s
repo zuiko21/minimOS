@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6b3, should match kernel16.s
+; v0.6b4, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171124-1046
+; last modified 20171127-1003
 
 ; assumes 8-bit sizes upon call...
 
@@ -24,6 +24,11 @@ dr_shut:
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
+
+; ****************debug code
+cout:lda io_c
+jsr$c0c2
+_EXIT_OK
 
 
 ; *****************************
@@ -103,7 +108,7 @@ ci_signal:
 ;		USES BLOUT
 ; cio_lock is a kernel structure
 
-cout:
+;cout:
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
 	XBA			; switch to MSB
@@ -1130,11 +1135,15 @@ str_24b:
 str_loop:
 		LDA [str_pt], Y		; check pointed char
 			BEQ str_end		; NULL terminates
+;*****debug code
+phy
+jsr$c0c2
+ply
 		INY					; continue
 		BRA str_loop
 str_end:
 	STX bl_siz			; simply store size!
-	_KERNEL(BLOUT)		; and call block output (could be patched)
+;	KERNEL(BLOUT)		; and call block output (could be patched)
 	JMP cio_callend		; will return proper error
 
 

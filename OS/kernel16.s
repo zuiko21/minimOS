@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b3
+; v0.6b4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171122-1238
+; last modified 20171127-0958
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS•16 0.6b2", 0	; version in comment
+	.asc	"minimOS·16 0.6b4", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -198,7 +198,6 @@ lda#10:jsr$c0c2
 
 ; new, show a splash message ever the kernel is restarted!
 ; assume 16-bit memory
-
 	JSR ks_cr			; leading newline
 	LDA #kern_splash	; get pointer to string
 	STA str_pt			; set parameter
@@ -260,7 +259,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS•16 0.6b2", 0	; version in comment
+	.asc	"minimOS·16 0.6b4", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
