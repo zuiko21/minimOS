@@ -25,11 +25,6 @@ dr_shut:
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
 
-; ****************debug code
-cout:lda io_c
-jsr$c0c2
-_EXIT_OK
-
 
 ; *****************************
 ; *** CIN,  get a character *** and manage events
@@ -42,10 +37,6 @@ _EXIT_OK
 ;		USES iol_dev, and whatever the driver takes
 
 cin:
-; ************************debug code
-jsr$c0bf
-sta io_c
-_EXIT_OK
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
 	XBA			; switch to MSB
@@ -112,8 +103,7 @@ ci_signal:
 ;		USES BLOUT
 ; cio_lock is a kernel structure
 
-; ********************commented label for debugging
-;cout:
+cout:
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
 	XBA			; switch to MSB

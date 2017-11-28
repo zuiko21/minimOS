@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6b2
+; v0.9.6b3
 ; *** new format for mOS 0.6 compatibility *** 16-bit version
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171115-1309
+; last modified 20171128-1032
 
 #include	"usual.h"
 .(
@@ -23,33 +23,33 @@
 
 ; *** info string ***
 debug_info:
-	.asc	"Console I/O driver for run65816 BBC simulator (16-bit), v0.9.6b2", 0
+	.asc	"Console I/O driver for run65816 BBC simulator (16-bit), v0.9.6b3", 0
 
 ; *** output ***
 kow_bout:
 #ifdef	SAFE
-	LDA bl_siz		; check size in case is zero
+	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
-		BEQ kow_rts		; nothing to do then
+		BEQ kow_rts			; nothing to do then
 #endif
 	LDA bl_ptr+1		; save pointer MSB...
-	PHA			; ...in case it changes
+	PHA					; ...in case it changes
 ; all checked, do block output!
-	LDY #0			; reset index
+	LDY #0				; reset index
 kow_cout:
 	LDA [bl_ptr], Y		; get char in case is control ***24-bit addressing
-	CMP #13			; carriage return?
-	BNE kow_ncr		; if so, should generate LF instead
-		LDA #10			; LF first (and only)
+	CMP #13				; carriage return?
+	BNE kow_ncr			; if so, should generate LF instead
+		LDA #10				; LF first (and only)
 kow_ncr:
-	JSR $c0c2		; print it
-	DEC bl_siz		; one less to go
-	BNE kow_blk		; go for next
+	JSR $c0c2			; print it
+	DEC bl_siz			; one less to go
+	BNE kow_blk			; go for next
 		LDA bl_siz+1		; are we done?
-			BEQ kow_end		; yeah!
+			BEQ kow_end			; yeah!
 		DEC bl_siz+1		; or one page less
 kow_blk:
-	INY			; point to next
+	INY					; point to next
 	BNE kow_cout		; did not wrap EEEEEEEEEK
 		INC bl_ptr+1		; or update MSB
 		BRA kow_cout		; and continue EEEEEEEEEEEK
@@ -62,25 +62,25 @@ kow_rts:
 ; *** input *** will only get one!
 kow_blin:
 #ifdef	SAFE
-	LDA bl_siz		; check size in case is zero
+	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
-		BEQ kow_rts		; nothing to do then
+		BEQ kow_rts			; nothing to do then
 #endif
-	JSR $c0bf		; will this work???
-;	BCS kow_empty	; nothing available
-		CMP #LF			; linux-like LF?
-		BNE kow_emit	; do not process
-			LDA #CR			; or convert to CR
+	JSR $c0bf			; will this work???
+;	BCS kow_empty		; nothing available
+		CMP #LF				; linux-like LF?
+		BNE kow_emit		; do not process
+			LDA #CR				; or convert to CR
 kow_emit:
 		STA [bl_ptr]		; store result otherwise ***24-bit addressing
-		DEC bl_siz		; one less
+		DEC bl_siz			; one less
 		LDA bl_siz
-		CMP #$FF		; will it wrap?
-		BNE kow_rts		; not
+		CMP #$FF			; will it wrap?
+		BNE kow_rts			; not
 			LDA bl_siz+1		; any more?
-		BEQ kow_rts		; not, just finished!
+		BEQ kow_rts			; not, just finished!
 			DEC bl_siz+1		; or update MSB
-		_DR_OK			; perhaps some special error code...
+		_DR_OK				; perhaps some special error code...
 ;kow_empty:
 ;	DR_ERR(EMPTY)		; nothing yet
 kow_err:
