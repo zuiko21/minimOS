@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6b2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171122-1204
+; last modified 20171128-1028
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -269,7 +269,7 @@ fw_gestalt:
 ; kerntab	= address of ISR (will take care of all necessary registers)
 
 fw_s_isr:
-	_CRITIC			; disable interrupts and save sizes! (5)
+	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$20		; ** 8-bit indexes, no ABI to set that! **
 	LDA kerntab			; get pointer (4)
@@ -286,7 +286,7 @@ fw_s_isr:
 ; ...unless SAFE mode is NOT selected (will not check upon NMI)
 
 fw_s_nmi:
-	_CRITIC			; save sizes, just in case CS is needed...
+	_CRITIC				; save sizes, just in case CS is needed...
 	.as: .xs: SEP #$30	; *** standard sizes ***
 #ifdef	SAFE
 	LDX #3				; offset to reversed magic string
@@ -319,7 +319,7 @@ fw_sn_ok:
 ; kerntab	= address of BRK routine (ending in RTS)
 
 fw_s_brk:
-	_CRITIC			; disable interrupts and save sizes! (5)
+	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA kerntab			; get pointer (4)
 	STA @fw_brk			; store for firmware, note long addressing (6)
@@ -413,6 +413,7 @@ fwi_loop:
 		INY
 		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 		BCC fwi_loop		; until whole TABLE is done (3/2)***might corrupt fw vars!
+; perhaps could do up to LAST_API && %11111110, then check whether extra byte or not outside the loop
 	_NO_CRIT			; restore interrupts if needed, will restore size too (4)
 	_DR_OK				; all done (8)
 
@@ -423,15 +424,15 @@ fwi_loop:
 fw_patch:
 ; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
 	_CRITIC				; disable interrupts and save sizes! (5)
-	.al: REP #$20			; ** 16-bit memory ** (3)
-	.xs: SEP #$20			; ** 8-bit indexes, no ABI to set that! **
-	LDA kerntab				; get full pointer (4)
-	TYX						; no Y-indexed long addressing! (2)
-	STA @fw_table, X		; store into firmware, note long addressing (6)
-	_NO_CRIT				; restore interrupts and sizes (4)
-	_DR_OK					; done (8)
+	.al: REP #$20		; ** 16-bit memory ** (3)
+	.xs: SEP #$20		; ** 8-bit indexes, no ABI to set that! **
+	LDA kerntab			; get full pointer (4)
+	TYX					; no Y-indexed long addressing! (2)
+	STA @fw_table, X	; store into firmware, note long addressing (6)
+	_NO_CRIT			; restore interrupts and sizes (4)
+	_DR_OK				; done (8)
 
-	.as: .xs				; just in case...
+	.as: .xs			; just in case...
 
 ; CONTEXT, zeropage & stack bankswitching
 fw_ctx:
@@ -482,22 +483,22 @@ fw_admin:
 ; *** minimOS·16 BRK handler *** might go elsewhere
 brk_hndl:		; label from vector list
 ; much like the ISR start
-	.al: .xl: REP #$30		; status already saved, but save register contents in full (3)
-	PHA						; save registers (3x4)
+	.al: .xl: REP #$30	; status already saved, but save register contents in full (3)
+	PHA					; save registers (3x4)
 	PHX
 	PHY
-	PHB						; eeeeeeeeeek (3)
+	PHB					; eeeeeeeeeek (3)
 ; must use some new indirect jump, as set by new SET_BRK
-;	JSR brk_handler			; standard label from IRQ
+;	JSR brk_handler		; standard label from IRQ
 ; ************************************ CONTINUE HERE ***************************
-	.al: .xl: REP #$30		; just in case (3)
-	PLB						; eeeeeeeeeeeek (4)
-	PLY						; restore status and return (3x5)
+	.al: .xl: REP #$30	; just in case (3)
+	PLB					; eeeeeeeeeeeek (4)
+	PLY					; restore status and return (3x5)
 	PLX
 	PLA
 	RTI
 
-.as:.xs:					; otherwise might prevent code after ROM!
+.as:.xs:				; otherwise might prevent code after ROM!
 
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
@@ -509,7 +510,7 @@ fw_mname:
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
-	JMP (fw_table, X)		; the old fashioned way
+	JMP (fw_table, X)	; the old fashioned way
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -536,13 +537,13 @@ cop_hndl:		; label from vector list
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
-	JMP (fw_admin, X)		; takes 5 clocks
+	JMP (fw_admin, X)	; takes 5 clocks
 
 
 ; *** vectored IRQ handler ***
 ; might go elsewhere, especially on NMOS systems
 irq:
-	JMP (fw_isr)	; vectored ISR (6)
+	JMP (fw_isr)		; vectored ISR (6)
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM

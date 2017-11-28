@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b4
+; v0.6b5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171127-0958
+; last modified 20171128-1021
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS·16 0.6b4", 0	; version in comment
+	.asc	"minimOS·16 0.6b5", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -186,9 +186,6 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
-lda#'O':jsr$c0c2
-lda#'K':jsr$c0c2
-lda#10:jsr$c0c2
 
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
@@ -259,7 +256,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS·16 0.6b4", 0	; version in comment
+	.asc	"minimOS·16 0.6b5", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
