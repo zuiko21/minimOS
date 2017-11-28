@@ -168,7 +168,7 @@ dr_spars:
 		INX
 		BNE dr_spars
 ; TASKDEV is no longer a thing...
-;	LDX #0				; ...but reset X if using restricted or sparse ID array!!!
+;	LDX #0				; ...reset X if using restricted set, but NOT needed with sparse ID array!!!
 
 ; *** prepare access to each driver header ***
 ; first get the pointer to it

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171128-1030
+; last modified 20171128-1112
 
 ; just in case
 #define		C816	_C816
@@ -149,9 +149,16 @@ dr_clear:
 		INX
 		CPX #MX_DRVRS*2		; all done? needed for sparse arrays (2) EEEEEEEEEK
 		BNE dr_clear		; finish page (3/2)
-
+; sparse arrays need their index inited... EEEEEEEEEEEK
+	LDX #128				; initial offset (2)
+	LDA #0					; ***** or 255, if needed ***** best to define a constant! *** A in 16-bit anyway
+dr_spars:
+		STA dr_ind-128, X		; clear entry
+		INX
+		INX						; 16-bit access
+		BNE dr_spars
 ; TASKDEV is no longer a thing...
-	LDX #0				; needed! (2)
+;	LDX #0					; ...reset X if using restricted set, but NOT needed with sparse ID array!!!
 ; *** prepare access to each driver header ***
 dr_loop:
 		PHX					; keep current value (3)
