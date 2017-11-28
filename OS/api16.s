@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6b4, should match kernel16.s
+; v0.6b5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171127-1005
+; last modified 20171128-1103
 
 ; assumes 8-bit sizes upon call...
 
@@ -1130,15 +1130,11 @@ str_24b:
 str_loop:
 		LDA [str_pt], Y		; check pointed char
 			BEQ str_end		; NULL terminates
-;*****debug code
-phy
-jsr$c0c2
-ply
 		INY					; continue
 		BRA str_loop
 str_end:
-	STX bl_siz			; simply store size!
-;	KERNEL(BLOUT)		; and call block output (could be patched)
+	STY bl_siz			; simply store size! eeeeeeeeeeeeeeeeeeeeeeeeeek
+	_KERNEL(BLOUT)		; and call block output (could be patched)
 	JMP cio_callend		; will return proper error
 
 
@@ -1155,7 +1151,6 @@ str_end:
 
 readln:
 ; no need to switch DBR as regular I/O calls would do it
-
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816 eeeeeeeeeek
