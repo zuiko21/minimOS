@@ -170,12 +170,13 @@ dr_loop:
 ; *** call new API function ***
 		_KERNEL(DR_INST)	; try to install this driver
 
+/*
 .al
 bcc*+8
 lda#'!':jsr$c0c2
 tya:sec:sbc#128:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
-
+*/
 ; *** prepare for next driver ***
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
