@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171128-1112
+; last modified 20171129-1415
 
 ; just in case
 #define		C816	_C816
@@ -169,6 +169,12 @@ dr_loop:
 
 ; *** call new API function ***
 		_KERNEL(DR_INST)	; try to install this driver
+
+.al
+bcc*+8
+lda#'!':jsr$c0c2
+tya:sec:sbc#128:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
 
 ; *** prepare for next driver ***
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
