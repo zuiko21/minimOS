@@ -1375,6 +1375,9 @@ dr_inst:
 ; minimOS•16 API defaults to 8 bit sizes
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
+lda#'I':jsr$c0c2
+lda#'D':jsr$c0c2
+lda#10:jsr$c0c2
 	LDA (da_ptr)		; check ID...
 ; will be stored later, in case is changed
 #ifdef	SAFE
@@ -1425,6 +1428,8 @@ dr_busy:
 ; already in use, function should return BUSY error code
 		JMP dr_babort		; already in use (3)
 dr_empty:
+txa:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
 	STX dr_id			; keep updated ID
 
 #ifndef		MUTABLE
@@ -1466,7 +1471,7 @@ dr_ios:
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #MX_DRVRS+2		; otherwise, is there room for more? (2) note offset
+		CPX #MX_DRVRS		; otherwise, is there room for more? (2) note +2 offset, now removed
 		BNE dr_ios			; yes, continue (3)
 	JMP dr_fabort		; no, complain (3)
 dr_sarr:
