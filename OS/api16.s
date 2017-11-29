@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171128-1103
+; last modified 20171129-1405
 
 ; assumes 8-bit sizes upon call...
 
@@ -1134,6 +1134,7 @@ str_loop:
 		BRA str_loop
 str_end:
 	STY bl_siz			; simply store size! eeeeeeeeeeeeeeeeeeeeeeeeeek
+	.xs: SEP #$10		; *** does callend need standard index size??? ***
 	_KERNEL(BLOUT)		; and call block output (could be patched)
 	JMP cio_callend		; will return proper error
 
