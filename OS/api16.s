@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171129-1405
+; last modified 20171130-1334
 
 ; assumes 8-bit sizes upon call...
 
@@ -1337,6 +1337,7 @@ sd_shut:
 ; first get the pointer to each driver table
 	.al: REP #$20		; *** 16-bit memory ***
 sd_loop:
+; ***** should modify this for DR_SHUT use *****
 ; get address index
 		LDA drvrs_ad, X		; get address from original list
 			BEQ sd_done			; no more drivers to shutdown!
@@ -1409,7 +1410,7 @@ dr_phys:
 #else
 ; new system for mutable IDs, 171013
 	LDY dr_ind-128, X	; already in use?
-;	CPY #$FF			; in case 0 is useable
+;	CPY #SX_FREE		; uncomment if SX_FREE is not zero
 	BEQ dr_empty		; no, all done
 ; otherwise filter bits and scan possible IDs for this kind of device
 ; original ID... must be already in A
@@ -1418,7 +1419,7 @@ dr_phys:
 		LDY #8				; devs per kind
 dr_nxid:
 			LDA dr_ind-128, X	; ID in use?
-;			CMP #$FF			; in case 0 is useable
+;			CMP #SX_FREE		; in case 0 is useable, otherwise let commented
 				BEQ dr_empty		; no, all OK now
 			INX					; yes, try next
 			DEY					; one less to go
@@ -1471,11 +1472,12 @@ dr_ios:
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #MX_DRVRS		; otherwise, is there room for more? (2) note +2 offset, now removed
+		CPX #2*MX_DRVRS+2	; otherwise, is there room for more? (2) note +2 offset, now removed, newer doubled
 		BNE dr_ios			; yes, continue (3)
 	JMP dr_fabort		; no, complain (3)
 dr_sarr:
 ; sequential index is computed, store it into direct array
+	LDY dr_id			; get direct, mutable ID eeeeeeeeeeeeeeek (3)
 	TXA					; alas, no STX abs,Y (2)
 	STA dr_ind-128, Y	; store sparse index (4)
 ; proper index already in X and A
