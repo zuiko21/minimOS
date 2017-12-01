@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171130-1334
+; last modified 20171201-1053
 
 ; assumes 8-bit sizes upon call...
 
@@ -1429,6 +1429,7 @@ dr_busy:
 ; already in use, function should return BUSY error code
 		JMP dr_babort		; already in use (3)
 dr_empty:
+lda#'>':jsr$c0c2
 txa:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
 	STX dr_id			; keep updated ID
@@ -1453,10 +1454,11 @@ dr_chk:
 dr_ntsk:
 		DEX					; check next feature (2)
 		BNE dr_chk			; zero included (3/2) ***BNE works on 8-bit, but does NOT check A_REQ! should be BPL...
+
 ; * 3) if arrived here, it is possible to install, but run init code to confirm *
 	.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)
 	JSR dr_icall		; call routine (6+...)
-	.xs: SEP #$10		; *** 8-bit indexes, again just in case *** (3)
+	.xs: .as: SEP #$30		; *** 8-bit indexes AND MEMORY just in case *** (3)
 ; as 816 function exit does not care about *memory* size, just return some error here...
 	BCC dr_isuc			; init was successful, proceed
 		JMP dr_uabort		; no way, forget about this (2/3)
