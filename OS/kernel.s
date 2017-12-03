@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171128-1005
+; last modified 20171203-1940
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,8 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc1", 13
-	.asc	"HackLabAL @ El Ejido", 0	; version in comment ***special name**
+	.asc	"minimOS 0.6rc1", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -539,7 +538,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6b3", 0
+	.asc	"minimOS 0.6rc1", 0
 #endif
 
 kern_end:		; for size computation
