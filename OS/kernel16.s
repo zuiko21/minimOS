@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171201-1059
+; last modified 20171204-0953
 
 ; just in case
 #define		C816	_C816
@@ -163,20 +163,28 @@ dr_spars:
 dr_loop:
 		PHX					; keep current value (3)
 ; first create a pointer to it
-		LDA drvrs_ad, X		; get full address (5)
-			BEQ dr_ok			; cannot be zero, all done otherwise
-		STA da_ptr			; store full pointer (4)
 lda#'#':jsr$c0c2
 txa:and#$ff:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
+		LDA drvrs_ad, X		; get full address (5)
+			BEQ dr_ok			; cannot be zero, all done otherwise
+		STA da_ptr			; store full pointer (4)
 ; *** call new API function ***
 		_KERNEL(DR_INST)	; try to install this driver
-bcc*+17
+php
+.al:rep#$20
+lda#'H':jsr$c0c2
+lda#'e':jsr$c0c2
+lda#'r':jsr$c0c2
+lda#'e':jsr$c0c2
+lda#10:jsr$c0c2
+plp
+bcc drsucc
 lda#'!':jsr$c0c2
-nl:lda#10:jsr$c0c2
-jmp go
-lda#'*':jsr$c0c2:jmp nl
-go:
+newline:lda#10:jsr$c0c2
+bra gonext
+drsucc:lda#'*':jsr$c0c2:bra newline
+gonext:
 
 ; *** prepare for next driver ***
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b5, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171201-1053
+; last modified 20171204-1012
 
 ; assumes 8-bit sizes upon call...
 
@@ -1371,14 +1371,15 @@ sd_done:
 
 dr_inst:
 ; make sure we work on bank zero!
+lda#'I':jsr$c0c2
+lda#'D':jsr$c0c2
+lda#10:jsr$c0c2
+	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeeek
 	PHK					; zero...
 	PLB					; ...is the bank!
 ; minimOS•16 API defaults to 8 bit sizes
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
-lda#'I':jsr$c0c2
-lda#'D':jsr$c0c2
-lda#10:jsr$c0c2
 	LDA (da_ptr)		; check ID...
 ; will be stored later, in case is changed
 #ifdef	SAFE
@@ -1570,15 +1571,23 @@ dr_ended:
 ; *** error handling ***
 ; **********************
 dr_iabort:
+lda#'i':jsr$c0c2
+lda#10:jsr$c0c2
 	LDY #INVALID		; logical devices cannot be installed
 	BRA dr_abort
 dr_fabort:
+lda#'f':jsr$c0c2
+lda#10:jsr$c0c2
 	LDY #FULL		; no room on queue
 	BRA dr_abort
 dr_babort:
+lda#'b':jsr$c0c2
+lda#10:jsr$c0c2
 	LDY #BUSY		; ID already in use
 	BRA dr_abort
 dr_uabort:
+lda#'u':jsr$c0c2
+lda#10:jsr$c0c2
 	LDY #UNAVAIL		; init failed
 dr_abort:
 	PLB					; *** make sure apps can call this from anywhere ***
