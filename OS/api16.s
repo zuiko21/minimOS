@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6b5, should match kernel16.s
+; v0.6b6, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171204-1012
+; last modified 20171205-0932
 
 ; assumes 8-bit sizes upon call...
 
@@ -1371,12 +1371,12 @@ sd_done:
 
 dr_inst:
 ; make sure we work on bank zero!
-lda#'I':jsr$c0c2
-lda#'D':jsr$c0c2
-lda#10:jsr$c0c2
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeeek
 	PHK					; zero...
 	PLB					; ...is the bank!
+lda#'I':jsr$c0c2
+lda#'D':jsr$c0c2
+lda#10:jsr$c0c2
 ; minimOS•16 API defaults to 8 bit sizes
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
@@ -1431,7 +1431,7 @@ dr_busy:
 		JMP dr_babort		; already in use (3)
 dr_empty:
 lda#'>':jsr$c0c2
-txa:clc:adc#'0':jsr$c0c2
+txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
 	STX dr_id			; keep updated ID
 
@@ -1455,6 +1455,9 @@ dr_chk:
 dr_ntsk:
 		DEX					; check next feature (2)
 		BNE dr_chk			; zero included (3/2) ***BNE works on 8-bit, but does NOT check A_REQ! should be BPL...
+lda#'Q':jsr$c0c2
+lda#'u':jsr$c0c2
+lda#10:jsr$c0c2
 
 ; * 3) if arrived here, it is possible to install, but run init code to confirm *
 	.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)
@@ -1465,6 +1468,9 @@ dr_ntsk:
 		JMP dr_uabort		; no way, forget about this (2/3)
 dr_isuc:
 ; if arrived here, it is OK to install the driver!
+lda#'O':jsr$c0c2
+lda#'k':jsr$c0c2
+lda#10:jsr$c0c2
 
 ; all checked OK, do actual driver installation!
 ; *** now adapted for new sparse arrays! ***
@@ -1485,6 +1491,9 @@ dr_sarr:
 	STA dr_ind-128, Y	; store sparse index (4)
 ; proper index already in X and A
 
+lda#'[':jsr$c0c2
+txa:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
 	.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
 
 ; * 4) Set I/O pointers *
@@ -1497,6 +1506,10 @@ dr_sarr:
 	LDA (da_ptr), Y		; get full address (6)
 	STA drv_opt, X		; store full pointer in table (5)
 
+lda#'I':jsr$c0c2
+lda#'/':jsr$c0c2
+lda#'O':jsr$c0c2
+lda#10:jsr$c0c2
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...
 ; time to get a pointer to the-block-of-pointers (source)
@@ -1555,7 +1568,14 @@ dr_doreq:
 		BPL dr_iqloop
 ; *** end of suspicious code ***
 dr_ended:
+lda#'p':jsr$c0c2
+lda#'a':jsr$c0c2
+lda#10:jsr$c0c2
 	LDY dr_id			; must return actual ID, as might be mutable!
+lda#'#':jsr$c0c2
+tya:sec:sbc#128:clc:adc#'O':jsr$c0c2
+lda#10:jsr$c0c2
+
 #ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
 	LDX dr_ind-128, Y	; convert to sparse index!

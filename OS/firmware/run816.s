@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6b2
+; v0.9.6b3
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171128-1028
+; last modified 20171205-0930
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -510,6 +510,7 @@ fw_mname:
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
+	.as:.xs: SEP #$30	; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 	JMP (fw_table, X)	; the old fashioned way
 
 ; filling for ready-to-blow ROM
