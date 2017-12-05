@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b6, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171205-0932
+; last modified 20171205-1026
 
 ; assumes 8-bit sizes upon call...
 
@@ -1434,6 +1434,9 @@ lda#'>':jsr$c0c2
 txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
 	STX dr_id			; keep updated ID
+lda#'#':jsr$c0c2
+txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
 
 #ifndef		MUTABLE
 	.as: SEP #$20		; *** 8-bit memory again *** (3)
@@ -1509,7 +1512,15 @@ lda#10:jsr$c0c2
 lda#'I':jsr$c0c2
 lda#'/':jsr$c0c2
 lda#'O':jsr$c0c2
+lda#'[':jsr$c0c2
+txa:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
+
+ldx dr_id
+lda#'#':jsr$c0c2
+txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
+
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...
 ; time to get a pointer to the-block-of-pointers (source)
@@ -1527,10 +1538,22 @@ lda#10:jsr$c0c2
 ; *** suspicious code follows ***
 dr_iqloop:
 		.as: SEP #$20		; *** 8-bit shift *** eeeeeeeeeeeeeeek
+lda#'*':jsr$c0c2
+txa:clc:adc#'P'-1:jsr$c0c2
+lda#10:jsr$c0c2
+lda#'#':jsr$c0c2
+lda dr_id:sec:sbc#128:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
+
 		ASL dr_aut		; extract MSB (will be A_POLL first, then A_REQ) eeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
+lda#'+':jsr$c0c2
+lda#10:jsr$c0c2
 			LDY queue_mx, X		; get index of free entry, will stay!
+lda#'(':jsr$c0c2
+tya:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
 			INC queue_mx, X		; add another task in queue
 			INC queue_mx, X		; pointer takes two bytes
 ; install entry into queue
@@ -1571,9 +1594,13 @@ dr_ended:
 lda#'p':jsr$c0c2
 lda#'a':jsr$c0c2
 lda#10:jsr$c0c2
-	LDY dr_id			; must return actual ID, as might be mutable!
+
 lda#'#':jsr$c0c2
-tya:sec:sbc#128:clc:adc#'O':jsr$c0c2
+lda dr_id:sec:sbc#128:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
+	LDY dr_id			; must return actual ID, as might be mutable!
+lda#'?':jsr$c0c2
+tya:sec:sbc#128:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
 
 #ifdef	MUTABLE
