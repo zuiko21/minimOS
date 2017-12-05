@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b5
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171204-0953
+; last modified 20171205-1035
 
 ; just in case
 #define		C816	_C816
@@ -163,7 +163,7 @@ dr_spars:
 dr_loop:
 		PHX					; keep current value (3)
 ; first create a pointer to it
-lda#'#':jsr$c0c2
+lda#'x':jsr$c0c2
 txa:and#$ff:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
 		LDA drvrs_ad, X		; get full address (5)
@@ -171,19 +171,16 @@ lda#10:jsr$c0c2
 		STA da_ptr			; store full pointer (4)
 ; *** call new API function ***
 		_KERNEL(DR_INST)	; try to install this driver
-php
-.al:rep#$20
 lda#'H':jsr$c0c2
 lda#'e':jsr$c0c2
 lda#'r':jsr$c0c2
 lda#'e':jsr$c0c2
 lda#10:jsr$c0c2
-plp
 bcc drsucc
 lda#'!':jsr$c0c2
 newline:lda#10:jsr$c0c2
 bra gonext
-drsucc:lda#'*':jsr$c0c2:bra newline
+drsucc:lda#'$':jsr$c0c2:bra newline
 gonext:
 
 ; *** prepare for next driver ***
@@ -204,6 +201,10 @@ dr_error:
 ; *** drivers already installed, clean up things and finish booting ***
 ; *********************************************************************
 dr_ok:					; *** all drivers inited ***
+lda#'D':jsr$c0c2
+lda#'u':jsr$c0c2
+lda#'h':jsr$c0c2
+lda#10:jsr$c0c2
 	PLX					; discard stored X, beware of 16-bit memory!
 
 ; **********************************
@@ -223,7 +224,7 @@ dr_ok:					; *** all drivers inited ***
 	STA str_pt			; set parameter
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
-	_KERNEL(STRING)		; print it!
+;	KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
 
 ; ******************************

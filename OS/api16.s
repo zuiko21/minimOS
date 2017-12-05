@@ -237,6 +237,7 @@ co_lckd:
 ; gets physdevnum and clears its mutex, restores DBR and exit with proper error code if C set
 ; must be called in all 8-bit size!!!
 cio_unlock:
+.as:sep#$20
 	LDX iol_dev			; **need to clear new lock! (3)
 	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
 	PLB					; we are leaving... into cio_callend
@@ -1434,9 +1435,6 @@ lda#'>':jsr$c0c2
 txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
 	STX dr_id			; keep updated ID
-lda#'#':jsr$c0c2
-txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
 
 #ifndef		MUTABLE
 	.as: SEP #$20		; *** 8-bit memory again *** (3)
@@ -1504,21 +1502,20 @@ lda#10:jsr$c0c2
 ; thus not worth a loop...
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
+jsr hex16
+lda#58:jsr$c0c2
+lda#10:jsr$c0c2
 	STA drv_ipt, X		; store full pointer in table (5)
 	LDY #D_BOUT			; offset for output routine (2)
 	LDA (da_ptr), Y		; get full address (6)
 	STA drv_opt, X		; store full pointer in table (5)
+jsr hex16
 
 lda#'I':jsr$c0c2
 lda#'/':jsr$c0c2
 lda#'O':jsr$c0c2
 lda#'[':jsr$c0c2
 txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
-
-ldx dr_id
-lda#'#':jsr$c0c2
-txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
 
 ; * 5) register interrupt routines * new, much cleaner approach
@@ -1541,10 +1538,6 @@ dr_iqloop:
 lda#'*':jsr$c0c2
 txa:clc:adc#'P'-1:jsr$c0c2
 lda#10:jsr$c0c2
-lda#'#':jsr$c0c2
-lda dr_id:sec:sbc#128:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
-
 		ASL dr_aut		; extract MSB (will be A_POLL first, then A_REQ) eeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
@@ -1595,16 +1588,14 @@ lda#'p':jsr$c0c2
 lda#'a':jsr$c0c2
 lda#10:jsr$c0c2
 
-lda#'#':jsr$c0c2
-lda dr_id:sec:sbc#128:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
 	LDY dr_id			; must return actual ID, as might be mutable!
-lda#'?':jsr$c0c2
+lda#'#':jsr$c0c2
 tya:sec:sbc#128:clc:adc#'0':jsr$c0c2
 lda#10:jsr$c0c2
 
 #ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
+.al:rep#$20
 	LDX dr_ind-128, Y	; convert to sparse index!
 	LDA da_ptr			; get header pointer, we were in 16-bit A (4)
 	STA drv_ads, X		; store in proper entry (5)
@@ -1612,8 +1603,18 @@ lda#10:jsr$c0c2
 #endif
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
-	EXIT_OK				; if arrived here, did not fail initialisation
+lda#'O':jsr$c0c2
+lda#'K':jsr$c0c2
+lda#'!':jsr$c0c2
+lda#10:jsr$c0c2
 
+	_EXIT_OK				; if arrived here, did not fail initialisation
+
+hex16:pha:xba:jsr pintahex:pla:pha:jsr pintahex:pla:rts
+pintahex:pha:lsr:lsr:lsr:lsr:jsr pinta
+pla:pinta:
+and#$0f:cmp#10:bcc numero:adc#6:clc:
+numero:adc#'0':jsr$c0c2:rts
 ; **********************
 ; *** error handling ***
 ; **********************
