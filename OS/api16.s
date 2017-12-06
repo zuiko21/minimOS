@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b6, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171205-1026
+; last modified 20171206-1654
 
 ; assumes 8-bit sizes upon call...
 
@@ -1278,11 +1278,6 @@ fg_busy:
 ; sd_flag is a kernel variable
 
 shutdown:
-; switch DBR as it accesses some kernel data!
-	PHB					; eeeeeeeeek
-	PHK					; bank 0 into stack
-	PLB					; set DBR! do not forget another PLB upon end!
-; proceed
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
@@ -1290,13 +1285,13 @@ shutdown:
 ; interrupt invoking, although for internal use
 	CPY #PW_HARD		; some invoking?
 		BCS sd_fw			; just pass to FW
-	STY sd_flag			; store mode for later, first must do proper system shutdown, note long addressing
+	TYA					; no longer switches DBR
+	STA @sd_flag			; store mode for later, first must do proper system shutdown, note long addressing
 ; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
 	_KERNEL(B_SIGNAL)	; ask braids to terminate *** no longer deindexing call as could be patched!
-	PLB					; restore before further tinkering!!!
 	PLP					; original mask is buried in stack, no DBR was saved!
 	CLI					; make sure all will keep running!
 	PHP					; restore for subsequent RTI
@@ -1327,7 +1322,7 @@ sd_warm:
 ; the scheduler will wait for NO braids active
 ; now let's disable all drivers
 sd_2nd:
-	LDA sd_flag			; check what was pending
+	LDA @sd_flag			; check what was pending
 	BNE sd_shut			; something to do
 		_PANIC("{sched}")	; otherwise it is an error!
 sd_shut:
@@ -1340,7 +1335,7 @@ sd_shut:
 sd_loop:
 ; ***** should modify this for DR_SHUT use *****
 ; get address index
-		LDA drvrs_ad, X		; get address from original list
+		LDA @drvrs_ad, X		; get address from original list
 			BEQ sd_done			; no more drivers to shutdown!
 		STA sysptr			; store temporarily (as needed by dr_call)
 ; will no longer check for successful installation, BYE routine gets called anyway
@@ -1356,7 +1351,8 @@ sd_next:
 		BRA sd_loop			; repeat
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
-	LDX sd_flag			; retrieve mode as index!
+	LDA @sd_flag			; retrieve mode...
+	TAX					; ...as index!
 	JMP (sd_tab-2, X)	; do as appropriate *** note offset as sd_stat will not be called from here
 
 	.as
