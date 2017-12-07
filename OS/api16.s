@@ -1,11 +1,9 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b6, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171206-1654
+; last modified 20171207-2017
 
 ; assumes 8-bit sizes upon call...
-
-.as: .xs:
 
 ; no way for standalone assembly, neither internal calls...
 
@@ -23,6 +21,7 @@ bl_stat:
 dr_shut:
 
 unimplemented:			; placeholder here, not currently used
+	.as: .xs:
 	_ERR(UNAVAIL)		; go away!
 
 
@@ -37,6 +36,7 @@ unimplemented:			; placeholder here, not currently used
 ;		USES iol_dev, and whatever the driver takes
 
 cin:
+	.as: .xs:
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
 	XBA			; switch to MSB
@@ -104,6 +104,7 @@ ci_signal:
 ; cio_lock is a kernel structure
 
 cout:
+	.as: .xs:
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
 	XBA			; switch to MSB
@@ -140,6 +141,7 @@ cout:
 ; * 8-bit savvy *
 
 blout:
+	.as: .xs:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -271,6 +273,7 @@ cio_notc:
 ; cio_lock & cin_mode are kernel structures
 
 blin:
+	.as: .xs:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -394,6 +397,7 @@ ci_rndend:
 ; think about managing the multiple exit points as this is a rather slow function
 
 malloc:
+	.xs:
 	.al: REP #$20		; *** 16-bit memory ***
 	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index (can be used for storing any 8-bit zero)
@@ -613,7 +617,6 @@ ma_room:
 		BNE ma_room			; continue until done
 	RTS
 
-	.as				; back to normal...
 
 ; *******************************
 ; **** FREE,  release memory ****
@@ -626,6 +629,7 @@ ma_room:
 ; ram_pos & ram_stat are kernel structures
 
 free:
+	.xs:
 	.al: REP #$20		; *** 16-bit memory ***
 	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index (will be used afterwards)
@@ -695,7 +699,6 @@ fr_join:
 		BNE fr_join			; repeat until done
 	RTS
 
-	.as				; back to normal...
 
 ; **************************************
 ; *** OPEN_W, get I/O port or window ***
@@ -709,11 +712,13 @@ fr_join:
 ; C = not supported/not available
 
 open_w:
+	.xs:
 	.al: REP #$20		; *** 16-bit memory size ***
 	LDA w_rect			; asking for some size? includes BOTH bytes
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 ow_no_window:
+	.as: SEP #$20		; for peace of mind...
 
 ; *********************************
 ; *** B_FORK, get available PID ***
@@ -722,6 +727,7 @@ ow_no_window:
 ; Y		= PID, 0 means not available or singletask
 
 b_fork:
+	.as: .xs:
 	LDY #0				; standard device or single task PID
 ; EXIT_OK on subsequent system calls!!!
 
@@ -737,9 +743,9 @@ b_fork:
 b_yield:
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
+	.as: .xs:
 	_EXIT_OK
 
-	.as					; back to normal...
 
 ; **************************************
 ; *** UPTIME, get approximate uptime ***
@@ -749,6 +755,7 @@ free_w:					; doesn't do much, either
 ; up_sec	= 24b approximate uptime in seconds for API compatibility
 
 uptime:
+	.xs:
 	.al: REP #$20		; *** optimum 16-bit memory ***
 ; default 816 API functions run on interrupts masked, thus no need for CS
 ; not worth setting DBR, note long addressing
@@ -758,8 +765,6 @@ uptime:
 		STA up_ticks+2		; and store it in output parameter (4)
 ; end of CS
 	_EXIT_OK
-
-	.as				; back to normal...
 
 
 ; *****************************************
@@ -774,6 +779,7 @@ uptime:
 ; API still subject to change... (register values, rendez-vous mode TBD)
 
 b_exec:
+	.as: .xs:
 ; non-multitasking version
 #ifdef	SAFE
 	TYA					; should be system reserved PID, best way
@@ -883,6 +889,7 @@ rst_shell:
 ; Y		= PID (0 means TO ALL)
 
 b_signal:
+	.as: .xs:
 #ifdef	SAFE
 	TYA					; check correct PID
 		BNE sig_pid			; invalid braid
@@ -913,6 +920,7 @@ sig_term:
 ; C = invalid PID
 
 b_flags:
+	.as: .xs:
 #ifdef	SAFE
 	TYA					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -939,6 +947,7 @@ sig_exit:
 ; C		= bad PID
 
 set_hndl:
+	.xs:
 	.al: REP #$20		; *** 16-bit memory size ***
 #ifdef	SAFE
 	TYX					; check PID
@@ -970,6 +979,7 @@ st_shset:
 ; may not need to be patched in multitasking systems!
 
 get_pid:
+	.as: .xs:
 	LDY run_pid			; new kernel variable
 	_EXIT_OK
 
@@ -985,6 +995,7 @@ get_pid:
 ;		USES rh_scan
 
 loadlink:
+	.as: .xs:
 ; *** first look for that filename in ROM headers ***
 ; no need to set DBR
 
@@ -1096,7 +1107,6 @@ ll_native:
 	_ERR(UNAVAIL)		; no headers to scan
 #endif
 
-	.as					; just in case
 
 ; *********************************
 ; *** STRING, prints a C-string ***
@@ -1111,6 +1121,7 @@ ll_native:
 ; cio_lock is a kernel structure
 
 string:
+	.as: .xs:
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816
@@ -1152,6 +1163,7 @@ str_end:
 ;		USES rl_dev, rl_cur and whatever CIN/COUT take
 
 readln:
+	.as: .xs:
 ; no need to switch DBR as regular I/O calls would do it
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
@@ -1223,6 +1235,7 @@ rl_cr:
 ; *** TO DO *** temporarily made 8-bit savvy
 
 set_fg:
+	.xs:
 	.al: REP #$20		; *** 16-bit memory ***
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
@@ -1247,9 +1260,8 @@ fg_none:
 	PLB					; restore!
 	_EXIT_OK			; finish anyway
 
-	.al					; called from above
-
 fg_dis:
+	.al:					; called from above
 	LDX VIA+ACR			; get current configuration
 		BPL fg_none			; it wasn't playing!
 	TXA					; process configuration
@@ -1262,10 +1274,10 @@ fg_dis:
 	PLB					; restore!
 	_EXIT_OK
 fg_busy:
+	.al:
 	PLB					; restore!
 	_ERR(BUSY)			; couldn't set
 
-	.as
 
 ; ***********************************************************
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
@@ -1278,6 +1290,7 @@ fg_busy:
 ; sd_flag is a kernel variable
 
 shutdown:
+	.as: .xs:
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
@@ -1355,7 +1368,6 @@ sd_done:
 	TAX					; ...as index!
 	JMP (sd_tab-2, X)	; do as appropriate *** note offset as sd_stat will not be called from here
 
-	.as
 
 ; *******************************
 ; *** DR_INST, install driver ***
@@ -1367,6 +1379,7 @@ sd_done:
 ; C			= could not install driver (ID in use or invalid, queue full, init failed)
 
 dr_inst:
+	.as: .xs:
 ; make sure we work on bank zero!
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeeek
 	PHK					; zero...
@@ -1646,6 +1659,7 @@ dr_abort:
 ; A in 16-bit mode
 
 dr_nextq:
+	.al: .xs:
 	LDA dq_ptr			; get original queue pointer
 	CLC
 	ADC #MX_QUEUE		; go to next queue
@@ -1657,12 +1671,14 @@ dr_nextq:
 ; dr_itask is now inlined, and has dq_off already in Y!
 
 dr_icall:
+	.al: .xs:
 	LDY #D_INIT			; original pointer offset (2)
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset
 ; *** assume 16-bit memory and 8-bit indexes ***
 ; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
 ; make certain about DBR in calls... but should be for kernel/API only
 dr_call:
+	.al: .xs:
 	LDA (da_ptr), Y		; destination pointer (6)
 	DEC					; one less for RTS (2)
 	PHA					; push it (4)
@@ -1678,6 +1694,7 @@ dr_call:
 ; ex_pt = 16b pointer to the proposed stack frame (certainly in bank 0)
 
 ts_info:
+	.xs:
 	.al: REP #$20			; *** 16-bit memory ***
 	LDA #tsi_str			; pointer to proposed stack frame
 	STA ex_pt				; store output word
@@ -1685,7 +1702,6 @@ ts_info:
 	LDY #tsi_end-tsi_str	; number of bytes
 	_EXIT_OK
 
-	.as
 
 ; *********************************************
 ; *** RELEASE, release ALL memory for a PID ***
@@ -1698,6 +1714,7 @@ ts_info:
 ; * 8-bit savvy, I think *
 
 release:
+	.as: .xs:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek
 	PHK					; bank 0 into stack
@@ -1739,7 +1756,6 @@ rls_oth:
 	PLB					; restore!
 	_EXIT_OK			; no errors...
 
-	.as
 
 ; ***********************************************************
 ; *** SET_CURR, set internal kernel info for running task ***
@@ -1752,6 +1768,7 @@ rls_oth:
 ; affects internal sysvars run_pid & run_arch
 
 set_curr:
+	.as: .xs:
 	TYA					; eeeeek, no long STY (2)
 	STA @run_pid		; store PID into kernel variables (5)
 	LDA cpu_ll			; get architecture from multitasking driver (3)
