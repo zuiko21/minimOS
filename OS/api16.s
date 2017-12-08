@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b6, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171207-2017
+; last modified 20171208-2201
 
 ; assumes 8-bit sizes upon call...
 
@@ -212,15 +212,15 @@ co_phys:
 ; arrived here with dev # in Y!
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
-	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
+	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
 ; newly computed index is stored as usual
-	STA iol_dev			; keep device-index temporarily, worth doing here (3)
+	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
-		LDX iol_dev			; retrieve index!
 		LDA cio_lock, X		; check whether THAT device is in use (4) 24-bit!
 			BEQ co_lckd			; resume operation if free (3)
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
+		LDX iol_dev			; retrieve index!
 		BRA co_loop			; try again! (3)
 
 co_lckd:
@@ -300,12 +300,11 @@ ci_port:
 ; new MUTEX for CIN
 ;	ASL					; convert to proper physdev index (2)
 ; new indirect-sparse array system!
-	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
+	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
 ; newly computed index is stored as usual
-	STA iol_dev			; keep sparse physdev temporarily, worth doing here (3)
+	STX iol_dev			; keep sparse physdev temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
-	LDX iol_dev			; *restore previous status (3)
 	LDA cio_lock, X		; *check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
@@ -316,6 +315,7 @@ ci_loop:
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
+		LDX iol_dev			; *restore previous status (3)
 		BRA ci_loop			; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
