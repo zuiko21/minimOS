@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc1, must match kernel.s
+; v0.6rc2, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171121-1021
+; last modified 20171210-1743
 
 ; no way for standalone assembly...
 
@@ -152,16 +152,16 @@ co_phys:
 ; arrived here with dev # in Y eeeeeek
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
-	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
+	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
 ; newly computed index is stored as usual
-	STA iol_dev			; keep device-index temporarily, worth doing here (3)
+	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 	_CRITIC				; needed for a MUTEX (5)
 co_loop:
-		LDX iol_dev			; retrieve index!
 		LDA cio_lock, X		; check whether THAT device is in use (4)
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
+		LDX iol_dev			; retrieve index!
 		_BRA co_loop		; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
@@ -200,13 +200,12 @@ ci_port:
 	BPL ci_nph			; logic device
 ; new MUTEX for CIN, physical devs only! ID arrives in Y!
 ; new indirect-sparse array system!
-	LDA dr_ind-128, Y	; get proper index for that physical ID (4)
+	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
 ; newly computed index is stored as usual
-	STA iol_dev			; keep sparse-physdev temporarily, worth doing here (3)
+	STX iol_dev			; keep sparse-physdev temporarily, worth doing here (3)
 ; * this has to be done atomic! *
 	_CRITIC
 ci_loop:
-	LDX iol_dev			; *restore previous status (3)
 	LDA cio_lock, X		; *check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
@@ -217,6 +216,7 @@ ci_loop:
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
+		LDX iol_dev			; *restore previous status (3)
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
