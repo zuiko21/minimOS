@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171211-0831
+; last modified 20171211-0836
 
 ; assumes 8-bit sizes upon call...
 
@@ -1465,9 +1465,9 @@ dr_chk:
 dr_ntsk:
 		DEX					; check next feature (2)
 		BNE dr_chk			; zero included (3/2) ***BNE works on 8-bit, but does NOT check A_REQ! should be BPL...
-lda#'Q':jsr$c0c2
+/*lda#'Q':jsr$c0c2
 lda#'u':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 
 ; * 3) if arrived here, it is possible to install, but run init code to confirm *
 	.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)
