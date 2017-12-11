@@ -34,4 +34,27 @@ err_code	mem_test(void) {
 		ptr = ptr - 256;		/* previous page */
 		a = ptr / 256			/* get page number... */
 		ram[ptr+y] = a;			/* ...and store it */
-		x--;
+	} while (a);
+	x--;
+	ptr = ptr%256 | x*256			/* update MSB */
+	a = ram[ptr+y];
+	himem = ++a;
+	x = 0xFF;
+	a = 0;
+	do {
+		ram[x--] = a--;
+	} while (a);
+	x = ram[0xFF];
+	if (x) {
+		himem = 0;
+	}
+	a = x--;
+	do {
+		if (a-- != ram[x--]) {
+			return RAM_FAIL;
+		}
+	} while (a);
+
+	return EXIT_OK;
+}
+
