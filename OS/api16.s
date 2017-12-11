@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6b6, should match kernel16.s
+; v0.6b7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171208-2201
+; last modified 20171211-0831
 
 ; assumes 8-bit sizes upon call...
 
@@ -1384,9 +1384,9 @@ dr_inst:
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeeek
 	PHK					; zero...
 	PLB					; ...is the bank!
-lda#'I':jsr$c0c2
+/*lda#'I':jsr$c0c2
 lda#'D':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 ; minimOS•16 API defaults to 8 bit sizes
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
@@ -1440,9 +1440,9 @@ dr_busy:
 ; already in use, function should return BUSY error code
 		JMP dr_babort		; already in use (3)
 dr_empty:
-lda#'>':jsr$c0c2
+/*lda#'>':jsr$c0c2
 txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 	STX dr_id			; keep updated ID
 
 #ifndef		MUTABLE
@@ -1478,9 +1478,9 @@ lda#10:jsr$c0c2
 		JMP dr_uabort		; no way, forget about this (2/3)
 dr_isuc:
 ; if arrived here, it is OK to install the driver!
-lda#'O':jsr$c0c2
+/*lda#'O':jsr$c0c2
 lda#'k':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 
 ; all checked OK, do actual driver installation!
 ; *** now adapted for new sparse arrays! ***
@@ -1501,9 +1501,9 @@ dr_sarr:
 	STA dr_ind-128, Y	; store sparse index (4)
 ; proper index already in X and A
 
-lda#'[':jsr$c0c2
+/*lda#'[':jsr$c0c2
 txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 	.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
 
 ; * 4) Set I/O pointers *
@@ -1511,21 +1511,20 @@ lda#10:jsr$c0c2
 ; thus not worth a loop...
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-jsr hex16
+/*jsr hex16
 lda#58:jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 	STA drv_ipt, X		; store full pointer in table (5)
 	LDY #D_BOUT			; offset for output routine (2)
 	LDA (da_ptr), Y		; get full address (6)
 	STA drv_opt, X		; store full pointer in table (5)
-jsr hex16
-
+/*jsr hex16
 lda#'I':jsr$c0c2
 lda#'/':jsr$c0c2
 lda#'O':jsr$c0c2
 lda#'[':jsr$c0c2
 txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...
@@ -1544,9 +1543,9 @@ lda#10:jsr$c0c2
 ; *** suspicious code follows ***
 dr_iqloop:
 		.as: SEP #$20		; *** 8-bit shift *** eeeeeeeeeeeeeeek
-lda#'*':jsr$c0c2
+/*lda#'*':jsr$c0c2
 txa:clc:adc#'P'-1:jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 		ASL dr_aut		; extract MSB (will be A_POLL first, then A_REQ) eeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
@@ -1593,14 +1592,14 @@ dr_doreq:
 		BPL dr_iqloop
 ; *** end of suspicious code ***
 dr_ended:
-lda#'p':jsr$c0c2
+/*lda#'p':jsr$c0c2
 lda#'a':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 
 	LDY dr_id			; must return actual ID, as might be mutable!
-lda#'#':jsr$c0c2
+/*lda#'#':jsr$c0c2
 tya:sec:sbc#128:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 
 #ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
@@ -1612,10 +1611,10 @@ lda#10:jsr$c0c2
 #endif
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
-lda#'O':jsr$c0c2
+/*lda#'O':jsr$c0c2
 lda#'K':jsr$c0c2
 lda#'!':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 
 	_EXIT_OK				; if arrived here, did not fail initialisation
 
