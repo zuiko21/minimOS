@@ -224,6 +224,9 @@ lda#10:jsr$c0c2
 	STA str_pt			; set parameter
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
+.as:sep#$20
+jsr debug_device
+.al:rep#$20
 	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
 

@@ -1,11 +1,41 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171211-0852
+; last modified 20171211-0932
 
 ; assumes 8-bit sizes upon call...
 
 ; no way for standalone assembly, neither internal calls...
+.as:.xs
+
+debug_device:
+tya
+
+hex8:pha:lsr:lsr:lsr:lsr:jsr pinta8
+pla:pinta8:
+and#$0f:cmp#10:bcc numero8:adc#6:clc:
+numero8:adc#'0':jsr$c0c2:rts
+
+debug_blout:
+lda#'B':jsr$c0c2
+lda#'L':jsr$c0c2
+lda#'O':jsr$c0c2
+lda#'U':jsr$c0c2
+lda#'T':jsr$c0c2
+lda#10:jsr$c0c2
+rts
+
+debug_cout:
+lda#'>':jsr$c0c2
+lda#10:jsr$c0c2
+clc:rts
+
+debug_win:
+lda#'W':jsr$c0c2
+lda#'i':jsr$c0c2
+lda#'n':jsr$c0c2
+lda#10:jsr$c0c2
+rts
 
 ; ***************************************
 ; *** dummy function, not implemented ***
@@ -105,6 +135,9 @@ ci_signal:
 
 cout:
 	.as: .xs:
+_EXIT_OK
+/*jsr debug_cout
+
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
 	XBA			; switch to MSB
@@ -123,7 +156,7 @@ cout:
 ; set fixed size and proceed
 	LDA #1			; single byte
 	STA bl_siz		; set size
-	STZ bl_siz+1
+	STZ bl_siz+1*/
 ; ...and fall into BLOUT
 
 ; **************************
@@ -142,23 +175,25 @@ cout:
 
 blout:
 	.as: .xs:
+jsr debug_device
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
 	PLB					; set DBR! do not forget another PLB upon end! (4)
 ; ****** from 8-bit code MUST check pointer in case is in direct page!!! ******
 #ifdef	SUPPORT
-	LDX run_arch				; from 6502 code?
-	BEQ blo_24b				; no, nothing to correct
-		STZ bl_ptr+2				; 6502 always in bank zero
-		LDA bl_ptr+1				; check page
-		BNE blo_24b				; all OK
+	LDX run_arch		; from 6502 code?
+	BEQ blo_24b			; no, nothing to correct
+		STZ bl_ptr+2		; 6502 always in bank zero
+		LDA bl_ptr+1		; check page
+		BNE blo_24b			; all OK
 			TDC					; where is direct page?
 			XBA					; go for MSB (assume page-aligned!)
-			STA bl_ptr+1				; physical address
+			STA bl_ptr+1		; physical address
 blo_24b:
 #endif
 ; proceed
+//jsr debug_device
 	TYA					; update flags upon dev number (2)
 	BNE co_port			; not default (3/2)
 		LDY stdout			; new per-process standard device (3)
@@ -176,6 +211,7 @@ co_port:
 #endif
 ; *** virtual windows manager TO DO ***
 co_win:
+jsr debug_win
 		LDY #NO_RSRC		; not yet implemented ***placeholder***
 		BRA cio_abort		; restore DBR and notify error
 ; ** end of filesystem access **
@@ -780,10 +816,10 @@ uptime:
 
 b_exec:
 	.as: .xs:
-lda#'A':jsr$c0c2
+/*lda#'A':jsr$c0c2
 lda#'P':jsr$c0c2
 lda#'I':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 
 ; non-multitasking version
 #ifdef	SAFE
@@ -834,11 +870,11 @@ exec_st:
 	.as: .xs: SEP #$30	; default 8-bit launch!
 	CLI					; time to do it!
 ; assume the stack is already preloaded with SIGKILL address (or wrapper RTL above that)
-lda#'J':jsr$c0c2
+/*lda#'J':jsr$c0c2
 lda#'u':jsr$c0c2
 lda#'m':jsr$c0c2
 lda#'p':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 
 	JMP [ex_pt]			; forthcoming RTL will end via SIGKILL
 
@@ -1138,6 +1174,7 @@ ll_native:
 
 string:
 	.as: .xs:
+jsr debug_device
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816
@@ -1153,6 +1190,7 @@ string:
 			STA str_pt+1
 str_24b:
 #endif
+	PHY					; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 	LDY #0				; will be fully cleared...
 	.xl: REP #$10		; *** 16-bit indexes ***
 str_loop:
@@ -1162,6 +1200,7 @@ str_loop:
 		BRA str_loop
 str_end:
 	STY bl_siz			; simply store size! eeeeeeeeeeeeeeeeeeeeeeeeeek
+	PLY					; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 	.xs: SEP #$10		; *** does callend need standard index size??? ***
 	_KERNEL(BLOUT)		; and call block output (could be patched)
 	JMP cio_callend		; will return proper error
