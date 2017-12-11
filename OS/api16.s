@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171211-0957
+; last modified 20171211-1008
 
 ; assumes 8-bit sizes upon call...
 
@@ -142,9 +142,6 @@ ci_signal:
 
 cout:
 	.as: .xs:
-_EXIT_OK
-/*jsr debug_cout
-
 ; if every zp is page-aligned as recommended, use this code
 	TDC			; where is direct page?
 	XBA			; switch to MSB
@@ -163,7 +160,7 @@ _EXIT_OK
 ; set fixed size and proceed
 	LDA #1			; single byte
 	STA bl_siz		; set size
-	STZ bl_siz+1*/
+	STZ bl_siz+1
 ; ...and fall into BLOUT
 
 ; **************************
@@ -190,7 +187,7 @@ blout:
 #ifdef	SUPPORT
 	LDX run_arch		; from 6502 code?
 	BEQ blo_24b			; no, nothing to correct
-jsr debug_6502
+//jsr debug_6502
 		STZ bl_ptr+2		; 6502 always in bank zero
 		LDA bl_ptr+1		; check page
 		BNE blo_24b			; all OK
@@ -1210,8 +1207,10 @@ jsr debug_device
 str_24b:
 #endif
 	PHY					; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
-	LDY #0				; will be fully cleared...
 	.xl: REP #$10		; *** 16-bit indexes ***
+	LDY #0				; will be fully cleared...
+	LDX str_pt			; must transfer parameter!!!!!!!!!!!!!!!!!!
+	STX bl_ptr			; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 str_loop:
 		LDA [str_pt], Y		; check pointed char
 			BEQ str_end		; NULL terminates
