@@ -834,6 +834,12 @@ exec_st:
 	.as: .xs: SEP #$30	; default 8-bit launch!
 	CLI					; time to do it!
 ; assume the stack is already preloaded with SIGKILL address (or wrapper RTL above that)
+lda#'J':jsr$c0c2
+lda#'u':jsr$c0c2
+lda#'m':jsr$c0c2
+lda#'p':jsr$c0c2
+lda#10:jsr$c0c2
+
 	JMP [ex_pt]			; forthcoming RTL will end via SIGKILL
 
 ; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
@@ -879,6 +885,11 @@ sk_loop:				; *** this code valid for singletask 816 ***
 ; if none of the above, a single task system can only restart the shell!
 ; * make certain it arrives here in 8-bit memory mode *
 rst_shell:
+lda#'E':jsr$c0c2
+lda#'x':jsr$c0c2
+lda#'i':jsr$c0c2
+lda#'t':jsr$c0c2
+lda#10:jsr$c0c2
 	LDA #1				; standard stack page
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer LSB, not using SPTR

@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20171121-1026
+; last modified 20171211-0857
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -48,6 +48,12 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
+/*lda#'S':jsr$c0c2
+lda#'h':jsr$c0c2
+lda#'e':jsr$c0c2
+lda#'l':jsr$c0c2
+lda#'l':jsr$c0c2
+lda#10:jsr$c0c2*/
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -76,7 +82,6 @@ go_xsh:
 open_xsh:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
-
 ; *** begin things ***
 main_loop:
 		LDA #>prompt		; address of prompt message (currently fixed)
