@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS·16 0.6b5", 0	; version in comment
+	.asc	"minimOS-16 0.6b5", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -224,9 +224,6 @@ lda#10:jsr$c0c2
 	STA str_pt			; set parameter
 	STZ str_pt+2		; clear bank!
 	LDY #DEVICE			; eeeeeek
-.as:sep#$20
-jsr debug_device
-.al:rep#$20
 	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
 
@@ -292,7 +289,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS·16 0.6b6", 0	; version in comment
+	.asc	"minimOS-16 0.6b6", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6b3
+; v0.9.6b4
 ; *** new format for mOS 0.6 compatibility *** 16-bit version
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171128-1032
+; last modified 20171211-0955
 
 #include	"usual.h"
 .(
@@ -25,45 +25,48 @@
 debug_info:
 	.asc	"Console I/O driver for run65816 BBC simulator (16-bit), v0.9.6b3", 0
 
+	.as:.xs				; supposedly called from 8-bit sizes!
+
 ; *** output ***
 kow_bout:
+lda#'k':jsr$c0c2
+lda#'o':jsr$c0c2
+lda#'u':jsr$c0c2
+lda#'t':jsr$c0c2
+lda#10:jsr$c0c2
+; all checked, do block output!
+	.xl: REP #$10		; worth going 16-bit indexes!!!
+	LDY #0				; reset index
+	LDX bl_siz			; get full size, could also check for zero!
 #ifdef	SAFE
-	LDA bl_siz			; check size in case is zero
-	ORA bl_siz+1
 		BEQ kow_rts			; nothing to do then
 #endif
-	LDA bl_ptr+1		; save pointer MSB...
-	PHA					; ...in case it changes
-; all checked, do block output!
-	LDY #0				; reset index
+.al:rep#$20
+txa:jsr hex16
+lda#'@':jsr$c0c2
+lda bl_ptr:jsr hex16
+.as:sep#$20
 kow_cout:
-	LDA [bl_ptr], Y		; get char in case is control ***24-bit addressing
-	CMP #13				; carriage return?
-	BNE kow_ncr			; if so, should generate LF instead
-		LDA #10				; LF first (and only)
+		LDA [bl_ptr], Y		; get char in case is control ***24-bit addressing
+//jsr hex8
+		CMP #13				; carriage return?
+		BNE kow_ncr			; if so, should generate LF instead
+			LDA #10				; LF first (and only)
 kow_ncr:
-	JSR $c0c2			; print it
-	DEC bl_siz			; one less to go
-	BNE kow_blk			; go for next
-		LDA bl_siz+1		; are we done?
-			BEQ kow_end			; yeah!
-		DEC bl_siz+1		; or one page less
-kow_blk:
-	INY					; point to next
-	BNE kow_cout		; did not wrap EEEEEEEEEK
-		INC bl_ptr+1		; or update MSB
-		BRA kow_cout		; and continue EEEEEEEEEEEK
+		JSR $c0c2			; print it
+		INY					; go for next
+		DEX					; one less to go
+		BNE kow_cout		; repeat until end
 kow_end:
-	PLA					; retrieve saved MSB
-	STA bl_ptr+1		; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+	STX bl_siz				; update remaining size!
 kow_rts:
 	_DR_OK
 
 ; *** input *** will only get one!
 kow_blin:
+	.xl: REP #$10		; worth going 16-bit indexes!!!
+	LDX bl_siz			; get full size, could also check for zero!
 #ifdef	SAFE
-	LDA bl_siz			; check size in case is zero
-	ORA bl_siz+1
 		BEQ kow_rts			; nothing to do then
 #endif
 	JSR $c0bf			; will this work???
@@ -73,16 +76,13 @@ kow_blin:
 			LDA #CR				; or convert to CR
 kow_emit:
 		STA [bl_ptr]		; store result otherwise ***24-bit addressing
-		DEC bl_siz			; one less
-		LDA bl_siz
-		CMP #$FF			; will it wrap?
-		BNE kow_rts			; not
-			LDA bl_siz+1		; any more?
-		BEQ kow_rts			; not, just finished!
-			DEC bl_siz+1		; or update MSB
+		DEX					; one less
+		STX bl_siz			; easier to update parameter
 		_DR_OK				; perhaps some special error code...
 ;kow_empty:
 ;	DR_ERR(EMPTY)		; nothing yet
 kow_err:
 	_DR_ERR(UNAVAIL)
+
+	.as:.xs				; make sure everything else assembles OK!
 .)
