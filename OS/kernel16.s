@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171211-0833
+; last modified 20171211-0849
 
 ; just in case
 #define		C816	_C816
@@ -238,13 +238,25 @@ sh_exec:
 	LDX shell-254		; get ACTUAL CPU type from executable header!
 #endif
 	STX cpu_ll			; architecture parameter
-	STZ ex_pt+2			; 24-bit addressing for forthcoming EXEC
 	.al: REP #$20		; will be needed anyway upon restart
 	LDA #shell			; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
+	STZ ex_pt+2			; 24-bit addressing for forthcoming EXEC
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
+lda#'F':jsr$c0c2
+lda#'o':jsr$c0c2
+lda#'r':jsr$c0c2
+lda#'k':jsr$c0c2
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
+tya:clc:adc#'0':jsr$c0c2
+lda#10:jsr$c0c2
+lda#'E':jsr$c0c2
+lda#'x':jsr$c0c2
+lda#'e':jsr$c0c2
+lda#'c':jsr$c0c2
+lda ex_pt:jsr hex16
+lda#10:jsr$c0c2
 	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
@@ -277,7 +289,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS·16 0.6b5", 0	; version in comment
+	.asc	"minimOS·16 0.6b6", 0	; version in comment
 #endif
 
 kern_end:		; for size computation

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b7, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171211-0836
+; last modified 20171211-0852
 
 ; assumes 8-bit sizes upon call...
 
@@ -780,6 +780,11 @@ uptime:
 
 b_exec:
 	.as: .xs:
+lda#'A':jsr$c0c2
+lda#'P':jsr$c0c2
+lda#'I':jsr$c0c2
+lda#10:jsr$c0c2
+
 ; non-multitasking version
 #ifdef	SAFE
 	TYA					; should be system reserved PID, best way
