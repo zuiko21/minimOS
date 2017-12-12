@@ -2,7 +2,7 @@
 ; v0.9.6b4
 ; *** new format for mOS 0.6 compatibility *** 16-bit version
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171212-1054
+; last modified 20171212-1103
 
 #include	"usual.h"
 .(
@@ -29,11 +29,6 @@ debug_info:
 
 ; *** output ***
 kow_bout:
-/*lda#'k':jsr$c0c2
-lda#'o':jsr$c0c2
-lda#'u':jsr$c0c2
-lda#'t':jsr$c0c2
-lda#10:jsr$c0c2*/
 ; all checked, do block output!
 	.xl: REP #$10		; worth going 16-bit indexes!!!
 	LDY #0				; reset index
@@ -41,11 +36,6 @@ lda#10:jsr$c0c2*/
 #ifdef	SAFE
 		BEQ kow_rts			; nothing to do then
 #endif
-/*.al:rep#$20
-txa:jsr hex16
-lda#'@':jsr$c0c2
-lda bl_ptr:jsr hex16
-.as:sep#$20*/
 kow_cout:
 		LDA [bl_ptr], Y		; get char in case is control ***24-bit addressing
 		CMP #13				; carriage return?

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171212-0955
+; last modified 20171212-1058
 
 ; just in case
 #define		C816	_C816
@@ -163,25 +163,11 @@ dr_spars:
 dr_loop:
 		PHX					; keep current value (3)
 ; first create a pointer to it
-/*lda#'x':jsr$c0c2
-txa:and#$ff:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2*/
 		LDA drvrs_ad, X		; get full address (5)
 			BEQ dr_ok			; cannot be zero, all done otherwise
 		STA da_ptr			; store full pointer (4)
 ; *** call new API function ***
 		_KERNEL(DR_INST)	; try to install this driver
-/*lda#'H':jsr$c0c2
-lda#'e':jsr$c0c2
-lda#'r':jsr$c0c2
-lda#'e':jsr$c0c2
-lda#10:jsr$c0c2
-bcc drsucc
-lda#'!':jsr$c0c2
-newline:lda#10:jsr$c0c2
-bra gonext
-drsucc:lda#'$':jsr$c0c2:bra newline
-gonext:*/
 
 ; *** prepare for next driver ***
 ; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
@@ -201,10 +187,6 @@ dr_error:
 ; *** drivers already installed, clean up things and finish booting ***
 ; *********************************************************************
 dr_ok:					; *** all drivers inited ***
-/*lda#'D':jsr$c0c2
-lda#'u':jsr$c0c2
-lda#'h':jsr$c0c2
-lda#10:jsr$c0c2*/
 	PLX					; discard stored X, beware of 16-bit memory!
 
 ; **********************************
@@ -244,19 +226,7 @@ sh_exec:
 	STZ ex_pt+2			; 24-bit addressing for forthcoming EXEC
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
-lda#'F':jsr$c0c2
-lda#'o':jsr$c0c2
-lda#'r':jsr$c0c2
-lda#'k':jsr$c0c2
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
-tya:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
-lda#'E':jsr$c0c2
-lda#'x':jsr$c0c2
-lda#'e':jsr$c0c2
-lda#'c':jsr$c0c2
-lda ex_pt:jsr hex16
-lda#10:jsr$c0c2
 	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!

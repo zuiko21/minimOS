@@ -1,49 +1,13 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171212-1001
+; last modified 20171212-1102
 
 ; assumes 8-bit sizes upon call...
 
 ; no way for standalone assembly, neither internal calls...
 .as:.xs
 
-debug_device:
-tya
-
-hex8:pha:lsr:lsr:lsr:lsr:jsr pinta8
-pla:pinta8:
-and#$0f:cmp#10:bcc numero8:adc#6:clc:
-numero8:adc#'0':jsr$c0c2:rts
-
-debug_blout:
-lda#'B':jsr$c0c2
-lda#'L':jsr$c0c2
-lda#'O':jsr$c0c2
-lda#'U':jsr$c0c2
-lda#'T':jsr$c0c2
-lda#10:jsr$c0c2
-rts
-
-debug_cout:
-lda#'>':jsr$c0c2
-lda#10:jsr$c0c2
-clc:rts
-
-debug_win:
-lda#'W':jsr$c0c2
-lda#'i':jsr$c0c2
-lda#'n':jsr$c0c2
-lda#10:jsr$c0c2
-rts
-
-debug_6502:
-lda#'6':jsr$c0c2
-lda#'5':jsr$c0c2
-lda#'0':jsr$c0c2
-lda#'2':jsr$c0c2
-lda#10:jsr$c0c2
-rts
 ; ***************************************
 ; *** dummy function, not implemented ***
 ; ***************************************
@@ -246,15 +210,10 @@ cio_abort:
 
 ; *** continue ***
 co_phys:
-/*lda#'=':jsr$c0c2
-jsr debug_device*/
 ; arrived here with dev # in Y!
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-/*lda#'[':jsr$c0c2
-txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2*/
 ; newly computed index is stored as usual
 	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
@@ -270,9 +229,6 @@ co_lckd:
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper sparse physdev index in X
-/*.al:rep#$20
-lda drv_opt,x:jsr hex16
-.as:sep#$20*/
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 	.as:.xs: SEP #$30	; *** please make sure we are back in 8-bit sizes ***
 ; ...and then into cio_unlock
@@ -347,9 +303,6 @@ ci_port:
 ;	ASL					; convert to proper physdev index (2)
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-/*lda#'(':jsr$c0c2
-txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2*/
 ; newly computed index is stored as usual
 	STX iol_dev			; keep sparse physdev temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
@@ -375,7 +328,6 @@ ci_lckdd:
 		JSR (drv_ipt, X)	; direct CALL!!!
 		.as:.xs: SEP #$30	; *** please make sure we are back in 8-bit sizes ***
 			BCS cio_unlock		; clear MUTEX and return whatever error!
-
 ci_nph:
 	CPY #64				; first file-dev??? ***
 		BCC ci_win			; below that, should be window manager
@@ -830,11 +782,6 @@ uptime:
 
 b_exec:
 	.as: .xs:
-/*lda#'A':jsr$c0c2
-lda#'P':jsr$c0c2
-lda#'I':jsr$c0c2
-lda#10:jsr$c0c2*/
-
 ; non-multitasking version
 #ifdef	SAFE
 	TYA					; should be system reserved PID, best way
@@ -884,12 +831,6 @@ exec_st:
 	.as: .xs: SEP #$30	; default 8-bit launch!
 	CLI					; time to do it!
 ; assume the stack is already preloaded with SIGKILL address (or wrapper RTL above that)
-/*lda#'J':jsr$c0c2
-lda#'u':jsr$c0c2
-lda#'m':jsr$c0c2
-lda#'p':jsr$c0c2
-lda#10:jsr$c0c2*/
-
 	JMP [ex_pt]			; forthcoming RTL will end via SIGKILL
 
 ; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
@@ -935,11 +876,6 @@ sk_loop:				; *** this code valid for singletask 816 ***
 ; if none of the above, a single task system can only restart the shell!
 ; * make certain it arrives here in 8-bit memory mode *
 rst_shell:
-/*lda#'E':jsr$c0c2
-lda#'x':jsr$c0c2
-lda#'i':jsr$c0c2
-lda#'t':jsr$c0c2
-lda#10:jsr$c0c2*/
 	LDA #1				; standard stack page
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer LSB, not using SPTR
@@ -1454,9 +1390,6 @@ dr_inst:
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeeek
 	PHK					; zero...
 	PLB					; ...is the bank!
-/*lda#'I':jsr$c0c2
-lda#'D':jsr$c0c2
-lda#10:jsr$c0c2*/
 ; minimOS•16 API defaults to 8 bit sizes
 ; get some info from header
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
@@ -1510,9 +1443,6 @@ dr_busy:
 ; already in use, function should return BUSY error code
 		JMP dr_babort		; already in use (3)
 dr_empty:
-/*lda#'>':jsr$c0c2
-txa:sec:sbc#128:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2*/
 	STX dr_id			; keep updated ID
 
 #ifndef		MUTABLE
@@ -1535,9 +1465,6 @@ dr_chk:
 dr_ntsk:
 		DEX					; check next feature (2)
 		BNE dr_chk			; zero included (3/2) ***BNE works on 8-bit, but does NOT check A_REQ! should be BPL...
-/*lda#'Q':jsr$c0c2
-lda#'u':jsr$c0c2
-lda#10:jsr$c0c2*/
 
 ; * 3) if arrived here, it is possible to install, but run init code to confirm *
 	.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)
@@ -1548,9 +1475,6 @@ lda#10:jsr$c0c2*/
 		JMP dr_uabort		; no way, forget about this (2/3)
 dr_isuc:
 ; if arrived here, it is OK to install the driver!
-/*lda#'O':jsr$c0c2
-lda#'k':jsr$c0c2
-lda#10:jsr$c0c2*/
 
 ; all checked OK, do actual driver installation!
 ; *** now adapted for new sparse arrays! ***
@@ -1570,10 +1494,6 @@ dr_sarr:
 	TXA					; alas, no STX abs,Y (2)
 	STA dr_ind-128, Y	; store sparse index (4)
 ; proper index already in X and A
-
-/*lda#'[':jsr$c0c2
-txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2*/
 	.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
 
 ; * 4) Set I/O pointers *
@@ -1581,20 +1501,10 @@ lda#10:jsr$c0c2*/
 ; thus not worth a loop...
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-/*jsr hex16
-lda#58:jsr$c0c2
-lda#10:jsr$c0c2*/
 	STA drv_ipt, X		; store full pointer in table (5)
 	LDY #D_BOUT			; offset for output routine (2)
 	LDA (da_ptr), Y		; get full address (6)
 	STA drv_opt, X		; store full pointer in table (5)
-/*jsr hex16
-lda#'I':jsr$c0c2
-lda#'/':jsr$c0c2
-lda#'O':jsr$c0c2
-lda#'[':jsr$c0c2
-txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2*/
 
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...
@@ -1613,18 +1523,10 @@ lda#10:jsr$c0c2*/
 ; *** suspicious code follows ***
 dr_iqloop:
 		.as: SEP #$20		; *** 8-bit shift *** eeeeeeeeeeeeeeek
-/*lda#'*':jsr$c0c2
-txa:clc:adc#'P'-1:jsr$c0c2
-lda#10:jsr$c0c2*/
 		ASL dr_aut		; extract MSB (will be A_POLL first, then A_REQ) eeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
-lda#'+':jsr$c0c2
-lda#10:jsr$c0c2
 			LDY queue_mx, X		; get index of free entry, will stay!
-lda#'(':jsr$c0c2
-tya:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
 			INC queue_mx, X		; add another task in queue
 			INC queue_mx, X		; pointer takes two bytes
 ; install entry into queue
@@ -1662,18 +1564,10 @@ dr_doreq:
 		BPL dr_iqloop
 ; *** end of suspicious code ***
 dr_ended:
-/*lda#'p':jsr$c0c2
-lda#'a':jsr$c0c2
-lda#10:jsr$c0c2*/
-
 	LDY dr_id			; must return actual ID, as might be mutable!
-/*lda#'#':jsr$c0c2
-tya:sec:sbc#128:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2*/
-
 #ifdef	MUTABLE
 ; ****** as all was OK, include this driver address into new array, at actually assigned ID
-.al:rep#$20
+	.al: REP #$20
 	LDX dr_ind-128, Y	; convert to sparse index!
 	LDA da_ptr			; get header pointer, we were in 16-bit A (4)
 	STA drv_ads, X		; store in proper entry (5)
@@ -1681,39 +1575,21 @@ lda#10:jsr$c0c2*/
 #endif
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
-/*lda#'O':jsr$c0c2
-lda#'K':jsr$c0c2
-lda#'!':jsr$c0c2
-lda#10:jsr$c0c2*/
-
 	_EXIT_OK				; if arrived here, did not fail initialisation
 
-hex16:pha:xba:jsr pintahex:pla:pha:jsr pintahex:pla:rts
-pintahex:pha:lsr:lsr:lsr:lsr:jsr pinta
-pla:pinta:
-and#$0f:cmp#10:bcc numero:adc#6:clc:
-numero:adc#'0':jsr$c0c2:rts
 ; **********************
 ; *** error handling ***
 ; **********************
 dr_iabort:
-lda#'i':jsr$c0c2
-lda#10:jsr$c0c2
 	LDY #INVALID		; logical devices cannot be installed
 	BRA dr_abort
 dr_fabort:
-lda#'f':jsr$c0c2
-lda#10:jsr$c0c2
 	LDY #FULL		; no room on queue
 	BRA dr_abort
 dr_babort:
-lda#'b':jsr$c0c2
-lda#10:jsr$c0c2
 	LDY #BUSY		; ID already in use
 	BRA dr_abort
 dr_uabort:
-lda#'u':jsr$c0c2
-lda#10:jsr$c0c2
 	LDY #UNAVAIL		; init failed
 dr_abort:
 	PLB					; *** make sure apps can call this from anywhere ***
