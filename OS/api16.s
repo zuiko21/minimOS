@@ -187,7 +187,6 @@ blout:
 #ifdef	SUPPORT
 	LDX run_arch		; from 6502 code?
 	BEQ blo_24b			; no, nothing to correct
-//jsr debug_6502
 		STZ bl_ptr+2		; 6502 always in bank zero
 		LDA bl_ptr+1		; check page
 		BNE blo_24b			; all OK
@@ -214,7 +213,6 @@ co_port:
 #endif
 ; *** virtual windows manager TO DO ***
 co_win:
-jsr debug_win
 		LDY #NO_RSRC		; not yet implemented ***placeholder***
 		BRA cio_abort		; restore DBR and notify error
 ; ** end of filesystem access **
@@ -349,9 +347,9 @@ ci_port:
 ;	ASL					; convert to proper physdev index (2)
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-lda#'(':jsr$c0c2
+/*lda#'(':jsr$c0c2
 txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 ; newly computed index is stored as usual
 	STX iol_dev			; keep sparse physdev temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
@@ -937,11 +935,11 @@ sk_loop:				; *** this code valid for singletask 816 ***
 ; if none of the above, a single task system can only restart the shell!
 ; * make certain it arrives here in 8-bit memory mode *
 rst_shell:
-lda#'E':jsr$c0c2
+/*lda#'E':jsr$c0c2
 lda#'x':jsr$c0c2
 lda#'i':jsr$c0c2
 lda#'t':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 	LDA #1				; standard stack page
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer LSB, not using SPTR
@@ -1190,7 +1188,6 @@ ll_native:
 
 string:
 	.as: .xs:
-//jsr debug_device
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816
@@ -1218,7 +1215,7 @@ str_loop:
 		BRA str_loop
 str_end:
 	STY bl_siz			; simply store size! eeeeeeeeeeeeeeeeeeeeeeeeeek
-	.xs: SEP #$10		; *** does callend need standard index size??? ***
+	.xs: SEP #$10		; *** stack pull needs standard index size ***
 	PLY					; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek^2
 	_KERNEL(BLOUT)		; and call block output (could be patched)
 	JMP cio_callend		; will return proper error
