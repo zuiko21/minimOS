@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171212-1102
+; last modified 20171212-1111
 
 ; assumes 8-bit sizes upon call...
 
@@ -1143,7 +1143,9 @@ str_24b:
 	LDY #0				; will be fully cleared...
 	.xl: REP #$10		; *** 16-bit indexes ***
 	LDX str_pt			; must transfer parameter!!!!!!!!!!!!!!!!!!
+	LDA str_pt+2		; and bank too eeeeeeeeeeeeeeeeeek
 	STX bl_ptr			; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+	STA bl_ptr+2		; eeeeeeeeeeeeeeeeek
 str_loop:
 		LDA [str_pt], Y		; check pointed char
 			BEQ str_end		; NULL terminates
