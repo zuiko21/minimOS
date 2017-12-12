@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171211-1010
+; last modified 20171212-0955
 
 ; just in case
 #define		C816	_C816
@@ -201,10 +201,10 @@ dr_error:
 ; *** drivers already installed, clean up things and finish booting ***
 ; *********************************************************************
 dr_ok:					; *** all drivers inited ***
-lda#'D':jsr$c0c2
+/*lda#'D':jsr$c0c2
 lda#'u':jsr$c0c2
 lda#'h':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 	PLX					; discard stored X, beware of 16-bit memory!
 
 ; **********************************

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6b7, should match kernel16.s
+; v0.6b8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171211-1008
+; last modified 20171212-1001
 
 ; assumes 8-bit sizes upon call...
 
@@ -248,15 +248,15 @@ cio_abort:
 
 ; *** continue ***
 co_phys:
-lda#'=':jsr$c0c2
-jsr debug_device
+/*lda#'=':jsr$c0c2
+jsr debug_device*/
 ; arrived here with dev # in Y!
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-lda#'[':jsr$c0c2
+/*lda#'[':jsr$c0c2
 txa:clc:adc#'0':jsr$c0c2
-lda#10:jsr$c0c2
+lda#10:jsr$c0c2*/
 ; newly computed index is stored as usual
 	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
@@ -272,9 +272,9 @@ co_lckd:
 	STA cio_lock, X		; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper sparse physdev index in X
-.al:rep#$20
+/*.al:rep#$20
 lda drv_opt,x:jsr hex16
-.as:sep#$20
+.as:sep#$20*/
 	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 	.as:.xs: SEP #$30	; *** please make sure we are back in 8-bit sizes ***
 ; ...and then into cio_unlock
@@ -1190,7 +1190,7 @@ ll_native:
 
 string:
 	.as: .xs:
-jsr debug_device
+//jsr debug_device
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816
@@ -1207,8 +1207,8 @@ jsr debug_device
 str_24b:
 #endif
 	PHY					; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
-	.xl: REP #$10		; *** 16-bit indexes ***
 	LDY #0				; will be fully cleared...
+	.xl: REP #$10		; *** 16-bit indexes ***
 	LDX str_pt			; must transfer parameter!!!!!!!!!!!!!!!!!!
 	STX bl_ptr			; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 str_loop:
@@ -1218,8 +1218,8 @@ str_loop:
 		BRA str_loop
 str_end:
 	STY bl_siz			; simply store size! eeeeeeeeeeeeeeeeeeeeeeeeeek
-	PLY					; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 	.xs: SEP #$10		; *** does callend need standard index size??? ***
+	PLY					; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek^2
 	_KERNEL(BLOUT)		; and call block output (could be patched)
 	JMP cio_callend		; will return proper error
 
