@@ -1,60 +1,79 @@
-unsigned char	a, x, y;
-unsigned char	ram[16384];
+/* ********************************************************
+ * ** Verificación de memoria en minimOS 0.4 (sobre SDd) **
+ * ********** última modificación: 20171212-0952 **********
+ * ******************************************************** */
 
-err_code	mem_test(void) {
-	int		ptr;				/* actually stored at ram[Z_USED] */
+/* ***** declaración de constantes ***** */
+/* offset en página cero usado como puntero indirecto */
+#define	Z_USED		2
 
-	ram[Z_USED]		= 0x55;		/* try pointer address first */
+/* código de error cuando la función acaba exitosamente */
+#define	EXIT_OK		0
+
+/* código de error si hay algún fallo en la RAM (haría PANIC en la práctica, valor irrelevante) */
+#define	RAM_FAIL	1
+
+/* ***** globales para memoria y registros 6502 ***** */
+unsigned char	a, x, y;		/* registros del 6502 */
+unsigned char	ram[16384];		/* 16 kiB RAM emulados */
+
+/* *********************************************************************************
+ * ***** función para verificar la RAM, devuelve constante con código de error *****
+ * ********************************************************************************* */
+int	mem_test(void) {
+	int		ptr;				/* en realidad se encuentra en ram[Z_USED] (16 bits) */
+
+	ram[Z_USED]		= 0x55;		/* verificar antes la ubicación del puntero */
 	ram[Z_USED+1]	= 0xAA;
-	a = ram[Z_USED];			/* get first value */
-	if (a != 0x55)	{			/* if not as expected, abort */
+	a = ram[Z_USED];			/* valor escrito en el LSB */
+	if (a != 0x55)	{			/* si no es el esperado, abortar */
 		return RAM_FAIL;
 	}
-	a = a ^ ram[Z_USED+1];		/* XOR between both values should be all ones */
-	a++;						/* plus one, must be all zeroes */
-	if (a) {					/* otherwise, it's bad! */
+	a = a ^ ram[Z_USED+1];		/* XOR de ambos bytes debe salir todo unos */
+	a++;						/* sumando uno, pasa a ser todo ceros */
+	if (a) {					/* ¡de lo contrario, imposible seguir! */
 		return RAM_FAIL;
 	}
-	y = 4:						/* safe offset for I/O hardware */
-	ptr = 0;					/* reset pointer */
-	a = 0x55;					/* initial value */
+	y = 4:						/* offset adecuado para el hardware E/S */
+	ptr = 0;					/* iniciar puntero */
+	a = 0x55;					/* valor inicial a escribir */
 	do {
-		ram[ptr+y] = a;			/* store it */
-		if (a != ram[ptr+y]) {	/* if different... */
-			break;				/* ...most likely outside decoded RAM */
+		ram[ptr+y] = a;			/* almacena el valor */
+		if (a != ram[ptr+y]) {	/* si es diferente... */
+			break;				/* ...puede que estemos fuera de la RAM */
 		}
-		a = a ^ 0xFF;			/* invert bits */
-		if (a >= 0x80) {		/* negative? */
-			continue;			/* if so, try once more */
+		a = a ^ 0xFF;			/* invertir los bits */
+		if (a >= 0x80) {		/* ¿es ahora negativo? */
+			continue;			/* en tal caso, repetir una vez más */
 		}
-		ptr = ptr + 256;		/* next page */
-	} while (ptr < 16384);		/* absolute RAM limit */
-	x = ptr / 256;				/* get current page number */
+		ptr = ptr + 256;		/* siguiente página */
+	} while (ptr < 16384);		/* límite absoluto de RAM */
+	x = ptr / 256;				/* número de página actual */
 	do {
-		ptr = ptr - 256;		/* previous page */
-		a = ptr / 256			/* get page number... */
-		ram[ptr+y] = a;			/* ...and store it */
-	} while (a);
-	x--;
-	ptr = ptr%256 | x*256			/* update MSB */
-	a = ram[ptr+y];
+		ptr = ptr - 256;		/* página previa */
+		a = ptr / 256			/* obtener número de página y almacenarlo */
+		ram[ptr+y] = a;
+	} while (a);				/* hasta llegar a la página cero */
+	x--;						/* X apunta a la última página */
+	ptr = ptr%256 | x*256		/* corrige MSB del puntero asignándole X */
+	a = ram[ptr+y];				/* leer el byte almacenado en esa página, es el número más alto de página */
 	himem = ++a;
-	x = 0xFF;
+	x = 0xFF;					/* nuevos valores iniciales para probar la página cero */
 	a = 0;
 	do {
-		ram[x--] = a--;
-	} while (a);
-	x = ram[0xFF];
-	if (x) {
+		ram[x--] = a--;			/* ir escribiendo una cuenta descendente (0, 255, 254...) empezando por arriba */
+	} while (a);				/* A es 0 cuando se haya hecho toda la página cero */
+	x = ram[0xFF];				/* lee el byte escrito en el último byte de la página */
+	if (x) {					/* si no es cero, hay mirroring, sólo 128 bytes de RAM */
 		himem = 0;
 	}
-	a = x--;
+	a = x--;					/* A contendrá el número de bytes, X apuntará al último byte */
 	do {
-		if (a-- != ram[x--]) {
+		if (a-- != ram[x--]) {	/* si algún valor escrito no coincide con el esperado, hay un problema */
 			return RAM_FAIL;
 		}
-	} while (a);
+	} while (a);				/* comprobar hasta agotar todos los bytes */
 
-	return EXIT_OK;
+	return EXIT_OK;				/* si llegó aquí, todo CORRECTO */
 }
 
