@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6b1
+; v0.6b2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171112-1649
+; last modified 20171213-1259
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -176,5 +176,6 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; *******************************************
 #ifdef	C816
 #include "shell/miniMoDA16.s"
+.as:.xs
 #include "../apps/pmap16.s"
 #endif
