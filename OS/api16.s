@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171212-1111
+; last modified 20171213-1353
 
 ; assumes 8-bit sizes upon call...
 
@@ -876,6 +876,7 @@ sk_loop:				; *** this code valid for singletask 816 ***
 ; if none of the above, a single task system can only restart the shell!
 ; * make certain it arrives here in 8-bit memory mode *
 rst_shell:
+	.as: .xs: SEP #$30	; *** all 8-bit ***
 	LDA #1				; standard stack page
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer LSB, not using SPTR

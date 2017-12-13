@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b11
-; last modified 20171213-1306
+; last modified 20171213-1336
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -201,7 +201,7 @@ pmap_tab:
 
 ; *** useful routines ***
 
-;	.al: xl		; as these will be called in 16-bit mode
+	.al: xl		; as these will be called in 16-bit mode
 
 ; ** these will go into a pseudolibrary **
 ; * print binary in A as two hex ciphers *
