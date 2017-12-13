@@ -1,9 +1,10 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b10
-; last modified 20170308-0933
+; v0.5.1b11
+; last modified 20171213-1306
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
+.as: .xs:				; eeeeeeeeeeeeeek
 .(
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####

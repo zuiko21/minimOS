@@ -1,11 +1,13 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.6a2
-; last modified 20170930-1916
+; v0.6b1
+; last modified 20171213-1305
 ; (c) 2016-2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
 #include "usual.h"
+
+.as:.xs
 
 .(
 ; *** uncomment for wide (80-char?) displays ***
@@ -1704,3 +1706,5 @@ da_oclist:
 #include "shell/data/opcodes16.s"
 mmd_end:					; size computation
 .)
+
+.as:.xs

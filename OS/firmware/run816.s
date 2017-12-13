@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6b3
+; v0.9.6b4
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171205-0930
+; last modified 20171213-1308
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -40,6 +40,9 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 ; ****** cold restart ******
 ; **************************
 ; **************************
+
+.as:.xs
+
 ; basic init
 reset:
 	SEI					; cold boot (2) not needed for simulator?
@@ -558,6 +561,8 @@ irq:
 panic_loop:
 	BRA panic_loop		; OK as this is 65816 only
 	NOP					; padding for reserved C816 vectors
+
+.as:.xs
 
 ; *** 65C816 ROM vectors ***
 * = $FFE4				; should be already at it
