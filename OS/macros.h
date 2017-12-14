@@ -1,6 +1,6 @@
-; minimOS 0.6rc1 MACRO definitions
+; minimOS 0.6rc2 MACRO definitions
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20170810-1255
+; last modified 20171214-1433
 
 ; *** standard addresses ***
 
@@ -31,8 +31,8 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #ifndef	C816
 #define		_KERNEL(a)		LDX #a: JSR kerncall
 #else
-; new COP signature as per WDC reccomendations, CLC now into firmware!
-#define		_KERNEL(a)		LDX #a: COP #$7F
+; new COP signature as per WDC reccomendations, CLC cannot be into firmware!
+#define		_KERNEL(a)		LDX #a: CLC: COP #$7F
 #endif
 
 ; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings! note pre-CLC

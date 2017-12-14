@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a16
+; v0.9.6a17
 ; (c)2017 Carlos J. Santisteban
-; last modified 20170823-2047
+; last modified 20171214-1434
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -654,7 +654,6 @@ fw_mname:
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
-	CLC					; pre-clear carry HERE
 	.as: .xs: SEP #$30		; default sizes!
 	JMP (fw_table, X)		; the old fashioned way
 
@@ -685,6 +684,7 @@ led_loop:
 
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
 * = kerncall
+	CLC				; must be here!
 	COP #$7F			; wrapper on 816 firmware, will do CLC!
 	RTS					; return to caller
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***

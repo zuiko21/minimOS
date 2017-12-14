@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.5.1a4
+; v0.6a1
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170116-0958
+; last modified 20171214-1438
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -328,6 +328,7 @@ brk_hndl:		; label from vector list
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
+	.as: .xs: SEP #$30
 	JMP (fw_table, X)		; the old fashioned way
 
 ; filling for ready-to-blow ROM
