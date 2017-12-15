@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6b2
+; v0.6b3
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171213-1259
+; last modified 20171215-2058
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -84,7 +84,7 @@ drv_size = drv_end - drv_file - $100	; exclude header
 	.word	0
 #endif
 ; ### end of minimOS header ###
-
+.as:.xs
 ; after header goes the binary blob
 #include "drivers/config/DRIVER_PACK.s"
 drv_end:		; for easier size computation
@@ -93,6 +93,7 @@ drv_end:		; for easier size computation
 ; *** include rest of the supplied software ***
 ; *********************************************
 ; with their own headers, these must be page aligned!!!
+.as:.xs
 #include "../apps/ls.s"
 
 ; select specific pmap version according to architecture!
@@ -100,6 +101,8 @@ drv_end:		; for easier size computation
 #ifndef		LOWRAM
 #include "../apps/pmap.s"
 #endif
+#else
+#include "../apps/pmap16.s"
 #endif
 
 #include "../apps/lined.s"
@@ -177,5 +180,5 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 #ifdef	C816
 #include "shell/miniMoDA16.s"
 .as:.xs
-#include "../apps/pmap16.s"
+;#include "../apps/pmap16.s"
 #endif
