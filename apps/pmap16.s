@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b12
-; last modified 20171218-0842
+; v0.5.1b13
+; last modified 20171218-0905
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -61,6 +61,14 @@ go_pmap:
 ; will not use iodev as will work on default device
 ; ##### end of minimOS specific stuff #####
 
+; as this will access tons of kernel data, must set DBR to zero... or use long addressing
+; maybe it is worth switching X and Y so long,X addressing could be used!
+; while we are in 8-bit mode...
+	LDA #0				; will operate on bank zero eeeeeeeeeeek
+	PHA					; zero on stack
+	PLB					; working on bank zero data eeeeeeeeeeeek
+; back to regular stuff
+
 	.al: .xl: REP #$30	; *** full 16-bit ***
 	LDA #splash & $FFFF	; address of splash message (plus column header)
 	JSR prnStrW & $FFFF			; print the string!
@@ -74,7 +82,7 @@ pmap_loop:
 		LDX #'$'			; print hex radix
 		JSR prnCharW & $FFFF
 		LDY current			; retrieve index
-		LDA ram_stat, Y		; check status of this
+		LDA ram_stat, Y		; check status of this (gets PID too)
 		AND #$0006			; danger! it is a 16-bit number!
 		PHA					; will use as index later
 		LDA ram_pos, Y		; get this block address
