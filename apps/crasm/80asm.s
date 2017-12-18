@@ -1,7 +1,7 @@
 ; 8080/8085 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5.1b1
-; last modified 20170829-1418
+; v0.5.1b2
+; last modified 20171218-0912
 ; (c) 2017 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -91,8 +91,8 @@ go_da:
 	JSR $FFFF &  prnStr			; print the string!
 
 ; preset ptr to a safe area
-	LDX #>user_sram		; beginning of available ram, as defined... in rom.s
-	LDY #<user_sram		; LSB misaligned?
+	LDX #>user_ram		; beginning of available ram, as defined... in rom.s
+	LDY #<user_ram		; LSB misaligned?
 	BEQ ptr_init		; nothing to align
 		INX					; otherwise start at next page
 ptr_init:

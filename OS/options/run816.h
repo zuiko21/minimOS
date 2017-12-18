@@ -2,7 +2,7 @@
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
 ; (c) 2017 Carlos J. Santisteban
-; last modified 20171123-1424
+; last modified 20171218-0910
 
 ; *** set conditional assembly ***
 
@@ -107,5 +107,5 @@ SS_SPEED =	30		; 15625 bps @ 1 MHz
 ; could be PHI2/31250-2
 
 ; ** speed code in fixed-point format, new 20150129 **
-SPEED_CODE =	$20		; 1 MHz system
+SPD_CODE =	$20		; 1 MHz system
 ; could be computed as PHI2*16/1000000

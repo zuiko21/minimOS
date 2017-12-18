@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6b4
+; v0.9.6b5
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171213-1308
+; last modified 20171218-0911
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -253,7 +253,7 @@ fw_gestalt:
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
 	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4+3)
-	LDX #SPEED_CODE		; speed code as determined in options.h (2+3)
+	LDX #SPD_CODE		; speed code as determined in options.h (2+3)
 	STY cpu_ll			; set outputs
 	STX c_speed
 	LDY himem			; get pages of kernel SRAM (4) ????
