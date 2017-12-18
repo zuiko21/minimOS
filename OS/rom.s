@@ -102,7 +102,7 @@ drv_end:		; for easier size computation
 #include "../apps/pmap.s"
 #endif
 #else
-#include "../apps/pmap16.s"
+;#include "../apps/pmap16.s"
 #endif
 
 #include "../apps/lined.s"
@@ -180,5 +180,5 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 #ifdef	C816
 #include "shell/miniMoDA16.s"
 .as:.xs
-;#include "../apps/pmap16.s"
+#include "../apps/pmap16.s"
 #endif

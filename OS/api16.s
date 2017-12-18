@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6b8, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171213-1353
+; last modified 20171218-0836
 
 ; assumes 8-bit sizes upon call...
 
@@ -1795,3 +1795,5 @@ k_vec:
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
 #endif
+
+.as:.xs					; just in case, for 8-bit ROM software
