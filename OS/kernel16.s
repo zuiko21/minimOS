@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b6
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171212-1058
+; last modified 20171218-0850
 
 ; just in case
 #define		C816	_C816
@@ -97,7 +97,7 @@ warm:
 
 ; what to do if scheduler run out if tasks? set here
 	LDX #PW_STAT		; default cmd upon lack of tasks
-	STX sd_flag		; must be done here as will no longer be done on driver init code!
+	STX sd_flag			; must be done here as will no longer be done on driver init code!
 
 ; *****************************
 ; *** memory initialisation ***
@@ -105,20 +105,19 @@ warm:
 
 ; ***this should take a basic memory map from firmware, perhaps via the GESTALT function
 
-	LDY #FREE_RAM	; dirty trick no longer allowed... should be zero
-	STY ram_stat	; as it is the first entry, no index needed
-	LDY #END_RAM	; also for end-of-memory marker
-	STY ram_stat+2	; note offset for interleaved array!
-	LDX #>user_ram	; beginning of available ram, as defined... in rom.s
-	LDY #<user_ram	; LSB misaligned?
-	BEQ ram_init	; nothing to align
-		INX				; otherwise start at next page
+	LDY #FREE_RAM		; dirty trick no longer allowed... should be zero
+	STY ram_stat		; as it is the first entry, no index needed
+	LDY #END_RAM		; also for end-of-memory marker
+	STY ram_stat+2		; note offset for interleaved array!
+	LDX #>user_ram		; beginning of available ram, as defined... in rom.s
+	LDY #<user_ram		; LSB misaligned?
+	BEQ ram_init		; nothing to align
+		INX					; otherwise start at next page
 ram_init:
-	TXA				; will set MSB as zero
-	STA ram_pos		; store it
-	LDA #SRAM		; number of SRAM pages as defined in options.h
-	STA ram_pos+2	; store second entry and we are done!
-
+	TXA					; will set MSB as zero
+	STA ram_pos			; store it
+	LDA #SRAM			; number of SRAM pages as defined in options.h
+	STA ram_pos+2		; store second entry and we are done!
 ; ************************************************
 ; *** intialise drivers from their jump tables ***
 ; ************************************************
