@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1b11
-; last modified 20171213-1336
+; v0.5.1b12
+; last modified 20171218-0842
 ; (c) 2016-2017 Carlos J. Santisteban
 
 #include "usual.h"
@@ -63,7 +63,7 @@ go_pmap:
 
 	.al: .xl: REP #$30	; *** full 16-bit ***
 	LDA #splash & $FFFF	; address of splash message (plus column header)
-	JSR prnStrW			; print the string!
+	JSR prnStrW & $FFFF			; print the string!
 
 ; ********************
 ; *** begin things ***
@@ -72,7 +72,7 @@ go_pmap:
 	STZ current			; reset index, 16-bit anyway
 pmap_loop:
 		LDX #'$'			; print hex radix
-		JSR prnCharW
+		JSR prnCharW & $FFFF
 		LDY current			; retrieve index
 		LDA ram_stat, Y		; check status of this
 		AND #$0006			; danger! it is a 16-bit number!
@@ -80,35 +80,35 @@ pmap_loop:
 		LDA ram_pos, Y		; get this block address
 		STA page			; store for further size computation
 		XBA					; let us look the bank address before
-		JSR byte2hexW		; print bank...
+		JSR byte2hexW & $FFFF		; print bank...
 		LDA page			; ...and switch back to page address, was destroyed
-		JSR byte2hexW
+		JSR byte2hexW & $FFFF
 		LDA #pmt_lsb & $FFFF	; string for trailing zeroes
-		JSR prnStrW
+		JSR prnStrW & $FFFF
 		PLX					; use as index
 		JMP (pmap_tab & $FFFF, X)	; process as appropriate
 
 ; * print suffix in X, new line and complete loop *
 pmap_next:
-		JSR prnCharW		; print suffix
+		JSR prnCharW & $FFFF		; print suffix
 pmap_cr:
 		LDX #CR				; new line
-		JSR prnCharW
+		JSR prnCharW & $FFFF
 		BRA pmap_loop		; and go for next entry
 
 ; manage used block
 pmap_used:
 	LDA #pmt_pid & $FFFF	; string for PID prefix
-	JSR prnStrW
+	JSR prnStrW & $FFFF
 	LDY current			; restore index
 	LDA ram_pid, Y		; get corresponding PID
-	JSR byte2hexW		; print it
+	JSR byte2hexW & $FFFF		; print it
 ; ...and finish line with block size
 
 ; * common ending with printed size, pages or KB *
 pmap_size:
 	LDX #' '			; print leading space
-	JSR prnCharW
+	JSR prnCharW & $FFFF
 	LDY current			; get old index
 	INY					; check next block!
 	INY					; 16 bit entries!!!!
@@ -119,7 +119,7 @@ pmap_size:
 	CMP #4				; check whether below 1k
 	BCS pmap_kb
 ;		INC					; round up pages!
-		JSR b2h_numW		; will not be over 4
+		JSR b2h_numW & $FFFF		; will not be over 4
 		LDX #'p'			; page suffix
 		BRA pmap_next		; print suffix, CR and go for next
 pmap_kb:
@@ -166,7 +166,7 @@ pkb_prn:
 pkb_ltt:
 		PLA					; get cipher from stack
 		PHY					; keep this again
-		JSR b2h_asciiW		; filtered printing
+		JSR b2h_asciiW & $FFFF		; filtered printing
 		PLY
 		DEY					; one less
 		BNE pkb_ltt			; go for next until done
@@ -176,19 +176,19 @@ pkb_ltt:
 ; manage locked list
 pmap_lock:
 	LDA #pmt_lock & $FFFF	; string for locked label
-	JSR prnStrW
+	JSR prnStrW & $FFFF
 	BRA pmap_size		; finish line with block size
 
 ; manage free block
 pmap_free:
 	LDA #pmt_free & $FFFF	; string for free label
-	JSR prnStrW
+	JSR prnStrW & $FFFF
 	BRA pmap_size		; finish line with block size
 
 ; manage end of list
 pmap_end:
 	LDA #pmt_end & $FFFF	; string for end label
-	JSR prnStrW
+	JSR prnStrW & $FFFF
 	_FINISH				; *** all done ***
 
 
@@ -211,7 +211,7 @@ byte2hexW:
 	LSR
 	LSR
 	LSR
-	JSR b2h_asciiW	; convert and print this cipher
+	JSR b2h_asciiW & $FFFF	; convert and print this cipher
 	PLA			; retrieve full value
 b2h_asciiW:
 	AND #$000F	; keep just the LSN... and repeat procedure
