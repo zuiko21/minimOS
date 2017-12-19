@@ -1,8 +1,8 @@
 ; default options for minimOS and other modules
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
-; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160406-0834
+; (c) 2015-2017 Carlos J. Santisteban
+; last modified 20171219-1100
 
 ; *** set conditional assembly ***
 
@@ -97,5 +97,5 @@ SS_SPEED =	30		; 15625 bps @ 1 MHz
 ; could be PHI2/31250-2
 
 ; speed code in fixed-point format, new 20150129
-SPEED_CODE =	$10		; 1 MHz system
+SPD_CODE =	$10		; 1 MHz system
 ; could be computed as PHI2*16/1000000

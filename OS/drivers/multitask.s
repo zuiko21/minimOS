@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.5.1a8
+; v0.5.1b1
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20170215-1358
+; last modified 20171219-1101
 ; *** TO BE HEAVILY REVISED ***
 
 ; ********************************
@@ -9,7 +9,6 @@
 ; ********************************
 
 ; *** set some reasonable number of braids ***
--MAX_BRAIDS		= 4		; reasonable number without too much overhead
 ; *** set delay counter for reasonable overhead ***
 QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switching
 
@@ -38,7 +37,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MAX_BRAIDS+'0', "-task Software Scheduler v0.5.1a8", 0	; works as long as no more than 9 braids!
+	.asc	MX_BRAID+'0', "-task Software Scheduler v0.5.1b1", 0	; works as long as no more than 9 braids!
 
 ; *** initialisation code ***
 mm_init:
@@ -59,12 +58,12 @@ mm_cont:
 ; *** SP possibly needs NOT to be intialised, neither sysptr set here... just flags? ***
 ;	LDA #>mm_context	; MSB of storage area
 ;	CLC					; hope isn't needed anymore in the loop!
-;	ADC #MAX_BRAIDS		; prepare backwards pointer! temporarily outside range...
+;	ADC #MX_BRAID		; prepare backwards pointer! temporarily outside range...
 ;	STA sysptr+1		; store in pointer, will be increased
 ;	LDA #<mm_context	; same for LSB, will not bother adding sys_sp
 ;	STA sysptr
 	LDA #BR_FREE		; adequate value in two highest bits, if sys_sp does NOT get inited!
-	LDX #MAX_BRAIDS		; set counter (much safer this way)
+	LDX #MX_BRAID		; set counter (much safer this way)
 mm_rsp:
 ;		DEC sysptr+1		; move pointer to next storage area
 ;		LDA #$FF			; original SP value, no need to skim on that *** really needed?
@@ -83,9 +82,9 @@ mm_bye:
 ; switch to next braid
 mm_yield:
 	CLC					; for safety in case RTS is found (when no other braid is active)
-	_ENTER_CS			; eeeeeeek, scheduler is expected to run with interrupts OFF!
+	_CRITIC		; eeeeeeek, scheduler is expected to run with interrupts OFF!
 	JSR mm_oksch		; ...then will CALL the scheduler! At once!
-	_EXIT_CS			; restore interrupt status, could be off anyway
+	_NO_CRIT			; restore interrupt status, could be off anyway
 	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
 
 ; in case of non-XIP code (loaded file) FINISH must free its previously assigned block, taking address from stack!
@@ -138,7 +137,7 @@ mm_next:
 
 ; PID count ended, try to wrap or shutdown if no more alive tasks!
 mm_wrap:
-		LDX #MAX_BRAIDS		; go to end instead, valid as last PID (2)
+		LDX #MX_BRAID		; go to end instead, valid as last PID (2)
 		DEY					; and check is not forever (2)
 			BNE mm_next			; otherwise should only happen at shutdown time (3/2)
 mm_lock:
@@ -306,7 +305,7 @@ mm_cmd:
 mm_chkpid:
 	TYA					; eeeeeeeek^2! the place to do it (3)
 		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
-	CPY #MAX_BRAIDS+1	; check whether it's a valid PID (2) eeeeeek!
+	CPY #MX_BRAID+1	; check whether it's a valid PID (2) eeeeeek!
 		BCS mm_piderr		; way too much (2/3) eeeeeeek
 	RTS					; back to business (6)
 mm_pidz:				; placeholder
@@ -320,8 +319,8 @@ mm_bad:
 ; reserve a free braid
 ; Y -> PID
 mm_fork:
-	LDY #MAX_BRAIDS		; scan backwards is usually faster (2)
-	_ENTER_CS			; this is delicate (5)
+	LDY #MX_BRAID		; scan backwards is usually faster (2)
+	_CRITIC			; this is delicate (5)
 mmf_loop:
 		LDA mm_flags-1, Y	; get that braid's status (4)
 		AND #BR_MASK		; mandatory now, ignore TERM (2)
@@ -329,13 +328,13 @@ mmf_loop:
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
 		BNE mmf_loop		; until the bottom of the list (3/2)
-	_EXIT_CS			; nothing was found (4)
+	_NO_CRIT			; nothing was found (4)
 ;	_DR_ERR(FULL)		; no available braids!
 	_DR_OK				; use system-reserved braid, is this OK?
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
 	STA mm_flags-1, Y	; reserve braid (4)
-	_EXIT_CS			; end of risk (4)
+	_NO_CRIT			; end of risk (4)
 	_DR_OK
 
 ; get code at some address running into a paused (?) braid
@@ -425,7 +424,7 @@ mmx_sfp:
 		CPY #$FF			; upon real end!
 		BNE mmx_sfp			; will work always!
 ; *** stack frame done, now let us set the initial environment ***
-;	_EXIT_CS			; no longer needs critical section as hardware stack remains intact
+;	_NO_CRIT			; no longer needs critical section as hardware stack remains intact
 ; prepare storage pointer for new context
 	PLA					; recover PID
 	TAX					; stay saved
@@ -495,14 +494,14 @@ mms_term:
 
 ; resume execution
 mms_cont:
-	_ENTER_CS			; this is delicate (2)
+	_CRITIC			; this is delicate (2)
 	LDA mm_flags-1, Y	; first check current state (5)
 	AND #BR_MASK		; mandatory as per integrated mm_treq (2)
 	CMP #BR_STOP		; is it paused? (2)
 		BNE mms_kerr		; no way to resume it! (2/3)
 	LDA #BR_RUN			; resume (2)
 	STA mm_flags-1, Y	; store new status (5) again, TERM is lost
-	_EXIT_CS			; were off for ...
+	_NO_CRIT			; were off for ...
 	_DR_OK
 
 ; pause execution
@@ -542,11 +541,11 @@ mm_hndl:
 #endif
 
 	LDA ex_pt			; get pointer LSB (3)
-	_ENTER_CS			; this is delicate... (5)
+	_CRITIC			; this is delicate... (5)
 	STA mm_term, Y		; store in table (4)
 	LDA ex_pt+1			; now for MSB (3+4)
 	STA mm_term+1, Y
-	_EXIT_CS			; were off for 13 clocks (4)
+	_NO_CRIT			; were off for 13 clocks (4)
 ; priorize braid, jump to it at once, really needed? *** placeholder ***
 mm_prior:
 	_DR_OK
