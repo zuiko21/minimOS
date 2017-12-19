@@ -255,7 +255,7 @@ srel_2nd:
 			BEQ srel_bak		; if zero, was backwards branch, no other positive accepted!
 				CMP #$FF			; otherwise, only $FF valid for forward branch
 				BEQ srel_fwd		; possibly valid forward branch
-					JMP overflow		; overflow otherwise
+					JMP overflow & $FFFF		; overflow otherwise
 srel_fwd:
 				LDA oper+1			; check stored offset
 				BPL srel_done		; positive is OK
