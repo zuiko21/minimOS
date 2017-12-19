@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6rc1
+; v0.9.6rc2
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171121-1016
+; last modified 20171219-1814
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -94,7 +94,7 @@ post:
 	_STZA irq_freq+1
 
 ; *** reset jiffy count ***
-	LDX #5				; max offset in uptime seconds AND ticks, assume contiguous (2) eeeeek
+	LDX #3				; max offset in uptime ticks, assume contiguous (2) eeeeek
 res_sec:
 		_STZA ticks, X		; reset BYTE (5)
 		DEX					; next backwards (2)
@@ -158,15 +158,27 @@ nmi:
 	STA sysptr+1
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
-	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
+; alternative faster way 39b, 58t (was 29b, 89t)
+	LDY fw_nmi			; copy vector to zeropage (corrected 20150118) (4+4+3+3)
+	LDA fw_nmi+1
+	STY sysptr			; nicer way 20160407
+	STA sysptr+1
 	LDY #0				; offset for NMI code pointer (2)
-nmi_chkmag:
-		LDA (sysptr), Y		; get code byte (5)
-		CMP fw_magic, X		; compare with string (4)
-			BNE rst_nmi			; not a valid routine (2/3)
-		INY					; another byte (2)
-		DEX					; internal string is read backwards (2)
-		BPL nmi_chkmag		; down to zero (3/2)
+	LDA (sysptr), Y		; get code byte (5)
+	CMP #'U'			; match? (2)
+		BNE rst_nmi			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (sysptr), Y		; get code byte (5)
+	CMP #'N'			; match? (2)
+		BNE rst_nmi			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (sysptr), Y		; get code byte (5)
+	CMP #'j'			; match? (2)
+		BNE rst_nmi			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (sysptr), Y		; get code byte (5)
+	CMP #'*'			; match? (2)
+		BNE rst_nmi			; not a valid routine (2/3)
 #endif
 	JSR nmi_call		; will do indirect call (6...)
 ; *** here goes the former nmi_end routine, restore and exit ***
