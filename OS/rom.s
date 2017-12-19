@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6b3
+; v0.6b4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171218-0915
+; last modified 20171219-1805
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -28,7 +28,7 @@ sysvol:
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
 	.asc	"minimOS 0.6 for ", MACHINE_NAME	; system version and machine
-	.asc	13, "20171112-1649", 0				; build date and time
+	.asc	13, "20171219-1805", 0				; build date and time
 
 	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date field
 
@@ -84,16 +84,15 @@ drv_size = drv_end - drv_file - $100	; exclude header
 	.word	0
 #endif
 ; ### end of minimOS header ###
-.as:.xs
+
 ; after header goes the binary blob
 #include "drivers/config/DRIVER_PACK.s"
-drv_end:		; for easier size computation
+drv_end:		; for easier size computation ***should this go into the driver pack file???
 
 ; *********************************************
 ; *** include rest of the supplied software ***
 ; *********************************************
 ; with their own headers, these must be page aligned!!!
-.as:.xs
 #include "../apps/ls.s"
 
 ; select specific pmap version according to architecture!
