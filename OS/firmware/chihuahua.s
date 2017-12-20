@@ -1,21 +1,24 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b3
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171219-1809
+; last modified 20171220-0826
 
 #define		FIRMWARE 	_FIRMWARE
 
 #include "usual.h"
 
-;* = FW_BASE			; this will be page-aligned!
+; already set at FW_BASE via rom.s
 
 .(
 #ifndef	NOHEAD
 ; *** first some ROM identification *** new 20150612
+; this is expected to be loaded at an aligned address anyway
 fw_start:
-	.asc 0, "m", CPU_TYPE, 13		; standard system file wrapper, new format 20161010, experimental type
-	.asc "boot", 0					; standard filename
-	.asc "0.9.6b1 firmware for "	; machine description as comment
+	.asc	0, "m", CPU_TYPE			; standard system file wrapper, new format 20161010, experimental type
+	.asc	"****", CR					; flags TBD
+	.asc	"boot", 0					; standard filename
+fw_splash:
+	.asc	"0.9.6b1 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -32,6 +35,9 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 	.word	0				; 64K space does not use upper 16-bit
 ; *** end of standard header ***
 #else
+; if no headers, put identifying strings somewhere
+fw_splash:
+	.asc	"0.9.6b1 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -49,10 +55,13 @@ reset:
 ; chihuahua is unlikely to use a 65816...
 	LDX #$FF		; initial stack pointer, no low ram here, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
+
+; ******************************
+; *** minimal hardware setup ***
+; ******************************
 ; disable all interrupt sources
 	LDA #$7F		; disable all interrupts (2+4)
 	STA VIA_J + IER
-
 ; and optionally check for VIA presence
 #ifdef	SAFE
 	LDA VIA_J + IER	; check VIA presence, NEW 20150118 (4)
@@ -84,30 +93,29 @@ post:
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; *** preset kernel start address (standard label from ROM file) ***
-	LDY #<kernel	; get LSB, nicer (2)
-	LDA #>kernel	; same for MSB (2)
-	STY fw_warm		; store in sysvars (4+4)
-	STA fw_warm+1
-
 ; *** set default CPU type ***
-;	LDA #CPU_TYPE	; constant from options.h, remove if tested (2)
+;	LDA #CPU_TYPE			; REDUNDANT if actual test is done (2)
+; ...but check it for real afterwards
+#include	"firmware/modules/cpu_check.s"
+; module will no longer store value
+	STA fw_cpu			; store variable (4)
 
-; might check out here for the actual CPU type...
-; should just get CPU type in A
-#include "firmware/modules/cpu_check.s"
-
-; after cpu_check, A holds CPU type (or previous LDA #)
-	STA fw_cpu		; store variable (4) redundant if stored from module
-
+; *** in case an NMOS CPU is used, this code must be assembled for it!
+; assume A holds CPU code as per above
 #ifdef	SAFE
 #ifndef	NMOS
-	CMP #'N'		; is it NMOS? not supported on this build!
+	CMP #'N'		; is it NMOS? not supported!
 	BNE fw_cpuOK	; otherwise continue
 		JMP lock		; cannot handle BRK, alas
 fw_cpuOK:
 #endif
 #endif
+
+; *** preset kernel start address (standard label from ROM file) ***
+	LDY #<kernel	; get LSB, nicer (2)
+	LDA #>kernel	; same for MSB (2)
+	STY fw_warm		; store in sysvars (4+4)
+	STA fw_warm+1
 
 ; *** preset default BRK & NMI handlers ***
 	LDY #<std_nmi			; default BRK like standard NMI
@@ -692,3 +700,4 @@ panic_loop:
 	.word	irq			; IRQ	@ $FFFE
 
 fw_end:					; for size computation
+.)
