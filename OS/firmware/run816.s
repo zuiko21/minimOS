@@ -1,18 +1,21 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6b5
+; v0.9.6rc1
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171218-0911
+; last modified 20171220-0827
 
 #define		FIRMWARE	_FIRMWARE
 
 ; in case of standalone assembly
 #include "usual.h"
 
+; already set at FW_BASE via rom.s
+
+.(
+#ifndef	NOHEAD
 ; *** first some ROM identification *** new 20150612
 ; this is expected to be loaded at an aligned address anyway
-#ifndef	NOHEAD
 fw_start:
-	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
+	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309, flags TBD
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
 	.asc	"0.9.6 firmware for "
@@ -33,6 +36,12 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 	.word	fwSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; *** end of standard header ***
+#else
+; if no headers, put identifying strings somewhere
+fw_splash:
+	.asc	"0.9.6 firmware for "
+fw_mname:
+	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
 
 ; **************************
@@ -41,7 +50,7 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 ; **************************
 ; **************************
 
-.as:.xs
+	.as:.xs				; to be sure!
 
 ; basic init
 reset:
@@ -88,12 +97,19 @@ fw_cpuOK:
 	PHK
 	PLD					; simpler than TCD et al
 
+; simulated 65816 has no real hardware to initialise...
+
 ; *********************************
 ; *** optional firmware modules ***
 ; *********************************
+
+; bootoff seems of little use here...
+
 post:
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
+
+; no beep so far on simulation...
 
 ; SRAM test
 ;#include "firmware/modules/ramtest.s"
@@ -105,29 +121,27 @@ post:
 ; *** set default CPU type ***
 	LDA #'V'			; 65816 only (2)
 	STA fw_cpu			; store variable (4)
-; as this is the only valid CPU for this firmware, no further checking necessary
+
+; *** as this is the only valid CPU for this firmware, no further checking necessary ***
 
 ; *** preset kernel start address (standard label from ROM file, unless downloaded) ***
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA #kernel			; get full address (3)
 	STA fw_warm			; store in sysvars (5)
 
-; *** preset jiffy irq frequency ***
-; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
-	STZ irq_freq		; store null speed... IRQ not set
-
 ; *** preset default BRK & NMI handlers ***
 	LDA #std_nmi		; default like the standard NMI
 	STA fw_brk			; store default handler
 ; since the NMI handler is validated, no need to install a default
 
+; *** preset jiffy irq frequency ***
+; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
+	STZ irq_freq		; store null speed... IRQ not set
+
 ; *** reset jiffy count ***
-	LDX #4				; max WORD offset in uptime seconds AND ticks, assume contiguous (2)
-res_sec:
-		STZ ticks, X		; reset word (5)
-		DEX					; next word backwards (2+2)
-		DEX
-		BPL res_sec			; zero is included
+; currently a 4-byte counter, not worth a loop
+	STZ ticks			; reset word (5)
+	STZ ticks+2			; next word too (5)
 
 ; ********************************
 ; *** hardware interrupt setup ***
@@ -503,14 +517,6 @@ brk_hndl:		; label from vector list
 
 .as:.xs:				; otherwise might prevent code after ROM!
 
-; if case of no headers, at least keep machine name somewhere
-#ifdef	NOHEAD
-fw_splash:
-	.asc	"0.9.6 firmware for "
-fw_mname:
-	.asc	MACHINE_NAME, 0
-#endif
-
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
 	.as:.xs: SEP #$30	; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
@@ -582,3 +588,6 @@ panic_loop:
 	.word	nmi			; (emulated) NMI	@ $FFFA
 	.word	reset		; (emulated) RST	@ $FFFC
 	.word	irq			; (emulated) IRQ	@ $FFFE
+
+fw_end:					; for size computation
+.)
