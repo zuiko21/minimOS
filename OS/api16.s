@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6b8, should match kernel16.s
+; v0.6rc1, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171218-0836
+; last modified 20171220-1423
 
 ; assumes 8-bit sizes upon call...
 
@@ -1778,9 +1778,9 @@ k_vec:
 	.word	b_exec		; launch new process ***simpler
 	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
 	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
-	.word	get_pid		; get PID of current braid ***returns 0
 	.word	set_hndl	; set SIGTERM handler
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	get_pid		; get PID of current braid ***returns 0
 ; new driver functionalities TBD
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue

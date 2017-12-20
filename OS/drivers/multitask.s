@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a1
+; v0.6a2
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171220-1311
+; last modified 20171220-1426
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -67,9 +67,9 @@ mm_rsp:
 	STX mm_pid			; set index as current PID
 ; install procedure means now PATCHING all relevant kernel functions!
 	LDX #12				; twice the number of functions to be patched, will use as array index
-	LDY #10				; last function to be patched
+	LDY #B_YIELD		; last function to be patched
 mm_patch:
-;		LDA 
+		LDA 
 ; *** shutdown code placeholder *** does not do much
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
@@ -533,25 +533,14 @@ mm_prior:
 mm_eexit:
 	_NEXT_ISR			; just in case
 
-; *** subfuction addresses table *** REVISE ORDER, OR ADD EXTRA INDEX
+; *** subfuction addresses table ***
 mm_funct:
 	.word	mm_fork		; reserve a free braid (will go BR_STOP for a moment)
 	.word	mm_exec		; get code at some address running into a paused braid (will go BR_RUN)
-	.word	mm_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
 	.word	mm_signal	; send some signal to a braid
 	.word	mm_status	; get execution flags for a braid
-	.word	mm_getpid	; get current PID
 	.word	mm_hndl		; set SIGTERM handler
-	.word	mm_prior	; priorize braid, jump to it at once, really needed?
-
-; API function order for reference only
-;	.word	b_fork		; get available PID ***returns 0
-;	.word	b_exec		; launch new process ***simpler
-;	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
-;	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
-;	.word	get_pid		; get PID of current braid ***returns 0
-;	.word	set_hndl	; set SIGTERM handler
-;	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	mm_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
 
 ; *** signal routines addresses table ***
 mms_table:

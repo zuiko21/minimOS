@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6b2
+; v0.6rc1
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171114-0903
+; last modified 20171220-1423
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -764,9 +764,9 @@ k_vec:
 	.word	b_exec		; launch new process ***simpler
 	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
 	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek***RENAMED
-	.word	get_pid		; get PID of current braid ***returns 0
 	.word	set_hndl	; set SIGTERM handler
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	get_pid		; get PID of current braid ***returns 0
 ; new functionalities TBD
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue

@@ -1,8 +1,9 @@
-; minimOS 0.6rc1 API/ABI
+; minimOS 0.6rc2 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
 ; some renaming 20170805, 20171030
-; last modified 20171114-0928
+; some ordering 20171220
+; last modified 20171220-1421
 
 ; *************************************************
 ; *************************************************
@@ -38,12 +39,12 @@ B_FORK		= LOADLINK + 2	; reserve a free braid
 B_EXEC		= B_FORK + 2	; get code at some address running into a previously reserved braid
 B_SIGNAL	= B_EXEC + 2	; send UNIX_like signal to a braid
 B_FLAGS		= B_SIGNAL + 2	; get execution flags of a braid
-GET_PID		= B_FLAGS + 2	; get current braid PID
-SET_HNDL	= GET_PID + 2	; set SIGTERM handler
+SET_HNDL	= B_FLAGS + 2	; set SIGTERM handler
 B_YIELD		= SET_HNDL + 2	; give away CPU time, not really needed but interesting anyway
+GET_PID		= B_YIELD + 2	; get current braid PID *** 20171220 is last one as will not need to be patched
 
 ; some new functionalities, perhaps OK with LOWRAM systems
-AQ_MNG		= B_YIELD + 2	; get asyncronous task status, or enable/disable it!
+AQ_MNG		= GET_PID + 2	; get asyncronous task status, or enable/disable it!
 PQ_MNG		= AQ_MNG + 2	; get periodic task status, enable/disable it or set frequency!
 
 ; not for LOWRAM systems
