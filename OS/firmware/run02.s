@@ -3,7 +3,7 @@
 ; *** use as sort-of template ***
 ; v0.9.6rc3
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171220-0827
+; last modified 20171220-1221
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -169,11 +169,6 @@ nmi:
 	_PHX
 	LDA systmp			; this byte too (3+3)
 	PHA
-; prepare for routine checking
-	LDY fw_nmi			; copy vector... (4+4)
-	LDA fw_nmi+1
-	STY sysptr			; ...on zeropage (3+3)
-	STA sysptr+1
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
 ; alternative faster way 39b, 58t (was 29b, 89t)
@@ -207,6 +202,7 @@ nmi_end:
 	_PLY
 	STX sysptr			; ...is also restored (3+3)
 	STY sysptr+1
+; restore registers
 	_PLY				; restore regular registers (3x4)
 	_PLX
 	PLA

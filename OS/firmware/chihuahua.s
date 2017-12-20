@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b3
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171220-0826
+; last modified 20171220-1238
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -247,6 +247,7 @@ std_nmi:
 ; *********************************************
 led_lock:
 ; make sure PB3 is output and device $Bx is selected, just in case
+; should toggle PB7 too with CB2 high, for a clicking sound****
 	LDA VIA_U+DDRB		; original direction
 	ORA #%11111001		; desired outputs
 	STA VIA_U+DDRB		; set on VIA
