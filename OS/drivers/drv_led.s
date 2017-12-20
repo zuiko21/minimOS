@@ -1,46 +1,102 @@
 ; LED Keypad driver for minimOS
-; as originally issued on 0.4rc1 20130521
-; v0.9.2 corrected NMOS version 20160407
-; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20160928-1053 for new interface
+; v0.9.6 adapted to mOS-65 0.6 driver format 20171220
+; (c) 2012-2017 Carlos J. Santisteban
+; last modified 20171220-1413
 
 ; in case of standalone assembly via 'xa drivers/drv_led.s'
-#ifndef		DRIVERS
-#include "options.h"
-#include "macros.h"
-#include "abi.h"		; new filename
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-#include "sysvars.h"
+#ifndef		HEADERS
+#include "usual.h"
 ; specific header for this driver
+.bss
 #include "drivers/drv_led.h"
 .text
 #endif
 
-#define _led_digits	4
-
 -drv_led:				; for compatibility with older NMI handler, added 20151015-1225
 
+.(
 ; *** begins with sub-function addresses table ***
-	.byt	DEV_LED						; D_ID, new format 20150323, TBD
-	.byt	A_POLL + A_CIN + A_COUT		; D_AUTH, this one does poll, no req., I/O, no 1-sec and neither block transfers, non relocatable (NEWEST HERE)
+	.byt	DEV_LED		; D_ID, new format 20150323, TBD
+	.byt	A_POLL|A_BLIN|A_BOUT	; D_AUTH, this one does poll, no req., I/O, no config/status, non relocatable
+	.word	led_bcin	; D_BLIN, input from buffer
+	.word	led_bcout	; D_BOUT, output to display
 	.word	led_reset	; D_INIT, initialize device and appropiate sysptrs, called by POST only
 	.word	led_get		; D_POLL, read keypad into buffer (called by ISR)
-	.word	ledg_end	; D_REQ, this one can't generate IRQs, will be ignored anyway
-	.word	led_cin		; D_CIN, input from buffer
-	.word	led_cout	; D_COUT, output to display
-	.word	ledg_end	; D_SEC, NEW, no need for 1-second interrupt
-	.word	ledg_end	; D_SIN, NEW, no block input
-	.word	ledg_end	; D_SOUT, NEW, no block output
-	.word	ledg_end	; D_BYE, NEWER, no shutdown procedure
+	.word	1			; D_FREQ, fastest frequency, now aiming to 250Hz
+	.word	ledg_end	; D_ASYN does nothing
+	.word	ledg_end	; D_CNFG, no config
+	.word	ledg_end	; D_STAT, no status
+	.word	ledg_end	; D_BYE, no shutdown procedure
 	.word	led_info	; D_INFO points to C-string
-	.byt	0			; D_MEM, reserved bytes, relocatable drivers only, NEW 130512
+	.word	0			; D_MEM, reserved bytes, relocatable drivers only, NEW 130512
 
 ; *** info string ***
 led_info:
-	.asc	"LED-keypad v0.9.1", 0
+	.asc	"LED-keypad v0.9.6", 0
+
+; *** mandatory block functions as per mOS 0.6 specs ***
+; * block input *
+led_bcin:
+#ifdef	SAFE
+	LDA bl_siz			; check size in case is zero
+	ORA bl_siz+1
+		BEQ led_pend		; nothing to do then
+#endif
+	LDA bl_ptr+1		; get pointer MSB
+	PHA					; in case gets modified...
+	LDY #0				; reset index
+lkbi_l:
+		_PHY				; keep this
+		JSR led_cin			; *** get one byte ***
+			BCS lkbi_err		; any error ends transfer!
+		_PLY				; restore index
+		LDA io_c			; received byte...
+		STA (bl_ptr), Y		; ...goes into buffer
+		INY					; go for next
+		BNE lkbi_nw			; still within page
+			INC bl_ptr+1			; ...or increment MSB
+lkbi_nw:
+		DEC bl_siz			; one less to go
+			BNE lkbi_l			; no wrap, continue
+		LDA bl_siz+1			; check MSB otherwise EEEEEK
+			BEQ lkbi_end		; no more!
+		DEC bl_siz+1		; ...or one page less
+		_BRA lkbi_l
+lkbi_err:
+	PLA					; was Y, but must respect error code!
+lkbi_end:
+	PLA					; gets pointer MSB back...
+	STA bl_ptr+1		; ...and restores it
+	RTS					; respect whatever error code
+
+; * block output *
+led_bcout:
+#ifdef	SAFE
+	LDA bl_siz			; check size in case is zero
+	ORA bl_siz+1
+		BEQ led_pend		; nothing to do then
+#endif
+	LDA bl_ptr+1		; get pointer MSB
+	PHA					; in case gets modified...
+	LDY #0				; reset index
+lkbo_l:
+		LDA (bl_ptr), Y		; buffer contents...
+		STA io_c			; ...will be sent
+		_PHY				; keep this
+		JSR led_cout		; *** send one byte ***
+			BCS lkbi_err		; any error ends transfer!
+		_PLY				; restore index
+		INY					; go for next
+		BNE lkbo_nw			; still within page
+			INC bl_ptr+1			; ...or increment MSB
+lkbo_nw:
+		DEC bl_siz			; one less to go
+			BNE lkbo_l			; no wrap, continue
+		LDA bl_siz+1			; check MSB otherwise
+			BEQ lkbi_end		; no more!
+		DEC bl_siz+1		; ...or one page less
+		_BRA lkbo_l
+
 
 ; *** output, rewritten 130507 ***
 led_cout:
@@ -49,6 +105,7 @@ led_cout:
 	BNE led_ncr		; check other codes
 		LDA #$FF		; -1 means next received character will clear the display
 		STA led_pos		; update variable!
+led_pend:
 		_DR_OK
 led_ncr:
 	CMP #12			; FF clears too
@@ -56,7 +113,7 @@ led_ncr:
 	CMP #10			; LF clears too
 	BNE led_noclear	; else, do print
 led_blank:
-		LDX led_len		; display size
+		LDX #DIGITS		; display size
 led_clear:
 		_STZA led_pos, X	; will clear LED buffer _and_ position, NMOS will *not* keep A corrected 20160407
 		DEX
@@ -94,14 +151,14 @@ led_nodot:
 		STA z2			; modify parameter!
 led_print:
 	LDA led_pos		; cursor position
-	CMP led_len		; is display full?
+	CMP #DIGITS		; is display full?
 		BMI led_cur		; else, don't scroll
 	LDX #0			; reset index
 led_scroll:
 		LDA led_buf+1, X	; get from second character
 		STA led_buf, X	; copy it before
 		INX				; get next character
-		CPX led_len		; until screen ends
+		CPX #DIGITS		; until screen ends
 		BNE led_scroll	; will scroll some garbage for a moment, but maaaaaaah, anyway it's just 0 (blank) or 1 segment
 	DEX				; back off one place
 	_STZA led_buf, X	; get rid of the garbage
@@ -115,7 +172,7 @@ led_cur:
 	_DR_OK
 
 ; *** input, rewritten 130507 ***
-; could use generic FIFO from 0.4.1, but a single-byte buffer will do
+; a single-byte buffer will do
 led_cin:
 	LDX lkp_cont	; number of characters in buffer
 	BEQ ledi_none	; no way if it's empty
@@ -148,7 +205,7 @@ led_nw:
 	AND #$0F			; mask input bits, keep PA0...PA3 only
 	STA lkp_mat, X		; store current column
 	INX					; next column, not stored, now it's 1...4
-	CPX #_led_digits	; four columns processed?
+	CPX #DIGITS		; four columns processed?
 	BEQ ledg_go			; decode it!
 ledg_end:
 		_DR_OK
@@ -183,7 +240,7 @@ ledg_scan:
 		BEQ ledg_end	; scancode 0 means no key at all!!!
 	DEX				; no 0-scancode in the table!
 	LDA kptable, X	; get ASCII from scancode table
-; could use generic FIFO from 0.4.1, but a single-byte buffer will do
+; a single-byte buffer will do
 	LDX lkp_cont	; number of characters in buffer
 	BNE ledg_full	; has something already
 		STA lkp_buf		; store char from A into buffer
@@ -200,21 +257,17 @@ led_reset:
 	STY VIA+DDRB		; easier with unprotected I/O, it's within kernel code anyway
 
 ; clear display	and related variables
-	LDA #_led_digits	; display size
-	STA led_len			; first byte of the pack
-	CLC					; let's make a counter for the bytes to be cleared
-	ADC #2				; mux+pos (+ the buffer itself)
-	TAX					; set counter as offset (won't reach first byte)
+	LDX #DIGITS			; display size
 	LDA #0				; there's STZ on CMOS, but NMOS macros are worse here
 led_dispcl:
-		STA led_len, X		; clear variable
+		STA led_buf-1, X	; clear variable
 		DEX					; previous
 		BNE led_dispcl		; won't reach offset 0, where the size is stored!
-	LDA #_led_digits-1	; ***correct value, so first interrupt won't miss first column!
+	LDA #DIGITS-1		; ***correct value, so first interrupt won't miss first column!
 	STA led_mux			; ***fixed 130521
 
 ; clear keypad things
-; could use generic FIFO from 0.4.1, but a single-byte buffer will do
+; a single-byte buffer will do
 	_STZA lkp_cont		; it's empty
 	_STZA lkp_new		; no scancode detected so far
 
@@ -240,3 +293,4 @@ lk_font:
 	.byt $CE, $FD, $DA, $B6, $1E, $38, $4E, $7C, $92, $76, $D8, $9C, $26, $F0, $C0, $10
 	.byt $40, $FA, $3E, $1A, $7A, $DE, $8E, $F6, $2E, $08, $70, $0E, $1C, $EC, $2A, $3A
 	.byt $CE, $E6, $0A, $32, $1E, $38, $4D, $7C, $92, $76, $D8, $9C, $20, $F0, $80, $00
+.)

@@ -2,7 +2,7 @@
 ; Chihuahua PLUS specific configuration!
 ; v0.6b2
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171220-1340
+; last modified 20171220-1415
 
 #define		DRIVERS		1
 
@@ -51,8 +51,8 @@ driver4:
 drvrs_ad:
 	.word	driver0		; generic list
 	.word	driver1		; generic list
-	.word	driver2		; generic list
-	.word	driver3		; generic list
-	.word	driver4		; generic list
+;	.word	driver2		; generic list
+;	.word	driver3		; generic list
+;	.word	driver4		; generic list
 
 	.word	0		; ***** TERMINATE LIST ***** (essential since 0.5a2)
