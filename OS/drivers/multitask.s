@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.6a2
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171220-1426
+; last modified 20171220-1435
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -66,10 +66,19 @@ mm_rsp:
 	INX					; the first PID is 1
 	STX mm_pid			; set index as current PID
 ; install procedure means now PATCHING all relevant kernel functions!
-	LDX #12				; twice the number of functions to be patched, will use as array index
-	LDY #B_YIELD		; last function to be patched
+	LDY #B_YIELD		; _last_ function to be patched
 mm_patch:
-		LDA 
+		LDA mm_funct-B_FORK, Y	; get LSB, note special offset from _first_ function saving the use of X
+		STA kerntab			; set FW parameter
+		LDA mm_funct-B_FORK+1, Y	; get MSB, note offset trick
+		STA kerntab			; set FW parameter
+		_PHY
+		_ADMIN(PATCH)		; patch this function
+		_PLY
+		DEY
+		DEY
+		CPY #B_FORK-2		; until the first function is patched last
+		BNE mm_patch
 ; *** shutdown code placeholder *** does not do much
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
