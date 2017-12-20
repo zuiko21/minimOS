@@ -1,23 +1,46 @@
 ; more-or-less generic firmware for minimOS·65
-; v0.5.1a1
-; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1218
+; v0.6b1
+; (c)2015-2017 Carlos J. Santisteban
+; last modified 20171220-0828
 
 #define		FIRMWARE	_FIRMWARE
 
 #include "usual.h"
 
-* = FW_BASE			; this will be page-aligned!
+; already set at FW_BASE via rom.s
 
+.(
+#ifndef	NOHEAD
 ; *** first some ROM identification *** new 20150612
+; this is expected to be loaded at an aligned address anyway
 fw_start:
-	.asc 0, "mB", 13				; standard system file wrapper, new 20161010, experimental type
+	.asc 0, "m", CPU_TYPE			; standard system file wrapper, new format 20161010, experimental type
+	.asc "****", CR					; flags TBD
 	.asc "boot", 0					; standard filename
-	.asc "0.5.1a1 firmware for "	; machine description as comment
+fw_splash: 
+	.asc "0.6b1 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
+; advance to end of header
+	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
-	.dsb	fw_start + $100 - *, $FF	; generate padding including end of linked list
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$7000	; time, 13.00
+	.word	$4AC2	; date, 2017/6/2
+
+fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	fwSize			; filesize
+	.word	0				; 64K space does not use upper 16-bit
+; *** end of standard header ***
+#else
+; if no headers, put identifying strings somewhere
+fw_splash:
+	.asc	"0.6b1 firmware for "
+fw_mname:
+	.asc	MACHINE_NAME, 0		; store the name at least
+#endif
 
 ; *** cold restart ***
 ; basic init
@@ -31,6 +54,10 @@ reset:
 ; * end of 65816 specific code *
 	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS				; initialise stack (2)
+
+; ******************************
+; *** minimal hardware setup ***
+; ******************************
 ; disable all interrupt sources
 	LDA #$7F		; disable all interrupts (2+4)
 	STA VIA_J + IER	; *** this is for single VIA systems ***
@@ -44,16 +71,19 @@ reset:
 via_ok:
 #endif
 
+; *********************************
 ; *** optional firmware modules ***
+; *********************************
+
 ; optional boot selector
-#include "firmware/modules/bootoff.s"
+;#include "firmware/modules/bootoff.s"
 
 ; ***continue power-on self-test***
 post:
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
-; some systems might copy ROM-in-RAM and continue at faster speed!
+; *** some systems might copy ROM-in-RAM and continue at faster speed! ***
 ;#include "firmware/modules/rominram.s"
 
 ; startup beep
@@ -62,25 +92,21 @@ post:
 ; SRAM test
 #include "firmware/modules/ramtest.s"
 
-; *** VIA initialisation (and stop beeping) ***
-	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
-	STA VIA_J + PCR
-	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
-	STA VIA_J + ACR
-; *** preset kernel start address (standard label from ROM file) ***
-	LDY #<kernel	; get LSB, nicer (2)
-	LDA #>kernel	; same for MSB (2)
-	STY fw_warm		; store in sysvars (4+4)
-	STA fw_warm+1
-; *** set default CPU type ***
-	LDA #CPU_TYPE	; constant from options.h (2)
-	STA fw_cpu		; store variable (4)
+; ***********************************
+; *** firmware parameter settings ***
+; ***********************************
 
-; might check out here for the actual CPU type...
-#include "firmware/modules/cpu_check.s"
+; *** set default CPU type ***
+;	LDA #CPU_TYPE			; REDUNDANT if actual test is done (2)
+; ...but check it for real afterwards
+#include	"firmware/modules/cpu_check.s"
+; module will no longer store value
+	STA fw_cpu			; store variable (4)
+
+; *** in case an NMOS CPU is used, this code must be assembled for it!
+; assume A holds CPU code as per above
 #ifdef	SAFE
 #ifndef	NMOS
-;	LDA fw_cpu		; already in A, but may change
 	CMP #'N'		; is it NMOS? not supported!
 	BNE fw_cpuOK	; otherwise continue
 		JMP lock		; cannot handle BRK, alas
@@ -88,7 +114,48 @@ fw_cpuOK:
 #endif
 #endif
 
+; *** preset kernel start address (standard label from ROM file) ***
+	LDY #<kernel	; get LSB, nicer (2)
+	LDA #>kernel	; same for MSB (2)
+	STY fw_warm		; store in sysvars (4+4)
+	STA fw_warm+1
+
+; *** preset default BRK & NMI handlers ***
+	LDY #<std_nmi			; default BRK like standard NMI
+	LDA #>std_nmi
+	STY fw_brk			; set vector
+	STA fw_brk+1
+; no need to set NMI as it will be validated
+
+; *** preset jiffy irq frequency ***
+; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
+	_STZA irq_freq		; store null speed... IRQ not set
+	_STZA irq_freq+1
+
+; *** reset jiffy count ***
+	LDX #3				; max offset in uptime (assume contiguous)
+res_sec:
+		_STZA ticks, X		; reset byte
+		DEX					; next byte backwards
+		BPL res_sec			; zero is included
+
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+
+
+
+
+
 ; *** maybe this is the place for final interrupt setup *** 20150605
+; *********************************************
+; *** VIA initialisation (and stop beeping) ***
+; *********************************************
+	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
+	STA VIA_J + PCR
+	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
+	STA VIA_J + ACR
+
 ; first of all, compute Timer 1 division factor, out from options.h 20160407
 T1_DIV = PHI2/IRQ_FREQ-2
 
@@ -359,3 +426,6 @@ panic_loop:
 	.word	nmi			; (emulated) NMI	@ $FFFA
 	.word	reset		; (emulated) RST	@ $FFFC
 	.word	irq			; (emulated) IRQ	@ $FFFE
+
+fw_end:					; for size computation
+.)
