@@ -1,18 +1,21 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6rc2
+; v0.9.6rc3
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171219-1814
+; last modified 20171220-0827
 
 #define		FIRMWARE	_FIRMWARE
 
 ; in case of standalone assembly
 #include "usual.h"
 
+; already set at FW_BASE via rom.s
+
+.(
+#ifndef	NOHEAD
 ; *** first some ROM identification *** new 20150612
 ; this is expected to be loaded at an aligned address anyway
-#ifndef	NOHEAD
 fw_start:
 	.asc	0, "m", CPU_TYPE	; special system wrapper
 	.asc	"****", CR			; flags TBD
@@ -35,6 +38,12 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 	.word	fwSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; *** end of standard header ***
+#else
+; if no headers, put identifying strings somewhere
+fw_splash:
+	.asc	"0.9.6 firmware for "
+fw_mname:
+	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
 
 ; **************************
@@ -54,12 +63,19 @@ reset:
 	LDX #SPTR			; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
 	TXS					; initialise stack (2)
 
+; simulated 65816 has no real hardware to initialise...
+
 ; *********************************
 ; *** optional firmware modules ***
 ; *********************************
+
+; bootoff seems of little use here...
+
 post:
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
+
+; no beep so far on simulation...
 
 ; SRAM test
 ;#include "firmware/modules/ramtest.s"
@@ -74,6 +90,8 @@ post:
 #include	"firmware/modules/cpu_check.s"
 ; module will no longer store value
 	STA fw_cpu			; store variable (4)
+
+; *** simulator simply cannot issue an NMOS CPU! ***
 
 ; *** preset kernel start address (standard label from ROM file, unless downloaded) ***
 	LDA #>kernel		; get full address (2+2)
@@ -552,3 +570,6 @@ panic_loop:
 	.word	nmi			; (emulated) NMI	@ $FFFA
 	.word	reset		; (emulated) RST	@ $FFFC
 	.word	irq			; (emulated) IRQ	@ $FFFE
+
+fw_end:					; for size computation
+.)
