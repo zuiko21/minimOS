@@ -1,16 +1,16 @@
 ; static variables for software multitasking module for minimOS
-; v0.5.1a4 *** bumped ***
+; v0.6a2
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171219-1106
+; last modified 20171220-1335
 
 #define	MX_BRAID	4
 
 mm_pid		.byt	0				; current PID
-mm_flags	.dsb	MX_BRAID		; status list, might be integrated with mm_treq???
-;mm_treq	.dsb	MX_BRAID		; table of SIGTERM requests, new 20150611 *** integrated on mm_flags 161117
+mm_flags	.dsb	MX_BRAID		; status list, now integrated with mm_treq
+mm_term		.dsb	MX_BRAID*2		; space for TERM pointers, no longer integrated in sysvars!
 ; no longer using mm_sfsiz & mm_stack, as per new TS_INFO output format!
-mm_qcnt		.byt	0				; quantums to wait for (6502 specific)
-; no longer defining mm_term, now integrated on sysvars.h
+; mm_qcnt no longer needed as per new driver format
+
 
 ; only software multitask will enable this
 #ifndef		AUTOBANK

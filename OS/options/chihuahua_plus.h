@@ -2,7 +2,7 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171219-1100
+; last modified 20171220-1310
 
 ; *** set conditional assembly ***
 
@@ -33,7 +33,7 @@
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		monitor.s
+#define		SHELL		miniMoDA.s
 
 ; default NMI, BRK etc TBD ***********
 
@@ -41,7 +41,7 @@
 ROM_BASE	=	$C000	; new Chihuahua PLUS
 
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$E000	; standard value
+FW_BASE		=	$F000	; standard value ***testing
 
 
 ; ** I/O definitions **

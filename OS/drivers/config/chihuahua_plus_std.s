@@ -1,21 +1,15 @@
 ; includes for minimOS drivers
 ; Chihuahua PLUS specific configuration!
-; v0.6b1
+; v0.6b2
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171220-1243
+; last modified 20171220-1340
 
 #define		DRIVERS		1
 
 ; in case of standalone assembly
-#ifndef		KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
+#ifndef		HEADERS
+#include "usual.h"
 .bss
-#include "firmware/chihuahua.h"
-#include "sysvars.h"
 #include "drivers/config/chihuahua_plus_std.h"
 .text
 #endif
@@ -37,7 +31,7 @@ driver1:
 
 driver2:
 ; SS-22 link
-#include "drivers/drv_ss22.s"
+;#include "drivers/drv_ss22.s"
 
 driver3:
 ; ASCII keyboard with LCD

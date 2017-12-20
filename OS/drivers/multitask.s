@@ -1,16 +1,15 @@
 ; software multitasking module for minimOS
-; v0.5.1b1
+; v0.6a1
 ; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171219-1101
-; *** TO BE HEAVILY REVISED ***
+; last modified 20171220-1311
+; *** UNDER REVISION ***
 
 ; ********************************
 ; *** multitasking driver code ***
 ; ********************************
 
-; *** set some reasonable number of braids ***
-; *** set delay counter for reasonable overhead ***
-QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switching
+; *** MX_BRAID defined in .h for some reasonable number of braids ***
+; *** delay counter for reasonable overhead will be set in header ***
 
 #ifndef		HEADERS
 #include "usual.h"
@@ -20,27 +19,33 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 .text
 #endif
 
+.(
 ; *** begins with sub-function addresses table *** REVISE
 	.byt	128			; physical driver number D_ID (TBD)
-	.byt	A_POLL+A_COUT	; polling scheduler this far, new architecture needs to enable output!
-	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
-	.word	mm_sched	; periodic scheduler
-	.word	mm_eexit	; D_REQ does nothing
+	.byt	A_POLL		; polling scheduler this far
 	.word	mm_abort	; no input
-	.word	mm_cmd		; output will process all subfunctions!
-	.word	mm_rts		; no need for 1-second interrupt
-	.word	mm_abort	; no block input
-	.word	mm_abort	; no block output
+	.word	mm_abort	; no output
+	.word	mm_init		; initialize device and appropiate sysvars, called by POST only *** HEAVILY REVISED
+	.word	mm_sched	; periodic scheduler
+	.word	10			; slowish 40ms quantum for acceptable overhead
+	.word	mm_eexit	; D_ASYN does nothing
+	.word	mm_eexit	; no config
+	.word	mm_eexit	; no status
 	.word	mm_bye		; shutdown procedure
-	.word	mm_info		; NEW, points to descriptor string
-	.byt	0			; reserved, D_MEM
+	.word	mm_info		; points to descriptor string
+	.word	0			; reserved, D_MEM
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MX_BRAID+'0', "-task Software Scheduler v0.5.1b1", 0	; works as long as no more than 9 braids!
+	.asc	MX_BRAID+'0', "-task Software Scheduler v0.6a1", 0	; works as long as no more than 9 braids!
+
+; *** zeropage space definitions ***
+	exec_p	=	local1	; temporary assignations!
+	exe_sp	=	local2
 
 ; *** initialisation code ***
 mm_init:
+; will now patch relevant task-handling kernel functions!
 #ifdef	SAFE
 ; might check for bankswitching hardware and cause error, in order NOT to install BOTH schedulers!...
 ; ...or just ignore as only the first driver will install?
@@ -51,30 +56,20 @@ mm_init:
 		_DR_ERR(UNAVAIL)	; error if not available
 mm_cont:
 #endif
-; initialise 6502-only delay counter
-	LDA #QUANTUM_COUNT
-	STA mm_qcnt			; init quantum counter
-; initialise stack pointers and flags table
-; *** SP possibly needs NOT to be intialised, neither sysptr set here... just flags? ***
-;	LDA #>mm_context	; MSB of storage area
-;	CLC					; hope isn't needed anymore in the loop!
-;	ADC #MX_BRAID		; prepare backwards pointer! temporarily outside range...
-;	STA sysptr+1		; store in pointer, will be increased
-;	LDA #<mm_context	; same for LSB, will not bother adding sys_sp
-;	STA sysptr
+; initialise stack pointers and flags table, no need to initialise SP yet!
 	LDA #BR_FREE		; adequate value in two highest bits, if sys_sp does NOT get inited!
 	LDX #MX_BRAID		; set counter (much safer this way)
 mm_rsp:
-;		DEC sysptr+1		; move pointer to next storage area
-;		LDA #$FF			; original SP value, no need to skim on that *** really needed?
-;		STA (sysptr), Y		; store "register" in proper area *** really needed?
-;		LDA #BR_FREE		; adequate value in two highest bits *** could be otside loop if sys_sp does NOT get inited!
 		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0 *** also resets integrated mm_treq
 		DEX					; one braid less (much safer this way)
 		BNE mm_rsp			; finish all braids (much safer this way)
 	INX					; the first PID is 1
 	STX mm_pid			; set index as current PID
-; do NOT set current SP as initialisation will crash! startup via scheduler will do anyway
+; install procedure means now PATCHING all relevant kernel functions!
+	LDX #12				; twice the number of functions to be patched, will use as array index
+	LDY #10				; last function to be patched
+mm_patch:
+;		LDA 
 ; *** shutdown code placeholder *** does not do much
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
@@ -82,7 +77,7 @@ mm_bye:
 ; switch to next braid
 mm_yield:
 	CLC					; for safety in case RTS is found (when no other braid is active)
-	_CRITIC		; eeeeeeek, scheduler is expected to run with interrupts OFF!
+	_CRITIC				; eeeeeeek, scheduler is expected to run with interrupts OFF!
 	JSR mm_oksch		; ...then will CALL the scheduler! At once!
 	_NO_CRIT			; restore interrupt status, could be off anyway
 	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
@@ -110,14 +105,6 @@ mm_suicide:
 
 ; *** the scheduler code ***
 mm_sched:
-; check whether it's time to switch or not
-	DEC mm_qcnt			; decrease remaining quantum count (6)
-	BEQ mm_do			; change task if expired (2/3)
-		RTS					; go away ASAP otherwise, no need for macro (6/0)
-mm_do:
-; execute scheduler itself
-	LDA #QUANTUM_COUNT	; get number of quantums to wait (2)
-	STA mm_qcnt			; restore counter for next time (4)
 mm_oksch:
 ; get next available PID
 	LDY #2				; to avoid deadlocks AND proper shutdown detection (2)
@@ -291,14 +278,6 @@ mm_sigterm:
 	PHA
 	PHP					; sigterm ends in RTI!
 	_JMPX(mm_term-2)	; indexed indirect jump, will return to RTS
-
-; *** subfunction processing section ***
-mm_cmd:
-#ifdef	SAFE
-	CPX #MM_PRIOR+2		; check limits, put last subfunction as appropriate (2)
-		BCS mm_bad			; go away otherwise! (2/3) eeeeeek
-#endif
-	_JMPX(mm_funct)		; jump to appropriate routine (6)
 
 #ifdef	SAFE
 ; check PID within limits (21 clocks optimized 150514, was 23 clocks including JSR)
@@ -554,7 +533,7 @@ mm_prior:
 mm_eexit:
 	_NEXT_ISR			; just in case
 
-; *** subfuction addresses table ***
+; *** subfuction addresses table *** REVISE ORDER, OR ADD EXTRA INDEX
 mm_funct:
 	.word	mm_fork		; reserve a free braid (will go BR_STOP for a moment)
 	.word	mm_exec		; get code at some address running into a paused braid (will go BR_RUN)
@@ -565,9 +544,19 @@ mm_funct:
 	.word	mm_hndl		; set SIGTERM handler
 	.word	mm_prior	; priorize braid, jump to it at once, really needed?
 
+; API function order for reference only
+;	.word	b_fork		; get available PID ***returns 0
+;	.word	b_exec		; launch new process ***simpler
+;	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+;	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
+;	.word	get_pid		; get PID of current braid ***returns 0
+;	.word	set_hndl	; set SIGTERM handler
+;	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+
 ; *** signal routines addresses table ***
 mms_table:
 	.word	mms_kill
 	.word	mms_term
 	.word	mms_cont
 	.word	mms_stop
+.)

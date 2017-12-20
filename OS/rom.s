@@ -93,7 +93,7 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 ; *** include rest of the supplied software ***
 ; *********************************************
 ; with their own headers, these must be page aligned!!!
-#include "../apps/ls.s"
+/*#include "../apps/ls.s"
 
 ; select specific pmap version according to architecture!
 #ifndef C816
@@ -108,7 +108,7 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 
 ;#include "../apps/lined.s"
 #include "../apps/sigtest.s"
-
+*/
 /*
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
@@ -143,7 +143,7 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ;#include "../apps/crasm/80asm.s"
 ;#include "../apps/crasm/68asm.s"
 #ifndef	C816
-#include "shell/miniMoDA.s"
+;#include "shell/miniMoDA.s"
 #endif
 ; ****** skip rest of unused ROM until firmware ******
 ; ##### empty header #####

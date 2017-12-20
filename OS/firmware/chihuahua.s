@@ -248,13 +248,13 @@ std_nmi:
 led_lock:
 ; make sure PB3 is output and device $Bx is selected, just in case
 ; should toggle PB7 too with CB2 high, for a clicking sound****
-	LDA VIA_U+DDRB		; original direction
+	LDA VIA+DDRB		; original direction
 	ORA #%11111001		; desired outputs
-	STA VIA_U+DDRB		; set on VIA
+	STA VIA+DDRB		; set on VIA
 ; intial value selects $D8 device (LCD on keyboard, E down and LED on)
 	LDA #%11011000
 ll_tog:
-		STA VIA_U+IORB		; turn LED on, LCD will not disturb
+		STA VIA+IORB		; turn LED on, LCD will not disturb
 ll_loop:
 				INX			; inner loop (2)
 				NOP			; add some delay (2+2)
