@@ -1,8 +1,8 @@
 ; includes for minimOS drivers
 ; Chihuahua PLUS specific configuration!
-; v0.5.1a1, bumped 161129
-; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161129-1022
+; v0.6b1
+; (c) 2015-2017 Carlos J. Santisteban
+; last modified 20171220-1243
 
 #define		DRIVERS		1
 
@@ -54,7 +54,7 @@ driver4:
 ; this might be generated in RAM in the future, allowing on-the-fly driver install
 ; since non LOWRAM systems call directly I/O routines, this is only used during registration
 
-drivers_ad:
+drvrs_ad:
 	.word	driver0		; generic list
 	.word	driver1		; generic list
 	.word	driver2		; generic list

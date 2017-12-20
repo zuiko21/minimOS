@@ -21,7 +21,7 @@ QUANTUM_COUNT	= 8		; specific delay, number of quantums to wait for before switc
 #endif
 
 ; *** begins with sub-function addresses table *** REVISE
-	.byt	TASK_DEV	; physical driver number D_ID (TBD)
+	.byt	128			; physical driver number D_ID (TBD)
 	.byt	A_POLL+A_COUT	; polling scheduler this far, new architecture needs to enable output!
 	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
 	.word	mm_sched	; periodic scheduler
