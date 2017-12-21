@@ -1,24 +1,24 @@
-; more-or-less generic firmware for minimOS·65
-; v0.6b1
+; generic firmware template for minimOS·65
+; v0.6b2
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171220-1237
+; last modified 20171221-1334
 
 #define		FIRMWARE	_FIRMWARE
-
 #include "usual.h"
-
 ; already set at FW_BASE via rom.s
 
 .(
 #ifndef	NOHEAD
+; *************************************
 ; *** first some ROM identification *** new 20150612
+; *************************************
 ; this is expected to be loaded at an aligned address anyway
 fw_start:
 	.asc 0, "m", CPU_TYPE			; standard system file wrapper, new format 20161010, experimental type
 	.asc "****", CR					; flags TBD
 	.asc "boot", 0					; standard filename
 fw_splash: 
-	.asc "0.6b1 firmware for "	; machine description as comment
+	.asc "0.6b2 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,39 +37,25 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6b1 firmware for "
+	.asc	"0.6b2 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
 
+; ********************
 ; *** cold restart ***
-; basic init
+; ********************
+
 reset:
-	SEI				; cold boot, best assume nothing (2)
-	CLD				; just in case, a must for NMOS (2)
-; * this is in case a 65816 is being used, but still compatible with all *
-	SEC				; would set back emulation mode on C816
-	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA $0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
-; * end of 65816 specific code *
-	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
-	TXS				; initialise stack (2)
+; *** basic init ***
+#include "firmware/modules/basic_init.s"
 
 ; ******************************
 ; *** minimal hardware setup ***
 ; ******************************
-; disable all interrupt sources
-	LDA #$7F		; disable all interrupts (2+4)
-	STA VIA_J + IER	; *** this is for single VIA systems ***
 
-; and optionally check for VIA presence
-#ifdef	SAFE
-	LDA VIA_J + IER	; check VIA presence, NEW 20150118 (4)
-	CMP #$80		; should read $80 (2)
-	BEQ via_ok		; panic otherwise! (slight modification 20150121 and 0220) (3/2)
-		JMP lock		; no other way to tell the world... (3)
-via_ok:
-#endif
+; check for VIA presence and disable all interrupts
+#include "firmware/modules/viacheck_irq.s"
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -79,11 +65,11 @@ via_ok:
 ;#include "firmware/modules/bootoff.s"
 
 ; ***continue power-on self-test***
-post:
+;post:				; this is no longer needed
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
-; *** some systems might copy ROM-in-RAM and continue at faster speed! ***
+; some systems might copy ROM-in-RAM and continue at faster speed!
 ;#include "firmware/modules/rominram.s"
 
 ; startup beep
@@ -97,22 +83,18 @@ post:
 ; ***********************************
 
 ; *** set default CPU type ***
-;	LDA #CPU_TYPE			; REDUNDANT if actual test is done (2)
-; ...but check it for real afterwards
-#include	"firmware/modules/cpu_check.s"
-; module will no longer store value
-	STA fw_cpu			; store variable (4)
+; just set expected default type as defined in options.h...
+;#include "firmware/modules/default_cpu.s"
+; ...or actually check for it!
+#include "firmware/modules/cpu_check.s"
+; do NOT include both files at once!
 
-; *** in case an NMOS CPU is used, this code must be assembled for it!
-; assume A holds CPU code as per above
-#ifdef	SAFE
-#ifndef	NMOS
-	CMP #'N'		; is it NMOS? not supported!
-	BNE fw_cpuOK	; otherwise continue
-		JMP lock		; cannot handle BRK, alas
-fw_cpuOK:
-#endif
-#endif
+; in case an NMOS CPU is used, make sure this was built for it
+#include "firmware/modules/nmos_savvy.s"
+
+; ---------------------------------------------------------------------
+; ------------------- CONTINUE BREAKOUT HERE --------------------------
+; ---------------------------------------------------------------------
 
 ; *** preset kernel start address (standard label from ROM file) ***
 	LDY #<kernel	; get LSB, nicer (2)
