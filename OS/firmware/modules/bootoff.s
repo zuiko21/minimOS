@@ -1,19 +1,16 @@
-; firmware module for most minimOS machines
-; bootoff code 0.9
-; as originally supplied with minimOS 0.4b4LK4
-; (c) Carlos J. Santisteban 2013-2016
-; last modified 20150223-1057
-; revised 20160115 for commit with new filenames
+; firmware module for minimOS·65
+; (c) 2013-2017 Carlos J. Santisteban
+; last modified 20171221-1307
 
-#ifndef		FIRMWARE
-#include "options.h"
-#include "macros.h"
-#include "abi.h"	; new filename
-post = ROM_BASE		; placeholders
-.text
-#endif
+; *** bootoff code *** v0.9.1
+; NMOS and 65816 savvy
+; no interface needed ('post' label is now generated here!)
 
-; *** choose boot address depending on PA0-PA3 ***
+#include "usual.h"
+
+.(
+; choose boot address depending on PA0-PA3
+; ...when PA4-7 is $1
 	LDA #$F0		; PA4...7 as output
 	STA VIA+DDRA
 	LDA #$10		; bit 4 high, 5-7 low
@@ -29,3 +26,7 @@ fw_boot:
 	.word	post		; default startup address
 	.dsb	28, $FF		; 14 empty vectors
 	.word	post		; in case the pull-ups put $FF on PA
+
+-post:
+; normal boot expected to continue after bootoff code
+.)
