@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b2
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171221-1334
+; last modified 20171222-2310
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -17,7 +17,7 @@ fw_start:
 	.asc 0, "m", CPU_TYPE			; standard system file wrapper, new format 20161010, experimental type
 	.asc "****", CR					; flags TBD
 	.asc "boot", 0					; standard filename
-fw_splash: 
+fw_splash:
 	.asc "0.6b2 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -114,25 +114,15 @@ reset:
 	_STZA irq_freq		; store null speed... IRQ not set
 	_STZA irq_freq+1
 
-; *** reset jiffy count ***
-	LDX #3				; max offset in uptime (assume contiguous)
-res_sec:
-		_STZA ticks, X		; reset byte
-		DEX					; next byte backwards
-		BPL res_sec			; zero is included
+; reset jiffy count
+#include "firmware/modules/jiffy_rst.s"
 
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
 
-; *** VIA initialisation (and stop beeping) *** typical
-	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
-	STA VIA_J + PCR
-	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
-	STA VIA_J + ACR
-; supposedly will not start counting until writing to counters!
-	LDA #$C0			; enable T1 (jiffy) interrupt only (2+4)
-	STA VIA_J + IER
+; VIA initialisation (and stop beeping)
+#include "firmware/modules/via_init.s"
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
