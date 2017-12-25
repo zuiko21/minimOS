@@ -1,9 +1,9 @@
-; minimOS 0.6rc2 API/ABI
+; minimOS 0.6rc3 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2017 Carlos J. Santisteban
 ; some renaming 20170805, 20171030
 ; some ordering 20171220
-; last modified 20171220-1421
+; last modified 20171225-2158
 
 ; *************************************************
 ; *************************************************
@@ -11,16 +11,19 @@
 ; *************************************************
 ; *************************************************
 
+; new system initialisation call!
+SYSINIT		= 0				; reset all data structures
+
 ; legacy basic I/O
-COUT		= 0	; character output, interface for BOUT
-CIN			= COUT + 2	; character input, interface for BLIN
-STRING		= CIN + 2	; output a C-string
+COUT		= SYSINIT + 2	; character output, interface for BOUT
+CIN			= COUT + 2		; character input, interface for BLIN
+STRING		= CIN + 2		; output a C-string
 READLN		= STRING + 2	; read input into supplied buffer
 
 ; block-oriented I/O
 BLOUT		= READLN + 2	; block output
-BLIN		= BLOUT + 2	; block input
-BL_CNFG		= BLIN + 2	; configuration settings, new TBD
+BLIN		= BLOUT + 2		; block input
+BL_CNFG		= BLIN + 2		; configuration settings, new TBD
 BL_STAT		= BL_CNFG + 2	; device status report, new TBD
 
 ; basic windowing system
@@ -47,7 +50,7 @@ GET_PID		= B_YIELD + 2	; get current braid PID *** 20171220 is last one as will 
 AQ_MNG		= GET_PID + 2	; get asyncronous task status, or enable/disable it!
 PQ_MNG		= AQ_MNG + 2	; get periodic task status, enable/disable it or set frequency!
 
-; not for LOWRAM systems
+; ** not for LOWRAM systems **
 ; drivers...
 DR_INST		= PQ_MNG + 2	; install driver
 DR_SHUT		= DR_INST + 2	; shutdown driver
@@ -55,12 +58,12 @@ DR_SHUT		= DR_INST + 2	; shutdown driver
 MALLOC		= DR_SHUT + 2	; allocate memory
 MEMLOCK		= MALLOC + 2	; allocate memory at a certain address, new 20170524
 FREE		= MEMLOCK + 2	; release memory block
-RELEASE		= FREE + 2	; release ALL memory blocks belonging to some PID, new 20161115
+RELEASE		= FREE + 2		; release ALL memory blocks belonging to some PID, new 20161115
 ; multitasking...
 TS_INFO		= RELEASE + 2	; get taskswitching info for multitasking driver
 SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & architecture) new 20170222
 
-; define the jump-table size for more efficient memory usage!
+; *** define the jump-table size for more efficient memory usage! ***
 LAST_API	= SET_CURR + 2	; *** set just after the LAST API call ***
 
 ; ***********************

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc3, must match kernel.s
+; v0.6rc4, must match kernel.s
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171220-1422
+; last modified 20171225-2159
 
 ; no way for standalone assembly...
 
@@ -10,6 +10,7 @@
 ; ***************************************
 
 memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
+sysinit:
 aq_mng:
 pq_mng:
 bl_cnfg:
@@ -1451,6 +1452,8 @@ set_curr:
 ; **************************************************
 #ifndef		DOWNLOAD
 k_vec:
+; system initialisation
+	.word	sysinit		; reset all kernel data ***NEW
 ; basic I/O
 	.word	cout		; output a character
 	.word	cin			; get a character
