@@ -94,7 +94,7 @@ fw_mname:
 ; no need to set NMI as it will be validated
 
 ; preset jiffy irq frequency
-#include "firmware/jiffy_hz.s"
+#include "firmware/modules/jiffy_hz.s"
 
 ; reset jiffy count
 #include "firmware/modules/jiffy_rst.s"

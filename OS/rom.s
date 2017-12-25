@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.6b4
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171219-1805
+; last modified 20171225-2154
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -93,7 +93,7 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 ; *** include rest of the supplied software ***
 ; *********************************************
 ; with their own headers, these must be page aligned!!!
-/*#include "../apps/ls.s"
+#include "../apps/ls.s"
 
 ; select specific pmap version according to architecture!
 #ifndef C816
@@ -103,12 +103,12 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 #else
 ;#include "../apps/pmap16.s"
 #endif
-#include "../apps/crasm/68asm.s"
-#include "../apps/crasm/80asm.s"
+;#include "../apps/crasm/68asm.s"
+;#include "../apps/crasm/80asm.s"
 
 ;#include "../apps/lined.s"
-#include "../apps/sigtest.s"
-*/
+;#include "../apps/sigtest.s"
+
 /*
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
