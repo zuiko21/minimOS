@@ -96,23 +96,16 @@ reset:
 ; ------------------- CONTINUE BREAKOUT HERE --------------------------
 ; ---------------------------------------------------------------------
 
-; *** preset kernel start address (standard label from ROM file) ***
-	LDY #<kernel	; get LSB, nicer (2)
-	LDA #>kernel	; same for MSB (2)
-	STY fw_warm		; store in sysvars (4+4)
-	STA fw_warm+1
+; preset kernel start address
+#include "firmware/modules/kern_addr.s"
 
-; *** preset default BRK & NMI handlers ***
-	LDY #<std_nmi			; default BRK like standard NMI
-	LDA #>std_nmi
-	STY fw_brk			; set vector
-	STA fw_brk+1
+; preset default BRK handler
+#include "firmware/modules/brk_addr.s"
+
 ; no need to set NMI as it will be validated
 
-; *** preset jiffy irq frequency ***
-; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
-	_STZA irq_freq		; store null speed... IRQ not set
-	_STZA irq_freq+1
+; preset jiffy irq frequency
+#include "firmware/jiffy_hz.s"
 
 ; reset jiffy count
 #include "firmware/modules/jiffy_rst.s"
