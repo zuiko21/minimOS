@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b2
 ; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171222-2310
+; last modified 20171225-2143
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -82,7 +82,7 @@ reset:
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; *** set default CPU type ***
+; set default CPU type
 ; just set expected default type as defined in options.h...
 ;#include "firmware/modules/default_cpu.s"
 ; ...or actually check for it!
@@ -91,10 +91,6 @@ reset:
 
 ; in case an NMOS CPU is used, make sure this was built for it
 #include "firmware/modules/nmos_savvy.s"
-
-; ---------------------------------------------------------------------
-; ------------------- CONTINUE BREAKOUT HERE --------------------------
-; ---------------------------------------------------------------------
 
 ; preset kernel start address
 #include "firmware/modules/kern_addr.s"

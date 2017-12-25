@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6rc3
+; v0.9.6rc4
 ; (c)2017 Carlos J. Santisteban
-; last modified 20171220-1221
+; last modified 20171225-2150
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -51,17 +51,9 @@ fw_mname:
 ; ****** cold restart ******
 ; **************************
 ; **************************
+
 ; basic init
-reset:
-	SEI					; cold boot (2)
-	CLD					; just in case, a must for NMOS (2)
-; * this is in case a 65816 is being used, but still compatible with all *
-	SEC					; would set back emulation mode on C816 (2)
-	.byt	$FB			; XCE on 816 (2), NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA $0				; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS (3)
-; * end of 65816 specific code *
-	LDX #SPTR			; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
-	TXS					; initialise stack (2)
+#include "firmware/modules/basic_init.s"
 
 ; simulated 65816 has no real hardware to initialise...
 
@@ -71,7 +63,7 @@ reset:
 
 ; bootoff seems of little use here...
 
-post:
+;post:				; this is no longer needed
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
@@ -84,46 +76,34 @@ post:
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; *** set default CPU type ***
-;	LDA #'V'			; 65816 installed (2) REDUNDANT if actual test is done
-; ...but check it for real afterwards
-#include	"firmware/modules/cpu_check.s"
-; module will no longer store value
-	STA fw_cpu			; store variable (4)
+; set default CPU type 
+; just set expected default type as defined in options.h...
+;#include "firmware/modules/default_cpu.s"
+; ...or actually check for it!
+#include "firmware/modules/cpu_check.s"
+; do NOT include both files at once!
 
 ; *** simulator simply cannot issue an NMOS CPU! ***
 
-; *** preset kernel start address (standard label from ROM file, unless downloaded) ***
-	LDA #>kernel		; get full address (2+2)
-	LDY #<kernel
-	STA fw_warm+1		; store in sysvars (4+4)
-	STY fw_warm
+; preset kernel start address
+#include "firmware/modules/kern_addr.s"
 
-; *** preset default BRK & NMI handlers ***
-	LDA #>std_nmi		; default like the standard NMI (2+2)
-	LDY #<std_nmi
-	STY fw_brk			; store default handler (4+4)
-	STA fw_brk+1
-; since the NMI handler is validated, no need to install a default
+; preset default BRK handler
+#include "firmware/modules/brk_addr.s"
 
-; *** preset jiffy irq frequency ***
-; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
-	_STZA irq_freq		; store null speed... IRQ not set (4+4)
-	_STZA irq_freq+1
+; no need to set NMI as it will be validated
 
-; *** reset jiffy count ***
-	LDX #3				; max offset in uptime ticks, assume contiguous (2) eeeeek
-res_sec:
-		_STZA ticks, X		; reset BYTE (5)
-		DEX					; next backwards (2)
-		BPL res_sec			; zero is included (3/2)
+; preset jiffy irq frequency
+#include "firmware/jiffy_hz.s"
+
+; reset jiffy count
+#include "firmware/modules/jiffy_rst.s"
 
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
-;	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
-;	STX VIA_J + IER
-; should also get the counter running etc
+
+; no VIA to initialise...
 
 ; **********************************
 ; *** direct print splash string ***
