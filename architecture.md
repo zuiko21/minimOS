@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-11-05*
+*Last update: 2017-12-27*
 
 ## Rationale
 
@@ -187,6 +187,16 @@ particular computer lacks such convenient devices, a **suitable driver** provide
 firmware I/O to work thru it. These won't be as reliable as the built-in devices in 
 heavily crashed environments, but it's better than nothing. *The concept of separate 
 **firmware drivers** has been considered*, but deemed too complicated.
+
+### Firmware
+
+This is intended as the **device-dependent** part of minimOS (the kernel being
+*device-independent*). Formerly consisted of several files, each one serving a
+particular architecture; however, the chore of copying every improvement on *each*
+file was aliviated via a **fully-*modular* approach**: the `template` file (or any
+particular machine's firmware, for that matter) will consist in just **a bunch of
+`#include`s** for *small* code chunks on the `modules` folder. Different machines
+may then use a different chunk for a particular feature, or suppress it.
 
 ### The LOWRAM option
 
