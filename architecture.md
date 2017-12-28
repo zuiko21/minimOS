@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-12-27*
+*Last update: 2017-12-28*
 
 ## Rationale
 
@@ -186,7 +186,11 @@ particular computer lacks such convenient devices, a **suitable driver** provide
 *custom* kernel could "announce" its availability to the firmware, for its simple 
 firmware I/O to work thru it. These won't be as reliable as the built-in devices in 
 heavily crashed environments, but it's better than nothing. *The concept of separate 
-**firmware drivers** has been considered*, but deemed too complicated.
+**firmware drivers** has been considered*, but deemed too complicated. Actual 
+implementation might just use a regular driver in firmware space, with its *unused*
+header as I/O routines will be directly called. *As long as the header address is
+provided into the configuration list at `drvrs_ad`, it might be used by the regular
+kernel too*. 
 
 ### Firmware
 
