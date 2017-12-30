@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc2, should match kernel16.s
 ; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171225-2200
+; last modified 20171230-2306
 
 ; assumes 8-bit sizes upon call...
 
@@ -13,7 +13,6 @@
 ; ***************************************
 
 memlock:				; *** FUTURE IMPLEMENTATION ***
-sysinit:
 aq_mng:
 pq_mng:
 bl_cnfg:
@@ -1755,8 +1754,6 @@ tsi_end:
 
 #ifndef		DOWNLOAD
 k_vec:
-; system initialisation
-	.word	sysinit		; reset all kernel data ***NEW
 ; basic I/O
 	.word	cout		; output a character
 	.word	cin			; get a character

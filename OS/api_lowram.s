@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc2
 ; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171225-2201
+; last modified 20171230-2307
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -22,7 +22,6 @@ dr_inst:			; no way to install these?
 dr_shut:
 
 ; *** FUTURE IMPLEMENTATION ***
-sysinit:
 aq_mng:
 pq_mng:
 bl_cnfg:
@@ -741,8 +740,6 @@ sd_tab:
 ; *** order MUST match abi.h ***
 -fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
 k_vec:
-; system initialisation
-	.word	sysinit		; reset all kernel data ***NEW
 ; basic I/O
 	.word	cout		; output a character
 	.word	cin			; get a character

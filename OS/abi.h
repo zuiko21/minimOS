@@ -3,7 +3,7 @@
 ; (c) 2012-2017 Carlos J. Santisteban
 ; some renaming 20170805, 20171030
 ; some ordering 20171220
-; last modified 20171225-2158
+; last modified 20171230-2305
 
 ; *************************************************
 ; *************************************************
@@ -11,11 +11,8 @@
 ; *************************************************
 ; *************************************************
 
-; new system initialisation call!
-SYSINIT		= 0				; reset all data structures
-
 ; legacy basic I/O
-COUT		= SYSINIT + 2	; character output, interface for BOUT
+COUT		= 0			; character output, interface for BOUT
 CIN			= COUT + 2		; character input, interface for BLIN
 STRING		= CIN + 2		; output a C-string
 READLN		= STRING + 2	; read input into supplied buffer
