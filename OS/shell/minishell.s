@@ -2,7 +2,7 @@
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
 ; last modified 20171211-0857
-; (c) 2016-2017 Carlos J. Santisteban
+; (c) 2016-2018 Carlos J. Santisteban
 
 #include "usual.h"
 .(

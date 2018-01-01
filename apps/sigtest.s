@@ -1,6 +1,6 @@
 ; SIGTERM test app for minimOS!
 ; v1.1b2, for minimOS 0.6 and up
-; (c) 2016-2017 Carlos J. Santisteban
+; (c) 2016-2018 Carlos J. Santisteban
 ; last modified 20171030-0948
 
 

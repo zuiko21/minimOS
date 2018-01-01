@@ -1,6 +1,6 @@
 ; BRK handler for minimOS·16
 ; v0.6a2
-; (c) 2016-2017 Carlos J. Santisteban
+; (c) 2016-2018 Carlos J. Santisteban
 ; last modified 20170822-1841
 
 ; old handler as a placeholder, should end in RTS

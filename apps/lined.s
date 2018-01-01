@@ -1,7 +1,7 @@
 ; line editor for minimOS!
 ; v0.5.1rc1
 ; same as 0.5 with 0.6 ABI/API compatibility
-; (c) 2016-2017 Carlos J. Santisteban
+; (c) 2016-2018 Carlos J. Santisteban
 ; last modified 20170829-1339
 
 #include "usual.h"

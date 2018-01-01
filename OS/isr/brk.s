@@ -1,6 +1,6 @@
 ; minimOS BRK handler
 ; v0.5.1rc1
-; (c) 2016-2017 Carlos J. Santisteban
+; (c) 2016-2018 Carlos J. Santisteban
 ; last modified 20170316-1245
 
 #include "usual.h"

@@ -1,6 +1,6 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc2, should match kernel16.s
-; (c) 2016-2017 Carlos J. Santisteban
+; (c) 2016-2018 Carlos J. Santisteban
 ; last modified 20171230-2306
 
 ; assumes 8-bit sizes upon call...

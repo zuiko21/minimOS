@@ -2,7 +2,7 @@
 ; based on miniMoDA engine!
 ; v0.5.1b2
 ; last modified 20171218-0912
-; (c) 2017 Carlos J. Santisteban
+; (c) 2017-2018 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 

@@ -1,7 +1,7 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b13
 ; last modified 20171218-0905
-; (c) 2016-2017 Carlos J. Santisteban
+; (c) 2016-2018 Carlos J. Santisteban
 
 #include "usual.h"
 .as: .xs:				; eeeeeeeeeeeeeek

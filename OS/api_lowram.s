@@ -1,6 +1,6 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc2
-; (c) 2012-2017 Carlos J. Santisteban
+; (c) 2012-2018 Carlos J. Santisteban
 ; last modified 20171230-2307
 
 ; *** dummy function, non implemented ***

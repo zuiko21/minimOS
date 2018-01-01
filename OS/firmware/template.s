@@ -1,6 +1,6 @@
 ; generic firmware template for minimOS·65
 ; v0.6b2
-; (c)2015-2017 Carlos J. Santisteban
+; (c)2015-2018 Carlos J. Santisteban
 ; last modified 20171225-2143
 
 #define		FIRMWARE	_FIRMWARE
