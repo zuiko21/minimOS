@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2017-12-28*
+*Last update: 2018-01-02*
 
 ## Rationale
 
@@ -201,6 +201,17 @@ file was aliviated via a **fully-*modular* approach**: the `template` file (or a
 particular machine's firmware, for that matter) will consist in just **a bunch of
 `#include`s** for *small* code chunks on the `modules` folder. Different machines
 may then use a different chunk for a particular feature, or suppress it.
+
+### The *administrative Kernel*
+
+This is the **firmware's API**, originally intended to be used by the Kernel only --
+although a standard interface is provided for standard apps, even if it's not really
+needed for the 65(C)02 version.
+
+Main available functions are for `INSTALL`ing the Kernel's *jump table*, and setting the
+IRQ, BRK and NMI routines -- all of them will be called by the Kernel at startup time.
+The mechanism for **kernel patching** is also supplied, this will have a *recovery
+setting* soon.
 
 ### The LOWRAM option
 
