@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-01-02*
+*Last update: 2018-01-03*
 
 ## Rationale
 
@@ -212,6 +212,9 @@ Main available functions are for `INSTALL`ing the Kernel's *jump table*, and set
 IRQ, BRK and NMI routines -- all of them will be called by the Kernel at startup time.
 The mechanism for **kernel patching** is also supplied, this will have a *recovery
 setting* soon.
+
+Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
+patchable. 
 
 ### The LOWRAM option
 
