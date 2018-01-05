@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-01-03*
+*Last update: 2018-01-05*
 
 ## Rationale
 
@@ -211,7 +211,7 @@ needed for the 65(C)02 version.
 Main available functions are for `INSTALL`ing the Kernel's *jump table*, and setting the
 IRQ, BRK and NMI routines -- all of them will be called by the Kernel at startup time.
 The mechanism for **kernel patching** is also supplied, this will have a *recovery
-setting* soon.
+setting* soon -- just by providing *zero* as the pointer to the supplied jump table.
 
 Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
 patchable. 
