@@ -414,7 +414,7 @@ Depending of the CPU used, this context can be totally or partially stored in **
 (typically under *multitasking*) with probably the *system reserved variables* as a notable exception.
 NMIs should preserve that too for total **transparency**
 
-Some hardware may make this area **protected** from other processes. Even on 65xx architectures,* **bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
+Some hardware may make this area **protected** from other processes. Even on 65xx architectures,***bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
 
 ### The LOWRAM option
 
@@ -447,6 +447,5 @@ Newer options are due for 0.6, like:
 - *adding* an array for driver enabling (whether `D_INIT` succeeded)
 
 and many more *(to be completed)*
----
- 
+
 *more coming soon*
