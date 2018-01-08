@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-01-05*
+*Last update: 2018-01-08*
 
 ## Rationale
 
@@ -192,7 +192,7 @@ header as I/O routines will be directly called. *As long as the header address i
 provided into the configuration list at `drvrs_ad`, it might be used by the regular
 kernel too*. 
 
-### Firmware
+## Firmware
 
 This is intended as the **device-dependent** part of minimOS (the kernel being
 *device-independent*). Formerly consisted of several files, each one serving a
@@ -216,39 +216,7 @@ setting* soon -- just by providing *zero* as the pointer to the supplied jump ta
 Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
 patchable. 
 
-### The LOWRAM option
-
-With an eye into **microcontrolers**, *minimOS* should be able to run on the most humble
-devices. Most interestingly, application (source) code for these devices should run
-**unmodified** on suitable bigger machines, for ease of development. With the
-inspiration coming from an *exposure time meter* project (using a 650**3** and an
-otherwise nearly-useless 6810 IC (**128-byte SRAM**), plus also from the attractive
-**6301/6303** Hitachi MCUs, it is reasonable to design a *reduced feature set* with
-particularly **low RAM usage**.
-
-Initially devised as a *separate fork*, 0.5.x version gave birth to the `LOWRAM`
-version. In order to reduce RAM usage, this option produces the following changes:
-
-- Non-patchable kernel calls
-- No memory management (besides zeropage/**context** area)
-- Reduced number of available drivers
-- Compact driver ID range (no *sparse* arrays)
-- No multitasking option
-- No windowing system option
-- No filesystem
-
-As there is no RAM to load programs (or drivers) on, there will not be any *relocation*
-features.
-
-Newer options are due for 0.6, like:
-
-- replacing generic calls with direct JSRs
-- using I/O arrays in ROM
-- *adding* an array for driver enabling (whether `D_INIT` succeeded)
-
-and many more *(to be completed)*
-
-### Device Drivers (0.6 version)
+## Device Drivers (0.6 version)
 
 As an essential feature of such device-agnostic OS, minimOS **driver architecture** has 
 been carefully crafted for **versatility**. The details may vary depending on the CPU 
@@ -443,10 +411,42 @@ upon interrupts or context switches.
 Depending of the CPU used, this context can be totally or partially stored in **zero-page** (for 65xx and 68xx families), 
 **registers** (680x0) or some appropriately pointed RAM area. Together with the 
 [stack](https://en.wikipedia.org/wiki/Stack_\(abstract_data_type\)) area, this will be saved upon **context switches** 
-(typically under *multitasking*) with probably the *system reserved variables* as a notable exception -- NMIs should preserve 
-that too for total **transparency**
+(typically under *multitasking*) with probably the *system reserved variables* as a notable exception.
+NMIs should preserve that too for total **transparency**
 
-Some hardware may make this area **protected** from other processes. Even on 65xx architectures, ***bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
+Some hardware may make this area **protected** from other processes. Even on 65xx architectures,* **bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
+
+### The LOWRAM option
+
+With an eye into **microcontrolers**, *minimOS* should be able to run on the most humble
+devices. Most interestingly, application (source) code for these devices should run
+**unmodified** on suitable bigger machines, for ease of development. With the
+inspiration coming from an *exposure time meter* project (using a 650**3** and an
+otherwise nearly-useless 6810 IC (**128-byte SRAM**), plus also from the attractive
+**6301/6303** Hitachi MCUs, it is reasonable to design a *reduced feature set* with
+particularly **low RAM usage**.
+
+Initially devised as a *separate fork*, 0.5.x version gave birth to the `LOWRAM`
+version. In order to reduce RAM usage, this option produces the following changes:
+
+- Non-patchable kernel calls
+- No memory management (besides zeropage/**context** area)
+- Reduced number of available drivers
+- Compact driver ID range (no *sparse* arrays)
+- No multitasking option
+- No windowing system option
+- No filesystem
+
+As there is no RAM to load programs (or drivers) on, there will not be any *relocation*
+features.
+
+Newer options are due for 0.6, like:
+
+- replacing generic calls with direct JSRs
+- using I/O arrays in ROM
+- *adding* an array for driver enabling (whether `D_INIT` succeeded)
+
+and many more *(to be completed)*
 ---
  
 *more coming soon*
