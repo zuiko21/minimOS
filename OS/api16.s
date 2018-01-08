@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc2, should match kernel16.s
+; v0.6rc3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20171230-2306
+; last modified 20180108-1333
 
 ; assumes 8-bit sizes upon call...
 
@@ -15,6 +15,7 @@
 memlock:				; *** FUTURE IMPLEMENTATION ***
 aq_mng:
 pq_mng:
+dr_info:
 bl_cnfg:
 bl_stat:
 ; *** DR_SHUT, remove driver ***
@@ -1786,11 +1787,12 @@ k_vec:
 	.word	pq_mng		; manage periodic task queue
 	.word	dr_inst		; install driver
 	.word	dr_shut		; remove driver
+	.word	dr_info		; get driver header
 ; memory management
 	.word	malloc		; reserve memory
-	.word	memlock		; reserve some address
 	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
+	.word	memlock		; reserve some address
 ; multitasking only
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
