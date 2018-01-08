@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc2
+; v0.6rc3
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20171230-2307
+; last modified 20180108-1335
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -24,6 +24,7 @@ dr_shut:
 ; *** FUTURE IMPLEMENTATION ***
 aq_mng:
 pq_mng:
+dr_info:
 bl_cnfg:
 bl_stat:
 
@@ -774,10 +775,11 @@ k_vec:
 #ifdef	SAFE
 	.word	dr_inst		; install driver
 	.word	dr_shut		; shutdown driver
+	.word	dr_info		; get header, is this possible?
 	.word	malloc		; reserve memory
-	.word	memlock		; reserve some address
 	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
+	.word	memlock		; reserve some address
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
 #endif
