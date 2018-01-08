@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc4, must match kernel.s
+; v0.6rc5, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20171230-2305
+; last modified 20180108-1332
 
 ; no way for standalone assembly...
 
@@ -12,6 +12,7 @@
 memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
 aq_mng:
 pq_mng:
+dr_info:
 bl_cnfg:
 bl_stat:
 ; *** DR_SHUT, remove driver ***
@@ -1485,11 +1486,12 @@ k_vec:
 ; drivers...
 	.word	dr_inst		; install driver
 	.word	dr_shut		; shutdown driver
+	.word	dr_info		; driver header ***new
 ; memory...
 	.word	malloc		; reserve memory
-	.word	memlock		; reserve some address
 	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
+	.word	memlock		; reserve some address
 ; multitasking...
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
