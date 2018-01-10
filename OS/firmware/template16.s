@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a2
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180110-1423
+; last modified 20180110-1432
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -315,16 +315,26 @@ fwp_func:
 	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	kernel		; shouldn't use this, just in case
 
-; *** administrative jump table ***
-; might go elsewhere as it may grow, especially on NMOS
-; WILL CHANGE ORDER
+; *********************************
+; *** administrative jump table *** changing
+; *********************************
 fw_admin:
-	.word	fw_install
-	.word	fw_s_isr
-	.word	fw_s_nmi
-	.word	fw_patch	; new order 20150409
-	.word	fw_gestalt
-	.word	fw_power
+; generic functions, esp. interrupt related
+	.word	fw_gestalt	; GESTALT get system info (renumbered)
+	.word	fw_s_isr	; SET_ISR set IRQ vector
+	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
+	.word	fw_s_brk	; *** SET_BRK set debugger, new 20170517
+	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
+	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	fw_power	; POWEROFF power-off, suspend or cold boot
+	.word	fw_fgen		; *** FREQ_GEN frequency generator hardware interface, TBD
+
+; not for LOWRAM systems
+	.word	fw_install	; INSTALL copy jump table
+	.word	fw_patch	; PATCH patch single function (renumbered)
+	.word	fw_ctx		; *** CONTEXT context bankswitching
 
 ; these already OK for 65816!
 ; *** minimOS·16 BRK handler *** might go elsewhere
@@ -351,8 +361,12 @@ cop_hndl:		; label from vector list
 	.dsb	kernel_call-*, $FF
 #endif
 
+; ******************************************************************
+; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
+; ******************************************************************
+
 ; *** minimOS·65 function call WRAPPER ($FFC0) ***
-* = kernel_call
+* = kerncall
 	CLC			; pre-clear carry
 	COP $FF		; wrapper on 816 firmware!
 	RTS			; return to caller
@@ -363,14 +377,13 @@ cop_hndl:		; label from vector list
 #endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
-* = admin_call
+* = adm_call
 	JMP (fw_admin, X)		; takes 5 clocks
 
-
 ; *** vectored IRQ handler ***
-; might go elsewhere, especially on NMOS systems
+; might go elsewhere
 irq:
-	JMP (fw_isr)	; vectored ISR (6)
+	JMP (fw_isr)	; vectored ISR (5)
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -402,3 +415,6 @@ panic_loop:
 	.word	nmi			; (emulated) NMI	@ $FFFA
 	.word	reset		; (emulated) RST	@ $FFFC
 	.word	irq			; (emulated) IRQ	@ $FFFE
+
+fw_end:					; for size computation
+.)

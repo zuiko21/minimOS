@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b2
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20171225-2143
+; last modified 20180110-1428
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -604,17 +604,17 @@ fw_admin:
 #endif
 #endif
 
-; ******************************************************************
-; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
-; ******************************************************************
-
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kernel_call-*, $FF
 #endif
 
+; ******************************************************************
+; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
+; ******************************************************************
+
 ; *** minimOS function call primitive ($FFC0) ***
-* = kernel_call
+* = kerncall
 	_JMPX(fw_table)	; macro for NMOS compatibility (6) this will be a wrapper on 816 firmware!
 
 ; filling for ready-to-blow ROM
@@ -623,7 +623,7 @@ fw_admin:
 #endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
-* = admin_call
+* = adm_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
 
