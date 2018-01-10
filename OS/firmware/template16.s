@@ -1,75 +1,75 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a1
-; (c)2015-2017 Carlos J. Santisteban
-; last modified 20171214-1438
+; v0.6a2
+; (c)2015-2018 Carlos J. Santisteban
+; last modified 20180110-1423
 
 #define		FIRMWARE	_FIRMWARE
-
 #include "usual.h"
+; already set at FW_BASE via rom.s
 
-* = FW_BASE			; this will be page-aligned!
-
+.(
+#ifndef	NOHEAD
+; *************************************
 ; *** first some ROM identification *** new 20150612
+; *************************************
+; this is expected to be loaded at an aligned address anyway
 fw_start:
 	.asc 0, "mV", 13					; standard system file wrapper, new 20161010, experimental type
+	.asc "****", CR						; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
 	.asc "boot", 0						; standard filename
-	.asc "65816 0.5.1a4 firmware for "	; machine description as comment
+fw_splash:
+	.asc "65816 0.6a2 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
+; advance to end of header
+	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
-	.dsb	fw_start + $100 - *, $FF	; generate padding including end of linked list
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$7000	; time, 13.00
+	.word	$4AC2	; date, 2017/6/2
 
-; *** cold restart ***
-; basic init
-reset:
-	SEI				; cold boot, best assume nothing (2)
-	CLD				; just in case, a must for NMOS (2)
-; * this is in case a 65816 is being used, but still compatible with all *
-	SEC				; would set back emulation mode on C816
-	.byt	$FB		; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA $0			; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
-; * end of 65816 specific code *
-	LDX #SPTR		; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
-	TXS				; initialise stack (2)
-; disable all interrupt sources
-	LDA #$7F		; disable all interrupts (2+4)
-	STA VIA_J + IER	; *** this is for single VIA systems ***
+fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
-; and optionally check for VIA presence
-#ifdef	SAFE
-	LDA VIA_J + IER	; check VIA presence, NEW 20150118 (4)
-	CMP #$80		; should read $80 (2)
-	BEQ via_ok		; panic otherwise! (slight modification 20150121 and 0220) (3/2)
-		JMP lock		; no other way to tell the world... (3)
-via_ok:
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	fwSize			; filesize
+	.word	0				; 64K space does not use upper 16-bit
+; *** end of standard header ***
+#else
+; if no headers, put identifying strings somewhere
+fw_splash:
+	.asc	"0.6a2 firmware for "
+fw_mname:
+	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
+
+; ********************
+; *** cold restart ***
+; ********************
+
+reset:
+; *** basic init ***
+#include "firmware/modules/basic_init.s"
+
+; ******************************
+; *** minimal hardware setup ***
+; ******************************
+
+; check for VIA presence and disable all interrupts
+#include "firmware/modules/viacheck_irq.s"
 
 ; as this firmware should be 65816-only, check for its presence or nothing!
-; derived from the work of David Empson, Oct. '94
-#ifdef	SAFE
-	SED					; decimal mode
-	LDA #$99			; load highest BCD number (sets N too)
-	CLC					; prepare to add
-	ADC #$02			; will wrap around in Decimal mode (should clear N)
-	CLD					; back to binary
-		BMI cpu_bad			; NMOS, N flag not affected by decimal add
-	TAY					; let us preload Y with 1 from above
-	LDX #$00			; sets Z temporarily
-	TYX					; TYX, 65802 instruction will clear Z, NOP on all 65C02s will not
-	BNE fw_cpuOK		; Branch only on 65802/816
-cpu_bad:
-		JMP lock			; cannot handle BRK, alas
-fw_cpuOK:
-#endif
-
+#include "firmware/modules/816_check.s"
 ; it can be assumed 65816 from this point on
 
+; *********************************
 ; *** optional firmware modules ***
+; *********************************
+
 ; optional boot selector
-#include "firmware/modules/bootoff.s"
+;#include "firmware/modules/bootoff.s"
 
 ; ***continue power-on self-test***
-post:
+;post:					; this is no longer needed
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
@@ -80,53 +80,68 @@ post:
 #include "firmware/modules/beep16.s"	; typical 816 standard beep
 
 ; SRAM test
-#include "firmware/modules/ramtest.s"
+#include "firmware/modules/ramtest.s"	; *** must support 24-bit addressing!!!
 
-; *** VIA initialisation (and stop beeping) ***
-	LDA #%11000010		; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
-	STA VIA_J + PCR
-	LDA #%01000000		; T1 cont, no PB7, no SR, no latch (so far) (2+4)
-	STA VIA_J + ACR
-; *** set default CPU type ***
+; ***********************************
+; *** firmware parameter settings ***
+; ***********************************
+
+; set default CPU type
 	LDA #'V'			; 65816 only (2)
 	STA fw_cpu			; store variable (4)
-; *** preset kernel start address (standard label from ROM file) ***
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	LDA #kernel			; get full address (3)
-	STA fw_warm			; store in sysvars (5)
 
-; *** maybe this is the place for final interrupt setup *** 20150605
-; first of all, compute Timer 1 division factor, out from options.h 20160407
-	LDA #IRQ_FREQ		; interrupts per second
-	STA irq_freq		; store speed... 
+; no way to be assembled for NMOS
 
-T1_DIV = PHI2/IRQ_FREQ-2
+; *** worth switching to 16-bit memory while setting pointers ***
+	.al: REP #$20
 
-	LDA	#T1_DIV			; set IRQ frequency divisor LSB, still in 16-bit (3)
-	STA VIA_J + T1CL	; put value into latches (will start counting!) (5)
-	LDX #4				; max WORD offset in uptime seconds AND ticks, assume contiguous (2)
-res_sec:
-		STZ ticks, X		; reset word (5)
-		DEX					; next word backwards (2+2)
-		DEX
-		BPL res_sec			; zero is included
-	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
-	STX VIA_J + IER
+; preset kernel start address
+#include "firmware/modules/kern_addr16.s"
 
-	.as: .xs: SEP #$30	; all back to 8-bit, just in case, might be removed if no remote boot is used (3)
+; preset default BRK handler
+#include "firmware/modules/brk_addr16.s"
+
+; no need to set NMI as it will be validated
+
+; preset jiffy irq frequency
+#include "firmware/modules/jiffy_hz16.s"
+
+; reset jiffy count
+#include "firmware/modules/jiffy_rst16.s"
+
+; *** back to 8-bit memory ***
+	.as: SEP #$20
+
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+
+; VIA initialisation (and stop beeping)
+#include "firmware/modules/via_init.s"
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
 -remote_boot:
 ;#include "firmware/modules/netboot.s"
 
+; *******************************************
 ; *** firmware ends, jump into the kernel ***
+; *******************************************
 start_kernel:
 	SEC					; emulation mode for a moment (2+2)
 	XCE
 	JMP (fw_warm)		; (5)
 
+
+; ********************************
+; ********************************
+; ****** interrupt handlers ******
+; ********************************
+; ********************************
+
+; **********************************************
 ; *** vectored NMI handler with magic number ***
+; **********************************************
 nmi:
 ; save registers AND system pointers
 	.al: .xl: REP #$30	; ** whole register size, just in case **
