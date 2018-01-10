@@ -1,9 +1,7 @@
 ; minimOS 0.6rc3 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; some renaming 20170805, 20171030
-; some ordering 20171220
-; last modified 20171230-2305
+; last modified 20180110-1313
 
 ; *************************************************
 ; *************************************************
@@ -51,13 +49,14 @@ PQ_MNG		= AQ_MNG + 2	; get periodic task status, enable/disable it or set freque
 ; drivers...
 DR_INST		= PQ_MNG + 2	; install driver
 DR_SHUT		= DR_INST + 2	; shutdown driver
+DR_INFO		= DR_SHUT + 2	; get header, new
 ; memory...
-MALLOC		= DR_SHUT + 2	; allocate memory
-MEMLOCK		= MALLOC + 2	; allocate memory at a certain address, new 20170524
-FREE		= MEMLOCK + 2	; release memory block
+MALLOC		= DR_INFO + 2	; allocate memory
+FREE		= MALLOC + 2	; release memory block
 RELEASE		= FREE + 2		; release ALL memory blocks belonging to some PID, new 20161115
+MEMLOCK		= RELEASE + 2	; allocate memory at a certain address, new 20170524
 ; multitasking...
-TS_INFO		= RELEASE + 2	; get taskswitching info for multitasking driver
+TS_INFO		= MEMLOCK + 2	; get taskswitching info for multitasking driver
 SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & architecture) new 20170222
 
 ; *** define the jump-table size for more efficient memory usage! ***
