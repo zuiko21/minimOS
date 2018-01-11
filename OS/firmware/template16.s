@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a2
+; v0.6a3
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180110-1432
+; last modified 20180111-1259
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a2 firmware for "
+	.asc	"0.6a3 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -145,30 +145,36 @@ start_kernel:
 nmi:
 ; save registers AND system pointers
 	.al: .xl: REP #$30	; ** whole register size, just in case **
-	PHA					; save registers (3x4)
+	PHA					; save registers (4x4)
 	PHX
 	PHY
+	PHB					; eeeeeeeeeeeeeeeek
 ; make NMI reentrant, new 65816 specific code
 ; assume all registers in 16-bit size, this is 6+2 bytes, 16+2 clocks! (was 10b, 38c)
 	LDY sysptr			; get original word (4+4)
 	LDA systmp			; this will get sys_sp also!
 	PHY					; store them in similar order (4+4)
 	PHA
+; switch DBR to bank zero!!!!
+	PHK					; push a zero...
+	PLB					; ...as current data bank!
 ; prepare for next routine while regs are still 16-bit!
 	LDA fw_nmi			; copy vector to zeropage (5+4)
 	STA sysptr
-	.as: .xs: SEP #$30	; ** back to 8-bit size! **
+
+#ifdef	SAFE
 ; check whether user NMI pointer is valid
-	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
-	LDY #0				; offset for NMI code pointer (2)
-nmi_chkmag:
-		LDA (sysptr), Y		; get code byte (5)
-		CMP fw_magic, X		; compare with string (4)
-			BNE rst_nmi			; not a valid routine (2/3)
-		INY					; another byte (2)
-		DEX					; internal string is read backwards (2)
-		BPL nmi_chkmag		; down to zero (3/2)
-do_nmi:
+	LDA (sysptr)		; get magic word, still on 16-bit (6)
+	CMP #'NU'			; valid? (3)
+		BNE rst_nmi			; not a valid routine (2/3)
+	LDY #2				; point to next word (3)
+	LDA (sysptr), Y		; get next magic word, still on 16-bit (6)
+	CMP #'*j'			; valid? (3)
+		BNE rst_nmi			; not a valid routine (2/3)
+; OK to proceed with supplied routine
+#endif
+
+	.as: .xs: SEP #$30	; ** back to 8-bit size! **
 	LDX #0				; null offset
 	JSR (fw_nmi, X)		; call actual code, ending in RTS (6)
 ; *** here goes the former nmi_end routine ***
@@ -178,6 +184,7 @@ nmi_end:
 	PLY
 	STA systmp			; I suppose is safe to alter sys_sp too (4+4)
 	STY sysptr
+	PLB					; eeeeeeeek
 	PLY					; restore regular registers (3x5)
 	PLX
 	PLA
@@ -188,6 +195,7 @@ fw_magic:
 
 ; *** execute standard NMI handler ***
 rst_nmi:
+	.as: .xs: SEP #$30	; ** back to 8-bit size! **
 	PEA nmi_end-1		; prepare return address
 ; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
 
@@ -344,8 +352,11 @@ brk_hndl:		; label from vector list
 	PHA						; save registers (3x4)
 	PHX
 	PHY
-	JSR brk_handler			; standard label from IRQ
+	PHB						; eeeeeeeeeek
+; will this work outside bank zero???
+;	JSR brk_handler			; standard label from IRQ****
 	.al: .xl: REP #$30		; just in case (3)
+	PLB						; eeeeek
 	PLY						; restore status and return
 	PLX
 	PLA
