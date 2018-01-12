@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6b4
+; v0.6b5
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20171225-2154
+; last modified 20180112-1112
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -28,7 +28,7 @@ sysvol:
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
 	.asc	"minimOS 0.6 for ", MACHINE_NAME	; system version and machine
-	.asc	13, "20171219-1805", 0				; build date and time
+	.asc	13, "20180112-1114", 0				; build date and time
 
 	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date field
 
@@ -71,7 +71,7 @@ drv_file:
 	BRK
 	.asc	"aD"						; driver pack file TBD
 	.asc	"****", CR					; flags TBD
-	.asc	"drivers", 0, 0				; filename and empty comment
+	.asc	"dev", 0, 0				; filename and empty comment
 
 	.dsb	drv_file + $F8 - *, $FF		; padding
 
