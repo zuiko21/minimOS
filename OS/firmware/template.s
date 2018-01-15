@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
-; v0.6b2
+; v0.6b3
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180110-1428
+; last modified 20180115-2204
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -514,9 +514,16 @@ fw_fgen:
 ; INSTALL, supply jump table
 ; **************************
 ;		INPUT
-; kerntab	= address of supplied jump table
+; kerntab	= address of supplied jump table (0 means reset)
 
 fw_install:
+	LDA kerntab			; check if null
+	ORA kerntab+1
+	BNE fwi_nz			; not zero, proceed
+		LDA fw_lastk			; or store last value
+		LDX fw_lastk+1
+		STA kerntab			; set previous value
+		STY kerntab+1
 	LDY #0				; reset index (2)
 	_CRITIC				; disable interrupts! (5)
 fwi_loop:
@@ -525,6 +532,10 @@ fwi_loop:
 		INY
 		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 		BNE fwi_loop		; until whole page is done (3/2)
+	LDA kerntab			; get used value...
+	LDX kerntab+1
+	STA fw_lastk			; ...and store as last!
+	STX fw_lastk+1
 	_NO_CRIT			; restore interrupts if needed (4)
 	_DR_OK				; all done (8)
 
