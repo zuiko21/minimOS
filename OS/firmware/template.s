@@ -106,6 +106,9 @@ reset:
 ; reset jiffy count
 #include "firmware/modules/jiffy_rst.s"
 
+; reset last installed kernel (new)
+#include "firmware/modules/rst_lastk.s"
+
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************

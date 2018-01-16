@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a3
+; v0.6a4
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180111-1259
+; last modified 20180116-1058
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR						; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
 	.asc "boot", 0						; standard filename
 fw_splash:
-	.asc "65816 0.6a2 firmware for "	; machine description as comment
+	.asc "65816 0.6a4 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a3 firmware for "
+	.asc	"0.6a4 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -108,6 +108,9 @@ reset:
 
 ; reset jiffy count
 #include "firmware/modules/jiffy_rst16.s"
+
+; reset last installed kernel (new)
+#include "firmware/modules/rst_lastk16.s"
 
 ; *** back to 8-bit memory ***
 	.as: SEP #$20
