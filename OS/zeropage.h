@@ -1,6 +1,6 @@
-; minimOS 0.6rc1 zero-page system variables
-; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171120-0912
+; minimOS 0.6rc2 zero-page system variables
+; (c) 2012-2018 Carlos J. Santisteban
+; last modified 20180116-1048
 
 .zero
 * = 0
@@ -38,7 +38,7 @@ locals:								; old label for compatibility
 
 ; *** include aliases here for local1/locpt1 ***
 dr_aut: ma_ix: mm_sig: iol_dev:		; 8 bit
-v_src:								; 16 bit
+tmp_ktab:							; 16 bit (v_src seems of no use!!!)
 
 local1: locpt1	.dsb	4			; variables for kernel functions @ $E4
 
@@ -48,7 +48,7 @@ dq_ptr	= dr_aut+2					; 16b
 
 ; *** include aliases here for local2/locpt2 ***
 ma_lim:								; 8 bit
-pfa_ptr: v_dest:					; 16 bit
+pfa_ptr: v_dest:					; 16 bit (is v_dest of any use???)
 ; exec_p no longer used
 
 local2: locpt2	.dsb	4			; variables for kernel functions @ $E8

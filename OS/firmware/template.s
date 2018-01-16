@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
-; v0.6b3
+; v0.6b4
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180115-2204
+; last modified 20180116-1053
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -507,23 +507,25 @@ fwp_func:
 fw_fgen:
 	_DR_ERR(UNAVAIL)		; not supported
 
-; these are for systems with enough RAM
-
+; *** these are for systems with enough RAM ***
 #ifndef		LOWRAM
+
 ; **************************
 ; INSTALL, supply jump table
 ; **************************
 ;		INPUT
-; kerntab	= address of supplied jump table (0 means reset)
+; kerntab	= address of supplied jump table (0 means unpatch all)
 
 fw_install:
-	LDA kerntab			; check if null
-	ORA kerntab+1
+; new feature, a null pointer means reinstall previously set jump table!
+	LDA kerntab+1		; check whether null (cannot be in zeropage anyway)
 	BNE fwi_nz			; not zero, proceed
-		LDA fw_lastk			; or store last value
-		LDX fw_lastk+1
-		STA kerntab			; set previous value
-		STY kerntab+1
+		LDX fw_lastk		; or store last value
+		LDA fw_lastk+1
+		STX kerntab			; set previous value
+		STA kerntab+1
+fwi_nz:
+; end of new feature, remove if not required
 	LDY #0				; reset index (2)
 	_CRITIC				; disable interrupts! (5)
 fwi_loop:
@@ -532,10 +534,12 @@ fwi_loop:
 		INY
 		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 		BNE fwi_loop		; until whole page is done (3/2)
-	LDA kerntab			; get used value...
-	LDX kerntab+1
-	STA fw_lastk			; ...and store as last!
-	STX fw_lastk+1
+; kernel successfully installed, keep original table address in case is reset
+	LDY kerntab			; get current value...
+	LDA kerntab+1
+	STY fw_lastk		; ...and store as last valid pointer!
+	STA fw_lastk+1
+; end of table address storage
 	_NO_CRIT			; restore interrupts if needed (4)
 	_DR_OK				; all done (8)
 
@@ -543,12 +547,27 @@ fwi_loop:
 ; PATCH, patch single function
 ; ****************************
 ;		INPUT
-; kerntab	= address of code
-; Y		= function to be patched
+; kerntab	= address of function code (0 means reset from last installed kernel)
+; Y			= function to be patched
 
 fw_patch:
+	LDX kerntab+1			; check whether null, cannot be in zeropage, get MSB anyway (3)
+; new feature, a null pointer means unpatch!
+	BNE fwp_nz				; already a valid pointer
+		LDX fw_lastk+1			; otherwise, let us point to the original kernel table
+		LDA fw_lastk
+		STX tmp_ktab+1			; prepare indirect pointer
+		STA tmp_ktab
+		INY						; will get MSB first
+		LDA (tmp_ktab), Y		; MSB of entry...
+		TAX						; ...will stay here
+		DEY						; back to LSB
+		LDA (tmp_ktab), Y
+		_BRA fwp_rst			; X.A points to original function
+fwp_nz:
+; end of new feature
 	LDA kerntab				; get LSB (3)
-	LDX kerntab+1			; same for MSB (3)
+fwp_rsp:
 	_CRITIC					; disable interrupts! (5)
 	STA fw_table, Y			; store where the firmware expects it (4+4)
 	TXA						; eeeeeeeeeeeek
