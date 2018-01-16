@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b4
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180116-1053
+; last modified 20180116-1102
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -78,6 +78,13 @@ reset:
 ; SRAM test
 #include "firmware/modules/ramtest.s"
 
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+
+; VIA initialisation (and stop beeping)
+#include "firmware/modules/via_init.s"
+
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
@@ -108,13 +115,6 @@ reset:
 
 ; reset last installed kernel (new)
 #include "firmware/modules/rst_lastk.s"
-
-; ********************************
-; *** hardware interrupt setup ***
-; ********************************
-
-; VIA initialisation (and stop beeping)
-#include "firmware/modules/via_init.s"
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm

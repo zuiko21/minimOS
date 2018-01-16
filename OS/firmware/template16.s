@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a4
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180116-1058
+; last modified 20180116-1101
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -82,6 +82,13 @@ reset:
 ; SRAM test
 #include "firmware/modules/ramtest.s"	; *** must support 24-bit addressing!!!
 
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+
+; VIA initialisation (and stop beeping)
+#include "firmware/modules/via_init.s"
+
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
@@ -114,13 +121,6 @@ reset:
 
 ; *** back to 8-bit memory ***
 	.as: SEP #$20
-
-; ********************************
-; *** hardware interrupt setup ***
-; ********************************
-
-; VIA initialisation (and stop beeping)
-#include "firmware/modules/via_init.s"
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
