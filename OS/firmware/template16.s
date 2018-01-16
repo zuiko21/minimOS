@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a4
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180116-1101
+; last modified 20180116-1109
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -206,7 +206,41 @@ rst_nmi:
 std_nmi:
 #include "firmware/modules/std_nmi.s"
 
+; ********************************
+; *** administrative functions ***
+; ********************************
 
+; *** generic functions ***
+
+; *********************************
+; GESTALT, get system info, API TBD
+; *********************************
+;		OUTPUT
+; cpu_ll	= CPU type
+; c_speed	= speed code (now 16b)
+; str_pt	= *machine name
+; ex_pt		= *memory map
+; k_ram		= pages of RAM
+; sizes irrelevant
+
+fw_gestalt:
+	PHP					; keep sizes (3)
+	.al: REP #$20		; ** 16-bit memory **
+	LDA #SPEED_CODE		; speed code as determined in options.h (2+3)
+	LDX fw_cpu			; get kind of CPU (previoulsy stored or determined) (4+3)
+	STA c_speed			; store values
+	STX cpu_ll
+	LDX himem			; get pages of kernel SRAM (4)
+	STX k_ram			; store output (3)
+	LDA #fw_mname		; get pointer to name
+	STA str_pt			; set value
+	LDA #fw_map			; get pointer to map
+	STA ex_pt			; set output
+	PLP					; restore sizes (4)
+	_DR_OK				; done (8)
+
+
+; -------------------- old code ----------------------
 ; *** administrative functions ***
 ; A0, install jump table
 ; kerntab <- address of supplied jump table
@@ -277,30 +311,6 @@ fw_patch:
 	_EXIT_CS				; restore interrupts and sizes (4)
 	_DR_OK					; done (8)
 #endif
-
-
-; A8, get system info, API TBD
-; zpar -> available pages of (kernel) SRAM
-; zpar+2.W -> available BANKS of RAM
-; zpar2.B -> speedcode
-; zpar2+2.B -> CPU type
-; zpar3.W/L -> points to a string with machine name
-; *** WILL change ABI/API ***
-fw_gestalt:
-	LDA himem		; get pages of kernel SRAM (4)
-	STA zpar		; store output (3)
-	PHP				; keep sizes (3)
-	.al: REP #$20	; ** 16-bit memory **
-	STZ zpar+2		; no bankswitched RAM yet (4)
-	STZ zpar3+2		; same for string address (4)
-	LDA #fw_mname	; get string pointer (3)
-	STA zpar3		; put it outside (4)
-	PLP				; restore sizes (4)
-	LDA #SPEED_CODE	; speed code as determined in options.h (2+3)
-	STA zpar2
-	LDA fw_cpu		; get kind of CPU (previoulsy stored or determined) (4+3)
-	STA zpar2+2
-	_DR_OK			; done (8)
 
 
 ; A10, poweroff etc
