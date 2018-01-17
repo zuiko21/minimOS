@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a4
+; v0.6a5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180117-1243
+; last modified 20180117-1306
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR						; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
 	.asc "boot", 0						; standard filename
 fw_splash:
-	.asc "65816 0.6a4 firmware for "	; machine description as comment
+	.asc "65816 0.6a5 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a4 firmware for "
+	.asc	"0.6a5 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -154,56 +154,78 @@ nmi:
 	PHB					; eeeeeeeeeeeeeeeek
 ; make NMI reentrant, new 65816 specific code
 ; assume all registers in 16-bit size, this is 6+2 bytes, 16+2 clocks! (was 10b, 38c)
-	LDY sysptr			; get original word (4+4)
-	LDA systmp			; this will get sys_sp also!
+	LDA sysptr			; get original word (4+4)
+	LDY systmp			; this will get sys_sp also!
 	PHY					; store them in similar order (4+4)
 	PHA
 ; switch DBR to bank zero!!!!
 	PHK					; push a zero...
 	PLB					; ...as current data bank!
 ; prepare for next routine while regs are still 16-bit!
-	LDA fw_nmi			; copy vector to zeropage (5+4)
-	STA sysptr
+	.xs: SEP #$10		; *** back to 8-bit indexes ***
+; in case an unaware 6502 app installs a handler ending in RTS,
+; stack imbalance will happen, best keep SP and reset afterwards
+#ifdef	SUPPORT
+	TSX					; get stack pointer LSB
+	STX sys_sp			; best place as will not switch
+#endif
+	LDA fw_nmi			; copy vector to zeropage, now 24b (5)
+	LDX fw_nmi+2		; bank too, new (4)
+	STA sysptr			; store all (4+3)
+	STX sysptr+2		; actually systmp
+; let us get ready for the return address
+	PHK					; return bank is zero (3)
+	PEA nmi_end-1		; prepare return address (5)
 
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
-	LDA (sysptr)		; get magic word, still on 16-bit (6)
-	CMP #'NU'			; valid? (3)
+	LDA [sysptr]		; get first word (7)
+	CMP #'U'+256*'N'	; correct? (3)
 		BNE rst_nmi			; not a valid routine (2/3)
-	LDY #2				; point to next word (3)
-	LDA (sysptr), Y		; get next magic word, still on 16-bit (6)
-	CMP #'*j'			; valid? (3)
+	LDY #2				; point to second word (2)
+	LDA [sysptr], Y		; get that (7)
+	CMP #'j'+256*'*'	; correct? (3)
 		BNE rst_nmi			; not a valid routine (2/3)
-; OK to proceed with supplied routine
 #endif
 
-	.as: .xs: SEP #$30	; ** back to 8-bit size! **
-	LDX #0				; null offset
-	JSR (fw_nmi, X)		; call actual code, ending in RTS (6)
+	.as: SEP #$20		; *** code is executed in 8-bit sizes ***
+; jump to user-supplied handler!
+; return address already set, but DBR is 0! No need to save it as only DP is accessed afterwards
+; MUST respect DP and sys_sp, though
+	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
+#ifdef	SUPPORT
+; 6502 handlers will end in RTS causing stack imbalance
+; must reset SP to previous value
+	.as: SEP #$20		; ** 8-bit memory for a moment **
+	TSC					; the whole stack pointer, will not mess with B
+	LDA sys_sp			; will replace the LSB with the stored value
+	TCS					; all set!
+#endif
 ; *** here goes the former nmi_end routine ***
 nmi_end:
 	.al: .xl: REP #$30	; ** whole register size to restore **
 	PLA					; retrieve saved vars (5+5)
 	PLY
-	STA systmp			; I suppose is safe to alter sys_sp too (4+4)
-	STY sysptr
+	STY systmp			; I suppose is safe to alter sys_sp too (4+4)
+	STA sysptr
+; as DBR was reset, time to restore it
 	PLB					; eeeeeeeek
 	PLY					; restore regular registers (3x5)
 	PLX
 	PLA
 	RTI					; resume normal execution and register size, hopefully
 
-
 ; *** execute standard NMI handler ***
 rst_nmi:
-	.as: .xs: SEP #$30	; ** back to 8-bit size! **
-; should I PHK for 24b pointers???
-	PEA nmi_end-1		; prepare return address
-; ...will continue thru subsequent standard handler, its RTS (RTL???) will get back to ISR exit
+	.xs:				; we came from 8-bit indexes
+	.as: SEP #$20		; handler is executed in full 8-bit sizes
+; return address already set!
+; ...will continue thru subsequent standard handler, its RTS/RTL will get back to ISR exit
 
-; *** default code for NMI handler, if not installed or invalid, should end in RTS (RTL???) ***
+; *** default code for NMI handler, enters in 8-bit sizes, if not installed or invalid, should end in RTS... or RTL ***
 std_nmi:
-#include "firmware/modules/std_nmi.s"
+#include "firmware/modules/std_nmi16.s"
+
 
 ; ********************************
 ; *** administrative functions ***
@@ -263,6 +285,78 @@ fw_s_isr:
 	_DR_OK				; done
 
 
+; ********************************
+; SET_NMI, set NMI handler routine
+; ********************************
+; might check whether the pointed code starts with the magic string
+; no need to disable interrupts as a partially set pointer would be rejected...
+; ...unless SAFE is not selected (will not check upon NMI)
+;	INPUT
+; ex_pt		= pointer to ISR (24b)
+;	OUTPUT
+; ex_pt		= currently set pointer (if was NULL at input)
+; sizes irrelevant!
+; routine ending in *RTL* (RTS is valid in bank zero, id est, 6502 code), regs already saved, but MUST respect sys_sp
+
+set_nmi:
+	LDA kerntab+1			; get MSB (3)
+		BEQ fw_r_nmi				; read instead (2/3)
+#ifdef	SAFE
+	LDY #0				; offset for NMI code pointer (2)
+	LDA (kerntab), Y		; get code byte (5)
+	CMP #'U'			; match? (2)
+		BNE fw_nerr			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (kerntab), Y		; get code byte (5)
+	CMP #'N'			; match? (2)
+		BNE fw_nerr			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (kerntab), Y		; get code byte (5)
+	CMP #'j'			; match? (2)
+		BNE fw_nerr			; not a valid routine (2/3)
+	INY					; another byte (2)
+	LDA (kerntab), Y		; get code byte (5)
+	CMP #'*'			; match? (2)
+		BNE fw_nerr			; not a valid routine (2/3)
+#endif
+	LDY kerntab				; get LSB (3)
+	STY fw_nmi				; store for firmware (4+4)
+	STA fw_nmi+1
+	_DR_OK					; done (8)
+fw_r_nmi:
+	LDY fw_nmi				; get current if read (4+4)
+	LDA fw_nmi+1
+	STY kerntab				; store result (3+3)
+	STA kerntab+1
+	_DR_OK
+fw_nerr:
+	_DR_ERR(CORRUPT)		; invalid magic string!
+
+; ***********************
+; SET_DBG, set BRK vector
+; ***********************
+; kerntab	= pointer to ISR (16b)
+;	OUTPUT
+; kerntab	= currently set pointer (if was NULL at input)
+; sizes irrelevant!
+; routine ending in RTS, regs already saved, but MUST respect sys_sp
+
+set_dbg:
+	LDY kerntab				; get LSB, nicer (3)
+	_CRITIC					; disable interrupts! (5)
+	LDA kerntab+1			; get MSB (3)
+		BEQ fw_r_brk				; read instead (2/3)
+	STY fw_brk				; store for firmware (4+4)
+	STA fw_brk+1
+fwsb_end:
+	_NO_CRIT				; restore interrupts if needed (4)
+	_DR_OK					; done (8)
+fw_r_brk:
+	LDY fw_brk				; get current if read (4+4)
+	LDA fw_brk+1
+	STY kerntab				; store result (3+3)
+	STA kerntab+1
+	_BRA fwsb_end
 
 
 ; -------------------- old code ----------------------
@@ -284,32 +378,6 @@ fwi_loop:
 
 
 
-
-; A4, set NMI vector
-; kerntab <- address of NMI code (including magic string)
-; might check whether the pointed code starts with the magic string
-; no need to disable interrupts as a partially set pointer would be rejected
-fw_s_nmi:
-#ifdef	SAFE
-	LDX #3					; offset to reversed magic string
-	LDY #0					; reset supplied pointer
-fw_sn_chk:
-		LDA (kerntab), Y		; get pointed handler string char
-		CMP fw_magic, X			; compare against reversed string
-		BEQ fw_sn_ok			; no problem this far...
-			_DR_ERR(CORRUPT)		; ...or invalid NMI handler
-fw_sn_ok:
-		INY						; try next one
-		DEX
-		BPL fw_sn_chk			; until all done
-#endif
-; transfer supplied pointer to firmware vector
-; not worth going 16-bit as will by 9b/19c instead of 10b/14c
-	LDY kerntab				; get LSB (3)
-	LDA kerntab+1			; get MSB (3)
-	STY fw_nmi				; store for firmware (4+4)
-	STA fw_nmi+1
-	_DR_OK					; done (8)
 
 
 ; A6, patch single function
@@ -359,9 +427,9 @@ fw_admin:
 ; generic functions, esp. interrupt related
 	.word	gestalt		; GESTALT get system info (renumbered)
 	.word	set_isr		; SET_ISR set IRQ vector
-	
-	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
-	.word	fw_s_brk	; *** SET_BRK set debugger, new 20170517
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+
 	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
 	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
 

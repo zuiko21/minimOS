@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a17
-; (c)2017 Carlos J. Santisteban
-; last modified 20171214-1434
+; v0.9.6a18
+; (c)2017-2018 Carlos J. Santisteban
+; last modified 20180117-1327
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a16 firmware for "
+	.asc	"0.9.6a18 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -166,55 +166,55 @@ nmi:
 	PHA					; save registers (3x4)
 	PHX
 	PHY
-	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeek
+	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeek (3)
+; prepare for following code while memory is still 16-bit!
+	.xs: SEP #$10		; *** back to 8-bit indexes *** (3)
 ; make NMI reentrant, new 65816 specific code
-	LDA sysptr			; get original words (4+4)
-	LDX systmp			; get sys_sp too!
-	PHX					; store them in similar order (4+4)
+	LDA sysptr			; get original words (4+3)
+	LDX systmp			; this will no longer get sys_sp too!
+	PHX					; store them in similar order (3+4)
 	PHA
 ; switch DBR to bank zero!!!!
-	PHK					; push a zero...
+	PHK					; push a zero... (3+3)
 	PLB					; ...as current data bank!
-; prepare for next routine while memory is still 16-bit!
-	.xs: SEP #$10		; *** back to 8-bit indexes ***
 ; in case an unaware 6502 app installs a handler ending in RTS,
 ; stack imbalance will happen, best keep SP and compare afterwards
 #ifdef	SUPPORT
-	TSX			; get stack pointer LSB
-	STX sys_sp		; best place as will not switch
+	TSX					; get stack pointer LSB (2)
+	STX sys_sp			; best place as will not switch (3)
 #endif
-	LDA fw_nmi		; copy vector to zeropage, now 24b (5)
+	LDA fw_nmi			; copy vector to zeropage, now 24b (5)
 	LDX fw_nmi+2		; bank too, new (4)
-	STA sysptr		; store all (4+3)
+	STA sysptr			; store all (4+3)
 	STX sysptr+2		; actually systmp
 ; let us get ready for the return address
-	PHK				; return bank is zero (3)
+	PHK					; return bank is zero (3)
 	PEA nmi_end-1		; prepare return address (5)
 
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
-	LDA [sysptr]			; get first word (7)
-	CMP #'U'+256*'N'		; correct? (3)
-			BNE rst_nmi			; not a valid routine (2/3)
+	LDA [sysptr]		; get first word (7)
+	CMP #'U'+256*'N'	; correct? (3)
+		BNE rst_nmi			; not a valid routine (2/3)
 	LDY #2				; point to second word (2)
-	LDA [sysptr], Y			; get that (7)
-	CMP #'j'+256*'*'		; correct? (3)
-			BNE rst_nmi			; not a valid routine (2/3)
+	LDA [sysptr], Y		; get that (7)
+	CMP #'j'+256*'*'	; correct? (3)
+		BNE rst_nmi			; not a valid routine (2/3)
 #endif
 
-	.as: SEP #$20			; *** code is executed in 8-bit sizes ***
+	.as: SEP #$20		; *** code is executed in 8-bit sizes ***
 ; jump to user-supplied handler!
 ; return address already set, but DBR is 0! No need to save it as only DP is accessed afterwards
 ; MUST respect DP and sys_sp, though
-	JMP [fw_nmi]		; will return upon RTL (8)
+	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
 nmi_end:
+#ifdef	SUPPORT
 ; 6502 handlers will end in RTS causing stack imbalance
 ; must reset SP to previous value
-#ifdef	SUPPORT
 	.as: SEP #$20		; ** 8-bit memory for a moment **
-	TSC			; the whole stack pointer, will not mess with B
-	LDA sys_sp		; will replace the LSB with the stored value
-	TCS			; all set!
+	TSC					; the whole stack pointer, will not mess with B
+	LDA sys_sp			; will replace the LSB with the stored value
+	TCS					; all set!
 #endif
 ; *** here goes the former nmi_end routine ***
 	.al: .xl: REP #$30	; ** whole register size to restore **
@@ -231,14 +231,14 @@ nmi_end:
 
 ; *** execute standard NMI handler ***
 rst_nmi:
-	.xs:					; we came from 8-bit indexes
-	.as: SEP #$20			; handler is executed in full 8-bit sizes
+	.xs:				; we came from 8-bit indexes
+	.as: SEP #$20		; handler is executed in full 8-bit sizes
 ; return address already set!
 ; ...will continue thru subsequent standard handler, its RTS/RTL will get back to ISR exit
 
-; *** default code for NMI handler, 8-bit sizes, if not installed or invalid, should end in RTS ***
+; *** default code for NMI handler, enters in 8-bit sizes, if not installed or invalid, should end in RTS... or RTL ***
 std_nmi:
-#include "firmware/modules/std_nmi.s"
+#include "firmware/modules/std_nmi16.s"
 
 
 ; ********************************
@@ -647,7 +647,7 @@ brk_call:
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a16 firmware for "
+	.asc	"0.9.6a18 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
