@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180117-1306
+; last modified 20180117-1427
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -147,38 +147,39 @@ start_kernel:
 ; **********************************************
 nmi:
 ; save registers AND system pointers
-	.al: .xl: REP #$30	; ** whole register size, just in case **
-	PHA					; save registers (4x4)
+	.al: .xl: REP #$30	; ** whole register size, just in case ** (3)
+	PHA					; save registers (3x4)
 	PHX
 	PHY
-	PHB					; eeeeeeeeeeeeeeeek
+	PHB					; eeeeeeeeeeeeeeeek (3)
+; prepare for following code while memory is still 16-bit!
+	.xs: SEP #$10		; *** back to 8-bit indexes *** (3)
 ; make NMI reentrant, new 65816 specific code
-; assume all registers in 16-bit size, this is 6+2 bytes, 16+2 clocks! (was 10b, 38c)
-	LDA sysptr			; get original word (4+4)
-	LDY systmp			; this will get sys_sp also!
-	PHY					; store them in similar order (4+4)
-	PHA
+	LDA sysptr			; get original words (4+3)
+	LDX systmp			; this will no longer get sys_sp too!
+	PHA					; make sure 8-bit systmp is on top (3+4)
+	PHX
 ; switch DBR to bank zero!!!!
-	PHK					; push a zero...
+	PHK					; push a zero... (3+3)
 	PLB					; ...as current data bank!
-; prepare for next routine while regs are still 16-bit!
-	.xs: SEP #$10		; *** back to 8-bit indexes ***
 ; in case an unaware 6502 app installs a handler ending in RTS,
 ; stack imbalance will happen, best keep SP and reset afterwards
 #ifdef	SUPPORT
-	TSX					; get stack pointer LSB
-	STX sys_sp			; best place as will not switch
+	TSX					; get stack pointer LSB (2)
+	STX sys_sp			; best place as will not switch (3)
 #endif
-	LDA fw_nmi			; copy vector to zeropage, now 24b (5)
-	LDX fw_nmi+2		; bank too, new (4)
-	STA sysptr			; store all (4+3)
-	STX sysptr+2		; actually systmp
 ; let us get ready for the return address
 	PHK					; return bank is zero (3)
 	PEA nmi_end-1		; prepare return address (5)
 
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
+; first copy vector into zeropage, as per long-indirect requirement
+	LDA fw_nmi			; copy vector to zeropage, now 24b (5)
+	LDX fw_nmi+2		; bank too, new (4)
+	STA sysptr			; store all (4+3)
+	STX sysptr+2		; actually systmp
+; look for the magic string
 	LDA [sysptr]		; get first word (7)
 	CMP #'U'+256*'N'	; correct? (3)
 		BNE rst_nmi			; not a valid routine (2/3)
@@ -193,32 +194,32 @@ nmi:
 ; return address already set, but DBR is 0! No need to save it as only DP is accessed afterwards
 ; MUST respect DP and sys_sp, though
 	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
+nmi_end:
+	.as: SEP #$20		; ** 8-bit memory for a moment ** (3)
 #ifdef	SUPPORT
 ; 6502 handlers will end in RTS causing stack imbalance
 ; must reset SP to previous value
-	.as: SEP #$20		; ** 8-bit memory for a moment **
-	TSC					; the whole stack pointer, will not mess with B
-	LDA sys_sp			; will replace the LSB with the stored value
-	TCS					; all set!
+	TSC					; the whole stack pointer, will not mess with B (2)
+	LDA sys_sp			; will replace the LSB with the stored value (3)
+	TCS					; all set! (2)
 #endif
 ; *** here goes the former nmi_end routine ***
-nmi_end:
-	.al: .xl: REP #$30	; ** whole register size to restore **
-	PLA					; retrieve saved vars (5+5)
-	PLY
-	STY systmp			; I suppose is safe to alter sys_sp too (4+4)
+	PLA					; restrieve systmp and restore it, no longer including sys_sp (4+3)
+	STA systmp			; restore values (4+4)
+	.al: .xl: REP #$30	; ** whole register size to restore the rest ** (3)
+	PLA					; restore saved sysptr (5+5)
 	STA sysptr
 ; as DBR was reset, time to restore it
-	PLB					; eeeeeeeek
+	PLB					; eeeeeeeek (4)
 	PLY					; restore regular registers (3x5)
 	PLX
 	PLA
-	RTI					; resume normal execution and register size, hopefully
+	RTI					; resume normal execution and register sizes, hopefully
 
 ; *** execute standard NMI handler ***
 rst_nmi:
 	.xs:				; we came from 8-bit indexes
-	.as: SEP #$20		; handler is executed in full 8-bit sizes
+	.as: SEP #$20		; handler is executed in full 8-bit sizes (3)
 ; return address already set!
 ; ...will continue thru subsequent standard handler, its RTS/RTL will get back to ISR exit
 
