@@ -227,6 +227,7 @@ rst_nmi:
 std_nmi:
 #include "firmware/modules/std_nmi16.s"
 
+.as: .xs
 
 ; ********************************
 ; *** administrative functions ***
