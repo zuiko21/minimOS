@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a4
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180116-1109
+; last modified 20180117-1243
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -193,16 +193,15 @@ nmi_end:
 	PLA
 	RTI					; resume normal execution and register size, hopefully
 
-fw_magic:
-	.asc	"*jNU"		; reversed magic string
 
 ; *** execute standard NMI handler ***
 rst_nmi:
 	.as: .xs: SEP #$30	; ** back to 8-bit size! **
+; should I PHK for 24b pointers???
 	PEA nmi_end-1		; prepare return address
-; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
+; ...will continue thru subsequent standard handler, its RTS (RTL???) will get back to ISR exit
 
-; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
+; *** default code for NMI handler, if not installed or invalid, should end in RTS (RTL???) ***
 std_nmi:
 #include "firmware/modules/std_nmi.s"
 
@@ -223,7 +222,7 @@ std_nmi:
 ; k_ram		= pages of RAM
 ; sizes irrelevant
 
-fw_gestalt:
+gestalt:
 	PHP					; keep sizes (3)
 	.al: REP #$20		; ** 16-bit memory **
 	LDA #SPEED_CODE		; speed code as determined in options.h (2+3)
@@ -238,6 +237,32 @@ fw_gestalt:
 	STA ex_pt			; set output
 	PLP					; restore sizes (4)
 	_DR_OK				; done (8)
+
+
+; ***********************
+; SET_ISR, set IRQ vector
+; ***********************
+;	INPUT
+; kerntab	= pointer to ISR (16b)
+;	OUTPUT
+; kerntab	= currently set pointer (if was NULL at input)
+; sizes irrelevant!
+
+set_isr:
+	_CRITIC
+	.al: REP #$20		; *** 16-bit memory ***
+	.xs: SEP #$10		; *** 8-bit indexes ***
+	LDA kerntab			; get original pointer
+	BNE fw_s_isr		; set ISR as was not NULL
+		LDA fw_isr			; get whole pointer otherwisw
+		STA kerntab			; store result
+; no need to skip next instruction as will be harmless, saving 3 bytes although wasting 5 cycles
+fw_s_isr:
+	STA fw_isr			; store for firmware
+	_NO_CRIT			; restore sizes and interrupt mask
+	_DR_OK				; done
+
+
 
 
 ; -------------------- old code ----------------------
@@ -258,15 +283,6 @@ fwi_loop:
 	_DR_OK				; all done (8)
 
 
-; A2, set IRQ vector
-; kerntab <- address of ISR
-fw_s_isr:
-	_ENTER_CS				; disable interrupts and save sizes! (5)
-	.al: REP #$20			; ** 16-bit memory ** (3)
-	LDA kerntab				; get pointer (4)
-	STY fw_isr				; store for firmware (5)
-	_EXIT_CS				; restore interrupts if needed, sizes too (4)
-	_DR_OK					; done (8)
 
 
 ; A4, set NMI vector
@@ -341,8 +357,9 @@ fwp_func:
 ; *********************************
 fw_admin:
 ; generic functions, esp. interrupt related
-	.word	fw_gestalt	; GESTALT get system info (renumbered)
-	.word	fw_s_isr	; SET_ISR set IRQ vector
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	
 	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
 	.word	fw_s_brk	; *** SET_BRK set debugger, new 20170517
 	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
