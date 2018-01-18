@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a18
+; v0.9.6a19
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180117-1427
+; last modified 20180118-1322
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a18 firmware for "
+	.asc	"0.9.6a19 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -650,7 +650,7 @@ brk_call:
 ; if case of no headers, at least keep machine name somewhere
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.9.6a18 firmware for "
+	.asc	"0.9.6a19 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
@@ -685,6 +685,10 @@ led_loop:
 	.dsb	kerncall-*, $FF
 #endif
 
+; ******************************************************************
+; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
+; ******************************************************************
+
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
 * = kerncall
 	CLC				; must be here!
@@ -695,15 +699,6 @@ led_loop:
 ; ...will point to either the above wrapper (16-bit kernel)...
 ; ...or the usual indirect-indexed jump (8-bit)...
 ; ...without pre-CLC or size setting!
-
-#ifdef		ROM
-	.dsb	adm_appc-*, $FF
-#endif
-; *** idea for 65816 admin-call interface from apps! ($FFC8) ***
-* = adm_appc
-	JSR adm_call		; get into firmware interface (returns via RTS)
-	RTL					; get back into original task (called via JSL $00FFC8)
-; ****** likely to end at $00FFCC ******
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -720,9 +715,24 @@ irq:
 	JMP [fw_isr]	; long vectored ISR (6)
 
 ; filling for ready-to-blow ROM
-#ifdef	ROM
-	.dsb	lock-*, $FF
+#ifdef		ROM
+	.dsb	adm_call-*, $FF
 #endif
+
+; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+* = adm_appc
+	PHB						; could came from any bank
+	PHK						; zero is...
+	PLB						; ...current bank
+	JSR (fw_admin, X)		; return here (DR_OK form)
+	PLB						; restore bank...
+	RTL						; ...and return from long address!
+
+; *** above code takes -8- bytes, thus no room for padding! ***
+; filling for ready-to-blow ROM
+;#ifdef	ROM
+;	.dsb	lock-*, $FF
+;#endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = lock
@@ -742,7 +752,7 @@ panic_loop:
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
 	.word	nmi			; emulated COP		@ $FFF4
-	.word	$3412		; reserved			@ $FFF6
+	.word	$FFFF		; reserved			@ $FFF6
 	.word	nmi			; emulated ABORT 	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case

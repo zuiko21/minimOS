@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180117-1427
+; last modified 20180118-1319
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -267,7 +267,7 @@ gestalt:
 ; SET_ISR, set IRQ vector
 ; ***********************
 ;	INPUT
-; kerntab	= pointer to ISR (16b)
+; kerntab	= pointer to ISR (24b)
 ;	OUTPUT
 ; kerntab	= currently set pointer (if was NULL at input)
 ; sizes irrelevant!
@@ -276,13 +276,24 @@ set_isr:
 	_CRITIC
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
-	LDA kerntab			; get original pointer
+#ifdef	SUPPORT
+	LDX run_arch		; called from 8-bit code?
+	BEQ si_16b			; no, bank address already provided
+		STZ kerntab+2		; otherwise, set it to zero
+si_16b:
+#endif
+	LDA kerntab+1		; check MSB and bank address
 	BNE fw_s_isr		; set ISR as was not NULL
 		LDA fw_isr			; get whole pointer otherwisw
+		LDX fw_isr+2
 		STA kerntab			; store result
-; no need to skip next instruction as will be harmless, saving 3 bytes although wasting 5 cycles
+		STX kerntab+2
+; no need to skip next instruction as will be harmless
 fw_s_isr:
+	LDA kerntab			; get original pointer
+	LDX kerntab+2
 	STA fw_isr			; store for firmware
+	STX fw_isr+2
 	_NO_CRIT			; restore sizes and interrupt mask
 	_DR_OK				; done
 
@@ -293,6 +304,7 @@ fw_s_isr:
 ; might check whether the pointed code starts with the magic string
 ; no need to disable interrupts as a partially set pointer would be rejected...
 ; ...unless SAFE is not selected (will not check upon NMI)
+; will use CRITIC section as will save register sizes as well
 ;	INPUT
 ; ex_pt		= pointer to ISR (24b)
 ;	OUTPUT
@@ -464,8 +476,8 @@ brk_hndl:		; label from vector list
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
-	.as: .xs: SEP #$30
-	JMP (fw_table, X)		; the old fashioned way
+	.as: .xs: SEP #$30	; standard sizes
+	JMP (fw_table, X)	; the old fashioned way (this takes 5 bytes)
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -479,27 +491,47 @@ cop_hndl:		; label from vector list
 ; *** minimOS·65 function call WRAPPER ($FFC0) ***
 * = kerncall
 	CLC			; pre-clear carry
-	COP $FF		; wrapper on 816 firmware!
-	RTS			; return to caller
+	COP $7F		; wrapper on 816 firmware!
+	RTS			; return to caller (this takes 4 bytes)
+; *** no longer a wrapper outside bank zero for minimOS·65 ***
+; alternative multikernel FW may use an indirect jump...
+; ...will point to either the above wrapper (16-bit kernel)...
+; ...or the usual indirect-indexed jump (8-bit)...
+; ...without pre-CLC or size setting!
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	admin_call-*, $FF
+	.dsb	adm_call-*, $FF
 #endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
-	JMP (fw_admin, X)		; takes 5 clocks
+	JMP (fw_admin, X)		; takes 5 clocks and 3 bytes, kernel/drivers only!
 
 ; *** vectored IRQ handler ***
 ; might go elsewhere
 irq:
-	JMP (fw_isr)	; vectored ISR (5)
+	JMP [fw_isr]	; 24-bit vectored ISR, 4 byte instruction (6) total 7 bytes
 
 ; filling for ready-to-blow ROM
-#ifdef	ROM
-	.dsb	lock-*, $FF
+#ifdef		ROM
+	.dsb	adm_call-*, $FF
 #endif
+
+; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+* = adm_appc
+	PHB						; could came from any bank
+	PHK						; zero is...
+	PLB						; ...current bank
+	JSR (fw_admin, X)		; return here (DR_OK form)
+	PLB						; restore bank...
+	RTL						; ...and return from long address!
+
+; *** above code takes -8- bytes, thus no room for padding! ***
+; filling for ready-to-blow ROM
+;#ifdef	ROM
+;	.dsb	lock-*, $FF
+;#endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = lock
