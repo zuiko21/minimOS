@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc2
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180119-1001
+; last modified 20180119-1046
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -165,62 +165,7 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 ; **********************************************
 nmi:
-; save registers AND system pointers
-	.al: .xl: REP #$30	; ** whole register size, just in case **
-	PHA					; save registers (3x4)
-	PHX
-	PHY
-	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeek
-; should I save and reset DP???
-; make NMI reentrant, new 65816 specific code
-; assume all registers in 16-bit size
-	LDY sysptr			; get original word (4+4)
-	LDA systmp			; this will get sys_sp also!
-	PHA					; store them in similar order (4+4)
-	PHY
-; switch DBR to bank zero!!!!
-	PHK					; push a zero...
-	PLB					; ...as current data bank!
-; prepare for next routine while memory is still 16-bit!
-	LDA fw_nmi			; copy vector to zeropage (5+4)
-	STA sysptr
-	.as: SEP #$20		; *** back to 8-bit size all the way! ***
-#ifdef	SAFE
-; check whether user NMI pointer is valid
-	LDX #3				; offset for (reversed) magic string, no longer preloaded (2)
-	LDY #0				; offset for NMI code pointer (2)
-nmi_chkmag:
-		LDA (sysptr), Y		; get code byte (5)
-		CMP fw_magic, X		; compare with string (4)
-			BNE rst_nmi			; not a valid routine (2/3)
-		INY					; another byte (2)
-		DEX					; internal string is read backwards (2)
-		BPL nmi_chkmag		; down to zero (3/2)
-#endif
-	LDX #0				; null offset (2)
-	JSR (fw_nmi, X)		; call actual code, ending in RTS (8) enters in 8-bit sizes
-; *** here goes the former nmi_end routine ***
-nmi_end:
-	.al: .xl: REP #$30	; ** whole register size to restore **
-	PLY					; retrieve saved vars (5+5)
-	PLA
-	STY sysptr			; restore values (4+4)
-	STA systmp			; I suppose is safe to alter sys_sp too
-; if DP was reset, time to restore it
-	PLB					; eeeeeeeeeeeeeeek
-	PLY					; restore regular registers (3x5)
-	PLX
-	PLA
-	RTI					; resume normal execution and register sizes, hopefully
-
-; *** execute standard NMI handler ***
-rst_nmi:
-	PEA nmi_end-1		; prepare return address
-; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
-
-; *** default code for NMI handler, 8-bit sizes, if not installed or invalid, should end in RTS ***
-std_nmi:
-#include "firmware/modules/std_nmi.s"
+#include "firmware/modules/nmi_hndl16.s"
 
 
 ; ********************************
