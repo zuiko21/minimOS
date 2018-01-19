@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a19
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180118-1333
+; last modified 20180119-0847
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -33,6 +33,12 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 	.word	fwSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
 ; *** end of standard header ***
+#else
+; if case of no headers, at least keep machine name somewhere
+fw_splash:
+	.asc	"0.9.6a19 firmware for "
+fw_mname:
+	.asc	MACHINE_NAME, 0
 #endif
 
 ; **************************
@@ -40,64 +46,43 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 ; ****** cold restart ******
 ; **************************
 ; **************************
-; basic init
+
+	.as:.xs				; to be sure!
+
 reset:
-	SEI					; cold boot (2)
-	CLD					; just in case of rebooting (2)
-; reset the 65816 to emulation mode, just in case
-	SEC					; would set back emulation mode on C816
-	XCE					; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA 0				; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
-; now we are surely into emulation mode, initialise basic stack at $1FF
-	LDX #SPTR			; initial stack pointer, must be done in emulation for '816 (2)
-	TXS					; initialise stack (2)
+; *** basic init ***
+#include "firmware/modules/basic_init16.s"
 
-; ***************************
+; ******************************
+; *** minimal hardware setup ***
+; ******************************
+
+; check for VIA presence and disable all interrupts
+#include "firmware/modules/viacheck_irq.s"
+
 ; *** specific 65816 code ***
-; ***************************
-
-; as this firmware should be 65816-only, check for its presence or nothing!
-; derived from the work of David Empson, Oct. '94
-#ifdef	SAFE
-	SED					; decimal mode
-	LDA #$99			; load highest BCD number (sets N too)
-	CLC					; prepare to add
-	ADC #2				; will wrap around in Decimal mode (should clear N)
-	CLD					; back to binary
-		BMI cpu_bad			; NMOS, N flag not affected by decimal add
-	TAY					; let us preload Y with 1 from above
-	LDX #0				; sets Z temporarily
-	TYX					; TYX, 65802 instruction will clear Z, NOP on all 65C02s will not
-	BNE fw_cpuOK		; Branch only on 65802/816
-cpu_bad:
-		JMP lock			; *** will signal via 'E' LED ***
-fw_cpuOK:
-#endif
-
+; as this firmware should be 65816-only, go back to native mode!
+#include "firmware/modules/816_check.s"
 ; it can be assumed 65816 from this point on
-	CLC					; set NATIVE mode eeeeeeeeeeek
-	XCE					; still with 8-bit registers
-; seems I really need to (re)set DP and DBR if rebooting
-	PHK					; stacks a zero
-	PLB					; reset this value
-	PHK					; stack two zeroes
-	PHK
-	PLD					; simpler than TCD et al
 
 ; *********************************
 ; *** optional firmware modules ***
 ; *********************************
-post:
-; might check ROM integrity here
-;#include "firmware/modules/romcheck.s"
 
-; SRAM test
-;#include "firmware/modules/ramtest.s"
-; MUST probe for RAM size, anyway... and skip the ROM
-#include "firmware/modules/memsiz.s"
+; optional boot selector
+;#include "firmware/modules/bootoff.s"
+
+; might check ROM integrity here
+;#include "firmware/modules/romcheck16.s"
+
+; Jalapa is intended NOT to have ROM-in-RAM feature
+
 
 ; startup beep, droplet style
-#include "firmware/modules/droplet.s"
+#include "firmware/modules/droplet.s"	; specific Jalapa sound, not sure if I will be able to run it asynchronously
+
+; SRAM test, MUST probe for RAM size, anyway... and skip the ROM
+#include "firmware/modules/memsiz.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -647,13 +632,6 @@ brk_call:
 
 .as:.xs:				; otherwise might prevent code after ROM!
 
-; if case of no headers, at least keep machine name somewhere
-#ifdef	NOHEAD
-fw_splash:
-	.asc	"0.9.6a19 firmware for "
-fw_mname:
-	.asc	MACHINE_NAME, 0
-#endif
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list

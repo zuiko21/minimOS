@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc1
-; (c)2017 Carlos J. Santisteban
-; last modified 20171220-0827
+; v0.9.6rc2
+; (c)2017-2018 Carlos J. Santisteban
+; last modified 20180119-0847
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -52,52 +52,34 @@ fw_mname:
 
 	.as:.xs				; to be sure!
 
-; basic init
 reset:
-	SEI					; cold boot (2) not needed for simulator?
-	CLD					; just in case, a must for NMOS (2)
-; reset the 65816 to emulation mode, just in case
-	SEC					; would set back emulation mode on C816
-	XCE					; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!
-	ORA $0				; the above would increment some random address in zeropage (NMOS) but this one is inocuous on all CMOS
-	LDX #SPTR			; initial stack pointer, machine-dependent, must be done in emulation for '816 (2)
-	TXS					; initialise stack (2)
+; *** basic init ***
+#include "firmware/modules/basic_init16.s"
 
-; ***************************
+; ******************************
+; *** minimal hardware setup ***
+; ******************************
+
+; check for VIA presence and disable all interrupts
+#include "firmware/modules/viacheck_irq.s"
+
 ; *** specific 65816 code ***
-; ***************************
-
-; as this firmware should be 65816-only, check for its presence or nothing!
-; derived from the work of David Empson, Oct. '94
-#ifdef	SAFE
-	SED					; decimal mode
-	LDA #$99			; load highest BCD number (sets N too)
-	CLC					; prepare to add
-	ADC #$02			; will wrap around in Decimal mode (should clear N)
-	CLD					; back to binary
-		BMI cpu_bad			; NMOS, N flag not affected by decimal add
-	TAY					; let us preload Y with 1 from above
-	LDX #$00			; sets Z temporarily
-	TYX					; TYX, 65802 instruction will clear Z, NOP on all 65C02s will not
-	BNE fw_cpuOK		; Branch only on 65802/816
-cpu_bad:
-		LDA #'?'			; *** some debug code for run65816, just in case ***
-		JSR $c0c2			; *** direct print via run65816 ********************
-		JMP lock			; cannot handle BRK, alas
-fw_cpuOK:
-#endif
-
+; as this firmware should be 65816-only, go back to native mode!
+#include "firmware/modules/816_check.s"
 ; it can be assumed 65816 from this point on
-	CLC					; set NATIVE mode eeeeeeeeeeek
-	XCE					; still with 8-bit registers
-; ***** do I really need to (re)set DP and DBR??? *****
-	PHK					; stacks a zero
-	PLB					; reset this value
-	PHK					; stack two zeroes
-	PHK
-	PLD					; simpler than TCD et al
 
+; ******************************
+; *** minimal hardware setup ***
+; ******************************
+
+; check for VIA presence and disable all interrupts
+;#include "firmware/modules/viacheck_irq.s"
 ; simulated 65816 has no real hardware to initialise...
+
+; *** specific 65816 code ***
+; as this firmware should be 65816-only, go back to native mode!
+#include "firmware/modules/816_check.s"
+; it can be assumed 65816 from this point on
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -105,14 +87,18 @@ fw_cpuOK:
 
 ; bootoff seems of little use here...
 
-post:
+
 ; might check ROM integrity here
-;#include "firmware/modules/romcheck.s"
+;#include "firmware/modules/romcheck16.s"
+
+; supposedly no ROM-in-RAM feature
+
 
 ; no beep so far on simulation...
 
+
 ; SRAM test
-;#include "firmware/modules/ramtest.s"
+;#include "firmware/modules/memsiz.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***

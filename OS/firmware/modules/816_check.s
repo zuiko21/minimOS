@@ -1,14 +1,14 @@
 ; firmware module for minimOS·65
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180110-1401
+; last modified 20180119-0905
 
 ; *** check whether an actual 65816 is in use ***
-; no interface needed
+; no interface needed, might call lock routine!
 
 ; as this firmware should be 65816-only, check for its presence or nothing!
 ; derived from the work of David Empson, Oct. '94
-#ifdef	SAFE
 .(
+#ifdef	SAFE
 	SED					; decimal mode
 	LDA #$99			; load highest BCD number (sets N too)
 	CLC					; prepare to add
@@ -22,5 +22,16 @@
 cpu_bad:
 		JMP lock		; cannot handle BRK, alas
 fw_cpuOK:
-.)
+
+; *** set back to native 816 mode ***
+; it can be assumed 65816 from this point on
+	CLC					; set NATIVE mode eeeeeeeeeeek
+	XCE					; still with 8-bit registers
+; seems I really need to (re)set DP and DBR if rebooting
+	PHK					; stacks a zero
+	PLB					; reset this value
+	PHK					; stack two zeroes
+	PHK
+	PLD					; simpler than TCD et al
 #endif
+.)

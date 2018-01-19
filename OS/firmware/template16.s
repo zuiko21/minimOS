@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180118-1333
+; last modified 20180119-0847
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -42,13 +42,17 @@ fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
 
-; ********************
-; *** cold restart ***
-; ********************
+; **************************
+; **************************
+; ****** cold restart ******
+; **************************
+; **************************
+
+	.as:.xs				; to be sure!
 
 reset:
 ; *** basic init ***
-#include "firmware/modules/basic_init.s"
+#include "firmware/modules/basic_init16.s"
 
 ; ******************************
 ; *** minimal hardware setup ***
@@ -57,7 +61,8 @@ reset:
 ; check for VIA presence and disable all interrupts
 #include "firmware/modules/viacheck_irq.s"
 
-; as this firmware should be 65816-only, check for its presence or nothing!
+; *** specific 65816 code ***
+; as this firmware should be 65816-only, go back to native mode!
 #include "firmware/modules/816_check.s"
 ; it can be assumed 65816 from this point on
 
@@ -68,10 +73,8 @@ reset:
 ; optional boot selector
 ;#include "firmware/modules/bootoff.s"
 
-; ***continue power-on self-test***
-;post:					; this is no longer needed
 ; might check ROM integrity here
-;#include "firmware/modules/romcheck.s"
+;#include "firmware/modules/romcheck16.s"
 
 ; some systems might copy ROM-in-RAM and continue at faster speed!
 ;#include "firmware/modules/rominram.s"
@@ -80,7 +83,7 @@ reset:
 #include "firmware/modules/beep16.s"	; typical 816 standard beep
 
 ; SRAM test
-#include "firmware/modules/ramtest.s"	; *** must support 24-bit addressing!!!
+#include "firmware/modules/memsiz.s"	; *** must support 24-bit addressing!!!
 
 ; ********************************
 ; *** hardware interrupt setup ***
