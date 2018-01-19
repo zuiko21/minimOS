@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a19
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180119-0847
+; last modified 20180119-1001
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -84,57 +84,60 @@ reset:
 ; SRAM test, MUST probe for RAM size, anyway... and skip the ROM
 #include "firmware/modules/memsiz.s"
 
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+
+; VIA initialisation (and stop beeping)
+#include "firmware/modules/via_init.s"
+
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; *** set default CPU type ***
+; *** set default CPU type *** (not worth a separate file?)
 	LDA #'V'			; 65816 only (2)
 	STA fw_cpu			; store variable (4)
+
 ; as this is the only valid CPU for this firmware, no further checking necessary
 
-; *** preset kernel start address (standard label from ROM file, unless downloaded) ***
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	LDA #kernel			; get full address (3)
-	STA fw_warm			; store in sysvars (5)
+; perhaps could wait until here to look for an actual 65816...
 
-; *** preset default BRK & NMI handlers ***
-	LDA #std_nmi		; default like the standard NMI
-	STZ fw_brk+1		; this is in bank 0, also clears MSB
-	STA fw_brk			; store default handler
-; since the NMI handler is validated, no need to install a default
+; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
+	.al: REP #$20
 
-; *** reset jiffy count ***
-	STZ ticks		; clear words (5+5)
-	STZ ticks+2		; no longer needs consecutive!
+; preset kernel start address
+#include "firmware/modules/kern_addr16.s"
 
-; ********************************
-; *** hardware interrupt setup ***
-; ********************************
-	LDX #%11000010		; CB2 low, Cx1 negative, CA2 indep. neg.
-	STX VIA_J + PCR
-	LDX #%01000000		; T1 cont, no PB7, no SR, no latch
-	STX VIA_J + ACR
-	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
-	STX VIA_J + IER
-; *** preset jiffy irq frequency ***
-	LDA #IRQ_PER		; get period from options
-	STA irq_hz		; set old parameter
-	JSR fw_jiffy		; start counters and update var!
+; preset default BRK handler
+#include "firmware/modules/brk_addr16.s"
 
-	.as: .xs: SEP #$30	; *** all back to 8-bit, just in case, might be removed if no remote boot is used (3) ***
+; no need to set NMI as it will be validated
 
-; NO direct print splash string ***
 
-; *** could download a kernel here, updating fw_warm accordingly ***
+; preset jiffy irq frequency
+#include "firmware/modules/jiffy_hz16.s"
+
+; reset jiffy count
+#include "firmware/modules/jiffy_rst16.s"
+
+; reset last installed kernel (new)
+#include "firmware/modules/rst_lastk16.s"
+
+; *** back to 8-bit memory ***
+	.as: SEP #$20
+
+; *** optional network booting ***
+; might modify the contents of fw_warm
+;#include "firmware/modules/netboot.s"
+
+; *** NO direct print splash string ***
 
 ; ************************
 ; *** start the kernel ***
 ; ************************
 start_kernel:
-	SEC					; emulation mode for a moment (2+2)
-	XCE
-	JMP (fw_warm)		; any 16-bit kernel should get back into NATIVE mode (5)
+#include "firmware/modules/start16.s"
 
 ; ********************************
 ; ********************************

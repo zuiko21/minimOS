@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
-; v0.6b4
+; v0.6b5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180116-1102
+; last modified 20180119-0931
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR					; flags TBD
 	.asc "boot", 0					; standard filename
 fw_splash:
-	.asc "0.6b4 firmware for "	; machine description as comment
+	.asc "0.6b5 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6b4 firmware for "
+	.asc	"0.6b5 firmware for "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -89,7 +89,7 @@ reset:
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; set default CPU type
+; *** set default CPU type ***
 ; just set expected default type as defined in options.h...
 ;#include "firmware/modules/default_cpu.s"
 ; ...or actually check for it!
@@ -99,6 +99,7 @@ reset:
 ; in case an NMOS CPU is used, make sure this was built for it
 #include "firmware/modules/nmos_savvy.s"
 
+; *** continue parameter setting ***
 ; preset kernel start address
 #include "firmware/modules/kern_addr.s"
 
@@ -107,8 +108,9 @@ reset:
 
 ; no need to set NMI as it will be validated
 
+
 ; preset jiffy irq frequency
-#include "firmware/jiffy_hz.s"
+#include "firmware/modules/jiffy_hz.s"
 
 ; reset jiffy count
 #include "firmware/modules/jiffy_rst.s"
@@ -118,12 +120,13 @@ reset:
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
--remote_boot:
 ;#include "firmware/modules/netboot.s"
 
-; *******************************************
-; *** firmware ends, jump into the kernel ***
-; *******************************************
+; *** direct print splash string code comes here, when available ***
+
+; ************************
+; *** start the kernel ***
+; ************************
 start_kernel:
 	JMP (fw_warm)		; (6)
 

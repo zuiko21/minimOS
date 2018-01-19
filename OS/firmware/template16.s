@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180119-0847
+; last modified 20180119-1001
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -96,13 +96,15 @@ reset:
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; set default CPU type
+; *** set default CPU type *** (not worth a separate file?)
 	LDA #'V'			; 65816 only (2)
 	STA fw_cpu			; store variable (4)
 
-; no way to be assembled for NMOS
+; as this is the only valid CPU for this firmware, no further checking necessary
 
-; *** worth switching to 16-bit memory while setting pointers ***
+; perhaps could wait until here to look for an actual 65816...
+
+; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
 	.al: REP #$20
 
 ; preset kernel start address
@@ -112,6 +114,7 @@ reset:
 #include "firmware/modules/brk_addr16.s"
 
 ; no need to set NMI as it will be validated
+
 
 ; preset jiffy irq frequency
 #include "firmware/modules/jiffy_hz16.s"
@@ -127,17 +130,15 @@ reset:
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
--remote_boot:
 ;#include "firmware/modules/netboot.s"
 
-; *******************************************
-; *** firmware ends, jump into the kernel ***
-; *******************************************
-start_kernel:
-	SEC					; emulation mode for a moment (2+2)
-	XCE
-	JMP (fw_warm)		; (5)
+; *** direct print splash string code comes here, when available ***
 
+; ************************
+; *** start the kernel ***
+; ************************
+start_kernel:
+#include "firmware/modules/start16.s"
 
 ; ********************************
 ; ********************************

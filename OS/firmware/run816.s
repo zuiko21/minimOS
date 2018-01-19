@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc2
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180119-0847
+; last modified 20180119-1001
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -100,67 +100,60 @@ reset:
 ; SRAM test
 ;#include "firmware/modules/memsiz.s"
 
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+
+; nothing to do here...
+
+
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; *** set default CPU type ***
+; *** set default CPU type *** (not worth a separate file?)
 	LDA #'V'			; 65816 only (2)
 	STA fw_cpu			; store variable (4)
 
-; *** as this is the only valid CPU for this firmware, no further checking necessary ***
+; as this is the only valid CPU for this firmware, no further checking necessary
 
-; *** preset kernel start address (standard label from ROM file, unless downloaded) ***
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	LDA #kernel			; get full address (3)
-	STA fw_warm			; store in sysvars (5)
+; perhaps could wait until here to look for an actual 65816...
 
-; *** preset default BRK & NMI handlers ***
-	LDA #std_nmi		; default like the standard NMI
-	STA fw_brk			; store default handler
-; since the NMI handler is validated, no need to install a default
+; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
+	.al: REP #$20
 
-; *** preset jiffy irq frequency ***
-; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
-	STZ irq_freq		; store null speed... IRQ not set
+; preset kernel start address
+#include "firmware/modules/kern_addr16.s"
 
-; *** reset jiffy count ***
-; currently a 4-byte counter, not worth a loop
-	STZ ticks			; reset word (5)
-	STZ ticks+2			; next word too (5)
+; preset default BRK handler
+#include "firmware/modules/brk_addr16.s"
 
-; ********************************
-; *** hardware interrupt setup ***
-; ********************************
-;	LDX #$C0			; enable T1 (jiffy) interrupt only, this in 8-bit (2+4)
-;	STX VIA_J + IER
+; no need to set NMI as it will be validated
 
-	.as: .xs: SEP #$30	; *** all back to 8-bit, just in case, might be removed if no remote boot is used (3) ***
 
-; **********************************
+; preset jiffy irq frequency
+#include "firmware/modules/jiffy_hz16.s"
+
+; reset jiffy count
+#include "firmware/modules/jiffy_rst16.s"
+
+; reset last installed kernel (new)
+#include "firmware/modules/rst_lastk16.s"
+
+; *** back to 8-bit memory ***
+	.as: SEP #$20
+
+; network booting makes no sense here
+
+
 ; *** direct print splash string ***
-; **********************************
-	LDX #0				; reset index
-fws_loop:
-		LDA fw_splash, X	; get char
-			BEQ fws_cr			; no more to print
-; as direct print uses no regs, nothing to save and reload
-		JSR $c0c2			; *** EhBASIC output ***
-		INX					; next char
-		BRA fws_loop
-fws_cr:
-	LDA #LF				; trailing CR, needed by console!
-	JSR $c0c2			; direct print
-
-; *** could download a kernel here, updating fw_warm accordingly ***
+#include "firmware/modules/splash.s"
 
 ; ************************
 ; *** start the kernel ***
 ; ************************
 start_kernel:
-	SEC					; emulation mode for a moment (2+2)
-	XCE
-	JMP (fw_warm)		; any 16-bit kernel should get back into NATIVE mode (5)
+#include "firmware/modules/start16.s"
 
 ; ********************************
 ; ********************************
