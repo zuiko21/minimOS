@@ -36,7 +36,7 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 #else
 ; if case of no headers, at least keep machine name somewhere
 fw_splash:
-	.asc	"0.9.6a19 firmware for "
+	.asc	"0.9.6a19 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
