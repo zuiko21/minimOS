@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc2
+; v0.9.6rc3
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180119-1046
+; last modified 20180122-1033
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -174,100 +174,27 @@ nmi:
 
 ; *** generic functions ***
 
-; GESTALT, get system info, API TBR
-;		OUTPUT
-; cpu_ll	= CPU type
-; c_speed	= speed code
-; str_pt	= points to a string with machine name
-; ex_pt		= points to a map of default memory conf ???
-; k_ram		= available pages of (kernel) SRAM
-; b_ram		= available BANKS of "high" RAM
+; *********************************
+; GESTALT, get system info, API TBD
+; *********************************
+#include "firmware/modules/gestalt16.s"
 
-fw_gestalt:
-	PHP					; save sizes!
-;	PHB					; in case is called outside bank 0?
-;	PHK					; use bank zero...
-;	PLB					; ...for data
-	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$10		; *** 8-bit indexes ***
-	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4+3)
-	LDX #SPD_CODE		; speed code as determined in options.h (2+3)
-	STY cpu_ll			; set outputs
-	STX c_speed
-	LDY himem			; get pages of kernel SRAM (4) ????
-	STY k_ram			; store output (3)
-	STZ b_ram			; no "high" RAM??? (4) *** TO DO ***
-	LDA #fw_mname		; get string pointer
-	STA str_pt			; put it outside
-	LDA #fw_map			; pointer to standard map TBD ????
-	STA ex_pt			; set output
-; some separate map for high RAM???
-;	PLB					; restore data bank?
-	_DR_OK				; done
-
+; ***********************
 ; SET_ISR, set IRQ vector
-;		INPUT
-; kerntab	= address of ISR (will take care of all necessary registers)
+; ***********************
+#include "firmware/modules/set_isr16.s"
 
-fw_s_isr:
-	_CRITIC				; disable interrupts and save sizes! (5)
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	.xs: SEP #$20		; ** 8-bit indexes, no ABI to set that! **
-	LDA kerntab			; get pointer (4)
-	STA @fw_isr			; store for firmware, note long addressing (6)
-	_NO_CRIT			; restore interrupts if needed, sizes too (4)
-	_DR_OK				; done (8)
+; ********************************
+; SET_NMI, set NMI handler routine
+; ********************************
+#include "firmware/modules/set_nmi16.s"
 
-; SET_NMI, set NMI vector
-;		INPUT
-; kerntab	= address of NMI code (including magic string, ends in RTS)
+; ********************************
+; SET_DBG, set BRK handler routine
+; ********************************
+#include "firmware/modules/set_dbg16.s"
 
-; might check whether the pointed code starts with the magic string
-; no need to disable interrupts as a partially set pointer would be rejected...
-; ...unless SAFE mode is NOT selected (will not check upon NMI)
 
-fw_s_nmi:
-	_CRITIC				; save sizes, just in case CS is needed...
-	.as: .xs: SEP #$30	; *** standard sizes ***
-#ifdef	SAFE
-	LDX #3				; offset to reversed magic string
-	LDY #0				; reset supplied pointer
-fw_sn_chk:
-		LDA (kerntab), Y	; get pointed handler string char
-		CMP @fw_magic, X	; compare against reversed string, note long addressing
-		BEQ fw_sn_ok		; no problem this far...
-; ***** due to error handling cannot use DR_ERR macro *****
-			LDY #CORRUPT		; error code (8-bit size)
-			PLP					; *** restore sizes eeeeeeeeek ***
-			SEC					; time to flag error!
-			RTS
-fw_sn_ok:
-		INY					; try next one
-		DEX
-		BPL fw_sn_chk		; until all done
-#endif
-; transfer supplied pointer to firmware vector
-	.al: REP #$20		; *** 16-bit memory ***
-	LDA kerntab			; get pointer (4)
-	STA @fw_nmi			; store for firmware, note long addressing (6)
-	_NO_CRIT			; restore sizes!
-	_DR_OK				; done (8)
-
-	.as: .xs			; just in case...
-
-; SET_BRK, set BRK handler
-;		INPUT
-; kerntab	= address of BRK routine (ending in RTS)
-
-fw_s_brk:
-	_CRITIC				; disable interrupts and save sizes! (5)
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	LDA kerntab			; get pointer (4)
-	STA @fw_brk			; store for firmware, note long addressing (6)
-	_NO_CRIT			; restore interrupts if needed, sizes too (4)
-	_DR_OK				; done
-
-	.as: .xs			; just in case...
 
 ; JIFFY, set jiffy IRQ frequency
 ;		INPUT

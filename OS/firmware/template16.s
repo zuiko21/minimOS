@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a6
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180122-1014
+; last modified 20180122-1031
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -172,146 +172,22 @@ irq:
 ; *********************************
 ; GESTALT, get system info, API TBD
 ; *********************************
-;		OUTPUT
-; cpu_ll	= CPU type
-; c_speed	= speed code (now 16b)
-; str_pt	= *machine name
-; ex_pt		= *memory map
-; k_ram		= pages of RAM
-; sizes irrelevant
-
-gestalt:
-	PHP					; keep sizes (3)
-	.al: REP #$20		; ** 16-bit memory **
-	.xs: SEP #$10		; ** 8-bit indexes **
-	LDX fw_cpu			; get kind of CPU previoulsy stored or determined (4)
-	STX cpu_ll			; store this value (3)
-	LDA #SPEED_CODE		; speed code as determined in options.h (3)
-	STA c_speed			; store this value (3) 
-	LDX himem			; get pages of kernel SRAM (4)
-	STX k_ram			; store output (3)
-	LDA #fw_mname		; get pointer to name (3)
-	STA str_pt			; set value (4)
-	LDA #fw_map			; get pointer to map (3)
-	STA ex_pt			; set output (4)
-	PLP					; restore sizes (4)
-	_DR_OK				; done (8)
-
+#include "firmware/modules/gestalt16.s"
 
 ; ***********************
 ; SET_ISR, set IRQ vector
 ; ***********************
-;	INPUT
-; kerntab	= pointer to ISR (24b)
-;	OUTPUT
-; kerntab	= currently set pointer (if was NULL at input)
-; sizes irrelevant!
-
-set_isr:
-	_CRITIC
-	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$10		; *** 8-bit indexes ***
-#ifdef	SUPPORT
-	LDX run_arch		; called from 8-bit code?
-	BEQ si_16b			; no, bank address already provided
-		STZ kerntab+2		; otherwise, set it to zero
-si_16b:
-#endif
-	LDA kerntab+1		; check MSB and bank address
-	BNE fw_s_isr		; set ISR as was not NULL
-		LDA fw_isr			; get whole pointer otherwisw
-		LDX fw_isr+2
-		STA kerntab			; store result
-		STX kerntab+2
-; no need to skip next instruction as will be harmless
-fw_s_isr:
-	LDA kerntab			; get original pointer
-	LDX kerntab+2
-	STA fw_isr			; store for firmware
-	STX fw_isr+2
-	_NO_CRIT			; restore sizes and interrupt mask
-	_DR_OK				; done
-
+#include "firmware/modules/set_isr16.s"
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
 ; ********************************
-; might check whether the pointed code starts with the magic string
-; no need to disable interrupts as a partially set pointer would be rejected...
-; ...unless SAFE is not selected (will not check upon NMI)
-; will use CRITIC section as will save register sizes as well
-;	INPUT
-; ex_pt		= pointer to ISR (24b)
-;	OUTPUT
-; ex_pt		= currently set pointer (if was NULL at input)
-; sizes irrelevant!
-; routine ending in *RTL* (RTS is valid in bank zero, id est, 6502 code), regs already saved, but MUST respect sys_sp
+#include "firmware/modules/set_nmi16.s"
 
-set_nmi:
-	_CRITIC				; will preserve sizes (5)
-	.al: REP #$20		; ** 16b memory, 8b index ** (3+3)
-	.xs: SEP #$10
-
-#ifdef	SUPPORT
-	LDX run_arch		; from 8-bit code? (4)
-	BEQ fw_sn24b			; no, bank already set (3/2)
-		STZ kerntab+2		; yes, assume it is bank zero (4)
-fw_sn24b:
-#endif
-
-	LDA kerntab+1		; get MSB+bank (4)
-		BEQ fw_r_nmi		; zero means read instead (2/3)
-
-#ifdef	SAFE
-	LDA [kerntab]		; get first word (7)
-	CMP #'U'+256*'N'	; correct? (3)
-		BNE fw_nerr			; not a valid routine (2/3)
-	LDY #2				; point to second word (2)
-	LDA [kerntab], Y	; get that (7)
-	CMP #'j'+256*'*'	; correct? (3)
-		BNE fw_nerr			; not a valid routine (2/3)
-#endif
-
-	LDY kerntab				; get LSB (3)
-	STY fw_nmi				; store for firmware (4)
-	STA fw_nmi+1			; includes MSB + bank (5)
-	_DR_OK					; done (8)
-fw_r_nmi:
-	LDY fw_nmi				; get current if read (4+5)
-	LDA fw_nmi+1
-	STY kerntab				; store result (3+4)
-	STA kerntab+1
-	_NO_CRIT				; restore sizes
-	_DR_OK
-fw_nerr:
-	_NO_CRIT				; restore sizes too
-	_DR_ERR(CORRUPT)		; invalid magic string!
-
-; ***********************
-; SET_DBG, set BRK vector
-; ***********************
-; kerntab	= pointer to ISR (16b)
-;	OUTPUT
-; kerntab	= currently set pointer (if was NULL at input)
-; sizes irrelevant!
-; routine ending in RTS, regs already saved, but MUST respect sys_sp
-
-set_dbg:
-	LDY kerntab				; get LSB, nicer (3)
-	_CRITIC					; disable interrupts! (5)
-	LDA kerntab+1			; get MSB (3)
-		BEQ fw_r_brk				; read instead (2/3)
-	STY fw_brk				; store for firmware (4+4)
-	STA fw_brk+1
-fwsb_end:
-	_NO_CRIT				; restore interrupts if needed (4)
-	_DR_OK					; done (8)
-fw_r_brk:
-	LDY fw_brk				; get current if read (4+4)
-	LDA fw_brk+1
-	STY kerntab				; store result (3+3)
-	STA kerntab+1
-	_BRA fwsb_end
+; ********************************
+; SET_DBG, set BRK handler routine
+; ********************************
+#include "firmware/modules/set_dbg16.s"
 
 
 ; -------------------- old code ----------------------

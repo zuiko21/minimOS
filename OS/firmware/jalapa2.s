@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a19
+; v0.9.6a20
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180119-1045
+; last modified 20180122-1037
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -158,151 +158,26 @@ nmi:
 
 ; *** generic functions ***
 
-; GESTALT, get system info, API TBR
-;		OUTPUT
-; cpu_ll	= CPU type
-; c_speed	= speed code
-; str_pt	= points to a string with machine name
-; ex_pt		= points to a map of default memory conf ???
-; k_ram		= available pages of (kernel) SRAM
-; b_ram		= available BANKS of "high" RAM
+; *********************************
+; GESTALT, get system info, API TBD
+; *********************************
+#include "firmware/modules/gestalt16.s"
 
-fw_gestalt:
-	PHP					; save sizes!
-	.al: REP #$20		; *** 16-bit memory ***
-	.xs: SEP #$10		; *** 8-bit indexes ***
-	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4)
-	LDA #SPD_CODE		; speed code as determined in options.h (3)
-	STY cpu_ll			; set outputs (3+4)
-	STA c_speed
-	LDY himem			; get pages of kernel SRAM (4) ????
-	STY k_ram			; store output (3)
-	STZ b_ram			; no "high" RAM??? (4) *** TO DO ***
-	LDA #fw_mname		; get string pointer
-	STA str_pt			; put it outside
-	LDA #fw_map			; pointer to standard map TBD ????
-	STA ex_pt			; set output
-; some separate map for high RAM???
-	PLP					; restore sizes eeeek
-	_DR_OK				; done
-
+; ***********************
 ; SET_ISR, set IRQ vector
-;		INPUT
-; kerntab	= 24b address of ISR (will take care of all necessary registers)
-;		zero means RETURN actual value! new 20170820
-fw_s_isr:
-	_CRITIC				; disable interrupts and save sizes! (5)
-#ifdef	SUPPORT
-	.xs: SEP #$10		; ** 8-bit indexes **
-	LDY run_arch		; called from unaware 6502 code?
-	BEQ fw_si24		; no, all set...
-		STZ kerntab+2		; ...or clear bank
-fw_si24:
-#endif
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	LDA kerntab+1			; get pointer highest... (4)
-; no ISRs on PAGE zero... BIT is not suitablex
-		BEQ fw_r_isr			; read instead! (2/3)
-	STA @fw_isr+1			; store for firmware, note long addressing (6)
-	LDA kerntab		; copy lowest too (4+6)
-	STA @fw_isr		; will recopy middle byte, no long STX...
-fwsi_end:
-	_NO_CRIT			; restore interrupts if needed, sizes too (4)
-	_DR_OK				; done (8)
-fw_r_isr:
-	LDA @fw_isr		; get previous value... (6)
-	STA kerntab		; ...and store it (4)
-	LDA @fw_isr+2		; get bank and garbage! (6)
-	STA kerntab+2		; will not hurt anyway (4)
-	BRA fwsi_end
+; ***********************
+#include "firmware/modules/set_isr16.s"
 
-; SET_NMI, set NMI vector
-;		INPUT
-; kerntab	= 24b address of NMI code (including magic string, ends in RTS)
-;		zero means RETURN actual value! new 20170820
+; ********************************
+; SET_NMI, set NMI handler routine
+; ********************************
+#include "firmware/modules/set_nmi16.s"
 
-; might check whether the pointed code starts with the magic string
-; no need to disable interrupts as a partially set pointer would be rejected...
-; ...unless SAFE mode is NOT selected (will not check upon NMI)
+; ********************************
+; SET_DBG, set BRK handler routine
+; ********************************
+#include "firmware/modules/set_dbg16.s"
 
-fw_s_nmi:
-	_CRITIC				; save sizes, just in case CS is needed...
-#ifdef	SUPPORT
-	.xs: SEP #$10			; *** standard index size ***
-	LDY run_arch		; called from unaware 6502 code?
-	BEQ fw_sn24		; no, all set...
-		STZ kerntab+2		; ...or clear bank
-fw_sn24:
-#endif
-	.al: REP #$20			; *** 16-bit memory ***
-; first check whether read or set
-	LDA kerntab+1			; get pointer highest... (4)
-; no ISRs on zeropage!
-		BEQ fw_r_nmi			; read instead! (2/3)
-#ifdef	SAFE
-	LDA [kerntab]		; get pointed handler string word
-	CMP #'U'+256*'N'	; valid?
-		BNE fw_snerr		; error!
-	LDY #2				; point to next word
-	LDA [kerntab], Y	; get pointed handler string word
-	CMP #'k'+256*'*'	; valid?
-		BNE fw_snerr		; error!
-#endif
-; transfer supplied pointer to firmware vector
-	LDA kerntab+1			; get pointer highest again (4)
-	STA @fw_nmi+1			; store for firmware, note long addressing (6)
-	LDA kerntab		; copy lowest too (4+6)
-	STA @fw_nmi		; will recopy middle byte, no long STX...
-fwsn_end:
-	_NO_CRIT			; restore sizes!
-	_DR_OK				; done (8)
-fw_snerr:
-	LDY #CORRUPT			; preload error code
-	_NO_CRIT			; restore sizes...
-	SEC					; ...but mark error
-	RTS					; firmware exit
-fw_r_nmi:
-	LDA @fw_nmi		; get previous value... (6)
-	STA kerntab		; ...and store it (4)
-	LDA @fw_nmi+2		; get bank and garbage! (6)
-	STA kerntab+2		; will not hurt anyway (4)
-	BRA fwsn_end
-
-	.as: .xs			; just in case...
-
-; SET_DBG, set BRK handler
-;		INPUT
-; kerntab	= 24b address of BRK routine (ending in RTS)
-;		zero means RETURN actual value! new 20170820
-
-fw_s_brk:
-	PHP					; save sizes! (3)
-#ifdef	SUPPORT
-	.xs: SEP #$10			; *** standard index size ***
-	LDY run_arch		; called from unaware 6502 code?
-	BEQ fw_sb24		; no, all set...
-		STZ kerntab+2		; ...or clear bank
-fw_sb24:
-#endif
-	.al: REP #$20		; ** 16-bit memory ** (3)
-; first check whether read or set
-	LDA kerntab+1			; get pointer highest... (4)
-; no ISRs on page zero!
-		BEQ fw_r_brk			; read instead! (2/3)
-	STA @fw_brk+1			; store for firmware, note long addressing (6)
-	LDA kerntab			; get pointer lowest (4)
-	STA @fw_brk			; sets middle byte too, no problem (6)
-fwb_end:
-	PLP					; restore sizes (4)
-	_DR_OK				; done
-fw_r_brk:
-	LDA @fw_brk		; get previous value... (6)
-	STA kerntab		; ...and store it (4)
-	LDA @fw_brk+2		; get bank and garbage! (6)
-	STA kerntab+2		; will not hurt anyway (4)
-	BRA fwb_end
-
-	.as: .xs			; just in case...
 
 ; JIFFY, set jiffy IRQ period
 ;		INPUT
