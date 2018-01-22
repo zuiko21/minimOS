@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a5
+; v0.6a6
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180119-1044
+; last modified 20180122-1014
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR						; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
 	.asc "boot", 0						; standard filename
 fw_splash:
-	.asc "65816 0.6a5 firmware for "	; machine description as comment
+	.asc "65816 0.6a6 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a5 firmware for "
+	.asc	"0.6a6 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -140,6 +140,7 @@ reset:
 start_kernel:
 #include "firmware/modules/start16.s"
 
+
 ; ********************************
 ; ********************************
 ; ****** interrupt handlers ******
@@ -152,9 +153,18 @@ start_kernel:
 nmi:
 #include "firmware/modules/nmi_hndl16.s"
 
+; ****************************
+; *** vectored IRQ handler ***
+; ****************************
+; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
+irq:
+	JMP [fw_isr]	; 24-bit vectored ISR (6)
+
 
 ; ********************************
+; ********************************
 ; *** administrative functions ***
+; ********************************
 ; ********************************
 
 ; *** generic functions ***
@@ -173,16 +183,17 @@ nmi:
 gestalt:
 	PHP					; keep sizes (3)
 	.al: REP #$20		; ** 16-bit memory **
-	LDA #SPEED_CODE		; speed code as determined in options.h (2+3)
-	LDX fw_cpu			; get kind of CPU (previoulsy stored or determined) (4+3)
-	STA c_speed			; store values
-	STX cpu_ll
+	.xs: SEP #$10		; ** 8-bit indexes **
+	LDX fw_cpu			; get kind of CPU previoulsy stored or determined (4)
+	STX cpu_ll			; store this value (3)
+	LDA #SPEED_CODE		; speed code as determined in options.h (3)
+	STA c_speed			; store this value (3) 
 	LDX himem			; get pages of kernel SRAM (4)
 	STX k_ram			; store output (3)
-	LDA #fw_mname		; get pointer to name
-	STA str_pt			; set value
-	LDA #fw_map			; get pointer to map
-	STA ex_pt			; set output
+	LDA #fw_mname		; get pointer to name (3)
+	STA str_pt			; set value (4)
+	LDA #fw_map			; get pointer to map (3)
+	STA ex_pt			; set output (4)
 	PLP					; restore sizes (4)
 	_DR_OK				; done (8)
 
@@ -237,37 +248,43 @@ fw_s_isr:
 ; routine ending in *RTL* (RTS is valid in bank zero, id est, 6502 code), regs already saved, but MUST respect sys_sp
 
 set_nmi:
-	LDA kerntab+1			; get MSB (3)
-		BEQ fw_r_nmi				; read instead (2/3)
+	_CRITIC				; will preserve sizes (5)
+	.al: REP #$20		; ** 16b memory, 8b index ** (3+3)
+	.xs: SEP #$10
+
+#ifdef	SUPPORT
+	LDX run_arch		; from 8-bit code? (4)
+	BEQ fw_sn24b			; no, bank already set (3/2)
+		STZ kerntab+2		; yes, assume it is bank zero (4)
+fw_sn24b:
+#endif
+
+	LDA kerntab+1		; get MSB+bank (4)
+		BEQ fw_r_nmi		; zero means read instead (2/3)
+
 #ifdef	SAFE
-	LDY #0				; offset for NMI code pointer (2)
-	LDA (kerntab), Y		; get code byte (5)
-	CMP #'U'			; match? (2)
+	LDA [kerntab]		; get first word (7)
+	CMP #'U'+256*'N'	; correct? (3)
 		BNE fw_nerr			; not a valid routine (2/3)
-	INY					; another byte (2)
-	LDA (kerntab), Y		; get code byte (5)
-	CMP #'N'			; match? (2)
-		BNE fw_nerr			; not a valid routine (2/3)
-	INY					; another byte (2)
-	LDA (kerntab), Y		; get code byte (5)
-	CMP #'j'			; match? (2)
-		BNE fw_nerr			; not a valid routine (2/3)
-	INY					; another byte (2)
-	LDA (kerntab), Y		; get code byte (5)
-	CMP #'*'			; match? (2)
+	LDY #2				; point to second word (2)
+	LDA [kerntab], Y	; get that (7)
+	CMP #'j'+256*'*'	; correct? (3)
 		BNE fw_nerr			; not a valid routine (2/3)
 #endif
+
 	LDY kerntab				; get LSB (3)
-	STY fw_nmi				; store for firmware (4+4)
-	STA fw_nmi+1
+	STY fw_nmi				; store for firmware (4)
+	STA fw_nmi+1			; includes MSB + bank (5)
 	_DR_OK					; done (8)
 fw_r_nmi:
-	LDY fw_nmi				; get current if read (4+4)
+	LDY fw_nmi				; get current if read (4+5)
 	LDA fw_nmi+1
-	STY kerntab				; store result (3+3)
+	STY kerntab				; store result (3+4)
 	STA kerntab+1
+	_NO_CRIT				; restore sizes
 	_DR_OK
 fw_nerr:
+	_NO_CRIT				; restore sizes too
 	_DR_ERR(CORRUPT)		; invalid magic string!
 
 ; ***********************
@@ -460,10 +477,6 @@ cop_hndl:		; label from vector list
 * = adm_call
 	JMP (fw_admin, X)		; takes 5 clocks and 3 bytes, kernel/drivers only!
 
-; *** vectored IRQ handler ***
-; might go elsewhere
-irq:
-	JMP [fw_isr]	; 24-bit vectored ISR, 4 byte instruction (6) total 7 bytes
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM

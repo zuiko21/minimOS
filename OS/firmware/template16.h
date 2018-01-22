@@ -13,5 +13,5 @@ fw_warm		.word	0				; start of kernel, new 20150220, 16-bit size
 fw_cpu		.byt	'V'				; CPU type ('V'=65C816)
 himem		.byt	0				; number of available 'kernel-RAM' pages
 ; should add some high ram and rom shadowing info
-banks		.byt	0			; number of RAM banks (placeholder)
+banks		.byt	0				; number of RAM banks (placeholder)
 irq_freq	.word	200				; jiffys per second

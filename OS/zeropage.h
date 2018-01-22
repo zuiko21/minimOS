@@ -1,6 +1,6 @@
 ; minimOS 0.6rc2 zero-page system variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180116-1048
+; last modified 20180122-0956
 
 .zero
 * = 0
@@ -100,7 +100,7 @@ w_rect:	up_ticks:					; 32 bit
 z2:z2W:z2L:							; old labels for compatibility
 zpar: zaddr	.dsb	4				; up to 4 bytes, including older names @ $F8
 
-c_speed	= cpu_ll+1					; 8b
+c_speed	= cpu_ll+1					; 16b ***might recheck alignment***
 bl_siz	= io_c-2					; 16b***
 up_sec	= up_ticks+1				; 24b, new source-compatible format
 ; *******************************************
