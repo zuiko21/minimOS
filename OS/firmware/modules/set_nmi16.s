@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180122-1047
+; last modified 20180122-1313
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
@@ -29,31 +29,34 @@ fw_sn24b:
 #endif
 
 	LDA kerntab+1		; get MSB+bank (4)
-		BEQ fw_r_nmi		; zero means read instead (2/3)
+	BNE fw_s_nmi		; zero means read instead (2/3)
+		LDY fw_nmi			; get current if read (4)
+		LDA fw_nmi+1		; this gets MSB+bank (5)
+		STY kerntab			; store result (3+4)
+		STA kerntab+1
+		_NO_CRIT			; restore sizes
+		_DR_OK
+fw_s_nmi:
 
 #ifdef	SAFE
-	LDA [kerntab]		; get first word (7)
-	CMP #'U'+256*'N'	; correct? (3)
+		LDA [kerntab]		; get first word (7)
+		CMP #'U'+256*'N'	; correct? (3)
 		BNE fw_nerr			; not a valid routine (2/3)
-	LDY #2				; point to second word (2)
-	LDA [kerntab], Y	; get that (7)
-	CMP #'j'+256*'*'	; correct? (3)
-		BNE fw_nerr			; not a valid routine (2/3)
+			LDY #2				; point to second word (2)
+			LDA [kerntab], Y	; get that (7)
+			CMP #'j'+256*'*'	; correct? (3)
+		BEQ fw_nsok			; it is a valid routine (2/3)
+fw_nerr:
+			_NO_CRIT			; restore sizes too
+			_DR_ERR(CORRUPT)	; invalid magic string!	
+fw_nsok:
+		LDA kerntab+1		; get MSB+bank again (4)
 #endif
 
-	LDY kerntab			; get LSB (3)
+	LDY kerntab			; get LSB, as MSB+bank already loaded (3)
 	STY fw_nmi			; store for firmware (4)
 	STA fw_nmi+1		; includes MSB + bank (5)
-	_DR_OK				; done (8)
-fw_r_nmi:
-	LDY fw_nmi			; get current if read (4+5)
-	LDA fw_nmi+1
-	STY kerntab			; store result (3+4)
-	STA kerntab+1
 	_NO_CRIT			; restore sizes
-	_DR_OK
-fw_nerr:
-	_NO_CRIT			; restore sizes too
-	_DR_ERR(CORRUPT)	; invalid magic string!
+	_DR_OK				; done (8)
 
 	.as: .xs			; just in case...
