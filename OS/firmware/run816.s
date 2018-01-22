@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc3
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180122-1033
+; last modified 20180122-1325
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -167,6 +167,13 @@ start_kernel:
 nmi:
 #include "firmware/modules/nmi_hndl16.s"
 
+; ****************************
+; *** vectored IRQ handler ***
+; ****************************
+; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
+irq:
+	JMP [fw_isr]	; 24-bit vectored ISR (6)
+
 
 ; ********************************
 ; *** administrative functions ***
@@ -312,10 +319,6 @@ fw_ctx:
 ; *** some firmware tables ***
 ; ****************************
 
-; magic string for NMI handler
-fw_magic:
-	.asc	"*jNU"		; REVERSED magic string
-
 ; sub-function jump table (eeeek)
 fwp_func:
 	.word	fwp_susp	; suspend	+FW_STAT
@@ -331,10 +334,11 @@ fw_map:
 ; *********************************
 fw_admin:
 ; generic functions, esp. interrupt related
-	.word	fw_gestalt	; GESTALT get system info (renumbered)
-	.word	fw_s_isr	; SET_ISR set IRQ vector
-	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
-	.word	fw_s_brk	; *** SET_BRK set debugger, new 20170517
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+
 	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
 	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
 
@@ -400,11 +404,7 @@ cop_hndl:		; label from vector list
 * = adm_call
 	JMP (fw_admin, X)	; takes 5 clocks
 
-
-; *** vectored IRQ handler ***
-; might go elsewhere, especially on NMOS systems
-irq:
-	JMP (fw_isr)		; vectored ISR (6)
+; this could be a good place for the IRQ handler...
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM

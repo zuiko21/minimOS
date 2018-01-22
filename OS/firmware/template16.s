@@ -353,6 +353,7 @@ cop_hndl:		; label from vector list
 * = adm_call
 	JMP (fw_admin, X)		; takes 5 clocks and 3 bytes, kernel/drivers only!
 
+; this could be a good place for the IRQ handler...
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM

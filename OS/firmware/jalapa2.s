@@ -151,6 +151,12 @@ start_kernel:
 nmi:
 #include "firmware/modules/nmi_hndl16.s"
 
+; ****************************
+; *** vectored IRQ handler ***
+; ****************************
+; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
+irq:
+	JMP [fw_isr]	; 24-bit vectored ISR (6)
 
 ; ********************************
 ; *** administrative functions ***
@@ -369,10 +375,11 @@ fw_map:
 ; *********************************
 fw_admin:
 ; generic functions, esp. interrupt related
-	.word	fw_gestalt	; GESTALT get system info (renumbered)
-	.word	fw_s_isr	; SET_ISR set IRQ vector
-	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
-	.word	fw_s_brk	; *** SET_DBG set debugger, new 20170517
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+
 	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
 	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
 
@@ -485,10 +492,7 @@ led_loop:
 * = adm_call
 	JMP (fw_admin, X)		; takes 5 clocks
 
-; *** vectored IRQ handler ***
-; could be elsewhere
-irq:
-	JMP [fw_isr]	; long vectored ISR (6)
+; this could be a good place for the IRQ handler...
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
