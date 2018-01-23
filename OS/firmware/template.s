@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180119-0931
+; last modified 20180123-1050
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -43,7 +43,9 @@ fw_mname:
 #endif
 
 ; ********************
+; ********************
 ; *** cold restart ***
+; ********************
 ; ********************
 
 reset:
@@ -64,8 +66,6 @@ reset:
 ; optional boot selector
 ;#include "firmware/modules/bootoff.s"
 
-; ***continue power-on self-test***
-;post:				; this is no longer needed
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
@@ -140,77 +140,15 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 ; **********************************************
 nmi:
+#include "firmware/modules/nmi_hndl16.s"
 
-#ifdef	NMOS
-	CLD					; eeeeeeeeek! 20150316
-#endif
+; ****************************
+; *** vectored IRQ handler ***
+; ****************************
+; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
+irq:
+	JMP (fw_isr)	; vectored ISR (6)
 
-; save registers AND system pointers
-	PHA					; save registers (3x3)
-	_PHX
-	_PHY
-; have to save systmp and sysptr, new faster (18 vs 41t) way, just one more byte!
-	LDA sysptr			; get original byte (3)
-	PHA					; put it on stack (3)
-	LDA sysptr+1			; same with other bytes (3*4)
-	PHA
-	LDA systmp
-	PHA				; eeeeeeeeek
-#ifdef	SAFE
-; check whether user NMI pointer is valid
-; alternative faster way 39b, 58t (was 29b, 89t)
-	LDY fw_nmi			; copy vector to zeropage (corrected 20150118) (4+4+3+3)
-	LDA fw_nmi+1
-	STY sysptr			; nicer way 20160407
-	STA sysptr+1
-	LDY #0				; offset for NMI code pointer (2)
-	LDA (sysptr), Y		; get code byte (5)
-	CMP #'U'			; match? (2)
-		BNE rst_nmi			; not a valid routine (2/3)
-	INY					; another byte (2)
-	LDA (sysptr), Y		; get code byte (5)
-	CMP #'N'			; match? (2)
-		BNE rst_nmi			; not a valid routine (2/3)
-	INY					; another byte (2)
-	LDA (sysptr), Y		; get code byte (5)
-	CMP #'j'			; match? (2)
-		BNE rst_nmi			; not a valid routine (2/3)
-	INY					; another byte (2)
-	LDA (sysptr), Y		; get code byte (5)
-	CMP #'*'			; match? (2)
-		BNE rst_nmi			; not a valid routine (2/3)
-#endif
-do_nmi:
-	JSR go_nmi			; call actual code, ending in RTS (6)
-; *** here goes the former nmi_end routine ***
-nmi_end:
-; restore temporary vars, faster way is 9b, 24t (vs. 8b/40t)
-	PLA					; get byte from stack (4)
-	STA systmp		; restore it (4)
-	PLA					; get byte from stack (4)
-	STA sysptr+1		; restore it (4)
-	PLA					; get byte from stack (4)
-	STA sysptr		; restore it (4)
-; restore registers
-	_PLY				; restore regular registers
-	_PLX
-	PLA
-	RTI					; resume normal execution, hopefully
-
-; *** execute installed NMI handler ***
-go_nmi:
-	JMP (fw_nmi)		; jump to code (and inocuous header) (6)
-
-; *** execute standard NMI handler ***
-rst_nmi:
-	JSR std_nmi			; call standard handler
-	_BRA nmi_end		; and finish as usual
-
-; magic string no longer needed!
-
-; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
-std_nmi:
-#include "firmware/modules/std_nmi.s"
 
 ; ********************************
 ; *** administrative functions ***
@@ -662,11 +600,7 @@ fw_admin:
 * = adm_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
-
-; *** vectored IRQ handler ***
-; might go elsewhere, especially on NMOS systems
-irq:
-	JMP (fw_isr)	; vectored ISR (6)
+; this could be a good place for the IRQ handler...
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM

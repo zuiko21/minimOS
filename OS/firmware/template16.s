@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a6
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180123-1002
+; last modified 20180123-1039
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -77,7 +77,7 @@ reset:
 ;#include "firmware/modules/romcheck16.s"
 
 ; some systems might copy ROM-in-RAM and continue at faster speed!
-;#include "firmware/modules/rominram.s"
+;#include "firmware/modules/rominram16.s"
 
 ; startup beep
 #include "firmware/modules/beep16.s"	; typical 816 standard beep

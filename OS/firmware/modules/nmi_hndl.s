@@ -1,22 +1,25 @@
 ; firmware module for minimOS·65
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180122-1333
+; last modified 20180123-1049
 
 ; *** generic NMI handler for 6502/65C02 ***
 ; expected to be fully re-entrant
 ; NMOS savvy
 
+#ifdef	NMOS
+	CLD					; eeeeeeeeek! 20150316
+#endif
 ; save registers AND system pointers
 	PHA					; save registers (3x3)
 	_PHX
 	_PHY
-; make NMI reentrant
-	LDX sysptr			; get original word  (3+3)
-	LDY sysptr+1
-	_PHY				; store them in similar order (3+3)
-	_PHX
-	LDA systmp			; this byte too (3+3)
+; have to save systmp and sysptr, new faster (18 vs 41t) way, just one more byte!
+	LDA sysptr			; get original byte (3)
+	PHA					; put it on stack (3)
+	LDA sysptr+1		; same with other bytes (3*4)
 	PHA
+	LDA systmp
+	PHA					; eeeeeeeeek
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
 ; alternative faster way 39b, 58t (was 29b, 89t)
@@ -44,28 +47,27 @@
 	JSR nmi_call		; will do indirect call (6...)
 ; *** here goes the former nmi_end routine, restore and exit ***
 nmi_end:
-	PLA					; retrieve saved vars (4+3)
-	STA systmp			; only this byte
-	_PLX				; sysptr... (4+4)
-	_PLY
-	STX sysptr			; ...is also restored (3+3)
-	STY sysptr+1
+; restore temporary vars, faster way is 9b, 24t (vs. 8b/40t)
+	PLA					; get byte from stack (4)
+	STA systmp		; restore it (4)
+	PLA					; get byte from stack (4)
+	STA sysptr+1		; restore it (4)
+	PLA					; get byte from stack (4)
+	STA sysptr		; restore it (4)
 ; restore registers
 	_PLY				; restore regular registers (3x4)
 	_PLX
 	PLA
 	RTI					; resume normal execution, hopefully (6)
 
+; *** execute installed NMI handler ***
 nmi_call:
 	JMP (fw_nmi)		; call actual code, ending in RTS, DUH (5/6...)
 
 ; *** execute standard NMI handler ***
 rst_nmi:
-	LDA #>nmi_end-1		; prepare return address
-	PHA
-	LDA #<nmi_end-1		; now LSB (safer than PEA)
-	PHA
-; ...will continue thru subsequent standard handler, its RTS will get back to ISR exit
+	JSR std_nmi			; call standard handler
+	_BRA nmi_end		; and finish as usual
 
 ; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
 std_nmi:

@@ -3,7 +3,7 @@
 ; *** use as sort-of template ***
 ; v0.9.6rc5
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180122-1334
+; last modified 20180123-1053
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -138,7 +138,14 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 ; **********************************************
 nmi:
-#include "firmware/modules/nmi_hndl.s"
+#include "firmware/modules/nmi_hndl16.s"
+
+; ****************************
+; *** vectored IRQ handler ***
+; ****************************
+; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
+irq:
+	JMP (fw_isr)	; vectored ISR (6)
 
 
 ; ********************************
