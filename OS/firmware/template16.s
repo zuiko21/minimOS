@@ -271,8 +271,7 @@ fw_admin:
 	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
 	.word	set_dbg		; SET_DBG set debugger, new 20170517
 	.word	jiffy		; JIFFY set jiffy IRQ speed
-
-	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
 	.word	fw_power	; POWEROFF power-off, suspend or cold boot
