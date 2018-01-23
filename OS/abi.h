@@ -89,8 +89,10 @@ GESTALT		= 0		; get system info (renumbered)
 SET_ISR		= GESTALT + 2	; set IRQ vector
 SET_NMI		= SET_ISR + 2	; set (magic preceded) NMI routine
 SET_DBG		= SET_NMI + 2	; set debugger, new 20170517
+
+; somewhat hardware specific
 JIFFY		= SET_DBG + 2	; set jiffy IRQ speed, ** TBD **
-IRQ_SRC		= JIFFY + 2	; get interrupt source in X for total ISR independence
+IRQ_SRC		= JIFFY + 2		; get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
 POWEROFF	= IRQ_SRC +2	; power-off, suspend or cold boot
@@ -99,7 +101,7 @@ FREQ_GEN	= POWEROFF + 2	; frequency generator hardware interface, TBD
 ; not for LOWRAM systems
 INSTALL		= FREQ_GEN + 2	; copy jump table
 PATCH		= INSTALL + 2	; patch single function (renumbered)
-CONTEXT		= PATCH + 2	; context bankswitching
+CONTEXT		= PATCH + 2		; context bankswitching
 
 ; **************************
 ; ** Driver table offsets **

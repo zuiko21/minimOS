@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc3
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180123-0953
+; last modified 20180123-1002
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -206,25 +206,11 @@ irq:
 ; ***************************
 #include "firmware/modules/jiffy_run816.s"
 
-
-
-
-; IRQ_SOURCE, investigate source of interrupt
-;		OUTPUT
-; *** X	= 0 (periodic), 2 (async IRQ @ 65xx) ***
-; *** notice NON-standard output register for faster indexed jump! ***
-; other even values hardware dependent
-; MUST be called on 8-bit sizes!
-
-fw_i_src:
-	BIT VIA_J+IFR		; much better than LDA + ASL + BPL! (4)
-	BVS fis_per			; from T1 (3/2)
-		LDX #2				; standard async otherwise (2)
-		RTS					; no error handling for speed! (6)
-fis_per:
-	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
-	LDX #0				; standard value for jiffy IRQ (2)
-	_DR_OK
+; ****************************************
+; IRQ_SRC, investigate source of interrupt
+; ****************************************
+; notice non-standard ABI, same module as 6502 version!
+#include "firmware/modules/irq_src.s"
 
 ; *** hardware specific ***
 

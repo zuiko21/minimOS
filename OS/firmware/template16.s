@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a6
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180123-0948
+; last modified 20180123-1002
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -194,6 +194,11 @@ irq:
 ; ***************************
 #include "firmware/modules/jiffy16.s"
 
+; ****************************************
+; IRQ_SRC, investigate source of interrupt
+; ****************************************
+; notice non-standard ABI, same module as 6502 version!
+#include "firmware/modules/irq_src.s"
 
 ; -------------------- old code ----------------------
 ; *** administrative functions ***
