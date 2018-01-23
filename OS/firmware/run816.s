@@ -309,13 +309,13 @@ fw_admin:
 	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
-	.word	fw_power	; POWEROFF power-off, suspend or cold boot
-	.word	fw_fgen		; *** FREQ_GEN frequency generator hardware interface, TBD
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
 
 ; not for LOWRAM systems
-	.word	fw_install	; INSTALL copy jump table
-	.word	fw_patch	; PATCH patch single function (renumbered)
-	.word	fw_ctx		; *** CONTEXT context bankswitching
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+	.word	context		; *** CONTEXT context bankswitching
 
 ; these already OK for 65816!
 ; *** minimOS·16 BRK handler *** might go elsewhere
