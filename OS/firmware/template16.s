@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a6
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180122-1031
+; last modified 20180123-0948
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -189,6 +189,11 @@ irq:
 ; ********************************
 #include "firmware/modules/set_dbg16.s"
 
+; ***************************
+; JIFFY, set jiffy IRQ period
+; ***************************
+#include "firmware/modules/jiffy16.s"
+
 
 ; -------------------- old code ----------------------
 ; *** administrative functions ***
@@ -260,8 +265,8 @@ fw_admin:
 	.word	set_isr		; SET_ISR set IRQ vector
 	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
 	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed
 
-	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
 	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
 
 ; pretty hardware specific

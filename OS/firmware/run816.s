@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc3
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180122-1325
+; last modified 20180123-0953
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -201,32 +201,13 @@ irq:
 ; ********************************
 #include "firmware/modules/set_dbg16.s"
 
+; ***************************
+; JIFFY, set jiffy IRQ period
+; ***************************
+#include "firmware/modules/jiffy_run816.s"
 
 
-; JIFFY, set jiffy IRQ frequency
-;		INPUT
-; irq_hz	= frequency in Hz (0 means no change)
-;		OUTPUT
-; irq_hz	= actually set frequency (in case of error or no change)
-; C			= could not set (not here)
 
-fw_jiffy:
-; this is generic
-; if could not change, then just set return parameter and C
-	_CRITIC			; disable interrupts and save sizes! (5)
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	LDA irq_hz			; get input value
-	BNE fj_set			; not just checking
-		LDA @irq_freq		; get current frequency
-		STA irq_hz			; set return values
-fj_end:
-		_NO_CRIT			; eeeeeeeeek
-		_DR_OK
-fj_set:
-	STA @irq_freq		; store in sysvars
-	BRA fj_end			; all done, no need to update as will be OK
-
-	.as: .xs			; just in case...
 
 ; IRQ_SOURCE, investigate source of interrupt
 ;		OUTPUT
@@ -338,8 +319,8 @@ fw_admin:
 	.word	set_isr		; SET_ISR set IRQ vector
 	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
 	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed
 
-	.word	fw_jiffy	; *** JIFFY set jiffy IRQ speed, ** TBD **
 	.word	fw_i_src	; *** IRQ_SOURCE get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
