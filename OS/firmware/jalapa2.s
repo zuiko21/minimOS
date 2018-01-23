@@ -197,34 +197,63 @@ irq:
 
 ; *** hardware specific ***
 
+; **********************
 ; POWEROFF, poweroff etc
-; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
+; **********************
+;	INPUT
+; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff, 8 = NMI, 10 = BRK)
+;	OUTPUT
 ; C -> not implemented
+; this must be further modularised
 
 fw_power:
-	PHP					; save sizes eeeeeeeeek
+	_CRITIC				; save sizes eeeeeeeeek
 	.as: .xs: SEP #$30	; *** all 8-bit ***
 	TYX					; get subfunction offset as index
 	JMP (fwp_func, X)	; select from jump table
 fwp_off:
 ; include here shutdown code
-	.byt	$DB			; STP in case a WDC CPU is used
+	STP					; $DB in case a WDC CPU is used
 	_PANIC("{OFF}")		; just in case is handled
 fwp_susp:
-; might use a SEI/WAI in case a WDC CPU is used...
+; first shut off interrupts!
+	LDA VIA_J + IER		; get current interrupt sources
+	PHA					; save for later (with bit 7 high)
+	AND #$7F			; turn bit 7 low
+	STA VIA_J + IER		; this will disable every enabled interrupt source
+; in case a WDC CPU is used, apply SEI/WAI sequence (SEI already done)
+	WAI					; $CB, wait for some interrupt
+; *** system expected to be suspended here ***
+; after waking up, reenable interrupt sources!
+	PLA					; get saved config (with bit 7 high)
+	STA VIA_J + IER		; this will enable every previously set interrupt source
+; this is also the exit for software interrupt simulation
 fwp_end:
-	PLP					; restore sizes
+	_NO_CRIT			; restore sizes
 	_DR_OK				; just continue execution
+; software interrupt calls
 fwp_nmi:
-	PHK				; always in bank 0
+	PHK					; always in bank 0
 	PEA fwp_end			; push correct return
-	PHP				; will end in RTI
+	PHP					; will end in RTI
 	JMP nmi				; handle as usual
 fwp_brk:
-	PHK				; always in bank 0
+	PHK					; always in bank 0
 	PEA fwp_end			; push correct return
-	PHP				; will end in RTI
-	JMP brk_hndl			; handle as usual
+	PHP					; will end in RTI
+	JMP brk_hndl		; handle as usual
+
+; sub-function jump table (eeeek)
+fwp_func:
+	.word	fwp_susp	; suspend	+FW_STAT
+	.word	kernel		; should not use this, just in case
+	.word	reset		; coldboot	+FW_COLD
+	.word	fwp_off		; poweroff	+FW_OFF
+; might include here the BRK/NMI invocation codes
+	.word	fwp_nmi		; PW_CLEAN not allowed here!
+	.word	fwp_nmi		; simulate NMI
+	.word	fwp_brk		; execute BRK, not sure if needed
+
 
 ; FREQ_GEN, frequency generator hardware interface, TBD
 fw_fgen:
@@ -278,16 +307,6 @@ fw_ctx:
 ; *** some firmware tables ***
 ; ****************************
 
-; sub-function jump table (eeeek)
-fwp_func:
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	kernel		; should not use this, just in case
-	.word	reset		; coldboot	+FW_COLD
-	.word	fwp_off		; poweroff	+FW_OFF
-; might include here the BRK/NMI invocation codes
-	.word	fwp_nmi		; PW_CLEAN not allowed here!
-	.word	fwp_nmi		; simulate NMI
-	.word	fwp_brk		; execute BRK, not sure if needed
 
 
 fw_map:
