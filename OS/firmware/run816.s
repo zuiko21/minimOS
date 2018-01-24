@@ -198,6 +198,12 @@ nmi:
 irq:
 	JMP [fw_isr]	; 24-bit vectored ISR (6)
 
+; ****************************
+; *** vectored BRK handler ***
+; ****************************
+brk_hndl:
+#include "firmware/modules/brk_hndl16.s"
+
 
 ; ********************************
 ; *** administrative functions ***
@@ -327,25 +333,6 @@ fw_map:
 ; *** do not know what to do here ***
 
 ; these already OK for 65816!
-; *** minimOS·16 BRK handler *** might go elsewhere
-brk_hndl:		; label from vector list
-; much like the ISR start
-	.al: .xl: REP #$30	; status already saved, but save register contents in full (3)
-	PHA					; save registers (3x4)
-	PHX
-	PHY
-	PHB					; eeeeeeeeeek (3)
-; must use some new indirect jump, as set by new SET_BRK
-;	JSR brk_handler		; standard label from IRQ
-; ************************************ CONTINUE HERE ***************************
-	.al: .xl: REP #$30	; just in case (3)
-	PLB					; eeeeeeeeeeeek (4)
-	PLY					; restore status and return (3x5)
-	PLX
-	PLA
-	RTI
-
-.as:.xs:				; otherwise might prevent code after ROM!
 
 ; *** minimOS·16 kernel call interface (COP) ***
 cop_hndl:		; label from vector list
