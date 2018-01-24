@@ -1,7 +1,7 @@
-; minimOS 0.6rc3 API/ABI
+; minimOS 0.6rc4 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180110-1313
+; last modified 20180124-1237
 
 ; *************************************************
 ; *************************************************
@@ -60,7 +60,7 @@ TS_INFO		= MEMLOCK + 2	; get taskswitching info for multitasking driver
 SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & architecture) new 20170222
 
 ; *** define the jump-table size for more efficient memory usage! ***
-LAST_API	= SET_CURR + 2	; *** set just after the LAST API call ***
+API_SIZE	= SET_CURR + 2	; *** set just after the LAST API call, renamed 20180124 ***
 
 ; ***********************
 ; ***********************

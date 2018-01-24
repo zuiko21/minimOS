@@ -315,25 +315,6 @@ freq_gen:
 
 ; *** for higher-specced systems ***
 
-; INSTALL, copy jump table
-;		INPUT
-; kerntab	= address of supplied pointer table
-
-install:
-	_CRITIC			; disable interrupts! (5)
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	.xs: SEP #$10		; ** just in case, 8-bit indexes ** (3)
-	LDY #0				; reset index (2)
-fwi_loop:
-		LDA (kerntab), Y	; get word from table as supplied (6)
-		STA @fw_table, Y	; copy where the firmware expects it (6) ***faster if switching DBR but heavier
-		INY					; advance two bytes (2+2)
-		INY
-		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
-		BCC fwi_loop		; until whole TABLE is done (3/2)***might corrupt fw vars!
-; perhaps could do up to LAST_API && %11111110, then check whether extra byte or not outside the loop
-	_NO_CRIT			; restore interrupts if needed, will restore size too (4)
-	_DR_OK				; all done (8)
 
 ; PATCH, patch single function
 ; kerntab <- address of code
