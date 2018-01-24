@@ -1,11 +1,11 @@
 ; generic firmware variables for minimOS·65
-; v0.6a3
+; v0.6a4
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180122-1302
+; last modified 20180124-1245
 
 -sysram:
 #ifndef	LOWRAM
-fw_table	.dsb	LAST_API, $0	; more efficient usage 171114, NOT available in 128-byte systems
+fw_table	.dsb	API_SIZE, $0	; more efficient usage 171114, NOT available in 128-byte systems
 fw_lastk	.word	0				; address of last installed kernel jump table! new 20180116
 #endif
 fw_isr		.word	0				; ISR vector

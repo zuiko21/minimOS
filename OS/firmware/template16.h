@@ -1,11 +1,11 @@
 ; firmware variables for minimOS·16
-; v0.6a4
+; v0.6a5
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180122-1303
+; last modified 20180124-1245
 
 -sysram:
 ; 65816 systems have enough RAM
-fw_table	.dsb	LAST_API, $0	; more efficient usage 171114, NOT available in 128-byte systems
+fw_table	.dsb	API_SIZE, $0	; more efficient usage 171114, NOT available in 128-byte systems
 fw_lastk	.word	0				; address of last installed kernel jump table! new 20180116
 fw_isr		.dsb	3, 0			; ISR vector ***could be set by app, thus 24-bit ***
 fw_nmi		.dsb	3, 0			; NMI vector, fortunately checks for integrity *** ditto above ***
