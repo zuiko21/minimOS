@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180124-0906
+; last modified 20180124-1314
 
 ; *** generic BRK handler for 65816 ***
 -brk_hndl:		; label from vector list
@@ -44,6 +44,6 @@
 	RTI
 ; as no long-indirect call is available, long-call here and return to handler
 brk_call:
-	JMP [fw_brk]		; will return
+	JMP [fw_dbg]		; will return
 .)
 	.as: .xs:			; otherwise might prevent code after ROM!

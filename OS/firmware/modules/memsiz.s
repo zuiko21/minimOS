@@ -2,9 +2,10 @@
 ; memory size estimation (needs mirroring, undecoded areas not allowed)
 ; 20-bit Jalapa version
 ; v0.6a4
-; (c) 2017 Carlos J. Santisteban
-; last modified 20170802-1907
+; (c) 2017-2018 Carlos J. Santisteban
+; last modified 20180124-1320
 
+.(
 	LDA #$FF		; initial MSB
 	STA uz			; set pointer LSB
 	LSR			; will point inside the lower 32k of each bank
@@ -52,3 +53,7 @@ rs_low:
 	LDA (uz)		; get supposed size
 	CMP $7FFF		; more than 32k?
 	BCS rs_done		; size in A is OK
+; *** THIS MUST BE REVISED ASAP ***
+rs_done:
+rs_not:
+.)

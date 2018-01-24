@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180124-1243
+; last modified 20180124-1328
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -275,7 +275,7 @@ context:
 ; A6, patch single function
 ; kerntab <- address of code
 ; Y <- function to be patched
-patch:
+;patch:
 #ifdef		LOWRAM
 	_DR_ERR(UNAVAIL)		; no way to patch on 128-byte systems
 #else
@@ -292,7 +292,7 @@ patch:
 ; A10, poweroff etc
 ; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
 ; C -> not implemented
-poweroff:
+;poweroff:
 	TYX					; get subfunction offset as index
 	JMP (fwp_func, X)	; select from jump table
 
@@ -312,6 +312,15 @@ fwp_func:
 	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	kernel		; shouldn't use this, just in case
 
+; ****************************
+; *** some firmware tables ***
+; ****************************
+
+
+
+fw_map:
+; *** do not know what to do here ***
+
 ; these already OK for 65816!
 
 ; *** minimOS·16 kernel call interface (COP) ***
@@ -320,9 +329,7 @@ cop_hndl:		; label from vector list
 	JMP (fw_table, X)	; the old fashioned way (this takes 5 bytes)
 
 ; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	kernel_call-*, $FF
-#endif
+	.dsb	kerncall-*, $FF
 
 ; ******************************************************************
 ; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
@@ -331,7 +338,7 @@ cop_hndl:		; label from vector list
 ; *** minimOS·65 function call WRAPPER ($FFC0) ***
 * = kerncall
 	CLC			; pre-clear carry
-	COP $7F		; wrapper on 816 firmware!
+	COP #$7F	; wrapper on 816 firmware!
 	RTS			; return to caller (this takes 4 bytes)
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
 ; alternative multikernel FW may use an indirect jump...
@@ -340,9 +347,7 @@ cop_hndl:		; label from vector list
 ; ...without pre-CLC or size setting!
 
 ; filling for ready-to-blow ROM
-#ifdef		ROM
 	.dsb	adm_call-*, $FF
-#endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
@@ -351,9 +356,7 @@ cop_hndl:		; label from vector list
 ; this could be a good place for the IRQ handler...
 
 ; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	adm_call-*, $FF
-#endif
+	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
 
 ; *** administrative meta-kernel call primitive for apps ($FFD8) ***
 * = adm_appc
@@ -367,7 +370,7 @@ cop_hndl:		; label from vector list
 ; *** above code takes -8- bytes, thus no room for padding! ***
 ; filling for ready-to-blow ROM
 ;#ifdef	ROM
-;	.dsb	lock-*, $FF
+	.dsb	lock-*, $FF
 ;#endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
