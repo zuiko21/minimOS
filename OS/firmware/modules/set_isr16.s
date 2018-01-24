@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180122-1318
+; last modified 20180124-0853
 
 ; ***********************
 ; SET_ISR, set IRQ vector
@@ -11,7 +11,8 @@
 ; kerntab	= currently set pointer (if was NULL at input)
 ; sizes irrelevant!
 
-set_isr:
+-set_isr:
+.(
 	_CRITIC
 	.al: REP #$20		; *** 16-bit memory *** (3)
 	.xs: SEP #$10		; *** 8-bit indexes *** (3)
@@ -36,5 +37,5 @@ fw_s_isr:
 	STA fw_isr+1
 	_NO_CRIT			; restore sizes and interrupt mask
 	_DR_OK				; done
-
+.)
 	.as: .xs			; just in case...

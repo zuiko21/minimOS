@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a6
+; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180123-1039
+; last modified 20180124-0837
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR						; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
 	.asc "boot", 0						; standard filename
 fw_splash:
-	.asc "65816 0.6a6 firmware for "	; machine description as comment
+	.asc "65816 0.6a7 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a6 FW @ "
+	.asc	"0.6a7 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -172,39 +172,45 @@ irq:
 ; *********************************
 ; GESTALT, get system info, API TBD
 ; *********************************
+gestalt:
 #include "firmware/modules/gestalt16.s"
 
 ; ***********************
 ; SET_ISR, set IRQ vector
 ; ***********************
+set_isr:
 #include "firmware/modules/set_isr16.s"
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
 ; ********************************
+set_nmi:
 #include "firmware/modules/set_nmi16.s"
 
 ; ********************************
 ; SET_DBG, set BRK handler routine
 ; ********************************
+set_dbg:
 #include "firmware/modules/set_dbg16.s"
 
 ; ***************************
 ; JIFFY, set jiffy IRQ period
 ; ***************************
+jiffy:
 #include "firmware/modules/jiffy16.s"
 
 ; ****************************************
 ; IRQ_SRC, investigate source of interrupt
 ; ****************************************
 ; notice non-standard ABI, same module as 6502 version!
+irq_src:
 #include "firmware/modules/irq_src.s"
 
 ; -------------------- old code ----------------------
 ; *** administrative functions ***
 ; A0, install jump table
 ; kerntab <- address of supplied jump table
-fw_install:
+install:
 	LDY #0				; reset index (2)
 	_ENTER_CS			; disable interrupts! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
@@ -224,7 +230,7 @@ fwi_loop:
 ; A6, patch single function
 ; kerntab <- address of code
 ; Y <- function to be patched
-fw_patch:
+patch:
 #ifdef		LOWRAM
 	_DR_ERR(UNAVAIL)		; no way to patch on 128-byte systems
 #else
@@ -241,7 +247,7 @@ fw_patch:
 ; A10, poweroff etc
 ; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
 ; C -> not implemented
-fw_power:
+poweroff:
 	TYX					; get subfunction offset as index
 	JMP (fwp_func, X)	; select from jump table
 

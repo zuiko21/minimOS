@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6rc5
+; v0.9.6rc6
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180123-1053
+; last modified 20180124-0842
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -41,7 +41,7 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.9.6 firmware for "
+	.asc	"0.9.6 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -138,7 +138,7 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 ; **********************************************
 nmi:
-#include "firmware/modules/nmi_hndl16.s"
+#include "firmware/modules/nmi_hndl.s"
 
 ; ****************************
 ; *** vectored IRQ handler ***
@@ -163,7 +163,7 @@ irq:
 ; k_ram		= available pages of (kernel) SRAM
 ; b_ram		= available BANKS of "high" RAM
 
-fw_gestalt:
+gestalt:
 	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4)
 	LDA #SPD_CODE		; speed code as determined in options.h (2)
 	STY cpu_ll			; set outputs (3+3)
@@ -185,7 +185,7 @@ fw_gestalt:
 ;		INPUT
 ; kerntab	= address of ISR (will take care of all necessary registers)
 
-fw_s_isr:
+set_isr:
 	LDY kerntab			; get pointer (3+3)
 	LDA kerntab+1
 	_CRITIC			; disable interrupts! (5)
@@ -202,7 +202,7 @@ fw_s_isr:
 ; no need to disable interrupts as a partially set pointer would be rejected...
 ; ...unless SAFE mode is NOT selected (will not check upon NMI)
 
-fw_s_nmi:
+set_nmi:
 #ifdef	SAFE
 	LDX #3				; offset to reversed magic string
 	LDY #0				; reset supplied pointer
@@ -232,7 +232,7 @@ fw_sn_ok:
 ;		INPUT
 ; kerntab	= address of BRK routine (ending in RTS)
 
-fw_s_brk:
+set_dbg:
 	_CRITIC			; disable interrupts! (5)
 	LDY kerntab			; get pointer
 	LDA kerntab+1
@@ -248,7 +248,7 @@ fw_s_brk:
 ; irq_hz	= actually set frequency (in case of error or no change)
 ; C			= could not set (not here)
 
-fw_jiffy:
+jiffy:
 ; this is generic
 ; if could not change, then just set return parameter and C
 	LDA irq_hz+1		; get input values
@@ -273,7 +273,7 @@ fj_set:
 ; *** notice NON-standard output register for faster indexed jump! ***
 ; other even values hardware dependent
 
-fw_i_src:
+irq_src:
 	BIT VIA_J+IFR		; much better than LDA + ASL + BPL! (4)
 	BVS fis_per			; from T1 (3/2)
 		LDX #2				; standard async otherwise (2)
@@ -289,7 +289,7 @@ fis_per:
 ; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
 ; C -> not implemented
 
-fw_power:
+poweroff:
 	TYA					; get subfunction offset
 	TAX					; use as index
 	_JMPX(fwp_func)		; select from jump table
@@ -301,8 +301,15 @@ fwp_off:
 fwp_susp:
 	_DR_OK				; just continue execution
 
+; power sub-function pointer table (eeeek)
+fwp_func:
+	.word	fwp_susp	; suspend	+FW_STAT
+	.word	kernel		; shouldn't use this, just in case (standard from rom.s)
+	.word	reset		; coldboot	+FW_COLD
+	.word	fwp_off		; poweroff	+FW_OFF
+
 ; FREQ_GEN, frequency generator hardware interface, TBD
-fw_fgen:
+freq_gen:
 ; ****** TO BE DONE ******
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
@@ -313,7 +320,7 @@ fw_fgen:
 ;		INPUT
 ; kerntab	= address of supplied pointer table
 
-fw_install:
+install:
 	_CRITIC			; disable interrupts! (5)
 	LDY #0				; reset index (2)
 fwi_loop:
@@ -329,7 +336,7 @@ fwi_loop:
 ; kerntab <- address of code
 ; Y <- function to be patched
 
-fw_patch:
+patch:
 	_CRITIC				; disable interrupts and save sizes! (5)
 	LDA kerntab				; get full pointer
 	LDX kerntab+1
@@ -340,7 +347,7 @@ fw_patch:
 	_DR_OK					; done (8)
 
 ; CONTEXT, zeropage & stack bankswitching
-fw_ctx:
+context:
 ; ****** TO BE DONE ******
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
@@ -357,17 +364,6 @@ fw_ctx:
 ; *** some firmware tables ***
 ; ****************************
 
-; magic string for NMI handler
-fw_magic:
-	.asc	"*jNU"		; REVERSED magic string
-
-; power sub-function pointer table (eeeek)
-fwp_func:
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	kernel		; shouldn't use this, just in case (standard from rom.s)
-	.word	reset		; coldboot	+FW_COLD
-	.word	fwp_off		; poweroff	+FW_OFF
-
 fw_map:
 ; *** do not know what to do here ***
 
@@ -376,22 +372,22 @@ fw_map:
 ; *********************************
 fw_admin:
 ; generic functions, esp. interrupt related
-	.word	fw_gestalt	; GESTALT get system info (renumbered)
-	.word	fw_s_isr	; SET_ISR set IRQ vector
-	.word	fw_s_nmi	; SET_NMI set (magic preceded) NMI routine
-	.word	fw_s_brk	; SET_BRK set debugger, new 20170517
-	.word	fw_jiffy	; JIFFY set jiffy IRQ speed, ** TBD **
-	.word	fw_i_src	; IRQ_SOURCE get interrupt source in X for total ISR independence
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed, ** TBD **
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
-	.word	fw_power	; POWEROFF power-off, suspend or cold boot
-	.word	fw_fgen		; *** FREQ_GEN frequency generator hardware interface, TBD
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
 
 ; not for LOWRAM systems
 #ifndef	LOWRAM
-	.word	fw_install	; INSTALL copy jump table
-	.word	fw_patch	; PATCH patch single function (renumbered)
-	.word	fw_ctx		; *** CONTEXT context bankswitching
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+	.word	context		; *** CONTEXT context bankswitching
 #endif
 
 ; *** minimOS BRK handler *** might go elsewhere
@@ -410,14 +406,6 @@ brk_call:
 	JMP (fw_brk)		; new vectored handler
 
 ; ****** some odds ******
-
-; if case of no headers, at least keep machine name somewhere
-#ifdef	NOHEAD
-fw_splash:
-	.asc	"0.9.6 firmware for "
-fw_mname:
-	.asc	MACHINE_NAME, 0
-#endif
 
 ; *** wrapper in case 816-enabled code calls 8-bit kernel??? ***
 cop_hndl:				; label from vector list

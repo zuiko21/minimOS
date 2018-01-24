@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a20
+; v0.9.6a21
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180123-1002
+; last modified 20180124-0837
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
 	.asc	"boot", 0				; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a19 firmware for "
+	.asc	"0.9.6a21 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -36,7 +36,7 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 #else
 ; if case of no headers, at least keep machine name somewhere
 fw_splash:
-	.asc	"0.9.6a19 FW @ "
+	.asc	"0.9.6a21 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
@@ -167,32 +167,38 @@ irq:
 ; *********************************
 ; GESTALT, get system info, API TBD
 ; *********************************
+gestalt:
 #include "firmware/modules/gestalt16.s"
 
 ; ***********************
 ; SET_ISR, set IRQ vector
 ; ***********************
+set_isr:
 #include "firmware/modules/set_isr16.s"
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
 ; ********************************
+set_nmi:
 #include "firmware/modules/set_nmi16.s"
 
 ; ********************************
 ; SET_DBG, set BRK handler routine
 ; ********************************
+set_dbg:
 #include "firmware/modules/set_dbg16.s"
 
 ; ***************************
 ; JIFFY, set jiffy IRQ period
 ; ***************************
+jiffy:
 #include "firmware/modules/jiffy16.s"
 
 ; ****************************************
 ; IRQ_SRC, investigate source of interrupt
 ; ****************************************
 ; notice non-standard ABI, same module as 6502 version!
+irq_src:
 #include "firmware/modules/irq_src.s"
 
 ; *** hardware specific ***
@@ -206,7 +212,7 @@ irq:
 ; C -> not implemented
 ; this must be further modularised
 
-fw_power:
+poweroff:
 	_CRITIC				; save sizes eeeeeeeeek
 	.as: .xs: SEP #$30	; *** all 8-bit ***
 	TYX					; get subfunction offset as index
@@ -256,7 +262,7 @@ fwp_func:
 
 
 ; FREQ_GEN, frequency generator hardware interface, TBD
-fw_fgen:
+freq_gen:
 ; ****** TO BE DONE ******
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
@@ -266,7 +272,7 @@ fw_fgen:
 ;		INPUT
 ; kerntab	= address of supplied pointer table
 
-fw_install:
+install:
 	_CRITIC				; disable interrupts! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$10		; ** just in case, 8-bit indexes ** (3)
@@ -284,7 +290,7 @@ fwi_loop:
 ; kerntab <- address of code
 ; Y <- function to be patched
 
-fw_patch:
+patch:
 ; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
 	_ENTER_CS				; disable interrupts and save sizes! (5)
 	.al: REP #$20			; ** 16-bit memory ** (3)
@@ -298,7 +304,7 @@ fw_patch:
 	.as: .xs				; just in case...
 
 ; CONTEXT, zeropage & stack bankswitching
-fw_ctx:
+context:
 ; ****** TO BE DONE ****** not on unexpanded Jalapa
 	_DR_ERR(UNAVAIL)	; not yet implemented, Jalapa does not use it
 

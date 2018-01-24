@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc3
+; v0.9.6rc4
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180123-1002
+; last modified 20180124-0840
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -184,33 +184,39 @@ irq:
 ; *********************************
 ; GESTALT, get system info, API TBD
 ; *********************************
+gestalt:
 #include "firmware/modules/gestalt16.s"
 
 ; ***********************
 ; SET_ISR, set IRQ vector
 ; ***********************
+set_isr:
 #include "firmware/modules/set_isr16.s"
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
 ; ********************************
+set_nmi:
 #include "firmware/modules/set_nmi16.s"
 
 ; ********************************
 ; SET_DBG, set BRK handler routine
 ; ********************************
+set_dbg:
 #include "firmware/modules/set_dbg16.s"
 
 ; ***************************
 ; JIFFY, set jiffy IRQ period
-; ***************************
+; *************************** Note specific module as does not make much sense
+jiffy:
 #include "firmware/modules/jiffy_run816.s"
 
 ; ****************************************
 ; IRQ_SRC, investigate source of interrupt
 ; ****************************************
 ; notice non-standard ABI, same module as 6502 version!
-#include "firmware/modules/irq_src.s"
+irq_src:
+;#include "firmware/modules/irq_src.s"
 
 ; *** hardware specific ***
 
@@ -218,7 +224,7 @@ irq:
 ; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
 ; C -> not implemented
 
-fw_power:
+poweroff:
 	PHP					; save sizes eeeeeeeeek
 	.as: .xs: SEP #$30	; *** all 8-bit ***
 	TYX					; get subfunction offset as index
@@ -232,8 +238,15 @@ fwp_susp:
 	PLP					; restore sizes
 	_DR_OK				; just continue execution
 
+; sub-function jump table (eeeek)
+fwp_func:
+	.word	fwp_susp	; suspend	+FW_STAT
+	.word	kernel		; should not use this, just in case
+	.word	reset		; coldboot	+FW_COLD
+	.word	fwp_off		; poweroff	+FW_OFF
+
 ; FREQ_GEN, frequency generator hardware interface, TBD
-fw_fgen:
+freq_gen:
 ; ****** TO BE DONE ******
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
@@ -243,7 +256,7 @@ fw_fgen:
 ;		INPUT
 ; kerntab	= address of supplied pointer table
 
-fw_install:
+install:
 	_CRITIC			; disable interrupts! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$10		; ** just in case, 8-bit indexes ** (3)
@@ -263,7 +276,7 @@ fwi_loop:
 ; kerntab <- address of code
 ; Y <- function to be patched
 
-fw_patch:
+patch:
 ; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
 	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
@@ -277,7 +290,7 @@ fw_patch:
 	.as: .xs			; just in case...
 
 ; CONTEXT, zeropage & stack bankswitching
-fw_ctx:
+context:
 ; ****** TO BE DONE ******
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
@@ -285,13 +298,6 @@ fw_ctx:
 ; ****************************
 ; *** some firmware tables ***
 ; ****************************
-
-; sub-function jump table (eeeek)
-fwp_func:
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	kernel		; should not use this, just in case
-	.word	reset		; coldboot	+FW_COLD
-	.word	fwp_off		; poweroff	+FW_OFF
 
 fw_map:
 ; *** do not know what to do here ***

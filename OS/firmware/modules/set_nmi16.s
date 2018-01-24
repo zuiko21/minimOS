@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180122-1313
+; last modified 20180124-0853
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
@@ -16,7 +16,8 @@
 ; sizes irrelevant!
 ; routine ending in *RTL* (RTS is valid in bank zero, id est, 6502 code), regs already saved, but MUST respect sys_sp
 
-set_nmi:
+-set_nmi:
+.(
 	_CRITIC				; will preserve sizes (5)
 	.al: REP #$20		; ** 16b memory, 8b index ** (3+3)
 	.xs: SEP #$10
@@ -58,5 +59,5 @@ fw_nsok:
 	STA fw_nmi+1		; includes MSB + bank (5)
 	_NO_CRIT			; restore sizes
 	_DR_OK				; done (8)
-
+.)
 	.as: .xs			; just in case...

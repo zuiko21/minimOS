@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180122-1048
+; last modified 20180124-0855
 
 ; *********************************
 ; GESTALT, get system info, API TBD
@@ -13,7 +13,8 @@
 ; k_ram		= pages of RAM
 ; sizes irrelevant
 
-gestalt:
+-gestalt:
+.(
 	PHP					; keep sizes (3)
 	.al: REP #$20		; ** 16-bit memory **
 	.xs: SEP #$10		; ** 8-bit indexes **
@@ -30,5 +31,5 @@ gestalt:
 	STA ex_pt			; set output (4)
 	PLP					; restore sizes (4)
 	_DR_OK				; done (8)
-
+.)
 	.as: .xs			; just in case...

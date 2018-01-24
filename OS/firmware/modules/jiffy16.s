@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180123-0945
+; last modified 20180124-0855
 
 ; ***************************
 ; JIFFY, set jiffy IRQ period
@@ -12,7 +12,8 @@
 ; C			= could not set
 ; takes several local vars...
 
-jiffy:
+-jiffy:
+.(
 ; if could not change, then just set return parameter and C
 	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
@@ -75,5 +76,5 @@ fj_shft:
 fj_over:
 	_NO_CRIT			; eeeeeeeek
 	_DR_ERR(INVALID)
-
+.)
 	.as: .xs			; just in case...

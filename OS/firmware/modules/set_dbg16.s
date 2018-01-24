@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180122-1320
+; last modified 20180124-0854
 
 ; ********************************
 ; *** SET_DBG, set BRK handler ***
@@ -9,7 +9,8 @@
 ; kerntab	= 24b address of BRK routine (ending in RTS/RTL)
 ;		zero means RETURN actual value! new 20170820
 
-set_dbg:
+-set_dbg:
+.(
 	_CRITIC
 	.al: REP #$20		; *** 16-bit memory ***
 	.xs: SEP #$10		; *** 8-bit indexes ***
@@ -34,5 +35,5 @@ fw_s_dbg:
 	STA fw_dbg+1
 	_NO_CRIT			; restore sizes and interrupt mask
 	_DR_OK				; done
-
+.)
 	.as: .xs			; just in case...

@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180123-0952
+; last modified 20180124-0854
 ; specific code for run816 simulator
 
 ; ***************************
@@ -12,9 +12,10 @@
 ; irq_hz	= actually set frequency (in case of error or no change)
 ; C			= could not set (not here)
 
-jiffy:
+-jiffy:
 ; this is generic
 ; if could not change, then just set return parameter and C
+.(
 	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	LDA irq_hz			; get input value
@@ -25,5 +26,5 @@ fj_set:
 	STA irq_freq		; store in sysvars, will not hurt anyway
 	_NO_CRIT			; eeeeeeeeek
 	_DR_OK
-
+.)
 	.as: .xs			; just in case...
