@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180124-1229
+; last modified 20180124-1243
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -271,25 +271,6 @@ context:
 #include "firmware/modules/context16.s"
 
 ; -------------------- old code ----------------------
-; *** administrative functions ***
-; A0, install jump table
-; kerntab <- address of supplied jump table
-install:
-	LDY #0				; reset index (2)
-	_ENTER_CS			; disable interrupts! (5)
-	.al: REP #$20		; ** 16-bit memory ** (3)
-fwi_loop:
-		LDA (kerntab), Y	; get word from table as supplied (6)
-		STA fw_table, Y		; copy where the firmware expects it (5)
-		INY					; advance two bytes (2+2)
-		INY
-		BNE fwi_loop		; until whole page is done (3/2)
-	_EXIT_CS			; restore interrupts if needed, will restore size too (4)
-	_DR_OK				; all done (8)
-
-
-
-
 
 ; A6, patch single function
 ; kerntab <- address of code

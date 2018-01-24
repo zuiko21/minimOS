@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c)2018 Carlos J. Santisteban
-; last modified 20180124-1240
+; last modified 20180124-1242
 
 ; ************************
 ; INSTALL, copy jump table
@@ -10,7 +10,7 @@
 ;			NULL means reset from previously installed one
 ; size irrelevant
 
-install:
+-install:
 .(
 	_CRITIC			; disable interrupts! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)

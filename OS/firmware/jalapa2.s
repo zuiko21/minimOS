@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a21
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180124-1229
+; last modified 20180124-1242
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -332,23 +332,6 @@ freq_gen:
 
 ; *** for higher-specced systems ***
 
-; INSTALL, copy jump table
-;		INPUT
-; kerntab	= address of supplied pointer table
-
-install:
-	_CRITIC				; disable interrupts! (5)
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	.xs: SEP #$10		; ** just in case, 8-bit indexes ** (3)
-	LDY #0				; reset index (2)
-fwi_loop:
-		LDA (kerntab), Y	; get word from table as supplied (6)
-		STA @fw_table, Y	; copy where the firmware expects it (6) ***faster if switching DBR but heavier
-		INY					; advance two bytes (2+2)
-		INY
-		BNE fwi_loop		; until whole page is done (3/2)
-	_NO_CRIT			; restore interrupts if needed, will restore size too (4)
-	_DR_OK				; all done (8)
 
 ; PATCH, patch single function
 ; kerntab <- address of code

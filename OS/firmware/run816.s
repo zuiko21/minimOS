@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc4
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180124-1230
+; last modified 20180124-1242
 
 #define		FIRMWARE	_FIRMWARE
 
