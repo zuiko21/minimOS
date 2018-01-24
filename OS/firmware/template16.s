@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180124-0837
+; last modified 20180124-0903
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -41,6 +41,30 @@ fw_splash:
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
+
+; *********************************
+; *********************************
+; *** administrative jump table *** changing
+; *********************************
+; *********************************
+fw_admin:
+; generic functions, esp. interrupt related
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
+
+; not for LOWRAM systems
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+	.word	context		; *** CONTEXT context bankswitching
+
 
 ; **************************
 ; **************************
@@ -266,27 +290,6 @@ fwp_func:
 	.word	fwp_susp	; suspend	+FW_STAT
 	.word	fwp_cold	; coldboot	+FW_COLD
 	.word	kernel		; shouldn't use this, just in case
-
-; *********************************
-; *** administrative jump table *** changing
-; *********************************
-fw_admin:
-; generic functions, esp. interrupt related
-	.word	gestalt		; GESTALT get system info (renumbered)
-	.word	set_isr		; SET_ISR set IRQ vector
-	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
-	.word	set_dbg		; SET_DBG set debugger, new 20170517
-	.word	jiffy		; JIFFY set jiffy IRQ speed
-	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
-
-; pretty hardware specific
-	.word	poweroff	; POWEROFF power-off, suspend or cold boot
-	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
-
-; not for LOWRAM systems
-	.word	install		; INSTALL copy jump table
-	.word	patch		; PATCH patch single function (renumbered)
-	.word	context		; *** CONTEXT context bankswitching
 
 ; these already OK for 65816!
 ; *** minimOS·16 BRK handler *** might go elsewhere

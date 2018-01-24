@@ -3,7 +3,7 @@
 ; *** use as sort-of template ***
 ; v0.9.6rc6
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180124-0842
+; last modified 20180124-0900
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -46,6 +46,31 @@ fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
 
+; *********************************
+; *********************************
+; *** administrative jump table *** changing
+; *********************************
+; *********************************
+fw_admin:
+; generic functions, esp. interrupt related
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed, ** TBD **
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
+
+; not for LOWRAM systems
+#ifndef	LOWRAM
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+	.word	context		; *** CONTEXT context bankswitching
+#endif
+
 ; **************************
 ; **************************
 ; ****** cold restart ******
@@ -53,6 +78,7 @@ fw_mname:
 ; **************************
 
 ; basic init
+reset:
 #include "firmware/modules/basic_init.s"
 
 ; simulated 65816 has no real hardware to initialise...
@@ -147,6 +173,21 @@ nmi:
 irq:
 	JMP (fw_isr)	; vectored ISR (6)
 
+; ***************************
+; *** minimOS BRK handler *** might go elsewhere
+; ***************************
+brk_hndl:				; label from vector list
+; much like the ISR start
+	PHA					; save registers
+	_PHX
+	_PHY
+	JSR brk_call		; indirect call
+	_PLY				; restore status and return
+	_PLX
+	PLA
+	RTI
+brk_call:
+	JMP (fw_brk)		; new vectored handler
 
 ; ********************************
 ; *** administrative functions ***
@@ -367,43 +408,6 @@ fw_ctx:
 fw_map:
 ; *** do not know what to do here ***
 
-; *********************************
-; *** administrative jump table *** changing
-; *********************************
-fw_admin:
-; generic functions, esp. interrupt related
-	.word	gestalt		; GESTALT get system info (renumbered)
-	.word	set_isr		; SET_ISR set IRQ vector
-	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
-	.word	set_dbg		; SET_DBG set debugger, new 20170517
-	.word	jiffy		; JIFFY set jiffy IRQ speed, ** TBD **
-	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
-
-; pretty hardware specific
-	.word	poweroff	; POWEROFF power-off, suspend or cold boot
-	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
-
-; not for LOWRAM systems
-#ifndef	LOWRAM
-	.word	install		; INSTALL copy jump table
-	.word	patch		; PATCH patch single function (renumbered)
-	.word	context		; *** CONTEXT context bankswitching
-#endif
-
-; *** minimOS BRK handler *** might go elsewhere
-; not sure how to link this to IRQ
-brk_hndl:				; label from vector list
-; much like the ISR start
-	PHA					; save registers
-	_PHX
-	_PHY
-	JSR brk_call		; indirect call
-	_PLY				; restore status and return
-	_PLX
-	PLA
-	RTI
-brk_call:
-	JMP (fw_brk)		; new vectored handler
 
 ; ****** some odds ******
 
