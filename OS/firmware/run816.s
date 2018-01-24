@@ -316,23 +316,6 @@ freq_gen:
 ; *** for higher-specced systems ***
 
 
-; PATCH, patch single function
-; kerntab <- address of code
-; Y <- function to be patched
-
-patch:
-; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
-	_CRITIC				; disable interrupts and save sizes! (5)
-	.al: REP #$20		; ** 16-bit memory ** (3)
-	.xs: SEP #$20		; ** 8-bit indexes, no ABI to set that! **
-	LDA kerntab			; get full pointer (4)
-	TYX					; no Y-indexed long addressing! (2)
-	STA @fw_table, X	; store into firmware, note long addressing (6)
-	_NO_CRIT			; restore interrupts and sizes (4)
-	_DR_OK				; done (8)
-
-	.as: .xs			; just in case...
-
 ; CONTEXT, zeropage & stack bankswitching
 context:
 ; ****** TO BE DONE ******
