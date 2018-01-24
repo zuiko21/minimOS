@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180124-0903
+; last modified 20180124-1229
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -235,6 +235,40 @@ jiffy:
 ; notice non-standard ABI, same module as 6502 version!
 irq_src:
 #include "firmware/modules/irq_src.s"
+
+; *** hardware specific ***
+
+; **********************
+; POWEROFF, shutdown etc *** TBD
+; **********************
+poweroff:
+;#include "firmware/modules/poweroff16.s"
+
+; ***********************************
+; FREQ_GEN, generate frequency at PB7 *** TBD
+; ***********************************
+freq_gen:
+;#include "firmware/modules/freq_gen16.s"
+
+; *** other functions with RAM enough ***
+
+; **************************
+; INSTALL, supply jump table
+; **************************
+install:
+#include "firmware/modules/install16.s"
+
+; ****************************
+; PATCH, patch single function
+; ****************************
+patch:
+#include "firmware/modules/patch16.s"
+
+; *****************************************
+; CONTEXT, hardware switch zeropage & stack
+; *****************************************
+context:
+#include "firmware/modules/context16.s"
 
 ; -------------------- old code ----------------------
 ; *** administrative functions ***

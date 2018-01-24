@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc4
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180124-0901
+; last modified 20180124-1230
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -250,6 +250,39 @@ irq_src:
 
 ; *** hardware specific ***
 
+; **********************
+; POWEROFF, shutdown etc *** TBD
+; **********************
+poweroff:
+;#include "firmware/modules/poweroff16.s"
+
+; ***********************************
+; FREQ_GEN, generate frequency at PB7 *** TBD
+; ***********************************
+freq_gen:
+;#include "firmware/modules/freq_gen16.s"
+
+; *** other functions with RAM enough ***
+
+; **************************
+; INSTALL, supply jump table
+; **************************
+install:
+#include "firmware/modules/install16.s"
+
+; ****************************
+; PATCH, patch single function
+; ****************************
+patch:
+#include "firmware/modules/patch16.s"
+
+; *****************************************
+; CONTEXT, hardware switch zeropage & stack
+; *****************************************
+context:
+#include "firmware/modules/context16.s"
+
+; --------------------old code --------------------
 ; POWEROFF, poweroff etc
 ; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
 ; C -> not implemented
