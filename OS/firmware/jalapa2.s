@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a21
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180124-1242
+; last modified 20180125-1332
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -239,12 +239,14 @@ irq_src:
 ; **********************
 poweroff:
 ;#include "firmware/modules/poweroff16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
 ;#include "firmware/modules/freq_gen16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; *** other functions with RAM enough ***
 
@@ -264,7 +266,8 @@ patch:
 ; CONTEXT, hardware switch zeropage & stack
 ; *****************************************
 context:
-#include "firmware/modules/context16.s"
+;#include "firmware/modules/context16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; ------------------------------old code-----------------------
 ; **********************
@@ -276,7 +279,7 @@ context:
 ; C -> not implemented
 ; this must be further modularised
 
-poweroff:
+;poweroff:
 	_CRITIC				; save sizes eeeeeeeeek
 	.as: .xs: SEP #$30	; *** all 8-bit ***
 	TYX					; get subfunction offset as index
@@ -325,42 +328,9 @@ fwp_func:
 	.word	fwp_brk		; execute BRK, not sure if needed
 
 
-; FREQ_GEN, frequency generator hardware interface, TBD
-freq_gen:
-; ****** TO BE DONE ******
-	_DR_ERR(UNAVAIL)	; not yet implemented
-
-; *** for higher-specced systems ***
-
-
-; PATCH, patch single function
-; kerntab <- address of code
-; Y <- function to be patched
-
-patch:
-; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
-	_ENTER_CS				; disable interrupts and save sizes! (5)
-	.al: REP #$20			; ** 16-bit memory ** (3)
-	.xs: SEP #$20			; ** 8-bit indexes, no ABI to set that! **
-	LDA kerntab				; get full pointer (4)
-	TYX						; no Y-indexed long addressing! (2)
-	STA @fw_table, X		; store into firmware, note long addressing (6)
-	_EXIT_CS				; restore interrupts and sizes (4)
-	_DR_OK					; done (8)
-
-	.as: .xs				; just in case...
-
-; CONTEXT, zeropage & stack bankswitching
-context:
-; ****** TO BE DONE ****** not on unexpanded Jalapa
-	_DR_ERR(UNAVAIL)	; not yet implemented, Jalapa does not use it
-
-
 ; ****************************
 ; *** some firmware tables ***
 ; ****************************
-
-
 
 fw_map:
 ; *** do not know what to do here ***

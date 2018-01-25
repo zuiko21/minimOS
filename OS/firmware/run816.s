@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc4
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180124-1242
+; last modified 20180125-1331
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -255,14 +255,16 @@ irq_src:
 ; **********************
 poweroff:
 ;#include "firmware/modules/poweroff16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
 ;#include "firmware/modules/freq_gen16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
-; *** other functions with RAM enough ***
+; *** other functions for higher specced systems ***
 
 ; **************************
 ; INSTALL, supply jump table
@@ -280,14 +282,15 @@ patch:
 ; CONTEXT, hardware switch zeropage & stack
 ; *****************************************
 context:
-#include "firmware/modules/context16.s"
+;#include "firmware/modules/context16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; --------------------old code --------------------
 ; POWEROFF, poweroff etc
 ; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
 ; C -> not implemented
 
-poweroff:
+;poweroff:
 	PHP					; save sizes eeeeeeeeek
 	.as: .xs: SEP #$30	; *** all 8-bit ***
 	TYX					; get subfunction offset as index
@@ -307,19 +310,6 @@ fwp_func:
 	.word	kernel		; should not use this, just in case
 	.word	reset		; coldboot	+FW_COLD
 	.word	fwp_off		; poweroff	+FW_OFF
-
-; FREQ_GEN, frequency generator hardware interface, TBD
-freq_gen:
-; ****** TO BE DONE ******
-	_DR_ERR(UNAVAIL)	; not yet implemented
-
-; *** for higher-specced systems ***
-
-
-; CONTEXT, zeropage & stack bankswitching
-context:
-; ****** TO BE DONE ******
-	_DR_ERR(UNAVAIL)	; not yet implemented
 
 
 ; ****************************

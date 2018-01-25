@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180124-1328
+; last modified 20180125-1334
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -243,12 +243,14 @@ irq_src:
 ; **********************
 poweroff:
 ;#include "firmware/modules/poweroff16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
 ;#include "firmware/modules/freq_gen16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; *** other functions with RAM enough ***
 
@@ -268,26 +270,10 @@ patch:
 ; CONTEXT, hardware switch zeropage & stack
 ; *****************************************
 context:
-#include "firmware/modules/context16.s"
+;#include "firmware/modules/context16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; -------------------- old code ----------------------
-
-; A6, patch single function
-; kerntab <- address of code
-; Y <- function to be patched
-;patch:
-#ifdef		LOWRAM
-	_DR_ERR(UNAVAIL)		; no way to patch on 128-byte systems
-#else
-; worth going 16-bit as status was saved, 10b/21c , was 13b/23c
-	_ENTER_CS				; disable interrupts and save sizes! (5)
-	.al: REP #$20			; ** 16-bit memory ** (3)
-	LDA kerntab				; get full pointer (4)
-	STA fw_table, Y			; store into firmware (5)
-	_EXIT_CS				; restore interrupts and sizes (4)
-	_DR_OK					; done (8)
-#endif
-
 
 ; A10, poweroff etc
 ; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
@@ -316,8 +302,6 @@ fwp_func:
 ; *** some firmware tables ***
 ; ****************************
 
-
-
 fw_map:
 ; *** do not know what to do here ***
 
@@ -329,7 +313,9 @@ cop_hndl:		; label from vector list
 	JMP (fw_table, X)	; the old fashioned way (this takes 5 bytes)
 
 ; filling for ready-to-blow ROM
+#ifdef	ROM
 	.dsb	kerncall-*, $FF
+#endif
 
 ; ******************************************************************
 ; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
@@ -347,7 +333,9 @@ cop_hndl:		; label from vector list
 ; ...without pre-CLC or size setting!
 
 ; filling for ready-to-blow ROM
+#ifdef	ROM
 	.dsb	adm_call-*, $FF
+#endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
@@ -356,7 +344,9 @@ cop_hndl:		; label from vector list
 ; this could be a good place for the IRQ handler...
 
 ; filling for ready-to-blow ROM
+#ifdef	ROM
 	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
+#endif
 
 ; *** administrative meta-kernel call primitive for apps ($FFD8) ***
 * = adm_appc
@@ -369,9 +359,9 @@ cop_hndl:		; label from vector list
 
 ; *** above code takes -8- bytes, thus no room for padding! ***
 ; filling for ready-to-blow ROM
-;#ifdef	ROM
+#ifdef	ROM
 	.dsb	lock-*, $FF
-;#endif
+#endif
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = lock
