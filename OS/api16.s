@@ -1,11 +1,65 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180108-1333
+; last modified 20180126-0839
 
-; assumes 8-bit sizes upon call...
+; **************************************************
+; *** jump table, if not in separate 'jump' file ***
+; **************************************************
+
+#ifndef		DOWNLOAD
+k_vec:
+; basic I/O
+	.word	cout		; output a character
+	.word	cin			; get a character
+	.word	string		; prints a C-string
+	.word	readln		; buffered input
+; block I/O
+	.word	blout		; block output
+	.word	blin		; block input
+	.word	bl_cnfg		; configure device
+	.word	bl_stat		; device status
+; simple windowing system (placeholders)
+	.word	open_w		; get I/O port or window
+	.word	close_w		; close window
+	.word	free_w		; will be closed by kernel
+; other generic functions
+	.word	uptime		; approximate uptime in ticks
+	.word	set_fg		; enable frequency generator (VIA T1@PB7)
+	.word	shutdown	; proper shutdown procedure
+	.word	loadlink	; get addr. once in RAM/ROM
+; simplified task management
+	.word	b_fork		; get available PID ***returns 0
+	.word	b_exec		; launch new process ***simpler
+	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
+	.word	set_hndl	; set SIGTERM handler
+	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	get_pid		; get PID of current braid ***returns 0
+; new driver functionalities TBD
+	.word	aq_mng		; manage asynchronous task queue
+	.word	pq_mng		; manage periodic task queue
+	.word	dr_inst		; install driver
+	.word	dr_shut		; remove driver
+	.word	dr_info		; get driver header
+; memory management
+	.word	malloc		; reserve memory
+	.word	free		; release memory
+	.word	release		; release ALL memory for a PID
+	.word	memlock		; reserve some address
+; multitasking only
+	.word	ts_info		; get taskswitching info
+	.word	set_curr	; set internal kernel info for running task
+#endif
+
+; ****************************
+; ****************************
+; *** Kernel API functions ***
+; ****************************
+; ****************************
 
 ; no way for standalone assembly, neither internal calls...
+; assumes 8-bit sizes upon call...
 .as:.xs
 
 ; ***************************************
@@ -23,7 +77,6 @@ bl_stat:
 dr_shut:
 
 unimplemented:			; placeholder here, not currently used
-	.as: .xs:
 	_ERR(UNAVAIL)		; go away!
 
 
@@ -38,17 +91,16 @@ unimplemented:			; placeholder here, not currently used
 ;		USES iol_dev, and whatever the driver takes
 
 cin:
-	.as: .xs:
 ; if every zp is page-aligned as recommended, use this code
-	TDC			; where is direct page?
-	XBA			; switch to MSB
+	TDC					; where is direct page?
+	XBA					; switch to MSB
 	STA bl_ptr+1		; set on pointer
-	LDA #io_c		; point to ZP parameter
-	STA bl_ptr		; ready, will not need to resolve!
+	LDA #io_c			; point to ZP parameter
+	STA bl_ptr			; ready, will not need to resolve!
 	STZ bl_ptr+2		; always bank zero! eeeeeeek
 ; set fixed size and proceed
-	LDA #1			; single byte
-	STA bl_siz		; set size
+	LDA #1				; single byte
+	STA bl_siz			; set size
 	STZ bl_siz+1
 	_KERNEL(BLIN)
 ; worth switching back DBR
@@ -106,25 +158,24 @@ ci_signal:
 ; cio_lock is a kernel structure
 
 cout:
-	.as: .xs:
 ; if every zp is page-aligned as recommended, use this code
-	TDC			; where is direct page?
-	XBA			; switch to MSB
+	TDC					; where is direct page?
+	XBA					; switch to MSB
 	STA bl_ptr+1		; set on pointer
-	LDA #io_c		; point to ZP parameter
-	STA bl_ptr		; ready, will not need to resolve!
+	LDA #io_c			; point to ZP parameter
+	STA bl_ptr			; ready, will not need to resolve!
 	STZ bl_ptr+2		; always in bank zero! eeeeeeeeeek
 ; otherwise add LSB like this
-;	TDC			; where is direct page?
+;	TDC					; where is direct page?
 ;	CLC
-;	ADC #io_c		; point to ZP parameter
-;	STA bl_ptr		; LSB ready
-;	XBA			; switch to MSB
-;	ADC #0			; propagate carry
+;	ADC #io_c			; point to ZP parameter
+;	STA bl_ptr			; LSB ready
+;	XBA					; switch to MSB
+;	ADC #0				; propagate carry
 ;	STA bl_ptr+1		; set on pointer
 ; set fixed size and proceed
-	LDA #1			; single byte
-	STA bl_siz		; set size
+	LDA #1				; single byte
+	STA bl_siz			; set size
 	STZ bl_siz+1
 ; ...and fall into BLOUT
 
@@ -143,7 +194,6 @@ cout:
 ; * 8-bit savvy *
 
 blout:
-	.as: .xs:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
@@ -189,12 +239,13 @@ co_log:
 			LDY #N_FOUND		; unknown device
 			BRA cio_abort		; restore & notify
 co_ok:
-		STZ bl_siz		; /dev/null transfers are complete
-		STZ bl_siz+1		; /dev/null transfers are complete
+		STZ bl_siz			; /dev/null transfers are complete
+		STZ bl_siz+1
 		PLB					; restore!!!
-		RTI					; end of function without errors
+		_EXIT_OK			; end of function without errors
 
 ; *** some common routines ***
+; these could be called in 8 or 16-bit index size, but always 8-bit memory!
 ci_nevent:
 	STZ cin_mode, X		; *back to normal mode
 ci_exitOK:
@@ -242,7 +293,6 @@ co_lckd:
 ; gets physdevnum and clears its mutex, restores DBR and exit with proper error code if C set
 ; must be called in all 8-bit size!!!
 cio_unlock:
-.as:sep#$20
 	LDX iol_dev			; **need to clear new lock! (3)
 	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
 	PLB					; we are leaving... into cio_callend
@@ -276,20 +326,19 @@ cio_notc:
 ; cio_lock & cin_mode are kernel structures
 
 blin:
-	.as: .xs:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
 	PHK					; bank zero into stack (3)
 	PLB					; set DBR! do not forget another PLB upon end! (4)
 #ifdef	SUPPORT
-	LDX run_arch				; from 6502 code?
-	BEQ bli_24b				; no, nothing to correct
-		STZ bl_ptr+2				; 6502 always in bank zero
-		LDA bl_ptr+1				; check page
-		BNE bli_24b				; all OK
+	LDX run_arch		; from 6502 code?
+	BEQ bli_24b			; no, nothing to correct
+		STZ bl_ptr+2		; 6502 always in bank zero
+		LDA bl_ptr+1		; check page
+		BNE bli_24b			; all OK
 			TDC					; where is direct page?
 			XBA					; go for MSB (assume page-aligned!)
-			STA bl_ptr+1				; physical address
+			STA bl_ptr+1		; physical address
 bli_24b:
 #endif
 ; proceed
@@ -352,8 +401,8 @@ ci_log:
 	JMP cio_abort		; restore & notify
 ; fill buffer with zeroes like "/dev/zero"
 ci_null:
-	LDY #0			; reset index, will be complete
-	TYA			; filling value as above
+	LDY #0				; reset index, will be complete
+	TYA					; filling value as above
 	.xl: REP #$10		; *** 16-bit index ***
 	LDX bl_siz			; get size in full
 	BNE ci_nulend		; nothing to do
@@ -374,10 +423,10 @@ ci_rnd:
 	BNE ci_rndend		; nothing to do
 ; load some random number in A
 ci_rndl:
-		LDA ticks		; simple placeholder***
+		LDA ticks			; simple placeholder***
 		STA [bl_ptr], Y		; clear byte in buffer
-		INY				; go for next
-		DEX				; one less to go
+		INY					; go for next
+		DEX					; one less to go
 		BNE ci_rndl
 ci_rndend:
 	JMP ci_exitOK		; nothing else
@@ -400,7 +449,6 @@ ci_rndend:
 ; think about managing the multiple exit points as this is a rather slow function
 
 malloc:
-	.xs:
 	.al: REP #$20		; *** 16-bit memory ***
 	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index (can be used for storing any 8-bit zero)
@@ -1748,54 +1796,3 @@ tsi_end:
 ; ****************************
 ; *** end of kernel tables ***
 ; ****************************
-
-; **************************************************
-; *** jump table, if not in separate 'jump' file ***
-; **************************************************
-
-#ifndef		DOWNLOAD
-k_vec:
-; basic I/O
-	.word	cout		; output a character
-	.word	cin			; get a character
-	.word	string		; prints a C-string
-	.word	readln		; buffered input
-; block I/O
-	.word	blout		; block output
-	.word	blin		; block input
-	.word	bl_cnfg		; configure device
-	.word	bl_stat		; device status
-; simple windowing system (placeholders)
-	.word	open_w		; get I/O port or window
-	.word	close_w		; close window
-	.word	free_w		; will be closed by kernel
-; other generic functions
-	.word	uptime		; approximate uptime in ticks
-	.word	set_fg		; enable frequency generator (VIA T1@PB7)
-	.word	shutdown	; proper shutdown procedure
-	.word	loadlink	; get addr. once in RAM/ROM
-; simplified task management
-	.word	b_fork		; get available PID ***returns 0
-	.word	b_exec		; launch new process ***simpler
-	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
-	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
-	.word	set_hndl	; set SIGTERM handler
-	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
-	.word	get_pid		; get PID of current braid ***returns 0
-; new driver functionalities TBD
-	.word	aq_mng		; manage asynchronous task queue
-	.word	pq_mng		; manage periodic task queue
-	.word	dr_inst		; install driver
-	.word	dr_shut		; remove driver
-	.word	dr_info		; get driver header
-; memory management
-	.word	malloc		; reserve memory
-	.word	free		; release memory
-	.word	release		; release ALL memory for a PID
-	.word	memlock		; reserve some address
-; multitasking only
-	.word	ts_info		; get taskswitching info
-	.word	set_curr	; set internal kernel info for running task
-#endif
-
-.as:.xs					; just in case, for 8-bit ROM software
