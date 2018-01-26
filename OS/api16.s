@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180126-0839
+; last modified 20180126-1113
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -431,6 +431,7 @@ ci_rndl:
 ci_rndend:
 	JMP ci_exitOK		; nothing else
 
+	.xs:
 
 ; ******************************
 ; *** MALLOC, reserve memory ***
@@ -460,7 +461,7 @@ malloc:
 ; detect caller architecture in order to enable 24-bit addressing
 	LDY run_arch		; zero for native 65816, respect X as it holds zero
 	BEQ ma_24b			; OK for 24b addressing
-		TXY			; ...or just bank 0 (was in X) for 6502
+		TXY					; ...or just bank 0 (was in X) for 6502
 		STX ma_rs+2			; clear number of banks just in case!
 		BRA ma_lset
 ma_24b:
@@ -508,8 +509,8 @@ ma_nxbig:
 ; is there at least one available block?
 		LDA ma_rs+1			; should not be zero
 		BNE ma_fill			; there is at least one block to allocate
-			PLB				; restore!
-			_ERR(FULL)		; otherwise no free memory!
+			PLB					; restore!
+			_ERR(FULL)			; otherwise no free memory!
 ; report allocated size
 ma_fill:
 		LDX ma_ix			; retrieve index
@@ -613,7 +614,7 @@ ma_updt:
 			PHA					; otherwise set data bank temprorarily...
 			PLB					; ...as will be taken by FREE from 8-bit code
 			_KERNEL(FREE)		; release what was wrongly assigned
-			PLB					; 6502 cannot currently run outside bank zero!
+			PLB					; 6502 cannot run outside bank zero!
 			_ERR(FULL)			; and exit with no suitable memory available
 ma_bankOK:
 #endif
@@ -625,7 +626,7 @@ ma_bankOK:
 ; ******************************
 ; *** common MALLOC routines ***
 ; ******************************
-	.al					; as routines will be called in 16-bit memory!!!
+;	.al					; as routines will be called in 16-bit memory!!!
 
 ; **** routine for aligned-block size computation ****
 ; returns found size in A, sets C if OK, error otherwise (C clear!)
@@ -668,6 +669,7 @@ ma_room:
 		BNE ma_room			; continue until done
 	RTS
 
+	.as:
 
 ; *******************************
 ; **** FREE,  release memory ****
@@ -680,7 +682,6 @@ ma_room:
 ; ram_pos & ram_stat are kernel structures
 
 free:
-	.xs:
 	.al: REP #$20		; *** 16-bit memory ***
 	PHB					; eeeeeeeek! do not forget to restore
 	LDX #0				; reset index (will be used afterwards)
@@ -742,14 +743,15 @@ fr_ok:
 ; routine for obliterating the following empty entry
 fr_join:
 		LDA ram_pos+4, X	; get following address
-		STA ram_pos+2, X		; store one entry below
+		STA ram_pos+2, X	; store one entry below
 		LDA ram_stat+4, X	; check status of following! **but PID field too**
-		STA ram_stat+2, X		; store one entry below **otherwise LDY/STY**
+		STA ram_stat+2, X	; store one entry below **otherwise LDY/STY**
 		TAY					; **will transfer just status, PID will be ripped off**
 		CPY #END_RAM		; end of list?
 		BNE fr_join			; repeat until done
 	RTS
 
+	.as:
 
 ; **************************************
 ; *** OPEN_W, get I/O port or window ***
@@ -763,7 +765,6 @@ fr_join:
 ; C = not supported/not available
 
 open_w:
-	.xs:
 	.al: REP #$20		; *** 16-bit memory size ***
 	LDA w_rect			; asking for some size? includes BOTH bytes
 	BEQ ow_no_window	; wouldn't do it
@@ -778,7 +779,6 @@ ow_no_window:
 ; Y		= PID, 0 means not available or singletask
 
 b_fork:
-	.as: .xs:
 	LDY #0				; standard device or single task PID
 ; EXIT_OK on subsequent system calls!!!
 
@@ -794,7 +794,6 @@ b_fork:
 b_yield:
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
-	.as: .xs:
 	_EXIT_OK
 
 
@@ -806,17 +805,17 @@ free_w:					; doesn't do much, either
 ; up_sec	= 24b approximate uptime in seconds for API compatibility
 
 uptime:
-	.xs:
 	.al: REP #$20		; *** optimum 16-bit memory ***
 ; default 816 API functions run on interrupts masked, thus no need for CS
 ; not worth setting DBR, note long addressing
-		LDA @ticks		; get system variable word (6)
-		STA up_ticks	; and store them in output parameter (4)
-		LDA @ticks+2	; get system variable uptime (6)
-		STA up_ticks+2		; and store it in output parameter (4)
+	LDA @ticks			; get system variable word (6)
+	STA up_ticks		; and store them in output parameter (4)
+	LDA @ticks+2		; get system variable uptime (6)
+	STA up_ticks+2		; and store it in output parameter (4)
 ; end of CS
 	_EXIT_OK
 
+	.as:
 
 ; *****************************************
 ; *** B_EXEC, launch new loaded process *** revamped 20170524
@@ -830,7 +829,6 @@ uptime:
 ; API still subject to change... (register values, rendez-vous mode TBD)
 
 b_exec:
-	.as: .xs:
 ; non-multitasking version
 #ifdef	SAFE
 	TYA					; should be system reserved PID, best way
@@ -877,7 +875,7 @@ exec_st:
 	PLB					; ...and now properly set for the task
 ; *** soon will preset registers according to new API ***
 ; at last, launch code
-	.as: .xs: SEP #$30	; default 8-bit launch!
+	.as: SEP #$20		; *** default 8-bit launch! ***
 	CLI					; time to do it!
 ; assume the stack is already preloaded with SIGKILL address (or wrapper RTL above that)
 	JMP [ex_pt]			; forthcoming RTL will end via SIGKILL
@@ -887,13 +885,11 @@ sig_kill:
 	.as: .xs: SEP #$30	; *** standard size, in case a task was killed ***
 ; first, free up all memory from previous task
 	LDY #0				; standard PID
-; should this correct DP, just in case?
-#ifdef	SAFE
+; should correct DP, just in case
 	TYA					; use that zero as standard DP
 	XBA					; that was MSB
 	TYA					; and this the LSB
 	TCD					; set proper zeropage for singletask systems!
-#endif
 	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
 ; * assume 8-bit sizes *
@@ -925,12 +921,14 @@ sk_loop:				; *** this code valid for singletask 816 ***
 ; if none of the above, a single task system can only restart the shell!
 ; * make certain it arrives here in 8-bit memory mode *
 rst_shell:
-	.as: .xs: SEP #$30	; *** all 8-bit ***
+;	.as
+;	.xs
+;	SEP #$30			; *** all 8-bit ***
 	LDA #1				; standard stack page
 	XBA					; use as MSB
 	LDA #$FF			; initial stack pointer LSB, not using SPTR
 	TCS					; init SP again (in case SIGKILL was called)
-	JMP sh_exec			; back to kernel shell!
+	JMP sh_exec			; back to kernel shell! *** standard label from kernel16.s ***
 
 
 ; **************************************************
@@ -941,7 +939,6 @@ rst_shell:
 ; Y		= PID (0 means TO ALL)
 
 b_signal:
-	.as: .xs:
 #ifdef	SAFE
 	TYA					; check correct PID
 		BNE sig_pid			; invalid braid
@@ -949,8 +946,7 @@ b_signal:
 	LDY b_sig			; get the signal
 	CPY #SIGTERM		; clean shutdown?
 	BNE sig_suic		; if so, call supplied routine (SIGKILL by default)
-; needs to end in RTI???
-		.as: .xs: SEP #$30	; *** make certain TERM handler is called in standard register size! ***
+; SIGTERM no longer needs to end in RTI!
 		JSR @sig_term		; indirect long call, JSL actually
 		_EXIT_OK		; return to caller
 sig_suic:
@@ -972,7 +968,6 @@ sig_term:
 ; C = invalid PID
 
 b_flags:
-	.as: .xs:
 #ifdef	SAFE
 	TYA					; check PID
 		BNE sig_pid			; only 0 accepted
@@ -981,8 +976,8 @@ b_flags:
 ; *** might need to add CPU info inside ***
 ;	LDA run_arch		; get running arch
 ;	EOR #'V'			; EOR trick reversed!
-;	ASL				; SIGTERM flag savvy?
-;	AND #%00111111			; room for status flags
+;	ASL					; SIGTERM flag savvy?
+;	AND #%00111111		; room for status flags
 ;	ORA #BR_RUN			; add mandatory flags
 ;	TAY
 sig_exit:
