@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180126-1113
+; last modified 20180126-1243
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -882,7 +882,7 @@ exec_st:
 
 ; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
 sig_kill:
-	.as: .xs: SEP #$30	; *** standard size, in case a task was killed ***
+	.as: .xs: SEP #$30	; *** standard sizes all the way, in case a task was killed ***
 ; first, free up all memory from previous task
 	LDY #0				; standard PID
 ; should correct DP, just in case
@@ -944,11 +944,11 @@ b_signal:
 		BNE sig_pid			; invalid braid
 #endif
 	LDY b_sig			; get the signal
-	CPY #SIGTERM		; clean shutdown?
+	CPY #SIGTERM		; clean task shutdown?
 	BNE sig_suic		; if so, call supplied routine (SIGKILL by default)
 ; SIGTERM no longer needs to end in RTI!
 		JSR @sig_term		; indirect long call, JSL actually
-		_EXIT_OK		; return to caller
+		_EXIT_OK			; return to caller
 sig_suic:
 	CPY #SIGKILL		; suicide?
 		BEQ sig_kill		; release MEMORY, windows etc
@@ -994,23 +994,21 @@ sig_exit:
 ; C		= bad PID
 
 set_hndl:
-	.xs:
 	.al: REP #$20		; *** 16-bit memory size ***
 #ifdef	SAFE
 	TYX					; check PID
 		BNE sig_pid			; only 0 accepted
 #endif
-	LDA ex_pt			; get pointer
 	LDX ex_pt+2			; 65816 takes bank too
-
 #ifdef	SUPPORT
 ; must check for 02 code in order to preset bank!
-	LDY run_arch		; check current code
-	BEQ st_shset			; if native, bank is set
+	LDA @run_arch		; check current code EEEEEEK takes extra byte
+	AND #$00FF			; filter irrelevant byte, as no LDY long
+	BEQ st_shset		; if native, bank is set
 		LDX #0				; otherwise is in bank 0!
 st_shset:
 #endif
-
+	LDA ex_pt			; get pointer
 	STA @mm_sterm		; store in single variable, 24-bit addr!
 	.as: SEP #$20		; *** back to 8-bit ***
 	TXA					; no long STX...
@@ -1026,7 +1024,6 @@ st_shset:
 ; may not need to be patched in multitasking systems!
 
 get_pid:
-	.as: .xs:
 	LDY run_pid			; new kernel variable
 	_EXIT_OK
 
@@ -1042,7 +1039,6 @@ get_pid:
 ;		USES rh_scan
 
 loadlink:
-	.as: .xs:
 ; *** first look for that filename in ROM headers ***
 ; no need to set DBR
 
@@ -1056,13 +1052,12 @@ loadlink:
 ; *** special corrections are needed in case the pointer is in direct page! ***
 		LDX str_pt+1		; get page numberk...
 		BNE ll_24b			; outside DP, nothing more to correct
-			TDC			; current context location
-			XBA			; assume page-aligned!
+			TDC					; current context location
+			XBA					; assume page-aligned!
 			STA str_pt+1		; store corrected value, 6502 caller should update its local MSB at least!
 ll_24b:
 #endif
 	.al: REP #$20		; *** 16-bit memory ***
-
 ; first of all, correct parameter pointer as will be aligned with header!
 	LDA str_pt			; get whole pointer (minus bank)
 	SEC
@@ -1073,7 +1068,7 @@ ll_24b:
 ll_reset:
 ; get initial address! beacuse of the above, no longer adds filename offset!
 	LDA #ROM_BASE		; begin of ROM contents
-	STA rh_scan		; set local pointer
+	STA rh_scan			; set local pointer
 	STZ rh_scan+2		; standard bank for long pointer into kernel function!
 ll_geth:
 ; ** check whether we are on a valid header!!! **
@@ -1123,24 +1118,20 @@ ll_found:
 	LDA [rh_scan], Y	; get it
 	CMP #'V'			; Rockwell is the only unsupported type! but look for any other 65xx option
 		BEQ ll_native		; native 65816 is fine!
-
 #ifdef	SUPPORT
 	CMP #'B'			; generic 65C02
 		BEQ ll_valid		; also OK but bank 0 only
 	CMP #'N'			; old NMOS
 		BEQ ll_valid		; if neither this one, unsupported CPU type!
 #endif
-
 ll_wrap:
 	_ERR(INVALID)		; unsupported CPU
-
 #ifdef	SUPPORT
 ll_valid:
 ; *** CPU-type is compatible but has 8-bit code, this would only work at bank zero! ***
 	LDX ex_pt+2			; check bank
 		BNE ll_wrap			; outside 0, not for this kind of code!
 #endif
-
 ll_native:
 ; either is 65816 code anywhere, or 6502 in bank 0
 	STA cpu_ll			; set CPU type, now will not matter whether XIP or not!
@@ -1150,6 +1141,7 @@ ll_native:
 	STZ ex_pt			; *** assume all headers are page-aligned *** eeeeek
 	STA ex_pt+1			; save rest of execution pointer
 	_EXIT_OK
+
 #else
 	_ERR(UNAVAIL)		; no headers to scan
 #endif
@@ -1168,7 +1160,6 @@ ll_native:
 ; cio_lock is a kernel structure
 
 string:
-	.as: .xs:
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
 	LDA @run_arch		; will be zero for native 65816
@@ -1216,7 +1207,6 @@ str_end:
 ;		USES rl_dev, rl_cur and whatever CIN/COUT take
 
 readln:
-	.as: .xs:
 ; no need to switch DBR as regular I/O calls would do it
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
@@ -1286,9 +1276,9 @@ rl_cr:
 ; should use some firmware interface, just in case it doesn't affect jiffy-IRQ!
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
 ; *** TO DO *** temporarily made 8-bit savvy
+; no long addressing...
 
 set_fg:
-	.xs:
 	.al: REP #$20		; *** 16-bit memory ***
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
@@ -1297,7 +1287,7 @@ set_fg:
 ; proceed
 	LDA zpar			; take whole word
 		BEQ fg_dis			; if zero, disable output
-	LDX VIA+ACR		; get current configuration byte
+	LDX VIA+ACR			; get current configuration byte
 		BMI fg_busy			; already in use
 	LDA VIA+T1LL		; get older T1 latch values
 	STA old_t1			; save them
@@ -1314,7 +1304,7 @@ fg_none:
 	_EXIT_OK			; finish anyway
 
 fg_dis:
-	.al:					; called from above
+	.al:				; called from above
 	LDX VIA+ACR			; get current configuration
 		BPL fg_none			; it wasn't playing!
 	TXA					; process configuration
@@ -1327,7 +1317,7 @@ fg_dis:
 	PLB					; restore!
 	_EXIT_OK
 fg_busy:
-	.al:
+;	.al:
 	PLB					; restore!
 	_ERR(BUSY)			; couldn't set
 
@@ -1343,7 +1333,6 @@ fg_busy:
 ; sd_flag is a kernel variable
 
 shutdown:
-	.as: .xs:
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
 	CPY #PW_STAT		; is it going to suspend?
@@ -1352,7 +1341,7 @@ shutdown:
 	CPY #PW_HARD		; some invoking?
 		BCS sd_fw			; just pass to FW
 	TYA					; no longer switches DBR
-	STA @sd_flag			; store mode for later, first must do proper system shutdown, note long addressing
+	STA @sd_flag		; store mode for later, first must do proper system shutdown, note long addressing
 ; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
@@ -1388,7 +1377,7 @@ sd_warm:
 ; the scheduler will wait for NO braids active
 ; now let's disable all drivers
 sd_2nd:
-	LDA @sd_flag			; check what was pending
+	LDA @sd_flag		; check what was pending
 	BNE sd_shut			; something to do
 		_PANIC("{sched}")	; otherwise it is an error!
 sd_shut:
@@ -1417,10 +1406,17 @@ sd_next:
 		BRA sd_loop			; repeat
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
-	LDA @sd_flag			; retrieve mode...
+	LDA @sd_flag		; retrieve mode...
 	TAX					; ...as index!
 	JMP (sd_tab-2, X)	; do as appropriate *** note offset as sd_stat will not be called from here
 
+sd_tab:					; check order in abi.h!
+; no more sd_stat!
+	.word	sd_warm		; warm boot direct by kernel ***or just 'warm'
+	.word	sd_cold		; cold boot via firmware
+	.word	sd_off		; poweroff system
+
+	.as:
 
 ; *******************************
 ; *** DR_INST, install driver ***
@@ -1432,7 +1428,6 @@ sd_done:
 ; C			= could not install driver (ID in use or invalid, queue full, init failed)
 
 dr_inst:
-	.as: .xs:
 ; make sure we work on bank zero!
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeeek
 	PHK					; zero...
@@ -1467,7 +1462,7 @@ dr_phys:
 	CMP drv_opt, X		; check whether in use (5)
 		BNE dr_busy			; pointer was not empty (2/3)
 	CMP drv_ipt, X		; now check input, just in case (5)
-	BEQ dr_empty		; no, all done
+	BNE dr_empty		; and all is done
 #else
 ; new system for mutable IDs, 171013
 	LDY dr_ind-128, X	; already in use?
@@ -1491,9 +1486,8 @@ dr_busy:
 		JMP dr_babort		; already in use (3)
 dr_empty:
 	STX dr_id			; keep updated ID
-
-#ifndef		MUTABLE
-	.as: SEP #$20		; *** 8-bit memory again *** (3)
+#ifndef	MUTABLE
+	.as: SEP #$20		; *** 8-bit memory as arrived here in 16-bit mode ***
 #endif
 
 ; * 2) check room in queues, where needed *
@@ -1516,7 +1510,7 @@ dr_ntsk:
 ; * 3) if arrived here, it is possible to install, but run init code to confirm *
 	.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)
 	JSR dr_icall		; call routine (6+...)
-	.xs: .as: SEP #$30		; *** 8-bit indexes AND MEMORY just in case *** (3)
+	.xs: .as: SEP #$30	; *** 8-bit indexes AND MEMORY just in case *** (3)
 ; as 816 function exit does not care about *memory* size, just return some error here...
 	BCC dr_isuc			; init was successful, proceed
 		JMP dr_uabort		; no way, forget about this (2/3)
@@ -1570,7 +1564,7 @@ dr_sarr:
 ; *** suspicious code follows ***
 dr_iqloop:
 		.as: SEP #$20		; *** 8-bit shift *** eeeeeeeeeeeeeeek
-		ASL dr_aut		; extract MSB (will be A_POLL first, then A_REQ) eeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+		ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ) eeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
 			LDY queue_mx, X		; get index of free entry, will stay!
@@ -1622,7 +1616,8 @@ dr_ended:
 #endif
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
-	_EXIT_OK				; if arrived here, did not fail initialisation
+	_EXIT_OK			; if arrived here, did not fail initialisation
+; sizes seem irrelevant here, as long as X=1
 
 ; **********************
 ; *** error handling ***
@@ -1631,10 +1626,10 @@ dr_iabort:
 	LDY #INVALID		; logical devices cannot be installed
 	BRA dr_abort
 dr_fabort:
-	LDY #FULL		; no room on queue
+	LDY #FULL			; no room on queue
 	BRA dr_abort
 dr_babort:
-	LDY #BUSY		; ID already in use
+	LDY #BUSY			; ID already in use
 	BRA dr_abort
 dr_uabort:
 	LDY #UNAVAIL		; init failed
@@ -1651,7 +1646,6 @@ dr_abort:
 ; A in 16-bit mode
 
 dr_nextq:
-	.al: .xs:
 	LDA dq_ptr			; get original queue pointer
 	CLC
 	ADC #MX_QUEUE		; go to next queue
@@ -1663,14 +1657,12 @@ dr_nextq:
 ; dr_itask is now inlined, and has dq_off already in Y!
 
 dr_icall:
-	.al: .xs:
 	LDY #D_INIT			; original pointer offset (2)
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset
 ; *** assume 16-bit memory and 8-bit indexes ***
 ; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
 ; make certain about DBR in calls... but should be for kernel/API only
 dr_call:
-	.al: .xs:
 	LDA (da_ptr), Y		; destination pointer (6)
 	DEC					; one less for RTS (2)
 	PHA					; push it (4)
@@ -1686,14 +1678,22 @@ dr_call:
 ; ex_pt = 16b pointer to the proposed stack frame (certainly in bank 0)
 
 ts_info:
-	.xs:
-	.al: REP #$20			; *** 16-bit memory ***
-	LDA #tsi_str			; pointer to proposed stack frame
-	STA ex_pt				; store output word
-;	STZ ex_pt+2				; clear if needed
+	.al: REP #$20		; *** 16-bit memory ***
+	LDA #tsi_str		; pointer to proposed stack frame
+	STA ex_pt			; store output word
+;	STZ ex_pt+2			; clear if needed
 	LDY #tsi_end-tsi_str	; number of bytes
 	_EXIT_OK
 
+tsi_str:
+; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
+	.word	isr_schd-1	; corrected reentry address, standard label from ISR
+	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
+;	.word	0, 0, 0			; irrelevant register values
+tsi_end:
+; end of stack frame for easier size computation
+
+	.as:
 
 ; *********************************************
 ; *** RELEASE, release ALL memory for a PID ***
@@ -1706,7 +1706,6 @@ ts_info:
 ; * 8-bit savvy, I think *
 
 release:
-	.as: .xs:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek
 	PHK					; bank 0 into stack
@@ -1748,6 +1747,7 @@ rls_oth:
 	PLB					; restore!
 	_EXIT_OK			; no errors...
 
+	.as:
 
 ; ***********************************************************
 ; *** SET_CURR, set internal kernel info for running task ***
@@ -1760,7 +1760,6 @@ rls_oth:
 ; affects internal sysvars run_pid & run_arch
 
 set_curr:
-	.as: .xs:
 	TYA					; eeeeek, no long STY (2)
 	STA @run_pid		; store PID into kernel variables (5)
 	LDA cpu_ll			; get architecture from multitasking driver (3)
@@ -1770,24 +1769,3 @@ set_curr:
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
-
-; *******************************
-; *** other data and pointers ***
-; *******************************
-sd_tab:					; check order in abi.h!
-; no more sd_stat!
-	.word	sd_warm		; warm boot direct by kernel ***or just 'warm'
-	.word	sd_cold		; cold boot via firmware
-	.word	sd_off		; poweroff system
-
-tsi_str:
-; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
-	.word	isr_schd-1	; corrected reentry address, standard label from ISR
-	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
-;	.word	0, 0, 0			; irrelevant register values
-tsi_end:
-; end of stack frame for easier size computation
-
-; ****************************
-; *** end of kernel tables ***
-; ****************************
