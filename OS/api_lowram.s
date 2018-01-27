@@ -1,7 +1,54 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc3
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180108-1335
+; last modified 20180127-2235
+
+; jump table, if not in separate 'jump' file
+; *** order MUST match abi.h ***
+-fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
+k_vec:
+; basic I/O
+	.word	cout		; output a character
+	.word	cin			; get a character
+	.word	string		; prints a C-string
+	.word	readln		; buffered input
+; block I/O
+	.word	blout		; block output
+	.word	blin		; block input
+	.word	bl_cnfg		; configure device
+	.word	bl_stat		; device status
+; simple windowing system (placeholders)
+	.word	open_w		; get I/O port or window
+	.word	close_w		; close window
+	.word	free_w		; will be closed by kernel
+; other generic functions
+	.word	uptime		; approximate uptime in ticks
+	.word	set_fg		; enable frequency generator (VIA T1@PB7)
+	.word	shutdown	; proper shutdown procedure
+	.word	loadlink	; get addr. once in RAM/ROM
+; simplified task management
+	.word	b_fork		; get available PID ***returns 0
+	.word	b_exec		; launch new process ***simpler
+	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek***RENAMED
+	.word	set_hndl	; set SIGTERM handler
+	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	get_pid		; get PID of current braid ***returns 0
+; new functionalities TBD
+	.word	aq_mng		; manage asynchronous task queue
+	.word	pq_mng		; manage periodic task queue
+; *** unimplemented functions ***
+#ifdef	SAFE
+	.word	dr_inst		; install driver
+	.word	dr_shut		; shutdown driver
+	.word	dr_info		; get header, is this possible?
+	.word	malloc		; reserve memory
+	.word	free		; release memory
+	.word	release		; release ALL memory for a PID
+	.word	memlock		; reserve some address
+	.word	ts_info		; get taskswitching info
+	.word	set_curr	; set internal kernel info for running task
+#endif
 
 ; *** dummy function, non implemented ***
 unimplemented:		; placeholder here, not currently used
@@ -737,49 +784,3 @@ sd_tab:
 ; *** end of kernel functions ***
 ; *******************************
 
-; jump table, if not in separate 'jump' file
-; *** order MUST match abi.h ***
--fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
-k_vec:
-; basic I/O
-	.word	cout		; output a character
-	.word	cin			; get a character
-	.word	string		; prints a C-string
-	.word	readln		; buffered input
-; block I/O
-	.word	blout		; block output
-	.word	blin		; block input
-	.word	bl_cnfg		; configure device
-	.word	bl_stat		; device status
-; simple windowing system (placeholders)
-	.word	open_w		; get I/O port or window
-	.word	close_w		; close window
-	.word	free_w		; will be closed by kernel
-; other generic functions
-	.word	uptime		; approximate uptime in ticks
-	.word	set_fg		; enable frequency generator (VIA T1@PB7)
-	.word	shutdown	; proper shutdown procedure
-	.word	loadlink	; get addr. once in RAM/ROM
-; simplified task management
-	.word	b_fork		; get available PID ***returns 0
-	.word	b_exec		; launch new process ***simpler
-	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
-	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek***RENAMED
-	.word	set_hndl	; set SIGTERM handler
-	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
-	.word	get_pid		; get PID of current braid ***returns 0
-; new functionalities TBD
-	.word	aq_mng		; manage asynchronous task queue
-	.word	pq_mng		; manage periodic task queue
-; *** unimplemented functions ***
-#ifdef	SAFE
-	.word	dr_inst		; install driver
-	.word	dr_shut		; shutdown driver
-	.word	dr_info		; get header, is this possible?
-	.word	malloc		; reserve memory
-	.word	free		; release memory
-	.word	release		; release ALL memory for a PID
-	.word	memlock		; reserve some address
-	.word	ts_info		; get taskswitching info
-	.word	set_curr	; set internal kernel info for running task
-#endif

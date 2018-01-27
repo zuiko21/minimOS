@@ -1,9 +1,59 @@
 ; minimOS generic Kernel API
 ; v0.6rc5, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180108-1332
+; last modified 20180127-2233
 
 ; no way for standalone assembly...
+
+; **************************************************
+; *** jump table, if not in separate 'jump' file ***
+; **************************************************
+#ifndef		DOWNLOAD
+k_vec:
+; basic I/O
+	.word	cout		; output a character
+	.word	cin			; get a character
+	.word	string		; prints a C-string
+	.word	readln		; buffered input
+; block-oriented I/O
+	.word	blout		; block output
+	.word	blin		; block input
+	.word	bl_cnfg		; I/O config, new
+	.word	bl_stat		; I/O query, new
+; simple windowing system (placeholders)
+	.word	open_w		; get I/O port or window
+	.word	close_w		; close window
+	.word	free_w		; will be closed by kernel
+; other generic functions
+	.word	uptime		; approximate uptime in ticks
+	.word	set_fg		; enable frequency generator (VIA T1@PB7)
+	.word	shutdown	; proper shutdown procedure
+	.word	loadlink	; get addr. once in RAM/ROM
+; simplified task management
+	.word	b_fork		; get available PID ***returns 0
+	.word	b_exec		; launch new process ***simpler
+	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
+	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
+	.word	set_hndl	; set SIGTERM handler
+	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	get_pid		; get PID of current braid ***returns 0
+; new driver functionalities TBD
+	.word	aq_mng		; manage asynchronous task queue
+	.word	pq_mng		; manage periodic task queue
+; only for systems with enough RAM
+; drivers...
+	.word	dr_inst		; install driver
+	.word	dr_shut		; shutdown driver
+	.word	dr_info		; driver header ***new
+; memory...
+	.word	malloc		; reserve memory
+	.word	free		; release memory
+	.word	release		; release ALL memory for a PID
+	.word	memlock		; reserve some address
+; multitasking...
+	.word	ts_info		; get taskswitching info
+	.word	set_curr	; set internal kernel info for running task
+#endif
 
 ; ***************************************
 ; *** dummy function, non implemented ***
@@ -1447,52 +1497,3 @@ set_curr:
 ; *** end of kernel functions ***
 ; *******************************
 
-; **************************************************
-; *** jump table, if not in separate 'jump' file ***
-; **************************************************
-#ifndef		DOWNLOAD
-k_vec:
-; basic I/O
-	.word	cout		; output a character
-	.word	cin			; get a character
-	.word	string		; prints a C-string
-	.word	readln		; buffered input
-; block-oriented I/O
-	.word	blout		; block output
-	.word	blin		; block input
-	.word	bl_cnfg		; I/O config, new
-	.word	bl_stat		; I/O query, new
-; simple windowing system (placeholders)
-	.word	open_w		; get I/O port or window
-	.word	close_w		; close window
-	.word	free_w		; will be closed by kernel
-; other generic functions
-	.word	uptime		; approximate uptime in ticks
-	.word	set_fg		; enable frequency generator (VIA T1@PB7)
-	.word	shutdown	; proper shutdown procedure
-	.word	loadlink	; get addr. once in RAM/ROM
-; simplified task management
-	.word	b_fork		; get available PID ***returns 0
-	.word	b_exec		; launch new process ***simpler
-	.word	b_signal	; send UNIX-like signal to a braid ***SIGTERM & SIGKILL only
-	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
-	.word	set_hndl	; set SIGTERM handler
-	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
-	.word	get_pid		; get PID of current braid ***returns 0
-; new driver functionalities TBD
-	.word	aq_mng		; manage asynchronous task queue
-	.word	pq_mng		; manage periodic task queue
-; only for systems with enough RAM
-; drivers...
-	.word	dr_inst		; install driver
-	.word	dr_shut		; shutdown driver
-	.word	dr_info		; driver header ***new
-; memory...
-	.word	malloc		; reserve memory
-	.word	free		; release memory
-	.word	release		; release ALL memory for a PID
-	.word	memlock		; reserve some address
-; multitasking...
-	.word	ts_info		; get taskswitching info
-	.word	set_curr	; set internal kernel info for running task
-#endif
