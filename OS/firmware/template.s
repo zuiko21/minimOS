@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b6
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180129-1414
+; last modified 20180129-1439
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -179,10 +179,88 @@ irq:
 ; ****** NOT SURE what to do about BRK handler... save regs? again? ******
 
 ; ********************************
+; ********************************
 ; *** administrative functions ***
+; ********************************
 ; ********************************
 
 ; *** generic functions ***
+
+; *********************************
+; GESTALT, get system info, API TBD
+; *********************************
+gestalt:
+#include "firmware/modules/gestalt.s"
+
+; ***********************
+; SET_ISR, set IRQ vector
+; ***********************
+set_isr:
+#include "firmware/modules/set_isr.s"
+
+; ********************************
+; SET_NMI, set NMI handler routine
+; ********************************
+set_nmi:
+#include "firmware/modules/set_nmi.s"
+
+; ********************************
+; SET_DBG, set BRK handler routine
+; ********************************
+set_dbg:
+#include "firmware/modules/set_dbg.s"
+
+; ***************************
+; JIFFY, set jiffy IRQ period
+; ***************************
+jiffy:
+#include "firmware/modules/jiffy.s"
+
+; ****************************************
+; IRQ_SRC, investigate source of interrupt
+; ****************************************
+; notice non-standard ABI, same module as 6502 version!
+irq_src:
+#include "firmware/modules/irq_src.s"
+
+; *** hardware specific ***
+
+; **********************
+; POWEROFF, shutdown etc *** TBD
+; **********************
+poweroff:
+#include "firmware/modules/poweroff.s"
+
+; ***********************************
+; FREQ_GEN, generate frequency at PB7 *** TBD
+; ***********************************
+freq_gen:
+;#include "firmware/modules/freq_gen16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
+
+; *** other functions with RAM enough ***
+#ifndef		LOWRAM
+; **************************
+; INSTALL, supply jump table
+; **************************
+install:
+#include "firmware/modules/install.s"
+
+; ****************************
+; PATCH, patch single function
+; ****************************
+patch:
+#include "firmware/modules/patch.s"
+
+; *****************************************
+; CONTEXT, hardware switch zeropage & stack
+; *****************************************
+context:
+;#include "firmware/modules/context16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
+#endif
+
+; ----------------------- OLD CODE ---------------------------
 
 ; *********************************
 ; GESTALT, get system info, API TBD
@@ -194,7 +272,7 @@ irq:
 ; ex_pt		= *memory map
 ; k_ram		= pages of RAM
 
-fw_gestalt:
+;fw_gestalt:
 	LDX #<SPD_CODE		; CPU speed
 	LDA #>SPD_CODE
 	LDY fw_cpu			; CPU type
@@ -220,7 +298,7 @@ fw_gestalt:
 ; kerntab	= vector
 ; 0 means READ current
 
-fw_s_isr:
+;fw_s_isr:
 	LDY kerntab				; get LSB, nicer (3)
 	_CRITIC					; disable interrupts! (5)
 	LDA kerntab+1			; get MSB (3)
@@ -248,7 +326,7 @@ fw_r_isr:
 ; 0 means read current
 ; routine ending in RTS, regs already saved, but MUST respect sys_sp
 
-fw_s_nmi:
+;fw_s_nmi:
 	LDA kerntab+1			; get MSB (3)
 		BEQ fw_r_nmi				; read instead (2/3)
 #ifdef	SAFE
@@ -290,7 +368,7 @@ fw_nerr:
 ; 0 means read current
 ; routine ending in RTS, regs already saved, but MUST respect sys_sp
 
-fw_s_brk:
+;fw_s_brk:
 	LDY kerntab				; get LSB, nicer (3)
 	_CRITIC					; disable interrupts! (5)
 	LDA kerntab+1			; get MSB (3)
@@ -316,7 +394,7 @@ fw_r_brk:
 ; irq_hz	= actually set period (if error or no change)
 ; C		= error, did not set
 
-fw_jiffy:
+;fw_jiffy:
 	_CRITIC		; this is serious
 	LDA irq_hz	; check LSB
 	ORA irq_hz+1	; any bit set?
@@ -410,7 +488,7 @@ fj_over:
 ; *** notice NON-standard output register for faster indexed jump! ***
 ; other even values will be hardware-dependent
 
-fw_i_src:
+;fw_i_src:
 	BIT VIA_J+IFR		; much better than LDA, ASL, BPL!
 	BVS fis_per		; from T1
 		LDX #2			; standard async otherwise
@@ -429,7 +507,7 @@ fis_per:
 ; Y = mode (0=suspend, 2=warmboot, 4=coldboot, 6=power off)
 ; *** new interrupt invoke codes (10=NMI, 12=BRK) ***
 
-fw_power:
+;fw_power:
 	TYA					; get subfunction offset
 	TAX					; use as index
 	_JMPX(fwp_func)		; select from jump table
@@ -472,15 +550,7 @@ fwp_func:
 	.word	fwp_nmi		; simulated NMI
 	.word	fwp_brk		; execute handler
 
-; ***********************************
-; FREQ_GEN, generate frequency at PB7
-; ***********************************
-; ****** T B D ******
-fw_fgen:
-	_DR_ERR(UNAVAIL)		; not supported
 
-; *** these are for systems with enough RAM ***
-#ifndef		LOWRAM
 
 ; **************************
 ; INSTALL, supply jump table
@@ -488,7 +558,7 @@ fw_fgen:
 ;		INPUT
 ; kerntab	= address of supplied jump table (0 means unpatch all)
 
-fw_install:
+;fw_install:
 ; new feature, a null pointer means reinstall previously set jump table!
 	LDA kerntab+1		; check whether null (cannot be in zeropage anyway)
 	BNE fwi_nz			; not zero, proceed
@@ -522,7 +592,7 @@ fwi_loop:
 ; kerntab	= address of function code (0 means reset from last installed kernel)
 ; Y			= function to be patched
 
-fw_patch:
+;fw_patch:
 	LDX kerntab+1			; check whether null, cannot be in zeropage, get MSB anyway (3)
 ; new feature, a null pointer means unpatch!
 	BNE fwp_nz				; already a valid pointer
@@ -546,15 +616,6 @@ fwp_rsp:
 	STA fw_table+1, Y
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
-
-; ****************************
-; CONTEXT, not supported here!
-; ****************************
-
-f_unavail:
-	_DR_ERR(UNAVAIL)		; not supported
-
-#endif
 
 ; WILL CHANGE
 
@@ -582,6 +643,9 @@ f_unavail:
 fw_map:
 	.word	0		; PLACEHOLDER FOR MEMORY MAP
 
+; ************************************************************************
+; ************************************************************************
+; ************************************************************************
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
