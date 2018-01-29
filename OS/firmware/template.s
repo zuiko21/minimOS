@@ -156,6 +156,7 @@ reset:
 start_kernel:
 	JMP (fw_warm)		; (6)
 
+
 ; ********************************
 ; ********************************
 ; ****** interrupt handlers ******
@@ -166,7 +167,7 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 ; **********************************************
 nmi:
-#include "firmware/modules/nmi_hndl16.s"
+#include "firmware/modules/nmi_hndl.s"
 
 ; ****************************
 ; *** vectored IRQ handler ***
@@ -175,6 +176,7 @@ nmi:
 irq:
 	JMP (fw_isr)	; vectored ISR (6)
 
+; ****** NOT SURE what to do about BRK handler... save regs? again? ******
 
 ; ********************************
 ; *** administrative functions ***
