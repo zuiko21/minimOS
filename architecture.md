@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-01-21*
+*Last update: 2018-01-29*
 
 ## Rationale
 
@@ -180,8 +180,8 @@ You can think of this as a ***Hardware Abstraction Layer***
 On second thought, in case of a *Kernel and/or driver failure*, it would be nice to have 
 an *emergency* I/O channel available for **debugging purposes**, provided the hardware 
 allows it. For instance, a *Commodore 64* **has** a 40x25 text screen starting at $0400 
-which could be easily used by debuggers, after a simple VIC-II initialisation. It, of 
-course, is supplied with a **keyboard** for human input, too. Even if a 
+which could be easily used by debuggers, after a simple VIC-II initialisation. It does have, of 
+course, a **keyboard** for human input, too. Even if a 
 particular computer lacks such convenient devices, a **suitable driver** provided by its 
 *custom* kernel could "announce" its availability to the firmware, for its simple 
 firmware I/O to work thru it. These won't be as reliable as the built-in devices in 
