@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6rc6
+; v0.9.6rc7
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180124-0900
+; last modified 20180129-1417
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -70,6 +70,7 @@ fw_admin:
 	.word	patch		; PATCH patch single function (renumbered)
 	.word	context		; *** CONTEXT context bankswitching
 #endif
+
 
 ; **************************
 ; **************************

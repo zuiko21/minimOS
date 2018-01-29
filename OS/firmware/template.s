@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
-; v0.6b5
+; v0.6b6
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180123-1050
+; last modified 20180129-1414
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR					; flags TBD
 	.asc "boot", 0					; standard filename
 fw_splash:
-	.asc "0.6b5 firmware for "	; machine description as comment
+	.asc "0.6b6 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,10 +37,36 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6b5 firmware for "
+	.asc	"0.6b6 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
+
+; *********************************
+; *********************************
+; *** administrative jump table *** changing
+; *********************************
+; *********************************
+fw_admin:
+; generic functions, esp. interrupt related
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
+
+; not for LOWRAM systems
+#ifndef	LOWRAM
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+	.word	context		; *** CONTEXT context bankswitching
+#endif
+
 
 ; ********************
 ; ********************
@@ -554,29 +580,6 @@ f_unavail:
 fw_map:
 	.word	0		; PLACEHOLDER FOR MEMORY MAP
 
-; *** administrative jump table ***
-; might go elsewhere as it may grow, especially on NMOS
-fw_admin:
-; generic functions, esp. interrupt related
-	.word	fw_gestalt
-	.word	fw_s_isr
-	.word	fw_s_nmi
-	.word	fw_s_brk
-	.word	fw_jiffy
-	.word	fw_i_src
-
-; pretty hardware specific
-	.word	fw_power
-	.word	fw_fgen
-
-; not for LOWRAM systems
-#ifndef	LOWRAM
-	.word	fw_install
-	.word	fw_patch
-#ifdef	SAFE
-	.word	f_unavail
-#endif
-#endif
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
