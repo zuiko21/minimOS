@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc4
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180125-1331
+; last modified 20180129-1330
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -254,8 +254,7 @@ irq_src:
 ; POWEROFF, shutdown etc *** TBD
 ; **********************
 poweroff:
-;#include "firmware/modules/poweroff16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
+#include "firmware/modules/poweroff16.s"
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
@@ -284,32 +283,6 @@ patch:
 context:
 ;#include "firmware/modules/context16.s"
 	_DR_ERR(UNAVAIL)	; not yet implemented
-
-; --------------------old code --------------------
-; POWEROFF, poweroff etc
-; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
-; C -> not implemented
-
-;poweroff:
-	PHP					; save sizes eeeeeeeeek
-	.as: .xs: SEP #$30	; *** all 8-bit ***
-	TYX					; get subfunction offset as index
-	JMP (fwp_func, X)	; select from jump table
-
-fwp_off:
-	_PANIC("{OFF}")		; just in case is handled
-	.byt	$42			; WDM will show up on BBC emulator... and cold boot!
-
-fwp_susp:
-	PLP					; restore sizes
-	_DR_OK				; just continue execution
-
-; sub-function jump table (eeeek)
-fwp_func:
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	kernel		; should not use this, just in case
-	.word	reset		; coldboot	+FW_COLD
-	.word	fwp_off		; poweroff	+FW_OFF
 
 
 ; ****************************

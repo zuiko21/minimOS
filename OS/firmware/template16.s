@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180125-1334
+; last modified 20180129-1330
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -242,8 +242,7 @@ irq_src:
 ; POWEROFF, shutdown etc *** TBD
 ; **********************
 poweroff:
-;#include "firmware/modules/poweroff16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
+#include "firmware/modules/poweroff16.s"
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
@@ -273,30 +272,6 @@ context:
 ;#include "firmware/modules/context16.s"
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
-; -------------------- old code ----------------------
-
-; A10, poweroff etc
-; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
-; C -> not implemented
-;poweroff:
-	TYX					; get subfunction offset as index
-	JMP (fwp_func, X)	; select from jump table
-
-fwp_off:	; ******** CONTINUE HERE ********* CONTINUE HERE *********
-#include "firmware/modules/poweroff.s"
-
-fwp_susp:
-#include "firmware/modules/suspend.s"
-
-fwp_cold:
-	JMP ($FFFC)			; call 6502 vector, as firmware start will initialize as needed
-
-; sub-function jump table
-fwp_func:
-	.word	fwp_off		; poweroff	+FW_OFF
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	fwp_cold	; coldboot	+FW_COLD
-	.word	kernel		; shouldn't use this, just in case
 
 ; ****************************
 ; *** some firmware tables ***

@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a21
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180125-1332
+; last modified 20180129-1327
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -234,12 +234,11 @@ irq_src:
 
 ; *** hardware specific ***
 
-; **********************
-; POWEROFF, shutdown etc *** TBD
-; **********************
+; *****************************************
+; POWEROFF, resets and interrupt invocation
+; *****************************************
 poweroff:
-;#include "firmware/modules/poweroff16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
+#include "firmware/modules/poweroff16.s"
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
@@ -268,64 +267,6 @@ patch:
 context:
 ;#include "firmware/modules/context16.s"
 	_DR_ERR(UNAVAIL)	; not yet implemented
-
-; ------------------------------old code-----------------------
-; **********************
-; POWEROFF, poweroff etc
-; **********************
-;	INPUT
-; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff, 8 = NMI, 10 = BRK)
-;	OUTPUT
-; C -> not implemented
-; this must be further modularised
-
-;poweroff:
-	_CRITIC				; save sizes eeeeeeeeek
-	.as: .xs: SEP #$30	; *** all 8-bit ***
-	TYX					; get subfunction offset as index
-	JMP (fwp_func, X)	; select from jump table
-fwp_off:
-; include here shutdown code
-	STP					; $DB in case a WDC CPU is used
-	_PANIC("{OFF}")		; just in case is handled
-fwp_susp:
-; first shut off interrupts!
-	LDA VIA_J + IER		; get current interrupt sources
-	PHA					; save for later (with bit 7 high)
-	AND #$7F			; turn bit 7 low
-	STA VIA_J + IER		; this will disable every enabled interrupt source
-; in case a WDC CPU is used, apply SEI/WAI sequence (SEI already done)
-	WAI					; $CB, wait for some interrupt
-; *** system expected to be suspended here ***
-; after waking up, reenable interrupt sources!
-	PLA					; get saved config (with bit 7 high)
-	STA VIA_J + IER		; this will enable every previously set interrupt source
-; this is also the exit for software interrupt simulation
-fwp_end:
-	_NO_CRIT			; restore sizes
-	_DR_OK				; just continue execution
-; software interrupt calls
-fwp_nmi:
-	PHK					; always in bank 0
-	PEA fwp_end			; push correct return
-	PHP					; will end in RTI
-	JMP nmi				; handle as usual
-fwp_brk:
-	PHK					; always in bank 0
-	PEA fwp_end			; push correct return
-	PHP					; will end in RTI
-	JMP brk_hndl		; handle as usual
-
-; sub-function jump table (eeeek)
-fwp_func:
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	kernel		; should not use this, just in case
-	.word	reset		; coldboot	+FW_COLD
-	.word	fwp_off		; poweroff	+FW_OFF
-; might include here the BRK/NMI invocation codes
-	.word	fwp_nmi		; PW_CLEAN not allowed here!
-	.word	fwp_nmi		; simulate NMI
-	.word	fwp_brk		; execute BRK, not sure if needed
 
 
 ; ****************************
