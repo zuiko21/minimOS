@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-01-29*
+*Last update: 2018-01-30*
 
 ## Rationale
 
@@ -200,7 +200,11 @@ particular architecture; however, the chore of copying every improvement on *eac
 file was aliviated via a **fully-*modular* approach**: the `template` file (or any
 particular machine's firmware, for that matter) will consist in just **a bunch of
 `#include`s** for *small* code chunks on the `modules` folder. Different machines
-may then use a different chunk for a particular feature, or suppress it. A similar
+may then use a different chunk for a particular feature, or suppress it. Please note
+that some of these chunks may be as short as two or three lines on code!
+
+
+A similar
 approach has been used for **firmware variables**, *statically* assigned before kernel's
 `sysvars`. After including the regular `template.h`, a particular machine may add
 any other variables as needed. 
