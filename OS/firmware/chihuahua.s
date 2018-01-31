@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b4
+; v0.9.6b5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180129-1416
+; last modified 20180131-0832
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -65,6 +65,15 @@ fw_admin:
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
 	.word	context		; *** CONTEXT context bankswitching
+#else
+#ifdef	SAFE
+	.word	missing		; these three functions not implemented on such systems
+	.word	missing
+	.word	missing
+
+missing:
+		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
+#endif
 #endif
 
 

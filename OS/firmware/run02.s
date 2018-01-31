@@ -1,9 +1,9 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; *** use as sort-of template ***
-; v0.9.6rc7
+; v0.9.6rc8
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180129-1417
+; last modified 20180131-0832
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -69,6 +69,15 @@ fw_admin:
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
 	.word	context		; *** CONTEXT context bankswitching
+#else
+#ifdef	SAFE
+	.word	missing		; these three functions not implemented on such systems
+	.word	missing
+	.word	missing
+
+missing:
+		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
+#endif
 #endif
 
 
