@@ -1,6 +1,6 @@
 ; minimOS 0.6rc2 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20171214-1433
+; last modified 20180131-1050
 
 ; *** standard addresses ***
 
@@ -19,7 +19,7 @@ WIND_DEV	=	129		; new name 20161017, might suffer the same fate!
 FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries for it! Perhaps #128
 
 ; *** considerations for minimOS·16 ***
-; kernel return is via RTI (note CLC trick, now into firmware)
+; kernel return is via RTI (note CLC trick)
 ; kernel functions are expected to be in bank zero!
 ; 6502 apps CANNOT work bank-agnostic, bank zero only
 ; driver routines are expected to be in bank zero too... standard JSR/RTS, must return to kernel!
@@ -46,9 +46,7 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #define		_U_ADM(a)		LDX #a: JSR adm_call
 #endif
 
-; new macro for filesystem calling, no specific kernel entries!
-; ** revise for 816 systems **** TO DO TO DO TO DO
-#define		_FILESYS(a)		STY locals+11: LDA #a: STA zpar: LDY #FILE_DEV: _KERNEL(COUT)
+; filesystem calling macro no longer defined!
 
 ; *** function endings ***
 ; new FINISH and ABORT macros for app exit to shell, using RTL for 65816
@@ -92,7 +90,7 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #define		LF		10
 #define		BS		8
 ; renamed TAB for 6800 compatibility!
-#define		HTAB		9
+#define		HTAB	9
 #define		BEL		7
 #define		ESC		27
 
