@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180131-1050
+; last modified 20180131-1228
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -277,42 +277,6 @@ context:
 
 ; ----------------------- OLD CODE ---------------------------
 
-; *** hardware specific ***
-
-
-; **************************
-; INSTALL, supply jump table
-; **************************
-;		INPUT
-; kerntab	= address of supplied jump table (0 means unpatch all)
-
-;fw_install:
-; new feature, a null pointer means reinstall previously set jump table!
-	LDA kerntab+1		; check whether null (cannot be in zeropage anyway)
-	BNE fwi_nz			; not zero, proceed
-		LDX fw_lastk		; or store last value
-		LDA fw_lastk+1
-		STX kerntab			; set previous value
-		STA kerntab+1
-fwi_nz:
-; end of new feature, remove if not required
-	LDY #0				; reset index (2)
-	_CRITIC				; disable interrupts! (5)
-fwi_loop:
-		LDA (kerntab), Y	; get from table as supplied (5)
-		STA fw_table, Y		; copy where the firmware expects it (4+2)
-		INY
-		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
-		BNE fwi_loop		; until whole page is done (3/2)
-; kernel successfully installed, keep original table address in case is reset
-	LDY kerntab			; get current value...
-	LDA kerntab+1
-	STY fw_lastk		; ...and store as last valid pointer!
-	STA fw_lastk+1
-; end of table address storage
-	_NO_CRIT			; restore interrupts if needed (4)
-	_DR_OK				; all done (8)
-
 ; ****************************
 ; PATCH, patch single function
 ; ****************************
@@ -345,27 +309,6 @@ fwp_rsp:
 	_NO_CRIT				; restore interrupts if needed (4)
 	_DR_OK					; done (8)
 
-; WILL CHANGE
-
-
-; **************** OLD ** CODE ** FOR ** REFERENCE ********************
-; A10, poweroff etc
-; Y <- mode (0 = poweroff, 2 = suspend, 4 = coldboot, 6 = warm?)
-; C -> not implemented
-;fw_power:
-	TYA					; get subfunction offset
-	TAX					; use as index
-	_JMPX(fwp_func)		; select from jump table
-
-;fwp_off:
-#include "firmware/modules/poweroff.s"
-
-;fwp_susp:
-#include "firmware/modules/suspend.s"
-
-;fwp_cold:
-	JMP ($FFFC)			; call 6502 vector, as firmware start will initialize as needed
-; ***************************** END *************************************
 
 ; **** some strange data ****
 fw_map:

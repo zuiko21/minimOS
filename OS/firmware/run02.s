@@ -305,57 +305,6 @@ fj_set:
 	_BRA fj_end			; all done, no need to update as will be OK
 
 
-; FREQ_GEN, frequency generator hardware interface, TBD
-freq_gen:
-; ****** TO BE DONE ******
-	_DR_ERR(UNAVAIL)	; not yet implemented
-
-; *** for higher-specced systems ***
-#ifndef	LOWRAM
-
-; INSTALL, copy jump table
-;		INPUT
-; kerntab	= address of supplied pointer table
-
-install:
-	_CRITIC			; disable interrupts! (5)
-	LDY #0				; reset index (2)
-fwi_loop:
-		LDA (kerntab), Y	; get word from table as supplied (5)
-		STA fw_table, Y		; copy where the firmware expects it (4)
-		INY					; advance one byte
-		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
-		BNE fwi_loop		; until whole page is done (3/2)
-	_NO_CRIT			; restore interrupts if needed, will restore size too (4)
-	_DR_OK				; all done (8)
-
-; PATCH, patch single function
-; kerntab <- address of code
-; Y <- function to be patched
-
-patch:
-	_CRITIC				; disable interrupts and save sizes! (5)
-	LDA kerntab				; get full pointer
-	LDX kerntab+1
-	STA fw_table, Y			; store into firmware
-	TXA
-	STA fw_table+1, Y
-	_NO_CRIT				; restore interrupts and sizes (4)
-	_DR_OK					; done (8)
-
-; CONTEXT, zeropage & stack bankswitching
-context:
-; ****** TO BE DONE ******
-	_DR_ERR(UNAVAIL)	; not yet implemented
-
-#else
-; these functions will not work on 128-byte systems!
-fw_install:
-fw_patch:
-fw_ctx:
-	_DR_ERR(UNAVAIL)	; not implemented on smaller systems!
-
-#endif
 
 ; ****************************
 ; *** some firmware tables ***

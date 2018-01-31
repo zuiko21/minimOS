@@ -274,64 +274,6 @@ context:
 	_DR_ERR(UNAVAIL)	; Chihuahua has nothing about this
 #endif
 
-; ----------------------- OLD CODE ---------------------------
-
-
-; ***********************************
-; FREQ_GEN, generate frequency at PB7
-; ***********************************
-; ****** T B D ******
-fw_fgen:
-	_DR_ERR(UNAVAIL)		; not supported
-
-; these are for systems with enough RAM
-
-#ifndef		LOWRAM
-; **************************
-; INSTALL, supply jump table
-; **************************
-;		INPUT
-; kerntab	= address of supplied jump table
-
-fw_install:
-	LDY #0				; reset index (2)
-	_CRITIC				; disable interrupts! (5)
-fwi_loop:
-		LDA (kerntab), Y	; get from table as supplied (5)
-		STA fw_table, Y		; copy where the firmware expects it (4+2)
-		INY
-		CPY #LAST_API		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
-		BNE fwi_loop		; until whole page is done (3/2)
-	_NO_CRIT			; restore interrupts if needed (4)
-	_DR_OK				; all done (8)
-
-; ****************************
-; PATCH, patch single function
-; ****************************
-;		INPUT
-; kerntab	= address of code
-; Y		= function to be patched
-
-fw_patch:
-	LDA kerntab				; get LSB (3)
-	LDX kerntab+1			; same for MSB (3)
-	_CRITIC					; disable interrupts! (5)
-	STA fw_table, Y			; store where the firmware expects it (4+4)
-	TXA						; eeeeeeeeeeeek
-	STA fw_table+1, Y
-	_NO_CRIT				; restore interrupts if needed (4)
-	_DR_OK					; done (8)
-
-; ****************************
-; CONTEXT, not supported here!
-; ****************************
-
-f_unavail:
-	_DR_ERR(UNAVAIL)		; not supported
-
-#endif
-
-; WILL CHANGE
 
 ; **** some strange data ****
 fw_map:
