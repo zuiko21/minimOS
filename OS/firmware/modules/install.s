@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180131-1226
+; last modified 20180131-1231
 
 ; ************************
 ; INSTALL, copy jump table
@@ -10,20 +10,20 @@
 ;			NULL means reset from previously installed one
 ;		OUTPUT
 ; kerntab	= previously installed jump table
-; uses local1
+; uses tmp_ktab
 
 -install:
 .(
 ; first get current address, not worth a subroutine
 	LDX fw_lastk		; get last value...
 	LDA fw_lastk+1
-	STX local1			; ...temporarily stored
-	STA local1+1
+	STX tmp_ktab		; ...temporarily stored
+	STA tmp_ktab+1
 ; new feature, a null pointer means reinstall previously set jump table!
 	LDY kerntab			; get this LSB for later
 	LDA kerntab+1		; check whether null (cannot be in zeropage anyway)
 	BNE fwi_nz			; not zero, proceed...
-		LDA loca11+1		; otherwise get lost MSB @ local1
+		LDA tmp_ktab+1		; otherwise get lost MSB @ local1
 		STX kerntab			; reset to previous value
 		STA kerntab+1
 fwi_nz:
@@ -39,7 +39,7 @@ fwi_loop:
 		CPY #API_SIZE		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 		BNE fwi_loop		; until whole page is done (3/2)
 ; kernel successfully installed, return previously set address (LSB still in X)
-	LDA local1+1		; get missing MSB...
+	LDA tmp_ktab+1		; get missing MSB...
 	STX kerntab			; ...ans set whole pointer as output
 	STA kerntab+1
 ; end of table address storage

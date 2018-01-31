@@ -275,40 +275,6 @@ context:
 	_DR_ERR(UNAVAIL)	; not yet implemented
 #endif
 
-; ----------------------- OLD CODE ---------------------------
-
-; ****************************
-; PATCH, patch single function
-; ****************************
-;		INPUT
-; kerntab	= address of function code (0 means reset from last installed kernel)
-; Y			= function to be patched
-
-;fw_patch:
-	LDX kerntab+1			; check whether null, cannot be in zeropage, get MSB anyway (3)
-; new feature, a null pointer means unpatch!
-	BNE fwp_nz				; already a valid pointer
-		LDX fw_lastk+1			; otherwise, let us point to the original kernel table
-		LDA fw_lastk
-		STX tmp_ktab+1			; prepare indirect pointer
-		STA tmp_ktab
-		INY						; will get MSB first
-		LDA (tmp_ktab), Y		; MSB of entry...
-		TAX						; ...will stay here
-		DEY						; back to LSB
-		LDA (tmp_ktab), Y
-		_BRA fwp_rst			; X.A points to original function
-fwp_nz:
-; end of new feature
-	LDA kerntab				; get LSB (3)
-fwp_rsp:
-	_CRITIC					; disable interrupts! (5)
-	STA fw_table, Y			; store where the firmware expects it (4+4)
-	TXA						; eeeeeeeeeeeek
-	STA fw_table+1, Y
-	_NO_CRIT				; restore interrupts if needed (4)
-	_DR_OK					; done (8)
-
 
 ; **** some strange data ****
 fw_map:
