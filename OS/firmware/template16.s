@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180129-1330
+; last modified 20180131-0837
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -60,7 +60,7 @@ fw_admin:
 	.word	poweroff	; POWEROFF power-off, suspend or cold boot
 	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
 
-; not for LOWRAM systems
+; 65816 systems are always highly-specced...
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
 	.word	context		; *** CONTEXT context bankswitching

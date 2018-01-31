@@ -18,7 +18,7 @@ fw_start:
 	.asc	"****", CR					; flags TBD
 	.asc	"boot", 0					; standard filename
 fw_splash:
-	.asc	"0.9.6b4 firmware for "	; machine description as comment
+	.asc	"0.9.6b5 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.9.6b4 FW @ "
+	.asc	"0.9.6b5 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif

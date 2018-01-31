@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR					; flags TBD
 	.asc "boot", 0					; standard filename
 fw_splash:
-	.asc "0.6b6 firmware for "	; machine description as comment
+	.asc "0.6b7 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
