@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180131-0832
+; last modified 20180131-0927
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -153,11 +153,12 @@ reset:
 ; reset last installed kernel (new)
 #include "firmware/modules/rst_lastk.s"
 
+; *** direct print splash string code comes here, when available ***
+
+
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
 ;#include "firmware/modules/netboot.s"
-
-; *** direct print splash string code comes here, when available ***
 
 ; ************************
 ; *** start the kernel ***
@@ -183,9 +184,14 @@ nmi:
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP (fw_isr)	; vectored ISR (6)
+	JMP (fw_isr)		; vectored ISR (6)
 
-; ****** NOT SURE what to do about BRK handler... save regs? again? ******
+; ***************************
+; *** minimOS BRK handler ***
+; ***************************
+brk_hndl:				; label from vector list
+#include "firmware/modules/brk_hndl.s"
+
 
 ; ********************************
 ; ********************************

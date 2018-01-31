@@ -3,7 +3,7 @@
 ; *** use as sort-of template ***
 ; v0.9.6rc8
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180131-0832
+; last modified 20180131-0927
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -143,6 +143,9 @@ reset:
 ; reset last installed kernel (new)
 #include "firmware/modules/rst_lastk.s"
 
+; *** could download a kernel here, updating fw_warm accordingly ***
+
+
 ; **********************************
 ; *** direct print splash string ***
 ; **********************************
@@ -158,13 +161,12 @@ fws_cr:
 	LDA #LF				; trailing CR, needed by console! (2)
 	JSR $c0c2			; direct print
 
-; *** could download a kernel here, updating fw_warm accordingly ***
-
 ; ************************
 ; *** start the kernel ***
 ; ************************
 start_kernel:
 	JMP (fw_warm)		; (5/6)
+
 
 ; ********************************
 ; ********************************
@@ -183,26 +185,19 @@ nmi:
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP (fw_isr)	; vectored ISR (6)
+	JMP (fw_isr)		; vectored ISR (6)
 
 ; ***************************
-; *** minimOS BRK handler *** might go elsewhere
+; *** minimOS BRK handler ***
 ; ***************************
 brk_hndl:				; label from vector list
-; much like the ISR start
-	PHA					; save registers
-	_PHX
-	_PHY
-	JSR brk_call		; indirect call
-	_PLY				; restore status and return
-	_PLX
-	PLA
-	RTI
-brk_call:
-	JMP (fw_brk)		; new vectored handler
+#include "firmware/modules/brk_hndl.s"
+
 
 ; ********************************
+; ********************************
 ; *** administrative functions ***
+; ********************************
 ; ********************************
 
 ; *** generic functions ***

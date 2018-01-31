@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180131-0832
+; last modified 20180131-0925
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -153,18 +153,19 @@ reset:
 ; reset last installed kernel (new)
 #include "firmware/modules/rst_lastk.s"
 
+; *** direct print splash string code comes here, when available ***
+
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
 ;#include "firmware/modules/netboot.s"
-
-; *** direct print splash string code comes here, when available ***
 
 ; ************************
 ; *** start the kernel ***
 ; ************************
 start_kernel:
 	JMP (fw_warm)		; (6)
+
 
 ; ********************************
 ; ********************************
@@ -173,46 +174,29 @@ start_kernel:
 ; ********************************
 
 ; **********************************************
-; *** vectored NMI handler with magic number ***
+; *** vectored NMI handler with magic number *** eeeeeeeeeeeeeek
 ; **********************************************
 nmi:
-#include "firmware/modules/nmi_hndl16.s"
+#include "firmware/modules/nmi_hndl.s"
 
 ; ****************************
 ; *** vectored IRQ handler ***
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP (fw_isr)	; vectored ISR (6)
+	JMP (fw_isr)		; vectored ISR (6)
 
+; ***************************
+; *** minimOS BRK handler ***
+; ***************************
+brk_hndl:				; label from vector list
+#include "firmware/modules/brk_hndl.s"
 
-; *********************************************
-; *********************************************
-; *** experimental blinking of CapsLock LED ***
-; *********************************************
-; *********************************************
-led_lock:
-; make sure PB3 is output and device $Bx is selected, just in case
-; should toggle PB7 too with CB2 high, for a clicking sound****
-	LDA VIA+DDRB		; original direction
-	ORA #%11111001		; desired outputs
-	STA VIA+DDRB		; set on VIA
-; intial value selects $D8 device (LCD on keyboard, E down and LED on)
-	LDA #%11011000
-ll_tog:
-		STA VIA+IORB		; turn LED on, LCD will not disturb
-ll_loop:
-				INX			; inner loop (2)
-				NOP			; add some delay (2+2)
-				NOP
-				BNE ll_loop		; inner takes 2303t (3)
-			INY			; outer loop (2)
-			BNE ll_loop		; full loop is ~0.59s @ 1 MHz (3)
-		EOR #%00001000		; toggle PB3
-		_BRA ll_tog		; switch and continue forever
 
 ; ********************************
+; ********************************
 ; *** administrative functions ***
+; ********************************
 ; ********************************
 
 ; *** generic functions ***
@@ -564,6 +548,31 @@ f_unavail:
 ; **** some strange data ****
 fw_map:
 	.word	0		; PLACEHOLDER FOR MEMORY MAP
+
+; *********************************************
+; *********************************************
+; *** experimental blinking of CapsLock LED ***
+; *********************************************
+; *********************************************
+led_lock:
+; make sure PB3 is output and device $Bx is selected, just in case
+; should toggle PB7 too with CB2 high, for a clicking sound****
+	LDA VIA+DDRB		; original direction
+	ORA #%11111001		; desired outputs
+	STA VIA+DDRB		; set on VIA
+; intial value selects $D8 device (LCD on keyboard, E down and LED on)
+	LDA #%11011000
+ll_tog:
+		STA VIA+IORB		; turn LED on, LCD will not disturb
+ll_loop:
+				INX			; inner loop (2)
+				NOP			; add some delay (2+2)
+				NOP
+				BNE ll_loop		; inner takes 2303t (3)
+			INY			; outer loop (2)
+			BNE ll_loop		; full loop is ~0.59s @ 1 MHz (3)
+		EOR #%00001000		; toggle PB3
+		_BRA ll_tog		; switch and continue forever
 
 
 ; ******************************************************************
