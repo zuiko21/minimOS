@@ -2,8 +2,8 @@
 ; suitable for run816 BBC simulator
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
-; (c) 2017 Carlos J. Santisteban
-; last modified 20171114-1101
+; (c) 2017-2018 Carlos J. Santisteban
+; last modified 20180131-1433
 
 ; *** set conditional assembly ***
 
@@ -52,7 +52,7 @@
 ROM_BASE	=	$C000	; enough for package
 
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$FC00	; simple firmware expected on BBC simulator
+FW_BASE		=	$F800	; simple firmware expected on BBC simulator
 
 
 ; ** I/O definitions **
