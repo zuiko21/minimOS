@@ -1,5 +1,5 @@
 ; firmware module for minimOS·65
-; (c) 2013-2017 Carlos J. Santisteban
+; (c) 2013-2018 Carlos J. Santisteban
 ; last modified 20171221-1307
 
 ; *** bootoff code *** v0.9.1

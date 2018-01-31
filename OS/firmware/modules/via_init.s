@@ -1,5 +1,5 @@
 ; firmware module for minimOS·65
-; (c) 2017 Carlos J. Santisteban
+; (c) 2017-2018 Carlos J. Santisteban
 ; last modified 20171222-2314
 
 ; VIA initialisation (and stop beeping)

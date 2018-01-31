@@ -1,6 +1,6 @@
 ; 65(C)51 ACIA firmware driver for minimOS
 ; v0.5a1
-; (c) 2012-2016 Carlos J. Santisteban
+; (c) 2012-2018 Carlos J. Santisteban
 ; last modified 20150220-1230
 ; revised 20160115 for commit with new filenames
 

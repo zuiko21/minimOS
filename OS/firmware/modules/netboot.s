@@ -1,6 +1,6 @@
 ; NetBoot module for minimOS firmware
 ; v0.5a2
-; (c) 2015-2016 Carlos J. Santisteban
+; (c) 2015-2018 Carlos J. Santisteban
 ; last modified 20160308-1358
 
 #define		NETBOOT		_NETBOOT

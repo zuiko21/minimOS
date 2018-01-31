@@ -1,6 +1,6 @@
 ; extensive RAMtest for minimOS
 ; v0.5a1
-; (c) 2015-2016 Carlos J. Santisteban
+; (c) 2015-2018 Carlos J. Santisteban
 ; last modified 20150622-1019
 ; revised 20160115 for commit with new filenames
 
