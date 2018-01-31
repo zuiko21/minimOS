@@ -1,9 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; *** use as sort-of template ***
 ; v0.9.6rc8
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180131-0927
+; last modified 20180131-1009
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -202,93 +201,83 @@ brk_hndl:				; label from vector list
 
 ; *** generic functions ***
 
-; GESTALT, get system info, API TBR
-;		OUTPUT
-; cpu_ll	= CPU type
-; c_speed	= speed code
-; str_pt	= points to a string with machine name
-; ex_pt		= points to a map of default memory conf ???
-; k_ram		= available pages of (kernel) SRAM
-; b_ram		= available BANKS of "high" RAM
-
+; *********************************
+; GESTALT, get system info, API TBD
+; *********************************
 gestalt:
-	LDY fw_cpu			; get kind of CPU (previoulsy stored or determined) (4)
-	LDA #SPD_CODE		; speed code as determined in options.h (2)
-	STY cpu_ll			; set outputs (3+3)
-	STA c_speed
-	LDA himem			; get pages of kernel SRAM (4) ????
-	STA k_ram			; store output (3)
-	_STZA b_ram			; no "high" RAM (4)
-	LDA #>fw_mname		; get string pointer (2+2)
-	LDY #<fw_mname
-	STA str_pt+1		; put it outside (3+3)
-	STY str_pt
-	LDA #>fw_map		; pointer to standard map TBD (2+2) ????
-	LDY #<fw_map
-	STY ex_pt			; set output (3+3)
-	STA ex_pt+1
-	_DR_OK				; done
+#include "firmware/modules/gestalt.s"
 
+; ***********************
 ; SET_ISR, set IRQ vector
-;		INPUT
-; kerntab	= address of ISR (will take care of all necessary registers)
-
+; ***********************
 set_isr:
-	LDY kerntab			; get pointer (3+3)
-	LDA kerntab+1
-	_CRITIC			; disable interrupts! (5)
-	STY fw_isr			; store for firmware (4+4)
-	STA fw_isr+1
-	_NO_CRIT			; restore interrupts if needed (4)
-	_DR_OK				; done (8)
+#include "firmware/modules/set_isr.s"
 
-; SET_NMI, set NMI vector
-;		INPUT
-; kerntab	= address of NMI code (including magic string, ends in RTS)
-
-; might check whether the pointed code starts with the magic string
-; no need to disable interrupts as a partially set pointer would be rejected...
-; ...unless SAFE mode is NOT selected (will not check upon NMI)
-
+; ********************************
+; SET_NMI, set NMI handler routine
+; ********************************
 set_nmi:
-#ifdef	SAFE
-	LDX #3				; offset to reversed magic string
-	LDY #0				; reset supplied pointer
-fw_sn_chk:
-		LDA (kerntab), Y	; get pointed handler string char
-		CMP fw_magic, X		; compare against reversed string
-		BEQ fw_sn_ok		; no problem this far...
-			_DR_ERR(CORRUPT)	; ...or invalid NMI handler
-fw_sn_ok:
-		INY					; try next one
-		DEX
-		BPL fw_sn_chk		; until all done
-#else
-	_CRITIC			; as will NOT check upon NMI, do not let partial settings
-#endif
-; transfer supplied pointer to firmware vector
-	LDY kerntab			; get LSB (3)
-	LDA kerntab+1		; get MSB (3)
-	STY fw_nmi			; store for firmware (4+4)
-	STA fw_nmi+1
-#ifndef	SAFE
-	_NO_CRIT			; had to shut off interrupts in case of no further checking!
-#endif
-	_DR_OK				; done (8)
+#include "firmware/modules/set_nmi.s"
 
-; SET_BRK, set BRK handler
-;		INPUT
-; kerntab	= address of BRK routine (ending in RTS)
-
+; ********************************
+; SET_DBG, set BRK handler routine
+; ********************************
 set_dbg:
-	_CRITIC			; disable interrupts! (5)
-	LDY kerntab			; get pointer
-	LDA kerntab+1
-	STY fw_brk			; store for firmware
-	STA fw_brk+1
-	_NO_CRIT			; restore interrupts if needed
-	_DR_OK				; done
+#include "firmware/modules/set_dbg.s"
 
+; ***************************
+; JIFFY, set jiffy IRQ period
+; ***************************
+jiffy:
+#include "firmware/modules/jiffy.s"
+
+; ****************************************
+; IRQ_SRC, investigate source of interrupt
+; ****************************************
+; notice non-standard ABI, same module as 6502 version!
+irq_src:
+#include "firmware/modules/irq_src.s"
+
+; *** hardware specific ***
+
+; **********************
+; POWEROFF, shutdown etc *** TBD
+; **********************
+poweroff:
+#include "firmware/modules/poweroff.s"
+
+; ***********************************
+; FREQ_GEN, generate frequency at PB7 *** TBD
+; ***********************************
+freq_gen:
+;#include "firmware/modules/freq_gen16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
+
+; *** other functions with RAM enough ***
+#ifndef		LOWRAM
+; **************************
+; INSTALL, supply jump table
+; **************************
+install:
+#include "firmware/modules/install.s"
+
+; ****************************
+; PATCH, patch single function
+; ****************************
+patch:
+#include "firmware/modules/patch.s"
+
+; *****************************************
+; CONTEXT, hardware switch zeropage & stack
+; *****************************************
+context:
+;#include "firmware/modules/context16.s"
+	_DR_ERR(UNAVAIL)	; not yet implemented
+#endif
+
+; ----------------------- OLD CODE ---------------------------
+
+; **************** make a specific one for no hardware??????????????????
 ; JIFFY, set jiffy IRQ frequency
 ;		INPUT
 ; irq_hz	= frequency in Hz (0 means no change)
