@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180131-0837
+; last modified 20180131-1347
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -182,13 +182,20 @@ nmi:
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP [fw_isr]	; 24-bit vectored ISR (6)
+	JMP [fw_isr]		; 24-bit vectored ISR (6)
 
 ; ****************************
 ; *** vectored BRK handler ***
 ; ****************************
 brk_hndl:
 #include "firmware/modules/brk_hndl16.s"
+
+; ******************************************************
+; *** minimOS·16 kernel call interface (COP handler) ***
+; ******************************************************
+cop_hndl:				; label from vector list
+	.as: .xs: SEP #$30	; standard sizes
+	JMP (fw_table, X)	; the old fashioned way
 
 
 ; ********************************
@@ -222,6 +229,8 @@ set_nmi:
 ; ********************************
 set_dbg:
 #include "firmware/modules/set_dbg16.s"
+
+; *** interrupt related ***
 
 ; ***************************
 ; JIFFY, set jiffy IRQ period
@@ -273,20 +282,17 @@ context:
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
 
-; ****************************
-; *** some firmware tables ***
-; ****************************
+; ***********************************
+; ***********************************
+; *** some firmware odds and ends ***
+; ***********************************
+; ***********************************
 
-fw_map:
-; *** do not know what to do here ***
+; *** memory map, as used by gestalt, not sure what to do with it ***
+fw_map:					; TO BE DONE
 
-; these already OK for 65816!
 
-; *** minimOS·16 kernel call interface (COP) ***
-cop_hndl:		; label from vector list
-	.as: .xs: SEP #$30	; standard sizes
-	JMP (fw_table, X)	; the old fashioned way (this takes 5 bytes)
-
+; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	kerncall-*, $FF
@@ -298,9 +304,9 @@ cop_hndl:		; label from vector list
 
 ; *** minimOS·65 function call WRAPPER ($FFC0) ***
 * = kerncall
-	CLC			; pre-clear carry
-	COP #$7F	; wrapper on 816 firmware!
-	RTS			; return to caller (this takes 4 bytes)
+	CLC					; pre-clear carry
+	COP #$7F			; wrapper on 816 firmware!
+	RTS					; return to caller (this takes 4 bytes)
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
 ; alternative multikernel FW may use an indirect jump...
 ; ...will point to either the above wrapper (16-bit kernel)...

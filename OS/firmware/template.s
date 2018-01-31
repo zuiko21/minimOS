@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180131-1228
+; last modified 20180131-1406
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -225,6 +225,8 @@ set_nmi:
 set_dbg:
 #include "firmware/modules/set_dbg.s"
 
+; *** interrupt related ***
+
 ; ***************************
 ; JIFFY, set jiffy IRQ period
 ; ***************************
@@ -276,17 +278,24 @@ context:
 #endif
 
 
-; **** some strange data ****
-fw_map:
-	.word	0		; PLACEHOLDER FOR MEMORY MAP
+; ***********************************
+; ***********************************
+; *** some firmware odds and ends ***
+; ***********************************
+; ***********************************
+
+; *** memory map, as used by gestalt, not sure what to do with it ***
+fw_map:					; TO BE DONE
+
 
 ; ************************************************************************
 ; ************************************************************************
 ; ************************************************************************
 
+; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	kernel_call-*, $FF
+	.dsb	kerncall-*, $FF
 #endif
 
 ; ******************************************************************
@@ -295,18 +304,29 @@ fw_map:
 
 ; *** minimOS function call primitive ($FFC0) ***
 * = kerncall
-	_JMPX(fw_table)	; macro for NMOS compatibility (6) this will be a wrapper on 816 firmware!
+	_JMPX(fw_table)		; macro for NMOS compatibility (6) this will be a wrapper on 816 firmware!
+
+; this could be a good place for the IRQ handler...
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	admin_call-*, $FF
+	.dsb	adm_call-*, $FF
 #endif
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
-; this could be a good place for the IRQ handler...
+; filling for ready-to-blow ROM
+#ifdef	ROM
+	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
+#endif
+
+; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+; not really needed on 6502 systems, but kept for the sake of binary compatibility
+; pretty much the same code at $FFD0, not worth more overhead
+* = adm_appc
+	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM

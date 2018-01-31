@@ -179,6 +179,7 @@ reset:
 start_kernel:
 #include "firmware/modules/start16.s"
 
+
 ; ********************************
 ; ********************************
 ; ****** interrupt handlers ******
@@ -196,7 +197,7 @@ nmi:
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP [fw_isr]	; 24-bit vectored ISR (6)
+	JMP [fw_isr]		; 24-bit vectored ISR (6)
 
 ; ****************************
 ; *** vectored BRK handler ***
@@ -204,9 +205,18 @@ irq:
 brk_hndl:
 #include "firmware/modules/brk_hndl16.s"
 
+; ******************************************************
+; *** minimOS·16 kernel call interface (COP handler) ***
+; ******************************************************
+cop_hndl:				; label from vector list
+	.as:.xs: SEP #$30	; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+	JMP (fw_table, X)	; the old fashioned way
+
 
 ; ********************************
+; ********************************
 ; *** administrative functions ***
+; ********************************
 ; ********************************
 
 ; *** generic functions ***
@@ -234,6 +244,8 @@ set_nmi:
 ; ********************************
 set_dbg:
 #include "firmware/modules/set_dbg16.s"
+
+; *** interrupt related ***
 
 ; ***************************
 ; JIFFY, set jiffy IRQ period
@@ -285,24 +297,25 @@ context:
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
 
-; ****************************
-; *** some firmware tables ***
-; ****************************
+; ***********************************
+; ***********************************
+; *** some firmware odds and ends ***
+; ***********************************
+; ***********************************
 
-fw_map:
-; *** do not know what to do here ***
+; *** memory map, as used by gestalt, not sure what to do with it ***
+fw_map:					; TO BE DONE
 
-; these already OK for 65816!
 
-; *** minimOS·16 kernel call interface (COP) ***
-cop_hndl:		; label from vector list
-	.as:.xs: SEP #$30	; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
-	JMP (fw_table, X)	; the old fashioned way
-
+; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kerncall-*, $FF
 #endif
+
+; ******************************************************************
+; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
+; ******************************************************************
 
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
 * = kerncall

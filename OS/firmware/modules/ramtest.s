@@ -1,19 +1,7 @@
 ; firmware module for minimOS
 ; RAMtest 0.5.2b2
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20161010-1216
-
-; in case of stand alone assembly
-#ifndef		FIRMWARE
-#include "options.h"
-#include "macros.h"
-#include "abi.h"	; new filename
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/ARCH.h"
-.text
-#endif
+; last modified 20180131-1415
 
 ; *** RAMtest, 6510-savvy ***
 ; check zeropage first (except bytes 0-1)

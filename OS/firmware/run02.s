@@ -225,6 +225,8 @@ set_nmi:
 set_dbg:
 #include "firmware/modules/set_dbg.s"
 
+; *** interrupt related ***
+
 ; ***************************
 ; JIFFY, set jiffy IRQ period
 ; ***************************
@@ -285,7 +287,7 @@ context:
 ; irq_hz	= actually set frequency (in case of error or no change)
 ; C			= could not set (not here)
 
-jiffy:
+;jiffy:
 ; this is generic
 ; if could not change, then just set return parameter and C
 	LDA irq_hz+1		; get input values
@@ -305,16 +307,14 @@ fj_set:
 	_BRA fj_end			; all done, no need to update as will be OK
 
 
+; ***********************************
+; ***********************************
+; *** some firmware odds and ends ***
+; ***********************************
+; ***********************************
 
-; ****************************
-; *** some firmware tables ***
-; ****************************
-
-fw_map:
-; *** do not know what to do here ***
-
-
-; ****** some odds ******
+; *** memory map, as used by gestalt, not sure what to do with it ***
+fw_map:					; TO BE DONE
 
 ; *** wrapper in case 816-enabled code calls 8-bit kernel??? ***
 cop_hndl:				; label from vector list
@@ -324,14 +324,15 @@ cop_hndl:				; label from vector list
 	RTI
 #endif
 
+; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kerncall-*, $FF
 #endif
 
-; ******************************
-; *** standard ROM interface ***
-; ******************************
+; ******************************************************************
+; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
+; ******************************************************************
 
 ; *** minimOS·65 function call interface ($FFC0) ***
 * = kerncall

@@ -188,9 +188,18 @@ irq:
 brk_hndl:
 #include "firmware/modules/brk_hndl16.s"
 
+; ******************************************************
+; *** minimOS·16 kernel call interface (COP handler) ***
+; ******************************************************
+cop_hndl:		; label from vector list
+	.as: .xs: SEP #$30		; default sizes!
+	JMP (fw_table, X)		; the old fashioned way
+
 
 ; ********************************
+; ********************************
 ; *** administrative functions ***
+; ********************************
 ; ********************************
 
 ; *** generic functions ***
@@ -218,6 +227,8 @@ set_nmi:
 ; ********************************
 set_dbg:
 #include "firmware/modules/set_dbg16.s"
+
+; *** interrupt related ***
 
 ; ***************************
 ; JIFFY, set jiffy IRQ period
@@ -269,19 +280,14 @@ context:
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
 
-; ****************************
-; *** some firmware tables ***
-; ****************************
+; ***********************************
+; ***********************************
+; *** some firmware odds and ends ***
+; ***********************************
+; ***********************************
 
-fw_map:
-; *** do not know what to do here ***
-
-; these already OK for 65816!
-
-; *** minimOS·16 kernel call interface (COP) ***
-cop_hndl:		; label from vector list
-	.as: .xs: SEP #$30		; default sizes!
-	JMP (fw_table, X)		; the old fashioned way
+; *** memory map, as used by gestalt, not sure what to do with it ***
+fw_map:					; TO BE DONE
 
 ; *************************************
 ; new lock routine blinking E-mode LED!
@@ -302,7 +308,7 @@ led_loop:
 			BNE led_loop
 		BRA led_switch
 
-
+; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kerncall-*, $FF

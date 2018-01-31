@@ -225,6 +225,8 @@ set_nmi:
 set_dbg:
 #include "firmware/modules/set_dbg.s"
 
+; *** interrupt related ***
+
 ; ***************************
 ; JIFFY, set jiffy IRQ period
 ; ***************************
@@ -275,14 +277,17 @@ context:
 #endif
 
 
-; **** some strange data ****
-fw_map:
-	.word	0		; PLACEHOLDER FOR MEMORY MAP
+; ***********************************
+; ***********************************
+; *** some firmware odds and ends ***
+; ***********************************
+; ***********************************
+
+; *** memory map, as used by gestalt, not sure what to do with it ***
+fw_map:					; TO BE DONE
 
 ; *********************************************
-; *********************************************
 ; *** experimental blinking of CapsLock LED ***
-; *********************************************
 ; *********************************************
 led_lock:
 ; make sure PB3 is output and device $Bx is selected, just in case
@@ -305,20 +310,19 @@ ll_loop:
 		_BRA ll_tog		; switch and continue forever
 
 
-; ******************************************************************
-; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
-; ******************************************************************
-
+; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	kerncall-*, $FF
 #endif
 
+; ******************************************************************
+; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
+; ******************************************************************
+
 ; *** minimOS function call primitive ($FFC0) ***
 * = kerncall
 	_JMPX(fw_table)	; macro for NMOS compatibility (6)
-
-; as 8-bit systems use std call for U_ADM, no $FFC8 wrapper
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -328,6 +332,8 @@ ll_loop:
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+
+; as 8-bit systems use std call for U_ADM, no $FFC8 wrapper
 
 ; this could be a good place for the IRQ handler...
 
