@@ -83,28 +83,16 @@ missing:
 ; ********************
 ; ********************
 
-; basic init
+; *** basic init *** save a few bytes as Chihuahua is unlikely to use a 65816
 reset:
-	SEI				; cold boot, best assume nothing (2)
-	CLD				; just in case, a must for NMOS (2)
-; chihuahua is unlikely to use a 65816...
-	LDX #$FF		; initial stack pointer, no low ram here, must be done in emulation for '816 (2)
-	TXS				; initialise stack (2)
+#include "firmware/modules/basic_init02.s"
 
 ; ******************************
 ; *** minimal hardware setup ***
 ; ******************************
-; disable all interrupt sources
-	LDA #$7F		; disable all interrupts (2+4)
-	STA VIA_J + IER
-; and optionally check for VIA presence
-#ifdef	SAFE
-	LDA VIA_J + IER	; check VIA presence, NEW 20150118 (4)
-	CMP #$80		; should read $80 (2)
-	BEQ via_ok		; panic otherwise! (slight modification 20150121 and 0220) (3/2)
-		JMP lock		; no other way to tell the world... (3)
-via_ok:
-#endif
+
+; check for VIA presence and disable all interrupts
+#include "firmware/modules/viacheck_irq.s"
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -113,10 +101,11 @@ via_ok:
 ; optional boot selector
 ;#include "firmware/modules/bootoff.s"
 
-; ***continue power-on self-test***
-post:
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
+
+; Chihuahua has no ROM-in-RAM feature!
+
 
 ; basic startup beep
 #include "firmware/modules/beep.s"
@@ -124,74 +113,56 @@ post:
 ; SRAM test
 #include "firmware/modules/ramtest.s"
 
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+
+; VIA initialisation (and stop beeping)
+#include "firmware/modules/via_init.s"
+
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
 
 ; *** set default CPU type ***
-;	LDA #CPU_TYPE			; REDUNDANT if actual test is done (2)
-; ...but check it for real afterwards
-#include	"firmware/modules/cpu_check.s"
-; module will no longer store value
-	STA fw_cpu			; store variable (4)
+; just set expected default type as defined in options.h...
+;#include "firmware/modules/default_cpu.s"
+; ...or actually check for it!
+#include "firmware/modules/cpu_check.s"
+; do NOT include both files at once!
 
-; *** in case an NMOS CPU is used, this code must be assembled for it!
-; assume A holds CPU code as per above
-#ifdef	SAFE
-#ifndef	NMOS
-	CMP #'N'		; is it NMOS? not supported!
-	BNE fw_cpuOK	; otherwise continue
-		JMP lock		; cannot handle BRK, alas
-fw_cpuOK:
-#endif
-#endif
+; in case an NMOS CPU is used, make sure this was built for it
+#include "firmware/modules/nmos_savvy.s"
 
-; *** preset kernel start address (standard label from ROM file) ***
-	LDY #<kernel	; get LSB, nicer (2)
-	LDA #>kernel	; same for MSB (2)
-	STY fw_warm		; store in sysvars (4+4)
-	STA fw_warm+1
+; *** continue parameter setting ***
+; preset kernel start address
+#include "firmware/modules/kern_addr.s"
 
-; *** preset default BRK & NMI handlers ***
-	LDY #<std_nmi			; default BRK like standard NMI
-	LDA #>std_nmi
-	STY fw_brk			; set vector
-	STA fw_brk+1
+; preset default BRK handler
+#include "firmware/modules/brk_addr.s"
+
 ; no need to set NMI as it will be validated
 
-; *** preset jiffy irq frequency ***
-; this should be done by installed kernel, but at least set to zero for 0.5.x compatibility!
-	_STZA irq_freq		; store null speed... IRQ not set
-	_STZA irq_freq+1
 
-; *** reset jiffy count ***
-	LDX #3				; max offset in uptime (assume contiguous)
-res_sec:
-		_STZA ticks, X		; reset byte
-		DEX					; next byte backwards
-		BPL res_sec			; zero is included
+; preset jiffy irq frequency
+#include "firmware/modules/jiffy_hz.s"
 
-; ********************************
-; *** hardware interrupt setup ***
-; ********************************
+; reset jiffy count
+#include "firmware/modules/jiffy_rst.s"
 
-; *** VIA initialisation (and stop beeping) ***
-	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
-	STA VIA_J + PCR
-	LDA #%01000000	; T1 cont, no PB7, no SR, no latch (so far) (2+4)
-	STA VIA_J + ACR
-; supposedly will not start counting until writing to counters!
-	LDA #$C0			; enable T1 (jiffy) interrupt only (2+4)
-	STA VIA_J + IER
+; reset last installed kernel (new)
+#include "firmware/modules/rst_lastk.s"
+
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
--remote_boot:
 ;#include "firmware/modules/netboot.s"
 
-; *******************************************
-; *** firmware ends, jump into the kernel ***
-; *******************************************
+; *** direct print splash string code comes here, when available ***
+
+; ************************
+; *** start the kernel ***
+; ************************
 start_kernel:
 	JMP (fw_warm)		; (6)
 

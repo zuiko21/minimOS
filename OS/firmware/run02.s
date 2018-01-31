@@ -99,7 +99,6 @@ reset:
 
 ; bootoff seems of little use here...
 
-;post:				; this is no longer needed
 ; might check ROM integrity here
 ;#include "firmware/modules/romcheck.s"
 
@@ -107,6 +106,12 @@ reset:
 
 ; SRAM test
 ;#include "firmware/modules/ramtest.s"
+
+; ********************************
+; *** hardware interrupt setup ***
+; ********************************
+
+; no VIA to initialise...
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -135,11 +140,8 @@ reset:
 ; reset jiffy count
 #include "firmware/modules/jiffy_rst.s"
 
-; ********************************
-; *** hardware interrupt setup ***
-; ********************************
-
-; no VIA to initialise...
+; reset last installed kernel (new)
+#include "firmware/modules/rst_lastk.s"
 
 ; **********************************
 ; *** direct print splash string ***

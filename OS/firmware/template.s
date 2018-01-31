@@ -84,7 +84,7 @@ missing:
 ; ********************
 
 reset:
-; *** basic init ***
+; *** basic init *** could save a few bytes if unlikely to use a 65816, use basic_init02.s instead
 #include "firmware/modules/basic_init.s"
 
 ; ******************************
