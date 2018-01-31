@@ -2,7 +2,7 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc8
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180131-1009
+; last modified 20180131-1051
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -304,46 +304,6 @@ fj_set:
 	STY irq_freq
 	_BRA fj_end			; all done, no need to update as will be OK
 
-; IRQ_SOURCE, investigate source of interrupt
-;		OUTPUT
-; *** X	= 0 (periodic), 2 (async IRQ @ 65xx) ***
-; *** notice NON-standard output register for faster indexed jump! ***
-; other even values hardware dependent
-
-irq_src:
-	BIT VIA_J+IFR		; much better than LDA + ASL + BPL! (4)
-	BVS fis_per			; from T1 (3/2)
-		LDX #2				; standard async otherwise (2)
-		RTS					; no error handling for speed! (6)
-fis_per:
-	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
-	LDX #0				; standard value for jiffy IRQ (2)
-	_DR_OK
-
-; *** hardware specific ***
-
-; POWEROFF, poweroff etc
-; Y <- mode (0 = suspend, 2 = warmboot, 4 = coldboot, 6 = poweroff)
-; C -> not implemented
-
-poweroff:
-	TYA					; get subfunction offset
-	TAX					; use as index
-	_JMPX(fwp_func)		; select from jump table
-
-fwp_off:
-	_PANIC("{OFF}")		; just in case is handled
-	.byt	$42			; WDM will show up on BBC emulator... and cold boot!
-
-fwp_susp:
-	_DR_OK				; just continue execution
-
-; power sub-function pointer table (eeeek)
-fwp_func:
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	kernel		; shouldn't use this, just in case (standard from rom.s)
-	.word	reset		; coldboot	+FW_COLD
-	.word	fwp_off		; poweroff	+FW_OFF
 
 ; FREQ_GEN, frequency generator hardware interface, TBD
 freq_gen:

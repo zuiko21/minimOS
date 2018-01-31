@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180131-1008
+; last modified 20180131-1051
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -276,55 +276,6 @@ context:
 
 ; ----------------------- OLD CODE ---------------------------
 
-; **********************
-; POWEROFF, shutdown etc
-; **********************
-;		INPUT
-; Y = mode (0=suspend, 2=warmboot, 4=coldboot, 6=power off)
-; *** new interrupt invoke codes (10=NMI, 12=BRK) ***
-
-fw_power:
-	TYA					; get subfunction offset
-	TAX					; use as index
-	_JMPX(fwp_func)		; select from jump table
-
-fwp_off:
-	.byt	$DB		; STP in case a WDC CPU is used
-	NOP			; avoid DCP abs,Y on NMOS
-	NOP
-	_PANIC("{OFF}")		; stop execution! just in case is handled
-fwp_brk:
-	JMP (fw_brk)		; call installed routine, perhaps will return
-fwp_susp:
-; could switch off VIA IRQ and use SEI/WAI for WDC use...
-#ifndef	NMOS
-	_CRITIC			; disable interrupts...
-	.byt	$CB		; WAI in case of WDC CPU
-	NOP			; # not used on other CMOS, but helpful anyway
-	_NO_CRIT		; ...and back to business
-#else
-	_DR_ERR(UNAVAIL)	; avoid AXS# on NMOS
-#endif
-fw_ret:
-	_DR_OK			; for NMI call eeeek
-fwp_nmi:
-	LDY #<fw_ret		; get correct return address
-	LDA #>fw_ret
-	PHA			; stack it in order
-	_PHY
-	PHP			; will end in RTI
-	JMP nmi			; handle as usual
-
-; sub-function jump table
-fwp_func:
-	.word	fwp_susp	; suspend	+FW_STAT
-	.word	start_kernel	; shouldn't use this, just in case
-	.word	reset		; coldboot	+FW_COLD
-	.word	fwp_off		; poweroff	+FW_OFF
-	.word	fwp_nmi		; PW_CLEAN is not allowed here!
-; must include BRK/NMI invocation codes
-	.word	fwp_nmi		; simulated NMI
-	.word	fwp_brk		; execute handler
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7
