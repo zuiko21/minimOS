@@ -1,6 +1,6 @@
 ; minimOS 0.6rc2 zero-page system variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180122-0956
+; last modified 20180131-1320
 
 .zero
 * = 0
@@ -48,7 +48,7 @@ dq_ptr	= dr_aut+2					; 16b
 
 ; *** include aliases here for local2/locpt2 ***
 ma_lim:								; 8 bit
-pfa_ptr: v_dest:					; 16 bit (is v_dest of any use???)
+pfa_ptr: un_ptch:					; 16 bit (is v_dest of any use???)
 ; exec_p no longer used
 
 local2: locpt2	.dsb	4			; variables for kernel functions @ $E8
