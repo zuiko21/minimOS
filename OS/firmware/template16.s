@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a7
+; v0.6a8
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180131-1347
+; last modified 20180201-1338
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR						; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
 	.asc "boot", 0						; standard filename
 fw_splash:
-	.asc "65816 0.6a7 firmware for "	; machine description as comment
+	.asc "65816 0.6a8 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a7 FW @ "
+	.asc	"0.6a8 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -120,13 +120,9 @@ reset:
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; *** set default CPU type *** (not worth a separate file?)
-	LDA #'V'			; 65816 only (2)
-	STA fw_cpu			; store variable (4)
-
+; *** set default CPU type ***
+#include "firmware/modules/default_816.s"
 ; as this is the only valid CPU for this firmware, no further checking necessary
-
-; perhaps could wait until here to look for an actual 65816...
 
 ; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
 	.al: REP #$20
