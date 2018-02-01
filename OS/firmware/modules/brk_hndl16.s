@@ -3,7 +3,7 @@
 ; last modified 20180124-1314
 
 ; *** generic BRK handler for 65816 ***
--brk_hndl:		; label from vector list
+-brk_hndl:				; label from vector list
 .(
 ; much like the ISR start
 	.al: .xl: REP #$38	; status already saved, but save register contents in full, decimal off just in case (3)

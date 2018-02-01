@@ -1,11 +1,12 @@
 ; firmware module for minimOS
 ; RAMtest 0.5.2b2
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180131-1415
+; last modified 20180201-1321
 
 ; *** RAMtest, 6510-savvy ***
 ; check zeropage first (except bytes 0-1)
 
+.(
 	LDX #$FD		; bytes to check, 6510-savvy
 	LDA #$FE		; value to be written, 6510-savvy
 rt_fill:
@@ -52,3 +53,4 @@ rt_page:
 	STA himem		; SRAM pages found
 ram_ok:
 ; *** SRAM already measured and tested ***
+.)

@@ -8,8 +8,8 @@
 ; no interface needed
 
 -reset:
-	SEI				; cold boot, best assume nothing (2)
-	CLD				; just in case, a must for NMOS (2)
+	SEI					; cold boot, best assume nothing (2)
+	CLD					; just in case, a must for NMOS (2)
 ; reset the 65816 to emulation mode, just in case
 	SEC					; would set back emulation mode on C816
 	XCE					; XCE on 816, NOP on C02, but illegal 'ISC $0005, Y' on NMOS!

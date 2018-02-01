@@ -1,22 +1,15 @@
 ; 65(C)51 ACIA firmware driver for minimOS
 ; v0.5a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20150220-1230
+; last modified 20180201-1330
 ; revised 20160115 for commit with new filenames
 
 ; in case of standalone assembly via 'xa firmware/modules/fd_6551.s'
 #ifndef		NETBOOT
-#include "options.h"
-#include "macros.h"
-#include "abi.h"		; new filename
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-* = ROM_BASE
-.text
+#include "usual.h"
 #endif
 
+.(
 ; *** constants for 65(C)51 registers ***
 ; get ACIA from options.h
 
@@ -131,3 +124,4 @@ fd_rti:
 	RTI				; go away
 fdr_err:
 	_ERR(N_FOUND)	; unexpected broken link**************
+.)

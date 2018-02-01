@@ -6,6 +6,7 @@
 ; expected to be fully re-entrant
 ; NMOS savvy
 
+.(
 #ifdef	NMOS
 	CLD					; eeeeeeeeek! 20150316
 #endif
@@ -49,11 +50,11 @@
 nmi_end:
 ; restore temporary vars, faster way is 9b, 24t (vs. 8b/40t)
 	PLA					; get byte from stack (4)
-	STA systmp		; restore it (4)
+	STA systmp			; restore it (4)
 	PLA					; get byte from stack (4)
 	STA sysptr+1		; restore it (4)
 	PLA					; get byte from stack (4)
-	STA sysptr		; restore it (4)
+	STA sysptr			; restore it (4)
 ; restore registers
 	_PLY				; restore regular registers (3x4)
 	_PLX
@@ -72,3 +73,4 @@ rst_nmi:
 ; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
 std_nmi:
 #include "firmware/modules/std_nmi.s"
+.)

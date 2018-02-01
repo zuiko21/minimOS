@@ -1,23 +1,14 @@
 ; NetBoot module for minimOS firmware
 ; v0.5a2
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20160308-1358
+; last modified 20180201-1328
 
 #define		NETBOOT		_NETBOOT
 
-; in case of standalone assembly 'xa firmware/modules/netboot.s'
-#ifndef		FIRMWARE
-#include "options.h"
-#include "macros.h"
-#include "abi.h"		; new filename
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-sysvars = *				; free RAM from here
-.text
-#endif
+; in case of standalone assembly
+#include	"usual.h"
 
+.(
 nb_ptr = uz				; pointer in zeropage (typically $3)
 nb_buf = nb_ptr+2		; 20-byte buffer in zeropage ($5)
 nb_conv = nb_buf+20		; space for converted hex strings ($19)
@@ -244,5 +235,4 @@ nb_lboot:
 nb_logout:		; ??????
 ; go away and proceed with preinstalled kernel
 nb_end:
-
-
+.)

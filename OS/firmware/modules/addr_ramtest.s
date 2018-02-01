@@ -1,21 +1,15 @@
 ; extensive RAMtest for minimOS
 ; v0.5a1
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20150622-1019
+; last modified 20180201-1333
 ; revised 20160115 for commit with new filenames
 
 ; in case of stand alone assembly
 #ifndef		FIRMWARE
-#include "options.h"
-#include "macros.h"
-#include "abi.h"		; new filename
-.zero
-#include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-.text
+#include "usual.h"
 #endif
 
+.(
 ; extensive RAMtest, based on an idea from Tony Gonzalez @ 6502.org
 ptr = z_used		; points at $2, 6510-savvy
 
@@ -60,3 +54,4 @@ adrt_test:
 adrt_bad:
 	_PANIC			; ????
 adrt_end:
+.)
