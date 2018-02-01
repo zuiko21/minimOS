@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b5
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180131-1051
+; last modified 20180201-1425
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -164,7 +164,7 @@ reset:
 ; *** start the kernel ***
 ; ************************
 start_kernel:
-	JMP (fw_warm)		; (6)
+#include "firmware/modules/start.s"
 
 
 ; ********************************
@@ -184,7 +184,7 @@ nmi:
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP (fw_isr)		; vectored ISR (6)
+#include "firmware/modules/irq_hndl.s"
 
 ; ***************************
 ; *** minimOS BRK handler ***

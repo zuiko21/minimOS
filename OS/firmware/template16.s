@@ -178,7 +178,7 @@ nmi:
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP [fw_isr]		; 24-bit vectored ISR (6)
+#include "firmware/modules/irq_hndl16.s"
 
 ; ****************************
 ; *** vectored BRK handler ***
@@ -190,8 +190,7 @@ brk_hndl:
 ; *** minimOS·16 kernel call interface (COP handler) ***
 ; ******************************************************
 cop_hndl:				; label from vector list
-	.as: .xs: SEP #$30	; standard sizes
-	JMP (fw_table, X)	; the old fashioned way
+#include "firmware/modules/cop_hndl.s"
 
 
 ; ********************************

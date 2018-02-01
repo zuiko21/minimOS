@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a21
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180129-1327
+; last modified 20180201-1420
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -119,10 +119,8 @@ reset:
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; *** set default CPU type *** (not worth a separate file?)
-	LDA #'V'			; 65816 only (2)
-	STA fw_cpu			; store variable (4)
-
+; *** set default CPU type ***
+#include "firmware/modules/default_816.s"
 ; as this is the only valid CPU for this firmware, no further checking necessary
 
 ; perhaps could wait until here to look for an actual 65816...
@@ -180,7 +178,7 @@ nmi:
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP [fw_isr]	; 24-bit vectored ISR (6)
+#include "firmware/modules/irq_hndl16.s"
 
 ; ****************************
 ; *** vectored BRK handler ***
@@ -192,8 +190,7 @@ brk_hndl:
 ; *** minimOS·16 kernel call interface (COP handler) ***
 ; ******************************************************
 cop_hndl:		; label from vector list
-	.as: .xs: SEP #$30		; default sizes!
-	JMP (fw_table, X)		; the old fashioned way
+#include "firmware/modules/cop_hndl.s"
 
 
 ; ********************************

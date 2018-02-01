@@ -2,7 +2,7 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc8
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180131-1424
+; last modified 20180201-1423
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -164,7 +164,7 @@ fws_cr:
 ; *** start the kernel ***
 ; ************************
 start_kernel:
-	JMP (fw_warm)		; (5/6)
+#include "firmware/modules/start.s"
 
 
 ; ********************************
@@ -184,7 +184,7 @@ nmi:
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-	JMP (fw_isr)		; vectored ISR (6)
+#include "firmware/modules/irq_hndl.s"
 
 ; ***************************
 ; *** minimOS BRK handler ***
@@ -290,22 +290,23 @@ context:
 ;jiffy:
 ; this is generic
 ; if could not change, then just set return parameter and C
+.(
 	LDA irq_hz+1		; get input values
 	LDY irq_hz
-;		BNE fj_set			; not just checking
+		BNE fj_set			; not just checking
 	CMP #0				; MSB also 0?
-;		BNE fj_set			; not checking
+		BNE fj_set			; not checking
 	LDA irq_freq+1		; get current frequency
 	LDY irq_freq
 	STA irq_hz+1		; set return values
 	STY irq_hz
-;fj_end:
+fj_end:
 	_DR_OK
-;fj_set:
+fj_set:
 	STA irq_freq+1		; store in sysvars
 	STY irq_freq
-;	BRA fj_end			; all done, no need to update as will be OK
-
+	BRA fj_end			; all done, no need to update as will be OK
+.)
 
 ; ***********************************
 ; ***********************************
