@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc4
+; v0.9.6rc5
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180201-1420
+; last modified 20180202-0855
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,8 +15,8 @@
 ; *** first some ROM identification *** new 20150612
 ; this is expected to be loaded at an aligned address anyway
 fw_start:
-	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309, flags TBD
-	.asc	"boot", 0				; mandatory filename for firmware
+	.asc	0, "mV****", CR		; standard system file wrapper, new 20160309, flags TBD
+	.asc	"boot", 0			; mandatory filename for firmware
 fw_splash:
 	.asc	"0.9.6 firmware for "
 ; at least, put machine name as needed by firmware!
@@ -27,14 +27,14 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7000	; time, 13.00
-	.word	$4AC2	; date, 2017/6/2
+	.word	$46E0				; time, 08.55
+	.word	$4C42				; date, 2018/2/2
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	fwSize			; filesize
-	.word	0				; 64K space does not use upper 16-bit
+	.word	fwSize				; filesize
+	.word	0					; 64K space does not use upper 16-bit
 ; *** end of standard header ***
 #else
 ; if no headers, put identifying strings somewhere
@@ -319,12 +319,6 @@ fw_map:					; TO BE DONE
 	RTS					; return to caller
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
 
-; ****** idea for 65816 admin-call interface from apps! ******
-; ** could be at $00FFC8 **
-;	JSR adm_call		; get into firmware interface (returns via RTS)
-;	RTL					; get back into original task (called via JSL $00FFC8)
-; ****** likely to end at $00FFCD ******
-
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	adm_call-*, $FF
@@ -332,9 +326,25 @@ fw_map:					; TO BE DONE
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
-	JMP (fw_admin, X)	; takes 5 clocks
+	JMP (fw_admin, X)	; takes 5 cycles
 
 ; this could be a good place for the IRQ handler...
+
+; filling for ready-to-blow ROM
+#ifdef	ROM
+	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
+#endif
+
+; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+* = adm_appc
+	PHB					; could came from any bank
+	PHK					; zero is...
+	PLB					; ...current bank
+	JSR (fw_admin, X)	; return here (DR_OK form)
+	PLB					; restore bank...
+	RTL					; ...and return from long address!
+
+; *** above code takes -8- bytes, thus no room for padding! ***
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -344,31 +354,29 @@ fw_map:					; TO BE DONE
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = lock
-	NOP					; same address as 6502
+	SEI					; same address as 6502
 panic_loop:
 	BRA panic_loop		; OK as this is 65816 only
 	NOP					; padding for reserved C816 vectors
 
-.as:.xs
-
 ; *** 65C816 ROM vectors ***
 * = $FFE4				; should be already at it
 	.word	cop_hndl	; native COP		@ $FFE4
-	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
+	.word	brk_hndl	; native BRK		@ $FFE6
 	.word	nmi			; native ABORT		@ $FFE8, not yet supported
 	.word	nmi			; native NMI		@ $FFEA, unified this far
 	.word	$FFFF		; reserved			@ $FFEC
 	.word	irq			; native IRQ		@ $FFEE, unified this far
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4
-	.word	$3412		; reserved			@ $FFF6
-	.word	nmi			; emulated ABORT 	@ $FFF8
+	.word	nmi			; emulated COP		@ $FFF4, not supported
+	.word	$FFFF		; reserved			@ $FFF6
+	.word	nmi			; emulated ABORT 	@ $FFF8, not yet supported
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; (emulated) NMI	@ $FFFA
-	.word	reset		; (emulated) RST	@ $FFFC
-	.word	irq			; (emulated) IRQ	@ $FFFE
+	.word	nmi			; (emulated) NMI	@ $FFFA, almost reentrant
+	.word	reset		; RST				@ $FFFC
+	.word	irq			; (emulated) IRQ	@ $FFFE, may crash
 
 fw_end:					; for size computation
 .)
