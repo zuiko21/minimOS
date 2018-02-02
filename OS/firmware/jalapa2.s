@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a21
+; v0.9.6a22
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180201-1420
+; last modified 20180202-0843
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -12,10 +12,10 @@
 ; this is expected to be loaded at an aligned address anyway
 #ifndef	NOHEAD
 fw_start:
-	.asc	0, "mV****", CR			; standard system file wrapper, new 20160309
-	.asc	"boot", 0				; mandatory filename for firmware
+	.asc	0, "mV****", CR		; standard system file wrapper, new 20160309
+	.asc	"boot", 0			; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a21 firmware for "
+	.asc	"0.9.6a22 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -24,19 +24,19 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7000	; time, 13.00
-	.word	$4AC2	; date, 2017/6/2
+	.word	$4560				; time, 08.43
+	.word	$4C42				; date, 2018/2/2
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	fwSize			; filesize
-	.word	0				; 64K space does not use upper 16-bit
+	.word	fwSize				; filesize
+	.word	0					; 64K space does not use upper 16-bit
 ; *** end of standard header ***
 #else
 ; if case of no headers, at least keep machine name somewhere
 fw_splash:
-	.asc	"0.9.6a21 FW @ "
+	.asc	"0.9.6a22 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
@@ -290,12 +290,12 @@ fw_map:					; TO BE DONE
 ; new lock routine blinking E-mode LED!
 ; *************************************
 led_lock:
-	CLC			; ensure native mode...
-	XCE			; ...for a moment
-	SEC			; will start in Emulation with C clear
+	CLC					; ensure native mode...
+	XCE					; ...for a moment
+	SEC					; will start in Emulation with C clear
 led_switch:
-		XCE			; switch between native and emulation mode
-		LDA #4			; suitable delay
+		XCE					; switch between native and emulation mode
+		LDA #4				; suitable delay
 led_loop:
 					INX
 					BNE led_loop
@@ -304,6 +304,7 @@ led_loop:
 			DEC
 			BNE led_loop
 		BRA led_switch
+
 
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
@@ -317,7 +318,7 @@ led_loop:
 
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
 * = kerncall
-	CLC				; must be here!
+	CLC					; must be here!
 	COP #$7F			; wrapper on 816 firmware, will do CLC!
 	RTS					; return to caller
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
@@ -333,7 +334,7 @@ led_loop:
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
-	JMP (fw_admin, X)		; takes 5 clocks
+	JMP (fw_admin, X)	; takes 5 cycles
 
 ; this could be a good place for the IRQ handler...
 
@@ -344,24 +345,22 @@ led_loop:
 
 ; *** administrative meta-kernel call primitive for apps ($FFD8) ***
 * = adm_appc
-	PHB						; could came from any bank
-	PHK						; zero is...
-	PLB						; ...current bank
-	JSR (fw_admin, X)		; return here (DR_OK form)
-	PLB						; restore bank...
-	RTL						; ...and return from long address!
-
+	PHB					; could came from any bank
+	PHK					; zero is...
+	PLB					; ...current bank
+	JSR (fw_admin, X)	; return here (DR_OK form)
+	PLB					; restore bank...
+	RTL					; ...and return from long address!
 ; *** above code takes -8- bytes, thus no room for padding! ***
-; filling for ready-to-blow ROM
-;#ifdef	ROM
-;	.dsb	lock-*, $FF
-;#endif
 
-; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
+; filling for ready-to-blow ROM
+#ifdef	ROM
+	.dsb	lock-*, $FF
+#endif
+
+; *** panic routine, this one will make Emulation LED blink ***
 * = lock
-	SEI					; same address as 6502
-panic_loop:
-	BRA led_lock		; OK as this is 65816 only
+	JMP led_lock		; specific call, may be far away
 	NOP					; padding for reserved C816 vectors
 
 ; *** 65C816 ROM vectors ***
