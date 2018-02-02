@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b5
+; v0.9.6b6
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180201-1425
+; last modified 20180202-0905
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -14,30 +14,30 @@
 ; *** first some ROM identification *** new 20150612
 ; this is expected to be loaded at an aligned address anyway
 fw_start:
-	.asc	0, "m", CPU_TYPE			; standard system file wrapper, new format 20161010, experimental type
-	.asc	"****", CR					; flags TBD
-	.asc	"boot", 0					; standard filename
+	.asc	0, "m", CPU_TYPE	; standard system file wrapper, new format 20161010, experimental type
+	.asc	"****", CR			; flags TBD
+	.asc	"boot", 0			; standard filename
 fw_splash:
-	.asc	"0.9.6b5 firmware for "	; machine description as comment
+	.asc	"0.9.6b6 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7000	; time, 13.00
-	.word	$4AC2	; date, 2017/6/2
+	.word	$48A0				; time, 09.05
+	.word	$4C42				; date, 2018/2/2
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	fwSize			; filesize
-	.word	0				; 64K space does not use upper 16-bit
+	.word	fwSize				; filesize
+	.word	0					; 64K space does not use upper 16-bit
 ; *** end of standard header ***
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.9.6b5 FW @ "
+	.asc	"0.9.6b6 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -333,9 +333,16 @@ ll_loop:
 * = adm_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
-; as 8-bit systems use std call for U_ADM, no $FFC8 wrapper
+; filling for ready-to-blow ROM
+#ifdef	ROM
+	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
+#endif
 
-; this could be a good place for the IRQ handler...
+; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+; not really needed on 6502 systems, but kept for the sake of binary compatibility
+; pretty much the same code at $FFD0, not worth more overhead
+* = adm_appc
+	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
