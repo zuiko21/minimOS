@@ -2,7 +2,7 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc8
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180202-0835
+; last modified 20180202-0855
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -28,14 +28,14 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7000			; time, 14.00
-	.word	$4AC9			; date, 2017/6/9
+	.word	$46E0				; time, 08.55
+	.word	$4C42				; date, 2018/2/2
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	fwSize			; filesize
-	.word	0				; 64K space does not use upper 16-bit
+	.word	fwSize				; filesize
+	.word	0					; 64K space does not use upper 16-bit
 ; *** end of standard header ***
 #else
 ; if no headers, put identifying strings somewhere
@@ -307,7 +307,7 @@ cop_hndl:				; label from vector list
 
 ; *** minimOS·65 function call interface ($FFC0) ***
 * = kerncall
-	_JMPX(fw_table)		; the old fashioned way
+	_JMPX(fw_table)		; the old fashioned way, suitable for NMOS builds
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -318,8 +318,16 @@ cop_hndl:				; label from vector list
 * = adm_call
 	_JMPX(fw_admin)		; takes 5/6 clocks
 
-; ****** taking up some unused space ******
-; this could be a good place for the IRQ handler...
+; filling for ready-to-blow ROM
+#ifdef	ROM
+	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
+#endif
+
+; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+; not really needed on 6502 systems, but kept for the sake of binary compatibility
+; pretty much the same code at $FFD0, not worth more overhead
+* = adm_appc
+	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
