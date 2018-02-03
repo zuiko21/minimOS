@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-01-30*
+*Last update: 2018-02-03*
 
 ## Rationale
 
@@ -200,11 +200,14 @@ particular architecture; however, the chore of copying every improvement on *eac
 file was aliviated via a **fully-*modular* approach**: the `template` file (or any
 particular machine's firmware, for that matter) will consist in just **a bunch of
 `#include`s** for *small* code chunks on the `modules` folder. Different machines
-may then use a different chunk for a particular feature, or suppress it. Please note
+may then use a different chunk for a particular feature, or suppress it.
+
+Please note
 that some of these chunks may be as short as two or three lines on code!
+However, this make sense as ther might be implementation changes for some simple
+operations, like e. g. the jiffy counter size.
 
-
-A similar
+A similar **modular**
 approach has been used for **firmware variables**, *statically* assigned before kernel's
 `sysvars`. After including the regular `template.h`, a particular machine may add
 any other variables as needed. 
@@ -217,8 +220,13 @@ needed for the 65(C)02 version.
 
 Main available functions are for `INSTALL`ing the Kernel's *jump table*, and setting the
 IRQ, BRK and NMI routines -- all of them will be called by the Kernel at startup time.
-The mechanism for **kernel patching** is also supplied, this will have a *recovery
-setting* soon -- just by providing *zero* as the pointer to the supplied jump table.
+The mechanism for **kernel patching** is also supplied, and from 0.6 version on
+it does provide a *recovery
+setting* -- just a NULL pointer as the supplied jump table (for `INSTALL`)
+or routine address (for individual function `PATCH`).
+The firmware will take care of a pointer to the last installed *kernel **jump table***
+for this matter. Any patching operation will also return the *previous* address, thus
+allowing both **head and tail patching**.
 
 Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
 patchable. 
