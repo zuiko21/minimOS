@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a16
+; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180205-0940
+; last modified 20180205-1014
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -20,25 +20,26 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 ; *** begins with sub-function addresses table ***
 	.byt	TASK_DEV	; physical driver number D_ID (TBD)
-	.byt	A_POLL+A_COUT	; polling scheduler this far, new architecture needs to enable output!
-	.word	mm_init		; initialize device and appropiate sysvars, called by POST only
-	.word	mm_sched	; periodic scheduler
-	.word	mm_nreq		; D_REQ does nothing
+	.byt	A_POLL+A_COUT	; polling scheduler for new 0.6 architecture
 	.word	mm_abort	; no input
-	.word	mm_cmd		; output will process all subfunctions!
-	.word	mm_rts		; no need for 1-second interrupt
-	.word	mm_abort	; no block input
-	.word	mm_abort	; no block output
+	.word	mm_abort	; no output
+	.word	mm_init		; initialize device and appropiate sysvars, MUST patch relevant task-handling functions!
+	.word	mm_sched	; periodic scheduler
+	.word	1			; scheduler frequency, quantum is as fast as jiffy!
+	.word	mm_nreq		; D_ASYN does nothing
+	.word	mm_abort	; no config?
+	.word	mm_abort	; no status?
 	.word	mm_bye		; shutdown procedure
 	.word	mm_info		; points to descriptor string
-	.byt	0			; reserved, D_MEM
+	.word	0			; reserved, D_MEM (word just in case)
+
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a16", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.6a1", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
-; *** 0.6 drivers should patch regular task handling in API!
+; *** 0.6 drivers should patch regular task handling in API! ***************************************************************
 mm_init:
 ; if needed, check whether proper stack frame is available from kernel
 #ifdef	SAFE
