@@ -1,7 +1,7 @@
-; minimOS 0.6rc4 API/ABI
+; minimOS 0.6rc5 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180124-1237
+; last modified 20180205-0943
 
 ; *************************************************
 ; *************************************************
@@ -101,7 +101,7 @@ FREQ_GEN	= POWEROFF + 2	; frequency generator hardware interface, TBD
 ; not for LOWRAM systems
 INSTALL		= FREQ_GEN + 2	; copy jump table
 PATCH		= INSTALL + 2	; patch single function (renumbered)
-CONTEXT		= PATCH + 2		; context bankswitching
+; CONTEXT no longer used, as will be used from an *specific* Multitasking driver
 
 ; **************************
 ; ** Driver table offsets **

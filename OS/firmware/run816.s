@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc5
+; v0.9.6rc6
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180202-0855
+; last modified 20180205-0950
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -27,8 +27,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$46E0				; time, 08.55
-	.word	$4C42				; date, 2018/2/2
+	.word	$4DA0				; time, 09.45
+	.word	$4C45				; date, 2018/2/5
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -65,7 +65,6 @@ fw_admin:
 ; not for LOWRAM systems
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
-	.word	context		; *** CONTEXT context bankswitching
 
 
 ; **************************
@@ -283,13 +282,6 @@ install:
 ; ****************************
 patch:
 #include "firmware/modules/patch16.s"
-
-; *****************************************
-; CONTEXT, hardware switch zeropage & stack
-; *****************************************
-context:
-;#include "firmware/modules/context16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
 
 
 ; ***********************************

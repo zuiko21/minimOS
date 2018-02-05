@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b6
+; v0.9.6b7
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180202-0905
+; last modified 20180205-0947
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -18,15 +18,15 @@ fw_start:
 	.asc	"****", CR			; flags TBD
 	.asc	"boot", 0			; standard filename
 fw_splash:
-	.asc	"0.9.6b6 firmware for "	; machine description as comment
+	.asc	"0.9.6b7 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$48A0				; time, 09.05
-	.word	$4C42				; date, 2018/2/2
+	.word	$4DA0				; time, 09.45
+	.word	$4C45				; date, 2018/2/5
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.9.6b6 FW @ "
+	.asc	"0.9.6b7 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif

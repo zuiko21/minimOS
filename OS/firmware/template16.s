@@ -1,5 +1,5 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a8
+; v0.6a9
 ; (c)2015-2018 Carlos J. Santisteban
 ; last modified 20180201-1338
 
@@ -14,30 +14,30 @@
 ; *************************************
 ; this is expected to be loaded at an aligned address anyway
 fw_start:
-	.asc 0, "mV", 13					; standard system file wrapper, new 20161010, experimental type
-	.asc "****", CR						; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
-	.asc "boot", 0						; standard filename
+	.asc 0, "mV", 13			; standard system file wrapper, new 20161010, experimental type
+	.asc "****", CR				; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
+	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "65816 0.6a8 firmware for "	; machine description as comment
+	.asc "65816 0.6a9 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7000	; time, 13.00
-	.word	$4AC2	; date, 2017/6/2
+	.word	$4DA0				; time, 09.45
+	.word	$4C45				; date, 2018/2/5
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	fwSize			; filesize
-	.word	0				; 64K space does not use upper 16-bit
+	.word	fwSize				; filesize
+	.word	0					; 64K space does not use upper 16-bit
 ; *** end of standard header ***
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a8 FW @ "
+	.asc	"0.6a9 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -63,7 +63,6 @@ fw_admin:
 ; 65816 systems are always highly-specced...
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
-	.word	context		; *** CONTEXT context bankswitching
 
 
 ; **************************
@@ -268,13 +267,6 @@ install:
 ; ****************************
 patch:
 #include "firmware/modules/patch16.s"
-
-; *****************************************
-; CONTEXT, hardware switch zeropage & stack
-; *****************************************
-context:
-;#include "firmware/modules/context16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
 
 
 ; ***********************************

@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a22
+; v0.9.6a23
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180202-0843
+; last modified 20180205-0949
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR		; standard system file wrapper, new 20160309
 	.asc	"boot", 0			; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a22 firmware for "
+	.asc	"0.9.6a23 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -24,8 +24,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4560				; time, 08.43
-	.word	$4C42				; date, 2018/2/2
+	.word	$4DA0				; time, 09.45
+	.word	$4C45				; date, 2018/2/5
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -36,7 +36,7 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 #else
 ; if case of no headers, at least keep machine name somewhere
 fw_splash:
-	.asc	"0.9.6a22 FW @ "
+	.asc	"0.9.6a23 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
@@ -62,7 +62,6 @@ fw_admin:
 ; not for LOWRAM systems
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
-	.word	context		; *** CONTEXT context bankswitching
 
 
 ; **************************
@@ -268,13 +267,6 @@ install:
 ; ****************************
 patch:
 #include "firmware/modules/patch16.s"
-
-; *****************************************
-; CONTEXT, hardware switch zeropage & stack
-; *****************************************
-context:
-;#include "firmware/modules/context16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
 
 
 ; ***********************************
