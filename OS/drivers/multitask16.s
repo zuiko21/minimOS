@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.5.1a15
-; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20170316-1838
+; v0.5.1a16
+; (c) 2016-2018 Carlos J. Santisteban
+; last modified 20180205-0940
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -35,9 +35,10 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.5.1a15", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.5.1a16", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
+; *** 0.6 drivers should patch regular task handling in API!
 mm_init:
 ; if needed, check whether proper stack frame is available from kernel
 #ifdef	SAFE
@@ -57,7 +58,7 @@ mm_cont:
 #endif
 ; should ASK kernel to initialise I/O locks and separate CIN status!
 ; initialise flags table (and stack pointers?)
-; at least, set direct page to current braid!
+; at least, set direct page to current braid! *** how to do thru context??? ***
 	LDA #>mm_context	; MSB of storage area
 	XBA					; will be the rest of the pointer
 	LDA #<mm_context	; same for LSB... should be ZERO for performance reasons
@@ -132,6 +133,7 @@ mm_switch:
 ; keep stack pointer!
 	TSX					; get index LSB (2)
 	STX sys_sp			; store as usual (3)
+; *** this could be the generic context switching ***
 ; go into new braid
 	LDA #>mm_context-256	; get pointer to direct pages eeeeeeeeeeek
 	CLC
@@ -146,6 +148,7 @@ mm_switch:
 	XBA					; that was MSB
 	LDA sys_sp			; restored value (3) *** should add LSB if not page-aligned?
 	TCS					; stack pointer updated!
+; *** end of context switching ***
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDY mm_pid			; get current PID again (4) new reg
 	LDA mm_flags-1, Y	; had it a SIGTERM request? (4)
@@ -179,6 +182,7 @@ mm_sigterm:
 ; in case a table of 24-bit pointers is used, do the following
 ; STX temp, CLC, ADC temp will multiply older X by three!
 ; then push the three bytes in a row (do not do the previous PHA from mm_stbnk)
+; *** perhaps PEA will help???
 	TAX					; proper offset in handler table (2)
 	LDA mm_term-1, X	; get MSB (4)
 	PHA					; and push it (3)
