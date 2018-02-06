@@ -1,11 +1,11 @@
 ; software multitasking module for minimOS·16
 ; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180206-0915
+; last modified 20180206-1032
 
-; ********************************
-; *** multitasking driver code ***
-; ********************************
+; ***************************
+; *** multitasking driver ***
+; ***************************
 
 ; *** set some reasonable number of braids ***
 MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
@@ -38,7 +38,9 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 mm_info:
 	.asc	"16-task 65816 Scheduler v0.6a1", 0	; fixed MAX_BRAIDS value!
 
+; ***************************
 ; *** initialisation code ***
+; ***************************
 mm_init:
 ; if needed, check whether proper stack frame is available from kernel
 #ifdef	SAFE
@@ -49,27 +51,24 @@ mm_init:
 		_DR_ERR(UNAVAIL)	; error if not available
 mm_cont:
 #endif
-; should ASK kernel to initialise I/O locks and separate CIN status!
-; initialise flags table (and stack pointers?)
-; at least, set direct page to current braid! *** how to do thru context??? ***
-	LDA #>mm_context	; MSB of storage area
-	XBA					; will be the rest of the pointer
-	LDA #<mm_context	; same for LSB... should be ZERO for performance reasons
+; first, set direct page to current braid!
+	.al: REP #$20		; *** 16-bit memory, index are 8-bit by default DR_INST method ***
+	LDA #mm_context		; storage area full pointer
 	TCD					; direct-page set for FIRST context
-	LDX #MAX_BRAIDS		; reset backwards index
-	LDA #BR_FREE		; adequate value in two highest bits, outside loop b/c integrated mm_treq
+; initialise flags table (but not stack pointers?)
+	LDY #MAX_BRAIDS		; reset backwards index
+	LDA #BR_FREE*257	; TWICE the 8-bit requuired pattern
 mm_rsp:
-		STA mm_flags-1, X	; set braid to FREE, please note X counts from 1 but table expects indexes from 0
-		DEX					; go for next
-		BNE mm_rsp			; continue until all done
-	INX					; default task (will be 1)
-	STX mm_pid			; set as current PID
+		STA mm_flags-2, Y	; set a couple of braids to FREE, please note table expects indexes from 0
+		DEY					; go for next (remember 16-bit)
+		DEY
+		BNE mm_rsp			; continue until all done (MAX_BRAIDS must be EVEN!!!)
+	INY					; default task (will be 1)
+	STY mm_pid			; set as current temporary PID
 ; do NOT set current SP as initialisation will crash! startup via scheduler will do anyway
-	TXY					; current temporary PID
-	STZ cpu_ll			; native 65816, of course
+	STZ cpu_ll			; native 65816, of course ***does extra byte, no problem
 	_KERNEL(SET_CURR)	; avoids possible crash upon shell startup
-
-; as everything is set now, patch all task-handling API entries ***16b mem***
+; as everything is set now, patch all task-handling API entries (M16)
 	LDY #B_FORK			; first function to be patched
 mm_ptl:
 		LDA mm_patch, Y		; get from table...
@@ -86,6 +85,25 @@ mm_ptl:
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
 
+; *** discard all patches and return an error code! ***
+; Y hold currently failed function code... if not on top of stack! (M16,X8)
+mm_restore:
+; 	PLY					; if it had to be saved!
+mm_rslp:
+		DEY					; go for previous function
+		DEY
+		CPY #B_FORK-2		; just before FIRST multitasking function
+			BEQ mm_abort		; all done
+		STZ kerntab			; otherwise set NULL parameter for unpatch feature!
+;		PHY					; for safe operation
+		_ADMIN(PATCH)		; restore original kernel function
+;		PLY					; restore too, if saved
+		BRA mm_rslp			; continue until done
+; *** placeholder for unimplemented features ***
+mm_abort:
+	_DR_ERR(UNAVAIL)
+
+; ---------------------- OLD CODE ---------------------------
 ; switch to next braid
 mm_yield:
 	CLC					; for safety in case RTS is found (when no other braid is active)
@@ -514,21 +532,6 @@ mm_prior:				; this is just a placeholder
 mm_nreq:
 	_NEXT_ISR			; just in case
 
-; discard all patches and return an error code!
-; Y hold currently failed function code (M16,X8)
-mm_restore:
-		DEY					; go for previous function
-		DEY
-		CPY #B_FORK-2		; just before FIRST multitasking function
-			BEQ mm_abort		; all done
-		STZ kerntab			; otherwise set NULL parameter for unpatch feature!
-;		PHY					; for safe operation
-		_ADMIN(PATCH)		; restore original kernel function
-;		PLY					; restore too, if saved
-		BRA mm_restore		; continue until done
-; placeholder for unimplemented features
-mm_abort:
-	_DR_ERR(UNAVAIL)
 
 ; *********************************
 ; *** diverse data and pointers ***
