@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180206-1032
+; last modified 20180206-1118
 
 ; ***************************
 ; *** multitasking driver ***
@@ -103,28 +103,23 @@ mm_rslp:
 mm_abort:
 	_DR_ERR(UNAVAIL)
 
-; ---------------------- OLD CODE ---------------------------
-; switch to next braid
-mm_yield:
-	CLC					; for safety in case RTS is found (when no other braid is active)
-; 65816 calls already run with interrupts OFF!
-	JSR mm_sched		; ...then will CALL the scheduler!
-; interrupt status will be restored later
-	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
-
-; kill itself!!! simple way to terminate after FINISH
+; *******************************
+; *** task special exit point ***
+; *******************************
 mm_suicide:
-	.as: .xs: SEP #$30	; ** standard size for app exit **
+	.as: .xs: SEP #$30	; ** standard size for app exit ** just in case
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 	SEI					; this needs to be run with interrupts OFF, do not care current status
-	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
+	JSR mms_kill		; complete KILL procedure and return here (ignoring errors) ***check stack among calls
 ; *** now switch to another braid as this one is dead! ***
 ; forget this context as will never be executed again!
 ; no need to clear z_used as 65816 do not need to manually copy zeropage contents, stack is already empty!
 	CLC					; for safety in case RTS is found (when no other braid is active)
 ; ...then go into the scheduler as this will no longer be executable
 
-; *** the scheduler code ***
+; **************************
+; *** the scheduler code *** usually called from ISR
+; **************************
 mm_sched:
 ; get next available PID
 	LDY #2				; to avoid deadlocks AND proper shutdown detection (2)
@@ -138,18 +133,18 @@ mm_next:
 		BNE mm_scan			; zero (now equal to BR_RUN) means executable braid (3/2)
 ; an executable braid is found
 	CPX mm_pid			; is it the same as before? (4)
-	BNE mm_switch		; if not, go and switch braids (3/2)
-		RTS					; otherwise, nothing to do; no need for macro (0/3)
+		BNE mm_switch		; if not, go and switch braids (3/2)
+	RTS					; otherwise, nothing to do; no need for macro (0/3)
 
-; PID expired, try to wrap or shutdown if no more live tasks!
+; PID count expired, try to wrap or shutdown if no more live tasks!
 mm_wrap:
 		LDX #MAX_BRAIDS		; go to end instead, valid as last PID (2)
 		DEY					; and check is not forever (2)
-			BNE mm_next			; otherwise should only happen at shutdown time (3/2)
+		BNE mm_next			; otherwise should only happen at shutdown time (3/2)
 mm_lock:
-		LDY #PW_CLEAN		; special code to do proper shutdown
-		_KERNEL(SHUTDOWN)	; all tasks stopped, time for shutdown
-		_PANIC("{TASK}")	; if ever arrives here, it was wrong at so many levels...
+	LDY #PW_CLEAN		; special code to do proper shutdown
+	_KERNEL(SHUTDOWN)	; all tasks stopped, time to complete shutdown (as specified by default action)
+	_PANIC("{TASK}")	; if ever arrives here, it was wrong at so many levels...
 
 ; arrived here in typically ? clocks, if all braids were executable
 mm_switch:
@@ -229,14 +224,9 @@ mm_sigterm:
 	PHP					; as needed by RTI
 	RTI					; actual jump, will return to an RTS and continue ISR
 
-; *** subfunction processing section ***
-mm_cmd:
-#ifdef	SAFE
-	CPX #MM_PRIOR+2		; check limits, put last subfunction as appropriate (2)
-		BCS mm_bad			; go away otherwise! (2/3) eeeeeeeeek
-#endif
-	JMP (mm_funct, X)	; jump to appropriate routine (6)
-
+; ****************************
+; *** supporting functions ***
+; ****************************
 #ifdef	SAFE
 ; check PID within limits (20 including call)
 mm_chkpid:
@@ -254,10 +244,21 @@ mm_bad:
 	_DR_ERR(INVALID)	; not a valid PID or subfunction code, worth checking
 #endif
 
-; reserve a free braid
+; ************************************
+; *** replacement Kernel functions ***
+; ************************************
+
+; *** switch to next braid ***
+mm_yield:
+; 65816 calls already run with interrupts OFF!
+	JSR mm_sched		; ...then will CALL the scheduler!
+; interrupt status will be restored later
+	_EXIT_OK			; I hope it is OK...
+
+; *** reserve a free braid ***
 ; Y -> PID
 mm_fork:
-	LDY #MAX_BRAIDS	; scan backwards is usually faster (2)
+	LDY #MAX_BRAIDS		; scan backwards is usually faster (2)
 ; ** assume interrupts are off via COP **
 mmf_loop:
 		LDA mm_flags-1, Y	; get that braid's status (4)
@@ -266,14 +267,14 @@ mmf_loop:
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
 		BNE mmf_loop		; until the bottom of the list (3/2)
-; nothing was found, no need to exit from CS
-;	_DR_ERR(FULL)		; no available braids! *** it is a kernel I/O call...
-	_DR_OK				; use system-reserved braid, is this OK?
-mmf_found:
-	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
-	STA mm_flags-1, Y	; reserve braid (4)
-; exit from CS
-	_DR_OK				; this OK? it is a kernel I/O call...
+	BEQ mmf_nfound		; nothing was found, just return 0 as system-reserved braid ID
+; otherwise there are some flags to initialise
+		LDA #BR_RISE		; new value, currently set as BR_STOP (2)
+		STA mm_flags-1, Y	; reserve braid (4)
+mmf_nfound:
+	_EXIT_OK				; return set PID
+
+; -------------------------------OLD----------------------
 
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
 ; Y <- PID, ex_pt <- addr, cpu_ll <- architecture, def_io <- sys_in & sysout

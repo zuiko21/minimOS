@@ -1,7 +1,7 @@
-; minimOS 0.6rc5 API/ABI
+; minimOS 0.6rc6 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180205-0943
+; last modified 20180206-1118
 
 ; *************************************************
 ; *************************************************
@@ -177,7 +177,7 @@ BR_FREE		= 192	; free slot, non-executable
 BR_RUN		=   0	; active process, may get CPU time, should be zero for quick evaluation
 BR_STOP		= 128	; paused process, will not get CPU until resumed
 BR_END		=  64	; ended task, waiting for rendez-vous
-; might add a fifth state for forked-but-not-yet-loaded braids (in order NOT to start them abnormally)
+BR_RISE		= BR_STOP	; might add a fifth state for forked-but-not-yet-loaded braids (in order NOT to start them abnormally)
 BR_MASK		= 192	; as it set both bits but NOT those for SIGTERM handler, new 20161117
 
 ; ** multitasking signals **
