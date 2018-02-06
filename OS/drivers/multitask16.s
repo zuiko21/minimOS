@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180205-1014
+; last modified 20180206-0915
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -33,24 +33,16 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 	.word	mm_info		; points to descriptor string
 	.word	0			; reserved, D_MEM (word just in case)
 
-
+.(
 ; *** driver description ***
 mm_info:
 	.asc	"16-task 65816 Scheduler v0.6a1", 0	; fixed MAX_BRAIDS value!
 
 ; *** initialisation code ***
-; *** 0.6 drivers should patch regular task handling in API! ***************************************************************
 mm_init:
 ; if needed, check whether proper stack frame is available from kernel
 #ifdef	SAFE
-; might check for bankswitching hardware and cause error, in order NOT to install BOTH schedulers!...
-; ...or just ignore as only the first driver will install?
-; hardware-assisted scheduler init code should do the opposite!
-;	LDY #0				; supposedly null PID
-;	ADMIN(SWITCH)		; future use of hardware multitasking
-;	BCC mm_nohw			; no hardware detected, OK to proceed with soft
-;		DR_ERR(INVALID)		; otherwise will not install, hope there is a hardware driver!
-;mm_nohw:
+; no longer hardware support from firmware!
 ; remaining code assumes software scheduler only
 	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
 	BCC mm_cont			; skip if no error eeeeeeeeeek
@@ -76,6 +68,20 @@ mm_rsp:
 	TXY					; current temporary PID
 	STZ cpu_ll			; native 65816, of course
 	_KERNEL(SET_CURR)	; avoids possible crash upon shell startup
+
+; as everything is set now, patch all task-handling API entries ***16b mem***
+	LDY #B_FORK			; first function to be patched
+mm_ptl:
+		LDA mm_patch, Y		; get from table...
+		STA kerntab			; ...and use as parameter
+;		PHY					; preserve this! is likely to be respected
+		_ADMIN(PATCH)		; install new function
+			BCS mm_restore		; somethiong went wrong, undo everything and exit!
+;		PLY					; otherwise retrieve loop var, if was saved
+		INY					; go for next
+		INY
+		CPY #GET_PID		; first NON-patched function...
+		BNE mm_ptl			; ...means we are done
 ; *** shutdown code placeholder *** does not do much
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
@@ -508,28 +514,41 @@ mm_prior:				; this is just a placeholder
 mm_nreq:
 	_NEXT_ISR			; just in case
 
+; discard all patches and return an error code!
+; Y hold currently failed function code (M16,X8)
+mm_restore:
+		DEY					; go for previous function
+		DEY
+		CPY #B_FORK-2		; just before FIRST multitasking function
+			BEQ mm_abort		; all done
+		STZ kerntab			; otherwise set NULL parameter for unpatch feature!
+;		PHY					; for safe operation
+		_ADMIN(PATCH)		; restore original kernel function
+;		PLY					; restore too, if saved
+		BRA mm_restore		; continue until done
 ; placeholder for unimplemented features
 mm_abort:
-	_DR_ERR(EMPTY)
+	_DR_ERR(UNAVAIL)
 
 ; *********************************
 ; *** diverse data and pointers ***
 ; *********************************
 
-; *** subfuction addresses table ***
-mm_funct:
-	.word	mm_fork		; reserve a free braid (will go BR_STOP for a moment)
-	.word	mm_exec		; get code at some address running into a paused braid (will go BR_RUN)
-	.word	mm_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
-	.word	mm_signal	; send some signal to a braid
-	.word	mm_status	; get execution flags for a braid
-	.word	mm_getpid	; get current PID
-	.word	mm_hndl		; set SIGTERM handler
-	.word	mm_prior	; priorize braid, jump to it at once, really needed?
+; *** array of patch addresses ***
+mm_patch:
+	.word	mm_fork
+	.word	mm_exec
+	.word	mm_signal
+	.word	mm_flags
+	.word	mm_seth
+; B_YIELD is not patched as will use standtard SET_CURR interface
 
+
+; ------- OLD -------------
 ; *** signal routines addresses table ***
 mms_table:
 	.word	mms_kill
 	.word	mms_term
 	.word	mms_cont
 	.word	mms_stop
+.)
