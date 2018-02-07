@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-03*
+*Last update: 2018-02-07*
 
 ## Rationale
 
@@ -259,7 +259,7 @@ calling the generic block routines.
 The primitive **event management** this far expected certain *control characters*
 (^C for `SIGTERM`, ^Z for `SIGSTOP`, etc) to be received and processed via `CIN`.
 Since managing these events *within a block transfer* seems unconvenient to say the
-least, the new approach will manage them **thru the *legacy* `CIN` routine**, which is
+least, the new approach does manage them **thru the *legacy* `CIN` routine**, which is
 anyway expected to be used for human iteraction. Note that current (0.6) `READLN`
 impementation does use `CIN` internally, thus event-savvy.
 
@@ -377,6 +377,14 @@ About **logical** device IDs, as of 2017-10-09 only three are supported:
 
 Device IDs in the range 1...63 are intended as **window** numbers, while 64 and up could
 be assigned to open **file handlers**.
+
+### Multitasking
+
+An unconventional feature (for the sake of modularity) is that muktitasking is
+**implemented as a 'device' driver**. No longer assigned a *fixed ID*, will supply
+the **scheduler** as a periodic `D_POLL` task (usually at *frequency* 1, although *soft*
+6502 implementations may use a longer quantum) while the `D_INIT` routine will
+**`PATCH` the existing *task-handling* functions**.
 
 ### Access privileges
 
