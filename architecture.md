@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-07*
+*Last update: 2018-02-08*
 
 ## Rationale
 
@@ -205,7 +205,7 @@ may then use a different chunk for a particular feature, or suppress it.
 Please note
 that some of these chunks may be as short as two or three lines on code!
 However, this make sense as ther might be implementation changes for some simple
-operations, like e. g. the jiffy counter size.
+operations, like e. g. the *jiffy counter* size.
 
 A similar **modular**
 approach has been used for **firmware variables**, *statically* assigned before kernel's
@@ -226,7 +226,30 @@ setting* -- just a NULL pointer as the supplied jump table (for `INSTALL`)
 or routine address (for individual function `PATCH`).
 The firmware will take care of a pointer to the last installed *kernel **jump table***
 for this matter. Any patching operation will also return the *previous* address, thus
-allowing both **head and tail patching**.
+allowing both **head and tail patching**, like this: *(assume 16-bit M in 65816 code)*
+
+```
+install_routine:
+    LDA #tail_patch       ; pointer to new code (or head_patch)
+    STA kerntab           ; set as parameter
+    LDY #my_function_id   ; kernel function to be patched
+    _ADMIN(PATCH)         ; install my routine
+    LDA kerntab           ; get old pointer
+    STA my_pointer        ; store it in a known address
+...
+tail_patch:               ; *** tail patching example ***
+    PHK                   ; will return to this bank
+    PEA patch_code        ; proper return address for RTI
+    PHP                   ; as requested by RTI
+    JMP (my_pointer)      ; call original routine first
+patch_code:
+; ...and execute new code after the original function
+    _EXIT_OK              ; proper API exit
+...
+head_patch:               ; *** head patching example ***
+; execute new code before original function...
+    JMP (my_pointer)      ; ...and the the original (will return to caller)
+```
 
 Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
 patchable. 
