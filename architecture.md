@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-08*
+*Last update: 2018-02-09*
 
 ## Rationale
 
@@ -223,32 +223,60 @@ IRQ, BRK and NMI routines -- all of them will be called by the Kernel at startup
 The mechanism for **kernel patching** is also supplied, and from 0.6 version on
 it does provide a *recovery
 setting* -- just a NULL pointer as the supplied jump table (for `INSTALL`)
-or routine address (for individual function `PATCH`).
-The firmware will take care of a pointer to the last installed *kernel **jump table***
-for this matter. Any patching operation will also return the *previous* address, thus
-allowing both **head and tail patching**, like this: *(assume 16-bit M in 65816 code)*
+or routine address (for individual function `PATCH`). The firmware will take care of a 
+pointer to the last installed *kernel **jump table***
+for this matter.
 
+Any patching operation will also return the *previous* address, thus
+allowing both **head and tail patching**, like this:
+
+**Install routine** (6502 version)
 ```
-install_routine:
-    LDA #tail_patch       ; pointer to new code (or head_patch)
+    LDA #>patch           ; pointer to new code
+    LDX #<patch
+    STX kerntab           ; store parameter word
+    STA kerntab+1
+    LDY #my_function_id   ; kernel function to be patched
+    _ADMIN(PATCH)         ; install my routine
+    LDX kerntab           ; get old pointer
+    LDA kerntab+1
+    STX my_pointer        ; store it at a known address
+    STA my_pointer+1
+```
+
+(65816 version)
+```
+    LDA #patch            ; pointer to new code (or head_patch)
     STA kerntab           ; set as parameter
     LDY #my_function_id   ; kernel function to be patched
     _ADMIN(PATCH)         ; install my routine
     LDA kerntab           ; get old pointer
     STA my_pointer        ; store it in a known address
-...
-tail_patch:               ; *** tail patching example ***
-    PHK                   ; will return to this bank
-    PEA patch_code        ; proper return address for RTI
-    PHP                   ; as requested by RTI
-    JMP (my_pointer)      ; call original routine first
+```
+
+**Head and/or tail patch code** (6502 version)
+```
+patch:
+; *** here comes the HEAD patching code ***
+    JSR old_call          ; *** only in case of tail-patching code ***
+; *** here comes the TAIL patching code ***
+    _EXIT_OK              ; proper API exit *** only for tail-patching code ***
+old_call:
+    JMP (my_pointer)      ; call original routine (will return to tail-patch or caller) 
+    
+```
+
+(65816 version)
+```
+patch:
+; *** here comes the HEAD patching code ***
+    PHK                   ; will return to this bank *** tail code only ***
+    PEA patch_code        ; proper return address for RTI *** tail code only ***
+    PHP                   ; as requested by RTI *** tail code only ***
+    JMP (my_pointer)      ; call original routine (will return to tail-patch or caller) 
 patch_code:
-; ...and execute new code after the original function
-    _EXIT_OK              ; proper API exit
-...
-head_patch:               ; *** head patching example ***
-; execute new code before original function...
-    JMP (my_pointer)      ; ...and the the original (will return to caller)
+; *** here comes the TAIL patching code ***
+    _EXIT_OK              ; proper API exit *** tail code only ***
 ```
 
 Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
