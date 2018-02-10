@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-09*
+*Last update: 2018-02-10*
 
 ## Rationale
 
@@ -258,7 +258,7 @@ allowing both **head and tail patching**, like this:
 ```
 patch:
 ; *** here comes the HEAD patching code ***
-    JSR old_call          ; *** only in case of tail-patching code ***
+    JSR old_call          ; *** only for tail-patching code ***
 ; *** here comes the TAIL patching code ***
     _EXIT_OK              ; proper API exit *** only for tail-patching code ***
 old_call:
@@ -339,12 +339,12 @@ being done for may interrupt tasks not requiring being executed at **every** sin
 On such cases, the unified interrupt task may start (in 6502 fashion) like this:
 
 ```
-DEC delay          ; some internal counter
-BNE fast_task      ; not expired, just execute jiffy task
-    LDA #max_delay ; number of jiffys to be executed before the slow task
-    STA delay
-    JSR slow_task  ; execute slow task...
-fast_task:         ; ...and continue with the usual jiffy task
+    DEC delay          ; some internal counter
+    BNE fast_task      ; not expired, just execute jiffy task
+        LDA #max_delay ; number of jiffys to be executed before the slow task
+        STA delay
+        JSR slow_task  ; execute slow task...
+fast_task:             ; ...and continue with the usual jiffy task
 ```
 
 For instance, in a system with 5 ms jiffy IRQ, a driver executing a periodic task **every 20 ms** 
@@ -431,11 +431,13 @@ be assigned to open **file handlers**.
 
 ### Multitasking
 
-An unconventional feature (for the sake of modularity) is that muktitasking is
+An unconventional feature (for the sake of modularity) is that multitasking is
 **implemented as a 'device' driver**. No longer assigned a *fixed ID*, will supply
 the **scheduler** as a periodic `D_POLL` task (usually at *frequency* 1, although *soft*
 6502 implementations may use a longer quantum) while the `D_INIT` routine will
-**`PATCH` the existing *task-handling* functions**.
+**`PATCH` the existing *task-handling* functions**. `GET_PID` might not need to be
+patched, as long as the scheduler makes use of the supplied `SET_CURR` function in
+order to report the running PID (and architecture) to the OS.  
 
 ### Access privileges
 
