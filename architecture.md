@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-10*
+*Last update: 2018-02-11*
 
 ## Rationale
 
@@ -21,9 +21,9 @@ plus the ubiquitous [**ARM**](https://en.wikipedia.org/wiki/ARM_architecture).
 
 These goals will define most of its design features.
 
-## Background
+# Background
 
-### Inspiration from CP/M
+## Inspiration from CP/M
 
 The *portability* goal takes some inspiration from the once popular 
 [**CP/M**](https://en.wikipedia.org/wiki/CP/M),
@@ -103,7 +103,7 @@ to be a problem, thanks to the development of highly compatible BIOSes thru
 [*clean room* design](https://en.wikipedia.org/wiki/Clean_room_design) techiniques, 
 running on highly standardised PC *clones* of widespread use. ***The rest is history...***
 
-### The home-computer market
+## The home-computer market
 
 On the other hand, the late seventies witnessed the birth of an unexpected computer 
 market: the 
@@ -155,33 +155,36 @@ Eventually, these home computers evolved into 16 or even 32-bit processors, like
 [Commodore Amiga](https://en.wikipedia.org/wiki/Amiga),
 although they were somewhat less popular as regular x86 PCs became less and less expensive.
 
-## Generic *minimOS* architecture
+# Generic *minimOS* architecture
 
-### Overview
+## Overview
 
 At first glance, **minimOS** architecture might look similar to that of CP/M,
 but there are significant differences. Have a look at this graph:
 
 ![minimOS architecture](mOS-arch.jpeg)
 
-Apparently, the **firmware** looks like the generic term for CP/M's *BIOS* -- together with the device **drivers**, 
-which were implemented via *customisation*.
+Apparently, the **firmware** looks like the generic term for CP/M's *BIOS* -- together with
+the device **drivers**, which were implemented via *customisation*.
 
-On the other hand, the **Kernel/API** seems certainly related to the *BDOS*, as is hardware-independent and 
-providing the only interface *application software* is supposed to use... This component is probably the 
+On the other hand, the **Kernel/API** seems certainly related to the *BDOS*, as is
+hardware-independent and providing the only interface *application software* is supposed
+to use... This component is probably the 
 **closest one to CP/M's design**, in both form and function.
 
-However, unlike CP/M's *BIOS*, minimOS' firmware (as of 2017-05-08) has **no I/O capabilities**, being restricted to 
-**Kernel instalation/configuration** issues, plus providing a **standard interface to some hardware-dependent features** 
-(say, *power management*). As this OS is intended to run on a wide spectrum of machines, from a simple embedded system 
-to a quasi-full-featured desktop computer, **there is no guarantee of I/O device availability** at such low level. 
+However, unlike CP/M's *BIOS*, minimOS' firmware (as of 2017-05-08) has
+**no I/O capabilities**, being restricted to **Kernel instalation/configuration** chores,
+plus providing a **standard interface to some hardware-dependent features**(say,
+*power management*). As this OS is intended to run on a **wide spectrum of machines**,
+from a simple embedded system to a *quasi-full-featured* desktop computer,
+**there is no guarantee of I/O device availability** at such low level.
 You can think of this as a ***Hardware Abstraction Layer***
 
 On second thought, in case of a *Kernel and/or driver failure*, it would be nice to have 
 an *emergency* I/O channel available for **debugging purposes**, provided the hardware 
 allows it. For instance, a *Commodore 64* **has** a 40x25 text screen starting at $0400 
-which could be easily used by debuggers, after a simple VIC-II initialisation. It does have, of 
-course, a **keyboard** for human input, too. Even if a 
+which could be easily used by debuggers, after a simple VIC-II initialisation. It does
+have, of course, a **keyboard** for human input, too. Even if a 
 particular computer lacks such convenient devices, a **suitable driver** provided by its 
 *custom* kernel could "announce" its availability to the firmware, for its simple 
 firmware I/O to work thru it. These won't be as reliable as the built-in devices in 
@@ -202,8 +205,7 @@ particular machine's firmware, for that matter) will consist in just **a bunch o
 `#include`s** for *small* code chunks on the `modules` folder. Different machines
 may then use a different chunk for a particular feature, or suppress it.
 
-Please note
-that some of these chunks may be as short as two or three lines on code!
+Please note that some of these chunks may be as short as two or three lines on code!
 However, this make sense as ther might be implementation changes for some simple
 operations, like e. g. the *jiffy counter* size.
 
@@ -439,7 +441,11 @@ the **scheduler** as a periodic `D_POLL` task (usually at *frequency* 1, althoug
 patched, as long as the scheduler makes use of the supplied `SET_CURR` function in
 order to report the running PID (and architecture) to the OS.  
 
-### Access privileges
+## Kernel/API
+
+*to be done*
+
+## Access privileges
 
 This is always a tough question, as there are some *psychological* reasons against a robust, **highly protected** system -- 
 it may lead to **buggier** user software under the *fake security* impression that userland crashes won't affect the *rest* 
@@ -492,7 +498,7 @@ NMIs should preserve that too for total **transparency**
 
 Some hardware may make this area **protected** from other processes. Even on 65xx architectures,***bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
 
-### The LOWRAM option
+## The LOWRAM option
 
 With an eye into **microcontrolers**, *minimOS* should be able to run on the most humble
 devices. Most interestingly, application (source) code for these devices should run
