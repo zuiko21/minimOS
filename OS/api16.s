@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180126-1243
+; last modified 20180212-1010
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -989,7 +989,7 @@ sig_exit:
 ; **************************************************************
 ;		INPUT
 ; Y		= PID (0 means to myself)
-; ex_pt = 24b SIGTERM handler routine ending in RTI!
+; ex_pt = 24b SIGTERM handler routine no longer ending in RTI!
 ;		OUTPUT
 ; C		= bad PID
 

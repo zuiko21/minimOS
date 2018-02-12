@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180212-0936
+; last modified 20180212-1013
 
 ; ***************************
 ; *** multitasking driver ***
@@ -198,7 +198,7 @@ mm_rts:
 ; **********************************
 ; *** the actual SIGTERM routine ***
 ; **********************************
-; no longer ending in RTI!
+; user-supplied handler no longer ending in RTI!
 ; needs older SHIFTED flags in A, PID in Y!!!
 mm_sigterm:
 	ASL					; ...and restore value with clear flag!
@@ -257,7 +257,7 @@ mm_stend:
 ; check PID within limits (20 including call)
 mm_chkpid:
 	TYA					; eeeeeeeek^2 the place to do it, new format (2)
-		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
+;		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
 	CPY #MAX_BRAIDS+1	; check whether it's a valid PID (2) eeeeeek!
 		BCS mm_piderr		; way too much (2/3) eeeek
 	RTS					; back to business (6)
@@ -271,18 +271,29 @@ mm_bad:
 #endif
 
 ; ************************************
+; ************************************
 ; *** replacement Kernel functions ***
 ; ************************************
+; ************************************
 
-; *** switch to next braid ***
+; *********************************************
+; *** B_YIELD, yield CPU time to next braid ***
+; *********************************************
+; no interface
+
 mm_yield:
 ; 65816 calls already run with interrupts OFF!
 	JSR mm_sched		; ...then will CALL the scheduler!
 ; interrupt status will be restored later
 	_EXIT_OK			; I hope it is OK...
 
-; *** reserve a free braid ***
-; Y -> PID
+
+; *********************************
+; *** B_FORK, get available PID ***
+; *********************************
+;		OUTPUT
+; Y		= PID, 0 means not available
+
 mm_fork:
 	LDY #MAX_BRAIDS		; scan backwards is usually faster (2)
 ; ** assume interrupts are off via COP **
@@ -298,7 +309,171 @@ mmf_loop:
 		LDA #BR_RISE		; new value, currently set as BR_STOP (2)
 		STA mm_flags-1, Y	; reserve braid (4)
 mmf_nfound:
-	_EXIT_OK				; return set PID
+	_EXIT_OK			; always return chosen PID
+
+
+; **************************************************
+; *** B_SIGNAL, send UNIX-like signal to a braid ***
+; **************************************************
+;		INPUT
+; b_sig	= signal to be sent
+; Y		= PID (0 means TO ALL?)
+
+mm_signal:
+#ifdef	SAFE
+	JSR mm_chkpid		; check for a valid PID first ()
+#endif
+; new code 20150611, needs new ABI but 21 bytes (or 13 if not SAFE) and 13 clocks at most
+	LDX b_sig			; get signal code (3)
+#ifdef	SAFE
+	CPX #SIGCONT+1		; compare against last (2)
+		BCC mms_kerr		; abort if wrong signal
+#endif
+	JSR (mms_table, X)	; call to actual code...
+	_EXIT_OK			; ...as this must end as per 816 ABI ***must keep error code, like cio_callend
+
+; now come the signal handlers...
+
+; *** SIGTERM, ask some braid to terminate ***
+mms_term:
+; supplied handler will be executed upon scheduler switching to it!
+; just set the flag
+	LDA mm_flags-1, Y	; get original flags, now integrated! (4)
+	ORA #1				; set request (2)
+	STA mm_flags-1, Y	; set SIGTERM request for that braid (4)
+	RTS
+
+; *** SIGKILL, kill braid! ***
+mms_kill:
+	LDA #BR_FREE		; will be no longer executable (2)
+	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
+	PHY					; keep targeted PID for a moment
+; free up all MEMORY & windows belonging to this PID...
+; Y currently set to desired PID
+	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115 *** should I do it?
+; now it is time to release memory assigned for non-XIP executable!
+	PLA					; retrieve desired PID... as LSB
+	CLC
+	ADC #>mm_stacks-256	; contextual stack area base pointer, assume page-aligned!!!
+; this version for pointer copying takes 18b/29t until call
+;	STA mk_nxpt+1		; this is MSB, stored in local pointer
+;	LDA #$FD			; make it point at stored address, LSB only *** assume page-aligned!!!
+;	STA mk_nxpt			; store local pointer to bottom of stack
+;	LDA (mk_nxpt) 		; get first pointer byte from stack
+;	STA ma_pt			; store as zp parameter
+;	REP #$20			; *** 16-bit memory ***
+;	LDY #1				; move index, not worth a loop
+;	LDA (mk_nxpt), Y 	; get last pointer word from stack
+;	STA ma_pt+1			; store as zp parameter
+; alternative code is 16b/30t until call and saves local
+	XBA					; that was MSB
+	LDA #$FD			; make it point at stored address, LSB only *** assume page-aligned!!!
+	.xl: .al: REP #$30	; *** all 16-bit ***
+	TAX					; offset is full address
+	LDA $0, X			; get base word
+	STA ma_pt			; store as zp parameter
+	LDY $2, X			; 6800-like indexing! gets extra byte
+	.xs: .as: SEP #$30	; *** back to 8-bit ***
+	STY ma_pt+2			; store bank byte eeeeeeek
+; another version is 16b/33t eeeeeeeek
+;	XBA					; that was MSB
+;	LDA #0				; make it point at whole stack space *** assume page-aligned!!!
+;	PHD					; keep direct pointer!
+;	TCD					; temporarily at stack space!
+;	REP #$20			; *** 16-bit memory ***
+;	LDA $FD				; get word, note offset eeeeeeek
+;	LDY $FF				; get bank
+;	PLD					; restore direct page
+;	STA ma_pt			; store word as zp parameter
+;	STY ma_pt+2			; store bank as zp parameter
+; will take address anyhow, FREE will quietly fail if no block was assigned to that pointer
+	_KERNEL(FREE)		; try to release the executable block
+; do not care if FREE succeeded or not...
+; window release *** TO DO *** TO DO *** TO DO ***
+	RTS					; return as appropriate
+
+	.as					; remaining routines are called in 8-bit mode
+
+; *** SIGCONT, resume execution ***
+mms_cont:
+; CS not needed as per 816 ABI
+	LDA mm_flags-1, Y	; first check current state (5)
+	LSR					; keep integrated mm_treq in C! (2)
+	CMP #BR_STOP/2		; is it paused? note it was shifted (2)
+		BNE mms_kerr		; no way to resume it! (2/3)
+	LDA #BR_RUN/2		; resume, note shift (2)
+	ROL					; reinsert TERM flag from C! (2)
+	STA mm_flags-1, Y	; store new status (5) again, TERM is lost
+; here ends CS
+	RTS
+
+; *** SIGSTOP, pause execution ***
+mms_stop:
+	LDA mm_flags-1, Y	; first check current state (5)
+	LSR					; keep integrated mm_treq in C! (2)
+	CMP #BR_RUN/2		; is it running? note shift (2)
+		BNE mms_kerr		; no way to stop it! (2/3)
+	LDA #BR_STOP/2		; pause it, note shift (2)
+	ROL					; reinsert TERM flag from C! (2)
+	STA mm_flags-1, Y	; store new status (5) *** would like to restore somehow any previous TERM!
+	RTS
+mms_kerr:
+	_DR_ERR(INVALID)	; not a running PID *** currently ignored error
+
+
+; ************************************************
+; *** B_FLAGS, get execution flags of a braid ***
+; ************************************************
+;		INPUT
+; Y = addressed braid
+;		OUTPUT
+; Y = flags ***TBD, might include architecture
+; C = invalid PID
+mm_status:
+#ifdef	SAFE
+	JSR mm_chkpid		; check for a valid PID first ()
+#endif
+	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
+	TAY					; return value (2) *** might want to write it somewhere for faster BIT
+	_EXIT_OK
+
+
+; **************************************************************
+; *** SET_HNDL, set SIGTERM handler, default is like SIGKILL ***
+; **************************************************************
+;		INPUT
+; Y		= PID (0 means to myself)
+; ex_pt = 24b SIGTERM handler routine no longer ending in RTI!
+;		OUTPUT
+; C		= bad PID
+mm_hndl:
+#ifdef	SAFE
+	JSR mm_chkpid		; check for a valid PID first (21)
+#endif
+; CS not needed in 65816 ABI
+; needs 24-bit addressing!!!
+	LDA ex_pt+2			; bank address
+	STA mm_stbnk-1, Y	; store into new array
+; put rest of address in array!
+	TYA					; get index
+	ASL					; double as pointer eeeeeeeeeeeek
+	TAX					; any better this way?
+; staying in 8-bit mode takes 10b, 14t
+;	LDA ex_pt			; get pointer LSB (3)
+;	STA mm_term-2, X	; store in table (4)
+;	LDA ex_pt+1			; now for MSB (3+4)
+;	STA mm_term-1, X
+; going 16-bit takes 7b, 12t (9b, 15t if actually needed to go back into 8-bit)
+	.al: REP #$20		; *** 16-bit memory *** (3)
+	LDA ex_pt			; get pointer (4)
+	STA mm_term-2, X	; store in table (5)
+; end of CS
+	_EXIT_OK
+
+; emergency exit, should never arrive here!
+mm_nreq:
+	_NEXT_ISR			; just in case
+
 
 ; -------------------------------OLD----------------------
 
@@ -409,156 +584,6 @@ arch_ok:
 	TCD					; back to current direct page
 	_DR_OK				; done
 
-; send some signal to a braid
-mm_signal:
-
-#ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first ()
-#endif
-
-; new code 20150611, needs new ABI but 21 bytes (or 13 if not SAFE) and 13 clocks at most
-	LDX b_sig			; get signal code (3)
-
-#ifdef	SAFE
-	CPX #SIGCONT+1		; compare against last (2)
-		BCC mms_kerr		; abort if wrong signal
-#endif
-
-	JMP (mms_table, X)	; jump to actual code
-
-; ask braid to terminate
-mms_term:
-	LDA mm_flags-1, Y	; get original flags, now integrated! (4)
-	ORA #1				; set request (2)
-	STA mm_flags-1, Y	; set SIGTERM request for that braid (4)
-	_DR_OK
-
-; kill braid!
-mms_kill:
-	LDA #BR_FREE		; will be no longer executable (2)
-	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
-	PHY					; keep targeted PID for a moment
-; free up all MEMORY & windows belonging to this PID...
-; Y currently set to desired PID
-	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
-; now it is time to release memory assigned for non-XIP executable!
-	PLA					; retrieve desired PID... as LSB
-	CLC
-	ADC #>mm_stacks-256	; contextual stack area base pointer, assume page-aligned!!!
-; this version for pointer copying takes 18b/29t until call
-;	STA mk_nxpt+1			; this is MSB, stored in local pointer
-;	LDA #$FD			; make it point at stored address, LSB only *** assume page-aligned!!!
-;	STA mk_nxpt		; store local pointer to bottom of stack
-;	LDA (mk_nxpt) 	; get first pointer byte from stack
-;	STA ma_pt		; store as zp parameter
-;	REP #$20		; *** 16-bit memory ***
-;	LDY #1			; move index, not worth a loop
-;	LDA (mk_nxpt), Y 	; get last pointer word from stack
-;	STA ma_pt+1		; store as zp parameter
-; alternative code is 16b/30t until call and saves local
-	XBA				; that was MSB
-	LDA #$FD			; make it point at stored address, LSB only *** assume page-aligned!!!
-	.xl: .al: REP #$30	; *** all 16-bit ***
-	TAX				; offset is full address
-	LDA $0, X			; get base word
-	STA ma_pt			; store as zp parameter
-	LDY $2, X			; 6800-like indexing! gets extra byte
-	.xs: .as: SEP #$30	; *** back to 8-bit ***
-	STY ma_pt+2			; store bank byte eeeeeeek
-; another version is 16b/33t eeeeeeeek
-;	XBA					; that was MSB
-;	LDA #0				; make it point at whole stack space *** assume page-aligned!!!
-;	PHD					; keep direct pointer!
-;	TCD					; temporarily at stack space!
-;	REP #$20			; *** 16-bit memory ***
-;	LDA $FD				; get word, note offset eeeeeeek
-;	LDY $FF				; get bank
-;	PLD					; restore direct page
-;	STA ma_pt			; store word as zp parameter
-;	STY ma_pt+2			; store bank as zp parameter
-; will take address anyhow, FREE will quietly fail if no block was assigned to that pointer
-	_KERNEL(FREE)		; try to release the executable block
-; do not care if FREE succeeded or not...
-; window release *** TO DO *** TO DO *** TO DO ***
-	_DR_OK				; return as appropriate
-
-	.as					; remaining routines are called in 8-bit mode
-
-; resume execution
-mms_cont:
-; CS not needed as per 816 ABI
-	LDA mm_flags-1, Y	; first check current state (5)
-	LSR					; keep integrated mm_treq in C! (2)
-	CMP #BR_STOP/2		; is it paused? note it was shifted (2)
-		BNE mms_kerr		; no way to resume it! (2/3)
-	LDA #BR_RUN/2		; resume, note shift (2)
-	ROL					; reinsert TERM flag from C! (2)
-	STA mm_flags-1, Y	; store new status (5) again, TERM is lost
-; here ends CS
-	_DR_OK
-
-; pause execution
-mms_stop:
-	LDA mm_flags-1, Y	; first check current state (5)
-	LSR					; keep integrated mm_treq in C! (2)
-	CMP #BR_RUN/2		; is it running? note shift (2)
-		BNE mms_kerr		; no way to stop it! (2/3)
-	LDA #BR_STOP/2		; pause it, note shift (2)
-	ROL					; reinsert TERM flag from C! (2)
-	STA mm_flags-1, Y	; store new status (5) *** would like to restore somehow any previous TERM!
-	_DR_OK
-mms_kerr:
-	_DR_ERR(INVALID)	; not a running PID
-
-; get execution flags for a braid
-mm_status:
-
-#ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first ()
-#endif
-
-	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
-	TAY					; return value (2) *** might want to write it somewhere for faster BIT
-	_DR_OK
-
-; get current PID **might be deprecated as directly handled in API
-mm_getpid:
-	LDY mm_pid			; get PID (4)
-	_DR_OK
-
-; set SIGTERM handler
-mm_hndl:
-
-#ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first (21)
-#endif
-
-; CS not needed in 65816 ABI
-; needs 24-bit addressing!!!
-	LDA ex_pt+2			; bank address
-	STA mm_stbnk-1, Y	; store into new array
-; put rest of address in array!
-	TYA					; get index
-	ASL					; double as pointer eeeeeeeeeeeek
-	TAX					; any better this way?
-; staying in 8-bit mode takes 10b, 14t
-;	LDA ex_pt			; get pointer LSB (3)
-;	STA mm_term-2, X	; store in table (4)
-;	LDA ex_pt+1			; now for MSB (3+4)
-;	STA mm_term-1, X
-; going 16-bit takes 7b, 12t (9b, 15t if actually needed to go back into 8-bit)
-	.al: REP #$20		; *** 16-bit memory *** (3)
-	LDA ex_pt			; get pointer (4)
-	STA mm_term-2, X	; store in table (5)
-; end of CS
-; ** priorize braid, jump to it at once, really needed? **
-mm_prior:				; this is just a placeholder
-	_DR_OK
-
-; emergency exit, should never arrive here!
-mm_nreq:
-	_NEXT_ISR			; just in case
-
 
 ; *********************************
 ; *** diverse data and pointers ***
@@ -571,14 +596,13 @@ mm_patch:
 	.word	mm_signal
 	.word	mm_flags
 	.word	mm_seth
-; B_YIELD is not patched as will use standtard SET_CURR interface
+	.word	mm_yield	; eeeeeeeek
+; GET_PID is not patched as will use standtard SET_CURR interface
 
-
-; ------- OLD -------------
 ; *** signal routines addresses table ***
 mms_table:
 	.word	mms_kill
 	.word	mms_term
+	.word	mms_stop	; eeeeeeeek
 	.word	mms_cont
-	.word	mms_stop
 .)
