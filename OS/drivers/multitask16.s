@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180212-0902
+; last modified 20180212-0936
 
 ; ***************************
 ; *** multitasking driver ***
@@ -39,7 +39,9 @@ mm_info:
 	.asc	"16-task 65816 Scheduler v0.6a1", 0	; fixed MAX_BRAIDS value!
 
 ; ***************************
+; ***************************
 ; *** initialisation code ***
+; ***************************
 ; ***************************
 mm_init:
 ; if needed, check whether proper stack frame is available from kernel
@@ -123,12 +125,14 @@ mm_suicide:
 ; ...then go into the scheduler as this will no longer be executable
 
 ; **************************
+; **************************
 ; *** the scheduler code *** usually called from ISR
+; **************************
 ; **************************
 mm_sched:
 ; get next available PID
 	LDY #2				; to avoid deadlocks AND proper shutdown detection (2)
-	LDX mm_pid			; actual PID as index (4)
+	LDX mm_pid			; current PID as index (4)
 mm_scan:
 		DEX					; going backwards is faster (2)
 			BEQ mm_wrap			; in case of wrap, remember first PID is 1 (2/3) faster implementation
@@ -154,20 +158,20 @@ mm_lock:
 ; arrived here in typically ? clocks, if all braids were executable
 mm_switch:
 ; store previous status
-	STX mm_pid			; will need to add that
+	STX mm_pid			; update PID, will need to add that
 ; keep stack pointer!
 	TSX					; get index LSB (2)
 	STX sys_sp			; store as usual (3)
 ; *** this could be the generic context switching ***
 ; go into new braid
-	LDA #>mm_context-256	; get pointer to direct pages eeeeeeeeeeek
+	LDA #>mm_context-256	; get pointer MSB to direct pages eeeeeeeeeeek
 	CLC
 	ADC mm_pid			; compute offset within stored direct-pages
 	XBA					; that was MSB
 	LDA #<mm_context	; should be zero
 	TCD					; new direct page is set
 ; set stack pointer to new context
-	LDA #>mm_stacks-256	; contextual stack area base pointer, assume page-aligned!!!
+	LDA #>mm_stacks-256	; contextual stack area base pointer MSB, assume page-aligned!!!
 	CLC
 	ADC mm_pid			; add offset for new braid
 	XBA					; that was MSB
@@ -175,45 +179,50 @@ mm_switch:
 	TCS					; stack pointer updated!
 ; *** end of context switching ***
 ; now it's time to check whether SIGTERM was sent! new 20150611
-	LDY mm_pid			; get current PID again (4) new reg
+	LDY mm_pid			; get new PID again (4)
 	LDA mm_flags-1, Y	; had it a SIGTERM request? (4)
 ; ...but first set running arch & PID!
 	PHA					; keep it for arch bits! (2)
 	AND #%00000110		; mask for CPU-type bits (2)
 	STA cpu_ll			; proper CPU code (3)
-	_KERNEL(SET_CURR)	; update system variables, keeps Y which already had the PID
+;	PHY					; in case is not kept...
+	_KERNEL(SET_CURR)	; update system variables, should keep Y which already had the PID
+;	PLY					; must retrive if not kept...
 	PLA					; but first restore full flags (4)
 ; continue SIGTERM checking
-	LSR					; easier check of bit 0! (2)
-		BCS mm_sigterm		; process it now! (2/3)
+	LSR					; MUST be shifted for later, easier check of bit 0! (2)
+	BCS mm_sigterm		; process it now! (2/3)
 mm_rts:
-	RTS					; all done, continue ISR
+		RTS					; all done, continue ISR... on another braid
 
-; the actual SIGTERM routine execution, new interface 161024, always ending in RTI
+; **********************************
+; *** the actual SIGTERM routine ***
+; **********************************
+; no longer ending in RTI!
 ; needs older SHIFTED flags in A, PID in Y!!!
 mm_sigterm:
 	ASL					; ...and restore value with clear flag!
 	STA mm_flags-1, Y	; EEEEEEEK! clear received TERM signal, new format 20161117
 ; stack return address upon end of SIGTERM handler
-	PHK					; push program bank as required by RTI in 816
-	PEA mm_rts			; correct return address after SIGTERM handler RTI
-	PHP					; eeeeeeeeeeeeeeeeeek
-; 24-bit indexed jump means the use of RTI
+	PHK					; push program bank as 816 code will end in RTL... as mm_stend cannot be $xx0000
+	PEA mm_stend-1		; correct return address after SIGTERM handler RTL/RTS
+#ifdef	SUPPORT
+	TSX					; keep current SP...
+	STX sys_sp			; ...in case bank address remains
+#endif
+; 24-bit indexed jump means the use of RTI as indirect long jump
 ; original approach, 15b, 27t
 	LDA mm_stbnk-1, Y	; now get bank address (4)
-	PHA					; needed for RTI at the end of the handler (3)
+	PHA					; push bank address for the simulated 24-bit call (3)
 	TYA					; addressed braid (2)
 	ASL					; two times for use as index (2)
-; in case a table of 24-bit pointers is used, do the following
-; STX temp, CLC, ADC temp will multiply older X by three!
-; then push the three bytes in a row (do not do the previous PHA from mm_stbnk)
-; *** perhaps PEA will help???
 	TAX					; proper offset in handler table (2)
 	LDA mm_term-1, X	; get MSB (4)
 	PHA					; and push it (3)
 	LDA mm_term-2, X	; same for LSB (4+3)
 	PHA
-; sample 24-bit code is 20b, 35t
+; in case a table of 24-bit pointers is used
+; sample 24-bit array code is 20b, 35t
 ;	TYA					; operate with PID (2)
 ;	STA systmp			; keep original (3)
 ;	ASL					; x2 (2)
@@ -227,10 +236,22 @@ mm_sigterm:
 ;	LDA mm_term-3, Y	; get one byte (4)
 ;	PHA					; push it (3)
 	PHP					; as needed by RTI
-	RTI					; actual jump, will return to an RTS and continue ISR
+	RTI					; actual jump, will return to an RTS or RTL just here!
+mm_stend:
+#ifdef	SUPPORT
+; 6502 handlers will end in RTS causing stack imbalance
+; must reset SP to previous value
+	.as: SEP #$20		; needs 8-bit memory, just in case (3)
+	TSC					; the whole stack pointer, will not mess with B (2)
+	LDA sys_sp			; will replace the LSB with the stored value (3)
+	TCS					; all set! (2)
+#endif
+	RTS					; back to ISR in new context, might be called from 
 
 ; ****************************
+; ****************************
 ; *** supporting functions ***
+; ****************************
 ; ****************************
 #ifdef	SAFE
 ; check PID within limits (20 including call)
