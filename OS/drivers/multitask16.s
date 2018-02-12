@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180206-1118
+; last modified 20180212-0902
 
 ; ***************************
 ; *** multitasking driver ***
@@ -18,6 +18,7 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 .text
 #endif
 
+.(
 ; *** begins with sub-function addresses table ***
 	.byt	TASK_DEV	; physical driver number D_ID (TBD)
 	.byt	A_POLL+A_COUT	; polling scheduler for new 0.6 architecture
@@ -33,7 +34,6 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 	.word	mm_info		; points to descriptor string
 	.word	0			; reserved, D_MEM (word just in case)
 
-.(
 ; *** driver description ***
 mm_info:
 	.asc	"16-task 65816 Scheduler v0.6a1", 0	; fixed MAX_BRAIDS value!
@@ -56,8 +56,13 @@ mm_cont:
 	LDA #mm_context		; storage area full pointer
 	TCD					; direct-page set for FIRST context
 ; initialise flags table (but not stack pointers?)
-	LDY #MAX_BRAIDS		; reset backwards index
-	LDA #BR_FREE*257	; TWICE the 8-bit requuired pattern
+	LDY #MAX_BRAIDS		; reset backwards index *** MAX_BRAIDS must be even!
+	LDA #BR_FREE*257	; TWICE the 8-bit required pattern
+#if MAX_BRAIDS % 2
+; *** in case of odd MAX_BRAIDS value, add the following code ***
+	DEY					; now it is even
+	STA mm_flags-1, Y	; will set an extra previous byte without ill effect
+#endif
 mm_rsp:
 		STA mm_flags-2, Y	; set a couple of braids to FREE, please note table expects indexes from 0
 		DEY					; go for next (remember 16-bit)
