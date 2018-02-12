@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.6b1, should match kernel16.s
+; v0.6b2, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20171122-1208
+; last modified 20180212-0926
 
 #define		ISR		_ISR
 
@@ -27,7 +27,7 @@
 		BVS periodic			; from T1 (3/2)
 
 ; ** generic alternative **
-;	_ADMIN(IRQ_SRC)			; get source in X
+;	ADMIN(IRQ_SRC)			; get source in X
 ;	JMP (irq_tab, X)		; do as appropriate
 ;irq_tab:
 ;	.word	periodic
