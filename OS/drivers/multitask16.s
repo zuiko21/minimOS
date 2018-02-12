@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180212-1013
+; last modified 20180212-1321
 
 ; ***************************
 ; *** multitasking driver ***
@@ -257,17 +257,24 @@ mm_stend:
 ; check PID within limits (20 including call)
 mm_chkpid:
 	TYA					; eeeeeeeek^2 the place to do it, new format (2)
-;		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
+		BEQ mm_pidz			; only a few subfunctions accept the reserved PID (2/3)
 	CPY #MAX_BRAIDS+1	; check whether it's a valid PID (2) eeeeeek!
 		BCS mm_piderr		; way too much (2/3) eeeek
+mm_pidok:
 	RTS					; back to business (6)
-mm_pidz:				; placeholder
-; should check whether X means a 0-compatible subfunction (B_EXEC for this, B_SIGNAL for all)
+mm_pidz:				; zero only valid for certain business
+; check whether signal is a 0-compatible subfunction (B_EXEC for this, B_SIGNAL for all)
+	LDA b_sig			; eeeeeeek
+	CMP #B_EXEC			; execute just here?
+		BEQ mm_pidok		; go for it!
+	CMP #B_SIGNAL		; send to all?
+		BEQ mm_pidok		; go for them!
+; in case more subfunctions accept PID zero, consider them here
 mm_piderr:
 	PLA					; discard return address, since called from a subroutine (4+4)
 	PLA
 mm_bad:
-	_DR_ERR(INVALID)	; not a valid PID or subfunction code, worth checking
+	_ERR(INVALID)		; not a valid PID or subfunction code, abort API
 #endif
 
 ; ************************************
@@ -317,7 +324,7 @@ mmf_nfound:
 ; **************************************************
 ;		INPUT
 ; b_sig	= signal to be sent
-; Y		= PID (0 means TO ALL?)
+; Y		= PID (0 means TO ALL)
 
 mm_signal:
 #ifdef	SAFE
@@ -329,7 +336,20 @@ mm_signal:
 	CPX #SIGCONT+1		; compare against last (2)
 		BCC mms_kerr		; abort if wrong signal
 #endif
-	JSR (mms_table, X)	; call to actual code...
+; must implement a loop counter in case of send to all!
+	TYA					; check whether broadcasting
+	BEQ mmsig_z			; send to all, prepare loop!
+		LDA #1				; otherwise, only one iteration
+		BRA mmsig_l			; make it and exit!
+mmsig_z:
+		LDA #MAX_BRAIDS		; will do all
+		TAY					; use as PID too!
+mmsig_l:
+; make sure the subfunctions do NOT mess with Y...
+		JSR (mms_table, X)	; call to actual code...
+		DEY					; prepare to modify next
+		DEC					; one less to go
+		BNE mmsig_l			; until all done!
 	_EXIT_OK			; ...as this must end as per 816 ABI ***must keep error code, like cio_callend
 
 ; now come the signal handlers...
@@ -372,9 +392,9 @@ mms_kill:
 	TAX					; offset is full address
 	LDA $0, X			; get base word
 	STA ma_pt			; store as zp parameter
-	LDY $2, X			; 6800-like indexing! gets extra byte
+	LDA $2, X			; 6800-like indexing! gets extra byte
 	.xs: .as: SEP #$30	; *** back to 8-bit ***
-	STY ma_pt+2			; store bank byte eeeeeeek
+	STA ma_pt+2			; store bank byte eeeeeeek
 ; another version is 16b/33t eeeeeeeek
 ;	XBA					; that was MSB
 ;	LDA #0				; make it point at whole stack space *** assume page-aligned!!!
