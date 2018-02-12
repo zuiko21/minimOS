@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.6a1
+; v0.6a2
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180212-1321
+; last modified 20180212-1341
 
 ; ***************************
 ; *** multitasking driver ***
@@ -36,7 +36,7 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.6a1", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.6a2", 0	; fixed MAX_BRAIDS value!
 
 ; ***************************
 ; ***************************
@@ -211,7 +211,7 @@ mm_sigterm:
 	STX sys_sp			; ...in case bank address remains
 #endif
 ; 24-bit indexed jump means the use of RTI as indirect long jump
-; original approach, 15b, 27t
+; not worth 24b array... perhaps an interleaved bank array?
 	LDA mm_stbnk-1, Y	; now get bank address (4)
 	PHA					; push bank address for the simulated 24-bit call (3)
 	TYA					; addressed braid (2)
@@ -221,20 +221,6 @@ mm_sigterm:
 	PHA					; and push it (3)
 	LDA mm_term-2, X	; same for LSB (4+3)
 	PHA
-; in case a table of 24-bit pointers is used
-; sample 24-bit array code is 20b, 35t
-;	TYA					; operate with PID (2)
-;	STA systmp			; keep original (3)
-;	ASL					; x2 (2)
-;	CLC
-;	ADC systmp			; x3 (2+3)
-;	TAY					; use as new index (2)
-;	LDA mm_term-1, Y	; get one byte (4)
-;	PHA					; push it (3)
-;	LDA mm_term-2, Y	; get one byte (4)
-;	PHA					; push it (3)
-;	LDA mm_term-3, Y	; get one byte (4)
-;	PHA					; push it (3)
 	PHP					; as needed by RTI
 	RTI					; actual jump, will return to an RTS or RTL just here!
 mm_stend:
@@ -276,6 +262,10 @@ mm_piderr:
 mm_bad:
 	_ERR(INVALID)		; not a valid PID or subfunction code, abort API
 #endif
+
+; emergency exit, should never arrive here!
+mm_nreq:
+	_NEXT_ISR			; just in case
 
 ; ************************************
 ; ************************************
@@ -346,7 +336,9 @@ mmsig_z:
 		TAY					; use as PID too!
 mmsig_l:
 ; make sure the subfunctions do NOT mess with Y...
+		PHA					; eeeeeek
 		JSR (mms_table, X)	; call to actual code...
+		PLA					; retrieve
 		DEY					; prepare to modify next
 		DEC					; one less to go
 		BNE mmsig_l			; until all done!
@@ -411,8 +403,6 @@ mms_kill:
 ; do not care if FREE succeeded or not...
 ; window release *** TO DO *** TO DO *** TO DO ***
 	RTS					; return as appropriate
-
-	.as					; remaining routines are called in 8-bit mode
 
 ; *** SIGCONT, resume execution ***
 mms_cont:
@@ -489,10 +479,6 @@ mm_hndl:
 	STA mm_term-2, X	; store in table (5)
 ; end of CS
 	_EXIT_OK
-
-; emergency exit, should never arrive here!
-mm_nreq:
-	_NEXT_ISR			; just in case
 
 
 ; -------------------------------OLD----------------------
