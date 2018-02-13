@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a2
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180212-1341
+; last modified 20180213-2238
 
 ; ***************************
 ; *** multitasking driver ***
@@ -151,11 +151,13 @@ mm_wrap:
 		DEY					; and check is not forever (2)
 		BNE mm_next			; otherwise should only happen at shutdown time (3/2)
 mm_lock:
+; perhaps should check if any braid is in BR_STOP state and try to wake it up first!
+; assume no running tasks here
 	LDY #PW_CLEAN		; special code to do proper shutdown
 	_KERNEL(SHUTDOWN)	; all tasks stopped, time to complete shutdown (as specified by default action)
 	_PANIC("{TASK}")	; if ever arrives here, it was wrong at so many levels...
 
-; arrived here in typically ? clocks, if all braids were executable
+; arrived here in typically 25 clocks, if all braids were executable
 mm_switch:
 ; store previous status
 	STX mm_pid			; update PID, will need to add that
@@ -468,12 +470,7 @@ mm_hndl:
 	TYA					; get index
 	ASL					; double as pointer eeeeeeeeeeeek
 	TAX					; any better this way?
-; staying in 8-bit mode takes 10b, 14t
-;	LDA ex_pt			; get pointer LSB (3)
-;	STA mm_term-2, X	; store in table (4)
-;	LDA ex_pt+1			; now for MSB (3+4)
-;	STA mm_term-1, X
-; going 16-bit takes 7b, 12t (9b, 15t if actually needed to go back into 8-bit)
+; going 16-bit takes 7b, 12t
 	.al: REP #$20		; *** 16-bit memory *** (3)
 	LDA ex_pt			; get pointer (4)
 	STA mm_term-2, X	; store in table (5)
