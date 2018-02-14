@@ -1,20 +1,21 @@
 ; static variables for 65816 software multitasking module for minimOS·16
-; v0.5.1a4
+; v0.6a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180205-0935
+; last modified 20180214-0857
 
 mm_pid		.byt	0				; current PID
-mm_flags	.dsb	MAX_BRAIDS		; status list, might be integrated with mm_treq???
 ; no longer using mm_sfsiz & mm_stack, as per new TS_INFO output format!
 ; but again gets mm_term here, together with specific mm_bank
-mm_term		.dsb	MAX_BRAIDS*2	; perhaps thru 24-bit misaligned pointers!
-mm_stbank	.dsb	MAX_BRAIDS
+mm_term		.dsb	MAX_BRAIDS*2	; not worth 24-bit misaligned pointers
+; new interleaved flags and SIGTERM banks, MUST use EVEN PIDs!!!
+mm_flags	.dsb	MAX_BRAIDS*2	; status list, integrated with mm_treq AND interleaved with mm_stbank
+mm_stbank	= mm_flags+1			; worth interleaving, even PIDs only!
 
 
 ; *** hardware multitasking will not use these ***
 #ifndef	AUTOBANK
 ; 65816-specific context areas, must be page-aligned!
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
-mm_context	.dsb	256 * MAX_BRAIDS	; direct-page areas
-mm_stacks	.dsb	256 * MAX_BRAIDS	; stack areas, 816-exclusive
+mm_context	.dsb	512*MAX_BRAIDS	; direct-page AND stack areas
+mm_stacks	= mm_context + 256		; interleaved stack areas, 816-exclusive
 #endif
