@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.6a2
+; v0.6a3
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180214-0911
+; last modified 20180215-1337
 
 ; ***************************
 ; *** multitasking driver ***
@@ -301,7 +301,7 @@ mmf_loop:
 		BNE mmf_loop		; until the bottom of the list (3/2)
 	BEQ mmf_nfound		; nothing was found, just return 0 as system-reserved braid ID
 ; otherwise there are some flags to initialise
-		LDA #BR_RISE		; new value, currently set as BR_STOP (2)
+		LDA #BR_BORN		; new value, no longer set as BR_STOP (2)
 		STA mm_flags-2, Y	; reserve braid (4)
 mmf_nfound:
 	_EXIT_OK			; always return chosen PID
@@ -439,11 +439,18 @@ mms_kerr:
 ;		OUTPUT
 ; Y = flags ***TBD, might include architecture
 ; C = invalid PID
+; if status was BR_END, returns that but set flags to BR_FREE!
 mm_status:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first ()
 #endif
 	LDA mm_flags-2, Y	; parameter as index (4) eeeeek!
+	CMP #BR_END			; is a rendez vous fetched? ***should it check parent PID???
+	BNE mm_norv			; no, nothing to be worried
+		LDA #BR_FREE		; yes, must set that braid free!
+		STA mm_flags-2, Y	; store new status...
+		LDA #BR_END			; ...but return the old one!
+mm_norv:
 	TAY					; return value (2) *** might want to write it somewhere for faster BIT
 	_EXIT_OK
 
