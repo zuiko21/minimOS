@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc3
+; v0.6rc4
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180127-2235
+; last modified 20180215-1324
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -23,7 +23,7 @@ k_vec:
 	.word	free_w		; will be closed by kernel
 ; other generic functions
 	.word	uptime		; approximate uptime in ticks
-	.word	set_fg		; enable frequency generator (VIA T1@PB7)
+; * no longer set_fg! *
 	.word	shutdown	; proper shutdown procedure
 	.word	loadlink	; get addr. once in RAM/ROM
 ; simplified task management
@@ -43,15 +43,13 @@ k_vec:
 	.word	dr_shut		; shutdown driver
 	.word	dr_info		; get header, is this possible?
 	.word	malloc		; reserve memory
-	.word	free		; release memory
 	.word	release		; release ALL memory for a PID
+	.word	free		; release memory
 	.word	memlock		; reserve some address
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
-#endif
-
 ; *** dummy function, non implemented ***
-unimplemented:		; placeholder here, not currently used
+unimplemented:			; placeholder here, not currently used
 ; *** MALLOC, reserve memory ***
 ; *** MEMLOCK, reserve some address ***
 ; *** FREE, release memory ***
@@ -67,15 +65,16 @@ ts_info:
 set_curr:
 dr_inst:			; no way to install these?
 dr_shut:
-
+#endif
 ; *** FUTURE IMPLEMENTATION ***
 aq_mng:
 pq_mng:
 dr_info:
 bl_cnfg:
 bl_stat:
-
 	_ERR(UNAVAIL)	; go away!
+
+;
 
 ; ********************************
 ; *** COUT, output a character ***
@@ -662,52 +661,6 @@ rl_cr:
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
 	_EXIT_OK			; and all done!
-
-
-; **************************************************
-; *** SET_FG, enable/disable frequency generator *** TO BE REVISED
-; **************************************************
-;		INPUT
-; zpar.w = dividing factor (times two?)
-;		OUTPUT
-; C = busy
-;
-; should use some firmware interface, just in case it doesn't affect jiffy-IRQ!
-; should also be Phi2-rate independent... input as Hz, or 100uS steps?
-; *******TO BE REVISED*********
-set_fg:
-	LDA zpar
-	ORA zpar+1
-		BEQ fg_dis		; if zero, disable output
-	LDA VIA+ACR		; get current configuration
-		BMI fg_busy	; already in use
-	LDX VIA+T1LL	; get older T1 latch values
-	STX old_t1		; save them
-	LDX VIA+T1LH
-	STX old_t1+1
-; *** TO_DO - should compare old and new values in order to adjust quantum size accordingly ***
-	LDX zpar			; get new division factor
-	STX VIA+T1LL	; store it
-	LDX zpar+1
-	STX VIA+T1LH
-	STX VIA+T1CH	; get it running!
-	ORA #$C0		; enable free-run PB7 output
-	STA VIA+ACR		; update config
-fg_none:
-	_EXIT_OK		; finish anyway
-fg_dis:
-	LDA VIA+ACR		; get current configuration
-		BPL fg_none	; it wasn't playing!
-	AND #$7F		; disable PB7 only
-	STA VIA+ACR		; update config
-	LDA old_t1		; older T1L_L
-	STA VIA+T1LL	; restore old value
-	LDA old_t1+1
-	STA VIA+T1LH	; it's supposed to be running already
-; *** TO_DO - restore standard quantum ***
-		_BRA fg_none
-fg_busy:
-	_ERR(BUSY)		; couldn't set
 
 
 ; ***********************************************************

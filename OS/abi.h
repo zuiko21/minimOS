@@ -1,7 +1,7 @@
-; minimOS 0.6rc6 API/ABI
+; minimOS 0.6rc7 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180206-1118
+; last modified 20180215-1319
 
 ; *************************************************
 ; *************************************************
@@ -10,7 +10,7 @@
 ; *************************************************
 
 ; legacy basic I/O
-COUT		= 0			; character output, interface for BOUT
+COUT		= 0				; character output, interface for BOUT
 CIN			= COUT + 2		; character input, interface for BLIN
 STRING		= CIN + 2		; output a C-string
 READLN		= STRING + 2	; read input into supplied buffer
@@ -25,11 +25,12 @@ BL_STAT		= BL_CNFG + 2	; device status report, new TBD
 OPEN_W		= BL_STAT + 2	; open window or get I/O device
 CLOSE_W		= OPEN_W + 2	; close a window or release device and its buffer
 FREE_W		= CLOSE_W + 2	; release a window but let it on screen, keeping its buffer, may be closed by kernel
+; perhaps could add some other window management functions
 
 ; other generic functions
 UPTIME		= FREE_W + 2	; give uptime in ticks and seconds
-SET_FG		= UPTIME + 2	; set PB7 frequency generator *** interface for firmware
-SHUTDOWN	= SET_FG + 2	; proper shutdown, with or without power-off
+; *** frequency generator DEPRECATED for firmware ***
+SHUTDOWN	= UPTIME + 2	; proper shutdown, with or without power-off
 LOADLINK	= SHUTDOWN + 2	; get an executable from its path, and get it loaded into primary memory, maybe relocated
 
 ; for multitask main use, but also with reduced single task management
@@ -53,8 +54,8 @@ DR_INFO		= DR_SHUT + 2	; get header, new
 ; memory...
 MALLOC		= DR_INFO + 2	; allocate memory
 FREE		= MALLOC + 2	; release memory block
-RELEASE		= FREE + 2		; release ALL memory blocks belonging to some PID, new 20161115
-MEMLOCK		= RELEASE + 2	; allocate memory at a certain address, new 20170524
+MEMLOCK		= FREE + 2		; allocate memory at a certain address, new 20170524
+RELEASE		= MEMLOCK + 2	; release ALL memory blocks belonging to some PID, new 20161115 *** worth it???
 ; multitasking...
 TS_INFO		= MEMLOCK + 2	; get taskswitching info for multitasking driver
 SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & architecture) new 20170222
@@ -84,24 +85,24 @@ CORRUPT	=   9		; data corruption
 ; ************************************
 ; ************************************
 
-; generic functions, esp. interrupt related
+; generic functions, esp. interrupt handler related
 GESTALT		= 0		; get system info (renumbered)
 SET_ISR		= GESTALT + 2	; set IRQ vector
 SET_NMI		= SET_ISR + 2	; set (magic preceded) NMI routine
 SET_DBG		= SET_NMI + 2	; set debugger, new 20170517
 
-; somewhat hardware specific
+; somewhat hardware specific, interrupt hardware related
 JIFFY		= SET_DBG + 2	; set jiffy IRQ speed, ** TBD **
 IRQ_SRC		= JIFFY + 2		; get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
-POWEROFF	= IRQ_SRC +2	; power-off, suspend or cold boot
+POWEROFF	= IRQ_SRC +2	; power-off, suspend or cold boot *** also BRK/NMI triggering
 FREQ_GEN	= POWEROFF + 2	; frequency generator hardware interface, TBD
 
 ; not for LOWRAM systems
 INSTALL		= FREQ_GEN + 2	; copy jump table
 PATCH		= INSTALL + 2	; patch single function (renumbered)
-; CONTEXT no longer used, as will be used from an *specific* Multitasking driver
+; CONTEXT no longer used, as would be just called from a *specific* Multitasking driver
 
 ; **************************
 ; ** Driver table offsets **
@@ -142,7 +143,7 @@ T1LL	= $6
 T1LH	= $7
 T2CL	= $8
 T2CH	= $9
-VSR		= $A	; renamed 20170805
+VSR		= $A		; renamed 20170805
 ACR		= $B
 PCR		= $C
 IFR		= $D
@@ -177,11 +178,11 @@ BR_FREE		= 192	; free slot, non-executable
 BR_RUN		=   0	; active process, may get CPU time, should be zero for quick evaluation
 BR_STOP		= 128	; paused process, will not get CPU until resumed
 BR_END		=  64	; ended task, waiting for rendez-vous
-BR_RISE		= BR_STOP	; might add a fifth state for forked-but-not-yet-loaded braids (in order NOT to start them abnormally)
-BR_MASK		= 192	; as it set both bits but NOT those for SIGTERM handler, new 20161117
+BR_BORN		= 160	; added a fifth state for forked-but-not-yet-loaded braids (in order NOT to start them abnormally)
+BR_MASK		= 224	; as it set highest 3 bits but NOT those for SIGTERM handler, new 20161117
 
 ; ** multitasking signals **
-SIGKILL		=  0	; immediately kill braid, will go BR_FREE... maybe after BR_END
+SIGKILL		=  0	; immediately kill braid, will go BR_FREE... maybe after BR_END if launched from rendez-vous mode
 SIGTERM		=  2	; ask braid to terminate in an orderly fashion, default handler is SIGKILL
 SIGSTOP		=  4	; pause braid, will go BR_STOP
 SIGCONT		=  6	; resume a previously paused braid, will go BR_RUN
