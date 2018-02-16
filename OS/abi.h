@@ -1,7 +1,7 @@
 ; minimOS 0.6rc7 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180215-1319
+; last modified 20180216-2226
 
 ; *************************************************
 ; *************************************************
@@ -57,7 +57,7 @@ FREE		= MALLOC + 2	; release memory block
 MEMLOCK		= FREE + 2		; allocate memory at a certain address, new 20170524
 RELEASE		= MEMLOCK + 2	; release ALL memory blocks belonging to some PID, new 20161115 *** worth it???
 ; multitasking...
-TS_INFO		= MEMLOCK + 2	; get taskswitching info for multitasking driver
+TS_INFO		= RELEASE + 2	; get taskswitching info for multitasking driver
 SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & architecture) new 20170222
 
 ; *** define the jump-table size for more efficient memory usage! ***
