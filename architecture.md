@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-11*
+*Last update: 2018-02-18*
 
 ## Rationale
 
@@ -203,7 +203,7 @@ particular architecture; however, the chore of copying every improvement on *eac
 file was aliviated via a **fully-*modular* approach**: the `template` file (or any
 particular machine's firmware, for that matter) will consist in just **a bunch of
 `#include`s** for *small* code chunks on the `modules` folder. Different machines
-may then use a different chunk for a particular feature, or suppress it.
+may then use a different chunk for a particular feature, or just suppress it.
 
 Please note that some of these chunks may be as short as two or three lines on code!
 However, this make sense as ther might be implementation changes for some simple
@@ -221,7 +221,7 @@ although a standard interface is provided for standard apps, even if it's not re
 needed for the 65(C)02 version.
 
 Main available functions are for `INSTALL`ing the Kernel's *jump table*, and setting the
-IRQ, BRK and NMI routines -- all of them will be called by the Kernel at startup time.
+IRQ, BRK and NMI routines -- usually will be called by the Kernel at startup time.
 The mechanism for **kernel patching** is also supplied, and from 0.6 version on
 it does provide a *recovery
 setting* -- just a NULL pointer as the supplied jump table (for `INSTALL`)
