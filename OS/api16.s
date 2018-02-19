@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc4, should match kernel16.s
+; v0.6rc5, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180215-1322
+; last modified 20180219-0915
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -37,17 +37,19 @@ k_vec:
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
 	.word	get_pid		; get PID of current braid ***returns 0
 ; new driver functionalities TBD
+	.word	dr_info		; get driver header
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue
+; advanced functions
+; drivers...
 	.word	dr_inst		; install driver
 	.word	dr_shut		; remove driver
-	.word	dr_info		; get driver header
-; memory management
+; memory...
 	.word	malloc		; reserve memory
 	.word	free		; release memory
 	.word	memlock		; reserve some address
 	.word	release		; release ALL memory for a PID
-; multitasking only
+; multitasking...
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
 #endif

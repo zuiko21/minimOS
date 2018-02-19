@@ -1,7 +1,7 @@
 ; minimOS 0.6rc7 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180216-2226
+; last modified 20180218-0907
 
 ; *************************************************
 ; *************************************************
@@ -42,17 +42,17 @@ SET_HNDL	= B_FLAGS + 2	; set SIGTERM handler
 B_YIELD		= SET_HNDL + 2	; give away CPU time, not really needed but interesting anyway
 GET_PID		= B_YIELD + 2	; get current braid PID *** 20171220 is last one as will not need to be patched
 
-; some new functionalities, perhaps OK with LOWRAM systems
-AQ_MNG		= GET_PID + 2	; get asyncronous task status, or enable/disable it!
+; some new driver functionalities, perhaps OK with LOWRAM systems
+DR_INFO		= GET_PID + 2	; get header, new
+AQ_MNG		= DR_INFO + 2	; get asyncronous task status, or enable/disable it!
 PQ_MNG		= AQ_MNG + 2	; get periodic task status, enable/disable it or set frequency!
 
 ; ** not for LOWRAM systems **
 ; drivers...
 DR_INST		= PQ_MNG + 2	; install driver
 DR_SHUT		= DR_INST + 2	; shutdown driver
-DR_INFO		= DR_SHUT + 2	; get header, new
 ; memory...
-MALLOC		= DR_INFO + 2	; allocate memory
+MALLOC		= DR_SHUT + 2	; allocate memory
 FREE		= MALLOC + 2	; release memory block
 MEMLOCK		= FREE + 2		; allocate memory at a certain address, new 20170524
 RELEASE		= MEMLOCK + 2	; release ALL memory blocks belonging to some PID, new 20161115 *** worth it???

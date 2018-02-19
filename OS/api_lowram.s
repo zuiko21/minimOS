@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc4
+; v0.6rc5
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180215-1324
+; last modified 20180219-0914
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -34,18 +34,18 @@ k_vec:
 	.word	set_hndl	; set SIGTERM handler
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
 	.word	get_pid		; get PID of current braid ***returns 0
-; new functionalities TBD
+; new driver functionalities TBD
+	.word	dr_info		; get header, is this possible?
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue
 ; *** unimplemented functions ***
 #ifdef	SAFE
 	.word	dr_inst		; install driver
 	.word	dr_shut		; shutdown driver
-	.word	dr_info		; get header, is this possible?
 	.word	malloc		; reserve memory
-	.word	release		; release ALL memory for a PID
 	.word	free		; release memory
 	.word	memlock		; reserve some address
+	.word	release		; release ALL memory for a PID
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
 ; *** dummy function, non implemented ***

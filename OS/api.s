@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc6, must match kernel.s
+; v0.6rc7, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180215-1322
+; last modified 20180219-0915
 
 ; no way for standalone assembly...
 
@@ -38,13 +38,13 @@ k_vec:
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
 	.word	get_pid		; get PID of current braid ***returns 0
 ; new driver functionalities TBD
+	.word	dr_info		; driver header ***new
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue
 ; only for systems with enough RAM
 ; drivers...
 	.word	dr_inst		; install driver
 	.word	dr_shut		; shutdown driver
-	.word	dr_info		; driver header ***new
 ; memory...
 	.word	malloc		; reserve memory
 	.word	free		; release memory
@@ -59,14 +59,13 @@ k_vec:
 ; *** dummy function, non implemented ***
 ; ***************************************
 
-memlock:				; *** FUTURE IMPLEMENTATION *** reserve some address
+; *** FUTURE IMPLEMENTATION *** reserve some address
+memlock:
 aq_mng:
 pq_mng:
 dr_info:
 bl_cnfg:
 bl_stat:
-; *** DR_SHUT, remove driver ***
-; interface TBD ****
 dr_shut:
 
 unimplemented:			; placeholder here
