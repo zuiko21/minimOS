@@ -1,6 +1,6 @@
-; minimOS 0.6rc1 System Variables
-; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171110-2059
+; minimOS 0.6rc2 System Variables
+; (c) 2012-2018 Carlos J. Santisteban
+; last modified 20180219-0831
 .bss
 
 ; **** I/O management ****
@@ -75,7 +75,6 @@ run_pid		.byt	0	; current PID running for easy kernel access, will be set by new
 dflt_in		= std_in	; in LOWRAM systems, both global and local standard devices are the same!
 dfltout		= stdout
 #endif
-old_t1		.word	0	; *** keep old T1 latch value for FG, revised 150208 *** might be revised or moved to firmware vars!
 
 ; ********************************
 ; *** some 65816 specific vars ***
