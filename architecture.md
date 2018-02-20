@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-18*
+*Last update: 2018-02-20*
 
 ## Rationale
 
@@ -282,7 +282,8 @@ patch_code:
 ```
 
 Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
-patchable. 
+patchable. The firmware will keep a table in RAM for the kernel's vector, sized as 
+defined by `API_SIZE`.
 
 ## Device Drivers (0.6 version)
 
