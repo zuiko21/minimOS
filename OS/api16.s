@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc5, should match kernel16.s
+; v0.6rc6, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180219-0915
+; last modified 20180221-0855
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -71,7 +71,6 @@ k_vec:
 memlock:				; *** FUTURE IMPLEMENTATION ***
 aq_mng:
 pq_mng:
-dr_info:
 bl_cnfg:
 bl_stat:
 ; *** DR_SHUT, remove driver ***
@@ -1613,6 +1612,31 @@ dr_call:
 	PHA					; push it (4)
 	.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
 	RTS					; actual CORRECTED jump (6)
+
+
+; *********************************************
+; *** DR_INFO, get pointer to driver header ***
+; *********************************************
+;		INPUT
+; Y			= requested device ID
+;		OUTPUT
+; ex_pt		= 16b pointer to driver header
+
+dr_info:
+#ifdef	MUTABLE
+; this assumes MUTABLE option!
+	LDX dr_ind-128, Y	; get sparse index
+;	CPY #$FF			; is this entry free? (or zero in leaded arrays)
+	BEQ di_none			; yes, signal error (3)
+		.al: REP #$20		; *** 16-bit memory ***
+		LDA drv_ads, X		; otherwise get full pointer...
+		STA ex_pt			; ...and store it as exit parameter
+		_EXIT_OK
+di_none:
+	_ERR(NFOUND)		; no such ID
+#else
+	_ERR(UNAVAIL)		; is there a way to get header address without sparse indexes?
+#endif
 
 
 ; ***************************************************************

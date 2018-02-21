@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc7, must match kernel.s
+; v0.6rc8, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180219-0915
+; last modified 20180221-0835
 
 ; no way for standalone assembly...
 
@@ -63,7 +63,6 @@ k_vec:
 memlock:
 aq_mng:
 pq_mng:
-dr_info:
 bl_cnfg:
 bl_stat:
 dr_shut:
@@ -1367,8 +1366,31 @@ dr_abort:
 	SEC
 	RTS
 
-; ******************************
-	_ERR(UNAVAIL)		; go away! PLACEHOLDER ********* TBD
+
+; *********************************************
+; *** DR_INFO, get pointer to driver header ***
+; *********************************************
+;		INPUT
+; Y			= requested device ID
+;		OUTPUT
+; ex_pt		= pointer to driver header
+
+dr_info:
+#ifdef	MUTABLE
+; this assumes MUTABLE option!
+	LDX dr_ind-128, Y	; get sparse index
+;	CPY #$FF			; is this entry free? (or zero in leaded arrays)
+	BEQ di_none			; yes, signal error (3)
+		LDA drv_ads+1, X	; otherwise get MSB...
+		LDY drv_ads, X		; ...and LSB
+		STY ex_pt			; store pointer as exit parameter
+		STA ex_pt+1
+		_EXIT_OK
+di_none:
+	_ERR(NFOUND)		; no such ID
+#else
+	_ERR(UNAVAIL)		; is there a way to get header address without sparse indexes?
+#endif
 
 
 ; ***************************************************************
