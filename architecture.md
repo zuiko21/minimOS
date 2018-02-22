@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-20*
+*Last update: 2018-02-22*
 
 ## Rationale
 
@@ -445,6 +445,12 @@ order to report the running PID (and architecture) to the OS.
 ## Kernel/API
 
 *to be done*
+
+### Kernel patching
+
+Kernel's API functioms may be patched (except on the `LOWRAM` version). From 0.6, the
+patching function (see *firmware* for details) provides the *previous* address,
+thus allowing both **head and/or tail patching**.
 
 ## Access privileges
 
