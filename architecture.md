@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-23*
+*Last update: 2018-02-26*
 
 ## Rationale
 
@@ -412,10 +412,18 @@ interfere with *kernel calls* and general system operation, if not carefully cra
 handler sets/restores DP accordingly).
 
 IDs *were* chosen in a random fashion, but they're likely to be grouped into batches
-of generic devices... thus, drivers would include any ID in the generic range, and the
-OS will try to find a place for him, perhaps with another suitable ID. *For instance,
-ther could be up to 8 **asynchronous serial** devices `as0` to `as7`, corresponding
-to IDs 232 to 239... thus, **most** if not all of these drivers would be supplied with
+of generic devices, like this:
+
+`lr0-lr7` = 128-135, **Low Resources** (for use within `LOWRAM` option)
+`as0-as7` = 232-239, *Asynchronous* Serial
+`ss0-ss7` = 240-247, *Synchronous* Serial (like **SS-22**)
+`ud0-ud7` = 248-255, **User Devices** (perhaps voiding 255)
+
+
+Thus, drivers would include any ID in the generic range, and the
+OS will try to find a place for him, perhaps with another suitable ID. Since
+there could be up to 8 **asynchronous serial** devices `as0` to `as7`, corresponding
+to IDs 232 to 239, **most** if not all of these drivers would be supplied with
 a fixed ID of 232, no matter whether driving a 6551, 6850, 16C550 or bit-banged VIA;
 upon install, the kernel would try to use the 232 entry. If busy, try everyone else up
 to 239; if no free entry is found, complain as `BUSY`, otherwise install it. Might try
