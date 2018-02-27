@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-26*
+*Last update: 2018-02-27*
 
 ## Rationale
 
@@ -415,8 +415,11 @@ IDs *were* chosen in a random fashion, but they're likely to be grouped into bat
 of generic devices, like this:
 
 `lr0-lr7` = 128-135, **Low Resources** (for use within `LOWRAM` option)
+
 `as0-as7` = 232-239, *Asynchronous* Serial
+
 `ss0-ss7` = 240-247, *Synchronous* Serial (like **SS-22**)
+
 `ud0-ud7` = 248-255, **User Devices** (perhaps voiding 255)
 
 
