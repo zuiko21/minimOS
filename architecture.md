@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-27*
+*Last update: 2018-02-28*
 
 ## Rationale
 
@@ -414,14 +414,10 @@ handler sets/restores DP accordingly).
 IDs *were* chosen in a random fashion, but they're likely to be grouped into batches
 of generic devices, like this:
 
-`lr0-lr7` = 128-135, **Low Resources** (for use within `LOWRAM` option)
-
-`as0-as7` = 232-239, *Asynchronous* Serial
-
-`ss0-ss7` = 240-247, *Synchronous* Serial (like **SS-22**)
-
-`ud0-ud7` = 248-255, **User Devices** (perhaps voiding 255)
-
+-`lr0-lr7` = 128-135, **Low Resources** (for use within `LOWRAM` option)
+-`as0-as7` = 232-239, *Asynchronous* Serial
+-`ss0-ss7` = 240-247, *Synchronous* Serial (like **SS-22**)
+-`ud0-ud7` = 248-255, **User Devices** (perhaps voiding 255)
 
 Thus, drivers would include any ID in the generic range, and the
 OS will try to find a place for him, perhaps with another suitable ID. Since
