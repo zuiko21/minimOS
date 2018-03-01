@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc5
+; v0.6rc6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180219-0914
+; last modified 20180301-1408
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -69,7 +69,6 @@ dr_shut:
 ; *** FUTURE IMPLEMENTATION ***
 aq_mng:
 pq_mng:
-dr_info:
 bl_cnfg:
 bl_stat:
 	_ERR(UNAVAIL)	; go away!
@@ -732,6 +731,27 @@ sd_tab:
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system
+
+; *********************************************
+; *** DR_INFO, get pointer to driver header ***
+; *********************************************
+;		INPUT
+; Y			= requested device ID
+;		OUTPUT
+; ex_pt		= pointer to driver header, is this possible *OR*
+; def_io	= std_in.L and stdout.H devices, if Y=0!
+
+dr_info:
+	TYA					; asking for defaults
+	BNE di_ndef			; no, proceed as usual
+		LDX std_in			; otherwise get BOTH devices
+		LDA stdout
+		STX def_io			; ...and store them as exit parameter
+		STA def_io+1
+		_EXIT_OK
+di_ndef:
+	_ERR(UNAVAIL)		; is there a way to get header address without sparse indexes?
+
 
 ; *******************************
 ; *** end of kernel functions ***

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc8, must match kernel.s
+; v0.6rc9, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180221-0835
+; last modified 20180301-1408
 
 ; no way for standalone assembly...
 
@@ -1373,9 +1373,18 @@ dr_abort:
 ;		INPUT
 ; Y			= requested device ID
 ;		OUTPUT
-; ex_pt		= pointer to driver header
+; ex_pt		= pointer to driver header *OR*
+; def_io	= std_in.L and stdout.H devices, if Y=0!
 
 dr_info:
+	TYA					; asking for defaults
+	BNE di_ndef			; no, proceed as usual
+		LDX std_in			; otherwise get BOTH devices
+		LDA stdout
+		STX def_io			; ...and store them as exit parameter
+		STA def_io+1
+		_EXIT_OK
+di_ndef:
 #ifdef	MUTABLE
 ; this assumes MUTABLE option!
 	LDX dr_ind-128, Y	; get sparse index
