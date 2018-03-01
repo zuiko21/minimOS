@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc6, should match kernel16.s
+; v0.6rc7, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180221-0855
+; last modified 20180301-1114
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1620,13 +1620,21 @@ dr_call:
 ;		INPUT
 ; Y			= requested device ID
 ;		OUTPUT
-; ex_pt		= 16b pointer to driver header
+; ex_pt		= 16b pointer to driver header *OR*
+; def_io	= std_in and stdout devices, if Y=0!
 
 dr_info:
-#ifdef	MUTABLE
+	TYA					; asking for defaults
+	BNE di_ndef			; no, proceed as usual
+		.al: REP #$20		; *** 16-bit memory ***
+		LDA std_in, X		; otherwise get BOTH devices
+		STA def_io			; ...and store them as exit parameter
+		_EXIT_OK
+di_ndef:
 ; this assumes MUTABLE option!
+#ifdef	MUTABLE
 	LDX dr_ind-128, Y	; get sparse index
-;	CPY #$FF			; is this entry free? (or zero in leaded arrays)
+;	CPX #$FF			; is this entry free? (or zero in leaded arrays)
 	BEQ di_none			; yes, signal error (3)
 		.al: REP #$20		; *** 16-bit memory ***
 		LDA drv_ads, X		; otherwise get full pointer...
