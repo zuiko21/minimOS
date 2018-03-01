@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc7, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180301-1114
+; last modified 20180301-1405
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1624,21 +1624,21 @@ dr_call:
 ; def_io	= std_in and stdout devices, if Y=0!
 
 dr_info:
-	TYA					; asking for defaults
-	BNE di_ndef			; no, proceed as usual
-		.al: REP #$20		; *** 16-bit memory ***
-		LDA std_in, X		; otherwise get BOTH devices
-		STA def_io			; ...and store them as exit parameter
+	TYA					; asking for defaults (2)
+	BNE di_ndef			; no, proceed as usual (3/2)
+		.al: REP #$20		; *** 16-bit memory *** (/3)
+		LDA std_in			; otherwise get BOTH devices (/4)
+		STA def_io			; ...and store them as exit parameter (/4)
 		_EXIT_OK
 di_ndef:
 ; this assumes MUTABLE option!
 #ifdef	MUTABLE
-	LDX dr_ind-128, Y	; get sparse index
+	LDX dr_ind-128, Y	; get sparse index (4+)
 ;	CPX #$FF			; is this entry free? (or zero in leaded arrays)
-	BEQ di_none			; yes, signal error (3)
-		.al: REP #$20		; *** 16-bit memory ***
-		LDA drv_ads, X		; otherwise get full pointer...
-		STA ex_pt			; ...and store it as exit parameter
+	BEQ di_none			; yes, signal error (3/2)
+		.al: REP #$20		; *** 16-bit memory *** (/3)
+		LDA drv_ads, X		; otherwise get full pointer... (/5)
+		STA ex_pt			; ...and store it as exit parameter (/4)
 		_EXIT_OK
 di_none:
 	_ERR(NFOUND)		; no such ID
