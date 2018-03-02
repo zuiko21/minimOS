@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180301-1408
+; last modified 20180302-1212
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -732,13 +732,12 @@ sd_tab:
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system
 
-; *********************************************
-; *** DR_INFO, get pointer to driver header ***
-; *********************************************
+; *******************************************
+; *** DR_INFO, get default device drivers ***
+; *******************************************
 ;		INPUT
 ; Y			= requested device ID
 ;		OUTPUT
-; ex_pt		= pointer to driver header, is this possible *OR*
 ; def_io	= std_in.L and stdout.H devices, if Y=0!
 
 dr_info:

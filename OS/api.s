@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc9, must match kernel.s
+; v0.6rc10, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180301-1408
+; last modified 20180302-1203
 
 ; no way for standalone assembly...
 
@@ -1373,14 +1373,21 @@ dr_abort:
 ;		INPUT
 ; Y			= requested device ID
 ;		OUTPUT
-; ex_pt		= pointer to driver header *OR*
-; def_io	= std_in.L and stdout.H devices, if Y=0!
+; ex_pt		= pointer to driver header, for any suitable Y
+; def_io	= std_in@L and stdout@H devices, if Y=0!
 
 dr_info:
 	TYA					; asking for defaults
 	BNE di_ndef			; no, proceed as usual
-		LDX std_in			; otherwise get BOTH devices
+; try to resolve default global devices
+		LDX std_in			; get std_in here (LSB) (/3)
+		BNE di_sinz			; non-standard input (/3/2)
+			LDX dflt_in			; otherwise, get system global! (//4)
+di_sinz:
 		LDA stdout
+		BNE di_sonz			; non-standard output (/3/2)
+			LDA dfltout			; otherwise get system global (//4)
+di_sonz:
 		STX def_io			; ...and store them as exit parameter
 		STA def_io+1
 		_EXIT_OK

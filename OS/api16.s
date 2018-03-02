@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc7, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180302-0942
+; last modified 20180302-1200
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1620,39 +1620,25 @@ dr_call:
 ;		INPUT
 ; Y			= requested device ID
 ;		OUTPUT
-; ex_pt		= 16b pointer to driver header *OR*
-; def_io	= std_in and stdout devices, if Y=0!
+; ex_pt		= 16b pointer to driver header, for any suitable Y
+; def_io	= std_in@L and stdout@H devices, if Y=0!
 
 dr_info:
 	TYA					; asking for defaults (2)
 	BNE di_ndef			; no, proceed as usual (3/2)
-; *** initial attempt going into 16-bit mode ***
-;		.al: REP #$20		; *** 16-bit memory *** (/3)
-;		LDA std_in			; otherwise get BOTH devices (/4)
-; should check whether any is the default device...
-;		TAX					; this gets LSB (std_in) in X (/2)
-;		BNE di_sinz			; non-standard input (/3/2)
-;			LDX dflt_in			; otherwise, get system global! (//4)
-;di_sinz:
-;		AND #$FF00			; filter MSB (stdout) (/3)
-;		BNE di_sonz			; non-standard output (/3/2)
-;			LDA dfltout			; otherwise get system global (with extra byte)... (//5)
-;			XBA					; ...and make it MSB (//3)
-;di_sonz:
-;		STA def_io			; now store MSB as exit parameter (/4)
-;		STX def_io			; this is the already processed LSB (/3)
-; *** alternative approach on full 8-bit ***
+; try to resolve default global devices
+; initial attempt going into 16-bit mode was 23 bytes, best 25 cycles, worst 35 cycles
+; *** alternative approach on full 8-bit *** 18 bytes, best 18 cycles, worst 24 bytes
 		LDX std_in			; get std_in here (LSB) (/3)
 		BNE di_sinz			; non-standard input (/3/2)
 			LDX dflt_in			; otherwise, get system global! (//4)
 di_sinz:
-		LDA stdout+1		; get stdout too (MSB) (/3)
+		LDA stdout			; get stdout too (/3)
 		BNE di_sonz			; non-standard output (/3/2)
 			LDA dfltout			; otherwise get system global (//4)
 di_sonz:
-		STA def_io+1			; now store MSB as exit parameter (/3)
+		STA def_io+1		; now store MSB as exit parameter (/3)
 		STX def_io			; this is the already processed LSB (/3)
-; *** common ending ***
 		_EXIT_OK
 di_ndef:
 ; this assumes MUTABLE option!
