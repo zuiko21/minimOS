@@ -1650,6 +1650,7 @@ ds_call:
 	PHA					; ...into the stack...
 	RTS					; ...and jump to it! Will return to the above caller
 
+	.as:
 
 ; *********************************************
 ; *** DR_INFO, get pointer to driver header ***

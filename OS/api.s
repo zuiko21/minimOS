@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc10, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180302-1203
+; last modified 20180302-1246
 
 ; no way for standalone assembly...
 
@@ -1365,6 +1365,41 @@ dr_abort:
 ; standard error exit, no macro here
 	SEC
 	RTS
+
+
+; ******************************
+; *** DR_SHUT, remove driver ***
+; ******************************
+;		INPUT
+; Y			= target ID
+;		OUTPUT
+; da_ptr	= pointer to header from removed driver (if available, C otherwise)
+
+; *** intended for MUTABLE option only ***
+
+dr_shut:
+	LDX dr_ind-128, Y	; is that being used?
+	BNE ds_used			; yes, proceed to remove
+		_ERR(NFOUND)		; no, nothing to remove
+ds_used:
+	_STZA dr_ind-128, Y	; this is no more, any problem here? ***use whatever null value***
+	LDY drv_ads, X		; get full header pointer
+	LDA drv_ads+1, X
+; does it need to clear that entry?
+	STY da_ptr			; report from removed, will serve as ZP pointer too
+	STA da_ptr+1
+; needs to disable interrupt tasks first! must keep X
+; *** perhaps using AQ_MNG and PQ_MNG???
+	_STZA drv_a_en, X	; clear flags for both drv_a_en and drv_p_en arrays! Queues do not recover any space, though
+	_STZA drv_p_en, X
+; does it need to remove I/O routines from arrays???
+
+; finally, execute proper shutdown
+	_CRITIC
+	LDY #D_BYE			; offset to shutdown routine
+	JSR dr_call			; execute shutdown procedure *** interrupts off ***
+	_NO_CRIT
+	_EXIT_OK			; all done
 
 
 ; *********************************************
