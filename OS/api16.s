@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc7, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180302-1215
+; last modified 20180302-1236
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -73,9 +73,6 @@ aq_mng:
 pq_mng:
 bl_cnfg:
 bl_stat:
-; *** DR_SHUT, remove driver ***
-; interface TBD ****
-dr_shut:
 
 unimplemented:			; placeholder here, not currently used
 	_ERR(UNAVAIL)		; go away!
@@ -267,6 +264,7 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
+; SAFE option should check for empty entries!!!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
@@ -351,9 +349,9 @@ bli_24b:
 ci_port:
 	BPL ci_nph			; logic device (2/3)
 ; new MUTEX for CIN
-;	ASL					; convert to proper physdev index (2)
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
+; SAFE option should check for empty entries!!!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep sparse physdev temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
@@ -1612,6 +1610,45 @@ dr_call:
 	PHA					; push it (4)
 	.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
 	RTS					; actual CORRECTED jump (6)
+
+
+; ******************************
+; *** DR_SHUT, remove driver ***
+; ******************************
+;		INPUT
+; Y			= target ID
+;		OUTPUT
+; da_ptr	= pointer to header from removed driver (if available, C otherwise)
+
+; *** intended for MUTABLE option only ***
+
+dr_shut:
+	LDX dr_ind-128, Y	; is that being used?
+	BNE ds_used			; yes, proceed to remove
+		_ERR(NFOUND)		; no, nothing to remove
+ds_used:
+	STZ dr_ind-128, Y	; this is no more, any problem here? ***use whatever null value***
+	.al: REP #$20		; *** 16-bit memory ***
+	LDA drv_ads, X		; get full header pointer
+; does it need to clear that entry?
+	STA da_ptr			; report from removed, will serve as ZP pointer too
+; needs to disable interrupt tasks first! must keep X
+; *** perhaps using AQ_MNG and PQ_MNG???
+	STZ drv_a_en, X		; clear flags for both drv_a_en and drv_p_en arrays! Queues do not recover any space, though
+; does it need to remove I/O routines from arrays???
+
+; finally, execute proper shutdown
+	_CRITIC
+	JSR ds_call			; execute shutdown procedure *** interrupts off ***
+	_NO_CRIT
+	_EXIT_OK			; all done
+
+ds_call:
+	LDY #D_BYE			; offset to shutdown routine
+	LDA (da_ptr), Y		; get routine address...
+	DEC					; ...corrected for RTS...
+	PHA					; ...into the stack...
+	RTS					; ...and jump to it! Will return to the above caller
 
 
 ; *********************************************
