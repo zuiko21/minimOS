@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc7, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180302-1200
+; last modified 20180302-1215
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1655,6 +1655,8 @@ di_none:
 #else
 	_ERR(UNAVAIL)		; is there a way to get header address without sparse indexes?
 #endif
+
+	.xs:
 
 
 ; ***************************************************************
