@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc7, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180301-1405
+; last modified 20180302-0942
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1626,9 +1626,33 @@ dr_call:
 dr_info:
 	TYA					; asking for defaults (2)
 	BNE di_ndef			; no, proceed as usual (3/2)
-		.al: REP #$20		; *** 16-bit memory *** (/3)
-		LDA std_in			; otherwise get BOTH devices (/4)
-		STA def_io			; ...and store them as exit parameter (/4)
+; *** initial attempt going into 16-bit mode ***
+;		.al: REP #$20		; *** 16-bit memory *** (/3)
+;		LDA std_in			; otherwise get BOTH devices (/4)
+; should check whether any is the default device...
+;		TAX					; this gets LSB (std_in) in X (/2)
+;		BNE di_sinz			; non-standard input (/3/2)
+;			LDX dflt_in			; otherwise, get system global! (//4)
+;di_sinz:
+;		AND #$FF00			; filter MSB (stdout) (/3)
+;		BNE di_sonz			; non-standard output (/3/2)
+;			LDA dfltout			; otherwise get system global (with extra byte)... (//5)
+;			XBA					; ...and make it MSB (//3)
+;di_sonz:
+;		STA def_io			; now store MSB as exit parameter (/4)
+;		STX def_io			; this is the already processed LSB (/3)
+; *** alternative approach on full 8-bit ***
+		LDX std_in			; get std_in here (LSB) (/3)
+		BNE di_sinz			; non-standard input (/3/2)
+			LDX dflt_in			; otherwise, get system global! (//4)
+di_sinz:
+		LDA stdout+1		; get stdout too (MSB) (/3)
+		BNE di_sonz			; non-standard output (/3/2)
+			LDA dfltout			; otherwise get system global (//4)
+di_sonz:
+		STA def_io+1			; now store MSB as exit parameter (/3)
+		STX def_io			; this is the already processed LSB (/3)
+; *** common ending ***
 		_EXIT_OK
 di_ndef:
 ; this assumes MUTABLE option!
