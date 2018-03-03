@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc7, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180302-1236
+; last modified 20180303-2209
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1639,16 +1639,10 @@ ds_used:
 
 ; finally, execute proper shutdown
 	_CRITIC
-	JSR ds_call			; execute shutdown procedure *** interrupts off ***
+	LDY #D_BYE			; offset to shutdown routine
+	JSR dr_call			; execute shutdown procedure *** interrupts off ***
 	_NO_CRIT
 	_EXIT_OK			; all done
-
-ds_call:
-	LDY #D_BYE			; offset to shutdown routine
-	LDA (da_ptr), Y		; get routine address...
-	DEC					; ...corrected for RTS...
-	PHA					; ...into the stack...
-	RTS					; ...and jump to it! Will return to the above caller
 
 	.as:
 
