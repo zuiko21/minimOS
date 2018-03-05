@@ -1,15 +1,15 @@
 ; minimOS 0.6rc3 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180305-0912
+; last modified 20180305-0941
 .bss
 
 ; **** I/O management ****
 ; ** pointer tables for drivers, new order suggested for alternative version **
 #ifndef	LOWRAM
-drv_opt		.dsb	MX_DRVRS*2	; full page of output driver pointers, new direct scheme 160406
+drv_opt		.dsb	MX_DRVRS*2	; full page of output driver pointers, new direct scheme 160406 ; ***these best NOT at $xx00***
 drv_ipt		.dsb	MX_DRVRS*2	; full page of input driver pointers, new direct scheme 160406
 ; ***** new direct array for sparse indexes *****
-dr_ind		.dsb	128			; index for sparse array
+dr_ind		.dsb	128			; index for sparse array ***this is best aligned at $xx80 for optimum performance***
 ; mutable or not, keep track of driver header pointers!
 drv_ads		.dsb	MX_DRVRS*2	; address of headers from actually assigned IDs, new 171011, now sparse
 #else

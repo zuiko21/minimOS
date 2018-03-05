@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc7, should match kernel16.s
+; v0.6rc8, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180303-2209
+; last modified 20180305-1006
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1394,30 +1394,21 @@ dr_phys:
 
 ; * 1) first check whether this ID was not in use *
 ; since I/O pointers are always set, pseudo-drivers are detected too!
-; sparse arrays will not convert ID to index yet...
+; always using sparse arrays, will not convert ID to index yet...
 	TAX					; definitive ID must end here, just in case, but also in A (2)
+	LDY dr_ind-128, X	; get proper offset as arrays are sparse!
 ; new 170523, TASK_DEV is nothing to be checked
-#ifndef		MUTABLE
-; older routine, no longer needed as new drv_ads array eases it!
-	.al: REP #$20		; *** 16-bit memory *** (3)
-	LDA #dr_error		; will look for this address (3)
-	CMP drv_opt, X		; check whether in use (5)
-		BNE dr_busy			; pointer was not empty (2/3)
-	CMP drv_ipt, X		; now check input, just in case (5)
-	BNE dr_empty		; and all is done
-#else
+; offsets are +1, thus 0 means free entry!
+	BEQ dr_empty		; if free, all done
+#ifdef		MUTABLE
 ; new system for mutable IDs, 171013
-	LDY dr_ind-128, X	; already in use?
-;	CPY #SX_FREE		; uncomment if SX_FREE is not zero
-	BEQ dr_empty		; no, all done
-; otherwise filter bits and scan possible IDs for this kind of device
-; original ID... must be already in A
-		AND #$F0			; filter relevant
+; filter bits and scan possible IDs for this kind of device
+; original ID must be already in A
+		AND #%11110000		; filter relevant
 		TAX					; base offset
 		LDY #8				; devs per kind
 dr_nxid:
 			LDA dr_ind-128, X	; ID in use?
-;			CMP #SX_FREE		; in case 0 is useable, otherwise let commented
 				BEQ dr_empty		; no, all OK now
 			INX					; yes, try next
 			DEY					; one less to go
@@ -1428,9 +1419,6 @@ dr_busy:
 		JMP dr_babort		; already in use (3)
 dr_empty:
 	STX dr_id			; keep updated ID
-#ifndef	MUTABLE
-	.as: SEP #$20		; *** 8-bit memory as arrived here in 16-bit mode ***
-#endif
 
 ; * 2) check room in queues, where needed *
 	LDY #D_AUTH			; let us get the provided features (2)
@@ -1462,13 +1450,13 @@ dr_isuc:
 ; all checked OK, do actual driver installation!
 ; *** now adapted for new sparse arrays! ***
 ; time to look for an empty entry on sparse array
-	LDX #2				; currently will not assing index 0 (2)
+	LDX #1				; will not assing index 0 (2)
 dr_ios:
-		LDA drv_opt+1, X	; check MSB of entry, non-output drivers must provide dummy error routine anyway (4)
+		LDA drv_ads, X		; check MSB of entry, now on mandatory array (4)
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #2*MX_DRVRS+2	; otherwise, is there room for more? (2) note +2 offset, now removed, newer doubled
+		CPX #2*MX_DRVRS+1	; otherwise, is there room for more? (2) note +1 offset
 		BNE dr_ios			; yes, continue (3)
 	JMP dr_fabort		; no, complain (3)
 dr_sarr:
@@ -1480,14 +1468,14 @@ dr_sarr:
 	.al: REP #$20		; *** 16-bit memory again, just in case *** (3)
 
 ; * 4) Set I/O pointers *
-; no longer checks I/O availability as any driver must provide at least dummy pointers!
+; no longer checks I/O availability as drv_ads array is mandatory!
 ; thus not worth a loop...
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-	STA drv_ipt, X		; store full pointer in table (5)
+	STA drv_ipt-1, X	; store full pointer in table, note min X=1 (5)
 	LDY #D_BOUT			; offset for output routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-	STA drv_opt, X		; store full pointer in table (5)
+	STA drv_opt-1, X	; store full pointer in table (5)
 
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...
@@ -1548,18 +1536,15 @@ dr_doreq:
 ; *** end of suspicious code ***
 dr_ended:
 	LDY dr_id			; must return actual ID, as might be mutable!
-#ifdef	MUTABLE
-; ****** as all was OK, include this driver address into new array, at actually assigned ID
+; sparse indexes always!
 	.al: REP #$20
 	LDX dr_ind-128, Y	; convert to sparse index!
 	LDA da_ptr			; get header pointer, we were in 16-bit A (4)
-	STA drv_ads, X		; store in proper entry (5)
-; ****** end of optional code
-#endif
+	STA drv_ads-1, X	; store in proper entry, note min X=1 (5)
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
 	_EXIT_OK			; if arrived here, did not fail initialisation
-; sizes seem irrelevant here, as long as X=1
+; memory size seems irrelevant here, as long as 8-bit indexes
 
 ; **********************
 ; *** error handling ***
@@ -1629,18 +1614,18 @@ dr_shut:
 ds_used:
 	STZ dr_ind-128, Y	; this is no more, any problem here? ***use whatever null value***
 	.al: REP #$20		; *** 16-bit memory ***
-	LDA drv_ads, X		; get full header pointer
-; does it need to clear that entry?
+	LDA drv_ads-1, X	; get full header pointer
 	STA da_ptr			; report from removed, will serve as ZP pointer too
-; needs to disable interrupt tasks first! must keep X
+; make sure this entry is reported as free for future use
+	STZ drv_ads-1, X	; clear this entry as now mandatory (note min X=1)
+; needs to disable interrupt tasks!
 ; *** perhaps using AQ_MNG and PQ_MNG???
-	STZ drv_a_en, X		; clear flags for both drv_a_en and drv_p_en arrays! Queues do not recover any space, though
-; does it need to remove I/O routines from arrays???
-
+; previous X is NOT valid as this is not a sparse array, but a queue!!!
+;	STZ drv_a_en, X		; clear flags for both drv_a_en and drv_p_en arrays! Queues do not recover any space, though
 ; finally, execute proper shutdown
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
-	JSR dr_call			; execute shutdown procedure *** interrupts off ***
+	JSR dr_call			; execute shutdown procedure via GENERIC routine *** interrupts off ***
 	_NO_CRIT
 	_EXIT_OK			; all done
 
@@ -1673,20 +1658,15 @@ di_sonz:
 		STX def_io			; this is the already processed LSB (/3)
 		_EXIT_OK
 di_ndef:
-; this assumes MUTABLE option!
-#ifdef	MUTABLE
-	LDX dr_ind-128, Y	; get sparse index (4+)
-;	CPX #$FF			; is this entry free? (or zero in leaded arrays)
+; as drv_ads is now mandatory, no need for MUTABLE option
+	LDX dr_ind-128, Y	; get sparse index, is it free? (4+)
 	BEQ di_none			; yes, signal error (3/2)
 		.al: REP #$20		; *** 16-bit memory *** (/3)
-		LDA drv_ads, X		; otherwise get full pointer... (/5)
+		LDA drv_ads-1, X	; otherwise get full pointer (note new offset)... (/5)
 		STA ex_pt			; ...and store it as exit parameter (/4)
 		_EXIT_OK
 di_none:
 	_ERR(NFOUND)		; no such ID
-#else
-	_ERR(UNAVAIL)		; is there a way to get header address without sparse indexes?
-#endif
 
 	.xs:
 

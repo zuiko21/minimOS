@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc10, must match kernel.s
+; v0.6rc11, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180302-1246
+; last modified 20180305-1006
 
 ; no way for standalone assembly...
 
@@ -1115,8 +1115,7 @@ dr_phys:
 	TAX					; was Y, also in A (2)
 ; sparse array ready
 	LDY dr_ind-128, X	; check original ID
-;	CPY #$FF			; is this entry free? (or zero in leaded arrays)
-	BEQ dr_empty		; yes, go for it (3)
+	BEQ dr_empty		; if free, go for it (3)
 #ifdef	MUTABLE
 ; new 171013, mutable IDs have a pointer array for easier checking
 		AND #%11110000		; no, filter 8 devs each kind
@@ -1124,25 +1123,11 @@ dr_phys:
 		LDY #8				; 8 devs per kind
 dr_nxid:
 			LDA dr_ind-128, X	; check that other ID
-;			CMP #$FF			; empty value? (2)
 				BEQ dr_empty		; yes, already OK (3)
 			INX					; no, try next (2)
 			DEY					; one less to go (2)
 			BNE dr_nxid			; until no more available (3)
 ; otherwise, no room for it! new ID in X
-#else
-; new 170518, TASK_DEV is nothing to be checked
-; ***** perhaps non-mutable IDs might take sparse arrays...
-	LDA #<dr_error		; pre-installed LSB (2)
-	CMP drv_opt, X		; check whether in use (4)
-		BNE dr_busy			; pointer was not empty (2/3)
-	CMP drv_ipt, X		; now check input, just in case (4)
-		BNE dr_busy			; pointer was not empty (2/3)
-	LDA #>dr_error		; now look for pre-installed MSB (2)
-	CMP drv_opt+1, X	; check whether in use (4)
-		BNE dr_busy			; pointer was not empty (2/3)
-	CMP drv_ipt+1, X	; now check input, just in case (4)
-	BEQ dr_empty		; it is OK to set (3/2)
 #endif
 dr_busy:
 ; separate function issues BUSY error
@@ -1156,7 +1141,7 @@ dr_empty:
 	LDA (da_ptr), Y
 	STA dr_aut			; a commonly used value
 ; check space in queues
-	LDX #1				; max queue index
+	LDX #1				; max queue-size index
 dr_chk:
 		ASL				; extract MSB (will be A_POLL first, then A_REQ)
 		BCC dr_ntsk			; skip verification if task not enabled
@@ -1180,13 +1165,13 @@ dr_succ:
 ; all checked OK, do actual driver installation!
 ; *** now adapted for new sparse arrays! ***
 ; time to look for an empty entry on sparse array
-	LDX #2				; currently will not use index 0 (2)
+	LDX #1				; will not assing index 0 (2)
 dr_ios:
-		LDA drv_opt+1, X	; check MSB of entry, non-output drivers must provide dummy error routine anyway (4)
+		LDA drv_ads, X		; check MSB of entry, now on mandatory array (4)
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #2*MX_DRVRS+2	; otherwise, is there room for more? (2) note offset
+		CPX #2*MX_DRVRS+1	; otherwise, is there room for more? (2) note offset
 		BNE dr_ios			; yes, no need for BRA (3)
 	JMP dr_fabort		; no, complain (3)
 dr_sarr:
@@ -1196,20 +1181,20 @@ dr_sarr:
 	STA dr_ind-128, Y	; store sparse index for that ID, alas, no STX abs,Y (4)
 ; proper index already in X and A
 ; 4) Set I/O pointers
-; no need to check I/O availability as any driver must supply at least dummy pointers!
+; no longer checks I/O availability as drv_ads array is mandatory!
 ; thus not worth a loop, I think...
 	LDY #D_BLIN			; input routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
-	STA drv_ipt, X		; store in table (4)
+	STA drv_ipt-1, X	; store in table, note min X=1 (4)
 	LDA pfa_ptr+1		; same for MSB (3+4)
-	STA drv_ipt+1, X
+	STA drv_ipt, X
 	LDY #D_BOUT			; offset for output routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
-	STA drv_opt, X		; store in table (4)
+	STA drv_opt-1, X	; store in table, note min X=1 (4)
 	LDA pfa_ptr+1		; same for MSB (3+4)
-	STA drv_opt+1, X
+	STA drv_opt, X
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
@@ -1273,15 +1258,12 @@ dr_neqnw:
 ; *** end of suspicious code ***
 dr_done:
 	LDY dr_id			; must return actual ID, as might be mutable!
-#ifdef	MUTABLE
-; ****** as all was OK, include this driver address into new array, at actually assigned ID
+; sparse indexes always!
 	LDX dr_ind-128, Y	; now it is a proper index for sparse array! (4)
 	LDA da_ptr			; get header pointer (3)
-	STA drv_ads, X		; store LSB (4)
+	STA drv_ads-1, X	; store LSB, note min X=1 (4)
 	LDA da_ptr+1		; same for MSB (3)
-	STA drv_ads+1, X	; store MSB in proper entry (4)
-; ****** end of optional code
-#endif
+	STA drv_ads, X		; store MSB in proper entry (4)
 ; function will exit successfully here
 	_EXIT_OK
 
@@ -1382,18 +1364,19 @@ dr_shut:
 	BNE ds_used			; yes, proceed to remove
 		_ERR(NFOUND)		; no, nothing to remove
 ds_used:
-	_STZA dr_ind-128, Y	; this is no more, any problem here? ***use whatever null value***
-	LDY drv_ads, X		; get full header pointer
-	LDA drv_ads+1, X
+	_STZA dr_ind-128, Y	; this is no more, any problem here?
+	LDY drv_ads-1, X	; get full header pointer (note min X=1)
+	LDA drv_ads, X
 ; does it need to clear that entry?
 	STY da_ptr			; report from removed, will serve as ZP pointer too
 	STA da_ptr+1
-; needs to disable interrupt tasks first! must keep X
-; *** perhaps using AQ_MNG and PQ_MNG???
-	_STZA drv_a_en, X	; clear flags for both drv_a_en and drv_p_en arrays! Queues do not recover any space, though
-	_STZA drv_p_en, X
 ; does it need to remove I/O routines from arrays???
-
+	_STZA drv_opt, X	; at least clear MSB of Output routine as checked by DR_INST (note null offset as min X=1)
+; needs to disable interrupt tasks!
+; *** perhaps using AQ_MNG and PQ_MNG???
+; previous X is NOT valid as this is not a sparse array, but a queue!!!
+;	_STZA drv_a_en, X	; clear flags for both drv_a_en and drv_p_en arrays! Queues do not recover any space, though
+;	_STZA drv_p_en, X
 ; finally, execute proper shutdown
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
@@ -1427,21 +1410,16 @@ di_sonz:
 		STA def_io+1
 		_EXIT_OK
 di_ndef:
-#ifdef	MUTABLE
-; this assumes MUTABLE option!
-	LDX dr_ind-128, Y	; get sparse index
-;	CPY #$FF			; is this entry free? (or zero in leaded arrays)
+; as drv_ads is now mandatory, no need for MUTABLE option
+	LDX dr_ind-128, Y	; get sparse index, is this entry free? (4)
 	BEQ di_none			; yes, signal error (3)
-		LDA drv_ads+1, X	; otherwise get MSB...
-		LDY drv_ads, X		; ...and LSB
+		LDA drv_ads, X		; otherwise get MSB (note min X=1)...
+		LDY drv_ads-1, X	; ...and LSB
 		STY ex_pt			; store pointer as exit parameter
 		STA ex_pt+1
 		_EXIT_OK
 di_none:
 	_ERR(NFOUND)		; no such ID
-#else
-	_ERR(UNAVAIL)		; is there a way to get header address without sparse indexes?
-#endif
 
 
 ; ***************************************************************
