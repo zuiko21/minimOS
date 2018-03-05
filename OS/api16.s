@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc8, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180305-1006
+; last modified 20180305-1014
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -245,9 +245,9 @@ co_ok:
 ; *** some common routines ***
 ; these could be called in 8 or 16-bit index size, but always 8-bit memory!
 ci_nevent:
-	STZ cin_mode, X		; *back to normal mode
+	STZ cin_mode-1, X	; *back to normal mode
 ci_exitOK:
-	STZ cio_lock, X		; *otherwise clear mutex!!! (4)
+	STZ cio_lock-1, X	; *otherwise clear mutex!!! (4)
 	PLB					; essential!
 	_EXIT_OK			; all done without error!
 
@@ -264,12 +264,12 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-; SAFE option should check for empty entries!!!
+; as dummy I/O pointers are mandatory, no need for null-offset check!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
-		LDA cio_lock, X		; check whether THAT device is in use (4) 24-bit!
+		LDA cio_lock-1, X	; check whether THAT device is in use (4) 24-bit!
 			BEQ co_lckd			; resume operation if free (3)
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		LDX iol_dev			; retrieve index!
@@ -277,10 +277,10 @@ co_loop:
 
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
-	STA cio_lock, X		; *reserve this (4)
+	STA cio_lock-1, X	; *reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper sparse physdev index in X
-	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
+	JSR (drv_opt-1, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 	.as:.xs: SEP #$30	; *** please make sure we are back in 8-bit sizes ***
 ; ...and then into cio_unlock
 
@@ -293,7 +293,7 @@ co_lckd:
 ; must be called in all 8-bit size!!!
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
-	STZ cio_lock, X		; ...because I have to clear MUTEX! *new indexed form (4)
+	STZ cio_lock-1, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	PLB					; we are leaving... into cio_callend
 
 ; ** cio_callend **
@@ -351,17 +351,17 @@ ci_port:
 ; new MUTEX for CIN
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-; SAFE option should check for empty entries!!!
+; as dummy I/O pointers are mandatory, no need for null-offset check!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep sparse physdev temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
-		LDA cio_lock, X		; *check whether THAT device in use (4)
+		LDA cio_lock-1, X	; *check whether THAT device in use (4)
 			BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
 		LDA run_pid			; who am I?
-		CMP cio_lock, X		; *was it me who locked? (4)
+		CMP cio_lock-1, X	; *was it me who locked? (4)
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
@@ -370,11 +370,11 @@ ci_loop:
 		BRA ci_loop			; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
-	STA cio_lock, X		; *reserve this (4)
+	STA cio_lock-1, X	; *reserve this (4)
 ci_lckdd:
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; ** new direct indexing **
-		JSR (drv_ipt, X)	; direct CALL!!!
+		JSR (drv_ipt-1, X)	; direct CALL!!!
 		.as:.xs: SEP #$30	; *** please make sure we are back in 8-bit sizes ***
 			BCS cio_unlock		; clear MUTEX and return whatever error!
 ci_nph:

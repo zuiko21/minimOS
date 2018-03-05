@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc11, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180305-1006
+; last modified 20180305-1014
 
 ; no way for standalone assembly...
 
@@ -202,11 +202,12 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
+; as dummy I/O pointers are mandatory, no need for null-offset check!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 	_CRITIC				; needed for a MUTEX (5)
 co_loop:
-		LDA cio_lock, X		; check whether THAT device is in use (4)
+		LDA cio_lock-1, X	; check whether THAT device is in use (4) note sparse offset
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
@@ -214,7 +215,7 @@ co_loop:
 		_BRA co_loop		; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
-	STA cio_lock, X		; *reserve this (4) note sparse offset
+	STA cio_lock-1, X	; *reserve this (4) note sparse offset
 	_NO_CRIT
 ; continue with mutually exclusive COUT
 	JSR co_call			; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
@@ -222,7 +223,7 @@ co_lckd:
 ; *** common I/O call ***
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
-	_STZA cio_lock, X	; ...because I have to clear MUTEX! *new indexed form (4)
+	_STZA cio_lock-1, X	; ...because I have to clear MUTEX! *new indexed form (4)
 	RTS					; exit with whatever error code
 
 
@@ -250,17 +251,18 @@ ci_port:
 ; new MUTEX for CIN, physical devs only! ID arrives in Y!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
+; as dummy I/O pointers are mandatory, no need for null-offset check!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep sparse-physdev temporarily, worth doing here (3)
 ; * this has to be done atomic! *
 	_CRITIC
 ci_loop:
-	LDA cio_lock, X		; *check whether THAT device in use (4)
+	LDA cio_lock-1, X	; *check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
 		LDA run_pid			; who am I?
-		CMP cio_lock, X		; *was it me who locked? (4)
+		CMP cio_lock-1, X	; *was it me who locked? (4)
 			BEQ ci_lckdd		; *if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
@@ -269,7 +271,7 @@ ci_loop:
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
-	STA cio_lock, X		; *reserve this (4)
+	STA cio_lock-1, X	; *reserve this (4)
 ci_lckdd:
 	_NO_CRIT
 ; * end of atomic operation *
@@ -344,10 +346,10 @@ ci_nle:
 
 ; *** for 02 systems without indexed CALL ***
 co_call:
-	_JMPX(drv_opt)		; direct jump to output routine
+	_JMPX(drv_opt-1)	; direct jump to output routine
 
 ci_call:
-	_JMPX(drv_ipt)		; direct jump to input routine
+	_JMPX(drv_ipt-1)	; direct jump to input routine
 
 
 ; ******************************
