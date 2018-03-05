@@ -1,6 +1,6 @@
-; minimOS 0.6rc2 System Variables
+; minimOS 0.6rc3 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180219-0831
+; last modified 20180305-0912
 .bss
 
 ; **** I/O management ****
@@ -10,14 +10,14 @@ drv_opt		.dsb	MX_DRVRS*2	; full page of output driver pointers, new direct schem
 drv_ipt		.dsb	MX_DRVRS*2	; full page of input driver pointers, new direct scheme 160406
 ; ***** new direct array for sparse indexes *****
 dr_ind		.dsb	128			; index for sparse array
-; ****** in case of mutable driver IDs
-#ifdef	MUTABLE
+; mutable or not, keep track of driver header pointers!
 drv_ads		.dsb	MX_DRVRS*2	; address of headers from actually assigned IDs, new 171011, now sparse
-#endif
 #else
 ; ****** this will change
 drv_num		.byt	0			; number of installed drivers
 id_list		.dsb	MX_DRVRS	; space for reasonable number of drivers
+; ideally will be non-sparse direct arrays from ROM, non-mutable devices lr0-lr7 (128-135)
+;drv_en		.dsb	8			; array of enabled drivers, perhaps going in a slower, memory-saving bitwise format???
 #endif
 
 ; ** I/O flags and locks **
