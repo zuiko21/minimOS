@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc11, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180305-1014
+; last modified 20180306-1036
 
 ; no way for standalone assembly...
 
@@ -202,12 +202,12 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-; as dummy I/O pointers are mandatory, no need for null-offset check!
+; a dummy first entry in pointer arrays make checking for available devices unnecessary!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 	_CRITIC				; needed for a MUTEX (5)
 co_loop:
-		LDA cio_lock-1, X	; check whether THAT device is in use (4) note sparse offset
+		LDA cio_lock, X		; check whether THAT device is in use (4)
 			BEQ co_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
@@ -215,15 +215,15 @@ co_loop:
 		_BRA co_loop		; try again! (3)
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
-	STA cio_lock-1, X	; *reserve this (4) note sparse offset
+	STA cio_lock, X		; reserve this (4)
 	_NO_CRIT
 ; continue with mutually exclusive COUT
 	JSR co_call			; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 
 ; *** common I/O call ***
 cio_unlock:
-	LDX iol_dev			; **need to clear new lock! (3)
-	_STZA cio_lock-1, X	; ...because I have to clear MUTEX! *new indexed form (4)
+	LDX iol_dev			; get offest, need to clear new lock! (3)
+	_STZA cio_lock, X	; ...because I have to clear MUTEX! (4)
 	RTS					; exit with whatever error code
 
 
@@ -251,27 +251,27 @@ ci_port:
 ; new MUTEX for CIN, physical devs only! ID arrives in Y!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-; as dummy I/O pointers are mandatory, no need for null-offset check!
+; a dummy first entry in pointer arrays make checking for available devices unnecessary!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep sparse-physdev temporarily, worth doing here (3)
 ; * this has to be done atomic! *
 	_CRITIC
 ci_loop:
-	LDA cio_lock-1, X	; *check whether THAT device in use (4)
+	LDA cio_lock, X		; check whether THAT device in use (4)
 	BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
 		LDA run_pid			; who am I?
-		CMP cio_lock-1, X	; *was it me who locked? (4)
-			BEQ ci_lckdd		; *if so, resume execution (3)
+		CMP cio_lock, X		; was it me who locked? (4)
+			BEQ ci_lckdd		; if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
-		LDX iol_dev			; *restore previous status (3)
+		LDX iol_dev			; restore previous status (3)
 		_BRA ci_loop		; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
-	STA cio_lock-1, X	; *reserve this (4)
+	STA cio_lock, X		; reserve this (4)
 ci_lckdd:
 	_NO_CRIT
 ; * end of atomic operation *
@@ -293,7 +293,8 @@ ci_nph:
 ; *** virtual window manager TO DO ***
 ci_win:
 	_ERR(NO_RSRC)		; not yet implemented ***placeholder***
-; manage logical devices...
+
+; *** manage logical devices ***
 ci_log:
 	CPY #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
@@ -301,6 +302,7 @@ ci_log:
 		BEQ ci_ok			; but work like "/dev/zero"
 	JMP cio_nfound		; final error otherwise
 
+; these loops could be unified somehow...
 ci_rnd:
 ; *** generate random number (TO DO) ***
 	LDY #0				; reset index
@@ -321,6 +323,7 @@ cirn_nw:
 	STX bl_ptr+1			; restore pointer***
 ci_ok:
 	_EXIT_OK
+
 ci_null:
 ; reading from DEV_NULL works like /dev/zero, must fill buffer with zeroes!
 		LDX bl_siz		; LSB as offset
@@ -346,10 +349,10 @@ ci_nle:
 
 ; *** for 02 systems without indexed CALL ***
 co_call:
-	_JMPX(drv_opt-1)	; direct jump to output routine
+	_JMPX(drv_opt)		; direct jump to output routine
 
 ci_call:
-	_JMPX(drv_ipt-1)	; direct jump to input routine
+	_JMPX(drv_ipt)		; direct jump to input routine
 
 
 ; ******************************
@@ -1167,13 +1170,13 @@ dr_succ:
 ; all checked OK, do actual driver installation!
 ; *** now adapted for new sparse arrays! ***
 ; time to look for an empty entry on sparse array
-	LDX #1				; will not assing index 0 (2)
+	LDX #2				; will not assing index 0 (2)
 dr_ios:
-		LDA drv_ads, X		; check MSB of entry, now on mandatory array (4)
+		LDA drv_ads+1, X	; check MSB of entry, now on mandatory array (4)
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #2*MX_DRVRS+1	; otherwise, is there room for more? (2) note offset
+		CPX #2*MX_DRVRS+2	; otherwise, is there room for more? (2) note offset
 		BNE dr_ios			; yes, no need for BRA (3)
 	JMP dr_fabort		; no, complain (3)
 dr_sarr:
@@ -1182,21 +1185,22 @@ dr_sarr:
 	TXA					; get spare entry index (2)
 	STA dr_ind-128, Y	; store sparse index for that ID, alas, no STX abs,Y (4)
 ; proper index already in X and A
+
 ; 4) Set I/O pointers
 ; no longer checks I/O availability as drv_ads array is mandatory!
 ; thus not worth a loop, I think...
 	LDY #D_BLIN			; input routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
-	STA drv_ipt-1, X	; store in table, note min X=1 (4)
+	STA drv_ipt, X		; store in table, leaving dummy entry (4)
 	LDA pfa_ptr+1		; same for MSB (3+4)
-	STA drv_ipt, X
+	STA drv_ipt+1, X
 	LDY #D_BOUT			; offset for output routine (2)
 	JSR dr_gind			; get indirect address
 	LDA pfa_ptr			; get driver table LSB (3)
-	STA drv_opt-1, X	; store in table, note min X=1 (4)
+	STA drv_opt, X		; store in table, leaving dummy entry (4)
 	LDA pfa_ptr+1		; same for MSB (3+4)
-	STA drv_opt, X
+	STA drv_opt+1, X
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
@@ -1263,9 +1267,9 @@ dr_done:
 ; sparse indexes always!
 	LDX dr_ind-128, Y	; now it is a proper index for sparse array! (4)
 	LDA da_ptr			; get header pointer (3)
-	STA drv_ads-1, X	; store LSB, note min X=1 (4)
+	STA drv_ads, X		; store LSB, leaving dummy entry (4)
 	LDA da_ptr+1		; same for MSB (3)
-	STA drv_ads, X		; store MSB in proper entry (4)
+	STA drv_ads+1, X	; store MSB in proper entry (4)
 ; function will exit successfully here
 	_EXIT_OK
 
@@ -1367,13 +1371,13 @@ dr_shut:
 		_ERR(NFOUND)		; no, nothing to remove
 ds_used:
 	_STZA dr_ind-128, Y	; this is no more, any problem here?
-	LDY drv_ads-1, X	; get full header pointer (note min X=1)
-	LDA drv_ads, X
+	LDY drv_ads, X		; get full header pointer (leave dummy entry)
+	LDA drv_ads+1, X
 ; does it need to clear that entry?
 	STY da_ptr			; report from removed, will serve as ZP pointer too
 	STA da_ptr+1
-; does it need to remove I/O routines from arrays???
-	_STZA drv_opt, X	; at least clear MSB of Output routine as checked by DR_INST (note null offset as min X=1)
+; make sure this entry is reported as free for future use
+	_STZA drv_ads+1, X	; clear at least MSB of this entry as now mandatory (first entry is dummy)
 ; needs to disable interrupt tasks!
 ; *** perhaps using AQ_MNG and PQ_MNG???
 ; previous X is NOT valid as this is not a sparse array, but a queue!!!

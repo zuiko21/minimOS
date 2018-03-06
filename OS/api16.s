@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc8, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180305-1014
+; last modified 20180306-1036
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -245,9 +245,9 @@ co_ok:
 ; *** some common routines ***
 ; these could be called in 8 or 16-bit index size, but always 8-bit memory!
 ci_nevent:
-	STZ cin_mode-1, X	; *back to normal mode
+	STZ cin_mode, X		; back to normal mode ***first entry is dummy in case a wrong device is asked!
 ci_exitOK:
-	STZ cio_lock-1, X	; *otherwise clear mutex!!! (4)
+	STZ cio_lock, X		; otherwise clear mutex!!! (4)
 	PLB					; essential!
 	_EXIT_OK			; all done without error!
 
@@ -264,12 +264,12 @@ co_phys:
 ; new per-phys-device MUTEX for COUT, no matter if singletask!
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-; as dummy I/O pointers are mandatory, no need for null-offset check!
+; a dummy first entry in pointer arrays make checking for available devices unnecessary!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep device-index temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 co_loop:
-		LDA cio_lock-1, X	; check whether THAT device is in use (4) 24-bit!
+		LDA cio_lock, X		; check whether THAT device is in use (4) 24-bit!
 			BEQ co_lckd			; resume operation if free (3)
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
 		LDX iol_dev			; retrieve index!
@@ -277,10 +277,10 @@ co_loop:
 
 co_lckd:
 	LDA run_pid			; get ours in A, faster!
-	STA cio_lock-1, X	; *reserve this (4)
+	STA cio_lock, X		; reserve this (4)
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; direct driver call, proper sparse physdev index in X
-	JSR (drv_opt-1, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
+	JSR (drv_opt, X)	; direct CALL!!! driver should end in RTS as usual via the new DR_ macros
 	.as:.xs: SEP #$30	; *** please make sure we are back in 8-bit sizes ***
 ; ...and then into cio_unlock
 
@@ -293,7 +293,7 @@ co_lckd:
 ; must be called in all 8-bit size!!!
 cio_unlock:
 	LDX iol_dev			; **need to clear new lock! (3)
-	STZ cio_lock-1, X	; ...because I have to clear MUTEX! *new indexed form (4)
+	STZ cio_lock, X		; ...because I have to clear MUTEX! (4)
 	PLB					; we are leaving... into cio_callend
 
 ; ** cio_callend **
@@ -351,30 +351,30 @@ ci_port:
 ; new MUTEX for CIN
 ; new indirect-sparse array system!
 	LDX dr_ind-128, Y	; get proper index for that physical ID (4)
-; as dummy I/O pointers are mandatory, no need for null-offset check!
+; a dummy first entry in pointer arrays make checking for available devices unnecessary!
 ; newly computed index is stored as usual
 	STX iol_dev			; keep sparse physdev temporarily, worth doing here (3)
 ; CS not needed for MUTEX as per 65816 API
 ci_loop:
-		LDA cio_lock-1, X	; *check whether THAT device in use (4)
+		LDA cio_lock, X		; check whether THAT device in use (4)
 			BEQ ci_lckd			; resume operation if free (3)
 ; otherwise yield CPU time and repeat
 ; but first check whether it was me (waiting on binary mode)
 		LDA run_pid			; who am I?
-		CMP cio_lock-1, X	; *was it me who locked? (4)
-			BEQ ci_lckdd		; *if so, resume execution (3)
+		CMP cio_lock, X		; was it me who locked? (4)
+			BEQ ci_lckdd		; if so, resume execution (3)
 ; if the above, could first check whether the device is in binary mode, otherwise repeat loop!
 ; continue with regular mutex
 		_KERNEL(B_YIELD)	; otherwise yield CPU time and repeat *** could be patched!
-		LDX iol_dev			; *restore previous status (3)
+		LDX iol_dev			; restore previous offset (3)
 		BRA ci_loop			; try again! (3)
 ci_lckd:
 	LDA run_pid			; who is me?
-	STA cio_lock-1, X	; *reserve this (4)
+	STA cio_lock-1, X	; reserve this (4)
 ci_lckdd:
 ; 65816 API runs on interrupts off, thus no explicit CS exit
 ; ** new direct indexing **
-		JSR (drv_ipt-1, X)	; direct CALL!!!
+		JSR (drv_ipt, X)	; direct CALL!!!
 		.as:.xs: SEP #$30	; *** please make sure we are back in 8-bit sizes ***
 			BCS cio_unlock		; clear MUTEX and return whatever error!
 ci_nph:
@@ -390,7 +390,8 @@ ci_nph:
 ci_win:
 	LDY #NO_RSRC		; not yet implemented ***placeholder***
 	JMP cio_abort		; restore & notify
-; manage logical devices...
+
+; *** manage logical devices ***
 ci_log:
 	CPY #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
@@ -398,10 +399,12 @@ ci_log:
 		BEQ ci_null
 	LDY #N_FOUND		; unknown device
 	JMP cio_abort		; restore & notify
+
+; surely there is a way to unify these loops...
 ; fill buffer with zeroes like "/dev/zero"
 ci_null:
 	LDY #0				; reset index, will be complete
-	TYA					; filling value as above
+	TYA					; filling value as above***
 	.xl: REP #$10		; *** 16-bit index ***
 	LDX bl_siz			; get size in full
 	BNE ci_nulend		; nothing to do
@@ -413,9 +416,10 @@ ci_nll:
 ci_nulend:
 	JMP ci_exitOK		; nothing else
 
+	.xs:
+
 ci_rnd:
 ; *** generate random number (TO DO) ***
-	.xs:
 	LDY #0				; reset index, will be complete
 	.xl: REP #$10		; *** 16-bit index ***
 	LDX bl_siz			; get size in full
@@ -1450,13 +1454,13 @@ dr_isuc:
 ; all checked OK, do actual driver installation!
 ; *** now adapted for new sparse arrays! ***
 ; time to look for an empty entry on sparse array
-	LDX #1				; will not assing index 0 (2)
+	LDX #2				; will not assing index 0 (2)
 dr_ios:
-		LDA drv_ads, X		; check MSB of entry, now on mandatory array (4)
+		LDA drv_ads+1, X	; check MSB of entry, now on mandatory array (4)
 			BEQ dr_sarr			; found a free entry (2/3)
 		INX					; go for next (2+2)
 		INX
-		CPX #2*MX_DRVRS+1	; otherwise, is there room for more? (2) note +1 offset
+		CPX #2*MX_DRVRS+2	; otherwise, is there room for more? (2) note +2 offset
 		BNE dr_ios			; yes, continue (3)
 	JMP dr_fabort		; no, complain (3)
 dr_sarr:
@@ -1472,10 +1476,10 @@ dr_sarr:
 ; thus not worth a loop...
 	LDY #D_BLIN			; offset for input routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-	STA drv_ipt-1, X	; store full pointer in table, note min X=1 (5)
+	STA drv_ipt, X		; store full pointer in table, leaving dummy entry (5)
 	LDY #D_BOUT			; offset for output routine (2)
 	LDA (da_ptr), Y		; get full address (6)
-	STA drv_opt-1, X	; store full pointer in table (5)
+	STA drv_opt, X		; store full pointer in table, leaving dummy entry (5)
 
 ; * 5) register interrupt routines * new, much cleaner approach
 ; dr_aut is now kept intact...
@@ -1540,7 +1544,7 @@ dr_ended:
 	.al: REP #$20
 	LDX dr_ind-128, Y	; convert to sparse index!
 	LDA da_ptr			; get header pointer, we were in 16-bit A (4)
-	STA drv_ads-1, X	; store in proper entry, note min X=1 (5)
+	STA drv_ads, X		; store in proper entry, leaving dummy entry (5)
 ; function arriving here will simply exit successfully
 	PLB					; *** make sure apps can call this from anywhere ***
 	_EXIT_OK			; if arrived here, did not fail initialisation
@@ -1614,10 +1618,10 @@ dr_shut:
 ds_used:
 	STZ dr_ind-128, Y	; this is no more, any problem here? ***use whatever null value***
 	.al: REP #$20		; *** 16-bit memory ***
-	LDA drv_ads-1, X	; get full header pointer
+	LDA drv_ads, X		; get full header pointer
 	STA da_ptr			; report from removed, will serve as ZP pointer too
 ; make sure this entry is reported as free for future use
-	STZ drv_ads-1, X	; clear this entry as now mandatory (note min X=1)
+	STZ drv_ads, X		; clear this entry as now mandatory (first entry is dummy)
 ; needs to disable interrupt tasks!
 ; *** perhaps using AQ_MNG and PQ_MNG???
 ; previous X is NOT valid as this is not a sparse array, but a queue!!!
@@ -1662,7 +1666,7 @@ di_ndef:
 	LDX dr_ind-128, Y	; get sparse index, is it free? (4+)
 	BEQ di_none			; yes, signal error (3/2)
 		.al: REP #$20		; *** 16-bit memory *** (/3)
-		LDA drv_ads-1, X	; otherwise get full pointer (note new offset)... (/5)
+		LDA drv_ads, X		; otherwise get full pointer (first entry is dummuy)... (/5)
 		STA ex_pt			; ...and store it as exit parameter (/4)
 		_EXIT_OK
 di_none:
@@ -1697,7 +1701,7 @@ tsi_end:
 	.as:
 
 ; *********************************************
-; *** RELEASE, release ALL memory for a PID ***
+; *** RELEASE, release ALL memory for a PID *** perhaps to be deprecated???
 ; *********************************************
 ;		INPUT
 ; Y		= PID, 0 means myself

@@ -1,62 +1,62 @@
 ; minimOS 0.6rc3 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180305-0941
+; last modified 20180306-1053
 .bss
 
 ; **** I/O management ****
 ; ** pointer tables for drivers, new order suggested for alternative version **
 #ifndef	LOWRAM
-drv_opt		.dsb	MX_DRVRS*2	; full page of output driver pointers, new direct scheme 160406 ; ***these best NOT at $xx00***
-drv_ipt		.dsb	MX_DRVRS*2	; full page of input driver pointers, new direct scheme 160406
-; ***** new direct array for sparse indexes *****
-dr_ind		.dsb	128			; index for sparse array ***this is best aligned at $xx80 for optimum performance***
+drv_opt		.dsb	MX_DRVRS*2+2	; full page of output driver pointers, new direct scheme 160406 ***include dummy entry***
+drv_ipt		.dsb	MX_DRVRS*2+2	; full page of input driver pointers, new direct scheme 160406
 ; mutable or not, keep track of driver header pointers!
-drv_ads		.dsb	MX_DRVRS*2	; address of headers from actually assigned IDs, new 171011, now sparse
+drv_ads		.dsb	MX_DRVRS*2+2	; address of headers from actually assigned IDs, new 171011, now sparse
+; ***** new direct array for sparse indexes *****
+dr_ind		.dsb	128				; index for sparse array ***this is best aligned at $xx80 for optimum performance***
 #else
 ; ****** this will change
-drv_num		.byt	0			; number of installed drivers
-id_list		.dsb	MX_DRVRS	; space for reasonable number of drivers
+drv_num		.byt	0				; number of installed drivers
+id_list		.dsb	MX_DRVRS		; space for reasonable number of drivers
 ; ideally will be non-sparse direct arrays from ROM, non-mutable devices lr0-lr7 (128-135)
-;drv_en		.dsb	8			; array of enabled drivers, perhaps going in a slower, memory-saving bitwise format???
+;drv_en		.dsb	8				; array of enabled drivers, perhaps going in a slower, memory-saving bitwise format???
 #endif
 
 ; ** I/O flags and locks **
 ; mandatory order!!!
 #ifndef	LOWRAM
-cio_lock	.dsb	MX_DRVRS*2	; PID-reserved MUTEX for CIN & COUT, per-phys-driver & interleaved with CIN binary mode flag for event management 170220
-cin_mode	= cio_lock + 1		; interleaved
+cio_lock	.dsb	MX_DRVRS*2+2	; PID-reserved MUTEX for CIN & COUT, per-phys-driver & interleaved with CIN binary mode flag for event management 170220
+cin_mode	= cio_lock+1			; interleaved
 #else
-cin_mode	.dsb	1			; only this for low ram systems
+cin_mode	.dsb	1				; only this for low ram systems
 #endif
 
 ; **** interrupt queues **** new format 20170518
-queue_mx	.word	0			; array with max offset for both Periodic[1] & Async[0] queues
-drv_poll	.dsb	MX_QUEUE	; space for periodic task pointers
-drv_freq	.dsb	MX_QUEUE	; array of periodic task frequencies (word?)
-drv_asyn	.dsb	MX_QUEUE	; space for async task pointers
-drv_a_en	.dsb	MX_QUEUE	; interleaved array of async interrupt task flags
-drv_p_en	= drv_a_en + 1		; ditto for periodic tasks (interleaved)
-drv_cnt		.dsb	MX_QUEUE	; current P-task counters eeeeeeeeeeeeeeeeeeeeek
+queue_mx	.word	0				; array with max offset for both Periodic[1] & Async[0] queues
+drv_poll	.dsb	MX_QUEUE		; space for periodic task pointers
+drv_freq	.dsb	MX_QUEUE		; array of periodic task frequencies (word?)
+drv_asyn	.dsb	MX_QUEUE		; space for async task pointers
+drv_a_en	.dsb	MX_QUEUE		; interleaved array of async interrupt task flags
+drv_p_en	= drv_a_en+1			; ditto for periodic tasks (interleaved)
+drv_cnt		.dsb	MX_QUEUE		; current P-task counters eeeeeeeeeeeeeeeeeeeeek
 
 ; *** single-task sigterm handler separate again! ***
 ; multitasking should provide appropriate space!
 #ifdef	C816
-mm_sterm	.dsb	3			; including bank address just after the pointer
+mm_sterm	.dsb	3				; including bank address just after the pointer
 #else
-mm_sterm	.dsb	2			; 16-bit pointer
+mm_sterm	.dsb	2				; 16-bit pointer
 #endif
 ; no longer mm_term et al here!
 
 ; **** new memory management table 150209, revamped 161106 ****
 #ifndef		LOWRAM
 #ifdef		C816
-ram_pos		.dsb	MAX_LIST*2	; location of blocks, new var 20161103
-ram_stat	.dsb	MAX_LIST*2	; status of each block, interleaved with PID for 65816!
-ram_pid		= ram_stat + 1		; interleaved array!
+ram_pos		.dsb	MAX_LIST*2		; location of blocks, new var 20161103
+ram_stat	.dsb	MAX_LIST*2		; status of each block, interleaved with PID for 65816!
+ram_pid		= ram_stat + 1			; interleaved array!
 #else
-ram_pos		.dsb	MAX_LIST	; location of blocks, new var 20161103
-ram_stat	.dsb	MAX_LIST	; status of each block, non interleaved
-ram_pid		.dsb	MAX_LIST	; non-interleaved PID array
+ram_pos		.dsb	MAX_LIST		; location of blocks, new var 20161103
+ram_stat	.dsb	MAX_LIST		; status of each block, non interleaved
+ram_pid		.dsb	MAX_LIST		; non-interleaved PID array
 #endif
 #endif
 
