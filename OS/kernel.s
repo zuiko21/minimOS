@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc1
+; v0.6rc2
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20171203-1940
+; last modified 20180306-1108
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc1", 0	; version in comment
+	.asc	"minimOS 0.6rc2", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -142,28 +142,24 @@ ram_init:
 dr_clear:
 		_STZA cio_lock, X	; clear I/O locks! (4)
 		_STZA cin_mode, X	; and binary flags, actually next address (4)
-#ifdef	MUTABLE
-		_STZA drv_ads, X	; ****** in case of mutable driver IDs, clear pointer array first (4+4)
+; drv_ads is now mandatory
+;		_STZA drv_ads, X	; ****** in case of mutable driver IDs, clear pointer array first (4+4)
 		_STZA drv_ads+1, X	; ****** could just clear MSB...
-		_STZA drv_opt+1, X	; clear at least pointer MSB eeeeeeeeeeeeeeeek
-		_STZA drv_ipt+1, X	; clear at least pointer MSB eeeeeeeeeeeeeeeek
-#else
-		LDA #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2)
-		STA drv_opt, X		; set LSB for output (4)
-		STA drv_ipt, X		; and for input (4)
-		LDA #>dr_error		; had to keep it inside because no STY abs,X!!!
-		STA drv_opt+1, X	; set MSB for output (4)
-		STA drv_ipt+1, X	; and for input (4)
-#endif
 		INX					; next entry (2+2)
 		INX
-		CPX #MX_DRVRS*2		; all done? needed for sparse arrays (2)
+		CPX #MX_DRVRS*2+2	; all done? needed for sparse arrays (2)
 		BNE dr_clear		; finish page (3/2)
+; only dummy entry of I/O pointer arrays must be initialised
+	LDY #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2+2)
+	LDA #>dr_error
+	STY drv_opt			; set LSB for output (4)
+	STY drv_ipt			; and for input (4)
+	STA drv_opt+1		; set MSB for output (4)
+	STA drv_ipt+1		; and for input (4)
 ; sparse arrays need their index inited...
-	LDX #128				; initial offset (2)
-	LDA #0					; ***** or 255, if needed ***** best to define a constant!
+	LDX #128			; initial offset (2)
 dr_spars:
-		STA dr_ind-128, X		; clear entry
+		_STZA dr_ind-128, X	; clear entry (best for CMOS)
 		INX
 		BNE dr_spars
 ; TASKDEV is no longer a thing...
@@ -204,6 +200,7 @@ dr_ok:					; *** all drivers inited ***
 #else
 
 ; ------ ------ LOWRAM version ------ ------
+; ***likely to change...
 
 ; *** 1) initialise stuff ***
 ; clear some bytes
@@ -538,7 +535,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6rc1", 0
+	.asc	"minimOS 0.6rc2", 0
 #endif
 
 kern_end:		; for size computation

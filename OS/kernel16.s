@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b6
-; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171218-0850
+; v0.6b7
+; (c) 2012-2018 Carlos J. Santisteban
+; last modified 20180306-1103
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6b6", 0	; version in comment
+	.asc	"minimOS-16 0.6b7", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -118,10 +118,10 @@ ram_init:
 	STA ram_pos			; store it
 	LDA #SRAM			; number of SRAM pages as defined in options.h
 	STA ram_pos+2		; store second entry and we are done!
+
 ; ************************************************
 ; *** intialise drivers from their jump tables ***
 ; ************************************************
-; sometime will create API entries for these, but new format is urgent!
 ; * will also initialise I/O lock arrays! * 20161129
 ; obviously enters in 16-bit memory size!
 
@@ -131,33 +131,28 @@ ram_init:
 	STZ queue_mx		; reset all indexes, 16-bit already set
 	STX run_arch		; assume native 65816
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
-
 ; init all I/O pointers and flags
-	LDA #dr_error		; make unused entries point to a standard error routine (3)
 dr_clear:
 		STZ cio_lock, X		; clear I/O locks and interleaved binary flags! (5)
-#ifdef	MUTABLE
+; mutable or not, drv_ads is now mandatory
 		STZ drv_ads, X		; ****** clear array for mutable IDs (5)
-		STZ drv_opt, X		; eeeeeeeeeeeek (5)
-		STZ drv_ipt, X		; eeeeeeeeeeeek (5)
-#else
-		STA drv_opt, X		; set full pointer for output (5)
-		STA drv_ipt, X		; and for input (5)
-#endif
 		INX					; go for next entry (2+2)
 		INX
-		CPX #MX_DRVRS*2		; all done? needed for sparse arrays (2) EEEEEEEEEK
+		CPX #MX_DRVRS*2+2	; all done? needed for sparse arrays (2) EEEEEEEEEK
 		BNE dr_clear		; finish page (3/2)
-; sparse arrays need their index inited... EEEEEEEEEEEK
+; no need to deal with drv_opt or drv_ipt, except for their FIRST dummy entry!
+	LDA #dr_error		; make unused entries point to a standard error routine (3)
+	STA drv_opt		; set full pointer for output (5)
+	STA drv_ipt		; and for input (5)
+; sparse arrays need their offsets inited... EEEEEEEEEEEK
 	LDX #128				; initial offset (2)
-	LDA #0					; ***** or 255, if needed ***** best to define a constant! *** A in 16-bit anyway
 dr_spars:
-		STA dr_ind-128, X		; clear entry
+		STZ dr_ind-128, X		; clear entry
 		INX
-		INX						; 16-bit access
+		INX						; 16-bit accesses
 		BNE dr_spars
 ; TASKDEV is no longer a thing...
-;	LDX #0					; ...reset X if using restricted set, but NOT needed with sparse ID array!!!
+; X already at zero
 ; *** prepare access to each driver header ***
 dr_loop:
 		PHX					; keep current value (3)
@@ -179,6 +174,7 @@ dr_loop:
 ; ****************************************************************************
 ; *** default error routine, just for kernel init... but also for DRV_SHUT ***
 ; ****************************************************************************
+; perhaps could include a dummy driver for the dummy entry
 dr_error:
 	_DR_ERR(N_FOUND)	; standard exit for non-existing drivers!
 
@@ -258,7 +254,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.6b6", 0	; version in comment
+	.asc	"minimOS-16 0.6b7", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
