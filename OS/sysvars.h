@@ -1,6 +1,6 @@
-; minimOS 0.6rc3 System Variables
+; minimOS 0.6rc4 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180306-1053
+; last modified 20180307-1425
 .bss
 
 ; **** I/O management ****
@@ -13,11 +13,14 @@ drv_ads		.dsb	MX_DRVRS*2+2	; address of headers from actually assigned IDs, new 
 ; ***** new direct array for sparse indexes *****
 dr_ind		.dsb	128				; index for sparse array ***this is best aligned at $xx80 for optimum performance***
 #else
-; ****** this will change
-drv_num		.byt	0				; number of installed drivers
-id_list		.dsb	MX_DRVRS		; space for reasonable number of drivers
-; ideally will be non-sparse direct arrays from ROM, non-mutable devices lr0-lr7 (128-135)
-;drv_en		.dsb	8				; array of enabled drivers, perhaps going in a slower, memory-saving bitwise format???
+; **** LOWRAM option uses non-sparse direct arrays from ROM, non-mutable devices lr0-lr7 (128-135) *****
+; drv_opt & drv_ipt defined elsewhere
+drv_ads		= drvrs_ad				; list of installed drivers as per supplied upon boot, cannot be changed
+drv_en		.dsb	1				; array of enabled drivers, into a slower, memory-saving bitwise format!
+; non-sparse arrays have no use for dr_ind
+; ** older dispatch system **
+;drv_num		.byt	0				; number of installed drivers
+;id_list		.dsb	MX_DRVRS		; space for reasonable number of drivers
 #endif
 
 ; ** I/O flags and locks **

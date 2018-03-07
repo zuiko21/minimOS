@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc2
+; v0.6rc3
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180306-1108
+; last modified 20180307-1442
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc2", 0	; version in comment
+	.asc	"minimOS 0.6rc3", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -209,7 +209,7 @@ dr_ok:					; *** all drivers inited ***
 	STX queue_mx+1
 ; ------ low-RAM systems have no direct tables to reset ------
 ; ** maybe look for fast tables in ROM **
-	STX drv_num			; single index of, not necessarily SUCCESSFULLY, detected drivers, updated 20150318 (4)
+;;	STX drv_num			; single index of, not necessarily SUCCESSFULLY, detected drivers, updated 20150318 (4)
 
 ; *** 2) prepare access to each driver header ***
 ; first get the pointer to it
@@ -222,9 +222,7 @@ dr_doins:
 		STA da_ptr+1		; store pointer MSB (3)
 		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
-; *** here comes the call to API function ***
-;		KERNEL(DR_INST)	; try to install this driver
-; *** code for separate API function ***
+; *** code from separate API function ***
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 #ifdef	SAFE
@@ -266,22 +264,37 @@ dr_ntsk:
 			BCS dr_nabort		; no way, forget about this
 ; 4) LOWRAM kernel has no I/O pointers...
 ; finally add ID to list
-		_LDAY(da_ptr)			; retrieve ID eeeeeek
+		_LDAY(da_ptr)		; retrieve ID eeeeeek
+; first convert ID into bit mask for new drv_en
+		TAX					; save ID for later!***
+#ifdef	SAFE
+		AND #%11111000		; mask out fixed bits
+		CMP #%10000000		; within range lr0-lr7?
+			BNE dr_iabort		; no, not possible
+		TXA					; retrieve ID otherwise
+#endif
+		AND #%00000111		; only 8 available devices
+		TAY					; use as counter...
+		LDA #1				; first bit means lr0 in new drv_en!
+		CPY #0				; if it is the first bit (lr0)...
+		BEQ dr_1stb			; ...do not rotate bits
+dr_scan:
+			ASL					; shift left for next device
+			DEY					; go for next until converted
+			BNE dr_scan
+dr_1stb:
+; arrives here with ID mask in A
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
-		LDY #0				; reset index (2)
-		BEQ dr_limit		; check whether has something to check, no need for BRA (3)
-dr_scan:
-			CMP id_list, Y		; compare with list entry (4)
-				BEQ dr_babort		; already in use, do not register! (2/3)
-			INY					; go for next (2)
-dr_limit:	CPY drv_num			; all done? (4)
-			BNE dr_scan			; go for next (3/2)
+; --------------------------CONTINUE HERE------------------
+		AND drv_en			; was that in use?
+			BEQ dr_babort		; already in use, do not register! (2/3)
+		TXA					; otherwise, retrieve ID and continue
 #endif
 ; if arrived here, succeeded, thus include ID in list
 		_LDAY(da_ptr)		; get ID eeeeeeeeek
-		LDX drv_num			; retrieve single offset (4)
-		STA id_list, X		; store in list, now in RAM (4)
+;;		LDX drv_num			; retrieve single offset (4)
+;;		STA id_list, X		; store in list, now in RAM (4)
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
@@ -430,16 +443,16 @@ dr_uabort:
 ; *** if arrived here, driver initialisation failed in anyway ***
 ; invalidate ID on list
 dr_abort:
-	LDX drv_num		; get failed driver index
+;;	LDX drv_num		; get failed driver index
 	LDA #DEV_NULL		; positive value is unreachable
-	STA id_list, X		; invalidate entry
+;;	STA id_list, X		; invalidate entry
 ;	SEC
 ;	RTS			; no macro needed as Carry was set
 ; *** function exits here if failed ***
 
 dr_ended:
 ; LOWRAM system keep count of installed drivers
-	INC drv_num		; update count
+;;	INC drv_num		; update count
 ; success!
 ;	EXIT_OK
 ; ***** end of function *****
@@ -535,7 +548,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6rc2", 0
+	.asc	"minimOS 0.6rc3", 0
 #endif
 
 kern_end:		; for size computation
