@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc3
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180307-1442
+; last modified 20180308-1111
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -262,39 +262,31 @@ dr_ntsk:
 ; 3.3) if arrived here, there is room for interrupt tasks, but check init code
 		JSR dr_icall		; call routine (6+...)
 			BCS dr_nabort		; no way, forget about this
-; 4) LOWRAM kernel has no I/O pointers...
+; 4) LOWRAM kernel has no I/O pointers in RAM...
 ; finally add ID to list
 		_LDAY(da_ptr)		; retrieve ID eeeeeek
 ; first convert ID into bit mask for new drv_en
-		TAX					; save ID for later!***
 #ifdef	SAFE
+		TAX					; eeeeeeeeeeeeek
 		AND #%11111000		; mask out fixed bits
 		CMP #%10000000		; within range lr0-lr7?
 			BNE dr_iabort		; no, not possible
 		TXA					; retrieve ID otherwise
 #endif
 		AND #%00000111		; only 8 available devices
-		TAY					; use as counter...
-		LDA #1				; first bit means lr0 in new drv_en!
-		CPY #0				; if it is the first bit (lr0)...
-		BEQ dr_1stb			; ...do not rotate bits
-dr_scan:
-			ASL					; shift left for next device
-			DEY					; go for next until converted
-			BNE dr_scan
-dr_1stb:
+		TAY					; use reduced ID as counter...
+		JSR dr_id2m			; convert ID 0...7 (in Y) to bit mask (in A)
 ; arrives here with ID mask in A
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
-; --------------------------CONTINUE HERE------------------
+		TAX					; save mask!
 		AND drv_en			; was that in use?
 			BEQ dr_babort		; already in use, do not register! (2/3)
 		TXA					; otherwise, retrieve ID and continue
 #endif
-; if arrived here, succeeded, thus include ID in list
-		_LDAY(da_ptr)		; get ID eeeeeeeeek
-;;		LDX drv_num			; retrieve single offset (4)
-;;		STA id_list, X		; store in list, now in RAM (4)
+; if arrived here, succeeded, thus enable ID in bit-list
+		ORA drv_en			; add bit to current
+		STA drv_en			; update register
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
@@ -324,7 +316,7 @@ dr_iqloop:
 ; install entry into queue
 				JSR dr_itask		; install into queue
 ; save for frequency queue, flags must be enabled for this task!
-				_LDAY(dr_id)			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
+				_LDAY(dr_id)		; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
 				LDY dq_off			; get index of free entry!
 				STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also
@@ -428,6 +420,18 @@ dr_itask:
 	STA (dq_ptr), Y
 	RTS
 
+; * convert ID (0...7) in Y, to bitmask in A *
+dr_id2m:
+	LDA #1				; first bit means lr0 in new drv_en!
+	CPY #0				; if it is the first bit (lr0)...
+	BEQ dr_1stb			; ...do not rotate bits
+dr_scan:
+		ASL					; shift left for next device
+		DEY					; go for next until converted
+		BNE dr_scan
+dr_1stb:
+	RTS
+
 ; **********************
 ; *** error handling ***
 ; **********************
@@ -443,22 +447,18 @@ dr_uabort:
 ; *** if arrived here, driver initialisation failed in anyway ***
 ; invalidate ID on list
 dr_abort:
-;;	LDX drv_num		; get failed driver index
-	LDA #DEV_NULL		; positive value is unreachable
-;;	STA id_list, X		; invalidate entry
-;	SEC
-;	RTS			; no macro needed as Carry was set
-; *** function exits here if failed ***
+	_LDAY(da_ptr)		; get failed ID
+; should it do SAFE checking again? perhaps put it into routine!
+	JSR dr_i2m			; convert to mask
+	EOR #$FF			; invert mask
+	AND drv_en			; remove failed device from current mask
+	STA drv_en
 
 dr_ended:
-; LOWRAM system keep count of installed drivers
-;;	INC drv_num		; update count
-; success!
-;	EXIT_OK
+; LOWRAM systems no longer keep count of installed drivers!
 ; ***** end of function *****
 
-; in order to keep drivers_ad in ROM, can't just forget unsuccessfully registered drivers...
-; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
+; continue with next driver in ROM list
 		_PLX				; retrieve saved index (4)
 		INX					; update ADDRESS index, even if unsuccessful (2)
 		INX					; eeeeeeeek! pointer arithmetic! (2)
