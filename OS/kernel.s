@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc3
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180308-1111
+; last modified 20180308-1319
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -266,16 +266,7 @@ dr_ntsk:
 ; finally add ID to list
 		_LDAY(da_ptr)		; retrieve ID eeeeeek
 ; first convert ID into bit mask for new drv_en
-#ifdef	SAFE
-		TAX					; eeeeeeeeeeeeek
-		AND #%11111000		; mask out fixed bits
-		CMP #%10000000		; within range lr0-lr7?
-			BNE dr_iabort		; no, not possible
-		TXA					; retrieve ID otherwise
-#endif
-		AND #%00000111		; only 8 available devices
-		TAY					; use reduced ID as counter...
-		JSR dr_id2m			; convert ID 0...7 (in Y) to bit mask (in A)
+		JSR dr_id2m			; convert ID 0...7 (in A) to bit mask (in A)
 ; arrives here with ID mask in A
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
@@ -420,8 +411,22 @@ dr_itask:
 	STA (dq_ptr), Y
 	RTS
 
-; * convert ID (0...7) in Y, to bitmask in A *
+; * convert ID (0...7) in A, to bitmask in A *
+; affects Y
 dr_id2m:
+#ifdef	SAFE
+	TAY					; eeeeeeeeeeeeek
+	AND #%11111000		; check out fixed bits
+	CMP #%10000000		; within range lr0-lr7?
+	BEQ dr_idok			; yes, create mask
+		PLA					; discard return address for this routine!
+		PLA
+		JMP dr_iabort		; abort with INVALID ID error
+dr_idok:
+	TYA					; retrieve ID otherwise
+#endif
+	AND #%00000111		; only 8 available devices
+	TAY					; use reduced ID as counter...
 	LDA #1				; first bit means lr0 in new drv_en!
 	CPY #0				; if it is the first bit (lr0)...
 	BEQ dr_1stb			; ...do not rotate bits
@@ -449,7 +454,7 @@ dr_uabort:
 dr_abort:
 	_LDAY(da_ptr)		; get failed ID
 ; should it do SAFE checking again? perhaps put it into routine!
-	JSR dr_i2m			; convert to mask
+	JSR dr_id2m			; convert to mask
 	EOR #$FF			; invert mask
 	AND drv_en			; remove failed device from current mask
 	STA drv_en

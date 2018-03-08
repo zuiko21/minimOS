@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc6
+; v0.6rc7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180302-1212
+; last modified 20180308-1321
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -38,10 +38,11 @@ k_vec:
 	.word	dr_info		; get header, is this possible?
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue
-; *** unimplemented functions ***
-#ifdef	SAFE
+; reduced driver implementation
 	.word	dr_inst		; install driver
 	.word	dr_shut		; shutdown driver
+; *** unimplemented functions ***
+#ifdef	SAFE
 	.word	malloc		; reserve memory
 	.word	free		; release memory
 	.word	memlock		; reserve some address
@@ -63,8 +64,6 @@ free:
 release:
 ts_info:
 set_curr:
-dr_inst:			; no way to install these?
-dr_shut:
 #endif
 ; *** FUTURE IMPLEMENTATION ***
 aq_mng:
@@ -731,6 +730,40 @@ sd_tab:
 	.word	sd_warm		; warm boot direct by kernel
 	.word	sd_cold		; cold boot via firmware
 	.word	sd_off		; poweroff system
+
+dr_inst:	
+		
+; *******************************
+; *** DR_SHUT, disable driver *** reduced LOWRAM version
+; *******************************
+;		INPUT
+; Y			= target ID (128...135, lr0-lr7)
+;		OUTPUT
+; da_ptr	= pointer to header from removed driver (if available, C otherwise)
+
+dr_shut:
+	TYA					; get ID
+	ASL					; convert to index
+	TAX
+	TYA					; get ID again
+	JSR dr_id2m			; convert to mask, might abort but respects X!
+	EOR #$FF			; negative mask
+	AND drv_en			; remove device from bitmask
+	STA drv_en
+; now get this FIXED driver header address
+	LDY drv_ads, X		; get full header pointer
+	LDA drv_ads+1, X
+	STY da_ptr			; report from removed, will serve as ZP pointer too
+	STA da_ptr+1
+; needs to disable interrupt tasks!
+; *** perhaps using AQ_MNG and PQ_MNG???
+; finally, execute proper shutdown
+	_CRITIC
+	LDY #D_BYE			; offset to shutdown routine
+	JSR dr_call			; execute shutdown procedure *** interrupts off ***
+	_NO_CRIT
+	_EXIT_OK			; all done
+
 
 ; *******************************************
 ; *** DR_INFO, get default device drivers ***

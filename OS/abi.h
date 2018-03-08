@@ -1,7 +1,7 @@
 ; minimOS 0.6rc7 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180218-0907
+; last modified 20180308-1301
 
 ; *************************************************
 ; *************************************************
@@ -47,10 +47,11 @@ DR_INFO		= GET_PID + 2	; get header, new
 AQ_MNG		= DR_INFO + 2	; get asyncronous task status, or enable/disable it!
 PQ_MNG		= AQ_MNG + 2	; get periodic task status, enable/disable it or set frequency!
 
-; ** not for LOWRAM systems **
-; drivers...
+; drivers... perhaps in a reduced way for LOWRAM systems
 DR_INST		= PQ_MNG + 2	; install driver
 DR_SHUT		= DR_INST + 2	; shutdown driver
+
+; ** not for LOWRAM systems **
 ; memory...
 MALLOC		= DR_SHUT + 2	; allocate memory
 FREE		= MALLOC + 2	; release memory block
