@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc8
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180309-1228
+; last modified 20180309-1239
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -795,6 +795,7 @@ dr_npoll:
 			BEQ dr_fabort		; no room!
 dr_nreq:
 ; if arrived here, there is room in queues (or was not needed)
+
 ; old code for queue space check!
 ;	LDX #1				; max queue index
 ;dr_chk:
@@ -850,10 +851,18 @@ dr_iqloop:
 		ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
-			LDY queue_mx, X		; get index of free entry!
-			STY dq_off			; worth saving on a local variable
-			INC queue_mx, X		; add another task in queue
-			INC queue_mx, X		; pointer takes two bytes
+; must look for a free entry, and store its index in dq_off!
+			LDY #MX_QUEUE-2		; last valid index
+dr_iqscan:
+				LDA dte_ptr, Y		; check into current queue
+				CMP #IQ_FREE		; is that free?
+					BEQ dr_qfree		; yes, save index
+				DEY					; no, move to another entry
+				DEY
+				BPL dr_iqscan		; will work with queues smaller than 128 bytes
+; should not arrive here...
+dr_qfree:
+			STY dq_off			; store index of free entry
 ; install entry into queue
 			JSR dr_itask		; install into queue
 ; save for frequency queue, flags must be enabled for this task!
