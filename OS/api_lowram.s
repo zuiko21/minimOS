@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc7
+; v0.6rc8
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180308-1334
+; last modified 20180309-1101
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -765,18 +765,35 @@ dr_phys:
 	LDA (da_ptr), Y
 	STA dr_aut			; a commonly used value
 ; check space in queues
-	LDX #1				; max queue index
+; *** this should really use some other method, like trying to find empty entries in queues! ***
+; *** might be interesting for the full featured API too ***
+	LDX #MX_QUEUE		; max index in queues
 dr_chk:
-		ASL				; extract MSB (will be A_POLL first, then A_REQ)
-		BCC dr_ntsk			; skip verification if task not enabled
-			LDY queue_mx, X		; get current tasks in queue
-			CPY #MX_QUEUE		; room for another?
-			BCC dr_ntsk			; yeah!
-dr_nabort:
-				JMP dr_fabort		; or did not checked OK
-dr_ntsk:
-		DEX					; let us check next feature
-		BNE dr_chk
+		BIT dr_aut			; check uppermost bits
+		BPL dr_npoll		; b7=0 means no polling
+			LDA drv_p_en		; get status for an entry of this queue
+; zero could be a halted task at ID=128!!! Perhaps safer to make 127 the 'free' value, as ID 255 might be reserved...
+			CMP #127			; is this entry free?
+			BEQ dr_pfree		; there is room in P-queue
+; -----------------------------------------------------------------------------------CONTINUHE
+dr_npoll:
+		BVC dr_nreq			; b6=0 means no async
+dr_nreq:
+		DEX					; one less
+		BPL dr_chk			; *** will work as long as queues are less than 128 bytes long ***
+; old code for queues check!
+;	LDX #1				; max queue index
+;dr_chk:
+;		ASL				; extract MSB (will be A_POLL first, then A_REQ)
+;		BCC dr_ntsk			; skip verification if task not enabled
+;			LDY queue_mx, X		; get current tasks in queue
+;			CPY #MX_QUEUE		; room for another?
+;			BCC dr_ntsk			; yeah!
+;dr_nabort:
+;				JMP dr_fabort		; or did not checked OK
+;dr_ntsk:
+;		DEX					; let us check next feature
+;		BNE dr_chk
 
 ; 3.3) if arrived here, there is room for interrupt tasks, but check init code
 	JSR dr_icall		; call routine (6+...)

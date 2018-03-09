@@ -1,6 +1,6 @@
 ; minimOS 0.6rc4 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180307-1425
+; last modified 20180309-1103
 .bss
 
 ; **** I/O management ****
@@ -33,7 +33,7 @@ cin_mode	.dsb	1				; only this for low ram systems
 #endif
 
 ; **** interrupt queues **** new format 20170518
-queue_mx	.word	0				; array with max offset for both Periodic[1] & Async[0] queues
+queue_mx	.word	0				; array with max offset for both Periodic[1] & Async[0] queues *** deprecate for LOWRAM, perhaps for all! ***
 drv_poll	.dsb	MX_QUEUE		; space for periodic task pointers
 drv_freq	.dsb	MX_QUEUE		; array of periodic task frequencies (word?)
 drv_asyn	.dsb	MX_QUEUE		; space for async task pointers
