@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc11, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180310-2140
+; last modified 20180310-2205
 
 ; no way for standalone assembly...
 
@@ -1379,9 +1379,17 @@ ds_used:
 	_STZA drv_ads+1, X	; clear at least MSB of this entry as now mandatory (first entry is dummy)
 ; needs to disable interrupt tasks!
 ; *** perhaps using AQ_MNG and PQ_MNG???
-; previous X is NOT valid as this is not a sparse array, but a queue!!!
-;	_STZA drv_a_en, X	; clear flags for both drv_a_en and drv_p_en arrays! Queues do not recover any space, though
-;	_STZA drv_p_en, X
+	STY dr_id			; ID needs to be compared
+	LDX #MX_QUEUE-1			; maximum index
+ds_qseek:
+		LDA drv_a_en, X			; get entry from whatever queue
+		ORA #%10000000			; enabled or not
+		CMP dr_id			; targeted ID?
+		BNE ds_qnxt			; no, try next
+			_STZA drv_a_en, X		; yes, clear entry
+ds_qnxt:
+		DEX				; another
+		BPL ds_qseek			; ***works below 128 bytes
 ; finally, execute proper shutdown
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
