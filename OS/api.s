@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc11, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180306-1036
+; last modified 20180310-2140
 
 ; no way for standalone assembly...
 
@@ -65,7 +65,6 @@ aq_mng:
 pq_mng:
 bl_cnfg:
 bl_stat:
-dr_shut:
 
 unimplemented:			; placeholder here
 	_ERR(UNAVAIL)		; go away!
