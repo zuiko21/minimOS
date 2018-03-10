@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc8
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180309-1239
+; last modified 20180310-2126
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -866,7 +866,7 @@ dr_qfree:
 ; install entry into queue
 			JSR dr_itask		; install into queue
 ; save for frequency queue, flags must be enabled for this task!
-			_LDAY(dr_id)		; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
+			_LDAY(da_ptr)		; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
 			LDY dq_off			; get index of free entry!
 			STA (dte_ptr), Y	; set default flags
 ; let us see if we are doing periodic task, in case frequency must be set also
@@ -899,6 +899,7 @@ dr_neqnw:
 ; *** end of suspicious code ***
 dr_done:
 ; *** 6) continue initing drivers ***
+	_LDAY(da_ptr)			; must return (fixed) ID as per API
 	_EXIT_OK				; if arrived here, did not fail
 
 ; **********************
