@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
 ; v0.6b3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180312-0957
+; last modified 20180312-1004
 
 #define		ISR		_ISR
 
@@ -37,8 +37,6 @@
 ; *** async interrupt otherwise *** (arrives here in 34 cycles if optimised)
 ; *********************************
 ; execute D_REQ in drivers
-; ***new approach, isr_done in 14t if nothing to do
-; ***first async in queue in 19t (total 53t) plus 
 asynchronous:
 ; *** classic code based on variable queue_mx arrays *** 21 bytes
 ; *** isr_done if queue is empty in 7t
@@ -82,15 +80,15 @@ i_anx:
 		DEX					; no, go backwards to be faster! (2+2)
 		DEX
 		BNE i_req			; until done (3/2)
-; *** continue after all interrupts dispatched ***
+; *** continue after all interrupts dispatched *** (28)
 ir_done:				; otherwise is spurious, due to separate BRK handler on 65816
 isr_done:
 	.al: .xl: REP #$30	; restore saved registers in full, just in case (3)
 	PLB					; eeeeeeeeek (4)
-	PLY					; restore registers (3x5 + 6)
+	PLY					; restore registers (3x5)
 	PLX
 	PLA
-	RTI					; this will restore appropriate register size
+	RTI					; this will restore appropriate register size (6)
 
 ; *********************************************
 ; *** here goes the periodic interrupt code *** (4)
