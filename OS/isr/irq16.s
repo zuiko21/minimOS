@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
 ; v0.6b3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180312-1004
+; last modified 20180312-1029
 
 #define		ISR		_ISR
 
@@ -140,11 +140,11 @@ isr_schd:				; *** take this standard address!!! ***
 i_rnx2:
 ; --- try not to scan the whole queue, if no more entries --- optional
 		CPY #IQ_FREE		; is there a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
-			BEQ isr_done		; yes, we are done (2/3)
+		BEQ ip_done			; yes, we are done (2/3)
 i_pnx:
-		DEX					; go backwards to be faster! (2+2)
-		DEX					; no improvement with offset, all of them will be called anyway
-		BNE i_poll			; until zero is done (3/2)
+			DEX					; go backwards to be faster! (2+2)
+			DEX					; no improvement with offset, all of them will be called anyway
+			BNE i_poll			; until zero is done (3/2)
 ; *** continue after all interrupts dispatched ***
 ip_done:
 ; update uptime, new simpler format is 12b, 14 or 24 cycles!

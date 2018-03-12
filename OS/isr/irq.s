@@ -2,7 +2,7 @@
 ; v0.6rc2, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180312-1011
+; last modified 20180312-1023
 
 #define		ISR		_ISR
 
@@ -104,6 +104,31 @@ periodic:
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
 ; execute D_POLL code in drivers
+; *** classic code based on variable queue_mx arrays ***  bytes
+;	LDX queue_mx+1		; get queue size (4)
+;	BEQ ip_done			; no drivers to call (2/3)
+;i_poll:
+;		DEX					; go backwards to be faster! (2+2)
+;		DEX					; no improvement with offset, all of them will be called anyway
+;		LDA drv_p_en, X		; *** check whether enabled, new in 0.6 ***
+;			BPL i_pnx			; *** if disabled, skip this task ***
+;		DEC drv_cnt, X		; otherwise continue with countdown
+;			BNE i_pnx			; LSB did not expire, do not execute yet
+;		DEC drv_cnt+1, X	; check now MSB, note value should be ONE more!
+;		BNE i_pnx			; keep waiting...
+;			LDA drv_freq, X		; ...or pick original value...
+;			STA drv_cnt, X		; ...and reset it!
+;			LDA drv_freq+1, X
+;			STA drv_cnt+1, X
+;			_PHX				; keep index! (3)
+;			JSR ip_call			; call from table (12...)
+; *** here is the return point needed for B_EXEC in order to create the stack frame ***
+;isr_schd:				; *** take this standard address!!! ***
+;			_PLX				; restore index (4)
+;i_pnx:
+;		BNE i_poll			; until zero is done (3/2)
+
+; *** alternative way with fixed-size arrays (no queue_mx) ***  bytes,  if left for the whole queue
 	LDX queue_mx+1		; get queue size (4)
 	BEQ ip_done			; no drivers to call (2/3)
 i_poll:
@@ -126,6 +151,7 @@ isr_schd:				; *** take this standard address!!! ***
 			_PLX				; restore index (4)
 i_pnx:
 		BNE i_poll			; until zero is done (3/2)
+; *** continue after all interrupts dispatched ***
 ip_done:
 ; update uptime, much faster new format
 	INC ticks			; increment uptime count (6)
