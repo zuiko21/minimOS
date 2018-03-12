@@ -2,7 +2,7 @@
 ; v0.6rc2, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180312-1023
+; last modified 20180312-1032
 
 #define		ISR		_ISR
 
@@ -95,7 +95,7 @@ isr_done:
 ir_call:
 	_JMPX(drv_asyn-2)	; address already computed, no return here, new offset 20151029
 ip_call:
-	_JMPX(drv_poll)		; ---------------------- MAY CHANGE ------------------------
+	_JMPX(drv_poll-2)
 
 ; *** here goes the periodic interrupt code *** (4)
 periodic:
@@ -129,27 +129,31 @@ periodic:
 ;		BNE i_poll			; until zero is done (3/2)
 
 ; *** alternative way with fixed-size arrays (no queue_mx) ***  bytes,  if left for the whole queue
-	LDX queue_mx+1		; get queue size (4)
-	BEQ ip_done			; no drivers to call (2/3)
+	LDX #MX_QUEUE		; maximum valid index plus 2 (2)
 i_poll:
-		DEX					; go backwards to be faster! (2+2)
-		DEX					; no improvement with offset, all of them will be called anyway
-		LDA drv_p_en, X		; *** check whether enabled, new in 0.6 ***
-			BPL i_pnx			; *** if disabled, skip this task ***
-		DEC drv_cnt, X		; otherwise continue with countdown
-			BNE i_pnx			; LSB did not expire, do not execute yet
-		DEC drv_cnt+1, X	; check now MSB, note value should be ONE more!
-		BNE i_pnx			; keep waiting...
-			LDA drv_freq, X		; ...or pick original value...
-			STA drv_cnt, X		; ...and reset it!
-			LDA drv_freq+1, X
-			STA drv_cnt+1, X
+		LDA drv_p_en-2 , X	; *** check whether enabled, new in 0.6 ***
+		BPL i_rnx2			; *** if disabled, skip this task ***
+			DEC drv_cnt-2, X	; otherwise continue with countdown
+				BNE i_pnx			; LSB did not expire, do not execute yet
+			DEC drv_cnt-1, X	; check now MSB, note value should be ONE more!
+				BNE i_pnx			; keep waiting...
+			LDA drv_freq-2, X	; ...or pick original value...
+			STA drv_cnt-2, X	; ...and reset it!
+			LDA drv_freq-1, X
+			STA drv_cnt-1, X
 			_PHX				; keep index! (3)
 			JSR ip_call			; call from table (12...)
 ; *** here is the return point needed for B_EXEC in order to create the stack frame ***
 isr_schd:				; *** take this standard address!!! ***
 			_PLX				; restore index (4)
+			_BRA i_pnx			; --- check next --- optional if optimised as below
+i_rnx2:
+; --- try not to scan the whole queue, if no more entries --- optional
+		CMP #IQ_FREE		; is there a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
+			BEQ ip_done			; yes, we are done (2/3)
 i_pnx:
+		DEX					; go backwards to be faster! (2+2)
+		DEX					; no improvement with offset, all of them will be called anyway
 		BNE i_poll			; until zero is done (3/2)
 ; *** continue after all interrupts dispatched ***
 ip_done:
