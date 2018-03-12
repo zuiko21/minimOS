@@ -2,7 +2,7 @@
 ; v0.6rc2, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180312-1032
+; last modified 20180312-1037
 
 #define		ISR		_ISR
 
@@ -36,15 +36,15 @@
 ; execute D_REQ in drivers
 asynchronous:
 ; *** classic code based on variable queue_mx arrays *** 21 bytes
-; *** isr_done if queue is empty in t
-; *** 'first' async in t (total t)
-; *** skip each disabled in t
-; *** cycle between enabled (but not satisfied) in t+...
+; *** isr_done if queue is empty in 7t
+; *** 'first' async in 27t (total 44t)
+; *** skip each disabled in 14t
+; *** cycle between enabled (but not satisfied) in 34t+...
 ;	LDX queue_mx	; get queue size (4)
 ;	BEQ ir_done		; no drivers to call (2/3)
 ;i_req:
-;		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
-;		BPL i_rnx			; *** if disabled, skip this task ***
+;		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 *** (4)
+;		BPL i_rnx			; *** if disabled, skip this task *** (2/3)
 ;			_PHX				; keep index! (3)
 ;			JSR ir_call			; call from table (12...)
 ;			_PLX				; restore index (4)
@@ -55,19 +55,19 @@ asynchronous:
 ;		BNE i_req			; until zero is done (3/2)
 
 ; *** alternative way with fixed-size arrays (no queue_mx) *** 24 bytes, 18 if left for the whole queue
-; *** isr_done if queue is empty in t (if EOQ-optimised!)
-; *** 'first' async in t (total t)!!!
-; *** skip each disabled in t (t if NOT EOQ-opt)
-; *** cycle between enabled (but not satisfied) in t+...
-	LDX #MX_QUEUE	; get max queue size (4)
+; *** isr_done if queue is empty in 14t (if EOQ-optimised!)
+; *** 'first' async in 23t (total 40t)!!!
+; *** skip each disabled in 18t (14t if NOT EOQ-opt)
+; *** cycle between enabled (but not satisfied) in 37t+...
+	LDX #MX_QUEUE	; get max queue size (2)
 i_req:
-		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
-		BPL i_rnx			; *** if disabled, skip this task ***
+		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 *** (4)
+		BPL i_rnx			; *** if disabled, skip this task *** (2/3)
 			_PHX				; keep index! (3)
 			JSR ir_call			; call from table (12...)
 			_PLX				; restore index (4)
 			BCC isr_done		; driver satisfied, thus go away NOW, BCC instead of BCS 20150320 (2/3)
-			_BRA i_anx			; --- otherwise check next --- optional if optimised as below
+			_BRA i_anx			; --- otherwise check next --- optional if optimised as below (3)
 i_rnx:
 		CMP #IQ_FREE		; is there a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
 			BEQ isr_done		; yes, we are done (2/3)
@@ -104,7 +104,7 @@ periodic:
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
 ; execute D_POLL code in drivers
-; *** classic code based on variable queue_mx arrays ***  bytes
+; *** classic code based on variable queue_mx arrays *** 41 bytes
 ;	LDX queue_mx+1		; get queue size (4)
 ;	BEQ ip_done			; no drivers to call (2/3)
 ;i_poll:
@@ -128,7 +128,7 @@ periodic:
 ;i_pnx:
 ;		BNE i_poll			; until zero is done (3/2)
 
-; *** alternative way with fixed-size arrays (no queue_mx) ***  bytes,  if left for the whole queue
+; *** alternative way with fixed-size arrays (no queue_mx) *** 44 bytes, 38 if left for the whole queue
 	LDX #MX_QUEUE		; maximum valid index plus 2 (2)
 i_poll:
 		LDA drv_p_en-2 , X	; *** check whether enabled, new in 0.6 ***
