@@ -1,7 +1,7 @@
 ; stub for optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
 ; v0.1
-; last modified 20180313-1011
+; last modified 20180313-1118
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -62,8 +62,8 @@ ot_tone:
 	TAX					; ...as index
 	LDA ot_notes, X		; get tone LSB
 	STA VIA_J+T2CL		; set T2 LSB
-	LDA ot_notes+1, X	; same for MSB
-	STA VIA_J+T2CH		; this will load upon next cycle
+;	LDA ot_notes+1, X	; same for MSB
+;	STA VIA_J+T2CH		; this will load upon next cycle
 	_PLX				; restore regs and exit
 	PLA
 	RTI
