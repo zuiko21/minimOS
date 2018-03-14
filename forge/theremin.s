@@ -1,7 +1,7 @@
 ; stub for optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
 ; v0.2
-; last modified 20180314-0911
+; last modified 20180314-1112
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -93,3 +93,35 @@ ot_patts:
 
 ; VIA T1 values for 32 chromatic notes
 ot_notes:
+	.byt	110,	4	; A4
+	.byt	47,		4	; Bb4
+	.byt	242,	3	; B4
+	.byt	186,	3	; C5
+	.byt	132,	3	; C#5
+	.byt	81,		3	; D5
+	.byt	34,		3	; Eb5
+	.byt	244,	2	; E5
+	.byt	202,	2	; F5
+	.byt	162,	2	; F#5
+	.byt	124,	2	; G5
+	.byt	88,		2	; G#5
+	.byt	54,		2	; A5
+	.byt	22,		2	; Bb5
+	.byt	248,	1	; B5
+	.byt	220,	1	; C6
+	.byt	193,	1	; C#6
+	.byt	168,	1	; D6
+	.byt	144,	1	; Eb6
+	.byt	121,	1	; E6
+	.byt	100,	1	; F6
+	.byt	80,		1	; F#6
+	.byt	61,		1	; G6
+	.byt	43,		1	; G#6
+	.byt	26,		1	; A6
+	.byt	10,		1	; Bb6
+	.byt	251,	0	; B6
+	.byt	237,	0	; C7
+	.byt	223,	0	; C#7
+	.byt	211,	0	; D7
+	.byt	199,	0	; Eb7
+	.byt	188,	0	; E7
