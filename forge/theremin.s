@@ -1,7 +1,7 @@
 ; stub for optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
 ; v0.2
-; last modified 20180314-1112
+; last modified 20180314-1228
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -13,13 +13,14 @@
 
 ; *** init code ***
 ; must set SS in T2 free-run mode, T1 as continuous interrupts (toggling PB7)
-; CA2 is independent interrupt on low-to-high (for pitch ionterrupt)
-; PB7 output, PA7 input (volume interrupt*) and PA0...6 as output
-; perhaps CA1 as volume interrupt will make things simpler!
+; CA2 is independent interrupt on low-to-high (for pitch interrupt)
+; let us try CA1 as volume interrupt, makes things simpler!
+; PB7 and PA0...6 as output (no longer using PA7 for volume interrupt)
 ; pitch DAC thru weighted resistors at PA0...4, volume DAC at PA5-PA6
 ot_init:
 ;	LDA #%
 	
+; start oscillator
 	LDA #110			; counter LSB value, about 440Hz PB7 @ 1 MHz (will be set later, but at least get it running)
 	STA VIA_J+T1CL		; set counter (and latch)
 	LDA #4				; same for MSB
@@ -28,42 +29,43 @@ ot_init:
 ; *** jiffy interrupt task, will increase counters and poll the volume sensor ***
 ot_irq:
 	PHA					; will be altered anyway
-; *** must check whether periodic (next value) or from CA2 (set pitch) ***
-	LDA #1				; mask for CA2
+; *** must check whether periodic (next value), from CA2 (set pitch) or CA1 (set volume) ***
 	BIT VIA_J+IFR		; check interrupt sources
-		BNE ot_pitch		; it is CA2, set pitch
-		BVC ot_vol			; it is jiffy
+		BVS ot_cnt			; it is jiffy
+	LDA VIA_J+IFR		; otherwise get whole bit mask
+	ROR					; shift out CA2
+		BCS ot_pitch		; it is CA2, set pitch
 ; in case CA1 is used for volume interrupt...
-		
-		; otherwise it is spurious!
-; *** it is the jiffy interrupt task ***
-ot_vol:
+	ROR					; shift out CA1
+		BCS ot_vol			; it is CA1, set volume
+	BCC ot_exit			; otherwise it is spurious!
+
+; *** handle the jiffy interrupt task ***
+; assume A was pushed
+ot_cnt:
 ; must acknowledge interrupt!!!
-		INC VIA_J+IORA		; increase counters
-		NOP					; *** small delay allowing the OpAmp to rise its output!
-		LDA #%00011111		; set mask for pitch ADC bits
-		BIT VIA_J+IORA		; check against current value (respect 4uS delay from INC!!!)
-		BNE ot_exit			; volume bits will not change
-		BPL ot_exit			; or we have not detected current volume
-; PA7 went high, we must set volume the first time ONLY
-; this will be MUCH simpler if we use, say, positive-transition CA1 for volume interrupt instead of polling!
-			_PHX				; will use this
-			LDA VIA_J+IORA		; still scanning, get stored value as %xvvttttt
-			
-			AND #%01111111		; must clear bit 7!
-			LSR					; shift as needed, now %00vvtttt
-			LSR					; %000vvttt
-			LSR					; %0000vvtt
-			LSR					; %00000vvt
-			LSR					; %000000vv as needed
-			TAX					; eeeeeeeeeeeeeek
-			LDA ot_patts, X		; get bit pattern for this volume
-			STA VIA_J+VSR		; set for PWM control output
-			_PLX				; restore reg
+	INC VIA_J+IORA		; increase counters
 ; *** end of ISR ***
 ot_exit:
-	PLA					; restore reg
+	PLA					; restore accumulator
 	RTI					; and we are done
+
+; *** handle volume setting ***
+; assume A was pushed
+ot_vol:
+	_PHX				; will use this
+	LDA VIA_J+IORA		; still scanning, get stored value as %xvvttttt
+		
+	AND #%01111111		; must clear bit 7!
+	LSR					; shift as needed, now %00vvtttt
+	LSR					; %000vvttt
+	LSR					; %0000vvtt
+	LSR					; %00000vvt
+	LSR					; %000000vv as needed
+	TAX					; eeeeeeeeeeeeeek
+	LDA ot_patts, X		; get bit pattern for this volume
+	STA VIA_J+VSR		; set for PWM control output
+	_PLX				; restore reg
 
 ; *** arrive here whenever CA2 is triggered (pitch value is set)
 ; assume A is already pushed into stack
