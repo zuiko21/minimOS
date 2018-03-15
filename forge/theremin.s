@@ -1,7 +1,7 @@
 ; stub for optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
 ; v0.2
-; last modified 20180314-1228
+; last modified 20180315-1255
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -16,6 +16,7 @@
 ; CA2 is independent interrupt on low-to-high (for pitch interrupt)
 ; let us try CA1 as volume interrupt, makes things simpler!
 ; PB7 and PA0...6 as output (no longer using PA7 for volume interrupt)
+; keep PA7 as output in order to remain at zero (makes CA2 handler faster)
 ; pitch DAC thru weighted resistors at PA0...4, volume DAC at PA5-PA6
 ot_init:
 ;	LDA #%
@@ -30,33 +31,52 @@ ot_init:
 ot_irq:
 	PHA					; will be altered anyway
 ; *** must check whether periodic (next value), from CA2 (set pitch) or CA1 (set volume) ***
-	BIT VIA_J+IFR		; check interrupt sources
-		BVS ot_cnt			; it is jiffy
-	LDA VIA_J+IFR		; otherwise get whole bit mask
-	ROR					; shift out CA2
-		BCS ot_pitch		; it is CA2, set pitch
+; original handler (16b) takes 7t for jiffy, 15 for pitch, 19 for volume and 22 for spurious (besides exit)
+; add 3b, 4t for interrupt acknowlege (worth it)
+	BIT VIA_J+IFR		; check interrupt sources (4)
+		BVS ot_cnt			; it is jiffy (3/2)
+	_PHX				; otherwise will use X (3)
+	LDA VIA_J+IFR		; get whole bit mask (/4)
+	STA VIA_J+IFR		; acknowledge any interrupt, worth it, place below LDA on CMOS handler (4)
+; for the above, CMOS could use LDA, STA, BIT #0, BVS, PHX instead
+	ROR					; shift out CA2 (/2)
+		BCS ot_pitch		; it is CA2, set pitch (/3/2)
 ; in case CA1 is used for volume interrupt...
-	ROR					; shift out CA1
-		BCS ot_vol			; it is CA1, set volume
-	BCC ot_exit			; otherwise it is spurious!
+	ROR					; shift out CA1 (//2)
+		BCS ot_vol			; it is CA1, set volume (//3/2)
+	BCC ot_rti			; otherwise it is spurious! must restore X (///3)
+; *** alternative handler, CMOS only!!! ***
+; 12b + 8b table, 9t for jiffy, 18t for pitch, volume and spurious
+;	LDA VIA_J+IFR		; check interrupt sources (4)
+;	ASL					; shift left, puts T1 as sign, plus makes CA1-CA2 as valid index (2)
+;		BMI ot_cnt			; jiffy! (3/2)
+;	AND #%00000110		; otherwise, could just be CAx (2)
+;	TAX					; as index (2)
+;	JMP (ot_srcs, X)	; CMOS only indexed jump (6)
+;ot_srcs:
+;	.word	ot_exit		; X=0, if not jiffy, was spurious interrupt
+;	.word	ot_pitch	; X=2, CA2 means pitch setting
+;	.word	ot_vol		; X=4, CA1 means volume setting
+;	.word	ot_pitch	; X=6, both CA1 & CA2, the latter taking priority
 
 ; *** handle the jiffy interrupt task ***
 ; assume A was pushed
 ot_cnt:
 ; must acknowledge interrupt!!!
+	LDA VIA_J+T1CL		; read dummy value for acknowledge (not needed for CMOS handler)
 	INC VIA_J+IORA		; increase counters
+	BPL ot_exit			; bit 7 remains 0
+		_STZA VIA_J+IORA	; otherwise, keep it zero!
 ; *** end of ISR ***
 ot_exit:
 	PLA					; restore accumulator
 	RTI					; and we are done
 
-; *** handle volume setting ***
-; assume A was pushed
+; *** handle volume setting (CA1) ***
+; assume A & X were pushed and interrupt source acknowledged
 ot_vol:
-	_PHX				; will use this
 	LDA VIA_J+IORA		; still scanning, get stored value as %xvvttttt
-		
-	AND #%01111111		; must clear bit 7!
+;	AND #%01111111		; must clear bit 7! no longer needed as jiffy does it
 	LSR					; shift as needed, now %00vvtttt
 	LSR					; %000vvttt
 	LSR					; %0000vvtt
@@ -65,13 +85,11 @@ ot_vol:
 	TAX					; eeeeeeeeeeeeeek
 	LDA ot_patts, X		; get bit pattern for this volume
 	STA VIA_J+VSR		; set for PWM control output
-	_PLX				; restore reg
+	_BRA ot_rti			; restore X and done (this is less accurate)
 
 ; *** arrive here whenever CA2 is triggered (pitch value is set)
-; assume A is already pushed into stack
+; assume A & X were pushed and interrupt source acknowledged
 ot_pitch:
-	_PHX				; will be needed
-; as CA2 was independent interrupt, must acknowledge source!
 	LDA VIA_J+IORA		; get counter value
 	AND #%00011111		; filter pitch bits
 	ASL					; twice...
@@ -80,8 +98,9 @@ ot_pitch:
 	STA VIA_J+T1LL		; set T1 LSB
 	LDA ot_notes+1, X	; same for MSB
 	STA VIA_J+T1LH		; this will load upon next cycle
+; *** standard ISR exit with full register restore ***
+ot_rti:
 	_PLX				; restore regs and exit
-; standard ISR exit, not worth reusing the above one
 	PLA
 	RTI
 
