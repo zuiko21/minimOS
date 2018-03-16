@@ -1,7 +1,7 @@
-; stub for optical Theremin app
+; optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
-; v0.2
-; last modified 20180316-1118
+; v0.3
+; last modified 20180316-1213
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -11,7 +11,7 @@
 ; buzzer sounds when PB7=0 & CB2=1 (use a diode or suitable amp)
 ; volume polling was done every ~80ms, this way could be up to 145ms, still OK
 
-* = ROM_BASE
+* = ROM_BASE			; for stand-alone ROMs
 
 ; *****************
 ; *** init code ***
@@ -84,20 +84,19 @@ ot_irq:
 		BCS ot_vol			; it is CA1, set volume (//3/2)
 	BCC ot_rti			; otherwise it is spurious! must restore X (///3)
 
-; *** handle the jiffy interrupt task ***
+; *** jiffy interrupt handler (increment counter for DACs) ***
 ; assume A was pushed
 ot_cnt:
-; must acknowledge interrupt!!!
 	LDA VIA_J+T1CL		; read dummy value for acknowledge (not needed for CMOS handler)
 	INC VIA_J+IORA		; increase counters
 	BPL ot_exit			; bit 7 remains 0
 		_STZA VIA_J+IORA	; otherwise, keep it zero!
-; *** end of ISR ***
+; *** fast end of ISR ***
 ot_exit:
 	PLA					; restore accumulator
 	RTI					; and we are done
 
-; *** handle volume setting (CA1) ***
+; *** CA1 interrupt handler (volume setting ***
 ; assume A & X were pushed and interrupt source acknowledged
 ot_vol:
 	LDA VIA_J+IORA		; still scanning, get stored value as %xvvttttt
@@ -112,7 +111,7 @@ ot_vol:
 	STA VIA_J+VSR		; set for PWM control output
 	_BRA ot_rti			; restore X and done (this is less accurate)
 
-; *** arrive here whenever CA2 is triggered (pitch value is set)
+; *** CA2 interrupt handler (pitch value is set) ***
 ; assume A & X were pushed and interrupt source acknowledged
 ot_pitch:
 	LDA VIA_J+IORA		; get counter value
@@ -127,9 +126,12 @@ ot_pitch:
 ot_rti:
 	_PLX				; restore regs and exit
 	PLA
+ot_nmi:					; NMI is actually disabled
 	RTI
 
+; ********************
 ; *** diverse data ***
+; ********************
 ; shifted bit patterns for diverse volume levels (hopefully!)
 ot_patts:
 	.byt	0			; 0 = MUTE
@@ -171,3 +173,14 @@ ot_notes:
 	.byt	211,	0	; D7
 	.byt	199,	0	; Eb7
 	.byt	188,	0	; E7
+
+; *** create padding for stand-alone ROM ***
+	.dsb	$FFFA-*, $FF
+
+; *********************************
+; *** 6502 hardware ROM vectors ***
+; *********************************
+* = $FFFA				; standard address
+	.word	ot_nmi		; NMI	@ $FFFA
+	.word	ot_init		; RST	@ $FFFC
+	.word	ot_irq		; IRQ	@ $FFFE
