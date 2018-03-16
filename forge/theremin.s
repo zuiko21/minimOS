@@ -1,7 +1,7 @@
 ; stub for optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
 ; v0.2
-; last modified 20180315-1342
+; last modified 20180316-1040
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -20,8 +20,10 @@
 ; pitch DAC thru weighted resistors at PA0...4, volume DAC at PA5-PA6
 ot_init:
 ; I/O direction
-	LDA #255			; whole bit mask
-	STA VIA_J+DDRA		; PA0...PA7 as output
+	LDX #255			; whole bit mask
+	STX VIA_J+DDRA		; PA0...PA7 as output
+	INX					; now it is 0
+	STA VIA_J+IORA		; reset DAC!
 	LDA VIA_J+DDRB		; current PB status
 	ORA #%10000000		; set PB7 as output
 	STA VIA_J+DDRB		; do not disturb PB0...PB6
@@ -31,7 +33,11 @@ ot_init:
 	ORA #%0111			; CA2 as independent positive edge, CA1 as positive edge
 	STA VIA_J+PCR
 ; set timer modes
-	LDA #%111
+	LDA #%11110000		; PB7 square wave, PB6 count (so far), free-run shift, no latching (2) 
+	STA VIA_J+ACR		; set timer modes (4)
+; enable suitable interrupts
+	LDA #%11000011		; enable T1, CA1 & CA2 (2+4)
+	STA VIA_J+IER
 ; start oscillator
 	LDA #110			; counter LSB value, about 440Hz PB7 @ 1 MHz (will be set later, but at least get it running)
 	STA VIA_J+T1CL		; set counter (and latch)
