@@ -1,7 +1,7 @@
 ; optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
 ; v0.4
-; last modified 20180316-1220
+; last modified 20180316-1235
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -14,7 +14,7 @@
 * = ROM_BASE			; for stand-alone ROMs
 
 ; *****************
-; *** init code ***
+; *** init code *** 52t to lock...
 ; *****************
 ; must set SS in T2 free-run mode, T1 as continuous interrupts (toggling PB7)
 ; CA2 is independent interrupt on low-to-high (for pitch setting)
@@ -23,22 +23,22 @@
 ; pitch DAC thru weighted resistors at PA0...4, volume DAC at PA5-PA7 (now 3 bits)
 ot_init:
 ; I/O direction
-	LDX #255			; whole bit mask
-	STX VIA_J+DDRA		; PA0...PA7 as output
-	INX					; now it is 0 (CMOS could just use STZ)
-	STA VIA_J+IORA		; reset DAC!
+	LDX #255			; whole bit mask (2)
+	STX VIA_J+DDRA		; PA0...PA7 as output (4)
+	INX					; now it is 0 (CMOS could just use STZ) (2)
+	STA VIA_J+IORA		; reset DAC! (4)
 ; as a stand-alone ROM, no need to keep remaining state unchanged
 ;	LDA VIA_J+DDRB		; current PB status
 ;	ORA #%10000000		; set PB7 as output
 ; enable PB7 output
-	LDA #%10000000		; set PB7 as output (direct)
-	STA VIA_J+DDRB		; do not disturb PB0...PB6
+	LDA #%10000000		; set PB7 as output (direct) (2)
+	STA VIA_J+DDRB		; do not disturb PB0...PB6 (4)
 ; as a stand-alone ROM, no need to keep remaining state unchanged
 ;	LDA VIA_J+PCR		; original values
 ;	AND #$F0			; respect CBx
 ;	ORA #%0111			; CA2 as independent positive edge, CA1 as positive edge
 ; disable handshake and set interrupt mode
-	LDA #%0111			; CA2 as independent positive edge, CA1 as positive edge
+	LDA #%0111			; CA2 as independent positive edge, CA1 as positive edge (2+4)
 	STA VIA_J+PCR
 ; set timer modes
 	LDA #%11110000		; PB7 square wave, PB6 count (so far), free-run shift, no latching (2) 
@@ -47,26 +47,26 @@ ot_init:
 	LDA #%11000011		; enable T1, CA1 & CA2 (2+4)
 	STA VIA_J+IER
 ; start oscillator
-	LDA #110			; counter LSB value, about 440Hz PB7 @ 1 MHz (will be set later, but at least get it running)
-	STA VIA_J+T1CL		; set counter (and latch)
-	LDA #4				; same for MSB
-	STA VIA_J+T1CH		; start counting!
+	LDA #110			; counter LSB value, about 440Hz PB7 @ 1 MHz (will be set later, but at least get it running) (2)
+	STA VIA_J+T1CL		; set counter (and latch) (4)
+	LDA #4				; same for MSB (2)
+	STA VIA_J+T1CH		; start counting! (4)
 
 ; ************************************************************************
 ; *** as a stand-alone ROM task, this will lock waiting for interrupts ***
 ; ************************************************************************
-	CLD					; just in case...
-	CLI					; make certain interrupts are ON
+	CLD					; just in case... (2)
+	CLI					; make certain interrupts are ON (2)
 ot_lock:
-	_BRA ot_lock		; wait for interrupts forever...
+	_BRA ot_lock		; wait for interrupts forever!
 
 ; **************************
-; *** interrupt handlers ***
+; *** interrupt handlers *** =30t jiffy, 65t pitch, 70t volume, 45t spurious
 ; **************************
 
-; *** ISR, check interrupt source and call appropriate handler ***
+; *** ISR, check interrupt source and call appropriate handler *** +10t to jiffy, +25t to pitch, +29t to vol, =45t for spurious
 ot_irq:
-	PHA					; will be altered anyway
+	PHA					; will be altered anyway (3)
 ; *** must check whether periodic (next value), from CA2 (set pitch) or CA1 (set volume) ***
 ; original handler (16b) takes 7t for jiffy, 15 for pitch, 19 for volume and 22 for spurious (besides exit)
 ; add 3b, 4t for interrupt acknowlege (worth it)
@@ -83,45 +83,45 @@ ot_irq:
 		BCS ot_vol			; it is CA1, set volume (//3/2)
 	BCC ot_rti			; otherwise it is spurious! must restore X (///3)
 
-; *** jiffy interrupt handler (increment counter for DACs) ***
+; *** jiffy interrupt handler (increment counter for DACs) *** +20t to exit
 ; assume A was pushed
 ot_cnt:
-	LDA VIA_J+T1CL		; read dummy value for acknowledge (not needed for CMOS handler)
-	INC VIA_J+IORA		; increase counters
+	LDA VIA_J+T1CL		; read dummy value for acknowledge (not needed for CMOS handler) (4)
+	INC VIA_J+IORA		; increase counters (6)
 ; new 3-bit DAC for volume uses up all bits
 ; *** fast end of ISR ***
 ot_exit:
-	PLA					; restore accumulator
-	RTI					; and we are done
+	PLA					; restore accumulator (4)
+	RTI					; and we are done (6)
 
-; *** CA1 interrupt handler (volume setting ***
+; *** CA1 interrupt handler (volume setting *** +41t to exit
 ; assume A & X were pushed and interrupt source acknowledged
 ot_vol:
-	LDA VIA_J+IORA		; still scanning, get stored value as %vvvttttt
-	LSR					; shift as needed, now %0vvvtttt
-	LSR					; %00vvvttt
-	LSR					; %000vvvtt
-	LSR					; %0000vvvt
-	LSR					; %00000vvv as needed
-	TAX					; eeeeeeeeeeeeeek
-	LDA ot_patts, X		; get bit pattern for this volume
-	STA VIA_J+VSR		; set for PWM control output
-	_BRA ot_rti			; restore X and done (this is less accurate)
+	LDA VIA_J+IORA		; still scanning, get stored value as %vvvttttt (4)
+	LSR					; shift as needed, now %0vvvtttt (2)
+	LSR					; %00vvvttt (2)
+	LSR					; %000vvvtt (2)
+	LSR					; %0000vvvt (2)
+	LSR					; %00000vvv as needed (2)
+	TAX					; eeeeeeeeeeeeeek (2)
+	LDA ot_patts, X		; get bit pattern for this volume (4)
+	STA VIA_J+VSR		; set for PWM control output (4)
+	_BRA ot_rti			; restore X and done (this is less accurate) (3)
 
-; *** CA2 interrupt handler (pitch value is set) ***
+; *** CA2 interrupt handler (pitch value is set) *** +40t to exit
 ; assume A & X were pushed and interrupt source acknowledged
 ot_pitch:
-	LDA VIA_J+IORA		; get counter value
-	AND #%00011111		; filter pitch bits
-	ASL					; twice...
-	TAX					; ...as index
-	LDA ot_notes, X		; get pitch LSB
-	STA VIA_J+T1LL		; set T1 LSB
-	LDA ot_notes+1, X	; same for MSB
-	STA VIA_J+T1LH		; this will load upon next cycle
+	LDA VIA_J+IORA		; get counter value (4)
+	AND #%00011111		; filter pitch bits (2)
+	ASL					; twice... (2)
+	TAX					; ...as index (2)
+	LDA ot_notes, X		; get pitch LSB (4)
+	STA VIA_J+T1LL		; set T1 LSB (4)
+	LDA ot_notes+1, X	; same for MSB (4)
+	STA VIA_J+T1LH		; this will load upon next cycle (4)
 ; *** standard ISR exit with full register restore ***
 ot_rti:
-	_PLX				; restore regs and exit
+	_PLX				; restore regs and exit (4+4+6)
 	PLA
 ot_nmi:					; NMI is actually disabled
 	RTI
