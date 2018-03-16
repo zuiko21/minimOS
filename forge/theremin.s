@@ -1,7 +1,7 @@
 ; optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
-; v0.3
-; last modified 20180316-1213
+; v0.4
+; last modified 20180316-1220
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -9,7 +9,7 @@
 ; new approach, notes are generated via PB7/T1 interrupts
 ; volume is set via PWM thru Serial register, T2 at full speed
 ; buzzer sounds when PB7=0 & CB2=1 (use a diode or suitable amp)
-; volume polling was done every ~80ms, this way could be up to 145ms, still OK
+; volume polling was done every ~80ms, interrupt-driven could be up to 145ms, still OK
 
 * = ROM_BASE			; for stand-alone ROMs
 
@@ -17,11 +17,10 @@
 ; *** init code ***
 ; *****************
 ; must set SS in T2 free-run mode, T1 as continuous interrupts (toggling PB7)
-; CA2 is independent interrupt on low-to-high (for pitch interrupt)
-; let us try CA1 as volume interrupt, makes things simpler!
-; PB7 and PA0...6 as output (no longer using PA7 for volume interrupt)
-; keep PA7 as output in order to remain at zero (makes CA2 handler faster)
-; pitch DAC thru weighted resistors at PA0...4, volume DAC at PA5-PA6
+; CA2 is independent interrupt on low-to-high (for pitch setting)
+; now uses CA1 as volume interrupt, makes things simpler!
+; PB7 and PA0...7 as output (no longer using PA7 for volume interrupt, now is volume MSB)
+; pitch DAC thru weighted resistors at PA0...4, volume DAC at PA5-PA7 (now 3 bits)
 ot_init:
 ; I/O direction
 	LDX #255			; whole bit mask
@@ -59,7 +58,7 @@ ot_init:
 	CLD					; just in case...
 	CLI					; make certain interrupts are ON
 ot_lock:
-	JMP ot_lock
+	_BRA ot_lock		; wait for interrupts forever...
 
 ; **************************
 ; *** interrupt handlers ***
@@ -89,8 +88,7 @@ ot_irq:
 ot_cnt:
 	LDA VIA_J+T1CL		; read dummy value for acknowledge (not needed for CMOS handler)
 	INC VIA_J+IORA		; increase counters
-	BPL ot_exit			; bit 7 remains 0
-		_STZA VIA_J+IORA	; otherwise, keep it zero!
+; new 3-bit DAC for volume uses up all bits
 ; *** fast end of ISR ***
 ot_exit:
 	PLA					; restore accumulator
@@ -99,13 +97,12 @@ ot_exit:
 ; *** CA1 interrupt handler (volume setting ***
 ; assume A & X were pushed and interrupt source acknowledged
 ot_vol:
-	LDA VIA_J+IORA		; still scanning, get stored value as %xvvttttt
-;	AND #%01111111		; must clear bit 7! no longer needed as jiffy does it
-	LSR					; shift as needed, now %00vvtttt
-	LSR					; %000vvttt
-	LSR					; %0000vvtt
-	LSR					; %00000vvt
-	LSR					; %000000vv as needed
+	LDA VIA_J+IORA		; still scanning, get stored value as %vvvttttt
+	LSR					; shift as needed, now %0vvvtttt
+	LSR					; %00vvvttt
+	LSR					; %000vvvtt
+	LSR					; %0000vvvt
+	LSR					; %00000vvv as needed
 	TAX					; eeeeeeeeeeeeeek
 	LDA ot_patts, X		; get bit pattern for this volume
 	STA VIA_J+VSR		; set for PWM control output
@@ -136,8 +133,12 @@ ot_nmi:					; NMI is actually disabled
 ot_patts:
 	.byt	0			; 0 = MUTE
 	.byt	%10000000	; 1 = 12.5%
-	.byt	%10010010	; 2 = 37.5% (will not use 25 & 50% as per log ear response)
-	.byt	%11111111	; 3 = 100%, continuous PB7 output
+	.byt	%10001000	; 2 = 25%
+	.byt	%10010010	; 3 = 37.5%
+	.byt	%10101010	; 4 = 50%
+	.byt	%11101010	; 5 = 62.5%
+	.byt	%11101110	; 6	= 75% (will not use 87.5% as per log ear response)
+	.byt	%11111111	; 7 = 100%, continuous PB7 output
 
 ; VIA T1 values for 32 chromatic notes
 ot_notes:
