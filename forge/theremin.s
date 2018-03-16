@@ -1,7 +1,7 @@
 ; stub for optical Theremin app
 ; (c) 2018 Carlos J. Santisteban
 ; v0.2
-; last modified 20180316-1040
+; last modified 20180316-1118
 
 ; to be assembled from OS/
 #include "usual.h"
@@ -11,7 +11,11 @@
 ; buzzer sounds when PB7=0 & CB2=1 (use a diode or suitable amp)
 ; volume polling was done every ~80ms, this way could be up to 145ms, still OK
 
+* = ROM_BASE
+
+; *****************
 ; *** init code ***
+; *****************
 ; must set SS in T2 free-run mode, T1 as continuous interrupts (toggling PB7)
 ; CA2 is independent interrupt on low-to-high (for pitch interrupt)
 ; let us try CA1 as volume interrupt, makes things simpler!
@@ -22,15 +26,20 @@ ot_init:
 ; I/O direction
 	LDX #255			; whole bit mask
 	STX VIA_J+DDRA		; PA0...PA7 as output
-	INX					; now it is 0
+	INX					; now it is 0 (CMOS could just use STZ)
 	STA VIA_J+IORA		; reset DAC!
-	LDA VIA_J+DDRB		; current PB status
-	ORA #%10000000		; set PB7 as output
+; as a stand-alone ROM, no need to keep remaining state unchanged
+;	LDA VIA_J+DDRB		; current PB status
+;	ORA #%10000000		; set PB7 as output
+; enable PB7 output
+	LDA #%10000000		; set PB7 as output (direct)
 	STA VIA_J+DDRB		; do not disturb PB0...PB6
+; as a stand-alone ROM, no need to keep remaining state unchanged
+;	LDA VIA_J+PCR		; original values
+;	AND #$F0			; respect CBx
+;	ORA #%0111			; CA2 as independent positive edge, CA1 as positive edge
 ; disable handshake and set interrupt mode
-	LDA VIA_J+PCR		; original values
-	AND #$F0			; respect CBx
-	ORA #%0111			; CA2 as independent positive edge, CA1 as positive edge
+	LDA #%0111			; CA2 as independent positive edge, CA1 as positive edge
 	STA VIA_J+PCR
 ; set timer modes
 	LDA #%11110000		; PB7 square wave, PB6 count (so far), free-run shift, no latching (2) 
@@ -44,7 +53,19 @@ ot_init:
 	LDA #4				; same for MSB
 	STA VIA_J+T1CH		; start counting!
 
-; *** jiffy interrupt task, will increase counters and poll the volume sensor ***
+; ************************************************************************
+; *** as a stand-alone ROM task, this will lock waiting for interrupts ***
+; ************************************************************************
+	CLD					; just in case...
+	CLI					; make certain interrupts are ON
+ot_lock:
+	JMP ot_lock
+
+; **************************
+; *** interrupt handlers ***
+; **************************
+
+; *** ISR, check interrupt source and call appropriate handler ***
 ot_irq:
 	PHA					; will be altered anyway
 ; *** must check whether periodic (next value), from CA2 (set pitch) or CA1 (set volume) ***
@@ -62,19 +83,6 @@ ot_irq:
 	ROR					; shift out CA1 (//2)
 		BCS ot_vol			; it is CA1, set volume (//3/2)
 	BCC ot_rti			; otherwise it is spurious! must restore X (///3)
-; *** alternative handler, CMOS only!!! ***
-; 12b + 8b table, 9t for jiffy, 18t for pitch, volume and spurious
-;	LDA VIA_J+IFR		; check interrupt sources (4)
-;	ASL					; shift left, puts T1 as sign, plus makes CA1-CA2 as valid index (2)
-;		BMI ot_cnt			; jiffy! (3/2)
-;	AND #%00000110		; otherwise, could just be CAx (2)
-;	TAX					; as index (2)
-;	JMP (ot_srcs, X)	; CMOS only indexed jump (6)
-;ot_srcs:
-;	.word	ot_exit		; X=0, if not jiffy, was spurious interrupt
-;	.word	ot_pitch	; X=2, CA2 means pitch setting
-;	.word	ot_vol		; X=4, CA1 means volume setting
-;	.word	ot_pitch	; X=6, both CA1 & CA2, the latter taking priority
 
 ; *** handle the jiffy interrupt task ***
 ; assume A was pushed
