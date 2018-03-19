@@ -1,7 +1,7 @@
 ; optical Theremin (app version)
 ; (c) 2018 Carlos J. Santisteban
 ; v0.4
-; last modified 20180319-1018
+; last modified 20180319-1038
 
 #include "usual.h"
 
@@ -70,7 +70,7 @@ go_th:
 ; ##### end of minimOS specific stuff #####
 	LDA #>banner		; address of banner message
 	LDY #<banner
-	STY str_ptr			; store parameter
+	STY str_pt			; store parameter
 	STA str_pt+1
 	LDY #0				; default device
 	_KERNEL(STRING)		; print the string!
@@ -313,6 +313,10 @@ ot_notes:
 	.byt	211,	0	; D7
 	.byt	199,	0	; Eb7
 	.byt	188,	0	; E7
+
+banner:
+	.asc	"Theremin v0.4", CR
+	.asc	"(hit NMI to exit)", CR, 0
 
 thEnd:					; ### for easy size computation ###
 .)
