@@ -1,7 +1,7 @@
 ; optical Theremin (app version)
 ; (c) 2018 Carlos J. Santisteban
 ; v0.4
-; last modified 20180319-0916
+; last modified 20180319-1018
 
 #include "usual.h"
 
@@ -19,7 +19,7 @@
 	ot_ier		= ot_acr+1
 	ot_t1l		= ot_ier+1
 	ot_oirq		= ot_t1l+2		; keep pointers to old interrupt routines!
-	ot_onmi		= ot_oirq+2
+	ot_onmi		= ot_oirq+2		; this might be 24b in 65816 systems!
 ; update final label!!!
 	__last	= ot_onmi+3	; ##### just for easier size check ##### 65(C)02 could use +2
 
@@ -90,6 +90,7 @@ go_th:
 ; pitch DAC thru weighted resistors at PA0...4, volume DAC at PA5-PA7 (now 3 bits)
 ; *** any previous config must be saved ***
 ; I/O direction
+	SEI					; ***be safe while tinkering...
 	LDA VIA_J+DDRA		; ***save previous DDRA (4+3)
 	STA ot_ddra
 	LDX #255			; whole bit mask (2)
@@ -111,6 +112,8 @@ go_th:
 	LDA #%11110000		; PB7 square wave, PB6 count (so far), free-run shift, no latching (2) 
 	STA VIA_J+ACR		; set timer modes (4)
 ; enable suitable interrupts
+	LDA VIA_J+IER		; ***save previous interrupt mask (4+3)
+	STA ot_ier
 	LDA #%11000011		; enable T1, CA1 & CA2 (2+4)
 	STA VIA_J+IER
 ; ***must save timer latches too
@@ -123,9 +126,30 @@ go_th:
 	STA VIA_J+T1CL		; set counter (and latch) (4)
 	LDA #4				; same for MSB (2)
 	STA VIA_J+T1CH		; start counting! (4)
-
 ; *** set interrupt handlers, saving old routines!
-
+; IRQ handler (as theremin is interrupt-driven)
+	LDY #<ot_irq		; get pointer to new ISR
+	LDA #>ot_irq
+	STY kerntab			; set firmware parameter
+	STA kerntab+1
+	_U_ADM(SET_ISR)		; unusual firmware call!
+	LDY kerntab			; retrieve old address
+	LDA kerntab+1
+	STY ot_oirq			; and save it for later
+	STA ot_oirq+1
+; NMI handler (will allow exit)
+	LDY #<ot_nmi		; get pointer to new handler
+	LDA #>ot_nmi
+	STY ex_pt			; set firmware parameter
+	STA ex_pt+1
+	_U_ADM(SET_NMI)		; unusual firmware call!
+	LDY ex_pt			; retrieve old address
+	LDA ex_pt+1
+	LDX ex_pt+2			; get bank just in case!
+	STY ot_onmi			; and save it for later
+	STA ot_onmi+1
+	STX ot_onmi+2
+; enable interrupts and let theremin go... until NMI is hit!
 	CLD					; just in case... (2)
 	CLI					; make certain interrupts are ON (2)
 ot_lock:
@@ -202,10 +226,44 @@ ot_rti:
 ot_nmi:
 ; just restoring state previous from app launch, discard registers and system pointers!
 ; all stored in zeropage, thus no need for stack
-
-#else
+	LDA ot_ddra			; restore previous VIA register values
+	STA VIA_J+DDRA
+	LDA ot_ddrb
+	STA VIA_J+DDRB
+	LDA	ot_pcr
+	STA VIA_J+PCR
+	LDA ot_acr
+	STA VIA_J+PCR
+	LDX #255			; full mask for clearing pending interrupts
+	LDA ot_ier			; this were the enabled interrupts (plus bit 7=1)
+;	ORA #%10000000		; make sure d7 is 1, we want to enable them back
+	STA VIA_J+IER		; re-enable as before
+	STX VIA_J+IFR		; none pending
+	LDY ot_t1l			; restore latches and counters
+	LDA ot_t1l
+	STY VIA_J+T1LL
+	STA VIA_J+T1LH
+	STA VIA_J+T1CH		; this will restore count!
+	LDY ot_oirq			; get pointers to old interrupt routines!
+	LDA ot_oirq+1
+	STY kerntab
+	STA kerntab+1
+	_U_ADM(SET_ISR)
+	LDY ot_onmi			; ditto for NMI
+	LDA ot_onmi+1
+	LDX ot_onmi+2		; this might be 24b in 65816 systems!
+	STY ex_pt
+	STA ex_pt+1
+	STX ex_pt+2
+	_U_ADM(SET_NMI)
+; discard all status and exit to system
+	_KERNEL(GET_PID)	; who am I?
+	LDA #SIGKILL		; will suicide
+	STA b_sig
+	_KERNEL(B_SIGNAL)	; I am done...
+#ifdef	SAFE
+	_PANIC("{SIGKILL}")	; should never arrive here...
 #endif
-
 
 ; ********************
 ; *** diverse data ***
