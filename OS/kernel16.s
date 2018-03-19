@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b7
+; v0.6b8
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180306-1103
+; last modified 20180319-0959
 
 ; just in case
 #define		C816	_C816
@@ -86,9 +86,9 @@ warm:
 	_ADMIN(SET_ISR)		; install routine, will respect sizes
 
 ; install BRK code (as defined in "isr/brk16.s", currently from IRQ, might move to rom.s)
-	LDA #supplied_brk		; get address (3)
-	STA kerntab			; no need to know about actual vector location (4)
-	STZ kerntab+2		; required 24b
+	LDA #supplied_brk	; get address (3)
+	STA ex_pt			; no need to know about actual vector location (4)
+	STZ ex_pt+2			; required 24b
 	_ADMIN(SET_DBG)		; install routine, will respect sizes
 
 ; Kernel no longer supplies default NMI, but could install it otherwise

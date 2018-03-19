@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180131-0947
+; last modified 20180319-0955
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
@@ -18,35 +18,35 @@
 
 -set_nmi:
 .(
-	LDA kerntab+1		; get MSB (3)
+	LDA ex_pt+1			; get MSB (3)
 		BEQ fw_r_nmi		; read instead (2/3)
 #ifdef	SAFE
 	LDY #0				; offset for NMI code pointer (2)
-	LDA (kerntab), Y	; get code byte (5) not worth CMOS indirect
+	LDA (ex_pt), Y		; get code byte (5) not worth CMOS indirect
 	CMP #'U'			; match? (2)
 		BNE fw_nerr			; not a valid routine (2/3)
 	INY					; another byte (2)
-	LDA (kerntab), Y	; get code byte (5)
+	LDA (ex_pt), Y		; get code byte (5)
 	CMP #'N'			; match? (2)
 		BNE fw_nerr			; not a valid routine (2/3)
 	INY					; another byte (2)
-	LDA (kerntab), Y	; get code byte (5)
+	LDA (ex_pt), Y		; get code byte (5)
 	CMP #'j'			; match? (2)
 		BNE fw_nerr			; not a valid routine (2/3)
 	INY					; another byte (2)
-	LDA (kerntab), Y	; get code byte (5)
+	LDA (ex_pt), Y		; get code byte (5)
 	CMP #'*'			; match? (2)
 		BNE fw_nerr			; not a valid routine (2/3)
 #endif
-	LDY kerntab			; get LSB (3)
+	LDY ex_pt			; get LSB (3)
 	STY fw_nmi			; store for firmware (4+4)
 	STA fw_nmi+1
 	_DR_OK				; done (8)
 fw_r_nmi:
 	LDY fw_nmi			; get current if read (4+4)
 	LDA fw_nmi+1
-	STY kerntab			; store result (3+3)
-	STA kerntab+1
+	STY ex_pt			; store result (3+3)
+	STA ex_pt+1
 	_DR_OK
 fw_nerr:
 	_DR_ERR(CORRUPT)	; invalid magic string!

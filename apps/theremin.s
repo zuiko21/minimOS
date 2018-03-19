@@ -1,21 +1,84 @@
-; optical Theremin app
+; optical Theremin (app version)
 ; (c) 2018 Carlos J. Santisteban
 ; v0.4
-; last modified 20180318-2129
+; last modified 20180319-0916
 
-; to be assembled from OS/
 #include "usual.h"
-
-; new approach, notes are generated via PB7/T1 interrupts
-; volume is set via PWM thru Serial register, T2 at full speed
-; buzzer sounds when PB7=0 & CB2=1 (use a diode or suitable amp)
-; volume polling was done every ~80ms, interrupt-driven could be up to 145ms, still OK
 
 ; *** app version must use the usual header, install both IRQ (for handlers)
 ; and NMI (for exit!) routines and let the interrupts run...
 ; upon NMI will restore all interrupt handlers and exit as a regular app! ***
 
-; TO DO standard minimOS header
+.(
+; *** declare zeropage variables ***
+; ##### uz is first available zeropage byte #####
+	ot_ddra		= uz			; previous VIA register values
+	ot_ddrb		= ot_ddra+1
+	ot_pcr		= ot_ddrb+1
+	ot_acr		= ot_pcr+1
+	ot_ier		= ot_acr+1
+	ot_t1l		= ot_ier+1
+	ot_oirq		= ot_t1l+2		; keep pointers to old interrupt routines!
+	ot_onmi		= ot_oirq+2
+; update final label!!!
+	__last	= ot_onmi+3	; ##### just for easier size check ##### 65(C)02 could use +2
+
+; ##### include minimOS headers and some other stuff #####
+#ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+thHead:
+; *** header identification ***
+	BRK							; do not enter here! NUL marks beginning of header
+	.asc	"m", CPU_TYPE		; minimOS app! it is 816 savvy
+	.asc	"****", 13			; some flags TBD
+
+; *** filename and optional comment ***
+	.asc	"theremin", 0				; file name (mandatory)
+	.asc	"Optical Theremin v0.4", 0	; comment
+
+; advance to end of header
+	.dsb	thHead + $F8 - *, $FF		; for ready-to-blow ROM, advance to time/date field
+
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$4AC0		; time, 09.22
+	.word	$4C73		; date, 2018/3/19
+
+thSize	=	thEnd - thHead -$100		; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	thSize		; filesize
+	.word	0			; 64K space does not use upper 16-bit
+#endif
+; ##### end of minimOS executable header #####
+
+; ********************************
+; *** initialise minimOS stuff ***
+; ********************************
+
+; ##### minimOS specific stuff #####
+	LDA #__last-uz		; zeropage space needed
+; check whether has enough zeropage space
+#ifdef	SAFE
+	CMP z_used			; check available zeropage space
+	BCC go_th			; enough space
+	BEQ go_th			; just enough!
+		_ABORT(FULL)		; not enough memory otherwise (rare) new interface
+go_th:
+#endif
+	STA z_used			; set needed ZP space as required by minimOS
+; will not use iodev as will work on default device
+; ##### end of minimOS specific stuff #####
+	LDA #>banner		; address of banner message
+	LDY #<banner
+	STY str_ptr			; store parameter
+	STA str_pt+1
+	LDY #0				; default device
+	_KERNEL(STRING)		; print the string!
+
+; new approach, notes are generated via PB7/T1 interrupts
+; volume is set via PWM thru Serial register, T2 at full speed
+; buzzer sounds when PB7=0 & CB2=1 (use a diode or suitable amp)
+; volume polling was done every ~80ms, interrupt-driven could be up to 145ms, still OK
 
 ; *****************
 ; *** init code ***
@@ -25,31 +88,36 @@
 ; now uses CA1 as volume interrupt, makes things simpler!
 ; PB7 and PA0...7 as output (no longer using PA7 for volume interrupt, now is volume MSB)
 ; pitch DAC thru weighted resistors at PA0...4, volume DAC at PA5-PA7 (now 3 bits)
-ot_init:
 ; *** any previous config must be saved ***
 ; I/O direction
-	LDA VIA_J+DDRA		; save previous DDRA (4+3)
-	PHA
+	LDA VIA_J+DDRA		; ***save previous DDRA (4+3)
+	STA ot_ddra
 	LDX #255			; whole bit mask (2)
 	STX VIA_J+DDRA		; PA0...PA7 as output (4)
 	INX					; now it is 0 (CMOS could just use STZ) (2)
 	STA VIA_J+IORA		; reset DAC! (4)
-	LDA VIA_J+DDRB		; current PB status
-	PHA			; saved!
-	ORA #%10000000		; set PB7 as output
+	LDA VIA_J+DDRB		; current PB status (4)
+	STA ot_ddrb			; ***saved! (3)
+	ORA #%10000000		; set PB7 as output (2)
 	STA VIA_J+DDRB		; do not disturb PB0...PB6 (4)
-	LDA VIA_J+PCR		; save original values
-	PHA
+	LDA VIA_J+PCR		; original PCR settings (4)
+	STA ot_pcr			; ***saved! (3)
 	AND #$F0			; respect CBx
 	ORA #%0111			; CA2 as independent positive edge, CA1 as positive edge
 	STA VIA_J+PCR
 ; set timer modes
-; ****** save previous state!!!
+	LDA VIA_J+ACR		; ***save previous timer modes (4+3)
+	STA ot_acr
 	LDA #%11110000		; PB7 square wave, PB6 count (so far), free-run shift, no latching (2) 
 	STA VIA_J+ACR		; set timer modes (4)
 ; enable suitable interrupts
 	LDA #%11000011		; enable T1, CA1 & CA2 (2+4)
 	STA VIA_J+IER
+; ***must save timer latches too
+	LDY VIA_J+T1LL		; T1 latch... (4+4+3+3)
+	LDA VIA_J+T1LH
+	STY ot_t1l
+	STA ot_t1l+2
 ; start oscillator
 	LDA #110			; counter LSB value, about 440Hz PB7 @ 1 MHz (will be set later, but at least get it running) (2)
 	STA VIA_J+T1CL		; set counter (and latch) (4)
@@ -126,8 +194,18 @@ ot_pitch:
 ot_rti:
 	_PLX				; restore regs and exit (4+4+6)
 	PLA
-ot_nmi:					; NMI is actually disabled
 	RTI
+
+; ****************************************************
+; *** NMI handler, will restore things and exit!!! ***
+; ****************************************************
+ot_nmi:
+; just restoring state previous from app launch, discard registers and system pointers!
+; all stored in zeropage, thus no need for stack
+
+#else
+#endif
+
 
 ; ********************
 ; *** diverse data ***
@@ -178,13 +256,5 @@ ot_notes:
 	.byt	199,	0	; Eb7
 	.byt	188,	0	; E7
 
-; *** create padding for stand-alone ROM ***
-	.dsb	$FFFA-*, $FF
-
-; *********************************
-; *** 6502 hardware ROM vectors ***
-; *********************************
-* = $FFFA				; standard address
-	.word	ot_nmi		; NMI	@ $FFFA
-	.word	ot_init		; RST	@ $FFFC
-	.word	ot_irq		; IRQ	@ $FFFE
+thEnd:					; ### for easy size computation ###
+.)

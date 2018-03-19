@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc4
+; v0.6rc5
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180308-1343
+; last modified 20180319-0958
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -85,10 +85,10 @@ warm:
 	_ADMIN(SET_ISR)		; install routine
 
 ; install BRK code (as defined in "isr/brk.s" loaded from IRQ)
-	LDY #<supplied_brk		; get address, nicer way (2+2)
+	LDY #<supplied_brk	; get address, nicer way (2+2)
 	LDA #>supplied_brk
-	STY kerntab			; no need to know about actual vector location (3)
-	STA kerntab+1
+	STY ex_pt			; no need to know about actual vector location (3)
+	STA ex_pt+1
 	_ADMIN(SET_DBG)		; install routine
 
 ; Kernel no longer supplies default NMI, but could install it otherwise

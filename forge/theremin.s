@@ -1,7 +1,7 @@
-; optical Theremin app
+; optical Theremin (standalone ROM version)
 ; (c) 2018 Carlos J. Santisteban
 ; v0.4
-; last modified 20180316-1235
+; last modified 20180319-0915
 
 ; to be assembled from OS/
 #include "usual.h"

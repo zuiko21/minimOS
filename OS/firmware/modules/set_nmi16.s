@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180124-0853
+; last modified 20180319-0955
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
@@ -24,37 +24,37 @@
 
 #ifdef	SUPPORT
 	LDX run_arch		; from 8-bit code? (4)
-	BEQ fw_sn24b			; no, bank already set (3/2)
-		STZ kerntab+2		; yes, assume it is bank zero (4)
+	BEQ fw_sn24b		; no, bank already set (3/2)
+		STZ ex_pt+2			; yes, assume it is bank zero (4)
 fw_sn24b:
 #endif
 
-	LDA kerntab+1		; get MSB+bank (4)
+	LDA ex_pt+1			; get MSB+bank (4)
 	BNE fw_s_nmi		; zero means read instead (2/3)
 		LDY fw_nmi			; get current if read (4)
 		LDA fw_nmi+1		; this gets MSB+bank (5)
-		STY kerntab			; store result (3+4)
-		STA kerntab+1
+		STY ex_pt			; store result (3+4)
+		STA ex_pt+1
 		_NO_CRIT			; restore sizes
 		_DR_OK
 fw_s_nmi:
 
 #ifdef	SAFE
-		LDA [kerntab]		; get first word (7)
+		LDA [ex_pt]			; get first word (7)
 		CMP #'U'+256*'N'	; correct? (3)
 		BNE fw_nerr			; not a valid routine (2/3)
 			LDY #2				; point to second word (2)
-			LDA [kerntab], Y	; get that (7)
+			LDA [ex_pt], Y		; get that (7)
 			CMP #'j'+256*'*'	; correct? (3)
 		BEQ fw_nsok			; it is a valid routine (2/3)
 fw_nerr:
 			_NO_CRIT			; restore sizes too
 			_DR_ERR(CORRUPT)	; invalid magic string!	
 fw_nsok:
-		LDA kerntab+1		; get MSB+bank again (4)
+		LDA ex_pt+1			; get MSB+bank again (4)
 #endif
 
-	LDY kerntab			; get LSB, as MSB+bank already loaded (3)
+	LDY ex_pt			; get LSB, as MSB+bank already loaded (3)
 	STY fw_nmi			; store for firmware (4)
 	STA fw_nmi+1		; includes MSB + bank (5)
 	_NO_CRIT			; restore sizes
