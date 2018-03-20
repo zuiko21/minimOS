@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc11, must match kernel.s
+; v0.6rc12, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180310-2205
+; last modified 20180320-1110
 
 ; no way for standalone assembly...
 
@@ -1367,9 +1367,10 @@ dr_abort:
 dr_shut:
 	LDX dr_ind-128, Y	; is that being used?
 	BNE ds_used			; yes, proceed to remove
-		_ERR(NFOUND)		; no, nothing to remove
+		_ERR(N_FOUND)		; no, nothing to remove
 ds_used:
-	_STZA dr_ind-128, Y	; this is no more, any problem here?
+	LDA #0				; no STZ abs, Y...
+	STA dr_ind-128, Y	; this is no more, any problem here?
 	LDY drv_ads, X		; get full header pointer (leave dummy entry)
 	LDA drv_ads+1, X
 ; does it need to clear that entry?
@@ -1432,7 +1433,7 @@ di_ndef:
 		STA ex_pt+1
 		_EXIT_OK
 di_none:
-	_ERR(NFOUND)		; no such ID
+	_ERR(N_FOUND)		; no such ID
 
 
 ; ***************************************************************
