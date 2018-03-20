@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc8
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180310-2126
+; last modified 20180320-0958
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -812,7 +812,7 @@ dr_nreq:
 
 ; 3.3) if arrived here, there is room for interrupt tasks, but check init code
 	JSR dr_icall		; call routine (6+...)
-		BCS dr_nabort		; no way, forget about this
+		BCS dr_fabort		; no way, forget about this
 ; 4) LOWRAM kernel has no I/O pointers in RAM...
 ; finally add ID to list
 	_LDAY(da_ptr)		; retrieve ID eeeeeek
@@ -908,6 +908,9 @@ dr_done:
 dr_babort:
 	LDX #BUSY			; as further routines affect Y, but not X
 	BNE dr_abort
+dr_fabort:
+	LDX #FULL
+	BNE dr_abort
 
 ; *****************************************
 ; *** some driver installation routines ***
@@ -1002,9 +1005,6 @@ dr_1stb:
 ; **********************
 dr_iabort:
 	LDX #INVALID
-	BNE dr_abort
-dr_fabort:
-	LDX #FULL
 	BNE dr_abort
 dr_uabort:
 	LDX #UNAVAIL

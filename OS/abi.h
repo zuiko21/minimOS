@@ -1,7 +1,7 @@
-; minimOS 0.6rc7 API/ABI
+; minimOS 0.6rc8 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180308-1301
+; last modified 20180320-0953
 
 ; *************************************************
 ; *************************************************
@@ -172,7 +172,9 @@ MX_DRVRS	=	4	; maximum number of drivers, independent as of 20170207
 MAX_LIST	=	0	; no memory management for such systems
 #endif
 
-; multitasking subfunctions, no longer needed as will patch regular kernel!
+IQ_FREE	= 127		; empty entry in interrupt queues, new 20180320
+
+; multitasking subfunctions no longer needed as will patch regular kernel!
 
 ; ** multitasking status values **
 BR_FREE		= 192	; free slot, non-executable

@@ -21,7 +21,7 @@
 	ot_oirq		= ot_t1l+2		; keep pointers to old interrupt routines!
 	ot_onmi		= ot_oirq+2		; this might be 24b in 65816 systems!
 ; update final label!!!
-	__last	= ot_onmi+3	; ##### just for easier size check ##### 65(C)02 could use +2
+	__last		= ot_onmi+3		; ##### just for easier size check ##### 65(C)02 could use +2
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
