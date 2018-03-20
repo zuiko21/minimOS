@@ -71,6 +71,6 @@ rst_nmi:
 	_BRA nmi_end		; and finish as usual
 
 ; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
-std_nmi:
++std_nmi:
 #include "firmware/modules/std_nmi.s"
 .)
