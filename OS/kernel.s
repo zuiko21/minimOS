@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180320-1008
+; last modified 20180320-1108
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc4", 0	; version in comment
+	.asc	"minimOS 0.6rc64", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -199,6 +199,7 @@ dr_error:
 dr_ok:					; *** all drivers inited ***
 	PLA					; discard stored X, no hassle for NMOS
 
+
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
@@ -270,7 +271,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6rc4", 0
+	.asc	"minimOS 0.6rc6", 0
 #endif
 
 kern_end:		; for size computation
