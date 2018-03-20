@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc8
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180320-0958
+; last modified 20180320-1102
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -105,8 +105,8 @@ cout:
 ; C = I/O error
 ;		USES da_ptr, iol_dev, plus whatever the driver takes
 
-cio_of = da_ptr			; parameter switching between CIN and COUT
-; da_ptr globally defined, cio_of not needed upon calling dr_call!
+cio_of		= da_ptr
+; da_ptr globally defined, no longer calling dr_call!
 
 blout:
 #ifdef	SAFE
@@ -116,9 +116,11 @@ blout:
 		_EXIT_OK			; or nothing to do
 blo_do:
 #endif
-	LDA #D_BOUT			; only difference from blin (2)
-	STA cio_of			; store for further indexing (3)
-	TYA					; for indexed comparisons (2)
+	LDA #D_BOUT			; output pointer location
+	STA cio_of			; store for further indexing
+; in case of optimised direct jump, suppress the above and use this instead
+;	_STZA cio_of		; store for further indexing, only difference from blin, no longer stores D_BOUT (3)
+	TYA					; check device ID (2)
 	BNE co_port			; not default (3/2)
 		LDA stdout			; default output device (3)
 		BNE co_port			; eeeeeeeeeek
@@ -133,26 +135,45 @@ co_port:
 		_STZA bl_siz+1			; null transfers always complete
 		_EXIT_OK			; "/dev/null" is always OK
 cio_phys:
-	LDX drv_num			; number of drivers (3)
-		BEQ cio_nfound		; no drivers at all! (2/3)
+; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
+	STY iol_dev			; need to save this... worth it, I think
+	LDA drv_en			; get mask of enabled drivers
+#ifdef	SAFE
+	LDX #8				; maximum number of drivers
+#endif
 cio_loop:
-		CMP id_list-1, X	; get ID from list, notice trick (4)
-			BEQ cio_dev			; device found! (2/3)
-		DEX					; go back one (2)
-		BNE cio_loop		; repeat until end, will reach not_found otherwise (3/2)
+		ROR					; shift right, C if enabled
+		DEY					; one ID scanned
+			BPL cio_dev			; the desired ID was reached
+#ifdef	SAFE
+		DEX					; another ID, enabled or not
+#endif
+		BNE cio_loop		; continue scanning until match (or end of list, if SAFE)
+; old code for reference
+;	LDX drv_num			; number of drivers (3)
+;		BEQ cio_nfound		; no drivers at all! (2/3)
+;cio_loop:
+;		CMP id_list-1, X	; get ID from list, notice trick (4)
+;			BEQ cio_dev			; device found! (2/3)
+;		DEX					; go back one (2)
+;		BNE cio_loop		; repeat until end, will reach not_found otherwise (3/2)
 cio_nfound:
 	_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
-cio_dev:
-	DEX					; needed because of backwards optimized loop (2)
-	TXA					; get index in list (2)
+cio_dev:				; old label location
+	BCC cio_nfound		; ID is valid but device is disabled
+	LDA iol_dev			; retrieve (valid) ID, no longer in X
 	ASL					; two times (2)
 	TAX					; index for address table!
-; unified version is 15 bytes, 20 + 29 clocks
-	LDY cio_of			; get offset (3)
+	LDY cio_of			; want input or output?
+;	BNE cio_in			; not zero is input
+; no support yext for optimised direct jumps...
+;		JMPX(drv_opt)		; optimised direct jump, new for 0.6
+;cio_in:
+;	JMPX(drv_ipt)
 	LDA drvrs_ad, X		; take table LSB (4)
-	STA da_ptr			; store pointer (3)
-	LDA drvrs_ad+1, X	; same for LSB (4+3)
-	STA da_ptr+1		; cannot use neater way but no longer needs cio_of!
+	STA da_ptr			; store pointer, cio_of no longer needed (3)
+	LDA drvrs_ad+1, X	; same for MSB (4+3)
+	STA da_ptr+1
 	JMP dr_call			; re-use routine (3...)
 
 ; *****************************
@@ -225,11 +246,11 @@ blin:
 	LDA bl_siz		; how many?
 	ORA bl_siz+1
 	BEQ bli_ok		; empty perhaps? eeeeeek
-		_EXIT_OK		; nithing to do
+		_EXIT_OK		; nothing to do
 bli_ok:
 #endif
 	LDA #D_BLIN			; only difference from bout
-	STA cio_of			; store for further addition
+	STA cio_of			; store for further addition, or just check as not zero
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
 		LDA std_in			; default input device
@@ -237,9 +258,7 @@ bli_ok:
 			LDA #DEVICE			; *** somewhat ugly hack ***
 ci_port:
 	BPL ci_nph			; logic device
-		JSR cio_phys		; check physical devices... but come back for events! new 20150617
-			BCS ci_exit			; some error, send it back
-
+		BMI cio_phys		; check physical devices, will no longer check events here
 ci_nph:
 ; only logical devs, no need to check for windows or filesystem
 	CMP #DEV_RND		; getting a random number?
@@ -689,7 +708,7 @@ sd_2nd:
 ; now let's disable all drivers
 	SEI					; disable interrupts
 ; call each driver's shutdown routine
-	LDA drv_num			; get number of installed drivers
+//	LDA drv_num			; get number of installed drivers
 	ASL					; twice the value as a pointer
 	TAX					; use as index
 ; first get the pointer to each driver table
