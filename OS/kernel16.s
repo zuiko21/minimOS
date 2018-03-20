@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b8
+; v0.6b9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180319-0959
+; last modified 20180320-1008
 
 ; just in case
 #define		C816	_C816
@@ -81,8 +81,8 @@ warm:
 
 ; install ISR code (as defined in "isr/irq16.s" below)
 	LDA #k_isr			; get address (3)
-	STA kerntab			; no need to know about actual vector location (4)
-	STZ kerntab+2		; required 24b
+	STA ex_pt			; no need to know about actual vector location (4)
+	STZ ex_pt+2			; required 24b
 	_ADMIN(SET_ISR)		; install routine, will respect sizes
 
 ; install BRK code (as defined in "isr/brk16.s", currently from IRQ, might move to rom.s)

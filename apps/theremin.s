@@ -1,7 +1,7 @@
 ; optical Theremin (app version)
 ; (c) 2018 Carlos J. Santisteban
-; v0.4
-; last modified 20180319-1038
+; v0.4b2
+; last modified 20180320-1010
 
 #include "usual.h"
 
@@ -19,7 +19,7 @@
 	ot_ier		= ot_acr+1
 	ot_t1l		= ot_ier+1
 	ot_oirq		= ot_t1l+2		; keep pointers to old interrupt routines!
-	ot_onmi		= ot_oirq+2		; this might be 24b in 65816 systems!
+	ot_onmi		= ot_oirq+3		; these might be 24b in 65816 systems!
 ; update final label!!!
 	__last		= ot_onmi+3		; ##### just for easier size check ##### 65(C)02 could use +2
 
@@ -130,13 +130,15 @@ go_th:
 ; IRQ handler (as theremin is interrupt-driven)
 	LDY #<ot_irq		; get pointer to new ISR
 	LDA #>ot_irq
-	STY kerntab			; set firmware parameter
-	STA kerntab+1
+	STY ex_pt			; set firmware parameter
+	STA ex_pt+1
 	_U_ADM(SET_ISR)		; unusual firmware call!
-	LDY kerntab			; retrieve old address
-	LDA kerntab+1
+	LDY ex_pt			; retrieve old address
+	LDA ex_pt+1
+	LDX ex_pt+2			; get bank just in case!
 	STY ot_oirq			; and save it for later
 	STA ot_oirq+1
+	STX ot_oirq+2
 ; NMI handler (will allow exit)
 	LDY #<ot_nmi		; get pointer to new handler
 	LDA #>ot_nmi

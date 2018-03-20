@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc5
+; v0.6rc6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180319-0958
+; last modified 20180320-1008
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -80,8 +80,8 @@ warm:
 ; install ISR code (as defined in "isr/irq.s" below)
 	LDY #<k_isr			; get address, nicer way (2+2)
 	LDA #>k_isr
-	STY kerntab			; no need to know about actual vector location (3)
-	STA kerntab+1
+	STY ex_pt			; no need to know about actual vector location (3)
+	STA ex_pt+1
 	_ADMIN(SET_ISR)		; install routine
 
 ; install BRK code (as defined in "isr/brk.s" loaded from IRQ)
