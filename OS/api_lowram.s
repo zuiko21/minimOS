@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180321-0855
+; last modified 20180321-1356
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -92,7 +92,8 @@ cout:
 	STA bl_siz			; set counter
 	_STZA bl_siz+1
 ; ...and fall into BLOUT
-
+lda#'C'
+jsr$c0c2
 ; ***************************
 ; *** BLOUT, block output ***
 ; ***************************
@@ -109,6 +110,10 @@ cio_of		= da_ptr
 ; da_ptr globally defined, no longer calling dr_call!
 
 blout:
+tya
+sec
+sbc#96
+jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size
 	ORA bl_siz+1
@@ -119,7 +124,7 @@ blo_do:
 	LDA #D_BOUT			; output pointer location
 	STA cio_of			; store for further indexing
 ; in case of optimised direct jump, suppress the above and use this instead
-;	_STZA cio_of		; store for further indexing, only difference from blin, no longer stores D_BOUT (3)
+;	STZA cio_of		; store for further indexing, only difference from blin, no longer stores D_BOUT (3)
 	TYA					; check device ID (2)
 	BNE co_port			; not default (3/2)
 		LDA stdout			; default output device (3)
@@ -131,8 +136,8 @@ co_port:
 ; investigate rest of logical devices
 		CMP #DEV_NULL		; lastly, ignore output
 			BNE cio_nfound		; final error otherwise
-		_STZA bl_siz			; null transfers always complete
-		_STZA bl_siz+1			; null transfers always complete
+		_STZA bl_siz		; null transfers always complete
+		_STZA bl_siz+1		; null transfers always complete
 		_EXIT_OK			; "/dev/null" is always OK
 cio_phys:
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
@@ -158,22 +163,43 @@ cio_loop:
 ;		DEX					; go back one (2)
 ;		BNE cio_loop		; repeat until end, will reach not_found otherwise (3/2)
 cio_nfound:
+lda#'X'
+jsr$c0c2
 	_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
 	BCC cio_nfound		; ID is valid but device is disabled
-	LDA iol_dev			; retrieve (valid) ID, no longer in X
-	ASL					; two times (2)
-	TAX					; index for address table!
+; this is suspicious...
+;	LDA iol_dev			; retrieve (valid) ID, no longer in X
+;	ASL					; two times (2)
+;	TAX					; index for address table!
 	LDY cio_of			; want input or output?
+tya
+clc
+adc#'0'
+jsr$c0c2
 ;	BNE cio_in			; not zero is input
 ; no support yext for optimised direct jumps...
 ;		JMPX(drv_opt)		; optimised direct jump, new for 0.6
 ;cio_in:
 ;	JMPX(drv_ipt)
-	LDA drvrs_ad, X		; take table LSB (4)
-	STA da_ptr			; store pointer, cio_of no longer needed (3)
-	LDA drvrs_ad+1, X	; same for MSB (4+3)
-	STA da_ptr+1
+; awful loop in the meanwhile
+	LDX #0
+cio_idsc:
+		LDA drvrs_ad, X		; take table LSB (4)
+		STA da_ptr			; store pointer (3)
+		LDA drvrs_ad+1, X	; same for MSB (4+3)
+			BEQ cio_nfound		; *never in ZP
+		STA da_ptr+1
+		_LDAY(da_ptr)		; *get ID of that
+		CMP iol_dev			; *desired?
+			BEQ cio_idok		; *yeah
+		INX					; *no, go next
+		INX					; *eeeeeeeeeeeeeek
+		BNE cio_idsc
+lda#'d'
+jsr$c0c2
+cio_idok:
+	LDY cio_of			; want input or output?
 	JMP dr_call			; re-use routine (3...)
 
 ; *****************************
@@ -603,7 +629,7 @@ ll_wrap:
 ; *********************************
 ;		INPUT
 ; Y			= dev
-; str_pt	= 24b pointer to string (might be altered!) 24-bit ready!
+; str_pt	= pointer to string (might be altered!)
 ;		OUTPUT
 ; C = device error
 ;		USES iol_dev and whatever BOUT takes
@@ -913,11 +939,11 @@ dr_done:
 ; **********************
 ; *** error handling ***
 ; **********************
-dr_babort:
-	LDX #BUSY			; as further routines affect Y, but not X
-	BNE dr_abort
 dr_fabort:
 	LDX #FULL
+	BNE dr_abort
+dr_babort:
+	LDX #BUSY			; as further routines affect Y, but not X
 	BNE dr_abort
 
 ; *****************************************

@@ -1,6 +1,6 @@
 ; minimOS 0.6rc4 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180309-1103
+; last modified 20180321-1357
 .bss
 
 ; **** I/O management ****
@@ -18,9 +18,6 @@ dr_ind		.dsb	128				; index for sparse array ***this is best aligned at $xx80 fo
 drv_ads		= drvrs_ad				; list of installed drivers as per supplied upon boot, cannot be changed
 drv_en		.dsb	1				; array of enabled drivers, into a slower, memory-saving bitwise format!
 ; non-sparse arrays have no use for dr_ind
-; ** older dispatch system **
-;drv_num		.byt	0				; number of installed drivers
-;id_list		.dsb	MX_DRVRS		; space for reasonable number of drivers
 #endif
 
 ; ** I/O flags and locks **

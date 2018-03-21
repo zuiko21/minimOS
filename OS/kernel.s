@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180320-1108
+; last modified 20180321-1307
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -212,15 +212,18 @@ dr_ok:					; *** all drivers inited ***
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
 ; new, show a splash message ever the kernel is restarted!
-	JSR ks_cr			; leading newline
+;	JSR ks_cr			; leading newline
+lda#'+'
+jsr$c0c2
 	LDY #<kern_splash	; get pointer
 	LDA #>kern_splash
 	STY str_pt			; set parameter
 	STA str_pt+1
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
-	JSR ks_cr			; trailing newline
-
+lda#'-'
+jsr$c0c2
+;	JSR ks_cr			; trailing newline
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************

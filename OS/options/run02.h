@@ -8,12 +8,12 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
-;#define		LOWRAM	_LOWRAM
+#define		LOWRAM	_LOWRAM
 
 ; new option for mutable IDs, most likely mandatory!
-#define		MUTABLE		_MUTABLE
+;#define		MUTABLE		_MUTABLE
 
 ; enable in order to remove headers, not LOADLINK savvy!
 ;#define		NOHEAD	_NOHEAD
@@ -85,7 +85,7 @@ DEVICE	=	DEV_CNIO		; standard I/O device
 ; * some pointers and addresses * renamed 20150220
 
 ; SRAM pages, just in case of mirroring/bus error * NOT YET USED
-#ifndef	LOWRAM
+#ifndef	LOWRAMxx
 SRAM		=	128		; 32 KiB available as standard
 SPTR		=	$FF		; general case stack pointer, new name 20160308
 SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
