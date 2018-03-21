@@ -212,7 +212,7 @@ dr_ok:					; *** all drivers inited ***
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
 ; new, show a splash message ever the kernel is restarted!
-;	JSR ks_cr			; leading newline
+	JSR ks_cr			; leading newline
 lda#'+'
 jsr$c0c2
 	LDY #<kern_splash	; get pointer

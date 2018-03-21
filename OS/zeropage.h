@@ -1,6 +1,6 @@
 ; minimOS 0.6rc2 zero-page system variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180131-1320
+; last modified 20180321-1430
 
 .zero
 * = 0
@@ -72,7 +72,7 @@ local3: locpt3	.dsb	4			; variables for kernel functions @ $EC
 ; ***********************
 
 ; *** include aliases here for zpar3/zaddr3 ***
-b_sig:								; 8 bit
+b_sig: cio_of:						; 8 bit
 ma_rs:								; 8/16 bit
 bl_ptr:								; 16/24 bit
 ex_pt:								; 16/24 bit

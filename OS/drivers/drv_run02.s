@@ -2,7 +2,7 @@
 ; v0.9.6b2
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180321-1316
+; last modified 20180321-1422
 
 #include	"usual.h"
 .(
@@ -27,6 +27,8 @@ debug_info:
 
 ; *** output ***
 kow_bout:
+lda#'*'
+jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
@@ -37,32 +39,34 @@ kow_bout:
 ; all checked, do block output!
 	LDY #0				; reset index
 kow_cout:
-lda#'.'
-jsr$c0c2
-	LDA (bl_ptr), Y		; get char in case is control
-	CMP #13				; carriage return?
-	BNE kow_ncr			; if so, should generate LF instead
-		LDA #10			; LF first (and only)
+		LDA (bl_ptr), Y		; get char in case is control
+		CMP #13				; carriage return?
+		BNE kow_ncr			; if so, should generate LF instead
+			LDA #10			; LF first (and only)
 kow_ncr:
-	JSR $c0c2			; print it
-	DEC bl_siz			; one less to go
-	BNE kow_blk			; go for next
-		LDA bl_siz+1		; are we done?
-			BEQ kow_end			; yeah!
-		DEC bl_siz+1		; or one page less
+		JSR $c0c2			; print it
+		DEC bl_siz			; one less to go
+		BNE kow_blk			; go for next
+			LDA bl_siz+1		; are we done?
+				BEQ kow_end			; yeah!
+			DEC bl_siz+1		; or one page less
 kow_blk:
-	INY					; point to next
-	BNE kow_cout		; did not wrap EEEEEEEEEK
-		INC bl_ptr+1		; or update MSB
+		INY					; point to next
+		BNE kow_cout		; did not wrap EEEEEEEEEK
+			INC bl_ptr+1		; or update MSB
 		_BRA kow_cout		; and continue EEEEEEEEEEEK
 kow_end:
 	PLA					; retrieve saved MSB
 	STA bl_ptr+1		; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+lda#'e'
+jsr$c0c2
 kow_rts:
 	_DR_OK
 
 ; *** input *** will only get one!
 kow_blin:
+lda#'i'
+jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1

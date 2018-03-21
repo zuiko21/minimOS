@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180321-1356
+; last modified 20180321-1408
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -72,7 +72,17 @@ bl_cnfg:
 bl_stat:
 	_ERR(UNAVAIL)	; go away!
 
-;
+; *** diverse data ***
+cio_mask:
+	.byt	%00000001	; lr0, 128 = d0
+	.byt	%00000010	; lr1, 129 = d0
+	.byt	%00000100	; lr2, 130 = d0
+	.byt	%00001000	; lr3, 131 = d0
+	.byt	%00010000	; lr4, 132 = d0
+	.byt	%00100000	; lr5, 133 = d0
+	.byt	%01000000	; lr6, 134 = d0
+	.byt	%10000000	; lr7, 135 = d0
+
 
 ; ********************************
 ; *** COUT, output a character ***
@@ -92,7 +102,7 @@ cout:
 	STA bl_siz			; set counter
 	_STZA bl_siz+1
 ; ...and fall into BLOUT
-lda#'C'
+lda#'c'
 jsr$c0c2
 ; ***************************
 ; *** BLOUT, block output ***
@@ -105,9 +115,6 @@ jsr$c0c2
 ; bl_siz	= remaining bytes
 ; C = I/O error
 ;		USES da_ptr, iol_dev, plus whatever the driver takes
-
-cio_of		= da_ptr
-; da_ptr globally defined, no longer calling dr_call!
 
 blout:
 tya
@@ -141,38 +148,27 @@ co_port:
 		_EXIT_OK			; "/dev/null" is always OK
 cio_phys:
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
-	STY iol_dev			; need to save this... worth it, I think
-	LDA drv_en			; get mask of enabled drivers
-#ifdef	SAFE
-	LDX #8				; maximum number of drivers
-#endif
-cio_loop:
-		ROR					; shift right, C if enabled
-		DEY					; one ID scanned
-			BPL cio_dev			; the desired ID was reached
-#ifdef	SAFE
-		DEX					; another ID, enabled or not
-#endif
-		BNE cio_loop		; continue scanning until match (or end of list, if SAFE)
-; old code for reference
-;	LDX drv_num			; number of drivers (3)
-;		BEQ cio_nfound		; no drivers at all! (2/3)
-;cio_loop:
-;		CMP id_list-1, X	; get ID from list, notice trick (4)
-;			BEQ cio_dev			; device found! (2/3)
-;		DEX					; go back one (2)
-;		BNE cio_loop		; repeat until end, will reach not_found otherwise (3/2)
+	STY iol_dev			; need to save this
+tya
+sec
+sbc#96
+jsr$c0c2
+; if SAFE blahblahbñah
+	LDA cio_mask-128 , Y	; pattern for this device
+	AND drv_en			; compare against enabled mask
+	BNE cio_dev			; device is not disabled
 cio_nfound:
 lda#'X'
 jsr$c0c2
-	_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
+		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
-	BCC cio_nfound		; ID is valid but device is disabled
 ; this is suspicious...
 ;	LDA iol_dev			; retrieve (valid) ID, no longer in X
 ;	ASL					; two times (2)
 ;	TAX					; index for address table!
 	LDY cio_of			; want input or output?
+lda#'?'
+jsr$c0c2
 tya
 clc
 adc#'0'
@@ -190,16 +186,27 @@ cio_idsc:
 		LDA drvrs_ad+1, X	; same for MSB (4+3)
 			BEQ cio_nfound		; *never in ZP
 		STA da_ptr+1
-		_LDAY(da_ptr)		; *get ID of that
+		LDY #D_ID
+		LDA (da_ptr), Y		; *get ID of that
 		CMP iol_dev			; *desired?
 			BEQ cio_idok		; *yeah
 		INX					; *no, go next
 		INX					; *eeeeeeeeeeeeeek
 		BNE cio_idsc
-lda#'d'
-jsr$c0c2
 cio_idok:
+lda#'>'
+jsr$c0c2
+txa
+clc
+adc#'0'
+jsr$c0c2
 	LDY cio_of			; want input or output?
+lda#'!'
+jsr$c0c2
+tya
+clc
+adc#'0'
+jsr$c0c2
 	JMP dr_call			; re-use routine (3...)
 
 ; *****************************
@@ -284,14 +291,16 @@ bli_ok:
 			LDA #DEVICE			; *** somewhat ugly hack ***
 ci_port:
 	BPL ci_nph			; logic device
-		BMI cio_phys		; check physical devices, will no longer check events here
+		JMP cio_phys		; check physical devices, will no longer check events here
 ci_nph:
 ; only logical devs, no need to check for windows or filesystem
 	CMP #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
 	CMP #DEV_NULL		; lastly, ignore input
-		BNE cio_nfound		; final error otherwise
+	BEQ ci_null
+		JMP cio_nfound		; final error otherwise
 ; must behave like /dev/zero!
+ci_null:
 	LDX bl_ptr+1		; pointer might change
 	LDA #0			; filling value
 	TAY			; reset index
