@@ -1622,7 +1622,8 @@ ds_phys:
 	BNE ds_used			; yes, proceed to remove
 		_ERR(NFOUND)		; no, nothing to remove
 ds_used:
-	STZ dr_ind-128, Y	; this is no more, any problem here? ***use whatever null value***
+	LDA #0				; this means free device, unfortunately no STZ abs,Y
+	STA dr_ind-128, Y	; this is no more, any problem here? ***use whatever null value***
 	.al: REP #$20		; *** 16-bit memory ***
 	LDA drv_ads, X		; get full header pointer
 	STA da_ptr			; report from removed, will serve as ZP pointer too
