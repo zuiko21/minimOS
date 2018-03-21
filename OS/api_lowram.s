@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180321-0839
+; last modified 20180321-0855
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -707,25 +707,14 @@ shutdown:
 sd_2nd:
 ; now let's disable all drivers
 	SEI					; disable interrupts
-; call each driver's shutdown routine
-//	LDA drv_num			; get number of installed drivers
-	ASL					; twice the value as a pointer
-	TAX					; use as index
-; first get the pointer to each driver table
+; call each driver's shutdown routine thru DR_SHUT
+	LDY #135			; last valid device driver ID
 sd_loop:
-; get address index
-		DEX					; go back one address
-		DEX
-		LDA drvrs_ad+1, X	; get address MSB (4)
-		BEQ sd_done			; not in zeropage
-		STA da_ptr+1		; store pointer (3)
-		LDA drvrs_ad, X		; same for LSB (4+3)
-		STA da_ptr
-		_PHX				; save index for later
-		LDY #D_BYE			; offset for shutdown routine --- eeeeeek!
-		JSR dr_call			; call routine from generic code!
-		_PLX				; retrieve index
-		BNE sd_loop			; repeat until zero
+		_PHY				; save just in case
+		_KERNEL(DR_SHUT)	; turn this off
+		_PLY				; retrieve
+		DEY					; next device
+		BMI sd_loop			; until done!
 ; ** system cleanly shut, time to let the firmware turn-off or reboot **
 sd_done:
 	LDX sd_flag			; retrieve mode as index!

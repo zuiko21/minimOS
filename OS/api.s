@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc13, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180321-0839
+; last modified 20180321-0853
 
 ; no way for standalone assembly...
 
@@ -1056,25 +1056,14 @@ sd_2nd:
 		_PANIC("{sched}")	; otherwise an error!
 sd_shut:
 	SEI				; disable interrupts
-; call each driver's shutdown routine
-	LDX #0			; reset index
-; first get the pointer to each driver table
+; call each driver's shutdown routine thru DR_SHUT (12b, was 25b)
+	LDY #128			; first valid device driver ID
 sd_loop:
-; get address index
-		LDA drvrs_ad, X	; get address from original list
-		STA da_ptr			; store temporarily eeeeeek
-		LDA drvrs_ad+1, X	; same for MSB
-			BEQ sd_done			; no more drivers to shutdown!
-		STA da_ptr+1
-; will no longer check for successful installation, BYE routine gets called anyway
-		LDY #D_BYE			; shutdown LSB offset eeeeeeek
-		_PHX				; save index for later
-		JSR dr_call			; call routine from generic code!!!
-		_PLX				; retrieve index
-sd_next:
-		INX					; advance to next entry (2+2)
-		INX
-		BNE sd_loop			; repeat, no need for BRA
+		_PHY				; save just in case
+		_KERNEL(DR_SHUT)	; turn this off
+		_PLY				; retrieve
+		INY					; next device
+		BNE sd_loop			; until done!
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
 	LDX sd_flag			; retrieve mode as index!
