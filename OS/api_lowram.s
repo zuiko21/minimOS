@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc8
+; v0.6rc9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180320-1102
+; last modified 20180321-0839
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -1054,6 +1054,15 @@ dr_abort:
 
 dr_shut:
 	TYA					; get ID
+
+#ifdef	SAFE
+		BPL ds_err			; must be physical...
+	CPY #136			; first invalid ID
+	BCC ds_phys			; it is within restricted range...
+ds_err:
+		_ERR(INVALID)		; ...or bust!
+ds_phys:
+#endif
 	ASL					; convert to index
 	TAX
 	TYA					; get ID again

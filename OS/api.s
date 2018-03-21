@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc12, must match kernel.s
+; v0.6rc13, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180320-1110
+; last modified 20180321-0839
 
 ; no way for standalone assembly...
 
@@ -1362,9 +1362,15 @@ dr_abort:
 ;		OUTPUT
 ; da_ptr	= pointer to header from removed driver (if available, C otherwise)
 
-; *** intended for MUTABLE option only ***
-
 dr_shut:
+
+#ifdef	SAFE
+	TYA					; check device
+	BMI ds_phys			; should be OK...
+		_ERR(INVALID)		; ...or bust!
+ds_phys:
+#endif
+
 	LDX dr_ind-128, Y	; is that being used?
 	BNE ds_used			; yes, proceed to remove
 		_ERR(N_FOUND)		; no, nothing to remove

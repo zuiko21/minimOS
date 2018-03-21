@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc9, should match kernel16.s
+; v0.6rc10, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180310-2157
+; last modified 20180321-0832
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1610,6 +1610,14 @@ dr_call:
 ; da_ptr	= pointer to header from removed driver (if available, C otherwise)
 
 dr_shut:
+
+#ifdef	SAFE
+	TYA					; check device
+	BMI ds_phys			; should be OK...
+		_ERR(INVALID)		; ...or bust!
+ds_phys:
+#endif
+
 	LDX dr_ind-128, Y	; is that being used?
 	BNE ds_used			; yes, proceed to remove
 		_ERR(NFOUND)		; no, nothing to remove
@@ -1622,18 +1630,18 @@ ds_used:
 	STZ drv_ads, X		; clear this entry as now mandatory (first entry is dummy)
 ; needs to disable interrupt tasks!
 ; *** perhaps using AQ_MNG and PQ_MNG???
-	STY dr_id		; targeted ID must be compared to entries
+	STY dr_id			; targeted ID must be compared to entries
 	LDX #MX_QUEUE-1		; maximum valid index, including interleaving
 	.as: SEP #$20		; *** back to 8-bit ***
 ds_qseek:
 		LDA drv_a_en, X		; get entry from whatever queue
 		ORA #%10000000		; disabled or not
-		CMP dr_id		; is this entry from targeted ID?
-		BNE dr_qnxt		; no, try other
+		CMP dr_id			; is this entry from targeted ID?
+		BNE dr_qnxt			; no, try another
 			STZ drv_a_en, X		; yes, clear queue entry
 dr_qnxt:
-		DEX			; previous entry, will switch queue
-		BPL ds_qseek		; ***will work below 128 bytes
+		DEX				; previous entry, will switch queue
+		BPL ds_qseek	; ***will work below 128 bytes
 ; finally, execute proper shutdown
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
