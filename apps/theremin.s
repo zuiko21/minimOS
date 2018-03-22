@@ -1,7 +1,7 @@
 ; optical Theremin (app version)
 ; (c) 2018 Carlos J. Santisteban
-; v0.4b2
-; last modified 20180320-1010
+; v0.4b3
+; last modified 20180322-1335
 
 #include "usual.h"
 
@@ -228,6 +228,8 @@ ot_rti:
 ot_nmi:
 ; just restoring state previous from app launch, discard registers and system pointers!
 ; all stored in zeropage, thus no need for stack
+	.asc	"UNj*"		; *** minimOS NMI magic header ***
+
 	LDA ot_ddra			; restore previous VIA register values
 	STA VIA_J+DDRA
 	LDA ot_ddrb
