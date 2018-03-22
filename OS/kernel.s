@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180321-1307
+; last modified 20180322-1107
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -223,7 +223,7 @@ jsr$c0c2
 	_KERNEL(STRING)		; print it!
 lda#'-'
 jsr$c0c2
-;	JSR ks_cr			; trailing newline
+	JSR ks_cr			; trailing newline
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
@@ -237,6 +237,10 @@ sh_exec:
 	STA def_io			; default local I/O
 	STA def_io+1
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
+lda#'x'
+jsr$c0c2
+lda#10
+jsr$c0c2
 	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!

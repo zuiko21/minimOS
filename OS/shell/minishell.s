@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20171211-0857
+; last modified 20180322-1107
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #include "usual.h"
@@ -48,12 +48,12 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
-/*lda#'S':jsr$c0c2
+lda#'S':jsr$c0c2
 lda#'h':jsr$c0c2
 lda#'e':jsr$c0c2
 lda#'l':jsr$c0c2
 lda#'l':jsr$c0c2
-lda#10:jsr$c0c2*/
+lda#10:jsr$c0c2
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
@@ -80,6 +80,12 @@ go_xsh:
 	BCC open_xsh		; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_xsh:
+lda#'@'
+jsr$c0c2
+tya
+clc
+adc#'0'
+jsr$c0c2
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 ; *** begin things ***
@@ -87,6 +93,8 @@ main_loop:
 		LDA #>prompt		; address of prompt message (currently fixed)
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
+lda#'>'
+jsr$c0c2
 		JSR getLine			; input a line
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
@@ -165,6 +173,12 @@ prnStr:
 	STA str_pt+2		; and set parameter
 #endif
 	LDY iodev			; standard device
+lda#'#'
+jsr$c0c2
+tya
+clc
+adc#'0'
+jsr$c0c2
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
 	RTS
