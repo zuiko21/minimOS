@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180321-1408
+; last modified 20180322-1317
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -74,14 +74,14 @@ bl_stat:
 
 ; *** diverse data ***
 cio_mask:
-	.byt	%00000001	; lr0, 128 = d0
-	.byt	%00000010	; lr1, 129 = d0
-	.byt	%00000100	; lr2, 130 = d0
-	.byt	%00001000	; lr3, 131 = d0
-	.byt	%00010000	; lr4, 132 = d0
-	.byt	%00100000	; lr5, 133 = d0
-	.byt	%01000000	; lr6, 134 = d0
-	.byt	%10000000	; lr7, 135 = d0
+	.byt	%00000001	; lr0, #128 = d0
+	.byt	%00000010	; lr1, #129 = d1
+	.byt	%00000100	; lr2, #130 = d2
+	.byt	%00001000	; lr3, #131 = d3
+	.byt	%00010000	; lr4, #132 = d4
+	.byt	%00100000	; lr5, #133 = d5
+	.byt	%01000000	; lr6, #134 = d6
+	.byt	%10000000	; lr7, #135 = d7
 
 
 ; ********************************
@@ -743,7 +743,7 @@ sd_2nd:
 ; now let's disable all drivers
 	SEI					; disable interrupts
 ; call each driver's shutdown routine thru DR_SHUT
-	LDY #135			; last valid device driver ID
+	LDY #135			; last valid device driver ID (lr7)
 sd_loop:
 		_PHY				; save just in case
 		_KERNEL(DR_SHUT)	; turn this off
@@ -788,7 +788,7 @@ dr_inst:
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 #ifdef	SAFE
-	_LDAY(da_ptr)			; get ID as not stored above
+	_LDAY(da_ptr)		; get ID as not stored above
 	BMI dr_phys			; only physical devices (3/2)
 		JMP dr_iabort		; reject logical devices (3)
 dr_phys:
