@@ -788,6 +788,10 @@ sd_tab:
 ; C		= could not install driver (ID in use or invalid, queue full, init failed)
 
 dr_inst:
+lda#'='
+jsr$c0c2
+lda drv_en
+jsr dbgbin
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 #ifdef	SAFE
@@ -852,6 +856,7 @@ dr_nreq:
 #else
 	LDA cio_mask-128, Y	; pattern for this device, faster this way
 #endif
+jsr dbgbin
 ; arrives here with ID mask in A
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
@@ -863,6 +868,7 @@ dr_nreq:
 ; if arrived here, succeeded, thus enable ID in bit-list
 	ORA drv_en			; add bit to current
 	STA drv_en			; update register
+jsr dbgbin
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
@@ -925,6 +931,15 @@ dr_qfree:
 ; *** must copy here original frequency into drv_cnt, now single-byte ***
 			STA drv_cnt, Y		; freq already in A, store unmodified
 			_BRA dr_doreq		; nothing to skip, go for async queue
+
+; **********************
+; *** error handling ***
+; **********************
+dr_fabort:
+	LDX #FULL
+	BNE dr_abort
+
+; end of the loop
 dr_noten:
 		JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
 dr_doreq:
@@ -945,11 +960,8 @@ dr_done:
 	_EXIT_OK				; if arrived here, did not fail
 
 ; **********************
-; *** error handling ***
+; *** error handling *** continued
 ; **********************
-dr_fabort:
-	LDX #FULL
-	BNE dr_abort
 dr_babort:
 	LDX #BUSY			; as further routines affect Y, but not X
 	BNE dr_abort
@@ -1033,6 +1045,11 @@ dr_abort:
 	JSR dr_id2m			; convert to mask
 	EOR #$FF			; invert mask
 	AND drv_en			; remove failed device from current mask
+pha
+lda#'-'
+jsr$c0c2
+pla
+jsr dbgbin
 	STA drv_en
 ; LOWRAM systems no longer keep count of installed drivers!
 	TXA					; previous error code...
@@ -1040,6 +1057,36 @@ dr_abort:
 	SEC					; will not use macro as error code is precomputed
 	RTS
 
+;DEBUG show A in binary
+dbgbin:
+pha
+phx
+phy
+ldy#8
+dloop:
+rol
+tax
+lda#'0'
+bcc dno
+inc
+dno:
+jsr$c0c2
+txa
+dey
+bne dloop
+lda#10
+jsr$c0c2
+ply
+plx
+pla
+rts
+
+dbgen:
+tay
+lda drv_en
+jsr dbgbin
+tya
+rts
 
 ; *******************************
 ; *** DR_SHUT, disable driver *** reduced LOWRAM version
