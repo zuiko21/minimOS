@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc9
+; v0.6rc10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180322-1317
+; last modified 20180323-0946
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -837,22 +837,6 @@ dr_npoll:
 		LDA dq_off+1		; free async counter (as above)
 			BEQ dr_fabort		; no room!
 dr_nreq:
-; if arrived here, there is room in queues (or was not needed)
-
-; old code for queue space check!
-;	LDX #1				; max queue index
-;dr_chk:
-;		ASL				; extract MSB (will be A_POLL first, then A_REQ)
-;		BCC dr_ntsk			; skip verification if task not enabled
-;			LDY queue_mx, X		; get current tasks in queue
-;			CPY #MX_QUEUE		; room for another?
-;			BCC dr_ntsk			; yeah!
-;dr_nabort:
-;				JMP dr_fabort		; or did not checked OK
-;dr_ntsk:
-;		DEX					; let us check next feature
-;		BNE dr_chk
-
 ; 3.3) if arrived here, there is room for interrupt tasks, but check init code
 	JSR dr_icall		; call routine (6+...)
 		BCS dr_fabort		; no way, forget about this
@@ -906,8 +890,19 @@ dr_iqscan:
 ; should not arrive here...
 dr_qfree:
 			STY dq_off			; store index of free entry
-; install entry into queue
-			JSR dr_itask		; install into queue
+; * code for copying a pointer from header into a table *
+; no longer dr_itask routine!
+; read pointer from header
+			LDY #1				; preset offset
+			LDA (pfa_ptr), Y	; get MSB from header
+			PHA					; stack it!
+			_LDAY(pfa_ptr)		; non-indexed indirect, get LSB in A
+; write pointer into queue
+			LDY dq_off			; get index of free entry!
+			STA (dq_ptr), Y		; store into reserved place!
+			INY					; go for MSB
+			PLA					; was stacked!
+			STA (dq_ptr), Y
 ; save for frequency queue, flags must be enabled for this task!
 			_LDAY(da_ptr)		; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default
 			LDY dq_off			; get index of free entry!
@@ -916,15 +911,12 @@ dr_qfree:
 			TXA					; doing periodic?
 				BEQ dr_done			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
 			JSR dr_nextq		; advance to next queue (frequencies)
-			JSR dr_itask		; same for frequency queue
-; *** must copy here original frequency (PLUS 256) into drv_cnt ***
-			LDA (dq_ptr), Y		; get MSB
-			_INC				; plus 1
-			STA drv_cnt, Y		; store copy...
-			STA (dq_ptr), Y		; ...and correct original value
-			DEY					; go for LSB
-			LDA (dq_ptr), Y		; get original...
-			STA drv_cnt, Y		; ...and store unmodified
+; install into queue but cannot use routine as now 8-bit values!
+			_LDAY(pfa_ptr)		; read pointer from header
+			LDY dq_off			; get index of free entry!
+			STA (dq_ptr), Y		; write freq into queue
+; *** must copy here original frequency into drv_cnt, now single-byte ***
+			STA drv_cnt, Y		; freq already in A, store unmodified
 			_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 		JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
@@ -999,22 +991,6 @@ dnq_nw:
 	BCC dnq_snw			; no carry...
 		INC pfa_ptr+1		; ...or update MSB
 dnq_snw:
-	RTS
-
-; * routine for copying a pointer from header into a table *
-; X is 0 for async, 1 for periodic, pfa_ptr, dq_off & dq_ptr set as usual
-dr_itask:
-; read pointer from header
-	LDY #1				; preset offset
-	LDA (pfa_ptr), Y		; get MSB from header
-	PHA					; stack it!
-	_LDAY(pfa_ptr)		; non-indexed indirect, get LSB in A
-; write pointer into queue
-	LDY dq_off			; get index of free entry!
-	STA (dq_ptr), Y		; store into reserved place!
-	INY					; go for MSB
-	PLA					; was stacked!
-	STA (dq_ptr), Y
 	RTS
 
 ; * convert ID (0...7) in A, to bitmask in A *

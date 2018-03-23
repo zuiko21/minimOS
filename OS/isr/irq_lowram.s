@@ -2,7 +2,7 @@
 ; v0.6a1, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180323-0915
+; last modified 20180323-0926
 
 #define		ISR		_ISR
 
@@ -96,13 +96,9 @@ i_poll:
 		LDA drv_p_en-2 , X	; *** check whether enabled, new in 0.6 ***
 		BPL i_rnx2			; *** if disabled, skip this task ***
 			DEC drv_cnt-2, X	; otherwise continue with countdown
-				BNE i_pnx			; LSB did not expire, do not execute yet
-			DEC drv_cnt-1, X	; check now MSB, note value should be ONE more!
-				BNE i_pnx			; keep waiting...
+				BNE i_pnx			; did not expire, do not execute yet
 			LDA drv_freq-2, X	; ...or pick original value...
 			STA drv_cnt-2, X	; ...and reset it!
-			LDA drv_freq-1, X
-			STA drv_cnt-1, X
 			_PHX				; keep index! (3)
 			JSR ip_call			; call from table (12...)
 ; *** here is the return point needed for B_EXEC in order to create the stack frame ***

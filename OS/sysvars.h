@@ -1,6 +1,6 @@
-; minimOS 0.6rc5 System Variables
+; minimOS 0.6rc6 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180322-1334
+; last modified 20180323-0925
 .bss
 
 ; **** I/O management ****
@@ -35,11 +35,15 @@ queue_mx	.word	0				; array with max offset for both Periodic[1] & Async[0] queu
 ; LOWRAM systems might interleave single-byte arrays for frequency & counters!
 #endif
 drv_poll	.dsb	MX_QUEUE		; space for periodic task pointers
-drv_freq	.dsb	MX_QUEUE		; array of periodic task frequencies (word?)
+drv_freq	.dsb	MX_QUEUE		; array of periodic task frequencies (usually words, but single-byte interleaved with counters on LOWRAM)
 drv_asyn	.dsb	MX_QUEUE		; space for async task pointers
 drv_a_en	.dsb	MX_QUEUE		; interleaved array of async interrupt task flags
 drv_p_en	= drv_a_en+1			; ditto for periodic tasks (interleaved)
+#ifndef	LOWRAM
 drv_cnt		.dsb	MX_QUEUE		; current P-task counters eeeeeeeeeeeeeeeeeeeeek
+#else
+drv_cnt		= drv_freq+1			; single byte arrays may be interleaved
+#endif
 
 ; *** single-task sigterm handler separate again! ***
 ; multitasking should provide appropriate space!
