@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180322-1107
+; last modified 20180323-0919
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc64", 0	; version in comment
+	.asc	"minimOS 0.6rc6", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -269,9 +269,14 @@ ks_cr:
 ; *** interrupt service routine ***
 ; *********************************
 ; will include BRK handler!
+; new separate LOWRAM ISR 20180323
 
 k_isr:
+#ifndef		LOWRAM
 #include "isr/irq.s"
+#else
+#include "isr/irq_lowram.s"
+#endif
 ; default NMI-ISR is on firmware!
 ; will include supplied BRK handler, although called by firmware
 
