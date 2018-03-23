@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180323-1052
+; last modified 20180323-1233
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -856,18 +856,26 @@ dr_nreq:
 #else
 	LDA cio_mask-128, Y	; pattern for this device, faster this way
 #endif
+pha
+lda#'%'
+jsr$c0c2
+pla
 jsr dbgbin
 ; arrives here with ID mask in A
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
 	TAX					; save mask!
 	AND drv_en			; was that in use?
-		BEQ dr_babort		; already in use, do not register! (2/3)
+		BNE dr_babort		; already in use, do not register! eeeeeeeeeeeek (2/3)
 	TXA					; otherwise, retrieve ID and continue
 #endif
 ; if arrived here, succeeded, thus enable ID in bit-list
 	ORA drv_en			; add bit to current
 	STA drv_en			; update register
+;pha
+;lda#'!'
+;jsr$c0c2
+;pla
 jsr dbgbin
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
@@ -956,7 +964,11 @@ dr_neqnw:
 ; *** end of suspicious code ***
 dr_done:
 ; *** 6) continue initing drivers ***
-	_LDAY(da_ptr)			; must return (fixed) ID as per API
+/*lda#'='
+jsr$c0c2
+lda drv_en
+jsr dbgbin
+*/	_LDAY(da_ptr)			; must return (fixed) ID as per API
 	_EXIT_OK				; if arrived here, did not fail
 
 ; **********************

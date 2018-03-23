@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc6
+; v0.6rc7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180323-1104
+; last modified 20180323-1245
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -167,6 +167,12 @@ dr_spars:
 ; ------ ------ alternative code for LOWRAM systems ------ ------
 	STX cin_mode		; single flag for non-multitasking systems, X known to be 0
 	STX drv_en			; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+	LDY #MX_QUEUE
+	LDA #IQ_FREE		; proper value
+dr_qcl:
+		STA drv_a_en-1, Y	; reset entry! eeeeeeeeeeek
+		DEY
+		BNE dr_qcl
 #endif
 
 ; X know to be zero here
