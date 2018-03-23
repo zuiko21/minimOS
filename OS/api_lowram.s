@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180323-0946
+; last modified 20180323-1008
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -153,8 +153,11 @@ tya
 sec
 sbc#96
 jsr$c0c2
-; if SAFE blahblahbñah
-	LDA cio_mask-128 , Y	; pattern for this device
+#ifdef	SAFE
+	JSR dr_id2m			; convert ID into mask
+#else
+	LDA cio_mask-128, Y	; pattern for this device, faster this way
+#endif
 	AND drv_en			; compare against enabled mask
 	BNE cio_dev			; device is not disabled
 cio_nfound:
@@ -844,7 +847,11 @@ dr_nreq:
 ; finally add ID to list
 	_LDAY(da_ptr)		; retrieve ID eeeeeek
 ; first convert ID into bit mask for new drv_en
-	JSR dr_id2m			; convert ID 0...7 (in A) to bit mask (in A)
+#ifdef	SAFE
+	JSR dr_id2m			; convert ID into mask
+#else
+	LDA cio_mask-128, Y	; pattern for this device, faster this way
+#endif
 ; arrives here with ID mask in A
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
@@ -993,11 +1000,10 @@ dnq_nw:
 dnq_snw:
 	RTS
 
-; * convert ID (0...7) in A, to bitmask in A *
-; affects Y
+; * convert ID (lr0...lr7) now in Y, to bitmask in A *
 dr_id2m:
-#ifdef	SAFE
-	TAY					; eeeeeeeeeeeeek
+; this routine will not be called unless in SAFE mode, thus extensive check becomes mandatory here
+	TYA					; already in Y
 	AND #%11111000		; check out fixed bits
 	CMP #%10000000		; within range lr0-lr7?
 	BEQ dr_idok			; yes, create mask
@@ -1005,18 +1011,8 @@ dr_id2m:
 		PLA
 		JMP dr_iabort		; abort with INVALID ID error
 dr_idok:
-	TYA					; retrieve ID otherwise
-#endif
-	AND #%00000111		; only 8 available devices
-	TAY					; use reduced ID as counter...
-	LDA #1				; first bit means lr0 in new drv_en!
-	CPY #0				; if it is the first bit (lr0)...
-	BEQ dr_1stb			; ...do not rotate bits
-dr_scan:
-		ASL					; shift left for next device
-		DEY					; go for next until converted
-		BNE dr_scan
-dr_1stb:
+; now Y is 128...135
+	LDA cio_mask-128, Y	; quickly get mask!
 	RTS
 
 ; **********************
@@ -1033,6 +1029,7 @@ dr_uabort:
 dr_abort:
 	_LDAY(da_ptr)		; get failed ID
 ; convert ID into mask for removing
+	TAY					; where the ID is expected
 	JSR dr_id2m			; convert to mask
 	EOR #$FF			; invert mask
 	AND drv_en			; remove failed device from current mask
@@ -1054,19 +1051,14 @@ dr_abort:
 
 dr_shut:
 	TYA					; get ID
-
-#ifdef	SAFE
-		BPL ds_err			; must be physical...
-	CPY #136			; first invalid ID
-	BCC ds_phys			; it is within restricted range...
-ds_err:
-		_ERR(INVALID)		; ...or bust!
-ds_phys:
-#endif
 	ASL					; convert to index
 	TAX
-	TYA					; get ID again
-	JSR dr_id2m			; convert to mask, might abort but respects X!
+; convert ID (already in Y) to mask
+#ifdef	SAFE
+	JSR dr_id2m			; convert ID into mask
+#else
+	LDA cio_mask-128, Y	; pattern for this device, faster this way
+#endif
 	EOR #$FF			; negative mask
 	AND drv_en			; remove device from bitmask
 	STA drv_en
