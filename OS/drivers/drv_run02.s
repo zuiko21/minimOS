@@ -2,7 +2,7 @@
 ; v0.9.6b2
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180322-1107
+; last modified 20180323-1053
 
 #include	"usual.h"
 .(
@@ -27,8 +27,8 @@ debug_info:
 
 ; *** output ***
 kow_bout:
-lda#'o'
-jsr$c0c2
+;lda#'o'
+;jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
@@ -58,15 +58,15 @@ kow_blk:
 kow_end:
 	PLA					; retrieve saved MSB
 	STA bl_ptr+1		; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
-lda#10
-jsr$c0c2
+;lda#10
+;jsr$c0c2
 kow_rts:
 	_DR_OK
 
 ; *** input *** will only get one!
 kow_blin:
-lda#'i'
-jsr$c0c2
+;lda#'i'
+;jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1

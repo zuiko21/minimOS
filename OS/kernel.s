@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180323-0919
+; last modified 20180323-1041
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -132,11 +132,11 @@ ram_init:
 ; *** initialise stuff ***
 ; clear some bytes
 	LDX #0				; reset driver index (2)
-	STX queue_mx		; reset all indexes, NMOS-savvy (4+4+4)
-	STX queue_mx+1
 
 #ifndef	LOWRAM
 ; ++++++ ++++++ standard version adds this ++++++ ++++++
+	STX queue_mx		; reset all indexes, NMOS-savvy (4+4+4)
+	STX queue_mx+1
 ; ++++++ new direct I/O tables for much faster access 20160406 ++++++
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
 dr_clear:
@@ -237,10 +237,6 @@ sh_exec:
 	STA def_io			; default local I/O
 	STA def_io+1
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
-lda#'x'
-jsr$c0c2
-lda#10
-jsr$c0c2
 	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!

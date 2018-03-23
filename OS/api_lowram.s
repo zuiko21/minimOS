@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180323-1008
+; last modified 20180323-1052
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -102,8 +102,8 @@ cout:
 	STA bl_siz			; set counter
 	_STZA bl_siz+1
 ; ...and fall into BLOUT
-lda#'c'
-jsr$c0c2
+;lda#'c'
+;jsr$c0c2
 ; ***************************
 ; *** BLOUT, block output ***
 ; ***************************
@@ -117,10 +117,10 @@ jsr$c0c2
 ;		USES da_ptr, iol_dev, plus whatever the driver takes
 
 blout:
-tya
-sec
-sbc#96
-jsr$c0c2
+;tya
+;sec
+;sbc#80
+;jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size
 	ORA bl_siz+1
@@ -149,10 +149,10 @@ co_port:
 cio_phys:
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
 	STY iol_dev			; need to save this
-tya
-sec
-sbc#96
-jsr$c0c2
+;tya
+;sec
+;sbc#80
+;jsr$c0c2
 #ifdef	SAFE
 	JSR dr_id2m			; convert ID into mask
 #else
@@ -170,12 +170,12 @@ cio_dev:				; old label location
 ;	ASL					; two times (2)
 ;	TAX					; index for address table!
 	LDY cio_of			; want input or output?
-lda#'?'
-jsr$c0c2
-tya
-clc
-adc#'0'
-jsr$c0c2
+;lda#'?'
+;jsr$c0c2
+;tya
+;clc
+;adc#'0'
+;jsr$c0c2
 ;	BNE cio_in			; not zero is input
 ; no support yext for optimised direct jumps...
 ;		JMPX(drv_opt)		; optimised direct jump, new for 0.6
@@ -197,19 +197,19 @@ cio_idsc:
 		INX					; *eeeeeeeeeeeeeek
 		BNE cio_idsc
 cio_idok:
-lda#'>'
-jsr$c0c2
-txa
-clc
-adc#'0'
-jsr$c0c2
+;lda#'>'
+;jsr$c0c2
+;txa
+;clc
+;adc#'0'
+;jsr$c0c2
 	LDY cio_of			; want input or output?
-lda#'!'
-jsr$c0c2
-tya
-clc
-adc#'0'
-jsr$c0c2
+;lda#'!'
+;jsr$c0c2
+;tya
+;clc
+;adc#'0'
+;jsr$c0c2
 	JMP dr_call			; re-use routine (3...)
 
 ; *****************************
