@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-02-28*
+*Last update: 2018-03-24*
 
 ## Rationale
 
@@ -354,6 +354,9 @@ For instance, in a system with 5 ms jiffy IRQ, a driver executing a periodic tas
 *and* a slow task every full second, would use `frequency = 4` and `max_delay = 50`. 
 A similar piece of code had to be used with "jiffy" tasks that hadn't to be 
 executed every periodic IRQ, as mentioned above.
+
+Please note that while frequencies are stated as 16-bit integers, `LOWRAM` option will 
+take the LSB *only*.
 
 Another improvement to the old method is the possibiliy of **temporarily disabling a certain 
 interrupt task** when not needed, for better system performance (and, of course, **re-enabling** it 
