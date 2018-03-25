@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180323-1233
+; last modified 20180325-1713
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -850,6 +850,7 @@ dr_nreq:
 ; 4) LOWRAM kernel has no I/O pointers in RAM...
 ; finally add ID to list
 	_LDAY(da_ptr)		; retrieve ID eeeeeek
+	TAY					; eeeeeeeeeeeek
 ; first convert ID into bit mask for new drv_en
 #ifdef	SAFE
 	JSR dr_id2m			; convert ID into mask
