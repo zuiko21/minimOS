@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-03-24*
+*Last update: 2018-03-26*
 
 ## Rationale
 
@@ -333,9 +333,10 @@ parameter is to be used.
 Older versions (before 0.6) had the **periodic tasks** separated into *jiffy* and *slow* 
 interrupt tasks, with no *frequency* parameter whatsoever, being complete responsability of 
 the task to count whatever *ticks* (jiffy interrupts) must wait in order to call the routine.
-Within the current **unified periodic queue** (and assuming a *recommended* **5 ms** IRQ period) 
-a *frequency* value of 200 would be equivalent 
-to the older *slow* interrupt task (5*200=1000 ms), while the standard **1** value will serve 
+Within the current **unified periodic queue** (and assuming a *recommended* **4 ms** IRQ 
+period) a *frequency* value of 250 would be equivalent 
+to the older *slow* interrupt task (4*250=1000 ms), while the standard **1** value will 
+serve 
 just like the old *jiffy* task. In case a driver needs *both* the jiffy and slow interrupt tasks, 
 code for the former shoud handle an internal **counter** for the appropriate delay, *as was already 
 being done for may interrupt tasks not requiring being executed at **every** single jiffy IRQ*. 
@@ -350,8 +351,9 @@ On such cases, the unified interrupt task may start (in 6502 fashion) like this:
 fast_task:             ; ...and continue with the usual jiffy task
 ```
 
-For instance, in a system with 5 ms jiffy IRQ, a driver executing a periodic task **every 20 ms** 
-*and* a slow task every full second, would use `frequency = 4` and `max_delay = 50`. 
+For instance, in a system with 4 ms jiffy IRQ, a driver executing a periodic task 
+**every 20 ms** 
+*and* a slow task every full second, would use `frequency = 5` and `max_delay = 50`. 
 A similar piece of code had to be used with "jiffy" tasks that hadn't to be 
 executed every periodic IRQ, as mentioned above.
 
