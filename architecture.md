@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-03-26*
+*Last update: 2018-03-27*
 
 ## Rationale
 
@@ -229,7 +229,9 @@ or routine address (for individual function `PATCH`). The firmware will take car
 pointer to the last installed *kernel **jump table***
 for this matter.
 
-Any patching operation will also return the *previous* address, thus
+On the other hand, passing a NULL pointer to any interrupt-setting function will simply
+return the original pointer. This might be deprecated as the standard interface for
+*patching* kernel functions will also return the *previous* address, thus
 allowing both **head and tail patching**, like this:
 
 **Install routine** (6502 version)
