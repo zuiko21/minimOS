@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180325-1713
+; last modified 20180328-2308
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -134,14 +134,14 @@ blo_do:
 ;	STZA cio_of		; store for further indexing, only difference from blin, no longer stores D_BOUT (3)
 	TYA					; check device ID (2)
 	BNE co_port			; not default (3/2)
-		LDA stdout			; default output device (3)
+		LDY stdout			; default output device (3)
 		BNE co_port			; eeeeeeeeeek
-			LDA #DEVICE			; *** somewhat ugly hack ***
+			LDY #DEVICE			; *** somewhat ugly hack ***
 co_port:
 	BMI cio_phys		; not a logic device (3/2)
 ; no need to check for windows or filesystem
 ; investigate rest of logical devices
-		CMP #DEV_NULL		; lastly, ignore output
+		CPY #DEV_NULL		; lastly, ignore output
 			BNE cio_nfound		; final error otherwise
 		_STZA bl_siz		; null transfers always complete
 		_STZA bl_siz+1		; null transfers always complete
@@ -165,11 +165,11 @@ lda#'X'
 jsr$c0c2
 		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
+	LDY cio_of			; want input or output?
 ; this is suspicious...
 ;	LDA iol_dev			; retrieve (valid) ID, no longer in X
 ;	ASL					; two times (2)
 ;	TAX					; index for address table!
-	LDY cio_of			; want input or output?
 ;lda#'?'
 ;jsr$c0c2
 ;tya
@@ -289,17 +289,17 @@ bli_ok:
 	STA cio_of			; store for further addition, or just check as not zero
 	TYA					; for indexed comparisons
 	BNE ci_port			; specified
-		LDA std_in			; default input device
+		LDY std_in			; default input device
 		BNE ci_port			; eeeeeeeeeek
-			LDA #DEVICE			; *** somewhat ugly hack ***
+			LDY #DEVICE			; *** somewhat ugly hack ***
 ci_port:
 	BPL ci_nph			; logic device
 		JMP cio_phys		; check physical devices, will no longer check events here
 ci_nph:
 ; only logical devs, no need to check for windows or filesystem
-	CMP #DEV_RND		; getting a random number?
+	CPY #DEV_RND		; getting a random number?
 		BEQ ci_rnd			; compute it!
-	CMP #DEV_NULL		; lastly, ignore input
+	CPY #DEV_NULL		; lastly, ignore input
 	BEQ ci_null
 		JMP cio_nfound		; final error otherwise
 ; must behave like /dev/zero!
