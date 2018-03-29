@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180131-1231
+; last modified 20180329-2346
 
 ; ************************
 ; INSTALL, copy jump table
@@ -10,6 +10,7 @@
 ;			NULL means reset from previously installed one
 ;		OUTPUT
 ; kerntab	= previously installed jump table
+; Y		= API_SIZE
 ; uses tmp_ktab
 
 -install:
