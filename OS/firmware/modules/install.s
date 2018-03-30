@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180329-2346
+; last modified 20180330-2327
 
 ; ************************
 ; INSTALL, copy jump table
@@ -41,7 +41,7 @@ fwi_loop:
 		BNE fwi_loop		; until whole page is done (3/2)
 ; kernel successfully installed, return previously set address (LSB still in X)
 	LDA tmp_ktab+1		; get missing MSB...
-	STX kerntab			; ...ans set whole pointer as output
+	STX kerntab			; ...and set whole pointer as output
 	STA kerntab+1
 ; end of table address storage
 	_NO_CRIT			; restore interrupts if needed (4)
