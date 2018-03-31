@@ -1,4 +1,4 @@
-; minimOS 0.6rc2 MACRO definitions
+; minimOS 0.6rc3 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
 ; last modified 20180131-1050
 
@@ -29,7 +29,11 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 ; system calling interface *** unified ·65 and ·16 macros
 
 #ifndef	C816
+#ifndef		API_OPT
 #define		_KERNEL(a)		LDX #a: JSR kerncall
+#else
+#include "api_opt.h"
+#endif
 #else
 ; new COP signature as per WDC reccomendations, CLC cannot be into firmware!
 #define		_KERNEL(a)		LDX #a: CLC: COP #$7F
@@ -38,12 +42,17 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 ; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings! note pre-CLC
 
 ; administrative calls unified for 6502 and 65816, all ending in RTS (use DR_OK and DR_ERR macros)
+#ifndef	API_OPT
 #define		_ADMIN(a)		LDX #a: JSR adm_call
+#else
+#include "adm_opt.h"
+#endif
+
 ; specific user-mode firmware call, needed for 65816
 #ifdef	C816
 #define		_U_ADM(a)		LDX #a: JSL adm_appc
 #else
-#define		_U_ADM(a)		LDX #a: JSR adm_call
+#define		_U_ADM(a)		_ADMIN(a)
 #endif
 
 ; filesystem calling macro no longer defined!
