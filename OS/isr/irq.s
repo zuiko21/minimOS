@@ -2,11 +2,13 @@
 ; v0.6rc2, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180312-1037
+; last modified 20180402-1330
 
 #define		ISR		_ISR
 
+#ifndef	HEADERS
 #include "usual.h"
+#endif
 
 ; **** the ISR code **** (initial tasks take 11t)
 #ifdef	NMOS

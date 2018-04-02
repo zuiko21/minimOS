@@ -7,5 +7,5 @@
 -sysram:
 ; no way to set experimental LOWRAM option
 ; *** standard FW vars from template ***
-#include "firmware/template.h"
+#include "template.h";**************TEST
 ; kernel sysvars to follow

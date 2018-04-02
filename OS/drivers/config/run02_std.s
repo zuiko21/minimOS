@@ -2,17 +2,19 @@
 ; run65816 BBC simulator specific configuration!
 ; 8-bit version
 ; v0.9b2
-; (c) 2017 Carlos J. Santisteban
-; last modified 20171115-1319
+; (c) 2017-2018 Carlos J. Santisteban
+; last modified 20180402-1337
 
 #define		DRIVERS		_DRIVERS
 
 ; in case of standalone assembly
+#ifndef	HEADERS
 #include	"usual.h"
+#endif
 
 ; *** load appropriate drivers here ***
 driver0:
-#include	"drivers/drv_run02.s"
+#include	"../drv_run02.s";****************TEST
 
 ; *** driver list in ROM ***
 ; only the addresses, in no particular order (watch out undefined drivers!)

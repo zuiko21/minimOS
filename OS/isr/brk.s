@@ -1,9 +1,12 @@
 ; minimOS BRK handler
 ; v0.5.1rc1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20170316-1245
+; last modified 20180402-1329
 
+#ifndef	HEADERS
 #include "usual.h"
+#endif
+
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
 

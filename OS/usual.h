@@ -14,13 +14,13 @@
 .bss
 * = SYSRAM				; as defined in options.h
 ; firmware and system variables
-#include "firmware/ARCH.h"
+#include "firmware/run02.h";******TESTING
 #ifndef	DOWNLOAD
 sysvars:
 #include "sysvars.h"
 ; driver-specific system variables, located here 20170207
 dr_vars:
-#include "drivers/config/DRIVER_PACK.h"
+#include "drivers/config/run02_std.h";******TESTING
 #endif
 ; points to the beginning of free SRAM
 -user_ram:

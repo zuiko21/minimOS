@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180330-2330
+; last modified 20180402-1333
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -294,7 +294,7 @@ k_isr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6rc6", 0
+	.asc	"minimOS 0.6rc7", 0
 #endif
 
 kern_end:		; for size computation
@@ -318,7 +318,7 @@ shell:					; no header to skip
 shell	= * + 256		; skip header
 #endif
 
-#include "shell/SHELL"
+#include "shell/minishell.s";*********TEST
 
 ; ************************************************************
 ; ****** Downloaded kernels add driver staff at the end ******

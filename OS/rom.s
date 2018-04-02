@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.6b5
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180112-1112
+; last modified 20180402-1335
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -86,19 +86,19 @@ drv_size = drv_end - drv_file - $100	; exclude header
 ; ### end of minimOS header ###
 
 ; after header goes the binary blob
-#include "drivers/config/DRIVER_PACK.s"
+#include "drivers/config/run02_std.s";*************TEST
 drv_end:		; for easier size computation ***should this go into the driver pack file???
 
 ; *********************************************
 ; *** include rest of the supplied software ***
 ; *********************************************
 ; with their own headers, these must be page aligned!!!
-#include "../apps/ls.s"
+;#include "../apps/ls.s"
 
 ; select specific pmap version according to architecture!
 #ifndef C816
 #ifndef		LOWRAM
-#include "../apps/pmap.s"
+;#include "../apps/pmap.s"
 #endif
 #else
 ;#include "../apps/pmap16.s"
@@ -143,7 +143,7 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ;#include "../apps/crasm/80asm.s"
 ;#include "../apps/crasm/68asm.s"
 #ifndef	C816
-#include "shell/miniMoDA.s"
+;#include "shell/miniMoDA.s"
 #endif
 ; ****** skip rest of unused ROM until firmware ******
 ; ##### empty header #####
@@ -173,7 +173,7 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; ***********************************
 ; *** hardware-dependent firmware ***
 ; ***********************************
-#include "firmware/ARCH.s"
+#include "firmware/run02.s";*************TEST
 
 ; *******************************************
 ; *** SPECIAL TEST, soft after kernel ROM ***
