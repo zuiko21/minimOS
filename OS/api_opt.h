@@ -1,6 +1,6 @@
-; minimOS 0.6rc1 FAST API calls
+; minimOS 0.6rc2 FAST API calls
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180402-1302
+; last modified 20180403-0959
 
 #ifdef	API_OPT
 #define		_KERNEL(COUT)		JSR cout
@@ -29,10 +29,12 @@
 #define		_KERNEL(PQ_MNG)		JSR pq_mng
 #define		_KERNEL(DR_INST)	JSR dr_inst
 #define		_KERNEL(DR_SHUT)	JSR dr_shut
+#ifndef	LOWRAM
 #define		_KERNEL(MALLOC)		JSR malloc
 #define		_KERNEL(FREE)		JSR free
 #define		_KERNEL(MEMLOCK)	JSR memlock
 #define		_KERNEL(RELEASE)	JSR release
 #define		_KERNEL(TS_INFO)	JSR ts_info
 #define		_KERNEL(SET_CURR)	JSR set_curr
+#endif
 #endif

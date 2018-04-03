@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180402-1333
+; last modified 20180403-0940
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -318,7 +318,7 @@ shell:					; no header to skip
 shell	= * + 256		; skip header
 #endif
 
-#include "shell/minishell.s";*********TEST
+#include "shell/SHELL"
 
 ; ************************************************************
 ; ****** Downloaded kernels add driver staff at the end ******

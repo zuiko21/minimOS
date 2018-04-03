@@ -10,7 +10,9 @@
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
 
-#define		LOWRAM	_LOWRAM
+;#define		LOWRAM	_LOWRAM
+
+;#define		API_OPT	_API_OPT
 
 ; new option for mutable IDs, most likely mandatory!
 ;#define		MUTABLE		_MUTABLE

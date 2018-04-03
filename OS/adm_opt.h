@@ -1,6 +1,6 @@
-; minimOS 0.6rc1 FAST Firmware calls
+; minimOS 0.6rc2 FAST Firmware calls
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180402-1314
+; last modified 20180403-0959
 
 #ifdef	API_OPT
 #define		_ADMIN(GESTALT)		JSR gestalt
@@ -11,6 +11,8 @@
 #define		_ADMIN(IRQ_SRC)		JSR irq_src
 #define		_ADMIN(POWEROFF)	JSR poweroff
 #define		_ADMIN(FREQ_GEN)	JSR freq_gen
+#ifndef	LOWRAM
 #define		_ADMIN(INSTALL)		JSR install
 #define		_ADMIN(PATCH)		JSR patch
+#endif
 #endif

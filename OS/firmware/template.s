@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
-; v0.6b8
+; v0.6b9
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180205-0946
+; last modified 20180403-0953
 
 #define		FIRMWARE	_FIRMWARE
 #include "usual.h"
@@ -266,7 +266,7 @@ install:
 ; ****************************
 patch:
 #include "firmware/modules/patch.s"
-
+#endif
 
 ; ***********************************
 ; ***********************************

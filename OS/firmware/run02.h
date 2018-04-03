@@ -2,10 +2,10 @@
 ; 8-bit kernels!
 ; v0.9.6b5
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180131-1418
+; last modified 20180403-0937
 
 -sysram:
 ; no way to set experimental LOWRAM option
 ; *** standard FW vars from template ***
-#include "template.h";**************TEST
+#include "firmware/template.h"
 ; kernel sysvars to follow
