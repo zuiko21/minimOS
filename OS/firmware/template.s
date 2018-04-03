@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR				; flags TBD
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "0.6b8 firmware for "	; machine description as comment
+	.asc "0.6b9 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6b8 FW @ "
+	.asc	"0.6b9 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -254,7 +254,6 @@ freq_gen:
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; *** other functions with RAM enough ***
-#ifndef		LOWRAM
 ; **************************
 ; INSTALL, supply jump table
 ; **************************
@@ -266,7 +265,6 @@ install:
 ; ****************************
 patch:
 #include "firmware/modules/patch.s"
-#endif
 
 ; ***********************************
 ; ***********************************

@@ -1,6 +1,6 @@
-; minimOS 0.6rc2 FAST API calls
+; minimOS 0.6rc3 FAST API calls
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180403-0959
+; last modified 20180403-1021
 
 #ifdef	API_OPT
 #define		_KERNEL(COUT)		JSR cout
@@ -36,5 +36,7 @@
 #define		_KERNEL(RELEASE)	JSR release
 #define		_KERNEL(TS_INFO)	JSR ts_info
 #define		_KERNEL(SET_CURR)	JSR set_curr
-#endif
+	API_SIZE	=	64
+#else
+	API_SIZE	=	52
 #endif

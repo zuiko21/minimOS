@@ -2,11 +2,10 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc9
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180403-0939
+; last modified 20180403-1015
 
 #define		FIRMWARE	_FIRMWARE
 
-.(
 ; in case of standalone assembly
 #ifndef	HEADERS
 #include "usual.h"
@@ -363,4 +362,4 @@ panic_loop:
 	.word	irq			; (emulated) IRQ	@ $FFFE
 
 fw_end:					; for size computation
-.)
+

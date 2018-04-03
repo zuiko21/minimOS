@@ -1085,6 +1085,8 @@ sd_tab:					; check order in abi.h
 ; C		= could not install driver (ID in use or invalid, queue full, init failed)
 
 dr_inst:
+lda#'i'
+jsr$c0c2
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 ; ...but will be stored anyway for mutable option
