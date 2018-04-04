@@ -1,7 +1,7 @@
-; minimOS 0.6rc10 API/ABI
+; minimOS 0.6rc11 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180403-1008
+; last modified 20180404-1134
 
 ; *************************************************
 ; *************************************************
@@ -88,27 +88,25 @@ CORRUPT	=   9		; data corruption
 ; ************************************
 ; ************************************
 
-#ifndef	API_OPT
 ; generic functions, esp. interrupt handler related
-GESTALT		= 0		; get system info (renumbered)
-SET_ISR		= GESTALT + 2	; set IRQ vector
-SET_NMI		= SET_ISR + 2	; set (magic preceded) NMI routine
-SET_DBG		= SET_NMI + 2	; set debugger, new 20170517
+#define	GESTALT		0
+#define	SET_ISR		GESTALT+2
+#define	SET_NMI		SET_ISR+2
+#define	SET_DBG		SET_NMI+2
 
 ; somewhat hardware specific, interrupt hardware related
-JIFFY		= SET_DBG + 2	; set jiffy IRQ speed, ** TBD **
-IRQ_SRC		= JIFFY + 2		; get interrupt source in X for total ISR independence
+#define	JIFFY		SET_DBG+2
+#define	IRQ_SRC		JIFFY+2
 
 ; pretty hardware specific
-POWEROFF	= IRQ_SRC +2	; power-off, suspend or cold boot *** also BRK/NMI triggering
-FREQ_GEN	= POWEROFF + 2	; frequency generator hardware interface, TBD
+#define	POWEROFF	IRQ_SRC+2
+#define	FREQ_GEN	POWEROFF+2
 
 #ifndef	LOWRAM
 ; not for LOWRAM systems
-INSTALL		= FREQ_GEN + 2	; copy jump table
-PATCH		= INSTALL + 2	; patch single function (renumbered)
+#define	INSTALL		FREQ_GEN+2
+#define	PATCH		INSTALL+2
 ; CONTEXT no longer used, as would be just called from a *specific* Multitasking driver
-#endif
 #endif
 
 ; **************************

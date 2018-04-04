@@ -20,7 +20,7 @@ sysvars:
 #include "sysvars.h"
 ; driver-specific system variables, located here 20170207
 dr_vars:
-#include "drivers/config/DRIVER_PACK.h";******TESTING
+#include "drivers/config/DRIVER_PACK.h"
 #endif
 ; points to the beginning of free SRAM
 -user_ram:

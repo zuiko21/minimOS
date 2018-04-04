@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180403-0940
+; last modified 20180404-1037
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -75,7 +75,7 @@ warm:
 	STA kerntab+1
 	_ADMIN(INSTALL)		; copy jump table
 #ifdef	SAFE
-	BCS ki_err		; something went wrong
+	BCS ki_err			; something went wrong
 		CPY #API_SIZE		; otherwise check firmware compatibility
 		BCS ki_ok		; enough room, proceed
 ki_err:
