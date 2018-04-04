@@ -1,12 +1,12 @@
 ; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
 ; v0.5.1b2
-; last modified 20171218-0912
+; last modified 20180404-1429
 ; (c) 2017-2018 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
-#include "usual.h"
+#include "../../OS/usual.h"
 
 .(
 ; *** uncomment for narrow (20-char) displays ***
@@ -1132,7 +1132,7 @@ cmd_ptr:
 splash:
 	.asc	"MC6800/6801/6301 cross-assembler", CR
 	.asc	"for 6502, v0.5.1", CR
-	.asc	"(c) 2017 Carlos J. Santisteban", CR
+	.asc	"(c) 2017-2018 Carlos J. Santisteban", CR
 #ifdef	SAFE
 	.asc	"Type 680x opcodes or .commands,", CR
 	.asc	".? for help", CR
@@ -1195,6 +1195,6 @@ help_str:
 ; include opcode list
 da_oclist:
 ; this is the full 6301/6303 list
-#include "../apps/crasm/data/opc6301.s"
+#include "data/opc6301.s"
 a68_end:					; size computation
 .)

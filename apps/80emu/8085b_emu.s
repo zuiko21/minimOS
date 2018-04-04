@@ -1,10 +1,10 @@
 ; Intel 8080/8085 emulator for minimOS!
 ; *** FAST VERSION WITHOUT PARITY OR BCD ARITHMETIC ***
 ; v0.1b3
-; (c) 2016 Carlos J. Santisteban
-; last modified 20160923-0935
+; (c) 2016-2018 Carlos J. Santisteban
+; last modified 20180404-1426
 
-#include "usual.h"
+#include "../../OS/usual.h"
 
 ; ** some useful macros **
 ; these make listings more succint
