@@ -2,7 +2,7 @@
 ; empty file for testing purposes
 ; copy or link as options.h in root dir
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20161219-1229
+; last modified 20180404-1446
 
 ; *** set conditional assembly ***
 
@@ -31,15 +31,15 @@
 #define		MACHINE_ID		"test"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
-#define		ARCH			test_fw
+#define		ARCH			firmare/test_fw
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK		test_drv
+#define		DRIVER_PACK		drivers/config/test_drv
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		miniMoDA.s
+#define		SHELL		shell/miniMoDA.s
 
 ; default NMI, BRK etc TBD ***********
 

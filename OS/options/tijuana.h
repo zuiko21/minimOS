@@ -2,7 +2,7 @@
 ; suitable for Tijuana with built-in VGA-compatible output
 ; copy or link as options.h in root dir
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20160406-0900
+; last modified 20180404-1445
 
 ; *** set conditional assembly ***
 
@@ -23,15 +23,15 @@
 #define		MACHINE_ID		"tvga"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
-#define		ARCH			tijuana
+#define		ARCH			firmware/tijuana
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK		tijuana_std
+#define		DRIVER_PACK		drivers/config/tijuana_std
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		monitor.s
+#define		SHELL		shell/monitor.s
 
 ; default NMI, BRK etc TBD ***********
 

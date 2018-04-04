@@ -2,7 +2,7 @@
 ; generic template, suitable for SDm/Jalapa
 ; copy or link as options.h in root dir
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20160310
+; last modified 20180404-1446
 
 ; *** set conditional assembly ***
 ; uncomment to remove debugging markup
@@ -40,15 +40,15 @@
 
 ; Firmware selection, new 20160310, will pickup suitable template from firmware/
 ; may or may not coicide with driver pack below! usually add _fw for clarity
-#define		ARCH			jalapa_fw
+#define		ARCH			firmware/jalapa_fw
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK		jalapa
+#define		DRIVER_PACK		drivers/config/jalapa
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		monitor.s
+#define		SHELL		shell/monitor.s
 
 ; default NMI, BRK etc TBD ***********
 
