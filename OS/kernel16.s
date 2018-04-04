@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180320-1008
+; last modified 20180404-1443
 
 ; just in case
 #define		C816	_C816
@@ -24,7 +24,7 @@
 #else
 ; standalone kernels need to keep track of drivers_ad label!
 .data
-#include "drivers/config/DRIVER_PACK.s"
+#include "DRIVER_PACK.s"
 .text
 #endif
 #endif
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6b7", 0	; version in comment
+	.asc	"minimOS-16 0.6b9", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -254,7 +254,7 @@ k_isr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.6b7", 0	; version in comment
+	.asc	"minimOS-16 0.6b9", 0	; version in comment
 #endif
 
 kern_end:		; for size computation
@@ -278,20 +278,20 @@ shell:			; no header to skip
 shell	= * + 256		; skip header
 #endif
 
-#include "shell/SHELL"
+#include "SHELL"
 
 ; ************************************************************
 ; ****** Downloaded kernels add driver staff at the end ******
 ; ************************************************************
 #ifdef	DOWNLOAD
-#include "drivers/config/DRIVER_PACK.s"	; this package will be included with downloadable kernels
+#include "DRIVER_PACK.s"	; this package will be included with downloadable kernels
 .data
 ; downloadable system have ALL system & driver variables AFTER the kernel/API
 sysvars:
 #include "sysvars.h"
 ; driver-specific system variables, located here 20170207
 dr_vars:
-#include "drivers/config/DRIVER_PACK.h"
+#include "DRIVER_PACK.h"
 .text					; eeeeeek
 -user_ram = *			; the rest of available SRAM
 #endif

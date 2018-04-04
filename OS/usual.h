@@ -1,5 +1,5 @@
 ; usual header includes for minimOS
-; last modified 20180403-1043
+; last modified 20180404-1439
 ; (c) 2012-2018 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -14,13 +14,13 @@
 .bss
 * = SYSRAM				; as defined in options.h
 ; firmware and system variables
-#include "firmware/ARCH.h"
+#include "ARCH.h"
 #ifndef	DOWNLOAD
 sysvars:
 #include "sysvars.h"
 ; driver-specific system variables, located here 20170207
 dr_vars:
-#include "drivers/config/DRIVER_PACK.h"
+#include "DRIVER_PACK.h"
 #endif
 ; points to the beginning of free SRAM
 -user_ram:

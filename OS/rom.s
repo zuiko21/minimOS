@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6b5
+; v0.6b6
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180403-0941
+; last modified 20180404-1441
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -86,7 +86,7 @@ drv_size = drv_end - drv_file - $100	; exclude header
 ; ### end of minimOS header ###
 
 ; after header goes the binary blob
-#include "drivers/config/DRIVER_PACK.s"
+#include "DRIVER_PACK.s"
 drv_end:		; for easier size computation ***should this go into the driver pack file???
 
 ; *********************************************
@@ -173,7 +173,7 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 ; ***********************************
 ; *** hardware-dependent firmware ***
 ; ***********************************
-#include "firmware/ARCH.s"
+#include "ARCH.s"
 
 ; *******************************************
 ; *** SPECIAL TEST, soft after kernel ROM ***
