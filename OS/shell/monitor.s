@@ -1,9 +1,9 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.6b1
-; last modified 20171113-0822
+; last modified 20180404-1414
 ; (c) 2016-2018 Carlos J. Santisteban
 
-#include "usual.h"
+#include "../usual.h"
 
 .(
 ; *** uncomment for narrow (20-char) displays ***
@@ -853,7 +853,7 @@ montitle:
 
 mon_splash:
 	.asc	"minimOS 0.6 monitor", CR
-	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
+	.asc	"(c) 2016-2018 Carlos J. Santisteban", CR, 0
 
 
 err_bad:

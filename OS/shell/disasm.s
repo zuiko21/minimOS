@@ -1,12 +1,12 @@
 ; Monitor shell with disassembler for minimOS
 ; v0.5rc3
-; last modified 20170930-1917
-; (c) 2016-2017 Carlos J. Santisteban
+; last modified 20180404-1417
+; (c) 2016-2018 Carlos J. Santisteban
 ; somehow deprecated...
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
-#include "usual.h"
+#include "../usual.h"
 
 ; *** uncomment for narrow (20-char) displays ***
 ;#define	NARROW	_NARROW
@@ -783,7 +783,7 @@ title:
 
 splash:
 	.asc	"minimOS 0.5 monitor/disassembler", CR
-	.asc	" (c) 2016 Carlos J. Santisteban", CR, 0
+	.asc	"(c) 2016-2018 Carlos J. Santisteban", CR, 0
 
 
 ;err_mmod:
@@ -842,4 +842,4 @@ help_str:
 	.byt	0
 
 ; include opcode list
-#include "shell/data/opcodes.s"
+#include "data/opcodes.s"

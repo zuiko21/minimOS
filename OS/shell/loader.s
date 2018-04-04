@@ -1,9 +1,9 @@
 ; Basic loader for minimOS (simple version)
 ; v0.5rc8
-; last modified 20160923-0928
-; (c) 2016-2017 Carlos J. Santisteban
+; last modified 20180404-1417
+; (c) 2016-2018 Carlos J. Santisteban
 
-#include "usual.h"
+#include "../usual.h"
 
 ; *** zeropage variables ***
 	l_io	=	uz		; default device
@@ -101,55 +101,55 @@ l_title:
 label1:
 .(
 #define	KERNEL
-#include "shell/disasm.s"
+#include "disasm.s"
 .)
 
 label2:
 .(
 #define	KERNEL
-#include "../apps/lined.s"
+#include "../../apps/lined.s"
 .)
 
 label3:
 .(
 #define	KERNEL
-#include "shell/miniMoDA.s"
+#include "miniMoDA.s"
 .)
 
 label4:
 .(
 #define	KERNEL
-;#include "shell/miniMoDA.s"
+;#include "miniMoDA.s"
 .)
 
 label5:
 .(
 #define	KERNEL
-;#include "shell/miniMoDA.s"
+;#include "miniMoDA.s"
 .)
 
 label6:
 .(
 #define	KERNEL
-;#include "shell/miniMoDA.s"
+;#include "miniMoDA.s"
 .)
 
 label7:
 .(
 #define	KERNEL
-;#include "shell/miniMoDA.s"
+;#include "miniMoDA.s"
 .)
 
 label8:
 .(
 #define	KERNEL
-;#include "shell/miniMoDA.s"
+;#include "miniMoDA.s"
 .)
 
 label9:
 .(
 #define	KERNEL
-;#include "shell/miniMoDA.s"
+;#include "miniMoDA.s"
 .)
 
 ; wrong option arrives here

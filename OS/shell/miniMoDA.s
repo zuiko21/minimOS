@@ -1,11 +1,11 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.6rc1
-; last modified 20171110-2103
+; last modified 20180404-1416
 ; (c) 2016-2018 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
-#include "usual.h"
+#include "../usual.h"
 
 .(
 ; *** uncomment for narrow (20-char) displays ***
@@ -1305,7 +1305,7 @@ cmd_ptr:
 ; *** strings and other data ***
 splash:
 	.asc	"minimOS 0.6 monitor/debugger/assembler", CR
-	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
+	.asc	"(c) 2016-2018 Carlos J. Santisteban", CR, 0
 
 err_bad:
 	.asc	"*** Bad command ***", CR, 0
@@ -1385,6 +1385,6 @@ title:
 
 ; include opcode list
 da_oclist:
-#include "shell/data/opcodes.s"
+#include "data/opcodes.s"
 mmd_end:					; size computation
 .)

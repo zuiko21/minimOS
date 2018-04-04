@@ -5,7 +5,7 @@
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
-#include "usual.h"
+#include "../usual.h"
 
 .as:.xs
 
@@ -1625,7 +1625,7 @@ cmd_ptr:
 ; *** strings and other data ***
 splash:
 	.asc	"minimOS 0.6a1 monitor/debugger/assembler", CR
-	.asc	"(c) 2016-2017 Carlos Santisteban", CR
+	.asc	"(c) 2016-2018 Carlos Santisteban", CR
 #ifdef	SAFE
 	.asc	"Type opcodes or .command, .? for help", CR
 #endif
@@ -1703,7 +1703,7 @@ title:
 
 ; include opcode list
 da_oclist:
-#include "shell/data/opcodes16.s"
+#include "data/opcodes16.s"
 mmd_end:					; size computation
 .)
 

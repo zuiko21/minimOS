@@ -1,11 +1,11 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20180402-1334
+; last modified 20180404-1415
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #ifndef	HEADERS
-#include "usual.h"
+#include "../usual.h"
 #endif
 
 .(
