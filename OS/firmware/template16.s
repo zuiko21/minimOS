@@ -1,10 +1,10 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a9
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180201-1338
+; last modified 20180404-1407
 
 #define		FIRMWARE	_FIRMWARE
-#include "usual.h"
+#include "../usual.h"
 ; already set at FW_BASE via rom.s
 
 .(
@@ -75,18 +75,18 @@ fw_admin:
 
 reset:
 ; *** basic init ***
-#include "firmware/modules/basic_init16.s"
+#include "modules/basic_init16.s"
 
 ; ******************************
 ; *** minimal hardware setup ***
 ; ******************************
 
 ; check for VIA presence and disable all interrupts
-#include "firmware/modules/viacheck_irq.s"
+#include "modules/viacheck_irq.s"
 
 ; *** specific 65816 code ***
 ; as this firmware should be 65816-only, go back to native mode!
-#include "firmware/modules/816_check.s"
+#include "modules/816_check.s"
 ; it can be assumed 65816 from this point on
 
 ; *********************************
@@ -94,62 +94,62 @@ reset:
 ; *********************************
 
 ; optional boot selector
-;#include "firmware/modules/bootoff.s"
+;#include "modules/bootoff.s"
 
 ; might check ROM integrity here
-;#include "firmware/modules/romcheck16.s"
+;#include "modules/romcheck16.s"
 
 ; some systems might copy ROM-in-RAM and continue at faster speed!
-;#include "firmware/modules/rominram16.s"
+;#include "modules/rominram16.s"
 
 ; startup beep
-#include "firmware/modules/beep16.s"	; typical 816 standard beep
+#include "modules/beep16.s"	; typical 816 standard beep
 
 ; SRAM test
-#include "firmware/modules/memsiz.s"	; *** must support 24-bit addressing!!!
+#include "modules/memsiz.s"	; *** must support 24-bit addressing!!!
 
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
 
 ; VIA initialisation (and stop beeping)
-#include "firmware/modules/via_init.s"
+#include "modules/via_init.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
 
 ; *** set default CPU type ***
-#include "firmware/modules/default_816.s"
+#include "modules/default_816.s"
 ; as this is the only valid CPU for this firmware, no further checking necessary
 
 ; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
 	.al: REP #$20
 
 ; preset kernel start address
-#include "firmware/modules/kern_addr16.s"
+#include "modules/kern_addr16.s"
 
 ; preset default BRK handler
-#include "firmware/modules/brk_addr16.s"
+#include "modules/brk_addr16.s"
 
 ; no need to set NMI as it will be validated
 
 
 ; preset jiffy irq frequency
-#include "firmware/modules/jiffy_hz16.s"
+#include "modules/jiffy_hz16.s"
 
 ; reset jiffy count
-#include "firmware/modules/jiffy_rst16.s"
+#include "modules/jiffy_rst16.s"
 
 ; reset last installed kernel (new)
-#include "firmware/modules/rst_lastk16.s"
+#include "modules/rst_lastk16.s"
 
 ; *** back to 8-bit memory ***
 	.as: SEP #$20
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
-;#include "firmware/modules/netboot.s"
+;#include "modules/netboot.s"
 
 ; *** direct print splash string code comes here, when available ***
 
@@ -157,7 +157,7 @@ reset:
 ; *** start the kernel ***
 ; ************************
 start_kernel:
-#include "firmware/modules/start16.s"
+#include "modules/start16.s"
 
 
 ; ********************************
@@ -170,26 +170,26 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 ; **********************************************
 nmi:
-#include "firmware/modules/nmi_hndl16.s"
+#include "modules/nmi_hndl16.s"
 
 ; ****************************
 ; *** vectored IRQ handler ***
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-#include "firmware/modules/irq_hndl16.s"
+#include "modules/irq_hndl16.s"
 
 ; ****************************
 ; *** vectored BRK handler ***
 ; ****************************
 brk_hndl:
-#include "firmware/modules/brk_hndl16.s"
+#include "modules/brk_hndl16.s"
 
 ; ******************************************************
 ; *** minimOS·16 kernel call interface (COP handler) ***
 ; ******************************************************
 cop_hndl:				; label from vector list
-#include "firmware/modules/cop_hndl.s"
+#include "modules/cop_hndl.s"
 
 
 ; ********************************
@@ -204,25 +204,25 @@ cop_hndl:				; label from vector list
 ; GESTALT, get system info, API TBD
 ; *********************************
 gestalt:
-#include "firmware/modules/gestalt16.s"
+#include "modules/gestalt16.s"
 
 ; ***********************
 ; SET_ISR, set IRQ vector
 ; ***********************
 set_isr:
-#include "firmware/modules/set_isr16.s"
+#include "modules/set_isr16.s"
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
 ; ********************************
 set_nmi:
-#include "firmware/modules/set_nmi16.s"
+#include "modules/set_nmi16.s"
 
 ; ********************************
 ; SET_DBG, set BRK handler routine
 ; ********************************
 set_dbg:
-#include "firmware/modules/set_dbg16.s"
+#include "modules/set_dbg16.s"
 
 ; *** interrupt related ***
 
@@ -230,14 +230,14 @@ set_dbg:
 ; JIFFY, set jiffy IRQ period
 ; ***************************
 jiffy:
-#include "firmware/modules/jiffy16.s"
+#include "modules/jiffy16.s"
 
 ; ****************************************
 ; IRQ_SRC, investigate source of interrupt
 ; ****************************************
 ; notice non-standard ABI, same module as 6502 version!
 irq_src:
-#include "firmware/modules/irq_src.s"
+#include "modules/irq_src.s"
 
 ; *** hardware specific ***
 
@@ -245,13 +245,13 @@ irq_src:
 ; POWEROFF, shutdown etc *** TBD
 ; **********************
 poweroff:
-#include "firmware/modules/poweroff16.s"
+#include "modules/poweroff16.s"
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
-;#include "firmware/modules/freq_gen16.s"
+;#include "modules/freq_gen16.s"
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; *** other functions with RAM enough ***
@@ -260,13 +260,13 @@ freq_gen:
 ; INSTALL, supply jump table
 ; **************************
 install:
-#include "firmware/modules/install16.s"
+#include "modules/install16.s"
 
 ; ****************************
 ; PATCH, patch single function
 ; ****************************
 patch:
-#include "firmware/modules/patch16.s"
+#include "modules/patch16.s"
 
 
 ; ***********************************

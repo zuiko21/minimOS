@@ -1,12 +1,12 @@
 ; firmware module for minimOS·65
 ; (c) 2013-2018 Carlos J. Santisteban
-; last modified 20171221-1307
+; last modified 20180404-1404
 
 ; *** bootoff code *** v0.9.1
 ; NMOS and 65816 savvy
 ; no interface needed ('post' label is now generated here!)
 
-#include "usual.h"
+#include "../../usual.h"
 
 .(
 ; choose boot address depending on PA0-PA3

@@ -1,6 +1,6 @@
 ; firmware variables for minimOS on Kowalski simulator
 ; v0.9.6a1
-; (c) 2015-2017 Carlos J. Santisteban
+; (c) 2015-2018 Carlos J. Santisteban
 ; last modified 20170822-1552
 
 -sysram:

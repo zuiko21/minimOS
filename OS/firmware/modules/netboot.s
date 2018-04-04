@@ -1,12 +1,12 @@
 ; NetBoot module for minimOS firmware
-; v0.5a2
+; v0.5a3
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180201-1328
+; last modified 20180404-1401
 
 #define		NETBOOT		_NETBOOT
 
 ; in case of standalone assembly
-#include	"usual.h"
+#include	"../../usual.h"
 
 .(
 nb_ptr = uz				; pointer in zeropage (typically $3)
@@ -224,8 +224,8 @@ nb_lboot:
 	.asc	"Lboot", 0		; for loading boot code
 
 ; *** simplified driver for netbooting (or into firmware?) ***
-#include "firmware/modules/fd_6551.s"	; ACIA
-;#include "firmware/modules/fd_ss22.s"	; SS-22 link
+#include "fd_6551.s"	; ACIA
+;#include "fd_ss22.s"	; SS-22 link
 ; *** this is a dummy driver for netbooting, please remove if supplying a real one ***
 ;fwn_init:
 ;fwn_cin:

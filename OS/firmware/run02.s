@@ -2,13 +2,13 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc9
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180403-1015
+; last modified 20180404-1355
 
 #define		FIRMWARE	_FIRMWARE
 
 ; in case of standalone assembly
 #ifndef	HEADERS
-#include "usual.h"
+#include "../usual.h"
 #endif
 
 ; already set at FW_BASE via rom.s
@@ -87,7 +87,7 @@ missing:
 
 ; basic init
 reset:
-#include "firmware/modules/basic_init.s"
+#include "modules/basic_init.s"
 
 ; simulated 65816 has no real hardware to initialise...
 
@@ -98,12 +98,12 @@ reset:
 ; bootoff seems of little use here...
 
 ; might check ROM integrity here
-;#include "firmware/modules/romcheck.s"
+;#include "modules/romcheck.s"
 
 ; no beep so far on simulation...
 
 ; SRAM test
-;#include "firmware/modules/ramtest.s"
+;#include "modules/ramtest.s"
 
 ; ********************************
 ; *** hardware interrupt setup ***
@@ -117,29 +117,29 @@ reset:
 
 ; set default CPU type 
 ; just set expected default type as defined in options.h...
-;#include "firmware/modules/default_cpu.s"
+;#include "modules/default_cpu.s"
 ; ...or actually check for it!
-#include "firmware/modules/cpu_check.s"
+#include "modules/cpu_check.s"
 ; do NOT include both files at once!
 
 ; *** simulator simply cannot issue an NMOS CPU! ***
 
 ; preset kernel start address
-#include "firmware/modules/kern_addr.s"
+#include "modules/kern_addr.s"
 
 ; preset default BRK handler
-#include "firmware/modules/brk_addr.s"
+#include "modules/brk_addr.s"
 
 ; no need to set NMI as it will be validated
 
 ; preset jiffy irq frequency
-#include "firmware/modules/jiffy_hz.s"
+#include "modules/jiffy_hz.s"
 
 ; reset jiffy count
-#include "firmware/modules/jiffy_rst.s"
+#include "modules/jiffy_rst.s"
 
 ; reset last installed kernel (new)
-#include "firmware/modules/rst_lastk.s"
+#include "modules/rst_lastk.s"
 
 ; *** could download a kernel here, updating fw_warm accordingly ***
 
@@ -163,7 +163,7 @@ fws_cr:
 ; *** start the kernel ***
 ; ************************
 start_kernel:
-#include "firmware/modules/start.s"
+#include "modules/start.s"
 
 
 ; ********************************
@@ -176,20 +176,20 @@ start_kernel:
 ; *** vectored NMI handler with magic number ***
 ; **********************************************
 nmi:
-#include "firmware/modules/nmi_hndl.s"
+#include "modules/nmi_hndl.s"
 
 ; ****************************
 ; *** vectored IRQ handler ***
 ; ****************************
 ; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
 irq:
-#include "firmware/modules/irq_hndl.s"
+#include "modules/irq_hndl.s"
 
 ; ***************************
 ; *** minimOS BRK handler ***
 ; ***************************
 brk_hndl:				; label from vector list
-#include "firmware/modules/brk_hndl.s"
+#include "modules/brk_hndl.s"
 
 
 ; ********************************
@@ -204,25 +204,25 @@ brk_hndl:				; label from vector list
 ; GESTALT, get system info, API TBD
 ; *********************************
 gestalt:
-#include "firmware/modules/gestalt.s"
+#include "modules/gestalt.s"
 
 ; ***********************
 ; SET_ISR, set IRQ vector
 ; ***********************
 set_isr:
-#include "firmware/modules/set_isr.s"
+#include "modules/set_isr.s"
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
 ; ********************************
 set_nmi:
-#include "firmware/modules/set_nmi.s"
+#include "modules/set_nmi.s"
 
 ; ********************************
 ; SET_DBG, set BRK handler routine
 ; ********************************
 set_dbg:
-#include "firmware/modules/set_dbg.s"
+#include "modules/set_dbg.s"
 
 ; *** interrupt related ***
 
@@ -230,14 +230,14 @@ set_dbg:
 ; JIFFY, set jiffy IRQ period
 ; ***************************
 jiffy:
-#include "firmware/modules/jiffy.s"
+#include "modules/jiffy.s"
 
 ; ****************************************
 ; IRQ_SRC, investigate source of interrupt
 ; ****************************************
 ; notice non-standard ABI, same module as 6502 version!
 irq_src:
-#include "firmware/modules/irq_src.s"
+#include "modules/irq_src.s"
 
 ; *** hardware specific ***
 
@@ -245,7 +245,7 @@ irq_src:
 ; POWEROFF, shutdown etc *** TBD
 ; **********************
 poweroff:
-#include "firmware/modules/poweroff.s"
+#include "modules/poweroff.s"
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
@@ -259,13 +259,13 @@ poweroff:
 ; INSTALL, supply jump table
 ; **************************
 install:
-#include "firmware/modules/install.s"
+#include "modules/install.s"
 
 ; ****************************
 ; PATCH, patch single function
 ; ****************************
 patch:
-#include "firmware/modules/patch.s"
+#include "modules/patch.s"
 
 ; *****************************************
 ; CONTEXT, hardware switch zeropage & stack

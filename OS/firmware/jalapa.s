@@ -1,11 +1,11 @@
 ; firmware for minimOS on SDm/Jalapa (and maybe others)
 ; generic template v0.5.3a1, unrelated to LATER generic template 0.5.1
-; (c)2015-2016 Carlos J. Santisteban
-; last modified 20161010-1225
+; (c)2015-2018 Carlos J. Santisteban
+; last modified 20180404-1352
 
 #define		FIRMWARE	_FIRMWARE
 
-#include "usual.h"
+#include "../usual.h"
 
 * = FW_BASE			; this will be page-aligned!
 
@@ -46,18 +46,18 @@ via_ok:
 
 ; *** optional firmware modules ***
 ; optional boot selector
-#include "firmware/modules/bootoff.s"
+#include "modules/bootoff.s"
 
 ; ***continue power-on self-test***
 post:
 ; might check ROM integrity here
-;#include "firmware/modules/romcheck.s"
+;#include "modules/romcheck.s"
 
 ; startup beep
-#include "firmware/modules/beep_jalapa.s"	; specific startup sound!
+#include "modules/beep_jalapa.s"	; specific startup sound!
 
 ; SRAM test
-#include "firmware/modules/ramtest.s"
+#include "modules/ramtest.s"
 
 ; *** VIA initialisation (and stop beeping) ***
 	LDA #%11000010	; CB2 low, Cx1 negative edge, CA2 indep. neg. (2+4)
@@ -74,7 +74,7 @@ post:
 	STA fw_cpu		; store variable (4)
 
 ; might check out here for the actual CPU type...
-#include "firmware/modules/cpu_check.s"
+#include "modules/cpu_check.s"
 #ifdef	SAFE
 #ifndef	NMOS
 ;	LDA fw_cpu		; already in A, but may change
@@ -104,7 +104,7 @@ res_sec:
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
 -remote_boot:
-;#include "firmware/modules/netboot.s"
+;#include "modules/netboot.s"
 
 ; *** firmware ends, jump into the kernel ***
 start_kernel:
@@ -171,7 +171,7 @@ fw_magic:
 
 ; *** default code for NMI handler, if not installed or invalid ***
 std_nmi:
-#include "firmware/modules/std_nmi.s"
+#include "modules/std_nmi.s"
 
 
 ; *** administrative functions ***

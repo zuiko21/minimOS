@@ -1,12 +1,12 @@
 ; 65(C)51 ACIA firmware driver for minimOS
 ; v0.5a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180201-1330
+; last modified 20180404-1402
 ; revised 20160115 for commit with new filenames
 
 ; in case of standalone assembly via 'xa firmware/modules/fd_6551.s'
 #ifndef		NETBOOT
-#include "usual.h"
+#include "../../usual.h"
 #endif
 
 .(

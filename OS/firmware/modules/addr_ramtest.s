@@ -1,12 +1,12 @@
 ; extensive RAMtest for minimOS
 ; v0.5a1
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180201-1333
+; last modified 20180404-1405
 ; revised 20160115 for commit with new filenames
 
 ; in case of stand alone assembly
 #ifndef		FIRMWARE
-#include "usual.h"
+#include "../usual.h"
 #endif
 
 .(

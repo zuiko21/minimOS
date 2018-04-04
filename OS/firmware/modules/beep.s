@@ -2,12 +2,12 @@
 ; startup beep code 0.9.2b1
 ; 0.9 originally supplied with minimOS 0.4rc
 ; (c) Carlos J. Santisteban 2013-2018
-; last modified 20180201-1332
+; last modified 20180404-1404
 ; revised 20160115 for commit with new filenames
 
 ; in case of standalone assembly
 #ifndef		FIRMWARE
-#include "usual.h"
+#include "../../usual.h"
 #endif
 
 ; *** initial beep (500Hz/MHz) during test ***

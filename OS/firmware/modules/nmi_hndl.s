@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180403-0936
+; last modified 20180404-1400
 
 ; *** generic NMI handler for 6502/65C02 ***
 ; expected to be fully re-entrant
@@ -72,5 +72,5 @@ rst_nmi:
 
 ; *** default code for NMI handler, if not installed or invalid, should end in RTS ***
 +std_nmi:
-#include "firmware/modules/std_nmi.s"
+#include "std_nmi.s"
 .)

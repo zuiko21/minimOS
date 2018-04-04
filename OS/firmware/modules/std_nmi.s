@@ -1,11 +1,11 @@
 ; standard NMI handler for minimOS firmware
 ; v0.6a3
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180402-1342
+; last modified 20180404-1358
 
 ; in case of standalone assembly
 #ifndef	HEADERS
-#include "usual.h"
+#include "../usual.h"
 #endif
 
 ; placeholder, just enable interrupts and return

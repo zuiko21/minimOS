@@ -1,12 +1,12 @@
 ; firmware for minimOS on Kowalski simulator
 ; v0.9b2
-; (c)2015-2017 Carlos J. Santisteban
-; last modified 20170111-0856
+; (c)2015-2018 Carlos J. Santisteban
+; last modified 20180404-1354
 
 #define		FIRMWARE	_FIRMWARE
 
 ; in case of standalone assembly
-#include "usual.h"
+#include "../usual.h"
 
 ; *** first some ROM identification *** new 20150612
 fw_start:
@@ -48,10 +48,10 @@ reset:
 post:
 
 ; might check ROM integrity here
-;#include "firmware/modules/romcheck.s"
+;#include "modules/romcheck.s"
 
 ; SRAM test
-;#include "firmware/modules/ramtest.s"
+;#include "modules/ramtest.s"
 
 ; *** preset kernel start address (standard label from ROM file) ***
 	LDA #<kernel	; get LSB (2)
@@ -63,7 +63,7 @@ post:
 	STA fw_cpu		; store variable (4)
 
 ; might check out here for the actual CPU type... would illegal opcodes break simulation?
-;#include "firmware/modules/cpu_check.s"
+;#include "modules/cpu_check.s"
 
 	LDA #<IRQ_FREQ	; interrupts per second, LSB ** revised 20150225 (2)
 	STA irq_freq	; store speed... (4)
@@ -138,7 +138,7 @@ rst_nmi:
 
 ; *** default code for NMI handler, if not installed or invalid ***
 std_nmi:
-#include "firmware/modules/std_nmi.s"
+#include "modules/std_nmi.s"
 
 fw_magic:
 	.asc	"*jNU"		; reversed magic string

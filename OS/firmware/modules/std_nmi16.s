@@ -1,9 +1,9 @@
 ; standard NMI handler for minimOS·16 firmware
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180131-0900
+; last modified 20180404-1358
 
 ; in case of standalone assembly
-#include "usual.h"
+#include "../usual.h"
 
 ; placeholder, just enable interrupts and return
 	LDA $E, S			; in order to get P from the stack (proper 16-bit stackframe)
