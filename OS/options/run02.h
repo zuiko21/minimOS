@@ -12,7 +12,7 @@
 
 ;#define		LOWRAM	_LOWRAM
 
-#define		API_OPT	_API_OPT
+;#define		API_OPT	_API_OPT
 
 ; new option for mutable IDs, most likely mandatory!
 #define		MUTABLE		_MUTABLE
