@@ -1,28 +1,22 @@
 ; includes for minimOS drivers
 ; Kowalski simulator specific configuration!
 ; v0.9b1
-; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20160330-1247
+; (c) 2015-2018 Carlos J. Santisteban
+; last modified 20180404-1339
 
 #define		DRIVERS		_DRIVERS
 
 ; in case of standalone assembly
-#ifndef		KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
+#ifndef		HEADERS
+#include "../../usual.h"
 .bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
-#include "drivers/config/DRIVER_PACK.h"	; generic access
+#include "kowalski_std.h"
 .text
 #endif
 
 ; *** load appropriate drivers here ***
 driver0:
-#include	"drivers/drv_kowalski.s"
+#include	"../drv_kowalski.s"
 
 ; *** driver list in ROM ***
 ; only the addresses, in no particular order (watch out undefined drivers!)

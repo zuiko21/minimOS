@@ -1,20 +1,20 @@
 ; static variables for minimOS·16 drivers
-; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161017-1322
+; (c) 2015-2018 Carlos J. Santisteban
+; last modified 20180404-1335
 
 ; optional multitasking
 #ifdef	MULTITASK
-#include "drivers/multitask16.h"
+#include "../multitask16.h"
 #endif
 
 ; optional filesystem
 #ifdef	FILESYSTEM
-#include "drivers/filesystem.h"
+#include "../filesystem.h"
 #endif
 
 ; ordinary driver variables
-#include "drivers/drv_led.h"
-#include "drivers/drv_ss22.h"
-;#include "drivers/drv_ascii_lcd.h"
-#include "drivers/drv_acia.h"
-;#include "drivers/drv_lcd.h"
+#include "../drv_led.h"
+#include "../drv_ss22.h"
+;#include "../drv_ascii_lcd.h"
+#include "../drv_acia.h"
+;#include "../drv_lcd.h"

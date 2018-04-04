@@ -1,22 +1,16 @@
 ; includes for minimOS drivers
 ; Jalapa16-specific configuration!
 ; v0.5a6
-; (c) 2015-2016 Carlos J. Santisteban
-; last modified 20161129
+; (c) 2015-2018 Carlos J. Santisteban
+; last modified 20180404-1336
 
 #define		DRIVERS		_DRIVERS
 
 ; in case of standalone assembly
-#ifndef		KERNEL
-#include "options.h"
-#include "macros.h"
-#include "abi.h"
-.zero
-#include "zeropage.h"
+#ifndef		HEADERS
+#include "../../usual.h"
 .bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
-#include "drivers/config/DRIVER_PACK.h"	; generic access
+#include "jalapa16_std.h"
 .text
 #endif
 
@@ -27,36 +21,36 @@ driver0:
 ; optional multitasking as a driver!!! new 20150324
 ; next driver's address would repeat on list... current (0.5a9) kernel would reject duplicates anyway
 #ifdef	MULTITASK
-#include	"drivers/multitask16.s"
+#include	"../multitask16.s"
 #endif
 
 driver1:
 ; optional filesystem as a driver! new 20150309
 ; same as above, if disabled
 #ifdef	FILESYSTEM
-#include	"drivers/filesystem.s"
+#include	"../filesystem.s"
 #endif
 
 ; *** standard drivers ***
 ; LED keypad
-#include "drivers/drv_led.s"
+#include "../drv_led.s"
 
 driver2:
 ; SS-22 link
-#include "drivers/drv_ss22.s"
+#include "../drv_ss22.s"
 
 driver3:
 ; ASCII keyboard with LCD
-;#include "drivers/drv_ascii_lcd.s"
+;#include "../drv_ascii_lcd.s"
 
 ; *** interfaces for SDx and later ***
 driver4:
 ; serial port
-#include "drivers/drv_acia.s"
+#include "../drv_acia.s"
 
 driver5:
 ; Hitachi LCD
-;#include "drivers/drv_lcd.s"
+;#include "../drv_lcd.s"
 
 ; up to 16 drivers, undefined ones point to dummy driver
 driver6:
@@ -74,7 +68,7 @@ driverF:
 ; *** make undefined drivers point here ***
 ; *** dummy driver, fake addresses ***
 ; to be placed after all actually defined drivers, new name 20150128
-#include "drivers/dummy.s"
+#include "../dummy.s"
 
 ; *** driver list in ROM ***
 ; only the addresses, in no particular order (watch out undefined drivers!)

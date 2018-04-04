@@ -1,17 +1,17 @@
 ; includes for minimOS drivers
 ; run65816 BBC simulator specific configuration!
 ; v0.9b2
-; (c) 2017 Carlos J. Santisteban
-; last modified 20171106-1008
+; (c) 2017-2018 Carlos J. Santisteban
+; last modified 20180404-1343
 
 #define		DRIVERS		_DRIVERS
 
 ; in case of standalone assembly
-#include	"usual.h"
+#include	"../../usual.h"
 
 ; *** load appropriate drivers here ***
 driver0:
-#include	"drivers/drv_run816.s"
+#include	"../drv_run816.s"
 
 ; *** driver list in ROM ***
 ; only the addresses, in no particular order (watch out undefined drivers!)

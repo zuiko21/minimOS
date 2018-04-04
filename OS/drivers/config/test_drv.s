@@ -1,8 +1,8 @@
 ; includes for minimOS drivers
 ; EMPTY configuration for testing purposes!
 ; v1.0
-; (c) 2016 Carlos J. Santisteban
-; last modified 20161219-1220
+; (c) 2016-2018 Carlos J. Santisteban
+; last modified 20180404-1348
 
 #define		DRIVERS		_DRIVERS
 
@@ -10,8 +10,8 @@
 #ifndef		KERNEL
 #include "usual.h"
 .bss
-#include "firmware/ARCH.h"
-#include "sysvars.h"
+#include "../../firmware/ARCH.h"
+#include "../../sysvars.h"
 .text
 #endif
 
@@ -19,9 +19,9 @@
 driver0:
 #ifdef	MULTITASK
 #ifdef	C816
-#include	"drivers/multitask16.s"
+#include	"../multitask16.s"
 #else
-#include	"drivers/multitask.s"
+#include	"../multitask.s"
 #endif
 #endif
 

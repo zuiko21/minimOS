@@ -2,12 +2,13 @@
 ; SDd with emulated serial specific configuration!
 ; ***** Jornada HackLabAlmería en El Ejido 2017 *****
 ; v0.6b1
-; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171112-1646
+; (c) 2015-2018 Carlos J. Santisteban
+; last modified 20180404-1344
 
 #define		DRIVERS		1
 
 ; in case of standalone assembly
+/*
 #ifndef		KERNEL
 #include "options.h"
 #include "macros.h"
@@ -20,6 +21,13 @@
 #include "drivers/config/sdd_serial.h"
 .text
 #endif
+*/
+#ifndef		HEADERS
+#include "../../usual.h"
+.bss
+#include "chihuahua_plus_std.h"
+.text
+#endif
 
 ; *** load appropriate drivers here ***
 ; place them between generic labels
@@ -27,7 +35,7 @@
 driver0:
 ; *** standard drivers ***
 ; Emulated serial
-#include "drivers/soft232.s"
+#include "../soft232.s"
 
 ; no more for this demo...
 
