@@ -1,42 +1,45 @@
-; minimOS 0.6rc3 FAST API calls
+; minimOS 0.6rc4 FAST API calls
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180403-1021
+; last modified 20180404-0856
 
 #ifdef	API_OPT
-#define		_KERNEL(COUT)		JSR cout
-#define		_KERNEL(CIN)		JSR cin
-#define		_KERNEL(STRING)		JSR string
-#define		_KERNEL(READLN)		JSR readln
-#define		_KERNEL(BLOUT)		JSR blout
-#define		_KERNEL(BLIN)		JSR blin
-#define		_KERNEL(BL_CNFG)	JSR bl_cnfg
-#define		_KERNEL(BL_STAT)	JSR bl_stat
-#define		_KERNEL(OPEN_W)		JSR open_w
-#define		_KERNEL(CLOSE_W)	JSR close_w
-#define		_KERNEL(FREE_W)		JSR free_w
-#define		_KERNEL(UPTIME)		JSR uptime
-#define		_KERNEL(SHUTDOWN)	JSR shutdown
-#define		_KERNEL(LOADLINK)	JSR loadlink
-#define		_KERNEL(B_FORK)		JSR b_fork
-#define		_KERNEL(B_EXEC)		JSR b_exec
-#define		_KERNEL(B_SIGNAL)	JSR b_signal
-#define		_KERNEL(B_FLAGS)	JSR b_flags
-#define		_KERNEL(SET_HNDL)	JSR set_hndl
-#define		_KERNEL(B_YIELD)	JSR b_yield
-#define		_KERNEL(GET_PID)	JSR get_pid
-#define		_KERNEL(DR_INFO)	JSR dr_info
-#define		_KERNEL(AQ_MNG)		JSR aq_mng
-#define		_KERNEL(PQ_MNG)		JSR pq_mng
-#define		_KERNEL(DR_INST)	JSR dr_inst
-#define		_KERNEL(DR_SHUT)	JSR dr_shut
+#define		_KERNEL(a)	_KFAST_ ## a
+
+#define		_KFAST_0	JSR cout
+#define		_KFAST_2	JSR cin
+#define		_KFAST_4	JSR string
+#define		_KFAST_6	JSR readln
+#define		_KFAST_8	JSR blout
+#define		_KFAST_10	JSR blin
+#define		_KFAST_12	JSR bl_cnfg
+#define		_KFAST_14	JSR bl_stat
+#define		_KFAST_16	JSR open_w
+#define		_KFAST_18	JSR close_w
+#define		_KFAST_20	JSR free_w
+#define		_KFAST_22	JSR uptime
+#define		_KFAST_24	JSR shutdown
+#define		_KFAST_26	JSR loadlink
+#define		_KFAST_28	JSR b_fork
+#define		_KFAST_30	JSR b_exec
+#define		_KFAST_32	JSR b_signal
+#define		_KFAST_34	JSR b_flags
+#define		_KFAST_36	JSR set_hndl
+#define		_KFAST_38	JSR b_yield
+#define		_KFAST_40	JSR get_pid
+#define		_KFAST_42	JSR dr_info
+#define		_KFAST_44	JSR aq_mng
+#define		_KFAST_46	JSR pq_mng
+#define		_KFAST_48	JSR dr_inst
+#define		_KFAST_50	JSR dr_shut
 #ifndef	LOWRAM
-#define		_KERNEL(MALLOC)		JSR malloc
-#define		_KERNEL(FREE)		JSR free
-#define		_KERNEL(MEMLOCK)	JSR memlock
-#define		_KERNEL(RELEASE)	JSR release
-#define		_KERNEL(TS_INFO)	JSR ts_info
-#define		_KERNEL(SET_CURR)	JSR set_curr
+#define		_KFAST_52	JSR malloc
+#define		_KFAST_54	JSR free
+#define		_KFAST_56	JSR memlock
+#define		_KFAST_58	JSR release
+#define		_KFAST_60	JSR ts_info
+#define		_KFAST_62	JSR set_curr
 	API_SIZE	=	64
 #else
 	API_SIZE	=	52
+#endif
 #endif
