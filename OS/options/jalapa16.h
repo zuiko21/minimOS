@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; suitable for Jalapa with 65816 miniBus card!
 ; copy or link as options.h in root dir
-; (c) 2015-2016 Carlos J. Santisteban
+; (c) 2015-2018 Carlos J. Santisteban
 ; last modified 20161017-1315
 
 ; *** set conditional assembly ***

@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; empty file for testing purposes
 ; copy or link as options.h in root dir
-; (c) 2016 Carlos J. Santisteban
+; (c) 2016-2018 Carlos J. Santisteban
 ; last modified 20161219-1229
 
 ; *** set conditional assembly ***

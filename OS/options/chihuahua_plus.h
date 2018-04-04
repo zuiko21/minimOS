@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
-; (c) 2015-2017 Carlos J. Santisteban
+; (c) 2015-2018 Carlos J. Santisteban
 ; last modified 20171220-1310
 
 ; *** set conditional assembly ***
