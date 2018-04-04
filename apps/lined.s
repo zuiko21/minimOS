@@ -4,7 +4,7 @@
 ; (c) 2016-2018 Carlos J. Santisteban
 ; last modified 20170829-1339
 
-#include "usual.h"
+#include "../OS/usual.h"
 .(
 
 ; *** constants declaration ***
@@ -905,7 +905,7 @@ txtEnd:
 le_title:
 	.asc	"Line Editor 0.5.1", 0
 le_splash:
-	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR, 0
+	.asc	"(c) 2016-2018 Carlos J. Santisteban", CR, 0
 le_start:
 	.asc	CR, "{start}", 0
 le_end:

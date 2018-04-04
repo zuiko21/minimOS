@@ -1,9 +1,9 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1rc1
-; last modified 20170511-1351
+; last modified 20180404-1422
 ; (c) 2016-2018 Carlos J. Santisteban
 
-#include "usual.h"
+#include "../OS/usual.h"
 .(
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
@@ -210,7 +210,7 @@ prnStr:
 ; *** strings and other data ***
 splash:
 	.asc	"pmap 0.5.1", CR
-	.asc	"(c) 2016-2017 Carlos J. Santisteban", CR
+	.asc	"(c) 2016-2018 Carlos J. Santisteban", CR
 	.asc	"Addr. PID  Size", CR, 0		; header
 
 ; format as follows

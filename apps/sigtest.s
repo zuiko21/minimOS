@@ -1,11 +1,11 @@
 ; SIGTERM test app for minimOS!
 ; v1.1b2, for minimOS 0.6 and up
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20171030-0948
+; last modified 20180404-1421
 
 
 ; for standalone assembly, set path to OS/
-#include "usual.h"
+#include "../OS/usual.h"
 
 .(
 ; ### first some executable header ###

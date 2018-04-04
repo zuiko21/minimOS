@@ -1,9 +1,9 @@
 ; optical Theremin (app version)
 ; (c) 2018 Carlos J. Santisteban
 ; v0.4b3
-; last modified 20180322-1335
+; last modified 20180404-1421
 
-#include "usual.h"
+#include "../OS/usual.h"
 
 ; *** app version must use the usual header, install both IRQ (for handlers)
 ; and NMI (for exit!) routines and let the interrupts run...
