@@ -2,12 +2,12 @@
 ; v0.6rc2, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180402-1330
+; last modified 20180404-1410
 
 #define		ISR		_ISR
 
 #ifndef	HEADERS
-#include "usual.h"
+#include "../usual.h"
 #endif
 
 ; **** the ISR code **** (initial tasks take 11t)
@@ -175,4 +175,4 @@ ip_done:
 ; will be called via firmware interface, should be moved to kernel or rom.s
 
 supplied_brk:			; should end in RTS anyway, 20160310
-#include "isr/brk.s"
+#include "brk.s"

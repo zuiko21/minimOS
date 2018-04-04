@@ -1,11 +1,11 @@
 ; ISR for minimOS·16
 ; v0.6b3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180312-1029
+; last modified 20180404-1409
 
 #define		ISR		_ISR
 
-#include "usual.h"
+#include "../usual.h"
 
 ; **********************
 ; **** the ISR code **** (initial tasks take 28 cycles)
@@ -158,4 +158,4 @@ ip_done:
 ; *** BRK handler *** should move this to kernel or rom.s
 ; *******************
 supplied_brk:				; this has a separate handler on FW, ends in RTS
-#include "isr/brk16.s"
+#include "brk16.s"
