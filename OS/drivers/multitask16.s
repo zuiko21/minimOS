@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a3
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180215-1337
+; last modified 20180404-1322
 
 ; ***************************
 ; *** multitasking driver ***
@@ -11,10 +11,10 @@
 MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 #ifndef		HEADERS
-#include "usual.h"
+#include "../usual.h"
 ; specific header
 .bss
-#include "drivers/multitask16.h"
+#include "multitask16.h"
 .text
 #endif
 
@@ -36,7 +36,7 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.6a2", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.6a3", 0	; fixed MAX_BRAIDS value!
 
 ; ***************************
 ; ***************************

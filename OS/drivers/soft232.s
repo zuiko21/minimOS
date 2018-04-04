@@ -1,7 +1,7 @@
 ; software serial port emulator for minimOS!
 ; v0.6b3, will assemble on NMOS but wrong timing! Use 65C02 *always*
-; (c) 2016-2017 Carlos J. Santisteban
-; last modified 20171118-2041
+; (c) 2016-2018 Carlos J. Santisteban
+; last modified 20180404-1322
 
 ; VIA bit functions
 ; Tx	= PA0 (any 0...5, set masks accordingly)
@@ -19,7 +19,7 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-#include "usual.h"
+#include "../usual.h"
 
 ; *** begins with sub-function addresses table ***
 	.byt	232		; physical driver number D_ID (TBD)

@@ -1,7 +1,7 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a6
-; (c) 2017 Carlos J. Santisteban
-; last modified 20171006-1101
+; (c) 2017-2018 Carlos J. Santisteban
+; last modified 20180404-1321
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -22,8 +22,8 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-#include "usual.h"
-#include "drivers/vdu-via.h"	; for testing
+#include "../usual.h"
+
 .(
 ; *** begins with sub-function addresses table ***
 	.byt	205			; physical driver number D_ID (TBD)

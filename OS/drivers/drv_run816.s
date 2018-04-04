@@ -1,10 +1,10 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
 ; v0.9.6b4
 ; *** new format for mOS 0.6 compatibility *** 16-bit version
-; (c) 2017 Carlos J. Santisteban
-; last modified 20171212-1103
+; (c) 2017-2018 Carlos J. Santisteban
+; last modified 20180404-1320
 
-#include	"usual.h"
+#include	"../usual.h"
 .(
 ; *** begins with sub-function addresses table ***
 	.byt	DEV_CNIO	; D_ID, new values 20150323

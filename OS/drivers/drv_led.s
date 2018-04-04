@@ -1,14 +1,13 @@
 ; LED Keypad driver for minimOS
 ; v0.9.6 adapted to mOS-65 0.6 driver format 20171220
-; (c) 2012-2017 Carlos J. Santisteban
-; last modified 20171220-1413
+; (c) 2012-2018 Carlos J. Santisteban
+; last modified 20180404-1324
 
-; in case of standalone assembly via 'xa drivers/drv_led.s'
 #ifndef		HEADERS
-#include "usual.h"
+#include "../usual.h"
 ; specific header for this driver
 .bss
-#include "drivers/drv_led.h"
+#include "drv_led.h"
 .text
 #endif
 

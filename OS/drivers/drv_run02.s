@@ -2,11 +2,10 @@
 ; v0.9.6b2
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180402-1338
+; last modified 20180404-1320
 
-#ifndef	HEADERS
-#include	"usual.h"
-#endif
+#include	"../usual.h"
+
 .(
 ; *** begins with sub-function addresses table ***
 	.byt	DEV_CNIO	; D_ID, new values 20150323

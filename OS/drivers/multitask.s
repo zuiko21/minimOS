@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.6a2
-; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171220-1435
+; (c) 2015-2018 Carlos J. Santisteban
+; last modified 20180404-1323
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -12,10 +12,10 @@
 ; *** delay counter for reasonable overhead will be set in header ***
 
 #ifndef		HEADERS
-#include "usual.h"
+#include "../usual.h"
 ; specific header
 .bss
-#include "drivers/multitask.h"
+#include "multitask.h"
 .text
 #endif
 
