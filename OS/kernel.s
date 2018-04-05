@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180404-1442
+; last modified 20180405-1323
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -21,7 +21,7 @@
 #else
 ; standalone kernels need to keep track of drivers_ad label!
 .data
-#include "DRIVER_PACK.s"
+#include DRIVER_PACK.s
 .text
 #endif
 #endif
@@ -318,20 +318,20 @@ shell:					; no header to skip
 shell	= * + 256		; skip header
 #endif
 
-#include "SHELL"
+#include SHELL
 
 ; ************************************************************
 ; ****** Downloaded kernels add driver staff at the end ******
 ; ************************************************************
 #ifdef	DOWNLOAD
-#include "DRIVER_PACK.s"	; this package will be included with downloadable kernels
+#include DRIVER_PACK.s	; this package will be included with downloadable kernels
 .data
 ; downloadable system have ALL system & driver variables AFTER the kernel/API
 sysvars:
 #include "sysvars.h"
 ; driver-specific system variables, located here 20170207
 dr_vars:
-#include "DRIVER_PACK.h"
+#include DRIVER_PACK.h
 .text					; eeeeeek
 -user_ram = *			; the rest of available SRAM
 #endif

@@ -3,7 +3,7 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180404-1440
+; last modified 20180405-1327
 
 ; *** set conditional assembly ***
 
@@ -38,15 +38,17 @@
 #define		MACHINE_ID		"run6502"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
-#define		ARCH			firmware/run02
+#define		ARCH.s			"firmware/run02.s"
+#define		ARCH.h			"firmware/run02.h"
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK		drivers/config/run02_std
+#define		DRIVER_PACK.s		"drivers/config/run02_std.s"
+#define		DRIVER_PACK.h		"drivers/config/run02_std.h"
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		shell/minishell.s
+#define		SHELL		"shell/minishell.s"
 
 ; default NMI, BRK etc TBD ***********
 
