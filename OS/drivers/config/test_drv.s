@@ -2,7 +2,7 @@
 ; EMPTY configuration for testing purposes!
 ; v1.0
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180404-1348
+; last modified 20180405-1401
 
 #define		DRIVERS		_DRIVERS
 
@@ -10,7 +10,8 @@
 #ifndef		KERNEL
 #include "usual.h"
 .bss
-#include "../../firmware/ARCH.h"
+; sample firmware for testing purposes
+#include "chihuahua_plus_std.h"
 #include "../../sysvars.h"
 .text
 #endif
