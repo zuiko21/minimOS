@@ -1,6 +1,6 @@
-; minimOS 0.6rc3 MACRO definitions
+; minimOS 0.6rc4 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180131-1050
+; last modified 20180405-1418
 
 ; *** standard addresses ***
 
@@ -30,27 +30,27 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 
 #ifndef	C816
 #ifndef		API_OPT
-#define		_KERNEL(a)		LDX #a: JSR kerncall
+#define		_KERNEL(a)		LDX #(a): JSR kerncall
 #else
 #include "api_opt.h"
 #endif
 #else
 ; new COP signature as per WDC reccomendations, CLC cannot be into firmware!
-#define		_KERNEL(a)		LDX #a: CLC: COP #$7F
+#define		_KERNEL(a)		LDX #(a): CLC: COP #$7F
 #endif
 
 ; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings! note pre-CLC
 
 ; administrative calls unified for 6502 and 65816, all ending in RTS (use DR_OK and DR_ERR macros)
 #ifndef	API_OPT
-#define		_ADMIN(a)		LDX #a: JSR adm_call
+#define		_ADMIN(a)		LDX #(a): JSR adm_call
 #else
 #include "adm_opt.h"
 #endif
 
 ; specific user-mode firmware call, needed for 65816
 #ifdef	C816
-#define		_U_ADM(a)		LDX #a: JSL adm_appc
+#define		_U_ADM(a)		LDX #(a): JSL adm_appc
 #else
 #define		_U_ADM(a)		_ADMIN(a)
 #endif
@@ -64,13 +64,13 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #ifndef	C816
 #define		_FINISH		CLC: RTS
 #define		_EXIT_OK	CLC: RTS
-#define		_ABORT(a)	LDY #a: SEC: RTS
-#define		_ERR(a)		LDY #a: SEC: RTS
+#define		_ABORT(a)	LDY #(a): SEC: RTS
+#define		_ERR(a)		LDY #(a): SEC: RTS
 #else
 #define		_FINISH		CLC: RTL
 #define		_EXIT_OK	RTI
-#define		_ABORT(a)	LDY #a: SEC: RTL
-#define		_ERR(a)		LDY #a: PLP: SEC: PHP: RTI
+#define		_ABORT(a)	LDY #(a): SEC: RTL
+#define		_ERR(a)		LDY #(a): PLP: SEC: PHP: RTI
 #endif
 
 ; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
@@ -78,7 +78,7 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 ; most code endings (except kernel API and apps) for both 6502 and 816 (expected to be in bank zero anyway)
 ; such code without error signaling (eg. shutdown, jiffy interrupt) may just end on RTS no matter the CPU
 #define		_DR_OK		CLC: RTS
-#define		_DR_ERR(a)	LDY #a: SEC: RTS
+#define		_DR_ERR(a)	LDY #(a): SEC: RTS
 
 ; new exit for asynchronous driver routines when not satisfied
 #define		_NXT_ISR	SEC: RTS
