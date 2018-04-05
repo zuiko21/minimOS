@@ -1,7 +1,7 @@
-; minimOS 0.6rc11 API/ABI
+; minimOS 0.6rc12 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180404-1134
+; last modified 20180405-1305
 
 ; *************************************************
 ; *************************************************
@@ -88,25 +88,27 @@ CORRUPT	=   9		; data corruption
 ; ************************************
 ; ************************************
 
+#ifndef	API_OPT
 ; generic functions, esp. interrupt handler related
-#define	GESTALT		0
-#define	SET_ISR		GESTALT+2
-#define	SET_NMI		SET_ISR+2
-#define	SET_DBG		SET_NMI+2
+GESTALT		= 0				; supply hardware info
+SET_ISR		= GESTALT+2		; set interrupt service routine
+SET_NMI		= SET_ISR+2		; set NMI routine (internally handled)
+SET_DBG		= SET_NMI+2		; set debugger (BRK) routine
 
 ; somewhat hardware specific, interrupt hardware related
-#define	JIFFY		SET_DBG+2
-#define	IRQ_SRC		JIFFY+2
+JIFFY		= SET_DBG+2		; set periodic interrupt frequency
+IRQ_SRC		= JIFFY+2		; determine interrupt line
 
 ; pretty hardware specific
-#define	POWEROFF	IRQ_SRC+2
-#define	FREQ_GEN	POWEROFF+2
+POWEROFF	= IRQ_SRC+2		; shutdown, suspend etc.
+FREQ_GEN	= POWEROFF+2	; generate square wave
 
 #ifndef	LOWRAM
 ; not for LOWRAM systems
-#define	INSTALL		FREQ_GEN+2
-#define	PATCH		INSTALL+2
+INSTALL		= FREQ_GEN+2	; copy kernel jump table
+PATCH		= INSTALL+2		; change one kernel function
 ; CONTEXT no longer used, as would be just called from a *specific* Multitasking driver
+#endif
 #endif
 
 ; **************************
