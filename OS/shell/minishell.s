@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20180404-1415
+; last modified 20180405-1413
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -10,7 +10,7 @@
 
 .(
 ; *** constant definitions ***
-#define	BUFSIZ		32
+BUFSIZ		= 32
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####

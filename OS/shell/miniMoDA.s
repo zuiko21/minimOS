@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.6rc1
-; last modified 20180404-1416
+; last modified 20180405-1412
 ; (c) 2016-2018 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -12,7 +12,7 @@
 ;#define	NARROW	_NARROW
 
 ; *** constant definitions ***
-#define	BUFSIZ		80
+BUFSIZ		= 80
 #define	COLON		58
 
 ; bytes per line in dumps 4 or 8/16
@@ -441,7 +441,6 @@ do_call:
 	LDA _a				; lastly retrieve accumulator
 	PLP					; restore status
 	JMP (value)			; go! might return somewhere else
-#endif
 
 
 ; ** .D = disassemble 'u' lines **
@@ -535,7 +534,7 @@ po_nobbx:
 				DEX					; puts $FF otherwise
 po_fwd:
 			_INC				; plus opcode...
-			CLC					; (will this and the above instead of SEC fix the error???)
+			CLC					; (will this and the above instead of SEC fix the error?)
 			ADC value			; ...and displacement...
 			ADC oper			; ...from current position
 			PHA					; this is the LSB, now check for the MSB
