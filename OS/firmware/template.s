@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
-; v0.6b9
+; v0.6b10
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180404-1406
+; last modified 20180406-1115
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -330,12 +330,12 @@ panic_loop:
 
 ; *** 65C816 ROM vectors ***
 * = $FFE4				; should be already at it
-	.word	fwp_cold	; native COP		@ $FFE4
-	.word	fwp_cold	; native BRK		@ $FFE6
-	.word	fwp_cold	; native ABORT		@ $FFE8
-	.word	fwp_cold	; native NMI		@ $FFEA
+	.word	lock		; native COP		@ $FFE4
+	.word	lock		; native BRK		@ $FFE6
+	.word	lock		; native ABORT		@ $FFE8
+	.word	lock		; native NMI		@ $FFEA
 	.word	$FFFF		; reserved			@ $FFEC
-	.word	fwp_cold	; native IRQ		@ $FFEE
+	.word	lock		; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
 	.word	nmi			; emulated COP		@ $FFF4
