@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
 ; v0.5.1b13
-; last modified 20180404-1422
+; last modified 20180409-1323
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #include "../OS/usual.h"
@@ -17,7 +17,7 @@
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
-pmapHead:
+pmap16Head:
 ; *** header identification ***
 	BRK						; do not enter here! NUL marks beginning of header
 	.asc	"mV"			; minimOS app! 65c816 only
@@ -29,16 +29,16 @@ pmapHead:
 	.asc	"16-bit minimOS 0.5.1 only!!!", 0
 
 ; advance to end of header
-	.dsb	pmapHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+	.dsb	pmap16Head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$6000			; time, 12.00
 	.word	$4A49			; date, 2017/2/09
 
-pmap16Size	=	pmapEnd - pmapHead -256	; compute size NOT including header!
+-pm16Sz	=	pmap16End-pmap16Head-256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	pmap16Size		; filesize
+	.word	pm16Sz			; filesize
 	.word	0				; 64K space does not use upper 16-bit
 #endif
 ; ##### end of minimOS executable header #####
@@ -282,7 +282,7 @@ pmt_pid:
 	.asc	"#$", 0
 
 ; ***** end of stuff *****
-pmapEnd:				; ### for easy size computation ###
+pmap16End:				; ### for easy size computation ###
 .)
 .as: .xs:				; eeeeeeeeeeeeeek
 

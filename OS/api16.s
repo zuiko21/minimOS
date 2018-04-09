@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc10, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180321-0850
+; last modified 20180409-1321
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -629,7 +629,7 @@ ma_bankOK:
 ; ******************************
 ; *** common MALLOC routines ***
 ; ******************************
-;	.al					; as routines will be called in 16-bit memory!!!
+	.al					; as routines will be called in 16-bit memory!!!
 
 ; **** routine for aligned-block size computation ****
 ; returns found size in A, sets C if OK, error otherwise (C clear!)
@@ -1626,7 +1626,7 @@ ds_phys:
 
 	LDX dr_ind-128, Y	; is that being used?
 	BNE ds_used			; yes, proceed to remove
-		_ERR(NFOUND)		; no, nothing to remove
+		_ERR(N_FOUND)		; no, nothing to remove
 ds_used:
 	LDA #0				; this means free device, unfortunately no STZ abs,Y
 	STA dr_ind-128, Y	; this is no more, any problem here? ***use whatever null value***
@@ -1692,7 +1692,7 @@ di_ndef:
 		STA ex_pt			; ...and store it as exit parameter (/4)
 		_EXIT_OK
 di_none:
-	_ERR(NFOUND)		; no such ID
+	_ERR(N_FOUND)		; no such ID
 
 	.xs:
 
