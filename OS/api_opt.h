@@ -1,6 +1,6 @@
-; minimOS 0.6rc6 FAST API calls
+; minimOS 0.6rc7 FAST API calls
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180411-0829
+; last modified 20180411-0855
 
 #ifdef	FAST_API
 #define		_KERNEL(a)	_KFAST_ ## a
@@ -38,8 +38,5 @@
 #define		_KFAST_RELEASE	JSR release
 #define		_KFAST_TS_INFO	JSR ts_info
 #define		_KFAST_SET_CURR	JSR set_curr
-	API_SIZE	=	64
-#else
-	API_SIZE	=	52
 #endif
 #endif

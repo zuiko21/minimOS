@@ -1,7 +1,7 @@
 ; minimOS 0.6rc13 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180411-0830
+; last modified 20180411-0854
 
 ; *************************************************
 ; *************************************************
@@ -9,7 +9,6 @@
 ; *************************************************
 ; *************************************************
 
-#ifndef	FAST_API
 ; legacy basic I/O
 COUT		= 0				; character output, interface for BOUT
 CIN			= COUT + 2		; character input, interface for BLIN
@@ -64,7 +63,6 @@ SET_CURR	= TS_INFO + 2	; set internal kernel info for running task (PID & archit
 
 ; *** define the jump-table size for more efficient memory usage! ***
 API_SIZE	= SET_CURR + 2	; *** set just after the LAST API call, renamed 20180124 ***
-#endif
 
 ; ***********************
 ; ***********************

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180411-0839
+; last modified 20180411-0852
 
 ; just in case
 #define		C816	_C816
@@ -76,12 +76,10 @@ warm:
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
 ; if kernel is assembled with FAST API, no jump table to install!
-#ifndef		FAST_API
 	LDA #k_vec			; get table address (3)
 	STA kerntab			; store parameter (4)
 ; as kernels must reside in bank 0, no need for 24-bit addressing
 	_ADMIN(INSTALL)		; copy jump table, will respect register sizes
-#endif
 #endif
 
 ; install ISR code (as defined in "isr/irq16.s" below)
