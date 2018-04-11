@@ -1,12 +1,14 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc10
+; v0.6rc11
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180328-2308
+; last modified 20180411-0835
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
 -fw_table:				; 128-byte systems' firmware get unpatchable table from here, new 20150318
 k_vec:
+; FAST API option needs no jump table!
+#ifndef	FAST_API
 ; basic I/O
 	.word	cout		; output a character
 	.word	cin			; get a character
@@ -49,6 +51,8 @@ k_vec:
 	.word	release		; release ALL memory for a PID
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
+#endif
+#endif
 ; *** dummy function, non implemented ***
 unimplemented:			; placeholder here, not currently used
 ; *** MALLOC, reserve memory ***
@@ -64,7 +68,6 @@ free:
 release:
 ts_info:
 set_curr:
-#endif
 ; *** FUTURE IMPLEMENTATION ***
 aq_mng:
 pq_mng:

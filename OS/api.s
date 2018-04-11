@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc13, must match kernel.s
+; v0.6rc14, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180321-0853
+; last modified 20180411-0835
 
 ; no way for standalone assembly...
 
@@ -10,6 +10,8 @@
 ; **************************************************
 #ifndef		DOWNLOAD
 k_vec:
+; FAST API option needs no jump table!
+#ifndef	FAST_API
 ; basic I/O
 	.word	cout		; output a character
 	.word	cin			; get a character
@@ -53,6 +55,7 @@ k_vec:
 ; multitasking...
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
+#endif
 #endif
 
 ; ***************************************
