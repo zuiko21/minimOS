@@ -3,7 +3,7 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180405-1339
+; last modified 20180411-0832
 
 ; *** set conditional assembly ***
 
@@ -12,7 +12,8 @@
 
 ;#define		LOWRAM	_LOWRAM
 
-#define		API_OPT	_API_OPT
+#define		FAST_API	_FAST_API
+#define		FAST_FW		_FAST_FW
 
 ; new option for mutable IDs, most likely mandatory!
 #define		MUTABLE		_MUTABLE

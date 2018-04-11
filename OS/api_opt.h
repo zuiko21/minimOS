@@ -1,8 +1,8 @@
-; minimOS 0.6rc5 FAST API calls
+; minimOS 0.6rc6 FAST API calls
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180405-1309
+; last modified 20180411-0829
 
-#ifdef	API_OPT
+#ifdef	FAST_API
 #define		_KERNEL(a)	_KFAST_ ## a
 
 #define		_KFAST_COUT		JSR cout

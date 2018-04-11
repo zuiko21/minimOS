@@ -1,7 +1,7 @@
-; minimOS 0.6rc12 API/ABI
+; minimOS 0.6rc13 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180405-1305
+; last modified 20180411-0830
 
 ; *************************************************
 ; *************************************************
@@ -9,7 +9,7 @@
 ; *************************************************
 ; *************************************************
 
-#ifndef	API_OPT
+#ifndef	FAST_API
 ; legacy basic I/O
 COUT		= 0				; character output, interface for BOUT
 CIN			= COUT + 2		; character input, interface for BLIN
@@ -88,7 +88,7 @@ CORRUPT	=   9		; data corruption
 ; ************************************
 ; ************************************
 
-#ifndef	API_OPT
+#ifndef	FAST_FW
 ; generic functions, esp. interrupt handler related
 GESTALT		= 0				; supply hardware info
 SET_ISR		= GESTALT+2		; set interrupt service routine
@@ -229,6 +229,7 @@ W_CLOSE		= 192	; closed, free window
 W_FREE		= 128	; no longer in use, may be closed by kernel itself
 W_REQ		=  64	; requested to close, will send SIGTERM to creator braid
 
+/*
 ; ****************************************************
 ; ** optional filesystem subfunctions 20150304, TBD **
 ; ****************************************************
@@ -257,6 +258,7 @@ FS_CREAT	=  34	; format filesystem
 
 MAX_FILES	=	16
 MAX_VOLS	=	8
+*/
 
 ; ************************
 ; ** logic devices, TBD **
