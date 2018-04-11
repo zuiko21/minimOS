@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc7
+; v0.6rc8
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180405-1339
+; last modified 20180411-0845
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc7", 0	; version in comment
+	.asc	"minimOS 0.6rc8", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -69,6 +69,7 @@ warm:
 #ifndef	LOWRAM
 ; ++++++
 #ifndef		DOWNLOAD
+#ifndef			FAST_API
 	LDY #<k_vec			; get table address, nicer way (2+2)
 	LDA #>k_vec
 	STY kerntab			; store parameter (3+3)
@@ -81,6 +82,7 @@ warm:
 ki_err:
 			_PANIC("{FWSIZ}")	; not enough, incompatible FW
 ki_ok:
+#endif
 #endif
 #endif
 ; ++++++
@@ -266,6 +268,12 @@ ks_cr:
 	_KERNEL(COUT)		; print it
 	RTS
 
+; in headerless builds, keep at least the splash string
+#ifdef	NOHEAD
+kern_splash:
+	.asc	"minimOS 0.6rc8", 0
+#endif
+
 ; ***********************************************
 ; *** generic kernel routines, separate files ***
 ; ***********************************************
@@ -290,12 +298,6 @@ k_isr:
 #endif
 ; default NMI-ISR is on firmware!
 ; will include supplied BRK handler, although called by firmware
-
-; in headerless builds, keep at least the splash string
-#ifdef	NOHEAD
-kern_splash:
-	.asc	"minimOS 0.6rc7", 0
-#endif
 
 kern_end:		; for size computation
 ; ***********************************************

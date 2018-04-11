@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b9
+; v0.6b10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180404-1443
+; last modified 20180411-0839
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6b9", 0	; version in comment
+	.asc	"minimOS-16 0.6b10", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -48,6 +48,8 @@ kern_siz = kern_end - kern_head - 256
 
 	.word	kern_siz, 0	; kernel size excluding header
 #endif
+; cannot put here default string as fw_warm will be set here!
+
 ; ##### end of minimOS header #####
 
 ; **************************************************
@@ -73,10 +75,13 @@ warm:
 
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
+; if kernel is assembled with FAST API, no jump table to install!
+#ifndef		FAST_API
 	LDA #k_vec			; get table address (3)
 	STA kerntab			; store parameter (4)
 ; as kernels must reside in bank 0, no need for 24-bit addressing
 	_ADMIN(INSTALL)		; copy jump table, will respect register sizes
+#endif
 #endif
 
 ; install ISR code (as defined in "isr/irq16.s" below)
@@ -236,6 +241,12 @@ ks_cr:
 	_KERNEL(COUT)		; print it
 	RTS
 
+; in case of no headers, keep splash ID string
+#ifdef	NOHEAD
+kern_splash:
+	.asc	"minimOS-16 0.6b10", 0	; version in comment
+#endif
+
 ; ***********************************************
 ; *** generic kernel routines, separate files ***
 ; ***********************************************
@@ -249,13 +260,6 @@ ks_cr:
 k_isr:
 #include "isr/irq16.s"
 ; default NMI-ISR is on firmware!
-
-
-; in case of no headers, keep splash ID string
-#ifdef	NOHEAD
-kern_splash:
-	.asc	"minimOS-16 0.6b9", 0	; version in comment
-#endif
 
 kern_end:		; for size computation
 ; ***********************************************
