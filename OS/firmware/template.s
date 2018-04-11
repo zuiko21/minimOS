@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR				; flags TBD
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "0.6b9 firmware for "	; machine description as comment
+	.asc "0.6b10 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6b9 FW @ "
+	.asc	"0.6b10 FW@"
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -48,6 +48,7 @@ fw_mname:
 ; *********************************
 ; *********************************
 fw_admin:
+#ifndef		FAST_FW
 ; generic functions, esp. interrupt related
 	.word	gestalt		; GESTALT get system info (renumbered)
 	.word	set_isr		; SET_ISR set IRQ vector
@@ -73,7 +74,7 @@ missing:
 		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
 #endif
 #endif
-
+#endif
 
 ; ********************
 ; ********************
@@ -292,8 +293,9 @@ fw_map:					; TO BE DONE
 
 ; *** minimOS function call primitive ($FFC0) ***
 * = kerncall
+#ifndef	FAST_API
 	_JMPX(fw_table)		; macro for NMOS compatibility (6) this will be a wrapper on 816 firmware!
-
+#endif
 ; this could be a good place for the IRQ handler...
 
 ; filling for ready-to-blow ROM
@@ -303,7 +305,9 @@ fw_map:					; TO BE DONE
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
+#ifndef	FAST_FW
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -314,7 +318,9 @@ fw_map:					; TO BE DONE
 ; not really needed on 6502 systems, but kept for the sake of binary compatibility
 ; pretty much the same code at $FFD0, not worth more overhead
 * = adm_appc
+#ifndef	FAST_FW
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
