@@ -52,6 +52,7 @@ fw_mname:
 ; *********************************
 ; *********************************
 fw_admin:
+#ifndef	FAST_FW
 ; generic functions, esp. interrupt related
 	.word	gestalt		; GESTALT get system info (renumbered)
 	.word	set_isr		; SET_ISR set IRQ vector
@@ -77,7 +78,7 @@ missing:
 		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
 #endif
 #endif
-
+#endif
 
 ; **************************
 ; **************************
@@ -304,7 +305,9 @@ cop_hndl:				; label from vector list
 
 ; *** minimOS·65 function call interface ($FFC0) ***
 * = kerncall
+#ifndef	FAST_API
 	_JMPX(fw_table)		; the old fashioned way, suitable for NMOS builds
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -313,7 +316,9 @@ cop_hndl:				; label from vector list
 
 ; *** administrative meta-kernel call primitive ($FFD0) ***
 * = adm_call
+#ifndef	FAST_FW
 	_JMPX(fw_admin)		; takes 5/6 clocks
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -324,7 +329,9 @@ cop_hndl:				; label from vector list
 ; not really needed on 6502 systems, but kept for the sake of binary compatibility
 ; pretty much the same code at $FFD0, not worth more overhead
 * = adm_appc
+#ifndef	FAST_FW
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
