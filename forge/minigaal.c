@@ -1,6 +1,6 @@
 /*
  * miniGaal, VERY elementary HTML browser for minimOS
- * last modified 20180412-1404
+ * last modified 20180412-1421
  * */
 
 #include <stdio.h>
@@ -71,8 +71,11 @@ int looktag(int pos) {
 		}
 		if (found) {	// properly recognised tag, push it into stack!
 printf("[%d OK]", token);
+			if(push(token)==-1)	printf("{***OVERFLOW***}");		// try to push the token
+			
 		} else {
 			printf("{?}");
+			pos=start+1;
 		}
 	}
 	
@@ -97,8 +100,9 @@ int main(void)
 
 	do {
 		c = tx[pt++];
-		if (c=='<') {	// tag is starting
-			pt=looktag(pt);
+		if (c=='<') {		// tag is starting
+		// should look for comments here
+			pt=looktag(pt);		// detect token and execute
 			while (tx[pt++] != '>')	printf("%c·",tx[pt-1]);	// look for the end of the tag
 		}
 		else {
