@@ -1,6 +1,6 @@
 /*
  * miniGaal, VERY elementary HTML browser for minimOS
- * last modified 20180412-1421
+ * last modified 20180412-1425
  * */
 
 #include <stdio.h>
@@ -61,11 +61,13 @@ int looktag(int pos) {
 			found=1;							// we have found a label!
 			printf("OK\n");
 		} else {
+			printf("<No>");
 			// different label, skip from list and try next one
-			if (tags[lista++] != 0) {			// was it the last one?
+			if (tags[lista+1] == 0) {			// was it the last one?
 				ended=1;						// no more to scan
 			} else {
 				pos=start;						// otherwise will try next, back where it started
+				while(tags[lista++]!='*');		// skip current tag
 				token++;
 			}
 		}
@@ -85,7 +87,7 @@ printf("[%d OK]", token);
 // *** main code ***
 int main(void)
 {
-	int pt=0;
+	int pt=0, t;
 
 // init code
 	etiq.sp = 0;		// reset stack pointer!
@@ -103,7 +105,13 @@ int main(void)
 		if (c=='<') {		// tag is starting
 		// should look for comments here
 			pt=looktag(pt);		// detect token and execute
-			while (tx[pt++] != '>')	printf("%c·",tx[pt-1]);	// look for the end of the tag
+			while (tx[pt++] != '>') {
+				printf("%c·",tx[pt-1]);
+				if (tx[pt-1] == '/') {	// it is a closing tag
+					t=pop();			// try to read from stack
+				}
+					
+			}	// look for the end of the tag
 		}
 		else {
 			printf("%c", c);
