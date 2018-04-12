@@ -1,6 +1,6 @@
 /*
  * miniGaal, VERY elementary HTML browser for minimOS
- * last modified 20180410-1107
+ * last modified 20180412-1318
  * */
 
 #include <stdio.h>
@@ -8,16 +8,16 @@
 // Global variables
 
 struct pila {
-	int sp;
-	char v[32];
-} etiq;					// parsed tags stack
+	int		sp;
+	char	v[32];
+} etiq;
 
-char tags[] = { "html*head*title*body*p*h1*br", 0 };	// recognised tabs separated by asterisks!
+char tags[] = "html*head*title*body*p*h1*br\0" ;	// recognised tabs separated by asterisks!
 
 // Several functions
 char push(char token) {		// push a tokenised tag into stack
-	if (sp<32) {
-		v[sp++] = token;
+	if ((etiq.sp)<32) {
+		etiq.v[(etiq.sp)++] = token;
 		return token;
 	} else {
 		return -1;			// stack overflow!
@@ -25,22 +25,24 @@ char push(char token) {		// push a tokenised tag into stack
 }
 
 char pop(void) {			// pop a tokenised tag from stack
-	if (sp>0) {
-		return v[--sp];
+	if (etiq.sp>0) {
+		return etiq.v[--(etiq.sp)];
 	} else {
 		return -1;			// stack is empty
 	}
+}
 
-int looktag(int pos) {
+int looktag(int pos, char f[]) {
 	int start=pos;		// keep this position for retying
 	int lista=0;		// label-list scanning pointer
 	int found=0;		// will scan until found...
 	int ended=0;		// ...or the tag list ends
 	int token=0;		// token list counter
+	char del;			// found delimiter
 
 	while (!found && !ended) {
-		while (file[pos++] == tags[lista++]);	// scan until end of label, either way, or any difference found
-		del = file[pos];						// check whatever ended the label
+		while (f[pos++] == tags[lista++]);	// scan until end of label, either way, or any difference found
+		del = f[pos];						// check whatever ended the label
 		if ((tags[lista] == '*') && (del==' ' || del=='\t' || del=='\n' || del=='>' || del=='/')) {
 			// found a proper delimiter for this tag
 			found=1;							// we have found a label!
@@ -54,6 +56,7 @@ int looktag(int pos) {
 			}
 		}
 		if (!ended) {	// properly recognised tag, push it into stack!
+printf("OK");
 		}
 	}
 	
@@ -63,8 +66,13 @@ int looktag(int pos) {
 // *** main code ***
 int main(void)
 {
+	char file[1000], c;
+	int pt=0;
+
 // init code
 	etiq.sp = 0;		// reset stack pointer!
+
+	fgets(file, 1000, stdin);	// read keyboard
 
 //if < is found, look for the label
 //	push it into stack
@@ -73,15 +81,15 @@ int main(void)
 
 
 	do {
-		c = file[++pt];
+		c = file[pt++];
 		if (c=='<') {	// tag is starting
-			pt=looktag(pt+1);
-			while (file[pt++] != '>');
+			pt=looktag(pt, file);
+			while (file[pt++] != '>');	// look for the end of the tag
 		}
 		else {
 			printf("%c", c);
 		}
-	} while (true);
+	} while (file[pt]!='\0');
 
 	return 0;
 }
