@@ -1,6 +1,6 @@
 /*
  * miniGaal, VERY elementary HTML browser for minimOS
- * last modified 20180412-1425
+ * last modified 20180413-0826
  * */
 
 #include <stdio.h>
@@ -13,7 +13,7 @@ struct pila {
 	char	v[32];
 } etiq;					// detected tags stack
 
-char tags[] = "html*head*title*body*p*h1*br*hr*\0" ;	// recognised tags separated by asterisks!
+char tags[] = "html*head*title*body*p*h1*br*hr*a*\0" ;	// recognised tags separated by asterisks!
 /*
  * TOKEN numbers (-1 is invalid)
  * 0 = html (do nothing)
@@ -24,6 +24,7 @@ char tags[] = "html*head*title*body*p*h1*br*hr*\0" ;	// recognised tags separate
  * 5 = h1 (print text _with spaces between letters_)
  * 6 = br (print CR)
  * 7 = hr (print '------------------------------------')
+ * 8 = a (link????)
  * */
  
 // Several functions
@@ -53,7 +54,14 @@ int looktag(int pos) {
 	char del;			// found delimiter
 
 	while (!found && !ended) {
-		while (tx[pos++] == tags[lista++])	printf("%c...",tx[pos-1]);	// scan until end of label, either way, or any difference found
+		if (tx[pos] == '/') {	// it is a closing tag
+			token=pop();		// try to pull it from stack
+			printf("[CLOSE %d]", token);
+			return ++pos;
+		}
+		while (tx[pos++] == tags[lista++]) {
+			printf("%c...",tx[pos-1]);	// scan until end of label, either way, or any difference found
+		}
 		del = tx[pos-1];						// check whatever ended the label
 		printf("\n(delimiter %c, lista %c)", del, tags[lista-1]);
 		if ((tags[--lista] == '*') && (del==' ' || del=='\t' || del=='\n' || del=='>' || del=='/')) {
@@ -64,10 +72,11 @@ int looktag(int pos) {
 			printf("<No>");
 			// different label, skip from list and try next one
 			if (tags[lista+1] == 0) {			// was it the last one?
+				printf("{EOL}\n");
 				ended=1;						// no more to scan
 			} else {
 				pos=start;						// otherwise will try next, back where it started
-				while(tags[lista++]!='*');		// skip current tag
+				while(tags[lista++]!='*')	printf("_%c", tags[lista-1]);		// skip current tag
 				token++;
 			}
 		}
@@ -77,7 +86,7 @@ printf("[%d OK]", token);
 			
 		} else {
 			printf("{?}");
-			pos=start+1;
+			pos=start;
 		}
 	}
 	
@@ -104,17 +113,19 @@ int main(void)
 		c = tx[pt++];
 		if (c=='<') {		// tag is starting
 		// should look for comments here
+			printf("\nTag ");
 			pt=looktag(pt);		// detect token and execute
-			while (tx[pt++] != '>') {
-				printf("%c·",tx[pt-1]);
+			while ((tx[pt++] != '>') && (tx[pt-1]!='\0')) {
+				printf("%c>",tx[pt-1]);
 				if (tx[pt-1] == '/') {	// it is a closing tag
-					t=pop();			// try to read from stack
+					t=pop();			// try to pull it from stack
+					printf("[POP %d]", t);
 				}
 					
-			}	// look for the end of the tag
+			}
 		}
 		else {
-			printf("%c", c);
+			printf(":%c", c);
 		}
 	} while (tx[pt]!='\0');
 
