@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180415-1511
+; last modified 20180415-1519
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -21,7 +21,13 @@
 ; dd#		set A
 ; dd'		set P
 
-#include "../OS/usual.h"
+#ifndef	HEADERS
+#include "../OS/options.h"
+#include "../OS/macros.h"
+#include "../OS/abi.h"
+#include "../OS/zeropage.h"
+.text
+#endif
 
 ; **********************
 ; *** zeropage usage ***
@@ -40,6 +46,8 @@
 ; ******************
 ; *** init stuff ***
 ; ******************
+* = $8000
+
 	JSR njs_regs				; keep current state, is SP ok?
 	_STZA z_sp				; reset data stack pointer
 ; main loop
@@ -53,8 +61,8 @@ nm_eval:
 				BCC nm_next			; ignore
 			CMP #'0'			; not even number?
 			BCC nm_pun			; is command
-				JSR nm_num			; or push value into stack
-				BRA
+; or push value into stack
+				_BRA nm_next
 nm_pun:
 			ASL				; convert to index
 			TAX
@@ -258,6 +266,13 @@ nm_pop:
 	LDA stack, X
 	RTS
 
+nm_push:
+; * push A into stack *
+	LDX z_sp
+	INC z_sp
+	STA stack, X
+	RTS
+
 nm_shex:
 ; * show A value in hex *
 	PHA
@@ -284,7 +299,6 @@ nm_sdec:
 nm_out:
 nm_in:
 nm_read:
-nm_pop:
 ;************
 			CMP #'9'+1			; decimal number?
 				BCC nm_dec			; 0...9, no hex
