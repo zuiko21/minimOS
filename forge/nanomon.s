@@ -1,17 +1,18 @@
 ; minimOS nano-monitor
 ; v0.1a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180415-1330
+; last modified 20180415-1511
 
 ; *** stub as NMI handler ***
+; (aaaa=4 hex char on stack, dd=2 hex char on stack)
 ; aaaa,		read byte into stack
 ; ddaaaa!	write byte
 ; aaaa$		hex dump
 ; +		continue hex dump
 ; aaaa"		ASCII dump
 ; -		continue ASCII dump
-; /		pop and show in hex
-; .		pop and show in ASCII
+; dd/		pop and show in hex
+; dd.		pop and show in ASCII
 ; aaaa&		call address
 ; aaaa*		jump to address
 ; %		show regs
@@ -20,21 +21,40 @@
 ; dd#		set A
 ; dd'		set P
 
-; init stuff...
+#include "../OS/usual.h"
 
+; **********************
+; *** zeropage usage ***
+; **********************
+	z_acc	= locals			; try to use kernel parameter space
+	z_x	= z_acc+1			; must respect register order
+	z_y	= z_x+1
+	z_psr	= z_y+1
+	z_cur	= z_psr+1
+	z_sp	= z_cur+1
+	z_addr	= z_sp+1
+	z_dat	= z_addr+2
+	buff	= z_dat+1
+	stack	= $100
+
+; ******************
+; *** init stuff ***
+; ******************
+	JSR njs_regs				; keep current state, is SP ok?
+	_STZA z_sp				; reset data stack pointer
 ; main loop
 nm_main:
 		JSR nm_read			; get line
 nm_eval:
 			LDX z_cur
-			LDA buff, X			; one char
-				BEQ nm_main			; EOL
+			LDA buff, X			; get one char
+				BEQ nm_main			; if EOL, ask again
 			CMP #' '			; whitespace?
 				BCC nm_next			; ignore
 			CMP #'0'			; not even number?
 			BCC nm_pun			; is command
 				JSR nm_num			; or push value into stack
-
+				BRA
 nm_pun:
 			ASL				; convert to index
 			TAX
@@ -45,9 +65,11 @@ nm_next:
 			BNE nm_eval			; no need for BRA
 
 nm_exe:
-	_JMPX(nm_cmds)			; execute command
+	_JMPX(nm_cmds)			; *** execute command ***
 
+; **************************
 ; *** command jump table ***
+; **************************
 nm_cmds:
 	.word	nm_poke			; ddaaaa!	write byte
 	.word	nm_asc			; aaaa"	ASCII dump
@@ -65,7 +87,9 @@ nm_cmds:
 	.word	nm_apop			; dd.	show in ASCII
 	.word	nm_hpop			; dd/	show in hex
 
+; ************************
 ; *** command routines ***
+; ************************
 nm_poke:
 ; * poke value in memory *
 	JSR nm_pop
@@ -75,23 +99,63 @@ nm_poke:
 	_STAY(z_addr)
 	RTS
 
+nm_peek:
+; * peek value from memory and put it on stack *
+	JSR nm_gaddr
+	_LDAY(z_addr)
+	RTS
+
 nm_asc:
 ; * 16-char ASCII dump from address on stack *
 	JSR nm_gaddr
-
+nad_do:
+	LDY #0
+nad_loop:
+		STY z_dat
+		LDA (z_addr), Y
+		JSR nm_out
+		LDY z_dat
+		INY
+		CPY #16
+		BNE nad_loop
 	RTS
 
-nm_acc:
-; * set A *
-	JSR nm_pop
-	STA z_acc
-	RTS
+nm_admp:
+; * continue ASCII dump *
+	LDA z_addr
+	CLC
+	ADC #16
+	STA z_addr
+	BCC nad_nc
+		INC z_addr+1
+nad_nc:
+	_BRA nad_do
 
 nm_hex:
 ; * 8-byte hex dump from address on stack *
 	JSR nm_gaddr
-
+nhd_do:
+	LDY #0
+nhd_loop:
+		STY z_dat
+		LDA (z_addr), Y
+		JSR nm_shex
+		LDY z_dat
+		INY
+		CPY #8
+		BNE nhd_loop
 	RTS
+
+nm_dump:
+; * continue hex dump *
+	LDA z_addr
+	CLC
+	ADC #8
+	STA z_addr
+	BCC nhd_nc
+		INC z_addr+1
+nhd_nc:
+	_BRA nhd_do
 
 nm_regs:
 ; * show register values *
@@ -116,22 +180,10 @@ nmv_loop:
 nm_lab:
 	.asc	"aXYP"
 
-nm_jsr:
-; * call address on stack *
-	JSR nm_jmp
-; restore register values
-	PHP
-	STA z_acc
-	STX z_x
-	STY z_y
-	PLA
-	STA z_psr
-	RTS
-
-nm_psr:
-; * set P *
+nm_acc:
+; * set A *
 	JSR nm_pop
-	STA z_psr
+	STA z_acc
 	RTS
 
 nm_ix:
@@ -146,6 +198,26 @@ nm_iy:
 	STA z_y
 	RTS
 
+nm_psr:
+; * set P *
+	JSR nm_pop
+	STA z_psr
+	RTS
+
+nm_jsr:
+; * call address on stack *
+	JSR nm_jmp
+njs_regs:
+; restore register values
+	PHP
+	STA z_acc
+	STX z_x
+	STY z_y
+	PLA
+	STA z_psr
+; could scan for PC value here?
+	RTS
+
 nm_jmp:
 ; * jump to address on stack *
 	JSR nm_gaddr
@@ -158,22 +230,6 @@ nm_jmp:
 	PLP
 	JMP (z_addr)
 
-nm_dump:
-; * continue hex dump *
-
-	RTS
-
-nm_peek:
-; * peek value from memory and put it on stack *
-	JSR nm_gaddr
-	_LDAY(z_addr)
-	RTS
-
-nm_admp:
-; * continue ASCII dump *
-
-	RTS
-
 nm_apop:
 ; * pop value and show in ASCII *
 	JSR nm_pop
@@ -184,7 +240,9 @@ nm_hpop:
 	JSR nm_pop
 	JMP nm_shex				; print hex... and return
 
+; ***********************
 ; *** useful routines ***
+; ***********************
 nm_gaddr:
 ; * pop 16-bit address in z_addr *
 	JSR nm_pop
@@ -195,9 +253,9 @@ nm_gaddr:
 
 nm_pop:
 ; * pop 8-bit data in A *
-	DEC nm_sp
-	LDX nm_sp
-	LDA z_stack, X
+	DEC z_sp
+	LDX z_sp
+	LDA stack, X
 	RTS
 
 nm_shex:
@@ -223,9 +281,9 @@ nm_sdec:
 	JSR nm_out					; print it
 	RTS
 
-nm_pop:
-nm_pop:
-nm_pop:
+nm_out:
+nm_in:
+nm_read:
 nm_pop:
 ;************
 			CMP #'9'+1			; decimal number?
