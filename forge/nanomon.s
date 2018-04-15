@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180415-1519
+; last modified 20180415-1621
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -27,6 +27,7 @@
 #include "../OS/abi.h"
 #include "../OS/zeropage.h"
 .text
+* = $8000
 #endif
 
 ; **********************
@@ -46,9 +47,17 @@
 ; ******************
 ; *** init stuff ***
 ; ******************
-* = $8000
 
-	JSR njs_regs				; keep current state, is SP ok?
+	JSR njs_regs				; keep current state, is PSR ok?
+; ** procedure for storing PC & PSR values at interrupt time **
+	TSX
+	LDA $101, X				; get stacked PSR
+	STA z_psr				; update value
+	LDY $102, X				; get stacked PC
+	LDA $103, X
+	STY z_addr				; update current pointer
+	STA z_addr+1
+; ** remove code above if not needed **
 	_STZA z_sp				; reset data stack pointer
 ; main loop
 nm_main:
@@ -61,8 +70,7 @@ nm_eval:
 				BCC nm_next			; ignore
 			CMP #'0'			; not even number?
 			BCC nm_pun			; is command
-; or push value into stack
-				_BRA nm_next
+				JMP nm_num			; or push a value
 nm_pun:
 			ASL				; convert to index
 			TAX
@@ -80,30 +88,28 @@ nm_exe:
 ; **************************
 nm_cmds:
 	.word	nm_poke			; ddaaaa!	write byte
-	.word	nm_asc			; aaaa"	ASCII dump
-	.word	nm_acc			; dd#	set A
-	.word	nm_hex			; aaaa$	hex dump
-	.word	nm_regs			; %	view regs
-	.word	nm_jsr			; aaaa&	call
-	.word	nm_psr			; dd'	set P
-	.word	nm_ix			; dd(	set X
-	.word	nm_iy			; dd)	set Y
-	.word	nm_jmp			; aaaa*	jump
-	.word	nm_dump			; +	continue hex dump
-	.word	nm_peek			; aaaa,	read byte and push
-	.word	nm_admp			; -	continue ASCII dump
-	.word	nm_apop			; dd.	show in ASCII
-	.word	nm_hpop			; dd/	show in hex
+	.word	nm_asc			; aaaa"		ASCII dump
+	.word	nm_acc			; dd#		set A
+	.word	nm_hex			; aaaa$		hex dump
+	.word	nm_regs			; %		view regs
+	.word	nm_jsr			; aaaa&		call
+	.word	nm_psr			; dd'		set P
+	.word	nm_ix			; dd(		set X
+	.word	nm_iy			; dd)		set Y
+	.word	nm_jmp			; aaaa*		jump
+	.word	nm_dump			; +		continue hex dump
+	.word	nm_peek			; aaaa,		read byte and push
+	.word	nm_admp			; -		continue ASCII dump
+	.word	nm_apop			; dd.		show in ASCII
+	.word	nm_hpop			; dd/		show in hex
 
 ; ************************
 ; *** command routines ***
 ; ************************
 nm_poke:
 ; * poke value in memory *
-	JSR nm_pop
-	STA z_dat
 	JSR nm_gaddr
-	LDA z_dat
+	JSR nm_pop
 	_STAY(z_addr)
 	RTS
 
@@ -111,12 +117,13 @@ nm_peek:
 ; * peek value from memory and put it on stack *
 	JSR nm_gaddr
 	_LDAY(z_addr)
-	RTS
+	JMP nm_push				; push... and return
 
 nm_asc:
 ; * 16-char ASCII dump from address on stack *
 	JSR nm_gaddr
-nad_do:
+nm_admp:
+; * continue ASCII dump *
 	LDY #0
 nad_loop:
 		STY z_dat
@@ -126,23 +133,13 @@ nad_loop:
 		INY
 		CPY #16
 		BNE nad_loop
-	RTS
-
-nm_admp:
-; * continue ASCII dump *
-	LDA z_addr
-	CLC
-	ADC #16
-	STA z_addr
-	BCC nad_nc
-		INC z_addr+1
-nad_nc:
-	_BRA nad_do
+	BEQ ndump_end
 
 nm_hex:
 ; * 8-byte hex dump from address on stack *
 	JSR nm_gaddr
-nhd_do:
+nm_dump:
+; * continue hex dump *
 	LDY #0
 nhd_loop:
 		STY z_dat
@@ -152,18 +149,15 @@ nhd_loop:
 		INY
 		CPY #8
 		BNE nhd_loop
-	RTS
-
-nm_dump:
-; * continue hex dump *
-	LDA z_addr
+ndump_end:
+	TYA
 	CLC
-	ADC #8
+	ADC z_addr
 	STA z_addr
 	BCC nhd_nc
 		INC z_addr+1
 nhd_nc:
-	_BRA nhd_do
+	RTS
 
 nm_regs:
 ; * show register values *
@@ -186,7 +180,7 @@ nmv_loop:
 		BNE nmv_loop
 	RTS
 nm_lab:
-	.asc	"aXYP"
+	.asc	"aXYp"
 
 nm_acc:
 ; * set A *
@@ -223,7 +217,6 @@ njs_regs:
 	STY z_y
 	PLA
 	STA z_psr
-; could scan for PC value here?
 	RTS
 
 nm_jmp:
@@ -254,9 +247,9 @@ nm_hpop:
 nm_gaddr:
 ; * pop 16-bit address in z_addr *
 	JSR nm_pop
-	STA z_addr+1
-	JSR nm_pop
 	STA z_addr
+	JSR nm_pop
+	STA z_addr+1
 	RTS
 
 nm_pop:
@@ -298,8 +291,41 @@ nm_sdec:
 
 nm_out:
 nm_in:
+
 nm_read:
+; * input command line into buffer *
+	LDX #0
+nr_loop:
+		STX z_cur
+nl_ign:
+		JSR nm_in
+		CMP #CR
+			BEQ nl_end
+		CMP #BS
+			BEQ nl_bs
+		CMP #' '
+			BCC nl_ign
+		PHA
+		JSR nm_out
+		PLA
+		LDX z_cur
+		STA buff, X
+		INX
+		BNE nr_loop
+nl_end:
+	JSR nm_out
+	LDX z_cur
+	_STZA buff, X
+	_STZA z_cur
+	RTS
+nl_bs:
+		JSR nm_out
+		LDX z_cur
+		DEX
+		_BRA nr_loop
+
 ;************
+nm_num:
 			CMP #'9'+1			; decimal number?
 				BCC nm_dec			; 0...9, no hex
 ; here must be hex number, carry is set
