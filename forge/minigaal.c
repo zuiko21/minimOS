@@ -1,6 +1,6 @@
 /*
  * miniGaal, VERY elementary HTML browser for minimOS
- * last modified 20180413-1014
+ * last modified 20180416-1033
  * */
 
 #include <stdio.h>
@@ -33,7 +33,7 @@ char push(char token) {		// push a tokenised tag into stack, return tag# or -1 i
 		etiq.v[(etiq.sp)++] = token;
 		return token;
 	} else {
-		return -1;			// stack overflow!
+		return 0;			// stack overflow!
 	}
 }
 
@@ -41,7 +41,7 @@ char pop(void) {			// pop a tokenised tag from stack, or -1 if empty
 	if (etiq.sp>0) {
 		return etiq.v[--(etiq.sp)];
 	} else {
-		return -1;			// stack is empty
+		return 0;			// stack is empty
 	}
 }
 
@@ -112,6 +112,7 @@ int main(void)
 {
 	int pt=0, t;
 	char c;
+	int tit=0;			// flag if title is defined
 
 // init code
 	etiq.sp = 0;				// reset stack pointer!
@@ -130,46 +131,55 @@ int main(void)
 		// should look for comments here
 			printf("\nTag ");
 			t=tag(pt);			// detect token
+			if (t)		push(t);	// push the token!
 			// identify and execute the token
 			switch(t) {
-				case 1:				// <html> (do nothing)
+				case 1:
+				case 4:				// <html> <body> (do nothing)
 					break;
 				case 2:				// <head> (expect for title at least)
 					break;
 				case 3:				// <title> (show betweeen [])
-					break;
-				case 4:				// <body> (do nothing)
-					break;
-				case 5:				// <p> (print text, then a couple of CRs)
+					tit=-1;
+					printf("\n[");
 					break;
 				case 6:				// <h1> (print text _with spaces between letters_)
 					break;
 				case 7:				// <br> (print CR)
+					printf("\n");
 					break;
 				case 8:				// <hr> (print '------------------------------------')
+					printf("\n-----------------------------------------\n");
 					break;
 				case 9:				// <a> (link????)
+					printf("_");
 					break;
 				// closing tags
-				case -1:			// <html> (do nothing)
+				case -1:
+				case -4:			// </html> </body> (do nothing)
 					break;
-				case -2:			// <head> (expect for title at least)
+				case -2:			// </head> (expect for title at least)
+					if (!tit)		printf("\n[]\n");
 					break;
-				case -3:			// <title> (show betweeen [])
+				case -3:			// </title> (show betweeen [])
+					printf("]\n");
 					break;
-				case -4:			// <body> (do nothing)
+				case -5:			// </p> (print text, then a couple of CRs)
+					printf("\n\n");
 					break;
-				case -5:			// <p> (print text, then a couple of CRs)
+				case -6:			// </h1> (print text _with spaces between letters_)
 					break;
-				case -6:			// <h1> (print text _with spaces between letters_)
+				case -7:			// <br /> (print CR) really needed in autoclose?
+//					printf("\n");
 					break;
-				case -7:			// <br> (print CR)
+				case -8:			// <hr /> (print '------------------------------------'), really needed?
+//					printf("\n-----------------------------------------\n");
 					break;
-				case -8:			// <hr> (print '------------------------------------')
-					break;
-				case -9:			// <a> (link????)
-					break;
-				default:
+				case -9:			// </a> (link????)
+					printf("_");
+//					break;
+//				default:
+//					prinf("<?>");
 			}
 			while ((tx[pt++] != '>') && (tx[pt-1]!='\0')) {
 				printf("%c>",tx[pt-1]);
