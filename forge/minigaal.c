@@ -1,6 +1,6 @@
 /*
  * miniGaal, VERY elementary HTML browser for minimOS
- * last modified 20180416-1047
+ * last modified 20180416-1056
  * */
 
 #include <stdio.h>
@@ -129,6 +129,7 @@ int main(void)
 	int pt=0, t;
 	char c;
 	int tit=0;			// flag if title is defined
+	int head=0;			// flag for heading mode
 
 // init code
 	etiq.sp = 0;				// reset stack pointer!
@@ -161,7 +162,12 @@ int main(void)
 					tit=-1;
 					printf("\n[");
 					break;
+				case 5:				// <p> (print text, then a couple of CRs)
+					printf("\n\n");
+					break;
 				case 6:				// <h1> (print text _with spaces between letters_)
+					head=-1;
+					printf("\n\n");
 					break;
 				case 7:				// <br> (print CR)
 					printf("\n");
@@ -186,6 +192,8 @@ int main(void)
 					printf("\n\n");
 					break;
 				case -6:			// </h1> (print text _with spaces between letters_)
+					head=0;
+					printf("\n\n");
 					break;
 				case -7:			// <br /> (print CR) really needed in autoclose?
 //					printf("\n");
@@ -217,6 +225,7 @@ int main(void)
 			printf(":");
 #endif
 			printf("%c", c);
+			if (head)	printf(" ");
 		}
 	} while (tx[pt]!='\0');
 
