@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1a1
+; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180415-1621
+; last modified 20180416-0904
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -33,32 +33,33 @@
 ; **********************
 ; *** zeropage usage ***
 ; **********************
-	z_acc	= locals			; try to use kernel parameter space
-	z_x	= z_acc+1			; must respect register order
+	z_acc	= locals	; try to use kernel parameter space
+	z_x	= z_acc+1		; must respect register order
 	z_y	= z_x+1
-	z_psr	= z_y+1
+	z_psr	= z_y+1		; if a loop is needed, put z_addr immediately after this
 	z_cur	= z_psr+1
 	z_sp	= z_cur+1
 	z_addr	= z_sp+1
 	z_dat	= z_addr+2
-	buff	= z_dat+1
+	z_tmp	= z_dat+1
+	buff	= z_tmp+1
 	stack	= $100
 
 ; ******************
 ; *** init stuff ***
 ; ******************
 
-	JSR njs_regs				; keep current state, is PSR ok?
-; ** procedure for storing PC & PSR values at interrupt time **
+	JSR njs_regs		; keep current state, is PSR ok?
+; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
 	TSX
-	LDA $101, X				; get stacked PSR
-	STA z_psr				; update value
-	LDY $102, X				; get stacked PC
+	LDA $101, X			; get stacked PSR
+	STA z_psr			; update value
+	LDY $102, X			; get stacked PC
 	LDA $103, X
-	STY z_addr				; update current pointer
+	STY z_addr			; update current pointer
 	STA z_addr+1
 ; ** remove code above if not needed **
-	_STZA z_sp				; reset data stack pointer
+	_STZA z_sp			; reset data stack pointer
 ; main loop
 nm_main:
 		JSR nm_read			; get line
@@ -121,42 +122,40 @@ nm_peek:
 
 nm_asc:
 ; * 16-char ASCII dump from address on stack *
+; note common code with hex dump
 	JSR nm_gaddr
 nm_admp:
 ; * continue ASCII dump *
-	LDY #0
-nad_loop:
-		STY z_dat
-		LDA (z_addr), Y
-		JSR nm_out
-		LDY z_dat
-		INY
-		CPY #16
-		BNE nad_loop
-	BEQ ndump_end
+	LDY #16				; number of bytes
+	LDA #255			; this (negative) means ASCII dump
+	BNE nd_reset		; common routine, was not zero anyway, no need for BRA
 
 nm_hex:
 ; * 8-byte hex dump from address on stack *
+; alternate version 35+9b (was 30+21b)
 	JSR nm_gaddr
 nm_dump:
 ; * continue hex dump *
-	LDY #0
+	LDY #8				; number of bytes
+	TYA					; this (positive) means HEX dump
+nd_reset:
+	STY z_tmp			; stored as counter
+	STA z_dat			; stored as flag (negative means ASCII dump)
 nhd_loop:
-		STY z_dat
-		LDA (z_addr), Y
+		_LDAY(z_addr)		; get byte from mutable pointer
+		BIT z_dat			; check dump type
+		BPL nhd_do			; positive means HEX dump
+			JSR nm_out			; otherwise is ASCII
+			_BRA nd_done		; go for next
+nhd_do:
 		JSR nm_shex
-		LDY z_dat
-		INY
-		CPY #8
-		BNE nhd_loop
-ndump_end:
-	TYA
-	CLC
-	ADC z_addr
-	STA z_addr
-	BCC nhd_nc
-		INC z_addr+1
+nd_done:
+		INC z_addr			; update pointer
+		BNE nhd_nc
+			INC z_addr+1
 nhd_nc:
+		DEC z_tmp			; one less to go
+		BNE nhd_loop
 	RTS
 
 nm_regs:
@@ -164,47 +163,47 @@ nm_regs:
 ; format a$$ X$$ Y$$ P$$
 ; alternate attempt is 23+1b (instead of 55+1) if nm_out respects X!
 ; added 6b as X saved in z_dat
-	LDX #0
+; saved 2 bytes going backwards
+	LDX #3				; max offset
 nmv_loop:
-		STX z_dat				; just in case
+		STX z_dat			; just in case
 		LDA nm_lab, X
 		JSR nm_out
-		LDX z_dat				; just in case
+		LDX z_dat			; just in case
 		LDA z_acc, X
 		JSR nm_shex
 		LDA #' '
 		JSR nm_out
-		LDX z_dat				; just in case
-		INX
-		CPX #4
-		BNE nmv_loop
+		LDX z_dat			; just in case
+		DEX					; go back for next
+		BPL nmv_loop		; zero will be last
 	RTS
 nm_lab:
-	.asc	"aXYp"
+	.asc	"pYXa"		; register labels, note reversed index
 
 nm_acc:
 ; * set A *
+; alternate 9+3x4=21b (these were 4x6=24b)
+	LDY #0
+nm_rgst:
 	JSR nm_pop
-	STA z_acc
+	STA !z_acc, Y		; ABSOLUTE Y-indexed, non 65816-savvy! Could use TAX & STX zp, Y (same bytes, bit slower but compliant)
 	RTS
 
 nm_ix:
 ; * set X *
-	JSR nm_pop
-	STA z_x
-	RTS
+	LDY #z_x-z_acc		; non-constant, safe way
+	BNE nm_rgst			; common code
 
 nm_iy:
 ; * set Y *
-	JSR nm_pop
-	STA z_y
-	RTS
+	LDY #z_y-z_acc		; non-constant, safe way
+	BNE nm_rgst			; common code
 
 nm_psr:
 ; * set P *
-	JSR nm_pop
-	STA z_psr
-	RTS
+	LDY #z_psr-z_acc	; non-constant, safe way
+	BNE nm_rgst			; common code
 
 nm_jsr:
 ; * call address on stack *
