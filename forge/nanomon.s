@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180416-0904
+; last modified 20180416-1000
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -67,22 +67,33 @@ nm_eval:
 			LDX z_cur
 			LDA buff, X			; get one char
 				BEQ nm_main			; if EOL, ask again
-			CMP #' '			; whitespace?
-				BCC nm_next			; ignore
-			CMP #'0'			; not even number?
-			BCC nm_pun			; is command
-				JMP nm_num			; or push a value
-nm_pun:
-			ASL				; convert to index
-			TAX
-			JSR nm_exe
+; current nm_read rejects whitespace altogether
+;			CMP #' '			; whitespace?
+;				BCC nm_next			; ignore
+			CMP #'0'			; is it a number?
+			BCS nm_num			; push its value
+				JSR nm_exe			; otherwise it is a command
+				_BRA nm_next		; do not process number in this case
+; ** pick a hex number and push it into stack**
+nm_num:
+			JSR nm_hx2n			; convert from hex and keep nibble in z_dat
+			INC z_cur
+			LDA buff, X			; pick next hex
+;				BEQ nm_main			; must be in pairs! would be catastrophic at the very end!
+			JSR nm_hx2n			; convert another nibble (over the previous one)
+;			LDA z_dat			; get fully converted byte... (already in A)
+			JSR nm_push			; ...pushed into data stack
 nm_next:
 ; read next char in input and proceed
 			INC z_cur			; go for next
 			BNE nm_eval			; no need for BRA
 
+; ** indexed jump to command routine (must be called from main loop) **
 nm_exe:
-	_JMPX(nm_cmds)			; *** execute command ***
+	ASL					; convert to index
+	TAX
+	_JMPX(nm_cmds)		; *** execute command ***
+
 
 ; **************************
 ; *** command jump table ***
@@ -167,19 +178,19 @@ nm_regs:
 	LDX #3				; max offset
 nmv_loop:
 		STX z_dat			; just in case
-		LDA nm_lab, X
+		LDA nm_lab, X		; get label from list
 		JSR nm_out
 		LDX z_dat			; just in case
-		LDA z_acc, X
-		JSR nm_shex
-		LDA #' '
+		LDA z_acc, X		; get register value, must match order!
+		JSR nm_shex			; show in hex
+		LDA #' '			; put a space between registers
 		JSR nm_out
 		LDX z_dat			; just in case
 		DEX					; go back for next
 		BPL nmv_loop		; zero will be last
 	RTS
 nm_lab:
-	.asc	"pYXa"		; register labels, note reversed index
+	.asc	"aXYp"		; register labels, will be printed in reverse!
 
 nm_acc:
 ; * set A *
@@ -187,7 +198,9 @@ nm_acc:
 	LDY #0
 nm_rgst:
 	JSR nm_pop
-	STA !z_acc, Y		; ABSOLUTE Y-indexed, non 65816-savvy! Could use TAX & STX zp, Y (same bytes, bit slower but compliant)
+; use this instead of ABSOLUTE Y-indexed, non 65816-savvy! (same bytes, bit slower but 816-compliant)
+	TAX
+	STX z_acc, Y
 	RTS
 
 nm_ix:
@@ -207,53 +220,53 @@ nm_psr:
 
 nm_jsr:
 ; * call address on stack *
-	JSR nm_jmp
+	JSR nm_jmp			; jump as usual, hopefully will return here
 njs_regs:
 ; restore register values
-	PHP
+	PHP					; flags are delicate and cannot be directly STored
 	STA z_acc
 	STX z_x
 	STY z_y
-	PLA
+	PLA					; this was the saved status reg
 	STA z_psr
 	RTS
 
 nm_jmp:
 ; * jump to address on stack *
-	JSR nm_gaddr
+	JSR nm_gaddr		; pick desired address
 ; preload registers
 	LDA z_psr
-	PHA
+	PHA					; P cannot be directly LoaDed, thus push it
 	LDA z_acc
 	LDX z_x
 	LDY z_y
-	PLP
-	JMP (z_addr)
+	PLP					; just before jumping, set flags
+	JMP (z_addr)		; go! not sure if it will ever return...
 
 nm_apop:
 ; * pop value and show in ASCII *
 	JSR nm_pop
-	JMP nm_out				; print... and return
+	JMP nm_out			; print... and return
 
 nm_hpop:
 ; * pop value and show in hex *
 	JSR nm_pop
-	JMP nm_shex				; print hex... and return
+	JMP nm_shex			; print hex... and return
 
 ; ***********************
 ; *** useful routines ***
 ; ***********************
 nm_gaddr:
 ; * pop 16-bit address in z_addr *
-	JSR nm_pop
+	JSR nm_pop			; will pop LSB first
 	STA z_addr
-	JSR nm_pop
+	JSR nm_pop			; then goes MSB
 	STA z_addr+1
 	RTS
 
 nm_pop:
 ; * pop 8-bit data in A *
-	DEC z_sp
+	DEC z_sp			; pre-decrement index
 	LDX z_sp
 	LDA stack, X
 	RTS
@@ -261,75 +274,100 @@ nm_pop:
 nm_push:
 ; * push A into stack *
 	LDX z_sp
-	INC z_sp
+	INC z_sp			; post-increment index
 	STA stack, X
 	RTS
 
 nm_shex:
 ; * show A value in hex *
-	PHA
+	PHA					; keep whole value for later LSNibble
 ; extract MSNibble
 	LSR
 	LSR
 	LSR
 	LSR
-	JSR nm_hprn
+	JSR nm_hprn			; print this in hex
 ; now retrieve LSNibble
 	PLA
-	AND #$0F
+	AND #$0F			; clear MSNibble bits
 nm_hprn:
 ; print A value as a hex digit
-	CMP #10
+	CMP #10				; should it use a letter?
 	BCC nm_sdec
-		ADC #6					; C was set
+		ADC #6				; as C was set, this will skip ASCII 58 to 65, and so on
 nm_sdec:
 ; convert to ASCII
-	ADC #'0'					; C is clear
-	JSR nm_out					; print it
-	RTS
+	ADC #'0'			; C is clear for sure
+	JMP nm_out			; print it... and return
 
 nm_out:
+; *** standard output ***
+; placeholder for run816 emulation
+	JSR $c0c2
+	RTS
+
 nm_in:
+; *** standard input ***
+; placeholder for run816 emulation
+		JSR $c0bf
+		CMP #0				; something arrived?
+		BEQ nm_in			; it is locking input
+	RTS
 
 nm_read:
 ; * input command line into buffer *
-	LDX #0
+; good to put some prompt before
+	LDA z_addr+1		; PC.MSB
+	JSR nm_shex			; as hex
+	LDA z_addr			; same for LSB
+	JSR nm_shex
+	LDA #'>'			; prompt sign
+	JSR nm_out
+	LDX #0				; reset cursor
 nr_loop:
-		STX z_cur
+		STX z_cur			; keep in memory, just in case
 nl_ign:
 		JSR nm_in
-		CMP #CR
-			BEQ nl_end
-		CMP #BS
-			BEQ nl_bs
-		CMP #' '
-			BCC nl_ign
-		PHA
-		JSR nm_out
+		CMP #CR				; is it newline?
+			BEQ nl_end			; if so, just end input
+		CMP #BS				; was it backspace?
+			BEQ nl_bs			; delete then
+		CMP #' '			; whitespace?
+			BCC nl_ign			; simply ignore it!
+		PHA					; save what was received...
+		JSR nm_out			; ...in case it gets affected
 		PLA
-		LDX z_cur
-		STA buff, X
-		INX
+		LDX z_cur			; retrieve cursor
+; could check bounds here
+		STA buff, X			; store char in buffer
+		INX					; go for next (no need for BRA)
 		BNE nr_loop
 nl_end:
-	JSR nm_out
-	LDX z_cur
-	_STZA buff, X
-	_STZA z_cur
+	JSR nm_out			; must echo CR
+	LDX z_cur			; retrieve cursor as usual
+	_STZA buff, X		; terminate string!
+	_STZA z_cur			; and reset cursor too
 	RTS
 nl_bs:
-		JSR nm_out
-		LDX z_cur
-		DEX
-		_BRA nr_loop
+	JSR nm_out			; will echo BS
+	LDX z_cur			; retrieve cursor as usual
+		BEQ nr_loop			; do not delete if already at beginning
+	DEX					; otherwise go back once
+	_BRA nr_loop
 
-;************
-nm_num:
-			CMP #'9'+1			; decimal number?
-				BCC nm_dec			; 0...9, no hex
-; here must be hex number, carry is set
-			SBC #65-58			; A...F turns into 10...15, +C
+nm_hx2n:
+; * convert from hex and ADD nibble to z_dat *
+	ASL z_dat			; old value times 16 (A will be low nibble now)
+	ASL z_dat
+	ASL z_dat
+	ASL z_dat
+	SEC
+	SBC #'0'			; convert from ASCII to value (with a skip over 10)
+	CMP #10				; was it a letter?
+	BCC nm_dec			; no, just store it
+		SBC #'A'-'9'-1		; yes, make it 10...15 (C was set)
 nm_dec:
-			SEC
-			SBC #'0'			; convert decimal char into value
+	ORA z_dat			; add this nibble to older MSNibble (lower bits are clear)
+	STA z_dat			; ready to go (and full result in A, too)
+	RTS
 
