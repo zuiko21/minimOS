@@ -1,6 +1,6 @@
 /*
  * miniGaal, VERY elementary HTML browser for minimOS
- * last modified 20180416-1033
+ * last modified 20180416-1047
  * */
 
 #include <stdio.h>
@@ -60,31 +60,47 @@ char tag(int pos) {		// detect tags and return token number (negative if CLOSING
 			}
 			else
 			{
+#ifdef	DEBUG
 				printf("[CLOSE %d]", token);
+#endif
 				// do something here?
 			}
 			return -token;			// report it and do not look further, NOTE SIGN
 		}
 		// find a matching substring
 		while (tx[pos++] == tags[cur++]) {
+#ifdef	DEBUG
 			printf("%c...",tx[pos-1]);
+#endif
 		}
 		// check whether there is a recognised tag, or a mismatch
 		del = tx[pos-1];			// check whatever ended the label
+#ifdef	DEBUG
 		printf("\n(delimiter %c, lista %c)", del, tags[cur-1]);
+#endif
 		if ((tags[--cur] == '*') && (del==' ' || del=='\t' || del=='\n' || del=='>' || del=='/')) {
 			// found a proper delimiter for this tag
+#ifdef	DEBUG
 			printf("OK\n");
+#endif
 			return token;				// is this OK already?
 		} else {					// string did not match label
+#ifdef	DEBUG
 			printf("<No>");
+#endif
 			if (tags[cur+1] == '\0') {	// was it the last one?
+#ifdef	DEBUG
 				printf("{EOL}\n");
+#endif
 				return 0;					// no more to scan
 			} else {
 				// skip label from list and try next one
 				pos=start;					// otherwise will try next, back where it started
-				while(tags[cur++]!='*')	printf("_%c", tags[cur-1]);		// skip current tag
+				while(tags[cur++]!='*') {
+#ifdef	DEBUG
+					printf("_%c", tags[cur-1]);		// skip current tag
+#endif
+				}
 				token++;
 				if (tags[cur] == '\0')		return 0;	// no more tags to scan!
 			}
@@ -129,7 +145,9 @@ int main(void)
 		c = tx[pt++];
 		if (c=='<') {		// tag is starting
 		// should look for comments here
+#ifdef	DEBUG
 			printf("\nTag ");
+#endif
 			t=tag(pt);			// detect token
 			if (t)		push(t);	// push the token!
 			// identify and execute the token
@@ -182,16 +200,23 @@ int main(void)
 //					prinf("<?>");
 			}
 			while ((tx[pt++] != '>') && (tx[pt-1]!='\0')) {
+#ifdef	DEBUG
 				printf("%c>",tx[pt-1]);
+#endif
 				if (tx[pt-1] == '/') {	// it is a closing tag
 					t=pop();			// try to pull it from stack
+#ifdef	DEBUG
 					printf("[POP %d]", t);
+#endif
 				}
 					
 			}
 		}
 		else {
-			printf(":%c", c);
+#ifdef	DEBUG
+			printf(":");
+#endif
+			printf("%c", c);
 		}
 	} while (tx[pt]!='\0');
 
