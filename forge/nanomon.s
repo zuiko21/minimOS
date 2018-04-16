@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180416-1000
+; last modified 20180416-1008
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -34,8 +34,8 @@
 ; *** zeropage usage ***
 ; **********************
 	z_acc	= locals	; try to use kernel parameter space
-	z_x	= z_acc+1		; must respect register order
-	z_y	= z_x+1
+	z_x		= z_acc+1	; must respect register order
+	z_y		= z_x+1
 	z_psr	= z_y+1		; if a loop is needed, put z_addr immediately after this
 	z_cur	= z_psr+1
 	z_sp	= z_cur+1
@@ -78,6 +78,7 @@ nm_eval:
 nm_num:
 			JSR nm_hx2n			; convert from hex and keep nibble in z_dat
 			INC z_cur
+			LDX z_cur			; eeeeeeeeeeeeeeeeeeeeeeeeeek
 			LDA buff, X			; pick next hex
 ;				BEQ nm_main			; must be in pairs! would be catastrophic at the very end!
 			JSR nm_hx2n			; convert another nibble (over the previous one)
