@@ -1,7 +1,7 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180418-1242
+; last modified 20180418-1404
 
 #include "../OS/usual.h"
 
@@ -54,66 +54,56 @@ pl_ok:
 
 look_tag:
 ; * detect tags from offset pt and return token number in A (inverted if CLOSING, zero if invalid) *
-	LDY pt				; get original pointer
-	LDA pt+1
-	STY tmp				; store working copy
-	STA tmp+1
-	LDX #1				; reset token counter...
+	LDX #1				; reset token counter... [token=1]
 	STX cnt
-	DEX					; ...and scanning index too (could use -1 offset and waive this DEX)
+	DEX					; ...and scanning index too (could use -1 offset and waive this DEX) [cur=0]
 ; scanning loop, will use tmp as working pointer, retrieving value from pt instead
-lt_loop:
-		LDY #0				; reset short range index
-		LDA (tmp), Y		; look for /
-		CMP #'/'			; closing tag?
+lt_loop:				; [while (-1) {]
+		LDY #0				; reset short range index [pos=start...]
+		LDA (tmp), Y		; looking for '/'
+		CMP #'/'			; closing tag?  [if (tx[pos] == '/') {]
 		BNE no_close		; not, do no pop
-			JMP pop				; yes, pop last registered tag... and return to caller!
-no_close:
+			JSR pop				; yes, pop last registered tag [token=pop()]
+			EOR #$FF			; ones complement eeeeeeeeeeeeeeeeeek
+			RTS					; [return -token]
+no_close:					; [}]
 lt_sbstr:
 ; find matching substring
-			LDA (tmp), Y		; char in source...
-			CMP tags, X			; ...against tag list
-			BEQ lts_nxt			; coincide, thus try next one
+			LDA tags, X			; char in tag list... [while (tags[cur]] 
+			CMP (tmp), Y		; ...against source [== tx[pos]) {]
+			BNE lts_nxt			; does not coincide
+				INX					; advance both indexes... hopefully 256 bytes from X will suffice!
+				INY					; these are [pos++; cur++;}] from scanning while
+			BNE lt_sbstr		; no real need for BRA
 ; first mismatch
-				LDA tags, X			; now A is the next char in tag list
-				CMP #'*'			; tag in list was ended?
-				BNE lt_mis			; no, try next tag
-					LDA (tmp), Y		; yes, now check for a suitable delimiter in source
-					CMP #'>'			; tag end?
-						BEQ lt_tag			; it is suitable!
-					CMP #' '			; space?
-						BEQ lt_tag			; it is suitable!
-					CMP #CR				; newline (whitespace)?
-						BEQ lt_tag			; it is suitable!
-					CMP #HTAB			; tabulator (whitespace)?
+lst_nxt:
+			CMP #'*'			; tag in list was ended? [if ((tags[--cur] == '*')]
+			BNE lt_mis			; no, try next tag [ && ]
+				LDA (tmp), Y		; yes, now check for a suitable delimiter in source [del = tx[pos];]
+				CMP #'>'			; tag end? [(del=='>' ||]
+					BEQ lt_tag			; it is suitable!
+				CMP #' '			; space? [del==' ' ||]
+					BEQ lt_tag			; it is suitable!
+				CMP #CR				; newline (whitespace)? [del=='\n' ||]
+					BEQ lt_tag			; it is suitable!
+				CMP #HTAB			; tabulator (whitespace)? [del=='\t')) {]
 					BNE lt_longer		; if none of the above, keep trying
-lt_tag:
-						LDA tok				; finally return token
-						RTS
+lt_tag:			LDA tok				; finally return token [return token]
+				RTS
 lt_longer:
-				DEX					; ...as we already are at the end of a listed label
+			DEX					; ...as we already are at the end of a listed label [} else {]
 lt_mis:
 ; skip label from list and try next one
-				LDA pt				; get original pointer
-				STA tmp				; store working copy
-				LDA pt+1			; MSB too, must respect Y
-				STA tmp+1
+			LDY #0				; back to source original position [pos=start]
 lts_skip:
-					INX					; advance in tag list
-					LDA tags, X			; check what is pointing now
-					CMP #'*'			; label separator?
-					BNE lst_skip		; not yet, keep scanning
-				INC cnt				; another label skipped
-				LDA tags+1, X		; check whether ended
-				BEQ lt_no			; yeah, go away
-;			BNE lt_sbstr		; not ended, thus may try another
-lst_nxt:
-			INX					; advance both indexes... hopefully 256 bytes from X will suffice!
-			INY
-			BNE lt_sbstr		; no real need for BRA
-lt_no:
-		RTS					; otherwise return 0 (invalid tag)
-; ***** THERE MUST BE A JUMP TO lt_loop SOMEWHERE *******
+				INX					; advance in tag list
+				LDA tags, X			; check what is pointing now [while(tags[cur++]]
+				CMP #'*'			; label separator? [!='*') ;]
+				BNE lst_skip		; not yet, keep scanning
+			INC cnt				; another label skipped [token++]
+			LDA tags+1, X		; check whether ended [if (tags[cur] == '\0')]
+		BNE lt_loop			; not ended, thus may try another [}]
+	RTS					; otherwise return 0 (invalid tag)
 
 
 ; ************
@@ -139,37 +129,6 @@ tags:
  * */
  /*
 
-	char token=1;			// token list counter
-	char del;				// found delimiter
-
-	while (-1) {
-		// beware of closing tags
-		if (tx[pos] == '/') {	// it is a closing tag
-			token=pop();			// try to pull token from stack
-			return -token;			// report it and do not look further, NOTE SIGN
-		}
-		// find a matching substring
-		while (tx[pos++] == tags[cur++]) {
-		}
-		// check whether there is a recognised tag, or a mismatch
-		del = tx[pos-1];			// check whatever ended the label
-		if ((tags[--cur] == '*') && (del==' ' || del=='\t' || del=='\n' || del=='>' || del=='/')) {
-			// found a proper delimiter for this tag
-			return token;				// is this OK already?
-		} else {					// string did not match label
-			if (tags[cur+1] == '\0') {	// was it the last one?
-				return 0;					// no more to scan
-			} else {
-				// skip label from list and try next one
-				pos=start;					// otherwise will try next, back where it started
-				while(tags[cur++]!='*') ;
-				token++;
-				if (tags[cur] == '\0')		return 0;	// no more tags to scan!
-			}
-		}
-	}
-}
-*/
 /* *** main code ***
 int main(void)
 {
