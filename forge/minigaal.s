@@ -1,7 +1,7 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
 ; v0.1a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180417-1423
+; last modified 20180418-1107
 
 #include "../OS/usual.h"
 
@@ -9,19 +9,19 @@
 ; *** zeropage definitions ***
 ; ****************************
 
-	flags	= uz				; several flags
-	tok	= flags+1			; decoded token
-	del	= tok+1				; delimiter
-	tmp	= del+1				; temporary use
-	lst	= tmp+1				; tag scanning
-	pt	= lst+1				; cursor
-	pila_sp	= pt+1				; stack pointer
-	pila_v	= pila_sp+1			; stack contents (32)
-	tx	= pila_v+32			; pointer to source (16b)
+	flags	= uz		; several flags
+	tok		= flags+1	; decoded token
+	del		= tok+1		; delimiter
+	tmp		= del+1		; temporary use
+	lst		= tmp+1		; tag scanning, temporary?
+	pt		= lst+1		; cursor (16b)
+	pila_sp	= pt+2		; stack pointer
+	pila_v	= pila_sp+1	; stack contents (32)
+	tx		= pila_v+32	; pointer to source (16b)
 
 	_last	= tx+2
 
-; *** data ***
+; *** HEADER & CODE TO DO ***
 
 ; *************************
 ; *** several functions ***
@@ -30,31 +30,37 @@
 push:
 ; * push token in A into internal stack (returns A, or 0 if full) *
 	LDX pila_sp
-	CPX #32					; already full?
-	BNE ps_ok				; no, go for it
-		LDA #0					; yes, return error
+	CPX #32				; already full?
+	BNE ps_ok			; no, go for it
+		LDA #0				; yes, return error
 		RTS
 ps_ok:
-	STA pila_v, X				; store into stack
-	INC pila_sp				; post-increment
+	STA pila_v, X		; store into stack
+	INC pila_sp			; post-increment
 	RTS
 
 ;950857000 ALCER Y PABLO
 
 pop:
 ; * pop token from internal stack into A (0=empty) *
-	LDX pila_sp				; is it empty?
-	BNE pl_ok				; no, go for it
-		LDA #0					; yes, return error
+	LDX pila_sp			; is it empty?
+	BNE pl_ok			; no, go for it
+		LDA #0				; yes, return error
 		RTS
 pl_ok:
-	DEC pila_sp				; pre-decrement
-	LDA pila_v, X				; pull from stack
+	DEC pila_sp			; pre-decrement
+	LDA pila_v, X		; pull from stack
 	RTS
 
 look_tag:
-; * detect tags from offset X and return token number in A (inverted if CLOSING, zero if invalid) *
-
+; * detect tags from offset pt and return token number in A (inverted if CLOSING, zero if invalid) *
+	LDY pt				; get original pointer
+	LDA pt+1
+	STY tmp				; store working copy
+	STA tmp+1
+	LDX #0				; reset scanning index
+	LDY #1				; token counter
+; scanning loop... TO DO 
 
 
 ; ************
@@ -80,8 +86,6 @@ tags:
  * */
  /*
 
-	int start=pos;			// keep this position for retrying
-	int cur=0;				// label-list scanning index
 	char token=1;			// token list counter
 	char del;				// found delimiter
 
