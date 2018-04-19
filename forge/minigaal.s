@@ -1,7 +1,7 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180418-1404
+; last modified 20180419-2104
 
 #include "../OS/usual.h"
 
@@ -16,12 +16,16 @@
 	cnt		= tmp+1		; token counter
 	pt		= cnt+1		; cursor (16b)
 	pila_sp	= pt+2		; stack pointer
-	pila_v	= pila_sp+1	; stack contents (32)
+	pila_v	= pila_sp+1	; stack contents (32) **** should that be the buffer insteas?
 	tx		= pila_v+32	; pointer to source (16b)
 
 	_last	= tx+2
 
 ; *** HEADER & CODE TO DO ***
+
+	_STZA flags
+; must initialise pt in a proper way...
+	_STZA pila_sp
 
 ; *************************
 ; *** several functions ***
@@ -38,8 +42,6 @@ ps_ok:
 	STA pila_v, X		; store into stack
 	INC pila_sp			; post-increment
 	RTS
-
-;950857000 ALCER Y PABLO
 
 pop:
 ; * pop token from internal stack into A (0=empty) *
