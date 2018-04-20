@@ -1,7 +1,7 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
 ; v0.1a3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180420-0954
+; last modified 20180420-1112
 
 #include "../OS/usual.h"
 
@@ -11,6 +11,7 @@
 ; *****************
 
 	STK_SIZ	= 32		; tag stack size
+	CLOSING	= 10		; offset for closing tags
 
 ; ****************************
 ; *** zeropage definitions ***
@@ -56,7 +57,7 @@ mg_next:
 			INC tx+1		; or increase MSB
 		BNE mg_loop		; no need for BRA
 chktag:
-; * tag processing * TODO TODO
+; * tag processing *
 	INC tx				; skip <... or shoud look_tag initialise Y as 1?
 	BNE ct_nw
 		INC tx+1
@@ -66,41 +67,88 @@ ct_nw:
 	BEQ tag_end			; no, just look for >
 		JSR push			; yes, push it into stack
 ; is this switch best done with indexed jump? surely!
-		CMP #3				; <title>
-		BNE ct_ntit
-			LDA flags
-			ORA #%00100000		; set d5 as title detected
-			STA flags
-			LDA #'['			; print title delimiter
-			JSR mg_out
-			_BRA tag_end
-ct_ntit:
-		CMP #5				; <p>
-		BNE ct_np
-ct_np:
-		CMP #6				; <h1>
-		BNE ct_nh1
-ct_nh1:
-		CMP #7				; <br />
-		BNE ct_nbr
-ct_nbr:
-		CMP #8				; <hr />
-		BNE ct_nhr
-ct_nhr:
-		CMP #9				; <a>
-		BNE ct_nlnk
-			LDA #'_'			; print link delimiter
-			JSR mg_out
-			_BRA tag_end
-ct_nlnk:
-; closing tags
-		CMP #5				; <p>
-		BNE ct_np
-ct_np:
-		CMP #5				; <p>
-		BNE ct_np
-ct_np:
+		ASL					; convert to index
+		TAX
+		JSR call_tag
+tag_end:
+; TODO TODO TODO
+; *** look for trailing > ***
 
+
+; *** tag handling caller ***
+call_tag:
+	_JMPX(tagtab)
+
+; *** tag handling table ***
+tagtab:
+	.word	tag_ret			; 0 invalid
+	.word	t_html			; 1 <html>
+	.word	t_head			; 2 <head>
+	.word	t_title			; 3 <title>
+	.word	t_body			; 4 <body>
+	.word	t_p				; 5 <p>
+	.word	t_h1			; 6 <h1>
+	.word	t_br			; 7 <br />
+	.word	t_hr			; 8 <hr />
+	.word	t_link			; 9 <a>
+	.word	tag_ret			; 10 invalid too
+	.word	tc_html			; 11 </html>
+	.word	tc_head			; 12 </head>
+	.word	tc_title		; 13 </title>
+	.word	tc_body			; 14 </body>
+	.word	tc_p			; 15 </p>
+	.word	tc_h1			; 16 </h1>
+	.word	tc_br			; 17 <br /> needed?
+	.word	tc_hr			; 18 <hr /> needed?
+	.word	tc_link			; 19 </a>
+
+; *******************************
+; *** tag processing routines ***
+; *******************************
+
+t_title:
+	LDA flags
+	ORA #%00100000		; set d5 as title detected
+	STA flags
+	LDA #'['			; print title delimiter
+	JSR mg_out
+tag_ret:				; generic exit point
+	RTS
+
+t_p:
+tc_p:
+	JMP block			; block element must use CRs
+
+t_h1:
+	LDA flags
+	ORA #%10000000		; set d7 as heading detected
+	JMP block			; block element must use CRs
+
+t_br:
+	LDA #CR				; print newline
+	JSR mg_out
+	RTS
+
+t_hr:
+; draw a line... TO DO
+	RTS
+
+t_link:
+tc_link:
+	LDA #'_'			; print link delimiter
+	JSR mg_out
+	RTS
+
+; closing tags
+tc_head:
+	LDA flags
+	AND #%00100000		; was a title detected?
+		BNE tag_ret			; yes, do nothing
+	LDA #'['			; no, print empty brackets
+	JSR mg_out
+tc_title:
+	LDA #']'
+	JMP mg_out
 
 ; *************************
 ; *** several functions ***
@@ -130,7 +178,7 @@ pl_ok:
 	RTS
 
 look_tag:
-; * detect tags from offset pt and return token number in A (inverted if CLOSING, zero if invalid) *
+; * detect tags from offset pt and return token number in A (+CLOSING if closing, zero if invalid) *
 	LDX #1				; reset token counter... [token=1]
 	STX cnt
 	DEX					; ...and scanning index too (could use -1 offset and waive this DEX) [cur=0]
@@ -141,7 +189,8 @@ lt_loop:				; [while (-1) {]
 		CMP #'/'			; closing tag?  [if (tx[pos] == '/') {]
 		BNE no_close		; not, do no pop
 			JSR pop			; yes, pop last registered tag [token=pop()]
-			EOR #$FF			; ones complement eeeeeeeeeeeeeeeeeek
+			CLC
+			ADC #CLOSING		; no longer ones complement...
 			RTS					; [return -token]
 no_close:					; [}]
 lt_sbstr:
