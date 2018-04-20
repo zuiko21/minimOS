@@ -65,6 +65,7 @@ ct_nw:
 	TAY					; is it valid?
 	BEQ tag_end			; no, just look for >
 		JSR push			; yes, push it into stack
+; is this switch best done with indexed jump? surely!
 		CMP #3				; <title>
 		BNE ct_ntit
 			LDA flags
@@ -88,6 +89,9 @@ ct_nbr:
 ct_nhr:
 		CMP #9				; <a>
 		BNE ct_nlnk
+			LDA #'_'			; print link delimiter
+			JSR mg_out
+			_BRA tag_end
 ct_nlnk:
 ; closing tags
 		CMP #5				; <p>
