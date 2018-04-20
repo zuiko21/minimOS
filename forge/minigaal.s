@@ -1,31 +1,61 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
-; v0.1a2
+; v0.1a3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180419-2104
+; last modified 20180420-0938
 
 #include "../OS/usual.h"
+
+.(
+; *****************
+; *** constants ***
+; *****************
+
+	STK_SIZ	= 32		; tag stack size
 
 ; ****************************
 ; *** zeropage definitions ***
 ; ****************************
 
-	flags	= uz		; several flags
-	tok		= flags+1	; decoded token
-	del		= tok+1		; delimiter
-	tmp		= del+1		; temporary use
-	cnt		= tmp+1		; token counter
-	pt		= cnt+1		; cursor (16b)
-	pila_sp	= pt+2		; stack pointer
-	pila_v	= pila_sp+1	; stack contents (32) **** should that be the buffer insteas?
-	tx		= pila_v+32	; pointer to source (16b)
+	flags	= uz				; several flags
+	tok		= flags+1			; decoded token
+	del		= tok+1				; delimiter
+	tmp		= del+1				; temporary use
+	cnt		= tmp+1				; token counter
+	pt		= cnt+1				; cursor (16b)
+	pila_sp	= pt+2				; stack pointer
+	pila_v	= pila_sp+1			; stack contents (as defined)
+	tx		= pila_v+STK_SIZ	; pointer to source (16b)
 
 	_last	= tx+2
 
 ; *** HEADER & CODE TO DO ***
 
+; flag format
+;		d7 = h1 (spaces between letters)
+;		d6 = last was a block element (do not add CRs)
+;		d5 = title is expected (inside <head>)
+;		...
 	_STZA flags
 ; must initialise pt in a proper way...
 	_STZA pila_sp
+; *** main loop ***
+mg_loop:
+		_LDAY(tx)		; get char from source
+		CMP #'<'		; opening tag? [if (c=='<') {]
+		BEQ chktag		; yes, it is a tag
+; * plain text print *
+			JSR mg_out		; otherwise, just print it
+			BIT flags		; check for flags
+			BPL mg_next		; not heading, thus no extra space
+				LDA #' '		; otherwise add spaces between letters
+				JSR mg_out
+mg_next:
+		INC tx			; go for next char
+		BNE mg_loop		; no wrap
+			INC tx+1		; or increase MSB
+		BNE mg_loop		; no need for BRA
+chktag:
+; * tag processing * TODO TODO
 
 ; *************************
 ; *** several functions ***
@@ -34,7 +64,7 @@
 push:
 ; * push token in A into internal stack (returns A, or 0 if full) *
 	LDX pila_sp
-	CPX #32				; already full?
+	CPX #STK_SIZ		; already full?
 	BNE ps_ok			; no, go for it
 		LDA #0				; yes, return error
 		RTS
@@ -65,7 +95,7 @@ lt_loop:				; [while (-1) {]
 		LDA (tmp), Y		; looking for '/'
 		CMP #'/'			; closing tag?  [if (tx[pos] == '/') {]
 		BNE no_close		; not, do no pop
-			JSR pop				; yes, pop last registered tag [token=pop()]
+			JSR pop			; yes, pop last registered tag [token=pop()]
 			EOR #$FF			; ones complement eeeeeeeeeeeeeeeeeek
 			RTS					; [return -token]
 no_close:					; [}]
@@ -134,15 +164,7 @@ tags:
 /* *** main code ***
 int main(void)
 {
-	int pt=0, t;
-	char c;
-	int tit=0;			// flag if title is defined
-	int head=0;			// flag for heading mode
 
-// init code
-	etiq.sp = 0;				// reset stack pointer!
-	printf("HTML input: ");
-	fgets(tx, 1000, stdin);		// read HTML from keyboard
 
 //if < is found, look for the label
 //	push it into stack
