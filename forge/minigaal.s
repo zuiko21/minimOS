@@ -1,7 +1,7 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
 ; v0.1a3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180420-0938
+; last modified 20180420-0954
 
 #include "../OS/usual.h"
 
@@ -33,7 +33,7 @@
 ; flag format
 ;		d7 = h1 (spaces between letters)
 ;		d6 = last was a block element (do not add CRs)
-;		d5 = title is expected (inside <head>)
+;		d5 = title was shown inside <head>
 ;		...
 	_STZA flags
 ; must initialise pt in a proper way...
@@ -41,14 +41,15 @@
 ; *** main loop ***
 mg_loop:
 		_LDAY(tx)		; get char from source
+			BEQ mg_end		; no more source code!
 		CMP #'<'		; opening tag? [if (c=='<') {]
-		BEQ chktag		; yes, it is a tag
+			BEQ chktag		; yes, it is a tag
 ; * plain text print *
-			JSR mg_out		; otherwise, just print it
-			BIT flags		; check for flags
-			BPL mg_next		; not heading, thus no extra space
-				LDA #' '		; otherwise add spaces between letters
-				JSR mg_out
+		JSR mg_out		; otherwise, just print it
+		BIT flags		; check for flags
+		BPL mg_next		; not heading, thus no extra space
+			LDA #' '		; otherwise add spaces between letters
+			JSR mg_out
 mg_next:
 		INC tx			; go for next char
 		BNE mg_loop		; no wrap
@@ -56,6 +57,46 @@ mg_next:
 		BNE mg_loop		; no need for BRA
 chktag:
 ; * tag processing * TODO TODO
+	INC tx				; skip <... or shoud look_tag initialise Y as 1?
+	BNE ct_nw
+		INC tx+1
+ct_nw:
+	JSR look_tag		; try to indentify a tag
+	TAY					; is it valid?
+	BEQ tag_end			; no, just look for >
+		JSR push			; yes, push it into stack
+		CMP #3				; <title>
+		BNE ct_ntit
+			LDA flags
+			ORA #%00100000		; set d5 as title detected
+			STA flags
+			LDA #'['			; print title delimiter
+			JSR mg_out
+			_BRA tag_end
+ct_ntit:
+		CMP #5				; <p>
+		BNE ct_np
+ct_np:
+		CMP #6				; <h1>
+		BNE ct_nh1
+ct_nh1:
+		CMP #7				; <br />
+		BNE ct_nbr
+ct_nbr:
+		CMP #8				; <hr />
+		BNE ct_nhr
+ct_nhr:
+		CMP #9				; <a>
+		BNE ct_nlnk
+ct_nlnk:
+; closing tags
+		CMP #5				; <p>
+		BNE ct_np
+ct_np:
+		CMP #5				; <p>
+		BNE ct_np
+ct_np:
+
 
 ; *************************
 ; *** several functions ***
@@ -172,15 +213,6 @@ int main(void)
 //	read until >
 /*
 	do {
-		c = tx[pt++];
-		if (c=='<') {		// tag is starting
-		// should look for comments here
-#ifdef	DEBUG
-			printf("\nTag ");
-#endif
-			t=tag(pt);			// detect token
-			if (t)		push(t);	// push the token!
-			// identify and execute the token
 			switch(t) {
 				case 1:
 				case 4:				// <html> <body> (do nothing)
@@ -250,12 +282,6 @@ int main(void)
 			}
 		}
 		else {
-#ifdef	DEBUG
-			printf(":");
-#endif
-			printf("%c", c);
-			if (head)	printf(" ");
-		}
 	} while (tx[pt]!='\0');
 
 	return 0;
