@@ -1,7 +1,7 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
 ; v0.1a3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180420-1112
+; last modified 20180421-2155
 
 #include "../OS/usual.h"
 
@@ -58,11 +58,7 @@ mg_next:
 		BNE mg_loop		; no need for BRA
 chktag:
 ; * tag processing *
-	INC tx				; skip <... or shoud look_tag initialise Y as 1?
-	BNE ct_nw
-		INC tx+1
-ct_nw:
-	JSR look_tag		; try to indentify a tag
+	JSR look_tag		; try to indentify a tag, will start from (tx)+1
 	TAY					; is it valid?
 	BEQ tag_end			; no, just look for >
 		JSR push			; yes, push it into stack
@@ -71,8 +67,30 @@ ct_nw:
 		TAX
 		JSR call_tag
 tag_end:
-; TODO TODO TODO
 ; *** look for trailing > ***
+	LDY #1			; start after <
+te_loop:
+		LDA (tx), Y		; what is there?
+			BEQ mg_end		; it is finished!
+		CMP #'>'		; is it the trailing >?
+			BEQ te_found		; yes, go for next tag
+; should it check for closing tags?
+		CMP #'/'		; closing tag?
+		BNE te_ncl
+			JSR pop			; yes, try to forget it
+te_ncl:
+		INY			; no, keep scanning
+		BNE te_loop		; no need for BRA
+te_found:
+	SEC					; as it has tx++
+	TYA
+	ADC tx				; add current offset to pointer
+	STA tx
+		BCC mg_loop
+	INC tx+1
+		BNE mg_loop			; no need for BRA
+mg_end:
+; TODO TODO TODO
 
 
 ; *** tag handling caller ***
@@ -179,12 +197,11 @@ pl_ok:
 
 look_tag:
 ; * detect tags from offset pt and return token number in A (+CLOSING if closing, zero if invalid) *
-	LDX #1				; reset token counter... [token=1]
-	STX cnt
-	DEX					; ...and scanning index too (could use -1 offset and waive this DEX) [cur=0]
+	LDX #0				; reset scanning index
+	LDY #1				; reset short range index, note < is skipped [pos=start...]
+	STY cnt				; reset token counter [token=1]
 ; scanning loop, will use tmp as working pointer, retrieving value from pt instead
 lt_loop:				; [while (-1) {]
-		LDY #0				; reset short range index [pos=start...]
 		LDA (tmp), Y		; looking for '/'
 		CMP #'/'			; closing tag?  [if (tx[pos] == '/') {]
 		BNE no_close		; not, do no pop
@@ -220,7 +237,7 @@ lt_longer:
 			DEX					; ...as we already are at the end of a listed label [} else {]
 lt_mis:
 ; skip label from list and try next one
-			LDY #0				; back to source original position [pos=start]
+			LDY #1				; back to source original position [pos=start]
 lts_skip:
 				INX					; advance in tag list
 				LDA tags, X			; check what is pointing now [while(tags[cur++]]
