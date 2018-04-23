@@ -1,7 +1,7 @@
 /* simple expression evaluator
  * intended for symbolic miniMoDA
  * (c) 2018 Carlos J. Santisteban
- * last modified 20180422-1728
+ * last modified 20180423-1356
  */
 #define	DEBUG	1
 
@@ -42,6 +42,29 @@ printf("pop @ %d: %d\n",sp,stack[sp-1]);
 		return -1;	//stack was empty
 	}
 }
+
+void getnum(void) {	// evaluate number into value
+	while(tx[pt]>='0' && tx[pt]<='9' && tx[pt]!='\0') {	// keep getting numbers
+#ifdef	DEBUG
+printf("CIPH! ");
+#endif
+#ifdef	DEBUG
+if(num==FALSE)	printf("Reset...");
+#endif
+		if(num==FALSE)	value=0;
+#ifdef	DEBUG
+printf("(was %d) ",value);
+#endif
+		value *= 10;
+		value += (int)(tx[pt]-'0');
+#ifdef	DEBUG
+printf("(now %d)\n",value);
+#endif
+				num = TRUE;
+		pt++;
+	}
+}
+
 /* main code */
 int main(void) {
 	int pt=0;	//reset cursor
