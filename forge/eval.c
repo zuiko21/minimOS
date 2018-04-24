@@ -1,7 +1,7 @@
 /* simple expression evaluator
  * intended for symbolic miniMoDA
  * (c) 2018 Carlos J. Santisteban
- * last modified 20180424-1100
+ * last modified 20180424-1209
  */
 #define	DEBUG	1
 
@@ -153,7 +153,7 @@ int main(void) {
 			case '\n':
 			case '\0':
 //whitespace, do nothing... just check whether a number was done
-				operation();	//in case we had postoperand
+//				operation();	//in case we had postoperand
 				break;
 			case '0':
 			case '1':
