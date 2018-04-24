@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.6b7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180405-1340
+; last modified 20180424-1047
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -106,7 +106,7 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 ;#include "../apps/crasm/68asm.s"
 ;#include "../apps/crasm/80asm.s"
 
-;#include "../apps/lined.s"
+;#include "../apps/minized.s"
 ;#include "../apps/sigtest.s"
 
 /*

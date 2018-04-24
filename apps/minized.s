@@ -2,7 +2,7 @@
 ; v0.5.1rc1
 ; same as 0.5 with 0.6 ABI/API compatibility
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20170829-1339
+; last modified 20180424-1048
 
 #include "../OS/usual.h"
 .(
@@ -32,7 +32,7 @@ linedHead:
 	.asc	"****", CR		; some flags TBD
 
 ; *** filename and optional comment ***
-	.asc	"lined", 0		; file name (mandatory)
+	.asc	"miniZed", 0		; file name (mandatory)
 	.asc	"Text Editor 0.5.1 (for source code)", 0	; comment
 
 ; advance to end of header
