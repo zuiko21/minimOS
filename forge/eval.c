@@ -1,7 +1,7 @@
 /* simple expression evaluator
  * intended for symbolic miniMoDA
  * (c) 2018 Carlos J. Santisteban
- * last modified 20180424-0905
+ * last modified 20180424-1100
  */
 #define	DEBUG	1
 
@@ -47,7 +47,7 @@ printf("pop @ %d: %d\n",sp,stack[sp-1]);
 void operation(void) {
 	int op = pop();
 
-	if (op=-1) {
+	if (op==-1) {
 #ifdef	DEBUG
 printf("No previous value\n");
 #endif
@@ -109,7 +109,6 @@ printf("(now %d)\n",value);
 #endif
 		pt++;
 	}
-	operation();	//check whether there was a pending operation
 }
 
 void operator(void) {
@@ -168,6 +167,8 @@ int main(void) {
 			case '9':
 //number, evaluate it
 				getnum();
+				pt--;
+				operation();	//check whether there was a pending operation
 				break;
 			case '+':
 			case '-':
@@ -184,7 +185,7 @@ int main(void) {
 		}
 		pt++;
 	} while(tx[pt-1]!='\0');
-	printf("\n\nResult: %d\n",value);
+	printf("\n\nResult: %d\nSP: %d\n",value,sp);
 
 	return 0;
 }
