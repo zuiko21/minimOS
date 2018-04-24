@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
-; (c) 2015 Carlos J. Santisteban
-; last modified 20150213-1443
+; (c) 2015-2018 Carlos J. Santisteban
+; last modified 20180424-1245
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -22,8 +22,42 @@
 ; 2.21	fixed IF .. THEN RETURN to not cause error
 ; 2.22	fixed RND() breaking the get byte routine
 
-; zero page use ..
+#include "../OS/usual.h"
 
+.(
+; **********************
+; *** minimOS header ***
+; **********************
+#ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+ehHead:
+; *** header identification ***
+	BRK								; do not enter here! NUL marks beginning of header
+	.asc	"m", CPU_TYPE			; minimOS app! should be NMOS-savvy, at least
+	.asc	"****", 13				; some flags TBD
+
+; *** filename and optional comment ***
+	.asc	"EhBASIC", 0			; file name (mandatory)
+	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 0		; comment with IMPORTANT attribution
+
+; advance to end of header
+	.dsb	ehHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$6380					; time, 12.28
+	.word	$4C98					; date, 2018/4/24
+
+ehSize	=	ehEnd - ehHead -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	ehSize					; filesize
+	.word	0						; 64K space does not use upper 16-bit
+#endif
+; ##### end of minimOS executable header #####
+
+; *********************
+; *** zero page use ***
+; *********************
 
 
 ut1_pl		= $71		; utility pointer 1 low byte
@@ -40,13 +74,13 @@ FACt_3		= FACt_2+1	; FAC temp mantissa3
 dims_l		= FACt_2	; array dimension size low byte
 dims_h		= FACt_3	; array dimension size high byte
 
-TempB			= $78		; temp page 0 byte
+TempB		= $78		; temp page 0 byte
 
 
-Smeml			= $79		; start of mem low byte		(Start-of-Basic)
-Smemh			= Smeml+1	; start of mem high byte	(Start-of-Basic)
-Svarl			= $7B		; start of vars low byte	(Start-of-Variables)
-Svarh			= Svarl+1	; start of vars high byte	(Start-of-Variables)
+Smeml		= $79		; start of mem low byte		(Start-of-Basic)
+Smemh		= Smeml+1	; start of mem high byte	(Start-of-Basic)
+Svarl		= $7B		; start of vars low byte	(Start-of-Variables)
+Svarh		= Svarl+1	; start of vars high byte	(Start-of-Variables)
 Sarryl		= $7D		; var mem end low byte		(Start-of-Arrays)
 Sarryh		= Sarryl+1	; var mem end high byte		(Start-of-Arrays)
 Earryl		= $7F		; array mem end low byte	(End-of-Arrays)
@@ -55,8 +89,8 @@ Sstorl		= $81		; string storage low byte	(String storage (moving down))
 Sstorh		= Sstorl+1	; string storage high byte	(String storage (moving down))
 Sutill		= $83		; string utility ptr low byte
 Sutilh		= Sutill+1	; string utility ptr high byte
-Ememl			= $85		; end of mem low byte		(Limit-of-memory)
-Ememh			= Ememl+1	; end of mem high byte		(Limit-of-memory)
+Ememl		= $85		; end of mem low byte		(Limit-of-memory)
+Ememh		= Ememl+1	; end of mem high byte		(Limit-of-memory)
 Clinel		= $87		; current line low byte		(Basic line number)
 Clineh		= Clinel+1	; current line high byte	(Basic line number)
 Blinel		= $89		; break line low byte		(Previous Basic line number)
@@ -68,8 +102,8 @@ Cpntrh		= Cpntrl+1	; continue pointer high byte
 Dlinel		= $8D		; current DATA line low byte
 Dlineh		= Dlinel+1	; current DATA line high byte
 
-Dptrl			= $8F		; DATA pointer low byte
-Dptrh			= Dptrl+1	; DATA pointer high byte
+Dptrl		= $8F		; DATA pointer low byte
+Dptrh		= Dptrl+1	; DATA pointer high byte
 
 Rdptrl		= $91		; read pointer low byte
 Rdptrh		= Rdptrl+1	; read pointer high byte
@@ -83,17 +117,17 @@ Cvarah		= Cvaral+1	; current var address high byte
 Frnxtl		= $97		; var pointer for FOR/NEXT low byte
 Frnxth		= Frnxtl+1	; var pointer for FOR/NEXT high byte
 
-Tidx1			= Frnxtl	; temp line index
+Tidx1		= Frnxtl	; temp line index
 
 Lvarpl		= Frnxtl	; let var pointer low byte
 Lvarph		= Frnxth	; let var pointer high byte
 
-prstk			= $99		; precedence stacked flag
+prstk		= $99		; precedence stacked flag
 
 comp_f		= $9B		; compare function flag, bits 0,1 and 2 used
-					; bit 2 set if >
-					; bit 1 set if =
-					; bit 0 set if <
+						; bit 2 set if >
+						; bit 1 set if =
+						; bit 0 set if <
 
 func_l		= $9C		; function pointer low byte
 func_h		= func_l+1	; function pointer high byte
@@ -183,22 +217,22 @@ ssptr_h		= FAC1_r	; string start pointer high byte
 
 sdescr		= FAC_sc	; string descriptor pointer
 
-csidx			= $BA		; line crunch save index
-Asptl			= csidx	; array size/pointer low byte
-Aspth			= $BB		; array size/pointer high byte
+csidx		= $BA		; line crunch save index
+Asptl		= csidx		; array size/pointer low byte
+Aspth		= $BB		; array size/pointer high byte
 
-Btmpl			= Asptl	; BASIC pointer temp low byte
-Btmph			= Aspth	; BASIC pointer temp low byte
+Btmpl		= Asptl		; BASIC pointer temp low byte
+Btmph		= Aspth		; BASIC pointer temp low byte
 
-Cptrl			= Asptl	; BASIC pointer temp low byte
-Cptrh			= Aspth	; BASIC pointer temp low byte
+Cptrl		= Asptl		; BASIC pointer temp low byte
+Cptrh		= Aspth		; BASIC pointer temp low byte
 
-Sendl			= Asptl	; BASIC pointer temp low byte
-Sendh			= Aspth	; BASIC pointer temp low byte
+Sendl		= Asptl		; BASIC pointer temp low byte
+Sendh		= Aspth		; BASIC pointer temp low byte
 
-LAB_IGBY		= $BC		; get next BASIC byte subroutine
+LAB_IGBY	= $BC		; get next BASIC byte subroutine
 
-LAB_GBYT		= $C2		; get current BASIC byte subroutine
+LAB_GBYT	= $C2		; get current BASIC byte subroutine
 Bpntrl		= $C3		; BASIC execute (get byte) pointer low byte
 Bpntrh		= Bpntrl+1	; BASIC execute (get byte) pointer high byte
 
@@ -210,11 +244,11 @@ Rbyte2		= Rbyte4+2	; middle PRNG byte
 Rbyte3		= Rbyte4+3	; least significant PRNG byte
 
 NmiBase		= $DC		; NMI handler enabled/setup/triggered flags
-					; bit	function
-					; ===	========
-					; 7	interrupt enabled
-					; 6	interrupt setup
-					; 5	interrupt happened
+						; bit	function
+						; ===	========
+						; 7	interrupt enabled
+						; 6	interrupt setup
+						; 5	interrupt happened
 ;			= $DD		; NMI handler addr low byte
 ;			= $DE		; NMI handler addr high byte
 IrqBase		= $DF		; IRQ handler enabled/setup/triggered flags
@@ -239,7 +273,7 @@ IrqBase		= $DF		; IRQ handler enabled/setup/triggered flags
 ;			= $ED		; unused
 ;			= $EE		; unused
 
-Decss			= $EF		; number to decimal string start
+Decss		= $EF		; number to decimal string start
 Decssp1		= Decss+1	; number to decimal string start
 
 ;			= $FF		; decimal string end
@@ -248,117 +282,117 @@ Decssp1		= Decss+1	; number to decimal string start
 
 ; primary command tokens (can start a statement)
 
-TK_END		= $80			; END token
-TK_FOR		= TK_END+1		; FOR token
-TK_NEXT		= TK_FOR+1		; NEXT token
-TK_DATA		= TK_NEXT+1		; DATA token
-TK_INPUT		= TK_DATA+1		; INPUT token
+TK_END		= $80		; END token
+TK_FOR		= TK_END+1	; FOR token
+TK_NEXT		= TK_FOR+1	; NEXT token
+TK_DATA		= TK_NEXT+1	; DATA token
+TK_INPUT	= TK_DATA+1	; INPUT token
 TK_DIM		= TK_INPUT+1	; DIM token
-TK_READ		= TK_DIM+1		; READ token
-TK_LET		= TK_READ+1		; LET token
-TK_DEC		= TK_LET+1		; DEC token
-TK_GOTO		= TK_DEC+1		; GOTO token
-TK_RUN		= TK_GOTO+1		; RUN token
-TK_IF			= TK_RUN+1		; IF token
-TK_RESTORE		= TK_IF+1		; RESTORE token
-TK_GOSUB		= TK_RESTORE+1	; GOSUB token
-TK_RETIRQ		= TK_GOSUB+1	; RETIRQ token
-TK_RETNMI		= TK_RETIRQ+1	; RETNMI token
-TK_RETURN		= TK_RETNMI+1	; RETURN token
+TK_READ		= TK_DIM+1	; READ token
+TK_LET		= TK_READ+1	; LET token
+TK_DEC		= TK_LET+1	; DEC token
+TK_GOTO		= TK_DEC+1	; GOTO token
+TK_RUN		= TK_GOTO+1	; RUN token
+TK_IF		= TK_RUN+1	; IF token
+TK_RESTORE	= TK_IF+1	; RESTORE token
+TK_GOSUB	= TK_RESTORE+1	; GOSUB token
+TK_RETIRQ	= TK_GOSUB+1	; RETIRQ token
+TK_RETNMI	= TK_RETIRQ+1	; RETNMI token
+TK_RETURN	= TK_RETNMI+1	; RETURN token
 TK_REM		= TK_RETURN+1	; REM token
-TK_STOP		= TK_REM+1		; STOP token
-TK_ON			= TK_STOP+1		; ON token
-TK_NULL		= TK_ON+1		; NULL token
-TK_INC		= TK_NULL+1		; INC token
-TK_WAIT		= TK_INC+1		; WAIT token
-TK_LOAD		= TK_WAIT+1		; LOAD token
-TK_SAVE		= TK_LOAD+1		; SAVE token
-TK_DEF		= TK_SAVE+1		; DEF token
-TK_POKE		= TK_DEF+1		; POKE token
-TK_DOKE		= TK_POKE+1		; DOKE token
-TK_CALL		= TK_DOKE+1		; CALL token
-TK_DO			= TK_CALL+1		; DO token
-TK_LOOP		= TK_DO+1		; LOOP token
-TK_PRINT		= TK_LOOP+1		; PRINT token
+TK_STOP		= TK_REM+1	; STOP token
+TK_ON		= TK_STOP+1	; ON token
+TK_NULL		= TK_ON+1	; NULL token
+TK_INC		= TK_NULL+1	; INC token
+TK_WAIT		= TK_INC+1	; WAIT token
+TK_LOAD		= TK_WAIT+1	; LOAD token
+TK_SAVE		= TK_LOAD+1	; SAVE token
+TK_DEF		= TK_SAVE+1	; DEF token
+TK_POKE		= TK_DEF+1	; POKE token
+TK_DOKE		= TK_POKE+1	; DOKE token
+TK_CALL		= TK_DOKE+1	; CALL token
+TK_DO		= TK_CALL+1	; DO token
+TK_LOOP		= TK_DO+1	; LOOP token
+TK_PRINT	= TK_LOOP+1	; PRINT token
 TK_CONT		= TK_PRINT+1	; CONT token
-TK_LIST		= TK_CONT+1		; LIST token
-TK_CLEAR		= TK_LIST+1		; CLEAR token
+TK_LIST		= TK_CONT+1	; LIST token
+TK_CLEAR	= TK_LIST+1	; CLEAR token
 TK_NEW		= TK_CLEAR+1	; NEW token
-TK_WIDTH		= TK_NEW+1		; WIDTH token
+TK_WIDTH	= TK_NEW+1	; WIDTH token
 TK_GET		= TK_WIDTH+1	; GET token
-TK_SWAP		= TK_GET+1		; SWAP token
-TK_BITSET		= TK_SWAP+1		; BITSET token
-TK_BITCLR		= TK_BITSET+1	; BITCLR token
+TK_SWAP		= TK_GET+1	; SWAP token
+TK_BITSET	= TK_SWAP+1	; BITSET token
+TK_BITCLR	= TK_BITSET+1	; BITCLR token
 TK_IRQ		= TK_BITCLR+1	; IRQ token
-TK_NMI		= TK_IRQ+1		; NMI token
-TK_SYS          = TK_NMI+1              ; SYS token *** added for SBC-2
+TK_NMI		= TK_IRQ+1	; NMI token
+TK_SYS		= TK_NMI+1	; SYS token *** added for SBC-2
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB		= TK_SYS+1		; TAB token
-TK_ELSE		= TK_TAB+1		; ELSE token
-TK_TO			= TK_ELSE+1		; TO token
-TK_FN			= TK_TO+1		; FN token
-TK_SPC		= TK_FN+1		; SPC token
-TK_THEN		= TK_SPC+1		; THEN token
-TK_NOT		= TK_THEN+1		; NOT token
-TK_STEP		= TK_NOT+1		; STEP token
-TK_UNTIL		= TK_STEP+1		; UNTIL token
-TK_WHILE		= TK_UNTIL+1	; WHILE token
+TK_TAB		= TK_SYS+1	; TAB token
+TK_ELSE		= TK_TAB+1	; ELSE token
+TK_TO		= TK_ELSE+1	; TO token
+TK_FN		= TK_TO+1	; FN token
+TK_SPC		= TK_FN+1	; SPC token
+TK_THEN		= TK_SPC+1	; THEN token
+TK_NOT		= TK_THEN+1	; NOT token
+TK_STEP		= TK_NOT+1	; STEP token
+TK_UNTIL	= TK_STEP+1	; UNTIL token
+TK_WHILE	= TK_UNTIL+1	; WHILE token
 TK_OFF		= TK_WHILE+1	; OFF token
 
-; opperator tokens
+; operator tokens
 
-TK_PLUS		= TK_OFF+1		; + token
-TK_MINUS		= TK_PLUS+1		; - token
+TK_PLUS		= TK_OFF+1	; + token
+TK_MINUS	= TK_PLUS+1	; - token
 TK_MUL		= TK_MINUS+1	; * token
-TK_DIV		= TK_MUL+1		; / token
-TK_POWER		= TK_DIV+1		; ^ token
+TK_DIV		= TK_MUL+1	; / token
+TK_POWER	= TK_DIV+1	; ^ token
 TK_AND		= TK_POWER+1	; AND token
-TK_EOR		= TK_AND+1		; EOR token
-TK_OR			= TK_EOR+1		; OR token
-TK_RSHIFT		= TK_OR+1		; RSHIFT token
-TK_LSHIFT		= TK_RSHIFT+1	; LSHIFT token
-TK_GT			= TK_LSHIFT+1	; > token
-TK_EQUAL		= TK_GT+1		; = token
-TK_LT			= TK_EQUAL+1	; < token
+TK_EOR		= TK_AND+1	; EOR token
+TK_OR		= TK_EOR+1	; OR token
+TK_RSHIFT	= TK_OR+1	; RSHIFT token
+TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token
+TK_GT		= TK_LSHIFT+1	; > token
+TK_EQUAL	= TK_GT+1	; = token
+TK_LT		= TK_EQUAL+1	; < token
 
 ; functions tokens
 
-TK_SGN		= TK_LT+1		; SGN token
-TK_INT		= TK_SGN+1		; INT token
-TK_ABS		= TK_INT+1		; ABS token
-TK_USR		= TK_ABS+1		; USR token
-TK_FRE		= TK_USR+1		; FRE token
-TK_POS		= TK_FRE+1		; POS token
-TK_SQR		= TK_POS+1		; SQR token
-TK_RND		= TK_SQR+1		; RND token
-TK_LOG		= TK_RND+1		; LOG token
-TK_EXP		= TK_LOG+1		; EXP token
-TK_COS		= TK_EXP+1		; COS token
-TK_SIN		= TK_COS+1		; SIN token
-TK_TAN		= TK_SIN+1		; TAN token
-TK_ATN		= TK_TAN+1		; ATN token
-TK_PEEK		= TK_ATN+1		; PEEK token
-TK_DEEK		= TK_PEEK+1		; DEEK token
-TK_SADD		= TK_DEEK+1		; SADD token
-TK_LEN		= TK_SADD+1		; LEN token
-TK_STRS		= TK_LEN+1		; STR$ token
-TK_VAL		= TK_STRS+1		; VAL token
-TK_ASC		= TK_VAL+1		; ASC token
-TK_UCASES		= TK_ASC+1		; UCASE$ token
-TK_LCASES		= TK_UCASES+1	; LCASE$ token
+TK_SGN		= TK_LT+1	; SGN token
+TK_INT		= TK_SGN+1	; INT token
+TK_ABS		= TK_INT+1	; ABS token
+TK_USR		= TK_ABS+1	; USR token
+TK_FRE		= TK_USR+1	; FRE token
+TK_POS		= TK_FRE+1	; POS token
+TK_SQR		= TK_POS+1	; SQR token
+TK_RND		= TK_SQR+1	; RND token
+TK_LOG		= TK_RND+1	; LOG token
+TK_EXP		= TK_LOG+1	; EXP token
+TK_COS		= TK_EXP+1	; COS token
+TK_SIN		= TK_COS+1	; SIN token
+TK_TAN		= TK_SIN+1	; TAN token
+TK_ATN		= TK_TAN+1	; ATN token
+TK_PEEK		= TK_ATN+1	; PEEK token
+TK_DEEK		= TK_PEEK+1	; DEEK token
+TK_SADD		= TK_DEEK+1	; SADD token
+TK_LEN		= TK_SADD+1	; LEN token
+TK_STRS		= TK_LEN+1	; STR$ token
+TK_VAL		= TK_STRS+1	; VAL token
+TK_ASC		= TK_VAL+1	; ASC token
+TK_UCASES	= TK_ASC+1	; UCASE$ token
+TK_LCASES	= TK_UCASES+1	; LCASE$ token
 TK_CHRS		= TK_LCASES+1	; CHR$ token
-TK_HEXS		= TK_CHRS+1		; HEX$ token
-TK_BINS		= TK_HEXS+1		; BIN$ token
-TK_BITTST		= TK_BINS+1		; BITTST token
+TK_HEXS		= TK_CHRS+1	; HEX$ token
+TK_BINS		= TK_HEXS+1	; BIN$ token
+TK_BITTST	= TK_BINS+1	; BITTST token
 TK_MAX		= TK_BITTST+1	; MAX token
-TK_MIN		= TK_MAX+1		; MIN token
-TK_PI			= TK_MIN+1		; PI token
-TK_TWOPI		= TK_PI+1		; TWOPI token
+TK_MIN		= TK_MAX+1	; MIN token
+TK_PI		= TK_MIN+1	; PI token
+TK_TWOPI	= TK_PI+1	; TWOPI token
 TK_VPTR		= TK_TWOPI+1	; VARPTR token
-TK_LEFTS		= TK_VPTR+1		; LEFT$ token
-TK_RIGHTS		= TK_LEFTS+1	; RIGHT$ token
+TK_LEFTS	= TK_VPTR+1	; LEFT$ token
+TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token
 TK_MIDS		= TK_RIGHTS+1	; MID$ token
 
 ; offsets from a base of X or Y
@@ -368,14 +402,14 @@ PLUS_1		= $01		; X or Y plus 1
 PLUS_2		= $02		; X or Y plus 2
 PLUS_3		= $03		; X or Y plus 3
 
-LAB_STAK		= $0100	; stack bottom, no offset
+LAB_STAK	= $0100		; stack bottom, no offset
 
-LAB_SKFE		= LAB_STAK+$FE
-					; flushed stack address
-LAB_SKFF		= LAB_STAK+$FF
-					; flushed stack address
+LAB_SKFE	= LAB_STAK+$FE
+						; flushed stack address
+LAB_SKFF	= LAB_STAK+$FF
+						; flushed stack address
 
-ccflag		= $0200	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
+ccflag		= $0200		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 
@@ -388,16 +422,17 @@ VEC_SV		= VEC_LD+2	; save vector
 
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80
 
-Ibuffs		= VEC_SV+2      ; ***changed for SBC-2
-					; start of input buffer after IRQ/NMI code
-Ibuffe		= Ibuffs+$47; end of input buffer
+Ibuffs		= VEC_SV+2	; ***changed for SBC-2
+						; start of input buffer after IRQ/NMI code
+Ibuffe		= Ibuffs+$47	; end of input buffer
 
-Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
-Ram_top		= $8000	; end of user RAM+1 (set as needed, should be page aligned)
+; *** these must be replaced by a call to MALLOC(0) ***
+;Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
+;Ram_top		= $8000	; end of user RAM+1 (set as needed, should be page aligned)
 
-; This start can be changed to suit your system
+; This start can be changed to suit your system *** NOPE, minimOS and/or xa will provide
 
-	*=	$BC00
+;	*=	$BC00
 
 ; BASIC cold start entry point
 
@@ -405,19 +440,19 @@ Ram_top		= $8000	; end of user RAM+1 (set as needed, should be page aligned)
 
 LAB_COLD
 	LDY	#PG2_TABE-PG2_TABS-1
-					; byte count-1
+						; byte count-1
 LAB_2D13
 	LDA	PG2_TABS,Y		; get byte
 	STA	ccflag,Y		; store in page 2
-	DEY				; decrement count
+	DEY					; decrement count
 	BPL	LAB_2D13		; loop if not done
 
 	LDX	#$FF			; set byte
-	STX	Clineh		; set current line high byte (set immediate mode)
-	TXS				; reset stack pointer
+	STX	Clineh			; set current line high byte (set immediate mode)
+	TXS					; reset stack pointer
 
 	LDA	#$4C			; code for JMP
-	STA	Fnxjmp		; save for jump vector for functions
+	STA	Fnxjmp			; save for jump vector for functions
 
 ; copy block from LAB_2CEE to $00BC - $00D3
 
@@ -425,7 +460,7 @@ LAB_2D13
 LAB_2D4E
 	LDA	LAB_2CEE-1,X	; get byte from table
 	STA	LAB_IGBY-1,X	; save byte in page zero
-	DEX				; decrement count
+	DEX					; decrement count
 	BNE	LAB_2D4E		; loop if not all done
 
 ; copy block from StrTab to $0000 - $0012
@@ -435,43 +470,43 @@ LAB_GMEM
 TabLoop
 	LDA	StrTab,X		; get byte from table
 	STA	PLUS_0,X		; save byte in page zero
-	DEX				; decrement count
-	BPL	TabLoop		; loop if not all done
+	DEX					; decrement count
+	BPL	TabLoop			; loop if not all done
 
 ; set-up start values
 
-	LDA	#$00			; clear A
-	STA	NmiBase		; clear NMI handler enabled flag
-	STA	IrqBase		; clear IRQ handler enabled flag
-	STA	FAC1_o		; clear FAC1 overflow byte
-	STA	last_sh		; clear descriptor stack top item pointer high byte
+	LDA	#$00			; clear A *** CMOS could use STZs
+	STA	NmiBase			; clear NMI handler enabled flag
+	STA	IrqBase			; clear IRQ handler enabled flag
+	STA	FAC1_o			; clear FAC1 overflow byte
+	STA	last_sh			; clear descriptor stack top item pointer high byte
 
 	LDA	#$0E			; set default tab size
-	STA	TabSiz		; save it
+	STA	TabSiz			; save it
 	LDA	#$03			; set garbage collect step size for descriptor stack
-	STA	g_step		; save it
-	LDX	#des_sk		; descriptor stack start
-	STX	next_s		; set descriptor stack pointer
+	STA	g_step			; save it
+	LDX	#des_sk			; descriptor stack start
+	STX	next_s			; set descriptor stack pointer
 	JSR	LAB_CRLF		; print CR/LF
 	LDA	#<LAB_MSZM		; point to memory size message (low addr)
 	LDY	#>LAB_MSZM		; point to memory size message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
 	JSR	LAB_INLN		; print "? " and get BASIC input
-	STX	Bpntrl		; set BASIC execute pointer low byte
-	STY	Bpntrh		; set BASIC execute pointer high byte
+	STX	Bpntrl			; set BASIC execute pointer low byte
+	STY	Bpntrh			; set BASIC execute pointer high byte
 	JSR	LAB_GBYT		; get last byte back
 
 	BNE	LAB_2DAA		; branch if not null (user typed something)
 
 	LDY	#$00			; else clear Y
-					; character was null so get memory size the hard way
-					; we get here with Y=0 and Itempl/h = Ram_base
+						; character was null so get memory size the hard way
+						; we get here with Y=0 and Itempl/h = Ram_base
 LAB_2D93
-	INC	Itempl		; increment temporary integer low byte
+	INC	Itempl			; increment temporary integer low byte
 	BNE	LAB_2D99		; branch if no overflow
 
-	INC	Itemph		; increment temporary integer high byte
-	LDA	Itemph		; get high byte
+	INC	Itemph			; increment temporary integer high byte
+	LDA	Itemph			; get high byte
 	CMP	#>Ram_top		; compare with top of RAM+1
 	BEQ	LAB_2DB6		; branch if match (end of user RAM)
 
@@ -481,7 +516,7 @@ LAB_2D99
 	CMP	(Itempl),Y		; compare via temporary integer
 	BNE	LAB_2DB6		; branch if fail
 
-	ASL				; shift test byte left (now $AA)
+	ASL					; shift test byte left (now $AA)
 	STA	(Itempl),Y		; save via temporary integer
 	CMP	(Itempl),Y		; compare via temporary integer
 	BEQ	LAB_2D93		; if ok go do next byte
@@ -490,39 +525,39 @@ LAB_2D99
 
 LAB_2DAA
 	JSR	LAB_2887		; get FAC1 from string
-	LDA	FAC1_e		; get FAC1 exponent
+	LDA	FAC1_e			; get FAC1 exponent
 	CMP	#$98			; compare with exponent = 2^24
 	BCS	LAB_GMEM		; if too large go try again
 
 	JSR	LAB_F2FU		; save integer part of FAC1 in temporary integer
-					; (no range check)
+						; (no range check)
 
 LAB_2DB6
-	LDA	Itempl		; get temporary integer low byte
-	LDY	Itemph		; get temporary integer high byte
+	LDA	Itempl			; get temporary integer low byte
+	LDY	Itemph			; get temporary integer high byte
 	CPY	#<Ram_base+1	; compare with start of RAM+$100 high byte
 	BCC	LAB_GMEM		; if too small go try again
 
 
 ; uncomment these lines if you want to check on the high limit of memory. Note if
 ; Ram_top is set too low then this will fail. default is ignore it and assume the
-; users know what they"re doing!
+; users know what they are doing!
 
 ;	CPY	#>Ram_top		; compare with top of RAM high byte
-;	BCC	MEM_OK		; branch if < RAM top
+;	BCC	MEM_OK			; branch if < RAM top
 
 ;	BNE	LAB_GMEM		; if too large go try again
-					; else was = so compare low bytes
+						; else was = so compare low bytes
 ;	CMP	#<Ram_top		; compare with top of RAM low byte
-;	BEQ	MEM_OK		; branch if = RAM top
+;	BEQ	MEM_OK			; branch if = RAM top
 
 ;	BCS	LAB_GMEM		; if too large go try again
 
 ;MEM_OK
 	STA	Ememl			; set end of mem low byte
 	STY	Ememh			; set end of mem high byte
-	STA	Sstorl		; set bottom of string space low byte
-	STY	Sstorh		; set bottom of string space high byte
+	STA	Sstorl			; set bottom of string space low byte
+	STY	Sstorh			; set bottom of string space high byte
 
 	LDY	#<Ram_base		; set start addr low byte
 	LDX	#>Ram_base		; set start addr high byte
@@ -532,7 +567,7 @@ LAB_2DB6
 ; this line is only needed if Ram_base is not $xx00
 
 ;	LDY	#$00			; clear Y
-	TYA				; clear A
+	TYA					; clear A
 	STA	(Smeml),Y		; clear first byte
 	INC	Smeml			; increment start of mem low byte
 
@@ -8651,3 +8686,7 @@ LAB_IMSG	.byte	" Extra ignored",$0D,$0A,$00
 LAB_REDO	.byte	" Redo from start",$0D,$0A,$00
 
 AA_end_basic
+
+ehEnd:					; for easier size computation
+.)
+
