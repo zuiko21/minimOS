@@ -1,7 +1,7 @@
 /* simple expression evaluator
  * intended for symbolic miniMoDA
  * (c) 2018 Carlos J. Santisteban
- * last modified 20180423-1356
+ * last modified 20180424-0905
  */
 #define	DEBUG	1
 
@@ -15,9 +15,10 @@
 
 /* globals */
 char tx[EXPSIZ];	//input buffer
-int value;		//final result will be here
+int value;			//final result will be here
 int stack[STKSIZ];	//stack contents
-int sp=0;		//stack pointer
+int sp=0;			//stack pointer
+int pt=0;	//reset cursor
 
 /* supporting functions */
 int push(int x) {	//returns true if OK, false if overflow
@@ -43,33 +44,103 @@ printf("pop @ %d: %d\n",sp,stack[sp-1]);
 	}
 }
 
+void operation(void) {
+	int op = pop();
+
+	if (op=-1) {
+#ifdef	DEBUG
+printf("No previous value\n");
+#endif
+		return;		//stack was empty, nothing to do here
+	}
+
+	switch (op>>16) {		//convert special code into operator ASCII, numbers will render 0 anyway
+// binary operators
+		case '+':	//add
+			value += pop();
+			break;
+		case '-':	//subtract
+			value = pop()-value;
+			break;
+		case '*':	//multiply
+			value *= pop();
+			break;
+		case '/':	//divide
+			value = pop()/value;
+			break;
+		case '&':	//bitwise and
+			value &= pop();
+			break;
+		case '|':	//bitwise or
+			value |= pop();
+			break;
+		case '^':	//bitwise xor
+			value ^= pop();
+			break;
+// unary operators
+		case '<':	//LSB
+			value %= 256;
+			break;
+		case '>':	//MSB
+			value >>=8;
+			break;
+		default:
+#ifdef	DEBUG
+printf("OP???\n");
+#endif
+			push(op);	//non recognised operation, leave stack untouched
+	}
+#ifdef	DEBUG
+printf("Value=%d\n",value);
+#endif
+
+}
+
 void getnum(void) {	// evaluate number into value
+	value=0;
 	while(tx[pt]>='0' && tx[pt]<='9' && tx[pt]!='\0') {	// keep getting numbers
 #ifdef	DEBUG
 printf("CIPH! ");
-#endif
-#ifdef	DEBUG
-if(num==FALSE)	printf("Reset...");
-#endif
-		if(num==FALSE)	value=0;
-#ifdef	DEBUG
-printf("(was %d) ",value);
 #endif
 		value *= 10;
 		value += (int)(tx[pt]-'0');
 #ifdef	DEBUG
 printf("(now %d)\n",value);
 #endif
-				num = TRUE;
 		pt++;
+	}
+	operation();	//check whether there was a pending operation
+}
+
+void operator(void) {
+	switch (tx[pt]) {
+// binary operators
+		case '+':	//add
+		case '-':	//subtract
+		case '*':	//multiply
+		case '/':	//divide
+		case '&':	//bitwise and
+		case '|':	//bitwise or
+		case '^':	//bitwise xor
+#ifdef	DEBUG
+printf("Binary %c ",tx[pt]);
+#endif
+			push(value);
+			push(tx[pt]<<16);	//special code for operator, cannot be a valid value
+			break;
+// unary operators
+		case '<':	//LSB
+		case '>':	//MSB
+#ifdef	DEBUG
+printf("Unary %c ",tx[pt]);
+#endif
+			push(tx[pt]<<16);	//no previous value to push
+			break;
 	}
 }
 
 /* main code */
 int main(void) {
-	int pt=0;	//reset cursor
-	int num=FALSE;	//a number was just evaluated
-	int op;
 
 /* read input */
 	fgets(tx, EXPSIZ, stdin);
@@ -83,62 +154,7 @@ int main(void) {
 			case '\n':
 			case '\0':
 //whitespace, do nothing... just check whether a number was done
-				if (num) {
-#ifdef	DEBUG
-printf("WS-NUM (value=%d)\n",value);
-#endif
-					op=pop();	//look for pending ops
-					if (op==-1)	break;	//empty stack
-					if (op<65536) {
-						push(op);	//was a number, push it back
-					} else {
-#ifdef	DEBUG
-printf("pending OP...");
-#endif
-
-					   num=FALSE;
-					   switch (op>>16) {	//do as stated
-//binary ops pop previous value and operate with last
-						case '+':
-							value = pop() + value;
-#ifdef	DEBUG
-printf("...+ (now %d)\n",value);
-#endif
-							break;
-						case '-':
-							value = pop() - value;
-#ifdef	DEBUG
-printf("...- (now %d)\n",value);
-#endif
-							break;
-						case '*':
-							value = pop() * value;
-#ifdef	DEBUG
-printf("...* (now %d)\n",value);
-#endif
-							break;
-						case '/':
-							value = pop() / value;
-#ifdef	DEBUG
-printf(".../ (now %d)\n",value);
-#endif
-							break;
-//unary ops just operate on last value
-						case '<':
-							value %= 256;
-#ifdef	DEBUG
-printf("...< (now %d)\n",value);
-#endif
-							break;
-						case '>':
-							value >>= 8;
-#ifdef	DEBUG
-printf("...> (now %d)\n",value);
-#endif
-							break;
-					   }
-					}
-				}
+				operation();	//in case we had postoperand
 				break;
 			case '0':
 			case '1':
@@ -151,22 +167,7 @@ printf("...> (now %d)\n",value);
 			case '8':
 			case '9':
 //number, evaluate it
-#ifdef	DEBUG
-printf("CIPH! ");
-#endif
-#ifdef	DEBUG
-if(num==FALSE)	printf("Reset...");
-#endif
-				if(num==FALSE)	value=0;
-#ifdef	DEBUG
-printf("(was %d) ",value);
-#endif
-				value *= 10;
-				value += (int)(tx[pt]-'0');
-#ifdef	DEBUG
-printf("(now %d)\n",value);
-#endif
-				num = TRUE;
+				getnum();
 				break;
 			case '+':
 			case '-':
@@ -174,22 +175,11 @@ printf("(now %d)\n",value);
 			case '/':
 			case '&':
 			case '|':
-//it is a binary operator, push previous value and then pending op
-#ifdef	DEBUG
-printf("Operator (%d)%c\n",value,tx[pt]);
-#endif
-				num=FALSE;
-				push(value);
-				push(tx[pt]<<16);	//shift makes code unreachable
-				break;
+			case '^':
 			case '<':
 			case '>':
-//it is an unary operator, just push pending op
-#ifdef	DEBUG
-printf("Operator %c\n",tx[pt]);
-#endif
-				num=FALSE;
-				push(tx[pt]<<16);	//shift makes code unreachable
+//some kind of operator
+				operator();	//perhaps needs to push preoperand
 				break;
 		}
 		pt++;
