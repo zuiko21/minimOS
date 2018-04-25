@@ -1,7 +1,7 @@
 /* simple expression evaluator
  * intended for symbolic miniMoDA
  * (c) 2018 Carlos J. Santisteban
- * last modified 20180424-1209
+ * last modified 20180425-1259
  */
 #define	DEBUG	1
 
@@ -12,6 +12,7 @@
 #define	STKSIZ	8
 #define	TRUE	-1
 #define	FALSE	0
+#define	COMILLA	39
 
 /* globals */
 char tx[EXPSIZ];	//input buffer
@@ -169,6 +170,11 @@ int main(void) {
 				getnum();
 				pt--;
 				operation();	//check whether there was a pending operation
+				break;
+			case COMILLA:
+//character between single-quotes, just take the ASCII value
+				value = tx[++pt];
+				while (tx[++pt] != COMILLA);	//advance to closing quote
 				break;
 			case '+':
 			case '-':
