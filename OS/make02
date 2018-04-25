@@ -1,0 +1,4 @@
+#!/bin/sh
+ln -f options/run02.h options.h
+xa rom.s -l labels -I firmware/ -I isr/ -I drivers/ -I drivers/config/ -I firmware/modules/ -I shell/
+

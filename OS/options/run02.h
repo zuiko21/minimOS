@@ -12,8 +12,8 @@
 
 ;#define		LOWRAM	_LOWRAM
 
-#define		FAST_API	_FAST_API
-#define		FAST_FW		_FAST_FW
+;#define		FAST_API	_FAST_API
+;#define		FAST_FW		_FAST_FW
 
 ; new option for mutable IDs, most likely mandatory!
 #define		MUTABLE		_MUTABLE
