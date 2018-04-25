@@ -1,6 +1,6 @@
 ; minimOS 0.6rc4 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180405-1418
+; last modified 20180425-0938
 
 ; *** standard addresses ***
 
@@ -29,7 +29,7 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 ; system calling interface *** unified ·65 and ·16 macros
 
 #ifndef	C816
-#ifndef		API_OPT
+#ifndef		FAST_API
 #define		_KERNEL(a)		LDX #(a): JSR kerncall
 #else
 #include "api_opt.h"
@@ -42,7 +42,7 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 ; * C816 API functions ending in RTI and redefined EXIT_OK and ERR endings! note pre-CLC
 
 ; administrative calls unified for 6502 and 65816, all ending in RTS (use DR_OK and DR_ERR macros)
-#ifndef	API_OPT
+#ifndef	FAST_FW
 #define		_ADMIN(a)		LDX #(a): JSR adm_call
 #else
 #include "adm_opt.h"
