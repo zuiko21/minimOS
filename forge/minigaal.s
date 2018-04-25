@@ -1,7 +1,7 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
 ; v0.1a3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180421-2155
+; last modified 20180425-1327
 
 #include "../OS/usual.h"
 
@@ -26,11 +26,87 @@
 	pila_sp	= pt+2				; stack pointer
 	pila_v	= pila_sp+1			; stack contents (as defined)
 	tx		= pila_v+STK_SIZ	; pointer to source (16b)
+	iodev	= tx+2				; * usual mOS device handler *
 
-	_last	= tx+2
+	_last	= iodev+1
 
-; *** HEADER & CODE TO DO ***
+; TOKEN numbers (0 is invalid) new base 20180413
+; 1 = html (do nothing)
+; 2 = head (expect for title at least)
+; 3 = title (show betweeen [])
+; 4 = body (do nothing)
+; 5 = p (print text, then a couple of CRs)
+; 6 = h1 (print text _with spaces between letters_)
+; 7 = br (print CR)
+; 8 = hr (print 20 dashes)
+; 9 = a (link????)
 
+; *********************************
+; *** minimOS executable header ***
+; *********************************
+#ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+mgHead:
+; *** header identification ***
+	BRK						; don't enter here! NUL marks beginning of header
+	.asc	"m", CPU_TYPE	; minimOS app!
+	.asc	"****", 13		; some flags TBD
+
+; *** filename and optional comment ***
+title:
+	.asc	"miniGaal", 0	; file name (mandatory)
+	.asc	"HTML browser v0.1", 0	; version in comment
+
+; advance to end of header
+	.dsb	mgHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+
+; *** date & time in MS-DOS format at byte 248 ($F8) ***
+	.word	$54E0			; time, 10.39
+	.word	$4AAB			; date, 2017/5/11
+
+mgSize	=	mgEnd - mgHead - 256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	mgSize			; filesize
+	.word	0				; 64K space does not use upper 16-bit
+#else
+title:
+	.asc	"miniGaal", 0	; keep window title at least
+#endif
+
+; ****************************************
+; *** usual minimOS app initialisation ***
+; ****************************************
+	LDA #_last-uz		; zeropage space needed
+; check whether has enough zeropage space
+#ifdef	SAFE
+	CMP z_used			; check available zeropage space
+	BCC go_xmg			; enough space
+	BEQ go_xmg			; just enough!
+		_ABORT(FULL)		; not enough memory otherwise (rare) new interface
+go_xmg:
+#endif
+	STA z_used			; set needed ZP space as required by minimOS
+	_STZA w_rect		; no screen size required
+	_STZA w_rect+1		; neither MSB
+	LDY #<title			; LSB of window title
+	LDA #>title			; MSB of window title
+	STY str_pt			; set parameter
+	STA str_pt+1
+#ifdef	C816
+	PHK					; current bank eeeeeeek
+	PLA					; get it
+	STA str_pt+2		; and set parameter
+#endif
+	_KERNEL(OPEN_W)		; ask for a character I/O device
+	BCC open_xmg		; no errors
+		_ABORT(NO_RSRC)		; abort otherwise! proper error code
+open_xmg:
+	STY iodev			; store device!!!
+
+; ***************************
+; *** init business staff ***
+; ***************************
 ; flag format
 ;		d7 = h1 (spaces between letters)
 ;		d6 = last was a block element (do not add CRs)
@@ -90,8 +166,12 @@ te_found:
 	INC tx+1
 		BNE mg_loop			; no need for BRA
 mg_end:
-; TODO TODO TODO
+; rendering is complete, free window and exit as usual
+	LDY iodev
+	_KERNEL(FREE_W)		; will no longer use this window, but keep contents
+	_EXIT_OK			; *** end of application code ***
 
+; ***************************
 
 ; *** tag handling caller ***
 call_tag:
@@ -128,34 +208,40 @@ t_title:
 	LDA flags
 	ORA #%00100000		; set d5 as title detected
 	STA flags
-	LDA #'['			; print title delimiter
-	JSR mg_out
-tag_ret:				; generic exit point
-	RTS
+	LDA #'['			; print title delimiter... will return
+	JMP mg_out
 
 t_p:
 tc_p:
-	JMP block			; block element must use CRs
+	JMP block			; block element must use CRs... will return
 
 t_h1:
 	LDA flags
 	ORA #%10000000		; set d7 as heading detected
-	JMP block			; block element must use CRs
+	JMP block			; block element must use CRs... will return
 
 t_br:
-	LDA #CR				; print newline
-	JSR mg_out
-	RTS
+	LDA #CR				; print newline... and return
+	JMP mg_out
 
 t_hr:
 ; draw a line... TO DO
+	JSR block			; this is a block element
+	LDX #20				; number of dashes
+thr_loop:
+		_PHX				; just in case
+		LDA #'-'			; print a dash
+		JSR mg_out
+		_PLX
+		DEX					; one less to go
+		BNE thr_loop
+tag_ret:				; ** generic exit point **
 	RTS
 
 t_link:
 tc_link:
-	LDA #'_'			; print link delimiter
-	JSR mg_out
-	RTS
+	LDA #'_'			; print link delimiter... and return
+	JMP mg_out
 
 ; closing tags
 tc_head:
@@ -256,103 +342,4 @@ lts_skip:
 tags:
 	.asc "html*head*title*body*p*h1*br*hr*a*", 0	; recognised tags separated by asterisks!
 
-; **** old C code follows ****
-
-/*
- * TOKEN numbers (0 is invalid) new base 20180413
- * 1 = html (do nothing)
- * 2 = head (expect for title at least)
- * 3 = title (show betweeen [])
- * 4 = body (do nothing)
- * 5 = p (print text, then a couple of CRs)
- * 6 = h1 (print text _with spaces between letters_)
- * 7 = br (print CR)
- * 8 = hr (print '------------------------------------')
- * 9 = a (link????)
- * */
- /*
-
-/* *** main code ***
-int main(void)
-{
-
-
-//if < is found, look for the label
-//	push it into stack
-//	it may show / before >, then pop it (and disable if style)
-//	read until >
-/*
-	do {
-			switch(t) {
-				case 1:
-				case 4:				// <html> <body> (do nothing)
-					break;
-				case 2:				// <head> (expect for title at least)
-					break;
-				case 3:				// <title> (show betweeen [])
-					tit=-1;
-					printf("\n[");
-					break;
-				case 5:				// <p> (print text, then a couple of CRs)
-					printf("\n\n");
-					break;
-				case 6:				// <h1> (print text _with spaces between letters_)
-					head=-1;
-					printf("\n\n");
-					break;
-				case 7:				// <br> (print CR)
-					printf("\n");
-					break;
-				case 8:				// <hr> (print '------------------------------------')
-					printf("\n-----------------------------------------\n");
-					break;
-				case 9:				// <a> (link????)
-					printf("_");
-					break;
-				// closing tags
-				case -1:
-				case -4:			// </html> </body> (do nothing)
-					break;
-				case -2:			// </head> (expect for title at least)
-					if (!tit)		printf("\n[]\n");
-					break;
-				case -3:			// </title> (show betweeen [])
-					printf("]\n");
-					break;
-				case -5:			// </p> (print text, then a couple of CRs)
-					printf("\n\n");
-					break;
-				case -6:			// </h1> (print text _with spaces between letters_)
-					head=0;
-					printf("\n\n");
-					break;
-				case -7:			// <br /> (print CR) really needed in autoclose?
-//					printf("\n");
-					break;
-				case -8:			// <hr /> (print '------------------------------------'), really needed?
-//					printf("\n-----------------------------------------\n");
-					break;
-				case -9:			// </a> (link????)
-					printf("_");
-//					break;
-//				default:
-//					prinf("<?>");
-			}
-			while ((tx[pt++] != '>') && (tx[pt-1]!='\0')) {
-#ifdef	DEBUG
-				printf("%c>",tx[pt-1]);
-#endif
-				if (tx[pt-1] == '/') {	// it is a closing tag
-					t=pop();			// try to pull it from stack
-#ifdef	DEBUG
-					printf("[POP %d]", t);
-#endif
-				}
-					
-			}
-		}
-		else {
-	} while (tx[pt]!='\0');
-
-	return 0;
-}
+mgEnd:					; for easy size computation
