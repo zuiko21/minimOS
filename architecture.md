@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-03-27*
+*Last update: 2018-04-25*
 
 ## Rationale
 
@@ -547,8 +547,8 @@ features.
 
 Newer options are due for 0.6, like:
 
-- replacing generic calls with direct JSRs
-- using I/O arrays in ROM
+- replacing generic calls with direct JSRs (**DONE via the `FAST_API` and `FAST_FW` options**)**
+- using I/O arrays in ROM (*should be a configuration file matter*)
 - *adding* an array for driver enabling (whether `D_INIT` succeeded)
 
 and many more *(to be completed)*
