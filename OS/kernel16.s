@@ -194,7 +194,6 @@ dr_ok:					; *** all drivers inited ***
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
 	STA dflt_in			; should check some devices, this assumes _in is LSB
-
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
 ; new, show a splash message ever the kernel is restarted!
