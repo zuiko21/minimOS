@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180424-1245
+; last modified 20180426-1108
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -261,6 +261,7 @@ IrqBase		= $DF		; IRQ handler enabled/setup/triggered flags
 ;			= $E1		; unused
 ;			= $E2		; unused
 ;			= $E3		; unused
+; *** minimOS does NOT allow the use of zeropage beyond $E4 ($E2 for the C64) ***
 ;			= $E4		; unused
 ;			= $E5		; unused
 ;			= $E6		; unused
@@ -273,6 +274,7 @@ IrqBase		= $DF		; IRQ handler enabled/setup/triggered flags
 ;			= $ED		; unused
 ;			= $EE		; unused
 
+; *** these must be relocated, perhaps @ $E2 ***
 Decss		= $EF		; number to decimal string start
 Decssp1		= Decss+1	; number to decimal string start
 
@@ -282,116 +284,116 @@ Decssp1		= Decss+1	; number to decimal string start
 
 ; primary command tokens (can start a statement)
 
-TK_END		= $80		; END token
-TK_FOR		= TK_END+1	; FOR token
-TK_NEXT		= TK_FOR+1	; NEXT token
-TK_DATA		= TK_NEXT+1	; DATA token
-TK_INPUT	= TK_DATA+1	; INPUT token
+TK_END		= $80			; END token
+TK_FOR		= TK_END+1		; FOR token
+TK_NEXT		= TK_FOR+1		; NEXT token
+TK_DATA		= TK_NEXT+1		; DATA token
+TK_INPUT	= TK_DATA+1		; INPUT token
 TK_DIM		= TK_INPUT+1	; DIM token
-TK_READ		= TK_DIM+1	; READ token
-TK_LET		= TK_READ+1	; LET token
-TK_DEC		= TK_LET+1	; DEC token
-TK_GOTO		= TK_DEC+1	; GOTO token
-TK_RUN		= TK_GOTO+1	; RUN token
-TK_IF		= TK_RUN+1	; IF token
-TK_RESTORE	= TK_IF+1	; RESTORE token
+TK_READ		= TK_DIM+1		; READ token
+TK_LET		= TK_READ+1		; LET token
+TK_DEC		= TK_LET+1		; DEC token
+TK_GOTO		= TK_DEC+1		; GOTO token
+TK_RUN		= TK_GOTO+1		; RUN token
+TK_IF		= TK_RUN+1		; IF token
+TK_RESTORE	= TK_IF+1		; RESTORE token
 TK_GOSUB	= TK_RESTORE+1	; GOSUB token
 TK_RETIRQ	= TK_GOSUB+1	; RETIRQ token
 TK_RETNMI	= TK_RETIRQ+1	; RETNMI token
 TK_RETURN	= TK_RETNMI+1	; RETURN token
 TK_REM		= TK_RETURN+1	; REM token
-TK_STOP		= TK_REM+1	; STOP token
-TK_ON		= TK_STOP+1	; ON token
-TK_NULL		= TK_ON+1	; NULL token
-TK_INC		= TK_NULL+1	; INC token
-TK_WAIT		= TK_INC+1	; WAIT token
-TK_LOAD		= TK_WAIT+1	; LOAD token
-TK_SAVE		= TK_LOAD+1	; SAVE token
-TK_DEF		= TK_SAVE+1	; DEF token
-TK_POKE		= TK_DEF+1	; POKE token
-TK_DOKE		= TK_POKE+1	; DOKE token
-TK_CALL		= TK_DOKE+1	; CALL token
-TK_DO		= TK_CALL+1	; DO token
-TK_LOOP		= TK_DO+1	; LOOP token
-TK_PRINT	= TK_LOOP+1	; PRINT token
+TK_STOP		= TK_REM+1		; STOP token
+TK_ON		= TK_STOP+1		; ON token
+TK_NULL		= TK_ON+1		; NULL token
+TK_INC		= TK_NULL+1		; INC token
+TK_WAIT		= TK_INC+1		; WAIT token
+TK_LOAD		= TK_WAIT+1		; LOAD token
+TK_SAVE		= TK_LOAD+1		; SAVE token
+TK_DEF		= TK_SAVE+1		; DEF token
+TK_POKE		= TK_DEF+1		; POKE token
+TK_DOKE		= TK_POKE+1		; DOKE token
+TK_CALL		= TK_DOKE+1		; CALL token
+TK_DO		= TK_CALL+1		; DO token
+TK_LOOP		= TK_DO+1		; LOOP token
+TK_PRINT	= TK_LOOP+1		; PRINT token
 TK_CONT		= TK_PRINT+1	; CONT token
-TK_LIST		= TK_CONT+1	; LIST token
-TK_CLEAR	= TK_LIST+1	; CLEAR token
+TK_LIST		= TK_CONT+1		; LIST token
+TK_CLEAR	= TK_LIST+1		; CLEAR token
 TK_NEW		= TK_CLEAR+1	; NEW token
-TK_WIDTH	= TK_NEW+1	; WIDTH token
+TK_WIDTH	= TK_NEW+1		; WIDTH token
 TK_GET		= TK_WIDTH+1	; GET token
-TK_SWAP		= TK_GET+1	; SWAP token
-TK_BITSET	= TK_SWAP+1	; BITSET token
+TK_SWAP		= TK_GET+1		; SWAP token
+TK_BITSET	= TK_SWAP+1		; BITSET token
 TK_BITCLR	= TK_BITSET+1	; BITCLR token
 TK_IRQ		= TK_BITCLR+1	; IRQ token
-TK_NMI		= TK_IRQ+1	; NMI token
-TK_SYS		= TK_NMI+1	; SYS token *** added for SBC-2
+TK_NMI		= TK_IRQ+1		; NMI token
+TK_SYS		= TK_NMI+1		; SYS token *** added for SBC-2
 
 ; secondary command tokens, can't start a statement
 
-TK_TAB		= TK_SYS+1	; TAB token
-TK_ELSE		= TK_TAB+1	; ELSE token
-TK_TO		= TK_ELSE+1	; TO token
-TK_FN		= TK_TO+1	; FN token
-TK_SPC		= TK_FN+1	; SPC token
-TK_THEN		= TK_SPC+1	; THEN token
-TK_NOT		= TK_THEN+1	; NOT token
-TK_STEP		= TK_NOT+1	; STEP token
-TK_UNTIL	= TK_STEP+1	; UNTIL token
+TK_TAB		= TK_SYS+1		; TAB token
+TK_ELSE		= TK_TAB+1		; ELSE token
+TK_TO		= TK_ELSE+1		; TO token
+TK_FN		= TK_TO+1		; FN token
+TK_SPC		= TK_FN+1		; SPC token
+TK_THEN		= TK_SPC+1		; THEN token
+TK_NOT		= TK_THEN+1		; NOT token
+TK_STEP		= TK_NOT+1		; STEP token
+TK_UNTIL	= TK_STEP+1		; UNTIL token
 TK_WHILE	= TK_UNTIL+1	; WHILE token
 TK_OFF		= TK_WHILE+1	; OFF token
 
 ; operator tokens
 
-TK_PLUS		= TK_OFF+1	; + token
-TK_MINUS	= TK_PLUS+1	; - token
+TK_PLUS		= TK_OFF+1		; + token
+TK_MINUS	= TK_PLUS+1		; - token
 TK_MUL		= TK_MINUS+1	; * token
-TK_DIV		= TK_MUL+1	; / token
-TK_POWER	= TK_DIV+1	; ^ token
+TK_DIV		= TK_MUL+1		; / token
+TK_POWER	= TK_DIV+1		; ^ token
 TK_AND		= TK_POWER+1	; AND token
-TK_EOR		= TK_AND+1	; EOR token
-TK_OR		= TK_EOR+1	; OR token
-TK_RSHIFT	= TK_OR+1	; RSHIFT token
+TK_EOR		= TK_AND+1		; EOR token
+TK_OR		= TK_EOR+1		; OR token
+TK_RSHIFT	= TK_OR+1		; RSHIFT token
 TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token
 TK_GT		= TK_LSHIFT+1	; > token
-TK_EQUAL	= TK_GT+1	; = token
+TK_EQUAL	= TK_GT+1		; = token
 TK_LT		= TK_EQUAL+1	; < token
 
 ; functions tokens
 
-TK_SGN		= TK_LT+1	; SGN token
-TK_INT		= TK_SGN+1	; INT token
-TK_ABS		= TK_INT+1	; ABS token
-TK_USR		= TK_ABS+1	; USR token
-TK_FRE		= TK_USR+1	; FRE token
-TK_POS		= TK_FRE+1	; POS token
-TK_SQR		= TK_POS+1	; SQR token
-TK_RND		= TK_SQR+1	; RND token
-TK_LOG		= TK_RND+1	; LOG token
-TK_EXP		= TK_LOG+1	; EXP token
-TK_COS		= TK_EXP+1	; COS token
-TK_SIN		= TK_COS+1	; SIN token
-TK_TAN		= TK_SIN+1	; TAN token
-TK_ATN		= TK_TAN+1	; ATN token
-TK_PEEK		= TK_ATN+1	; PEEK token
-TK_DEEK		= TK_PEEK+1	; DEEK token
-TK_SADD		= TK_DEEK+1	; SADD token
-TK_LEN		= TK_SADD+1	; LEN token
-TK_STRS		= TK_LEN+1	; STR$ token
-TK_VAL		= TK_STRS+1	; VAL token
-TK_ASC		= TK_VAL+1	; ASC token
-TK_UCASES	= TK_ASC+1	; UCASE$ token
+TK_SGN		= TK_LT+1		; SGN token
+TK_INT		= TK_SGN+1		; INT token
+TK_ABS		= TK_INT+1		; ABS token
+TK_USR		= TK_ABS+1		; USR token
+TK_FRE		= TK_USR+1		; FRE token
+TK_POS		= TK_FRE+1		; POS token
+TK_SQR		= TK_POS+1		; SQR token
+TK_RND		= TK_SQR+1		; RND token
+TK_LOG		= TK_RND+1		; LOG token
+TK_EXP		= TK_LOG+1		; EXP token
+TK_COS		= TK_EXP+1		; COS token
+TK_SIN		= TK_COS+1		; SIN token
+TK_TAN		= TK_SIN+1		; TAN token
+TK_ATN		= TK_TAN+1		; ATN token
+TK_PEEK		= TK_ATN+1		; PEEK token
+TK_DEEK		= TK_PEEK+1		; DEEK token
+TK_SADD		= TK_DEEK+1		; SADD token
+TK_LEN		= TK_SADD+1		; LEN token
+TK_STRS		= TK_LEN+1		; STR$ token
+TK_VAL		= TK_STRS+1		; VAL token
+TK_ASC		= TK_VAL+1		; ASC token
+TK_UCASES	= TK_ASC+1		; UCASE$ token
 TK_LCASES	= TK_UCASES+1	; LCASE$ token
 TK_CHRS		= TK_LCASES+1	; CHR$ token
-TK_HEXS		= TK_CHRS+1	; HEX$ token
-TK_BINS		= TK_HEXS+1	; BIN$ token
-TK_BITTST	= TK_BINS+1	; BITTST token
+TK_HEXS		= TK_CHRS+1		; HEX$ token
+TK_BINS		= TK_HEXS+1		; BIN$ token
+TK_BITTST	= TK_BINS+1		; BITTST token
 TK_MAX		= TK_BITTST+1	; MAX token
-TK_MIN		= TK_MAX+1	; MIN token
-TK_PI		= TK_MIN+1	; PI token
-TK_TWOPI	= TK_PI+1	; TWOPI token
+TK_MIN		= TK_MAX+1		; MIN token
+TK_PI		= TK_MIN+1		; PI token
+TK_TWOPI	= TK_PI+1		; TWOPI token
 TK_VPTR		= TK_TWOPI+1	; VARPTR token
-TK_LEFTS	= TK_VPTR+1	; LEFT$ token
+TK_LEFTS	= TK_VPTR+1		; LEFT$ token
 TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token
 TK_MIDS		= TK_RIGHTS+1	; MID$ token
 
@@ -402,7 +404,7 @@ PLUS_1		= $01		; X or Y plus 1
 PLUS_2		= $02		; X or Y plus 2
 PLUS_3		= $03		; X or Y plus 3
 
-LAB_STAK	= $0100		; stack bottom, no offset
+LAB_STAK	= $0100		; stack bottom, no offset *** is this 816-savvy?
 
 LAB_SKFE	= LAB_STAK+$FE
 						; flushed stack address
@@ -424,7 +426,8 @@ VEC_SV		= VEC_LD+2	; save vector
 
 Ibuffs		= VEC_SV+2	; ***changed for SBC-2
 						; start of input buffer after IRQ/NMI code
-Ibuffe		= Ibuffs+$47	; end of input buffer
+Ibuffe		= Ibuffs+$47
+						; end of input buffer
 
 ; *** these must be replaced by a call to MALLOC(0) ***
 ;Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
@@ -456,7 +459,8 @@ LAB_2D13
 
 ; copy block from LAB_2CEE to $00BC - $00D3
 
-	LDX	#StrTab-LAB_2CEE	; set byte count
+	LDX	#StrTab-LAB_2CEE
+						; set byte count
 LAB_2D4E
 	LDA	LAB_2CEE-1,X	; get byte from table
 	STA	LAB_IGBY-1,X	; save byte in page zero
@@ -466,7 +470,8 @@ LAB_2D4E
 ; copy block from StrTab to $0000 - $0012
 
 LAB_GMEM
-	LDX	#EndTab-StrTab-1	; set byte count-1
+	LDX	#EndTab-StrTab-1
+						; set byte count-1
 TabLoop
 	LDA	StrTab,X		; get byte from table
 	STA	PLUS_0,X		; save byte in page zero
@@ -580,9 +585,9 @@ LAB_2E05
 	JSR	LAB_CRLF		; print CR/LF
 	JSR	LAB_1463		; do "NEW" and "CLEAR"
 	LDA	Ememl			; get end of mem low byte
-	SEC				; set carry for subtract
+	SEC					; set carry for subtract
 	SBC	Smeml			; subtract start of mem low byte
-	TAX				; copy to X
+	TAX					; copy to X
 	LDA	Ememh			; get end of mem high byte
 	SBC	Smemh			; subtract start of mem high byte
 	JSR	LAB_295E		; print XA as unsigned integer (bytes free)
@@ -591,8 +596,8 @@ LAB_2E05
 	JSR	LAB_18C3		; print null terminated string from memory
 	LDA	#<LAB_1274		; warm start vector low byte
 	LDY	#>LAB_1274		; warm start vector high byte
-	STA	Wrmjpl		; save warm start vector low byte
-	STY	Wrmjph		; save warm start vector high byte
+	STA	Wrmjpl			; save warm start vector low byte
+	STY	Wrmjph			; save warm start vector high byte
 	JMP	(Wrmjpl)		; go do warm start
 
 ; open up space in memory
@@ -610,10 +615,11 @@ LAB_2E05
 
 LAB_11CF
 	JSR	LAB_121F		; check available memory, "Out of memory" error if no room
-					; addr to check is in AY (low/high)
-	STA	Earryl		; save new array mem end low byte
-	STY	Earryh		; save new array mem end high byte
+						; addr to check is in AY (low/high)
+	STA	Earryl			; save new array mem end low byte
+	STY	Earryh			; save new array mem end high byte
 
+; *************************************CONTINUE HERE****************************
 ; open up space in memory
 ; move (Ostrtl)-(Obendl) to new block ending at (Nbendl)
 ; don't set array end
