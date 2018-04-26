@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180426-1332
+; last modified 20180426-1335
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -1429,7 +1429,7 @@ LAB_FOR
 	PLA					; pull return address
 	LDA	#$10			; we need 16d bytes !
 	JSR	LAB_1212		; check room on stack for A bytes
-	JSR	LAB_SNBS		; scan for next BASIC statement ([:] or [EOL])
+	JSR	LAB_SNBS		; scan for next BASIC statement ([COLON] or [EOL])
 	CLC					; clear carry for add
 	TYA					; copy index to A
 	ADC	Bpntrl			; add BASIC execute pointer low byte
@@ -1888,49 +1888,49 @@ LAB_RETURN
 	BNE	LAB_16E5		; exit if following token (to allow syntax error)
 
 LAB_16E8
-	PLA				; dump calling routine return address
-	PLA				; dump calling routine return address
-	PLA				; pull token
+	PLA					; dump calling routine return address
+	PLA					; dump calling routine return address
+	PLA					; pull token
 	CMP	#TK_GOSUB		; compare with GOSUB token
 	BNE	LAB_16F4		; branch if no matching GOSUB
 
 LAB_16FF
-	PLA				; pull current line low byte
-	STA	Clinel		; save current line low byte
-	PLA				; pull current line high byte
-	STA	Clineh		; save current line high byte
-	PLA				; pull BASIC execute pointer low byte
-	STA	Bpntrl		; save BASIC execute pointer low byte
-	PLA				; pull BASIC execute pointer high byte
-	STA	Bpntrh		; save BASIC execute pointer high byte
+	PLA					; pull current line low byte
+	STA	Clinel			; save current line low byte
+	PLA					; pull current line high byte
+	STA	Clineh			; save current line high byte
+	PLA					; pull BASIC execute pointer low byte
+	STA	Bpntrl			; save BASIC execute pointer low byte
+	PLA					; pull BASIC execute pointer high byte
+	STA	Bpntrh			; save BASIC execute pointer high byte
 
-					; now do the DATA statement as we could be returning into
-					; the middle of an ON <var> GOSUB n,m,p,q line
-					; (the return address used by the DATA statement is the one
-					; pushed before the GOSUB was executed!)
+						; now do the DATA statement as we could be returning into
+						; the middle of an ON <var> GOSUB n,m,p,q line
+						; (the return address used by the DATA statement is the one
+						; pushed before the GOSUB was executed!)
 
 ; perform DATA
 
 LAB_DATA
-	JSR	LAB_SNBS		; scan for next BASIC statement ([:] or [EOL])
+	JSR	LAB_SNBS		; scan for next BASIC statement ([COLON] or [EOL])
 
-					; set BASIC execute pointer
+						; set BASIC execute pointer
 LAB_170F
-	TYA				; copy index to A
-	CLC				; clear carry for add
-	ADC	Bpntrl		; add BASIC execute pointer low byte
-	STA	Bpntrl		; save BASIC execute pointer low byte
+	TYA					; copy index to A
+	CLC					; clear carry for add
+	ADC	Bpntrl			; add BASIC execute pointer low byte
+	STA	Bpntrl			; save BASIC execute pointer low byte
 	BCC	LAB_1719		; skip next if no carry
 
-	INC	Bpntrh		; else increment BASIC execute pointer high byte
+	INC	Bpntrh			; else increment BASIC execute pointer high byte
 LAB_1719
 	RTS
 
 LAB_16FC
 	JMP	LAB_SNER		; do syntax error then warm start
 
-; scan for next BASIC statement ([:] or [EOL])
-; returns Y as index to [:] or [EOL]
+; scan for next BASIC statement ([COLON] or [EOL])
+; returns Y as index to [COLON] or [EOL]
 
 LAB_SNBS
 	LDX	#COLON			; set look for character = COLON
@@ -1944,7 +1944,7 @@ LAB_SNBL
 	LDY	#$00			; set search character = [EOL]
 	STY	Asrch			; store search character
 LAB_1725
-	TXA				; get alt search character
+	TXA					; get alt search character
 	EOR	Asrch			; toggle search character, effectively swap with $00
 	STA	Asrch			; save swapped search character
 LAB_172D
@@ -1954,7 +1954,7 @@ LAB_172D
 	CMP	Asrch			; compare with search character
 	BEQ	LAB_1719		; exit if found
 
-	INY				; increment index
+	INY					; increment index
 	CMP	#$22			; compare current character with open quote
 	BNE	LAB_172D		; if not open quote go get next character
 
@@ -1968,19 +1968,19 @@ LAB_IF
 	CMP	#TK_THEN		; compare with THEN token
 	BEQ	LAB_174B		; if it was THEN go do IF
 
-					; wasn't IF .. THEN so must be IF .. GOTO
+						; wasn't IF .. THEN so must be IF .. GOTO
 	CMP	#TK_GOTO		; compare with GOTO token
 	BNE	LAB_16FC		; if it wasn't GOTO go do syntax error
 
-	LDX	Bpntrl		; save the basic pointer low byte
-	LDY	Bpntrh		; save the basic pointer high byte
+	LDX	Bpntrl			; save the basic pointer low byte
+	LDY	Bpntrh			; save the basic pointer high byte
 	JSR	LAB_IGBY		; increment and scan memory
 	BCS	LAB_16FC		; if not numeric go do syntax error
 
-	STX	Bpntrl		; restore the basic pointer low byte
-	STY	Bpntrh		; restore the basic pointer high byte
+	STX	Bpntrl			; restore the basic pointer low byte
+	STY	Bpntrh			; restore the basic pointer high byte
 LAB_174B
-	LDA	FAC1_e		; get FAC1 exponent
+	LDA	FAC1_e			; get FAC1 exponent
 	BEQ	LAB_174E		; if the result was zero go look for an ELSE
 
 	JSR	LAB_IGBY		; else increment and scan memory
@@ -1989,14 +1989,14 @@ LAB_174B
 LAB_174C
 	JMP	LAB_GOTO		; else was numeric so do GOTO n
 
-					; is var or keyword
+						; is var or keyword
 LAB_174D
 	CMP	#TK_RETURN		; compare the byte with the token for RETURN
 	BNE	LAB_174G		; if it wasn't RETURN go interpret BASIC code from (Bpntrl)
-					; and return to this code to process any following code
+						; and return to this code to process any following code
 
 	JMP	LAB_1602		; else it was RETURN so interpret BASIC code from (Bpntrl)
-					; but don't return here
+						; but don't return here
 
 LAB_174G
 	JSR	LAB_15FF		; interpret BASIC code from (Bpntrl)
@@ -2671,10 +2671,10 @@ LAB_19C5
 
 					; find next DATA statement or do "Out of DATA" error
 LAB_19DD
-	JSR	LAB_SNBS		; scan for next BASIC statement ([:] or [EOL])
+	JSR	LAB_SNBS		; scan for next BASIC statement ([COLON] or [EOL])
 	INY				; increment index
-	TAX				; copy character ([:] or [EOL])
-	BNE	LAB_19F6		; branch if [:]
+	TAX				; copy character ([COLON] or [EOL])
+	BNE	LAB_19F6		; branch if [COLON]
 
 	LDX	#$06			; set for "Out of DATA" error
 	INY				; increment index, now points to next line pointer high byte
