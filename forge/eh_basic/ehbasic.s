@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180426-1305
+; last modified 20180426-1332
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -452,7 +452,7 @@ LAB_2D13
 
 	LDX	#$FF			; set byte
 	STX	Clineh			; set current line high byte (set immediate mode)
-	TXS					; reset stack pointer
+	TXS					; reset stack pointer ***beware of 816/multitask savvyness
 
 	LDA	#$4C			; code for JMP
 	STA	Fnxjmp			; save for jump vector for functions
@@ -1768,17 +1768,17 @@ LAB_16B0
 LAB_GOTO
 	JSR	LAB_GFPN		; get fixed-point number into temp integer
 	JSR	LAB_SNBL		; scan for next BASIC line
-	LDA	Clineh		; get current line high byte
-	CMP	Itemph		; compare with temporary integer high byte
+	LDA	Clineh			; get current line high byte
+	CMP	Itemph			; compare with temporary integer high byte
 	BCS	LAB_16D0		; branch if >= (start search from beginning)
 
-	TYA				; else copy line index to A
-	SEC				; set carry (+1)
-	ADC	Bpntrl		; add BASIC execute pointer low byte
-	LDX	Bpntrh		; get BASIC execute pointer high byte
+	TYA					; else copy line index to A
+	SEC					; set carry (+1)
+	ADC	Bpntrl			; add BASIC execute pointer low byte
+	LDX	Bpntrh			; get BASIC execute pointer high byte
 	BCC	LAB_16D4		; branch if no overflow to high byte
 
-	INX				; increment high byte
+	INX					; increment high byte
 	BCS	LAB_16D4		; branch always (can never be carry)
 
 ; search for line # in temp (Itempl/Itemph) from start of mem pointer (Smeml)
@@ -1792,15 +1792,15 @@ LAB_16D0
 LAB_16D4
 	JSR	LAB_SHLN		; search Basic for temp integer line number from AX
 	BCC	LAB_16F7		; if carry clear go do "Undefined statement" error
-					; (unspecified statement)
+						; (unspecified statement)
 
-					; carry already set for subtract
-	LDA	Baslnl		; get pointer low byte
+						; carry already set for subtract
+	LDA	Baslnl			; get pointer low byte
 	SBC	#$01			; -1
-	STA	Bpntrl		; save BASIC execute pointer low byte
-	LDA	Baslnh		; get pointer high byte
+	STA	Bpntrl			; save BASIC execute pointer low byte
+	LDA	Baslnh			; get pointer high byte
 	SBC	#$00			; subtract carry
-	STA	Bpntrh		; save BASIC execute pointer high byte
+	STA	Bpntrh			; save BASIC execute pointer high byte
 LAB_16E5
 	RTS
 
@@ -1811,65 +1811,65 @@ LAB_DONOK
 ; perform LOOP
 
 LAB_LOOP
-	TAY				; save following token
-	TSX				; copy stack pointer
+	TAY					; save following token
+	TSX					; copy stack pointer ***beware of 816-MM
 	LDA	LAB_STAK+3,X	; get token byte from stack
-	CMP	#TK_DO		; compare with DO token
+	CMP	#TK_DO			; compare with DO token
 	BNE	LAB_DONOK		; branch if no matching DO
 
-	INX				; dump calling routine return address
-	INX				; dump calling routine return address
-	TXS				; correct stack
-	TYA				; get saved following token back
+	INX					; dump calling routine return address
+	INX					; dump calling routine return address
+	TXS					; correct stack ***beware of 816/multitask savvyness
+	TYA					; get saved following token back
 	BEQ	LoopAlways		; if no following token loop forever
-					; (stack pointer in X)
+						; (stack pointer in X)
 
 	CMP	#COLON			; could be COLON
 	BEQ	LoopAlways		; if :... loop forever
 
 	SBC	#TK_UNTIL		; subtract token for UNTIL, we know carry is set here
-	TAX				; copy to X (if it was UNTIL then Y will be correct)
-	BEQ	DoRest		; branch if was UNTIL
+	TAX					; copy to X (if it was UNTIL then Y will be correct)
+	BEQ	DoRest			; branch if was UNTIL
 
-	DEX				; decrement result
+	DEX					; decrement result
 	BNE	LAB_16FC		; if not WHILE go do syntax error and warm start
-					; only if the token was WHILE will this fail
+						; only if the token was WHILE will this fail
 
-	DEX				; set invert result byte
+	DEX					; set invert result byte
 DoRest
-	STX	Frnxth		; save invert result byte
+	STX	Frnxth			; save invert result byte
 	JSR	LAB_IGBY		; increment and scan memory
 	JSR	LAB_EVEX		; evaluate expression
-	LDA	FAC1_e		; get FAC1 exponent
+	LDA	FAC1_e			; get FAC1 exponent
 	BEQ	DoCmp			; if =0 go do straight compare
 
 	LDA	#$FF			; else set all bits
 DoCmp
-	TSX				; copy stack pointer
-	EOR	Frnxth		; EOR with invert byte
+	TSX					; copy stack pointer ***beware of 816-MM
+	EOR	Frnxth			; EOR with invert byte
 	BNE	LoopDone		; if <> 0 clear stack and back to interpreter loop
 
-					; loop condition wasn't met so do it again
+						; loop condition wasn't met so do it again
 LoopAlways
 	LDA	LAB_STAK+2,X	; get current line low byte
-	STA	Clinel		; save current line low byte
+	STA	Clinel			; save current line low byte
 	LDA	LAB_STAK+3,X	; get current line high byte
-	STA	Clineh		; save current line high byte
+	STA	Clineh			; save current line high byte
 	LDA	LAB_STAK+4,X	; get BASIC execute pointer low byte
-	STA	Bpntrl		; save BASIC execute pointer low byte
+	STA	Bpntrl			; save BASIC execute pointer low byte
 	LDA	LAB_STAK+5,X	; get BASIC execute pointer high byte
-	STA	Bpntrh		; save BASIC execute pointer high byte
+	STA	Bpntrh			; save BASIC execute pointer high byte
 	JSR	LAB_GBYT		; scan memory
 	JMP	LAB_15C2		; go do interpreter inner loop
 
-					; clear stack and back to interpreter loop
+						; clear stack and back to interpreter loop
 LoopDone
-	INX				; dump DO token
-	INX				; dump current line low byte
-	INX				; dump current line high byte
-	INX				; dump BASIC execute pointer low byte
-	INX				; dump BASIC execute pointer high byte
-	TXS				; correct stack
+	INX					; dump DO token
+	INX					; dump current line low byte
+	INX					; dump current line high byte
+	INX					; dump BASIC execute pointer low byte
+	INX					; dump BASIC execute pointer high byte
+	TXS					; correct stack ***beware of 816/multitask savvyness
 	JMP	LAB_DATA		; go perform DATA (find : or [EOL])
 
 ; do the return without gosub error
@@ -2726,7 +2726,7 @@ LAB_1A1B
 ; exit with z=1 if FOR else exit with z=0
 
 LAB_11A1
-	TSX				; copy stack pointer
+	TSX				; copy stack pointer ***beware of 816-MM
 	INX				; +1 pass return address
 	INX				; +2 pass return address
 	INX				; +3 pass calling routine return address
@@ -2786,7 +2786,7 @@ LAB_1A54
 	BEQ	LAB_1ABE		; do error #X, then warm start
 
 LAB_1A56
-	TXS				; set stack pointer, X set by search, dumps return addresses
+	TXS				; set stack pointer, X set by search, dumps return addresses ***beware of 816/multitask savvyness
 
 	TXA				; copy stack pointer
 	SEC				; set carry for subtract
@@ -2796,7 +2796,7 @@ LAB_1A56
 
 	LDY	#>LAB_STAK		; point to stack page high byte
 	JSR	LAB_UFAC		; unpack memory (STEP value) into FAC1
-	TSX				; get stack pointer back
+	TSX				; get stack pointer back ***beware of 816-MM
 	LDA	LAB_STAK+8,X	; get step sign
 	STA	FAC1_s		; save FAC1 sign (b7)
 	LDA	Frnxtl		; get FOR variable pointer low byte
@@ -2805,7 +2805,7 @@ LAB_1A56
 	JSR	LAB_PFAC		; pack FAC1 into (FOR variable)
 	LDY	#>LAB_STAK		; point to stack page high byte
 	JSR	LAB_27FA		; compare FAC1 with (Y,ut2_pl) (TO value)
-	TSX				; get stack pointer back
+	TSX				; get stack pointer back ***beware of 816-MM
 	CMP	LAB_STAK+8,X	; compare step sign
 	BEQ	LAB_1A9B		; branch if = (loop complete)
 
@@ -2826,7 +2826,7 @@ LAB_1A9B
 	TXA				; stack copy to A
 	ADC	#$0F			; add $10 ($0F+carry) to dump FOR structure
 	TAX				; copy back to index
-	TXS				; copy to stack pointer
+	TXS				; copy to stack pointer ***beware of 816/multitask savvyness
 	JSR	LAB_GBYT		; scan memory
 	CMP	#","			; compare with ","
 	BNE	LAB_1A98		; branch if not "," (go do interpreter inner loop)
@@ -3830,7 +3830,7 @@ LAB_1E1F
 	STA	Varnm2		; restore array name 2nd byte
 	PLA				; pull dimensions count
 	TAY				; restore it
-	TSX				; copy stack pointer
+	TSX				; copy stack pointer ***beware of 816-MM
 	LDA	LAB_STAK+2,X	; get DIM flag
 	PHA				; push it
 	LDA	LAB_STAK+1,X	; get data type flag
