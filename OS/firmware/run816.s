@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc7
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180425-1441
+; last modified 20180426-1113
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -139,6 +139,7 @@ reset:
 ; as this is the only valid CPU for this firmware, no further checking necessary
 
 #include "modules/kern_addr.s";try 8-bit!
+#include "modules/brk_addr.s"
 ; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
 	.al: REP #$20
 
@@ -147,8 +148,6 @@ reset:
 
 ; preset default BRK handler
 ;#include "modules/brk_addr16.s"
-lda#'K'*257
-jsr$c0c2
 
 ; no need to set NMI as it will be validated
 
