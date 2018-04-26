@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180426-1108
+; last modified 20180426-1305
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -329,7 +329,7 @@ TK_IRQ		= TK_BITCLR+1	; IRQ token
 TK_NMI		= TK_IRQ+1		; NMI token
 TK_SYS		= TK_NMI+1		; SYS token *** added for SBC-2
 
-; secondary command tokens, can't start a statement
+; secondary command tokens, cannot start a statement
 
 TK_TAB		= TK_SYS+1		; TAB token
 TK_ELSE		= TK_TAB+1		; ELSE token
@@ -619,58 +619,57 @@ LAB_11CF
 	STA	Earryl			; save new array mem end low byte
 	STY	Earryh			; save new array mem end high byte
 
-; *************************************CONTINUE HERE****************************
 ; open up space in memory
 ; move (Ostrtl)-(Obendl) to new block ending at (Nbendl)
 ; don't set array end
 
 LAB_11D6
-	SEC				; set carry for subtract
-	LDA	Obendl		; get block end low byte
-	SBC	Ostrtl		; subtract block start low byte
-	TAY				; copy MOD(block length/$100) byte to Y
-	LDA	Obendh		; get block end high byte
-	SBC	Ostrth		; subtract block start high byte
-	TAX				; copy block length high byte to X
-	INX				; +1 to allow for count=0 exit
-	TYA				; copy block length low byte to A
+	SEC					; set carry for subtract
+	LDA	Obendl			; get block end low byte
+	SBC	Ostrtl			; subtract block start low byte
+	TAY					; copy MOD(block length/$100) byte to Y
+	LDA	Obendh			; get block end high byte
+	SBC	Ostrth			; subtract block start high byte
+	TAX					; copy block length high byte to X
+	INX					; +1 to allow for count=0 exit
+	TYA					; copy block length low byte to A
 	BEQ	LAB_120A		; branch if length low byte=0
 
-					; block is (X-1)*256+Y bytes, do the Y bytes first
+						; block is (X-1)*256+Y bytes, do the Y bytes first
 
-	SEC				; set carry for add + 1, two's complement
+	SEC					; set carry for add + 1, two's complement
 	EOR	#$FF			; invert low byte for subtract
-	ADC	Obendl		; add block end low byte
+	ADC	Obendl			; add block end low byte
 
-	STA	Obendl		; save corrected old block end low byte
+	STA	Obendl			; save corrected old block end low byte
 	BCS	LAB_11F3		; branch if no underflow
 
-	DEC	Obendh		; else decrement block end high byte
-	SEC				; set carry for add + 1, two's complement
+	DEC	Obendh			; else decrement block end high byte
+	SEC					; set carry for add + 1, two's complement
 LAB_11F3
-	TYA				; get MOD(block length/$100) byte
+	TYA					; get MOD(block length/$100) byte
 	EOR	#$FF			; invert low byte for subtract
-	ADC	Nbendl		; add destination end low byte
-	STA	Nbendl		; save modified new block end low byte
+	ADC	Nbendl			; add destination end low byte
+	STA	Nbendl			; save modified new block end low byte
 	BCS	LAB_1203		; branch if no underflow
 
-	DEC	Nbendh		; else decrement block end high byte
+	DEC	Nbendh			; else decrement block end high byte
 	BCC	LAB_1203		; branch always
 
 LAB_11FF
 	LDA	(Obendl),Y		; get byte from source
 	STA	(Nbendl),Y		; copy byte to destination
 LAB_1203
-	DEY				; decrement index
+	DEY					; decrement index
 	BNE	LAB_11FF		; loop until Y=0
 
-					; now do Y=0 indexed byte
+						; now do Y=0 indexed byte
 	LDA	(Obendl),Y		; get byte from source
 	STA	(Nbendl),Y		; save byte to destination
 LAB_120A
-	DEC	Obendh		; decrement source pointer high byte
-	DEC	Nbendh		; decrement destination pointer high byte
-	DEX				; decrement block count
+	DEC	Obendh			; decrement source pointer high byte
+	DEC	Nbendh			; decrement destination pointer high byte
+	DEX					; decrement block count
 	BNE	LAB_1203		; loop until count = $0
 
 	RTS
@@ -680,7 +679,7 @@ LAB_120A
 
 LAB_1212
 	STA	TempB			; save result in temp byte
-	TSX				; copy stack
+	TSX					; copy stack *** check 816 and multitask savvyness
 	CPX	TempB			; compare new "limit" with stack
 	BCC	LAB_OMER		; if stack < limit do "Out of memory" error then warm start
 
@@ -690,52 +689,52 @@ LAB_1212
 ; addr to check is in AY (low/high)
 
 LAB_121F
-	CPY	Sstorh		; compare bottom of string mem high byte
+	CPY	Sstorh			; compare bottom of string mem high byte
 	BCC	LAB_124B		; if less then exit (is ok)
 
 	BNE	LAB_1229		; skip next test if greater (tested <)
 
-					; high byte was =, now do low byte
-	CMP	Sstorl		; compare with bottom of string mem low byte
+						; high byte was =, now do low byte
+	CMP	Sstorl			; compare with bottom of string mem low byte
 	BCC	LAB_124B		; if less then exit (is ok)
 
-					; addr is > string storage ptr (oops!)
+						; addr is > string storage ptr (oops!)
 LAB_1229
-	PHA				; push addr low byte
+	PHA					; push addr low byte
 	LDX	#$08			; set index to save Adatal to expneg inclusive
-	TYA				; copy addr high byte (to push on stack)
+	TYA					; copy addr high byte (to push on stack)
 
-					; save misc numeric work area
+						; save misc numeric work area
 LAB_122D
-	PHA				; push byte
+	PHA					; push byte
 	LDA	Adatal-1,X		; get byte from Adatal to expneg ( ,$00 not pushed)
-	DEX				; decrement index
+	DEX					; decrement index
 	BPL	LAB_122D		; loop until all done
 
 	JSR	LAB_GARB		; garbage collection routine
 
-					; restore misc numeric work area
+						; restore misc numeric work area
 	LDX	#$00			; clear the index to restore bytes
 LAB_1238
-	PLA				; pop byte
+	PLA					; pop byte
 	STA	Adatal,X		; save byte to Adatal to expneg
-	INX				; increment index
+	INX					; increment index
 	CPX	#$08			; compare with end + 1
 	BMI	LAB_1238		; loop if more to do
 
-	PLA				; pop addr high byte
-	TAY				; copy back to Y
-	PLA				; pop addr low byte
-	CPY	Sstorh		; compare bottom of string mem high byte
+	PLA					; pop addr high byte
+	TAY					; copy back to Y
+	PLA					; pop addr low byte
+	CPY	Sstorh			; compare bottom of string mem high byte
 	BCC	LAB_124B		; if less then exit (is ok)
 
 	BNE	LAB_OMER		; if greater do "Out of memory" error then warm start
 
-					; high byte was =, now do low byte
-	CMP	Sstorl		; compare with bottom of string mem low byte
+						; high byte was =, now do low byte
+	CMP	Sstorl			; compare with bottom of string mem low byte
 	BCS	LAB_OMER		; if >= do "Out of memory" error then warm start
 
-					; ok exit, carry clear
+						; ok exit, carry clear
 LAB_124B
 	RTS
 
@@ -758,21 +757,21 @@ LAB_XERR
 	LDY	#>LAB_EMSG		; point to " Error" high addr
 LAB_1269
 	JSR	LAB_18C3		; print null terminated string from memory
-	LDY	Clineh		; get current line high byte
-	INY				; increment it
+	LDY	Clineh			; get current line high byte
+	INY					; increment it
 	BEQ	LAB_1274		; go do warm start (was immediate mode)
 
-					; else print line number
+						; else print line number
 	JSR	LAB_2953		; print " in line [LINE #]"
 
 ; BASIC warm start entry point
 ; wait for Basic command
 
 LAB_1274
-					; clear ON IRQ/NMI bytes
+						; clear ON IRQ/NMI bytes
 	LDA	#$00			; clear A
-	STA	IrqBase		; clear enabled byte
-	STA	NmiBase		; clear enabled byte
+	STA	IrqBase			; clear enabled byte
+	STA	NmiBase			; clear enabled byte
 	LDA	#<LAB_RMSG		; point to "Ready" message low byte
 	LDY	#>LAB_RMSG		; point to "Ready" message high byte
 
@@ -783,18 +782,18 @@ LAB_1274
 LAB_127D
 	JSR	LAB_1357		; call for BASIC input
 LAB_1280
-	STX	Bpntrl		; set BASIC execute pointer low byte
-	STY	Bpntrh		; set BASIC execute pointer high byte
+	STX	Bpntrl			; set BASIC execute pointer low byte
+	STY	Bpntrh			; set BASIC execute pointer high byte
 	JSR	LAB_GBYT		; scan memory
 	BEQ	LAB_127D		; loop while null
 
 ; got to interpret input line now ..
 
 	LDX	#$FF			; current line to null value
-	STX	Clineh		; set current line high byte
+	STX	Clineh			; set current line high byte
 	BCC	LAB_1295		; branch if numeric character (handle new BASIC line)
 
-					; no line number .. immediate mode
+						; no line number .. immediate mode
 	JSR	LAB_13A6		; crunch keywords into Basic tokens
 	JMP	LAB_15F6		; go scan and interpret code
 
@@ -807,99 +806,99 @@ LAB_1295
 	JSR	LAB_SSLN		; search BASIC for temp integer line number
 	BCC	LAB_12E6		; branch if not found
 
-					; aroooogah! line # already exists! delete it
+						; aroooogah! line # already exists! delete it
 	LDY	#$01			; set index to next line pointer high byte
 	LDA	(Baslnl),Y		; get next line pointer high byte
-	STA	ut1_ph		; save it
+	STA	ut1_ph			; save it
 	LDA	Svarl			; get start of vars low byte
-	STA	ut1_pl		; save it
-	LDA	Baslnh		; get found line pointer high byte
-	STA	ut2_ph		; save it
-	LDA	Baslnl		; get found line pointer low byte
-	DEY				; decrement index
+	STA	ut1_pl			; save it
+	LDA	Baslnh			; get found line pointer high byte
+	STA	ut2_ph			; save it
+	LDA	Baslnl			; get found line pointer low byte
+	DEY					; decrement index
 	SBC	(Baslnl),Y		; subtract next line pointer low byte
-	CLC				; clear carry for add
+	CLC					; clear carry for add
 	ADC	Svarl			; add start of vars low byte
 	STA	Svarl			; save new start of vars low byte
-	STA	ut2_pl		; save destination pointer low byte
+	STA	ut2_pl			; save destination pointer low byte
 	LDA	Svarh			; get start of vars high byte
 	ADC	#$FF			; -1 + carry
 	STA	Svarh			; save start of vars high byte
-	SBC	Baslnh		; subtract found line pointer high byte
-	TAX				; copy to block count
-	SEC				; set carry for subtract
-	LDA	Baslnl		; get found line pointer low byte
+	SBC	Baslnh			; subtract found line pointer high byte
+	TAX					; copy to block count
+	SEC					; set carry for subtract
+	LDA	Baslnl			; get found line pointer low byte
 	SBC	Svarl			; subtract start of vars low byte
-	TAY				; copy to bytes in first block count
+	TAY					; copy to bytes in first block count
 	BCS	LAB_12D0		; branch if overflow
 
-	INX				; increment block count (correct for =0 loop exit)
-	DEC	ut2_ph		; decrement destination high byte
+	INX					; increment block count (correct for =0 loop exit)
+	DEC	ut2_ph			; decrement destination high byte
 LAB_12D0
-	CLC				; clear carry for add
-	ADC	ut1_pl		; add source pointer low byte
+	CLC					; clear carry for add
+	ADC	ut1_pl			; add source pointer low byte
 	BCC	LAB_12D8		; branch if no overflow
 
-	DEC	ut1_ph		; else decrement source pointer high byte
-	CLC				; clear carry
+	DEC	ut1_ph			; else decrement source pointer high byte
+	CLC					; clear carry
 
-					; close up memory to delete old line
+						; close up memory to delete old line
 LAB_12D8
 	LDA	(ut1_pl),Y		; get byte from source
 	STA	(ut2_pl),Y		; copy to destination
-	INY				; increment index
+	INY					; increment index
 	BNE	LAB_12D8		; while <> 0 do this block
 
-	INC	ut1_ph		; increment source pointer high byte
-	INC	ut2_ph		; increment destination pointer high byte
-	DEX				; decrement block count
+	INC	ut1_ph			; increment source pointer high byte
+	INC	ut2_ph			; increment destination pointer high byte
+	DEX					; decrement block count
 	BNE	LAB_12D8		; loop until all done
 
-					; got new line in buffer and no existing same #
+						; got new line in buffer and no existing same #
 LAB_12E6
-	LDA	Ibuffs		; get byte from start of input buffer
+	LDA	Ibuffs			; get byte from start of input buffer
 	BEQ	LAB_1319		; if null line just go flush stack/vars and exit
 
-					; got new line and it isn't empty line
+						; got new line and it isn't empty line
 	LDA	Ememl			; get end of mem low byte
 	LDY	Ememh			; get end of mem high byte
-	STA	Sstorl		; set bottom of string space low byte
-	STY	Sstorh		; set bottom of string space high byte
+	STA	Sstorl			; set bottom of string space low byte
+	STY	Sstorh			; set bottom of string space high byte
 	LDA	Svarl			; get start of vars low byte	(end of BASIC)
-	STA	Obendl		; save old block end low byte
+	STA	Obendl			; save old block end low byte
 	LDY	Svarh			; get start of vars high byte	(end of BASIC)
-	STY	Obendh		; save old block end high byte
+	STY	Obendh			; save old block end high byte
 	ADC	Ibptr			; add input buffer pointer	(also buffer length)
 	BCC	LAB_1301		; branch if no overflow from add
 
-	INY				; else increment high byte
+	INY					; else increment high byte
 LAB_1301
-	STA	Nbendl		; save new block end low byte	(move to, low byte)
-	STY	Nbendh		; save new block end high byte
+	STA	Nbendl			; save new block end low byte	(move to, low byte)
+	STY	Nbendh			; save new block end high byte
 	JSR	LAB_11CF		; open up space in memory
-					; old start pointer Ostrtl,Ostrth set by the find line call
-	LDA	Earryl		; get array mem end low byte
-	LDY	Earryh		; get array mem end high byte
+						; old start pointer Ostrtl,Ostrth set by the find line call
+	LDA	Earryl			; get array mem end low byte
+	LDY	Earryh			; get array mem end high byte
 	STA	Svarl			; save start of vars low byte
 	STY	Svarh			; save start of vars high byte
 	LDY	Ibptr			; get input buffer pointer	(also buffer length)
-	DEY				; adjust for loop type
+	DEY					; adjust for loop type
 LAB_1311
 	LDA	Ibuffs-4,Y		; get byte from crunched line
 	STA	(Baslnl),Y		; save it to program memory
-	DEY				; decrement count
+	DEY					; decrement count
 	CPY	#$03			; compare with first byte-1
 	BNE	LAB_1311		; continue while count <> 3
 
-	LDA	Itemph		; get line # high byte
+	LDA	Itemph			; get line # high byte
 	STA	(Baslnl),Y		; save it to program memory
-	DEY				; decrement count
-	LDA	Itempl		; get line # low byte
+	DEY					; decrement count
+	LDA	Itempl			; get line # low byte
 	STA	(Baslnl),Y		; save it to program memory
-	DEY				; decrement count
+	DEY					; decrement count
 	LDA	#$FF			; set byte to allow chain rebuild. if you didn't set this
-					; byte then a zero already here would stop the chain rebuild
-					; as it would think it was the [EOT] marker.
+						; byte then a zero already here would stop the chain rebuild
+						; as it would think it was the [EOT] marker.
 	STA	(Baslnl),Y		; save it to program memory
 
 LAB_1319
@@ -908,29 +907,29 @@ LAB_1319
 	LDA	Smemh			; get start of mem high byte
 	LDY	#$01			; index to high byte of next line pointer
 LAB_1325
-	STX	ut1_pl		; set line start pointer low byte
-	STA	ut1_ph		; set line start pointer high byte
+	STX	ut1_pl			; set line start pointer low byte
+	STA	ut1_ph			; set line start pointer high byte
 	LDA	(ut1_pl),Y		; get it
 	BEQ	LAB_133E		; exit if end of program
 
 ; rebuild chaining of Basic lines
 
 	LDY	#$04			; point to first code byte of line
-					; there is always 1 byte + [EOL] as null entries are deleted
+						; there is always 1 byte + [EOL] as null entries are deleted
 LAB_1330
-	INY				; next code byte
+	INY					; next code byte
 	LDA	(ut1_pl),Y		; get byte
 	BNE	LAB_1330		; loop if not [EOL]
 
-	SEC				; set carry for add + 1
-	TYA				; copy end index
-	ADC	ut1_pl		; add to line start pointer low byte
-	TAX				; copy to X
+	SEC					; set carry for add + 1
+	TYA					; copy end index
+	ADC	ut1_pl			; add to line start pointer low byte
+	TAX					; copy to X
 	LDY	#$00			; clear index, point to this line's next line pointer
 	STA	(ut1_pl),Y		; set next line pointer low byte
-	TYA				; clear A
-	ADC	ut1_ph		; add line start pointer high byte + carry
-	INY				; increment index to high byte
+	TYA					; clear A
+	ADC	ut1_ph			; add line start pointer high byte + carry
+	INY					; increment index to high byte
 	STA	(ut1_pl),Y		; save next line pointer low byte
 	BCC	LAB_1325		; go do next line, branch always, carry clear
 
@@ -947,10 +946,10 @@ LAB_INLN
 
 ; receive line from keyboard
 
-					; $08 as delete key (BACKSPACE on standard keyboard)
+						; $08 as delete key (BACKSPACE on standard keyboard)
 LAB_134B
 	JSR	LAB_PRNA		; go print the character
-	DEX				; decrement the buffer counter (delete)
+	DEX					; decrement the buffer counter (delete)
 	.byte	$2C			; make LDX into BIT abs
 
 ; call for BASIC input (main entry point)
@@ -958,7 +957,7 @@ LAB_134B
 LAB_1357
 	LDX	#$00			; clear BASIC line buffer pointer
 LAB_1359
-	JSR	V_INPT		; call scan input device
+	JSR	V_INPT			; call scan input device
 	BCC	LAB_1359		; loop if no byte
 
 	BEQ	LAB_1359		; loop until valid input (ignore NULLs)
@@ -986,7 +985,7 @@ LAB_1378
 	BCS	LAB_138E		; skip store and do [BELL] if buffer full
 
 	STA	Ibuffs,X		; else store in buffer
-	INX				; increment pointer
+	INX					; increment pointer
 LAB_137F
 	JSR	LAB_PRNA		; go print the character
 	BNE	LAB_1359		; always loop for next character
@@ -999,7 +998,7 @@ LAB_1384
 LAB_138E
 	LDA	#$07			; [BELL] character into A
 	BNE	LAB_137F		; go print the [BELL] but ignore input character
-					; branch always
+						; branch always
 
 ; crunch keywords into Basic tokens
 ; position independent buffer version ..
@@ -1008,12 +1007,12 @@ LAB_138E
 LAB_13A6
 	LDY	#$FF			; set save index (makes for easy math later)
 
-	SEC				; set carry for subtract
-	LDA	Bpntrl		; get basic execute pointer low byte
+	SEC					; set carry for subtract
+	LDA	Bpntrl			; get basic execute pointer low byte
 	SBC	#<Ibuffs		; subtract input buffer start pointer
-	TAX				; copy result to X (index past line # if any)
+	TAX					; copy result to X (index past line # if any)
 
-	STX	Oquote		; clear open quote/DATA flag
+	STX	Oquote			; clear open quote/DATA flag
 LAB_13AC
 	LDA	Ibuffs,X		; get byte from input buffer
 	BEQ	LAB_13EC		; if null save byte then exit
@@ -1027,25 +1026,25 @@ LAB_13AC
 	CMP	#"0"			; compare with "0"
 	BCS	LAB_13EC		; if >= go save byte then continue crunching
 
-	STA	Scnquo		; save buffer byte as search character
+	STA	Scnquo			; save buffer byte as search character
 	CMP	#$22			; is it quote character?
 	BEQ	LAB_1410		; branch if so (copy quoted string)
 
 	CMP	#"*"			; compare with "*"
 	BCC	LAB_13EC		; if < go save byte then continue crunching
 
-					; else crunch now
+						; else crunch now
 LAB_13CC
-	BIT	Oquote		; get open quote/DATA token flag
+	BIT	Oquote			; get open quote/DATA token flag
 	BVS	LAB_13EC		; branch if b6 of Oquote set (was DATA)
-					; go save byte then continue crunching
+						; go save byte then continue crunching
 
 	STX	TempB			; save buffer read index
 	STY	csidx			; copy buffer save index
 	LDY	#<TAB_1STC		; get keyword first character table low address
-	STY	ut2_pl		; save pointer low byte
+	STY	ut2_pl			; save pointer low byte
 	LDY	#>TAB_1STC		; get keyword first character table high address
-	STY	ut2_ph		; save pointer high byte
+	STY	ut2_ph			; save pointer high byte
 	LDY	#$00			; clear table pointer
 
 LAB_13D0
@@ -1053,33 +1052,33 @@ LAB_13D0
 	BEQ	LAB_13D1		; go do word_table_chr if match
 
 	BCC	LAB_13EA		; if < keyword first character table byte go restore
-					; Y and save to crunched
+						; Y and save to crunched
 
-	INY				; else increment pointer
+	INY					; else increment pointer
 	BNE	LAB_13D0		; and loop (branch always)
 
 ; have matched first character of some keyword
 
 LAB_13D1
-	TYA				; copy matching index
-	ASL				; *2 (bytes per pointer)
-	TAX				; copy to new index
+	TYA					; copy matching index
+	ASL					; *2 (bytes per pointer)
+	TAX					; copy to new index
 	LDA	TAB_CHRT,X		; get keyword table pointer low byte
-	STA	ut2_pl		; save pointer low byte
+	STA	ut2_pl			; save pointer low byte
 	LDA	TAB_CHRT+1,X	; get keyword table pointer high byte
-	STA	ut2_ph		; save pointer high byte
+	STA	ut2_ph			; save pointer high byte
 
 	LDY	#$FF			; clear table pointer (make -1 for start)
 
 	LDX	TempB			; restore buffer read index
 
 LAB_13D6
-	INY				; next table byte
+	INY					; next table byte
 	LDA	(ut2_pl),Y		; get byte from table
 LAB_13D8
 	BMI	LAB_13EA		; all bytes matched so go save token
 
-	INX				; next buffer byte
+	INX					; next buffer byte
 	CMP	Ibuffs,X		; compare with byte from input buffer
 	BEQ	LAB_13D6		; go compare next if match
 
@@ -1088,32 +1087,32 @@ LAB_13D8
 LAB_13EA
 	LDY	csidx			; restore save index
 
-					; save crunched to output
+						; save crunched to output
 LAB_13EC
-	INX				; increment buffer index (to next input byte)
-	INY				; increment save index (to next output byte)
+	INX					; increment buffer index (to next input byte)
+	INY					; increment save index (to next output byte)
 	STA	Ibuffs,Y		; save byte to output
 	CMP	#$00			; set the flags, set carry
 	BEQ	LAB_142A		; do exit if was null [EOL]
 
-					; A holds token or byte here
-	SBC	#":"			; subtract ":" (carry set by CMP #00)
-	BEQ	LAB_13FF		; branch if it was ":" (is now $00)
+						; A holds token or byte here
+	SBC	#COLON			; subtract COLON (carry set by CMP #00)
+	BEQ	LAB_13FF		; branch if it was COLON (is now $00)
 
-					; A now holds token-$3A
+						; A now holds token-$3A
 	CMP	#TK_DATA-$3A	; compare with DATA token - $3A
 	BNE	LAB_1401		; branch if not DATA
 
-					; token was : or DATA
+						; token was : or DATA
 LAB_13FF
-	STA	Oquote		; save token-$3A (clear for ":", TK_DATA-$3A for DATA)
+	STA	Oquote			; save token-$3A (clear for COLON, TK_DATA-$3A for DATA)
 LAB_1401
 	EOR	#TK_REM-$3A		; effectively subtract REM token offset
 	BNE	LAB_13AC		; If wasn't REM then go crunch rest of line
 
 	STA	Asrch			; else was REM so set search for [EOL]
 
-					; loop for REM, "..." etc.
+						; loop for REM, "..." etc.
 LAB_1408
 	LDA	Ibuffs,X		; get byte from input buffer
 	BEQ	LAB_13EC		; branch if null [EOL]
@@ -1121,42 +1120,42 @@ LAB_1408
 	CMP	Asrch			; compare with stored character
 	BEQ	LAB_13EC		; branch if match (end quote)
 
-					; entry for copy string in quotes, don't crunch
+						; entry for copy string in quotes, don't crunch
 LAB_1410
-	INY				; increment buffer save index
+	INY					; increment buffer save index
 	STA	Ibuffs,Y		; save byte to output
-	INX				; increment buffer read index
+	INX					; increment buffer read index
 	BNE	LAB_1408		; loop while <> 0 (should never be 0!)
 
-					; not found keyword this go
+						; not found keyword this go
 LAB_1417
 	LDX	TempB			; compare has failed, restore buffer index (start byte!)
 
-					; now find the end of this word in the table
+						; now find the end of this word in the table
 LAB_141B
 	LDA	(ut2_pl),Y		; get table byte
-	PHP				; save status
-	INY				; increment table index
-	PLP				; restore byte status
+	PHP					; save status
+	INY					; increment table index
+	PLP					; restore byte status
 	BPL	LAB_141B		; if not end of keyword go do next
 
 	LDA	(ut2_pl),Y		; get byte from keyword table
 	BNE	LAB_13D8		; go test next word if not zero byte (end of table)
 
-					; reached end of table with no match
+						; reached end of table with no match
 	LDA	Ibuffs,X		; restore byte from input buffer
 	BPL	LAB_13EA		; branch always (all bytes in buffer are $00-$7F)
-					; go save byte in output and continue crunching
+						; go save byte in output and continue crunching
 
-					; reached [EOL]
+						; reached [EOL]
 LAB_142A
-	INY				; increment pointer
-	INY				; increment pointer (makes it next line pointer high byte)
+	INY					; increment pointer
+	INY					; increment pointer (makes it next line pointer high byte)
 	STA	Ibuffs,Y		; save [EOL] (marks [EOT] in immediate mode)
-	INY				; adjust for line copy
-	INY				; adjust for line copy
-	INY				; adjust for line copy
-	DEC	Bpntrl		; allow for increment (change if buffer starts at $xxFF)
+	INY					; adjust for line copy
+	INY					; adjust for line copy
+	INY					; adjust for line copy
+	DEC	Bpntrl			; allow for increment (change if buffer starts at $xxFF)
 	RTS
 
 ; search Basic for temp integer line number from start of mem
@@ -1173,36 +1172,36 @@ LAB_SSLN
 
 LAB_SHLN
 	LDY	#$01			; set index
-	STA	Baslnl		; save low byte as current
-	STX	Baslnh		; save high byte as current
+	STA	Baslnl			; save low byte as current
+	STX	Baslnh			; save high byte as current
 	LDA	(Baslnl),Y		; get pointer high byte from addr
 	BEQ	LAB_145F		; pointer was zero so we"re done, do "not found" exit
 
 	LDY	#$03			; set index to line # high byte
 	LDA	(Baslnl),Y		; get line # high byte
-	DEY				; decrement index (point to low byte)
-	CMP	Itemph		; compare with temporary integer high byte
+	DEY					; decrement index (point to low byte)
+	CMP	Itemph			; compare with temporary integer high byte
 	BNE	LAB_1455		; if <> skip low byte check
 
 	LDA	(Baslnl),Y		; get line # low byte
-	CMP	Itempl		; compare with temporary integer low byte
+	CMP	Itempl			; compare with temporary integer low byte
 LAB_1455
 	BCS	LAB_145E		; else if temp < this line, exit (passed line#)
 
 LAB_1456
-	DEY				; decrement index to next line ptr high byte
+	DEY					; decrement index to next line ptr high byte
 	LDA	(Baslnl),Y		; get next line pointer high byte
-	TAX				; copy to X
-	DEY				; decrement index to next line ptr low byte
+	TAX					; copy to X
+	DEY					; decrement index to next line ptr low byte
 	LDA	(Baslnl),Y		; get next line pointer low byte
 	BCC	LAB_SHLN		; go search for line # in temp (Itempl/Itemph) from AX
-					; (carry always clear)
+						; (carry always clear)
 
 LAB_145E
 	BEQ	LAB_1460		; exit if temp = found line #, carry is set
 
 LAB_145F
-	CLC				; clear found flag
+	CLC					; clear found flag
 LAB_1460
 	RTS
 
@@ -1213,11 +1212,11 @@ LAB_NEW
 
 LAB_1463
 	LDA	#$00			; clear A
-	TAY				; clear Y
+	TAY					; clear Y
 	STA	(Smeml),Y		; clear first line, next line pointer, low byte
-	INY				; increment index
+	INY					; increment index
 	STA	(Smeml),Y		; clear first line, next line pointer, high byte
-	CLC				; clear carry
+	CLC					; clear carry
 	LDA	Smeml			; get start of mem low byte
 	ADC	#$02			; calculate end of BASIC low byte
 	STA	Svarl			; save start of vars low byte
@@ -1228,44 +1227,44 @@ LAB_1463
 ; reset execution to start, clear vars and flush stack
 
 LAB_1477
-	CLC				; clear carry
+	CLC					; clear carry
 	LDA	Smeml			; get start of mem low byte
 	ADC	#$FF			; -1
-	STA	Bpntrl		; save BASIC execute pointer low byte
+	STA	Bpntrl			; save BASIC execute pointer low byte
 	LDA	Smemh			; get start of mem high byte
 	ADC	#$FF			; -1+carry
-	STA	Bpntrh		; save BASIC execute pointer high byte
+	STA	Bpntrh			; save BASIC execute pointer high byte
 
 ; "CLEAR" command gets here
 
 LAB_147A
 	LDA	Ememl			; get end of mem low byte
 	LDY	Ememh			; get end of mem high byte
-	STA	Sstorl		; set bottom of string space low byte
-	STY	Sstorh		; set bottom of string space high byte
+	STA	Sstorl			; set bottom of string space low byte
+	STY	Sstorh			; set bottom of string space high byte
 	LDA	Svarl			; get start of vars low byte
 	LDY	Svarh			; get start of vars high byte
-	STA	Sarryl		; save var mem end low byte
-	STY	Sarryh		; save var mem end high byte
-	STA	Earryl		; save array mem end low byte
-	STY	Earryh		; save array mem end high byte
+	STA	Sarryl			; save var mem end low byte
+	STY	Sarryh			; save var mem end high byte
+	STA	Earryl			; save array mem end low byte
+	STY	Earryh			; save array mem end high byte
 	JSR	LAB_161A		; perform RESTORE command
 
 ; flush stack and clear continue flag
 
 LAB_1491
-	LDX	#des_sk		; set descriptor stack pointer
-	STX	next_s		; save descriptor stack pointer
-	PLA				; pull return address low byte
-	TAX				; copy return address low byte
-	PLA				; pull return address high byte
+	LDX	#des_sk			; set descriptor stack pointer
+	STX	next_s			; save descriptor stack pointer
+	PLA					; pull return address low byte
+	TAX					; copy return address low byte
+	PLA					; pull return address high byte
 	STX	LAB_SKFE		; save to cleared stack
 	STA	LAB_SKFF		; save to cleared stack
 	LDX	#$FD			; new stack pointer
-	TXS				; reset stack
+	TXS					; reset stack ***beware of 816/multitask savvyness
 	LDA	#$00			; clear byte
-	STA	Cpntrh		; clear continue pointer high byte
-	STA	Sufnxf		; clear subscript/FNX flag
+	STA	Cpntrh			; clear continue pointer high byte
+	STA	Sufnxf			; clear subscript/FNX flag
 LAB_14A6
 	RTS
 
@@ -1274,7 +1273,7 @@ LAB_14A6
 LAB_CLEAR
 	BEQ	LAB_147A		; if no following token go do "CLEAR"
 
-					; else there was a following token (go do syntax error)
+						; else there was a following token (go do syntax error)
 	RTS
 
 ; perform LIST [n][-m]
@@ -1288,51 +1287,51 @@ LAB_LIST
 	CMP	#TK_MINUS		; compare with token for -
 	BNE	LAB_14A6		; exit if not - (LIST -m)
 
-					; LIST [[n][-m]]
-					; this bit sets the n , if present, as the start and end
+						; LIST [[n][-m]]
+						; this bit sets the n , if present, as the start and end
 LAB_14BD
 	JSR	LAB_GFPN		; get fixed-point number into temp integer
 	JSR	LAB_SSLN		; search BASIC for temp integer line number
-					; (pointer in Baslnl/Baslnh)
+						; (pointer in Baslnl/Baslnh)
 	JSR	LAB_GBYT		; scan memory
 	BEQ	LAB_14D4		; branch if no more characters
 
-					; this bit checks the - is present
+						; this bit checks the - is present
 	CMP	#TK_MINUS		; compare with token for -
 	BNE	LAB_1460		; return if not "-" (will be Syntax error)
 
-					; LIST [n]-m
-					; the - was there so set m as the end value
+						; LIST [n]-m
+						; the - was there so set m as the end value
 	JSR	LAB_IGBY		; increment and scan memory
 	JSR	LAB_GFPN		; get fixed-point number into temp integer
 	BNE	LAB_1460		; exit if not ok
 
 LAB_14D4
-	LDA	Itempl		; get temporary integer low byte
-	ORA	Itemph		; OR temporary integer high byte
+	LDA	Itempl			; get temporary integer low byte
+	ORA	Itemph			; OR temporary integer high byte
 	BNE	LAB_14E2		; branch if start set
 
 	LDA	#$FF			; set for -1
-	STA	Itempl		; set temporary integer low byte
-	STA	Itemph		; set temporary integer high byte
+	STA	Itempl			; set temporary integer low byte
+	STA	Itemph			; set temporary integer high byte
 LAB_14E2
 	LDY	#$01			; set index for line
-	STY	Oquote		; clear open quote flag
+	STY	Oquote			; clear open quote flag
 	JSR	LAB_CRLF		; print CR/LF
 	LDA	(Baslnl),Y		; get next line pointer high byte
-					; pointer initially set by search at LAB_14BD
+						; pointer initially set by search at LAB_14BD
 	BEQ	LAB_152B		; if null all done so exit
 	JSR	LAB_1629		; do CRTL-C check vector
 
-	INY				; increment index for line
+	INY					; increment index for line
 	LDA	(Baslnl),Y		; get line # low byte
-	TAX				; copy to X
-	INY				; increment index
+	TAX					; copy to X
+	INY					; increment index
 	LDA	(Baslnl),Y		; get line # high byte
-	CMP	Itemph		; compare with temporary integer high byte
+	CMP	Itemph			; compare with temporary integer high byte
 	BNE	LAB_14FF		; branch if no high byte match
 
-	CPX	Itempl		; compare with temporary integer low byte
+	CPX	Itempl			; compare with temporary integer low byte
 	BEQ	LAB_1501		; branch if = last line to do (< will pass next branch)
 
 LAB_14FF				; else ..
@@ -1350,111 +1349,111 @@ LAB_150C
 	CMP	#$22			; was it " character
 	BNE	LAB_1519		; branch if not
 
-					; we are either entering or leaving a pair of quotes
-	LDA	Oquote		; get open quote flag
+						; we are either entering or leaving a pair of quotes
+	LDA	Oquote			; get open quote flag
 	EOR	#$FF			; toggle it
-	STA	Oquote		; save it back
+	STA	Oquote			; save it back
 LAB_1519
-	INY				; increment index
+	INY					; increment index
 	LDA	(Baslnl),Y		; get next byte
 	BNE	LAB_152E		; branch if not [EOL] (go print character)
-	TAY				; else clear index
+	TAY					; else clear index
 	LDA	(Baslnl),Y		; get next line pointer low byte
-	TAX				; copy to X
-	INY				; increment index
+	TAX					; copy to X
+	INY					; increment index
 	LDA	(Baslnl),Y		; get next line pointer high byte
-	STX	Baslnl		; set pointer to line low byte
-	STA	Baslnh		; set pointer to line high byte
+	STX	Baslnl			; set pointer to line low byte
+	STA	Baslnh			; set pointer to line high byte
 	BNE	LAB_14E2		; go do next line if not [EOT]
-					; else ..
+						; else ..
 LAB_152B
 	RTS
 
 LAB_152E
 	BPL	LAB_150C		; just go print it if not token byte
 
-					; else was token byte so uncrunch it (maybe)
-	BIT	Oquote		; test the open quote flag
+						; else was token byte so uncrunch it (maybe)
+	BIT	Oquote			; test the open quote flag
 	BMI	LAB_150C		; just go print character if open quote set
 
 	LDX	#>LAB_KEYT		; get table address high byte
-	ASL				; *2
-	ASL				; *4
+	ASL					; *2
+	ASL					; *4
 	BCC	LAB_152F		; branch if no carry
 
-	INX				; else increment high byte
-	CLC				; clear carry for add
+	INX					; else increment high byte
+	CLC					; clear carry for add
 LAB_152F
 	ADC	#<LAB_KEYT		; add low byte
 	BCC	LAB_1530		; branch if no carry
 
-	INX				; else increment high byte
+	INX					; else increment high byte
 LAB_1530
-	STA	ut2_pl		; save table pointer low byte
-	STX	ut2_ph		; save table pointer high byte
+	STA	ut2_pl			; save table pointer low byte
+	STX	ut2_ph			; save table pointer high byte
 	STY	Tidx1			; save index for line
 	LDY	#$00			; clear index
 	LDA	(ut2_pl),Y		; get length
-	TAX				; copy length
-	INY				; increment index
+	TAX					; copy length
+	INY					; increment index
 	LDA	(ut2_pl),Y		; get 1st character
-	DEX				; decrement length
+	DEX					; decrement length
 	BEQ	LAB_1508		; if no more characters exit and print
 
 	JSR	LAB_PRNA		; go print the character
-	INY				; increment index
+	INY					; increment index
 	LDA	(ut2_pl),Y		; get keyword address low byte
-	PHA				; save it for now
-	INY				; increment index
+	PHA					; save it for now
+	INY					; increment index
 	LDA	(ut2_pl),Y		; get keyword address high byte
 	LDY	#$00
-	STA	ut2_ph		; save keyword pointer high byte
-	PLA				; pull low byte
-	STA	ut2_pl		; save keyword pointer low byte
+	STA	ut2_ph			; save keyword pointer high byte
+	PLA					; pull low byte
+	STA	ut2_pl			; save keyword pointer low byte
 LAB_1540
 	LDA	(ut2_pl),Y		; get character
-	DEX				; decrement character count
+	DEX					; decrement character count
 	BEQ	LAB_1508		; if last character exit and print
 
 	JSR	LAB_PRNA		; go print the character
-	INY				; increment index
+	INY					; increment index
 	BNE	LAB_1540		; loop for next character
 
 ; perform FOR
 
 LAB_FOR
 	LDA	#$80			; set FNX
-	STA	Sufnxf		; set subscript/FNX flag
-	JSR	LAB_LET		; go do LET
-	PLA				; pull return address
-	PLA				; pull return address
+	STA	Sufnxf			; set subscript/FNX flag
+	JSR	LAB_LET			; go do LET
+	PLA					; pull return address
+	PLA					; pull return address
 	LDA	#$10			; we need 16d bytes !
 	JSR	LAB_1212		; check room on stack for A bytes
 	JSR	LAB_SNBS		; scan for next BASIC statement ([:] or [EOL])
-	CLC				; clear carry for add
-	TYA				; copy index to A
-	ADC	Bpntrl		; add BASIC execute pointer low byte
-	PHA				; push onto stack
-	LDA	Bpntrh		; get BASIC execute pointer high byte
+	CLC					; clear carry for add
+	TYA					; copy index to A
+	ADC	Bpntrl			; add BASIC execute pointer low byte
+	PHA					; push onto stack
+	LDA	Bpntrh			; get BASIC execute pointer high byte
 	ADC	#$00			; add carry
-	PHA				; push onto stack
-	LDA	Clineh		; get current line high byte
-	PHA				; push onto stack
-	LDA	Clinel		; get current line low byte
-	PHA				; push onto stack
-	LDA	#TK_TO		; get "TO" token
+	PHA					; push onto stack
+	LDA	Clineh			; get current line high byte
+	PHA					; push onto stack
+	LDA	Clinel			; get current line low byte
+	PHA					; push onto stack
+	LDA	#TK_TO			; get "TO" token
 	JSR	LAB_SCCA		; scan for CHR$(A) , else do syntax error then warm start
 	JSR	LAB_CTNM		; check if source is numeric, else do type mismatch
 	JSR	LAB_EVNM		; evaluate expression and check is numeric,
-					; else do type mismatch
-	LDA	FAC1_s		; get FAC1 sign (b7)
+						; else do type mismatch
+	LDA	FAC1_s			; get FAC1 sign (b7)
 	ORA	#$7F			; set all non sign bits
-	AND	FAC1_1		; and FAC1 mantissa1
-	STA	FAC1_1		; save FAC1 mantissa1
+	AND	FAC1_1			; and FAC1 mantissa1
+	STA	FAC1_1			; save FAC1 mantissa1
 	LDA	#<LAB_159F		; set return address low byte
 	LDY	#>LAB_159F		; set return address high byte
-	STA	ut1_pl		; save return address low byte
-	STY	ut1_ph		; save return address high byte
+	STA	ut1_pl			; save return address low byte
+	STY	ut1_ph			; save return address high byte
 	JMP	LAB_1B66		; round FAC1 and put on stack (returns to next instruction)
 
 LAB_159F
@@ -1465,72 +1464,72 @@ LAB_159F
 	CMP	#TK_STEP		; compare with STEP token
 	BNE	LAB_15B3		; jump if not "STEP"
 
-					;.was step so ..
+						;.was step so ..
 	JSR	LAB_IGBY		; increment and scan memory
 	JSR	LAB_EVNM		; evaluate expression and check is numeric,
-					; else do type mismatch
+						; else do type mismatch
 LAB_15B3
 	JSR	LAB_27CA		; return A=FF,C=1/-ve A=01,C=0/+ve
-	STA	FAC1_s		; set FAC1 sign (b7)
-					; this is +1 for +ve step and -1 for -ve step, in NEXT we
-					; compare the FOR value and the TO value and return +1 if
-					; FOR > TO, 0 if FOR = TO and -1 if FOR < TO. the value
-					; here (+/-1) is then compared to that result and if they
-					; are the same (+ve and FOR > TO or -ve and FOR < TO) then
-					; the loop is done
+	STA	FAC1_s			; set FAC1 sign (b7)
+						; this is +1 for +ve step and -1 for -ve step, in NEXT we
+						; compare the FOR value and the TO value and return +1 if
+						; FOR > TO, 0 if FOR = TO and -1 if FOR < TO. the value
+						; here (+/-1) is then compared to that result and if they
+						; are the same (+ve and FOR > TO or -ve and FOR < TO) then
+						; the loop is done
 	JSR	LAB_1B5B		; push sign, round FAC1 and put on stack
-	LDA	Frnxth		; get var pointer for FOR/NEXT high byte
-	PHA				; push on stack
-	LDA	Frnxtl		; get var pointer for FOR/NEXT low byte
-	PHA				; push on stack
-	LDA	#TK_FOR		; get FOR token
-	PHA				; push on stack
+	LDA	Frnxth			; get var pointer for FOR/NEXT high byte
+	PHA					; push on stack
+	LDA	Frnxtl			; get var pointer for FOR/NEXT low byte
+	PHA					; push on stack
+	LDA	#TK_FOR			; get FOR token
+	PHA					; push on stack
 
 ; interpreter inner loop
 
 LAB_15C2
 	JSR	LAB_1629		; do CRTL-C check vector
-	LDA	Bpntrl		; get BASIC execute pointer low byte
-	LDY	Bpntrh		; get BASIC execute pointer high byte
+	LDA	Bpntrl			; get BASIC execute pointer low byte
+	LDY	Bpntrh			; get BASIC execute pointer high byte
 
-	LDX	Clineh		; continue line is $FFxx for immediate mode
-					; ($00xx for RUN from immediate mode)
-	INX				; increment it (now $00 if immediate mode)
+	LDX	Clineh			; continue line is $FFxx for immediate mode
+						; ($00xx for RUN from immediate mode)
+	INX					; increment it (now $00 if immediate mode)
 	BEQ	LAB_15D1		; branch if null (immediate mode)
 
-	STA	Cpntrl		; save continue pointer low byte
-	STY	Cpntrh		; save continue pointer high byte
+	STA	Cpntrl			; save continue pointer low byte
+	STY	Cpntrh			; save continue pointer high byte
 LAB_15D1
 	LDY	#$00			; clear index
 	LDA	(Bpntrl),Y		; get next byte
 	BEQ	LAB_15DC		; branch if null [EOL]
 
-	CMP	#":"			; compare with ":"
+	CMP	#COLON			; compare with COLON
 	BEQ	LAB_15F6		; branch if = (statement separator)
 
 LAB_15D9
 	JMP	LAB_SNER		; else syntax error then warm start
 
-					; have reached [EOL]
+						; have reached [EOL]
 LAB_15DC
 	LDY	#$02			; set index
 	LDA	(Bpntrl),Y		; get next line pointer high byte
-	CLC				; clear carry for no "BREAK" message
+	CLC					; clear carry for no "BREAK" message
 	BEQ	LAB_1651		; if null go to immediate mode (was immediate or [EOT]
-					; marker)
+						; marker)
 
-	INY				; increment index
+	INY					; increment index
 	LDA	(Bpntrl),Y		; get line # low byte
-	STA	Clinel		; save current line low byte
-	INY				; increment index
+	STA	Clinel			; save current line low byte
+	INY					; increment index
 	LDA	(Bpntrl),Y		; get line # high byte
-	STA	Clineh		; save current line high byte
-	TYA				; A now = 4
-	ADC	Bpntrl		; add BASIC execute pointer low byte
-	STA	Bpntrl		; save BASIC execute pointer low byte
+	STA	Clineh			; save current line high byte
+	TYA					; A now = 4
+	ADC	Bpntrl			; add BASIC execute pointer low byte
+	STA	Bpntrl			; save BASIC execute pointer low byte
 	BCC	LAB_15F6		; branch if no overflow
 
-	INC	Bpntrh		; else increment BASIC execute pointer high byte
+	INC	Bpntrh			; else increment BASIC execute pointer high byte
 LAB_15F6
 	JSR	LAB_IGBY		; increment and scan memory
 
@@ -1546,22 +1545,22 @@ LAB_15FF
 	BEQ	LAB_1628		; exit if zero [EOL]
 
 LAB_1602
-	ASL				; *2 bytes per vector and normalise token
+	ASL					; *2 bytes per vector and normalise token
 	BCS	LAB_1609		; branch if was token
 
-	JMP	LAB_LET		; else go do implied LET
+	JMP	LAB_LET			; else go do implied LET
 
 LAB_1609
 	CMP	#(TK_TAB-$80)*2	; compare normalised token * 2 with TAB
 	BCS	LAB_15D9		; branch if A>=TAB (do syntax error then warm start)
-					; only tokens before TAB can start a line
-	TAY				; copy to index
+						; only tokens before TAB can start a line
+	TAY					; copy to index
 	LDA	LAB_CTBL+1,Y	; get vector high byte
-	PHA				; onto stack
+	PHA					; onto stack
 	LDA	LAB_CTBL,Y		; get vector low byte
-	PHA				; onto stack
+	PHA					; onto stack
 	JMP	LAB_IGBY		; jump to increment and scan memory
-					; then "return" to vector
+						; then "return" to vector
 
 ; CTRL-C check jump. this is called as a subroutine but exits back via a jump if a
 ; key press is detected.
@@ -1578,36 +1577,36 @@ LAB_1636
 
 LAB_STOP
 	BCS	LAB_163B		; branch if token follows STOP
-					; else just END
+						; else just END
 ; END
 
 LAB_END
-	CLC				; clear the carry, indicate a normal program end
+	CLC					; clear the carry, indicate a normal program end
 LAB_163B
 	BNE	LAB_167A		; if wasn't CTRL-C or there is a following byte return
 
-	LDA	Bpntrh		; get the BASIC execute pointer high byte
+	LDA	Bpntrh			; get the BASIC execute pointer high byte
 	EOR	#>Ibuffs		; compare with buffer address high byte (Cb unchanged)
 	BEQ	LAB_164F		; branch if the BASIC pointer is in the input buffer
-					; (can't continue in immediate mode)
+						; (cannot continue in immediate mode)
 
-					; else ..
+						; else ..
 	EOR	#>Ibuffs		; correct the bits
-	LDY	Bpntrl		; get BASIC execute pointer low byte
-	STY	Cpntrl		; save continue pointer low byte
-	STA	Cpntrh		; save continue pointer high byte
+	LDY	Bpntrl			; get BASIC execute pointer low byte
+	STY	Cpntrl			; save continue pointer low byte
+	STA	Cpntrh			; save continue pointer high byte
 LAB_1647
-	LDA	Clinel		; get current line low byte
-	LDY	Clineh		; get current line high byte
-	STA	Blinel		; save break line low byte
-	STY	Blineh		; save break line high byte
+	LDA	Clinel			; get current line low byte
+	LDY	Clineh			; get current line high byte
+	STA	Blinel			; save break line low byte
+	STY	Blineh			; save break line high byte
 LAB_164F
-	PLA				; pull return address low
-	PLA				; pull return address high
+	PLA					; pull return address low
+	PLA					; pull return address high
 LAB_1651
 	BCC	LAB_165E		; if was program end just do warm start
 
-					; else ..
+						; else ..
 	LDA	#<LAB_BMSG		; point to "Break" low byte
 	LDY	#>LAB_BMSG		; point to "Break" high byte
 	JMP	LAB_1269		; print "Break" and do warm start
@@ -1621,35 +1620,35 @@ LAB_RESTORE
 	BNE	LAB_RESTOREn	; branch if next character not null (RESTORE n)
 
 LAB_161A
-	SEC				; set carry for subtract
+	SEC					; set carry for subtract
 	LDA	Smeml			; get start of mem low byte
 	SBC	#$01			; -1
 	LDY	Smemh			; get start of mem high byte
 	BCS	LAB_1624		; branch if no underflow
 
 LAB_uflow
-	DEY				; else decrement high byte
+	DEY					; else decrement high byte
 LAB_1624
 	STA	Dptrl			; save DATA pointer low byte
 	STY	Dptrh			; save DATA pointer high byte
 LAB_1628
 	RTS
 
-					; is RESTORE n
+						; is RESTORE n
 LAB_RESTOREn
 	JSR	LAB_GFPN		; get fixed-point number into temp integer
 	JSR	LAB_SNBL		; scan for next BASIC line
-	LDA	Clineh		; get current line high byte
-	CMP	Itemph		; compare with temporary integer high byte
+	LDA	Clineh			; get current line high byte
+	CMP	Itemph			; compare with temporary integer high byte
 	BCS	LAB_reset_search	; branch if >= (start search from beginning)
 
-	TYA				; else copy line index to A
-	SEC				; set carry (+1)
-	ADC	Bpntrl		; add BASIC execute pointer low byte
-	LDX	Bpntrh		; get BASIC execute pointer high byte
+	TYA					; else copy line index to A
+	SEC					; set carry (+1)
+	ADC	Bpntrl			; add BASIC execute pointer low byte
+	LDX	Bpntrh			; get BASIC execute pointer high byte
 	BCC	LAB_go_search	; branch if no overflow to high byte
 
-	INX				; increment high byte
+	INX					; increment high byte
 	BCS	LAB_go_search	; branch always (can never be carry clear)
 
 ; search for line # in temp (Itempl/Itemph) from start of mem pointer (Smeml)
@@ -1668,20 +1667,20 @@ LAB_go_search
 	JMP	LAB_16F7		; else go do "Undefined statement" error
 
 LAB_line_found
-					; carry already set for subtract
-	LDA	Baslnl		; get pointer low byte
+						; carry already set for subtract
+	LDA	Baslnl			; get pointer low byte
 	SBC	#$01			; -1
-	LDY	Baslnh		; get pointer high byte
+	LDY	Baslnh			; get pointer high byte
 	BCS	LAB_1624		; branch if no underflow (save DATA pointer and return)
 
 	BCC	LAB_uflow		; else decrement high byte then save DATA pointer and
-					; return (branch always)
+						; return (branch always)
 
 ; perform NULL
 
 LAB_NULL
 	JSR	LAB_GTBY		; get byte parameter
-	STX	Nullct		; save new NULL count
+	STX	Nullct			; save new NULL count
 LAB_167A
 	RTS
 
@@ -1690,26 +1689,26 @@ LAB_167A
 LAB_CONT
 	BNE	LAB_167A		; if following byte exit to do syntax error
 
-	LDY	Cpntrh		; get continue pointer high byte
+	LDY	Cpntrh			; get continue pointer high byte
 	BNE	LAB_166C		; go do continue if we can
 
-	LDX	#$1E			; error code $1E ("Can't continue" error)
+	LDX	#$1E			; error code $1E ("cannot continue" error)
 	JMP	LAB_XERR		; do error #X, then warm start
 
-					; we can continue so ..
+						; we can continue so ..
 LAB_166C
-	LDA	#TK_ON		; set token for ON
-	JSR	LAB_IRQ		; set IRQ flags
-	LDA	#TK_ON		; set token for ON
-	JSR	LAB_NMI		; set NMI flags
+	LDA	#TK_ON			; set token for ON
+	JSR	LAB_IRQ			; set IRQ flags
+	LDA	#TK_ON			; set token for ON
+	JSR	LAB_NMI			; set NMI flags
 
-	STY	Bpntrh		; save BASIC execute pointer high byte
-	LDA	Cpntrl		; get continue pointer low byte
-	STA	Bpntrl		; save BASIC execute pointer low byte
-	LDA	Blinel		; get break line low byte
-	LDY	Blineh		; get break line high byte
-	STA	Clinel		; set current line low byte
-	STY	Clineh		; set current line high byte
+	STY	Bpntrh			; save BASIC execute pointer high byte
+	LDA	Cpntrl			; get continue pointer low byte
+	STA	Bpntrl			; save BASIC execute pointer low byte
+	LDA	Blinel			; get break line low byte
+	LDY	Blineh			; get break line high byte
+	STA	Clinel			; set current line low byte
+	STY	Clineh			; set current line high byte
 	RTS
 
 ; perform RUN
@@ -1717,7 +1716,7 @@ LAB_166C
 LAB_RUN
 	BNE	LAB_1696		; branch if RUN n
 	JMP	LAB_1477		; reset execution to start, clear variables, flush stack and
-					; return
+						; return
 
 ; does RUN n
 
@@ -1730,16 +1729,16 @@ LAB_1696
 LAB_DO
 	LDA	#$05			; need 5 bytes for DO
 	JSR	LAB_1212		; check room on stack for A bytes
-	LDA	Bpntrh		; get BASIC execute pointer high byte
-	PHA				; push on stack
-	LDA	Bpntrl		; get BASIC execute pointer low byte
-	PHA				; push on stack
-	LDA	Clineh		; get current line high byte
-	PHA				; push on stack
-	LDA	Clinel		; get current line low byte
-	PHA				; push on stack
-	LDA	#TK_DO		; token for DO
-	PHA				; push on stack
+	LDA	Bpntrh			; get BASIC execute pointer high byte
+	PHA					; push on stack
+	LDA	Bpntrl			; get BASIC execute pointer low byte
+	PHA					; push on stack
+	LDA	Clineh			; get current line high byte
+	PHA					; push on stack
+	LDA	Clinel			; get current line low byte
+	PHA					; push on stack
+	LDA	#TK_DO			; token for DO
+	PHA					; push on stack
 	JSR	LAB_GBYT		; scan memory
 	JMP	LAB_15C2		; go do interpreter inner loop
 
@@ -1748,21 +1747,21 @@ LAB_DO
 LAB_GOSUB
 	LDA	#$05			; need 5 bytes for GOSUB
 	JSR	LAB_1212		; check room on stack for A bytes
-	LDA	Bpntrh		; get BASIC execute pointer high byte
-	PHA				; push on stack
-	LDA	Bpntrl		; get BASIC execute pointer low byte
-	PHA				; push on stack
-	LDA	Clineh		; get current line high byte
-	PHA				; push on stack
-	LDA	Clinel		; get current line low byte
-	PHA				; push on stack
+	LDA	Bpntrh			; get BASIC execute pointer high byte
+	PHA					; push on stack
+	LDA	Bpntrl			; get BASIC execute pointer low byte
+	PHA					; push on stack
+	LDA	Clineh			; get current line high byte
+	PHA					; push on stack
+	LDA	Clinel			; get current line low byte
+	PHA					; push on stack
 	LDA	#TK_GOSUB		; token for GOSUB
-	PHA				; push on stack
+	PHA					; push on stack
 LAB_16B0
 	JSR	LAB_GBYT		; scan memory
 	JSR	LAB_GOTO		; perform GOTO n
 	JMP	LAB_15C2		; go do interpreter inner loop
-					; (can't RTS, we used the stack!)
+						; (cannot RTS, we used the stack!)
 
 ; perform GOTO
 
@@ -1825,7 +1824,7 @@ LAB_LOOP
 	BEQ	LoopAlways		; if no following token loop forever
 					; (stack pointer in X)
 
-	CMP	#":"			; could be ":"
+	CMP	#COLON			; could be COLON
 	BEQ	LoopAlways		; if :... loop forever
 
 	SBC	#TK_UNTIL		; subtract token for UNTIL, we know carry is set here
@@ -1934,7 +1933,7 @@ LAB_16FC
 ; returns Y as index to [:] or [EOL]
 
 LAB_SNBS
-	LDX	#":"			; set look for character = ":"
+	LDX	#COLON			; set look for character = COLON
 	.byte	$2C			; makes next line BIT $00A2
 
 ; scan for next BASIC line
@@ -2108,7 +2107,7 @@ LAB_1773
 	JSR	LAB_GFPN		; get fixed-point number into temp integer (skip this n)
 					; (we could LDX #"," and JSR LAB_SNBL+2, then we
 					; just BNE LAB_176B for the loop. should be quicker ..
-					; no we can't, what if we meet a colon or [EOL]?)
+					; no we cannot, what if we meet a colon or [EOL]?)
 	CMP	#$2C			; compare next character with ","
 	BEQ	LAB_176B		; loop if ","
 
@@ -2368,12 +2367,12 @@ LAB_1866
 	LDX	#<Ibuffs		; set X to buffer start-1 low byte
 	LDY	#>Ibuffs		; set Y to buffer start-1 high byte
 
-; print CR/LF
+; print CR/LF *** minimOS use just CR for newline ***
 
 LAB_CRLF
 	LDA	#$0D			; load [CR]
-	JSR	LAB_PRNA		; go print the character
-	LDA	#$0A			; load [LF]
+;	JSR	LAB_PRNA		; go print the character
+;	LDA	#$0A			; load [LF]
 	BNE	LAB_PRNA		; go print the character and return, branch always
 
 LAB_188B
@@ -2408,7 +2407,7 @@ LAB_18A2
 					; calculate TAB offset
 	TXA				; copy integer value to A
 	SBC	TPos			; subtract terminal position
-	BCC	LAB_18BD		; branch if result was < 0 (can't TAB backwards)
+	BCC	LAB_18BD		; branch if result was < 0 (cannot TAB backwards)
 
 					; print A spaces
 LAB_18B6
@@ -2620,7 +2619,7 @@ LAB_1988
 	CMP	#$22			; was it " ?
 	BEQ	LAB_1999		; branch if so
 
-	LDA	#":"			; else search character is ":"
+	LDA	#COLON			; else search character is COLON
 	STA	Srchc			; set new search character
 	LDA	#","			; other search character is ","
 	CLC				; clear carry for add
@@ -6604,7 +6603,7 @@ LAB_2A74
 	SBC	#$0A			;.subtract 10 from exponent count
 	BCS	LAB_2A74		; loop while still >= 0
 
-	ADC	#":"			; add character ":" ($30+$0A, result is 10 less that value)
+	ADC	#COLON			; add character COLON ($30+$0A, result is 10 less that value)
 	STA	Decss+4,Y		; save to output string
 	TXA				; copy 10's character
 	STA	Decss+3,Y		; save to output string
@@ -7279,7 +7278,7 @@ LAB_CKIN
 	STA	Bpntrh		; save as BASIC execute pointer high byte
 
 	JMP	LAB_15C2		; go do interpreter inner loop
-					; can't RTS, we used the stack! the RTS from the ctrl-c
+					; cannot RTS, we used the stack! the RTS from the ctrl-c
 					; check will be taken when the RETIRQ/RETNMI/RETURN is
 					; executed at the end of the subroutine
 
@@ -7508,7 +7507,7 @@ LAB_WDTH
 	CPX	#$10			; else make min width = 16d
 	BCC	TabErr		; if less do function call error and exit
 
-; this next compare ensures that we can't exit WIDTH via an error leaving the
+; this next compare ensures that we cannot exit WIDTH via an error leaving the
 ; tab size greater than the line length.
 
 	CPX	TabSiz		; compare with tab size
@@ -7731,8 +7730,8 @@ PG2_TABE
 ; character get subroutine for zero page
 
 ; For a 1.8432MHz 6502 including the JSR and RTS
-; fastest (>=":")	=  29 cycles =  15.7uS
-; slowest (<":")	=  40 cycles =  21.7uS
+; fastest (>=COLON)	=  29 cycles =  15.7uS
+; slowest (<COLON)	=  40 cycles =  21.7uS
 ; space skip	= +21 cycles = +11.4uS
 ; inc across page	=  +4 cycles =  +2.2uS
 
@@ -7757,8 +7756,8 @@ LAB_2CF4
 	CMP	#TK_ELSE		; compare with the token for ELSE
 	BEQ	LAB_2D05		; exit if ELSE, not numeric, carry set
 
-	CMP	#":"			; compare with ":"
-	BCS	LAB_2D05		; exit if >= ":", not numeric, carry set
+	CMP	#COLON			; compare with COLON
+	BCS	LAB_2D05		; exit if >= COLON, not numeric, carry set
 
 	CMP	#" "			; compare with " "
 	BEQ	LAB_2CEE		; if " " go do next
@@ -7792,11 +7791,11 @@ StrTab
 EndTab
 
 LAB_MSZM
-	.byte	$0D,$0A,"Memory size ",$00
+	.byte	$0D,"Memory size ",$00
 
 LAB_SMSG
-	.byte	" Bytes free",$0D,$0A,$0A
-	.byte	"Enhanced BASIC 2.22",$0A,$00
+	.byte	" Bytes free",$0D,$0D
+	.byte	"Enhanced BASIC 2.22",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
@@ -8500,7 +8499,7 @@ LAB_KEYT
 	.word	LBB_SYS			; SYS   *** Added for SBC-2
 
 
-; secondary commands (can't start a statement)
+; secondary commands (cannot start a statement)
 
 	.byte	4,"T"
 	.word	LBB_TAB		; TAB
@@ -8673,7 +8672,7 @@ ERR_ID	.byte	"Illegal direct",$00
 ERR_TM	.byte	"Type mismatch",$00
 ERR_LS	.byte	"String too long",$00
 ERR_ST	.byte	"String too complex",$00
-ERR_CN	.byte	"Can't continue",$00
+ERR_CN	.byte	"Cannot continue",$00
 ERR_UF	.byte	"Undefined function",$00
 ERR_LD	.byte	"LOOP without DO",$00
 
@@ -8683,13 +8682,13 @@ ERR_LD	.byte	"LOOP without DO",$00
 
 ;ERR_UA	.byte	"Undimensioned array",$00
 
-LAB_BMSG	.byte	$0D,$0A,"Break",$00
+LAB_BMSG	.byte	$0D,"Break",$00
 LAB_EMSG	.byte	" Error",$00
 LAB_LMSG	.byte	" in line ",$00
-LAB_RMSG	.byte	$0D,$0A,"Ready",$0D,$0A,$00
+LAB_RMSG	.byte	$0D,"Ready",$0D,$00
 
-LAB_IMSG	.byte	" Extra ignored",$0D,$0A,$00
-LAB_REDO	.byte	" Redo from start",$0D,$0A,$00
+LAB_IMSG	.byte	" Extra ignored",$0D,$00
+LAB_REDO	.byte	" Redo from start",$0D,$00
 
 AA_end_basic
 
