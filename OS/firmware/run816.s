@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc7
+; v0.9.6rc8
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180426-1113
+; last modified 20180427-1048
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -30,7 +30,7 @@ fw_mname:
 	.word	$4DA0				; time, 09.45
 	.word	$4C45				; date, 2018/2/5
 
-fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
+fwSize	=	$10000 - fw_start - 256	; compute BLOCK size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	fwSize				; filesize
@@ -139,7 +139,7 @@ reset:
 ; as this is the only valid CPU for this firmware, no further checking necessary
 
 #include "modules/kern_addr.s";try 8-bit!
-#include "modules/brk_addr.s"
+;#include "modules/brk_addr.s"
 ; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
 	.al: REP #$20
 
@@ -147,7 +147,7 @@ reset:
 ;#include "modules/kern_addr16.s"
 
 ; preset default BRK handler
-;#include "modules/brk_addr16.s"
+#include "modules/brk_addr16.s"
 
 ; no need to set NMI as it will be validated
 
@@ -309,7 +309,7 @@ fw_map:					; TO BE DONE
 ; *** minimOS-65 function call WRAPPER ($FFC0) ***
 * = kerncall
 	CLC					; pre-clear carry
-	COP #$FF			; wrapper on 816 firmware!
+	COP #$7F			; wrapper on 816 firmware!
 	RTS					; return to caller
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
 
