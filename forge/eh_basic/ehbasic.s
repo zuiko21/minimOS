@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180426-1444
+; last modified 20180429-2220
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -59,13 +59,14 @@ ehSize	=	ehEnd - ehHead -256	; compute size NOT including header!
 ; *** zero page use ***
 ; *********************
 
+; *** likely to need some other vars from pseudodriver
 
 ut1_pl		= $71		; utility pointer 1 low byte
 ut1_ph		= ut1_pl+1	; utility pointer 1 high byte
 ut2_pl		= $73		; utility pointer 2 low byte
 ut2_ph		= ut2_pl+1	; utility pointer 2 high byte
 
-Temp_2		= ut1_pl	; temp byte for block move	
+Temp_2		= ut1_pl	; temp byte for block move
 
 FACt_1		= $75		; FAC temp mantissa1
 FACt_2		= FACt_1+1	; FAC temp mantissa2
@@ -404,13 +405,18 @@ PLUS_1		= $01		; X or Y plus 1
 PLUS_2		= $02		; X or Y plus 2
 PLUS_3		= $03		; X or Y plus 3
 
-LAB_STAK	= $0100		; stack bottom, no offset *** is this 816-savvy?
+#ifndef	C816
+LAB_STAK	= $0100		; stack bottom, no offset
+#else
+LAB_STAK	= $0		; stack bottom, will use 16-bit X
+#endif
 
 LAB_SKFE	= LAB_STAK+$FE
 						; flushed stack address
 LAB_SKFF	= LAB_STAK+$FF
 						; flushed stack address
 
+; *** these MUST be relocated somewhere, perhaps in ZP ***
 ccflag		= $0200		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
@@ -427,7 +433,7 @@ VEC_SV		= VEC_LD+2	; save vector
 Ibuffs		= VEC_SV+2	; ***changed for SBC-2
 						; start of input buffer after IRQ/NMI code
 Ibuffe		= Ibuffs+$47
-						; end of input buffer
+						; end of input buffer *** might be reduced
 
 ; *** these must be replaced by a call to MALLOC(0) ***
 ;Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
@@ -467,7 +473,7 @@ LAB_2D4E
 	DEX					; decrement count
 	BNE	LAB_2D4E		; loop if not all done
 
-; copy block from StrTab to $0000 - $0012
+; copy block from StrTab to $0000 - $0012***
 
 LAB_GMEM
 	LDX	#EndTab-StrTab-1
@@ -678,8 +684,10 @@ LAB_120A
 ; stack too deep? do OM error
 
 LAB_1212
+; if 6502 multitask does not fragment stack, will be OK
+; no way for LOWRAM, though
 	STA	TempB			; save result in temp byte
-	TSX					; copy stack *** check 816 and multitask savvyness
+	TSX					; copy stack, 816-savvy
 	CPX	TempB			; compare new "limit" with stack
 	BCC	LAB_OMER		; if stack < limit do "Out of memory" error then warm start
 
@@ -1812,13 +1820,14 @@ LAB_DONOK
 
 LAB_LOOP
 	TAY					; save following token
-	TSX					; copy stack pointer ***beware of 816-MM
+	TSX					; copy stack pointer
 	LDA	LAB_STAK+3,X	; get token byte from stack
 	CMP	#TK_DO			; compare with DO token
 	BNE	LAB_DONOK		; branch if no matching DO
 
 	INX					; dump calling routine return address
 	INX					; dump calling routine return address
+
 	TXS					; correct stack ***beware of 816/multitask savvyness
 	TYA					; get saved following token back
 	BEQ	LoopAlways		; if no following token loop forever
@@ -7771,7 +7780,7 @@ LAB_2CF4
 LAB_2D05
 	RTS
 
-; page zero initialisation table $00-$12 inclusive
+; page zero initialisation table $00-$12 inclusive***
 
 StrTab
 	.byte	$4C			; JMP opcode
