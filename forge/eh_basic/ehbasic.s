@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180429-2220
+; last modified 20180430-1148
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -411,6 +411,7 @@ LAB_STAK	= $0100		; stack bottom, no offset
 LAB_STAK	= $0		; stack bottom, will use 16-bit X
 #endif
 
+; *** must check these limits...
 LAB_SKFE	= LAB_STAK+$FE
 						; flushed stack address
 LAB_SKFF	= LAB_STAK+$FF
@@ -546,13 +547,16 @@ LAB_2DAA
 LAB_2DB6
 	LDA	Itempl			; get temporary integer low byte
 	LDY	Itemph			; get temporary integer high byte
-	CPY	#<Ram_base+1	; compare with start of RAM+$100 high byte
+; note that ram_base is variable
+	DEY				; *** OK?
+	CPY	Ram_base+1	; compare with start of RAM+$100 high byte
 	BCC	LAB_GMEM		; if too small go try again
 
 
 ; uncomment these lines if you want to check on the high limit of memory. Note if
 ; Ram_top is set too low then this will fail. default is ignore it and assume the
 ; users know what they are doing!
+; *** now ram_top is also variable
 
 ;	CPY	#>Ram_top		; compare with top of RAM high byte
 ;	BCC	MEM_OK			; branch if < RAM top
@@ -570,8 +574,9 @@ LAB_2DB6
 	STA	Sstorl			; set bottom of string space low byte
 	STY	Sstorh			; set bottom of string space high byte
 
-	LDY	#<Ram_base		; set start addr low byte
-	LDX	#>Ram_base		; set start addr high byte
+; now ram_base is variable
+	LDY	Ram_base		; set start addr low byte
+	LDX	Ram_base+1		; set start addr high byte
 	STY	Smeml			; save start of mem low byte
 	STX	Smemh			; save start of mem high byte
 
@@ -4393,7 +4398,8 @@ LAB_20D0
 LAB_20DC
 	STX	Sendh			; save string end high byte
 	LDA	ssptr_h			; get string start high byte
-	CMP	#>Ram_base		; compare with start of program memory
+; var base
+	CMP	Ram_base+1		; compare with start of program memory
 	BCS	LAB_RTST		; branch if not in utility area
 
 						; string in utility area, move to string memory
@@ -7797,6 +7803,7 @@ StrTab
 	.byte	$00			; clear terminal position
 	.byte	$00			; default terminal width byte
 	.byte	$F2			; default limit for TAB = 14
+; ram_base is now variable address...
 	.word	Ram_base		; start of user RAM
 EndTab
 
