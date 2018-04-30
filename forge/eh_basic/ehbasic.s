@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180430-1148
+; last modified 20180430-1718
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -231,6 +231,7 @@ Cptrh		= Aspth		; BASIC pointer temp low byte
 Sendl		= Asptl		; BASIC pointer temp low byte
 Sendh		= Aspth		; BASIC pointer temp low byte
 
+; *** not a good idea to call/jump to ZP
 LAB_IGBY	= $BC		; get next BASIC byte subroutine
 
 LAB_GBYT	= $C2		; get current BASIC byte subroutine
@@ -256,24 +257,7 @@ IrqBase		= $DF		; IRQ handler enabled/setup/triggered flags
 ;			= $E0		; IRQ handler addr low byte
 ;			= $E1		; IRQ handler addr high byte
 
-;			= $DE		; unused
-;			= $DF		; unused
-;			= $E0		; unused
-;			= $E1		; unused
-;			= $E2		; unused
-;			= $E3		; unused
 ; *** minimOS does NOT allow the use of zeropage beyond $E4 ($E2 for the C64) ***
-;			= $E4		; unused
-;			= $E5		; unused
-;			= $E6		; unused
-;			= $E7		; unused
-;			= $E8		; unused
-;			= $E9		; unused
-;			= $EA		; unused
-;			= $EB		; unused
-;			= $EC		; unused
-;			= $ED		; unused
-;			= $EE		; unused
 
 ; *** these must be relocated, perhaps @ $E2 ***
 Decss		= $EF		; number to decimal string start
@@ -422,19 +406,34 @@ ccflag		= $0200		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 
-VEC_CC		= ccnull+1	; ctrl c check vector
+; ***no real need for these
+;VEC_CC		= ccnull+1	; ctrl c check vector
 
-VEC_IN		= VEC_CC+2	; input vector
-VEC_OUT		= VEC_IN+2	; output vector
-VEC_LD		= VEC_OUT+2	; load vector
-VEC_SV		= VEC_LD+2	; save vector
+;VEC_IN		= VEC_CC+2	; input vector
+;VEC_OUT		= VEC_IN+2	; output vector
+;VEC_LD		= VEC_OUT+2	; load vector
+;VEC_SV		= VEC_LD+2	; save vector
 
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80
 
-Ibuffs		= VEC_SV+2	; ***changed for SBC-2
+Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS
 						; start of input buffer after IRQ/NMI code
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
+
+	_STZA ma_align		; page-aligned
+	_STZA ma_rs		; as much as possible
+	_STZA ma_rs+1
+	_KERNEL(MALLOC)		; request RAM from OS
+	LDA ma_pt
+	STA Ram_base
+	CLC
+;	ADC ma_rs		; not needed if MALLOC is page-aligned
+	STA Ram_top		; base+size=top
+	LDA ma_pt+1		; MSB now
+	STA Ram_base+1		; copy pointer
+	ADC ma_rs+1
+	STA Ram_top+1		; base+size=top
 
 ; *** these must be replaced by a call to MALLOC(0) ***
 ;Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
@@ -447,12 +446,13 @@ Ibuffe		= Ibuffs+$47
 ; BASIC cold start entry point
 
 ; new page 2 initialisation, copy block to ccflag on
-
+; *** cannot use page 2 freely ***
 LAB_COLD
 	LDY	#PG2_TABE-PG2_TABS-1
 						; byte count-1
 LAB_2D13
 	LDA	PG2_TABS,Y		; get byte
+; might use indirect indexed after another malloc
 	STA	ccflag,Y		; store in page 2
 	DEY					; decrement count
 	BPL	LAB_2D13		; loop if not done
@@ -464,7 +464,7 @@ LAB_2D13
 	LDA	#$4C			; code for JMP
 	STA	Fnxjmp			; save for jump vector for functions
 
-; copy block from LAB_2CEE to $00BC - $00D3
+; copy block from LAB_2CEE to $00BC - $00D3***
 
 	LDX	#StrTab-LAB_2CEE
 						; set byte count
@@ -1579,6 +1579,7 @@ LAB_1609
 ; key press is detected.
 
 LAB_1629
+; *** will be replaced by something else, SIGTERM handler?
 	JMP	(VEC_CC)		; ctrl c check vector
 
 ; if there was a key press it gets back here ..
@@ -7718,7 +7719,7 @@ LAB_TWOPI
 
 ; system dependant i/o vectors
 ; these are in RAM and are set by the monitor at start-up
-
+; *** will just be replaced by minimOS I/O calls, saving vectors
 V_INPT
 	JMP	(VEC_IN)		; non halting scan input device
 V_OUTP
