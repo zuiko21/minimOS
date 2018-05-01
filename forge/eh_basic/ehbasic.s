@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180430-1718
+; last modified 20180501-2146
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -60,6 +60,7 @@ ehSize	=	ehEnd - ehHead -256	; compute size NOT including header!
 ; *********************
 
 ; *** likely to need some other vars from pseudodriver
+; must add Ram_base and Ram_top, now variables instead of constants
 
 ut1_pl		= $71		; utility pointer 1 low byte
 ut1_ph		= ut1_pl+1	; utility pointer 1 high byte
@@ -141,7 +142,7 @@ des_2h		= des_2l+1	; string descriptor_2 pointer high byte
 
 g_step		= $A0		; garbage collect step size
 
-Fnxjmp		= $A1		; jump vector for functions
+Fnxjmp		= $A1		; jump vector for functions *** could just use JSR, then JMP(Fnxjpl)
 Fnxjpl		= Fnxjmp+1	; functions jump vector low byte
 Fnxjph		= Fnxjmp+2	; functions jump vector high byte
 
@@ -234,7 +235,8 @@ Sendh		= Aspth		; BASIC pointer temp low byte
 ; *** not a good idea to call/jump to ZP
 LAB_IGBY	= $BC		; get next BASIC byte subroutine
 
-LAB_GBYT	= $C2		; get current BASIC byte subroutine
+; *** best to use a mere pointer for indirect jump ***
+;LAB_GBYT	= $C2		; get current BASIC byte subroutine
 Bpntrl		= $C3		; BASIC execute (get byte) pointer low byte
 Bpntrh		= Bpntrl+1	; BASIC execute (get byte) pointer high byte
 
@@ -402,7 +404,8 @@ LAB_SKFF	= LAB_STAK+$FF
 						; flushed stack address
 
 ; *** these MUST be relocated somewhere, perhaps in ZP ***
-ccflag		= $0200		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
+; the other side of the stack may be dangerous... but $0200 was DEADLY in minimOS
+ccflag		= $0100		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 
@@ -421,6 +424,7 @@ Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 
+; *** reserve as much memory as available ***
 	_STZA ma_align		; page-aligned
 	_STZA ma_rs		; as much as possible
 	_STZA ma_rs+1
@@ -459,10 +463,11 @@ LAB_2D13
 
 	LDX	#$FF			; set byte
 	STX	Clineh			; set current line high byte (set immediate mode)
-	TXS					; reset stack pointer ***beware of 816/multitask savvyness
+;	TXS					; reset stack pointer *** not possible in minimOS
 
-	LDA	#$4C			; code for JMP
-	STA	Fnxjmp			; save for jump vector for functions
+; *** instead of SMC, do JSR then JMP (Fnxjmp+1) ***
+;	LDA	#$4C			; code for JMP
+;	STA	Fnxjmp			; save for jump vector for functions
 
 ; copy block from LAB_2CEE to $00BC - $00D3***
 
@@ -474,14 +479,14 @@ LAB_2D4E
 	DEX					; decrement count
 	BNE	LAB_2D4E		; loop if not all done
 
-; copy block from StrTab to $0000 - $0012***
+; copy block from StrTab to $0000 - $0012 *** $0003 and beyond in mOS
 
 LAB_GMEM
 	LDX	#EndTab-StrTab-1
 						; set byte count-1
 TabLoop
 	LDA	StrTab,X		; get byte from table
-	STA	PLUS_0,X		; save byte in page zero
+	STA	uz+PLUS_0,X		; save byte in page zero, must skip minimOS reserved!
 	DEX					; decrement count
 	BPL	TabLoop			; loop if not all done
 
@@ -506,7 +511,7 @@ TabLoop
 	JSR	LAB_INLN		; print "? " and get BASIC input
 	STX	Bpntrl			; set BASIC execute pointer low byte
 	STY	Bpntrh			; set BASIC execute pointer high byte
-	JSR	LAB_GBYT		; get last byte back
+	JSR	LAB_GBYT		; get last byte back *** relocate to a JMP (Bpntrl) somewhere
 
 	BNE	LAB_2DAA		; branch if not null (user typed something)
 
@@ -519,7 +524,7 @@ LAB_2D93
 
 	INC	Itemph			; increment temporary integer high byte
 	LDA	Itemph			; get high byte
-	CMP	#>Ram_top		; compare with top of RAM+1
+	CMP	Ram_top+1		; compare with top of RAM+1 *** check new var
 	BEQ	LAB_2DB6		; branch if match (end of user RAM)
 
 LAB_2D99
@@ -1273,8 +1278,14 @@ LAB_1491
 	PLA					; pull return address high byte
 	STX	LAB_SKFE		; save to cleared stack
 	STA	LAB_SKFF		; save to cleared stack
-	LDX	#$FD			; new stack pointer
-	TXS					; reset stack ***beware of 816/multitask savvyness
+#ifndef	C816
+	LDX	#$FD			; new stack pointer *** check mOS value
+	TXS					; reset stack
+#else
+	TSC
+	LDA	#$FD			; *** check as above
+	TCS					; reset stack
+#endif
 	LDA	#$00			; clear byte
 	STA	Cpntrh			; clear continue pointer high byte
 	STA	Sufnxf			; clear subscript/FNX flag
