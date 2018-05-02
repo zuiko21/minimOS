@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1319
+; last modified 20180502-1339
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -128,10 +128,14 @@ ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ; *** no longer need for CTRL_C vector ***
 
-; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80 !!!!!!!!!!! but uses BOTH indexes!
-; *** could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed ***
+; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80
+; *** 65816 could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed ***
+#ifdef	C816
 IbufiY		= ccnull+1	; self-pointer to next buffer! $26-27
 Ibuffs		= IbufuY+2	; changed for SBC-2, again for minimOS $28...6F EEEEEEEEEEEK
+#else
+Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $26...6D for 65C02
+#endif
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 
@@ -587,9 +591,9 @@ TabLoop
 	LDY	#>LAB_MSZM		; point to memory size message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
 	JSR	LAB_INLN		; print "? " and get BASIC input
-	STX	Bpntrl			; set BASIC execute pointer low byte *** IS THIS DONE ELSEWHERE?
+	STX	Bpntrl			; set BASIC execute pointer low byte
 	STY	Bpntrh			; set BASIC execute pointer high byte
-	JSR	LAB_GBYT		; get last byte back *** relocate to a JMP (Bpntrl) somewhere
+	JSR	LAB_GBYT		; get last byte back
 
 	BNE	LAB_2DAA		; branch if not null (user typed something)
 
@@ -1205,7 +1209,11 @@ LAB_13EA
 LAB_13EC
 	INX					; increment buffer index (to next input byte)
 	INY					; increment save index (to next output byte)
+#ifndef	C816
+	STA	Ibuffs, Y		; save byte to output, will use abs,Y
+#else
 	STA	(IbufiY),Y		; save byte to output *** was STA Ibuffs, Y
+#endif
 	CMP	#$00			; set the flags, set carry
 	BEQ	LAB_142A		; do exit if was null [EOL]
 
@@ -1237,7 +1245,11 @@ LAB_1408
 						; entry for copy string in quotes, do not crunch
 LAB_1410
 	INY					; increment buffer save index
-	STA	(IbufiY),Y		; save byte to output *** was STA Ibuffs,Y
+#ifndef	C816
+	STA	Ibuffs, Y		; save byte to output, will use abs,Y
+#else
+	STA	(IbufiY),Y		; save byte to output *** was STA Ibuffs, Y
+#endif
 	INX					; increment buffer read index
 	BNE	LAB_1408		; loop while <> 0 (should never be 0!)
 
@@ -1265,7 +1277,11 @@ LAB_141B
 LAB_142A
 	INY					; increment pointer
 	INY					; increment pointer (makes it next line pointer high byte)
-	STA	(IbufiY),Y		; save [EOL] (marks [EOT] in immediate mode) *** was STA Ibuffs,Y
+#ifndef	C816
+	STA	Ibuffs, Y		; save [EOL] (marks [EOT] in immediate mode), will use abs,Y
+#else
+	STA	(IbufiY),Y		; save [EOL] (marks [EOT] in immediate mode) *** was STA Ibuffs, Y
+#endif
 	INY					; adjust for line copy
 	INY					; adjust for line copy
 	INY					; adjust for line copy
@@ -1707,12 +1723,22 @@ LAB_163B
 	BNE	LAB_167A		; if wasn't CTRL-C or there is a following byte return
 
 	LDA	Bpntrh			; get the BASIC execute pointer high byte
+#ifndef	C816
 	EOR	#>Ibuffs		; compare with buffer address high byte (Cb unchanged)
+#else
+	EOR IbufiY+1		; compare with buffer address high byte (Cb unchanged) *** 816-savvy
+#endif
 	BEQ	LAB_164F		; branch if the BASIC pointer is in the input buffer
 						; (cannot continue in immediate mode)
 
 						; else ..
+
+#ifndef	C816
 	EOR	#>Ibuffs		; correct the bits
+#else
+	EOR IbufiY+1		; correct the bits *** 816-savvy
+#endif
+
 	LDY	Bpntrl			; get BASIC execute pointer low byte
 	STY	Cpntrl			; save continue pointer low byte
 	STA	Cpntrh			; save continue pointer high byte
@@ -7848,8 +7874,10 @@ PG2_TABS
 	.byte	$00			; ctrl-c byte timeout	-	GET needs this
 ;	.word	CTRLC			; ctrl c check vector *** no longer used
 ; *** now it needs self-pointer to Ibuffs for 65816-savvyness ***
-; will correct MSB (from D) if needed
-	.word	Ibuffs		; address of input buffer, now in ZP (65816 MUST correct MSB from D.H)
+; will correct MSB (from D) later
+#ifdef	C816
+	.byte	<Ibuffs		; address of input buffer, now in ZP (MUST correct MSB from D.H)
+#endif
 ;	.word	xxxx			; non halting key input	-	monitor to set this
 ;	.word	xxxx			; output vector		-	monitor to set this
 ;	.word	xxxx			; load vector		-	monitor to set this
