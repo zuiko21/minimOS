@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1401
+; last modified 20180502-1408
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -7858,12 +7858,22 @@ LAB_TWOPI
 ; *** will just be replaced by minimOS I/O calls, saving vectors
 V_INPT
 ;	JMP	(VEC_IN)		; non halting scan input device
+	LDY #0				; *** default device, might check assigned window ***
+	_KERNEL(CIN)
+; could check C and Y here for safety
+	LDA c_io
+	RTS
 V_OUTP
 ;	JMP	(VEC_OUT)		; send byte to output device
+	LDY #0				; *** default device, might check assigned window ***
+	STA c_io
+	_KERNEL(COUT)
+	RTS
 V_LOAD
 ;	JMP	(VEC_LD)		; load BASIC program
 V_SAVE
 ;	JMP	(VEC_SV)		; save BASIC program
+	RTS					; *** not yet implemented ***
 
 ; The rest are tables messages and code for RAM
 
