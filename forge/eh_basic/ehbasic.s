@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180501-2146
+; last modified 20180502-0911
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -59,64 +59,124 @@ ehSize	=	ehEnd - ehHead -256	; compute size NOT including header!
 ; *** zero page use ***
 ; *********************
 
-; *** likely to need some other vars from pseudodriver
-; must add Ram_base and Ram_top, now variables instead of constants
+eh_basic	= uz		; EhBASIC zeropage usage
 
+; *** no need for vectored warm start ***
+;LAB_WARM	= eh_basic-1; BASIC warm start entry point *** only the next two bytes are used, thus no need for this byte itself
+;Wrmjpl 	= LAB_WARM+1; BASIC warm start vector jump low byte
+;Wrmjph 	= LAB_WARM+2; BASIC warm start vector jump high byte
+
+;Usrjmp		= uz		; USR function JMP address *** no longer $0A, should it hold a JMP opcode???
+;Usrjpl		= Usrjmp+1	; USR function JMP vector low byte
+;Usrjph		= Usrjmp+2	; USR function JMP vector high byte
+
+Nullct		= uz		; nulls output after each line *** $03
+TPos		= Nullct+1	; BASIC terminal position byte *** $04
+TWidth		= TPos+1	; BASIC terminal width byte *** $05
+Iclim		= TWidth+1	; input column limit *** $06
+Itempl		= Iclim		; temporary integer low byte *** $06-07
+Itemph		= Itempl+1	; temporary integer high byte
+
+nums_1		= Itempl	; number to bin/hex string convert MSB $06-08
+nums_2		= nums_1+1	; number to bin/hex string convert
+nums_3		= nums_1+2	; number to bin/hex string convert LSB
+
+Srchc		= nums_3+1	; search character *** $09, no longer $5B
+Temp3		= Srchc		; temp byte used in number routines *** $09
+Scnquo		= Srchc+1	; scan-between-quotes flag *** $0A, no longer $5C
+Asrch		= Scnquo	; alt search character *** $0A
+
+XOAw_l		= Srchc		; eXclusive OR, OR and AND word low byte *** $09-0A
+XOAw_h		= Scnquo	; eXclusive OR, OR and AND word high byte
+
+Ibptr		= Scnquo+1	; input buffer pointer *** $0B, no longer $5D
+Dimcnt		= Ibptr		; # of dimensions *** $0B
+Tindx		= Ibptr		; token index *** $0B
+
+Defdim		= Ibptr+1	; default DIM flag *** $0C, no longer $5E
+Dtypef		= Defdim+1	; data type flag, $FF=string, $00=numeric *** $0D, no longer $5F
+Oquote		= Dtypef+1	; open quote flag (b7) (Flag: DATA scan; LIST quote; memory) *** $0E, no longer $60
+Gclctd		= Oquote	; garbage collected flag *** $0E
+Sufnxf		= Oquote+1	; subscript/FNX flag, 1xxx xxx = FN(0xxx xxx) *** $0F, no longer $61
+Imode		= Sufnxf+1	; input mode flag, $00=INPUT, $80=READ *** $10, no longer $62
+
+Cflag		= Imode+1	; comparison evaluation flag *** $11, no longer $63
+
+TabSiz		= Cflag+1	; TAB step size (was input flag) *** $12, no longer $64
+
+next_s		= TabSiz+1	; next descriptor stack address *** $13, no longer $65
+
+; *** watch this, might point somewhere in zeropage ***
+						; these two bytes form a word pointer to the item
+						; currently on top of the descriptor stack
+last_sl		= next_s+1	; last descriptor stack address low byte *** $14, no longer $66
+last_sh		= last_sl+1	; last descriptor stack address high byte (always $00) *** $15, no longer $67
+
+des_sk		= last_sh	; descriptor stack start address (temp strings) *** $15, no longer $67
+; *** seems to need 10-byte space here ***
+
+; must add Ram_base and Ram_top, now variables instead of constants
+Ram_base	= des_sk+10	; *** check space for stack above *** $1F-20
+Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $21-22
+
+; *** currently free space between $23-$70 ***
+
+; *** original variables follow, think about relocating from $71 to $23 as above ***
 ut1_pl		= $71		; utility pointer 1 low byte
 ut1_ph		= ut1_pl+1	; utility pointer 1 high byte
-ut2_pl		= $73		; utility pointer 2 low byte
+ut2_pl		= ut1_ph+1	; utility pointer 2 low byte was $73
 ut2_ph		= ut2_pl+1	; utility pointer 2 high byte
 
 Temp_2		= ut1_pl	; temp byte for block move
 
-FACt_1		= $75		; FAC temp mantissa1
+FACt_1		= ut2_ph+1	; FAC temp mantissa1 was $75
 FACt_2		= FACt_1+1	; FAC temp mantissa2
 FACt_3		= FACt_2+1	; FAC temp mantissa3
 
 dims_l		= FACt_2	; array dimension size low byte
 dims_h		= FACt_3	; array dimension size high byte
 
-TempB		= $78		; temp page 0 byte
+TempB		= FACt_3+1	; temp page 0 byte was $78
 
 
-Smeml		= $79		; start of mem low byte		(Start-of-Basic)
+Smeml		= TempB+1	; start of mem low byte		(Start-of-Basic) was $79
 Smemh		= Smeml+1	; start of mem high byte	(Start-of-Basic)
-Svarl		= $7B		; start of vars low byte	(Start-of-Variables)
+Svarl		= Smemh+1	; start of vars low byte	(Start-of-Variables) was $7B
 Svarh		= Svarl+1	; start of vars high byte	(Start-of-Variables)
-Sarryl		= $7D		; var mem end low byte		(Start-of-Arrays)
+Sarryl		= Svarh+1	; var mem end low byte		(Start-of-Arrays) was $7D
 Sarryh		= Sarryl+1	; var mem end high byte		(Start-of-Arrays)
-Earryl		= $7F		; array mem end low byte	(End-of-Arrays)
+Earryl		= $7F		; array mem end low byte	(End-of-Arrays) was $7F
 Earryh		= Earryl+1	; array mem end high byte	(End-of-Arrays)
-Sstorl		= $81		; string storage low byte	(String storage (moving down))
+Sstorl		= $81		; string storage low byte	(String storage (moving down)) was $81
 Sstorh		= Sstorl+1	; string storage high byte	(String storage (moving down))
-Sutill		= $83		; string utility ptr low byte
+Sutill		= $83		; string utility ptr low byte was $83
 Sutilh		= Sutill+1	; string utility ptr high byte
-Ememl		= $85		; end of mem low byte		(Limit-of-memory)
+Ememl		= $85		; end of mem low byte		(Limit-of-memory) was $85
 Ememh		= Ememl+1	; end of mem high byte		(Limit-of-memory)
-Clinel		= $87		; current line low byte		(Basic line number)
+Clinel		= $87		; current line low byte		(Basic line number) was $87
 Clineh		= Clinel+1	; current line high byte	(Basic line number)
-Blinel		= $89		; break line low byte		(Previous Basic line number)
+Blinel		= $89		; break line low byte		(Previous Basic line number) was $89
 Blineh		= Blinel+1	; break line high byte		(Previous Basic line number)
 
-Cpntrl		= $8B		; continue pointer low byte
+Cpntrl		= $8B		; continue pointer low byte was $8B
 Cpntrh		= Cpntrl+1	; continue pointer high byte
 
-Dlinel		= $8D		; current DATA line low byte
+Dlinel		= $8D		; current DATA line low byte was $8D
 Dlineh		= Dlinel+1	; current DATA line high byte
 
-Dptrl		= $8F		; DATA pointer low byte
+Dptrl		= $8F		; DATA pointer low byte was $8F
 Dptrh		= Dptrl+1	; DATA pointer high byte
 
-Rdptrl		= $91		; read pointer low byte
+Rdptrl		= $91		; read pointer low byte was $91
 Rdptrh		= Rdptrl+1	; read pointer high byte
 
-Varnm1		= $93		; current var name 1st byte
+Varnm1		= $93		; current var name 1st byte was $93
 Varnm2		= Varnm1+1	; current var name 2nd byte
 
-Cvaral		= $95		; current var address low byte
+Cvaral		= $95		; current var address low byte was $95
 Cvarah		= Cvaral+1	; current var address high byte
 
-Frnxtl		= $97		; var pointer for FOR/NEXT low byte
+Frnxtl		= $97		; var pointer for FOR/NEXT low byte was $97
 Frnxth		= Frnxtl+1	; var pointer for FOR/NEXT high byte
 
 Tidx1		= Frnxtl	; temp line index
@@ -124,48 +184,48 @@ Tidx1		= Frnxtl	; temp line index
 Lvarpl		= Frnxtl	; let var pointer low byte
 Lvarph		= Frnxth	; let var pointer high byte
 
-prstk		= $99		; precedence stacked flag
+prstk		= $99		; precedence stacked flag was $99
 
-comp_f		= $9B		; compare function flag, bits 0,1 and 2 used
+comp_f		= $9B		; compare function flag, bits 0,1 and 2 used; was $9B
 						; bit 2 set if >
 						; bit 1 set if =
 						; bit 0 set if <
 
-func_l		= $9C		; function pointer low byte
+func_l		= $9C		; function pointer low byte was $9C
 func_h		= func_l+1	; function pointer high byte
 
 garb_l		= func_l	; garbage collection working pointer low byte
 garb_h		= func_h	; garbage collection working pointer high byte
 
-des_2l		= $9E		; string descriptor_2 pointer low byte
+des_2l		= $9E		; string descriptor_2 pointer low byte was $9E
 des_2h		= des_2l+1	; string descriptor_2 pointer high byte
 
-g_step		= $A0		; garbage collect step size
+g_step		= $A0		; garbage collect step size was $A0
 
-Fnxjmp		= $A1		; jump vector for functions *** could just use JSR, then JMP(Fnxjpl)
+Fnxjmp		= $A1		; jump vector for functions was $A1 *** could just use JSR, then JMP(Fnxjpl)
 Fnxjpl		= Fnxjmp+1	; functions jump vector low byte
 Fnxjph		= Fnxjmp+2	; functions jump vector high byte
 
 g_indx		= Fnxjpl	; garbage collect temp index
 
-FAC2_r		= $A3		; FAC2 rounding byte
+FAC2_r		= $A3		; FAC2 rounding byte was $A3 (see above)
 
-Adatal		= $A4		; array data pointer low byte
+Adatal		= $A4		; array data pointer low byte was $A4
 Adatah		= Adatal+1	; array data pointer high  byte
 
 Nbendl		= Adatal	; new block end pointer low byte
 Nbendh		= Adatah	; new block end pointer high  byte
 
-Obendl		= $A6		; old block end pointer low byte
+Obendl		= $A6		; old block end pointer low byte was $A6
 Obendh		= Obendl+1	; old block end pointer high  byte
 
-numexp		= $A8		; string to float number exponent count
-expcnt		= $A9		; string to float exponent count
+numexp		= $A8		; string to float number exponent count was $A8
+expcnt		= $A9		; string to float exponent count was $A9
 
 numbit		= numexp	; bit count for array element calculations
 
-numdpf		= $AA		; string to float decimal point flag
-expneg		= $AB		; string to float eval exponent -ve flag
+numdpf		= $AA		; string to float decimal point flag was $AA
+expneg		= $AB		; string to float eval exponent -ve flag was $AB
 
 Astrtl		= numdpf	; array start pointer low byte
 Astrth		= expneg	; array start pointer high  byte
@@ -185,7 +245,7 @@ Ostrth		= expneg	; old block start pointer high  byte
 Vrschl		= numdpf	; variable search pointer low byte
 Vrschh		= expneg	; variable search pointer high  byte
 
-FAC1_e		= $AC		; FAC1 exponent
+FAC1_e		= $AC		; FAC1 exponent was $AC
 FAC1_1		= FAC1_e+1	; FAC1 mantissa1
 FAC1_2		= FAC1_e+2	; FAC1 mantissa2
 FAC1_3		= FAC1_e+3	; FAC1 mantissa3
@@ -200,28 +260,28 @@ des_ph		= FAC1_3	; string descriptor pointer high byte
 
 mids_l		= FAC1_3	; MID$ string temp length byte
 
-negnum		= $B1		; string to float eval -ve flag
-numcon		= $B1		; series evaluation constant count
+negnum		= $B1		; string to float eval -ve flag was $B1
+numcon		= $B1		; series evaluation constant count was $B1
 
-FAC1_o		= $B2		; FAC1 overflow byte
+FAC1_o		= $B2		; FAC1 overflow byte was $B2
 
-FAC2_e		= $B3		; FAC2 exponent
+FAC2_e		= $B3		; FAC2 exponent was $B3
 FAC2_1		= FAC2_e+1	; FAC2 mantissa1
 FAC2_2		= FAC2_e+2	; FAC2 mantissa2
 FAC2_3		= FAC2_e+3	; FAC2 mantissa3
 FAC2_s		= FAC2_e+4	; FAC2 sign (b7)
 
-FAC_sc		= $B8		; FAC sign comparison, Acc#1 vs #2
-FAC1_r		= $B9		; FAC1 rounding byte
+FAC_sc		= $B8		; FAC sign comparison, Acc#1 vs #2 was $B8
+FAC1_r		= $B9		; FAC1 rounding byte was $B9
 
 ssptr_l		= FAC_sc	; string start pointer low byte
 ssptr_h		= FAC1_r	; string start pointer high byte
 
 sdescr		= FAC_sc	; string descriptor pointer
 
-csidx		= $BA		; line crunch save index
+csidx		= $BA		; line crunch save index was $BA
 Asptl		= csidx		; array size/pointer low byte
-Aspth		= $BB		; array size/pointer high byte
+Aspth		= $BB		; array size/pointer high byte was $BB
 
 Btmpl		= Asptl		; BASIC pointer temp low byte
 Btmph		= Aspth		; BASIC pointer temp low byte
@@ -236,18 +296,18 @@ Sendh		= Aspth		; BASIC pointer temp low byte
 LAB_IGBY	= $BC		; get next BASIC byte subroutine
 
 ; *** best to use a mere pointer for indirect jump ***
-;LAB_GBYT	= $C2		; get current BASIC byte subroutine
-Bpntrl		= $C3		; BASIC execute (get byte) pointer low byte
+;LAB_GBYT	= $C2		; get current BASIC byte subroutine was $C2
+Bpntrl		= $C3		; BASIC execute (get byte) pointer low byte was $C3
 Bpntrh		= Bpntrl+1	; BASIC execute (get byte) pointer high byte
 
 ;			= $D7		; end of get BASIC char subroutine
 
-Rbyte4		= $D8		; extra PRNG byte
+Rbyte4		= $D8		; extra PRNG byte was $D8
 Rbyte1		= Rbyte4+1	; most significant PRNG byte
 Rbyte2		= Rbyte4+2	; middle PRNG byte
 Rbyte3		= Rbyte4+3	; least significant PRNG byte
 
-NmiBase		= $DC		; NMI handler enabled/setup/triggered flags
+NmiBase		= $DC		; NMI handler enabled/setup/triggered flags was $DC
 						; bit	function
 						; ===	========
 						; 7	interrupt enabled
@@ -255,7 +315,7 @@ NmiBase		= $DC		; NMI handler enabled/setup/triggered flags
 						; 5	interrupt happened
 ;			= $DD		; NMI handler addr low byte
 ;			= $DE		; NMI handler addr high byte
-IrqBase		= $DF		; IRQ handler enabled/setup/triggered flags
+IrqBase		= $DF		; IRQ handler enabled/setup/triggered flags was $DF
 ;			= $E0		; IRQ handler addr low byte
 ;			= $E1		; IRQ handler addr high byte
 
@@ -610,12 +670,14 @@ LAB_2E05
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
 	LDY	#>LAB_SMSG		; point to sign-on message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
-	LDA	#<LAB_1274		; warm start vector low byte
-	LDY	#>LAB_1274		; warm start vector high byte
-	STA	Wrmjpl			; save warm start vector low byte
-	STY	Wrmjph			; save warm start vector high byte
-	JMP	(Wrmjpl)		; go do warm start
-
+; *** no need for vectored warm start ***
+;	LDA	#<LAB_1274		; warm start vector low byte
+;	LDY	#>LAB_1274		; warm start vector high byte
+;	STA	Wrmjpl			; save warm start vector low byte
+;	STY	Wrmjph			; save warm start vector high byte
+;	JMP	(Wrmjpl)		; go do warm start
+	JMP LAB_1274		; go do warm start (non vectored)
+	
 ; open up space in memory
 ; move (Ostrtl)-(Obendl) to new block ending at (Nbendl)
 ; Nbendl,Nbendh - new block end address (A/Y)
@@ -4521,7 +4583,7 @@ LAB_214B
 	STX	Histrh			; save as highest string high byte
 	LDA	#des_sk			; set descriptor stack pointer
 	STA	ut1_pl			; save descriptor stack pointer low byte
-	STY	ut1_ph			; save descriptor stack pointer high byte ($00)
+	STY	ut1_ph			; save descriptor stack pointer high byte ($00)***
 LAB_2161
 	CMP	next_s			; compare with descriptor stack pointer
 	BEQ	LAB_216A		; branch if =
@@ -6949,7 +7011,8 @@ LAB_2C74
 ; perform USR()
 
 LAB_USR
-	JSR	Usrjmp		; call user code
+;	JSR	Usrjmp		; call user code
+	JSR LAB_FCER		; call user-code *** non-vectored ***
 	JMP	LAB_1BFB		; scan for ")", else do syntax error then warm start
 
 ; perform ATN()
@@ -7801,22 +7864,22 @@ LAB_2D05
 ; page zero initialisation table $00-$12 inclusive***
 
 StrTab
-	.byte	$4C			; JMP opcode
-	.word LAB_COLD		; initial warm start vector (cold start)
+	.byte	$4C			; JMP opcode 0
+	.word LAB_COLD		; initial warm start vector (cold start) 1,2
 
-	.byte	$00			; these bytes are not used by BASIC
-	.word	$0000			; 
-	.word	$0000			; 
-	.word	$0000			; 
+	.byte	$00			; these bytes are not used by BASIC 3
+	.word	$0000			; 4,5
+	.word	$0000			; 6,7
+	.word	$0000			; 8,9
 
-	.byte	$4C			; JMP opcode
-	.word	LAB_FCER		; initial user function vector ("Function call" error)
-	.byte	$00			; default NULL count
-	.byte	$00			; clear terminal position
-	.byte	$00			; default terminal width byte
-	.byte	$F2			; default limit for TAB = 14
+	.byte	$4C			; JMP opcode A
+	.word	LAB_FCER		; initial user function vector ("Function call" error) B,C
+	.byte	$00			; default NULL count D
+	.byte	$00			; clear terminal position E
+	.byte	$00			; default terminal width byte F
+	.byte	$F2			; default limit for TAB = 14 $10
 ; ram_base is now variable address...
-	.word	Ram_base		; start of user RAM
+	.word	Ram_base		; start of user RAM $11-12
 EndTab
 
 LAB_MSZM
