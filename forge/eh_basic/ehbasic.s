@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1241
+; last modified 20180502-1243
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -122,8 +122,17 @@ Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks s
 ccflag		= Ram_top+1	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
+; *** no longer need for CTRL_C vector ***
 
-; *** currently free space between $23-$70 ***
+; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80 !!!!!!!!!!! but uses BOTH indexes!
+; *** could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed
+Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS
+						; start of input buffer after IRQ/NMI code
+Ibuffe		= Ibuffs+$47
+						; end of input buffer *** might be reduced
+
+; ?????
+; *** currently free space between $26-$70 ***
 
 ; *** original variables follow, think about relocating from $71 to $23 as above ***
 ut1_pl		= $71		; utility pointer 1 low byte
@@ -141,7 +150,6 @@ dims_l		= FACt_2	; array dimension size low byte
 dims_h		= FACt_3	; array dimension size high byte
 
 TempB		= FACt_3+1	; temp page 0 byte was $78
-
 
 Smeml		= TempB+1	; start of mem low byte		(Start-of-Basic) was $79
 Smemh		= Smeml+1	; start of mem high byte	(Start-of-Basic)
@@ -470,13 +478,6 @@ LAB_SKFF	= LAB_STAK+$FF
 ;VEC_OUT		= VEC_IN+2	; output vector
 ;VEC_LD		= VEC_OUT+2	; load vector
 ;VEC_SV		= VEC_LD+2	; save vector
-
-; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80 !!!!!!!!!!! but uses BOTH indexes!
-
-Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS
-						; start of input buffer after IRQ/NMI code
-Ibuffe		= Ibuffs+$47
-						; end of input buffer *** might be reduced
 
 ; ********************************
 ; *** EhBASIC code starts here ***
@@ -970,7 +971,7 @@ LAB_1301
 	LDY	Ibptr			; get input buffer pointer	(also buffer length)
 	DEY					; adjust for loop type
 LAB_1311
-	LDA	Ibuffs-4,Y		; get byte from crunched line
+	LDA	Ibuffs-4,Y		; get byte from crunched line *** DP-savvy?
 	STA	(Baslnl),Y		; save it to program memory
 	DEY					; decrement count
 	CPY	#$03			; compare with first byte-1
@@ -1177,7 +1178,7 @@ LAB_13EA
 LAB_13EC
 	INX					; increment buffer index (to next input byte)
 	INY					; increment save index (to next output byte)
-	STA	Ibuffs,Y		; save byte to output
+	STA	Ibuffs,Y		; save byte to output *** DP-savvy?
 	CMP	#$00			; set the flags, set carry
 	BEQ	LAB_142A		; do exit if was null [EOL]
 
@@ -1209,7 +1210,7 @@ LAB_1408
 						; entry for copy string in quotes, do not crunch
 LAB_1410
 	INY					; increment buffer save index
-	STA	Ibuffs,Y		; save byte to output
+	STA	Ibuffs,Y		; save byte to output *** DP-savvy?
 	INX					; increment buffer read index
 	BNE	LAB_1408		; loop while <> 0 (should never be 0!)
 
@@ -1237,7 +1238,7 @@ LAB_141B
 LAB_142A
 	INY					; increment pointer
 	INY					; increment pointer (makes it next line pointer high byte)
-	STA	Ibuffs,Y		; save [EOL] (marks [EOT] in immediate mode)
+	STA	Ibuffs,Y		; save [EOL] (marks [EOT] in immediate mode) *** DP-savvy?
 	INY					; adjust for line copy
 	INY					; adjust for line copy
 	INY					; adjust for line copy
