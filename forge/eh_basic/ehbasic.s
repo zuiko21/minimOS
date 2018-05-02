@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1206
+; last modified 20180502-1241
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -33,7 +33,7 @@
 ehHead:
 ; *** header identification ***
 	BRK								; do not enter here! NUL marks beginning of header
-	.asc	"m", CPU_TYPE			; minimOS app! should be NMOS-savvy, at least
+	.asc	"mB"					; minimOS app, CMOS only!
 	.asc	"****", 13				; some flags TBD
 
 ; *** filename and optional comment ***
@@ -106,11 +106,10 @@ TabSiz		= Cflag+1	; TAB step size (was input flag) *** $12, no longer $64
 
 next_s		= TabSiz+1	; next descriptor stack address *** $13, no longer $65
 
-; *** watch this, might point somewhere in zeropage ***
 						; these two bytes form a word pointer to the item
 						; currently on top of the descriptor stack
 last_sl		= next_s+1	; last descriptor stack address low byte *** $14, no longer $66
-last_sh		= last_sl+1	; last descriptor stack address high byte (always $00) *** $15, no longer $67
+last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.H) *** $15, no longer $67
 
 des_sk		= last_sh	; descriptor stack start address (temp strings) *** $15, no longer $67
 ; *** seems to need 10-byte space here ***
@@ -118,6 +117,11 @@ des_sk		= last_sh	; descriptor stack start address (temp strings) *** $15, no lo
 ; must add Ram_base and Ram_top, now variables instead of constants
 Ram_base	= des_sk+10	; *** check space for stack above *** $1F-20
 Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $21-22
+
+; these were on page 2... but $0200 is DEADLY in minimOS
+ccflag		= Ram_top+1	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
+ccbyte		= ccflag+1	; BASIC CTRL-C byte
+ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 
 ; *** currently free space between $23-$70 ***
 
@@ -315,12 +319,12 @@ IrqBase		= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** ski
 ;			= $C6		; IRQ handler addr low byte was $E0
 ;			= $C7		; IRQ handler addr high byte was $E1
 
-; *** minimOS does NOT allow the use of zeropage beyond $E4 ($E2 for the C64) ***
+; *** still some bytes free from $C8 up to $E3 ($E1 for the C64) ***
 
-; *** these must be relocated, perhaps @ $E2 ***
-Decss		= $EF		; number to decimal string start
+; *** these MUST be relocated, perhaps @ $E2 *** CANNOT BE IN ZP as will not be 65816-savvy!
+Decss		= $EF		; number to decimal string start was $EF
 Decssp1		= Decss+1	; number to decimal string start
-
+; *** seems to need this 17-byte space ***
 ;			= $FF		; decimal string end
 
 ; token values needed for BASIC
@@ -459,12 +463,6 @@ LAB_SKFE	= LAB_STAK+$FE
 LAB_SKFF	= LAB_STAK+$FF
 						; flushed stack address
 
-; *** these MUST be relocated somewhere, perhaps in ZP ***!!!!!!!!!!!!!
-; the other side of the stack may be dangerous... but $0200 was DEADLY in minimOS
-ccflag		= $0100		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
-ccbyte		= ccflag+1	; BASIC CTRL-C byte
-ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
-
 ; *** no real need for these ***
 ;VEC_CC		= ccnull+1	; ctrl c check vector
 
@@ -473,24 +471,30 @@ ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ;VEC_LD		= VEC_OUT+2	; load vector
 ;VEC_SV		= VEC_LD+2	; save vector
 
-; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80 !!!!!!!!!!!
+; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80 !!!!!!!!!!! but uses BOTH indexes!
 
 Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS
 						; start of input buffer after IRQ/NMI code
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 
+; ********************************
+; *** EhBASIC code starts here ***
+; ********************************
+
+; should check for ZP space and default window TODO TODO TODO ***
+
 ; *** reserve as much memory as available ***
-	_STZA ma_align		; page-aligned
-	_STZA ma_rs		; as much as possible
-	_STZA ma_rs+1
+	STZ ma_align		; page-aligned
+	STZ ma_rs			; as much as possible
+	STZA ma_rs+1
 	_KERNEL(MALLOC)		; request RAM from OS
 	LDA ma_pt
 	STA Ram_base
 	CLC
-;	ADC ma_rs		; not needed if MALLOC is page-aligned
-	STA Ram_top		; base+size=top
-	LDA ma_pt+1		; MSB now
+;	ADC ma_rs			; not needed if MALLOC is page-aligned
+	STA Ram_top			; base+size=top
+	LDA ma_pt+1			; MSB now
 	STA Ram_base+1		; copy pointer
 	ADC ma_rs+1
 	STA Ram_top+1		; base+size=top
@@ -506,15 +510,14 @@ Ibuffe		= Ibuffs+$47
 ; BASIC cold start entry point
 
 ; new page 2 initialisation, copy block to ccflag on
-; *** cannot use page 2 freely ***
+; *** cannot use page 2 freely, now goes into a safe ZP/DP space ***
 LAB_COLD
-	LDY	#PG2_TABE-PG2_TABS-1
+	LDX	#PG2_TABE-PG2_TABS-1	; *** use X instead of Y to make it 816-DP-savvy
 						; byte count-1
 LAB_2D13
-	LDA	PG2_TABS,Y		; get byte
-; might use indirect indexed after another malloc
-	STA	ccflag,Y		; store in page 2
-	DEY					; decrement count
+	LDA	PG2_TABS,X		; get byte
+	STA	ccflag,X		; *** store in new ZP space
+	DEX					; decrement count
 	BPL	LAB_2D13		; loop if not done
 
 	LDX	#$FF			; set byte
@@ -548,11 +551,18 @@ TabLoop
 
 ; set-up start values
 
-	LDA	#$00			; clear A *** CMOS could use STZs
-	STA	NmiBase			; clear NMI handler enabled flag
-	STA	IrqBase			; clear IRQ handler enabled flag
-	STA	FAC1_o			; clear FAC1 overflow byte
-	STA	last_sh			; clear descriptor stack top item pointer high byte
+;	LDA	#$00			; clear A *** CMOS will use STZs
+	STZ	NmiBase			; clear NMI handler enabled flag
+	STZ	IrqBase			; clear IRQ handler enabled flag
+	STZ	FAC1_o			; clear FAC1 overflow byte
+#ifndef	C816
+	STZ	last_sh			; clear descriptor stack top item pointer high byte
+#else
+	PHD					; where is zeropage?
+	PLA					; discard LSB
+	PLA					; MSB of D
+	STA	last_sh			; make sure descriptor stack top item pointer high byte arrives to real zeropage
+#endif
 
 	LDA	#$0E			; set default tab size
 	STA	TabSiz			; save it
@@ -1648,8 +1658,8 @@ LAB_1609
 ; key press is detected.
 
 LAB_1629
-; *** will be replaced by something else, SIGTERM handler?
-	JMP	(VEC_CC)		; ctrl c check vector
+;	JMP	(VEC_CC)		; ctrl c check vector
+	JMP CTRLC			; *** will just jump to supplied routine ***
 
 ; if there was a key press it gets back here ..
 
@@ -6496,7 +6506,7 @@ LAB_296E
 
 	LDA	#$2D			; else character = "-"
 LAB_2978
-	STA	Decss,Y		; save leading character (" " or "-")
+	STA	Decss,Y		; save leading character (" " or "-") *** ZP DANGER FOR 816!
 LAB_297B
 	STA	FAC1_s		; clear FAC1 sign (b7)
 	STY	Sendl			; save index
@@ -6584,13 +6594,13 @@ LAB_29E4
 	LDY	Sendl			; get output string index
 	LDA	#$2E			; character "."
 	INY				; increment index
-	STA	Decss,Y		; save to output string
+	STA	Decss,Y		; save to output string *** ZP DANGER FOR 816!
 	TXA				;.
 	BEQ	LAB_29F5		;.
 
 	LDA	#"0"			; character "0"
 	INY				; increment index
-	STA	Decss,Y		; save to output string
+	STA	Decss,Y		; save to output string *** ZP DANGER FOR 816!
 LAB_29F5
 	STY	Sendl			; save output string index
 LAB_29F7
@@ -6633,14 +6643,14 @@ LAB_2A21
 	INY				; increment output string index
 	TAX				; copy character to X
 	AND	#$7F			; mask out top bit
-	STA	Decss,Y		; save to output string
+	STA	Decss,Y		; save to output string *** ZP DANGER FOR 816!
 	DEC	numexp		; decrement # of characters before the dp
 	BNE	LAB_2A3B		; branch if still characters to do
 
 					; else output the point
 	LDA	#$2E			; character "."
 	INY				; increment output string index
-	STA	Decss,Y		; save to output string
+	STA	Decss,Y		; save to output string *** ZP DANGER FOR 816!
 LAB_2A3B
 	STY	Sendl			; save output string index
 	LDY	Cvaral		; get current var address low byte
@@ -6654,7 +6664,7 @@ LAB_2A3B
 					; now remove trailing zeroes
 	LDY	Sendl			; get output string index
 LAB_2A4B
-	LDA	Decss,Y		; get character from output string
+	LDA	Decss,Y		; get character from output string *** ZP DANGER FOR 816!
 	DEY				; decrement output string index
 	CMP	#"0"			; compare with "0"
 	BEQ	LAB_2A4B		; loop until non "0" character found
@@ -6678,9 +6688,9 @@ LAB_2A58
 	TAX				; copy exponent count to X
 	LDA	#"-"			; character "-"
 LAB_2A68
-	STA	Decss+2,Y		; save to output string
+	STA	Decss+2,Y		; save to output string *** ZP DANGER FOR 816!
 	LDA	#$45			; character "E"
-	STA	Decss+1,Y		; save exponent sign to output string
+	STA	Decss+1,Y		; save exponent sign to output string *** ZP DANGER FOR 816!
 	TXA				; get exponent count back
 	LDX	#"0"-1		; one less than "0" character
 	SEC				; set carry for subtract
@@ -6690,21 +6700,21 @@ LAB_2A74
 	BCS	LAB_2A74		; loop while still >= 0
 
 	ADC	#COLON			; add character COLON ($30+$0A, result is 10 less that value)
-	STA	Decss+4,Y		; save to output string
+	STA	Decss+4,Y		; save to output string *** ZP DANGER FOR 816!
 	TXA				; copy 10's character
-	STA	Decss+3,Y		; save to output string
+	STA	Decss+3,Y		; save to output string *** ZP DANGER FOR 816!
 	LDA	#$00			; set null terminator
-	STA	Decss+5,Y		; save to output string
+	STA	Decss+5,Y		; save to output string *** ZP DANGER FOR 816!
 	BEQ	LAB_2A91		; go set string pointer (AY) and exit (branch always)
 
 					; save last character, [EOT] and exit
 LAB_2A89
-	STA	Decss,Y		; save last character to output string
+	STA	Decss,Y		; save last character to output string *** ZP DANGER FOR 816!
 
 					; set null terminator and exit
 LAB_2A8C
 	LDA	#$00			; set null terminator
-	STA	Decss+1,Y		; save after last character
+	STA	Decss+1,Y		; save after last character *** ZP DANGER FOR 816!
 
 					; set string pointer (AY) and exit
 LAB_2A91
@@ -7301,22 +7311,22 @@ LAB_EXCH
 ; now also the code that checks to see if an interrupt has occurred
 
 CTRLC
-	LDA	ccflag		; get [CTRL-C] check flag
+	LDA	ccflag			; get [CTRL-C] check flag
 	BNE	LAB_FBA2		; exit if inhibited
 
-	JSR	V_INPT		; scan input device
+	JSR	V_INPT			; scan input device
 	BCC	LAB_FBA0		; exit if buffer empty
 
-	STA	ccbyte		; save received byte
+	STA	ccbyte			; save received byte
 	LDX	#$20			; "life" timer for bytes
-	STX	ccnull		; set countdown
+	STX	ccnull			; set countdown
 	JMP	LAB_1636		; return to BASIC
 
 LAB_FBA0
-	LDX	ccnull		; get countdown byte
+	LDX	ccnull			; get countdown byte
 	BEQ	LAB_FBA2		; exit if finished
 
-	DEC	ccnull		; else decrement countdown
+	DEC	ccnull			; else decrement countdown
 LAB_FBA2
 	LDX	#NmiBase		; set pointer to NMI values
 	JSR	LAB_CKIN		; go check interrupt
@@ -7807,7 +7817,7 @@ PG2_TABS
 	.byte	$00			; ctrl-c flag		-	$00 = enabled
 	.byte	$00			; ctrl-c byte		-	GET needs this
 	.byte	$00			; ctrl-c byte timeout	-	GET needs this
-	.word	CTRLC			; ctrl c check vector
+;	.word	CTRLC			; ctrl c check vector *** no longer used
 ;	.word	xxxx			; non halting key input	-	monitor to set this
 ;	.word	xxxx			; output vector		-	monitor to set this
 ;	.word	xxxx			; load vector		-	monitor to set this
@@ -7825,7 +7835,7 @@ PG2_TABE
 ; the target address for the LDA at LAB_2CF4 becomes the BASIC execute pointer once the
 ; block is copied to it's destination, any non zero page address will do at assembly
 ; time, to assemble a three byte instruction.
-; *** now uses a CMOS-only non-indexed indirect!
+; *** now uses a CMOS-only non-indexed indirect! ***
 ; should check whether X or Y are irrelevant upon call, in order to use appropriate NMOS macros
 
 ; WAS page 0 initialisation table from $BC
