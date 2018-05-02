@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1408
+; last modified 20180502-1411
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -336,11 +336,11 @@ IrqBase		= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** ski
 
 ; *** still some bytes free from $C8 up to $E3 ($E1 for the C64) ***
 
-; *** these MUST be relocated, perhaps @ $E2 *** CANNOT BE IN ZP as will not be 65816-savvy!
-Decss		= $EF		; number to decimal string start was $EF
+; *** these MUST be relocated *** CANNOT BE IN ZP as will not be 65816-savvy! *** temporarily at the other side of ONE stack!
+Decss		= $0100		; number to decimal string start was $EF *** UGLY HACK!!!
 Decssp1		= Decss+1	; number to decimal string start
 ; *** seems to need this 17-byte space ***
-;			= $FF		; decimal string end
+;						; decimal string end was $FF
 
 ; token values needed for BASIC
 
@@ -7861,12 +7861,12 @@ V_INPT
 	LDY #0				; *** default device, might check assigned window ***
 	_KERNEL(CIN)
 ; could check C and Y here for safety
-	LDA c_io
+	LDA io_c
 	RTS
 V_OUTP
 ;	JMP	(VEC_OUT)		; send byte to output device
 	LDY #0				; *** default device, might check assigned window ***
-	STA c_io
+	STA io_c
 	_KERNEL(COUT)
 	RTS
 V_LOAD
@@ -8820,7 +8820,7 @@ LAB_BAER
 	.word	ERR_ST		;$1C string too complex
 	.word	ERR_CN		;$1E continue error
 	.word	ERR_UF		;$20 undefined function
-	.word ERR_LD		;$22 LOOP without DO
+	.word	ERR_LD		;$22 LOOP without DO
 
 ; I may implement these two errors to force definition of variables and
 ; dimensioning of arrays before use.
