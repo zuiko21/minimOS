@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1303
+; last modified 20180502-1319
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -131,8 +131,7 @@ ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80 !!!!!!!!!!! but uses BOTH indexes!
 ; *** could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed ***
 IbufiY		= ccnull+1	; self-pointer to next buffer! $26-27
-Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS $28...6F
-						; start of input buffer after IRQ/NMI code
+Ibuffs		= IbufuY+2	; changed for SBC-2, again for minimOS $28...6F EEEEEEEEEEEK
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 
