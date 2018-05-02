@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1243
+; last modified 20180502-1303
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -118,23 +118,23 @@ des_sk		= last_sh	; descriptor stack start address (temp strings) *** $15, no lo
 Ram_base	= des_sk+10	; *** check space for stack above *** $1F-20
 Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $21-22
 
-; these were on page 2... but $0200 is DEADLY in minimOS
-ccflag		= Ram_top+1	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
+; these were on page 2... but $0200 is DEADLY in minimOS, now $23-25
+ccflag		= Ram_top+2	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ; *** no longer need for CTRL_C vector ***
 
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80 !!!!!!!!!!! but uses BOTH indexes!
-; *** could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed
-Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS
+; *** could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed ***
+IbufiY		= ccnull+1	; self-pointer to next buffer! $26-27
+Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS $28...6F
 						; start of input buffer after IRQ/NMI code
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 
-; ?????
-; *** currently free space between $26-$70 ***
+; *** currently free space at 70 ***
 
-; *** original variables follow, think about relocating from $71 to $23 as above ***
+; *** original variables follow ***
 ut1_pl		= $71		; utility pointer 1 low byte
 ut1_ph		= ut1_pl+1	; utility pointer 1 high byte
 ut2_pl		= ut1_ph+1	; utility pointer 2 low byte was $73
@@ -520,6 +520,14 @@ LAB_2D13
 	STA	ccflag,X		; *** store in new ZP space
 	DEX					; decrement count
 	BPL	LAB_2D13		; loop if not done
+
+; *** this can be a good place for the 65816 to correct DP-pointer IbufiY ***
+#ifdef	C816
+	PHD					; where is direct page?
+	PLA					; discard LSB
+	PLA					; this is the page devoted to ZP
+	STA	IbufiY+1		; correct pointer MSB!
+#endif
 
 	LDX	#$FF			; set byte
 	STX	Clineh			; set current line high byte (set immediate mode)
@@ -971,7 +979,7 @@ LAB_1301
 	LDY	Ibptr			; get input buffer pointer	(also buffer length)
 	DEY					; adjust for loop type
 LAB_1311
-	LDA	Ibuffs-4,Y		; get byte from crunched line *** DP-savvy?
+	LDA	Ibuffs-4,Y		; get byte from crunched line *** DP-savvy?*** THIS IS TOUGH
 	STA	(Baslnl),Y		; save it to program memory
 	DEY					; decrement count
 	CPY	#$03			; compare with first byte-1
@@ -1178,7 +1186,7 @@ LAB_13EA
 LAB_13EC
 	INX					; increment buffer index (to next input byte)
 	INY					; increment save index (to next output byte)
-	STA	Ibuffs,Y		; save byte to output *** DP-savvy?
+	STA	(IbufiY),Y		; save byte to output *** was STA Ibuffs, Y
 	CMP	#$00			; set the flags, set carry
 	BEQ	LAB_142A		; do exit if was null [EOL]
 
@@ -1210,7 +1218,7 @@ LAB_1408
 						; entry for copy string in quotes, do not crunch
 LAB_1410
 	INY					; increment buffer save index
-	STA	Ibuffs,Y		; save byte to output *** DP-savvy?
+	STA	(IbufiY),Y		; save byte to output *** was STA Ibuffs,Y
 	INX					; increment buffer read index
 	BNE	LAB_1408		; loop while <> 0 (should never be 0!)
 
@@ -1238,7 +1246,7 @@ LAB_141B
 LAB_142A
 	INY					; increment pointer
 	INY					; increment pointer (makes it next line pointer high byte)
-	STA	Ibuffs,Y		; save [EOL] (marks [EOT] in immediate mode) *** DP-savvy?
+	STA	(IbufiY),Y		; save [EOL] (marks [EOT] in immediate mode) *** was STA Ibuffs,Y
 	INY					; adjust for line copy
 	INY					; adjust for line copy
 	INY					; adjust for line copy
@@ -7814,11 +7822,15 @@ V_SAVE
 
 ; the rest of the code is tables and BASIC start-up code
 
+; this is no longer in ZP
 PG2_TABS
 	.byte	$00			; ctrl-c flag		-	$00 = enabled
 	.byte	$00			; ctrl-c byte		-	GET needs this
 	.byte	$00			; ctrl-c byte timeout	-	GET needs this
 ;	.word	CTRLC			; ctrl c check vector *** no longer used
+; *** now it needs self-pointer to Ibuffs for 65816-savvyness ***
+; will correct MSB (from D) if needed
+	.word	Ibuffs		; address of input buffer, now in ZP (65816 MUST correct MSB from D.H)
 ;	.word	xxxx			; non halting key input	-	monitor to set this
 ;	.word	xxxx			; output vector		-	monitor to set this
 ;	.word	xxxx			; load vector		-	monitor to set this
