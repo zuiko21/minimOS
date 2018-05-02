@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1339
+; last modified 20180502-1401
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -22,7 +22,7 @@
 ; 2.21	fixed IF .. THEN RETURN to not cause error
 ; 2.22	fixed RND() breaking the get byte routine
 
-#include "../OS/usual.h"
+#include "../../OS/usual.h"
 
 .(
 ; **********************
@@ -139,7 +139,7 @@ Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $26...6D for 65C02
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 
-; *** currently free space at 70 ***
+; *** currently free space at $70 ($6E-70 for 65C02) ***
 
 ; *** original variables follow ***
 ut1_pl		= $71		; utility pointer 1 low byte
@@ -223,7 +223,7 @@ g_step		= des_2h+1	; garbage collect step size was $A0
 
 ;Fnxjmp		= g_step+1	; jump vector for functions was $A1 *** NEVER USED
 Fnxjpl		= g_step+1	; functions jump vector low byte, now $A1
-Fnxjph		= Fnxjmp+2	; functions jump vector high byte
+Fnxjph		= Fnxjpl+1	; functions jump vector high byte
 
 g_indx		= Fnxjpl	; garbage collect temp index
 
@@ -389,11 +389,11 @@ TK_BITSET	= TK_SWAP+1		; BITSET token
 TK_BITCLR	= TK_BITSET+1	; BITCLR token
 TK_IRQ		= TK_BITCLR+1	; IRQ token
 TK_NMI		= TK_IRQ+1		; NMI token
-TK_SYS		= TK_NMI+1		; SYS token *** added for SBC-2
+;TK_SYS		= TK_NMI+1		; SYS token *** added for SBC-2
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_SYS+1		; TAB token
+TK_TAB		= TK_NMI+1		; TAB token *** SYS no longer used
 TK_ELSE		= TK_TAB+1		; ELSE token
 TK_TO		= TK_ELSE+1		; TO token
 TK_FN		= TK_TO+1		; FN token
@@ -486,6 +486,8 @@ LAB_SKFF	= LAB_STAK+$FF
 ;VEC_LD		= VEC_OUT+2	; load vector
 ;VEC_SV		= VEC_LD+2	; save vector
 
+COLON		= $3A
+
 ; ********************************
 ; *** EhBASIC code starts here ***
 ; ********************************
@@ -495,7 +497,7 @@ LAB_SKFF	= LAB_STAK+$FF
 ; *** reserve as much memory as available ***
 	STZ ma_align		; page-aligned
 	STZ ma_rs			; as much as possible
-	STZA ma_rs+1
+	STZ ma_rs+1
 	_KERNEL(MALLOC)		; request RAM from OS
 	LDA ma_pt
 	STA Ram_base
@@ -1225,7 +1227,7 @@ LAB_13EC
 	CMP	#TK_DATA-$3A	; compare with DATA token - $3A
 	BNE	LAB_1401		; branch if not DATA
 
-						; token was : or DATA
+						; token was COLON or DATA
 LAB_13FF
 	STA	Oquote			; save token-$3A (clear for COLON, TK_DATA-$3A for DATA)
 LAB_1401
@@ -1973,7 +1975,7 @@ LAB_LOOP
 						; (stack pointer in X)
 
 	CMP	#COLON			; could be COLON
-	BEQ	LoopAlways		; if :... loop forever
+	BEQ	LoopAlways		; if [COLON]... loop forever
 
 	SBC	#TK_UNTIL		; subtract token for UNTIL, we know carry is set here
 	TAX					; copy to X (if it was UNTIL then Y will be correct)
@@ -2018,7 +2020,7 @@ LoopDone
 	INX					; dump BASIC execute pointer low byte
 	INX					; dump BASIC execute pointer high byte
 	TXS					; correct stack ***beware of 816/multitask savvyness
-	JMP	LAB_DATA		; go perform DATA (find : or [EOL])
+	JMP	LAB_DATA		; go perform DATA (find COLON or [EOL])
 
 ; do the return without gosub error
 
@@ -2157,7 +2159,7 @@ LAB_174G
 	CMP	#TK_ELSE		; compare it with the token for ELSE
 	BEQ	LAB_DATA		; if ELSE ignore the following statement
 
-; there was no ELSE so continue execution of IF <expr> THEN <stat> [: <stat>]. any
+; there was no ELSE so continue execution of IF <expr> THEN <stat> [[COLON] <stat>]. any
 ; following ELSE will, correctly, cause a syntax error
 
 	RTS					; else return to the interpreter inner loop
@@ -2842,9 +2844,9 @@ LAB_19F6
 	TAX					; copy to X
 	JSR	LAB_170F		; set BASIC execute pointer
 	CPX	#TK_DATA		; compare with "DATA" token
-	BEQ	LAB_1985		; was "DATA" so go do next READ
 
 	BNE	LAB_19DD		; go find next statement if not "DATA"
+	JMP	LAB_1985		; was "DATA" so go do next READ *** changed because of range
 
 ; end of INPUT/READ routine
 
@@ -7855,13 +7857,13 @@ LAB_TWOPI
 ; these are in RAM and are set by the monitor at start-up
 ; *** will just be replaced by minimOS I/O calls, saving vectors
 V_INPT
-	JMP	(VEC_IN)		; non halting scan input device
+;	JMP	(VEC_IN)		; non halting scan input device
 V_OUTP
-	JMP	(VEC_OUT)		; send byte to output device
+;	JMP	(VEC_OUT)		; send byte to output device
 V_LOAD
-	JMP	(VEC_LD)		; load BASIC program
+;	JMP	(VEC_LD)		; load BASIC program
 V_SAVE
-	JMP	(VEC_SV)		; save BASIC program
+;	JMP	(VEC_SV)		; save BASIC program
 
 ; The rest are tables messages and code for RAM
 
@@ -7902,6 +7904,7 @@ PG2_TABE
 ; increment and scan memory
 
 LAB_IGBY				; LAB_2CEE
+LAB_2CEE
 	INC	Bpntrl			; increment BASIC execute pointer low byte
 	BNE	LAB_2CF4		; branch if no carry
 						; else
@@ -7911,6 +7914,7 @@ LAB_IGBY				; LAB_2CEE
 ; scan memory
 
 LAB_GBYT				; LAB_2CF4
+LAB_2CF4
 	LDA	(Bpntrl)		; get byte to scan (addr set by call routine) *** now using indirect pointer
 	CMP	#TK_ELSE		; compare with the token for ELSE
 	BEQ	LAB_2D05		; exit if ELSE, not numeric, carry set
@@ -8117,7 +8121,7 @@ LAB_CTBL
 	.word	LAB_BITCLR-1	; BITCLR		new command
 	.word	LAB_IRQ-1		; IRQ			new command
 	.word	LAB_NMI-1		; NMI			new command
-	.word   SYSjmp-1                ; SYS         *** added for SBC-2
+;	.word   SYSjmp-1		; SYS		*** added for SBC-2 *** not sure what to do in minimOS
 
 ; function pre process routine table
 
@@ -8521,7 +8525,7 @@ LBB_STRS
 LBB_SWAP
 	.byte	"WAP",TK_SWAP	; SWAP
 LBB_SYS
-	.byte   "YS", TK_SYS    ; SYS    *** added for SBC-2
+;	.byte   "YS", TK_SYS    ; SYS *** added for SBC-2
 	.byte	$00
 TAB_ASCT
 LBB_TAB
@@ -8655,8 +8659,8 @@ LAB_KEYT
 	.word	LBB_IRQ		; IRQ
 	.byte	3,"N"
 	.word	LBB_NMI		; NMI
-	.byte	3,"S"			;
-	.word	LBB_SYS			; SYS   *** Added for SBC-2
+;	.byte	3,"S"			;
+;	.word	LBB_SYS			; SYS   *** Added for SBC-2
 
 
 ; secondary commands (cannot start a statement)
