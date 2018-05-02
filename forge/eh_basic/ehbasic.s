@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1411
+; last modified 20180502-1441
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -637,8 +637,8 @@ LAB_2DB6
 	LDA	Itempl			; get temporary integer low byte
 	LDY	Itemph			; get temporary integer high byte
 ; note that ram_base is variable
-	DEY				; *** OK?
-	CPY	Ram_base+1	; compare with start of RAM+$100 high byte
+	DEY					; *** OK?
+	CPY	Ram_base+1		; compare with start of RAM+$100 high byte
 	BCC	LAB_GMEM		; if too small go try again
 
 
@@ -1602,7 +1602,7 @@ LAB_159F
 	CMP	#TK_STEP		; compare with STEP token
 	BNE	LAB_15B3		; jump if not "STEP"
 
-						;.was step so ..
+						; was step so ..
 	JSR	LAB_IGBY		; increment and scan memory
 	JSR	LAB_EVNM		; evaluate expression and check is numeric,
 						; else do type mismatch
@@ -1961,15 +1961,21 @@ LAB_DONOK
 
 LAB_LOOP
 	TAY					; save following token
+#ifdef	C816
+	.xl: REP #$10		; *** needs 16-bit full SP ***
+#endif
 	TSX					; copy stack pointer
-	LDA	LAB_STAK+3,X	; get token byte from stack
+	LDA	LAB_STAK+3,X	; get token byte from stack *** will be null-offset for 65816
 	CMP	#TK_DO			; compare with DO token
 	BNE	LAB_DONOK		; branch if no matching DO
 
 	INX					; dump calling routine return address
 	INX					; dump calling routine return address
 
-	TXS					; correct stack ***beware of 816/multitask savvyness
+	TXS					; correct stack *** OK for 65816
+#ifdef	C816
+	.xs: SEP #$10		; *** revert to standard index size ***
+#endif
 	TYA					; get saved following token back
 	BEQ	LoopAlways		; if no following token loop forever
 						; (stack pointer in X)
@@ -1995,13 +2001,16 @@ DoRest
 
 	LDA	#$FF			; else set all bits
 DoCmp
-	TSX					; copy stack pointer ***beware of 816-MM
+#ifdef	C816
+	.xl: REP #$10		; *** needs 16-bit full SP ***
+#endif
+	TSX					; copy stack pointer *** OK for 65816
 	EOR	Frnxth			; EOR with invert byte
 	BNE	LoopDone		; if <> 0 clear stack and back to interpreter loop
 
 						; loop condition wasn't met so do it again
 LoopAlways
-	LDA	LAB_STAK+2,X	; get current line low byte
+	LDA	LAB_STAK+2,X	; get current line low byte *** offsets depending on architecture
 	STA	Clinel			; save current line low byte
 	LDA	LAB_STAK+3,X	; get current line high byte
 	STA	Clineh			; save current line high byte
@@ -2009,9 +2018,15 @@ LoopAlways
 	STA	Bpntrl			; save BASIC execute pointer low byte
 	LDA	LAB_STAK+5,X	; get BASIC execute pointer high byte
 	STA	Bpntrh			; save BASIC execute pointer high byte
-	JSR	LAB_GBYT		; scan memory
-	JMP	LAB_15C2		; go do interpreter inner loop
+	JSR	LAB_GBYT		; scan memory *** OK for 16-bit X
+#ifdef	C816
+	.xs: SEP #$10		; *** standard size ***
+#endif
+	JMP	LAB_15C2		; go do interpreter inner loop *** FAILS in 16-bit indexes!
 
+#ifdef	C816
+	.xl					; *** about to exit in 16-bit indexes, will not reach here otherwise ***
+#endif
 						; clear stack and back to interpreter loop
 LoopDone
 	INX					; dump DO token
@@ -2019,7 +2034,10 @@ LoopDone
 	INX					; dump current line high byte
 	INX					; dump BASIC execute pointer low byte
 	INX					; dump BASIC execute pointer high byte
-	TXS					; correct stack ***beware of 816/multitask savvyness
+	TXS					; correct stack *** OK for 65816
+#ifdef	C816
+	.xs: SEP #$10		; *** standard size ***
+#endif
 	JMP	LAB_DATA		; go perform DATA (find COLON or [EOL])
 
 ; do the return without gosub error
@@ -2874,9 +2892,13 @@ LAB_1A1B
 
 ; search the stack for FOR activity
 ; exit with z=1 if FOR else exit with z=0
+; *** exits in 16-bit indexes!!! ***
 
 LAB_11A1
-	TSX					; copy stack pointer ***beware of 816-MM
+#ifdef	C816
+	.xl: REP #$10		; *** needs full 16-bit SP ***
+#endif
+	TSX					; copy stack pointer *** now OK
 	INX					; +1 pass return address
 	INX					; +2 pass return address
 	INX					; +3 pass calling routine return address
@@ -2903,14 +2925,24 @@ LAB_11BB
 	BEQ	LAB_11CE		; exit if match found
 
 LAB_11C7
+#ifdef	C816
+	.al: REP #$20		; *** needs full 16-bit Accumulator, too ***
+#endif
 	TXA					; copy index
 	CLC					; clear carry for add
-	ADC	#$10			; add FOR stack use size
+	ADC	#$10			; add FOR stack use size *** 8 or 16-bit
 	TAX					; copy back to index
+#ifdef	C816
+	.as: SEP #$20		; *** back to standard Accumulator ***
+#endif
 	BNE	LAB_11A6		; loop if not at start of stack
 
 LAB_11CE
 	RTS
+
+#ifdef	C816
+	.xs
+#endif
 
 ; perform NEXT
 
@@ -2928,16 +2960,23 @@ LAB_1A49
 	STA	Frnxtl			; store variable pointer low byte
 	STY	Frnxth			; store variable pointer high byte
 						; (both cleared if no variable defined)
-	JSR	LAB_11A1		; search the stack for FOR activity
+	JSR	LAB_11A1		; search the stack for FOR activity *** only call to that routine
 	BEQ	LAB_1A56		; branch if found
 
+#ifdef	C816
+	.xs: SEP #$10		; *** abort in standard size ***
+#endif
 	LDX	#$00			; else set error $00 ("NEXT without FOR" error)
 LAB_1A54
 	BEQ	LAB_1ABE		; do error #X, then warm start
 
+#ifdef	C816
+	.xl					; *** exit from the above in 16-bit index ***
+#endif
 LAB_1A56
-	TXS					; set stack pointer, X set by search, dumps return addresses ***beware of 816/multitask savvyness
+	TXS					; set stack pointer, X set by search, dumps return addresses *** now OK!
 
+; * C H U N G O *** TO DO * TO DO * TO DO *
 	TXA					; copy stack pointer
 	SEC					; set carry for subtract
 	SBC	#$F7			; point to TO var
