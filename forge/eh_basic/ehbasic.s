@@ -33,7 +33,11 @@
 ehHead:
 ; *** header identification ***
 	BRK								; do not enter here! NUL marks beginning of header
+#ifndef	C816
 	.asc	"mB"					; minimOS app, CMOS only!
+#else
+	.asc	"mV"					; 65816-savvyness is achieved via exclusive code
+#endif
 	.asc	"****", 13				; some flags TBD
 
 ; *** filename and optional comment ***
@@ -978,12 +982,28 @@ LAB_1301
 	STY	Svarh			; save start of vars high byte
 	LDY	Ibptr			; get input buffer pointer	(also buffer length)
 	DEY					; adjust for loop type
+
+; *** as LDA Ibuffs-4, Y is no longer accepted, try to get IbufiY back 4 bytes, then restore it after loop ***
+#ifdef	C816
+	LDA	#<Ibuffs-4		; original address minus 4
+	STA IbufiY			; temporarily alter pointer
 LAB_1311
-	LDA	Ibuffs-4,Y		; get byte from crunched line *** DP-savvy?*** THIS IS TOUGH
+	LDA	(IbufiY),Y		; get byte from crunched line *** corrected DP pointer for -4 offset in 65816
+#else
+LAB_1311
+	LDA	Ibuffs-4,Y		; get byte from crunched line *** this is 65C02 code, thus OK to use abs,Y instead
+#endif
+
 	STA	(Baslnl),Y		; save it to program memory
 	DEY					; decrement count
 	CPY	#$03			; compare with first byte-1
 	BNE	LAB_1311		; continue while count <> 3
+
+; *** revert IbufiY to its original value
+#ifdef	C816
+	LDA	#<Ibuffs		; original address again
+	STA IbufiY			; restore pointer
+#endif
 
 	LDA	Itemph			; get line # high byte
 	STA	(Baslnl),Y		; save it to program memory
