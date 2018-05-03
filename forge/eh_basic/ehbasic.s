@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180503-1059
+; last modified 20180503-1113
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -74,7 +74,7 @@ eh_basic	= uz		; EhBASIC zeropage usage
 ;Usrjpl		= Usrjmp+1	; USR function JMP vector low byte
 ;Usrjph		= Usrjmp+2	; USR function JMP vector high byte
 
-Nullct		= uz		; nulls output after each line *** $03
+Nullct		= eh_basic	; nulls output after each line *** $03
 TPos		= Nullct+1	; BASIC terminal position byte *** $04
 TWidth		= TPos+1	; BASIC terminal width byte *** $05
 Iclim		= TWidth+1	; input column limit *** $06
@@ -565,9 +565,8 @@ LAB_2D13
 
 ; *** this can be a good place for the 65816 to correct DP-pointer IbufiY ***
 #ifdef	C816
-	PHD					; where is direct page?
-	PLA					; discard LSB
-	PLA					; this is the page devoted to ZP
+	TDC					; where is direct page?
+	XBA					; this is the page devoted to ZP
 	STA	IbufiY+1		; correct pointer MSB!
 #endif
 
@@ -596,7 +595,7 @@ LAB_GMEM
 						; set byte count-1
 TabLoop
 	LDA	StrTab,X		; get byte from table
-	STA	uz+PLUS_0,X		; save byte in page zero *** will skip minimOS reserved!
+	STA	Nullct,X		; save byte in page zero *** will skip minimOS reserved!
 	DEX					; decrement count
 	BPL	TabLoop			; loop if not all done
 
@@ -609,10 +608,9 @@ TabLoop
 #ifndef	C816
 	STZ	last_sh			; clear descriptor stack top item pointer high byte
 #else
-	PHD					; where is zeropage?
-	PLA					; discard LSB
-	PLA					; MSB of D
-	STA	last_sh			; make sure descriptor stack top item pointer high byte arrives to real zeropage
+	TDC					; where is zeropage?
+	XBA					; MSB of D
+	STA	last_sh+1		; make sure descriptor stack top item pointer high byte arrives to real zeropage EEEEEEEEEEK
 #endif
 
 	LDA	#$0E			; set default tab size
@@ -6634,7 +6632,7 @@ LAB_296E
 
 	LDA	#$2D			; else character = "-"
 LAB_2978
-	STA	Decss,Y			; save leading character (" " or "-") *** ZP DANGER FOR 816!
+	STA	Decss,Y			; save leading character (" " or "-") *** OK as temporarily at $0100
 LAB_297B
 	STA	FAC1_s			; clear FAC1 sign (b7)
 	STY	Sendl			; save index
@@ -6722,13 +6720,13 @@ LAB_29E4
 	LDY	Sendl			; get output string index
 	LDA	#$2E			; character "."
 	INY					; increment index
-	STA	Decss,Y			; save to output string *** ZP DANGER FOR 816!
+	STA	Decss,Y			; save to output string *** OK as temporarily at $0100
 	TXA
 	BEQ	LAB_29F5
 
 	LDA	#"0"			; character "0"
 	INY					; increment index
-	STA	Decss,Y			; save to output string *** ZP DANGER FOR 816!
+	STA	Decss,Y			; save to output string *** OK as temporarily at $0100
 LAB_29F5
 	STY	Sendl			; save output string index
 LAB_29F7
@@ -6771,14 +6769,14 @@ LAB_2A21
 	INY					; increment output string index
 	TAX					; copy character to X
 	AND	#$7F			; mask out top bit
-	STA	Decss,Y			; save to output string *** ZP DANGER FOR 816!
+	STA	Decss,Y			; save to output string *** OK as temporarily at $0100
 	DEC	numexp			; decrement # of characters before the dp
 	BNE	LAB_2A3B		; branch if still characters to do
 
 						; else output the point
 	LDA	#$2E			; character "."
 	INY					; increment output string index
-	STA	Decss,Y			; save to output string *** ZP DANGER FOR 816!
+	STA	Decss,Y			; save to output string *** OK as temporarily at $0100
 LAB_2A3B
 	STY	Sendl			; save output string index
 	LDY	Cvaral			; get current var address low byte
@@ -6792,7 +6790,7 @@ LAB_2A3B
 						; now remove trailing zeroes
 	LDY	Sendl			; get output string index
 LAB_2A4B
-	LDA	Decss,Y			; get character from output string *** ZP DANGER FOR 816!
+	LDA	Decss,Y			; get character from output string *** OK as temporarily at $0100
 	DEY					; decrement output string index
 	CMP	#"0"			; compare with "0"
 	BEQ	LAB_2A4B		; loop until non "0" character found
@@ -6816,9 +6814,9 @@ LAB_2A58
 	TAX					; copy exponent count to X
 	LDA	#"-"			; character "-"
 LAB_2A68
-	STA	Decss+2,Y		; save to output string *** ZP DANGER FOR 816!
+	STA	Decss+2,Y		; save to output string *** OK as temporarily at $0100
 	LDA	#$45			; character "E"
-	STA	Decss+1,Y		; save exponent sign to output string *** ZP DANGER FOR 816!
+	STA	Decss+1,Y		; save exponent sign to output string *** OK as temporarily at $0100
 	TXA					; get exponent count back
 	LDX	#"0"-1			; one less than "0" character
 	SEC					; set carry for subtract
@@ -6828,21 +6826,21 @@ LAB_2A74
 	BCS	LAB_2A74		; loop while still >= 0
 
 	ADC	#COLON			; add character COLON ($30+$0A, result is 10 less that value)
-	STA	Decss+4,Y		; save to output string *** ZP DANGER FOR 816!
+	STA	Decss+4,Y		; save to output string *** OK as temporarily at $0100
 	TXA					; copy 10's character
-	STA	Decss+3,Y		; save to output string *** ZP DANGER FOR 816!
+	STA	Decss+3,Y		; save to output string *** OK as temporarily at $0100
 	LDA	#$00			; set null terminator
-	STA	Decss+5,Y		; save to output string *** ZP DANGER FOR 816!
+	STA	Decss+5,Y		; save to output string *** OK as temporarily at $0100
 	BEQ	LAB_2A91		; go set string pointer (AY) and exit (branch always)
 
 						; save last character, [EOT] and exit
 LAB_2A89
-	STA	Decss,Y			; save last character to output string *** ZP DANGER FOR 816!
+	STA	Decss,Y			; save last character to output string *** OK as temporarily at $0100
 
 						; set null terminator and exit
 LAB_2A8C
 	LDA	#$00			; set null terminator
-	STA	Decss+1,Y		; save after last character *** ZP DANGER FOR 816!
+	STA	Decss+1,Y		; save after last character *** OK as temporarily at $0100
 
 						; set string pointer (AY) and exit
 LAB_2A91
@@ -8015,25 +8013,25 @@ LAB_2CF4
 LAB_2D05
 	RTS
 
-; page zero initialisation table $00-$12 inclusive***
+; page zero initialisation table was $00-$12 inclusive *** now $03-$06
 
 StrTab
-	.byte	$4C			; JMP opcode 0
-	.word LAB_COLD		; initial warm start vector (cold start) 1,2
+;	.byte	$4C			; JMP opcode 0
+;	.word LAB_COLD		; initial warm start vector (cold start) 1,2
 
-	.byte	$00			; these bytes are not used by BASIC 3
-	.word	$0000			; 4,5
-	.word	$0000			; 6,7
-	.word	$0000			; 8,9
+;	.byte	$00			; these bytes are not used by BASIC 3
+;	.word	$0000		; 4,5
+;	.word	$0000		; 6,7
+;	.word	$0000		; 8,9
 
-	.byte	$4C			; JMP opcode A
-	.word	LAB_FCER		; initial user function vector ("Function call" error) B,C
-	.byte	$00			; default NULL count D
-	.byte	$00			; clear terminal position E
-	.byte	$00			; default terminal width byte F
-	.byte	$F2			; default limit for TAB = 14 $10
+;	.byte	$4C			; JMP opcode A
+;	.word	LAB_FCER	; initial user function vector ("Function call" error) B,C
+	.byte	$00			; default NULL count D *** now $03
+	.byte	$00			; clear terminal position E *** now $04
+	.byte	$00			; default terminal width byte F *** now $05
+	.byte	$F2			; default limit for TAB = 14 $10 *** now $06
 ; ram_base is now variable address...
-	.word	Ram_base		; start of user RAM $11-12
+;	.word	Ram_base	; start of user RAM $11-12
 EndTab
 
 LAB_MSZM
@@ -8041,6 +8039,7 @@ LAB_MSZM
 
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
+eh_title:
 	.byte	"Enhanced BASIC 2.22",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
