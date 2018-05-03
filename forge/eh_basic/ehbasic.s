@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180502-1441
+; last modified 20180503-1055
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -132,7 +132,7 @@ ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ; *** 65816 could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed ***
 #ifdef	C816
 IbufiY		= ccnull+1	; self-pointer to next buffer! $26-27
-Ibuffs		= IbufuY+2	; changed for SBC-2, again for minimOS $28...6F EEEEEEEEEEEK
+Ibuffs		= IbufiY+2	; changed for SBC-2, again for minimOS $28...6F EEEEEEEEEEEK
 #else
 Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $26...6D for 65C02
 #endif
@@ -488,11 +488,40 @@ LAB_SKFF	= LAB_STAK+$FF
 
 COLON		= $3A
 
-; ********************************
-; *** EhBASIC code starts here ***
-; ********************************
+; ***********************************
+; *** minimOS initialisation code ***
+; ***********************************
 
 ; should check for ZP space and default window TODO TODO TODO ***
+
+; *** extra check for 816-savvyness ***
+#ifdef	SAFE
+#ifndef		C816
+	_ADMIN(GESTALT)		; investigate architecture details
+	LDA cpu_ll			; check installed CPU
+	CMP #'V'			; is it a 65816?
+	BNE cpu_ok			; nope, nothing to be afraid of
+; at this point, there is a 65816, let us check if emulating a 6502
+		CLC					; will go native for a moment
+		.byt $FB			; XCE check previous E state
+		PHP					; while native, keep previous E as C
+		.byt $FB			; XCE, back to previous mode
+		PLP					; now C indicates E state
+		BCS cpu_ok			; we are running an 8-bit kernel, thus OK
+; otherwise this is a 16-bit system which needs a proper version to run
+			LDY #<cpu_err		; get error message pointer
+			LDA #>cpu_err
+			STY str_pt			; set kernel parameter
+			STA str_pt+1
+;			STZ str_pt+2		; just in case, 6502 code must load in bank zero
+			LDY #0				; default device, or previously open?
+			_KERNEL(STRING)		; print message
+			_ABORT(INVALID)		; *** abort code, either RTS or RTL will be OK
+cpu_err:
+	.asc	"Sorry, this version does NOT run on 65816 systems", 0
+cpu_ok:
+#endif
+#endif
 
 ; *** reserve as much memory as available ***
 	STZ ma_align		; page-aligned
@@ -509,7 +538,11 @@ COLON		= $3A
 	ADC ma_rs+1
 	STA Ram_top+1		; base+size=top
 
-; *** these have been replaced by a call to MALLOC(0) ***
+; ********************************
+; *** EhBASIC code starts here ***
+; ********************************
+
+; *** these have been replaced by the above call to MALLOC(0) ***
 ;Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
 ;Ram_top		= $8000	; end of user RAM+1 (set as needed, should be page aligned)
 
