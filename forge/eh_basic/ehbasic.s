@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180503-1055
+; last modified 20180503-1059
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -6536,7 +6536,7 @@ LAB_28EF
 	BNE	LAB_28EF		; loop until all done
 
 LAB_28F6
-	LDA	negnum		; get -ve flag
+	LDA	negnum			; get -ve flag
 	BMI	LAB_28FB		; if -ve do - FAC1 and return
 
 	RTS
@@ -6549,14 +6549,14 @@ LAB_28FB
 ; do unsigned FAC1*10+number
 
 LAB_28FE
-	PHA				; save character
-	BIT	numdpf		; test decimal point flag
+	PHA					; save character
+	BIT	numdpf			; test decimal point flag
 	BPL	LAB_2905		; skip exponent increment if not set
 
-	INC	numexp		; else increment number exponent
+	INC	numexp			; else increment number exponent
 LAB_2905
 	JSR	LAB_269E		; multiply FAC1 by 10
-	PLA				; restore character
+	PLA					; restore character
 	AND	#$0F			; convert to binary
 	JSR	LAB_2912		; evaluate new ASCII digit
 	JMP	LAB_289E		; go do next character
@@ -6564,39 +6564,39 @@ LAB_2905
 ; evaluate new ASCII digit
 
 LAB_2912
-	PHA				; save digit
+	PHA					; save digit
 	JSR	LAB_27AB		; round and copy FAC1 to FAC2
-	PLA				; restore digit
+	PLA					; restore digit
 	JSR	LAB_27DB		; save A as integer byte
-	LDA	FAC2_s		; get FAC2 sign (b7)
-	EOR	FAC1_s		; toggle with FAC1 sign (b7)
-	STA	FAC_sc		; save sign compare (FAC1 EOR FAC2)
-	LDX	FAC1_e		; get FAC1 exponent
-	JMP	LAB_ADD		; add FAC2 to FAC1 and return
+	LDA	FAC2_s			; get FAC2 sign (b7)
+	EOR	FAC1_s			; toggle with FAC1 sign (b7)
+	STA	FAC_sc			; save sign compare (FAC1 EOR FAC2)
+	LDX	FAC1_e			; get FAC1 exponent
+	JMP	LAB_ADD			; add FAC2 to FAC1 and return
 
 ; evaluate next character of exponential part of number
 
 LAB_2925
-	LDA	expcnt		; get exponent count byte
+	LDA	expcnt			; get exponent count byte
 	CMP	#$0A			; compare with 10 decimal
 	BCC	LAB_2934		; branch if less
 
 	LDA	#$64			; make all -ve exponents = -100 decimal (causes underflow)
-	BIT	expneg		; test exponent -ve flag
+	BIT	expneg			; test exponent -ve flag
 	BMI	LAB_2942		; branch if -ve
 
 	JMP	LAB_2564		; else do overflow error
 
 LAB_2934
-	ASL				; * 2
-	ASL				; * 4
-	ADC	expcnt		; * 5
-	ASL				; * 10
+	ASL					; * 2
+	ASL					; * 4
+	ADC	expcnt			; * 5
+	ASL					; * 10
 	LDY	#$00			; set index
 	ADC	(Bpntrl),Y		; add character (will be $30 too much!)
-	SBC	#"0"-1		; convert character to binary
+	SBC	#"0"-1			; convert character to binary
 LAB_2942
-	STA	expcnt		; save exponent count byte
+	STA	expcnt			; save exponent count byte
 	JMP	LAB_28C4		; go get next character
 
 ; print " in line [LINE #]"
@@ -6606,20 +6606,20 @@ LAB_2953
 	LDY	#>LAB_LMSG		; point to " in line " message high byte
 	JSR	LAB_18C3		; print null terminated string from memory
 
-					; print Basic line #
-	LDA	Clineh		; get current line high byte
-	LDX	Clinel		; get current line low byte
+						; print Basic line #
+	LDA	Clineh			; get current line high byte
+	LDX	Clinel			; get current line low byte
 
 ; print XA as unsigned integer
 
 LAB_295E
-	STA	FAC1_1		; save low byte as FAC1 mantissa1
-	STX	FAC1_2		; save high byte as FAC1 mantissa2
+	STA	FAC1_1			; save low byte as FAC1 mantissa1
+	STX	FAC1_2			; save high byte as FAC1 mantissa2
 	LDX	#$90			; set exponent to 16d bits
-	SEC				; set integer is +ve flag
+	SEC					; set integer is +ve flag
 	JSR	LAB_STFA		; set exp=X, clearFAC1 mantissa3 and normalise
 	LDY	#$00			; clear index
-	TYA				; clear A
+	TYA					; clear A
 	JSR	LAB_297B		; convert FAC1 to string, skip sign character save
 	JMP	LAB_18C3		; print null terminated string from memory and return
 
@@ -6629,37 +6629,37 @@ LAB_295E
 LAB_296E
 	LDY	#$01			; set index = 1
 	LDA	#$20			; character = " " (assume +ve)
-	BIT	FAC1_s		; test FAC1 sign (b7)
+	BIT	FAC1_s			; test FAC1 sign (b7)
 	BPL	LAB_2978		; branch if +ve
 
 	LDA	#$2D			; else character = "-"
 LAB_2978
-	STA	Decss,Y		; save leading character (" " or "-") *** ZP DANGER FOR 816!
+	STA	Decss,Y			; save leading character (" " or "-") *** ZP DANGER FOR 816!
 LAB_297B
-	STA	FAC1_s		; clear FAC1 sign (b7)
+	STA	FAC1_s			; clear FAC1 sign (b7)
 	STY	Sendl			; save index
-	INY				; increment index
-	LDX	FAC1_e		; get FAC1 exponent
+	INY					; increment index
+	LDX	FAC1_e			; get FAC1 exponent
 	BNE	LAB_2989		; branch if FAC1<>0
 
-					; exponent was $00 so FAC1 is 0
+						; exponent was $00 so FAC1 is 0
 	LDA	#"0"			; set character = "0"
 	JMP	LAB_2A89		; save last character, [EOT] and exit
 
-					; FAC1 is some non zero value
+						; FAC1 is some non zero value
 LAB_2989
 	LDA	#$00			; clear (number exponent count)
 	CPX	#$81			; compare FAC1 exponent with $81 (>1.00000)
 
 	BCS	LAB_299A		; branch if FAC1=>1
 
-					; FAC1<1
+						; FAC1<1
 	LDA	#<LAB_294F		; set pointer low byte to 1,000,000
 	LDY	#>LAB_294F		; set pointer high byte to 1,000,000
 	JSR	LAB_25FB		; do convert AY, FCA1*(AY)
 	LDA	#$FA			; set number exponent count (-6)
 LAB_299A
-	STA	numexp		; save number exponent count
+	STA	numexp			; save number exponent count
 LAB_299C
 	LDA	#<LAB_294B		; set pointer low byte to 999999.4375 (max before sci note)
 	LDY	#>LAB_294B		; set pointer high byte to 999999.4375
@@ -6668,7 +6668,7 @@ LAB_299C
 
 	BPL	LAB_29B9		; go do /10 if FAC1 > (AY)
 
-					; FAC1 < (AY)
+						; FAC1 < (AY)
 LAB_29A7
 	LDA	#<LAB_2947		; set pointer low byte to 99999.9375
 	LDY	#>LAB_2947		; set pointer high byte to 99999.9375
@@ -6677,15 +6677,15 @@ LAB_29A7
 
 	BPL	LAB_29C0		; branch if FAC1 > (AY) (no decimal places)
 
-					; FAC1 <= (AY)
+						; FAC1 <= (AY)
 LAB_29B2
 	JSR	LAB_269E		; multiply by 10
-	DEC	numexp		; decrement number exponent count
+	DEC	numexp			; decrement number exponent count
 	BNE	LAB_29A7		; go test again (branch always)
 
 LAB_29B9
 	JSR	LAB_26B9		; divide by 10
-	INC	numexp		; increment number exponent count
+	INC	numexp			; increment number exponent count
 	BNE	LAB_299C		; go test again (branch always)
 
 ; now we have just the digits to do
@@ -6695,25 +6695,25 @@ LAB_29C0
 LAB_29C3
 	JSR	LAB_2831		; convert FAC1 floating-to-fixed
 	LDX	#$01			; set default digits before dp = 1
-	LDA	numexp		; get number exponent count
-	CLC				; clear carry for add
+	LDA	numexp			; get number exponent count
+	CLC					; clear carry for add
 	ADC	#$07			; up to 6 digits before point
 	BMI	LAB_29D8		; if -ve then 1 digit before dp
 
 	CMP	#$08			; A>=8 if n>=1E6
 	BCS	LAB_29D9		; branch if >= $08
 
-					; carry is clear
+						; carry is clear
 	ADC	#$FF			; take 1 from digit count
-	TAX				; copy to A
+	TAX					; copy to A
 	LDA	#$02			;.set exponent adjust
 LAB_29D8
-	SEC				; set carry for subtract
+	SEC					; set carry for subtract
 LAB_29D9
 	SBC	#$02			; -2
-	STA	expcnt		;.save exponent adjust
-	STX	numexp		; save digits before dp count
-	TXA				; copy to A
+	STA	expcnt			;.save exponent adjust
+	STX	numexp			; save digits before dp count
+	TXA					; copy to A
 	BEQ	LAB_29E4		; branch if no digits before dp
 
 	BPL	LAB_29F7		; branch if digits before dp
@@ -6721,130 +6721,130 @@ LAB_29D9
 LAB_29E4
 	LDY	Sendl			; get output string index
 	LDA	#$2E			; character "."
-	INY				; increment index
-	STA	Decss,Y		; save to output string *** ZP DANGER FOR 816!
-	TXA				;.
-	BEQ	LAB_29F5		;.
+	INY					; increment index
+	STA	Decss,Y			; save to output string *** ZP DANGER FOR 816!
+	TXA
+	BEQ	LAB_29F5
 
 	LDA	#"0"			; character "0"
-	INY				; increment index
-	STA	Decss,Y		; save to output string *** ZP DANGER FOR 816!
+	INY					; increment index
+	STA	Decss,Y			; save to output string *** ZP DANGER FOR 816!
 LAB_29F5
 	STY	Sendl			; save output string index
 LAB_29F7
 	LDY	#$00			; clear index (point to 100,000)
-	LDX	#$80			; 
+	LDX	#$80
 LAB_29FB
-	LDA	FAC1_3		; get FAC1 mantissa3
-	CLC				; clear carry for add
+	LDA	FAC1_3			; get FAC1 mantissa3
+	CLC					; clear carry for add
 	ADC	LAB_2A9C,Y		; add -ve LSB
-	STA	FAC1_3		; save FAC1 mantissa3
-	LDA	FAC1_2		; get FAC1 mantissa2
+	STA	FAC1_3			; save FAC1 mantissa3
+	LDA	FAC1_2			; get FAC1 mantissa2
 	ADC	LAB_2A9B,Y		; add -ve NMSB
-	STA	FAC1_2		; save FAC1 mantissa2
-	LDA	FAC1_1		; get FAC1 mantissa1
+	STA	FAC1_2			; save FAC1 mantissa2
+	LDA	FAC1_1			; get FAC1 mantissa1
 	ADC	LAB_2A9A,Y		; add -ve MSB
-	STA	FAC1_1		; save FAC1 mantissa1
-	INX				; 
-	BCS	LAB_2A18		; 
+	STA	FAC1_1			; save FAC1 mantissa1
+	INX 
+	BCS	LAB_2A18
 
 	BPL	LAB_29FB		; not -ve so try again
 
-	BMI	LAB_2A1A		; 
+	BMI	LAB_2A1A
 
 LAB_2A18
-	BMI	LAB_29FB		; 
+	BMI	LAB_29FB
 
 LAB_2A1A
-	TXA				; 
-	BCC	LAB_2A21		; 
+	TXA
+	BCC	LAB_2A21
 
-	EOR	#$FF			; 
-	ADC	#$0A			; 
+	EOR	#$FF
+	ADC	#$0A
 LAB_2A21
-	ADC	#"0"-1		; add "0"-1 to result
-	INY				; increment index ..
-	INY				; .. to next less ..
-	INY				; .. power of ten
-	STY	Cvaral		; save as current var address low byte
+	ADC	#"0"-1			; add "0"-1 to result
+	INY					; increment index ..
+	INY					; .. to next less ..
+	INY					; .. power of ten
+	STY	Cvaral			; save as current var address low byte
 	LDY	Sendl			; get output string index
-	INY				; increment output string index
-	TAX				; copy character to X
+	INY					; increment output string index
+	TAX					; copy character to X
 	AND	#$7F			; mask out top bit
-	STA	Decss,Y		; save to output string *** ZP DANGER FOR 816!
-	DEC	numexp		; decrement # of characters before the dp
+	STA	Decss,Y			; save to output string *** ZP DANGER FOR 816!
+	DEC	numexp			; decrement # of characters before the dp
 	BNE	LAB_2A3B		; branch if still characters to do
 
-					; else output the point
+						; else output the point
 	LDA	#$2E			; character "."
-	INY				; increment output string index
-	STA	Decss,Y		; save to output string *** ZP DANGER FOR 816!
+	INY					; increment output string index
+	STA	Decss,Y			; save to output string *** ZP DANGER FOR 816!
 LAB_2A3B
 	STY	Sendl			; save output string index
-	LDY	Cvaral		; get current var address low byte
-	TXA				; get character back
-	EOR	#$FF			; 
-	AND	#$80			; 
-	TAX				; 
+	LDY	Cvaral			; get current var address low byte
+	TXA					; get character back
+	EOR	#$FF 
+	AND	#$80 
+	TAX 
 	CPY	#$12			; compare index with max
 	BNE	LAB_29FB		; loop if not max
 
-					; now remove trailing zeroes
+						; now remove trailing zeroes
 	LDY	Sendl			; get output string index
 LAB_2A4B
-	LDA	Decss,Y		; get character from output string *** ZP DANGER FOR 816!
-	DEY				; decrement output string index
+	LDA	Decss,Y			; get character from output string *** ZP DANGER FOR 816!
+	DEY					; decrement output string index
 	CMP	#"0"			; compare with "0"
 	BEQ	LAB_2A4B		; loop until non "0" character found
 
 	CMP	#"."			; compare with "."
 	BEQ	LAB_2A58		; branch if was dp
 
-					; restore last character
-	INY				; increment output string index
+						; restore last character
+	INY					; increment output string index
 LAB_2A58
 	LDA	#$2B			; character "+"
-	LDX	expcnt		; get exponent count
+	LDX	expcnt			; get exponent count
 	BEQ	LAB_2A8C		; if zero go set null terminator and exit
 
-					; exponent isn't zero so write exponent
+						; exponent isn't zero so write exponent
 	BPL	LAB_2A68		; branch if exponent count +ve
 
 	LDA	#$00			; clear A
-	SEC				; set carry for subtract
-	SBC	expcnt		; subtract exponent count adjust (convert -ve to +ve)
-	TAX				; copy exponent count to X
+	SEC					; set carry for subtract
+	SBC	expcnt			; subtract exponent count adjust (convert -ve to +ve)
+	TAX					; copy exponent count to X
 	LDA	#"-"			; character "-"
 LAB_2A68
 	STA	Decss+2,Y		; save to output string *** ZP DANGER FOR 816!
 	LDA	#$45			; character "E"
 	STA	Decss+1,Y		; save exponent sign to output string *** ZP DANGER FOR 816!
-	TXA				; get exponent count back
-	LDX	#"0"-1		; one less than "0" character
-	SEC				; set carry for subtract
+	TXA					; get exponent count back
+	LDX	#"0"-1			; one less than "0" character
+	SEC					; set carry for subtract
 LAB_2A74
-	INX				; increment 10's character
+	INX					; increment 10's character
 	SBC	#$0A			;.subtract 10 from exponent count
 	BCS	LAB_2A74		; loop while still >= 0
 
 	ADC	#COLON			; add character COLON ($30+$0A, result is 10 less that value)
 	STA	Decss+4,Y		; save to output string *** ZP DANGER FOR 816!
-	TXA				; copy 10's character
+	TXA					; copy 10's character
 	STA	Decss+3,Y		; save to output string *** ZP DANGER FOR 816!
 	LDA	#$00			; set null terminator
 	STA	Decss+5,Y		; save to output string *** ZP DANGER FOR 816!
 	BEQ	LAB_2A91		; go set string pointer (AY) and exit (branch always)
 
-					; save last character, [EOT] and exit
+						; save last character, [EOT] and exit
 LAB_2A89
-	STA	Decss,Y		; save last character to output string *** ZP DANGER FOR 816!
+	STA	Decss,Y			; save last character to output string *** ZP DANGER FOR 816!
 
-					; set null terminator and exit
+						; set null terminator and exit
 LAB_2A8C
 	LDA	#$00			; set null terminator
 	STA	Decss+1,Y		; save after last character *** ZP DANGER FOR 816!
 
-					; set string pointer (AY) and exit
+						; set string pointer (AY) and exit
 LAB_2A91
 	LDA	#<Decssp1		; set result string low pointer
 	LDY	#>Decssp1		; set result string high pointer
