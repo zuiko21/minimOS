@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180503-1113
+; last modified 20180504-1019
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -140,6 +140,8 @@ Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 
 ; *** currently free space at $70 ($6E-70 for 65C02) ***
+
+iodev		= $70		; minimOS standard I/O device
 
 ; *** original variables follow ***
 ut1_pl		= $71		; utility pointer 1 low byte
@@ -335,8 +337,9 @@ IrqBase		= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** ski
 ;			= $C7		; IRQ handler addr high byte was $E1
 
 ; *** still some bytes free from $C8 up to $E3 ($E1 for the C64) ***
+__last		= IrqBase+3	; *** just for easier size check ***
 
-; *** these MUST be relocated *** CANNOT BE IN ZP as will not be 65816-savvy! *** temporarily at the other side of ONE stack!
+; *** these CANNOT BE IN ZP as will not be 65816-savvy! *** temporarily at the other side of ONE stack!
 Decss		= $0100		; number to decimal string start was $EF *** UGLY HACK!!!
 Decssp1		= Decss+1	; number to decimal string start
 ; *** seems to need this 17-byte space ***
@@ -491,8 +494,28 @@ COLON		= $3A
 ; ***********************************
 ; *** minimOS initialisation code ***
 ; ***********************************
-
-; should check for ZP space and default window TODO TODO TODO ***
+	LDA #__last-uz		; zeropage space needed
+; check whether has enough zeropage space
+#ifdef	SAFE
+	CMP z_used			; check available zeropage space
+	BCC go_eh			; enough space
+	BEQ go_eh			; just enough!
+		_ABORT(FULL)		; not enough memory otherwise (rare)
+go_lined:
+#endif
+	STA z_used			; set needed ZP space as required by minimOS
+	STZ w_rect			; no screen size required
+	STZ w_rect+1		; neither MSB
+	LDY #<eh_title		; LSB of window title
+	LDA #>eh_title		; MSB of window title
+	STY str_pt			; set parameter
+	STA str_pt+1
+	_KERNEL(OPEN_W)		; ask for a character I/O device
+	BCC open_eh			; no errors
+		_ABORT(NO_RSRC)		; abort otherwise! proper error code
+open_eh:
+	STY iodev			; store device!!!
+; ##### end of minimOS specific stuff #####
 
 ; *** extra check for 816-savvyness ***
 #ifdef	SAFE
@@ -514,7 +537,7 @@ COLON		= $3A
 			STY str_pt			; set kernel parameter
 			STA str_pt+1
 ;			STZ str_pt+2		; just in case, 6502 code must load in bank zero
-			LDY #0				; default device, or previously open?
+			LDY iodev			; default device
 			_KERNEL(STRING)		; print message
 			_ABORT(INVALID)		; *** abort code, either RTS or RTL will be OK
 cpu_err:
@@ -7928,14 +7951,14 @@ LAB_TWOPI
 ; *** will just be replaced by minimOS I/O calls, saving vectors
 V_INPT
 ;	JMP	(VEC_IN)		; non halting scan input device
-	LDY #0				; *** default device, might check assigned window ***
+	LDY iodev				; *** default device, might check assigned window ***
 	_KERNEL(CIN)
 ; could check C and Y here for safety
 	LDA io_c
 	RTS
 V_OUTP
 ;	JMP	(VEC_OUT)		; send byte to output device
-	LDY #0				; *** default device, might check assigned window ***
+	LDY iodev				; *** default device, might check assigned window ***
 	STA io_c
 	_KERNEL(COUT)
 	RTS
