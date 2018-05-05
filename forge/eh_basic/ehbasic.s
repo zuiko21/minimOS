@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180505-1510
+; last modified 20180505-1623
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -128,72 +128,70 @@ ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80
 ; *** 65816 could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed ***
-#ifdef	C816
-IbufiY		= ccnull+1	; self-pointer to next buffer! $27-28
-Ibuffs		= IbufiY+2	; changed for SBC-2, again for minimOS $29...70 EEEEEEEEEEEK
-#else
-Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $27...6E for 65C02
-#endif
+Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $27...6E
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
+#ifdef	C816
+IbufiY		= Ibuffe+1	; self-pointer to next buffer! $6F-70
+#endif
 
 ; *** currently free space at $6F-70 for 65C02 ONLY ***
 
 ; *** original variables follow ***
 ut1_pl		= $71		; utility pointer 1 low byte
 ut1_ph		= ut1_pl+1	; utility pointer 1 high byte
-ut2_pl		= ut1_ph+1	; utility pointer 2 low byte was $73
+ut2_pl		= ut1_ph+1	; utility pointer 2 low byte $73
 ut2_ph		= ut2_pl+1	; utility pointer 2 high byte
 
 Temp_2		= ut1_pl	; temp byte for block move
 
-FACt_1		= ut2_ph+1	; FAC temp mantissa1 was $75
+FACt_1		= ut2_ph+1	; FAC temp mantissa1 $75
 FACt_2		= FACt_1+1	; FAC temp mantissa2
 FACt_3		= FACt_2+1	; FAC temp mantissa3
 
-dims_l		= FACt_2	; array dimension size low byte
+dims_l		= FACt_2	; array dimension size low byte $76
 dims_h		= FACt_3	; array dimension size high byte
 
-TempB		= FACt_3+1	; temp page 0 byte was $78
+TempB		= FACt_3+1	; temp page 0 byte $78
 
-Smeml		= TempB+1	; start of mem low byte		(Start-of-Basic) was $79
+Smeml		= TempB+1	; start of mem low byte		(Start-of-Basic) $79
 Smemh		= Smeml+1	; start of mem high byte	(Start-of-Basic)
-Svarl		= Smemh+1	; start of vars low byte	(Start-of-Variables) was $7B
+Svarl		= Smemh+1	; start of vars low byte	(Start-of-Variables) $7B
 Svarh		= Svarl+1	; start of vars high byte	(Start-of-Variables)
-Sarryl		= Svarh+1	; var mem end low byte		(Start-of-Arrays) was $7D
+Sarryl		= Svarh+1	; var mem end low byte		(Start-of-Arrays) $7D
 Sarryh		= Sarryl+1	; var mem end high byte		(Start-of-Arrays)
 Earryl		= Sarryh+1	; array mem end low byte	(End-of-Arrays) was $7F
 Earryh		= Earryl+1	; array mem end high byte	(End-of-Arrays)
-Sstorl		= Earryh+1	; string storage low byte	(String storage (moving down)) was $81
+Sstorl		= Earryh+1	; string storage low byte	(String storage (moving down)) $81
 Sstorh		= Sstorl+1	; string storage high byte	(String storage (moving down))
-Sutill		= Sstorh+1	; string utility ptr low byte was $83
+Sutill		= Sstorh+1	; string utility ptr low byte $83
 Sutilh		= Sutill+1	; string utility ptr high byte
-Ememl		= Sutilh+1	; end of mem low byte		(Limit-of-memory) was $85
+Ememl		= Sutilh+1	; end of mem low byte		(Limit-of-memory) $85
 Ememh		= Ememl+1	; end of mem high byte		(Limit-of-memory)
-Clinel		= Ememh+1	; current line low byte		(Basic line number) was $87
+Clinel		= Ememh+1	; current line low byte		(Basic line number) $87
 Clineh		= Clinel+1	; current line high byte	(Basic line number)
-Blinel		= Clineh+1	; break line low byte		(Previous Basic line number) was $89
+Blinel		= Clineh+1	; break line low byte		(Previous Basic line number) $89
 Blineh		= Blinel+1	; break line high byte		(Previous Basic line number)
 
-Cpntrl		= Blineh+1	; continue pointer low byte was $8B
+Cpntrl		= Blineh+1	; continue pointer low byte $8B
 Cpntrh		= Cpntrl+1	; continue pointer high byte
 
-Dlinel		= Cpntrh+1	; current DATA line low byte was $8D
+Dlinel		= Cpntrh+1	; current DATA line low byte $8D
 Dlineh		= Dlinel+1	; current DATA line high byte
 
-Dptrl		= Dlineh+1	; DATA pointer low byte was $8F
+Dptrl		= Dlineh+1	; DATA pointer low byte $8F
 Dptrh		= Dptrl+1	; DATA pointer high byte
 
-Rdptrl		= Dptrh+1	; read pointer low byte was $91
+Rdptrl		= Dptrh+1	; read pointer low byte $91
 Rdptrh		= Rdptrl+1	; read pointer high byte
 
-Varnm1		= Rdptrh+1	; current var name 1st byte was $93
+Varnm1		= Rdptrh+1	; current var name 1st byte $93
 Varnm2		= Varnm1+1	; current var name 2nd byte
 
-Cvaral		= Varnm2+1	; current var address low byte was $95
+Cvaral		= Varnm2+1	; current var address low byte $95
 Cvarah		= Cvaral+1	; current var address high byte
 
-Frnxtl		= Cvarah+1	; var pointer for FOR/NEXT low byte was $97
+Frnxtl		= Cvarah+1	; var pointer for FOR/NEXT low byte $97
 Frnxth		= Frnxtl+1	; var pointer for FOR/NEXT high byte
 
 Tidx1		= Frnxtl	; temp line index
@@ -201,112 +199,111 @@ Tidx1		= Frnxtl	; temp line index
 Lvarpl		= Frnxtl	; let var pointer low byte
 Lvarph		= Frnxth	; let var pointer high byte
 
-prstk		= Frnxth+1	; precedence stacked flag was $99
+prstk		= Frnxth+1	; precedence stacked flag $99
 
-comp_f		= prstk+2	; compare function flag, bits 0,1 and 2 used; was $9B
+comp_f		= prstk+2	; compare function flag, bits 0,1 and 2 used, $9B
 						; bit 2 set if >
 						; bit 1 set if =
 						; bit 0 set if <
 
-func_l		= comp_f+1	; function pointer low byte was $9C
+func_l		= comp_f+1	; function pointer low byte $9C
 func_h		= func_l+1	; function pointer high byte
 
-garb_l		= func_l	; garbage collection working pointer low byte
+garb_l		= func_l	; garbage collection working pointer low byte $9C
 garb_h		= func_h	; garbage collection working pointer high byte
 
-des_2l		= func_h+1	; string descriptor_2 pointer low byte was $9E
+des_2l		= func_h+1	; string descriptor_2 pointer low byte $9E
 des_2h		= des_2l+1	; string descriptor_2 pointer high byte
 
-g_step		= des_2h+1	; garbage collect step size was $A0
+g_step		= des_2h+1	; garbage collect step size $A0
 
-;Fnxjmp		= g_step+1	; jump vector for functions was $A1 *** NEVER USED
 Fnxjpl		= g_step+1	; functions jump vector low byte, now $A1
 Fnxjph		= Fnxjpl+1	; functions jump vector high byte
 
-g_indx		= Fnxjpl	; garbage collect temp index
+g_indx		= Fnxjpl	; garbage collect temp index $A1
 
-FAC2_r		= Fnxjph+1	; FAC2 rounding byte was $A3 (see above)
+FAC2_r		= Fnxjph+1	; FAC2 rounding byte $A3
 
-Adatal		= FAC2_r+1	; array data pointer low byte was $A4
+Adatal		= FAC2_r+1	; array data pointer low byte $A4
 Adatah		= Adatal+1	; array data pointer high  byte
 
-Nbendl		= Adatal	; new block end pointer low byte
+Nbendl		= Adatal	; new block end pointer low byte $A4
 Nbendh		= Adatah	; new block end pointer high  byte
 
-Obendl		= Adatah+1	; old block end pointer low byte was $A6
+Obendl		= Adatah+1	; old block end pointer low byte $A6
 Obendh		= Obendl+1	; old block end pointer high  byte
 
-numexp		= Obendh+1	; string to float number exponent count was $A8
-expcnt		= numexp+1	; string to float exponent count was $A9
+numexp		= Obendh+1	; string to float number exponent count $A8
+expcnt		= numexp+1	; string to float exponent count $A9
 
-numbit		= numexp	; bit count for array element calculations
+numbit		= numexp	; bit count for array element calculations $A8
 
-numdpf		= expcnt+1	; string to float decimal point flag was $AA
-expneg		= numdpf+1	; string to float eval exponent -ve flag was $AB
+numdpf		= expcnt+1	; string to float decimal point flag $AA
+expneg		= numdpf+1	; string to float eval exponent -ve flag $AB
 
-Astrtl		= numdpf	; array start pointer low byte
-Astrth		= expneg	; array start pointer high  byte
+Astrtl		= numdpf	; array start pointer low byte $AA
+Astrth		= expneg	; array start pointer high byte
 
-Histrl		= numdpf	; highest string low byte
-Histrh		= expneg	; highest string high  byte
+Histrl		= numdpf	; highest string low byte $AA
+Histrh		= expneg	; highest string high byte
 
-Baslnl		= numdpf	; BASIC search line pointer low byte
-Baslnh		= expneg	; BASIC search line pointer high  byte
+Baslnl		= numdpf	; BASIC search line pointer low byte $AA
+Baslnh		= expneg	; BASIC search line pointer high byte
 
-Fvar_l		= numdpf	; find/found variable pointer low byte
-Fvar_h		= expneg	; find/found variable pointer high  byte
+Fvar_l		= numdpf	; find/found variable pointer low byte $AA
+Fvar_h		= expneg	; find/found variable pointer high byte
 
-Ostrtl		= numdpf	; old block start pointer low byte
-Ostrth		= expneg	; old block start pointer high  byte
+Ostrtl		= numdpf	; old block start pointer low byte $AA
+Ostrth		= expneg	; old block start pointer high byte
 
-Vrschl		= numdpf	; variable search pointer low byte
-Vrschh		= expneg	; variable search pointer high  byte
+Vrschl		= numdpf	; variable search pointer low byte $AA
+Vrschh		= expneg	; variable search pointer high byte
 
-FAC1_e		= expneg+1	; FAC1 exponent was $AC
+FAC1_e		= expneg+1	; FAC1 exponent $AC
 FAC1_1		= FAC1_e+1	; FAC1 mantissa1
 FAC1_2		= FAC1_e+2	; FAC1 mantissa2
 FAC1_3		= FAC1_e+3	; FAC1 mantissa3
 FAC1_s		= FAC1_e+4	; FAC1 sign (b7)
 
-str_ln		= FAC1_e	; string length
+str_ln		= FAC1_e	; string length $AC
 str_pl		= FAC1_1	; string pointer low byte
 str_ph		= FAC1_2	; string pointer high byte
 
-des_pl		= FAC1_2	; string descriptor pointer low byte
+des_pl		= FAC1_2	; string descriptor pointer low byte $AD
 des_ph		= FAC1_3	; string descriptor pointer high byte
 
-mids_l		= FAC1_3	; MID$ string temp length byte
+mids_l		= FAC1_3	; MID$ string temp length byte $AE
 
-negnum		= FAC1_s+1	; string to float eval -ve flag was $B1
-numcon		= negnum	; series evaluation constant count was $B1
+negnum		= FAC1_s+1	; string to float eval -ve flag $B1
+numcon		= negnum	; series evaluation constant count $B1
 
-FAC1_o		= numcon+1	; FAC1 overflow byte was $B2
+FAC1_o		= numcon+1	; FAC1 overflow byte $B2
 
-FAC2_e		= FAC1_o+1	; FAC2 exponent was $B3
+FAC2_e		= FAC1_o+1	; FAC2 exponent $B3
 FAC2_1		= FAC2_e+1	; FAC2 mantissa1
 FAC2_2		= FAC2_e+2	; FAC2 mantissa2
 FAC2_3		= FAC2_e+3	; FAC2 mantissa3
 FAC2_s		= FAC2_e+4	; FAC2 sign (b7)
 
-FAC_sc		= FAC2_s+1	; FAC sign comparison, Acc#1 vs #2 was $B8
-FAC1_r		= FAC_sc+1	; FAC1 rounding byte was $B9
+FAC_sc		= FAC2_s+1	; FAC sign comparison, Acc#1 vs #2 $B8
+FAC1_r		= FAC_sc+1	; FAC1 rounding byte $B9
 
-ssptr_l		= FAC_sc	; string start pointer low byte
+ssptr_l		= FAC_sc	; string start pointer low byte $B8
 ssptr_h		= FAC1_r	; string start pointer high byte
 
-sdescr		= FAC_sc	; string descriptor pointer
+sdescr		= FAC_sc	; string descriptor pointer $B8
 
-csidx		= FAC1_r+1	; line crunch save index was $BA
-Asptl		= csidx		; array size/pointer low byte
-Aspth		= Asptl+1	; array size/pointer high byte was $BB
+csidx		= FAC1_r+1	; line crunch save index $BA
+Asptl		= csidx		; array size/pointer low byte $BA
+Aspth		= Asptl+1	; array size/pointer high byte $BB
 
-Btmpl		= Asptl		; BASIC pointer temp low byte
+Btmpl		= Asptl		; BASIC pointer temp low byte $BA
 Btmph		= Aspth		; BASIC pointer temp low byte
 
-Cptrl		= Asptl		; BASIC pointer temp low byte
+Cptrl		= Asptl		; BASIC pointer temp low byte $BA
 Cptrh		= Aspth		; BASIC pointer temp low byte
 
-Sendl		= Asptl		; BASIC pointer temp low byte
+Sendl		= Asptl		; BASIC pointer temp low byte $BA
 Sendh		= Aspth		; BASIC pointer temp low byte
 
 Bpntrl		= Aspth+1	; BASIC execute (get byte) pointer low byte was $C3 *** skipped code to $BC, this is the INDIRECT POINTER for the ROM routine
@@ -543,11 +540,13 @@ cpu_ok:
 	_KERNEL(MALLOC)		; request RAM from OS
 	LDA ma_pt
 	STA Ram_base
+	STA Itempl			; will need it later
 	CLC
 ;	ADC ma_rs			; not needed if MALLOC is page-aligned
 	STA Ram_top			; base+size=top
 	LDA ma_pt+1			; MSB now
 	STA Ram_base+1		; copy pointer
+	STA Itemph
 	ADC ma_rs+1
 	STA Ram_top+1		; base+size=top
 
@@ -578,7 +577,7 @@ LAB_2D13
 	LDX	#$FF			; set byte
 	STX	Clineh			; set current line high byte (set immediate mode)
 
-; copy block from StrTab to $0000 - $0012 *** $0003 and beyond in mOS
+; copy block from StrTab to $0000 - $0012 *** now $03-$06 in mOS
 
 LAB_GMEM
 	LDX	#EndTab-StrTab-1
@@ -623,12 +622,12 @@ TabLoop
 						; character was null so get memory size the hard way
 						; we get here with Y=0 and Itempl/h = Ram_base
 LAB_2D93
-	INC	Itempl			; increment temporary integer low byte***
+	INC	Itempl			; increment temporary integer low byte
 	BNE	LAB_2D99		; branch if no overflow
 
 	INC	Itemph			; increment temporary integer high byte
 	LDA	Itemph			; get high byte
-	CMP	Ram_top+1		; compare with top of RAM+1 *** check new var
+	CMP	Ram_top+1		; compare with top of RAM+1
 	BEQ	LAB_2DB6		; branch if match (end of user RAM)
 
 LAB_2D99
@@ -657,7 +656,7 @@ LAB_2DB6
 	LDA	Itempl			; get temporary integer low byte
 	LDY	Itemph			; get temporary integer high byte
 ; note that ram_base is variable
-	DEY					; *** OK?
+	DEY
 	CPY	Ram_base+1		; compare with start of RAM+$100 high byte
 	BCC	LAB_GMEM		; if too small go try again
 
@@ -667,12 +666,12 @@ LAB_2DB6
 ; users know what they are doing!
 ; *** now ram_top is also variable
 
-;	CPY	#>Ram_top		; compare with top of RAM high byte
+;	CPY	Ram_top+1		; compare with top of RAM high byte
 ;	BCC	MEM_OK			; branch if < RAM top
 
 ;	BNE	LAB_GMEM		; if too large go try again
 						; else was = so compare low bytes
-;	CMP	#<Ram_top		; compare with top of RAM low byte
+;	CMP	Ram_top			; compare with top of RAM low byte
 ;	BEQ	MEM_OK			; branch if = RAM top
 
 ;	BCS	LAB_GMEM		; if too large go try again
@@ -714,14 +713,8 @@ LAB_2E05
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
 	LDY	#>LAB_SMSG		; point to sign-on message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
-; *** no need for vectored warm start ***
-;	LDA	#<LAB_1274		; warm start vector low byte
-;	LDY	#>LAB_1274		; warm start vector high byte
-;	STA	Wrmjpl			; save warm start vector low byte
-;	STY	Wrmjph			; save warm start vector high byte
-;	JMP	(Wrmjpl)		; go do warm start
 	JMP LAB_1274		; go do warm start (non vectored)
-	
+
 ; open up space in memory
 ; move (Ostrtl)-(Obendl) to new block ending at (Nbendl)
 ; Nbendl,Nbendh - new block end address (A/Y)
@@ -7133,7 +7126,6 @@ LAB_2C74
 ; perform USR()
 
 LAB_USR
-;	JSR	Usrjmp		; call user code
 	JSR LAB_FCER		; call user-code *** non-vectored ***
 	JMP	LAB_1BFB		; scan for ")", else do syntax error then warm start
 
