@@ -591,7 +591,6 @@ TabLoop
 
 ; set-up start values
 
-;	LDA	#$00			; clear A *** CMOS will use STZs
 	STZ	NmiBase			; clear NMI handler enabled flag
 	STZ	IrqBase			; clear IRQ handler enabled flag
 	STZ	FAC1_o			; clear FAC1 overflow byte
@@ -614,7 +613,7 @@ TabLoop
 	LDY	#>LAB_MSZM		; point to memory size message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
 	JSR	LAB_INLN		; print "? " and get BASIC input
-	STX	Bpntrl			; set BASIC execute pointer low byte***
+	STX	Bpntrl			; set BASIC execute pointer low byte
 	STY	Bpntrh			; set BASIC execute pointer high byte
 	JSR	LAB_GBYT		; get last byte back
 
@@ -1098,10 +1097,10 @@ LAB_134B
 LAB_1357
 	LDX	#$00			; clear BASIC line buffer pointer
 LAB_1359
+	PHX				; *** only needs to be preserved here ***
 	JSR	V_INPT			; call scan input device
+	PLX				; *** no NMOS, thus OK here ***
 	BCC	LAB_1359		; loop if no byte
-
-;	BEQ	LAB_1359		; loop until valid input (ignore NULLs)
 
 	CMP	#$07			; compare with [BELL]
 	BEQ	LAB_1378		; branch if [BELL]
@@ -2553,7 +2552,11 @@ LAB_185E
 LAB_1866
 	STZ	Ibuffs,X		; null terminate input, CMOS-only
 	LDX	#<Ibuffs		; set X to buffer start-1 low byte
-	LDY	#>Ibuffs		; set Y to buffer start-1 high byte *** is this OK?
+#ifndef	C816
+	LDY	#>Ibuffs		; set Y to buffer start-1 high byte
+#else
+	LDY	IbufiY+1		; set Y to buffer start-1 high byte from self-pointer
+#endif
 
 ; print CR/LF *** minimOS uses just CR for newline ***
 
@@ -7912,16 +7915,21 @@ LAB_TWOPI
 
 ; system dependant i/o vectors
 ; *** will just be replaced by minimOS I/O calls, saving vectors
-V_IN						; non halting scan input device
+V_INPT						; non halting scan input device
 	LDY iodev				; assigned window
 	_KERNEL(CIN)
 ; could check C and Y here for safety
 	LDA io_c
 	RTS
 V_OUTP						; send byte to output device
-	LDY iodev				; *** assigned window ***
 	STA io_c
+	PHX					; *** must save these ***
+	PHY
+	LDY iodev				; *** assigned window ***
 	_KERNEL(COUT)
+	PLY					; *** this ignores errors ***
+	PLX
+	LDA io_c				; *** worth recovering it ***
 	RTS
 V_LOAD						; load BASIC program
 V_SAVE						; save BASIC program
