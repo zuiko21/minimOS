@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180504-1019
+; last modified 20180505-1300
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -41,6 +41,7 @@ ehHead:
 	.asc	"****", 13				; some flags TBD
 
 ; *** filename and optional comment ***
+eh_wtit:
 	.asc	"EhBASIC", 0			; file name (mandatory)
 	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 0		; comment with IMPORTANT attribution
 
@@ -56,6 +57,10 @@ ehSize	=	ehEnd - ehHead -256	; compute size NOT including header!
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	ehSize					; filesize
 	.word	0						; 64K space does not use upper 16-bit
+#else
+; keep at least window title on headerless builds
+eh_wtit:
+	.asc	"EhBASIC", 0			; window title
 #endif
 ; ##### end of minimOS executable header #####
 
@@ -506,8 +511,8 @@ go_lined:
 	STA z_used			; set needed ZP space as required by minimOS
 	STZ w_rect			; no screen size required
 	STZ w_rect+1		; neither MSB
-	LDY #<eh_title		; LSB of window title
-	LDA #>eh_title		; MSB of window title
+	LDY #<eh_wtit		; LSB of window title
+	LDA #>eh_wtit		; MSB of window title
 	STY str_pt			; set parameter
 	STA str_pt+1
 	_KERNEL(OPEN_W)		; ask for a character I/O device
@@ -8062,7 +8067,6 @@ LAB_MSZM
 
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
-eh_title:
 	.byte	"Enhanced BASIC 2.22",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
