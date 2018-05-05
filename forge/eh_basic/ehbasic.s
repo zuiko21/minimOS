@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180505-1419
+; last modified 20180505-1510
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -76,51 +76,51 @@ Nullct		= eh_basic	; nulls output after each line *** $03
 TPos		= Nullct+1	; BASIC terminal position byte *** $04
 TWidth		= TPos+1	; BASIC terminal width byte *** $05
 Iclim		= TWidth+1	; input column limit *** $06
-Itempl		= Iclim		; temporary integer low byte *** $06-07
+Itempl		= Iclim+1	; temporary integer low byte *** $07-08 EEEEEEEEK
 Itemph		= Itempl+1	; temporary integer high byte
 
-nums_1		= Itempl	; number to bin/hex string convert MSB $06-08
+nums_1		= Itempl	; number to bin/hex string convert MSB $07-09
 nums_2		= nums_1+1	; number to bin/hex string convert
 nums_3		= nums_1+2	; number to bin/hex string convert LSB
 
-Srchc		= nums_3+1	; search character *** $09, no longer $5B
-Temp3		= Srchc		; temp byte used in number routines *** $09
-Scnquo		= Srchc+1	; scan-between-quotes flag *** $0A, no longer $5C
-Asrch		= Scnquo	; alt search character *** $0A
+Srchc		= nums_3+1	; search character *** $0A, no longer $5B
+Temp3		= Srchc		; temp byte used in number routines *** $0A
+Scnquo		= Srchc+1	; scan-between-quotes flag *** $0B, no longer $5C
+Asrch		= Scnquo	; alt search character *** $0B
 
-XOAw_l		= Srchc		; eXclusive OR, OR and AND word low byte *** $09-0A
+XOAw_l		= Srchc		; eXclusive OR, OR and AND word low byte *** $0A-0B
 XOAw_h		= Scnquo	; eXclusive OR, OR and AND word high byte
 
-Ibptr		= Scnquo+1	; input buffer pointer *** $0B, no longer $5D
-Dimcnt		= Ibptr		; # of dimensions *** $0B
-Tindx		= Ibptr		; token index *** $0B
+Ibptr		= Scnquo+1	; input buffer pointer *** $0C, no longer $5D
+Dimcnt		= Ibptr		; # of dimensions *** $0C
+Tindx		= Ibptr		; token index *** $0C
 
-Defdim		= Ibptr+1	; default DIM flag *** $0C, no longer $5E
-Dtypef		= Defdim+1	; data type flag, $FF=string, $00=numeric *** $0D, no longer $5F
-Oquote		= Dtypef+1	; open quote flag (b7) (Flag: DATA scan; LIST quote; memory) *** $0E, no longer $60
-Gclctd		= Oquote	; garbage collected flag *** $0E
-Sufnxf		= Oquote+1	; subscript/FNX flag, 1xxx xxx = FN(0xxx xxx) *** $0F, no longer $61
-Imode		= Sufnxf+1	; input mode flag, $00=INPUT, $80=READ *** $10, no longer $62
+Defdim		= Ibptr+1	; default DIM flag *** $0D, no longer $5E
+Dtypef		= Defdim+1	; data type flag, $FF=string, $00=numeric *** $0E, no longer $5F
+Oquote		= Dtypef+1	; open quote flag (b7) (Flag: DATA scan; LIST quote; memory) *** $0F, no longer $60
+Gclctd		= Oquote	; garbage collected flag *** $0F
+Sufnxf		= Oquote+1	; subscript/FNX flag, 1xxx xxx = FN(0xxx xxx) *** $10, no longer $61
+Imode		= Sufnxf+1	; input mode flag, $00=INPUT, $80=READ *** $11, no longer $62
 
-Cflag		= Imode+1	; comparison evaluation flag *** $11, no longer $63
+Cflag		= Imode+1	; comparison evaluation flag *** $12, no longer $63
 
-TabSiz		= Cflag+1	; TAB step size (was input flag) *** $12, no longer $64
+TabSiz		= Cflag+1	; TAB step size (was input flag) *** $13, no longer $64
 
-next_s		= TabSiz+1	; next descriptor stack address *** $13, no longer $65
+next_s		= TabSiz+1	; next descriptor stack address *** $14, no longer $65
 
 						; these two bytes form a word pointer to the item
 						; currently on top of the descriptor stack
-last_sl		= next_s+1	; last descriptor stack address low byte *** $14, no longer $66
-last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.H) *** $15, no longer $67
+last_sl		= next_s+1	; last descriptor stack address low byte *** $15, no longer $66
+last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.H) *** $16, no longer $67
 
-des_sk		= last_sh	; descriptor stack start address (temp strings) *** $15, no longer $67
+des_sk		= last_sh	; descriptor stack start address (temp strings) *** $16, no longer $67
 ; *** seems to need 10-byte space here ***
 
 ; must add Ram_base and Ram_top, now variables instead of constants
-Ram_base	= des_sk+10	; *** check space for stack above *** $1F-20
-Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $21-22
+Ram_base	= des_sk+10	; *** check space for stack above *** $20-21
+Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $22-23
 
-; these were on page 2... but $0200 is DEADLY in minimOS, now $23-25
+; these were on page 2... but $0200 is DEADLY in minimOS, now $24-26
 ccflag		= Ram_top+2	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
@@ -129,17 +129,15 @@ ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80
 ; *** 65816 could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed ***
 #ifdef	C816
-IbufiY		= ccnull+1	; self-pointer to next buffer! $26-27
-Ibuffs		= IbufiY+2	; changed for SBC-2, again for minimOS $28...6F EEEEEEEEEEEK
+IbufiY		= ccnull+1	; self-pointer to next buffer! $27-28
+Ibuffs		= IbufiY+2	; changed for SBC-2, again for minimOS $29...70 EEEEEEEEEEEK
 #else
-Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $26...6D for 65C02
+Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $27...6E for 65C02
 #endif
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 
-; *** currently free space at $70 ($6E-70 for 65C02) ***
-
-iodev		= $70		; ##### minimOS selected I/O device #####
+; *** currently free space at $6F-70 for 65C02 ONLY ***
 
 ; *** original variables follow ***
 ut1_pl		= $71		; utility pointer 1 low byte
@@ -332,8 +330,10 @@ IrqBase		= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** ski
 ;			= $C6		; IRQ handler addr low byte was $E0
 ;			= $C7		; IRQ handler addr high byte was $E1
 
-; *** still some bytes free from $C8 up to $E3 ($E1 for the C64) ***
-__last		= IrqBase+3	; *** just for easier size check ***
+iodev		= IrqBase+3		; ##### minimOS selected I/O device ##### $C8
+
+; *** still some bytes free from $C9 up to $E3 ($E1 for the C64) ***
+__last		= iodev+1	; *** just for easier size check ***
 
 ; *** these CANNOT BE IN ZP as will not be 65816-savvy! *** temporarily at the other side of ONE stack!
 Decss		= $0100		; number to decimal string start was $EF *** UGLY HACK!!!
