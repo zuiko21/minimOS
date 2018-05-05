@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180505-1300
+; last modified 20180505-1419
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -70,14 +70,7 @@ eh_wtit:
 
 eh_basic	= uz		; EhBASIC zeropage usage
 
-; *** no need for vectored warm start ***
-;LAB_WARM	= eh_basic-1; BASIC warm start entry point *** only the next two bytes are used, thus no need for this byte itself
-;Wrmjpl 	= LAB_WARM+1; BASIC warm start vector jump low byte
-;Wrmjph 	= LAB_WARM+2; BASIC warm start vector jump high byte
-
-;Usrjmp		= uz		; USR function JMP address *** no longer $0A, should it hold a JMP opcode???
-;Usrjpl		= Usrjmp+1	; USR function JMP vector low byte
-;Usrjph		= Usrjmp+2	; USR function JMP vector high byte
+; *** no need for vectored warm start, cannot see any use for Usrjmp ***
 
 Nullct		= eh_basic	; nulls output after each line *** $03
 TPos		= Nullct+1	; BASIC terminal position byte *** $04
@@ -146,7 +139,7 @@ Ibuffe		= Ibuffs+$47
 
 ; *** currently free space at $70 ($6E-70 for 65C02) ***
 
-iodev		= $70		; minimOS standard I/O device
+iodev		= $70		; ##### minimOS selected I/O device #####
 
 ; *** original variables follow ***
 ut1_pl		= $71		; utility pointer 1 low byte
@@ -318,9 +311,7 @@ Cptrh		= Aspth		; BASIC pointer temp low byte
 Sendl		= Asptl		; BASIC pointer temp low byte
 Sendh		= Aspth		; BASIC pointer temp low byte
 
-;LAB_IGBY	= $BC		; get next BASIC byte subroutine *** not a good idea to call/jump to ZP
-;LAB_GBYT	= $C2		; get current BASIC byte subroutine was $C2 *** best to use a mere pointer for indirect jump
-Bpntrl		= Aspth+1	; BASIC execute (get byte) pointer low byte was $C3 *** skipped code to $BC, this is the INDIRECT POINTER
+Bpntrl		= Aspth+1	; BASIC execute (get byte) pointer low byte was $C3 *** skipped code to $BC, this is the INDIRECT POINTER for the ROM routine
 Bpntrh		= Bpntrl+1	; BASIC execute (get byte) pointer high byte
 
 ; these get closer as code is no longer here
@@ -398,6 +389,7 @@ TK_BITCLR	= TK_BITSET+1	; BITCLR token
 TK_IRQ		= TK_BITCLR+1	; IRQ token
 TK_NMI		= TK_IRQ+1		; NMI token
 ;TK_SYS		= TK_NMI+1		; SYS token *** added for SBC-2
+; *** minimOS needs some 'exit to shell' command ***
 
 ; secondary command tokens, cannot start a statement
 
@@ -485,16 +477,9 @@ LAB_SKFE	= LAB_STAK+$FE
 						; flushed stack address
 LAB_SKFF	= LAB_STAK+$FF
 						; flushed stack address
+; *** no real need for I/O vectors ***
 
-; *** no real need for these ***
-;VEC_CC		= ccnull+1	; ctrl c check vector
-
-;VEC_IN		= VEC_CC+2	; input vector
-;VEC_OUT		= VEC_IN+2	; output vector
-;VEC_LD		= VEC_OUT+2	; load vector
-;VEC_SV		= VEC_LD+2	; save vector
-
-COLON		= $3A
+COLON		= $3A				; avoids problems with some assemblers...
 
 ; ***********************************
 ; *** minimOS initialisation code ***
@@ -506,7 +491,7 @@ COLON		= $3A
 	BCC go_eh			; enough space
 	BEQ go_eh			; just enough!
 		_ABORT(FULL)		; not enough memory otherwise (rare)
-go_lined:
+go_eh:
 #endif
 	STA z_used			; set needed ZP space as required by minimOS
 	STZ w_rect			; no screen size required
@@ -530,6 +515,7 @@ open_eh:
 	CMP #'V'			; is it a 65816?
 	BNE cpu_ok			; nope, nothing to be afraid of
 ; at this point, there is a 65816, let us check if emulating a 6502
+; as this code was assembled for 65C02, cannot use 816 opcodes in source!
 		CLC					; will go native for a moment
 		.byt $FB			; XCE check previous E state
 		PHP					; while native, keep previous E as C
@@ -540,8 +526,7 @@ open_eh:
 			LDY #<cpu_err		; get error message pointer
 			LDA #>cpu_err
 			STY str_pt			; set kernel parameter
-			STA str_pt+1
-;			STZ str_pt+2		; just in case, 6502 code must load in bank zero
+			STA str_pt+1		; 6502 code must load in bank zero, RUN_ARCH will set bank accordingly
 			LDY iodev			; default device
 			_KERNEL(STRING)		; print message
 			_ABORT(INVALID)		; *** abort code, either RTS or RTL will be OK
@@ -570,14 +555,6 @@ cpu_ok:
 ; *** EhBASIC code starts here ***
 ; ********************************
 
-; *** these have been replaced by the above call to MALLOC(0) ***
-;Ram_base		= $0400	; start of user RAM (set as needed, should be page aligned)
-;Ram_top		= $8000	; end of user RAM+1 (set as needed, should be page aligned)
-
-; This start can be changed to suit your system *** NOPE, minimOS and/or xa will provide
-
-;	*=	$BC00
-
 ; BASIC cold start entry point
 
 ; new page 2 initialisation, copy block to ccflag on
@@ -600,21 +577,6 @@ LAB_2D13
 
 	LDX	#$FF			; set byte
 	STX	Clineh			; set current line high byte (set immediate mode)
-;	TXS					; reset stack pointer *** not possible in minimOS
-
-; *** instead of SMC, do JSR then JMP (Fnxjmp+1) ***
-;	LDA	#$4C			; code for JMP
-;	STA	Fnxjmp			; save for jump vector for functions
-
-; copy block from LAB_2CEE to $00BC - $00D3 *** will call ROM using indirect pointer
-
-;	LDX	#StrTab-LAB_2CEE
-;						; set byte count
-;LAB_2D4E
-;	LDA	LAB_2CEE-1,X	; get byte from table
-;	STA	LAB_IGBY-1,X	; save byte in page zero
-;	DEX					; decrement count
-;	BNE	LAB_2D4E		; loop if not all done
 
 ; copy block from StrTab to $0000 - $0012 *** $0003 and beyond in mOS
 
@@ -634,7 +596,7 @@ TabLoop
 	STZ	IrqBase			; clear IRQ handler enabled flag
 	STZ	FAC1_o			; clear FAC1 overflow byte
 #ifndef	C816
-	STZ	last_sh			; clear descriptor stack top item pointer high byte
+	STZ	last_sh+1		; clear descriptor stack top item pointer high byte
 #else
 	TDC					; where is zeropage?
 	XBA					; MSB of D
@@ -652,7 +614,7 @@ TabLoop
 	LDY	#>LAB_MSZM		; point to memory size message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
 	JSR	LAB_INLN		; print "? " and get BASIC input
-	STX	Bpntrl			; set BASIC execute pointer low byte
+	STX	Bpntrl			; set BASIC execute pointer low byte***
 	STY	Bpntrh			; set BASIC execute pointer high byte
 	JSR	LAB_GBYT		; get last byte back
 
@@ -662,7 +624,7 @@ TabLoop
 						; character was null so get memory size the hard way
 						; we get here with Y=0 and Itempl/h = Ram_base
 LAB_2D93
-	INC	Itempl			; increment temporary integer low byte
+	INC	Itempl			; increment temporary integer low byte***
 	BNE	LAB_2D99		; branch if no overflow
 
 	INC	Itemph			; increment temporary integer high byte
@@ -1139,7 +1101,7 @@ LAB_1359
 	JSR	V_INPT			; call scan input device
 	BCC	LAB_1359		; loop if no byte
 
-	BEQ	LAB_1359		; loop until valid input (ignore NULLs)
+;	BEQ	LAB_1359		; loop until valid input (ignore NULLs)
 
 	CMP	#$07			; compare with [BELL]
 	BEQ	LAB_1378		; branch if [BELL]
@@ -2589,17 +2551,14 @@ LAB_185E
 ; CR/LF return to BASIC from BASIC input handler
 
 LAB_1866
-	LDA	#$00			; clear byte
-	STA	Ibuffs,X		; null terminate input
+	STZ	Ibuffs,X		; null terminate input, CMOS-only
 	LDX	#<Ibuffs		; set X to buffer start-1 low byte
-	LDY	#>Ibuffs		; set Y to buffer start-1 high byte
+	LDY	#>Ibuffs		; set Y to buffer start-1 high byte *** is this OK?
 
-; print CR/LF *** minimOS use just CR for newline ***
+; print CR/LF *** minimOS uses just CR for newline ***
 
 LAB_CRLF
 	LDA	#$0D			; load [CR]
-;	JSR	LAB_PRNA		; go print the character
-;	LDA	#$0A			; load [LF]
 	BNE	LAB_PRNA		; go print the character and return, branch always
 
 LAB_188B
@@ -7952,26 +7911,21 @@ LAB_TWOPI
 	JMP	LAB_UFAC		; unpack memory (AY) into FAC1 and return
 
 ; system dependant i/o vectors
-; these are in RAM and are set by the monitor at start-up
 ; *** will just be replaced by minimOS I/O calls, saving vectors
-V_INPT
-;	JMP	(VEC_IN)		; non halting scan input device
-	LDY iodev				; *** default device, might check assigned window ***
+V_IN						; non halting scan input device
+	LDY iodev				; assigned window
 	_KERNEL(CIN)
 ; could check C and Y here for safety
 	LDA io_c
 	RTS
-V_OUTP
-;	JMP	(VEC_OUT)		; send byte to output device
-	LDY iodev				; *** default device, might check assigned window ***
+V_OUTP						; send byte to output device
+	LDY iodev				; *** assigned window ***
 	STA io_c
 	_KERNEL(COUT)
 	RTS
-V_LOAD
-;	JMP	(VEC_LD)		; load BASIC program
-V_SAVE
-;	JMP	(VEC_SV)		; save BASIC program
-	RTS					; *** not yet implemented ***
+V_LOAD						; load BASIC program
+V_SAVE						; save BASIC program
+	RTS					; *** not yet implemented *** PLACEHOLDER
 
 ; The rest are tables messages and code for RAM
 
@@ -7982,16 +7936,11 @@ PG2_TABS
 	.byte	$00			; ctrl-c flag		-	$00 = enabled
 	.byte	$00			; ctrl-c byte		-	GET needs this
 	.byte	$00			; ctrl-c byte timeout	-	GET needs this
-;	.word	CTRLC			; ctrl c check vector *** no longer used
 ; *** now it needs self-pointer to Ibuffs for 65816-savvyness ***
 ; will correct MSB (from D) later
 #ifdef	C816
 	.byte	<Ibuffs		; address of input buffer, now in ZP (MUST correct MSB from D.H)
 #endif
-;	.word	xxxx			; non halting key input	-	monitor to set this
-;	.word	xxxx			; output vector		-	monitor to set this
-;	.word	xxxx			; load vector		-	monitor to set this
-;	.word	xxxx			; save vector		-	monitor to set this
 PG2_TABE
 
 ; character get subroutine for zero page *** now stays in ROM with an indirect pointer in ZP
@@ -8002,16 +7951,13 @@ PG2_TABE
 ; space skip	= +21 cycles = +11.4uS
 ; inc across page	=  +4 cycles =  +2.2uS
 
-; the target address for the LDA at LAB_2CF4 becomes the BASIC execute pointer once the
-; block is copied to it's destination, any non zero page address will do at assembly
-; time, to assemble a three byte instruction.
+; the target address for the LDA at LAB_2CF4 becomes the BASIC execute pointer
 ; *** now uses a CMOS-only non-indexed indirect! ***
-; should check whether X or Y are irrelevant upon call, in order to use appropriate NMOS macros
 
 ; WAS page 0 initialisation table from $BC
 ; increment and scan memory
 
-LAB_IGBY				; LAB_2CEE
+LAB_IGBY
 LAB_2CEE
 	INC	Bpntrl			; increment BASIC execute pointer low byte
 	BNE	LAB_2CF4		; branch if no carry
@@ -8021,7 +7967,7 @@ LAB_2CEE
 ; WAS page 0 initialisation table from $C2
 ; scan memory
 
-LAB_GBYT				; LAB_2CF4
+LAB_GBYT
 LAB_2CF4
 	LDA	(Bpntrl)		; get byte to scan (addr set by call routine) *** now using indirect pointer
 	CMP	#TK_ELSE		; compare with the token for ELSE
@@ -8044,22 +7990,11 @@ LAB_2D05
 ; page zero initialisation table was $00-$12 inclusive *** now $03-$06
 
 StrTab
-;	.byte	$4C			; JMP opcode 0
-;	.word LAB_COLD		; initial warm start vector (cold start) 1,2
-
-;	.byte	$00			; these bytes are not used by BASIC 3
-;	.word	$0000		; 4,5
-;	.word	$0000		; 6,7
-;	.word	$0000		; 8,9
-
-;	.byte	$4C			; JMP opcode A
 ;	.word	LAB_FCER	; initial user function vector ("Function call" error) B,C
 	.byte	$00			; default NULL count D *** now $03
 	.byte	$00			; clear terminal position E *** now $04
 	.byte	$00			; default terminal width byte F *** now $05
 	.byte	$F2			; default limit for TAB = 14 $10 *** now $06
-; ram_base is now variable address...
-;	.word	Ram_base	; start of user RAM $11-12
 EndTab
 
 LAB_MSZM
@@ -8632,7 +8567,7 @@ LBB_STRS
 	.byte	"TR$(",TK_STRS	; STR$(
 LBB_SWAP
 	.byte	"WAP",TK_SWAP	; SWAP
-LBB_SYS
+;LBB_SYS
 ;	.byte   "YS", TK_SYS    ; SYS *** added for SBC-2
 	.byte	$00
 TAB_ASCT
