@@ -113,7 +113,7 @@ next_s		= TabSiz+1	; next descriptor stack address *** $14, no longer $65
 last_sl		= next_s+1	; last descriptor stack address low byte *** $15, no longer $66
 last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.H) *** $16, no longer $67
 
-des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no longer $68
+des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no longer $68 eeeeeeeeeeek
 ; *** seems to need 9-byte space here $17-$1F ***
 
 ; must add Ram_base and Ram_top, now variables instead of constants
@@ -1090,9 +1090,8 @@ LAB_134B
 LAB_1357
 	LDX	#$00			; clear BASIC line buffer pointer
 LAB_1359
-	PHX				; *** only needs to be preserved here ***
+; *** X only needs to be preserved here ***
 	JSR	V_INPT			; call scan input device
-	PLX				; *** no NMOS, thus OK here ***
 	BCC	LAB_1359		; loop if no byte
 
 	CMP	#$07			; compare with [BELL]
@@ -7908,9 +7907,13 @@ LAB_TWOPI
 ; system dependant i/o vectors
 ; *** will just be replaced by minimOS I/O calls, saving vectors
 V_INPT						; non halting scan input device
+	PHX					; *** best to save these here ***
+	PHY
 	LDY iodev				; assigned window
 	_KERNEL(CIN)
 ; could check C and Y here for safety
+	PLY					; *** macro-savvy before LDA ***
+	PLX
 	LDA io_c
 	RTS
 V_OUTP						; send byte to output device
