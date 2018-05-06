@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180506-1124
+; last modified 20180506-1317
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -131,11 +131,8 @@ ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $27...6E
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
-#ifdef	C816
-IbufiY		= Ibuffe+1	; self-pointer to next buffer! $6F-70
-#endif
-
-; *** currently free space at $6F-70 for 65C02 ONLY ***
+; *** minimOS cannot assume a particular empty stack address ***
+emptsk		= Ibuffe+1	; *** empty stack location *** $6F-70
 
 ; *** original variables follow ***
 ut1_pl		= $71		; utility pointer 1 low byte
@@ -327,16 +324,21 @@ IrqBase		= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** ski
 ;			= $C6		; IRQ handler addr low byte was $E0
 ;			= $C7		; IRQ handler addr high byte was $E1
 
-iodev		= IrqBase+3		; ##### minimOS selected I/O device ##### $C8
 
-; *** still some bytes free from $C9 up to $E3 ($E1 for the C64) ***
+#ifdef	C816
+IbufiY		= IrqBase+3	; self-pointer to zp buffer! $C8-C9
+iodev		= IbufiY+2		; ##### minimOS selected I/O device ##### $CA
+#else
+iodev		= IrqBase+3		; ##### minimOS selected I/O device ##### $C8
+#endif
+
+; *** still some bytes free from $C9 ($CB for 816) up to $E3 ($E1 for the C64) ***
 __last		= iodev+1	; *** just for easier size check ***
 
 ; *** these CANNOT BE IN ZP as will not be 65816-savvy! *** temporarily at the other side of ONE stack!
 Decss		= $0100		; number to decimal string start was $EF *** UGLY HACK!!!
 Decssp1		= Decss+1	; number to decimal string start
 ; *** seems to need this 17-byte space ***
-;						; decimal string end was $FF
 
 ; token values needed for BASIC
 
@@ -469,11 +471,7 @@ LAB_STAK	= $0100		; stack bottom, no offset
 LAB_STAK	= $0		; stack bottom, will use 16-bit X
 #endif
 
-; *** must check these limits...
-LAB_SKFE	= LAB_STAK+$FE
-						; flushed stack address
-LAB_SKFF	= LAB_STAK+$FF
-						; flushed stack address
+; *** flushed stack address (minus 2) will be stored at emptsk in runtime ***
 ; *** no real need for I/O vectors ***
 
 COLON		= $3A				; avoids problems with some assemblers...
@@ -550,6 +548,21 @@ cpu_ok:
 	ADC ma_rs+1
 	STA Ram_top+1		; base+size=top
 
+; *** keep track of flushed stack address ***
+#ifdef	C816
+	.xl: REP #$10
+#endif
+	TSX			; current stack pointer
+	DEX			; minus two
+	DEX
+	STX emptsk		; store for later
+#ifdef	C816
+	.xs: SEP #$10
+#else
+	LDA #1			; standard 6502 stack page
+	STA emptsk+1		; *** must be indirect pointer ready ***
+#endif
+
 ; ********************************
 ; *** EhBASIC code starts here ***
 ; ********************************
@@ -566,13 +579,6 @@ LAB_2D13
 	STA	ccflag,X		; *** store in new ZP space
 	DEX					; decrement count
 	BPL	LAB_2D13		; loop if not done
-
-; *** this can be a good place for the 65816 to correct DP-pointer IbufiY ***
-#ifdef	C816
-	TDC					; where is direct page?
-	XBA					; this is the page devoted to ZP
-	STA	IbufiY+1		; correct pointer MSB!
-#endif
 
 	LDX	#$FF			; set byte
 	STX	Clineh			; set current line high byte (set immediate mode)
@@ -599,6 +605,7 @@ TabLoop
 	TDC					; where is zeropage?
 	XBA					; MSB of D
 	STA	last_sh			; make sure descriptor stack top item pointer high byte arrives to real zeropage EEEEEEEEEEK^2
+	STA	IbufiY+1		; correct this pointer MSB too!
 #endif
 
 	LDA	#$0E			; set default tab size
@@ -683,6 +690,7 @@ LAB_2DB6
 	STY	Sstorh			; set bottom of string space high byte
 
 ; now ram_base is variable
+; perhaps should check requested size and then call MALLOC accordingly, saving Ram_ variables...
 	LDY	Ram_base		; set start addr low byte
 	LDX	Ram_base+1		; set start addr high byte
 	STY	Smeml			; save start of mem low byte
@@ -1319,7 +1327,7 @@ LAB_SHLN
 	STA	Baslnl			; save low byte as current
 	STX	Baslnh			; save high byte as current
 	LDA	(Baslnl),Y		; get pointer high byte from addr
-	BEQ	LAB_145F		; pointer was zero so we"re done, do "not found" exit
+	BEQ	LAB_145F		; pointer was zero so we are done, do `not found` exit
 
 	LDY	#$03			; set index to line # high byte
 	LDA	(Baslnl),Y		; get line # high byte
@@ -1399,18 +1407,21 @@ LAB_147A
 LAB_1491
 	LDX	#des_sk			; set descriptor stack pointer
 	STX	next_s			; save descriptor stack pointer
-	PLA					; pull return address low byte
-	TAX					; copy return address low byte
-	PLA					; pull return address high byte
-	STX	LAB_SKFE		; save to cleared stack
-	STA	LAB_SKFF		; save to cleared stack
-#ifndef	C816
-	LDX	#$FD			; new stack pointer *** check mOS value
+; *** minimOS cannot assume a fixed flushed stack address ***
+	PLA					; pull return address low byte *** reversed
+	PLX					; pull return address high byte *** reversed
+	LDY	#1				; *** offset to older LAB_SKFE
+	STA	(emptsk), Y		; save to cleared stack
+	TXA				; now for MSB...
+	INY					; *** offset to older LAB_SKFF
+	STA	(emptsk), Y		; save to cleared stack
+#ifdef	C816
+	.xl: REP #$10
+#endif
+	LDX	emptsk			; new stack pointer *** 8 or 16-bit
 	TXS					; reset stack
-#else
-	TSC
-	LDA	#$FD			; *** check as above
-	TCS					; reset stack
+#ifdef	C816
+	.xs: SEP #$10
 #endif
 	LDA	#$00			; clear byte
 	STA	Cpntrh			; clear continue pointer high byte
@@ -1716,7 +1727,6 @@ LAB_1609
 ; key press is detected.
 
 LAB_1629
-;	JMP	(VEC_CC)		; ctrl c check vector
 	JMP CTRLC			; *** will just jump to supplied routine ***
 
 ; if there was a key press it gets back here ..
@@ -1740,7 +1750,7 @@ LAB_163B
 #ifndef	C816
 	EOR	#>Ibuffs		; compare with buffer address high byte (Cb unchanged)
 #else
-	EOR IbufiY+1		; compare with buffer address high byte (Cb unchanged) *** 816-savvy
+	EOR	IbufiY+1		; compare with buffer address high byte (Cb unchanged) *** 816-savvy
 #endif
 	BEQ	LAB_164F		; branch if the BASIC pointer is in the input buffer
 						; (cannot continue in immediate mode)
@@ -1750,7 +1760,7 @@ LAB_163B
 #ifndef	C816
 	EOR	#>Ibuffs		; correct the bits
 #else
-	EOR IbufiY+1		; correct the bits *** 816-savvy
+	EOR	IbufiY+1		; correct the bits *** 816-savvy
 #endif
 
 	LDY	Bpntrl			; get BASIC execute pointer low byte
@@ -2036,11 +2046,11 @@ LoopAlways
 #endif
 	JMP	LAB_15C2		; go do interpreter inner loop *** FAILS in 16-bit indexes!
 
+						; clear stack and back to interpreter loop
+LoopDone
 #ifdef	C816
 	.xl					; *** about to exit in 16-bit indexes, will not reach here otherwise ***
 #endif
-						; clear stack and back to interpreter loop
-LoopDone
 	INX					; dump DO token
 	INX					; dump current line low byte
 	INX					; dump current line high byte
