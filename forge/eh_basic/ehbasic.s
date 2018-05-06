@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180505-1623
+; last modified 20180506-1124
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -68,7 +68,7 @@ eh_wtit:
 ; *** zero page use ***
 ; *********************
 
-eh_basic	= uz		; EhBASIC zeropage usage
+eh_basic	= uz		; ##### EhBASIC zeropage usage on minimOS #####
 
 ; *** no need for vectored warm start, cannot see any use for Usrjmp ***
 
@@ -113,8 +113,8 @@ next_s		= TabSiz+1	; next descriptor stack address *** $14, no longer $65
 last_sl		= next_s+1	; last descriptor stack address low byte *** $15, no longer $66
 last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.H) *** $16, no longer $67
 
-des_sk		= last_sh	; descriptor stack start address (temp strings) *** $16, no longer $67
-; *** seems to need 10-byte space here ***
+des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no longer $68
+; *** seems to need 9-byte space here $17-$1F ***
 
 ; must add Ram_base and Ram_top, now variables instead of constants
 Ram_base	= des_sk+10	; *** check space for stack above *** $20-21
@@ -594,11 +594,11 @@ TabLoop
 	STZ	IrqBase			; clear IRQ handler enabled flag
 	STZ	FAC1_o			; clear FAC1 overflow byte
 #ifndef	C816
-	STZ	last_sh+1		; clear descriptor stack top item pointer high byte
+	STZ	last_sh			; clear descriptor stack top item pointer high byte EEEEEEEEK
 #else
 	TDC					; where is zeropage?
 	XBA					; MSB of D
-	STA	last_sh+1		; make sure descriptor stack top item pointer high byte arrives to real zeropage EEEEEEEEEEK
+	STA	last_sh			; make sure descriptor stack top item pointer high byte arrives to real zeropage EEEEEEEEEEK^2
 #endif
 
 	LDA	#$0E			; set default tab size
