@@ -721,7 +721,7 @@ LAB_2E05
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
 	LDY	#>LAB_SMSG		; point to sign-on message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
-	JMP LAB_1274		; go do warm start (non vectored)
+	JMP	LAB_1274		; go do warm start (non vectored)
 
 ; open up space in memory
 ; move (Ostrtl)-(Obendl) to new block ending at (Nbendl)
