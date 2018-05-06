@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180506-1317
+; last modified 20180506-1443
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -2998,8 +2998,59 @@ LAB_1A54
 #endif
 LAB_1A56
 	TXS					; set stack pointer, X set by search, dumps return addresses *** now OK!
+#ifdef	C816
+; *** fully revamped code for 65816, entered in 16-bit index ***
+	.xs: SEP #$10			; *** back to standard size ***
+	TSC					; copy stack pointer *** discard MSB as will be supplied later! ***
+	SEC					; set carry for subtract
+	SBC	#$F7			; point to TO var
+	STA	ut2_pl			; save pointer to TO var for compare
+	ADC	#$FB			; point to STEP var
 
-; * C H U N G O *** TO DO * TO DO * TO DO *
+	LDY	emptsk+1		; point to stack page high byte
+	JSR	LAB_UFAC		; unpack memory (STEP value) into FAC1
+; *** regular stack accesses need no abs,X in the 65816, use stack-relative instead ***
+	LDA	8, S				; get step sign *** 65816 ***
+	STA	FAC1_s			; save FAC1 sign (b7)
+	LDA	Frnxtl			; get FOR variable pointer low byte
+	LDY	Frnxth			; get FOR variable pointer high byte
+	JSR	LAB_246C		; add (FOR variable) to FAC1
+	JSR	LAB_PFAC		; pack FAC1 into (FOR variable)
+	LDY	emptsk+1		; point to stack page high byte
+	JSR	LAB_27FA		; compare FAC1 with (Y,ut2_pl) (TO value)
+; X was reloaded with stack here, thus offsets are OK
+	CMP	8, S				; compare step sign *** 65816 ***
+	BEQ	LAB_1A9B		; branch if = (loop complete)
+
+						; loop back and do it all again
+; new transfer in 16-bit mode is 13b, 27t
+	.al: REP #$20
+	LDA	$0D, S			; get FOR line
+	STA	Clinel			; save current line
+	LDA	$0F, S			; get BASIC execute pointer (note endianness)
+	XBA						; correct endianness!
+	STA	Bpntrl			; save BASIC execute pointer
+	.as: SEP #$20
+; whole transfer in 8-bit was 16b, 28t
+;	LDA	$0D, S			; get FOR line low byte
+;	STA	Clinel			; save current line low byte
+;	LDA	$0E, S			; get FOR line high byte
+;	STA	Clineh			; save current line high byte
+;	LDA	$10, S			; get BASIC execute pointer low byte
+;	STA	Bpntrl			; save BASIC execute pointer low byte
+;	LDA	$0F, S			; get BASIC execute pointer high byte
+;	STA	Bpntrh			; save BASIC execute pointer high byte
+LAB_1A98
+	JMP	LAB_15C2		; go do interpreter inner loop
+
+						; loop complete so carry on
+LAB_1A9B
+; as SP will not wrap, no need for 16-bit add
+	TSC					; stack copy to A (16-bit)
+	ADC	#$0F			; add $10 ($0F+carry) to dump FOR structure
+	TCS					; copy to stack pointer (16-bit, MSB intact)
+#else
+; *** original code for 65C02, stack-savvy ***
 	TXA					; copy stack pointer
 	SEC					; set carry for subtract
 	SBC	#$F7			; point to TO var
@@ -3008,7 +3059,7 @@ LAB_1A56
 
 	LDY	#>LAB_STAK		; point to stack page high byte
 	JSR	LAB_UFAC		; unpack memory (STEP value) into FAC1
-	TSX					; get stack pointer back ***beware of 816-MM
+	TSX					; get stack pointer back
 	LDA	LAB_STAK+8,X	; get step sign
 	STA	FAC1_s			; save FAC1 sign (b7)
 	LDA	Frnxtl			; get FOR variable pointer low byte
@@ -3017,7 +3068,7 @@ LAB_1A56
 	JSR	LAB_PFAC		; pack FAC1 into (FOR variable)
 	LDY	#>LAB_STAK		; point to stack page high byte
 	JSR	LAB_27FA		; compare FAC1 with (Y,ut2_pl) (TO value)
-	TSX					; get stack pointer back ***beware of 816-MM
+	TSX					; get stack pointer back
 	CMP	LAB_STAK+8,X	; compare step sign
 	BEQ	LAB_1A9B		; branch if = (loop complete)
 
@@ -3038,7 +3089,8 @@ LAB_1A9B
 	TXA					; stack copy to A
 	ADC	#$0F			; add $10 ($0F+carry) to dump FOR structure
 	TAX					; copy back to index
-	TXS					; copy to stack pointer ***beware of 816/multitask savvyness
+	TXS					; copy to stack pointer
+#endif
 	JSR	LAB_GBYT		; scan memory
 	CMP	#","			; compare with ","
 	BNE	LAB_1A98		; branch if not "," (go do interpreter inner loop)
