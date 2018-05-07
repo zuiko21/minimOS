@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180506-1443
+; last modified 20180507-1231
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -3000,7 +3000,7 @@ LAB_1A56
 	TXS					; set stack pointer, X set by search, dumps return addresses *** now OK!
 #ifdef	C816
 ; *** fully revamped code for 65816, entered in 16-bit index ***
-	.xs: SEP #$10			; *** back to standard size ***
+	.xs: SEP #$10		; *** back to standard size ***
 	TSC					; copy stack pointer *** discard MSB as will be supplied later! ***
 	SEC					; set carry for subtract
 	SBC	#$F7			; point to TO var
@@ -3010,7 +3010,7 @@ LAB_1A56
 	LDY	emptsk+1		; point to stack page high byte
 	JSR	LAB_UFAC		; unpack memory (STEP value) into FAC1
 ; *** regular stack accesses need no abs,X in the 65816, use stack-relative instead ***
-	LDA	8, S				; get step sign *** 65816 ***
+	LDA	8, S			; get step sign *** 65816 ***
 	STA	FAC1_s			; save FAC1 sign (b7)
 	LDA	Frnxtl			; get FOR variable pointer low byte
 	LDY	Frnxth			; get FOR variable pointer high byte
@@ -3019,7 +3019,7 @@ LAB_1A56
 	LDY	emptsk+1		; point to stack page high byte
 	JSR	LAB_27FA		; compare FAC1 with (Y,ut2_pl) (TO value)
 ; X was reloaded with stack here, thus offsets are OK
-	CMP	8, S				; compare step sign *** 65816 ***
+	CMP	8, S			; compare step sign *** 65816 ***
 	BEQ	LAB_1A9B		; branch if = (loop complete)
 
 						; loop back and do it all again
@@ -3028,7 +3028,7 @@ LAB_1A56
 	LDA	$0D, S			; get FOR line
 	STA	Clinel			; save current line
 	LDA	$0F, S			; get BASIC execute pointer (note endianness)
-	XBA						; correct endianness!
+	XBA					; correct endianness!
 	STA	Bpntrl			; save BASIC execute pointer
 	.as: SEP #$20
 ; whole transfer in 8-bit was 16b, 28t
@@ -6895,9 +6895,9 @@ LAB_2A91
 ; perform power function
 
 LAB_POWER
-	BEQ	LAB_EXP		; go do  EXP()
+	BEQ	LAB_EXP			; go do  EXP()
 
-	LDA	FAC2_e		; get FAC2 exponent
+	LDA	FAC2_e			; get FAC2 exponent
 	BNE	LAB_2ABF		; branch if FAC2<>0
 
 	JMP	LAB_24F3		; clear FAC1 exponent and sign and return
@@ -6906,45 +6906,45 @@ LAB_2ABF
 	LDX	#<func_l		; set destination pointer low byte
 	LDY	#>func_l		; set destination pointer high byte
 	JSR	LAB_2778		; pack FAC1 into (XY)
-	LDA	FAC2_s		; get FAC2 sign (b7)
+	LDA	FAC2_s			; get FAC2 sign (b7)
 	BPL	LAB_2AD9		; branch if FAC2>0
 
-					; else FAC2 is -ve and can only be raised to an
-					; integer power which gives an x +j0 result
-	JSR	LAB_INT		; perform INT
+						; else FAC2 is -ve and can only be raised to an
+						; integer power which gives an x +j0 result
+	JSR	LAB_INT			; perform INT
 	LDA	#<func_l		; set source pointer low byte
 	LDY	#>func_l		; set source pointer high byte
 	JSR	LAB_27F8		; compare FAC1 with (AY)
 	BNE	LAB_2AD9		; branch if FAC1 <> (AY) to allow Function Call error
-					; this will leave FAC1 -ve and cause a Function Call
-					; error when LOG() is called
+						; this will leave FAC1 -ve and cause a Function Call
+						; error when LOG() is called
 
-	TYA				; clear sign b7
+	TYA					; clear sign b7
 	LDY	Temp3			; save mantissa 3 from INT() function as sign in Y
-					; for possible later negation, b0
+						; for possible later negation, b0
 LAB_2AD9
 	JSR	LAB_279D		; save FAC1 sign and copy ABS(FAC2) to FAC1
-	TYA				; copy sign back ..
-	PHA				; .. and save it
-	JSR	LAB_LOG		; do LOG(n)
+	TYA					; copy sign back ..
+	PHA					; .. and save it
+	JSR	LAB_LOG			; do LOG(n)
 	LDA	#<garb_l		; set pointer low byte
 	LDY	#>garb_l		; set pointer high byte
 	JSR	LAB_25FB		; do convert AY, FCA1*(AY) (square the value)
-	JSR	LAB_EXP		; go do EXP(n)
-	PLA				; pull sign from stack
-	LSR				; b0 is to be tested, shift to Cb
+	JSR	LAB_EXP			; go do EXP(n)
+	PLA					; pull sign from stack
+	LSR					; b0 is to be tested, shift to Cb
 	BCC	LAB_2AF9		; if no bit then exit
 
-					; Perform negation
+						; Perform negation
 ; do - FAC1
 
 LAB_GTHAN
-	LDA	FAC1_e		; get FAC1 exponent
+	LDA	FAC1_e			; get FAC1 exponent
 	BEQ	LAB_2AF9		; exit if FAC1_e = $00
 
-	LDA	FAC1_s		; get FAC1 sign (b7)
+	LDA	FAC1_s			; get FAC1 sign (b7)
 	EOR	#$FF			; complement it
-	STA	FAC1_s		; save FAC1 sign (b7)
+	STA	FAC1_s			; save FAC1 sign (b7)
 LAB_2AF9
 	RTS
 
@@ -6954,51 +6954,51 @@ LAB_EXP
 	LDA	#<LAB_2AFA		; set 1.443 pointer low byte
 	LDY	#>LAB_2AFA		; set 1.443 pointer high byte
 	JSR	LAB_25FB		; do convert AY, FCA1*(AY)
-	LDA	FAC1_r		; get FAC1 rounding byte
+	LDA	FAC1_r			; get FAC1 rounding byte
 	ADC	#$50			; +$50/$100
 	BCC	LAB_2B2B		; skip rounding if no carry
 
 	JSR	LAB_27C2		; round FAC1 (no check)
 LAB_2B2B
-	STA	FAC2_r		; save FAC2 rounding byte
+	STA	FAC2_r			; save FAC2 rounding byte
 	JSR	LAB_27AE		; copy FAC1 to FAC2
-	LDA	FAC1_e		; get FAC1 exponent
+	LDA	FAC1_e			; get FAC1 exponent
 	CMP	#$88			; compare with EXP limit (256d)
 	BCC	LAB_2B39		; branch if less
 
 LAB_2B36
 	JSR	LAB_2690		; handle overflow and underflow
 LAB_2B39
-	JSR	LAB_INT		; perform INT
+	JSR	LAB_INT			; perform INT
 	LDA	Temp3			; get mantissa 3 from INT() function
-	CLC				; clear carry for add
+	CLC					; clear carry for add
 	ADC	#$81			; normalise +1
 	BEQ	LAB_2B36		; if $00 go handle overflow
 
-	SEC				; set carry for subtract
+	SEC					; set carry for subtract
 	SBC	#$01			; now correct for exponent
-	PHA				; save FAC2 exponent
+	PHA					; save FAC2 exponent
 
-					; swap FAC1 and FAC2
+						; swap FAC1 and FAC2
 	LDX	#$04			; 4 bytes to do
 LAB_2B49
 	LDA	FAC2_e,X		; get FAC2,X
 	LDY	FAC1_e,X		; get FAC1,X
 	STA	FAC1_e,X		; save FAC1,X
 	STY	FAC2_e,X		; save FAC2,X
-	DEX				; decrement count/index
+	DEX					; decrement count/index
 	BPL	LAB_2B49		; loop if not all done
 
-	LDA	FAC2_r		; get FAC2 rounding byte
-	STA	FAC1_r		; save as FAC1 rounding byte
+	LDA	FAC2_r			; get FAC2 rounding byte
+	STA	FAC1_r			; save as FAC1 rounding byte
 	JSR	LAB_SUBTRACT	; perform subtraction, FAC2 from FAC1
 	JSR	LAB_GTHAN		; do - FAC1
 	LDA	#<LAB_2AFE		; set counter pointer low byte
 	LDY	#>LAB_2AFE		; set counter pointer high byte
 	JSR	LAB_2B84		; go do series evaluation
 	LDA	#$00			; clear A
-	STA	FAC_sc		; clear sign compare (FAC1 EOR FAC2)
-	PLA				;.get saved FAC2 exponent
+	STA	FAC_sc			; clear sign compare (FAC1 EOR FAC2)
+	PLA					;.get saved FAC2 exponent
 	JMP	LAB_2675		; test and adjust accumulators and return
 
 ; ^2 then series evaluation
@@ -7023,10 +7023,10 @@ LAB_2B88
 	LDX	#<numexp		; set pointer low byte
 	JSR	LAB_2770		; set pointer high byte and pack FAC1 into numexp
 	LDA	(Cptrl),Y		; get constants count
-	STA	numcon		; save constants count
+	STA	numcon			; save constants count
 	LDY	Cptrl			; get count pointer low byte
-	INY				; increment it (now constants pointer)
-	TYA				; copy it
+	INY					; increment it (now constants pointer)
+	TYA					; copy it
 	BNE	LAB_2B97		; skip next if no overflow
 
 	INC	Cptrh			; else increment high byte
@@ -7037,18 +7037,18 @@ LAB_2B9B
 	JSR	LAB_25FB		; do convert AY, FCA1*(AY)
 	LDA	Cptrl			; get constants pointer low byte
 	LDY	Cptrh			; get constants pointer high byte
-	CLC				; clear carry for add
+	CLC					; clear carry for add
 	ADC	#$04			; +4 to  low pointer (4 bytes per constant)
 	BCC	LAB_2BA8		; skip next if no overflow
 
-	INY				; increment high byte
+	INY					; increment high byte
 LAB_2BA8
 	STA	Cptrl			; save pointer low byte
 	STY	Cptrh			; save pointer high byte
 	JSR	LAB_246C		; add (AY) to FAC1
 	LDA	#<numexp		; set pointer low byte to partial @ numexp
 	LDY	#>numexp		; set pointer high byte to partial @ numexp
-	DEC	numcon		; decrement constants count
+	DEC	numcon			; decrement constants count
 	BNE	LAB_2B9B		; loop until all done
 
 	RTS
@@ -7068,29 +7068,29 @@ LAB_2BA8
 ; Serial correlation coefficient is -0.000370, totally uncorrelated would be 0.0
 
 LAB_RND
-	LDA	FAC1_e		; get FAC1 exponent
-	BEQ	NextPRN		; do next random # if zero
+	LDA	FAC1_e			; get FAC1 exponent
+	BEQ	NextPRN			; do next random # if zero
 
-					; else get seed into random number store
-	LDX	#Rbyte4		; set PRNG pointer low byte
+						; else get seed into random number store
+	LDX	#Rbyte4			; set PRNG pointer low byte
 	LDY	#$00			; set PRNG pointer high byte
 	JSR	LAB_2778		; pack FAC1 into (XY)
 NextPRN
 	LDX	#$AF			; set EOR byte
 	LDY	#$13			; do this nineteen times
 LoopPRN
-	ASL	Rbyte1		; shift PRNG most significant byte
-	ROL	Rbyte2		; shift PRNG middle byte
-	ROL	Rbyte3		; shift PRNG least significant byte
-	ROL	Rbyte4		; shift PRNG extra byte
+	ASL	Rbyte1			; shift PRNG most significant byte
+	ROL	Rbyte2			; shift PRNG middle byte
+	ROL	Rbyte3			; shift PRNG least significant byte
+	ROL	Rbyte4			; shift PRNG extra byte
 	BCC	Ninc1			; branch if bit 32 clear
 
-	TXA				; set EOR byte
-	EOR	Rbyte1		; EOR PRNG extra byte
-	STA	Rbyte1		; save new PRNG extra byte
+	TXA					; set EOR byte
+	EOR	Rbyte1			; EOR PRNG extra byte
+	STA	Rbyte1			; save new PRNG extra byte
 Ninc1
-	DEY				; decrement loop count
-	BNE	LoopPRN		; loop if not all done
+	DEY					; decrement loop count
+	BNE	LoopPRN			; loop if not all done
 
 	LDX	#$02			; three bytes to copy
 CopyPRNG
@@ -7100,10 +7100,10 @@ CopyPRNG
 	BPL	CopyPRNG		; loop if not complete
 
 	LDA	#$80			; set the exponent
-	STA	FAC1_e		; save FAC1 exponent
+	STA	FAC1_e			; save FAC1 exponent
 
-	ASL				; clear A
-	STA	FAC1_s		; save FAC1 sign
+	ASL					; clear A
+	STA	FAC1_s			; save FAC1 sign
 
 	JMP	LAB_24D5		; normalise FAC1 and return
 
@@ -7120,23 +7120,23 @@ LAB_SIN
 	JSR	LAB_27AB		; round and copy FAC1 to FAC2
 	LDA	#<LAB_2C7C		; set (2*pi) pointer low byte
 	LDY	#>LAB_2C7C		; set (2*pi) pointer high byte
-	LDX	FAC2_s		; get FAC2 sign (b7)
+	LDX	FAC2_s			; get FAC2 sign (b7)
 	JSR	LAB_26C2		; divide by (AY) (X=sign)
 	JSR	LAB_27AB		; round and copy FAC1 to FAC2
-	JSR	LAB_INT		; perform INT
+	JSR	LAB_INT			; perform INT
 	LDA	#$00			; clear byte
-	STA	FAC_sc		; clear sign compare (FAC1 EOR FAC2)
+	STA	FAC_sc			; clear sign compare (FAC1 EOR FAC2)
 	JSR	LAB_SUBTRACT	; perform subtraction, FAC2 from FAC1
 	LDA	#<LAB_2C80		; set 0.25 pointer low byte
 	LDY	#>LAB_2C80		; set 0.25 pointer high byte
 	JSR	LAB_2455		; perform subtraction, (AY) from FAC1
-	LDA	FAC1_s		; get FAC1 sign (b7)
-	PHA				; save FAC1 sign
+	LDA	FAC1_s			; get FAC1 sign (b7)
+	PHA					; save FAC1 sign
 	BPL	LAB_2C35		; branch if +ve
 
-					; FAC1 sign was -ve
+						; FAC1 sign was -ve
 	JSR	LAB_244E		; add 0.5 to FAC1
-	LDA	FAC1_s		; get FAC1 sign (b7)
+	LDA	FAC1_s			; get FAC1 sign (b7)
 	BMI	LAB_2C38		; branch if -ve
 
 	LDA	Cflag			; get comparison evaluation flag
@@ -7148,10 +7148,10 @@ LAB_2C38
 	LDA	#<LAB_2C80		; set 0.25 pointer low byte
 	LDY	#>LAB_2C80		; set 0.25 pointer high byte
 	JSR	LAB_246C		; add (AY) to FAC1
-	PLA				; restore FAC1 sign
+	PLA					; restore FAC1 sign
 	BPL	LAB_2C45		; branch if was +ve
 
-					; else correct FAC1
+						; else correct FAC1
 	JSR	LAB_GTHAN		; do - FAC1
 LAB_2C45
 	LDA	#<LAB_2C84		; set pointer low byte to counter
@@ -7164,7 +7164,7 @@ LAB_TAN
 	JSR	LAB_276E		; pack FAC1 into Adatal
 	LDA	#$00			; clear byte
 	STA	Cflag			; clear comparison evaluation flag
-	JSR	LAB_SIN		; go do SIN(n)
+	JSR	LAB_SIN			; go do SIN(n)
 	LDX	#<func_l		; set sin(n) pointer low byte
 	LDY	#>func_l		; set sin(n) pointer high byte
 	JSR	LAB_2778		; pack FAC1 into (XY)
@@ -7172,7 +7172,7 @@ LAB_TAN
 	LDY	#>Adatal		; set n pointer high addr
 	JSR	LAB_UFAC		; unpack memory (AY) into FAC1
 	LDA	#$00			; clear byte
-	STA	FAC1_s		; clear FAC1 sign (b7)
+	STA	FAC1_s			; clear FAC1 sign (b7)
 	LDA	Cflag			; get comparison evaluation flag
 	JSR	LAB_2C74		; save flag and go do series evaluation
 
@@ -7181,7 +7181,7 @@ LAB_TAN
 	JMP	LAB_26CA		; convert AY and do (AY)/FAC1
 
 LAB_2C74
-	PHA				; save comparison evaluation flag
+	PHA					; save comparison evaluation flag
 	JMP	LAB_2C35		; go do series evaluation
 
 ; perform USR()
@@ -7193,14 +7193,14 @@ LAB_USR
 ; perform ATN()
 
 LAB_ATN
-	LDA	FAC1_s		; get FAC1 sign (b7)
-	PHA				; save sign
+	LDA	FAC1_s			; get FAC1 sign (b7)
+	PHA					; save sign
 	BPL	LAB_2CA1		; branch if +ve
 
 	JSR	LAB_GTHAN		; else do - FAC1
 LAB_2CA1
-	LDA	FAC1_e		; get FAC1 exponent
-	PHA				; push exponent
+	LDA	FAC1_e			; get FAC1 exponent
+	PHA					; push exponent
 	CMP	#$81			; compare with 1
 	BCC	LAB_2CAF		; branch if FAC1<1
 
@@ -7211,7 +7211,7 @@ LAB_2CAF
 	LDA	#<LAB_2CC9		; set pointer low byte to counter
 	LDY	#>LAB_2CC9		; set pointer high byte to counter
 	JSR	LAB_2B6E		; ^2 then series evaluation
-	PLA				; restore old FAC1 exponent
+	PLA					; restore old FAC1 exponent
 	CMP	#$81			; compare with 1
 	BCC	LAB_2CC2		; branch if FAC1<1
 
@@ -7219,7 +7219,7 @@ LAB_2CAF
 	LDY	#>LAB_2C78		; set (pi/2) pointer high byte
 	JSR	LAB_2455		; perform subtraction, (AY) from FAC1
 LAB_2CC2
-	PLA				; restore FAC1 sign
+	PLA					; restore FAC1 sign
 	BPL	LAB_2D04		; exit if was +ve
 
 	JMP	LAB_GTHAN		; else do - FAC1 and return
@@ -7229,16 +7229,16 @@ LAB_2CC2
 LAB_BITSET
 	JSR	LAB_GADB		; get two parameters for POKE or WAIT
 	CPX	#$08			; only 0 to 7 are allowed
-	BCS	FCError		; branch if > 7
+	BCS	FCError			; branch if > 7
 
 	LDA	#$00			; clear A
-	SEC				; set the carry
+	SEC					; set the carry
 S_Bits
-	ROL				; shift bit
-	DEX				; decrement bit number
-	BPL	S_Bits		; loop if still +ve
+	ROL					; shift bit
+	DEX					; decrement bit number
+	BPL	S_Bits			; loop if still +ve
 
-	INX				; make X = $00
+	INX					; make X = $00
 	ORA	(Itempl,X)		; or with byte via temporary integer (addr)
 	STA	(Itempl,X)		; save byte via temporary integer (addr)
 LAB_2D04
@@ -7249,15 +7249,15 @@ LAB_2D04
 LAB_BITCLR
 	JSR	LAB_GADB		; get two parameters for POKE or WAIT
 	CPX	#$08			; only 0 to 7 are allowed
-	BCS	FCError		; branch if > 7
+	BCS	FCError			; branch if > 7
 
 	LDA	#$FF			; set A
 S_Bitc
-	ROL				; shift bit
-	DEX				; decrement bit number
-	BPL	S_Bitc		; loop if still +ve
+	ROL					; shift bit
+	DEX					; decrement bit number
+	BPL	S_Bitc			; loop if still +ve
 
-	INX				; make X = $00
+	INX					; make X = $00
 	AND	(Itempl,X)		; and with byte via temporary integer (addr)
 	STA	(Itempl,X)		; save byte via temporary integer (addr)
 	RTS
@@ -7271,24 +7271,24 @@ LAB_BTST
 	JSR	LAB_IGBY		; increment BASIC pointer
 	JSR	LAB_GADB		; get two parameters for POKE or WAIT
 	CPX	#$08			; only 0 to 7 are allowed
-	BCS	FCError		; branch if > 7
+	BCS	FCError			; branch if > 7
 
 	JSR	LAB_GBYT		; get next BASIC byte
 	CMP	#")"			; is next character ")"
-	BEQ	TST_OK		; if ")" go do rest of function
+	BEQ	TST_OK			; if ")" go do rest of function
 
 	JMP	LAB_SNER		; do syntax error then warm start
 
 TST_OK
 	JSR	LAB_IGBY		; update BASIC execute pointer (to character past ")")
 	LDA	#$00			; clear A
-	SEC				; set the carry
+	SEC					; set the carry
 T_Bits
-	ROL				; shift bit
-	DEX				; decrement bit number
-	BPL	T_Bits		; loop if still +ve
+	ROL					; shift bit
+	DEX					; decrement bit number
+	BPL	T_Bits			; loop if still +ve
 
-	INX				; make X = $00
+	INX					; make X = $00
 	AND	(Itempl,X)		; AND with byte via temporary integer (addr)
 	BEQ	LAB_NOTT		; branch if zero (already correct)
 
@@ -7300,7 +7300,7 @@ LAB_NOTT
 
 LAB_BINS
 	CPX	#$19			; max + 1
-	BCS	BinFErr		; exit if too big ( > or = )
+	BCS	BinFErr			; exit if too big ( > or = )
 
 	STX	TempB			; save # of characters ($00 = leading zero remove)
 	LDA	#$18			; need A byte long space
@@ -7308,20 +7308,20 @@ LAB_BINS
 	LDY	#$17			; set index
 	LDX	#$18			; character count
 NextB1
-	LSR	nums_1		; shift highest byte
-	ROR	nums_2		; shift middle byte
-	ROR	nums_3		; shift lowest byte bit 0 to carry
-	TXA				; load with "0"/2
-	ROL				; shift in carry
+	LSR	nums_1			; shift highest byte
+	ROR	nums_2			; shift middle byte
+	ROR	nums_3			; shift lowest byte bit 0 to carry
+	TXA					; load with "0"/2
+	ROL					; shift in carry
 	STA	(str_pl),Y		; save to temp string + index
-	DEY				; decrement index
-	BPL	NextB1		; loop if not done
+	DEY					; decrement index
+	BPL	NextB1			; loop if not done
 
 	LDA	TempB			; get # of characters
-	BEQ	EndBHS		; branch if truncate
+	BEQ	EndBHS			; branch if truncate
 
-	TAX				; copy length to X
-	SEC				; set carry for add !
+	TAX					; copy length to X
+	SEC					; set carry for add !
 	EOR	#$FF			; 1's complement
 	ADC	#$18			; add 24d
 	BEQ	GoPr2			; if zero print whole string
@@ -7332,36 +7332,36 @@ NextB1
 ; truncate string to remove leading "0"s
 
 EndBHS
-	TAY				; clear index (A=0, X=length here)
+	TAY					; clear index (A=0, X=length here)
 NextB2
 	LDA	(str_pl),Y		; get character from string
 	CMP	#"0"			; compare with "0"
 	BNE	GoPr			; if not "0" then go print string from here
 
-	DEX				; decrement character count
+	DEX					; decrement character count
 	BEQ	GoPr3			; if zero then end of string so go print it
 
-	INY				; else increment index
-	BPL	NextB2		; loop always
+	INY					; else increment index
+	BPL	NextB2			; loop always
 
 ; make fixed length output string - ignore overflows!
 
 GoPr3
-	INX				; need at least 1 character
+	INX					; need at least 1 character
 GoPr
-	TYA				; copy result
+	TYA					; copy result
 GoPr1
-	CLC				; clear carry for add
-	ADC	str_pl		; add low address
-	STA	str_pl		; save low address
+	CLC					; clear carry for add
+	ADC	str_pl			; add low address
+	STA	str_pl			; save low address
 	LDA	#$00			; do high byte
-	ADC	str_ph		; add high address
-	STA	str_ph		; save high address
+	ADC	str_ph			; add high address
+	STA	str_ph			; save high address
 GoPr2
-	STX	str_ln		; X holds string length
+	STX	str_ln			; X holds string length
 	JSR	LAB_IGBY		; update BASIC execute pointer (to character past ")")
 	JMP	LAB_RTST		; check for space on descriptor stack then put address
-					; and length on descriptor stack and update stack pointers
+						; and length on descriptor stack and update stack pointers
 
 BinFErr
 	JMP	LAB_FCER		; do function call error then warm start
@@ -7370,7 +7370,7 @@ BinFErr
 
 LAB_HEXS
 	CPX	#$07			; max + 1
-	BCS	BinFErr		; exit if too big ( > or = )
+	BCS	BinFErr			; exit if too big ( > or = )
 
 	STX	TempB			; save # of characters
 
@@ -7378,21 +7378,21 @@ LAB_HEXS
 	JSR	LAB_MSSP		; make string space A bytes long
 	LDY	#$05			; set string index
 
-	SED				; need decimal mode for nibble convert
-	LDA	nums_3		; get lowest byte
+	SED					; need decimal mode for nibble convert
+	LDA	nums_3			; get lowest byte
 	JSR	LAB_A2HX		; convert A to ASCII hex byte and output
-	LDA	nums_2		; get middle byte
+	LDA	nums_2			; get middle byte
 	JSR	LAB_A2HX		; convert A to ASCII hex byte and output
-	LDA	nums_1		; get highest byte
+	LDA	nums_1			; get highest byte
 	JSR	LAB_A2HX		; convert A to ASCII hex byte and output
-	CLD				; back to binary
+	CLD					; back to binary
 
 	LDX	#$06			; character count
 	LDA	TempB			; get # of characters
-	BEQ	EndBHS		; branch if truncate
+	BEQ	EndBHS			; branch if truncate
 
-	TAX				; copy length to X
-	SEC				; set carry for add !
+	TAX					; copy length to X
+	SEC					; set carry for add !
 	EOR	#$FF			; 1's complement
 	ADC	#$06			; add 6d
 	BEQ	GoPr2			; if zero print whole string
@@ -7402,27 +7402,27 @@ LAB_HEXS
 ; convert A to ASCII hex byte and output .. note set decimal mode before calling
 
 LAB_A2HX
-	TAX				; save byte
+	TAX					; save byte
 	AND	#$0F			; mask off top bits
 	JSR	LAB_AL2X		; convert low nibble to ASCII and output
-	TXA				; get byte back
-	LSR				; /2	shift high nibble to low nibble
-	LSR				; /4
-	LSR				; /8
-	LSR				; /16
+	TXA					; get byte back
+	LSR					; /2	shift high nibble to low nibble
+	LSR					; /4
+	LSR					; /8
+	LSR					; /16
 LAB_AL2X
 	CMP	#$0A			; set carry for +1 if >9
 	ADC	#"0"			; add ASCII "0"
 	STA	(str_pl),Y		; save to temp string
-	DEY				; decrement counter
+	DEY					; decrement counter
 	RTS
 
 LAB_NLTO
-	STA	FAC1_e		; save FAC1 exponent
+	STA	FAC1_e			; save FAC1 exponent
 	LDA	#$00			; clear sign compare
 LAB_MLTE
-	STA	FAC_sc		; save sign compare (FAC1 EOR FAC2)
-	TXA				; restore character
+	STA	FAC_sc			; save sign compare (FAC1 EOR FAC2)
+	TXA					; restore character
 	JSR	LAB_2912		; evaluate new ASCII digit
 
 ; gets here if the first character was "$" for hex
@@ -7440,8 +7440,8 @@ LAB_CHEX
 	ADC	#$0A			; convert to nibble
 LAB_ISHN
 	AND	#$0F			; convert to binary
-	TAX				; save nibble
-	LDA	FAC1_e		; get FAC1 exponent
+	TAX					; save nibble
+	LDA	FAC1_e			; get FAC1 exponent
 	BEQ	LAB_MLTE		; skip multiply if zero
 
 	ADC	#$04			; add four to exponent (*16 - carry clear here)
@@ -7451,17 +7451,17 @@ LAB_MLTO
 	JMP	LAB_2564		; do overflow error and warm start
 
 LAB_NXCH
-	TAX				; save bit
-	LDA	FAC1_e		; get FAC1 exponent
+	TAX					; save bit
+	LDA	FAC1_e			; get FAC1 exponent
 	BEQ	LAB_MLBT		; skip multiply if zero
 
-	INC	FAC1_e		; increment FAC1 exponent (*2)
+	INC	FAC1_e			; increment FAC1 exponent (*2)
 	BEQ	LAB_MLTO		; do overflow error if = $00
 
 	LDA	#$00			; clear sign compare
 LAB_MLBT
-	STA	FAC_sc		; save sign compare (FAC1 EOR FAC2)
-	TXA				; restore bit
+	STA	FAC_sc			; save sign compare (FAC1 EOR FAC2)
+	TXA					; restore bit
 	JSR	LAB_2912		; evaluate new ASCII digit
 
 ; gets here if the first character was  "%" for binary
@@ -7513,56 +7513,56 @@ LAB_CKIN
 ; we disable the interrupt here and make two new commands RETIRQ and RETNMI to
 ; automatically enable the interrupt when we exit
 
-	ASL				; move happened bit to setup bit
+	ASL					; move happened bit to setup bit
 	AND	#$40			; mask happened bits
 	BEQ	LAB_CRTS		; if no interrupt then exit
 
 	STA	PLUS_0,X		; save interrupt flag byte
 
-	TXA				; copy index ..
-	TAY				; .. to Y
+	TXA					; copy index ..
+	TAY					; .. to Y
 
-	PLA				; dump return address low byte, call from CTRL-C
-	PLA				; dump return address high byte
+	PLA					; dump return address low byte, call from CTRL-C
+	PLA					; dump return address high byte
 
 	LDA	#$05			; need 5 bytes for GOSUB
 	JSR	LAB_1212		; check room on stack for A bytes
-	LDA	Bpntrh		; get BASIC execute pointer high byte
-	PHA				; push on stack
-	LDA	Bpntrl		; get BASIC execute pointer low byte
-	PHA				; push on stack
-	LDA	Clineh		; get current line high byte
-	PHA				; push on stack
-	LDA	Clinel		; get current line low byte
-	PHA				; push on stack
+	LDA	Bpntrh			; get BASIC execute pointer high byte
+	PHA					; push on stack
+	LDA	Bpntrl			; get BASIC execute pointer low byte
+	PHA					; push on stack
+	LDA	Clineh			; get current line high byte
+	PHA					; push on stack
+	LDA	Clinel			; get current line low byte
+	PHA					; push on stack
 	LDA	#TK_GOSUB		; token for GOSUB
-	PHA				; push on stack
+	PHA					; push on stack
 
 	LDA	PLUS_1,Y		; get interrupt code pointer low byte
-	STA	Bpntrl		; save as BASIC execute pointer low byte
+	STA	Bpntrl			; save as BASIC execute pointer low byte
 	LDA	PLUS_2,Y		; get interrupt code pointer high byte
-	STA	Bpntrh		; save as BASIC execute pointer high byte
+	STA	Bpntrh			; save as BASIC execute pointer high byte
 
 	JMP	LAB_15C2		; go do interpreter inner loop
-					; cannot RTS, we used the stack! the RTS from the ctrl-c
-					; check will be taken when the RETIRQ/RETNMI/RETURN is
-					; executed at the end of the subroutine
+						; cannot RTS, we used the stack! the RTS from the ctrl-c
+						; check will be taken when the RETIRQ/RETNMI/RETURN is
+						; executed at the end of the subroutine
 
 ; get byte from input device, no waiting
 ; returns with carry set if byte in A
 
 INGET
-	JSR	V_INPT		; call scan input device
+	JSR	V_INPT			; call scan input device
 	BCS	LAB_FB95		; if byte go reset timer
 
-	LDA	ccnull		; get countdown
+	LDA	ccnull			; get countdown
 	BEQ	LAB_FB96		; exit if empty
 
-	LDA	ccbyte		; get last received byte
-	SEC				; flag we got a byte
+	LDA	ccbyte			; get last received byte
+	SEC					; flag we got a byte
 LAB_FB95
 	LDX	#$00			; clear X
-	STX	ccnull		; clear timer because we got a byte
+	STX	ccnull			; clear timer because we got a byte
 LAB_FB96
 	RTS
 
@@ -7579,10 +7579,10 @@ LAB_IRQ
 
 LAB_NMI
 	LDX	#NmiBase		; set pointer to NMI values
-	CMP	#TK_ON		; compare with token for ON
+	CMP	#TK_ON			; compare with token for ON
 	BEQ	LAB_INON		; go turn on interrupt
 
-	CMP	#TK_OFF		; compare with token for OFF
+	CMP	#TK_OFF			; compare with token for OFF
 	BEQ	LAB_IOFF		; go turn off interrupt
 
 	EOR	#TK_CLEAR		; compare with token for CLEAR, A = $00 if = TK_CLEAR
@@ -7597,7 +7597,7 @@ LAB_IOFF
 
 LAB_INON
 	LDA	PLUS_0,X		; get interrupt setup flag
-	ASL				; Shift bit to enabled flag
+	ASL					; Shift bit to enabled flag
 	ORA	PLUS_0,X		; OR with flag byte
 LAB_INEX
 	STA	PLUS_0,X		; save interrupt flag byte
@@ -7609,7 +7609,7 @@ LAB_INEX
 ; perform ON IRQ
 
 LAB_SIRQ
-	CLI				; enable interrupts
+	CLI					; enable interrupts
 	LDX	#IrqBase		; set pointer to IRQ values
 	.byte	$2C			; make next line BIT abs.
 
@@ -7630,10 +7630,10 @@ LAB_SNMI
 
 LAB_LFND
 	LDX	TempB			; get interrupt pointer
-	LDA	Baslnl		; get pointer low byte
+	LDA	Baslnl			; get pointer low byte
 	SBC	#$01			; -1 (carry already set for subtract)
 	STA	PLUS_1,X		; save as interrupt pointer low byte
-	LDA	Baslnh		; get pointer high byte
+	LDA	Baslnh			; get pointer high byte
 	SBC	#$00			; subtract carry
 	STA	PLUS_2,X		; save as interrupt pointer high byte
 
@@ -7649,10 +7649,10 @@ LAB_IRTS
 LAB_RETIRQ
 	BNE	LAB_IRTS		; exit if following token (to allow syntax error)
 
-	LDA	IrqBase		; get interrupt flags
-	ASL				; copy setup to enabled (b7)
-	ORA	IrqBase		; OR in setup flag
-	STA	IrqBase		; save enabled flag
+	LDA	IrqBase			; get interrupt flags
+	ASL					; copy setup to enabled (b7)
+	ORA	IrqBase			; OR in setup flag
+	STA	IrqBase			; save enabled flag
 	JMP	LAB_16E8		; go do rest of RETURN
 
 ; return from NMI service, restores the enabled flag.
@@ -7662,10 +7662,10 @@ LAB_RETIRQ
 LAB_RETNMI
 	BNE	LAB_IRTS		; exit if following token (to allow syntax error)
 
-	LDA	NmiBase		; get set-up flag
-	ASL				; copy setup to enabled (b7)
-	ORA	NmiBase		; OR in setup flag
-	STA	NmiBase		; save enabled flag
+	LDA	NmiBase			; get set-up flag
+	ASL					; copy setup to enabled (b7)
+	ORA	NmiBase			; OR in setup flag
+	STA	NmiBase			; save enabled flag
 	JMP	LAB_16E8		; go do rest of RETURN
 
 ; MAX() MIN() pre process
@@ -7678,29 +7678,29 @@ LAB_MMPP
 
 LAB_MAX
 	JSR	LAB_PHFA		; push FAC1, evaluate expression,
-					; pull FAC2 and compare with FAC1
-	BPL	LAB_MAX		; branch if no swap to do
+						; pull FAC2 and compare with FAC1
+	BPL	LAB_MAX			; branch if no swap to do
 
-	LDA	FAC2_1		; get FAC2 mantissa1
+	LDA	FAC2_1			; get FAC2 mantissa1
 	ORA	#$80			; set top bit (clear sign from compare)
-	STA	FAC2_1		; save FAC2 mantissa1
+	STA	FAC2_1			; save FAC2 mantissa1
 	JSR	LAB_279B		; copy FAC2 to FAC1
-	BEQ	LAB_MAX		; go do next (branch always)
+	BEQ	LAB_MAX			; go do next (branch always)
 
 ; perform MIN()
 
 LAB_MIN
 	JSR	LAB_PHFA		; push FAC1, evaluate expression,
-					; pull FAC2 and compare with FAC1
-	BMI	LAB_MIN		; branch if no swap to do
+						; pull FAC2 and compare with FAC1
+	BMI	LAB_MIN			; branch if no swap to do
 
-	BEQ	LAB_MIN		; branch if no swap to do
+	BEQ	LAB_MIN			; branch if no swap to do
 
-	LDA	FAC2_1		; get FAC2 mantissa1
+	LDA	FAC2_1			; get FAC2 mantissa1
 	ORA	#$80			; set top bit (clear sign from compare)
-	STA	FAC2_1		; save FAC2 mantissa1
+	STA	FAC2_1			; save FAC2 mantissa1
 	JSR	LAB_279B		; copy FAC2 to FAC1
-	BEQ	LAB_MIN		; go do next (branch always)
+	BEQ	LAB_MIN			; go do next (branch always)
 
 ; exit routine. do not bother returning to the loop code
 ; check for correct exit, else so syntax error
@@ -7709,8 +7709,8 @@ LAB_MMEC
 	CMP	#")"			; is it end of function?
 	BNE	LAB_MMSE		; if not do MAX MIN syntax error
 
-	PLA				; dump return address low byte
-	PLA				; dump return address high byte
+	PLA					; dump return address low byte
+	PLA					; dump return address high byte
 	JMP	LAB_IGBY		; update BASIC execute pointer (to chr past ")")
 
 LAB_MMSE
@@ -7724,41 +7724,41 @@ LAB_PHFA
 	CMP	#","			; is there more ?
 	BNE	LAB_MMEC		; if not go do end check
 
-					; push FAC1
+						; push FAC1
 	JSR	LAB_27BA		; round FAC1
-	LDA	FAC1_s		; get FAC1 sign
+	LDA	FAC1_s			; get FAC1 sign
 	ORA	#$7F			; set all non sign bits
-	AND	FAC1_1		; AND FAC1 mantissa1 (AND in sign bit)
-	PHA				; push on stack
-	LDA	FAC1_2		; get FAC1 mantissa2
-	PHA				; push on stack
-	LDA	FAC1_3		; get FAC1 mantissa3
-	PHA				; push on stack
-	LDA	FAC1_e		; get FAC1 exponent
-	PHA				; push on stack
+	AND	FAC1_1			; AND FAC1 mantissa1 (AND in sign bit)
+	PHA					; push on stack
+	LDA	FAC1_2			; get FAC1 mantissa2
+	PHA					; push on stack
+	LDA	FAC1_3			; get FAC1 mantissa3
+	PHA					; push on stack
+	LDA	FAC1_e			; get FAC1 exponent
+	PHA					; push on stack
 
 	JSR	LAB_IGBY		; scan and get next BASIC byte (after ",")
 	JSR	LAB_EVNM		; evaluate expression and check is numeric,
-					; else do type mismatch
+						; else do type mismatch
 
-					; pop FAC2 (MAX/MIN expression so far)
-	PLA				; pop exponent
-	STA	FAC2_e		; save FAC2 exponent
-	PLA				; pop mantissa3
-	STA	FAC2_3		; save FAC2 mantissa3
-	PLA				; pop mantissa1
-	STA	FAC2_2		; save FAC2 mantissa2
-	PLA				; pop sign/mantissa1
-	STA	FAC2_1		; save FAC2 sign/mantissa1
-	STA	FAC2_s		; save FAC2 sign
+						; pop FAC2 (MAX/MIN expression so far)
+	PLA					; pop exponent
+	STA	FAC2_e			; save FAC2 exponent
+	PLA					; pop mantissa3
+	STA	FAC2_3			; save FAC2 mantissa3
+	PLA					; pop mantissa1
+	STA	FAC2_2			; save FAC2 mantissa2
+	PLA					; pop sign/mantissa1
+	STA	FAC2_1			; save FAC2 sign/mantissa1
+	STA	FAC2_s			; save FAC2 sign
 
-					; compare FAC1 with (packed) FAC2
+						; compare FAC1 with (packed) FAC2
 	LDA	#<FAC2_e		; set pointer low byte to FAC2
 	LDY	#>FAC2_e		; set pointer high byte to FAC2
 	JMP	LAB_27F8		; compare FAC1 with FAC2 (AY) and return
-					; returns A=$00 if FAC1 = (AY)
-					; returns A=$01 if FAC1 > (AY)
-					; returns A=$FF if FAC1 < (AY)
+						; returns A=$00 if FAC1 = (AY)
+						; returns A=$01 if FAC1 > (AY)
+						; returns A=$FF if FAC1 < (AY)
 
 ; perform WIDTH
 
@@ -7767,21 +7767,21 @@ LAB_WDTH
 	BEQ	LAB_TBSZ		; if so do tab size
 
 	JSR	LAB_GTBY		; get byte parameter
-	TXA				; copy width to A
+	TXA					; copy width to A
 	BEQ	LAB_NSTT		; branch if set for infinite line
 
 	CPX	#$10			; else make min width = 16d
-	BCC	TabErr		; if less do function call error and exit
+	BCC	TabErr			; if less do function call error and exit
 
 ; this next compare ensures that we cannot exit WIDTH via an error leaving the
 ; tab size greater than the line length.
 
-	CPX	TabSiz		; compare with tab size
+	CPX	TabSiz			; compare with tab size
 	BCS	LAB_NSTT		; branch if >= tab size
 
-	STX	TabSiz		; else make tab size = terminal width
+	STX	TabSiz			; else make tab size = terminal width
 LAB_NSTT
-	STX	TWidth		; set the terminal width
+	STX	TWidth			; set the terminal width
 	JSR	LAB_GBYT		; get BASIC byte back
 	BEQ	WExit			; exit if no following
 
@@ -7790,47 +7790,47 @@ LAB_NSTT
 
 LAB_TBSZ
 	JSR	LAB_SGBY		; scan and get byte parameter
-	TXA				; copy TAB size
-	BMI	TabErr		; if >127 do function call error and exit
+	TXA					; copy TAB size
+	BMI	TabErr			; if >127 do function call error and exit
 
 	CPX	#$01			; compare with min-1
-	BCC	TabErr		; if <=1 do function call error and exit
+	BCC	TabErr			; if <=1 do function call error and exit
 
-	LDA	TWidth		; set flags for width
+	LDA	TWidth			; set flags for width
 	BEQ	LAB_SVTB		; skip check if infinite line
 
-	CPX	TWidth		; compare TAB with width
+	CPX	TWidth			; compare TAB with width
 	BEQ	LAB_SVTB		; ok if =
 
-	BCS	TabErr		; branch if too big
+	BCS	TabErr			; branch if too big
 
 LAB_SVTB
-	STX	TabSiz		; save TAB size
+	STX	TabSiz			; save TAB size
 
 ; calculate tab column limit from TAB size. The Iclim is set to the last tab
 ; position on a line that still has at least one whole tab width between it
 ; and the end of the line.
 
 WExit
-	LDA	TWidth		; get width
+	LDA	TWidth			; get width
 	BEQ	LAB_SULP		; branch if infinite line
 
-	CMP	TabSiz		; compare with tab size
+	CMP	TabSiz			; compare with tab size
 	BCS	LAB_WDLP		; branch if >= tab size
 
-	STA	TabSiz		; else make tab size = terminal width
+	STA	TabSiz			; else make tab size = terminal width
 LAB_SULP
-	SEC				; set carry for subtract
+	SEC					; set carry for subtract
 LAB_WDLP
-	SBC	TabSiz		; subtract tab size
+	SBC	TabSiz			; subtract tab size
 	BCS	LAB_WDLP		; loop while no borrow
 
-	ADC	TabSiz		; add tab size back
-	CLC				; clear carry for add
-	ADC	TabSiz		; add tab size back again
+	ADC	TabSiz			; add tab size back
+	CLC					; clear carry for add
+	ADC	TabSiz			; add tab size back again
 	STA	Iclim			; save for now
-	LDA	TWidth		; get width back
-	SEC				; set carry for subtract
+	LDA	TWidth			; get width back
+	SEC					; set carry for subtract
 	SBC	Iclim			; subtract remainder
 	STA	Iclim			; save tab column limit
 LAB_NOSQ
@@ -7842,102 +7842,102 @@ TabErr
 ; perform SQR()
 
 LAB_SQR
-	LDA	FAC1_s		; get FAC1 sign
-	BMI	TabErr		; if -ve do function call error
+	LDA	FAC1_s			; get FAC1 sign
+	BMI	TabErr			; if -ve do function call error
 
-	LDA	FAC1_e		; get exponent
+	LDA	FAC1_e			; get exponent
 	BEQ	LAB_NOSQ		; if zero just return
 
-					; else do root
+						; else do root
 	JSR	LAB_27AB		; round and copy FAC1 to FAC2
 	LDA	#$00			; clear A
 
-	STA	FACt_3		; clear remainder
-	STA	FACt_2		; ..
-	STA	FACt_1		; ..
+	STA	FACt_3			; clear remainder
+	STA	FACt_2			; ..
+	STA	FACt_1			; ..
 	STA	TempB			; ..
 
-	STA	FAC1_3		; clear root
-	STA	FAC1_2		; ..
-	STA	FAC1_1		; ..
+	STA	FAC1_3			; clear root
+	STA	FAC1_2			; ..
+	STA	FAC1_1			; ..
 
 	LDX	#$18			; 24 pairs of bits to do
-	LDA	FAC2_e		; get exponent
-	LSR				; check odd/even
+	LDA	FAC2_e			; get exponent
+	LSR					; check odd/even
 	BCS	LAB_SQE2		; if odd only 1 shift first time
 
 LAB_SQE1
-	ASL	FAC2_3		; shift highest bit of number ..
-	ROL	FAC2_2		; ..
-	ROL	FAC2_1		; ..
-	ROL	FACt_3		; .. into remainder
-	ROL	FACt_2		; ..
-	ROL	FACt_1		; ..
+	ASL	FAC2_3			; shift highest bit of number ..
+	ROL	FAC2_2			; ..
+	ROL	FAC2_1			; ..
+	ROL	FACt_3			; .. into remainder
+	ROL	FACt_2			; ..
+	ROL	FACt_1			; ..
 	ROL	TempB			; .. never overflows
 LAB_SQE2
-	ASL	FAC2_3		; shift highest bit of number ..
-	ROL	FAC2_2		; ..
-	ROL	FAC2_1		; ..
-	ROL	FACt_3		; .. into remainder
-	ROL	FACt_2		; ..
-	ROL	FACt_1		; ..
+	ASL	FAC2_3			; shift highest bit of number ..
+	ROL	FAC2_2			; ..
+	ROL	FAC2_1			; ..
+	ROL	FACt_3			; .. into remainder
+	ROL	FACt_2			; ..
+	ROL	FACt_1			; ..
 	ROL	TempB			; .. never overflows
 
-	ASL	FAC1_3		; root = root * 2
-	ROL	FAC1_2		; ..
-	ROL	FAC1_1		; .. never overflows
+	ASL	FAC1_3			; root = root * 2
+	ROL	FAC1_2			; ..
+	ROL	FAC1_1			; .. never overflows
 
-	LDA	FAC1_3		; get root low byte
-	ROL				; *2
+	LDA	FAC1_3			; get root low byte
+	ROL					; *2
 	STA	Temp3			; save partial low byte
-	LDA	FAC1_2		; get root low mid byte
-	ROL				; *2
-	STA	Temp3+1		; save partial low mid byte
-	LDA	FAC1_1		; get root high mid byte
-	ROL				; *2
-	STA	Temp3+2		; save partial high mid byte
+	LDA	FAC1_2			; get root low mid byte
+	ROL					; *2
+	STA	Temp3+1			; save partial low mid byte
+	LDA	FAC1_1			; get root high mid byte
+	ROL					; *2
+	STA	Temp3+2			; save partial high mid byte
 	LDA	#$00			; get root high byte (always $00)
-	ROL				; *2
-	STA	Temp3+3		; save partial high byte
+	ROL					; *2
+	STA	Temp3+3			; save partial high byte
 
-					; carry clear for subtract +1
-	LDA	FACt_3		; get remainder low byte
+						; carry clear for subtract +1
+	LDA	FACt_3			; get remainder low byte
 	SBC	Temp3			; subtract partial low byte
 	STA	Temp3			; save partial low byte
 
-	LDA	FACt_2		; get remainder low mid byte
-	SBC	Temp3+1		; subtract partial low mid byte
-	STA	Temp3+1		; save partial low mid byte
+	LDA	FACt_2			; get remainder low mid byte
+	SBC	Temp3+1			; subtract partial low mid byte
+	STA	Temp3+1			; save partial low mid byte
 
-	LDA	FACt_1		; get remainder high mid byte
-	SBC	Temp3+2		; subtract partial high mid byte
-	TAY				; copy partial high mid byte
+	LDA	FACt_1			; get remainder high mid byte
+	SBC	Temp3+2			; subtract partial high mid byte
+	TAY					; copy partial high mid byte
 
 	LDA	TempB			; get remainder high byte
-	SBC	Temp3+3		; subtract partial high byte
+	SBC	Temp3+3			; subtract partial high byte
 	BCC	LAB_SQNS		; skip sub if remainder smaller
 
 	STA	TempB			; save remainder high byte
 
-	STY	FACt_1		; save remainder high mid byte
+	STY	FACt_1			; save remainder high mid byte
 
-	LDA	Temp3+1		; get remainder low mid byte
-	STA	FACt_2		; save remainder low mid byte
+	LDA	Temp3+1			; get remainder low mid byte
+	STA	FACt_2			; save remainder low mid byte
 
 	LDA	Temp3			; get partial low byte
-	STA	FACt_3		; save remainder low byte
+	STA	FACt_3			; save remainder low byte
 
-	INC	FAC1_3		; increment root low byte (never any rollover)
+	INC	FAC1_3			; increment root low byte (never any rollover)
 LAB_SQNS
-	DEX				; decrement bit pair count
+	DEX					; decrement bit pair count
 	BNE	LAB_SQE1		; loop if not all done
 
-	SEC				; set carry for subtract
-	LDA	FAC2_e		; get exponent
+	SEC					; set carry for subtract
+	LDA	FAC2_e			; get exponent
 	SBC	#$80			; normalise
-	ROR				; /2 and re-bias to $80
+	ROR					; /2 and re-bias to $80
 	ADC	#$00			; add bit zero back in (allow for half shift)
-	STA	FAC1_e		; save it
+	STA	FAC1_e			; save it
 	JMP	LAB_24D5		; normalise FAC1 and return
 
 ; perform VARPTR()
@@ -7946,8 +7946,8 @@ LAB_VARPTR
 	JSR	LAB_IGBY		; increment and scan memory
 	JSR	LAB_GVAR		; get var address
 	JSR	LAB_1BFB		; scan for ")" , else do syntax error then warm start
-	LDY	Cvaral		; get var address low byte
-	LDA	Cvarah		; get var address high byte
+	LDY	Cvaral			; get var address low byte
+	LDA	Cvarah			; get var address high byte
 	JMP	LAB_AYFC		; save and convert integer AY to FAC1 and return
 
 ; perform PI
@@ -7956,7 +7956,7 @@ LAB_PI
 	LDA	#<LAB_2C7C		; set (2*pi) pointer low byte
 	LDY	#>LAB_2C7C		; set (2*pi) pointer high byte
 	JSR	LAB_UFAC		; unpack memory (AY) into FAC1
-	DEC	FAC1_e		; make result = PI
+	DEC	FAC1_e			; make result = PI
 	RTS
 
 ; perform TWOPI
@@ -7968,28 +7968,28 @@ LAB_TWOPI
 
 ; system dependant i/o vectors
 ; *** will just be replaced by minimOS I/O calls, saving vectors
-V_INPT						; non halting scan input device
+V_INPT					; non halting scan input device
 	PHX					; *** best to save these here ***
 	PHY
-	LDY iodev				; assigned window
+	LDY iodev			; ##### assigned window #####
 	_KERNEL(CIN)
 ; could check C and Y here for safety
 	PLY					; *** macro-savvy before LDA ***
 	PLX
 	LDA io_c
 	RTS
-V_OUTP						; send byte to output device
+V_OUTP					; send byte to output device
 	STA io_c
 	PHX					; *** must save these ***
 	PHY
-	LDY iodev				; *** assigned window ***
+	LDY iodev			; ##### assigned window #####
 	_KERNEL(COUT)
 	PLY					; *** this ignores errors ***
 	PLX
-	LDA io_c				; *** worth recovering it ***
+	LDA io_c			; *** worth recovering it ***
 	RTS
-V_LOAD						; load BASIC program
-V_SAVE						; save BASIC program
+V_LOAD					; load BASIC program
+V_SAVE					; save BASIC program
 	RTS					; *** not yet implemented *** PLACEHOLDER
 
 ; The rest are tables messages and code for RAM
@@ -8044,11 +8044,11 @@ LAB_2CF4
 	CMP	#" "			; compare with " "
 	BEQ	LAB_2CEE		; if " " go do next
 
-	SEC				; set carry for SBC
+	SEC					; set carry for SBC
 	SBC	#"0"			; subtract "0"
-	SEC				; set carry for SBC
+	SEC					; set carry for SBC
 	SBC	#$D0			; subtract -"0"
-					; clear carry if byte = "0"-"9"
+						; clear carry if byte = "0"-"9"
 LAB_2D05
 	RTS
 
@@ -8071,107 +8071,107 @@ LAB_SMSG
 
 ; numeric constants and series
 
-					; constants and series for LOG(n)
+								; constants and series for LOG(n)
 LAB_25A0
-	.byte	$02			; counter
-	.byte	$80,$19,$56,$62	; 0.59898
-	.byte	$80,$76,$22,$F3	; 0.96147
-;##	.byte	$80,$76,$22,$F1	; 0.96147
-	.byte	$82,$38,$AA,$40	; 2.88539
-;##	.byte	$82,$38,$AA,$45	; 2.88539
+	.byte	$02					; counter
+	.byte	$80,$19,$56,$62		; 0.59898
+	.byte	$80,$76,$22,$F3		; 0.96147
+;##	.byte	$80,$76,$22,$F1		; 0.96147
+	.byte	$82,$38,$AA,$40		; 2.88539
+;##	.byte	$82,$38,$AA,$45		; 2.88539
 
 LAB_25AD
-	.byte	$80,$35,$04,$F3	; 0.70711	1/root 2
+	.byte	$80,$35,$04,$F3		; 0.70711	1/root 2
 LAB_25B1
-	.byte	$81,$35,$04,$F3	; 1.41421	root 2
+	.byte	$81,$35,$04,$F3		; 1.41421	root 2
 LAB_25B5
-	.byte	$80,$80,$00,$00	; -0.5
+	.byte	$80,$80,$00,$00		; -0.5
 LAB_25B9
-	.byte	$80,$31,$72,$18	; 0.69315	LOG(2)
+	.byte	$80,$31,$72,$18		; 0.69315	LOG(2)
 
-					; numeric PRINT constants
+								; numeric PRINT constants
 LAB_2947
-	.byte	$91,$43,$4F,$F8	; 99999.9375 (max value with at least one decimal)
+	.byte	$91,$43,$4F,$F8		; 99999.9375 (max value with at least one decimal)
 LAB_294B
-	.byte	$94,$74,$23,$F7	; 999999.4375 (max value before scientific notation)
+	.byte	$94,$74,$23,$F7		; 999999.4375 (max value before scientific notation)
 LAB_294F
-	.byte	$94,$74,$24,$00	; 1000000
+	.byte	$94,$74,$24,$00		; 1000000
 
-					; EXP(n) constants and series
+								; EXP(n) constants and series
 LAB_2AFA
-	.byte	$81,$38,$AA,$3B	; 1.4427	(1/LOG base 2 e)
+	.byte	$81,$38,$AA,$3B		; 1.4427	(1/LOG base 2 e)
 LAB_2AFE
-	.byte	$06			; counter
-	.byte	$74,$63,$90,$8C	; 2.17023e-4
-	.byte	$77,$23,$0C,$AB	; 0.00124
-	.byte	$7A,$1E,$94,$00	; 0.00968
-	.byte	$7C,$63,$42,$80	; 0.05548
-	.byte	$7E,$75,$FE,$D0	; 0.24023
-	.byte	$80,$31,$72,$15	; 0.69315
-	.byte	$81,$00,$00,$00	; 1.00000
+	.byte	$06					; counter
+	.byte	$74,$63,$90,$8C		; 2.17023e-4
+	.byte	$77,$23,$0C,$AB		; 0.00124
+	.byte	$7A,$1E,$94,$00		; 0.00968
+	.byte	$7C,$63,$42,$80		; 0.05548
+	.byte	$7E,$75,$FE,$D0		; 0.24023
+	.byte	$80,$31,$72,$15		; 0.69315
+	.byte	$81,$00,$00,$00		; 1.00000
 
-;##	.byte	$07			; counter
-;##	.byte	$74,$94,$2E,$40	; -1/7! (-1/5040)
-;##	.byte	$77,$2E,$4F,$70	;  1/6! ( 1/720)
-;##	.byte	$7A,$88,$02,$6E	; -1/5! (-1/120)
-;##	.byte	$7C,$2A,$A0,$E6	;  1/4! ( 1/24)
-;##	.byte	$7E,$AA,$AA,$50	; -1/3! (-1/6)
-;##	.byte	$7F,$7F,$FF,$FF	;  1/2! ( 1/2)
-;##	.byte	$81,$80,$00,$00	; -1/1! (-1/1)
-;##	.byte	$81,$00,$00,$00	;  1/0! ( 1/1)
+;##	.byte	$07					; counter
+;##	.byte	$74,$94,$2E,$40		; -1/7! (-1/5040)
+;##	.byte	$77,$2E,$4F,$70		;  1/6! ( 1/720)
+;##	.byte	$7A,$88,$02,$6E		; -1/5! (-1/120)
+;##	.byte	$7C,$2A,$A0,$E6		;  1/4! ( 1/24)
+;##	.byte	$7E,$AA,$AA,$50		; -1/3! (-1/6)
+;##	.byte	$7F,$7F,$FF,$FF		;  1/2! ( 1/2)
+;##	.byte	$81,$80,$00,$00		; -1/1! (-1/1)
+;##	.byte	$81,$00,$00,$00		;  1/0! ( 1/1)
 
-					; trigonometric constants and series
+								; trigonometric constants and series
 LAB_2C78
-	.byte	$81,$49,$0F,$DB	; 1.570796371 (pi/2) as floating #
+	.byte	$81,$49,$0F,$DB		; 1.570796371 (pi/2) as floating #
 LAB_2C84
-	.byte	$04			; counter
-	.byte	$86,$1E,$D7,$FB	; 39.7109
-;##	.byte	$86,$1E,$D7,$BA	; 39.7109
-	.byte	$87,$99,$26,$65	;-76.575
-;##	.byte	$87,$99,$26,$64	;-76.575
-	.byte	$87,$23,$34,$58	; 81.6022
-	.byte	$86,$A5,$5D,$E1	;-41.3417
-;##	.byte	$86,$A5,$5D,$E0	;-41.3417
+	.byte	$04					; counter
+	.byte	$86,$1E,$D7,$FB		; 39.7109
+;##	.byte	$86,$1E,$D7,$BA		; 39.7109
+	.byte	$87,$99,$26,$65		;-76.575
+;##	.byte	$87,$99,$26,$64		;-76.575
+	.byte	$87,$23,$34,$58		; 81.6022
+	.byte	$86,$A5,$5D,$E1		;-41.3417
+;##	.byte	$86,$A5,$5D,$E0		;-41.3417
 LAB_2C7C
-	.byte	$83,$49,$0F,$DB	; 6.28319 (2*pi) as floating #
-;##	.byte	$83,$49,$0F,$DA	; 6.28319 (2*pi) as floating #
+	.byte	$83,$49,$0F,$DB		; 6.28319 (2*pi) as floating #
+;##	.byte	$83,$49,$0F,$DA		; 6.28319 (2*pi) as floating #
 
 LAB_2CC9
-	.byte	$08			; counter
-	.byte	$78,$3A,$C5,$37	; 0.00285
-	.byte	$7B,$83,$A2,$5C	;-0.0160686
-	.byte	$7C,$2E,$DD,$4D	; 0.0426915
-	.byte	$7D,$99,$B0,$1E	;-0.0750429
-	.byte	$7D,$59,$ED,$24	; 0.106409
-	.byte	$7E,$91,$72,$00	;-0.142036
-	.byte	$7E,$4C,$B9,$73	; 0.199926
-	.byte	$7F,$AA,$AA,$53	;-0.333331
+	.byte	$08					; counter
+	.byte	$78,$3A,$C5,$37		; 0.00285
+	.byte	$7B,$83,$A2,$5C		;-0.0160686
+	.byte	$7C,$2E,$DD,$4D		; 0.0426915
+	.byte	$7D,$99,$B0,$1E		;-0.0750429
+	.byte	$7D,$59,$ED,$24		; 0.106409
+	.byte	$7E,$91,$72,$00		;-0.142036
+	.byte	$7E,$4C,$B9,$73		; 0.199926
+	.byte	$7F,$AA,$AA,$53		;-0.333331
 
-;##	.byte	$08			; counter
-;##	.byte	$78,$3B,$D7,$4A	; 1/17
-;##	.byte	$7B,$84,$6E,$02	;-1/15
-;##	.byte	$7C,$2F,$C1,$FE	; 1/13
-;##	.byte	$7D,$9A,$31,$74	;-1/11
-;##	.byte	$7D,$5A,$3D,$84	; 1/9
-;##	.byte	$7E,$91,$7F,$C8	;-1/7
-;##	.byte	$7E,$4C,$BB,$E4	; 1/5
-;##	.byte	$7F,$AA,$AA,$6C	;-1/3
+;##	.byte	$08					; counter
+;##	.byte	$78,$3B,$D7,$4A		; 1/17
+;##	.byte	$7B,$84,$6E,$02		;-1/15
+;##	.byte	$7C,$2F,$C1,$FE		; 1/13
+;##	.byte	$7D,$9A,$31,$74		;-1/11
+;##	.byte	$7D,$5A,$3D,$84		; 1/9
+;##	.byte	$7E,$91,$7F,$C8		;-1/7
+;##	.byte	$7E,$4C,$BB,$E4		; 1/5
+;##	.byte	$7F,$AA,$AA,$6C		;-1/3
 
-LAB_1D96	= *+1			; $00,$00 used for undefined variables
+LAB_1D96	= *+1				; $00,$00 used for undefined variables
 LAB_259C
-	.byte	$81,$00,$00,$00	; 1.000000, used for INC
+	.byte	$81,$00,$00,$00		; 1.000000, used for INC
 LAB_2AFD
-	.byte	$81,$80,$00,$00	; -1.00000, used for DEC. must be on the same page as +1.00
+	.byte	$81,$80,$00,$00		; -1.00000, used for DEC. must be on the same page as +1.00
 
-					; misc constants
+								; misc constants
 LAB_1DF7
-	.byte	$90			;-32768 (uses first three bytes from 0.5)
+	.byte	$90					;-32768 (uses first three bytes from 0.5)
 LAB_2A96
-	.byte	$80,$00,$00,$00	; 0.5
+	.byte	$80,$00,$00,$00		; 0.5
 LAB_2C80
-	.byte	$7F,$00,$00,$00	; 0.25
+	.byte	$7F,$00,$00,$00		; 0.25
 LAB_26B5
-	.byte	$84,$20,$00,$00	; 10.0000 divide by 10 constant
+	.byte	$84,$20,$00,$00		; 10.0000 divide by 10 constant
 
 ; This table is used in converting numbers to ASCII.
 
@@ -8203,7 +8203,7 @@ LAB_CTBL
 	.word	LAB_RETIRQ-1	; RETIRQ		new command
 	.word	LAB_RETNMI-1	; RETNMI		new command
 	.word	LAB_RETURN-1	; RETURN
-	.word	LAB_REM-1		; REM
+	.word	LAB_REM-1		; RE	M
 	.word	LAB_STOP-1		; STOP
 	.word	LAB_ON-1		; ON			modified command
 	.word	LAB_NULL-1		; NULL		modified command
@@ -8314,31 +8314,31 @@ LAB_FTBM	= LAB_FTBL+$01
 ; hierarchy and action addresses for operator
 
 LAB_OPPT
-	.byte	$79			; +
+	.byte	$79				; +
 	.word	LAB_ADD-1
-	.byte	$79			; -
+	.byte	$79				; -
 	.word	LAB_SUBTRACT-1
-	.byte	$7B			; *
+	.byte	$7B				; *
 	.word	LAB_MULTIPLY-1
-	.byte	$7B			; /
+	.byte	$7B				; /
 	.word	LAB_DIVIDE-1
-	.byte	$7F			; ^
+	.byte	$7F				; ^
 	.word	LAB_POWER-1
-	.byte	$50			; AND
+	.byte	$50				; AND
 	.word	LAB_AND-1
-	.byte	$46			; EOR			new operator
+	.byte	$46				; EOR			new operator
 	.word	LAB_EOR-1
-	.byte	$46			; OR
+	.byte	$46				; OR
 	.word	LAB_OR-1
-	.byte	$56			; >>			new operator
+	.byte	$56				; >>			new operator
 	.word	LAB_RSHIFT-1
-	.byte	$56			; <<			new operator
+	.byte	$56				; <<			new operator
 	.word	LAB_LSHIFT-1
-	.byte	$7D			; >
+	.byte	$7D				; >
 	.word	LAB_GTHAN-1
-	.byte	$5A			; =
+	.byte	$5A				; =
 	.word	LAB_EQUAL-1
-	.byte	$64			; <
+	.byte	$64				; <
 	.word	LAB_LTHAN-1
 
 ; keywords start with ..
@@ -8374,7 +8374,7 @@ TAB_1STC
 	.byte	"V"
 	.byte	"W"
 	.byte	"^"
-	.byte	$00			; table terminator
+	.byte	$00				; table terminator
 
 ; pointers to keyword tables
 
@@ -8418,185 +8418,182 @@ TAB_CHRT
 ; end marker (#$00)
 
 TAB_STAR
-	.byte TK_MUL,$00		; *
+	.byte TK_MUL,$00			; *
 TAB_PLUS
-	.byte TK_PLUS,$00		; +
+	.byte TK_PLUS,$00			; +
 TAB_MNUS
-	.byte TK_MINUS,$00	; -
+	.byte TK_MINUS,$00			; -
 TAB_SLAS
-	.byte TK_DIV,$00		; /
+	.byte TK_DIV,$00			; /
 TAB_LESS
 LBB_LSHIFT
-	.byte	"<",TK_LSHIFT	; <<	note - "<<" must come before "<"
-	.byte TK_LT			; <
+	.byte	"<",TK_LSHIFT		; <<	note - "<<" must come before "<"
+	.byte TK_LT					; <
 	.byte	$00
 TAB_EQUL
-	.byte TK_EQUAL,$00	; =
+	.byte TK_EQUAL,$00			; =
 TAB_MORE
 LBB_RSHIFT
-	.byte	">",TK_RSHIFT	; >>	note - ">>" must come before ">"
-	.byte TK_GT			; >
+	.byte	">",TK_RSHIFT		; >>	note - ">>" must come before ">"
+	.byte TK_GT					; >
 	.byte	$00
 TAB_QEST
-	.byte TK_PRINT,$00	; ?
+	.byte TK_PRINT,$00			; ?
 TAB_ASCA
 LBB_ABS
-	.byte	"BS(",TK_ABS	; ABS(
+	.byte	"BS(",TK_ABS		; ABS(
 LBB_AND
-	.byte	"ND",TK_AND		; AND
+	.byte	"ND",TK_AND			; AND
 LBB_ASC
-	.byte	"SC(",TK_ASC	; ASC(
+	.byte	"SC(",TK_ASC		; ASC(
 LBB_ATN
-	.byte	"TN(",TK_ATN	; ATN(
+	.byte	"TN(",TK_ATN		; ATN(
 	.byte	$00
 TAB_ASCB
 LBB_BINS
-	.byte	"IN$(",TK_BINS	; BIN$(
+	.byte	"IN$(",TK_BINS		; BIN$(
 LBB_BITCLR
 	.byte	"ITCLR",TK_BITCLR	; BITCLR
 LBB_BITSET
 	.byte	"ITSET",TK_BITSET	; BITSET
 LBB_BITTST
-	.byte	"ITTST(",TK_BITTST
-					; BITTST(
+	.byte	"ITTST(",TK_BITTST	; BITTST(
 	.byte	$00
 TAB_ASCC
 LBB_CALL
-	.byte	"ALL",TK_CALL	; CALL
+	.byte	"ALL",TK_CALL		; CALL
 LBB_CHRS
-	.byte	"HR$(",TK_CHRS	; CHR$(
+	.byte	"HR$(",TK_CHRS		; CHR$(
 LBB_CLEAR
-	.byte	"LEAR",TK_CLEAR	; CLEAR
+	.byte	"LEAR",TK_CLEAR		; CLEAR
 LBB_CONT
-	.byte	"ONT",TK_CONT	; CONT
+	.byte	"ONT",TK_CONT		; CONT
 LBB_COS
-	.byte	"OS(",TK_COS	; COS(
+	.byte	"OS(",TK_COS		; COS(
 	.byte	$00
 TAB_ASCD
 LBB_DATA
-	.byte	"ATA",TK_DATA	; DATA
+	.byte	"ATA",TK_DATA		; DATA
 LBB_DEC
-	.byte	"EC",TK_DEC		; DEC
+	.byte	"EC",TK_DEC			; DEC
 LBB_DEEK
-	.byte	"EEK(",TK_DEEK	; DEEK(
+	.byte	"EEK(",TK_DEEK		; DEEK(
 LBB_DEF
-	.byte	"EF",TK_DEF		; DEF
+	.byte	"EF",TK_DEF			; DEF
 LBB_DIM
-	.byte	"IM",TK_DIM		; DIM
+	.byte	"IM",TK_DIM			; DIM
 LBB_DOKE
-	.byte	"OKE",TK_DOKE	; DOKE note - "DOKE" must come before "DO"
+	.byte	"OKE",TK_DOKE		; DOKE note - "DOKE" must come before "DO"
 LBB_DO
-	.byte	"O",TK_DO		; DO
+	.byte	"O",TK_DO			; DO
 	.byte	$00
 TAB_ASCE
 LBB_ELSE
-	.byte	"LSE",TK_ELSE	; ELSE
+	.byte	"LSE",TK_ELSE		; ELSE
 LBB_END
-	.byte	"ND",TK_END		; END
+	.byte	"ND",TK_END			; END
 LBB_EOR
-	.byte	"OR",TK_EOR		; EOR
+	.byte	"OR",TK_EOR			; EOR
 LBB_EXP
-	.byte	"XP(",TK_EXP	; EXP(
+	.byte	"XP(",TK_EXP		; EXP(
 	.byte	$00
 TAB_ASCF
 LBB_FN
-	.byte	"N",TK_FN		; FN
+	.byte	"N",TK_FN			; FN
 LBB_FOR
-	.byte	"OR",TK_FOR		; FOR
+	.byte	"OR",TK_FOR			; FOR
 LBB_FRE
-	.byte	"RE(",TK_FRE	; FRE(
+	.byte	"RE(",TK_FRE		; FRE(
 	.byte	$00
 TAB_ASCG
 LBB_GET
-	.byte	"ET",TK_GET		; GET
+	.byte	"ET",TK_GET			; GET
 LBB_GOSUB
-	.byte	"OSUB",TK_GOSUB	; GOSUB
+	.byte	"OSUB",TK_GOSUB		; GOSUB
 LBB_GOTO
-	.byte	"OTO",TK_GOTO	; GOTO
+	.byte	"OTO",TK_GOTO		; GOTO
 	.byte	$00
 TAB_ASCH
 LBB_HEXS
-	.byte	"EX$(",TK_HEXS	; HEX$(
+	.byte	"EX$(",TK_HEXS		; HEX$(
 	.byte	$00
 TAB_ASCI
 LBB_IF
-	.byte	"F",TK_IF		; IF
+	.byte	"F",TK_IF			; IF
 LBB_INC
-	.byte	"NC",TK_INC		; INC
+	.byte	"NC",TK_INC			; INC
 LBB_INPUT
-	.byte	"NPUT",TK_INPUT	; INPUT
+	.byte	"NPUT",TK_INPUT		; INPUT
 LBB_INT
-	.byte	"NT(",TK_INT	; INT(
+	.byte	"NT(",TK_INT		; INT(
 LBB_IRQ
-	.byte	"RQ",TK_IRQ		; IRQ
+	.byte	"RQ",TK_IRQ			; IRQ
 	.byte	$00
 TAB_ASCL
 LBB_LCASES
-	.byte	"CASE$(",TK_LCASES
-					; LCASE$(
+	.byte	"CASE$(",TK_LCASES	; LCASE$(
 LBB_LEFTS
 	.byte	"EFT$(",TK_LEFTS	; LEFT$(
 LBB_LEN
-	.byte	"EN(",TK_LEN	; LEN(
+	.byte	"EN(",TK_LEN		; LEN(
 LBB_LET
-	.byte	"ET",TK_LET		; LET
+	.byte	"ET",TK_LET			; LET
 LBB_LIST
-	.byte	"IST",TK_LIST	; LIST
+	.byte	"IST",TK_LIST		; LIST
 LBB_LOAD
-	.byte	"OAD",TK_LOAD	; LOAD
+	.byte	"OAD",TK_LOAD		; LOAD
 LBB_LOG
-	.byte	"OG(",TK_LOG	; LOG(
+	.byte	"OG(",TK_LOG		; LOG(
 LBB_LOOP
-	.byte	"OOP",TK_LOOP	; LOOP
+	.byte	"OOP",TK_LOOP		; LOOP
 	.byte	$00
 TAB_ASCM
 LBB_MAX
-	.byte	"AX(",TK_MAX	; MAX(
+	.byte	"AX(",TK_MAX		; MAX(
 LBB_MIDS
-	.byte	"ID$(",TK_MIDS	; MID$(
+	.byte	"ID$(",TK_MIDS		; MID$(
 LBB_MIN
-	.byte	"IN(",TK_MIN	; MIN(
+	.byte	"IN(",TK_MIN		; MIN(
 	.byte	$00
 TAB_ASCN
 LBB_NEW
-	.byte	"EW",TK_NEW		; NEW
+	.byte	"EW",TK_NEW			; NEW
 LBB_NEXT
-	.byte	"EXT",TK_NEXT	; NEXT
+	.byte	"EXT",TK_NEXT		; NEXT
 LBB_NMI
-	.byte	"MI",TK_NMI		; NMI
+	.byte	"MI",TK_NMI			; NMI
 LBB_NOT
-	.byte	"OT",TK_NOT		; NOT
+	.byte	"OT",TK_NOT			; NOT
 LBB_NULL
-	.byte	"ULL",TK_NULL	; NULL
+	.byte	"ULL",TK_NULL		; NULL
 	.byte	$00
 TAB_ASCO
 LBB_OFF
-	.byte	"FF",TK_OFF		; OFF
+	.byte	"FF",TK_OFF			; OFF
 LBB_ON
-	.byte	"N",TK_ON		; ON
+	.byte	"N",TK_ON			; ON
 LBB_OR
-	.byte	"R",TK_OR		; OR
+	.byte	"R",TK_OR			; OR
 	.byte	$00
 TAB_ASCP
 LBB_PEEK
-	.byte	"EEK(",TK_PEEK	; PEEK(
+	.byte	"EEK(",TK_PEEK		; PEEK(
 LBB_PI
-	.byte	"I",TK_PI		; PI
+	.byte	"I",TK_PI			; PI
 LBB_POKE
-	.byte	"OKE",TK_POKE	; POKE
+	.byte	"OKE",TK_POKE		; POKE
 LBB_POS
-	.byte	"OS(",TK_POS	; POS(
+	.byte	"OS(",TK_POS		; POS(
 LBB_PRINT
-	.byte	"RINT",TK_PRINT	; PRINT
+	.byte	"RINT",TK_PRINT		; PRINT
 	.byte	$00
 TAB_ASCR
 LBB_READ
-	.byte	"EAD",TK_READ	; READ
+	.byte	"EAD",TK_READ		; READ
 LBB_REM
-	.byte	"EM",TK_REM		; REM
+	.byte	"EM",TK_REM			; REM
 LBB_RESTORE
-	.byte	"ESTORE",TK_RESTORE
-					; RESTORE
+	.byte	"ESTORE",TK_RESTORE	; RESTORE
 LBB_RETIRQ
 	.byte	"ETIRQ",TK_RETIRQ	; RETIRQ
 LBB_RETNMI
@@ -8604,74 +8601,72 @@ LBB_RETNMI
 LBB_RETURN
 	.byte	"ETURN",TK_RETURN	; RETURN
 LBB_RIGHTS
-	.byte	"IGHT$(",TK_RIGHTS
-					; RIGHT$(
+	.byte	"IGHT$(",TK_RIGHTS	; RIGHT$(
 LBB_RND
-	.byte	"ND(",TK_RND	; RND(
+	.byte	"ND(",TK_RND		; RND(
 LBB_RUN
-	.byte	"UN",TK_RUN		; RUN
+	.byte	"UN",TK_RUN			; RUN
 	.byte	$00
 TAB_ASCS
 LBB_SADD
-	.byte	"ADD(",TK_SADD	; SADD(
+	.byte	"ADD(",TK_SADD		; SADD(
 LBB_SAVE
-	.byte	"AVE",TK_SAVE	; SAVE
+	.byte	"AVE",TK_SAVE		; SAVE
 LBB_SGN
-	.byte	"GN(",TK_SGN	; SGN(
+	.byte	"GN(",TK_SGN		; SGN(
 LBB_SIN
-	.byte	"IN(",TK_SIN	; SIN(
+	.byte	"IN(",TK_SIN		; SIN(
 LBB_SPC
-	.byte	"PC(",TK_SPC	; SPC(
+	.byte	"PC(",TK_SPC		; SPC(
 LBB_SQR
-	.byte	"QR(",TK_SQR	; SQR(
+	.byte	"QR(",TK_SQR		; SQR(
 LBB_STEP
-	.byte	"TEP",TK_STEP	; STEP
+	.byte	"TEP",TK_STEP		; STEP
 LBB_STOP
-	.byte	"TOP",TK_STOP	; STOP
+	.byte	"TOP",TK_STOP		; STOP
 LBB_STRS
-	.byte	"TR$(",TK_STRS	; STR$(
+	.byte	"TR$(",TK_STRS		; STR$(
 LBB_SWAP
-	.byte	"WAP",TK_SWAP	; SWAP
+	.byte	"WAP",TK_SWAP		; SWAP
 ;LBB_SYS
-;	.byte   "YS", TK_SYS    ; SYS *** added for SBC-2
+;	.byte   "YS", TK_SYS		; SYS *** added for SBC-2
 	.byte	$00
 TAB_ASCT
 LBB_TAB
-	.byte	"AB(",TK_TAB	; TAB(
+	.byte	"AB(",TK_TAB		; TAB(
 LBB_TAN
-	.byte	"AN(",TK_TAN	; TAN(
+	.byte	"AN(",TK_TAN		; TAN(
 LBB_THEN
-	.byte	"HEN",TK_THEN	; THEN
+	.byte	"HEN",TK_THEN		; THEN
 LBB_TO
-	.byte	"O",TK_TO		; TO
+	.byte	"O",TK_TO			; TO
 LBB_TWOPI
-	.byte	"WOPI",TK_TWOPI	; TWOPI
+	.byte	"WOPI",TK_TWOPI		; TWOPI
 	.byte	$00
 TAB_ASCU
 LBB_UCASES
-	.byte	"CASE$(",TK_UCASES
-					; UCASE$(
+	.byte	"CASE$(",TK_UCASES	; UCASE$(
 LBB_UNTIL
-	.byte	"NTIL",TK_UNTIL	; UNTIL
+	.byte	"NTIL",TK_UNTIL		; UNTIL
 LBB_USR
-	.byte	"SR(",TK_USR	; USR(
+	.byte	"SR(",TK_USR		; USR(
 	.byte	$00
 TAB_ASCV
 LBB_VAL
-	.byte	"AL(",TK_VAL	; VAL(
+	.byte	"AL(",TK_VAL		; VAL(
 LBB_VPTR
 	.byte	"ARPTR(",TK_VPTR	; VARPTR(
 	.byte	$00
 TAB_ASCW
 LBB_WAIT
-	.byte	"AIT",TK_WAIT	; WAIT
+	.byte	"AIT",TK_WAIT		; WAIT
 LBB_WHILE
-	.byte	"HILE",TK_WHILE	; WHILE
+	.byte	"HILE",TK_WHILE		; WHILE
 LBB_WIDTH
-	.byte	"IDTH",TK_WIDTH	; WIDTH
+	.byte	"IDTH",TK_WIDTH		; WIDTH
 	.byte	$00
 TAB_POWR
-	.byte	TK_POWER,$00	; ^
+	.byte	TK_POWER,$00		; ^
 
 ; new decode table for LIST
 ; Table is ..
@@ -8686,89 +8681,89 @@ LAB_KEYT
 	.byte	3,"F"
 	.word	LBB_FOR		; FOR
 	.byte	4,"N"
-	.word	LBB_NEXT		; NEXT
+	.word	LBB_NEXT	; NEXT
 	.byte	4,"D"
-	.word	LBB_DATA		; DATA
+	.word	LBB_DATA	; DATA
 	.byte	5,"I"
-	.word	LBB_INPUT		; INPUT
+	.word	LBB_INPUT	; INPUT
 	.byte	3,"D"
 	.word	LBB_DIM		; DIM
 	.byte	4,"R"
-	.word	LBB_READ		; READ
+	.word	LBB_READ	; READ
 	.byte	3,"L"
 	.word	LBB_LET		; LET
 	.byte	3,"D"
 	.word	LBB_DEC		; DEC
 	.byte	4,"G"
-	.word	LBB_GOTO		; GOTO
+	.word	LBB_GOTO	; GOTO
 	.byte	3,"R"
 	.word	LBB_RUN		; RUN
 	.byte	2,"I"
 	.word	LBB_IF		; IF
 	.byte	7,"R"
-	.word	LBB_RESTORE		; RESTORE
+	.word	LBB_RESTORE	; RESTORE
 	.byte	5,"G"
-	.word	LBB_GOSUB		; GOSUB
+	.word	LBB_GOSUB	; GOSUB
 	.byte	6,"R"
-	.word	LBB_RETIRQ		; RETIRQ
+	.word	LBB_RETIRQ	; RETIRQ
 	.byte	6,"R"
-	.word	LBB_RETNMI		; RETNMI
+	.word	LBB_RETNMI	; RETNMI
 	.byte	6,"R"
-	.word	LBB_RETURN		; RETURN
+	.word	LBB_RETURN	; RETURN
 	.byte	3,"R"
 	.word	LBB_REM		; REM
 	.byte	4,"S"
-	.word	LBB_STOP		; STOP
+	.word	LBB_STOP	; STOP
 	.byte	2,"O"
 	.word	LBB_ON		; ON
 	.byte	4,"N"
-	.word	LBB_NULL		; NULL
+	.word	LBB_NULL	; NULL
 	.byte	3,"I"
 	.word	LBB_INC		; INC
 	.byte	4,"W"
-	.word	LBB_WAIT		; WAIT
+	.word	LBB_WAIT	; WAIT
 	.byte	4,"L"
-	.word	LBB_LOAD		; LOAD
+	.word	LBB_LOAD	; LOAD
 	.byte	4,"S"
-	.word	LBB_SAVE		; SAVE
+	.word	LBB_SAVE	; SAVE
 	.byte	3,"D"
 	.word	LBB_DEF		; DEF
 	.byte	4,"P"
-	.word	LBB_POKE		; POKE
+	.word	LBB_POKE	; POKE
 	.byte	4,"D"
-	.word	LBB_DOKE		; DOKE
+	.word	LBB_DOKE	; DOKE
 	.byte	4,"C"
-	.word	LBB_CALL		; CALL
+	.word	LBB_CALL	; CALL
 	.byte	2,"D"
 	.word	LBB_DO		; DO
 	.byte	4,"L"
-	.word	LBB_LOOP		; LOOP
+	.word	LBB_LOOP	; LOOP
 	.byte	5,"P"
-	.word	LBB_PRINT		; PRINT
+	.word	LBB_PRINT	; PRINT
 	.byte	4,"C"
-	.word	LBB_CONT		; CONT
+	.word	LBB_CONT	; CONT
 	.byte	4,"L"
-	.word	LBB_LIST		; LIST
+	.word	LBB_LIST	; LIST
 	.byte	5,"C"
-	.word	LBB_CLEAR		; CLEAR
+	.word	LBB_CLEAR	; CLEAR
 	.byte	3,"N"
 	.word	LBB_NEW		; NEW
 	.byte	5,"W"
-	.word	LBB_WIDTH		; WIDTH
+	.word	LBB_WIDTH	; WIDTH
 	.byte	3,"G"
 	.word	LBB_GET		; GET
 	.byte	4,"S"
-	.word	LBB_SWAP		; SWAP
+	.word	LBB_SWAP	; SWAP
 	.byte	6,"B"
-	.word	LBB_BITSET		; BITSET
+	.word	LBB_BITSET	; BITSET
 	.byte	6,"B"
-	.word	LBB_BITCLR		; BITCLR
+	.word	LBB_BITCLR	; BITCLR
 	.byte	3,"I"
 	.word	LBB_IRQ		; IRQ
 	.byte	3,"N"
 	.word	LBB_NMI		; NMI
-;	.byte	3,"S"			;
-;	.word	LBB_SYS			; SYS   *** Added for SBC-2
+;	.byte	3,"S"
+;	.word	LBB_SYS		; SYS   *** Added for SBC-2
 
 
 ; secondary commands (cannot start a statement)
@@ -8776,7 +8771,7 @@ LAB_KEYT
 	.byte	4,"T"
 	.word	LBB_TAB		; TAB
 	.byte	4,"E"
-	.word	LBB_ELSE		; ELSE
+	.word	LBB_ELSE	; ELSE
 	.byte	2,"T"
 	.word	LBB_TO		; TO
 	.byte	2,"F"
@@ -8784,30 +8779,30 @@ LAB_KEYT
 	.byte	4,"S"
 	.word	LBB_SPC		; SPC
 	.byte	4,"T"
-	.word	LBB_THEN		; THEN
+	.word	LBB_THEN	; THEN
 	.byte	3,"N"
 	.word	LBB_NOT		; NOT
 	.byte	4,"S"
-	.word	LBB_STEP		; STEP
+	.word	LBB_STEP	; STEP
 	.byte	5,"U"
-	.word	LBB_UNTIL		; UNTIL
+	.word	LBB_UNTIL	; UNTIL
 	.byte	5,"W"
-	.word	LBB_WHILE		; WHILE
+	.word	LBB_WHILE	; WHILE
 	.byte	3,"O"
 	.word	LBB_OFF		; OFF
 
-; opperators
+; operators
 
 	.byte	1,"+"
-	.word	$0000			; +
+	.word	$0000		; +
 	.byte	1,"-"
-	.word	$0000			; -
+	.word	$0000		; -
 	.byte	1,"*"
-	.word	$0000			; *
+	.word	$0000		; *
 	.byte	1,"/"
-	.word	$0000			; /
+	.word	$0000		; /
 	.byte	1,"^"
-	.word	$0000			; ^
+	.word	$0000		; ^
 	.byte	3,"A"
 	.word	LBB_AND		; AND
 	.byte	3,"E"
@@ -8815,88 +8810,88 @@ LAB_KEYT
 	.byte	2,"O"
 	.word	LBB_OR		; OR
 	.byte	2,">"
-	.word	LBB_RSHIFT		; >>
+	.word	LBB_RSHIFT	; >>
 	.byte	2,"<"
-	.word	LBB_LSHIFT		; <<
+	.word	LBB_LSHIFT	; <<
 	.byte	1,">"
-	.word	$0000			; >
+	.word	$0000		; >
 	.byte	1,"="
-	.word	$0000			; =
+	.word	$0000		; =
 	.byte	1,"<"
-	.word	$0000			; <
+	.word	$0000		; <
 
 ; functions
 
-	.byte	4,"S"			;
+	.byte	4,"S"
 	.word	LBB_SGN		; SGN
-	.byte	4,"I"			;
+	.byte	4,"I"
 	.word	LBB_INT		; INT
-	.byte	4,"A"			;
+	.byte	4,"A"
 	.word	LBB_ABS		; ABS
-	.byte	4,"U"			;
+	.byte	4,"U"
 	.word	LBB_USR		; USR
-	.byte	4,"F"			;
+	.byte	4,"F"
 	.word	LBB_FRE		; FRE
-	.byte	4,"P"			;
+	.byte	4,"P"
 	.word	LBB_POS		; POS
-	.byte	4,"S"			;
+	.byte	4,"S"
 	.word	LBB_SQR		; SQR
-	.byte	4,"R"			;
+	.byte	4,"R"
 	.word	LBB_RND		; RND
-	.byte	4,"L"			;
+	.byte	4,"L"
 	.word	LBB_LOG		; LOG
-	.byte	4,"E"			;
+	.byte	4,"E"
 	.word	LBB_EXP		; EXP
-	.byte	4,"C"			;
+	.byte	4,"C"
 	.word	LBB_COS		; COS
-	.byte	4,"S"			;
+	.byte	4,"S"
 	.word	LBB_SIN		; SIN
-	.byte	4,"T"			;
+	.byte	4,"T"
 	.word	LBB_TAN		; TAN
-	.byte	4,"A"			;
+	.byte	4,"A"
 	.word	LBB_ATN		; ATN
-	.byte	5,"P"			;
-	.word	LBB_PEEK		; PEEK
-	.byte	5,"D"			;
-	.word	LBB_DEEK		; DEEK
-	.byte	5,"S"			;
-	.word	LBB_SADD		; SADD
-	.byte	4,"L"			;
+	.byte	5,"P"
+	.word	LBB_PEEK	; PEEK
+	.byte	5,"D"
+	.word	LBB_DEEK	; DEEK
+	.byte	5,"S"
+	.word	LBB_SADD	; SADD
+	.byte	4,"L"
 	.word	LBB_LEN		; LEN
-	.byte	5,"S"			;
-	.word	LBB_STRS		; STR$
-	.byte	4,"V"			;
+	.byte	5,"S"
+	.word	LBB_STRS	; STR$
+	.byte	4,"V"
 	.word	LBB_VAL		; VAL
-	.byte	4,"A"			;
+	.byte	4,"A"
 	.word	LBB_ASC		; ASC
-	.byte	7,"U"			;
-	.word	LBB_UCASES		; UCASE$
-	.byte	7,"L"			;
-	.word	LBB_LCASES		; LCASE$
-	.byte	5,"C"			;
-	.word	LBB_CHRS		; CHR$
-	.byte	5,"H"			;
-	.word	LBB_HEXS		; HEX$
-	.byte	5,"B"			;
-	.word	LBB_BINS		; BIN$
-	.byte	7,"B"			;
-	.word	LBB_BITTST		; BITTST
-	.byte	4,"M"			;
+	.byte	7,"U"
+	.word	LBB_UCASES	; UCASE$
+	.byte	7,"L"
+	.word	LBB_LCASES	; LCASE$
+	.byte	5,"C"
+	.word	LBB_CHRS	; CHR$
+	.byte	5,"H"
+	.word	LBB_HEXS	; HEX$
+	.byte	5,"B"
+	.word	LBB_BINS	; BIN$
+	.byte	7,"B"
+	.word	LBB_BITTST	; BITTST
+	.byte	4,"M"
 	.word	LBB_MAX		; MAX
-	.byte	4,"M"			;
+	.byte	4,"M"
 	.word	LBB_MIN		; MIN
-	.byte	2,"P"			;
+	.byte	2,"P"
 	.word	LBB_PI		; PI
-	.byte	5,"T"			;
-	.word	LBB_TWOPI		; TWOPI
-	.byte	7,"V"			;
-	.word	LBB_VPTR		; VARPTR
-	.byte	6,"L"			;
-	.word	LBB_LEFTS		; LEFT$
-	.byte	7,"R"			;
-	.word	LBB_RIGHTS		; RIGHT$
-	.byte	5,"M"			;
-	.word	LBB_MIDS		; MID$
+	.byte	5,"T"
+	.word	LBB_TWOPI	; TWOPI
+	.byte	7,"V"
+	.word	LBB_VPTR	; VARPTR
+	.byte	6,"L"
+	.word	LBB_LEFTS	; LEFT$
+	.byte	7,"R"
+	.word	LBB_RIGHTS	; RIGHT$
+	.byte	5,"M"
+	.word	LBB_MIDS	; MID$
 
 ; BASIC messages, mostly error messages
 
