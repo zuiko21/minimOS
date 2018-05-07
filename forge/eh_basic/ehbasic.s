@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180507-1238
+; last modified 20180507-1336
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -327,9 +327,9 @@ IrqBase		= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** ski
 
 #ifdef	C816
 IbufiY		= IrqBase+3	; self-pointer to zp buffer! $C8-C9
-iodev		= IbufiY+2		; ##### minimOS selected I/O device ##### $CA
+iodev		= IbufiY+2	; ##### minimOS selected I/O device ##### $CA
 #else
-iodev		= IrqBase+3		; ##### minimOS selected I/O device ##### $C8
+iodev		= IrqBase+3	; ##### minimOS selected I/O device ##### $C8
 #endif
 
 ; *** still some bytes free from $C9 ($CB for 816) up to $E3 ($E1 for the C64) ***
@@ -388,11 +388,11 @@ TK_BITCLR	= TK_BITSET+1	; BITCLR token
 TK_IRQ		= TK_BITCLR+1	; IRQ token
 TK_NMI		= TK_IRQ+1		; NMI token
 ;TK_SYS		= TK_NMI+1		; SYS token *** added for SBC-2
-; *** minimOS needs some 'exit to shell' command ***
+TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell #####
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_NMI+1		; TAB token *** SYS no longer used
+TK_TAB		= TK_BYE+1		; TAB token ##### SYS no longer used, minimOS needs BYE #####
 TK_ELSE		= TK_TAB+1		; ELSE token
 TK_TO		= TK_ELSE+1		; TO token
 TK_FN		= TK_TO+1		; FN token
@@ -470,8 +470,8 @@ LAB_STAK	= $0100		; stack bottom, no offset
 #else
 LAB_STAK	= $0		; stack bottom, will use 16-bit X
 #endif
-
 ; *** flushed stack address (minus 2) will be stored at emptsk in runtime ***
+
 ; *** no real need for I/O vectors ***
 
 COLON		= $3A				; avoids problems with some assemblers...
@@ -505,7 +505,7 @@ open_eh:
 ; *** extra check for 816-savvyness ***
 #ifdef	SAFE
 #ifndef		C816
-	_ADMIN(GESTALT)		; investigate architecture details
+	_ADMIN(GESTALT)		; ##### investigate architecture details #####
 	LDA cpu_ll			; check installed CPU
 	CMP #'V'			; is it a 65816?
 	BNE cpu_ok			; nope, nothing to be afraid of
@@ -516,26 +516,28 @@ open_eh:
 		PHP					; while native, keep previous E as C
 		.byt $FB			; XCE, back to previous mode
 		PLP					; now C indicates E state
-		BCS cpu_ok			; we are running an 8-bit kernel, thus OK
-; otherwise this is a 16-bit system which needs a proper version to run
+		BCS cpu_ok			; we are running an 8-bit kernel in emulation mode, thus OK
+; otherwise this is a 16-bit native system which needs a proper version to run
 			LDY #<cpu_err		; get error message pointer
 			LDA #>cpu_err
 			STY str_pt			; set kernel parameter
 			STA str_pt+1		; 6502 code must load in bank zero, RUN_ARCH will set bank accordingly
 			LDY iodev			; default device
-			_KERNEL(STRING)		; print message
-			_ABORT(INVALID)		; *** abort code, either RTS or RTL will be OK
+			_KERNEL(STRING)		; ##### print message #####
+			_ABORT(INVALID)		; ##### abort code, either RTS or RTL will be OK #####
 cpu_err:
 	.asc	"Sorry, this version does NOT run on 65816 systems", 0
 cpu_ok:
 #endif
 #endif
 
-; *** reserve as much memory as available ***
+; ##### reserve as much memory as available #####
+; ...perhaps worth waiting the user to type required memory, then calling MALLOC accordingly!
+; otherwise set Ram_base & Ram_top as appropriate
 	STZ ma_align		; page-aligned
 	STZ ma_rs			; as much as possible
 	STZ ma_rs+1
-	_KERNEL(MALLOC)		; request RAM from OS
+	_KERNEL(MALLOC)		; ##### request RAM from OS #####
 	LDA ma_pt
 	STA Ram_base
 	STA Itempl			; will need it later
@@ -549,17 +551,18 @@ cpu_ok:
 	STA Ram_top+1		; base+size=top
 
 ; *** keep track of flushed stack address ***
+; this is needed in minimOS but will work fine on other systems too
 #ifdef	C816
 	.xl: REP #$10
 #endif
-	TSX			; current stack pointer
-	DEX			; minus two
+	TSX					; current stack pointer
+	DEX					; minus two
 	DEX
-	STX emptsk		; store for later
+	STX emptsk			; store for later
 #ifdef	C816
 	.xs: SEP #$10
 #else
-	LDA #1			; standard 6502 stack page
+	LDA #1				; standard 6502 stack page
 	STA emptsk+1		; *** must be indirect pointer ready ***
 #endif
 
@@ -572,11 +575,12 @@ cpu_ok:
 ; new page 2 initialisation, copy block to ccflag on
 ; *** cannot use page 2 freely, now goes into a safe ZP/DP space ***
 LAB_COLD
-	LDX	#PG2_TABE-PG2_TABS-1	; *** use X instead of Y to make it 816-DP-savvy
+	LDX	#PG2_TABE-PG2_TABS-1
+						; *** uses X instead of Y to make it 816-DP-savvy ***
 						; byte count-1
 LAB_2D13
 	LDA	PG2_TABS,X		; get byte
-	STA	ccflag,X		; *** store in new ZP space
+	STA	ccflag,X		; *** store in new ZP space ***
 	DEX					; decrement count
 	BPL	LAB_2D13		; loop if not done
 
@@ -590,7 +594,7 @@ LAB_GMEM
 						; set byte count-1
 TabLoop
 	LDA	StrTab,X		; get byte from table
-	STA	Nullct,X		; save byte in page zero *** will skip minimOS reserved!
+	STA	Nullct,X		; save byte in page zero *** will skip minimOS reserved! ***
 	DEX					; decrement count
 	BPL	TabLoop			; loop if not all done
 
@@ -628,6 +632,7 @@ TabLoop
 	LDY	#$00			; else clear Y
 						; character was null so get memory size the hard way
 						; we get here with Y=0 and Itempl/h = Ram_base
+; *** in case MALLOC was not called before, best to call it with (0) for full memory assignment ***
 LAB_2D93
 	INC	Itempl			; increment temporary integer low byte
 	BNE	LAB_2D99		; branch if no overflow
@@ -650,6 +655,7 @@ LAB_2D99
 
 	BNE	LAB_2DB6		; branch if fail
 
+; *** will arrive here if some amount was specified, call MALLOC accordingly ***
 LAB_2DAA
 	JSR	LAB_2887		; get FAC1 from string
 	LDA	FAC1_e			; get FAC1 exponent
@@ -684,13 +690,14 @@ LAB_2DB6
 ;	BCS	LAB_GMEM		; if too large go try again
 
 ;MEM_OK
+
+; *** in any case, might think about integrating Ram_base & Ram_top into these... ***
 	STA	Ememl			; set end of mem low byte
 	STY	Ememh			; set end of mem high byte
 	STA	Sstorl			; set bottom of string space low byte
 	STY	Sstorh			; set bottom of string space high byte
 
 ; now ram_base is variable
-; perhaps should check requested size and then call MALLOC accordingly, saving Ram_ variables...
 	LDY	Ram_base		; set start addr low byte
 	LDX	Ram_base+1		; set start addr high byte
 	STY	Smeml			; save start of mem low byte
@@ -708,6 +715,8 @@ LAB_2DB6
 ;	BNE	LAB_2E05		; branch if no rollover
 
 ;	INC	Smemh			; increment start of mem high byte
+
+; *** memory assigned anyway, show available bytes ***
 LAB_2E05
 	JSR	LAB_CRLF		; print CR/LF
 	JSR	LAB_1463		; do "NEW" and "CLEAR"
@@ -801,7 +810,7 @@ LAB_120A
 ; stack too deep? do OM error
 
 LAB_1212
-; if 6502 multitask does not fragment stack, will be OK
+; *** if 6502 multitask does not fragment stack, will be OK ***
 ; no way for LOWRAM, though
 	STA	TempB			; save result in temp byte
 	TSX					; copy stack, 816-savvy
@@ -1661,8 +1670,8 @@ LAB_15C2
 	STA	Cpntrl			; save continue pointer low byte
 	STY	Cpntrh			; save continue pointer high byte
 LAB_15D1
-	LDY	#$00			; clear index
-	LDA	(Bpntrl),Y		; get next byte
+;	LDY	#$00			; clear index
+	LDA	(Bpntrl)		; get next byte *** CMOS only, does not need index ***
 	BEQ	LAB_15DC		; branch if null [EOL]
 
 	CMP	#COLON			; compare with COLON
@@ -2194,8 +2203,8 @@ LAB_174G
 ; the IF was executed and there may be a following ELSE so the code needs to return
 ; here to check and ignore the ELSE if present
 
-	LDY	#$00			; clear the index
-	LDA	(Bpntrl),Y		; get the next BASIC byte
+;	LDY	#$00			; clear the index
+	LDA	(Bpntrl)		; get the next BASIC byte *** CMOS only, needs no index ***
 	CMP	#TK_ELSE		; compare it with the token for ELSE
 	BEQ	LAB_DATA		; if ELSE ignore the following statement
 
@@ -2439,8 +2448,8 @@ LAB_17F4
 
 						; make space and copy string
 LAB_17FB
-	LDY	#$00			; index to length
-	LDA	(des_pl),Y		; get string length
+;	LDY	#$00			; index to length
+	LDA	(des_pl)		; get string length *** CMOS only, needs no index ***
 	JSR	LAB_209C		; copy string
 	LDA	des_2l			; get descriptor pointer low byte
 	LDY	des_2h			; get descriptor pointer high byte
@@ -2493,8 +2502,8 @@ LAB_IsByte
 	BEQ	LAB_NoSt		; skip store if null string
 
 	PLA					; get character back
-	LDY	#$00			; clear index
-	STA	(str_pl),Y		; save byte in string (byte IS string!)
+;	LDY	#$00			; clear index
+	STA	(str_pl)		; save byte in string (byte IS string!) *** CMOS only, needs no index ***
 LAB_NoSt
 	JSR	LAB_RTST		; check for space on descriptor stack then put address
 						; and length on descriptor stack and update stack pointers
@@ -2532,7 +2541,7 @@ LAB_1831
 
 	JSR	LAB_296E		; convert FAC1 to string
 	JSR	LAB_20AE		; print " terminated string to Sutill/Sutilh
-	LDY	#$00			; clear index
+;	LDY	#$00			; clear index
 
 ; do not check fit if terminal width byte is zero
 
@@ -2541,7 +2550,7 @@ LAB_1831
 
 	SEC					; set carry for subtract
 	SBC	TPos			; subtract terminal position
-	SBC	(des_pl),Y		; subtract string length
+	SBC	(des_pl)		; subtract string length *** CMOS only, needs no index ***
 	BCS	LAB_185E		; branch if less than terminal width
 
 	JSR	LAB_CRLF		; else print CR/LF
@@ -2901,8 +2910,8 @@ LAB_1A03
 
 						; we were getting INPUT
 LAB_1A0E
-	LDY	#$00			; clear index
-	LDA	(Rdptrl),Y		; get next byte
+;	LDY	#$00			; clear index
+	LDA	(Rdptrl)		; get next byte *** CMOS only, needs no index ***
 	BNE	LAB_1A1B		; error if not end of INPUT
 
 	RTS
@@ -3394,8 +3403,8 @@ LAB_1BFB
 ; scan for CHR$(A) , else do syntax error then warm start
 
 LAB_SCCA
-	LDY	#$00			; clear index
-	CMP	(Bpntrl),Y		; check next byte is = A
+;	LDY	#$00			; clear index
+	CMP	(Bpntrl)		; check next byte is = A *** CMOS only, needs no index ***
 	BNE	LAB_SNER		; if not do syntax error then warm start
 
 	JMP	LAB_IGBY		; increment and scan memory then return
@@ -4954,10 +4963,10 @@ LAB_224D
 	STA	ssptr_l			; set pointer low byte
 	PLA					; get descriptor pointer high byte back
 	STA	ssptr_h			; set pointer high byte
-	LDY	#$00			; clear index
-	LDA	(ssptr_l),Y		; get length_1 from descriptor
+;	LDY	#$00			; clear index
+	LDA	(ssptr_l)		; get length_1 from descriptor *** CMOS only, needs no index ***
 	CLC					; clear carry for add
-	ADC	(des_pl),Y		; add length_2
+	ADC	(des_pl)		; add length_2 *** CMOS only, needs no index ***
 	BCC	LAB_226D		; branch if no overflow
 
 	LDX	#$1A			; else set error code $1A ("String too long" error)
@@ -5109,8 +5118,8 @@ LAB_CHRS
 	JSR	LAB_MSSP		; make string space A bytes long A=$AC=length,
 						; X=$AD=Sutill=ptr low byte, Y=$AE=Sutilh=ptr high byte
 	PLA					; get character back
-	LDY	#$00			; clear index
-	STA	(str_pl),Y		; save byte in string (byte IS string!)
+;	LDY	#$00			; clear index
+	STA	(str_pl)		; save byte in string (byte IS string!) *** CMOS only, needs no index ***
 	JMP	LAB_RTST		; check for space on descriptor stack then put string
 						; address and length on descriptor stack and update stack
 						; pointers
@@ -5223,6 +5232,11 @@ LAB_236F
 						; (JSR pushes return addr-1. this is all very nice
 						; but will go tits up if either call is on a page
 						; boundary!)
+#ifdef	SAFE
+	BNE fj_nw
+		INC Fnxjph			; *** correcting code ***
+fj_nw:
+#endif
 	JMP	(Fnxjpl)		; in effect, RTS
 
 ; perform LCASE$()
@@ -5321,8 +5335,8 @@ LAB_ASC
 	JSR	LAB_ESGL		; evaluate string, get length in A (and Y)
 	BEQ	LAB_23A8		; if null do function call error then warm start
 
-	LDY	#$00			; set index to first character
-	LDA	(ut1_pl),Y		; get byte
+;	LDY	#$00			; set index to first character
+	LDA	(ut1_pl)		; get byte *** CMOS only, needs no index ***
 	TAY					; copy to Y
 	JMP	LAB_1FD0		; convert Y to byte in FAC1 and return
 
@@ -5384,8 +5398,8 @@ LAB_23C5
 	JSR	LAB_GBYT		; scan memory
 	JSR	LAB_2887		; get FAC1 from string
 	PLA					; restore string end +1 byte
-	LDY	#$00			; set index to zero
-	STA	(ut2_pl),Y		; put string end byte back
+;	LDY	#$00			; set index to zero
+	STA	(ut2_pl)		; put string end byte back *** CMOS only, needs no index ***
 
 ; restore BASIC execute pointer from temp (Btmpl/Btmph)
 
@@ -6640,8 +6654,8 @@ LAB_2934
 	ASL					; * 4
 	ADC	expcnt			; * 5
 	ASL					; * 10
-	LDY	#$00			; set index
-	ADC	(Bpntrl),Y		; add character (will be $30 too much!)
+;	LDY	#$00			; set index
+	ADC	(Bpntrl)		; add character (will be $30 too much!) *** CMOS only, needs no index ***
 	SBC	#"0"-1			; convert character to binary
 LAB_2942
 	STA	expcnt			; save exponent count byte
