@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180507-1235
+; last modified 20180507-1238
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -1100,7 +1100,7 @@ LAB_1357
 LAB_1359
 ; *** X only needs to be preserved here ***
 	JSR	V_INPT			; call scan input device
-	BCC	LAB_1359		; loop if no byte
+	BCS	LAB_1359		; loop if no byte ##### minimOS way
 
 	CMP	#$07			; compare with [BELL]
 	BEQ	LAB_1378		; branch if [BELL]
@@ -7490,7 +7490,7 @@ CTRLC
 	BNE	LAB_FBA2		; exit if inhibited
 
 	JSR	V_INPT			; scan input device
-	BCC	LAB_FBA0		; exit if buffer empty
+	BCS	LAB_FBA0		; exit if buffer empty ##### minimOS way
 
 	STA	ccbyte			; save received byte
 	LDX	#$20			; "life" timer for bytes
@@ -7559,7 +7559,7 @@ LAB_CKIN
 
 INGET
 	JSR	V_INPT			; call scan input device
-	BCS	LAB_FB95		; if byte go reset timer
+	BCC LAB_FB95		; if byte go reset timer ##### minimOS way
 
 	LDA	ccnull			; get countdown
 	BEQ	LAB_FB96		; exit if empty
@@ -7980,6 +7980,7 @@ V_INPT					; non halting scan input device
 	LDY iodev			; ##### assigned window #####
 	_KERNEL(CIN)
 ; could check C and Y here for safety
+; note C works opposite than the original EhBASIC, has been modified
 	PLY					; *** macro-savvy before LDA ***
 	PLX
 	LDA io_c
