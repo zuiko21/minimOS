@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180507-1231
+; last modified 20180507-1235
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -4095,7 +4095,10 @@ LAB_1E1F
 	STA	Varnm2			; restore array name 2nd byte
 	PLA					; pull dimensions count
 	TAY					; restore it
-	TSX					; copy stack pointer ***beware of 816-MM
+#ifdef	C816
+	.xl: REP #$10		; *** 65816 needs 16-bit indexes ***
+#endif
+	TSX					; copy stack pointer
 	LDA	LAB_STAK+2,X	; get DIM flag
 	PHA					; push it
 	LDA	LAB_STAK+1,X	; get data type flag
@@ -4104,6 +4107,9 @@ LAB_1E1F
 	STA	LAB_STAK+2,X	; stack before flag bytes
 	LDA	FAC1_3			; get this dimension size low byte
 	STA	LAB_STAK+1,X	; stack before flag bytes
+#ifdef	C816
+	.xs: SEP #$10		; *** back to standard size ***
+#endif
 	INY					; increment dimensions count
 	JSR	LAB_GBYT		; scan memory
 	CMP	#","			; compare with ","
