@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180507-1336
+; last modified 20180507-1816
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -903,9 +903,9 @@ LAB_1269
 
 LAB_1274
 						; clear ON IRQ/NMI bytes
-	LDA	#$00			; clear A
-	STA	IrqBase			; clear enabled byte
-	STA	NmiBase			; clear enabled byte
+;	LDA	#$00			; clear A
+	STZ	IrqBase			; clear enabled byte
+	STZ	NmiBase			; clear enabled byte
 	LDA	#<LAB_RMSG		; point to "Ready" message low byte
 	LDY	#>LAB_RMSG		; point to "Ready" message high byte
 
@@ -1432,9 +1432,9 @@ LAB_1491
 #ifdef	C816
 	.xs: SEP #$10
 #endif
-	LDA	#$00			; clear byte
-	STA	Cpntrh			; clear continue pointer high byte
-	STA	Sufnxf			; clear subscript/FNX flag
+;	LDA	#$00			; clear byte
+	STZ	Cpntrh			; clear continue pointer high byte
+	STZ	Sufnxf			; clear subscript/FNX flag
 LAB_14A6
 	RTS
 
@@ -3882,8 +3882,8 @@ LAB_1D47				; gets here with character after var name in A
 
 						; variable name wasn't var(... so look for plain var
 LAB_1D53
-	LDA	#$00			; clear A
-	STA	Sufnxf			; clear subscript/FNX flag
+;	LDA	#$00			; clear A
+	STZ	Sufnxf			; clear subscript/FNX flag
 	LDA	Svarl			; get start of vars low byte
 	LDX	Svarh			; get start of vars high byte
 	LDY	#$00			; clear index
@@ -4698,8 +4698,13 @@ LAB_20F8
 	LDA	str_ph			; get string pointer high byte
 	STA	PLUS_2,X		; put on string stack
 	LDY	#$00			; clear Y
-	STX	des_pl			; save string descriptor pointer low byte
+#ifdef	C816
+	LDA	IbufiY+1		; *** zeropage location ***
+	STA	des_ph			; save string descriptor pointer high byte (NOT always $00)
+#else
 	STY	des_ph			; save string descriptor pointer high byte (always $00)
+#endif
+	STX	des_pl			; save string descriptor pointer low byte
 	DEY					; Y = $FF
 	STY	Dtypef			; save data type flag, $FF=string
 	STX	last_sl			; save old stack pointer (current top item)
@@ -4766,15 +4771,20 @@ LAB_GARB
 LAB_214B
 	STX	Sstorl			; set string storage low byte
 	STA	Sstorh			; set string storage high byte
-	LDY	#$00			; clear index
-	STY	garb_h			; clear working pointer high byte (flag no strings to move)
+;	LDY	#$00			; clear index
+	STZ	garb_h			; clear working pointer high byte (flag no strings to move)
 	LDA	Earryl			; get array mem end low byte
 	LDX	Earryh			; get array mem end high byte
 	STA	Histrl			; save as highest string low byte
 	STX	Histrh			; save as highest string high byte
 	LDA	#des_sk			; set descriptor stack pointer
+#ifdef	C816
+	LDY	IbufiY+1		; *** where is zeropage? ***
+#else
+	LDY	#$00			; on 65C02, zeropage is fixed
+#endif
 	STA	ut1_pl			; save descriptor stack pointer low byte
-	STY	ut1_ph			; save descriptor stack pointer high byte ($00)***
+	STY	ut1_ph			; save descriptor stack pointer high byte (NOT always $00)
 LAB_2161
 	CMP	next_s			; compare with descriptor stack pointer
 	BEQ	LAB_216A		; branch if =
@@ -5454,8 +5464,8 @@ LAB_F2FU
 
 LAB_PEEK
 	JSR	LAB_F2FX		; save integer part of FAC1 in temporary integer
-	LDX	#$00			; clear index
-	LDA	(Itempl,X)		; get byte via temporary integer (addr)
+;	LDX	#$00			; clear index
+	LDA	(Itemp)			; get byte via temporary integer (addr) *** no pre-index ***
 	TAY					; copy byte to Y
 	JMP	LAB_1FD0		; convert Y to byte in FAC1 and return
 
@@ -5464,23 +5474,23 @@ LAB_PEEK
 LAB_POKE
 	JSR	LAB_GADB		; get two parameters for POKE or WAIT
 	TXA					; copy byte argument to A
-	LDX	#$00			; clear index
-	STA	(Itempl,X)		; save byte via temporary integer (addr)
+;	LDX	#$00			; clear index
+	STA	(Itempl)		; save byte via temporary integer (addr) *** no pre-index ***
 	RTS
 
 ; perform DEEK()
 
 LAB_DEEK
 	JSR	LAB_F2FX		; save integer part of FAC1 in temporary integer
-	LDX	#$00			; clear index
-	LDA	(Itempl,X)		; PEEK low byte
+;	LDX	#$00			; clear index
+	LDA	(Itempl)		; PEEK low byte *** no pre-index
 	TAY					; copy to Y
 	INC	Itempl			; increment pointer low byte
 	BNE	Deekh			; skip high increment if no rollover
 
 	INC	Itemph			; increment pointer high byte
 Deekh
-	LDA	(Itempl,X)		; PEEK high byte
+	LDA	(Itempl)		; PEEK high byte *** no pre-index
 	JMP	LAB_AYFC		; save and convert integer AY to FAC1 and return
 
 ; perform DOKE
@@ -5499,15 +5509,15 @@ LAB_DOKE
 	JSR	LAB_F2FX		; convert floating-to-fixed
 
 	TYA					; copy value low byte (float to fixed returns word in AY)
-	LDX	#$00			; clear index
-	STA	(Frnxtl,X)		; POKE low byte
+;	LDX	#$00			; clear index
+	STA	(Frnxtl)		; POKE low byte *** no pre-index
 	INC	Frnxtl			; increment pointer low byte
 	BNE	Dokeh			; skip high increment if no rollover
 
 	INC	Frnxth			; increment pointer high byte
 Dokeh
 	LDA	Itemph			; get value high byte
-	STA	(Frnxtl,X)		; POKE high byte
+	STA	(Frnxtl)		; POKE high byte *** no pre-index
 	JMP	LAB_GBYT		; scan memory and return
 
 ; perform SWAP
@@ -5659,14 +5669,14 @@ LAB_247C
 	STY	FAC1_s			; save FAC1 sign (b7)
 	EOR	#$FF			; complement A
 	ADC	#$00			; +1 (twos complement, carry is set)
-	LDY	#$00			; clear Y
-	STY	FAC2_r			; clear FAC2 rounding byte
+;	LDY	#$00			; clear Y
+	STZ	FAC2_r			; clear FAC2 rounding byte
 	LDX	#FAC1_e			; set index to FAC1 exponent addr
 	BNE	LAB_249C		; branch always
 
 LAB_2498
-	LDY	#$00			; clear Y
-	STY	FAC1_r			; clear FAC1 rounding byte
+;	LDY	#$00			; clear Y
+	STZ	FAC1_r			; clear FAC1 rounding byte
 LAB_249C
 	CMP	#$F9			; compare exponent diff with $F9
 	BMI	LAB_2467		; branch if range $79-$F8
@@ -5938,10 +5948,10 @@ LAB_MULTIPLY
 	BEQ	LAB_264C		; exit if zero
 
 	JSR	LAB_2673		; test and adjust accumulators
-	LDA	#$00			; clear A
-	STA	FACt_1			; clear temp mantissa1
-	STA	FACt_2			; clear temp mantissa2
-	STA	FACt_3			; clear temp mantissa3
+;	LDA	#$00			; clear A
+	STZ	FACt_1			; clear temp mantissa1
+	STZ	FACt_2			; clear temp mantissa2
+	STZ	FACt_3			; clear temp mantissa3
 	LDA	FAC1_r			; get FAC1 rounding byte
 	JSR	LAB_2622		; go do shift/add FAC2
 	LDA	FAC1_3			; get FAC1 mantissa3
@@ -6065,8 +6075,8 @@ LAB_269E
 	ADC	#$02			; add two to exponent (*4)
 	BCS	LAB_269B		; do overflow error if > $FF
 
-	LDX	#$00			; clear byte
-	STX	FAC_sc			; clear sign compare (FAC1 EOR FAC2)
+;	LDX	#$00			; clear byte
+	STZ	FAC_sc			; clear sign compare (FAC1 EOR FAC2)
 	JSR	LAB_247C		; add FAC2 to FAC1 (*5)
 	INC	FAC1_e			; increment FAC1 exponent (*10)
 	BNE	LAB_268F		; if non zero just do RTS
@@ -6321,8 +6331,8 @@ LAB_SGN
 
 LAB_27DB
 	STA	FAC1_1			; save FAC1 mantissa1
-	LDA	#$00			; clear A
-	STA	FAC1_2			; clear FAC1 mantissa2
+;	LDA	#$00			; clear A
+	STZ	FAC1_2			; clear FAC1 mantissa2
 	LDX	#$88			; set exponent
 
 ; set exp=X, clearFAC1 mantissa3 and normalise
@@ -6335,11 +6345,11 @@ LAB_27E3
 ; set exp=X, clearFAC1 mantissa3 and normalise
 
 LAB_STFA
-	LDA	#$00			; clear A
-	STA	FAC1_3			; clear FAC1 mantissa3
+;	LDA	#$00			; clear A
+	STZ	FAC1_3			; clear FAC1 mantissa3
 	STX	FAC1_e			; set FAC1 exponent
-	STA	FAC1_r			; clear FAC1 rounding byte
-	STA	FAC1_s			; clear FAC1 sign (b7)
+	STZ	FAC1_r			; clear FAC1 rounding byte
+	STZ	FAC1_s			; clear FAC1 sign (b7)
 	JMP	LAB_24D0		; do ABS and normalise FAC1
 
 ; perform ABS()
@@ -6807,7 +6817,7 @@ LAB_29FB
 	LDA	FAC1_1			; get FAC1 mantissa1
 	ADC	LAB_2A9A,Y		; add -ve MSB
 	STA	FAC1_1			; save FAC1 mantissa1
-	INX 
+	INX
 	BCS	LAB_2A18
 
 	BPL	LAB_29FB		; not -ve so try again
@@ -7016,8 +7026,8 @@ LAB_2B49
 	LDA	#<LAB_2AFE		; set counter pointer low byte
 	LDY	#>LAB_2AFE		; set counter pointer high byte
 	JSR	LAB_2B84		; go do series evaluation
-	LDA	#$00			; clear A
-	STA	FAC_sc			; clear sign compare (FAC1 EOR FAC2)
+;	LDA	#$00			; clear A
+	STZ	FAC_sc			; clear sign compare (FAC1 EOR FAC2)
 	PLA					;.get saved FAC2 exponent
 	JMP	LAB_2675		; test and adjust accumulators and return
 
@@ -7144,8 +7154,8 @@ LAB_SIN
 	JSR	LAB_26C2		; divide by (AY) (X=sign)
 	JSR	LAB_27AB		; round and copy FAC1 to FAC2
 	JSR	LAB_INT			; perform INT
-	LDA	#$00			; clear byte
-	STA	FAC_sc			; clear sign compare (FAC1 EOR FAC2)
+;	LDA	#$00			; clear byte
+	STZ	FAC_sc			; clear sign compare (FAC1 EOR FAC2)
 	JSR	LAB_SUBTRACT	; perform subtraction, FAC2 from FAC1
 	LDA	#<LAB_2C80		; set 0.25 pointer low byte
 	LDY	#>LAB_2C80		; set 0.25 pointer high byte
@@ -7182,8 +7192,8 @@ LAB_2C45
 
 LAB_TAN
 	JSR	LAB_276E		; pack FAC1 into Adatal
-	LDA	#$00			; clear byte
-	STA	Cflag			; clear comparison evaluation flag
+;	LDA	#$00			; clear byte
+	STZ	Cflag			; clear comparison evaluation flag
 	JSR	LAB_SIN			; go do SIN(n)
 	LDX	#<func_l		; set sin(n) pointer low byte
 	LDY	#>func_l		; set sin(n) pointer high byte
@@ -7191,8 +7201,8 @@ LAB_TAN
 	LDA	#<Adatal		; set n pointer low addr
 	LDY	#>Adatal		; set n pointer high addr
 	JSR	LAB_UFAC		; unpack memory (AY) into FAC1
-	LDA	#$00			; clear byte
-	STA	FAC1_s			; clear FAC1 sign (b7)
+;	LDA	#$00			; clear byte
+	STZ	FAC1_s			; clear FAC1 sign (b7)
 	LDA	Cflag			; get comparison evaluation flag
 	JSR	LAB_2C74		; save flag and go do series evaluation
 
@@ -7870,16 +7880,16 @@ LAB_SQR
 
 						; else do root
 	JSR	LAB_27AB		; round and copy FAC1 to FAC2
-	LDA	#$00			; clear A
+;	LDA	#$00			; clear A
 
-	STA	FACt_3			; clear remainder
-	STA	FACt_2			; ..
-	STA	FACt_1			; ..
-	STA	TempB			; ..
+	STZ	FACt_3			; clear remainder
+	STZ	FACt_2			; ..
+	STZ	FACt_1			; ..
+	STZ	TempB			; ..
 
-	STA	FAC1_3			; clear root
-	STA	FAC1_2			; ..
-	STA	FAC1_1			; ..
+	STZ	FAC1_3			; clear root
+	STZ	FAC1_2			; ..
+	STZ	FAC1_1			; ..
 
 	LDX	#$18			; 24 pairs of bits to do
 	LDA	FAC2_e			; get exponent
