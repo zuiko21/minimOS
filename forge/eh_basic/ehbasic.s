@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180509-1351
+; last modified 20180509-1418
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -7980,7 +7980,12 @@ LAB_EXIT
 	.xs: SEP #$10
 #endif
 	LDY Smeml			; where is my block of RAM?
+	DEY
 	LDA Smemh
+	CPY #$FF
+	BNE eh_ex
+		DEC
+eh_ex:
 	STY ma_pt			; must free it!
 	STA ma_pt+1
 	_KERNEL(FREE)
