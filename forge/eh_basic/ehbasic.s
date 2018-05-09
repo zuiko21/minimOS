@@ -121,7 +121,8 @@ des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no 
 ;Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $22-23
 
 ; these were on page 2... but $0200 is DEADLY in minimOS, now $24-26
-ccflag		= Ram_top+2	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
+; *** might compact these somewhat ***
+ccflag		= $24		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ; *** no longer need for CTRL_C vector ***
@@ -4612,7 +4613,7 @@ LAB_20DC
 	STX	Sendh			; save string end high byte
 	LDA	ssptr_h			; get string start high byte
 ; var base
-	CMP	Ram_base+1		; compare with start of program memory
+	CMP	Smemh			; compare with start of program memory *** is this OK?
 	BCS	LAB_RTST		; branch if not in utility area
 
 						; string in utility area, move to string memory
@@ -5413,7 +5414,7 @@ LAB_F2FU
 LAB_PEEK
 	JSR	LAB_F2FX		; save integer part of FAC1 in temporary integer
 ;	LDX	#$00			; clear index
-	LDA	(Itemp)			; get byte via temporary integer (addr) *** no pre-index ***
+	LDA	(Itempl)		; get byte via temporary integer (addr) *** no pre-index ***
 	TAY					; copy byte to Y
 	JMP	LAB_1FD0		; convert Y to byte in FAC1 and return
 

@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.6b7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180424-1047
+; last modified 20180509-1215
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -94,6 +94,8 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 ; *********************************************
 ; with their own headers, these must be page aligned!!!
 #include "../apps/ls.s"
+
+#include "../forge/eh_basic/ehbasic.s"		; *** NEW ***
 
 ; select specific pmap version according to architecture!
 #ifndef C816

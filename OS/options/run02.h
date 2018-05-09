@@ -54,7 +54,7 @@
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **
-ROM_BASE	=	$C000	; enough for package
+ROM_BASE	=	$8000	; enough for package WITH EhBASIC
 
 ; ** position of firmware, usually skipping I/O area **
 FW_BASE		=	$F800	; simple firmware expected on BBC simulator
