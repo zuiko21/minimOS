@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180509-1317
+; last modified 20180509-1329
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -7456,7 +7456,9 @@ CTRLC
 	LDA	ccflag			; get [CTRL-C] check flag
 	BNE	LAB_FBA2		; exit if inhibited
 
-	JSR	V_INPT			; scan input device
+; *** DISABLED ^C PER EMULATOR LIMITATIONS ***
+;	JSR	V_INPT			; scan input device
+sec	; NEEDS TO REPORT 'NO KEY'
 	BCS	LAB_FBA0		; exit if buffer empty ##### minimOS way
 
 	STA	ccbyte			; save received byte
