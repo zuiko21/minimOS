@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180507-1816
+; last modified 20180509-0908
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -117,8 +117,8 @@ des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no 
 ; *** seems to need 9-byte space here $17-$1F ***
 
 ; must add Ram_base and Ram_top, now variables instead of constants
-Ram_base	= des_sk+10	; *** check space for stack above *** $20-21
-Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $22-23
+;Ram_base	= des_sk+10	; *** check space for stack above *** $20-21
+;Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $22-23
 
 ; these were on page 2... but $0200 is DEADLY in minimOS, now $24-26
 ccflag		= Ram_top+2	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
@@ -151,7 +151,7 @@ dims_h		= FACt_3	; array dimension size high byte
 
 TempB		= FACt_3+1	; temp page 0 byte $78
 
-Smeml		= TempB+1	; start of mem low byte		(Start-of-Basic) $79
+Smeml		= TempB+1	; start of mem low byte		(Start-of-Basic) $79 *** will serve as Ram_base
 Smemh		= Smeml+1	; start of mem high byte	(Start-of-Basic)
 Svarl		= Smemh+1	; start of vars low byte	(Start-of-Variables) $7B
 Svarh		= Svarl+1	; start of vars high byte	(Start-of-Variables)
@@ -163,7 +163,7 @@ Sstorl		= Earryh+1	; string storage low byte	(String storage (moving down)) $81
 Sstorh		= Sstorl+1	; string storage high byte	(String storage (moving down))
 Sutill		= Sstorh+1	; string utility ptr low byte $83
 Sutilh		= Sutill+1	; string utility ptr high byte
-Ememl		= Sutilh+1	; end of mem low byte		(Limit-of-memory) $85
+Ememl		= Sutilh+1	; end of mem low byte		(Limit-of-memory) $85 *** will serva as Ram_top
 Ememh		= Ememl+1	; end of mem high byte		(Limit-of-memory)
 Clinel		= Ememh+1	; current line low byte		(Basic line number) $87
 Clineh		= Clinel+1	; current line high byte	(Basic line number)
@@ -531,25 +531,6 @@ cpu_ok:
 #endif
 #endif
 
-; ##### reserve as much memory as available #####
-; ...perhaps worth waiting the user to type required memory, then calling MALLOC accordingly!
-; otherwise set Ram_base & Ram_top as appropriate
-	STZ ma_align		; page-aligned
-	STZ ma_rs			; as much as possible
-	STZ ma_rs+1
-	_KERNEL(MALLOC)		; ##### request RAM from OS #####
-	LDA ma_pt
-	STA Ram_base
-	STA Itempl			; will need it later
-	CLC
-;	ADC ma_rs			; not needed if MALLOC is page-aligned
-	STA Ram_top			; base+size=top
-	LDA ma_pt+1			; MSB now
-	STA Ram_base+1		; copy pointer
-	STA Itemph
-	ADC ma_rs+1
-	STA Ram_top+1		; base+size=top
-
 ; *** keep track of flushed stack address ***
 ; this is needed in minimOS but will work fine on other systems too
 #ifdef	C816
@@ -589,7 +570,6 @@ LAB_2D13
 
 ; copy block from StrTab to $0000 - $0012 *** now $03-$06 in mOS
 
-LAB_GMEM
 	LDX	#EndTab-StrTab-1
 						; set byte count-1
 TabLoop
@@ -618,6 +598,8 @@ TabLoop
 	STA	g_step			; save it
 	LDX	#des_sk			; descriptor stack start
 	STX	next_s			; set descriptor stack pointer
+
+LAB_GMEM
 	JSR	LAB_CRLF		; print CR/LF
 	LDA	#<LAB_MSZM		; point to memory size message (low addr)
 	LDY	#>LAB_MSZM		; point to memory size message (high addr)
@@ -629,33 +611,12 @@ TabLoop
 
 	BNE	LAB_2DAA		; branch if not null (user typed something)
 
-	LDY	#$00			; else clear Y
-						; character was null so get memory size the hard way
-						; we get here with Y=0 and Itempl/h = Ram_base
-; *** in case MALLOC was not called before, best to call it with (0) for full memory assignment ***
-LAB_2D93
-	INC	Itempl			; increment temporary integer low byte
-	BNE	LAB_2D99		; branch if no overflow
+						; else character was null so get memory size the "hard" way
+	STZ ma_rs			; ##### as much as possible #####
+	STZ ma_rs+1
+	BRA LAB_2DB6		; proceed to reserve memory
 
-	INC	Itemph			; increment temporary integer high byte
-	LDA	Itemph			; get high byte
-	CMP	Ram_top+1		; compare with top of RAM+1
-	BEQ	LAB_2DB6		; branch if match (end of user RAM)
-
-LAB_2D99
-	LDA	#$55			; set test byte
-	STA	(Itempl),Y		; save via temporary integer
-	CMP	(Itempl),Y		; compare via temporary integer
-	BNE	LAB_2DB6		; branch if fail
-
-	ASL					; shift test byte left (now $AA)
-	STA	(Itempl),Y		; save via temporary integer
-	CMP	(Itempl),Y		; compare via temporary integer
-	BEQ	LAB_2D93		; if ok go do next byte
-
-	BNE	LAB_2DB6		; branch if fail
-
-; *** will arrive here if some amount was specified, call MALLOC accordingly ***
+; *** will arrive here if some amount was specified, will call MALLOC accordingly ***
 LAB_2DAA
 	JSR	LAB_2887		; get FAC1 from string
 	LDA	FAC1_e			; get FAC1 exponent
@@ -664,44 +625,33 @@ LAB_2DAA
 
 	JSR	LAB_F2FU		; save integer part of FAC1 in temporary integer
 						; (no range check)
+	LDY	Itempl			; get temporary integer low byte
+	LDA	Itemph			; get temporary integer high byte
+
+	STY ma_rs			; ##### set desired amount... #####
+	STA ma_rs+1
 
 LAB_2DB6
-	LDA	Itempl			; get temporary integer low byte
-	LDY	Itemph			; get temporary integer high byte
-; note that ram_base is variable
-	DEY
-	CPY	Ram_base+1		; compare with start of RAM+$100 high byte
-	BCC	LAB_GMEM		; if too small go try again
-
-
-; uncomment these lines if you want to check on the high limit of memory. Note if
-; Ram_top is set too low then this will fail. default is ignore it and assume the
-; users know what they are doing!
-; *** now ram_top is also variable
-
-;	CPY	Ram_top+1		; compare with top of RAM high byte
-;	BCC	MEM_OK			; branch if < RAM top
-
-;	BNE	LAB_GMEM		; if too large go try again
-						; else was = so compare low bytes
-;	CMP	Ram_top			; compare with top of RAM low byte
-;	BEQ	MEM_OK			; branch if = RAM top
-
-;	BCS	LAB_GMEM		; if too large go try again
-
-;MEM_OK
-
-; *** in any case, might think about integrating Ram_base & Ram_top into these... ***
-	STA	Ememl			; set end of mem low byte
-	STY	Ememh			; set end of mem high byte
+	STZ ma_align		; page-aligned
+	_KERNEL(MALLOC)		; ##### request RAM from OS #####
+	BCS LAB_GMEM		; perhaps asking too much, try again
+	LDA ma_pt
+	STA Smeml			; *** no longer Ram_base ***
+	CLC
+;	ADC ma_rs			; not needed if MALLOC is page-sized
+	STA Ememl			; base+size=top *** no longer Ram_top ***
 	STA	Sstorl			; set bottom of string space low byte
-	STY	Sstorh			; set bottom of string space high byte
+	LDA ma_pt+1			; MSB now
+	STA Smemh			; copy pointer
+	ADC ma_rs+1
+	STA Ememh			; base+size=top
+	STA	Sstorh			; set bottom of string space high byte
 
-; now ram_base is variable
-	LDY	Ram_base		; set start addr low byte
-	LDX	Ram_base+1		; set start addr high byte
-	STY	Smeml			; save start of mem low byte
-	STX	Smemh			; save start of mem high byte
+; while MALLOC is page sized, no need to check minimum size, should release small block anyway
+;	LDA	ma_rs+1			; get number of assigned pages, make sure there are at least $100 bytes
+;	BEQ	LAB_GMEM		; if too small go try again
+
+; *** now minimOS will check on the high limit of memory ***
 
 ; this line is only needed if Ram_base is not $xx00
 
@@ -711,9 +661,7 @@ LAB_2DB6
 	INC	Smeml			; increment start of mem low byte
 
 ; these two lines are only needed if Ram_base is $xxFF
-
 ;	BNE	LAB_2E05		; branch if no rollover
-
 ;	INC	Smemh			; increment start of mem high byte
 
 ; *** memory assigned anyway, show available bytes ***
