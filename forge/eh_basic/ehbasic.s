@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180509-1329
+; last modified 20180509-1351
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -382,12 +382,11 @@ TK_BITSET	= TK_SWAP+1		; BITSET token
 TK_BITCLR	= TK_BITSET+1	; BITCLR token
 TK_IRQ		= TK_BITCLR+1	; IRQ token
 TK_NMI		= TK_IRQ+1		; NMI token
-;TK_SYS		= TK_NMI+1		; SYS token *** added for SBC-2
-;TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell #####
+TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell #####
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_NMI+1		; TAB token ##### SYS no longer used, minimOS needs BYE #####
+TK_TAB		= TK_BYE+1		; TAB token ##### SYS no longer used, minimOS needs BYE #####
 TK_ELSE		= TK_TAB+1		; ELSE token
 TK_TO		= TK_ELSE+1		; TO token
 TK_FN		= TK_TO+1		; FN token
@@ -7970,6 +7969,27 @@ V_SAVE					; save BASIC program
 
 	RTS					; *** not yet implemented *** PLACEHOLDER
 
+; perform BYE	##### minimOS #####
+LAB_EXIT
+#ifdef	C816
+	.xl: REP #$10
+#endif
+	LDX	emptsk			; new stack pointer *** 8 or 16-bit
+	TXS					; reset stack
+#ifdef	C816
+	.xs: SEP #$10
+#endif
+	LDY Smeml			; where is my block of RAM?
+	LDA Smemh
+	STY ma_pt			; must free it!
+	STA ma_pt+1
+	_KERNEL(FREE)
+	LDY iodev			; will close window too
+	_KERNEL(CLOSE_W)
+	PLA					; still has to discard some return address! EEEEEEEEEK
+	PLA
+	_FINISH				; exit to shell!
+
 ; The rest are tables messages and code for RAM
 
 ; the rest of the code is tables and BASIC start-up code
@@ -8207,7 +8227,7 @@ LAB_CTBL
 	.word	LAB_BITCLR-1	; BITCLR		new command
 	.word	LAB_IRQ-1		; IRQ			new command
 	.word	LAB_NMI-1		; NMI			new command
-;	.word   SYSjmp-1		; SYS		*** added for SBC-2 *** not sure what to do in minimOS
+	.word   LAB_EXIT-1		; BYE		##### added for minimOS #####
 
 ; function pre process routine table
 
@@ -8436,6 +8456,8 @@ LBB_BITSET
 	.byte	"ITSET",TK_BITSET	; BITSET
 LBB_BITTST
 	.byte	"ITTST(",TK_BITTST	; BITTST(
+LBB_BYE
+	.byte	"YE",TK_BYE			; BYE		##### for minimOS #####
 	.byte	$00
 TAB_ASCC
 LBB_CALL
@@ -8606,8 +8628,6 @@ LBB_STRS
 	.byte	"TR$(",TK_STRS		; STR$(
 LBB_SWAP
 	.byte	"WAP",TK_SWAP		; SWAP
-;LBB_SYS
-;	.byte   "YS", TK_SYS		; SYS *** added for SBC-2
 	.byte	$00
 TAB_ASCT
 LBB_TAB
@@ -8740,8 +8760,8 @@ LAB_KEYT
 	.word	LBB_IRQ		; IRQ
 	.byte	3,"N"
 	.word	LBB_NMI		; NMI
-;	.byte	3,"S"
-;	.word	LBB_SYS		; SYS   *** Added for SBC-2
+	.byte	3,"B"
+	.word	LBB_BYE		; BYE		##### minimOS #####
 
 
 ; secondary commands (cannot start a statement)
