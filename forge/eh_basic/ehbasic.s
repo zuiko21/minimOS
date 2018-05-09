@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180509-1251
+; last modified 20180509-1259
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -116,9 +116,12 @@ last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.
 des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no longer $68 eeeeeeeeeeek
 ; *** seems to need 9-byte space here $17-$1F ***
 
-; must add Ram_base and Ram_top, now variables instead of constants
-;Ram_base	= des_sk+10	; *** check space for stack above *** $20-21
-;Ram_top		= Ram_base+2	; *** think about using these MSB-only, as MALLOC blocks should be page-aligned! *** $22-23
+iodev		= $20		; ##### minimOS selected I/O device ##### $20
+#ifdef	C816
+IbufiY		= iodev+1	; self-pointer to zp buffer! $21-22
+#endif
+
+; *** $23 free for all, $21-22 for 65C02 too! ***
 
 ; these were on page 2... but $0200 is DEADLY in minimOS, now $24-26
 ; *** might compact these somewhat ***
@@ -325,16 +328,7 @@ IrqBase		= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** ski
 ;			= $C6		; IRQ handler addr low byte was $E0
 ;			= $C7		; IRQ handler addr high byte was $E1
 
-
-#ifdef	C816
-IbufiY		= IrqBase+3	; self-pointer to zp buffer! $C8-C9
-iodev		= IbufiY+2	; ##### minimOS selected I/O device ##### $CA
-#else
-iodev		= IrqBase+3	; ##### minimOS selected I/O device ##### $C8
-#endif
-
-; *** still some bytes free from $C9 ($CB for 816) up to $E3 ($E1 for the C64) ***
-__last		= iodev+1	; *** just for easier size check ***
+__last		= IrqBase+3	; *** just for easier size check ***
 
 ; *** these CANNOT BE IN ZP as will not be 65816-savvy! *** temporarily at the other side of ONE stack!
 Decss		= $0100		; number to decimal string start was $EF *** UGLY HACK!!!
