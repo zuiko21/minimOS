@@ -8,7 +8,7 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-;#define		SAFE	_SAFE
+#define		SAFE	_SAFE
 
 ;#define		LOWRAM	_LOWRAM
 
@@ -63,7 +63,7 @@ FW_BASE		=	$F800	; simple firmware expected on BBC simulator
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-IO_BASE		=	$8000	; ???????as per EhBASIC I/O
+IO_BASE		=	$C000	; ???????as per EhBASIC I/O
 
 ; missing hardware declarations...
 ; * VIA 65(C)22 Base address, machine dependent *

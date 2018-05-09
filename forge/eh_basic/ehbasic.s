@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180509-0908
+; last modified 20180509-1251
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -389,11 +389,11 @@ TK_BITCLR	= TK_BITSET+1	; BITCLR token
 TK_IRQ		= TK_BITCLR+1	; IRQ token
 TK_NMI		= TK_IRQ+1		; NMI token
 ;TK_SYS		= TK_NMI+1		; SYS token *** added for SBC-2
-TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell #####
+;TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell #####
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_BYE+1		; TAB token ##### SYS no longer used, minimOS needs BYE #####
+TK_TAB		= TK_NMI+1		; TAB token ##### SYS no longer used, minimOS needs BYE #####
 TK_ELSE		= TK_TAB+1		; ELSE token
 TK_TO		= TK_ELSE+1		; TO token
 TK_FN		= TK_TO+1		; FN token
