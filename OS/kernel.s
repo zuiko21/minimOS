@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc8
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180411-0845
+; last modified 20180509-1237
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -230,16 +230,12 @@ dr_ok:					; *** all drivers inited ***
 
 ; new, show a splash message ever the kernel is restarted!
 	JSR ks_cr			; leading newline
-lda#'+'
-jsr$c0c2
 	LDY #<kern_splash	; get pointer
 	LDA #>kern_splash
 	STY str_pt			; set parameter
 	STA str_pt+1
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
-lda#'-'
-jsr$c0c2
 	JSR ks_cr			; trailing newline
 ; ******************************
 ; **** launch monitor/shell ****
