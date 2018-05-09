@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180509-1259
+; last modified 20180509-1317
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -1364,7 +1364,7 @@ LAB_1491
 	PLX					; pull return address high byte *** reversed
 	LDY	#1				; *** offset to older LAB_SKFE
 	STA	(emptsk), Y		; save to cleared stack
-	TXA				; now for MSB...
+	TXA					; now for MSB...
 	INY					; *** offset to older LAB_SKFF
 	STA	(emptsk), Y		; save to cleared stack
 #ifdef	C816
@@ -7948,22 +7948,24 @@ V_INPT					; non halting scan input device
 	_KERNEL(CIN)
 ; could check C and Y here for safety
 ; note C works opposite than the original EhBASIC, has been modified
-	PLY					; *** macro-savvy before LDA ***
-	PLX
-	LDA io_c
-	RTS
+	BRA io_end			; *** skim some bytes ***
+
 V_OUTP					; send byte to output device
 	STA io_c
 	PHX					; *** must save these ***
 	PHY
 	LDY iodev			; ##### assigned window #####
 	_KERNEL(COUT)
+io_end:
 	PLY					; *** this ignores errors ***
 	PLX
 	LDA io_c			; *** worth recovering it ***
 	RTS
+
 V_LOAD					; load BASIC program
+
 V_SAVE					; save BASIC program
+
 	RTS					; *** not yet implemented *** PLACEHOLDER
 
 ; The rest are tables messages and code for RAM

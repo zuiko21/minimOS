@@ -108,7 +108,7 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 ;#include "../apps/crasm/68asm.s"
 ;#include "../apps/crasm/80asm.s"
 
-;#include "../apps/minized.s"
+#include "../apps/minized.s"
 ;#include "../apps/sigtest.s"
 
 /*

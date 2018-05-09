@@ -7,7 +7,7 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-;#define		SAFE	_SAFE
+#define		SAFE	_SAFE
 
 ; enable in order to remove headers, not LOAD_LINK savvy!
 ;#define		NOHEAD	_NOHEAD
@@ -44,7 +44,7 @@
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **
-ROM_BASE	=	$C000	; enough for package
+ROM_BASE	=	$8000	; enough for package
 
 ; ** position of firmware, usually skipping I/O area **
 FW_BASE		=	$FC00	; simple firmware expected on BBC simulator
@@ -53,7 +53,7 @@ FW_BASE		=	$FC00	; simple firmware expected on BBC simulator
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-IO_BASE		=	$8000	; ???????as per EhBASIC I/O
+IO_BASE		=	$C000	; ???????as per EhBASIC I/O
 
 ; missing hardware declarations...
 ; * VIA 65(C)22 Base address, machine dependent *
