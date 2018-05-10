@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180510-1101
+; last modified 20180510-1335
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -97,7 +97,7 @@ Tindx		= Ibptr		; token index *** $0C
 
 Defdim		= Ibptr+1	; default DIM flag *** $0D, no longer $5E
 Dtypef		= Defdim+1	; data type flag, $FF=string, $00=numeric *** $0E, no longer $5F
-Oquote		= Dtypef+1	; open quote flag (b7) (Flag: DATA scan; LIST quote; memory) *** $0F, no longer $60
+Oquote		= Dtypef+1	; open quote flag (b7) (Flag- DATA scan; LIST quote; memory) *** $0F, no longer $60
 Gclctd		= Oquote	; garbage collected flag *** $0F
 Sufnxf		= Oquote+1	; subscript/FNX flag, 1xxx xxx = FN(0xxx xxx) *** $10, no longer $61
 Imode		= Sufnxf+1	; input mode flag, $00=INPUT, $80=READ *** $11, no longer $62
@@ -118,10 +118,10 @@ des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no 
 
 iodev		= $20		; ##### minimOS selected I/O device ##### $20
 eh_term		= iodev+1	; ##### minimOS SIGTERM flag, will replace ^C handling ##### $21
-#ifdef	C816
-IbufiY		= eh_term+1	; self-pointer to zp buffer! $22-23
-#endif
 
+#ifdef	C816
+IbufiY		= eh_term+1	; self-pointer to DP buffer! $22-23
+#endif
 ; *** $22-23 free for 65C02 ***
 
 ; these were on page 2... but $0200 is DEADLY in minimOS, now $24-26
@@ -168,7 +168,7 @@ Sstorl		= Earryh+1	; string storage low byte	(String storage (moving down)) $81
 Sstorh		= Sstorl+1	; string storage high byte	(String storage (moving down))
 Sutill		= Sstorh+1	; string utility ptr low byte $83
 Sutilh		= Sutill+1	; string utility ptr high byte
-Ememl		= Sutilh+1	; end of mem low byte		(Limit-of-memory) $85 *** will serva as Ram_top
+Ememl		= Sutilh+1	; end of mem low byte		(Limit-of-memory) $85 *** will serve as Ram_top
 Ememh		= Ememl+1	; end of mem high byte		(Limit-of-memory)
 Clinel		= Ememh+1	; current line low byte		(Basic line number) $87
 Clineh		= Clinel+1	; current line high byte	(Basic line number)
@@ -548,7 +548,7 @@ cpu_ok:
 	LDA #>sigterm
 	STY ex_pt			; set parameter
 	STA ex_pt+1
-	LDY #0				;
+	LDY #0				; setting my own SIGTERM handler
 	_KERNEL(SET_HNDL)	; ##### install SIGTERM handler #####
 ; supposedly ignoring any errors...
 
@@ -621,7 +621,7 @@ LAB_GMEM
 	STZ ma_rs+1
 	BRA LAB_2DB6		; proceed to reserve memory
 
-; *** will arrive here if some amount was specified, will call MALLOC accordingly ***
+; *** will arrive here if some amount was specified, will determine it and call MALLOC accordingly ***
 LAB_2DAA
 	JSR	LAB_2887		; get FAC1 from string
 	LDA	FAC1_e			; get FAC1 exponent
@@ -640,6 +640,7 @@ LAB_2DB6
 	STZ ma_align		; page-aligned
 	_KERNEL(MALLOC)		; ##### request RAM from OS #####
 	BCS LAB_GMEM		; perhaps asking too much, try again
+
 	LDA ma_pt
 	STA Smeml			; *** no longer Ram_base ***
 	CLC
@@ -656,15 +657,10 @@ LAB_2DB6
 ;	LDA	ma_rs+1			; get number of assigned pages, make sure there are at least $100 bytes
 ;	BEQ	LAB_GMEM		; if too small go try again
 
-; *** now minimOS will check on the high limit of memory ***
-
-; this line is only needed if Ram_base is not $xx00
-
-;	LDY	#$00			; clear Y
-	TYA					; clear A
-	STA	(Smeml),Y		; clear first byte
+; *** cannot assume any Y value ***
+	LDA	#$00			; clear A
+	STA	(Smeml)			; clear first byte *** CMOS only ***
 	INC	Smeml			; increment start of mem low byte
-
 ; these two lines are only needed if Ram_base is $xxFF
 ;	BNE	LAB_2E05		; branch if no rollover
 ;	INC	Smemh			; increment start of mem high byte
@@ -974,7 +970,7 @@ LAB_1301
 ; *** as LDA Ibuffs-4, Y is no longer accepted, try to get IbufiY back 4 bytes, then restore it after loop ***
 #ifdef	C816
 	LDA	#<Ibuffs-4		; original address minus 4
-	STA IbufiY			; temporarily alter pointer
+	STA IbufiY			; temporarily alter pointer, cannot wrap as DP *should* be page-aligned
 LAB_1311
 	LDA	(IbufiY),Y		; get byte from crunched line *** corrected DP pointer for -4 offset in 65816
 #else
