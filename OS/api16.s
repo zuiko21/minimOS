@@ -977,7 +977,7 @@ b_flags:
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDY #BR_RUN			; single-task systems are always running
-	LDA run_arch		; get running architecture (new)
+	LDA @run_arch		; get running architecture (new)
 	STA cpu_ll			; report it
 sig_exit:
 	_EXIT_OK
