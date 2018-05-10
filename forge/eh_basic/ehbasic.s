@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180510-1335
+; last modified 20180510-1341
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -2442,7 +2442,7 @@ LAB_GET
 LAB_GETS
 	PHA					; save character
 	LDA	#$01			; string is single byte
-	BCS	LAB_IsByte		; branch if byte received
+	BCC	LAB_IsByte		; branch if byte received ##### minimOS way
 
 	PLA					; string is null
 LAB_IsByte
@@ -7545,7 +7545,7 @@ INGET
 	BEQ	LAB_FB96		; exit if empty
 
 	LDA	ccbyte			; get last received byte
-	SEC					; flag we got a byte
+	CLC					; flag we got a byte ##### minimOS way
 LAB_FB95
 	LDX	#$00			; clear X
 	STX	ccnull			; clear timer because we got a byte
