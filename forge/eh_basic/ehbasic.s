@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180509-1418
+; last modified 20180510-1101
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -117,11 +117,12 @@ des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no 
 ; *** seems to need 9-byte space here $17-$1F ***
 
 iodev		= $20		; ##### minimOS selected I/O device ##### $20
+eh_term		= iodev+1	; ##### minimOS SIGTERM flag, will replace ^C handling ##### $21
 #ifdef	C816
-IbufiY		= iodev+1	; self-pointer to zp buffer! $21-22
+IbufiY		= eh_term+1	; self-pointer to zp buffer! $22-23
 #endif
 
-; *** $23 free for all, $21-22 for 65C02 too! ***
+; *** $22-23 free for 65C02 ***
 
 ; these were on page 2... but $0200 is DEADLY in minimOS, now $24-26
 ; *** might compact these somewhat ***
@@ -540,6 +541,16 @@ cpu_ok:
 	LDA #1				; standard 6502 stack page
 	STA emptsk+1		; *** must be indirect pointer ready ***
 #endif
+
+; good time for setting the SIGTERM handler (replaces ^C checking)
+	STZ eh_term			; ##### clear SIGTERM flag #####
+	LDY #<sigterm		; get pointer to handler
+	LDA #>sigterm
+	STY ex_pt			; set parameter
+	STA ex_pt+1
+	LDY #0				;
+	_KERNEL(SET_HNDL)	; ##### install SIGTERM handler #####
+; supposedly ignoring any errors...
 
 ; ********************************
 ; *** EhBASIC code starts here ***
@@ -7457,8 +7468,13 @@ CTRLC
 
 ; *** DISABLED ^C PER EMULATOR LIMITATIONS ***
 ;	JSR	V_INPT			; scan input device
-sec	; NEEDS TO REPORT 'NO KEY'
-	BCS	LAB_FBA0		; exit if buffer empty ##### minimOS way
+;	BCS	LAB_FBA0		; exit if buffer empty ##### minimOS way
+
+; ##### replaced by SIGTERM handling #####
+	BIT eh_term			; check whether a SIGTERM was issued
+	BPL LAB_FBA0		; resume normal operation if not received
+
+	STZ eh_term			; otherwise, 'acknowledge' SIGTERM and process it
 
 	STA	ccbyte			; save received byte
 	LDX	#$20			; "life" timer for bytes
@@ -7994,6 +8010,12 @@ eh_ex:
 	PLA					; still has to discard some return address! EEEEEEEEEK
 	PLA
 	_FINISH				; exit to shell!
+
+; ##### the SIGTERM handling routine #####
+sigterm:
+	LDA #$FF			; we do NOT want the THERAC-25 hazard...
+	STA eh_term			; register ^C thru the flag
+	RTS
 
 ; The rest are tables messages and code for RAM
 
