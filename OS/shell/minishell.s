@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20180405-1413
+; last modified 20180510-1048
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -83,12 +83,6 @@ go_xsh:
 	BCC open_xsh		; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_xsh:
-;lda#'@'
-;jsr$c0c2
-;tya
-;clc
-;adc#'0'
-;jsr$c0c2
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 ; *** begin things ***
@@ -96,8 +90,6 @@ main_loop:
 		LDA #>prompt		; address of prompt message (currently fixed)
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
-;lda#'>'
-;jsr$c0c2
 		JSR getLine			; input a line
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
@@ -141,7 +133,6 @@ xsh_wait:
 			BEQ main_loopN		; then continue asking for more
 xsh_single:
 	_KERNEL(B_EXEC)		; execute anyway...
-/*
 ; *** DUH! singletasking systems will not arrive here ***
 	BCC xsh_success		; no runtime errors!
 		TYA					; otherwise get error code
@@ -152,7 +143,6 @@ xsh_single:
 		LDA #>xsh_abrt
 		JSR prnStr			; print it
 xsh_success:
-*/
 	_PANIC("{exit}")	; temporary check
 	JMP shell			; ...but reset shell environment! should not arrive here
 
@@ -176,12 +166,6 @@ prnStr:
 	STA str_pt+2		; and set parameter
 #endif
 	LDY iodev			; standard device
-;lda#'#'
-;jsr$c0c2
-;tya
-;clc
-;adc#'0'
-;jsr$c0c2
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
 	RTS
