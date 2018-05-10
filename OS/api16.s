@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc11, should match kernel16.s
+; v0.6rc12, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180411-0853
+; last modified 20180510-1408
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -437,7 +437,7 @@ ci_rndend:
 	.xs:
 
 ; ******************************
-; *** MALLOC, reserve memory ***
+; *** MALLOC, reserve memory *** MUST change in a bidirectional way
 ; ******************************
 ;		INPUT
 ; ma_rs		= 24b size (0 means reserve as much memory as available)
@@ -965,10 +965,11 @@ sig_term:
 ; *** B_FLAGS, get execution flags of a braid ***
 ; ************************************************
 ;		INPUT
-; Y = addressed braid
+; Y			= addressed braid
 ;		OUTPUT
-; Y = flags ***TBD, might include architecture
-; C = invalid PID
+; Y			= flags ***TBD
+; cpu_ll	= running architecture
+; C			= invalid PID
 
 b_flags:
 #ifdef	SAFE
@@ -976,13 +977,8 @@ b_flags:
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDY #BR_RUN			; single-task systems are always running
-; *** might need to add CPU info inside ***
-;	LDA run_arch		; get running arch
-;	EOR #'V'			; EOR trick reversed!
-;	ASL					; SIGTERM flag savvy?
-;	AND #%00111111		; room for status flags
-;	ORA #BR_RUN			; add mandatory flags
-;	TAY
+	LDA run_arch		; get running architecture (new)
+	STA cpu_ll			; report it
 sig_exit:
 	_EXIT_OK
 

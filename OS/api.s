@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc14, must match kernel.s
+; v0.6rc15, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180509-1237
+; last modified 20180510-1408
 
 ; no way for standalone assembly...
 
@@ -770,10 +770,11 @@ sig_pid:
 ; *** B_FLAGS, get execution flags of a braid ***
 ; ***********************************************
 ;		INPUT
-; Y = addressed braid
+; Y			= addressed braid
 ;		OUTPUT
-; Y = flags ***TBD, might include architecture
-; C = invalid PID
+; Y			= flags ***TBD
+; cpu_ll	= running architecture
+; C			= invalid PID
 
 b_flags:
 #ifdef	SAFE
@@ -781,6 +782,8 @@ b_flags:
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDY #BR_RUN			; single-task systems are always running
+	LDA run_arch		; get running architecture (new)
+	STA cpu_ll			; report it
 	_EXIT_OK
 
 
