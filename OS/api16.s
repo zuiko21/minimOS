@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc13, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180511-0904
+; last modified 20180511-1055
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -893,7 +893,7 @@ sig_kill:
 	XBA					; that was MSB
 	TYA					; and this the LSB
 	TCD					; set proper zeropage for singletask systems!
-;	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+;	KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
 ; * assume 8-bit sizes *
 ; this code is 11b, 43t

@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.6b7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180509-1215
+; last modified 20180511-1039
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -109,7 +109,7 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 ;#include "../apps/crasm/80asm.s"
 
 #include "../apps/minized.s"
-;#include "../apps/sigtest.s"
+#include "../apps/sigtest.s"
 
 /*
 ; ****** skip I/O area for more ******
@@ -183,5 +183,5 @@ freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 #ifdef	C816
 ; 816-only software!
 #include "shell/miniMoDA16.s"
-#include "../apps/pmap16.s"
+;#include "../apps/pmap16.s"
 #endif
