@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180510-1341
+; last modified 20180511-1236
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -1934,6 +1934,9 @@ LAB_16E5
 	RTS
 
 LAB_DONOK
+#ifdef	C816
+	.xs: SEP #$10		; *** revert to standard index size ***
+#endif
 	LDX	#$22			; error code $22 ("LOOP without DO" error)
 	JMP	LAB_XERR		; do error #X, then warm start
 
@@ -2919,6 +2922,7 @@ LAB_11C7
 	BNE	LAB_11A6		; loop if not at start of stack
 
 LAB_11CE
+; *** intended to exit in 16-bit X with whole SP in it ***
 	RTS
 
 #ifdef	C816
@@ -2941,7 +2945,7 @@ LAB_1A49
 	STA	Frnxtl			; store variable pointer low byte
 	STY	Frnxth			; store variable pointer high byte
 						; (both cleared if no variable defined)
-	JSR	LAB_11A1		; search the stack for FOR activity *** only call to that routine
+	JSR	LAB_11A1		; search the stack for FOR activity *** only call to that routine, EXIT IN 16-BIT INDEXES
 	BEQ	LAB_1A56		; branch if found
 
 #ifdef	C816
@@ -2951,20 +2955,24 @@ LAB_1A49
 LAB_1A54
 	BEQ	LAB_1ABE		; do error #X, then warm start
 
-#ifdef	C816
-	.xl					; *** exit from the above in 16-bit index ***
-#endif
 LAB_1A56
-	TXS					; set stack pointer, X set by search, dumps return addresses *** now OK!
 #ifdef	C816
 ; *** fully revamped code for 65816, entered in 16-bit index ***
+	.xl					; *** exit from the above in 16-bit index ***
+	TXS					; set stack pointer, X set by search, dumps return addresses *** should be OK
 	.xs: SEP #$10		; *** back to standard size ***
 	TSC					; copy stack pointer *** discard MSB as will be supplied later! ***
-	SEC					; set carry for subtract
-	SBC	#$F7			; point to TO var
+;	SEC					; set carry for subtract
+;	SBC	#$F7			; point to TO var *** NOOOOOOOOOOOOOOOOO
+;	STA	ut2_pl			; save pointer to TO var for compare
+;	ADC	#$FB			; point to STEP var
+; *** 65816-savvy method ***
+	CLC					; will add instead
+	ADC #$09			; point to TO var
 	STA	ut2_pl			; save pointer to TO var for compare
-	ADC	#$FB			; point to STEP var
-
+	SEC					; now prepare to subtract
+	SBC #$05			; point to STEP var
+; ***
 	LDY	emptsk+1		; point to stack page high byte
 	JSR	LAB_UFAC		; unpack memory (STEP value) into FAC1
 ; *** regular stack accesses need no abs,X in the 65816, use stack-relative instead ***
@@ -3009,6 +3017,7 @@ LAB_1A9B
 	TCS					; copy to stack pointer (16-bit, MSB intact)
 #else
 ; *** original code for 65C02, stack-savvy ***
+	TXS					; set stack pointer, X set by search, dumps return addresses *** OK here
 	TXA					; copy stack pointer
 	SEC					; set carry for subtract
 	SBC	#$F7			; point to TO var
@@ -3049,6 +3058,7 @@ LAB_1A9B
 	TAX					; copy back to index
 	TXS					; copy to stack pointer
 #endif
+
 	JSR	LAB_GBYT		; scan memory
 	CMP	#","			; compare with ","
 	BNE	LAB_1A98		; branch if not "," (go do interpreter inner loop)
