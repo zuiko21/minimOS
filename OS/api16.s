@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc12, should match kernel16.s
+; v0.6rc13, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180510-1408
+; last modified 20180511-0904
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -893,7 +893,7 @@ sig_kill:
 	XBA					; that was MSB
 	TYA					; and this the LSB
 	TCD					; set proper zeropage for singletask systems!
-	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+;	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
 ; * assume 8-bit sizes *
 ; this code is 11b, 43t
@@ -914,6 +914,7 @@ sk_loop:				; *** this code valid for singletask 816 ***
 ;	SEP #$20			; *** 8-bit memory *** (3)
 
 ; previous RELEASE marked pointer as 24b valid! otherwise STZ run_arch
+	STZ run_arch		; see above
 	_KERNEL(FREE)		; free it or fail quietly
 ; *** end of non-XIP code, will not harm anyway ***
 ; then, check for any shutdown command
@@ -1141,6 +1142,7 @@ ll_native:
 	STA ex_pt+1			; save rest of execution pointer
 	_EXIT_OK
 
+	.as					; EEEEEEEEEEEK
 #else
 	_ERR(UNAVAIL)		; no headers to scan
 #endif

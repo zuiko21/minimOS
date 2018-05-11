@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc15, must match kernel.s
+; v0.6rc16, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180510-1408
+; last modified 20180511-0856
 
 ; no way for standalone assembly...
 
@@ -693,7 +693,7 @@ ex_st:
 sig_kill:
 ; first, free up all memory from previous task
 	LDY #0				; standard PID
-	_KERNEL(RELEASE)	; free all memory eeeeeeeek
+;	_KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
 ; cannot just pull from stack as SIGKILL may be executed at any time
 ;	LDY $FF+SPTR		; get stacked pointer of block...
@@ -773,7 +773,7 @@ sig_pid:
 ; Y			= addressed braid
 ;		OUTPUT
 ; Y			= flags ***TBD
-; cpu_ll	= running architecture
+; cpu_ll	= running architecture***
 ; C			= invalid PID
 
 b_flags:
@@ -782,8 +782,7 @@ b_flags:
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDY #BR_RUN			; single-task systems are always running
-	LDA run_arch		; get running architecture (new)
-	STA cpu_ll			; report it
+;	STA cpu_ll			; report running architecture, which?
 	_EXIT_OK
 
 

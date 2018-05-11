@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6a10
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180411-0859
+; last modified 20180511-0831
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -158,6 +158,7 @@ reset:
 ; *** start the kernel ***
 ; ************************
 start_kernel:
+; start16 will switch to emulation mode just before launching kernel!
 #include "modules/start16.s"
 
 

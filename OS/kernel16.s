@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b10
+; v0.6b11
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180411-0852
+; last modified 20180511-0837
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6b10", 0	; version in comment
+	.asc	"minimOS-16 0.6b11", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -72,10 +72,10 @@ warm:
 	XCE					; enter native mode! still 8 bit regs, though
 ; worth going 16-bit for the install calls!
 	.al: REP #$20		; *** 16-bit memory most of the time ***
+	.xs					; to make sure...
 
 ; install kernel jump table if not previously loaded
 #ifndef		DOWNLOAD
-; if kernel is assembled with FAST API, no jump table to install!
 	LDA #k_vec			; get table address (3)
 	STA kerntab			; store parameter (4)
 ; as kernels must reside in bank 0, no need for 24-bit addressing
@@ -98,7 +98,7 @@ warm:
 
 ; will not try to set jiffy, assumed by firmware
 
-; what to do if scheduler run out if tasks? set here
+; what to do if scheduler ran out if tasks? set here
 	LDX #PW_STAT		; default cmd upon lack of tasks
 	STX sd_flag			; must be done here as will no longer be done on driver init code!
 
@@ -117,7 +117,7 @@ warm:
 	BEQ ram_init		; nothing to align
 		INX					; otherwise start at next page
 ram_init:
-	TXA					; will set MSB as zero
+	TXA					; will set MSB (bank address) as zero
 	STA ram_pos			; store it
 	LDA #SRAM			; number of SRAM pages as defined in options.h
 	STA ram_pos+2		; store second entry and we are done!
@@ -241,7 +241,7 @@ ks_cr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.6b10", 0	; version in comment
+	.asc	"minimOS-16 0.6b11", 0	; version in comment
 #endif
 
 ; ***********************************************
