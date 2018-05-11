@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180511-1236
+; last modified 20180511-1920
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -1265,7 +1265,8 @@ LAB_142A
 	INY					; adjust for line copy
 	INY					; adjust for line copy
 	INY					; adjust for line copy
-	DEC	Bpntrl			; allow for increment (change if buffer starts at $xxFF)
+	DEC	Bpntrl			; allow for increment (change if buffer starts at $xx00)
+; in case buffer is page-aligned, apply here Daryl`s patch
 	RTS
 
 ; search Basic for temp integer line number from start of mem
