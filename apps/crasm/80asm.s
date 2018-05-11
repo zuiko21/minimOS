@@ -1,7 +1,7 @@
 ; 8080/8085 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
 ; v0.5.1b2
-; last modified 20180404-1428
+; last modified 20180511-1107
 ; (c) 2017-2018 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
