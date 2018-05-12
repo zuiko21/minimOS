@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20180510-1048
+; last modified 20180512-1857
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -51,12 +51,6 @@ shellSize	=	shellEnd - shellHead - 256	; compute size NOT including header!
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
-lda#'S':jsr$c0c2
-lda#'h':jsr$c0c2
-lda#'e':jsr$c0c2
-lda#'l':jsr$c0c2
-lda#'l':jsr$c0c2
-lda#10:jsr$c0c2
 ; ##### minimOS specific stuff #####
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space

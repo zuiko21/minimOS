@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc11
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180411-0835
+; last modified 20180512-1906
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -105,8 +105,7 @@ cout:
 	STA bl_siz			; set counter
 	_STZA bl_siz+1
 ; ...and fall into BLOUT
-;lda#'c'
-;jsr$c0c2
+
 ; ***************************
 ; *** BLOUT, block output ***
 ; ***************************
@@ -120,10 +119,6 @@ cout:
 ;		USES da_ptr, iol_dev, plus whatever the driver takes
 
 blout:
-;tya
-;sec
-;sbc#80
-;jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size
 	ORA bl_siz+1
@@ -152,10 +147,6 @@ co_port:
 cio_phys:
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
 	STY iol_dev			; need to save this
-;tya
-;sec
-;sbc#80
-;jsr$c0c2
 #ifdef	SAFE
 	JSR dr_id2m			; convert ID into mask
 #else
@@ -164,8 +155,6 @@ cio_phys:
 	AND drv_en			; compare against enabled mask
 	BNE cio_dev			; device is not disabled
 cio_nfound:
-lda#'X'
-jsr$c0c2
 		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
 	LDY cio_of			; want input or output?
@@ -173,12 +162,6 @@ cio_dev:				; old label location
 ;	LDA iol_dev			; retrieve (valid) ID, no longer in X
 ;	ASL					; two times (2)
 ;	TAX					; index for address table!
-;lda#'?'
-;jsr$c0c2
-;tya
-;clc
-;adc#'0'
-;jsr$c0c2
 ;	BNE cio_in			; not zero is input
 ; no support yext for optimised direct jumps...
 ;		JMPX(drv_opt)		; optimised direct jump, new for 0.6
@@ -200,19 +183,7 @@ cio_idsc:
 		INX					; *eeeeeeeeeeeeeek
 		BNE cio_idsc
 cio_idok:
-;lda#'>'
-;jsr$c0c2
-;txa
-;clc
-;adc#'0'
-;jsr$c0c2
 	LDY cio_of			; want input or output?
-;lda#'!'
-;jsr$c0c2
-;tya
-;clc
-;adc#'0'
-;jsr$c0c2
 	JMP dr_call			; re-use routine (3...)
 
 ; *****************************
@@ -791,10 +762,6 @@ sd_tab:
 ; C		= could not install driver (ID in use or invalid, queue full, init failed)
 
 dr_inst:
-lda#'='
-jsr$c0c2
-lda drv_en
-jsr dbgbin
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 #ifdef	SAFE
@@ -860,11 +827,6 @@ dr_nreq:
 #else
 	LDA cio_mask-128, Y	; pattern for this device, faster this way
 #endif
-pha
-lda#'%'
-jsr$c0c2
-pla
-jsr dbgbin
 ; arrives here with ID mask in A
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
@@ -876,11 +838,6 @@ jsr dbgbin
 ; if arrived here, succeeded, thus enable ID in bit-list
 	ORA drv_en			; add bit to current
 	STA drv_en			; update register
-;pha
-;lda#'!'
-;jsr$c0c2
-;pla
-jsr dbgbin
 
 ; *** 5) register interrupt routines *** new, much cleaner approach
 ; time to get a pointer to the-block-of-pointers (source)
@@ -968,11 +925,7 @@ dr_neqnw:
 ; *** end of suspicious code ***
 dr_done:
 ; *** 6) continue initing drivers ***
-/*lda#'='
-jsr$c0c2
-lda drv_en
-jsr dbgbin
-*/	_LDAY(da_ptr)			; must return (fixed) ID as per API
+	_LDAY(da_ptr)			; must return (fixed) ID as per API
 	_EXIT_OK				; if arrived here, did not fail
 
 ; **********************
@@ -1061,11 +1014,6 @@ dr_abort:
 	JSR dr_id2m			; convert to mask
 	EOR #$FF			; invert mask
 	AND drv_en			; remove failed device from current mask
-pha
-lda#'-'
-jsr$c0c2
-pla
-jsr dbgbin
 	STA drv_en
 ; LOWRAM systems no longer keep count of installed drivers!
 	TXA					; previous error code...
