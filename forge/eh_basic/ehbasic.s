@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180513-1532
+; last modified 20180513-2212
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -534,21 +534,21 @@ cpu_ok:
 	TSX					; current stack pointer
 	DEX					; minus two
 	DEX
-	STX emptsk			; store for later
+	STX	emptsk			; store for later
 #ifdef	C816
 	.xs: SEP #$10
 #else
-	LDA #1				; standard 6502 stack page
-	STA emptsk+1		; *** must be indirect pointer ready ***
+	LDA	#1				; standard 6502 stack page
+	STA	emptsk+1		; *** must be indirect pointer ready ***
 #endif
 
 ; good time for setting the SIGTERM handler (replaces ^C checking)
-	STZ eh_term			; ##### clear SIGTERM flag #####
-	LDY #<sigterm		; get pointer to handler
-	LDA #>sigterm
-	STY ex_pt			; set parameter
-	STA ex_pt+1
-	LDY #0				; setting my own SIGTERM handler
+	STZ	eh_term			; ##### clear SIGTERM flag #####
+	LDY	#<sigterm		; get pointer to handler
+	LDA	#>sigterm
+	STY	ex_pt			; set parameter
+	STA	ex_pt+1
+	LDY	#0				; setting my own SIGTERM handler
 	_KERNEL(SET_HNDL)	; ##### install SIGTERM handler #####
 ; supposedly ignoring any errors...
 
@@ -570,7 +570,8 @@ LAB_2D13
 	DEX					; decrement count
 	BPL	LAB_2D13		; loop if not done
 
-	LDX	#$FF			; set byte
+;	LDX	#$FF			; set byte
+	DEX					; as known to be zero here, will become $FF
 	STX	Clineh			; set current line high byte (set immediate mode)
 
 ; copy block from StrTab to $0000 - $0012 *** now $03-$06 in mOS
@@ -617,9 +618,9 @@ LAB_GMEM
 	BNE	LAB_2DAA		; branch if not null (user typed something)
 
 						; else character was null so get memory size the "hard" way
-	STZ ma_rs			; ##### as much as possible #####
-	STZ ma_rs+1
-	BRA LAB_2DB6		; proceed to reserve memory
+	STZ	ma_rs			; ##### as much as possible #####
+	STZ	ma_rs+1
+	BRA	LAB_2DB6		; proceed to reserve memory
 
 ; *** will arrive here if some amount was specified, will determine it and call MALLOC accordingly ***
 LAB_2DAA
@@ -633,24 +634,24 @@ LAB_2DAA
 	LDY	Itempl			; get temporary integer low byte
 	LDA	Itemph			; get temporary integer high byte
 
-	STY ma_rs			; ##### set desired amount... #####
-	STA ma_rs+1
+	STY	ma_rs			; ##### set desired amount... #####
+	STA	ma_rs+1
 
 LAB_2DB6
-	STZ ma_align		; page-aligned
+	STZ	ma_align		; page-aligned
 	_KERNEL(MALLOC)		; ##### request RAM from OS #####
 	BCS LAB_GMEM		; perhaps asking too much, try again
 
-	LDA ma_pt
-	STA Smeml			; *** no longer Ram_base ***
+	LDA	ma_pt
+	STA	Smeml			; *** no longer Ram_base ***
 	CLC
-;	ADC ma_rs			; not needed if MALLOC is page-sized
-	STA Ememl			; base+size=top *** no longer Ram_top ***
+;	ADC	ma_rs			; not needed if MALLOC is page-sized
+	STA	Ememl			; base+size=top *** no longer Ram_top ***
 	STA	Sstorl			; set bottom of string space low byte
-	LDA ma_pt+1			; MSB now
-	STA Smemh			; copy pointer
-	ADC ma_rs+1
-	STA Ememh			; base+size=top
+	LDA	ma_pt+1			; MSB now
+	STA	Smemh			; copy pointer
+	ADC	ma_rs+1
+	STA	Ememh			; base+size=top
 	STA	Sstorh			; set bottom of string space high byte
 
 ; while MALLOC is page sized, no need to check minimum size, should release small block anyway
@@ -805,8 +806,7 @@ LAB_1238
 	CPX	#$08			; compare with end + 1
 	BMI	LAB_1238		; loop if more to do
 
-	PLA					; pop addr high byte
-	TAY					; copy back to Y
+	PLY					; pop addr high byte, back to Y
 	PLA					; pop addr low byte
 	CPY	Sstorh			; compare bottom of string mem high byte
 	BCC	LAB_124B		; if less then exit (is ok)
