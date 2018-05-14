@@ -1,10 +1,8 @@
 ; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5.1b2
-; last modified 20180404-1429
+; v0.5.2b1 like 0.5.1 but 65816-savvy
+; last modified 20180514-1313
 ; (c) 2017-2018 Carlos J. Santisteban
-
-; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
 #include "../../OS/usual.h"
 
@@ -29,12 +27,12 @@
 a68_head:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"mB"	; minimOS app! (make 02 calls detectable)
+	.asc	"m", CPU_TYPE	; minimOS app!
 	.asc	"****", 13		; some flags TBD
 ; *** filename and optional comment ***
 title:
 	.asc	"68asm", 0	; file name (mandatory)
-	.asc	"6800/6801/6301 cross-assembler for 6502, v0.5.1", 0	; comment
+	.asc	"6800/6801/6301 cross-assembler for 65xx, v0.5.2", 0	; comment
 
 ; advance to end of header
 	.dsb	a68_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
@@ -925,6 +923,19 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
+#ifdef	C816
+	CMP #0				; A points to zero page by some chance?
+	BNE ps_nzp			; no, get "standard" bank
+		TDC					; otherwise get Direct page instead
+		XBA					; in LSB
+		TAX					; ready to be poked
+		BRA ps_stk
+ps_nzp:
+	PHK					; must make sure about current bank!
+	PLX
+ps_stk:
+	STX str_pt+2
+#endif
 	LDY #0			; standard device
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
@@ -969,6 +980,19 @@ getLine:
 	LDA bufpt+1			; likely 0!
 	STY str_pt			; set parameter
 	STA str_pt+1
+#ifdef	C816
+	CMP #0				; A points to zero page by some chance?
+	BNE gl_nzp			; no, get "standard" bank
+		TDC					; otherwise get Direct page instead
+		XBA					; in LSB
+		TAX					; ready to be poked
+		BRA gl_stk
+gl_nzp:
+	PHK					; must make sure about current bank!
+	PLX
+gl_stk:
+	STX str_pt+2
+#endif
 	LDX #BUFSIZ-1		; max index
 	STX ln_siz			; set value
 	LDY #0			; use standard device
@@ -1131,7 +1155,7 @@ cmd_ptr:
 ; *** strings and other data ***
 splash:
 	.asc	"MC6800/6801/6301 cross-assembler", CR
-	.asc	"for 6502, v0.5.1", CR
+	.asc	"for 65xx, v0.5.2", CR
 	.asc	"(c) 2017-2018 Carlos J. Santisteban", CR
 #ifdef	SAFE
 	.asc	"Type 680x opcodes or .commands,", CR
