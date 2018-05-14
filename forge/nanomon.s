@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180416-1008
+; last modified 20180514-1218
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -30,6 +30,7 @@
 * = $8000
 #endif
 
+.(
 ; **********************
 ; *** zeropage usage ***
 ; **********************
@@ -49,6 +50,7 @@
 ; *** init stuff ***
 ; ******************
 
++nanomon:
 	JSR njs_regs		; keep current state, is PSR ok?
 ; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
 	TSX
@@ -371,4 +373,4 @@ nm_dec:
 	ORA z_dat			; add this nibble to older MSNibble (lower bits are clear)
 	STA z_dat			; ready to go (and full result in A, too)
 	RTS
-
+.)

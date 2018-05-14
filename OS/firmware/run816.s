@@ -168,6 +168,10 @@ reset:
 ; *** direct print splash string ***
 #include "modules/splash.s"
 
+; *** TESTING NANOMON ***
+#include "../../forge/nanomon.s"
+; ***********************
+
 ; ************************
 ; *** start the kernel ***
 ; ************************
