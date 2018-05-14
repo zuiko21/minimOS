@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1a2
+; v0.1b1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180514-1218
+; last modified 20180514-1243
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -52,7 +52,12 @@
 
 +nanomon:
 	JSR njs_regs		; keep current state, is PSR ok?
+#ifdef	C816
+	SEC					; make sure it is in emulation mode!!!
+	XCE
+#endif
 ; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
+; 65816 valid in emulation mode ONLY!
 	TSX
 	LDA $101, X			; get stacked PSR
 	STA z_psr			; update value
@@ -93,6 +98,7 @@ nm_next:
 
 ; ** indexed jump to command routine (must be called from main loop) **
 nm_exe:
+	SBC #' '			; EEEEEEEEEEEEEEK (C was clear, thus same as subtracting '!')
 	ASL					; convert to index
 	TAX
 	_JMPX(nm_cmds)		; *** execute command ***
@@ -331,7 +337,7 @@ nr_loop:
 		STX z_cur			; keep in memory, just in case
 nl_ign:
 		JSR nm_in
-		CMP #CR				; is it newline?
+		CMP #10				; is it newline? EEEEEEEEEEEEEEEEK
 			BEQ nl_end			; if so, just end input
 		CMP #BS				; was it backspace?
 			BEQ nl_bs			; delete then
