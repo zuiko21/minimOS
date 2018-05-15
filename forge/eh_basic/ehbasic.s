@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180513-2212
+; last modified 20180515-1055
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -36,7 +36,7 @@ ehHead:
 #ifndef	C816
 	.asc	"mB"					; minimOS app, CMOS only!
 #else
-	.asc	"mV"					; 65816-savvyness is achieved via exclusive code
+	.asc	"mB"					; 65816-savvyness is achieved via exclusive code***
 #endif
 	.asc	"****", 13				; some flags TBD
 
@@ -1668,12 +1668,12 @@ LAB_15DC
 
 	INC	Bpntrh			; else increment BASIC execute pointer high byte
 LAB_15F6
-	JSR	LAB_IGBY		; increment and scan memory
 php
 pha
-lda#'i'
+lda#'*'
 pla
 plp
+	JSR	LAB_IGBY		; increment and scan memory
 
 LAB_15F9
 	JSR	LAB_15FF		; go interpret BASIC code from (Bpntrl)
@@ -2431,7 +2431,11 @@ LAB_17FB
 	STY	ssptr_h			; save descriptor pointer high byte
 	JSR	LAB_228A		; copy string from descriptor (sdescr) to (Sutill)
 	LDA	#<FAC1_e		; set descriptor pointer low byte
+#ifdef	C816
+	LDY IbufiY+1		; get descriptor pointer high byte EEEEEEEEEEK^2
+#else
 	LDY	#>FAC1_e		; get descriptor pointer high byte
+#endif
 
 						; clean stack and assign value to string variable
 LAB_1811
@@ -3658,7 +3662,11 @@ LAB_LTHAN
 	AND	FAC2_1			; and FAC2 mantissa1 (AND in sign bit)
 	STA	FAC2_1			; save FAC2 mantissa1
 	LDA	#<FAC2_e		; set pointer low byte to FAC2
+#ifdef	C816
+	LDY	IbufiY+1		; set pointer high byte to FAC2 EEEEEEEEEEEEEK
+#else
 	LDY	#>FAC2_e		; set pointer high byte to FAC2
+#endif
 	JSR	LAB_27F8		; compare FAC1 with FAC2 (AY)
 	TAX					; copy result
 	JMP	LAB_1CE1		; go evaluate result
@@ -4575,7 +4583,7 @@ LAB_STRS
 	JSR	LAB_CTNM		; check if source is numeric, else do type mismatch
 	JSR	LAB_296E		; convert FAC1 to string
 	LDA	#<Decssp1		; set result string low pointer
-	LDY	#>Decssp1		; set result string high pointer
+	LDY	#>Decssp1		; set result string high pointer **** watch this if ever gets into zeropage
 	BEQ	LAB_20AE		; print null terminated string to Sutill/Sutilh
 
 ; Do string vector
@@ -6210,7 +6218,11 @@ LAB_UFAC
 LAB_276E
 	LDX	#<Adatal		; set pointer low byte
 LAB_2770
+#ifdef	C816
+	LDY	IbufiY+1		; set pointer high byte EEEEEEEEEEEEEEEEK
+#else
 	LDY	#>Adatal		; set pointer high byte
+#endif
 	BEQ	LAB_2778		; pack FAC1 into (XY) and return
 
 ; pack FAC1 into (Lvarpl)
@@ -6900,7 +6912,7 @@ LAB_2A8C
 						; set string pointer (AY) and exit
 LAB_2A91
 	LDA	#<Decssp1		; set result string low pointer
-	LDY	#>Decssp1		; set result string high pointer
+	LDY	#>Decssp1		; set result string high pointer *** watch this in case gets into zeropage
 	RTS
 
 ; perform power function
@@ -6915,7 +6927,11 @@ LAB_POWER
 
 LAB_2ABF
 	LDX	#<func_l		; set destination pointer low byte
+#ifdef	C816
+	LDY	IbufiY+1		; set destination pointer high byte EEEEEEEEEK²
+#else
 	LDY	#>func_l		; set destination pointer high byte
+#endif
 	JSR	LAB_2778		; pack FAC1 into (XY)
 	LDA	FAC2_s			; get FAC2 sign (b7)
 	BPL	LAB_2AD9		; branch if FAC2>0
@@ -6924,7 +6940,11 @@ LAB_2ABF
 						; integer power which gives an x +j0 result
 	JSR	LAB_INT			; perform INT
 	LDA	#<func_l		; set source pointer low byte
+#ifdef	C816
+	LDY	IbufiY+1		; set source pointer high byte EEEEEEEEEK²
+#else
 	LDY	#>func_l		; set source pointer high byte
+#endif
 	JSR	LAB_27F8		; compare FAC1 with (AY)
 	BNE	LAB_2AD9		; branch if FAC1 <> (AY) to allow Function Call error
 						; this will leave FAC1 -ve and cause a Function Call
@@ -6939,7 +6959,11 @@ LAB_2AD9
 	PHA					; .. and save it
 	JSR	LAB_LOG			; do LOG(n)
 	LDA	#<garb_l		; set pointer low byte
-	LDY	#>garb_l		; set pointer high byte
+#ifdef	C816
+	LDY	IbufiY+1		; set pointer high byte EEEEEEEEEK²
+#else
+	LDY	#>garb_h		; set pointer high byte
+#endif
 	JSR	LAB_25FB		; do convert AY, FCA1*(AY) (square the value)
 	JSR	LAB_EXP			; go do EXP(n)
 	PLA					; pull sign from stack
@@ -7022,7 +7046,11 @@ LAB_2B6E
 	JSR	LAB_25FB		; do convert AY, FCA1*(AY)
 	JSR	LAB_2B88		; go do series evaluation
 	LDA	#<Adatal		; pointer to original # low byte
+#ifdef	C816
+	LDY	IbufiY+1		; pointer to original # high byte EEEEEEEEEK²
+#else
 	LDY	#>Adatal		; pointer to original # high byte
+#endif
 	JMP	LAB_25FB		; do convert AY, FCA1*(AY) and return
 
 ; series evaluation
@@ -7058,7 +7086,11 @@ LAB_2BA8
 	STY	Cptrh			; save pointer high byte
 	JSR	LAB_246C		; add (AY) to FAC1
 	LDA	#<numexp		; set pointer low byte to partial @ numexp
+#ifdef	C816
+	LDY	IbufiY+1		; set pointer high byte to partial @ numexp EEEEEEEEEK²
+#else
 	LDY	#>numexp		; set pointer high byte to partial @ numexp
+#endif
 	DEC	numcon			; decrement constants count
 	BNE	LAB_2B9B		; loop until all done
 
@@ -7177,10 +7209,18 @@ LAB_TAN
 	STZ	Cflag			; clear comparison evaluation flag
 	JSR	LAB_SIN			; go do SIN(n)
 	LDX	#<func_l		; set sin(n) pointer low byte
+#ifdef	C816
+	LDY	IbufiY+1		; set sin(n) pointer high byte EEEEEEEEEK²
+#else
 	LDY	#>func_l		; set sin(n) pointer high byte
+#endif
 	JSR	LAB_2778		; pack FAC1 into (XY)
 	LDA	#<Adatal		; set n pointer low addr
-	LDY	#>Adatal		; set n pointer high addr
+#ifdef	C816
+	LDY	IbufiY+1		; set n pointer high byte EEEEEEEEEK²
+#else
+	LDY	#>Adatal		; set n pointer high byte
+#endif
 	JSR	LAB_UFAC		; unpack memory (AY) into FAC1
 ;	LDA	#$00			; clear byte
 	STZ	FAC1_s			; clear FAC1 sign (b7)
@@ -7188,7 +7228,11 @@ LAB_TAN
 	JSR	LAB_2C74		; save flag and go do series evaluation
 
 	LDA	#<func_l		; set sin(n) pointer low byte
+#ifdef	C816
+	LDY	IbufiY+1		; set sin(n) pointer high byte EEEEEEEEEK²
+#else
 	LDY	#>func_l		; set sin(n) pointer high byte
+#endif
 	JMP	LAB_26CA		; convert AY and do (AY)/FAC1
 
 LAB_2C74
@@ -7772,7 +7816,11 @@ LAB_PHFA
 
 						; compare FAC1 with (packed) FAC2
 	LDA	#<FAC2_e		; set pointer low byte to FAC2
+#ifdef	C816
+	LDY	IbufiY+1		; set pointer high byte to FAC2 EEEEEEEEEK²
+#else
 	LDY	#>FAC2_e		; set pointer high byte to FAC2
+#endif
 	JMP	LAB_27F8		; compare FAC1 with FAC2 (AY) and return
 						; returns A=$00 if FAC1 = (AY)
 						; returns A=$01 if FAC1 > (AY)
