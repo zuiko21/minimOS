@@ -1669,10 +1669,14 @@ LAB_15DC
 	INC	Bpntrh			; else increment BASIC execute pointer high byte
 LAB_15F6
 	JSR	LAB_IGBY		; increment and scan memory
+php
+pha
+lda#'i'
+pla
+plp
 
 LAB_15F9
 	JSR	LAB_15FF		; go interpret BASIC code from (Bpntrl)
-
 LAB_15FC
 	JMP	LAB_15C2		; loop
 
