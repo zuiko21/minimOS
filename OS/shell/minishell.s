@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20180512-1857
+; last modified 20180516-1233
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -77,6 +77,16 @@ go_xsh:
 	BCC open_xsh		; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_xsh:
+pha
+lda#'s'
+jsr$c0c2
+lda#'#'
+jsr$c0c2
+pla
+tya
+clc
+adc#48
+jsr$c0c2
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 ; *** begin things ***

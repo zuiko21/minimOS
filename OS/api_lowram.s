@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc11
+; v0.6rc12
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180512-1906
+; last modified 20180516-1224
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -136,6 +136,14 @@ blo_do:
 		BNE co_port			; eeeeeeeeeek
 			LDY #DEVICE			; *** somewhat ugly hack ***
 co_port:
+php
+lda#'='
+jsr$c0c2
+tya
+sec
+sbc#80
+jsr$c0c2
+plp
 	BMI cio_phys		; not a logic device (3/2)
 ; no need to check for windows or filesystem
 ; investigate rest of logical devices
@@ -170,11 +178,11 @@ cio_dev:				; old label location
 ; awful loop in the meanwhile
 	LDX #0
 cio_idsc:
-		LDA drvrs_ad, X		; take table LSB (4)
-		STA da_ptr			; store pointer (3)
-		LDA drvrs_ad+1, X	; same for MSB (4+3)
+		LDA drvrs_ad+1, X	; same for MSB
 			BEQ cio_nfound		; *never in ZP
 		STA da_ptr+1
+		LDA drvrs_ad, X		; take table LSB (4)
+		STA da_ptr			; store pointer (3)
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
 		CMP iol_dev			; *desired?
@@ -183,6 +191,14 @@ cio_idsc:
 		INX					; *eeeeeeeeeeeeeek
 		BNE cio_idsc
 cio_idok:
+lda iol_dev
+sec
+sbc#96
+jsr$c0c2
+lda cio_of
+clc
+adc#48
+jsr$c0c2
 	LDY cio_of			; want input or output?
 	JMP dr_call			; re-use routine (3...)
 

@@ -3,12 +3,12 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180411-0832
+; last modified 20180516-1207
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
 #define		LOWRAM	_LOWRAM
 
@@ -90,11 +90,15 @@ DEVICE	=	DEV_CNIO		; standard I/O device
 ; * some pointers and addresses * renamed 20150220
 
 ; SRAM pages, just in case of mirroring/bus error * NOT YET USED
-#ifndef	LOWRAMxx
+#ifndef	LOWRAM
 SRAM		=	128		; 32 KiB available as standard
 SPTR		=	$FF		; general case stack pointer, new name 20160308
 SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
+#ifndef	C64
 ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp
+#else
+ZP_AVAIL	=	$DF		; two bytes less for the 6510
+#endif
 #else
 ; rare lowram version for testing purposes
 SRAM		=	0
