@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180515-1055
+; last modified 20180516-0855
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -119,21 +119,20 @@ des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no 
 iodev		= $20		; ##### minimOS selected I/O device ##### $20
 eh_term		= iodev+1	; ##### minimOS SIGTERM flag, will replace ^C handling ##### $21
 
-#ifdef	C816
-IbufiY		= eh_term+1	; self-pointer to DP buffer! $22-23
-#endif
-; *** $22-23 free for 65C02 ***
-
-; these were on page 2... but $0200 is DEADLY in minimOS, now $24-26
+; these were on page 2... but $0200 is DEADLY in minimOS, now $22-24
 ; *** might compact these somewhat ***
-ccflag		= $24		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
+ccflag		= eh_term+1	; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ; *** no longer need for CTRL_C vector ***
+#ifdef	C816
+IbufiY		= ccnull+1	; self-pointer to DP buffer! $25-26 eeeeeeeeeeeeeeeeeeek
+#endif
+; *** $25-26 free for 65C02 ***
 
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80
 ; *** 65816 could use a ZP pointer to it (say, IbufiY), then use (IbufiY),Y instead of Ibuffs,Y where needed ***
-Ibuffs		= ccnull+1	; changed for SBC-2, again for minimOS, $27...6E
+Ibuffs		= $27		; changed for SBC-2, again for minimOS, $27...6E
 Ibuffe		= Ibuffs+$47
 						; end of input buffer *** might be reduced
 ; *** minimOS cannot assume a particular empty stack address ***
@@ -521,7 +520,7 @@ open_eh:
 			_KERNEL(STRING)		; ##### print message #####
 			_ABORT(INVALID)		; ##### abort code, either RTS or RTL will be OK #####
 cpu_err:
-	.asc	"Sorry, this version does NOT run on 65816 systems", 0
+	.asc	"Sorry, this version does NOT run on '816", CR, 0
 cpu_ok:
 #endif
 #endif
@@ -539,7 +538,7 @@ cpu_ok:
 	.xs: SEP #$10
 #else
 	LDA	#1				; standard 6502 stack page
-	STA	emptsk+1		; *** must be indirect pointer ready ***
+	STA	emptsk+1		; *** must be indirect-pointer-ready on either CPU ***
 #endif
 
 ; good time for setting the SIGTERM handler (replaces ^C checking)
@@ -8102,10 +8101,10 @@ PG2_TABS
 	.byte	$00			; ctrl-c flag		-	$00 = enabled
 	.byte	$00			; ctrl-c byte		-	GET needs this
 	.byte	$00			; ctrl-c byte timeout	-	GET needs this
-; *** now it needs self-pointer to Ibuffs for 65816-savvyness ***
+; *** now it needs self-pointer to Ibuffs for 65816-savvyness *** MUST be after these!
 ; will correct MSB (from D) later
 #ifdef	C816
-	.byte	<Ibuffs		; address of input buffer, now in ZP (MUST correct MSB from D.H)
+	.byte	<Ibuffs		; address of input buffer, now in ZP (MUST correct MSB from D.H) currently $25
 #endif
 PG2_TABE
 
