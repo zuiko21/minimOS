@@ -147,11 +147,16 @@ co_port:
 cio_phys:
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
 	STY iol_dev			; need to save this
+lda#'#'
+jsr$c0c2
+tya
+sec
+sbc#80
+jsr$c0c2
 #ifdef	SAFE
-	JSR dr_id2m			; convert ID into mask
-#else
-	LDA cio_mask-128, Y	; pattern for this device, faster this way
+	JSR dr_id2m			; check valid ID for mask
 #endif
+	LDA cio_mask-128, Y	; pattern for this device, faster this way
 	AND drv_en			; compare against enabled mask
 	BNE cio_dev			; device is not disabled
 cio_nfound:
@@ -159,6 +164,8 @@ lda#'?'
 jsr$c0c2
 		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
+lda#'!'
+jsr$c0c2
 	LDY cio_of			; want input or output?
 ; this is suspicious...
 ;	LDA iol_dev			; retrieve (valid) ID, no longer in X
@@ -173,21 +180,37 @@ cio_dev:				; old label location
 	LDX #0
 cio_idsc:
 		LDA drvrs_ad+1, X	; same for MSB
-			BEQ cio_nfound		; *never in ZP
+			BEQ cio_nfound2		; *never in ZP
 		STA da_ptr+1
+jsr debug_hex
 		LDA drvrs_ad, X		; take table LSB (4)
 		STA da_ptr			; store pointer (3)
+jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
+jsr dbgbin
 		CMP iol_dev			; *desired?
 			BEQ cio_idok		; *yeah
 		INX					; *no, go next
 		INX					; *eeeeeeeeeeeeeek
 		BNE cio_idsc
+php
+lda#'X'
+jsr$c0c2
+plp
+		BEQ cio_nfound		; ? did not found the end of the driver list, should not happen...
 cio_idok:
+lda#'O'
+jsr$c0c2
+lda#'K'
+jsr$c0c2
 	LDY cio_of			; want input or output?
 	JMP dr_call			; re-use routine (3...)
 
+cio_nfound2
+lda#'~'
+jsr$c0c2
+jmp cio_nfound
 ; *****************************
 ; *** CIN,  get a character ***
 ; *****************************
@@ -828,10 +851,9 @@ dr_nreq:
 	TAY					; eeeeeeeeeeeek
 ; first convert ID into bit mask for new drv_en
 #ifdef	SAFE
-	JSR dr_id2m			; convert ID into mask
-#else
-	LDA cio_mask-128, Y	; pattern for this device, faster this way
+	JSR dr_id2m			; check ID for mask
 #endif
+	LDA cio_mask-128, Y	; pattern for this device, faster this way
 ; arrives here with ID mask in A
 #ifdef	SAFE
 ; 3.1) check whether this ID was not in use ***
@@ -986,10 +1008,10 @@ dnq_nw:
 dnq_snw:
 	RTS
 
-; * convert ID (lr0...lr7) now in Y, to bitmask in A *
+; * check whether ID in Y is in range lr0...lr7 *
 dr_id2m:
 ; this routine will not be called unless in SAFE mode, thus extensive check becomes mandatory here
-	TYA					; already in Y
+	TYA					; original device
 	AND #%11111000		; check out fixed bits
 	CMP #%10000000		; within range lr0-lr7?
 	BEQ dr_idok			; yes, create mask
@@ -998,7 +1020,6 @@ dr_id2m:
 		JMP dr_iabort		; abort with INVALID ID error
 dr_idok:
 ; now Y is 128...135
-	LDA cio_mask-128, Y	; quickly get mask!
 	RTS
 
 ; **********************
@@ -1017,6 +1038,7 @@ dr_abort:
 ; convert ID into mask for removing
 	TAY					; where the ID is expected
 	JSR dr_id2m			; convert to mask
+	LDA cio_mask-128, Y	; pattern for this device, faster this way
 	EOR #$FF			; invert mask
 	AND drv_en			; remove failed device from current mask
 	STA drv_en
@@ -1031,6 +1053,8 @@ dbgbin:
 pha
 phx
 phy
+lda#'%'
+jsr$c0c2
 ldy#8
 dloop:
 rol
@@ -1057,10 +1081,14 @@ jsr dbgbin
 tya
 rts
 
+;DEBUG show A in pseudohex
 debug_hex:
-lda#'*'
+pha
+pha
+lda#'$'
 jsr$c0c2
-lda bl_ptr+1
+pla
+pha
 lsr
 lsr
 lsr
@@ -1068,24 +1096,12 @@ lsr
 clc
 adc#48
 jsr$c0c2
-lda bl_ptr+1
+pla
 and#15
 clc
 adc#48
 jsr$c0c2
-lda bl_ptr
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-jsr$c0c2
-lda bl_ptr
-and#15
-clc
-adc#48
-jsr$c0c2
+pla
 rts
 ; *******************************
 ; *** DR_SHUT, disable driver *** reduced LOWRAM version
@@ -1101,10 +1117,9 @@ dr_shut:
 	TAX
 ; convert ID (already in Y) to mask
 #ifdef	SAFE
-	JSR dr_id2m			; convert ID into mask
-#else
-	LDA cio_mask-128, Y	; pattern for this device, faster this way
+	JSR dr_id2m			; check valid ID for mask
 #endif
+	LDA cio_mask-128, Y	; pattern for this device, faster this way
 	EOR #$FF			; negative mask
 	AND drv_en			; remove device from bitmask
 	STA drv_en
