@@ -10,13 +10,13 @@
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
 
-;#define		LOWRAM	_LOWRAM
+#define		LOWRAM	_LOWRAM
 
 ;#define		FAST_API	_FAST_API
 ;#define		FAST_FW		_FAST_FW
 
 ; new option for mutable IDs, most likely mandatory!
-#define		MUTABLE		_MUTABLE
+;#define		MUTABLE		_MUTABLE
 
 ; enable in order to remove headers, not LOADLINK savvy!
 ;#define		NOHEAD	_NOHEAD
