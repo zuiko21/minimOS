@@ -77,16 +77,6 @@ go_xsh:
 	BCC open_xsh		; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_xsh:
-pha
-lda#'s'
-jsr$c0c2
-lda#'#'
-jsr$c0c2
-pla
-tya
-clc
-adc#48
-jsr$c0c2
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 ; *** begin things ***
@@ -164,34 +154,6 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
-lda#'&'
-jsr$c0c2
-lda str_pt+1
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-jsr$c0c2
-lda str_pt+1
-and#15
-clc
-adc#48
-jsr$c0c2
-lda str_pt
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-jsr$c0c2
-lda str_pt
-and#15
-clc
-adc#48
-jsr$c0c2
 #ifdef	C816
 	PHK					; current bank eeeeeeek
 	PLA					; get it

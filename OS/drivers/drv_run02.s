@@ -2,7 +2,7 @@
 ; v0.9.6b3
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180516-1322
+; last modified 20180516-1346
 
 #include	"../usual.h"
 
@@ -28,35 +28,6 @@ debug_info:
 
 ; *** output ***
 kow_bout:
-lda#'o'
-jsr$c0c2
-lda bl_ptr+1
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-jsr$c0c2
-lda bl_ptr+1
-and#15
-clc
-adc#48
-jsr$c0c2
-lda bl_ptr
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-jsr$c0c2
-lda bl_ptr
-and#15
-clc
-adc#48
-jsr$c0c2
-
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
