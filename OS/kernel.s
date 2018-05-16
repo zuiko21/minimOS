@@ -229,13 +229,13 @@ dr_ok:					; *** all drivers inited ***
 
 ; new, show a splash message ever the kernel is restarted!
 	JSR ks_cr			; leading newline
-/*	LDY #<kern_splash	; get pointer
+	LDY #<kern_splash	; get pointer
 	LDA #>kern_splash
 	STY str_pt			; set parameter
 	STA str_pt+1
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
-*/	JSR ks_cr			; trailing newline
+	JSR ks_cr			; trailing newline
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
@@ -249,37 +249,9 @@ sh_exec:
 	STA def_io			; default local I/O
 	STA def_io+1
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
-lda ex_pt+1
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-jsr$c0c2
-lda ex_pt+1
-and#15
-clc
-adc#48
-jsr$c0c2
-
-lda ex_pt
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-jsr$c0c2
-lda ex_pt
-and#15
-clc
-adc#48
-jsr$c0c2
-
 	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
-lda#'x'
+lda#'!'
 jsr$c0c2
 bra*
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!

@@ -164,6 +164,34 @@ prnChar:
 prnStr:
 	STA str_pt+1		; store MSB
 	STY str_pt			; LSB
+lda#'&'
+jsr$c0c2
+lda str_pt+1
+lsr
+lsr
+lsr
+lsr
+clc
+adc#48
+jsr$c0c2
+lda str_pt+1
+and#15
+clc
+adc#48
+jsr$c0c2
+lda str_pt
+lsr
+lsr
+lsr
+lsr
+clc
+adc#48
+jsr$c0c2
+lda str_pt
+and#15
+clc
+adc#48
+jsr$c0c2
 #ifdef	C816
 	PHK					; current bank eeeeeeek
 	PLA					; get it

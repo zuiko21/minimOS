@@ -101,6 +101,7 @@ cout:
 	LDA #io_c			; will point to parameter
 	STA bl_ptr			; set pointer
 	_STZA bl_ptr+1
+jsr debug_hex
 	LDA #1				; single byte
 	STA bl_siz			; set counter
 	_STZA bl_siz+1
@@ -116,9 +117,11 @@ cout:
 ;		OUTPUT
 ; bl_siz	= remaining bytes
 ; C = I/O error
-;		USES da_ptr, iol_dev, plus whatever the driver takes
+;		USES cio_of, da_ptr, iol_dev, plus whatever the driver takes
 
 blout:
+lda#'>'
+jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size
 	ORA bl_siz+1
@@ -126,8 +129,12 @@ blout:
 		_EXIT_OK			; or nothing to do
 blo_do:
 #endif
+; here bl_ptr is OK...
+jsr debug_hex
 	LDA #D_BOUT			; output pointer location
 	STA cio_of			; store for further indexing
+; ...and here it is not!!!
+jsr debug_hex
 ; in case of optimised direct jump, suppress the above and use this instead
 ;	STZA cio_of		; store for further indexing, only difference from blin, no longer stores D_BOUT (3)
 	TYA					; check device ID (2)
@@ -163,6 +170,8 @@ cio_phys:
 	AND drv_en			; compare against enabled mask
 	BNE cio_dev			; device is not disabled
 cio_nfound:
+lda#'?'
+jsr$c0c2
 		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
 	LDY cio_of			; want input or output?
@@ -193,13 +202,19 @@ cio_idsc:
 cio_idok:
 lda iol_dev
 sec
-sbc#96
+sbc#80
 jsr$c0c2
 lda cio_of
 clc
-adc#48
+adc#65
+jsr$c0c2
+lda#'c'
 jsr$c0c2
 	LDY cio_of			; want input or output?
+tya
+clc
+adc#65
+jsr$c0c2
 	JMP dr_call			; re-use routine (3...)
 
 ; *****************************
@@ -637,13 +652,20 @@ ll_wrap:
 ;		USES iol_dev and whatever BOUT takes
 
 string:
+lda#'$'
+jsr$c0c2
 	STY iol_dev			; save Y device
+	LDA str_pt			; get LSB of pointer...
+	STA bl_ptr			; ...as new parameter EEEEEEEEEEEEEEEK
 	LDY #0				; reset new index
 	STY bl_siz+1		; reset counter
 	LDX str_pt+1		; get older MSB in case it changes
+	STX bl_ptr+1		; ...and as new parameter eeeeeek
 str_loop:
 		LDA (str_pt), Y		; get character, new approach
 			BEQ str_end			; NUL = end-of-string
+lda#'.'
+jsr$c0c2
 		INY					; eeeeeeeek!
 		BNE str_loop		; no wrap
 			INC str_pt+1		; next page, unfortunately
@@ -651,9 +673,9 @@ str_loop:
 		BNE str_loop		; no need for BRA
 str_end:
 	STX str_pt+1		; restore pointer
-	STY bl_siz		; complete counter
-	LDY iol_dev		; retrieve device
-	JMP blout		; standard block out... and return
+	STY bl_siz			; complete counter
+	LDY iol_dev			; retrieve device
+	JMP blout			; standard block out... and return
 
 
 ; ******************************
@@ -959,6 +981,7 @@ dr_icall:
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
 ; takes 10 bytes, 29 clocks
 dr_call:
+jsr debug_hex
 	INY					; get MSB first (2)
 	LDA (da_ptr), Y		; destination pointer MSB (5)
 	PHA					; push it (3)
@@ -1068,6 +1091,36 @@ jsr dbgbin
 tya
 rts
 
+debug_hex:
+lda#'*'
+jsr$c0c2
+lda bl_ptr+1
+lsr
+lsr
+lsr
+lsr
+clc
+adc#48
+jsr$c0c2
+lda bl_ptr+1
+and#15
+clc
+adc#48
+jsr$c0c2
+lda bl_ptr
+lsr
+lsr
+lsr
+lsr
+clc
+adc#48
+jsr$c0c2
+lda bl_ptr
+and#15
+clc
+adc#48
+jsr$c0c2
+rts
 ; *******************************
 ; *** DR_SHUT, disable driver *** reduced LOWRAM version
 ; *******************************

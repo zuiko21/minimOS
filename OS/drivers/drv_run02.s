@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6b2
+; v0.9.6b3
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180509-1241
+; last modified 20180516-1322
 
 #include	"../usual.h"
 
@@ -28,13 +28,41 @@ debug_info:
 
 ; *** output ***
 kow_bout:
+lda#'o'
+jsr$c0c2
+lda bl_ptr+1
+lsr
+lsr
+lsr
+lsr
+clc
+adc#48
+jsr$c0c2
+lda bl_ptr+1
+and#15
+clc
+adc#48
+jsr$c0c2
+lda bl_ptr
+lsr
+lsr
+lsr
+lsr
+clc
+adc#48
+jsr$c0c2
+lda bl_ptr
+and#15
+clc
+adc#48
+jsr$c0c2
+
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
 		BEQ kow_rts			; nothing to do then
 #endif
-	LDA bl_ptr+1		; save pointer MSB...
-	PHA					; ...in case it changes
+	LDX bl_ptr+1		; save pointer MSB...
 ; all checked, do block output!
 	LDY #0				; reset index
 kow_cout:
@@ -55,13 +83,14 @@ kow_blk:
 			INC bl_ptr+1		; or update MSB
 		_BRA kow_cout		; and continue EEEEEEEEEEEK
 kow_end:
-	PLA					; retrieve saved MSB
-	STA bl_ptr+1		; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+	STX bl_ptr+1		;  retrieve saved MSB
 kow_rts:
 	_DR_OK
 
 ; *** input *** will only get one!
 kow_blin:
+lda#'i'
+jsr$c0c2
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
