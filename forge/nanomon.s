@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b1
+; v0.1b2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180514-1243
+; last modified 20180517-1026
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -165,7 +165,11 @@ nhd_loop:
 		_LDAY(z_addr)		; get byte from mutable pointer
 		BIT z_dat			; check dump type
 		BPL nhd_do			; positive means HEX dump
-			JSR nm_out			; otherwise is ASCII
+			CMP #' '			; otherwise is ASCII, but printable?
+			BCC nhd_prn			; yes, keep it as is
+				LDA #'.'			; no, use substituting character instead
+nhd_prn:
+			JSR nm_out			; print whatever
 			_BRA nd_done		; go for next
 nhd_do:
 		JSR nm_shex
