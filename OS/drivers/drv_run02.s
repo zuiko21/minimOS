@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6b3
+; v0.9.6b4
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180516-1346
+; last modified 20180517-1234
 
 #include	"../usual.h"
 
@@ -58,17 +58,22 @@ kow_end:
 kow_rts:
 	_DR_OK
 
-; *** input *** will only get one!
+; *** input ***
 kow_blin:
 lda#'i'
 jsr$c0c2
+lda bl_ptr+1
+jsr debug_hex
+lda bl_ptr
+jsr debug_hex
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
 		BEQ kow_rts			; nothing to do then
 #endif
 	JSR $c0bf			; will this work???
-;	BCS kow_empty		; nothing available
+	TAX
+	BEQ kow_empty		; nothing available *** perhaps BEQ
 		CMP #LF				; linux-like LF?
 		BNE kow_emit		; do not process
 			LDA #CR				; or convert to CR
@@ -77,13 +82,17 @@ kow_emit:
 		DEC bl_siz			; one less
 		LDA bl_siz
 		CMP #$FF			; will it wrap?
-		BNE kow_rts			; not
+		BNE kow_cont		; not *** should NOT just return, but try to get some more!
 			LDA bl_siz+1		; any more?
 		BEQ kow_rts			; not, just finished!
 			DEC bl_siz+1		; or update MSB
-		_DR_OK				; perhaps some special error code...
-;kow_empty:
-;	DR_ERR(EMPTY)		; nothing yet
+kow_cont:
+		INC bl_ptr			; go for next
+		BNE kow_blin
+			INC bl_ptr+1
+		BNE kow_blin		; BRA
+kow_empty:
+	_DR_ERR(EMPTY)		; nothing yet
 kow_err:
 	_DR_ERR(UNAVAIL);
 .)

@@ -166,7 +166,7 @@ jsr$c0c2
 cio_dev:				; old label location
 lda#'!'
 jsr$c0c2
-	LDY cio_of			; want input or output?
+;	LDY cio_of			; want input or output?
 ; this is suspicious...
 ;	LDA iol_dev			; retrieve (valid) ID, no longer in X
 ;	ASL					; two times (2)
@@ -191,6 +191,8 @@ jsr debug_hex
 jsr dbgbin
 		CMP iol_dev			; *desired?
 			BEQ cio_idok		; *yeah
+lda#'+'
+jsr$c0c2
 		INX					; *no, go next
 		INX					; *eeeeeeeeeeeeeek
 		BNE cio_idsc
@@ -208,7 +210,7 @@ jsr$c0c2
 	JMP dr_call			; re-use routine (3...)
 
 cio_nfound2
-lda#'~'
+lda#'~';list at drvrs_ad ended unexpectedly
 jsr$c0c2
 jmp cio_nfound
 ; *****************************
@@ -1050,11 +1052,13 @@ dr_abort:
 
 ;DEBUG show A in binary
 dbgbin:
-pha
 phx
 phy
+pha
 lda#'%'
 jsr$c0c2
+pla
+pha
 ldy#8
 dloop:
 rol
@@ -1069,16 +1073,16 @@ dey
 bne dloop
 lda#10
 jsr$c0c2
+pla
 ply
 plx
-pla
 rts
 
 dbgen:
-tay
+pha
 lda drv_en
 jsr dbgbin
-tya
+pla
 rts
 
 ;DEBUG show A in pseudohex
