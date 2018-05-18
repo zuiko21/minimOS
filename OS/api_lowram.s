@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc12
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180516-1349
+; last modified 20180518-2224
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -160,12 +160,8 @@ jsr$c0c2
 	AND drv_en			; compare against enabled mask
 	BNE cio_dev			; device is not disabled
 cio_nfound:
-lda#'?'
-jsr$c0c2
 		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
-lda#'!'
-jsr$c0c2
 ;	LDY cio_of			; want input or output?
 ; this is suspicious...
 ;	LDA iol_dev			; retrieve (valid) ID, no longer in X
@@ -182,30 +178,17 @@ cio_idsc:
 		LDA drvrs_ad+1, X	; same for MSB
 			BEQ cio_nfound2		; *never in ZP
 		STA da_ptr+1
-jsr debug_hex
 		LDA drvrs_ad, X		; take table LSB (4)
 		STA da_ptr			; store pointer (3)
-jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
-jsr dbgbin
 		CMP iol_dev			; *desired?
 			BEQ cio_idok		; *yeah
-lda#'+'
-jsr$c0c2
 		INX					; *no, go next
 		INX					; *eeeeeeeeeeeeeek
 		BNE cio_idsc
-php
-lda#'X'
-jsr$c0c2
-plp
 		BEQ cio_nfound		; ? did not found the end of the driver list, should not happen...
 cio_idok:
-lda#'O'
-jsr$c0c2
-lda#'K'
-jsr$c0c2
 	LDY cio_of			; want input or output?
 	JMP dr_call			; re-use routine (3...)
 
