@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b2
+; v0.1b3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180517-1026
+; last modified 20180520-2039
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -75,8 +75,6 @@ nm_eval:
 			LDA buff, X			; get one char
 				BEQ nm_main			; if EOL, ask again
 ; current nm_read rejects whitespace altogether
-;			CMP #' '			; whitespace?
-;				BCC nm_next			; ignore
 			CMP #'0'			; is it a number?
 			BCS nm_num			; push its value
 				JSR nm_exe			; otherwise it is a command
@@ -89,8 +87,7 @@ nm_num:
 			LDA buff, X			; pick next hex
 ;				BEQ nm_main			; must be in pairs! would be catastrophic at the very end!
 			JSR nm_hx2n			; convert another nibble (over the previous one)
-;			LDA z_dat			; get fully converted byte... (already in A)
-			JSR nm_push			; ...pushed into data stack
+			JSR nm_push			; fully converted byte in A pushed into data stack
 nm_next:
 ; read next char in input and proceed
 			INC z_cur			; go for next
@@ -212,7 +209,7 @@ nm_acc:
 nm_rgst:
 	JSR nm_pop
 ; use this instead of ABSOLUTE Y-indexed, non 65816-savvy! (same bytes, bit slower but 816-compliant)
-	TAX
+	TAX					; will run in emulation mode though
 	STX z_acc, Y
 	RTS
 
