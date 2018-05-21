@@ -1,7 +1,8 @@
 ; minimOS nano-monitor
 ; v0.1b3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180520-2039
+; last modified 20180521-2126
+; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
@@ -51,11 +52,13 @@
 ; ******************
 
 +nanomon:
-	JSR njs_regs		; keep current state, is PSR ok?
 #ifdef	C816
+	PHP
 	SEC					; make sure it is in emulation mode!!!
 	XCE
+	PLP
 #endif
+	JSR njs_regs		; keep current state, is PSR ok?
 ; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
 ; 65816 valid in emulation mode ONLY!
 	TSX
