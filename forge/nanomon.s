@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1b3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180521-2126
+; last modified 20180522-2219
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler ***
@@ -330,6 +330,8 @@ nm_in:
 nm_read:
 ; * input command line into buffer *
 ; good to put some prompt before
+	LDA #CR
+	JSR nm_out
 	LDA z_addr+1		; PC.MSB
 	JSR nm_shex			; as hex
 	LDA z_addr			; same for LSB
