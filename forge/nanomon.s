@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b3
+; v0.1b4
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180522-2219
+; last modified 20180523-2158
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler ***
@@ -25,7 +25,7 @@
 #ifndef	HEADERS
 #include "../OS/options.h"
 #include "../OS/macros.h"
-#include "../OS/abi.h"
+//#include "../OS/abi.h"
 #include "../OS/zeropage.h"
 .text
 * = $8000
@@ -38,8 +38,10 @@
 	z_acc	= locals	; try to use kernel parameter space
 	z_x		= z_acc+1	; must respect register order
 	z_y		= z_x+1
-	z_psr	= z_y+1		; if a loop is needed, put z_addr immediately after this
-	z_cur	= z_psr+1
+	z_psr	= z_y+1
+	z_s	= z_psr+1	; will store SP too
+; if a loop is needed, put z_addr immediately after this
+	z_cur	= z_s+1
 	z_sp	= z_cur+1
 	z_addr	= z_sp+1
 	z_dat	= z_addr+2
@@ -53,7 +55,7 @@
 
 +nanomon:
 #ifdef	C816
-	PHP
+	PHP					; keep status!
 	SEC					; make sure it is in emulation mode!!!
 	XCE
 	PLP
@@ -62,6 +64,7 @@
 ; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
 ; 65816 valid in emulation mode ONLY!
 	TSX
+	STZ z_s				; store initial SP
 	LDA $101, X			; get stacked PSR
 	STA z_psr			; update value
 	LDY $102, X			; get stacked PC
@@ -184,11 +187,12 @@ nhd_nc:
 
 nm_regs:
 ; * show register values *
-; format a$$ X$$ Y$$ P$$
+; format S$$p$$Y$$X$$a$$
 ; alternate attempt is 23+1b (instead of 55+1) if nm_out respects X!
 ; added 6b as X saved in z_dat
 ; saved 2 bytes going backwards
-	LDX #3				; max offset
+; Now shows S too
+	LDX #4				; max offset
 nmv_loop:
 		STX z_dat			; just in case
 		LDA nm_lab, X		; get label from list
@@ -196,14 +200,14 @@ nmv_loop:
 		LDX z_dat			; just in case
 		LDA z_acc, X		; get register value, must match order!
 		JSR nm_shex			; show in hex
-		LDA #' '			; put a space between registers
-		JSR nm_out
+;		LDA #' '			; put a space between registers
+;		JSR nm_out
 		LDX z_dat			; just in case
 		DEX					; go back for next
 		BPL nmv_loop		; zero will be last
 	RTS
 nm_lab:
-	.asc	"aXYp"		; register labels, will be printed in reverse!
+	.asc	"aXYpS"		; register labels, will be printed in reverse!
 
 nm_acc:
 ; * set A *
@@ -233,7 +237,7 @@ nm_psr:
 
 nm_jsr:
 ; * call address on stack *
-	JSR nm_jmp			; jump as usual, hopefully will return here
+	JSR nm_jmp2			; jump as usual but without touching SP, hopefully will return here
 njs_regs:
 ; restore register values
 	PHP					; flags are delicate and cannot be directly STored
@@ -246,6 +250,9 @@ njs_regs:
 
 nm_jmp:
 ; * jump to address on stack *
+	LDX z_s				; initial SP value
+	TXS					; this makes sense if could be changed
+nm_jmp2:
 	JSR nm_gaddr		; pick desired address
 ; preload registers
 	LDA z_psr
