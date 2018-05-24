@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-04-25*
+*Last update: 2018-05-24*
 
 ## Rationale
 
@@ -422,6 +422,7 @@ IDs *were* chosen in a random fashion, but they're likely to be grouped into bat
 of generic devices, like this:
 
 -`lr0-lr7` = 128-135, **Low Resources** (for use within `LOWRAM` option)
+-`rd0-rd7` = 128-135, **Reseved Drivers** (for multitasking, windowing, fikesystem, etc.)
 -`as0-as7` = 232-239, *Asynchronous* Serial
 -`ss0-ss7` = 240-247, *Synchronous* Serial (like **SS-22**)
 -`ud0-ud7` = 248-255, **User Devices** (perhaps voiding 255)
@@ -433,7 +434,9 @@ to IDs 232 to 239, **most** if not all of these drivers would be supplied with
 a fixed ID of 232, no matter whether driving a 6551, 6850, 16C550 or bit-banged VIA;
 upon install, the kernel would try to use the 232 entry. If busy, try everyone else up
 to 239; if no free entry is found, complain as `BUSY`, otherwise install it. Might try
-first with the supplied ID first (232-239) just in case.* As of 2017-10-23, a new
+first with the supplied ID first (232-239) just in case.*
+
+As of 2017-10-23, a new
 `MUTABLE` option switches on this feature, which will take (yet) another 256-byte array
 from `sysvars.h`.
 
