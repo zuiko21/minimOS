@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc13, should match kernel16.s
+; v0.6rc14, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180511-1055
+; last modified 20180525-2153
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1384,12 +1384,21 @@ dr_inst:
 	PLB					; ...is the bank!
 ; minimOS•16 API defaults to 8 bit sizes
 ; get some info from header
+; dynamic drivers currently not supported
+#ifdef	SAFE
+	LDY #D_MEM
+	LDA (da_ptr), Y
+	INY
+	ORA (da_ptr), Y
+		BNE dr_derr
+#endif
 ; assuming D_ID is zero, just use non-indexed indirect to get ID (not much used anyway)
 	LDA (da_ptr)		; check ID...
 ; will be stored later, in case is changed
 #ifdef	SAFE
 	BMI dr_phys			; only physical devices (3/2)
 ; logical devices cannot be installed this way, function should return INVALID error
+dr_derr:
 		JMP dr_iabort		; reject logical devices (3)
 dr_phys:
 #endif

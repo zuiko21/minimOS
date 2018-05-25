@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc16, must match kernel.s
+; v0.6rc17, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180511-1054
+; last modified 20180525-2148
 
 ; no way for standalone assembly...
 
@@ -1091,13 +1091,23 @@ sd_tab:					; check order in abi.h
 
 dr_inst:
 ; get some info from header
+; dynamic drivers are currently NOT supported
+#ifdef	SAFE
+	LDY #D_MEM
+	LDA (da_ptr), Y
+	INY
+	ORA (da_ptr), Y
+		BNE dr_derr
+#endif
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 ; ...but will be stored anyway for mutable option
 	_LDAY(da_ptr)			; retrieve ID
 #ifdef	SAFE
 	BMI dr_phys			; only physical devices (3/2)
 ; separate function issues INVALID error
+dr_derr:
 		JMP dr_iabort		; reject logical devices (3)
+dr_phys:
 #endif
 
 ; *** before registering, check whether the driver COULD be successfully installed ***
@@ -1107,7 +1117,6 @@ dr_inst:
 ; otherwise, skip the installing procedure altogether for that driver
 
 ; 1) first check whether this ID was not in use ***
-dr_phys:
 ; ****** will store ID as might change within device type if busy (already in A) ******
 ; ++++++ new faster driver list 20151014, revamped 20160406 ++++++
 	TAX					; was Y, also in A (2)

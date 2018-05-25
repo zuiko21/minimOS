@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc12
+; v0.6rc13
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180518-2224
+; last modified 20180525-2156
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -778,8 +778,14 @@ dr_inst:
 ; get some info from header
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 #ifdef	SAFE
+	LDY #D_MEM
+	LDA (da_ptr), Y
+	INY
+	ORA (da_ptr), Y
+		BNE dr_derr
 	_LDAY(da_ptr)		; get ID as not stored above
 	BMI dr_phys			; only physical devices (3/2)
+dr_derr:
 		JMP dr_iabort		; reject logical devices (3)
 dr_phys:
 #endif
