@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-05-24*
+*Last update: 2018-05-26*
 
 ## Rationale
 
@@ -400,7 +400,9 @@ succesfully initialised or not (e.g. device not present), the latter condition m
 routine will be called, although any error condition makes little sense now, thus is not 
 required.
 
-As of 2017-08-02, drivers **cannot be loaded *on-the-fly***, 
+### Static vs. *Dynamic* Drivers
+
+As of 2017-08-02, drivers **cannot be loaded *on-the-fly*** (*dynamic*), 
 being **assembled together** with the Kernel, firmware etc. 
 The problem is in *driver variables*, which are **statically allocated**. 
 *Future versions will allow loading drivers from mass storage, even on a 
@@ -417,6 +419,8 @@ for better runtime performance; even (for the **65816**) moving
 interfere with *kernel calls* and general system operation, if not carefully crafted 
 (interrupts **off**, and make sure [NMI](https://en.wikipedia.org/wiki/Non-maskable_interrupt) 
 handler sets/restores DP accordingly).
+
+### Device IDs
 
 IDs *were* chosen in a random fashion, but they're likely to be grouped into batches
 of generic devices, like this:
