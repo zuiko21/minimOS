@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-05-26*
+*Last update: 2018-05-27*
 
 ## Rationale
 
@@ -303,7 +303,8 @@ in use, but in any case they'll bear a **header** containing this kind of inform
 - Pointer to a **Periodic Interrupt Handler** (called every "n" *jiffy* interrupts, if enabled)
 - **Frequency** value for the *periodic* task described above (the *n* value for the above)
 - Pointer to a **description *C-string*** in human-readable form
-- Number of ***dynamically allocated* bytes**, if loadable *on-the-fly* (TBD)
+- Number of ***dynamically allocated* bytes**, if loadable *on-the-fly*
+- *Offset* to data relocation table (only if the above is **not zero**)
 
 A last-minute change in 0.6 is the **block-oriented I/O**. This was foreseen on older
 versions, but drivers were *character-oriented*. This also leaves room for separate
@@ -409,16 +410,52 @@ The problem is in *driver variables*, which are **statically allocated**.
 running system **without rebooting***. For this to be achieved, *dynamic allocation* of 
 variable space is needed, thus a parameter in driver header asks for a certain memory 
 size. Details for passing the allocated space *pointer* to the asking driver are TBD,
-but a feasible method in 65xx architectures would be **setting `sysptr`** 
-reserved zeropage location prior to any interrupt task execution, pointing it to the 
-beginning of allocated space. *Indirect indexed addressing* would have to be used 
-by the drivers in order to access its (dynamically allocated) variable space. 
-Alternatively, a *relocation* scheme (**not yet implemented**  in any way) may be used
-for better runtime performance; even (for the **65816**) moving 
-*Direct Page* to the reserved area for the task execution, although that may 
-interfere with *kernel calls* and general system operation, if not carefully crafted 
-(interrupts **off**, and make sure [NMI](https://en.wikipedia.org/wiki/Non-maskable_interrupt) 
-handler sets/restores DP accordingly).
+however in 65xx architectures has been dismissed the idea of *pointing `sysptr`* to the 
+beginning of allocated space, prior to any interrupt task execution, as this will 
+**dramatically impair performance**, together with the use of *Indirect indexed 
+addressing* instead of faster *absolute* addressing, indexed or not.
+ 
+Alternatively, a *relocation* scheme (**not yet used**) will be used for *much*
+better runtime performance; I no longer see any problem for the **65816**, as 
+*Direct Page* does not need to be moved or even used, except for the
+*globally system reserved* `sysptr` and `systmp`. 
+
+Sample code for *driver variable **relocation*** could be as follows (wrote in
+**16-bit** memory/indexes in 65816-fashion for simplicity).
+*This will be done upon `DR_INST` call* and
+a similar scheme could be used for *generic code relocation* as issued by `LOADLINK`.
+
+We assume `da_ptr` points to the driver's header, as usual during install.
+
+```
+; first let us set up some pointers
+    LDY #D_MEM         ; how much dynamic memory is asked?
+    LDA (da_ptr), Y
+    BNE dd_end         ; static driver, nothing to do here
+; *** missing here is reserving dynamic memory for the driver, assume pointer at dynmem ***
+        LDY #D_DYN         ; otherwise get offset to relocation table
+        LDA (da_ptr), Y
+        CLC
+        ADC da_ptr         ; get absolute pointer
+; I think we can assume C is clear here... and will stay so!
+        STA dyntab         ; use as local pointer
+        LDY #0             ; reset counter
+; all set, let us convert the variable references
+dyd_rel:
+            LDA (dyntab), Y    ; any more to convert?
+                BEQ dd_end         ; no, all done
+            ADC da_ptr         ; yes, compute actual location of address
+            STA tmptr          ; store temporary pointer
+            LDA (tmptr)        ; this is the generic address to be converted
+            EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
+            ADC dynmem         ; the location of this driver's variables
+; the above value could be directly read from an X-indexed array, saving one local
+            STA (tmptr)        ; address is corrected!
+            INY                ; go for next offset (assume 16-bit indexes)
+            INY
+            BRA dyd_rel
+dd_end:
+```
 
 ### Device IDs
 
