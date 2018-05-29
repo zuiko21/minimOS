@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc13
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180525-2156
+; last modified 20180529-1113
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -147,12 +147,6 @@ co_port:
 cio_phys:
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
 	STY iol_dev			; need to save this
-lda#'#'
-jsr$c0c2
-tya
-sec
-sbc#80
-jsr$c0c2
 #ifdef	SAFE
 	JSR dr_id2m			; check valid ID for mask
 #endif
