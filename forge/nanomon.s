@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b4
+; v0.1b5
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180523-2158
+; last modified 20180529-0854
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler ***
@@ -9,18 +9,18 @@
 ; aaaa,		read byte into stack
 ; ddaaaa!	write byte
 ; aaaa$		hex dump
-; +		continue hex dump
+; +			continue hex dump
 ; aaaa"		ASCII dump
-; -		continue ASCII dump
-; dd/		pop and show in hex
-; dd.		pop and show in ASCII
+; -			continue ASCII dump
+; dd.		pop and show in hex (new)
 ; aaaa&		call address
 ; aaaa*		jump to address
-; %		show regs
+; %			show regs
 ; dd(		set X
 ; dd)		set Y
 ; dd#		set A
 ; dd'		set P
+; dd/		set SP (new)
 
 #ifndef	HEADERS
 #include "../OS/options.h"
@@ -39,7 +39,7 @@
 	z_x		= z_acc+1	; must respect register order
 	z_y		= z_x+1
 	z_psr	= z_y+1
-	z_s	= z_psr+1	; will store SP too
+	z_s		= z_psr+1	; will store SP too
 ; if a loop is needed, put z_addr immediately after this
 	z_cur	= z_s+1
 	z_sp	= z_cur+1
@@ -64,13 +64,14 @@
 ; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
 ; 65816 valid in emulation mode ONLY!
 	TSX
-	STZ z_s				; store initial SP
-	LDA $101, X			; get stacked PSR
-	STA z_psr			; update value
-	LDY $102, X			; get stacked PC
-	LDA $103, X
-	STY z_addr			; update current pointer
-	STA z_addr+1
+	STX z_s				; store initial SP
+; ** this only if directly called from RTI **
+;	LDA $101, X			; get stacked PSR
+;	STA z_psr			; update value
+;	LDY $102, X			; get stacked PC
+;	LDA $103, X
+;	STY z_addr			; update current pointer
+;	STA z_addr+1
 ; ** remove code above if not needed **
 	_STZA z_sp			; reset data stack pointer
 ; main loop
@@ -124,8 +125,8 @@ nm_cmds:
 	.word	nm_dump			; +		continue hex dump
 	.word	nm_peek			; aaaa,		read byte and push
 	.word	nm_admp			; -		continue ASCII dump
-	.word	nm_apop			; dd.		show in ASCII
-	.word	nm_hpop			; dd/		show in hex
+	.word	nm_hpop			; dd.		show in hex
+	.word	nm_ssp			; dd/		set SP (new)
 
 ; ************************
 ; *** command routines ***
@@ -168,10 +169,15 @@ nhd_loop:
 		_LDAY(z_addr)		; get byte from mutable pointer
 		BIT z_dat			; check dump type
 		BPL nhd_do			; positive means HEX dump
+; *** check whether printable ***
 			CMP #' '			; otherwise is ASCII, but printable?
-			BCC nhd_prn			; yes, keep it as is
-				LDA #'.'			; no, use substituting character instead
+				BCC nhd_npr			; no, use substituting character instead
+			CMP #127			; high-ASCII will not print either
+			BCC nhd_prn			; below 127 (and over 31), keep it as is
+nhd_npr:
+				LDA #'.'			; otherwise use substituting character
 nhd_prn:
+; *** end of filtering ***
 			JSR nm_out			; print whatever
 			_BRA nd_done		; go for next
 nhd_do:
@@ -187,11 +193,7 @@ nhd_nc:
 
 nm_regs:
 ; * show register values *
-; format S$$p$$Y$$X$$a$$
-; alternate attempt is 23+1b (instead of 55+1) if nm_out respects X!
-; added 6b as X saved in z_dat
-; saved 2 bytes going backwards
-; Now shows S too
+; format S$$P$$Y$$X$$a$$
 	LDX #4				; max offset
 nmv_loop:
 		STX z_dat			; just in case
@@ -207,12 +209,12 @@ nmv_loop:
 		BPL nmv_loop		; zero will be last
 	RTS
 nm_lab:
-	.asc	"aXYpS"		; register labels, will be printed in reverse!
+	.asc	"axyps"		; register labels, will be printed in reverse!
 
 nm_acc:
 ; * set A *
 ; alternate 9+3x4=21b (these were 4x6=24b)
-	LDY #0
+	LDY #0				; A must be the first register into variables array
 nm_rgst:
 	JSR nm_pop
 ; use this instead of ABSOLUTE Y-indexed, non 65816-savvy! (same bytes, bit slower but 816-compliant)
@@ -233,6 +235,11 @@ nm_iy:
 nm_psr:
 ; * set P *
 	LDY #z_psr-z_acc	; non-constant, safe way
+	BNE nm_rgst			; common code
+
+nm_ssp:
+; * set S *
+	LDY #z_s-z_acc		; non-constant, safe way
 	BNE nm_rgst			; common code
 
 nm_jsr:
@@ -263,15 +270,7 @@ nm_jmp2:
 	PLP					; just before jumping, set flags
 	JMP (z_addr)		; go! not sure if it will ever return...
 
-nm_apop:
-; * pop value and show in ASCII *
-	JSR nm_pop
-	JMP nm_out			; print... and return
-
-nm_hpop:
-; * pop value and show in hex *
-	JSR nm_pop
-	JMP nm_shex			; print hex... and return
+; moved nm_hpop for improved performance and compact size!
 
 ; ***********************
 ; *** useful routines ***
@@ -298,6 +297,11 @@ nm_push:
 	STA stack, X
 	RTS
 
+nm_hpop:
+; * pop value and show in hex * *** from command routines ***
+	JSR nm_pop
+;	JMP nm_shex			; print hex... and return (already there!)
+
 nm_shex:
 ; * show A value in hex *
 	PHA					; keep whole value for later LSNibble
@@ -318,7 +322,7 @@ nm_hprn:
 nm_sdec:
 ; convert to ASCII
 	ADC #'0'			; C is clear for sure
-	JMP nm_out			; print it... and return
+;	JMP nm_out			; print it... and return (already there!)
 
 nm_out:
 ; *** standard output ***
@@ -336,8 +340,11 @@ nm_in:
 
 nm_read:
 ; * input command line into buffer *
+#ifdef	NMOS
+	CLD					; eeeeeeeeeeeek
+#endif
 ; good to put some prompt before
-	LDA #CR
+	LDA #LF				; eeeeeeeeeeeeek (needed for run816)
 	JSR nm_out
 	LDA z_addr+1		; PC.MSB
 	JSR nm_shex			; as hex
@@ -350,6 +357,12 @@ nr_loop:
 		STX z_cur			; keep in memory, just in case
 nl_ign:
 		JSR nm_in
+; *** must convert to uppercase ***
+		CMP #'a'			; lowercase?
+		BCC nl_upp			; no, leave it as is
+			AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
+nl_upp:
+; *** end of uppercase conversion ***
 		CMP #10				; is it newline? EEEEEEEEEEEEEEEEK
 			BEQ nl_end			; if so, just end input
 		CMP #BS				; was it backspace?
