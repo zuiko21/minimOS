@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1b5
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180529-0854
+; last modified 20180529-0909
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler ***
@@ -52,7 +52,6 @@
 ; ******************
 ; *** init stuff ***
 ; ******************
-.asc "<NANO>"
 +nanomon:
 #ifdef	C816
 	PHP					; keep status!
@@ -116,15 +115,15 @@ nm_cmds:
 	.word	nm_asc			; aaaa"		ASCII dump
 	.word	nm_acc			; dd#		set A
 	.word	nm_hex			; aaaa$		hex dump
-	.word	nm_regs			; %		view regs
+	.word	nm_regs			; %			view regs
 	.word	nm_jsr			; aaaa&		call
 	.word	nm_psr			; dd'		set P
 	.word	nm_ix			; dd(		set X
 	.word	nm_iy			; dd)		set Y
 	.word	nm_jmp			; aaaa*		jump
-	.word	nm_dump			; +		continue hex dump
+	.word	nm_dump			; +			continue hex dump
 	.word	nm_peek			; aaaa,		read byte and push
-	.word	nm_admp			; -		continue ASCII dump
+	.word	nm_admp			; -			continue ASCII dump
 	.word	nm_hpop			; dd.		show in hex
 	.word	nm_ssp			; dd/		set SP (new)
 
@@ -171,9 +170,9 @@ nhd_loop:
 		BPL nhd_do			; positive means HEX dump
 ; *** check whether printable ***
 			CMP #' '			; otherwise is ASCII, but printable?
-				BCC nhd_npr			; no, use substituting character instead
-			CMP #127			; high-ASCII will not print either
-			BCC nhd_prn			; below 127 (and over 31), keep it as is
+			BCC nhd_npr			; no, use substituting character instead
+				CMP #127			; high-ASCII will not print either
+					BCC nhd_prn			; below 127 (and over 31), keep it as is
 nhd_npr:
 				LDA #'.'			; otherwise use substituting character
 nhd_prn:
@@ -406,4 +405,3 @@ nm_dec:
 	STA z_dat			; ready to go (and full result in A, too)
 	RTS
 .)
-.asc "<NANO>"
