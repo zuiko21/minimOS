@@ -1,7 +1,7 @@
-; minimOS 0.6rc14 API/ABI
+; minimOS 0.6rc15 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180412-1312
+; last modified 20180529-1516
 
 ; *************************************************
 ; *************************************************
@@ -123,6 +123,7 @@ D_STAT	= 16		; device status, TBD
 D_BYE	= 18		; shutdown procedure
 D_INFO	= 20		; points to a C-string with driver info
 D_MEM	= 22		; NEW, required variable space (if relocatable) (WORD)
+D_DYN	= 24		; NEW, offset to relocation table (if the above is NOT zero)
 
 ; ** Driver feature mask values **
 A_POLL	= %10000000	; D_POLL routine available
