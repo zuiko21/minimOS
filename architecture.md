@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-05-27*
+*Last update: 2018-05-29*
 
 ## Rationale
 
@@ -37,8 +37,7 @@ Perhaps this achieved goal was the key to CP/M's success. This OS had three main
 - **BDOS** (Basic Disk OS)
 - **CCP** (Console Command Processor)
 
-Unlike the 
-[**BIOS**](https://en.wikipedia.org/wiki/BIOS), 
+Unlike the [**BIOS**](https://en.wikipedia.org/wiki/BIOS), 
 which was provided *customised* by the computer's maker, 
 all the remaining components were **generic**, as supplied by 
 [Digital Research](https://en.wikipedia.org/wiki/Digital_Research). 
@@ -48,8 +47,7 @@ was a **single task**, single user OS. As soon as the task was completed, the *s
 was reloaded and the user was prompted for another command.
 
 Alas, this scheme is not complete: usually, these components were provided on some kind of mass-storage
-media (often 
-[*diskettes*](https://en.wikipedia.org/wiki/Floppy_disk)) 
+media (often [*diskettes*](https://en.wikipedia.org/wiki/Floppy_disk)) 
 that had to be *loaded* into RAM somehow, as no CPU has any means to execute code *directly* from 
 [**secondary memory**](https://en.wikipedia.org/wiki/Auxiliary_memory). 
 Thus, a small piece of **ROM** or any other *non-volatile 
@@ -75,13 +73,11 @@ some **non-volatile** ROM is expected to be accesible at that address. But CP/M 
 thus some means to *switch off* ROM access from the bottom of the address map (once 
 the firmware has done its task, of course) has to be provided to achieve CP/M compatibility... 
 unless you want to *manually* program the initial RAM bytes via toggle-switches! Anyway, 
-such a simple 
-[*bank-switching*](https://en.wikipedia.org/wiki/Bank_switching) 
+such a simple [*bank-switching*](https://en.wikipedia.org/wiki/Bank_switching) 
 feature was easily implemented, as demonstrated by CP/M's sheer popularity.
 
 Back in the day, the **I/O** capabilites of computers were rather limited: assume a *keyboard*, an *output device*
-(could be a text CRT screen, but a 
-[*teletype*](https://en.wikipedia.org/wiki/Teleprinter) 
+(could be a text CRT screen, but a [*teletype*](https://en.wikipedia.org/wiki/Teleprinter) 
 would do) and/or a *printer*, plus some *mass-storage* devices, 
 and you were set. Thus, the concept of modular 
 [device **drivers**](https://en.wikipedia.org/wiki/Device_driver) 
@@ -106,8 +102,7 @@ running on highly standardised PC *clones* of widespread use. ***The rest is his
 ## The home-computer market
 
 On the other hand, the late seventies witnessed the birth of an unexpected computer 
-market: the 
-[*home computer*](https://en.wikipedia.org/wiki/Home_computer) 
+market: the [*home computer*](https://en.wikipedia.org/wiki/Home_computer) 
 which, despite the performance impairment, made computing affordable for the masses.
 
 But bereft of the portability/standardisation features of CP/M (and later MS-DOS) machines, 
@@ -172,7 +167,7 @@ hardware-independent and providing the only interface *application software* is 
 to use... This component is probably the 
 **closest one to CP/M's design**, in both form and function.
 
-However, unlike CP/M's *BIOS*, minimOS' firmware (as of 2017-05-08) has
+However, unlike CP/M's *BIOS*, minimOS' firmware (as of 2018-05-29) has
 **no I/O capabilities**, being restricted to **Kernel instalation/configuration** chores,
 plus providing a **standard interface to some hardware-dependent features**(say,
 *power management*). As this OS is intended to run on a **wide spectrum of machines**,
@@ -403,7 +398,7 @@ required.
 
 ### Static vs. *Dynamic* Drivers
 
-As of 2017-08-02, drivers **cannot be loaded *on-the-fly*** (*dynamic*), 
+As of 2018-05-29, drivers **cannot be loaded *on-the-fly*** (*dynamic*), 
 being **assembled together** with the Kernel, firmware etc. 
 The problem is in *driver variables*, which are **statically allocated**. 
 *Future versions will allow loading drivers from mass storage, even on a 
@@ -437,17 +432,18 @@ We assume `da_ptr` points to the driver's header, as usual during install.
         LDA (da_ptr), Y
         CLC
         ADC da_ptr         ; get absolute pointer
-; I think we can assume C is clear here... and will stay so!
         STA dyntab         ; use as local pointer
         LDY #0             ; reset counter
 ; all set, let us convert the variable references
 dyd_rel:
             LDA (dyntab), Y    ; any more to convert?
                 BEQ dd_end         ; no, all done
+            CLC
             ADC da_ptr         ; yes, compute actual location of address
             STA tmptr          ; store temporary pointer
             LDA (tmptr)        ; this is the generic address to be converted
             EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
+; We can assume C clead here
             ADC dynmem         ; the location of this driver's variables
 ; the above value could be directly read from an X-indexed array, saving one local
             STA (tmptr)        ; address is corrected!
@@ -462,11 +458,11 @@ dd_end:
 IDs *were* chosen in a random fashion, but they're likely to be grouped into batches
 of generic devices, like this:
 
--`lr0-lr7` = 128-135, **Low Resources** (for use within `LOWRAM` option)
--`rd0-rd7` = 128-135, **Reseved Drivers** (for multitasking, windowing, fikesystem, etc.)
--`as0-as7` = 232-239, *Asynchronous* Serial
--`ss0-ss7` = 240-247, *Synchronous* Serial (like **SS-22**)
--`ud0-ud7` = 248-255, **User Devices** (perhaps voiding 255)
+- `lr0-lr7` = 128-135, **Low Resources** (for use within `LOWRAM` option)
+- `rd0-rd7` = 128-135, **Reseved Drivers** (for multitasking, windowing, filesystem, etc.)
+- `as0-as7` = 232-239, *Asynchronous* Serial
+- `ss0-ss7` = 240-247, *Synchronous* Serial (like **SS22**)
+- `ud0-ud7` = 248-255, **User Devices** (255 *might* be reserved)
 
 Thus, drivers would include any ID in the generic range, and the
 OS will try to find a place for him, perhaps with another suitable ID. Since
@@ -481,7 +477,7 @@ As of 2017-10-23, a new
 `MUTABLE` option switches on this feature, which will take (yet) another 256-byte array
 from `sysvars.h`.
 
-About **logical** device IDs, as of 2017-10-09 only three are supported:
+About **logical** device IDs, as of 2018-05-29 only three are supported:
 
 - **#0** as the (task-defined or global) **default** device (like UNIX's `stdin` & `stdout`)
 - **#126** as **`DEV_RND`** (still under development)
@@ -493,7 +489,7 @@ be assigned to open **file handlers**.
 ### Multitasking
 
 An unconventional feature (for the sake of modularity) is that multitasking is
-**implemented as a 'device' driver**. No longer assigned a *fixed ID*, will supply
+**implemented as a 'device' driver**. This driver will supply
 the **scheduler** as a periodic `D_POLL` task (usually at *frequency* 1, although *soft*
 6502 implementations may use a longer quantum) while the `D_INIT` routine will
 **`PATCH` the existing *task-handling* functions**. `GET_PID` might not need to be
