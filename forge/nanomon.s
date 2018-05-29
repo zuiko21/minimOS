@@ -52,7 +52,7 @@
 ; ******************
 ; *** init stuff ***
 ; ******************
-
+.asc "<NANO>"
 +nanomon:
 #ifdef	C816
 	PHP					; keep status!
@@ -406,3 +406,4 @@ nm_dec:
 	STA z_dat			; ready to go (and full result in A, too)
 	RTS
 .)
+.asc "<NANO>"
