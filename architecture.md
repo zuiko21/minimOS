@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-05-29*
+*Last update: 2018-05-30*
 
 ## Rationale
 
@@ -221,8 +221,7 @@ The mechanism for **kernel patching** is also supplied, and from 0.6 version on
 it does provide a *recovery
 setting* -- just a NULL pointer as the supplied jump table (for `INSTALL`)
 or routine address (for individual function `PATCH`). The firmware will take care of a 
-pointer to the last installed *kernel **jump table***
-for this matter.
+pointer to the last installed *kernel **jump table** *for this matter.
 
 On the other hand, passing a NULL pointer to any interrupt-setting function will simply
 return the original pointer. This might be deprecated as the standard interface for
@@ -308,12 +307,15 @@ Note that, for compatibility reasons, *the Kernel still provides legacy **charac
 oriented I/O*, as mere interfaces setting a fixed single-byte *block size* prior to
 calling the generic block routines.
 
-The primitive **event management** this far expected certain *control characters*
-(^C for `SIGTERM`, ^Z for `SIGSTOP`, etc) to be received and processed via `CIN`.
-Since managing these events *within a block transfer* seems unconvenient to say the
-least, the new approach does manage them **thru the *legacy* `CIN` routine**, which is
-anyway expected to be used for human iteraction. Note that current (0.6) `READLN`
-impementation does use `CIN` internally, thus event-savvy.
+At boot time, the *initialisation* routine of each registered driver is **unconditionally** 
+called -- if not needed, must point to an existing *Return from Subroutine* instruction. 
+Upon exit, this routine must return an **error flag** indicating whether the driver was 
+succesfully initialised or not (e.g. device not present), the latter condition making it 
+**unavailable** for further I/O operation. Similarly, at shutdown/reboot every *shutdown* 
+routine will be called, although any error condition makes little sense now, thus is not 
+required.
+
+### Interrupt queues
 
 Of special interest are the **interrupt routines**. The (now unified) **periodic** queue handles
 those tasks at *multiples* of the **jiffy** IRQ period; while **5 ms** is the *recommended*  
@@ -382,20 +384,6 @@ but each task must return an *error code* signaling whether the IRQ was **acknow
 by that handler or not. This code **may or may not** be ignored by the ISR, depending on 
 performance considerations or the chance of simaltaneous interrupts.
 
-*I/O routines* need little explanation, now that **block** transfers are the
-standard form. Old *character-oriented* code will now need to integrate a loop for
-repeatedly executing the single byte transfer. Note that drivers lacking input and/or
-output capabilities **must** provide anyway a pointer to a valid *error routine*, as
-the MSB might be checked in some implementations. 
-
-At boot time, the *initialisation* routine of each registered driver is **unconditionally** 
-called -- if not needed, must point to an existing *Return from Subroutine* instruction. 
-Upon exit, this routine must return an **error flag** indicating whether the driver was 
-succesfully initialised or not (e.g. device not present), the latter condition making it 
-**unavailable** for further I/O operation. Similarly, at shutdown/reboot every *shutdown* 
-routine will be called, although any error condition makes little sense now, thus is not 
-required.
-
 ### Static vs. *Dynamic* Drivers
 
 As of 2018-05-29, drivers **cannot be loaded *on-the-fly*** (*dynamic*), 
@@ -452,6 +440,21 @@ dyd_rel:
             BRA dyd_rel
 dd_end:
 ```
+
+### Input/Output
+
+*I/O routines* need little explanation, now that **block** transfers are the
+standard form. Old *character-oriented* code will now need to integrate a loop for
+repeatedly executing the single byte transfer. Note that drivers lacking input and/or
+output capabilities **must** provide anyway a pointer to a valid *error routine*, as
+the MSB might be checked in some implementations. 
+
+The primitive **event management** this far expected certain *control characters*
+(^C for `SIGTERM`, ^Z for `SIGSTOP`, etc) to be received and processed via `CIN`.
+Since managing these events *within a block transfer* seems unconvenient to say the
+least, the new approach does manage them **thru the *legacy* `CIN` routine**, which is
+anyway expected to be used for human iteraction. Note that current (0.6) `READLN`
+impementation does use `CIN` internally, thus event-savvy.
 
 ### Device IDs
 
@@ -589,7 +592,7 @@ Newer options are due for 0.6, like:
 
 - replacing generic calls with direct JSRs (**DONE via the `FAST_API` and `FAST_FW` options**)**
 - using I/O arrays in ROM (*should be a configuration file matter*)
-- *adding* an array for driver enabling (whether `D_INIT` succeeded)
+- *adding* an array for driver enabling (whether `D_INIT` succeeded) (**in the making, bitwise**)
 
 and many more *(to be completed)*
 
