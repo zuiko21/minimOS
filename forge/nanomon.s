@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b5
+; v0.1b6
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180529-0909
+; last modified 20180530-1322
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler ***
@@ -372,7 +372,14 @@ nl_upp:
 		JSR nm_out			; ...in case it gets affected
 		PLA
 		LDX z_cur			; retrieve cursor
-; could check bounds here
+; *** could check bounds here ***
+;		CPX #BUFSIZ			; full buffer?
+;		BCC nl_ok			; no, just continue
+;			LDA #BS				; yes, delete last printed
+;			JSR nm_out
+; perhaps could beep also...
+;			BRA nr_loop			; nothing gets written, ask again for BS
+;nl_ok:
 		STA buff, X			; store char in buffer
 		INX					; go for next (no need for BRA)
 		BNE nr_loop
