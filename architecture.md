@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-05-30*
+*Last update: 2018-05-31*
 
 ## Rationale
 
@@ -415,7 +415,17 @@ We assume `da_ptr` points to the driver's header, as usual during install.
     LDY #D_MEM         ; how much dynamic memory is asked?
     LDA (da_ptr), Y
     BNE dd_end         ; static driver, nothing to do here
-; *** missing here is reserving dynamic memory for the driver, assume pointer at dynmem ***
+; if arrives here, it is a dynamic driver, must first allocate requested memory
+        LDX dynptr         ; first free byte will be the start of allocated space
+        STX dynmem         ; save for later
+        CLC                ; A holds requested size
+        ADC dynmem         ; base + size = new free position
+        CMP #DYN_END       ; is there room for it?
+        BCC dyd_ok         ; yes, proceed
+            _ERR(FULL)         ; no, abort driver installation 
+dyd_ok:
+        STA dynptr         ; free space pointer updated
+; space allocated, proceed to relocate references
         LDY #D_DYN         ; otherwise get offset to relocation table
         LDA (da_ptr), Y
         CLC
@@ -433,7 +443,6 @@ dyd_rel:
             EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
 ; We can assume C clead here
             ADC dynmem         ; the location of this driver's variables
-; the above value could be directly read from an X-indexed array, saving one local
             STA (tmptr)        ; address is corrected!
             INY                ; go for next offset (assume 16-bit indexes)
             INY
