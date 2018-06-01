@@ -223,7 +223,7 @@ The mechanism for **kernel patching** is also supplied, and from 0.6 version on
 it does provide a *recovery
 setting* -- just a NULL pointer as the supplied jump table (for `INSTALL`)
 or routine address (for individual function `PATCH`). The firmware will take care of a 
-pointer to the last installed *kernel **jump table** *for this matter.
+pointer to the last installed *kernel **jump table*** for this matter.
 
 On the other hand, passing a NULL pointer to any interrupt-setting function will simply
 return the original pointer. This might be deprecated as the standard interface for
