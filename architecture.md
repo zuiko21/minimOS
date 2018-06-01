@@ -236,7 +236,7 @@ allowing both **head and tail patching**, like this:
     LDX #<patch
     STX kerntab           ; store parameter word
     STA kerntab+1
-    LDY #my_function_id   ; kernel function to be patched
+    LDY #function_id      ; kernel function to be patched
     _ADMIN(PATCH)         ; install my routine
     LDX kerntab           ; get old pointer
     LDA kerntab+1
@@ -246,9 +246,9 @@ allowing both **head and tail patching**, like this:
 
 (65816 version)
 ```
-    LDA #patch            ; pointer to new code (or head_patch)
+    LDA #patch            ; pointer to new code
     STA kerntab           ; set as parameter
-    LDY #my_function_id   ; kernel function to be patched
+    LDY #function_id      ; kernel function to be patched
     _ADMIN(PATCH)         ; install my routine
     LDA kerntab           ; get old pointer
     STA my_pointer        ; store it in a known address
@@ -270,9 +270,11 @@ old_call:
 ```
 patch:
 ; *** here comes the HEAD patching code ***
-    PHK                   ; will return to this bank *** tail code only ***
-    PEA patch_code        ; proper return address for RTI *** tail code only ***
-    PHP                   ; as requested by RTI *** tail code only ***
+; *** the following code ONLY in case of tail-patching ***
+    PHK                   ; will return to this bank *** tail-patching only ***
+    PEA patch_code        ; proper return address for RTI *** tail-patching only ***
+    PHP                   ; as requested by RTI *** tail-patching only ***
+; *** the above code ONLY in case of tal-patching ***
     JMP (my_pointer)      ; call original routine (will return to tail-patch or caller) 
 patch_code:
 ; *** here comes the TAIL patching code ***
