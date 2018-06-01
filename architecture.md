@@ -326,7 +326,7 @@ those tasks at *multiples* of the **jiffy** IRQ period; while **4 ms** is the *r
 value, the actual timing **cannot be guaranteed**. Plus, the ocassional *interrupt masking* 
 when entering 
 [critical sections](https://en.wikipedia.org/wiki/Critical_section) may cause further 
-delays. This mechanism is particularly suited to  
+delays. This mechanism is particularly suited to
 replace the [**daemons**](https://en.wikipedia.org/wiki/Daemon_(computing)) 
 commonly seen on UNIX-like systems, perhaps with better responsiveness (quite an asset on 
 low-spec machines) or even with no form of **multitasking** (which is, in any 
@@ -362,7 +362,8 @@ A similar piece of code had to be used with "jiffy" tasks that hadn't to be
 executed every periodic IRQ, as mentioned above.
 
 Please note that while frequencies are stated as 16-bit integers, `LOWRAM` option will 
-take the LSB *only*.
+take the LSB *only*, setting it to **0** in case the MSB is not zero -- this will provide the **slowest**
+operation (execute each 256 *jiffys*).
 
 Another improvement to the old method is the possibiliy of **temporarily disabling a certain 
 interrupt task** when not needed, for better system performance (and, of course, **re-enabling** it 
