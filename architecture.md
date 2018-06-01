@@ -196,8 +196,8 @@ kernel too*.
 
 This is intended as the **device-dependent** part of minimOS (the kernel being
 *device-independent*). Formerly consisted of several files, each one serving a
-particular architecture; however, the chore of copying every improvement on *each*
-file was aliviated via a **fully-*modular* approach**: the `template` file (or any
+particular machine; however, the chore of copying every improvement on *each*
+file was alleviated via a **fully-*modular* approach**: the `template` file (or any
 particular machine's firmware, for that matter) will consist in just **a bunch of
 `#include`s** for *small* code chunks on the `modules` folder. Different machines
 may then use a different chunk for a particular feature, or just suppress it.
