@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-05-31*
+*Last update: 2018-06-01*
 
 ## Rationale
 
@@ -40,7 +40,9 @@ Perhaps this achieved goal was the key to CP/M's success. This OS had three main
 Unlike the [**BIOS**](https://en.wikipedia.org/wiki/BIOS), 
 which was provided *customised* by the computer's maker, 
 all the remaining components were **generic**, as supplied by 
-[Digital Research](https://en.wikipedia.org/wiki/Digital_Research). 
+[Digital Research](https://en.wikipedia.org/wiki/Digital_Research)
+(which also supplied a BIOS *template* intended for the
+[Intel MDS-800 development system](http://www.computinghistory.org.uk/det/21821/Intel-Intellec-MDS-800-Development-System/). 
 Of course, other commands or the *application software* were run atop of this, probably by 
 temporarily *replacing the CCP* for increased available RAM, as this 
 was a **single task**, single user OS. As soon as the task was completed, the *shell* (CCP) 
