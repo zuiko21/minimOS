@@ -322,7 +322,7 @@ required.
 ### Interrupt queues
 
 Of special interest are the **interrupt routines**. The (now unified) **periodic** queue handles
-those tasks at *multiples* of the **jiffy** IRQ period; while **4 ms** is the *recommended*  
+those tasks at *multiples* of the **jiffy** IRQ period; while **4 ms** is the *recommended*
 value, the actual timing **cannot be guaranteed**. Plus, the ocassional *interrupt masking* 
 when entering 
 [critical sections](https://en.wikipedia.org/wiki/Critical_section) may cause further 
