@@ -488,7 +488,7 @@ there could be up to 8 **asynchronous serial** devices `as0` to `as7`, correspon
 to IDs 232 to 239, **most** if not all of these drivers would be supplied with
 a fixed ID of 232, no matter whether driving a 6551, 6850, 16C550 or bit-banged VIA;
 upon install, the kernel would try to use the 232 entry. If busy, try everyone else up
-to 239; if no free entry is found, complain as `BUSY`, otherwise install it. Might try
+to 239; if no free entry is found, complain as `BUSY`, otherwise install it. *Might try
 first with the supplied ID first (232-239) just in case.*
 
 As of 2017-10-23, a new
