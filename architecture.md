@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-02*
+*Last update: 2018-06-04*
 
 ## Rationale
 
@@ -453,6 +453,53 @@ dyd_rel:
             INY
             BRA dyd_rel
 dd_end:
+```
+
+Please note that, for this *and for any other relocation procedure*, should any
+data structure be used via an indirect ZP⁻pointer, it **can no longer be copied
+via a couple of *immediate* loads**, but the *whole, uninterrupted pointer* must
+be stored somewhere in order to allow its relocation. Typical code (no longer valid)
+that would go as follows:
+
+```
+    LDY #<my_data    ; get LSB of data structure (dynamically allocated)
+    LDA #>my_data    ; same for MSB
+    STY pointer      ; store pointer in ZP
+    STA pointer+1
+    . . .
+    LDA (pointer), Y ; (typical use example)
+    . . .
+```
+
+In case of *dynamic* drivers, such kind of code should be written this way:
+
+```
+    LDY somewhere    ; must get LSB from the whole pointer
+    LDA somewhere+1  ; same for MSB
+; now follows identical code to above example
+    STY pointer      ; store pointer in ZP
+    STA pointer+1
+    . . .
+    LDA (pointer), Y ; (typical use example)
+    . . .
+somewhere:
+    .word my_data    ; here lies the relocatable pointer to the dynamically allocated data
+```
+
+Thus the corresponding entry into the relocation table would precisely point
+to `somewhere`, which contains the dynamic address.
+
+On the other hand, *the above precautions may not be needed in 65816 code*,
+as **16-bit immediate** allows easy copying of a *complete* pointer (within
+**bank zero** at least, as expected for driver memory):
+
+```
+; 16-bit memory is assumed (or indexes in inconvenient, use LDX/STX or LDY/STY for copy instead)
+    LDA #my_data     ; get WHOLE pointer of data structure (dynamically allocated)
+    STA pointer      ; store pointer in ZP
+    . . .
+    LDA (pointer), Y ; (typical use example)
+    . . .
 ```
 
 ### Input/Output
