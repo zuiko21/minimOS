@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-04*
+*Last update: 2018-06-05*
 
 ## Rationale
 
@@ -446,7 +446,7 @@ dyd_rel:
             STA tmptr          ; store temporary pointer
             LDA (tmptr)        ; this is the generic address to be converted
             EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
-; We can assume C clead here
+            CLC
             ADC dynmem         ; the location of this driver's variables
             STA (tmptr)        ; address is corrected!
             INY                ; go for next offset (assume 16-bit indexes)
@@ -625,6 +625,19 @@ Depending of the CPU used, this context can be totally or partially stored in **
 NMIs should preserve that too for total **transparency**
 
 Some hardware may make this area **protected** from other processes. Even on 65xx architectures,***bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
+
+## Application format
+
+To be done.
+
+### Relocatable format
+
+Although **not yes implemented** as of 2018-06-05, a *relocatable format* has been thought of.
+In a similar way as already described for *dynamic drivers*, the most reasonable way could be
+adding a **list of offsets** where the *generic* addresses are referenced, then upon load time
+adding the base address to them. In order to avoid problems with *fake zero-page* references,
+these generic addresses may start at **$8000**, similarly to dynamic driver generic accesses
+to $4000 and beyond. The relocation algorithm has been already described there.
 
 ## The LOWRAM option
 
