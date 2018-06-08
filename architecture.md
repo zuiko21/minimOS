@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-05*
+*Last update: 2018-06-08*
 
 ## Rationale
 
@@ -388,6 +388,10 @@ jiffy IRQs happened). For the **asynchronous tasks**, as similar procedure may b
 but each task must return an *error code* signaling whether the IRQ was **acknowledged** 
 by that handler or not. This code **may or may not** be ignored by the ISR, depending on 
 performance considerations or the chance of simaltaneous interrupts.
+
+### Interrupt performance: *latency* vs. *jitter* vs. *overhead*
+
+TBD
 
 ### Static vs. *Dynamic* Drivers
 
