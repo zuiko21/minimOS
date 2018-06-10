@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-08*
+*Last update: 2018-06-10*
 
 ## Rationale
 
@@ -391,7 +391,11 @@ performance considerations or the chance of simaltaneous interrupts.
 
 ### Interrupt performance: *latency* vs. *jitter* vs. *overhead*
 
-TBD
+In certain systems, **interrupt performance** may be a global performance defining
+parameter. Especially on **65xx systems**, which bear *outstandingly low interrupt
+latency*, although in the realm of a complex OS this is somewhat impaired.
+
+*TBD*
 
 ### Static vs. *Dynamic* Drivers
 
