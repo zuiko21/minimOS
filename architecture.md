@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-10*
+*Last update: 2018-06-11*
 
 ## Rationale
 
@@ -394,6 +394,29 @@ performance considerations or the chance of simaltaneous interrupts.
 In certain systems, **interrupt performance** may be a global performance defining
 parameter. Especially on **65xx systems**, which bear *outstandingly low interrupt
 latency*, although in the realm of a complex OS this is somewhat impaired.
+
+But interrupt performance can be measured from different points of view. For a start,
+in case of *asynchronous* interrupts, the goal is to achieve a very **low latency**, as
+these interrupts may happen unexpectedly and should be serviced ASAP. While not as
+efficient as specifically-tailored 6502 code, current implementation of the ISR is able
+to execute the *most prioritary* asynchronous interrupt in as low as **40 clock cycles**,
+still better than most other microprocessors can achieve. The *65816* version, with much
+more context to save, takes longer (57 cycles) but as these will usually *faster clocked*
+than 'classic' 6502s, this will hardly be an issue.
+
+On the other hand, latency in itself becomes almost meaningless for *synchronous*, periodic
+interrupts, which will happen at very precisely known time. As long as the *period* of executions
+is kept *reasonably* stable (*absolute* stability is impossible to achieve!), they will do fine.
+The goal here is to keep **low jitter** for predictable results. Since interrupt tasks may be
+temporarily interrupted, this cannot be guaranteed, but code design should try to *equalize*
+execution times, even if some *overhead* is added.
+
+Being inspired by old-fashioned 8-bit systems, where *every cycle counts*, the ISR should
+be as *succint* and efficient as possible, thus adding **minimal overhead**. This is always
+desirable, but especially in minimOS, with its surprinsgly short *quantum* (**4 ms**
+recommended, or **250 Hz**). Note that some critical systems may reduce jitter to almost
+zero, by checking the VIA T1 value ASAP and then executing some equalizing *delay* code...
+at the cost of *increased overhead*. No free lunch, I'm afraid...
 
 *TBD*
 
