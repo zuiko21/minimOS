@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-11*
+*Last update: 2018-06-16*
 
 ## Rationale
 
@@ -418,7 +418,8 @@ recommended, or **250 Hz**). Note that some critical systems may reduce jitter t
 zero, by checking the VIA T1 value ASAP and then executing some equalizing *delay* code...
 at the cost of *increased overhead*. No free lunch, I'm afraid...
 
-*TBD*
+Anyway, minimOS' firmware interface offers easy **ISR patching/replacing**, allowing
+*optimum performance* when needed.
 
 ### Static vs. *Dynamic* Drivers
 
