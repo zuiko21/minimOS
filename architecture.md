@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-19*
+*Last update: 2018-06-20*
 
 ## Rationale
 
@@ -302,7 +302,7 @@ in use, but in any case they'll bear a **header** containing this kind of inform
 - **Frequency** value for the *periodic* task described above (the *n* value for the above)
 - Pointer to a **description *C-string*** in human-readable form
 - Number of ***dynamically allocated* bytes**, if loadable *on-the-fly*
-- *Offset* to data relocation table (only if the above is **not zero**)
+- *Offset* (or *pointer*) to data relocation table (only if the above is **not zero**)
 
 A last-minute change in 0.6 is the **block-oriented I/O**. This was foreseen on older
 versions, but drivers were *character-oriented*. This also leaves room for separate
