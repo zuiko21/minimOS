@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-20*
+*Last update: 2018-06-24*
 
 ## Rationale
 
@@ -552,6 +552,30 @@ Since managing these events *within a block transfer* seems unconvenient to say 
 least, the new approach does manage them **thru the *legacy* `CIN` routine**, which is
 anyway expected to be used for human iteraction. Note that current (0.6) `READLN`
 impementation does use `CIN` internally, thus event-savvy.
+
+#### Character set
+
+In a way or another, no computing device is
+free from dealing with some text. And
+because English is *not* my mother tongue,
+some **language support** had to be 
+included,
+at least in a minimalistic way.
+
+*Multy-byte encodings** (like *Unicode*)
+are versatile and well supported anywhere,
+they put *extra burden on limited devices*
+and thus not a very sensible choice for
+this OS -- this is not *maximOS* in any
+way! However, **their use is not ruled
+out** for bigger systems or when text I/O
+performance is not a concern; it is simply
+an **optional feature**, just cannot be
+the default, native encoding.
+
+The choice of character set is somewhere
+between **ISO 8859-1** and **ISO 8859-15**
+(perhaps closer to the latter).
 
 ### Device IDs
 
