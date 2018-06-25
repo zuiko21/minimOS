@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-24*
+*Last update: 2018-06-25*
 
 ## Rationale
 
@@ -575,7 +575,9 @@ the default, native encoding.
 
 The choice of character set is somewhere
 between **ISO 8859-1** and **ISO 8859-15**
-(perhaps closer to the latter).
+(perhaps closer to the latter). Most of the
+characters kept from 8859-1 are the
+*empty diacritics*, which may be changed.
 
 ### Device IDs
 
