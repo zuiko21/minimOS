@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-25*
+*Last update: 2018-06-27*
 
 ## Rationale
 
@@ -289,7 +289,10 @@ defined by `API_SIZE`.
 
 As an essential feature of such device-agnostic OS, minimOS **driver architecture** has 
 been carefully crafted for **versatility**. The details may vary depending on the CPU 
-in use, but in any case they'll bear a **header** containing this kind of information:
+in use, but in any case they'll bear a
+**header** (does not need to be
+*page-aligned*) containing this package of 
+information:
 
 - A device **ID** (currently 128-255, as *logical* devices use up to 127)
 - A **feature mask** indicating the availability of some of the following
@@ -600,9 +603,14 @@ upon install, the kernel would try to use the 232 entry. If busy, try everyone e
 to 239; if no free entry is found, complain as `BUSY`, otherwise install it. *Might try
 first with the supplied ID first (232-239) just in case.*
 
+Most likely, no auto-ID change should be
+available for reserved blocks
+(`lr` & `rd`).
+
 As of 2017-10-23, a new
 `MUTABLE` option switches on this feature, which will take (yet) another 256-byte array
-from `sysvars.h`.
+from `sysvars.h`, but may become implicit
+except for `LOWRAM` systems.
 
 About **logical** device IDs, as of 2018-05-29 only three are supported:
 
