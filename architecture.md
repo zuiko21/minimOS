@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-27*
+*Last update: 2018-06-29*
 
 ## Rationale
 
@@ -304,7 +304,7 @@ information:
 - Pointer to a **Periodic Interrupt Handler** (called every "n" *jiffy* interrupts, if enabled)
 - **Frequency** value for the *periodic* task described above (the *n* value for the above)
 - Pointer to a **description *C-string*** in human-readable form
-- Number of ***dynamically allocated* bytes**, if loadable *on-the-fly*
+- Number (word) of ***dynamically allocated* bytes**, if loadable *on-the-fly*
 - *Offset* (or *pointer*) to data relocation table (only if the above is **not zero**)
 
 A last-minute change in 0.6 is the **block-oriented I/O**. This was foreseen on older
