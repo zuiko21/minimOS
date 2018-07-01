@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-06-29*
+*Last update: 2018-07-01*
 
 ## Rationale
 
@@ -177,7 +177,7 @@ from a simple embedded system to a *quasi-full-featured* desktop computer,
 **there is no guarantee of I/O device availability** at such low level.
 You can think of this as a ***Hardware Abstraction Layer***
 
-On second thought, in case of a *Kernel and/or driver failure*, it would be nice to have 
+However, in case of a *Kernel and/or driver failure*, it would be nice to have 
 an *emergency* I/O channel available for **debugging purposes**, provided the hardware 
 allows it. For instance, a *Commodore 64* **has** a 40x25 text screen starting at $0400 
 which could be easily used by debuggers, after a simple VIC-II initialisation. It does
@@ -540,6 +540,10 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 (\*) One thing to be determined is whether to use an *offset* or an *absolute
 address* for the variable **relocation table**. If the latter, the `ADC da_ptr`
 part won't be used.
+
+This sample code sports **awful** memory
+allocation code; perhaps the use of regular
+`MALLOC` and `FREE` is advisable.
  
 ### Input/Output
 
