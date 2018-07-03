@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-07-01*
+*Last update: 2018-07-03*
 
 ## Rationale
 
@@ -20,6 +20,11 @@ and the popular [**x86**](https://en.wikipedia.org/wiki/X86),
 plus the ubiquitous [**ARM**](https://en.wikipedia.org/wiki/ARM_architecture).
 
 These goals will define most of its design features.
+
+## Aesthetic
+
+The *corporative* typeface is **Neuzeit
+Grotesk DIN 30640**.
 
 # Background
 
