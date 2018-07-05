@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc14, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180525-2153
+; last modified 20180705-1654
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1453,6 +1453,9 @@ dr_chk:
 dr_ntsk:
 		DEX					; check next feature (2)
 		BNE dr_chk			; zero included (3/2) ***BNE works on 8-bit, but does NOT check A_REQ! should be BPL...
+
+; * 2b) in case of DYNAMIC drivers, requested space must be allocated successfully
+; but if D_INIT fails afterwards, FREE must be called!
 
 ; * 3) if arrived here, it is possible to install, but run init code to confirm *
 	.al: REP #$20		; *** 16-bit memory as required by dr_icall *** (3)

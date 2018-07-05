@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc17, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180525-2148
+; last modified 20180705-1652
 
 ; no way for standalone assembly...
 
@@ -1113,6 +1113,8 @@ dr_phys:
 ; *** before registering, check whether the driver COULD be successfully installed ***
 ; that means 1.the ID must not be in use eeeeeek
 ; 2.there must be room enough on the interrupt queues for its tasks, if provided
+; 2b.in case of DYNAMIC drivers, requested memory must be succesfully allocated
+; but in case of D_INIT failure, FREE must be called!
 ; and 3.the D_INIT routine succeeded as usual
 ; otherwise, skip the installing procedure altogether for that driver
 
