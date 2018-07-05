@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-07-03*
+*Last update: 2018-07-05*
 
 ## Rationale
 
@@ -461,17 +461,24 @@ We assume `da_ptr` points to the driver's header, as usual during install.
     LDA (da_ptr), Y
     BNE dd_end         ; static driver, nothing to do here
 ; if arrives here, it is a dynamic driver, must first allocate requested memory
-        LDX dynptr         ; first free byte will be the start of allocated space
-        STX dynmem         ; save for later
-        CLC                ; A holds requested size
-        ADC dynmem         ; base + size = new free position
-        CMP #DYN_END       ; is there room for it?
+; *** original code commented out for much better use of MALLOC/FREE ***
+        STA ma_rs          ; set parameters for MALLOC
+        STZ ma_align
+        _KERNEL(MALLOC)
+;       LDX dynptr         ; first free byte will be the start of allocated space
+;       STX dynmem         ; save for later
+;       CLC                ; A holds requested size
+;       ADC dynmem         ; base + size = new free position
+;       CMP #DYN_END       ; is there room for it?
         BCC dyd_ok         ; yes, proceed
             _ERR(FULL)         ; no, abort driver installation 
 dyd_ok:
-        STA dynptr         ; free space pointer updated
+        LDA ma_pt          ; get pointer from MALLOC
+        STA dynmem         ; store as base for relocation
+; *** must be stored in an array for later FREE call ***
+;       STA dynptr         ; free space pointer updated
 ; space allocated, proceed to relocate references
-        LDY #D_DYN         ; otherwise get offset to relocation table
+        LDY #D_DYN         ; get offset to relocation table
         LDA (da_ptr), Y
         CLC
         ADC da_ptr         ; get absolute pointer (*)
@@ -545,10 +552,6 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 (\*) One thing to be determined is whether to use an *offset* or an *absolute
 address* for the variable **relocation table**. If the latter, the `ADC da_ptr`
 part won't be used.
-
-This sample code sports **awful** memory
-allocation code; perhaps the use of regular
-`MALLOC` and `FREE` is advisable.
  
 ### Input/Output
 
