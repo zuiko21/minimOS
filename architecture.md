@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-07-05*
+*Last update: 2018-07-07*
 
 ## Rationale
 
@@ -463,7 +463,7 @@ We assume `da_ptr` points to the driver's header, as usual during install.
 ; if arrives here, it is a dynamic driver, must first allocate requested memory
 ; *** original code commented out for much better use of MALLOC/FREE ***
         STA ma_rs          ; set parameters for MALLOC
-        STZ ma_align
+        STZ ma_align       ; *** might revise API for non-page-aligned blocks ***
         _KERNEL(MALLOC)
 ;       LDX dynptr         ; first free byte will be the start of allocated space
 ;       STX dynmem         ; save for later
