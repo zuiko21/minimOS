@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-07-07*
+*Last update: 2018-07-09*
 
 ## Rationale
 
@@ -475,7 +475,14 @@ We assume `da_ptr` points to the driver's header, as usual during install.
 dyd_ok:
         LDA ma_pt          ; get pointer from MALLOC
         STA dynmem         ; store as base for relocation
-; *** must be stored in an array for later FREE call ***
+; *** must be stored in an array for later FREE call, like... ***
+;       LDX dyndrv         ; get index as number of dynamic drivers
+;       STA dynptr, X      ; store into array
+;       INC dyndrv         ; there is one more driver
+;       LDA #D_ID          ; must be associated to a particular ID
+;       LDA (da_ptr), Y    ; get ID
+;       STA dyn_id, X      ; store in list, interleaved array!!!
+; *** end of sample code***
 ;       STA dynptr         ; free space pointer updated
 ; space allocated, proceed to relocate references
         LDY #D_DYN         ; get offset to relocation table
