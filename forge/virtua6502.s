@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180710-1846
+; last modified 20180712-1237
 
 #include "../OS/usual.h"
 
@@ -13,12 +13,13 @@
 
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
-tmptr	= uz		; temporary storage (up to 16 bit, little endian)
-sp65		= uz+2		; stack pointer
-pc65		= sp65+1	; program counter
+tmptr		= uz		; temporary storage (up to 16 bit, little endian)
 
-f65		= pc65+2	; flags
-a65		= f65+1		; accumulator
+s65		= uz+2		; stack pointer
+pc65		= s65+1		; program counter
+p65		= pc65+2	; flags
+
+a65		= p65+1		; accumulator
 x65		= a65+1		; X index
 y65		= x65+1		; Y index
 
@@ -38,9 +39,9 @@ go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
 	.al: REP #%00100000	; 16 bit memory
-	STZ zpar		; no screen size required, 16 bit op?
+	STZ w_rect		; no screen size required, 16 bit op?
 	LDA #title		; address window title
-	STA zaddr3		; set parameter
+	STA str_pt		; set parameter
 	_KERNEL(OPEN_W)	; ask for a character I/O device
 	BCC open_emu	; no errors
 		_ABORT(NO_RSRC)	; abort otherwise!
@@ -50,11 +51,16 @@ open_emu:
 ; will currently assume whole bank 1
 
 ; *** start the emulation! ***
-reset80:
-	STZ pc65	; indirect indexed! still on 16-bit
+reset65:
+
+
+
+
+	LDA $FFFC	; get reset vector FROM CURRENT BANK
+	STZ pc65	; still on 16-bit
 	.as: SEP #%00100000	; back to 8 bit
-	LDY #0		; RST 0
-; I think CMOS powers up with I set...
+	LDA #%00110100		; binary mode, interrupts off!
+	STA p65		; set initial status
 
 ; *** main loop ***
 execute:
@@ -67,19 +73,25 @@ lo_jump:
 			JMP (opt_l, X)	; otherwise, emulation routines for opcodes with bit7 low
 
 ; *** NOP (4) arrives here, saving 3 bytes and 3 cycles ***
+; must add illegal NMOS opcodes as NOPs
 
 _ea:
-_:
+_02:_22:_42:_62:_82:_c2:_e2:
+_03:_13:_23:_33:_43:_53:_63:_73:_83:_93:_a3:_b3:_c3:_d3:_e3:_f3:
+_44:_54:_d4:_f4:
+_0b:_1b:_2b:_3b:_4b:_5b:_6b:_7b:_8b:_9b:_ab:_bb:_eb:_fb:
+_5c:_dc:_fc:
+; might include WDC-only STP & WAI ($CB & $DB) as well
 
 ; continue execution via JMP next_op, will not arrive here otherwise
 next_op:
 		INY				; advance one byte (2)
 		BNE execute		; fetch next instruction if no boundary is crossed (3/2)
-		
-; usual overhead is 22 clock cycles, not including final jump
-; boundary crossing, much simpler on 816
 
-	INC pc65 + 1		; increment MSB otherwise (5)
+; usual overhead is 22 clock cycles, not including final jump
+; boundary crossing, much simpler on 816?
+
+	INC pc65+1			; increment MSB otherwise (5)
 	BRA execute			; fetch next (3)
 
 
@@ -91,15 +103,21 @@ exit:
 
 
 ; *** interrupt support ***
-; unsupported opcodes will be TRAPped
-
-_08:_10:_18:_28:_38:_d9:
-_cb:_ed:_dd:_fd:
-
-	_PC_ADV			; skip illegal opcode (5)****needed???
+; no unsupported opcodes on CMOS!
 
 nmi65:				; hardware interrupts, when available, to be checked AFTER incrementing PC
-; *** to do to do to do ***
+	LDX #0			; NMI @ $FFFA
+; standard interrupt handling
+	LDA p65			; original status
+	ORA #%00000100		; disable further interrupts...
+	AND #%11110111		; ...and clear decimal flag!
+	STA p65
+	.al: REP #$20		; 16-bit memory
+	LDA $FFFA, X		; read appropriate vector
+	STA pc65		; will resume execution there
+	.as: SEP #$20		; back to 8-bit
+	BRA execute
+
 ;-------------------------------continue here----------------------
 intr80:				; ** generic interrupt entry point, offset in X ** (37!)
 	LDA pc80+1	; get PC MSB (3)
