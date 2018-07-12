@@ -1,14 +1,14 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-1707
+; last modified 20180712-1733
 
 #include "../OS/usual.h"
 
 ; ** some useful macros **
 ; these make listings more succint
 
-; increment Y checking injected boundary crossing (5/5/9) ** must be in 8 bit mode!
+; increment Y checking boundary crossing (5/5/9) ** must be in 8 bit mode!
 #define	_PC_ADV		INY: BNE *+4: INC pc65+1
 
 ; *** declare zeropage addresses ***
@@ -29,6 +29,7 @@ cdev		= y65+1		; I/O device *** minimOS specific ***
 
 ; *** startup code, minimOS specific stuff ***
 ; ** assume 8-bit register size, native mode **
+
 	LDA #cdev-uz+1	; zeropage space needed
 #ifdef	SAFE
 	CMP z_used		; check available zeropage space
@@ -55,10 +56,10 @@ reset65:
 	LDX #2			; RST @ $FFFC
 ; standard interrupt handling, expects vector offset in X
 x_vect:
-	.al: REP #$20		; 16-bit memory, just in case
-	LDA $FFFA, X		; read appropriate vector
-	STA pc65		; will resume execution there
-	.as: SEP #$20		; back to 8-bit
+	LDA $FFFB, X		; read appropriate vector MSB
+	STA pc65+1		; will resume execution there
+	LDY $FFFA, X		; read appropriate vector LSB eeeeek
+	STZ pc65		; *** must be zero at all times ***
 	LDA p65			; original status
 	ORA #%00010100		; disable further interrupts...
 	AND #%11110111		; ...and clear decimal flag!
@@ -119,11 +120,12 @@ _00:
 		STA p65
 int_stat:
 ; first save current PC into stack
+	PHY			; EEEEEEEEEEEEEEEEEEK
 	LDA pc65+1		; get PC MSB...
 	LDY s65			; and current SP
 	STA $0100, Y		; store in emulated stack
 	DEY			; post-decrement
-	LDA pc65		; same for LSB
+	PLA			; same for LSB eeeeeeeeek
 	STA $0100, Y		; store in emulated stack
 	DEY			; post-decrement
 ; now push current status
@@ -481,8 +483,7 @@ _40:
 	LDA $0100, X	; pull from stack
 	STA p65		; pulled value goes to PSR
 	INX		; pre-increment
-	LDA $0100, X	; pull from stack
-	STA pc65	; pulled value goes to PC-LSB
+	LDY $0100, X	; pull from stack PC-LSB eeeeeeek
 	INX		; pre-increment
 	LDA $0100, X	; pull from stack
 	STA pc65+1	; pulled value goes to PC-MSB
@@ -498,8 +499,10 @@ _60:
 	.al: REP #$20	; worth going 16-bit
 	LDA $0100, X	; pull full return address from stack
 	INC		; correct it!
-	STA pc65	; pulled value goes to PC
 	.as: SEP #$20	; back to 8-bit
+	TAY		; eeeeeeeeeeek
+	XBA		; LSB done, now for MSB
+	STA pc65+1	; pulled value goes to PC
 	INX		; skip both bytes
 	STX s65		; update SP
 ; all done
@@ -712,6 +715,33 @@ _7c:
 	TAY		; pointer is ready!
 	JMP execute
 
+; subroutine call
+
+_20:
+; JSR abs
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store temporarily
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; destination ready
+; now push the CURRENT address as we are at the last byte of the instruction
+	TYX			; eeeeeeeeek
+	LDA pc65+1		; get PC MSB...
+	LDY s65			; and current SP
+	STA $0100, Y		; store in emulated stack
+	DEY			; post-decrement
+	TXA			; same for LSB eeeeeeeeek!
+	STA $0100, Y		; store in emulated stack
+	DEY			; post-decrement
+	STY s65			; update SP
+; jump to previously computed address
+	LDA tmptr+1	; retrieve MSB
+	STA pc65+1
+	LDY tmptr	; pointer is ready!
+	JMP execute
+
 
 ; *** ***
 
@@ -746,879 +776,6 @@ _:
 
 
 ;------------------------------- old 8080 opcodes -----------------------------------
-_46:
-; MOV B,M (7) from memory
-; +11
-	LDA (hl80)	; pointed source
-	STA b80	; destination
-	JMP next_op	; flags unaffected
-
-_47:
-; MOV B,A (5, 4 @ 8085)
-; +9
-	LDA a80	; source
-	STA b80	; destination
-	JMP next_op	; flags unaffected
-
-; to C
-
-_48:
-; MOV C,B (5, 4 @ 8085)
-; +9
-	LDA b80	; source
-	STA c80	; destination
-	JMP next_op	; flags unaffected
-
-_4a:
-; MOV C,D (5, 4 @ 8085)
-; +9
-	LDA d80	; source
-	STA c80	; destination
-	JMP next_op	; flags unaffected
-
-_4b:
-; MOV C,E (5, 4 @ 8085)
-; +9
-	LDA e80	; source
-	STA c80	; destination
-	JMP next_op	; flags unaffected
-
-_4c:
-; MOV C,H (5, 4 @ 8085)
-; +9
-	LDA h80	; source
-	STA c80	; destination
-	JMP next_op	; flags unaffected
-
-_4d:
-; MOV C,L (5, 4 @ 8085)
-; 9
-	LDA l80	; source
-	STA c80	; destination
-	JMP next_op	; flags unaffected
-exchange them
-_4e:
-; MOV C,M (7) from memory
-; +11
-	LDA (hl80)	; pointed source
-	STA c80	; destination
-	JMP next_op	; flags unaffected
-
-_4f:
-; MOV C,A (5, 4 @ 8085)
-; +9
-	LDA a80	; source
-	STA c80	; destination
-	JMP next_op	; flags unaffected
-
-; to D
-
-_50:
-; MOV D,B (5, 4 @ 8085)
-; +9
-	LDA b80	; source
-	STA d80	; destination
-	JMP next_op	; flags unaffected
-
-_51:
-; MOV D,C (5, 4 @ 8085)
-; +9
-	LDA c80	; source
-	STA d80	; destination
-	JMP next_op	; flags unaffected
-
-_53:
-; MOV D,E (5, 4 @ 8085)
-; +9
-	LDA e80	; source
-	STA d80	; destination
-	JMP next_op	; flags unaffected
-
-_54:
-; MOV D,H (5, 4 @ 8085)
-; +9
-	LDA h80	; source
-	STA d80	; destination
-	JMP next_op	; flags unaffected
-
-_55:
-; MOV D,L (5, 4 @ 8085)
-; +9
-	LDA l80	; source
-	STA d80	; destination
-	JMP next_op	; flags unaffected
-
-_56:
-; MOV D,M (7) from memory
-; +11
-	LDA (hl80)	; pointed source
-	STA d80	; destination
-	JMP next_op	; flags unaffected
-
-_57:
-; MOV D,A (5, 4 @ 8085)
-; +9
-	LDA a80	; source
-	STA d80	; destination
-	JMP next_op	; flags unaffected
-
-; to E
-
-_58:
-; MOV E,B (5, 4 @ 8085)
-; +9
-	LDA b80	; source
-	STA e80	; destination
-	JMP next_op	; flags unaffected
-
-_59:
-; MOV E,C (5, 4 @ 8085)
-; +9
-	LDA c80	; source
-	STA e80	; destination
-	JMP next_op	; flags unaffected
-
-_5a:
-; MOV E,D (5, 4 @ 8085)
-; +9
-	LDA d80	; source
-	STA e80	; destination
-	JMP next_op	; flags unaffected
-
-_5c:
-; MOV E,H (5, 4 @ 8085)
-; +9
-	LDA h80	; source
-	STA e80	; destination
-	JMP next_op	; flags unaffected
-
-_5d:
-; MOV E,L (5, 4 @ 8085)
-; +9
-	LDA l80	; source
-	STA e80	; destination
-	JMP next_op	; flags unaffected
-
-_5e:
-; MOV E,M (7) from memory
-; +11
-	LDA (hl80)	; pointed source
-	STA e80	; destination
-	JMP next_op	; flags unaffected
-
-_5f:
-; MOV E,A (5, 4 @ 8085)
-; +9
-	LDA a80	; source
-	STA e80	; destination
-	JMP next_op	; flags unaffected
-
-; to H
-
-_60:
-; MOV H,B (5, 4 @ 8085)
-; +9
-	LDA b80	; source
-	STA h80	; destination
-	JMP next_op	; flags unaffected
-
-_61:
-; MOV H,C (5, 4 @ 8085)
-; +9
-	LDA c80	; source
-	STA h80	; destination
-	JMP next_op	; flags unaffected
-
-_62:
-; MOV H,D (5, 4 @ 8085)
-; +9
-	LDA d80	; source
-	STA h80	; destination
-	JMP next_op	; flags unaffected
-
-_63:
-; MOV H,E (5, 4 @ 8085)
-; +9
-	LDA e80	; source
-	STA h80	; destination
-	JMP next_op	; flags unaffected
-
-_65:
-; MOV H,L (5, 4 @ 8085)
-; +9
-	LDA l80	; source
-	STA h80	; destination
-	JMP next_op	; flags unaffected
-
-_66:
-; MOV H,M (7) from memory
-; +11
-	LDA (hl80)	; pointed source
-	STA h80	; destination
-	JMP next_op	; flags unaffected
-
-_67:
-; MOV H,A (5, 4 @ 8085)
-; +9
-	LDA a80	; source
-	STA h80	; destination
-	JMP next_op	; flags unaffected
-
-; to L
-
-_68:
-; MOV L,B (5, 4 @ 8085)
-; +9
-	LDA b80	; source
-	STA l80	; destination
-	JMP next_op	; flags unaffected
-
-_69:
-; MOV L,C (5, 4 @ 8085)
-; +9
-	LDA c80	; source
-	STA l80	; destination
-	JMP next_op	; flags unaffected
-
-_6a:
-; MOV L,D (5, 4 @ 8085)
-; +9
-	LDA d80	; source
-	STA l80	; destination
-	JMP next_op	; flags unaffected
-
-_6b:
-; MOV L,E (5, 4 @ 8085)
-; +9
-	LDA e80	; source
-	STA l80	; destination
-	JMP next_op	; flags unaffected
-
-_6c:
-; MOV L,H (5, 4 @ 8085)
-; +9
-	LDA h80	; source
-	STA l80	; destination
-	JMP next_op	; flags unaffected
-
-_6e:
-; MOV L,M (7) from memory
-; +11
-	LDA (hl80)	; pointed source
-	STA l80	; destination
-	JMP next_op	; flags unaffected
-
-_6f:
-; MOV L,A (5, 4 @ 8085)
-; +9
-	LDA a80	; source
-	STA l80	; destination
-	JMP next_op	; flags unaffected
-
-; to memory
-
-_70:
-; MOV M,B (7)
-; +11
-	LDA b80	; source
-	STA (hl80)	; pointed source
-	JMP next_op	; flags unaffected
-
-_71:
-; MOV M,C (7)
-; +11
-	LDA c80	; source
-	STA (hl80)	; pointed source
-	JMP next_op	; flags unaffected
-
-_72:
-; MOV M,D (7)
-; +11
-	LDA d80	; source
-	STA (hl80)	; pointed source
-	JMP next_op	; flags unaffected
-
-_73:
-; MOV M,E (7)
-; +11
-	LDA e80	; source
-	STA (hl80)	; pointed source
-	JMP next_op	; flags unaffected
-
-_74:
-; MOV M,H (7)
-; +11
-	LDA h80	; source
-	STA (hl80)	; pointed source
-	JMP next_op	; flags unaffected
-
-_75:
-; MOV M,L (7)
-; +11
-	LDA l80	; source
-	STA (hl80)	; pointed source
-	JMP next_op	; flags unaffected
-
-_77:
-; MOV M,A (7) cannot use macro in order to stay generic
-; +11
-	LDA a80	; source
-	STA (hl80)	; pointed source
-	JMP next_op	; flags unaffected
-
-; to A
-
-_78:
-; MOV A,B (5, 4 @ 8085)
-; +12
-	LDA b80	; source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-_79:
-; MOV A,C (5, 4 @ 8085)
-; +9
-	LDA c80	; source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-_7a:
-; MOV A,D (5, 4 @ 8085)
-; +9
-	LDA d80	; source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-_7b:
-; MOV A,E (5, 4 @ 8085)
-; +9
-	LDA e80	; source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-_7c:
-; MOV A,H (5, 4 @ 8085)
-; +9
-	LDA h80	; source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-_7d:
-; MOV A,L (5, 4 @ 8085)
-; +9
-	LDA l80	; source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-_7e:
-; MOV A,M (7) from memory
-; +11
-	LDA (hl80)	; pointed source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-; immediate
-
-_06:
-; MVI B (7)
-; +16/16/20
-	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA b80	; destination
-	JMP next_op	; flags unaffected
-
-_0e:
-; MVI C (7)
-; +16/16/20
-	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA c80	; destination
-	JMP next_op	; flags unaffected
-
-_16:
-; MVI D (7)
-; +16/16/20
-	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA d80	; destination
-	JMP next_op	; flags unaffected
-
-_1e:
-; MVI E (7)
-; +16/16/20
-	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA e80	; destination
-	JMP next_op	; flags unaffected
-
-_26:
-; MVI H (7)
-; +16/16/20
-	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA h80	; destination
-	JMP next_op	; flags unaffected
-
-_2e:
-; MVI L (7)
-; +16/16/20
-	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA l80	; destination
-	JMP next_op	; flags unaffected
-
-_36:
-; MVI M (10) to memory
-; +18/18/22
-	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA (hl80)	; simple!
-	JMP next_op	; flags unaffected
-
-_3e:
-; MVI A (7)
-; +16/16/20
-	_PC_ADV		; point to operand
-	LDA (pc80), Y	; get immediate
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-; double immediate
-
-_01:
-; LXI B (10)
-; +29/29/33, 21 bytes
-	_PC_ADV		; point to operand
-	.al:	REP #%00100000	; ** 16 bit memory **
-	LDA (pc80), Y	; get first immediate
-	STA bc80	; destination
-	.as:	SEP #%00100000	; ** back to 8 bit **
-	_PC_ADV		; skip LSB
-	JMP next_op	; flags unaffected
-
-_11:
-; LXI D (10)
-; +29/29/33, 21 bytes
-	_PC_ADV		; point to operand
-	.al:	REP #%00100000	; ** 16 bit memory **
-	LDA (pc80), Y	; get first immediate
-	STA de80	; destination
-	.as:	SEP #%00100000	; ** back to 8 bit **
-	_PC_ADV		; skip LSB
-	JMP next_op	; flags unaffected
-
-_21:
-; LXI H (10)
-; +29/29/33, 21 bytes
-	_PC_ADV		; point to operand
-	.al:	REP #%00100000	; ** 16 bit memory **
-	LDA (pc80), Y	; get first immediate
-	STA hl80	; destination
-	.as:	SEP #%00100000	; ** back to 8 bit **
-	_PC_ADV		; skip LSB
-	JMP next_op	; flags unaffected
-
-_31:
-; LXI SP (10)
-; +29/29/33, 21 bytes
-	_PC_ADV		; point to operand
-	.al:	REP #%00100000	; ** 16 bit memory **
-	LDA (pc80), Y	; get first immediate
-	STA sp80	; destination
-	.as:	SEP #%00100000	; ** back to 8 bit **
-	_PC_ADV		; skip LSB
-	JMP next_op	; flags unaffected
-
-; ** load/store A indirect **
-
-_0a:
-; LDAX B (7)
-; +11
-	LDA (bc80)	; pointed source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-_1a:
-; LDAX D (7)
-; +11
-	LDA (de80)	; pointed source
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-
-_02:
-; STAX B (7)
-; +11
-	LDA a80		; source
-	STA (bc80)	; pointed destination
-	JMP next_op	; flags unaffected
-
-_12:
-; STAX D (7)
-; +11
-	LDA a80		; source
-	STA (de80)	; pointed destination
-	JMP next_op	; flags unaffected
-
-; ** load/store direct **
-
-_3a:
-; LDA (13)
-;+16/16/20
-	_PC_ADV		; advance to operand
-	LDA (pc80), Y	; actual data
-	STA a80	; destination
-	JMP next_op	; flags unaffected
-	
-_2a:
-; LHLD (16) load HL direct
-;+29/29/33
-	_PC_ADV		; point to operand
-	.al:	REP #%00100000	; ** 16 bit memory **
-	LDA (pc80), Y	; get operand
-	STA hl80	; destination
-	.as:	SEP #%00100000	; ** back to 8 bit **
-	_PC_ADV		; skip LSB
-	JMP next_op	; flags unaffecfed
-	
-_32:
-; STA (13)
-;+16/16/20
-	_PC_ADV		; advance to operand
-	LDA a80		; source
-	STA (pc80), Y	; destination
-	JMP next_op	; flags unaffected
-
-_22:
-; SHLD (16) store HL direct
-;+29/29/33
-	_PC_ADV		; point to operand
-	.al:	REP #%00100000	; ** 16 bit memory **
-	LDA hl80	; source
-	STA (pc80), Y	; destination
-	.as:	SEP #%00100000	; ** back to 8 bit **
-	_PC_ADV		; skip LSB
-	JMP next_op	; flags unaffecfed
-
-; exchange DE & HL
-
-_eb:
-; XCHG (4)
-;+25
-	.al:	.xl:	REP #%00110000	; ** 16 bit memory and indexes **
-	LDA hl80	; one pair
-	LDX de80	; the other one
-	STA de80	; exchange both
-	STX hl80
-	.as:	.xs:	SEP #%00110000	; ** back to 8 bit **
-	JMP next_op	; flags unaffected
-
-
-; ** jump **
-
-_c3:
-; JMP (10)
-;+23/23/27
-jump:
-	_PC_ADV		; go for operand
-	.al:	REP #%00100000	; ** 16 bit memory **
-do_jmp:
-	LDA (pc80), Y	; get operand
-	.as:	SEP #%00100000	; ** back to 8 bit **
-	TAY		; extract LSB
-	XBA		; switch to MSB
-	STA pc80+1	; register is ready
-	JMP execute	; jump to it!
-
-	
-_da:
-; JC (10, 7/10 @ 8085) if carry
-;+31/31/35 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	LSR		; put bit 0 on native C
-		BCS jump	; execute jump
-	BRA notjmp	; otherwise skip & continue
-
-_d2:
-; JNC (10, 7/10 @ 8085) if not carry
-;+31/31/35 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	LSR		; put bit 0 on native C
-		BCC jump	; execute jump
-	BRA notjmp	; otherwise skip & continue
-
-_f2:
-; JP (10, 7/10 @ 8085) if plus
-;+29/29/33 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 7
-		BPL jump	; execute jump
-	BRA notjmp	; otherwise skip & continue
-
-_fa:
-; JM (10, 7/10 @ 8085) if minus
-;+29/29/33 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 7
-		BMI jump	; execute jump
-	BRA notjmp	; otherwise skip & continue
-
-_c2:
-; JNZ (10, 7/10 @ 8085) if not zero
-;+29/29/33 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 6
-		BVC jump	; execute jump
-	BRA notjmp	; skip and continue
-
-_ca:
-; JZ (10, 7/10 @ 8085) if zero
-;+29/29/33 if taken, +18/18/22 if not
-	BIT f80		; get flags bit 6
-		BVS jump	; execute jump
-notjmp:
-	_PC_ADV		; skip unused address
-	_PC_ADV
-	JMP next_op	; continue otherwise
-
-_ea:
-; JPE (10, 7/10 @ 8085) on parity even
-;+31/31/35 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	AND #%00000100	; check bit 2
-		BNE jump	; execute jump
-	BRA notjmp	; otherwise skip & continue
-
-_e2:
-; JPO (10, 7/10 @ 8085) on parity odd
-;+31/31/35 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	AND #%00000100	; check bit 2
-		BEQ jump	; execute jump
-	BRA notjmp	; otherwise skip & continue
-
-_e9:
-; PCHL (5, 6 @ 8085) jump to address pointed by HL, not worth 16 bit mode
-;+12
-	LDY l80		; get HL word
-	LDA h80
-	STA pc80+1	; set PC
-	JMP execute
-
-
-; ** call **
-
-_cd:
-; CALL (17, 18 @ 8085)
-;+57/57/61
-call:
-	_PC_ADV	; point to operand
-	LDA pc80+1	; get PC MSB (3)
-	XBA		; make room for LSB (3)
-	TYA		; composed! (2)
-	.al:	REP #%00100001	; ** 16 bit memory & clear C ** (3)
-	ADC #2	; point to return address (3)
-	DEC sp80	; correct SP (7+7)
-	DEC sp80
-	STA (sp80)	; return address pushed (6)
-	BRA do_jmp	; continue like jump in 16 bit (19)
-
-_dc:
-; CC (11/17, 9/18 @ 8085) if carry
-;+65/65/69 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	LSR		; put bit 0 on native C
-		BCS call	; execute call
-	BRA notjmp	; otherwise skip & continue
-
-_d4:
-; CNC (11/17, 9/18 @ 8085) if not carry
-;+65/65/69 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	LSR		; put bit 0 on native C
-		BCC call	; execute call
-	BRA notjmp	; otherwise skip & continue
-
-_f4:
-; CP (11/17, 9/18 @ 8085) if plus
-;+63/63/67 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 7
-		BPL call	; execute call
-	BRA notjmp	; otherwise skip & continue
-
-_fc:
-; CM (11/17, 9/18 @ 8085) if minus
-;+63/63/67 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 7
-		BMI call	; execute call
-	BRA notjmp	; otherwise skip & continue
-
-_cc:
-; CZ (11/17, 9/18 @ 8085) if zero
-;+63/63/67 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 6
-		BVS call	; execute call
-	BRA notjmp	; skip and continue
-
-_c4:
-; CNZ (11/17, 9/18 @ 8085) if not zero
-;+63/63/67 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 6
-		BVC call	; execute call
-	BRA notjmp	; skip and continue
-
-_ec:
-; CPE (11/17, 9/18 @ 8085) on parity even
-;+65/65/69 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	AND #%00000100	; check bit 2
-		BNE call	; execute call
-	BRA notjmp	; otherwise skip & continue
-
-_e4:
-; CPO (11/17, 9/18 @ 8085p) on parity odd
-;+65/65/69 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	AND #%00000100	; check bit 2
-		BEQ call	; execute call
-	BRA notjmp	; otherwise skip & continue
-
-
-; ** return **
-
-_c9:
-; RET (10)
-;+32
-ret:
-	.al:	REP #%00100000	; ** 16 bit memory **
-	LDA (sp80)	; fetch return address
-	INC sp80	; advance SP
-	INC sp80
-	.as:	SEP #%00100000	; ** back to 8 bit **
-	TAY		; extract LSB
-	XBA		; switch to MSB
-	STA pc80+1	; register is ready
-	JMP execute	; jump to it!
-	
-_d8:
-; RC (5/11, 6/12 @ 8085) if carry
-;+40 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	LSR		; put bit 0 on native C
-		BCS ret	; execute return
-	BRA notjmp2	; otherwise skip & continue
-
-_d0:
-; RNC (5/11, 6/12 @ 8085) if not carry
-;+40 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	LSR		; put bit 0 on native C
-		BCC ret	; execute return
-	BRA notjmp2	; otherwise skip & continue
-
-_f0:
-; RP (5/11, 6/12 @ 8085) if plus
-;+38 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 7
-		BPL ret	; execute return
-	BRA notjmp2	; otherwise skip & continue
-
-_f8:
-; RM (5/11, 6/12 @ 8085) if minus
-;+38 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 7
-		BMI ret	; execute return
-	BRA notjmp2	; otherwise skip & continue
-
-_c0:
-; RNZ (5/11, 6/12 @ 8085) if not zero
-;+38 if taken, +21/21/25 if not
-	BIT f80		; get flags bit 6
-		BVC ret	; execute return
-	BRA notjmp2	; otherwise skip & continue
-
-_c8:
-; RZ (5/11, 6/12 @ 8085) if zero
-;+38 if taken, +18/18/22 if not
-	BIT f80		; get flags bit 6
-		BVS ret	; execute return
-notjmp2:
-	_PC_ADV		; skip unused address
-	_PC_ADV
-	JMP next_op	; continue otherwise
-
-_e8:
-; RPE (5/11, 6/12 @ 8085) on parity even
-;+40 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	AND #%00000100	; check bit 2
-		BNE ret	; execute return
-	BRA notjmp2	; otherwise skip and continue
-
-_e0:
-; RPO (5/11, 6/12 @ 8085) on parity odd
-;+40 if taken, +23/23/27 if not
-	LDA f80		; get flags
-	AND #%00000100	; check bit 2
-		BEQ ret	; execute return
-	BRA notjmp2	; otherwise skip and continue
-
-
-; ** restart **
-; faster, specific routines
-
-_c7:
-; RST 0 (11, 12 @ 8085)
-;+47/47/51
-	_PC_ADV		; skip opcode
-	LDX #0	; offset
-	JMP intr80	; calling procedure
-
-_cf:
-; RST 1 (11, 12 @ 8085)
-;+47/47/51
-	_PC_ADV		; skip opcode
-	LDX #$08	; offset
-	JMP intr80	; calling procedure
-
-_d7:
-; RST 2 (11, 12 @ 8085)
-;+47/47/51
-	_PC_ADV		; skip opcode
-	LDX #$10	; offset
-	JMP intr80	; calling procedure
-
-_df:
-; RST 3 (11, 12 @ 8085)
-;+47/47/51
-	_PC_ADV		; skip opcode
-	LDX #$18	; offset
-	JMP intr80	; calling procedure
-
-_e7:
-; RST 4 (11, 12 @ 8085)
-;+47/47/51
-	_PC_ADV		; skip opcode
-	LDX #$20	; offset
-	JMP intr80	; calling procedure
-
-_ef:
-; RST 5 (11, 12 @ 8085)
-;+47/47/51
-	_PC_ADV		; skip opcode
-	LDX #$28	; offset
-	JMP intr80	; calling procedure
-
-_f7:
-; RST 6 (11, 12 @ 8085)
-;+47/47/51
-	_PC_ADV		; skip opcode
-	LDX #$30	; offset
-	JMP intr80	; calling procedure
-
-_ff:
-; RST 7 (11, 12 @ 8085)
-;+47/47/51
-	_PC_ADV		; skip opcode
-	LDX #$38	; offset
-	JMP intr80	; calling procedure
-
 
 ; ** stack **
 
