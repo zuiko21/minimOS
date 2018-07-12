@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-1327
+; last modified 20180712-1525
 
 #include "../OS/usual.h"
 
@@ -55,7 +55,7 @@ reset65:
 	LDX #2			; RST @ $FFFC
 ; standard interrupt handling, expects vector offset in X
 x_vect:
-	.al: REP #$20		; 16-bit memory
+	.al: REP #$20		; 16-bit memory, just in case
 	LDA $FFFA, X		; read appropriate vector
 	STA pc65		; will resume execution there
 	.as: SEP #$20		; back to 8-bit
@@ -133,87 +133,317 @@ int_stat:
 	STY s65			; update SP
 	BRA x_vect		; execute interrupt code
 
-;-------------------------------continue here----------------------
-intr80:				; ** generic interrupt entry point, offset in X ** (37!)
-	LDA pc80+1	; get PC MSB (3)
-	XBA		; make room for LSB (3)
-	TYA		; composed! (2)
-	.al:	REP #%00100000	; ** 16 bit memory  ** (3)
-	DEC sp80	; correct SP (7+7)
-	DEC sp80
-	STA (sp80)	; return address pushed (6)
-; saved processor status
-; seems to push PC only!!!
-	.as:	SEP #%00100000	; ** back to 8 bit ** (3)
-
-vector_pull:		; ** standard jump to entry point, offset in X ** 8 bit memory and index
-	STZ pc80+1	; set MSB clear (3)
-	TXY		; update PC (2)
-	BRA execute		; continue with interrupt handler
-
-; ** other 8085 hardware interrupts... when available **
-rst55:
-	LDA rimask	; get all masks
-	ASR		; quickly get bit 0
-		BCS execute	; ignore if masked
-	LDX #$2C	; hardwired address
-	BRA intr80	; respond to interrupt
-
-rst65:
-	LDA rimask	; get all masks
-	AND #%00000010		; get bit 1
-		BNE execute	; ignore if masked
-	LDX #$34	; hardwired address
-	BRA intr80	; respond to interrupt
-
-rst75:
-	LDA rimask	; get all masks
-	AND #%00000100		; get bit 2
-		BNE execute	; ignore if masked
-	LDX #$3C	; hardwired address
-	BRA intr80	; respond to interrupt
-
-
+; ****************************************
 ; *** *** valid opcode definitions *** ***
+; ****************************************
 
-; ** move **
-; to B
+; *** implicit instructions ***
+; flag settings
 
-_41:
-; MOV B,C (5, 4 @ 8085)
-; +9
-	LDA c80	; source
-	STA b80	; destination
-	JMP next_op	; flags unaffected
+_18:
+; CLC
+; +10
+	LDA #1		; C flag...
+	TRB p65		; gets cleared
+	JMP next_op
 
-_42:
-; MOV B,D (5, 4 @ 8085)
-; +9
-	LDA d80	; source
-	STA b80	; destination
-	JMP next_op	; flags unaffected
+_d8:
+; CLD
+; +10
+	LDA #8		; D flag...
+	TRB p65		; gets cleared
+	JMP next_op
 
-_43:
-; MOV B,E (5, 4 @ 8085)
-; +9
-	LDA e80	; source
-	STA b80	; destination
-	JMP next_op	; flags unaffected
+_58:
+; CLI
+; +10
+	LDA #4		; I flag...
+	TRB p65		; gets cleared
+	JMP next_op
 
-_44:
-; MOV B,H (5, 4 @ 8085)
-; +9
-	LDA h80	; source
-	STA b80	; destination
-	JMP next_op	; flags unaffected
+_b8:
+; CLV
+; +10
+	LDA #$40	; V flag...
+	TRB p65		; gets cleared
+	JMP next_op
 
-_45:
-; MOV B,L (5, 4 @ 8085)
-; +9
-	LDA l80	; source
-	STA b80	; destination
-	JMP next_op	; flags unaffected
+_38:
+; SEC
+; +10
+	LDA #1		; C flag...
+	TSB p65		; gets set
+	JMP next_op
 
+_f8:
+; SED
+; +10
+	LDA #8		; D flag...
+	TSB p65		; gets set
+	JMP next_op
+_78:
+; SEI
+; +10
+	LDA #4		; I flag...
+	TSB p65		; gets set
+	JMP next_op
+
+; index modifying
+
+_ca:
+; DEX
+; +23
+	DEC x65		; decrement index
+; LUT-based flag setting, 11b 15t
+	LDX x65		; check result
+; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_88:
+; DEY
+; +23
+	DEC y65		; decrement index
+; LUT-based flag setting, 11b 15t
+	LDX y65		; check result
+; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_e8:
+; INX
+; +23
+	INC x65		; increment index
+; LUT-based flag setting, 11b 15t
+	LDX x65		; check result
+; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_c8:
+; INY
+; +23
+	INC y65		; increment index
+; LUT-based flag setting, 11b 15t
+	LDX y65		; check result
+; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+; register transfer
+
+_aa:
+; TAX
+; +23
+	LDA a65		; copy accumulator...
+	STA x65		; ...to index
+	TAX		; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_ab:
+; TAY
+; +23
+	LDA a65		; copy accumulator...
+	STA y65		; ...to index
+	TAX		; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_ba:
+; TSX
+; +23
+	LDA s65		; copy stack pointer...
+	STA x65		; ...to index
+	TAX		; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_8a:
+; TXA
+; +23
+	LDA x65		; copy index...
+	STA a65		; ...to accumulator
+	TAX		; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_9a:
+; TXS
+; +23
+	LDA x65		; copy index...
+	STA s65		; ...to stack pointer
+	TAX		; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_98:
+; TYA
+; +23
+	LDA y65		; copy index...
+	STA a65		; ...to accumulator
+	TAX		; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+; *** stack operations ***
+; push
+
+_48:
+; PHA
+; +18
+	LDA a65		; get accumulator
+; standard push of value in A, does not affect flags
+	LDX s65		; and current SP
+	STA $0100, X	; push into stack
+	DEX		; post-decrement
+	STX s65		; update SP
+; all done
+	JMP next_op
+
+_da:
+; PHX
+; +18
+	LDA x65		; get index
+; standard push of value in A, does not affect flags
+	LDX s65		; and current SP
+	STA $0100, X	; push into stack
+	DEX		; post-decrement
+	STX s65		; update SP
+; all done
+	JMP next_op
+
+_5a:
+; PHY
+; +18
+	LDA y65		; get index
+; standard push of value in A, does not affect flags
+	LDX s65		; and current SP
+	STA $0100, X	; push into stack
+	DEX		; post-decrement
+	STX s65		; update SP
+; all done
+	JMP next_op
+
+_08:
+; PHP
+; +18
+	LDA p65		; get status
+; standard push of value in A, does not affect flags
+	LDX s65		; and current SP
+	STA $0100, X	; push into stack
+	DEX		; post-decrement
+	STX s65		; update SP
+; all done
+	JMP next_op
+
+; pull
+
+_68:
+; PLA
+; +32
+	INC s65		; pre-increment SP
+	LDX s65		; use as index
+	LDA $0100, X	; pull from stack
+	STA a65		; pulled value goes to A
+	TAX		; operation result in X
+; standard NZ flag setting
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_fa:
+; PLX
+; +32
+	INC s65		; pre-increment SP
+	LDX s65		; use as index
+	LDA $0100, X	; pull from stack
+	STA x65		; pulled value goes to X
+	TAX		; operation result in X
+; standard NZ flag setting
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_7a:
+; PLY
+; +32
+	INC s65		; pre-increment SP
+	LDX s65		; use as index
+	LDA $0100, X	; pull from stack
+	STA y65		; pulled value goes to Y
+	TAX		; operation result in X
+; standard NZ flag setting
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_28:
+; PLP
+; +32
+	INC s65		; pre-increment SP
+	LDX s65		; use as index
+	LDA $0100, X	; pull from stack
+	STA p65		; pulled value goes to PSR
+	TAX		; operation result in X
+; standard NZ flag setting
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+;------------------------------- old 8080 opcodes -----------------------------------
 _46:
 ; MOV B,M (7) from memory
 ; +11
@@ -2277,8 +2507,11 @@ szp_lut:
 	.byt	$84, $80, $80, $84, $80, $84, $84, $80	; 240-247
 	.byt	$80, $84, $84, $80, $84, $80, $80, $84	; 248-255
 
+; ****************************************
 ; *** opcode execution addresses table ***
-; should stay no matter the CPU!
+; ****************************************
+
+; should stay the same no matter the CPU!
 opt_l:
 	.word	_00
 	.word	_01
@@ -2537,4 +2770,4 @@ opt_h:
 	.word	_fd
 	.word	_fe
 	.word	_ff
-	
+
