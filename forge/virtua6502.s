@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-1801
+; last modified 20180712-1842
 
 #include "../OS/usual.h"
 
@@ -818,53 +818,168 @@ _8c:
 	STA (tmptr)	; store operand
 	JMP next_op
 
-_:
-;
+_64:
+; STZ zp
 ; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	STZ !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
 
-_:
-;
+_74:
+; STZ zp, X
 ; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	STZ !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
 
-_:
-;
+_9c:
+; STZ abs
 ; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA #0
+	STA (tmptr)	; clear operand
+	JMP next_op
 
-_:
-;
+_9e:
+; STZ abs, X
 ; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA #0
+	STA (tmptr)	; clear operand
+	JMP next_op
 
-_:
-;
+_8d:
+; STA abs
 ; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA a65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
 
-_:
-;
+_9d:
+; STA abs, X
 ; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA a65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
 
-_:
-;
+_99:
+; STA abs, Y
 ; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA a65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
 
-_:
-;
+_85:
+; STA zp
 ; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA a65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
 
-_:
-;
+_95:
+; STA zp, X
 ; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA a65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
 
-_:
-;
+_92:
+; STA (zp)
 ; +
+	PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA a65		; value to be stored
+	STA (tmptr)
+	JMP next_op
 
-_:
-;
+_91:
+; STA (zp), Y
 ; +
+	PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA a65		; value to be stored
+	STA (tmptr)
+	JMP next_op
 
-_:
-;
+_81:
+; STA (zp, X)
 ; +
+	PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA a65		; value to be stored
+	STA (tmptr)
+	JMP next_op
 
 _:
 ;
