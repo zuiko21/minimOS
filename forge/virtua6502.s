@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-1637
+; last modified 20180712-1707
 
 #include "../OS/usual.h"
 
@@ -69,7 +69,7 @@ execute:
 		LDA (pc65), Y	; get opcode (5)
 		ASL				; double it as will become pointer (2)
 		TAX				; use as pointer, keeping carry (2)
-		BCC lo_jump		; seems to be less opcodes with bit7 low... (2/3)
+		BCC lo_jump		; seems to have less opcodes with bit7 low... (2/3)
 			JMP (opt_h, X)	; emulation routines for opcodes with bit7 hi (6)
 lo_jump:
 			JMP (opt_l, X)	; otherwise, emulation routines for opcodes with bit7 low
@@ -488,7 +488,7 @@ _40:
 	STA pc65+1	; pulled value goes to PC-MSB
 	STX s65		; update SP
 ; all done
-	JMP next_op
+	JMP execute	; PC already set!
 
 _60:
 ; RTS
@@ -503,7 +503,7 @@ _60:
 	INX		; skip both bytes
 	STX s65		; update SP
 ; all done
-	JMP next_op
+	JMP execute	; PC already set!
 
 ; *** WDC-exclusive instructions ***
 
@@ -519,6 +519,7 @@ _cb:
 	BRA _db		; without proper interrupt support, just like STP
 
 ; *** bit testing ***
+
 _89:
 ; BIT imm
 ; +
@@ -649,6 +650,67 @@ _3c:
 	TSB p65		; final status
 ; all done
 	JMP next_op
+
+; *** jumps ***
+
+; conditional branches
+
+_90:
+; BCC
+; +
+	PC_ADV		; get relative address
+	LDA (pc65), Y
+
+	JMP execute	; PC is ready!
+
+
+; absolute jumps
+
+_4c:
+; JMP abs
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	TAX		; store temporarily
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA pc65+1	; update PC
+	TXY		; pointer is ready!
+	JMP execute
+
+_6c:
+; JMP indirect
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store temporarily
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; indirect pointer ready
+	LDY #1		; indirect MSB offset
+	LDA (tmptr), Y	; final MSB
+	STA pc65+1
+	LDA (tmptr)	; final LSB
+	TAY		; pointer is ready!
+	JMP execute
+
+_7c:
+; JMP indirect indexed
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store temporarily
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; indirect pointer ready
+	LDY x65		; indexing
+	INY		; but get MSB first
+	LDA (tmptr), Y	; final MSB
+ 	STA pc65+1
+	DEY		; go for LSB
+	LDA (tmptr), Y	; final LSB
+	TAY		; pointer is ready!
+	JMP execute
 
 
 ; *** ***
