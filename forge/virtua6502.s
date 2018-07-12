@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-1308
+; last modified 20180712-1327
 
 #include "../OS/usual.h"
 
@@ -83,7 +83,6 @@ _03:_13:_23:_33:_43:_53:_63:_73:_83:_93:_a3:_b3:_c3:_d3:_e3:_f3:
 _44:_54:_d4:_f4:
 _0b:_1b:_2b:_3b:_4b:_5b:_6b:_7b:_8b:_9b:_ab:_bb:_eb:_fb:
 _5c:_dc:_fc:
-; might include WDC-only STP & WAI ($CB & $DB) as well
 
 ; continue execution via JMP next_op, will not arrive here otherwise
 next_op:
@@ -115,9 +114,9 @@ _00:
 	LDX #4			; both IRQ & BRK @ $FFFE
 	LDA (pc65), Y		; check whether IRQ or BRK
 	BEQ int_stat		; was soft, leave B flag on
-		LDA pc65		; hard otherwise
+		LDA p65			; hard otherwise
 		AND #%11101111		; clear B
-		STA pc65
+		STA p65
 int_stat:
 ; first save current PC into stack
 	LDA pc65+1		; get PC MSB...
