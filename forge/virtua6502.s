@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-1733
+; last modified 20180712-1801
 
 #include "../OS/usual.h"
 
@@ -663,7 +663,7 @@ _90:
 ; +
 	PC_ADV		; get relative address
 	LDA (pc65), Y
-
+; *** todo todo todo todo ***
 	JMP execute	; PC is ready!
 
 
@@ -741,6 +741,181 @@ _20:
 	STA pc65+1
 	LDY tmptr	; pointer is ready!
 	JMP execute
+
+; *** load / store ***
+
+; load
+
+; store
+
+_86:
+; STX zp
+; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA x65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_96:
+; STX zp, Y
+; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC y65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA x65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_8e:
+; STX abs
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA x65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
+
+_84:
+; STY zp
+; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA y65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_94:
+; STY zp, X
+; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA y65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_8c:
+; STY abs
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA y65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+_:
+;
+; +
+
+
+
 
 
 ; *** ***
