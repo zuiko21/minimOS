@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-1237
+; last modified 20180712-1308
 
 #include "../OS/usual.h"
 
@@ -52,15 +52,17 @@ open_emu:
 
 ; *** start the emulation! ***
 reset65:
-
-
-
-
-	LDA $FFFC	; get reset vector FROM CURRENT BANK
-	STZ pc65	; still on 16-bit
-	.as: SEP #%00100000	; back to 8 bit
-	LDA #%00110100		; binary mode, interrupts off!
-	STA p65		; set initial status
+	LDX #2			; RST @ $FFFC
+; standard interrupt handling, expects vector offset in X
+x_vect:
+	.al: REP #$20		; 16-bit memory
+	LDA $FFFA, X		; read appropriate vector
+	STA pc65		; will resume execution there
+	.as: SEP #$20		; back to 8-bit
+	LDA p65			; original status
+	ORA #%00010100		; disable further interrupts...
+	AND #%11110111		; ...and clear decimal flag!
+	STA p65
 
 ; *** main loop ***
 execute:
@@ -107,16 +109,30 @@ exit:
 
 nmi65:				; hardware interrupts, when available, to be checked AFTER incrementing PC
 	LDX #0			; NMI @ $FFFA
-; standard interrupt handling
-	LDA p65			; original status
-	ORA #%00000100		; disable further interrupts...
-	AND #%11110111		; ...and clear decimal flag!
-	STA p65
-	.al: REP #$20		; 16-bit memory
-	LDA $FFFA, X		; read appropriate vector
-	STA pc65		; will resume execution there
-	.as: SEP #$20		; back to 8-bit
-	BRA execute
+	BRA int_stat		; save common status and execute
+irq65:
+_00:
+	LDX #4			; both IRQ & BRK @ $FFFE
+	LDA (pc65), Y		; check whether IRQ or BRK
+	BEQ int_stat		; was soft, leave B flag on
+		LDA pc65		; hard otherwise
+		AND #%11101111		; clear B
+		STA pc65
+int_stat:
+; first save current PC into stack
+	LDA pc65+1		; get PC MSB...
+	LDY s65			; and current SP
+	STA $0100, Y		; store in emulated stack
+	DEY			; post-decrement
+	LDA pc65		; same for LSB
+	STA $0100, Y		; store in emulated stack
+	DEY			; post-decrement
+; now push current status
+	LDA p65			; status...
+	STA $0100, Y		; store in emulated stack
+	DEY			; post-decrement
+	STY s65			; update SP
+	BRA x_vect		; execute interrupt code
 
 ;-------------------------------continue here----------------------
 intr80:				; ** generic interrupt entry point, offset in X ** (37!)
