@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-1525
+; last modified 20180712-1637
 
 #include "../OS/usual.h"
 
@@ -188,7 +188,7 @@ _78:
 	TSB p65		; gets set
 	JMP next_op
 
-; index modifying
+; register modify
 
 _ca:
 ; DEX
@@ -238,6 +238,34 @@ _c8:
 	INC y65		; increment index
 ; LUT-based flag setting, 11b 15t
 	LDX y65		; check result
+; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_3a:
+; DEC
+; +23
+	DEC a65		; decrement A
+; LUT-based flag setting, 11b 15t
+	LDX a65		; check result
+; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_1a:
+; INC
+; +23
+	INC a65		; increment A
+; LUT-based flag setting, 11b 15t
+	LDX a65		; check result
 ; operation result in X
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
@@ -442,6 +470,218 @@ _28:
 	STA p65
 ; all done
 	JMP next_op
+
+; return instructions
+
+_40:
+; RTI
+; +34
+	LDX s65		; get current SP
+	INX		; pre-increment
+	LDA $0100, X	; pull from stack
+	STA p65		; pulled value goes to PSR
+	INX		; pre-increment
+	LDA $0100, X	; pull from stack
+	STA pc65	; pulled value goes to PC-LSB
+	INX		; pre-increment
+	LDA $0100, X	; pull from stack
+	STA pc65+1	; pulled value goes to PC-MSB
+	STX s65		; update SP
+; all done
+	JMP next_op
+
+_60:
+; RTS
+; +29
+	LDX s65		; get current SP
+	INX		; pre-increment
+	.al: REP #$20	; worth going 16-bit
+	LDA $0100, X	; pull full return address from stack
+	INC		; correct it!
+	STA pc65	; pulled value goes to PC
+	.as: SEP #$20	; back to 8-bit
+	INX		; skip both bytes
+	STX s65		; update SP
+; all done
+	JMP next_op
+
+; *** WDC-exclusive instructions ***
+
+_db:
+; STP
+; +
+; should print some results or message...
+	_FINISH		; stop emulation, this far
+
+_cb:
+; WAI
+; +
+	BRA _db		; without proper interrupt support, just like STP
+
+; *** bit testing ***
+_89:
+; BIT imm
+; +
+	PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	AND a65		; AND with memory
+	BEQ 89z		; will set Z
+		LDA #2		; or clear Z in previous status
+		TRB p65		; updated
+		JMP next_op
+89z:
+	LDA #2		; set Z in previous status
+	TSB p65		; updated
+; all done
+	JMP next_op
+
+_24:
+; BIT zp
+; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+; operand in A, common BIT routine
+	AND a65		; AND with memory
+	TAX		; keep this value
+	BEQ 24z		; will set Z
+		LDA #2		; or clear Z in previous status
+		TRB p65		; updated
+		JMP 24nv	; check highest bits
+24z:
+	LDA #2		; set Z in previous status
+	TSB p65		; updated
+24nv:
+	LDA #$C0	; pre-clear NV
+	TRB p65
+	TXA		; retrieve old result
+	AND #$C0	; only two highest bits
+	TSB p65		; final status
+; all done
+	JMP next_op
+
+_34:
+; BIT zp, X
+; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+; operand in A, common BIT routine
+	AND a65		; AND with memory
+	TAX		; keep this value
+	BEQ 34z		; will set Z
+		LDA #2		; or clear Z in previous status
+		TRB p65		; updated
+		JMP 34nv	; check highest bits
+34z:
+	LDA #2		; set Z in previous status
+	TSB p65		; updated
+34nv:
+	LDA #$C0	; pre-clear NV
+	TRB p65
+	TXA		; retrieve old result
+	AND #$C0	; only two highest bits
+	TSB p65		; final status
+; all done
+	JMP next_op
+
+_2c:
+; BIT abs
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; get operand
+; operand in A, common BIT routine
+	AND a65		; AND with memory
+	TAX		; keep this value
+	BEQ 2cz		; will set Z
+		LDA #2		; or clear Z in previous status
+		TRB p65		; updated
+		JMP 2cnv	; check highest bits
+2cz:
+	LDA #2		; set Z in previous status
+	TSB p65		; updated
+2cnv:
+	LDA #$C0	; pre-clear NV
+	TRB p65
+	TXA		; retrieve old result
+	AND #$C0	; only two highest bits
+	TSB p65		; final status
+; all done
+	JMP next_op
+
+_3c:
+; BIT abs, X
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; get operand
+; operand in A, common BIT routine
+	AND a65		; AND with memory
+	TAX		; keep this value
+	BEQ 3cz		; will set Z
+		LDA #2		; or clear Z in previous status
+		TRB p65		; updated
+		JMP 3cnv	; check highest bits
+3cz:
+	LDA #2		; set Z in previous status
+	TSB p65		; updated
+3cnv:
+	LDA #$C0	; pre-clear NV
+	TRB p65
+	TXA		; retrieve old result
+	AND #$C0	; only two highest bits
+	TSB p65		; final status
+; all done
+	JMP next_op
+
+
+; *** ***
+
+; increment/decrement
+_:
+; DEC
+; +23
+	DEC a65		; decrement 
+; LUT-based flag setting, 11b 15t
+	LDX a65		; check result
+; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_:
+; INC
+; +23
+	INC a65		; increment 
+; LUT-based flag setting, 11b 15t
+	LDX a65		; check result
+; operation result in X
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
 
 ;------------------------------- old 8080 opcodes -----------------------------------
 _46:
