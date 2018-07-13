@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a2
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180713-0924
+; last modified 20180713-0936
 
 #include "../OS/usual.h"
 
@@ -1732,6 +1732,123 @@ _01:
 
 ; * exclusive or *
 
+_49:
+; EOR imm
+; +
+	PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_45:
+; EOR zp
+; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_55:
+; EOR zp, X
+; +
+	PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_4d:
+; EOR abs
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_5d:
+; EOR abs, X
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_59:
+; EOR abs, Y
+; +
+	PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
 _52:
 ; EOR (zp)
 ; +
@@ -1799,6 +1916,8 @@ _41:
 	STA p65
 ; all done
 	JMP next_op
+
+; *** ***
 
 _:
 ;
