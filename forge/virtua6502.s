@@ -1,10 +1,14 @@
 ; Virtual R65C02 for minimOS-16!!!
-; v0.1a2
+; v0.1a3
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180713-0936
+; last modified 20180713-2004
 
-#include "../OS/usual.h"
-
+//#include "../OS/usual.h"
+#include "../OS/macros.h"
+#include "../OS/abi.h"
+.zero
+#include "../OS/zeropage.h"
+.text
 ; ** some useful macros **
 ; these make listings more succint
 
@@ -30,7 +34,7 @@ cdev		= y65+1		; I/O device *** minimOS specific ***
 ; *** startup code, minimOS specific stuff ***
 ; ** assume 8-bit register size, native mode **
 
-	LDA #cdev-uz+1	; zeropage space needed
+	LDA #<cdev-uz+1	; zeropage space needed
 #ifdef	SAFE
 	CMP z_used		; check available zeropage space
 	BCC go_emu		; more than enough space
@@ -291,7 +295,7 @@ _aa:
 ; all done
 	JMP next_op
 
-_ab:
+_a8:
 ; TAY
 ; +23
 	LDA a65		; copy accumulator...
@@ -526,14 +530,14 @@ _cb:
 _89:
 ; BIT imm
 ; +
-	PC_ADV		; get immediate operand
+	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	AND a65		; AND with memory
-	BEQ 89z		; will set Z
+	BEQ g89z	; will set Z
 		LDA #2		; or clear Z in previous status
 		TRB p65		; updated
 		JMP next_op
-89z:
+g89z:
 	LDA #2		; set Z in previous status
 	TSB p65		; updated
 ; all done
@@ -542,21 +546,21 @@ _89:
 _24:
 ; BIT zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
-	BEQ 24z		; will set Z
+	BEQ g24z	; will set Z
 		LDA #2		; or clear Z in previous status
 		TRB p65		; updated
-		JMP 24nv	; check highest bits
-24z:
+		JMP g24nv	; check highest bits
+g24z:
 	LDA #2		; set Z in previous status
 	TSB p65		; updated
-24nv:
+g24nv:
 	LDA #$C0	; pre-clear NV
 	TRB p65
 	TXA		; retrieve old result
@@ -568,7 +572,7 @@ _24:
 _34:
 ; BIT zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -577,14 +581,14 @@ _34:
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
-	BEQ 34z		; will set Z
+	BEQ g34z	; will set Z
 		LDA #2		; or clear Z in previous status
 		TRB p65		; updated
-		JMP 34nv	; check highest bits
-34z:
+		JMP g34nv	; check highest bits
+g34z:
 	LDA #2		; set Z in previous status
 	TSB p65		; updated
-34nv:
+g34nv:
 	LDA #$C0	; pre-clear NV
 	TRB p65
 	TXA		; retrieve old result
@@ -596,24 +600,24 @@ _34:
 _2c:
 ; BIT abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; get operand
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
-	BEQ 2cz		; will set Z
+	BEQ g2cz	; will set Z
 		LDA #2		; or clear Z in previous status
 		TRB p65		; updated
-		JMP 2cnv	; check highest bits
-2cz:
+		JMP g2cnv	; check highest bits
+g2cz:
 	LDA #2		; set Z in previous status
 	TSB p65		; updated
-2cnv:
+g2cnv:
 	LDA #$C0	; pre-clear NV
 	TRB p65
 	TXA		; retrieve old result
@@ -625,12 +629,12 @@ _2c:
 _3c:
 ; BIT abs, X
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC x65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -638,14 +642,14 @@ _3c:
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
-	BEQ 3cz		; will set Z
+	BEQ g3cz	; will set Z
 		LDA #2		; or clear Z in previous status
 		TRB p65		; updated
-		JMP 3cnv	; check highest bits
-3cz:
+		JMP g3cnv	; check highest bits
+g3cz:
 	LDA #2		; set Z in previous status
 	TSB p65		; updated
-3cnv:
+g3cnv:
 	LDA #$C0	; pre-clear NV
 	TRB p65
 	TXA		; retrieve old result
@@ -661,7 +665,7 @@ _3c:
 _90:
 ; BCC
 ; +
-	PC_ADV		; get relative address
+	_PC_ADV		; get relative address
 	LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 	JMP execute	; PC is ready!
@@ -672,10 +676,10 @@ _90:
 _4c:
 ; JMP abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	TAX		; store temporarily
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA pc65+1	; update PC
 	TXY		; pointer is ready!
@@ -684,10 +688,10 @@ _4c:
 _6c:
 ; JMP indirect
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store temporarily
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; indirect pointer ready
 	LDY #1		; indirect MSB offset
@@ -700,10 +704,10 @@ _6c:
 _7c:
 ; JMP indirect indexed
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store temporarily
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; indirect pointer ready
 	LDY x65		; indexing
@@ -720,10 +724,10 @@ _7c:
 _20:
 ; JSR abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store temporarily
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; destination ready
 ; now push the CURRENT address as we are at the last byte of the instruction
@@ -749,7 +753,7 @@ _20:
 _a2:
 ; LDX imm
 ; +
-	PC_ADV		; get immediate operand
+	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	STA x65		; update register
 ; standard NZ flag setting
@@ -764,7 +768,7 @@ _a2:
 _a6:
 ; LDX zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -781,7 +785,7 @@ _a6:
 _b6:
 ; LDX zp, Y
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC y65		; add index, forget carry as will page-wrap
@@ -800,10 +804,10 @@ _b6:
 _ae:
 ; LDX abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; load operand
@@ -820,12 +824,12 @@ _ae:
 _be:
 ; LDX abs, Y
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC y65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -843,7 +847,7 @@ _be:
 _a0:
 ; LDY imm
 ; +
-	PC_ADV		; get immediate operand
+	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	STA x65		; update register
 ; standard NZ flag setting
@@ -858,7 +862,7 @@ _a0:
 _a4:
 ; LDY zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -875,7 +879,7 @@ _a4:
 _b4:
 ; LDY zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -894,10 +898,10 @@ _b4:
 _ac:
 ; LDY abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; load operand
@@ -914,12 +918,12 @@ _ac:
 _bc:
 ; LDY abs, X
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC x65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -937,7 +941,7 @@ _bc:
 _a9:
 ; LDA imm
 ; +
-	PC_ADV		; get immediate operand
+	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	STA a65		; update register
 ; standard NZ flag setting
@@ -952,7 +956,7 @@ _a9:
 _a5:
 ; LDA zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -969,7 +973,7 @@ _a5:
 _b5:
 ; LDA zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -988,10 +992,10 @@ _b5:
 _ad:
 ; LDA abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; load operand
@@ -1008,12 +1012,12 @@ _ad:
 _bd:
 ; LDA abs, X
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC x65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1031,12 +1035,12 @@ _bd:
 _b9:
 ; LDA abs, Y
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC y65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1054,7 +1058,7 @@ _b9:
 _b2:
 ; LDA (zp)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1075,7 +1079,7 @@ _b2:
 _b1:
 ; LDA (zp), Y
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1099,7 +1103,7 @@ _b1:
 _a1:
 ; LDA (zp, X)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
 	ADC x65		; preindexing, forget C as will wrap
@@ -1124,7 +1128,7 @@ _a1:
 _86:
 ; STX zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA x65		; value to be stored
@@ -1134,7 +1138,7 @@ _86:
 _96:
 ; STX zp, Y
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC y65		; add index, forget carry as will page-wrap
@@ -1146,10 +1150,10 @@ _96:
 _8e:
 ; STX abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA x65		; value to be stored
@@ -1159,7 +1163,7 @@ _8e:
 _84:
 ; STY zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA y65		; value to be stored
@@ -1169,7 +1173,7 @@ _84:
 _94:
 ; STY zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -1181,10 +1185,10 @@ _94:
 _8c:
 ; STY abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA y65		; value to be stored
@@ -1194,7 +1198,7 @@ _8c:
 _64:
 ; STZ zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	STZ !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1203,7 +1207,7 @@ _64:
 _74:
 ; STZ zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -1214,10 +1218,10 @@ _74:
 _9c:
 ; STZ abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA #0
@@ -1227,12 +1231,12 @@ _9c:
 _9e:
 ; STZ abs, X
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC x65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1243,10 +1247,10 @@ _9e:
 _8d:
 ; STA abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA a65		; value to be stored
@@ -1256,12 +1260,12 @@ _8d:
 _9d:
 ; STA abs, X
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC x65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1272,12 +1276,12 @@ _9d:
 _99:
 ; STA abs, Y
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC y65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1288,7 +1292,7 @@ _99:
 _85:
 ; STA zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA a65		; value to be stored
@@ -1298,7 +1302,7 @@ _85:
 _95:
 ; STA zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -1310,7 +1314,7 @@ _95:
 _92:
 ; STA (zp)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1324,7 +1328,7 @@ _92:
 _91:
 ; STA (zp), Y
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1341,7 +1345,7 @@ _91:
 _81:
 ; STA (zp, X)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
 	ADC x65		; preindexing, forget C as will wrap
@@ -1361,7 +1365,7 @@ _81:
 _29:
 ; AND imm
 ; +
-	PC_ADV		; get immediate operand
+	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	AND a65		; do AND
 ; standard NZ flag setting
@@ -1376,7 +1380,7 @@ _29:
 _25:
 ; AND zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1393,7 +1397,7 @@ _25:
 _35:
 ; AND zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -1412,10 +1416,10 @@ _35:
 _2d:
 ; AND abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
@@ -1432,12 +1436,12 @@ _2d:
 _3d:
 ; AND abs, X
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC x65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1455,12 +1459,12 @@ _3d:
 _39:
 ; AND abs, Y
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC y65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1478,7 +1482,7 @@ _39:
 _32:
 ; AND (zp)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1499,7 +1503,7 @@ _32:
 _31:
 ; AND (zp), Y
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1523,7 +1527,7 @@ _31:
 _21:
 ; AND (zp, X)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
 	ADC x65		; preindexing, forget C as will wrap
@@ -1548,7 +1552,7 @@ _21:
 _09:
 ; ORA imm
 ; +
-	PC_ADV		; get immediate operand
+	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	ORA a65		; do OR
 ; standard NZ flag setting
@@ -1563,7 +1567,7 @@ _09:
 _05:
 ; ORA zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1580,7 +1584,7 @@ _05:
 _15:
 ; ORA zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -1599,10 +1603,10 @@ _15:
 _0d:
 ; ORA abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
@@ -1619,12 +1623,12 @@ _0d:
 _1d:
 ; ORA abs, X
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC x65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1642,12 +1646,12 @@ _1d:
 _19:
 ; ORA abs, Y
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC y65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1665,7 +1669,7 @@ _19:
 _12:
 ; ORA (zp)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1686,7 +1690,7 @@ _12:
 _11:
 ; ORA (zp), Y
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1710,7 +1714,7 @@ _11:
 _01:
 ; ORA (zp, X)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
 	ADC x65		; preindexing, forget C as will wrap
@@ -1735,7 +1739,7 @@ _01:
 _49:
 ; EOR imm
 ; +
-	PC_ADV		; get immediate operand
+	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	EOR a65		; do XOR
 ; standard NZ flag setting
@@ -1750,7 +1754,7 @@ _49:
 _45:
 ; EOR zp
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1767,7 +1771,7 @@ _45:
 _55:
 ; EOR zp, X
 ; +
-	PC_ADV		; get zeropage address
+	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
@@ -1786,10 +1790,10 @@ _55:
 _4d:
 ; EOR abs
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
@@ -1806,12 +1810,12 @@ _4d:
 _5d:
 ; EOR abs, X
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC x65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1829,12 +1833,12 @@ _5d:
 _59:
 ; EOR abs, Y
 ; +
-	PC_ADV		; get LSB
+	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
 	ADC y65
 	STA tmptr	; store in vector
-	PC_ADV		; get MSB
+	_PC_ADV		; get MSB
 	LDA (pc65), Y
 	ADC #0		; in case of page boundary crossing
 	STA tmptr+1	; vector is complete
@@ -1852,7 +1856,7 @@ _59:
 _52:
 ; EOR (zp)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1873,7 +1877,7 @@ _52:
 _51:
 ; EOR (zp), Y
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
@@ -1897,7 +1901,7 @@ _51:
 _41:
 ; EOR (zp, X)
 ; +
-	PC_ADV		; get zeropage pointer
+	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
 	ADC x65		; preindexing, forget C as will wrap
@@ -1918,7 +1922,7 @@ _41:
 	JMP next_op
 
 ; *** ***
-
+/*
 _:
 ;
 ; +
@@ -1930,7 +1934,7 @@ _:
 _:
 ;
 ; +
-
+*/
 
 
 
@@ -1938,7 +1942,7 @@ _:
 ; *** ***
 
 ; increment/decrement memory
-_:
+/*_:
 ; DEC
 ; +23
 	DEC a65		; decrement 
@@ -2049,7 +2053,7 @@ _:
 _:
 ;
 ; +
-
+*/
 
 ; *** LUT for Z & N status bits directly based on result as index ***
 nz_lut:
