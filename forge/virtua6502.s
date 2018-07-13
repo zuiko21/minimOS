@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a2
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180712-2039
+; last modified 20180713-0924
 
 #include "../OS/usual.h"
 
@@ -140,7 +140,7 @@ int_stat:
 ; ****************************************
 
 ; *** implicit instructions ***
-; flag settings
+; * flag settings *
 
 _18:
 ; CLC
@@ -190,7 +190,7 @@ _78:
 	TSB p65		; gets set
 	JMP next_op
 
-; register modify
+; * register inc/dec *
 
 _ca:
 ; DEX
@@ -276,7 +276,7 @@ _1a:
 ; all done
 	JMP next_op
 
-; register transfer
+; * register transfer *
 
 _aa:
 ; TAX
@@ -357,7 +357,7 @@ _98:
 	JMP next_op
 
 ; *** stack operations ***
-; push
+; * push *
 
 _48:
 ; PHA
@@ -407,7 +407,7 @@ _08:
 ; all done
 	JMP next_op
 
-; pull
+; * pull *
 
 _68:
 ; PLA
@@ -473,7 +473,7 @@ _28:
 ; all done
 	JMP next_op
 
-; return instructions
+; * return instructions *
 
 _40:
 ; RTI
@@ -656,18 +656,18 @@ _3c:
 
 ; *** jumps ***
 
-; conditional branches
+; * conditional branches *
 
 _90:
 ; BCC
 ; +
 	PC_ADV		; get relative address
 	LDA (pc65), Y
-; *** todo todo todo todo ***
+; *** to do *** to do *** to do *** to do ***
 	JMP execute	; PC is ready!
 
 
-; absolute jumps
+; * absolute jumps *
 
 _4c:
 ; JMP abs
@@ -715,7 +715,7 @@ _7c:
 	TAY		; pointer is ready!
 	JMP execute
 
-; subroutine call
+; * subroutine call *
 
 _20:
 ; JSR abs
@@ -744,7 +744,7 @@ _20:
 
 ; *** load / store ***
 
-; load
+; * load *
 
 _a2:
 ; LDX imm
@@ -1119,7 +1119,7 @@ _a1:
 ; all done
 	JMP next_op
 
-; store
+; * store *
 
 _86:
 ; STX zp
@@ -1356,7 +1356,7 @@ _81:
 
 ; *** bitwise ops ***
 
-; and
+; * logic and *
 
 _29:
 ; AND imm
@@ -1543,7 +1543,7 @@ _21:
 ; all done
 	JMP next_op
 
-; or
+; * logic or *
 
 _09:
 ; ORA imm
@@ -1682,6 +1682,7 @@ _12:
 	STA p65
 ; all done
 	JMP next_op
+
 _11:
 ; ORA (zp), Y
 ; +
@@ -1720,6 +1721,76 @@ _01:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	ORA a65		; do OR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+; * exclusive or *
+
+_52:
+; EOR (zp)
+; +
+	PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_51:
+; EOR (zp), Y
+; +
+	PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_41:
+; EOR (zp, X)
+; +
+	PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
