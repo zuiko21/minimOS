@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
-; v0.1a3
+; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180713-2004
+; last modified 20180714-1108
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -9,6 +9,7 @@
 .zero
 #include "../OS/zeropage.h"
 .text
+
 ; ** some useful macros **
 ; these make listings more succint
 
@@ -34,7 +35,7 @@ cdev		= y65+1		; I/O device *** minimOS specific ***
 ; *** startup code, minimOS specific stuff ***
 ; ** assume 8-bit register size, native mode **
 
-	LDA #<cdev-uz+1	; zeropage space needed
+	LDA #cdev-uz+1	; zeropage space needed
 #ifdef	SAFE
 	CMP z_used		; check available zeropage space
 	BCC go_emu		; more than enough space
@@ -1921,55 +1922,92 @@ _41:
 ; all done
 	JMP next_op
 
-; *** ***
-/*
-_:
-;
+; *** arithmetic ***
+
+; * inc/dec memory *
+
+_e6:
+; INC zp
 ; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
 
-_:
-;
+_f6:
+; INC zp, X
 ; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
 
-_:
-;
+_ee:
+; INC abs
 ; +
-*/
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_fe:
+; INC abs, X
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
 
 
 
-
-; *** ***
-
-; increment/decrement memory
 /*_:
-; DEC
-; +23
-	DEC a65		; decrement 
-; LUT-based flag setting, 11b 15t
-	LDX a65		; check result
-; operation result in X
-	LDA p65		; previous status...
-	AND #$82	; ...minus NZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA p65
-; all done
-	JMP next_op
-
-_:
-; INC
-; +23
-	INC a65		; increment 
-; LUT-based flag setting, 11b 15t
-	LDX a65		; check result
-; operation result in X
-	LDA p65		; previous status...
-	AND #$82	; ...minus NZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA p65
-; all done
-	JMP next_op
-
 _:
 ;
 ; +
