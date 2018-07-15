@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180714-1108
+; last modified 20180715-0940
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -15,6 +15,7 @@
 
 ; increment Y checking boundary crossing (5/5/9) ** must be in 8 bit mode!
 #define	_PC_ADV		INY: BNE *+4: INC pc65+1
+; a on-generic, faster approach would use INY, BEQ somewhere
 
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
