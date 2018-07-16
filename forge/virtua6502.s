@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180716-1935
+; last modified 20180716-2114
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -109,6 +109,7 @@ next_op:
 		BNE execute		; fetch next instruction if no boundary is crossed (3/2)
 
 ; usual overhead is 22 clock cycles, not including final jump
+; (*) PC-setting instructions save 5t
 ; boundary crossing, much simpler on 816?
 
 	INC pc65+1			; increment MSB otherwise (5)
@@ -698,7 +699,7 @@ _90:
 
 _4c:
 ; JMP abs
-; +
+; +30/30/38*
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	TAX		; store temporarily
@@ -710,7 +711,7 @@ _4c:
 
 _6c:
 ; JMP indirect
-; +
+; +46/46/54*
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store temporarily
@@ -726,7 +727,7 @@ _6c:
 
 _7c:
 ; JMP indirect indexed
-; +
+; +51/51/59*
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store temporarily
@@ -746,7 +747,7 @@ _7c:
 
 _20:
 ; JSR abs
-; +
+; +63/63/71*
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store temporarily
@@ -775,11 +776,11 @@ _20:
 
 _a2:
 ; LDX imm
-; +
+; +30/30/34
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	STA x65		; update register
-; standard NZ flag setting
+; standard NZ flag setting (+17)
 	TAX		; index for LUT
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
@@ -790,7 +791,7 @@ _a2:
 
 _a6:
 ; LDX zp
-; +
+; +36/36/40
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -807,7 +808,7 @@ _a6:
 
 _b6:
 ; LDX zp, Y
-; +
+; +41/41/45
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -826,7 +827,7 @@ _b6:
 
 _ae:
 ; LDX abs
-; +
+; +51/51/59
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -846,7 +847,7 @@ _ae:
 
 _be:
 ; LDX abs, Y
-; +
+; +58/58/66
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -869,7 +870,7 @@ _be:
 
 _a0:
 ; LDY imm
-; +
+; +30/30/34
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	STA x65		; update register
@@ -884,7 +885,7 @@ _a0:
 
 _a4:
 ; LDY zp
-; +
+; +36/36/40
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -901,7 +902,7 @@ _a4:
 
 _b4:
 ; LDY zp, X
-; +
+; +41/41/45
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -920,7 +921,7 @@ _b4:
 
 _ac:
 ; LDY abs
-; +
+; +51/51/59
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -940,7 +941,7 @@ _ac:
 
 _bc:
 ; LDY abs, X
-; +
+; +58/58/66
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -963,7 +964,7 @@ _bc:
 
 _a9:
 ; LDA imm
-; +
+; +30/30/34
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	STA a65		; update register
@@ -978,7 +979,7 @@ _a9:
 
 _a5:
 ; LDA zp
-; +
+; +36/36/40
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -995,7 +996,7 @@ _a5:
 
 _b5:
 ; LDA zp, X
-; +
+; +41/41/45
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -1014,7 +1015,7 @@ _b5:
 
 _ad:
 ; LDA abs
-; +
+; +51/51/59
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -1034,7 +1035,7 @@ _ad:
 
 _bd:
 ; LDA abs, X
-; +
+; +58/58/66
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1057,7 +1058,7 @@ _bd:
 
 _b9:
 ; LDA abs, Y
-; +
+; +58/58/66
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1080,7 +1081,7 @@ _b9:
 
 _b2:
 ; LDA (zp)
-; +
+; +51/51/55
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1101,7 +1102,7 @@ _b2:
 
 _b1:
 ; LDA (zp), Y
-; +
+; +58/58/62
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1125,7 +1126,7 @@ _b1:
 
 _a1:
 ; LDA (zp, X)
-; +
+; +56/56/60
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
@@ -1150,7 +1151,7 @@ _a1:
 
 _86:
 ; STX zp
-; +
+; +22/22/26
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1160,7 +1161,7 @@ _86:
 
 _96:
 ; STX zp, Y
-; +
+; +27/27/31
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -1172,7 +1173,7 @@ _96:
 
 _8e:
 ; STX abs
-; +
+; +37/37/45
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -1185,7 +1186,7 @@ _8e:
 
 _84:
 ; STY zp
-; +
+; +22/22/26
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1195,7 +1196,7 @@ _84:
 
 _94:
 ; STY zp, X
-; +
+; +27/27/31
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -1207,7 +1208,7 @@ _94:
 
 _8c:
 ; STY abs
-; +
+; +37/37/45
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -1220,7 +1221,7 @@ _8c:
 
 _64:
 ; STZ zp
-; +
+; +19/19/23
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1229,7 +1230,7 @@ _64:
 
 _74:
 ; STZ zp, X
-; +
+; +24/24/28
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -1240,7 +1241,7 @@ _74:
 
 _9c:
 ; STZ abs
-; +
+; +36/36/44
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -1253,7 +1254,7 @@ _9c:
 
 _9e:
 ; STZ abs, X
-; +
+; +43/43/51
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1269,7 +1270,7 @@ _9e:
 
 _8d:
 ; STA abs
-; +
+; +37/37/45
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -1282,7 +1283,7 @@ _8d:
 
 _9d:
 ; STA abs, X
-; +
+; +44/44/52
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1298,7 +1299,7 @@ _9d:
 
 _99:
 ; STA abs, Y
-; +
+; +44/44/52
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1314,7 +1315,7 @@ _99:
 
 _85:
 ; STA zp
-; +
+; +22/22/26
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1324,7 +1325,7 @@ _85:
 
 _95:
 ; STA zp, X
-; +
+; +27/27/31
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -1336,7 +1337,7 @@ _95:
 
 _92:
 ; STA (zp)
-; +
+; +37/37/41
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1350,7 +1351,7 @@ _92:
 
 _91:
 ; STA (zp), Y
-; +
+; +44/44/48
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1367,7 +1368,7 @@ _91:
 
 _81:
 ; STA (zp, X)
-; +
+; +42/42/46
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
@@ -1387,11 +1388,12 @@ _81:
 
 _29:
 ; AND imm
-; +
+; +33/33/37
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	AND a65		; do AND
-; standard NZ flag setting
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting (17)
 	TAX		; index for LUT
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
@@ -1402,12 +1404,13 @@ _29:
 
 _25:
 ; AND zp
-; +
+; +39/39/43
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1419,7 +1422,7 @@ _25:
 
 _35:
 ; AND zp, X
-; +
+; +44/44/48
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -1427,6 +1430,7 @@ _35:
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1438,7 +1442,7 @@ _35:
 
 _2d:
 ; AND abs
-; +
+; +54/54/62
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -1447,6 +1451,7 @@ _2d:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1458,7 +1463,7 @@ _2d:
 
 _3d:
 ; AND abs, X
-; +
+; +61/61/69
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1470,6 +1475,7 @@ _3d:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1481,7 +1487,7 @@ _3d:
 
 _39:
 ; AND abs, Y
-; +
+; +61/61/69
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1493,6 +1499,7 @@ _39:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1504,7 +1511,7 @@ _39:
 
 _32:
 ; AND (zp)
-; +
+; +54/54/58
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1514,6 +1521,7 @@ _32:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1525,7 +1533,7 @@ _32:
 
 _31:
 ; AND (zp), Y
-; +
+; +61/61/65
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1538,6 +1546,7 @@ _31:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1549,7 +1558,7 @@ _31:
 
 _21:
 ; AND (zp, X)
-; +
+; +59/59/63
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
@@ -1561,6 +1570,7 @@ _21:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1574,10 +1584,11 @@ _21:
 
 _09:
 ; ORA imm
-; +
+; +33/33/37
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1589,12 +1600,13 @@ _09:
 
 _05:
 ; ORA zp
-; +
+; +39/39/43
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1606,7 +1618,7 @@ _05:
 
 _15:
 ; ORA zp, X
-; +
+; +44/44/48
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -1614,6 +1626,7 @@ _15:
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1625,7 +1638,7 @@ _15:
 
 _0d:
 ; ORA abs
-; +
+; +54/54/62
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -1634,6 +1647,7 @@ _0d:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1645,7 +1659,7 @@ _0d:
 
 _1d:
 ; ORA abs, X
-; +
+; +61/61/69
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1657,6 +1671,7 @@ _1d:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1668,7 +1683,7 @@ _1d:
 
 _19:
 ; ORA abs, Y
-; +
+; +61/61/69
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1680,6 +1695,7 @@ _19:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1691,7 +1707,7 @@ _19:
 
 _12:
 ; ORA (zp)
-; +
+; +54/54/58
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1701,6 +1717,7 @@ _12:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1712,7 +1729,7 @@ _12:
 
 _11:
 ; ORA (zp), Y
-; +
+; +61/61/65
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1725,6 +1742,7 @@ _11:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1736,7 +1754,7 @@ _11:
 
 _01:
 ; ORA (zp, X)
-; +
+; +59/59/63
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
@@ -1748,6 +1766,7 @@ _01:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1761,10 +1780,11 @@ _01:
 
 _49:
 ; EOR imm
-; +
+; +33/33/37
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1776,12 +1796,13 @@ _49:
 
 _45:
 ; EOR zp
-; +
+; +39/39/43
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1793,7 +1814,7 @@ _45:
 
 _55:
 ; EOR zp, X
-; +
+; +44/44/48
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -1801,6 +1822,7 @@ _55:
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1812,7 +1834,7 @@ _55:
 
 _4d:
 ; EOR abs
-; +
+; +54/54/62
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -1821,6 +1843,7 @@ _4d:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1832,7 +1855,7 @@ _4d:
 
 _5d:
 ; EOR abs, X
-; +
+; +61/61/69
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1844,6 +1867,7 @@ _5d:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1855,7 +1879,7 @@ _5d:
 
 _59:
 ; EOR abs, Y
-; +
+; +61/61/69
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -1867,6 +1891,7 @@ _59:
 	STA tmptr+1	; vector is complete
 	LDA (tmptr)	; read operand
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1878,7 +1903,7 @@ _59:
 
 _52:
 ; EOR (zp)
-; +
+; +54/54/58
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1888,6 +1913,7 @@ _52:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1899,7 +1925,7 @@ _52:
 
 _51:
 ; EOR (zp), Y
-; +
+; +61/61/65
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	TAX		; temporary index...
@@ -1912,6 +1938,7 @@ _51:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1923,7 +1950,7 @@ _51:
 
 _41:
 ; EOR (zp, X)
-; +
+; +59/59/63
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
 	CLC
@@ -1935,6 +1962,7 @@ _41:
 	STA tmptr+1
 	LDA (tmptr)	; read operand
 	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -1950,7 +1978,7 @@ _41:
 
 _e6:
 ; INC zp
-; +
+; +************************
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
