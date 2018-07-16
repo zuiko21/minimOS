@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180716-1850
+; last modified 20180716-1916
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -58,7 +58,7 @@ open_emu:
 ; should try to allocate memory here
 	STZ ma_rs		; will ask for...
 	LDX #1
-	STZ ma_rs+2		; ...one full bank
+	STX ma_rs+2		; ...one full bank
 	LDX #$FF		; bank aligned!
 	STX ma_align
 	_KERNEL(MALLOC)
@@ -66,9 +66,11 @@ open_emu:
 	LDX ma_pt+2		; where is the allocated bank?
 	PHX
 	PLB			; switch to that bank!
+; *** *** MUST load virtual ROM from somewhere *** ***
 
 ; *** start the emulation! ***
 reset65:
+	.as: .xs: SEP #$30	; make sure all in 8-bit mode
 	LDX #2			; RST @ $FFFC
 ; standard interrupt handling, expects vector offset in X
 x_vect:
@@ -163,6 +165,8 @@ v6exit:
 	LDY cdev		; in case is a window...
 	_KERNEL(FREE_W)		; ...allow further examination
 	_FINISH			; end without errors?
+
+	.as:
 
 ; ****************************************
 ; *** *** valid opcode definitions *** ***
