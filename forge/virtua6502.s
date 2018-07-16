@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180715-0940
+; last modified 20180716-1850
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -41,6 +41,7 @@ cdev		= y65+1		; I/O device *** minimOS specific ***
 	CMP z_used		; check available zeropage space
 	BCC go_emu		; more than enough space
 	BEQ go_emu		; just enough!
+nomem:
 		_ABORT(FULL)	; not enough memory otherwise (rare) new interface
 go_emu:
 #endif
@@ -55,7 +56,16 @@ go_emu:
 open_emu:
 	STY cdev		; store device!!!
 ; should try to allocate memory here
-; will currently assume whole bank 1
+	STZ ma_rs		; will ask for...
+	LDX #1
+	STZ ma_rs+2		; ...one full bank
+	LDX #$FF		; bank aligned!
+	STX ma_align
+	_KERNEL(MALLOC)
+		BCS nomem		; could not get a full bank
+	LDX ma_pt+2		; where is the allocated bank?
+	PHX
+	PLB			; switch to that bank!
 
 ; *** start the emulation! ***
 reset65:
@@ -140,6 +150,19 @@ int_stat:
 	DEY			; post-decrement
 	STY s65			; update SP
 	BRA x_vect		; execute interrupt code
+
+; *** proper exit point ***
+v6exit:
+; should I print anything?
+	PHB			; current bank...
+	PLX			; ...is MSB of pointer
+	STX ma_pt+2
+	.al: REP #$20		; 16-bit memory
+	STZ ma_pt		; this completes the pointer
+	_KERNEL(FREE)		; release the virtual bank!
+	LDY cdev		; in case is a window...
+	_KERNEL(FREE_W)		; ...allow further examination
+	_FINISH			; end without errors?
 
 ; ****************************************
 ; *** *** valid opcode definitions *** ***
@@ -520,7 +543,7 @@ _db:
 ; STP
 ; +
 ; should print some results or message...
-	_FINISH		; stop emulation, this far
+	JMP v6exit	; stop emulation, this far
 
 _cb:
 ; WAI
