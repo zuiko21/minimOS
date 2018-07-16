@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180716-2114
+; last modified 20180716-2148
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -1978,12 +1978,12 @@ _41:
 
 _e6:
 ; INC zp
-; +************************
+; +
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
-	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
-	EOR a65		; do XOR
+	INC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	LDA !0, X	; retrieve value
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -2001,8 +2001,8 @@ _f6:
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
 	TAX		; temporary index...
-	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
-	EOR a65		; do XOR
+	INC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	LDA !0, X	; retrieve value
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
@@ -2015,14 +2015,24 @@ _f6:
 _ee:
 ; INC abs
 ; +
-	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	STA tmptr	; store in vector
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	STA tmptr+1	; vector is complete
-	LDA (tmptr)	; read operand
-	EOR a65		; do XOR
+; original RMW code (minus macros) was 13b 28t
+;	PC_ADV		; get LSB
+;	LDA (pc65), Y
+;	STA tmptr	; store in vector
+;	PC_ADV		; get MSB
+;	LDA (pc65), Y
+;	STA tmptr+1	; vector is complete
+;	LDA (tmptr)	; read operand
+;	INC
+;	STA (tmptr)	; update
+; alternate code (minus macros) is 10b 23t
+	_PC_ADV		; point to address
+	.al: xl: REP #$30	; all long!
+	LDA (pc65), Y	; get full address
+	TAX		; address as index
+	INC !0, X	; absolute with full index! reads extra byte
+	.al: .xs: SEP #$30	; standard sizes
+	_PC_ADV		; skip MSB
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
