@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180716-1916
+; last modified 20180716-1922
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -94,7 +94,7 @@ lo_jump:
 			JMP (opt_l, X)	; otherwise, emulation routines for opcodes with bit7 low
 
 ; *** NOP (4) arrives here, saving 3 bytes and 3 cycles ***
-; must add illegal NMOS opcodes as NOPs
+; must add illegal NMOS opcodes (not yet used in NMOS) as NOPs
 
 _ea:
 _02:_22:_42:_62:_82:_c2:_e2:
@@ -282,7 +282,7 @@ _c8:
 	JMP next_op
 
 _3a:
-; DEC
+; DEC [DEC A]
 ; +23
 	DEC a65		; decrement A
 ; LUT-based flag setting, 11b 15t
@@ -296,7 +296,7 @@ _3a:
 	JMP next_op
 
 _1a:
-; INC
+; INC [INC A]
 ; +23
 	INC a65		; increment A
 ; LUT-based flag setting, 11b 15t
@@ -313,10 +313,9 @@ _1a:
 
 _aa:
 ; TAX
-; +23
-	LDA a65		; copy accumulator...
-	STA x65		; ...to index
-	TAX		; operation result in X
+; +21
+	LDX a65		; copy accumulator...
+	STX x65		; ...to index (value in X)
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -326,10 +325,9 @@ _aa:
 
 _a8:
 ; TAY
-; +23
-	LDA a65		; copy accumulator...
-	STA y65		; ...to index
-	TAX		; operation result in X
+; +21
+	LDX a65		; copy accumulator...
+	STX y65		; ...to index
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -339,10 +337,9 @@ _a8:
 
 _ba:
 ; TSX
-; +23
-	LDA s65		; copy stack pointer...
-	STA x65		; ...to index
-	TAX		; operation result in X
+; +21
+	LDX s65		; copy stack pointer...
+	STX x65		; ...to index
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -352,10 +349,9 @@ _ba:
 
 _8a:
 ; TXA
-; +23
-	LDA x65		; copy index...
-	STA a65		; ...to accumulator
-	TAX		; operation result in X
+; +21
+	LDX x65		; copy index...
+	STX a65		; ...to accumulator
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -365,10 +361,9 @@ _8a:
 
 _9a:
 ; TXS
-; +23
-	LDA x65		; copy index...
-	STA s65		; ...to stack pointer
-	TAX		; operation result in X
+; +21
+	LDX x65		; copy index...
+	STX s65		; ...to stack pointer
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -378,10 +373,9 @@ _9a:
 
 _98:
 ; TYA
-; +23
-	LDA y65		; copy index...
-	STA a65		; ...to accumulator
-	TAX		; operation result in X
+; +21
+	LDX y65		; copy index...
+	STX a65		; ...to accumulator
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
