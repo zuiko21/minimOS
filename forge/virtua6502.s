@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180716-2148
+; last modified 20180716-2221
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -2025,13 +2025,14 @@ _ee:
 ;	LDA (tmptr)	; read operand
 ;	INC
 ;	STA (tmptr)	; update
-; alternate code (minus macros) is 10b 23t
+; alternate code (minus macros) is 12b 25t
 	_PC_ADV		; point to address
 	.al: xl: REP #$30	; all long!
 	LDA (pc65), Y	; get full address
 	TAX		; address as index
-	INC !0, X	; absolute with full index! reads extra byte
-	.al: .xs: SEP #$30	; standard sizes
+	.as: SEP #$10	; should not touch extra byte
+	INC !0, X	; absolute with full index!
+	.xs: SEP #$20	; standard size
 	_PC_ADV		; skip MSB
 ; standard NZ flag setting
 	TAX		; index for LUT
@@ -2045,17 +2046,31 @@ _ee:
 _fe:
 ; INC abs, X
 ; +
+; original -m is 18b 35t
+;	PC_ADV		; get LSB
+;	LDA (pc65), Y
+;	CLC		; do indexing
+;	ADC x65
+;	STA tmptr	; store in vector
+;	PC_ADV		; get MSB
+;	LDA (pc65), Y
+;	ADC #0		; in case of page boundary crossing
+;	STA tmptr+1	; vector is complete
+;	LDA (tmptr)	; read operand
+;	INC
+;	STA (tmptr)	; update
+; alternate -m is 17b 33t
 	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	CLC		; do indexing
-	ADC x65
-	STA tmptr	; store in vector
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	ADC #0		; in case of page boundary crossing
-	STA tmptr+1	; vector is complete
-	LDA (tmptr)	; read operand
-	EOR a65		; do XOR
+	LDA #0
+	XBA		; make sure B is clear
+	LDA x65		; get index
+	.al: .xl: REP #$31	; long regs... & CLC
+	ADC (pc65), Y	; add full base address
+	TAX		; as index
+	.as: SEP #$10	; should not touch extra byte
+	INC !0, X	; absolute with full index!
+	.xs: SEP #$20	; standard size
+	_PC_ADV		; skip MSB
 ; standard NZ flag setting
 	TAX		; index for LUT
 	LDA p65		; previous status...
