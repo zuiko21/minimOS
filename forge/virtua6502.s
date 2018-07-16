@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180716-1922
+; last modified 20180716-1935
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -391,10 +391,10 @@ _48:
 ; +18
 	LDA a65		; get accumulator
 ; standard push of value in A, does not affect flags
+; new code, same speed but 1 byte less
 	LDX s65		; and current SP
 	STA $0100, X	; push into stack
-	DEX		; post-decrement
-	STX s65		; update SP
+	DEC s65		; post-decrement
 ; all done
 	JMP next_op
 
@@ -403,10 +403,10 @@ _da:
 ; +18
 	LDA x65		; get index
 ; standard push of value in A, does not affect flags
+; new code, same speed but 1 byte less
 	LDX s65		; and current SP
 	STA $0100, X	; push into stack
-	DEX		; post-decrement
-	STX s65		; update SP
+	DEC s65		; post-decrement
 ; all done
 	JMP next_op
 
@@ -415,10 +415,10 @@ _5a:
 ; +18
 	LDA y65		; get index
 ; standard push of value in A, does not affect flags
+; new code, same speed but 1 byte less
 	LDX s65		; and current SP
 	STA $0100, X	; push into stack
-	DEX		; post-decrement
-	STX s65		; update SP
+	DEC s65		; post-decrement
 ; all done
 	JMP next_op
 
@@ -427,10 +427,10 @@ _08:
 ; +18
 	LDA p65		; get status
 ; standard push of value in A, does not affect flags
+; new code, same speed but 1 byte less
 	LDX s65		; and current SP
 	STA $0100, X	; push into stack
-	DEX		; post-decrement
-	STX s65		; update SP
+	DEC s65		; post-decrement
 ; all done
 	JMP next_op
 
@@ -539,20 +539,20 @@ _60:
 
 _db:
 ; STP
-; +
+; +...
 ; should print some results or message...
 	JMP v6exit	; stop emulation, this far
 
 _cb:
 ; WAI
-; +
+; +...
 	BRA _db		; without proper interrupt support, just like STP
 
 ; *** bit testing ***
 
 _89:
 ; BIT imm
-; +
+; +25/25/30
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	AND a65		; AND with memory
@@ -568,21 +568,21 @@ g89z:
 
 _24:
 ; BIT zp
-; +
+; +50/50/56
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
-; operand in A, common BIT routine
+; operand in A, common BIT routine (34/34/36)
 	AND a65		; AND with memory
 	TAX		; keep this value
-	BEQ g24z	; will set Z
-		LDA #2		; or clear Z in previous status
-		TRB p65		; updated
+	BNE g24z	; will clear Z
+		LDA #2		; or set Z in previous status
+		TSB p65		; updated
 		JMP g24nv	; check highest bits
 g24z:
-	LDA #2		; set Z in previous status
-	TSB p65		; updated
+	LDA #2		; clear Z in previous status
+	TRB p65		; updated
 g24nv:
 	LDA #$C0	; pre-clear NV
 	TRB p65
@@ -594,7 +594,7 @@ g24nv:
 
 _34:
 ; BIT zp, X
-; +
+; +55/55/61
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
@@ -604,13 +604,13 @@ _34:
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
-	BEQ g34z	; will set Z
-		LDA #2		; or clear Z in previous status
-		TRB p65		; updated
+	BNE g34z	; will clear Z
+		LDA #2		; or set Z in previous status
+		TSB p65		; updated
 		JMP g34nv	; check highest bits
 g34z:
-	LDA #2		; set Z in previous status
-	TSB p65		; updated
+	LDA #2		; clear Z in previous status
+	TRB p65		; updated
 g34nv:
 	LDA #$C0	; pre-clear NV
 	TRB p65
@@ -622,7 +622,7 @@ g34nv:
 
 _2c:
 ; BIT abs
-; +
+; +65/65/75
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -633,13 +633,13 @@ _2c:
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
-	BEQ g2cz	; will set Z
-		LDA #2		; or clear Z in previous status
-		TRB p65		; updated
+	BNE g2cz		; will clear Z
+		LDA #2		; or set Z in previous status
+		TSB p65		; updated
 		JMP g2cnv	; check highest bits
 g2cz:
-	LDA #2		; set Z in previous status
-	TSB p65		; updated
+	LDA #2		; clear Z in previous status
+	TRB p65		; updated
 g2cnv:
 	LDA #$C0	; pre-clear NV
 	TRB p65
@@ -651,7 +651,7 @@ g2cnv:
 
 _3c:
 ; BIT abs, X
-; +
+; +72/72/82
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
@@ -665,13 +665,13 @@ _3c:
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
-	BEQ g3cz	; will set Z
-		LDA #2		; or clear Z in previous status
-		TRB p65		; updated
+	BNE g3cz	; will reset Z
+		LDA #2		; or set Z in previous status
+		TSB p65		; updated
 		JMP g3cnv	; check highest bits
 g3cz:
 	LDA #2		; set Z in previous status
-	TSB p65		; updated
+	TRB p65		; updated
 g3cnv:
 	LDA #$C0	; pre-clear NV
 	TRB p65
