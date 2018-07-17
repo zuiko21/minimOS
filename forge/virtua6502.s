@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180717-1634
+; last modified 20180717-1641
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -690,13 +690,124 @@ g3cnv:
 ; * conditional branches *
 
 _90:
-; BCC
-; +
+; BCC rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #1		; will check C flag
+	BIT p65
+	BNE g90		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g90:
+	JMP next_op
+
+_b0:
+; BCS rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #1		; will check C flag
+	BIT p65
+	BEQ gb0		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+gb0:
+	JMP next_op
+
+_30:
+; BMI rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #128	; will check N flag
+	BIT p65
+	BEQ g30		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g30:
+	JMP next_op
+
+_10:
+; BPL rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #128	; will check N flag
+	BIT p65
+	BNE g10		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g10:
+	JMP next_op
+
+_f0:
+; BEQ rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #2		; will check Z flag
+	BIT p65
+	BEQ gf0		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+gf0:
+	JMP next_op
+
+_d0:
+; BNE rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #2		; will check Z flag
+	BIT p65
+	BNE gd0		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+gd0:
+	JMP next_op
+
+_50:
+; BVC rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #64		; will check V flag
+	BIT p65
+	BNE g50		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g50:
+	JMP next_op
+
+_70:
+; BVS rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #64		; will check V flag
+	BIT p65
+	BNE g70		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g70:
+	JMP next_op
+
+_80:
+; BRA rel
+; +// *
 	_PC_ADV		; get relative address
 	LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 	JMP execute	; PC is ready!
-
 
 ; * absolute jumps *
 
