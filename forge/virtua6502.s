@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180717-1520
+; last modified 20180717-1526
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -2055,93 +2055,90 @@ _fe:
 	STA p65
 ; all done
 	JMP next_op
+_c6:
+; DEC zp
+; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	DEC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	LDA !0, X	; retrieve value
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_d6:
+; DEC zp, X
+; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	DEC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	LDA !0, X	; retrieve value
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_ce:
+; DEC abs
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	DEC
+	STA (tmptr)	; update
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
+
+_de:
+; DEC abs, X
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	DEC
+	STA (tmptr)	; update
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA p65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA p65
+; all done
+	JMP next_op
 
 
 
 /*_:
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-; 
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
-
-_:
-;
-; +
 */
 
 ; *** LUT for Z & N status bits directly based on result as index ***
@@ -2442,4 +2439,3 @@ opt_h:
 	.word	_fd
 	.word	_fe
 	.word	_ff
-
