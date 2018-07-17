@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180716-2241
+; last modified 20180717-1520
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -46,7 +46,7 @@ nomem:
 go_emu:
 #endif
 	STA z_used		; set required ZP space as required by minimOS
-	.al: REP #%00100000	; 16 bit memory
+	.al: REP #$20		; 16 bit memory
 	STZ w_rect		; no screen size required, 16 bit op?
 	LDA #title		; address window title
 	STA str_pt		; set parameter
@@ -160,14 +160,13 @@ v6exit:
 	PHB			; current bank...
 	PLX			; ...is MSB of pointer
 	STX ma_pt+2
-	.al: REP #$20		; 16-bit memory
+	STZ ma_pt+1
 	STZ ma_pt		; this completes the pointer
 	_KERNEL(FREE)		; release the virtual bank!
 	LDY cdev		; in case is a window...
 	_KERNEL(FREE_W)		; ...allow further examination
 	_FINISH			; end without errors?
 
-	.as:
 
 ; ****************************************
 ; *** *** valid opcode definitions *** ***
