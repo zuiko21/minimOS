@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180717-1526
+; last modified 20180717-1554
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -1973,6 +1973,248 @@ _41:
 
 ; *** arithmetic ***
 
+; * add with carry *
+
+_69:
+; ADC imm
+; +46/46/50
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+; copy virtual status (+36)
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_65:
+; ADC zp
+; +52/52/56
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+; copy virtual status
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_75:
+; ADC zp, X
+; +57/57/61
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+; copy virtual status
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_6d:
+; ADC abs
+; +67/67/75
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_7d:
+; ADC abs, X
+; +74/74/82
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_79:
+; ADC abs, Y
+; +74/74/82
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_72:
+; ADC (zp)
+; +67/67/71
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_71:
+; ADC (zp), Y
+; +74/74/78
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_61:
+; ADC (zp, X)
+; +72/72/76
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX p65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA p65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+
 ; * inc/dec memory *
 
 _e6:
@@ -2135,7 +2377,6 @@ _de:
 	STA p65
 ; all done
 	JMP next_op
-
 
 
 /*_:
