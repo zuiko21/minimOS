@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180718-1922
+; last modified 20180718-2048
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -515,33 +515,25 @@ _28:
 
 _40:
 ; RTI
-; +34
+; +31*
 	LDX s65		; get current SP, extra zero
 	INX		; pre-increment
 	LDA $0100, X	; pull from stack
 	STA p65		; pulled value goes to PSR
-;-------------------------
 	INX		; pre-increment
-	LDY $0100, X	; pull from stack PC-LSB eeeeeeek
-	INX		; pre-increment
-	LDA $0100, X	; pull from stack
-	STA pc65+1	; pulled value goes to PC-MSB
-	STX s65		; update SP
+	LDY $0100, X	; pull from stack to PC
+	INX		; skip MSB
+	STX s65		; update SP, extra byte
 ; all done
 	JMP execute	; PC already set!
 
 _60:
 ; RTS
-; +29
-	LDX s65		; get current SP
+; +23*
+	LDX s65		; get current SP, extra zero
 	INX		; pre-increment
-	.al: REP #$20	; worth going 16-bit
-	LDA $0100, X	; pull full return address from stack
-	INC		; correct it!
-	.as: SEP #$20	; back to 8-bit
-	TAY		; eeeeeeeeeeek
-	XBA		; LSB done, now for MSB
-	STA pc65+1	; pulled value goes to PC
+	LDY $0100, X	; pull full return address from stack
+	INY		; correct it!
 	INX		; skip both bytes
 	STX s65		; update SP
 ; all done
@@ -564,9 +556,9 @@ _cb:
 
 _89:
 ; BIT imm
-; +25/25/30
-	_PC_ADV		; get immediate operand
-	LDA (pc65), Y
+; +22/22.5/23
+	_PC_ADV		; get immediate operand, just INY
+	LDA !0, Y
 	AND a65		; AND with memory
 	BEQ g89z	; will set Z
 		LDA #2		; or clear Z in previous status
@@ -580,9 +572,9 @@ g89z:
 
 _24:
 ; BIT zp
-; +50/50/56
+; +48/48/50
 	_PC_ADV		; get zeropage address
-	LDA (pc65), Y
+	LDA !0, Y	; cannot get extra byte!
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 ; operand in A, common BIT routine (34/34/36)
@@ -606,9 +598,9 @@ g24nv:
 
 _34:
 ; BIT zp, X
-; +55/55/61
+; +53/53/55
 	_PC_ADV		; get zeropage address
-	LDA (pc65), Y
+	LDA !0, Y	; cannot get extra byte!
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
 	TAX		; temporary index...
@@ -634,14 +626,11 @@ g34nv:
 
 _2c:
 ; BIT abs
-; +65/65/75
-	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	STA tmptr	; store in vector
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	STA tmptr+1	; vector is complete
-	LDA (tmptr)	; get operand
+; +49/49/51
+	_PC_ADV		; point to operand
+	LDX !0, Y	; just full address!
+	INY		; skip MSB
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
@@ -663,17 +652,16 @@ g2cnv:
 
 _3c:
 ; BIT abs, X
-; +72/72/82
+; +64/64/66
 	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	CLC		; do indexing
-	ADC x65
-	STA tmptr	; store in vector
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	ADC #0		; in case of page boundary crossing
-	STA tmptr+1	; vector is complete
-	LDA (tmptr)	; get operand
+	.al: REP #$21	; 16-bit... and clear C
+	LDA !0, Y	; just full address!
+	INY		; skip MSB
+	ADC x65		; do indexing, picks extra
+	TAX		; final address, B remains touched
+	LDA #0		; use extra byte to clear B
+	.as: SEP #$20
+	LDA !0, X	; get final data
 ; operand in A, common BIT routine
 	AND a65		; AND with memory
 	TAX		; keep this value
@@ -705,7 +693,6 @@ _90:
 	LDA #1		; will check C flag
 	BIT p65
 	BNE g90		; will not branch
-		LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 		JMP execute	; PC is ready!
 g90:
@@ -719,7 +706,6 @@ _b0:
 	LDA #1		; will check C flag
 	BIT p65
 	BEQ gb0		; will not branch
-		LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 		JMP execute	; PC is ready!
 gb0:
@@ -733,7 +719,6 @@ _30:
 	LDA #128	; will check N flag
 	BIT p65
 	BEQ g30		; will not branch
-		LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 		JMP execute	; PC is ready!
 g30:
@@ -747,7 +732,6 @@ _10:
 	LDA #128	; will check N flag
 	BIT p65
 	BNE g10		; will not branch
-		LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 		JMP execute	; PC is ready!
 g10:
@@ -761,7 +745,6 @@ _f0:
 	LDA #2		; will check Z flag
 	BIT p65
 	BEQ gf0		; will not branch
-		LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 		JMP execute	; PC is ready!
 gf0:
@@ -775,7 +758,6 @@ _d0:
 	LDA #2		; will check Z flag
 	BIT p65
 	BNE gd0		; will not branch
-		LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 		JMP execute	; PC is ready!
 gd0:
@@ -789,7 +771,6 @@ _50:
 	LDA #64		; will check V flag
 	BIT p65
 	BNE g50		; will not branch
-		LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 		JMP execute	; PC is ready!
 g50:
@@ -803,7 +784,6 @@ _70:
 	LDA #64		; will check V flag
 	BIT p65
 	BNE g70		; will not branch
-		LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 		JMP execute	; PC is ready!
 g70:
@@ -813,7 +793,6 @@ _80:
 ; BRA rel
 ; +// *
 	_PC_ADV		; get relative address
-	LDA (pc65), Y
 ; *** to do *** to do *** to do *** to do ***
 	JMP execute	; PC is ready!
 
@@ -821,75 +800,54 @@ _80:
 
 _4c:
 ; JMP abs
-; +30/30/38*
-	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	TAX		; store temporarily
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	STA pc65+1	; update PC
+; +13*
+	_PC_ADV		; point to operand
+	LDX !0, Y	; full address!
 	TXY		; pointer is ready!
 	JMP execute
 
 _6c:
 ; JMP indirect
-; +46/46/54*
-	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	STA tmptr	; store temporarily
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	STA tmptr+1	; indirect pointer ready
-	LDY #1		; indirect MSB offset
-	LDA (tmptr), Y	; final MSB
-	STA pc65+1
-	LDA (tmptr)	; final LSB
-	TAY		; pointer is ready!
+; +17*
+	_PC_ADV		; point to pointer
+	LDX !0, Y	; full address!
+	LDY !0, X	; and destination ready!
 	JMP execute
 
 _7c:
 ; JMP indirect indexed
-; +51/51/59*
-	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	STA tmptr	; store temporarily
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	STA tmptr+1	; indirect pointer ready
-	LDY x65		; indexing
-	INY		; but get MSB first
-	LDA (tmptr), Y	; final MSB
- 	STA pc65+1
-	DEY		; go for LSB
-	LDA (tmptr), Y	; final LSB
-	TAY		; pointer is ready!
+; +32*
+	_PC_ADV		; point to pointer
+	.al: REP #$21	; 16-bit... and CLC
+	LDA !0, Y	; full table address!
+	ADC x65		; indexing, extra byte
+	TAX		; final address
+	LDA #0		; must clear B
+	.as: SEP #$20
+	LDY !0, X	; and destination ready!
 	JMP execute
 
 ; * subroutine call *
 
 _20:
 ; JSR abs
-; +63/63/71*
-	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	STA tmptr	; store temporarily
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	STA tmptr+1	; destination ready
-; now push the CURRENT address as we are at the last byte of the instruction
-	TYX			; eeeeeeeeek
-	LDA pc65+1		; get PC MSB...
-	LDY s65			; and current SP
-	STA $0100, Y		; store in emulated stack
-	DEY			; post-decrement
-	TXA			; same for LSB eeeeeeeeek!
-	STA $0100, Y		; store in emulated stack
-	DEY			; post-decrement
-	STY s65			; update SP
-; jump to previously computed address
-	LDA tmptr+1	; retrieve MSB
-	STA pc65+1
-	LDY tmptr	; pointer is ready!
+; +44*
+	_PC_ADV			; point to addeess
+; first compute return address
+	.al: REP #$20
+	TYA			; copy PC...
+	INC			; at MSB
+; push the CURRENT address as we are at the last byte of the instruction
+	LDX s65			; current SP with extra
+	DEX			; LSB location
+	STA !$0100, X		; return address into virtual stack
+	DEX			; post-decrement
+	STX s65			; update SP
+	LDA #0			; clear B
+	.as: SEP #20
+; jump to destination
+	LDX !0, Y		; target address
+	TXY			; ready!
 	JMP execute
 
 ; *** load / store ***
@@ -898,11 +856,11 @@ _20:
 
 _a2:
 ; LDX imm
-; +30/30/34
+; +28
 	_PC_ADV		; get immediate operand
-	LDA (pc65), Y
+	LDA !0, Y
 	STA x65		; update register
-; standard NZ flag setting (+17)
+; standard NZ flag setting (+18)
 	TAX		; index for LUT
 	LDA p65		; previous status...
 	AND #$82	; ...minus NZ...
@@ -913,10 +871,10 @@ _a2:
 
 _a6:
 ; LDX zp
-; +36/36/40
+; +35
 	_PC_ADV		; get zeropage address
-	LDA (pc65), Y
-	TAX		; temporary index...
+	LDA !0, Y	; temporary index...
+	TAX		; ...cannot pick extra...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA x65		; update register
 ; standard NZ flag setting
@@ -930,12 +888,12 @@ _a6:
 
 _b6:
 ; LDX zp, Y
-; +41/41/45
+; +40
 	_PC_ADV		; get zeropage address
-	LDA (pc65), Y
+	LDA !0, Y	; temporary index...
 	CLC
 	ADC y65		; add index, forget carry as will page-wrap
-	TAX		; temporary index...
+	TAX		; ...cannot pick extra...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA x65		; update register
 ; standard NZ flag setting
@@ -949,14 +907,11 @@ _b6:
 
 _ae:
 ; LDX abs
-; +51/51/59
-	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	STA tmptr	; store in vector
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	STA tmptr+1	; vector is complete
-	LDA (tmptr)	; load operand
+; +36
+	_PC_ADV		; get address
+	LDX !0, Y
+	INY		; skip MSB
+	LDA !0, X	; load operand
 	STA x65		; update register
 ; standard NZ flag setting
 	TAX		; index for LUT
@@ -969,17 +924,16 @@ _ae:
 
 _be:
 ; LDX abs, Y
-; +58/58/66
-	_PC_ADV		; get LSB
-	LDA (pc65), Y
-	CLC		; do indexing
-	ADC y65
-	STA tmptr	; store in vector
-	_PC_ADV		; get MSB
-	LDA (pc65), Y
-	ADC #0		; in case of page boundary crossing
-	STA tmptr+1	; vector is complete
-	LDA (tmptr)	; load operand
+; +51
+	_PC_ADV		; get address
+	.al: REP #21	; 16-b... and CLC
+	LDA !0, Y	; base address
+	ADC y65		; pluss offset & extra
+	INY		; skip MSB
+	TAX		; final address
+	LDA #0		; clear B
+	.as: SEP #$20
+	LDA !0, X	; load operand
 	STA x65		; update register
 ; standard NZ flag setting
 	TAX		; index for LUT
@@ -992,7 +946,7 @@ _be:
 
 _a0:
 ; LDY imm
-; +30/30/34
+; +30/30/34--------------------------------
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	STA x65		; update register
