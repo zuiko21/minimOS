@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180719-1250
+; last modified 20180719-1808
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -19,12 +19,8 @@
 
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
-tmptr		= uz		; temporary storage (up to 16 bit, little endian)*need?
-
-s65		= uz+2		; stack pointer, may use next byte as zero
-pc65		= s65+1		; program counter, will be set to zero*need?
-
-p65		= pc65+2	; flags, keep MSB at zero
+s65		= uz		; stack pointer, may use next byte as zero
+p65		= s65+2	; flags, keep MSB at zero
 
 a65		= p65+2		; accumulator, all these with extra byte
 x65		= a65+2		; X index
