@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180720-1847
+; last modified 20180720-2030
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -55,7 +55,6 @@ nomem:
 		_ABORT(FULL)	; not enough memory
 #endif
 open_emu:
-	STZ pc65		; keep this at zero!*need?
 	STZ a65			; clear these (for MSBs)
 	STZ x65			; clear these (for MSBs)
 	STZ y65			; clear these (for MSBs)
@@ -548,8 +547,8 @@ _24:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 ; operand in A, common BIT routine (34/34/36)
-	AND a65			; AND with memory
 	TAX				; keep this value
+	AND a65			; AND with memory
 	BNE g24z		; will clear Z
 		LDA #2			; or set Z in previous status
 		TSB p65			; updated
@@ -575,8 +574,9 @@ _34:
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	AND a65			; AND with memory
+
 	TAX				; keep this value
+	AND a65			; AND with memory
 	BNE g34z		; will clear Z
 		LDA #2			; or set Z in previous status
 		TSB p65			; updated
@@ -599,8 +599,9 @@ _2c:
 	LDX !0, Y		; just full address!
 	_PC_ADV			; skip MSB
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	AND a65			; AND with memory
+
 	TAX				; keep this value
+	AND a65			; AND with memory
 	BNE g2cz		; will clear Z
 		LDA #2			; or set Z in previous status
 		TSB p65			; updated
@@ -628,8 +629,9 @@ _3c:
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
 	LDA !0, X		; get final data
-	AND a65			; AND with memory
+
 	TAX				; keep this value
+	AND a65			; AND with memory
 	BNE g3cz		; will reset Z
 		LDA #2			; or set Z in previous status
 		TSB p65			; updated
@@ -1900,7 +1902,7 @@ _69:
 ; copy virtual status (+47)
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -1926,7 +1928,7 @@ _65:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -1951,7 +1953,7 @@ _75:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -1974,7 +1976,7 @@ _6d:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2002,7 +2004,7 @@ _7d:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2030,7 +2032,7 @@ _79:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2058,7 +2060,7 @@ _72:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2087,7 +2089,7 @@ _71:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2116,7 +2118,7 @@ _61:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2125,7 +2127,7 @@ _61:
 	STA a65			; update value
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
 	PLP
 	JMP next_op
@@ -2139,7 +2141,7 @@ _e9:
 ; copy virtual status (+47)
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2165,7 +2167,7 @@ _e5:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2190,7 +2192,7 @@ _f5:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2213,7 +2215,7 @@ _ed:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2241,7 +2243,7 @@ _fd:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2269,7 +2271,7 @@ _f9:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2297,7 +2299,7 @@ _f2:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2326,7 +2328,7 @@ _f1:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2355,7 +2357,7 @@ _e1:
 
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0!
+	ORA #$20		; make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
@@ -2373,13 +2375,13 @@ _e1:
 
 _e6:
 ; INC zp
-; +
+; +39
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 	INC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	LDA !0, X		; retrieve value
-; standard NZ flag setting
+; standard NZ flag setting (+18)
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -2390,7 +2392,7 @@ _e6:
 
 _f6:
 ; INC zp, X
-; +
+; +44
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
@@ -2398,34 +2400,33 @@ _f6:
 	TAX				; temporary index...
 	INC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	LDA !0, X		; retrieve value
-; standard NZ flag setting
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _ee:
 ; INC abs
-; +
+; +40
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
 	INC !0, X		; update operand
-; standard NZ flag setting
+	LDA !0, X		; retrieve value
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _fe:
 ; INC abs, X
-; +
+; +55
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2435,35 +2436,34 @@ _fe:
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
 	INC !0, X		; update final data
-; standard NZ flag setting
+	LDA !0, X		; retrieve value
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _c6:
 ; DEC zp
-; +
+; +39
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 	DEC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	LDA !0, X		; retrieve value
-; standard NZ flag setting
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _d6:
 ; DEC zp, X
-; +
+; +44
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
@@ -2471,34 +2471,33 @@ _d6:
 	TAX				; temporary index...
 	DEC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	LDA !0, X		; retrieve value
-; standard NZ flag setting
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _ce:
 ; DEC abs
-; +
+; +40
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
 	DEC !0, X		; update operand
-; standard NZ flag setting
+	LDA !0, X		; retrieve value
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _de:
 ; DEC abs, X
-; +
+; +55
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2508,15 +2507,250 @@ _de:
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
 	DEC !0, X		; update final data
-; standard NZ flag setting
+	LDA !0, X		; retrieve value
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
+; * comparisons *
+
+_cd:
+; CMP abs
+; +
+
+_dd:
+; CMP abs, X
+; +
+
+_d9:
+; CMP abs, Y
+; +
+
+_c9:
+; CMP imm
+; +
+
+_c5:
+; CMP zp
+; +
+
+_d5:
+; CMP zp, X
+; +
+
+_d2:
+; CMP (zp)
+; +
+
+_d1:
+; CMP (zp), Y
+; +
+
+_c1:
+; CMP (zp, X)
+; +
+
+_ec:
+; CPX abs
+; +
+
+_e0:
+; CPX imm
+; +
+
+_e4:
+; CPX zp
+; +
+
+_cc:
+; CPY abs
+; +
+
+_c0:
+; CPY imm
+; +
+
+_c4:
+; CPY zp
+; +
+
+; *** bit shifting ***
+
+; * shift *
+
+_0e:
+; ASL abs
+; +
+
+_1e:
+; ASL abs, X
+; +
+
+_0a:
+; ASL [ASL A]
+; +
+
+_06:
+; ASL zp
+; +
+
+_16:
+; ASL zp, X
+; +
+
+_4e:
+; LSR abs
+; +
+
+_5e:
+; LSR abs, X
+; +
+
+_4a:
+; LSR [LSR A]
+; +
+
+_46:
+; LSR zp
+; +
+
+_56:
+; LSR zp, X
+; +
+
+; * rotation *
+
+_2e:
+; ROL abs
+; +
+
+_3e:
+; ROL abs, X
+; +
+
+_2a:
+; ROL [ROL A]
+; +
+
+_26:
+; ROL zp
+; +
+
+_36:
+; ROL zp, X
+; +
+
+_6e:
+; ROR abs
+; +
+
+_7e:
+; ROR abs, X
+; +
+
+_6a:
+; ROR [ROR A]
+; +
+
+_66:
+; ROR zp
+; +
+
+_76:
+; ROR zp, X
+; +
+
+; *** bit handling ***
+
+; * test & lock *
+
+_1c:
+; TRB abs
+; +
+
+_14:
+; TRB zp
+; +
+
+_0c:
+; TSB abs
+; +
+
+_04:
+; TSB zp
+; +
+
+; * (re)set bits *
+
+_07:
+; RMB0 zp
+; +
+
+_17:
+; RMB1 zp
+; +
+
+_27:
+; RMB2 zp
+; +
+
+_37:
+; RMB3 zp
+; +
+
+_47:
+; RMB4 zp
+; +
+
+_57:
+; RMB5 zp
+; +
+
+_67:
+; RMB6 zp
+; +
+
+_77:
+; RMB7 zp
+; +
+
+_87:
+; SMB0 zp
+; +
+
+_97:
+; SMB1 zp
+; +
+
+_a7:
+; SMB2 zp
+; +
+
+_b7:
+; SMB3 zp
+; +
+
+_c7:
+; SMB4 zp
+; +
+
+_d7:
+; SMB5 zp
+; +
+
+_e7:
+; SMB6 zp
+; +
+
+_f7:
+; SMB7 zp
+; +
+
+; * branch on bits *
 
 ; *******************************************************************
 ; *** LUT for Z & N status bits directly based on result as index ***
