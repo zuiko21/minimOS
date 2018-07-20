@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180720-1243
+; last modified 20180720-1635
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -100,7 +100,7 @@ execute:
 lo_jump:
 			JMP (opt_l, X)	; otherwise, emulation routines for opcodes with bit7 low
 
-; *** NOP (4) arrives here, saving 3 bytes and 3 cycles ***
+; *** NOP (2) arrives here, saving 3 bytes and 3 cycles ***
 
 _ea:
 
@@ -117,8 +117,8 @@ next_op:
 		INY				; advance one byte (2)
 		BNE execute		; fetch next instruction (3)
 
-; usual overhead is 22 clock cycles, not including final jump
-; (*) PC-setting instructions save 5t
+; usual overhead is 22 clock cycles, not including final jump (3)
+; (*) PC-setting instructions like jumps save 5t
 
 ; if PC wraps, will abort emulation!
 
@@ -180,6 +180,8 @@ int_stat:
 ; *** *** valid opcode definitions *** ***
 ; ****************************************
 
+	.as: .xl:
+
 ; *** implicit instructions ***
 ; * flag settings *
 
@@ -237,7 +239,7 @@ _ca:
 ; DEX
 ; +25
 	DEC x65			; decrement index
-; LUT-based flag setting, 11b 15t
+; LUT-based flag setting (+20)
 	LDX x65			; check result, extra zero
 ; operation result in X
 	LDA p65			; previous status...
@@ -251,70 +253,55 @@ _88:
 ; DEY
 ; +25
 	DEC y65			; decrement index
-; LUT-based flag setting, 11b 15t
 	LDX y65			; check result
-; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _e8:
 ; INX
 ; +25
 	INC x65			; increment index
-; LUT-based flag setting, 11b 15t
 	LDX x65			; check result
-; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _c8:
 ; INY
 ; +25
 	INC y65			; increment index
-; LUT-based flag setting, 11b 15t
 	LDX y65			; check result
-; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _3a:
 ; DEC [DEC A]
 ; +25
 	DEC a65			; decrement A
-; LUT-based flag setting, 11b 15t
 	LDX a65			; check result
-; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _1a:
 ; INC [INC A]
 ; +25
 	INC a65			; increment A
-; LUT-based flag setting, 11b 15t
 	LDX a65			; check result
-; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 ; * register transfer *
@@ -324,6 +311,7 @@ _aa:
 ; +24
 	LDA a65			; copy accumulator...
 	STA x65			; ...to index
+; standard NZ setting (+18)
 	TAX				; (value in X)
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -342,7 +330,6 @@ _a8:
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _ba:
@@ -355,7 +342,6 @@ _ba:
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _8a:
@@ -368,7 +354,6 @@ _8a:
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _9a:
@@ -381,7 +366,6 @@ _9a:
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _98:
@@ -394,7 +378,6 @@ _98:
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 ; *** stack operations ***
@@ -404,7 +387,7 @@ _48:
 ; PHA
 ; +20
 	LDA a65			; get accumulator
-; standard push of value in A, does not affect flags
+; standard push of value in A, does not affect flags (+17)
 	LDX s65			; and current SP, extra zero
 	STA $0100, X	; push into stack
 	DEC s65			; post-decrement
@@ -415,33 +398,27 @@ _da:
 ; PHX
 ; +20
 	LDA x65			; get index
-; standard push of value in A, does not affect flags
 	LDX s65			; and current SP
 	STA $0100, X	; push into stack
 	DEC s65			; post-decrement
-; all done
 	JMP next_op
 
 _5a:
 ; PHY
 ; +20
 	LDA y65			; get index
-; standard push of value in A, does not affect flags
 	LDX s65			; and current SP
 	STA $0100, X	; push into stack
 	DEC s65			; post-decrement
-; all done
 	JMP next_op
 
 _08:
 ; PHP
 ; +20
 	LDA p65			; get status
-; standard push of value in A, does not affect flags
 	LDX s65			; and current SP
 	STA $0100, X	; push into stack
 	DEC s65			; post-decrement
-; all done
 	JMP next_op
 
 ; * pull *
@@ -453,8 +430,8 @@ _68:
 	LDX s65			; use as index, extra zero
 	LDA $0100, X	; pull from stack
 	STA a65			; pulled value goes to A
-	TAX				; operation result in X
 ; standard NZ flag setting
+	TAX				; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -470,12 +447,10 @@ _fa:
 	LDA $0100, X	; pull from stack
 	STA x65			; pulled value goes to X
 	TAX				; operation result in X
-; standard NZ flag setting
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _7a:
@@ -486,12 +461,10 @@ _7a:
 	LDA $0100, X	; pull from stack
 	STA y65			; pulled value goes to Y
 	TAX				; operation result in X
-; standard NZ flag setting
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _28:
@@ -502,12 +475,10 @@ _28:
 	LDA $0100, X	; pull from stack
 	STA p65			; pulled value goes to PSR
 	TAX				; operation result in X
-; standard NZ flag setting
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 ; * return instructions *
@@ -604,7 +575,6 @@ _34:
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-; operand in A, common BIT routine
 	AND a65			; AND with memory
 	TAX				; keep this value
 	BNE g34z		; will clear Z
@@ -620,7 +590,6 @@ g34nv:
 	TXA				; retrieve old result
 	AND #$C0		; only two highest bits
 	TSB p65			; final status
-; all done
 	JMP next_op
 
 _2c:
@@ -630,7 +599,6 @@ _2c:
 	LDX !0, Y		; just full address!
 	_PC_ADV			; skip MSB
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-; operand in A, common BIT routine
 	AND a65			; AND with memory
 	TAX				; keep this value
 	BNE g2cz		; will clear Z
@@ -646,7 +614,6 @@ g2cnv:
 	TXA				; retrieve old result
 	AND #$C0		; only two highest bits
 	TSB p65			; final status
-; all done
 	JMP next_op
 
 _3c:
@@ -661,7 +628,6 @@ _3c:
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
 	LDA !0, X		; get final data
-; operand in A, common BIT routine
 	AND a65			; AND with memory
 	TAX				; keep this value
 	BNE g3cz		; will reset Z
@@ -677,7 +643,6 @@ g3cnv:
 	TXA				; retrieve old result
 	AND #$C0		; only two highest bits
 	TSB p65			; final status
-; all done
 	JMP next_op
 
 ; *** jumps ***
@@ -876,13 +841,11 @@ _a6:
 	TAX				; ...cannot pick extra...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA x65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _b6:
@@ -895,13 +858,11 @@ _b6:
 	TAX				; ...cannot pick extra...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA x65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _ae:
@@ -912,13 +873,11 @@ _ae:
 	_PC_ADV			; skip MSB
 	LDA !0, X		; load operand
 	STA x65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _be:
@@ -934,13 +893,11 @@ _be:
 	.as: SEP #$20
 	LDA !0, X		; load operand
 	STA x65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _a0:
@@ -949,13 +906,11 @@ _a0:
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
 	STA x65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _a4:
@@ -966,13 +921,11 @@ _a4:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA y65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _b4:
@@ -985,13 +938,11 @@ _b4:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA y65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _ac:
@@ -1002,13 +953,11 @@ _ac:
 	_PC_ADV			; skip MSB
 	LDA !0, X		; load operand
 	STA y65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _bc:
@@ -1024,13 +973,11 @@ _bc:
 	.as: SEP #$20
 	LDA !0, X		; load operand
 	STA y65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _a9:
@@ -1039,13 +986,11 @@ _a9:
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
 	STA a65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _a5:
@@ -1056,13 +1001,11 @@ _a5:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA a65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _b5:
@@ -1075,13 +1018,11 @@ _b5:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA a65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _ad:
@@ -1092,13 +1033,11 @@ _ad:
 	_PC_ADV			; skip MSB
 	LDA !0, X		; load operand
 	STA a65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _bd:
@@ -1114,13 +1053,11 @@ _bd:
 	.as: SEP #$20
 	LDA !0, X		; load operand
 	STA a65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _b9:
@@ -1136,13 +1073,11 @@ _b9:
 	.as: SEP #$20
 	LDA !0, X		; load operand
 	STA a65			; update register
-; standard NZ flag setting
 	TAX			; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _b2:
@@ -1158,13 +1093,11 @@ _b2:
 	.as: SEP #$20
 	LDA !0, X		; ...of final data
 	STA a65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _b1:
@@ -1181,13 +1114,11 @@ _b1:
 	.as: SEP #$20
 	LDA !0, X		; ...of final data
 	STA a65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _a1:
@@ -1204,13 +1135,11 @@ _a1:
 	.as: SEP #$20
 	LDA !0, X		; ...of final data
 	STA a65			; update register
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 ; * store *
