@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180720-1801
+; last modified 20180720-1840
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -2128,7 +2128,7 @@ _71:
 
 _61:
 ; ADC (zp, X)
-; +85
+; +85---
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y
 	.al: REP #$21	; 16b & CLC
@@ -2138,23 +2138,19 @@ _61:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
-	LDA !0, X		; ...final data
-	TAX				; save for later!
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
 	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, X		; ...final data
 	ADC a65			; do add
 	STA a65			; update value
 	PHP				; new status
 	PLA
 	ORA #$10		; this puts B-flag back to 1, read BRK issue above
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 	JMP next_op
 
@@ -2162,20 +2158,23 @@ _61:
 
 _e9:
 ; SBC imm
-; +
+; +49
 	_PC_ADV			; PREPARE immediate operand
-; copy virtual status
-	PHP
-	LDX p65			; assume virtual status
-	PHX
-	PLP				; as both d5 and d4 are kept 1, no problem
+; copy virtual status (+47)
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
 ; proceed
 	LDA a65
 	SBC !0, Y		; subtract operand
 	STA a65			; update value
-; with so many flags to set, best sync with virtual P
+; with so many flags to set, best sync with virtual P (minus X-flag!)
 	PHP				; new status
 	PLA
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
 	PLP
 ; all done
@@ -2311,88 +2310,17 @@ _f9:
 _f2:
 ; SBC (zp)
 ; +
-	_PC_ADV			; get zeropage pointer
-	LDA !0, Y
-	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	STA tmptr		; this was LSB
-	LDA !1, X		; same for MSB
-	STA tmptr+1
-; copy virtual status
-	PHP
-	LDX p65			; assume virtual status
-	PHX
-	PLP				; as both d5 and d4 are kept 1, no problem
-; proceed
-	LDA a65
-	SBC (tmptr)		; subtract operand
-	STA a65			; update value
-; with so many flags to set, best sync with virtual P
-	PHP				; new status
-	PLA
-	STA p65			; update virtual
-	PLP
-; all done
-	JMP next_op
+
 
 _f1:
 ; SBC (zp), Y
 ; +
-	_PC_ADV			; get zeropage pointer
-	LDA !0, Y
-	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	STA tmptr		; this was LSB
-	CLC
-	ADC y65			; indexed
-	LDA !1, X		; same for MSB
-	ADC #0			; in case of boundary crossing
-	STA tmptr+1
-; copy virtual status
-	PHP
-	LDX p65			; assume virtual status
-	PHX
-	PLP				; as both d5 and d4 are kept 1, no problem
-; proceed
-	LDA a65
-	SBC (tmptr)		; subtract operand
-	STA a65			; update value
-; with so many flags to set, best sync with virtual P
-	PHP				; new status
-	PLA
-	STA p65			; update virtual
-	PLP
-; all done
-	JMP next_op
+
 
 _e1:
-; ADC (zp, X)
-; +72/72/76
-	_PC_ADV			; get zeropage pointer
-	LDA !0, Y
-	CLC
-	ADC x65			; preindexing, forget C as will wrap
-	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	STA tmptr		; this was LSB
-	LDA !1, X		; same for MSB
-	STA tmptr+1
-; copy virtual status
-	PHP
-	LDX p65			; assume virtual status
-	PHX
-	PLP				; as both d5 and d4 are kept 1, no problem
-; proceed
-	LDA a65
-	SBC (tmptr)		; subtract operand
-	STA a65			; update value
-; with so many flags to set, best sync with virtual P
-	PHP				; new status
-	PLA
-	STA p65			; update virtual
-	PLP
-; all done
-	JMP next_op
+; SBC (zp, X)
+; +
+
 
 ; * inc/dec memory *
 
@@ -2543,7 +2471,9 @@ _de:
 	JMP next_op
 
 
+; *******************************************************************
 ; *** LUT for Z & N status bits directly based on result as index ***
+; *******************************************************************
 nz_lut:
 	.byt	2, 0, 0, 0, 0, 0, 0, 0	; zero to 7
 	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 8-15
