@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180720-2030
+; last modified 20180720-2035
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -238,9 +238,8 @@ _ca:
 ; DEX
 ; +25
 	DEC x65			; decrement index
-; LUT-based flag setting (+20)
 	LDX x65			; check result, extra zero
-; operation result in X
+; operation result in X (+16)
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -253,6 +252,7 @@ _88:
 ; +25
 	DEC y65			; decrement index
 	LDX y65			; check result
+
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -264,6 +264,7 @@ _e8:
 ; +25
 	INC x65			; increment index
 	LDX x65			; check result
+
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -275,6 +276,7 @@ _c8:
 ; +25
 	INC y65			; increment index
 	LDX y65			; check result
+
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -286,6 +288,7 @@ _3a:
 ; +25
 	DEC a65			; decrement A
 	LDX a65			; check result
+
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -297,6 +300,7 @@ _1a:
 ; +25
 	INC a65			; increment A
 	LDX a65			; check result
+
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
@@ -324,6 +328,7 @@ _a8:
 ; +24
 	LDA a65			; copy accumulator...
 	STA y65			; ...to index
+
 	TAX
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -336,6 +341,7 @@ _ba:
 ; +24
 	LDA s65			; copy stack pointer...
 	STA x65			; ...to index
+
 	TAX
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -348,6 +354,7 @@ _8a:
 ; +24
 	LDA x65			; copy index...
 	STA a65			; ...to accumulator
+
 	TAX
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -360,6 +367,7 @@ _9a:
 ; +24
 	LDA x65			; copy index...
 	STA s65			; ...to stack pointer
+
 	TAX
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -372,6 +380,7 @@ _98:
 ; +24
 	LDA y65			; copy index...
 	STA a65			; ...to accumulator
+
 	TAX
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -397,6 +406,7 @@ _da:
 ; PHX
 ; +20
 	LDA x65			; get index
+
 	LDX s65			; and current SP
 	STA $0100, X	; push into stack
 	DEC s65			; post-decrement
@@ -406,6 +416,7 @@ _5a:
 ; PHY
 ; +20
 	LDA y65			; get index
+
 	LDX s65			; and current SP
 	STA $0100, X	; push into stack
 	DEC s65			; post-decrement
@@ -415,6 +426,7 @@ _08:
 ; PHP
 ; +20
 	LDA p65			; get status
+
 	LDX s65			; and current SP
 	STA $0100, X	; push into stack
 	DEC s65			; post-decrement
@@ -445,6 +457,7 @@ _fa:
 	LDX s65			; use as index
 	LDA $0100, X	; pull from stack
 	STA x65			; pulled value goes to X
+
 	TAX				; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -459,6 +472,7 @@ _7a:
 	LDX s65			; use as index
 	LDA $0100, X	; pull from stack
 	STA y65			; pulled value goes to Y
+
 	TAX				; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -473,6 +487,7 @@ _28:
 	LDX s65			; use as index
 	LDA $0100, X	; pull from stack
 	STA p65			; pulled value goes to PSR
+
 	TAX				; operation result in X
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -648,7 +663,6 @@ g3cnv:
 	JMP next_op
 
 ; *** jumps ***
-
 ; * conditional branches *
 
 _90:
@@ -843,6 +857,7 @@ _a6:
 	TAX				; ...cannot pick extra...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA x65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -860,6 +875,7 @@ _b6:
 	TAX				; ...cannot pick extra...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA x65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -875,6 +891,7 @@ _ae:
 	_PC_ADV			; skip MSB
 	LDA !0, X		; load operand
 	STA x65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -895,6 +912,7 @@ _be:
 	.as: SEP #$20
 	LDA !0, X		; load operand
 	STA x65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -908,6 +926,7 @@ _a0:
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
 	STA x65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -923,6 +942,7 @@ _a4:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA y65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -940,6 +960,7 @@ _b4:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA y65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -955,6 +976,7 @@ _ac:
 	_PC_ADV			; skip MSB
 	LDA !0, X		; load operand
 	STA y65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -975,6 +997,7 @@ _bc:
 	.as: SEP #$20
 	LDA !0, X		; load operand
 	STA y65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -988,6 +1011,7 @@ _a9:
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
 	STA a65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1003,6 +1027,7 @@ _a5:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA a65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1020,6 +1045,7 @@ _b5:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	STA a65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1035,6 +1061,7 @@ _ad:
 	_PC_ADV			; skip MSB
 	LDA !0, X		; load operand
 	STA a65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1055,6 +1082,7 @@ _bd:
 	.as: SEP #$20
 	LDA !0, X		; load operand
 	STA a65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1075,6 +1103,7 @@ _b9:
 	.as: SEP #$20
 	LDA !0, X		; load operand
 	STA a65			; update register
+
 	TAX			; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1095,6 +1124,7 @@ _b2:
 	.as: SEP #$20
 	LDA !0, X		; ...of final data
 	STA a65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1116,6 +1146,7 @@ _b1:
 	.as: SEP #$20
 	LDA !0, X		; ...of final data
 	STA a65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1137,6 +1168,7 @@ _a1:
 	.as: SEP #$20
 	LDA !0, X		; ...of final data
 	STA a65			; update register
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1157,7 +1189,7 @@ _86:
 	JMP next_op
 
 _96:
-; STX zp, Y---cont cleanup
+; STX zp, Y
 ; +25
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
@@ -1332,7 +1364,7 @@ _92:
 
 _91:
 ; STA (zp), Y
-; +
+; +41
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y
 	TAX				; temporary index...
@@ -1362,9 +1394,8 @@ _81:
 	STA !0, X		; ...as final data
 	JMP next_op
 
-; *** bitwise ops ***
-
-; * logic and *
+; *** logic ops ***
+; * and *
 
 _29:
 ; AND imm
@@ -1391,6 +1422,7 @@ _25:
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1409,6 +1441,7 @@ _35:
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1425,6 +1458,7 @@ _2d:
 	LDA !0, X		; read operand
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1446,6 +1480,7 @@ _3d:
 	LDA !0, X		; get final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1467,6 +1502,7 @@ _39:
 	LDA !0, X		; get final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1488,6 +1524,7 @@ _32:
 	LDA !0, X		; read operand
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1510,6 +1547,7 @@ _31:
 	LDA !0, X		; final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1532,16 +1570,15 @@ _21:
 	LDA !0, X		; ...final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
-; * logic or *
+; * inclusive or *
 
 _09:
 ; ORA imm
@@ -1568,6 +1605,7 @@ _05:
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1586,6 +1624,7 @@ _15:
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1602,6 +1641,7 @@ _0d:
 	LDA !0, X		; read operand
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1623,6 +1663,7 @@ _1d:
 	LDA !0, X		; get final data
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1644,6 +1685,7 @@ _19:
 	LDA !0, X		; get final data
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1665,6 +1707,7 @@ _12:
 	LDA !0, X		; read operand
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1687,6 +1730,7 @@ _11:
 	LDA !0, X		; final data
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1709,6 +1753,7 @@ _01:
 	LDA !0, X		; ...final data
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1743,6 +1788,7 @@ _45:
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1761,6 +1807,7 @@ _55:
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1777,6 +1824,7 @@ _4d:
 	LDA !0, X		; read operand
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1798,6 +1846,7 @@ _5d:
 	LDA !0, X		; get final data
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1819,6 +1868,7 @@ _59:
 	LDA !0, X		; get final data
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1840,6 +1890,7 @@ _52:
 	LDA !0, X		; read operand
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1862,6 +1913,7 @@ _51:
 	LDA !0, X		; final data
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1884,6 +1936,7 @@ _41:
 	LDA !0, X		; ...final data
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
+
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1892,7 +1945,6 @@ _41:
 	JMP next_op
 
 ; *** arithmetic ***
-
 ; * add with carry *
 
 _69:
@@ -2579,7 +2631,6 @@ _c4:
 ; +
 
 ; *** bit shifting ***
-
 ; * shift *
 
 _0e:
@@ -2665,7 +2716,6 @@ _76:
 ; +
 
 ; *** bit handling ***
-
 ; * test & lock *
 
 _1c:
@@ -2684,6 +2734,7 @@ _04:
 ; TSB zp
 ; +
 
+; *** Rockwell/WDC exclusive ***
 ; * (re)set bits *
 
 _07:
@@ -2751,6 +2802,71 @@ _f7:
 ; +
 
 ; * branch on bits *
+
+_0f:
+; BBR0 zp, rel
+; +
+
+_1f:
+; BBR1 zp, rel
+; +
+
+_2f:
+; BBR2 zp, rel
+; +
+
+_3f:
+; BBR3 zp, rel
+; +
+
+_4f:
+; BBR4 zp, rel
+; +
+
+_5f:
+; BBR5 zp, rel
+; +
+
+_6f:
+; BBR6 zp, rel
+; +
+
+_7f:
+; BBR7 zp, rel
+; +
+
+_8f:
+; BBS0 zp, rel
+; +
+
+_9f:
+; BBS1 zp, rel
+; +
+
+_af:
+; BBS2 zp, rel
+; +
+
+_bf:
+; BBS3 zp, rel
+; +
+
+_cf:
+; BBS4 zp, rel
+; +
+
+_df:
+; BBS5 zp, rel
+; +
+
+_ef:
+; BBS6 zp, rel
+; +
+
+_ff:
+; BBS7 zp, rel
+; +
+
 
 ; *******************************************************************
 ; *** LUT for Z & N status bits directly based on result as index ***
