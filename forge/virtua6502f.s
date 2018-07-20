@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180720-1635
+; last modified 20180720-1713
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -1366,12 +1366,12 @@ _81:
 
 _29:
 ; AND imm
-; +33/33/37
+; +31
 	_PC_ADV			; get immediate operand
-	LDA (pc65), Y
+	LDA !0, Y
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting (17)
+; standard NZ flag setting (+18)
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
@@ -1382,25 +1382,23 @@ _29:
 
 _25:
 ; AND zp
-; +39/39/43
+; +38
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _35:
 ; AND zp, X
-; +44/44/48
+; +43
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
@@ -1409,36 +1407,32 @@ _35:
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _2d:
 ; AND abs
-; +54/54/62
+; +39
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
 	LDA !0, X		; read operand
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _3d:
 ; AND abs, X
-; +61/61/69
+; +54
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -1450,18 +1444,16 @@ _3d:
 	LDA !0, X		; get final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _39:
 ; AND abs, Y
-; +61/61/69
+; +54
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -1473,75 +1465,69 @@ _39:
 	LDA !0, X		; get final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _32:
 ; AND (zp)
-; +54/54/58
+; +55
 	_PC_ADV			; get zeropage pointer
-	LDA !0, Y
+	LDA !0, Y		; cannot pick extra
 	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	STA tmptr		; this was LSB
-	LDA !1, X		; same for MSB
-	STA tmptr+1
-	LDA (tmptr)		; read operand
+	.al: REP #$20
+	LDA !0, X		; ...pick full pointer from emulated zeropage
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
+	LDA !0, X		; read operand
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _31:
 ; AND (zp), Y
-; +61/61/65
+; +59
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y
 	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	STA tmptr		; this was LSB
-	CLC
+	.al: REP #$21	; 16b & CLC
+	LDA !0, X		; ...pick full pointer from emulated zeropage
 	ADC y65			; indexed
-	LDA !1, X		; same for MSB
-	ADC #0			; in case of boundary crossing
-	STA tmptr+1
-	LDA (tmptr)		; read operand
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
+	LDA !0, X		; final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
-; standard NZ flag setting
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #$82		; ...minus NZ...
 	ORA nz_lut, X	; ...adds flag mask
 	STA p65
-; all done
 	JMP next_op
 
 _21:
 ; AND (zp, X)
-; +59/59/63
+; +59
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y
-	CLC
-	ADC x65			; preindexing, forget C as will wrap
+	.al: REP #$21	; 16b & CLC
+	ADC x65			; preindexing, worth picking extra
 	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	STA tmptr		; this was LSB
-	LDA !1, X		; same for MSB
-	STA tmptr+1
-	LDA (tmptr)		; read operand
+	LDA !0, X		; ...pick full pointer from emulated zeropage
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
+	LDA !0, X		; ...final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
 ; standard NZ flag setting
