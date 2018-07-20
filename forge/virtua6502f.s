@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180720-1840
+; last modified 20180720-1847
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -1895,115 +1895,102 @@ _41:
 
 _69:
 ; ADC imm
-; +57
-	_PC_ADV			; get immediate operand
-	LDA !0, Y
-; copy virtual status (+50)
-	TAX				; save for later!
+; +49
+	_PC_ADV			; seek immediate operand
+; copy virtual status (+47)
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		: make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
 ; proceed
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, Y
 	ADC a65			; do add
 	STA a65			; update value
 ; with so many flags to set, best sync with virtual P (minus X-flag!)
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 ; all done
 	JMP next_op
 
 _65:
 ; ADC zp
-; +
+; +56
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	TAX				; save for later!
+
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		: make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, X		; from emulated zeropage
 	ADC a65			; do add
 	STA a65			; update value
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 	JMP next_op
 
 _75:
 ; ADC zp, X
-; +
+; +61
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-	TAX				; save for later!
+
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		: make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, X		; from emulated zeropage
 	ADC a65			; do add
 	STA a65			; update value
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 	JMP next_op
 
 _6d:
 ; ADC abs
-; +
+; +57
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
-	LDA !0, X		; read operand
-	TAX				; save for later!
+
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		: make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, X		; read operand
 	ADC a65			; do add
 	STA a65			; update value
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 	JMP next_op
 
 _7d:
 ; ADC abs, X
-; +
+; +72
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2012,29 +1999,26 @@ _7d:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
-	LDA !0, X		; get final data
-	TAX				; save for later!
+
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		: make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, X		; get final data
 	ADC a65			; do add
 	STA a65			; update value
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 	JMP next_op
 
 _79:
 ; ADC abs, Y
-; +
+; +72
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2043,29 +2027,26 @@ _79:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
-	LDA !0, X		; get final data
-	TAX				; save for later!
+
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		: make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, X		; get final data
 	ADC a65			; do add
 	STA a65			; update value
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 	JMP next_op
 
 _72:
 ; ADC (zp)
-; +81
+; +73
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y		; cannot pick extra
 	TAX				; temporary index...
@@ -2074,29 +2055,26 @@ _72:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
-	LDA !0, X		; read operand
-	TAX				; save for later!
+
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		: make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, X		; read operand
 	ADC a65			; do add
 	STA a65			; update value
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 	JMP next_op
 
 _71:
 ; ADC (zp), Y
-; +85
+; +77
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2106,29 +2084,26 @@ _71:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
-	LDA !0, X		; final data
-	TAX				; save for later!
+
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
-	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
+	ORA #$20		: make sure M=1 & X=0!
 	AND #$EF
 	PHA
 	PLP				; assume virtual status (X=0!)
-	TXA				; eeeeeeeeek, may touch B
+	LDA !0, X		; final data
 	ADC a65			; do add
 	STA a65			; update value
 	PHP				; new status
 	PLA
-	ORA #$10		; this puts B-flag back to 1, read BRK issue above
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
-	LDA #0			; must clear B
-	XBA
 	PLP
 	JMP next_op
 
 _61:
 ; ADC (zp, X)
-; +85---
+; +77
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y
 	.al: REP #$21	; 16b & CLC
@@ -2138,6 +2113,7 @@ _61:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	PHP				; will tinker with host status!
 	LDA p65			; pick virtual status
 	ORA #$20		: make sure M=1 & X=0! ISR should not ADC/SBC before checking for BRK!
@@ -2182,78 +2158,78 @@ _e9:
 
 _e5:
 ; SBC zp
-; +
+; +56
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
-; copy virtual status
-	PHP
-	LDA p65			; assume virtual status
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
 	PHA
-	PLP				; as both d5 and d4 are kept 1, no problem
-; proceed
+	PLP				; assume virtual status (X=0!)
 	LDA a65
-	SBC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
+	SBC !0, X		; subtract operand
 	STA a65			; update value
-; with so many flags to set, best sync with virtual P
 	PHP				; new status
 	PLA
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
 	PLP
-; all done
 	JMP next_op
 
 _f5:
 ; SBC zp, X
-; +
+; +61
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
-; copy virtual status
-	PHP
-	LDA p65			; assume virtual status
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
 	PHA
-	PLP				; as both d5 and d4 are kept 1, no problem
-; proceed
+	PLP				; assume virtual status (X=0!)
 	LDA a65
-	SBC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
+	SBC !0, X		; subtract operand
 	STA a65			; update value
-; with so many flags to set, best sync with virtual P
 	PHP				; new status
 	PLA
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
 	PLP
-; all done
 	JMP next_op
 
 _ed:
 ; SBC abs
-; +
+; +57
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
-; copy virtual status
-	PHP
-	LDX p65			; assume virtual status
-	PHX
-	PLP				; as both d5 and d4 are kept 1, no problem
-; proceed
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
 	LDA a65
 	SBC !0, X		; subtract operand
 	STA a65			; update value
-; with so many flags to set, best sync with virtual P
 	PHP				; new status
 	PLA
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
 	PLP
-; all done
 	JMP next_op
 
 _fd:
 ; SBC abs, X
-; +
+; +72
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2262,26 +2238,26 @@ _fd:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
-; copy virtual status
-	PHP
-	LDX p65			; assume virtual status
-	PHX
-	PLP				; as both d5 and d4 are kept 1, no problem
-; proceed
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
 	LDA a65
 	SBC !0, X		; subtract operand
 	STA a65			; update value
-; with so many flags to set, best sync with virtual P
 	PHP				; new status
 	PLA
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
 	PLP
-; all done
 	JMP next_op
 
 _f9:
 ; SBC abs, Y
-; +
+; +72
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2290,37 +2266,108 @@ _f9:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
-; copy virtual status
-	PHP
-	LDX p65			; assume virtual status
-	PHX
-	PLP				; as both d5 and d4 are kept 1, no problem
-; proceed
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
 	LDA a65
 	SBC !0, X		; subtract operand
 	STA a65			; update value
-; with so many flags to set, best sync with virtual P
 	PHP				; new status
 	PLA
+	ORA #$10		; this puts B-flag back to 1
 	STA p65			; update virtual
 	PLP
-; all done
 	JMP next_op
 
 _f2:
 ; SBC (zp)
-; +
+; +73
+	_PC_ADV			; get zeropage pointer
+	LDA !0, Y		; cannot pick extra
+	TAX				; temporary index...
+	.al: REP #$20
+	LDA !0, X		; ...pick full pointer from emulated zeropage
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
 
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65
+	SBC !0, X		; subtract operand
+	STA a65			; update value
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _f1:
 ; SBC (zp), Y
-; +
+; +77
+	_PC_ADV			; get zeropage pointer
+	LDA !0, Y
+	TAX				; temporary index...
+	.al: REP #$21	; 16b & CLC
+	LDA !0, X		; ...pick full pointer from emulated zeropage
+	ADC y65			; indexed
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
 
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65
+	SBC !0, X		; subtract operand
+	STA a65			; update value
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _e1:
 ; SBC (zp, X)
-; +
+; +77
+	_PC_ADV			; get zeropage pointer
+	LDA !0, Y
+	.al: REP #$21	; 16b & CLC
+	ADC x65			; preindexing, worth picking extra
+	TAX				; temporary index...
+	LDA !0, X		; ...pick full pointer from emulated zeropage
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
 
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		: make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65
+	SBC !0, X		; subtract operand
+	STA a65			; update value
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 ; * inc/dec memory *
 
