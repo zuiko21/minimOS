@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1234
+; last modified 20180721-1246
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -2704,14 +2704,26 @@ _c4:
 
 _0e:
 ; ASL abs
-; +
+; +43/43.5/44
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; common ASL code, address in X (+33-34)
+	ASL !0, X		; shift destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	BCC g0e			; no C
+		INC			; ...or set it!
+g0e:
+	STA p65
+	JMP next_op
 
 _1e:
 ; ASL abs, X
-; +
+; +58/58.5/59
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2721,35 +2733,73 @@ _1e:
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
 
+	ASL !0, X		; shift destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	BCC g1e			; no C
+		INC			; ...or set it!
+g1e:
+	STA p65
+	JMP next_op
+
 _0a:
 ; ASL [ASL A]
-; +
+; +29/29.5/30
 	ASL a65			; shift accumulator
 	LDA a65			; get result, cannot pick extra
 ; specific code
 	TAX				; LUT index
 	LDA p65			; original status
-	AND #$7D		; ...minus NZ...
+	AND #$7C		; ...minus NZC!
 	ORA nz_lut, X	; ...adds flag mask
+	BCC g0a			; no C
+		INC			; ...or set it!
+g0a:
 	STA p65
 	JMP next_op
-	
 
 _06:
 ; ASL zp
-; +
+; +42/42.5/43
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 
+	ASL !0, X		; shift destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	BCC g06			; no C
+		INC			; ...or set it!
+g06:
+	STA p65
+	JMP next_op
+
 _16:
 ; ASL zp, X
-; +
+; +47/47.5/48
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+
+	ASL !0, X		; shift destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	BCC g16			; no C
+		INC			; ...or set it!
+g16:
+	STA p65
+	JMP next_op
 
 _4e:
 ; LSR abs
