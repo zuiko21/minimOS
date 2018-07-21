@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1613
+; last modified 20180721-1657
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -3113,15 +3113,15 @@ _1c:
 	STA p65
 	JMP next_op
 ; alt2 from -----32B (43-44)
-	PLP
-	BEQ g1c			; will set Z
-		LDA #2			; or clear Z in previous status
-		TRB p65			; updated
-		JMP next_op
-g1c:
-	LDA #2			; set Z in previous status
-	TSB p65			; updated
-	JMP next_op
+;	PLP
+;	BEQ g1c			; will set Z
+;		LDA #2			; or clear Z in previous status
+;		TRB p65			; updated
+;		JMP next_op
+;g1c:
+;	LDA #2			; set Z in previous status
+;	TSB p65			; updated
+;	JMP next_op
 
 
 ; common TRB routine (+41/41/42) 35b
@@ -3157,11 +3157,11 @@ _14:
 	STA !0, X
 	LDA tmp			; retrieve
 	AND a65			; test selected bits
-	BEQ g1c			; will set Z
+	BEQ g14			; will set Z
 		LDA #2			; or clear Z in previous status
 		TRB p65			; updated
 		JMP next_op
-g1c:
+g14:
 	LDA #2			; set Z in previous status
 	TSB p65			; updated
 	JMP next_op
