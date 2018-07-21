@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1246
+; last modified 20180721-1521
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -2704,26 +2704,24 @@ _c4:
 
 _0e:
 ; ASL abs
-; +43/43.5/44
+; +42
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
-; common ASL code, address in X (+33-34)
+; common ASL code, address in X (+32)
 	ASL !0, X		; shift destination
 	LDA !0, X		; get result...
 	TAX				; LUT index
 	LDA p65			; original status
 	AND #$7C		; ...minus NZC!
 	ORA nz_lut, X	; ...adds flag mask
-	BCC g0e			; no C
-		INC			; ...or set it!
-g0e:
+	ADC #0			; and C, if set!
 	STA p65
 	JMP next_op
 
 _1e:
 ; ASL abs, X
-; +58/58.5/59
+; +57
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2739,15 +2737,13 @@ _1e:
 	LDA p65			; original status
 	AND #$7C		; ...minus NZC!
 	ORA nz_lut, X	; ...adds flag mask
-	BCC g1e			; no C
-		INC			; ...or set it!
-g1e:
+	ADC #0			; and C, if set!
 	STA p65
 	JMP next_op
 
 _0a:
 ; ASL [ASL A]
-; +29/29.5/30
+; +28
 	ASL a65			; shift accumulator
 	LDA a65			; get result, cannot pick extra
 ; specific code
@@ -2755,15 +2751,13 @@ _0a:
 	LDA p65			; original status
 	AND #$7C		; ...minus NZC!
 	ORA nz_lut, X	; ...adds flag mask
-	BCC g0a			; no C
-		INC			; ...or set it!
-g0a:
+	ADC #0			; and C, if set!
 	STA p65
 	JMP next_op
 
 _06:
 ; ASL zp
-; +42/42.5/43
+; +41
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2774,15 +2768,13 @@ _06:
 	LDA p65			; original status
 	AND #$7C		; ...minus NZC!
 	ORA nz_lut, X	; ...adds flag mask
-	BCC g06			; no C
-		INC			; ...or set it!
-g06:
+	ADC #0			; and C, if set!
 	STA p65
 	JMP next_op
 
 _16:
 ; ASL zp, X
-; +47/47.5/48
+; +46
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
@@ -2795,9 +2787,7 @@ _16:
 	LDA p65			; original status
 	AND #$7C		; ...minus NZC!
 	ORA nz_lut, X	; ...adds flag mask
-	BCC g16			; no C
-		INC			; ...or set it!
-g16:
+	ADC #0			; and C, if set!
 	STA p65
 	JMP next_op
 
