@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1521
+; last modified 20180721-1531
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -2746,7 +2746,7 @@ _0a:
 ; +28
 	ASL a65			; shift accumulator
 	LDA a65			; get result, cannot pick extra
-; specific code
+; common part
 	TAX				; LUT index
 	LDA p65			; original status
 	AND #$7C		; ...minus NZC!
@@ -2793,14 +2793,24 @@ _16:
 
 _4e:
 ; LSR abs
-; +
+; +42
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; common LSR code, address in X (+32)
+	LSR !0, X		; shift destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	ADC #0			; and C, if set!
+	STA p65
+	JMP next_op
 
 _5e:
 ; LSR abs, X
-; +
+; +57
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2810,38 +2820,89 @@ _5e:
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
 
+	LSR !0, X		; shift destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	ADC #0			; and C, if set!
+	STA p65
+	JMP next_op
+
 _4a:
 ; LSR [LSR A]
-; +
+; +28
+	LSR a65			; shift destination
+	LDA a65			; get result...
+; specific code
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	ADC #0			; and C, if set!
+	STA p65
+	JMP next_op
 
 _46:
 ; LSR zp
-; +
+; +41
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 
+	LSR !0, X		; shift destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	ADC #0			; and C, if set!
+	STA p65
+	JMP next_op
+
 _56:
 ; LSR zp, X
-; +
+; +46
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+
+	LSR !0, X		; shift destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original status
+	AND #$7C		; ...minus NZC!
+	ORA nz_lut, X	; ...adds flag mask
+	ADC #0			; and C, if set!
+	STA p65
+	JMP next_op
 
 ; * rotation *
 
 _2e:
 ; ROL abs
-; +
+; +47
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; common ROL code, address in X (+37)
+	LSR p65			; extract previous C
+	ROL !0, X		; rotate destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
 
 _3e:
 ; ROL abs, X
-; +
+; +62
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2850,37 +2911,93 @@ _3e:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
+	LSR p65			; extract previous C
+	ROL !0, X		; rotate destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
 
 _2a:
 ; ROL [ROL A]
-; +
+; +33
+
+	LSR p65			; extract previous C
+	ROL a65			; rotate destination
+	LDA a65			; get result...
+; common part
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
 
 _26:
 ; ROL zp
-; +
+; +46
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 
+	LSR p65			; extract previous C
+	ROL !0, X		; rotate destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
+
 _36:
 ; ROL zp, X
-; +
+; +51
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
 
+	LSR p65			; extract previous C
+	ROL !0, X		; rotate destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
+
 _6e:
 ; ROR abs
-; +
+; +47
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; common ROR code, address in X (+37)
+	LSR p65			; extract previous C
+	ROR !0, X		; rotate destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
 
 _7e:
 ; ROR abs, X
-; +
+; +62
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2890,25 +3007,69 @@ _7e:
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
 
+	LSR p65			; extract previous C
+	ROR !0, X		; rotate destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
+
 _6a:
 ; ROR [ROR A]
-; +
+; +33
+
+	LSR p65			; extract previous C
+	ROR a65			; rotate destination
+	LDA a65			; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
 
 _66:
 ; ROR zp
-; +
+; +46
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 
+	LSR p65			; extract previous C
+	ROR !0, X		; rotate destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
+
 _76:
 ; ROR zp, X
-; +
+; +51
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+
+	LSR p65			; extract previous C
+	ROR !0, X		; rotate destination
+	LDA !0, X		; get result...
+	TAX				; LUT index
+	LDA p65			; original SHIFTED status
+	AND #$3E		; ...minus NZC! Note shift
+	ROL				; unshift and insert C
+	ORA nz_lut, X	; add flag mask
+	STA p65
+	JMP next_op
 
 ; *** bit handling ***
 ; * test & lock *
