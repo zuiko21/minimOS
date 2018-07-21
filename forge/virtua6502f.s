@@ -1,8 +1,8 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; specially fast version!
-; v0.1a4
+; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180720-2150
+; last modified 20180721-1113
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -85,7 +85,7 @@ x_vect:
 	LDY $FFFA, X	; read appropriate vector as PC
 	LDA p65			; original status
 	ORA #%00100100	; disable further interrupts (and keep M set)...
-	AND #%11110111	; ...and clear decimal flag!
+	AND #%11100111	; ...and clear decimal flag (and X)!
 	STA p65
 	LDA #0			; clear B
 	XBA
