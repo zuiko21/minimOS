@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1113
+; last modified 20180721-1118
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -562,18 +562,46 @@ _24:
 	LDA !0, Y		; cannot get extra byte!
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-; alternative common BIT with LUT, result in A (+31) 20b
+; alternative 1 common BIT with LUT, result in A (+34) 22b *good for COMPACT version*
 	STA tmp			; temporary storage, faster than PHA/PLA
 	AND a65			; AND with memory
 	TAX				; index for LUT
 	LDA p65			; previous status...
 	AND #%00111101	; ...minus NVZ...
 	ORA nz_lut, X	; ...adds flag mask
+	AND #%01111111	; make sure N remains clear!
 	STA p65
 	LDA tmp			; retrieve old result
 	AND #$C0		; only two highest bits
 	TSB p65			; final status
-; all done
+; alt2... 22b (+35) not worth
+	TAX				; keep this
+	AND #$C0		; only two highest bits
+	STA tmp			; temporary storage to be ORed
+	TXA				; retrieve
+	AND a65			; AND with memory
+	TAX				; index for LUT
+	LDA p65			; previous status...
+	AND #%00111101	; ...minus NVZ...
+	ORA nz_lut, X	; ...adds flag mask
+	AND #%01111111	; make sure N remains clear!
+	ORA tmp			; and copy NV from operand
+	STA p65
+; alt3... 25b (+28/28/36) FASTEST
+	TAX				; keep this
+	AND #$C0		; only two highest bits
+	STA tmp			; temporary storage to be ORed
+	LDA p65			; previous status...
+	AND #%00111101	; ...minus NVZ...
+	ORA tmp			; and copy NV from operand
+	STA p65
+	TXA				; retrieve
+	AND a65			; AND with memory
+	BEQ g24z
+		JMP next_op		; all done if not Z
+	LDA #2			; otherwise set Z
+	TSB p65
+
 	JMP next_op
 
 _34:
@@ -586,6 +614,7 @@ _34:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 
+; old common code 25b (34/34/36)
 	TAX				; keep this value
 	AND a65			; AND with memory
 	BNE g34z		; will clear Z
@@ -602,18 +631,6 @@ g34nv:
 	AND #$C0		; only two highest bits
 	TSB p65			; final status
 
-; alternative common BIT with LUT, result in A (+31) 20b
-	STA tmp			; temporary storage, faster than PHA/PLA
-	AND a65			; AND with memory
-	TAX				; index for LUT
-	LDA p65			; previous status...
-	AND #%00111101	; ...minus NVZ...
-	AND #$C2		; ...minus NVZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA p65
-	LDA tmp			; retrieve old result
-	AND #$C0		; only two highest bits
-	TSB p65			; final status
 	JMP next_op
 
 _2c:
@@ -624,16 +641,6 @@ _2c:
 	_PC_ADV			; skip MSB
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 
-	STA tmp			; temporary storage, faster than PHA/PLA
-	AND a65			; AND with memory
-	TAX				; index for LUT
-	LDA p65			; previous status...
-	AND #%00111101	; ...minus NVZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA p65
-	LDA tmp			; retrieve old result
-	AND #$C0		; only two highest bits
-	TSB p65			; final status
 	JMP next_op
 
 _3c:
@@ -649,16 +656,6 @@ _3c:
 	.as: SEP #$20
 	LDA !0, X		; get final data
 
-	STA tmp			; temporary storage, faster than PHA/PLA
-	AND a65			; AND with memory
-	TAX				; index for LUT
-	LDA p65			; previous status...
-	AND #$C2		; ...minus NVZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA p65
-	LDA tmp			; retrieve old result
-	AND #$C0		; only two highest bits
-	TSB p65			; final status
 	JMP next_op
 
 ; *** jumps ***
