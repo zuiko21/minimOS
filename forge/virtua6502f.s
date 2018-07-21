@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1205
+; last modified 20180721-1226
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -563,18 +563,6 @@ _24:
 	LDA !0, Y		; cannot get extra byte!
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-; common BIT with LUT, result in A (+34) 22b *good for COMPACT version*
-;	STA tmp			; temporary storage, faster than PHA/PLA
-;	AND a65			; AND with accumulator
-;	TAX				; index for LUT
-;	LDA p65			; previous status...
-;	AND #%00111101	; ...minus NVZ...
-;	ORA nz_lut, X	; ...adds flag mask
-;	AND #%01111111	; make sure N remains clear!
-;	STA p65
-;	LDA tmp			; retrieve old result
-;	AND #$C0		; only two highest bits
-;	TSB p65			; final status
 ; fastest common BIT code (+28/28/36) 25b
 	TAX				; keep this
 	AND #$C0		; only two highest bits
@@ -2583,62 +2571,133 @@ _de:
 _cd:
 ; CMP abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _dd:
 ; CMP abs, X
 ; +
+	_PC_ADV			; get LSB
+	.al: REP #$21	; 16-bit... and clear C
+	LDA !0, Y		; just full address!
+	_PC_ADV			; skip MSB
+	ADC x65			; do indexing, picks extra
+	TAX				; final address, B remains touched
+	LDA #0			; use extra byte to clear B
+	.as: SEP #$20
 
 _d9:
 ; CMP abs, Y
 ; +
+	_PC_ADV			; get LSB
+	.al: REP #$21	; 16-bit... and clear C
+	LDA !0, Y		; just full address!
+	_PC_ADV			; skip MSB
+	ADC x65			; do indexing, picks extra
+	TAX				; final address, B remains touched
+	LDA #0			; use extra byte to clear B
+	.as: SEP #$20
 
 _c9:
 ; CMP imm
 ; +
+	_PC_ADV			; get immediate operand
+	LDA !0, Y
 
 _c5:
 ; CMP zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _d5:
 ; CMP zp, X
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	CLC
+	ADC x65			; add index, forget carry as will page-wrap
+	TAX				; temporary index...
 
 _d2:
 ; CMP (zp)
 ; +
+	_PC_ADV			; get zeropage pointer
+	LDA !0, Y		; cannot pick extra
+	TAX				; temporary index...
+	.al: REP #$20
+	LDA !0, X		; ...pick full pointer from emulated zeropage
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
 
 _d1:
 ; CMP (zp), Y
 ; +
+	_PC_ADV			; get zeropage pointer
+	LDA !0, Y
+	TAX				; temporary index...
+	.al: REP #$21	; 16b & CLC
+	LDA !0, X		; ...pick full pointer from emulated zeropage
+	ADC y65			; indexed
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
 
 _c1:
 ; CMP (zp, X)
 ; +
+	_PC_ADV			; get zeropage pointer
+	LDA !0, Y
+	.al: REP #$21	; 16b & CLC
+	ADC x65			; preindexing, worth picking extra
+	TAX				; temporary index...
+	LDA !0, X		; ...pick full pointer from emulated zeropage
+	TAX				; final address...
+	LDA #0			; clear B
+	.as: SEP #$20
 
 _ec:
 ; CPX abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _e0:
 ; CPX imm
 ; +
+	_PC_ADV			; get immediate operand
+	LDA !0, Y
 
 _e4:
 ; CPX zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _cc:
 ; CPY abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _c0:
 ; CPY imm
 ; +
+	_PC_ADV			; get immediate operand
+	LDA !0, Y
 
 _c4:
 ; CPY zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 ; *** bit shifting ***
 ; * shift *
@@ -2646,30 +2705,64 @@ _c4:
 _0e:
 ; ASL abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _1e:
 ; ASL abs, X
 ; +
+	_PC_ADV			; get LSB
+	.al: REP #$21	; 16-bit... and clear C
+	LDA !0, Y		; just full address!
+	_PC_ADV			; skip MSB
+	ADC x65			; do indexing, picks extra
+	TAX				; final address, B remains touched
+	LDA #0			; use extra byte to clear B
+	.as: SEP #$20
 
 _0a:
 ; ASL [ASL A]
 ; +
+	ASL a65			; shift accumulator
+	LDA a65			; get result
+; common ASL code (+)
+	
 
 _06:
 ; ASL zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _16:
 ; ASL zp, X
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	CLC
+	ADC x65			; add index, forget carry as will page-wrap
+	TAX				; temporary index...
 
 _4e:
 ; LSR abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _5e:
 ; LSR abs, X
 ; +
+	_PC_ADV			; get LSB
+	.al: REP #$21	; 16-bit... and clear C
+	LDA !0, Y		; just full address!
+	_PC_ADV			; skip MSB
+	ADC x65			; do indexing, picks extra
+	TAX				; final address, B remains touched
+	LDA #0			; use extra byte to clear B
+	.as: SEP #$20
 
 _4a:
 ; LSR [LSR A]
@@ -2678,20 +2771,39 @@ _4a:
 _46:
 ; LSR zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _56:
 ; LSR zp, X
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	CLC
+	ADC x65			; add index, forget carry as will page-wrap
+	TAX				; temporary index...
 
 ; * rotation *
 
 _2e:
 ; ROL abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _3e:
 ; ROL abs, X
 ; +
+	_PC_ADV			; get LSB
+	.al: REP #$21	; 16-bit... and clear C
+	LDA !0, Y		; just full address!
+	_PC_ADV			; skip MSB
+	ADC x65			; do indexing, picks extra
+	TAX				; final address, B remains touched
+	LDA #0			; use extra byte to clear B
+	.as: SEP #$20
 
 _2a:
 ; ROL [ROL A]
@@ -2700,18 +2812,37 @@ _2a:
 _26:
 ; ROL zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _36:
 ; ROL zp, X
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	CLC
+	ADC x65			; add index, forget carry as will page-wrap
+	TAX				; temporary index...
 
 _6e:
 ; ROR abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _7e:
 ; ROR abs, X
 ; +
+	_PC_ADV			; get LSB
+	.al: REP #$21	; 16-bit... and clear C
+	LDA !0, Y		; just full address!
+	_PC_ADV			; skip MSB
+	ADC x65			; do indexing, picks extra
+	TAX				; final address, B remains touched
+	LDA #0			; use extra byte to clear B
+	.as: SEP #$20
 
 _6a:
 ; ROR [ROR A]
@@ -2720,10 +2851,18 @@ _6a:
 _66:
 ; ROR zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _76:
 ; ROR zp, X
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	CLC
+	ADC x65			; add index, forget carry as will page-wrap
+	TAX				; temporary index...
 
 ; *** bit handling ***
 ; * test & lock *
@@ -2731,18 +2870,30 @@ _76:
 _1c:
 ; TRB abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _14:
 ; TRB zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _0c:
 ; TSB abs
 ; +
+	_PC_ADV			; get address
+	LDX !0, Y
+	_PC_ADV			; skip MSB
 
 _04:
 ; TSB zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 ; *** Rockwell/WDC exclusive ***
 ; * (re)set bits *
@@ -2750,132 +2901,260 @@ _04:
 _07:
 ; RMB0 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _17:
 ; RMB1 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _27:
 ; RMB2 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _37:
 ; RMB3 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _47:
 ; RMB4 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _57:
 ; RMB5 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _67:
 ; RMB6 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _77:
 ; RMB7 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _87:
 ; SMB0 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _97:
 ; SMB1 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _a7:
 ; SMB2 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _b7:
 ; SMB3 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _c7:
 ; SMB4 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _d7:
 ; SMB5 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _e7:
 ; SMB6 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 _f7:
 ; SMB7 zp
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
 
 ; * branch on bits *
 
 _0f:
 ; BBR0 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _1f:
 ; BBR1 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _2f:
 ; BBR2 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _3f:
 ; BBR3 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _4f:
 ; BBR4 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _5f:
 ; BBR5 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _6f:
 ; BBR6 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _7f:
 ; BBR7 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _8f:
 ; BBS0 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _9f:
 ; BBS1 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _af:
 ; BBS2 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _bf:
 ; BBS3 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _cf:
 ; BBS4 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _df:
 ; BBS5 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _ef:
 ; BBS6 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 _ff:
 ; BBS7 zp, rel
 ; +
+	_PC_ADV			; get zeropage address
+	LDA !0, Y
+	TAX				; temporary index...
+
+	_PC_ADV			; skip to displacement
 
 
 ; *******************************************************************
