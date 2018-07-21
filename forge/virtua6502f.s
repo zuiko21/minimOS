@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1531
+; last modified 20180721-1613
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -2574,6 +2574,7 @@ _cd:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; *** to do *** to do *** to do *** to do ***
 
 _dd:
 ; CMP abs, X
@@ -2586,6 +2587,7 @@ _dd:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+; *** to do *** to do *** to do *** to do ***
 
 _d9:
 ; CMP abs, Y
@@ -2598,12 +2600,14 @@ _d9:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+; *** to do *** to do *** to do *** to do ***
 
 _c9:
 ; CMP imm
 ; +
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
+; *** to do *** to do *** to do *** to do ***
 
 _c5:
 ; CMP zp
@@ -2611,6 +2615,7 @@ _c5:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+; *** to do *** to do *** to do *** to do ***
 
 _d5:
 ; CMP zp, X
@@ -2620,6 +2625,7 @@ _d5:
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+; *** to do *** to do *** to do *** to do ***
 
 _d2:
 ; CMP (zp)
@@ -2632,6 +2638,7 @@ _d2:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+; *** to do *** to do *** to do *** to do ***
 
 _d1:
 ; CMP (zp), Y
@@ -2645,6 +2652,7 @@ _d1:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+; *** to do *** to do *** to do *** to do ***
 
 _c1:
 ; CMP (zp, X)
@@ -2658,6 +2666,7 @@ _c1:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+; *** to do *** to do *** to do *** to do ***
 
 _ec:
 ; CPX abs
@@ -2665,12 +2674,14 @@ _ec:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; *** to do *** to do *** to do *** to do ***
 
 _e0:
 ; CPX imm
 ; +
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
+; *** to do *** to do *** to do *** to do ***
 
 _e4:
 ; CPX zp
@@ -2678,6 +2689,7 @@ _e4:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+; *** to do *** to do *** to do *** to do ***
 
 _cc:
 ; CPY abs
@@ -2685,12 +2697,14 @@ _cc:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; *** to do *** to do *** to do *** to do ***
 
 _c0:
 ; CPY imm
 ; +
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
+; *** to do *** to do *** to do *** to do ***
 
 _c4:
 ; CPY zp
@@ -2698,6 +2712,7 @@ _c4:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+; *** to do *** to do *** to do *** to do ***
 
 ; *** bit shifting ***
 ; * shift *
@@ -3076,10 +3091,56 @@ _76:
 
 _1c:
 ; TRB abs
-; +
+; +51/51/52
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; alt 31b (+50)
+	LDA !0, X		; get operand
+	STA tmp			; save for later
+	LDA a65
+	TRB tmp
+	PHP
+	LDA tmp
+	STA !0, X
+;----
+	PLA
+	AND #2
+	STA tmp
+	LDA p65
+	AND #%11111101
+	ORA tmp
+	STA p65
+	JMP next_op
+; alt2 from -----32B (43-44)
+	PLP
+	BEQ g1c			; will set Z
+		LDA #2			; or clear Z in previous status
+		TRB p65			; updated
+		JMP next_op
+g1c:
+	LDA #2			; set Z in previous status
+	TSB p65			; updated
+	JMP next_op
+
+
+; common TRB routine (+41/41/42) 35b
+	LDA !0, X		; get operand
+	STA tmp			; save for later
+	LDA a65			; mask
+	EOR #$FF		; inverted mask
+	AND !0, X		; clear selected bits
+	STA !0, X
+	LDA tmp			; retrieve
+	AND a65			; test selected bits
+	BEQ g1c			; will set Z
+		LDA #2			; or clear Z in previous status
+		TRB p65			; updated
+		JMP next_op
+g1c:
+	LDA #2			; set Z in previous status
+	TSB p65			; updated
+	JMP next_op
 
 _14:
 ; TRB zp
@@ -3088,12 +3149,45 @@ _14:
 	LDA !0, Y
 	TAX				; temporary index...
 
+	LDA !0, X		; get operand
+	STA tmp			; save for later
+	LDA a65			; mask
+	EOR #$FF		; inverted mask
+	AND !0, X		; clear selected bits
+	STA !0, X
+	LDA tmp			; retrieve
+	AND a65			; test selected bits
+	BEQ g1c			; will set Z
+		LDA #2			; or clear Z in previous status
+		TRB p65			; updated
+		JMP next_op
+g1c:
+	LDA #2			; set Z in previous status
+	TSB p65			; updated
+	JMP next_op
+
+
 _0c:
 ; TSB abs
 ; +
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+; common TSB routine (+//)
+	LDA !0, X		; get operand
+	STA tmp			; save for later
+	ORA a65			; set selected bits
+	STA !0, X
+	LDA tmp			; retrieve
+	AND a65			; test selected bits
+	BEQ g0c			; will set Z
+		LDA #2			; or clear Z in previous status
+		TRB p65			; updated
+		JMP next_op
+g0c:
+	LDA #2			; set Z in previous status
+	TSB p65			; updated
+	JMP next_op
 
 _04:
 ; TSB zp
@@ -3102,9 +3196,26 @@ _04:
 	LDA !0, Y
 	TAX				; temporary index...
 
+	LDA !0, X		; get operand
+	STA tmp			; save for later
+	ORA a65			; set selected bits
+	STA !0, X
+	LDA tmp			; retrieve
+	AND a65			; test selected bits
+	BEQ g04			; will set Z
+		LDA #2			; or clear Z in previous status
+		TRB p65			; updated
+		JMP next_op
+g04:
+	LDA #2			; set Z in previous status
+	TSB p65			; updated
+	JMP next_op
+
+
 ; *** Rockwell/WDC exclusive ***
 ; * (re)set bits *
 
+; *** to do *** to do *** to do *** to do ***
 _07:
 ; RMB0 zp
 ; +
