@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1118
+; last modified 20180721-1205
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -541,9 +541,10 @@ _cb:
 
 _89:
 ; BIT imm
-; +22/22.5/23
+; +22/22/23
 	_PC_ADV			; get immediate operand, just INY
 	LDA !0, Y
+; absolute BIT does not use common code as no NV setting
 	AND a65			; AND with memory
 	BEQ g89z		; will set Z
 		LDA #2			; or clear Z in previous status
@@ -557,37 +558,24 @@ g89z:
 
 _24:
 ; BIT zp
-; +45
+; +42/42/50
 	_PC_ADV			; get zeropage address
 	LDA !0, Y		; cannot get extra byte!
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-; alternative 1 common BIT with LUT, result in A (+34) 22b *good for COMPACT version*
-	STA tmp			; temporary storage, faster than PHA/PLA
-	AND a65			; AND with memory
-	TAX				; index for LUT
-	LDA p65			; previous status...
-	AND #%00111101	; ...minus NVZ...
-	ORA nz_lut, X	; ...adds flag mask
-	AND #%01111111	; make sure N remains clear!
-	STA p65
-	LDA tmp			; retrieve old result
-	AND #$C0		; only two highest bits
-	TSB p65			; final status
-; alt2... 22b (+35) not worth
-	TAX				; keep this
-	AND #$C0		; only two highest bits
-	STA tmp			; temporary storage to be ORed
-	TXA				; retrieve
-	AND a65			; AND with memory
-	TAX				; index for LUT
-	LDA p65			; previous status...
-	AND #%00111101	; ...minus NVZ...
-	ORA nz_lut, X	; ...adds flag mask
-	AND #%01111111	; make sure N remains clear!
-	ORA tmp			; and copy NV from operand
-	STA p65
-; alt3... 25b (+28/28/36) FASTEST
+; common BIT with LUT, result in A (+34) 22b *good for COMPACT version*
+;	STA tmp			; temporary storage, faster than PHA/PLA
+;	AND a65			; AND with accumulator
+;	TAX				; index for LUT
+;	LDA p65			; previous status...
+;	AND #%00111101	; ...minus NVZ...
+;	ORA nz_lut, X	; ...adds flag mask
+;	AND #%01111111	; make sure N remains clear!
+;	STA p65
+;	LDA tmp			; retrieve old result
+;	AND #$C0		; only two highest bits
+;	TSB p65			; final status
+; fastest common BIT code (+28/28/36) 25b
 	TAX				; keep this
 	AND #$C0		; only two highest bits
 	STA tmp			; temporary storage to be ORed
@@ -595,10 +583,11 @@ _24:
 	AND #%00111101	; ...minus NVZ...
 	ORA tmp			; and copy NV from operand
 	STA p65
-	TXA				; retrieve
-	AND a65			; AND with memory
+	TXA				; retrieve operand
+	AND a65			; AND with accumulator
 	BEQ g24z
 		JMP next_op		; all done if not Z
+g24z:
 	LDA #2			; otherwise set Z
 	TSB p65
 
@@ -606,7 +595,7 @@ _24:
 
 _34:
 ; BIT zp, X
-; +53/53/55
+; +47/47/55
 	_PC_ADV			; get zeropage address
 	LDA !0, Y		; cannot get extra byte!
 	CLC
@@ -614,38 +603,49 @@ _34:
 	TAX				; temporary index...
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 
-; old common code 25b (34/34/36)
-	TAX				; keep this value
-	AND a65			; AND with memory
-	BNE g34z		; will clear Z
-		LDA #2			; or set Z in previous status
-		TSB p65			; updated
-		JMP g34nv		; check highest bits
-g34z:
-	LDA #2			; clear Z in previous status
-	TRB p65			; updated
-g34nv:
-	LDA #$C0		; pre-clear NV
-	TRB p65
-	TXA				; retrieve old result
+	TAX				; keep this
 	AND #$C0		; only two highest bits
-	TSB p65			; final status
-
+	STA tmp			; temporary storage to be ORed
+	LDA p65			; previous status...
+	AND #%00111101	; ...minus NVZ...
+	ORA tmp			; and copy NV from operand
+	STA p65
+	TXA				; retrieve operand
+	AND a65			; AND with accumulator
+	BEQ g34z
+		JMP next_op		; all done if not Z
+g34z:
+	LDA #2			; otherwise set Z
+	TSB p65
 	JMP next_op
 
 _2c:
 ; BIT abs
-; +49/49/51
+; +43/43/51
 	_PC_ADV			; point to operand
 	LDX !0, Y		; just full address!
 	_PC_ADV			; skip MSB
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 
+	TAX				; keep this
+	AND #$C0		; only two highest bits
+	STA tmp			; temporary storage to be ORed
+	LDA p65			; previous status...
+	AND #%00111101	; ...minus NVZ...
+	ORA tmp			; and copy NV from operand
+	STA p65
+	TXA				; retrieve operand
+	AND a65			; AND with accumulator
+	BEQ g2cz
+		JMP next_op		; all done if not Z
+g2cz:
+	LDA #2			; otherwise set Z
+	TSB p65
 	JMP next_op
 
 _3c:
 ; BIT abs, X
-; +
+; +58/58/66
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -656,6 +656,20 @@ _3c:
 	.as: SEP #$20
 	LDA !0, X		; get final data
 
+	TAX				; keep this
+	AND #$C0		; only two highest bits
+	STA tmp			; temporary storage to be ORed
+	LDA p65			; previous status...
+	AND #%00111101	; ...minus NVZ...
+	ORA tmp			; and copy NV from operand
+	STA p65
+	TXA				; retrieve operand
+	AND a65			; AND with accumulator
+	BEQ g3cz
+		JMP next_op		; all done if not Z
+g3cz:
+	LDA #2			; otherwise set Z
+	TSB p65
 	JMP next_op
 
 ; *** jumps ***
