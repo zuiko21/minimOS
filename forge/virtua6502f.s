@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180721-1657
+; last modified 20180722-1006
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -3123,6 +3123,22 @@ _1c:
 ;	TSB p65			; updated
 ;	JMP next_op
 
+;alt3 30b (+37-39) BEST
+	LDA !0, X		; get operand
+	STA tmp			; must be accesible
+	LDA a65			; get mask
+	TRB tmp			; proceed natively
+	BEQ g1cz		; will set Z
+		LDA #2			; or clear Z in previous status
+		TRB p65			; updated
+		JMP g1cu
+g1cz:
+	LDA #2			; set Z in previous status
+	TSB p65			; updated
+g1cu:
+	LDA tmp			; write final value
+	STA !0, X
+	JMP next_op
 
 ; common TRB routine (+41/41/42) 35b
 	LDA !0, X		; get operand
@@ -3173,7 +3189,7 @@ _0c:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
-; common TSB routine (+//)
+; common TSB routine (+34-35) 30b
 	LDA !0, X		; get operand
 	STA tmp			; save for later
 	ORA a65			; set selected bits
