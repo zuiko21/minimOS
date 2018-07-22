@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180722-1104
+; last modified 20180722-1131
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -2570,15 +2570,32 @@ _de:
 
 _cd:
 ; CMP abs
-; +
+; +54
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
-; *** to do *** to do *** to do *** to do ***
+; copy virtual status (+44) common CMP code
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+; proceed
+	LDA a65			; from accumulator...
+	CMP !0, X		; ...do comparison
+; with so many flags to set, best sync with virtual P (minus X-flag!)
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+; all done
+	JMP next_op
 
 _dd:
 ; CMP abs, X
-; +
+; +68
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2587,11 +2604,25 @@ _dd:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65			; from accumulator...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _d9:
 ; CMP abs, Y
-; +
+; +68
 	_PC_ADV			; get LSB
 	.al: REP #$21	; 16-bit... and clear C
 	LDA !0, Y		; just full address!
@@ -2600,36 +2631,91 @@ _d9:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65			; from accumulator...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _c9:
 ; CMP imm
-; +
+; +46
 	_PC_ADV			; get immediate operand
-	LDA !0, Y
-; *** to do *** to do *** to do *** to do ***
+; somewhat special code, same speed (TYX worth on compact version)
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65			; from accumulator...
+	CMP !0, Y		; ...do comparison (immediate)
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _c5:
 ; CMP zp
-; +
+; +53
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65			; from accumulator...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _d5:
 ; CMP zp, X
-; +
+; +58
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65			; from accumulator...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _d2:
 ; CMP (zp)
-; +
+; +70
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y		; cannot pick extra
 	TAX				; temporary index...
@@ -2638,11 +2724,25 @@ _d2:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65			; from accumulator...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _d1:
 ; CMP (zp), Y
-; +
+; +74
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2652,11 +2752,25 @@ _d1:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65			; from accumulator...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _c1:
 ; CMP (zp, X)
-; +
+; +74
 	_PC_ADV			; get zeropage pointer
 	LDA !0, Y
 	.al: REP #$21	; 16b & CLC
@@ -2666,53 +2780,155 @@ _c1:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA a65			; from accumulator...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _ec:
 ; CPX abs
-; +
+; +54
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
-; *** to do *** to do *** to do *** to do ***
+; copy virtual status (+44) common CPX code
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+; proceed
+	LDA x65			; from X...
+	CMP !0, X		; ...do comparison
+; with so many flags to set, best sync with virtual P (minus X-flag!)
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+; all done
+	JMP next_op
 
 _e0:
 ; CPX imm
-; +
+; +46
 	_PC_ADV			; get immediate operand
-	LDA !0, Y
-; *** to do *** to do *** to do *** to do ***
+; adapted code
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA x65			; from X...
+	CMP !0, Y		; ...do comparison (immediate)
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _e4:
 ; CPX zp
-; +
+; +53
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA x65			; from X...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _cc:
 ; CPY abs
-; +
+; +54
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
-; *** to do *** to do *** to do *** to do ***
+; copy virtual status (+44) common CPY code
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+; proceed
+	LDA y65			; from Y...
+	CMP !0, X		; ...do comparison
+; with so many flags to set, best sync with virtual P (minus X-flag!)
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+; all done
+	JMP next_op
 
 _c0:
 ; CPY imm
-; +
+; +46
 	_PC_ADV			; get immediate operand
-	LDA !0, Y
-; *** to do *** to do *** to do *** to do ***
+; adapted code
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA y65			; from Y...
+	CMP !0, Y		; ...do comparison (immediate)
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 _c4:
 ; CPY zp
-; +
+; +53
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
-; *** to do *** to do *** to do *** to do ***
+
+	PHP				; will tinker with host status!
+	LDA p65			; pick virtual status
+	ORA #$20		; make sure M=1 & X=0!
+	AND #$EF
+	PHA
+	PLP				; assume virtual status (X=0!)
+	LDA y65			; from Y...
+	CMP !0, X		; ...do comparison
+	PHP				; new status
+	PLA
+	ORA #$10		; this puts B-flag back to 1
+	STA p65			; update virtual
+	PLP
+	JMP next_op
 
 ; *** bit shifting ***
 ; * shift *
