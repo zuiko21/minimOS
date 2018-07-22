@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180722-1131
+; last modified 20180722-1136
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -562,8 +562,8 @@ _24:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y		; cannot get extra byte!
 	TAX				; temporary index...
+; fastest common BIT code (+33/33/41)
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
-; fastest common BIT code (+28/28/36) 25b
 	TAX				; keep this
 	AND #$C0		; only two highest bits
 	STA tmp			; temporary storage to be ORed
@@ -589,8 +589,8 @@ _34:
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 
+	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	TAX				; keep this
 	AND #$C0		; only two highest bits
 	STA tmp			; temporary storage to be ORed
@@ -613,8 +613,8 @@ _2c:
 	_PC_ADV			; point to operand
 	LDX !0, Y		; just full address!
 	_PC_ADV			; skip MSB
-	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 
+	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	TAX				; keep this
 	AND #$C0		; only two highest bits
 	STA tmp			; temporary storage to be ORed
@@ -642,8 +642,8 @@ _3c:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
-	LDA !0, X		; get final data
 
+	LDA !0, X		; get final data
 	TAX				; keep this
 	AND #$C0		; only two highest bits
 	STA tmp			; temporary storage to be ORed
@@ -1182,6 +1182,7 @@ _86:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+
 	LDA x65			; value to be stored
 	STA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	JMP next_op
@@ -1194,6 +1195,7 @@ _96:
 	CLC
 	ADC y65			; add offset
 	TAX				; temporary index...
+
 	LDA x65			; value to be stored
 	STA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	JMP next_op
@@ -1204,6 +1206,7 @@ _8e:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	LDA x65			; value to be stored
 	STA !0, X		; store operand
 	JMP next_op
@@ -1214,6 +1217,7 @@ _84:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+
 	LDA y65			; value to be stored
 	STA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	JMP next_op
@@ -1226,6 +1230,7 @@ _94:
 	CLC
 	ADC x65			; add offset
 	TAX				; temporary index...
+
 	LDA y65			; value to be stored
 	STA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	JMP next_op
@@ -1236,6 +1241,7 @@ _8c:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	LDA y65			; value to be stored
 	STA !0, X		; store operand
 	JMP next_op
@@ -1246,6 +1252,7 @@ _64:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+
 	STZ !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	JMP next_op
 
@@ -1257,6 +1264,7 @@ _74:
 	CLC
 	ADC x65			; add offset
 	TAX				; temporary index...
+
 	STZ !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	JMP next_op
 
@@ -1266,6 +1274,7 @@ _9c:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	STZ !0, X		; store operand
 	JMP next_op
 
@@ -1280,6 +1289,7 @@ _9e:
 	TAX				; final address
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	STZ !0, X		; clear destination
 	JMP next_op
 
@@ -1289,6 +1299,7 @@ _8d:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	LDA a65			; value to be stored
 	STA !0, X		; store operand
 	JMP next_op
@@ -1304,6 +1315,7 @@ _9d:
 	TAX				; final address
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA a65			; value to be stored
 	STA !0, X		; store destination
 	JMP next_op
@@ -1319,6 +1331,7 @@ _99:
 	TAX				; final address
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA a65			; value to be stored
 	STA !0, X		; store destination
 	JMP next_op
@@ -1329,6 +1342,7 @@ _85:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y		; base address
 	TAX				; temporary index...
+
 	LDA a65			; value to be stored
 	STA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	JMP next_op
@@ -1341,6 +1355,7 @@ _95:
 	CLC
 	ADC x65			; add index
 	TAX				; temporary index...
+
 	LDA a65			; value to be stored
 	STA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	JMP next_op
@@ -1356,6 +1371,7 @@ _92:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA a65			; value to be stored
 	STA !0, X		; ...as final data
 	JMP next_op
@@ -1372,6 +1388,7 @@ _91:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA a65			; value to be stored
 	STA !0, X		; ...as final data
 	JMP next_op
@@ -1388,6 +1405,7 @@ _81:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA a65			; value to be stored
 	STA !0, X		; ...as final data
 	JMP next_op
@@ -1400,6 +1418,7 @@ _29:
 ; +31
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
+; worth using TYX in COMPACT version
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
 ; standard NZ flag setting (+18)
@@ -1417,6 +1436,7 @@ _25:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
@@ -1436,6 +1456,7 @@ _35:
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
@@ -1453,6 +1474,7 @@ _2d:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	LDA !0, X		; read operand
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
@@ -1475,6 +1497,7 @@ _3d:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
 	LDA !0, X		; get final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
@@ -1497,6 +1520,7 @@ _39:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
 	LDA !0, X		; get final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
@@ -1519,6 +1543,7 @@ _32:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; read operand
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
@@ -1542,6 +1567,7 @@ _31:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
@@ -1565,6 +1591,7 @@ _21:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; ...final data
 	AND a65			; do AND
 	STA a65			; eeeeeeeeeeeeek
@@ -1583,6 +1610,7 @@ _09:
 ; +31
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
+; worth using TYX in compact
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
 ; standard NZ flag setting
@@ -1600,6 +1628,7 @@ _05:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
@@ -1619,6 +1648,7 @@ _15:
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
@@ -1636,6 +1666,7 @@ _0d:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	LDA !0, X		; read operand
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
@@ -1658,6 +1689,7 @@ _1d:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
 	LDA !0, X		; get final data
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
@@ -1680,6 +1712,7 @@ _19:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
 	LDA !0, X		; get final data
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
@@ -1702,6 +1735,7 @@ _12:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; read operand
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
@@ -1725,6 +1759,7 @@ _11:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; final data
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
@@ -1748,6 +1783,7 @@ _01:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; ...final data
 	ORA a65			; do OR
 	STA a65			; eeeeeeeeeeeeek
@@ -1766,6 +1802,7 @@ _49:
 ; +31
 	_PC_ADV			; get immediate operand
 	LDA !0, Y
+; worth TYX in compact
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
 ; standard NZ flag setting
@@ -1783,6 +1820,7 @@ _45:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
@@ -1802,6 +1840,7 @@ _55:
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+
 	LDA !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
@@ -1819,6 +1858,7 @@ _4d:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	LDA !0, X		; read operand
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
@@ -1841,6 +1881,7 @@ _5d:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
 	LDA !0, X		; get final data
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
@@ -1863,6 +1904,7 @@ _59:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
 	LDA !0, X		; get final data
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
@@ -1885,6 +1927,7 @@ _52:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; read operand
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
@@ -1908,6 +1951,7 @@ _51:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; final data
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
@@ -1931,6 +1975,7 @@ _41:
 	TAX				; final address...
 	LDA #0			; clear B
 	.as: SEP #$20
+
 	LDA !0, X		; ...final data
 	EOR a65			; do XOR
 	STA a65			; eeeeeeeeeeeeek
@@ -1957,7 +2002,7 @@ _69:
 	PHA
 	PLP				; assume virtual status (X=0!)
 ; proceed
-	LDA !0, Y
+	LDA !0, Y		; worth TYX in compact
 	ADC a65			; do add
 	STA a65			; update value
 ; with so many flags to set, best sync with virtual P (minus X-flag!)
@@ -2197,7 +2242,7 @@ _e9:
 	PLP				; assume virtual status (X=0!)
 ; proceed
 	LDA a65
-	SBC !0, Y		; subtract operand
+	SBC !0, Y		; subtract operand, worth TYX in compact
 	STA a65			; update value
 ; with so many flags to set, best sync with virtual P (minus X-flag!)
 	PHP				; new status
@@ -2429,6 +2474,7 @@ _e6:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+
 	INC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	LDA !0, X		; retrieve value
 ; standard NZ flag setting (+18)
@@ -2448,6 +2494,7 @@ _f6:
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+
 	INC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	LDA !0, X		; retrieve value
 
@@ -2464,6 +2511,7 @@ _ee:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	INC !0, X		; update operand
 	LDA !0, X		; retrieve value
 
@@ -2485,6 +2533,7 @@ _fe:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
 	INC !0, X		; update final data
 	LDA !0, X		; retrieve value
 
@@ -2501,6 +2550,7 @@ _c6:
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+
 	DEC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	LDA !0, X		; retrieve value
 
@@ -2519,6 +2569,7 @@ _d6:
 	CLC
 	ADC x65			; add index, forget carry as will page-wrap
 	TAX				; temporary index...
+
 	DEC !0, X		; ...for emulated zeropage *** must use absolute for emulated bank ***
 	LDA !0, X		; retrieve value
 
@@ -2535,6 +2586,7 @@ _ce:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
+
 	DEC !0, X		; update operand
 	LDA !0, X		; retrieve value
 
@@ -2556,6 +2608,7 @@ _de:
 	TAX				; final address, B remains touched
 	LDA #0			; use extra byte to clear B
 	.as: SEP #$20
+
 	DEC !0, X		; update final data
 	LDA !0, X		; retrieve value
 
