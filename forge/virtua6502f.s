@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180722-1006
+; last modified 20180722-1035
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -3095,35 +3095,7 @@ _1c:
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
-; alt 31b (+50)
-	LDA !0, X		; get operand
-	STA tmp			; save for later
-	LDA a65
-	TRB tmp
-	PHP
-	LDA tmp
-	STA !0, X
-;----
-	PLA
-	AND #2
-	STA tmp
-	LDA p65
-	AND #%11111101
-	ORA tmp
-	STA p65
-	JMP next_op
-; alt2 from -----32B (43-44)
-;	PLP
-;	BEQ g1c			; will set Z
-;		LDA #2			; or clear Z in previous status
-;		TRB p65			; updated
-;		JMP next_op
-;g1c:
-;	LDA #2			; set Z in previous status
-;	TSB p65			; updated
-;	JMP next_op
-
-;alt3 30b (+37-39) BEST
+; common native TRB routine 30b (+37-39) BEST
 	LDA !0, X		; get operand
 	STA tmp			; must be accesible
 	LDA a65			; get mask
@@ -3140,24 +3112,6 @@ g1cu:
 	STA !0, X
 	JMP next_op
 
-; common TRB routine (+41/41/42) 35b
-	LDA !0, X		; get operand
-	STA tmp			; save for later
-	LDA a65			; mask
-	EOR #$FF		; inverted mask
-	AND !0, X		; clear selected bits
-	STA !0, X
-	LDA tmp			; retrieve
-	AND a65			; test selected bits
-	BEQ g1c			; will set Z
-		LDA #2			; or clear Z in previous status
-		TRB p65			; updated
-		JMP next_op
-g1c:
-	LDA #2			; set Z in previous status
-	TSB p65			; updated
-	JMP next_op
-
 _14:
 ; TRB zp
 ; +
@@ -3166,22 +3120,20 @@ _14:
 	TAX				; temporary index...
 
 	LDA !0, X		; get operand
-	STA tmp			; save for later
-	LDA a65			; mask
-	EOR #$FF		; inverted mask
-	AND !0, X		; clear selected bits
-	STA !0, X
-	LDA tmp			; retrieve
-	AND a65			; test selected bits
-	BEQ g14			; will set Z
+	STA tmp			; must be accesible
+	LDA a65			; get mask
+	TRB tmp			; proceed natively
+	BEQ g14z		; will set Z
 		LDA #2			; or clear Z in previous status
 		TRB p65			; updated
-		JMP next_op
-g14:
+		JMP g14u
+g14z:
 	LDA #2			; set Z in previous status
 	TSB p65			; updated
+g14u:
+	LDA tmp			; write final value
+	STA !0, X
 	JMP next_op
-
 
 _0c:
 ; TSB abs
@@ -3231,118 +3183,197 @@ g04:
 ; *** Rockwell/WDC exclusive ***
 ; * (re)set bits *
 
-; *** to do *** to do *** to do *** to do ***
 _07:
 ; RMB0 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #%11111110	; REVERSE mask for bit 0
+; common RMB, reverse mask in A, address in X (+13)
+	AND !0, X		; keep all but selected
+	STA !0, X
+	JMP next_op
 
 _17:
 ; RMB1 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #%11111101	; REVERSE mask for bit 1
+
+	AND !0, X		; keep all but selected
+	STA !0, X
+	JMP next_op
 
 _27:
 ; RMB2 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #%11111011	; REVERSE mask for bit 2
+
+	AND !0, X		; keep all but selected
+	STA !0, X
+	JMP next_op
 
 _37:
 ; RMB3 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #%11110111	; REVERSE mask for bit 3
+
+	AND !0, X		; keep all but selected
+	STA !0, X
+	JMP next_op
 
 _47:
 ; RMB4 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #%11101111	; REVERSE mask for bit 4
+
+	AND !0, X		; keep all but selected
+	STA !0, X
+	JMP next_op
 
 _57:
 ; RMB5 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #%11011111	; REVERSE mask for bit 5
+
+	AND !0, X		; keep all but selected
+	STA !0, X
+	JMP next_op
 
 _67:
 ; RMB6 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #%10111111	; REVERSE mask for bit 6
+
+	AND !0, X		; keep all but selected
+	STA !0, X
+	JMP next_op
 
 _77:
 ; RMB7 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #%01111111	; REVERSE mask for bit 7
+
+	AND !0, X		; keep all but selected
+	STA !0, X
+	JMP next_op
 
 _87:
 ; SMB0 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #1			; mask for bit 0
+; common SMB, mask in A, address in X (+13)
+	ORA !0, X		; set selected
+	STA !0, X
+	JMP next_op
 
 _97:
 ; SMB1 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #2			; mask for bit 1
+; common SMB, mask in A, address in X (+13)
+	ORA !0, X		; set selected
+	STA !0, X
+	JMP next_op
 
 _a7:
 ; SMB2 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #4			; mask for bit 2
+; common SMB, mask in A, address in X (+13)
+	ORA !0, X		; set selected
+	STA !0, X
+	JMP next_op
 
 _b7:
 ; SMB3 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #8			; mask for bit 3
+; common SMB, mask in A, address in X (+13)
+	ORA !0, X		; set selected
+	STA !0, X
+	JMP next_op
 
 _c7:
 ; SMB4 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #16			; mask for bit 4
+; common SMB, mask in A, address in X (+13)
+	ORA !0, X		; set selected
+	STA !0, X
+	JMP next_op
 
 _d7:
 ; SMB5 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #32			; mask for bit 5
+; common SMB, mask in A, address in X (+13)
+	ORA !0, X		; set selected
+	STA !0, X
+	JMP next_op
 
 _e7:
 ; SMB6 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #64			; mask for bit 6
+; common SMB, mask in A, address in X (+13)
+	ORA !0, X		; set selected
+	STA !0, X
+	JMP next_op
 
 _f7:
 ; SMB7 zp
-; +
+; +24
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
+	LDA #128		; mask for bit 7
+; common SMB, mask in A, address in X (+13)
+	ORA !0, X		; set selected
+	STA !0, X
+	JMP next_op
 
 ; * branch on bits *
 
