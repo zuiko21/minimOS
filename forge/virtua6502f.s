@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180722-1136
+; last modified 20180723-1601
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -769,9 +769,22 @@ g70:
 
 _80:
 ; BRA rel
-; +// *
+; +42/42.5/43 *
 	_PC_ADV			; get relative address
-; *** to do *** to do *** to do *** to do ***
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g80p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g80p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
 	JMP execute		; PC is ready!
 
 ; * absolute jumps *
