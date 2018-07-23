@@ -1014,7 +1014,7 @@ _96:
 	BRA do_stx		; +14
 _8e:
 ; STX abs
-; +25
+; +24
 	_PC_ADV			; get address
 	LDX !0, Y
 	_PC_ADV			; skip MSB
@@ -1349,7 +1349,6 @@ _15:
 	TAX				; temporary index...
 
 	BRA do_ora		; +35
-	BRA do_ora
 
 _0d:
 ; ORA abs
