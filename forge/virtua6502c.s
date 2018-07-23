@@ -2,7 +2,7 @@
 ; COMPACT version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180722-1621
+; last modified 20180723-1455
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -104,7 +104,7 @@ lo_jump:
 
 _ea:
 
-; must add illegal NMOS opcodes (not yet used in NMOS) as NOPs
+; must add illegal NMOS opcodes (not yet used in 65C02) as NOPs
 
 _02:_22:_42:_62:_82:_c2:_e2:
 _03:_13:_23:_33:_43:_53:_63:_73:_83:_93:_a3:_b3:_c3:_d3:_e3:_f3:
@@ -134,7 +134,6 @@ v6exit:
 	LDY cdev		; in case is a window... reads extra byte
 	_KERNEL(FREE_W)	; ...allow further examination
 	_FINISH			; end without errors?
-
 
 
 ; *** window title, optional and minimOS specific ***
@@ -171,6 +170,8 @@ int_stat:
 	LDA p65			; status... and zero for B
 	.as: SEP #$20
 	STA $0100, X	; store in emulated stack
+	ORA #%00010000	; but current virtual status remains with B (aka X) flag set!!!
+	STA p65
 	DEX				; post-decrement
 	STX s65			; update SP, MSB should be zero
 	JMP x_vect		; execute interrupt code
@@ -189,6 +190,7 @@ _18:
 ; CLC
 ; +10
 	LDA #1			; C flag...
+; common clear flag code, CLC seems most used
 do_clc:
 	TRB p65			; gets cleared
 	JMP next_op
@@ -218,6 +220,7 @@ _38:
 ; SEC
 ; +10
 	LDA #1			; C flag...
+; common set flag code, SEC seems most used
 do_sec:
 	TSB p65			; gets set
 	JMP next_op
@@ -293,13 +296,13 @@ _aa:
 ; +24
 	LDA a65			; copy accumulator...
 	STA x65			; ...to index
-; *** standard NZ setting (+18, 16 without TAX) ***
+; *** standard NZ setting (+18, 16 if already in X) ***
 tax_nz:
-	TAX				; (value in X)
+	TAX				; put value in X as LUT index
 std_nz:
-	LDA p65			; previous status...
-	AND #$7D		; ...minus NZ...
-	ORA nz_lut, X	; ...adds flag mask
+	LDA p65			; current status...
+	AND #$7D		; ...minus previous NZ...
+	ORA nz_lut, X	; ...plus flag mask
 	STA p65
 ; all done
 	JMP next_op
@@ -469,7 +472,7 @@ _89:
 ; +22/22/23
 	_PC_ADV			; get immediate operand, just INY
 	LDA !0, Y
-; absolute BIT does not use common code as no NV setting
+; immediate BIT does not use common code as no NV setting
 	AND a65			; AND with accumulator
 	BEQ g89z		; was zero
 		LDA #2			; otherwise clear Z
@@ -545,87 +548,102 @@ _3c:
 _90:
 ; BCC rel
 ; +12 if not taken
-; +// * if taken
+; +52/52.5/53* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #1			; will check C flag
-	BIT p65
+	AND p65
 	BEQ do_bra		; will branch
 		JMP next_op		; or just continue
 
 _b0:
 ; BCS rel
 ; +12 if not taken
-; +// * if taken
+; +52/52.5/53* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #1			; will check C flag
-	BIT p65
+	AND p65
 	BNE do_bra		; will branch
 		JMP next_op		; or just continue
 
 _30:
 ; BMI rel
 ; +12 if not taken
-; +// * if taken
+; +52/52.5/53* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #128		; will check N flag
-	BIT p65
+	AND p65
 	BNE do_bra		; will branch
 		JMP next_op		; or just continue
 
 _10:
 ; BPL rel
 ; +12 if not taken
-; +// * if taken
+; +52/52.5/53* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #128		; will check N flag
-	BIT p65
+	AND p65
 	BEQ do_bra		; will branch
 		JMP next_op		; or just continue
 
 _f0:
 ; BEQ rel
 ; +12 if not taken
-; +// * if taken
+; +52/52.5/53* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #2			; will check Z flag
-	BIT p65
+	AND p65
 	BNE do_bra		; will branch
 		JMP next_op		; or just continue
 
 _d0:
 ; BNE rel
 ; +12 if not taken
-; +// * if taken
+; +52/52.5/53* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #2			; will check Z flag
-	BIT p65
+	AND p65
 	BEQ do_bra			; will branch
 		JMP next_op		; or just continue
 ; *** common branch code ***
 do_bra:
 _80:
 ; BRA rel
-; +// *
-; *** to do *** to do *** to do *** to do ***
+; +42/42.5/43*
+	_PC_ADV			; point to offset
+do_bra2:
+	LDX #0			; will use as sign extention
+	LDA !0, Y		; get offset
+	BPL g80p		; forward jump, no extention
+		DEX			; backwards means at least MSB is $FF
+g80p:
+	STX tmp			; store MSB and extra
+	STA tmp			; this is LSB only
+	.al: REP #$21		; 16-bit add & CLC
+	_PC_ADV			; skip whole instruction!
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset
+	TAY			; result in PC
+	LDA #0			; clear B
+	.as: SEP #$20
 	JMP execute		; PC is ready!
 
 _50:
 ; BVC rel
 ; +12 if not taken
-; +// * if taken
+; +52/52.5/53* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #64			; will check V flag
-	BIT p65
+	AND p65
 	BEQ do_bra		; will branch
 		JMP next_op		; or just continue
 
 _70:
 ; BVS rel
 ; +12 if not taken
-; +// * if taken
+; +52/52.5/53* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #64			; will check V flag
-	BIT p65
+	AND p65
 	BNE do_bra		; will branch
 		JMP next_op		; or just continue
 
@@ -664,13 +682,13 @@ _7c:
 
 _20:
 ; JSR abs
-; +44*
+; +44* (+5 or +10 if support for native mOS calls)
 	_PC_ADV			; point to addeess
 ; first compute return address
 	.al: REP #$20
 	TYA				; copy PC...
 	INC				; at MSB
-; push the CURRENT address as we are at the last byte of the instruction
+; push address as we are at the last byte of the instruction
 	LDX s65			; current SP with extra
 	DEX				; LSB location
 	STA !$0100, X	; return address into virtual stack
@@ -680,8 +698,46 @@ _20:
 	.as: SEP #20
 ; jump to destination
 	LDX !0, Y		; target address
+; *** should include here a trap for NATIVE minimOS Kernel calls! ***
+	CPX #$FFC0		; minimOS Kernel call?
+		BEQ mos_k		; execute natively!
+;	CPX #$FFD0		; minimOS firmware call? worth it?
+;		BEQ mos_f		; execute natively! * TO DO *
+; jump to target address
 	TXY				; ready!
 	JMP execute
+; *** management of trapped native calls ***
+mos_f:
+; not sure if worth it...
+; repeat kpar_l loop and make special JSL $FFD8, then go after COP
+mos_k:
+; *** transfer virtual parameters to host space ***
+	LDX #11			; max offset on parameter area
+kpar_l:
+		LDA !$F0, X		; copy parameter from virtual space...
+		STA $F0, X		; ...into host zeropage
+		DEX			; until done
+		BPL kpar_l
+	LDY y65			; base parameter
+; *** call native OS ***
+	LDX x65			; requested kernel function
+	CLC
+	COP #$7F		; NATIVE 65816 minimOS Kernel call (no macro)
+; *** return error flag, if available ***
+	BCC mos_ok		; no error to report
+		LDA #1			; set virtual C flag
+		TSB p65
+mos_ok:
+; *** extract possible return values ***
+	STY y65			; base parameter
+	LDX #11			; max offset on parameter area
+kpar_r:
+		LDA $F0, X		; copy host values...
+		STA !$F0, X		; ...into virtual space
+		DEX			; until done
+		BPL kpar_r
+; *** return to caller, worth using virtual RTS ***
+	JMP _20			; execute virtual RTS, even faster
 
 ; *** load / store ***
 
@@ -2564,8 +2620,7 @@ do_bbr:
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
 	BNE g0f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		JMP do_bra2		; do branch, already set at offset
 g0f:
 	JMP next_op
 
