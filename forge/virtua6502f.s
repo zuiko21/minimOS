@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180723-1659
+; last modified 20180723-1708
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -925,7 +925,7 @@ _7c:
 
 _20:
 ; JSR abs
-; +44*
+; +44* (+5...)
 	_PC_ADV			; point to addeess
 ; first compute return address
 	.al: REP #$20
@@ -941,8 +941,46 @@ _20:
 	.as: SEP #20
 ; jump to destination
 	LDX !0, Y		; target address
+; *** trap for NATIVE minimOS Kernel calls ***
+	CPX #$FFC0
+		BEQ mos_k
 	TXY				; ready!
 	JMP execute
+; *** manage Kernel call ***
+mos_k:
+	LDX #11			; max params
+kpar_l:
+		LDA !$F0, X		; copy from virtual to host
+		STA $F0, X
+		DEX
+		BPL kpar_l
+	LDY y65			; base param
+; *** call OS ***
+	LDX x65			; kernel func
+	CLC			; macro-less call
+	COP #$7F
+; *** error flag ***
+	BCC mos_ok
+		LDA #1			; set virtual C
+		TSB p65
+mos_ok:
+; *** return values ***
+	STY y65
+	LDX #11
+kpar_r:
+		LDA $F0, X		; copy from host to virtual
+		STA !$F0, X
+		DEX
+		BPL kpar_r
+; *** return to caller ***
+	LDX s65			; get current SP, extra zero
+	INX				; pre-increment
+	LDY $0100, X	; pull full return address from stack
+	INY				; correct it!
+	INX				; skip both bytes
+	STX s65			; update SP
+; all done
+	JMP execute		; PC already set!
 
 ; *** load / store ***
 
