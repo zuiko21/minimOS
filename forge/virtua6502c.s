@@ -2,7 +2,7 @@
 ; COMPACT version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180723-1455
+; last modified 20180723-1621
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -548,7 +548,7 @@ _3c:
 _90:
 ; BCC rel
 ; +12 if not taken
-; +52/52.5/53* if taken
+; +50/50.5/51* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #1			; will check C flag
 	AND p65
@@ -558,7 +558,7 @@ _90:
 _b0:
 ; BCS rel
 ; +12 if not taken
-; +52/52.5/53* if taken
+; +50/50.5/51* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #1			; will check C flag
 	AND p65
@@ -568,7 +568,7 @@ _b0:
 _30:
 ; BMI rel
 ; +12 if not taken
-; +52/52.5/53* if taken
+; +50/50.5/51* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #128		; will check N flag
 	AND p65
@@ -578,7 +578,7 @@ _30:
 _10:
 ; BPL rel
 ; +12 if not taken
-; +52/52.5/53* if taken
+; +50/50.5/51* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #128		; will check N flag
 	AND p65
@@ -588,7 +588,7 @@ _10:
 _f0:
 ; BEQ rel
 ; +12 if not taken
-; +52/52.5/53* if taken
+; +50/50.5/51* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #2			; will check Z flag
 	AND p65
@@ -598,19 +598,18 @@ _f0:
 _d0:
 ; BNE rel
 ; +12 if not taken
-; +52/52.5/53* if taken
+; +50/50.5/51* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #2			; will check Z flag
 	AND p65
 	BEQ do_bra			; will branch
 		JMP next_op		; or just continue
-; *** common branch code ***
-do_bra:
+
 _80:
 ; BRA rel
-; +42/42.5/43*
-	_PC_ADV			; point to offset
-do_bra2:
+; +40/40.5/41*
+; *** common branch code ***
+do_bra:
 	LDX #0			; will use as sign extention
 	LDA !0, Y		; get offset
 	BPL g80p		; forward jump, no extention
@@ -630,7 +629,7 @@ g80p:
 _50:
 ; BVC rel
 ; +12 if not taken
-; +52/52.5/53* if taken
+; +50/50.5/51* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #64			; will check V flag
 	AND p65
@@ -640,7 +639,7 @@ _50:
 _70:
 ; BVS rel
 ; +12 if not taken
-; +52/52.5/53* if taken
+; +50/50.5/51* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #64			; will check V flag
 	AND p65
@@ -737,7 +736,7 @@ kpar_r:
 		DEX			; until done
 		BPL kpar_r
 ; *** return to caller, worth using virtual RTS ***
-	JMP _20			; execute virtual RTS, even faster
+	JMP _60			; execute virtual RTS, even faster
 
 ; *** load / store ***
 
@@ -2610,24 +2609,24 @@ _f7:
 _0f:
 ; BBR0 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +63/63.5/64* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 	LDA #1			; mask for bit 0
-; common BBR code (+13/+*)
+; common BBR code (+13, +52/52.5/53*)
 do_bbr:
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
 	BNE g0f			; will not branch
-		JMP do_bra2		; do branch, already set at offset
+		JMP do_bra		; do branch, already set at offset
 g0f:
 	JMP next_op
 
 _1f:
 ; BBR1 zp, rel
-; +24 if not taken
-; +// * if taken
+; +27 if not taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2637,8 +2636,8 @@ _1f:
 
 _2f:
 ; BBR2 zp, rel
-; +24 if not taken
-; +// * if taken
+; +27 if not taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2648,8 +2647,8 @@ _2f:
 
 _3f:
 ; BBR3 zp, rel
-; +24 if not taken
-; +// * if taken
+; +27 if not taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2659,8 +2658,8 @@ _3f:
 
 _4f:
 ; BBR4 zp, rel
-; +24 if not taken
-; +// * if taken
+; +27 if not taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2670,8 +2669,8 @@ _4f:
 
 _5f:
 ; BBR5 zp, rel
-; +24 if not taken
-; +// * if taken
+; +27 if not taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2681,8 +2680,8 @@ _5f:
 
 _6f:
 ; BBR6 zp, rel
-; +24 if not taken
-; +// * if taken
+; +27 if not taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2692,8 +2691,8 @@ _6f:
 
 _7f:
 ; BBR7 zp, rel
-; +24 if not taken
-; +// * if taken
+; +27 if not taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2704,25 +2703,24 @@ _7f:
 _8f:
 ; BBS0 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +63/63.5/64 * if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 	LDA #1			; mask for bit 0
-; common BBS code (+13/+*)
+; common BBS code (+13, +52/52.5/53*)
 do_bbs:
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
 	BEQ g8f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		JMP do_bra		; do branch, already set at offset
 g8f:
 	JMP next_op
 
 _9f:
 ; BBS1 zp, rel
 ; +27 if not taken
-; +// * if taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2733,7 +2731,7 @@ _9f:
 _af:
 ; BBS2 zp, rel
 ; +27 if not taken
-; +// * if taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2744,7 +2742,7 @@ _af:
 _bf:
 ; BBS3 zp, rel
 ; +27 if not taken
-; +// * if taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2755,7 +2753,7 @@ _bf:
 _cf:
 ; BBS4 zp, rel
 ; +27 if not taken
-; +// * if taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2766,7 +2764,7 @@ _cf:
 _df:
 ; BBS5 zp, rel
 ; +27 if not taken
-; +// * if taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2777,7 +2775,7 @@ _df:
 _ef:
 ; BBS6 zp, rel
 ; +27 if not taken
-; +// * if taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -2788,7 +2786,7 @@ _ef:
 _ff:
 ; BBS7 zp, rel
 ; +27 if not taken
-; +// * if taken
+; +66/66.5/67* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
