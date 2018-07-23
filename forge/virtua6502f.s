@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180723-1601
+; last modified 20180723-1659
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -3765,24 +3765,38 @@ _f7:
 _0f:
 ; BBR0 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 	LDA #1			; mask for bit 0
-; common BBR code (+13/+*)
+; common BBR code
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
-	BNE g0f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g0f			; will not branch
+; branch code +40/40.5/41*
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g0fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g0fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g0f:
-	JMP next_op
+		JMP next_op
 
 _1f:
 ; BBR1 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3790,16 +3804,29 @@ _1f:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
-	BNE g1f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g1f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g1fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g1fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g1f:
-	JMP next_op
+		JMP next_op
 
 _2f:
 ; BBR2 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3807,16 +3834,29 @@ _2f:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
-	BNE g2f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g2f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g2fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g2fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g2f:
-	JMP next_op
+		JMP next_op
 
 _3f:
 ; BBR3 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3824,16 +3864,29 @@ _3f:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
-	BNE g3f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g3f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g3fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g3fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g3f:
-	JMP next_op
+		JMP next_op
 
 _4f:
 ; BBR4 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3841,16 +3894,29 @@ _4f:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
-	BNE g4f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g4f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g4fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g4fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g4f:
-	JMP next_op
+		JMP next_op
 
 _5f:
 ; BBR5 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3858,16 +3924,29 @@ _5f:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
-	BNE g5f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g5f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g5fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g5fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g5f:
-	JMP next_op
+		JMP next_op
 
 _6f:
 ; BBR6 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3875,16 +3954,29 @@ _6f:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
-	BNE g6f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g6f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g6fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g6fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g6f:
-	JMP next_op
+		JMP next_op
 
 _7f:
 ; BBR7 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3892,33 +3984,59 @@ _7f:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it set?
-	BNE g7f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g7f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g7fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g7fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g7f:
-	JMP next_op
+		JMP next_op
 
 _8f:
 ; BBS0 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
 	LDA #1			; mask for bit 0
-; common BBS code (+13/+*)
+
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
-	BEQ g8f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ g8f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g8fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g8fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g8f:
-	JMP next_op
+		JMP next_op
 
 _9f:
 ; BBS1 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3926,16 +4044,29 @@ _9f:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
-	BEQ g9f			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ g9f			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g9fp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g9fp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g9f:
-	JMP next_op
+		JMP next_op
 
 _af:
 ; BBS2 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3943,16 +4074,29 @@ _af:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
-	BEQ gaf			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ gaf			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gbfp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gbfp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gaf:
-	JMP next_op
+		JMP next_op
 
 _bf:
 ; BBS3 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3960,16 +4104,29 @@ _bf:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
-	BEQ gbf			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ gbf			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gbfp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gbfp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gbf:
-	JMP next_op
+		JMP next_op
 
 _cf:
 ; BBS4 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3977,16 +4134,29 @@ _cf:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
-	BEQ gcf			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ gcf			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gcfp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gcfp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gcf:
-	JMP next_op
+		JMP next_op
 
 _df:
 ; BBS5 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -3994,16 +4164,29 @@ _df:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
-	BEQ gdf			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ gdf			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gdfp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gdfp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gdf:
-	JMP next_op
+		JMP next_op
 
 _ef:
 ; BBS6 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -4011,16 +4194,29 @@ _ef:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
-	BEQ gef			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ gef			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gefp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gefp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gef:
-	JMP next_op
+		JMP next_op
 
 _ff:
 ; BBS7 zp, rel
 ; +24 if not taken
-; +// * if taken
+; +60/60.6/61* if taken
 	_PC_ADV			; get zeropage address
 	LDA !0, Y
 	TAX				; temporary index...
@@ -4028,11 +4224,24 @@ _ff:
 
 	_PC_ADV			; skip to displacement
 	AND !0, X		; is it clear?
-	BEQ gff			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ gff			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gffp		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gffp:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gff:
-	JMP next_op
+		JMP next_op
 
 ; *******************************************************************
 ; *** LUT for Z & N status bits directly based on result as index ***
