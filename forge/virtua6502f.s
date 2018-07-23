@@ -4115,9 +4115,9 @@ _af:
 		BEQ gaf			; will not branch
 	LDX #0			; MSB as sign extention
 	LDA !0, Y		; get offset
-	BPL gbfp		; forward jump, no extention
+	BPL gafp		; forward jump, no extention
 		DEX			; backwards puts $FF as MSB
-gbfp:
+gafp:
 	STX tmp			; MSB & extra
 	STA tmp			; LSB
 	.al: REP #$21		; 16b add
