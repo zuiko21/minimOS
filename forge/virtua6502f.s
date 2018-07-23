@@ -666,111 +666,214 @@ g3cz:
 _90:
 ; BCC rel
 ; +13 if not taken
-; +// * if taken
+; +48/48.5/49* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #1			; will check C flag
 	BIT p65
-	BNE g90			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g90			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g90p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g90p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g90:
-	JMP next_op
+		JMP next_op
 
 _b0:
 ; BCS rel
 ; +13 if not taken
-; +// * if taken
+; +48/48.5/49* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #1			; will check C flag
 	BIT p65
-	BEQ gb0			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ gb0			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gb0p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gb0p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gb0:
-	JMP next_op
+		JMP next_op
 
 _30:
 ; BMI rel
 ; +13 if not taken
-; +// * if taken
+; +48/48.5/49* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #128		; will check N flag
 	BIT p65
-	BEQ g30			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ g30			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g30p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g30p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g30:
-	JMP next_op
+		JMP next_op
 
 _10:
 ; BPL rel
 ; +13 if not taken
-; +// * if taken
+; +48/48.5/49* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #128		; will check N flag
 	BIT p65
-	BNE g10			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g10			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g10p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g10p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g10:
-	JMP next_op
+		JMP next_op
 
 _f0:
 ; BEQ rel
 ; +13 if not taken
-; +// * if taken
+; +48/48.5/49* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #2			; will check Z flag
 	BIT p65
-	BEQ gf0			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BEQ gf0			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gf0p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gf0p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gf0:
-	JMP next_op
+		JMP next_op
 
 _d0:
 ; BNE rel
 ; +13 if not taken
-; +// * if taken
+; +48/48.5/49* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #2			; will check Z flag
 	BIT p65
-	BNE gd0			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE gd0			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL gd0p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+gd0p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 gd0:
-	JMP next_op
+		JMP next_op
 
 _50:
 ; BVC rel
 ; +13 if not taken
-; +// * if taken
+; +48/48.5/49* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #64			; will check V flag
 	BIT p65
-	BNE g50			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g50			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g50p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g50p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g50:
-	JMP next_op
+		JMP next_op
 
 _70:
 ; BVS rel
 ; +13 if not taken
-; +// * if taken
+; +48/48.5/49* if taken
 	_PC_ADV			; PREPARE relative address
 	LDA #64			; will check V flag
 	BIT p65
-	BNE g70			; will not branch
-; *** to do *** to do *** to do *** to do ***
-		JMP execute		; PC is ready!
+		BNE g70			; will not branch
+	LDX #0			; MSB as sign extention
+	LDA !0, Y		; get offset
+	BPL g70p		; forward jump, no extention
+		DEX			; backwards puts $FF as MSB
+g70p:
+	STX tmp			; MSB & extra
+	STA tmp			; LSB
+	.al: REP #$21		; 16b add
+	_PC_ADV			; skip instruction
+	TYA			; next address...
+	ADC tmp			; ...plus or minus offset...
+	TAY			; ...is new PC
+	LDA #0			; clear B
+	.as: SEP #$20
+	JMP execute		; PC is ready!
 g70:
-	JMP next_op
+		JMP next_op
 
 _80:
 ; BRA rel
-; +42/42.5/43 *
-	_PC_ADV			; get relative address
+; +40/40.5/41*
 	LDX #0			; MSB as sign extention
 	LDA !0, Y		; get offset
 	BPL g80p		; forward jump, no extention
