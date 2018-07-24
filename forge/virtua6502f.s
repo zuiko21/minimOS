@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180723-1708
+; last modified 20180724-2200
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -955,6 +955,9 @@ kpar_l:
 		DEX
 		BPL kpar_l
 	LDY y65			; base param
+; *** *** *** CAVEATS *** *** ***
+; See comments on virtua6502c.s
+; *** *** *** *** *** *** *** ***
 ; *** call OS ***
 	LDX x65			; kernel func
 	CLC			; macro-less call
