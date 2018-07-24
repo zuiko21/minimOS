@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-07-09*
+*Last update: 2018-07-24*
 
 ## Rationale
 
@@ -318,6 +318,12 @@ versions, but drivers were *character-oriented*. This also leaves room for separ
 Note that, for compatibility reasons, *the Kernel still provides legacy **character**-
 oriented I/O*, as mere interfaces setting a fixed single-byte *block size* prior to
 calling the generic block routines.
+
+Note that, while driver format for kernels *up to 0.5.1* (totally **incompatible**
+with those for 0.6 and beyond) *might* provide some compatibility for **8-bit
+drivers *on 16-bit kernels***, this is no longer the case. However, making them
+16-bit-savvy should be pretty straightforward, as should be adapting
+*character-oriented* older drivers.
 
 At boot time, the *initialisation* routine of each registered driver is **unconditionally** 
 called -- if not needed, must point to an existing *Return from Subroutine* instruction. 
