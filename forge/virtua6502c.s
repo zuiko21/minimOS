@@ -2,7 +2,7 @@
 ; COMPACT version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180724-2158
+; last modified 20180725-2221
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -722,11 +722,13 @@ kpar_l:
 ; 1. R65C02 code is unaware of 24-bit pointers, but actual call is issued by
 ;    virtua6502, which stands as a 16-bit app, disabling pointer auto-fill.
 ;    A feasible (and DIRTY!) workaround would be faking run_arch for most calls.
+; = preset f2, f6, fa at bank!
 ; 2. MALLOC calls should NOT provide blocks from bank 0, as expected with 6502
 ;    code, because it will NOT be reachable from EMULATED code! It shoud use
 ;    somehow the memory _inside_ the vurtual space bank, as long as its vital
 ;    structures (zeropage, stack, app code...) are respected. Perhaps some kind
 ;    of _parametrised_ MALLOC (with minimum & maximum address) is needed?
+; = custom malloc/free
 ; *** *** *** *** *** *** *** ***
 ; *** call native OS ***
 	LDX x65			; requested kernel function
