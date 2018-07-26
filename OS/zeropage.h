@@ -1,6 +1,6 @@
-; minimOS 0.6rc4 zero-page system variables
+; minimOS 0.6rc5 zero-page system variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180517-1242
+; last modified 20180726-1117
 
 .zero
 * = 0
@@ -73,21 +73,20 @@ local3: locpt3	.dsb	4			; variables for kernel functions @ $EC
 
 ; *** include aliases here for zpar3/zaddr3 ***
 b_sig:								; 8 bit
-ma_rs:								; 8/16 bit
-bl_ptr:								; 16/24 bit
-ex_pt:								; 16/24 bit
+bl_ptr:								; 16/24 bit ptr
+ex_pt:								; 16/24 bit ptr
 
 z10:z10W:z10L:						; old labels for compatibility
 zpar3: zaddr3	.dsb	4			; up to 4 bytes, including older names @ $F0
 
-k_ram	= ma_rs+2					; 8b, Kernel RAM pages (0 = 128 byte system)
-b_ram	= ma_rs+3					; 8b, Banks of "high" memory (65816 only)
-ln_siz	= bl_ptr+3					; 8b, maximum READLN input! eeeeeeeeeeeek
+k_ram	= b_sig+1					; 8b, Kernel RAM pages (0 = 128 byte system) changed for virtua6502 compatibility
+b_ram	= b_sig+3					; 8b, Banks of "high" memory (65816 only)
+ln_siz	= b_sig+3					; 8b, maximum READLN input! eeeeeeeeeeeek
 ; *********************************************
 
 ; *** include aliases here for zpar2/zaddr2 ***
 def_io: irq_hz: da_ptr: kerntab:	; 16 bit
-ma_pt: str_pt:						; 16/24 bit
+ma_pt: str_pt:						; 16/24 bit pointers
 
 z6:z6W:z6L:							; old labels for compatibility
 zpar2: zaddr2	.dsb	4			; up to 4 bytes, including older names @ $F4
@@ -96,7 +95,8 @@ bl_siz	= da_ptr+2					; 16b *** was here
 ; *********************************************
 
 ; *** include aliases here for zpar/zaddr ***
-io_c: ma_align: cpu_ll:				; 8 bit
+io_c:  cpu_ll:						; 8 bit
+ma_rs:								; 16/24 bit
 w_rect:	up_ticks:					; 32 bit
 
 z2:z2W:z2L:							; old labels for compatibility
@@ -104,6 +104,7 @@ zpar: zaddr	.dsb	4				; up to 4 bytes, including older names @ $F8
 
 c_speed	= cpu_ll+1					; 16b ***might recheck alignment***
 up_sec	= up_ticks+1				; 24b, new source-compatible format
+ma_align	= ma_rs+3			; 8b, moved for virtua6502 compatibility
 ; *******************************************
 
 ; ***********************************************
