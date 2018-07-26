@@ -1,8 +1,8 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; COMPACT version!
-; v0.1a5
+; v0.1a6
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180725-2221
+; last modified 20180726-1058
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -71,6 +71,10 @@ open_emu:
 	_KERNEL(MALLOC)
 		BCS nomem		; could not get a full bank
 	LDX ma_pt+2		; where is the allocated bank?
+; *** *** preset bank pointers (see CAVEATS about JSR abs) *** ***
+	STX zpar3+2		; preset 24b bank pointers
+	STX zpar2+2
+; set virtual bank as current
 	PHX
 	PLB				; switch to that bank!
 ; *** *** MUST load virtual ROM from somewhere *** ***
@@ -702,6 +706,7 @@ _20:
 		BEQ mos_k		; execute natively!
 ;	CPX #$FFD0		; minimOS firmware call? worth it?
 ;		BEQ mos_f		; execute natively! * TO DO *
+; *** disable the above code if not needed ***
 ; jump to target address
 	TXY				; ready!
 	JMP execute
@@ -718,20 +723,25 @@ kpar_l:
 		DEX			; until done
 		BPL kpar_l
 	LDY y65			; base parameter
+; *** call native OS ***
+	LDX x65			; requested kernel function
 ; *** *** *** CAVEATS *** *** ***
 ; 1. R65C02 code is unaware of 24-bit pointers, but actual call is issued by
 ;    virtua6502, which stands as a 16-bit app, disabling pointer auto-fill.
-;    A feasible (and DIRTY!) workaround would be faking run_arch for most calls.
-; = preset f2, f6, fa at bank!
+;    A feasible workaround would be presetting the bank address on pointer
+;    parameters with the current bank address.
 ; 2. MALLOC calls should NOT provide blocks from bank 0, as expected with 6502
-;    code, because it will NOT be reachable from EMULATED code! It shoud use
-;    somehow the memory _inside_ the vurtual space bank, as long as its vital
-;    structures (zeropage, stack, app code...) are respected. Perhaps some kind
-;    of _parametrised_ MALLOC (with minimum & maximum address) is needed?
-; = custom malloc/free
+;    code, because it will NOT be reachable from EMULATED code! It sholud use
+;    somehow the memory _inside_ the virtual space bank, as long as its vital
+;    structures (zeropage, stack, app code...) are respected. The only way I can
+;    think is re-trapping those calls to a custom MALLOC/FREE, allegedly much
+;    simpler as guaranteed to be single-task.
 ; *** *** *** *** *** *** *** ***
-; *** call native OS ***
-	LDX x65			; requested kernel function
+	CPX #MALLOC		; is it trying to allocate memory?
+		BEQ t_aloc		; use custom code!
+	CPX #FREE		; ditto for releasing memory
+		BEQ t_free
+; * end of MALLOC/FREE trap *
 	CLC
 	COP #$7F		; NATIVE 65816 minimOS Kernel call (no macro)
 ; *** return error flag, if available ***
@@ -749,6 +759,10 @@ kpar_r:
 		BPL kpar_r
 ; *** return to caller, worth using virtual RTS ***
 	JMP _60			; execute virtual RTS, even faster
+; *** *** custom MALLOC/FREE code *** ***
+t_aloc:
+t_free:
+	JMP _60			; execute virtual RTS
 
 ; *** load / store ***
 
