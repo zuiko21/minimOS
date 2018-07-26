@@ -702,10 +702,12 @@ _20:
 ; jump to destination
 	LDX !0, Y		; target address
 ; *** should include here a trap for NATIVE minimOS Kernel calls! ***
+#ifdef	TRAP
 	CPX #$FFC0		; minimOS Kernel call?
 		BEQ mos_k		; execute natively!
 ;	CPX #$FFD0		; minimOS firmware call? worth it?
 ;		BEQ mos_f		; execute natively! * TO DO *
+#endif
 ; *** disable the above code if not needed ***
 ; jump to target address
 	TXY				; ready!
