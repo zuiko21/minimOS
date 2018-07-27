@@ -2,7 +2,7 @@
 ; specially fast version!
 ; v0.1a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180724-2200
+; last modified 20180727-1032
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -27,7 +27,11 @@ x65		= a65+2		; X index
 y65		= x65+2		; Y index
 
 tmp		= y65+2		; temporary storage
+#ifdef	TRAP
+; memory structures for custom MALLOC, define cdev afterwards
+#else
 cdev	= tmp+2		; I/O device *** minimOS specific ***
+#endif
 
 ; *** minimOS executable header will go here ***
 
@@ -71,6 +75,11 @@ open_emu:
 	_KERNEL(MALLOC)
 		BCS nomem		; could not get a full bank
 	LDX ma_pt+2		; where is the allocated bank?
+#ifdef	TRAP
+; preset 24b pointer bank
+	STX zpar3+2
+	STX zpar2+2
+#endif
 	PHX
 	PLB				; switch to that bank!
 ; *** *** MUST load virtual ROM from somewhere *** ***
@@ -941,11 +950,15 @@ _20:
 	.as: SEP #20
 ; jump to destination
 	LDX !0, Y		; target address
+#ifdef	TRAP
 ; *** trap for NATIVE minimOS Kernel calls ***
 	CPX #$FFC0
 		BEQ mos_k
+#endif
 	TXY				; ready!
 	JMP execute
+
+#ifdef	TRAP
 ; *** manage Kernel call ***
 mos_k:
 	LDX #11			; max params
@@ -960,6 +973,7 @@ kpar_l:
 ; *** *** *** *** *** *** *** ***
 ; *** call OS ***
 	LDX x65			; kernel func
+; ** must further trap MALLOC and FREE forcuatom code! **
 	CLC			; macro-less call
 	COP #$7F
 ; *** error flag ***
@@ -984,6 +998,7 @@ kpar_r:
 	STX s65			; update SP
 ; all done
 	JMP execute		; PC already set!
+#endif
 
 ; *** load / store ***
 

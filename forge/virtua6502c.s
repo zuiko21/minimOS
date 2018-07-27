@@ -2,7 +2,7 @@
 ; COMPACT version!
 ; v0.1a6
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180727-1017
+; last modified 20180727-1028
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -26,13 +26,13 @@ a65		= p65+2		; accumulator, all these with extra byte
 x65		= a65+2		; X index
 y65		= x65+2		; Y index
 
-tmp		= y65+2		; temporary storage
+tmp		= y65+2		; temporary storage (word)
 
 ; * TRAP option will use some memory for custom MALLOC structures *
 #ifdef	TRAP
 ; define last_z as the first free address
 #else
-last_z		= tmp+2
+last_z	= tmp+2
 #endif
 
 cdev	= last_z		; I/O device *** minimOS specific ***
@@ -79,9 +79,11 @@ open_emu:
 	_KERNEL(MALLOC)
 		BCS nomem		; could not get a full bank
 	LDX ma_pt+2		; where is the allocated bank?
+#ifdef	TRAP
 ; *** *** preset bank pointers (see CAVEATS about kernel trap) *** ***
 	STX zpar3+2		; preset 24b bank pointers (for current ABI)
 	STX zpar2+2
+#endif
 ; set virtual bank as current
 	PHX
 	PLB				; switch to that bank!
@@ -720,6 +722,8 @@ _20:
 ; jump to target address
 	TXY				; ready!
 	JMP execute
+
+#ifdef	TRAP
 ; *** management of trapped native calls ***
 mos_f:
 ; not sure if worth it...
@@ -769,10 +773,11 @@ kpar_r:
 		BPL kpar_r
 ; *** return to caller, worth using virtual RTS ***
 	JMP _60			; execute virtual RTS, even faster
-; *** *** custom MALLOC/FREE code *** ***
+; *** *** custom MALLOC/FREE code *** *** TO DO * TO DO * TO DO *
 t_aloc:
 t_free:
 	JMP _60			; execute virtual RTS
+#endif
 
 ; *** load / store ***
 
