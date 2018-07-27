@@ -2,7 +2,7 @@
 ; COMPACT version!
 ; v0.1a6
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180726-1058
+; last modified 20180727-1017
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -27,7 +27,15 @@ x65		= a65+2		; X index
 y65		= x65+2		; Y index
 
 tmp		= y65+2		; temporary storage
-cdev	= tmp+2		; I/O device *** minimOS specific ***
+
+; * TRAP option will use some memory for custom MALLOC structures *
+#ifdef	TRAP
+; define last_z as the first free address
+#else
+last_z		= tmp+2
+#endif
+
+cdev	= last_z		; I/O device *** minimOS specific ***
 
 ; *** minimOS executable header will go here ***
 
@@ -71,8 +79,8 @@ open_emu:
 	_KERNEL(MALLOC)
 		BCS nomem		; could not get a full bank
 	LDX ma_pt+2		; where is the allocated bank?
-; *** *** preset bank pointers (see CAVEATS about JSR abs) *** ***
-	STX zpar3+2		; preset 24b bank pointers
+; *** *** preset bank pointers (see CAVEATS about kernel trap) *** ***
+	STX zpar3+2		; preset 24b bank pointers (for current ABI)
 	STX zpar2+2
 ; set virtual bank as current
 	PHX
