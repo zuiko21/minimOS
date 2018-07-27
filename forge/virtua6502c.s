@@ -2,7 +2,7 @@
 ; COMPACT version!
 ; v0.1a6
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180727-1028
+; last modified 20180727-1320
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -28,14 +28,16 @@ y65		= x65+2		; Y index
 
 tmp		= y65+2		; temporary storage (word)
 
-; * TRAP option will use some memory for custom MALLOC structures *
 #ifdef	TRAP
-; define last_z as the first free address
+; * TRAP option will use some memory for custom MALLOC structures *
+t_min	= tmp+2		; first allocated page (2...127, 0 if empty)
+t_max	= t_min+1	; first free page after allocated heap (up to 128)
+t_page	= t_max+1	; array of allocated start pages (2...127) 16 entries
+t_siz	= t_page+16	; array of allocated sizes (bit 7 hi if free)
+cdev	= t_siz+16	; last address is I/O device
 #else
-last_z	= tmp+2
+cdev	= tmp+2		; I/O device *** minimOS specific ***
 #endif
-
-cdev	= last_z		; I/O device *** minimOS specific ***
 
 ; *** minimOS executable header will go here ***
 
@@ -79,14 +81,22 @@ open_emu:
 	_KERNEL(MALLOC)
 		BCS nomem		; could not get a full bank
 	LDX ma_pt+2		; where is the allocated bank?
+	PHX				; will be pulled later
 #ifdef	TRAP
 ; *** *** preset bank pointers (see CAVEATS about kernel trap) *** ***
 	STX zpar3+2		; preset 24b bank pointers (for current ABI)
 	STX zpar2+2
+; custom MALLOC init
+	STZ t_min		; means empty heap, will not use t_max
+	LDX #15			; max array offset
+t_reset:
+		STZ t_page, X	; clear entry
+		STZ t_siz, X
+		DEX
+		BPL t_reset
 #endif
 ; set virtual bank as current
-	PHX
-	PLB				; switch to that bank!
+	PLB				; switch to pushed bank!
 ; *** *** MUST load virtual ROM from somewhere *** ***
 
 ; *** start the emulation! ***
@@ -775,8 +785,125 @@ kpar_r:
 	JMP _60			; execute virtual RTS, even faster
 ; *** *** custom MALLOC/FREE code *** *** TO DO * TO DO * TO DO *
 t_aloc:
-t_free:
+; should convert generic size request into full pages... and detect full-size requests
+	LDA ma_rs
+	ORA ma_rs+1		; asking for full size?
+	BNE m_nfull		; no, regular procedure
+		LDA t_min		; yes, first check wheter empty
+		BNE mf_siz		; not empty, deduce size
+			LDA #126		; full 31.5K otherwise!
+			STA ma_rs+1
+			BRA do_fp		; proceed in a simple way
+mf_siz:
+		LDA t_min		; look for space before heap
+		SEC
+		SBC #2			; minus reserved
+		STA ma_pt+1		; store leading size
+		LDA #128		; let us look after the heap
+		SEC
+		SBC t_max		; this is trailing size
+		CMP ma_pt+1		; bigger than leading?
+		BCC mf_max		; no, already set at maximum
+			STA ma_pt+1		; yes, update size
+mf_max:
+		BRA m_pgft		; allocate this size
+m_nfull:
+	LDA ma_rs		; check whether complete pages
+	BEQ m_pgft		; yes, leave parameter
+		INC ma_rs+1		; no, round up to full page
+m_pgft:
+; look for some room
+	LDA t_min		; is this the first allocation?
+	BNE do_aloc		; no, regular procedure
+do_fp:
+		LDA #2			; yes, set heap start...
+		STA min			; ...as new minimum
+		JSR in_list		; create first entry
+		LDA ma_rs+1		; plus size...
+		CLC
+		ADC #2			; ...from start...
+		BPL fp_ok		; fits fine
+			LDA #2			; no, remove very first entry
+			BRA tma_err		; over 32K, no way!
+fp_ok:
+		STA t_max		; ...is new end
+		BRA tma_ok
+do_aloc:
+	CLC			; check whether it fits before heap
+	SBC #2			; subtract reserved pages
+	CMP ma_rs+1		; how many pages were asked?
+	BCC m_heap		; no room before, put it after heap
+		LDA t_min		; fits! will stick to tail
+		SBC ma_rs+1		; C already set
+		STA t_min		; new minimum is the address
+		JSR in_list		; insert into list
+		BRA tma_ok		; was successful
+m_heap:
+	LDA t_max		; the end of the heap is allocated address
+	JSR in_list		; create entry
+	LDA t_max		; original value...
+	CLC
+	ADC ma_rs+1		; ...plus size...
+	BPL mh_ok		; fits fine
+		LDA t_max		; no, remove this entry
+		BRA tma_err		; over 32K, no way!
+mh_ok:
+	STA t_max		; ...is the new end
+tma_ok:
+; * successfull MALLOC *
+	STZ !ma_pt		; always page-aligned (direct into virtual ZP)
+	LDA #1			; mask for C flag
+	TRB p65			; no error!
 	JMP _60			; execute virtual RTS
+
+t_free:
+
+; *** supporting routines ***
+; ** create list entry, A is allocated page **
+in_list:
+	STA !ma_pt+1		; A is the allocated address (virtual ZP)
+	TAY			; keep for later, RTS will set it
+	LDX #15			; max array offset
+il_loop:
+		LDA t_page, X	; free entry?
+			BEQ il_free		; yes, fill it
+		DEX			; no, go for next
+		BPL il_loop
+	PLA			; discard return address eeeeeeeeek
+	PLA
+	BRA tma_not		; no entry to remove, just notify
+tma_err:
+; * could not allocate, A is bogus allocated page *
+		JSR out_lst		; remove failed entry
+tma_not:
+; notify error and abort
+	LDA #FULL		; no available "memory"
+	STA y65			; set error code
+	LDA #1			; mask for C flag
+	TSB p65			; indicate error!
+	JMP _60			; execute virtual RTS
+; found free entry, create new
+il_free:
+	TYA				; retrieve allocated bank
+	STA t_page, X	; create entry
+	LDA ma_rs+1		; include size too
+	STA t_siz+1, X
+	RTS
+
+; ** remove list entry, A is allocated page **
+out_lst:
+	LDX #15			; max offset
+ol_loop:
+		CMP t_page, X	; is the requested entry?
+			BEQ ol_found		; yes, remove it
+		DEX			; no, try next
+		BPL ol_loop
+		BMI ol_rts		; not found, just return
+ol_found:
+	STZ t_page, X	; clear entry
+	STZ t_siz, X
+ol_rts:
+	RTS
 #endif
 
 ; *** load / store ***
