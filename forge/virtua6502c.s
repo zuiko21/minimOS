@@ -2,7 +2,7 @@
 ; COMPACT version!
 ; v0.1a6
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180727-1320
+; last modified 20180728-1034
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -16,6 +16,9 @@
 
 ; increment Y checking boundary crossing (2) ** must be in 16-bit index mode!
 #define	_PC_ADV		INY
+
+; *** allow optional kernel call trap ***
+#define	TRAP	_TRAP
 
 ; *** declare zeropage addresses ***
 ; ** 'uz' is first available zeropage address (currently $03 in minimOS) **
@@ -755,8 +758,8 @@ kpar_l:
 ;    A feasible workaround would be presetting the bank address on pointer
 ;    parameters with the current bank address.
 ; 2. MALLOC calls should NOT provide blocks from bank 0, as expected with 6502
-;    code, because it will NOT be reachable from EMULATED code! It sholud use
-;    somehow the memory _inside_ the virtual space bank, as long as its vital
+;    code, because they will NOT be reachable from EMULATED code! It sholud use
+;    the memory _inside_ the virtual space bank, as long as its vital
 ;    structures (zeropage, stack, app code...) are respected. The only way I can
 ;    think is re-trapping those calls to a custom MALLOC/FREE, allegedly much
 ;    simpler as guaranteed to be single-task.
@@ -783,7 +786,11 @@ kpar_r:
 		BPL kpar_r
 ; *** return to caller, worth using virtual RTS ***
 	JMP _60			; execute virtual RTS, even faster
-; *** *** custom MALLOC/FREE code *** *** TO DO * TO DO * TO DO *
+
+t_free:
+	BRA t_free2		; was too far...
+
+; *** *** custom MALLOC code *** ***
 t_aloc:
 ; should convert generic size request into full pages... and detect full-size requests
 	LDA ma_rs
@@ -817,7 +824,7 @@ m_pgft:
 	BNE do_aloc		; no, regular procedure
 do_fp:
 		LDA #2			; yes, set heap start...
-		STA min			; ...as new minimum
+		STA t_min			; ...as new minimum
 		JSR in_list		; create first entry
 		LDA ma_rs+1		; plus size...
 		CLC
@@ -855,8 +862,77 @@ tma_ok:
 	LDA #1			; mask for C flag
 	TRB p65			; no error!
 	JMP _60			; execute virtual RTS
+tma_err:
+	BRA tma_err2		; too far...
 
-t_free:
+; *** *** custom FREE code *** ***
+t_free2:
+	LDA ma_pt+1		; get allocated page (assume all aligned)
+	LDX #15			; max array offset
+fr_loop:
+		CMP t_page, X	; requested entry?
+			BEQ fr_this		; yes, fill it
+		DEX			; no, go for next
+		BPL fr_loop
+fr_not:
+; * notify error and abort *
+	LDA #N_FOUND		; no entry to be freed
+	STA y65			; set error code
+	LDA #1			; mask for C flag
+	TSB p65			; indicate error!
+	JMP _60			; execute virtual RTS
+fr_this:
+	LDA t_siz, X	; let us mark entry as deleted...
+	ORA #128		; ...by setting bit 7
+	STA t_siz, X
+	LDA ma_pt+1		; where was the allocated block?
+	CMP t_min		; at heap beginning?
+	BNE fr_end		; no, look at the other side
+; try to delete as many blocks to the left as possible
+fr_left:
+		CLC				; yes, delete lower side of heap...
+		TAY				; (keep current minimum for later)
+		ADC t_siz, X	; ...by adding current size to minimum
+		STA t_min
+		TYA				; retrieve deleted block...
+		JSR out_lst		; ...and delete its entry
+; now let us check for deleted entries at heap start in case they can be skipped
+		LDA t_min		; current heap start
+		LDX #15			; max offset
+fr_dl:
+			CMP t_page, X	; is this entry at start...?
+			BNE fd_nxl
+				BIT t_siz, X	; ...and deleted?
+				BMI fr_left		; yes, remove it
+fd_nxl:
+			DEX				; try next
+			BPL fr_dl
+		BRA tma_ok		; all done, no errors!
+fr_end:
+	CLC
+	ADC t_siz, X	; add size to check where it ends
+	CMP t_max		; was it last?
+	BNE tma_ok		; could not delete anything, but that is OK
+; otherwise try to delete as many blocks to the right as possible
+fr_right:
+		SEC				; yes, delete upper side of heap...
+		TAY				; (keep current maximum for later)
+		SBC t_siz, X	; ...by subtracting current size to maximum
+		STA t_max
+		TYA				; retrieve deleted block...
+		JSR out_lst		; ...and delete its entry
+; now let us check for deleted entries at heap start in case they can be skipped
+		LDA t_max		; current heap start
+		LDX #15			; max offset
+fr_dr:
+			CMP t_page, X	; is this entry at end...?
+			BNE fd_nxr
+				BIT t_siz, X	; ...and deleted?
+				BMI fr_right		; yes, remove it
+fd_nxr:
+			DEX				; try next
+			BPL fr_dr
+		BRA tma_ok		; all done, no errors!
 
 ; *** supporting routines ***
 ; ** create list entry, A is allocated page **
@@ -872,12 +948,12 @@ il_loop:
 	PLA			; discard return address eeeeeeeeek
 	PLA
 	BRA tma_not		; no entry to remove, just notify
-tma_err:
+tma_err2:
 ; * could not allocate, A is bogus allocated page *
 		JSR out_lst		; remove failed entry
 tma_not:
 ; notify error and abort
-	LDA #FULL		; no available "memory"
+	LDA #FULL		; no more available entries
 	STA y65			; set error code
 	LDA #1			; mask for C flag
 	TSB p65			; indicate error!
