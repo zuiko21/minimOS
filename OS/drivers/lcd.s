@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180729-1806
+; last modified 20180729-1946
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -185,7 +185,7 @@ l_pulse:
 	DEC VIA_U+IORB
 	RTS
 
-; *** carriage return ***
+; *** new line ***
 lcd_cr:
 	JSR l_busy		; ready for several commands
 	_STZA lcd_x		; correct local coordinates
@@ -258,35 +258,56 @@ lcr_ns:
 
 ; *** tab (4 spaces) ***
 lcd_tab:
-	; get LSB
-
-	AND #%11111100		; modulo 4
+	LDA lcd_x		; get column
+	AND #%11111100	; modulo 4
 	CLC
-	ADC #4				; increment position (2)
-	_DR_OK				; yes, all done
+	ADC #4			; increment to target position (2)
+	SEC
+	SBC lcd_x		; subtract current, these are the needed spaces
+	TAX				; will be respected
+ltab_sp:
+		JSR l_busy		; wait for DDRAM access
+		LDA #LCD_RS		; will write
+		STA VIA_U+IORB
+		LDA #' '		; white space
+		JSR l_issue		; write into device
+		INC lcd_x		; take note of advance
+		DEX
+		BNE ltab_sp		; until done
+	LDA lcd_x		; final column
+	CMP #L_CHAR		; end of line?
+	BNE lt_yok		; no, all done
+		JMP lcd_cr		; yes, do newline as usual
+lt_yok:
+	_DR_OK
 
 ; *** backspace ***
 lcd_bs:
 ; first get cursor one position back...
-	JSR lbs_bk			; will call it again at the end (...)
-; ...then print a space, the regular way...
-	LDA #' '			; code of space (2)
-	STA io_c			; store as single char... (3)
-	JSR lcd_prn			; print whatever is in io_c (...)
-; ...and back again!
-lbs_bk:
-	DEC lcd_cur			; one position back (6)
-	LDA lcd_cur		; check for carry (4)
-	CMP #$FF			; did it wrap? (2)
-	BNE lcd_end			; no, return or end function (3/2)
-; really ought to check for possible scroll-UP...
-; at least, avoid being outside feasible values
-
-			PLA					; discard return address, as nothing to print (4+4)
-			PLA
-			_DR_ERR(EMPTY)		; try to complain, just in case
-lbs_end:
-	_DR_OK				; all done, CLC will not harm at first call
+	LDA lcd_x		; nothing to the left? (4)
+	BNE lbs_ok		; something, go back one (3/2)
+		_DR_ERR(EMPTY)		; nothing, complain somehow
+lbs_ok:
+	DEC lcd_x		; one position back (6)
+; ...then print a space
+; perhaps easier with cursor shift?
+	JSR l_busy		; wait for address setting
+	LDX lcd_y		; index for y
+	LDA l_addr, X	; current line address
+	CLC
+	ADC lcd_x		; compute current address
+	ORA #%10000000	; set DDRAM address
+	TAX				; save as will be used again
+	JSR l_issue		; issue command and return
+	JSR l_busy		; wait for DDRAM access
+	LDA #LCD_RS		; will write
+	STA VIA_U+IORB
+	LDA #' '		; white space
+	JSR l_issue		; write into device
+	JSR l_busy		; wait for address setting
+	TXA				; retrieve command
+	JSR l_issue		; set definitive address
+	_DR_OK			; local cursor was not affected
 
 ; ************************
 ; *** generic routines ***
