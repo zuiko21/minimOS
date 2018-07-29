@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180729-1424
+; last modified 20180729-1555
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -181,17 +181,52 @@ l_pulse:
 
 ; *** carriage return ***
 lcd_cr:
+	JSR l_busy		; ready for several commands
 	_STZA lcd_x		; correct local coordinates
 	INC lcd_y
 	LDA lcd_y		; check whether should scroll
 	CMP #L_LINE
 	BCC lcr_ns		; no scroll
-		DEC lcd_y		; yes, back to maximum...
-					; *** TO DO *** TO DO *** TO DO *** TO DO ***
+		LDY #1			; yes, first source line
+lcr_sc:
+			STY lcd_y		; will be loop variable
+			LDA l_addr, Y	; address of this line
+			ORA #%10000000	; set DDRAM address
+			JSR l_issue
+			LDX #0			; loop variable
+lcr_scr:
+				JSR l_avail		; wait for DDRAM access
+				LDA #LCD_RM		; will read
+				JSR l_issue
+				LDA VIA_U+IORA	; get byte and advance pointer
+				STA l_buff, X	; store temporarily
+				INX
+				CPX #L_CHAR		; until 20 chars done
+				BNE lcr_scl
+; one 20 char line in buffer, copy back on line above
+			LDY lcd_y		; back one line
+			DEY
+			LDA l_addr, Y	; address of this line
+			ORA #%10000000	; set DDRAM address
+			JSR l_issue
+			LDX #0			; loop variable
+lcr_scw:
+				
+				LDA l_buff, X	; retrieve from buffer
+				INX
+				CPX #L_CHAR		; until 20 chars done
+				BNE lcr_scw
+; proceed until three lines have been moved
+			LDY lcd_y		; advance one line
+			INY
+			CPY #L_LINE		; all done?
+			BNE lcr_sc
+		STY lcd_y		; restore as maximum
+; before exit, should clear bottom line! TO DO
 lcr_ns:
 	LDX lcd_y		; index for y
 	LDA l_addr, X	; current line address
-	ORA #%10000000	; set DDRAM aadress
+	ORA #%10000000	; set DDRAM address
 	BNE l_issue		; issue command and return (no need for BRA)
 
 ; *** tab (4 spaces) ***
@@ -261,8 +296,22 @@ w_loop:
 		BNE w100us
 	RTS
 
-; *** routine for waiting command completion *** respects X
+; *** wait command completion *** respects X
 l_busy:
+	JSR _wait		; generic busy check
+	AND #L_OTH			; respect bits (A returns PB)
+	ORA #LCD_PB			; ready for command
+	STA VIA_U+IORB
+	DEC VIA_U+DDRA		; set back outputs
+	RTS
+
+; *** wait for sending chars***
+l_avail:
+	JSR l_wait		; cannot optimise as JMP, in case of timeout
+	RTS
+
+; ** generic availability check **
+l_wait:
 	_STZA VIA_U+DDRA	; set input!
 	LDA VIA_U+IORB		; original PB
 	AND #L_OTH			; respect bits
@@ -278,14 +327,12 @@ lb_loop:
 			BEQ l_tout			; timeout expired!
 		BIT VIA_U+IORA		; read status (respect A)
 		BMI lb_loop			; until available
-	AND #L_OTH			; respect bits (A was OK)
-	ORA #LCD_PB			; ready for command
-	STA VIA_U+IORB
-	DEC VIA_U+DDRA		; set back outputs
 	RTS
 ; ** timeout handler **
 l_tout:
-	PLA					; discard return address
+	PLA					; discard both return addresses
+	PLA
+	PLA
 	PLA
 	_DR_ERR(TIMEOUT)
 
