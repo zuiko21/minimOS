@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180729-1652
+; last modified 20180729-1706
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -61,9 +61,7 @@ ld_loop:
 		LDA wait_c, X	; get delay (in 100us units)
 		JSR l_delay
 		LDA #$30		; standard init value
-		STA VIA_U+IORA	; ...on data port
-		INC VIA_U+IORB	; pulse E on LCD!
-		DEC VIA_U+IORB
+		JSR l_issue		; ...as command sent
 		DEX				; next delay
 		BPL ld_loop
 ; set LCD parameters
@@ -71,9 +69,7 @@ ld_loop:
 li_loop:
 		JSR l_busy		; wait for LCD availability
 		LDA l_set, X		; get config command
-		STA VIA_U+IORA	; ...on data port
-		INC VIA_U+IORB	; pulse E on LCD!
-		DEC VIA_U+IORB
+		JSR l_issue		; ...as command sent
 		DEX				; next command
 		BPL li_loop
 	_DR_OK				; succeeded
@@ -121,7 +117,7 @@ lcd_char:
 lcd_nff:
 		CMP #CR				; newline?
 		BNE lch_ncr
-			JMP lcd_cr			; modify pointers (scrolling perhaps) and return
+			JMP lcd_cr			; scrolling perhaps
 lcd_ncr:
 		CMP #HTAB			; tab?
 		BNE lch_ntb
@@ -171,7 +167,7 @@ lcd_cls:
 	_STZA lcd_y
 	JSR l_busy		; wait for LCD availability
 	LDA #1			; command = clear display
-; * issue command on A, assume cmd output set *
+; * issue command on A, assume PB set for cmd output *
 l_issue:
 	STA VIA_U+IORA		; eeeeeeeeeeeeeek
 l_pulse:
@@ -197,14 +193,17 @@ lcr_sc:
 lcr_scr:
 				JSR l_avail		; wait for DDRAM access
 				LDA #LCD_RM		; will read
-				JSR l_issue
+				STA VIA_U+IORB
+				INC VIA_U+IORB	; enable...
 				LDA VIA_U+IORA	; get byte and advance pointer
+				DEC VIA_U+IORB	; ...and disable
 				STA l_buff, X	; store temporarily
 				INX
 				CPX #L_CHAR		; until 20 chars done
-				BNE lcr_scl
+				BNE lcr_scr
 ; one 20 char line in buffer, copy back on line above
-			LDY lcd_y		; back one line
+			JSR l_busy
+			LDY lcd_y		; destination is one line less
 			DEY
 			LDA l_addr, Y	; address of this line
 			ORA #%10000000	; set DDRAM address
@@ -213,7 +212,7 @@ lcr_scr:
 lcr_scw:
 				JSR l_busy		; wait for DDRAM access
 				LDA #LCD_RS		; will write
-				JSR l_issue
+				STA VIA_U+IORB
 				LDA l_buff, X	; retrieve from buffer
 				JSR l_issue	; and write into device
 				INX
@@ -227,7 +226,20 @@ lcr_scw:
 		DEY				; eeeeeeeeeeek
 		STY lcd_y		; restore as maximum
 ; before exit, should clear bottom line!
-
+		JSR l_busy
+		LDA l_addr+L_LINE-1	; bottom line address (+3)
+		ORA #%10000000	; set DDRAM address
+		JSR l_issue
+		LDX #L_CHAR		; spaces to be printed
+lcr_sp:
+			JSR l_busy		; wait for DDRAM access
+			LDA #LCD_RS		; will write
+			STA VIA_U+IORB
+			LDA #' '		; white space
+			JSR l_issue		; write into device
+			DEX
+			BNE lcr_sp		; until done
+		JSR l_busy		; wait for address setting
 lcr_ns:
 	LDX lcd_y		; index for y
 	LDA l_addr, X	; current line address
@@ -313,7 +325,7 @@ l_busy:
 ; *** wait for sending chars***
 l_avail:
 	JSR l_wait		; cannot optimise as JMP, in case of timeout
-	RTS
+	RTS			; back with PA as input
 
 ; ** generic availability check **
 l_wait:
@@ -322,15 +334,17 @@ l_wait:
 	AND #L_OTH			; respect bits
 	ORA #LCD_RD			; will read status
 	STA VIA_U+IORB
-	LDY #200			; for 2.2 ms timeout (96 if pulse is inside loop)
-	INC VIA_U+IORB		; pulse E on LCD! inside loop if flag not updated
-	DEC VIA_U+IORB
+	LDY #74			; for 2.25 ms timeout
 lb_loop:
-; is busy flag updated without pulsing E?
 ; MUST implement some timeout, or will hang if disconnected!!
 		DEY
 			BEQ l_tout			; timeout expired!
+; is busy flag updated without pulsing E? if so, may put INC before and DEC after the loop!
+		INC VIA_U+IORB		; enable...
 		BIT VIA_U+IORA		; read status (respect A)
+		PHP			; must keep this
+		DEC VIA_U+IORB		; ...and disable
+		PLP			; unaffected by DEC
 		BMI lb_loop			; until available
 	RTS
 ; ** timeout handler **
