@@ -2,7 +2,7 @@
 ; COMPACT version!
 ; v0.1a6
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180728-1034
+; last modified 20180729-1049
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -792,6 +792,7 @@ t_free:
 
 ; *** *** custom MALLOC code *** ***
 t_aloc:
+; * note that ma_align is ignored! Always page-aligned *
 ; should convert generic size request into full pages... and detect full-size requests
 	LDA ma_rs
 	ORA ma_rs+1		; asking for full size?
