@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180729-1059
+; last modified 20180729-1241
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -43,12 +43,86 @@ lcd_err:
 	LCD_PB	= $10		; base with E=0 (pulse PB0 via INC/DEC)
 	LCD_RS	= %00010010	; set RS (PB1)
 	LCD_RD	= %00010100	; read from LCD (PB2)
+; size definitions for other size LCDs
+	L_CHAR	= 20		; chars per line
+	L_LINE	= 4		; lines
 
 ; ************************
 ; *** initialise stuff ***
 ; ************************
 lcd_init:
+	JSR lcd_rst		; set VIA ready for LCD command
+; follow standard LCD init procedure
+	LDX #2			; wait values [0..2]
+ld_loop:
+		LDA wait_c, X	; get delay (in 100us units)
+		JSR l_delay
+		LDA #$30		; standard init value
+		STA VIA_U+IORA	; ...on data port
+		INC VIA_U+IORB	; pulse E on LCD!
+		DEC VIA_U+IORB
+		DEX				; next delay
+		BPL ld_loop
+; set LCD parameters
+	LDX #3			; will send 4 commands
+li_loop:
+		JSR w_busy		; wait for LCD availability
+		LDA l_set, X		; get config command
+		STA VIA_U+IORA	; ...on data port
+		INC VIA_U+IORB	; pulse E on LCD!
+		DEC VIA_U+IORB
+		DEX				; next command
+		BPL li_loop
+
 	_DR_OK				; succeeded
+
+; ************************************
+; *** routine for waiting A×100 uS *** for 1 MHz
+; ************************************
+wait_c:
+	TAY					; will respect X, affects Y & A
+; base 100uS delay
+w100us:
+		LDA #15			; 104uS delay @ 1 MHz, change or compute if needed
+w_loop:
+			SEC				; (2)
+			SBC #1			; (2)
+			BNE w_loop		; (3)
+		DEY				; another 100uS
+		BNE w100us
+	RTS
+
+; **********************************************
+; *** routine for waiting command completion ***
+; **********************************************
+w_busy:
+	_STZA VIA_U+DDRA	; set input!
+	LDA VIA_U+IORB		; original PB
+	AND #L_OTH			; respect bits
+	ORA #LCD_RD			; will read status
+	STA VIA_U+IORB		; command is set
+	LDY #200			; for 2.2 ms timeout (96 if pulse is inside loop)
+	INC VIA_U+IORB		; pulse E on LCD! inside loop if flag not updated
+	DEC VIA_U+IORB
+wb_loop:
+; is busy flag updated without pulsing E?
+; MUST implement some timeout, or will hang if disconnected!!
+		DEY
+			BEQ l_tout			; timeout expired!
+		BIT VIA_U+IORA		; read status (respect A)
+		BMI wb_loop			; until available
+	AND #L_OTH			; respect bits (A was OK)
+	ORA #LCD_PB			; ready for command
+	STA VIA_U+IORB		; command is set
+	INC VIA_U+IORB		; pulse E on LCD!
+	DEC VIA_U+IORB
+	DEC VIA_U+DDRA		; set back outputs
+	RTS
+; ** timeout handler **
+l_tout:
+	PLA					; discard return address
+	PLA
+	_DR_ERR(TIMEOUT)
 
 ; ***************************************
 ; *** routine for clearing the screen ***
@@ -175,21 +249,32 @@ lbs_end:
 	_DR_OK				; all done, CLC will not harm at first call
 
 ; *** generic routines ***
-; set up VIA... for LCD settings (exit as X=idle, Y=$FF)
+; set up VIA... for LCD settings
 lcd_rst:
 	LDA VIA_U+DDRB		; control port... (4)
 	ORA #%11110111		; ...with required outputs... (2)
 	STA VIA_U+DDRB		; ...just in case (4)
 	LDY #$FF			; all outputs... (2)
-	STY VIA_U+DDRA		; ...for data port (4)
-	LDA VIA_U+IORB		; original PB value on user VIA (new var) (4)
-	AND #L_OTH			; clear device, leave PB3 (2)
-
+	STA VIA_U+DDRA		; ...as uses 8-bit mode (4)
+	LDA VIA_U+IORB		; original PB value on user VIA (4)
+	AND #L_OTH			; leave PB3 (2)
+	ORA #LCD_PB		; E=RS=0, ready for commands
+	STA VIA_U+IORB		; just waiting for E to send LCD command (4)
 	RTS
 
 ; ********************
 ; *** several data ***
 ; ********************
 
+; initialisation delays (reversed)
+l_delay:
+	.byt	1, 41, 150	; 15ms, 4.1ms & 100us
+
+; initialisation commands (reversed)
+l_set:
+	.byt	%00000110	; entry set = increment, do not shift
+	.byt	%00000001	; display clear
+	.byt	%00001000	; display off
+	.byt	%00111000	; 8-bit, 2 lines, 5x8 font
 
 .)
