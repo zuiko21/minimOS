@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180729-1706
+; last modified 20180729-1806
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -41,9 +41,9 @@ lcd_err:
 ; *** define some constants ***
 	L_OTH	= %00001000	; bits to be kept, PB3 only
 	L_NOTH	= %11110111	; required PB outputs (inverse of L_OTH)
-	LCD_PB	= %00010000	; base with E=0 (pulse PB0 via INC/DEC)
+	LCD_PB	= %00010000	; idle command E=0 (pulse PB0 via INC/DEC)
 	LCD_RS	= %00010010	; set RS for printing & CG (PB1)
-	LCD_RD	= %00010100	; read from LCD (PB2)
+	LCD_RD	= %00010100	; read status from LCD (PB2)
 	LCD_RM	= %00010110	; read DDRAM/CGRAM (PB2+PB1)
 
 ; size definitions for other size LCDs
@@ -58,8 +58,18 @@ lcd_init:
 ; follow standard LCD init procedure
 	LDX #2			; wait values [0..2]
 ld_loop:
-		LDA wait_c, X	; get delay (in 100us units)
-		JSR l_delay
+		LDY wait_c, X	; get delay (in 100us units)
+; * code for waiting A×100 uS *
+; base 100uS delay
+w100us:
+			LDA #14			; 97+5uS delay @ 1 MHz, change or compute if needed
+w_loop:
+				SEC				; (2)
+				SBC #1			; (2)
+				BNE w_loop		; (3)
+			DEY				; another 100uS
+			BNE w100us
+; end of delay code
 		LDA #$30		; standard init value
 		JSR l_issue		; ...as command sent
 		DEX				; next delay
@@ -299,20 +309,6 @@ lcd_cmd:
 	STA VIA_U+IORB		; just waiting for E to send LCD command in PA (4)
 	RTS
 
-; *** routine for waiting A×100 uS *** for 1 MHz
-wait_c:
-	TAY					; will respect X, affects Y & A
-; base 100uS delay
-w100us:
-		LDA #14			; 97+5uS delay @ 1 MHz, change or compute if needed
-w_loop:
-			SEC				; (2)
-			SBC #1			; (2)
-			BNE w_loop		; (3)
-		DEY				; another 100uS
-		BNE w100us
-	RTS
-
 ; *** wait command completion *** respects X
 l_busy:
 	JSR l_wait		; generic busy check
@@ -360,7 +356,7 @@ l_tout:
 ; ********************
 
 ; initialisation delays (reversed)
-l_delay:
+wait_c:
 	.byt	1, 41, 150	; 15ms, 4.1ms & 100us
 
 ; initialisation commands (reversed)
