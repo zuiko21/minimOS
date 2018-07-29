@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180729-1555
+; last modified 20180729-1652
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -153,11 +153,11 @@ lcd_prn:
 	LDA VIA_U+IORB		; current PB (4)
 	AND #L_OTH			; respect PB3 only (2)
 	ORA #LCD_RS
-	STA VIA_U+IORB		; set command... (4)
+	STA VIA_U+IORB		; set command... (4)****
 
 ; printing is done, now advance current position
 ; set up VIA... (worth a subroutine)
-	JSR lcd_rst		; ready to control CRTC (...)
+	JSR lcd_rst		; ready to control LCD (...)
 
 	_DR_OK
 
@@ -173,7 +173,7 @@ lcd_cls:
 	LDA #1			; command = clear display
 ; * issue command on A, assume cmd output set *
 l_issue:
-	STA VIA_U+IORB
+	STA VIA_U+IORA		; eeeeeeeeeeeeeek
 l_pulse:
 	INC VIA_U+IORB		; pulse E on LCD!
 	DEC VIA_U+IORB
@@ -211,8 +211,11 @@ lcr_scr:
 			JSR l_issue
 			LDX #0			; loop variable
 lcr_scw:
-				
+				JSR l_busy		; wait for DDRAM access
+				LDA #LCD_RS		; will write
+				JSR l_issue
 				LDA l_buff, X	; retrieve from buffer
+				JSR l_issue	; and write into device
 				INX
 				CPX #L_CHAR		; until 20 chars done
 				BNE lcr_scw
@@ -221,8 +224,10 @@ lcr_scw:
 			INY
 			CPY #L_LINE		; all done?
 			BNE lcr_sc
+		DEY				; eeeeeeeeeeek
 		STY lcd_y		; restore as maximum
-; before exit, should clear bottom line! TO DO
+; before exit, should clear bottom line!
+
 lcr_ns:
 	LDX lcd_y		; index for y
 	LDA l_addr, X	; current line address
@@ -298,7 +303,7 @@ w_loop:
 
 ; *** wait command completion *** respects X
 l_busy:
-	JSR _wait		; generic busy check
+	JSR l_wait		; generic busy check
 	AND #L_OTH			; respect bits (A returns PB)
 	ORA #LCD_PB			; ready for command
 	STA VIA_U+IORB
