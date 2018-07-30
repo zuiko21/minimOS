@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180729-1946
+; last modified 20180730-2013
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -155,16 +155,21 @@ vdu_nsi:
 		LDA #'?'			; unrecognised char
 		STA io_c			; store as required
 lcd_prn:
+	JSR l_avail			; wait for LCD
 ; set up VIA for LCD print
 	LDA VIA_U+IORB		; current PB (4)
 	AND #L_OTH			; respect PB3 only (2)
-	ORA #LCD_RS
-	STA VIA_U+IORB		; set command... (4)****
-
-; printing is done, now advance current position
-; set up VIA... (worth a subroutine)
-	JSR lcd_rst		; ready to control LCD (...)
-
+	ORA #LCD_RS			; allow DDRAM write (2)
+	STA VIA_U+IORB		; set mode... (4)
+; send char at io_c
+	LDA io_c			; get char
+; *** *** should check here for spanish characters *** ***
+	JSR l_issue			; enable transfer
+; advance local cursor position and check for possible wrap/scroll
+	INC lcd_x			; one more char
+	LDA lcd_x			; check for EOL
+	CMP #L_CHAR
+		BEQ lcd_cr			; wrapped, thus do CR
 	_DR_OK
 
 ; *************************
