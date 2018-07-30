@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180730-2013
+; last modified 20180730-2026
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -198,6 +198,7 @@ lcd_cr:
 	LDA lcd_y		; check whether should scroll
 	CMP #L_LINE
 	BCC lcr_ns		; no scroll
+; ** scrolling code, may become routine if makes branches too far **
 		LDY #1			; yes, first source line
 lcr_sc:
 			STY lcd_y		; will be loop variable
@@ -246,6 +247,7 @@ lcr_scw:
 		ORA #%10000000	; set DDRAM address
 		JSR l_issue
 		LDX #L_CHAR		; spaces to be printed
+; this space-printing loop canno use regular lcd_prn as the last one will invoke CR
 lcr_sp:
 			JSR l_busy		; wait for DDRAM access
 			LDA #LCD_RS		; will write
@@ -255,6 +257,7 @@ lcr_sp:
 			DEX
 			BNE lcr_sp		; until done
 		JSR l_busy		; wait for address setting
+; ** end of scrolling code **
 lcr_ns:
 	LDX lcd_y		; index for y
 	LDA l_addr, X	; current line address
@@ -270,20 +273,13 @@ lcd_tab:
 	SEC
 	SBC lcd_x		; subtract current, these are the needed spaces
 	TAX				; will be respected
+	LDA #' '		; char to be printed, set once only
+	STA io_c
 ltab_sp:
-		JSR l_busy		; wait for DDRAM access
-		LDA #LCD_RS		; will write
-		STA VIA_U+IORB
-		LDA #' '		; white space
-		JSR l_issue		; write into device
-		INC lcd_x		; take note of advance
+		JSR lcd_prn		; do print that space, but must respect X
 		DEX
 		BNE ltab_sp		; until done
-	LDA lcd_x		; final column
-	CMP #L_CHAR		; end of line?
-	BNE lt_yok		; no, all done
-		JMP lcd_cr		; yes, do newline as usual
-lt_yok:
+; regular print will take care of possible CR
 	_DR_OK
 
 ; *** backspace ***
@@ -292,26 +288,20 @@ lcd_bs:
 	LDA lcd_x		; nothing to the left? (4)
 	BNE lbs_ok		; something, go back one (3/2)
 		_DR_ERR(EMPTY)		; nothing, complain somehow
-lbs_ok:
 	DEC lcd_x		; one position back (6)
+lbs_ok:
 ; ...then print a space
-; perhaps easier with cursor shift?
-	JSR l_busy		; wait for address setting
-	LDX lcd_y		; index for y
-	LDA l_addr, X	; current line address
-	CLC
-	ADC lcd_x		; compute current address
-	ORA #%10000000	; set DDRAM address
-	TAX				; save as will be used again
-	JSR l_issue		; issue command and return
-	JSR l_busy		; wait for DDRAM access
-	LDA #LCD_RS		; will write
-	STA VIA_U+IORB
-	LDA #' '		; white space
-	JSR l_issue		; write into device
-	JSR l_busy		; wait for address setting
-	TXA				; retrieve command
-	JSR l_issue		; set definitive address
+; easier with cursor shift! 26 vs 39b
+	JSR l_busy		; wait for LCD
+	LDA #$10		; shift left cursor!
+	JSR l_issue
+	LDA #' '		; will print a space
+	STA io_c
+	JSR lcd_prn		; regular print
+	DEC lcd_x		; one position back (6)
+	JSR l_busy		; wait for LCD again
+	LDA #$10		; shift left cursor again!
+	JSR l_issue
 	_DR_OK			; local cursor was not affected
 
 ; ************************
@@ -327,9 +317,10 @@ lcd_rst:
 lcd_out:
 	LDA #$FF			; all outputs... (2)
 	STA VIA_U+DDRA		; ...as uses 8-bit mode (4)
-; *** even faster command issue ***
+; *** even faster command mode set ***
 lcd_cmd:
 	LDA VIA_U+IORB		; original PB value on user VIA (4)
+lcd_cpb:
 	AND #L_OTH			; leave PB3 (2)
 	ORA #LCD_PB		; E=RS=0, ready for commands
 	STA VIA_U+IORB		; just waiting for E to send LCD command in PA (4)
@@ -338,23 +329,21 @@ lcd_cmd:
 ; *** wait command completion *** respects X
 l_busy:
 	JSR l_wait		; generic busy check
-	AND #L_OTH			; respect bits (A returns PB)
-	ORA #LCD_PB			; ready for command
-	STA VIA_U+IORB
-	DEC VIA_U+DDRA		; set back outputs
+	JSR lcd_cpb		; ready for command (A was PB)
+	DEC VIA_U+DDRA	; set back outputs
 	RTS
 
-; *** wait for sending chars***
+; *** wait for sending chars*** respects X
 l_avail:
-	JSR l_wait		; cannot optimise as JMP, in case of timeout
+	JSR l_wait		; cannot optimise as JMP, in case of timeout!
 	RTS			; back with PA as input
 
 ; ** generic availability check **
 l_wait:
 	_STZA VIA_U+DDRA	; set input!
-	LDA VIA_U+IORB		; original PB
-	AND #L_OTH			; respect bits
-	ORA #LCD_RD			; will read status
+	LDA VIA_U+IORB	; original PB
+	AND #L_OTH		; respect bits
+	ORA #LCD_RD		; will read status
 	STA VIA_U+IORB
 	LDY #74			; for 2.25 ms timeout
 lb_loop:
@@ -362,12 +351,12 @@ lb_loop:
 		DEY
 			BEQ l_tout			; timeout expired!
 ; is busy flag updated without pulsing E? if so, may put INC before and DEC after the loop!
-		INC VIA_U+IORB		; enable...
-		BIT VIA_U+IORA		; read status (respect A)
-		PHP			; must keep this
-		DEC VIA_U+IORB		; ...and disable
-		PLP			; unaffected by DEC
-		BMI lb_loop			; until available
+		INC VIA_U+IORB	; enable...
+		BIT VIA_U+IORA	; read status (respect A)
+		PHP				; must keep this
+		DEC VIA_U+IORB	; ...and disable
+		PLP				; unaffected by DEC
+		BMI lb_loop		; until available
 	RTS
 ; ** timeout handler **
 l_tout:
