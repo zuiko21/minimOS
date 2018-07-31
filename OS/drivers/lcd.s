@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180731-1739
+; last modified 20180731-1755
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -16,6 +16,9 @@
 #include "../usual.h"
 
 .(
+; substitution for undefined chars
+#define	SUBST	' '
+
 ; *** begins with sub-function addresses table ***
 	.byt	144			; physical driver number D_ID (TBD)
 	.byt	A_BOUT		; output driver, non-interrupt-driven
@@ -82,7 +85,9 @@ li_loop:
 		JSR l_issue		; ...as command sent
 		DEX				; next command
 		BPL li_loop
-	_DR_OK				; succeeded
+; LCD is ready, proceed with driver variables
+	_STZA nx_sub		; next free substitution entry (for intl support)
+	_DR_OK			; succeeded
 
 ; *********************************
 ; *** print block of characters *** mandatory loop
@@ -152,7 +157,7 @@ vso_xor:
 vdu_nsi:
 */
 ; non-printable neither accepted control, thus use substitution character
-		LDA #'?'			; unrecognised char
+		LDA #SUBST			; unrecognised char
 		STA io_c			; store as required
 lcd_prn:
 	JSR l_avail			; wait for LCD
@@ -163,7 +168,7 @@ lcd_prn:
 	STA VIA_U+IORB		; set mode... (4)
 ; send char at io_c
 	LDA io_c			; get char
-; *** *** should check here for spanish characters *** ***
+; *** *** should check here for special characters *** ***
 ; assuming ROM code A02!
 ; 128-143 are the ZX Spectrum graphics (16)
 ; 144-159 taken from CP437 @ $Ex, most coincide except 145, 150, 152 & 157 (4)
@@ -171,8 +176,61 @@ lcd_prn:
 ; thus 191 & up are OK
 ; 161-167, 169-171, 176-179, 181-183, 185 and up seem just like 8859-1
 ; 164 (€), 188-190 are defined but in minimOS come from 8859-15
+	BPL lch_ok			; standard ASCII
+		CMP #191			; higher chars like ISO-8859
+	BCS lch_ok
+; I think is best to use a LUT 128-190, zero means must be redefined
+		AND #$7F			; supress MSb eeeeeek
+		TAX					; index for LUT
+		LDA isolut, X			; check code or redefine
+	BNE lch_ok			; no change (or substitute available)
+; *** zero in LUT means char is not available, so seek for a definition ***
+; 1) look if already has been defined, if so just use it
+		LDX #7				; max index for assign array
+sc_sub:
+			CMP cg_sub, X			; check entry
+				BEQ sc_yet			; already defined
+			DEX					; try another
+			BPL sc_sub
+		BMI sc_sch			; not found, get definition (BRA)
+sc_yet:
+		TXA				; number of user-defined char...
+		ORA #128			; ...plus 128 for LCD!
+		BNE lch_ok			; all done (BRA)
+; 2) look it up into supplied definitions
+sc_sch:
+		LDX #31				; max index for definitions array (interesting size!)
+sc_ldef:
+			CMP cg_defs, X			; is this the glyph?
+				BEQ sc_reg			; yeah, send it
+			DEX					; or try another
+			BPL sc_ldef
+; strange to arrive here... just use usual substitution character
+		LDA #SUBST
+		BNE lch_ok
+; 3) take note of new definition
+sc_reg:
+		LDY nx_sub			; first free element in assigns array
+		STA cg_sub, Y			; store before original code is lost
+		INY				; advance pointer
+		TYA
+		AND #7				; mod 8
+		STA nx_sub
+; 4) send definition to CGRAM
+		TXA					; index of glyph
+		ASL					; times 8
+		ASL
+		ASL					; fortunately 31×8 < 255!
+		TAX					; index into glyph 'file'
 
+; 5) get substitution (128-135)
+		LDX nx_sub			; first free entry...
+		DEX				; ...minus 1...
+		TXA				; ...is last used
+		AND #7			; in case it wrapped
+		ORA #128		; add bit 7 and we are done
 ; *** *** end of regional support *** ***
+lch_ok:
 	JSR l_issue			; enable transfer
 ; advance local cursor position and check for possible wrap/scroll
 	INC lcd_x			; one more char
