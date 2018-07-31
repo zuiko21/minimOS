@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
-; v0.6a1
+; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180731-1611
+; last modified 20180731-1651
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -164,6 +164,12 @@ lcd_prn:
 ; send char at io_c
 	LDA io_c			; get char
 ; *** *** should check here for spanish characters *** ***
+; assuming ROM code A02!
+; 161-167, 169-171, 176-179, 181-183, 185 and up seems just like 8859-1
+; 164 (€), 188-190 are defined but in minimOS come from 8859-15
+; 128-143 are the ZX Spectrum graphics
+; 144-159 undefined???
+; *** *** end of regional support *** ***
 	JSR l_issue			; enable transfer
 ; advance local cursor position and check for possible wrap/scroll
 	INC lcd_x			; one more char
