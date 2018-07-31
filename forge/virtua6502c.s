@@ -1,8 +1,8 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; COMPACT version!
-; v0.1a6
+; v0.1a7
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180729-1049
+; last modified 20180731-1617
 
 //#include "../OS/usual.h"
 #include "../OS/macros.h"
@@ -90,7 +90,11 @@ open_emu:
 	STX zpar3+2		; preset 24b bank pointers (for current ABI)
 	STX zpar2+2
 ; custom MALLOC init
-	STZ t_min		; means empty heap, will not use t_max
+;	STZ t_min		; means empty heap, will not use t_max
+; newer scheme makes no distinction of empty case
+	LDA #2			; start of available pages
+	STA t_min		; set both sentinels
+	STA t_max
 	LDX #15			; max array offset
 t_reset:
 		STZ t_page, X	; clear entry
@@ -797,12 +801,13 @@ t_aloc:
 	LDA ma_rs
 	ORA ma_rs+1		; asking for full size?
 	BNE m_nfull		; no, regular procedure
-		LDA t_min		; yes, first check wheter empty
-		BNE mf_siz		; not empty, deduce size
-			LDA #126		; full 31.5K otherwise!
-			STA ma_rs+1
-			BRA do_fp		; proceed in a simple way
-mf_siz:
+; t_min can no longer be zero
+;		LDA t_min		; yes, first check wheter empty
+;		BNE mf_siz		; not empty, deduce size
+;			LDA #126		; full 31.5K otherwise!
+;			STA ma_rs+1
+;			BRA do_fp		; proceed in a simple way
+;mf_siz:
 		LDA t_min		; look for space before heap
 		SEC
 		SBC #2			; minus reserved
@@ -821,35 +826,38 @@ m_nfull:
 		INC ma_rs+1		; no, round up to full page
 m_pgft:
 ; look for some room
-	LDA t_min		; is this the first allocation?
-	BNE do_aloc		; no, regular procedure
-do_fp:
-		LDA #2			; yes, set heap start...
-		STA t_min			; ...as new minimum
-		JSR in_list		; create first entry
-		LDA ma_rs+1		; plus size...
-		CLC
-		ADC #2			; ...from start...
-		BPL fp_ok		; fits fine
-			LDA #2			; no, remove very first entry
-			BRA tma_err		; over 32K, no way!
-fp_ok:
-		STA t_max		; ...is new end
-		BRA tma_ok
-do_aloc:
-	CLC			; check whether it fits before heap
-	SBC #2			; subtract reserved pages
+; t_min can no longer be zero
+	LDA t_min		; look space before heap first
+;	BNE do_aloc		; not empty, regular procedure
+;do_fp:
+;		LDA #2			; yes, set heap start...
+;		STA t_min			; ...as new minimum
+;		JSR in_list		; create first entry
+;		LDA ma_rs+1		; plus size...
+;		CLC
+;		ADC #2			; ...from start...
+;		BPL fp_ok		; fits fine
+;			LDA #2			; no, remove very first entry
+;			BRA tma_err		; over 32K, no way!
+;fp_ok:
+;		STA t_max		; ...is new end
+;		BRA tma_ok
+;do_aloc:
+	DEC				; check whether it fits before heap...
+	DEC				; ...subtract reserved pages
 	CMP ma_rs+1		; how many pages were asked?
 	BCC m_heap		; no room before, put it after heap
-		LDA t_min		; fits! will stick to tail
+		INC				; fits! will stick before heap
+		INC				; as fast but smaller
 		SBC ma_rs+1		; C already set
 		STA t_min		; new minimum is the address
 		JSR in_list		; insert into list
 		BRA tma_ok		; was successful
 m_heap:
 	LDA t_max		; the end of the heap is allocated address
+	PHA				; best way
 	JSR in_list		; create entry
-	LDA t_max		; original value...
+	PLA				; original value...
 	CLC
 	ADC ma_rs+1		; ...plus size...
 	BPL mh_ok		; fits fine
@@ -863,8 +871,8 @@ tma_ok:
 	LDA #1			; mask for C flag
 	TRB p65			; no error!
 	JMP _60			; execute virtual RTS
-tma_err:
-	BRA tma_err2		; too far...
+;tma_err:
+;	BRA tma_err2		; too far...
 
 ; *** *** custom FREE code *** ***
 t_free2:
@@ -875,6 +883,8 @@ fr_loop:
 			BEQ fr_this		; yes, fill it
 		DEX			; no, go for next
 		BPL fr_loop
+; ***************************
+; ** common error routines **
 fr_not:
 ; * notify error and abort *
 	LDA #N_FOUND		; no entry to be freed
@@ -882,6 +892,19 @@ fr_not:
 	LDA #1			; mask for C flag
 	TSB p65			; indicate error!
 	JMP _60			; execute virtual RTS
+
+tma_err:			; was err2
+; * could not allocate, A is bogus allocated page *
+		JSR out_lst		; remove failed entry
+tma_not:
+; notify error and abort
+	LDA #FULL		; no more available entries
+	STA y65			; set error code
+	LDA #1			; mask for C flag
+	TSB p65			; indicate error!
+	JMP _60			; execute virtual RTS
+; ** end of error routines **
+; ***************************
 fr_this:
 	LDA t_siz, X	; let us mark entry as deleted...
 	ORA #128		; ...by setting bit 7
@@ -949,16 +972,6 @@ il_loop:
 	PLA			; discard return address eeeeeeeeek
 	PLA
 	BRA tma_not		; no entry to remove, just notify
-tma_err2:
-; * could not allocate, A is bogus allocated page *
-		JSR out_lst		; remove failed entry
-tma_not:
-; notify error and abort
-	LDA #FULL		; no more available entries
-	STA y65			; set error code
-	LDA #1			; mask for C flag
-	TSB p65			; indicate error!
-	JMP _60			; execute virtual RTS
 ; found free entry, create new
 il_free:
 	TYA				; retrieve allocated bank
