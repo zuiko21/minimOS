@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180731-1923
+; last modified 20180731-2053
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -54,7 +54,7 @@ lcd_err:
 	L_LINE	= 4		; lines
 
 ; glyph redefinition size
-	num_glph	= cg_glph - cg_defs 
+	num_glph	= cg_glph - cg_defs
 ; ************************
 ; *** initialise stuff ***
 ; ************************
@@ -201,7 +201,7 @@ sc_yet:
 		BNE lch_ok			; all done (BRA)
 ; 2) look it up into supplied definitions
 sc_sch:
-		LDX #num_glph-1		; max index for definitions array (size is 30 currently, must be 32 or less)
+		LDX #num_glph-1		; max index for definitions array (size must be 32 or less)
 sc_ldef:
 			CMP cg_defs, X			; is this the glyph?
 				BEQ sc_reg			; yeah, send it
@@ -461,10 +461,10 @@ l_addr:
 isolut:
 	.byt	32,	0,	0,	0,	0,	0,	0,	0	; 128-143, ZX semigraphics, note 128 is just remapped to space
 	.byt	0,	0,	0,	0,	0,	0,	0,	0
-	.byt	144,	0,	146,	147,	148,	149,	0,	151	; 144-159, most like CP437 $Ex
-	.byt	0,	153,	154,	155,	156,	0,	158,	159
-	.byt	32,	161,	162	163,	0,	165,	166,	167	; note NBSP is just remapped to regular space
-	.byt	0,	169,	170,	171,	0,	0,	0,	0
+	.byt	144,	223,	146,	147,	148,	149,	0,	151	; 144-159, most like CP437 $Ex, Beta is remapped to Eszett, Phi to empty set
+	.byt	216,	153,	154,	155,	156,	0,	158,	159
+	.byt	32,	161,	162	163,	0,	165,	166,	167	; note NBSP is just remapped to regular space, SHY to hyphen
+	.byt	0,	169,	170,	171,	0,	45,	0,	0
 	.byt	176,	177,	178,	179,	0,	181,	182,	183
 	.byt	0,	185,	186,	187,	0,	0,	0		; up to 190, rest is unchanged
 
@@ -472,12 +472,13 @@ isolut:
 cg_defs:
 	.byt	129, 130, 131, 132, 133, 134, 135	; ZX graphics (128 is a space)
 	.byt	136, 137, 138, 139, 140, 141, 142, 143
-	.byt	145, 150, 152, 157			; selected math greek
-	.byt	164, 168, 172, 173, 174, 175		; euro sign and other differences between ISO 8859-1 & -15
+	.byt	150, 157				; selected math greek (two remaps)
+	.byt	164, 168, 172, 174, 175			; euro sign and other differences between ISO 8859-1 & -15, SHY remapped
 	.byt	180, 184, 188, 189, 190
 
 ; ** glyph definitions (note index above) **
 cg_glph:
+; ZX semi-graphs
 ; 129, ZX up rt
 	.byt	%00111
 	.byt	%00111
@@ -627,5 +628,127 @@ cg_glph:
 	.byt	%11111
 	.byt	%11111
 	.byt	%11111
+
+; selected math greek (beta remapped to eszett, phi remapped to empty set)
+; 150, greek mju
+	.byt	%00000
+	.byt	%10001
+	.byt	%10001
+	.byt	%11011
+	.byt	%10101
+	.byt	%10000
+	.byt	%10000
+	.byt	%00000
+
+; 157, greek lowercase phi
+	.byt	%00000
+	.byt	%00010
+	.byt	%10101
+	.byt	%10101
+	.byt	%00100
+	.byt	%00100
+	.byt	%00100
+	.byt	%00000
+
+; differences between ISO 8859-1 & 8859-15 (SHY remapped to -)
+; 164, Euro sign
+	.byt	%00110
+	.byt	%01001
+	.byt	%11110
+	.byt	%01000
+	.byt	%11110
+	.byt	%01001
+	.byt	%00110
+	.byt	%00000
+
+; 168, diaeresis
+	.byt	%00000
+	.byt	%01010
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+
+; 172, negation
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%11111
+	.byt	%00001
+	.byt	%00001
+	.byt	%00000
+	.byt	%00000
+
+; 174, registered
+	.byt	%01110
+	.byt	%11111
+	.byt	%11011
+	.byt	%11111
+	.byt	%11101
+	.byt	%11011
+	.byt	%01110
+	.byt	%00000
+
+; 175, macron
+	.byt	%11111
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+
+; 180, acute
+	.byt	%00010
+	.byt	%00100
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+
+; 184, cedilla
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00100
+	.byt	%01100
+	.byt	%00000
+
+; 188, upper OE
+	.byt	%00000
+	.byt	%01111
+	.byt	%10100
+	.byt	%10100
+	.byt	%10111
+	.byt	%10100
+	.byt	%01111
+	.byt	%00000
+
+; 189, lower oe
+	.byt	%00000
+	.byt	%00000
+	.byt	%01110
+	.byt	%10101
+	.byt	%10110
+	.byt	%10100
+	.byt	%01111
+	.byt	%00000
+
+; 190, upper y-uml
+	.byt	%10001
+	.byt	%00000
+	.byt	%10001
+	.byt	%10001
+	.byt	%01010
+	.byt	%00100
+	.byt	%00100
+	.byt	%00000
 
 .)
