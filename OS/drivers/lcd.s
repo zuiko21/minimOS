@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180731-1755
+; last modified 20180731-1923
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -53,6 +53,8 @@ lcd_err:
 	L_CHAR	= 20		; chars per line
 	L_LINE	= 4		; lines
 
+; glyph redefinition size
+	num_glph	= cg_glph - cg_defs 
 ; ************************
 ; *** initialise stuff ***
 ; ************************
@@ -199,7 +201,7 @@ sc_yet:
 		BNE lch_ok			; all done (BRA)
 ; 2) look it up into supplied definitions
 sc_sch:
-		LDX #31				; max index for definitions array (interesting size!)
+		LDX #num_glph-1		; max index for definitions array (size is 30 currently, must be 32 or less)
 sc_ldef:
 			CMP cg_defs, X			; is this the glyph?
 				BEQ sc_reg			; yeah, send it
@@ -207,7 +209,7 @@ sc_ldef:
 			BPL sc_ldef
 ; strange to arrive here... just use usual substitution character
 		LDA #SUBST
-		BNE lch_ok
+			BNE lch_ok			; actually BRA
 ; 3) take note of new definition
 sc_reg:
 		LDY nx_sub			; first free element in assigns array
@@ -222,6 +224,8 @@ sc_reg:
 		ASL
 		ASL					; fortunately 31×8 < 255!
 		TAX					; index into glyph 'file'
+		JSR l_busy			; wait for LCD
+		LDA 
 
 ; 5) get substitution (128-135)
 		LDX nx_sub			; first free entry...
@@ -452,5 +456,176 @@ l_set:
 ; line adresses
 l_addr:
 	.byt	0, $40, $14, $54	; start address of each line
+
+; LUT marking undefined chars
+isolut:
+	.byt	32,	0,	0,	0,	0,	0,	0,	0	; 128-143, ZX semigraphics, note 128 is just remapped to space
+	.byt	0,	0,	0,	0,	0,	0,	0,	0
+	.byt	144,	0,	146,	147,	148,	149,	0,	151	; 144-159, most like CP437 $Ex
+	.byt	0,	153,	154,	155,	156,	0,	158,	159
+	.byt	32,	161,	162	163,	0,	165,	166,	167	; note NBSP is just remapped to regular space
+	.byt	0,	169,	170,	171,	0,	0,	0,	0
+	.byt	176,	177,	178,	179,	0,	181,	182,	183
+	.byt	0,	185,	186,	187,	0,	0,	0		; up to 190, rest is unchanged
+
+; list of redefinitions (glyphs must be at 8×index)
+cg_defs:
+	.byt	129, 130, 131, 132, 133, 134, 135	; ZX graphics (128 is a space)
+	.byt	136, 137, 138, 139, 140, 141, 142, 143
+	.byt	145, 150, 152, 157			; selected math greek
+	.byt	164, 168, 172, 173, 174, 175		; euro sign and other differences between ISO 8859-1 & -15
+	.byt	180, 184, 188, 189, 190
+
+; ** glyph definitions (note index above) **
+cg_glph:
+; 129, ZX up rt
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+
+; 130, ZX up lt
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+
+; 131, ZX up
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+
+; 132, ZX dn rt
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+
+; 133, ZX right
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+
+; 134, ZX backslash
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+
+; 135, ZX neg dn lt
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+
+; 136, ZX dn lt
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+
+; 137, ZX slash
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+
+; 138, ZX left
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+
+; 139, ZX neg dn rt
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+
+; 140, ZX down
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%00000
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+
+; 141, ZX neg up lt
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%00111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+
+; 142, ZX neg up rt
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11100
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+
+; 143, ZX black
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
+	.byt	%11111
 
 .)
