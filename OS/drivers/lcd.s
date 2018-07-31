@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180730-2026
+; last modified 20180731-1611
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -59,7 +59,7 @@ lcd_init:
 	LDX #2			; wait values [0..2]
 ld_loop:
 		LDY wait_c, X	; get delay (in 100us units)
-; * code for waiting A×100 uS *
+; * code for waiting Y×100 uS *
 ; base 100uS delay
 w100us:
 			LDA #14			; 97+5uS delay @ 1 MHz, change or compute if needed
@@ -156,7 +156,7 @@ vdu_nsi:
 		STA io_c			; store as required
 lcd_prn:
 	JSR l_avail			; wait for LCD
-; set up VIA for LCD print
+; set up VIA for LCD print (RS)
 	LDA VIA_U+IORB		; current PB (4)
 	AND #L_OTH			; respect PB3 only (2)
 	ORA #LCD_RS			; allow DDRAM write (2)
@@ -247,7 +247,7 @@ lcr_scw:
 		ORA #%10000000	; set DDRAM address
 		JSR l_issue
 		LDX #L_CHAR		; spaces to be printed
-; this space-printing loop canno use regular lcd_prn as the last one will invoke CR
+; this space-printing loop cannot use regular lcd_prn as the last one will invoke CR
 lcr_sp:
 			JSR l_busy		; wait for DDRAM access
 			LDA #LCD_RS		; will write
