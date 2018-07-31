@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180731-2053
+; last modified 20180731-2113
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -222,17 +222,43 @@ sc_reg:
 		TXA					; index of glyph
 		ASL					; times 8
 		ASL
-		ASL					; fortunately 31×8 < 255!
-		TAX					; index into glyph 'file'
+		ASL
+		TAX					; will save index into glyph 'file'
+		CLC
+		ADC #8				; will need final index for loop
+		STA lc_tmp			; I need this variable
+; let us set CGRAM address for this
 		JSR l_busy			; wait for LCD
-		LDA 
-
+		_PHX				; much safer in case of timeout
+		LDX nx_sub			; first free entry...
+		DEX					; ...minus 1...
+		TXA					; ...is last used
+		AND #7				; in case it wrapped
+		ORA #64				; make it set CGRAM command
+		JSR l_issue
+; now transfer the whole 8 bytes from glyph record
+		_PLX					; retrieve file index
+		LDA VIA_U+IORB		; current PB (4)
+		AND #L_OTH			; respect PB3 only (2)
+		ORA #LCD_RS			; allow CGRAM write (2)
+		STA VIA_U+IORB		; set mode... (4)
+sc_wcl:
+			JSR l_busy		; wait for CGRAM access
+			LDA VIA_U+IORB		; current PB (4)
+			AND #L_OTH			; respect PB3 only (2)
+			ORA #LCD_RS			; allow CGRAM write (2)
+			STA VIA_U+IORB		; set mode... (4)
+			LDA sc_glph, X		; get byte from glyph
+			JSR l_issue		; write into device
+			INX
+			CPX lc_tmp		; are we done.
+			BNE sc_wcl
+		JSR l_busy		; will need it
 ; 5) get substitution (128-135)
 		LDX nx_sub			; first free entry...
 		DEX				; ...minus 1...
 		TXA				; ...is last used
 		AND #7			; in case it wrapped
-		ORA #128		; add bit 7 and we are done
 ; *** *** end of regional support *** ***
 lch_ok:
 	JSR l_issue			; enable transfer
