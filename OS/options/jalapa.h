@@ -2,7 +2,7 @@
 ; suitable for Jalapa and its strange memory architecture!
 ; copy or link as options.h in root dir
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20160406-0844
+; last modified 20180801-2045
 
 ; *** set conditional assembly ***
 
@@ -60,6 +60,7 @@ VIA		=	VIA1			; for compatibility with older code
 VIA_J	=	VIA1
 VIA_FG	=	VIA1
 VIA_SS	=	VIA1
+VIA_U	=	VIA1
 
 ; * ACIA/UART address *
 ACIA1	=	IO_BASE + $D0	; ACIA address on SDm and most other (no longer $DFE0 for easier decoding 688+138)

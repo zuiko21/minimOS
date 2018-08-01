@@ -2,7 +2,7 @@
 ; empty file for testing purposes
 ; copy or link as options.h in root dir
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180404-1446
+; last modified 20180801-2043
 
 ; *** set conditional assembly ***
 
@@ -69,6 +69,7 @@ VIA		=	VIA1			; for compatibility with older code
 VIA_J	=	VIA1
 VIA_FG	=	VIA1
 VIA_SS	=	VIA1
+VIA_U	=	VIA1
 
 
 ; *** set standard device *** new 20160331 

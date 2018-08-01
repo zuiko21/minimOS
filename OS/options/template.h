@@ -2,7 +2,7 @@
 ; generic template, suitable for SDm/Jalapa
 ; copy or link as options.h in root dir
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180404-1446
+; last modified 20180801-2041
 
 ; *** set conditional assembly ***
 ; uncomment to remove debugging markup
@@ -79,11 +79,13 @@ VIA2	=	VIA1			; Jalapa is a single-VIA machine, others may change
 ; VIA_FG is the one for audio generation (/PB7 & CB2)
 ; VIA_SS is the one for SS-22 interface
 ; VIA_SP is the one for SPI interface (TBD)
+; VIA_U is the one for user port (VIAport)
 
 VIA_J	=	VIA1			; the only one in SDm, though
 VIA_FG	=	VIA1
 VIA_SS	=	VIA1
 VIA_SP	=	VIA1
+VIA_U	=	VIA1
 
 ; for compatibility with older code
 VIA		=	VIA1			; valid for SDm and most
