@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180801-2002
+; last modified 20180801-2029
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -14,10 +14,13 @@
 ; *** minimOS headers ***
 ; ***********************
 //#include "../usual.h"
-#include "../macros.h"
-#include "../abi.h"
+#include "options/chihuahua_plus.h"
+#include "macros.h"
+#include "abi.h"
 .zero
-#include "../zeropage.h"
+#include "zeropage.h"
+* = $200
+#include "drivers/lcd.h"
 .text
 
 .(
@@ -38,12 +41,12 @@
 	.word	lcd_err		; D_ASYN does nothing
 	.word	lcd_err		; no config
 	.word	lcd_err		; no status
-	.word	lcd_shut	; shutdown procedure will disable display
-	.word	lcd_text	; points to descriptor string
+	.word	lcd_off		; shutdown procedure will disable display
+	.word	lcd_txt		; points to descriptor string
 	.word	0			; reserved, D_MEM
 
 ; *** driver description ***
-srs_info:
+lcd_txt:
 	.asc	"20x4 char LCD 0.6a1", 0
 
 lcd_err:
@@ -109,6 +112,7 @@ ints_l:
 		DEX
 		BPL ints_l
 #endif
+lcd_off:			; *** placeholder ***
 	_DR_OK			; succeeded
 
 ; *********************************
@@ -147,23 +151,23 @@ lcd_char:
 ; first check whether control char or printable
 	LDA io_c			; get char (3)
 	CMP #' '			; printable? (2)
-	BCS lcd_prn			; it is! skip further comparisons (3)
+	BCS lch_wdd			; it is! skip further comparisons (3)
 		CMP #FORMFEED		; clear screen?
 		BNE lch_nff
 			JMP lcd_cls			; clear and return!
-lcd_nff:
+lch_nff:
 		CMP #CR				; newline?
 		BNE lch_ncr
 			JMP lcd_cr			; scrolling perhaps
-lcd_ncr:
+lch_ncr:
 		CMP #HTAB			; tab?
 		BNE lch_ntb
 			JMP lcd_tab			; advance cursor
-lcd_ntb:
+lch_ntb:
 		CMP #BS				; backspace?
 		BNE lch_nbs
 			JMP lcd_bs			; delete last character
-lcd_nbs:
+lch_nbs:
 /*
 		CMP #14				; shift out?
 		BNE lch_nso
@@ -181,7 +185,7 @@ vdu_nsi:
 ; non-printable neither accepted control, thus use substitution character
 		LDA #SUBST			; unrecognised char
 		STA io_c			; store as required
-lcd_prn:
+lch_wdd:
 	JSR l_avail			; wait for LCD
 ; set up VIA for LCD print (RS)
 	LDA VIA_U+IORB		; current PB (4)
@@ -381,7 +385,7 @@ lcr_ns:
 	LDX lcd_y		; index for y
 	LDA l_addr, X	; current line address
 	ORA #%10000000	; set DDRAM address
-	BNE l_issue		; issue command and return (no need for BRA)
+	JMP l_issue		; issue command and return
 
 ; *** tab (4 spaces) ***
 lcd_tab:
