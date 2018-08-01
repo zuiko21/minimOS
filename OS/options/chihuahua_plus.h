@@ -2,7 +2,7 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20171220-1310
+; last modified 20180801-2023
 
 ; *** set conditional assembly ***
 
@@ -58,10 +58,12 @@ VIA		=	VIA1			; for compatibility with older code
 ; VIA_J is the one which does the jiffy IRQ, most likely the main one
 ; VIA_FG is the one for audio generation (/PB7 & CB2)
 ; VIA_SS is the one for SS-22 interface
+; VIA_U is the user interface (VIAport)
 
 VIA_J	=	VIA1
 VIA_FG	=	VIA1
 VIA_SS	=	VIA1
+VIA_U	=	VIA1
 
 ; * optional ACIA/UART address (in external board!) *
 ACIA1	=	IO_BASE + $D0	; ACIA address on most (no longer $DFE0 for easier decoding 688+138)

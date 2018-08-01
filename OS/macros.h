@@ -1,6 +1,6 @@
-; minimOS 0.6rc4 MACRO definitions
+; minimOS 0.6rc5 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180425-0938
+; last modified 20180801-2020
 
 ; *** standard addresses ***
 
@@ -98,6 +98,7 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #define		CR		13
 #define		LF		10
 #define		BS		8
+#define		FORMFEED	12
 ; renamed TAB for 6800 compatibility!
 #define		HTAB	9
 #define		BEL		7
