@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180731-2113
+; last modified 20180801-2002
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -13,11 +13,19 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-#include "../usual.h"
+//#include "../usual.h"
+#include "../macros.h"
+#include "../abi.h"
+.zero
+#include "../zeropage.h"
+.text
 
 .(
+; *** assembly options and other constants ***
 ; substitution for undefined chars
 #define	SUBST	' '
+; enable char redefining for international support
+;#define	INTLSUP	_INTLSUP
 
 ; *** begins with sub-function addresses table ***
 	.byt	144			; physical driver number D_ID (TBD)
@@ -53,8 +61,11 @@ lcd_err:
 	L_CHAR	= 20		; chars per line
 	L_LINE	= 4		; lines
 
+#ifdef	INTLSUP
 ; glyph redefinition size
 	num_glph	= cg_glph - cg_defs
+#endif
+
 ; ************************
 ; *** initialise stuff ***
 ; ************************
@@ -88,7 +99,16 @@ li_loop:
 		DEX				; next command
 		BPL li_loop
 ; LCD is ready, proceed with driver variables
+	_STZA lcd_x		; reset coordinate
+	_STZA lcd_y		; reset coordinate
+#ifdef	INTLSUP
 	_STZA nx_sub		; next free substitution entry (for intl support)
+	LDX #7
+ints_l:
+		_STZA cg_sub, X	; clear substitution entry
+		DEX
+		BPL ints_l
+#endif
 	_DR_OK			; succeeded
 
 ; *********************************
@@ -171,6 +191,7 @@ lcd_prn:
 ; send char at io_c
 	LDA io_c			; get char
 ; *** *** should check here for special characters *** ***
+#ifdef	INTLSUP
 ; assuming ROM code A02!
 ; 128-143 are the ZX Spectrum graphics (16)
 ; 144-159 taken from CP437 @ $Ex, most coincide except 145, 150, 152 & 157 (4)
@@ -259,6 +280,7 @@ sc_wcl:
 		DEX				; ...minus 1...
 		TXA				; ...is last used
 		AND #7			; in case it wrapped
+#endif
 ; *** *** end of regional support *** ***
 lch_ok:
 	JSR l_issue			; enable transfer
@@ -483,6 +505,7 @@ l_set:
 l_addr:
 	.byt	0, $40, $14, $54	; start address of each line
 
+#ifdef	INTLSUP
 ; LUT marking undefined chars
 isolut:
 	.byt	32,	0,	0,	0,	0,	0,	0,	0	; 128-143, ZX semigraphics, note 128 is just remapped to space
@@ -776,5 +799,6 @@ cg_glph:
 	.byt	%00100
 	.byt	%00100
 	.byt	%00000
+#endif
 
 .)
