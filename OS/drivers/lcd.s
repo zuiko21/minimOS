@@ -28,7 +28,7 @@
 ; substitution for undefined chars
 #define	SUBST	' '
 ; enable char redefining for international support
-;#define	INTLSUP	_INTLSUP
+#define	INTLSUP	_INTLSUP
 
 ; *** begins with sub-function addresses table ***
 	.byt	144			; physical driver number D_ID (TBD)
@@ -203,13 +203,14 @@ lch_wdd:
 ; thus 191 & up are OK
 ; 161-167, 169-171, 176-179, 181-183, 185 and up seem just like 8859-1
 ; 164 (€), 188-190 are defined but in minimOS come from 8859-15
-	BPL lch_ok			; standard ASCII
+	BPL lch_ok2			; standard ASCII
 		CMP #191			; higher chars like ISO-8859
 	BCS lch_ok
 ; I think is best to use a LUT 128-190, zero means must be redefined
 		AND #$7F			; supress MSb eeeeeek
 		TAX					; index for LUT
 		LDA isolut, X			; check code or redefine
+lch_ok2:
 	BNE lch_ok			; no change (or substitute available)
 ; *** zero in LUT means char is not available, so seek for a definition ***
 ; 1) look if already has been defined, if so just use it
@@ -273,7 +274,7 @@ sc_wcl:
 			AND #L_OTH			; respect PB3 only (2)
 			ORA #LCD_RS			; allow CGRAM write (2)
 			STA VIA_U+IORB		; set mode... (4)
-			LDA sc_glph, X		; get byte from glyph
+			LDA cg_glph, X		; get byte from glyph
 			JSR l_issue		; write into device
 			INX
 			CPX lc_tmp		; are we done.
@@ -516,7 +517,7 @@ isolut:
 	.byt	0,	0,	0,	0,	0,	0,	0,	0
 	.byt	144,	223,	146,	147,	148,	149,	0,	151	; 144-159, most like CP437 $Ex, Beta is remapped to Eszett, Phi to empty set
 	.byt	216,	153,	154,	155,	156,	0,	158,	159
-	.byt	32,	161,	162	163,	0,	165,	166,	167	; note NBSP is just remapped to regular space, SHY to hyphen
+	.byt	32,	161,	162,	163,	0,	165,	166,	167	; note NBSP is just remapped to regular space, SHY to hyphen
 	.byt	0,	169,	170,	171,	0,	45,	0,	0
 	.byt	176,	177,	178,	179,	0,	181,	182,	183
 	.byt	0,	185,	186,	187,	0,	0,	0		; up to 190, rest is unchanged
