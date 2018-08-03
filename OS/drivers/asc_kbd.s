@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180803-2159
+; last modified 20180803-2223
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -10,6 +10,11 @@
 
 ; new VIA-connected device ID is $25/A5/2D/AD (%x010x101), will go into PB
 ; could it be combined with LCD, saving one 688?
+
+; ** driver variables description **
+; ak_fi, first free element in FIFO
+; ak_fo, element ready for exit in FIFO
+; ak_mk, temporary storage of column 15 (modifiers)
 
 ; ***********************
 ; *** minimOS headers ***
@@ -26,8 +31,8 @@
 	.word	ak_poll		; periodic interrupt...
 	.word	4		; 20ms scan seems fast enough
 	.word	ak_nreq		; D_ASYN does nothing
-	.word	ak_nreq		; no config
-	.word	ak_nreq		; no status
+	.word	ak_err		; no config
+	.word	ak_err		; no status
 	.word	ak_exit		; shutdown procedure, leave VIA as it was...
 	.word	ak_info		; points to descriptor string
 	.word	0		; non-relocatable, D_MEM
@@ -37,14 +42,14 @@ ak_info:
 	.asc	"ASCII keyboard v0.6", 0
 
 ; *** some definitions ***
-AF_SIZ		= 16		; buffer size (only 15 useable)
+AF_SIZ		= 16		; buffer size (only 15 useable) no need to be power of two
 
 PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output
 PB_MASK		= %01111111	; all used, PB7 free
 
-; ****************************************************************
-; *** read key (only one byte of buffer will be filled at most ***
-; ****************************************************************
+; ****************************************
+; *** read from buffer to output block ***
+; ****************************************
 ak_read:
 	LDA bl_ptr+1			; save pointer MSB
 	PHA
@@ -55,7 +60,6 @@ ak_rloop:
 			BEQ blck_end			; nothing to do
 		JSR ak_get			; *** get one byte from buffer***
 			BCS blck_end		; any error ends transfer!
-		LDA io_c			; received byte... *need?*
 		STA (bl_ptr),Y			; ...goes into buffer
 		INY					; next byte, check carry
 		BNE ak_nw
@@ -72,8 +76,10 @@ ak_nw:
 blck_end:
 	PLA					; restore MSB
 	STA bl_ptr+1
-	RTS				; respect whatever error code
+	RTS					; respect whatever error code
 
+ak_err:
+	_DR_ERR(NO_RSRC)		; cannot do this
 
 ; ************************
 ; *** initialise stuff ***
@@ -96,7 +102,6 @@ ak_get:
 		_DR_ERR(EMPTY)			; yes, do nothing
 ak_some:
 	LDA ak_buff, X		; extract char
-;	STA io_c			; *need?*
 	INX					; this is no more
 	CPX #AF_SIZ			; wrapped?
 	BNE ak_rnw				; no
@@ -126,4 +131,55 @@ ak_wnw:
 		_STZA ak_fo			; or go back to zero
 ak_room:
 	_DR_OK
+
+; ******************************************************
+; *** scan matrix and put char on FIFO, if available *** D_POLL task
+; ******************************************************
+ak_poll:
+; must setup VIA first!!
+	LDX #15			; maximum column index (modifiers)
+	JSR ap_scol		; scan this column
+	ASL			; modifier offsets need 9 bits!
+	TAX			; index for modifier combos
+	LDY ak_mods, X	; get offset on main table for these modifiers
+	LDA ak_mods+1, X
+	STY ak_mk		; save for later?
+	STA ak_mk+1
+	LDX #14			; last regular column
+ap_sloop:
+		JSR ap_scol		; scan this one
+; to do to do to do
+		DEX				; next column
+		BPL ap_sloop
+; must check whether scancode is different from last poll
+	TAY				; use scancode as post-index
+	LDA (ak_mk), Y		; this is the ASCII code
+	JSR ak_push		; goes into FIFO
+	_DR_OK
+
+; **************************
+; *** auxiliary routines ***
+; **************************
+
+; get rows in A as selected in column X
+ap_scol:
+	TXA				; column
+	ASL				; times 16
+	ASL
+	ASL
+	ASL
+	STA VIA_U+IORA		; place output bits (select column)
+; fastest machines may need some delay here
+	LDA VIA_U+IORA		; get row values back
+	AND #$0F		; just the low nibble
+	RTS
+
+; *** misc ***
+ak_nreq:
+	_NXT_ISR		; in case gets called, exit ASAP
+
+; *******************************
+; *** diverse data and tables ***
+; *******************************
+
 .)
