@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180804-1538
+; last modified 20180804-1605
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -220,6 +220,8 @@ ap_scok:
 ap_char:
 	STA ak_scod		; save last detected! eeeeeeeeek
 	TAY				; use scancode as post-index
+; *** should manage dead key(s) here ***
+ap_live:
 	LDA (ak_mk), Y		; this is the ASCII code
 	_NO_CRIT		; zeropage is free
 	JMP ak_push		; goes into FIFO... and return to ISR
@@ -303,7 +305,7 @@ ak_tc:
 
 ; alt & control
 ak_tac:
-	.byt	$00, $00, $00, $00,  $B8, $E2, $0, $0,  $0, $A8, $0, $0
+	.byt	$0, $0, $0, $0,  $B8, $E2, $0, $0,  $0, $A8, $0, $0
 	.byt	$0, $0, $EA, $0,  $0, $0, $AE, $0,  $0, $0, $0, $0
 	.byt	$0, $0, $0, $0,  $0, $0, $FB, $0,  $0, $0, $EE, $0
 	.byt	$0, $0, $F4, $0,  $0, $E3, $F5, $0, $0, $0, $0, $0
@@ -315,11 +317,11 @@ ak_tuac:
 ak_tsac:
 ; shift & caps & alt & control (same as above, this far)
 ak_tsuac:
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
+	.byt	$0, $0, $0, $0,  $B4, $C2, $0, $0,  $0, $A6, $0, $0
+	.byt	$0, $0, $CA, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $DB, $0,  $0, $0, $CE, $0
+	.byt	$0, $0, $D4, $0,  $0, $C3, $D5, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 
 ; shift (with or without caps lock)
 ak_ts:
@@ -330,36 +332,29 @@ ak_tsu:
 	.byt	$2E, $4C, $4F, $29,  $2D, $D1, $50, $3D,  $0, $0, $5E, $3F
 	.byt	$0, $C7, $2A, $BF,  $0A, $0B, $0D, $08,  $0C, $0, $7F, $1B
 
-; shift & alt
+; shift & alt (with or without caps lock)
 ak_tsa:
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-
-; shift & caps lock & alt
 ak_tsua:
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
+	.byt	$0, $BB, $0, $0,  $0, $C0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $D0, $0, $0,  $0, $0, $C8, $A3,  $0, $0, $DE, $0
+	.byt	$0, $0, $0, $AF,  $0, $0, $D9, $0,  $0, $0, $CC, $0
+	.byt	$0, $0, $D2, $0,  $0, $B6, $D8, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $B1, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 
-; shift & control
+; shift & control (with or without caps lock) TBD
 ak_tsc:
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-
-; shift & caps lock & control
 ak_tsuc:
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
-	.byt	$, $, $, $, $, $, $, $, $, $, $, $
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+
+; ** tables for deadkey(s), just one in Spanish **
+; unshifted
+ak_draw:
+
+; shift and/or caps lock
+ak_dsu:
 
 .)
