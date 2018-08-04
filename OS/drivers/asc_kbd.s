@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180804-1802
+; last modified 20180804-1856
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -24,6 +24,7 @@
 ; ak_scod, last detected scancode
 ; ak_del, delay counter before repeat
 ; ak_rep, repeat rate counter
+; ak_dead, deadkey mode flag
 
 ; ***********************
 ; *** minimOS headers ***
@@ -105,6 +106,8 @@ ak_init:
 	_STZA ak_rmod
 	_STZA ak_cmod
 	_STZA ak_scod
+; clear deadkey
+	_STZA ak_dead
 ; preset repeat counters
 	LDA #AR_DEL
 	STA ak_del
@@ -222,7 +225,7 @@ ap_scok:
 ; must check whether scancode is different from last poll
 	CMP ak_scod		; any changes?
 	BNE ap_char		; yes, get ASCII and put into buffer
-; no changes, but could implement repeat here...
+; *** no changes, but could implement repeat here ***
 ;		BEQ ap_end		; do nothing if repeat is not implemented
 		LDY ak_del		; already repeating?
 		BEQ ak_rpt		; go check its counter
@@ -241,33 +244,42 @@ ap_char:
 	STY ak_del
 	LDY #AR_RATE
 	STY ak_rep
-; end of repeat code
+; ** end of repeat code **
 	STA ak_scod		; save last detected! eeeeeeeeek
 ; get ASCII from compound scancode
 ap_dorp:
 	TAY				; use scancode as post-index
 ; *** should manage dead key(s) here ***
-; this code manages ONE deadkey
-; ...but with shift there are TWO actual deadkeys on same scancode
-; *** TO DO *** TO DO *** TO DO *** TO DO ***
 	CPY #$2E		; acute accent/umlaut scancode?
-	BNE ap_numl		; do not set
-		STY ak_dead		; or enter deadkey mode...
+	BNE ap_ndk		; do not set
+		LDX #2			; or enter deadkey mode 1 (acute)
+		LDA ak_cmod		; check modifiers
+		AND #8			; only shift bit supported
+		BEQ ap_numl		; not shifed...
+			LDX #6			; ...or set deadkey mode 2 (uml)
+ap_uml:
+		STX ak_dead		; set deadkey mode...
 		BNE ap_end		; ...and exit without key
-ap_numl:
-	LDA ak_dead		; are we in deadkey mode?
+ap_ndk:
+	LDX ak_dead		; are we in deadkey mode?
 	BEQ ak_live		; no, decode as usual
 		LDA ak_cmod		; or yes, check modifiers
 		AND #%1001		; only shift & capslock supported
 		BEQ adk_ns		; will use unshifted dead table
-			LDA ak_dku, Y		; take ASCII
-			BEQ ak_live		; unrelated to dead key
-			BNE ak_got		; otherwise print adecuate char
+			LDX ak_dead		; or get original deadkey mode...
+			INX			; ...and advance to next table
+			INX
 adk_ns:
-		LDA ak_dks, Y		; shifted deadkey table
-		BNE ak_got		; if related, print adecuate char
-; end of deadkey code
+		LDA ak_dkpt, X		; get base pointer for accented chars
+		STA ak_mk		; and set for indirect mode
+		LDA ak_dkpt+1, X
+		STA ak_mk+1
+;		LDA (ak_mk), Y		; take ASCII
+;		BNE ak_got		; if related, print adecuate char
+; otherwise is unrelated to dead key
+; ** end of deadkey code **
 ak_live:
+	_STZA ak_dead		; ** is this OK? **
 	LDA (ak_mk), Y		; this is the ASCII code
 ak_got:
 	_NO_CRIT		; zeropage is free
