@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180804-1605
+; last modified 20180804-1624
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -22,6 +22,8 @@
 ;	d3 = shift
 ; ak_cmod, modifier status (like ak_rmod with toggling caps lock)
 ; ak_scod, last detected scancode
+; ak_del, delay counter before repeat
+; ak_rep, repeat rate counter
 
 ; ***********************
 ; *** minimOS headers ***
@@ -50,7 +52,8 @@ ak_info:
 
 ; *** some definitions ***
 AF_SIZ		= 16		; buffer size (only 15 useable) no need to be power of two
-
+AR_DEL		= 140		; 140×5 ms (0.7s) fixed delay
+AR_RATE		= 20		; 20×5 ms (1/10s) fixed repeat rate
 PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output
 PB_KEEP		= %10000000	; keep PB7
 PB_MASK		= %00100101	; VIAport address
@@ -102,6 +105,11 @@ ak_init:
 	_STZA ak_rmod
 	_STZA ak_cmod
 	_STZA ak_scod
+; preset repeat counters
+	LDA #AR_DEL
+	STA ak_del
+	LDA #AR_RATE
+	STA ak_rep
 
 	_DR_OK				; succeeded
 
@@ -215,10 +223,27 @@ ap_scok:
 	CMP ak_scod		; any changes?
 	BNE ap_char		; yes, get ASCII and put into buffer
 ; no changes, but could implement repeat here...
-		BEQ ap_end		; do nothing...
-; get ASCII from compound scancode
+;		BEQ ap_end		; do nothing if repeat is not implemented
+		LDY ak_del		; already repeating?
+		BEQ ak_rpt		; go check its counter
+			DEC ak_del		; decrement delay counter...
+			BNE ap_end		; ...but do not repeat yet
+; delay counter has expired, start repeating at its rate
+ak_rpt:
+		DEC ak_rep		; rate counter...
+		BNE ap_end		; ...abort if not expired...
+	LDY #AR_RATE		; ...or reload rate counter...
+	STY ak_rep
+	BNE ap_dorp		; ...and send repeated char!
+; finish repeat (if active) and get ready for new char
 ap_char:
 	STA ak_scod		; save last detected! eeeeeeeeek
+	LDY #AR_DEL		; peeset repeat counters
+	STY ak_del
+	LDY #AR_RATE
+	STY ak_rep
+; get ASCII from compound scancode
+ap_dorp:
 	TAY				; use scancode as post-index
 ; *** should manage dead key(s) here ***
 ap_live:
@@ -267,8 +292,8 @@ ak_traw:
 	.byt	$20, $3C, $09, $BA,  $7A, $61, $71, $31,  $78, $73, $77, $32
 	.byt	$63, $64, $65, $33,  $76, $66, $72, $34,  $62, $67, $74, $35
 	.byt	$6E, $68, $79, $36,  $6D, $6A, $75, $37,  $2C, $6B, $69, $38
-	.byt	$2E, $6C, $6F, $39,  $2D, $F1, $70, $30,  $0, $0, $60, $27
-	.byt	$0, $E7, $2B, $A1,  $0A, $0B, $0D, $08,  $0C, $0, $7F, $1B
+	.byt	$2E, $6C, $6F, $39,  $2D, $F1, $70, $30,  $0 , $0 , $60, $27
+	.byt	$0 , $E7, $2B, $A1,  $0A, $0B, $0D, $08,  $0C, $0 , $7F, $1B
 
 ; caps lock (with or without control)
 ak_tu:
@@ -276,40 +301,40 @@ ak_tuc:
 	.byt	$20, $3C, $09, $BA,  $5A, $41, $51, $31,  $58, $53, $57, $32
 	.byt	$43, $44, $45, $33,  $56, $46, $52, $34,  $42, $47, $54, $35
 	.byt	$4E, $48, $59, $36,  $4D, $4A, $55, $37,  $2C, $4B, $49, $38
-	.byt	$2E, $4C, $4F, $39,  $2D, $D1, $50, $30,  $0, $0, $60, $27
-	.byt	$0, $C7, $2B, $A1,  $0A, $0B, $0D, $08,  $0C, $0, $7F, $1B
+	.byt	$2E, $4C, $4F, $39,  $2D, $D1, $50, $30,  $0 , $0 , $60, $27
+	.byt	$0 , $C7, $2B, $A1,  $0A, $0B, $0D, $08,  $0C, $0 , $7F, $1B
 
 ; alt
 ak_ta:
-	.byt	$0, $AB, $0, $5C,  $0, $E0, $0, $7C,  $0, $A7, $0, $40
-	.byt	$A9, $F0, $A4, $23,  $0, $0, $E8, $A2,  $DF, $0, $FE, $0
-	.byt	$0, $0, $A5, $AC,  $B5, $0, $F9, $0,  $0, $0, $EC, $0
-	.byt	$0, $0, $F2, $0,  $0, $7E, $F8, $0,  $0, $7B, $5B, $0
-	.byt	$0, $7D, $5D, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0 , $AB, $0 , $5C,  $0 , $E0, $0 , $7C,  $0 , $A7, $0 , $40
+	.byt	$A9, $F0, $A4, $23,  $0 , $0 , $E8, $A2,  $DF, $0 , $FE, $0
+	.byt	$0 , $0 , $A5, $AC,  $B5, $0 , $F9, $0 ,  $0 , $0 , $EC, $0
+	.byt	$0 , $0 , $F2, $0 ,  $0 , $7E, $F8, $0 ,  $0 , $7B, $5B, $0
+	.byt	$0 , $7D, $5D, $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
 ; caps lock & alt
 ak_tua:
-	.byt	$0, $AB, $0, $5C,  $0, $C0, $0, $7C,  $0, $A7, $0, $40
-	.byt	$A9, $D0, $A4, $23,  $0, $0, $C8, $A2,  $DF, $0, $DE, $0
-	.byt	$0, $0, $A5, $AC,  $B5, $0, $D9, $0,  $0, $0, $CC, $0
-	.byt	$0, $0, $D2, $0,  $0, $B6, $D8, $0,  $0, $7B, $5B, $0
-	.byt	$0, $7D, $5D, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0 , $AB, $0 , $5C,  $0 , $C0, $0 , $7C,  $0 , $A7, $0 , $40
+	.byt	$A9, $D0, $A4, $23,  $0 , $0 , $C8, $A2,  $DF, $0 , $DE, $0
+	.byt	$0 , $0 , $A5, $AC,  $B5, $0 , $D9, $0 ,  $0 , $0 , $CC, $0
+	.byt	$0 , $0 , $D2, $0 ,  $0 , $B6, $D8, $0 ,  $0 , $7B, $5B, $0
+	.byt	$0 , $7D, $5D, $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
 ; control
 ak_tc:
 	.byt	$00, $00, $00, $00,  $1A, $01, $11, $00,  $18, $13, $17, $00
 	.byt	$03, $04, $05, $00,  $16, $06, $12, $00,  $02, $07, $14, $00
 	.byt	$0E, $08, $19, $00,  $0D, $0A, $15, $00,  $00, $0B, $09, $00
-	.byt	$00, $0C, $0F, $00,  $00, $00, $10, $00,  $0, $00, $00, $00
-	.byt	$0, $00, $00, $00,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$00, $0C, $0F, $00,  $00, $00, $10, $00,  $0 , $00, $00, $00
+	.byt	$0 , $00, $00, $00,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
 ; alt & control
 ak_tac:
-	.byt	$0, $0, $0, $0,  $B8, $E2, $0, $0,  $0, $A8, $0, $0
-	.byt	$0, $0, $EA, $0,  $0, $0, $AE, $0,  $0, $0, $0, $0
-	.byt	$0, $0, $0, $0,  $0, $0, $FB, $0,  $0, $0, $EE, $0
-	.byt	$0, $0, $F4, $0,  $0, $E3, $F5, $0, $0, $0, $0, $0
-	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0 , $0 , $0 , $0 ,  $B8, $E2, $0 , $0 ,  $0 , $A8, $0 , $0
+	.byt	$0 , $0 , $EA, $0 ,  $0 , $0 , $AE, $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $FB, $0 ,  $0 , $0 , $EE, $0
+	.byt	$0 , $0 , $F4, $0 ,  $0 , $E3, $F5, $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
 ; caps & alt & control
 ak_tuac:
@@ -317,44 +342,55 @@ ak_tuac:
 ak_tsac:
 ; shift & caps & alt & control (same as above, this far)
 ak_tsuac:
-	.byt	$0, $0, $0, $0,  $B4, $C2, $0, $0,  $0, $A6, $0, $0
-	.byt	$0, $0, $CA, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
-	.byt	$0, $0, $0, $0,  $0, $0, $DB, $0,  $0, $0, $CE, $0
-	.byt	$0, $0, $D4, $0,  $0, $C3, $D5, $0,  $0, $0, $0, $0
-	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0 , $0 , $0 , $0 ,  $B4, $C2, $0 , $0 ,  $0 , $A6, $0 , $0
+	.byt	$0 , $0 , $CA, $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $DB, $0 ,  $0 , $0 , $CE, $0
+	.byt	$0 , $0 , $D4, $0 ,  $0 , $C3, $D5, $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
 ; shift (with or without caps lock)
 ak_ts:
 ak_tsu:
-	.byt	$A0, $3E, $0, $AA,  $5A, $41, $51, $21,  $58, $53, $57, $22
+	.byt	$A0, $3E, $0 , $AA,  $5A, $41, $51, $21,  $58, $53, $57, $22
 	.byt	$43, $44, $45, $B7,  $56, $46, $52, $24,  $42, $47, $54, $25
 	.byt	$4E, $48, $59, $26,  $4D, $4A, $55, $2F,  $2C, $4B, $49, $28
-	.byt	$2E, $4C, $4F, $29,  $2D, $D1, $50, $3D,  $0, $0, $5E, $3F
-	.byt	$0, $C7, $2A, $BF,  $0A, $0B, $0D, $08,  $0C, $0, $7F, $1B
+	.byt	$2E, $4C, $4F, $29,  $2D, $D1, $50, $3D,  $0 , $0 , $5E, $3F
+	.byt	$0 , $C7, $2A, $BF,  $0A, $0B, $0D, $08,  $0C, $0 , $7F, $1B
 
 ; shift & alt (with or without caps lock)
 ak_tsa:
 ak_tsua:
-	.byt	$0, $BB, $0, $0,  $0, $C0, $0, $0,  $0, $0, $0, $0
-	.byt	$0, $D0, $0, $0,  $0, $0, $C8, $A3,  $0, $0, $DE, $0
-	.byt	$0, $0, $0, $AF,  $0, $0, $D9, $0,  $0, $0, $CC, $0
-	.byt	$0, $0, $D2, $0,  $0, $B6, $D8, $0,  $0, $0, $0, $0
-	.byt	$0, $0, $B1, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0 , $BB, $0 , $0 ,  $0 , $C0, $0 , $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $D0, $0 , $0 ,  $0 , $0 , $C8, $A3,  $0 , $0 , $DE, $0
+	.byt	$0 , $0 , $0 , $AF,  $0 , $0 , $D9, $0 ,  $0 , $0 , $CC, $0
+	.byt	$0 , $0 , $D2, $0 ,  $0 , $B6, $D8, $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $B1, $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
 ; shift & control (with or without caps lock) TBD
 ak_tsc:
 ak_tsuc:
-	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
-	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
-	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
-	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
-	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
 ; ** tables for deadkey(s), just one in Spanish **
 ; unshifted
 ak_draw:
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 
 ; shift and/or caps lock
 ak_dsu:
+
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 
 .)
