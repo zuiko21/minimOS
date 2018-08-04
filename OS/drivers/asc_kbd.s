@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180804-1234
+; last modified 20180804-1318
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -13,7 +13,6 @@
 ; ** driver variables description **
 ; ak_fi, first free element in FIFO
 ; ak_fo, element ready for exit in FIFO
-; ak_mk, pointer to appropriate table
 ; ak_ddra, old port config
 ; ak_iorb, old command **needed?**
 ; ak_rmod, last detected raw modifier combo
@@ -55,6 +54,8 @@ AF_SIZ		= 16		; buffer size (only 15 useable) no need to be power of two
 PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output
 PB_KEEP		= %10000000	; keep PB7
 PB_MASK		= %00100101	; VIAport address
+
+ak_mk		= sysptr	; *** needed zeropage pointer ***
 
 ; ****************************************
 ; *** read from buffer to output block ***
@@ -161,6 +162,7 @@ ak_poll:
 ; scan modifier column
 	LDX #15			; maximum column index (modifiers)
 	JSR ap_scol		; scan this column
+	_CRITIC			; will use zeropage interrupt space!
 	CMP ak_rmod		; any change on these?
 	BNE ap_eqm		; no, just scan the rest
 		STA ak_rmod		; update modifier combo
@@ -175,10 +177,10 @@ ak_poll:
 ; ...and toggle caps lock status bit
 		LSR ak_cmod		; clear caps lock bit...
 		TYA			; is caps lock on?
-		BEQ ap_lowc		; nope...
-			SEC
-			ROL ak_cmod		; ...or set this bit
-ap_lowc:
+		BEQ ap_updc		; nope...
+			SEC			; ...or yes...
+ap_updc:
+		ROL ak_cmod		; ...update this bit
 ; get table address for this modifier combo
 		LDA ak_cmod		; retrieve modifier status
 		ASL				; table offsets need 9 bits!
@@ -196,19 +198,31 @@ ap_sloop:
 		BPL ap_sloop
 ap_end:
 	_STZA ak_scod		; clear previous scancode! eeeeeeeek
+	_NO_CRIT		; eeeeeeeeek
 	RTS				; none pressed, all done
-; must check whether scancode is different from last poll
+; we have a raw, incomplete scancode, must convert it
 ap_kpr:
-	ORA col16, X		; include column index!
+	LDY #0			; clear row number (hopefully will stop)
+ap_bshf:
+		LSR				; shift until A is clear
+	BEQ ap_scok		; Y is the highest row pressed!
+		INY				; next row
+		BNE ap_bshf		; will finish eventually
+ap_scok:
+	TYA				; base row index
+	ORA col4, X		; include column index!
+; must check whether scancode is different from last poll
 	CMP ak_scod		; any changes?
 	BNE ap_char		; yes, get ASCII and put into buffer
 ; no changes, but could implement repeat here...
 		BEQ ap_end		; do nothing...
 ; get ASCII from compound scancode
 ap_char:
+	STA ak_scod		; save last detected! eeeeeeeeek
 	TAY				; use scancode as post-index
 	LDA (ak_mk), Y		; this is the ASCII code
-	JMP ak_push		; goes into FIFO... ans return to ISR
+	_NO_CRIT		; zeropage is free
+	JMP ak_push		; goes into FIFO... and return to ISR
 
 ; **************************
 ; *** auxiliary routines ***
@@ -216,7 +230,9 @@ ap_char:
 
 ; get rows in A as selected in column X
 ap_scol:
-	LDA col16, X		; column times 16
+	LDA col4, X		; column times 4
+	ASL				; make it times 16 for port
+	ASL
 	STA VIA_U+IORA		; place output bits (select column)
 ; fastest machines may need some delay here
 	LDA VIA_U+IORA		; get row values back
@@ -231,9 +247,63 @@ ak_nreq:
 ; *** diverse data and tables ***
 ; *******************************
 
-; column index times 16 for compound scancodes
-col16:
-	.byt	  0,  16,  32,  48,  64,  80,  96, 112
-	.byt	128, 144, 160, 176, 192, 208, 224, 240
+; column index times 4 for compound scancodes
+col4:
+	.byt	 0,  4,  8, 12, 16, 20, 24, 28
+	.byt	32, 36, 40, 44, 48, 52, 56, 60
+
+; pointers to tables depending on modifiers
+ak_mods:
+	.word	ak_traw, ak_tu,   ak_ta,   ak_tua,  ak_tc,   ak_tuc,  ak_tac,  ak_tuac
+	.word	ak_ts,   ak_tsu,  ak_tsa,  ak_tsua, ak_tsc,  ak_tsuc, ak_tsac, ak_tsuac
+
+; *** scancode to ASCII tables***
+; unshifted
+ak_traw:
+
+; caps lock
+ak_tu:
+
+; alt
+ak_ta:
+
+; caps lock & alt
+ak_tua:
+
+; control
+ak_tc:
+
+; caps lock & control
+ak_tuc:
+
+; alt & control
+ak_tac:
+
+; caps & alt & control
+ak_tuac:
+
+; shift
+ak_ts:
+
+; shift & caps lock
+ak_tsu:
+
+; shift & alt
+ak_tsa:
+
+; shift & caps lock & alt
+ak_tsua:
+
+; shift & control
+ak_tsc:
+
+; shift & caps lock & control
+ak_tsuc:
+
+; shift & alt & control
+ak_tsac:
+
+; shift & caps & alt & control
+ak_tsuac:
 
 .)
