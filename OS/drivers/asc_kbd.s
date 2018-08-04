@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180804-1624
+; last modified 20180804-1802
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -204,8 +204,8 @@ ap_sloop:
 			BNE ap_kpr		; some key pressed
 		DEX				; next column
 		BPL ap_sloop
-ap_end:
 	_STZA ak_scod		; clear previous scancode! eeeeeeeek
+ap_end:
 	_NO_CRIT		; eeeeeeeeek
 	RTS				; none pressed, all done
 ; we have a raw, incomplete scancode, must convert it
@@ -237,17 +237,39 @@ ak_rpt:
 	BNE ap_dorp		; ...and send repeated char!
 ; finish repeat (if active) and get ready for new char
 ap_char:
-	STA ak_scod		; save last detected! eeeeeeeeek
-	LDY #AR_DEL		; peeset repeat counters
+	LDY #AR_DEL		; preset repeat counters
 	STY ak_del
 	LDY #AR_RATE
 	STY ak_rep
+; end of repeat code
+	STA ak_scod		; save last detected! eeeeeeeeek
 ; get ASCII from compound scancode
 ap_dorp:
 	TAY				; use scancode as post-index
 ; *** should manage dead key(s) here ***
-ap_live:
+; this code manages ONE deadkey
+; ...but with shift there are TWO actual deadkeys on same scancode
+; *** TO DO *** TO DO *** TO DO *** TO DO ***
+	CPY #$2E		; acute accent/umlaut scancode?
+	BNE ap_numl		; do not set
+		STY ak_dead		; or enter deadkey mode...
+		BNE ap_end		; ...and exit without key
+ap_numl:
+	LDA ak_dead		; are we in deadkey mode?
+	BEQ ak_live		; no, decode as usual
+		LDA ak_cmod		; or yes, check modifiers
+		AND #%1001		; only shift & capslock supported
+		BEQ adk_ns		; will use unshifted dead table
+			LDA ak_dku, Y		; take ASCII
+			BEQ ak_live		; unrelated to dead key
+			BNE ak_got		; otherwise print adecuate char
+adk_ns:
+		LDA ak_dks, Y		; shifted deadkey table
+		BNE ak_got		; if related, print adecuate char
+; end of deadkey code
+ak_live:
 	LDA (ak_mk), Y		; this is the ASCII code
+ak_got:
 	_NO_CRIT		; zeropage is free
 	JMP ak_push		; goes into FIFO... and return to ISR
 
