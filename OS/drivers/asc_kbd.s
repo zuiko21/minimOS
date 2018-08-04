@@ -1,21 +1,28 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180803-2302
+; last modified 20180804-1234
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
 ; PA4...7	= output (selected column)
 ; PB3		= caps lock LED (hopefully respected!)
 
-; new VIA-connected device ID is $25/A5/2D/AD (%x010x101), will go into PB
-; could it be combined with LCD, saving one 688?
+; new VIA-connected device ID is $A5/AD, $25/2D with PB7 off (%x010x101)
 
 ; ** driver variables description **
 ; ak_fi, first free element in FIFO
 ; ak_fo, element ready for exit in FIFO
 ; ak_mk, pointer to appropriate table
 ; ak_ddra, old port config
+; ak_iorb, old command **needed?**
+; ak_rmod, last detected raw modifier combo
+;	d0 = caps lock
+;	d1 = alt
+;	d2 = control
+;	d3 = shift
+; ak_cmod, modifier status (like ak_rmod with toggling caps lock)
+; ak_scod, last detected scancode
 
 ; ***********************
 ; *** minimOS headers ***
@@ -90,6 +97,10 @@ ak_init:
 ; reset FIFO
 	_STZA ak_fi
 	_STZA ak_fo
+; clear previous scancodes
+	_STZA ak_rmod
+	_STZA ak_cmod
+	_STZA ak_scod
 
 	_DR_OK				; succeeded
 
@@ -132,7 +143,7 @@ ak_wnw:
 	BNE ak_room			; did not, all done
 		_STZA ak_fo			; or go back to zero
 ak_room:
-	_DR_OK
+	RTS					; no errors here
 
 ; ******************************************************
 ; *** scan matrix and put char on FIFO, if available *** D_POLL task
@@ -150,23 +161,54 @@ ak_poll:
 ; scan modifier column
 	LDX #15			; maximum column index (modifiers)
 	JSR ap_scol		; scan this column
-	ASL			; modifier offsets need 9 bits!
-	TAX			; index for modifier combos
-	LDY ak_mods, X	; get pointer on main table for these modifiers
-	LDA ak_mods+1, X
-	STY ak_mk		; save for later!
-	STA ak_mk+1
+	CMP ak_rmod		; any change on these?
+	BNE ap_eqm		; no, just scan the rest
+		STA ak_rmod		; update modifier combo
+; update status of caps lock LED...
+		AND #1			; caps lock=bit 0
+		TAY			; keep for status
+		ASL
+		ASL
+		ASL			; now is bit 3, ready for PB3
+		EOR VIA_U+IORB		; TOGGLE PB3, thus caps lock LED
+		STA VIA_U+IORB
+; ...and toggle caps lock status bit
+		LSR ak_cmod		; clear caps lock bit...
+		TYA			; is caps lock on?
+		BEQ ap_lowc		; nope...
+			SEC
+			ROL ak_cmod		; ...or set this bit
+ap_lowc:
+; get table address for this modifier combo
+		LDA ak_cmod		; retrieve modifier status
+		ASL				; table offsets need 9 bits!
+		TAX				; index for modifier combos
+		LDY ak_mods, X	; get pointer on main table for these modifiers
+		LDA ak_mods+1, X
+		STY ak_mk		; save for later!
+		STA ak_mk+1
+ap_eqm:
 	LDX #14			; last regular column
 ap_sloop:
 		JSR ap_scol		; scan this one
-; to do to do to do
+			BNE ap_kpr		; some key pressed
 		DEX				; next column
 		BPL ap_sloop
+ap_end:
+	_STZA ak_scod		; clear previous scancode! eeeeeeeek
+	RTS				; none pressed, all done
 ; must check whether scancode is different from last poll
+ap_kpr:
+	ORA col16, X		; include column index!
+	CMP ak_scod		; any changes?
+	BNE ap_char		; yes, get ASCII and put into buffer
+; no changes, but could implement repeat here...
+		BEQ ap_end		; do nothing...
+; get ASCII from compound scancode
+ap_char:
 	TAY				; use scancode as post-index
 	LDA (ak_mk), Y		; this is the ASCII code
-	JSR ak_push		; goes into FIFO
-	_DR_OK
+	JMP ak_push		; goes into FIFO... ans return to ISR
 
 ; **************************
 ; *** auxiliary routines ***
@@ -174,11 +216,7 @@ ap_sloop:
 
 ; get rows in A as selected in column X
 ap_scol:
-	TXA				; column
-	ASL				; times 16
-	ASL
-	ASL
-	ASL
+	LDA col16, X		; column times 16
 	STA VIA_U+IORA		; place output bits (select column)
 ; fastest machines may need some delay here
 	LDA VIA_U+IORA		; get row values back
@@ -192,5 +230,10 @@ ak_nreq:
 ; *******************************
 ; *** diverse data and tables ***
 ; *******************************
+
+; column index times 16 for compound scancodes
+col16:
+	.byt	  0,  16,  32,  48,  64,  80,  96, 112
+	.byt	128, 144, 160, 176, 192, 208, 224, 240
 
 .)
