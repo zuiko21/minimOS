@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180804-1856
+; last modified 20180805-1533
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -116,7 +116,6 @@ ak_init:
 
 	_DR_OK				; succeeded
 
-
 ; *******************************
 ; *** read one byte from FIFO *** A -> char, C = empty, uses X
 ; *******************************
@@ -176,6 +175,8 @@ ak_poll:
 	_CRITIC			; will use zeropage interrupt space!
 	CMP ak_rmod		; any change on these?
 	BNE ap_eqm		; no, just scan the rest
+
+; perhaps check for deadkey mode here???
 		STA ak_rmod		; update modifier combo
 ; update status of caps lock LED...
 		AND #1			; caps lock=bit 0
