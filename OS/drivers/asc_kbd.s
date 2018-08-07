@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180807-1644
+; last modified 20180807-1728
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -64,7 +64,7 @@ PB_MASK		= %00100101	; VIAport address
 ak_mk		= sysptr	; *** required zeropage pointer ***
 
 ; ****************************************
-; *** read from buffer to output block ***
+; *** read from buffer to output block *** usual mandatory loop
 ; ****************************************
 ak_read:
 	LDA bl_ptr+1			; save pointer MSB
@@ -108,7 +108,7 @@ ak_init:
 	_STZA ak_rmod
 	_STZA ak_cmod
 	_STZA ak_scod
-; clear deadkey
+; clear deadkey mode
 	_STZA ak_dead
 ; preset repeat variables & counters
 	LDA #AR_DEL
@@ -117,7 +117,7 @@ ak_init:
 	LDA #AR_RATE
 	STA ak_vrep
 	STA ak_rep
-
+; all done
 	_DR_OK				; succeeded
 
 ; *******************************
