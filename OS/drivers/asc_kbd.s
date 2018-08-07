@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180807-1001
+; last modified 20180807-1644
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -23,7 +23,9 @@
 ; ak_cmod, modifier status (like ak_rmod with toggling caps lock)
 ; ak_scod, last detected scancode
 ; ak_del, delay counter before repeat
+; ak_vdel, original delay value
 ; ak_rep, repeat rate counter
+; ak_vrep, original rate value
 ; ak_dead, deadkey mode flag
 
 ; ***********************
@@ -53,13 +55,13 @@ ak_info:
 
 ; *** some definitions ***
 AF_SIZ		= 16		; buffer size (only 15 useable) no need to be power of two
-AR_DEL		= 140		; 140×5 ms (0.7s) fixed delay
-AR_RATE		= 20		; 20×5 ms (1/10s) fixed repeat rate
+AR_DEL		= 140		; 140×5 ms (0.7s) original delay
+AR_RATE		= 20		; 20×5 ms (1/10s) original repeat rate
 PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output
 PB_KEEP		= %10000000	; keep PB7
 PB_MASK		= %00100101	; VIAport address
 
-ak_mk		= sysptr	; *** needed zeropage pointer ***
+ak_mk		= sysptr	; *** required zeropage pointer ***
 
 ; ****************************************
 ; *** read from buffer to output block ***
@@ -108,10 +110,12 @@ ak_init:
 	_STZA ak_scod
 ; clear deadkey
 	_STZA ak_dead
-; preset repeat counters
+; preset repeat variables & counters
 	LDA #AR_DEL
+	STA ak_vdel
 	STA ak_del
 	LDA #AR_RATE
+	STA ak_vrep
 	STA ak_rep
 
 	_DR_OK				; succeeded
@@ -236,22 +240,22 @@ ap_scok:
 ak_rpt:
 		DEC ak_rep		; rate counter...
 		BNE ap_end		; ...abort if not expired...
-	LDY #AR_RATE		; ...or reload rate counter...
+	LDY ak_vrep		; ...or reload rate counter...
 	STY ak_rep
 	BNE ap_dorp		; ...and send repeated char!
 ; finish repeat (if active) and get ready for new char
 ap_char:
-	LDY #AR_DEL		; preset repeat counters
+	LDY ak_vdel		; preset repeat counters
 	STY ak_del
-	LDY #AR_RATE
+	LDY ak_vrep
 	STY ak_rep
 ; ** end of repeat code **
 	STA ak_scod		; save last detected! eeeeeeeeek
 ; get ASCII from compound scancode
 ap_dorp:
 	TAY				; use scancode as post-index
-; *** should manage dead key(s) here ***
-	CPY #$2E		; acute accent/umlaut scancode?
+; *** should NOT manage dead key(s) here ***
+/*	CPY #$2E		; acute accent/umlaut scancode?
 	BNE ap_ndk		; do not set
 		LDX #2			; or enter deadkey mode 1 (acute)
 		LDA ak_cmod		; check modifiers
@@ -277,13 +281,12 @@ adk_ns:
 		STA ak_mk+1
 ;		LDA (ak_mk), Y		; take ASCII
 ;		BNE ak_got		; if related, print adecuate char
-; otherwise is unrelated to dead key
+; otherwise is unrelated to dead key */
 ; ** end of deadkey code **
-ak_live:
 	_STZA ak_dead		; ** is this OK? **
 	LDA (ak_mk), Y		; this is the ASCII code
-; perhaps deadkeys must be checked here *****
-ak_got:
+; *** deadkeys must be checked here ***
+ak_live:
 	_NO_CRIT		; zeropage is free
 	JMP ak_push		; goes into FIFO... and return to ISR
 
