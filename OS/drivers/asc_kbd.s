@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180805-1533
+; last modified 20180807-1001
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -282,6 +282,7 @@ adk_ns:
 ak_live:
 	_STZA ak_dead		; ** is this OK? **
 	LDA (ak_mk), Y		; this is the ASCII code
+; perhaps deadkeys must be checked here *****
 ak_got:
 	_NO_CRIT		; zeropage is free
 	JMP ak_push		; goes into FIFO... and return to ISR
