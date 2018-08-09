@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180809-1741
+; last modified 20180809-1803
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -34,6 +34,20 @@
 #include "../usual.h"
 
 .(
+; ***************
+; *** options ***
+; ***************
+
+; uncomment for repeat (except for deadkeys)
+#define	REPEAT	_REPEAT
+
+; uncomment for deadkey support (Spanish only this far)
+#define	DEADKEY	_DEADKEY
+
+; ******************************
+; *** standard minimOS stuff ***
+; ******************************
+
 ; *** begins with sub-function addresses table ***
 	.byt	145		; physical driver number D_ID (TBD)
 	.byt	A_BLIN|A_POLL	; input driver, periodic interrupt-driven
@@ -53,7 +67,7 @@
 ak_info:
 	.asc	"ASCII keyboard v0.6", 0
 
-; *** some definitions ***
+; *** some constant definitions ***
 AF_SIZ		= 16		; buffer size (only 15 useable) no need to be power of two
 AR_DEL		= 140		; 140×5 ms (0.7s) original delay
 AR_RATE		= 20		; 20×5 ms (1/10s) original repeat rate
@@ -108,8 +122,11 @@ ak_init:
 	_STZA ak_rmod
 	_STZA ak_cmod
 	_STZA ak_scod
+#ifdef	DEADKEY
 ; clear deadkey mode
 	_STZA ak_dead
+#endif
+#ifdef	REPEAT
 ; preset repeat variables & counters
 	LDA #AR_DEL
 	STA ak_vdel
@@ -117,6 +134,7 @@ ak_init:
 	LDA #AR_RATE
 	STA ak_vrep
 	STA ak_rep
+#endif
 ; all done
 	_DR_OK				; succeeded
 
@@ -150,6 +168,7 @@ ak_poll:
 		EOR VIA_U+IORB		; TOGGLE PB3, thus caps lock LED
 		STA VIA_U+IORB
 ; ...and toggle caps lock status bit
+; TBD, best to toggle status bit and then cooying it into PB3
 		LSR ak_cmod		; clear caps lock bit...
 		TYA			; is caps lock on?
 		CLC
@@ -159,16 +178,18 @@ ap_updc:
 		ROL ak_cmod		; ...update this bit
 ; get table address for this modifier combo
 		LDA ak_cmod		; retrieve modifier status
+#ifdef	DEADKEY
 ; *** check whether in deadkey mode for simplified modifier handling ***
 		LDX ak_dead		; will be modified by previous deadkey?
 			BNE ap_dset		; yeah
-; *** standard code follows ***
+#endif
 ; standard table select
 		ASL				; table offsets need 9 bits!
 		TAX				; index for modifier combos
 		LDY ak_mods, X	; get pointer on main table for these modifiers
 		LDA ak_mods+1, X
-; *** following code only needed for deadkeys ***
+#ifdef	DEADKEY
+; *** deadkey table handling ***
 		BNE ap_pset		; set this pointer (BRA)
 ap_dset:
 			AND #%1001		; detect shift or caps ONLY
@@ -179,7 +200,7 @@ ap_dns:
 			LDY ak_dktb, X	; get pointer for deadkey-modified
 			LDA ak_dktb+1, X
 ap_pset:
-; *** end of deadkey table handling ***
+#endif
 		STY ak_mk		; save for later!
 		STA ak_mk+1
 ap_eqm:
@@ -207,8 +228,9 @@ ap_scok:
 ; must check whether scancode is different from last poll
 	CMP ak_scod		; any changes?
 	BNE ap_char		; yes, get ASCII and put into buffer
-; *** no changes, but could implement repeat here ***
-;		BEQ ap_end		; do nothing if repeat is not implemented
+#ifndef	REPEAT
+		BEQ ap_end		; do nothing if repeat is not implemented
+#else
 		LDY ak_del		; already repeating?
 		BEQ ak_rpt		; go check its counter
 			DEC ak_del		; decrement delay counter...
@@ -226,13 +248,13 @@ ap_char:
 	STY ak_del
 	LDY ak_vrep
 	STY ak_rep
-; ** end of repeat code **
+#endif
 	STA ak_scod		; save last detected! eeeeeeeeek
 ; get ASCII from compound scancode
 ap_dorp:
 	TAY				; use scancode as post-index
 	LDA (ak_mk), Y		; this is the ASCII code
-; *** deadkeys must be checked here ***
+#ifdef	DEADKEY
 	CMP #$B4		; acute?
 		LDA #2			; first half table of dead keys
 		BNE ap_dead
@@ -243,29 +265,15 @@ ap_dead:
 		STA ak_dead		; set deadkey mode
 		BNE ap_end		; is BRA
 ap_live:
-	_STZA ak_dead		; no repeat for deadkeys
+	_STZA ak_dead		; no repeat for deadkeys, this far
+#endif
 	_NO_CRIT		; zeropage is free
-	JMP ak_push		; goes into FIFO... and return to ISR
+;	JMP ak_push		; goes into FIFO... and return to ISR
+; no need for the above if ak_push code follows!
 
 ; **************************
 ; *** auxiliary routines ***
 ; **************************
-
-; *** read one byte from FIFO *** A -> char, C = empty, uses X
-ak_get:
-	LDX ak_fo			; get output position
-	CPX ak_fi			; is it empty?
-	BNE ak_some			; no, do extract
-		_DR_ERR(EMPTY)			; yes, do nothing
-ak_some:
-	LDA ak_buff, X		; extract char
-	INX					; this is no more
-	CPX #AF_SIZ			; wrapped?
-	BNE ak_rnw				; no
-		LDX #0					; or yes, back to zero
-ak_rnw:
-	STX ak_fo			; eeeeeeeeeek
-	_DR_OK
 
 ; *** push one byte into FIFO *** A <- char, uses X
 ak_push:
@@ -286,6 +294,22 @@ ak_wnw:
 		_STZA ak_fo			; or go back to zero
 ak_room:
 	RTS					; no errors here
+
+; *** read one byte from FIFO *** A -> char, C = empty, uses X
+ak_get:
+	LDX ak_fo			; get output position
+	CPX ak_fi			; is it empty?
+	BNE ak_some			; no, do extract
+		_DR_ERR(EMPTY)			; yes, do nothing
+ak_some:
+	LDA ak_buff, X		; extract char
+	INX					; this is no more
+	CPX #AF_SIZ			; wrapped?
+	BNE ak_rnw				; no
+		LDX #0					; or yes, back to zero
+ak_rnw:
+	STX ak_fo			; eeeeeeeeeek
+	_DR_OK
 
 ; *** get rows in A as selected in column X ***
 ap_scol:
