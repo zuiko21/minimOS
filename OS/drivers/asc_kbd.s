@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180808-2215
+; last modified 20180809-1736
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -254,43 +254,19 @@ ap_char:
 ; get ASCII from compound scancode
 ap_dorp:
 	TAY				; use scancode as post-index
-; *** should NOT manage dead key(s) here ***
-/*	CPY #$2E		; acute accent/umlaut scancode?
-	BNE ap_ndk		; do not set
-		LDX #2			; or enter deadkey mode 1 (acute)
-		LDA ak_cmod		; check modifiers
-		AND #8			; only shift bit supported
-		BEQ ap_numl		; not shifed...
-			LDX #6			; ...or set deadkey mode 2 (uml)
-ap_uml:
-		STX ak_dead		; set deadkey mode...
-		BNE ap_end		; ...and exit without key
-ap_ndk:
-	LDX ak_dead		; are we in deadkey mode?
-	BEQ ak_live		; no, decode as usual
-		LDA ak_cmod		; or yes, check modifiers
-		AND #%1001		; only shift & capslock supported
-		BEQ adk_ns		; will use unshifted dead table
-			LDX ak_dead		; or get original deadkey mode...
-			INX			; ...and advance to next table
-			INX
-adk_ns:
-		LDA ak_dkpt, X		; get base pointer for accented chars
-		STA ak_mk		; and set for indirect mode
-		LDA ak_dkpt+1, X
-		STA ak_mk+1
-;		LDA (ak_mk), Y		; take ASCII
-;		BNE ak_got		; if related, print adecuate char
-; otherwise is unrelated to dead key */
-; ** end of deadkey code **
-	_STZA ak_dead		; ** is this OK? **
 	LDA (ak_mk), Y		; this is the ASCII code
 ; *** deadkeys must be checked here ***
-	CMP #''; acute?
-
-	CMP #''; umlaut?
-	BNE ak_live
-ak_live:
+	CMP #$B4		; acute?
+		LDA #2			; first half table of dead keys
+		BNE ap_dead
+	CMP #$A8		; umlaut? last to be checked
+		LDA #6			; last of half-tables for deadkeys
+	BNE ap_live
+ap_dead:
+		STA ak_dead		; set deadkey mode
+		BNE ap_end		; is BRA
+ap_live:
+	_STZA ak_dead		; no repeat for deadkeys
 	_NO_CRIT		; zeropage is free
 	JMP ak_push		; goes into FIFO... and return to ISR
 
