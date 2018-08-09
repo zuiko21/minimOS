@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180809-1736
+; last modified 20180809-1741
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -120,46 +120,6 @@ ak_init:
 ; all done
 	_DR_OK				; succeeded
 
-; *******************************
-; *** read one byte from FIFO *** A -> char, C = empty, uses X
-; *******************************
-ak_get:
-	LDX ak_fo			; get output position
-	CPX ak_fi			; is it empty?
-	BNE ak_some			; no, do extract
-		_DR_ERR(EMPTY)			; yes, do nothing
-ak_some:
-	LDA ak_buff, X		; extract char
-	INX					; this is no more
-	CPX #AF_SIZ			; wrapped?
-	BNE ak_rnw				; no
-		LDX #0					; or yes, back to zero
-ak_rnw:
-	STX ak_fo			; eeeeeeeeeek
-	_DR_OK
-
-; *******************************
-; *** push one byte into FIFO *** A <- char, uses X
-; *******************************
-ak_push:
-	LDX ak_fi			; get input position
-	STA ak_buff, X		; insert char
-	INX					; go for first free position
-	CPX #AF_SIZ			; wrapped?
-	BNE ak_wnw				; no
-		LDX #0					; or yes, back to zero
-ak_wnw:
-	STX ak_fi			; update pointer
-	CPX ak_fo			; is it full?
-	BNE ak_room			; no, all OK
-		INC ak_fo			; yes, simply discard oldest byte
-		LDA ak_fo			; but check for wrap, too
-		CMP #AF_SIZ
-	BNE ak_room			; did not, all done
-		_STZA ak_fo			; or go back to zero
-ak_room:
-	RTS					; no errors here
-
 ; ******************************************************
 ; *** scan matrix and put char on FIFO, if available *** D_POLL task
 ; ******************************************************
@@ -179,9 +139,8 @@ ak_poll:
 	_CRITIC			; will use zeropage interrupt space!
 	CMP ak_rmod		; any change on these?
 	BNE ap_eqm		; no, just scan the rest
-
-; perhaps check for deadkey mode here???
-		STA ak_rmod		; update modifier combo
+		STA ak_rmod		; update raw modifier combo...
+		STA ak_cmod		; and compound too, caps lock is wrong
 ; update status of caps lock LED...
 		AND #1			; caps lock=bit 0
 		TAY			; keep for status
@@ -193,16 +152,34 @@ ak_poll:
 ; ...and toggle caps lock status bit
 		LSR ak_cmod		; clear caps lock bit...
 		TYA			; is caps lock on?
+		CLC
 		BEQ ap_updc		; nope...
 			SEC			; ...or yes...
 ap_updc:
 		ROL ak_cmod		; ...update this bit
 ; get table address for this modifier combo
 		LDA ak_cmod		; retrieve modifier status
+; *** check whether in deadkey mode for simplified modifier handling ***
+		LDX ak_dead		; will be modified by previous deadkey?
+			BNE ap_dset		; yeah
+; *** standard code follows ***
+; standard table select
 		ASL				; table offsets need 9 bits!
 		TAX				; index for modifier combos
 		LDY ak_mods, X	; get pointer on main table for these modifiers
 		LDA ak_mods+1, X
+; *** following code only needed for deadkeys ***
+		BNE ap_pset		; set this pointer (BRA)
+ap_dset:
+			AND #%1001		; detect shift or caps ONLY
+			BEQ ap_dns		; unshifted...
+				INX				; ...or point to next table
+				INX
+ap_dns:
+			LDY ak_dktb, X	; get pointer for deadkey-modified
+			LDA ak_dktb+1, X
+ap_pset:
+; *** end of deadkey table handling ***
 		STY ak_mk		; save for later!
 		STA ak_mk+1
 ap_eqm:
@@ -274,7 +251,43 @@ ap_live:
 ; *** auxiliary routines ***
 ; **************************
 
-; get rows in A as selected in column X
+; *** read one byte from FIFO *** A -> char, C = empty, uses X
+ak_get:
+	LDX ak_fo			; get output position
+	CPX ak_fi			; is it empty?
+	BNE ak_some			; no, do extract
+		_DR_ERR(EMPTY)			; yes, do nothing
+ak_some:
+	LDA ak_buff, X		; extract char
+	INX					; this is no more
+	CPX #AF_SIZ			; wrapped?
+	BNE ak_rnw				; no
+		LDX #0					; or yes, back to zero
+ak_rnw:
+	STX ak_fo			; eeeeeeeeeek
+	_DR_OK
+
+; *** push one byte into FIFO *** A <- char, uses X
+ak_push:
+	LDX ak_fi			; get input position
+	STA ak_buff, X		; insert char
+	INX					; go for first free position
+	CPX #AF_SIZ			; wrapped?
+	BNE ak_wnw				; no
+		LDX #0					; or yes, back to zero
+ak_wnw:
+	STX ak_fi			; update pointer
+	CPX ak_fo			; is it full?
+	BNE ak_room			; no, all OK
+		INC ak_fo			; yes, simply discard oldest byte
+		LDA ak_fo			; but check for wrap, too
+		CMP #AF_SIZ
+	BNE ak_room			; did not, all done
+		_STZA ak_fo			; or go back to zero
+ak_room:
+	RTS					; no errors here
+
+; *** get rows in A as selected in column X ***
 ap_scol:
 	LDA col4, X		; column times 4
 	ASL				; make it times 16 for port
@@ -302,6 +315,11 @@ col4:
 ak_mods:
 	.word	ak_traw, ak_tu,   ak_ta,   ak_tua,  ak_tc,   ak_tuc,  ak_tac,  ak_tuac
 	.word	ak_ts,   ak_tsu,  ak_tsa,  ak_tsua, ak_tsc,  ak_tsuc, ak_tsac, ak_tsuac
+
+; pointers to tables of characters altered by dead keys!
+; this far, only shift and/or caps lock are detected
+ak_dktb:
+	.word	ak_acu,  ak_acs,  ak_umu,  ak_ums
 
 ; *** scancode to ASCII tables***
 ; cols 0...14, and inside rows 0...3
@@ -395,16 +413,33 @@ ak_tsuc:
 	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
 ; ** tables for deadkey(s), just one in Spanish **
-; unshifted
-ak_draw:
+; acute unshifted
+ak_acu:
 	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 
-; shift and/or caps lock
-ak_dsu:
+; acute with shift and/or caps lock
+ak_acs:
+
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+
+; diaeresis unshifted
+ak_umu:
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
+
+; diaeresis with shift and/or caps lock
+ak_ums:
 
 	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
 	.byt	$0, $0, $0, $0,  $0, $0, $0, $0,  $0, $0, $0, $0
