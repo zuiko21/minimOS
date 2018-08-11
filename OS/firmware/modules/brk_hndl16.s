@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180124-1314
+; last modified 20180811-1317
 
 ; *** generic BRK handler for 65816 ***
 -brk_hndl:				; label from vector list
@@ -14,29 +14,38 @@
 ; make sure we work on bank zero eeeeeeeeek
 	PHK					; stack a 0...
 	PLB					; ...for data bank
+; *** new NMI-like stack frame, easier on debuggers ***
+	.xs: SEP #$10		; *** back to 8-bit indexes ***
+	LDA sysptr		; get whole 16 bits
+	LDX systmp		; do not mess with sys_sp
+	PHA
+	PHX
 ; in case an unaware 6502 app installs a handler ending in RTS,
 ; stack imbalance will happen, best keep SP and compare afterwards
 #ifdef	SUPPORT
-	.xs: SEP #$10		; *** back to 8-bit indexes ***
 	TSX					; get stack pointer LSB
 	STX sys_sp			; best place as will not switch
-	.as: SEP #$20		; now all in 8-bit
-#else
-	.as: .xs: SEP #$30	; all 8-bit
 #endif
+	.as: SEP #$20		; now all in 8-bit
 ; must use some new indirect jump, as set by new SET_BRK
 ; arrives in 8-bit, DBR=0 (no need to save it)
 	JSR @brk_call		; JSL new indirect
+	.as: SEP #$20		; ** 8-bit memory for a moment **
+	.xl: REP #$10		; make sure we have 16-bit indexes
 ; 6502 handlers will end in RTS causing stack imbalance
 ; must reset SP to previous value
 #ifdef	SUPPORT
-	.as: SEP #$20		; ** 8-bit memory for a moment **
 	TSC					; the whole stack pointer, will not mess with B
 	LDA sys_sp			; will replace the LSB with the stored value
 	TCS					; all set!
 #endif
+; *** retrieve reserved vars ***
+	PLA					; this is 8-bit systmp
+	PLX					; this is 16-bit sysptr
+	STA systmp
+	STX sysptr
 ; restore full status and exit
-	.al: .xl: REP #$30	; just in case (3)
+	.al: REP #$20			; all 16-bit (3)
 	PLB					; eeeeeeeeeeeek (4)
 	PLY					; restore status and return (3x5)
 	PLX
