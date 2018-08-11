@@ -1,10 +1,10 @@
 ; minimOS nano-monitor
-; v0.1b6
+; v0.1b7
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180530-1322
+; last modified 20180811-1323
 ; 65816-savvy, but in emulation mode ONLY
 
-; *** stub as NMI handler ***
+; *** stub as NMI handler, now valid for BRK ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
 ; aaaa,		read byte into stack
 ; ddaaaa!	write byte
@@ -21,6 +21,8 @@
 ; dd#		set A
 ; dd'		set P
 ; dd/		set SP (new)
+; no exit command, should do something like [nmi_end]*
+; ...or jump to a known existing RTI, if no handler is available
 
 #ifndef	HEADERS
 #include "../OS/options.h"
@@ -32,6 +34,9 @@
 #endif
 
 .(
+; option to pick full status from standard stack frame, comment if handler not available
+#define	NMI_SF	_NMI_SF
+
 ; **********************
 ; *** zeropage usage ***
 ; **********************
@@ -59,19 +64,37 @@
 	XCE
 	PLP
 #endif
-	JSR njs_regs		; keep current state, is PSR ok?
 ; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
 ; 65816 valid in emulation mode ONLY!
 	TSX
 	STX z_s				; store initial SP
-; ** this only if directly called from RTI **
-;	LDA $101, X			; get stacked PSR
-;	STA z_psr			; update value
-;	LDY $102, X			; get stacked PC
-;	LDA $103, X
-;	STY z_addr			; update current pointer
-;	STA z_addr+1
-; ** remove code above if not needed **
+
+#ifdef	NMI_SF
+; ** pick register values from standard stack frame, if needed **
+; forget about systmp/sysptr
+	LDA $104, X			; stacked Y
+	STA z_y
+	LDA $105, X			; stacked X
+	STA z_x
+	LDA $106, X			; stacked A
+	STA z_acc
+; minimal status with new offsets
+; systems without NMI-handler may keep old offsets $101...103
+	LDA $107, X			; get stacked PSR
+	STA z_psr			; update value
+	LDY $108, X			; get stacked PC
+	LDA $109, X
+	STY z_addr			; update current pointer
+	STA z_addr+1
+#else
+	JSR njs_regs		; keep current state, is PSR ok?
+	LDA $101, X			; get stacked PSR
+	STA z_psr			; update value
+	LDY $102, X			; get stacked PC
+	LDA $103, X
+	STY z_addr			; update current pointer
+	STA z_addr+1
+#endif
 	_STZA z_sp			; reset data stack pointer
 ; main loop
 nm_main:
