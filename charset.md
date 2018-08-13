@@ -1,6 +1,13 @@
 # minimOS Character Set
 
-*last modified 2018-08-12*
+*last modified 2018-08-13*
+
+Focused on limited resource platforms, the standard **character set** for minimOS
+had to satisfy the following:
+
+- Single-byte sequences (for easier/faster parsing).
+- Reasonably adhesion to actual standards for convenient compatibility.
+- Support for Spanish characters plus some other personal interests of mine.
 
 Currently, it is *loosely* based on **ISO 8859-1**. It does however include the
 Euro sign from 8859-15.
