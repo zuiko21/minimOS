@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
-; v0.6a2
+; v0.6a3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180801-2029
+; last modified 20180815-1521
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -19,6 +19,7 @@
 #include "abi.h"
 .zero
 #include "zeropage.h"
+
 * = $200
 #include "drivers/lcd.h"
 .text
@@ -26,7 +27,7 @@
 .(
 ; *** assembly options and other constants ***
 ; substitution for undefined chars
-#define	SUBST	' '
+#define	SUBST	'?'
 ; enable char redefining for international support
 #define	INTLSUP	_INTLSUP
 
@@ -47,7 +48,7 @@
 
 ; *** driver description ***
 lcd_txt:
-	.asc	"20x4 char LCD 0.6a1", 0
+	.asc	"20x4 char LCD 0.6a3", 0
 
 lcd_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
@@ -156,6 +157,10 @@ lcd_char:
 		BNE lch_nff
 			JMP lcd_cls			; clear and return!
 lch_nff:
+		CMP #LF			; line feed?
+		BNE lch_nlf
+			JMP lcd_lf			; clear and return!
+lch_nlf:
 		CMP #CR				; newline?
 		BNE lch_ncr
 			JMP lcd_cr			; scrolling perhaps
@@ -314,10 +319,11 @@ l_pulse:
 	DEC VIA_U+IORB
 	RTS
 
-; *** new line ***
+; *** new line and line feed ***
 lcd_cr:
 	JSR l_busy		; ready for several commands
 	_STZA lcd_x		; correct local coordinates
+lcd_lf:
 	INC lcd_y
 	LDA lcd_y		; check whether should scroll
 	CMP #L_LINE
@@ -385,6 +391,10 @@ lcr_sp:
 lcr_ns:
 	LDX lcd_y		; index for y
 	LDA l_addr, X	; current line address
+; as this is common for CR & LF, the latter may not assume X as 0
+	CLC
+	ADC lcd_x		; either zero or current value
+; preset address
 	ORA #%10000000	; set DDRAM address
 	JMP l_issue		; issue command and return
 
