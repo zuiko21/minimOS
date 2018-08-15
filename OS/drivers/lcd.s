@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180815-1521
+; last modified 20180815-2139
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -525,17 +525,18 @@ l_addr:
 isolut:
 	.byt	32,	0,	0,	0,	0,	0,	0,	0	; 128-143, ZX semigraphics, note 128 is just remapped to space
 	.byt	0,	0,	0,	0,	0,	0,	0,	0
-	.byt	144,	223,	146,	147,	148,	149,	0,	151	; 144-159, most like CP437 $Ex, Beta is remapped to Eszett, Phi to empty set
-	.byt	216,	153,	154,	155,	156,	0,	158,	159
-	.byt	32,	161,	162,	163,	0,	165,	166,	167	; note NBSP is just remapped to regular space, SHY to hyphen
-	.byt	0,	169,	170,	171,	0,	45,	0,	0
+	.byt	144,	11,	146,	147,	148,	149,	28,	151	; 144-159, most like CP437 $Ex with some remappings
+	.byt	29,	153,	154,	155,	156,	126,	158,	159
+	.byt	0,	161,	162,	163,	0,	165,	166,	167	; note NBSP is now a hollow square, SHY is 'not-equal' (remapped to Yen) and a few more changes
+	.byt	0,	169,	170,	171,	0,	165,	174,	0
 	.byt	176,	177,	178,	179,	0,	181,	182,	183
-	.byt	0,	185,	186,	187,	0,	0,	0		; up to 190, rest is unchanged
+	.byt	184,	127,	186,	187,	0,	0,	102		; up to 190, rest is unchanged
 
 ; list of redefinitions (glyphs must be at 8×index)
 cg_defs:
 	.byt	129, 130, 131, 132, 133, 134, 135	; ZX graphics (128 is a space)
 	.byt	136, 137, 138, 139, 140, 141, 142, 143
+;**********revise
 	.byt	150, 157				; selected math greek (two remaps)
 	.byt	164, 168, 172, 174, 175			; euro sign and other differences between ISO 8859-1 & -15, SHY remapped
 	.byt	180, 184, 188, 189, 190
