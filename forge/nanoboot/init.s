@@ -1,48 +1,51 @@
 ; startup nanoBoot for 6502
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180816-1643
+; last modified 20180816-1743
 
 ; *** needed zeropage variables ***
 ; nb_ptr (word) for initial address, will use as pointer
 ; nb_fin (word) is final address, MUST be consecutive
 ; nb_ex (word) keeps initial address
 ; nb_rcv, received byte (must be reset to 1)
-; nb_flag, sets bit 7 when a byte is ready (autoreset)
+; nb_flag, sets bit 7 when a byte is ready (autoreset, or bit 7 clear)
 
 nb_init:
 	SEI					; make sure interrupts are off
-	LDA #1				; initial value
-	STA nb_rcv
-	_STZA nb_flag			; reset reception flag
+	LDY #1				; initial value
+	STY nb_rcv			; preset received value
+	STY nb_flag			; reset reception flag
 ; *** set interrupt handlers ***
-	LDY #<nb_irq
+	LDX #<nb_irq
 	LDA #>nb_irq
-	STY fw_isr
+	STX fw_isr
 	STA fw_isr+1
-	LDY #<nb_nmi
+	LDX #<nb_nmi
 	LDA #>nb_nmi
-	STY fw_nmi
+	STX fw_nmi
 	STA fw_nmi+1
 ; *** wait for a valid nanoBoot link *** $4B, [start], [end]
 nb_wait:
 		BIT nb_flag			; received something?
 		BPL nb_wait
-	_STZA nb_flag			; clear flag
 	LDA nb_rcv			; check received
 	CMP #$4B			; valid nanoBoot link?
 	BNE nb_exit			; no, abort
 ; *** get nanoBoot header ***
 		LDX #0				; counter for bytes of header
+		STY nb_rcv			; preset value
+		STY nb_flag			; reset reception flag
 nb_loop:
 				BIT nb_flag			; received something?
 				BPL nb_loop
-			_STZA nb_flag			; clear flag
 			LDA nb_rcv			; check received
 			STA nb_ptr, X			; store in variable
+			STY nb_rcv			; reset value
+			STY nb_flag			; clear bit 7
 			INX
 			CPX #4				; all of header done?
 			BNE nb_loop
 ; prepare variables for transfer
+		LDX #1				; resetting value
 		LDY nb_ptr			; make a copy of initial address
 		LDA nb_ptr+1
 		STY nb_ex			; Y is offset already
@@ -52,9 +55,10 @@ nb_loop:
 nb_get:
 				BIT nb_flag			; received something?
 				BPL nb_get
-			_STZA nb_flag			; clear flag
 			LDA nb_rcv			; check received
 			STA (nb_ptr), Y		; store at destination
+			STX nb_rcv			; preset value
+			STX nb_flag			; clear bit 7
 			INY					; next
 			BNE nbg_nw			; check MSB too
 				INC nb_ptr+1
