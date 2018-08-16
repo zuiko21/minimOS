@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180816-1743
+; last modified 20180816-1816
 
 ; *** needed zeropage variables ***
 ; nb_ptr (word) for initial address, will use as pointer
@@ -66,7 +66,7 @@ nbg_nw:
 			CPY nb_fin			; check whether ended
 			BNE nb_get			; no, continue
 				LDA nb_ptr+1			; check MSB too
-				CMP nb_end+1
+				CMP nb_fin+1
 			BNE nb_get			; no, continue
 ; *** transfer ended, execute loaded code! ***
 		JMP (nb_ex)			; go!

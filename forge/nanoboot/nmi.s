@@ -2,7 +2,7 @@
 ; (c) 2018 Carlos J. Santisteban
 ; last modified 20180816-1722
 
-nb_nmi:
+-nb_nmi:
 	SEC
 	ROL nb_rcv			; prepare for next bit, initially on (2+5)
 	CLI					; enable IRQ for a moment... (2)
