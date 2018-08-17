@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6a2
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180815-2133
+; last modified 20180817-1008
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -69,8 +69,8 @@ ak_info:
 
 ; *** some constant definitions ***
 AF_SIZ		= 16		; buffer size (only 15 useable) no need to be power of two
-AR_DEL		= 140		; 140×5 ms (0.7s) original delay
-AR_RATE		= 20		; 20×5 ms (1/10s) original repeat rate
+AR_DEL		= 35		; 35×20 ms (0.7s) original delay
+AR_RATE		= 5		; 5×20 ms (1/10s) original repeat rate
 PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output
 PB_KEEP		= %10000000	; keep PB7
 PB_MASK		= %00100101	; VIAport address
