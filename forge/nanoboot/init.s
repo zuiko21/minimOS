@@ -51,7 +51,7 @@ nb_loop:
 		STY nb_ex			; Y is offset already (3+3)
 		STA nb_ex+1
 		_STZA nb_ptr			; ready for indirect-indexed (3 for CMOS)
-; *** execute transfer ***
+; *** execute transfer *** worst case 43 clocks per byte plus both interrupts
 nb_get:
 				BIT nb_flag			; received something? (3)
 				BPL nb_get			; (3/2)
@@ -59,6 +59,10 @@ nb_get:
 			STA (nb_ptr), Y		; store at destination (5 or 6)
 			STX nb_rcv			; preset value (3)
 			STX nb_flag			; clear bit 7 (3)
+; NMI could happen from this point on
+; as the interrupt cycle takes 59 clocks plus the longest opcode of 3 clocks,
+; maximum speed is one bit every 62 clocks, which is about 16 kbps @ 1 MHz
+; after each 8 bits, up to 43 clocks delay would total 105 clocks, 9.5 kbps
 			INY					; next (2)
 			BNE nbg_nw			; check MSB too (3/7)
 				INC nb_ptr+1
