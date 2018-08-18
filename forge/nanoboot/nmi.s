@@ -1,6 +1,6 @@
 ; nanoBoot NMI handler for 6502
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180818-1642
+; last modified 20180818-1747
 
 nb_nmi:
 	SEC
@@ -14,3 +14,4 @@ nb_nmi:
 ; will affect A, worth saving it here
 	ROR nb_flag			; this will set bit 7 accordingly (5)
 	RTI					; (6) total 29 clocks + ISR
+; 7 clocks to acknowledge IRQ plus 25 of the ISR itself, grand total 61 clocks

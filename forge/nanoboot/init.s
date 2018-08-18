@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180818-1032
+; last modified 20180818-1750
 
 ; *** needed zeropage variables ***
 ; nb_ptr (word) for initial address, will use as pointer
@@ -60,9 +60,9 @@ nb_get:
 			STX nb_rcv			; preset value (3)
 			STX nb_flag			; clear bit 7 (3)
 ; NMI could happen from this point on
-; as the interrupt cycle takes 59 clocks plus the longest opcode of 3 clocks,
-; maximum speed is one bit every 62 clocks, which is about 16 kbps @ 1 MHz
-; after each 8 bits, up to 43 clocks delay would total 105 clocks, 9.5 kbps
+; as the interrupt cycle takes 68 clocks plus the longest opcode of 3 clocks,
+; maximum speed is one bit every 71 clocks, which is about 14 kbps @ 1 MHz
+; after each 8 bits, up to 43 clocks delay would total 114 clocks, 8.77 kbps
 			INY					; next (2)
 			BNE nbg_nw			; check MSB too (3/7)
 				INC nb_ptr+1
