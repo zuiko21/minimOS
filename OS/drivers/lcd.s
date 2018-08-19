@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
-; v0.6a3
+; v0.6a4
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180815-2139
+; last modified 20180819-1427
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -173,20 +173,6 @@ lch_ntb:
 		BNE lch_nbs
 			JMP lcd_bs			; delete last character
 lch_nbs:
-/*
-		CMP #14				; shift out?
-		BNE lch_nso
-			LDA #$FF			; mask for reverse video
-			_BRA lcd_xor		; set mask and finish
-vch_nso:
-		CMP #15				; shift in?
-		BNE lch_nsi
-			LDA #$FF			; mask for true video
-vso_xor:
-			STA vdu_xor			; set new mask
-			RTS					; all done for this setting
-vdu_nsi:
-*/
 ; non-printable neither accepted control, thus use substitution character
 		LDA #SUBST			; unrecognised char
 		STA io_c			; store as required
@@ -203,11 +189,12 @@ lch_wdd:
 #ifdef	INTLSUP
 ; assuming ROM code A02!
 ; 128-143 are the ZX Spectrum graphics (16)
-; 144-159 taken from CP437 @ $Ex, most coincide except 145, 150, 152 & 157 (4)
-; other changes are 160, 164, 168, 172-175, 180, 184, 188-190 (12)
-; thus 191 & up are OK
-; 161-167, 169-171, 176-179, 181-183, 185 and up seem just like 8859-1
-; 164 (€), 188-190 are defined but in minimOS come from 8859-15
+; 144-159 taken from CP437 @ $Ex, most coincide except 145, 150, 152 & 157... (4)
+; ...which come from CP437 @ $Fx and can be found elsewhere
+; other changes are 160, 164, 168, 172, 173, 175, 180, 185, 188-190 (11)
+; 184 (lowercase omega) differs from ISO 8859-1, but is OK on LCD
+; 164 (€), 189 (oe) come from 8859-15
+; thus 191 & up are OK just like 8859-1
 	BPL lch_ok2			; standard ASCII
 		CMP #191			; higher chars like ISO-8859
 	BCS lch_ok
@@ -525,21 +512,18 @@ l_addr:
 isolut:
 	.byt	32,	0,	0,	0,	0,	0,	0,	0	; 128-143, ZX semigraphics, note 128 is just remapped to space
 	.byt	0,	0,	0,	0,	0,	0,	0,	0
-	.byt	144,	11,	146,	147,	148,	149,	28,	151	; 144-159, most like CP437 $Ex with some remappings
+	.byt	144,	17,	146,	147,	148,	149,	28,	151	; 144-159, most like CP437 $Ex with some remappings
 	.byt	29,	153,	154,	155,	156,	126,	158,	159
-	.byt	0,	161,	162,	163,	0,	165,	166,	167	; note NBSP is now a hollow square, SHY is 'not-equal' (remapped to Yen) and a few more changes
+	.byt	135,	161,	162,	163,	0,	165,	166,	167	; note NBSP is now a hollow square, SHY is 'not-equal' (remapped to Yen) and a few more changes
 	.byt	0,	169,	170,	171,	0,	165,	174,	0
-	.byt	176,	177,	178,	179,	0,	181,	182,	183
-	.byt	184,	127,	186,	187,	0,	0,	102		; up to 190, rest is unchanged
+	.byt	176,	177,	178,	179,	39,	181,	182,	183
+	.byt	184,	127,	186,	187,	23,	0,	102		; up to 190, rest is unchanged
 
-; list of redefinitions (glyphs must be at 8×index)
+; list of (currently) 20 redefinitions (glyphs must be at 8×index)
 cg_defs:
 	.byt	129, 130, 131, 132, 133, 134, 135	; ZX graphics (128 is a space)
 	.byt	136, 137, 138, 139, 140, 141, 142, 143
-;**********revise
-	.byt	150, 157				; selected math greek (two remaps)
-	.byt	164, 168, 172, 174, 175			; euro sign and other differences between ISO 8859-1 & -15, SHY remapped
-	.byt	180, 184, 188, 189, 190
+	.byt	164, 168, 172, 175, 189			; euro sign and other differences between ISO 8859-1 & -15, SHY remapped
 
 ; ** glyph definitions (note index above) **
 cg_glph:
@@ -694,27 +678,6 @@ cg_glph:
 	.byt	%11111
 	.byt	%11111
 
-; selected math greek (beta remapped to eszett, phi remapped to empty set)
-; 150, greek mju
-	.byt	%00000
-	.byt	%10001
-	.byt	%10001
-	.byt	%11011
-	.byt	%10101
-	.byt	%10000
-	.byt	%10000
-	.byt	%00000
-
-; 157, greek lowercase phi
-	.byt	%00000
-	.byt	%00010
-	.byt	%10101
-	.byt	%10101
-	.byt	%00100
-	.byt	%00100
-	.byt	%00100
-	.byt	%00000
-
 ; differences between ISO 8859-1 & 8859-15 (SHY remapped to -)
 ; 164, Euro sign
 	.byt	%00110
@@ -746,16 +709,6 @@ cg_glph:
 	.byt	%00000
 	.byt	%00000
 
-; 174, registered
-	.byt	%01110
-	.byt	%11111
-	.byt	%11011
-	.byt	%11111
-	.byt	%11101
-	.byt	%11011
-	.byt	%01110
-	.byt	%00000
-
 ; 175, macron
 	.byt	%11111
 	.byt	%00000
@@ -764,36 +717,6 @@ cg_glph:
 	.byt	%00000
 	.byt	%00000
 	.byt	%00000
-	.byt	%00000
-
-; 180, acute
-	.byt	%00010
-	.byt	%00100
-	.byt	%00000
-	.byt	%00000
-	.byt	%00000
-	.byt	%00000
-	.byt	%00000
-	.byt	%00000
-
-; 184, cedilla
-	.byt	%00000
-	.byt	%00000
-	.byt	%00000
-	.byt	%00000
-	.byt	%00000
-	.byt	%00100
-	.byt	%01100
-	.byt	%00000
-
-; 188, upper OE
-	.byt	%00000
-	.byt	%01111
-	.byt	%10100
-	.byt	%10100
-	.byt	%10111
-	.byt	%10100
-	.byt	%01111
 	.byt	%00000
 
 ; 189, lower oe
@@ -806,15 +729,5 @@ cg_glph:
 	.byt	%01111
 	.byt	%00000
 
-; 190, upper y-uml
-	.byt	%10001
-	.byt	%00000
-	.byt	%10001
-	.byt	%10001
-	.byt	%01010
-	.byt	%00100
-	.byt	%00100
-	.byt	%00000
 #endif
-
 .)

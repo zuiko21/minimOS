@@ -36,8 +36,8 @@ needed, its functionality may be provided by code 128/$80 Spectrum graphic (whic
 shows up as a blank space anyway).
 - *Soft hyphen* (173, $AD) is replaced by the (seldom found on single-byte encodings!)
 **slashed equal**.
-- *Cedilla* (184, $B8) is not needed as Iberian & Gallic keyboards have the C
-key available, thus is replaced by **lowercase omega**. *This encoding
+- *Cedilla* (184, $B8) is not needed as Iberian & Gallic keyboards have the
+*C-cedilla* key available, thus is replaced by **lowercase omega**. *This encoding
 is already used on some HD44780-based LCD text displays*. 
 - *Superscript 1* (185, $B9), unlike the superscript 2 & 3, makes little sense to me,
 thus replaced by **uppercase delta**.
