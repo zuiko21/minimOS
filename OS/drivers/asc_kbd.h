@@ -1,10 +1,10 @@
 ; variables for ASCII keyboard driver
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180819-1549
+; last modified 20180819-1603
 
 ak_fi	.byt	0		; FIFO pointers
 ak_fo	.byt	0
-ak_buff	.dsb	AF_SIZ, 0	; FIFO buffer (16 char)
+ak_buff	.dsb	16, 0		; FIFO buffer (16 char)
 ak_ddra	.byt	0		; old config
 ak_rmod	.byt	0		; raw and coocked modifier combo
 ak_cmod	.byt	0

@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
-; v0.6a2
+; v0.6b1
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180817-1008
+; last modified 20180819-1607
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -31,7 +31,15 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-#include "usual.h"
+//#include "usual.h"
+#include "options/chihuahua_plus.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+* = $200
+#include "drivers/asc_kbd.h"
+.text
 
 .(
 ; ***************
@@ -39,10 +47,10 @@
 ; ***************
 
 ; uncomment for repeat (except for deadkeys)
-#define	REPEAT	_REPEAT
+;#define	REPEAT	_REPEAT
 
 ; uncomment for deadkey support (Spanish only this far)
-#define	DEADKEY	_DEADKEY
+;#define	DEADKEY	_DEADKEY
 
 ; ******************************
 ; *** standard minimOS stuff ***
@@ -136,6 +144,7 @@ ak_init:
 	STA ak_rep
 #endif
 ; all done
+ak_exit:				; placeholder
 	_DR_OK				; succeeded
 
 ; ******************************************************
@@ -230,6 +239,7 @@ ap_scok:
 	BNE ap_char		; yes, get ASCII and put into buffer
 #ifndef	REPEAT
 		BEQ ap_end		; do nothing if repeat is not implemented
+ap_char:
 #else
 		LDY ak_del		; already repeating?
 		BEQ ak_rpt		; go check its counter
@@ -340,10 +350,12 @@ ak_mods:
 	.word	ak_traw, ak_tu,   ak_ta,   ak_tua,  ak_tc,   ak_tuc,  ak_tac,  ak_tuac
 	.word	ak_ts,   ak_tsu,  ak_tsa,  ak_tsua, ak_tsc,  ak_tsuc, ak_tsac, ak_tsuac
 
+#ifdef	DEADKEY
 ; pointers to tables of characters altered by dead keys!
 ; this far, only shift and/or caps lock are detected
 ak_dktb:
 	.word	ak_acu,  ak_acs,  ak_umu,  ak_ums
+#endif
 
 ; *******************************
 ; *** scancode to ASCII tables***
@@ -422,6 +434,7 @@ ak_tsuac:
 	.byt	$00, $0C, $0F, $00,  $00, $00, $10, $00,  $0 , $00, $00, $00
 	.byt	$0 , $00, $00, $00,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
+#ifdef	DEADKEY
 ; ** tables for deadkey(s), just one in Spanish **
 ; acute unshifted
 ak_acu:
@@ -454,5 +467,5 @@ ak_ums:
 	.byt	$0 , $0 , $BE, $0 ,  $0 , $0 , $DC, $0 ,  $0 , $0 , $CF, $0
 	.byt	$0 , $0 , $B6, $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 	.byt	$0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
-
+#endif
 .)
