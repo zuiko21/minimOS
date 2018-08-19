@@ -1,8 +1,8 @@
 ; includes for minimOS drivers
 ; Chihuahua PLUS specific configuration!
-; v0.6b2
+; v0.6b3
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180404-1328
+; last modified 20180819-1542
 
 #define		DRIVERS		1
 
@@ -18,16 +18,12 @@
 ; place them between generic labels
 
 driver0:
-; LED keypad
-#include "../drv_led.s"
+; Hitachi LCD
+#include "lcd.s"
 
 driver1:
-; SS-22 link
-;#include "../drv_ss22.s"
-
-driver2:
-; ASCII keyboard with LCD
-;#include "../drv_ascii_lcd.s"
+; ASCII keyboard
+;#include "../asc_kbd.s"
 
 
 ; *** driver list in ROM ***
@@ -37,7 +33,7 @@ driver2:
 
 drvrs_ad:
 	.word	driver0		; generic list
-;	.word	driver1		; generic list
+	.word	driver1		; generic list
 ;	.word	driver2		; generic list
 ;	.word	driver3		; generic list
 ;	.word	driver4		; generic list

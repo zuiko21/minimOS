@@ -1,7 +1,7 @@
 ; firmware variables for minimOS on Chihuahua (PLUS)
-; v0.9.6b4
+; v0.9.6b5
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180404-1350
+; last modified 20180819-1543
 
 -sysram:
 ; *** standard FW vars from template ***

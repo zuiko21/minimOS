@@ -2,7 +2,7 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180801-2023
+; last modified 20180819-1532
 
 ; *** set conditional assembly ***
 
@@ -25,15 +25,17 @@
 #define		MACHINE_ID		"sdd+"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
-#define		ARCH			chihuahua
+#define		ARCH_h			"firmware/chihuahua.h"
+#define		ARCH_s			"firmware/chihuahua.s"
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK		chihuahua_plus_std
+#define		DRIVER_PACK_h		"drivers/config/chihuahua_plus_std.h"
+#define		DRIVER_PACK_s		"drivers/config/chihuahua_plus_std.s"
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		miniMoDA.s
+#define		SHELL		"shell/miniMoDA.s"
 
 ; default NMI, BRK etc TBD ***********
 

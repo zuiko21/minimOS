@@ -29,7 +29,7 @@
 ; substitution for undefined chars
 #define	SUBST	'?'
 ; enable char redefining for international support
-#define	INTLSUP	_INTLSUP
+;#define	INTLSUP	_INTLSUP
 
 ; *** begins with sub-function addresses table ***
 	.byt	144			; physical driver number D_ID (TBD)
