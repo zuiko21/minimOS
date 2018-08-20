@@ -48,7 +48,7 @@
 
 ; *** driver description ***
 lcd_txt:
-	.asc	"20x4 char LCD 0.6a3", 0
+	.asc	"20x4 char LCD 0.6", 0
 
 lcd_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
