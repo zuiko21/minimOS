@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a4
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180819-1427
+; last modified 20180821-2135
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -48,7 +48,7 @@
 
 ; *** driver description ***
 lcd_txt:
-	.asc	"20x4 char LCD 0.6", 0
+	.asc	"20x4 char LCD v0.6", 0
 
 lcd_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
@@ -56,9 +56,9 @@ lcd_err:
 ; *** define some constants ***
 	L_OTH	= %00001000	; bits to be kept, PB3 only
 	L_NOTH	= %11110111	; required PB outputs (inverse of L_OTH)
-	LCD_PB	= %00010000	; idle command E=0 (pulse PB0 via INC/DEC)
-	LCD_RS	= %00010010	; set RS for printing & CG (PB1)
-	LCD_RD	= %00010100	; read status from LCD (PB2)
+	LCD_ID	= %00010000	; idle command E=0 (pulse PB0 via INC/DEC)
+	LCD_PR	= %00010010	; set RS for printing & CG (PB1)
+	LCD_RS	= %00010100	; read status from LCD (PB2)
 	LCD_RM	= %00010110	; read DDRAM/CGRAM (PB2+PB1)
 
 ; size definitions for other size LCDs
@@ -181,7 +181,7 @@ lch_wdd:
 ; set up VIA for LCD print (RS)
 	LDA VIA_U+IORB		; current PB (4)
 	AND #L_OTH			; respect PB3 only (2)
-	ORA #LCD_RS			; allow DDRAM write (2)
+	ORA #LCD_PR			; allow DDRAM write (2)
 	STA VIA_U+IORB		; set mode... (4)
 ; send char at io_c
 	LDA io_c			; get char
@@ -258,13 +258,13 @@ sc_reg:
 		_PLX					; retrieve file index
 		LDA VIA_U+IORB		; current PB (4)
 		AND #L_OTH			; respect PB3 only (2)
-		ORA #LCD_RS			; allow CGRAM write (2)
+		ORA #LCD_PR			; allow CGRAM write (2)
 		STA VIA_U+IORB		; set mode... (4)
 sc_wcl:
 			JSR l_busy		; wait for CGRAM access
 			LDA VIA_U+IORB		; current PB (4)
 			AND #L_OTH			; respect PB3 only (2)
-			ORA #LCD_RS			; allow CGRAM write (2)
+			ORA #LCD_PR			; allow CGRAM write (2)
 			STA VIA_U+IORB		; set mode... (4)
 			LDA cg_glph, X		; get byte from glyph
 			JSR l_issue		; write into device
@@ -344,7 +344,7 @@ lcr_scr:
 			LDX #0			; loop variable
 lcr_scw:
 				JSR l_busy		; wait for DDRAM access
-				LDA #LCD_RS		; will write
+				LDA #LCD_PR		; will write
 				STA VIA_U+IORB
 				LDA l_buff, X	; retrieve from buffer
 				JSR l_issue	; and write into device
@@ -367,7 +367,7 @@ lcr_scw:
 ; this space-printing loop cannot use regular lcd_prn as the last one will invoke CR
 lcr_sp:
 			JSR l_busy		; wait for DDRAM access
-			LDA #LCD_RS		; will write
+			LDA #LCD_PR		; will write
 			STA VIA_U+IORB
 			LDA #' '		; white space
 			JSR l_issue		; write into device
@@ -443,7 +443,7 @@ lcd_cmd:
 	LDA VIA_U+IORB		; original PB value on user VIA (4)
 lcd_cpb:
 	AND #L_OTH			; leave PB3 (2)
-	ORA #LCD_PB		; E=RS=0, ready for commands
+	ORA #LCD_ID		; E=RS=0, ready for commands
 	STA VIA_U+IORB		; just waiting for E to send LCD command in PA (4)
 	RTS
 
@@ -464,7 +464,7 @@ l_wait:
 	_STZA VIA_U+DDRA	; set input!
 	LDA VIA_U+IORB	; original PB
 	AND #L_OTH		; respect bits
-	ORA #LCD_RD		; will read status
+	ORA #LCD_RS		; will read status
 	STA VIA_U+IORB
 	LDY #74			; for 2.25 ms timeout
 lb_loop:
