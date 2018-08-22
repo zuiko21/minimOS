@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180822-1318
+; last modified 20180822-1335
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (must be reset to 1)
@@ -44,14 +44,13 @@ nb_loop:
 ; prepare variables for transfer
 		TAY					; last byte loaded is the index! (2)
 		_STZA nb_ptr			; ready for indirect-indexed (3 for CMOS)
-; *** execute transfer *** worst case 43 clocks per byte plus both interrupts
+; *** execute transfer *** worst case 55 clocks per byte plus both interrupts
 nb_get:
 			JSR nb_grc			; wait for byte (26+)
 			STA (nb_ptr), Y		; store at destination (5 or 6)
-;---------check timing below!!!
-; as the interrupt cycle takes 68 clocks plus the longest opcode of 3 clocks,
-; maximum speed is one bit every 71 clocks, which is about 14 kbps @ 1 MHz
-; after each 8 bits, up to 43 clocks delay would total 114 clocks, 8.77 kbps
+; as the interrupt cycle takes 68 clocks plus the longest opcode of 6 clocks,
+; maximum speed is one bit every 74 clocks, which is about 13.5 kbps @ 1 MHz
+; after each 8 bits, up to 55 clocks delay would total 129 clocks, 7.75 kbps
 			INY					; next (2)
 			BNE nbg_nw			; check MSB too (3/7)
 				INC nb_ptr+1
