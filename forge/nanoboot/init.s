@@ -69,7 +69,7 @@ nbg_nw:
 ; *************************************
 nb_tab:
 	.word	nb_irq
-	.word	nb_isr
+	.word	nb_nmi
 
 ; **********************************************************************
 ; *** routine waits for a fully received byte (in A) and clear flags ***
