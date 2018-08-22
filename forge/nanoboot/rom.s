@@ -1,6 +1,9 @@
 ; minimal nanoBoot firmware
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180822-1331
+; last modified 20180822-1922
+
+#define	SAFE	_SAFE
+;#define	SETOVER	_SETOVER
 
 #include "../../OS/macros.h"
 #include "nanoboot.h"
@@ -21,14 +24,21 @@ fw_nmi	.word	0
 ; * stack can be anywhere into page 1
 
 reset:
+#ifdef	SETOVER
+nb_irq:
+#endif
 ;	CLD
 ;	LDX #$FF
 ;	TXS
 
 ; ...followed by code chunks
 #include "init.s"
+#ifndef	SETOVER
 #include "nmi.s"
 #include "isr.s"
+#else
+#include "so_nmi.s"
+#endif
 
 ; vectored interrupt handlers
 nmi:
