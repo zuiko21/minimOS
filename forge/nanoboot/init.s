@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180822-1335
+; last modified 20180823-1500
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (must be reset to 1)
@@ -18,10 +18,18 @@ nb_init:
 ; *** set interrupt handlers ***
 ; a loop plus table is 15b 53t, but needs consecutive fw vars
 ; old code was 20b 24t
+#ifdef	SETOVER
+	LDY #1				; just two bytes if using SO
+#else
 	LDY #3				; copy bytes 0...3 (2)
+#endif
 nb_svec:
 		LDA nb_tab, Y			; get origin from table (4)
+#ifdef	SETOVER
+		STA fw_nmi, Y			; and write just this FW vector
+#else
 		STA fw_isr, Y			; and write for FW (4)
+#endif
 		DEY					; next (2+3)
 		BPL nb_svec
 ; *** wait for a valid nanoBoot link *** $4B, end.H, end.L, start.H, start.L
@@ -48,6 +56,7 @@ nb_loop:
 nb_get:
 			JSR nb_grc			; wait for byte (26+)
 			STA (nb_ptr), Y		; store at destination (5 or 6)
+; *** performance when using NMI/IRQ ***
 ; as the interrupt cycle takes 68 clocks plus the longest opcode of 6 clocks,
 ; maximum speed is one bit every 74 clocks, which is about 13.5 kbps @ 1 MHz
 ; after each 8 bits, up to 55 clocks delay would total 129 clocks, 7.75 kbps
@@ -67,7 +76,9 @@ nbg_nw:
 ; *** table with interrupt pointers ***
 ; *************************************
 nb_tab:
+#ifndef	SETOVER
 	.word	nb_irq
+#endif
 	.word	nb_nmi
 
 ; **********************************************************************
@@ -85,5 +96,7 @@ nb_grc:
 ; **********************************************************************
 ; *** in case nonvalid header is detected, reset or continue booting ***
 ; **********************************************************************
+#ifdef	SAFE
 nb_exit:
 	JMP ($FFFC)			; reset, hopefully will go elsewhere
+#endif
