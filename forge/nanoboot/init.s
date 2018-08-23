@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180823-1500
+; last modified 20180823-1508
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (must be reset to 1)
@@ -60,6 +60,9 @@ nb_get:
 ; as the interrupt cycle takes 68 clocks plus the longest opcode of 6 clocks,
 ; maximum speed is one bit every 74 clocks, which is about 13.5 kbps @ 1 MHz
 ; after each 8 bits, up to 55 clocks delay would total 129 clocks, 7.75 kbps
+; *** performance when using SO (no IRQ) ***
+; interrupt cycle becomes at worst 24+7+6 = 37 clocks (27 kbps @ 1 MHz)
+; including delay for each received byte is 92 clocks, 10.87 kbps
 			INY					; next (2)
 			BNE nbg_nw			; check MSB too (3/7)
 				INC nb_ptr+1
