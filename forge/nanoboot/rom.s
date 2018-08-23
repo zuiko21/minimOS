@@ -2,8 +2,8 @@
 ; (c) 2018 Carlos J. Santisteban
 ; last modified 20180822-1922
 
-#define	SAFE	_SAFE
-;#define	SETOVER	_SETOVER
+;#define	SAFE	_SAFE
+#define	SETOVER	_SETOVER
 
 #include "../../OS/macros.h"
 #include "nanoboot.h"
