@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180823-1508
+; last modified 20180824-2114
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (must be reset to 1)
@@ -18,20 +18,19 @@ nb_init:
 ; *** set interrupt handlers ***
 ; a loop plus table is 15b 53t, but needs consecutive fw vars
 ; old code was 20b 24t
-#ifdef	SETOVER
-	LDY #1				; just two bytes if using SO
-#else
+#ifndef	SETOVER
 	LDY #3				; copy bytes 0...3 (2)
-#endif
 nb_svec:
 		LDA nb_tab, Y			; get origin from table (4)
-#ifdef	SETOVER
-		STA fw_nmi, Y			; and write just this FW vector
-#else
 		STA fw_isr, Y			; and write for FW (4)
-#endif
 		DEY					; next (2+3)
 		BPL nb_svec
+#else
+	LDY #<nb_nmi			; copy routine address...
+	LDA #>nb_nmi
+	STY fw_nmi			; ...and store it into firmware
+	STA fw_nmi+1
+#endif
 ; *** wait for a valid nanoBoot link *** $4B, end.H, end.L, start.H, start.L
 ; note big-endian for simpler memory filling!
 ; the magic byte ($4B) could be ignored as well
@@ -81,8 +80,8 @@ nbg_nw:
 nb_tab:
 #ifndef	SETOVER
 	.word	nb_irq
-#endif
 	.word	nb_nmi
+#endif
 
 ; **********************************************************************
 ; *** routine waits for a fully received byte (in A) and clear flags ***
