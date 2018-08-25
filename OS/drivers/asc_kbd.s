@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6b2
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180825-1518
+; last modified 20180825-1612
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -269,20 +269,24 @@ ap_char:
 ap_dorp:
 	TAY				; use scancode as post-index
 	LDA (ak_mk), Y		; this is the ASCII code
+	_NO_CRIT		; zeropage is free
 #ifdef	DEADKEY
+	LDX ak_dead		; check whether an actual deadkey-generated char
+		BNE ap_live		; yes, no further checking
 	CMP #$B4		; acute?
+	BNE apd_b4
 		LDA #2			; first half table of dead keys
 		BNE ap_dead
+apd_b4:
 	CMP #$A8		; umlaut? last to be checked
-		LDA #6			; last of half-tables for deadkeys
 	BNE ap_live
+		LDA #6			; last of half-tables for deadkeys
 ap_dead:
-		STA ak_dead		; set deadkey mode
-		BNE ap_end		; is BRA
+		STA ak_dead		; set deadkey mode and exit!
+		RTS
 ap_live:
 	_STZA ak_dead		; no repeat for deadkeys, this far
 #endif
-	_NO_CRIT		; zeropage is free
 ;	JMP ak_push		; goes into FIFO... and return to ISR
 ; no need for the above if ak_push code follows!
 
