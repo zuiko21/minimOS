@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS, simple version
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180824-2132
+; last modified 20180825-1256
 
 ; *** caveats ***
 ; alt not recognised
@@ -23,7 +23,9 @@
 ;	d2 = control
 ;	d3 = shift
 ; ak_cmod, modifier status (like ak_rmod with toggling caps lock)
+; ak_tof, table offset
 ; ak_scod, last detected scancode
+; ak_get, decoded character
 
 ; ***********************
 ; *** minimOS headers ***
@@ -35,7 +37,7 @@
 .zero
 #include "zeropage.h"
 * = $200
-#include "drivers/asc_kbd.h"
+#include "drivers/bas_kbd.h"
 .text
 
 .(
@@ -67,8 +69,6 @@ PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output
 PB_KEEP		= %10000000	; keep PB7
 PB_MASK		= %00100101	; VIAport address
 
-;ak_mk		= sysptr	; *** required zeropage pointer ***
-
 ; ****************************************
 ; *** read from buffer to output block *** usual mandatory loop
 ; ****************************************
@@ -80,10 +80,12 @@ ak_rloop:
 		LDA bl_siz			; check remaining
 		ORA bl_siz+1
 			BEQ blck_end			; nothing to do
-		JSR ak_get			; *** get one byte from buffer***
-			BCS blck_end		; any error ends transfer!
+		LDA ak_get			; *** get single byte ***
+			BEQ blck_err		; not available, ends transfer!
 		STA (bl_ptr),Y			; ...goes into buffer
-		INY					; next byte, check carry
+		_STZA ak_get			; eeeeeek
+		CLC
+		INY					; next byte, check wrap
 		BNE ak_nw
 			INC bl_ptr+1
 ak_nw:
@@ -94,7 +96,10 @@ ak_nw:
 			LDA bl_siz+1			; any page remaining?
 		BEQ blck_end			; no, exit
 			DEC bl_siz+1			; ...or one page less
-		_BRA ak_rloop
+		_BRA blck_end			; cannot get another one
+blck_err:
+	SEC					; set error before exit
+	LDY #EMPTY
 blck_end:
 	PLA					; restore MSB
 	STA bl_ptr+1
@@ -111,6 +116,7 @@ ak_init:
 	_STZA ak_rmod
 	_STZA ak_cmod
 	_STZA ak_scod
+	_STZA ak_get
 ; all done
 ak_exit:				; placeholder
 	_DR_OK				; succeeded
@@ -131,37 +137,28 @@ ak_poll:
 ; scan modifier column
 	LDX #15			; maximum column index (modifiers)
 	JSR ap_scol		; scan this column
-	_CRITIC			; will use zeropage interrupt space!
 	CMP ak_rmod		; any change on these?
 	BNE ap_eqm		; no, just scan the rest
 		STA ak_rmod		; update raw modifier combo...
 		STA ak_cmod		; and compound too, caps lock is wrong
-; update status of caps lock LED...
+; toggle caps lock status bit...
 		AND #1			; caps lock=bit 0
-		TAY			; keep for status
-		ASL
-		ASL
-		ASL			; now is bit 3, ready for PB3
-		EOR VIA_U+IORB		; TOGGLE PB3, thus caps lock LED
-		STA VIA_U+IORB
-; ...and toggle caps lock status bit
-; TBD, best to toggle status bit and then cooying it into PB3
-		LSR ak_cmod		; clear caps lock bit...
-		TYA			; is caps lock on?
-		CLC
-		BEQ ap_updc		; nope...
-			SEC			; ...or yes...
-ap_updc:
-		ROL ak_cmod		; ...update this bit
-; get table address for this modifier combo
-		LDA ak_cmod		; retrieve modifier status
-; standard table select
-		ASL				; table offsets need 9 bits!
-		TAX				; index for modifier combos
-		LDY ak_mods, X	; get pointer on main table for these modifiers
-		LDA ak_mods+1, X
-		STY ak_mk		; save for later!
-		STA ak_mk+1
+		EOR ak_cmod		; toggle caps lock bit...
+		STA ak_cmod		; ...update this bit
+		AND #1			; this is current caps lock status
+		TAY				; check for presence
+; ...and update status of caps lock LED!
+		LDA VIA_U+IORB
+		AND #%11110111	; clear PB3, thus caps lock LED
+		CPY #0			; is caps lock on?
+		BNE ap_ncl		; no, let LED off
+			ORA #%00001000	; set bit otherwise
+ap_ncl:
+		STA VIA_U+IORB	; update PB3 LED
+; get table address for this modifier combo, much simpler
+		LDX ak_cmod
+		LDA ak_mods, X	; offset wothin tables
+		STA ak_tof		; will be added later
 ap_eqm:
 	LDX #14			; last regular column
 ap_sloop:
@@ -170,8 +167,8 @@ ap_sloop:
 		DEX				; next column
 		BPL ap_sloop
 	_STZA ak_scod		; clear previous scancode! eeeeeeeek
+	_STZA ak_get
 ap_end:
-	_NO_CRIT		; eeeeeeeeek
 	RTS				; none pressed, all done
 ; we have a raw, incomplete scancode, must convert it
 ap_kpr:
@@ -187,16 +184,17 @@ ap_scok:
 ; must check whether scancode is different from last poll
 	CMP ak_scod		; any changes?
 	BNE ap_char		; yes, get ASCII and put into buffer
-		BEQ ap_end		; do nothing if repeat is not implemented
+		BEQ ap_end		; do nothing as repeat is not implemented
 ap_char:
 	STA ak_scod		; save last detected! eeeeeeeeek
 ; get ASCII from compound scancode
 ap_dorp:
-	TAY				; use scancode as post-index
-	LDA (ak_mk), Y		; this is the ASCII code
-	_NO_CRIT		; zeropage is free
-;	JMP ak_push		; goes into FIFO... and return to ISR
-; no need for the above if ak_push code follows!
+	CLC
+	ADC ak_tof		; add offset for modifier table
+	TAX				; use full scancode as index
+	LDA ak_tabs, X		; this is the ASCII code
+	STA ak_get		; goes into single-byte buffer
+	_DR_OK
 
 ; **************************
 ; *** auxiliary routines ***
@@ -226,47 +224,39 @@ col4:
 	.byt	 0,  4,  8, 12, 16, 20, 24, 28
 	.byt	32, 36, 40, 44, 48, 52, 56
 
-; continue here----------------------------
-; pointers to tables depending on modifiers
+; offsets to tables depending on modifiers
 ak_mods:
-	.word	ak_traw, ak_tu,   ak_ta,   ak_tua,  ak_tc,   ak_tuc,  ak_tac,  ak_tuac
-	.word	ak_ts,   ak_tsu,  ak_tsa,  ak_tsua, ak_tsc,  ak_tsuc, ak_tsac, ak_tsuac
+	.byt	0,	60,	0,	60,	180,	180,	180,	180
+	.byt	120,	120,	120,	120,	180,	180,	180,	180
 
 ; *******************************
 ; *** scancode to ASCII tables***
 ; *******************************
 ; cols 0...14, and inside rows 0...3
 
+ak_tabs:
 ; unshifted
-ak_traw:
 	.byt	$20, $3C, $09, $BA,  $7A, $61, $71, $31,  $78, $73, $77, $32
 	.byt	$63, $64, $65, $33,  $76, $66, $72, $34,  $62, $67, $74, $35
 	.byt	$6E, $68, $79, $36,  $6D, $6A, $75, $37,  $2C, $6B, $69, $38
 	.byt	$2E, $6C, $6F, $39,  $2D, $F1, $70, $30,  $0 , $B4, $60, $27
 	.byt	$0 , $E7, $2B, $A1,  $0A, $0B, $0D, $08,  $0C, $0 , $7F, $1B
 
-; caps lock
-ak_tu:
+; caps lock (+60)
 	.byt	$20, $3C, $09, $BA,  $5A, $41, $51, $31,  $58, $53, $57, $32
 	.byt	$43, $44, $45, $33,  $56, $46, $52, $34,  $42, $47, $54, $35
 	.byt	$4E, $48, $59, $36,  $4D, $4A, $55, $37,  $2C, $4B, $49, $38
 	.byt	$2E, $4C, $4F, $39,  $2D, $D1, $50, $30,  $0 , $B4, $60, $27
 	.byt	$0 , $C7, $2B, $A1,  $0A, $0B, $0D, $08,  $0C, $0 , $7F, $1B
 
-; shift (with or without caps lock)
-ak_ts:
-ak_tsu:
+; shift (with or without caps lock, +120)
 	.byt	$0 , $3E, $0 , $AA,  $5A, $41, $51, $21,  $58, $53, $57, $22
 	.byt	$43, $44, $45, $B7,  $56, $46, $52, $24,  $42, $47, $54, $25
 	.byt	$4E, $48, $59, $26,  $4D, $4A, $55, $2F,  $2C, $4B, $49, $28
 	.byt	$2E, $4C, $4F, $29,  $2D, $D1, $50, $3D,  $0 , $A8, $5E, $3F
 	.byt	$0 , $C7, $2A, $BF,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
 
-; control (with or without caps lock or shift)
-ak_tc:
-ak_tuc:
-ak_tsc:
-ak_tsuc:
+; control (with or without caps lock or shift, +180)
 	.byt	$00, $00, $00, $00,  $1A, $01, $11, $00,  $18, $13, $17, $00
 	.byt	$03, $04, $05, $00,  $16, $06, $12, $00,  $02, $07, $14, $00
 	.byt	$0E, $08, $19, $00,  $0D, $0A, $15, $00,  $00, $0B, $09, $00
