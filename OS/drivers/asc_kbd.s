@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6b2
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180825-1351
+; last modified 20180825-1518
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -167,32 +167,30 @@ ak_poll:
 	CMP ak_rmod		; any change on these?
 	BNE ap_eqm		; no, just scan the rest
 		STA ak_rmod		; update raw modifier combo...
-
-		LSR ak_cmod		; extract old caps lock
-; toggle caps lock status bit
-		AND #1			; caps lock=bit 0
-		BEQ ap_ncl		; not pressed, do not toggle, or...
-			BCC ap_cup		; was off, go on
-				CLC				; or turn off
+		LSR				; pressing caps lock?
+		BCC ap_selt		; no, just check other modifiers
+; toggle caps lock status bit (A holds shifted modifiers)
+			LSR ak_cmod		; get older cpaps state
+			BCC ap_cup		; was off, turn it on...
+				CLC				; ...or turn off if was on
 				BCC ap_cok
 ap_cup:
-			SEC
+			SEC				; this turns caps on
 ap_cok:
-			ROL ak_cmod
-
-		STA ak_cmod		; update
-
-		AND #1			; current status
-		TAY			; keep for later
+			ROL				; reinsert new status together with other bits
+			STA ak_cmod		; update all bits
+			AND #1			; current caps lock status
+			TAY				; keep for later
 ; and update status of caps lock LED
-		LDA VIA_U+IORB		; clear PB3, thus caps lock LED
-		AND #%11110111
-		CPY #0			; is caps lock on?
-		BEQ ap_updc		; nope...
-			ORA #%00001000	; ...or yes...
+			LDA VIA_U+IORB	; clear PB3, thus caps lock LED
+			AND #%11110111
+			CPY #0			; is caps lock on?
+			BEQ ap_updc		; nope...
+				ORA #%00001000	; ...or yes
 ap_updc:
-		STA VIA_U+IORB
+			STA VIA_U+IORB	; update LED status
 ; get table address for this modifier combo
+ap_selt:
 		LDA ak_cmod		; retrieve modifier status
 #ifdef	DEADKEY
 ; *** check whether in deadkey mode for simplified modifier handling ***
