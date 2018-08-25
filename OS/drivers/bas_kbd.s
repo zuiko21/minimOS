@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS, simple version
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180825-1256
+; last modified 20180825-1349
 
 ; *** caveats ***
 ; alt not recognised
@@ -151,7 +151,7 @@ ak_poll:
 		LDA VIA_U+IORB
 		AND #%11110111	; clear PB3, thus caps lock LED
 		CPY #0			; is caps lock on?
-		BNE ap_ncl		; no, let LED off
+		BEQ ap_ncl		; no, let LED off
 			ORA #%00001000	; set bit otherwise
 ap_ncl:
 		STA VIA_U+IORB	; update PB3 LED

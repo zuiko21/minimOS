@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
-; v0.6b1
+; v0.6b2
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180819-1607
+; last modified 20180825-1342
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -168,23 +168,20 @@ ak_poll:
 	BNE ap_eqm		; no, just scan the rest
 		STA ak_rmod		; update raw modifier combo...
 		STA ak_cmod		; and compound too, caps lock is wrong
-; update status of caps lock LED...
+; toggle caps lock status bit
 		AND #1			; caps lock=bit 0
-		TAY			; keep for status
-		ASL
-		ASL
-		ASL			; now is bit 3, ready for PB3
-		EOR VIA_U+IORB		; TOGGLE PB3, thus caps lock LED
-		STA VIA_U+IORB
-; ...and toggle caps lock status bit
-; TBD, best to toggle status bit and then cooying it into PB3
-		LSR ak_cmod		; clear caps lock bit...
-		TYA			; is caps lock on?
-		CLC
+		EOR ak_cmod		; toggle caps lock
+		STA ak_cmod		; update
+		AND #1			; current status
+		TAY			; keep for later
+; and update status of caps lock LED
+		LDA VIA_U+IORB		; clear PB3, thus caps lock LED
+		AND #%11110111
+		CPY #0			; is caps lock on?
 		BEQ ap_updc		; nope...
-			SEC			; ...or yes...
+			ORA #%00001000	; ...or yes...
 ap_updc:
-		ROL ak_cmod		; ...update this bit
+		STA VIA_U+IORB
 ; get table address for this modifier combo
 		LDA ak_cmod		; retrieve modifier status
 #ifdef	DEADKEY
