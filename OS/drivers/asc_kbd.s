@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6b2
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180825-1342
+; last modified 20180825-1351
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -167,11 +167,21 @@ ak_poll:
 	CMP ak_rmod		; any change on these?
 	BNE ap_eqm		; no, just scan the rest
 		STA ak_rmod		; update raw modifier combo...
-		STA ak_cmod		; and compound too, caps lock is wrong
+
+		LSR ak_cmod		; extract old caps lock
 ; toggle caps lock status bit
 		AND #1			; caps lock=bit 0
-		EOR ak_cmod		; toggle caps lock
+		BEQ ap_ncl		; not pressed, do not toggle, or...
+			BCC ap_cup		; was off, go on
+				CLC				; or turn off
+				BCC ap_cok
+ap_cup:
+			SEC
+ap_cok:
+			ROL ak_cmod
+
 		STA ak_cmod		; update
+
 		AND #1			; current status
 		TAY			; keep for later
 ; and update status of caps lock LED
