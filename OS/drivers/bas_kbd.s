@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS, simple version
-; v0.6a1
+; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180825-1349
+; last modified 20180825-1550
 
 ; *** caveats ***
 ; alt not recognised
@@ -139,23 +139,31 @@ ak_poll:
 	JSR ap_scol		; scan this column
 	CMP ak_rmod		; any change on these?
 	BNE ap_eqm		; no, just scan the rest
-		STA ak_rmod		; update raw modifier combo...
-		STA ak_cmod		; and compound too, caps lock is wrong
+		STA ak_rmod		; update raw modifier combo
+		LSR				; pressing caps lock?
+		BCC ap_selt		; no, just check other modifiers
 ; toggle caps lock status bit...
-		AND #1			; caps lock=bit 0
-		EOR ak_cmod		; toggle caps lock bit...
-		STA ak_cmod		; ...update this bit
-		AND #1			; this is current caps lock status
-		TAY				; check for presence
+			LSR ak_cmod		; get older caps lock status
+			BCC ap_cup		; was off, turn it on...
+				CLC				; ...or was on, turn off
+				BCC ap_cok
+ap_cup:
+			SEC			; will turn caps on
+ap_cok:
+			ROL			; reinsert new caps status with other mod bits
+			STA ak_cmod		; update all bits
+			AND #1			; this is current caps lock status
+			TAY				; check for presence
 ; ...and update status of caps lock LED!
-		LDA VIA_U+IORB
-		AND #%11110111	; clear PB3, thus caps lock LED
-		CPY #0			; is caps lock on?
-		BEQ ap_ncl		; no, let LED off
-			ORA #%00001000	; set bit otherwise
+			LDA VIA_U+IORB
+			AND #%11110111	; clear PB3, thus caps lock LED
+			CPY #0			; is caps lock on?
+			BEQ ap_ncl		; no, let LED off
+				ORA #%00001000	; set bit otherwise
 ap_ncl:
-		STA VIA_U+IORB	; update PB3 LED
+			STA VIA_U+IORB	; update PB3 LED
 ; get table address for this modifier combo, much simpler
+ap_selt:
 		LDX ak_cmod
 		LDA ak_mods, X	; offset wothin tables
 		STA ak_tof		; will be added later
