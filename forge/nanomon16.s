@@ -1,26 +1,26 @@
 ; minimOS-16 nano-monitor
-; v0.1b1
+; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180811-1341
+; last modified 20180826-1319
 ; 65816-specific version
 
-; *** stub as NMI handler, now valid for BRK ***
-; (aaaa=4 hex char on stack, dd=2 hex char on stack)
-; aaaa,		read byte into stack
-; ddaaaa!	write byte
-; aaaa$		hex dump
+; *** NMI handler, now valid for BRK ***
+; (aaaaaa=6 hex char addr on stack, wwww=4 hex char on stack, dd=2 hex char on stack)
+; aaaaaa,	read byte into stack
+; aaaaaa!	write byte
+; aaaaaa$	hex dump
 ; +			continue hex dump
-; aaaa"		ASCII dump
+; aaaaaa"	ASCII dump
 ; -			continue ASCII dump
 ; dd.		pop and show in hex (new)
-; aaaa&		call address
-; aaaa*		jump to address
+; aaaaaa&	call address
+; aaaaaa*	jump to address
 ; %			show regs
-; aaaa(		set X
-; aaaa)		set Y
-; aaaa#		set A
+; wwww(		set X
+; wwww)		set Y
+; wwww#		set A
 ; dd'		set P
-; aaaa/		set SP (new)
+; wwww/		set SP (new)
 ; no exit command, should do something like [nmi_end]*
 ; ...or jump to a known existing RTI, if no handler is available
 ; no way to set K, B or D this far!
@@ -45,12 +45,12 @@
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
 	z_psr	= z_y+2
-	z_s		= z_psr+1	; will store SP too
+	z_s		= z_psr+1	; will store system SP too
 ; if a loop is needed, put z_addr immediately after this
 	z_cur	= z_s+2
-	z_sp	= z_cur+1
+	z_sp	= z_cur+1	; data SP
 	z_addr	= z_sp+1
-	z_dat	= z_addr+2
+	z_dat	= z_addr+3	; 24-bit addresses
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
 	stack	= $100		; this is extremely dangerous for 816!
@@ -59,45 +59,50 @@
 ; *** init stuff ***
 ; ******************
 +nanomon:
-	PHP					; keep status!
+	PHP					; keep status! needed?
 	CLC					; make sure it is in NATIVE mode!!!
 	XCE
 	PLP
 
-; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
-; *** TO DO *** TO DO *** TO DO *** TO DO ***
-
-; 65816 valid in emulation mode ONLY!
-	TSX
+; ** procedure for storing PC & PSR values at interrupt time **
+	.xl: REP #$10
+	TSX 					; get whole SP
 	STX z_s				; store initial SP
+	.xs: SEP #$10
 
 #ifdef	NMI_SF
 ; ** pick register values from standard stack frame, if needed **
-; forget about systmp/sysptr
-	LDA $104, X			; stacked Y
+; forget about systmp/sysptr AND caller
+	.al: REP #$20
+	LDA 7, S			; stacked Y
 	STA z_y
-	LDA $105, X			; stacked X
+	LDA 9, S			; stacked X
 	STA z_x
-	LDA $106, X			; stacked A
+	LDA 11, S			; stacked A
 	STA z_acc
 ; minimal status with new offsets
-; systems without NMI-handler may keep old offsets $101...103
-	LDA $107, X			; get stacked PSR
+	LDA 14, S			; get stacked PC
+	STA z_addr			; update current pointer
+	.as: .xs: SEP #$30	; *** make sure all in 8-bit ***
+	LDA 16, S			; bank address too
+	STA z_addr+2
+	LDA 13, S			; get stacked PSR
 	STA z_psr			; update value
-	LDY $108, X			; get stacked PC
-	LDA $109, X
-	STY z_addr			; update current pointer
-	STA z_addr+1
+
 #else
 	JSR njs_regs		; keep current state, is PSR ok?
-	LDA $101, X			; get stacked PSR
+.as
+	LDA 1, S			; get stacked PSR
 	STA z_psr			; update value
-	LDY $102, X			; get stacked PC
-	LDA $103, X
-	STY z_addr			; update current pointer
+	LDA 2, S			; get stacked PC
+	STA z_addr			; update current pointer
+	LDA 3, S
 	STA z_addr+1
+	LDA 4, S
+	STA z_addr+2
 #endif
-	_STZA z_sp			; reset data stack pointer
+	STZ z_sp			; reset data stack pointer
+
 ; main loop
 nm_main:
 		JSR nm_read			; get line
@@ -109,7 +114,7 @@ nm_eval:
 			CMP #'0'			; is it a number?
 			BCS nm_num			; push its value
 				JSR nm_exe			; otherwise it is a command
-				_BRA nm_next		; do not process number in this case
+				BRA nm_next		; do not process number in this case
 ; ** pick a hex number and push it into stack **
 nm_num:
 			JSR nm_hx2n			; convert from hex and keep nibble in z_dat
@@ -122,35 +127,35 @@ nm_num:
 nm_next:
 ; read next char in input and proceed
 			INC z_cur			; go for next
-			BNE nm_eval			; no need for BRA
+			BRA nm_eval
 
 ; ** indexed jump to command routine (must be called from main loop) **
 nm_exe:
 	SBC #' '			; EEEEEEEEEEEEEEK (C was clear, thus same as subtracting '!')
 	ASL					; convert to index
 	TAX
-	_JMPX(nm_cmds)		; *** execute command ***
+	JMP (nm_cmds, X)	; *** execute command ***
 
 
 ; **************************
 ; *** command jump table ***
 ; **************************
 nm_cmds:
-	.word	nm_poke			; ddaaaa!	write byte
-	.word	nm_asc			; aaaa"		ASCII dump
-	.word	nm_acc			; dd#		set A
-	.word	nm_hex			; aaaa$		hex dump
+	.word	nm_poke			; aaaaaa!	write byte
+	.word	nm_asc			; aaaaaa"	ASCII dump
+	.word	nm_acc			; wwww#		set A
+	.word	nm_hex			; aaaaaa$	hex dump
 	.word	nm_regs			; %			view regs
-	.word	nm_jsr			; aaaa&		call
+	.word	nm_jsr			; aaaaaa&	call
 	.word	nm_psr			; dd'		set P
-	.word	nm_ix			; dd(		set X
-	.word	nm_iy			; dd)		set Y
-	.word	nm_jmp			; aaaa*		jump
+	.word	nm_ix			; wwww(		set X
+	.word	nm_iy			; wwww)		set Y
+	.word	nm_jmp			; aaaaaa*	jump
 	.word	nm_dump			; +			continue hex dump
-	.word	nm_peek			; aaaa,		read byte and push
+	.word	nm_peek			; aaaaaa,	read byte and push
 	.word	nm_admp			; -			continue ASCII dump
 	.word	nm_hpop			; dd.		show in hex
-	.word	nm_ssp			; dd/		set SP (new)
+	.word	nm_ssp			; wwww/		set SP (new)
 
 ; ************************
 ; *** command routines ***
@@ -159,13 +164,13 @@ nm_poke:
 ; * poke value in memory *
 	JSR nm_gaddr
 	JSR nm_pop
-	_STAY(z_addr)
+	STA [z_addr]
 	RTS
 
 nm_peek:
 ; * peek value from memory and put it on stack *
 	JSR nm_gaddr
-	_LDAY(z_addr)
+	LDA [z_addr]
 	JMP nm_push				; push... and return
 
 nm_asc:
@@ -176,11 +181,10 @@ nm_admp:
 ; * continue ASCII dump *
 	LDY #16				; number of bytes
 	LDA #255			; this (negative) means ASCII dump
-	BNE nd_reset		; common routine, was not zero anyway, no need for BRA
+	BRA nd_reset		; common routine, was not zero anyway
 
 nm_hex:
 ; * 8-byte hex dump from address on stack *
-; alternate version 35+9b (was 30+21b)
 	JSR nm_gaddr
 nm_dump:
 ; * continue hex dump *
@@ -190,7 +194,7 @@ nd_reset:
 	STY z_tmp			; stored as counter
 	STA z_dat			; stored as flag (negative means ASCII dump)
 nhd_loop:
-		_LDAY(z_addr)		; get byte from mutable pointer
+		LDA [z_addr]		; get byte from mutable pointer
 		BIT z_dat			; check dump type
 		BPL nhd_do			; positive means HEX dump
 ; *** check whether printable ***
@@ -203,13 +207,15 @@ nhd_npr:
 nhd_prn:
 ; *** end of filtering ***
 			JSR nm_out			; print whatever
-			_BRA nd_done		; go for next
+			BRA nd_done		; go for next
 nhd_do:
 		JSR nm_shex
 nd_done:
+		.al: REP #$20
 		INC z_addr			; update pointer
-		BNE nhd_nc
-			INC z_addr+1
+		.as: SEP #$20
+		BNE nhd_nc			; in case of bank crossing
+			INC z_addr+2
 nhd_nc:
 		DEC z_tmp			; one less to go
 		BNE nhd_loop
@@ -217,7 +223,7 @@ nhd_nc:
 
 nm_regs:
 ; * show register values *
-; format S$$P$$Y$$X$$a$$
+; format S$$P$$Y$$X$$a$$ **************** TO DO ** TO DO ** TO DO ****
 	LDX #4				; max offset
 nmv_loop:
 		STX z_dat			; just in case
@@ -236,10 +242,16 @@ nm_lab:
 	.asc	"axyps"		; register labels, will be printed in reverse!
 
 nm_acc:
-; * set A *
-; alternate 9+3x4=21b (these were 4x6=24b)
+; * set A **** and other 16-bit registers
 	LDY #0				; A must be the first register into variables array
 nm_rgst:
+	JSR nm_pop
+; use this instead of ABSOLUTE Y-indexed, non 65816-savvy! (same bytes, bit slower but 816-compliant)
+	TAX					; will run in emulation mode though
+	STX z_acc, Y
+	INY					; go to next byte (MSB)
+; this is the entry point for 8-bit registers...
+nm_rgst1:
 	JSR nm_pop
 ; use this instead of ABSOLUTE Y-indexed, non 65816-savvy! (same bytes, bit slower but 816-compliant)
 	TAX					; will run in emulation mode though
@@ -257,9 +269,9 @@ nm_iy:
 	BNE nm_rgst			; common code
 
 nm_psr:
-; * set P *
+; * set P **** will set 8 bits only
 	LDY #z_psr-z_acc	; non-constant, safe way
-	BNE nm_rgst			; common code
+	BNE nm_rgst1			; single-byte code
 
 nm_ssp:
 ; * set S *
@@ -272,39 +284,47 @@ nm_jsr:
 njs_regs:
 ; restore register values
 	PHP					; flags are delicate and cannot be directly STored
+	.al: .xl: REP #$30
 	STA z_acc
 	STX z_x
 	STY z_y
+	.as: .xs: SEP #$30
 	PLA					; this was the saved status reg
 	STA z_psr
 	RTS
 
 nm_jmp:
 ; * jump to address on stack *
+	.xl: REP #$10
 	LDX z_s				; initial SP value
 	TXS					; this makes sense if could be changed
+	.xs: SEP #$10
 nm_jmp2:
 	JSR nm_gaddr		; pick desired address
 ; preload registers
 	LDA z_psr
 	PHA					; P cannot be directly LoaDed, thus push it
+	.al: .xl: REP #$30
 	LDA z_acc
 	LDX z_x
 	LDY z_y
+	.al: .xl: ; REP #$30			; *** not needed per PLP ***
 	PLP					; just before jumping, set flags
-	JMP (z_addr)		; go! not sure if it will ever return...
+	JMP [z_addr]		; go! not sure if it will ever return...
 
 ; moved nm_hpop for improved performance and compact size!
 
 ; ***********************
-; *** useful routines ***
+; *** useful routines *** OK for 816
 ; ***********************
 nm_gaddr:
-; * pop 16-bit address in z_addr *
+; * pop 24-bit address in z_addr *
 	JSR nm_pop			; will pop LSB first
 	STA z_addr
 	JSR nm_pop			; then goes MSB
 	STA z_addr+1
+	JSR nm_pop			; Bank address goes last
+	STA z_addr+2
 	RTS
 
 nm_pop:
@@ -364,12 +384,11 @@ nm_in:
 
 nm_read:
 ; * input command line into buffer *
-#ifdef	NMOS
-	CLD					; eeeeeeeeeeeek
-#endif
 ; good to put some prompt before
 	LDA #LF				; eeeeeeeeeeeeek (needed for run816)
 	JSR nm_out
+	LDA z_addr+2		; PC.Bank *** otherwise seems OK
+	JSR nm_shex			; as hex
 	LDA z_addr+1		; PC.MSB
 	JSR nm_shex			; as hex
 	LDA z_addr			; same for LSB
@@ -406,20 +425,20 @@ nl_upp:
 ;			BRA nr_loop			; nothing gets written, ask again for BS
 ;nl_ok:
 		STA buff, X			; store char in buffer
-		INX					; go for next (no need for BRA)
-		BNE nr_loop
+		INX					; go for next
+		BRA nr_loop
 nl_end:
 	JSR nm_out			; must echo CR
 	LDX z_cur			; retrieve cursor as usual
-	_STZA buff, X		; terminate string!
-	_STZA z_cur			; and reset cursor too
+	STZ buff, X		; terminate string!
+	STZ z_cur			; and reset cursor too
 	RTS
 nl_bs:
 	JSR nm_out			; will echo BS
 	LDX z_cur			; retrieve cursor as usual
 		BEQ nr_loop			; do not delete if already at beginning
 	DEX					; otherwise go back once
-	_BRA nr_loop
+	BRA nr_loop
 
 nm_hx2n:
 ; * convert from hex and ADD nibble to z_dat *
