@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1455
+; last modified 20180826-1505
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -38,27 +38,31 @@
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
+	BUFSIZ	= 16		; maximum buffer size
+	STKSIZ	= 8		; maximum stack size (unused)
+
 ; **********************
 ; *** zeropage usage ***
 ; **********************
 ; 16-bit registers
-	z_acc	= locals	; try to use kernel parameter space
+	z_acc	= $FF-stack+z_acc-STKSIZ	; will try to keep within direct page
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
 	z_s		= z_y+2	; will store system SP too
 	z_d		= z_s+2	; D is 16-bit too!
 ; 8-bit registers
-	z_psr	= z_d+2	; note new order as PSR is 8-bit only
-	z_b		= z_psr+1	; B is 8-bit too
+	z_b		= z_d+2	; B is 8-bit too
+	z_psr	= z_b+1	; note new order as PSR is 8-bit only
 ; 24-bit PC
-	z_addr	= z_b+1	; this is 24-bit
+	z_addr	= z_psr+1	; this is 24-bit
 ; internal vars
 	z_cur	= z_addr+3
 	z_sp	= z_cur+1	; data SP
 	z_dat	= z_sp+1
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
-	stack	= $100		; this is extremely dangerous for 816!
+	stack	= buff+BUFSIZ
+
 
 ; ******************
 ; *** init stuff ***
@@ -98,8 +102,7 @@
 	LDA 6, S			; stacked B
 	STA z_b
 #else
-	JSR njs_regs		; keep current state, is PSR ok?
-.as
+	JSR njs_regs		; keep current state
 	LDA 1, S			; get stacked PSR
 	STA z_psr			; update value
 	LDA 2, S			; get stacked PC
@@ -129,7 +132,9 @@ nm_num:
 			INC z_cur
 			LDX z_cur			; eeeeeeeeeeeeeeeeeeeeeeeeeek
 			LDA buff, X			; pick next hex
-;				BEQ nm_main			; must be in pairs! would be catastrophic at the very end!
+#ifdef	SAFE
+				BEQ nm_main			; must be in pairs! would be catastrophic at the very end!
+#endif
 			JSR nm_hx2n			; convert another nibble (over the previous one)
 			JSR nm_push			; fully converted byte in A pushed into data stack
 nm_next:
@@ -142,6 +147,12 @@ nm_exe:
 	SBC #' '			; EEEEEEEEEEEEEEK (C was clear, thus same as subtracting '!')
 	ASL					; convert to index
 	TAX
+#ifdef	SAFE
+	CPX #nm_ssp+2-nm_poke	; within bounds?
+	BCC nm_okx		; yeah, proceed
+		RTS			; silently abort otherwise
+nm_okx:
+#endif
 	JMP (nm_cmds, X)	; *** execute command ***
 
 
@@ -231,6 +242,7 @@ nhd_nc:
 
 nm_regs:
 ; * show register values *
+; format 
 ; format S$$P$$Y$$X$$a$$ **************** TO DO ** TO DO ** TO DO ****
 	LDX #4				; max offset
 nmv_loop:
@@ -351,6 +363,14 @@ nm_gaddr:
 nm_pop:
 ; * pop 8-bit data in A *
 	DEC z_sp			; pre-decrement index
+#ifdef	SAFE
+	BNE np_some			; non-empty
+		LDA #0				; or just return 0
+		STA z_sp			; back to empty
+; could complain somehow
+		RTS
+np_some:
+#endif
 	LDX z_sp
 	LDA stack, X
 	RTS
@@ -358,12 +378,18 @@ nm_pop:
 nm_push:
 ; * push A into stack *
 	LDX z_sp
+#ifdef	SAFE
+	CPX #STKSIZ			; room for it?
+	BCC nh_room			; yeah, proceed
+; could complain somehow otherwise
+		RTS
+#endif
 	INC z_sp			; post-increment index
 	STA stack, X
 	RTS
 
 nm_hpop:
-; * pop value and show in hex * *** from command routines ***
+; * pop value and show in hex *
 	JSR nm_pop
 ;	JMP nm_shex			; print hex... and return (already there!)
 
@@ -406,7 +432,7 @@ nm_in:
 nm_read:
 ; * input command line into buffer *
 ; good to put some prompt before
-	LDA #LF				; eeeeeeeeeeeeek (needed for run816)
+	LDA #LF				; eeeeeeeeeeeeek (needed for run816, CR otherwise)
 	JSR nm_out
 	LDA z_addr+2		; PC.Bank *** otherwise seems OK
 	JSR nm_shex			; as hex
@@ -427,7 +453,7 @@ nl_ign:
 			AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
 nl_upp:
 ; *** end of uppercase conversion ***
-		CMP #10				; is it newline? EEEEEEEEEEEEEEEEK
+		CMP #LF				; is it newline (CR)? EEEEEEEEEEEEEEEEK
 			BEQ nl_end			; if so, just end input
 		CMP #BS				; was it backspace?
 			BEQ nl_bs			; delete then
@@ -438,13 +464,15 @@ nl_upp:
 		PLA
 		LDX z_cur			; retrieve cursor
 ; *** could check bounds here ***
-;		CPX #BUFSIZ			; full buffer?
-;		BCC nl_ok			; no, just continue
-;			LDA #BS				; yes, delete last printed
-;			JSR nm_out
+#ifdef	SAFE
+		CPX #BUFSIZ			; full buffer?
+		BCC nl_ok			; no, just continue
+			LDA #BS				; yes, delete last printed
+			JSR nm_out
 ; perhaps could beep also...
-;			BRA nr_loop			; nothing gets written, ask again for BS
-;nl_ok:
+			BRA nr_loop			; nothing gets written, ask again for BS
+nl_ok:
+#endif
 		STA buff, X			; store char in buffer
 		INX					; go for next
 		BRA nr_loop
