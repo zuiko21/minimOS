@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b2
+; v0.1b3
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1732
+; last modified 20180826-1800
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -91,6 +91,9 @@
 	STA z_x
 	LDA 11, S			; stacked A
 	STA z_acc
+	PHD					; will save Direct Page
+	PLA
+	STA z_d
 ; minimal status with new offsets
 	LDA 14, S			; get stacked PC
 	STA z_addr			; update current pointer
@@ -103,7 +106,7 @@
 	LDA 6, S			; stacked B
 	STA z_b
 #else
-	JSR njs_regs		; keep current state
+	JSR njs_regs		; keep current state, but that PSR is not valid
 	LDA 1, S			; get stacked PSR
 	STA z_psr			; update value
 	LDA 2, S			; get stacked PC
@@ -396,11 +399,9 @@ nm_pop:
 ; * pop 8-bit data in A *
 	DEC z_sp			; pre-decrement index
 #ifdef	SAFE
-	BNE np_some			; non-empty
-		LDA #0				; or just return 0
-		STA z_sp			; back to empty
+	BPL np_some			; non-empty
+		STZ z_sp			; or void pointer
 ; could complain somehow
-		RTS
 np_some:
 #endif
 	LDX z_sp

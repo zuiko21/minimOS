@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b7
+; v0.1b8
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180811-1323
+; last modified 20180826-1754
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -25,34 +25,40 @@
 ; ...or jump to a known existing RTI, if no handler is available
 
 #ifndef	HEADERS
-#include "../OS/options.h"
 #include "../OS/macros.h"
-//#include "../OS/abi.h"
-#include "../OS/zeropage.h"
 .text
 * = $8000
 #endif
 
 .(
+; ***************
+; *** options ***
+; ***************
+#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
+
+	BUFSIZ	= 16
+	STKSIZ	= 8
 
 ; **********************
 ; *** zeropage usage ***
 ; **********************
-	z_acc	= locals	; try to use kernel parameter space
+; 6502 registers
+	z_acc	= $100-11-BUFSIZ-STKSIZ	; try to use kernel parameter space
 	z_x		= z_acc+1	; must respect register order
 	z_y		= z_x+1
-	z_psr	= z_y+1
-	z_s		= z_psr+1	; will store SP too
-; if a loop is needed, put z_addr immediately after this
-	z_cur	= z_s+1
+	z_s		= z_y+1	; will store SP too
+	z_psr	= z_s+1
+; 2-byte PC
+	z_addr	= z_psr+1
+; internal vars
+	z_cur	= z_addr+2
 	z_sp	= z_cur+1
-	z_addr	= z_sp+1
-	z_dat	= z_addr+2
+	z_dat	= z_sp+1
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
-	stack	= $100
+	stack	= buff+BUFSIZ
 
 ; ******************
 ; *** init stuff ***
@@ -96,6 +102,10 @@
 	STA z_addr+1
 #endif
 	_STZA z_sp			; reset data stack pointer
+#ifdef	NMOS
+	CLD					; eeeeeeeeeeeek
+#endif
+
 ; main loop
 nm_main:
 		JSR nm_read			; get line
@@ -114,7 +124,9 @@ nm_num:
 			INC z_cur
 			LDX z_cur			; eeeeeeeeeeeeeeeeeeeeeeeeeek
 			LDA buff, X			; pick next hex
-;				BEQ nm_main			; must be in pairs! would be catastrophic at the very end!
+#ifdef	SAFE
+				BEQ nm_main			; must be in pairs! would be catastrophic at the very end!
+#endif
 			JSR nm_hx2n			; convert another nibble (over the previous one)
 			JSR nm_push			; fully converted byte in A pushed into data stack
 nm_next:
@@ -127,6 +139,13 @@ nm_exe:
 	SBC #' '			; EEEEEEEEEEEEEEK (C was clear, thus same as subtracting '!')
 	ASL					; convert to index
 	TAX
+#ifdef	SAFE
+	CPX #nm_endc-nm_cmds	; within range?
+	BCC nm_okx
+; might complain here
+		RTS				; exit if not
+nm_okx:
+#endif
 	_JMPX(nm_cmds)		; *** execute command ***
 
 
@@ -149,6 +168,11 @@ nm_cmds:
 	.word	nm_admp			; -			continue ASCII dump
 	.word	nm_hpop			; dd.		show in hex
 	.word	nm_ssp			; dd/		set SP (new)
+
+#ifdef	SAFE
+; label for easy table size computation
+nm_endc:
+#endif
 
 ; ************************
 ; *** command routines ***
@@ -215,7 +239,7 @@ nhd_nc:
 
 nm_regs:
 ; * show register values *
-; format S$$P$$Y$$X$$a$$
+; format p$$s$$y$$x$$a$$
 	LDX #4				; max offset
 nmv_loop:
 		STX z_dat			; just in case
@@ -231,7 +255,7 @@ nmv_loop:
 		BPL nmv_loop		; zero will be last
 	RTS
 nm_lab:
-	.asc	"axyps"		; register labels, will be printed in reverse!
+	.asc	"axysp"		; register labels, will be printed in reverse!
 
 nm_acc:
 ; * set A *
@@ -308,6 +332,12 @@ nm_gaddr:
 nm_pop:
 ; * pop 8-bit data in A *
 	DEC z_sp			; pre-decrement index
+#ifdef	SAFE
+	BPL np_some			; was not empty?
+		_STZA z_sp			; reset stack otherwise
+; could complain somehow
+np_some:
+#endif
 	LDX z_sp
 	LDA stack, X
 	RTS
@@ -315,6 +345,13 @@ nm_pop:
 nm_push:
 ; * push A into stack *
 	LDX z_sp
+#ifdef	SAFE
+	CPX #STKSIZ			; room for it?
+	BCC nh_room
+; could complain here
+		RTS
+nh_room:
+#endif
 	INC z_sp			; post-increment index
 	STA stack, X
 	RTS
@@ -362,11 +399,8 @@ nm_in:
 
 nm_read:
 ; * input command line into buffer *
-#ifdef	NMOS
-	CLD					; eeeeeeeeeeeek
-#endif
 ; good to put some prompt before
-	LDA #LF				; eeeeeeeeeeeeek (needed for run816)
+	LDA #LF				; eeeeeeeeeeeeek (needed for run816) CR
 	JSR nm_out
 	LDA z_addr+1		; PC.MSB
 	JSR nm_shex			; as hex
@@ -385,7 +419,7 @@ nl_ign:
 			AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
 nl_upp:
 ; *** end of uppercase conversion ***
-		CMP #10				; is it newline? EEEEEEEEEEEEEEEEK
+		CMP #LF				; is it newline? EEEEEEEEEEEEEEEEK (CR)
 			BEQ nl_end			; if so, just end input
 		CMP #BS				; was it backspace?
 			BEQ nl_bs			; delete then
@@ -396,13 +430,15 @@ nl_upp:
 		PLA
 		LDX z_cur			; retrieve cursor
 ; *** could check bounds here ***
-;		CPX #BUFSIZ			; full buffer?
-;		BCC nl_ok			; no, just continue
-;			LDA #BS				; yes, delete last printed
-;			JSR nm_out
+#ifdef	SAFE
+		CPX #BUFSIZ			; full buffer?
+		BCC nl_ok			; no, just continue
+			LDA #BS				; yes, delete last printed
+			JSR nm_out
 ; perhaps could beep also...
-;			BRA nr_loop			; nothing gets written, ask again for BS
-;nl_ok:
+			BRA nr_loop			; nothing gets written, ask again for BS
+nl_ok:
+#endif
 		STA buff, X			; store char in buffer
 		INX					; go for next (no need for BRA)
 		BNE nr_loop
