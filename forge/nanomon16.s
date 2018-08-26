@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b1
+; v0.1b2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1653
+; last modified 20180826-1705
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -27,15 +27,16 @@
 ; wwwwdd?	set D (16b) & B (last 8b)!
 
 #ifndef	HEADERS
-#include "../OS/options.h"
 #include "../OS/macros.h"
-//#include "../OS/abi.h"
-#include "../OS/zeropage.h"
 .text
 * = $8000
 #endif
 
 .(
+; ***************
+; *** options ***
+; ***************
+#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
@@ -46,7 +47,7 @@
 ; *** zeropage usage ***
 ; **********************
 ; 16-bit registers
-	z_acc	= $FF-stack+z_acc-STKSIZ	; will try to keep within direct page
+	z_acc	= $FF-19-BUFSIZ-STKSIZ	; will try to keep within direct page
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
 	z_s		= z_y+2	; will store system SP too
@@ -63,7 +64,6 @@
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
 	stack	= buff+BUFSIZ
-
 
 ; ******************
 ; *** init stuff ***
@@ -129,6 +129,7 @@ nm_eval:
 				LDA #'0'			; ...or set special index...
 				CLC					; nm_exe will subtract, expects borrow!
 				BRA nm_spcm			; ...and execute
+nm_ndb:
 ; *** continue with regular commands ***
 			CMP #'0'			; is it a number?
 			BCS nm_num			; push its value
@@ -414,6 +415,7 @@ nm_push:
 	BCC nh_room			; yeah, proceed
 ; could complain somehow otherwise
 		RTS
+nh_room:
 #endif
 	INC z_sp			; post-increment index
 	STA stack, X
