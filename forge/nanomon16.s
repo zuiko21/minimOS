@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1319
+; last modified 20180826-1455
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -23,7 +23,7 @@
 ; wwww/		set SP (new)
 ; no exit command, should do something like [nmi_end]*
 ; ...or jump to a known existing RTI, if no handler is available
-; no way to set K, B or D this far!
+; no way to set B or D this far!
 
 #ifndef	HEADERS
 #include "../OS/options.h"
@@ -41,16 +41,21 @@
 ; **********************
 ; *** zeropage usage ***
 ; **********************
+; 16-bit registers
 	z_acc	= locals	; try to use kernel parameter space
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
-	z_psr	= z_y+2
-	z_s		= z_psr+1	; will store system SP too
-; if a loop is needed, put z_addr immediately after this
-	z_cur	= z_s+2
+	z_s		= z_y+2	; will store system SP too
+	z_d		= z_s+2	; D is 16-bit too!
+; 8-bit registers
+	z_psr	= z_d+2	; note new order as PSR is 8-bit only
+	z_b		= z_psr+1	; B is 8-bit too
+; 24-bit PC
+	z_addr	= z_b+1	; this is 24-bit
+; internal vars
+	z_cur	= z_addr+3
 	z_sp	= z_cur+1	; data SP
-	z_addr	= z_sp+1
-	z_dat	= z_addr+3	; 24-bit addresses
+	z_dat	= z_sp+1
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
 	stack	= $100		; this is extremely dangerous for 816!
@@ -74,6 +79,7 @@
 ; ** pick register values from standard stack frame, if needed **
 ; forget about systmp/sysptr AND caller
 	.al: REP #$20
+; should store D too, as the NMI stack frame does not modify it!
 	LDA 7, S			; stacked Y
 	STA z_y
 	LDA 9, S			; stacked X
@@ -88,7 +94,9 @@
 	STA z_addr+2
 	LDA 13, S			; get stacked PSR
 	STA z_psr			; update value
-
+; should keep stacked Data Bank register
+	LDA 6, S			; stacked B
+	STA z_b
 #else
 	JSR njs_regs		; keep current state, is PSR ok?
 .as
@@ -288,9 +296,16 @@ njs_regs:
 	STA z_acc
 	STX z_x
 	STY z_y
+	PHD					; will save Direct Page
+	PLA
+	STA z_d
 	.as: .xs: SEP #$30
+	PHB					; save Data Bank
+	PLA
+	STA z_b
 	PLA					; this was the saved status reg
 	STA z_psr
+; perhaps should reset some internal variables, just in case
 	RTS
 
 nm_jmp:
@@ -303,12 +318,18 @@ nm_jmp2:
 	JSR nm_gaddr		; pick desired address
 ; preload registers
 	LDA z_psr
-	PHA					; P cannot be directly LoaDed, thus push it
+	PHA					; P cannot be directly Loaded, thus push it
+	LDA z_b
+	PHA					; will preset B
+	PLB
 	.al: .xl: REP #$30
+	LDA z_d				; direct page will be preset from stack
+	PHA
 	LDA z_acc
 	LDX z_x
 	LDY z_y
-	.al: .xl: ; REP #$30			; *** not needed per PLP ***
+	PLD					; set D from top of stack
+	.as: .xs:				; *** SEP #$30 not needed per PLP ***
 	PLP					; just before jumping, set flags
 	JMP [z_addr]		; go! not sure if it will ever return...
 
