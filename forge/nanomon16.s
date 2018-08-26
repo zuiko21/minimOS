@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1705
+; last modified 20180826-1732
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -47,7 +47,7 @@
 ; *** zeropage usage ***
 ; **********************
 ; 16-bit registers
-	z_acc	= $FF-19-BUFSIZ-STKSIZ	; will try to keep within direct page
+	z_acc	= $100-19-BUFSIZ-STKSIZ	; will try to keep within direct page
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
 	z_s		= z_y+2	; will store system SP too
