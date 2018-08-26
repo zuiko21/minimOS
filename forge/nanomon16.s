@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1a2
+; v0.1b1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1629
+; last modified 20180826-1653
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -23,7 +23,8 @@
 ; wwww/		set SP (new)
 ; no exit command, should do something like [nmi_end]*
 ; ...or jump to a known existing RTI, if no handler is available
-; no way to set B or D this far!
+; special command to set B or D:
+; wwwwdd?	set D (16b) & B (last 8b)!
 
 #ifndef	HEADERS
 #include "../OS/options.h"
@@ -122,8 +123,16 @@ nm_eval:
 			LDA buff, X			; get one char
 				BEQ nm_main			; if EOL, ask again
 ; current nm_read rejects whitespace altogether
+; *** check special command '?' first ***
+			CMP #'?'			; was set D&B?
+			BNE nm_ndb			; no...
+				LDA #'0'			; ...or set special index...
+				CLC					; nm_exe will subtract, expects borrow!
+				BRA nm_spcm			; ...and execute
+; *** continue with regular commands ***
 			CMP #'0'			; is it a number?
 			BCS nm_num			; push its value
+nm_spcm:
 				JSR nm_exe			; otherwise it is a command
 				BRA nm_next		; do not process number in this case
 ; ** pick a hex number and push it into stack **
@@ -148,9 +157,10 @@ nm_exe:
 	ASL					; convert to index
 	TAX
 #ifdef	SAFE
-	CPX #nm_ssp+2-nm_poke	; within bounds?
+	CPX #nm_endc-nm_cmds	; within bounds?
 	BCC nm_okx		; yeah, proceed
-		RTS			; silently abort otherwise
+; couls complain somehow
+		RTS			; quietly ignore it, otherwise
 nm_okx:
 #endif
 	JMP (nm_cmds, X)	; *** execute command ***
@@ -175,6 +185,13 @@ nm_cmds:
 	.word	nm_admp			; -			continue ASCII dump
 	.word	nm_hpop			; dd.		show in hex
 	.word	nm_ssp			; wwww/		set SP (new)
+; special commands outside normal range
+	.word	nm_sdb			; wwwwdd?	set D=wwww, B=dd
+
+#ifdef	SAFE
+; label just for table size computation
+nm_endc:
+#endif
 
 ; ************************
 ; *** command routines ***
@@ -288,22 +305,29 @@ nm_rgst1:
 nm_ix:
 ; * set X *
 	LDY #z_x-z_acc		; non-constant, safe way
-	BNE nm_rgst			; common code
+	BRA nm_rgst			; common code
 
 nm_iy:
 ; * set Y *
 	LDY #z_y-z_acc		; non-constant, safe way
-	BNE nm_rgst			; common code
+	BRA nm_rgst			; common code
 
 nm_psr:
 ; * set P **** will set 8 bits only
 	LDY #z_psr-z_acc	; non-constant, safe way
-	BNE nm_rgst1			; single-byte code
+	BRA nm_rgst1			; single-byte code
 
 nm_ssp:
 ; * set S *
 	LDY #z_s-z_acc		; non-constant, safe way
-	BNE nm_rgst			; common code
+	BRA nm_rgst			; common code
+
+nm_sdb:
+; * SPECIAL, set D & B **** one 8-bit and one 16-bit
+	LDY #z_b-z_acc		; will set 8-bit B first
+	JSR nm_rgst1			; CALL single-byte code
+	LDY #z_d-z_acc		; then 16-bit D
+	BRA nm_rgst			; common code
 
 nm_jsr:
 ; * call address on stack *
