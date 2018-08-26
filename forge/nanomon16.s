@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1614
+; last modified 20180826-1629
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -252,16 +252,16 @@ nmv_loop:
 		LDA nm_lab, X		; get label from list
 		JSR nm_out
 		LDX z_dat			; just in case
+		CPX #10				; past the last 8-bit value?
+		BCS nmv_8b			; no, skip MSB
+			LDA z_acc, X		; yeah, print MSB
+			JSR nm_shex
+			DEC z_dat		; now for LSB
+			LDX z_dat		; continue with updated value
+nmv_8b:
 		LDA z_acc, X		; get register value, must match order!
 		JSR nm_shex			; show in hex
 		LDX z_dat			; just in case
-		CPX #10				; past the last 8-bit value?
-		BCS nmv_8b			; no, skip second byte
-			LDA z_acc-1, X		; yeah, print second byte
-			JSR nm_shex
-			LDX z_dat			; just in case
-			DEX				; two bytes before saved!
-nmv_8b:
 		DEX					; go back for next
 		BPL nmv_loop			; zero will be last
 	RTS
