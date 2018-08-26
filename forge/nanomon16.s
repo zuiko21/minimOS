@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1505
+; last modified 20180826-1614
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -242,9 +242,11 @@ nhd_nc:
 
 nm_regs:
 ; * show register values *
-; format 
-; format S$$P$$Y$$X$$a$$ **************** TO DO ** TO DO ** TO DO ****
-	LDX #4				; max offset
+
+; format p$$b$$d$$$$s$$$$
+;        y$$$$x$$$$a$$$$
+
+	LDX #11				; max offset
 nmv_loop:
 		STX z_dat			; just in case
 		LDA nm_lab, X		; get label from list
@@ -252,14 +254,19 @@ nmv_loop:
 		LDX z_dat			; just in case
 		LDA z_acc, X		; get register value, must match order!
 		JSR nm_shex			; show in hex
-;		LDA #' '			; put a space between registers
-;		JSR nm_out
 		LDX z_dat			; just in case
+		CPX #10				; past the last 8-bit value?
+		BCS nmv_8b			; no, skip second byte
+			LDA z_acc-1, X		; yeah, print second byte
+			JSR nm_shex
+			LDX z_dat			; just in case
+			DEX				; two bytes before saved!
+nmv_8b:
 		DEX					; go back for next
-		BPL nmv_loop		; zero will be last
+		BPL nmv_loop			; zero will be last
 	RTS
 nm_lab:
-	.asc	"axyps"		; register labels, will be printed in reverse!
+	.asc	" a x y s dbp"	; register labels, note space before 16-bit values, will be printed backwards!
 
 nm_acc:
 ; * set A **** and other 16-bit registers
