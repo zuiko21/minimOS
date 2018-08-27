@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b8
+; v0.1b9
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1754
+; last modified 20180827-2206
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -21,8 +21,7 @@
 ; dd#		set A
 ; dd'		set P
 ; dd/		set SP (new)
-; no exit command, should do something like [nmi_end]*
-; ...or jump to a known existing RTI, if no handler is available
+; NEW exit command via the 'colon' character
 
 #ifndef	HEADERS
 #include "../OS/macros.h"
@@ -114,6 +113,16 @@ nm_eval:
 			LDA buff, X			; get one char
 				BEQ nm_main			; if EOL, ask again
 ; current nm_read rejects whitespace altogether
+; *** NEW, check for exit command, remove if not needed ***
+			CMP #COLON			; trying to exit?
+			BNE nm_cont			; no, continue
+#ifndef	NMI_SF
+				RTI					; exit from debugger
+#else
+				RTS					; back to NMI handler
+#endif
+nm_cont:
+; *** end of exit command ***
 			CMP #'0'			; is it a number?
 			BCS nm_num			; push its value
 				JSR nm_exe			; otherwise it is a command
@@ -147,7 +156,6 @@ nm_exe:
 nm_okx:
 #endif
 	_JMPX(nm_cmds)		; *** execute command ***
-
 
 ; **************************
 ; *** command jump table ***

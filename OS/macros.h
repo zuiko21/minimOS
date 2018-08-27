@@ -1,6 +1,6 @@
-; minimOS 0.6rc5 MACRO definitions
+; minimOS 0.6rc6 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180801-2020
+; last modified 20180827-2217
 
 ; *** standard addresses ***
 
@@ -103,6 +103,7 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #define		HTAB	9
 #define		BEL		7
 #define		ESC		27
+#define		COLON		58
 
 ; *** conditional opcode assembly ***
 #ifdef	NMOS

@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b3
+; v0.1b4
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180826-1800
+; last modified 20180827-2219
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -21,8 +21,7 @@
 ; wwww#		set A
 ; dd'		set P
 ; wwww/		set SP (new)
-; no exit command, should do something like [nmi_end]*
-; ...or jump to a known existing RTI, if no handler is available
+; NEW exit command is 'colon' character
 ; special command to set B or D:
 ; wwwwdd?	set D (16b) & B (last 8b)!
 
@@ -126,7 +125,17 @@ nm_eval:
 			LDA buff, X			; get one char
 				BEQ nm_main			; if EOL, ask again
 ; current nm_read rejects whitespace altogether
-; *** check special command '?' first ***
+; *** check new exit command first ***
+			CMP #COLON			; exit command?
+			BNE nm_cont			; no, just continue
+; perhaps should restore registers as edited?
+#ifndef	NMI_SF
+				RTI				; exit debugger
+#else
+				RTS				; back to NMI handler
+#endif
+nm_cont:
+; *** check special command '?' then ***
 			CMP #'?'			; was set D&B?
 			BNE nm_ndb			; no...
 				LDA #'0'			; ...or set special index...
