@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b4
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180827-2219
+; last modified 20180828-2051
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -292,6 +292,15 @@ nmv_8b:
 		LDA z_acc, X		; get register value, must match order!
 		JSR nm_shex			; show in hex
 		LDX z_dat			; just in case
+		CPX #6				; first line just printed?
+; check if first line is complete in order to send a newline...
+; ...but may be removed for 16-char displays
+		BNE nmv_nol			; no, do not feed
+			LDA #CR				; yes, jump line
+			JSR nm_out
+			LDX z_dat			; just in case
+nmv_nol:
+; end of optional newline
 		DEX					; go back for next
 		BPL nmv_loop			; zero will be last
 	RTS
