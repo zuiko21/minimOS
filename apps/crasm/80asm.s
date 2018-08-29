@@ -1,7 +1,7 @@
 ; 8080/8085 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
 ; v0.5.2b1, like 0.5.1 but 65816-savvy
-; last modified 20180511-1107
+; last modified 20180829-2134
 ; (c) 2017-2018 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -14,7 +14,6 @@
 
 ; *** constant definitions ***
 #define	BUFSIZ		80
-#define	COLON		58
 
 ; bytes per line in dumps 4 or 8/16
 #ifdef	NARROW

@@ -1,7 +1,7 @@
 ; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
 ; v0.5.2b1 like 0.5.1 but 65816-savvy
-; last modified 20180514-1313
+; last modified 20180829-2134
 ; (c) 2017-2018 Carlos J. Santisteban
 
 #include "../../OS/usual.h"
@@ -12,7 +12,6 @@
 
 ; *** constant definitions ***
 #define	BUFSIZ		80
-#define	COLON		58
 
 ; bytes per line in dumps 4 or 8/16
 #ifdef	NARROW
