@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180404-1359
+; last modified 20180831-2347
 
 ; *** generic NMI handler for 65816 ***
 ; expected to be fully re-entrant
@@ -86,7 +86,7 @@ rst_nmi:
 ; *** default code for NMI routine, enters in 8-bit sizes, if not installed or invalid, should end in RTL (RTS if SUPPORT enabled) ***
 ; note std_nmi MUST be exported as is used by brk_addr module!!!
 +std_nmi:
-#include "std_nmi16.s"
+#include STD_NMI
 
 .as: .xs				; just in case
 .)
