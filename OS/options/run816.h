@@ -2,7 +2,7 @@
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180514-1222
+; last modified 20180901-2158
 
 ; *** set conditional assembly ***
 
@@ -34,13 +34,14 @@
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK_h		drivers/config/run816_std.h
-#define		DRIVER_PACK_s		drivers/config/run816_std.s
+#define		DRIVER_PACK_h		"drivers/config/run816_std.h"
+#define		DRIVER_PACK_s		"drivers/config/run816_std.s"
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		shell/minishell.s
-
+#define		SHELL		"shell/minishell.s"
+; defaukt firmware NMI
+#define		STD_NMI		"../forge/nanomon16.s"
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **

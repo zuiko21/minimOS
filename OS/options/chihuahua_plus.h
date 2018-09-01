@@ -2,7 +2,7 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180819-1532
+; last modified 20180901-2153
 
 ; *** set conditional assembly ***
 
@@ -34,8 +34,10 @@
 #define		DRIVER_PACK_s		"drivers/config/chihuahua_plus_std.s"
 
 ; *** Default files ***
-; default shell from folder
+; default shell
 #define		SHELL		"shell/miniMoDA.s"
+; default Firmware NMI
+#define		STD_NMI		"../forge/nanomon.s"
 
 ; default NMI, BRK etc TBD ***********
 
