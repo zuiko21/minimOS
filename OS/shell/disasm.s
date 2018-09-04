@@ -1,6 +1,6 @@
 ; Monitor shell with disassembler for minimOS
 ; v0.5rc3
-; last modified 20180404-1417
+; last modified 20180904-1648
 ; (c) 2016-2018 Carlos J. Santisteban
 ; somehow deprecated...
 
@@ -13,9 +13,6 @@
 
 ; *** constant definitions ***
 #define	BUFSIZ		16
-#define	CR			13
-#define	BS			8
-#define	BEL			7
 ; bytes per line in dumps 4 or 8/16
 #ifdef	NARROW
 #define		PERLINE		4
