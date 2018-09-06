@@ -54,14 +54,17 @@
 ; return address already set, but DBR is 0! No need to save it as only DP is accessed afterwards
 ; MUST respect DP and sys_sp, though
 	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
-nmi_end:
-	.as: SEP #$20		; ** 8-bit memory for a moment ** (3)
++nmi_end:
 #ifdef	SUPPORT
 ; 6502 handlers will end in RTS causing stack imbalance
 ; must reset SP to previous value
+	.al: REP #$20		; ** I think TSC needs to be in 16-bit ** (3)
 	TSC					; the whole stack pointer, will not mess with B (2)
+	.as: SEP #$20		; ** 8-bit memory for a moment ** (3)
 	LDA sys_sp			; will replace the LSB with the stored value (3)
 	TCS					; all set! (2)
+#else
+	.as: SEP #$20		; ** 8-bit memory for a moment ** (3)
 #endif
 ; *** here goes the former nmi_end routine ***
 	PLA					; restrieve systmp and restore it, no longer including sys_sp (4+3)

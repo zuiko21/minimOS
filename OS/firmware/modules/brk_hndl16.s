@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180811-1317
+; last modified 20180906-1729
 
 ; *** generic BRK handler for 65816 ***
 -brk_hndl:				; label from vector list
@@ -30,14 +30,17 @@
 ; must use some new indirect jump, as set by new SET_BRK
 ; arrives in 8-bit, DBR=0 (no need to save it)
 	JSR @brk_call		; JSL new indirect
-	.as: SEP #$20		; ** 8-bit memory for a moment **
 	.xl: REP #$10		; make sure we have 16-bit indexes
 ; 6502 handlers will end in RTS causing stack imbalance
 ; must reset SP to previous value
 #ifdef	SUPPORT
+	.al: REP #$20		; ** I think TSC needs to be in 16-bit **
 	TSC					; the whole stack pointer, will not mess with B
+	.as: SEP #$20		; ** 8-bit memory for a moment **
 	LDA sys_sp			; will replace the LSB with the stored value
 	TCS					; all set!
+#else
+	.as: SEP #$20		; ** 8-bit memory for a moment **
 #endif
 ; *** retrieve reserved vars ***
 	PLA					; this is 8-bit systmp
