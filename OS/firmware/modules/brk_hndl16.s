@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180906-1729
+; last modified 20180906-1743
 
 ; *** generic BRK handler for 65816 ***
 -brk_hndl:				; label from vector list
@@ -30,30 +30,33 @@
 ; must use some new indirect jump, as set by new SET_BRK
 ; arrives in 8-bit, DBR=0 (no need to save it)
 	JSR @brk_call		; JSL new indirect
-	.xl: REP #$10		; make sure we have 16-bit indexes
+	JMP nmi_end		; reusing standard code
+
+; older corrected code for reference, needed to enter in 16-bit index
 ; 6502 handlers will end in RTS causing stack imbalance
 ; must reset SP to previous value
 #ifdef	SUPPORT
-	.al: REP #$20		; ** I think TSC needs to be in 16-bit **
-	TSC					; the whole stack pointer, will not mess with B
-	.as: SEP #$20		; ** 8-bit memory for a moment **
-	LDA sys_sp			; will replace the LSB with the stored value
-	TCS					; all set!
+;	.al:; REP #$20		; ** I think TSC needs to be in 16-bit **
+;	TSC					; the whole stack pointer, will not mess with B
+;	.as:; SEP #$20		; ** 8-bit memory for a moment **
+;	LDA sys_sp			; will replace the LSB with the stored value
+;	TCS					; all set!
 #else
-	.as: SEP #$20		; ** 8-bit memory for a moment **
+;	.as:; SEP #$20		; ** 8-bit memory for a moment **
 #endif
 ; *** retrieve reserved vars ***
-	PLA					; this is 8-bit systmp
-	PLX					; this is 16-bit sysptr
-	STA systmp
-	STX sysptr
+;	PLA					; this is 8-bit systmp
+;	PLX					; this is 16-bit sysptr
+;	STA systmp
+;	STX sysptr
 ; restore full status and exit
-	.al: REP #$20			; all 16-bit (3)
-	PLB					; eeeeeeeeeeeek (4)
-	PLY					; restore status and return (3x5)
-	PLX
-	PLA
-	RTI
+;	.al:; REP #$20			; all 16-bit (3)
+;	PLB					; eeeeeeeeeeeek (4)
+;	PLY					; restore status and return (3x5)
+;	PLX
+;	PLA
+;	RTI
+
 ; as no long-indirect call is available, long-call here and return to handler
 brk_call:
 	JMP [fw_dbg]		; will return
