@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180831-2347
+; last modified 20180906-1656
 
 ; *** generic NMI handler for 6502/65C02 ***
 ; expected to be fully re-entrant
@@ -47,7 +47,7 @@
 #endif
 	JSR nmi_call		; will do indirect call (6...)
 ; *** here goes the former nmi_end routine, restore and exit ***
-nmi_end:
++nmi_end:
 ; restore temporary vars, faster way is 9b, 24t (vs. 8b/40t)
 	PLA					; get byte from stack (4)
 	STA systmp			; restore it (4)
