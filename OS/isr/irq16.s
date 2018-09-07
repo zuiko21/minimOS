@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
 ; v0.6b3, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180404-1409
+; last modified 20180907-1730
 
 #define		ISR		_ISR
 
@@ -62,9 +62,9 @@ asynchronous:
 ; *** 'first' async in 19t (total 53t)!!!
 ; *** skip each disabled in 18t (14t if NOT EOQ-opt)
 ; *** cycle between enabled (but not satisfied) in 33t+...
-	LDX #MX_QUEUE		; maximum valid index plus 2 (note offset afterwards) (2)
+	LDX #MX_QUEUE-2		; maximum valid index (2)
 i_req:
-		LDA drv_a_en-2, X	; check whether enabled (4)
+		LDA drv_a_en, X	; check whether enabled (4)
 		BPL i_rnx			; *** if disabled, skip this task *** (2/3)
 			PHX					; keep index! (3)
 			JSR (drv_asyn-2, X)	; call from table (8+...) expected to return in 8-bit size, at least indexes
@@ -79,7 +79,7 @@ i_rnx:
 i_anx:
 		DEX					; no, go backwards to be faster! (2+2)
 		DEX
-		BNE i_req			; until done (3/2)
+		BPL i_req			; until done (3/2)
 ; *** continue after all interrupts dispatched *** (28)
 ir_done:				; otherwise is spurious, due to separate BRK handler on 65816
 isr_done:
@@ -121,9 +121,9 @@ periodic:
 ;i_pnx:
 ;		BNE i_poll				; until zero is done (3/2)
 ; *** alternative way with fixed-size arrays (no queue_mx) *** 37 bytes, 31 if left for the whole queue
-	LDX #MX_QUEUE		; maximum valid index plus 2 (2)
+	LDX #MX_QUEUE-2		; maximum valid index (2)
 i_poll:
-		LDY drv_p_en-2, X	; *** check whether enabled, new in 0.6 *** note offset (4)
+		LDY drv_p_en, X	; *** check whether enabled, new in 0.6 *** (4)
 		BPL i_rnx2			; *** if disabled, skip this task *** (2/3)
 			.al: REP #$20		; *** 16-bit memory for counters ***
 			DEC drv_cnt-2, X	; otherwise continue with countdown
@@ -144,7 +144,7 @@ i_rnx2:
 i_pnx:
 			DEX					; go backwards to be faster! (2+2)
 			DEX					; no improvement with offset, all of them will be called anyway
-			BNE i_poll			; until zero is done (3/2)
+			BPL i_poll			; until zero is done (3/2)
 ; *** continue after all interrupts dispatched ***
 ip_done:
 ; update uptime, new simpler format is 12b, 14 or 24 cycles!

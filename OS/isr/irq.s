@@ -2,7 +2,7 @@
 ; v0.6rc3, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180906-1714
+; last modified 20180907-1730
 
 #define		ISR		_ISR
 
@@ -61,9 +61,9 @@ asynchronous:
 ; *** 'first' async in 23t (total 40t)!!!
 ; *** skip each disabled in 18t (14t if NOT EOQ-opt)
 ; *** cycle between enabled (but not satisfied) in 37t+...
-	LDX #MX_QUEUE	; get max queue size (2)
+	LDX #MX_QUEUE-2		; get last queue index (2)
 i_req:
-		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 *** (4)
+		LDA drv_a_en, X	; *** check whether enabled, new in 0.6 *** (4)
 		BPL i_rnx			; *** if disabled, skip this task *** (2/3)
 			_PHX				; keep index! (3)
 			JSR ir_call			; call from table (12...)
@@ -76,7 +76,7 @@ i_rnx:
 i_anx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; decrease after processing, negative offset on call, less latency, 20151029
-		BNE i_req			; until zero is done (3/2)
+		BPL i_req			; until zero is done (3/2)
 
 ir_done:
 ; lastly, check for BRK (11 if spurious, 28+FW call if issued)
@@ -142,9 +142,9 @@ periodic:
 ;		BNE i_poll			; until zero is done (3/2)
 
 ; *** alternative way with fixed-size arrays (no queue_mx) *** 44 bytes, 38 if left for the whole queue
-	LDX #MX_QUEUE		; maximum valid index plus 2 (2)
+	LDX #MX_QUEUE-2		; maximum valid index (2)
 i_poll:
-		LDA drv_p_en-2 , X	; *** check whether enabled, new in 0.6 ***
+		LDA drv_p_en , X	; *** check whether enabled, new in 0.6 ***
 		BPL i_rnx2			; *** if disabled, skip this task ***
 			DEC drv_cnt-2, X	; otherwise continue with countdown
 				BNE i_pnx			; LSB did not expire, do not execute yet
@@ -167,7 +167,7 @@ i_rnx2:
 i_pnx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; no improvement with offset, all of them will be called anyway
-		BNE i_poll			; until zero is done (3/2)
+		BPL i_poll			; until zero is done (3/2)
 ; *** continue after all interrupts dispatched ***
 ip_done:
 ; update uptime, much faster new format
