@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
-; v0.6b2
+; v0.6b3
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180825-1612
+; last modified 20180908-2256
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -306,11 +306,12 @@ ak_wnw:
 	STX ak_fi			; update pointer
 	CPX ak_fo			; is it full?
 	BNE ak_room			; no, all OK
-		INC ak_fo			; yes, simply discard oldest byte
-		LDA ak_fo			; but check for wrap, too
-		CMP #AF_SIZ
-	BNE ak_room			; did not, all done
-		_STZA ak_fo			; or go back to zero
+		DEC ak_fi			; yes, simply discard THIS byte
+		SEC					; notify error
+		LDY #FULL
+	BPL ak_room			; did not wrap, all done
+		LDA #AF_SIZ-1			; or just place it at the end
+		STA ak_fi
 ak_room:
 	RTS					; no errors here
 
