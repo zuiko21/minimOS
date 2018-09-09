@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS, simple version
 ; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180825-1550
+; last modified 20180909-1251
 
 ; *** caveats ***
 ; alt not recognised
@@ -201,8 +201,14 @@ ap_dorp:
 	ADC ak_tof		; add offset for modifier table
 	TAX				; use full scancode as index
 	LDA ak_tabs, X		; this is the ASCII code
-	STA ak_get		; goes into single-byte buffer
+; put char into single byte buffer, but if not read looks more reasonable to lose the LAST key
+	LDY ak_get		; already clear?
+	BNE ap_err		; no! just lose this character
+; if the very last key is to be recorded, just store it (delete above)
+		STA ak_get		; clear to go, put into single-byte buffer
 	_DR_OK
+ap_err:
+	_DR_ERR(FULL)		; notify error if possible
 
 ; **************************
 ; *** auxiliary routines ***
