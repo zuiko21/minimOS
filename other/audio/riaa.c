@@ -41,28 +41,33 @@ double db(double g) {
 /**********************/
 
 double stage(double f, double cb, double rba, double rbd, double cl, double rla, double rld) {
-	double t, zcl, zcb, re, im, re2, im2, re3, im3, zl, zb;
+	double t, zcl, zcb, re, im, re2, im2, re3, im3;
 
 	t= 1/(pp*f);
 /* capacitor reactance */
-	zcl= t/cl;		// load (collector) capacitor
 	zcb= t/cb;		// bias (emitter) capacitor
-/* load (collector) impedance */
-	re= mulr(rla, zcl, rld, 0);
-	im= muli(rla, zcl, rld, 0);
-	re2= divr(re, im, rla+rld, zcl);
-	im2= divi(re, im, rla+rld, zcl);
+	if (cl>0) {
+		zcl= t/cl;		// load (collector) capacitor
+/* load (collector) impedance for EQ stages */
+		re= mulr(rla, zcl, rld, 0);
+		im= muli(rla, zcl, rld, 0);
+		re2= divr(re, im, rla+rld, zcl);
+		im2= divi(re, im, rla+rld, zcl);
+	} else {
+/* for non-EQ stages */
+		re2= rld;		// single resistor
+		im2= 0;
+	}
 /* bias (emitter) impedance */
 	re= mulr(rba, zcb, rbd, 0);
 	im= muli(rba, zcb, rbd, 0);
 	re3= divr(re, im, rba+rbd, zcb);
 	im3= divi(re, im, rba+rbd, zcb);
+/* compute stage gain by COMPLEX division */
+	re= divr(re2, im2, re3, im3);
+	im= divi(re2, im2, re3, im3);
 
-	zl= polar(re2, im2);
-	zb= polar(re3, im3);
-
-/* compute stage gain just by polar modules? */
-	return zl/zb;
+	return polar(re, im);
 }
 
 double lowpass(double f, double c, double r) {
@@ -101,12 +106,11 @@ int main(void) {
 	double s3c= 47e-6, s3a= 270, s3d= 1200, s3l= 1800;	// third stage values
 	double lpr= 37500, lpc= 2e-9;		// final low-pass filter values
 /* input/output coupling */
-	double cin= 220e-9, zin= 116e3;		// effect of 68n input capacitor
+	double cin= 68e-9, zin= 116e3;		// effect of 68n input capacitor
 	double cout= 470e-9, zout= 47e3;	// effect of 470n output capacitor
 /* variables */
 	int fr;					// loop counter
-	double cl, cb, zb, zl, gain, t;		// temporary results
-	double re, im, re2, im2, lpf, hpf;
+	double gain;				// temporary result
 
 /* --------------- */
 
@@ -117,23 +121,19 @@ int main(void) {
 
 /* compute gain for each frequency */
 	for (fr= 0; fr<freqs; fr++) {
-		t= 1/(pp*hz[fr]);	// for convenience
 
+/*** circuit configuration ***/
 /* apply input coupling effect, currently includes IEC amend */
 		gain= hipass(hz[fr], zin, cin);
+
+/* apply non-EQ first stage with subsonic filter */
+		gain*= stage(hz[fr], s1c, s1a, s1d, 0, 0, s1l);	// missing AC load
 
 /* apply middle EQ stage */
 		gain*= stage(hz[fr], fb, rba, rbd, fl, rla, rld);
 
-/* apply other stages gain */
-// must add subsonic filter! simple way*******
-
-		gain*= s1l/s1a;
-		gain*= hipass(hz[fr], s1c, s1a);	// apply passive hi-pass
-
-		gain*= s3l/s3a;
-		gain*= hipass(hz[fr], s3c, s3a);	// apply passive hi-pass
-		// two by-ten stages
+/* apply non-EQ third stage with subsonic filter */
+		gain*= stage(hz[fr], s3c, s3a, s3d, 0, 0, s3l); // missing AC load
 
 /* RIAA low-pass filter */
 		gain*= lowpass(hz[fr], lpc, lpr);		// apply passive low-pass
@@ -141,7 +141,7 @@ int main(void) {
 /* apply output coupling effect */
 		gain*= hipass(hz[fr], zout, cout);
 
-/* print results! */
+/*** print results! ***/
 		printf("%f\t%f\t%f\n", hz[fr], gain, db(gain));
 	}
 
