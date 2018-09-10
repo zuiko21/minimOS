@@ -32,8 +32,16 @@ double polar(double a, double b) {
 	return sqrt(a*a+b*b);
 }
 
+/************************/
+/* convenient functions */
+/************************/
+
 double db(double g) {
 	return 20*log10(g);
+}
+
+double para(double r1, double r2) {
+	return r1*r2/(r1+r2);
 }
 
 /**********************/
@@ -97,16 +105,16 @@ double hipass(double f, double c, double r) {
 int main(void) {
 /* constants */
 	double hz[11]= {0.1, 1, 4, 13, 20, 50, 500, 1000, 2120, 6300, 20000};	// test frequencies
-	int freqs= 11;			// same as above array!!!
+	int freqs= 11;				// same as above array!!!
 /* stage two */
 	double rla= 470, rld= 4100, rba= 270, rbd= 2200;	// resistor values
 	double fl= 690e-9, fb= 47e-6;				// capacitor values
 /* other stages */
-	double s1c= 10e-6, s1a= 1200, s1d= 10000, s1l= 10000;	// first stage values
-	double s3c= 47e-6, s3a= 270, s3d= 1200, s3l= 1800;	// third stage values
+	double s1c= 22e-6, s1a= 1200, s1d= 10000, s1l= 10000;	// first stage values
+	double s3c= 100e-6, s3a= 390, s3d= 1200, s3l= 1800;	// third stage values
 	double lpr= 37500, lpc= 2e-9;		// final low-pass filter values
 /* input/output coupling */
-	double cin= 68e-9, zin= 116e3;		// effect of 68n input capacitor
+	double cin= 150e-9, zin= 116e3;		// effect of 150n input capacitor (was 68n)
 	double cout= 470e-9, zout= 47e3;	// effect of 470n output capacitor
 /* variables */
 	int fr;					// loop counter
@@ -123,8 +131,8 @@ int main(void) {
 	for (fr= 0; fr<freqs; fr++) {
 
 /*** circuit configuration ***/
-/* apply input coupling effect, currently includes IEC amend */
-		gain= hipass(hz[fr], zin, cin);
+/* apply input coupling effect */
+		gain= hipass(hz[fr], cin, zin);
 
 /* apply non-EQ first stage with subsonic filter */
 		gain*= stage(hz[fr], s1c, s1a, s1d, 0, 0, s1l);	// missing AC load
@@ -139,7 +147,7 @@ int main(void) {
 		gain*= lowpass(hz[fr], lpc, lpr);		// apply passive low-pass
 
 /* apply output coupling effect */
-		gain*= hipass(hz[fr], zout, cout);
+		gain*= hipass(hz[fr], cout, zout);
 
 /*** print results! ***/
 		printf("%f\t%f\t%f\n", hz[fr], gain, db(gain));
