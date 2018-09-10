@@ -41,7 +41,7 @@ double db(double g) {
 /**********************/
 
 double stage(double f, double cb, double rba, double rbd, double cl, double rla, double rld) {
-	double t, zcl, zcb, re, im, re2, im2, zl, zb;
+	double t, zcl, zcb, re, im, re2, im2, re3, im3, zl, zb;
 
 	t= 1/(pp*f);
 /* capacitor reactance */
@@ -52,13 +52,14 @@ double stage(double f, double cb, double rba, double rbd, double cl, double rla,
 	im= muli(rla, zcl, rld, 0);
 	re2= divr(re, im, rla+rld, zcl);
 	im2= divi(re, im, rla+rld, zcl);
-	zl= polar(re2, im2);
 /* bias (emitter) impedance */
 	re= mulr(rba, zcb, rbd, 0);
 	im= muli(rba, zcb, rbd, 0);
-	re2= divr(re, im, rba+rbd, zcb);
-	im2= divi(re, im, rba+rbd, zcb);
-	zb= polar(re2, im2);
+	re3= divr(re, im, rba+rbd, zcb);
+	im3= divi(re, im, rba+rbd, zcb);
+
+	zl= polar(re2, im2);
+	zb= polar(re3, im3);
 
 /* compute stage gain just by polar modules? */
 	return zl/zb;
