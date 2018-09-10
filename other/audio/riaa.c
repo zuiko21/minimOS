@@ -112,10 +112,10 @@ int main(void) {
 /********************/
 /* stage two, bias 2k2/270+47uF, load 8k2/8k2/470+690nF */
 	double rla= 470, rld= 4100, rba= 270, rbd= 2200;	// resistor values
-	double fl= 680e-9, fb= 47e-6;				// capacitor values
+	double fl= 680e-9, fb= 100e-6;				// capacitor values
 /* other stages */
 	double s1c= 22e-6, s1a= 1200, s1d= 10000, s1l= 10000;	// first stage values, bias 10k/1k2+22uF, load 10k
-	double s3c= 100e-6, s3a= 390, s3d= 1200, s3l= 1800;	// third stage values, bias 1k2/390+100uF, load 1k8
+	double s3c= 47e-6, s3a= 390, s3d= 1200, s3l= 1800;	// third stage values, bias 1k2/390+100uF, load 1k8
 	double lpr= 27000, lpc= 2.7e-9;		// final low-pass filter values (68k/82k, 1n/1n)
 /* input/output coupling */
 	double cin= 150e-9, zin= para(180e3, 330e3);		// effect of 150n input capacitor (was 68n)
