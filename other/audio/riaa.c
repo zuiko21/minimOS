@@ -106,13 +106,17 @@ int main(void) {
 /* constants */
 	double hz[11]= {0.1, 1, 4, 13, 20, 50, 500, 1000, 2120, 6300, 20000};	// test frequencies
 	int freqs= 11;				// same as above array!!!
-/* stage two */
+
+/********************/
+/* component values */
+/********************/
+/* stage two, bias 2k2/270+47uF, load 8k2/8k2/470+690nF */
 	double rla= 470, rld= 4100, rba= 270, rbd= 2200;	// resistor values
-	double fl= 690e-9, fb= 47e-6;				// capacitor values
+	double fl= 680e-9, fb= 47e-6;				// capacitor values
 /* other stages */
-	double s1c= 22e-6, s1a= 1200, s1d= 10000, s1l= 10000;	// first stage values
-	double s3c= 100e-6, s3a= 390, s3d= 1200, s3l= 1800;	// third stage values
-	double lpr= 37500, lpc= 2e-9;		// final low-pass filter values
+	double s1c= 22e-6, s1a= 1200, s1d= 10000, s1l= 10000;	// first stage values, bias 10k/1k2+22uF, load 10k
+	double s3c= 100e-6, s3a= 390, s3d= 1200, s3l= 1800;	// third stage values, bias 1k2/390+100uF, load 1k8
+	double lpr= 27000, lpc= 2.7e-9;		// final low-pass filter values (68k/82k, 1n/1n)
 /* input/output coupling */
 	double cin= 150e-9, zin= 116e3;		// effect of 150n input capacitor (was 68n)
 	double cout= 470e-9, zout= 47e3;	// effect of 470n output capacitor
@@ -150,7 +154,7 @@ int main(void) {
 		gain*= hipass(hz[fr], cout, zout);
 
 /*** print results! ***/
-		printf("%f\t%f\t%f\n", hz[fr], gain, db(gain));
+		printf("%f\t%f\t%f\n", hz[fr], gain, db(gain)-40.1288);
 	}
 
 	return 0;
