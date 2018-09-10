@@ -47,7 +47,7 @@ int main(void) {
 	double s3c= 47e-6, s3a= 270, s3d= 1200, s3l= 1800;	// third stage values
 	double lpr= 37500, lpc= 2e-9;		// final low-pass filter values
 /* input/output coupling */
-	double cin= 100e-9, zin= 116e3;		// effect of 68n input capacitor
+	double cin= 220e-9, zin= 116e3;		// effect of 68n input capacitor
 	double cout= 470e-9, zout= 47e3;	// effect of 470n output capacitor
 /* variables */
 	int fr;					// loop counter
