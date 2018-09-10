@@ -3,8 +3,14 @@
 /* use gcc -lm to compile with math!!! */
 
 /********************/
-/* custom functions */
+/* GLOBAL constants */
 /********************/
+
+double pp= 2*3.14159265;	// pi times two for convenience
+
+/*********************/
+/* complex functions */
+/*********************/
 
 double mulr(double a, double b, double c, double d) {
 	return a*c - b*d;
@@ -30,6 +36,54 @@ double db(double g) {
 	return 20*log10(g);
 }
 
+/**********************/
+/* filters and stages */
+/**********************/
+
+double stage(double f, double cb, double rba, double rbd, double cl, double rla, double rld) {
+	double t, zcl, zcb, re, im, re2, im2, zl, zb;
+
+	t= 1/(pp*f);
+/* capacitor reactance */
+	zcl= t/cl;		// load (collector) capacitor
+	zcb= t/cb;		// bias (emitter) capacitor
+/* load (collector) impedance */
+	re= mulr(rla, zcl, rld, 0);
+	im= muli(rla, zcl, rld, 0);
+	re2= divr(re, im, rla+rld, zcl);
+	im2= divi(re, im, rla+rld, zcl);
+	zl= polar(re2, im2);
+/* bias (emitter) impedance */
+	re= mulr(rba, zcb, rbd, 0);
+	im= muli(rba, zcb, rbd, 0);
+	re2= divr(re, im, rba+rbd, zcb);
+	im2= divi(re, im, rba+rbd, zcb);
+	zb= polar(re2, im2);
+
+/* compute stage gain just by polar modules? */
+	return zl/zb;
+}
+
+double lowpass(double f, double c, double r) {
+	double re, im, zc;
+
+	zc= 1/(pp*f*c);
+	re= divr(0, zc, r, zc);
+	im= divi(0, zc, r, zc);
+
+	return polar(re, im);
+}
+
+double hipass(double f, double c, double r) {
+	double re, im, zc;
+
+	zc= 1/(pp*f*c);
+	re= divr(r, 0, r, zc);
+	im= divi(r, 0, r, zc);
+
+	return polar(re, im);
+}
+
 /****************/
 /* main program */
 /****************/
@@ -38,7 +92,6 @@ int main(void) {
 /* constants */
 	double hz[11]= {0.1, 1, 4, 13, 20, 50, 500, 1000, 2120, 6300, 20000};	// test frequencies
 	int freqs= 11;			// same as above array!!!
-	double pp= 2*3.14159265;	// pi times two for convenience
 /* stage two */
 	double rla= 470, rld= 4100, rba= 270, rbd= 2200;	// resistor values
 	double fl= 690e-9, fb= 47e-6;				// capacitor values
@@ -58,69 +111,37 @@ int main(void) {
 
 /* prepare display */
 	printf("(output-Z: %f)\n\n", zout);
-	printf("Hz\t\tZLoad\t\tZBias\t\tGain\t\tdB\n");
-	printf("==\t\t=====\t\t=====\t\t====\t\t==\n");
+	printf("Hz\t\tGain\t\tdB\n");
+	printf("==\t\t====\t\t==\n");
 
 /* compute gain for each frequency */
 	for (fr= 0; fr<freqs; fr++) {
 		t= 1/(pp*hz[fr]);	// for convenience
-/* capacitor reactance */
-		cl= t/fl;		// load (collector) capacitor
-		cb= t/fb;		// bias (emitter) capacitor
-/* load (collector) impedance */
-		re= mulr(rla, cl, rld, 0);
-		im= muli(rla, cl, rld, 0);
-		re2= divr(re, im, rla+rld, cl);
-		im2= divi(re, im, rla+rld, cl);
-		zl= polar(re2, im2);
-/* bias (emitter) impedance */
-		re= mulr(rba, cb, rbd, 0);
-		im= muli(rba, cb, rbd, 0);
-		re2= divr(re, im, rba+rbd, cb);
-		im2= divi(re, im, rba+rbd, cb);
-		zb= polar(re2, im2);
-/* compute stage gain just by polar modules? */
-		gain= zl/zb;
 
 /* apply input coupling effect, currently includes IEC amend */
-		cb= t/cin;
-		re= divr(zin, 0, zin, cb);
-		im= divi(zin, 0, zin, cb);
-		hpf= polar(re, im);
-		gain*= hpf;		// apply hi-pass
+		gain= hipass(hz[fr], zin, cin);
+
+/* apply middle EQ stage */
+		gain*= stage(hz[fr], fb, rba, rbd, fl, rla, rld);
 
 /* apply other stages gain */
 // must add subsonic filter! simple way*******
+
 		gain*= s1l/s1a;
-		cb= t/s1c;
-		re= divr(s1a, 0, s1a, cb);
-		im= divi(s1a, 0, s1a, cb);
-		hpf= polar(re, im);
-		gain*= hpf;		// apply passive hi-pass
+		gain*= hipass(hz[fr], s1c, s1a);	// apply passive hi-pass
 
 		gain*= s3l/s3a;
-		cb= t/s3c;
-		re= divr(s3a, 0, s3a, cb);
-		im= divi(s3a, 0, s3a, cb);
-		hpf= polar(re, im);
-		gain*= hpf;		// apply passive hi-pass
+		gain*= hipass(hz[fr], s3c, s3a);	// apply passive hi-pass
 		// two by-ten stages
+
 /* RIAA low-pass filter */
-		cl= t/lpc;
-		re= divr(0, cl, lpr, cl);
-		im= divi(0, cl, lpr, cl);
-		lpf= polar(re, im);
-		gain*= lpf;		// apply passive low-pass
+		gain*= lowpass(hz[fr], lpc, lpr);		// apply passive low-pass
 
 /* apply output coupling effect */
-		cb= t/cout;
-		re= divr(zout, 0, zout, cb);
-		im= divi(zout, 0, zout, cb);
-		hpf= polar(re, im);
-		gain*= hpf;		// apply passive hi-pass
+		gain*= hipass(hz[fr], zout, cout);
 
 /* print results! */
-		printf("%f\t%f\t%f\t%f\t%f\n", hz[fr], zl, zb, gain, db(gain));
+		printf("%f\t%f\t%f\n", hz[fr], gain, db(gain));
 	}
 
 	return 0;
