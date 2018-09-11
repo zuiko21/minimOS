@@ -114,7 +114,7 @@ int main(void) {
 /*	double rla= 470, rld= 4100, rba= 270, rbd= 2200;	// resistor values
 	double fl= 680e-9, fb= 100e-6;				// capacitor values
 */	double rla=para(1800,1800), rld=10e3, fl=360e-9;
-	double rba=270, rbd=10e3, fb=47e-6;
+	double rba=270, rbd=8200, fb=47e-6;
 /* other stages */
 //	double s1c= 22e-6, s1a= 1200, s1d= 10000, s1l= 10000;	// first stage values, bias 10k/1k2+22uF, load 10k
 //double s3c= 47e-6, s3a= 390, s3d= 1200, s3l= 1800;	// third stage values, bias 1k2/390+100uF, load 1k8
@@ -158,7 +158,7 @@ int main(void) {
 		gain*= hipass(hz[fr], cout, zout);
 
 /*** print results! ***/
-		printf("%f\t%f\t%f\n", hz[fr], gain, db(gain)-37.9);
+		printf("%f\t%f\t%f\n", hz[fr], gain, db(gain)-37.955);
 	}
 
 	return 0;
