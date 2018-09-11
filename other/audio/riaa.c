@@ -104,36 +104,36 @@ double hipass(double f, double c, double r) {
 
 int main(void) {
 /* constants */
-	double hz[11]= {0.1, 1, 4, 13, 20, 50, 500, 1000, 2120, 6300, 20000};	// test frequencies
-	int freqs= 11;				// same as above array!!!
+	int freqs= 18;		// same as size of arrays below!!!
+	double hz[18]= {0.1, 1, 4, 12, 20, 31, 49, 79, 150, 270, 480,
+			1000, 1100, 2100, 3800, 7600, 12000, 21000};	// test frequencies
+/* if using ...20, 31, 49, 79, 150, 270, 480, 1k, 1k1, 2k1, 3k8, 7k6, 12k, 21k,
+	these are the IEC values for convenience */
+	double iec[18]= {0,0,0,0, 16.35, 17.09, 16.45, 14.4, 10.28, 6.23, 2.92,
+			0, -0.23, -2.73, -6.17, -11.39, -15.17, -19.95};
 
 /********************/
 /* component values */
 /********************/
-/* stage two, bias 2k2/270+47uF, load 8k2/8k2/470+690nF */
-/*	double rla= 470, rld= 4100, rba= 270, rbd= 2200;	// resistor values
-	double fl= 680e-9, fb= 100e-6;				// capacitor values
-*/	double rla=para(1800,1800), rld=10e3, fl=360e-9;
-	double rba=270, rbd=8200, fb=47e-6;
-/* other stages */
-//	double s1c= 22e-6, s1a= 1200, s1d= 10000, s1l= 10000;	// first stage values, bias 10k/1k2+22uF, load 10k
-//double s3c= 47e-6, s3a= 390, s3d= 1200, s3l= 1800;	// third stage values, bias 1k2/390+100uF, load 1k8
-	double s3c=100e-6, s3a=150, s3d=1200, s3l=3300;
-//	double lpr= 27000, lpc= 2.7e-9; // final low-pass filter values (68k/82k, //1n/1n)
-	double lpr=para(150e3,120e3), lpc=1.1e-9;
+/* stage one, bias 8k2/150+100uF, load 10k/1k1+270nF */
+	double rla=para(2200,2200), rld=10e3, fl=270e-9;
+	double rba=150, rbd=8200, fb=100e-6;
+/* stage two and low pass filter */
+	double s3c=100e-6, s3a=150, s3d=560, s3l=1500;
+	double lpr=para(68e3,68e3), lpc=2.2e-9;
 /* input/output coupling */
-	double cin= 150e-9, zin= para(150e3, 330e3);		// effect of 150n input capacitor (was 68n)
+	double cin= 220e-9, zin= para(150e3, 330e3);		// effect of 220n input capacitor (was 68n)
 	double cout= 470e-9, zout= 47e3;	// effect of 470n output capacitor
 /* variables */
 	int fr;					// loop counter
-	double gain;				// temporary result
+	double gain, eq;			// temporary results
 
 /* --------------- */
 
 /* prepare display */
 	printf("(output-Z: %f)\n\n", zout);
-	printf("Hz\t\tGain\t\tdB\n");
-	printf("==\t\t====\t\t==\n");
+	printf("Hz\t\tGain\t\tdB\t\t(IEC err)\n");
+	printf("==\t\t====\t\t==\t\t=========\n");
 
 /* compute gain for each frequency */
 	for (fr= 0; fr<freqs; fr++) {
@@ -142,13 +142,10 @@ int main(void) {
 /* apply input coupling effect */
 		gain= hipass(hz[fr], cin, zin);
 
-/* apply non-EQ first stage with subsonic filter */
-//		gain*= stage(hz[fr], s1c, s1a, s1d, 0, 0, s1l);	// missing AC load
-
-/* apply middle EQ stage */
+/* apply first EQ stage */
 		gain*= stage(hz[fr], fb, rba, rbd, fl, rla, rld);
 
-/* apply non-EQ third stage with subsonic filter */
+/* apply non-EQ second stage with subsonic filter */
 		gain*= stage(hz[fr], s3c, s3a, s3d, 0, 0, s3l); // missing AC load
 
 /* RIAA low-pass filter */
@@ -157,8 +154,9 @@ int main(void) {
 /* apply output coupling effect */
 		gain*= hipass(hz[fr], cout, zout);
 
+		eq= db(gain)-38.8345;				// EQ dB for convenience
 /*** print results! ***/
-		printf("%f\t%f\t%f\n", hz[fr], gain, db(gain)-37.955);
+		printf("%f\t%f\t%f\t%f\n", hz[fr], gain, eq, eq-iec[fr]);
 	}
 
 	return 0;
