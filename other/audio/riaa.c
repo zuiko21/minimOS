@@ -118,7 +118,7 @@ int main(void) {
 	double s3c= 47e-6, s3a= 390, s3d= 1200, s3l= 1800;	// third stage values, bias 1k2/390+100uF, load 1k8
 	double lpr= 27000, lpc= 2.7e-9;		// final low-pass filter values (68k/82k, 1n/1n)
 /* input/output coupling */
-	double cin= 150e-9, zin= para(180e3, 330e3);		// effect of 150n input capacitor (was 68n)
+	double cin= 180e-9, zin= para(150e3, 330e3);		// effect of 150n input capacitor (was 68n)
 	double cout= 470e-9, zout= 47e3;	// effect of 470n output capacitor
 /* variables */
 	int fr;					// loop counter
