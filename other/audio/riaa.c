@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include <math.h>
 /* use gcc -lm to compile with math!!! */
 
@@ -42,6 +44,26 @@ double db(double g) {
 
 double para(double r1, double r2) {
 	return r1*r2/(r1+r2);
+}
+
+double alea(void) {
+	return 0.5;//rand()*1.0/RAND_MAX;
+}
+
+double	c2(void) {
+	return 0.9+0.1*(alea()+alea());
+}
+
+double	c1(void) {
+	return 0.9+0.2*alea();
+}
+
+double	r2(void) {
+	return 0.95+0.05*(alea()+alea());
+}
+
+double	r1(void) {
+	return 0.95+0.1*alea();
 }
 
 /**********************/
@@ -112,17 +134,18 @@ int main(void) {
 	double iec[18]= {0,0,0,0, 16.35, 17.09, 16.45, 14.4, 10.28, 6.23, 2.92,
 			0, -0.23, -2.73, -6.17, -11.39, -15.17, -19.95};
 
+	srand(time(NULL));			// prepare random numbers!
 /********************/
 /* component values */
 /********************/
 /* stage one, bias 8k2/150+100uF, load 10k/1k1+270nF */
-	double rla=para(2200,2200), rld=10e3, fl=270e-9;
-	double rba=150, rbd=8200, fb=100e-6;
+	double rla=para(2200,2200)*r2(), rld=10e3*r1(), fl=270e-9*c2();
+	double rba=150*r1(), rbd=8200*r1(), fb=100e-6*c1();
 /* stage two and low pass filter */
-	double s3c=100e-6, s3a=150, s3d=560, s3l=1500;
-	double lpr=para(68e3,68e3), lpc=2.2e-9;
+	double s3c=100e-6*c1(), s3a=150*r1(), s3d=560*r1(), s3l=1500*r1();
+	double lpr=para(68e3,68e3)*r2(), lpc=2.2e-9*c2();
 /* input/output coupling */
-	double cin= 220e-9, zin= para(150e3, 330e3);		// effect of 220n input capacitor (was 68n)
+	double cin= 220e-9*c1(), zin= para(150e3, 330e3)*r2();		// effect of 220n input capacitor (was 68n)
 	double cout= 470e-9, zout= 47e3;	// effect of 470n output capacitor
 /* variables */
 	int fr;					// loop counter
@@ -131,7 +154,7 @@ int main(void) {
 /* --------------- */
 
 /* prepare display */
-	printf("(output-Z: %f)\n\n", zout);
+	printf("(output-Z: %f)\n%d\n", zout, RAND_MAX);
 	printf("Hz\t\tGain\t\tdB\t\t(IEC err)\n");
 	printf("==\t\t====\t\t==\t\t=========\n");
 
