@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc17, must match kernel.s
+; v0.6rc18, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180705-1652
+; last modified 20180913-1209
 
 ; no way for standalone assembly...
 
@@ -62,7 +62,7 @@ k_vec:
 ; *** dummy function, non implemented ***
 ; ***************************************
 
-; *** FUTURE IMPLEMENTATION *** reserve some address
+; *** FUTURE IMPLEMENTATION *** reserve some addresses
 memlock:
 aq_mng:
 pq_mng:
@@ -90,10 +90,10 @@ cin:
 	LDA #1				; transfer a single byte
 	STA bl_siz			; set size
 	_STZA bl_siz+1
-	_KERNEL(BLIN)			; get small block...
+	_KERNEL(BLIN)		; get small block...
 ; ...and check for events!
-	BCC ci_nerror			; got something...
-		RTS				; ...or keep error code from BLIN
+	BCC ci_nerror		; got something...
+		RTS					; ...or keep error code from BLIN
 ci_nerror:
 	LDX iol_dev			; **use physdev as index! worth doing here (3)
 	LDA io_c			; get received character
@@ -105,7 +105,7 @@ ci_nerror:
 	BEQ ci_event		; should process possible event
 		_STZA cin_mode, X	; *back to normal mode
 ci_exitOK:
-		_EXIT_OK		; *otherwise mark no error and exit
+		_EXIT_OK			; *otherwise mark no error and exit
 ci_event:
 	CMP #16				; is it DLE?
 	BNE ci_notdle		; otherwise check next
@@ -191,7 +191,7 @@ co_log:
 ; investigate rest of logical devices
 		CPY #DEV_NULL		; lastly, ignore output
 		BNE cio_nfound		; final error otherwise
-			_STZA bl_siz			; transfer fullfilled eeeeeek
+			_STZA bl_siz		; transfer fullfilled eeeeeek
 			_STZA bl_siz+1
 			_EXIT_OK			; "/dev/null" is always OK
 ; *** common I/O call ***
@@ -308,41 +308,41 @@ ci_log:
 ci_rnd:
 ; *** generate random number (TO DO) ***
 	LDY #0				; reset index
-	LDX bl_ptr+1			; keep MSB just in case***
+	LDX bl_ptr+1		; keep MSB just in case***
 cirn_loop:
 		LDA ticks			; simple placeholder******* eeeeeeek
-		STA (bl_ptr), Y			; store in buffer
-		INY				; go for next
+		STA (bl_ptr), Y		; store in buffer
+		INY					; go for next
 		BNE cirn_nw			; no wrap...
-			INC bl_ptr+1			; ...or next page*****
+			INC bl_ptr+1		; ...or next page*****
 cirn_nw:
 		DEC bl_siz			; one less to go
-		BNE cirn_loop			; no boundary crossing...
-			DEC bl_siz+1			; ...or propagate...
-			LDA bl_siz+1			; ...and check value...
+		BNE cirn_loop		; no boundary crossing...
+			DEC bl_siz+1		; ...or propagate...
+			LDA bl_siz+1		; ...and check value...
 			CMP #$FF			; ...whether wrapped...
-		BNE cirn_loop			; ...until the end
-	STX bl_ptr+1			; restore pointer***
+		BNE cirn_loop		; ...until the end
+	STX bl_ptr+1		; restore pointer***
 ci_ok:
 	_EXIT_OK
 
 ci_null:
 ; reading from DEV_NULL works like /dev/zero, must fill buffer with zeroes!
-		LDX bl_siz		; LSB as offset
-			BEQ ci_nlw		; empty perhaps?
-		LDA #0			; fill buffer with this
-		TAY			; reset ascending offset
+		LDX bl_siz			; LSB as offset
+			BEQ ci_nlw			; empty perhaps?
+		LDA #0				; fill buffer with this
+		TAY					; reset ascending offset
 ci_nll:
 			STA (bl_ptr), Y		; put a zero into buffer
-			INY			; try one more
-			BNE ci_ny		; no wrap yet
+			INY					; try one more
+			BNE ci_ny			; no wrap yet
 				INC bl_ptr+1		; or increment MSB*** but save it!!
 ci_ny:
-			DEC bl_siz		; one less to go
+			DEC bl_siz			; one less to go
 			BNE ci_nll
 ci_nlw:
 		LDX bl_siz+1		; check MSB
-			BEQ ci_nle		; all done!
+			BEQ ci_nle			; all done!
 		DEC bl_siz+1		; or continue
 		_BRA ci_nll
 ci_nle:
@@ -377,7 +377,7 @@ malloc:
 		INC ma_rs+1			; otherwise increase number of pages
 		STX ma_rs			; ...and just in case, clear asked bytes!
 ma_nxpg:
-	_CRITIC			; this is dangerous! enter critical section, new 160119
+	_CRITIC				; this is dangerous! enter critical section, new 160119
 	LDA ma_rs+1			; get number of asked pages
 	BNE ma_scan			; work on specific size
 ; otherwise check for biggest available block
@@ -557,7 +557,7 @@ free:
 #endif
 	LDX #0				; reset index
 	LDA ma_pt+1			; get comparison PAGE eeeeeeeeek
-	_CRITIC			; supposedly dangerous
+	_CRITIC				; supposedly dangerous
 fr_loop:
 		CMP ram_pos, X		; is what we are looking for?
 			BEQ fr_found		; go free it!
@@ -598,11 +598,11 @@ fr_ok:
 ; routine for obliterating the following empty entry
 fr_join:
 		LDA ram_pos+2, X	; get following address
-		STA ram_pos+1, X		; store one entry below
+		STA ram_pos+1, X	; store one entry below
 		LDA ram_pid+2, X	; copy PID of following, but keep status for last!
-		STA ram_pid+1, X		; no longer interleaved
+		STA ram_pid+1, X	; no longer interleaved
 		LDA ram_stat+2, X	; check status of following!
-		STA ram_stat+1, X		; store one entry below
+		STA ram_stat+1, X	; store one entry below
 		CMP #END_RAM		; end of list?
 		BNE fr_join			; repeat until done
 	RTS
@@ -622,7 +622,7 @@ fr_join:
 open_w:
 	LDA w_rect			; asking for some size?
 	ORA w_rect+1
-	BEQ ow_no_window	; wouldn't do it
+	BEQ ow_no_window	; would not do it
 		_ERR(NO_RSRC)
 ow_no_window:
 ; *********************************
@@ -642,8 +642,8 @@ b_fork:
 ;		INPUT
 ; Y = dev
 
-close_w:				; doesn't do much
-free_w:					; doesn't do much, either
+close_w:				; does not do much
+free_w:					; does not do much, either
 b_yield:
 	_EXIT_OK
 
@@ -656,8 +656,8 @@ b_yield:
 ; up_ticks	= 32-bit uptime in ticks, new format 20170822
 
 uptime:
-	LDX #3			; max offset, count backwards (2)
-	_CRITIC			; don't change while copying (5)
+	LDX #3				; max offset, count backwards (2)
+	_CRITIC				; don't change while copying (5)
 up_loop:
 		LDA ticks, X		; get system variable byte (4)
 		STA up_ticks, X		; and store them in output parameter (3)
@@ -756,7 +756,7 @@ b_signal:
 ; TERM handlers no longer end in RTI!!!
 		JSR sig_term		; will call... and return here
 sig_exit:
-		_EXIT_OK		; standard exit, resume execution after calling handler
+		_EXIT_OK			; standard exit, resume execution after calling handler
 sig_term:
 		JMP (mm_sterm)		; execute handler, will return to sig_exit
 sig_suic:
@@ -782,7 +782,7 @@ b_flags:
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDY #BR_RUN			; single-task systems are always running
-;	STA cpu_ll			; report running architecture, which?
+;	STY cpu_ll			; report running architecture, which one?
 	_EXIT_OK
 
 
@@ -882,45 +882,48 @@ ll_nfound:
 	_ERR(N_FOUND)		; all was scanned and the query was not found
 ll_found:
 ; this was the original loadlink code prior to 20161202, will be executed after the header was found!
-	LDY #1			; offset for filetype
+	LDY #1				; offset for filetype
 	LDA (rh_scan), Y	; check filetype
-	CMP #'m'		; must be minimOS app!
-		BNE ll_wrap		; error otherwise
-	INY				; next byte is CPU type
+	CMP #'m'			; must be minimOS app!
+		BNE ll_wrap			; error otherwise
+	INY					; next byte is CPU type
 	LDA (rh_scan), Y	; get it
 ; this is done instead of LDX fw_cpu
 ;	ADMIN(GESTALT)		; get full system info
-;	LDY cpu_ll		; installed CPU *** should return it in Y!
-	LDY fw_cpu		; ********************* HACK AGAIN. MUST REVISE GESTALT INTERFACE ************************
-	CPY #'R'		; is it a Rockwell/WDC CPU?
-		BEQ ll_rock		; from R down is OK
-	CPY #'B'		; generic 65C02?
-		BEQ ll_cmos		; from B down is OK
-	CPY #'V'		; 65816 is supported but no better than a generic 65C02
+;	LDY cpu_ll			; installed CPU *** should return it in Y!
+	LDY fw_cpu			; ********************* HACK AGAIN. MUST REVISE GESTALT INTERFACE ************************
+	CPY #'R'			; is it a Rockwell/WDC CPU?
+		BEQ ll_rock			; from R down is OK
+	CPY #'B'			; generic 65C02?
+		BEQ ll_cmos			; from B down is OK
+	CPY #'V'			; 65816 is supported but no better than a generic 65C02
 		BEQ ll_cmos
-	CPY #'N'		; old NMOS?
+; if none of the above, must be plain old NMOS... unless FW variables are corrupt!
+#ifdef	SAFE
+	CPY #'N'			; old NMOS?
 		BEQ ll_nmos			; only NMOS code will do
 		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
+#endif
 ll_rock:
-	CMP #'R'		; code has Rockwell extensions?
+	CMP #'R'			; code has Rockwell extensions?
 		BEQ ll_valid
 ll_cmos:
-	CMP #'B'		; generic 65C02 code?
+	CMP #'B'			; generic 65C02 code?
 		BEQ ll_valid
 ll_nmos:
-	CMP #'N'		; every supported CPU can run NMOS code
-		BNE ll_wrap		; otherwise is code for another architecture!
+	CMP #'N'			; every supported CPU can run NMOS code
+		BNE ll_wrap			; otherwise is code for another architecture!
 ; present CPU is able to execute supplied code
 ll_valid:
-	LDY rh_scan+1	; and MSB
-	INY				; start from next page
-	_STZA ex_pt		; *** assume all headers are page-aligned ***
-	STY ex_pt+1		; save rest of execution pointer
+	LDY rh_scan+1		; and MSB
+	INY					; start from next page
+	_STZA ex_pt			; *** assume all headers are page-aligned ***
+	STY ex_pt+1			; save rest of execution pointer
 	_EXIT_OK
 ll_wrap:
-	_ERR(INVALID)	; something was wrong
+	_ERR(INVALID)		; something was wrong
 #else
-	_ERR(UNAVAIL)	; no headers to scan
+	_ERR(UNAVAIL)		; no headers to scan
 #endif
 
 ; *********************************
@@ -941,7 +944,7 @@ string:
 	STA bl_ptr			; ...as new parameter
 	LDX str_pt+1		; MSB of pointer might be changed
 	LDY #0				; eeeeeeeek! (2)
-	STY bl_siz+1			; reset MSB of measured size
+	STY bl_siz+1		; reset MSB of measured size
 str_loop:
 		LDA (str_pt), Y		; get character from string, new approach (5)
 			BEQ str_term		; terminated! (3/2)
@@ -975,7 +978,7 @@ rl_l:
 ; always useful to yield CPU time, but could be patched...
 		_KERNEL(B_YIELD)
 		LDY rl_dev			; use device
-		_KERNEL(CIN)			; get one character
+		_KERNEL(CIN)		; get one character
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
@@ -1056,11 +1059,11 @@ sd_cold:
 ; the scheduler will wait for NO braids active
 ; now let's disable all drivers
 sd_2nd:
-	LDA sd_flag		; check what was pending
-	BNE sd_shut		; something to do
+	LDA sd_flag			; check what was pending
+	BNE sd_shut			; something to do
 		_PANIC("{sched}")	; otherwise an error!
 sd_shut:
-	SEI				; disable interrupts
+	SEI					; disable interrupts
 ; call each driver's shutdown routine thru DR_SHUT (12b, was 25b)
 	LDY #128			; first valid device driver ID
 sd_loop:
@@ -1101,7 +1104,7 @@ dr_inst:
 #endif
 ; as D_ID is zero, simply indirect will do without variable (not much used anyway)
 ; ...but will be stored anyway for mutable option
-	_LDAY(da_ptr)			; retrieve ID
+	_LDAY(da_ptr)		; retrieve ID
 #ifdef	SAFE
 	BMI dr_phys			; only physical devices (3/2)
 ; separate function issues INVALID error
@@ -1152,7 +1155,7 @@ dr_empty:
 ; check space in queues
 	LDX #1				; max queue-size index
 dr_chk:
-		ASL				; extract MSB (will be A_POLL first, then A_REQ)
+		ASL					; extract MSB (will be A_POLL first, then A_REQ)
 		BCC dr_ntsk			; skip verification if task not enabled
 			LDY queue_mx, X		; get current tasks in queue
 			CPY #MX_QUEUE		; room for another?
@@ -1166,7 +1169,7 @@ dr_ntsk:
 
 ; 3) if arrived here, there is room for interrupt tasks, but check init code
 	JSR dr_icall		; call routine (6+...)
-	BCC dr_succ		; success
+	BCC dr_succ			; success
 ; separate function issues UNAVAIL error
 		JMP dr_uabort		; no way, forget about this
 dr_succ:
@@ -1344,13 +1347,13 @@ dr_itask:
 ; **********************
 dr_iabort:
 	LDY #INVALID
-	_BRA dr_abort			; could use BNE instead of BRA
+	BNE dr_abort			; could use BNE instead of BRA
 dr_fabort:
 	LDY #FULL
-	_BRA dr_abort
+	BNE dr_abort
 dr_babort:
 	LDY #BUSY
-	_BRA dr_abort
+	BNE dr_abort
 dr_uabort:
 	LDY #INVALID
 dr_abort:
@@ -1392,16 +1395,16 @@ ds_used:
 ; needs to disable interrupt tasks!
 ; *** perhaps using AQ_MNG and PQ_MNG???
 	STY dr_id			; ID needs to be compared
-	LDX #MX_QUEUE-1			; maximum index
+	LDX #MX_QUEUE-1		; maximum index
 ds_qseek:
-		LDA drv_a_en, X			; get entry from whatever queue
-		ORA #%10000000			; enabled or not
+		LDA drv_a_en, X		; get entry from whatever queue
+		ORA #%10000000		; enabled or not
 		CMP dr_id			; targeted ID?
 		BNE ds_qnxt			; no, try next
-			_STZA drv_a_en, X		; yes, clear entry
+			_STZA drv_a_en, X	; yes, clear entry
 ds_qnxt:
-		DEX				; another
-		BPL ds_qseek			; ***works below 128 bytes
+		DEX					; another
+		BPL ds_qseek		; ***works below 128 bytes
 ; finally, execute proper shutdown
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
@@ -1455,18 +1458,18 @@ di_none:
 ; ex_pt		= pointer to the proposed stack frame
 
 ts_info:
-	LDX #<tsi_str			; pointer to proposed stack frame
-	LDA #>tsi_str			; including MSB
-	STX ex_pt				; store LSB
-	STA ex_pt+1				; and MSB
-	LDY #tsi_end-tsi_str	; number of bytes
+	LDX #<tsi_str		; pointer to proposed stack frame
+	LDA #>tsi_str		; including MSB
+	STX ex_pt			; store LSB
+	STA ex_pt+1			; and MSB
+	LDY #tsi_end-tsi_str; number of bytes
 	_EXIT_OK
 
 tsi_str:
 ; pre-created reversed stack frame for firing tasks up, regardless of multitasking driver implementation
 	.word	isr_schd-1	; corrected reentry address, NEW standard label from ISR
-	.byt	1				; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
-;	.byt	0, 0, 0			; irrelevant Y, X, A values?
+	.byt	1			; stored X value, best if multitasking driver is the first one EEEEEEEEEEEK not zero!
+;	.byt	0, 0, 0		; irrelevant Y, X, A values?
 tsi_end:
 ; end of stack frame for easier size computation
 
@@ -1495,7 +1498,7 @@ rls_loop:
 			LDY ram_pos, X		; get pointer to targeted block
 			STY ma_pt			; will be used by FREE
 			_STZA ma_pt+1
-			_KERNEL(FREE)			; release it!
+			_KERNEL(FREE)		; release it!
 			_PLX				; retrieve status
 			PLA
 			BCC rls_next		; keep index IF current entry was deleted!
@@ -1529,4 +1532,3 @@ set_curr:
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
-
