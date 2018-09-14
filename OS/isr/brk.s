@@ -1,7 +1,7 @@
 ; minimOS BRK handler
-; v0.5.1rc1
+; v0.5.1rc2
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180404-1410
+; last modified 20180914-1550
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -17,15 +17,17 @@
 #ifndef	C816
 ; regular 6502 code
 	TSX				; current stack pointer
-	LDA $0108, X	; get MSB (note offset below)
-	LDY $0107, X	; get LSB+1
+	LDA $0109, X	; get MSB (note offset below)
+	LDY $0108, X	; get LSB+1
 	BNE brk_nw		; will not wrap upon decrement!
 		_DEC			; otherwise correct MSB
 #else
 ; 65816 code saves... one byte
-	LDA 11, s		; get buried LSB eeeeeeeeeeeeeeeek
+	LDA 14, s		; get buried LSB eeeeeeeeeeeeeeeek
 	TAX				; hold it
-	LDA 12, s		; get buried MSB
+	LDA 15, s		; get buried MSB
+	LDY 16, s		; bank too eeeeeeek
+	STY systmp		; store after 16b pointer
 	TXY				; prepare for later
 	BNE brk_nw		; will not wrap upon decrement!
 		DEC				; otherwise correct MSB
@@ -38,7 +40,11 @@ brk_nw:
 	LDY #0			; eeeeeeeeeeeeeeeeeek
 brk_ploop:
 		_PHY			; save cursor
+#ifdef	C816
+		LDA [sysptr], Y	; get current char
+#else
 		LDA (sysptr), Y	; get current char
+#endif
 		BNE brk_prn		; more text to show, unfortunately NMOS macro needs this instead of BEQ brk_term
 			PLA				; otherwise discard saved counter
 			_BRA brk_term	; and finish printed line
@@ -55,7 +61,7 @@ brk_term:
 
 ; send a newline to default device
 brk_cr:
-	LDA #13			; CR
+	LDA #CR
 brk_out:
 	LDY #0			; default
 	STA io_c		; kernel parameter
