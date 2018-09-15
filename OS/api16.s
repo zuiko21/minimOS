@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc14, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180705-1654
+; last modified 20180915-2159
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1168,7 +1168,7 @@ string:
 		STZ str_pt+2		; ...or bank 0!
 		LDA str_pt+1		; was zeropage?
 		BNE str_24b			; no, proceed
-			TDC					; ...or get context
+			TDC					; ...or get context ***will this work in 8-bit M?
 ;			ADC str_pt			; add base if not aligned, C was clear
 ;			STA str_pt			; store pointer LSB
 			XBA					; MSB only, assume page-aligned
