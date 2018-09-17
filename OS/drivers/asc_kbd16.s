@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS-16!
-; v0.6a1
+; v0.6a2
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180909-1311
+; last modified 20180917-2229
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -106,7 +106,7 @@ ak_rloop:
 		LDX bl_siz			; bytes to go
 		DEX					; one less
 		STX bl_siz			; update
-		BNE bk_rloop			; continue with remaining, or end
+		BNE ak_rloop			; continue with remaining, or end
 blck_end:
 	RTS					; respect whatever error code
 
