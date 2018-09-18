@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS-16
 ; v0.6a4
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180917-2211
+; last modified 20180918-2146
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -82,7 +82,7 @@ ld_loop:
 ; * code for waiting Y×100 uS *
 ; base 100uS delay
 w100us:
-			LDA #14			; 97+5uS delay @ 1 MHz, change or compute if needed
+			LDA #32			; for 2.304 MHz, change or compute if needed
 w_loop:
 				SEC				; (2)
 				SBC #1			; (2)
@@ -250,7 +250,7 @@ sc_reg:
 		STA lc_tmp			; I need this variable
 ; let us set CGRAM address for this
 		JSR l_busy			; wait for LCD
-		_PHX				; much safer in case of timeout
+		PHX				; much safer in case of timeout
 		LDX nx_sub			; first free entry...
 		DEX					; ...minus 1...
 		TXA					; ...is last used
@@ -258,7 +258,7 @@ sc_reg:
 		ORA #64				; make it set CGRAM command
 		JSR l_issue
 ; now transfer the whole 8 bytes from glyph record
-		_PLX					; retrieve file index
+		PLX					; retrieve file index
 		LDA VIA_U+IORB		; current PB (4)
 		AND #L_OTH			; respect PB3 only (2)
 		ORA #LCD_PR			; allow CGRAM write (2)
@@ -297,8 +297,8 @@ lch_ok:
 
 ; *** clear the screen ***
 lcd_cls:
-	_STZA lcd_x		; clear local coordinates
-	_STZA lcd_y
+	STZ lcd_x		; clear local coordinates
+	STZ lcd_y
 	JSR l_busy		; wait for LCD availability
 	LDA #1			; command = clear display
 ; * issue command on A, assume PB set for cmd output *
@@ -312,7 +312,7 @@ l_pulse:
 ; *** new line and line feed ***
 lcd_cr:
 	JSR l_busy		; ready for several commands
-	_STZA lcd_x		; correct local coordinates
+	STZ lcd_x		; correct local coordinates
 lcd_lf:
 	INC lcd_y
 	LDA lcd_y		; check whether should scroll
@@ -464,7 +464,7 @@ l_avail:
 
 ; ** generic availability check **
 l_wait:
-	_STZA VIA_U+DDRA	; set input!
+	STZ VIA_U+DDRA	; set input!
 	LDA VIA_U+IORB	; original PB
 	AND #L_OTH		; respect bits
 	ORA #LCD_RS		; will read status
