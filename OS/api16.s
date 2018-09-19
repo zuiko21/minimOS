@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc14, should match kernel16.s
+; v0.6rc15, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180916-1121
+; last modified 20180919-1054
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -163,14 +163,6 @@ cout:
 	LDA #io_c			; point to ZP parameter
 	STA bl_ptr			; ready, will not need to resolve!
 	STZ bl_ptr+2		; always in bank zero! eeeeeeeeeek
-; otherwise add LSB like this
-;	TDC					; where is direct page?
-;	CLC
-;	ADC #io_c			; point to ZP parameter
-;	STA bl_ptr			; LSB ready
-;	XBA					; switch to MSB
-;	ADC #0				; propagate carry
-;	STA bl_ptr+1		; set on pointer
 ; set fixed size and proceed
 	LDA #1				; single byte
 	STA bl_siz			; set size
@@ -994,12 +986,12 @@ sig_exit:
 ; C		= bad PID
 
 set_hndl:
-	.al: REP #$20		; *** 16-bit memory size ***
 #ifdef	SAFE
 	TYX					; check PID
 		BNE sig_pid			; only 0 accepted
 #endif
 	LDX ex_pt+2			; 65816 takes bank too
+	.al: REP #$20		; *** 16-bit memory size ***
 #ifdef	SUPPORT
 ; must check for 02 code in order to preset bank!
 	LDA @run_arch		; check current code EEEEEEK takes extra byte
@@ -1169,10 +1161,7 @@ string:
 		LDA str_pt+1		; was zeropage?
 		BNE str_24b			; no, proceed
 			TDC					; ...or get context, full 16-bit regardless of M bit
-;			ADC str_pt			; add base if not aligned, C was clear
-;			STA str_pt			; store pointer LSB
 			XBA					; MSB only, assume page-aligned
-;			ADC #0				; progagate carry and reclear C
 			STA str_pt+1
 str_24b:
 #endif
@@ -1217,10 +1206,7 @@ readln:
 		LDA str_pt+1		; zeropage?
 		BNE rl_24b			; do not correct...
 			TDC					; ...or get context
-;			ADC str_pt			; add base if not aligned, C was clear
-;			STA str_pt			; set LSB
 			XBA					; MSB only (assume page aligned)
-;			ADC #0				; propagate carry, C will clear
 			STA str_pt+1		; correct pointer
 rl_24b:
 #endif
