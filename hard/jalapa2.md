@@ -7,7 +7,11 @@ bankswitching feature (lower 16K, including *zeropage* & *stack*) for reasonable
 versions.
 
 As this machine will take the *experimental* aim of the aborted **SDx** project,
-some **configuration options** (EPROM size, I/O page...) will be available via jumpers.
+some **configuration options** (EPROM size,
+I/O page...) were to be available via jumpers,
+but deemed too complicated. On the other
+hand, the use of two separate ROM sockets
+(for `sys` and `lib` *implicit* volumes).
 
 ## Specs
 
@@ -20,9 +24,14 @@ Still within design phase, here's an outline of its basic specs:
 - (E)EPROM: up to 512 KB
 - Serial: single **65C51**
 
-The most interesting *innovation* is **remapping** part of the ROM (up to 32K) into *bank 
-zero*'s top, for convenient 65xx vector location. For debugging purposes, LEDs will
-indicate the state of **E** (emulation mode) and **M/X** (register sizes) lines of the 65816.
+Although its most interesting feature was **remapping** part of the ROM (up to 32K) 
+into *bank zero*'s top, for convenient 65xx
+vector location, once again this was rejected
+against the aforementioned use of *two* ROM
+sockets.
+
+For debugging purposes, 
+LEDs will indicate the state of **E** (emulation mode) and **M/X** (register sizes) lines of the 65816.
 
 ### Not provided on this machine
 
@@ -36,27 +45,27 @@ Despite the 65816 providing 24-bit addresses, this computer bears a **20-bit** a
 bus *(1 MiB)*. Splitting this space in two allows **up to 512 kiB RAM & 512 kiB ROM**,
 which is the maximum size available in *hobbyist-friendly*, 5v DIP packages.
 
-The usual need in 65816 systems of some ROM in *bank zero* is waived by *remapping
-the upper 32 or 16k (configurable) of the first bank of ROM into bank zero. As the upper
-4 address bits are not connected, this map will *repeat* every 16 banks, note the `x` as
+The usual need in 65816 systems of some ROM in *bank zero* is no longer *remapping
+the upper 32k of the first bank of ROM into bank zero, but using a fixed ROM
+instead.
+
+As the upper 4 address bits are not used, note the `x` as
 *don't care* in the indicated addresses. No provision is made to avoid *mirroring*,
 thus suitable firmware should take that into account.
 
 A typically configured machine goes as follows:
 
 - $x00000-$x07FFF: RAM (all configs)
-- $x08000-$x0BFFF: EPROM (if set to 32K, RAM otherwise) *from $x88000-$x8BFFF*
-- $xC0000-$x0DEFF: EPROM (if set to 32 or 16K, RAM otherwise) *from $x8C000-$x8DEFF*
-- $x0DF00-$x0DFFF: I/O (not valid if 8K or less assigned to ROM, see note below)
-- $x0E000-$x0FFFF: EPROM (on standard configs) *from $x8E000-x$8FFFF*
+- $x80000-$x0DEFF: EPROM
+- $x0DF00-$x0DFFF: I/O
+- $x0E000-$x0FFFF: EPROM
 - $x10000-$x1FFFF: RAM (both 128 & 512K models)
 - $x20000-$x7FFFF: RAM (512K model only)
-- $x80000-$xFFFFF: "high" ROM (includes *kernel* ROM as mentioned)
+- $x80000-$xFFFFF: "high" ROM (no longer includes *kernel* ROM)
 
-Configuration jumpers select the ***kernel* ROM size** (usually 32 or 16K, but smaller sizes
-down to 2 kiB are possible) and the **I/O page** can be freely located anywhere within
-*the upper 32K of bank zero*, although it **must overlap *kernel* ROM area**, otherwise
-bad things may happen (unaccessible I/O, bus contention...) 
+Jumpers *might* select the **I/O page**,
+freely located anywhere within
+*the upper 32K of bank zero*.
 
 Actually, *I/O space* is just **128 bytes**... as it is hardwired to the upper 32K (see
 above), the LSB on the '688 comparator goes to A7, thus being able to select *either
@@ -120,5 +129,5 @@ enabled whenever the ***kernel* area** is accessed (below $x10000, with `BA19` l
 A NAND gate is to be used for this signal, from both `BA19` and the (active *high*)
 result of a '688 detecting the configured *kernel* area.
 
-*Last modified: 2017-07-21*
+*Last modified: 2018-09-21*
  
