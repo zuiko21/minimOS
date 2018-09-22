@@ -7,11 +7,8 @@ bankswitching feature (lower 16K, including *zeropage* & *stack*) for reasonable
 versions.
 
 As this machine will take the *experimental* aim of the aborted **SDx** project,
-some **configuration options** (EPROM size,
-I/O page...) were to be available via jumpers,
-but deemed too complicated. On the other
-hand, the use of two separate ROM sockets
-(for `sys` and `lib` *implicit* volumes).
+some **configuration options** (EPROM size, I/O page...) were to be available via
+jumpers, but deemed too complicated.
 
 ## Specs
 
@@ -22,13 +19,13 @@ Still within design phase, here's an outline of its basic specs:
 - VIA: *single* **65C22**, with the typical **piezo-buzzer** at PB7/CB2
 - RAM: 128/512 KB (static 32-pin)
 - (E)EPROM: up to 512 KB
-- Serial: single **65C51**
+- Serial: single **65C51**, really needed?
 
 Although its most interesting feature was **remapping** part of the ROM (up to 32K) 
-into *bank zero*'s top, for convenient 65xx
-vector location, once again this was rejected
-against the aforementioned use of *two* ROM
-sockets.
+into *bank zero*'s top, for convenient 65xx vector location,
+once again this was feature was discarded and went instead for
+the use of ***two* separate ROM** sockets (for `sys` and `lib` *implicit* volumes,
+namely the **Kernel** and **application** EPROMs).
 
 For debugging purposes, 
 LEDs will indicate the state of **E** (emulation mode) and **M/X** (register sizes) lines of the 65816.
@@ -46,7 +43,7 @@ bus *(1 MiB)*. Splitting this space in two allows **up to 512 kiB RAM & 512 kiB 
 which is the maximum size available in *hobbyist-friendly*, 5v DIP packages.
 
 The usual need in 65816 systems of some ROM in *bank zero* is no longer *remapping
-the upper 32k of the first bank of ROM into bank zero, but using a fixed ROM
+the upper 32k of the first bank of ROM into bank zero, but using a separate ROM
 instead.
 
 As the upper 4 address bits are not used, note the `x` as
@@ -56,19 +53,19 @@ thus suitable firmware should take that into account.
 A typically configured machine goes as follows:
 
 - $x00000-$x07FFF: RAM (all configs)
-- $x80000-$x0DEFF: EPROM
+- $x80000-$x0DEFF: EPROM (**kernel** & **firmware**)
 - $x0DF00-$x0DFFF: I/O
-- $x0E000-$x0FFFF: EPROM
+- $x0E000-$x0FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
 - $x10000-$x1FFFF: RAM (both 128 & 512K models)
 - $x20000-$x7FFFF: RAM (512K model only)
 - $x80000-$xFFFFF: "high" ROM (no longer includes *kernel* ROM)
 
-Jumpers *might* select the **I/O page**,
-freely located anywhere within
-*the upper 32K of bank zero*.
+A reasonable feature would be *jumpers* to select the **I/O page**,
+freely located anywhere within *the upper 32K of bank zero*, switching off the
+*kernel ROM* for peripheral access.
 
-Actually, *I/O space* is just **128 bytes**... as it is hardwired to the upper 32K (see
-above), the LSB on the '688 comparator goes to A7, thus being able to select *either
+Actually, *I/O space* is just **128 bytes**... as it is hardwired to the upper 32K,
+the LSB on the '688 comparator goes to A7, thus being able to select *either
 half* of the page. As the MSB goes with A14, A15 is kept as a non-selectable option
 one the previous comparator, for *kernel-ROM* selection. **This method seems OK
 *if an expansion bus provides means to disable internal decoding***, otherwise will
@@ -127,7 +124,8 @@ will be Phi2-validated via `/WE`, as usual
 - **`ROM /CS`**, on the other hand, cannot just be the opposite, because it has to be
 enabled whenever the ***kernel* area** is accessed (below $x10000, with `BA19` low).
 A NAND gate is to be used for this signal, from both `BA19` and the (active *high*)
-result of a '688 detecting the configured *kernel* area.
+result of a '688 detecting the configured *kernel* area. This might be implemented
+thru some *decoder*, like a spare 74HC139... which I have plenty of.
 
-*Last modified: 2018-09-21*
+*Last modified: 2018-09-22*
  
