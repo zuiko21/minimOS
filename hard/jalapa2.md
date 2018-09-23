@@ -44,7 +44,7 @@ Despite the 65816 providing 24-bit addresses, this computer bears a **20-bit** a
 bus *(1 MiB)*. Splitting this space in two allows **up to 512 kiB RAM & 512 kiB ROM**,
 which is the maximum size available in *hobbyist-friendly*, 5v DIP packages.
 
-The usual need in 65816 systems of some ROM in *bank zero* is no longer *remapping
+The usual need in 65816 systems of some ROM in *bank zero* is no longer *remapping*
 the upper 32k of the first bank of ROM into bank zero, but using a separate ROM
 instead.
 
@@ -75,7 +75,7 @@ limit the expansion capabilities. On the other hand, "borrowing" the whole page 
 I/O will need to disable the internal '139 for the unused half-page. 
 
 Some workaround for its limited expansion capabilities would be decoding the
-*high* ROM at the **uppermost banks** (`BA19`-`BA23`=**1**) avoiding mirroring.
+*high* ROM at the **uppermost banks** (`BA3`-`BA7`=**1**) avoiding mirroring.
 That would render it at $F80000-$FFFFFF, leaving at least **fifteen 512 kiB blocks**
 at the addresses $x80000-$xFFFFF free for expansion (where x is on the range $0-$E)
  
@@ -89,8 +89,8 @@ allow significantly faster clock rates. Since HC logic seems good in this design
 **250 ns memories** are suitable.
 
 As usual in 65816 talk, `D0`...`D7` and `A0`...`A15` are the **direct** data and address 
-lines (pinout shared with the *6502*) while `BA16`...`BA23` are the outputs from the
-*transparent **latch*** as usually done (note `BA20` to `BA23` are **not** used,
+lines (pinout shared with the *6502*) while `BA0`...`BA7` are the outputs from the
+*transparent **latch*** as usually done (note `BA4` to `BA7` are **not** used,
 except for decoding the high ROM (see above).
 
 ### RDY implementation
@@ -125,17 +125,11 @@ should be provided for **expansion bus** use.
 While the moderate clock speed does not ask for an extremely efficient *address
 decoding*, keeping circuitry **as simple as possible** will reduce the build effort...
 
-- **`RAM /CS`** is as simple as **negated `BA19`** (the lowest 512K of each megabyte).
+- **`RAM /CS`** is as simple as **negated `BA3`** (the lowest 512K of each megabyte).
 *Note that RAM is **always** written*, although its *output* will be disabled when
 overlapping with (kernel) EPROM or I/O. *No clock is taken for this signal*, writes
 will be Phi2-validated via `/WE`, as usual. *It is possible to obtain `RAM /CS`
-putting `BA19` thru `BA23` on a '688 for non-mirrored decoding, enhancing the
+putting `BA3` thru `BA7` on a '688 for non-mirrored decoding, enhancing the
 expanasion capabilities*.
-
-- **`ROM /CS`**, on the other hand, cannot just be the opposite, because it has to be
-enabled whenever the ***kernel* area** is accessed (below $x10000, with `BA19` low).
-A NAND gate is to be used for this signal, from both `BA19` and the (active *high*)
-result of a '688 detecting the configured *kernel* area. This might be implemented
-thru some *decoder*, like a spare 74HC139... which I have plenty of.
 
 *Last modified: 2018-09-23*
