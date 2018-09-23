@@ -11,8 +11,8 @@ IRQ6 | /IRQ | /IRQ
 /BBSY | BE | *1?*
 /BCLR | /ML | *1?*
 /BERR | /ABORT | **1**
-/DS1 | VDA | **0**
-/DS0 | VPA | **0**
+/DS1 | VDA | **0** see text
+/DS0 | VPA | **0** see text
 /LWORD | M/X | **1**
 AM0 | E | **1**
 AM1 | /VP | *1?*
@@ -21,11 +21,15 @@ AM3 | **1** | /SO
 AM5 | **0** | **1** *(16-bit sense)*
 /AS | */WE* | */WE*
 D0-D7 | DO-D7 | D0-D7
-D8-D15 | *NC*
+D8-D15 | *NC, reserved*
 A1-A7 | A0-A6 | A0-A6
 AM4 | A7 | A7
 A8-A15 | A8-A15 | A8-A15
 A16-A23 | BA0-BA7 | **0**
 
-`AM2`, normally carrying `SYNC` on 65C02 systems, *may* simulate that on 65816 machines
-the usual way (`VDA` and `VPA`).
+- `AM2`, normally carrying `SYNC` on 65C02 systems, *may* simulate that on 65816
+machines the usual way (`VDA` and `VPA`).
+- Alternatively, `/DS1` may stay **high** on '02 systems, letting `SYNC` into `/DS0`.
+*This will free AM2 in all platforms*.
+
+Fixed values must be set thru *pull-up* (or *pull-down*) resistors.
