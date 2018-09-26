@@ -67,19 +67,23 @@ for **wider front and back porchs**, thus these longer *positions* still render 
 
 Between frames, a total of **77 lines** must be generated for blanking and *VSync*,
 adding 1848 *positions*. Including **448 active lines** of 24 positions, the grand
-total is **12600 *positions***, well within the 27C256 capacity. The 14-bit counter
-(a **couple of 74HC4024**s) must be reset upon reaching 12600, detected via an AND gate.
+total is **12600 positions**, well within the 27C256 capacity. The 14-bit counter
+(several **74HC161**s, as they **must** be synchronous) will be reset upon reaching 12600,
+detected via a NAND gate.
 
 ## Video signal generation
 
-No big deal here... for the bitmapped version, just a **74HC165 *shift register*** at
-the VRAM output. However, the *chunky* 4bpp version may use a **74HC157 *multiplexer***
+No big deal here... for the bitmapped version, just a **74HC165 shift register** at
+the VRAM output. However, the *chunky* 4bpp version may use **multiplexing** instead
 for transferring each half of the stored byte.
 
 Back to the bitmap, the shift register will be clocked directly from the 24.576 MHz
 dot clock, while the 14-bit counter is fed from 1/32 of that (768 kHz). 1/16 and 1/8
 division factors are however fed directly to the VRAM's A0 & A1 lines, as previoulsy
-described (thru *tristate* gates). All these division factors may come from a
-**74HC393** (not sure if a *synchronous* counter is needed, though). 
+described (thru *tristate* gates). All these division factors may come from more
+74HC161s, as *synchronous* counter are needed. Note that this 5-bit *prescaler* will
+take a bit more than the *first* 4-bit counter, and that *second* one will supply the
+**3 least-significant bits** too, and *cannot be reset* upon reaching 12600... but those
+lower bits are going to be zero anyway (12600/8=1575) thus no problem.
 
-*last modified: 20180925-2211*
+*last modified: 20180926-1104*
