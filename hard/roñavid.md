@@ -68,8 +68,8 @@ for **wider front and back porchs**, thus these longer *positions* still render 
 Between frames, a total of **77 lines** must be generated for blanking and *VSync*,
 adding 1848 *positions*. Including **448 active lines** of 24 positions, the grand
 total is **12600 positions**, well within the 27C256 capacity. The 14-bit counter
-(several **74HC161**s, as they **must** be synchronous) will be reset upon reaching 12600,
-detected via a NAND gate.
+(several **cascading 74HC161**s, as they **must** be synchronous) will be reset
+upon reaching 12600, detected via a NAND gate.
 
 ## Video signal generation
 
@@ -84,6 +84,25 @@ described (thru *tristate* gates). All these division factors may come from more
 74HC161s, as *synchronous* counter are needed. Note that this 5-bit *prescaler* will
 take a bit more than the *first* 4-bit counter, and that *second* one will supply the
 **3 least-significant bits** too, and *cannot be reset* upon reaching 12600... but those
-lower bits are going to be zero anyway (12600/8=1575) thus no problem.
+lower bits are going to be zero anyway (12600/8=**1575**) thus not an issue.
 
-*last modified: 20180926-1104*
+## Colour/greyscale option
+
+By *halving* both horizontal and vertical resolution, the same 32 kiB VRAM allows
+up to **4 bits per pixel**. The resulting **288x224** resolution is feasible on
+old-fasioned *PAL/NTSC TV* sets; however, it is best to standardise on **VGA output**
+using *line duplication*. Now the dot-clock is actually one half of the master
+frequency, **12.288 MHz**. But each VRAM address gives two pixels only (vs. eight)
+although at half the rate, thus the VRAM LSB comes from 1/4 of the master. Three of
+the counter outputs will form the *lower bits* of VRAM addresses (vs. two)
+including 1/8 & 1/16.
+
+The EPROM address bits remain fed from 1/32 and beyond, just like the bitmap version.
+Its contents, however, are different: **each scanline's addresses are sent twice** for
+line duplication, which is logical as VRAM addresses are shifted left by one bit. Note
+that the extra *direct bit for VRAM address LSB* makes things much more complicated,
+in case of a *dual-mode* card. Other than that, the addresses generating circuits
+remain pretty much the same, including resetting at *position* 12600. Of course,
+every *position* accounts for a **16-pixel strip** (instead of 32).  
+
+*last modified: 20180926-2143*
