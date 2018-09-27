@@ -83,8 +83,8 @@ dot clock, while the 14-bit EPROM addresses are fed from `Q2B` (384 kHz) and bey
 described (thru *tristate* gates). All these division factors may come from more
 74HC161s, as *synchronous* counter are needed.
 
-*Note: the outputs from the **first** '161 are called `Q1A` (LSB) to `Q1D` (MSB),
-the **second** '161 uses `Q2A` to `Q2D`, and so on.*
+*Note:* the outputs from the **first** '161 are called `Q1A` (LSB) to `Q1D` (MSB),
+the **second** '161 uses `Q2A` to `Q2D`, and so on.
 
 ## Colour/greyscale option
 
@@ -95,16 +95,31 @@ using *line duplication*. Now the dot-clock is actually one half of the master
 frequency, however the *multiplexing* must be done at half of that, `Q1B` at
 **6.144 MHz**. But each VRAM address gives two pixels only (vs. eight)
 although at half the rate, thus the VRAM LSB comes from `Q1C` instead.
-*In order to simplify a **dual-mode circuit**, that LSB will go to `A14` on VRAM,
+In order to *simplify* a **dual-mode circuit**, that LSB will go to `A14` on VRAM,
 but will be muxed with `A0` from the CPU bus, shifting the remaining CPU address lines
-to `A0...A13` on the VRAM*.
+to `A0...A13` on the VRAM.
 
-The EPROM address bits remain fed from 1/32 and beyond, just like the bitmap version.
+The EPROM address bits are always hardwired to `Q2B-Q`.
 Its contents, however, are different: **each scanline's addresses are sent twice** for
 line duplication, which is logical as VRAM addresses are shifted left by one bit. Note
-that the extra *direct bit for VRAM address LSB* makes things much more complicated,
-in case of a *dual-mode* card. Other than that, the addresses generating circuits
+that the *direct bit for address LSB* goes from `Q1C` to `A14` *on the VRAM* but is
+mapped to `A0` on the *CPU bus* side! Other than that, the addresses generating circuits
 remain pretty much the same, including resetting at *position* 12600. Of course,
-every *position* accounts for a **16-pixel strip** (instead of 32).  
+every *position* here accounts for a **16-pixel strip** (instead of 32).  
 
-*last modified: 20180927-1115*
+## Component List *(provisional)*
+
+Qty. | Ref.    | pins | comments
+---- | ----    | ---- | --------
+5    | 74HC161 | 80   | counters
+2    | 27C128  | 56   | address & sync generator
+1    | oscil.  |  4   | main clock
+1    | 74HC30  | 14   | reset device
+1    | 62256   | 28   | VRAM
+2    | 74HC244 | 40   | EPROM "multiplexers"
+4    | 74HC245 | 80   | CPU-bus "multiplexers"
+1    | 74HC165 | 16   | video shift register (bitmap)
+1    | 74HC157 | 16   | pixel multiplexer (colour)
+2    | 74HC688 | 40   | CPU-bus address decoder
+
+*last modified: 20180927-1231*
