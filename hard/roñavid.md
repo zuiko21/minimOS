@@ -31,7 +31,7 @@ frames**. For heavy VRAM access rates, this will reduce the computer's *effectiv
 speed* to about 830 kHz.
 
 For maximum performance, however, the RDY-generating circuit might be disabled, at the
-cost of the typical *snow* during CPU accesses.
+cost of the typical *snow* showing up during CPU accesses.
 
 ## Addresses and sync generation
 
@@ -47,7 +47,7 @@ this is no big deal. Advantages of this approach:
 transceivers) for the video addresses.
 - The video addresses are generated in a nice **contiguous, linear** fashion.
 
-The uppermost bits of the "high" ROM carry the /HS, /VS and /DE (display enable)
+The uppermost bits of the "high" ROM carry the `/HS`, `/VS` and `/DE` (display enable)
 signals. Since we are addressing a 32 kiB VRAM, we need the remaining 15 bits but,
 as we have used up 3 out of all 16 ROM output bits, the *two least-significant bits*
 which are missing will come **direct from the counters** (would need to be
@@ -69,7 +69,7 @@ Between frames, a total of **77 lines** must be generated for blanking and *VSyn
 adding 1848 *positions*. Including **448 active lines** of 24 positions, the grand
 total is **12600 positions**, well within the 27C256 capacity. The 14-bit counter
 (several **cascading 74HC161**s, as they **must** be synchronous) will be reset
-upon reaching 12600, detected via a NAND gate.
+upon reaching 12600, detected via a multi-input NAND gate.
 
 ## Video signal generation
 
@@ -78,13 +78,13 @@ the VRAM output. However, the *chunky* 4bpp version may use **multiplexing** ins
 for transferring each half of the stored byte.
 
 Back to the bitmap, the shift register will be clocked directly from the 24.576 MHz
-dot clock, while the 14-bit counter is fed from 1/32 of that (768 kHz). 1/16 and 1/8
-division factors are however fed directly to the VRAM's A0 & A1 lines, as previoulsy
+dot clock, while the 14-bit EPROM addresses are fed from `Q2B` (384 kHz) and beyond.
+`Q1D` & `Q2A` are however fed directly to the VRAM's `A0` & `A1` lines, as previoulsy
 described (thru *tristate* gates). All these division factors may come from more
-74HC161s, as *synchronous* counter are needed. Note that this 5-bit *prescaler* will
-take a bit more than the *first* 4-bit counter, and that *second* one will supply the
-**3 least-significant bits** too, and *cannot be reset* upon reaching 12600... but those
-lower bits are going to be zero anyway (12600/8=**1575**) thus not an issue.
+74HC161s, as *synchronous* counter are needed.
+
+*Note: the outputs from the **first** '161 are called `Q1A` (LSB) to `Q1D` (MSB),
+the **second** '161 uses `Q2A` to `Q2D`, and so on.*
 
 ## Colour/greyscale option
 
@@ -92,10 +92,12 @@ By *halving* both horizontal and vertical resolution, the same 32 kiB VRAM allow
 up to **4 bits per pixel**. The resulting **288x224** resolution is feasible on
 old-fasioned *PAL/NTSC TV* sets; however, it is best to standardise on **VGA output**
 using *line duplication*. Now the dot-clock is actually one half of the master
-frequency, **12.288 MHz**. But each VRAM address gives two pixels only (vs. eight)
-although at half the rate, thus the VRAM LSB comes from 1/4 of the master. Three of
-the counter outputs will form the *lower bits* of VRAM addresses (vs. two)
-including 1/8 & 1/16.
+frequency, however the *multiplexing* must be done at half of that, `Q1B` at
+**6.144 MHz**. But each VRAM address gives two pixels only (vs. eight)
+although at half the rate, thus the VRAM LSB comes from `Q1C` instead.
+*In order to simplify a **dual-mode circuit**, that LSB will go to `A14` on VRAM,
+but will be muxed with `A0` from the CPU bus, shifting the remaining CPU address lines
+to `A0...A13` on the VRAM*.
 
 The EPROM address bits remain fed from 1/32 and beyond, just like the bitmap version.
 Its contents, however, are different: **each scanline's addresses are sent twice** for
@@ -105,4 +107,4 @@ in case of a *dual-mode* card. Other than that, the addresses generating circuit
 remain pretty much the same, including resetting at *position* 12600. Of course,
 every *position* accounts for a **16-pixel strip** (instead of 32).  
 
-*last modified: 20180926-2143*
+*last modified: 20180927-1115*
