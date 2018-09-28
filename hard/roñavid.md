@@ -53,6 +53,18 @@ as we have used up 3 out of all 16 ROM output bits, the *two least-significant b
 which are missing will come **direct from the counters** (would need to be
 *tristated*, though).
 
+On second thought... the control signals `/HS`, `/VS` and `/DE` **cannot** be
+*tristated* like the remaining bits of the high ROM, otherwise loss of sync will
+happen. Two workarounds are in mind:
+
+- Not using `/OE` on the high ROM, using a 4-bit tristate line driver (74HC244). The
+last bit must be multiplexed externally, but this is anyway needed for switching
+between *bitmap* and *colour* modes (see below).
+- Adding a **third ROM** just for control signals. As I own *plenty* of them, this is
+the preferred solution (makes wiring simpler, too). Despite having extra room in the
+high ROM, the lowermost bits will be generated from the counters because of
+*bandwidth* reasons.
+
 If we address each byte (8 pixels) of the VRAM as *positions*, the ROM addresses would
 need not just the 32256 bytes of the VRAM, but also the *retrace* time (when the
 blanking and sync pulses are generated). This will need **50400 *positions***, asking
@@ -99,7 +111,7 @@ In order to *simplify* a **dual-mode circuit**, that LSB will go to `A14` on VRA
 but will be muxed with `A0` from the CPU bus, shifting the remaining CPU address lines
 to `A0...A13` on the VRAM.
 
-The EPROM address bits are always hardwired to `Q2B-Q`.
+The EPROM address bits are always hardwired to `Q2B-Q5A`.
 Its contents, however, are different: **each scanline's addresses are sent twice** for
 line duplication, which is logical as VRAM addresses are shifted left by one bit. Note
 that the *direct bit for address LSB* goes from `Q1C` to `A14` *on the VRAM* but is
@@ -112,14 +124,13 @@ every *position* here accounts for a **16-pixel strip** (instead of 32).
 Qty. | Ref.    | pins | comments
 ---- | ----    | ---- | --------
 5    | 74HC161 | 80   | counters
-2    | 27C128  | 56   | address & sync generator
+3    | 27C128  | 84   | address & sync generator
 1    | oscil.  |  4   | main clock
 1    | 74HC30  | 14   | reset device
 1    | 62256   | 28   | VRAM
-2    | 74HC244 | 40   | EPROM "multiplexers"
-4    | 74HC245 | 80   | CPU-bus "multiplexers"
+5    | 74HC245 | 100  | CPU-bus "multiplexers"
 1    | 74HC165 | 16   | video shift register (bitmap)
 1    | 74HC157 | 16   | pixel multiplexer (colour)
 2    | 74HC688 | 40   | CPU-bus address decoder
 
-*last modified: 20180927-1231*
+*last modified: 20180928-2308*
