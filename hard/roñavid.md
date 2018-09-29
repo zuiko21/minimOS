@@ -4,17 +4,18 @@
 
 ## Video output
 
-Will generate a *somewhat **VGA-compatible*** signal, albeit with slightly faster
-timings -- due to my lack of 25.175 MHz oscillators. Originally intended as a
-**bitmapped high resolution** display, an alternative version may generate a lower
+Intended for the **Jalapa (2)** 65816-based development computer, this card
+will generate a somewhat **VGA-compatible** signal, albeit with *slightly faster*
+timings, due to my lack of 25.175 MHz oscillators. Originally intended as a
+**bitmapped high resolution** display, the complete version can generate a lower
 resolution image with **4-bpp**, either *greyscale* or *GRgB* colour.
 
 - Dot clock: **24.576 MHz**  
 - VRAM: static **32 kiB** (62256)
-- Resolution: **576x448** pixels *(alternative: 288x224)*
-- Colour depth: **1 bpp** (alternative: *chunky* 4 bpp, either greyscale
+- Resolution: **576x448** or 512x480 pixels (*lo-res:* **288x224** or 256x240)
+- Colour depth: **1 bpp** (*lo-res:* chunky **4 bpp**, either greyscale
 or *non-indexed* colour)
-- Scan rates: about 32 kHz horizontal, 61 Hz vertical
+- Scan rates: **32 kHz** horizontal and nearly **61 Hz** vertical
 
 While a *planar* hi-res version with 3 or 4 bitplanes was considered, the required
 amount of wiring and soldering is not worth the effort, and without the *hardware
@@ -28,7 +29,8 @@ priority to the latter thru *negating the RDY line* during the enabled display t
 When fitted to a **2.304 MHz *Jalapa*** machine, this will get VRAM access of
 **18 clock cycles each scanline**, plus an additional **5544 accessible cycles between
 frames**. For heavy VRAM access rates, this will reduce the computer's *effective
-speed* to about 830 kHz.
+speed* to about 830 kHz. *These figures will vary somewhat if using the alternate
+512x480 or 256x240 resolutions, or with a different CPU speed.*
 
 For maximum performance, however, the RDY-generating circuit might be disabled, at the
 cost of the typical *snow* showing up during CPU accesses.
@@ -48,7 +50,7 @@ transceivers) for the video addresses.
 - The video addresses are generated in a nice **contiguous, linear** fashion.
 
 The uppermost bits of the "high" ROM carry the `/HS`, `/VS` and `/DE` (display enable)
-signals. Since we are addressing a 32 kiB VRAM, we need the remaining 15 bits but,
+signals. Since we are addressing a 32 kiB VRAM, we need another 15 bits but,
 as we have used up 3 out of all 16 ROM output bits, the *two least-significant bits*
 which are missing will come **direct from the counters** (would need to be
 *tristated*, though).
@@ -62,24 +64,27 @@ last bit must be multiplexed externally, but this is anyway needed for switching
 between *bitmap* and *colour* modes (see below).
 - Adding a **third ROM** just for control signals. As I own *plenty* of them, this is
 the preferred solution (makes wiring simpler, too). Despite having extra room in the
-high ROM, the lowermost bits will be generated from the counters because of
-*bandwidth* reasons.
+high ROM, the lowermost bits will stay being generated from the counters
+because of *bandwidth* reasons.
 
 If we address each byte (8 pixels) of the VRAM as *positions*, the ROM addresses would
 need not just the 32256 bytes of the VRAM, but also the *retrace* time (when the
 blanking and sync pulses are generated). This will need **50400 *positions***, asking
 for a couple of 27C512s. But since I own *plenty* of slowish **27C128**s, a less
-precise addressing is used. By removing the two (fastest changing) least
+precise addressing is used. *This prevents the use of a standard 25.175 Mhz
+oscillator for a more standard resolution (**640x400** or 320x200/4bpp)*.
+
+In case of the *hi-res* mode, by removing the two (fastest changing) least
 significant bits from the EPROMs address bus, each *position* becomes a
 **32-pixel strip** (about 1.3 microseconds), so every scanline takes *24 positions*, 18 
 of them *active*. The lower resolution compared to the industry-standard VGA allows
-for **wider front and back porchs**, thus these longer *positions* still render a
-**properly timed and centered *HSync* pulse**, as all timings become multiples of the
+for **wider front and back porchs**, thus these coarse *positions* still render a
+**properly sized and centered *HSync* pulse**, as all timings become multiples of the
 1.3 uS *quantum*.
 
 Between frames, a total of **77 lines** must be generated for blanking and *VSync*,
 adding 1848 *positions*. Including **448 active lines** of 24 positions, the grand
-total is **12600 positions**, well within the 27C256 capacity. The 14-bit counter
+total is **12600 positions**, well within the 27128 capacity. The 14-bit counter
 (several **cascading 74HC161**s, as they **must** be synchronous) will be reset
 upon reaching 12600, detected via a multi-input NAND gate.
 
@@ -90,7 +95,7 @@ the VRAM output. However, the *chunky* 4bpp version may use **multiplexing** ins
 for transferring each half of the stored byte.
 
 Back to the bitmap, the shift register will be clocked directly from the 24.576 MHz
-dot clock, while the 14-bit EPROM addresses are fed from `Q2B` (384 kHz) and beyond.
+dot clock, while the 14-bit EPROM addresses are taken from `Q2B` (384 kHz) and beyond.
 `Q1D` & `Q2A` are however fed directly to the VRAM's `A0` & `A1` lines, as previoulsy
 described (thru *tristate* gates). All these division factors may come from more
 74HC161s, as *synchronous* counter are needed.
@@ -123,14 +128,19 @@ every *position* here accounts for a **16-pixel strip** (instead of 32).
 
 Qty. | Ref.    | pins | comments
 ---- | ----    | ---- | --------
-5    | 74HC161 | 80   | counters
-3    | 27C128  | 84   | address & sync generator
-1    | oscil.  |  4   | main clock
-1    | 74HC30  | 14   | reset device
-1    | 62256   | 28   | VRAM
-5    | 74HC245 | 100  | CPU-bus "multiplexers"
-1    | 74HC165 | 16   | video shift register (bitmap)
-1    | 74HC157 | 16   | pixel multiplexer (colour)
-2    | 74HC688 | 40   | CPU-bus address decoder
+5    | 74HC161 |  80  | counters
+3    | 27C128  |  84  | address & sync generator
+1    | oscil.  |   4  | main clock
+1    | 74HC30  |  14  | reset device
+1    | 62256   |  28  | VRAM
+9    | 74HC245 | 180  | CPU-bus and video output "multiplexers" (\*)
+2    | 74HC139 |  16  | internal signal decoding
+1    | 74HC165 |  16  | video shift register (bitmap)
+1    | 74HC157 |  16  | pixel multiplexer (lo-res)
+1    | 74HC688 |  20  | CPU-bus decoder
+1    | CD4066  |  16  | greyscale analog switch
 
-*last modified: 20180928-2308*
+\*) May use **3 less** of them if single-resolution. *Further pin savings by replacing
+a few of them for 74HC__244__s*.
+
+*last modified: 20180929-1733*
