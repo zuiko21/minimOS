@@ -143,9 +143,9 @@ Qty. | Ref.    | pins | comments
 1    | 74HC165 |  16  | video shift register (bitmap)
 1    | 74HC157 |  16  | pixel multiplexer (lo-res)
 1    | 74HC688 |  20  | CPU-bus decoder
-1    | CD4066  |  16  | greyscale analog switch
+1    | 'HC4316 |  16  | greyscale analog switch
 
 \*) May use **3 less** of them if single-resolution. *Further pin savings by replacing
 a few of them for 74HC**244**s*.
 
-*last modified: 20180930-1032*
+*last modified: 20180930-1224*
