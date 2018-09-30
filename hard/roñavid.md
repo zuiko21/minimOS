@@ -29,8 +29,11 @@ priority to the latter thru *negating the RDY line* during the enabled display t
 When fitted to a **2.304 MHz *Jalapa*** machine, this will get VRAM access of
 **18 clock cycles each scanline**, plus an additional **5544 accessible cycles between
 frames**. For heavy VRAM access rates, this will reduce the computer's *effective
-speed* to about 830 kHz. *These figures will vary somewhat if using the alternate
-512x480 or 256x240 resolutions, or with a different CPU speed.*
+speed* to about 830 kHz. *These figures will vary somewhat if using a different
+CPU speed, or the alternate 512x480 or 256x240 resolutions.* In this last case,
+there will be 24 free clock cycles each scanline, plus 3240 cycles between frames,
+resulting in a worst case 666 kHz effective speed, albeit with somewhat reduced
+latency and **much simpler software** routines.
 
 For maximum performance, however, the RDY-generating circuit might be disabled, at the
 cost of the typical *snow* showing up during CPU accesses.
@@ -72,7 +75,8 @@ need not just the 32256 bytes of the VRAM, but also the *retrace* time (when the
 blanking and sync pulses are generated). This will need **50400 *positions***, asking
 for a couple of 27C512s. But since I own *plenty* of slowish **27C128**s, a less
 precise addressing is used. *This prevents the use of a standard 25.175 Mhz
-oscillator for a more standard resolution (**640x400** or 320x200/4bpp)*.
+oscillator for a more standard resolution (**640x400** or 320x200/4bpp), as the tighter
+sync requirements will need **at least** a 32 kiB EPROM bank with 26250 positions*.
 
 In case of the *hi-res* mode, by removing the two (fastest changing) least
 significant bits from the EPROMs address bus, each *position* becomes a
@@ -80,13 +84,14 @@ significant bits from the EPROMs address bus, each *position* becomes a
 of them *active*. The lower resolution compared to the industry-standard VGA allows
 for **wider front and back porchs**, thus these coarse *positions* still render a
 **properly sized and centered *HSync* pulse**, as all timings become multiples of the
-1.3 uS *quantum*.
+1.3 uS *quantum*. *The alternative resolutions have 16 active positions*.
 
 Between frames, a total of **77 lines** must be generated for blanking and *VSync*,
 adding 1848 *positions*. Including **448 active lines** of 24 positions, the grand
 total is **12600 positions**, well within the 27128 capacity. The 14-bit counter
 (several **cascading 74HC161**s, as they **must** be synchronous) will be reset
-upon reaching 12600, detected via a multi-input NAND gate.
+upon reaching 12600, detected via a multi-input NAND gate. *Alternate resolutions
+have 480 active lines and 45 blank lines*.
 
 ## Video signal generation
 
@@ -124,7 +129,7 @@ mapped to `A0` on the *CPU bus* side! Other than that, the addresses generating 
 remain pretty much the same, including resetting at *position* 12600. Of course,
 every *position* here accounts for a **16-pixel strip** (instead of 32).  
 
-## Component List *(provisional)*
+## Main Component List
 
 Qty. | Ref.    | pins | comments
 ---- | ----    | ---- | --------
@@ -141,6 +146,6 @@ Qty. | Ref.    | pins | comments
 1    | CD4066  |  16  | greyscale analog switch
 
 \*) May use **3 less** of them if single-resolution. *Further pin savings by replacing
-a few of them for 74HC__244__s*.
+a few of them for 74HC**244**s*.
 
-*last modified: 20180929-1733*
+*last modified: 20180930-1032*
