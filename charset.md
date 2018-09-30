@@ -1,6 +1,6 @@
 # minimOS Character Set
 
-*last modified 2018-08-19*
+*last modified 20180930-1630*
 
 Focused on limited resource platforms, the standard **character set** for minimOS
 had to satisfy the following:
@@ -47,3 +47,17 @@ by the **eng** character (required by Wolof language) while the first one will g
 the **bullet** character. Note that the *lowercase **oe** ligature* is kept from
 ISO 8859-15 as, like the Y with diaeresis, may be an acceptable substitute for the
 (rare) appearances of their uppercase counterparts.
+
+## non-ASCII character table
+
+   |$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
+---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---
+**$8x**|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;
+**$9x**|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;
+**$Ax**|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;
+**$Bx**|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;
+**$Cx**|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;
+**$Dx**|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;
+**$Ex**|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;
+**$Fx**|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;|&#;
+
