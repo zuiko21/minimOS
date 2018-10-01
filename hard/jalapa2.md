@@ -8,18 +8,18 @@ versions.
 
 As this machine will take the *experimental* aim of the aborted **SDx** project,
 some **configuration options** (EPROM size, I/O page...) were to be available via
-jumpers, but deemed too complicated.
+jumpers, but deemed too complicated. The **I/O page** selection may remain, though.
 
 ## Specs
 
 Still within design phase, here's an outline of its basic specs:
 
 - CPU: **65C816**
-- Clock speed: likely **2.304 MHz**, although might be increased in the future
+- Clock speed: **2.304 MHz**, with **1.8432** and **3.072 *turbo*** options
 - VIA: *single* **65C22**, with the typical **piezo-buzzer** at PB7/CB2
 - RAM: 128/512 KB (static 32-pin)
 - (E)EPROM: up to 512 KB
-- Serial: single **65C51**, really needed?
+- Serial: single **65C51**, *really needed?*
 - *VME-like* **expansion bus**, essentialy the 65816 pins
 
 Although its most interesting feature was **remapping** part of the ROM (up to 32K) 
@@ -28,8 +28,9 @@ once again this was feature was discarded and went instead for
 the use of ***two* separate ROM** sockets (for `sys` and `lib` *implicit* volumes,
 namely the **Kernel** and **application** EPROMs).
 
-For debugging purposes, 
-LEDs will indicate the state of **E** (emulation mode) and **M/X** (register sizes) lines of the 65816.
+For debugging purposes, LEDs will indicate the state of **E** (emulation mode)
+and **M/X** (register sizes) lines of the 65816. These will be available on the
+*VME-like* bus, too.
 
 ### Not provided on this machine
 
@@ -48,19 +49,19 @@ The usual need in 65816 systems of some ROM in *bank zero* is no longer *remappi
 the upper 32k of the first bank of ROM into bank zero, but using a separate ROM
 instead.
 
-As the upper 4 address bits are not used, note the `x` as
-*don't care* in the indicated addresses. No provision is made to avoid *mirroring*,
+About the RAM, no provision is made to avoid *mirroring*,
 thus suitable firmware should take that into account.
 
 A typically configured machine goes as follows:
 
-- $x00000-$x07FFF: RAM (all configs)
-- $x80000-$x0DEFF: EPROM (**kernel** & **firmware**)
-- $x0DF00-$x0DFFF: I/O
-- $x0E000-$x0FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
-- $x10000-$x1FFFF: RAM (both 128 & 512K models)
-- $x20000-$x7FFFF: RAM (512K model only)
-- $x80000-$xFFFFF: "high" ROM (no longer includes *kernel* ROM)
+- $000000-$007FFF: RAM (all configs)
+- $080000-$00DEFF: EPROM (**kernel** & **firmware**)
+- $00DF00-$00DFFF: built-in I/O (selectable)
+- $00E000-$00FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
+- $010000-$01FFFF: RAM (both 128 & 512K models)
+- $020000-$07FFFF: RAM (512K model only)
+- $080000-$F7FFFF: **free** for *VME-like* expansion bus
+- $F80000-$FFFFFF: "high" ROM (no longer includes *kernel* ROM)
 
 A reasonable feature would be *jumpers* to select the **I/O page**,
 freely located anywhere within *the upper 32K of bank zero*, switching off the
@@ -74,10 +75,11 @@ one the previous comparator, for *kernel-ROM* selection. **This method seems OK
 limit the expansion capabilities. On the other hand, "borrowing" the whole page for
 I/O will need to disable the internal '139 for the unused half-page. 
 
-Some workaround for its limited expansion capabilities would be decoding the
+Some workaround for its limited expansion capabilities is decoding the
 *high* ROM at the **uppermost banks** (`BA3`-`BA7`=**1**) avoiding mirroring.
-That would render it at $F80000-$FFFFFF, leaving at least **fifteen 512 kiB blocks**
-at the addresses $x80000-$xFFFFF free for expansion (where x is on the range $0-$E)
+Also, RAM should be properly decoded too, at least within the lowest 512 K. That would
+render `lib` ROM at $F80000-$FFFFFF, leaving all addresses $080000-$F7FFFF
+(15 MiB) **free** for expansion.
  
 ## Glue-logic implementation
 
@@ -125,11 +127,14 @@ should be provided for **expansion bus** use.
 While the moderate clock speed does not ask for an extremely efficient *address
 decoding*, keeping circuitry **as simple as possible** will reduce the build effort...
 
-- **`RAM /CS`** is as simple as **negated `BA3`** (the lowest 512K of each megabyte).
+- **`RAM /CS`** takes `BA3-BA7` as *zero* on a '688 (the lowest 512 kiB).
 *Note that RAM is **always** written*, although its *output* will be disabled when
 overlapping with (kernel) EPROM or I/O. *No clock is taken for this signal*, writes
-will be Phi2-validated via `/WE`, as usual. *It is possible to obtain `RAM /CS`
-putting `BA3` thru `BA7` on a '688 for non-mirrored decoding, enhancing the
-expanasion capabilities*.
+will be Phi2-validated via `/WE`, as usual.
+- **`RAM /OE`** stays low unless both `/BZ` low and `A15` high.
+- **`/IO`** uses `/BZ` to enable a '688, then `A8-A15` high as configured.
+- **`KERNEL /CS`** uses both `/BZ` (bank zero) low and `A15` high (first upper 32K).
+- **`KERNEL /OE`** needs `/IO` negated (high), perhaps with `R/W` high to avoid *bus
+contention*.
 
-*Last modified: 2018-09-23*
+*Last modified: 20181001-2204*
