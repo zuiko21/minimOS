@@ -4,7 +4,7 @@
 ------ | --- | ----- | ----- | ---- | ----
 O | SYSCLK | Phi2 IN | *Phi2 OUT* | Phi2 | E
 oc | SYSRESET | /RES | /RES | /RESET | /RESET
-3s | /WRITE | */WE* | */WE* | */WE* | */WE* | */WE*
+3s | /WRITE | R/W | R/W | R/W | R/W
 oc | /DTACK | *RDY* | RDY | /HALT | MR
 oc | /IRQ7 | /NMI | /NMI | /NMI | /NMI
 oc | /IRQ6 | /IRQ | /IRQ | /IRQ | /IRQ
@@ -24,7 +24,7 @@ oc | /BERR | /ABORT | **1** | **1** | **1**
 3s | AM2 | /VP | **1?** | **1** | **1**
 3s | AM3 | **1** | /SO | **1** | **1** | **1**
 3s | AM5 | **1** | **1** | **1** | **1** | **1** *(16-bit bus)*
-3s | /AS | R/W | R/W | R/W | R/W
+3s | /AS |  |  |  | 
 3s | D0-D7 | D0-D7 | D0-D7 | D0-D7 | DO-D7
 3s | D8-D15 | *NC, reserved*
 3s | A1-A7 | A0-A6 | A0-A6 | A0-A6 | A0-A6
