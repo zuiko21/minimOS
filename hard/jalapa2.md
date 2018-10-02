@@ -67,19 +67,14 @@ A reasonable feature would be *jumpers* to select the **I/O page**,
 freely located anywhere within *the upper 32K of bank zero*, switching off the
 *kernel ROM* for peripheral access.
 
-Actually, *I/O space* is just **128 bytes**... as it is hardwired to the upper 32K,
-the LSB on the '688 comparator goes to A7, thus being able to select *either
-half* of the page. As the MSB goes with A14, A15 is kept as a non-selectable option
-one the previous comparator, for *kernel-ROM* selection. **This method seems OK
-*if an expansion bus provides means to disable internal decoding***, otherwise will
-limit the expansion capabilities. On the other hand, "borrowing" the whole page for
-I/O will need to disable the internal '139 for the unused half-page. 
+Note that "borrowing" the whole page for I/O will need some way to disable the internal
+'139 for the unused half-page. So far, the 128-byte decoded I/O gets *mirrored*.
 
-Some workaround for its limited expansion capabilities is decoding the
+Since a proper bus interface is fitted, tha proper way of is to decode the
 *high* ROM at the **uppermost banks** (`BA3`-`BA7`=**1**) avoiding mirroring.
-Also, RAM should be properly decoded too, at least within the lowest 512 K. That would
-render `lib` ROM at $F80000-$FFFFFF, leaving all addresses $080000-$F7FFFF
-(15 MiB) **free** for expansion.
+Also, *RAM should be properly decoded* too, at least within the **lowest 512 K**.
+That would render `lib` ROM at $F80000-$FFFFFF, leaving all addresses
+$080000-$F7FFFF (15 MiB) **free** for expansion.
  
 ## Glue-logic implementation
 
@@ -92,8 +87,7 @@ allow significantly faster clock rates. Since HC logic seems good in this design
 
 As usual in 65816 talk, `D0`...`D7` and `A0`...`A15` are the **direct** data and address 
 lines (pinout shared with the *6502*) while `BA0`...`BA7` are the outputs from the
-*transparent **latch*** as usually done (note `BA4` to `BA7` are **not** used,
-except for decoding the high ROM (see above).
+*transparent **latch*** as usually done.
 
 ### RDY implementation
 
@@ -120,21 +114,35 @@ addresses*. Another option would be the use of **clock-stretching** and leaving 
 *gently* pulled up and indisturbed.
 
 Note that this machine *does **not** negate RDY* by itself, although this capability
-should be provided for **expansion bus** use.
+should be provided for **expansion bus** use, perhaps by means of *clock-stretching*.
 
 ### Chip Selection
 
 While the moderate clock speed does not ask for an extremely efficient *address
 decoding*, keeping circuitry **as simple as possible** will reduce the build effort...
 
-- **`RAM /CS`** takes `BA3-BA7` as *zero* on a '688 (the lowest 512 kiB).
-*Note that RAM is **always** written*, although its *output* will be disabled when
-overlapping with (kernel) EPROM or I/O. *No clock is taken for this signal*, writes
-will be Phi2-validated via `/WE`, as usual.
-- **`RAM /OE`** stays low unless both `/BZ` low and `A15` high.
-- **`/IO`** uses `/BZ` to enable a '688, then `A8-A15` high as configured.
-- **`KERNEL /CS`** uses both `/BZ` (bank zero) low and `A15` high (first upper 32K).
-- **`KERNEL /OE`** needs `/IO` negated (high), perhaps with `R/W` high to avoid *bus
-contention*.
+*Unless noted otherwise, all '688s and '139s are **enabled** when any of `VDA` or `VPA`
+are in **high** state.*
 
-*Last modified: 20181001-2204*
+- **`/BZ`** (bank zero) is, of course, a '688 expecting `BA0-BA7` to be zero, possibly
+enabled thru `VPA` NOR `VDA`
+- **`LIB /CS`** (enabling the *high* ROM) is another '688 looking for `BA5-7` high,
+perhaps with R/W too in case of *bus contention*. In that case, you can keep
+`LIB /OE` tied to ground.
+- **`RAM /CS`** expects `BA3-BA7` as *zero* on a '688 (the lowest 512 kiB).
+*Note that RAM is **always** written*, although its *output* will be disabled when
+overlapping with (kernel) EPROM or I/O. *The `/WE` signal will no longer be generated*,
+as with a fast RAM it is best to **validate `RAM /CS` with Phi2**, together with 
+several `BA` bits. This reduces power consumption, too. *Further savings could be done
+putting `/IO` and `KERNEL /CS` here too*, RAMs are usually fast enough for this.
+- **`RAM /OE`** stays low unless `/BZ` is low and `A15` high. *It is actually
+the **negation** of `KERNEL /CS`*, but if this last signal affects `RAM /CS`
+(see above) can be **just tied to ground**.
+- **`/IO`** uses `/BZ` to *enable* a '688, then `A8-A15` as configured. *Note that*
+- **`KERNEL /CS`** looks for `/BZ` low and `A15` high (first upper 32K), for lowest
+power consumption (will stay on during I/O but with outputs disabled). *A few ns
+cound be gained if **enabled** via `/BZ`*. 
+- **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
+*bus contention*.
+
+*Last modified: 20181002-1325*
