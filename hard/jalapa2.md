@@ -41,8 +41,8 @@ and **M/X** (register sizes) lines of the 65816. These will be available on the
 
 ## Memory map
 
-Despite the 65816 providing 24-bit addresses, this computer bears a **20-bit** address
-bus *(1 MiB)*. Splitting this space in two allows **up to 512 kiB RAM & 512 kiB ROM**,
+Formerly using a **20-bit** address
+bus *(1 MiB)*, this space allows **up to 512 kiB RAM & 512 kiB ROM**,
 which is the maximum size available in *hobbyist-friendly*, 5v DIP packages.
 
 The usual need in 65816 systems of some ROM in *bank zero* is no longer *remapping*
@@ -64,8 +64,8 @@ A typically configured machine goes as follows:
 - $F80000-$FFFFFF: "high" ROM (no longer includes *kernel* ROM)
 
 A reasonable feature would be *jumpers* to select the **I/O page**,
-freely located anywhere within *the upper 32K of bank zero*, switching off the
-*kernel ROM* for peripheral access.
+freely located anywhere within *bank zero*, switching off
+both the *kernel ROM* and RAM (just in case) for peripheral access.
 
 Note that "borrowing" the whole page for I/O will need some way to disable the internal
 '139 for the unused half-page. So far, the 128-byte decoded I/O gets *mirrored*.
@@ -130,8 +130,9 @@ enabled thru `VPA` NOR `VDA`
 perhaps with R/W too in case of *bus contention*. In that case, you can keep
 `LIB /OE` tied to ground.
 - **`RAM /CS`** expects `BA3-BA7` as *zero* on a '688 (the lowest 512 kiB).
-*Note that RAM is **always** written*, although its *output* will be disabled when
-overlapping with (kernel) EPROM or I/O. *The `/WE` signal will no longer be generated*,
+*Note that RAM was **always** written*, although its *output* will be disabled when
+overlapping with (kernel) EPROM or I/O. An alternative decoding will shut it off
+during I/O, though. *The `/WE` signal will no longer be generated*,
 as with a fast RAM it is best to **validate `RAM /CS` with Phi2**, together with 
 several `BA` bits. This reduces power consumption, too. *Further savings could be done
 putting `/IO` and `KERNEL /CS` here too*, RAMs are usually fast enough for this.
@@ -145,4 +146,4 @@ cound be gained if **enabled** via `/BZ`*.
 - **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
 *bus contention*.
 
-*Last modified: 20181002-1325*
+*Last modified: 20181003-2150*
