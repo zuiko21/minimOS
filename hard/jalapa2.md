@@ -38,6 +38,19 @@ and **M/X** (register sizes) lines of the 65816. These will be available on the
 - Hardware *zeropage/stack* **bankswitching** (65816 allows easy multitasking)
 - 6845-based video output (cards available thru the *expansion bus*)
 
+### Clock generation
+
+According to the usual way of selecting my *most abundant* components in stock,
+the clock signal is generated from a **18.432 MHz oscillator** can. Together with
+a **74HC(T)390**, one half divides this frequency *by ten*, obtaining the
+*standard 1.8432 MHz* for the **ACIA**. The other half of the '390 is however
+cofigured as **divide-by-eight**, thus obtaining the nominal **2.304 MHz** as
+the *main system clock*.
+
+For the *turbo* option, this second half of the '390 could be configured as
+*divide-by-six* for a **3.072 MHz** Phi2. For this matter, the first *divide-by-5*
+counter must be reset upon reaching 3, via an AND gate.
+
 ## Memory map
 
 This machine fomerly was designed around a  **20-bit** address bus *(1 MiB)*,
@@ -155,4 +168,4 @@ cound be gained if **enabled** via `/BZ`*.
 - **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
 *bus contention*.
 
-*Last modified: 20181004-1231*
+*Last modified: 20181005-1009*
