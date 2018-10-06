@@ -1,7 +1,7 @@
 ; Roñavid driver for minimOS-16
 ; v0.6a1
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20181005-1816
+; last modified 20181006-1430
 
 ; 576×448 bitmap version
 
@@ -23,7 +23,7 @@
 ; *** assembly options and other constants ***
 ; substitution for undefined chars
 #define	SUBST	'?'
-; enable char redefining for international support
+; enable extended ASCII for international support
 #define	INTLSUP	_INTLSUP
 
 ; *** begins with sub-function addresses table ***
@@ -59,9 +59,7 @@ rv_err:
 ; ************************
 rv_init:
 ; proceed with driver variables
-	STZ rv_x		; reset coordinate
-	STZ rv_y		; reset coordinate
-	_DR_OK			; succeeded
+	JMP rv_cls		; clear screen and exit
 
 ; *********************************
 ; *** print block of characters *** mandatory loop
@@ -151,8 +149,24 @@ lch_ok:
 rv_cls:
 	STZ rv_x		; clear local coordinates
 	STZ rv_y
-
-	RTS
+	PHB
+	LDA #7				; VRAM page
+	PHA				; use stack to set B
+	PLB
+	LDY #0				; reset index
+	.xl: .al: REP #$30	; all 16-bit
+	LDA #$8000		; VRAM base address
+	STA rv_loc		; local pointer
+	TYA				; preset value
+rc_loop:
+		STA [rv_loc], Y		; clear first word
+		INY
+		STA [rv_loc], Y		; and the second word
+		INY
+		BPL rc_loop
+	PLB				; restore data bank
+	.as: .xs: SEP #$30
+	_EXIT_OK
 
 ; *** new line and line feed ***
 rv_cr:
