@@ -1,7 +1,7 @@
 ; Roñavid driver for minimOS-16
-; v0.6a1
+; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20181006-1430
+; last modified 20181007-1027
 
 ; 576×448 bitmap version
 
@@ -9,7 +9,7 @@
 ; *** minimOS headers ***
 ; ***********************
 //#include "../usual.h"
-#include "options/chihuahua_plus.h"
+;#include "options/chihuahua_plus.h"
 #include "macros.h"
 #include "abi.h"
 .zero
@@ -26,14 +26,18 @@
 ; enable extended ASCII for international support
 #define	INTLSUP	_INTLSUP
 
+; VRAM address and page, currently at $078000-$07FFFF
+#define	VRAM_A	$8000
+#define	VRAM_B	$07
+
 ; *** begins with sub-function addresses table ***
 	.byt	160			; physical driver number D_ID (TBD)
 	.byt	A_BOUT		; output driver, non-interrupt-driven
 	.word	rv_err		; does not read
 	.word	rv_prn		; print N characters
 	.word	rv_init		; initialise device, called by POST only
-	.word	rv_rts		; no periodic interrupt
-	.word	0			; frequency makes no sense
+	.word	rv_cur		; periodic interrupt just for cursor
+	.word	60			; frequency of cursor toggling (0.24s)
 	.word	rv_err		; D_ASYN does nothing
 	.word	rv_err		; no config
 	.word	rv_err		; no status
@@ -47,8 +51,6 @@ rv_txt:
 
 rv_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
-
-; *** define some constants ***
 
 ; size definitions for 8*16 font
 	L_CHAR	= 72		; chars per line
@@ -150,12 +152,12 @@ rv_cls:
 	STZ rv_x		; clear local coordinates
 	STZ rv_y
 	PHB
-	LDA #7				; VRAM page
+	LDA #VRAM_B		; VRAM bank
 	PHA				; use stack to set B
 	PLB
 	LDY #0				; reset index
 	.xl: .al: REP #$30	; all 16-bit
-	LDA #$8000		; VRAM base address
+	LDA #VRAM_A		; VRAM base address
 	STA rv_loc		; local pointer
 	TYA				; preset value
 rc_loop:
@@ -221,6 +223,29 @@ rbs_ok:
 ; *** generic routines ***
 ; ************************
 
+; interrupt-driven cursor flashing
+rv_cur:
+	LDA rv_cen		; is cursor enabled?
+	BEQ rv_ncur		; not, do nothing
+		LDA rv_y		; yes, get cursor row
+		.al: REP #$21		; 16-bit for a while, preclear C
+		AND #$00FF		; clear high
+		ASL
+		ASL
+		ASL
+		ASL			; conver to scanlines (times 16)
+		ADC #VRAM_A		; compute base address for this row
+		ADC #15			; will affect bottoom scanline!
+		STA sysptr		; prepare pointer
+		.as: SEP #$20		; back to 8-bit
+		LDA #VRAM_B		; set VRAM bank too
+		STA systmp
+		LDA #$FF		; mask value for faster access!
+		LDY rv_x		; column as offset
+		EOR [sysptr], Y		; modified value is ready
+		STA [sysptr], Y		; already set
+rv_ncur:
+	RTS
 
 ; ********************
 ; *** several data ***
