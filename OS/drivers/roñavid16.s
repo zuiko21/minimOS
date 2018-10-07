@@ -1,7 +1,7 @@
 ; Roñavid driver for minimOS-16
 ; v0.6a2
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20181007-1027
+; last modified 20181007-1108
 
 ; 576×448 bitmap version
 
@@ -61,6 +61,9 @@ rv_err:
 ; ************************
 rv_init:
 ; proceed with driver variables
+	LDA #$FF
+	STA rv_cen		; enable cursor by default
+	STZ rv_cdis		; but not currently shown
 	JMP rv_cls		; clear screen and exit
 
 ; *********************************
@@ -227,7 +230,13 @@ rbs_ok:
 rv_cur:
 	LDA rv_cen		; is cursor enabled?
 	BEQ rv_ncur		; not, do nothing
-		LDA rv_y		; yes, get cursor row
+		LDA rv_cdis		; current status
+; if cursor is to be disabled AND rv_cdis NZ, call here to restore image
+; ditto when scrolling! assume rv_cdis on A anyway
+rv_ctog:
+		EOR $FF			; toggle and store
+		STA rv_cdis
+		LDA rv_y		; get cursor row
 		.al: REP #$21		; 16-bit for a while, preclear C
 		AND #$00FF		; clear high
 		ASL
