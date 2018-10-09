@@ -49,7 +49,9 @@ the *main system clock*.
 
 For the *turbo* option, this second half of the '390 could be configured as
 *divide-by-six* for a **3.072 MHz** Phi2. For this matter, the first *divide-by-5*
-counter must be reset upon reaching 3, via an AND gate.
+counter must be reset upon reaching 3, via an AND gate. A simpler, but perhaps
+too fast for the HC chips, would be taking the clock from the divide-by-5 section
+of the ACIA divider, getting **3.6864 MHz**.
 
 ## Memory map
 
@@ -62,8 +64,10 @@ The usual need in 65816 systems of some ROM in *bank zero* is no longer satisfie
 by *remapping* the upper 32k of the first bank of ROM into bank zero, but using a
 **separate EPROM** instead.
 
-About the RAM, no provision is made to avoid mirroring *within the maximum
-512 kiB area* (or 1 MiB) thus suitable firmware should take that into account.
+About the RAM, no provision is made to avoid mirroring *within the first
+megabyte* thus suitable firmware should take that into account. Decoding RAM
+for *twice* the required amount allows for **getting full access to the
+*ROM-shadowed* RAM**.
 
 A typically configured machine goes as follows:
 
@@ -73,8 +77,9 @@ A typically configured machine goes as follows:
 - $00E000-$00FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
 - $010000-$01FFFF: RAM (both 128 & 512K models)
 - $020000-$07FFFF: RAM (512K model only, or *mirror* images of RAM if 128K are fitted)
-- $080000-$F7FFFF: **free** for *VME-like* expansion bus ($080000-$0FFFFF might be
-more RAM images, too)
+- $080000-$0FFFFF: more RAM images ($0x8000-$0xFFFF allows *shadow RAM* access for some
+x values)
+- $100000-$F7FFFF: **free** for *VME-like* expansion bus
 - $F80000-$FFFFFF: "high" ROM (no longer includes *kernel* ROM)
 
 As this is a development machine, *jumpers* select the **I/O page**,
@@ -90,10 +95,9 @@ have just another *four* available slots, as VIA & ACIA appear *twice* on the pa
 
 Since a complete *expansion bus* is fitted, the *high* ROM must be decoded at the
 **uppermost banks** (`BA3-BA7`=**1**) avoiding mirroring.
-Also, *RAM should be properly decoded* too, at least within the **lowest 512 K**.
+Also, *RAM should be properly decoded* too, but within the **lowest MiB**.
 That would render `lib` ROM at $F80000-$FFFFFF, leaving all addresses
-$080000-$F7FFFF (15 MiB) **free** for expansion, or 14 MiB, if the alternative
-decoding is used.
+$100000-$F7FFFF (14 MiB) **free** for expansion.
  
 ## Glue-logic implementation
 
@@ -170,4 +174,4 @@ cound be gained if **enabled** via `/BZ`*.
 - **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
 *bus contention*.
 
-*Last modified: 20181008-2219*
+*Last modified: 20181009-2053*
