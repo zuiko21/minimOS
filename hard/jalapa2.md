@@ -50,7 +50,7 @@ the *main system clock*.
 For the *turbo* option, this second half of the '390 could be configured as
 *divide-by-six* for a **3.072 MHz** Phi2. For this matter, the first *divide-by-5*
 counter must be reset upon reaching 3, via an AND gate. A simpler, but perhaps
-too fast for the HC chips, would be taking the clock from the divide-by-5 section
+too fast for the *HC* ICs, would be taking the clock from the divide-by-5 section
 of the ACIA divider, getting **3.6864 MHz**.
 
 ## Memory map
@@ -156,7 +156,7 @@ most likely enabled thru `VPA` NOR `VDA` (aka `/OK`).
 - **`LIB /CS`** (enabling the *high* ROM) is another '688 looking for `BA5-BA7`
 high, and maybe R/W too in case of *bus contention*. In that case, you can keep
 `LIB /OE` tied to ground.
-- **`RAM /CS`** expects `BA3-BA7` as *zero* on a '688 (the lowest 512 kiB).
+- **`RAM /CS`** expects `BA4-BA7` as *zero* on a '688 (the lowest MiB).
 *Note that RAM was **always** written*, although its *output* was disabled when
 overlapping with (kernel) EPROM or I/O. An *alternative decoding* will shut it off
 during I/O, though. *The `/WE` signal will no longer be generated*,
@@ -174,4 +174,4 @@ cound be gained if **enabled** via `/BZ`*.
 - **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
 *bus contention*.
 
-*Last modified: 20181009-2053*
+*Last modified: 20181010-2115*
