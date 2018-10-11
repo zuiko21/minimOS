@@ -1,7 +1,7 @@
-; minimOS 0.6rc15 API/ABI
+; minimOS 0.6rc16 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180529-1516
+; last modified 20181011-0954
 
 ; *************************************************
 ; *************************************************
@@ -40,7 +40,9 @@ B_SIGNAL	= B_EXEC + 2	; send UNIX_like signal to a braid
 B_FLAGS		= B_SIGNAL + 2	; get execution flags of a braid
 SET_HNDL	= B_FLAGS + 2	; set SIGTERM handler
 B_YIELD		= SET_HNDL + 2	; give away CPU time, not really needed but interesting anyway
-GET_PID		= B_YIELD + 2	; get current braid PID *** 20171220 is last one as will not need to be patched
+B_FORE		= B_YIELD + 2	; set foreground task ***new 20181011***
+B_EVENT		= B_FORE + 2	; identify event and send signal to foreground task ***new 20181011***
+GET_PID		= B_EVENT + 2	; get current braid PID *** 20171220 is last one as will not need to be patched
 
 ; some new driver functionalities, perhaps OK with LOWRAM systems
 DR_INFO		= GET_PID + 2	; get header, new
