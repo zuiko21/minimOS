@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc18, must match kernel.s
+; v0.6rc19, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180913-1209
+; last modified 20181011-1015
 
 ; no way for standalone assembly...
 
@@ -38,6 +38,8 @@ k_vec:
 	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
 	.word	set_hndl	; set SIGTERM handler
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	b_fore		; set foreground task ***new
+	.word	b_event		; send signal to foreground task ***new
 	.word	get_pid		; get PID of current braid ***returns 0
 ; new driver functionalities TBD
 	.word	dr_info		; driver header ***new
@@ -74,7 +76,7 @@ unimplemented:			; placeholder here
 
 
 ; ****************************
-; *** CIN, get a character *** and manage events!
+; *** CIN, get a character *** no longer manage events!
 ; ****************************
 ;		INPUT
 ; Y = dev
@@ -91,44 +93,43 @@ cin:
 	STA bl_siz			; set size
 	_STZA bl_siz+1
 	_KERNEL(BLIN)		; get small block...
-; ...and check for events!
 	BCC ci_nerror		; got something...
 		RTS					; ...or keep error code from BLIN
 ci_nerror:
 	LDX iol_dev			; **use physdev as index! worth doing here (3)
 	LDA io_c			; get received character
-	CMP #' '			; printable?
-		BCS ci_exitOK		; if so, will not be an event, exit with NO error
+;	CMP #' '			; printable?
+;		BCS ci_exitOK		; if so, will not be an event, exit with NO error
 ; otherwise might be an event
 ; check for binary mode first
-	LDY cin_mode, X		; *get flag, new sysvar 20150617
-	BEQ ci_event		; should process possible event
-		_STZA cin_mode, X	; *back to normal mode
+;	LDY cin_mode, X		; *get flag, new sysvar 20150617
+;	BEQ ci_event		; should process possible event
+;		STZA cin_mode, X	; *back to normal mode
 ci_exitOK:
 		_EXIT_OK			; *otherwise mark no error and exit
 ci_event:
-	CMP #16				; is it DLE?
-	BNE ci_notdle		; otherwise check next
-		STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
-		_ERR(EMPTY)			; and supress received character (will NOT stay locked!)******************
+;	CMP #16				; is it DLE?
+;	BNE ci_notdle		; otherwise check next
+;		STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
+;		ERR(EMPTY)			; and supress received character (will NOT stay locked!)******************
 ci_notdle:
-	CMP #3				; is it ^C? (TERM)
-	BNE ci_noterm		; otherwise check next
-		LDA #SIGTERM
-		_BRA ci_signal		; send signal
+;	CMP #3				; is it ^C? (TERM)
+;	BNE ci_noterm		; otherwise check next
+;		LDA #SIGTERM
+;		BRA ci_signal		; send signal
 ci_noterm:
-	CMP #4				; is it ^D? (KILL) somewhat dangerous...
-	BNE ci_nokill		; otherwise check next
-		LDA #SIGKILL
-		_BRA ci_signal		; send signal
+;	CMP #4				; is it ^D? (KILL) somewhat dangerous...
+;	BNE ci_nokill		; otherwise check next
+;		LDA #SIGKILL
+;		BRA ci_signal		; send signal
 ci_nokill:
-	CMP #26				; is it ^Z? (STOP)
-		BNE ci_exitOK		; otherwise there is no more to check
-	LDA #SIGSTOP		; last signal to be sent
+;	CMP #26				; is it ^Z? (STOP)
+;		BNE ci_exitOK		; otherwise there is no more to check
+;	LDA #SIGSTOP		; last signal to be sent
 ci_signal:
-	STA b_sig			; set signal as parameter
-	LDY run_pid			; faster GET_PID
-	_KERNEL(B_SIGNAL)	; send signal to myself
+;	STA b_sig			; set signal as parameter
+;	LDY run_pid			; faster GET_PID
+;	_KERNEL(B_SIGNAL)	; send signal to myself
 ; continue after having filtered the error
 ci_error:
 	_ERR(EMPTY)			; no character was received
@@ -640,7 +641,7 @@ b_fork:
 ; *** B_YIELD, yield CPU time to next braid **************
 ; ********************************************************
 ;		INPUT
-; Y = dev
+; Y = dev (unless it is B_YIELD)
 
 close_w:				; does not do much
 free_w:					; does not do much, either
@@ -818,6 +819,47 @@ get_pid:
 	LDY run_pid			; new kernel variable
 	_EXIT_OK
 
+; ***********************************
+; *** B_FORE, set foreground task ***
+; ***********************************
+;		INPUT
+; Y		= PID of task, 0 if myself
+
+b_fore:
+#ifdef	SAFE
+	TYA					; check PID
+	BEQ bf_ok			; must be zero
+		_ERR(INVALID)		; complain otherwise
+bf_ok:
+#endif
+	_EXIT_OK
+
+; ************************************************
+; *** B_EVENT, send signal to appropriate task ***
+; ************************************************
+;		INPUT
+; Y		= transferred char
+
+b_event:
+	CPY #3				; is it ^C?
+	BNE be_nc
+		LDA #SIGTERM
+		BNE be_sig			; no need for BRA
+be_nc:
+	CPY #4				; is it ^D?
+	BNE be_nd
+		LDA #SIGKILL		; somewhat dangerous!
+		BEQ be_sig			; no need for BRA (this was zero)
+be_nd:
+	CPY #26				; is it ^Z?
+	BNE bn_none			; this is the last recognised event
+		LDA #SIGSTOP
+be_sig:
+	STA mm_sig			; set signal
+	LDY run_fg			; get foreground task, internal!
+	JMP b_signal		; exexute and return
+be_none:
+	_ERR(INVALID)		; usually a discarded event
 
 ; **************************************************************
 ; *** LOADLINK, get address once in RAM/ROM (in development) ***
