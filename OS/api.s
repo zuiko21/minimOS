@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc19, must match kernel.s
+; v0.6rc20, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181011-1015
+; last modified 20181012-1821
 
 ; no way for standalone assembly...
 
@@ -93,11 +93,12 @@ cin:
 	STA bl_siz			; set size
 	_STZA bl_siz+1
 	_KERNEL(BLIN)		; get small block...
-	BCC ci_nerror		; got something...
+;	BCC ci_nerror		; got something...
 		RTS					; ...or keep error code from BLIN
-ci_nerror:
-	LDX iol_dev			; **use physdev as index! worth doing here (3)
-	LDA io_c			; get received character
+; *** events no longer managed here ***
+;ci_nerror:
+;	LDX iol_dev			; **use physdev as index! worth doing here (3)
+;	LDA io_c			; get received character
 ;	CMP #' '			; printable?
 ;		BCS ci_exitOK		; if so, will not be an event, exit with NO error
 ; otherwise might be an event
@@ -105,34 +106,34 @@ ci_nerror:
 ;	LDY cin_mode, X		; *get flag, new sysvar 20150617
 ;	BEQ ci_event		; should process possible event
 ;		STZA cin_mode, X	; *back to normal mode
-ci_exitOK:
-		_EXIT_OK			; *otherwise mark no error and exit
-ci_event:
+;ci_exitOK:
+;		EXIT_OK			; *otherwise mark no error and exit
+;ci_event:
 ;	CMP #16				; is it DLE?
 ;	BNE ci_notdle		; otherwise check next
 ;		STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
 ;		ERR(EMPTY)			; and supress received character (will NOT stay locked!)******************
-ci_notdle:
+;ci_notdle:
 ;	CMP #3				; is it ^C? (TERM)
 ;	BNE ci_noterm		; otherwise check next
 ;		LDA #SIGTERM
 ;		BRA ci_signal		; send signal
-ci_noterm:
+;ci_noterm:
 ;	CMP #4				; is it ^D? (KILL) somewhat dangerous...
 ;	BNE ci_nokill		; otherwise check next
 ;		LDA #SIGKILL
 ;		BRA ci_signal		; send signal
-ci_nokill:
+;ci_nokill:
 ;	CMP #26				; is it ^Z? (STOP)
 ;		BNE ci_exitOK		; otherwise there is no more to check
 ;	LDA #SIGSTOP		; last signal to be sent
-ci_signal:
+;ci_signal:
 ;	STA b_sig			; set signal as parameter
 ;	LDY run_pid			; faster GET_PID
-;	_KERNEL(B_SIGNAL)	; send signal to myself
+;	KERNEL(B_SIGNAL)	; send signal to myself
 ; continue after having filtered the error
-ci_error:
-	_ERR(EMPTY)			; no character was received
+;ci_error:
+;	ERR(EMPTY)			; no character was received
 
 
 ; ********************************
@@ -1172,7 +1173,7 @@ dr_phys:
 	BEQ dr_empty		; if free, go for it (3)
 #ifdef	MUTABLE
 ; new 171013, mutable IDs have a pointer array for easier checking
-		AND #%11110000		; no, filter 8 devs each kind
+		AND #%11111000		; no, filter 8 devs each kind (non-interleaved)
 		TAX
 		LDY #8				; 8 devs per kind
 dr_nxid:
@@ -1315,6 +1316,7 @@ dr_done:
 	LDY dr_id			; must return actual ID, as might be mutable!
 ; sparse indexes always!
 	LDX dr_ind-128, Y	; now it is a proper index for sparse array! (4)
+; ******I think it had to be shifted left...
 	LDA da_ptr			; get header pointer (3)
 	STA drv_ads, X		; store LSB, leaving dummy entry (4)
 	LDA da_ptr+1		; same for MSB (3)
@@ -1421,10 +1423,12 @@ dr_shut:
 ds_phys:
 #endif
 
-	LDX dr_ind-128, Y	; is that being used?
+	LDA dr_ind-128, Y	; is that being used?
 	BNE ds_used			; yes, proceed to remove
 		_ERR(N_FOUND)		; no, nothing to remove
 ds_used:
+	ASL					; EEEEEEEEEEEEEEEK
+	TAX
 	LDA #0				; no STZ abs, Y...
 	STA dr_ind-128, Y	; this is no more, any problem here?
 	LDY drv_ads, X		; get full header pointer (leave dummy entry)
