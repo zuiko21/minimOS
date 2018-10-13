@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc20, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181012-1821
+; last modified 20181013-2243
 
 ; no way for standalone assembly...
 
@@ -1173,7 +1173,7 @@ dr_phys:
 	BEQ dr_empty		; if free, go for it (3)
 #ifdef	MUTABLE
 ; new 171013, mutable IDs have a pointer array for easier checking
-		AND #%11111000		; no, filter 8 devs each kind (non-interleaved)
+		AND #%11111000		; no, filter 8 devs each kind
 		TAX
 		LDY #8				; 8 devs per kind
 dr_nxid:
