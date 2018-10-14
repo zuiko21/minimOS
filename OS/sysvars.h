@@ -1,6 +1,6 @@
 ; minimOS 0.6rc7 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181012-1757
+; last modified 20181014-1657
 .bss
 
 ; **** I/O management ****
@@ -23,8 +23,8 @@ drv_en		.dsb	1				; array of enabled drivers, into a slower, memory-saving bitwi
 ; ** I/O flags and locks **
 ; mandatory order!!!
 #ifndef	LOWRAM
-cio_lock	.dsb	MX_DRVRS+1	; PID-reserved MUTEX for CIN & COUT, per-phys-driver, no longer interleaved with CIN binary mode flag
-; *** cin mode no longer here! *** above array is half the size
+cio_lock	.dsb	MX_DRVRS*2+2	; PID-reserved MUTEX for CIN & COUT, per-phys-driver, was interleaved with CIN binary mode flag
+; *** cin mode no longer here! *** currently wasting half the size
 ;cin_mode	= cio_lock+1			; was interleaved
 #else
 ;cin_mode	.dsb	1				; was this for low ram systems
