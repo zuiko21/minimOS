@@ -1,6 +1,6 @@
 ; minimOS 0.6rc7 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181014-1657
+; last modified 20181015-1009
 .bss
 
 ; **** I/O management ****
@@ -54,6 +54,11 @@ mm_sterm	.dsb	3				; including bank address just after the pointer
 mm_sterm	.dsb	2				; 16-bit pointer
 #endif
 ; no longer mm_term et al here!
+
+; *** new foreground task variable ***
+#ifndef	LOWRAM
+run_fg		.byt	0				; will change on multitasking systems, otherwise stays at zero
+#endif
 
 ; **** new memory management table 150209, revamped 161106 ****
 #ifndef		LOWRAM

@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b11
+; v0.6b12
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180511-0837
+; last modified 20181015-1010
 
 ; just in case
 #define		C816	_C816
@@ -134,6 +134,7 @@ ram_init:
 	STZ queue_mx		; reset all indexes, 16-bit already set
 	STX run_arch		; assume native 65816
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
+	STX run_fg			; essential for multitasking, B_EVENT will pick its value anyway!
 ; init all I/O pointers and flags
 dr_clear:
 		STZ cio_lock, X		; clear I/O locks and interleaved binary flags! (5)

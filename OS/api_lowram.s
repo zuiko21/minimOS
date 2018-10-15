@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc14
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181015-0946
+; last modified 20181015-1006
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -35,6 +35,8 @@ k_vec:
 	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek***RENAMED
 	.word	set_hndl	; set SIGTERM handler
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+	.word	b_fore		; set foreground task ***new
+	.word	b_event		; send signal to foreground task ***new
 	.word	get_pid		; get PID of current braid ***returns 0
 ; new driver functionalities TBD
 	.word	dr_info		; get header, is this possible?
@@ -338,6 +340,50 @@ b_yield:
 close_w:
 free_w:
 	_EXIT_OK
+
+
+; ***********************************
+; *** B_FORE, set foreground task ***
+; ***********************************
+;		INPUT
+; Y		= PID of task, 0 if myself
+
+b_fore:
+#ifdef	SAFE
+	TYA					; check PID
+	BEQ bf_ok			; must be zero
+		_ERR(INVALID)		; complain otherwise
+bf_ok:
+#endif
+	_EXIT_OK
+
+
+; ************************************************
+; *** B_EVENT, send signal to appropriate task ***
+; ************************************************
+;		INPUT
+; Y		= transferred char
+
+b_event:
+	CPY #3				; is it ^C?
+	BNE be_nc
+		LDA #SIGTERM
+		BNE be_sig			; no need for BRA
+be_nc:
+	CPY #4				; is it ^D?
+	BNE be_nd
+		LDA #SIGKILL		; somewhat dangerous!
+		BEQ be_sig			; no need for BRA (this was zero)
+be_nd:
+	CPY #26				; is it ^Z?
+	BNE bn_none			; this is the last recognised event
+		LDA #SIGSTOP
+be_sig:
+	STA mm_sig			; set signal
+	LDY #0				; get foreground task, cannot multitask anyway!
+	JMP b_signal		; exexute and return
+be_none:
+	_ERR(INVALID)		; usually a discarded event
 
 
 ; **************************************
