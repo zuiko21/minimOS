@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc20, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181013-2243
+; last modified 20181015-1051
 
 ; no way for standalone assembly...
 
@@ -824,7 +824,7 @@ get_pid:
 ; *** B_FORE, set foreground task ***
 ; ***********************************
 ;		INPUT
-; Y		= PID of task, 0 if myself
+; Y		= PID of task, 0 if myself (or single-task)
 
 b_fore:
 #ifdef	SAFE
@@ -840,6 +840,7 @@ bf_ok:
 ; ************************************************
 ;		INPUT
 ; Y		= transferred char
+; affects mm_sig as may call B_SIGNAL
 
 b_event:
 	CPY #3				; is it ^C?
@@ -860,7 +861,7 @@ be_sig:
 	LDY run_fg			; get foreground task, internal!
 	JMP b_signal		; exexute and return
 be_none:
-	_ERR(INVALID)		; usually a discarded event
+	_ERR(INVALID)		; usually a discarded event, may be just ignored
 
 ; **************************************************************
 ; *** LOADLINK, get address once in RAM/ROM (in development) ***
