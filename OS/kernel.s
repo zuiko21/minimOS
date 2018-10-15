@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc8
+; v0.6rc9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180509-1237
+; last modified 20181015-0943
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc8", 0	; version in comment
+	.asc	"minimOS 0.6rc9", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -150,9 +150,9 @@ ram_init:
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
 dr_clear:
 		_STZA cio_lock, X	; clear I/O locks! (4)
-		_STZA cin_mode, X	; and binary flags, actually next address (4)
+;		STZA cin_mode, X	; and binary flags, actually next address (4)
 ; drv_ads is now mandatory
-;		_STZA drv_ads, X	; ****** in case of mutable driver IDs, clear pointer array first (4+4)
+;		STZA drv_ads, X		; ****** in case of mutable driver IDs, clear pointer array first (4+4)
 		_STZA drv_ads+1, X	; ****** could just clear MSB...
 		INX					; next entry (2+2)
 		INX
@@ -174,7 +174,7 @@ dr_spars:
 ; ++++++ ++++++ end of standard version extra code ++++++ ++++++
 #else
 ; ------ ------ alternative code for LOWRAM systems ------ ------
-	STX cin_mode		; single flag for non-multitasking systems, X known to be 0
+;	STX cin_mode		; NLA, single flag for non-multitasking systems, X known to be 0
 	STX drv_en			; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 	LDY #MX_QUEUE
 	LDA #IQ_FREE		; proper value

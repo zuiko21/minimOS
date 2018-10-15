@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc15, should match kernel16.s
+; v0.6rc16, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180919-1054
+; last modified 20181015-0959
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -101,47 +101,48 @@ cin:
 	STA bl_siz			; set size
 	STZ bl_siz+1
 	_KERNEL(BLIN)
+	RTI					; ** keep possible error **
 ; worth switching back DBR
-	PHB					; eeeeeeeeek (3)
-	PHK					; bank zero into stack (3)
-	PLB					; set DBR! do not forget another PLB upon end! (4)
-; ** EVENT management **
-	LDX iol_dev			; **use physdev as index! (3)
-	LDA io_c			; get received character
-	CMP #' '			; printable?
-		BCS ci_exitOK		; if so, will not be an event, exit with NO error
-; otherwise might be an event
+;	PHB					; eeeeeeeeek (3)
+;	PHK					; bank zero into stack (3)
+;	PLB					; set DBR! do not forget another PLB upon end! (4)
+; ** EVENT management no longer here **
+;	LDX iol_dev			; **use physdev as index! (3)
+;	LDA io_c			; get received character
+;	CMP #' '			; printable?
+;		BCS ci_exitOK		; if so, will not be an event, exit with NO error
+; events no longer here!
 ; check for binary mode first
-	LDY cin_mode, X		; *get flag, new sysvar 20150617
-	BNE ci_nevent		; otherwise should process possible event
+;	LDY cin_mode, X		; *get flag, new sysvar 20150617
+;	BNE ci_nevent		; otherwise should process possible event
 ; *** event processing ***
-		CMP #16				; is it DLE?
-		BNE ci_notdle		; otherwise check next
-			STA cin_mode, X		; *set binary mode! safer and faster!
-			LDY #EMPTY			; and supress received character
-			BRA cio_abort		; restore & notify (will stay locked!)
-ci_notdle:
-		CMP #3				; is it ^C? (TERM)
-		BNE ci_noterm		; otherwise check next
-			LDA #SIGTERM
-			BRA ci_signal		; send signal
-ci_noterm:
-		CMP #4				; is it ^D? (KILL) somewhat dangerous...
-		BNE ci_nokill		; otherwise check next
-			LDA #SIGKILL
-			BRA ci_signal		; send signal
-ci_nokill:
-		CMP #26				; is it ^Z? (STOP)
-			BNE ci_exitOK		; otherwise there is no more to check
-		LDA #SIGSTOP		; last signal to be sent
-ci_signal:
-		STA b_sig			; set signal as parameter
+;		CMP #16				; is it DLE?
+;		BNE ci_notdle		; otherwise check next
+;			STA cin_mode, X		; *set binary mode! safer and faster!
+;			LDY #EMPTY			; and supress received character
+;			BRA cio_abort		; restore & notify (will stay locked!)
+;ci_notdle:
+;		CMP #3				; is it ^C? (TERM)
+;		BNE ci_noterm		; otherwise check next
+;			LDA #SIGTERM
+;			BRA ci_signal		; send signal
+;ci_noterm:
+;		CMP #4				; is it ^D? (KILL) somewhat dangerous...
+;		BNE ci_nokill		; otherwise check next
+;			LDA #SIGKILL
+;			BRA ci_signal		; send signal
+;ci_nokill:
+;		CMP #26				; is it ^Z? (STOP)
+;			BNE ci_exitOK		; otherwise there is no more to check
+;		LDA #SIGSTOP		; last signal to be sent
+;ci_signal:
+;		STA b_sig			; set signal as parameter
 ; much faster KERNEL(GET_PID)
-		LDY run_pid			; internal PID in Y...
-		_KERNEL(B_SIGNAL)	; send signal to myself *** could be patched!
-		LDY #EMPTY			; no character was received
-		SEC					; eeeeeeeek
-		JMP cio_unlock		; release device and exit!
+;		LDY run_pid			; internal PID in Y...
+;		KERNEL(B_SIGNAL)	; send signal to myself *** could be patched!
+;		LDY #EMPTY			; no character was received
+;		SEC					; eeeeeeeek
+;		JMP cio_unlock		; release device and exit!
 
 
 ; ********************************
@@ -236,8 +237,8 @@ co_ok:
 
 ; *** some common routines ***
 ; these could be called in 8 or 16-bit index size, but always 8-bit memory!
-ci_nevent:
-	STZ cin_mode, X		; back to normal mode ***first entry is dummy in case a wrong device is asked!
+;ci_nevent:
+;	STZ cin_mode, X		; back to normal mode ***first entry is dummy in case a wrong device is asked!
 ci_exitOK:
 	STZ cio_lock, X		; otherwise clear mutex!!! (4)
 	PLB					; essential!
@@ -314,7 +315,7 @@ cio_notc:
 ; C		= I/O error
 
 ;		USES iol_dev, and whatever the driver takes
-; cio_lock & cin_mode are kernel structures
+; cio_lock is kernel structure
 
 blin:
 ; switch DBR as it accesses a lot of kernel data!

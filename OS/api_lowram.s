@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc13
+; v0.6rc14
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180529-1113
+; last modified 20181015-0946
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -211,36 +211,13 @@ cin:
 		BCS ci_exit			; ...or return error
 ; ** EVENT management **
 	LDA io_c			; get received character
-	CMP #' '			; printable?
-	BCC ci_manage		; if not, might be an event
-ci_exitOK:
-		CLC					; otherwise, no error --- eeeeeeeek!
+;	CMP #' '			; printable?
+;	BCC ci_manage		; if not, might be an event
+;ci_exitOK:
+	CLC					; otherwise, no error --- eeeeeeeek!
 ci_exit:
-		RTS					; above comparison would set carry
-; ** continue event management **
-ci_manage:
-; check for binary mode
-	LDY cin_mode		; get flag, new sysvar 20150617
-	BEQ ci_event		; should process possible event
-		_STZY cin_mode		; back to normal mode
-		_BRA ci_exit		; and return whatever was received
-ci_event:
-	CMP #16				; is it DLE?
-	BNE ci_notdle		; otherwise check next
-		STA cin_mode		; set binary mode! SAFER!
-		BNE ci_abort		; and supress received character, no need for BRA
-ci_notdle:
-	CMP #3				; is it ^C? (TERM)
-	BNE ci_exitOK		; otherwise there's no more to check -- only signal for single-task systems!
-		LDA #SIGTERM
-		STA b_sig			; set signal as parameter
-#ifdef	SAFE
-		LDY #0				; sent to all, this is the only one (skimming a couple of bytes!)
-#endif
-		JSR b_signal		; send signal FASTER
-ci_abort:
-		_ERR(EMPTY)			; no character was received
-
+	RTS					; above comparison would set carry
+; ** event management no longer here **
 
 ; *************************
 ; *** BLIN, block input ***
@@ -253,7 +230,6 @@ ci_abort:
 ; bl_siz	= remaining bytes
 ; C		= nothing available
 ;		USES iol_dev, and whatever the driver takes
-; cin_mode is a kernel variable
 
 blin:
 #ifdef	SAFE
@@ -585,8 +561,9 @@ ll_found:
 		BEQ ll_rock			; from R down is OK
 	CPX #'B'			; generic 65C02?
 		BEQ ll_cmos			; from B down is OK
-	CPX #'V'			; 65816 is supported but no better than a generic 65C02
-		BEQ ll_cmos
+; does it make any sense to support the 816 on such limited systems??
+;	CPX #'V'			; 65816 is supported but no better than a generic 65C02
+;		BEQ ll_cmos
 	CPX #'N'			; old NMOS?
 	BEQ ll_nmos			; only NMOS code will do
 		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
