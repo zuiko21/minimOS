@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc20, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181015-1051
+; last modified 20181015-1100
 
 ; no way for standalone assembly...
 
@@ -840,7 +840,7 @@ bf_ok:
 ; ************************************************
 ;		INPUT
 ; Y		= transferred char
-; affects mm_sig as may call B_SIGNAL
+; affects b_sig as may call B_SIGNAL
 
 b_event:
 	CPY #3				; is it ^C?
@@ -857,7 +857,7 @@ be_nd:
 	BNE bn_none			; this is the last recognised event
 		LDA #SIGSTOP
 be_sig:
-	STA mm_sig			; set signal
+	STA b_sig			; set signal
 	LDY run_fg			; get foreground task, internal!
 	JMP b_signal		; exexute and return
 be_none:
