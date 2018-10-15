@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc16, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181015-1054
+; last modified 20181015-1105
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1043,7 +1043,7 @@ bf_ok:
 ; ************************************************
 ;		INPUT
 ; Y		= transferred char
-; affects mm_sig as it may call B_SIGNAL
+; affects b_sig as it may call B_SIGNAL
 
 b_event:
 	CPY #3				; is it ^C?
@@ -1060,7 +1060,7 @@ be_nd:
 	BNE bn_none			; this is the last recognised event
 		LDA #SIGSTOP
 be_sig:
-	STA mm_sig			; set signal
+	STA b_sig			; set signal
 	LDY @run_fg			; get foreground task, internal!
 	JMP b_signal		; exexute and return
 be_none:
