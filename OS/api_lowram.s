@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc14
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181015-1006
+; last modified 20181015-1102
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -346,7 +346,7 @@ free_w:
 ; *** B_FORE, set foreground task ***
 ; ***********************************
 ;		INPUT
-; Y		= PID of task, 0 if myself
+; Y		= PID of task, must be 0 as this will not multitask
 
 b_fore:
 #ifdef	SAFE
@@ -363,6 +363,7 @@ bf_ok:
 ; ************************************************
 ;		INPUT
 ; Y		= transferred char
+; affects b_sig as may call B_SIGNAL
 
 b_event:
 	CPY #3				; is it ^C?
@@ -379,11 +380,13 @@ be_nd:
 	BNE bn_none			; this is the last recognised event
 		LDA #SIGSTOP
 be_sig:
-	STA mm_sig			; set signal
+	STA b_sig			; set signal
+#ifdef	SAFE
 	LDY #0				; get foreground task, cannot multitask anyway!
+#endif
 	JMP b_signal		; exexute and return
 be_none:
-	_ERR(INVALID)		; usually a discarded event
+	_ERR(INVALID)		; usually a discarded event, may be just ignored
 
 
 ; **************************************
