@@ -7,8 +7,8 @@ bankswitching feature (lower 16K, including *zeropage* & *stack*) for reasonable
 versions.
 
 As this machine will take the *experimental* aim of the aborted **SDx** project,
-some **configuration options**  like *Kernel size* were to be available via
-jumpers, but deemed too complicated. The **I/O page** selection will remain, though.
+some *configuration options* like **Kernel size** and **I/O page** selection might
+be selected via *jumpers*.
 
 ## Specs
 
@@ -38,6 +38,11 @@ and **M/X** (register sizes) lines of the 65816. These will be available on the
 - Hardware *zeropage/stack* **bankswitching** (65816 allows easy multitasking)
 - 6845-based video output (cards available thru the *expansion bus*)
 
+The newest redesign, however, allows easy implementation of the *ROM-in-RAM*
+feature, by adding an extra *comparison bit* to the `ROM /CS` signal generation.
+But, being a **single VIA** machine, such switching signal should be generated
+*manually via a jumper*, as there is hardly a spare bit for that.
+ 
 ### Clock generation
 
 According to the usual way of selecting my *most abundant* components in stock,
@@ -97,7 +102,7 @@ Since a complete *expansion bus* is fitted, the *high* ROM must be decoded at th
 **uppermost banks** (`BA3-BA7`=**1**) avoiding mirroring.
 Also, *RAM should be properly decoded* too, but within the **lowest MiB**.
 That would render `lib` ROM at $F80000-$FFFFFF, leaving all addresses
-$100000-$F7FFFF (14 MiB) **free** for expansion.
+$100000-$F7FFFF, a whole **14 MiB free** for expansion.
  
 ## Glue-logic implementation
 
@@ -157,21 +162,20 @@ most likely enabled thru `VPA` NOR `VDA` (aka `/OK`).
 high, and maybe R/W too in case of *bus contention*. In that case, you can keep
 `LIB /OE` tied to ground.
 - **`RAM /CS`** expects `BA4-BA7` as *zero* on a '688 (the lowest MiB).
-*Note that RAM was **always** written*, although its *output* was disabled when
-overlapping with (kernel) EPROM or I/O. An *alternative decoding* will shut it off
-during I/O, though. *The `/WE` signal will no longer be generated*,
-as with a fast RAM it is best to **validate `RAM /CS` with Phi2**, together with 
-several `BA` bits. This reduces power consumption, too. *Further savings could be done
-putting `/IO` and `KERNEL /CS` here too*, as RAMs are usually fast enough for this.
-- **`RAM /OE`** stays low unless `/BZ` is low and `A15` high. *It is actually
-the **negation** of `KERNEL /CS`*, but if this last signal affects `RAM /CS`
-(see above) can be **just tied to ground**.
+*Note that RAM is disabled when overlapping with (kernel) EPROM or I/O*.
+*The `/WE` signal will no longer be generated*,m as with a fast RAM it is best
+to **validate `RAM /CS` with Phi2**, together with several `BA` bits, `/IO` and
+`KERNEL /CS` for lower power consumption*, as RAMs are usually fast enough for this.
+- **`RAM /OE`** can be **just tied to ground**, just like `LIB /OE`.
 - **`/IO`** uses `/BZ` to *enable* a '688, then `A8-A15` as configured. *Note that
 this is no longer restricted to EPROM space*, as long as it shuts off RAM output too.
-- **`KERNEL /CS`** looks for `/BZ` low and `A15` high (first upper 32K), for lowest
-power consumption (will stay on during I/O but with outputs disabled). *A few ns
-cound be gained if **enabled** via `/BZ`*. 
+- **`KERNEL /CS`** uses `/BZ` to *enable* a '688, then `A8-A15` as configured, but
+as it *must* take the uppermost bits, `A15` is expected to be **always 1**, while
+`A14-A11` might be *sequentially* compared to ones for **reduced kernel sizes**
+(from **32 kiB** down to **2 kiB**). Some jumpers will disconnect *ignored* address
+lines. In this scheme, ROM will stay enabled during I/O but with outputs disabled.
 - **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
-*bus contention*.
+*bus contention*.  If done thru a 74HC139's `/Y3` output, there is another output
+signalling *contention states* (`/Y2` if `R/W` is set to the decoder's `A0`)
 
-*Last modified: 20181010-2115*
+*Last modified: 20181016-1013*
