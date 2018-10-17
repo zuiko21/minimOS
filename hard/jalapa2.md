@@ -176,6 +176,11 @@ as it *must* take the uppermost bits, `A15` is expected to be **always 1**, whil
 lines. In this scheme, ROM will stay enabled during I/O but with outputs disabled.
 - **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
 *bus contention*.  If done thru a 74HC139's `/Y3` output, there is another output
-signalling *contention states* (`/Y2` if `R/W` is set to the decoder's `A0`)
+signalling *contention states* (`/Y2` if `R/W` is set to the decoder's `A0`).
+*This '139 does **not** need to be enabled via `/BZ`, as that signal will already
+enable the `KERNEL /CS`*. Please note that this configuration is intended for
+**minimal power consumption** and not optimum performance. Exchanging the ROM's
+`/OE` and `/CS` signals will turn the opposite, although will not allow the
+*bus contention* detection.
 
-*Last modified: 20181016-1013*
+*Last modified: 20181017-1043*
