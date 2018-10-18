@@ -83,7 +83,7 @@ A typically configured machine goes as follows:
 - $010000-$01FFFF: RAM (both 128 & 512K models)
 - $020000-$07FFFF: RAM (512K model only, or *mirror* images of RAM if 128K are fitted)
 - $080000-$0FFFFF: more RAM images ($0x8000-$0xFFFF allows *shadow RAM* access for some
-x values)
+*x* values: **8** for all, plus **2, 4, 6, $A, $C** & **$E** for the *128K model*)
 - $100000-$F7FFFF: **free** for *VME-like* expansion bus
 - $F80000-$FFFFFF: "high" ROM (no longer includes *kernel* ROM)
 
@@ -177,10 +177,10 @@ lines. In this scheme, ROM will stay enabled during I/O but with outputs disable
 - **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
 *bus contention*.  If done thru a 74HC139's `/Y3` output, there is another output
 signalling *contention states* (`/Y2` if `R/W` is set to the decoder's `A0`), but
-that '139 *must* be enabled via `/BZ`. Should this feature not be needed, the
-decoder could be permanently enabled. Swapping ROM's `/CS` and `/OE` inputs allows
+that '139 *must* be enabled via `/BZ`. *Should this feature not be needed, the
+decoder could be permanently active*. Plus, swapping ROM's `/CS` and `/OE` inputs allows
 for higher performance at the cost of increased power consumption. On the other hand,
 moving the `R/W`signal to the `KERNEL /CS` '688 (with corresponding '139 input set
 high) would further reduce power consumption.
 
-*Last modified: 20181017-1055*
+*Last modified: 20181018-1204*

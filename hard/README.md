@@ -1,8 +1,6 @@
-#Hardware for minimOS
+# Hardware for minimOS
 
-
-
-##Supported architectures
+## Supported architectures
 
 With great embarrassment I have to admit never have owned a 65xx computer... but suport for these classic machines shouldn't be difficult to add -- for instance, I have declared as 'reserved' the two first zero-page bytes in case the utterly popular Commodore-64 (using a 6510) is targeted. Back to my own-designed machines, here's the current history & roadmap:
 
@@ -36,7 +34,7 @@ Status: finished and _sort-of_ working, but with some strange malfunction :-(
 
 Form-factor: Breadboard with point-to-point soldering.
 
-Specs: Soldered, compact version of SDd. Strange bug with VIA, not solved yet. Probably will be discarded.
+Specs: Soldered, compact version of SDd. Strange bug with VIA, not solved yet. Likely to be discarded.
 
 Interfaces: Piezo buzzer between PB7-CB2, SS-22 and VIA-port connectors.
 
@@ -75,13 +73,13 @@ Specs: intended to be a fully bankswitching 65C02 SBC, but also pluggable into a
 
 **Jalapa (formerly SDm)**
 
-Status: finishing design.
+Status: **almost finished** design, heavily *revamped* as of Oct-2018.
 
 Form-factor: Breadboard with point-to-point soldering.
 
-Specs: 1.8432 / 2.304 MHz 65C02, 128 kiB RAM (16K + 7x16K banks), 32 kiB EPROM, VIA 65C22, ACIA 65SC51.
+Specs: 1.8432 / 2.304 MHz **65C816**, 128 kiB RAM (or 512K), up to 32 kiB *Kernel* EPROM, VIA 65C22, ACIA 65SC51.
 
-Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, VIA (SBC-2 style but with "mirrored" power pins), TTL-level RS-232, *miniBus* slot (6502 direct expansion)
+Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, VIA (SBC-2 style but with "mirrored" power pins), TTL-level RS-232, *VME-like* slot (65816 direct expansion)
 
 
 **Tijuana**
