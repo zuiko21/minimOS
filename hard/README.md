@@ -48,7 +48,7 @@ Form-factor: Breadboard with point-to-point soldering.
 Specs: Soldered, compact version of SDd. Strange bug with VIA, not solved yet.
 *Likely to be discarded*.
 
-Interfaces: Piezo buzzer between PB7-CB2, SS-22 and *VIAport* connectors.
+Interfaces: Piezo buzzer between PB7-CB2, SS-22 and old *VIAport* connectors.
 
 
 
@@ -62,7 +62,7 @@ Form-factor: Breadboard with point-to-point soldering.
 Specs: 1 MHz (socketed) 65C02, 16 kiB RAM, 32 kiB EPROM, VIA 65C22.
 *Might be configured for 32 kiB RAM + 16 kiB EPROM if desired*.
 
-Interfaces: Amplified piezo buzzer between PB7-CB2, SS-22 and *VIAport* connectors.
+Interfaces: Amplified piezo buzzer between PB7-CB2, SS-22 and old *VIAport* connectors.
 
 
 
@@ -77,7 +77,7 @@ Specs: 1.25 / 2 MHz 65C02/102, 8-16 kIB RAM, 32 kiB EPROM, VIA 65C22, ACIA 65SC5
 RTC 146818.
 
 Interfaces: Amplified piezo buzzer between PB7-CB2, Hitachi LCD, TTL-level RS-232,
-SS-22 and *VIAport* connectors. Several diagnostic LEDs.
+SS-22 and old *VIAport* connectors. Several diagnostic LEDs.
 
 
 
@@ -101,9 +101,9 @@ Specs: 1.8432 / 2.304 MHz **65C816**, 128 kiB RAM (or 512K),
 up to 32 kiB *Kernel* EPROM plus up to 512 kiB *library* EPROM,
 VIA 65C22, ACIA 65SC51.
 
-Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, VIA (*SBC-2* style
-but with "mirrored" power pins), TTL-level RS-232, *VME-like* slot
-(65816 direct expansion)
+Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, new *VIAport*
+(*SBC-2* style but with "mirrored" power pins), TTL-level RS-232,
+*VME-like* slot (65816 direct expansion)
 
 
 
@@ -131,8 +131,8 @@ Status: in design stage
 
 Form-factor: ?
 
-Specs: 2 MHz (at least) 65816, 512 kiB RAM, 32 kiB EPROM, 2 x VIA 65C22,
-UART 16C550, RTC MC146818.
+Specs: 4 MHz (at least) 65816, 512 kiB RAM, 32 kiB *Kernel* EPROM, 512 kiB *lib* EPROM,
+2 x VIA 65C22, UART 16C550, RTC MC146818.
 
 Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
 **65SIB**, Hitachi LCD thru VIA, maybe *I2C*, *VME-like* slot (65816 direct expansion)
@@ -147,7 +147,7 @@ Status: in design stage
 Form-factor: 4-layer PCB, SMD components.
 
 Specs: 12 MHz (I hope!) 65816, up to **8 MiB RAM** (2 x Garth's modules),
-32 kiB Kernel + 2 MiB *lib* EPROM (?), 2 x VIA 65C22, (2x) UART.
+32 kiB Kernel + 2 MiB *lib* EPROM, 2 x VIA 65C22, (2x) UART.
 
 Interfaces: most likely those of Veracruz, possibly plus SD-card,
 text console (or graphic) output...
@@ -155,4 +155,4 @@ text console (or graphic) output...
 
 *...more to come!
 
-last modified: 20181018-1223*
+last modified: 20181019-2247*
