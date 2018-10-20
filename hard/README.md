@@ -2,11 +2,11 @@
 
 ## Supported architectures
 
-With great embarrassment I have to admit never have owned a 65xx computer...
+With great embarrassment I have to admit never having owned a 65xx computer...
 but suport for these classic machines shouldn't be difficult to add -- for
 instance, I have declared as 'reserved' the two first zero-page bytes in case
 the utterly popular Commodore-64 (using a 6510) is targeted. Back to my
-own-designed machines, here's the current history & roadmap:
+**own-designed** machines, here's the current history & roadmap:
 
 
 
@@ -25,9 +25,10 @@ Intefaces: four (very large) 7-segment LED digits, light sensor, a couple of key
 
 
 
-**SDd _("Sistema de Desarrollo didáctico", Learning Development System)_**
+[**SDd _("Sistema de Desarrollo didáctico", Learning Development 
+System)_**](https://flic.kr/s/aHsjCMszTY)
 
-Status: WORKING!
+Status: [WORKING!](https://twitter.com/zuiko21/status/936654607014653952?s=19)
 
 Form-factor: solderless breadboard.
 
@@ -39,7 +40,7 @@ currently with a VIA-attached 4-digit **LED-keypad**.
 
 
 
-**CHIHUAHUA**
+[**CHIHUAHUA**](https://flic.kr/s/aHsjEn5ntM)
 
 Status: finished and _sort-of_ working, but with some strange malfunction :-(
 
@@ -53,7 +54,7 @@ Interfaces: Piezo buzzer between PB7-CB2, SS-22 and old *VIAport* connectors.
 
 
 
-**CHIHUAHA PLUS**
+[**CHIHUAHA PLUS**](https://flic.kr/s/aHsjEGuCH3)
 
 Status: under construction.
 
@@ -67,7 +68,8 @@ Interfaces: Amplified piezo buzzer between PB7-CB2, SS-22 and old *VIAport* conn
 
 
 
-**SDx _("Sistema de Desarrollo eXpandible", Expansible Develpment System)_**
+[**SDx _("Sistema de Desarrollo eXpandible", Expansible Develpment 
+System)_**](https://flic.kr/s/aHsjDAwJBR)
 
 Status: aborted :-(
 
@@ -155,4 +157,4 @@ text console (or graphic) output...
 
 *...more to come!
 
-last modified: 20181019-2247*
+last modified: 20181020-2237*
