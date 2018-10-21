@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc20, must match kernel.s
+; v0.6rc21, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181015-1100
+; last modified 20181021-1323
 
 ; no way for standalone assembly...
 
@@ -825,19 +825,22 @@ get_pid:
 ; ***********************************
 ;		INPUT
 ; Y		= PID of task, 0 if myself (or single-task)
+; *** if Y=$FF, switch to another available task *** new
 
 b_fore:
 #ifdef	SAFE
+	CPY #$FF			; asking for another?
+		BEQ bf_ok			; will stay anyway as singletask!
 	TYA					; check PID
-	BEQ bf_ok			; must be zero
-		_ERR(INVALID)		; complain otherwise
+		BEQ bf_ok			; must be zero
+	_ERR(INVALID)		; complain otherwise
 bf_ok:
 #endif
 	_EXIT_OK
 
-; ************************************************
-; *** B_EVENT, send signal to appropriate task ***
-; ************************************************
+; ***********************************************************
+; *** B_EVENT, send signal to appropriate foreground task ***
+; ***********************************************************
 ;		INPUT
 ; Y		= transferred char
 ; affects b_sig as may call B_SIGNAL

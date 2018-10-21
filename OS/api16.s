@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc16, should match kernel16.s
+; v0.6rc17, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181015-1105
+; last modified 20181021-1331
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1027,11 +1027,13 @@ get_pid:
 ; *** B_FORE, set foreground task ***
 ; ***********************************
 ;		INPUT
-; Y		= PID of task, 0 if myself or single-task
+; Y		= PID of task, 0 if myself or single-task, $FF switch to next!
 
 b_fore:
 #ifdef	SAFE
-	TYA					; check PID
+	CPY #$FF			; asking for another?
+	BEQ bf_ok			; will stay anyway
+		TYA					; check PID
 	BEQ bf_ok			; must be zero
 		_ERR(INVALID)		; complain otherwise
 bf_ok:

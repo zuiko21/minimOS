@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc14
+; v0.6rc15
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181015-1102
+; last modified 20181021-1335
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -346,11 +346,13 @@ free_w:
 ; *** B_FORE, set foreground task ***
 ; ***********************************
 ;		INPUT
-; Y		= PID of task, must be 0 as this will not multitask
+; Y		= PID of task, must be 0 as this will not multitask, $FF stays anyway
 
 b_fore:
 #ifdef	SAFE
-	TYA					; check PID
+	CPY #$FF			; another?
+	BEQ bf_ok			; stay anyway
+		TYA					; check PID
 	BEQ bf_ok			; must be zero
 		_ERR(INVALID)		; complain otherwise
 bf_ok:
