@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc21, must match kernel.s
+; v0.6rc22, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181021-1323
+; last modified 20181022-0947
 
 ; no way for standalone assembly...
 
@@ -842,8 +842,9 @@ bf_ok:
 ; *** B_EVENT, send signal to appropriate foreground task ***
 ; ***********************************************************
 ;		INPUT
-; Y		= transferred char
-; affects b_sig as may call B_SIGNAL
+; Y		= transferred char (assumed *previously* stored into buffer or io_c)
+; affects b_sig as it may call B_SIGNAL
+; may not need to be patched?
 
 b_event:
 	CPY #3				; is it ^C?
@@ -862,9 +863,10 @@ be_nd:
 be_sig:
 	STA b_sig			; set signal
 	LDY run_fg			; get foreground task, internal!
-	JMP b_signal		; exexute and return
+	JSR b_signal		; execute...
+	_ERR(EMPTY)			; ...and discard input char!
 be_none:
-	_ERR(INVALID)		; usually a discarded event, may be just ignored
+	_EXIT_OK			; regular char or maybe a discarded event, will just be ingored
 
 ; **************************************************************
 ; *** LOADLINK, get address once in RAM/ROM (in development) ***
