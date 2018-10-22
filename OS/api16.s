@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc18, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181022-0947
+; last modified 20181022-1009
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -36,8 +36,10 @@ k_vec:
 	.word	set_hndl	; set SIGTERM handler
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
 	.word	b_fore		; set foreground task ***new
+	.word	get_fg		; get foreground task ***newer
+; non-patched task management
 	.word	b_event		; send signal to foreground task ***new
-	.word	get_pid		; get PID of current braid ***returns 0
+	.word	get_pid		; get PID of current braid (as set by SET_CURR)
 ; new driver functionalities TBD
 	.word	dr_info		; get driver header
 	.word	aq_mng		; manage asynchronous task queue
@@ -1064,7 +1066,7 @@ be_nd:
 		LDA #SIGSTOP
 be_sig:
 	STA b_sig			; set signal
-	LDY @run_fg			; get foreground task, internal!
+	_KERNEL(GET_FG)		; get foreground task, may be patched!
 	JSR b_signal		; execute...
 	_ERR(EMPTY)			; ...and discard input char!
 be_none:

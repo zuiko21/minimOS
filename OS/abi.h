@@ -1,7 +1,7 @@
-; minimOS 0.6rc16 API/ABI
+; minimOS 0.6rc17 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181011-0954
+; last modified 20181022-1001
 
 ; *************************************************
 ; *************************************************
@@ -33,7 +33,7 @@ UPTIME		= FREE_W + 2	; give uptime in ticks and seconds
 SHUTDOWN	= UPTIME + 2	; proper shutdown, with or without power-off
 LOADLINK	= SHUTDOWN + 2	; get an executable from its path, and get it loaded into primary memory, maybe relocated
 
-; for multitask main use, but also with reduced single task management
+; for multitask main use, but also with reduced single task management, will be patched by multitasking driver!
 B_FORK		= LOADLINK + 2	; reserve a free braid
 B_EXEC		= B_FORK + 2	; get code at some address running into a previously reserved braid
 B_SIGNAL	= B_EXEC + 2	; send UNIX_like signal to a braid
@@ -41,7 +41,9 @@ B_FLAGS		= B_SIGNAL + 2	; get execution flags of a braid
 SET_HNDL	= B_FLAGS + 2	; set SIGTERM handler
 B_YIELD		= SET_HNDL + 2	; give away CPU time, not really needed but interesting anyway
 B_FORE		= B_YIELD + 2	; set foreground task ***new 20181011***
-B_EVENT		= B_FORE + 2	; identify event and send signal to foreground task ***new 20181011***
+GET_FG		= B_FORE + 2	; get previously set foreground task ***new20181022***
+; unpatched functions...
+B_EVENT		= GET_FG + 2	; identify event and send signal to foreground task ***new 20181011*** for drivers
 GET_PID		= B_EVENT + 2	; get current braid PID *** 20171220 is last one as will not need to be patched
 
 ; some new driver functionalities, perhaps OK with LOWRAM systems

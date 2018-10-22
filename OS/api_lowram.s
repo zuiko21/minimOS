@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc16
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181022-0947
+; last modified 20181022-1009
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -36,8 +36,10 @@ k_vec:
 	.word	set_hndl	; set SIGTERM handler
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
 	.word	b_fore		; set foreground task ***new
+	.word	get_fg		; get foreground task ***newer
+; non-patched task management
 	.word	b_event		; send signal to foreground task ***new
-	.word	get_pid		; get PID of current braid ***returns 0
+	.word	get_pid		; get PID of current braid (returns 0)
 ; new driver functionalities TBD
 	.word	dr_info		; get header, is this possible?
 	.word	aq_mng		; manage asynchronous task queue
@@ -316,15 +318,17 @@ open_w:
 	BEQ ow_no_window	; wouldn't do it
 		_ERR(NO_RSRC)
 
-; *************************************
-; *** GET_PID, get current PID ********
-; *** B_FORK, reserve available PID ***
-; *************************************
+; ******************************************
+; *** GET_PID, get current PID *************
+; *** B_FORK, reserve available PID ********
+; *** GET_FG, get current foreground PID ***
+; ******************************************
 ;		OUTPUT
 ; Y = PID (0 means singletask system)
 ow_no_window:
 
 get_pid:
+get_fg:
 b_fork:
 	LDY #0				; no multitasking or standard device
 ; ********************************************************
