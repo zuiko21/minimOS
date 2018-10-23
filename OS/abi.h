@@ -1,7 +1,7 @@
-; minimOS 0.6rc17 API/ABI
+; minimOS 0.6rc18 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181022-1001
+; last modified 20181023-1227
 
 ; *************************************************
 ; *************************************************
@@ -25,10 +25,11 @@ BL_STAT		= BL_CNFG + 2	; device status report, new TBD
 OPEN_W		= BL_STAT + 2	; open window or get I/O device
 CLOSE_W		= OPEN_W + 2	; close a window or release device and its buffer
 FREE_W		= CLOSE_W + 2	; release a window but let it on screen, keeping its buffer, may be closed by kernel
+FLOAT_W		= FREE_W + 2	; put this window in foreground, interface similar to B_FORE
 ; perhaps could add some other window management functions
 
 ; other generic functions
-UPTIME		= FREE_W + 2	; give uptime in ticks and seconds
+UPTIME		= FLOAT_W + 2	; give uptime in ticks and seconds
 ; *** frequency generator DEPRECATED for firmware ***
 SHUTDOWN	= UPTIME + 2	; proper shutdown, with or without power-off
 LOADLINK	= SHUTDOWN + 2	; get an executable from its path, and get it loaded into primary memory, maybe relocated

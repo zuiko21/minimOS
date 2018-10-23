@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc18, should match kernel16.s
+; v0.6rc19, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181023-1214
+; last modified 20181023-1230
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -23,6 +23,7 @@ k_vec:
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
+	.word	float_w		; put window/device in foreground ***new placeholder
 ; other generic functions
 	.word	uptime		; approximate uptime in ticks
 ; * no longer set_fg! *
@@ -787,6 +788,7 @@ b_fork:
 ; ********************************************************
 ; *** CLOSE_W,  close window *****************************
 ; *** FREE_W, release window, will be closed by kernel ***
+; *** FLOAT_W, put window in foreground ******************
 ; ********************************************************
 ;		INPUT
 ; Y = dev
@@ -794,6 +796,7 @@ b_fork:
 b_yield:
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
+float_w:				; placeholder
 	_EXIT_OK
 
 

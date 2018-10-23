@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc22, must match kernel.s
+; v0.6rc23, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181023-1214
+; last modified 20181023-1229
 
 ; no way for standalone assembly...
 
@@ -26,6 +26,7 @@ k_vec:
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
+	.word	float_w		; put window/device in foreground ***new placeholder
 ; other generic functions
 	.word	uptime		; approximate uptime in ticks
 ; * no longer set_fg! *
@@ -645,6 +646,7 @@ b_fork:
 ; ********************************************************
 ; *** CLOSE_W,  close window *****************************
 ; *** FREE_W, release window, will be closed by kernel ***
+; *** FLOAT_W, put window in foreground ******************
 ; *** B_YIELD, yield CPU time to next braid **************
 ; ********************************************************
 ;		INPUT
@@ -652,6 +654,7 @@ b_fork:
 
 close_w:				; does not do much
 free_w:					; does not do much, either
+float_w:				; placeholder
 b_yield:
 	_EXIT_OK
 

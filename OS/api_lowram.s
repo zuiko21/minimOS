@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc16
+; v0.6rc17
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181023-1219
+; last modified 20181023-1230
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -23,6 +23,7 @@ k_vec:
 	.word	open_w		; get I/O port or window
 	.word	close_w		; close window
 	.word	free_w		; will be closed by kernel
+	.word	float_w		; put device in foreground ***new placeholder
 ; other generic functions
 	.word	uptime		; approximate uptime in ticks
 ; * no longer set_fg! *
@@ -334,8 +335,9 @@ b_fork:
 ; ********************************************************
 ; *** B_YIELD, yield CPU time to next braid **************
 ; ********************************************************
-; *** CLOSE_W,  close window *****************************
-; *** FREE_W, release window, will be closed by kernel ***
+; *** CLOSE_W,  close device *****************************
+; *** FREE_W, release device, will be closed by kernel ***
+; *** FLOAT_W, put device in foreground ******************
 ; ********************************************************
 ;		INPUT
 ; Y = dev
@@ -343,6 +345,7 @@ b_fork:
 b_yield:
 close_w:
 free_w:
+float_w:
 	_EXIT_OK
 
 
