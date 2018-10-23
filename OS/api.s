@@ -851,6 +851,7 @@ bf_ok:
 ; Y		= transferred char (assumed *previously* stored into buffer or io_c)
 ; affects b_sig as it may call B_SIGNAL
 ; may not need to be patched?
+; this MUST handle DLEs accordingly, cin_mode as global or PID-based array???
 
 b_event:
 	CPY #3				; is it ^C?
