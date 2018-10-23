@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc16
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181022-1009
+; last modified 20181023-1219
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -346,57 +346,6 @@ free_w:
 	_EXIT_OK
 
 
-; ***********************************
-; *** B_FORE, set foreground task ***
-; ***********************************
-;		INPUT
-; Y		= PID of task, must be 0 as this will not multitask, $FF stays anyway
-
-b_fore:
-#ifdef	SAFE
-	CPY #$FF			; another?
-	BEQ bf_ok			; stay anyway
-		TYA					; check PID
-	BEQ bf_ok			; must be zero
-		_ERR(INVALID)		; complain otherwise
-bf_ok:
-#endif
-	_EXIT_OK
-
-
-; ************************************************
-; *** B_EVENT, send signal to appropriate task ***
-; ************************************************
-;		INPUT
-; Y		= transferred char (assumed *previously* stored into buffer or io_c)
-; affects b_sig as it may call B_SIGNAL
-; may not need to be patched?
-
-b_event:
-	CPY #3				; is it ^C?
-	BNE be_nc
-		LDA #SIGTERM
-		BNE be_sig			; no need for BRA
-be_nc:
-	CPY #4				; is it ^D?
-	BNE be_nd
-		LDA #SIGKILL		; somewhat dangerous!
-		BEQ be_sig			; no need for BRA (this was zero)
-be_nd:
-	CPY #26				; is it ^Z?
-	BNE bn_none			; this is the last recognised event
-		LDA #SIGSTOP
-be_sig:
-	STA b_sig			; set signal
-#ifdef	SAFE
-	LDY #0				; get foreground task, cannot multitask anyway!
-#endif
-	JSR b_signal		; execute...
-	_ERR(EMPTY)			; ...and discard input char!
-be_none:
-	_EXIT_OK			; regular char or maybe a discarded event, will just be ingored
-
-
 ; **************************************
 ; *** UPTIME, get approximate uptime ***
 ; **************************************
@@ -440,6 +389,7 @@ ex_st:
 	JSR ex_jmp			; call supplied address
 ; *** SIGKILL standard handler ***
 sig_kill:
+; *** TO DO *** this should save Y & P.C (carry) somewhere for status report! ***
 ; systems without memory management have nothing to free...
 	LDA sd_flag			; some pending action?
 	BEQ rst_shell		; if not, just restart the shell
@@ -540,6 +490,56 @@ set_hndl:
 	STA mm_sterm+1
 	_NO_CRIT
 	_EXIT_OK
+
+
+; ***********************************
+; *** B_FORE, set foreground task ***
+; ***********************************
+;		INPUT
+; Y		= PID of task, must be 0 as this will not multitask, $FF stays anyway
+
+b_fore:
+#ifdef	SAFE
+	CPY #$FF			; another?
+	BEQ bf_ok			; stay anyway
+		TYA					; check PID
+		BNE sig_pid			; must be zero, complain otherwise
+bf_ok:
+#endif
+	_EXIT_OK
+
+
+; ************************************************
+; *** B_EVENT, send signal to appropriate task ***
+; ************************************************
+;		INPUT
+; Y		= transferred char (assumed *previously* stored into buffer or io_c)
+; affects b_sig as it may call B_SIGNAL
+; may not need to be patched?
+
+b_event:
+	CPY #3				; is it ^C?
+	BNE be_nc
+		LDA #SIGTERM
+		BNE be_sig			; no need for BRA
+be_nc:
+	CPY #4				; is it ^D?
+	BNE be_nd
+		LDA #SIGKILL		; somewhat dangerous!
+		BEQ be_sig			; no need for BRA (this was zero)
+be_nd:
+	CPY #26				; is it ^Z?
+	BNE bn_none			; this is the last recognised event
+		LDA #SIGSTOP
+be_sig:
+	STA b_sig			; set signal
+#ifdef	SAFE
+	LDY #0				; get foreground task, cannot multitask anyway!
+#endif
+	JSR b_signal		; execute...
+	_ERR(EMPTY)			; ...and discard input char!
+be_none:
+	_EXIT_OK			; regular char or maybe a discarded event, will just be ingored
 
 
 ; **************************************************************

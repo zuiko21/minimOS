@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc18, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181022-1009
+; last modified 20181023-1214
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -883,6 +883,7 @@ exec_st:
 ; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
 sig_kill:
 	.as: .xs: SEP #$30	; *** standard sizes all the way, in case a task was killed ***
+; *** TO DO *** this should save Y & P.C (carry) somewhere for status report! ***
 ; first, free up all memory from previous task
 	LDY #0				; standard PID
 ; should correct DP, just in case
@@ -1036,8 +1037,7 @@ b_fore:
 	CPY #$FF			; asking for another?
 	BEQ bf_ok			; will stay anyway
 		TYA					; check PID
-	BEQ bf_ok			; must be zero
-		_ERR(INVALID)		; complain otherwise
+		BNE sig_pid			; must be zero, complain otherwise
 bf_ok:
 #endif
 	_EXIT_OK

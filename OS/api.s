@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc22, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181022-1007
+; last modified 20181023-1214
 
 ; no way for standalone assembly...
 
@@ -699,6 +699,7 @@ ex_st:
 
 ; ***** SIGKILL handler, either from B_SIGNAL or at task completion *****
 sig_kill:
+; *** TO DO *** this should save Y & P.C (carry) somewhere for status report! ***
 ; first, free up all memory from previous task
 	LDY #0				; standard PID
 ;	KERNEL(RELEASE)	; free all memory eeeeeeeek
@@ -836,10 +837,9 @@ get_pid:
 b_fore:
 #ifdef	SAFE
 	CPY #$FF			; asking for another?
-		BEQ bf_ok			; will stay anyway as singletask!
-	TYA					; check PID
-		BEQ bf_ok			; must be zero
-	_ERR(INVALID)		; complain otherwise
+	BEQ bf_ok			; will stay anyway as singletask!
+		TYA					; check PID
+		BNE sig_pid			; must be zero, complain otherwise
 bf_ok:
 #endif
 	_EXIT_OK
