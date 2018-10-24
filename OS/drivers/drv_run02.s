@@ -60,12 +60,12 @@ kow_rts:
 
 ; *** input ***
 kow_blin:
-lda#'i'
-jsr$c0c2
-lda bl_ptr+1
-jsr debug_hex
-lda bl_ptr
-jsr debug_hex
+;lda#'i'
+;jsr$c0c2
+;lda bl_ptr+1
+;jsr debug_hex
+;lda bl_ptr
+;jsr debug_hex
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1

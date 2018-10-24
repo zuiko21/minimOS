@@ -533,7 +533,7 @@ be_nc:
 		BEQ be_sig			; no need for BRA (this was zero)
 be_nd:
 	CPY #26				; is it ^Z?
-	BNE bn_none			; this is the last recognised event
+	BNE be_none			; this is the last recognised event
 		LDA #SIGSTOP
 be_sig:
 	STA b_sig			; set signal

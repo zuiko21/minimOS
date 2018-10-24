@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1b9
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180827-2206
+; last modified 20181024-0901
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -37,14 +37,14 @@
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
-	BUFSIZ	= 16
-	STKSIZ	= 8
+BUFFER	= 16
+STKSIZ	= 8
 
 ; **********************
 ; *** zeropage usage ***
 ; **********************
 ; 6502 registers
-	z_acc	= $100-11-BUFSIZ-STKSIZ	; try to use kernel parameter space
+	z_acc	= $100-11-BUFFER-STKSIZ	; try to use kernel parameter space
 	z_x		= z_acc+1	; must respect register order
 	z_y		= z_x+1
 	z_s		= z_y+1	; will store SP too
@@ -57,7 +57,7 @@
 	z_dat	= z_sp+1
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
-	stack	= buff+BUFSIZ
+	stack	= buff+BUFFER
 
 ; ******************
 ; *** init stuff ***
@@ -439,7 +439,7 @@ nl_upp:
 		LDX z_cur			; retrieve cursor
 ; *** could check bounds here ***
 #ifdef	SAFE
-		CPX #BUFSIZ			; full buffer?
+		CPX #BUFFER			; full buffer?
 		BCC nl_ok			; no, just continue
 			LDA #BS				; yes, delete last printed
 			JSR nm_out

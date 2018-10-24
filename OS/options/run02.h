@@ -8,20 +8,20 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-;#define		SAFE	_SAFE
+#define		SAFE	_SAFE
 
-#define		LOWRAM	_LOWRAM
+;#define		LOWRAM	_LOWRAM
 
 ;#define		FAST_API	_FAST_API
 ;#define		FAST_FW		_FAST_FW
 
 ; new option for mutable IDs, most likely mandatory!
-;#define		MUTABLE		_MUTABLE
+#define		MUTABLE		_MUTABLE
 
 ; enable in order to remove headers, not LOADLINK savvy!
 ;#define		NOHEAD	_NOHEAD
 ; enable multitasking support... hopefully! *** might be defined upon multitasking driver
-;#define	MULTITASK	_MULTITASK
+#define	MULTITASK	_MULTITASK
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02

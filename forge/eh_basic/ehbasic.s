@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180516-0855
+; last modified 20181024-0859
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -467,8 +467,6 @@ LAB_STAK	= $0		; stack bottom, will use 16-bit X
 ; *** flushed stack address (minus 2) will be stored at emptsk in runtime ***
 
 ; *** no real need for I/O vectors ***
-
-COLON		= $3A				; avoids problems with some assemblers...
 
 ; ***********************************
 ; *** minimOS initialisation code ***
