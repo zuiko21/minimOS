@@ -1,7 +1,7 @@
 ; minimOS BRK handler
-; v0.5.1rc2
+; v0.5.1rc3
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180914-1550
+; last modified 20181024-0914
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -21,21 +21,24 @@
 	LDY $0108, X	; get LSB+1
 	BNE brk_nw		; will not wrap upon decrement!
 		_DEC			; otherwise correct MSB
+brk_nw:
+; ************************************ check regs
 #else
 ; 65816 code saves... one byte
 	LDA 14, s		; get buried LSB eeeeeeeeeeeeeeeek
-	TAX				; hold it
+	TAY				; hold it
 	LDA 15, s		; get buried MSB
-	LDY 16, s		; bank too eeeeeeek
-	STY systmp		; store after 16b pointer
-	TXY				; prepare for later
+	TAX				; ...no LDY,s!
+	LDA 16, s		; bank too eeeeeeek^2
+	STA systmp		; store after 16b pointer
+	TYA				; check LSB for later
 	BNE brk_nw		; will not wrap upon decrement!
-		DEC				; otherwise correct MSB
-#endif
+		DEX				; otherwise correct MSB
 brk_nw:
+#endif
 	DEY				; back to signature address
 ; A/Y points to beginning of string
-	STA sysptr+1	; prepare internal pointer, should it be saved for reentrancy?
+	STX sysptr+1	; prepare internal pointer, should it be saved for reentrancy?
 	STY sysptr
 	LDY #0			; eeeeeeeeeeeeeeeeeek
 brk_ploop:
