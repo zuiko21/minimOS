@@ -1,6 +1,6 @@
 ; minimOS 0.6rc7 System Variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181015-1036
+; last modified 20181024-1040
 .bss
 
 ; **** I/O management ****
@@ -79,8 +79,6 @@ dflt_in		.byt	0	; GLOBAL default devices, EXCEPT for LOWRAM systems
 dfltout		.byt	0
 ; no way for multitasking in LOWRAM systems
 run_pid		.byt	0	; current PID running for easy kernel access, will be set by new SET_CURR
-; *** new foreground task variable ***
-run_fg		.byt	0				; will change on multitasking systems, otherwise stays at zero
 #else
 dflt_in		= std_in	; in LOWRAM systems, both global and local standard devices are the same!
 dfltout		= stdout

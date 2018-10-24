@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc9
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181015-1010
+; last modified 20181024-1043
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -148,7 +148,6 @@ ram_init:
 	STX queue_mx+1
 ; ++++++ new direct I/O tables for much faster access 20160406 ++++++
 	STX run_pid			; new 170222, set default running PID *** this must be done BEFORE initing drivers as multitasking should place appropriate temporary value via SET_CURR!
-	STX run_fg			; essential for multitasking, B_EVENT will pick its value anyway!
 dr_clear:
 		_STZA cio_lock, X	; clear I/O locks! (4)
 ;		STZA cin_mode, X	; and binary flags, actually next address (4)
