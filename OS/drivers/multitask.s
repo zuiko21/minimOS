@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a2
+; v0.6a3
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180404-1323
+; last modified 20181024-1058
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -66,7 +66,7 @@ mm_rsp:
 	INX					; the first PID is 1
 	STX mm_pid			; set index as current PID
 ; install procedure means now PATCHING all relevant kernel functions!
-	LDY #B_YIELD		; _last_ function to be patched
+	LDY #GET_FG		; _last_ function to be patched ***new
 mm_patch:
 		LDA mm_funct-B_FORK, Y	; get LSB, note special offset from _first_ function saving the use of X
 		STA kerntab			; set FW parameter
@@ -538,6 +538,8 @@ mm_hndl:
 mm_prior:
 	_DR_OK
 
+; get 
+
 ; emergency exit, should never arrive here!
 mm_eexit:
 	_NEXT_ISR			; just in case
@@ -550,6 +552,8 @@ mm_funct:
 	.word	mm_status	; get execution flags for a braid
 	.word	mm_hndl		; set SIGTERM handler
 	.word	mm_yield	; switch to next braid, likely to be ignored if lacking hardware-assisted multitasking
+	.word	mm_fore		; ***new, set foreground task
+	.word	mm_getfg	; ***new, get foreground PID
 
 ; *** signal routines addresses table ***
 mms_table:

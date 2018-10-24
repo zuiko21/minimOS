@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.6a3
+; v0.6a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180404-1322
+; last modified 20181024-1058
 
 ; ***************************
 ; *** multitasking driver ***
@@ -82,7 +82,7 @@ mm_ptl:
 ;		PLY					; otherwise retrieve loop var, if was saved
 		INY					; go for next
 		INY
-		CPY #GET_PID		; first NON-patched function...
+		CPY #B_EVENT		; first NON-patched function...
 		BNE mm_ptl			; ...means we are done
 ; *** shutdown code placeholder *** does not do much
 mm_bye:
@@ -602,7 +602,8 @@ mm_patch:
 	.word	mm_flags
 	.word	mm_seth
 	.word	mm_yield	; eeeeeeeek
-; GET_PID is not patched as will use standtard SET_CURR interface
+	.word	mm_fore		; ***new, set foreground task
+	.word	mm_getfg	; ***new, get foreground PID
 
 ; *** signal routines addresses table ***
 mms_table:

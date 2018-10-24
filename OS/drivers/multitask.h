@@ -1,15 +1,17 @@
 ; static variables for software multitasking module for minimOS
-; v0.6a2
-; (c) 2015-2017 Carlos J. Santisteban
-; last modified 20171220-1335
+; v0.6a3
+; (c) 2015-2018 Carlos J. Santisteban
+; last modified 20181024-1052
 
 #define	MX_BRAID	4
 
 mm_pid		.byt	0				; current PID
+mm_fg		.byt	0				; *** new foreground task
 mm_flags	.dsb	MX_BRAID		; status list, now integrated with mm_treq
 mm_term		.dsb	MX_BRAID*2		; space for TERM pointers, no longer integrated in sysvars!
 ; no longer using mm_sfsiz & mm_stack, as per new TS_INFO output format!
 ; mm_qcnt no longer needed as per new driver format
+mm_fg		= term+1			; *** new foreground task
 
 
 ; only software multitask will enable this
