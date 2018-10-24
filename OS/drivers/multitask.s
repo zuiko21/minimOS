@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.6a3
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181024-1058
+; last modified 20181024-1108
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -301,10 +301,15 @@ mm_piderr:
 	PLA					; discard return address, since called from a subroutine (4+4)
 	PLA
 mm_bad:
-	_DR_ERR(INVALID)		; not a valid PID or subfunction code, worth checking
+	_ERR(INVALID)		; not a valid PID or subfunction code, worth checking, is this OK?
 #endif
 
-; reserve a free braid
+; ******************************************************
+; *** replacement for kernel functions *****************
+; *** these end in EXIT_OK as will patch regular API ***
+; ******************************************************
+
+; B_FORK, reserve a free braid
 ; Y -> PID
 mm_fork:
 	LDY #MX_BRAID		; scan backwards is usually faster (2)
@@ -317,15 +322,15 @@ mmf_loop:
 		DEY					; try next (2)
 		BNE mmf_loop		; until the bottom of the list (3/2)
 	_NO_CRIT			; nothing was found (4)
-;	_DR_ERR(FULL)		; no available braids!
-	_DR_OK				; use system-reserved braid, is this OK?
+;	ERR(FULL)		; no available braids!
+	_EXIT_OK			; use system-reserved braid, is this OK?
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
 	STA mm_flags-1, Y	; reserve braid (4)
 	_NO_CRIT			; end of risk (4)
-	_DR_OK
+	_EXIT_OK
 
-; get code at some address running into a paused (?) braid
+; B_EXEC, get code at some address running into a paused (?) braid
 ; Y <- PID, ex_pt <- addr, def_io <- sys_in & sysout ** no need for architecture
 ; no longer should need some flag to indicate XIP or not! code start address always at stack bottom
 mm_exec:
@@ -334,7 +339,7 @@ mm_exec:
 #endif
 	TYA					; new PID passing
 	BNE mmx_br			; go for another braid
-		_DR_ERR(INVALID)	; rejects system PID, or execute within this braid??? *** REVISE
+		_ERR(INVALID)	; rejects system PID, or execute within this braid??? *** REVISE
 mmx_br:
 	PHA					; save desired PID for later!
 ; now should point to future stack space, no longer will switch regular stack!
@@ -514,12 +519,7 @@ mm_status:
 
 	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
 	TAY					; return value (2) *** might want to write it somewhere for faster BIT
-	_DR_OK
-
-; get current PID
-mm_getpid:
-	LDY mm_pid			; get PID (4)
-	_DR_OK
+	_EXIT_OK
 
 ; set SIGTERM handler
 mm_hndl:
@@ -534,11 +534,12 @@ mm_hndl:
 	LDA ex_pt+1			; now for MSB (3+4)
 	STA mm_term+1, Y
 	_NO_CRIT			; were off for 13 clocks (4)
-; priorize braid, jump to it at once, really needed? *** placeholder ***
-mm_prior:
-	_DR_OK
+	_EXIT_OK
 
-; get 
+; get foreground PID from reserved variable
+mm_getfg:
+	LDY mm_fg			; get foreground PID
+	_EXIT_OK
 
 ; emergency exit, should never arrive here!
 mm_eexit:
