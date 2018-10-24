@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc19, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181023-1230
+; last modified 20181024-1030
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -773,13 +773,15 @@ open_w:
 ow_no_window:
 	.as: SEP #$20		; for peace of mind...
 
-; *********************************
-; *** B_FORK, get available PID ***
-; *********************************
+; ******************************************
+; *** B_FORK, get available PID ************
+; *** GET_FG, get current foreground PID ***
+; ******************************************
 ;		OUTPUT
 ; Y		= PID, 0 means not available or singletask
 
 b_fork:
+get_fg:
 	LDY #0				; standard device or single task PID
 ; EXIT_OK on subsequent system calls!!!
 
@@ -1066,7 +1068,7 @@ be_nc:
 		BEQ be_sig			; no need for BRA (this was zero)
 be_nd:
 	CPY #26				; is it ^Z?
-	BNE bn_none			; this is the last recognised event
+	BNE be_none			; this is the last recognised event
 		LDA #SIGSTOP
 be_sig:
 	STA b_sig			; set signal

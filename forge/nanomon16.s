@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b4
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180828-2051
+; last modified 20181024-1029
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -39,14 +39,14 @@
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
-	BUFSIZ	= 16		; maximum buffer size
+	BUFFER	= 16		; maximum buffer size
 	STKSIZ	= 8		; maximum stack size (unused)
 
 ; **********************
 ; *** zeropage usage ***
 ; **********************
 ; 16-bit registers
-	z_acc	= $100-19-BUFSIZ-STKSIZ	; will try to keep within direct page
+	z_acc	= $100-19-BUFFER-STKSIZ	; will try to keep within direct page
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
 	z_s		= z_y+2	; will store system SP too
@@ -62,12 +62,12 @@
 	z_dat	= z_sp+1
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
-	stack	= buff+BUFSIZ
+	stack	= buff+BUFFER
 
 ; ******************
 ; *** init stuff ***
 ; ******************
-+nanomon:
+;+nanomon:
 	PHP					; keep status! needed?
 	CLC					; make sure it is in NATIVE mode!!!
 	XCE
@@ -517,7 +517,7 @@ nl_upp:
 		LDX z_cur			; retrieve cursor
 ; *** could check bounds here ***
 #ifdef	SAFE
-		CPX #BUFSIZ			; full buffer?
+		CPX #BUFFER			; full buffer?
 		BCC nl_ok			; no, just continue
 			LDA #BS				; yes, delete last printed
 			JSR nm_out
