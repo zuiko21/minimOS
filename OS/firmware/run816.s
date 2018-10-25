@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc9
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180511-1035
+; last modified 20181025-0912
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -169,7 +169,7 @@ reset:
 #include "modules/splash.s"
 
 ; *** TESTING NANOMON ***
-#include "../../forge/nanomon.s"
+;#include "../../forge/nanomon.s"
 ; ***********************
 
 ; ************************

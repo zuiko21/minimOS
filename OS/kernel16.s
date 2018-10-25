@@ -190,7 +190,6 @@ dr_ok:					; *** all drivers inited ***
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
-
 ; *** set default I/O device *** still in 16-bit memory
 	LDA #DEVICE*257		; as defined in options.h **** revise as it might be different for I and O
 	STA dflt_in			; should check some devices, this assumes _in is LSB
