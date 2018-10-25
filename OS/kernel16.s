@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b12
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181024-1042
+; last modified 20181025-1059
 
 ; just in case
 #define		C816	_C816
@@ -24,7 +24,7 @@
 #else
 ; standalone kernels need to keep track of drivers_ad label!
 .data
-#include "DRIVER_PACK.s"
+#include DRIVER_PACK_s
 .text
 #endif
 #endif
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6b11", 0	; version in comment
+	.asc	"minimOS-16 0.6b12", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -216,10 +216,10 @@ sh_exec:
 	LDX shell-254		; get ACTUAL CPU type from executable header!
 #endif
 	STX cpu_ll			; architecture parameter
+	STZ ex_pt+2			; 24-bit addressing for forthcoming EXEC
 	.al: REP #$20		; will be needed anyway upon restart
 	LDA #shell			; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
-	STZ ex_pt+2			; 24-bit addressing for forthcoming EXEC
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
@@ -240,7 +240,7 @@ ks_cr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.6b11", 0	; version in comment
+	.asc	"minimOS-16 0.6b12", 0	; version in comment
 #endif
 
 ; ***********************************************
@@ -278,20 +278,20 @@ shell:			; no header to skip
 shell	= * + 256		; skip header
 #endif
 
-#include "SHELL"
+#include SHELL
 
 ; ************************************************************
 ; ****** Downloaded kernels add driver staff at the end ******
 ; ************************************************************
 #ifdef	DOWNLOAD
-#include "DRIVER_PACK.s"	; this package will be included with downloadable kernels
+#include DRIVER_PACK_s	; this package will be included with downloadable kernels
 .data
 ; downloadable system have ALL system & driver variables AFTER the kernel/API
 sysvars:
 #include "sysvars.h"
 ; driver-specific system variables, located here 20170207
 dr_vars:
-#include "DRIVER_PACK.h"
+#include DRIVER_PACK_h
 .text					; eeeeeek
 -user_ram = *			; the rest of available SRAM
 #endif
