@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181024-1058
+; last modified 20181025-1111
 
 ; ***************************
 ; *** multitasking driver ***
@@ -261,6 +261,33 @@ mm_bad:
 	_ERR(INVALID)		; not a valid PID or subfunction code, abort API
 #endif
 
+; *** SIGCONT, resume execution ***
+mms_cont:
+; CS not needed as per 816 ABI
+	LDA mm_flags-2, Y	; first check current state (5)
+	LSR					; keep integrated mm_treq in C! (2)
+	CMP #BR_STOP/2		; is it paused? note it was shifted (2)
+		BNE mms_kerr		; no way to resume it! (2/3)
+	LDA #BR_RUN/2		; resume, note shift (2)
+	ROL					; reinsert TERM flag from C! (2)
+	STA mm_flags-2, Y	; store new status (5) again, TERM is lost
+; here ends CS
+	RTS
+
+; *** SIGSTOP, pause execution ***
+mms_stop:
+	LDA mm_flags-2, Y	; first check current state (5)
+	LSR					; keep integrated mm_treq in C! (2)
+	CMP #BR_RUN/2		; is it running? note shift (2)
+		BNE mms_kerr		; no way to stop it! (2/3)
+	LDA #BR_STOP/2		; pause it, note shift (2)
+	ROL					; reinsert TERM flag from C! (2)
+	STA mm_flags-2, Y	; store new status (5) *** would like to restore somehow any previous TERM!
+	RTS
+mms_kerr:
+	_DR_ERR(INVALID)	; not a running PID *** currently ignored error
+
+
 ; emergency exit, should never arrive here!
 mm_nreq:
 	_NEXT_ISR			; just in case
@@ -404,33 +431,6 @@ mms_kill:
 ; window release *** TO DO *** TO DO *** TO DO ***
 	RTS					; return as appropriate
 
-; *** SIGCONT, resume execution ***
-mms_cont:
-; CS not needed as per 816 ABI
-	LDA mm_flags-2, Y	; first check current state (5)
-	LSR					; keep integrated mm_treq in C! (2)
-	CMP #BR_STOP/2		; is it paused? note it was shifted (2)
-		BNE mms_kerr		; no way to resume it! (2/3)
-	LDA #BR_RUN/2		; resume, note shift (2)
-	ROL					; reinsert TERM flag from C! (2)
-	STA mm_flags-2, Y	; store new status (5) again, TERM is lost
-; here ends CS
-	RTS
-
-; *** SIGSTOP, pause execution ***
-mms_stop:
-	LDA mm_flags-2, Y	; first check current state (5)
-	LSR					; keep integrated mm_treq in C! (2)
-	CMP #BR_RUN/2		; is it running? note shift (2)
-		BNE mms_kerr		; no way to stop it! (2/3)
-	LDA #BR_STOP/2		; pause it, note shift (2)
-	ROL					; reinsert TERM flag from C! (2)
-	STA mm_flags-2, Y	; store new status (5) *** would like to restore somehow any previous TERM!
-	RTS
-mms_kerr:
-	_DR_ERR(INVALID)	; not a running PID *** currently ignored error
-
-
 ; ************************************************
 ; *** B_FLAGS, get execution flags of a braid ***
 ; ************************************************
@@ -481,7 +481,7 @@ mm_hndl:
 
 
 ; -------------------------------OLD----------------------
-
+/*
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
 ; Y <- PID, ex_pt <- addr, cpu_ll <- architecture, def_io <- sys_in & sysout
 ; no longer should need some flag to indicate XIP or not! code start address always at stack bottom
@@ -588,7 +588,7 @@ arch_ok:
 	LDA #<mm_context	; should be zero for optimum performance
 	TCD					; back to current direct page
 	_DR_OK				; done
-
+*/
 
 ; *********************************
 ; *** diverse data and pointers ***
