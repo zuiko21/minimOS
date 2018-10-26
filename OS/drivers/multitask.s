@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a3
+; v0.6a4
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181024-1108
+; last modified 20181026-1244
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -83,14 +83,6 @@ mm_patch:
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
 
-; switch to next braid
-mm_yield:
-	CLC					; for safety in case RTS is found (when no other braid is active)
-	_CRITIC				; eeeeeeek, scheduler is expected to run with interrupts OFF!
-	JSR mm_oksch		; ...then will CALL the scheduler! At once!
-	_NO_CRIT			; restore interrupt status, could be off anyway
-	_DR_OK				; eeeeeeeeeeeeeek, stack imbalance otherwise!
-
 ; in case of non-XIP code (loaded file) FINISH must free its previously assigned block, taking address from stack!
 mm_oblit:
 	PLA					; take LSB from stack!
@@ -110,7 +102,7 @@ mm_suicide:
 	TXS					; *** optimise for faster switch!
 	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
 	CLC					; for safety in case RTS is found (when no other braid is active)
-	_BRA mm_oksch		; ...then into scheduler code, current context is irrelevant as will no longer be executable
+;	_BRA mm_oksch		; ...then into scheduler code, current context is irrelevant as will no longer be executable
 
 ; *** the scheduler code ***
 mm_sched:
@@ -277,6 +269,10 @@ mm_stload:
 mm_rts:
 		RTS					; all done, continue ISR
 
+; **********************************************************
+; *** signal execution code ********************************
+; **********************************************************
+
 ; *** the actual SIGTERM routine execution, new 20150611 ***
 mm_sigterm:
 	ASL					; ...and restore value with clear flag!
@@ -288,29 +284,13 @@ mm_sigterm:
 	PHP					; sigterm ends in RTI!
 	_JMPX(mm_term-2)	; indexed indirect jump, will return to RTS
 
-#ifdef	SAFE
-; check PID within limits (21 clocks optimized 150514, was 23 clocks including JSR)
-mm_chkpid:
-	TYA					; eeeeeeeek^2! the place to do it (3)
-		BEQ mm_pidz			; system-reserved PID???? don't know what to do here... (2/3)
-	CPY #MX_BRAID+1	; check whether it's a valid PID (2) eeeeeek!
-		BCS mm_piderr		; way too much (2/3) eeeeeeek
-	RTS					; back to business (6)
-mm_pidz:				; placeholder
-mm_piderr:
-	PLA					; discard return address, since called from a subroutine (4+4)
-	PLA
-mm_bad:
-	_ERR(INVALID)		; not a valid PID or subfunction code, worth checking, is this OK?
-#endif
-
 ; ******************************************************
 ; *** replacement for kernel functions *****************
 ; *** these end in EXIT_OK as will patch regular API ***
 ; ******************************************************
 
-; B_FORK, reserve a free braid
-; Y -> PID
+; *** B_FORK, reserve a free braid ***
+; Y -> PID (0 = no more available braids)
 mm_fork:
 	LDY #MX_BRAID		; scan backwards is usually faster (2)
 	_CRITIC			; this is delicate (5)
@@ -322,7 +302,7 @@ mmf_loop:
 		DEY					; try next (2)
 		BNE mmf_loop		; until the bottom of the list (3/2)
 	_NO_CRIT			; nothing was found (4)
-;	ERR(FULL)		; no available braids!
+;	ERR(FULL)			; no available braids!
 	_EXIT_OK			; use system-reserved braid, is this OK?
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
@@ -330,7 +310,7 @@ mmf_found:
 	_NO_CRIT			; end of risk (4)
 	_EXIT_OK
 
-; B_EXEC, get code at some address running into a paused (?) braid
+; *** B_EXEC, get code at some address running into a paused (?) braid ***
 ; Y <- PID, ex_pt <- addr, def_io <- sys_in & sysout ** no need for architecture
 ; no longer should need some flag to indicate XIP or not! code start address always at stack bottom
 mm_exec:
@@ -443,31 +423,96 @@ mmx_sfp:
 	LDA #BR_RUN			; will enable task, no pending TERM!
 	STA mm_flags-1, X	; X holds desired PID
 
+; *** B_YIELD, yield CPU time ***
+; no interface needed
+mm_yield:
+	CLC					; for safety in case RTS is found (when no other braid is active)
+	_CRITIC				; eeeeeeek, scheduler is expected to run with interrupts OFF!
+	JSR mm_oksch		; ...then will CALL the scheduler! At once!
+	_NO_CRIT			; restore interrupt status, could be off anyway
+	_EXIT_OK			; eeeeeeeeeeeeeek, stack imbalance otherwise!
+
+; *** GET_FG, get foreground PID from reserved variable ***
+; Y -> PID
+mm_getfg:
+	LDY mm_fg			; get foreground PID
+	_EXIT_OK
+
+; *** B_SIGNAL, send some signal to a braid ***
+; b_sig <- signal code, Y <- PID (0 means TO ALL)
+mm_signal:
+#ifdef	SAFE
+	JSR mm_chkpidz		; check for a valid PID first (21)
+#endif
+; TO DO, must accept PID=0 as send to all!
+; new code 20150611, needs new ABI but 21 bytes (or 13 if not SAFE) and 13 clocks at most
+	LDX b_sig			; get signal code (3)
+
+#ifdef	SAFE
+	CPX #SIGCONT+1		; compare against last (2)
+	BCS mms_call		; abort if wrong signal eeeeeeek
+		_ERR(INVALID)		; unrecognized signal!
+#endif
+mms_call:
+	JSR mms_jmp			; call that... and return?
+	_EXIT_OK
+
+mms_jmp:
+	_JMPX(mms_table)	; jump to actual code
+
+; *** B_FLAGS, get execution flags for a braid ***
+; Y <- PID, Y -> flags
+mm_status:
+#ifdef	SAFE
+	JSR mm_chkpid		; check for a valid PID first (21)
+#endif
+
+	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
+	TAY					; return value (2) *** might want to write it somewhere for faster BIT
+	_EXIT_OK
+
+; *** SET_HNDL, set SIGTERM handler ***
+; mm_term <- handler pointer, Y <- PID
+mm_hndl:
+#ifdef	SAFE
+	JSR mm_chkpid		; check for a valid PID first (21)
+#endif
+
+	LDA ex_pt			; get pointer LSB (3)
+	_CRITIC				; this is delicate... (5)
+	STA mm_term, Y		; store in table (4)
+	LDA ex_pt+1			; now for MSB (3+4)
+	STA mm_term+1, Y
+	_NO_CRIT			; were off for 13 clocks (4)
+	_EXIT_OK
+
+
+; ****************************
+; *** supporting functions ***
+; ****************************
+
+#ifdef	SAFE
+; check PID within limits, with or without 0 (two entry points)
+mm_chkpidz:
+	TYA					; eeeeeeeek^2! the place to do it (2)
+		BEQ mm_piderr		; error unless explicitally accepted (2/3)
+mm_chkpid:
+	CPY #MX_BRAID+1	; check whether it's a valid PID (2) eeeeeek!
+		BCS mm_piderr		; way too much (2/3) eeeeeeek
+	RTS					; back to business (6)
+mm_piderr:
+	PLA					; discard return address, since called from a subroutine (4+4)
+	PLA
+mm_bad:
+	_ERR(INVALID)		; not a valid PID or subfunction code, worth checking, is this OK?
+#endif
 
 ; pre-execution routine for faster task-switching first time!
 mm_pre_exec:
 	STA z_used		; store maximum available zero-page bytes from A, for safety EEEEEEK
 	RTI				; 'return' to start of task! Much simpler, as long as a dummy PHP is done
 
-; send some signal to a braid
-mm_signal:
-
-#ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first (21)
-#endif
-
-; new code 20150611, needs new ABI but 21 bytes (or 13 if not SAFE) and 13 clocks at most
-	LDX b_sig			; get signal code (3)
-
-#ifdef	SAFE
-	CPX #SIGCONT+1		; compare against last (2)
-	BMI mms_jmp			; abort if wrong signal
-		_DR_ERR(INVALID)		; unrecognized signal!
-#endif
-
-mms_jmp:
-	_JMPX(mms_table)	; jump to actual code
-
+; *** signals ***
 ; kill braid!
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
@@ -509,37 +554,6 @@ mms_stop:
 mms_kerr:
 mm_abort:				; a bit of a placeholder...
 	_DR_ERR(INVALID)	; not a valid PID
-
-; get execution flags for a braid
-mm_status:
-
-#ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first (21)
-#endif
-
-	LDA mm_flags-1, Y	; parameter as index (4) eeeeek!
-	TAY					; return value (2) *** might want to write it somewhere for faster BIT
-	_EXIT_OK
-
-; set SIGTERM handler
-mm_hndl:
-
-#ifdef	SAFE
-	JSR mm_chkpid		; check for a valid PID first (21)
-#endif
-
-	LDA ex_pt			; get pointer LSB (3)
-	_CRITIC			; this is delicate... (5)
-	STA mm_term, Y		; store in table (4)
-	LDA ex_pt+1			; now for MSB (3+4)
-	STA mm_term+1, Y
-	_NO_CRIT			; were off for 13 clocks (4)
-	_EXIT_OK
-
-; get foreground PID from reserved variable
-mm_getfg:
-	LDY mm_fg			; get foreground PID
-	_EXIT_OK
 
 ; emergency exit, should never arrive here!
 mm_eexit:
