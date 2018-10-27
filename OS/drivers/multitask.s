@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.6a4
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181026-1244
+; last modified 20181027-1310
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -37,7 +37,7 @@
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MX_BRAID+'0', "-task Software Scheduler v0.6a1", 0	; works as long as no more than 9 braids!
+	.asc	MX_BRAID+'0', "-task Software Scheduler v0.6a4", 0	; works as long as no more than 9 braids!
 
 ; *** zeropage space definitions ***
 	exec_p	=	local1	; temporary assignations!
@@ -71,7 +71,7 @@ mm_patch:
 		LDA mm_funct-B_FORK, Y	; get LSB, note special offset from _first_ function saving the use of X
 		STA kerntab			; set FW parameter
 		LDA mm_funct-B_FORK+1, Y	; get MSB, note offset trick
-		STA kerntab			; set FW parameter
+		STA kerntab+1			; set FW parameter eeeeeek
 		_PHY
 		_ADMIN(PATCH)		; patch this function
 		_PLY
