@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a4
+; v0.6a5
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181027-1310
+; last modified 20181028-1022
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -37,7 +37,7 @@
 
 ; *** driver description, NEW 20150323 ***
 mm_info:
-	.asc	MX_BRAID+'0', "-task Software Scheduler v0.6a4", 0	; works as long as no more than 9 braids!
+	.asc	MX_BRAID+'0', "-task Software Scheduler v0.6", 0	; works as long as no more than 9 braids!
 
 ; *** zeropage space definitions ***
 	exec_p	=	local1	; temporary assignations!
@@ -100,6 +100,7 @@ mm_suicide:
 	_STZA z_used		; *** optimise for faster switch!
 	LDX #$FE			; Do not let EMPTY! eeeeeeeeeek
 	TXS					; *** optimise for faster switch!
+	LDY mm_pid			; get current task number HERE eeeeeeeeek
 	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
 	CLC					; for safety in case RTS is found (when no other braid is active)
 ;	_BRA mm_oksch		; ...then into scheduler code, current context is irrelevant as will no longer be executable
@@ -454,11 +455,7 @@ mm_signal:
 		_ERR(INVALID)		; unrecognized signal!
 #endif
 mms_call:
-	JSR mms_jmp			; call that... and return?
-	_EXIT_OK
-
-mms_jmp:
-	_JMPX(mms_table)	; jump to actual code
+	_JMPX(mms_table)	; jump to actual code... and return (6502 ABI is the same for routines and API functions)
 
 ; *** B_FLAGS, get execution flags for a braid ***
 ; Y <- PID, Y -> flags
@@ -518,7 +515,6 @@ mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
 ; should probably free up all MEMORY & windows belonging to this PID...
-	LDY mm_pid			; get current task number
 	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
 ; window release *** TO DO *** TO DO *** TO DO ***
 	_DR_OK
