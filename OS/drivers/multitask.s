@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a5
+; v0.6a6
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181028-1022
+; last modified 20181029-1013
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -39,13 +39,8 @@
 mm_info:
 	.asc	MX_BRAID+'0', "-task Software Scheduler v0.6", 0	; works as long as no more than 9 braids!
 
-; *** zeropage space definitions ***
-	exec_p	=	local1	; temporary assignations!
-	exe_sp	=	local2
-
 ; *** initialisation code ***
 mm_init:
-; will now patch relevant task-handling kernel functions!
 #ifdef	SAFE
 ; might check for bankswitching hardware and cause error, in order NOT to install BOTH schedulers!...
 ; ...or just ignore as only the first driver will install?
@@ -53,6 +48,7 @@ mm_init:
 ; remaining code assumes software scheduler only
 	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
 	BCC mm_cont			; skip if no error eeeeeeeeeek
+mm_abort:
 		_DR_ERR(UNAVAIL)	; error if not available
 mm_cont:
 #endif
@@ -66,12 +62,12 @@ mm_rsp:
 	INX					; the first PID is 1
 	STX mm_pid			; set index as current PID
 ; install procedure means now PATCHING all relevant kernel functions!
-	LDY #GET_FG		; _last_ function to be patched ***new
+	LDY #GET_FG			; _last_ function to be patched ***new
 mm_patch:
 		LDA mm_funct-B_FORK, Y	; get LSB, note special offset from _first_ function saving the use of X
 		STA kerntab			; set FW parameter
 		LDA mm_funct-B_FORK+1, Y	; get MSB, note offset trick
-		STA kerntab+1			; set FW parameter eeeeeek
+		STA kerntab+1		; set FW parameter eeeeeek
 		_PHY
 		_ADMIN(PATCH)		; patch this function
 		_PLY
@@ -83,31 +79,30 @@ mm_patch:
 mm_bye:
 	_DR_OK				; new interface for both 6502 and 816
 
+; *************************************************
+; *** end-of-task routine, where FINISH returns ***
+; *************************************************
 ; in case of non-XIP code (loaded file) FINISH must free its previously assigned block, taking address from stack!
 mm_oblit:
-	PLA					; take LSB from stack!
-	STA ma_pt			; parameter for FREE
-	PLA					; same for MSB
-	STA ma_pt+1
-	SEI					; certainly needs interrupts off!
-	_KERNEL(FREE)		; generic access
-; ...and get into mm_suicide
-
-; kill itself!!! simple way to terminate after FINISH
-mm_suicide:
+;	PLA					; take LSB from stack!
+;	STA ma_pt			; parameter for FREE
+;	PLA					; same for MSB
+;	STA ma_pt+1
+;	SEI					; certainly needs interrupts off!
+;	KERNEL(FREE)		; generic access
+; ...and get into mm_suicide (label no longer needed)
+;mm_suicide:
 	LDY mm_pid			; special entry point for task ending EEEEEEEEEEEK
 	SEI					; this needs to be run with interrupts OFF, do not care current status
 	_STZA z_used		; *** optimise for faster switch!
 	LDX #$FE			; Do not let EMPTY! eeeeeeeeeek
 	TXS					; *** optimise for faster switch!
-	LDY mm_pid			; get current task number HERE eeeeeeeeek
-	JSR mms_kill		; complete KILL procedure and return here (ignoring errors)
+	JSR mms_kill		; complete KILL procedure and return here (ignoring errors) OK for 6502, Y set as PID
 	CLC					; for safety in case RTS is found (when no other braid is active)
-;	_BRA mm_oksch		; ...then into scheduler code, current context is irrelevant as will no longer be executable
+;	BRA mm_sched		; ...then into scheduler code, current context is irrelevant as will no longer be executable
 
 ; *** the scheduler code ***
 mm_sched:
-mm_oksch:
 ; get next available PID
 	LDY #2				; to avoid deadlocks AND proper shutdown detection (2)
 	LDX mm_pid			; actual PID as index (4)
@@ -138,7 +133,10 @@ mm_lock:
 mm_switch:
 ; store previous status
 	STX systmp			; store temporarily new PID (3)
+
+; *****************************
 ; *** save current context! ***
+; *****************************
 ; first save both zeropage & stack from context as stated in mm_pid
 	LDA #<mm_context	; possibly zero (2)
 	STA sysptr			; set LSB (3)
@@ -199,7 +197,10 @@ mm_stsav:
 		STA (sysptr), Y		; storage area (5)
 		INY					; go for next (2)
 		BNE mm_stsav		; until the end (3/2)
+
+; *********************************************
 ; *** now let's retrieve new task's context ***
+; *********************************************
 ; compute storage address (+31 before the loop)
 	LDA systmp			; retrieve new PID (3)
 	STA mm_pid			; set new value, in the meanwhile (4+2)
@@ -262,28 +263,23 @@ mm_stload:
 		STA $0100, Y		; put stack contents
 		INY					; go for next
 		BNE mm_stload		; until the end
+
+; **************************************
+; *** pending SIGTERM execution code ***
+; **************************************
 ; now it's time to check whether SIGTERM was sent! new 20150611
 	LDX mm_pid			; get current PID again (4)
 	LDA mm_flags-1, X	; had it a SIGTERM request? (4) in case of integrated mm_treq
 	LSR					; easier check of bit 0! (2)
 	BCS mm_sigterm		; process it now! (2/3)
 mm_rts:
-		RTS					; all done, continue ISR
-
-; **********************************************************
-; *** signal execution code ********************************
-; **********************************************************
-
-; *** the actual SIGTERM routine execution, new 20150611 ***
+		RTS					; all done, continue ISR with C clear
+; *** the actual SIGTERM routine execution, new 20150611, fixed 20181029  ***
 mm_sigterm:
 	ASL					; ...and restore value with clear flag!
 	STA mm_flags-1, X	; EEEEEEEK! clear received TERM signal, new format 20161117
-	LDA #>mm_rts		; compute return address for RTI!
-	PHA					; into stack
-	LDA #<mm_rts		; same for LSB
-	PHA
-	PHP					; sigterm ends in RTI!
-	_JMPX(mm_term-2)	; indexed indirect jump, will return to RTS
+; no longer pushing a fake return address to a mere RTS!
+	_JMPX(mm_term-2)	; indexed indirect jump, will return to ISR (hopefully with clear C!)
 
 ; ******************************************************
 ; *** replacement for kernel functions *****************
@@ -302,12 +298,14 @@ mmf_loop:
 			BEQ mmf_found		; got it (2/3)
 		DEY					; try next (2)
 		BNE mmf_loop		; until the bottom of the list (3/2)
-	_NO_CRIT			; nothing was found (4)
+		BEQ mmf_nfound		; ***if not found, just return PID=0
+;	NO_CRIT				; nothing was found ***using a BEQ above instead...
 ;	ERR(FULL)			; no available braids!
-	_EXIT_OK			; use system-reserved braid, is this OK?
 mmf_found:
 	LDA #BR_STOP		; *** is this OK? somewhat dangerous *** (2)
 	STA mm_flags-1, Y	; reserve braid (4)
+; ***could just jump here if no available slot was found...
+mmf_nfound:
 	_NO_CRIT			; end of risk (4)
 	_EXIT_OK
 
@@ -334,30 +332,19 @@ mmx_br:
 ; *****place starting address at the very bottom of stack, even in XIP code
 ; first goes KILL handler, as braids are expected to end via RTS *** could be different for rendez-vous mode calls!
 ; this was only for XIP code, otherwise shoud push a different handler address AND below that the pointer to the assigned block (handler will take it for FREE)
-; ** check flag for XIP/non-XIP code and jump to mmx_nonxip if needed
-; ** XIP handler **
-	LDA #>mm_suicide-1	; compute end-of-task MSB (will arrive via RTS, thus one byte before)
-	STA (exec_p), Y		; these could be replaced by PHA...
-	DEY
-	LDA #<mm_suicide-1	; same for LSB
-	STA (exec_p), Y		; these could be replaced by PHA...
-	DEY
-;		_BRA mmx_frame		; continue creating stack frame!
-; ** non-XIP handler **
-;mmx_nonxip:
+; ** non-XIP extra code, will not harm anyway **
 ;	LDA ex_pt+1			; get MSB
 ;	PHA					; push it
 ;	LDA ex_pt			; same for LSB
 ;	PHA
-;	LDA #>mm_oblit-1	; compute end-of-task MSB for non-XIP (will arrive via RTS, thus one byte before)
-;	STA (exec_p), Y		; these could be replaced by PHA...
-;	DEY
-;	LDA #<mm_oblit-1	; same for LSB
-;	STA (exec_p), Y		; these could be replaced by PHA...
-;	DEY
-; ** could jump to mmx_frame in case of optimisation **
+; continue with standard XIP code
+	LDA #>mm_oblit-1	; compute end-of-task MSB for non-XIP (will arrive via RTS, thus one byte before)
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
+	LDA #<mm_oblit-1	; same for LSB
+	STA (exec_p), Y		; these could be replaced by PHA...
+	DEY
 ; now the start address, no offset is needed if ending on RTI
-mmx_frame:
 	LDA ex_pt+1			; braid's starting MSB goes first
 	STA (exec_p), Y		; these could be replaced by PHA...
 	DEY
@@ -509,8 +496,16 @@ mm_pre_exec:
 	STA z_used		; store maximum available zero-page bytes from A, for safety EEEEEEK
 	RTI				; 'return' to start of task! Much simpler, as long as a dummy PHP is done
 
-; *** signals ***
-; kill braid!
+; emergency exit, should never arrive here!
+mm_eexit:
+	_NEXT_ISR			; just in case
+
+; ************************************
+; *** signals ************************
+; *** required interface, Y <- PID ***
+; ************************************
+
+; SIGKILL, kill braid immediately! perhaps called via ^D?
 mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
@@ -519,14 +514,14 @@ mms_kill:
 ; window release *** TO DO *** TO DO *** TO DO ***
 	_DR_OK
 
-; ask braid to terminate
+; SIGTERM, ask braid to terminate, usually called via ^C
 mms_term:
 	LDA mm_flags-1, Y	; get original flags, now integrated! (4)
 	ORA #1				; set request (2)
 	STA mm_flags-1, Y	; set SIGTERM request for that braid (4)
-	_DR_OK
+	_EXIT_OK			; as direct jump from patched B_SIGNAL
 
-; resume execution
+; SIGCONT, resume execution
 mms_cont:
 	_CRITIC			; this is delicate (2)
 	LDA mm_flags-1, Y	; first check current state (5)
@@ -536,9 +531,9 @@ mms_cont:
 	LDA #BR_RUN			; resume (2)
 	STA mm_flags-1, Y	; store new status (5) again, TERM is lost
 	_NO_CRIT			; were off for ...
-	_DR_OK
+	_EXIT_OK			; as direct jump from patched B_SIGNAL
 
-; pause execution
+; SIGSTOP, pause execution, usually called via ^Z
 mms_stop:
 	LDA mm_flags-1, Y	; first check current state (5)
 	AND #BR_MASK		; mandatory as mm_treq is integrated! *** note that a previous TERM signal is lost!
@@ -546,14 +541,13 @@ mms_stop:
 		BNE mms_kerr		; no way to stop it! (2/3)
 	LDA #BR_STOP		; pause it (2)
 	STA mm_flags-1, Y	; store new status (5) *** would like to restore somehow any previous TERM!
-	_DR_OK
+	_EXIT_OK			; as direct jump from patched B_SIGNAL
 mms_kerr:
-mm_abort:				; a bit of a placeholder...
 	_DR_ERR(INVALID)	; not a valid PID
 
-; emergency exit, should never arrive here!
-mm_eexit:
-	_NEXT_ISR			; just in case
+; **********************
+; *** pointer tables ***
+; **********************
 
 ; *** subfuction addresses table ***
 mm_funct:

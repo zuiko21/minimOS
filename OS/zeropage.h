@@ -1,6 +1,6 @@
-; minimOS 0.6rc6 zero-page system variables
+; minimOS 0.6rc7 zero-page system variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181015-1109
+; last modified 20181029-1004
 
 .zero
 * = 0
@@ -48,8 +48,7 @@ dq_ptr	= dr_aut+2					; 16b
 
 ; *** include aliases here for local2/locpt2 ***
 ma_lim: cio_of:						; 8 bit
-pfa_ptr: un_ptch:					; 16 bit (is v_dest of any use?)
-; exec_p no longer used
+pfa_ptr: un_ptch: exec_p:			; 16 bit (is v_dest of any use?)
 
 local2: locpt2	.dsb	4			; variables for kernel functions @ $E8
 
@@ -59,10 +58,10 @@ dr_id	= rl_dev					; 8b
 ; **********************************************
 
 ; *** include aliases here for local3/locpt3 ***
-rl_cur:								; 8 bit
+rl_cur: exe_sp:						; 8 bit
 dte_ptr:							; 16 bit
 rh_scan:							; 16/24 bit
-; exe_sp & ex_wr no longer used
+; ex_wr no longer used
 
 local3: locpt3	.dsb	4			; variables for kernel functions @ $EC
 ; **********************************************
