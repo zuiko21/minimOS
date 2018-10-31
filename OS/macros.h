@@ -1,12 +1,12 @@
-; minimOS 0.6rc6 MACRO definitions
+; minimOS 0.6rc7 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180827-2217
+; last modified 20181031-2138
 
 ; *** standard addresses ***
 
 kerncall	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
-adm_call	=	$FFD0	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
-adm_appc	=	$FFD8	; special interface for 65816 firmware call from USER software!
+adm_call	=	$FFD8	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
+adm_appc	=	$FFD0	; special interface for 65816 firmware call from USER software!
 ; usually pointing to JSR adm_call, then RTL
 
 ; unified address (will lock at $FFE1-2 anyway) for CMOS and NMOS ** new name 20161010
