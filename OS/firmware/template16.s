@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a10
+; v0.6a11
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180511-0831
+; last modified 20181101-1821
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -18,7 +18,7 @@ fw_start:
 	.asc "****", CR				; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "65816 0.6a10 firmware for "	; machine description as comment
+	.asc "65816 0.6a11 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a10 FW@"
+	.asc	"0.6a11 FW@"
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -304,22 +304,10 @@ fw_map:					; TO BE DONE
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
-	.dsb	adm_call-*, $FF
-#endif
-
-; *** administrative meta-kernel call primitive ($FFD0) ***
-* = adm_call
-#ifndef	FAST_FW
-	JMP (fw_admin, X)		; takes 5 clocks and 3 bytes, kernel/drivers only!
-#endif
-; this could be a good place for the IRQ handler...
-
-; filling for ready-to-blow ROM
-#ifdef	ROM
 	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
 #endif
 
-; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+; *** administrative meta-kernel call primitive for apps ($FFD0) ***
 * = adm_appc
 #ifndef	FAST_FW
 	PHB						; could came from any bank
@@ -331,6 +319,17 @@ fw_map:					; TO BE DONE
 #endif
 
 ; *** above code takes -8- bytes, thus no room for padding! ***
+; filling for ready-to-blow ROM
+;#ifdef	ROM
+;	.dsb	adm_call-*, $FF
+;#endif
+
+; *** administrative meta-kernel call primitive ($FFD8) ***
+* = adm_call
+#ifndef	FAST_FW
+	JMP (fw_admin, X)		; takes 5 clocks and 3 bytes, kernel/drivers only!
+#endif
+
 ; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	lock-*, $FF
