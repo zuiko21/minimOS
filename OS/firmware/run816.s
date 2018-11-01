@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc10
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20181101-1843
+; last modified 20181101-1851
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -344,12 +344,12 @@ fw_map:					; TO BE DONE
 	.dsb	lock-*, $FF
 #endif
 
-; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
+; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
 * = lock
 	SEI					; same address as 6502
+	SEC
 panic_loop:
 	BRA panic_loop		; OK as this is 65816 only
-	NOP					; padding for reserved C816 vectors
 
 ; *** 65C816 ROM vectors ***
 * = $FFE4				; should be already at it

@@ -2,7 +2,7 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc10
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20181101-1837
+; last modified 20181101-1853
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -333,9 +333,10 @@ cop_hndl:				; label from vector list
 	.dsb	lock-*, $FF
 #endif
 
-; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
+; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
 * = lock
-	SEC					; unified procedure 20150410, was CLV
+	SEI					; REunified procedure 20181101
+	SEC
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
 	NOP					; padding for reserved C816 vectors

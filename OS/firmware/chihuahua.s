@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b8
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181101-1830
+; last modified 20181101-1856
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -349,13 +349,14 @@ ll_loop:
 	.dsb	lock-*, $FF
 #endif
 
-; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
+; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
 ; alternatively, blink CapsLock LED!
 * = lock
-	SEI					; unified procedure like 6800
+	SEI					; unified procedure
+	SEC
 ; classic way
 panic_loop:
-	_BRA panic_loop		; no problem if /SO is used
+	BCS panic_loop		; no problem if /SO is used
 ; ** alternative way **
 ;	JMP led_lock		; start CapsLock blinking!
 

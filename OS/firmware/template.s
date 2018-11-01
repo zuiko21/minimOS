@@ -1,7 +1,7 @@
 ; generic firmware template for minimOS·65
 ; v0.6b11
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181101-1820
+; last modified 20181101-1850
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -326,12 +326,12 @@ fw_map:					; TO BE DONE
 	.dsb	lock-*, $FF
 #endif
 
-; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
+; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
 * = lock
-	SEC					; unified procedure 20150410, was CLV
+	SEI					; reunified procedure 20181101
+	SEC
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
-	NOP					; padding for reserved C816 vectors
 
 ; *** 65C816 ROM vectors ***
 * = $FFE4				; should be already at it
