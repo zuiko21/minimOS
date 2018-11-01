@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc9
+; v0.9.6rc10
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20181025-0912
+; last modified 20181101-1843
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -62,7 +62,7 @@ fw_admin:
 	.word	poweroff	; POWEROFF power-off, suspend or cold boot
 	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
 
-; not for LOWRAM systems
+; 65816 systems have plenty of RAM
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
 
@@ -316,22 +316,11 @@ fw_map:					; TO BE DONE
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
 
 ; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	adm_call-*, $FF
-#endif
-
-; *** administrative meta-kernel call primitive ($FFD0) ***
-* = adm_call
-	JMP (fw_admin, X)	; takes 5 cycles
-
-; this could be a good place for the IRQ handler...
-
-; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
 #endif
 
-; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+; *** administrative meta-kernel call primitive for apps ($FFD0) ***
 * = adm_appc
 	PHB					; could came from any bank
 	PHK					; zero is...
@@ -341,12 +330,19 @@ fw_map:					; TO BE DONE
 	RTL					; ...and return from long address!
 
 ; *** above code takes -8- bytes, thus no room for padding! ***
+; filling for ready-to-blow ROM
+;#ifdef		ROM
+;	.dsb	adm_call-*, $FF
+;#endif
+
+; *** administrative meta-kernel call primitive ($FFD8) ***
+* = adm_call
+	JMP (fw_admin, X)	; takes 5 cycles
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	lock-*, $FF
 #endif
-
 
 ; *** panic routine, locks at very obvious address ($FFE1-$FFE2) ***
 * = lock

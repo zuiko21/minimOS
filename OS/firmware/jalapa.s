@@ -1,3 +1,4 @@
+; *** *** O B S O L E T E *** *** lookr for jalapa2 instead
 ; firmware for minimOS on SDm/Jalapa (and maybe others)
 ; generic template v0.5.3a1, unrelated to LATER generic template 0.5.1
 ; (c)2015-2018 Carlos J. Santisteban

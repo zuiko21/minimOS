@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b7
+; v0.9.6b8
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20180404-1350
+; last modified 20181101-1830
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -325,23 +325,23 @@ ll_loop:
 	_JMPX(fw_table)	; macro for NMOS compatibility (6)
 
 ; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	adm_call-*, $FF
-#endif
-
-; *** administrative meta-kernel call primitive ($FFD0) ***
-* = adm_call
-	_JMPX(fw_admin)		; takes 6 clocks with CMOS
-
-; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
 #endif
 
-; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+; *** administrative meta-kernel call primitive for apps ($FFD0) ***
 ; not really needed on 6502 systems, but kept for the sake of binary compatibility
-; pretty much the same code at $FFD0, not worth more overhead
+; pretty much the same code at $FFD8, not worth more overhead
 * = adm_appc
+	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+
+; filling for ready-to-blow ROM
+#ifdef		ROM
+	.dsb	adm_call-*, $FF
+#endif
+
+; *** administrative meta-kernel call primitive ($FFD8) ***
+* = adm_call
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 
 ; filling for ready-to-blow ROM

@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc9
+; v0.9.6rc10
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180404-1355
+; last modified 20181101-1837
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -116,7 +116,7 @@ reset:
 ; *** firmware parameter settings ***
 ; ***********************************
 
-; set default CPU type 
+; set default CPU type
 ; just set expected default type as defined in options.h...
 ;#include "modules/default_cpu.s"
 ; ...or actually check for it!
@@ -268,11 +268,6 @@ install:
 patch:
 #include "modules/patch.s"
 
-; *****************************************
-; CONTEXT, hardware switch zeropage & stack
-; *****************************************
-context:
-	_DR_ERR(UNAVAIL)	; not yet implemented
 #endif
 
 
@@ -310,27 +305,27 @@ cop_hndl:				; label from vector list
 #endif
 
 ; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	adm_call-*, $FF
-#endif
-
-; *** administrative meta-kernel call primitive ($FFD0) ***
-* = adm_call
-#ifndef	FAST_FW
-	_JMPX(fw_admin)		; takes 5/6 clocks
-#endif
-
-; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
 #endif
 
-; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+; *** administrative meta-kernel call primitive for apps ($FFD0) ***
 ; not really needed on 6502 systems, but kept for the sake of binary compatibility
-; pretty much the same code at $FFD0, not worth more overhead
+; pretty much the same code at $FFD8, not worth more overhead
 * = adm_appc
 #ifndef	FAST_FW
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#endif
+
+; filling for ready-to-blow ROM
+#ifdef		ROM
+	.dsb	adm_call-*, $FF
+#endif
+
+; *** administrative meta-kernel call primitive ($FFD8) ***
+* = adm_call
+#ifndef	FAST_FW
+	_JMPX(fw_admin)		; takes 5/6 clocks
 #endif
 
 ; filling for ready-to-blow ROM
@@ -360,7 +355,7 @@ panic_loop:
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
 	.word	nmi			; emulated COP		@ $FFF4
-	.word	$3412		; reserved			@ $FFF6
+	.word	$FFFF		; reserved			@ $FFF6
 	.word	nmi			; emulated ABORT 	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
@@ -369,4 +364,3 @@ panic_loop:
 	.word	irq			; (emulated) IRQ	@ $FFFE
 
 fw_end:					; for size computation
-

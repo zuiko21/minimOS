@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-II
-; v0.9.6a23
+; v0.9.6a24
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20180404-1353
+; last modified 20181101-1832
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR		; standard system file wrapper, new 20160309
 	.asc	"boot", 0			; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a23 firmware for "
+	.asc	"0.9.6a24 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -36,7 +36,7 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 #else
 ; if case of no headers, at least keep machine name somewhere
 fw_splash:
-	.asc	"0.9.6a23 FW @ "
+	.asc	"0.9.6a24 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
@@ -324,18 +324,7 @@ led_loop:
 	.dsb	adm_call-*, $FF
 #endif
 
-; *** administrative meta-kernel call primitive ($FFD0) ***
-* = adm_call
-	JMP (fw_admin, X)	; takes 5 cycles
-
-; this could be a good place for the IRQ handler...
-
-; filling for ready-to-blow ROM
-#ifdef		ROM
-	.dsb	adm_call-*, $FF
-#endif
-
-; *** administrative meta-kernel call primitive for apps ($FFD8) ***
+; *** administrative meta-kernel call primitive for apps ($FFD0) ***
 * = adm_appc
 	PHB					; could came from any bank
 	PHK					; zero is...
@@ -344,6 +333,14 @@ led_loop:
 	PLB					; restore bank...
 	RTL					; ...and return from long address!
 ; *** above code takes -8- bytes, thus no room for padding! ***
+; filling for ready-to-blow ROM
+;#ifdef		ROM
+;	.dsb	adm_call-*, $FF
+;#endif
+
+; *** administrative meta-kernel call primitive ($FFD8) ***
+* = adm_call
+	JMP (fw_admin, X)	; takes 5 cycles
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
