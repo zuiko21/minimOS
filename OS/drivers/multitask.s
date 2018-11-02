@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a6
+; v0.6a7
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181029-1013
+; last modified 20181102-1128
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -385,7 +385,7 @@ mmx_sfp:
 		CPY #$FF			; upon real end!
 		BNE mmx_sfp			; will work always!
 ; *** stack frame done, now let us set the initial environment ***
-;	_NO_CRIT			; no longer needs critical section as hardware stack remains intact
+;	NO_CRIT			; no longer needs critical section as hardware stack remains intact
 ; prepare storage pointer for new context
 	PLA					; recover PID
 	TAX					; stay saved
@@ -432,7 +432,6 @@ mm_signal:
 #ifdef	SAFE
 	JSR mm_chkpidz		; check for a valid PID first (21)
 #endif
-; TO DO, must accept PID=0 as send to all!
 ; new code 20150611, needs new ABI but 21 bytes (or 13 if not SAFE) and 13 clocks at most
 	LDX b_sig			; get signal code (3)
 
@@ -442,6 +441,18 @@ mm_signal:
 		_ERR(INVALID)		; unrecognized signal!
 #endif
 mms_call:
+; must accept PID=0 as send to all!
+	TYA				; check whether broadcasting
+	BNE mms_cjmp		; no, just send signal once
+		LDY #MX_BRAID		; yes, prepare loop for all braids
+mms_loop:
+			_PHY				; just in case
+			JSR mms_cjmp		; send signal to this braid and return here
+			_PLY
+			DEY				; next braid, backwards
+			BNE mms_loop
+		_EXIT_OK
+mms_cjmp:
 	_JMPX(mms_table)	; jump to actual code... and return (6502 ABI is the same for routines and API functions)
 
 ; *** B_FLAGS, get execution flags for a braid ***
