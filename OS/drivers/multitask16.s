@@ -1,14 +1,14 @@
 ; software multitasking module for minimOS·16
-; v0.6a4
+; v0.6a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181025-1111
+; last modified 20181103-2129
 
 ; ***************************
 ; *** multitasking driver ***
 ; ***************************
 
 ; *** set some reasonable number of braids ***
-MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
+MX_BRAID		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 #ifndef		HEADERS
 #include "../usual.h"
@@ -36,7 +36,7 @@ MAX_BRAIDS		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.6a3", 0	; fixed MAX_BRAIDS value!
+	.asc	"16-task 65816 Scheduler v0.6a4", 0	; fixed MX_BRAID value!
 
 ; ***************************
 ; ***************************
@@ -58,13 +58,13 @@ mm_cont:
 	LDA #mm_context		; storage area full pointer
 	TCD					; direct-page set for FIRST context
 ; initialise flags table (but not stack pointers?)
-	LDY #MAX_BRAIDS*2	; reset backwards index, new interleaved arrays, even PIDs!
+	LDY #MX_BRAID*2	; reset backwards index, new interleaved arrays, even PIDs!
 	LDA #BR_FREE		; 8-bit required pattern at LSB, clear MSB for interleaved banks (worth switching to 8-bit?)
 mm_rsp:
 		STA mm_flags-2, Y	; set braid to FREE, please note table expects EVEN indexes from 0
 		DEY					; go for next (remember 16-bit)
 		DEY
-		BNE mm_rsp			; continue until all done (MAX_BRAIDS must be EVEN!!!)
+		BNE mm_rsp			; continue until all done (MX_BRAID must be EVEN!!!)
 	INY					; default task (will be 2!)
 	INY
 	STY mm_pid			; set as current temporary PID
@@ -144,7 +144,7 @@ mm_next:
 
 ; PID count expired, try to wrap or shutdown if no more live tasks!
 mm_wrap:
-		LDX #MAX_BRAIDS*2	; go to end instead, valid as last PID (2)
+		LDX #MX_BRAID*2		; go to end instead, valid as last PID (2)
 		DEY					; and check is not forever (2)
 		BNE mm_next			; otherwise should only happen at shutdown time (3/2)
 mm_lock:
@@ -242,7 +242,7 @@ mm_stend:
 mm_chkpid:
 	TYA					; eeeeeeeek^2 the place to do it, new format (2)
 		BEQ mm_pidz			; only a few subfunctions accept the reserved PID (2/3)
-	CPY #MAX_BRAIDS+1	; check whether it's a valid PID (2) eeeeeek!
+	CPY #MX_BRAID+1		; check whether it's a valid PID (2) eeeeeek!
 		BCS mm_piderr		; way too much (2/3) eeeek
 mm_pidok:
 	RTS					; back to business (6)
@@ -317,7 +317,7 @@ mm_yield:
 ; Y		= PID, 0 means not available
 
 mm_fork:
-	LDY #MAX_BRAIDS		; scan backwards is usually faster (2)
+	LDY #MX_BRAID		; scan backwards is usually faster (2)
 ; ** assume interrupts are off via COP **
 mmf_loop:
 		LDA mm_flags-2, Y	; get that braid's status (4)
@@ -357,11 +357,11 @@ mm_signal:
 		LDA #1				; otherwise, only one iteration
 		BRA mmsig_l			; make it and exit!
 mmsig_z:
-		LDY #MAX_BRAIDS*2	; max PID as will do them all
+		LDY #MX_BRAID*2		; max PID as will do them all
 		TYA					; use as counter...
 		LSR					; ...but halved
 mmsig_l:
-; make sure the subfunctions do NOT mess with Y...
+; make sure the subfunctions do NOT mess with X or Y...
 		PHA					; eeeeeek
 		JSR (mms_table, X)	; call to actual code...
 		PLA					; retrieve
