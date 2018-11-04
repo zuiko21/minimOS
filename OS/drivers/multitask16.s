@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181103-2129
+; last modified 20181104-1143
 
 ; ***************************
 ; *** multitasking driver ***
@@ -20,8 +20,8 @@ MX_BRAID		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 .(
 ; *** begins with sub-function addresses table ***
-	.byt	TASK_DEV	; physical driver number D_ID (TBD)
-	.byt	A_POLL+A_COUT	; polling scheduler for new 0.6 architecture
+	.byt	TASK_DEV	; physical driver number D_ID (ft0)
+	.byt	A_POLL		; polling scheduler for new 0.6 architecture
 	.word	mm_abort	; no input
 	.word	mm_abort	; no output
 	.word	mm_init		; initialize device and appropiate sysvars, MUST patch relevant task-handling functions!
@@ -36,7 +36,7 @@ MX_BRAID		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 ; *** driver description ***
 mm_info:
-	.asc	"16-task 65816 Scheduler v0.6a4", 0	; fixed MX_BRAID value!
+	.asc	"16-task 65816 Scheduler v0.6a5", 0	; fixed MX_BRAID value!
 
 ; ***************************
 ; ***************************

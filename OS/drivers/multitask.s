@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
 ; v0.6a7
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181102-1128
+; last modified 20181104-1142
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -21,7 +21,7 @@
 
 .(
 ; *** begins with sub-function addresses table *** REVISE
-	.byt	128			; physical driver number D_ID (TBD)
+	.byt	TASK_DEV	; physical driver number D_ID (currently ft0, 136)
 	.byt	A_POLL		; polling scheduler this far
 	.word	mm_abort	; no input
 	.word	mm_abort	; no output

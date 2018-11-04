@@ -1,26 +1,26 @@
-; minimOS 0.6rc7 MACRO definitions
+; minimOS 0.6rc8 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181031-2138
+; last modified 20181104-1134
 
 ; *** standard addresses ***
 
 kerncall	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
-adm_call	=	$FFD8	; ending in RTS, intended for kernel/drivers ONLY ** back to original address 20161010
+adm_call	=	$FFD8	; ending in RTS, intended for kernel/drivers ONLY, revamped address
 adm_appc	=	$FFD0	; special interface for 65816 firmware call from USER software!
 ; usually pointing to JSR adm_call, then RTL
 
-; unified address (will lock at $FFE1-2 anyway) for CMOS and NMOS ** new name 20161010
+; unified address (will lock at $FFE2-3 anyway) for CMOS and NMOS ** new name 20161010
 ; some machines will lock somewhere else, like blinking the Emulation LED!
 lock		=	$FFE0	; more-or-less 816 savvy address
 
 ; *** device numbers for optional pseudo-driver modules, TBD ***
-;TASK_DEV	=	128		; no longer needed, may displace the following
-WIND_DEV	=	129		; new name 20161017, might suffer the same fate!
-FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries for it! Perhaps #128
+TASK_DEV	=	136		; back again as ft0 (standard feature)
+WIND_DEV	=	137		; new name 20161017, might become ft1
+FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entries for it! Perhaps as ft2?
 
 ; *** considerations for minimOS·16 ***
 ; kernel return is via RTI (note CLC trick)
-; kernel functions are expected to be in bank zero!
+; kernel functions are expected to be in bank zero! At least the entry points
 ; 6502 apps CANNOT work bank-agnostic, bank zero only
 ; driver routines are expected to be in bank zero too... standard JSR/RTS, must return to kernel!
 
@@ -73,8 +73,6 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 #define		_ERR(a)		LDY #(a): PLP: SEC: PHP: RTI
 #endif
 
-; ***** alternative preCLC makes error handling 2 clocks slower, so what? *****
-
 ; most code endings (except kernel API and apps) for both 6502 and 816 (expected to be in bank zero anyway)
 ; such code without error signaling (eg. shutdown, jiffy interrupt) may just end on RTS no matter the CPU
 #define		_DR_OK		CLC: RTS
@@ -107,20 +105,21 @@ FILE_DEV	=	130		; *** this will be sticked somewhere as no patchable API entries
 
 ; *** conditional opcode assembly ***
 #ifdef	NMOS
+; this is the slower, compact version, needs no memory
 #define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
 #define		_PHX		TXA: PHA
 #define		_PHY		TYA: PHA
 #define		_PLX		PLA: TAX
 #define		_PLY		PLA: TAY
 #define		_STAX(a)	LDX #0: STA (a, X)
-; STAY/LDAY macros new 20150225 for faster emulation
+; STAY/LDAY macros new 20150225 for faster NMOS execution
 #define		_STAY(a)	LDY #0: STA (a), Y
 #define		_LDAX(a)	LDX #0: LDA (a, X)
 #define		_LDAY(a)	LDY #0: LDA (a), Y
 #define		_INC		CLC: ADC #1
 #define		_DEC		SEC: SBC #1
 #define		_BRA		JMP
-; faster than CLC-BCC and the very same size, but no longer position-independent
+; faster than CLC-BCC and the very same size, and leaves statua intact, but no longer position-independent
 #define		_STZX		LDX #0: STX
 #define		_STZY		LDY #0: STY
 #define		_STZA		LDA #0: STA
