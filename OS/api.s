@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc23, must match kernel.s
+; v0.6rc24, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181024-0906
+; last modified 20181104-1114
 
 ; no way for standalone assembly...
 
@@ -1125,9 +1125,12 @@ sd_shut:
 ; call each driver's shutdown routine thru DR_SHUT (12b, was 25b)
 	LDY #128			; first valid device driver ID
 sd_loop:
-		_PHY				; save just in case
-		_KERNEL(DR_SHUT)	; turn this off
-		_PLY				; retrieve
+		LDA dr_ind-128, Y	; check whether this ID is in use
+		BEQ sdl_skip		; no! skip this ID
+			_PHY				; save just in case
+			_KERNEL(DR_SHUT)	; turn this off
+			_PLY				; retrieve
+sdl_skip:
 		INY					; next device
 		BNE sd_loop			; until done!
 ; system cleanly shut, time to let the firmware turn-off or reboot
