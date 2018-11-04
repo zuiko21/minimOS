@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc19, should match kernel16.s
+; v0.6rc20, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181024-1030
+; last modified 20181104-1129
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1371,34 +1371,17 @@ sd_2nd:
 sd_shut:
 	SEI					; disable interrupts (forever)
 ; let us shut down all drivers thru DR_SHUT! (11b, was 25b)
-	LDY #128			; first valid device driver ID
+	LDX #128			; first valid device driver ID
 sd_loop:
-		PHY					; save just in case
-		_KERNEL(DR_SHUT)	; turn this off
-		PLY					; retrieve
-		INY					; next device
+		LDA @dr_ind, X		; is this ID in use?
+		BEQ sdl_skip		; no, just skip it
+			PHX					; must save
+			TXY					; use as parameter
+			_KERNEL(DR_SHUT)	; turn this off
+			PLX					; retrieve
+sdl_skip:
+		INX					; next device
 		BNE sd_loop			; until done!
-; ***OLD CODE*** call each driver's shutdown routine
-;	LDX #0				; reset index
-; first get the pointer to each driver table
-;	.al: ;REP #$20		; *** 16-bit memory ***
-;sd_loop:
-; ***** should modify this for DR_SHUT use *****
-; get address index
-;		LDA @drvrs_ad, X		; get address from original list
-;			BEQ sd_done			; no more drivers to shutdown!
-;		STA sysptr			; store temporarily (as needed by dr_call)
-; will no longer check for successful installation, BYE routine gets called anyway
-;		PHX					; save index for later
-;		PHP					; and register size, just in case!
-;		LDY #D_BYE			; shutdown MSB offset
-;		JSR dr_call			; call routine from generic code!!!
-;		PLP					; back to original size, will ignore error code anyway
-;		PLX					; retrieve index
-;sd_next:
-;		INX					; advance to next entry (2+2)
-;		INX
-;		BRA sd_loop			; repeat
 ; system cleanly shut, time to let the firmware turn-off or reboot
 sd_done:
 	LDA @sd_flag		; retrieve mode...
