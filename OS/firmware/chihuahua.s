@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b8
+; v0.9.6b9
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181101-1856
+; last modified 20181106-1010
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -309,6 +309,13 @@ ll_loop:
 		EOR #%00001000		; toggle PB3
 		_BRA ll_tog		; switch and continue forever
 
+; *** NMOS version needs large ADMIN call back here! ***
+#ifndef	FAST_FW
+#ifdef	NMOS
+nmos_adc:
+	_JMPX(fw_admin)		; takes a lot of clocks
+#endif
+#endif
 
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
@@ -333,7 +340,13 @@ ll_loop:
 ; not really needed on 6502 systems, but kept for the sake of binary compatibility
 ; pretty much the same code at $FFD8, not worth more overhead
 * = adm_appc
+#ifndef	FAST_FW
+#ifndef	NMOS
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#else
+	JMP nmos_adc		; needed overhead as takes 10 bytes!
+#endif
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -342,7 +355,13 @@ ll_loop:
 
 ; *** administrative meta-kernel call primitive ($FFD8) ***
 * = adm_call
+#ifndef	FAST_FW
+#ifndef	NMOS
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#else
+	JMP nmos_adc		; needed overhead as takes 10 bytes!
+#endif
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
