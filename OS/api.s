@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc24, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181104-1114
+; last modified 20181106-1311
 
 ; no way for standalone assembly...
 
@@ -703,7 +703,7 @@ ex_st:
 sig_kill:
 ; *** TO DO *** this should save Y & P.C (carry) somewhere for status report! ***
 ; first, free up all memory from previous task
-	LDY #0				; standard PID
+;	LDY #0				; standard PID
 ;	KERNEL(RELEASE)	; free all memory eeeeeeeek
 ; *** non-XIP code should release its own block! ***
 ; cannot just pull from stack as SIGKILL may be executed at any time
