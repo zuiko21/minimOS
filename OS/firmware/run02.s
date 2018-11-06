@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc11
+; v0.9.6rc12
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20181106-0832
+; last modified 20181106-1006
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -288,6 +288,14 @@ cop_hndl:				; label from vector list
 	RTI
 #endif
 
+; *** NMOS version needs large ADMIN call back here! ***
+#ifndef	FAST_FW
+#ifdef	NMOS
+nmos_adc:
+	_JMPX(fw_admin)		; takes a lot of clocks
+#endif
+#endif
+
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -311,10 +319,14 @@ cop_hndl:				; label from vector list
 
 ; *** administrative meta-kernel call primitive for apps ($FFD0) ***
 ; not really needed on 6502 systems, but kept for the sake of binary compatibility
-; pretty much the same code at $FFD8, not worth more overhead
+; pretty much the same code at $FFD8, not worth more overhead (but check NMOS size!)
 * = adm_appc
 #ifndef	FAST_FW
+#ifndef	NMOS
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#else
+	JMP nmos_adc		; needed overhead as takes 10 bytes!
+#endif
 #endif
 
 ; filling for ready-to-blow ROM
@@ -325,7 +337,11 @@ cop_hndl:				; label from vector list
 ; *** administrative meta-kernel call primitive ($FFD8) ***
 * = adm_call
 #ifndef	FAST_FW
-	_JMPX(fw_admin)		; takes 5/6 clocks
+#ifndef	NMOS
+	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#else
+	JMP nmos_adc		; needed overhead as takes 10 bytes!
+#endif
 #endif
 
 ; filling for ready-to-blow ROM
