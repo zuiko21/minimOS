@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc10
+; v0.9.6rc11
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20181101-1853
+; last modified 20181106-0832
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -339,7 +339,6 @@ cop_hndl:				; label from vector list
 	SEC
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
-	NOP					; padding for reserved C816 vectors
 
 ; **********************************
 ; ****** hardware ROM vectors ******
