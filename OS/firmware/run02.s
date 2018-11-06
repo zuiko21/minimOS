@@ -345,7 +345,7 @@ panic_loop:
 ; **********************************
 
 ; *** 65C816 ROM vectors ***
-* = $FFE4				; should be already at it
+;* = $FFE4				; should be already at it
 	.word	cop_hndl	; native COP		@ $FFE4
 	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
 	.word	nmi			; native ABORT		@ $FFE8, not yet supported
