@@ -1,16 +1,16 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180511-0835
+; last modified 20181107-1037
 
 ; ************************
 ; INSTALL, copy jump table
 ; ************************
 ;		INPUT
+; Y			= API_SIZE, 0 means whole page ***new***
 ; kerntab	= address of supplied pointer table (16b)
 ;			NULL means reset from previously installed one
 ;		OUTPUT
 ; kerntab	= previously installed jump table (16b)
-; Y			= API_SIZE
 ; sizes irrelevant
 
 -install:
@@ -28,12 +28,23 @@
 		STA kerntab			; set parameter as previous value (4)
 fwi_nz:
 	STA fw_lastk		; eeeeeeeeeeeeeeek (5)
-	LDY #0				; reset index (2)
+#ifdef	SAFE
+; API_SIZE must be even! Will check so
+	TYA					; how many entries?
+	LSR					; even or odd?
+	BCC fwi_loop		; even as expected, proceed
+		DEY					; odd, must do single-byte check
+		.as: SEP #$20		; 8-bit memory for a moment
+		LDA (kerntab), Y	; get word from table as supplied (5)
+		STA fw_table, Y		; copy where the firmware expects it (5)
+		.al: REP #$20		; back to 16-bit
+#endif
 fwi_loop:
+		DEY					; backwards two bytes (2+2)
+		DEY
 		LDA (kerntab), Y	; get word from table as supplied (6)
 		STA fw_table, Y		; copy where the firmware expects it (6)
-		INY					; advance two bytes (2+2)
-		INY
+		TYX					; check counter LSB, not in A!
 		CPY #API_SIZE & $FF	; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK (must be 8-bit, too)
 		BNE fwi_loop		; until whole TABLE is done (3/2)
 	LDA tmp_ktab		; set previous table...
