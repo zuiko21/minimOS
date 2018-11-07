@@ -2,7 +2,7 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc12
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20181106-1006
+; last modified 20181107-1840
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -44,40 +44,6 @@ fw_splash:
 	.asc	"0.9.6 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
-#endif
-
-; *********************************
-; *********************************
-; *** administrative jump table *** changing
-; *********************************
-; *********************************
-fw_admin:
-#ifndef	FAST_FW
-; generic functions, esp. interrupt related
-	.word	gestalt		; GESTALT get system info (renumbered)
-	.word	set_isr		; SET_ISR set IRQ vector
-	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
-	.word	set_dbg		; SET_DBG set debugger, new 20170517
-	.word	jiffy		; JIFFY set jiffy IRQ speed, ** TBD **
-	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
-
-; pretty hardware specific
-	.word	poweroff	; POWEROFF power-off, suspend or cold boot
-	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
-
-; not for LOWRAM systems
-#ifndef	LOWRAM
-	.word	install		; INSTALL copy jump table
-	.word	patch		; PATCH patch single function (renumbered)
-#else
-#ifdef	SAFE
-	.word	missing		; these three functions not implemented on such systems
-	.word	missing
-
-missing:
-		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
-#endif
-#endif
 #endif
 
 ; **************************
@@ -192,6 +158,40 @@ irq:
 brk_hndl:				; label from vector list
 #include "modules/brk_hndl.s"
 
+
+; *********************************
+; *********************************
+; *** administrative jump table *** changing
+; *********************************
+; *********************************
+fw_admin:
+#ifndef	FAST_FW
+; generic functions, esp. interrupt related
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed, ** TBD **
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
+
+; not for LOWRAM systems
+#ifndef	LOWRAM
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+#else
+#ifdef	SAFE
+	.word	missing		; these three functions not implemented on such systems
+	.word	missing
+
+missing:
+		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
+#endif
+#endif
+#endif
 
 ; ********************************
 ; ********************************
