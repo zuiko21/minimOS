@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc24, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181106-1311
+; last modified 20181107-1905
 
 ; no way for standalone assembly...
 
@@ -87,7 +87,7 @@ unimplemented:			; placeholder here
 ; io_c	= char
 ; C		= not available
 ;		USES whatever BLIN takes
-
+	.asc	"<CIN>"
 cin:
 	LDA #io_c			; will point to old parameter
 	STA bl_ptr			; set pointer
@@ -148,7 +148,7 @@ cin:
 ;		OUTPUT
 ; C = I/O error
 ;		USES whatever BLOUT takes
-
+	.asc	"<COUT>"
 cout:
 	LDA #io_c			; will point to old parameter
 	STA bl_ptr			; set pointer
@@ -171,7 +171,8 @@ cout:
 ; C		= I/O error
 ;		USES iol_dev plus whatever the driver takes
 ; cio_lock is a kernel structure
-
+	BRA blout
+	.asc	"<BLOUT>"
 blout:
 	TYA					; basic ID check (2)
 	BNE co_port			; not default (3/2)
@@ -233,7 +234,6 @@ cio_unlock:
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! (4)
 	RTS					; exit with whatever error code
 
-
 ; ***********************
 ; *** BLIN, get block ***
 ; ***********************
@@ -246,7 +246,7 @@ cio_unlock:
 ; C		= I/O error
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock & cin_mode are kernel structures
-
+	.asc	"<BLIN>"
 blin:
 	TYA					; update flags from Y contents
 	BNE ci_port			; specified
@@ -374,7 +374,7 @@ ci_call:
 ; C		= not enough memory/corruption detected
 ;		USES ma_ix.b
 ; ram_stat & ram_pid (= ram_stat+1) are interleaved in minimOS-16
-
+	.asc	"<MALLOC>"
 malloc:
 	LDX #0				; reset index
 	LDY ma_rs			; check individual bytes, just in case
@@ -554,7 +554,7 @@ ma_room:
 ; C = no such used block
 ;
 ; ram_pos & ram_stat are kernel structures
-
+	.asc	"<FREE>"
 free:
 #ifdef	SAFE
 	LDY ma_pt			; LSB currently not implemented
@@ -623,7 +623,7 @@ fr_join:
 ;		OUTPUT
 ; Y = dev
 ; C = not supported/not available
-
+	.asc	"<OPEN_W>"
 open_w:
 	LDA w_rect			; asking for some size?
 	ORA w_rect+1
@@ -636,7 +636,8 @@ ow_no_window:
 ; ******************************************
 ;		OUTPUT
 ; Y		= PID, 0 means not available or singletask
-
+	BRA get_fg
+	.asc	"<B_FORK,GET_FG>"
 get_fg:
 b_fork:
 	LDY #0				; constant default device or standard single task
@@ -650,7 +651,8 @@ b_fork:
 ; ********************************************************
 ;		INPUT
 ; Y = dev (unless it is B_YIELD)
-
+	BRA close_w
+	.asc	"<CLOSE_W,FREE_W,FLOAT_W,B_YIELD>"
 close_w:				; does not do much
 free_w:					; does not do much, either
 float_w:				; placeholder
@@ -664,7 +666,7 @@ b_yield:
 ;		OUTPUT
 ; up_sec	= approximate 24-bit uptime in secs for API compatibility
 ; up_ticks	= 32-bit uptime in ticks, new format 20170822
-
+	.asc	"<UPTIME>"
 uptime:
 	LDX #3				; max offset, count backwards (2)
 	_CRITIC				; don't change while copying (5)
@@ -686,7 +688,7 @@ up_loop:
 ; def_io	= std_in & stdout
 ;
 ; API still subject to change... (register values, rendez-vous mode TBD)
-
+	.asc	"<B_EXEC>"
 b_exec:
 ; non-multitasking version
 #ifdef	SAFE
@@ -755,7 +757,7 @@ ex_jmp:
 ;		INPUT
 ; b_sig	= signal to be sent
 ; Y		= PID (0 means TO ALL)
-
+	.asc	"<B_SIGNAL>"
 b_signal:
 #ifdef	SAFE
 	TYA					; check correct PID
@@ -786,7 +788,7 @@ sig_pid:
 ; Y			= flags ***TBD
 ; cpu_ll	= running architecture***
 ; C			= invalid PID
-
+	.asc	"<B_FLAGS>"
 b_flags:
 #ifdef	SAFE
 	TYA					; check PID
@@ -805,7 +807,7 @@ b_flags:
 ; ex_pt = SIGTERM handler routine (ending in RTS!!!!)
 ;		OUTPUT
 ; C		= bad PID
-
+	.asc	"<SET_HNDL>"
 set_hndl:
 #ifdef	SAFE
 	TYA					; check PID
@@ -824,7 +826,7 @@ set_hndl:
 ;		OUTPUT
 ; Y		= PID, 0 on singletask systems
 ; may not need to be patched in multitasking systems!
-
+	.asc	"<GET_PID>"
 get_pid:
 	LDY run_pid			; new kernel variable
 	_EXIT_OK
@@ -835,7 +837,7 @@ get_pid:
 ;		INPUT
 ; Y		= PID of task, 0 if myself (or single-task)
 ; *** if Y=$FF, switch to another available task *** new
-
+	.asc	"<B_FORE>"
 b_fore:
 #ifdef	SAFE
 	CPY #$FF			; asking for another?
@@ -854,7 +856,7 @@ bf_ok:
 ; affects b_sig as it may call B_SIGNAL
 ; may not need to be patched?
 ; this MUST handle DLEs accordingly, cin_mode as global or PID-based array???
-
+	.asc	"<B_EVENT>"
 b_event:
 	CPY #3				; is it ^C?
 	BNE be_nc
@@ -885,7 +887,7 @@ be_none:
 ;		OUTPUT
 ; ex_pt		= pointer to executable code
 ;		USES rh_scan
-
+	.asc	"<LOADLINK>"
 loadlink:
 ; this will ONLY work if NOHEAD option is NOT enabled!
 #ifndef	NOHEAD
@@ -993,9 +995,8 @@ ll_wrap:
 ;		OUTPUT
 ; C = device error
 ;		USES BLOUT...
-
+	.asc	"<STRING>"
 string:
-
 ; not very efficient... measure string and call BOUT
 	_PHY				; must keep device eeeeeeek
 	LDA str_pt			; get LSB of pointer...
@@ -1028,7 +1029,7 @@ str_term:
 ; str_pt	= buffer address
 ; ln_siz	= max offset (byte)
 ;		USES rl_dev, rl_cur
-
+	.asc	"<READLN>"
 readln:
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
@@ -1085,7 +1086,7 @@ rl_cr:
 ; C		= couldn't poweroff or reboot (?)
 ;		USES b_sig (calls B_SIGNAL)
 ; sd_flag is a kernel variable
-
+	.asc	"<SHUTDOWN>"
 shutdown:
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
@@ -1152,7 +1153,7 @@ sd_tab:					; check order in abi.h
 ;		OUTPUT
 ; Y		= actually assigned ID (if mutable)
 ; C		= could not install driver (ID in use or invalid, queue full, init failed)
-
+	.asc	"<DR_INST>"
 dr_inst:
 ; get some info from header
 ; dynamic drivers are currently NOT supported
@@ -1431,16 +1432,14 @@ dr_abort:
 ; Y			= target ID
 ;		OUTPUT
 ; da_ptr	= pointer to header from removed driver (if available, C otherwise)
-
+	.asc	"<DR_SHUT>"
 dr_shut:
-
 #ifdef	SAFE
 	TYA					; check device
 	BMI ds_phys			; should be OK...
 		_ERR(INVALID)		; ...or bust!
 ds_phys:
 #endif
-
 	LDA dr_ind-128, Y	; is that being used?
 	BNE ds_used			; yes, proceed to remove
 		_ERR(N_FOUND)		; no, nothing to remove
@@ -1485,7 +1484,7 @@ ds_qnxt:
 ;		OUTPUT
 ; ex_pt		= pointer to driver header, for any suitable Y
 ; def_io	= std_in@L and stdout@H devices, if Y=0!
-
+	.asc	"<DR_INFO>"
 dr_info:
 	TYA					; asking for defaults
 	BNE di_ndef			; no, proceed as usual
@@ -1520,7 +1519,7 @@ di_none:
 ;		OUTPUT
 ; Y			= number of bytes
 ; ex_pt		= pointer to the proposed stack frame
-
+	.asc	"<TS_INFO>"
 ts_info:
 	LDX #<tsi_str		; pointer to proposed stack frame
 	LDA #>tsi_str		; including MSB
@@ -1544,7 +1543,7 @@ tsi_end:
 ;		INPUT
 ; Y		= PID, 0 means myself
 ;		USES ma_pt and whatever takes FREE (will call it)
-
+	.asc	"<RELEASE>"
 release:
 	TYA					; as no CPY abs,X
 	BNE rls_pid			; was it a valid PID?
@@ -1587,7 +1586,7 @@ rls_next:
 ; Y			= PID
 ; affects internal sysvar run_pid
 ; run_arch not supported in 8-bit mode
-
+	.asc	"<SET_CURR>"
 set_curr:
 ; does not check for valid PID... hopefully the multitasking driver (the only one expected to call this) does
 	STY run_pid			; store PID into kernel variables (4)
