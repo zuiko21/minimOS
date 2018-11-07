@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20181107-1037
+; last modified 20181107-1050
 
 ; ************************
 ; INSTALL, copy jump table
@@ -11,10 +11,18 @@
 ;			NULL means reset from previously installed one
 ;		OUTPUT
 ; kerntab	= previously installed jump table (16b)
-; sizes irrelevant
+; sizes irrelevant, but SAFE option expects to enter in 8-bit indexes (as usually does)
 
 -install:
 .(
+#ifdef	SAFE
+.xs:
+	CPY #API_SIZE & $FF	; fits current firmware?
+	BCC fwi_ok			; yeah, proceed
+	BEQ fwi_ok			; good enough
+		_ERR(FULL)			; otherwise, not enough room for that kernel!
+fwi_ok:
+#endif
 	_CRITIC				; disable interrupts and save sizes! (5)
 	.al: REP #$20		; ** 16-bit memory ** (3)
 	.xs: SEP #$10		; ** just in case, 8-bit indexes ** (3)
@@ -45,7 +53,6 @@ fwi_loop:
 		LDA (kerntab), Y	; get word from table as supplied (6)
 		STA fw_table, Y		; copy where the firmware expects it (6)
 		TYX					; check counter LSB, not in A!
-		CPY #API_SIZE & $FF	; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK (must be 8-bit, too)
 		BNE fwi_loop		; until whole TABLE is done (3/2)
 	LDA tmp_ktab		; set previous table...
 	STA kerntab			; ...as output

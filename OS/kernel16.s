@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b12
+; v0.6b13
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181025-1059
+; last modified 20181107-1054
 
 ; just in case
 #define		C816	_C816
@@ -38,7 +38,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6b12", 0	; version in comment
+	.asc	"minimOS-16 0.6b13", 0	; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
 	.word	$5000	; time, 1000
@@ -79,7 +79,13 @@ warm:
 	LDA #k_vec			; get table address (3)
 	STA kerntab			; store parameter (4)
 ; as kernels must reside in bank 0, no need for 24-bit addressing
+	LDY #API_SIZE & $FF	; *** new API ***
 	_ADMIN(INSTALL)		; copy jump table, will respect register sizes
+#ifdef	SAFE
+	BCC ki_ok		; no problems
+		_PANIC("{FWSIZ}")	; not enough room, incompatible FW
+ki_ok:
+#endif
 #endif
 
 ; install ISR code (as defined in "isr/irq16.s" below)
@@ -240,7 +246,7 @@ ks_cr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS-16 0.6b12", 0	; version in comment
+	.asc	"minimOS-16 0.6b13", 0	; version in comment
 #endif
 
 ; ***********************************************

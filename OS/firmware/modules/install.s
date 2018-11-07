@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20181107-1030
+; last modified 20181107-1047
 
 ; ************************
 ; INSTALL, copy jump table
@@ -15,6 +15,13 @@
 
 -install:
 .(
+#ifdef	SAFE
+	CPY #API_SIZE & $FF	; fits current firmware?
+	BCC fwi_ok			; yeah, proceed
+	BEQ fwi_ok			; good enough
+		_ERR(FULL)			; otherwise, not enough room for that kernel!
+fwi_ok:
+#endif
 ; first get current address, not worth a subroutine
 	LDX fw_lastk		; get last value...
 	LDA fw_lastk+1

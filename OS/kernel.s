@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc9
+; v0.6rc10
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181024-1043
+; last modified 20181107-1054
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,7 +35,7 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc9", 0	; version in comment
+	.asc	"minimOS 0.6rc10", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
@@ -73,13 +73,11 @@ warm:
 	LDA #>k_vec
 	STY kerntab			; store parameter (3+3)
 	STA kerntab+1
+	LDY #API_SIZE & $FF	; *** new API ***
 	_ADMIN(INSTALL)		; copy jump table
 #ifdef	SAFE
-	BCS ki_err			; something went wrong
-		CPY #API_SIZE		; otherwise check firmware compatibility
-		BCS ki_ok		; enough room, proceed
-ki_err:
-			_PANIC("{FWSIZ}")	; not enough, incompatible FW
+	BCC ki_ok		; no problems
+		_PANIC("{FWSIZ}")	; not enough room, incompatible FW
 ki_ok:
 #endif
 #endif
@@ -269,7 +267,7 @@ ks_cr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"minimOS 0.6rc8", 0
+	.asc	"minimOS 0.6rc10", 0
 #endif
 
 ; ***********************************************
