@@ -76,6 +76,8 @@ fw_admin:
 	.as:.xs				; to be sure!
 
 reset:
+lda#'?'
+jsr$c0c2
 ; *** basic init ***
 #include "modules/basic_init16.s"
 
@@ -322,6 +324,7 @@ fw_map:					; TO BE DONE
 
 ; *** administrative meta-kernel call primitive for apps ($FFD0) ***
 * = adm_appc
+real_admappc:
 	PHB					; could came from any bank
 	PHK					; zero is...
 	PLB					; ...current bank
@@ -331,12 +334,13 @@ fw_map:					; TO BE DONE
 
 ; *** above code takes -8- bytes, thus no room for padding! ***
 ; filling for ready-to-blow ROM
-;#ifdef		ROM
-;	.dsb	adm_call-*, $FF
-;#endif
+#ifdef		ROM
+	.dsb	adm_call-*, $FF
+#endif
 
 ; *** administrative meta-kernel call primitive ($FFD8) ***
 * = adm_call
+real_admcall:
 	JMP (fw_admin, X)	; takes 5 cycles
 
 ; filling for ready-to-blow ROM
