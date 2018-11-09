@@ -90,7 +90,7 @@ reset:
 ; *** specific 65816 code ***
 ; as this firmware should be 65816-only, go back to native mode!
 #include "modules/816_check.s"
-; it can be assumed 65816 from this point on
+; it can be assumed 65816 from this point on *** NATIVE ***
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -127,20 +127,13 @@ reset:
 ; as this is the only valid CPU for this firmware, no further checking necessary
 
 ; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
-;	.al: REP #$20
+	.al: REP #$20
 
 ; preset kernel start address
-;#include "modules/kern_addr16.s"
-#include "modules/kern_addr.s"
+#include "modules/kern_addr16.s"
 
 ; preset default BRK handler
-;#include "modules/brk_addr16.s"
-#include "modules/brk_addr.s"
-
-.as:sep#$20
-lda#'*'
-jsr$c0c2
-.al:rep#$20
+#include "modules/brk_addr16.s"
 
 ; no need to set NMI as it will be validated
 

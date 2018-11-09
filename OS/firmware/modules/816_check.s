@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180119-0905
+; last modified 20181109-1237
 
 ; *** check whether an actual 65816 is in use ***
 ; no interface needed, might call lock routine!
@@ -22,6 +22,7 @@
 cpu_bad:
 		JMP lock		; cannot handle BRK, alas
 fw_cpuOK:
+#endif
 
 ; *** set back to native 816 mode ***
 ; it can be assumed 65816 from this point on
@@ -33,5 +34,4 @@ fw_cpuOK:
 	PHK					; stack two zeroes
 	PHK
 	PLD					; simpler than TCD et al
-#endif
 .)
