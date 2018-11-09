@@ -76,22 +76,8 @@ fw_admin:
 	.as:.xs				; to be sure!
 
 reset:
-lda#'?'
-jsr$c0c2
 ; *** basic init ***
 #include "modules/basic_init16.s"
-
-; ******************************
-; *** minimal hardware setup ***
-; ******************************
-
-; check for VIA presence and disable all interrupts
-;#include "modules/viacheck_irq.s"
-
-; *** specific 65816 code ***
-; as this firmware should be 65816-only, go back to native mode!
-#include "modules/816_check.s"
-; it can be assumed 65816 from this point on
 
 ; ******************************
 ; *** minimal hardware setup ***
@@ -142,14 +128,18 @@ jsr$c0c2
 
 ; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
 	.al: REP #$20
-
 ; preset kernel start address
-#include "modules/kern_addr16.s"
+;#include "modules/kern_addr16.s"
 
 ; preset default BRK handler
-#include "modules/brk_addr16.s"
+;#include "modules/brk_addr16.s"
 
 ; no need to set NMI as it will be validated
+.as:sep#$20
+lda#'z'
+jsr$c0c2
+.al:rep#$20
+
 
 
 ; preset jiffy irq frequency
