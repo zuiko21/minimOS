@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc20, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181104-1129
+; last modified 20181109-1007
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -92,7 +92,7 @@ unimplemented:			; placeholder here, not currently used
 ; io_c	= char
 ; C		= not available
 ;		USES iol_dev, and whatever the driver takes
-
+	.asc	"<CIN>"
 cin:
 ; if every zp is page-aligned as recommended, use this code
 	TDC					; where is direct page?
@@ -160,7 +160,7 @@ cin:
 ; C = I/O error
 ;		USES BLOUT
 ; cio_lock is a kernel structure
-
+	.asc	"<COUT>"
 cout:
 ; if every zp is page-aligned as recommended, use this code
 	TDC					; where is direct page?
@@ -188,7 +188,8 @@ cout:
 ;		USES iol_dev, plus whatever the driver takes
 ; cio_lock is a kernel structure
 ; * 8-bit savvy *
-
+	BRA blout
+	.asc	"<BLOUT>"
 blout:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
@@ -321,7 +322,7 @@ cio_notc:
 
 ;		USES iol_dev, and whatever the driver takes
 ; cio_lock is kernel structure
-
+	.asc	"<BLIN>"
 blin:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek (3)
@@ -449,7 +450,7 @@ ci_rndend:
 ; MUST limit 6502 blocks to bank zero
 ; 02-savvy, but should check ma_lim properly
 ; think about managing the multiple exit points as this is a rather slow function
-
+	.asc	"<MALLOC>"
 malloc:
 	.al: REP #$20		; *** 16-bit memory ***
 	PHB					; eeeeeeeek! do not forget to restore
@@ -681,7 +682,7 @@ ma_room:
 ; C = no such used block
 ;
 ; ram_pos & ram_stat are kernel structures
-
+	.asc	"<FREE>"
 free:
 	.al: REP #$20		; *** 16-bit memory ***
 	PHB					; eeeeeeeek! do not forget to restore
@@ -764,7 +765,7 @@ fr_join:
 ;		OUTPUT
 ; Y = dev
 ; C = not supported/not available
-
+	.asc	"<OPEN_W>"
 open_w:
 	.al: REP #$20		; *** 16-bit memory size ***
 	LDA w_rect			; asking for some size? includes BOTH bytes
@@ -779,7 +780,8 @@ ow_no_window:
 ; ******************************************
 ;		OUTPUT
 ; Y		= PID, 0 means not available or singletask
-
+	BRA b_fork
+	.asc	"<B_FORK,GET_FG>"
 b_fork:
 get_fg:
 	LDY #0				; standard device or single task PID
@@ -794,7 +796,8 @@ get_fg:
 ; ********************************************************
 ;		INPUT
 ; Y = dev
-
+	BRA b_yield
+	.asc	"<B_YIELD,CLOSE_W,FREE_W,FLOAT_W>"
 b_yield:
 close_w:				; doesn't do much
 free_w:					; doesn't do much, either
@@ -808,7 +811,7 @@ float_w:				; placeholder
 ;		OUTPUT
 ; up_ticks	= 32b tick counter, new format 20170822
 ; up_sec	= 24b approximate uptime in seconds for API compatibility
-
+	.asc	"<UPTIME>"
 uptime:
 	.al: REP #$20		; *** optimum 16-bit memory ***
 ; default 816 API functions run on interrupts masked, thus no need for CS
@@ -832,7 +835,7 @@ uptime:
 ; def_io	= 16b default std_in (LSB) & stdout (MSB)
 ;
 ; API still subject to change... (register values, rendez-vous mode TBD)
-
+	.asc	"<B_EXEC>"
 b_exec:
 ; non-multitasking version
 #ifdef	SAFE
@@ -944,7 +947,7 @@ rst_shell:
 ;		INPUT
 ; b_sig	= signal to be sent
 ; Y		= PID (0 means TO ALL)
-
+	.asc	"<B_SIGNAL>"
 b_signal:
 #ifdef	SAFE
 	TYA					; check correct PID
@@ -974,7 +977,7 @@ sig_term:
 ; Y			= flags ***TBD
 ; cpu_ll	= running architecture
 ; C			= invalid PID
-
+	.asc	"<B_FLAGS>"
 b_flags:
 #ifdef	SAFE
 	TYA					; check PID
@@ -995,7 +998,7 @@ sig_exit:
 ; ex_pt = 24b SIGTERM handler routine no longer ending in RTI!
 ;		OUTPUT
 ; C		= bad PID
-
+	.asc	"<SET_HNDL>"
 set_hndl:
 #ifdef	SAFE
 	TYX					; check PID
@@ -1025,7 +1028,7 @@ st_shset:
 ;		OUTPUT
 ; Y		= PID, 0 on singletask systems
 ; may not need to be patched in multitasking systems!
-
+	.asc	"<GET_PID>"
 get_pid:
 	LDY run_pid			; new kernel variable
 	_EXIT_OK
@@ -1036,7 +1039,7 @@ get_pid:
 ; ***********************************
 ;		INPUT
 ; Y		= PID of task, 0 if myself or single-task, $FF switch to next!
-
+	.asc	"<B_FORE>"
 b_fore:
 #ifdef	SAFE
 	CPY #$FF			; asking for another?
@@ -1055,7 +1058,7 @@ bf_ok:
 ; affects b_sig as it may call B_SIGNAL
 ; may not need to be patched?
 ; this MUST handle DLEs accordingly, cin_mode as global or PID-based array???
-
+	.asc	"<B_EVENT>"
 b_event:
 	CPY #3				; is it ^C?
 	BNE be_nc
@@ -1087,7 +1090,7 @@ be_none:
 ; ex_pt		= 24b pointer to executable code
 ; cpu_ll	= architecture (as stated in headers!)
 ;		USES rh_scan
-
+	.asc	"<LOADLINK>"
 loadlink:
 ; *** first look for that filename in ROM headers ***
 ; no need to set DBR
@@ -1209,7 +1212,7 @@ ll_native:
 ;		USES iol_dev and whatever the driver takes
 ;
 ; cio_lock is a kernel structure
-
+	.asc	"<STRING>"
 string:
 #ifdef	SUPPORT
 ; check architecture in order to discard bank address
@@ -1253,7 +1256,7 @@ str_end:
 ;		OUTPUT
 ; C = some error
 ;		USES rl_dev, rl_cur and whatever CIN/COUT take
-
+	.asc	"<READLN>"
 readln:
 ; no need to switch DBR as regular I/O calls would do it
 #ifdef	SUPPORT
@@ -1319,7 +1322,7 @@ rl_cr:
 ; C = couldn't poweroff or reboot (?)
 ;		USES b_sig (calls B_SIGNAL)
 ; sd_flag is a kernel variable
-
+	.asc	"<SHUTDOWN>"
 shutdown:
 	CPY #PW_CLEAN		; from scheduler only!
 		BEQ sd_2nd			; continue with second stage
@@ -1403,7 +1406,7 @@ sd_tab:					; check order in abi.h!
 ;		OUTPUT
 ; Y			= actually assigned ID (if mutable)
 ; C			= could not install driver (ID in use or invalid, queue full, init failed)
-
+	.asc	"<DR_INST>"
 dr_inst:
 ; make sure we work on bank zero!
 	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeeek
@@ -1651,7 +1654,7 @@ dr_call:
 ; Y			= target ID
 ;		OUTPUT
 ; da_ptr	= pointer to header from removed driver (if available, C otherwise)
-
+	.asc	"<DR_SHUT>"
 dr_shut:
 
 #ifdef	SAFE
@@ -1702,7 +1705,7 @@ dr_qnxt:
 ;		OUTPUT
 ; ex_pt		= 16b pointer to driver header, for any suitable Y
 ; def_io	= std_in@L and stdout@H devices, if Y=0!
-
+	.asc	"<DR_INFO>"
 dr_info:
 	TYA					; asking for defaults (2)
 	BNE di_ndef			; no, proceed as usual (3/2)
@@ -1740,7 +1743,7 @@ di_none:
 ;		OUTPUT
 ; Y		= number of bytes
 ; ex_pt = 16b pointer to the proposed stack frame (certainly in bank 0)
-
+	.asc	"<TS_INFO>"
 ts_info:
 	.al: REP #$20		; *** 16-bit memory ***
 	LDA #tsi_str		; pointer to proposed stack frame
@@ -1768,7 +1771,7 @@ tsi_end:
 ; this is NOT intended to be called by apps, kernel & multitasking driver only, thus do not care about architecture
 ; but make certain that FREE calls are 24-bit enabled!
 ; * 8-bit savvy, I think *
-
+	.asc	"<RELEASE>"
 release:
 ; switch DBR as it accesses a lot of kernel data!
 	PHB					; eeeeeeeeek
@@ -1822,7 +1825,7 @@ rls_oth:
 ;		OUTPUT
 ; Y			= preset PID (must respect it!)
 ; affects internal sysvars run_pid & run_arch
-
+	.asc	"<SET_CURR>"
 set_curr:
 	TYA					; eeeeek, no long STY (2)
 	STA @run_pid		; store PID into kernel variables (5)
