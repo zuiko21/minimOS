@@ -1,7 +1,7 @@
 ; firmware variables for minimOS·16
-; v0.6a6
+; v0.6a7
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180219-0833
+; last modified 20181109-1222
 
 -sysram:
 ; 65816 systems have enough RAM
@@ -15,5 +15,5 @@ fw_cpu		.byt	'V'				; CPU type ('V'=65C816)
 himem		.byt	0				; number of available 'kernel-RAM' pages
 ; should add some high ram and rom shadowing info
 banks		.byt	0				; number of RAM banks (placeholder)
-irq_freq	.word	200				; jiffys per second
+irq_freq	.word	250				; jiffys per second
 old_t1		.word	0				; keep old T1 latch value for FREQ_GEN

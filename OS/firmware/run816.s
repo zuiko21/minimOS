@@ -127,18 +127,22 @@ reset:
 ; as this is the only valid CPU for this firmware, no further checking necessary
 
 ; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
-	.al: REP #$20
+;	.al: REP #$20
+
 ; preset kernel start address
 ;#include "modules/kern_addr16.s"
+#include "modules/kern_addr.s"
 
 ; preset default BRK handler
 ;#include "modules/brk_addr16.s"
+#include "modules/brk_addr.s"
 
-; no need to set NMI as it will be validated
 .as:sep#$20
-lda#'z'
+lda#'*'
 jsr$c0c2
 .al:rep#$20
+
+; no need to set NMI as it will be validated
 
 
 

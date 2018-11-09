@@ -29,8 +29,8 @@
 #define		MACHINE_ID		"run65816"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
-#define		ARCH_h			firmware/run816.h
-#define		ARCH_s			firmware/run816.s
+#define		ARCH_h			"firmware/run816.h"
+#define		ARCH_s			"firmware/run816.s"
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
