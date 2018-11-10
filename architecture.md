@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-07-24*
+*Last update: 2018-11-10*
 
 ## Rationale
 
@@ -176,7 +176,7 @@ to use... This component is probably the
 
 However, unlike CP/M's *BIOS*, minimOS' firmware (as of 2018-05-29) has
 **no I/O capabilities**, being restricted to **Kernel instalation/configuration** chores,
-plus providing a **standard interface to some hardware-dependent features**(say,
+plus providing a **standard interface to some hardware-dependent features** (say,
 *power management*). As this OS is intended to run on a **wide spectrum of machines**,
 from a simple embedded system to a *quasi-full-featured* desktop computer,
 **there is no guarantee of I/O device availability** at such low level.
@@ -193,11 +193,16 @@ firmware I/O to work thru it. These won't be as reliable as the built-in devices
 heavily crashed environments, but it's better than nothing. *The concept of separate 
 **firmware drivers** has been considered*, but deemed too complicated. Actual 
 implementation might just use a regular driver in firmware space, with its *unused*
-header as I/O routines will be directly called. *As long as the header address is
+header and I/O routines that will be directly called. *As long as the header address is
 provided into the configuration list at `drvrs_ad`, it might be used by the regular
 kernel too*. 
 
 ## Firmware
+
+The *firmware* term is actually a **misnomer** here, as most *minimOS* kernel
+will usually reside together in some firm of (E)EPROM. As previously mentioned,
+calling it BIOS would be inappropriate, as no I/O is provided. On the other hand,
+the firmware calling macro is `_ADMIN` from *Administrative Kernel*.
 
 This is intended as the **device-dependent** part of minimOS (the kernel being
 *device-independent*). Formerly consisted of several files, each one serving a
