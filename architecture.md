@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-10*
+*Last update: 2018-11-11*
 
 ## Rationale
 
@@ -70,18 +70,19 @@ this firmware was part of the computer's hardware, and had nothing to do with CP
 for being designed to boot from such system files. 
 
 Apart from such firmware design, having an **Intel 8080** CPU or compatible (the only one 
-initially supported by CP/M) and at least **16 KiB RAM** *starting at address $0*\* (plus some 
+initially supported by CP/M) and at least **16 KiB RAM** *starting at address $0* (plus some 
 kind of **disk drive** for the DOS to work on) were the only requisites to any computer 
 maker to have a **CP/M compatible** machine. With its notable software base, CP/M was *the* 
 choice for many computer makers, at least in the office environment.
 
-\*) A quick *hardware* note: since the i8080 CPU starts executing code *from address 0*, 
-some **non-volatile** ROM is expected to be accesible at that address. But CP/M *needs* RAM there, 
-thus some means to *switch off* ROM access from the bottom of the address map (once 
-the firmware has done its task, of course) has to be provided to achieve CP/M compatibility... 
-unless you want to *manually* program the initial RAM bytes via toggle-switches! Anyway, 
-such a simple [*bank-switching*](https://en.wikipedia.org/wiki/Bank_switching) 
-feature was easily implemented, as demonstrated by CP/M's sheer popularity.
+> A quick *hardware* note: since the i8080 CPU starts executing code *from address 0*, 
+> some **non-volatile** ROM is expected to be accesible at that address.
+> But CP/M *needs* RAM there, thus some means to *switch off* ROM access from
+> the bottom of the address map (once the firmware has done its chore, of course)
+> has to be provided to achieve CP/M compatibility... unless you want to *manually*
+> program the initial RAM bytes via toggle-switches! Anyway, 
+> such a simple [*bank-switching*](https://en.wikipedia.org/wiki/Bank_switching) 
+> feature was easily implemented, as demonstrated by CP/M's sheer popularity.
 
 Back in the day, the **I/O** capabilites of computers were rather limited: assume a *keyboard*, an *output device*
 (could be a text CRT screen, but a [*teletype*](https://en.wikipedia.org/wiki/Teleprinter) 
@@ -200,8 +201,8 @@ kernel too*.
 ## Firmware
 
 The *firmware* term is actually a **misnomer** here, as most *minimOS* kernel
-will usually reside together in some firm of (E)EPROM. As previously mentioned,
-calling it BIOS would be inappropriate, as no I/O is provided. On the other hand,
+will usually reside together in some kind of (E)EPROM. As previously mentioned,
+calling it BIOS would be inappropriate too, as no I/O is provided. On the other hand,
 the firmware calling macro is `_ADMIN` from *Administrative Kernel*.
 
 This is intended as the **device-dependent** part of minimOS (the kernel being
@@ -218,14 +219,16 @@ operations, like e. g. the *jiffy counter* size.
 
 A similar **modular**
 approach has been used for **firmware variables**, *statically* assigned before kernel's
-`sysvars`. After including the regular `template.h`, a particular machine may add
+*sysvars*. After including the regular `template.h`, a particular machine may add
 any other variables as needed. 
 
-### The *administrative Kernel*
+### The *Administrative Kernel*
 
 This is the **firmware's API**, originally intended to be used by the Kernel only --
 although a standard interface is provided for standard apps, even if it's not really
 needed for the 65(C)02 version.
+
+#### Kernel installing and patching
 
 Main available functions are for `INSTALL`ing the Kernel's *jump table*, and setting the
 IRQ, BRK and NMI routines -- usually will be called by the Kernel at startup time.
@@ -292,8 +295,12 @@ patch_code:
 ```
 
 Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
-patchable. The firmware will keep a table in RAM for the kernel's vector, sized as 
-defined by `API_SIZE`.
+patchable. The firmware will keep a table in RAM for the kernel's vectors, sized as 
+defined by `API_SIZE`. Please note that the final 0.6 release API expects kernels to
+*specify their **number of functions** upon calling `INSTALL`* (in bytes; 0 means a 
+full 256-byte page is needed). This way, the firmware may check whether the kernel to
+be installed fits its own data structures and report an error code otherwise; the
+**generic** kernel being installed *will not need to now about those structures*.
 
 ## Device Drivers (0.6 version)
 
