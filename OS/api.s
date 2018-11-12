@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc24, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181107-1905
+; last modified 20181112-1015
 
 ; no way for standalone assembly...
 
@@ -96,47 +96,8 @@ cin:
 	STA bl_siz			; set size
 	_STZA bl_siz+1
 	_KERNEL(BLIN)		; get small block...
-;	BCC ci_nerror		; got something...
 		RTS					; ...or keep error code from BLIN
 ; *** events no longer managed here ***
-;ci_nerror:
-;	LDX iol_dev			; **use physdev as index! worth doing here (3)
-;	LDA io_c			; get received character
-;	CMP #' '			; printable?
-;		BCS ci_exitOK		; if so, will not be an event, exit with NO error
-; otherwise might be an event
-; check for binary mode first
-;	LDY cin_mode, X		; *get flag, new sysvar 20150617
-;	BEQ ci_event		; should process possible event
-;		STZA cin_mode, X	; *back to normal mode
-;ci_exitOK:
-;		EXIT_OK			; *otherwise mark no error and exit
-;ci_event:
-;	CMP #16				; is it DLE?
-;	BNE ci_notdle		; otherwise check next
-;		STA cin_mode, X		; *set binary mode! puts 16, safer and faster!
-;		ERR(EMPTY)			; and supress received character (will NOT stay locked!)******************
-;ci_notdle:
-;	CMP #3				; is it ^C? (TERM)
-;	BNE ci_noterm		; otherwise check next
-;		LDA #SIGTERM
-;		BRA ci_signal		; send signal
-;ci_noterm:
-;	CMP #4				; is it ^D? (KILL) somewhat dangerous...
-;	BNE ci_nokill		; otherwise check next
-;		LDA #SIGKILL
-;		BRA ci_signal		; send signal
-;ci_nokill:
-;	CMP #26				; is it ^Z? (STOP)
-;		BNE ci_exitOK		; otherwise there is no more to check
-;	LDA #SIGSTOP		; last signal to be sent
-;ci_signal:
-;	STA b_sig			; set signal as parameter
-;	LDY run_pid			; faster GET_PID
-;	KERNEL(B_SIGNAL)	; send signal to myself
-; continue after having filtered the error
-;ci_error:
-;	ERR(EMPTY)			; no character was received
 
 
 ; ********************************
