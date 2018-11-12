@@ -2,7 +2,7 @@
 ; v0.9.6b4
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180517-1234
+; last modified 20181112-1342
 
 #include	"../usual.h"
 
@@ -60,12 +60,6 @@ kow_rts:
 
 ; *** input ***
 kow_blin:
-;lda#'i'
-;jsr$c0c2
-;lda bl_ptr+1
-;jsr debug_hex
-;lda bl_ptr
-;jsr debug_hex
 #ifdef	SAFE
 	LDA bl_siz			; check size in case is zero
 	ORA bl_siz+1
@@ -94,5 +88,5 @@ kow_cont:
 kow_empty:
 	_DR_ERR(EMPTY)		; nothing yet
 kow_err:
-	_DR_ERR(UNAVAIL);
+	_DR_ERR(UNAVAIL)
 .)
