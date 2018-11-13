@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc10
+; v0.6rc11
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181107-1054
+; last modified 20181113-1004
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -251,10 +251,10 @@ sh_exec:
 ; singletask systems will not arrive here, ever!
 lda#'!'
 jsr$c0c2
-bra*
+st_lock:
+bra st_lock
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
-here:
-	_BRA here			; ...as the scheduler will detour execution
+	_PANIC("{yield}")	; ...as the scheduler will detour execution
 
 ; a quick way to print a newline on standard device
 ks_cr:
