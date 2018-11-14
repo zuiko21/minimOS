@@ -61,9 +61,9 @@ kow_rts:
 ; *** input ***
 kow_blin:
 #ifdef	SAFE
-	LDA bl_siz			; check size in case is zero
-	ORA bl_siz+1
-		BEQ kow_rts			; nothing to do then
+nop:nop;	LDA bl_siz			; check size in case is zero
+nop:nop;	ORA bl_siz+1
+nop:nop;		BEQ kow_rts			; nothing to do then
 #endif
 	JSR $c0bf			; will this work???
 	TAX
