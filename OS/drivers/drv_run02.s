@@ -1,8 +1,8 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
-; v0.9.6b4
+; v0.9.6b5
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20181112-1342
+; last modified 20181114-0849
 
 #include	"../usual.h"
 
@@ -60,11 +60,9 @@ kow_rts:
 
 ; *** input ***
 kow_blin:
-#ifdef	SAFE
-nop:nop;	LDA bl_siz			; check size in case is zero
-nop:nop;	ORA bl_siz+1
-nop:nop;		BEQ kow_rts			; nothing to do then
-#endif
+	LDA bl_siz			; check size in case is zero
+	ORA bl_siz+1
+		BEQ kow_rts			; nothing to do then
 	JSR $c0bf			; will this work???
 	TAX
 	BEQ kow_empty		; nothing available *** perhaps BEQ
