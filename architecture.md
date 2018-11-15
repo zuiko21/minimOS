@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-11*
+*Last update: 2018-11-15*
 
 ## Rationale
 
@@ -296,7 +296,7 @@ patch_code:
 
 Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
 patchable. The firmware will keep a table in RAM for the kernel's vectors, sized as 
-defined by `API_SIZE`. Please note that the final 0.6 release API expects kernels to
+defined by `API_SIZE`. Also, the final 0.6 release API expects kernels to
 *specify their **number of functions** upon calling `INSTALL`* (in bytes; 0 means a 
 full 256-byte page is needed). This way, the firmware may check whether the kernel to
 be installed fits its own data structures and report an error code otherwise; the
@@ -576,7 +576,7 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 
 (\*) One thing to be determined is whether to use an *offset* or an *absolute
 address* for the variable **relocation table**. If the latter, the `ADC da_ptr`
-part won't be used.
+part won't be used. But the earlier options seems to make much more sense.
  
 ### Input/Output
 
