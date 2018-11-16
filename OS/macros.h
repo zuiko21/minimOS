@@ -1,11 +1,11 @@
-; minimOS 0.6rc8 MACRO definitions
+; minimOS 0.6rc9 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181104-1134
+; last modified 20181116-0951
 
 ; *** standard addresses ***
 
 kerncall	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
-adm_call	=	$FFD8	; ending in RTS, intended for kernel/drivers ONLY, revamped address
+adm_call	=	$FFDA	; ending in RTS, intended for kernel/drivers ONLY, revamped address
 adm_appc	=	$FFD0	; special interface for 65816 firmware call from USER software!
 ; usually pointing to JSR adm_call, then RTL
 

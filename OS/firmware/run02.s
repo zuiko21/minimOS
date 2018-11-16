@@ -334,7 +334,7 @@ nmos_adc:
 	.dsb	adm_call-*, $FF
 #endif
 
-; *** administrative meta-kernel call primitive ($FFD8) ***
+; *** administrative meta-kernel call primitive ($FFDA) ***
 * = adm_call
 #ifndef	FAST_FW
 #ifndef	NMOS

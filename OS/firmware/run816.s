@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc10
+; v0.9.6rc11
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20181101-1851
+; last modified 20181116-1003
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -43,29 +43,6 @@ fw_splash:
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
-
-; *********************************
-; *********************************
-; *** administrative jump table *** changing
-; *********************************
-; *********************************
-fw_admin:
-; generic functions, esp. interrupt related
-	.word	gestalt		; GESTALT get system info (renumbered)
-	.word	set_isr		; SET_ISR set IRQ vector
-	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
-	.word	set_dbg		; SET_DBG set debugger, new 20170517
-	.word	jiffy		; JIFFY set jiffy IRQ speed
-	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
-
-; pretty hardware specific
-	.word	poweroff	; POWEROFF power-off, suspend or cold boot
-	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
-
-; 65816 systems have plenty of RAM
-	.word	install		; INSTALL copy jump table
-	.word	patch		; PATCH patch single function (renumbered)
-
 
 ; **************************
 ; **************************
@@ -200,6 +177,29 @@ cop_hndl:				; label from vector list
 #include "modules/cop_hndl.s"
 
 
+; *********************************
+; *********************************
+; *** administrative jump table *** changing
+; *********************************
+; *********************************
+fw_admin:
+; generic functions, esp. interrupt related
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
+
+; 65816 systems have plenty of RAM
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+
+
 ; ********************************
 ; ********************************
 ; *** administrative functions ***
@@ -319,13 +319,12 @@ real_admappc:
 	PLB					; restore bank...
 	RTL					; ...and return from long address!
 
-; *** above code takes -8- bytes, thus no room for padding! ***
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	adm_call-*, $FF
 #endif
 
-; *** administrative meta-kernel call primitive ($FFD8) ***
+; *** administrative meta-kernel call primitive ($FFDA) ***
 * = adm_call
 real_admcall:
 	JMP (fw_admin, X)	; takes 5 cycles
