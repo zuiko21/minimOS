@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-15*
+*Last update: 2018-11-17*
 
 ## Rationale
 
@@ -23,8 +23,7 @@ These goals will define most of its design features.
 
 ## Aesthetic
 
-The *corporative* typeface is **Neuzeit
-Grotesk DIN 30640**.
+The *corporative* typeface is **Neuzeit Grotesk DIN 30640**.
 
 # Background
 
@@ -48,15 +47,16 @@ all the remaining components were **generic**, as supplied by
 [Digital Research](https://en.wikipedia.org/wiki/Digital_Research)
 (which also supplied a BIOS *template* intended for the
 [Intel MDS-800](http://www.computinghistory.org.uk/det/21821/Intel-Intellec-MDS-800-Development-System/) development system). 
-Of course, other commands or the *application software* were run atop of this, probably by 
-temporarily *replacing the CCP* for increased available RAM, as this 
-was a **single task**, single user OS. As soon as the task was completed, the *shell* (CCP) 
-was reloaded and the user was prompted for another command.
+Of course, other commands or the *application software* were run atop of this,
+most likely *replacing the CCP* temporarily for increased available RAM, as this 
+was a **single task**, single user OS. As soon as the task was completed,
+the *shell* (CCP) was reloaded and the user was prompted for another command.
 
-Alas, this scheme is not complete: usually, these components were provided on some kind of mass-storage
-media (often [*diskettes*](https://en.wikipedia.org/wiki/Floppy_disk)) 
-that had to be *loaded* into RAM somehow, as no CPU has any means to execute code *directly* from 
-[**secondary memory**](https://en.wikipedia.org/wiki/Auxiliary_memory). 
+Alas, this scheme is not complete: usually, these components were provided
+on some kind of mass-storage media (often
+[*diskettes*](https://en.wikipedia.org/wiki/Floppy_disk)) 
+that had to be *loaded* into RAM, as no CPU has any means to execute code *directly* from 
+[**secondary memory**](https://en.wikipedia.org/wiki/Auxiliary_memory).
 Thus, a small piece of **ROM** or any other *non-volatile 
 [**primary** memory](https://en.wikipedia.org/wiki/Computer_memory)* 
 was needed in order to load and run the Operating System. This was often a 
@@ -65,9 +65,9 @@ was needed in order to load and run the Operating System. This was often a
 [**firmware**](https://en.wikipedia.org/wiki/Firmware)) 
 whose main purpose, besides the initial setup and perhaps some hardware tests 
 ([*POST, Power-On Self-Test*](https://en.wikipedia.org/wiki/Power-on_self-test))
-was merely copying those three files in RAM and ordering the CPU to jump at their code. Obviously, 
-this firmware was part of the computer's hardware, and had nothing to do with CP/M, save 
-for being designed to boot from such system files. 
+was merely copying those three files in RAM and ordering the CPU to jump at their code.
+Obviously, this firmware was part of the computer's hardware, and had nothing to do
+with CP/M itself, save for being designed to boot from such system files. 
 
 Apart from such firmware design, having an **Intel 8080** CPU or compatible (the only one 
 initially supported by CP/M) and at least **16 KiB RAM** *starting at address $0* (plus some 
@@ -84,8 +84,9 @@ choice for many computer makers, at least in the office environment.
 > such a simple [*bank-switching*](https://en.wikipedia.org/wiki/Bank_switching) 
 > feature was easily implemented, as demonstrated by CP/M's sheer popularity.
 
-Back in the day, the **I/O** capabilites of computers were rather limited: assume a *keyboard*, an *output device*
-(could be a text CRT screen, but a [*teletype*](https://en.wikipedia.org/wiki/Teleprinter) 
+Back in the day, the **I/O** capabilites of computers were rather limited: assume
+a *keyboard*, an *output device* (could be a text CRT screen, but a
+[*teletype*](https://en.wikipedia.org/wiki/Teleprinter) 
 would do) and/or a *printer*, plus some *mass-storage* devices, 
 and you were set. Thus, the concept of modular 
 [device **drivers**](https://en.wikipedia.org/wiki/Device_driver) 
@@ -175,7 +176,7 @@ hardware-independent and providing the only interface *application software* is 
 to use... This component is probably the 
 **closest one to CP/M's design**, in both form and function.
 
-However, unlike CP/M's *BIOS*, minimOS' firmware (as of 2018-05-29) has
+Unlike CP/M's *BIOS*, though, minimOS' firmware (as of 2018-05-29) has
 **no I/O capabilities**, being restricted to **Kernel instalation/configuration** chores,
 plus providing a **standard interface to some hardware-dependent features** (say,
 *power management*). As this OS is intended to run on a **wide spectrum of machines**,
@@ -196,7 +197,7 @@ heavily crashed environments, but it's better than nothing. *The concept of sepa
 implementation might just use a regular driver in firmware space, with its *unused*
 header and I/O routines that will be directly called. *As long as the header address is
 provided into the configuration list at `drvrs_ad`, it might be used by the regular
-kernel too*. 
+kernel too*.
 
 ## Firmware
 
@@ -233,10 +234,11 @@ needed for the 65(C)02 version.
 Main available functions are for `INSTALL`ing the Kernel's *jump table*, and setting the
 IRQ, BRK and NMI routines -- usually will be called by the Kernel at startup time.
 The mechanism for **kernel patching** is also supplied, and from 0.6 version on
-it does provide a *recovery
-setting* -- just a NULL pointer as the supplied jump table (for `INSTALL`)
-or routine address (for individual function `PATCH`). The firmware will take care of a 
-pointer to the last installed *kernel **jump table*** for this matter.
+it does provide a *recovery setting* -- just a NULL pointer as the supplied jump table
+(for `INSTALL`) or routine address (for individual function `PATCH`). The firmware
+will take care of a pointer to the last installed *kernel **jump table*** for this matter.
+
+*(must clarify this)*
 
 On the other hand, passing a NULL pointer to any interrupt-setting function will simply
 return the original pointer, no matter that the standard interface for
@@ -287,15 +289,19 @@ patch:
     PHK                   ; will return to this bank *** tail-patching only ***
     PEA patch_code        ; proper return address for RTI *** tail-patching only ***
     PHP                   ; as requested by RTI *** tail-patching only ***
-; *** the above code ONLY in case of tal-patching ***
+; *** the above code ONLY in case of tail-patching ***
     JMP (my_pointer)      ; call original routine (will return to tail-patch or caller) 
 patch_code:
 ; *** here comes the TAIL patching code ***
     _EXIT_OK              ; proper API exit *** tail code only ***
 ```
 
-Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not**
-patchable. The firmware will keep a table in RAM for the kernel's vectors, sized as 
+The above code, apparently, does **not** allow *mixed* interrupt code -- i. e.,
+patching a 16-bit kernel with 8-bit code. Maybe it's worth implementing a *filter*
+for the `U_ADM` entry point.
+
+Please note that, unlike the *generic* Kernel, this *administrative Kernel* is **not
+patchable**. The firmware will keep a table in RAM for the kernel's vectors, sized as 
 defined by `API_SIZE`. Also, the final 0.6 release API expects kernels to
 *specify their **number of functions** upon calling `INSTALL`* (in bytes; 0 means a 
 full 256-byte page is needed). This way, the firmware may check whether the kernel to
@@ -306,10 +312,8 @@ be installed fits its own data structures and report an error code otherwise; th
 
 As an essential feature of such device-agnostic OS, minimOS **driver architecture** has 
 been carefully crafted for **versatility**. The details may vary depending on the CPU 
-in use, but in any case they'll bear a
-**header** (does not need to be
-*page-aligned*) containing this package of 
-information:
+in use, but in any case they'll bear a **header** (does not need to be *page-aligned*)
+containing this package of information:
 
 - A device **ID** (currently 128-255, as *logical* devices use up to 127)
 - A **feature mask** indicating the availability of some of the following
@@ -334,26 +338,26 @@ calling the generic block routines.
 Note that, while driver format for kernels *up to 0.5.1* (totally **incompatible**
 with those for 0.6 and beyond) *might* provide some compatibility for **8-bit
 drivers *on 16-bit kernels***, this is no longer the case. However, making them
-16-bit-savvy should be pretty straightforward, as should be adapting
-*character-oriented* older drivers.
+16-bit-savvy should be pretty straightforward, as should be adapting older
+*character-oriented* drivers with a suitable loop.
 
 At boot time, the *initialisation* routine of each registered driver is **unconditionally** 
-called -- if not needed, must point to an existing *Return from Subroutine* instruction. 
+called -- if not needed, must point to an existing `ReTurn from Subroutine` instruction. 
 Upon exit, this routine must return an **error flag** indicating whether the driver was 
 succesfully initialised or not (e.g. device not present), the latter condition making it 
 **unavailable** for further I/O operation. Similarly, at shutdown/reboot every *shutdown* 
-routine will be called, although any error condition makes little sense now, thus is not 
-required.
+routine will be called, although any error condition makes no sense, thus no error code
+is required or evaluated anyway.
 
 ### Interrupt queues
 
-Of special interest are the **interrupt routines**. The (now unified) **periodic** queue handles
-those tasks at *multiples* of the **jiffy** IRQ period; while **4 ms** is the *recommended*
-value, the actual timing **cannot be guaranteed**. Plus, the ocassional *interrupt masking* 
-when entering 
-[critical sections](https://en.wikipedia.org/wiki/Critical_section) may cause further 
-delays. This mechanism is particularly suited to
-replace the [**daemons**](https://en.wikipedia.org/wiki/Daemon_(computing)) 
+Of special interest are the **interrupt routines**. The (now unified) **periodic** queue
+handles those tasks at *multiples* of the **jiffy** IRQ period; while **4 ms** is
+the *recommended* value, the actual timing **cannot be guaranteed**. Plus,
+the ocassional *interrupt masking* when entering
+[critical sections](https://en.wikipedia.org/wiki/Critical_section) may cause further
+delays. This mechanism is particularly suited to replace the
+[**daemons**](https://en.wikipedia.org/wiki/Daemon_(computing)) 
 commonly seen on UNIX-like systems, perhaps with better responsiveness (quite an asset on 
 low-spec machines) or even with no form of **multitasking** (which is, in any 
 case, another *driver*) available! On the other hand, for those cases of obviously 
@@ -364,11 +368,10 @@ Older versions (before 0.6) had the **periodic tasks** separated into *jiffy* an
 interrupt tasks, with no *frequency* parameter whatsoever, being complete responsability of 
 the task to count whatever *ticks* (jiffy interrupts) must wait in order to call the routine.
 Within the current **unified periodic queue** (and assuming a *recommended* **4 ms** IRQ 
-period) a *frequency* value of 250 would be equivalent 
-to the older *slow* interrupt task (4*250=1000 ms), while the standard **1** value will 
-serve 
-just like the old *jiffy* task. In case a driver needs *both* the jiffy and slow interrupt tasks, 
-code for the former shoud handle an internal **counter** for the appropriate delay, *as was already 
+period) a *frequency* value of 250 would be equivalent to the older *slow* interrupt task
+(4*250=1000 ms), while the standard **1** value will serve just like the old *jiffy* task.
+In case a driver needs *both* the jiffy and slow interrupt tasks, code for the former
+should handle an internal **counter** for the appropriate delay, *as was already 
 being done for may interrupt tasks not requiring being executed at **every** single jiffy IRQ*. 
 On such cases, the unified interrupt task may start (in 6502 fashion) like this:
 
@@ -382,38 +385,39 @@ fast_task:             ; ...and continue with the usual jiffy task
 ```
 
 For instance, in a system with 4 ms jiffy IRQ, a driver executing a periodic task 
-**every 20 ms** 
-*and* a slow task every full second, would use `frequency = 5` and `max_delay = 50`. 
-A similar piece of code had to be used with "jiffy" tasks that hadn't to be 
-executed every periodic IRQ, as mentioned above.
+**every 20 ms** *and* a slow task every full second, would use `frequency = 5` and
+`max_delay = 50`. A similar piece of code had to be used with "jiffy" tasks that
+hadn't to be executed every periodic IRQ, as mentioned above.
 
 Please note that while frequencies are stated as 16-bit integers, `LOWRAM` option will 
-take the LSB *only*, setting it to **0** in case the MSB is not zero -- this will provide the **slowest**
-operation (execute each 256 *jiffys*).
+take the LSB *only*, setting it to **0** in case the MSB is not zero -- this will
+provide the **slowest** operation (execute each 256 *jiffys*). For the full-fledged
+version, a 16b *zero* frequency value implies the **slowest** operation again, this
+time a whopping *65536 jiffys* (usually **over 4 minutes**).
 
 Another improvement to the old method is the possibiliy of **temporarily disabling a certain 
-interrupt task** when not needed, for better system performance (and, of course, **re-enabling** it 
-at any time, when needed). ***API functions** will be provided to **enable/disable** a particular task, 
-modify its **frequency** value or simply **checking** its current settings*.
+interrupt task** when not needed, for better system performance (and, of course,
+**re-enabling** it at any time, when needed). ***API functions** will be provided to
+**enable/disable** a particular task, modify its **frequency** value or simply
+**checking** its current settings*.
 
-On the other hand, with *asynchronous interrupts* it's still worth keeping them in a 
-*separate queue* for **lower interrupt latency**. *Frequency* is meaningless here, but the idea 
-of **enabling/disabling** them at will remains interesting. Such on-the-fly check adds very little 
-overhead, thus way worth it.
+On the other hand, for **asynchronous interrupts** it's still worth keeping them in a 
+*separate queue* for **lower interrupt latency**. *Frequency* is meaningless here, but
+the idea of **enabling/disabling** them at will remains interesting. Such on-the-fly
+check adds very little overhead, thus certainly worth it.
 
-Actual implementation may vary, but probably the most efficient way is having separate 
-**interrupt queues** (one for each kind: periodic/async) filled up at boot time *if* 
-a driver provides such kind of interupt task *and* was succesfully initialised. Please note that 
-this system was designed with the (rather simple) interrupt system of 65xx processors in mind. 
-*Hardware with more sophisticated interrupt management could use more 
-queues to match their capabilities*. In any case, 
+Please note that this system was designed with the (rather simple) interrupt system
+of 65xx processors in mind. *Hardware with more sophisticated interrupt management
+could use more queues to match their capabilities*. In any case, 
 whenever the [ISR](https://en.wikipedia.org/wiki/Interrupt_handler) 
-is called, if a *periodic* interrupt was the cause, the *periodic* queue will be scanned, 
-calling each entry sequentially (ditto for the *slow* queue, whenever some amount of 
-jiffy IRQs happened). For the **asynchronous tasks**, as similar procedure may be used, 
-but each task must return an *error code* signaling whether the IRQ was **acknowledged** 
-by that handler or not. This code **may or may not** be ignored by the ISR, depending on 
-performance considerations or the chance of simaltaneous interrupts.
+is called, if a **periodic interrupt** was the cause, the *periodic* queue will be
+scanned, calling each entry sequentially. For the **asynchronous tasks**, a similar
+procedure may be used, but each task **must** return an *error code* signaling whether
+the IRQ was **acknowledged** by that handler or not. This code **may or may not**
+be ignored by the ISR, depending on performance considerations or the estimated
+chance of simultaneous interrupts. If *ignored*, the ISR should keep checking the
+async queue until the end, which may avoid repeating the whole ISR cycle should
+another IRQ be issued while serving the first one. 
 
 ### Interrupt performance: *latency* vs. *jitter* vs. *overhead*
 
@@ -430,22 +434,24 @@ still better than most other microprocessors can achieve. The *65816* version, w
 more context to save, takes longer (57 cycles) but as these will usually *faster clocked*
 than 'classic' 6502s, this will hardly be an issue.
 
-On the other hand, latency in itself becomes almost meaningless for *synchronous*, periodic
-interrupts, which will happen at very precisely known time. As long as the *period* of executions
-is kept *reasonably* stable (*absolute* stability is impossible to achieve!), they will do fine.
-The goal here is to keep **low jitter** for predictable results. Since interrupt tasks may be
-temporarily interrupted, this cannot be guaranteed, but code design should try to *equalize*
-execution times, even if some *overhead* is added.
+On the other hand, latency in itself becomes almost meaningless for synchronous,
+*periodic* interrupts, which will happen at very precisely known time. As long as
+the *periodicity* of executions is kept *reasonably* stable (*absolute* stability
+is impossible to achieve!), they will do fine. The goal here is to keep **low jitter**
+for predictable results. Since interrupt tasks may be temporarily interrupted, this
+cannot be guaranteed, but code design should try to *equalize* execution times,
+even if some *overhead* is added.
 
 Being inspired by old-fashioned 8-bit systems, where *every cycle counts*, the ISR should
 be as *succint* and efficient as possible, thus adding **minimal overhead**. This is always
 desirable, but especially in minimOS, with its surprinsgly short *quantum* (**4 ms**
 recommended, or **250 Hz**). Note that some critical systems may reduce jitter to almost
 zero, by checking the VIA T1 value ASAP and then executing some equalizing *delay* code...
-at the cost of *increased overhead*. No free lunch, I'm afraid...
+at the cost of **increased overhead**. *No free lunch, I'm afraid...*
 
 Anyway, minimOS' firmware interface offers easy **ISR patching/replacing**, allowing
-*optimum performance* when needed.
+*optimum performance* when needed, although the firmware will always add some fixed
+overhead.
 
 ### Static vs. *Dynamic* Drivers
 
@@ -468,8 +474,8 @@ better runtime performance; I no longer see any problem for the **65816**, as
 
 Sample code for *driver variable **relocation*** could be as follows (wrote in
 **16-bit** memory/indexes in 65816-fashion for simplicity).
-*This will be done upon `DR_INST` call* and
-a similar scheme could be used for *generic code relocation* as issued by `LOADLINK`.
+*This will be done upon `DR_INST` call* and a similar scheme could be used for
+*generic code relocation* as issued by `LOADLINK`.
 
 We assume `da_ptr` points to the driver's header, as usual during install.
 
@@ -576,7 +582,7 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 
 (\*) One thing to be determined is whether to use an *offset* or an *absolute
 address* for the variable **relocation table**. If the latter, the `ADC da_ptr`
-part won't be used. But the earlier options seems to make much more sense.
+part won't be used. But the earlier option seems to make much more sense.
  
 ### Input/Output
 
@@ -595,59 +601,44 @@ impementation does use `CIN` internally, thus event-savvy.
 
 #### Character set
 
-In a way or another, no computing device is
-free from dealing with some text. And
-because English is *not* my mother tongue,
-some **language support** had to be 
-included,
-at least in a minimalistic way.
+In a way or another, no computing device is free from dealing with some text. And
+because English is *not* my mother tongue, some **language support** had to be
+included, at least in a minimalistic way.
 
-*Multy-byte encodings** (like *Unicode*)
-are versatile and well supported anywhere,
-they put *extra burden on limited devices*
-and thus not a very sensible choice for
-this OS -- this is not *maximOS* in any
-way! However, **their use is not ruled
-out** for bigger systems or when text I/O
-performance is not a concern; it is simply
-an **optional feature**, just cannot be
-the default, native encoding.
+*Multi-byte encodings** (like *Unicode*) are versatile and well supported anywhere,
+they put *extra burden on limited devices* and thus not a very sensible choice for
+this OS -- this is not *maximOS* by any stretch of imagination! However, **their use
+is not ruled out** for bigger systems or when text I/O performance is not a concern;
+it is simply an **optional feature**, just cannot be the *default, native* encoding.
 
-The choice of character set is somewhere
-between **ISO 8859-1** and **ISO 8859-15**
-(perhaps closer to the latter). Most of the
-characters kept from 8859-1 are the
-*empty diacritics*, which may be changed.
+The choice of character set is somewhere between **ISO 8859-1** and **ISO 8859-15**.
 
 ### Device IDs
 
 IDs *were* chosen in a random fashion, but they're likely to be grouped into batches
 of generic devices, like this:
 
-- `lr0-lr7` = 128-135, **Low Resources** (for use within `LOWRAM` option)
+- `lr0-lr7` = 128-135, **Low Resource** (for use within `LOWRAM` option)
 - `rd0-rd7` = 136-143, **Reseved Drivers** (for multitasking, windowing, filesystem, etc.)
 - *144-231 TBD*
 - `as0-as7` = 232-239, *Asynchronous* Serial
 - `ss0-ss7` = 240-247, *Synchronous* Serial (like **SS22**)
-- `ud0-ud7` = 248-255, **User Devices** (255 *might* be reserved)
+- `ud0-ud7` = 248-255, **User Devices** (255/`ud7` *might* be reserved)
 
 Thus, drivers would include any ID in the generic range, and the
 OS will try to find a place for him, perhaps with another suitable ID. Since
 there could be up to 8 **asynchronous serial** devices `as0` to `as7`, corresponding
 to IDs 232 to 239, **most** if not all of these drivers would be supplied with
-a fixed ID of 232, no matter whether driving a 6551, 6850, 16C550 or bit-banged VIA;
+a fixed ID of 232, no matter whether driving a 6551, 6850, 16C550 or *bit-banged* VIA;
 upon install, the kernel would try to use the 232 entry. If busy, try everyone else up
 to 239; if no free entry is found, complain as `BUSY`, otherwise install it. *Might try
 first with the supplied ID first (232-239) just in case.*
 
-Most likely, no auto-ID change should be
-available for reserved blocks
-(`lr` & `rd`).
+Most likely, no auto-ID change should be available for reserved blocks (`lr` & `rd`).
 
-As of 2017-10-23, a new
-`MUTABLE` option switches on this feature, which will take (yet) another 256-byte array
-from `sysvars.h`, but may become implicit
-except for `LOWRAM` systems.
+As of 2017-10-23, a new `MUTABLE` option switches on this feature, which will take
+(yet) another 256-byte array from `sysvars.h`, but may become implicit except for
+`LOWRAM` systems.
 
 About **logical** device IDs, as of 2018-05-29 only three are supported:
 
@@ -666,7 +657,8 @@ the **scheduler** as a periodic `D_POLL` task (usually at *frequency* 1, althoug
 6502 implementations may use a longer quantum) while the `D_INIT` routine will
 **`PATCH` the existing *task-handling* functions**. `GET_PID` might not need to be
 patched, as long as the scheduler makes use of the supplied `SET_CURR` function in
-order to report the running PID (and architecture) to the OS.  
+order to report the running PID (and architecture) to the OS. *Certainly, `GET_PID` is
+intended for application use only, as the Kernel may just read its own variable.*
 
 ## Kernel/API
 
@@ -682,36 +674,44 @@ unpatch the whole API, restoring it to the last installed full Kernel!
 
 ## Access privileges
 
-This is always a tough question, as there are some *psychological* reasons against a robust, **highly protected** system -- 
-it may lead to **buggier** user software under the *fake security* impression that userland crashes won't affect the *rest* 
-of the system... but there are certain situations where adequate protection is **a must**. Thus, by concept, minimOS *neither 
-requires nor prevent protection techniques*. Development is made with *cleanliness* and *functional separation* in mind, but 
-access privileges are just **recommended paths**, as 65xx CPUs have no protection facilities whatsoever, and **may be skipped** 
-altogether if *performance concerns* require so. The aforementioned functional separation would allow other CPUs with privilege 
-support to strictly enforce such "correct" access procedures.
+This is always a tough question, as there are some *psychological* reasons against
+a robust, **highly protected** system -- it may lead to **buggier** user software
+under the *fake security* impression that userland crashes won't affect the *rest*
+of the system... but there are certain situations where adequate protection is
+**a must**. Thus, by concept, minimOS *neither requires nor prevent protection
+techniques*. Development is made with *cleanliness* and *functional separation*
+in mind, but access privileges are just **recommended paths**, as 65xx CPUs have
+no protection facilities whatsoever, and **may be skipped** altogether if *performance
+concerns* require so. The aforementioned functional separation would allow other
+CPUs with privilege support to strictly enforce such "correct" access procedures.
 
 The arrows in the previous graphic tell the *expected* calls between components. In a nutshell:
 
-- **User apps** may just call the *Kernel/API*
-- **Kernel** will use *drivers* and *firmware* functions, but **not** the *hardware*
+- **User apps** should just call the *Kernel/API*
+- **Kernel** will use *drivers* and *firmware* functions, but will **not** directly
+access *hardware*
 - **Drivers** will interact with *hardware*, either directly or thru *firmware*
-- **Firmware** is of course *hardware-specific*, but may call some *Kernel* functions
+- **Firmware** is of course *hardware-specific*, but may call some *Kernel* functions (?)
 
-Eagle-eyed readers may have noticed the **yellow fringing** around the *apps-to-kernel* arrow... while user apps are not 
-*expected* to call the Firmware *directly*, there is nothing preventing it. Actually, a "plain" 6502 may do it without 
-effort, as the firmware's [ABI](https://en.wikipedia.org/wiki/Application_binary_interface) is pretty much the same as 
-the Kernel's (call via `JSR` and ending in `RTS`). The 65816 makes it more difficult, as the Kernel uses a different 
-interface (call via `COP` which must end in **`RTI`**) while the Firmware
-is expected to be called *from bank zero* (where the 
-Kernel & drivers must reside); but anyway, a **wrapper** is now provided for enabling the user apps to **directly** call
-the firmware via `JSL` (from any bank)... *if you know what you're doing* (register sizes, etc)
+Eagle-eyed readers may have noticed the **yellow fringing** around the *apps-to-kernel*
+arrow... while user apps are not *expected* to call the Firmware *directly*, there is
+nothing preventing it. Actually, a "plain" 6502 may do it without effort, as the
+firmware's [ABI](https://en.wikipedia.org/wiki/Application_binary_interface) is pretty
+much the same as the Kernel's (call via `JSR` and ending in `RTS`). The 65816 makes it
+more difficult, as the Kernel uses a different interface (call via `COP` which must end
+in **`RTI`**) while the Firmware is expected to be called *from bank zero* (where the
+Kernel & drivers must reside); but anyway, a **wrapper** is now provided for enabling
+the user apps to **directly** call the firmware via `JSL` (from any bank)...
+*if you know what you're doing* (register sizes, etc).
 
-The desired *cleanliness* is responsible for the creation of some *apparently unneeded* Kernel functions (`TS_INFO`, `RELEASE`, 
-`SET_CURR`...) that will be discussed in due time, particularly affecting **multitasking** implementation.
+The desired *cleanliness* is responsible for the creation of some *apparently unneeded*
+Kernel functions (`TS_INFO`, `RELEASE`, `SET_CURR`...) that will be discussed in due time,
+particularly affecting **multitasking** implementation.
 
-Note that *future* optimisation options will render kernel & firmware calls as **direct `JSR` calls**
-(or some suitable 65816 replacement, including `PLP:RTL` instead of `RTI`) removing
-the need for *jump tables* and the time-consuming interface that was needed for **binary compatibility**.
+Note that some optimisation options will render kernel & firmware calls as **direct
+`JSR` calls** (or some suitable 65816 replacement, including `PLP:RTL` instead of `RTI`)
+removing the need for *jump tables* and the time-consuming interface that was needed
+for **binary compatibility**.
 
 ### Task context
 
@@ -719,19 +719,24 @@ This is an architecture-dependent issue, but will usually include:
 
 - Standard *per task* Input and Output device, allowing easy **redirection**
 - Some available **space** for the user task, doesn't need to be allocated
-- Probably an indication of available user space. *This could be updated with the **actually** used bytes from that space*.
+- Probably an indication of available user space. *This could be updated with the
+**actually** used bytes from that space*.
 - **Local variables** for kernel functions (should *not* be touched by user code)
 - **Kernel parameters** for function calling
-- **System reserved variables** which, at least on 65xx machines, *may* be used harmlessly but would certainly change
-upon interrupts or context switches.
+- **System reserved variables** which, at least on 65xx machines, *may* be used
+harmlessly but would certainly change upon interrupts or context switches.
 
-Depending of the CPU used, this context can be totally or partially stored in **zero-page** (for 65xx and 68xx families), 
-**registers** (680x0) or some appropriately pointed RAM area. Together with the 
-[stack](https://en.wikipedia.org/wiki/Stack_\(abstract_data_type\)) area, this will be saved upon **context switches** 
-(typically under *multitasking*) with probably the *system reserved variables* as a notable exception.
-NMIs should preserve that too for total **transparency**
+Depending of the CPU used, this context can be totally or partially stored in
+**zero-page** (for 65xx and 68xx families), **registers** (680x0) or some
+appropriately pointed RAM area. Together with the 
+[stack](https://en.wikipedia.org/wiki/Stack_\(abstract_data_type\)) area,
+this will be saved upon **context switches** (typically under *multitasking*)
+with probably the *system reserved variables* as a notable exception.
+NMIs should preserve those too for total **transparency**
 
-Some hardware may make this area **protected** from other processes. Even on 65xx architectures,***bank-switching** the zero-page and stack* areas will yield a similar effect, while greatly improving **multitasking** performance.
+Some hardware may make this area **protected** from other processes. Even on
+65xx architectures, ***bank-switching** the zero-page and stack* areas will yield
+a similar effect, while greatly improving **multitasking** performance.
 
 ## Application format
 
@@ -770,7 +775,7 @@ version. In order to reduce RAM usage, this option produces the following change
 As there is no RAM to load programs (or drivers) on, there will not be any *relocation*
 features.
 
-Newer options are due for 0.6, like:
+Newer options for 0.6 include:
 
 - replacing generic calls with direct JSRs (**DONE via the `FAST_API` and `FAST_FW` options**)**
 - using I/O arrays in ROM (*should be a configuration file matter*)
