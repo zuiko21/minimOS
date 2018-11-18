@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-17*
+*Last update: 2018-11-18*
 
 ## Rationale
 
@@ -512,7 +512,7 @@ dyd_ok:
         LDY #D_DYN         ; get offset to relocation table
         LDA (da_ptr), Y
         CLC
-        ADC da_ptr         ; get absolute pointer (*)
+        ADC da_ptr         ; get absolute pointer
         STA dyntab         ; use as local pointer
         LDY #0             ; reset counter
 ; all set, let us convert the variable references
@@ -580,10 +580,6 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
     . . .
 ```
 
-(\*) One thing to be determined is whether to use an *offset* or an *absolute
-address* for the variable **relocation table**. If the latter, the `ADC da_ptr`
-part won't be used. But the earlier option seems to make much more sense.
- 
 ### Input/Output
 
 *I/O routines* need little explanation, now that **block** transfers are the
