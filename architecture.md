@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-18*
+*Last update: 2018-11-19*
 
 ## Rationale
 
@@ -477,9 +477,11 @@ Sample code for *driver variable **relocation*** could be as follows (wrote in
 *This will be done upon `DR_INST` call* and a similar scheme could be used for
 *generic code relocation* as issued by `LOADLINK`.
 
-We assume `da_ptr` points to the driver's header, as usual during install.
+We assume `da_ptr` points to the driver's header, as usual during install. *This
+code may be generalized for data and code relocation*.
 
 ```
+; *** let us allocate some memory for driver variables ***
 ; first let us set up some pointers
     LDY #D_MEM         ; how much dynamic memory is asked?
     LDA (da_ptr), Y
@@ -509,6 +511,7 @@ dyd_ok:
 ; *** end of sample code***
 ;       STA dynptr         ; free space pointer updated
 ; space allocated, proceed to relocate references
+; *** this may be used for code relocation too ***
         LDY #D_DYN         ; get offset to relocation table
         LDA (da_ptr), Y
         CLC
@@ -523,7 +526,7 @@ dyd_rel:
             ADC da_ptr         ; yes, compute actual location of address
             STA tmptr          ; store temporary pointer
             LDA (tmptr)        ; this is the generic address to be converted
-            EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
+;           EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
             CLC
             ADC dynmem         ; the location of this driver's variables
             STA (tmptr)        ; address is corrected!
