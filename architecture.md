@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-19*
+*Last update: 2018-11-20*
 
 ## Rationale
 
@@ -221,7 +221,11 @@ operations, like e. g. the *jiffy counter* size.
 A similar **modular**
 approach has been used for **firmware variables**, *statically* assigned before kernel's
 *sysvars*. After including the regular `template.h`, a particular machine may add
-any other variables as needed. 
+any other variables as needed. On the other
+hand, including these extra variables *before*
+the template may facilitate computing the
+**first address if `sysvars`** in case of a
+*dynamically linked* (loadable) kernel.
 
 ### The *Administrative Kernel*
 
