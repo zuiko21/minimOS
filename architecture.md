@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-20*
+*Last update: 2018-11-21*
 
 ## Rationale
 
@@ -221,11 +221,14 @@ operations, like e. g. the *jiffy counter* size.
 A similar **modular**
 approach has been used for **firmware variables**, *statically* assigned before kernel's
 *sysvars*. After including the regular `template.h`, a particular machine may add
-any other variables as needed. On the other
-hand, including these extra variables *before*
-the template may facilitate computing the
-**first address if `sysvars`** in case of a
+any other variables as needed. On the other hand, including these extra variables *before*
+the template may facilitate computing the **first address of `sysvars`** in case of a
 *dynamically linked* (loadable) kernel.
+
+In any case, it is worth transferring the initial address of kernel variables,
+allowing a *dynamic kernel* to **relocate itself (!)**. Since the kernel will
+start with interrupts off, it is safe to store it into the `sysptr` zeropage
+variable.
 
 ### The *Administrative Kernel*
 
