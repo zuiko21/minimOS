@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-23*
+*Last update: 2018-11-24*
 
 ## Rationale
 
@@ -600,10 +600,13 @@ the MSB might be checked in some implementations.
 
 The primitive **event management** this far expected certain *control characters*
 (^C for `SIGTERM`, ^Z for `SIGSTOP`, etc) to be received and processed via `CIN`.
-Since managing these events *within a block transfer* seems unconvenient to say the
-least, the new approach does manage them **thru the *legacy* `CIN` routine**, which is
-anyway expected to be used for human iteraction. Note that current (0.6) `READLN`
-impementation does use `CIN` internally, thus event-savvy.
+However, this old approach would disable signal receiving by *CPU-intensive* tasks.
+Thus, event management is the sole responsability of suitable **drivers**, simplified
+by the newly provided `B_EVENT` kernel function. As this will send the appropriate
+signal to the *foreground task* (and no longer to the calling PID), determining this
+becomes a new problem. As a temporary workaround (still lacking *virtual windows*)
+there are the **`B_FORE` and `GET_FG` new functions**, *in a similar fashion as
+`SET_CURR` and `GET_PID` did for multitasking*.
 
 #### Character set
 
