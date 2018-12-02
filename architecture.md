@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-11-24*
+*Last update: 2018-12-02*
 
 ## Rationale
 
@@ -228,7 +228,8 @@ the template may facilitate computing the **first address of `sysvars`** in case
 In any case, it is worth transferring the initial address of kernel variables,
 allowing a *dynamic kernel* to **relocate itself (!)**. Since the kernel will
 start with interrupts off, it is safe to store it into the `sysptr` zeropage
-variable. However, this feature can be switched on and off via the `DYNKERN` option.
+variable. As long as no variables are used before calling the relocation function,
+all will be OK. This feature can be switched on and off via the `DYNKERN` option.
 
 ### The *Administrative Kernel*
 
