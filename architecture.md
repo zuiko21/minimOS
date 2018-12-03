@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-02*
+*Last update: 2018-12-03*
 
 ## Rationale
 
@@ -534,7 +534,9 @@ dyd_rel:
             ADC da_ptr         ; yes, compute actual location of address
             STA tmptr          ; store temporary pointer
             LDA (tmptr)        ; this is the generic address to be converted
-;           EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
+; generic data addresses may start at $4000 (up to 16K), while code relocation
+; may use $8000 as base, limited to 32K... or just from zero.
+            EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
             CLC
             ADC dynmem         ; the location of this driver's variables
             STA (tmptr)        ; address is corrected!
