@@ -1,7 +1,7 @@
 ; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
 ; v0.5.2b1 like 0.5.1 but 65816-savvy
-; last modified 20180829-2134
+; last modified 20181205-1104
 ; (c) 2017-2018 Carlos J. Santisteban
 
 #include "../../OS/usual.h"
@@ -30,7 +30,7 @@ a68_head:
 	.asc	"****", 13		; some flags TBD
 ; *** filename and optional comment ***
 title:
-	.asc	"68asm", 0	; file name (mandatory)
+	.asc	"63asm", 0	; file name (mandatory)
 	.asc	"6800/6801/6301 cross-assembler for 65xx, v0.5.2", 0	; comment
 
 ; advance to end of header
