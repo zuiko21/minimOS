@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.6b7
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20180514-1207
+; last modified 20181205-1103
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -142,7 +142,7 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ;#include "shell/monitor.s"
 #ifdef	C816
 #include "../apps/crasm/80asm.s"
-#include "../apps/crasm/68asm.s"
+#include "../apps/crasm/63asm.s"
 #else
 #include "shell/miniMoDA.s"
 #endif
