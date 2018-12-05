@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-04*
+*Last update: 2018-12-05*
 
 ## Rationale
 
@@ -494,32 +494,17 @@ code may be generalized for data and code relocation*.
     LDY #D_MEM         ; how much dynamic memory is asked?
     LDA (da_ptr), Y
     BNE dd_end         ; static driver, nothing to do here
-; if arrives here, it is a dynamic driver, must first allocate requested memory
-; *** original code commented out for much better use of MALLOC/FREE ***
+; if arrived here, it is a dynamic driver, must first allocate requested memory
         STA ma_rs          ; set parameters for MALLOC
         STZ ma_align       ; *** might revise API for non-page-aligned blocks ***
-        _KERNEL(MALLOC)
-;       LDX dynptr         ; first free byte will be the start of allocated space
-;       STX dynmem         ; save for later
-;       CLC                ; A holds requested size
-;       ADC dynmem         ; base + size = new free position
-;       CMP #DYN_END       ; is there room for it?
+        _KERNEL(MALLOC)    ; successful allocation?
         BCC dyd_ok         ; yes, proceed
             _ERR(FULL)         ; no, abort driver installation 
 dyd_ok:
         LDA ma_pt          ; get pointer from MALLOC
         STA dynmem         ; store as base for relocation
-; *** must be stored in an array for later FREE call, like... ***
-;       LDX dyndrv         ; get index as number of dynamic drivers
-;       STA dynptr, X      ; store into array
-;       INC dyndrv         ; there is one more driver
-;       LDA #D_ID          ; must be associated to a particular ID
-;       LDA (da_ptr), Y    ; get ID
-;       STA dyn_id, X      ; store in list, interleaved array!!!
-; *** end of sample code***
-;       STA dynptr         ; free space pointer updated
 ; space allocated, proceed to relocate references
-; *** this may be used for code relocation too ***
+; *** this section may be used for code relocation too ***
         LDY #D_DYN         ; get offset to relocation table
         LDA (da_ptr), Y
         CLC
@@ -536,8 +521,10 @@ dyd_rel:
             LDA (tmptr)        ; this is the generic address to be converted
 ; generic data addresses may start at $4000 (up to 16K), while code relocation...
 ; ...may just start from zero, as skipping the header will provide addresses over $100
+; in any case, 65xx jumps have no zeropage addressing anyway. 68xx may need...
+; ...to make sure early jumps (or references) are assembled as full 16-bit.
 ; data relocation could start from $8000 as well, but $4000 gives it a chance to work...
-; ...on an unaware 32K RAM system!
+; ...on unaware 32K RAM systems!
             EOR #$4000         ; *** assume generic addresses start @ $4000 and no more than 16k is used ***
             CLC
             ADC dynmem         ; the location of this driver's variables
@@ -594,6 +581,9 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
     LDA (pointer), Y ; (typical use example)
     . . .
 ```
+
+65816 systems should also take care of **bank** addresses, thru a similar but
+single-byte relocation code. Long references should be much rarer, though.
 
 ### Input/Output
 
