@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-05*
+*Last update: 2018-12-06*
 
 ## Rationale
 
@@ -536,13 +536,13 @@ dd_end:
 ```
 
 Please note that, for this *and for any other relocation procedure*, should any
-data structure be used via an indirect ZP⁻pointer, it **can no longer be copied
+data structure be used via an indirect ZP⁻pointer, it **can no longer be set
 via a couple of *immediate* loads**, but the *whole, uninterrupted pointer* must
 be stored somewhere in order to allow its relocation. Typical code (no longer valid)
 that would go as follows:
 
 ```
-    LDY #<my_data    ; get LSB of data structure (dynamically allocated)
+    LDY #<my_data    ; get LSB of data structure (statically allocated)
     LDA #>my_data    ; same for MSB
     STY pointer      ; store pointer in ZP
     STA pointer+1
@@ -584,6 +584,19 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 
 65816 systems should also take care of **bank** addresses, thru a similar but
 single-byte relocation code. Long references should be much rarer, though.
+
+#### Relocation tables
+
+*Not yet implemented*, but the most reasonable way of implementing relocatable
+binaries would be an **offsets table** placed *after the code blurb*, which will
+point to any location whenever an *absolute reference* is made -- the beginning
+of this table (no need for any alignment) stored into `dyntab` ZP variable on the
+code sample above. This list must be *double-null* terminated.
+
+Actually, relocatable kernels and drivers would use **two** of these tables, pointed
+from corresponding entries on the *minimOS header*. No particular order is thus
+needed, although they could **not** be placed at the very beginning of the binary,
+as that will prevent regular code execution.
 
 ### Input/Output
 
