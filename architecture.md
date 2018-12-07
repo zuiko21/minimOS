@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-06*
+*Last update: 2018-12-07*
 
 ## Rationale
 
@@ -584,6 +584,9 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 
 65816 systems should also take care of **bank** addresses, thru a similar but
 single-byte relocation code. Long references should be much rarer, though.
+
+In order to allow *relocatable kernels*, the `RELOC` function is to be provided
+by **firmware**.
 
 #### Relocation tables
 
