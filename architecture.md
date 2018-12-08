@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-07*
+*Last update: 2018-12-08*
 
 ## Rationale
 
@@ -586,7 +586,9 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 single-byte relocation code. Long references should be much rarer, though.
 
 In order to allow *relocatable kernels*, the `RELOC` function is to be provided
-by **firmware**.
+by **firmware**. A relocatable kernel should call this *before* calling `INSTALL`
+for obvious reasons. Anyway, only the firmware shpuld be aware of the kernel's
+header and its relocation tables.
 
 #### Relocation tables
 
