@@ -1,7 +1,7 @@
-; minimOS 0.6rc18 API/ABI
+; minimOS 0.6rc19 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181023-1227
+; last modified 20181209-1233
 
 ; *************************************************
 ; *************************************************
@@ -110,6 +110,7 @@ FREQ_GEN	= POWEROFF+2	; generate square wave
 INSTALL		= FREQ_GEN+2	; copy kernel jump table
 PATCH		= INSTALL+2		; change one kernel function
 ; CONTEXT no longer used, as would be just called from a *specific* Multitasking driver
+RELOC		= PATCH+2		; relocate code and/or variables ***TBD***
 #endif
 
 ; **************************
