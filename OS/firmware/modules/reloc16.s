@@ -1,17 +1,16 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20181210-1111
+; last modified 20181210-1237
 
 ; *** relocate 65816-based code and data ***
 ; interface TBD
-; ex_pt <- code start_kernel
-
+; ex_rlc <- code start address (24b) including bank at bnk_rl (+2)
+; sv_rlc <- data start address, usually for kernel/drivers only (16b)
+; rl_tab <- pointer to list of offsets (might point to ...
 
 #ifdef	LOWRAM
 .(
 	.al: REP #$20		; save a couple bytes by going 16-bit again
-	LDA #sysvars		; beginning of kernel space
-	STA 		; set parameter
 ; must check THREE relocation tables: code (all), data (usually kernels & drivers only) and banks (for 65816)
 ; do NOT check headers here!!! use ZP parameters
 	LDA ex_pt			; get code location...
