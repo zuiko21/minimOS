@@ -1,6 +1,6 @@
-; minimOS 0.6rc7 zero-page system variables
+; minimOS 0.6rc8 zero-page system variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181029-1004
+; last modified 20181210-1230
 
 .zero
 * = 0
@@ -74,6 +74,7 @@ local3: locpt3	.dsb	4			; variables for kernel functions @ $EC
 b_sig:								; 8 bit
 bl_ptr:								; 16/24 bit ptr
 ex_pt:								; 16/24 bit ptr
+ex_rlc:								; 16/24 bit ptr, base address for relocation
 
 z10:z10W:z10L:						; old labels for compatibility
 zpar3: zaddr3	.dsb	4			; up to 4 bytes, including older names @ $F0
@@ -81,11 +82,13 @@ zpar3: zaddr3	.dsb	4			; up to 4 bytes, including older names @ $F0
 k_ram	= b_sig+1					; 8b, Kernel RAM pages (0 = 128 byte system) changed for virtua6502 compatibility
 b_ram	= b_sig+3					; 8b, Banks of "high" memory (65816 only)
 ln_siz	= b_sig+3					; 8b, maximum READLN input! eeeeeeeeeeeek
+bnk_rl	= ex_rlc+2					; 8b, bank for relocation, part of the full address
 ; *********************************************
 
 ; *** include aliases here for zpar2/zaddr2 ***
 def_io: irq_hz: da_ptr: kerntab:	; 16 bit
 ma_pt: str_pt:						; 16/24 bit pointers
+sv_rlc:								; 16 bit pointer (sysvars relocation)
 
 z6:z6W:z6L:							; old labels for compatibility
 zpar2: zaddr2	.dsb	4			; up to 4 bytes, including older names @ $F4
@@ -97,6 +100,7 @@ bl_siz	= da_ptr+2					; 16b *** was here
 io_c:  cpu_ll:						; 8 bit
 ma_rs:								; 16/24 bit
 w_rect:	up_ticks:					; 32 bit
+rl_tab:								; 16/24 bit (block of pointers to relocation tables)
 
 z2:z2W:z2L:							; old labels for compatibility
 zpar: zaddr	.dsb	4				; up to 4 bytes, including older names @ $F8
