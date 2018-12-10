@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-08*
+*Last update: 2018-12-10*
 
 ## Rationale
 
@@ -225,11 +225,10 @@ any other variables as needed. On the other hand, including these extra variable
 the template may facilitate computing the **first address of `sysvars`** in case of a
 *dynamically linked* (loadable) kernel.
 
-In any case, it is worth transferring the initial address of kernel variables,
-allowing a *dynamic kernel* to **relocate itself (!)**. Since the kernel will
-start with interrupts off, it is safe to store it into the `sysptr` zeropage
-variable. As long as no variables are used before calling the relocation function,
-all will be OK. This feature can be switched on and off via the `DYNKERN` option.
+In case such *dynamic* kernel is to be *relocated*, there is no need to
+store the initial address of **kernel variables** into the `sysptr` zeropage
+variable, as long as the `RELOC` relocation function is *called from the firmware* itself.
+This feature can be switched on and off via the `DYNKERN` option.
 
 ### The *Administrative Kernel*
 
@@ -574,7 +573,7 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 **bank zero** at least, as expected for driver memory):
 
 ```
-; 16-bit memory is assumed (or indexes in inconvenient, use LDX/STX or LDY/STY for copy instead)
+; 16-bit memory is assumed (or indexes if inconvenient, use LDX/STX or LDY/STY for copy instead)
     LDA #my_data     ; get WHOLE pointer of data structure (dynamically allocated)
     STA pointer      ; store pointer in ZP
     . . .
@@ -586,8 +585,8 @@ as **16-bit immediate** allows easy copying of a *complete* pointer (within
 single-byte relocation code. Long references should be much rarer, though.
 
 In order to allow *relocatable kernels*, the `RELOC` function is to be provided
-by **firmware**. A relocatable kernel should call this *before* calling `INSTALL`
-for obvious reasons. Anyway, only the firmware shpuld be aware of the kernel's
+by **firmware**. A relocatable kernel does **not** need to call this,
+as only the firmware should be aware of the kernel's
 header and its relocation tables.
 
 #### Relocation tables
@@ -602,6 +601,9 @@ Actually, relocatable kernels and drivers would use **two** of these tables, poi
 from corresponding entries on the *minimOS header*. No particular order is thus
 needed, although they could **not** be placed at the very beginning of the binary,
 as that will prevent regular code execution.
+
+As noted above, 65816 code must provide a *third* relocation table, just for **bank addresses**.
+A modified algorithm will only adapt single bytes as pointed. These should be much less anyway.
 
 ### Input/Output
 
@@ -766,12 +768,13 @@ To be done.
 
 ### Relocatable format
 
-Although **not yes implemented** as of 2018-06-05, a *relocatable format* has been thought of.
+Although **not yet implemented** as of 2018-06-05, a *relocatable format* has been thought of.
 In a similar way as already described for *dynamic drivers*, the most reasonable way could be
 adding a **list of offsets** where the *generic* addresses are referenced, then upon load time
-adding the base address to them. In order to avoid problems with *fake zero-page* references,
-these generic addresses may start at **$8000**, similarly to dynamic driver generic accesses
-to $4000 and beyond. The relocation algorithm has been already described there.
+adding the base address to them. 65xx code is unlikely to generate *fake zero-page* references,
+thus generic addresses may **start at $0**, unlike dynamic *data* addresses which are set
+to $4000 and beyond. The relocation algorithm has been already described on the dynamic driver
+section.
 
 ## The LOWRAM option
 
