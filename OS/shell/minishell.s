@@ -10,7 +10,7 @@
 
 .(
 ; *** constant definitions ***
-BUFSIZ		= 32
+BUFSIZ		= 16
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc17
+; v0.6rc18
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181023-1230
+; last modified 20181211-0958
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -167,7 +167,7 @@ cio_dev:				; old label location
 ;	ASL					; two times (2)
 ;	TAX					; index for address table!
 ;	BNE cio_in			; not zero is input
-; no support yext for optimised direct jumps...
+; no support yet for optimised direct jumps...
 ;		JMPX(drv_opt)		; optimised direct jump, new for 0.6
 ;cio_in:
 ;	JMPX(drv_ipt)
@@ -179,12 +179,25 @@ cio_idsc:
 		STA da_ptr+1
 		LDA drvrs_ad, X		; take table LSB (4)
 		STA da_ptr			; store pointer (3)
+;lda da_ptr+1
+;jsr debug_hex
+;lda da_ptr
+;jsr debug_hex
+lda#'?':jsr$c0c2
+lda iol_dev:jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
+;tay:lda#'#':jsr$c0c2:tya
+;jsr debug_hex
+;cmp (da_ptr),y
 		CMP iol_dev			; *desired?
 			BEQ cio_idok		; *yeah
 		INX					; *no, go next
 		INX					; *eeeeeeeeeeeeeek
+;lda#'X'
+;jsr $c0c2
+;txa
+;jsr debug_hex
 		BNE cio_idsc
 		BEQ cio_nfound		; ? did not found the end of the driver list, should not happen...
 cio_idok:
