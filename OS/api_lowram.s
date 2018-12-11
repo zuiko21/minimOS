@@ -172,6 +172,8 @@ cio_dev:				; old label location
 ;cio_in:
 ;	JMPX(drv_ipt)
 ; awful loop in the meanwhile
+lda#$84
+sta driver0
 	LDX #0
 cio_idsc:
 		LDA drvrs_ad+1, X	; same for MSB
