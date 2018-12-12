@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc18
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181211-0958
+; last modified 20181212-1033
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -185,8 +185,8 @@ cio_idsc:
 ;jsr debug_hex
 ;lda da_ptr
 ;jsr debug_hex
-lda#'?':jsr$c0c2
-lda iol_dev:jsr debug_hex
+;lda#'?':jsr$c0c2
+;lda iol_dev:jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
 ;tay:lda#'#':jsr$c0c2:tya
@@ -207,8 +207,8 @@ cio_idok:
 	JMP dr_call			; re-use routine (3...)
 
 cio_nfound2
-lda#'~';list at drvrs_ad ended unexpectedly
-jsr$c0c2
+;lda#'~';list at drvrs_ad ended unexpectedly
+;jsr$c0c2
 jmp cio_nfound
 ; *****************************
 ; *** CIN,  get a character ***
