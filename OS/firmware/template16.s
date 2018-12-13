@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6a11
+; v0.6b12
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181101-1851
+; last modified 20181213-1027
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -14,19 +14,19 @@
 ; *************************************
 ; this is expected to be loaded at an aligned address anyway
 fw_start:
-	.asc 0, "mV", 13			; standard system file wrapper, new 20161010, experimental type
+	.asc 0, "mV"				; standard system file wrapper, new 20161010, experimental type
 	.asc "****", CR				; flags TBD eeeeeeeeeeeeeeeeeeeeeeeeeek
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "65816 0.6a11 firmware for "	; machine description as comment
+	.asc "65816 firmware 0.6b12 for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
-; advance to end of header
+; advance to end of header (may need extra fields for relocation)
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4DA0				; time, 09.45
-	.word	$4C45				; date, 2018/2/5
+	.word	$53C0				; time, 10.30
+	.word	$4D8D				; date, 2018/12/13
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6a11 FW@"
+	.asc	"0.6b12 FW@"
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -48,7 +48,7 @@ fw_mname:
 ; *********************************
 ; *********************************
 fw_admin:
-#ifndef	FAST_FW
+#ifndef		FAST_FW
 ; generic functions, esp. interrupt related
 	.word	gestalt		; GESTALT get system info (renumbered)
 	.word	set_isr		; SET_ISR set IRQ vector
@@ -64,16 +64,24 @@ fw_admin:
 ; 65816 systems are always highly-specced...
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
+	.word	reloc		; RELOCate code and data (TBD)
 #endif
+
+
+; some room for unimplemented functions
+#ifdef	SAFE
+missing:
+		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
+#endif
+
+
 
 ; **************************
 ; **************************
 ; ****** cold restart ******
 ; **************************
 ; **************************
-
 	.as:.xs				; to be sure!
-
 reset:
 ; *** basic init ***
 #include "modules/basic_init16.s"
@@ -81,14 +89,10 @@ reset:
 ; ******************************
 ; *** minimal hardware setup ***
 ; ******************************
-
+; specific 65816 code *** as this firmware should be 65816-only, this will go back to native mode!
+#include "modules/816_check.s"
 ; check for VIA presence and disable all interrupts
 #include "modules/viacheck_irq.s"
-
-; *** specific 65816 code ***
-; as this firmware should be 65816-only, go back to native mode!
-#include "modules/816_check.s"
-; it can be assumed 65816 from this point on
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -122,9 +126,13 @@ reset:
 
 ; *** set default CPU type ***
 #include "modules/default_816.s"
-; as this is the only valid CPU for this firmware, no further checking necessary
 
-; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
+; as this is the only valid CPU for this firmware, no actual checking necessary
+
+
+
+
+; *** *** continue parameter setting, worth switching to 16-bit memory while setting pointers *** ***
 	.al: REP #$20
 
 ; preset kernel start address
@@ -135,7 +143,6 @@ reset:
 
 ; no need to set NMI as it will be validated
 
-
 ; preset jiffy irq frequency
 #include "modules/jiffy_hz16.s"
 
@@ -145,14 +152,16 @@ reset:
 ; reset last installed kernel (new)
 #include "modules/rst_lastk16.s"
 
-; *** back to 8-bit memory ***
+; *** *** back to 8-bit memory *** ***
 	.as: SEP #$20
+
+; *** direct print splash string code comes here, when available ***
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
 ;#include "modules/netboot.s"
 
-; *** direct print splash string code comes here, when available ***
+; *** possible kernel RELOCation should be done here ***
 
 ; ************************
 ; *** start the kernel ***
@@ -186,7 +195,6 @@ irq:
 ; ****************************
 brk_hndl:
 #include "modules/brk_hndl16.s"
-
 ; ******************************************************
 ; *** minimOS·16 kernel call interface (COP handler) ***
 ; ******************************************************
@@ -256,7 +264,6 @@ freq_gen:
 ;#include "modules/freq_gen16.s"
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
-; *** other functions with RAM enough ***
 
 ; **************************
 ; INSTALL, supply jump table
@@ -270,6 +277,11 @@ install:
 patch:
 #include "modules/patch16.s"
 
+; *******************************
+; RELOC, data and code relocation *** TBD
+; *******************************
+reloc:
+;#include "modules/reloc16.s"
 
 ; ***********************************
 ; ***********************************
@@ -280,10 +292,13 @@ patch:
 ; *** memory map, as used by gestalt, not sure what to do with it ***
 fw_map:					; TO BE DONE
 
+; ************************************************************************
+; ************************************************************************
+; ************************************************************************
 
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
-#ifdef	ROM
+#ifdef		ROM
 	.dsb	kerncall-*, $FF
 #endif
 
@@ -308,6 +323,8 @@ fw_map:					; TO BE DONE
 #endif
 
 ; *** administrative meta-kernel call primitive for apps ($FFD0) ***
+; really needed on 65816 systems, for the sake of binary compatibility
+; does not jump to $FFDA, not worth more overhead than it already does
 * = adm_appc
 #ifndef	FAST_FW
 	PHB						; could came from any bank
@@ -318,13 +335,12 @@ fw_map:					; TO BE DONE
 	RTL						; ...and return from long address!
 #endif
 
-; *** above code takes -8- bytes, thus no room for padding! ***
 ; filling for ready-to-blow ROM
-;#ifdef	ROM
-;	.dsb	adm_call-*, $FF
-;#endif
+#ifdef	ROM
+	.dsb	adm_call-*, $FF
+#endif
 
-; *** administrative meta-kernel call primitive ($FFD8) ***
+; *** administrative meta-kernel call primitive ($FFDA) ***
 * = adm_call
 #ifndef	FAST_FW
 	JMP (fw_admin, X)		; takes 5 clocks and 3 bytes, kernel/drivers only!

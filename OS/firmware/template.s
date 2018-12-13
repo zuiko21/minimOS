@@ -1,7 +1,7 @@
-; generic firmware template for minimOS·65
-; v0.6b11
+; more-or-less generic firmware template for minimOS·65
+; v0.6b12
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181101-1850
+; last modified 20181213-1027
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -18,15 +18,15 @@ fw_start:
 	.asc "****", CR				; flags TBD
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "0.6b10 firmware for "	; machine description as comment
+	.asc "0.6b12 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
-; advance to end of header
+; advance to end of header (may need extra fields for relocation)
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4DA0				; time, 09.45
-	.word	$4C45				; date, 2018/2/5
+	.word	$53C0				; time, 10.30
+	.word	$4D8D				; date, 2018/12/13
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.6b10 FW@"
+	.asc	"0.6b12 FW@"
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -60,16 +60,16 @@ fw_admin:
 ; pretty hardware specific
 	.word	poweroff	; POWEROFF power-off, suspend or cold boot
 	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
-
 ; not for LOWRAM systems
 #ifndef	LOWRAM
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
+	.word	reloc		; RELOCate code and data (TBD)
 #else
 #ifdef	SAFE
 	.word	missing		; these three functions not implemented on such systems
 	.word	missing
-
+	.word	missing
 missing:
 		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
 #endif
@@ -89,6 +89,7 @@ reset:
 ; ******************************
 ; *** minimal hardware setup ***
 ; ******************************
+; 65x02 does not need to deal with native vs. emulation mode
 
 ; check for VIA presence and disable all interrupts
 #include "modules/viacheck_irq.s"
@@ -142,7 +143,6 @@ reset:
 
 ; no need to set NMI as it will be validated
 
-
 ; preset jiffy irq frequency
 #include "modules/jiffy_hz.s"
 
@@ -152,17 +152,22 @@ reset:
 ; reset last installed kernel (new)
 #include "modules/rst_lastk.s"
 
-; *** direct print splash string code comes here, when available ***
 
+
+
+; *** direct print splash string code comes here, when available ***
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
 ;#include "modules/netboot.s"
 
+; *** possible kernel RELOCation should be done here ***
+
 ; ************************
 ; *** start the kernel ***
 ; ************************
 start_kernel:
+
 #include "modules/start.s"
 
 
@@ -185,11 +190,16 @@ nmi:
 irq:
 #include "modules/irq_hndl.s"
 
-; ***************************
-; *** minimOS BRK handler ***
-; ***************************
+; ****************************
+; *** vectored BRK handler ***
+; ****************************
 brk_hndl:				; label from vector list
 #include "modules/brk_hndl.s"
+
+; *** *** 65x02 does has no use for a COP handler *** ***
+
+
+
 
 
 ; ********************************
@@ -254,7 +264,7 @@ freq_gen:
 ;#include "modules/freq_gen16.s"
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
-; *** other functions with RAM enough ***
+; *** other functions for systems with RAM enough ***
 ; **************************
 ; INSTALL, supply jump table
 ; **************************
@@ -267,6 +277,12 @@ install:
 patch:
 #include "modules/patch.s"
 
+; *******************************
+; RELOC, data and code relocation *** TBD
+; *******************************
+reloc:
+;#include "modules/reloc.s"
+
 ; ***********************************
 ; ***********************************
 ; *** some firmware odds and ends ***
@@ -275,7 +291,6 @@ patch:
 
 ; *** memory map, as used by gestalt, not sure what to do with it ***
 fw_map:					; TO BE DONE
-
 
 ; ************************************************************************
 ; ************************************************************************
@@ -297,6 +312,11 @@ fw_map:					; TO BE DONE
 	_JMPX(fw_table)		; macro for NMOS compatibility (6) this will be a wrapper on 816 firmware!
 #endif
 
+
+
+
+
+
 ; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
@@ -304,11 +324,16 @@ fw_map:					; TO BE DONE
 
 ; *** administrative meta-kernel call primitive for apps ($FFD0) ***
 ; not really needed on 6502 systems, but kept for the sake of binary compatibility
-; pretty much the same code at $FFD8, not worth more overhead
+; pretty much the same code at $FFDA, not worth more overhead
 * = adm_appc
 #ifndef	FAST_FW
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
 #endif
+
+; 65816 need to do some extra stuff, but check anyway NMOS option, as may not have room enough!
+
+
+
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -333,7 +358,7 @@ fw_map:					; TO BE DONE
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
 
-; *** 65C816 ROM vectors ***
+; *** 65C816 ROM vectors, just in case ***
 * = $FFE4				; should be already at it
 	.word	lock		; native COP		@ $FFE4
 	.word	lock		; native BRK		@ $FFE6
