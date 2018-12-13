@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6b12
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181213-1027
+; last modified 20181213-1104
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -296,6 +296,9 @@ fw_map:					; TO BE DONE
 ; ************************************************************************
 ; ************************************************************************
 
+; no NMOS option here, thus ADMIN & U_ADM handlers have room enough!
+
+
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -345,6 +348,9 @@ fw_map:					; TO BE DONE
 #ifndef	FAST_FW
 	JMP (fw_admin, X)		; takes 5 clocks and 3 bytes, kernel/drivers only!
 #endif
+
+
+
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM

@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
 ; v0.6b12
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181213-1027
+; last modified 20181213-1104
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -292,10 +292,13 @@ reloc:
 ; *** memory map, as used by gestalt, not sure what to do with it ***
 fw_map:					; TO BE DONE
 
-; ************************************************************************
-; ************************************************************************
-; ************************************************************************
-
+; *** NMOS version needs large ADMIN call back here! ***
+#ifndef	FAST_FW
+#ifdef	NMOS
+nmos_adc:
+	_JMPX(fw_admin)		; takes a lot of clocks
+#endif
+#endif
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -327,25 +330,28 @@ fw_map:					; TO BE DONE
 ; pretty much the same code at $FFDA, not worth more overhead
 * = adm_appc
 #ifndef	FAST_FW
+#ifndef	NMOS
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#else
+	JMP nmos_adc		; needed overhead as takes 10 bytes!
 #endif
-
-; 65816 need to do some extra stuff, but check anyway NMOS option, as may not have room enough!
-
-
-
+#endif
+; 65816 need to do some extra stuff, but this must check anyway NMOS option, as may not have room enough!
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
 	.dsb	adm_call-*, $FF
 #endif
 
-; *** administrative meta-kernel call primitive ($FFD8) ***
+; *** administrative meta-kernel call primitive ($FFDA) ***
 * = adm_call
 #ifndef	FAST_FW
+#ifndef	NMOS
 	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#else
+	JMP nmos_adc		; needed overhead as takes 10 bytes!
 #endif
-
+#endif
 ; filling for ready-to-blow ROM
 #ifdef	ROM
 	.dsb	lock-*, $FF
