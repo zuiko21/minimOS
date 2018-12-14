@@ -1,7 +1,7 @@
 ; minimOS BRK handler
-; v0.5.1rc3
+; v0.5.1rc4
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181024-0914
+; last modified 20181214-1640
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -17,32 +17,27 @@ lda#'K':jsr$c0c2
 	JSR brk_cr		; worth it
 ; let us get the original return address
 ; *** think about a padding byte on any BRK call, would make life much simpler!
+; should this code depend on the status of E bit instead??
 #ifndef	C816
 ; regular 6502 code
 	TSX				; current stack pointer
-	LDA $0109, X	; get MSB (note offset below)
-	LDY $0108, X	; get LSB+1
-	BNE brk_nw		; will not wrap upon decrement!
-		_DEC			; otherwise correct MSB
-brk_nw:
-; ************************************ check regs
+	LDY $0109, X	; get MSB (note offset below)
+	LDA $0108, X	; get LSB+1
 #else
-; 65816 code saves... one byte
-	LDA 14, s		; get buried LSB eeeeeeeeeeeeeeeek
-	TAY				; hold it
-	LDA 15, s		; get buried MSB
-	TAX				; ...no LDY,s!
+; 65816 code was 14 bytes (actually 15)
 	LDA 16, s		; bank too eeeeeeek^2
 	STA systmp		; store after 16b pointer
-	TYA				; check LSB for later
-	BNE brk_nw		; will not wrap upon decrement!
-		DEX				; otherwise correct MSB
-brk_nw:
+	LDA 15, s		; get buried MSB
+	TAY				; ...no LDX,s!
+	LDA 14, s		; get buried LSB eeeeeeeeeeeeeeeek
 #endif
-	DEY				; back to signature address
-; A/Y points to beginning of string
-	STX sysptr+1	; prepare internal pointer, should it be saved for reentrancy?
-	STY sysptr
+	BNE brk_nw		; will not wrap upon decrement!
+		DEY				; otherwise correct MSB
+brk_nw:
+	_DEC				; back to signature address
+; Y/A points to beginning of string
+	STY sysptr+1	; prepare internal pointer, should it be saved for reentrancy?
+	STA sysptr
 	LDY #0			; eeeeeeeeeeeeeeeeeek
 brk_ploop:
 		_PHY			; save cursor
