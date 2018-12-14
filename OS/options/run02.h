@@ -3,12 +3,12 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017-2018 Carlos J. Santisteban
-; last modified 20180901-2156
+; last modified 20181214-1145
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
 #define		LOWRAM	_LOWRAM
 
@@ -16,7 +16,7 @@
 ;#define		FAST_FW		_FAST_FW
 
 ; new option for mutable IDs, most likely mandatory!
-#define		MUTABLE		_MUTABLE
+;#define		MUTABLE		_MUTABLE
 
 ; enable in order to remove headers, not LOADLINK savvy!
 ;#define		NOHEAD	_NOHEAD
@@ -104,8 +104,8 @@ ZP_AVAIL	=	$DF		; two bytes less for the 6510
 ; rare lowram version for testing purposes
 SRAM		=	0
 SPTR		=	$63		; (previously $75) MTE and other 128-byte RAM systems!
-SYSRAM		=	$28		; for 128-byte systems, reduced value 20150210
-ZP_AVAIL	=	$25
+SYSRAM		=	$20		; for 128-byte systems, reduced value 20150210 (should be $28)
+ZP_AVAIL	=	SYSRAM-3
 #endif
 
 ; *** speed definitions ***

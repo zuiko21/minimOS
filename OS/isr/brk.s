@@ -9,10 +9,10 @@
 
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
-/*lda#'b':jsr$c0c2
-lda#'r':jsr$c0c2
-lda#'k':jsr$c0c2
-*/
+lda#'B':jsr$c0c2
+lda#'R':jsr$c0c2
+lda#'K':jsr$c0c2
+
 ; first of all, send a CR to default device
 	JSR brk_cr		; worth it
 ; let us get the original return address
@@ -62,15 +62,22 @@ brk_prn:
 brk_term:
 	JSR brk_cr		; another newline
 ; we are done, should call debugger if desired, otherwise we will just lock
+lda#'D':jsr$c0c2
+lda#'i':jsr$c0c2
+lda#'e':jsr$c0c2
+lda#'!':jsr$c0c2
+
 	JMP lock		; let the system DIE
 ;	RTS				; *** otherwise let it finish the ISR
 
 ; send a newline to default device
 brk_cr:
-//lda#'c':jsr$c0c2
-//lda#'r':jsr$c0c2
+lda#'c':jsr$c0c2
+lda#'r':jsr$c0c2
 	LDA #CR
 brk_out:
+jsr$c0c2
+rts
 	LDY #0			; default
 	STA io_c		; kernel parameter
 	_KERNEL(COUT)	; system call

@@ -150,6 +150,8 @@ co_port:
 		_STZA bl_siz+1		; null transfers always complete
 		_EXIT_OK			; "/dev/null" is always OK
 cio_phys:
+;lda cio_of:jsr debug_hex
+tya:jsr debug_hex
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
 	STY iol_dev			; need to save this
 #ifdef	SAFE
@@ -159,6 +161,10 @@ cio_phys:
 	AND drv_en			; compare against enabled mask
 	BNE cio_dev			; device is not disabled
 cio_nfound:
+lda#'d':jsr$c0c2
+lda#'e':jsr$c0c2
+lda#'v':jsr$c0c2
+
 		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
 ;	LDY cio_of			; want input or output?
@@ -172,8 +178,6 @@ cio_dev:				; old label location
 ;cio_in:
 ;	JMPX(drv_ipt)
 ; awful loop in the meanwhile
-lda#$84
-sta driver0
 	LDX #0
 cio_idsc:
 		LDA drvrs_ad+1, X	; same for MSB
@@ -189,8 +193,9 @@ cio_idsc:
 ;lda iol_dev:jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
-;tay:lda#'#':jsr$c0c2:tya
-;jsr debug_hex
+lda#$84:sta driver0
+tay:lda#'#':jsr$c0c2:tya
+jsr debug_hex
 ;cmp (da_ptr),y
 		CMP iol_dev			; *desired?
 			BEQ cio_idok		; *yeah
@@ -207,8 +212,8 @@ cio_idok:
 	JMP dr_call			; re-use routine (3...)
 
 cio_nfound2
-;lda#'~';list at drvrs_ad ended unexpectedly
-;jsr$c0c2
+lda#'~';list at drvrs_ad ended unexpectedly
+jsr$c0c2
 jmp cio_nfound
 ; *****************************
 ; *** CIN,  get a character ***
@@ -221,23 +226,15 @@ jmp cio_nfound
 ;		USES BLIN
 
 cin:
+lda#'i':jsr$c0c2
 	LDA #io_c			; will point to parameter
 	STA bl_ptr			; set pointer
 	_STZA bl_ptr+1
 	LDA #1				; single byte
 	STA bl_siz			; set counter
 	_STZA bl_siz+1
-	JSR blin			; proceed...
-		BCS ci_exit			; ...or return error
-; ** EVENT management **
-	LDA io_c			; get received character
-;	CMP #' '			; printable?
-;	BCC ci_manage		; if not, might be an event
-;ci_exitOK:
-	CLC					; otherwise, no error --- eeeeeeeek!
-ci_exit:
-	RTS					; above comparison would set carry
-; ** event management no longer here **
+;	JMP blin			; proceed... and return
+; ** event management no longer here ** may just fall into BLIN!
 
 ; *************************
 ; *** BLIN, block input ***
@@ -255,10 +252,11 @@ blin:
 #ifdef	SAFE
 	LDA bl_siz		; how many?
 	ORA bl_siz+1
-	BEQ bli_ok		; empty perhaps? eeeeeek
+	BNE bli_ok		; empty perhaps? eeeeeek^2
 		_EXIT_OK		; nothing to do
 bli_ok:
 #endif
+lda#'I':jsr$c0c2
 	LDA #D_BLIN			; only difference from bout
 	STA cio_of			; store for further addition, or just check as not zero
 	TYA					; for indexed comparisons
@@ -710,10 +708,6 @@ str_end:
 ;		USES rl_dev, rl_cur and whatever CIN takes
 
 readln:
-lda#'n':jsr$c0c2
-lda#'e':jsr$c0c2
-lda#'l':jsr$c0c2
-
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
@@ -722,10 +716,12 @@ rl_l:
 		JSR cin				; get one character
 lda#".":jsr$c0c2
 		BCC rl_rcv			; got something
+lda#'C':jsr$c0c2
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
+lda#'E':jsr$c0c2
 			LDA #0
-			_STAX(str_pt)		; if any other error, terminate string
+			_STAX(str_pt)		; if any other error, CLEAR and terminate string
 			RTS					; and return whatever error
 rl_rcv:
 		LDA io_c			; get received
@@ -740,13 +736,23 @@ rl_rcv:
 			_BRA rl_echo		; and resume operation
 rl_nbs:
 		CPY ln_siz			; overflow? EEEEEEEEEEK
-			BCS rl_l			; ignore if so
+		bne rlllll
+lda#'!':jsr$c0c2
+jmp rl_l
+			BEQ rl_l			; ignore if so (was BCS)
+rlllll
 		STA (str_pt), Y		; store into buffer
+lda#'+':jsr$c0c2
 		INC	rl_cur			; update index
 rl_echo:
 		LDY rl_dev			; retrieve device
 		JSR cout			; echo received character
-lda#"+":jsr$c0c2
+lda#'#':jsr$c0c2
+lda io_c:jsr$c0c2
+lda#'b':jsr$c0c2
+lda#'r':jsr$c0c2
+lda#'a':jsr$c0c2
+
 		_BRA rl_l			; and continue
 rl_cr:
 lda#'c':jsr$c0c2
@@ -758,7 +764,6 @@ lda#'r':jsr$c0c2
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
 	_EXIT_OK			; and all done!
-
 
 ; ***********************************************************
 ; *** SHUTDOWN, proper shutdown, with or without poweroff ***
