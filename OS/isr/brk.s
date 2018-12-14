@@ -9,7 +9,10 @@
 
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
-
+/*lda#'b':jsr$c0c2
+lda#'r':jsr$c0c2
+lda#'k':jsr$c0c2
+*/
 ; first of all, send a CR to default device
 	JSR brk_cr		; worth it
 ; let us get the original return address
@@ -64,6 +67,8 @@ brk_term:
 
 ; send a newline to default device
 brk_cr:
+//lda#'c':jsr$c0c2
+//lda#'r':jsr$c0c2
 	LDA #CR
 brk_out:
 	LDY #0			; default

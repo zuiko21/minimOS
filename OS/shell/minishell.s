@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20180516-1233
+; last modified 20181214-1004
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -85,6 +85,9 @@ main_loop:
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
 		JSR getLine			; input a line
+lda#'g':jsr$c0c2
+lda#'o':jsr$c0c2
+lda#'t':jsr$c0c2
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
@@ -177,7 +180,14 @@ getLine:
 	LDX #BUFSIZ-1		; maximum offset
 	STX ln_siz
 	LDY iodev			; use standard device
+lda#'k':jsr$c0c2
+lda#'e':jsr$c0c2
+lda#'r':jsr$c0c2
 	_KERNEL(READLN)		; get string
+lda#'r':jsr$c0c2
+lda#'t':jsr$c0c2
+lda#'s':jsr$c0c2
+
 	RTS					; and all done!
 
 
