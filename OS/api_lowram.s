@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc18
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181212-1033
+; last modified 20181214-1015
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -710,12 +710,17 @@ str_end:
 ;		USES rl_dev, rl_cur and whatever CIN takes
 
 readln:
+lda#'n':jsr$c0c2
+lda#'e':jsr$c0c2
+lda#'l':jsr$c0c2
+
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
 		JSR b_yield			; always useful!
 		LDY rl_dev			; use device
 		JSR cin				; get one character
+lda#".":jsr$c0c2
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
@@ -741,8 +746,11 @@ rl_nbs:
 rl_echo:
 		LDY rl_dev			; retrieve device
 		JSR cout			; echo received character
+lda#"+":jsr$c0c2
 		_BRA rl_l			; and continue
 rl_cr:
+lda#'c':jsr$c0c2
+lda#'r':jsr$c0c2
 	LDA #CR				; newline
 	LDY rl_dev			; retrieve device
 	JSR cout			; print newline (ignoring errors)
