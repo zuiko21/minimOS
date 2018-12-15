@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
 ; v0.6b13
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181215-1726
+; last modified 20181215-1750
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -367,17 +367,18 @@ panic_loop:
 * = $FFE4				; should be already at it
 #ifdef	SAFE
 ; *** 65C816 ROM vectors, just in case ***
-	.word	lock		; native COP		@ $FFE4
-	.word	lock		; native BRK		@ $FFE6
-	.word	lock		; native ABORT		@ $FFE8
-	.word	lock		; native NMI		@ $FFEA
-	.word	$FFFF		; reserved			@ $FFEC
-	.word	lock		; native IRQ		@ $FFEE
+	.word	aborted		; native COP		@ $FFE4
+	.word	aborted		; native BRK		@ $FFE6
+	.word	aborted		; native ABORT		@ $FFE8
+	.word	aborted		; native NMI		@ $FFEA
+aborted:
+	.word	$FF40		; reserved (*)		@ $FFEC holds RTI!
+	.word	aborted		; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4
+	.word	aborted		; emulated COP		@ $FFF4
 	.word	$FFFF		; reserved			@ $FFF6
-	.word	nmi			; emulated ABORT 	@ $FFF8
+	.word	aborted		; emulated ABORT 	@ $FFF8
 #else
 #ifdef	ROM
 	.dsb	$FFFA-*, $FF

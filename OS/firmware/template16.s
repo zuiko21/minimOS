@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6b12
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181213-1104
+; last modified 20181215-1745
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -368,20 +368,21 @@ panic_loop:
 * = $FFE4				; should be already at it
 	.word	cop_hndl	; native COP		@ $FFE4
 	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
-	.word	nmi			; native ABORT		@ $FFE8, not yet supported
-	.word	nmi			; native NMI		@ $FFEA, unified this far
-	.word	$FFFF		; reserved			@ $FFEC
-	.word	irq			; native IRQ		@ $FFEE, unified this far
+	.word	aborted		; native ABORT		@ $FFE8, not yet supported
+	.word	nmi			; native NMI		@ $FFEA, unified?
+aborted:
+	.word	$FF40		; reserved (*)			@ $FFEC holds RTI!
+	.word	irq			; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4
+	.word	nmi			; emulated COP		@ $FFF4, error
 	.word	$FFFF		; reserved			@ $FFF6
-	.word	nmi			; emulated ABORT 	@ $FFF8
+	.word	aborted			; emulated ABORT 	@ $FFF8, not supported
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; (emulated) NMI	@ $FFFA
-	.word	reset		; (emulated) RST	@ $FFFC
-	.word	irq			; (emulated) IRQ	@ $FFFE
+	.word	nmi			; (emulated) NMI	@ $FFFA, unified?
+	.word	reset		; standard RST		@ $FFFC
+	.word	aborted		; (emulated) IRQ	@ $FFFE, not available
 
 fw_end:					; for size computation
 .)
