@@ -1,7 +1,7 @@
 ; minimOS BRK handler
-; v0.5.1rc4
+; v0.5.1rc5
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181214-1640
+; last modified 20181215-1628
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -18,6 +18,7 @@ lda#'K':jsr$c0c2
 ; let us get the original return address
 ; *** think about a padding byte on any BRK call, would make life much simpler!
 ; should this code depend on the status of E bit instead??
+; actually, the 816 bits should get into brk16.s
 #ifndef	C816
 ; regular 6502 code
 	TSX				; current stack pointer
@@ -46,15 +47,17 @@ brk_ploop:
 #else
 		LDA (sysptr), Y	; get current char
 #endif
-		BNE brk_prn		; more text to show, unfortunately NMOS macro needs this instead of BEQ brk_term
-			PLA				; otherwise discard saved counter
-			_BRA brk_term	; and finish printed line
-brk_prn:
+			BEQ brk_term	; if ended, finish printed line
 		JSR brk_out		; send out character! saves 6 bytes
 		_PLY			; restore counter
 		INY				; next in string
 		BNE brk_ploop	; this version will not print over 256 chars!
+#ifdef	SAFE
+		BEQ brk_end		; string too long, should never arrive
+#endif
 brk_term:
+	PLA				; discard saved counter
+brk_end:
 	JSR brk_cr		; another newline
 ; we are done, should call debugger if desired, otherwise we will just lock
 lda#'D':jsr$c0c2
@@ -73,7 +76,7 @@ lda#'r':jsr$c0c2
 brk_out:
 jsr$c0c2
 rts
-	LDY #0			; default
-	STA io_c		; kernel parameter
-	_KERNEL(COUT)	; system call
-	RTS
+;	LDY #0			; default
+;	STA io_c		; kernel parameter
+;	KERNEL(COUT)	; system call
+;	RTS
