@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
-; v0.6b12
+; v0.6b13
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181213-1104
+; last modified 20181215-1726
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -364,8 +364,9 @@ nmos_adc:
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
 
-; *** 65C816 ROM vectors, just in case ***
 * = $FFE4				; should be already at it
+#ifdef	SAFE
+; *** 65C816 ROM vectors, just in case ***
 	.word	lock		; native COP		@ $FFE4
 	.word	lock		; native BRK		@ $FFE6
 	.word	lock		; native ABORT		@ $FFE8
@@ -377,11 +378,16 @@ panic_loop:
 	.word	nmi			; emulated COP		@ $FFF4
 	.word	$FFFF		; reserved			@ $FFF6
 	.word	nmi			; emulated ABORT 	@ $FFF8
+#else
+#ifdef	ROM
+	.dsb	$FFFA-*, $FF
+#endif
+#endif
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; (emulated) NMI	@ $FFFA
-	.word	reset		; (emulated) RST	@ $FFFC
-	.word	irq			; (emulated) IRQ	@ $FFFE
+	.word	nmi			; NMI	@ $FFFA
+	.word	reset		; RST	@ $FFFC
+	.word	irq			; IRQ	@ $FFFE
 
 fw_end:					; for size computation
 .)
