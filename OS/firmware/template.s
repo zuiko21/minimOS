@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
 ; v0.6b13
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181215-1750
+; last modified 20181216-2200
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -358,8 +358,10 @@ nmos_adc:
 #endif
 
 ; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
+; may be suited to any particular machine after disabling interrupts
 * = lock
 	SEI					; reunified procedure 20181101
+; *** jump to a suitable lock routine if needed ***
 	SEC
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC

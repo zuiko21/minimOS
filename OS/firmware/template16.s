@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6b12
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181215-1745
+; last modified 20181216-2200
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -358,8 +358,10 @@ fw_map:					; TO BE DONE
 #endif
 
 ; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
+; may be changed for a particular machine after disabling interrupts
 * = lock
 	SEI					; reunified procedure 20181101
+; *** jump to specific lock routine from here ***
 	SEC
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
