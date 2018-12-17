@@ -1,7 +1,7 @@
 ; minimOS BRK handler
-; v0.5.1rc5
+; v0.6a2, bumped as per 816 version
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181215-1628
+; last modified 20181217-0934
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -17,21 +17,9 @@ lda#'K':jsr$c0c2
 	JSR brk_cr		; worth it
 ; let us get the original return address
 ; *** think about a padding byte on any BRK call, would make life much simpler!
-; should this code depend on the status of E bit instead??
-; actually, the 816 bits should get into brk16.s
-#ifndef	C816
-; regular 6502 code
 	TSX				; current stack pointer
 	LDY $0109, X	; get MSB (note offset below)
 	LDA $0108, X	; get LSB+1
-#else
-; 65816 code was 14 bytes (actually 15)
-	LDA 16, s		; bank too eeeeeeek^2
-	STA systmp		; store after 16b pointer
-	LDA 15, s		; get buried MSB
-	TAY				; ...no LDX,s!
-	LDA 14, s		; get buried LSB eeeeeeeeeeeeeeeek
-#endif
 	BNE brk_nw		; will not wrap upon decrement!
 		DEY				; otherwise correct MSB
 brk_nw:
@@ -42,11 +30,7 @@ brk_nw:
 	LDY #0			; eeeeeeeeeeeeeeeeeek
 brk_ploop:
 		_PHY			; save cursor
-#ifdef	C816
-		LDA [sysptr], Y	; get current char
-#else
 		LDA (sysptr), Y	; get current char
-#endif
 			BEQ brk_term	; if ended, finish printed line
 		JSR brk_out		; send out character! saves 6 bytes
 		_PLY			; restore counter
