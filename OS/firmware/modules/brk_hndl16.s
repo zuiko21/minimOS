@@ -11,13 +11,13 @@
 	PHX
 	PHY
 	PHB					; eeeeeeeeeek (3)
-; make sure we work on bank zero eeeeeeeeek
-	PHK					; stack a 0...
-	PLB					; ...for data bank
+; make sure we work on bank zero eeeeeeeeek ...but not really needed as JMP[abs] takes pointer from bank zero!
+;	PHK					; stack a 0...
+;	PLB					; ...for data bank
 ; *** new NMI-like stack frame, easier on debuggers ***
 	.xs: SEP #$10		; *** back to 8-bit indexes ***
-	LDA sysptr		; get whole 16 bits
-	LDX systmp		; do not mess with sys_sp
+	LDA sysptr			; get whole 16 bits
+	LDX systmp			; do not mess with sys_sp
 	PHA
 	PHX
 ; in case an unaware 6502 app installs a handler ending in RTS,
@@ -30,7 +30,7 @@
 ; must use some new indirect jump, as set by new SET_BRK
 ; arrives in 8-bit, DBR=0 (no need to save it)
 	JSR @brk_call		; JSL new indirect
-	JMP nmi_end		; reusing standard code
+	JMP nmi_end			; reusing standard code
 
 ; older corrected code for reference, needed to enter in 16-bit index
 ; 6502 handlers will end in RTS causing stack imbalance

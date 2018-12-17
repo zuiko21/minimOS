@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180831-2347
+; last modified 20181217-0955
 
 ; *** generic NMI handler for 65816 ***
 ; expected to be fully re-entrant
@@ -19,9 +19,9 @@
 	LDX systmp			; this will no longer get sys_sp too!
 	PHA					; make sure 8-bit systmp is on top (3+4)
 	PHX
-; switch DBR to bank zero!!!!
-	PHK					; push a zero... (3+4)
-	PLB					; ...as current data bank!
+; switch DBR to bank zero!!!! but not really needed as JMP[abs] takes the pointer from bank zero
+;	PHK					; push a zero... (3+4)
+;	PLB					; ...as current data bank!
 ; in case an unaware 6502 app installs a handler ending in RTS,
 ; stack imbalance will happen, best keep SP and reset afterwards
 #ifdef	SUPPORT
@@ -35,8 +35,9 @@
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
 ; first copy vector into zeropage, as per long-indirect requirement
-	LDA fw_nmi			; copy vector to zeropage, now 24b (5)
-	LDX fw_nmi+2		; bank too, new (4)
+	LDA @fw_nmi+2		; bank too, new (6) will also get a discarded sys_sp
+	TAX					; unfortunately, no LDX long! (2)
+	LDA @fw_nmi			; copy vector to zeropage, now 24b (6)
 	STA sysptr			; store all (4+3)
 	STX sysptr+2		; actually systmp
 ; look for the magic string
@@ -51,7 +52,7 @@
 
 	.as: SEP #$20		; *** code is executed in 8-bit sizes ***
 ; jump to user-supplied handler!
-; return address already set, but DBR is 0! No need to save it as only DP is accessed afterwards
+; return address already set! No need to reset DBR as only DP is accessed afterwards
 ; MUST respect DP and sys_sp, though
 	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
 +nmi_end:
@@ -72,7 +73,7 @@
 	.al: .xl: REP #$30	; ** whole register size to restore the rest ** (3)
 	PLA					; restore saved sysptr (5+5)
 	STA sysptr
-; as DBR was reset, time to restore it
+; as DBR was pushed, time to restore it
 	PLB					; eeeeeeeek (4)
 	PLY					; restore regular registers (3x5)
 	PLX

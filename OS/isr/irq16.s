@@ -16,7 +16,7 @@
 	PHY
 	PHB						; eeeeeeeeeeeeeek (3)
 	.as: .xs: SEP #$30		; back to 8-bit size (3)
-; should preset DBR !!!
+; should preset DBR !!! because it accesses a lot of sysvars!
 	PHK						; zero into the stack (3)
 	PLB						; no other way to set it (4)
 ; *** place here HIGH priority async tasks, if required ***
