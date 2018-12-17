@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc1
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20181214-1004
+; last modified 20181217-1011
 ; (c) 2016-2018 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -178,10 +178,6 @@ getLine:
 	STX ln_siz
 	LDY iodev			; use standard device
 	_KERNEL(READLN)		; get string
-lda#'g':jsr$c0c2
-lda#'o':jsr$c0c2
-lda#'t':jsr$c0c2
-
 	RTS					; and all done!
 
 
