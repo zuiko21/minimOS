@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b13
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181214-0945
+; last modified 20181218-1429
 
 ; just in case
 #define		C816	_C816
@@ -226,6 +226,11 @@ sh_exec:
 	.al: REP #$20		; will be needed anyway upon restart
 	LDA #shell			; pointer to integrated shell! eeeeeek
 	STA ex_pt			; set execution full address
+.as:sep#$20
+lda#'@':jsr$c0c2
+lda ex_pt+1:jsr debug_hex
+lda ex_pt:jsr debug_hex
+.al:rep#$20
 	LDA #DEVICE*257		; revise as above *****
 	STA def_io			; default LOCAL I/O
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
