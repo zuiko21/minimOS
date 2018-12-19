@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6b13
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181218-1429
+; last modified 20181219-1033
 
 ; just in case
 #define		C816	_C816
@@ -267,6 +267,29 @@ kern_splash:
 k_isr:
 #include "isr/irq16.s"
 ; default NMI-ISR is on firmware!
+
+; *** some debugging code *** 8-bit expected
+debug_hex:
+pha
+pha
+lda#'$'
+jsr$c0c2
+pla
+pha
+lsr
+lsr
+lsr
+lsr
+clc
+adc#48
+jsr$c0c2
+pla
+and#15
+clc
+adc#48
+jsr$c0c2
+pla
+rts
 
 kern_end:		; for size computation
 ; ***********************************************
