@@ -884,9 +884,9 @@ exec_st:
 ; *** soon will preset registers according to new API ***
 ; at last, launch code
 	.as: SEP #$20		; *** default 8-bit launch! ***
-lda#'m':jsr$c0c2
-lda#'O':jsr$c0c2
-lda#'S':jsr$c0c2
+lda#'B':jsr$c0c2
+lda#'E':jsr$c0c2
+lda#'x':jsr$c0c2
 	CLI					; time to do it!
 ; assume the stack is already preloaded with SIGKILL address (or wrapper RTL above that)
 	JMP [ex_pt]			; forthcoming RTL will end via SIGKILL

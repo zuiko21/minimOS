@@ -216,6 +216,12 @@ dr_ok:					; *** all drivers inited ***
 ; ******************************
 sh_exec:
 ; should use LOADLINK...
+
+.as:sep#$20
+lda#'L':jsr$c0c2
+lda#'N':jsr$c0c2
+lda#'K':jsr$c0c2
+.al:rep#$20
 #ifdef	NOHEAD
 	LDX #'V'			; assume shell code is 65816!!! ***** REVISE
 #else
@@ -239,6 +245,36 @@ lda ex_pt:jsr debug_hex
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
 here:
 	BRA here			; ...as the scheduler will detour execution
+
+.as:.xs
+; *** some debugging code *** 8-bit expected
+debug_hex:
+pha
+pha
+lda#'$'
+jsr$c0c2
+pla
+pha
+lsr
+lsr
+lsr
+lsr
+clc
+adc#48
+cmp#'9'
+bcs*+2
+adc#7
+jsr$c0c2
+pla
+and#15
+clc
+adc#48
+cmp#'9'
+bcs*+2
+adc#7
+jsr$c0c2
+pla
+rts
 
 ; a quick way to print a newline on standard device
 ks_cr:
@@ -267,29 +303,6 @@ kern_splash:
 k_isr:
 #include "isr/irq16.s"
 ; default NMI-ISR is on firmware!
-
-; *** some debugging code *** 8-bit expected
-debug_hex:
-pha
-pha
-lda#'$'
-jsr$c0c2
-pla
-pha
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-jsr$c0c2
-pla
-and#15
-clc
-adc#48
-jsr$c0c2
-pla
-rts
 
 kern_end:		; for size computation
 ; ***********************************************
