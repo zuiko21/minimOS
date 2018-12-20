@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.6b3, should match kernel16.s
+; v0.6b4, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20180907-1730
+; last modified 20181220-1126
 
 #define		ISR		_ISR
 
@@ -90,6 +90,8 @@ isr_done:
 	PLA
 	RTI					; this will restore appropriate register size (6)
 
+.as: .xs				; eeeeeeeeeeeeeeeeeeeeeeeeeeeek
+
 ; *********************************************
 ; *** here goes the periodic interrupt code *** (4)
 ; *********************************************
@@ -153,6 +155,8 @@ ip_done:
 		BNE isr_done		; no wrap yet *** revise for load balancing (3/2)
 	INC ticks+2			; increment the rest (8)
  	BRA isr_done		; go away (3)
+
+.as:
 
 ; *******************
 ; *** BRK handler *** should move this to kernel or rom.s

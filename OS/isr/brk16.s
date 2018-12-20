@@ -7,6 +7,11 @@
 #include "../usual.h"
 #endif
 
+lda#'B':jsr$c0c2
+lda#'R':jsr$c0c2
+lda#'K':jsr$c0c2
+lda#58:jsr$c0c2
+
 ; this is currently a panic/crash routine!
 ; first of all, send a CR to default device
 	JSR brk_cr		; worth it
@@ -51,7 +56,7 @@ brk_end:
 brk_cr:
 lda#'c':jsr$c0c2
 lda#'r':jsr$c0c2
-	LDA #CR
+	LDA #10;CR
 brk_out:
 jsr$c0c2
 rts
