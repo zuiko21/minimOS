@@ -1,7 +1,7 @@
 ; minimOS·16 BRK handler
-; v0.6a2, taken from common 65C02 code
+; v0.6b1, taken from common 65C02 code
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181217-0938
+; last modified 20181220-1139
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -10,7 +10,7 @@
 lda#'B':jsr$c0c2
 lda#'R':jsr$c0c2
 lda#'K':jsr$c0c2
-lda#58:jsr$c0c2
+lda#'!':jsr$c0c2
 
 ; this is currently a panic/crash routine!
 ; first of all, send a CR to default device
@@ -20,11 +20,11 @@ lda#58:jsr$c0c2
 ; should this code depend on the status of E bit instead??
 ; actually, the 816 bits should get into brk16.s
 ; 65816 code was 14 bytes (actually 15)
-	LDA 16, s		; bank too eeeeeeek^2
+	LDA 17, s		; bank too eeeeeeek^2
 	STA systmp		; store after 16b pointer
-	LDA 15, s		; get buried MSB
+	LDA 16, s		; get buried MSB
 	TAY				; ...no LDY,s!
-	LDA 14, s		; get buried LSB eeeeeeeeeeeeeeeek
+	LDA 15, s		; get buried LSB eeeeeeeeeeeeeeeek
 	BNE brk_nw		; will not wrap upon decrement!
 		DEY				; otherwise correct MSB
 brk_nw:
@@ -54,8 +54,6 @@ brk_end:
 
 ; send a newline to default device
 brk_cr:
-lda#'c':jsr$c0c2
-lda#'r':jsr$c0c2
 	LDA #10;CR
 brk_out:
 jsr$c0c2
