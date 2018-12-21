@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.6rc2
-; last modified 20180829-2131
+; last modified 20181221-1003
 ; (c) 2016-2018 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -368,12 +368,13 @@ call_mcmd:
 ; *** command routines, named as per pointer table ***
 ; ****************************************************
 
+#ifdef	SAFE
 ; ** .? = show commands **
 help:
 	LDA #>help_str		; help string
 	LDY #<help_str
 	JMP prnStr			; print it, and return to main loop
-
+#endif
 
 ; ** .A = set accumulator **
 set_A:
@@ -1340,8 +1341,8 @@ ex_trok:
 	.asc	" bytes transferred", CR, 0
 
 ; online help only available under the SAFE option!
-help_str:
 #ifdef	SAFE
+help_str:
 	.asc	"---Command list---", CR
 	.asc	".? = show this list", CR
 	.asc	".Ad = set A reg.", CR
@@ -1373,8 +1374,8 @@ help_str:
 	.asc	"s => raw string", CR
 	.asc	"c = +(load)/ -(save)", CR
 	.asc	"x=Cold/Warm/Shutdown", CR
-#endif
 	.byt	0
+#endif
 
 #ifdef	NOHEAD
 title:

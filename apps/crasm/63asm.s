@@ -1,7 +1,7 @@
 ; 6800/6801/6301 cross-assembler for minimOS 6502
 ; based on miniMoDA engine!
-; v0.5.2b1 like 0.5.1 but 65816-savvy
-; last modified 20181205-1104
+; v0.5.2b2 like 0.5.1 but 65816-savvy
+; last modified 20181221-0958
 ; (c) 2017-2018 Carlos J. Santisteban
 
 #include "../../OS/usual.h"
@@ -37,8 +37,8 @@ title:
 	.dsb	a68_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7200		; time, 14.16
-	.word	$4AAB		; date, 2017/5/11
+	.word	$5000		; time, 10.00
+	.word	$4D95		; date, 2018/12/21
 
 	a68siz	=	a68_end - a68_head - 256	; compute size NOT including header!
 
@@ -130,7 +130,11 @@ cli_loop:
 		JSR $FFFF &  gnc_do			; get into command byte otherwise
 		CMP #'W'+1			; past last command?
 			BCS bad_cmd			; unrecognised
+#ifdef	SAFE
 		SBC #'?'-1			; first available command (had borrow)
+#else
+		SBC #'B'-1			; first available command (had borrow)
+#endif
 			BCC bad_cmd			; cannot be lower
 		ASL					; times two to make it index
 		TAX					; use as index
@@ -327,12 +331,13 @@ call_mcmd:
 ; *** command routines, named as per pointer table ***
 ; ****************************************************
 
+#ifdef	SAFE
 ; ** .? = show commands **
 help:
 	LDA #>help_str		; help string
 	LDY #<help_str
 	JMP $FFFF &  prnStr			; print it, and return to main loop
-
+#endif
 
 ; ** .B = store byte **
 store_byte:
@@ -1125,9 +1130,11 @@ ftv_bad:
 
 ; *** pointers to command routines (? to Y) ***
 cmd_ptr:
+#ifdef	SAFE
 	.word	help			; .?
 	.word		_unrecognised	; .@
 	.word		_unrecognised	; .A
+#endif
 	.word	store_byte		; .B
 	.word		_unrecognised	; .C
 	.word	disassemble		; .D
@@ -1191,8 +1198,8 @@ ex_trok:
 	.asc	" bytes transferred", CR, 0
 
 ; online help only available under the SAFE option!
-help_str:
 #ifdef	SAFE
+help_str:
 	.asc	"(d => 2 hex chars)", CR
 	.asc	"(a => 4 hex chars)", CR
 	.asc	"(* => up to 4 chars)", CR
@@ -1212,8 +1219,8 @@ help_str:
 	.asc	".T* = assemble src.", CR
 	.asc	".Ud = set 'u' lines", CR
 	.asc	".Wa = store word", CR
-#endif
 	.byt	0
+#endif
 
 ; include opcode list
 da_oclist:
