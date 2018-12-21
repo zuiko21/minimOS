@@ -19,7 +19,9 @@ lda#'K':jsr$c0c2
 ; *** think about a padding byte on any BRK call, would make life much simpler!
 	TSX				; current stack pointer
 	LDY $0111, X	; get MSB (note offset below)
+tya:jsr debug_hex
 	LDA $0110, X	; get LSB+1
+jsr debug_hex
 	BNE brk_nw		; will not wrap upon decrement!
 		DEY				; otherwise correct MSB
 brk_nw:

@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc18
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181214-1015
+; last modified 20181221-1039
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -1148,11 +1148,19 @@ lsr
 lsr
 clc
 adc#48
+cmp#58
+bcc n1
+adc#6
+n1:
 jsr$c0c2
 pla
 and#15
 clc
 adc#48
+cmp#58
+bcc n2
+adc#6
+n2:
 jsr$c0c2
 pla
 rts

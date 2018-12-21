@@ -10,7 +10,7 @@
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
 
-;#define		LOWRAM	_LOWRAM
+#define		LOWRAM	_LOWRAM
 
 ;#define		FAST_API	_FAST_API
 ;#define		FAST_FW		_FAST_FW
