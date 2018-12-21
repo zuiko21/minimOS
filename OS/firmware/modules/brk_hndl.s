@@ -11,6 +11,11 @@
 #ifdef	NMOS
 	CLD					; eeeeeeeeeeeeeeeek
 #endif
+tsx
+lda$103,x:jsr debug_hex
+lda$102,x:jsr debug_hex
+lda$101,x:jsr debug_hex
+
 ; much like the ISR start
 	PHA					; save registers (3x3)
 	_PHX
