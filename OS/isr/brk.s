@@ -1,7 +1,7 @@
 ; minimOS BRK handler
-; v0.6a2, bumped as per 816 version
+; v0.6b1
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181217-0934
+; last modified 20181221-1010
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -18,8 +18,8 @@ lda#'K':jsr$c0c2
 ; let us get the original return address
 ; *** think about a padding byte on any BRK call, would make life much simpler!
 	TSX				; current stack pointer
-	LDY $0109, X	; get MSB (note offset below)
-	LDA $0108, X	; get LSB+1
+	LDY $0111, X	; get MSB (note offset below)
+	LDA $0110, X	; get LSB+1
 	BNE brk_nw		; will not wrap upon decrement!
 		DEY				; otherwise correct MSB
 brk_nw:
@@ -44,6 +44,7 @@ brk_term:
 brk_end:
 	JSR brk_cr		; another newline
 ; we are done, should call debugger if desired, otherwise we will just lock
+lda#10:jsr$c0c2
 lda#'D':jsr$c0c2
 lda#'i':jsr$c0c2
 lda#'e':jsr$c0c2
@@ -54,9 +55,7 @@ lda#'!':jsr$c0c2
 
 ; send a newline to default device
 brk_cr:
-lda#'c':jsr$c0c2
-lda#'r':jsr$c0c2
-	LDA #CR
+	LDA #10;CR
 brk_out:
 jsr$c0c2
 rts
