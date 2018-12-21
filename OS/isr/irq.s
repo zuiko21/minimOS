@@ -2,7 +2,7 @@
 ; v0.6rc3, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180907-1730
+; last modified 20181221-1115
 
 #define		ISR		_ISR
 
@@ -85,6 +85,7 @@ ir_done:
 	AND #$10			; mask out B bit (2)
 	BEQ isr_done		; spurious interrupt! (2/3)
 ; ...this is BRK, but must emulate NMI stack frame!
+; *** NOT HERE *** just restore saved status from IRQ and proceed?
 		LDA sysptr		; save extended state (6x3)
 		PHA
 		LDA sysptr+1

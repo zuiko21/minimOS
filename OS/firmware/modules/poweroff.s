@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180131-1107
+; last modified 20181221-1110
 
 ; *****************************************
 ; POWEROFF, resets and interrupt invocation
@@ -56,12 +56,9 @@ fwp_nmi:
 	PHP					; will end in RTI
 	JMP nmi				; handle as usual
 fwp_brk:
-	LDY #<fwp_end		; get correct return address
-	LDA #>fwp_end
-	PHA					; stack it in order
-	_PHY
-	PHP					; will end in RTI
-	JMP brk_hndl		; handle as usual *** standard template label
+; this makes NO sense at all, just put a BRK for the sake of it
+	BRK					; call software interrupt
+	_BRA fwp_end		; ...and return to caller if possible
 
 ; sub-function jump table
 fwp_func:
