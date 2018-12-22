@@ -1,7 +1,7 @@
 ; minimOS BRK panic handler
-; v0.6b1
+; v0.6b3
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181221-1010
+; last modified 20181222-2209
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -18,28 +18,8 @@ lda#'K':jsr$c0c2
 ; let us get the original return address
 ; *** think about a padding byte on any BRK call, would make life much simpler!
 	TSX				; current stack pointer
-	LDY $0116, X	; get MSB (note offset below)
-	LDA $0115, X	; get LSB+1
-pha
-lda$0118,x:jsr debug_hex
-lda$0117,x:jsr debug_hex
-lda$0116,x:jsr debug_hex
-lda$0115,x:jsr debug_hex
-lda$0114,x:jsr debug_hex
-lda$0113,x:jsr debug_hex
-lda$0112,x:jsr debug_hex
-lda$0111,x:jsr debug_hex
-lda$0110,x:jsr debug_hex
-lda$0109,x:jsr debug_hex
-lda$0108,x:jsr debug_hex
-lda$0107,x:jsr debug_hex
-lda$0106,x:jsr debug_hex
-lda$0105,x:jsr debug_hex
-lda$0104,x:jsr debug_hex
-lda$0103,x:jsr debug_hex
-lda$0102,x:jsr debug_hex
-lda$0101,x:jsr debug_hex
-pla
+	LDY $0111, X	; get MSB (note offset below)
+	LDA $0110, X	; get LSB+1
 	BNE brk_nw		; will not wrap upon decrement!
 		DEY				; otherwise correct MSB
 brk_nw:
@@ -47,8 +27,6 @@ brk_nw:
 ; Y/A points to beginning of string
 	STY sysptr+1	; prepare internal pointer, should it be saved for reentrancy?
 	STA sysptr
-jsr debug_hex
-tya:jsr debug_hex
 	LDY #0			; eeeeeeeeeeeeeeeeeek
 brk_ploop:
 		_PHY			; save cursor
