@@ -1,20 +1,15 @@
 ; firmware module for minimOS·65
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20180906-1707
+; last modified 20181222-2154
 
 ; *** generic BRK handler for 65(C)02 ***
-; **** preliminary, 65816-like code ****
 ; NMOS-savvy
 
--brk_hndl:				; label from vector list
+-brk_hndl:
 .(
 #ifdef	NMOS
 	CLD					; eeeeeeeeeeeeeeeek
 #endif
-tsx
-lda$103,x:jsr debug_hex
-lda$102,x:jsr debug_hex
-lda$101,x:jsr debug_hex
 
 ; much like the ISR start
 	PHA					; save registers (3x3)
@@ -28,6 +23,7 @@ lda$101,x:jsr debug_hex
 	LDA systmp
 	PHA
 ; must use some new indirect jump, as set by new SET_BRK
+; if managed from IRQ ISR, should it arrive here?
 	JSR brk_call		; indirect jump will return here
 ; *** restore reserved vars since 20180811 ***
 ; common code ending from FW NMI handler!

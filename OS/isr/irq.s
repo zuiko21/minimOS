@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6rc3, should match kernel.s
+; v0.6rc4, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181221-1115
+; last modified 20181222-2149
 
 #define		ISR		_ISR
 
@@ -85,7 +85,6 @@ ir_done:
 	AND #$10			; mask out B bit (2)
 	BEQ isr_done		; spurious interrupt! (2/3)
 ; ...this is BRK, but must emulate NMI stack frame!
-; *** NOT HERE *** just restore saved status from IRQ and proceed?
 		LDA sysptr		; save extended state (6x3)
 		PHA
 		LDA sysptr+1
@@ -96,9 +95,16 @@ ir_done:
 		LDY #PW_SOFT		; BRK otherwise (firmware interface)
 		_ADMIN(POWEROFF)
 ; in case of BRK, must restore the NMI-like standard stack frame
-		JMP nmi_end		; standard exported FW label!
+;		JMP nmi_end		; standard exported FW label!
+; ...or just add retrieving the extended state, it is just 6 extra bytes!
+; ...OR, destroy return address and let FW nmi_end restore full state!
+;		PLA
+;		STA systmp
+;		PLA
+;		STA sysptr+1
+;		PLA
+;		STA sysptr
 ; *** continue after all interrupts dispatched ***
-; may reuse part after nmi_end
 isr_done:
 	_PLY	; restore registers (3x4 + 6)
 	_PLX
