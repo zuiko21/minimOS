@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc24, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181221-1039
+; last modified 20181223-2054
 
 ; no way for standalone assembly...
 
@@ -1556,34 +1556,3 @@ set_curr:
 ; *******************************
 ; *** end of kernel functions ***
 ; *******************************
-
-;DEBUG show A in pseudohex
-debug_hex:
-pha
-pha
-lda#'$'
-jsr$c0c2
-pla
-pha
-lsr
-lsr
-lsr
-lsr
-clc
-adc#48
-cmp#58
-bcc n1
-adc#6
-n1:
-jsr$c0c2
-pla
-and#15
-clc
-adc#48
-cmp#58
-bcc n2
-adc#6
-n2:
-jsr$c0c2
-pla
-rts
