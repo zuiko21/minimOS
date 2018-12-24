@@ -1,7 +1,7 @@
-; minimOS 0.6rc19 API/ABI
+; minimOS 0.6rc20 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181209-1233
+; last modified 20181224-1604
 
 ; *************************************************
 ; *************************************************
@@ -220,9 +220,10 @@ PW_WARM		=  2	; warm reset (needs no firmware) renumbered 150603
 PW_COLD		=  4	; cold reset (needed for compatibility with other architectures) renumbered 150603
 PW_OFF		=  6	; power off
 PW_CLEAN	=  8	; scheduler detected system is clean for poweroff! new 20160408
-; invocation codes for NMI and debug/BRK
-PW_HARD		= 10	; trigger hardware interrupt (like NMI)
-PW_SOFT		= 12	; invoke debugger (BRK, most needed for 6502)
+; invocation codes for NMI and IRQ
+PW_NMI		= 10	; trigger max-priority interrupt (like NMI)
+PW_IRQ		= 12	; trigger standard hardware interrupt (6502 has IRQ only)
+; other architectures may use further codes for lesser-priority interrupts
 
 ; *******************************************
 ; ** optional windowing system values, TBD **

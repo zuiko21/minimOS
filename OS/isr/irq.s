@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6rc4, should match kernel.s
+; v0.6rc5, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181222-2149
+; last modified 20181224-1613
 
 #define		ISR		_ISR
 
@@ -92,18 +92,9 @@ ir_done:
 		LDA systmp
 		PHA
 ; proceed with standard routine, this knows nothing about FW vars
-		LDY #PW_SOFT		; BRK otherwise (firmware interface)
-		_ADMIN(POWEROFF)
-; in case of BRK, must restore the NMI-like standard stack frame
-;		JMP nmi_end		; standard exported FW label!
-; ...or just add retrieving the extended state, it is just 6 extra bytes!
-; ...OR, destroy return address and let FW nmi_end restore full state!
-;		PLA
-;		STA systmp
-;		PLA
-;		STA sysptr+1
-;		PLA
-;		STA sysptr
+; *** BRK is no longer simulated by FW, must use some other way ***
+; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
+		JMP brk_hndl		; non-portable, optimised way
 ; *** continue after all interrupts dispatched ***
 isr_done:
 	_PLY	; restore registers (3x4 + 6)
