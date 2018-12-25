@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6rc5, should match kernel.s
+; v0.6rc6, should match kernel.s
 ; features TBD
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20181224-1613
+; last modified 20181225-1136
 
 #define		ISR		_ISR
 
@@ -79,7 +79,9 @@ i_anx:
 		BPL i_req			; until zero is done (3/2)
 
 ir_done:
+; *********************
 ; lastly, check for BRK (11 if spurious, 28+FW call if issued)
+; *********************
 	TSX					; get stack pointer (2)
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
@@ -92,8 +94,11 @@ ir_done:
 		LDA systmp
 		PHA
 ; proceed with standard routine, this knows nothing about FW vars
+; *****************************************************************
 ; *** BRK is no longer simulated by FW, must use some other way ***
+; *****************************************************************
 ; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
+;		JMP (brk_02)		; reuse some hard vector
 		JMP brk_hndl		; non-portable, optimised way
 ; *** continue after all interrupts dispatched ***
 isr_done:
