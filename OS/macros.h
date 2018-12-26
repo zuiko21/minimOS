@@ -1,8 +1,11 @@
-; minimOS 0.6rc9 MACRO definitions
+; minimOS 0.6rc10 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181116-0951
+; last modified 20181226-1307
 
+; **************************
 ; *** standard addresses ***
+; **************************
+; these may come into abi.h
 
 kerncall	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
 adm_call	=	$FFDA	; ending in RTS, intended for kernel/drivers ONLY, revamped address
@@ -13,12 +16,17 @@ adm_appc	=	$FFD0	; special interface for 65816 firmware call from USER software!
 ; some machines will lock somewhere else, like blinking the Emulation LED!
 lock		=	$FFE0	; more-or-less 816 savvy address
 
+; redefined hard vectors *** new 20181226
+brk_02		=	$FFF6	; supposedly emulated BRK, may be 816-savvy!
+
 ; *** device numbers for optional pseudo-driver modules, TBD ***
 TASK_DEV	=	136		; back again as ft0 (standard feature)
 WIND_DEV	=	137		; new name 20161017, might become ft1
 FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entries for it! Perhaps as ft2?
 
+; *************************************
 ; *** considerations for minimOS·16 ***
+; *************************************
 ; kernel return is via RTI (note CLC trick)
 ; kernel functions are expected to be in bank zero! At least the entry points
 ; 6502 apps CANNOT work bank-agnostic, bank zero only
@@ -49,6 +57,7 @@ FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entrie
 #endif
 
 ; specific user-mode firmware call, needed for 65816
+; future versions may limit app-access to admininstrative kernel
 #ifdef	C816
 #define		_U_ADM(a)		LDX #(a): JSL adm_appc
 #else
