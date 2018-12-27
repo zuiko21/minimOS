@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b9
+; v0.9.6b10
 ; (c)2015-2018 Carlos J. Santisteban
-; last modified 20181106-1010
+; last modified 20181227-1805
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -18,7 +18,7 @@ fw_start:
 	.asc	"****", CR			; flags TBD
 	.asc	"boot", 0			; standard filename
 fw_splash:
-	.asc	"0.9.6b7 firmware for "	; machine description as comment
+	.asc	"0.9.6b10 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
@@ -189,7 +189,7 @@ irq:
 ; ***************************
 ; *** minimOS BRK handler ***
 ; ***************************
-brk_hndl:				; label from vector list
+brk_hndl:				; pointed from reserved vector
 #include "modules/brk_hndl.s"
 
 
@@ -372,8 +372,8 @@ nmos_adc:
 ; alternatively, blink CapsLock LED!
 * = lock
 	SEI					; unified procedure
-	SEC
 ; classic way
+	SEC
 panic_loop:
 	BCS panic_loop		; no problem if /SO is used
 ; ** alternative way **
@@ -381,10 +381,14 @@ panic_loop:
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
-	.dsb	$FFFA-*, $FF
+	.dsb	$FFF6-*, $FF
 #endif
 
 ; once again, CHIHUAHUA is very unlikely to use a 65816
+; but must store the BRK handler address!
+* = $FFF6
+	.word	brk_hndl		; new BRK	@ $FFF6
+	.word	nmi			; unsupported ABORT	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
 	.word	nmi			; NMI	@ $FFFA

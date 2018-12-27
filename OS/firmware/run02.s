@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc12
+; v0.9.6rc13
 ; (c)2017-2018 Carlos J. Santisteban
-; last modified 20181107-1840
+; last modified 20181227-1758
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -155,7 +155,7 @@ irq:
 ; ***************************
 ; *** minimOS BRK handler ***
 ; ***************************
-brk_hndl:				; label from vector list
+brk_hndl:				; this is now pointed from a reserved vector
 #include "modules/brk_hndl.s"
 
 
@@ -285,6 +285,7 @@ cop_hndl:				; label from vector list
 #ifdef	C816
 	.as: .xs: SEP #$30	; *** standard sizes, just in case ***
 	JSR (fw_table, X)	; the old fashioned way, 8-bit functions end in RTS
+; ...but this does NOT affect the pushed status!
 	RTI
 #endif
 
@@ -362,16 +363,16 @@ panic_loop:
 
 ; *** 65C816 ROM vectors ***
 ;* = $FFE4				; should be already at it
-	.word	cop_hndl	; native COP		@ $FFE4
-	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
+	.word	cop_hndl	; native COP		@ $FFE4***revise
+	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ***revise
 	.word	nmi			; native ABORT		@ $FFE8, not yet supported
 	.word	nmi			; native NMI		@ $FFEA, unified this far
 	.word	$FFFF		; reserved			@ $FFEC
-	.word	irq			; native IRQ		@ $FFEE, unified this far
+	.word	irq			; native IRQ		@ $FFEE, unified this far***revise
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4
-	.word	$FFFF		; reserved			@ $FFF6
+	.word	nmi			; emulated COP		@ $FFF4***revise
+	.word	brk_hndl		; reserved (eBRK)	@ $FFF6
 	.word	nmi			; emulated ABORT 	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
