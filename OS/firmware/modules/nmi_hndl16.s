@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018 Carlos J. Santisteban
-; last modified 20181217-0955
+; last modified 20181227-1740
 
 ; *** generic NMI handler for 65816 ***
 ; expected to be fully re-entrant
@@ -59,7 +59,6 @@
 #ifdef	SUPPORT
 ; 6502 handlers will end in RTS causing stack imbalance
 ; must reset SP to previous value
-	.al: REP #$20		; ** I think TSC needs to be in 16-bit ** (3)
 	TSC					; the whole stack pointer, will not mess with B (2)
 	.as: SEP #$20		; ** 8-bit memory for a moment ** (3)
 	LDA sys_sp			; will replace the LSB with the stored value (3)
