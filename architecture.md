@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-10*
+*Last update: 2018-12-27*
 
 ## Rationale
 
@@ -315,6 +315,64 @@ full 256-byte page is needed). This way, the firmware may check whether the kern
 be installed fits its own data structures and report an error code otherwise; the
 **generic** kernel being installed *will not need to now about those structures*.
 
+### Interrupt routines
+
+Another of the firmware's abilities is to set user-defined **interrupt routines**
+via some patchable firmware vectors.
+Depending of the particular architecture, these may include:
+
+- A **software interrupt**, BRK in case of the 6502.
+- A **non-maskable** hardware interrupt (typically *NMI*)
+- One or more maskable **hardware interrupts** (just IRQ for the 6502)
+
+Due to the difficulty on the original 6502 telling BRK from IRQ, this kind of interrupt
+has been devoted to **error handling**. Actually, the `PANIC` macro on the 6502/65816
+platforms is just a `BRK` (without any *signature byte*) followed by a C-string
+with a short error message. Since calling a *debugger* afterwards is desirable, a
+**unified stack frame** with the NMI, which may be used for manually-invoking the
+debugger. Thus, both kind of routines will end like a regular subroutine (`RTS` on the
+6502, `RTL` on the 65816). The firmware-supplied interrupt handlers will call these
+user-installed routines *after* saving the whole state on the stack, restoring it
+after the routine execution. 
+
+Of course, the NMI is expected to (hopefully) *save* a crashed system, thus
+it is desirable to be execute *reliably* no matter the system state. A minimal form of
+*defence from a corrupt NMI vector* is provided via a **_magic_ word** in front of
+the NMI routine. The chosen string is `UNj*` ($55, $4E, $6A, $2A) which is both:
+
+- Unlikely to be found as plain text
+- Unlikely to be found as actual code
+- Inocuous if executed as code
+
+The latter is particularly important as this magic string **gets "executed"** upon
+calling the routine, but for a 6502 it just means:
+
+```
+        EOR $, X    ; [55, 4E] Affects A (saved) from a random ZP location
+	ROR A       ; [6A] Rotates a meaningless A but...
+        ROL A       ; [2A] ...anyway gets back to the previous value!
+```
+
+This particular code snippet is an absolutely *absurd* thing to do, thus highly
+unlikely to be found on an arbitrarily pointed code area.
+
+On the other hand, the regular software IRQ has no previous handler whatsoever, in
+order to achive the **lowest possible latency**. A general purpose system needs to
+save the basic state, though (lacking `sysptr` and `systmp` as the NMI/BRK handlers do).
+
+A nuissance on the 6502/65C02 is the *combined IRQ/BRK vector*. As `BRK` is used
+for (fatal) error handling, a regular IRQ is assumed at first and, if no *hardware*
+interrupt is acknowledged by the ISR, the usual procedure for detecting a `BRK`
+execution is issued, before considering it a *spurious* interrupt. But since a kernel-
+(or application!) supplied ISR knows nothing about the *firmware's* `BRK` handler
+address, some standard pointer must be provided. As of 0.6, the firmware-private
+`brk_hndl` routine address is stored at $FFF6, which is unused on the 6502 and
+*reserved* on the 65816; but since this CPU's *native BRK vector* is at $FF**E**6,
+it makes sense as an hypothetical *emulated BRK* vector, thus likely to remain unused.
+This way, once the ISR determines the source of interruption as `BRK`, it just has to
+do `JMP ($FFF6)` and the firmware's handler will issue the routine and, if suitable,
+will restore the state and resume the execution.
+
 ## Device Drivers (0.6 version)
 
 As an essential feature of such device-agnostic OS, minimOS **driver architecture** has 
@@ -628,7 +686,6 @@ there are the **`B_FORE` and `GET_FG` new functions**, *in a similar fashion as
 In a way or another, no computing device is free from dealing with some text. And
 because English is *not* my mother tongue, some **language support** had to be
 included, at least in a minimalistic way.
-
 *Multi-byte encodings** (like *Unicode*) are versatile and well supported anywhere,
 they put *extra burden on limited devices* and thus not a very sensible choice for
 this OS -- this is not *maximOS* by any stretch of imagination! However, **their use
