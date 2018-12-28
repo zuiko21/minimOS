@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-27*
+*Last update: 2018-12-28*
 
 ## Rationale
 
@@ -24,6 +24,13 @@ These goals will define most of its design features.
 ## Aesthetic
 
 The *corporative* typeface is **Neuzeit Grotesk DIN 30640**.
+
+## Naming conventions
+
+The names of most applications and high level utilities for this OS
+begin with **mini**. On the other hand, *firmware* components that do NOT rely
+on an undelying OS are named beginning with **nano**, like `nanoboot` and
+`nanomon`.
 
 # Background
 
