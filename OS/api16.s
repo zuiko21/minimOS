@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc20, should match kernel16.s
 ; (c) 2016-2018 Carlos J. Santisteban
-; last modified 20181220-1133
+; last modified 20181229-1245
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1329,7 +1329,7 @@ shutdown:
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_fw			; do not shutdown system then!
 ; interrupt invoking, although for internal use
-	CPY #PW_HARD		; some invoking?
+	CPY #PW_NMI		; some invoking?
 		BCS sd_fw			; just pass to FW
 	TYA					; no longer switches DBR
 	STA @sd_flag		; store mode for later, first must do proper system shutdown, note long addressing
