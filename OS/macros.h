@@ -1,6 +1,6 @@
 ; minimOS 0.6rc11 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181230-2244
+; last modified 20181230-2257
 
 ; **************************
 ; *** standard addresses ***
@@ -117,10 +117,13 @@ FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entrie
 
 ; *** conditional opcode assembly ***
 #ifdef	NMOS
+#ifdef		LOWRAM
 ; the slower, compact version, needs no memory... but not 65816-savvy!
-;#define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
+#define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
+#else
 ; in case of a NMOS-binary is executed on a 65816 machine, use this faster version
 #define		_JMPX(a)	LDA a+1, X: STA nmos_ii+1: LDA a, X: STA nmos_ii: JMP (nmos_ii)
+#endif
 #define		_PHX		TXA: PHA
 #define		_PHY		TYA: PHA
 #define		_PLX		PLA: TAX
