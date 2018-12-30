@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20170315-0942
+; last modified 20181230-2233
 
 ; Opcode list as bit-7 terminated strings
 ; @ expects single byte, & expects word
@@ -10,7 +10,7 @@
 
 #ifndef	OPCODELIST
 #define		OPCODELIST	_OPCODELIST
-	.asc	"BRK ", '@'+$80	; $00=BRK (actually a 2-byte opcode)
+	.asc	"BR", 'K'+$80	; $00=BRK (actually a 2-byte opcode, now using just one)
 	.asc	"ORA (@, X", ')'+$80	; $01=ORA (zp,X)
 	.asc	"?", '@'+$80	; $02=?
 	.asc	"?", ' '+$80	; $03=?
