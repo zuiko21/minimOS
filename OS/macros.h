@@ -1,6 +1,6 @@
-; minimOS 0.6rc10 MACRO definitions
+; minimOS 0.6rc11 MACRO definitions
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181226-1307
+; last modified 20181230-2244
 
 ; **************************
 ; *** standard addresses ***
@@ -18,6 +18,9 @@ lock		=	$FFE0	; more-or-less 816 savvy address
 
 ; redefined hard vectors *** new 20181226
 brk_02		=	$FFF6	; supposedly emulated BRK, may be 816-savvy!
+
+; new NMOS definition
+nmos_ii		=	$E2		; pointer for JMPX macro
 
 ; *** device numbers for optional pseudo-driver modules, TBD ***
 TASK_DEV	=	136		; back again as ft0 (standard feature)
@@ -114,8 +117,10 @@ FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entrie
 
 ; *** conditional opcode assembly ***
 #ifdef	NMOS
-; this is the slower, compact version, needs no memory
-#define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
+; the slower, compact version, needs no memory... but not 65816-savvy!
+;#define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
+; in case of a NMOS-binary is executed on a 65816 machine, use this faster version
+#define		_JMPX(a)	LDA a+1, X: STA nmos_ii+1: LDA a, X: STA nmos_ii: JMP (nmos_ii)
 #define		_PHX		TXA: PHA
 #define		_PHY		TYA: PHA
 #define		_PLX		PLA: TAX
@@ -128,7 +133,7 @@ FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entrie
 #define		_INC		CLC: ADC #1
 #define		_DEC		SEC: SBC #1
 #define		_BRA		JMP
-; faster than CLC-BCC and the very same size, and leaves statua intact, but no longer position-independent
+; faster than CLC-BCC and the very same size, and leaves status intact, but no longer position-independent
 #define		_STZX		LDX #0: STX
 #define		_STZY		LDY #0: STY
 #define		_STZA		LDA #0: STA

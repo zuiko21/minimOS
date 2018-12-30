@@ -1,6 +1,6 @@
-; minimOS 0.6rc8 zero-page system variables
+; minimOS 0.6rc9 zero-page system variables
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181210-1324
+; last modified 20181230-2249
 
 .zero
 * = 0
@@ -23,9 +23,10 @@ uz						; user context starts here, $03...$E3
 
 ; ** Commodore 64 places default I/O devices here **
 #ifdef	CBM64
-* = $E2					; just before local variables, see definition below
+* = $E0					; just before local variables...and the new NMOS macro, see definition below
 std_in		.byt	0	; default parent input device (for 6510)
 stdout		.byt	0	; default parent outout device (for 6510)
+-nmos_ii	.word	0	; already defined for new NMOS macro
 #endif
 
 ; ******************************************
