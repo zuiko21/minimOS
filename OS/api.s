@@ -1,8 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc24, must match kernel.s
 ; (c) 2012-2018 Carlos J. Santisteban
-; last modified 20181226-1424
-
+; last modified 20181231-1724
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -699,7 +698,10 @@ ex_jmp:
 	STY mm_sterm		; set variable
 	STA mm_sterm+1
 ; this is how a task should replace the shell
-	LDA #ZP_AVAIL		; eeeeeeeeeeek
+	LDA #ZP_AVAIL		; eeeeeeeeeeek *** must be computed!
+; NMOS systems (or apps!) get 2 bytes less
+; C-64 gets four bytes less
+; LOWRAM has reduced space, no matter the CPU or arch
 	STA z_used			; otherwise SAFE will not work
 ; and set default devices!!! eeeeeeeeeeeeeeeeeeeeeeek
 	LDA def_io			; standard input
