@@ -1,6 +1,6 @@
 ; minimOS generic Kernel
 ; v0.6rc11
-; (c) 2012-2018 Carlos J. Santisteban
+; (c) 2012-2019 Carlos J. Santisteban
 ; last modified 20181214-0947
 
 ; avoid standalone definitions

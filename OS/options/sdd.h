@@ -2,7 +2,7 @@
 ; suitable for SDd with emulated serial
 ; ***** Jornadas HackLabAlmería en El Ejido 2017 *****
 ; copy or link as options.h in root dir
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20171114-0951
 
 ; *** set conditional assembly ***

@@ -1,5 +1,5 @@
 ; minimOS opcode list for (dis)assembler modules
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20181230-2234
 
 ; Opcode list as bit-7 terminated strings

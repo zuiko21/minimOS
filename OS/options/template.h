@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; generic template, suitable for SDm/Jalapa
 ; copy or link as options.h in root dir
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20180903-1832
 
 ; *** set conditional assembly ***

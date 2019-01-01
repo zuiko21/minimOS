@@ -1,6 +1,6 @@
 ; minimOS·16 BRK handler
 ; v0.6b1, taken from common 65C02 code
-; (c) 2016-2018 Carlos J. Santisteban
+; (c) 2016-2019 Carlos J. Santisteban
 ; last modified 20181220-1139
 
 #ifndef	HEADERS

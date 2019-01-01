@@ -1,6 +1,6 @@
 ; minimOS BRK panic handler
 ; v0.6b3
-; (c) 2016-2018 Carlos J. Santisteban
+; (c) 2016-2019 Carlos J. Santisteban
 ; last modified 20181222-2209
 
 #ifndef	HEADERS

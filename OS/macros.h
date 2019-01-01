@@ -1,5 +1,5 @@
 ; minimOS 0.6rc11 MACRO definitions
-; (c) 2012-2018 Carlos J. Santisteban
+; (c) 2012-2019 Carlos J. Santisteban
 ; last modified 20181230-2257
 
 ; **************************

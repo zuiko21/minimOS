@@ -1,7 +1,7 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.6rc2
 ; last modified 20181221-1003
-; (c) 2016-2018 Carlos J. Santisteban
+; (c) 2016-2019 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 

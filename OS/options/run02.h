@@ -2,7 +2,7 @@
 ; suitable for run816 BBC simulator
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
-; (c) 2017-2018 Carlos J. Santisteban
+; (c) 2017-2019 Carlos J. Santisteban
 ; last modified 20181214-1145
 
 ; *** set conditional assembly ***

@@ -1,7 +1,7 @@
 ; ISR for minimOS on LOWRAM systems
 ; v0.6a1, should match kernel.s
 ; features TBD
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20180404-1409
 
 #define		ISR		_ISR

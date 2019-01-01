@@ -1,5 +1,5 @@
 ; minimOS 0.6rc5 FAST Firmware calls
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20180411-0829
 
 

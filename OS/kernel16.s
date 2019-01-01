@@ -1,6 +1,6 @@
 ; minimOS·16 generic Kernel
 ; v0.6b13
-; (c) 2012-2018 Carlos J. Santisteban
+; (c) 2012-2019 Carlos J. Santisteban
 ; last modified 20181220-1134
 
 ; just in case
