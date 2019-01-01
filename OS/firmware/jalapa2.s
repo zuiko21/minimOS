@@ -1,6 +1,6 @@
 ; firmware for minimOS on Jalapa-II
 ; v0.9.6a24
-; (c)2017-2018 Carlos J. Santisteban
+; (c) 2017-2019 Carlos J. Santisteban
 ; last modified 20181101-1832
 
 #define		FIRMWARE	_FIRMWARE

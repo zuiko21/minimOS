@@ -1,6 +1,6 @@
 ; generic firmware variables for minimOS·65
 ; v0.6a5
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20180219-0833
 
 -sysram:

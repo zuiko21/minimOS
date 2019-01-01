@@ -1,6 +1,6 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b10
-; (c)2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20181227-1805
 
 #define		FIRMWARE 	_FIRMWARE

@@ -1,6 +1,6 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6b12
-; (c)2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20181216-2200
 
 #define		FIRMWARE	_FIRMWARE

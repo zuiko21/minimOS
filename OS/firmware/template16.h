@@ -1,6 +1,6 @@
 ; firmware variables for minimOS·16
 ; v0.6a7
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20181109-1222
 
 -sysram:
