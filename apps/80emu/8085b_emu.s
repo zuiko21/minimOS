@@ -1,7 +1,7 @@
 ; Intel 8080/8085 emulator for minimOS!
 ; *** FAST VERSION WITHOUT PARITY OR BCD ARITHMETIC ***
 ; v0.1b3
-; (c) 2016-2018 Carlos J. Santisteban
+; (c) 2016-2019 Carlos J. Santisteban
 ; last modified 20180404-1426
 
 #include "../../OS/usual.h"
