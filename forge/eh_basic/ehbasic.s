@@ -1,5 +1,5 @@
 ; *** adapted version of EhBASIC for minimOS ***
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20181024-0859
 ; **********************************************
 

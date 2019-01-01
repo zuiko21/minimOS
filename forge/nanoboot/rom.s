@@ -1,5 +1,5 @@
 ; minimal nanoBoot firmware
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20180822-1922
 
 ;#define	SAFE	_SAFE

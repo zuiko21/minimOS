@@ -1,6 +1,6 @@
 ; minimOS-16 nano-monitor
 ; v0.1b4
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20181024-1029
 ; 65816-specific version
 

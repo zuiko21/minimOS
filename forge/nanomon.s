@@ -1,6 +1,6 @@
 ; minimOS nano-monitor
 ; v0.1b9
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20181024-0901
 ; 65816-savvy, but in emulation mode ONLY
 

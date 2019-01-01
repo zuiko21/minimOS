@@ -1,5 +1,5 @@
 ; SS-22 audio play
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20181206-2210
 
 ; add appropriate minimOS headers here!

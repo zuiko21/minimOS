@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; COMPACT version!
 ; v0.1a7
-; (c) 2016-2018 Carlos J. Santisteban
+; (c) 2016-2019 Carlos J. Santisteban
 ; last modified 20180731-1617
 
 //#include "../OS/usual.h"
