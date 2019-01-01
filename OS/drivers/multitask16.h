@@ -1,6 +1,6 @@
 ; static variables for 65816 software multitasking module for minimOS·16
 ; v0.6a2
-; (c) 2016-2018 Carlos J. Santisteban
+; (c) 2016-2019 Carlos J. Santisteban
 ; last modified 20181024-1050
 
 mm_pid		.byt	0				; current PID

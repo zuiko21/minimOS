@@ -1,5 +1,5 @@
 ; variables for simple ASCII keyboard driver
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20180825-1335
 
 ak_get	.byt	0		; single-char buffer

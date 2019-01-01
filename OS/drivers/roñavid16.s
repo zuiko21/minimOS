@@ -1,6 +1,6 @@
 ; Roñavid driver for minimOS-16
 ; v0.6a2
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20181007-1108
 
 ; 576×448 bitmap version

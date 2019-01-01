@@ -1,6 +1,6 @@
 ; VIA-connected 8 KiB VDU for minimOS!
 ; v0.6a6
-; (c) 2017-2018 Carlos J. Santisteban
+; (c) 2017-2019 Carlos J. Santisteban
 ; last modified 20180404-1321
 
 ; new VIA-connected device ID is $Cx for CRTC control, $Dx for VRAM access, will go into PB

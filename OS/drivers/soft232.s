@@ -1,6 +1,6 @@
 ; software serial port emulator for minimOS!
 ; v0.6b3, will assemble on NMOS but wrong timing! Use 65C02 *always*
-; (c) 2016-2018 Carlos J. Santisteban
+; (c) 2016-2019 Carlos J. Santisteban
 ; last modified 20180404-1322
 
 ; VIA bit functions

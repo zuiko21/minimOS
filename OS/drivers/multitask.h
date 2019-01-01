@@ -1,6 +1,6 @@
 ; static variables for software multitasking module for minimOS
 ; v0.6a3
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20181024-1052
 
 #define	MX_BRAID	4
