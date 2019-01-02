@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; RAMtest 0.5.2b2
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20180201-1321
 
 ; *** RAMtest, 6510-savvy ***

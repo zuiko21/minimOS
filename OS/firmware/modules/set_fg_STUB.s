@@ -1,4 +1,5 @@
 ; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA *** revised 20150208...
+; (c) 2015-2019 Carlos J. Santisteban
 ; ** should use some firmware interface, just in case it doesn't affect jiffy-IRQ! **
 ; should also be Phi2-rate independent... input as Hz, or 100uS steps?
 ; zpar.W <- dividing factor (times two?), C -> busy

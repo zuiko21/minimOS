@@ -1,8 +1,8 @@
 ; firmware module for minimOS·65
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20171225-2139
 
-; *** preset 
+; *** preset IRQ frequency as NULL ***
 ; no interface needed, affects FW vars
 ; NMOS and 65816 savvy
 

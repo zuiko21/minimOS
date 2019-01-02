@@ -1,6 +1,7 @@
 ; **************************************************
 ; *** SET_FG, enable/disable frequency generator *** TO BE REVISED
 ; **************************************************
+; (c) 2018-2019 Carlos J. Santisteban
 ;		INPUT
 ; zpar.w = dividing factor (times two?)
 ;		OUTPUT

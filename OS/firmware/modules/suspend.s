@@ -1,5 +1,6 @@
 ; suspend firmware module for minimOS
 ; v0.5.1a1
+; (c) 2016-2019 Carlos J. Santisteban Salinas
 ; generic placeholder
 ; last modified 20161010
 

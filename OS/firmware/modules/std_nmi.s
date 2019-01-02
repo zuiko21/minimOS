@@ -1,6 +1,6 @@
 ; standard NMI handler for minimOS firmware
 ; v0.6a3
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2019 Carlos J. Santisteban
 ; last modified 20180404-1358
 
 ; in case of standalone assembly

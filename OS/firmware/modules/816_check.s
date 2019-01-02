@@ -1,5 +1,5 @@
 ; firmware module for minimOS·16
-; (c) 2018 Carlos J. Santisteban
+; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20181109-1237
 
 ; *** check whether an actual 65816 is in use ***

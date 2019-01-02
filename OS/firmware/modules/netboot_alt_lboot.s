@@ -1,7 +1,7 @@
 ; *** alternate netboot Lboot module for minimOS ***
-; (c) 2015-2018 Carlos J. Santisteban Salinas
+; (c) 2015-2019 Carlos J. Santisteban Salinas
 ; last modified 20150304-0945
-; revised 20160115 for commit
+; revised 20160115 for commit *** perhaps obsolete ***
 
 	LDX #>nb_lboot		; Lboot string MSB (2)
 	LDY #<nb_lboot		; Lboot string LSB (2)
