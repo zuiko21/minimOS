@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2018-12-28*
+*Last update: 2019-01-05*
 
 ## Rationale
 
@@ -422,6 +422,8 @@ routine will be called, although any error condition makes no sense, thus no err
 is required or evaluated anyway.
 
 ### Interrupt queues
+
+*This section applies on the kernel-provided ISR.*
 
 Of special interest are the **interrupt routines**. The (now unified) **periodic** queue
 handles those tasks at *multiples* of the **jiffy** IRQ period; while **4 ms** is
