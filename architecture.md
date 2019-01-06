@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2019-01-05*
+*Last update: 2019-01-06*
 
 ## Rationale
 
@@ -379,6 +379,12 @@ it makes sense as an hypothetical *emulated BRK* vector, thus likely to remain u
 This way, once the ISR determines the source of interruption as `BRK`, it just has to
 do `JMP ($FFF6)` and the firmware's handler will issue the routine and, if suitable,
 will restore the state and resume the execution.
+
+In order to prevent a crash early on the startup process, some basic interrupt
+handlers should be installed by the firmware itsel, before the kernel installs
+the definitive ones. Typically the firmware will install a **panic handler** for
+BRK and a mere **interrupt enable** for NMI, while the IRQ vector will just point
+to RTI (perhaps reusing the aforementioned NMI routine.
 
 ## Device Drivers (0.6 version)
 
