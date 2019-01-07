@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2019-01-06*
+*Last update: 2019-01-07*
 
 ## Rationale
 
@@ -252,7 +252,7 @@ it does provide a *recovery setting* -- just a NULL pointer as the supplied jump
 (for `INSTALL`) or routine address (for individual function `PATCH`). The firmware
 will take care of a pointer to the last installed *kernel **jump table*** for this matter.
 
-*(must clarify this)*
+*(must clarify this, including platforms with several IRQs)*
 
 On the other hand, passing a NULL pointer to any interrupt-setting function will simply
 return the original pointer, no matter that the standard interface for
