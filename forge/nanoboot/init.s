@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20180824-2114
+; last modified 20190108-1413
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (must be reset to 1)
@@ -98,7 +98,7 @@ nb_grc:
 ; **********************************************************************
 ; *** in case nonvalid header is detected, reset or continue booting ***
 ; **********************************************************************
-#ifdef	SAFE
 nb_exit:
+#ifdef	SAFE
 	JMP ($FFFC)			; reset, hopefully will go elsewhere
 #endif
