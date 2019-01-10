@@ -1,6 +1,6 @@
 ; nanoBoot NMI handler for 6502
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20180818-1747
+; last modified 20190110-1219
 
 nb_nmi:
 	SEC
@@ -12,6 +12,6 @@ nb_nmi:
 ; do not know if keeping IRQ low will retrigger the interrupt
 ; perhaps ISR should alter saved status masking I, anyway this SEI is needed
 ; will affect A, worth saving it here
-	ROR nb_flag			; this will set bit 7 accordingly (5)
+	ROL nb_flag			; this will set bit 7 after eight executions (5) EEEEEEEEEEEK
 	RTI					; (6) total 29 clocks + ISR
 ; 7 clocks to acknowledge IRQ plus 25 of the ISR itself, grand total 61 clocks

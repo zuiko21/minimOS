@@ -1,10 +1,10 @@
 ; startup nanoBoot for 6502
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190108-1413
+; last modified 20190110-1207
 
 ; *** needed zeropage variables ***
-; nb_rcv, received byte (must be reset to 1)
-; nb_flag, sets bit 7 when a byte is ready (autoreset, or bit 7 clear)
+; nb_rcv, received byte (No longer need to be reset!)
+; nb_flag, sets bit 7 when a byte is ready (autoreset!)
 ; nb_ptr (word) for initial address, will use as pointer
 ; nb_fin (word) is final address, MUST be consecutive
 ; nb_ex (word) keeps initial address, should be consecutive
@@ -12,21 +12,19 @@
 
 nb_init:
 	SEI					; make sure interrupts are off (2)
-	LDX #1				; must keep this initial value (2)
-	STX nb_rcv			; preset received value (3)
-	STX nb_flag			; reset reception flag (3)
+	LDX #0				; could keep this initial value (2)
 ; *** set interrupt handlers ***
 ; a loop plus table is 15b 53t, but needs consecutive fw vars
 ; old code was 20b 24t
 #ifndef	SETOVER
 	LDY #3				; copy bytes 0...3 (2)
 nb_svec:
-		LDA nb_tab, Y			; get origin from table (4)
-		STA fw_isr, Y			; and write for FW (4)
+		LDA nb_tab, Y		; get origin from table (4)
+		STA fw_isr, Y		; and write for FW (4)
 		DEY					; next (2+3)
 		BPL nb_svec
 #else
-	LDY #<nb_nmi			; copy routine address...
+	LDY #<nb_nmi		; copy routine address...
 	LDA #>nb_nmi
 	STY fw_nmi			; ...and store it into firmware
 	STA fw_nmi+1
@@ -38,8 +36,8 @@ nb_svec:
 		LDY #4				; will receive bytes 0...4 (2)
 nb_loop:
 			JSR nb_grc			; wait for reception and reset flags (26+)
-			STA nb_ptr, Y			; store in variable (4)
-			STA nb_ex, Y			; simpler way, nb_ex should be after both pointers (4)
+			STA nb_ptr, Y		; store in variable (4)
+			STA nb_ex, Y		; simpler way, nb_ex should be after both pointers (4)
 			DEY					; next (2)
 			BPL nb_loop			; until done (3/2)
 ; may check here for a valid header
@@ -88,17 +86,31 @@ nb_tab:
 ; **********************************************************************
 ; X must be 1!!! takes at least 20t (+6n)
 nb_grc:
+	STX nb_flag			; clear flag! (3)
+#ifdef	TIMEBOOT
+	STX timeout			; preset counter for ~0.92 s @ 1 MHz
+	STX timeout+1
+nb_grc2:
+		DEC timeout			; one less to go (5)
+		BNE nb_cont			; if still within time, continue waiting after 8 extra cycles (3/2)
+			DEC timeout+1		; update MSB too otherwise (5)
+			BNE nb_cont			; not yet expired, continue after 15 extra cycles (3/2)
+				PLA					; discard return address otherwise... (4+4)
+				PLA
+				BNE nb_exit			; ...and proceed with standard boot!
+nb_cont:
+#else
+nb_grc2:
+#endif
 		BIT nb_flag			; received something? (3)
-		BPL nb_grc			; (3/2)
+		BPL nb_grc2			; (3/2)
 	LDA nb_rcv			; check received (3)
-	STX nb_rcv			; preset value (3)
-	STX nb_flag			; clear bit 7 (3)
 	RTS
 
 ; **********************************************************************
 ; *** in case nonvalid header is detected, reset or continue booting ***
 ; **********************************************************************
 nb_exit:
-#ifdef	SAFE
+#ifndef	TIMEBOOT
 	JMP ($FFFC)			; reset, hopefully will go elsewhere
 #endif
