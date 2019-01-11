@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 2018124-1601
+; last modified 20190111-2318
 
 ; *****************************************
 ; POWEROFF, resets and interrupt invocation
@@ -26,8 +26,7 @@
 ; *** power off ***
 fwp_off:
 	.byt	$DB			; STP in case a WDC CPU is used
-	NOP					; avoid DCP abs,Y on NMOS
-	NOP
+	ORA #0					; avoid DCP abs,Y on NMOS
 	_PANIC("{OFF}")		; stop execution, if ever arrives here!
 
 ; *** suspend ***
