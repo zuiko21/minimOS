@@ -1,6 +1,6 @@
-; nanoBoot ISR for 6502
+; nanoBoot ISR for 6502, v0.2a1
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20180818-1021
+; last modified 20190112-1631
 
 nb_irq:
 	LSR nb_rcv		; mimick IRQ level on least significant bit...
@@ -10,5 +10,4 @@ nb_irq:
 	PLA				; saved status...
 	ORA #%00000100	; ...now with I set
 	PHA				; restore all (A changed)
-	RTI			; total 16 clocks! if on zeropage
-; if I flag is to be set, takes 9 extra clocks (total 25)
+	RTI			; as I flag is to be set, takes 25 clocks

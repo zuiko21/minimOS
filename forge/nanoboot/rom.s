@@ -1,9 +1,10 @@
 ; minimal nanoBoot firmware
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20180822-1922
+; last modified 20190112-1703
 
-;#define	SAFE	_SAFE
-#define	SETOVER	_SETOVER
+#define	SAFE	_SAFE
+#define	TIMEBOOT	_TIMEBOOT
+;#define	SETOVER	_SETOVER
 
 #include "../../OS/macros.h"
 #include "nanoboot.h"
