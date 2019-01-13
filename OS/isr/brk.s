@@ -1,7 +1,7 @@
 ; minimOS BRK panic handler
-; v0.6b3
+; v0.6b4
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20181222-2209
+; last modified 20190113-2057
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -51,6 +51,16 @@ lda#'e':jsr$c0c2
 lda#'!':jsr$c0c2
 
 	JMP lock		; let the system DIE
+; if needed to return after BRK, skip panic message on stacked PC
+;	SEC				; Y is in A, get ready for addition, skipping NUL!
+;	ADC sysptr		; LSB...
+;	TAY				; ...is ready in Y
+;	LDA sysptr+1		; get MSB
+;	ADC #0			; fix MSB if needed, now in A
+;	TSX				; current stack pointer
+;	STA $0110, X		; set LSB+1
+;	TYA				; as no STY abs,X...
+;	STA $0111, X		; ...set MSB
 ;	RTS				; *** otherwise let it finish the ISR
 
 ; send a newline to default device
