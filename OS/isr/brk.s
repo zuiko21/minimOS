@@ -14,10 +14,23 @@ lda#'R':jsr$c0c2
 lda#'K':jsr$c0c2
 
 ; first of all, send a CR to default device
-	JSR brk_cr		; worth it
+	JSR brk_cr			; worth it
 ; let us get the original return address
 ; *** think about a padding byte on any BRK call, would make life much simpler!
-	TSX				; current stack pointer
+	TSX					; current stack pointer
+lda$10b,x:jsr debug_hex
+lda$10a,x:jsr debug_hex
+lda$109,x:jsr debug_hex
+lda$108,x:jsr debug_hex
+lda$107,x:jsr debug_hex
+lda$106,x:jsr debug_hex
+lda$105,x:jsr debug_hex
+lda$104,x:jsr debug_hex
+lda$103,x:jsr debug_hex
+lda$102,x:jsr debug_hex
+lda$101,x:jsr debug_hex
+lda$100,x:jsr debug_hex
+lda#10:jsr$c0c2
 	LDY $010B, X		; get MSB (note offset below)
 	LDA $010A, X		; get LSB+1
 	BNE brk_nw			; will not wrap upon decrement!
