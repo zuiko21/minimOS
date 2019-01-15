@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.6rc1
-; last modified 20190115-1345
+; last modified 20190115-1435
 ; (c) 2016-2019 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -422,9 +422,10 @@ poke_loop:
 poke_opc:
 		LDA count			; matching opcode as computed
 		STA [ptr]			; poke it without offset
-; should check here for REP/SEP in order to update status flags!
-		LDX oper			; get operand just in case
-		JSR sflag_chk  & $FFFF		; possible flag update!
+; should check here for REP/SEP in order to update status flags...
+; ..but since we have a command for that, this code is no longer needed!
+;		LDX oper			; get operand just in case
+;		JSR sflag_chk  & $FFFF		; possible flag update!
 ; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!
 ; **** to do above ****
 ; advance pointer and continue execution
@@ -793,11 +794,11 @@ po_dump:
 		INC bytes			; otherwise there is one more operand
 po_dnmv:
 ; ** check also if a REP/SEP was issued **
-	LDY #1				; byte operand offset
-	LDA [oper], Y		; get operand...
-	TAX					; ...in X
-	LDA [oper]			; and opcode in A
-	JSR $FFFF &  sflag_chk		; check if sflags are to be updated
+;	LDY #1				; byte operand offset
+;	LDA [oper], Y		; get operand...
+;	TAX					; ...in X
+;	LDA [oper]			; and opcode in A
+;	JSR $FFFF &  sflag_chk		; check if sflags are to be updated
 ; now print hex dump as a comment!
 	LDA #';'			; semicolon as comment introducer
 	JSR $FFFF &  prnChar
@@ -1433,27 +1434,27 @@ h2n_err:
 
 ; ** end of inline library **
 
-; * check whether opcode is REP/SEP in order to update size flags
+; * check whether opcode is REP/SEP in order to update size flags *** NO LONGER NEEDED
 ; A=opcode, X=operand, destroys Y
-sflag_chk:
-	TAY					; keep for later
-	AND #%11011111		; filter out differences
-	CMP #$C2			; is it REP/SEP?
-	BNE schk_done		; no flags to correct
-		TYA					; recheck opcode
-		AND #%00100000		; one for SEP, zero for REP
-		BEQ schk_rep
-			TXA					; get operand to be set...
-			ORA sflags			; ...onto current status
-			STA sflags			; updated!
-			RTS
-schk_rep:
-		TXA					; get operand to REset...
-		EOR #$FF			; ...generating a mask...
-		AND sflags			; ...applied to current status
-		STA sflags			; updated!
-schk_done:
-	RTS
+;sflag_chk:
+;	TAY					; keep for later
+;	AND #%11011111		; filter out differences
+;	CMP #$C2			; is it REP/SEP?
+;	BNE schk_done		; no flags to correct
+;		TYA					; recheck opcode
+;		AND #%00100000		; one for SEP, zero for REP
+;		BEQ schk_rep
+;			TXA					; get operand to be set...
+;			ORA sflags			; ...onto current status
+;			STA sflags			; updated!
+;			RTS
+;schk_rep:
+;		TXA					; get operand to REset...
+;		EOR #$FF			; ...generating a mask...
+;		AND sflags			; ...applied to current status
+;		STA sflags			; updated!
+;schk_done:
+;	RTS
 
 ; * convert flag-dependent size markers to standard ones *
 ; A=operand marker, will return standard type
