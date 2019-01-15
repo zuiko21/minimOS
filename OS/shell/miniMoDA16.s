@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.6rc1
-; last modified 20180829-2131
+; last modified 20190115-0930
 ; (c) 2016-2019 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -41,8 +41,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$5600		; time, 10.48
-	.word	$4AAB		; date, 2017/5/11
+	.word	$4DA0		; time, 9.45
+	.word	$4E2F		; date, 2019/1/15
 
 	mmdsize	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -901,6 +901,10 @@ ex_npb:
 	RTS
 
 
+; ** .F = invoke text editor? ***
+; ***** TO DO ****** TO DO ******
+
+
 ; ** .G = set stack pointer **
 set_SP:
 	JSR $FFFF &  fetch_word		; get 16b operand
@@ -908,6 +912,10 @@ set_SP:
 	LDA value+1			; MSB too!
 	STA _sp+1
 	RTS
+
+
+; ** .H = RESERVED ***
+; ***** TO DO ****** TO DO ******
 
 
 ; ** .I = show symbol table ***
@@ -1005,7 +1013,7 @@ ex_ok:
 	JMP $FFFF &  prnStr			; and print it! eeeeeek return also
 
 
-; ** .L = invoke line editor ***
+; ** .L = set register sizes ***
 ; ***** TO DO ****** TO DO ******
 
 
@@ -1599,13 +1607,13 @@ cmd_ptr:
 	.word	call_address	; .C
 	.word	disassemble		; .D
 	.word	examine			; .E
-	.word		_unrecognised	; .F
+	.word		_unrecognised	; .F will invoke line editor
 	.word	set_SP			; .G
-	.word		_unrecognised	; .H
+	.word		_unrecognised	; .H is RESERVED this far
 	.word		_unrecognised	; .I will be symbol_table
 	.word	jump_address	; .J
 	.word	ext_bytes		; .K
-	.word		_unrecognised	; .L will invoke line editor
+	.word		_unrecognised	; .L will set register sizes
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
@@ -1623,8 +1631,8 @@ cmd_ptr:
 
 ; *** strings and other data ***
 splash:
-	.asc	"minimOS 0.6a1 monitor/debugger/assembler", CR
-	.asc	"(c) 2016-2018 Carlos Santisteban", CR
+	.asc	"minimOS 0.6 monitor/debugger/assembler", CR
+	.asc	"(c) 2016-2019 Carlos Santisteban", CR
 #ifdef	SAFE
 	.asc	"Type opcodes or .command, .? for help", CR
 #endif
@@ -1666,32 +1674,37 @@ help_str:
 	.asc	"(d, a, l => 2, 4, 6 hex chars)", CR
 	.asc	"(* => up to 6 hex chars)", CR
 	.asc	"(s => raw string, ends on C", "R)", CR
+;	.asc	"(r => M/X register size,", CR, " +/-/= => 16/8/no change", CR
 	.asc	"---Command list---", CR
-	.asc	".? = show this list", CR
-	.asc	".@d = set Data Bank reg.", CR
-	.asc	".A* = set A reg. (16-bit)", CR
-	.asc	".Bd = store byte", CR
-	.asc	".C* = call subroutine", CR
-	.asc	".D* = disassemble 'u' opcodes", CR
-	.asc	".E* = dump 'u' lines", CR
-	.asc	".Ga = set SP reg.", CR
-	.asc	".J* = jump to address", CR
+	.asc	".?   = show this list", CR
+	.asc	".@d  = set Data Bank reg.", CR
+	.asc	".A*  = set A reg. (16-bit)", CR
+	.asc	".Bd  = store byte", CR
+	.asc	".C*  = call subroutine", CR
+	.asc	".D*  = disassemble 'u' opcodes", CR
+	.asc	".E*  = dump 'u' lines", CR
+;	.asc	".F*  = edit text on memory", CR
+	.asc	".Ga  = set SP reg.", CR
+;	.asc	".H   = RESERVED?", CR
+;	.asc	".I   = show symbol table", CR
+	.asc	".J*  = jump to address", CR
 	.asc	".K+d = load n bytes from dev. d", CR
 	.asc	".K-d = save n bytes to device d", CR
-	.asc	".Ml = copy 'n' bytes to l", CR
-	.asc	".N* = set 'n' value (16-bit)", CR
-	.asc	".O* = set origin address", CR
-	.asc	".Pd = set Status reg.", CR
-	.asc	".Q = quit", CR
-	.asc	".R = reboot or poweroff", CR
-	.asc	".Ss = store raw string", CR
-	.asc	".T* = assemble source", CR
-	.asc	".Ud = set 'u' lines", CR
-	.asc	".V = view registers", CR
-	.asc	".Wa = store word", CR
-	.asc	".X* = set X reg. (16-bit)", CR
-	.asc	".Y* = set Y reg. (16-bit)", CR
-	.asc	".Z* = set Direct Page (16-bit)", CR
+;	.asc	".Lrr = set M & X register sizes", CR
+	.asc	".M*  = copy 'n' bytes to l", CR
+	.asc	".Na  = set 'n' value (16-bit)", CR
+	.asc	".O*  = set origin address", CR
+	.asc	".Pd  = set Status reg.", CR
+	.asc	".Q   = quit", CR
+	.asc	".R   = reboot or poweroff", CR
+	.asc	".Ss  = store raw string", CR
+	.asc	".T*  = assemble source", CR
+	.asc	".Ud  = set 'u' lines", CR
+	.asc	".V   = view registers", CR
+	.asc	".Wa  = store word", CR
+	.asc	".X*  = set X reg. (16-bit)", CR
+	.asc	".Y*  = set Y reg. (16-bit)", CR
+	.asc	".Z*  = set Direct Page (16-bit)", CR
 #endif
 	.byt	0
 
