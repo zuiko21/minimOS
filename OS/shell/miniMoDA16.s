@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.6rc1
-; last modified 20190115-0930
+; last modified 20190115-1345
 ; (c) 2016-2019 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -1013,8 +1013,40 @@ ex_ok:
 	JMP $FFFF &  prnStr			; and print it! eeeeeek return also
 
 
-; ** .L = set register sizes ***
-; ***** TO DO ****** TO DO ******
+; ** .L = set register sizes *** new
+set_siz:
+; prepare bit mask
+	LDA #$22			; preset mask for M bit... plus C sentinel!
+	STA temp			; mask storage
+; loop for trying to get a char for setting/resetting the bit
+ss_cmd:
+		JSR $FFFF &  getNextChar		; is there an extra character?
+			BCS ss_exit			; end of command, no more to do
+		TAX					; check whether end of buffer
+			BEQ ss_exit			; ibidem
+; check required size change, first for M, then for X
+		CMP #'+'			; asking for 16-bit size?
+		BNE ss_notw
+			LDA temp			; mask for corresponding bit
+			EOR #$FF			; inverted! could use $30 as well
+			AND sflags			; remove bit...
+			BRA ss_next			; in case another bit remains
+ss_notw:
+		CMP #'-'			; asking for 18-bit size?
+		BNE ss_not8
+			LDA temp			; mask for corresponding bit
+			AND #$30			; remove sentinel bit for security!
+			ORA sflags			; set bit...
+;			BRA ss_next
+ss_not8:
+; if not '+' neither '-', we may safely assume it will not change that size, will not check for '='
+; ...or complain if we are very picky!
+ss_next:
+		STA sflags			; ...and finally update flags
+		LSR temp			; next bit
+		BCC ss_cmd			; one bit still remains
+ss_exit:
+	RTS
 
 
 ; ** .M = move (copy) 'n' bytes of memory **
@@ -1432,13 +1464,13 @@ adrmodes:
 		BRA sc_flchk		; check appropriate flag
 sc_nxflag:
 	CMP #'?'			; depending on M flag?
-	BNE sc_stdm		; if not, nothing more to check
+	BNE sc_stdm			; if not, nothing more to check
 		LDA #$20			; mask for M flag
 sc_flchk:
 		AND sflags			; get special site for flags!!!
 		BEQ sc_fl0			; if zero, 16-bit mode!
 			LDA #'@'			; otherwise is an 8-bit amount
-			RTS			; proceed as usual
+			RTS					; proceed as usual
 sc_fl0:
 		LDA #'&'			; expecting word size
 sc_stdm:
@@ -1613,7 +1645,7 @@ cmd_ptr:
 	.word		_unrecognised	; .I will be symbol_table
 	.word	jump_address	; .J
 	.word	ext_bytes		; .K
-	.word		_unrecognised	; .L will set register sizes
+	.word	set_siz			; .L
 	.word	move			; .M
 	.word	set_count		; .N
 	.word	origin			; .O
@@ -1690,7 +1722,7 @@ help_str:
 	.asc	".J*  = jump to address", CR
 	.asc	".K+d = load n bytes from dev. d", CR
 	.asc	".K-d = save n bytes to device d", CR
-;	.asc	".Lrr = set M & X register sizes", CR
+	.asc	".Lrr = set M & X register sizes", CR
 	.asc	".M*  = copy 'n' bytes to l", CR
 	.asc	".Na  = set 'n' value (16-bit)", CR
 	.asc	".O*  = set origin address", CR
