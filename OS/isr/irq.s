@@ -2,7 +2,7 @@
 ; v0.6rc6, should match kernel.s
 ; features TBD
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20181225-1136
+; last modified 20190116-1707
 
 #define		ISR		_ISR
 
@@ -98,8 +98,8 @@ ir_done:
 ; *** BRK is no longer simulated by FW, must use some other way ***
 ; *****************************************************************
 ; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
-;		JMP (brk_02)		; reuse some hard vector
-		JMP brk_hndl		; non-portable, optimised way
+		JMP (brk_02)		; reuse some hard vector
+;		JMP brk_hndl		; non-portable, optimised way
 ; *** continue after all interrupts dispatched ***
 isr_done:
 	_PLY	; restore registers (3x4 + 6)
