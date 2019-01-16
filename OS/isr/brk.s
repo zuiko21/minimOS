@@ -18,13 +18,13 @@ lda#'K':jsr$c0c2
 ; let us get the original return address
 ; *** think about a padding byte on any BRK call, would make life much simpler!
 	TSX					; current stack pointer
-/*nop:nop:nop:nop
+nop:nop:nop:nop
 nop:nop:nop:nop
 nop:nop:nop:nop
 
-nop*/
+nop
 
-/*lda$10b,x:jsr debug_hex
+lda$10b,x:jsr debug_hex
 lda$10a,x:jsr debug_hex
 lda$109,x:jsr debug_hex
 lda$108,x:jsr debug_hex
@@ -35,8 +35,7 @@ lda$104,x:jsr debug_hex
 lda$103,x:jsr debug_hex
 lda$102,x:jsr debug_hex
 lda$101,x:jsr debug_hex
-lda$100,x:jsr debug_hex
-lda#10:jsr$c0c2
+/*lda#10:jsr$c0c2
 lda#'A':jsr$c0c2
 lda#'b':jsr$c0c2*/
 
