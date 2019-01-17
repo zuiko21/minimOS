@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1b9
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20181024-0901
+; last modified 20190117-1103
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -414,7 +414,7 @@ nm_read:
 	JSR nm_shex			; as hex
 	LDA z_addr			; same for LSB
 	JSR nm_shex
-	LDA #'>'			; prompt sign
+	LDA #COLON			; prompt sign
 	JSR nm_out
 	LDX #0				; reset cursor
 nr_loop:
