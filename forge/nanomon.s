@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b9
+; v0.1b10
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190117-1103
+; last modified 20190117-1233
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -107,7 +107,62 @@ STKSIZ	= 8
 
 ; main loop
 nm_main:
-		JSR nm_read			; get line
+;		JSR nm_read			; get line *** can be inlined
+;nm_read:
+		LDA #LF				; eeeeeeeeeeeeek (needed for run816) CR
+		JSR nm_out
+		LDA z_addr+1		; PC.MSB
+		JSR nm_shex			; as hex
+		LDA z_addr			; same for LSB
+		JSR nm_shex
+		LDA #COLON			; prompt sign
+		JSR nm_out
+		LDX #0				; reset cursor
+nr_loop:
+			STX z_cur			; keep in memory, just in case
+nl_ign:
+			JSR nm_in
+; *** must convert to uppercase ***
+			CMP #'a'			; lowercase?
+			BCC nl_upp			; no, leave it as is
+				AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
+nl_upp:
+; *** end of uppercase conversion ***
+			CMP #LF				; is it newline? EEEEEEEEEEEEEEEEK (CR)
+				BEQ nl_end			; if so, just end input
+			CMP #BS				; was it backspace?
+				BEQ nl_bs			; delete then
+			CMP #' '			; whitespace?
+				BCC nl_ign			; simply ignore it!
+			PHA					; save what was received...
+			JSR nm_out			; ...in case it gets affected
+			PLA
+			LDX z_cur			; retrieve cursor
+; *** could check bounds here ***
+#ifdef	SAFE
+			CPX #BUFFER			; full buffer?
+			BCC nl_ok			; no, just continue
+				LDA #BS				; yes, delete last printed
+				JSR nm_out
+; perhaps could beep also...
+				BRA nr_loop			; nothing gets written, ask again for BS
+nl_ok:
+#endif
+			STA buff, X			; store char in buffer
+			INX					; go for next (no need for BRA)
+			BNE nr_loop
+nl_bs:
+		JSR nm_out			; will echo BS
+		LDX z_cur			; retrieve cursor as usual
+			BEQ nr_loop			; do not delete if already at beginning
+		DEX					; otherwise go back once
+		_BRA nr_loop
+nl_end:
+		JSR nm_out			; must echo CR
+		LDX z_cur			; retrieve cursor as usual
+		_STZA buff, X		; terminate string!
+		_STZA z_cur			; and reset cursor too
+;		RTS
 nm_eval:
 			LDX z_cur
 			LDA buff, X			; get one char
@@ -404,64 +459,6 @@ nm_in:
 		CMP #0				; something arrived?
 		BEQ nm_in			; it is locking input
 	RTS
-
-nm_read:
-; * input command line into buffer *
-; good to put some prompt before
-	LDA #LF				; eeeeeeeeeeeeek (needed for run816) CR
-	JSR nm_out
-	LDA z_addr+1		; PC.MSB
-	JSR nm_shex			; as hex
-	LDA z_addr			; same for LSB
-	JSR nm_shex
-	LDA #COLON			; prompt sign
-	JSR nm_out
-	LDX #0				; reset cursor
-nr_loop:
-		STX z_cur			; keep in memory, just in case
-nl_ign:
-		JSR nm_in
-; *** must convert to uppercase ***
-		CMP #'a'			; lowercase?
-		BCC nl_upp			; no, leave it as is
-			AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
-nl_upp:
-; *** end of uppercase conversion ***
-		CMP #LF				; is it newline? EEEEEEEEEEEEEEEEK (CR)
-			BEQ nl_end			; if so, just end input
-		CMP #BS				; was it backspace?
-			BEQ nl_bs			; delete then
-		CMP #' '			; whitespace?
-			BCC nl_ign			; simply ignore it!
-		PHA					; save what was received...
-		JSR nm_out			; ...in case it gets affected
-		PLA
-		LDX z_cur			; retrieve cursor
-; *** could check bounds here ***
-#ifdef	SAFE
-		CPX #BUFFER			; full buffer?
-		BCC nl_ok			; no, just continue
-			LDA #BS				; yes, delete last printed
-			JSR nm_out
-; perhaps could beep also...
-			BRA nr_loop			; nothing gets written, ask again for BS
-nl_ok:
-#endif
-		STA buff, X			; store char in buffer
-		INX					; go for next (no need for BRA)
-		BNE nr_loop
-nl_end:
-	JSR nm_out			; must echo CR
-	LDX z_cur			; retrieve cursor as usual
-	_STZA buff, X		; terminate string!
-	_STZA z_cur			; and reset cursor too
-	RTS
-nl_bs:
-	JSR nm_out			; will echo BS
-	LDX z_cur			; retrieve cursor as usual
-		BEQ nr_loop			; do not delete if already at beginning
-	DEX					; otherwise go back once
-	_BRA nr_loop
 
 nm_hx2n:
 ; * convert from hex and ADD nibble to z_dat *
