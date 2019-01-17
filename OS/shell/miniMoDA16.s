@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.6rc1
-; last modified 20190115-1435
+; v0.6rc2
+; last modified 20190117-1218
 ; (c) 2016-2019 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -424,9 +424,10 @@ poke_opc:
 		STA [ptr]			; poke it without offset
 ; should check here for REP/SEP in order to update status flags...
 ; ..but since we have a command for that, this code is no longer needed!
+; enable this if deemed necessary
 ;		LDX oper			; get operand just in case
 ;		JSR sflag_chk  & $FFFF		; possible flag update!
-; now it is time to print the opcode and hex dump! make sures 'bytes' is preserved!!!
+; now it is time to print the opcode and hex dump! make sure 'bytes' is preserved!!!
 ; **** to do above ****
 ; advance pointer and continue execution
 		LDA bytes			; add number of operands...
@@ -793,12 +794,12 @@ po_dump:
 	BNE po_dnmv			; nope, nothing to correct
 		INC bytes			; otherwise there is one more operand
 po_dnmv:
-; ** check also if a REP/SEP was issued **
-;	LDY #1				; byte operand offset
-;	LDA [oper], Y		; get operand...
-;	TAX					; ...in X
-;	LDA [oper]			; and opcode in A
-;	JSR $FFFF &  sflag_chk		; check if sflags are to be updated
+; ** check also if a REP/SEP was issued ** makes sense as no source directives to be found!
+	LDY #1				; byte operand offset
+	LDA [oper], Y		; get operand...
+	TAX					; ...in X
+	LDA [oper]			; and opcode in A
+	JSR $FFFF &  sflag_chk		; check if sflags are to be updated
 ; now print hex dump as a comment!
 	LDA #';'			; semicolon as comment introducer
 	JSR $FFFF &  prnChar
@@ -1434,27 +1435,27 @@ h2n_err:
 
 ; ** end of inline library **
 
-; * check whether opcode is REP/SEP in order to update size flags *** NO LONGER NEEDED
+; * check whether opcode is REP/SEP in order to update size flags *** NO LONGER NEEDED but useful for disassembly
 ; A=opcode, X=operand, destroys Y
-;sflag_chk:
-;	TAY					; keep for later
-;	AND #%11011111		; filter out differences
-;	CMP #$C2			; is it REP/SEP?
-;	BNE schk_done		; no flags to correct
-;		TYA					; recheck opcode
-;		AND #%00100000		; one for SEP, zero for REP
-;		BEQ schk_rep
-;			TXA					; get operand to be set...
-;			ORA sflags			; ...onto current status
-;			STA sflags			; updated!
-;			RTS
-;schk_rep:
-;		TXA					; get operand to REset...
-;		EOR #$FF			; ...generating a mask...
-;		AND sflags			; ...applied to current status
-;		STA sflags			; updated!
-;schk_done:
-;	RTS
+sflag_chk:
+	TAY					; keep for later
+	AND #%11011111		; filter out differences
+	CMP #$C2			; is it REP/SEP?
+	BNE schk_done		; no flags to correct
+		TYA					; recheck opcode
+		AND #%00100000		; one for SEP, zero for REP
+		BEQ schk_rep
+			TXA					; get operand to be set...
+			ORA sflags			; ...onto current status
+			STA sflags			; updated!
+			RTS
+schk_rep:
+		TXA					; get operand to REset...
+		EOR #$FF			; ...generating a mask...
+		AND sflags			; ...applied to current status
+		STA sflags			; updated!
+schk_done:
+	RTS
 
 ; * convert flag-dependent size markers to standard ones *
 ; A=operand marker, will return standard type
@@ -1707,7 +1708,7 @@ help_str:
 	.asc	"(d, a, l => 2, 4, 6 hex chars)", CR
 	.asc	"(* => up to 6 hex chars)", CR
 	.asc	"(s => raw string, ends on C", "R)", CR
-;	.asc	"(r => M/X register size,", CR, " +/-/= => 16/8/no change", CR
+	.asc	"(r => M/X register size,", CR, " +/-/= => 16/8/no change", CR
 	.asc	"---Command list---", CR
 	.asc	".?   = show this list", CR
 	.asc	".@d  = set Data Bank reg.", CR
