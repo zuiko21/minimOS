@@ -2,7 +2,7 @@
 ; v0.6rc6, should match kernel.s
 ; features TBD
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190116-1707
+; last modified 20190117-1051
 
 #define		ISR		_ISR
 
@@ -47,9 +47,9 @@ asynchronous:
 ;i_req:
 ;		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 *** (4)
 ;		BPL i_rnx			; *** if disabled, skip this task *** (2/3)
-;			_PHX				; keep index! (3)
+;			PHX				; keep index! (3)
 ;			JSR ir_call			; call from table (12...)
-;			_PLX				; restore index (4)
+;			PLX				; restore index (4)
 ;				BCC isr_done		; driver satisfied, thus go away NOW, BCC instead of BCS 20150320 (2/3)
 ;i_rnx:
 ;		DEX					; go backwards to be faster! (2+2)
@@ -80,7 +80,7 @@ i_anx:
 
 ir_done:
 ; *********************
-; lastly, check for BRK (11 if spurious, 28+FW call if issued)
+; lastly, check for BRK
 ; *********************
 	TSX					; get stack pointer (2)
 	LDA $0104, X		; get saved PSR (4)
@@ -93,7 +93,6 @@ ir_done:
 		PHA
 		LDA systmp
 		PHA
-; proceed with standard routine, this knows nothing about FW vars
 ; *****************************************************************
 ; *** BRK is no longer simulated by FW, must use some other way ***
 ; *****************************************************************
@@ -136,11 +135,11 @@ periodic:
 ;			STA drv_cnt, X		; ...and reset it!
 ;			LDA drv_freq+1, X
 ;			STA drv_cnt+1, X
-;			_PHX				; keep index! (3)
+;			PHX				; keep index! (3)
 ;			JSR ip_call			; call from table (12...)
 ; *** here is the return point needed for B_EXEC in order to create the stack frame ***
 ;isr_schd:				; *** take this standard address!!! ***
-;			_PLX				; restore index (4)
+;			PLX				; restore index (4)
 ;i_pnx:
 ;		BNE i_poll			; until zero is done (3/2)
 
