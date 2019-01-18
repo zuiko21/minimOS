@@ -1,7 +1,7 @@
 ; minimOS BRK panic handler
 ; v0.6b6
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190118-0957
+; last modified 20190118-1015
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -44,12 +44,19 @@ brk_end:
 	SEC					; Y is in A, get ready for addition, skipping NUL!
 	ADC sysptr			; LSB...
 	TAY					; ...is ready in Y
+	INY					; must skip NUL, really!
+	BNE be_nz			; neither will wrap
+		SEC					; ...or correct next MSB
+be_nz:
 	LDA sysptr+1		; get MSB
 	ADC #0				; fix MSB if needed, now in A
+jsr debug_hex
 	TSX					; current stack pointer
-	STA $0110, X		; set LSB+1
+	STA $010B, X		; set MSB eeeeeeeeeeeeeeek
 	TYA					; as no STY abs,X...
-	STA $0111, X		; ...set MSB
+	STA $010A, X		; ...set LSB eeeeeeeeeeeek
+jsr debug_hex
+jmp lock
 	RTS					; *** otherwise let it finish the ISR
 
 ; send a newline to default device
@@ -62,7 +69,7 @@ rts
 ;	STA io_c			; kernel parameter
 ;	KERNEL(COUT)		; system call
 ;	RTS
-/*
+
 debug_hex:
 pha
 lda#10:jsr$c0c2
@@ -80,4 +87,4 @@ dhx_num:
 clc:adc#'0'
 jsr$c0c2
 rts
-*/
+
