@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6rc6, should match kernel.s
+; v0.6rc7, should match kernel.s
 ; features TBD
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190117-1051
+; last modified 20190117-0955
 
 #define		ISR		_ISR
 
@@ -17,20 +17,18 @@
 	PHA						; save registers (3x3)
 	_PHX
 	_PHY
-
 ; *** place here HIGH priority async tasks, if required ***
 
-; check whether from VIA, BRK... (7 if periodic, 6 if async)
-
-;	ADMIN(IRQ_SRC)			; check source, **generic way**
-;	JMPX(irq_tab)			; do as appropriate
-;irq_tab:
-;	.word periodic			; standard jiffy
-;	.word asyncronous		; async otherwise
+; check whether from VIA, BRK...
+	_ADMIN(IRQ_SRC)			; check source, **generic way**
+	_JMPX(irq_tab)			; do as appropriate
+irq_tab:
+	.word periodic			; standard jiffy
+	.word asynchronous		; async otherwise
 
 ; optimised, non-portable code
-	BIT VIA+IFR				; much better than LDA + ASL + BPL! (4)
-		BVS periodic		; from T1 (3/2)
+;	BIT VIA+IFR				; much better than LDA + ASL + BPL! (4)
+;		BVS periodic		; from T1 (3/2)
 
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 17 cycles if optimised)
@@ -114,6 +112,7 @@ ip_call:
 
 ; *** here goes the periodic interrupt code *** (4)
 periodic:
+lda#'#':jsr$c0c2		; *** periodic interrupt should NEVER happen ***
 	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
 
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***

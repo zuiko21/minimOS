@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc13
+; v0.9.6rc14
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20181227-1758
+; last modified 20190118-0949
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -30,7 +30,7 @@ fw_mname:
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$4DA0				; time, 09.45
-	.word	$4C45				; date, 2018/2/5
+	.word	$4E32				; date, 2019/1/18
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -236,9 +236,9 @@ jiffy:
 ; ****************************************
 ; IRQ_SRC, investigate source of interrupt
 ; ****************************************
-; notice non-standard ABI, same module as 6502 version!
+; *** TWEAKED version for VIA-less emulators, always ASYNC! ***
 irq_src:
-#include "modules/irq_src.s"
+#include "modules/irq_src_emu.s"
 
 ; *** hardware specific ***
 

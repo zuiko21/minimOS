@@ -1,44 +1,18 @@
 ; minimOS BRK panic handler
-; v0.6b5
+; v0.6b6
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190114-0859
+; last modified 20190118-0957
 
 #ifndef	HEADERS
 #include "../usual.h"
 #endif
-
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
-lda#'B':jsr$c0c2
-lda#'R':jsr$c0c2
-lda#'K':jsr$c0c2
 
 ; first of all, send a CR to default device
 	JSR brk_cr			; worth it
-; let us get the original return address
-; *** think about a padding byte on any BRK call, would make life much simpler!
+; let us get the original return address, where the panic string begins
 	TSX					; current stack pointer
-/*nop:nop:nop:nop
-nop:nop:nop:nop
-nop:nop:nop:nop
-
-nop
-
-lda$10b,x:jsr debug_hex
-lda$10a,x:jsr debug_hex
-lda$109,x:jsr debug_hex
-lda$108,x:jsr debug_hex
-lda$107,x:jsr debug_hex
-lda$106,x:jsr debug_hex
-lda$105,x:jsr debug_hex
-lda$104,x:jsr debug_hex
-lda$103,x:jsr debug_hex
-lda$102,x:jsr debug_hex
-lda$101,x:jsr debug_hex
-lda#10:jsr$c0c2
-lda#'A':jsr$c0c2
-lda#'b':jsr$c0c2*/
-
 	LDY $010B, X		; get MSB (note offset below)
 	LDA $010A, X		; get LSB+1
 	BNE brk_nw			; will not wrap upon decrement!
@@ -65,24 +39,18 @@ brk_term:
 brk_end:
 	JSR brk_cr			; another newline
 ; we are done, should call debugger if desired, otherwise we will just lock
-lda#10:jsr$c0c2
-lda#'D':jsr$c0c2
-lda#'i':jsr$c0c2
-lda#'e':jsr$c0c2
-lda#'!':jsr$c0c2
-
-	JMP lock			; let the system DIE
+;	JMP lock			; let the system DIE
 ; if needed to return after BRK, skip panic message on stacked PC
-;	SEC					; Y is in A, get ready for addition, skipping NUL!
-;	ADC sysptr			; LSB...
-;	TAY					; ...is ready in Y
-;	LDA sysptr+1		; get MSB
-;	ADC #0				; fix MSB if needed, now in A
-;	TSX					; current stack pointer
-;	STA $0110, X		; set LSB+1
-;	TYA					; as no STY abs,X...
-;	STA $0111, X		; ...set MSB
-;	RTS					; *** otherwise let it finish the ISR
+	SEC					; Y is in A, get ready for addition, skipping NUL!
+	ADC sysptr			; LSB...
+	TAY					; ...is ready in Y
+	LDA sysptr+1		; get MSB
+	ADC #0				; fix MSB if needed, now in A
+	TSX					; current stack pointer
+	STA $0110, X		; set LSB+1
+	TYA					; as no STY abs,X...
+	STA $0111, X		; ...set MSB
+	RTS					; *** otherwise let it finish the ISR
 
 ; send a newline to default device
 brk_cr:
@@ -94,7 +62,7 @@ rts
 ;	STA io_c			; kernel parameter
 ;	KERNEL(COUT)		; system call
 ;	RTS
-
+/*
 debug_hex:
 pha
 lda#10:jsr$c0c2
@@ -112,3 +80,4 @@ dhx_num:
 clc:adc#'0'
 jsr$c0c2
 rts
+*/
