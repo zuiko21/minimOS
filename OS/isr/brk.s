@@ -1,7 +1,7 @@
 ; minimOS BRK panic handler
 ; v0.6b6
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190118-1015
+; last modified 20190118-1115
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -22,6 +22,8 @@ brk_nw:
 ; Y/A points to beginning of string
 	STY sysptr+1		; prepare internal pointer, should it be saved for reentrancy?
 	STA sysptr
+;pha:tya:jsr debug_hex
+;pla:jsr debug_hex
 	LDY #0				; eeeeeeeeeeeeeeeeeek
 brk_ploop:
 		_PHY				; save cursor
@@ -32,31 +34,26 @@ brk_ploop:
 		INY					; next in string
 		BNE brk_ploop		; this version will not print over 256 chars!
 #ifdef	SAFE
-		BEQ brk_end			; string too long, should never arrive
+	DEY					; will turn to $FF, max length
+	_PHY				; string too long, should never arrive, but try to crop it!
 #endif
 brk_term:
-	PLA					; discard saved counter
-brk_end:
 	JSR brk_cr			; another newline
+	PLA					; retrieve saved counter
 ; we are done, should call debugger if desired, otherwise we will just lock
 ;	JMP lock			; let the system DIE
 ; if needed to return after BRK, skip panic message on stacked PC
 	SEC					; Y is in A, get ready for addition, skipping NUL!
 	ADC sysptr			; LSB...
 	TAY					; ...is ready in Y
-	INY					; must skip NUL, really!
-	BNE be_nz			; neither will wrap
-		SEC					; ...or correct next MSB
-be_nz:
 	LDA sysptr+1		; get MSB
 	ADC #0				; fix MSB if needed, now in A
-jsr debug_hex
 	TSX					; current stack pointer
 	STA $010B, X		; set MSB eeeeeeeeeeeeeeek
+;jsr debug_hex
 	TYA					; as no STY abs,X...
 	STA $010A, X		; ...set LSB eeeeeeeeeeeek
-jsr debug_hex
-jmp lock
+;jsr debug_hex
 	RTS					; *** otherwise let it finish the ISR
 
 ; send a newline to default device
