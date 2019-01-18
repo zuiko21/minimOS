@@ -102,7 +102,6 @@ reset:
 ; *** set default CPU type ***
 #include "modules/default_816.s"
 ; as this is the only valid CPU for this firmware, no further checking necessary
-
 ; *** continue parameter setting, worth switching to 16-bit memory while setting pointers ***
 	.al: REP #$20
 

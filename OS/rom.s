@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6b7
+; v0.6b8
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20181205-1103
+; last modified 20190118-0916
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -32,8 +32,8 @@ sysvol:
 
 	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date field
 
-	.word	$6800				; time, 13.00
-	.word	$4AB8				; date, 2017/05/24
+	.word	$49E0				; time, 9.15
+	.word	$4E32				; date, 2019/01/18
 
 ;romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 
@@ -109,7 +109,7 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 #include "../apps/minized.s"
 #include "../apps/sigtest.s"
 
-
+/*
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
 #ifndef	NOHEAD
@@ -133,7 +133,7 @@ emptySize	=	afterIO - empty_head -256	; compute size NOT including header!
 afterIO		= $E000				; assume I/O ends at $DFFF
 	.dsb	afterIO - *, $FF	; skip I/O and page alignment!!!
 * = afterIO					; should be already there
-
+*/
 
 ; *************************************
 ; ****** more software after I/O ******
