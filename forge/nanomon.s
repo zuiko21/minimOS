@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b10
+; v0.1b12
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190117-1233
+; last modified 20190119-1224
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -33,7 +33,7 @@
 ; ***************
 ; *** options ***
 ; ***************
-#define	SAFE	_SAFE
+;#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
@@ -76,19 +76,19 @@ STKSIZ	= 8
 
 #ifdef	NMI_SF
 ; ** pick register values from standard stack frame, if needed **
-; forget about systmp/sysptr
-	LDA $104, X			; stacked Y
+; do not mess with systmp/sysptr
+	LDA $106, X			; stacked Y
 	STA z_y
-	LDA $105, X			; stacked X
+	LDA $107, X			; stacked X
 	STA z_x
-	LDA $106, X			; stacked A
+	LDA $108, X			; stacked A
 	STA z_acc
 ; minimal status with new offsets
 ; systems without NMI-handler may keep old offsets $101...103
-	LDA $107, X			; get stacked PSR
+	LDA $109, X			; get stacked PSR
 	STA z_psr			; update value
-	LDY $108, X			; get stacked PC
-	LDA $109, X
+	LDY $10A, X			; get stacked PC
+	LDA $10B, X
 	STY z_addr			; update current pointer
 	STA z_addr+1
 #else
@@ -171,6 +171,7 @@ nm_eval:
 ; *** NEW, check for exit command, remove if not needed ***
 			CMP #COLON			; trying to exit?
 			BNE nm_cont			; no, continue
+; note that this will not modify stacked register values!
 #ifndef	NMI_SF
 				RTI					; exit from debugger
 #else

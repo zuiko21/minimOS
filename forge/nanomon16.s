@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b4
+; v0.1b5
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190117-1105
+; last modified 20190119-1237
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -35,7 +35,7 @@
 ; ***************
 ; *** options ***
 ; ***************
-#define	SAFE	_SAFE
+;#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
@@ -84,25 +84,25 @@
 ; forget about systmp/sysptr AND caller
 	.al: REP #$20
 ; should store D too, as the NMI stack frame does not modify it!
-	LDA 7, S			; stacked Y
+	LDA 8, S			; stacked Y
 	STA z_y
-	LDA 9, S			; stacked X
+	LDA 10, S			; stacked X
 	STA z_x
-	LDA 11, S			; stacked A
+	LDA 12, S			; stacked A
 	STA z_acc
 	PHD					; will save Direct Page
 	PLA
 	STA z_d
 ; minimal status with new offsets
-	LDA 14, S			; get stacked PC
+	LDA 15, S			; get stacked PC
 	STA z_addr			; update current pointer
 	.as: .xs: SEP #$30	; *** make sure all in 8-bit ***
-	LDA 16, S			; bank address too
+	LDA 17, S			; bank address too
 	STA z_addr+2
-	LDA 13, S			; get stacked PSR
+	LDA 14, S			; get stacked PSR
 	STA z_psr			; update value
 ; should keep stacked Data Bank register
-	LDA 6, S			; stacked B
+	LDA 7, S			; stacked B
 	STA z_b
 #else
 	JSR njs_regs		; keep current state, but that PSR is not valid
