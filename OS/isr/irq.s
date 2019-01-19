@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6rc7, should match kernel.s
+; v0.6rc8, should match kernel.s
 ; features TBD
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190117-0955
+; last modified 20190119-1201
 
 #define		ISR		_ISR
 
@@ -85,11 +85,11 @@ ir_done:
 	AND #$10			; mask out B bit (2)
 	BEQ isr_done		; spurious interrupt! (2/3)
 ; ...this is BRK, but must emulate NMI stack frame!
-		LDA sysptr		; save extended state (6x3)
+		LDA systmp
 		PHA
 		LDA sysptr+1
 		PHA
-		LDA systmp
+		LDA sysptr		; save extended state (6x3)
 		PHA
 ; *****************************************************************
 ; *** BRK is no longer simulated by FW, must use some other way ***

@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20181227-1740
+; last modified 20190119-1221
 
 ; *** generic NMI handler for 65816 ***
 ; expected to be fully re-entrant
@@ -17,8 +17,8 @@
 ; make NMI reentrant, new 65816 specific code
 	LDA sysptr			; get original words (4+3)
 	LDX systmp			; this will no longer get sys_sp too!
-	PHA					; make sure 8-bit systmp is on top (3+4)
 	PHX
+	PHA					; why 8-bit systmp was on top? (3+4)
 ; switch DBR to bank zero!!!! but not really needed as JMP[abs] takes the pointer from bank zero
 ;	PHK					; push a zero... (3+4)
 ;	PLB					; ...as current data bank!
@@ -55,6 +55,10 @@
 ; return address already set! No need to reset DBR as only DP is accessed afterwards
 ; MUST respect DP and sys_sp, though
 	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
+
+; ********************************************
+; *** here goes the former nmi_end routine ***
+; ********************************************
 +nmi_end:
 #ifdef	SUPPORT
 ; 6502 handlers will end in RTS causing stack imbalance
@@ -66,12 +70,13 @@
 #else
 	.as: SEP #$20		; ** 8-bit memory for a moment ** (3)
 #endif
-; *** here goes the former nmi_end routine ***
-	PLA					; restrieve systmp and restore it, no longer including sys_sp (4+3)
-	STA systmp			; restore values (4+4)
-	.al: .xl: REP #$30	; ** whole register size to restore the rest ** (3)
-	PLA					; restore saved sysptr (5+5)
-	STA sysptr
+; new extended state order needs this new code (10b instead of 8b)
+	.xl: REP #$10		; ** 16-bit index for sysptr ** (3)
+	PLX					; this gets sysptr (5)
+	PLA					; retrieve systmp and restore it, no longer including sys_sp (4)
+	STA systmp			; restore values (3+4)
+	STX sysptr
+	.al: REP #$20		; ** whole register size to restore the rest ** (3)
 ; as DBR was pushed, time to restore it
 	PLB					; eeeeeeeek (4)
 	PLY					; restore regular registers (3x5)

@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20180906-1656
+; last modified 20190119-1209
 
 ; *** generic NMI handler for 6502/65C02 ***
 ; expected to be fully re-entrant
@@ -15,12 +15,12 @@
 	_PHX
 	_PHY
 ; have to save systmp and sysptr, new faster (18 vs 41t) way, just one more byte!
-	LDA sysptr			; get original byte (3)
-	PHA					; put it on stack (3)
-	LDA sysptr+1		; same with other bytes (3*4)
-	PHA
-	LDA systmp
+	LDA systmp				; new order
 	PHA					; eeeeeeeeek
+	LDA sysptr+1
+	PHA
+	LDA sysptr
+	PHA
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
 ; alternative faster way 39b, 58t (was 29b, 89t)
@@ -46,15 +46,17 @@
 		BNE rst_nmi			; not a valid routine (2/3)
 #endif
 	JSR nmi_call		; will do indirect call (6...)
+; **************************************************************
 ; *** here goes the former nmi_end routine, restore and exit ***
+; **************************************************************
 +nmi_end:
 ; restore temporary vars, faster way is 9b, 24t (vs. 8b/40t)
-	PLA					; get byte from stack (4)
-	STA systmp			; restore it (4)
+	PLA					; get byte from stack, new order (4)
+	STA sysptr			; restore it (4)
 	PLA					; get byte from stack (4)
 	STA sysptr+1		; restore it (4)
 	PLA					; get byte from stack (4)
-	STA sysptr			; restore it (4)
+	STA systmp			; restore it (4)
 ; restore registers
 	_PLY				; restore regular registers (3x4)
 	_PLX

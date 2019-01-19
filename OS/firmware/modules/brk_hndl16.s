@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20181227-1742
+; last modified 20190119-1204
 
 ; *** generic BRK handler for 65816 ***
 -brk_hndl:				; label from vector list
@@ -15,8 +15,8 @@
 	.xs: SEP #$10		; *** back to 8-bit indexes ***
 	LDA sysptr			; get whole 16 bits
 	LDX systmp			; do not mess with sys_sp
-	PHA
 	PHX
+	PHA
 ; in case an unaware 6502 app installs a handler ending in RTS,
 ; stack imbalance will happen, best keep SP and compare afterwards
 #ifdef	SUPPORT
