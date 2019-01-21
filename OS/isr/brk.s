@@ -54,7 +54,7 @@ brk_term:
 	TYA					; as no STY abs,X...
 	STA $010A, X		; ...set LSB eeeeeeeeeeeek
 ;jsr debug_hex
-	JMP nanomon			; testing, will return to BRK handler
+	JMP nanomon			; testing, will return to BRK handler *** needs NMI_SF option ***
 ;	RTS					; *** otherwise let it finish the ISR
 
 ; send a newline to default device

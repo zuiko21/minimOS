@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1b13
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190121-1005
+; last modified 20190121-1405
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -113,9 +113,7 @@ nmr_loop:
 	STA z_addr+1
 #endif
 	_STZA z_sp			; reset data stack pointer
-#ifdef	NMOS
-	CLD					; eeeeeeeeeeeek
-#endif
+	CLD					; really worth it...
 
 ; main loop
 nm_main:
@@ -176,6 +174,7 @@ nl_end:
 		_STZA z_cur			; and reset cursor too
 ;		RTS
 nm_eval:
+			CLD					; really worth it...
 			LDX z_cur
 			LDA buff, X			; get one char
 				BEQ nm_main			; if EOL, ask again
