@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b12
+; v0.1b13
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190119-1224
+; last modified 20190121-1005
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -33,27 +33,29 @@
 ; ***************
 ; *** options ***
 ; ***************
-;#define	SAFE	_SAFE
+#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
-BUFFER	= 16
-STKSIZ	= 8
+BUFFER	= 8				; enough for a single command
+STKSIZ	= 5				; in order not to get into return stack space!
 
 ; **********************
 ; *** zeropage usage ***
 ; **********************
 ; 6502 registers
-	z_acc	= $100-11-BUFFER-STKSIZ	; try to use kernel parameter space
-	z_x		= z_acc+1	; must respect register order
-	z_y		= z_x+1
-	z_s		= z_y+1	; will store SP too
-	z_psr	= z_s+1
+; S is never stacked, but must be stored anyway!
+	z_s		= $E0		; try to use kernel parameter space
+; stacked registers
+	z_y		= z_s+1
+	z_x		= z_y+1		; must respect register order, now matching stacked order!
+	z_acc	= z_x+1
+	z_psr	= z_acc+1	; P before PC
 ; 2-byte PC
 	z_addr	= z_psr+1
 ; internal vars
 	z_cur	= z_addr+2
-	z_sp	= z_cur+1
+	z_sp	= z_cur+1	; data stack pointer
 	z_dat	= z_sp+1
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
@@ -77,21 +79,31 @@ STKSIZ	= 8
 #ifdef	NMI_SF
 ; ** pick register values from standard stack frame, if needed **
 ; do not mess with systmp/sysptr
-	LDA $106, X			; stacked Y
-	STA z_y
-	LDA $107, X			; stacked X
-	STA z_x
-	LDA $108, X			; stacked A
-	STA z_acc
+; this could be simpler if register variables would match the stacked order... 14b instead of 30b!
+	LDY #0				; reset counter, unfortunately cannot work backwards
+nmr_loop:
+		LDA $106, X			; get stacked value
+		STA z_y, Y			; actually absolute,Y addressing!
+		INX					; go deeper into stack...
+		INY					; ...and further into zeropage
+		CPY #6				; copied all bytes?
+		BNE nmr_loop		; no, continue until done
+; older direct code for reference
+;	LDA $106, X			; stacked Y
+;	STA z_y
+;	LDA $107, X			; stacked X
+;	STA z_x
+;	LDA $108, X			; stacked A
+;	STA z_acc
 ; minimal status with new offsets
-; systems without NMI-handler may keep old offsets $101...103
-	LDA $109, X			; get stacked PSR
-	STA z_psr			; update value
-	LDY $10A, X			; get stacked PC
-	LDA $10B, X
-	STY z_addr			; update current pointer
-	STA z_addr+1
+;	LDA $109, X			; get stacked PSR
+;	STA z_psr			; update value
+;	LDY $10A, X			; get stacked PC
+;	LDA $10B, X
+;	STY z_addr			; update current pointer
+;	STA z_addr+1
 #else
+; systems without NMI-handler may keep old offsets $101...103
 	JSR njs_regs		; keep current state, is PSR ok?
 	LDA $101, X			; get stacked PSR
 	STA z_psr			; update value
@@ -144,7 +156,7 @@ nl_upp:
 			BCC nl_ok			; no, just continue
 				LDA #BS				; yes, delete last printed
 				JSR nm_out
-; perhaps could beep also...
+; perhaps could beep too...
 				BRA nr_loop			; nothing gets written, ask again for BS
 nl_ok:
 #endif
@@ -211,7 +223,18 @@ nm_exe:
 		RTS				; exit if not
 nm_okx:
 #endif
-	_JMPX(nm_cmds)		; *** execute command ***
+; the use of JMPX macro is NOT safe as zeropage is liberally used
+; use code from the old, slower macro instead
+#ifdef	NMOS
+	LDA nm_cmds+1, X	; get MSB
+	PHA					; and push it
+	LDA nm_cmds, X		; ditto for LSB
+	PHA
+	PHP					; as required by RTI
+	RTI					; actual jump!
+#else
+	JMP (nm_cmds, X)	; *** execute command ***
+#endif
 
 ; **************************
 ; *** command jump table ***
@@ -303,14 +326,15 @@ nhd_nc:
 
 nm_regs:
 ; * show register values *
-; format p$$s$$y$$x$$a$$
+; format s$$y$$x$$a$$p$$
+; new order per matched stack
 	LDX #4				; max offset
 nmv_loop:
 		STX z_dat			; just in case
 		LDA nm_lab, X		; get label from list
 		JSR nm_out
 		LDX z_dat			; just in case
-		LDA z_acc, X		; get register value, must match order!
+		LDA z_s, X			; get register value, must match order!
 		JSR nm_shex			; show in hex
 ;		LDA #' '			; put a space between registers
 ;		JSR nm_out
@@ -319,37 +343,38 @@ nmv_loop:
 		BPL nmv_loop		; zero will be last
 	RTS
 nm_lab:
-	.asc	"axysp"		; register labels, will be printed in reverse!
+	.asc	"syxap"		; register labels, will be printed backwards!
 
-nm_acc:
-; * set A *
+nm_ssp:
+; * set S *
 ; alternate 9+3x4=21b (these were 4x6=24b)
-	LDY #0				; A must be the first register into variables array
+; as ZP register bank mimics stacked order, different offsets than before
+	LDY #0				; S must be the first register into variables array
 nm_rgst:
 	JSR nm_pop
 ; use this instead of ABSOLUTE Y-indexed, non 65816-savvy! (same bytes, bit slower but 816-compliant)
 	TAX					; will run in emulation mode though
-	STX z_acc, Y
+	STX z_s, Y
 	RTS
-
-nm_ix:
-; * set X *
-	LDY #z_x-z_acc		; non-constant, safe way
-	BNE nm_rgst			; common code
 
 nm_iy:
 ; * set Y *
-	LDY #z_y-z_acc		; non-constant, safe way
+	LDY #z_y-z_s		; non-constant, safe way, actually is 1
+	BNE nm_rgst			; common code
+
+nm_ix:
+; * set X *
+	LDY #z_x-z_s		; non-constant, safe way, actually is 2
+	BNE nm_rgst			; common code
+
+nm_acc:
+; * set A *
+	LDY #z_acc-z_s		; non-constant, safe way, actually is 3
 	BNE nm_rgst			; common code
 
 nm_psr:
 ; * set P *
-	LDY #z_psr-z_acc	; non-constant, safe way
-	BNE nm_rgst			; common code
-
-nm_ssp:
-; * set S *
-	LDY #z_s-z_acc		; non-constant, safe way
+	LDY #z_psr-z_s		; non-constant, safe way, actually is 4
 	BNE nm_rgst			; common code
 
 nm_jsr:
@@ -403,7 +428,7 @@ nm_pop:
 np_some:
 #endif
 	LDX z_sp
-	LDA stack, X
+	LDA stack, X		; should NOT get into return stack, or force absolute,X instead!
 	RTS
 
 nm_push:
@@ -417,7 +442,7 @@ nm_push:
 nh_room:
 #endif
 	INC z_sp			; post-increment index
-	STA stack, X
+	STA stack, X		; should NOT get into return stack, or force absolute,X instead!
 	RTS
 
 nm_hpop:
