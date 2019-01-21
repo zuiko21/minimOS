@@ -1,7 +1,7 @@
 ; minimOS BRK panic handler
 ; v0.6b6
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190118-1115
+; last modified 20190121-1340
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -54,7 +54,8 @@ brk_term:
 	TYA					; as no STY abs,X...
 	STA $010A, X		; ...set LSB eeeeeeeeeeeek
 ;jsr debug_hex
-	RTS					; *** otherwise let it finish the ISR
+	JMP nanomon			; testing, will return to BRK handler
+;	RTS					; *** otherwise let it finish the ISR
 
 ; send a newline to default device
 brk_cr:
@@ -84,4 +85,3 @@ dhx_num:
 clc:adc#'0'
 jsr$c0c2
 rts
-

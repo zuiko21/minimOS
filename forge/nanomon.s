@@ -33,7 +33,7 @@
 ; ***************
 ; *** options ***
 ; ***************
-#define	SAFE	_SAFE
+;#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
