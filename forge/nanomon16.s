@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b7
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190122-0950
+; last modified 20190122-1433
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -50,12 +50,12 @@
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
 	z_s		= z_y+2		; will store system SP too
-	z_d		= z_s+2		; D is 16-bit too!
+	z_d		= z_s+2		; D is 16-bit too! but not stored on NMI stack frame
 ; 8-bit registers
 	z_b		= z_d+2		; B is 8-bit too
 	z_psr	= z_b+1		; note new order as PSR is 8-bit only
 ; 24-bit PC
-	z_addr	= z_psr+1	; this is 24-bit
+	z_addr	= z_psr+1	; this is 24-bit (PSR must be just before this!)
 ; internal vars
 	z_cur	= z_addr+3
 	z_sp	= z_cur+1	; data SP
@@ -68,54 +68,51 @@
 ; *** init stuff ***
 ; ******************
 +nanomon:
-	PHP					; keep status! needed?
+; status is always saved on stack
 	CLC					; make sure it is in NATIVE mode!!!
 	XCE
-	PLP
-
-; ** procedure for storing PC & PSR values at interrupt time **
-	.xl: REP #$18		; clear D flag, just in case
-	TSX 				; get whole SP
-	STX z_s				; store initial SP
-	.xs: SEP #$10
+; cannot tinker with X and SP unless saved on stack frame!
 
 #ifdef	NMI_SF
 ; ** pick register values from standard stack frame, if needed **
 ; forget about systmp/sysptr AND caller
-	.al: REP #$20		; 16-bit memory
+	.al: REP #$28		; ** 16-bit memory ** clear D flag too, just in case
+	TSC 				; get whole SP, could use X as well
+	STA z_s				; store initial SP
+; ready to save state, already in 16-bit memory (saved 2 bytes)
 	LDA 8, S			; stacked Y
 	STA z_y
 	LDA 10, S			; stacked X
 	STA z_x
 	LDA 12, S			; stacked A
 	STA z_acc
-; should store D too, as the NMI stack frame does not modify it!
+; should store D too, as the NMI handler does not modify neither stacks it!
 	PHD					; will save Direct Page
 	PLA
 	STA z_d
-; minimal status with new offsets
-	LDA 15, S			; get stacked PC
-	STA z_addr			; update current pointer
+; minimal status with new offsets (10b, was 16 plus a couple of bytes saved before)
+	LDA 14, S			; get stacked PSR + PC.L
+	STA z_psr			; update values
+	LDA 16, S			; PC.H + K too
+	STA z_addr+1
 	.as: .xs: SEP #$30	; *** make sure all in 8-bit ***
-	LDA 17, S			; bank address too
-	STA z_addr+2
-	LDA 14, S			; get stacked PSR
-	STA z_psr			; update value
 ; should keep stacked Data Bank register
 	LDA 7, S			; stacked B
 	STA z_b
 #else
 	PHD					; eeeeeeeeeeeeeeeeeeeek
 	JSR njs_regs		; keep current state, but that PSR is not valid
-; could save some bytes by switching to 16-bit...
-	LDA 1, S			; get stacked PSR
+; time to pick values from stack!
+	.al: REP #$28		; ** 16-bit memory ** clear D flag too, just in case
+	TSC 				; get whole SP
+	STA z_s				; store initial SP
+; we are already in 16-bit, just save the bytes in consecutive pairs! (10b instead of 16, plus previous saving)
+	LDA 1, S			; get stacked PSR + PC.L
 	STA z_psr			; update value
-	LDA 2, S			; get stacked PC
-	STA z_addr			; update current pointer
-	LDA 3, S
-	STA z_addr+1
-	LDA 4, S
-	STA z_addr+2
+	LDA 3, S			; get stacked PC.H + K
+	STA z_addr+1		; update current pointer
+	.as: .xs: SEP #$30	; back to 8-bit
+; do I need to save B?
 #endif
 	PHK					; eeeeeeeek! must set B as NMI handler does not!
 	PLB
@@ -123,7 +120,7 @@
 
 ; main loop
 nm_main:
-		JSR nm_read			; get line
+		JSR nm_read			; get line (could be inlined)
 nm_eval:
 			LDX z_cur
 			LDA buff, X			; get one char
@@ -134,6 +131,7 @@ nm_eval:
 			BNE nm_cont			; no, just continue
 ; perhaps should restore registers as edited?
 #ifndef	NMI_SF
+; if B was pushed, time to restore it!
 				RTI				; exit debugger
 #else
 				RTS				; back to NMI handler
@@ -176,7 +174,7 @@ nm_exe:
 #ifdef	SAFE
 	CPX #nm_endc-nm_cmds	; within bounds?
 	BCC nm_okx		; yeah, proceed
-; couls complain somehow
+; could complain somehow
 		RTS			; quietly ignore it, otherwise
 nm_okx:
 #endif
@@ -358,7 +356,7 @@ nm_sdb:
 nm_jsr:
 ; * call address on stack *
 ; must keep current D somewhere!
-	PHD					; will stack regular D under the long return address!
+	PHD					; will stack regular D under the long return address! eeeeeeeek
 	JSR @nm_jmp2		; jump as usual but without touching SP, hopefully will return here via RTL!
 njs_regs:
 ; restore register values
