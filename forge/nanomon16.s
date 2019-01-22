@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b5
+; v0.1b7
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190119-1237
+; last modified 20190122-0950
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -39,8 +39,8 @@
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
-	BUFFER	= 16		; maximum buffer size
-	STKSIZ	= 8		; maximum stack size (unused)
+	BUFFER	= 16		; maximum buffer size, definitely needs more than the 6502 version
+	STKSIZ	= 8			; maximum data stack size
 
 ; **********************
 ; *** zeropage usage ***
@@ -49,11 +49,11 @@
 	z_acc	= $100-19-BUFFER-STKSIZ	; will try to keep within direct page
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
-	z_s		= z_y+2	; will store system SP too
-	z_d		= z_s+2	; D is 16-bit too!
+	z_s		= z_y+2		; will store system SP too
+	z_d		= z_s+2		; D is 16-bit too!
 ; 8-bit registers
-	z_b		= z_d+2	; B is 8-bit too
-	z_psr	= z_b+1	; note new order as PSR is 8-bit only
+	z_b		= z_d+2		; B is 8-bit too
+	z_psr	= z_b+1		; note new order as PSR is 8-bit only
 ; 24-bit PC
 	z_addr	= z_psr+1	; this is 24-bit
 ; internal vars
@@ -74,8 +74,8 @@
 	PLP
 
 ; ** procedure for storing PC & PSR values at interrupt time **
-	.xl: REP #$10
-	TSX 					; get whole SP
+	.xl: REP #$18		; clear D flag, just in case
+	TSX 				; get whole SP
 	STX z_s				; store initial SP
 	.xs: SEP #$10
 
@@ -105,6 +105,7 @@
 	LDA 7, S			; stacked B
 	STA z_b
 #else
+	PHD					; eeeeeeeeeeeeeeeeeeeek
 	JSR njs_regs		; keep current state, but that PSR is not valid
 	LDA 1, S			; get stacked PSR
 	STA z_psr			; update value
@@ -337,7 +338,7 @@ nm_iy:
 nm_psr:
 ; * set P **** will set 8 bits only
 	LDY #z_psr-z_acc	; non-constant, safe way
-	BRA nm_rgst1			; single-byte code
+	BRA nm_rgst1		; single-byte code
 
 nm_ssp:
 ; * set S *
@@ -347,37 +348,47 @@ nm_ssp:
 nm_sdb:
 ; * SPECIAL, set D & B **** one 8-bit and one 16-bit
 	LDY #z_b-z_acc		; will set 8-bit B first
-	JSR nm_rgst1			; CALL single-byte code
+	JSR nm_rgst1		; CALL single-byte code
 	LDY #z_d-z_acc		; then 16-bit D
 	BRA nm_rgst			; common code
 
 nm_jsr:
 ; * call address on stack *
-	JSR nm_jmp2			; jump as usual but without touching SP, hopefully will return here
+; must keep current D somewhere!
+	PHD					; will stack regular D under the long return address!
+	JSR @nm_jmp2		; jump as usual but without touching SP, hopefully will return here via RTL!
 njs_regs:
 ; restore register values
 	PHP					; flags are delicate and cannot be directly STored
-	.al: .xl: REP #$30
+	PHD					; will save Direct Page at exit time
+	.al: .xl: REP #$38	; this will reset D flag too! Not needed at startup
+; should make certain about nanomon direct page location!
+	PHA					; will temporarily destroy A, thus save it first
+	LDA 6, S			; gets buried original D value (will be discarded later)
+	TCD					; back to original direct page, register values can be safely saved!
+	PLA					; A value after exit is restored
+; continue saving regular registers
 	STA z_acc
 	STX z_x
 	STY z_y
-	PHD					; will save Direct Page
-	PLA
+	PLA					; this picks up D after exit
 	STA z_d
-	.as: .xs: SEP #$30
+	.as: .xs: SEP #$30	; 8 bit registers remain
 	PHB					; save Data Bank
 	PLA
 	STA z_b
 	PLA					; this was the saved status reg
 	STA z_psr
 ; perhaps should reset some internal variables, just in case
+	PLA					; at least MUST discard previously saved D!
+	PLA					; meaningless 8-bit values
 	RTS
 
 nm_jmp:
-; * jump to address on stack *
+; * jump to address on data stack *
 	.xl: REP #$10
-	LDX z_s				; initial SP value
-	TXS					; this makes sense if could be changed
+	LDX z_s				; saved SP value
+	TXS					; this makes sense if could be changed, will not return anyway
 	.xs: SEP #$10
 nm_jmp2:
 	JSR nm_gaddr		; pick desired address
@@ -394,7 +405,7 @@ nm_jmp2:
 	LDX z_x
 	LDY z_y
 	PLD					; set D from top of stack
-	.as: .xs:				; *** SEP #$30 not needed per PLP ***
+	.as: .xs:			; *** SEP #$30 not needed per PLP ***
 	PLP					; just before jumping, set flags
 	JMP [z_addr]		; go! not sure if it will ever return...
 

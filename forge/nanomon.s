@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.1b13
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190121-1405
+; last modified 20190122-0907
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -37,8 +37,9 @@
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
-BUFFER	= 8				; enough for a single command
-STKSIZ	= 5				; in order not to get into return stack space!
+BUFFER	= 9				; enough for a single command, even one for a byte and another for a word
+STKSIZ	= 4				; in order not to get into return stack space! writes use up to three
+; note that with ZP addressing will wrap into start of zeropage, problem with 6510 or default I/O!
 
 ; **********************
 ; *** zeropage usage ***
@@ -182,10 +183,15 @@ nm_eval:
 ; *** NEW, check for exit command, remove if not needed ***
 			CMP #COLON			; trying to exit?
 			BNE nm_cont			; no, continue
-; note that this will not modify stacked register values!
 #ifndef	NMI_SF
+; note that this will not modify stacked register values!
+; a simple workaround would be % for checking S as xx
+; then 01xx$ to see the stack contents, getting the return address rrrr at 3rd-4th bytes
+; subtract 3 to S as yy/ and finally rrrr*
 				RTI					; exit from debugger
 #else
+; the NMI handler will reset registers, thus no sense to preset registers
+; use the above workaround, modified as needed (discard whole stack frame!)
 				RTS					; back to NMI handler
 #endif
 nm_cont:
@@ -390,7 +396,7 @@ njs_regs:
 	RTS
 
 nm_jmp:
-; * jump to address on stack *
+; * jump to address on data stack *
 	LDX z_s				; initial SP value
 	TXS					; this makes sense if could be changed
 nm_jmp2:
