@@ -67,7 +67,7 @@
 ; ******************
 ; *** init stuff ***
 ; ******************
-;+nanomon:
++nanomon:
 	PHP					; keep status! needed?
 	CLC					; make sure it is in NATIVE mode!!!
 	XCE
@@ -280,15 +280,15 @@ nm_regs:
 	LDX #11				; max offset
 nmv_loop:
 		STX z_dat			; just in case
-		LDA nm_lab, X		; get label from list
+		LDA @nm_lab, X		; get label from list, wrong bank??
 		JSR nm_out
 		LDX z_dat			; just in case
 		CPX #10				; past the last 8-bit value?
 		BCS nmv_8b			; no, skip MSB
 			LDA z_acc, X		; yeah, print MSB
 			JSR nm_shex
-			DEC z_dat		; now for LSB
-			LDX z_dat		; continue with updated value
+			DEC z_dat			; now for LSB
+			LDX z_dat			; continue with updated value
 nmv_8b:
 		LDA z_acc, X		; get register value, must match order!
 		JSR nm_shex			; show in hex
@@ -297,13 +297,13 @@ nmv_8b:
 ; check if first line is complete in order to send a newline...
 ; ...but may be removed for 16-char displays
 		BNE nmv_nol			; no, do not feed
-			LDA #CR				; yes, jump line
+			LDA #10				; yes, jump line (CR if not run816)
 			JSR nm_out
 			LDX z_dat			; just in case
 nmv_nol:
 ; end of optional newline
 		DEX					; go back for next
-		BPL nmv_loop			; zero will be last
+		BPL nmv_loop		; zero will be last
 	RTS
 nm_lab:
 	.asc	" a x y s dbp"	; register labels, note space before 16-bit values, will be printed backwards!

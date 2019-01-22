@@ -44,8 +44,9 @@ brk_term:
 brk_end:
 	JSR brk_cr			; another newline
 ; we are done, should call debugger if desired, otherwise we will just lock
-	JMP lock			; let the system DIE
-;	RTL					; *** otherwise let it finish the ISR
+;	JMP lock			; let the system DIE
+	JSR nanomon
+	RTL					; *** otherwise let it finish the ISR
 
 ; send a newline to default device
 brk_cr:
