@@ -39,14 +39,14 @@
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
-	BUFFER	= 16		; maximum buffer size, definitely needs more than the 6502 version
+	BUFFER	= 13		; maximum buffer size, definitely needs more than the 6502 version
 	STKSIZ	= 8			; maximum data stack size
 
 ; **********************
 ; *** zeropage usage ***
 ; **********************
 ; 16-bit registers
-	z_acc	= $100-19-BUFFER-STKSIZ	; will try to keep within direct page
+	z_acc	= $D8		; will try to keep within direct page
 	z_x		= z_acc+2	; must respect register order
 	z_y		= z_x+2
 	z_s		= z_y+2		; will store system SP too
@@ -82,14 +82,14 @@
 #ifdef	NMI_SF
 ; ** pick register values from standard stack frame, if needed **
 ; forget about systmp/sysptr AND caller
-	.al: REP #$20
-; should store D too, as the NMI stack frame does not modify it!
+	.al: REP #$20		; 16-bit memory
 	LDA 8, S			; stacked Y
 	STA z_y
 	LDA 10, S			; stacked X
 	STA z_x
 	LDA 12, S			; stacked A
 	STA z_acc
+; should store D too, as the NMI stack frame does not modify it!
 	PHD					; will save Direct Page
 	PLA
 	STA z_d
@@ -107,6 +107,7 @@
 #else
 	PHD					; eeeeeeeeeeeeeeeeeeeek
 	JSR njs_regs		; keep current state, but that PSR is not valid
+; could save some bytes by switching to 16-bit...
 	LDA 1, S			; get stacked PSR
 	STA z_psr			; update value
 	LDA 2, S			; get stacked PC
@@ -116,6 +117,8 @@
 	LDA 4, S
 	STA z_addr+2
 #endif
+	PHK					; eeeeeeeek! must set B as NMI handler does not!
+	PLB
 	STZ z_sp			; reset data stack pointer
 
 ; main loop
@@ -280,7 +283,7 @@ nm_regs:
 	LDX #11				; max offset
 nmv_loop:
 		STX z_dat			; just in case
-		LDA @nm_lab, X		; get label from list, wrong bank??
+		LDA nm_lab, X		; get label from list
 		JSR nm_out
 		LDX z_dat			; just in case
 		CPX #10				; past the last 8-bit value?
