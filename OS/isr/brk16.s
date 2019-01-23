@@ -1,7 +1,7 @@
 ; minimOS·16 BRK handler
-; v0.6b1, taken from common 65C02 code
+; v0.6b2, taken from common 65C02 code
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190118-0910
+; last modified 20190123-0908
 
 #ifndef	HEADERS
 #include "../usual.h"
@@ -45,8 +45,8 @@ brk_end:
 	JSR brk_cr			; another newline
 ; we are done, should call debugger if desired, otherwise we will just lock
 ;	JMP lock			; let the system DIE
-	JSR nanomon
-	RTL					; *** otherwise let it finish the ISR
+	JMP @nanomon		; will exit via its own RTL!
+;	RTL					; *** otherwise let it finish the ISR
 
 ; send a newline to default device
 brk_cr:

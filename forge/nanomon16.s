@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b7
+; v0.1b8
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190122-1433
+; last modified 20190123-0914
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -134,7 +134,7 @@ nm_eval:
 ; if B was pushed, time to restore it!
 				RTI				; exit debugger
 #else
-				RTS				; back to NMI handler
+				RTL				; back to NMI handler eeeeeeeeeek
 #endif
 nm_cont:
 ; *** check special command '?' then ***
