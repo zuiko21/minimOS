@@ -50,10 +50,12 @@ brk_term:
 	SEC					; get ready for addition, skipping NUL!
 	TYA					; original offset
 	ADC sysptr			; adds to return address
-	STA 15, S			; modify stacked PC
+	STA 15, S			; modify stacked PC, no need to deal with bank
 ; return address is ready, but try a debugger first
 	JMP @nanomon		; will exit via its own RTL!
 ;	RTL					; *** otherwise let it finish the ISR
+
+.as:
 
 ; send a newline to default device
 brk_cr:

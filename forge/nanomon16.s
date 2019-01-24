@@ -1,13 +1,13 @@
 ; minimOS-16 nano-monitor
-; v0.1b8
+; v0.1b9
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190123-0914
+; last modified 20190124-0848
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
 ; (aaaaaa=6 hex char addr on stack, wwww=4 hex char on stack, dd=2 hex char on stack)
 ; aaaaaa,	read byte into stack
-; aaaaaa!	write byte
+; ddaaaaaa!	write byte
 ; aaaaaa$	hex dump
 ; +			continue hex dump
 ; aaaaaa"	ASCII dump
@@ -112,7 +112,7 @@
 	LDA 3, S			; get stacked PC.H + K
 	STA z_addr+1		; update current pointer
 	.as: .xs: SEP #$30	; back to 8-bit
-; do I need to save B?
+	PHB					; saving B is generally a good idea, as will reset it
 #endif
 	PHK					; eeeeeeeek! must set B as NMI handler does not!
 	PLB
@@ -131,10 +131,10 @@ nm_eval:
 			BNE nm_cont			; no, just continue
 ; perhaps should restore registers as edited?
 #ifndef	NMI_SF
-; if B was pushed, time to restore it!
-				RTI				; exit debugger
+				PLB					; if B was pushed, time to restore it!
+				RTI					; exit debugger
 #else
-				RTL				; back to NMI handler eeeeeeeeeek
+				RTL					; back to NMI handler eeeeeeeeeek
 #endif
 nm_cont:
 ; *** check special command '?' then ***
