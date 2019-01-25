@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc24, must match kernel.s
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20181231-1724
+; last modified 20190125-1114
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -1312,7 +1312,7 @@ dr_done:
 dr_icall:
 	LDY #D_INIT			; original pointer offset (2)
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
-; takes 10 bytes, 29 clocks
+; takes 10 bytes, 29 clocks *** THIS MUST GET A SEPARATE API ENTRY ***
 dr_call:
 	INY					; get MSB first (2)
 	LDA (da_ptr), Y		; destination pointer MSB (5)
@@ -1324,7 +1324,7 @@ dr_call:
 	RTI					; actual jump (6)
 
 ; * get indirect address from driver pointer table, 13 bytes, 33 clocks *
-; da_ptr pointing to header, Y has the offset in table, returns pointer in sysptr
+; da_ptr pointing to header, Y has the offset in table, returns pointer in sysptr *** THIS MUST GET A SEPARATE API ENTRY ***
 dr_gind:
 	LDA (da_ptr), Y		; get address LSB (5)
 	STA pfa_ptr			; store temporarily (3)
