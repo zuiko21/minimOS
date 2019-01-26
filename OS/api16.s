@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc20, should match kernel16.s
+; v0.6rc21, should match kernel16.s
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20181229-1245
+; last modified 20190126-1339
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -43,6 +43,7 @@ k_vec:
 	.word	get_pid		; get PID of current braid (as set by SET_CURR)
 ; new driver functionalities TBD
 	.word	dr_info		; get driver header
+	.word	dr_exec		; execute driver routine ***new
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue
 ; advanced functions
@@ -1635,16 +1636,37 @@ dr_nextq:
 
 dr_icall:
 	LDY #D_INIT			; original pointer offset (2)
+	BRA dr_call			; continue with generic code
+
+
+; ************************************
+; *** DR_EXEC, call driver routine ***
+; ************************************
+;	INPUT
+; Y		= device
+; b_sig		= requested offset
+	.asc	"<DR_EXEC>"
+dr_exec:
+	TYX
+		BPL dx_none
+	LDX dr_ind, Y
+	BEQ dx_none
+		.al: REP #$20
+		LDA drv_ads-1, X
+		STA da_ptr
+		LDY b_sig
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset
 ; *** assume 16-bit memory and 8-bit indexes ***
 ; takes 7 bytes (could be 2 less) 21 clocks, was 10 bytes, 29 clocks
 ; make certain about DBR in calls... but should be for kernel/API only
 dr_call:
-	LDA (da_ptr), Y		; destination pointer (6)
-	DEC					; one less for RTS (2)
-	PHA					; push it (4)
-	.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
-	RTS					; actual CORRECTED jump (6)
+		LDA (da_ptr), Y		; destination pointer (6)
+		DEC					; one less for RTS (2)
+		PHA					; push it (4)
+		.as: .xs: SEP #$30	; make sure driver is called in 8-bit size (3)
+		RTS					; actual CORRECTED jump (6)
+dx_none:
+	_ERR(N_FOUND)
 
 
 ; ******************************
