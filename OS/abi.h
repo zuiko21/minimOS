@@ -1,7 +1,7 @@
-; minimOS 0.6rc20 API/ABI
+; minimOS 0.6rc21 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20181224-1604
+; last modified 20190126-1323
 
 ; *************************************************
 ; *************************************************
@@ -49,7 +49,8 @@ GET_PID		= B_EVENT + 2	; get current braid PID *** 20171220 is last one as will 
 
 ; some new driver functionalities, perhaps OK with LOWRAM systems
 DR_INFO		= GET_PID + 2	; get header, new
-AQ_MNG		= DR_INFO + 2	; get asyncronous task status, or enable/disable it!
+DR_EXEC		= DR_INFO + 2	; execute driver routine, new 20190126
+AQ_MNG		= DR_EXEC + 2	; get asyncronous task status, or enable/disable it!
 PQ_MNG		= AQ_MNG + 2	; get periodic task status, enable/disable it or set frequency!
 
 ; drivers... perhaps in a reduced way for LOWRAM systems

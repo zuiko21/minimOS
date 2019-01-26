@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc24, must match kernel.s
+; v0.6rc25, must match kernel.s
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190125-1114
+; last modified 20190126-1301
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -45,6 +45,7 @@ k_vec:
 	.word	get_pid		; get PID of current braid (as set by SET_CURR)
 ; new driver functionalities TBD
 	.word	dr_info		; driver header ***new
+	.word	dr_exec		; execute driver routine ***newer
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue
 ; only for systems with enough RAM
@@ -1311,20 +1312,10 @@ dr_done:
 ; *****************************************
 dr_icall:
 	LDY #D_INIT			; original pointer offset (2)
-; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
-; takes 10 bytes, 29 clocks *** THIS MUST GET A SEPARATE API ENTRY ***
-dr_call:
-	INY					; get MSB first (2)
-	LDA (da_ptr), Y		; destination pointer MSB (5)
-	PHA					; push it (3)
-	DEY					; go for LSB (2)
-	LDA (da_ptr), Y		; repeat procedure (5)
-	PHA					; push LSB (3)
-	PHP					; 816 is expected to be in emulation mode anyway (3)
-	RTI					; actual jump (6)
+	JMP dr_call			; continue with generic code
 
 ; * get indirect address from driver pointer table, 13 bytes, 33 clocks *
-; da_ptr pointing to header, Y has the offset in table, returns pointer in sysptr *** THIS MUST GET A SEPARATE API ENTRY ***
+; da_ptr pointing to header, Y has the offset in table, returns pointer in pfa_ptr *** THIS MIGHT GET A SEPARATE API ENTRY ***
 dr_gind:
 	LDA (da_ptr), Y		; get address LSB (5)
 	STA pfa_ptr			; store temporarily (3)
@@ -1473,6 +1464,39 @@ di_ndef:
 		STA ex_pt+1
 		_EXIT_OK
 di_none:
+	_ERR(N_FOUND)		; no such ID
+
+
+; ************************************
+; *** DR_EXEC, call driver routine ***
+; ************************************
+;		INPUT
+; Y			= device
+; b_sig		= requested offset (must be valid pointer entry!)
+	.asc	"<DR_EXEC>"
+dr_exec:
+; as drv_ads is now mandatory, no need for MUTABLE option
+	TYA				; look for physical devices only
+		BPL dx_none
+	LDX dr_ind-128, Y	; get sparse index, is this entry free? (4)
+	BEQ dx_none			; yes, signal error (3)
+		LDA drv_ads, X		; otherwise get MSB (note min X=1)...
+		LDY drv_ads-1, X	; ...and LSB
+		STY da_ptr			; store pointer as temporary parameter
+		STA da_ptr+1
+		LDY b_sig		; select pointer
+; *** generic driver call, pointer set at da_ptr, Y holds table offset *** new 20150610, revised 20160412
+; takes 10 bytes, 29 clocks
+dr_call:
+		INY					; get MSB first (2)
+		LDA (da_ptr), Y		; destination pointer MSB (5)
+		PHA					; push it (3)
+		DEY					; go for LSB (2)
+		LDA (da_ptr), Y		; repeat procedure (5)
+		PHA					; push LSB (3)
+		PHP					; 816 is expected to be in emulation mode anyway (3)
+		RTI					; actual jump (6)
+dx_none:
 	_ERR(N_FOUND)		; no such ID
 
 
