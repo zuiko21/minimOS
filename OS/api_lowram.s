@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc18
+; v0.6rc19
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20181221-1039
+; last modified 20190126-1337
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -43,6 +43,7 @@ k_vec:
 	.word	get_pid		; get PID of current braid (returns 0)
 ; new driver functionalities TBD
 	.word	dr_info		; get header, is this possible?
+	.word	dr_exec		; execute routine, new
 	.word	aq_mng		; manage asynchronous task queue
 	.word	pq_mng		; manage periodic task queue
 ; reduced driver implementation
@@ -78,6 +79,7 @@ aq_mng:
 pq_mng:
 bl_cnfg:
 bl_stat:
+dr_exec:
 	_ERR(UNAVAIL)	; go away!
 
 ; *** diverse data ***
