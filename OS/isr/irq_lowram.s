@@ -1,8 +1,8 @@
 ; ISR for minimOS on LOWRAM systems
-; v0.6a1, should match kernel.s
+; v0.6a2, should match kernel.s
 ; features TBD
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20180404-1409
+; last modified 20190128-0947
 
 #define		ISR		_ISR
 
@@ -71,8 +71,19 @@ ir_done:
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
 	BEQ isr_done		; spurious interrupt! (2/3)
-		LDY #PW_SOFT		; BRK otherwise (firmware interface)
-		_ADMIN(POWEROFF)
+; ...this is BRK, but must emulate NMI stack frame!
+		LDA systmp
+		PHA
+		LDA sysptr+1
+		PHA
+		LDA sysptr		; save extended state (6x3)
+		PHA
+; *****************************************************************
+; *** BRK is no longer simulated by FW, must use some other way ***
+; *****************************************************************
+; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
+		JMP (brk_02)		; reuse some hard vector
+;		JMP brk_hndl		; non-portable, optimised way
 ; *** continue after all interrupts dispatched ***
 isr_done:
 	_PLY	; restore registers (3x4 + 6)

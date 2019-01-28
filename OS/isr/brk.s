@@ -68,7 +68,7 @@ rts
 ;	KERNEL(COUT)		; system call
 ;	RTS
 
-debug_hex:
+/*debug_hex:
 pha
 lda#10:jsr$c0c2
 lda#'$':jsr$c0c2
@@ -84,4 +84,4 @@ adc#6
 dhx_num:
 clc:adc#'0'
 jsr$c0c2
-rts
+rts*/

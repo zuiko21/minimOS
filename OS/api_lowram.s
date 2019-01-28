@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc19
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190126-1337
+; last modified 20190128-0946
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -780,7 +780,7 @@ lda#'r':jsr$c0c2
 shutdown:
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_fw			; don't shutdown system then!
-	CPY #PW_HARD		; some interrupt invoked?
+	CPY #PW_NMI			; some interrupt invoked?
 		BCS sd_fw			; just pass to FW
 	CPY #PW_CLEAN		; from end of main task
 		BEQ sd_2nd			; continue with second stage
