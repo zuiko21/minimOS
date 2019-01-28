@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc19
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190128-0946
+; last modified 20190128-1417
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -153,7 +153,7 @@ co_port:
 		_EXIT_OK			; "/dev/null" is always OK
 cio_phys:
 ;lda cio_of:jsr debug_hex
-tya:jsr debug_hex
+;tya:jsr debug_hex
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
 	STY iol_dev			; need to save this
 #ifdef	SAFE
@@ -163,9 +163,9 @@ tya:jsr debug_hex
 	AND drv_en			; compare against enabled mask
 	BNE cio_dev			; device is not disabled
 cio_nfound:
-lda#'d':jsr$c0c2
-lda#'e':jsr$c0c2
-lda#'v':jsr$c0c2
+;lda#'d':jsr$c0c2
+;lda#'e':jsr$c0c2
+;lda#'v':jsr$c0c2
 
 		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
@@ -195,9 +195,9 @@ cio_idsc:
 ;lda iol_dev:jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
-lda#$84:sta driver0
-tay:lda#'#':jsr$c0c2:tya
-jsr debug_hex
+;lda#$84:sta driver0
+;tay:lda#'#':jsr$c0c2:tya
+;jsr debug_hex
 ;cmp (da_ptr),y
 		CMP iol_dev			; *desired?
 			BEQ cio_idok		; *yeah
@@ -214,9 +214,9 @@ cio_idok:
 	JMP dr_call			; re-use routine (3...)
 
 cio_nfound2
-lda#'~';list at drvrs_ad ended unexpectedly
-jsr$c0c2
-jmp cio_nfound
+;lda#'~';list at drvrs_ad ended unexpectedly
+;jsr$c0c2
+;jmp cio_nfound
 ; *****************************
 ; *** CIN,  get a character ***
 ; *****************************
@@ -228,7 +228,7 @@ jmp cio_nfound
 ;		USES BLIN
 
 cin:
-lda#'i':jsr$c0c2
+;lda#'i':jsr$c0c2
 	LDA #io_c			; will point to parameter
 	STA bl_ptr			; set pointer
 	_STZA bl_ptr+1
@@ -258,7 +258,7 @@ blin:
 		_EXIT_OK		; nothing to do
 bli_ok:
 #endif
-lda#'I':jsr$c0c2
+;lda#'I':jsr$c0c2
 	LDA #D_BLIN			; only difference from bout
 	STA cio_of			; store for further addition, or just check as not zero
 	TYA					; for indexed comparisons
@@ -716,12 +716,12 @@ rl_l:
 		JSR b_yield			; always useful!
 		LDY rl_dev			; use device
 		JSR cin				; get one character
-lda#".":jsr$c0c2
+;lda#".":jsr$c0c2
 		BCC rl_rcv			; got something
-lda#'C':jsr$c0c2
+;lda#'C':jsr$c0c2
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
-lda#'E':jsr$c0c2
+;lda#'E':jsr$c0c2
 			LDA #0
 			_STAX(str_pt)		; if any other error, CLEAR and terminate string
 			RTS					; and return whatever error
@@ -738,27 +738,27 @@ rl_rcv:
 			_BRA rl_echo		; and resume operation
 rl_nbs:
 		CPY ln_siz			; overflow? EEEEEEEEEEK
-		bne rlllll
-lda#'!':jsr$c0c2
-jmp rl_l
+;bne rlllll
+;lda#'!':jsr$c0c2
+;jmp rl_l
 			BEQ rl_l			; ignore if so (was BCS)
-rlllll
+;rlllll
 		STA (str_pt), Y		; store into buffer
-lda#'+':jsr$c0c2
+;lda#'+':jsr$c0c2
 		INC	rl_cur			; update index
 rl_echo:
 		LDY rl_dev			; retrieve device
 		JSR cout			; echo received character
-lda#'#':jsr$c0c2
-lda io_c:jsr$c0c2
-lda#'b':jsr$c0c2
-lda#'r':jsr$c0c2
-lda#'a':jsr$c0c2
+;lda#'#':jsr$c0c2
+;lda io_c:jsr$c0c2
+;lda#'b':jsr$c0c2
+;lda#'r':jsr$c0c2
+;lda#'a':jsr$c0c2
 
 		_BRA rl_l			; and continue
 rl_cr:
-lda#'c':jsr$c0c2
-lda#'r':jsr$c0c2
+;lda#'c':jsr$c0c2
+;lda#'r':jsr$c0c2
 	LDA #CR				; newline
 	LDY rl_dev			; retrieve device
 	JSR cout			; print newline (ignoring errors)
