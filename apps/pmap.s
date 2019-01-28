@@ -162,7 +162,7 @@ pmap_end:
 
 
 ; *** useful routines ***
-	NOP			; *** *** *** temporary patch to avoid calling $c0bf!!!
+	.dsb	4			; *** *** *** temporary patch to avoid calling $c0bf!!! remove with actual hardware!
 ; ** these will go into a pseudolibrary **
 ; * print binary in A as two hex ciphers *
 hex2char:
