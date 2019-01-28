@@ -1,6 +1,6 @@
 ; memory map for minimOS! KLUDGE
-; v0.5.1rc2
-; last modified 20180510-1046
+; v0.5.1rc3
+; last modified 20190128-0925
 ; (c) 2016-2019 Carlos J. Santisteban
 
 #include "../OS/usual.h"
@@ -161,13 +161,6 @@ pmap_end:
 	_FINISH		; *** all done ***
 
 
-; *** table for routine pounters, as defined in abi.h ***
-pmap_tab:
-	.word	pmap_free
-	.word	pmap_used
-	.word	pmap_end
-	.word	pmap_lock
-
 ; *** useful routines ***
 
 ; ** these will go into a pseudolibrary **
@@ -235,6 +228,13 @@ pmt_lsb:
 
 pmt_pid:
 	.asc	"#$", 0
+
+; *** table for routine pounters, as defined in abi.h ***
+pmap_tab:
+	.word	pmap_free
+	.word	pmap_used
+	.word	pmap_end
+	.word	pmap_lock
 
 ; ***** end of stuff *****
 pmapEnd:				; ### for easy size computation ###

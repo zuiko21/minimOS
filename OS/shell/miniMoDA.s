@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
-; v0.6rc2
-; last modified 20181221-1003
+; v0.6rc3
+; last modified 20190128-0927
 ; (c) 2016-2019 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -922,7 +922,7 @@ sst_loop:
 		LDA (bufpt), Y		; get raw character
 		_STAX(ptr)			; store in place, respect Y but now X is OK to use in NMOS
 #ifdef	NMOS
-		TAY					; update flags altered by macro!
+		TAX					; update flags altered by macro! eeeeeeeeeeeeeeeeeeeeeeeeek
 #endif
 			BEQ sstr_end		; until terminator, will be stored anyway
 		CMP #CR				; newline also accepted, just in case
