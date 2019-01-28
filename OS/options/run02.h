@@ -3,7 +3,7 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20181214-1145
+; last modified 20190128-0956
 
 ; *** set conditional assembly ***
 
@@ -12,6 +12,7 @@
 
 #define		LOWRAM	_LOWRAM
 
+; *** these optimisations need the CPP preprocessor! ***
 ;#define		FAST_API	_FAST_API
 ;#define		FAST_FW		_FAST_FW
 
