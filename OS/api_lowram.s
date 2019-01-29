@@ -757,7 +757,10 @@ lda#'!':jsr$c0c2
 lda#'@':jsr$c0c2:tya:clc:adc#'0':jsr$c0c2
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
-lda#10:jsr$c0c2
+deb_str:lda#'=':jsr$c0c2
+ldy#0
+deb_lp:lda(str_pt),y:beq deb_exit:jsr$c0c2:iny:bra deb_lp
+deb_exit:lda#10:jsr$c0c2
 	_EXIT_OK			; and all done!
 
 ; ***********************************************************
