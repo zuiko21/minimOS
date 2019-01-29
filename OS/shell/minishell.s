@@ -106,8 +106,8 @@ main_loop:
 		LDA #>buffer		; in zeropage, all MSBs are zero
 		STY str_pt			; set parameter
 		STA str_pt+1
-;		KERNEL(LOADLINK)	; look for that file!
-sec:ldy#INVALID:		BCC xsh_ok			; it was found, thus go execute it
+		_KERNEL(LOADLINK)	; look for that file!
+		BCC xsh_ok			; it was found, thus go execute it
 			CPY #INVALID		; found but not compatible?
 			BNE ms_nf
 				LDY #<xsh_err		; get incompatible message pointer
