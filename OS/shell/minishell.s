@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5.2rc1
+; v0.5.2rc2
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20181217-1011
+; last modified 20190129-0913
 ; (c) 2016-2019 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -84,7 +84,21 @@ main_loop:
 		LDA #>prompt		; address of prompt message (currently fixed)
 		LDY #<prompt
 		JSR prnStr			; print the prompt! (/sys/_)
-		JSR getLine			; input a line
+;		JSR getLine			; input a line *** worth inlining
+; * get input line from device at fixed-address buffer *
+; now using the one built-in into API
+		LDY #<buffer		; get buffer address in zp
+		LDA #>buffer		; MSB, should be zero already!
+		STY str_pt			; set kernel parameter
+		STA str_pt+1		; clear MSB, no need for STZ
+#ifdef	C816
+		STZ str_pt+2		; this buffer is in zeropage!
+#endif
+		LDX #BUFSIZ-1		; maximum offset
+		STX ln_siz
+		LDY iodev			; use standard device
+		_KERNEL(READLN)		; get string
+; * end of inlined getLine *
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
@@ -92,8 +106,8 @@ main_loop:
 		LDA #>buffer		; in zeropage, all MSBs are zero
 		STY str_pt			; set parameter
 		STA str_pt+1
-		_KERNEL(LOADLINK)	; look for that file!
-		BCC xsh_ok			; it was found, thus go execute it
+;		KERNEL(LOADLINK)	; look for that file!
+sec:ldy#INVALID:		BCC xsh_ok			; it was found, thus go execute it
 			CPY #INVALID		; found but not compatible?
 			BNE ms_nf
 				LDY #<xsh_err		; get incompatible message pointer
@@ -105,7 +119,7 @@ ms_nf:
 ms_err:
 			JSR prnStr			; print it!
 main_loopN:
-			JMP main_loop		; and try another ***was _BRA without debug code
+			JMP main_loop		; and try another ***was BRA without debug code
 xsh_ok:
 ; something is ready to run, but set its default I/O first!!!
 		LDY iodev
@@ -163,23 +177,6 @@ prnStr:
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
 	RTS
-
-; * get input line from device at fixed-address buffer *
-; now using the one built-in into API
-getLine:
-	LDY #<buffer		; get buffer address in zp
-	LDA #>buffer		; MSB, should be zero already!
-	STY str_pt			; set kernel parameter
-	STA str_pt+1		; clear MSB, no need for STZ
-#ifdef	C816
-	STZ str_pt+2		; this buffer is in zeropage!
-#endif
-	LDX #BUFSIZ-1		; maximum offset
-	STX ln_siz
-	LDY iodev			; use standard device
-	_KERNEL(READLN)		; get string
-	RTS					; and all done!
-
 
 ; *** strings and other data ***
 
