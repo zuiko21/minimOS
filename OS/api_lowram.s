@@ -195,7 +195,7 @@ cio_idsc:
 ;lda iol_dev:jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
-;lda#$84:sta driver0
+lda#$84:sta driver0
 ;tay:lda#'#':jsr$c0c2:tya
 ;jsr debug_hex
 ;cmp (da_ptr),y

@@ -2,7 +2,7 @@
 ; v0.6a2, should match kernel.s
 ; features TBD
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190128-0947
+; last modified 20190129-0838
 
 #define		ISR		_ISR
 
@@ -29,14 +29,14 @@
 ;	.word asyncronous		; async otherwise
 
 ; alternative way, best for NMOS
-;	ADMIN(IRQ_SRC)			; check source, **generic way**
-;	TXA						; check offset at X
-;	BNE periodic			; jump if required...
+	_ADMIN(IRQ_SRC)			; check source, **generic way**
+	TXA						; check offset at X
+		BEQ periodic			; jump if required... eeeeeeeeek
 ; ...and the fall into async, perhaps will exchange them for lower async latency!
 
 ; optimised, non-portable code
-	BIT VIA+IFR				; much better than LDA + ASL + BPL! (4)
-		BVS periodic		; from T1 (3/2)
+;	BIT VIA+IFR				; much better than LDA + ASL + BPL! (4)
+;		BVS periodic		; from T1 (3/2)
 
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 17 cycles if optimised)

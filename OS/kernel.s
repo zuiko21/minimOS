@@ -97,7 +97,7 @@ ki_ok:
 	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
 	_ADMIN(SET_DBG)		; install routine
-	_PANIC("MIerda")
+
 ; Kernel no longer supplies default NMI, but could install it otherwise
 ; jiffy already set by firmware
 
