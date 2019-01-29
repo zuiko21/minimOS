@@ -8,6 +8,9 @@
 #endif
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
+lda#'B':jsr$c0c2
+lda#'R':jsr$c0c2
+lda#'K':jsr$c0c2
 
 ; first of all, send a CR to default device
 	JSR brk_cr			; worth it
@@ -54,6 +57,7 @@ brk_term:
 	TYA					; as no STY abs,X...
 	STA $010A, X		; ...set LSB eeeeeeeeeeeek
 ;jsr debug_hex
+lda#'!':jsr$c0c2
 	JMP nanomon			; testing, will return to BRK handler *** needs NMI_SF option ***
 ;	RTS					; *** otherwise let it finish the ISR
 
