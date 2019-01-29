@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.2rc2
 ; like 0.5.1 for 0.6 ABI/API!
-; last modified 20190129-0913
+; last modified 20190129-0958
 ; (c) 2016-2019 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -100,6 +100,7 @@ main_loop:
 		_KERNEL(READLN)		; get string
 ; * end of inlined getLine *
 		LDA buffer			; check whether empty line
+pha:lda#58:jsr$c0c2:pla:pha:clc:adc#'A':jsr$c0c2:pla
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
 		LDY #<buffer		; just to make sure it is the LSB only

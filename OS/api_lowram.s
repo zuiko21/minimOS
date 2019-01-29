@@ -571,6 +571,7 @@ be_none:
 ;		USES rh_scan
 
 loadlink:
+lda#'K':jsr$c0c2
 ; *** look for that filename in ROM headers ***
 #ifndef	NOHEAD
 ; first of all, correct parameter pointer as will be aligned with header!
@@ -595,9 +596,11 @@ ll_geth:
 		CMP #CR				; was it a CR?
 			BNE ll_nfound		; if not, go away
 ; look for the name
+lda#'>':jsr$c0c2
 		INY					; reset scanning index (now at name position, was @7)
 ll_nloop:
 			LDA (rh_scan), Y	; get character in found name
+jsr$c0c2
 			CMP (str_pt), Y		; compare with what we are looking for
 				BNE ll_nthis		; difference found
 			ORA (str_pt), Y		; otherwise check whether at EOL
@@ -716,12 +719,10 @@ rl_l:
 ;		JSR b_yield			; always useful! ...but here is no multitasking option!
 		LDY rl_dev			; use device
 		JSR cin				; get one character
-;lda#".":jsr$c0c2
 		BCC rl_rcv			; got something
-;lda#'C':jsr$c0c2
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
-;lda#'E':jsr$c0c2
+lda#'*':jsr$c0c2
 			LDA #0
 			_STAX(str_pt)		; if any other error, CLEAR and terminate string
 			RTS					; and return whatever error
@@ -738,33 +739,25 @@ rl_rcv:
 			_BRA rl_echo		; and resume operation
 rl_nbs:
 		CPY ln_siz			; overflow? EEEEEEEEEEK
-;bne rlllll
-;lda#'!':jsr$c0c2
-;jmp rl_l
 			BEQ rl_l			; ignore if so (was BCS)
-;rlllll
 		STA (str_pt), Y		; store into buffer
-;lda#'+':jsr$c0c2
+lda#'+':jsr$c0c2
 		INC	rl_cur			; update index
+lda rl_cur:clc:adc#'0':jsr$c0c2:lda#',':jsr$c0c2
 rl_echo:
 		LDY rl_dev			; retrieve device
 		JSR cout			; echo received character
-;lda#'#':jsr$c0c2
-;lda io_c:jsr$c0c2
-;lda#'b':jsr$c0c2
-;lda#'r':jsr$c0c2
-;lda#'a':jsr$c0c2
-
 		_BRA rl_l			; and continue
 rl_cr:
-;lda#'c':jsr$c0c2
-;lda#'r':jsr$c0c2
+lda#'!':jsr$c0c2
 	LDA #CR				; newline
 	LDY rl_dev			; retrieve device
 	JSR cout			; print newline (ignoring errors)
 	LDY rl_cur			; retrieve cursor!!!!!
+lda#'@':jsr$c0c2:tya:clc:adc#'0':jsr$c0c2
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
+lda#10:jsr$c0c2
 	_EXIT_OK			; and all done!
 
 ; ***********************************************************
