@@ -713,7 +713,7 @@ readln:
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
-		JSR b_yield			; always useful!
+;		JSR b_yield			; always useful! ...but here is no multitasking option!
 		LDY rl_dev			; use device
 		JSR cin				; get one character
 ;lda#".":jsr$c0c2
