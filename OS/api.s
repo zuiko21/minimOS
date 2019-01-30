@@ -95,6 +95,7 @@ cin:
 	LDA #1				; transfer a single byte
 	STA bl_siz			; set size
 	_STZA bl_siz+1
+; may be moved in front of BLIN for somewhat higher performance, just watch debug string!
 	_KERNEL(BLIN)		; get small block...
 		RTS					; ...or keep error code from BLIN
 ; *** events no longer managed here ***

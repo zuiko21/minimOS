@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc19
+; v0.6rc20
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190128-1417
+; last modified 20190130-1246
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -152,8 +152,6 @@ co_port:
 		_STZA bl_siz+1		; null transfers always complete
 		_EXIT_OK			; "/dev/null" is always OK
 cio_phys:
-;lda cio_of:jsr debug_hex
-;tya:jsr debug_hex
 ; let us scan for the requested device, for sure Y>127, shoud be Y<136 too
 	STY iol_dev			; need to save this
 #ifdef	SAFE
@@ -163,10 +161,6 @@ cio_phys:
 	AND drv_en			; compare against enabled mask
 	BNE cio_dev			; device is not disabled
 cio_nfound:
-;lda#'d':jsr$c0c2
-;lda#'e':jsr$c0c2
-;lda#'v':jsr$c0c2
-
 		_ERR(N_FOUND)		; unknown device, needed before cio_dev in case of optimized loop
 cio_dev:				; old label location
 ;	LDY cio_of			; want input or output?
@@ -183,40 +177,23 @@ cio_dev:				; old label location
 	LDX #0
 cio_idsc:
 		LDA drvrs_ad+1, X	; same for MSB
-			BEQ cio_nfound2		; *never in ZP
+			BEQ cio_nfound		; *never in ZP
 		STA da_ptr+1
 		LDA drvrs_ad, X		; take table LSB (4)
 		STA da_ptr			; store pointer (3)
-;lda da_ptr+1
-;jsr debug_hex
-;lda da_ptr
-;jsr debug_hex
-;lda#'?':jsr$c0c2
-;lda iol_dev:jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
-lda#$84:sta driver0;****
-;tay:lda#'#':jsr$c0c2:tya
-;jsr debug_hex
-;cmp (da_ptr),y
+;lda#$84:sta driver0;****this should no longer be necessary
 		CMP iol_dev			; *desired?
 			BEQ cio_idok		; *yeah
 		INX					; *no, go next
 		INX					; *eeeeeeeeeeeeeek
-;lda#'X'
-;jsr $c0c2
-;txa
-;jsr debug_hex
 		BNE cio_idsc
 		BEQ cio_nfound		; ? did not found the end of the driver list, should not happen...
 cio_idok:
 	LDY cio_of			; want input or output?
 	JMP dr_call			; re-use routine (3...)
 
-cio_nfound2
-;lda#'~';list at drvrs_ad ended unexpectedly
-;jsr$c0c2
-;jmp cio_nfound
 ; *****************************
 ; *** CIN,  get a character ***
 ; *****************************
@@ -228,7 +205,6 @@ cio_nfound2
 ;		USES BLIN
 
 cin:
-;lda#'i':jsr$c0c2
 	LDA #io_c			; will point to parameter
 	STA bl_ptr			; set pointer
 	_STZA bl_ptr+1
@@ -252,13 +228,12 @@ cin:
 
 blin:
 #ifdef	SAFE
-	LDA bl_siz		; how many?
+	LDA bl_siz			; how many?
 	ORA bl_siz+1
-	BNE bli_ok		; empty perhaps? eeeeeek^2
-		_EXIT_OK		; nothing to do
+	BNE bli_ok			; empty perhaps? eeeeeek^2
+		_EXIT_OK			; nothing to do
 bli_ok:
 #endif
-;lda#'I':jsr$c0c2
 	LDA #D_BLIN			; only difference from bout
 	STA cio_of			; store for further addition, or just check as not zero
 	TYA					; for indexed comparisons
@@ -279,15 +254,15 @@ ci_nph:
 ; must behave like /dev/zero!
 ci_null:
 	LDX bl_ptr+1		; pointer might change
-	LDA #0			; filling value
-	TAY			; reset index
+	LDA #0				; filling value
+	TAY					; reset index
 ci_nll:
 		STA (bl_ptr), Y		; store a zero in buffer
-		INY			; next
-		BNE ci_ny		; no wrap
+		INY					; next
+		BNE ci_ny			; no wrap
 			INC bl_ptr+1		; increment MSB
 ci_ny:
-		DEC bl_siz		; one less
+		DEC bl_siz			; one less
 			BNE ci_nll
 ci_nlw:
 		CMP bl_siz+1		; check pages remaining
@@ -571,7 +546,6 @@ be_none:
 ;		USES rh_scan
 
 loadlink:
-lda#'K':jsr$c0c2
 ; *** look for that filename in ROM headers ***
 #ifndef	NOHEAD
 ; first of all, correct parameter pointer as will be aligned with header!
@@ -596,7 +570,6 @@ ll_geth:
 		CMP #CR				; was it a CR?
 			BNE ll_nfound		; if not, go away
 ; look for the name
-lda#'>':jsr$c0c2
 		INY					; reset scanning index (now at name position, was @7)
 ll_nloop:
 			LDA (rh_scan), Y	; get character in found name
@@ -634,7 +607,7 @@ ll_found:
 	LDA (rh_scan), Y	; get it
 ; check compability of supplied code against present CPU
 ;	LDX fw_cpu			; *** UGLY HACK, this is a FIRMWARE variable ***
-	_ADMIN(GESTALT)			; get sys info, proper way
+	_ADMIN(GESTALT)		; get sys info, proper way
 	LDX cpu_ll			; installed CPU
 	CPX #'R'			; is it a Rockwell/WDC CPU?
 		BEQ ll_rock			; from R down is OK
@@ -716,20 +689,18 @@ readln:
 	STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
-;		JSR b_yield			; always useful! ...but here is no multitasking option!
+; here is no multitasking option!
 		LDY rl_dev			; use device
 		JSR cin				; get one character
 		BCC rl_rcv			; got something
 			CPY #EMPTY			; otherwise is just waiting?
 		BEQ rl_l			; continue then
-lda#'*':jsr$c0c2
 			LDA #0
 			_STAX(str_pt)		; if any other error, CLEAR and terminate string
 			RTS					; and return whatever error
 rl_rcv:
 		LDA io_c			; get received
 		LDY rl_cur			; retrieve index
-pha:clc:adc#'0':jsr$c0c2:pla
 		CMP #CR				; hit CR?
 			BEQ rl_cr			; all done then
 		CMP #BS				; is it backspace?
@@ -742,26 +713,18 @@ rl_nbs:
 		CPY ln_siz			; overflow? EEEEEEEEEEK
 			BEQ rl_l			; ignore if so (was BCS)
 		STA (str_pt), Y		; store into buffer
-lda#'+':jsr$c0c2
 		INC	rl_cur			; update index
-lda rl_cur:clc:adc#'0':jsr$c0c2:lda#',':jsr$c0c2
 rl_echo:
 		LDY rl_dev			; retrieve device
 		JSR cout			; echo received character
 		_BRA rl_l			; and continue
 rl_cr:
-lda#'!':jsr$c0c2
 	LDA #CR				; newline
 	LDY rl_dev			; retrieve device
 	JSR cout			; print newline (ignoring errors)
 	LDY rl_cur			; retrieve cursor!!!!!
-lda#'@':jsr$c0c2:tya:clc:adc#'0':jsr$c0c2
 	LDA #0				; no STZ indirect indexed
 	STA (str_pt), Y		; terminate string
-deb_str:lda#'=':jsr$c0c2
-ldy#0
-deb_lp:lda(str_pt),y:beq deb_exit:jsr$c0c2:iny:bra deb_lp
-deb_exit:lda#10:jsr$c0c2
 	_EXIT_OK			; and all done!
 
 ; ***********************************************************
@@ -1133,7 +1096,7 @@ jsr dbgbin
 pla
 rts
 
-;DEBUG show A in pseudohex
+;DEBUG show A in hex
 debug_hex:
 pha
 pha

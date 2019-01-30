@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc21, should match kernel16.s
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190126-1339
+; last modified 20190130-1243
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -108,47 +108,6 @@ cin:
 	STZ bl_siz+1
 	_KERNEL(BLIN)
 	RTI					; ** keep possible error **
-; worth switching back DBR
-;	PHB					; eeeeeeeeek (3)
-;	PHK					; bank zero into stack (3)
-;	PLB					; set DBR! do not forget another PLB upon end! (4)
-; ** EVENT management no longer here **
-;	LDX iol_dev			; **use physdev as index! (3)
-;	LDA io_c			; get received character
-;	CMP #' '			; printable?
-;		BCS ci_exitOK		; if so, will not be an event, exit with NO error
-; events no longer here!
-; check for binary mode first
-;	LDY cin_mode, X		; *get flag, new sysvar 20150617
-;	BNE ci_nevent		; otherwise should process possible event
-; *** event processing ***
-;		CMP #16				; is it DLE?
-;		BNE ci_notdle		; otherwise check next
-;			STA cin_mode, X		; *set binary mode! safer and faster!
-;			LDY #EMPTY			; and supress received character
-;			BRA cio_abort		; restore & notify (will stay locked!)
-;ci_notdle:
-;		CMP #3				; is it ^C? (TERM)
-;		BNE ci_noterm		; otherwise check next
-;			LDA #SIGTERM
-;			BRA ci_signal		; send signal
-;ci_noterm:
-;		CMP #4				; is it ^D? (KILL) somewhat dangerous...
-;		BNE ci_nokill		; otherwise check next
-;			LDA #SIGKILL
-;			BRA ci_signal		; send signal
-;ci_nokill:
-;		CMP #26				; is it ^Z? (STOP)
-;			BNE ci_exitOK		; otherwise there is no more to check
-;		LDA #SIGSTOP		; last signal to be sent
-;ci_signal:
-;		STA b_sig			; set signal as parameter
-; much faster KERNEL(GET_PID)
-;		LDY run_pid			; internal PID in Y...
-;		KERNEL(B_SIGNAL)	; send signal to myself *** could be patched!
-;		LDY #EMPTY			; no character was received
-;		SEC					; eeeeeeeek
-;		JMP cio_unlock		; release device and exit!
 
 
 ; ********************************
@@ -1330,7 +1289,7 @@ shutdown:
 	CPY #PW_STAT		; is it going to suspend?
 		BEQ sd_fw			; do not shutdown system then!
 ; interrupt invoking, although for internal use
-	CPY #PW_NMI		; some invoking?
+	CPY #PW_NMI			; some invoking?
 		BCS sd_fw			; just pass to FW
 	TYA					; no longer switches DBR
 	STA @sd_flag		; store mode for later, first must do proper system shutdown, note long addressing
