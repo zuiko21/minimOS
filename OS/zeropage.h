@@ -1,6 +1,6 @@
-; minimOS 0.6rc9 zero-page system variables
+; minimOS 0.6rc10 zero-page system variables
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20181230-2249
+; last modified 20190130-0906
 
 .zero
 * = 0
@@ -84,18 +84,18 @@ zpar3: zaddr3	.dsb	4			; up to 4 bytes, including older names @ $F0
 
 k_ram	= b_sig+1					; 8b, Kernel RAM pages (0 = 128 byte system) changed for virtua6502 compatibility
 b_ram	= b_sig+3					; 8b, Banks of "high" memory (65816 only)
-ln_siz	= b_sig+3					; 8b, maximum READLN input! eeeeeeeeeeeek
+da_ptr	= b_sig+2					; 16b, had conflict within LOWRAM I/O!
 ; *********************************************
 
 ; *** include aliases here for zpar2/zaddr2 ***
-def_io: irq_hz: da_ptr: kerntab:	; 16 bit
+def_io: irq_hz: kerntab:			; 16 bit
 ma_pt: str_pt:						; 16/24 bit pointers
 ex_rlc:								; 16/24 bit ptr, base address for relocation
 
 z6:z6W:z6L:							; old labels for compatibility
 zpar2: zaddr2	.dsb	4			; up to 4 bytes, including older names @ $F4
 
-bl_siz	= da_ptr+2					; 16b *** was here
+bl_siz	= str_pt+2					; 16b *** was here
 bnk_rl	= ex_rlc+2					; 8b, bank for relocation, part of the full address
 ; *********************************************
 
@@ -108,9 +108,11 @@ w_rect:	up_ticks:					; 32 bit
 z2:z2W:z2L:							; old labels for compatibility
 zpar: zaddr		.dsb	4			; up to 4 bytes, including older names @ $F8
 
-c_speed	= cpu_ll+1					; 16b ***might recheck alignment***
-up_sec	= up_ticks+1				; 24b, new source-compatible format
+c_speed		= cpu_ll+1				; 16b ***might recheck alignment***
+up_sec		= up_ticks+1			; 24b, new source-compatible format
 ma_align	= ma_rs+3				; 8b, moved for virtua6502 compatibility
+ln_siz		= io_c+3				; 8b, maximum READLN input! moved for LOWRAM eeeeeeeeeeeek
+
 ; *******************************************
 
 ; ***********************************************

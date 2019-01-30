@@ -195,7 +195,7 @@ cio_idsc:
 ;lda iol_dev:jsr debug_hex
 		LDY #D_ID
 		LDA (da_ptr), Y		; *get ID of that
-lda#$84:sta driver0
+lda#$84:sta driver0;****
 ;tay:lda#'#':jsr$c0c2:tya
 ;jsr debug_hex
 ;cmp (da_ptr),y
@@ -729,6 +729,7 @@ lda#'*':jsr$c0c2
 rl_rcv:
 		LDA io_c			; get received
 		LDY rl_cur			; retrieve index
+pha:clc:adc#'0':jsr$c0c2:pla
 		CMP #CR				; hit CR?
 			BEQ rl_cr			; all done then
 		CMP #BS				; is it backspace?

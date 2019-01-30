@@ -100,7 +100,6 @@ main_loop:
 		_KERNEL(READLN)		; get string
 ; * end of inlined getLine *
 		LDA buffer			; check whether empty line
-pha:lda#58:jsr$c0c2:pla:pha:clc:adc#'A':jsr$c0c2:pla
 			BEQ main_loop		; if so, just repeat entry
 ; in an over-simplistic way, just tell this 'filename' to LOAD_LINK and let it do...
 		LDY #<buffer		; just to make sure it is the LSB only
