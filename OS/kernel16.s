@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
-; v0.6b13
+; v0.6rc1
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20181220-1134
+; last modified 20190130-1230
 
 ; just in case
 #define		C816	_C816
@@ -38,11 +38,11 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS-16 0.6b13", 0	; version in comment
+	.asc	"minimOS·16 v0.6", 0		; version in comment
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$4DA0	; time, 09.45
-	.word	$4D8E	; date, 2018/12/14
+	.word	$63C0	; time, 12.30
+	.word	$4E3E	; date, 2019/1/30
 
 kern_siz = kern_end - kern_head - 256
 
@@ -160,7 +160,6 @@ dr_spars:
 		INX
 		INX						; 16-bit accesses
 		BNE dr_spars
-; TASKDEV is no longer a thing...
 ; X already at zero
 ; *** prepare access to each driver header ***
 dr_loop:
@@ -233,8 +232,7 @@ sh_exec:
 	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
-here:
-	BRA here			; ...as the scheduler will detour execution
+	_PANIC("{yield}")	; ...as the scheduler will detour execution
 
 .as:.xs
 
@@ -249,19 +247,24 @@ ks_cr:
 ; in case of no headers, keep splash ID string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"mOS-16 0.6", 0		; version in comment
+	.asc	"mOS·16 0.6", 0		; version in comment
 #endif
 
 ; ***********************************************
 ; *** generic kernel routines, separate files ***
 ; ***********************************************
+#ifdef	SAFE
 	.asc	"<API>"				; for debug only
+#endif
 #include "api16.s"
 
 ; *********************************
 ; *** interrupt service routine ***
 ; *********************************
-; will include BRK handler!
+#ifdef	SAFE
+	.asc	"<IRQ>"				; for debug only
+#endif
+
 k_isr:
 #include "isr/irq16.s"
 ; default NMI-ISR is on firmware!

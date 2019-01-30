@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6rc11
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20181214-0947
+; last modified 20190130-1215
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,12 +35,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6rc11", 0	; version in comment
+	.asc	"minimOS 0.6", 0	; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$4DA0	; time, 9.45
-	.word	$4D8E	; date, 2018/12/14
+	.word	$61E0	; time, 12.15
+	.word	$4E3E	; date, 2019/1/30
 
 kern_siz = kern_end - kern_head - $100
 
@@ -248,10 +248,6 @@ sh_exec:
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
 	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
-lda#'!'
-jsr$c0c2
-st_lock:
-bra st_lock
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
 	_PANIC("{yield}")	; ...as the scheduler will detour execution
 
@@ -272,8 +268,10 @@ kern_splash:
 ; ***********************************************
 ; *** generic kernel routines, separate files ***
 ; ***********************************************
-#ifndef		LOWRAM
+#ifndef	LOWRAM
+#ifdef		SAFE
 	.asc	"<API>"		; debug only
+#endif
 #include "api.s"
 #else
 #include "api_lowram.s"
@@ -285,14 +283,16 @@ kern_splash:
 ; will include BRK handler!
 ; new separate LOWRAM ISR 20180323
 
+#ifdef		SAFE
+	.asc	"<IRQ>"		; debug only
+#endif
+
 k_isr:
 #ifndef		LOWRAM
 #include "isr/irq.s"
 #else
 #include "isr/irq_lowram.s"
 #endif
-; default NMI-ISR is on firmware!
-; will include supplied BRK handler, although called by firmware
 
 kern_end:		; for size computation
 ; ***********************************************
@@ -305,7 +305,7 @@ kern_end:		; for size computation
 ; *** place here the shell code, must end in FINISH macro, currently with header ***
 ; **********************************************************************************
 ; must NOT include external shell label!!!
-; but MUST make page alignment HERE, the bulit-in one into shell file will fo nothing as already algined
+; but MUST make page alignment HERE, the bulit-in one into shell file will do nothing as already algined
 
 ; first determine actual shell address, no longer internally defined!
 #ifdef	NOHEAD
@@ -318,7 +318,7 @@ shell	= * + 256		; skip header
 #include SHELL
 
 ; ************************************************************
-; ****** Downloaded kernels add driver staff at the end ******
+; ****** Downloaded kernels add driver stuff at the end ******
 ; ************************************************************
 #ifdef	DOWNLOAD
 #include DRIVER_PACK_s	; this package will be included with downloadable kernels
