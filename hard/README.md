@@ -110,6 +110,24 @@ Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, new *VIAport*
 
 
 
+**Acapulco**
+
+Status: finishing design.
+
+Form-factor: Breadboard with point-to-point soldering.
+
+Specs: 1.536 MHz 65C02, 32 kiB SRAM (plus 1 kiB
+in parallel as *attribute area*, 
+32 kiB EPROM, VIA 65C22, CRTC HD6445.
+*Intended to be a colour & graphics capable SBC.*
+
+Interfaces: Piezo buzzer, SS-22, new VIA connector,
+VGA-compatible video output (320x200 @ 16 colours
+in GRgB mode, max. 2 of them each 8x8 pixels)
+
+
+
+
 **Tijuana**
 
 Status: finishing design.
