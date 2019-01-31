@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc25, must match kernel.s
+; v0.6rc26, must match kernel.s
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190126-1301
+; last modified 20190131-0851
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -911,21 +911,22 @@ ll_found:
 	LDA (rh_scan), Y	; check filetype
 	CMP #'m'			; must be minimOS app!
 		BNE ll_wrap			; error otherwise
-	INY					; next byte is CPU type
-	LDA (rh_scan), Y	; get it
-; this is done instead of LDX fw_cpu
-;	ADMIN(GESTALT)		; get full system info
-;	LDY cpu_ll			; installed CPU *** should return it in Y!
-	LDY fw_cpu			; ********************* HACK AGAIN. MUST REVISE GESTALT INTERFACE ************************
-	CPY #'R'			; is it a Rockwell/WDC CPU?
+;	LDX fw_cpu			; ********************* HACK AGAIN. MUST REVISE GESTALT INTERFACE ************************
+	ADMIN(GESTALT)		; get full system info
+	LDX cpu_ll			; installed CPU *** should return it in Y!
+; this is needed for the GESTALT call to work!
+	LDY #2				; offset for filetype EEEEEEEEEEEEK
+	LDA (rh_scan), Y	; get REQUESTED CPU for the code EEEEEEEEEEEEEEEEK
+; check compability of supplied code against present CPU
+	CPX #'R'			; is it a Rockwell/WDC CPU?
 		BEQ ll_rock			; from R down is OK
-	CPY #'B'			; generic 65C02?
+	CPX #'B'			; generic 65C02?
 		BEQ ll_cmos			; from B down is OK
-	CPY #'V'			; 65816 is supported but no better than a generic 65C02
+	CPX #'V'			; 65816 is supported but no better than a generic 65C02
 		BEQ ll_cmos
 ; if none of the above, must be plain old NMOS... unless FW variables are corrupt!
 #ifdef	SAFE
-	CPY #'N'			; old NMOS?
+	CPX #'N'			; old NMOS?
 		BEQ ll_nmos			; only NMOS code will do
 		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
 #endif

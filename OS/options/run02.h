@@ -8,7 +8,7 @@
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
 #define		LOWRAM	_LOWRAM
 

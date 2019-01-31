@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc20
+; v0.6rc21
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190130-1246
+; last modified 20190131-0852
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -573,7 +573,7 @@ ll_geth:
 		INY					; reset scanning index (now at name position, was @7)
 ll_nloop:
 			LDA (rh_scan), Y	; get character in found name
-jsr$c0c2
+;jsr$c0c2
 			CMP (str_pt), Y		; compare with what we are looking for
 				BNE ll_nthis		; difference found
 			ORA (str_pt), Y		; otherwise check whether at EOL
@@ -603,22 +603,26 @@ ll_found:
 	LDA (rh_scan), Y	; check filetype
 	CMP #'m'			; must be minimOS app!
 		BNE ll_wrap		; error otherwise
-	INY					; next byte is CPU type
-	LDA (rh_scan), Y	; get it
-; check compability of supplied code against present CPU
 ;	LDX fw_cpu			; *** UGLY HACK, this is a FIRMWARE variable ***
 	_ADMIN(GESTALT)		; get sys info, proper way
 	LDX cpu_ll			; installed CPU
+; this is needed for the GESTALT call to work!
+	LDY #2				; offset for filetype EEEEEEEEEEEEK
+	LDA (rh_scan), Y	; get REQUESTED CPU for the code EEEEEEEEEEEEEEEEK
+; check compability of supplied code against present CPU
 	CPX #'R'			; is it a Rockwell/WDC CPU?
 		BEQ ll_rock			; from R down is OK
 	CPX #'B'			; generic 65C02?
 		BEQ ll_cmos			; from B down is OK
-; does it make any sense to support the 816 on such limited systems??
-;	CPX #'V'			; 65816 is supported but no better than a generic 65C02
-;		BEQ ll_cmos
+; does it make any sense to support the 816 on such limited systems?? *** emulation only ***
+	CPX #'V'			; 65816 is supported but no better than a generic 65C02
+		BEQ ll_cmos
+; *** remove the above if on real hardware that will not use a 65816 ***
+#ifdef	SAFE
 	CPX #'N'			; old NMOS?
 	BEQ ll_nmos			; only NMOS code will do
 		_PANIC("{CPU?}")	; *** should NEVER arrive here, unless firmware variables are corrupt! ***
+#endif
 ll_rock:
 	CMP #'R'			; code has Rockwell extensions?
 		BEQ ll_valid
