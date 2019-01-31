@@ -1,6 +1,6 @@
 ; Monitor shell for minimOS (simple version)
 ; v0.6b1
-; last modified 20180404-1414
+; last modified 20190131-0903
 ; (c) 2016-2019 Carlos J. Santisteban
 
 #include "../usual.h"
@@ -10,7 +10,7 @@
 ;#define	NARROW	_NARROW
 
 ; *** constant definitions ***
-#define	BUFSIZ		16
+#define	BUFSIZ		8
 ; bytes per line in dumps 4 or 8/16
 #ifdef	NARROW
 #define		PERLINE		4

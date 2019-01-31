@@ -912,7 +912,7 @@ ll_found:
 	CMP #'m'			; must be minimOS app!
 		BNE ll_wrap			; error otherwise
 ;	LDX fw_cpu			; ********************* HACK AGAIN. MUST REVISE GESTALT INTERFACE ************************
-	ADMIN(GESTALT)		; get full system info
+	_ADMIN(GESTALT)		; get full system info
 	LDX cpu_ll			; installed CPU *** should return it in Y!
 ; this is needed for the GESTALT call to work!
 	LDY #2				; offset for filetype EEEEEEEEEEEEK

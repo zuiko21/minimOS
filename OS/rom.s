@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; v0.6b8
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190118-0916
+; last modified 20190131-0902
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -101,6 +101,8 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 #ifndef C816
 #ifndef		LOWRAM
 #include "../apps/pmap.s"
+#else
+#include "shell/monitor.s"
 #endif
 #else
 #include "../apps/pmap16.s"
