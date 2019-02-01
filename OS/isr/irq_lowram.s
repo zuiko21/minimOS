@@ -18,7 +18,7 @@
 	_PHX
 	_PHY
 
-; *** place here HIGH priority async tasks, if required ***
+; *** place HIGH priority async tasks here, if required ***
 
 ; check whether from VIA, BRK... (7 if periodic, 6 if async)
 
@@ -28,7 +28,7 @@
 ;	.word periodic			; standard jiffy
 ;	.word asyncronous		; async otherwise
 
-; alternative way, best for NMOS
+; alternative way, best for NMOS 6502
 	_ADMIN(IRQ_SRC)		; check source, **generic way**
 	TXA					; check offset at X
 		BEQ periodic		; jump if required... eeeeeeeeek
@@ -59,7 +59,7 @@ i_req:
 			_BRA i_anx			; --- otherwise check next --- optional if optimised as below (3)
 i_rnx:
 		CMP #IQ_FREE		; is there a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
-			BEQ isr_done		; yes, we are done (2/3)
+			BEQ ir_done			; yes, we are done (2/3) eeeeeeeeeeeeeeek
 i_anx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; decrease after processing, negative offset on call, less latency, 20151029

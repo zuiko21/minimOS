@@ -69,8 +69,8 @@ i_req:
 			BCC isr_done		; driver satisfied, thus go away NOW, BCC instead of BCS 20150320 (2/3)
 			_BRA i_anx			; --- otherwise check next --- optional if optimised as below (3)
 i_rnx:
-		CMP #IQ_FREE		; is there a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
-			BEQ isr_done		; yes, we are done (2/3)
+		CMP #IQ_FREE		; is this a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
+			BEQ ir_done			; yes, we are done (2/3) eeeeeeeek
 i_anx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; decrease after processing, negative offset on call, less latency, 20151029
