@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
-; v0.6rc26, must match kernel.s
+; v0.6rc27, must match kernel.s
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190131-0851
+; last modified 20190201-1014
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -680,8 +680,9 @@ sig_kill:
 ; then, check for any shutdown command
 	LDA sd_flag			; some pending action?
 	BEQ rst_shell		; if not, just restart the shell
+lda#'c':jsr$c0c2
 		LDY #PW_CLEAN		; or go into second phase...
-		JSR shutdown		; ...of shutdown procedure (could use JMP)*** what of patched???
+		JMP shutdown		; ...of shutdown procedure (instead of JSR)*** what if patched???
 ; if none of the above, a single task system can only restart the shell!
 rst_shell:
 	LDX #SPTR			; init stack again (in case SIGKILL was called)
@@ -735,13 +736,13 @@ b_signal:
 		JSR sig_term		; will call... and return here
 sig_exit:
 		_EXIT_OK			; standard exit, resume execution after calling handler
-sig_term:
-		JMP (mm_sterm)		; execute handler, will return to sig_exit
 sig_suic:
 	CPY #SIGKILL		; suicide?
 		BEQ sig_kill
 sig_pid:
 	_ERR(INVALID)		; unrecognised signal
+sig_term:
+	JMP (mm_sterm)		; execute handler, will return to sig_exit
 
 
 ; ***********************************************
@@ -1062,18 +1063,21 @@ shutdown:
 	CPY #PW_NMI		; interrupt simulation?
 		BCS sd_fw			; do not shutdown, just pass to FW
 	STY sd_flag			; store mode for later, first must do proper system shutdown
+lda#'S':jsr$c0c2
+tya:clc:adc#'0':jsr$c0c2
 ; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
 	_KERNEL(B_SIGNAL)	; ask braids to terminate *** no longer direct call as could be patched!
+lda#'T':jsr$c0c2
 	CLI					; make sure all will keep running!
 	_EXIT_OK
 
 ; firmware interface
 sd_fw:
 	_ADMIN(POWEROFF)	; except for suspend, shouldn't return...
-	RTS					; just in case was not implemented!
+	RTS					; restore if suspended!
 sd_off:
 	LDY #PW_OFF			; poweroff
 	BNE sd_fw			; no need for BRA
@@ -1084,6 +1088,7 @@ sd_cold:
 ; the scheduler will wait for NO braids active
 ; now let's disable all drivers
 sd_2nd:
+lda#'2':jsr$c0c2
 	LDA sd_flag			; check what was pending
 	BNE sd_shut			; something to do
 		_PANIC("{sched}")	; otherwise an error!

@@ -17,6 +17,7 @@
 .(
 	TYA					; get subfunction offset
 	TAX					; use as index
+clc:adc#'0':jsr$c0c2
 	_JMPX(fwp_func)		; select from jump table
 
 ; **********************
