@@ -17,7 +17,7 @@
 ;#define		FAST_FW		_FAST_FW
 
 ; new option for mutable IDs, most likely mandatory!
-#define		MUTABLE		_MUTABLE
+;#define		MUTABLE		_MUTABLE
 
 ; enable in order to remove headers, not LOADLINK savvy!
 ;#define		NOHEAD	_NOHEAD
@@ -26,7 +26,7 @@
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
-#define		NMOS	_NMOS
+;#define		NMOS	_NMOS
 #ifdef	NMOS
 #define		CPU_TYPE	'N'
 #else

@@ -2,7 +2,7 @@
 ; v0.6rc8, should match kernel.s
 ; features TBD
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190119-1201
+; last modified 20190201-0840
 
 #define		ISR		_ISR
 
@@ -12,23 +12,23 @@
 
 ; **** the ISR code **** (initial tasks take 11t)
 #ifdef	NMOS
-	CLD						; NMOS only, 20150316, conditioned 20151029 (2)
+	CLD					; NMOS only, 20150316, conditioned 20151029 (2)
 #endif
-	PHA						; save registers (3x3)
+	PHA					; save registers (3x3)
 	_PHX
 	_PHY
 ; *** place here HIGH priority async tasks, if required ***
 
 ; check whether from VIA, BRK...
-	_ADMIN(IRQ_SRC)			; check source, **generic way**
-	_JMPX(irq_tab)			; do as appropriate
+	_ADMIN(IRQ_SRC)		; check source, **generic way**
+	_JMPX(irq_tab)		; do as appropriate
 irq_tab:
-	.word periodic			; standard jiffy
-	.word asynchronous		; async otherwise
+	.word periodic		; standard jiffy
+	.word asynchronous	; async otherwise
 
 ; optimised, non-portable code
-;	BIT VIA+IFR				; much better than LDA + ASL + BPL! (4)
-;		BVS periodic		; from T1 (3/2)
+;	BIT VIA+IFR			; much better than LDA + ASL + BPL! (4)
+;		BVS periodic	; from T1 (3/2)
 
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 17 cycles if optimised)
@@ -61,7 +61,7 @@ asynchronous:
 ; *** cycle between enabled (but not satisfied) in 37t+...
 	LDX #MX_QUEUE-2		; get last queue index (2)
 i_req:
-		LDA drv_a_en, X	; *** check whether enabled, new in 0.6 *** (4)
+		LDA drv_a_en, X		; *** check whether enabled, new in 0.6 *** (4)
 		BPL i_rnx			; *** if disabled, skip this task *** (2/3)
 			_PHX				; keep index! (3)
 			JSR ir_call			; call from table (12...)
@@ -85,11 +85,11 @@ ir_done:
 	AND #$10			; mask out B bit (2)
 	BEQ isr_done		; spurious interrupt! (2/3)
 ; ...this is BRK, but must emulate NMI stack frame!
-		LDA systmp
+		LDA systmp			; save extended state (6x3)
 		PHA
 		LDA sysptr+1
 		PHA
-		LDA sysptr		; save extended state (6x3)
+		LDA sysptr
 		PHA
 ; *****************************************************************
 ; *** BRK is no longer simulated by FW, must use some other way ***
@@ -99,7 +99,7 @@ ir_done:
 ;		JMP brk_hndl		; non-portable, optimised way
 ; *** continue after all interrupts dispatched ***
 isr_done:
-	_PLY	; restore registers (3x4 + 6)
+	_PLY				; restore registers (3x4 + 6)
 	_PLX
 	PLA
 	RTI
@@ -112,7 +112,7 @@ ip_call:
 
 ; *** here goes the periodic interrupt code *** (4)
 periodic:
-lda#'#':jsr$c0c2		; *** periodic interrupt should NEVER happen ***
+;lda#'#':jsr$c0c2		; *** periodic interrupt should NEVER happen ***
 	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
 
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
@@ -173,11 +173,11 @@ i_pnx:
 ip_done:
 ; update uptime, much faster new format
 	INC ticks			; increment uptime count (6)
-		BNE isr_done			; did not wrap (3/2)
+		BNE isr_done		; did not wrap (3/2)
 	INC ticks+1			; otherwise carry (6)
-		BNE isr_done			; did not wrap (3/2)
+		BNE isr_done		; did not wrap (3/2)
 	INC ticks+2			; otherwise carry (6)
-		BNE isr_done			; did not wrap (3/2)
+		BNE isr_done		; did not wrap (3/2)
 	INC ticks+3			; otherwise carry (6)
 	_BRA isr_done		; go away (3)
 

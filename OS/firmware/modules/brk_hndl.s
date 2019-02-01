@@ -15,7 +15,7 @@
 .(
 ; must use some new indirect jump, as set by new SET_BRK
 	JSR brk_call		; indirect jump will return here
-	JMP nmi_end		; standard firmware label
+	JMP nmi_end			; standard firmware label
 ; as no indirect call is available, call here and return to handler
 brk_call:
 	JMP (fw_dbg)		; will return
