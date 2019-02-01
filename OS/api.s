@@ -678,10 +678,8 @@ sig_kill:
 ;	KERNEL(FREE)		; free it or fail quietly
 ; *** end of non-XIP code, will not harm anyway ***
 ; then, check for any shutdown command
-lda#'K':jsr$c0c2
 	LDA sd_flag			; some pending action?
 	BEQ rst_shell		; if not, just restart the shell
-lda#'c':jsr$c0c2
 		LDY #PW_CLEAN		; or go into second phase...
 		JMP shutdown		; ...of shutdown procedure (instead of JSR)*** what if patched???
 ; if none of the above, a single task system can only restart the shell!
@@ -1065,14 +1063,11 @@ shutdown:
 	CPY #PW_NMI		; interrupt simulation?
 		BCS sd_fw			; do not shutdown, just pass to FW
 	STY sd_flag			; store mode for later, first must do proper system shutdown
-lda#'S':jsr$c0c2
-tya:clc:adc#'0':jsr$c0c2
 ; ask all braids to terminate
 	LDY #0				; PID=0 means ALL braids
 	LDA #SIGTERM		; will be asked to terminate
 	STA b_sig			; store signal type
 	_KERNEL(B_SIGNAL)	; ask braids to terminate *** no longer direct call as could be patched!
-lda#'T':jsr$c0c2
 	CLI					; make sure all will keep running!
 	_EXIT_OK
 
@@ -1090,7 +1085,6 @@ sd_cold:
 ; the scheduler will wait for NO braids active
 ; now let's disable all drivers
 sd_2nd:
-lda#'2':jsr$c0c2
 	LDA sd_flag			; check what was pending
 	BNE sd_shut			; something to do
 		_PANIC("{sched}")	; otherwise an error!
@@ -1099,10 +1093,10 @@ sd_shut:
 ; call each driver's shutdown routine thru DR_SHUT (12b, was 25b)
 	LDY #128			; first valid device driver ID
 sd_loop:
-		LDA dr_ind-128, Y	; check whether this ID is in use
-		BEQ sdl_skip		; no! skip this ID
+;		LDA dr_ind-128, Y	; check whether this ID is in use
+;		BEQ sdl_skip		; no! skip this ID
 			_PHY				; save just in case
-;			_KERNEL(DR_SHUT)	; turn this off
+			_KERNEL(DR_SHUT)	; turn this off
 			_PLY				; retrieve
 sdl_skip:
 		INY					; next device
@@ -1434,7 +1428,7 @@ ds_qnxt:
 ; finally, execute proper shutdown
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
-	JSR dr_call			; execute shutdown procedure *** interrupts off ***
+;	JSR dr_call			; execute shutdown procedure *** interrupts off ***
 	_NO_CRIT
 	_EXIT_OK			; all done
 

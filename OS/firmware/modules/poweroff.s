@@ -17,7 +17,6 @@
 .(
 	TYA					; get subfunction offset
 	TAX					; use as index
-clc:adc#'0':jsr$c0c2
 	_JMPX(fwp_func)		; select from jump table
 
 ; **********************
@@ -32,14 +31,12 @@ fwp_off:
 
 ; *** suspend ***
 fwp_susp:
-lda#'s':jsr$c0c2
 	LDA fw_cpu			; get current CPU type
 	CMP #'N'			; is it NMOS?
 	BNE fwp_stat			; if not, cannot be suspended!
 ; should an NMOS device had an actual powerdown feature, use it here!
 		_DR_ERR(UNAVAIL)	; avoid AXS# on NMOS
 fwp_stat:
-lda#'h':jsr$c0c2
 	_CRITIC				; disable interrupts...
 ; first shut off interrupt sources! *** only useful with WDC CPUs ***
 	LDA VIA_J + IER		; get current interrupt sources
@@ -62,7 +59,6 @@ fwp_end:
 ; despite both FW vectors being together, should NOT unify these chunks as JMP nmi is
 ; MUCH safer than JMP (fw_nmi), plus state must be saved anyway.
 fwp_nmi:
-lda#'N':jsr$c0c2
 	LDY #<fwp_end		; get correct return address
 	LDA #>fwp_end
 	PHA					; stack it in order
@@ -71,7 +67,6 @@ lda#'N':jsr$c0c2
 	JMP nmi				; handle as usual (standard label)
 ; note that register values will make no sense on debuggers
 fwp_irq:
-lda#'I':jsr$c0c2
 	LDY #<fwp_end		; get correct return address
 	LDA #>fwp_end
 	PHA					; stack it in order
