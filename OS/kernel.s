@@ -233,6 +233,7 @@ dr_ok:					; *** all drivers inited ***
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
+
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
