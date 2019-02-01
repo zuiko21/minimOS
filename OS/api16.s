@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
-; v0.6rc21, should match kernel16.s
+; v0.6rc22, should match kernel16.s
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190130-1243
+; last modified 20190201-1209
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1606,12 +1606,13 @@ dr_icall:
 ; b_sig		= requested offset
 	.asc	"<DR_EXEC>"
 dr_exec:
-	TYX
+	TYX					; as no long,Y available, also check for physical ID
 		BPL dx_none
-	LDX dr_ind, Y
+	LDA @dr_ind-128, X	; eeeeeeeeeeek^2
 	BEQ dx_none
+		TAX					; long addresses have no LDX,Y
 		.al: REP #$20
-		LDA drv_ads-1, X
+		LDA @drv_ads, X		; why was it -1? check long mode!
 		STA da_ptr
 		LDY b_sig
 ; *** generic driver call, pointer set at da_ptr, Y holds table offset
@@ -1644,9 +1645,14 @@ dr_shut:
 		_ERR(INVALID)		; ...or bust!
 ds_phys:
 #endif
-
+; make sure we work on bank zero!
+	PHB					; eeeeeeeeeeeeeeeeeeeeeeeeeek
+	PHK					; zero...
+	PLB					; ...is the bank!
+; continue with 16-bit addresses, but do not forget to pick previous B from stack!
 	LDX dr_ind-128, Y	; is that being used?
 	BNE ds_used			; yes, proceed to remove
+		PLB					; essential!
 		_ERR(N_FOUND)		; no, nothing to remove
 ds_used:
 	LDA #0				; this means free device, unfortunately no STZ abs,Y
@@ -1671,12 +1677,15 @@ dr_qnxt:
 		DEX				; previous entry, will switch queue
 		BPL ds_qseek	; ***will work below 128 bytes
 ; finally, execute proper shutdown
+	.al: REP #$20		; *** 16-bit memory *** eeeeeeek
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
 	JSR dr_call			; execute shutdown procedure via GENERIC routine *** interrupts off ***
 	_NO_CRIT
+	PLB					; eeeeeeeeeeeeeeeeeeek
 	_EXIT_OK			; all done
 
+	.as:
 
 ; *********************************************
 ; *** DR_INFO, get pointer to driver header ***
