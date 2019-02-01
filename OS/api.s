@@ -1397,14 +1397,13 @@ dr_shut:
 		_ERR(INVALID)		; ...or bust!
 ds_phys:
 #endif
-	LDA dr_ind-128, Y	; is that being used?
+	LDX dr_ind-128, Y	; is that being used?
 	BNE ds_used			; yes, proceed to remove
 		_ERR(N_FOUND)		; no, nothing to remove
 ds_used:
-	ASL					; EEEEEEEEEEEEEEEK
-	TAX
 	LDA #0				; no STZ abs, Y...
 	STA dr_ind-128, Y	; this is no more, any problem here?
+	STY dr_id			; ID needs to be compared eeeeeeeeek
 	LDY drv_ads, X		; get full header pointer (leave dummy entry)
 	LDA drv_ads+1, X
 ; does it need to clear that entry?
@@ -1414,7 +1413,6 @@ ds_used:
 	_STZA drv_ads+1, X	; clear at least MSB of this entry as now mandatory (first entry is dummy)
 ; needs to disable interrupt tasks!
 ; *** perhaps using AQ_MNG and PQ_MNG???
-	STY dr_id			; ID needs to be compared
 	LDX #MX_QUEUE-1		; maximum index
 ds_qseek:
 		LDA drv_a_en, X		; get entry from whatever queue
@@ -1428,7 +1426,7 @@ ds_qnxt:
 ; finally, execute proper shutdown
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
-;	JSR dr_call			; execute shutdown procedure *** interrupts off ***
+	JSR dr_call			; execute shutdown procedure *** interrupts off ***
 	_NO_CRIT
 	_EXIT_OK			; all done
 
