@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API for LOWRAM systems
-; v0.6rc21
+; v0.6rc22
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190131-0852
+; last modified 20190201-1128
 
 ; jump table, if not in separate 'jump' file
 ; *** order MUST match abi.h ***
@@ -1139,9 +1139,6 @@ rts
 ; da_ptr	= pointer to header from removed driver (if available, C otherwise)
 
 dr_shut:
-	TYA					; get ID
-	ASL					; convert to index
-	TAX
 ; convert ID (already in Y) to mask
 #ifdef	SAFE
 	JSR dr_id2m			; check valid ID for mask
@@ -1150,20 +1147,33 @@ dr_shut:
 	EOR #$FF			; negative mask
 	AND drv_en			; remove device from bitmask
 	STA drv_en
+	STY dr_id			; ID needs to be compared eeeeeeeeek
 ; now get this FIXED driver header address
-	LDY drv_ads, X		; get full header pointer
-	LDA drv_ads+1, X
-	STY da_ptr			; report from removed, will serve as ZP pointer too
-	STA da_ptr+1
+; must SCAN thru devices list!
+	LDX #0
+ds_sk:
+		LDA drv_ads+1, X	; check that some list remains
+			BEQ ds_free			; no, just abort
+		STA da_ptr+1
+		LDA drv_ads, X		; get full header pointer
+		STA da_ptr			; report from removed, will serve as ZP pointer too
+		_LDAY(da_ptr)		; what is the actual ID?
+		CMP dr_id			; is the targeted one?
+			BEQ ds_fnd			; found, disable its queues
+		INX					; try next one otherwise
+		INX
+		BNE ds_sk			; no need for bra
+ds_fnd:
 ; needs to disable interrupt tasks!
 ; *** perhaps using AQ_MNG and PQ_MNG???
 ; finally, execute proper shutdown
 	_CRITIC
 	LDY #D_BYE			; offset to shutdown routine
-	JSR dr_call			; execute shutdown procedure *** interrupts off ***
+;	JSR dr_call			; execute shutdown procedure *** interrupts off ***
 	_NO_CRIT
 	_EXIT_OK			; all done
-
+ds_free:
+	_ERR(N_FOUND)		; nothing to remove
 
 ; *******************************************
 ; *** DR_INFO, get default device drivers ***
