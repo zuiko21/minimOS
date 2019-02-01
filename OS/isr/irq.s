@@ -95,8 +95,9 @@ ir_done:
 ; *** BRK is no longer simulated by FW, must use some other way ***
 ; *****************************************************************
 ; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
-		JMP (brk_02)		; reuse some hard vector
-;		JMP brk_hndl		; non-portable, optimised way
+		JMP (brk_02)		; reuse some hard vector (will return via NMI end)
+; *****************************************************************
+
 ; *** continue after all interrupts dispatched ***
 isr_done:
 	_PLY				; restore registers (3x4 + 6)
@@ -112,7 +113,6 @@ ip_call:
 
 ; *** here goes the periodic interrupt code *** (4)
 periodic:
-;lda#'#':jsr$c0c2		; *** periodic interrupt should NEVER happen ***
 	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
 
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
@@ -164,7 +164,7 @@ isr_schd:				; *** take this standard address!!! ***
 i_rnx2:
 ; --- try not to scan the whole queue, if no more entries --- optional
 		CMP #IQ_FREE		; is there a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
-			BEQ ip_done			; yes, we are done (2/3)
+			BEQ ip_done			; yes, we are done (2/3) ***** MUST REVISE *****
 i_pnx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; no improvement with offset, all of them will be called anyway

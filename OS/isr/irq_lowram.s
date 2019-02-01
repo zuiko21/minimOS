@@ -59,7 +59,7 @@ i_req:
 			_BRA i_anx			; --- otherwise check next --- optional if optimised as below (3)
 i_rnx:
 		CMP #IQ_FREE		; is there a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
-			BEQ ir_done			; yes, we are done (2/3) eeeeeeeeeeeeeeek
+			BEQ ir_done			; yes, we are done (2/3) eeeeeeeeeeeeeeek ***** MUST REVISE *****
 i_anx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; decrease after processing, negative offset on call, less latency, 20151029
@@ -82,8 +82,9 @@ ir_done:
 ; *** BRK is no longer simulated by FW, must use some other way ***
 ; *****************************************************************
 ; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
-		JMP (brk_02)		; reuse some hard vector
-;		JMP brk_hndl		; non-portable, optimised way
+		JMP (brk_02)		; reuse some hard vector (will exit via NMI common end)
+; *****************************************************************
+
 ; *** continue after all interrupts dispatched ***
 isr_done:
 	_PLY				; restore registers (3x4 + 6)

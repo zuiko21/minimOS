@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
 ; v0.6b4, should match kernel16.s
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20181220-1126
+; last modified 20190201-0940
 
 #define		ISR		_ISR
 
@@ -21,17 +21,16 @@
 	PLB						; no other way to set it (4)
 ; *** place here HIGH priority async tasks, if required ***
 
-; check whether jiffy or async (7 if periodic, 6 if async)
+; check whether jiffy or async
 ; might use firmware call IRQ_SRC for complete generic kernel!
-	BIT VIA_J+IFR			; much better than LDA + ASL + BPL! (4)
-		BVS periodic			; from T1 (3/2)
-
+;	BIT VIA_J+IFR			; much better than LDA + ASL + BPL! (4)
+;		BVS periodic			; from T1 (3/2)
 ; ** generic alternative **
-;	ADMIN(IRQ_SRC)			; get source in X
-;	JMP (irq_tab, X)		; do as appropriate
-;irq_tab:
-;	.word	periodic
-;	.word	asynchronous
+	_ADMIN(IRQ_SRC)			; get source in X
+	JMP (irq_tab, X)		; do as appropriate
+irq_tab:
+	.word	periodic
+	.word	asynchronous
 
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 34 cycles if optimised)
@@ -75,13 +74,14 @@ i_req:
 i_rnx:
 ; --- try not to scan the whole queue, if no more entries --- optional
 		CMP #IQ_FREE		; is there a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
-			BEQ isr_done		; yes, we are done (2/3)
+			BEQ isr_done		; yes, we are done (2/3) *** does not matter, but should that be ir_done instead?
 i_anx:
 		DEX					; no, go backwards to be faster! (2+2)
 		DEX
 		BPL i_req			; until done (3/2)
 ; *** continue after all interrupts dispatched *** (28)
 ir_done:				; otherwise is spurious, due to separate BRK handler on 65816
+; might log the spurious interrupt somehow...
 isr_done:
 	.al: .xl: REP #$30	; restore saved registers in full, just in case (3)
 	PLB					; eeeeeeeeek (4)
