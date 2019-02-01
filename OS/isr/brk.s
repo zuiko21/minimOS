@@ -1,16 +1,13 @@
 ; minimOS BRK panic handler
 ; v0.6b6
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190121-1340
+; last modified 20190201-0935
 
 #ifndef	HEADERS
 #include "../usual.h"
 #endif
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
-lda#'B':jsr$c0c2
-lda#'R':jsr$c0c2
-lda#'K':jsr$c0c2
 
 ; first of all, send a CR to default device
 	JSR brk_cr			; worth it
@@ -25,8 +22,6 @@ brk_nw:
 ; Y/A points to beginning of string
 	STY sysptr+1		; prepare internal pointer, should it be saved for reentrancy?
 	STA sysptr
-;pha:tya:jsr debug_hex
-;pla:jsr debug_hex
 	LDY #0				; eeeeeeeeeeeeeeeeeek
 brk_ploop:
 		_PHY				; save cursor
@@ -53,11 +48,8 @@ brk_term:
 	ADC #0				; fix MSB if needed, now in A
 	TSX					; current stack pointer
 	STA $010B, X		; set MSB eeeeeeeeeeeeeeek
-;jsr debug_hex
 	TYA					; as no STY abs,X...
 	STA $010A, X		; ...set LSB eeeeeeeeeeeek
-;jsr debug_hex
-lda#'!':jsr$c0c2
 	JMP nanomon			; testing, will return to BRK handler *** needs NMI_SF option ***
 ;	RTS					; *** otherwise let it finish the ISR
 
@@ -71,21 +63,3 @@ rts
 ;	STA io_c			; kernel parameter
 ;	KERNEL(COUT)		; system call
 ;	RTS
-
-/*debug_hex:
-pha
-lda#10:jsr$c0c2
-lda#'$':jsr$c0c2
-pla:pha
-lsr:lsr:lsr:lsr
-jsr dhx_prn
-pla
-and#$f
-dhx_prn:
-cmp#10
-bcc dhx_num
-adc#6
-dhx_num:
-clc:adc#'0'
-jsr$c0c2
-rts*/
