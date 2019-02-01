@@ -233,8 +233,7 @@ dr_ok:					; *** all drivers inited ***
 	LDY #DEVICE			; eeeeeek
 	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
-LDY #PW_OFF
-_KERNEL(SHUTDOWN)
+
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************

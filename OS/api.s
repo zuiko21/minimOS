@@ -678,6 +678,7 @@ sig_kill:
 ;	KERNEL(FREE)		; free it or fail quietly
 ; *** end of non-XIP code, will not harm anyway ***
 ; then, check for any shutdown command
+lda#'K':jsr$c0c2
 	LDA sd_flag			; some pending action?
 	BEQ rst_shell		; if not, just restart the shell
 lda#'c':jsr$c0c2
@@ -688,6 +689,7 @@ rst_shell:
 	LDX #SPTR			; init stack again (in case SIGKILL was called)
 	TXS
 	JMP sh_exec			; back to kernel shell!
+
 ex_jmp:
 ; *** non-XIP code must push the block address at the very bottom of stack ***
 ;	LDA ex_pt+1			; get MSB...
@@ -1100,7 +1102,7 @@ sd_loop:
 		LDA dr_ind-128, Y	; check whether this ID is in use
 		BEQ sdl_skip		; no! skip this ID
 			_PHY				; save just in case
-			_KERNEL(DR_SHUT)	; turn this off
+;			_KERNEL(DR_SHUT)	; turn this off
 			_PLY				; retrieve
 sdl_skip:
 		INY					; next device
