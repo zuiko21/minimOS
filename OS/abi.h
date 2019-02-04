@@ -1,7 +1,7 @@
-; minimOS 0.6rc21 API/ABI
+; minimOS 0.6rc22 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190126-1323
+; last modified 20190204-1304
 
 ; *************************************************
 ; *************************************************
@@ -106,13 +106,12 @@ IRQ_SRC		= JIFFY+2		; determine interrupt line
 POWEROFF	= IRQ_SRC+2		; shutdown, suspend etc.
 FREQ_GEN	= POWEROFF+2	; generate square wave
 
-#ifndef	LOWRAM
 ; not for LOWRAM systems
 INSTALL		= FREQ_GEN+2	; copy kernel jump table
 PATCH		= INSTALL+2		; change one kernel function
 ; CONTEXT no longer used, as would be just called from a *specific* Multitasking driver
 RELOC		= PATCH+2		; relocate code and/or variables ***TBD***
-#endif
+CONIO		= RELOC+2		; firmware basic console, when available
 
 ; **************************
 ; ** Driver table offsets **
