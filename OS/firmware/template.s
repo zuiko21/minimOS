@@ -290,10 +290,7 @@ reloc:
 ; ***************************************
 conio:
 ;#include "modules/conio.s"
-
-#ifdef	SAFE
-	JMP missing			; for absent placeholders
-#endif
+	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 ; ***********************************
 ; ***********************************
