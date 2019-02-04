@@ -2,7 +2,7 @@
 ; Acapulco specific configuration!
 ; v0.6b1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190204-1256
+; last modified 20190204-1300
 
 #define		DRIVERS		1
 
@@ -18,12 +18,12 @@
 ; place them between generic labels
 
 driver0:
-; Hitachi LCD
-#include "lcd.s"
+; Acapulco standard video
+#include "../vdu_aca.s"
 
 driver1:
 ; ASCII keyboard
-;#include "../asc_kbd.s"
+#include "../asc_kbd.s"
 
 
 ; *** driver list in ROM ***
