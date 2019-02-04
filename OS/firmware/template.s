@@ -253,9 +253,9 @@ irq_src:
 
 ; *** hardware specific ***
 
-; **********************
+; **************************
 ; POWEROFF, shutdown etc *** TBD
-; **********************
+; **************************
 poweroff:
 #include "modules/poweroff.s"
 
@@ -285,9 +285,9 @@ patch:
 reloc:
 ;#include "modules/reloc.s"
 
-; ***************************************
+; ***********************************
 ; CONIO, basic console when available *** TBD
-; ***************************************
+; ***********************************
 conio:
 ;#include "modules/conio.s"
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device

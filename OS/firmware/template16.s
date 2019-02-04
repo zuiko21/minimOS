@@ -284,9 +284,9 @@ patch:
 reloc:
 ;#include "modules/reloc16.s"
 
-; ***************************************
+; ***********************************
 ; CONIO, basic console when available *** TBD
-; ***************************************
+; ***********************************
 conio:
 ;#include "modules/conio16.s"
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device

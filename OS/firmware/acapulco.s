@@ -1,7 +1,7 @@
 ; firmware for minimOS on Acapulco
-; v0.9.6b1
+; v0.9.6b2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190203-1402
+; last modified 20190204-1323
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -25,8 +25,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4DA0				; time, 09.45
-	.word	$4C45				; date, 2018/2/5
+	.word	$6800				; time, 13.00
+	.word	$4E44				; date, 2019/2/4
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -62,7 +62,8 @@ fw_admin:
 
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
-	.word	conio		; *** CONIO basic console TO DO
+	.word	reloc		; RELOCate code and data (TBD)
+	.word	conio		; CONIO, basic console when available (TBD)
 
 
 ; ********************
@@ -257,13 +258,17 @@ install:
 patch:
 #include "modules/patch.s"
 
-; **************************************
-; CONIO, basic built-in console ** TO DO
-; **************************************
-conio:
-	_DR_ERR(UNAVAIL)	; *** TO DO ***
-#endif
+; ********************************
+; RELOC, data and code relocation *** TBD
+; ********************************
+reloc:
+;#include "modules/reloc.s"
 
+; ***********************************
+; CONIO, basic console when available *** highly specific
+; ***********************************
+conio:
+#include "modules/cio_aca.s"
 
 ; ***********************************
 ; ***********************************
@@ -375,13 +380,13 @@ panic_loop:
 ; once again, CHIHUAHUA is very unlikely to use a 65816
 ; but must store the BRK handler address!
 * = $FFF6
-	.word	brk_hndl		; new BRK	@ $FFF6
+	.word	brk_hndl	; new BRK			@ $FFF6
 	.word	nmi			; unsupported ABORT	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; NMI	@ $FFFA
-	.word	reset		; RST	@ $FFFC
-	.word	irq			; IRQ	@ $FFFE
+	.word	nmi			; NMI				@ $FFFA
+	.word	reset		; RST				@ $FFFC
+	.word	irq			; IRQ				@ $FFFE
 
 fw_end:					; for size computation
 .)
