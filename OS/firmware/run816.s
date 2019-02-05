@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; v0.9.6rc12
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190205-0905
+; last modified 20190205-0956
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -349,8 +349,8 @@ real_admcall:
 
 ; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
 * = lock
-	SEI					; same address as 6502
 	.byt	$42			; WDM opcode will trigger an error on run/lib65816
+	SEI					; actually a signature byte
 panic_loop:
 	BRA panic_loop		; OK as this is 65816 only
 
