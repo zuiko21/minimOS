@@ -267,6 +267,7 @@ freq_gen:
 	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; *** other functions for systems with RAM enough ***
+#ifndef	LOWRAM
 ; **************************
 ; INSTALL, supply jump table
 ; **************************
@@ -291,6 +292,7 @@ reloc:
 conio:
 ;#include "modules/conio.s"
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
+#endif
 
 ; ***********************************
 ; ***********************************
