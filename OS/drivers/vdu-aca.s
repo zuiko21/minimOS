@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a1
+; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190204-1331
+; last modified 20190205-0958
 
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
@@ -43,6 +43,9 @@ va_err:
 	crtc_da	= $DFC1
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
+; *** zeropage variables ***
+	v_dest	= $E8		; was local2, perhaps including this on zeropage.h?
+
 ; ************************
 ; *** initialise stuff ***
 ; ************************
@@ -60,10 +63,10 @@ vi_crl:
 		BNE vi_crl			; continue otherwise
 ; clear all VRAM!
 ; ...but preset standard colours before!
-; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
-
+	LDA #$F0			; white paper, black ink
+	STA va_attr			; this value will be used by CLS
 ; software cursor will be set by CLS routine!
-	JSR va_cls			; reuse code upon Form Feed
+	JSR va_cls			; reuse code from Form Feed
 ; reset inverse video mask!
 	_STZA va_xor		; clear mask is true video
 ; all done!
@@ -84,14 +87,11 @@ va_cls:
 ; new, preset scrolling limit
 	LDA #>VA_SCRL		; original limit, will wrap around this constant (2)
 	STA va_sch+1		; set new var (4)
-	_STZA va_sch		; hopefully VRAM will be page-aligned! (4)
-; get VIA ready, assume all outputs
-; set up VIA... for VRAM access!!!
-	LDA VIA_U+IORB		; current PB (4)
-	AND #VV_OTH			; respect PB3 only (2)
-	ORA #VV_LH			; command = latch high address (2)
-	STA VIA_U+IORB		; set command $D1/D9... (4)
+	_STZA va_sch		; VRAM is page-aligned! (4)
+; no VIA in between...
 vcl_lh:
+
+; -------------------------------------------------------------------------
 		LDX v_dest+1		; get MSB (3)
 		STX VIA_U+IORA		; is data to be latched... (4)
 		DEC VIA_U+IORB		; ...now! PB goes to $D0/D8, setL (6)
