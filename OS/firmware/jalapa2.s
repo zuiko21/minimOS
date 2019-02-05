@@ -1,7 +1,7 @@
-; firmware for minimOS on Jalapa-II
-; v0.9.6a24
+; firmware for minimOS on Jalapa-2
+; v0.9.6a25
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20181101-1832
+; last modified 20190205-0843
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -15,7 +15,7 @@ fw_start:
 	.asc	0, "mV****", CR		; standard system file wrapper, new 20160309
 	.asc	"boot", 0			; mandatory filename for firmware
 fw_splash:
-	.asc	"0.9.6a24 firmware for "
+	.asc	"0.9.6 firmware for "
 ; at least, put machine name as needed by firmware!
 fw_mname:
 	.asc	MACHINE_NAME, 0
@@ -24,8 +24,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4DA0				; time, 09.45
-	.word	$4C45				; date, 2018/2/5
+	.word	$45A0				; time, 08.45
+	.word	$4E45				; date, 2019/2/5
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -36,7 +36,7 @@ fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 #else
 ; if case of no headers, at least keep machine name somewhere
 fw_splash:
-	.asc	"0.9.6a24 FW @ "
+	.asc	"0.9.6 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0
 #endif
@@ -47,6 +47,7 @@ fw_mname:
 ; *********************************
 ; *********************************
 fw_admin:
+#ifndef		FAST_FW
 ; generic functions, esp. interrupt related
 	.word	gestalt		; GESTALT get system info (renumbered)
 	.word	set_isr		; SET_ISR set IRQ vector
@@ -62,7 +63,9 @@ fw_admin:
 ; not for LOWRAM systems
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
-
+	.word	reloc		; RELOCate code and data (TBD)
+	.word	conio		; CONIO, basic console when available
+#endif
 
 ; **************************
 ; **************************
@@ -250,11 +253,11 @@ poweroff:
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
-freq_gen:
+;freq_gen:
 ;#include "modules/freq_gen16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
+;	_DR_ERR(UNAVAIL)	; not yet implemented
 
-; *** other functions with RAM enough ***
+; *** higher specced functions ***
 
 ; **************************
 ; INSTALL, supply jump table
@@ -267,6 +270,20 @@ install:
 ; ****************************
 patch:
 #include "modules/patch16.s"
+
+; *******************************
+; RELOC, data and code relocation *** TBD
+; *******************************
+reloc:
+;#include "modules/reloc16.s"
+
+; ***********************************
+; CONIO, basic console when available *** TBD
+; ***********************************
+conio:
+;#include "modules/conio16.s"
+freq_gen:				; another not-yet-implemented feature
+	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 
 ; ***********************************
@@ -314,10 +331,6 @@ led_loop:
 	COP #$7F			; wrapper on 816 firmware, will do CLC!
 	RTS					; return to caller
 ; *** no longer a wrapper outside bank zero for minimOS·65 ***
-; alternative multikernel FW may use an indirect jump...
-; ...will point to either the above wrapper (16-bit kernel)...
-; ...or the usual indirect-indexed jump (8-bit)...
-; ...without pre-CLC or size setting!
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
@@ -325,22 +338,28 @@ led_loop:
 #endif
 
 ; *** administrative meta-kernel call primitive for apps ($FFD0) ***
+; really needed on 65816 systems, for the sake of binary compatibility
+; does not jump to $FFDA, not worth more overhead than it already does
 * = adm_appc
+#ifndef	FAST_FW
 	PHB					; could came from any bank
 	PHK					; zero is...
 	PLB					; ...current bank
 	JSR (fw_admin, X)	; return here (DR_OK form)
 	PLB					; restore bank...
 	RTL					; ...and return from long address!
-; *** above code takes -8- bytes, thus no room for padding! ***
-; filling for ready-to-blow ROM
-;#ifdef		ROM
-;	.dsb	adm_call-*, $FF
-;#endif
+#endif
 
-; *** administrative meta-kernel call primitive ($FFD8) ***
+; filling for ready-to-blow ROM
+#ifdef		ROM
+	.dsb	adm_call-*, $FF
+#endif
+
+; *** administrative meta-kernel call primitive ($FFDA) ***
 * = adm_call
-	JMP (fw_admin, X)	; takes 5 cycles
+#ifndef	FAST_FW
+	JMP (fw_admin, X)	; takes 5 clocks and 3 bytes, kernel/drivers only!
+#endif
 
 ; filling for ready-to-blow ROM
 #ifdef	ROM
@@ -349,24 +368,26 @@ led_loop:
 
 ; *** panic routine, this one will make Emulation LED blink ***
 * = lock
+	SEI					; just in case...
 	JMP led_lock		; specific call, may be far away
-	NOP					; padding for reserved C816 vectors
 
 ; *** 65C816 ROM vectors ***
 * = $FFE4				; should be already at it
 	.word	cop_hndl	; native COP		@ $FFE4
 	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
-	.word	nmi			; native ABORT		@ $FFE8, not yet supported
-	.word	nmi			; native NMI		@ $FFEA, unified this far
-	.word	$FFFF		; reserved			@ $FFEC
-	.word	irq			; native IRQ		@ $FFEE, unified this far
+	.word	aborted		; native ABORT		@ $FFE8, not yet supported
+	.word	nmi			; native NMI		@ $FFEA, unified?
+aborted:
+	.word	$FF40		; reserved (*)		@ $FFEC holds RTI!
+	.word	irq			; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4
-	.word	$FFFF		; reserved			@ $FFF6
-	.word	nmi			; emulated ABORT 	@ $FFF8
+	.word	aborted		; emulated COP		@ $FFF4, not compatible
+	.word	$FFFF		; reserved			@ $FFF6, no emulated BRK here
+	.word	aborted		; emulated ABORT 	@ $FFF8, not supported
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; (emulated) NMI	@ $FFFA
-	.word	reset		; (emulated) RST	@ $FFFC
-	.word	irq			; (emulated) IRQ	@ $FFFE
+	.word	aborted		; (emulated) NMI	@ $FFFA, not unified
+	.word	reset		; standard RST		@ $FFFC
+	.word	aborted		; (emulated) IRQ	@ $FFFE, not available
+

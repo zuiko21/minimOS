@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc11
+; v0.9.6rc12
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190129-0847
+; last modified 20190205-0905
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -27,8 +27,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4DA0				; time, 09.45
-	.word	$4C45				; date, 2018/2/5
+	.word	$45A0				; time, 8.45
+	.word	$4E45				; date, 2019/2/5
 
 fwSize	=	$10000 - fw_start - 256	; compute BLOCK size NOT including header!
 
@@ -178,6 +178,7 @@ cop_hndl:				; label from vector list
 ; *********************************
 ; *********************************
 fw_admin:
+#ifndef		FAST_FW
 ; generic functions, esp. interrupt related
 	.word	gestalt		; GESTALT get system info (renumbered)
 	.word	set_isr		; SET_ISR set IRQ vector
@@ -193,7 +194,9 @@ fw_admin:
 ; 65816 systems have plenty of RAM
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
-
+	.word	reloc		; RELOCate code and data (TBD)
+	.word	conio		; CONIO, basic console when available
+#endif
 
 ; ********************************
 ; ********************************
@@ -253,9 +256,9 @@ poweroff:
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
-freq_gen:
+;freq_gen:
 ;#include "modules/freq_gen16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
+;	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; *** other functions for higher specced systems ***
 
@@ -270,6 +273,21 @@ install:
 ; ****************************
 patch:
 #include "modules/patch16.s"
+
+; *******************************
+; RELOC, data and code relocation *** TBD
+; *******************************
+reloc:
+;#include "modules/reloc16.s"
+
+; ***********************************
+; CONIO, basic console when available *** TBD
+; ***********************************
+conio:
+;#include "modules/conio16.s"
+freq_gen:				; another not-yet-implemented feature
+	_DR_ERR(UNAVAIL)	; not implemented unless specific device
+
 
 
 ; ***********************************
@@ -332,28 +350,29 @@ real_admcall:
 ; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
 * = lock
 	SEI					; same address as 6502
-	SEC
+	.byt	$42			; WDM opcode will trigger an error on run/lib65816
 panic_loop:
 	BRA panic_loop		; OK as this is 65816 only
 
 ; *** 65C816 ROM vectors ***
 * = $FFE4				; should be already at it
 	.word	cop_hndl	; native COP		@ $FFE4
-	.word	brk_hndl	; native BRK		@ $FFE6
-	.word	nmi			; native ABORT		@ $FFE8, not yet supported
-	.word	nmi			; native NMI		@ $FFEA, unified this far
-	.word	$FFFF		; reserved			@ $FFEC
-	.word	irq			; native IRQ		@ $FFEE, unified this far
+	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ
+	.word	aborted		; native ABORT		@ $FFE8, not yet supported
+	.word	nmi			; native NMI		@ $FFEA, unified?
+aborted:
+	.word	$FF40		; reserved (*)		@ $FFEC holds RTI!
+	.word	irq			; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4, not supported
-	.word	$FFFF		; reserved			@ $FFF6
-	.word	nmi			; emulated ABORT 	@ $FFF8, not yet supported
+	.word	aborted		; emulated COP		@ $FFF4, not compatible
+	.word	$FFFF		; reserved			@ $FFF6, no emulated BRK here
+	.word	aborted		; emulated ABORT 	@ $FFF8, not supported
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; (emulated) NMI	@ $FFFA, almost reentrant
-	.word	reset		; RST				@ $FFFC
-	.word	irq			; (emulated) IRQ	@ $FFFE, may crash
+	.word	aborted		; (emulated) NMI	@ $FFFA, perhaps not unified
+	.word	reset		; standard RST		@ $FFFC
+	.word	aborted		; (emulated) IRQ	@ $FFFE, not available
 
 fw_end:					; for size computation
 .)

@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc14
+; v0.9.6rc15
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190118-0949
+; last modified 20190205-0937
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -30,7 +30,7 @@ fw_mname:
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$4DA0				; time, 09.45
-	.word	$4E32				; date, 2019/1/18
+	.word	$4E45				; date, 2019/2/5
 
 fwSize	=	$10000 - fw_start - 256	; compute size NOT including header!
 
@@ -165,28 +165,29 @@ brk_hndl:				; this is now pointed from a reserved vector
 ; *********************************
 ; *********************************
 fw_admin:
-#ifndef	FAST_FW
+#ifndef		FAST_FW
 ; generic functions, esp. interrupt related
 	.word	gestalt		; GESTALT get system info (renumbered)
 	.word	set_isr		; SET_ISR set IRQ vector
 	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
 	.word	set_dbg		; SET_DBG set debugger, new 20170517
-	.word	jiffy		; JIFFY set jiffy IRQ speed, ** TBD **
+	.word	jiffy		; JIFFY set jiffy IRQ speed
 	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
-
 ; pretty hardware specific
 	.word	poweroff	; POWEROFF power-off, suspend or cold boot
 	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
-
 ; not for LOWRAM systems
 #ifndef	LOWRAM
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
+	.word	reloc		; RELOCate code and data (TBD)
+	.word	conio		; CONIO, basic console when available (TBD)
 #else
 #ifdef	SAFE
 	.word	missing		; these three functions not implemented on such systems
 	.word	missing
-
+	.word	missing
+	.word	missing
 missing:
 		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
 #endif
@@ -251,8 +252,8 @@ poweroff:
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
-+freq_gen:
-	_DR_ERR(UNAVAIL)	; not yet implemented
+;freq_gen:
+;	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; *** other functions with RAM enough ***
 #ifndef		LOWRAM
@@ -268,7 +269,20 @@ install:
 patch:
 #include "modules/patch.s"
 
+; *******************************
+; RELOC, data and code relocation *** TBD
+; *******************************
+reloc:
+;#include "modules/reloc.s"
+
+; ***********************************
+; CONIO, basic console when available *** TBD
+; ***********************************
+conio:
+;#include "modules/conio.s"
 #endif
+freq_gen:				; another not-yet-implemented function
+	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 
 ; ***********************************
@@ -279,15 +293,6 @@ patch:
 
 ; *** memory map, as used by gestalt, not sure what to do with it ***
 fw_map:					; TO BE DONE
-
-; *** wrapper in case 816-enabled code calls 8-bit kernel??? ***
-cop_hndl:				; label from vector list
-#ifdef	C816
-	.as: .xs: SEP #$30	; *** standard sizes, just in case ***
-	JSR (fw_table, X)	; the old fashioned way, 8-bit functions end in RTS
-; ...but this does NOT affect the pushed status!
-	RTI
-#endif
 
 ; *** NMOS version needs large ADMIN call back here! ***
 #ifndef	FAST_FW
@@ -352,32 +357,41 @@ nmos_adc:
 
 ; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
 * = lock
-	SEI					; REunified procedure 20181101
-	SEC
+	SEI					; same address as 6502
+	.byt	$42			; WDM opcode will trigger an error on run/lib65816
 panic_loop:
-	BCS panic_loop		; no problem if /SO is used, new 20150410, was BVC
+	BRA panic_loop		; OK as this is 65816 only
 
 ; **********************************
 ; ****** hardware ROM vectors ******
 ; **********************************
 
-; *** 65C816 ROM vectors ***
-;* = $FFE4				; should be already at it
-	.word	cop_hndl	; native COP		@ $FFE4***revise
-	.word	brk_hndl	; native BRK		@ $FFE6, call standard label from IRQ***revise
-	.word	nmi			; native ABORT		@ $FFE8, not yet supported
-	.word	nmi			; native NMI		@ $FFEA, unified this far
-	.word	$FFFF		; reserved			@ $FFEC
-	.word	irq			; native IRQ		@ $FFEE, unified this far***revise
+#ifdef	SAFE
+; *** 65C816 ROM vectors, just in case ***
+	.word	nmi			; native COP		@ $FFE4, will debug
+	.word	nmi			; native BRK		@ $FFE6, will debug
+	.word	aborted		; native ABORT		@ $FFE8
+	.word	aborted		; native NMI		@ $FFEA
+aborted:
+	.word	$FF40		; reserved (nRST)	@ $FFEC holds RTI!
+	.word	aborted		; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4***revise
-	.word	brk_hndl		; reserved (eBRK)	@ $FFF6
+	.word	nmi			; emulated COP		@ $FFF4, not compatible
+; must store the BRK handler address!
+	.word	brk_hndl	; reserved (eBRK)	@ $FFF6, 65x02 BRK handler entry
+	.word	aborted		; emulated ABORT 	@ $FFF8, not supported
+#else
+#ifdef	ROM
+	.dsb	$FFF6-*, $FF
+	.word	brk_hndl	; new eBRK			@ $FFF6
 	.word	nmi			; emulated ABORT 	@ $FFF8
+#endif
+#endif
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; (emulated) NMI	@ $FFFA
-	.word	reset		; (emulated) RST	@ $FFFC
-	.word	irq			; (emulated) IRQ	@ $FFFE
+	.word	nmi			; NMI	@ $FFFA
+	.word	reset		; RST	@ $FFFC
+	.word	irq			; IRQ	@ $FFFE
 
 fw_end:					; for size computation

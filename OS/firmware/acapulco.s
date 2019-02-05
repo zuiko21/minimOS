@@ -377,7 +377,7 @@ panic_loop:
 	.dsb	$FFF6-*, $FF
 #endif
 
-; once again, CHIHUAHUA is very unlikely to use a 65816
+; once again, ACAPULCO is very unlikely to use a 65816
 ; but must store the BRK handler address!
 * = $FFF6
 	.word	brk_hndl	; new BRK			@ $FFF6

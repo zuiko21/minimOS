@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b10
+; v0.9.6b11
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20181227-1805
+; last modified 20190205-0836
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -18,15 +18,15 @@ fw_start:
 	.asc	"****", CR			; flags TBD
 	.asc	"boot", 0			; standard filename
 fw_splash:
-	.asc	"0.9.6b10 firmware for "	; machine description as comment
+	.asc	"0.9.6 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4DA0				; time, 09.45
-	.word	$4C45				; date, 2018/2/5
+	.word	$45A0				; time, 08.45
+	.word	$4E45				; date, 2019/2/5
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -37,7 +37,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #else
 ; if no headers, put identifying strings somewhere
 fw_splash:
-	.asc	"0.9.6b7 FW @ "
+	.asc	"0.9.6 FW @ "
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
@@ -48,6 +48,7 @@ fw_mname:
 ; *********************************
 ; *********************************
 fw_admin:
+#ifndef		FAST_FW
 ; generic functions, esp. interrupt related
 	.word	gestalt		; GESTALT get system info (renumbered)
 	.word	set_isr		; SET_ISR set IRQ vector
@@ -61,21 +62,11 @@ fw_admin:
 	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
 
 ; not for LOWRAM systems
-#ifndef	LOWRAM
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
-	.word	context		; *** CONTEXT context bankswitching
-#else
-#ifdef	SAFE
-	.word	missing		; these three functions not implemented on such systems
-	.word	missing
-	.word	missing
-
-missing:
-		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
+	.word	reloc		; RELOCate code and data (TBD)
+	.word	conio		; CONIO, basic console when available (TBD)
 #endif
-#endif
-
 
 ; ********************
 ; ********************
@@ -251,9 +242,9 @@ poweroff:
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
-freq_gen:
+;freq_gen:
 ;#include "modules/freq_gen16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
+;	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; *** other functions with RAM enough ***
 #ifndef		LOWRAM
@@ -269,13 +260,19 @@ install:
 patch:
 #include "modules/patch.s"
 
-; *****************************************
-; CONTEXT, hardware switch zeropage & stack
-; *****************************************
-context:
-	_DR_ERR(UNAVAIL)	; Chihuahua has nothing about this
-#endif
+; *******************************
+; RELOC, data and code relocation *** TBD
+; *******************************
+reloc:
+;#include "modules/reloc.s"
 
+; ***********************************
+; CONIO, basic console when available *** TBD
+; ***********************************
+conio:
+;#include "modules/conio.s"
+freq_gen:				; another not-yet-implemented function
+	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 ; ***********************************
 ; ***********************************
@@ -387,7 +384,7 @@ panic_loop:
 ; once again, CHIHUAHUA is very unlikely to use a 65816
 ; but must store the BRK handler address!
 * = $FFF6
-	.word	brk_hndl		; new BRK	@ $FFF6
+	.word	brk_hndl	; new BRK			@ $FFF6
 	.word	nmi			; unsupported ABORT	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
