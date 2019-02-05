@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
-; v0.6b14
+; v0.6b15
 ; (c)2015-2019 Carlos J. Santisteban
-; last modified 20190204-1307
+; last modified 20190205-0922
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -25,8 +25,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$6800				; time, 13.00
-	.word	$4E44				; date, 2019/2/4
+	.word	$4BC0				; time, 9.30
+	.word	$4E45				; date, 2019/2/5
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -378,8 +378,8 @@ panic_loop:
 * = $FFE4				; should be already at it
 #ifdef	SAFE
 ; *** 65C816 ROM vectors, just in case ***
-	.word	aborted		; native COP		@ $FFE4
-	.word	aborted		; native BRK		@ $FFE6
+	.word	nmi			; native COP		@ $FFE4, will debug
+	.word	nmi			; native BRK		@ $FFE6, will debug
 	.word	aborted		; native ABORT		@ $FFE8
 	.word	aborted		; native NMI		@ $FFEA
 aborted:
@@ -387,15 +387,15 @@ aborted:
 	.word	aborted		; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi		; emulated COP		@ $FFF4
--brk_02:
+	.word	nmi			; emulated COP		@ $FFF4, not compatible
+; must store the BRK handler address!
 	.word	brk_hndl	; reserved (eBRK)	@ $FFF6, 65x02 BRK handler entry
-	.word	nmi		; emulated ABORT 	@ $FFF8
+	.word	aborted		; emulated ABORT 	@ $FFF8, not supported
 #else
 #ifdef	ROM
 	.dsb	$FFF6-*, $FF
-	.word	brk_hndl	; reserved (eBRK)	@ $FFF6
-	.word	nmi		; emulated ABORT 	@ $FFF8
+	.word	brk_hndl	; new eBRK			@ $FFF6
+	.word	nmi			; emulated ABORT 	@ $FFF8
 #endif
 #endif
 ; *** 65(C)02 ROM vectors ***
