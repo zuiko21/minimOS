@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6b13
+; v0.6b14
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190204-1309
+; last modified 20190205-0854
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -381,16 +381,16 @@ panic_loop:
 	.word	aborted		; native ABORT		@ $FFE8, not yet supported
 	.word	nmi			; native NMI		@ $FFEA, unified?
 aborted:
-	.word	$FF40		; reserved (*)			@ $FFEC holds RTI!
+	.word	$FF40		; reserved (*)		@ $FFEC holds RTI!
 	.word	irq			; native IRQ		@ $FFEE
 	.word	$FFFF		; reserved			@ $FFF0
 	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4, error
-	.word	$FFFF		; reserved			@ $FFF6
-	.word	aborted			; emulated ABORT 	@ $FFF8, not supported
+	.word	aborted		; emulated COP		@ $FFF4, not compatible
+	.word	$FFFF		; reserved			@ $FFF6, no emulated BRK here
+	.word	aborted		; emulated ABORT 	@ $FFF8, not supported
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
-	.word	nmi			; (emulated) NMI	@ $FFFA, unified?
+	.word	aborted		; (emulated) NMI	@ $FFFA, perhaps not unified
 	.word	reset		; standard RST		@ $FFFC
 	.word	aborted		; (emulated) IRQ	@ $FFFE, not available
 
