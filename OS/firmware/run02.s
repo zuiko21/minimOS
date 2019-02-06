@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc15
+; v0.9.6rc16
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190205-0956
+; last modified 20190206-0854
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -252,8 +252,8 @@ poweroff:
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
-;freq_gen:
-;	_DR_ERR(UNAVAIL)	; not yet implemented
+freq_gen:
+#include "modules/set_fg.s"
 
 ; *** other functions with RAM enough ***
 #ifndef		LOWRAM
@@ -280,9 +280,8 @@ reloc:
 ; ***********************************
 conio:
 ;#include "modules/conio.s"
-#endif
-freq_gen:				; another not-yet-implemented function
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
+#endif
 
 
 ; ***********************************

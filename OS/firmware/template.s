@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
-; v0.6b15
+; v0.6b16
 ; (c)2015-2019 Carlos J. Santisteban
-; last modified 20190205-0922
+; last modified 20190206-0853
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -263,8 +263,7 @@ poweroff:
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
-;#include "modules/freq_gen16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
+#include "modules/set_fg.s"
 
 ; *** other functions for systems with RAM enough ***
 #ifndef	LOWRAM

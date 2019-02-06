@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc12
+; v0.9.6rc13
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190205-0956
+; last modified 20190206-0855
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -243,7 +243,7 @@ jiffy:
 ; ****************************************
 ; notice non-standard ABI, same module as 6502 version!
 irq_src:
-;#include "modules/irq_src.s"
+#include "modules/irq_src.s"
 
 ; *** hardware specific ***
 
@@ -256,9 +256,8 @@ poweroff:
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
-;freq_gen:
-;#include "modules/freq_gen16.s"
-;	_DR_ERR(UNAVAIL)	; not yet implemented
+freq_gen:
+#include "modules/set_fg16.s"
 
 ; *** other functions for higher specced systems ***
 
@@ -285,7 +284,6 @@ reloc:
 ; ***********************************
 conio:
 ;#include "modules/conio16.s"
-freq_gen:				; another not-yet-implemented feature
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 

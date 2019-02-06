@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
 ; v0.6b14
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190205-0854
+; last modified 20190206-0853
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -263,9 +263,7 @@ poweroff:
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
-;#include "modules/freq_gen16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
-
+#include "modules/set_fg16.s"
 
 ; **************************
 ; INSTALL, supply jump table
