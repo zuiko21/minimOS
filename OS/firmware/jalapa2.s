@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-2
-; v0.9.6a25
+; v0.9.6a26
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190205-0843
+; last modified 20190206-0905
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -253,9 +253,8 @@ poweroff:
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
-;freq_gen:
-;#include "modules/freq_gen16.s"
-;	_DR_ERR(UNAVAIL)	; not yet implemented
+freq_gen:
+#include "modules/set_fg16.s"
 
 ; *** higher specced functions ***
 
@@ -282,7 +281,6 @@ reloc:
 ; ***********************************
 conio:
 ;#include "modules/conio16.s"
-freq_gen:				; another not-yet-implemented feature
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 

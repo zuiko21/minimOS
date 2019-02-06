@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b11
+; v0.9.6b12
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190205-0836
+; last modified 20190206-0904
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -242,9 +242,8 @@ poweroff:
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
-;freq_gen:
-;#include "modules/freq_gen16.s"
-;	_DR_ERR(UNAVAIL)	; not yet implemented
+freq_gen:
+#include "modules/set_fg.s"
 
 ; *** other functions with RAM enough ***
 #ifndef		LOWRAM
@@ -271,7 +270,6 @@ reloc:
 ; ***********************************
 conio:
 ;#include "modules/conio.s"
-freq_gen:				; another not-yet-implemented function
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 ; ***********************************

@@ -1,7 +1,7 @@
 ; firmware for minimOS on Acapulco
-; v0.9.6b2
+; v0.9.6b3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190204-1323
+; last modified 20190206-0905
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -241,8 +241,7 @@ poweroff:
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
-;#include "modules/freq_gen16.s"
-	_DR_ERR(UNAVAIL)	; not yet implemented
+#include "modules/set_fg16.s"
 
 ; *** other functions with RAM enough ***
 #ifndef		LOWRAM
