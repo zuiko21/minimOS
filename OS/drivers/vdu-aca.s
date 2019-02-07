@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190207-1033
+; last modified 20190207-1212
 
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
@@ -45,6 +45,7 @@ va_err:
 
 ; *** zeropage variables ***
 	v_dest	= $E8		; was local2, perhaps including this on zeropage.h?
+	v_src	= v_dest	; is this OK?
 
 ; ************************
 ; *** initialise stuff ***
@@ -87,7 +88,7 @@ va_cls:
 	LDY #<VA_BASE
 	STY va_ba			; set standard start point (4+4)
 	STA va_ba+1
-	STY v_dest			; set local pointer... (3+3)
+	STY v_dest			; set local pointer... (3+3) assume page aligned!
 	STA v_dest+1
 	STY va_cur			; ...and restore home position (4+4)
 	STA va_cur+1
@@ -96,27 +97,30 @@ va_cls:
 	STA va_sch+1		; set new var (4)
 	_STZA va_sch		; VRAM is page-aligned! (4)
 ; no VIA in between...
-vcl_lh:
+	LDY #0				; get LSB for indirect-indexed (assume page-aligned)
+	LDA #0				; standard clear value
+vcl_l:
+		STA (v_dest), Y		; clear bytes
+		INY
+		BNE vcl_l			; finish page
+	INC v_dest+1		; next page
+		BPL vcl_l			; this assumes screen ends at $8000!
+; must set this as start & cursor address!
 
-; -------------------------------------------------------------------------
-		LDX v_dest+1		; get MSB (3)
-		STX VIA_U+IORA		; is data to be latched... (4)
-		DEC VIA_U+IORB		; ...now! PB goes to $D0/D8, setL (6)
-		LDA VIA_U+IORB		; worth keeping setL in A (4)
-		TAX					; X will be Write (2)
-		INX					; will compute Write too... (2)
-		INX					; ...$D2/DA (2)
-vcl_ll:
-			LDY v_dest			; get LSB (3)
-			STY VIA_U+IORA		; is data to be latched... (4)
-			STX VIA_U+IORB		; ...now! went to WRITE (4)
-			_STZY VIA_U+IORA	; clear output data... (4)
-			STA VIA_U+IORB		; ...now! back to SETL, faster than DEC (4)
-			INC v_dest			; next byte (5)
-			BNE vcl_ll			; continue page (3, total 27)
-		INC VIA_U+IORB		; back to setH command $D1/D9 (6)
-		INC v_dest+1		; next page! (5)
-		BNE vcl_lh			; continue until end (3)
+; screen is clear, but must set attribute area too!
+	LDY #0				; assume <VA_COL is zero
+	STY v_dest			; clear pointer LSB
+	LDA #>VA_COL		; set MSB
+	STA v_dest
+	LDA va_attr			; default colour value!
+vcl_c:
+		STA (v_dest), Y		; set this byte
+		INY					; go for next
+		BNE vcl_c
+	INC v_dest			; check following page
+	LDA v_dest			; how far are we?
+	CMP #>VA_BASE		; already at VRAM?
+		BNE vcl_c			; no, still to go
 	RTS
 
 ; *********************************
@@ -130,8 +134,8 @@ vp_l:
 		_PHY				; keep this
 		LDA (bl_ptr), Y		; buffer contents...
 		STA io_c			; ...will be sent
-		JSR va_char		; *** print one byte ***
-			BCS va_exit		; any error ends transfer!
+		JSR va_char			; *** print one byte ***
+			BCS va_exit			; any error ends transfer!
 		_PLY				; restore index
 		INY					; go for next
 		DEC bl_siz			; one less to go
@@ -414,7 +418,7 @@ va_data:
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt 28				; R7, VSYNC position - 1
+	.byt *28				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
