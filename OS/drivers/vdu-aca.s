@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190208-1007
+; last modified 20190208-1015
 
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
@@ -286,16 +286,17 @@ vch_adv:
 		INC va_cur+1		; or increment MSB (6)
 ; should set CRTC cursor accordingly
 vch_scs:
-	LDY #15				; cur_l register on CRTC (2)
-	LDA va_cur;----------------------------------------------------
+	LDY #14				; cur_h register on CRTC (2)
+	LDX #1				; max offset (2)
 vcur_l:
+		LDA va_cur, X		; get data
 		STY crtc_rs			; select register
 		STA crtc_da			; ...and set data
 ; go for next
-		LDA va_cur+1		; get MSB for next (4)
-		DEY					; previous reg (2)
-		CPY #13				; cur_h already done? (2)
-			BNE vcur_l			; no, go for MSB (3/2)
+		INY					; next reg (2)
+		DEX					; will pick previous byte
+		BPL vcur_l			; until finished (3/2)
+; ------------------------------
 ; check whether scrolling is needed
 		LDA va_cur+1		; check position (4)
 		CMP va_sch+1		; all lines done? (4)
