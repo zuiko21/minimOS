@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190208-0947
+; last modified 20190208-1007
 
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
@@ -23,7 +23,7 @@
 	.word	va_err		; no config
 	.word	va_err		; no status
 	.word	va_rts		; shutdown procedure does nothing
-	.word	va_text	; points to descriptor string
+	.word	va_text		; points to descriptor string
 	.word	0			; reserved, D_MEM
 
 ; *** driver description ***
@@ -253,36 +253,32 @@ vch_sh:
 	LDA va_cur+1
 	STY v_dest			; will be destination pointer (3+3)
 	STA v_dest+1
-; get VIA ready, assume all outputs
-; set up VIA... for VRAM access!
-	LDA VIA_U+IORB		; current PB (4)
-	AND #VV_OTH			; respect PB3 only (2)
-	ORA #VV_LL			; command = latch LOW address (2)
-	STA VIA_U+IORB		; set command... (4)
-	LDX v_dest			; get destination LSB (3)
-	STX VIA_U+IORA		; as data to be latched... (4)
-	INC VIA_U+IORB		; ...now! ready for MSB (6)
-	TAX					; previous command LL (2) eeeeeeek
-	INX				; for quick return to current LH (2)
 ; copy from font (+1...) to VRAM (+1024...)
 	LDY #0				; scanline counter (2)
 vch_pl:
-; transfer byte from glyph data to VRAM thru VIA...
-		LDA v_dest+1		; get destination MSB (3)
-		STA VIA_U+IORA		; as data to be latched... (4)
-		INC VIA_U+IORB		; ...now! ready for data write (4)
 		LDA (v_src), Y		; get glyph data (5)
 		EOR va_xor			; apply mask! (4)
-		STA VIA_U+IORA		; as data to be latched... (4)
-		STX VIA_U+IORB		; ...now! quick return to LatchH (4)
+		_STAX(v_dest)		; store into VRAM (5) do not mess with Y
 ; advance to next scanline
 		LDA v_dest+1		; get current MSB (3+2)
 		CLC
 		ADC #4				; offset for next scanline is 1024 (2)
+		AND #127			; *** check for wrapping *** eeeeeeeek
+		ORA #>VA_BASE
 		STA v_dest+1		; update (3)
-		INY					; next scanline (2)
+		INY					; next font byte (2)
 		CPY #VA_SCAN		; all done? (2)
 		BNE vch_pl			; continue otherwise (3)
+; now must set attribute accordingly!
+	SEC					; subtract 8192+1024 from v_dest (MSB already in A)
+	SBC #36
+;	BCS vch_nw			; no wrap, is this needed?
+;		AND #127			; hope this will do otherwise...
+;		ORA #>VA_BASE
+vch_nw:
+	STA v_dest+1		; now it should be pointing to the corresponding attribute
+	LDA va_attr			; get preset colour...
+	_STAY(va_dest)		; ...and place it
 ; printing is done, now advance current position
 vch_adv:
 	INC va_cur			; advance to next character (6)
@@ -290,13 +286,11 @@ vch_adv:
 		INC va_cur+1		; or increment MSB (6)
 ; should set CRTC cursor accordingly
 vch_scs:
-; set up VIA... (worth a subroutine)
-	JSR crtc_rst		; ready to control CRTC (...)
-	LDA va_cur			; value LSB is first loaded (4)
 	LDY #15				; cur_l register on CRTC (2)
+	LDA va_cur;----------------------------------------------------
 vcur_l:
-; set address (Y)/value (A) pair, then idle
-		JSR crtc_set			; (...)
+		STY crtc_rs			; select register
+		STA crtc_da			; ...and set data
 ; go for next
 		LDA va_cur+1		; get MSB for next (4)
 		DEY					; previous reg (2)
