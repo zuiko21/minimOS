@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190208-0905
+; last modified 20190208-0947
 
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
@@ -45,7 +45,7 @@ va_err:
 
 ; *** zeropage variables ***
 	v_dest	= $E8		; was local2, perhaps including this on zeropage.h?
-	v_src	= v_dest	; is this OK?
+	v_src	= $EA		; is this OK?
 
 ; ************************
 ; *** initialise stuff ***
@@ -53,7 +53,7 @@ va_err:
 va_init:
 ; must set up CRTC first, depending on selected video mode!
 	LDA va_mode			; get requested
-	AND #7				; filter relevant bits
+	AND #7				; filter relevant bits, up to 8 modes
 	STA va_mode			; fix possible altered bits
 	ASL					; each mode has 16-byte table
 	ASL
@@ -141,8 +141,8 @@ vp_l:
 		_PHY				; keep this
 		LDA (bl_ptr), Y		; buffer contents...
 		STA io_c			; ...will be sent
-		JSR va_char			; *** print one byte ***
-			BCS va_exit			; any error ends transfer!
+		JSR va_char			; *** print one byte *** might be inlined
+;			BCS va_exit			; any error ends transfer!
 		_PLY				; restore index
 		INY					; go for next
 		DEC bl_siz			; one less to go
@@ -163,10 +163,14 @@ va_rts:
 ; *** print one char in io_c ***
 ; ******************************
 va_char:
-; first check whether control char or printable
 	LDA io_c			; get char (3)
+; ** first of all, check whether was waiting for a colour code **
+	LDX va_col			; setting some colour?
+		BNE va_scol			; if not, continue with regular code
+; ** then check whether control char or printable **
 	CMP #' '			; printable? (2)
 	BCS vch_prn			; it is! skip further comparisons (3)
+; otherwise check control codes
 		CMP #FORMFEED		; clear screen?
 		BNE vch_nff
 			JMP va_cls			; clear and return!
@@ -190,16 +194,44 @@ vch_nbs:
 vch_nso:
 		CMP #15				; shift in?
 		BNE vch_nsi
-			LDA #$FF			; mask for true video
+			LDA #0				; mask for true video eeeeeeeeeek
 vso_xor:
 			STA va_xor			; set new mask
-			RTS					; all done for this setting
+			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 vch_nsi:
-; non-printable neither accepted control, thus use substitution character
+		CMP #18				; DC1? (set INK)
+			BEQ vch_dcx			; set proper flag
+		CMP #20				; DC3? (set PAPER)
+		BNE vch_npr			; *** no more control codes ***
+vch_dcx:
+			STA va_col			; set flag if any colour is to be set
+			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+; ** set pending colour code **
+va_scol:
+	AND #%00001111		; filter relevant bits
+	STA va_col			; temporary flag use for storing colour!
+	LDA va_attr			; get current colour
+	CPX #20				; is it DC3 (PAPER)?
+	BNE va_sink			; assume INK otherwise
+		ASL va_col			; convert to paper code
+		ASL va_col
+		ASL va_col
+		ASL va_col
+		AND #%00001111		; will respect current ink
+		_BRA va_spap
+va_sink:
+	AND #%11110000		; will respect current paper
+va_spap:
+	ORA va_col			; mix with (possible shifted) new colour
+	STA va_attr			; new definition
+	_STZA va_col		; clear flag and we are done
+	RTS					; *** no need for DR_OK as BCS is not being used
+; *** non-printable neither accepted control, thus use substitution character ***
+vch_npr:
 		LDA #'?'			; unrecognised char
 		STA io_c			; store as required
+; *** convert ASCII into pointer offset, needs 11 bits ***
 vch_prn:
-; convert ASCII into pointer offset, needs 11bit
 	_STZA io_c+1		; clear MSB (3)
 	LDX #3				; will shift 3 bits left (2)
 vch_sh:
@@ -363,13 +395,13 @@ va_bs:
 ; ...and back again!
 vbs_bk:
 	DEC va_cur			; one position back (6)
-	LDA va_char		; check for carry (4)
+	LDA va_cur			; check for borrow (4) eeeeeeeeek
 	CMP #$FF			; did it wrap? (2)
 	BNE vbs_end			; no, return or end function (3/2)
-		DEC vbs_cur+1		; yes, propagate carry (6)
+		DEC va_cur+1		; yes, propagate borrow (6) eeeeeeek
 ; really ought to check for possible scroll-UP...
 ; at least, avoid being outside feasible values
-		LDA vbs_cur+1		; where are we? (4)
+		LDA va_cur+1		; where are we? (4)
 		CMP #>VA_BASE		; cannot be below VRAM base (2)
 		BCS vbs_end			; no borrow, all OK (3/2)
 			LDY #<VA_BASE		; get base address (2)
@@ -565,5 +597,8 @@ va_data:
 	.byt <VA_BASE
 	.byt >VA_BASE		; R14/15, cursor position (big endian)
 	.byt <VA_BASE
+
+; *** glyphs ***
+va_font:
 
 .)
