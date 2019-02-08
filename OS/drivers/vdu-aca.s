@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190208-0821
+; last modified 20190208-0905
 
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
@@ -61,6 +61,8 @@ va_init:
 	ASL
 	TAY					; use as index
 	LDX #0				; separate counter
+; reset inverse video mask!
+	STX va_xor			; clear mask is true video
 ; load CRTC registers
 vi_crl:
 		STX crtc_rst		; select this register
@@ -75,11 +77,8 @@ vi_crl:
 	LDA #$F0			; white paper, black ink
 	STA va_attr			; this value will be used by CLS
 ; software cursor will be set by CLS routine!
-	JSR va_cls			; reuse code from Form Feed
-; reset inverse video mask!
-	_STZA va_xor		; clear mask is true video
-; all done!
-	_DR_OK				; succeeded
+	CLC					; just in case...
+;	JMP va_cls			; reuse code from Form Feed, will return to caller
 
 ; ***************************************
 ; *** routine for clearing the screen *** takes 92526, 60 ms @ 1.536 MHz
