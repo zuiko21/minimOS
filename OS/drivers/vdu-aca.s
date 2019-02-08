@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190207-1212
+; last modified 20190208-0821
 
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
@@ -54,6 +54,7 @@ va_init:
 ; must set up CRTC first, depending on selected video mode!
 	LDA va_mode			; get requested
 	AND #7				; filter relevant bits
+	STA va_mode			; fix possible altered bits
 	ASL					; each mode has 16-byte table
 	ASL
 	ASL
@@ -67,7 +68,7 @@ vi_crl:
 		STA crtc_da			; set value
 		INY					; next address
 		INX
-		CPX #$F				; last register done?
+		CPX #$10			; last register done?
 		BNE vi_crl			; continue otherwise
 ; clear all VRAM!
 ; ...but preset standard colours before!
@@ -81,46 +82,53 @@ vi_crl:
 	_DR_OK				; succeeded
 
 ; ***************************************
-; *** routine for clearing the screen ***
+; *** routine for clearing the screen *** takes 92526, 60 ms @ 1.536 MHz
 ; ***************************************
-va_cls:
-	LDA #>VA_BASE		; base address (2+2)
-	LDY #<VA_BASE
+va_cls:					; * initial code takes 22t *
+	LDA #>VA_BASE		; base address (2+2) assume page aligned!
+	LDY #<VA_BASE		; actually 0!
 	STY va_ba			; set standard start point (4+4)
 	STA va_ba+1
-	STY v_dest			; set local pointer... (3+3) assume page aligned!
-	STA v_dest+1
 	STY va_cur			; ...and restore home position (4+4)
 	STA va_cur+1
-; new, preset scrolling limit
+; must set this as start & cursor address!
+	LDX #12				; CRTC screen start register, then comes cursor address (2)
+vc_crs:					; * this loops takes 49t *
+		STX crtc_rs
+		STA crtc_da			; set MSB... (4+4)
+		INX					; next register (2)
+		STX crtc_rs
+		STY crtc_da			; ...and LSB (4+4)
+		INX					; try next value (2)
+		CPX #16				; all done? (2+3 twice, minus 1)
+		BNE vc_crs
+; new, preset scrolling limit * takes 10t *
 	LDA #>VA_SCRL		; original limit, will wrap around this constant (2)
 	STA va_sch+1		; set new var (4)
 	_STZA va_sch		; VRAM is page-aligned! (4)
-; no VIA in between...
-	LDY #0				; get LSB for indirect-indexed (assume page-aligned)
-	LDA #0				; standard clear value
-vcl_l:
-		STA (v_dest), Y		; clear bytes
-		INY
-		BNE vcl_l			; finish page
-	INC v_dest+1		; next page
-		BPL vcl_l			; this assumes screen ends at $8000!
-; must set this as start & cursor address!
-
-; screen is clear, but must set attribute area too!
-	LDY #0				; assume <VA_COL is zero
-	STY v_dest			; clear pointer LSB
-	LDA #>VA_COL		; set MSB
-	STA v_dest
-	LDA va_attr			; default colour value!
-vcl_c:
-		STA (v_dest), Y		; set this byte
-		INY					; go for next
+; must clear not only VRAM, but attribute area too! * optimum init is 13t *
+;	LDY #0				; assume <VA_COL is zero (2) should be if both this and VA_BASE are page-aligned
+	STY v_dest			; clear pointer LSB, will stay this way (3)
+	LDA #>VA_COL		; set MSB (2)
+	STA v_dest+1		; eeeeeeeeeeeeek (4)
+	LDA va_attr			; default colour value! (4)
+vcl_c:					; * whole loop takes 4x(2559+13)-1+2 = 10289t *
+		STA (v_dest), Y		; set this byte (5)
+		INY					; go for next (2+3)
 		BNE vcl_c
-	INC v_dest			; check following page
-	LDA v_dest			; how far are we?
-	CMP #>VA_BASE		; already at VRAM?
-		BNE vcl_c			; no, still to go
+	INC v_dest+1		; check following page eeeeeeeeek (5)
+	LDA v_dest+1		; how far are we? (3)
+	CMP #>VA_BASE		; already at VRAM? or suitable limit (2)
+		BNE vcl_c			; no, still to go (3)
+; assume VRAM goes just after attribute area, thus v_dest already pointing to VA_BASE
+	TYA				; zero (on Y) is the standard clear value (2)
+; otherwise, do LDA #0 and TAY * whole loop takes 32x(2559+8)-1 = 82143t *
+vcl_l:
+		STA (v_dest), Y		; clear byte (5)
+		INY
+		BNE vcl_l			; finish page (2+3)
+	INC v_dest+1		; next page (5)
+		BPL vcl_l			; this assumes screen ends at $8000! (3)
 	RTS
 
 ; *********************************
@@ -404,6 +412,10 @@ crtc_set:
 ; *** several data ***
 ; ********************
 
+va_width:
+; line lengths on several modes, must match order from va_data!
+	.byt	40, 36, 32, 40, 40, 36, 32, 40
+
 va_data:
 ; CRTC registers initial values
 ; total of eight video modes
@@ -539,7 +551,7 @@ va_data:
 
 ; mode 7 (aka 40/48S) is 320x200 1-6-1, 3.9uS sync, 650nS back porch (perhaps compatible)
 	.byt 47				; R0, horizontal total chars - 1
-	.byt 32				; R1, horizontal displayed chars
+	.byt 40				; R1, horizontal displayed chars
 	.byt *37				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
