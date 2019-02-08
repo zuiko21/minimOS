@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190208-1015
+; last modified 20190208-1204
 
 ; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
@@ -366,14 +366,11 @@ vcr_chk:
 		CPX va_cur+1		; near there?
 			BNE vcr_mod			; no way
 		CMP va_cur			; compare in full
-		BCx vcr_mod			; not yet...
-
-
+		BCC vcr_mod			; not yet...
+; was that OK?
+	STX va_cur+1
 	STA va_cur			; eeeeeeeeek (4)
-vcr_chc:
-	BCC vch_ok			; seems OK (3/2)
-		INC va_cur+1		; or propagate carry... (6)
-		BNE vch_scs			; ...update cursor and check for scrolling, no need for BRA (3/2)
+	_BRA vch_scs		; ...update cursor and check for scrolling
 
 ; *** tab (8 spaces) ***
 va_tab:
@@ -387,7 +384,7 @@ vtb_l:
 		STA io_c
 		JSR vch_prn			; direct space printing, A holds 32 too (...)
 		PLA					; recover desired address (4)
-		CMP va_cur			; reached? (4)
+		CMP va_cur			; reached? (4) *************************** NOOOOOOOOOOOOOOOOOOOOOOOO
 		BNE vtb_l			; no, continue (3/2)
 	_DR_OK				; yes, all done
 
