@@ -52,7 +52,7 @@ va_err:
 ; ************************
 va_init:
 ; must set up CRTC first, depending on selected video mode!
-	LDA va_mode			; get requested
+	LDA va_mode			; get requested *** from firmware!
 	AND #7				; filter relevant bits, up to 8 modes
 	STA va_mode			; fix possible altered bits
 	ASL					; each mode has 16-byte table
@@ -296,22 +296,22 @@ vcur_l:
 		INY					; next reg (2)
 		DEX					; will pick previous byte
 		BPL vcur_l			; until finished (3/2)
-; ------------------------------
 ; check whether scrolling is needed
-		LDA va_cur+1		; check position (4)
-		CMP va_sch+1		; all lines done? (4)
-			BNE vch_ok			; no, just exit (3/2)
-		LDA va_cur			; check LSB too... (4+4)
-		CMP va_sch
-			BNE vch_ok			; (3/2)
+	LDA va_cur+1		; check position (4)
+	CMP va_sch+1		; all lines done? (4)
+		BNE vch_ok			; no, just exit (3/2)
+	LDA va_cur			; check LSB too... (4+4)
+	CMP va_sch
+		BNE vch_ok			; (3/2)
 ; otherwise must scroll... via CRTC
 ; increment base address, wrapping if needed
+	LDX va_mode			; get set mode for the width table
 	CLC
 	LDA va_ba			; get current base... (2+4)
-	ADC #32				; ...and add one line (2)
+	ADC va_width, X		; ...and add one line (4)
 	STA va_ba			; update variable LSB (4)
 ;	TAX					; keep in case is needed (2)
-	LDA va_ba+1		; now for MSB (4)
+	LDA va_ba+1			; now for MSB (4)
 	ADC #0				; propagate carry (2)
 	CMP #>VA_SCRL		; did it wrap? (2)
 	BNE vsc_nw			; no, just set CRTC and local (3/2)
@@ -323,16 +323,16 @@ vsc_nw:
 	STA va_ba+1		; update variable MSB... (4)
 ;	STX va_ba			; see above! (4)
 ; ...and CRTC registerSSSSSS!!!!
-; VIA already set for CRTC control IDLE!
 	LDY #12				; start_h register on CRTC (2)
+	LDX #1				; max offset (2)
 vsc_upd:
-; set address (Y)/value (A) pair, then idle
-		JSR crtc_set			; (...)
-; LSB too! eeeeeeeeeeeeek
-		LDA va_ba			; get LSB (4)
-		INY					; following register (2)
-		CPY #14				; all done? (2)
-		BNE vsc_upd			; no, go for LSB then (3/2)
+		LDA va_ba, X		; get data
+		STY crtc_rs			; select register
+		STA crtc_da			; ...and set data
+; go for next
+		INY					; next reg (2)
+		DEX					; will pick previous byte
+		BPL vsc_upd			; until finished (3/2)
 ; update va_sch
 	LDA va_sch			; get LSB (4)
 	LDX va_sch+1		; see MSB (4)
@@ -344,19 +344,31 @@ vsc_upd:
 		LDA #<VA_BASE		; add one line to this (2)
 vsc_blim:
 	CLC
-	ADC #32				; full line length (2+2)
+	LDY va_mode			; get set mode for the width table
+	ADC va_width, Y		; ...and add one line (4)
 	STA va_sch			; update variable (4+4)
 	STX va_sch+1
 vch_ok:
 	_DR_OK
 
-; *** carriage return ***
+; *** carriage return *** TO DO ***
 ; quite easy as 32 char per line
 va_cr:
-	LDA va_cur			; get LSB (4)
-	AND #%11100000		; modulo 32 (2+2)
-	CLC
-	ADC #32				; increment line (2)
+	LDX #>VA_BASE		; MSB when required
+	LDA #<VA_BASE
+	LDY va_mode			; get set mode for the width table
+vcr_mod:
+		CLC
+		ADC va_width, Y		; ...and add one line (4)
+		BCC vcr_chk
+			INX					; MSB was incremented
+vcr_chk:
+		CPX va_cur+1		; near there?
+			BNE vcr_mod			; no way
+		CMP va_cur			; compare in full
+		BCx vcr_mod			; not yet...
+
+
 	STA va_cur			; eeeeeeeeek (4)
 vcr_chc:
 	BCC vch_ok			; seems OK (3/2)
@@ -408,31 +420,6 @@ vbs_bk:
 			_DR_ERR(EMPTY)		; try to complain, just in case
 vbs_end:
 	_DR_OK				; all done, CLC will not harm at first call
-
-; *** generic routines ***
-; set up VIA... for CRTC settings (exit as X=idle, Y=$FF)
-crtc_rst:
-	LDA VIA_U+DDRB		; control port... (4)
-	ORA #%11110111		; ...with required outputs... (2)
-	STA VIA_U+DDRB		; ...just in case (4)
-	LDY #$FF			; all outputs... (2)
-	STY VIA_U+DDRA		; ...for data port (4)
-	LDA VIA_U+IORB		; original PB value on user VIA (new var) (4)
-	AND #VV_OTH			; clear device, leave PB3 (2)
-	ORA #VV_CRTC		; CRTC mode (2)
-	TAX					; keep this status as 'idle' E=RS=0 (2)
-	STA VIA_U+IORB		; ready to write in 6845 addr reg (4)
-	RTS
-
-; set address (Y)/value (A) pair, then back to idle (X)
-crtc_set:
-	STY VIA_U+IORA		; select this address... (4)
-	INC VIA_U+IORB		; ...now! (4)
-	INC VIA_U+IORB		; RS=1, will provide value for register (4)
-	STA VIA_U+IORA		; here is the loaded value... (4)
-	INC VIA_U+IORB		; ...now! (4)
-	STX VIA_U+IORB		; go idle ASAP (4)
-	RTS
 
 ; ********************
 ; *** several data ***
