@@ -1,9 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a3
+; v0.6a4
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190208-1204
-
-; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
+; last modified 20190209-1900
 
 ; ***********************
 ; *** minimOS headers ***
@@ -16,8 +14,8 @@
 	.byt	A_BOUT		; output driver, non-interrupt-driven
 	.word	va_err		; does not read
 	.word	va_prn		; print N characters
-	.word	va_init		; initialise 'device', called by POST only
-	.word	va_rts		; no periodic interrupt
+	.word	va_init		; initialise device
+	.word	va_rts		; no periodic interrupt, thus...
 	.word	0			; frequency makes no sense
 	.word	va_err		; D_ASYN does nothing
 	.word	va_err		; no config
@@ -41,7 +39,6 @@ va_err:
 
 	crtc_rs	= $DFC0		; *** hardwired 6845 addresses on Acapulco ***
 	crtc_da	= $DFC1
-; *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE *** TO BE DONE ***
 
 ; *** zeropage variables ***
 	v_dest	= $E8		; was local2, perhaps including this on zeropage.h?
@@ -165,8 +162,8 @@ va_rts:
 va_char:
 	LDA io_c			; get char (3)
 ; ** first of all, check whether was waiting for a colour code **
-	LDX va_col			; setting some colour?
-		BNE va_scol			; if not, continue with regular code
+	LDX va_col			; setting some colour or expecting binary?
+		BNE va_bin			; if not, continue with regular code
 ; ** then check whether control char or printable **
 	CMP #' '			; printable? (2)
 	BCS vch_prn			; it is! skip further comparisons (3)
@@ -199,15 +196,22 @@ vso_xor:
 			STA va_xor			; set new mask
 			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 vch_nsi:
-		CMP #18				; DC1? (set INK)
+; the following control codes expect a further byte, thus set flag accordingly
+		CMP #16				; DLE?
+			BEQ vch_dcx			; set flag and exit
+		CMP #18				; DC2? (set INK)
 			BEQ vch_dcx			; set proper flag
-		CMP #20				; DC3? (set PAPER)
+		CMP #20				; DC4? (set PAPER)
 		BNE vch_npr			; *** no more control codes ***
 vch_dcx:
 			STA va_col			; set flag if any colour is to be set
 			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+; ** check for binary mode first **
+va_bin:
+	CPX #16			; binary mode? print directly
+		BEQ vch_prn		; if not, should be setting colour
 ; ** set pending colour code **
-va_scol:
+;va_scol:
 	AND #%00001111		; filter relevant bits
 	STA va_col			; temporary flag use for storing colour!
 	LDA va_attr			; get current colour
