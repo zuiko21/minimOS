@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a3 (32 column mode)
+; v0.6a4 (32 column mode)
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190209-1912
+; last modified 20190210-1045
 
 ; ***********************
 ; *** minimOS headers ***
@@ -161,7 +161,7 @@ va_char:
 	LDA io_c			; get char (3)
 ; ** first of all, check whether was waiting for a colour code, or binary mode **
 	LDX va_col			; setting some colour?
-		BNE va_scol			; if not, continue with regular code
+		BNE va_bin			; if not, continue with regular code
 ; ** then check whether control char or printable **
 	CMP #' '			; printable? (2)
 	BCS vch_prn			; it is! skip further comparisons (3)
@@ -194,7 +194,7 @@ vso_xor:
 			STA va_xor			; set new mask
 			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 vch_nsi:
-		CMP #16				; DLE?
+		CMP #16				; DLE? (binary mode)
 			BEQ vch_dcx			; set proper flag
 		CMP #18				; DC2? (set INK)
 			BEQ vch_dcx			; set proper flag
@@ -204,16 +204,19 @@ vch_dcx:
 			STA va_col			; set flag if any colour is to be set
 			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 ; these codes expect a second byte
-va_scol:
-	CPX #16				; binary mode? print directly
-		BEQ vch_prn			; if not, will set colour
+va_bin:
+	CPX #16				; binary mode? print directly...
+	BNE va_scol			; if not, will set colour
+		_STZA va_col			; ...but clear flag! eeeeeeeek
+		_BRA vch_prn
 ; ** set pending colour code **
+va_scol:
 	AND #%00001111		; filter relevant bits
 	STA va_col			; temporary flag use for storing colour!
 	LDA va_attr			; get current colour
-	CPX #20				; is it DC3 (PAPER)?
+	CPX #20				; is it DC4 (PAPER)?
 	BNE va_sink			; assume INK otherwise
-		ASL va_col			; convert to paper code
+		ASL va_col			; convert to paper code (high nibble)
 		ASL va_col
 		ASL va_col
 		ASL va_col

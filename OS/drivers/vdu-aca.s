@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a4
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190209-2338
+; last modified 20190210-1040
 
 ; ***********************
 ; *** minimOS headers ***
@@ -202,7 +202,7 @@ vso_xor:
 			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 vch_nsi:
 ; the following control codes expect a further byte, thus set flag accordingly
-		CMP #16				; DLE?
+		CMP #16				; DLE? (binary mode)
 			BEQ vch_dcx			; set flag and exit
 		CMP #18				; DC2? (set INK)
 			BEQ vch_dcx			; set proper flag
@@ -213,14 +213,16 @@ vch_dcx:
 			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 ; ** check for binary mode first **
 va_bin:
-	CPX #16			; binary mode? print directly
-		BEQ vch_prn		; if not, should be setting colour
+	CPX #16			; binary mode? print directly...
+	BNE va_scol		; if not, should be setting colour
+		_STZA va_col		; ...but reset flag! eeeeeeeek
+		_BRA vch_prn
 ; ** set pending colour code **
-;va_scol:
+va_scol:
 	AND #%00001111		; filter relevant bits
 	STA va_col			; temporary flag use for storing colour!
 	LDA va_attr			; get current colour
-	CPX #20				; is it DC3 (PAPER)?
+	CPX #20				; is it DC4 (PAPER)?
 	BNE va_sink			; assume INK otherwise
 		ASL va_col			; convert to paper code
 		ASL va_col
