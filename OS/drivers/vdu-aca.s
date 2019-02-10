@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a4
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190210-1040
+; last modified 20190210-1123
 
 ; ***********************
 ; *** minimOS headers ***
@@ -79,7 +79,7 @@ vi_crl:
 ;	JMP va_cls			; reuse code from Form Feed, will return to caller
 
 ; ***************************************
-; *** routine for clearing the screen *** took 92526, 60 ms @ 1.536 MHz
+; *** routine for clearing the screen *** takes 92865t, 60.46 ms @ 1.536 MHz
 ; ***************************************
 va_cls:					; * initial code takes 22t *
 	LDA #>VA_BASE		; base address (2+2) assume page aligned!
@@ -99,18 +99,18 @@ vc_crs:					; * this loops takes 49t *
 		INX					; try next value (2)
 		CPX #16				; all done? (2+3 twice, minus 1)
 		BNE vc_crs
-; new, preset scrolling limit * takes 10t *
+; new, preset scrolling limit * should take 10t *
 	LDA #>VA_SCRL		; original limit, will wrap around this constant (2)
 	STA va_sch+1		; set new var (4)
-	STY va_sch		; VRAM should be page-aligned! (4)
-; must clear not only VRAM, but attribute area too! * optimum init is 13t *
 ;	LDY #0				; assume <VA_COL is zero (2) should be if both this and VA_BASE are page-aligned
+	STY va_sch		; VRAM should be page-aligned! (4)
+; must clear not only VRAM, but attribute area too! * this is 12t *
 	STY v_dest			; clear pointer LSB, will stay this way (3)
 	LDA #>VA_COL		; set MSB (2)
 	STA v_dest+1		; eeeeeeeeeeeeek (4)
 	LDA va_attr			; default colour value! (4)
 ; both areas (colour & VRAM) may be reset from a single loop!
-vcl_c:					; * old loop took 4x(2559+13)-1+2 = 10289t *
+vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2+3)
 		BNE vcl_c
@@ -120,16 +120,10 @@ vcl_c:					; * old loop took 4x(2559+13)-1+2 = 10289t *
 	BNE vcl_l			; no, do not change A (3)
 ; assume VRAM goes just after attribute area, thus v_dest already pointing to VA_BASE
 		TYA				; zero (on Y) is the standard clear value (2)
-; otherwise, do LDA #0 and TAY * whole loop took 32x(2559+8)-1 = 82143t *
+; otherwise, do LDA #0 and TAY
 vcl_l:
 	CPX #>VA_END			; whole screen done?
 		BNE vcl_c			; if not, continue
-; old second loop
-;		STA (v_dest), Y		; clear byte (5)
-;		INY
-;		BNE vcl_l			; finish page (2+3)
-;	INC v_dest+1		; next page (5)
-;		BPL vcl_l			; this assumes screen ends at $8000! (3)
 	RTS
 
 ; *********************************

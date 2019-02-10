@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a4 (32 column mode)
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190210-1045
+; last modified 20190210-1118
 
 ; ***********************
 ; *** minimOS headers ***
@@ -33,6 +33,7 @@ va_err:
 
 ; *** define some constants ***
 	VA_BASE	= $6000		; standard VRAM for Acapulco
+	VA_END	= $8000		; end of VRAM
 	VA_COL	= $5C00		; standard colour RAM for Acapulco
 	VA_SCRL	= VA_BASE+1024	; base plus 32x32 chars, 16-bit in case is needed
 	VA_SCAN	= 8			; number of scanlines (pretty hardwired)
@@ -51,7 +52,7 @@ va_init:
 ; must set up CRTC first, depending on selected video mode!
 	LDA va_mode			; get requested *** from firmware!
 	AND #4				; filter relevant bits, just D2
-	STA va_mode			; fix possible altered bits
+	STA va_mode			; fix possibly altered bits
 	ASL					; each mode has 16-byte table, as mode is 0 or 4 just multiply by 4
 	ASL
 	TAY					; use as index
@@ -76,7 +77,7 @@ vi_crl:
 ;	JMP va_cls			; reuse code from Form Feed, will return to caller
 
 ; ***************************************
-; *** routine for clearing the screen *** takes 92526, 60 ms @ 1.536 MHz
+; *** routine for clearing the screen *** takes 92865, 60.46 ms @ 1.536 MHz
 ; ***************************************
 va_cls:					; * initial code takes 22t *
 	LDA #>VA_BASE		; base address (2+2) assume page aligned!
@@ -87,7 +88,7 @@ va_cls:					; * initial code takes 22t *
 	STA va_cur+1
 ; must set this as start & cursor address!
 	LDX #12				; CRTC screen start register, then comes cursor address (2)
-vc_crs:					; * this loops takes 49t *
+vc_crs:					; * this loop takes 18b, 49t *
 		STX crtc_rs
 		STA crtc_da			; set MSB... (4+4)
 		INX					; next register (2)
@@ -96,33 +97,29 @@ vc_crs:					; * this loops takes 49t *
 		INX					; try next value (2)
 		CPX #16				; all done? (2+3 twice, minus 1)
 		BNE vc_crs
-; new, preset scrolling limit * takes 10t *
+; new, preset scrolling limit * would take 10t *
 	LDA #>VA_SCRL		; original limit, will wrap around this constant (2)
 	STA va_sch+1		; set new var (4)
-	_STZA va_sch		; VRAM is page-aligned! (4)
-; must clear not only VRAM, but attribute area too! * optimum init is 13t *
 ;	LDY #0				; assume <VA_COL is zero (2) should be if both this and VA_BASE are page-aligned
+	STY va_sch			; VRAM is page-aligned! (4)
+; must clear not only VRAM, but attribute area too! * this is 12t *
 	STY v_dest			; clear pointer LSB, will stay this way (3)
 	LDA #>VA_COL		; set MSB (2)
 	STA v_dest+1		; eeeeeeeeeeeeek (4)
 	LDA va_attr			; default colour value! (4)
-vcl_c:					; * whole loop takes 4x(2559+13)-1+2 = 10289t *
+vcl_c:					; * whole loop takes 36x(2559+18)= 92772t *
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2+3)
 		BNE vcl_c
 	INC v_dest+1		; check following page eeeeeeeeek (5)
-	LDA v_dest+1		; how far are we? (3)
-	CMP #>VA_BASE		; already at VRAM? or suitable limit (2)
-		BNE vcl_c			; no, still to go (3)
+	LDX v_dest+1		; how far are we? (3) eeeeeeeek
+	CPX #>VA_BASE		; already at VRAM? or suitable limit (2)
+	BNE vcl_l			; no, keep A value (3)
 ; assume VRAM goes just after attribute area, thus v_dest already pointing to VA_BASE
-	TYA				; zero (on Y) is the standard clear value (2)
-; otherwise, do LDA #0 and TAY * whole loop takes 32x(2559+8)-1 = 82143t *
+		TYA					; zero (on Y) is the standard clear value (2)
 vcl_l:
-		STA (v_dest), Y		; clear byte (5)
-		INY
-		BNE vcl_l			; finish page (2+3)
-	INC v_dest+1		; next page (5)
-		BPL vcl_l			; this assumes screen ends at $8000! (3)
+	CPX #>VA_END		; whole screen done?
+		BNE vcl_c			; if not, continue (2+3)
 	RTS
 
 ; *********************************
