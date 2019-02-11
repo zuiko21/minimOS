@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.6b4, should match kernel16.s
+; v0.6.1a1, should match kernel16.s
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190201-0940
+; last modified 20190211-2155
 
 #define		ISR		_ISR
 
@@ -27,10 +27,14 @@
 ;		BVS periodic			; from T1 (3/2)
 ; ** generic alternative **
 	_ADMIN(IRQ_SRC)			; get source in X
-	JMP (irq_tab, X)		; do as appropriate
-irq_tab:
-	.word	periodic
-	.word	asynchronous
+; a bit less latency this way
+	TXA
+		BNE periodic
+; otherwise the fully generic code
+;	JMP (irq_tab, X)		; do as appropriate
+;irq_tab:
+;	.word	periodic
+;	.word	asynchronous
 
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 34 cycles if optimised)

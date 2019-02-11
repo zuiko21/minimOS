@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6rc8, should match kernel.s
+; v0.6.1a1, should match kernel.s
 ; features TBD
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190201-0840
+; last modified 20190211-2150
 
 #define		ISR		_ISR
 
@@ -21,10 +21,14 @@
 
 ; check whether from VIA, BRK...
 	_ADMIN(IRQ_SRC)		; check source, **generic way**
-	_JMPX(irq_tab)		; do as appropriate
-irq_tab:
-	.word periodic		; standard jiffy
-	.word asynchronous	; async otherwise
+; since 65xx systems are expected to have a single interrupt source, this may serve
+	TXA			; check offset in X
+		BNE periodic
+; otherwise use the full generic way
+;	_JMPX(irq_tab)		; do as appropriate
+;irq_tab:
+;	.word periodic		; standard jiffy
+;	.word asynchronous	; async otherwise
 
 ; optimised, non-portable code
 ;	BIT VIA+IFR			; much better than LDA + ASL + BPL! (4)
