@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a4 (32 column mode)
+; v0.6a5 (32 column mode)
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190210-1118
+; last modified 20190212-0845
 
 ; ***********************
 ; *** minimOS headers ***
@@ -25,7 +25,7 @@
 	.word	0			; reserved, D_MEM
 
 ; *** driver description ***
-srs_info:
+va_text:
 	.asc	"Acapulco 32-col. built-in VDU v0.6", 0
 
 va_err:
@@ -61,7 +61,7 @@ va_init:
 	STX va_xor			; clear mask is true video
 ; load CRTC registers
 vi_crl:
-		STX crtc_rst		; select this register
+		STX crtc_rs			; select this register
 		LDA va_data, Y		; get value for it
 		STA crtc_da			; set value
 		INY					; next address
@@ -77,7 +77,7 @@ vi_crl:
 ;	JMP va_cls			; reuse code from Form Feed, will return to caller
 
 ; ***************************************
-; *** routine for clearing the screen *** takes 92865, 60.46 ms @ 1.536 MHz
+; *** routine for clearing the screen *** takes 92865T, 60.46 ms @ 1.536 MHz
 ; ***************************************
 va_cls:					; * initial code takes 22t *
 	LDA #>VA_BASE		; base address (2+2) assume page aligned!
@@ -278,7 +278,7 @@ vch_pl:
 vch_nw:
 	STA v_dest+1		; now it should be pointing to the corresponding attribute
 	LDA va_attr			; get preset colour...
-	_STAY(va_dest)		; ...and place it
+	_STAY(v_dest)		; ...and place it
 ; printing is done, now advance current position
 vch_adv:
 	INC va_cur			; advance to next character (6)

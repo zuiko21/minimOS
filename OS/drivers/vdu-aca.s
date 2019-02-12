@@ -1,14 +1,18 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a4
+; v0.6a5
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190210-1123
+; last modified 20190212-0845
 
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
+.(
 #include "../usual.h"
 
-.(
+#ifndef	ROM
+#include "vdu-aca.h"
+#endif
+
 ; *** begins with sub-function addresses table ***
 	.byt	192			; physical driver number D_ID (TBD)
 	.byt	A_BOUT		; output driver, non-interrupt-driven
@@ -25,7 +29,7 @@
 	.word	0			; reserved, D_MEM
 
 ; *** driver description ***
-srs_info:
+va_text:
 	.asc	"Acapulco built-in VDU v0.6", 0
 
 va_err:
@@ -40,6 +44,7 @@ va_err:
 
 	crtc_rs	= $DFC0		; *** hardwired 6845 addresses on Acapulco ***
 	crtc_da	= $DFC1
+;	va_mode	= $400		; *** *** *** DEBUGGING ONLY *** *** ***
 
 ; *** zeropage variables ***
 	v_dest	= $E8		; was local2, perhaps including this on zeropage.h?
@@ -63,7 +68,7 @@ va_init:
 	STX va_xor			; clear mask is true video
 ; load CRTC registers
 vi_crl:
-		STX crtc_rst		; select this register
+		STX crtc_rs			; select this register
 		LDA va_data, Y		; get value for it
 		STA crtc_da			; set value
 		INY					; next address
@@ -283,7 +288,7 @@ vch_pl:
 vch_nw:
 	STA v_dest+1		; now it should be pointing to the corresponding attribute
 	LDA va_attr			; get preset colour...
-	_STAY(va_dest)		; ...and place it
+	_STAY(v_dest)		; ...and place it
 ; printing is done, now advance current position
 vch_adv:
 	INC va_cur			; advance to next character (6)
@@ -375,7 +380,7 @@ vcr_chk:
 ; was that OK?
 	STX va_cur+1
 	STA va_cur			; eeeeeeeeek (4)
-	_BRA vch_scs		; ...update cursor and check for scrolling
+	JMP vch_scs			; ...update cursor and check for scrolling
 
 ; *** tab (8 spaces) ***
 va_tab:
@@ -445,7 +450,7 @@ va_data:
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt *28				; R7, VSYNC position - 1
+	.byt 0;28				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -463,7 +468,7 @@ va_data:
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 28				; R6, vertical displayed chars
-	.byt *34				; R7, VSYNC position - 1
+	.byt 0;34				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -495,8 +500,8 @@ va_data:
 ; mode 3 (aka 40/48T) is 320x200 1-5-2, 3.25uS sync, 1.3uS back porch (most likely compatible)
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
-	.byt *37				; R2, HSYNC position - 1
-	.byt *132			; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 0;37				; R2, HSYNC position - 1
+	.byt 0;132			; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 32				; R6, vertical displayed chars
@@ -513,8 +518,8 @@ va_data:
 ; mode 4 (aka 40/48P) is 320x200 1-4-3, 2.6uS sync, 1.95uS back porch (likely compatible)
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
-	.byt *37				; R2, HSYNC position - 1
-	.byt *132			; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 0;37				; R2, HSYNC position - 1
+	.byt 0;132			; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 32				; R6, vertical displayed chars
@@ -531,7 +536,7 @@ va_data:
 ; mode 5 (aka 36/48) is 288x224 1-6-3, most likely compatible
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 36				; R1, horizontal displayed chars
-	.byt *37				; R2, HSYNC position - 1
+	.byt 0;37				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
@@ -549,7 +554,7 @@ va_data:
 ; mode 6 (aka 32/48) is 256x240 1-6-3, most likely compatible
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 32				; R1, horizontal displayed chars
-	.byt *37				; R2, HSYNC position - 1
+	.byt 0;37				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
@@ -567,12 +572,12 @@ va_data:
 ; mode 7 (aka 40/48S) is 320x200 1-6-1, 3.9uS sync, 650nS back porch (perhaps compatible)
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
-	.byt *37				; R2, HSYNC position - 1
+	.byt 0;37				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 32				; R6, vertical displayed chars
-	.byt *34				; R7, VSYNC position - 1
+	.byt 0;34				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
