@@ -1,18 +1,14 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a5
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190212-0845
+; last modified 20190212-0903
+
+#include "../usual.h"
 
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
 .(
-#include "../usual.h"
-
-#ifndef	ROM
-#include "vdu-aca.h"
-#endif
-
 ; *** begins with sub-function addresses table ***
 	.byt	192			; physical driver number D_ID (TBD)
 	.byt	A_BOUT		; output driver, non-interrupt-driven

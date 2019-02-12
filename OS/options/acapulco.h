@@ -2,7 +2,7 @@
 ; suitable for Acapulco
 ; copy or link as options.h in root dir
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190202
+; last modified 20190212
 
 ; *** set conditional assembly ***
 
@@ -22,7 +22,7 @@
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
 
 #define		MACHINE_NAME	"Acapulco"
-#define		MACHINE_ID		"zx6"
+#define		MACHINE_ID		"zx8"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
 #define		ARCH_h			"firmware/acapulco.h"
@@ -51,7 +51,7 @@ FW_BASE		=	$F000	; standard value ***testing
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-IO_BASE	=	$DF00	; standard
+IO_BASE	=	$DF00		; standard
 
 ; * VIA 65(C)22 Base address, machine dependent *
 ; generic address declaration
@@ -72,7 +72,7 @@ VIA_U	=	VIA1
 ; must define CRTC
 
 ; *** set standard device *** new 20160331
-DEVICE	=	DEV_VDU	; standard O device, and input?
+DEVICE	=	192		; standard O device, and input? *** TBD ***
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220
@@ -97,9 +97,7 @@ IRQ_FREQ =	200			; general case
 ; could be PHI2/IRQ_FREQ-2
 
 ; ** initial speed for SS-22 link, begin no faster than 15625 bps **
-SS_SPEED =	30		; 15625 bps @ 1 MHz
-; could be PHI2/31250-2
+SS_SPEED =	PHI2/31250-2
 
 ; speed code in fixed-point format, new 20150129
-SPD_CODE =	$10		; 1 MHz system
-; could be computed as PHI2*16/1000000
+SPD_CODE =	PHI2*16/1000000

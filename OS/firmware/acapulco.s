@@ -1,7 +1,7 @@
 ; firmware for minimOS on Acapulco
-; v0.9.6b3
+; v0.9.6b4
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190206-0905
+; last modified 20190212-0908
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -97,7 +97,7 @@ reset:
 ; Acapulco has no ROM-in-RAM feature!
 
 ; specific startup beep
-#include "modules/beep_pwm.s"
+;#include "modules/beep_pwm.s"
 
 ; SRAM test, note that may affect VRAM
 #include "modules/ramtest.s"
@@ -143,7 +143,7 @@ reset:
 #include "modules/rst_lastk.s"
 
 ; *** direct print splash string code comes here, include rainbow logo ***
-#include "modules/splash_acapulco.s"
+;#include "modules/splash_acapulco.s"
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
@@ -241,7 +241,7 @@ poweroff:
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
-#include "modules/set_fg16.s"
+#include "modules/set_fg.s"
 
 ; *** other functions with RAM enough ***
 #ifndef		LOWRAM
@@ -267,7 +267,7 @@ reloc:
 ; CONIO, basic console when available *** highly specific
 ; ***********************************
 conio:
-#include "modules/cio_aca.s"
+;#include "modules/cio_aca.s"
 
 ; ***********************************
 ; ***********************************

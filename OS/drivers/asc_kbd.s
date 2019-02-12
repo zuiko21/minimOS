@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
-; v0.6b3
+; v0.6b4
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20180908-2256
+; last modified 20190212-0906
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -31,7 +31,8 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-//#include "usual.h"
+#include "usual.h"
+/*
 #include "options/chihuahua_plus.h"
 #include "macros.h"
 #include "abi.h"
@@ -40,7 +41,7 @@
 * = $200
 #include "drivers/asc_kbd.h"
 .text
-
+*/
 .(
 ; ***************
 ; *** options ***

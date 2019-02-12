@@ -19,7 +19,7 @@
 
 driver0:
 ; Acapulco standard video
-#include "../vdu_aca.s"
+#include "../vdu-aca.s"
 
 driver1:
 ; ASCII keyboard
