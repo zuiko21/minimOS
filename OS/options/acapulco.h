@@ -2,7 +2,7 @@
 ; suitable for Acapulco
 ; copy or link as options.h in root dir
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190212
+; last modified 20190212-0936
 
 ; *** set conditional assembly ***
 
@@ -35,7 +35,7 @@
 
 ; *** Default files ***
 ; default shell
-#define		SHELL		"shell/miniMoDA.s"
+#define		SHELL		"shell/minishell.s"
 ; default Firmware NMI
 #define		STD_NMI		"../forge/nanomon.s"
 
@@ -45,7 +45,7 @@
 ROM_BASE	=	$8000
 
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$F000	; standard value ***testing
+FW_BASE		=	$F400	; ***testing
 
 
 ; ** I/O definitions **

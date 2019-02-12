@@ -111,7 +111,7 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 #include "../apps/minized.s"
 #include "../apps/sigtest.s"
 
-/*
+
 ; ****** skip I/O area for more ******
 ; ##### empty header #####
 #ifndef	NOHEAD
@@ -135,7 +135,7 @@ emptySize	=	afterIO - empty_head -256	; compute size NOT including header!
 afterIO		= $E000				; assume I/O ends at $DFFF
 	.dsb	afterIO - *, $FF	; skip I/O and page alignment!!!
 * = afterIO					; should be already there
-*/
+
 
 ; *************************************
 ; ****** more software after I/O ******

@@ -2,7 +2,7 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20180901-2153
+; last modified 20180912-0936
 
 ; *** set conditional assembly ***
 
@@ -35,7 +35,7 @@
 
 ; *** Default files ***
 ; default shell
-#define		SHELL		"shell/miniMoDA.s"
+#define		SHELL		"shell/minishell.s"
 ; default Firmware NMI
 #define		STD_NMI		"../forge/nanomon.s"
 
