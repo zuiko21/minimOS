@@ -1,11 +1,10 @@
 ; minimOS BRK panic handler
-; v0.6b6
+; v0.6.1a1
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190201-0935
+; last modified 20190213-0848
 
-#ifndef	HEADERS
 #include "../usual.h"
-#endif
+
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
 
@@ -50,7 +49,7 @@ brk_term:
 	STA $010B, X		; set MSB eeeeeeeeeeeeeeek
 	TYA					; as no STY abs,X...
 	STA $010A, X		; ...set LSB eeeeeeeeeeeek
-	JMP nanomon			; testing, will return to BRK handler *** needs NMI_SF option ***
+	JMP std_nmi			; testing, will return to BRK handler *** needs NMI_SF option ***
 ;	RTS					; *** otherwise let it finish the ISR
 
 ; send a newline to default device
