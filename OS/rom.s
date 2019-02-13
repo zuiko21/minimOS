@@ -1,7 +1,7 @@
 ; minimOS ROM template
-; v0.6b8
+; v0.6.1a1
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190131-0902
+; last modified 20190213-0836
 
 ; create ready-to-blow ROM image
 #define		ROM		_ROM
@@ -27,13 +27,13 @@ sysvol:
 	.asc	"****", CR	; some flags TBD
 	.asc	"sys", 0	; volume name (mandatory)
 ; *** ROM identification string as comment (highly recommended) ***
-	.asc	"minimOS 0.6 for ", MACHINE_NAME	; system version and machine
-	.asc	13, "20180112-1114", 0				; build date and time
+	.asc	"minimOS 0.6.1 for ", MACHINE_NAME	; system version and machine
+	.asc	13, "20190213-0845", 0				; build date and time
 
 	.dsb	sysvol + $F8 - *, $FF				; for ready-to-blow ROM, advance to time/date field
 
-	.word	$49E0				; time, 9.15
-	.word	$4E32				; date, 2019/01/18
+	.word	$45A0				; time, 8.45
+	.word	$4E4D				; date, 2019/02/13
 
 ;romsize	=	$FF00 - ROM_BASE	; compute size! excluding header
 
@@ -69,14 +69,14 @@ kernel	= * + 256	; skip header
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 drv_file:
 	BRK
-	.asc	"aD"						; driver pack file TBD
-	.asc	"****", CR					; flags TBD
-	.asc	"dev", 0, 0				; filename and empty comment
+	.asc	"aD"				; driver pack file TBD
+	.asc	"****", CR			; flags TBD
+	.asc	"dev", 0, 0			; filename and empty comment
 
 	.dsb	drv_file + $F8 - *, $FF		; padding
 
-	.word	$43C0						; time, 08.30
-	.word	$4A47						; date, 2017/02/07
+	.word	$45A0				; time, 8.45
+	.word	$4E4D				; date, 2019/02/13
 
 drv_size = drv_end - drv_file - $100	; exclude header
 
@@ -87,7 +87,7 @@ drv_size = drv_end - drv_file - $100	; exclude header
 
 ; after header goes the binary blob
 #include DRIVER_PACK_s
-drv_end:		; for easier size computation ***should this go into the driver pack file???
+drv_end:				; for easier size computation ***should this go into the driver pack file?
 
 ; *********************************************
 ; *** include rest of the supplied software ***
@@ -111,36 +111,39 @@ drv_end:		; for easier size computation ***should this go into the driver pack f
 #include "../apps/minized.s"
 #include "../apps/sigtest.s"
 
-
+; ************************************
 ; ****** skip I/O area for more ******
+; ************************************
 ; ##### empty header #####
 #ifndef	NOHEAD
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 empty_head:
-	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"aS****", CR	; just reserved SYSTEM space
-	.asc	"[I/O]", 0, 0	; file name (mandatory) and empty comment
+	BRK							; don't enter here! NUL marks beginning of header
+	.asc	"aS****", CR		; just reserved SYSTEM space
+	.asc	"[I/O]", 0, 0		; file name (mandatory) and empty comment
 ; advance to end of header
-	.dsb	empty_head + $FC - *, $FF	; for ready-to-blow ROM, advance to size
-; *** no valid date & time ***
+	.dsb	empty_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time
+
+	.word	$45A0				; time, 8.45
+	.word	$4E4D				; date, 2019/02/13
+
 emptySize	=	afterIO - empty_head -256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	emptySize		; filesize
-	.word	0				; 64K space does not use upper 16-bit
+	.word	emptySize			; filesize
+	.word	0					; 64K space does not use upper 16-bit
 #endif
 ; ##### end of minimOS header #####
 
 ; *** blank space for I/O area skipping ***
 afterIO		= $E000				; assume I/O ends at $DFFF
 	.dsb	afterIO - *, $FF	; skip I/O and page alignment!!!
-* = afterIO					; should be already there
 
+* = afterIO						; should be already there
 
 ; *************************************
 ; ****** more software after I/O ******
 ; *************************************
-; ...could add more software up to $FC00
 ;#include "shell/monitor.s"
 #ifdef	C816
 #include "../apps/crasm/80asm.s"
@@ -148,30 +151,35 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 #else
 #include "shell/miniMoDA.s"
 #endif
+
+; ****************************************************
 ; ****** skip rest of unused ROM until firmware ******
+; ****************************************************
 ; ##### empty header #####
 #ifndef	NOHEAD
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 free_head:
-	BRK						; don't enter here! NUL marks beginning of header
-	.asc	"aS****", CR	; just reserved SYSTEM space
+	BRK							; don't enter here! NUL marks beginning of header
+	.asc	"aS****", CR		; just reserved SYSTEM space
 	.asc	"[R", "OM]", 0, 0	; file name (mandatory) and empty comment *** note macro savvy
 ; advance to end of header
-	.dsb	free_head + $FC - *, $FF	; for ready-to-blow ROM, advance to size
-; *** no valid date & time ***
+	.dsb	free_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time
+
+	.word	$45A0				; time, 8.45
+	.word	$4E4D				; date, 2019/02/13
+
 freeSize	=	FW_BASE - free_head -256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	freeSize		; filesize
-	.word	0				; 64K space does not use upper 16-bit
+	.word	freeSize			; filesize
+	.word	0					; 64K space does not use upper 16-bit
+#endif
 ; ##### end of minimOS header #####
 
 ; ***************************************
 ; *** make separate room for firmware ***
 ; ***************************************
 	.dsb	FW_BASE - *, $FF	; for ready-to-blow ROM, skip to firmware area
-;* = FW_BASE					; should be already there
-#endif
 
 ; ***********************************
 ; *** hardware-dependent firmware ***

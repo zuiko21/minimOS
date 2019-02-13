@@ -2,17 +2,16 @@
 ; suitable for Acapulco
 ; copy or link as options.h in root dir
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190212-0936
+; last modified 20190213-0832
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
 ;#define		NMOS	_NMOS
-;#define		LOWRAM	_LOWRAM
 
 ; uncomment to enable (software) multitasking
-#define		MULTITASK	_MULTITASK
+;#define		MULTITASK	_MULTITASK
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -22,7 +21,7 @@
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
 
 #define		MACHINE_NAME	"Acapulco"
-#define		MACHINE_ID		"zx8"
+#define		MACHINE_ID		"zx65"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
 #define		ARCH_h			"firmware/acapulco.h"
@@ -45,10 +44,9 @@
 ROM_BASE	=	$8000
 
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$F400	; ***testing
+FW_BASE		=	$F800	; barely fits!
 
-
-; ** I/O definitions **
+; ** ** I/O definitions ** **
 
 ; I/O base address, usually one page, new 20160308
 IO_BASE	=	$DF00		; standard
@@ -69,7 +67,8 @@ VIA_FG	=	VIA1
 VIA_SS	=	VIA1
 VIA_U	=	VIA1
 
-; must define CRTC
+; * must define CRTC from built-in video *
+CRTC	=	IO_BASE + $C0	; CRTC base, data register is the following address
 
 ; *** set standard device *** new 20160331
 DEVICE	=	192		; standard O device, and input? *** TBD ***
@@ -83,8 +82,11 @@ SRAM =	128
 
 SPTR		=	$FF		; general case stack pointer, new name 20160308
 SYSRAM		=	$0200	; generic case system RAM after zeropage and stack, most systems with at least 1 kiB RAM
+#ifndef	NMOS
 ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp
-
+#else
+ZP_AVAIL	=	$DF		; new NMOS macro takes this word too
+#endif
 
 ; *** speed definitions ***
 
