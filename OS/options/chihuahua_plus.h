@@ -2,21 +2,31 @@
 ; suitable for Chihuahua PLUS
 ; copy or link as options.h in root dir
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20180912-0936
+; last modified 20190213-0908
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
 #define		SAFE	_SAFE
-;#define		NMOS	_NMOS
-;#define		LOWRAM	_LOWRAM
 
 ; uncomment to enable (software) multitasking
-#define		MULTITASK	_MULTITASK
+;#define		MULTITASK	_MULTITASK
+
+; *** these optimisations need the CPP preprocessor! ***
+;#define		FAST_API	_FAST_API
+;#define		FAST_FW		_FAST_FW
+
+; new option for mutable IDs, most likely mandatory!
+#define		MUTABLE		_MUTABLE
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
+;#define		NMOS	_NMOS
+#ifdef	NMOS
+#define		CPU_TYPE	'N'
+#else
 #define		CPU_TYPE	'B'
+#endif
 
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
@@ -68,10 +78,6 @@ VIA_J	=	VIA1
 VIA_FG	=	VIA1
 VIA_SS	=	VIA1
 VIA_U	=	VIA1
-
-; * optional ACIA/UART address (in external board!) *
-ACIA1	=	IO_BASE + $D0	; ACIA address on most (no longer $DFE0 for easier decoding 688+138)
-ACIA	=	ACIA1			; for increased compatibility
 
 ; *** set standard device *** new 20160331 
 DEVICE	=	DEV_LED		; standard I/O device
