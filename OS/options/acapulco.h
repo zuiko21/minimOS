@@ -2,7 +2,7 @@
 ; suitable for Acapulco
 ; copy or link as options.h in root dir
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190213-0832
+; last modified 20190213-0905
 
 ; *** set conditional assembly ***
 
@@ -13,9 +13,20 @@
 ; uncomment to enable (software) multitasking
 ;#define		MULTITASK	_MULTITASK
 
+; *** these optimisations need the CPP preprocessor! ***
+;#define		FAST_API	_FAST_API
+;#define		FAST_FW		_FAST_FW
+
+; new option for mutable IDs, most likely mandatory!
+#define		MUTABLE		_MUTABLE
+
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
+#ifndef	NMOS
 #define		CPU_TYPE	'B'
+#else
+#define		CPU_TYPE	'N'
+#endif
 
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
@@ -71,7 +82,7 @@ VIA_U	=	VIA1
 CRTC	=	IO_BASE + $C0	; CRTC base, data register is the following address
 
 ; *** set standard device *** new 20160331
-DEVICE	=	192		; standard O device, and input? *** TBD ***
+DEVICE	=	192			; standard O device, and input? *** TBD ***
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220

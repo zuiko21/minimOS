@@ -75,13 +75,13 @@ fw_admin:
 ; *** basic init *** unlikely to use a 65816
 reset:
 #include "modules/basic_init02.s"
-
+lda#'i':jsr$c0c2
 ; ******************************
 ; *** minimal hardware setup ***
 ; ******************************
 
 ; check for VIA presence and disable all interrupts
-#include "modules/viacheck_irq.s"
+;#include "modules/viacheck_irq.s"
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -101,13 +101,13 @@ reset:
 
 ; SRAM test, note that may affect VRAM
 #include "modules/ramtest.s"
-
+lda#'t':jsr$c0c2
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
 
 ; VIA initialisation (and stop beeping)
-#include "modules/via_init.s"
+;#include "modules/via_init.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -119,14 +119,14 @@ reset:
 ; ...or actually check for it!
 #include "modules/cpu_check.s"
 ; do NOT include both files at once!
-
+lda#'C':jsr$c0c2
 ; in case an NMOS CPU is used, make sure this was built for it
 #include "modules/nmos_savvy.s"
 
 ; *** continue parameter setting ***
 ; preset kernel start address
 #include "modules/kern_addr.s"
-
+lda#'K':jsr$c0c2
 ; preset default BRK handler, might set a proper PANIC handler
 #include "modules/brk_addr.s"
 

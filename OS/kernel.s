@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6rc11
+; v0.6.1a1
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190130-1215
+; last modified 20190213-0900
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -35,12 +35,12 @@ kern_head:
 	.asc	"****", 13		; flags TBD
 	.asc	"kernel", 0		; filename
 kern_splash:
-	.asc	"minimOS 0.6", 0	; version in comment
+	.asc	"minimOS 0.6.1", 0			; version in comment
 
 	.dsb	kern_head + $F8 - *, $FF	; padding
 
-	.word	$61E0	; time, 12.15
-	.word	$4E3E	; date, 2019/1/30
+	.word	$4800	; time, 9.00
+	.word	$4E4D	; date, 2019/2/13
 
 kern_siz = kern_end - kern_head - $100
 
@@ -247,7 +247,7 @@ sh_exec:
 	STA def_io			; default local I/O
 	STA def_io+1
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
-	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
+;	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
 	_PANIC("{yield}")	; ...as the scheduler will detour execution
@@ -263,7 +263,7 @@ ks_cr:
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
-	.asc	"mOS 0.6", 0
+	.asc	"mOS 0.6.1", 0
 #endif
 
 ; ***********************************************
