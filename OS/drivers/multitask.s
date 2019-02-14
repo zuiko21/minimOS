@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a7
+; v0.6a8
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20181104-1142
+; last modified 20190214-0906
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -472,7 +472,9 @@ mm_hndl:
 #ifdef	SAFE
 	JSR mm_chkpid		; check for a valid PID first (21)
 #endif
-
+	TYA					; eeeeeeeeeeek
+	ASL					; pointers are TWICE the size of flags!
+	TAY					; back to index
 	LDA ex_pt			; get pointer LSB (3)
 	_CRITIC				; this is delicate... (5)
 	STA mm_term, Y		; store in table (4)
