@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
-; v0.6a5
+; v0.6a6
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20181104-1143
+; last modified 20190214-1237
 
 ; ***************************
 ; *** multitasking driver ***
@@ -58,15 +58,13 @@ mm_cont:
 	LDA #mm_context		; storage area full pointer
 	TCD					; direct-page set for FIRST context
 ; initialise flags table (but not stack pointers?)
-	LDY #MX_BRAID*2	; reset backwards index, new interleaved arrays, even PIDs!
+	LDY #MX_BRAID	; reset backwards index, NON interleaved array!
 	LDA #BR_FREE		; 8-bit required pattern at LSB, clear MSB for interleaved banks (worth switching to 8-bit?)
 mm_rsp:
-		STA mm_flags-2, Y	; set braid to FREE, please note table expects EVEN indexes from 0
-		DEY					; go for next (remember 16-bit)
-		DEY
+		STA mm_flags-1, Y	; set braid to FREE, please note table expects indexes from 0
+		DEY					; go for next
 		BNE mm_rsp			; continue until all done (MX_BRAID must be EVEN!!!)
-	INY					; default task (will be 2!)
-	INY
+	INY					; default task (will be 1!)
 	STY mm_pid			; set as current temporary PID
 ; do NOT set current SP as initialisation will crash! startup via scheduler will do anyway
 	STZ cpu_ll			; native 65816, of course ***does extra byte, no problem
@@ -78,7 +76,7 @@ mm_ptl:
 		STA kerntab			; ...and use as parameter
 ;		PHY					; preserve this! is likely to be respected
 		_ADMIN(PATCH)		; install new function
-			BCS mm_restore		; somethiong went wrong, undo everything and exit!
+			BCS mm_restore		; something went wrong, undo everything and exit!
 ;		PLY					; otherwise retrieve loop var, if was saved
 		INY					; go for next
 		INY
@@ -131,10 +129,9 @@ mm_sched:
 	LDX mm_pid			; current PID as index (4)
 mm_scan:
 		DEX					; going backwards is faster (2)
-		DEX					; it is now EVEN PIDs only! (2)
-			BEQ mm_wrap			; in case of wrap, remember first PID is *2* (2/3) faster implementation
+			BEQ mm_wrap			; in case of wrap, remember first PID is *1* (2/3) faster implementation
 mm_next:
-		LDA mm_flags-2, X	; get status of entry (4)
+		LDA mm_flags-1, X	; get status of entry (4)
 		AND #BR_MASK		; if SIGTERM flag is integrated here, this is mandatory, does not harm (2)
 		BNE mm_scan			; zero (now equal to BR_RUN) means executable braid (3/2)
 ; an executable braid is found
@@ -144,7 +141,7 @@ mm_next:
 
 ; PID count expired, try to wrap or shutdown if no more live tasks!
 mm_wrap:
-		LDX #MX_BRAID*2		; go to end instead, valid as last PID (2)
+		LDX #MX_BRAID		; go to end instead, valid as last PID (2)
 		DEY					; and check is not forever (2)
 		BNE mm_next			; otherwise should only happen at shutdown time (3/2)
 mm_lock:
@@ -202,7 +199,7 @@ mm_rts:
 ; needs older SHIFTED flags in A, PID in Y!!!
 mm_sigterm:
 	ASL					; ...and restore value with clear flag!
-	STA mm_flags-2, Y	; EEEEEEEK! clear received TERM signal, new format 20161117
+	STA mm_flags-1, Y	; EEEEEEEK! clear received TERM signal, new format 20161117
 ; stack return address upon end of SIGTERM handler
 	PHK					; push program bank as 816 code will end in RTL... as mm_stend cannot be $xx0000
 	PEA mm_stend-1		; correct return address after SIGTERM handler RTL/RTS
@@ -211,10 +208,13 @@ mm_sigterm:
 	STX sys_sp			; ...in case bank address remains
 #endif
 ; 24-bit indexed jump means the use of RTI as indirect long jump
-; not worth 24b array... perhaps an interleaved bank array?
-	LDA mm_stbnk-2, Y	; now get bank address (4)
+; not worth 24b array...
+	LDA mm_stbnk-1, Y	; now get bank address (4)
 	PHA					; push bank address for the simulated 24-bit call (3)
-; even PIDs make the index ready for all arrays!
+; no longer even PIDs...
+	TYA					; eeeeeeeeeeek
+	ASL					; pointers are TWICE the size of flags!
+	TAY					; back to index
 	LDA mm_term-2, Y	; get MSB (4) ***check these offsets
 	PHA					; and push it (3)
 	LDA mm_term-3, Y	; same for LSB (4+3)
@@ -264,25 +264,25 @@ mm_bad:
 ; *** SIGCONT, resume execution ***
 mms_cont:
 ; CS not needed as per 816 ABI
-	LDA mm_flags-2, Y	; first check current state (5)
+	LDA mm_flags-1, Y	; first check current state (5)
 	LSR					; keep integrated mm_treq in C! (2)
 	CMP #BR_STOP/2		; is it paused? note it was shifted (2)
 		BNE mms_kerr		; no way to resume it! (2/3)
 	LDA #BR_RUN/2		; resume, note shift (2)
 	ROL					; reinsert TERM flag from C! (2)
-	STA mm_flags-2, Y	; store new status (5) again, TERM is lost
+	STA mm_flags-1, Y	; store new status (5) again, TERM is lost
 ; here ends CS
 	RTS
 
 ; *** SIGSTOP, pause execution ***
 mms_stop:
-	LDA mm_flags-2, Y	; first check current state (5)
+	LDA mm_flags-1, Y	; first check current state (5)
 	LSR					; keep integrated mm_treq in C! (2)
 	CMP #BR_RUN/2		; is it running? note shift (2)
 		BNE mms_kerr		; no way to stop it! (2/3)
 	LDA #BR_STOP/2		; pause it, note shift (2)
 	ROL					; reinsert TERM flag from C! (2)
-	STA mm_flags-2, Y	; store new status (5) *** would like to restore somehow any previous TERM!
+	STA mm_flags-1, Y	; store new status (5) *** would like to restore somehow any previous TERM!
 	RTS
 mms_kerr:
 	_DR_ERR(INVALID)	; not a running PID *** currently ignored error
@@ -320,7 +320,7 @@ mm_fork:
 	LDY #MX_BRAID		; scan backwards is usually faster (2)
 ; ** assume interrupts are off via COP **
 mmf_loop:
-		LDA mm_flags-2, Y	; get that braid's status (4)
+		LDA mm_flags-1, Y	; get that braid's status (4)
 		AND #BR_MASK		; mandatory now (2)
 		CMP #BR_FREE		; check whether available (2)
 			BEQ mmf_found		; got it (2/3)
@@ -329,7 +329,7 @@ mmf_loop:
 	BEQ mmf_nfound		; nothing was found, just return 0 as system-reserved braid ID
 ; otherwise there are some flags to initialise
 		LDA #BR_BORN		; new value, no longer set as BR_STOP (2)
-		STA mm_flags-2, Y	; reserve braid (4)
+		STA mm_flags-1, Y	; reserve braid (4)
 mmf_nfound:
 	_EXIT_OK			; always return chosen PID
 
@@ -357,7 +357,7 @@ mm_signal:
 		LDA #1				; otherwise, only one iteration
 		BRA mmsig_l			; make it and exit!
 mmsig_z:
-		LDY #MX_BRAID*2		; max PID as will do them all
+		LDY #MX_BRAID		; max PID as will do them all
 		TYA					; use as counter...
 		LSR					; ...but halved
 mmsig_l:
@@ -366,7 +366,6 @@ mmsig_l:
 		JSR (mms_table, X)	; call to actual code...
 		PLA					; retrieve
 		DEY					; prepare to modify next
-		DEY
 		DEC					; one less to go
 		BNE mmsig_l			; until all done!
 	_EXIT_OK			; ...as this must end as per 816 ABI ***must keep error code, like cio_callend
@@ -377,9 +376,9 @@ mmsig_l:
 mms_term:
 ; supplied handler will be executed upon scheduler switching to it!
 ; just set the flag
-	LDA mm_flags-2, Y	; get original flags, now integrated! (4)
+	LDA mm_flags-1, Y	; get original flags, now integrated! (4)
 	ORA #1				; set request (2)
-	STA mm_flags-2, Y	; set SIGTERM request for that braid (4)
+	STA mm_flags-1, Y	; set SIGTERM request for that braid (4)
 	RTS
 
 ; *** SIGKILL, kill braid! ***
@@ -470,15 +469,19 @@ mm_hndl:
 ; CS not needed in 65816 ABI
 ; needs 24-bit addressing!!!
 	LDA ex_pt+2			; bank address
-	STA mm_stbnk-2, Y	; store into new array
+	STA mm_stbnk-2, Y	; store into NON interleaved array
 ; put rest of address in array!
+	TYA					; eeeeeeeeeeek
+	ASL					; pointers are TWICE the size of flags!
+	TAY					; back to index
 ; going 16-bit takes 7b, 12t
 	.al: REP #$20		; *** 16-bit memory *** (3)
 	LDA ex_pt			; get pointer (4)
-	STA mm_term-2, Y	; store in table (5)
+	STA mm_term-2, Y	; store into INTERLEAVED table (5)
 ; end of CS
 	_EXIT_OK
 
+	.as
 
 ; -------------------------------OLD----------------------
 /*
