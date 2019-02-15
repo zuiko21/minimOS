@@ -123,7 +123,7 @@ in parallel as *attribute area*,
 
 Interfaces: Piezo buzzer, SS-22, new VIA connector,
 VGA-compatible video output (320x200 @ 16 colours
-in GRgB mode, max. 2 of them each 8x8 pixels)
+in GRgB mode, only 2 of them each 8x8 pixels)
 
 
 
