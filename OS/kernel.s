@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6.1a1
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190213-0900
+; last modified 20190215-0951
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -247,7 +247,7 @@ sh_exec:
 	STA def_io			; default local I/O
 	STA def_io+1
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
-;	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
+	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
 	_PANIC("{yield}")	; ...as the scheduler will detour execution

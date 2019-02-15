@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a8
+; v0.6a9
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190214-0906
+; last modified 20190215-1015
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -416,7 +416,7 @@ mmx_sfp:
 mm_yield:
 	CLC					; for safety in case RTS is found (when no other braid is active)
 	_CRITIC				; eeeeeeek, scheduler is expected to run with interrupts OFF!
-	JSR mm_oksch		; ...then will CALL the scheduler! At once!
+	JSR mm_sched		; ...then will CALL the scheduler! At once!
 	_NO_CRIT			; restore interrupt status, could be off anyway
 	_EXIT_OK			; eeeeeeeeeeeeeek, stack imbalance otherwise!
 
@@ -424,6 +424,12 @@ mm_yield:
 ; Y -> PID
 mm_getfg:
 	LDY mm_fg			; get foreground PID
+	_EXIT_OK
+
+; *** B_FORE, get foreground PID from reserved variable *** STUB
+; Y -> PID
+mm_fore:
+	STY mm_fg			; set foreground PID
 	_EXIT_OK
 
 ; *** B_SIGNAL, send some signal to a braid ***
