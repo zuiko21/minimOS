@@ -3,26 +3,26 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190128-0956
+; last modified 20190215-1216
 
 ; *** set conditional assembly ***
 
 ; comment for optimized code without optional checks
-#define		SAFE	_SAFE
+;#define		SAFE	_SAFE
 
-#define		LOWRAM	_LOWRAM
+;#define		LOWRAM	_LOWRAM
 
 ; *** these optimisations need the CPP preprocessor! ***
 ;#define		FAST_API	_FAST_API
 ;#define		FAST_FW		_FAST_FW
 
 ; new option for mutable IDs, most likely mandatory!
-;#define		MUTABLE		_MUTABLE
+#define		MUTABLE		_MUTABLE
 
 ; enable in order to remove headers, not LOADLINK savvy!
 ;#define		NOHEAD	_NOHEAD
 ; enable multitasking support... hopefully! *** might be defined upon multitasking driver
-#define	MULTITASK	_MULTITASK
+;#define		MULTITASK	_MULTITASK
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -65,7 +65,7 @@ FW_BASE		=	$F800	; simple firmware expected on BBC simulator
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-IO_BASE		=	$C000	; as per EhBASIC I/O
+IO_BASE		=	$DF00	; as per EhBASIC I/O
 
 ; missing hardware declarations...
 ; * VIA 65(C)22 Base address, machine dependent *

@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS
-; v0.6a9
+; v0.6b1
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190215-1015
+; last modified 20190215-1204
 ; *** UNDER REVISION ***
 
 ; ********************************
@@ -39,6 +39,9 @@
 mm_info:
 	.asc	MX_BRAID+'0', "-task Software Scheduler v0.6", 0	; works as long as no more than 9 braids!
 
+mm_abort:
+		_DR_ERR(UNAVAIL)	; error for not available features
+
 ; *** initialisation code ***
 mm_init:
 #ifdef	SAFE
@@ -47,10 +50,7 @@ mm_init:
 ; hardware-assisted scheduler init code should do the opposite!
 ; remaining code assumes software scheduler only
 	_KERNEL(TS_INFO)	; just checking availability, will actually be used by B_EXEC
-	BCC mm_cont			; skip if no error eeeeeeeeeek
-mm_abort:
-		_DR_ERR(UNAVAIL)	; error if not available
-mm_cont:
+		BCS mm_abort		; skip if no error eeeeeeeeeek
 #endif
 ; initialise stack pointers and flags table, no need to initialise SP yet!
 	LDA #BR_FREE		; adequate value in two highest bits, if sys_sp does NOT get inited!
@@ -529,7 +529,7 @@ mms_kill:
 	LDA #BR_FREE		; will be no longer executable (2)
 	STA mm_flags-1, Y	; store new status AND clear unattended TERM (5)
 ; should probably free up all MEMORY & windows belonging to this PID...
-	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
+;	_KERNEL(RELEASE)	; free up ALL memory belonging to this PID, new 20161115
 ; window release *** TO DO *** TO DO *** TO DO ***
 	_DR_OK
 
