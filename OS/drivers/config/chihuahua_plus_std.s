@@ -1,8 +1,8 @@
 ; includes for minimOS drivers
 ; Chihuahua PLUS specific configuration!
-; v0.6b3
-; (c) 2015-2018 Carlos J. Santisteban
-; last modified 20180819-1542
+; v0.6b4
+; (c) 2015-2019 Carlos J. Santisteban
+; last modified 20190215-0959
 
 #define		DRIVERS		1
 
@@ -23,7 +23,7 @@ driver0:
 
 driver1:
 ; ASCII keyboard
-;#include "../asc_kbd.s"
+#include "../asc_kbd.s"
 
 
 ; *** driver list in ROM ***
