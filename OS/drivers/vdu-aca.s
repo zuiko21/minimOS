@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a5
+; v0.6a6
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190212-0903
+; last modified 20190216-2117
 
 #include "../usual.h"
 
@@ -357,8 +357,7 @@ vsc_blim:
 vch_ok:
 	_DR_OK
 
-; *** carriage return *** TO DO ***
-; quite easy as 32 char per line
+; *** carriage return ***
 va_cr:
 	LDX #>VA_BASE		; MSB when required
 	LDA #<VA_BASE
@@ -390,7 +389,7 @@ vtb_l:
 		STA io_c
 		JSR vch_prn			; direct space printing, A holds 32 too (...)
 		PLA					; recover desired address (4)
-		CMP va_cur			; reached? (4) *************************** NOOOOOOOOOOOOOOOOOOOOOOOO
+		CMP va_cur			; reached? (4) *** why not? ? ?
 		BNE vtb_l			; no, continue (3/2)
 	_DR_OK				; yes, all done
 
