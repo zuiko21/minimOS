@@ -1,6 +1,6 @@
 # minimOS Character Set
 
-*last modified 20180930-1827*
+*last modified 20190217-1232*
 
 Focused on limited resource platforms, the standard **character set** for minimOS
 had to satisfy the following:
@@ -60,4 +60,49 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 **$Dx**|Đ|Ñ|Ò|Ó|Ô|Õ|Ö|×|Ø|Ù|Ú|Û|Ü|Ý|&#222;|&#223;
 **$Ex**|à|á|â|ã|ä|å|æ|ç|è|é|ê|ë|ì|í|î|ï
 **$Fx**|đ|ñ|ò|ó|ô|õ|ö|÷|ø|ù|ú|û|ü|ý|&#254;|&#255;
+
+## Control characters
+
+Dec|Hex|ASCII|mOS|notes
+---|---|-----|---|-----
+0|$00|`NUL`|**`NUL`**|(1)
+1|$01|`SOH`|**`HOME`**|reset cursor without clearing screen
+2|$02|`STX`|**`LEFT`**|move cursor
+3|$03|`ETX`|**`TERM`**|send TERM signal
+4|$04|`EOT`|**``**|
+5|$05|`ENQ`|**``**|
+6|$06|`ACK`|**`RIGHT`**|move cursor (no space)
+7|$07|`BEL`|**`BEL`**|acoustic or visual alert
+8|$08|`BS`|**`BS`**|clear previous character
+9|$09|`HT`|**`HTAB`**|advance to next tab, printing spaces
+10|$0A|`LF`|**`DOWN`**|move cursor (no CR)
+11|$0B|`VT`|**`UPCUR`**|cursor up one line
+12|$0C|`FF`|**`FF`**|clear screen (2)
+13|$0D|`CR`|**`NEWLN`**|ZX Spectrum-like
+14|$0E|`SO`|**`EMON`**|emphasis on
+15|$0F|`SI`|**`EMOFF`**|emphasis off
+16|$10|`DLE`|**`DLE`**|do not interpret next control char (3) 
+17|$11|`DC1`|**``**|
+18|$12|`DC2`|**`INK`**|set foreground colour (3)(4)
+19|$13|`DC3`|**``**|
+20|$14|`DC4`|**`PAPER`**|set background colour (3)(4)
+21|$15|`NAK`|**``**|
+22|$16|`SYN`|**``**|
+23|$17|`ETB`|**``**|
+24|$18|`CAN`|*``**|
+25|$19|`EM`|**``**|
+26|$1A|`SUB`|**``**|
+27|$1B|`ESC`|**`ESC`**|
+28|$1C|`FS`|**``**|
+29|$1D|`GS`|**``**|
+30|$1E|`RS`|**``**|
+31|$1F|`US`|**``**|
+
+### Notes:
+
+1.If sent to `CONIO`, will issue an input.
+2.If sent to `CONIO`, reset the standard device.
+3.Takes a second character to complete
+4.Currently only low nibble used as `GRgB` or `G2 R2 G1 B2`. *High nibble may be used
+(when supported) as `R1 G0 R0 B1`*.
 
