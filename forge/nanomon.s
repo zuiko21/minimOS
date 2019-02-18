@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.2a1
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190218-1011
+; last modified 20190218-2257
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -142,8 +142,7 @@ nl_upp:
 #ifdef	SAFE
 			CMP #12				; is it formfeed? must clear, perhaps initialising!
 				BNE nl_ncls			; if not, just continue checking others
-			CPX #0				; at the beginning
-				BNE nl_ncls			; ignore too
+			CPX #0				; at the beginning?
 				BEQ nl_bs			; will clear screen with nothing to delete, otherwise 
 nl_ncls:
 #endif
