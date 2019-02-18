@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.1b13
+; v0.2a1
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190122-0907
+; last modified 20190218-1011
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -139,6 +139,14 @@ nl_ign:
 				AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
 nl_upp:
 ; *** end of uppercase conversion ***
+#ifdef	SAFE
+			CMP #12				; is it formfeed? must clear, perhaps initialising!
+				BNE nl_ncls			; if not, just continue checking others
+			CPX #0				; at the beginning
+				BNE nl_ncls			; ignore too
+				BEQ nl_bs			; will clear screen with nothing to delete, otherwise 
+nl_ncls:
+#endif
 			CMP #LF				; is it newline? EEEEEEEEEEEEEEEEK (CR)
 				BEQ nl_end			; if so, just end input
 			CMP #BS				; was it backspace?
@@ -207,7 +215,9 @@ nm_num:
 			LDX z_cur			; eeeeeeeeeeeeeeeeeeeeeeeeeek
 			LDA buff, X			; pick next hex
 #ifdef	SAFE
-				BEQ nm_main			; must be in pairs! would be catastrophic at the very end!
+			BNE nm_pair			; must be in pairs! would be catastrophic at the very end!
+				JMP nm_main
+nm_pair:
 #endif
 			JSR nm_hx2n			; convert another nibble (over the previous one)
 			JSR nm_push			; fully converted byte in A pushed into data stack
