@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.2a2
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190219-1016
+; last modified 20190219-1401
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -84,7 +84,7 @@ STKSIZ	= 4				; in order not to get into return stack space! writes use up to th
 	LDY #0				; reset counter, unfortunately cannot work backwards
 nmr_loop:
 		LDA $106, X			; get stacked value
-		STA z_y, Y			; actually absolute,Y addressing!
+		STA !z_y, Y			; actually absolute,Y addressing!
 		INX					; go deeper into stack...
 		INY					; ...and further into zeropage
 		CPY #6				; copied all bytes?
@@ -118,8 +118,7 @@ nmr_loop:
 
 ; main loop
 nm_main:
-;		JSR nm_read			; get line *** can be inlined
-;nm_read:
+; *** old nm_read code, now inlined ***
 		LDA #LF				; eeeeeeeeeeeeek (needed for run816) CR
 		JSR nm_out
 		LDA z_addr+1		; PC.MSB
@@ -133,17 +132,17 @@ nr_loop:
 			STX z_cur			; keep in memory, just in case
 nl_ign:
 			JSR nm_in			; may inline CONIO call here...
-; *** must convert to uppercase ***
+; must convert to uppercase
 			CMP #'a'			; lowercase?
 			BCC nl_upp			; no, leave it as is
 				AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
 nl_upp:
-; *** end of uppercase conversion ***
+; end of uppercase conversion
 #ifdef	SAFE
 			CMP #12				; is it formfeed? must clear, perhaps initialising!
 				BNE nl_ncls			; if not, just continue checking others
-			CPX #0				; at the beginning?
-				BEQ nl_bs			; will clear screen with nothing to delete, otherwise 
+			CPX #0				; at the beginning? otherwise ^L is ignored
+				BEQ nl_bs			; will clear screen with nothing to delete 
 nl_ncls:
 #endif
 			CMP #LF				; is it newline? EEEEEEEEEEEEEEEEK (CR)
@@ -163,7 +162,8 @@ nl_ncls:
 				LDA #BS				; yes, delete last printed
 				JSR nm_out
 ; perhaps could beep too...
-				BRA nr_ign			; nothing gets written, ask again for BS *** CONIO savvy, instead of nr_loop
+				_BRA nr_ign			; nothing gets written, ask again for BS
+; CONIO savviness is already achieved by I/O functions, could use nr_loop instead
 nl_ok:
 #endif
 			STA buff, X			; store char in buffer
@@ -172,7 +172,7 @@ nl_ok:
 nl_bs:
 		JSR nm_out			; will echo BS
 		LDX z_cur			; retrieve cursor as usual
-			BEQ nr_loop			; do not delete if already at beginning
+			BEQ nl_ign			; do not delete if already at beginning
 		DEX					; otherwise go back once
 		_BRA nr_loop
 nl_end:
@@ -180,7 +180,7 @@ nl_end:
 		LDX z_cur			; retrieve cursor as usual
 		_STZA buff, X		; terminate string!
 		_STZA z_cur			; and reset cursor too
-;		RTS
+; *** end of inlined input ***
 nm_eval:
 			CLD					; really worth it...
 			LDX z_cur
@@ -368,7 +368,7 @@ nm_rgst:
 	JSR nm_pop
 ; use this instead of ABSOLUTE Y-indexed, non 65816-savvy! (same bytes, bit slower but 816-compliant)
 	TAX					; will run in emulation mode though
-	STX z_s, Y
+	STX !z_s, Y
 	RTS
 
 nm_iy:
@@ -489,16 +489,19 @@ nm_sdec:
 nm_out:
 ; *** standard output ***
 	TAY					; set CONIO parameter
-	_PHX
+	_PHX				; CONIO savviness
 	_ADMIN(CONIO)
-	_PLX
+	_PLX				; restore X as was destroyed by the call parameter
 	RTS
 
 nm_in:
 ; *** standard input ***
-		LDY #0				; CONIO input
+	_PHX				; CONIO savviness
+nm_in2:
+		LDY #0				; CONIO as input
 		_ADMIN(CONIO)
-		BCS nm_in			; it is locking input
+		BCS nm_in2			; it is locking input
+	_PLX				; may destroy A in NMOS!
 	TYA					; otherwise, get read char
 	RTS
 
