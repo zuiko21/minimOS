@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc16
+; v0.9.6rc17
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190206-0854
+; last modified 201902196-0934
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -278,9 +278,8 @@ reloc:
 ; ***********************************
 ; CONIO, basic console when available *** TBD
 ; ***********************************
-conio:
-;#include "modules/conio.s"
-	_DR_ERR(UNAVAIL)	; not implemented unless specific device
+conio:					; simple I/O routines for run816 and run02
+#include "modules/conio-run816.s"
 #endif
 
 
