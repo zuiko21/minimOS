@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.2a1
+; v0.2a2
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190218-2257
+; last modified 20190219-1016
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -132,7 +132,7 @@ nm_main:
 nr_loop:
 			STX z_cur			; keep in memory, just in case
 nl_ign:
-			JSR nm_in
+			JSR nm_in			; may inline CONIO call here...
 ; *** must convert to uppercase ***
 			CMP #'a'			; lowercase?
 			BCC nl_upp			; no, leave it as is
@@ -163,7 +163,7 @@ nl_ncls:
 				LDA #BS				; yes, delete last printed
 				JSR nm_out
 ; perhaps could beep too...
-				BRA nr_loop			; nothing gets written, ask again for BS
+				BRA nr_ign			; nothing gets written, ask again for BS *** CONIO savvy, instead of nr_loop
 nl_ok:
 #endif
 			STA buff, X			; store char in buffer
@@ -488,16 +488,18 @@ nm_sdec:
 
 nm_out:
 ; *** standard output ***
-; placeholder for run816 emulation
-	JSR $c0c2
+	TAY					; set CONIO parameter
+	_PHX
+	_ADMIN(CONIO)
+	_PLX
 	RTS
 
 nm_in:
 ; *** standard input ***
-; placeholder for run816 emulation
-		JSR $c0bf
-		CMP #0				; something arrived?
-		BEQ nm_in			; it is locking input
+		LDY #0				; CONIO input
+		_ADMIN(CONIO)
+		BCS nm_in			; it is locking input
+	TYA					; otherwise, get read char
 	RTS
 
 nm_hx2n:
