@@ -2,6 +2,7 @@
 ; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20190112-1703
 
+#define	NMOS	_NMOS
 #define	SAFE	_SAFE
 #define	TIMEBOOT	_TIMEBOOT
 ;#define	SETOVER	_SETOVER
