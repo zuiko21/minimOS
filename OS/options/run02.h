@@ -22,7 +22,7 @@
 ; enable in order to remove headers, not LOADLINK savvy!
 ;#define		NOHEAD	_NOHEAD
 ; enable multitasking support... hopefully! *** might be defined upon multitasking driver
-#define		MULTITASK	_MULTITASK
+;#define		MULTITASK	_MULTITASK
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02

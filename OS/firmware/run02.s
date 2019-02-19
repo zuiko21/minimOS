@@ -2,7 +2,7 @@
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc17
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 201902196-0934
+; last modified 20190219-0951
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -116,10 +116,15 @@ reset:
 ; **********************************
 	LDX #0				; reset index (2)
 fws_loop:
-		LDA fw_splash, X	; get char (4)
+		LDY fw_splash, X	; get char (4) *** use A without CONIO ***
 			BEQ fws_cr			; no more to print (2/3)
 ; as direct print uses no regs, nothing to save and reload
-		JSR $c0c2			; *** EhBASIC output ***
+;		JSR $c0c2			; *** EhBASIC output ***
+; trying the new CONIO service...
+		PHX					; keep index!
+		_ADMIN(CONIO)		; firmware call
+		PLX
+; end of CONIO call...
 		INX					; next char (2)
 		BNE fws_loop		; no need for BRA, as long as no more tha 255 chars (3/2)
 fws_cr:
