@@ -1,6 +1,7 @@
 ; minimal nanoBoot firmware
+; v0.2a3
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190112-1703
+; last modified 20190220-1042
 
 #define	NMOS	_NMOS
 #define	SAFE	_SAFE
@@ -47,6 +48,9 @@ nmi:
 	JMP (fw_nmi)
 irq:
 	JMP (fw_isr)
+
+; *** filling for ROM-ready files ***
+	.dsb	$FFFA-*, $FF
 
 ; *****************************
 ; *** standard 6502 vectors ***
