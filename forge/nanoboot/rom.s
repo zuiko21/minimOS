@@ -13,8 +13,8 @@
 
 ; mimimal firmware variables?
 ; these should NOT go into zeropage, even if saving a few bytes
-* = $0200
 .bss
+* = $0200
 fw_isr	.word	0
 fw_nmi	.word	0
 .text
