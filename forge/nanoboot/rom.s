@@ -3,7 +3,7 @@
 ; (c) 2018-2019 Carlos J. Santisteban
 ; last modified 20190220-1042
 
-#define	NMOS	_NMOS
+; already NMOS-savvy
 #define	SAFE	_SAFE
 #define	TIMEBOOT	_TIMEBOOT
 ;#define	SETOVER	_SETOVER
@@ -12,15 +12,15 @@
 #include "nanoboot.h"
 
 ; mimimal firmware variables?
+; these should NOT go into zeropage, even if saving a few bytes
 * = $0200
-
+.bss
 fw_isr	.word	0
 fw_nmi	.word	0
-
-; *** ROM contents *** 256 bytes will suffice
-* = $FF00
-
 .text
+
+; *** ROM contents *** 128 bytes will suffice!
+* = $FF80
 
 ; standard 6502 init... NOT NEEDED
 ; * no adds or subtractions, thus decimal mode irrelevant
