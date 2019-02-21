@@ -37,7 +37,7 @@
 ; ***************
 ;#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
-;#define	NMI_SF	_NMI_SF
+#define	NMI_SF	_NMI_SF
 
 	BUFFER	= 13		; maximum buffer size, definitely needs more than the 6502 version
 	STKSIZ	= 8			; maximum data stack size
@@ -74,7 +74,7 @@
 ; cannot tinker with X and SP unless saved on stack frame!
 
 #ifdef	NMI_SF
-; ** pick register values from standard stack frame, if needed **
+; ** pick register values from standard stack frame, if needed ** current is 35 bytes
 ; forget about systmp/sysptr AND caller
 	.al: REP #$28		; ** 16-bit memory ** clear D flag too, just in case
 	TSC 				; get whole SP, could use X as well

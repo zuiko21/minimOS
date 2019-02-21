@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel
 ; v0.6rc1
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190130-1230
+; last modified 20190221-1237
 
 ; just in case
 #define		C816	_C816
@@ -56,7 +56,6 @@ kern_siz = kern_end - kern_head - 256
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
 warm:
-lda#'K':jsr$c0c2
 	SEI					; interrupts off, just in case
 	CLD					; do not assume anything
 #ifdef		SAFE
