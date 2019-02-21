@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190219-0935
+; last modified 20190221-1029
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -18,10 +18,10 @@
 	BEQ cn_in			; Y=0 means input mode
 		CMP #CR				; newline?
 		BNE cn_ncr			; UNIX uses LF instead
-			LDA #10
+			LDA #LF
 ;			BNE cn_out			; no need for BRA... and may fall directly into cn_out
 cn_ncr:
-;		CMP #12				; reset device?
+;		CMP #FORMFEED		; reset device?
 ;		BNE cn_out			; no, just print it
 ; *** no way to initialise run816, just keep this as a template ***
 cn_out:

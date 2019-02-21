@@ -1,7 +1,7 @@
 ; LED Keypad driver for minimOS
 ; v0.9.6 adapted to mOS-65 0.6 driver format 20171220
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20180404-1324
+; last modified 20190221-1033
 
 #ifndef		HEADERS
 #include "../usual.h"
@@ -107,9 +107,9 @@ led_cout:
 led_pend:
 		_DR_OK
 led_ncr:
-	CMP #12			; FF clears too
+	CMP #FORMFEED	; FF clears too
 		BEQ led_blank
-	CMP #10			; LF clears too
+	CMP #LF			; LF clears too
 	BNE led_noclear	; else, do print
 led_blank:
 		LDX #DIGITS		; display size

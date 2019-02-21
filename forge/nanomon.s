@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.2a2
+; v0.2a3
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190219-1401
+; last modified 20190221-1033
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -25,6 +25,7 @@
 
 #ifndef	HEADERS
 #include "../OS/macros.h"
+#include "../OS/abi.h"
 .text
 * = $8000
 #endif
@@ -89,20 +90,6 @@ nmr_loop:
 		INY					; ...and further into zeropage
 		CPY #6				; copied all bytes?
 		BNE nmr_loop		; no, continue until done
-; older direct code for reference
-;	LDA $106, X			; stacked Y
-;	STA z_y
-;	LDA $107, X			; stacked X
-;	STA z_x
-;	LDA $108, X			; stacked A
-;	STA z_acc
-; minimal status with new offsets
-;	LDA $109, X			; get stacked PSR
-;	STA z_psr			; update value
-;	LDY $10A, X			; get stacked PC
-;	LDA $10B, X
-;	STY z_addr			; update current pointer
-;	STA z_addr+1
 #else
 ; systems without NMI-handler may keep old offsets $101...103
 	JSR njs_regs		; keep current state, is PSR ok?
@@ -139,7 +126,7 @@ nl_ign:
 nl_upp:
 ; end of uppercase conversion
 #ifdef	SAFE
-			CMP #12				; is it formfeed? must clear, perhaps initialising!
+			CMP #FORMFEED		; is it formfeed? must clear, perhaps initialising!
 				BNE nl_ncls			; if not, just continue checking others
 			CPX #0				; at the beginning? otherwise ^L is ignored
 				BEQ nl_bs			; will clear screen with nothing to delete 
