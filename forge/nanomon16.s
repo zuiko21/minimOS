@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b9
+; v0.1b10
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190124-0848
+; last modified 20190221-1045
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -37,7 +37,7 @@
 ; ***************
 ;#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
-#define	NMI_SF	_NMI_SF
+;#define	NMI_SF	_NMI_SF
 
 	BUFFER	= 13		; maximum buffer size, definitely needs more than the 6502 version
 	STKSIZ	= 8			; maximum data stack size
@@ -113,6 +113,8 @@
 	STA z_addr+1		; update current pointer
 	.as: .xs: SEP #$30	; back to 8-bit
 	PHB					; saving B is generally a good idea, as will reset it
+	PLA					; eeeeeeeeek...
+	STA z_b
 #endif
 	PHK					; eeeeeeeek! must set B as NMI handler does not!
 	PLB

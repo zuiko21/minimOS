@@ -149,7 +149,7 @@ nl_ncls:
 				LDA #BS				; yes, delete last printed
 				JSR nm_out
 ; perhaps could beep too...
-				_BRA nr_ign			; nothing gets written, ask again for BS
+				_BRA nl_ign			; nothing gets written, ask again for BS
 ; CONIO savviness is already achieved by I/O functions, could use nr_loop instead
 nl_ok:
 #endif

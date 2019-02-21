@@ -106,6 +106,7 @@ drv_end:				; for easier size computation ***should this go into the driver pack
 #endif
 #else
 #include "../apps/pmap16.s"
+#include "../apps/crasm/80asm.s"	; relocated here
 #endif
 
 #include "../apps/minized.s"
@@ -146,7 +147,7 @@ afterIO		= $E000				; assume I/O ends at $DFFF
 ; *************************************
 ;#include "shell/monitor.s"
 #ifdef	C816
-#include "../apps/crasm/80asm.s"
+;#include "../apps/crasm/80asm.s"
 #include "../apps/crasm/63asm.s"
 #else
 #include "shell/miniMoDA.s"
