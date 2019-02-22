@@ -2,7 +2,7 @@
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20180901-2158
+; last modified 20190222-0952
 
 ; *** set conditional assembly ***
 
@@ -40,7 +40,7 @@
 ; *** Default files ***
 ; default shell from folder
 #define		SHELL		"shell/minishell.s"
-; defaukt firmware NMI
+; default firmware NMI
 #define		STD_NMI		"../forge/nanomon16.s"
 ; default NMI, BRK etc TBD ***********
 

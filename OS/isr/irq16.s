@@ -1,7 +1,7 @@
 ; ISR for minimOS·16
-; v0.6.1a1, should match kernel16.s
+; v0.6.1a2, should match kernel16.s
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190211-2155
+; last modified 20190222-0949
 
 #define		ISR		_ISR
 
@@ -10,28 +10,28 @@
 ; **********************
 ; **** the ISR code **** (initial tasks take 28 cycles)
 ; **********************
-	.al: .xl: REP #$38		; status already saved, but save register contents in full (3)
-	PHA						; save registers (3x4)
+	.al: .xl: REP #$38	; status already saved, but save register contents in full (3)
+	PHA					; save registers (3x4)
 	PHX
 	PHY
-	PHB						; eeeeeeeeeeeeeek (3)
-	.as: .xs: SEP #$30		; back to 8-bit size (3)
+	PHB					; eeeeeeeeeeeeeek (3)
+	.as: .xs: SEP #$30	; back to 8-bit size (3)
 ; should preset DBR !!! because it accesses a lot of sysvars!
-	PHK						; zero into the stack (3)
-	PLB						; no other way to set it (4)
+	PHK					; zero into the stack (3)
+	PLB					; no other way to set it (4)
 ; *** place here HIGH priority async tasks, if required ***
 
 ; check whether jiffy or async
 ; might use firmware call IRQ_SRC for complete generic kernel!
-;	BIT VIA_J+IFR			; much better than LDA + ASL + BPL! (4)
-;		BVS periodic			; from T1 (3/2)
+;	BIT VIA_J+IFR		; much better than LDA + ASL + BPL! (4)
+;		BVS periodic		; from T1 (3/2)
 ; ** generic alternative **
-	_ADMIN(IRQ_SRC)			; get source in X
+	_ADMIN(IRQ_SRC)		; get source in X
 ; a bit less latency this way
 	TXA
-		BNE periodic
+		BEQ periodic		
 ; otherwise the fully generic code
-;	JMP (irq_tab, X)		; do as appropriate
+;	JMP (irq_tab, X)	; do as appropriate
 ;irq_tab:
 ;	.word	periodic
 ;	.word	asynchronous
@@ -46,19 +46,19 @@ asynchronous:
 ; *** 'first' async in 23t (total 57t)
 ; *** skip each disabled in 14t
 ; *** cycle between enabled (but not satisfied) in 30t+...
-;	LDX queue_mx			; get async queue size (4)
-;	BEQ ir_done				; no drivers to call (2/3)
+;	LDX queue_mx		; get async queue size (4)
+;	BEQ ir_done			; no drivers to call (2/3)
 ;i_req:
 ;		LDA drv_a_en-2, X	; *** check whether enabled, note offset, new in 0.6 ***
 ;		BPL i_rnx			; *** if disabled, skip this task ***
-;			PHX						; keep index! (3)
+;			PHX					; keep index! (3)
 ;			JSR (drv_asyn-2, X)	; call from table (8+...) expected to return in 8-bit size, at least indexes
-;			PLX						; restore index (4)
-;				BCC isr_done			; driver satisfied, thus go away NOW (2/3)
+;			PLX					; restore index (4)
+;				BCC isr_done		; driver satisfied, thus go away NOW (2/3)
 ;i_rnx:
-;		DEX						; go backwards to be faster! (2+2)
-;		DEX						; decrease after processing
-;		BNE i_req				; until done (3/2)
+;		DEX					; go backwards to be faster! (2+2)
+;		DEX					; decrease after processing
+;		BNE i_req			; until done (3/2)
 
 ; *** alternative way with fixed-size arrays (no queue_mx) *** 24 bytes, 18 if left for the whole queue
 ; *** isr_done if queue is empty in 14t (if EOQ-optimised!)
@@ -67,7 +67,7 @@ asynchronous:
 ; *** cycle between enabled (but not satisfied) in 33t+...
 	LDX #MX_QUEUE-2		; maximum valid index (2)
 i_req:
-		LDA drv_a_en, X	; check whether enabled (4)
+		LDA drv_a_en, X		; check whether enabled (4)
 		BPL i_rnx			; *** if disabled, skip this task *** (2/3)
 			PHX					; keep index! (3)
 			JSR (drv_asyn-2, X)	; call from table (8+...) expected to return in 8-bit size, at least indexes
@@ -100,36 +100,36 @@ isr_done:
 ; *** here goes the periodic interrupt code *** (4)
 ; *********************************************
 periodic:
-	LDA VIA_J+T1CL			; acknowledge periodic interrupt!!! (4) *** IRQ_SRC should have done it already, if used
+	LDA VIA_J+T1CL		; acknowledge periodic interrupt!!! (4) *** IRQ_SRC should have done it already, if used
 
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
 ; execute D_POLL code in drivers
 ; *** classic code based on variable queue_mx arrays *** 34 bytes
-;	LDX queue_mx+1			; get queue size (4)
-;	BEQ ip_done				; no drivers to call (2/3)
+;	LDX queue_mx+1		; get queue size (4)
+;	BEQ ip_done			; no drivers to call (2/3)
 ;i_poll:
-;		DEX						; go backwards to be faster! (2+2)
-;		DEX						; no improvement with offset, all of them will be called anyway
-;		LDY drv_p_en, X			; *** check whether enabled, new in 0.6 ***
-;			BPL i_pnx				; *** if disabled, skip this task ***
-;		.al: REP #$20			; *** 16-bit memory for counters ***
-;		DEC drv_cnt, X			; otherwise continue with countdown
-;		BNE i_pnx				; did not expire, do not execute yet
-;			LDA drv_freq, X			; otherwise get original value...
-;			STA drv_cnt, X			; ...and reset it! eeeeeeeeeeeeeeek
-;			.as: .xs: SEP #$30		; make sure...
-;			PHX						; keep index! (3)
-;			JSR (drv_poll, X)		; call from table (8...)
+;		DEX					; go backwards to be faster! (2+2)
+;		DEX					; no improvement with offset, all of them will be called anyway
+;		LDY drv_p_en, X		; *** check whether enabled, new in 0.6 ***
+;			BPL i_pnx			; *** if disabled, skip this task ***
+;		.al: REP #$20		; *** 16-bit memory for counters ***
+;		DEC drv_cnt, X		; otherwise continue with countdown
+;		BNE i_pnx			; did not expire, do not execute yet
+;			LDA drv_freq, X		; otherwise get original value...
+;			STA drv_cnt, X		; ...and reset it! eeeeeeeeeeeeeeek
+;			.as: .xs: SEP #$30	; make sure...
+;			PHX					; keep index! (3)
+;			JSR (drv_poll, X)	; call from table (8...)
 ; *** here is the return point needed for B_EXEC in order to create the stack frame ***
-;isr_schd:					; *** take this standard address!!! ***
-;			PLX						; restore index (4)
+;isr_schd:				; *** take this standard address!!! ***
+;			PLX					; restore index (4)
 ;i_pnx:
-;		BNE i_poll				; until zero is done (3/2)
+;		BNE i_poll			; until zero is done (3/2)
 ; *** alternative way with fixed-size arrays (no queue_mx) *** 37 bytes, 31 if left for the whole queue
 	LDX #MX_QUEUE-2		; maximum valid index (2)
 i_poll:
-		LDY drv_p_en, X	; *** check whether enabled, new in 0.6 *** (4)
+		LDY drv_p_en, X		; *** check whether enabled, new in 0.6 *** (4)
 		BPL i_rnx2			; *** if disabled, skip this task *** (2/3)
 			.al: REP #$20		; *** 16-bit memory for counters ***
 			DEC drv_cnt-2, X	; otherwise continue with countdown
