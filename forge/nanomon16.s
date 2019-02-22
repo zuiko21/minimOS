@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b12
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190222-1159
+; last modified 20190222-1242
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -484,7 +484,7 @@ nm_hprn:
 nm_sdec:
 ; convert to ASCII
 	ADC #'0'			; C is clear for sure
-;	JMP nm_out			; print it... and return (already there!)
+;	BRA nm_out			; print it... and return (already there!)
 
 nm_out:
 ; *** standard output ***
@@ -498,6 +498,7 @@ nm_in:
 ; *** standard input ***
 	PHX					; CONIO savviness
 nm_in2:
+lda#'C':jsr$c0c2
 		LDY #0				; CONIO as input
 		_ADMIN(CONIO)
 		BCS nm_in2			; it is locking input
@@ -508,7 +509,7 @@ nm_in2:
 nm_read:
 ; * input command line into buffer *
 ; good to put some prompt before
-	LDA #LF				; eeeeeeeeeeeeek (needed for run816, CR otherwise)
+	LDA #CR				; eeeeeeeeeeeeek (needed for run816, CR otherwise)
 	JSR nm_out
 	LDA z_addr+2		; PC.Bank *** otherwise seems OK
 	JSR nm_shex			; as hex
@@ -519,6 +520,7 @@ nm_read:
 	LDA #COLON			; prompt sign
 	JSR nm_out
 	LDX #0				; reset cursor
+
 nr_loop:
 		STX z_cur			; keep in memory, just in case
 nl_ign:
@@ -529,7 +531,7 @@ nl_ign:
 			AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
 nl_upp:
 ; *** end of uppercase conversion ***
-		CMP #LF				; is it newline (CR)? EEEEEEEEEEEEEEEEK
+		CMP #CR				; is it newline (CR)? EEEEEEEEEEEEEEEEK
 			BEQ nl_end			; if so, just end input
 		CMP #BS				; was it backspace?
 			BEQ nl_bs			; delete then

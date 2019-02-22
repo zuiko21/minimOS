@@ -11,7 +11,7 @@
 ;		12	= clear screen AND initialise device
 ;	OUTPUT
 ; C ->	no available char (if Y was 0)
-; NMOS savvy
+; NMOS and 65816 savvy
 
 .(
 	TYA					; check mode (and put into A, just in case)

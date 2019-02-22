@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.2a3
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190222-1206
+; last modified 20190222-1215
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -106,7 +106,7 @@ nmr_loop:
 ; main loop
 nm_main:
 ; *** old nm_read code, now inlined ***
-		LDA #LF				; eeeeeeeeeeeeek (needed for run816) CR
+		LDA #CR				; eeeeeeeeeeeeek (needed for run816) CR
 		JSR nm_out
 		LDA z_addr+1		; PC.MSB
 		JSR nm_shex			; as hex
@@ -132,7 +132,7 @@ nl_upp:
 				BEQ nl_bs			; will clear screen with nothing to delete 
 nl_ncls:
 #endif
-			CMP #LF				; is it newline? EEEEEEEEEEEEEEEEK (CR)
+			CMP #CR				; is it newline? EEEEEEEEEEEEEEEEK (CR)
 				BEQ nl_end			; if so, just end input
 			CMP #BS				; was it backspace?
 				BEQ nl_bs			; delete then

@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc17
+; v0.9.6rc18
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190219-0951
+; last modified 20190222-1220
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -112,24 +112,9 @@ reset:
 
 
 ; **********************************
-; *** direct print splash string ***
+; *** direct print splash string *** now with generic CONIO
 ; **********************************
-	LDX #0				; reset index (2)
-fws_loop:
-		LDY fw_splash, X	; get char (4) *** use A without CONIO ***
-			BEQ fws_cr			; no more to print (2/3)
-; as direct print uses no regs, nothing to save and reload
-;		JSR $c0c2			; *** EhBASIC output ***
-; trying the new CONIO service...
-		PHX					; keep index!
-		_ADMIN(CONIO)		; firmware call
-		PLX
-; end of CONIO call...
-		INX					; next char (2)
-		BNE fws_loop		; no need for BRA, as long as no more tha 255 chars (3/2)
-fws_cr:
-	LDA #LF				; trailing CR, needed by console! (2)
-	JSR $c0c2			; direct print
+#include "modules/splash.s"
 
 ; ************************
 ; *** start the kernel ***
@@ -186,7 +171,7 @@ fw_admin:
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
 	.word	reloc		; RELOCate code and data (TBD)
-	.word	conio		; CONIO, basic console when available (TBD)
+	.word	conio		; CONIO, basic console when available (TBD) *** should NOT depend on LOWRAM option!
 #else
 #ifdef	SAFE
 	.word	missing		; these three functions not implemented on such systems
@@ -249,7 +234,7 @@ irq_src:
 ; *** hardware specific ***
 
 ; **********************
-; POWEROFF, shutdown etc *** TBD
+; POWEROFF, shutdown etc
 ; **********************
 poweroff:
 #include "modules/poweroff.s"
@@ -281,7 +266,7 @@ reloc:
 ;#include "modules/reloc.s"
 
 ; ***********************************
-; CONIO, basic console when available *** TBD
+; CONIO, basic console when available
 ; ***********************************
 conio:					; simple I/O routines for run816 and run02
 #include "modules/conio-run816.s"
