@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
 ; v0.2a3
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190221-1033
+; last modified 20190222-1206
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -188,8 +188,8 @@ nm_eval:
 ; use the above workaround, modified as needed (discard whole stack frame!)
 				RTS					; back to NMI handler
 #endif
-nm_cont:
 ; *** end of exit command ***
+nm_cont:
 			CMP #'0'			; is it a number?
 			BCS nm_num			; push its value
 				JSR nm_exe			; otherwise it is a command

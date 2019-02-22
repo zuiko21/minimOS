@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b11
+; v0.1b12
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190222-1051
+; last modified 20190222-1159
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -27,6 +27,7 @@
 
 #ifndef	HEADERS
 #include "../OS/macros.h"
+#include "../OS/abi.h"
 .text
 * = $8000
 #endif
@@ -115,11 +116,13 @@
 	PHK					; eeeeeeeek! must set B as NMI handler does not!
 	PLB
 	STZ z_sp			; reset data stack pointer
+	CLD					; just in case...
 
 ; main loop
 nm_main:
 		JSR nm_read			; get line (could be inlined)
 nm_eval:
+			CLD					; worth it
 			LDX z_cur
 			LDA buff, X			; get one char
 				BEQ nm_main			; if EOL, ask again
@@ -134,6 +137,7 @@ nm_eval:
 #else
 				RTL					; back to NMI handler eeeeeeeeeek
 #endif
+; *** end of exit command ***
 nm_cont:
 ; *** check special command '?' then ***
 			CMP #'?'			; was set D&B?
@@ -484,16 +488,21 @@ nm_sdec:
 
 nm_out:
 ; *** standard output ***
-; placeholder for run816 emulation
-	JSR $c0c2
+	TAY					; set CONIO parameter
+	PHX					; CONIO savviness
+	_ADMIN(CONIO)
+	PLX					; restore X as was destroyed by the call parameter
 	RTS
 
 nm_in:
 ; *** standard input ***
-; placeholder for run816 emulation
-		JSR $c0bf
-		CMP #0				; something arrived?
-		BEQ nm_in			; it is locking input
+	PHX					; CONIO savviness
+nm_in2:
+		LDY #0				; CONIO as input
+		_ADMIN(CONIO)
+		BCS nm_in2			; it is locking input
+	PLX					; always OK on 65816
+	TYA					; get read char
 	RTS
 
 nm_read:
