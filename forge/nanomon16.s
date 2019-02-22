@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b11
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190222-1014
+; last modified 20190222-1051
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -35,9 +35,8 @@
 ; ***************
 ; *** options ***
 ; ***************
-;#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
-;#define	NMI_SF	_NMI_SF
+#define	NMI_SF	_NMI_SF
 
 	BUFFER	= 13		; maximum buffer size, definitely needs more than the 6502 version
 	STKSIZ	= 8			; maximum data stack size
@@ -100,7 +99,6 @@
 	LDA 7, S			; stacked B
 	STA z_b
 #else
-	PHD					; eeeeeeeeeeeeeeeeeeeek
 	JSR nm_ireg			; keep current state, but that PSR is not valid, NOTE wrapper
 ; time to pick values from stack!
 	.al: REP #$28		; ** 16-bit memory ** clear D flag too, just in case
@@ -356,7 +354,7 @@ nm_sdb:
 nm_ireg:
 ; *** special entry point for register init *** eeeeeeeeeeeeeeek
 	PHD					; will stack regular D under the long return address! eeeeeeeek
-	JMP njs_regs		; get register status... and return to caller!
+	BRA njs_regs		; get register status... and return to caller!
 
 nm_jsr:
 ; * call address on stack *
