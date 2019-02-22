@@ -13,8 +13,6 @@
 
 -brk_hndl:
 .(
-lda#'B':jsr$c0c2
-lda#'R':jsr$c0c2
 ; must use some new indirect jump, as set by new SET_BRK
 	JSR brk_call		; indirect jump will return here
 	JMP nmi_end			; standard firmware label
