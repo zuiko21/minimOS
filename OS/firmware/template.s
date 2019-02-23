@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
-; v0.6b16
+; v0.6b17
 ; (c)2015-2019 Carlos J. Santisteban
-; last modified 20190206-0853
+; last modified 20190223-2249
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -65,17 +65,15 @@ fw_admin:
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
 	.word	reloc		; RELOCate code and data (TBD)
-	.word	conio		; CONIO, basic console when available (TBD)
 #else
-#ifdef	SAFE
 	.word	missing		; these three functions not implemented on such systems
 	.word	missing
 	.word	missing
-	.word	missing
+#endif
+	.word	conio		; CONIO, basic console when available (TBD)
+#ifdef	LOWRAM
 missing:
 		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
-#endif
-#endif
 #endif
 
 ; ********************
@@ -284,6 +282,7 @@ patch:
 ; *******************************
 reloc:
 ;#include "modules/reloc.s"
+#endif
 
 ; ***********************************
 ; CONIO, basic console when available *** TBD
@@ -291,7 +290,6 @@ reloc:
 conio:
 ;#include "modules/conio.s"
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
-#endif
 
 ; ***********************************
 ; ***********************************

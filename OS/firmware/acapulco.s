@@ -1,7 +1,7 @@
 ; firmware for minimOS on Acapulco
-; v0.9.6b4
+; v0.9.6b5
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190212-0908
+; last modified 20190223-2241
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -75,13 +75,13 @@ fw_admin:
 ; *** basic init *** unlikely to use a 65816
 reset:
 #include "modules/basic_init02.s"
-lda#'i':jsr$c0c2
+
 ; ******************************
 ; *** minimal hardware setup ***
 ; ******************************
 
 ; check for VIA presence and disable all interrupts
-;#include "modules/viacheck_irq.s"
+#include "modules/viacheck_irq.s"
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -97,17 +97,17 @@ lda#'i':jsr$c0c2
 ; Acapulco has no ROM-in-RAM feature!
 
 ; specific startup beep
-;#include "modules/beep_pwm.s"
+#include "modules/beep_sweep.s"
 
 ; SRAM test, note that may affect VRAM
 #include "modules/ramtest.s"
-lda#'t':jsr$c0c2
+
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
 
 ; VIA initialisation (and stop beeping)
-;#include "modules/via_init.s"
+#include "modules/via_init.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -119,14 +119,13 @@ lda#'t':jsr$c0c2
 ; ...or actually check for it!
 #include "modules/cpu_check.s"
 ; do NOT include both files at once!
-lda#'C':jsr$c0c2
 ; in case an NMOS CPU is used, make sure this was built for it
 #include "modules/nmos_savvy.s"
 
 ; *** continue parameter setting ***
 ; preset kernel start address
 #include "modules/kern_addr.s"
-lda#'K':jsr$c0c2
+
 ; preset default BRK handler, might set a proper PANIC handler
 #include "modules/brk_addr.s"
 
@@ -243,6 +242,8 @@ poweroff:
 freq_gen:
 #include "modules/set_fg.s"
 
+; might move CONIO here from 0.7 and beynmd
+
 ; *** other functions with RAM enough ***
 #ifndef		LOWRAM
 ; **************************
@@ -267,7 +268,7 @@ reloc:
 ; CONIO, basic console when available *** highly specific
 ; ***********************************
 conio:
-;#include "modules/cio_aca.s"
+#include "modules/cio_aca.s"
 
 ; ***********************************
 ; ***********************************

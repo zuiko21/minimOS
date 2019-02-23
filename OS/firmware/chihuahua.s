@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
 ; v0.9.6b12
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190206-0904
+; last modified 20190223-2237
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -269,7 +269,6 @@ reloc:
 ; CONIO, basic console when available *** TBD
 ; ***********************************
 conio:
-;#include "modules/conio.s"
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 ; ***********************************

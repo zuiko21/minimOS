@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-2
-; v0.9.6a26
+; v0.9.6b1
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190206-0905
+; last modified 20190223-2242
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -280,7 +280,6 @@ reloc:
 ; CONIO, basic console when available *** TBD
 ; ***********************************
 conio:
-;#include "modules/conio16.s"
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
 

@@ -1,8 +1,8 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
-; v0.9.6rc18
+; v0.9.6rc19
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190222-1220
+; last modified 20190223-2244
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -171,17 +171,15 @@ fw_admin:
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
 	.word	reloc		; RELOCate code and data (TBD)
-	.word	conio		; CONIO, basic console when available (TBD) *** should NOT depend on LOWRAM option!
 #else
-#ifdef	SAFE
 	.word	missing		; these three functions not implemented on such systems
 	.word	missing
 	.word	missing
-	.word	missing
+#endif
+	.word	conio		; CONIO, basic console when available (TBD) *** should NOT depend on LOWRAM option!
+#ifdef	LOWRAM
 missing:
 		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
-#endif
-#endif
 #endif
 
 ; ********************************
@@ -264,13 +262,13 @@ patch:
 ; *******************************
 reloc:
 ;#include "modules/reloc.s"
+#endif
 
 ; ***********************************
 ; CONIO, basic console when available
 ; ***********************************
 conio:					; simple I/O routines for run816 and run02
 #include "modules/conio-run816.s"
-#endif
 
 
 ; ***********************************
