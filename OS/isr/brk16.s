@@ -6,7 +6,7 @@
 #ifndef	HEADERS
 #include "../usual.h"
 #endif
-lda#'B':jsr$c0c2
+lda#'3':jsr$c0c2
 ; this is currently a panic/crash routine!
 ; first of all, send a CR to default device
 	JSR brk_cr			; worth it
@@ -52,8 +52,9 @@ brk_term:
 	ADC sysptr			; adds to return address
 	STA 15, S			; modify stacked PC, no need to deal with bank
 ; return address is ready, but try a debugger first
-lda#'J':jsr$c0c2
-	JMP @std_nmi		; will exit via its own RTL!
+	.as: SEP #$20		; eeeeeeeeeeeeeek
+lda#'4':jsr$c0c2
+	JMP nanomon		; will exit via its own RTL!
 ;	RTL					; *** otherwise let it finish the ISR
 
 .as:
