@@ -68,7 +68,6 @@
 ; *** init stuff ***
 ; ******************
 +nanomon:
-lda#'5':jsr$c0c2
 ; status is always saved on stack
 	CLC					; make sure it is in NATIVE mode!!!
 	XCE
@@ -136,6 +135,7 @@ nm_eval:
 				PLB					; if B was pushed, time to restore it!
 				RTI					; exit debugger
 #else
+lda#'x':jsr$c0c2
 				RTL					; back to NMI handler eeeeeeeeeek
 #endif
 ; *** end of exit command ***
@@ -301,7 +301,7 @@ nmv_8b:
 ; check if first line is complete in order to send a newline...
 ; ...but may be removed for 16-char displays
 		BNE nmv_nol			; no, do not feed
-			LDA #10				; yes, jump line (CR if not run816)
+			LDA #CR				; yes, jump line
 			JSR nm_out
 			LDX z_dat			; just in case
 nmv_nol:
@@ -491,19 +491,28 @@ nm_out:
 ; *** standard output ***
 	TAY					; set CONIO parameter
 	PHX					; CONIO savviness
-	_ADMIN(CONIO)
+;	ADMIN(CONIO)
+tya
+cpy#13
+bne xxx_ncr
+lda#10
+xxx_ncr:
+jsr$c0c2
 	PLX					; restore X as was destroyed by the call parameter
 	RTS
 
 nm_in:
 ; *** standard input ***
 	PHX					; CONIO savviness
+lda#'i':jsr$c0c2
 nm_in2:
 		LDY #0				; CONIO as input
-		_ADMIN(CONIO)
-		BCS nm_in2			; it is locking input
+;		ADMIN(CONIO)
+;		BCS nm_in2			; it is locking input
+jsr$c0bf:;beq nm_in2
 	PLX					; always OK on 65816
-	TYA					; get read char
+pha:lda#'o':jsr$c0c2:pla
+;	TYA					; get read char
 	RTS
 
 nm_read:
