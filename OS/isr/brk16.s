@@ -1,12 +1,12 @@
 ; minimOS·16 BRK handler
-; v0.6b2, taken from common 65C02 code
+; v0.6b3, taken from common 65C02 code
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190222-1110
+; last modified 20190225-1340
 
 #ifndef	HEADERS
 #include "../usual.h"
 #endif
-
+lda#'B':jsr$c0c2
 ; this is currently a panic/crash routine!
 ; first of all, send a CR to default device
 	JSR brk_cr			; worth it
@@ -52,7 +52,8 @@ brk_term:
 	ADC sysptr			; adds to return address
 	STA 15, S			; modify stacked PC, no need to deal with bank
 ; return address is ready, but try a debugger first
-	JMP @nanomon		; will exit via its own RTL!
+lda#'J':jsr$c0c2
+	JMP @std_nmi		; will exit via its own RTL!
 ;	RTL					; *** otherwise let it finish the ISR
 
 .as:

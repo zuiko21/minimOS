@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b12
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190222-1242
+; last modified 20190225-1343
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -68,12 +68,12 @@
 ; *** init stuff ***
 ; ******************
 +nanomon:
+lda#'n':jsr$c0c2
 ; status is always saved on stack
 	CLC					; make sure it is in NATIVE mode!!!
 	XCE
 ; cannot tinker with X and SP unless saved on stack frame!
-jsr nm_regs
-
+;jsr nm_regs
 #ifdef	NMI_SF
 ; ** pick register values from standard stack frame, if needed ** current is 35 bytes
 ; forget about systmp/sysptr AND caller
