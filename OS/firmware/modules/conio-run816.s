@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190221-1029
+; last modified 20190225-0838
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -27,10 +27,15 @@ cn_ncr:
 cn_out:
 		JSR $c0c2
 cn_end:
-		_EXIT_OK			; make sure C is clear
+		_DR_OK			; make sure C is clear
 cn_in:
 	JSR $c0bf
 	TAY					; check received character
-		BNE cn_end			; there was something, just return it
-	_ERR(EMPTY)			; set C instead
+	BEQ cn_empty		; nothing here, keep trying
+		CPY #LF				; UNIX-like linefeed?
+		BNE cn_end			; no, just return it
+			LDY #CR				; otherwise use minimOS newline instead!
+			BNE cn_end
+cn_empty:
+	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 .)
