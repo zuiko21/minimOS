@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.2a3
+; v0.2a4
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190222-1215
+; last modified 20190225-0859
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -339,8 +339,8 @@ nmv_loop:
 		JSR nm_shex			; show in hex
 ;		LDA #' '			; put a space between registers
 ;		JSR nm_out
-		LDX z_dat			; just in case
-		DEX					; go back for next
+		LDX z_dat			; go back for next
+		DEX
 		BPL nmv_loop		; zero will be last
 	RTS
 nm_lab:
@@ -355,7 +355,7 @@ nm_rgst:
 	JSR nm_pop
 ; use this instead of ABSOLUTE Y-indexed, non 65816-savvy! (same bytes, bit slower but 816-compliant)
 	TAX					; will run in emulation mode though
-	STX !z_s, Y
+	STX z_s, Y
 	RTS
 
 nm_iy:

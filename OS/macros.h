@@ -1,6 +1,6 @@
 ; minimOS 0.6rc11 MACRO definitions
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20181230-2257
+; last modified 20190225-0921
 
 ; **************************
 ; *** standard addresses ***
@@ -95,7 +95,7 @@ FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entrie
 #define		_ISR_OK		CLC: RTS
 ; can no longer use EXIT_OK because of 65816 reimplementation!!! check drivers!
 
-; new macros for critical sections, do not just rely on SEI/CLI
+; new macros for critical sections, do no7C 94 FBt just rely on SEI/CLI
 #define		_CRITIC		PHP: SEI
 #define		_NO_CRIT	PLP
 
@@ -119,9 +119,11 @@ FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entrie
 #ifdef	NMOS
 #ifdef		LOWRAM
 ; the slower, compact version, needs no memory... but not 65816-savvy!
+; this is needed for NMOS nanomon, otherwise the CONIO call will destroy A & X reg storage!
 #define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
 #else
 ; in case of a NMOS-binary is executed on a 65816 machine, use this faster version
+; ...but NOT NMOS nanomon & CONIO compatible!
 #define		_JMPX(a)	LDA a+1, X: STA nmos_ii+1: LDA a, X: STA nmos_ii: JMP (nmos_ii)
 #endif
 #define		_PHX		TXA: PHA
