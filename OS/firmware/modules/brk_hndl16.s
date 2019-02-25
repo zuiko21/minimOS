@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190119-1204
+; last modified 20190225-1409
 
 ; *** generic BRK handler for 65816 ***
 -brk_hndl:				; label from vector list
@@ -27,6 +27,7 @@
 ; must use some new indirect jump, as set by new SET_BRK
 ; arrives in 8-bit, DBR=0 (no need to save it)
 	JSR @brk_call		; JSL new indirect
+lda#'6':jsr$c0c2
 	JMP nmi_end			; reusing standard code
 ; 6502 handlers will end in RTS causing stack imbalance, nmi_end will correct
 

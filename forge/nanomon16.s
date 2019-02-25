@@ -68,7 +68,7 @@
 ; *** init stuff ***
 ; ******************
 +nanomon:
-lda#'n':jsr$c0c2
+lda#'5':jsr$c0c2
 ; status is always saved on stack
 	CLC					; make sure it is in NATIVE mode!!!
 	XCE
