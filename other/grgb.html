@@ -6,23 +6,23 @@
 	<body>
 		<table border="1">
 			<tr>
-				<td>0</td>
-				<td>1</td>
-				<td>2</td>
-				<td>3</td>
-				<td>4</td>
-				<td>5</td>
-				<td>6</td>
-				<td>7</td>
-				<td>8</td>
-				<td>9</td>
-				<td>A</td>
-				<td>B</td>
-				<td>C</td>
-				<td>D</td>
-				<td>E</td>
-				<td>F</td>
-				<th>mode</th>
+				<th>0</th>
+				<th>1</th>
+				<th>2</th>
+				<th>3</th>
+				<th>4</th>
+				<th>5</th>
+				<th>6</th>
+				<th>7</th>
+				<th>8</th>
+				<th>9</th>
+				<th>A</th>
+				<th>B</th>
+				<th>C</th>
+				<th>D</th>
+				<th>E</th>
+				<th>F</th>
+				<th><em>palette</em></th>
 			</tr>
 			<tr>
 				<td style="color:#FFF; background-color:#000">0000</td><!--black-->
@@ -71,54 +71,77 @@
 				<th>LGRB</th>
 			</tr>
 			<tr>
-				<td style="color:#FFF; background-color:#000" colspan="2">000</td>
-				<td style="color:#FFF; background-color:#00F" colspan="2">001</td>
+				<td style="color:#FFF; background-color:#000">0000</td><!--black-->
+				<td style="color:#FFF; background-color:#000">1000</td>
+				<td style="color:#FFF; background-color:#00F">0001</td><!--blue-->
+				<td style="color:#FFF; background-color:#05F">1001</td>
 
-				<td style="color:#FFF; background-color:#F00" colspan="2">010</td>
-				<td style="color:#FFF; background-color:#F0F" colspan="2">011</td>
+				<td style="color:#FFF; background-color:#F00">0100</td><!--red-->
+				<td style="color:#FFF; background-color:#F00">1100</td>
+				<td style="color:#FFF; background-color:#F0F">0101</td><!--magenta-->
+				<td style="color:#FFF; background-color:#F5F">1101</td>
 
-				<td style="color:#000; background-color:#0F0" colspan="2">100</td>
-				<td style="color:#000; background-color:#0FF" colspan="2">101</td>
+				<td style="color:#000; background-color:#0A0">0010</td><!--green-->
+				<td style="color:#000; background-color:#0F0">1010</td>
+				<td style="color:#000; background-color:#0AF">0011</td><!--cyan-->
+				<td style="color:#000; background-color:#0FF">1011</td>
 
-				<td style="color:#000; background-color:#FF0" colspan="2">110</td>
-				<td style="color:#000; background-color:#FFF" colspan="2">111</td>
+				<td style="color:#000; background-color:#FA0">0110</td><!--yellow-->
+				<td style="color:#000; background-color:#FF0">1110</td>
+				<td style="color:#000; background-color:#FFF">0111</td><!--white-->
+				<td style="color:#000; background-color:#FFF">1111</td>
+
+				<th>GRgB -> ZX</th>
+			</tr>
+			<tr>
+				<td style="color:#FFF; background-color:#000" colspan="2">1-000</td>
+				<td style="color:#FFF; background-color:#00F" colspan="2">1-001</td>
+
+				<td style="color:#FFF; background-color:#F00" colspan="2">1-010</td>
+				<td style="color:#FFF; background-color:#F0F" colspan="2">1-011</td>
+
+				<td style="color:#000; background-color:#0F0" colspan="2">1-100</td>
+				<td style="color:#000; background-color:#0FF" colspan="2">1-101</td>
+
+				<td style="color:#000; background-color:#FF0" colspan="2">1-110</td>
+				<td style="color:#000; background-color:#FFF" colspan="2">1-111</td>
 				
 				<th>ZX Spectrum (BRIGHT)</th>
 			</tr>
 			<tr>
-				<td style="color:#FFF; background-color:#000" colspan="2">000</td>
-				<td style="color:#FFF; background-color:#00C" colspan="2">001</td>
+				<td style="color:#FFF; background-color:#000" colspan="2">0-000</td>
+				<td style="color:#FFF; background-color:#00C" colspan="2">0-001</td>
 
-				<td style="color:#FFF; background-color:#C00" colspan="2">010</td>
-				<td style="color:#FFF; background-color:#C0C" colspan="2">011</td>
+				<td style="color:#FFF; background-color:#C00" colspan="2">0-010</td>
+				<td style="color:#FFF; background-color:#C0C" colspan="2">0-011</td>
 
-				<td style="color:#000; background-color:#0C0" colspan="2">100</td>
-				<td style="color:#000; background-color:#0CC" colspan="2">101</td>
+				<td style="color:#000; background-color:#0C0" colspan="2">0-100</td>
+				<td style="color:#000; background-color:#0CC" colspan="2">0-101</td>
 
-				<td style="color:#000; background-color:#CC0" colspan="2">110</td>
-				<td style="color:#000; background-color:#CCC" colspan="2">111</td>
+				<td style="color:#000; background-color:#CC0" colspan="2">0-110</td>
+				<td style="color:#000; background-color:#CCC" colspan="2">0-111</td>
 				
 				<th>ZX Spectrum</th>
 			</tr>
 			<tr>
 				<td style="color:#FFF; background-color:#000">0000</td>
-				<td style="color:#FFF; background-color:#00F">0001</td>
-				<td style="color:#FFF; background-color:#F00">0100</td>
-				<td style="color:#FFF; background-color:#F0F">0101</td>
-
-				<td style="color:#000; background-color:#0F0">0010</td>
-				<td style="color:#000; background-color:#0FF">0011</td>
-				<td style="color:#000; background-color:#FF0">0110</td>
-				<td style="color:#000; background-color:#FFF">0111</td>
-
 				<td style="color:#FFF; background-color:#000">1000</td>
+				<td style="color:#FFF; background-color:#00F">0001</td>
 				<td style="color:#FFF; background-color:#222">1001</td>
+
+				<td style="color:#FFF; background-color:#F00">0100</td>
 				<td style="color:#FFF; background-color:#444">1100</td>
+				<td style="color:#FFF; background-color:#F0F">0101</td>
 				<td style="color:#FFF; background-color:#666">1101</td>
 
+				<td style="color:#000; background-color:#0F0">0010</td>
 				<td style="color:#000; background-color:#888">1010</td>
+				<td style="color:#000; background-color:#0FF">0011</td>
 				<td style="color:#000; background-color:#AAA">1011</td>
+
+				<td style="color:#000; background-color:#FF0">0110</td>
 				<td style="color:#000; background-color:#CCC">1110</td>
+				<td style="color:#000; background-color:#FFF">0111</td>
 				<td style="color:#000; background-color:#EEE">1111</td>
 				
 				<th>RGB + greyscale</th>
