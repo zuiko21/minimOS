@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b12
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190225-1343
+; last modified 20190226-1001
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -135,7 +135,6 @@ nm_eval:
 				PLB					; if B was pushed, time to restore it!
 				RTI					; exit debugger
 #else
-lda#'x':jsr$c0c2
 				RTL					; back to NMI handler eeeeeeeeeek
 #endif
 ; *** end of exit command ***
@@ -504,21 +503,19 @@ jsr$c0c2
 nm_in:
 ; *** standard input ***
 	PHX					; CONIO savviness
-lda#'i':jsr$c0c2
 nm_in2:
 		LDY #0				; CONIO as input
 ;		ADMIN(CONIO)
 ;		BCS nm_in2			; it is locking input
-jsr$c0bf:;beq nm_in2
+jsr$c0bf:tax:beq nm_in2
 	PLX					; always OK on 65816
-pha:lda#'o':jsr$c0c2:pla
 ;	TYA					; get read char
 	RTS
 
 nm_read:
 ; * input command line into buffer *
 ; good to put some prompt before
-	LDA #CR				; eeeeeeeeeeeeek (needed for run816, CR otherwise)
+	LDA #CR				; eeeeeeeeeeeeek
 	JSR nm_out
 	LDA z_addr+2		; PC.Bank *** otherwise seems OK
 	JSR nm_shex			; as hex
@@ -540,7 +537,7 @@ nl_ign:
 			AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
 nl_upp:
 ; *** end of uppercase conversion ***
-		CMP #CR				; is it newline (CR)? EEEEEEEEEEEEEEEEK
+		CMP #LF				; is it newline (CR)? EEEEEEEEEEEEEEEEK^2 for run816
 			BEQ nl_end			; if so, just end input
 		CMP #BS				; was it backspace?
 			BEQ nl_bs			; delete then
