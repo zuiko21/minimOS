@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b12
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190226-1001
+; last modified 20190226-1015
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -490,13 +490,13 @@ nm_out:
 ; *** standard output ***
 	TAY					; set CONIO parameter
 	PHX					; CONIO savviness
-;	ADMIN(CONIO)
-tya
-cpy#13
-bne xxx_ncr
-lda#10
-xxx_ncr:
-jsr$c0c2
+	_ADMIN(CONIO)
+;tya
+;cpy#13
+;bne xxx_ncr
+;lda#10
+;xxx_ncr:
+;jsr$c0c2
 	PLX					; restore X as was destroyed by the call parameter
 	RTS
 
