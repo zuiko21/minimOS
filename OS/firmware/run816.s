@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
-; v0.9.6rc13
+; v0.9.6rc14
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190206-0855
+; last modified 20190227-0916
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -278,14 +278,13 @@ patch:
 ; *******************************
 reloc:
 ;#include "modules/reloc16.s"
-
-; ***********************************
-; CONIO, basic console when available *** TBD
-; ***********************************
-conio:
-;#include "modules/conio16.s"
 	_DR_ERR(UNAVAIL)	; not implemented unless specific device
 
+; ***********************************
+; CONIO, basic console when available *** EEEEEEEEK
+; ***********************************
+conio:
+#include "modules/conio-run816.s"
 
 
 ; ***********************************

@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.1b12
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190226-1015
+; last modified 20190227-0912
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -491,12 +491,6 @@ nm_out:
 	TAY					; set CONIO parameter
 	PHX					; CONIO savviness
 	_ADMIN(CONIO)
-;tya
-;cpy#13
-;bne xxx_ncr
-;lda#10
-;xxx_ncr:
-;jsr$c0c2
 	PLX					; restore X as was destroyed by the call parameter
 	RTS
 
@@ -505,11 +499,10 @@ nm_in:
 	PHX					; CONIO savviness
 nm_in2:
 		LDY #0				; CONIO as input
-;		ADMIN(CONIO)
-;		BCS nm_in2			; it is locking input
-jsr$c0bf:tax:beq nm_in2
+		_ADMIN(CONIO)
+		BCS nm_in2			; it is locking input
 	PLX					; always OK on 65816
-;	TYA					; get read char
+	TYA					; get read char
 	RTS
 
 nm_read:
@@ -537,7 +530,7 @@ nl_ign:
 			AND #%01011111		; yes, convert to uppercase (strip bit-7 too)
 nl_upp:
 ; *** end of uppercase conversion ***
-		CMP #LF				; is it newline (CR)? EEEEEEEEEEEEEEEEK^2 for run816
+		CMP #CR				; is it newline (CR)? EEEEEEEEEEEEEEEEK^2 for run816
 			BEQ nl_end			; if so, just end input
 		CMP #BS				; was it backspace?
 			BEQ nl_bs			; delete then
