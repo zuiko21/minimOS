@@ -93,7 +93,7 @@ Specs: intended to be a *fully bankswitching* 65C02 **SBC**, but also pluggable 
 
 
 
-**Jalapa (formerly _SDm_)**
+[**Jalapa (formerly _SDm_)**](jalapa2.md)
 
 Status: **almost finished** design, heavily *revamped* as of Oct-2018.
 
@@ -110,7 +110,7 @@ Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, new *VIAport*
 
 
 
-**Acapulco**
+[**Acapulco**](acapulco.md)
 
 Status: finishing design.
 
