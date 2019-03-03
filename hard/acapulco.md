@@ -27,15 +27,6 @@ Still within design phase, here is an outline of its basic specs:
 - (E)EPROM: **32 kiB**
 - Built-in video: **6445** based, 6845 may be used with extra multiplexing.
 
-Although its most interesting feature was **remapping** part of the ROM (up to 32K) 
-into *bank zero*'s top for convenient 65xx vector location, once again this was
-discarded and went instead for the use of ***two* separate ROM** sockets
-(for `sys` and `lib` *implicit* volumes, namely the *Kernel and application* EPROMs).
-
-For debugging purposes, LEDs will indicate the state of **E** (emulation mode)
-and **M/X** (register sizes) lines of the 65816. These will be available on the
-*VME-like* bus, too.
-
 ### Not provided on this machine
 
 - Serial port
@@ -55,7 +46,7 @@ will use *half the resolution*, both horizontal and vertical, of the VGA standar
 
 Further divided by 16, this signal will provide the main **`Phi-2`** clock.
 
-## Video output (TBD)
+## Video output
 
 The main feature of the otherwise simple **Acapulco** computer is the VGA-compatible
 **colour video output**. But since a complete *4 bpp full VGA* signal would need
@@ -63,12 +54,13 @@ at least *128 kiB of VRAM*, some measures must be taken in order to reduce the m
 and bandwith requirememts so they fit into the 6502 capabilities:
 
 - **Halving the resolution**, both H & V, giving a resolution similar to the usual
-*home computers* of old.
+*home computers* of old, via **line doubling**.
 - The use of an **attribute area**, allowing the whole image to be stored like a
 *bitmap*, limited to **two available colours _each 8x8 pixels_**.
 
 These restrictions allow the whole VRAM area to fit into a mere **9 kiB** (1 for the
-*attribute area*), subtracted from the regular SRAM as *vampire-video*.
+*attribute area*), subtracted from the regular SRAM as *vampire-video*. Supplied with
+32 kiB of static RAM, this seems a reasonable approach.
 
 The versatility of the **6x45 CRTCs** allow easy implementation of several video
 modes. The choice of oscillator will affect compatibility, so some *timing tweaking*
@@ -76,7 +68,7 @@ should be used in case the *non-standard 24.576 MHz* can is used. *Video driver*
 thus provide several *configuration tables*, allowing these suggested modes:
 
 - _for the **standard 25.175 MHz**:_
-0) **320x200** (40x25 char.) *industry-standard* timing
+0) **320x200** (40x25 char.) **industry-standard** timing
 0) **288x224** (36x28 char.) with elongated porchs (fully compatible)
 0) **256x240** (32x30 char.) ditto, allowing a simpler driver
 
