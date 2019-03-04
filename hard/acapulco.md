@@ -39,7 +39,7 @@ _optional **65816 card**_)
 
 According to the usual way of selecting my *most abundant* components in stock,
 the clock signal is generated from a **24.576 MHz oscillator** can. However, the
-presence of a *VGA-compatible* option suggests the industry-standard **25.175** MHz
+presence of a *VGA-compatible* option suggests the industry-standard **25.175 MHz**
 frequency; but some tinkering with the 6845/6345/6445 registers may achieve the
 required compatibility. *Half* of this frequency is used as **dot clock**, as it
 will use *half the resolution*, both horizontal and vertical, of the VGA standard.
@@ -73,113 +73,79 @@ thus provide several *configuration tables*, allowing these suggested modes:
 0) **256x240** (32x30 char.) ditto, allowing a simpler driver
 
 - *for the non-standard 24.576 MHz:*
-3) **320x200** (40x25 char.) shorter back porch & sync pulses (likely compatible)
-3) **320x200** (40x25 char.) much shorter sync pulse (likely compatible)
-3) **288x224** (36x28 char.) most likely compatible (*slightly* faster timing)
+3) **320x200** (40x25 char.) shorter *back porch & sync pulses* (likely compatible)
+3) **320x200** (40x25 char.) **much shorter sync** pulse (likely compatible)
+3) **288x224** (36x28 char.) most likely compatible with *slightly* faster timing
 3) **256x240** (32x30 char.) ditto, allowing a simpler driver
-3) **320x200** (40x25 char.) much shorter back porch (*perhaps* compatible)
+3) **320x200** (40x25 char.) **much shorter back porch** (*perhaps* compatible)
 
+*Firmware* may provide a module for **quick video mode selection** during startup.
 
-*- - - - - - - - - - - - - - - Jalapa specs below, as template - - - - - - - - - - -*
+6x45's *raster addresses* are wired as the most significant bits. This allows fast
+**hardware-assisted scrolling**. It also sets a *constant distance* (`$0400`) between
+the *colour RAM* and the first raster of each displayed character, greatly simplifying
+the driver.
+
+### Palette for the *Colour RAM*
+
+For moderate bandwith and attractive presentation, a **GRgB palette** is used -- the
+*green* channel sporting **4 levels**, as the human eye is most sensitive to this one.
+The colour codes *for each character* (or the corresponding **8x8 pixel** area) are
+recorded in a *chunky* fashion, the most significant nibble representing the
+**background** one.
+
+You can see the **GRgB palette** (among several discarded other ones) [here](../other/grgb.html)
 
 ## Memory map
 
-This machine fomerly was designed around a  **20-bit** address bus *(1 MiB)*,
-enough to allow **up to 512 kiB RAM & 512 kiB ROM**, which is the maximum size
-available in *hobbyist-friendly*, 5v DIP packages. However, the need for a suitable
-**expansion bus** calls for a more complete address decoding.
+Within the usual 6502 restriction to 64 kiB address space, this machine is simply
+defined as **32 kiB SRAM + 32 kiB EPROM**. From the latter, a full page (`$DFxx`)
+is assigned to I/O devices -- although with quite a bit of mirroring.
 
-The usual need in 65816 systems of some ROM in *bank zero* is no longer satisfied
-by *remapping* the upper 32k of the first bank of ROM into bank zero, but using a
-**separate EPROM** instead.
+Because of the *built-in video* feature, some of the RAM is used as *VRAM*. **Colour
+RAM** is, by the way, in a *separate 6116 chip*, but will be read by the CRTC only;
+*writes on that area will be made **simultaneously on the 62256** too*, allowing
+further reading by the CPU.
 
-About the RAM, no provision is made to avoid mirroring *within the first
-megabyte* thus suitable firmware should take that into account. Decoding RAM
-for *twice* the required amount allows for **getting full access to the
-*ROM-shadowed* RAM**.
+The standard memory map goes as follows:
 
-A typically configured machine goes as follows:
-
-- $000000-$007FFF: RAM (all configs)
-- $080000-$00DEFF: EPROM (**kernel** & **firmware**)
-- $00DF00-$00DFFF: built-in I/O (selectable)
-- $00E000-$00FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
-- $010000-$01FFFF: RAM (both 128 & 512K models)
-- $020000-$07FFFF: RAM (512K model only, or *mirror* images of RAM if 128K are fitted)
-- $080000-$0FFFFF: more RAM images ($0x8000-$0xFFFF allows *shadow RAM* access for some
-*x* values: **8** for all, plus **2, 4, 6, $A, $C** & **$E** for the *128K model*)
-- $100000-$F7FFFF: **free** for *VME-like* expansion bus
-- $F80000-$FFFFFF: "high" ROM (no longer includes *kernel* ROM)
-
-As this is a development machine, *jumpers* select the **I/O page**,
-freely located anywhere within *bank zero, no longer restricted to the
-EPROM area*. This is enabled by switching off both the *kernel ROM*
-and RAM (just in case) for peripheral access.
+- $0000-$5BFF: RAM (general purpose)
+- $5C00-$5FFF: **Colour RAM** (1K used from separate 6116)
+- $6000-$7FFF: **Video RAM**
+- $8000-$DEFF: EPROM (**kernel & firmware**, plus any desired apps)
+- $DF00-$DFFF: built-in **I/O** (NON selectable, buy maybe *switchable*)
+- $E000-$FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
 
 Decoded via a '139, the **I/O page** supports just **four** internal devices,
-two of them already assigned (**VIA** and **ACIA**). As per *minimOS* recommendations,
-each device owns **32 bytes** from this page, thus the 128-byte decoded I/O gets
-*mirrored*. Any *external card* decoding extra devices on this standard area will thus
-have just another *four* available slots, as VIA & ACIA appear *twice* on the page.
+only two of them actually assigned (**VIA** and **CRTC**). As per *minimOS*
+recommendations, each device owns **32 bytes** from this page, thus the 128-byte
+decoded I/O gets *mirrored*.
 
-Since a complete *expansion bus* is fitted, the *high* ROM must be decoded at the
-**uppermost banks** (`BA3-BA7`=**1**) avoiding mirroring.
-Also, *RAM should be properly decoded* too, but within the **lowest MiB**.
-That would render `lib` ROM at $F80000-$FFFFFF, leaving all addresses
-$100000-$F7FFFF, a whole **14 MiB free** for expansion.
- 
+Anyway, since a complete *expansion bus* is not fitted, there is a chance to
+**disable internal decoding** thru the *CPU socket*. Pin 1 (`VSS` or `/VP`)
+may be connected via a jumper to the decoding `/EN` enable input (active low).
+A *pull-down* resistor will allow normal operation in case a W65C02S part is
+used (which takes pin 1 as `/VP` output), but will not prevent a suitable
+socket-installed card **disabling the built-in decoding** whenever an *external
+I/O address* is issued. This method allows a *65816 card* to supply some *extra
+memory* outside bank zero.
+
 ## Glue-logic implementation
 
-As usual in my designs, some component choices were determined by my stock... This may
-lead to somewhat *sub-optimal* designs, although at such *pedestrian* speeds shouldn't
-be a problem. In any case, replacing the 74HCxx ICs by faster **74ACT/FCT** logic will
-allow significantly faster clock rates. Since HC logic seems good in this design for
-**up to ~2.5 MHz**, the initial goal is attained. At the *nominal 2.304 MHz*,
-**250 ns memories** are suitable.
-
-Most of the ICs dor decoding are **74HC688** and **74HC139**, as I own plenty of them.
-
-As usual in 65816 talk, `D0-D7` and `A0-A15` are the **direct** data and address 
-lines (pinout shared with the *6502*) while `BA0-BA7` are the outputs from the
-*transparent **latch*** as usually done. *These lines may be called `A16-A23`*.
+Most of the ICs for decoding are **74HC688** and **74HC139**, as I own plenty of them.
 
 ### RDY implementation
 
-Still under research is the fact **whether an RDY-halted 65816 *multiplexes* bank
-addresses on the data bus or not**. Should this assumption be *true*, this perhaps will
-*not* be an issue, because:
-
-- While *reading*, the selected address will remain valid, and the recommended **74HC245**
-will just isolate the CPU data bus from the outside, while the addressed device is
-(slowly) *building* the data bits. As long as it reaches a stable configuration prior
-to the *setup time* on the **last** Phi-2 cycle, all will be fine.
-- During *writes*, the output data from CPU will arrive *intermittently* to the slow
-device; it seems that *most RAMs actually **latch** the current data just upon /WE going
-**up*** and, unless its *setup time* is longer than half the clock cycle.
-- Even if the previous SRAM assumption is *false*, the *data bus capacitance* is most
-likely to **keep the output data stable** when the 74xx245 shuts off during Phi-1 with
-its outputs in *high-Z* state. *Weak pull-downs* are even allowed, but with all the
-mirroring on this machine there seems to be little use for such a **BRK-generating
-device** which will disable execution on *undecoded* areas.
-
-Otherwise (the bank address does *not* get multiplexed during RDY pauses) the
-WDC-suggested circuit **must** be modified in order to avoid *latching **invalid** bank
-addresses*. Another option would be the use of **clock-stretching** and leaving RDY
-*gently* pulled up and indisturbed.
-
-Note that this machine *does **not** negate RDY* by itself, although this capability
-should be provided for **expansion bus** use, perhaps by means of *clock-stretching*.
+Note that this machine _does **not** negate RDY_ by itself, thus a *gentle* pull-up
+is connected to thius pin on the CPU. Thus, *WDC parts* should not worry about the
+execution of `WAI/STP` opcodes, as long as the jumper is NOT set to provide `VSS` there.
 
 ### Chip Selection
 
-While the moderate clock speed does not ask for an extremely efficient *address
-decoding*, keeping circuitry **as simple as possible** will reduce the build effort...
-Extra care has been taken to reduce *power consumption* as much as possible, although
-the slowest bits (esp. for ROM enabling) are generated ASAP.
+*Unless noted otherwise, all '688s and '139s are **enabled** as long as `/EN`
+(perhaps available at CPU socket pin 1) is held **low**.*
 
-*Unless noted otherwise, all '688s and '139s are **enabled** when any of `VDA` or `VPA`
-are in **high** state.*
-
+*- - - - - - - - - - - - - - - Jalapa specs below, as template - - - - - - - - - - -*
 - **`/BZ`** (bank zero) is, of course, a '688 expecting `BA0-BA7` to be zero,
 most likely enabled thru `VPA` NOR `VDA` (aka `/OK`).
 - **`LIB /CS`** (enabling the *high* ROM) is another '688 looking for `BA5-BA7`
@@ -207,4 +173,4 @@ for higher performance at the cost of increased power consumption. On the other 
 moving the `R/W`signal to the `KERNEL /CS` '688 (with corresponding '139 input set
 high) would further reduce power consumption.
 
-*Last modified: 20181018-1204*
+*Last modified: 20190304-0959*
