@@ -1,7 +1,7 @@
 # Acapulco
 
 The **Acapulco** project, formerly called *Tampico*, is a simple 65C02 computer with
-**built-in *VGA-compatible* video output*. Despite this output fitting a
+**built-in *VGA-compatible* video output**. Despite this output fitting a
 *quasi-VGA* format, actual picture resolution is *SD TV-like* but compatible with
 more modern devices. This also stays better within the limited power of a 65C02.
 
