@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a6
+; v0.6a7
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190216-2117
+; last modified 20190304-1434
 
 #include "../usual.h"
 
@@ -437,7 +437,7 @@ va_data:
 
 ; *** values for 25.175 MHz dot clock *** 31.47 kHz Hsync, 59.94 Hz Vsync
 ; unlikely to work on 24.576 MHz crystal (30.72 kHz Hsync, 58.5 Hz Vsync)
-; mode 0 (aka 40/50) is 320x200 1-6-3, *** industry standard ***
+; mode 0 (aka 40/50) is 320x200 (40x25) 1-6-3, *** industry standard ***
 	.byt 49				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
@@ -445,7 +445,7 @@ va_data:
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt 0;28				; R7, VSYNC position - 1
+	.byt 26				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -455,7 +455,7 @@ va_data:
 	.byt >VA_BASE		; R14/15, cursor position (big endian)
 	.byt <VA_BASE
 
-; mode 1 (aka 36/50) is 288x224 1-6-3, fully compatible
+; mode 1 (aka 36/50) is 288x224 (36x28) 1-6-3, fully compatible
 	.byt 49				; R0, horizontal total chars - 1
 	.byt 36				; R1, horizontal displayed chars
 	.byt 39				; R2, HSYNC position - 1
@@ -463,7 +463,7 @@ va_data:
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 28				; R6, vertical displayed chars
-	.byt 0;34				; R7, VSYNC position - 1
+	.byt 28				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -473,15 +473,15 @@ va_data:
 	.byt >VA_BASE		; R14/15, cursor position (big endian)
 	.byt <VA_BASE
 
-; mode 2 (aka 32/50) is 256x240 1-6-3, fully compatible
+; mode 2 (aka 32/50) is 256x240 (32x30) 1-6-3, fully compatible
 	.byt 49				; R0, horizontal total chars - 1
 	.byt 32				; R1, horizontal displayed chars
 	.byt 37				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
-	.byt 32				; R6, vertical displayed chars
-	.byt 34				; R7, VSYNC position - 1
+	.byt 30				; R6, vertical displayed chars
+	.byt 30				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -492,15 +492,15 @@ va_data:
 	.byt <VA_BASE
 
 ; *** values for 24.576 MHz dot clock *** 32 kHz Hsync, 60.95 Hz Vsync
-; mode 3 (aka 40/48T) is 320x200 1-5-2, 3.25uS sync, 1.3uS back porch (most likely compatible)
+; mode 3 (aka 40/48T) is 320x200 (40x25) 1-5-2, 3.25uS sync, 1.3uS back porch (most likely compatible)
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
-	.byt 0;37				; R2, HSYNC position - 1
-	.byt 0;132			; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 41				; R2, HSYNC position - 1
+	.byt 37				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
-	.byt 32				; R6, vertical displayed chars
-	.byt 34				; R7, VSYNC position - 1
+	.byt 25				; R6, vertical displayed chars
+	.byt 26				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -510,15 +510,15 @@ va_data:
 	.byt >VA_BASE		; R14/15, cursor position (big endian)
 	.byt <VA_BASE
 
-; mode 4 (aka 40/48P) is 320x200 1-4-3, 2.6uS sync, 1.95uS back porch (likely compatible)
+; mode 4 (aka 40/48P) is 320x200 (40x25) 1-4-3, 2.6uS sync, 1.95uS back porch (likely compatible)
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
-	.byt 0;37				; R2, HSYNC position - 1
-	.byt 0;132			; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 41				; R2, HSYNC position - 1
+	.byt 36				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
-	.byt 32				; R6, vertical displayed chars
-	.byt 34				; R7, VSYNC position - 1
+	.byt 25				; R6, vertical displayed chars
+	.byt 26				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -528,15 +528,15 @@ va_data:
 	.byt >VA_BASE		; R14/15, cursor position (big endian)
 	.byt <VA_BASE
 
-; mode 5 (aka 36/48) is 288x224 1-6-3, most likely compatible
+; mode 5 (aka 36/48) is 288x224 (36x28) 1-6-3, most likely compatible
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 36				; R1, horizontal displayed chars
-	.byt 0;37				; R2, HSYNC position - 1
+	.byt 39				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
-	.byt 32				; R6, vertical displayed chars
-	.byt 34				; R7, VSYNC position - 1
+	.byt 28				; R6, vertical displayed chars
+	.byt 28				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -546,15 +546,15 @@ va_data:
 	.byt >VA_BASE		; R14/15, cursor position (big endian)
 	.byt <VA_BASE
 
-; mode 6 (aka 32/48) is 256x240 1-6-3, most likely compatible
+; mode 6 (aka 32/48) is 256x240 (32x30) 1-6-3, most likely compatible
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 32				; R1, horizontal displayed chars
-	.byt 0;37				; R2, HSYNC position - 1
+	.byt 37				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
-	.byt 32				; R6, vertical displayed chars
-	.byt 34				; R7, VSYNC position - 1
+	.byt 30				; R6, vertical displayed chars
+	.byt 30				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
@@ -564,15 +564,15 @@ va_data:
 	.byt >VA_BASE		; R14/15, cursor position (big endian)
 	.byt <VA_BASE
 
-; mode 7 (aka 40/48S) is 320x200 1-6-1, 3.9uS sync, 650nS back porch (perhaps compatible)
+; mode 7 (aka 40/48S) is 320x200 (40x25) 1-6-1, 3.9uS sync, 650nS back porch (perhaps compatible)
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
-	.byt 0;37				; R2, HSYNC position - 1
+	.byt 41				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
-	.byt 32				; R6, vertical displayed chars
-	.byt 0;34				; R7, VSYNC position - 1
+	.byt 25				; R6, vertical displayed chars
+	.byt 26				; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
