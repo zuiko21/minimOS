@@ -1,7 +1,7 @@
 ; firmware for minimOS on Acapulco
-; v0.9.6b5
+; v0.9.6b6
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190223-2241
+; last modified 20190304-1314
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -89,8 +89,9 @@ reset:
 
 ; optional boot selector
 ;#include "modules/bootoff.s"
-; try to select video mode *** TO DO ***
-; should initialise built-in video too *** TO DO ***
+
+; try to select video mode, will safely initialise CRTC too!
+#include "modules/aca-vmode.s"
 
 ; might check ROM integrity here
 ;#include "modules/romcheck.s"
@@ -107,6 +108,8 @@ reset:
 ; ********************************
 
 ; VIA initialisation (and stop beeping)
+; may need to wait for the (long) beep to end and SHUT OFF interrupts!
+; then the generic module may come, but it will keep PB7 int enabled!
 #include "modules/via_init.s"
 
 ; ***********************************
