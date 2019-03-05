@@ -1,6 +1,6 @@
 ; Acapulco firmware module for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190304-1410
+; last modified 20190305-0827
 
 ; *** set Acapulco video mode at boot ***
 
@@ -15,7 +15,7 @@ afw_ci:
 		BPL afw_ci			; until done
 	BMI afw_rm			; go read mode, no need for BRA
 afw_si:
-	.byt 47, 32, 37, 38, 32, 13, 30, 31, 0, 15		; *** revise safe values ***
+	.byt 47, 32, 37, 38, 31, 13, 30, 30, 0, 15		; *** revise safe values ***
 ; *** this reads desired video mode from column 1 of ASCII-keyboard ***
 	_STZA VIA_U+DDRA	; safest way
 ; do I need to set DDRB?

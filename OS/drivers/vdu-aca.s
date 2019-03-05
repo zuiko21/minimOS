@@ -441,7 +441,7 @@ va_data:
 	.byt 49				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
@@ -459,7 +459,7 @@ va_data:
 	.byt 49				; R0, horizontal total chars - 1
 	.byt 36				; R1, horizontal displayed chars
 	.byt 39				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 28				; R6, vertical displayed chars
@@ -477,7 +477,7 @@ va_data:
 	.byt 49				; R0, horizontal total chars - 1
 	.byt 32				; R1, horizontal displayed chars
 	.byt 37				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 30				; R6, vertical displayed chars
@@ -496,7 +496,7 @@ va_data:
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
-	.byt 37				; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 37				; R3, HSYNC width (may have VSYNC in MSN) =5
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
@@ -514,7 +514,7 @@ va_data:
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
-	.byt 36				; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 36				; R3, HSYNC width (may have VSYNC in MSN) =4
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
@@ -532,7 +532,7 @@ va_data:
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 36				; R1, horizontal displayed chars
 	.byt 39				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 28				; R6, vertical displayed chars
@@ -550,7 +550,7 @@ va_data:
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 32				; R1, horizontal displayed chars
 	.byt 37				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 30				; R6, vertical displayed chars
@@ -568,7 +568,7 @@ va_data:
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
+	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
