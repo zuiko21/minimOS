@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190119-1221
+; last modified 20190306-1045
 
 ; *** generic NMI handler for 65816 ***
 ; expected to be fully re-entrant
@@ -29,9 +29,9 @@
 	STX sys_sp			; best place as will not switch (3)
 #endif
 ; let us get ready for the return address
-	PHK					; return bank is zero (3)
-	PEA nmi_end-1		; prepare return address (5)
-
+;	PHK					; return bank is zero (3)
+;	PEA nmi_end-1		; prepare return address (5)
+; perhaps not worth, just call routine jump!
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
 ; first copy vector into zeropage, as per long-indirect requirement
@@ -49,12 +49,9 @@
 	CMP #'j'+256*'*'	; correct? (3)
 		BNE rst_nmi			; not a valid routine (2/3)
 #endif
-
 	.as: SEP #$20		; *** code is executed in 8-bit sizes ***
 ; jump to user-supplied handler!
-; return address already set! No need to reset DBR as only DP is accessed afterwards
-; MUST respect DP and sys_sp, though
-	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
+	JSR @nmi_jmp
 
 ; ********************************************
 ; *** here goes the former nmi_end routine ***
@@ -83,6 +80,14 @@
 	PLX
 	PLA
 	RTI					; resume normal execution and register sizes, hopefully
+
+; *******************************
+; *** NMI user-routine caller ***
+; *******************************
+; return address already set! No need to reset DBR as only DP is accessed afterwards
+; MUST respect DP and sys_sp, though
+.as:.xs:
+	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
 
 ; *** execute standard NMI handler ***
 rst_nmi:
