@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a7
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190305-0935
+; last modified 20190306-0858
 
 #include "../usual.h"
 
@@ -62,7 +62,8 @@ va_init:
 	LDX #0				; separate counter
 ; reset inverse video mask!
 	STX va_xor			; clear mask is true video
-; load CRTC registers
+; load 6845 CRTC registers
+; assumes FW has already set the special 6345/3445 regs!
 vi_crl:
 		STX crtc_rs			; select this register
 		LDA va_data, Y		; get value for it
