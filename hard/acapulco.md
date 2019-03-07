@@ -86,6 +86,21 @@ thus provide several *configuration tables*, allowing these suggested modes:
 the *colour RAM* and the first raster of each displayed character, greatly simplifying
 the driver.
 
+### VGA compatibility and the 6845
+
+As previously metioned, fully VGA compatibility will only be achieved thru the use of
+a standard 25.175 MHz oscillator. The project is to be made using a 6445 CRTC and no
+further issues should occur; however, in case a classic 6845 is used, another problem
+can arise: it produces a **fixed length** (16 lines) *vertical sync* pulse, which
+may throw off the vertical position of the image a bit. *This might be an issue on the
+256x240 mode*, as the whole 480 image lines are used, and some monitors may not have
+room enough for top or bottom lines under such displaced `VSYNC` pulse.
+
+On the other hand, the 6345/6445 may fine-adjust the `VSYNC` pulse length, thus
+highly recommended in any case. To keep the desired 6845 compatibility, this setting
+(together with those 6345/6445-specific ones) **must be done by the Firmware** so the
+OS *driver* does not have to check for other than the generic 6845 registers.
+
 ### Palette for the *Colour RAM*
 
 For moderate bandwith and attractive presentation, a **GRgB palette** is used -- the
@@ -110,16 +125,17 @@ further reading by the CPU.
 The standard memory map goes as follows:
 
 - $0000-$5BFF: RAM (general purpose)
-- $5C00-$5FFF: **Colour RAM** (1K used from separate 6116)
+- $5C00-$5FFF: **Colour RAM** (1K used from a separate 6116)
 - $6000-$7FFF: **Video RAM**
 - $8000-$DEFF: EPROM (**kernel & firmware**, plus any desired apps)
 - $DF00-$DFFF: built-in **I/O** (NON selectable, buy maybe *switchable*)
 - $E000-$FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
 
 Decoded via a '139, the **I/O page** supports just **four** internal devices,
-only two of them actually assigned (**VIA** and **CRTC**). As per *minimOS*
-recommendations, each device owns **32 bytes** from this page, thus the 128-byte
-decoded I/O gets *mirrored*.
+only two of them actually assigned (**VIA** at `$DFFx` and **CRTC** at `$DFCx`).
+The whole '139 with its two decoders is used, in a way that a couple of
+**16-byte** areas is decoded for each device. *This may simplify the I/O expansion*
+without the need to disable the internal decoding.
 
 Anyway, since a complete *expansion bus* is not fitted, there is a chance to
 **disable internal decoding** thru the *CPU socket*. Pin 1 (`VSS` or `/VP`)
@@ -127,12 +143,27 @@ may be connected via a jumper to the decoding `/EN` enable input (active low).
 A *pull-down* resistor will allow normal operation in case a W65C02S part is
 used (which takes pin 1 as `/VP` output), but will not prevent a suitable
 socket-installed card **disabling the built-in decoding** whenever an *external
-I/O address* is issued. This method allows a *65816 card* to supply some *extra
-memory* outside bank zero.
+I/O address* is issued. This method allows a *65816 card* to supply some
+**extra memory** outside bank zero.
 
 ## Glue-logic implementation
 
 Most of the ICs for decoding are **74HC688** and **74HC139**, as I own plenty of them.
+As per **multiplexing the address lines** in order to share RAM access between the CPU
+and the CRTC, the use of a 6445 waives the need for actual multiplexers. From the CPU
+side, though, a couple of **74HC245** isolate this part of the address bus whenever the
+CRTC ouputs are not tristated (during *Phi1*).
+
+Please note that *the 6445 does NOT tristate its outputs* until it is so configured.
+Thus, the Firmware MUST do that as soon as possible, and make certain that **no RAM is
+accessed until its _tristate_ configuration**, in order to avoid *bus contention*.
+The hardware will make sure that the CPU-side '245s are enabled when `Phi2` is high
+AND `A15` is low, so ROM accesses during the first cycles will not cause bus contention.
+
+Special consideration needs the 6116 **Colour RAM**. Wired (mostly) in parallel
+with the regular 62256 RAM, it is *write-only* for the CPU (it will read from the
+62256, which is always written with the same contents) thru another '245 (a '244 may
+be used as well) and *read-only* for the CRTC (thru a suitable '374/'574 latch).
 
 ### RDY implementation
 
@@ -173,4 +204,4 @@ for higher performance at the cost of increased power consumption. On the other 
 moving the `R/W`signal to the `KERNEL /CS` '688 (with corresponding '139 input set
 high) would further reduce power consumption.
 
-*Last modified: 20190304-0959*
+*Last modified: 20190307-0848*
