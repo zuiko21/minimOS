@@ -133,9 +133,14 @@ The standard memory map goes as follows:
 
 Decoded via a '139, the **I/O page** supports just **four** internal devices,
 only two of them actually assigned (**VIA** at `$DFFx` and **CRTC** at `$DFCx`).
-The whole '139 with its two decoders is used, in a way that a couple of
+The whole '139 with its two decoders may be used, in a way that a couple of
 **16-byte** areas is decoded for each device. *This may simplify the I/O expansion*
-without the need to disable the internal decoding.
+without the need to disable the internal decoding. Otherwise, the two devices
+will take 32-byte spaces mirrored at several addresses, but will allow a
+somewhat faster decoding.
+
+Some mirroring could be
+reduced by taking `A5` to the VIA's `/CS2` active-high signal.
 
 Anyway, since a complete *expansion bus* is not fitted, there is a chance to
 **disable internal decoding** thru the *CPU socket*. Pin 1 (`VSS` or `/VP`)
@@ -204,4 +209,4 @@ for higher performance at the cost of increased power consumption. On the other 
 moving the `R/W`signal to the `KERNEL /CS` '688 (with corresponding '139 input set
 high) would further reduce power consumption.
 
-*Last modified: 20190307-0848*
+*Last modified: 20190308-1158*
