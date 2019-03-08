@@ -45,17 +45,19 @@ required compatibility. *Half* of this frequency is used as **dot clock**, as it
 will use *half the resolution*, both horizontal and vertical, of the VGA standard.
 
 Further divided by 16, this signal will provide the main **`Phi-2`** clock.
+This way, CPU accesses will be *interleaved* with CRTC accesses for
+**optimum performance**.
 
 ## Video output
 
 The main feature of the otherwise simple **Acapulco** computer is the VGA-compatible
 **colour video output**. But since a complete *4 bpp full VGA* signal would need
 at least *128 kiB of VRAM*, some measures must be taken in order to reduce the memory
-and bandwith requirememts so they fit into the 6502 capabilities:
+and bandwith requirememts so they fit into the 6502's capabilities:
 
-- **Halving the resolution**, both H & V, giving a resolution similar to the usual
+1) **Halving the resolution**, both H & V, giving a resolution similar to the usual
 *home computers* of old, via **line doubling**.
-- The use of an **attribute area**, allowing the whole image to be stored like a
+1) The use of an **attribute area**, allowing the whole image to be stored like a
 *bitmap*, limited to **two available colours _each 8x8 pixels_**.
 
 These restrictions allow the whole VRAM area to fit into a mere **9 kiB** (1 for the
@@ -72,7 +74,7 @@ thus provide several *configuration tables*, allowing these suggested modes:
 0) **288x224** (36x28 char.) with elongated porchs (fully compatible)
 0) **256x240** (32x30 char.) ditto, allowing a simpler driver
 
-- *for the non-standard 24.576 MHz:*
+- _for the non-standard 24.576 MHz:_
 3) **320x200** (40x25 char.) shorter *back porch & sync pulses* (likely compatible)
 3) **320x200** (40x25 char.) **much shorter sync** pulse (likely compatible)
 3) **288x224** (36x28 char.) most likely compatible with *slightly* faster timing
@@ -88,7 +90,7 @@ the driver.
 
 ### VGA compatibility and the 6845
 
-As previously metioned, fully VGA compatibility will only be achieved thru the use of
+As previously metioned, fully VGA compatibility can only be achieved thru the use of
 a standard 25.175 MHz oscillator. The project is to be made using a 6445 CRTC and no
 further issues should occur; however, in case a classic 6845 is used, another problem
 can arise: it produces a **fixed length** (16 lines) *vertical sync* pulse, which
@@ -96,9 +98,10 @@ may throw off the vertical position of the image a bit. *This might be an issue 
 256x240 mode*, as the whole 480 image lines are used, and some monitors may not have
 room enough for top or bottom lines under such displaced `VSYNC` pulse.
 
-On the other hand, the 6345/6445 may fine-adjust the `VSYNC` pulse length, thus
-highly recommended in any case. To keep the desired 6845 compatibility, this setting
-(together with those 6345/6445-specific ones) **must be done by the Firmware** so the
+On the other hand, the 6345/6445 can fine-adjust the `VSYNC` pulse length
+*and* position, thus highly recommended in any case. To keep the desired 6845
+compatibility, this setting (together with those 6345/6445-specific ones)
+**must be done by the Firmware** during *cold boot*, so the
 OS *driver* does not have to check for other than the generic 6845 registers.
 
 ### Palette for the *Colour RAM*
@@ -109,7 +112,8 @@ The colour codes *for each character* (or the corresponding **8x8 pixel** area) 
 recorded in a *chunky* fashion, the most significant nibble representing the
 **background** one.
 
-You can see the **GRgB palette** (among several discarded other ones) [here](../other/grgb.html)
+You can see the **GRgB palette** (among several discarded other ones)
+[here](../other/grgb.html)
 
 ## Memory map
 
@@ -131,16 +135,15 @@ The standard memory map goes as follows:
 - $DF00-$DFFF: built-in **I/O** (NON selectable, buy maybe *switchable*)
 - $E000-$FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
 
-Decoded via a '139, the **I/O page** supports just **four** internal devices,
-only two of them actually assigned (**VIA** at `$DFFx` and **CRTC** at `$DFCx`).
-The whole '139 with its two decoders may be used, in a way that a couple of
-**16-byte** areas is decoded for each device. *This may simplify the I/O expansion*
-without the need to disable the internal decoding. Otherwise, the two devices
-will take 32-byte spaces mirrored at several addresses, but will allow a
-somewhat faster decoding.
+Decoded via a '139, the **I/O page** supports just **four** internal devices
+with a 32-byte area each (as per minimOS recommendations), mirrored on the
+lower half of the I/O page. Only two devices are actually assigned:
 
-Some mirroring could be
-reduced by taking `A5` to the VIA's `/CS2` active-high signal.
+- **VIA** at `$DFFx` (actually $DFE0-$DFFF, also at $DF60-$DF7F)
+- **CRTC** at `$DFCx` ($DFC0-$DFDF and $DF40-$DF5F)
+
+Some mirroring could be reduced by taking `A4` to the VIA's `CS1` *active-high*
+signal, limiting its appearances at the nominal $DFFx and $DF7x.
 
 Anyway, since a complete *expansion bus* is not fitted, there is a chance to
 **disable internal decoding** thru the *CPU socket*. Pin 1 (`VSS` or `/VP`)
@@ -173,13 +176,24 @@ be used as well) and *read-only* for the CRTC (thru a suitable '374/'574 latch).
 ### RDY implementation
 
 Note that this machine _does **not** negate RDY_ by itself, thus a *gentle* pull-up
-is connected to thius pin on the CPU. Thus, *WDC parts* should not worry about the
+is connected to this pin on the CPU. Thus, *WDC parts* should not worry about the
 execution of `WAI/STP` opcodes, as long as the jumper is NOT set to provide `VSS` there.
 
 ### Chip Selection
 
-*Unless noted otherwise, all '688s and '139s are **enabled** as long as `/EN`
-(perhaps available at CPU socket pin 1) is held **low**.*
+_Unless noted otherwise, all '688s and '139s are **enabled** as long as `/EN`
+(perhaps available at CPU socket pin 1) is held **low**._
+
+- **`/IO`** (peripheral page): a '688 compares `A8-A15` to `$DF`
+- **`/RD`** (read enable): a '139 takes `Phi2 (nA1)` and `R/W (nA0)`, output on `n/Y3`
+- **`/WR`** (write enable): the same '139 for `/RD`, output on `n/Y2`
+- **`ROM /CS`**: inverted `A15` for optimum speed
+- **`ROM /OE`**: some '139...
+- **`VIA /CS2`**: a '139 enabled by `/IO`, takes `A6 (nA1)` and `A5 (nA0)`, output
+on `n/Y3`
+- **`CRTC /CS`**: the same '139 as above, output on `n/Y2`
+- **`VIA CS1`**: just `A4` as previously stated
+- **`/`** (): '
 
 *- - - - - - - - - - - - - - - Jalapa specs below, as template - - - - - - - - - - -*
 - **`/BZ`** (bank zero) is, of course, a '688 expecting `BA0-BA7` to be zero,
@@ -209,4 +223,4 @@ for higher performance at the cost of increased power consumption. On the other 
 moving the `R/W`signal to the `KERNEL /CS` '688 (with corresponding '139 input set
 high) would further reduce power consumption.
 
-*Last modified: 20190308-1158*
+*Last modified: 20190308-1815*
