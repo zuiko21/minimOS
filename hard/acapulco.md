@@ -45,7 +45,7 @@ required compatibility. *Half* of this frequency is used as **dot clock**, as it
 will use *half the resolution*, both horizontal and vertical, of the VGA standard.
 
 Further divided by 16, this signal will provide the main **`Phi-2`** clock.
-This way, CPU accesses will be *interleaved* with CRTC accesses for
+This way, CPU accesses will be **interleaved** with CRTC accesses for
 **optimum performance**.
 
 ## Video output
@@ -128,22 +128,26 @@ further reading by the CPU.
 
 The standard memory map goes as follows:
 
-- $0000-$5BFF: RAM (general purpose)
-- $5C00-$5FFF: **Colour RAM** (1K used from a separate 6116)
-- $6000-$7FFF: **Video RAM**
-- $8000-$DEFF: EPROM (**kernel & firmware**, plus any desired apps)
-- $DF00-$DFFF: built-in **I/O** (NON selectable, buy maybe *switchable*)
-- $E000-$FFFF: EPROM (continued kernel & firmware, including *hardware vectors*)
+- `$0000-$5BFF`: *62256* **RAM** (general purpose)
+- `$5C00-$5FFF`: **Colour RAM** (**1K used** from a separate *6116*)
+- `$6000-$7FFF`: **Video RAM** (stored in the *62256*)
+- `$8000-$DEFF`: EPROM (**kernel & firmware**, plus any desired apps)
+- `$DF00-$DFFF`: built-in **I/O** (NON selectable, buy maybe *switchable*)
+- `$E000-$FFFF`: EPROM (continued kernel & firmware, including *hardware vectors*)
 
 Decoded via a '139, the **I/O page** supports just **four** internal devices
-with a 32-byte area each (as per minimOS recommendations), mirrored on the
-lower half of the I/O page. Only two devices are actually assigned:
+with a 32-byte area each (decoding address lines `A5-A6`), mirrored on the
+lower half of the I/O page. Only two devices are included:
 
 - **VIA** at `$DFFx` (actually $DFE0-$DFFF, also at $DF60-$DF7F)
-- **CRTC** at `$DFCx` ($DFC0-$DFDF and $DF40-$DF5F)
+- **CRTC** at `$DFCC-$DFCD` ($DFC0-$DFDF and $DF40-$DF5F)
 
 Some mirroring could be reduced by taking `A4` to the VIA's `CS1` *active-high*
-signal, limiting its appearances at the nominal $DFFx and $DF7x.
+signal, limiting its appearances at the **nominal $DFFx** and $DF7x. The other
+second half of the '139 may be used (taking A7) leaving undecoded the *lower half*
+of the I/O page, but at the cost of increasing delays. **This is particularly critical
+with the 6522 VIA** as 1 MHz parts may violate its `tACR` and `tACW` requirements.
+*Using 2 MHz parts should provide adequate speed*, though.
 
 Anyway, since a complete *expansion bus* is not fitted, there is a chance to
 **disable internal decoding** thru the *CPU socket*. Pin 1 (`VSS` or `/VP`)
@@ -181,19 +185,27 @@ execution of `WAI/STP` opcodes, as long as the jumper is NOT set to provide `VSS
 
 ### Chip Selection
 
-_Unless noted otherwise, all '688s and '139s are **enabled** as long as `/EN`
+_Unless noted otherwise, all '688s and '139s are *enabled* as long as **`/EN`**
 (perhaps available at CPU socket pin 1) is held **low**._
 
 - **`/IO`** (peripheral page): a '688 compares `A8-A15` to `$DF`
 - **`/RD`** (read enable): a '139 takes `Phi2 (nA1)` and `R/W (nA0)`, output on `n/Y3`
 - **`/WR`** (write enable): the same '139 for `/RD`, output on `n/Y2`
 - **`ROM /CS`**: inverted `A15` for optimum speed
-- **`ROM /OE`**: some '139...
-- **`VIA /CS2`**: a '139 enabled by `/IO`, takes `A6 (nA1)` and `A5 (nA0)`, output
+- **`ROM /OE`**: a '139 takes `/RD (nA1)` and `/IO (nA0)`, output on `n/Y1`
+- **`RAM /CS`**: a *permanently enabled* '139 takes `Phi2 (nA1)` and `A15 (nA0)`,
+output is **negated** `n/Y3`
+- **`/MUX`** (enable CPU RAM access): the same '139 as above, output on `n/Y2`
+- **`RAM /OE`**: a '139 *enabled by `A15`* takes `Phi2 (nA1)` and `/EN (nA0)`,
+output is **negated** `n/Y3`
+- **`VIA /CS2`**: a '139 enabled by `/IO`\*, takes `A6 (nA1)` and `A5 (nA0)`, output
 on `n/Y3`
 - **`CRTC /CS`**: the same '139 as above, output on `n/Y2`
-- **`VIA CS1`**: just `A4` as previously stated
+- **`VIA CS1`**: direct to `A4` as previously stated
 - **`/`** (): '
+
+*) Another '139 half may be used for enabling the other one, taking `A7` and
+`/IO` as *enable*, for **reduced mirroring** at some speed penalty. 
 
 *- - - - - - - - - - - - - - - Jalapa specs below, as template - - - - - - - - - - -*
 - **`/BZ`** (bank zero) is, of course, a '688 expecting `BA0-BA7` to be zero,
@@ -223,4 +235,4 @@ for higher performance at the cost of increased power consumption. On the other 
 moving the `R/W`signal to the `KERNEL /CS` '688 (with corresponding '139 input set
 high) would further reduce power consumption.
 
-*Last modified: 20190308-1815*
+*Last modified: 20190309-2216*
