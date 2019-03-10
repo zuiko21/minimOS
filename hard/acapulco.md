@@ -202,37 +202,9 @@ output is **negated** `n/Y3`
 on `n/Y3`
 - **`CRTC /CS`**: the same '139 as above, output on `n/Y2`
 - **`VIA CS1`**: direct to `A4` as previously stated
-- **`/`** (): '
+- **`/CRAM`** (colour RAM write): a '688 comparing `A10-A15` to the upper bits of `$5C`
 
-*) Another '139 half may be used for enabling the other one, taking `A7` and
+*) Another '139 half may be used for enabling this one, taking `A7` and
 `/IO` as *enable*, for **reduced mirroring** at some speed penalty. 
 
-*- - - - - - - - - - - - - - - Jalapa specs below, as template - - - - - - - - - - -*
-- **`/BZ`** (bank zero) is, of course, a '688 expecting `BA0-BA7` to be zero,
-most likely enabled thru `VPA` NOR `VDA` (aka `/OK`).
-- **`LIB /CS`** (enabling the *high* ROM) is another '688 looking for `BA5-BA7`
-high, and maybe R/W too in case of *bus contention*. In that case, you can keep
-`LIB /OE` tied to ground.
-- **`RAM /CS`** expects `BA4-BA7` as *zero* on a '688 (the lowest MiB).
-*Note that RAM is disabled when overlapping with (kernel) EPROM or I/O*.
-*The `/WE` signal will no longer be generated*,m as with a fast RAM it is best
-to **validate `RAM /CS` with Phi2**, together with several `BA` bits, `/IO` and
-`KERNEL /CS` for lower power consumption*, as RAMs are usually fast enough for this.
-- **`RAM /OE`** can be **just tied to ground**, just like `LIB /OE`.
-- **`/IO`** uses `/BZ` to *enable* a '688, then `A8-A15` as configured. *Note that
-this is no longer restricted to EPROM space*, as long as it shuts off RAM output too.
-- **`KERNEL /CS`** uses `/BZ` to *enable* a '688, then `A8-A15` as configured, but
-as it *must* take the uppermost bits, `A15` is expected to be **always 1**, while
-`A14-A11` might be *sequentially* compared to ones for **reduced kernel sizes**
-(from **32 kiB** down to **2 kiB**). Some jumpers will disconnect *ignored* address
-lines. In this scheme, ROM will stay enabled during I/O but with outputs disabled.
-- **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid
-*bus contention*.  If done thru a 74HC139's `/Y3` output, there is another output
-signalling *contention states* (`/Y2` if `R/W` is set to the decoder's `A0`), but
-that '139 *must* be enabled via `/BZ`. *Should this feature not be needed, the
-decoder could be permanently active*. Plus, swapping ROM's `/CS` and `/OE` inputs allows
-for higher performance at the cost of increased power consumption. On the other hand,
-moving the `R/W`signal to the `KERNEL /CS` '688 (with corresponding '139 input set
-high) would further reduce power consumption.
-
-*Last modified: 20190309-2216*
+*Last modified: 20190310-1843*
