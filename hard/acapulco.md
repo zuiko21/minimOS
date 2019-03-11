@@ -44,9 +44,9 @@ frequency; but some tinkering with the 6845/6345/6445 registers may achieve the
 required compatibility. *Half* of this frequency is used as **dot clock**, as it
 will use *half the resolution*, both horizontal and vertical, of the VGA standard.
 
-Further divided by 16, this signal will provide the main **`Phi-2`** clock.
-This way, CPU accesses will be **interleaved** with CRTC accesses for
-**optimum performance**.
+Further divided by 16 (via a **74HC161**), this signal will provide the main
+**`Phi-2`** clock. This way, CPU accesses will be **interleaved** with
+CRTC accesses for **optimum performance**.
 
 ## Video output
 
@@ -113,7 +113,8 @@ recorded in a *chunky* fashion, the most significant nibble representing the
 **background** one.
 
 You can see the **GRgB palette** (among several discarded other ones)
-[here](../other/grgb.html)
+[here](../other/grgb.html):
+![GRgB palette](../other/grgb_palette.png)
 
 ## Memory map
 
