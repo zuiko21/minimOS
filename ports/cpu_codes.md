@@ -7,7 +7,7 @@ Some CPUs are binary-compatible, thus they've been grouped on their particular p
 `LOAD_LINK` function will determine, according to the reported installed CPU (via the `GESTALT` *firmware* function),
 whether a particular code chunk is able to be executed on that particular machine.
 
-## [minimOS·65](https://github.com/zuiko21/minimOS)
+## [minimOS·65 & minimOS·16](https://github.com/zuiko21/minimOS)
 *The **standard** minimOS for 6502 and derivatives*
 - **N**: plain *NMOS* **6502** (illegal opcodes **not** supported)
 - **B**: generic 65**C**02 (no `RMB/SMB/BBR/BBS` opcodes)
@@ -51,6 +51,6 @@ due to restricted performance on this MCU family*
 - **L**: 80**386**
 ...
 
-*Last modified: 2017-06-10*
+*Last modified: 20190311*
 
 
