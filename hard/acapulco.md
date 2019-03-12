@@ -205,7 +205,7 @@ on `n/Y3`
 - **`VIA CS1`**: direct to `A4` as previously stated
 - **`/CRAM`** (colour RAM write): a '688 comparing `A10-A15` to the upper bits of `$5C`
 
-*) Another '139 half may be used for enabling this one, taking `A7` and
+\*) Another '139 half may be used for enabling this one, taking `A7` and
 `/IO` as *enable*, for **reduced mirroring** at some speed penalty. 
 
 ### RAM multiplexing
@@ -219,6 +219,14 @@ abundant '245s bus transceivers (acting as mere line drivers) instead. Note that
 the ROM and peripherals are *directly connected to the CPU address lines* and
 thus not multiplexed at all.
 
+Enabling the CRTC's outputs is as simple as connecting `Phi2` to the `LPSTB/TSC`
+input. On the other hand, *the CPU bus cannot be simply enabled by this signal*,
+as the 6445 **will NOT tristate its output _until properly configured_**. In order
+to allow safe operation without *bus contention*, the CPU addresses are enabled
+by the aforementioned `/MUX` signal -- that is, when `Phi2` is high (CPU access)
+*AND* `A15` is **low** (EPROM and I/O addresses will *not* arrive to the RAMs
+address bus). For this trick to work, it is ESSENTIAL that **no RAM is accessed**
+(including subroutine calls) **until the tristate option is activated**.
+*Aproppriate firware is configured this way*. 
 
-
-*Last modified: 20190312-0932*
+*Last modified: 20190312-1358*
