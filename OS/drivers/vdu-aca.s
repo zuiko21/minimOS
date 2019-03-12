@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a7
+; v0.6a8
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190306-0858
+; last modified 20190312-1001
 
 #include "../usual.h"
 
@@ -45,6 +45,9 @@ va_err:
 ; *** zeropage variables ***
 	v_dest	= $E8		; was local2, perhaps including this on zeropage.h?
 	v_src	= $EA		; is this OK?
+	vs_mask	= $E4		; *** local 1, splash screen only ***
+	vs_cnt	= $E5		; width counter
+	vs_at	= $E6		; attribute counter
 
 ; ************************
 ; *** initialise stuff ***
@@ -80,13 +83,35 @@ vi_cmr:
 		INX					; next address, now single index
 		CPX #$10			; last register done?
 		BNE vi_cmr			; continue otherwise
- clear all VRAM!
+; clear all VRAM!
 ; ...but preset standard colours before!
 	LDA #$F0			; white paper, black ink
 	STA va_attr			; this value will be used by CLS
 ; software cursor will be set by CLS routine!
-	CLC					; just in case...
-;	JMP va_cls			; reuse code from Form Feed, will return to caller
+;	CLC					; just in case...
+	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
+; *** splash screen code ***
+	LDA #$FF			; all bits on...
+	STA vs_mask			; ...as first byte on splash screen
+	LDA #7				; highest position number
+	STA vs_cnt
+	LDX va_mode			; get resolution index
+	LDA va_width, X		; chars per line
+	SEC
+	SBC vs_cnt			; subtract needed positions
+	STA va_dest			; set as LSB (assume page aligned!)
+	STA va_src			; another pointer for attributes
+	LDA #>VA_BASE		; put standard MSB
+	STA va_dest
+	SBC #4				; attribute area is 1 K before (C was set!)
+	STA va_src			; both MSBs set
+
+	_STZA vs_at			; clear attribute list counter
+	LDX vs_at			; current index
+; ------------- TO DO ----------------- TO DO ------------------
+
+; *** end of splash screen, if not used may just use CLC above and let it fall into CLS routine ***
+	_DR_OK				; installation succeeded
 
 ; ***************************************
 ; *** routine for clearing the screen *** takes 92865t, 60.46 ms @ 1.536 MHz
@@ -435,6 +460,16 @@ vbs_end:
 ; ********************
 ; *** several data ***
 ; ********************
+
+va_cspl:
+; splash screen attributes table (ink on upper right)
+	.byt	%11111110	; yellow on white
+	.byt	%11101011	; cyan on yellow
+	.byt	%10111010	; green on cyan
+	.byt	%10100101	; magenta on green
+	.byt	%01010100	; red on magenta
+	.byt	%01000001	; blue on red
+	.byt	%00010000	; black on blue
 
 va_width:
 ; line lengths on several modes, must match order from va_data!
