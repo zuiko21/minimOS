@@ -1,6 +1,6 @@
 ; firmware module for minimOS·16
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190306-1045
+; last modified 20190312-1007
 
 ; *** generic NMI handler for 65816 ***
 ; expected to be fully re-entrant
@@ -87,6 +87,7 @@
 ; return address already set! No need to reset DBR as only DP is accessed afterwards
 ; MUST respect DP and sys_sp, though
 .as:.xs:
+nmi_jmp:
 	JMP [fw_nmi]		; will return upon RTL... or RTS (8)
 
 ; *** execute standard NMI handler ***
