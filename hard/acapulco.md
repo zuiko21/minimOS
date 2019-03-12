@@ -208,4 +208,17 @@ on `n/Y3`
 *) Another '139 half may be used for enabling this one, taking `A7` and
 `/IO` as *enable*, for **reduced mirroring** at some speed penalty. 
 
-*Last modified: 20190310-1843*
+### RAM multiplexing
+
+Since there is **no separate VRAM** on this machine (even the *colour RAM* values
+are read by the CPU *from the standard RAM*, written in parallel), adequate
+multiplexing between CPU and CRTC addresses must be provided. The use of a
+6345/**6445** (instead of the classic 6845/HD46505) with **tristate** outputs
+eases the need for a *real* '157-based multiplexer, relying on a couple of my
+abundant '245s bus transceivers (acting as mere line drivers) instead. Note that
+the ROM and peripherals are *directly connected to the CPU address lines* and
+thus not multiplexed at all.
+
+
+
+*Last modified: 20190312-0932*
