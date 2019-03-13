@@ -104,6 +104,23 @@ compatibility, this setting (together with those 6345/6445-specific ones)
 **must be done by the Firmware** during *cold boot*, so the
 OS *driver* does not have to check for other than the generic 6845 registers.
 
+### Video signal generation
+
+Despite being a **4 bpp** screen, the use of an *attribute area* makes VRAM
+format as simple as a **bitmap** one. Thus, during CRTC addressing, RAM data is
+latched into a **'165 shift register** as usual. However, instead of sending
+its serial output directly to the VGA connector, it is used for *multiplexing*
+the nibbles read from the *colour RAM* (in parallel with the regular RAM), and
+those 4 bits (representing either *foreground* or *background* color) are sent
+to the _makeshift **DAC**_. The colour RAM output is, by the way, *latched* at
+the same time as the shift register.
+
+_**Cursor** circuitry is TBD_, certainly with the assistance of the 6x45 hardware.
+Most likely will involve some XOR gate between the shift register and the *colour
+multiplexer*, actually swapping fore- and background colours (much like the ZX
+Spectrum's `INVERSE` or `FLASH` modes). Ditto for **blanking**, not sure if via
+some AND gate or by totally disabling the colour mux.
+
 ### Palette for the *Colour RAM*
 
 For moderate bandwith and attractive presentation, a **GRgB palette** is used -- the
@@ -171,7 +188,8 @@ Please note that *the 6445 does NOT tristate its outputs* until it is so configu
 Thus, the Firmware MUST do that as soon as possible, and make certain that **no RAM is
 accessed until its _tristate_ configuration**, in order to avoid *bus contention*.
 The hardware will make sure that the CPU-side '245s are enabled when `Phi2` is high
-AND `A15` is low, so ROM accesses during the first cycles will not cause bus contention.
+AND `A15` is low, so ROM or I/O accesses during the very first cycles will not cause
+any problems.
 
 Special consideration needs the 6116 **Colour RAM**. Wired (mostly) in parallel
 with the regular 62256 RAM, it is *write-only* for the CPU (it will read from the
@@ -220,13 +238,10 @@ the ROM and peripherals are *directly connected to the CPU address lines* and
 thus not multiplexed at all.
 
 Enabling the CRTC's outputs is as simple as connecting `Phi2` to the `LPSTB/TSC`
-input. On the other hand, *the CPU bus cannot be simply enabled by this signal*,
-as the 6445 **will NOT tristate its output _until properly configured_**. In order
-to allow safe operation without *bus contention*, the CPU addresses are enabled
-by the aforementioned `/MUX` signal -- that is, when `Phi2` is high (CPU access)
-*AND* `A15` is **low** (EPROM and I/O addresses will *not* arrive to the RAMs
-address bus). For this trick to work, it is ESSENTIAL that **no RAM is accessed**
-(including subroutine calls) **until the tristate option is activated**.
-*Aproppriate firware is configured this way*. 
+input. On the other hand, *the CPU bus cannot be simply enabled by this signal*.
+In order to allow safe operation without *bus contention*, as previously stated,
+the CPU addresses are enabled by the aforementioned `/MUX` signal. For this trick
+to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
+the tristate option is activated**. *Aproppriate firmware makes sure about this*. 
 
-*Last modified: 20190312-1358*
+*Last modified: 20190313-0850*
