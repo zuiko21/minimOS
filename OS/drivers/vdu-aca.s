@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a8
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190312-1001
+; last modified 20190313-0851
 
 #include "../usual.h"
 
@@ -43,11 +43,10 @@ va_err:
 ;	va_mode	= $400		; *** *** *** DEBUGGING ONLY *** *** ***
 
 ; *** zeropage variables ***
-	v_dest	= $E8		; was local2, perhaps including this on zeropage.h?
-	v_src	= $EA		; is this OK?
+	v_dest	= $E8		; was local2, perhaps including this on zeropage.h? aka ptc
+	v_src	= $EA		; is this OK? aka ptl
 	vs_mask	= $E4		; *** local 1, splash screen only ***
-	vs_cnt	= $E5		; width counter
-	vs_at	= $E6		; attribute counter
+	vs_cnt	= $E5		; line counter
 
 ; ************************
 ; *** initialise stuff ***
@@ -91,12 +90,19 @@ vi_cmr:
 ;	CLC					; just in case...
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
 ; *** splash screen code ***
-	LDA #$FF			; all bits on...
-	STA vs_mask			; ...as first byte on splash screen
-	LDA #7				; highest position number
+	LDA #7				; line counter
 	STA vs_cnt
 	LDX va_mode			; get resolution index
-	LDA va_width, X		; chars per line
+	EOR #$FF			; will be subtracted from line length (assume page-aligned)
+	CLC					; ...was in 1s-complement?
+	ADC va_width, X		; add chars per line
+	STA v_src			; set LSB
+	LDA #>VA_COL		; MSB too
+	STA v_src+1
+vs_nlin:
+; ------------- old code ----------------- TO DO ------------------
+/*	LDA #$FF			; all bits on...
+	STA vs_mask			; ...as first byte on splash screen
 	SEC
 	SBC vs_cnt			; subtract needed positions
 	STA va_dest			; set as LSB (assume page aligned!)
@@ -107,8 +113,7 @@ vi_cmr:
 	STA va_src			; both MSBs set
 
 	_STZA vs_at			; clear attribute list counter
-	LDX vs_at			; current index
-; ------------- TO DO ----------------- TO DO ------------------
+	LDX vs_at			; current index*/
 
 ; *** end of splash screen, if not used may just use CLC above and let it fall into CLS routine ***
 	_DR_OK				; installation succeeded
