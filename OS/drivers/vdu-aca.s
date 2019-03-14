@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a8
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190313-0851
+; last modified 20190314-1235
 
 #include "../usual.h"
 
@@ -87,34 +87,58 @@ vi_cmr:
 	LDA #$F0			; white paper, black ink
 	STA va_attr			; this value will be used by CLS
 ; software cursor will be set by CLS routine!
-;	CLC					; just in case...
+;	CLC					; just in case there is no splash code
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
 ; *** splash screen code ***
 	LDA #7				; line counter
 	STA vs_cnt
 	LDX va_mode			; get resolution index
-	EOR #$FF			; will be subtracted from line length (assume page-aligned)
-	CLC					; ...was in 1s-complement?
+	LDA #0				; LSB as is page-aligned
+	CLC					; prepare addition
 	ADC va_width, X		; add chars per line
+	SEC					; prepare subtraction
+	SBC vs_cnt			; set initial column
 	STA v_src			; set LSB
-	LDA #>VA_COL		; MSB too
-	STA v_src+1
+	LDX #>VA_COL		; MSB too
+	STX v_src+1
 vs_nlin:
-; ------------- old code ----------------- TO DO ------------------
-/*	LDA #$FF			; all bits on...
-	STA vs_mask			; ...as first byte on splash screen
-	SEC
-	SBC vs_cnt			; subtract needed positions
-	STA va_dest			; set as LSB (assume page aligned!)
-	STA va_src			; another pointer for attributes
-	LDA #>VA_BASE		; put standard MSB
-	STA va_dest
-	SBC #4				; attribute area is 1 K before (C was set!)
-	STA va_src			; both MSBs set
-
-	_STZA vs_at			; clear attribute list counter
-	LDX vs_at			; current index*/
-
+		LDA v_src			; previously set
+		STA v_dest			; LSB for both ponters!
+		CLC
+		ADC #$4				; VRAM is 1k after colour RAM
+		STA v_dest+1		; set this MSB
+		LDY #0				; reset horiz index
+vs_ncol:
+			LDA va_cspl, Y		; set attribute for this position
+			STA (v_src), Y
+			LDA #$FF			; initial mask
+			STA vs_mask
+vs_nras:
+				LDA vs_mask			; get mask for this raster
+				STA (v_dest), Y		; put on VRAM
+				LDA v_dest+1		; update for next raster
+				CLC
+				ADC #4
+				STA v_dest+1
+				LSR vs_mask			; mask for next raster
+				BNE vs_nras			; while some dots in it
+			LDA v_dest+1		; back to original raster
+			SEC
+			SBC #$20
+			STA v_dest+1
+			INY					; next column
+			CPY vs_cnt			; less than X?
+			BCC vs_ncol
+		LDA v_src			; get old pointer
+		SEC					; add line length PLUS 1
+		LDX va_mode			; for this resolution
+		ADC va_width, X		; add chars per line
+		STA v_src
+		BCC vs_nc			; no carry
+			INC v_src+1			; check possible carry!
+vs_nc:
+		DEC vs_cnt			; one less row to go
+		BNE vs_nlin
 ; *** end of splash screen, if not used may just use CLC above and let it fall into CLS routine ***
 	_DR_OK				; installation succeeded
 
