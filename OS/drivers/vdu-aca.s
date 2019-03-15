@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a8
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190314-1235
+; last modified 20190315-1014
 
 #include "../usual.h"
 
@@ -90,54 +90,54 @@ vi_cmr:
 ;	CLC					; just in case there is no splash code
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
 ; *** splash screen code ***
-	LDA #7				; line counter
+	LDA #7				; line counter (2+3)
 	STA vs_cnt
-	LDX va_mode			; get resolution index
-	LDA #0				; LSB as is page-aligned
-	CLC					; prepare addition
-	ADC va_width, X		; add chars per line
-	SEC					; prepare subtraction
-	SBC vs_cnt			; set initial column
-	STA v_src			; set LSB
-	LDX #>VA_COL		; MSB too
+	LDX va_mode			; get resolution index (4)
+	LDA #0				; LSB as is page-aligned (2)
+	CLC					; prepare addition (2)
+	ADC va_width, X		; add chars per line (4)
+	SEC					; prepare subtraction (2)
+	SBC vs_cnt			; set initial column (3)
+	STA v_src			; set LSB (3)
+	LDX #>VA_COL		; MSB too (2+3)
 	STX v_src+1
 vs_nlin:
-		LDA v_src			; previously set
-		STA v_dest			; LSB for both ponters!
+		LDA v_src			; previously set (3)
+		STA v_dest			; LSB for both ponters! (3+2)
 		CLC
-		ADC #$4				; VRAM is 1k after colour RAM
-		STA v_dest+1		; set this MSB
-		LDY #0				; reset horiz index
+		ADC #$4				; VRAM is 1k after colour RAM (2)
+		STA v_dest+1		; set this MSB (3)
+		LDY #0				; reset horiz index (2)
 vs_ncol:
-			LDA va_cspl, Y		; set attribute for this position
+			LDA va_cspl, Y		; set attribute for this position (4+5)
 			STA (v_src), Y
-			LDA #$FF			; initial mask
+			LDA #$FF			; initial mask (2+3)
 			STA vs_mask
 vs_nras:
-				LDA vs_mask			; get mask for this raster
-				STA (v_dest), Y		; put on VRAM
-				LDA v_dest+1		; update for next raster
+				LDA vs_mask			; get mask for this raster (3)
+				STA (v_dest), Y		; put on VRAM (5)
+				LDA v_dest+1		; update for next raster (3+2+2+3)
 				CLC
 				ADC #4
 				STA v_dest+1
-				LSR vs_mask			; mask for next raster
-				BNE vs_nras			; while some dots in it
-			LDA v_dest+1		; back to original raster
+				LSR vs_mask			; mask for next raster (5)
+				BNE vs_nras			; while some dots in it (3*)
+			LDA v_dest+1		; back to original raster (3+2+2+3)
 			SEC
 			SBC #$20
 			STA v_dest+1
-			INY					; next column
-			CPY vs_cnt			; less than X?
+			INY					; next column (2)
+			CPY vs_cnt			; less than X? (3+3*)
 			BCC vs_ncol
-		LDA v_src			; get old pointer
-		SEC					; add line length PLUS 1
-		LDX va_mode			; for this resolution
-		ADC va_width, X		; add chars per line
+		LDA v_src			; get old pointer (3)
+		SEC					; add line length PLUS 1 (2)
+		LDX va_mode			; for this resolution (4)
+		ADC va_width, X		; add chars per line (4+3)
 		STA v_src
-		BCC vs_nc			; no carry
-			INC v_src+1			; check possible carry!
+		BCC vs_nc			; no carry (3*)
+			INC v_src+1			; check possible carry! (5)
 vs_nc:
-		DEC vs_cnt			; one less row to go
+		DEC vs_cnt			; one less row to go (5+3*)
 		BNE vs_nlin
 ; *** end of splash screen, if not used may just use CLC above and let it fall into CLS routine ***
 	_DR_OK				; installation succeeded
