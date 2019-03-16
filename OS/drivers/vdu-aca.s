@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a8
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190315-1014
+; last modified 20190316-2243
 
 #include "../usual.h"
 
@@ -93,20 +93,20 @@ vi_cmr:
 	LDA #7				; line counter (2+3)
 	STA vs_cnt
 	LDX va_mode			; get resolution index (4)
-	LDA #0				; LSB as is page-aligned (2)
+	LDA #<VA_BASE				; LSB as is page-aligned (2)
 	CLC					; prepare addition (2)
 	ADC va_width, X		; add chars per line (4)
 	SEC					; prepare subtraction (2)
 	SBC vs_cnt			; set initial column (3)
-	STA v_src			; set LSB (3)
-	LDX #>VA_COL		; MSB too (2+3)
-	STX v_src+1
+	STA v_dest			; set LSB (3)
+	LDX #>VA_BASE		; MSB too (2+3)
+	STX v_dest+1
 vs_nlin:
-		LDA v_src			; previously set (3)
-		STA v_dest			; LSB for both ponters! (3+2)
-		CLC
-		ADC #$4				; VRAM is 1k after colour RAM (2)
-		STA v_dest+1		; set this MSB (3)
+		STA v_src			; LSB for both ponters! (3)
+		TXA					; get MSB back (2+2)
+		SEC
+		SBC #$4				; VRAM is 1k after colour RAM (2)
+		STA v_src+1		; set this MSB (3)
 		LDY #0				; reset horiz index (2)
 vs_ncol:
 			LDA va_cspl, Y		; set attribute for this position (4+5)
@@ -129,10 +129,11 @@ vs_nras:
 			INY					; next column (2)
 			CPY vs_cnt			; less than X? (3+3*)
 			BCC vs_ncol
+		TAX					; keep MSB eeeeeeek (2)
 		LDA v_src			; get old pointer (3)
 		SEC					; add line length PLUS 1 (2)
-		LDX va_mode			; for this resolution (4)
-		ADC va_width, X		; add chars per line (4+3)
+		LDY va_mode			; for this resolution (4)
+		ADC va_width, Y		; add chars per line (4+3)
 		STA v_src
 		BCC vs_nc			; no carry (3*)
 			INC v_src+1			; check possible carry! (5)
