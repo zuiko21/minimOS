@@ -189,7 +189,9 @@ Thus, the Firmware MUST do that as soon as possible, and make certain that **no 
 accessed until its _tristate_ configuration**, in order to avoid *bus contention*.
 The hardware will make sure that the CPU-side '245s are enabled when `Phi2` is high
 AND `A15` is low, so ROM or I/O accesses during the very first cycles will not cause
-any problems.
+any problems. **6502 does a (fake) stack access during RESET**, thus note the trick
+on *Chip selection* for a complete solution. _None of these solutions will be
+actually needed if using a properly **multiplexed** 6845_.
 
 Special consideration needs the 6116 **Colour RAM**. Wired (mostly) in parallel
 with the regular 62256 RAM, it is *write-only* for the CPU (it will read from the
@@ -212,18 +214,21 @@ _Unless noted otherwise, all '688s and '139s are *enabled* as long as **`/EN`**
 - **`/WR`** (write enable): the same '139 for `/RD`, output on `n/Y2`
 - **`ROM /CS`**: inverted `A15` for optimum speed
 - **`ROM /OE`**: a '139 takes `/RD (nA1)` and `/IO (nA0)`, output on `n/Y1`
-- **`RAM /CS`**: a *permanently enabled* '139 takes `Phi2 (nA1)` and `A15 (nA0)`,
+- **`RAM /CS`**: a *permanently\* enabled* '139 takes `Phi2 (nA1)` and `A15 (nA0)`,
 output is **negated** `n/Y3`
 - **`/MUX`** (enable CPU RAM access): the same '139 as above, output on `n/Y2`
 - **`RAM /OE`**: a '139 *enabled by `A15`* takes `Phi2 (nA1)` and `/EN (nA0)`,
 output is **negated** `n/Y3`
-- **`VIA /CS2`**: a '139 enabled by `/IO`\*, takes `A6 (nA1)` and `A5 (nA0)`, output
+- **`VIA /CS2`**: a '139 enabled by `/IO`\*\*, takes `A6 (nA1)` and `A5 (nA0)`, output
 on `n/Y3`
 - **`CRTC /CS`**: the same '139 as above, output on `n/Y2`
 - **`VIA CS1`**: direct to `A4` as previously stated
 - **`/CRAM`** (colour RAM write): a '688 comparing `A10-A15` to the upper bits of `$5C`
 
-\*) Another '139 half may be used for enabling this one, taking `A7` and
+\*) The *enable* signal should be the **inverted `/RES`** signal, but with a
+*capacitor* to provide a few microseconds delay, skipping fake stack access
+during RESET.
+\*\*) Another '139 half may be used for enabling this one, taking `A7` and
 `/IO` as *enable*, for **reduced mirroring** at some speed penalty. 
 
 ### RAM multiplexing
@@ -244,4 +249,4 @@ the CPU addresses are enabled by the aforementioned `/MUX` signal. For this tric
 to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
 the tristate option is activated**. *Aproppriate firmware makes sure about this*. 
 
-*Last modified: 20190317-1222*
+*Last modified: 20190317-1312*
