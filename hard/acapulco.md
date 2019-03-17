@@ -75,11 +75,11 @@ thus provide several *configuration tables*, allowing these suggested modes:
 0) **256x240** (32x30 char.) ditto, allowing a simpler driver
 
 - _for the non-standard 24.576 MHz:_
-3) **320x200** (40x25 char.) shorter *back porch & sync pulses* (likely compatible)
+3) **320x200** (40x25 char.) **much shorter back porch** (*perhaps* compatible)
 3) **320x200** (40x25 char.) **much shorter sync** pulse (likely compatible)
 3) **288x224** (36x28 char.) most likely compatible with *slightly* faster timing
 3) **256x240** (32x30 char.) ditto, allowing a simpler driver
-3) **320x200** (40x25 char.) **much shorter back porch** (*perhaps* compatible)
+3) **320x200** (40x25 char.) shorter *back porch & sync pulses* (likely compatible)
 
 *Firmware* may provide a module for **quick video mode selection** during startup.
 
@@ -244,4 +244,4 @@ the CPU addresses are enabled by the aforementioned `/MUX` signal. For this tric
 to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
 the tristate option is activated**. *Aproppriate firmware makes sure about this*. 
 
-*Last modified: 20190313-0850*
+*Last modified: 20190317-1222*
