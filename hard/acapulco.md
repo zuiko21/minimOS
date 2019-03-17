@@ -227,7 +227,8 @@ on `n/Y3`
 
 \*) The *enable* signal should be the **inverted `/RES`** signal, but with a
 *capacitor* to provide a few microseconds delay, skipping fake stack access
-during RESET.
+during RESET. _5 clock cycles should suffice, **~3.3 uS**_.
+
 \*\*) Another '139 half may be used for enabling this one, taking `A7` and
 `/IO` as *enable*, for **reduced mirroring** at some speed penalty. 
 
