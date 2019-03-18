@@ -124,9 +124,9 @@ some AND gate or by totally disabling the colour mux.
 ### Palette for the *Colour RAM*
 
 For moderate bandwith and attractive presentation, a **GRgB palette** is used -- the
-*green* channel sporting **4 levels**, as the human eye is most sensitive to this one.
-The colour codes *for each character* (or the corresponding **8x8 pixel** area) are
-recorded in a *chunky* fashion, the most significant nibble representing the
+*green* channel sporting **4 levels** isntead of two, as the human eye is most sensitive
+to this one. The colour codes *for each character* (or the corresponding **8x8 pixel**
+area) are recorded in a *chunky* fashion, the most significant nibble representing the
 **background** one.
 
 You can see the **GRgB palette** (among several discarded other ones)
@@ -225,11 +225,9 @@ on `n/Y3`
 - **`VIA CS1`**: direct to `A4` as previously stated
 - **`/CRAM`** (colour RAM write): a '688 comparing `A10-A15` to the upper bits of `$5C`
 
-\*) The *enable* signal should be the **inverted `/RES`** signal, but with a
-*capacitor (or RC)* to provide a few microseconds delay, skipping fake stack access
-during RESET. _5 clock cycles should suffice, **~3.3 uS**_, and the decoder's
-input rise time must be observed, thus the use a *Schmitt Trigger* is
-recommended.
+\*) The *enable* signal should be the **inverted `/RES`** signal, but *delayed* a few
+microseconds, skipping fake stack access during RESET. _5 clock cycles should suffice_,
+perhaps the most recommended method wouul be the use of a **shift register**.
 
 \*\*) Another '139 half may be used for enabling this one, taking `A7` and
 `/IO` as *enable*, for **reduced mirroring** at some speed penalty. 
@@ -252,4 +250,4 @@ the CPU addresses are enabled by the aforementioned `/MUX` signal. For this tric
 to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
 the tristate option is activated**. *Aproppriate firmware makes sure about this*. 
 
-*Last modified: 20190318-1013*
+*Last modified: 20190318-1059*
