@@ -1,6 +1,6 @@
 # Acapulco
 
-The **Acapulco** project, formerly called *Tampico*, is a simple 65C02 computer with
+The **Acapulco** project, formerly called _Tampico_, is a simple 65C02 computer with
 **built-in *VGA-compatible* video output**. Despite this output fitting a
 *quasi-VGA* format, actual picture resolution is *SD TV-like* but compatible with
 more modern devices. This also stays better within the limited power of a 65C02.
@@ -96,7 +96,9 @@ further issues should occur; however, in case a classic 6845 is used, another pr
 can arise: it produces a **fixed length** (16 lines) *vertical sync* pulse, which
 may throw off the vertical position of the image a bit. *This might be an issue on the
 256x240 mode*, as the whole 480 image lines are used, and some monitors may not have
-room enough for top or bottom lines under such displaced `VSYNC` pulse.
+room enough for top or bottom lines under such displaced `VSYNC` pulse. _This should
+affect the **32-column modes** only_, and a workaround could be limiting them to
+_28 rows_ (224 raster lines).
 
 On the other hand, the 6345/6445 can fine-adjust the `VSYNC` pulse length
 *and* position, thus highly recommended in any case. To keep the desired 6845
@@ -141,7 +143,7 @@ is assigned to I/O devices -- although with quite a bit of mirroring.
 
 Because of the *built-in video* feature, some of the RAM is used as *VRAM*. **Colour
 RAM** is, by the way, in a *separate 6116 chip*, but will be read by the CRTC only;
-*writes on that area will be made **simultaneously on the 62256** too*, allowing
+_writes on that area will be made **simultaneously on the 62256** too_, allowing
 further reading by the CPU.
 
 The standard memory map goes as follows:
@@ -250,4 +252,4 @@ the CPU addresses are enabled by the aforementioned `/MUX` signal. For this tric
 to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
 the tristate option is activated**. *Aproppriate firmware makes sure about this*. 
 
-*Last modified: 20190318-1059*
+*Last modified: 20190319-1354*
