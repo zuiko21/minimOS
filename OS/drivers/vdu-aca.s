@@ -100,8 +100,8 @@ vi_cmr:
 	SBC vs_cnt			; set initial column (3)
 	STA v_dest			; set LSB (3)
 	LDX #>VA_BASE		; MSB too (2+3)
-	STX v_dest+1
 vs_nlin:
+		STX v_dest+1
 		STA v_src			; LSB for both ponters! (3)
 		TXA					; get MSB back (2+2)
 		SEC
@@ -130,13 +130,13 @@ vs_nras:
 			CPY vs_cnt			; less than X? (3+3*)
 			BCC vs_ncol
 		TAX					; keep MSB eeeeeeek (2)
-		LDA v_src			; get old pointer (3)
+		LDA v_dest			; get old pointer (3)
 		SEC					; add line length PLUS 1 (2)
 		LDY va_mode			; for this resolution (4)
 		ADC va_width, Y		; add chars per line (4+3)
-		STA v_src
+		STA v_dest
 		BCC vs_nc			; no carry (3*)
-			INC v_src+1			; check possible carry! (5)
+			INX					; check possible carry! (2)
 vs_nc:
 		DEC vs_cnt			; one less row to go (5+3*)
 		BNE vs_nlin
