@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a8
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190316-2243
+; last modified 20190320-0847
 
 #include "../usual.h"
 
@@ -507,7 +507,7 @@ va_width:
 
 va_cdat:
 ; new, common values for CRTC registers in ALL modes
-	.byt 0				; R8, interlaced mode
+	.byt $50			; R8, interlaced mode AND 1 ch. skew
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
 	.byt 15				; R11, cursor end raster

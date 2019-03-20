@@ -1,6 +1,6 @@
 ; Acapulco firmware module for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190306-1057
+; last modified 20190320-0848
 
 ; *** set Acapulco video mode at boot ***
 
@@ -27,7 +27,7 @@ afw_ci:
 
 ; *** data tables ***
 afw_si:
-	.byt 47, 32, 37, 38, 31, 13, 30, 30, 0, 15		; *** safe values for 6845 ***
+	.byt 47, 32, 37, 38, 31, 13, 30, 30, 80, 15		; *** safe values for 6845 ***
 ; specific 6345/6445 registers
 afw_63d:
 	.byt 8				; R30, d3=SY (enable VS adjust)
