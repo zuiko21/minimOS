@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a8
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190320-0847
+; last modified 20190320-0907
 
 #include "../usual.h"
 
@@ -89,31 +89,38 @@ vi_cmr:
 ; software cursor will be set by CLS routine!
 ;	CLC					; just in case there is no splash code
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
-; *** splash screen code ***
+
+; **************************
+; *** splash screen code *** 86 bytes, 7033t (~4.58 ms @ 1.536 MHz)
+; **************************
+; initial code takes 27t
 	LDA #7				; line counter (2+3)
 	STA vs_cnt
 	LDX va_mode			; get resolution index (4)
-	LDA #<VA_BASE				; LSB as is page-aligned (2)
+	LDA #<VA_BASE		; LSB as is page-aligned (2)
 	CLC					; prepare addition (2)
 	ADC va_width, X		; add chars per line (4)
 	SEC					; prepare subtraction (2)
 	SBC vs_cnt			; set initial column (3)
 	STA v_dest			; set LSB (3)
-	LDX #>VA_BASE		; MSB too (2+3)
+	LDX #>VA_BASE		; MSB too (2)
 vs_nlin:
-		STX v_dest+1
+; row loop takes 8 times 46+column loop, minus one = 7006t
+		STX v_dest+1		; will be updated on loop (3)
 		STA v_src			; LSB for both ponters! (3)
 		TXA					; get MSB back (2+2)
 		SEC
 		SBC #$4				; VRAM is 1k after colour RAM (2)
-		STA v_src+1		; set this MSB (3)
+		STA v_src+1			; set this MSB (3)
 		LDY #0				; reset horiz index (2)
 vs_ncol:
+; columns loop takes 239*n-1 (n=7...1) = 1672, 1433, 1194, 955, 716, 477, 238t (total 6685t)
 			LDA va_cspl, Y		; set attribute for this position (4+5)
 			STA (v_src), Y
 			LDA #$FF			; initial mask (2+3)
 			STA vs_mask
 vs_nras:
+; inner raster loop takes 26*8-1 = 207t
 				LDA vs_mask			; get mask for this raster (3)
 				STA (v_dest), Y		; put on VRAM (5)
 				LDA v_dest+1		; update for next raster (3+2+2+3)
@@ -140,7 +147,11 @@ vs_nras:
 vs_nc:
 		DEC vs_cnt			; one less row to go (5+3*)
 		BNE vs_nlin
-; *** end of splash screen, if not used may just use CLC above and let it fall into CLS routine ***
+; ****************************
+; *** end of splash screen ***
+; ****************************
+; if not used may just use CLC above and let it fall into CLS routine ***
+
 	_DR_OK				; installation succeeded
 
 ; ***************************************
