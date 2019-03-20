@@ -1,7 +1,7 @@
 ; firmware for minimOS on Acapulco
 ; v0.9.6b6
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190304-1314
+; last modified 20190320-0908
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -98,7 +98,7 @@ reset:
 ; Acapulco has no ROM-in-RAM feature!
 
 ; specific startup beep
-#include "modules/beep_sweep.s"
+#include "modules/droplet.s"
 
 ; SRAM test, note that may affect VRAM
 #include "modules/ramtest.s"

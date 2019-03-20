@@ -1,7 +1,7 @@
 ; firmware for minimOS on Jalapa-2
 ; v0.9.6b1
 ; (c) 2017-2019 Carlos J. Santisteban
-; last modified 20190223-2242
+; last modified 20190320-0909
 
 #define		FIRMWARE	_FIRMWARE
 
@@ -105,7 +105,7 @@ reset:
 
 
 ; startup beep, droplet style
-#include "modules/droplet.s"	; specific Jalapa sound, not sure if I will be able to run it asynchronously
+#include "modules/beep_jalapa.s"	; specific Jalapa sound, not sure if I will be able to run it asynchronously
 
 ; SRAM test, MUST probe for RAM size, anyway... and skip the ROM
 #include "modules/memsiz.s"
