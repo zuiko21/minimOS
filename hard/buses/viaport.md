@@ -22,7 +22,7 @@ although with **symmetrical power pins** as per
 [Garth Wilson's design](http://wilsonminesco.com/6502primer/potpourri.html),
 suggestion, so in case of accidental _backwards fitting_ no harm will be made.
 _One of the +5 V pins may be connected to a **LED** on peripheral devices and
-left **unconnected** on computers, thus alerting about a reversed connection.
+left **unconnected** on computers_, thus **alerting** about a reversed connection.
 
 ## VIAbus
 
