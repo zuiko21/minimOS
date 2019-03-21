@@ -30,13 +30,13 @@ _Inside_ means closer to the VIA (on a computer).
 
 outside | inside
 ------- | ------
-+5 v | GND
++5 v\*\* | GND
 `Px0` | `Px5`
 `Px1` | `Px6`
 `Px2` | `Px7`
 `Px3` | `Cx1`
 `Px4` | `Cx2` 
-GND | +5 v\*\*
+GND | +5 v
 
 ### Integrated SS-22 connector
 
@@ -51,26 +51,26 @@ GND | +5 v\*\*
 
 Outside | Inside
 ------- | ------
-+5 v | GND
++5 v\*\* | GND
 `PA0` | `PA5`
 `PA1` | `PA6`
 `PA2` | `PA7`
 `PA3` | `CA1`
 `PA4` | `CA2` 
-GND | +5 v\*\*
+GND | +5 v
 GND\* | _NC_
 `CB1` | _NC_ 
 `CB2` | **_Key_** (IDC-40 standard)
 `CA2` | _NC_ 
 _NC_ | _NC_
 +5 v | _NC_
-+5 v | GND
++5 v\*\* | GND
 `PB0` | `PB5`
 `PB1` | `PB6`
 `PB2` | `PB7`
 `PB3` | `CB1`
 `PB4` | `CB2` 
-GND | +5 v\*\*
+GND | +5 v
 
 \*) These GND pins should be slightly _longer_, trying to avoid damage
 in case of **hot-plugging**.
@@ -78,4 +78,4 @@ in case of **hot-plugging**.
 \*\*) Might be left _NC_ on computers and connected to a LED on peripherals
 for _backwards fitting_ detection.
 
-_Last modified 20190321-0914_
+_Last modified 20190321-0917_
