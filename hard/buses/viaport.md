@@ -23,7 +23,7 @@ so in case of accidental _backwards fitting_ no harm will be made.
 ### _single-port_ VIAport2 pinout
 
 outside | inside
-=== | ===
+------- | ------
 **+5 v** | **GND**
 `Px0` | `Px5`
 `Px1` | `Px6`
