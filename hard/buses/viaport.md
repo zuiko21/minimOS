@@ -19,6 +19,8 @@ with those used by [Daryl Rictor's SBC-2 computer](http://sbc.rictor.org/info2.h
 but with **symmetrical power pins** as per
 [Garth Wilson's design](http://wilsonminesco.com/6502primer/potpourri.html),
 so in case of accidental _backwards fitting_ no harm will be made.
+_One of the power pins may be connected to a LED on peripheral devices and
+left unconnected on computers, thus detecting such wrong fittings_.
 
 ## Pinouts
 
@@ -34,9 +36,9 @@ outside | inside
 `Px2` | `Px7`
 `Px3` | `Cx1`
 `Px4` | `Cx2` 
-GND | +5 v
+GND | +5 v\*\*
 
-### integrated SS-22 connector
+### Integrated SS-22 connector
 
 1) GND\*
 1) `CB1` (CLK)
@@ -55,7 +57,7 @@ Outside | Inside
 `PA2` | `PA7`
 `PA3` | `CA1`
 `PA4` | `CA2` 
-GND | +5 v
+GND | +5 v\*\*
 GND\* | _NC_
 `CB1` | _NC_ 
 `CB2` | **_Key_** (IDC-40 standard)
@@ -68,9 +70,12 @@ _NC_ | _NC_
 `PB2` | `PB7`
 `PB3` | `CB1`
 `PB4` | `CB2` 
-GND | +5 v
+GND | +5 v\*\*
 
 \*) These GND pins should be slightly _longer_, trying to avoid damage
 in case of **hot-plugging**.
 
-_Last modified 20190321-0908_
+\*\*) Might be left _NC_ on computers and connected to a LED on peripherals
+for _backwards fitting_ detection.
+
+_Last modified 20190321-0914_
