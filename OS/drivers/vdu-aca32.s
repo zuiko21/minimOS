@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a5 (32 column mode)
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190212-0845
+; last modified 20190322-1043
 
 ; ***********************
 ; *** minimOS headers ***
@@ -457,5 +457,5 @@ va_data:
 
 ; *** glyphs ***
 va_font:
-
+#include "fonts/8x8.s"
 .)

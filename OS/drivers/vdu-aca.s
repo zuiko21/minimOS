@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a8
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190320-0907
+; last modified 20190322-1041
 
 #include "../usual.h"
 
@@ -616,5 +616,5 @@ va_data:
 
 ; *** glyphs ***
 va_font:
-
+#include "fonts/8x8.s"
 .)
