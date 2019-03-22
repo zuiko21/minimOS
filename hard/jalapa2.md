@@ -16,7 +16,7 @@ Still within design phase, here is an outline of its basic specs:
 
 - CPU: **65C816**
 - Clock speed: **2.304 MHz**, with **1.8432** and **3.072 *turbo*** options
-- VIA: *single* **65C22**, with the typical **piezo-buzzer** at PB7/CB2
+- VIA: (one of two?) **65C22**, with the typical **piezo-buzzer** at PB7/CB2
 - RAM: 128/**512 kiB** (static 32-pin)
 - (E)EPROM: up to **512 kiB**
 - Serial: single **65C51**, just for the sake of completeness
@@ -34,7 +34,7 @@ and **M/X** (register sizes) lines of the 65816. These will be available on the
 ### Not provided on this machine
 
 - ROM-in-RAM copy (it's slow enough for most EPROMs)
-- Real Time Clock (of little use lacking a *filesystem*, although might be included)
+- Real Time Clock (of little use lacking a *filesystem*, although **might be included**)
 - Hardware *zeropage/stack* **bankswitching** (65816 allows easy multitasking)
 - 6845-based video output (cards available thru the *expansion bus*)
 
@@ -101,7 +101,7 @@ have just another *four* available slots, as VIA & ACIA appear *twice* on the pa
 Since a complete *expansion bus* is fitted, the *high* ROM must be decoded at the
 **uppermost banks** (`BA3-BA7`=**1**) avoiding mirroring.
 Also, *RAM should be properly decoded* too, but within the **lowest MiB**.
-That would render `lib` ROM at $F80000-$FFFFFF, leaving all addresses
+That would render `/lib` ROM at $F80000-$FFFFFF, leaving all addresses
 $100000-$F7FFFF, a whole **14 MiB free** for expansion.
  
 ## Glue-logic implementation
@@ -183,4 +183,4 @@ for higher performance at the cost of increased power consumption. On the other 
 moving the `R/W`signal to the `KERNEL /CS` '688 (with corresponding '139 input set
 high) would further reduce power consumption.
 
-*Last modified: 20181018-1204*
+*Last modified: 20190322-0906*
