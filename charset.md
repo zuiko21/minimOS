@@ -63,45 +63,49 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 
 ^ key|Dec|Hex|ASCII|mOS|glyph|notes
 -----|---|---|-----|---|-----|-----
-|0|$00|`NUL`|**`NULL`**||(1)
+-|0|$00|`NUL`|**`NULL`**||(1)
 A|1|$01|`SOH`|**`HOME`**|&#8689;|reset cursor without clearing screen
 B|2|$02|`STX`|**`LEFT`**|&#8678;|move cursor to the left (no backspace)
 C|3|$03|`ETX`|**`TERM`**||send TERM signal
 D|4|$04|`EOT`|**`ENDT`**|&#8690;|end of text
 E|5|$05|`ENQ`|**`ENDL`**|&#8608;|move cursor to end of line
 F|6|$06|`ACK`|**`RGHT`**|&#8680;|move cursor to the right (no space)
-G|7|$07|`BEL`|**`BELL`**||acoustic or visual alert
-H|8|$08|`BS`|**`BKSP`**|&#8602;|backspace, clear previous character
+G|7|$07|`BEL`|**`BELL`**|&#128276;|acoustic or visual alert
+H|8|$08|`BS`|**`BKSP`**|&#9003;|backspace, clear previous character
 I|9|$09|`HT`|**`HTAB`**|&#8677;|advance to next tab, printing spaces
 J|10|$0A|`LF`|**`DOWN`**|&#8681;|cursor down (no CR)
 K|11|$0B|`VT`|**`UPCU`**|&#8679;|cursor up one line
 L|12|$0C|`FF`|**`FRMF`**||clear screen (2)
-M|13|$0D|`CR`|**`NWLN`**||newline, ZX Spectrum-like
-N|14|$0E|`SO`|**`EMON`**||emphasis on
-O|15|$0F|`SI`|**`EMOF`**||emphasis off
-P|16|$10|`DLE`|**`DLE`**||do not interpret next control char (3) 
+M|13|$0D|`CR`|**`NWLN`**|&#9166;|newline, ZX Spectrum-like
+N|14|$0E|`SO`|**`EMON`**|&#9733;|emphasis on
+O|15|$0F|`SI`|**`EMOF`**|&#9830;|emphasis off
+P|16|$10|`DLE`|**`DLE`**|&#9829;|do not interpret next control char (3) 
 Q|17|$11|`DC1`|**`XON`**|&#8658;|cursor on (when available)
-R|18|$12|`DC2`|**`INK`**||set foreground colour (3)(4)
+R|18|$12|`DC2`|**`INK`**|&#9999;|set foreground colour (3)(4)
 S|19|$13|`DC3`|**`XOFF`**|&#8656;|cursor off
 T|20|$14|`DC4`|**`PAPR`**||set background colour (3)(4)
 U|21|$15|`NAK`|**`CRTN`**|&#8606;|carriage return (without line feed)
 V|22|$16|`SYN`|**`PGDN`**|&#8609;|page down
-W|23|$17|`ETB`|**``**||
-X|24|$18|`CAN`|*`BKTB`**|&#8676;|backwards tabulation
+W|23|$17|`ETB`|**` `**||
+X|24|$18|`CAN`|**`BKTB`**|&#8676;|backwards tabulation
 Y|22|$19|`EM`|**`PGUP`**|&#8607;|page up
-Z|26|$1A|`SUB`|**``**||
-|27|$1B|`ESC`|**`ESC`**|&#11017;|escape
-|28|$1C|`FS`|**``**||
-|29|$1D|`GS`|**``**||
-|30|$1E|`RS`|**``**||
-|31|$1F|`US`|**``**||
+Z|26|$1A|`SUB`|**` `**||
+-|27|$1B|`ESC`|**`ESC`**|&#11017;|escape
+-|28|$1C|`FS`|**` `**||
+-|29|$1D|`GS`|**` `**||
+-|30|$1E|`RS`|**` `**||
+-|31|$1F|`US`|**` `**||
+-|127|$7F|`DEL`|**`DEL`**|&#8999;|delete
 
 ### Notes:
 
 1.If sent to `CONIO`, will issue an input.
+
 2.If sent to `CONIO`, reset the standard device.
+
 3.Takes a second character to complete
+
 4.Currently only low nibble used as `GRgB` or `G2 R2 G1 B2`. *High nibble may be used
 (when supported) as `R1 G0 R0 B1`*.
 
-*last modified 20190323-1152*
+*last modified 20190323-1227*
