@@ -63,10 +63,10 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 
 ^ key|Dec|Hex|ASCII|mOS|glyph|notes
 -----|---|---|-----|---|-----|-----
--|0|$00|`NUL`|**`NULL`**||(1)
+-|0|$00|`NUL`|**`NULL`**|&#9940;|(1)
 A|1|$01|`SOH`|**`HOME`**|&#8689;|reset cursor without clearing screen
 B|2|$02|`STX`|**`LEFT`**|&#8678;|move cursor to the left (no backspace)
-C|3|$03|`ETX`|**`TERM`**||send TERM signal
+C|3|$03|`ETX`|**`TERM`**|&#9211;|send TERM signal
 D|4|$04|`EOT`|**`ENDT`**|&#8690;|end of text
 E|5|$05|`ENQ`|**`ENDL`**|&#8608;|move cursor to end of line
 F|6|$06|`ACK`|**`RGHT`**|&#8680;|move cursor to the right (no space)
@@ -86,15 +86,15 @@ S|19|$13|`DC3`|**`XOFF`**|&#8656;|cursor off
 T|20|$14|`DC4`|**`PAPR`**||set background colour (3)(4)
 U|21|$15|`NAK`|**`CRTN`**|&#8606;|carriage return (without line feed)
 V|22|$16|`SYN`|**`PGDN`**|&#8609;|page down
-W|23|$17|`ETB`|**` `**||
+W|23|$17|`ETB`|**` `**|&#9824;|
 X|24|$18|`CAN`|**`BKTB`**|&#8676;|backwards tabulation
 Y|22|$19|`EM`|**`PGUP`**|&#8607;|page up
-Z|26|$1A|`SUB`|**` `**||
+Z|26|$1A|`SUB`|**` `**|&#9827;|
 -|27|$1B|`ESC`|**`ESC`**|&#11017;|escape
--|28|$1C|`FS`|**` `**||
--|29|$1D|`GS`|**` `**||
--|30|$1E|`RS`|**` `**||
--|31|$1F|`US`|**` `**||
+-|28|$1C|`FS`|**` `**|&#9698;|
+-|29|$1D|`GS`|**` `**|&#9699;|
+-|30|$1E|`RS`|**` `**|&#9700;|
+-|31|$1F|`US`|**` `**|&#9701;|
 -|127|$7F|`DEL`|**`DEL`**|&#8999;|delete
 
 ### Notes:
@@ -108,4 +108,4 @@ Z|26|$1A|`SUB`|**` `**||
 4.Currently only low nibble used as `GRgB` or `G2 R2 G1 B2`. *High nibble may be used
 (when supported) as `R1 G0 R0 B1`*.
 
-*last modified 20190323-1227*
+*last modified 20190323-1606*
