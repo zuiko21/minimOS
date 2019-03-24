@@ -75,21 +75,21 @@ H|8|$08|`BS`|**`BKSP`**|&#9003;|backspace, clear previous character
 I|9|$09|`HT`|**`HTAB`**|&#8677;|advance to next tab, printing spaces
 J|10|$0A|`LF`|**`DOWN`**|&#8681;|cursor down (no CR)
 K|11|$0B|`VT`|**`UPCU`**|&#8679;|cursor up one line
-L|12|$0C|`FF`|**`FRMF`**||clear screen (2)
-M|13|$0D|`CR`|**`NWLN`**|&#9166;|newline, ZX Spectrum-like
+L|12|$0C|`FF`|**`FORM`**|&#9635;|clear screen (2)
+M|13|$0D|`CR`|**`NEWL`**|&#9166;|newline, ZX Spectrum-like
 N|14|$0E|`SO`|**`EMON`**|&#9733;|emphasis on
 O|15|$0F|`SI`|**`EMOF`**|&#9830;|emphasis off
 P|16|$10|`DLE`|**`DLE`**|&#9829;|do not interpret next control char (3) 
 Q|17|$11|`DC1`|**`XON`**|&#8658;|cursor on (when available)
 R|18|$12|`DC2`|**`INK`**|&#9999;|set foreground colour (3)(4)
 S|19|$13|`DC3`|**`XOFF`**|&#8656;|cursor off
-T|20|$14|`DC4`|**`PAPR`**||set background colour (3)(4)
+T|20|$14|`DC4`|**`PAPC`**|&#73668;|set background colour (3)(4)
 U|21|$15|`NAK`|**`CRTN`**|&#8606;|carriage return (without line feed)
 V|22|$16|`SYN`|**`PGDN`**|&#8609;|page down
-W|23|$17|`ETB`|**` `**|&#9824;|
+W|23|$17|`ETB`|**`ATYX`**|&#9824;|set cursor position (5)
 X|24|$18|`CAN`|**`BKTB`**|&#8676;|backwards tabulation
 Y|22|$19|`EM`|**`PGUP`**|&#8607;|page up
-Z|26|$1A|`SUB`|**` `**|&#9827;|
+Z|26|$1A|`SUB`|**`STOP`**|&#9827;|send STOP signal
 -|27|$1B|`ESC`|**`ESC`**|&#11017;|escape
 -|28|$1C|`FS`|**` `**|&#9698;|
 -|29|$1D|`GS`|**` `**|&#9699;|
@@ -99,13 +99,15 @@ Z|26|$1A|`SUB`|**` `**|&#9827;|
 
 ### Notes:
 
-1.If sent to `CONIO`, will issue an input.
+1.If sent to `CONIO`, will issue an _input_.
 
-2.If sent to `CONIO`, reset the standard device.
+2.If sent to `CONIO`, will **reset** the standard device.
 
 3.Takes a second character to complete
 
 4.Currently only low nibble used as `GRgB` or `G2 R2 G1 B2`. *High nibble may be used
 (when supported) as `R1 G0 R0 B1`*.
 
-*last modified 20190323-1606*
+5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
+
+*last modified 20190324-1932*
