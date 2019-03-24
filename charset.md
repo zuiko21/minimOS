@@ -1,7 +1,5 @@
 # minimOS Character Set
 
-*last modified 20190217-1232*
-
 Focused on limited resource platforms, the standard **character set** for minimOS
 had to satisfy the following:
 
@@ -63,40 +61,40 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 
 ## Control characters
 
-Dec|Hex|ASCII|mOS|notes
----|---|-----|---|-----
-0|$00|`NUL`|**`NUL`**|(1)
-1|$01|`SOH`|**`HOME`**|reset cursor without clearing screen
-2|$02|`STX`|**`LEFT`**|move cursor
-3|$03|`ETX`|**`TERM`**|send TERM signal
-4|$04|`EOT`|**``**|
-5|$05|`ENQ`|**``**|
-6|$06|`ACK`|**`RIGHT`**|move cursor (no space)
-7|$07|`BEL`|**`BEL`**|acoustic or visual alert
-8|$08|`BS`|**`BS`**|clear previous character
-9|$09|`HT`|**`HTAB`**|advance to next tab, printing spaces
-10|$0A|`LF`|**`DOWN`**|move cursor (no CR)
-11|$0B|`VT`|**`UPCUR`**|cursor up one line
-12|$0C|`FF`|**`FF`**|clear screen (2)
-13|$0D|`CR`|**`NEWLN`**|ZX Spectrum-like
-14|$0E|`SO`|**`EMON`**|emphasis on
-15|$0F|`SI`|**`EMOFF`**|emphasis off
-16|$10|`DLE`|**`DLE`**|do not interpret next control char (3) 
-17|$11|`DC1`|**``**|
-18|$12|`DC2`|**`INK`**|set foreground colour (3)(4)
-19|$13|`DC3`|**``**|
-20|$14|`DC4`|**`PAPER`**|set background colour (3)(4)
-21|$15|`NAK`|**``**|
-22|$16|`SYN`|**``**|
-23|$17|`ETB`|**``**|
-24|$18|`CAN`|*``**|
-25|$19|`EM`|**``**|
-26|$1A|`SUB`|**``**|
-27|$1B|`ESC`|**`ESC`**|
-28|$1C|`FS`|**``**|
-29|$1D|`GS`|**``**|
-30|$1E|`RS`|**``**|
-31|$1F|`US`|**``**|
+^ key|Dec|Hex|ASCII|mOS|glyph|notes
+-----|---|---|-----|---|-----|-----
+|0|$00|`NUL`|**`NULL`**||(1)
+A|1|$01|`SOH`|**`HOME`**|&#8689;|reset cursor without clearing screen
+B|2|$02|`STX`|**`LEFT`**|&#8678;|move cursor to the left (no backspace)
+C|3|$03|`ETX`|**`TERM`**||send TERM signal
+D|4|$04|`EOT`|**`ENDT`**|&#8690;|end of text
+E|5|$05|`ENQ`|**`ENDL`**|&#8608;|move cursor to end of line
+F|6|$06|`ACK`|**`RGHT`**|&#8680;|move cursor to the right (no space)
+G|7|$07|`BEL`|**`BELL`**||acoustic or visual alert
+H|8|$08|`BS`|**`BKSP`**|&#8602;|backspace, clear previous character
+I|9|$09|`HT`|**`HTAB`**|&#8677;|advance to next tab, printing spaces
+J|10|$0A|`LF`|**`DOWN`**|&#8681;|cursor down (no CR)
+K|11|$0B|`VT`|**`UPCU`**|&#8679;|cursor up one line
+L|12|$0C|`FF`|**`FRMF`**||clear screen (2)
+M|13|$0D|`CR`|**`NWLN`**||newline, ZX Spectrum-like
+N|14|$0E|`SO`|**`EMON`**||emphasis on
+O|15|$0F|`SI`|**`EMOF`**||emphasis off
+P|16|$10|`DLE`|**`DLE`**||do not interpret next control char (3) 
+Q|17|$11|`DC1`|**`XON`**|&#8658;|cursor on (when available)
+R|18|$12|`DC2`|**`INK`**||set foreground colour (3)(4)
+S|19|$13|`DC3`|**`XOFF`**|&#8656;|cursor off
+T|20|$14|`DC4`|**`PAPR`**||set background colour (3)(4)
+U|21|$15|`NAK`|**`CRTN`**|&#8606;|carriage return (without line feed)
+V|22|$16|`SYN`|**`PGDN`**|&#8609;|page down
+W|23|$17|`ETB`|**``**||
+X|24|$18|`CAN`|*`BKTB`**|&#8676;|backwards tabulation
+Y|22|$19|`EM`|**`PGUP`**|&#8607;|page up
+Z|26|$1A|`SUB`|**``**||
+|27|$1B|`ESC`|**`ESC`**|&#11017;|escape
+|28|$1C|`FS`|**``**||
+|29|$1D|`GS`|**``**||
+|30|$1E|`RS`|**``**||
+|31|$1F|`US`|**``**||
 
 ### Notes:
 
@@ -106,3 +104,4 @@ Dec|Hex|ASCII|mOS|notes
 4.Currently only low nibble used as `GRgB` or `G2 R2 G1 B2`. *High nibble may be used
 (when supported) as `R1 G0 R0 B1`*.
 
+*last modified 20190323-1152*
