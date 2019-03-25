@@ -61,6 +61,8 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 
 ## Control characters
 
+The _glyph_ is obtained by preceeding the code with a `DLE`.
+
 ^ key|Dec|Hex|ASCII|mOS|glyph|notes
 -----|---|---|-----|---|-----|-----
 -|0|$00|`NUL`|**`NULL`**|&#9940;|(1)
