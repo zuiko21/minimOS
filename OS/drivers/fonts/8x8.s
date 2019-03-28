@@ -1,6 +1,6 @@
 ; font definition for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190327-0911
+; last modified 20190328-0902
 
 ; ASCII $00 - NULL / No entry
 	.byt	%00011000
@@ -55,22 +55,22 @@
 ; ASCII $05 - ENDL / double arrow right
 	.byt	%00000000
 	.byt	%00000000
-	.byt	%00101000
-	.byt	%00010100
-	.byt	%11111110
-	.byt	%00010100
-	.byt	%00101000
+	.byt	%00100100
+	.byt	%00010010
+	.byt	%11111111
+	.byt	%00010010
+	.byt	%00100100
 	.byt	%00000000
 
 ; ASCII $06 - RIGHT
 	.byt	%00000000
-	.byt	%01111100
-	.byt	%01111100
-	.byt	%11111110
-	.byt	%01111100
-	.byt	%00111000
 	.byt	%00010000
-	.byt	%00000000
+	.byt	%01111000
+	.byt	%01111100
+	.byt	%01111110
+	.byt	%01111100
+	.byt	%01111000
+	.byt	%00010000
 
 ; ASCII $07 - BELL
 
@@ -80,7 +80,7 @@
 	.byt	%01111110
 	.byt	%11111111
 	.byt	%00110000
-	.byt	%01100000
+	.byt	%00100000
 
 ; ASCII $08 - BKSP
 	.byt	%00000000
@@ -104,22 +104,22 @@
 
 ; ASCII $0A - DOWN
 	.byt	%00000000
-	.byt	%00111100
-	.byt	%00111100
-	.byt	%00111100
-	.byt	%01111110
-	.byt	%00111100
-	.byt	%00011000
+	.byt	%01111100
+	.byt	%01111100
+	.byt	%11111110
+	.byt	%01111100
+	.byt	%00111000
+	.byt	%00010000
 	.byt	%00000000
 
 ; ASCII $0B - UPCU
 	.byt	%00000000
-	.byt	%00011000
-	.byt	%00111100
-	.byt	%01111110
-	.byt	%00111100
-	.byt	%00111100
-	.byt	%00111100
+	.byt	%00010000
+	.byt	%00111000
+	.byt	%01111100
+	.byt	%11111110
+	.byt	%01111100
+	.byt	%01111100
 	.byt	%00000000
 
 ; ASCII $0C - FORM / centre filled square
@@ -164,12 +164,12 @@
 
 ; ASCII $10 - DLE / heart
 	.byt	%00000000
-	.byt	%01100110
-	.byt	%11111111
-	.byt	%11111111
-	.byt	%01111110
-	.byt	%00111100
-	.byt	%00011000
+	.byt	%01101100
+	.byt	%11111110
+	.byt	%11111110
+	.byt	%01111100
+	.byt	%00111000
+	.byt	%00010000
 	.byt	%00000000
 
 ; ASCII $11 - XON / imply
@@ -183,16 +183,16 @@
 	.byt	%00010000
 
 ; ASCII $12 - INK / pencil
-	.byt	%00000000
-	.byt	%01111110
-	.byt	%01000010
-	.byt	%01011010
-	.byt	%01100110
-	.byt	%00100100
-	.byt	%00011000
+	.byt	%00000100
+	.byt	%00001000
+	.byt	%00010001
+	.byt	%00100010
+	.byt	%01000100
+	.byt	%01101000
+	.byt	%01110000
 	.byt	%00000000
 
-; ASCII $13 - XOFF / reverse imly
+; ASCII $13 - XOFF / reverse imply
 	.byt	%00000000
 	.byt	%00010000
 	.byt	%00100000
@@ -215,11 +215,11 @@
 ; ASCII $15 - CRTN / double arrow left
 	.byt	%00000000
 	.byt	%00000000
-	.byt	%00010100
-	.byt	%00101000
-	.byt	%01111110
-	.byt	%00101000
-	.byt	%00010100
+	.byt	%00100100
+	.byt	%01001000
+	.byt	%11111110
+	.byt	%01001000
+	.byt	%00100100
 	.byt	%00000000
 
 ; ASCII $16 - PGDN / double arrow down
@@ -227,10 +227,10 @@
 	.byt	%00010000
 	.byt	%01010100
 	.byt	%00111000
+	.byt	%00010000
 	.byt	%01010100
 	.byt	%00111000
 	.byt	%00010000
-	.byt	%00000000
 
 ; ASCII $17 - ATYX / spades suit
 	.byt	%00000000
@@ -257,20 +257,20 @@
 	.byt	%00010000
 	.byt	%00111000
 	.byt	%01010100
+	.byt	%00010000
 	.byt	%00111000
 	.byt	%01010100
 	.byt	%00010000
-	.byt	%00000000
 
 ; ASCII $1A - STOP / club suit
 	.byt	%00000000
-	.byt	%00011000
-	.byt	%00111100
-	.byt	%01011010
-	.byt	%11111111
-	.byt	%01011010
-	.byt	%00011000
-	.byt	%00111100
+	.byt	%00010000
+	.byt	%00111000
+	.byt	%01010100
+	.byt	%11111110
+	.byt	%01010100
+	.byt	%00010000
+	.byt	%00111000
 
 ; ASCII $1B - ESC / NW arrow
 	.byt	%00000000
