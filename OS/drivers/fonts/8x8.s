@@ -1,6 +1,6 @@
 ; font definition for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190328-0907
+; last modified 20190329-0900
 
 ; ASCII $00 - NULL / No entry
 	.byt	%00011000
@@ -145,12 +145,12 @@
 ; ASCII $0E - EMON / Star
 	.byt	%00000000
 	.byt	%00010000
+	.byt	%00010000
+	.byt	%11010110
 	.byt	%00111000
-	.byt	%11111110
-	.byt	%00111000
-	.byt	%01101100
+	.byt	%00010000
+	.byt	%00101000
 	.byt	%01000100
-	.byt	%00000000
 
 ; ASCII $0F - EMOF / Diamond
 	.byt	%00000000
