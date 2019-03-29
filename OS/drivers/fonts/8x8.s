@@ -1,6 +1,6 @@
 ; font definition for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190329-0900
+; last modified 20190329-0903
 
 ; ASCII $00 - NULL / No entry
 	.byt	%00011000
@@ -74,11 +74,11 @@
 
 ; ASCII $07 - BELL
 
-	.byt	%00011000
-	.byt	%01111110
-	.byt	%01111110
-	.byt	%01111110
-	.byt	%11111111
+	.byt	%00010000
+	.byt	%01111100
+	.byt	%01111100
+	.byt	%01111100
+	.byt	%11111110
 	.byt	%00110000
 	.byt	%00100000
 
