@@ -63,36 +63,36 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 
 The _glyph_ is obtained by preceeding the code with a `DLE`.
 
-^ key|Dec|Hex|ASCII|mOS|glyph|notes
+^ key|Dec|Hex|ASCII|mOS|glyph & description|notes
 -----|---|---|-----|---|-----|-----
--|0|$00|`NUL`|**`NULL`**|&#9940;|(1)
-A|1|$01|`SOH`|**`HOME`**|&#8689;|reset cursor without clearing screen
-B|2|$02|`STX`|**`LEFT`**|&#8678;|move cursor to the left (no backspace)
-C|3|$03|`ETX`|**`TERM`**|&#9211;|send TERM signal
-D|4|$04|`EOT`|**`ENDT`**|&#8690;|end of text
-E|5|$05|`ENQ`|**`ENDL`**|&#8608;|move cursor to end of line
-F|6|$06|`ACK`|**`RGHT`**|&#8680;|move cursor to the right (no space)
-G|7|$07|`BEL`|**`BELL`**|&#128276;|acoustic or visual alert
-H|8|$08|`BS`|**`BKSP`**|&#9003;|backspace, clear previous character
-I|9|$09|`HT`|**`HTAB`**|&#8677;|advance to next tab, printing spaces
-J|10|$0A|`LF`|**`DOWN`**|&#8681;|cursor down (no CR)
-K|11|$0B|`VT`|**`UPCU`**|&#8679;|cursor up one line
-L|12|$0C|`FF`|**`FORM`**|&#9635;|clear screen (2)
-M|13|$0D|`CR`|**`NEWL`**|&#9166;|newline, ZX Spectrum-like
-N|14|$0E|`SO`|**`EMON`**|&#9733;|emphasis on
-O|15|$0F|`SI`|**`EMOF`**|&#9830;|emphasis off
-P|16|$10|`DLE`|**`DLE`**|&#9829;|do not interpret next control char (3) 
-Q|17|$11|`DC1`|**`XON`**|&#8658;|cursor on (when available)
-R|18|$12|`DC2`|**`INK`**|&#9999;|set foreground colour (3)(4)
-S|19|$13|`DC3`|**`XOFF`**|&#8656;|cursor off
-T|20|$14|`DC4`|**`PAPC`**|&#73668;|set background colour (3)(4)
-U|21|$15|`NAK`|**`CRTN`**|&#8606;|carriage return (without line feed)
-V|22|$16|`SYN`|**`PGDN`**|&#8609;|page down
-W|23|$17|`ETB`|**`ATYX`**|&#9824;|set cursor position (5)
-X|24|$18|`CAN`|**`BKTB`**|&#8676;|backwards tabulation
-Y|22|$19|`EM`|**`PGUP`**|&#8607;|page up
-Z|26|$1A|`SUB`|**`STOP`**|&#9827;|send STOP signal
--|27|$1B|`ESC`|**`ESC`**|&#11017;|escape
+-|0|$00|`NUL`|**`NULL`**|&#9940; no entry|(1)
+A|1|$01|`SOH`|**`HOME`**|&#8689; arrow to NW corner|reset cursor without clearing screen
+B|2|$02|`STX`|**`LEFT`**|&#8678; arrow left|cursor left (no backspace)
+C|3|$03|`ETX`|**`TERM`**|&#9211; ball switch|send TERM signal
+D|4|$04|`EOT`|**`ENDT`**|&#8690; arrow to SE corner|end of text
+E|5|$05|`ENQ`|**`ENDL`**|&#8608; double arrow right|move cursor to end of line
+F|6|$06|`ACK`|**`RGHT`**|&#8680; arrow right|cursor right (no space)
+G|7|$07|`BEL`|**`BELL`**|&#128276; bell|acoustic or visual alert
+H|8|$08|`BS`|**`BKSP`**|&#9003; left sign with x|backspace, clear previous character
+I|9|$09|`HT`|**`HTAB`**|&#8677; right arrow with bar|advance to next tab, printing spaces
+J|10|$0A|`LF`|**`DOWN`**|&#8681; arrow down|cursor down (no CR)
+K|11|$0B|`VT`|**`UPCU`**|&#8679; arrow up|cursor up one line
+L|12|$0C|`FF`|**`FORM`**|&#9635; square with block|clear screen (2)
+M|13|$0D|`CR`|**`NEWL`**|&#9166; angled arrow|newline, ZX Spectrum-like
+N|14|$0E|`SO`|**`EMON`**|&#9733; star|emphasis on
+O|15|$0F|`SI`|**`EMOF`**|&#9830; diamond suit|emphasis off
+P|16|$10|`DLE`|**`DLE`**|&#9829; heart suit|do not interpret next control char (3) 
+Q|17|$11|`DC1`|**`XON`**|&#8658; imply|cursor on
+R|18|$12|`DC2`|**`INK`**|&#9999; pencil|set foreground colour (3)(4)
+S|19|$13|`DC3`|**`XOFF`**|&#8656; reverse imply|cursor off
+T|20|$14|`DC4`|**`PAPC`**|&#73668; paper sheet|set background colour (3)(4)
+U|21|$15|`NAK`|**`CRTN`**|&#8606; double arrow left|carriage return (without line feed)
+V|22|$16|`SYN`|**`PGDN`**|&#8609; double arrow down|page down
+W|23|$17|`ETB`|**`ATYX`**|&#9824; spade suit|set cursor position (5)
+X|24|$18|`CAN`|**`BKTB`**|&#8676; left arrow with bar|backwards tabulation
+Y|22|$19|`EM`|**`PGUP`**|&#8607; double arrow up|page up
+Z|26|$1A|`SUB`|**`STOP`**|&#9827; club suit|send STOP signal
+-|27|$1B|`ESC`|**`ESC`**|&#11017; NW arrow/mouse cursor|escape
 -|28|$1C|`FS`|**` `**|&#9698;|
 -|29|$1D|`GS`|**` `**|&#9699;|
 -|30|$1E|`RS`|**` `**|&#9700;|
@@ -112,4 +112,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9827;|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190324-1932*
+*last modified 20190331-2333*
