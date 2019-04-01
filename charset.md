@@ -64,8 +64,8 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 The _glyph_ is obtained by preceeding the code with a `DLE`.
 
 ^ key|Dec|Hex|ASCII|mOS|glyph & description|notes
------|---|---|-----|---|-----|-----
--|0|$00|`NUL`|**`NULL`**|&#9940; no entry|(1)
+-----|---|---|-----|---|-------------------|-----
+-|0|$00|`NUL`|**`NULL`**|&#9635; square with block|(1)
 A|1|$01|`SOH`|**`HOME`**|&#8689; arrow to NW corner|reset cursor without clearing screen
 B|2|$02|`STX`|**`LEFT`**|&#8678; arrow left|cursor left (no backspace)
 C|3|$03|`ETX`|**`TERM`**|&#9211; ball switch|send TERM signal
@@ -77,21 +77,21 @@ H|8|$08|`BS`|**`BKSP`**|&#9003; left sign with x|backspace, clear previous chara
 I|9|$09|`HT`|**`HTAB`**|&#8677; right arrow with bar|advance to next tab, printing spaces
 J|10|$0A|`LF`|**`DOWN`**|&#8681; arrow down|cursor down (no CR)
 K|11|$0B|`VT`|**`UPCU`**|&#8679; arrow up|cursor up one line
-L|12|$0C|`FF`|**`FORM`**|&#9635; square with block|clear screen (2)
+L|12|$0C|`FF`|**`FORM`**|&#73668; paper sheet|clear screen (2)
 M|13|$0D|`CR`|**`NEWL`**|&#9166; angled arrow|newline, ZX Spectrum-like
-N|14|$0E|`SO`|**`EMON`**|&#9733; star|emphasis on
-O|15|$0F|`SI`|**`EMOF`**|&#9830; diamond suit|emphasis off
+N|14|$0E|`SO`|**`EMON`**|&#8658; imply|emphasis on
+O|15|$0F|`SI`|**`EMOF`**|&#8656; reverse imply|emphasis off
 P|16|$10|`DLE`|**`DLE`**|&#9829; heart suit|do not interpret next control char (3) 
-Q|17|$11|`DC1`|**`XON`**|&#8658; imply|cursor on
+Q|17|$11|`DC1`|**`XON`**|&#9733; star|cursor on
 R|18|$12|`DC2`|**`INK`**|&#9999; pencil|set foreground colour (3)(4)
-S|19|$13|`DC3`|**`XOFF`**|&#8656; reverse imply|cursor off
-T|20|$14|`DC4`|**`PAPC`**|&#73668; paper sheet|set background colour (3)(4)
+S|19|$13|`DC3`|**`XOFF`**|&#9830; diamond suit|cursor off
+T|20|$14|`DC4`|**`PAPC`**|&#9827; club suit|set background colour (3)(4)
 U|21|$15|`NAK`|**`CRTN`**|&#8606; double arrow left|carriage return (without line feed)
 V|22|$16|`SYN`|**`PGDN`**|&#8609; double arrow down|page down
 W|23|$17|`ETB`|**`ATYX`**|&#9824; spade suit|set cursor position (5)
 X|24|$18|`CAN`|**`BKTB`**|&#8676; left arrow with bar|backwards tabulation
 Y|22|$19|`EM`|**`PGUP`**|&#8607; double arrow up|page up
-Z|26|$1A|`SUB`|**`STOP`**|&#9827; club suit|send STOP signal
+Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 -|27|$1B|`ESC`|**`ESC`**|&#11017; NW arrow/mouse cursor|escape
 -|28|$1C|`FS`|**` `**|&#9698;|
 -|29|$1D|`GS`|**` `**|&#9699;|
@@ -112,4 +112,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9827; club suit|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190331-2333*
+*last modified 20190401-1155*
