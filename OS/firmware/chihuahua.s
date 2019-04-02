@@ -1,7 +1,7 @@
 ; firmware for minimOS on Chihuahua PLUS (and maybe others)
-; v0.9.6b12
+; v0.9.6b13
 ; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20190223-2237
+; last modified 20190402-1402
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -133,6 +133,8 @@ reset:
 #include "modules/brk_addr.s"
 
 ; no need to set NMI as it will be validated
+; ...but 6502 systems should set a minimal IRQ handler in order to enable PANIC (BRK) handling!
+#include "modules/mini_irq.s"
 
 
 ; preset jiffy irq frequency

@@ -1,7 +1,7 @@
 ; firmware for minimOS on Acapulco
-; v0.9.6b6
+; v0.9.6b7
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190320-0908
+; last modified 20190402-1402
 
 #define		FIRMWARE 	_FIRMWARE
 
@@ -133,7 +133,8 @@ reset:
 #include "modules/brk_addr.s"
 
 ; no need to set NMI as it will be validated
-
+; ...but 6502 systems should set a minimal IRQ handler in order to enable PANIC (BRK) handling!
+#include "modules/mini_irq.s"
 
 ; preset jiffy irq frequency
 #include "modules/jiffy_hz.s"
@@ -144,8 +145,7 @@ reset:
 ; reset last installed kernel (new)
 #include "modules/rst_lastk.s"
 
-; *** direct print splash string code comes here, include rainbow logo ***
-;#include "modules/splash_acapulco.s"
+; *** direct print splash string would come here, but supplied driver will do it ***
 
 ; *** optional network booting ***
 ; might modify the contents of fw_warm
