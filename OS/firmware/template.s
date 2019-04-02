@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
-; v0.6b17
+; v0.6b18
 ; (c)2015-2019 Carlos J. Santisteban
-; last modified 20190223-2249
+; last modified 20190402-1219
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -141,7 +141,9 @@ reset:
 ; preset default BRK handler
 #include "modules/brk_addr.s"
 
-; no need to set NMI as it will be validated
+; no need to set NMI as it will be validated...
+; ...but 6502 systems should set a minimal IRQ handler in order to enable PANIC (BRK) handling!
+#include "modules/mini_irq.s"
 
 ; preset jiffy irq frequency
 #include "modules/jiffy_hz.s"
@@ -151,8 +153,6 @@ reset:
 
 ; reset last installed kernel (new)
 #include "modules/rst_lastk.s"
-
-
 
 
 ; *** direct print splash string code comes here, when available ***
