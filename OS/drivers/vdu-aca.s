@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a8
+; v0.6a9
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190322-1041
+; last modified 20190403-0905
 
 #include "../usual.h"
 
@@ -241,8 +241,9 @@ va_char:
 		BNE va_bin			; if not, continue with regular code
 ; ** then check whether control char or printable **
 	CMP #' '			; printable? (2)
-	BCS vch_prn			; it is! skip further comparisons (3)
-; otherwise check control codes
+		BCC vch_nprn		; if not, check control codes
+	JMP vch_prn			; it is! skip further comparisons (3)
+vch_nprn:
 		CMP #FORMFEED		; clear screen?
 		BNE vch_nff
 			JMP va_cls			; clear and return!
@@ -271,6 +272,20 @@ vso_xor:
 			STA va_xor			; set new mask
 			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 vch_nsi:
+		CMP #17				; XON? (show cursor)
+		BNE vch_nsc
+			LDA #96				; value for visible cursor, slowly blinking
+			BNE vc_set			; put this value on register
+vch_nsc_:
+		CMP #19				; XOFF? (hide cursor)
+		BNE vch_nhc
+			LDA #32				; value for hidden cursor
+vc_set:
+			LDX #10				; CRTC cursor register
+			STX crtc_rs			; select register...
+			STA crtc_da			; ...and set data
+			RTS					; all done for this setting
+vch_nhc:
 ; the following control codes expect a further byte, thus set flag accordingly
 		CMP #16				; DLE? (binary mode)
 			BEQ vch_dcx			; set flag and exit
