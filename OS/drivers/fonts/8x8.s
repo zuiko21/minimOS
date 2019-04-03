@@ -1,6 +1,6 @@
 ; font definition for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190401-1202
+; last modified 20190403-0851
 
 ; ASCII $00 - NULL / centre filled square
 	.byt	%11111111
@@ -1277,14 +1277,7 @@
 	.byt	%11111110
 
 ; ASCII $80 - block space
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00000000
+	.byt	0, 0, 0, 0, 0, 0, 0, 0
 
 ; ASCII $81 - continue with ZX Spectrum blocks
 	.byt	%00001111
