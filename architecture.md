@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2019-01-07*
+*Last update: 2019-04-04*
 
 ## Rationale
 
@@ -205,6 +205,12 @@ implementation might just use a regular driver in firmware space, with its *unus
 header and I/O routines that will be directly called. *As long as the header address is
 provided into the configuration list at `drvrs_ad`, it might be used by the regular
 kernel too*.
+
+For those systems lacking a fixed keyboard but
+sporting a VIA, a simple parallel input may be
+provided by _enabling PA latch_ and reading
+its value whenever a valid transition
+happened at `CA1`.
 
 ## Firmware
 
