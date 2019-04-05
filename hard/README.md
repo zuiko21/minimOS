@@ -8,7 +8,7 @@ instance, I have declared as 'reserved' the two first zero-page bytes in case
 the utterly popular Commodore-64 (using a 6510) is targeted. Back to my
 **own-designed** machines, here's the current history & roadmap:
 
-
+### Computers
 
 
 **MTE _("Medidor de Tiempos de Exposición", Exposure Time Meter)_**
@@ -173,6 +173,28 @@ Interfaces: most likely those of Veracruz, possibly plus SD-card,
 text console (or graphic) output...
 
 
+### Peripherals (TBD)
+
+**LED-Keypad**
+
+
+
+
+**ASCII Keyboard**
+
+
+
+
+**PASK (_Port A Simple Keyboard_)**
+
+
+
+
+**Roñavid**
+
+
+
+
 *...more to come!
 
-last modified: 20181020-2237*
+last modified: 20190405-1622*
