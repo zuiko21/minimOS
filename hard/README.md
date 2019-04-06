@@ -185,7 +185,7 @@ text console (or graphic) output...
 
 
 
-**PASK (_Port A Simple Keyboard_)**
+**[PASK (_Port A Simple Keyboard_)](pask.md)**
 
 
 
