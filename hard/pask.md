@@ -8,9 +8,9 @@ interface _even in heaviliy crashed systems_.
 
 ## Hardware interface
 
-The now standard **VIAport 2** in a simple port fashion will suffice. It is
-expected to be connected to port A. Actually, only `CA1` is used besides the port
-lines `PA0-PA7`.
+The now standard **VIAport 2** in a simple port fashion will suffice. It must be
+connected to port A, as port B does not support _read handshake_. Actually, only `CA1`
+is used besides the port lines `PA0-PA7`.
 
 ## Keyboard
 
@@ -32,7 +32,11 @@ Q W E R T Y U I O P
 ^ *   [SPACE]   * ^ 
 ```
 
-Note: `+` is **`SHIFT`**, `^` is **`CONTROL`** and `*` is **`ALT`**
+> Note:
+>> `+` is **`SHIFT`**
+>> `^` is **`CONTROL`**
+>> `*` is **`ALT`**
+> Modifyer keys are doubled for convenience, but there is no distinction between them.
 
 ### Shifted codes
 
@@ -44,7 +48,7 @@ Key|normal|`SHIFT`|`CTRL`|`CTRL`+`SHIFT`|`ALT`|`ALT`+`SHIFT`|`ALT`+`CTRL`|`ALT`+
 **4**|$34 `4`|$24 `$`|$2E `.`|$1E `RS`|$ ``|$ ``|$ ``|$ ``
 **5**|$35 `5`|$25 `%`|$2F `/`|$1F `US`|$ ``|$ ``|$ ``|$ ``
 **6**|$36 `6`|$26 `&`|$3A `:`|$5B `[`|$ ``|$ ``|$ ``|$ ``
-**7**|$37 `7`|$27 `'`|$3B `;`|$5C `\\`|$ ``|$ ``|$ ``|$ ``
+**7**|$37 `7`|$27 `'`|$3B `;`|$5C `\`|$ ``|$ ``|$ ``|$ ``
 **8**|$38 `8`|$28 `(`|$3C `<`|$5D `]`|$ ``|$ ``|$ ``|$ ``
 **9**|$39 `9`|$29 `)`|$3D `=`|$5E `^`|$ ``|$ ``|$ ``|$ ``
 **0**|$30 `0`|$2A `*`|$3E `>`|$5F `_`|$ ``|$ ``|$ ``|$ ``
@@ -75,6 +79,6 @@ V|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``
 B|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``
 N|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``|$ ``
 **M**|$6D `m`|$4D `M`|$0D `NEWL`|$3F `?`|$ ``|$ ``|$ ``|$ ``
-`SPACE`|$20 ` `|$60 `\``|$40 `@`|$ ``|$ ``|$ ``|$ ``|$ ``
+`SPACE`|$20 ` `|$60 `` `|$40 `@`|$ ``|$ ``|$ ``|$ ``|$ ``
 
-_Last update: 20190406-2340_
+_Last update: 20190407-1058_
