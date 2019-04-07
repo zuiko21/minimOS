@@ -79,13 +79,13 @@ J|10|$0A|`LF`|**`DOWN`**|&#8681; arrow down|cursor down (no CR)
 K|11|$0B|`VT`|**`UPCU`**|&#8679; arrow up|cursor up one line
 L|12|$0C|`FF`|**`FORM`**|&#73668; paper sheet|clear screen (2)
 M|13|$0D|`CR`|**`NEWL`**|&#9166; angled arrow|newline, ZX Spectrum-like
-N|14|$0E|`SO`|**`EMON`**|&#8658; imply|emphasis on
-O|15|$0F|`SI`|**`EMOF`**|&#8656; reverse imply|emphasis off
+N|14|$0E|`SO`|**`EON`**|&#8658; imply|emphasis on
+O|15|$0F|`SI`|**`EOFF`**|&#8656; reverse imply|emphasis off
 P|16|$10|`DLE`|**`DLE`**|&#9829; heart suit|do not interpret next control char (3) 
 Q|17|$11|`DC1`|**`XON`**|&#9733; star|cursor on
 R|18|$12|`DC2`|**`INK`**|&#9999; pencil|set foreground colour (3)(4)
 S|19|$13|`DC3`|**`XOFF`**|&#9830; diamond suit|cursor off
-T|20|$14|`DC4`|**`PAPC`**|&#9827; club suit|set background colour (3)(4)
+T|20|$14|`DC4`|**`PAPR`**|&#9827; club suit|set background colour (3)(4)
 U|21|$15|`NAK`|**`CRTN`**|&#8606; double arrow left|carriage return (without line feed)
 V|22|$16|`SYN`|**`PGDN`**|&#8609; double arrow down|page down
 W|23|$17|`ETB`|**`ATYX`**|&#9824; spade suit|set cursor position (5)
@@ -112,4 +112,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190401-1155*
+*last modified 20190407-1954*
