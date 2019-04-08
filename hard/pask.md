@@ -39,6 +39,23 @@ Q W E R T Y U I O P
 >
 > Modifier keys are _doubled_ for convenience, but there is no distinction between them.
 
+### Suggested 5x8 matrix decoding
+
+Based on the previously shown layout.
+
+Format: _`row`-`column`_
+
+```
+00  01  02  03  04  40  41  42  43  44
+10  11  12  13  14  50  51  52  53  54
+  20  21  22  23  24  60  61  62  63
+      30  31  32  33  34  70  71
+                  72
+```
+
+Note: `SHIFT`, `CONTROL` and `ALT` are **outside** the matrix, thus the
+matrix points `64`, `73` and `74` remain unused.
+
 ### Keymap codes
 
 Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`CTL`+`SHFT`
@@ -83,4 +100,4 @@ Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`C
 
 Unused combos render `NULL` ($00)
 
-_Last update: 20190408-1320_
+_Last update: 20190408-1342_
