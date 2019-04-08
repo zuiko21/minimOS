@@ -100,4 +100,18 @@ Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`C
 
 Unused combos render `NULL` ($00)
 
-_Last update: 20190408-1342_
+## Circuit design
+
+As a **self-contained, CPU-less** device, _PASK_
+must scan on its own the _keyboard matrix_
+while trying to avoid the effects of bouncing
+as much as possible. _Low pin count_ is a goal
+for obvious reasons, and thus several matrices
+have been considered.
+
+The most obvious approach, a **4x10 matrix**,
+would involve a 4 bit counter with a 4-to-16
+decoder -- a 74HC154. But that would be a lot 
+of pins
+
+_Last update: 20190408-1824_
