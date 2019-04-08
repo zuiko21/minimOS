@@ -79,8 +79,8 @@ Key|normal|`SHIFT`|`CTRL`|`CTRL`+`SHIFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+
 `B`|$62 b|$42 B|$02`LEFT`|$83 &#9600;|$DF ß      |   -       |   -       |   -
 `N`|$6E n|$4E N|$0E`EON `|$8C &#9604;|$F1 ñ      |$D1 Ñ      |$BE &#331; |   -
 `M`|$6D m|$4D M|$0D`NEWL`|$3F ?      |$B5 &#181; |$BF ¿      |$9E &#8712;|   -
-`SPC`|$20`SPC`|$60 &#96;|$40 @|$80`NBSP`|$B4 &#180;|$A0 &#9633;|**$00`NULL`**|-
+`SPC`|$20`SPC`|$80`NBSP`|$40 @|$60 &#96;|$A0 &#9633;|$B4 &#180;|**$00`NULL`**|-
 
 Unused combos render `NULL` ($00)
 
-_Last update: 20190408-1243_
+_Last update: 20190408-1249_
