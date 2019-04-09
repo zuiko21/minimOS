@@ -23,12 +23,14 @@ key_, neither `BACKSPACE`, `TAB` or cursors, as all of them may be generated via
 It is possible to use a 10x4 matrix, although the 5x8 scheme allows the use of
 lower pin count components.
 
-### Suggested layout
+### Suggested layouts
 ```
-1 2 3 4 5 6 7 8 9 0
-Q W E R T Y U I O P
- A S D F G H J K L
-+  Z X C V B N M  +
+     Standard                Compact
+
+1 2 3 4 5 6 7 8 9 0    1 2 3 4 5 6 7 8 9 0
+Q W E R T Y U I O P    Q W E R T Y U I O P
+ A S D F G H J K L     + A S D F G H J K L
++  Z X C V B N M  +    ^ * Z X C V B N M #
 ^ *   [SPACE]   * ^ 
 ```
 
@@ -36,20 +38,24 @@ Q W E R T Y U I O P
 > - **`+`** is `SHIFT`
 > - **`^`** is `CONTROL`
 > - **`*`** is `ALT`
+> - **`#`** is `SPACE` (on _compact_ layout)
 >
-> Modifier keys are _doubled_ for convenience, but there is no distinction between them.
+> On the standard layout, modifier keys are _doubled_ for convenience,
+but there is no distinction between them.
 
 ### Suggested 5x8 matrix decoding
 
-Based on the previously shown layout.
+Based on the previously shown layouts.
 
-Format: _`row`-`column`_
+Format: _`row`.`column`_
 
 ```
-00  01  02  03  04  40  41  42  43  44
-10  11  12  13  14  50  51  52  53  54
-  20  21  22  23  24  60  61  62  63
-      30  31  32  33  34  70  71
+               STANDARD                                     COMPACT
+
+00  01  02  03  04  40  41  42  43  44      00  01  02  03  04  40  41  42  43  44
+10  11  12  13  14  50  51  52  53  54      10  11  12  13  14  50  51  52  53  54
+  20  21  22  23  24  60  61  62  63            20  21  22  23  24  60  61  62  63
+      30  31  32  33  34  70  71                    30  31  32  33  34  70  71  72
                   72
 ```
 
@@ -130,4 +136,4 @@ because of the aforementioned reason of its
 active-low inputs.
 
 
-_Last update: 20190409-1136_
+_Last update: 20190409-2226_
