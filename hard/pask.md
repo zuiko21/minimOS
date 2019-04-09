@@ -1,4 +1,4 @@
-# PASK: _Port A_ Simple Keyboard
+# PASK: _Port-A_ Simple Keyboard
 
 Intended as a simple keyboard capable of generating the **full range of characters**
 (if not in the most convenient way) with **really simple software support**. This
@@ -112,6 +112,22 @@ have been considered.
 The most obvious approach, a **4x10 matrix**,
 would involve a 4 bit counter with a 4-to-16
 decoder -- a 74HC154. But that would be a lot 
-of pins
+of pins and, being active-low its outputs,
+will need the use of expensive _Shottky
+diodes_ in order to prevent ghosting.
 
-_Last update: 20190408-1824_
+On the other hand, the **5x8 matrix** will
+fit a **74HC238** decoder which, besides its
+large availability (from my stock), has
+_active-high_ outputs, allowing the use of
+just eight unexpensive 1N4148 diodes.
+
+Once the column is selected by the decoder,
+each row line is received as _unencoded_
+addresses lines; the use of a _priority
+encoder_ (e.g. 74HC147) has been discarded
+because of the aforementioned reason of its
+active-low inputs.
+
+
+_Last update: 20190409-1136_
