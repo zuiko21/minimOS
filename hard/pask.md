@@ -1,4 +1,4 @@
-# PASK: _Port-A_ Simple Keyboard
+# PASK: _Port-"A"_ Simple Keyboard
 
 Intended as a simple keyboard capable of generating the **full range of characters**
 (if not in the most convenient way) with **really simple software support**. This
@@ -6,11 +6,31 @@ device simply puts into the **user VIA's _port A_** (in _handshake_ input mode) 
 desired ASCII code, to be directly read thru a trivial driver, allowing easy
 interface _even in heaviliy crashed systems_.
 
+## Principle of operation
+
+From the computer's point of view, PASK just sends an ASCII code whenever a key is
+pressed. A simple _ripple counter_ scans the keyboard's rows and, together with the
+detected column data, create an address for an **(EP)ROM** containing the corresponding
+character codes. This allows the use with any character set by switching the EPROM.
+
+With the proposed 5x8 matrix, this takes 5 (uncoded) plus 3 (8 coded rows) and
+3 modifier bits (shift, control & alt), for a total of 11 bits (**2 kiB**). But
+larger EPROMs (up to 27C128, which I have many) are accepted, with jumpers allowing
+_alternative charsets_.
+
 ## Hardware interface
 
 The now standard **VIAport 2** in a simple port fashion will suffice. It must be
 connected to port A, as port B does not support _read handshake_. Actually, only `CA1`
 is used besides the port lines `PA0-PA7`.
+
+Since the VIA interface is _sort-of-compatible_ with the well-known **Centronics**
+connection, PASK might be connected to a classic printer with no computer in between!
+But in order not to violate its timings, the data must be held for at least 0.5 us
+after the `/STROBE` pulse ends (and the same amount _before_ it starts). Since the
+ROM output usually stays tristated until a key code is sent (in case of interference
+with unrelated port-A activity), a jumper may keep the ROM's `/OE` enabled for
+direct print operation.
 
 ## Keyboard
 
@@ -136,4 +156,4 @@ because of the aforementioned reason of its
 active-low inputs.
 
 
-_Last update: 20190409-2226_
+_Last update: 20190410-1805_
