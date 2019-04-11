@@ -11,12 +11,21 @@ interface _even in heaviliy crashed systems_.
 From the computer's point of view, PASK just sends an ASCII code whenever a key is
 pressed. A simple _ripple counter_ scans the keyboard's rows and, together with the
 detected column data, create an address for an **(EP)ROM** containing the corresponding
-character codes. This allows the use with any character set by switching the EPROM.
+character codes. This allows the use with any character set by switching the EPROM contents.
 
-With the proposed 5x8 matrix, this takes 5 (uncoded) plus 3 (8 coded rows) and
-3 modifier bits (shift, control & alt), for a total of 11 bits (**2 kiB**). But
-larger EPROMs (up to 27C128, which I have many) are accepted, with jumpers allowing
-_alternative charsets_.
+Whenever the selected row detects some pressed key(s), the `/ROW` signal is generated --
+which, in turn, emits the `/STROBE` pulse. But it also **stops the clock** for the counter,
+in order to wait for the key to be released. Thus, **debouncing** becomes just a matter of
+scanning the keys at a reasonable rate (~20 ms).
+
+On the other hand, the _n-key rollover_ problem is not solved this way... the simpler workaround
+I can think of is the use of a _second EPROM_ just taking the uncoded column bits, emitting
+the `/ROW` signal when **one and only one key** is pressed.
+
+With the proposed 5x8 matrix, the EPROM takes 5 _uncoded_ columns, plus 3 row bits (8 coded rows)
+and 3 modifier bits (shift, control & alt), for a total of **11 bits** (**2 kiB**). A 2716 will
+suffice; anyway, larger EPROMs (up to 27C128, which I have many) are accepted, with a few jumpers
+allowing _alternative charsets_.
 
 ## Hardware interface
 
@@ -156,4 +165,4 @@ because of the aforementioned reason of its
 active-low inputs.
 
 
-_Last update: 20190410-1805_
+_Last update: 20190411-0907_
