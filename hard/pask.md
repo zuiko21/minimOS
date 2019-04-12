@@ -33,7 +33,7 @@ allowing _alternative charsets_.
 
 The now standard **VIAport 2** in a simple port fashion will suffice. It must be
 connected to port A, as port B does not support _read handshake_. Actually, only `CA1`
-is used besides the port lines `PA0-PA7`.
+is used besides the data lines `PA0-PA7`.
 
 Since the VIA interface is _sort-of-compatible_ with the well-known **Centronics**
 connection, PASK might be connected to a classic printer with no computer in between!
@@ -52,7 +52,8 @@ key_, neither `BACKSPACE`, `TAB` or cursors, as all of them may be generated via
 `CONTROL`-key combos (e.g. `^M` for _newline_).
 
 It is possible to use a 10x4 matrix, although the 5x8 scheme allows the use of
-lower pin count components.
+lower pin count components. This latter arrangement is assumed in all the following
+information.
 
 ### Suggested layouts
 ```
@@ -93,7 +94,28 @@ Format: _`row`.`column`_
 Note: `SHIFT`, `CONTROL` and `ALT` are **outside** the matrix, thus the
 matrix points `64`, `73` and `74` remain unused.
 
+Alternatively, the **compact** layout may suggest the use of a different decoding,
+which could simplify the wiring. In this case, the unused matrix points are
+`20`, `30` and `31` (where the _modifier_ keys would be located). EPROM mappings
+would be different to those of the standard version:
+
+```
+         COMPACT (ALTERNATIVE)
+
+00  01  02  03  04  40  41  42  43  44
+10  11  12  13  14  50  51  52  53  54
+    21  22  23  24  60  61  62  63  64
+        32  33  34  70  71  72  73  74  
+```
+
 ### Keymap codes
+
+I have tried to assign the whole character set in a reasonable way. Goals included:
+
+- Easy access to **Spanish diacritics** (acute accent, ñ and diaeresis)
+- Reasonable access for commonly used missing keys (_`CTL` + number_ for most **punctuation symbols**)
+- Reasonably consistent and intuitive symbols access.
+- Scarce use of the rather awkward `CTRL`+`ALT`+`SHIFT` combo.
 
 Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`CTL`+`SHFT`
 ---|------|-------|------|------------|-------|------------|-----------|----------------
@@ -135,7 +157,7 @@ Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`C
 `M`|$6D m|$4D M|$0D`NEWL`|$3F ?      |$B5 &#181; |$BF ¿      |$9E &#8712;|   -
 `SPC`|$20`SPC`|$80`NBSP`|$40 @|$60 &#96;|$A0 &#9633;|$B4 &#180;|**$00`NULL`**|-
 
-Unused combos render `NULL` ($00)
+Unused combos render `NULL` ($00), although the recommended standard is **`CTRL`+`ALT`+`SPACE`**.
 
 ## Circuit design
 
@@ -182,10 +204,10 @@ For **better response and user experience** (plus
 improved compatibility with the Centronics I/F)
 the `/STROBE` signal is not just `/ROW`, but a
 slightly delayed pulse or limited length, made
-with the FFs of a '74, taking the original
-unswitched clock signal. Something like **400 Hz**
-seems to be a suitable clock rate for debouncing,
+with the FFs of a '74, in sync with the original
+_unswitched_ clock signal. Something like **400 Hz**
+seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20190412-1013_
+_Last update: 20190412-1115_
