@@ -16,11 +16,13 @@ character codes. This allows the use with any character set by switching the EPR
 Whenever the selected row detects some pressed key(s), the `/ROW` signal is generated --
 which, in turn, emits the `/STROBE` pulse. But it also **stops the clock** for the counter,
 in order to wait for the key to be released. Thus, **debouncing** becomes just a matter of
-scanning the keys at a reasonable rate (~20 ms).
+scanning the keyboard at a reasonable rate (~20 ms).
 
 On the other hand, the _n-key rollover_ problem is not solved this way... the simpler workaround
 I can think of is the use of a _second EPROM_ just taking the uncoded column bits, emitting
-the `/ROW` signal when **one and only one key** is pressed.
+the `/ROW` signal when **one and only one key** is pressed. Another option could be the use of a
+_priority encoder_ for the column inputs, but that was deemed inconvenient as will be discussed
+later.
 
 With the proposed 5x8 matrix, the EPROM takes 5 _uncoded_ columns, plus 3 row bits (8 coded rows)
 and 3 modifier bits (shift, control & alt), for a total of **11 bits** (**2 kiB**). A 2716 will
@@ -157,12 +159,33 @@ large availability (from my stock), has
 _active-high_ outputs, allowing the use of
 just eight unexpensive 1N4148 diodes.
 
-Once the column is selected by the decoder,
-each row line is received as _unencoded_
+Once the row is selected by the decoder,
+each column line is received as _unencoded_
 addresses lines; the use of a _priority
 encoder_ (e.g. 74HC147) has been discarded
 because of the aforementioned reason of its
 active-low inputs.
 
+The `/ROW` signal, indicating a key is pressed
+on the selected row, might be generated thru a
+'688 telling whether the all the column inputs
+are 0, or with a '32 quad-OR gate for the same
+purpose (these will generate an active-high `ROW`
+signal). But neither will deal with several keys
+pressed _in that row_, other than sending
+unexpected `NULL`s. Thus, a second EPROM takes
+the uncoded column lines and generates the `ROW`
+and `/ROW` signals (both needed) whenever a
+**single** key is pressed on the row.
 
-_Last update: 20190411-0907_
+For **better response and user experience** (plus
+improved compatibility with the Centronics I/F)
+the `/STROBE` signal is not just `/ROW`, but a
+slightly delayed pulse or limited length, made
+with the FFs of a '74, taking the original
+unswitched clock signal. Something like **400 Hz**
+seems to be a suitable clock rate for debouncing,
+although frequencies up to 1 MHz might work well
+with the interface.
+
+_Last update: 20190412-1013_
