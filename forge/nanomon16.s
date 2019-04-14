@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
-; v0.1b12
+; v0.2a1
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190227-0912
+; last modified 20190414-1333
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -534,8 +534,7 @@ nl_upp:
 			BEQ nl_end			; if so, just end input
 		CMP #BS				; was it backspace?
 			BEQ nl_bs			; delete then
-		CMP #' '			; whitespace?
-			BCC nl_ign			; simply ignore it!
+; control codes no longer discarded here, so FF will be issued anyway
 		PHA					; save what was received...
 		JSR nm_out			; ...in case it gets affected
 		PLA
@@ -550,6 +549,9 @@ nl_upp:
 			BRA nr_loop			; nothing gets written, ask again for BS
 nl_ok:
 #endif
+; control codes best discarded here
+		CMP #' '			; whitespace?
+			BCC nl_ign			; simply ignore it!
 		STA buff, X			; store char in buffer
 		INX					; go for next
 		BRA nr_loop
