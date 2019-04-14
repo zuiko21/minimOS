@@ -19,7 +19,7 @@
 	STA VIA_U+ACR		; ready for latched input
 ; the very basic FW drivers polls IFR until bit 1 is set
 ; otherwise, a suitable async interrupt task should put IORA on a FIFO for later CIN/BLIN read
-; but I do not thinks is really worth it! Polling should do fine.
+; but I do not think is really worth it! Polling should do fine.
 	LDA #2				; disable CA1 interrupt (unlike a full driver!)
 	STA VIA_U+IER		; all done
 .)
