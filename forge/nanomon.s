@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.2a4
+; v0.2a5
 ; (c) 2018-2019 Carlos J. Santisteban
-; last modified 20190225-0859
+; last modified 20190414-1212
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -126,18 +126,18 @@ nl_ign:
 nl_upp:
 ; end of uppercase conversion
 #ifdef	SAFE
+
 			CMP #FORMFEED		; is it formfeed? must clear, perhaps initialising!
 				BNE nl_ncls			; if not, just continue checking others
 			CPX #0				; at the beginning? otherwise ^L is ignored
-				BEQ nl_bs			; will clear screen with nothing to delete 
+				BEQ nl_bs			; will clear screen with nothing to delete
 nl_ncls:
 #endif
 			CMP #CR				; is it newline? EEEEEEEEEEEEEEEEK (CR)
 				BEQ nl_end			; if so, just end input
 			CMP #BS				; was it backspace?
 				BEQ nl_bs			; delete then
-			CMP #' '			; whitespace?
-				BCC nl_ign			; simply ignore it!
+; discarding control codes may just be done before inserting into buffer
 			PHA					; save what was received...
 			JSR nm_out			; ...in case it gets affected
 			PLA
@@ -153,6 +153,9 @@ nl_ncls:
 ; CONIO savviness is already achieved by I/O functions, could use nr_loop instead
 nl_ok:
 #endif
+; this is a good place for discarding control codes, but letting them on print
+			CMP #' '			; whitespace?
+				BCC nl_ign			; simply ignore it!
 			STA buff, X			; store char in buffer
 			INX					; go for next (no need for BRA)
 			BNE nr_loop
