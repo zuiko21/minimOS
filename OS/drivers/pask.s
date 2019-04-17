@@ -1,7 +1,7 @@
 ; 40-key simple ASCII keyboard for minimOS!
 ; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190416-2253
+; last modified 20190417-2121
 
 ; ***********************
 ; *** minimOS headers ***
@@ -47,7 +47,9 @@ pk_rloop:
 		PHY
 #include "../firmware/modules/pask_read.s"
 ; should check events here
-		_KERNEL(B_EVENT)
+		BCS pk_nev		; skip event polling if nothing picked
+			_KERNEL(B_EVENT)
+pk_nev:
 		TYA					; take possible key or error
 		PLY
 ; standard loop follows
