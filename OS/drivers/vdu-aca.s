@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a9
+; v0.6a10
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190403-0905
+; last modified 20190418-2016
 
 #include "../usual.h"
 
@@ -336,11 +336,11 @@ vch_sh:
 		DEX					; next shift (2+3)
 		BNE vch_sh
 ; add offset to font base address
-	LDA #<va_font		; add to base... (2+2)
+	LDA #<va_font		; add to base... (2+2) *** might use a RAM pointer
 	CLC
 	ADC io_c			; ...the computed offset (3)
 	STA v_src			; store locally (3)
-	LDA #>va_font		; same for MSB (2+3)
+	LDA #>va_font		; same for MSB (2+3) *** ditto for flexibility
 	ADC io_c+1
 ;	_DEC				; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
