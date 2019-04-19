@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a11
+; v0.6a12
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190419-1243
+; last modified 20190419-1304
 
 #include "../usual.h"
 
@@ -290,6 +290,35 @@ vc_set:
 		STA crtc_da			; ...and set data
 		RTS					; all done for this setting
 vch_nhc:
+	CMP #LF				; cursor down?
+	BNE vch_nlf
+; *** down one line *** TO DO
+		JMP vch_scs			; update cursor and exit
+vch_nlf:
+	CMP #VTAB			; cursor up?
+	BNE vch_nvt
+; *** up one line *** TO DO
+		JMP vch_scs			; update cursor and exit
+vch_nvt:
+	CMP #2				; cursor left?
+	BNE vch_nleft
+		DEC va_cur			; point to previous byte
+		LDA va_cur			; check for possible borrow
+		CMP #$FF
+		BNE va_ltnw
+			DEC va_cur+1
+va_ltnw:
+; might need to check more bounds
+		JMP vch_scs			; update cursor and exit
+vch_nleft:
+	CMP #6				; cursor right?
+	BNE vch_nrght
+		INC va_cur			; point to following byte
+		BNE va_rtnw
+			INC va_cur+1
+va_rtnw:
+; might need to check more bounds
+		JMP vch_scs			; update cursor and exit
 
 ; **** the following control codes expect a further byte (or two), thus set flag accordingly ****
 	CMP #16				; DLE? (binary mode)
@@ -409,18 +438,9 @@ vch_adv:
 	INC va_cur			; advance to next character (6)
 	BNE vch_scs			; all done, no wrap (3)
 		INC va_cur+1		; or increment MSB (6)
-; should set CRTC cursor accordingly
+; should set CRTC cursor accordingly *** worth a subroutine?
 vch_scs:
-	LDY #14				; cur_h register on CRTC (2)
-	LDX #1				; max offset (2)
-vcur_l:
-		LDA va_cur, X		; get data
-		STY crtc_rs			; select register
-		STA crtc_da			; ...and set data
-; go for next
-		INY					; next reg (2)
-		DEX					; will pick previous byte
-		BPL vcur_l			; until finished (3/2)
+	JSR vch_scur
 ; check whether scrolling is needed
 	LDA va_cur+1		; check position (4)
 	CMP va_sch+1		; all lines done? (4)
@@ -542,6 +562,20 @@ vbs_bk:
 			_DR_ERR(EMPTY)		; try to complain, just in case
 vbs_end:
 	_DR_OK				; all done, CLC will not harm at first call
+
+; **** CRTC routines ****
+; set cursor position from computed va_cur (maybe from separate coordinates)
+vch_scur:
+	LDY #14				; cur_h register on CRTC (2)
+	LDX #1				; max offset (2)
+vcur_l:
+		LDA va_cur, X		; get data
+		STY crtc_rs			; select register
+		STA crtc_da			; ...and set data
+; go for next
+		INY					; next reg (2)
+		DEX					; will pick previous byte
+		BPL vcur_l			; until finished (3/2)
 
 ; ********************
 ; *** several data ***
