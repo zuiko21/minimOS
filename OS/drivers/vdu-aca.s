@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a10
+; v0.6a11
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190418-2016
+; last modified 20190419-1203
 
 #include "../usual.h"
 
@@ -258,7 +258,7 @@ vch_ncr:
 vch_ntb:
 		CMP #BS				; backspace?
 		BNE vch_nbs
-			JMP va_bs			; deleta last character
+			JMP va_bs			; delete last character
 vch_nbs:
 		CMP #14				; shift out?
 		BNE vch_nso
@@ -286,23 +286,41 @@ vc_set:
 			STA crtc_da			; ...and set data
 			RTS					; all done for this setting
 vch_nhc:
-; the following control codes expect a further byte, thus set flag accordingly
+; the following control codes expect a further byte (or two), thus set flag accordingly
 		CMP #16				; DLE? (binary mode)
 			BEQ vch_dcx			; set flag and exit
 		CMP #18				; DC2? (set INK)
 			BEQ vch_dcx			; set proper flag
 		CMP #20				; DC4? (set PAPER)
+			BEQ vch_dcx			; set proper flag
+		CMP #23				; ATYX? (set coordinates)
 		BNE vch_npr			; *** no more control codes ***
 vch_dcx:
 			STA va_col			; set flag if any colour is to be set
 			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+; ** flag means it did not print previous byte, what to do with current one? **
 ; ** check for binary mode first **
 va_bin:
 	CPX #16			; binary mode? print directly...
-	BNE va_scol		; if not, should be setting colour
+	BNE va_scloc		; if not, should be setting colour or location
 		_STZA va_col		; ...but reset flag! eeeeeeeek
 		_BRA vch_prn
-; ** set pending colour code **
+va_scloc:
+	CPX #23			; waiting for first coordinate, Y?
+	BNE va_ny		; if not, perhaps waiting for X
+		SEC
+		SBC #' '		; from space and beyond
+; *** *** compute new Y pointer... TO DO
+		INC va_col		; flag expects second coordinate
+		RTS				; just wait for the next coordinate
+va_ny:
+	CPY #24			; waiting for the last coordinate, X?
+	BNE va_scol		; if not, must be a colour setting
+		SEC
+		SBC #' '		; from space and beyond
+; *** *** add this X and set cursor... TO DO
+		_BRA va_mbres		; reset flag and we are done
+; ** set pending colour code, X=18 or 20 **
 va_scol:
 	AND #%00001111		; filter relevant bits
 	STA va_col			; temporary flag use for storing colour!
@@ -314,12 +332,13 @@ va_scol:
 		ASL va_col
 		ASL va_col
 		AND #%00001111		; will respect current ink
-		_BRA va_spap
+		BNE va_spap		; no need for BRA, if it fails (black) the following instruction will be harmless
 va_sink:
 	AND #%11110000		; will respect current paper
 va_spap:
-	ORA va_col			; mix with (possible shifted) new colour
+	ORA va_col			; mix with (possibly shifted) new colour
 	STA va_attr			; new definition
+va_mbres:
 	_STZA va_col		; clear flag and we are done
 	RTS					; *** no need for DR_OK as BCS is not being used
 ; *** non-printable neither accepted control, thus use substitution character ***
