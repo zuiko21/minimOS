@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a11
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190419-1203
+; last modified 20190419-1243
 
 #include "../usual.h"
 
@@ -236,69 +236,76 @@ va_rts:
 ; ******************************
 va_char:
 	LDA io_c			; get char (3)
-; ** first of all, check whether was waiting for a colour code **
+; ** first of all, check whether was waiting for an extra byte (or two) **
 	LDX va_col			; setting some colour or expecting binary?
-		BNE va_bin			; if not, continue with regular code
+	BEQ va_nbin			; if not, continue with regular code
+		JMP va_bin			; otherwise process accordingly
+va_nbin:
 ; ** then check whether control char or printable **
 	CMP #' '			; printable? (2)
-		BCC vch_nprn		; if not, check control codes
-	JMP vch_prn			; it is! skip further comparisons (3)
+	BCC vch_nprn		; if not, check control codes
+		JMP vch_prn			; it is! skip further comparisons (3)
+
+; **** identify possible control codes ****
 vch_nprn:
-		CMP #FORMFEED		; clear screen?
-		BNE vch_nff
-			JMP va_cls			; clear and return!
+	CMP #FORMFEED		; clear screen?
+	BNE vch_nff
+		JMP va_cls			; clear and return!
 vch_nff:
-		CMP #CR				; newline?
-		BNE vch_ncr
-			JMP va_cr			; modify pointers (scrolling perhaps) and return
+	CMP #CR				; newline?
+	BNE vch_ncr
+		JMP va_cr			; modify pointers (scrolling perhaps) and return
 vch_ncr:
-		CMP #HTAB			; tab?
-		BNE vch_ntb
-			JMP va_tab			; advance cursor
+	CMP #HTAB			; tab?
+	BNE vch_ntb
+		JMP va_tab			; advance cursor
 vch_ntb:
-		CMP #BS				; backspace?
-		BNE vch_nbs
-			JMP va_bs			; delete last character
+	CMP #BS				; backspace?
+	BNE vch_nbs
+		JMP va_bs			; delete last character
 vch_nbs:
-		CMP #14				; shift out?
-		BNE vch_nso
-			LDA #$FF			; mask for reverse video
-			_BRA vso_xor		; set mask and finish
+	CMP #14				; shift out?
+	BNE vch_nso
+		LDA #$FF			; mask for reverse video
+		_BRA vso_xor		; set mask and finish
 vch_nso:
-		CMP #15				; shift in?
-		BNE vch_nsi
-			LDA #0				; mask for true video eeeeeeeeeek
+	CMP #15				; shift in?
+	BNE vch_nsi
+		LDA #0				; mask for true video eeeeeeeeeek
 vso_xor:
-			STA va_xor			; set new mask
-			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+		STA va_xor			; set new mask
+		RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 vch_nsi:
-		CMP #17				; XON? (show cursor)
-		BNE vch_nsc
-			LDA #96				; value for visible cursor, slowly blinking
-			BNE vc_set			; put this value on register
-vch_nsc_:
-		CMP #19				; XOFF? (hide cursor)
-		BNE vch_nhc
-			LDA #32				; value for hidden cursor
+	CMP #17				; XON? (show cursor)
+	BNE vch_nsc
+		LDA #96				; value for visible cursor, slowly blinking
+		BNE vc_set			; put this value on register
+vch_nsc:
+	CMP #19				; XOFF? (hide cursor)
+	BNE vch_nhc
+		LDA #32				; value for hidden cursor
 vc_set:
-			LDX #10				; CRTC cursor register
-			STX crtc_rs			; select register...
-			STA crtc_da			; ...and set data
-			RTS					; all done for this setting
+		LDX #10				; CRTC cursor register
+		STX crtc_rs			; select register...
+		STA crtc_da			; ...and set data
+		RTS					; all done for this setting
 vch_nhc:
-; the following control codes expect a further byte (or two), thus set flag accordingly
-		CMP #16				; DLE? (binary mode)
-			BEQ vch_dcx			; set flag and exit
-		CMP #18				; DC2? (set INK)
-			BEQ vch_dcx			; set proper flag
-		CMP #20				; DC4? (set PAPER)
-			BEQ vch_dcx			; set proper flag
-		CMP #23				; ATYX? (set coordinates)
-		BNE vch_npr			; *** no more control codes ***
+
+; **** the following control codes expect a further byte (or two), thus set flag accordingly ****
+	CMP #16				; DLE? (binary mode)
+		BEQ vch_dcx			; set flag and exit
+	CMP #18				; DC2? (set INK)
+		BEQ vch_dcx			; set proper flag
+	CMP #20				; DC4? (set PAPER)
+		BEQ vch_dcx			; set proper flag
+	CMP #23				; ATYX? (set coordinates)
+	BEQ vch_dcx			; set flag or...
+		JMP vch_npr			; *** no more control codes ***
 vch_dcx:
-			STA va_col			; set flag if any colour is to be set
-			RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
-; ** flag means it did not print previous byte, what to do with current one? **
+	STA va_col			; set flag if any colour or coordinate is to be set
+	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+
+; **** flag means it did not print previous byte, what to do with current one? ****
 ; ** check for binary mode first **
 va_bin:
 	CPX #16			; binary mode? print directly...
@@ -341,10 +348,13 @@ va_spap:
 va_mbres:
 	_STZA va_col		; clear flag and we are done
 	RTS					; *** no need for DR_OK as BCS is not being used
-; *** non-printable neither accepted control, thus use substitution character ***
+
+; **** non-printable neither accepted control, thus use substitution character ****
 vch_npr:
 		LDA #'?'			; unrecognised char
 		STA io_c			; store as required
+
+; **** actual printing ****
 ; *** convert ASCII into pointer offset, needs 11 bits ***
 vch_prn:
 	_STZA io_c+1		; clear MSB (3)
@@ -466,6 +476,7 @@ vsc_blim:
 vch_ok:
 	_DR_OK
 
+; **** several printing features ****
 ; *** carriage return ***
 va_cr:
 	LDX #>VA_BASE		; MSB when required
