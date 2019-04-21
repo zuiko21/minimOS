@@ -61,12 +61,18 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 
 ## Control characters
 
-The _glyph_ is obtained by preceeding the code with a `DLE`.
+Once again, these were selected in order to satisfy easy processing and reasonable
+adhesion to standards. In particular, most of bash key shortcuts are
+implemented here, while a few other are just standard ASCII. A notable difference
+is the use of **plain `CR` as _newline_**, unlike the common UNIX (`LF`) and
+DOS/Windows (`CR` plus `LF`) alternatives.
+
+When required, the _glyph_ is obtained by preceeding the code with a `DLE`.
 
 ^ key|Dec|Hex|ASCII|mOS|glyph & description|notes
 -----|---|---|-----|---|-------------------|-----
 -|0|$00|`NUL`|**`NULL`**|&#9635; square with block|(1)
-A|1|$01|`SOH`|**`HOME`**|&#8689; arrow to NW corner|reset cursor without clearing screen
+A|1|$01|`SOH`|**`CRTN`**|&#8606; double arrow left|carriage return (without line feed)
 B|2|$02|`STX`|**`LEFT`**|&#8678; arrow left|cursor left (no backspace)
 C|3|$03|`ETX`|**`TERM`**|&#9211; ball switch|send TERM signal
 D|4|$04|`EOT`|**`ENDT`**|&#8690; arrow to SE corner|end of text
@@ -86,7 +92,7 @@ Q|17|$11|`DC1`|**`XON`**|&#9733; star|cursor on
 R|18|$12|`DC2`|**`INK`**|&#9999; pencil|set foreground colour (3)(4)
 S|19|$13|`DC3`|**`XOFF`**|&#9830; diamond suit|cursor off
 T|20|$14|`DC4`|**`PAPR`**|&#9827; club suit|set background colour (3)(4)
-U|21|$15|`NAK`|**`CRTN`**|&#8606; double arrow left|carriage return (without line feed)
+U|21|$15|`NAK`|**`HOME`**|&#8689; arrow to NW corner|reset cursor without clearing screen
 V|22|$16|`SYN`|**`PGDN`**|&#8609; double arrow down|page down
 W|23|$17|`ETB`|**`ATYX`**|&#9824; spade suit|set cursor position (5)
 X|24|$18|`CAN`|**`BKTB`**|&#8676; left arrow with bar|backwards tabulation
@@ -112,4 +118,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190407-1954*
+*last modified 20190421-1732*
