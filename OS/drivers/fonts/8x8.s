@@ -1,6 +1,6 @@
 ; font definition for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190403-0851
+; last modified 20190423-1358
 
 ; ASCII $00 - NULL / centre filled square
 	.byt	%11111111
@@ -12,15 +12,15 @@
 	.byt	%10000001
 	.byt	%11111111
 
-; ASCII $01 - HOME / arrow to NW corner
-	.byt	%11111111
-	.byt	%10000000
-	.byt	%10111100
-	.byt	%10110000
-	.byt	%10101000
-	.byt	%10100100
-	.byt	%10000010
-	.byt	%10000001
+; ASCII $01 - HOML / double arrow left
+	.byt	%00000000
+	.byt	%00000000
+	.byt	%00100100
+	.byt	%01001000
+	.byt	%11111110
+	.byt	%01001000
+	.byt	%00100100
+	.byt	%00000000
 
 ; ASCII $02 - LEFT / left arrow
 	.byt	%00000000
@@ -212,15 +212,15 @@
 	.byt	%00010000
 	.byt	%00111000
 
-; ASCII $15 - CRTN / double arrow left
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00100100
-	.byt	%01001000
-	.byt	%11111110
-	.byt	%01001000
-	.byt	%00100100
-	.byt	%00000000
+; ASCII $15 - HOME / arrow to NW corner
+	.byt	%11111111
+	.byt	%10000000
+	.byt	%10111100
+	.byt	%10110000
+	.byt	%10101000
+	.byt	%10100100
+	.byt	%10000010
+	.byt	%10000001
 
 ; ASCII $16 - PGDN / double arrow down
 	.byt	%00000000
