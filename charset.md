@@ -67,6 +67,15 @@ implemented here, while a few other are just standard ASCII. A notable differenc
 is the use of **plain `CR` as _newline_**, unlike the common UNIX (`LF`) and
 DOS/Windows (`CR` plus `LF`) alternatives.
 
+Notable exceptions are the cursor up/down, the
+CR-without-LF and the XON/XOFF, which makes
+little sense on a "glass tty" but are used
+instead to **enable the cursor**.
+
+**Colour codes**, on the other hand, are
+generated in a similar way to the _ZX 
+Spectrum_ although with different codes.
+
 When required, the _glyph_ is obtained by preceeding the code with a `DLE`.
 
 ^ key|Dec|Hex|ASCII|mOS|glyph & description|notes
@@ -118,4 +127,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190423-1358*
+*last modified 20190426-1932*
