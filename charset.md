@@ -67,10 +67,9 @@ implemented here, while a few other are just standard ASCII. A notable differenc
 is the use of **plain `CR` as _newline_**, unlike the common UNIX (`LF`) and
 DOS/Windows (`CR` plus `LF`) alternatives.
 
-Some exceptions are the cursor up/down, the
-CR-without-LF and the XON/XOFF, which makes
-little sense on a "glass tty" but are used
-instead to **enable the cursor**.
+Some exceptions are the cursor up/down (from VT and LF), the
+CR-without-LF (used as HOML, line home) and the XON/XOFF, which makes
+little sense on a "glass tty" but are used instead to **enable the cursor**.
 
 **Colour codes**, on the other hand, are
 generated in a similar way to the _ZX 
@@ -130,4 +129,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190427-2222*
+*last modified 20190428-2304*
