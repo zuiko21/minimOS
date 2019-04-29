@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a12
+; v0.6a13
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190419-1304
+; last modified 20190429-1245
 
 #include "../usual.h"
 
@@ -242,12 +242,39 @@ va_char:
 		JMP va_bin			; otherwise process accordingly
 va_nbin:
 ; ** then check whether control char or printable **
-	CMP #' '			; printable? (2)
-	BCC vch_nprn		; if not, check control codes
+	CMP #' '			; printable? (2) might use 28 as new limit for a shorter table
+	BCC vch_isc0		; if not, check control codes
 		JMP vch_prn			; it is! skip further comparisons (3)
-
 ; **** identify possible control codes ****
-vch_nprn:
+vch_isc0:
+; *** *** new code takes  plus 64 byte table *** ***
+	ASL					; character code times two
+	TAX					; is now an index
+	_JMPX(va_c0)		; new, operate according to C0 code table
+; *** much closer control routines *** ***
+; EON & EOFF (inverse/true video)
+vch_so:
+	LDA #$FF			; mask for reverse video
+	BNE vso_xor			; set mask and finish, no need for BRA
+vch_si_
+		LDA #0				; mask for true video eeeeeeeeeek
+vso_xor:
+	STA va_xor			; set new mask
+	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+; XON & XOFF (cursor on/off)
+vch_sc:
+	LDA #96				; value for visible cursor, slowly blinking
+	BNE vc_set			; put this value on register
+vch_hc:
+		LDA #32				; value for hidden cursor
+vc_set:
+	LDX #10				; CRTC cursor register
+	STX crtc_rs			; select register...
+	STA crtc_da			; ...and set data
+	RTS					; all done for this setting
+
+; *** *** classic code was 213 bytes *** ***
+/*
 	CMP #FORMFEED		; clear screen?
 	BNE vch_nff
 		JMP va_cls			; clear and return!
@@ -377,12 +404,12 @@ va_spap:
 va_mbres:
 	_STZA va_col		; clear flag and we are done
 	RTS					; *** no need for DR_OK as BCS is not being used
-
+*/
+; *** end of classic code *** ***
 ; **** non-printable neither accepted control, thus use substitution character ****
 vch_npr:
 		LDA #'?'			; unrecognised char
 		STA io_c			; store as required
-
 ; **** actual printing ****
 ; *** convert ASCII into pointer offset, needs 11 bits ***
 vch_prn:
@@ -580,6 +607,42 @@ vcur_l:
 ; ********************
 ; *** several data ***
 ; ********************
+
+va_c0:
+; new C0 codes managament table
+	.word	vch_npr		; NULL, not accepted... or might just generate a NEWL
+	.word		; HOML, CR without LF
+	.word		; LEFT, move cursor
+	.word	vch_npr		; TERM, does not affect screen
+	.word		; ENDT, end of text, may just issue a FF
+	.word	vch_npr		; ENDL, not accepted... or might just put cursor at the rightmost column
+	.word		; RGHT, move cursor
+	.word		; BELL, should make something conspicuous
+	.word	va_bs		; BKSP, backspace
+	.word	va_tab		; HTAB, move to next tab column
+	.word		; DOWN, move cursor
+	.word		; UPCU, move cursor
+	.word	va_cls		; FORM, clear screen
+	.word	va_cr		; NEWL, new line
+	.word	vch_so		; EON,  inverse video
+	.word	vch_si		; EOFF, true video
+	.word	vch_dcx		; DLE,  disable next control char
+	.word	vch_sc		; XON,  turn cursor on
+	.word	vch_dcx		; INK,  set foreground colour (uses another char)
+	.word	vch_hc		; XOFF, turn cursor off
+	.word	vch_dcx		; PAPR, set background colour (uses another char)
+	.word		; HOME, move cursor to top left without clearing
+	.word	va_cls		; PGDN, page down, may issue a FF
+	.word	vch_dcx		; ATYX, takes two more chars!
+	.word	vch_npr		; BKTB, no direct effect on screen
+	.word	vch_npr		; PGUP, no direct effect on screen
+	.word	vch_npr		; STOP, no effect on screen
+	.word	vch_npr		; ESC,  no effect on screen (this far!)
+; here come the ASCII separators, might be left printed anyway, saving 8 bytes from the table
+	.word	vch_npr		; FS,   no effect on screen or just print the glyph
+	.word	vch_npr		; GS,   no effect on screen or just print the glyph
+	.word	vch_npr		; RS,   no effect on screen or just print the glyph
+	.word	vch_npr		; US,   no effect on screen or just print the glyph
 
 va_cspl:
 ; splash screen attributes table (ink on upper right)
