@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a13
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190429-1245
+; last modified 20190429-1348
 
 #include "../usual.h"
 
@@ -239,11 +239,56 @@ va_char:
 ; ** first of all, check whether was waiting for an extra byte (or two) **
 	LDX va_col			; setting some colour or expecting binary?
 	BEQ va_nbin			; if not, continue with regular code
-		JMP va_bin			; otherwise process accordingly
+		_JMPX(va_xtb-16)	; otherwise process accordingly (using another table, note offset)
+; *** *** much closer code, may be elsewhere *** ***
+vch_dle:				; * process byte as glyph *
+	_STZA va_col		; ...but reset flag! eeeeeeeek
+	_BRA vch_prn		; NMOS might use BEQ instead, but not for CMOS!
+vch_atyx:				; * expects row byte... *
+	SEC
+	SBC #' '			; from space and beyond
+; compute new Y pointer... *** *** TO DO
+	INC va_col			; flag expects second coordinate... routine pointer placed TWO bytes after!
+	INC va_col
+	RTS					; just wait for the next coordinate
+vch_atcl:				; * ...and then expects column byte, note it is now 25, no longer 24! *
+	SEC
+	SBC #' '			; from space and beyond
+; add this X and set cursor... *** *** TO DO
+	_BRA va_mbres		; reset flag and we are done
+
+vch_ink:				; * take byte as FG colour *
+	AND #%00001111		; filter relevant bits
+	STA va_col			; temporary flag use for storing colour!
+	LDA va_attr			; get current colour
+vch_papr:				; * take byte as BG colour *
+	AND #%00001111		; filter relevant bits
+	STA va_col			; temporary flag use for storing colour!
+	LDA va_attr			; get current colour
+
+	CPX #20				; is it DC4 (PAPER)?
+	BNE va_sink			; assume INK otherwise
+		ASL va_col			; convert to paper code
+		ASL va_col
+		ASL va_col
+		ASL va_col
+		AND #%00001111		; will respect current ink
+		BNE va_spap		; no need for BRA, if it fails (black) the following instruction will be harmless
+va_sink:
+	AND #%11110000		; will respect current paper
+va_spap:
+	ORA va_col			; mix with (possibly shifted) new colour
+	STA va_attr			; new definition
+va_mbres:
+	_STZA va_col		; clear flag and we are done
+	RTS					; *** no need for DR_OK as BCS is not being used
+
+
+
 va_nbin:
 ; ** then check whether control char or printable **
 	CMP #' '			; printable? (2) might use 28 as new limit for a shorter table
-	BCC vch_isc0		; if not, check control codes
+	BCC vch_isc0		; if not, check control codes (may be inlined)
 		JMP vch_prn			; it is! skip further comparisons (3)
 ; **** identify possible control codes ****
 vch_isc0:
@@ -251,7 +296,7 @@ vch_isc0:
 	ASL					; character code times two
 	TAX					; is now an index
 	_JMPX(va_c0)		; new, operate according to C0 code table
-; *** much closer control routines *** ***
+; *** *** much closer control routines, can be placed anywhere *** ***
 ; EON & EOFF (inverse/true video)
 vch_so:
 	LDA #$FF			; mask for reverse video
@@ -272,6 +317,32 @@ vc_set:
 	STX crtc_rs			; select register...
 	STA crtc_da			; ...and set data
 	RTS					; all done for this setting
+; cursor down (*** TO DO ***)
+vch_down:
+	JMP vch_scs			; update cursor and exit (might reuse code below at va_rtnw)
+; cursor up (*** TO DO ***)
+vch_up:
+	JMP vch_scs			; update cursor and exit
+; cursor left
+vch_left:
+	DEC va_cur			; point to previous byte
+	LDA va_cur			; check for possible borrow
+	CMP #$FF
+	BNE va_rtnw			; saving one byte!
+		DEC va_cur+1
+		BNE va_rtnw			; no need for BRA
+; cursor right
+vch_rght:
+	INC va_cur			; point to following byte
+	BNE va_rtnw
+		INC va_cur+1
+va_rtnw:				; might need to check more bounds **** common exit point ***
+	JMP vch_scs			; update cursor and exit
+; request for extra bytes
+vch_dcx:
+	STA va_col			; set flag if any colour or coordinate is to be set
+	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+
 
 ; *** *** classic code was 213 bytes *** ***
 /*
@@ -612,16 +683,16 @@ va_c0:
 ; new C0 codes managament table
 	.word	vch_npr		; NULL, not accepted... or might just generate a NEWL
 	.word		; HOML, CR without LF
-	.word		; LEFT, move cursor
+	.word	vch_left	; LEFT, move cursor
 	.word	vch_npr		; TERM, does not affect screen
 	.word		; ENDT, end of text, may just issue a FF
 	.word	vch_npr		; ENDL, not accepted... or might just put cursor at the rightmost column
-	.word		; RGHT, move cursor
+	.word	vch_rght	; RGHT, move cursor
 	.word		; BELL, should make something conspicuous
 	.word	va_bs		; BKSP, backspace
 	.word	va_tab		; HTAB, move to next tab column
-	.word		; DOWN, move cursor
-	.word		; UPCU, move cursor
+	.word	vch_down	; DOWN, move cursor
+	.word	vch_up		; UPCU, move cursor
 	.word	va_cls		; FORM, clear screen
 	.word	va_cr		; NEWL, new line
 	.word	vch_so		; EON,  inverse video
@@ -644,6 +715,16 @@ va_c0:
 	.word	vch_npr		; RS,   no effect on screen or just print the glyph
 	.word	vch_npr		; US,   no effect on screen or just print the glyph
 
+va_xtb:
+; new table for extra-byte codes
+; note offset as managed X codes are 16, 18, 20 and 23, thus padding byte
+	.word	vch_dle		; process byte as glyph
+	.word	vch_ink		; take byte as FG colour
+	.word	vch_papr	; take byte as BG colour
+	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
+	.word	vch_atyx	; expects row byte
+	.word	vch_atcl	; expects column byte, note it is now 25, no longer 24!
+ 
 va_cspl:
 ; splash screen attributes table (ink on upper right)
 	.byt	%11111110	; yellow on white
