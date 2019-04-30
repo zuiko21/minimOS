@@ -4,7 +4,10 @@
 ; last modified 20190430-0915
 
 #include "../usual.h"
+
+; this for debugging only!
 #include "vdu-aca.h"
+
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
@@ -40,6 +43,8 @@ va_err:
 
 	crtc_rs	= $DFC0		; *** hardwired 6845 addresses on Acapulco ***
 	crtc_da	= $DFC1
+
+; debug only!
 	va_mode	= $400		; *** *** *** DEBUGGING ONLY *** *** ***
 
 ; define SEPARATORS in order to use a shorter table by letting 28-31 as printable!
@@ -52,7 +57,7 @@ va_err:
 	vs_cnt	= $E5		; line counter
 
 ; ************************
-; *** initialise stuff ***
+; *** initialise stuff *** should create line addresses table...
 ; ************************
 va_init:
 ; must set up CRTC first, depending on selected video mode!
@@ -377,7 +382,7 @@ vch_sh:
 	ADC io_c+1
 ;	_DEC				; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
-; create local destination pointer
+; create local destination pointer *** MAY NEED TO RECOMPUTE USING TABLE
 	LDY va_cur			; get current position (4+4)
 	LDA va_cur+1
 	STY v_dest			; will be destination pointer (3+3)
@@ -392,7 +397,7 @@ vch_pl:
 		LDA v_dest+1		; get current MSB (3+2)
 		CLC
 		ADC #4				; offset for next scanline is 1024 (2)
-		AND #127			; *** check for wrapping *** eeeeeeeek
+		AND #127			; *** check for wrapping *** eeeeeeeek *** MAY NEED TO RECOMPUTE USING TABLE
 		ORA #>VA_BASE
 		STA v_dest+1		; update (3)
 		INY					; next font byte (2)
@@ -416,7 +421,7 @@ vch_adv:
 ; should set CRTC cursor accordingly *** worth a subroutine?
 vch_scs:
 	JSR vch_scur
-; check whether scrolling is needed
+; check whether scrolling is needed *** MAY NEED TO RECOMPUTE USING TABLE
 	LDA va_cur+1		; check position (4)
 	CMP va_sch+1		; all lines done? (4)
 		BNE vch_ok			; no, just exit (3/2)
@@ -523,7 +528,7 @@ vbs_bk:
 	CMP #$FF			; did it wrap? (2)
 	BNE vbs_end			; no, return or end function (3/2)
 		DEC va_cur+1		; yes, propagate borrow (6) eeeeeeek
-; really ought to check for possible scroll-UP...
+; really ought to check for possible scroll-UP... *** MAY NEED TO RECOMPUTE USING TABLE
 ; at least, avoid being outside feasible values
 		LDA va_cur+1		; where are we? (4)
 		CMP #>VA_BASE		; cannot be below VRAM base (2)
@@ -551,6 +556,7 @@ vcur_l:
 		INY					; next reg (2)
 		DEX					; will pick previous byte
 		BPL vcur_l			; until finished (3/2)
+	RTS					; eeeeeeeeeeeeeeeeeek
 
 ; ********************
 ; *** several data ***
