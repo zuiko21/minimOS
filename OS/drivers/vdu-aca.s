@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a13
+; v0.6a14
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190430-0915
+; last modified 20190501-1815
 
 #include "../usual.h"
 
@@ -53,6 +53,7 @@ va_err:
 ; *** zeropage variables ***
 	v_dest	= $E8		; was local2, perhaps including this on zeropage.h? aka ptc
 	v_src	= $EA		; is this OK? aka ptl
+; do these need to be in zeropage?
 	vs_mask	= $E4		; *** local 1, splash screen only ***
 	vs_cnt	= $E5		; line counter
 
@@ -94,6 +95,7 @@ vi_cmr:
 ; ...but preset standard colours before!
 	LDA #$F0			; white paper, black ink
 	STA va_attr			; this value will be used by CLS
+; *** MUST reset line pointers array!
 ; software cursor will be set by CLS routine!
 ;	CLC					; just in case there is no splash code
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
