@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a14
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190501-2139
+; last modified 20190501-2340
 
 #include "../usual.h"
 
@@ -83,13 +83,13 @@ vi_crl:
 		INX
 		CPX #8				; last register done? (remaining registers are common, no longer $10)
 		BNE vi_crl			; continue otherwise
-; new, common registers from separate table (13 bytes more of code, but saves 64 from tables!)
+; new, common registers from separate table (13 bytes more of code, but saves 72 from tables!)
 vi_cmr:
 		STX crtc_rs			; select this register
 		LDA va_cdat-8, X	; get COMMON value for it, note offset
 		STA crtc_da			; set value
 		INX					; next address, now single index
-		CPX #$10			; last register done?
+		CPX #12				; last register done?
 		BNE vi_cmr			; continue otherwise
 ; new, must copy R1 and R6 into va_wdth and va_hght
 	LDA va_data-2, Y		; Y is known to be base+8, thus -2 is R6
@@ -193,8 +193,8 @@ vc_nm:
 		INY				; next row
 		CPY va_hght
 		BNE va_clp
-	LDY va_lpl			; set home position from first entry
-	LDA va_lph
+	LDY #<VA_BASE			; set home position... this is faster
+	LDA #>VA_BASE
 ; must set this as start & cursor address!
 	LDX #12				; CRTC screen start register, then comes cursor address (2)
 vc_crs:					; * this loops takes 49t *
@@ -272,7 +272,7 @@ vch_atyx:
 	SEC
 	SBC #' '			; from space and beyond
 ; compute new Y pointer...
-	STA v_y				; set new value
+	STA va_y			; set new value
 	INC va_col			; flag expects second coordinate... routine pointer placed TWO bytes after!
 	INC va_col
 	RTS					; just wait for the next coordinate
@@ -281,7 +281,7 @@ vch_atcl:
 	SEC
 	SBC #' '			; from space and beyond
 ; add X and set cursor...
-	STA v_x				; coordinates are set
+	STA va_x				; coordinates are set
 ; **** TO DO
 		_BRA va_mbres		; reset flag and we are done
 ; * * take byte as FG colour * *
@@ -351,10 +351,6 @@ va_home:
 va_homl:
 	_STZA va_x			; just reset column
 	_BRA va_rtnw			; update cursor and exit
-; * * cursor down * *
-vch_down:
-	INC va_y			; advance row
-	_BRA va_rtnw			; update cursor and exit (will check for scrolling)
 ; * * cursor left * *
 vch_left:
 	LDX va_x			; check whether at leftmost column
@@ -363,13 +359,16 @@ vch_left:
 vcl_nl:
 	DEC va_x			; previous column
 	_BRA va_rtnw			; standard end
-; * * cursor right * *
+; * * cursor right * * also used by normal printing
 vch_rght:
 	INC va_x			; point to following column
 	CMP va_wdth			; over line length?
 	BNE va_rtnw
 		_STZX va_x			; if so, back to left...
-		_BRA vch_down			; ...and down one line
+; ...and fall into cursor down!
+; * * cursor down * *
+vch_down:
+		INC va_y			; advance row
 va_rtnw:				; **** common exit point ***
 	JMP vch_scs			; update cursor and exit
 ; * * cursor up * *
@@ -381,7 +380,7 @@ vch_up:
 		RTS				; temporarily do nothing
 vcu_nt:
 	DEC va_y			; one row up
-	JMP vch_scs			; update cursor and exit (already checked for scrolling)
+	JMP vch_scs			; update cursor and exit (already checked for scrolling, may skip that)
 ; * * request for extra bytes * *
 vch_dcx:
 	STA va_col			; set flag if any colour or coordinate is to be set
@@ -413,11 +412,21 @@ vch_sh:
 	ADC io_c+1
 ;	_DEC				; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
-; create local destination pointer *** MAY NEED TO RECOMPUTE USING TABLE
-	LDY va_cur			; get current position (4+4)
-	LDA va_cur+1
-	STY v_dest			; will be destination pointer (3+3)
-	STA v_dest+1
+; create local destination pointer
+	LDA va_y			; current absolute row
+	CLC
+	ADC va_bi			; actual position in circular array
+	CMP va_hght			; check for wrapping
+	BCC va_nwbi
+		SBC va_hght
+va_nwbi:
+	TAX					; use as index
+	LDA va_lpl, X			; get base pointer for that row
+	LDY va_lph, X
+	CLC
+	ADC va_x			; and now add column offset
+	STA v_dest			; will be destination pointer (3+3)
+	STY v_dest+1
 ; copy from font (+1...) to VRAM (+1024...)
 	LDY #0				; scanline counter (2)
 vch_pl:
@@ -428,8 +437,7 @@ vch_pl:
 		LDA v_dest+1		; get current MSB (3+2)
 		CLC
 		ADC #4				; offset for next scanline is 1024 (2)
-		AND #127			; *** check for wrapping *** eeeeeeeek *** MAY NEED TO RECOMPUTE USING TABLE
-		ORA #>VA_BASE
+; *** *** is checking for wrap needed? *** ***
 		STA v_dest+1		; update (3)
 		INY					; next font byte (2)
 		CPY #VA_SCAN		; all done? (2)
@@ -437,154 +445,95 @@ vch_pl:
 ; now must set attribute accordingly!
 	SEC					; subtract 8192+1024 from v_dest (MSB already in A)
 	SBC #36
-;	BCS vch_nw			; no wrap, is this needed?
-;		AND #127			; hope this will do otherwise...
-;		ORA #>VA_BASE
 vch_nw:
 	STA v_dest+1		; now it should be pointing to the corresponding attribute
 	LDA va_attr			; get preset colour...
-	_STAY(v_dest)		; ...and place it
+	_STAX(v_dest)		; ...and place it eeeeeeeeeek
 ; printing is done, now advance current position
-vch_adv:
-	INC va_cur			; advance to next character (6)
-	BNE vch_scs			; all done, no wrap (3)
-		INC va_cur+1		; or increment MSB (6)
-; should set CRTC cursor accordingly *** worth a subroutine?
+	JMP vch_rght		; *** this is actually cursor right! ***
 vch_scs:
-	JSR vch_scur
-; check whether scrolling is needed *** MAY NEED TO RECOMPUTE USING TABLE
-	LDA va_cur+1		; check position (4)
-	CMP va_sch+1		; all lines done? (4)
-		BNE vch_ok			; no, just exit (3/2)
-	LDA va_cur			; check LSB too... (4+4)
-	CMP va_sch
-		BNE vch_ok			; (3/2)
-; otherwise must scroll... via CRTC
-; increment base address, wrapping if needed****
-	CLC
-	LDA va_ba			; get current base... (2+4)
-	ADC va_wdth			; ...and add one line (4)
-	STA va_ba			; update variable LSB (4)
-;	TAX					; keep in case is needed (2)
-	LDA va_ba+1			; now for MSB (4)
-	ADC #0				; propagate carry (2)
-	CMP #>VA_SCRL		; did it wrap? (2)
-	BNE vsc_nw			; no, just set CRTC and local (3/2)
-;	CPX #<VA_SCRL		; all 16-bits coincide? (2)
-;	BNE vsc_nw			; no, just set CRTC and local (3/2)
-		LDA #>VA_BASE		; or yes, wrap value around (2)
-;		LDX #<VA_BASE		; is this needed for MSB comparison??? (2)
-vsc_nw:
-	STA va_ba+1		; update variable MSB... (4)
-;	STX va_ba			; see above! (4)
-; ...and CRTC registerSSSSSS!!!!
-	LDY #12				; start_h register on CRTC (2)
-	LDX #1				; max offset (2)
-vsc_upd:
-		LDA va_ba, X		; get data
-		STY crtc_rs			; select register
-		STA crtc_da			; ...and set data
-; go for next
-		INY					; next reg (2)
-		DEX					; will pick previous byte
-		BPL vsc_upd			; until finished (3/2)
-; update va_sch
-	LDA va_sch			; get LSB (4)
-	LDX va_sch+1		; see MSB (4)
-	CPX #>VA_SCRL		; already at limit? (2)
-	BNE vsc_blim		; not, just increment (3/2)
-;	CMP #<VA_SCRL		; LSB already at limit too? (2)
-;	BNE vsc_blim		; not, just increment (3/2)
-		LDX #>VA_BASE		; yes, wrap to 2nd line (2)
-		LDA #<VA_BASE		; add one line to this (2)
-vsc_blim:
-	CLC
-	ADC va_wdth			; ...and add one line (4)
-	STA va_sch			; update variable (4+4)
-	STX va_sch+1
+; check whether scrolling is needed *** RECOMPUTE USING TABLE
+; it is assumed that only UPCU may issue a scroll up, thus not checked here
+	LDA va_y		; actual row
+	CMP va_hght		; over last line?
+	BNE vch_ok		; no, just exit (3/2)
+; scroll is needed, must update pointer array and base index
+; *** *** *** TO DO *** *** ***
+; set new base address on CRTC
+		LDX va_bi			; where is the new start address?
+		LDY va_lph, X			; get pointer, note order
+		LDA va_lpl, X
+; set CRTC registers, note MSB is on Y and LSB on A!
+		LDX #12				; start_h register on CRTC (2)
+		STX crtc_rs			; select register
+		STY crtc_da			; ...and set data MSB
+; go for next reg
+		INX					; next reg (2)
+		STX crtc_rs			; select register
+		STA crtc_da			; ...and set data LSB
 vch_ok:
+; set cursor position from separate coordinates, might be inlined
+; access to circular array is worth a subroutine?
+	LDA va_y			; current absolute row
+	CLC
+	ADC va_bi			; actual position in circular array
+	CMP va_hght			; check for wrapping
+	BCC vsc_nwbi
+		SBC va_hght
+vsc_nwbi:
+	TAX					; use as index
+	LDA va_lpl, X			; get base pointer for that row
+	LDY va_lph, X
+	CLC
+	ADC va_x			; and now add column offset
+	BCC vsc_cok			; eeeeeeek
+		INY
+vsc_cok:
+; set CRTC registers, note MSB is on Y and LSB on A! worth another?
+	LDX #14				; cur_h register on CRTC (2)
+	STX crtc_rs			; select register
+	STY crtc_da			; ...and set data MSB
+; go for next
+	INX					; next reg (2)
+	STX crtc_rs			; select register
+	STA crtc_da			; ...and set data LSB
 	_DR_OK
 
 ; **** several printing features ****
-; *** carriage return *** MUST CHANGE and COMBINE WITH HOML
+; *** carriage return ***
 va_cr:
-	LDX #>VA_BASE		; MSB when required
-	LDA #<VA_BASE
-vcr_mod:
-		CLC
-		ADC va_wdth			; ...and add one line (4)
-		BCC vcr_chk
-			INX					; MSB was incremented
-vcr_chk:
-		CPX va_cur+1		; near there?
-			BNE vcr_mod			; no way
-		CMP va_cur			; compare in full
-		BCC vcr_mod			; not yet...
-; was that OK?
-	STX va_cur+1
-	STA va_cur			; eeeeeeeeek (4)
-	JMP vch_scs			; ...update cursor and check for scrolling
+	INC va_y		; line feed...
+	JMP vch_homl		; ...and finish with simple CR
 
 ; *** tab (8 spaces) ***
 va_tab:
-	LDA va_cur			; get LSB (4)
+	LDA va_x			; get column (4)
 	AND #%11111000		; modulo 8 (2+2)
 	CLC
-	ADC #8				; increment position (2)
+	ADC #8				; increment target position (2)
+	CMP va_wdth			; over the limit?
+	BCC vtb_l
+		LDA #0
 vtb_l:
 		PHA					; save desired position (3)
 		LDA #' '			; will print spaces (2+3)
 		STA io_c
 		JSR vch_prn			; direct space printing, A holds 32 too (...)
-		PLA					; recover desired address (4)
-		CMP va_cur			; reached? (4) *** why not? ? ?
+		PLA					; retrieve target column (4)
+		CMP va_x			; reached? (4)
 		BNE vtb_l			; no, continue (3/2)
 	_DR_OK				; yes, all done
 
 ; *** backspace ***
 va_bs:
 ; first get cursor one position back...
-	JSR vbs_bk			; will call it again at the end (...)
+	JSR vch_left			; standard
 ; ...then print a space, the regular way...
 	LDA #' '			; code of space (2)
 	STA io_c			; store as single char... (3)
 	JSR va_prn			; print whatever is in io_c (...)
 ; ...and back again!
-vbs_bk:
-	DEC va_cur			; one position back (6)
-	LDA va_cur			; check for borrow (4) eeeeeeeeek
-	CMP #$FF			; did it wrap? (2)
-	BNE vbs_end			; no, return or end function (3/2)
-		DEC va_cur+1		; yes, propagate borrow (6) eeeeeeek
-; really ought to check for possible scroll-UP... *** MAY NEED TO RECOMPUTE USING TABLE
-; at least, avoid being outside feasible values
-		LDA va_cur+1		; where are we? (4)
-		CMP #>VA_BASE		; cannot be below VRAM base (2)
-		BCS vbs_end			; no borrow, all OK (3/2)
-			LDY #<VA_BASE		; get base address (2)
-			LDA #>VA_BASE		; MSB too (2)
-			STY va_cur			; set current (4+4)
-			STA va_cur+1
-			PLA					; discard return address, as nothing to print (4+4)
-			PLA
-			_DR_ERR(EMPTY)		; try to complain, just in case
-vbs_end:
-	_DR_OK				; all done, CLC will not harm at first call
-
-; **** CRTC routines ****
-; set cursor position from computed va_cur (maybe from separate coordinates)
-vch_scur:
-	LDY #14				; cur_h register on CRTC (2)
-	LDX #1				; max offset (2)
-vcur_l:
-		LDA va_cur, X		; get data
-		STY crtc_rs			; select register
-		STA crtc_da			; ...and set data
-; go for next
-		INY					; next reg (2)
-		DEX					; will pick previous byte
-		BPL vcur_l			; until finished (3/2)
-	RTS					; eeeeeeeeeeeeeeeeeek
+	JMP vch_left			; will return
 
 ; ********************
 ; *** several data ***
@@ -656,10 +605,7 @@ va_cdat:
 	.byt 15				; R9, maximum raster - 1
 	.byt 32				; R10, cursor start raster & blink/disable (off)
 	.byt 15				; R11, cursor end raster
-	.byt >VA_BASE		; R12/13, start address (big endian!)
-	.byt <VA_BASE
-	.byt >VA_BASE		; R14/15, cursor position (big endian!)
-	.byt <VA_BASE
+; start & cursor addresses (R12...R15) to be set by CLS
 
 va_data:
 ; CRTC registers initial values (only those which differ on each mode)
