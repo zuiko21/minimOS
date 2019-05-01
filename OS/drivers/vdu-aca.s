@@ -271,7 +271,8 @@ va_char:
 vch_atyx:
 	SEC
 	SBC #' '			; from space and beyond
-; compute new Y pointer... *** *** TO DO
+; compute new Y pointer...
+	STA v_y				; set new value
 	INC va_col			; flag expects second coordinate... routine pointer placed TWO bytes after!
 	INC va_col
 	RTS					; just wait for the next coordinate
@@ -279,7 +280,9 @@ vch_atyx:
 vch_atcl:
 	SEC
 	SBC #' '			; from space and beyond
-; add this X and set cursor... *** *** TO DO
+; add X and set cursor...
+	STA v_x				; coordinates are set
+; **** TO DO
 		_BRA va_mbres		; reset flag and we are done
 ; * * take byte as FG colour * *
 vch_ink:
@@ -341,34 +344,44 @@ vc_set:
 	STX crtc_rs			; select register...
 	STA crtc_da			; ...and set data
 	RTS					; all done for this setting
-; * * HOML (CR without LF) * * (*** TO DO ***)
-va_homl:
-	JMP vch_scs			; update cursor and exit
-; * * HOME (without clearing) * * (*** TO DO ***)
+; * * HOME (without clearing) * *
 va_home:
-	JMP vch_scs			; update cursor and exit
-; * * cursor down * * (*** TO DO ***)
+	_STZA va_y ; reset row... and fall into HOML
+; * * HOML (CR without LF) * *
+va_homl:
+	_STZA va_x			; just reset column
+	_BRA va_rtnw			; update cursor and exit
+; * * cursor down * *
 vch_down:
-	JMP vch_scs			; update cursor and exit (might reuse code below at va_rtnw)
-; * * cursor up * * (*** TO DO ***)
-vch_up:
-	JMP vch_scs			; update cursor and exit
+	INC va_y			; advance row
+	_BRA va_rtnw			; update cursor and exit (will check for scrolling)
 ; * * cursor left * *
 vch_left:
-	DEC va_cur			; point to previous byte
-	LDA va_cur			; check for possible borrow
-	CMP #$FF
-	BNE va_rtnw			; saving one byte!
-		DEC va_cur+1
-		BNE va_rtnw			; no need for BRA
-; * * cursor right * * vch_left reuses some code
+	LDX va_x			; check whether at leftmost column
+	BNE vcl_nl			; no, proceed
+		RTS				; yes, simply ignore!
+vcl_nl:
+	DEC va_x			; previous column
+	_BRA va_rtnw			; standard end
+; * * cursor right * *
 vch_rght:
-	INC va_cur			; point to following byte
+	INC va_x			; point to following column
+	CMP va_wdth			; over line length?
 	BNE va_rtnw
-		INC va_cur+1
-; common code for LEFT & RGHT
-va_rtnw:				; might need to check more bounds **** common exit point ***
+		_STZX va_x			; if so, back to left...
+		_BRA vch_down			; ...and down one line
+va_rtnw:				; **** common exit point ***
 	JMP vch_scs			; update cursor and exit
+; * * cursor up * *
+; this is expected to be much longer, as may need to scroll up!
+vch_up:
+	LDX va_y			; check if already at top
+	BNE vcu_nt			; no, just update coordinate
+; otherwise, scroll up... *** TO DO *** TO DO *** TO DO ***
+		RTS				; temporarily do nothing
+vcu_nt:
+	DEC va_y			; one row up
+	JMP vch_scs			; update cursor and exit (already checked for scrolling)
 ; * * request for extra bytes * *
 vch_dcx:
 	STA va_col			; set flag if any colour or coordinate is to be set
