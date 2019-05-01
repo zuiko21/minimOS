@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a14
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190501-1815
+; last modified 20190501-2029
 
 #include "../usual.h"
 
@@ -91,11 +91,17 @@ vi_cmr:
 		INX					; next address, now single index
 		CPX #$10			; last register done?
 		BNE vi_cmr			; continue otherwise
+; new, must copy R1 and R6 into va_wdth and va_hght
+	LDA va_data-2, Y		; Y is known to be base+8, thus -2 is R6
+	LDX va_data-7, Y		; Y is known to be base+8, thus -7 is R1
+	STA va_hght			; store convenient values
+	STX va_wdth
+; *** MUST create line pointers array!
+
 ; clear all VRAM!
 ; ...but preset standard colours before!
 	LDA #$F0			; white paper, black ink
 	STA va_attr			; this value will be used by CLS
-; *** MUST reset line pointers array!
 ; software cursor will be set by CLS routine!
 ;	CLC					; just in case there is no splash code
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
@@ -106,10 +112,9 @@ vi_cmr:
 ; initial code takes 27t
 	LDA #7				; line counter (2+3)
 	STA vs_cnt
-	LDX va_mode			; get resolution index (4)
 	LDA #<VA_BASE		; LSB as is page-aligned (2)
 	CLC					; prepare addition (2)
-	ADC va_width, X		; add chars per line (4)
+	ADC va_wdth		; add chars per line (4)
 	SEC					; prepare subtraction (2)
 	SBC vs_cnt			; set initial column (3)
 	STA v_dest			; set LSB (3)
@@ -149,8 +154,7 @@ vs_nras:
 		TAX					; keep MSB eeeeeeek (2)
 		LDA v_dest			; get old pointer (3)
 		SEC					; add line length PLUS 1 (2)
-		LDY va_mode			; for this resolution (4)
-		ADC va_width, Y		; add chars per line (4+3)
+		ADC va_wdth			; add chars per line (4+3)
 		STA v_dest
 		BCC vs_nc			; no carry (3*)
 			INX					; check possible carry! (2)
@@ -431,11 +435,10 @@ vch_scs:
 	CMP va_sch
 		BNE vch_ok			; (3/2)
 ; otherwise must scroll... via CRTC
-; increment base address, wrapping if needed
-	LDX va_mode			; get set mode for the width table
+; increment base address, wrapping if needed****
 	CLC
 	LDA va_ba			; get current base... (2+4)
-	ADC va_width, X		; ...and add one line (4)
+	ADC va_wdth			; ...and add one line (4)
 	STA va_ba			; update variable LSB (4)
 ;	TAX					; keep in case is needed (2)
 	LDA va_ba+1			; now for MSB (4)
@@ -471,8 +474,7 @@ vsc_upd:
 		LDA #<VA_BASE		; add one line to this (2)
 vsc_blim:
 	CLC
-	LDY va_mode			; get set mode for the width table
-	ADC va_width, Y		; ...and add one line (4)
+	ADC va_wdth			; ...and add one line (4)
 	STA va_sch			; update variable (4+4)
 	STX va_sch+1
 vch_ok:
@@ -483,10 +485,9 @@ vch_ok:
 va_cr:
 	LDX #>VA_BASE		; MSB when required
 	LDA #<VA_BASE
-	LDY va_mode			; get set mode for the width table
 vcr_mod:
 		CLC
-		ADC va_width, Y		; ...and add one line (4)
+		ADC va_wdth			; ...and add one line (4)
 		BCC vcr_chk
 			INX					; MSB was incremented
 vcr_chk:
@@ -573,7 +574,7 @@ va_c0:
 	.word	va_cls		; ENDT, end of text, may just issue a FF
 	.word	vch_npr		; ENDL, not accepted... or might just put cursor at the rightmost column
 	.word	vch_rght	; RGHT, move cursor
-	.word		; BELL, should make something conspicuous
+	.word	va_npr		; BELL, should make something conspicuous***
 	.word	va_bs		; BKSP, backspace
 	.word	va_tab		; HTAB, move to next tab column
 	.word	vch_down	; DOWN, move cursor
@@ -611,7 +612,7 @@ va_xtb:
 	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
 	.word	vch_atyx	; expects row byte
 	.word	vch_atcl	; expects column byte, note it is now 25, no longer 24!
- 
+
 va_cspl:
 ; splash screen attributes table (ink on upper right)
 	.byt	%11111110	; yellow on white
@@ -622,9 +623,7 @@ va_cspl:
 	.byt	%01000001	; blue on red
 	.byt	%00010000	; black on blue
 
-va_width:
-; line lengths on several modes, must match order from va_data!
-	.byt	40, 36, 32, 40, 40, 36, 32, 40
+; va_width array no longer used
 
 va_cdat:
 ; new, common values for CRTC registers in ALL modes
