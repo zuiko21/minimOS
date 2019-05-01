@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a14
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190501-2029
+; last modified 20190501-2139
 
 #include "../usual.h"
 
@@ -96,7 +96,7 @@ vi_cmr:
 	LDX va_data-7, Y		; Y is known to be base+8, thus -7 is R1
 	STA va_hght			; store convenient values
 	STX va_wdth
-; *** MUST create line pointers array!
+; MUST create line pointers array... but when clearing screen!
 
 ; clear all VRAM!
 ; ...but preset standard colours before!
@@ -169,15 +169,32 @@ vs_nc:
 	_DR_OK				; installation succeeded
 
 ; ***************************************
-; *** routine for clearing the screen *** takes 92865t, 60.46 ms @ 1.536 MHz
+; *** routine for clearing the screen *** takes about 60 ms @ 1.536 MHz
 ; ***************************************
-va_cls:					; * initial code takes 22t *
-	LDA #>VA_BASE		; base address (2+2) assume page aligned!
-	LDY #<VA_BASE		; actually 0!
-	STY va_ba			; set standard start point (4+4)
-	STA va_ba+1
-	STY va_cur			; ...and restore home position (4+4)
-	STA va_cur+1
+va_cls:					; * initial code took 22t *
+; should create the pointer array!
+	LDX #>VA_BASE		; base address (2) assume page aligned!
+	LDA #<VA_BASE		; actually 0!
+	TAY				; reset index
+	STY va_bi		; ...and circular base too...
+	STY va_x		; ...plus coordinates as well
+	STY va_y
+va_clp:
+		STA va_lpl, Y		; make LSB entry
+		STA va_src		; fast buffer!
+		TXA				; get and store MSB
+		STA va_lph, Y
+		LDA va_src		; retrieve value
+		CLC
+		ADC va_wdth		; add columns per line
+		BCC vc_nm		; check whether wraps
+			INX
+vc_nm:
+		INY				; next row
+		CPY va_hght
+		BNE va_clp
+	LDY va_lpl			; set home position from first entry
+	LDA va_lph
 ; must set this as start & cursor address!
 	LDX #12				; CRTC screen start register, then comes cursor address (2)
 vc_crs:					; * this loops takes 49t *
@@ -189,14 +206,9 @@ vc_crs:					; * this loops takes 49t *
 		INX					; try next value (2)
 		CPX #16				; all done? (2+3 twice, minus 1)
 		BNE vc_crs
-; new, preset scrolling limit * should take 10t *
-	LDA #>VA_SCRL		; original limit, will wrap around this constant (2)
-	STA va_sch+1		; set new var (4)
-;	LDY #0				; assume <VA_COL is zero (2) should be if both this and VA_BASE are page-aligned
-	STY va_sch		; VRAM should be page-aligned! (4)
 ; must clear not only VRAM, but attribute area too! * this is 12t *
 	STY v_dest			; clear pointer LSB, will stay this way (3)
-	LDA #>VA_COL		; set MSB (2)
+	SBC #>(VA_BASE-VA_COL)	; set MSB, C was set, A held MSB (2)
 	STA v_dest+1		; eeeeeeeeeeeeek (4)
 	LDA va_attr			; default colour value! (4)
 ; both areas (colour & VRAM) may be reset from a single loop!
