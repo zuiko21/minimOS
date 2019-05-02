@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a14
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190502-0916
+; last modified 20190502-1600
 
 #include "../usual.h"
 
@@ -417,7 +417,7 @@ vch_dcx:
 
 ; * * direct glyph printing (was above) * * should be close to actual printing
 vch_dle:				; * process byte as glyph *
-	_STZA va_col		; ...but reset flag! eeeeeeeek
+	_STZX va_col		; ...but reset flag! eeeeeeeek^2
 		_BRA vch_prn		; NMOS might use BEQ instead, but not for CMOS!
 
 ; * * non-printable neither accepted control, thus use substitution character * *
