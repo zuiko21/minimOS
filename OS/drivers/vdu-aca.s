@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a14
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190501-2340
+; last modified 20190502-0916
 
 #include "../usual.h"
 
@@ -35,10 +35,11 @@ va_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
 
 ; *** define some constants ***
-	VA_BASE	= $6000		; standard VRAM for Acapulco
-	VA_END	= $8000		; end of VRAM
 	VA_COL	= $5C00		; standard colour RAM for Acapulco
-	VA_SCRL	= VA_BASE+1024	; base plus 32x32 chars, 16-bit in case is needed
+	VA_BASE	= $6000		; standard VRAM for Acapulco
+	VA_SCRL	= $6400		; base plus 32x32 chars, 16-bit in case is needed
+	VA_END	= $8000		; end of VRAM
+
 	VA_SCAN	= 8			; number of scanlines (pretty hardwired)
 
 	crtc_rs	= $DFC0		; *** hardwired 6845 addresses on Acapulco ***
@@ -51,8 +52,9 @@ va_err:
 #define	SEPARATORS	_SEPARATORS
 
 ; *** zeropage variables ***
-	v_dest	= $E8		; was local2, perhaps including this on zeropage.h? aka ptc
-	v_src	= $EA		; is this OK? aka ptl
+	v_dest	= $E8		; generic writes, was local2, perhaps including this on zeropage.h? aka ptc
+	v_src	= $EA		; font read, is this OK? aka ptl
+
 ; do these need to be in zeropage?
 	vs_mask	= $E4		; *** local 1, splash screen only ***
 	vs_cnt	= $E5		; line counter
@@ -92,14 +94,13 @@ vi_cmr:
 		CPX #12				; last register done?
 		BNE vi_cmr			; continue otherwise
 ; new, must copy R1 and R6 into va_wdth and va_hght
-	LDA va_data-2, Y		; Y is known to be base+8, thus -2 is R6
-	LDX va_data-7, Y		; Y is known to be base+8, thus -7 is R1
+	LDA va_data-2, Y	; Y is known to be base+8, thus -2 is R6
+	LDX va_data-7, Y	; Y is known to be base+8, thus -7 is R1
 	STA va_hght			; store convenient values
 	STX va_wdth
-; MUST create line pointers array... but when clearing screen!
+; MUST create line pointers array... but only when clearing screen!
 
-; clear all VRAM!
-; ...but preset standard colours before!
+; clear all VRAM... but preset standard colours before!
 	LDA #$F0			; white paper, black ink
 	STA va_attr			; this value will be used by CLS
 ; software cursor will be set by CLS routine!
@@ -114,7 +115,7 @@ vi_cmr:
 	STA vs_cnt
 	LDA #<VA_BASE		; LSB as is page-aligned (2)
 	CLC					; prepare addition (2)
-	ADC va_wdth		; add chars per line (4)
+	ADC va_wdth			; add chars per line (4)
 	SEC					; prepare subtraction (2)
 	SBC vs_cnt			; set initial column (3)
 	STA v_dest			; set LSB (3)
@@ -175,25 +176,25 @@ va_cls:					; * initial code took 22t *
 ; should create the pointer array!
 	LDX #>VA_BASE		; base address (2) assume page aligned!
 	LDA #<VA_BASE		; actually 0!
-	TAY				; reset index
-	STY va_bi		; ...and circular base too...
-	STY va_x		; ...plus coordinates as well
+	TAY					; reset index
+	STY va_bi			; ...and circular base too...
+	STY va_x			; ...plus coordinates as well
 	STY va_y
 va_clp:
 		STA va_lpl, Y		; make LSB entry
-		STA va_src		; fast buffer!
-		TXA				; get and store MSB
+		STA v_src			; fast buffer!
+		TXA					; get and store MSB
 		STA va_lph, Y
-		LDA va_src		; retrieve value
+		LDA v_src			; retrieve value
 		CLC
-		ADC va_wdth		; add columns per line
-		BCC vc_nm		; check whether wraps
+		ADC va_wdth			; add columns per line
+		BCC vc_nm			; check whether wraps
 			INX
 vc_nm:
-		INY				; next row
+		INY					; next row
 		CPY va_hght
 		BNE va_clp
-	LDY #<VA_BASE			; set home position... this is faster
+	LDY #<VA_BASE		; set home position... this is faster
 	LDA #>VA_BASE
 ; must set this as start & cursor address!
 	LDX #12				; CRTC screen start register, then comes cursor address (2)
@@ -221,10 +222,10 @@ vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
 	CPX #>VA_BASE		; already at VRAM? or suitable limit (2)
 	BNE vcl_l			; no, do not change A (3)
 ; assume VRAM goes just after attribute area, thus v_dest already pointing to VA_BASE
-		TYA				; zero (on Y) is the standard clear value (2)
+		TYA					; zero (on Y) is the standard clear value (2)
 ; otherwise, do LDA #0 and TAY
 vcl_l:
-	CPX #>VA_END			; whole screen done?
+	CPX #>VA_END		; whole screen done?
 		BNE vcl_c			; if not, continue
 	RTS
 
@@ -266,24 +267,39 @@ va_char:
 	LDX va_col			; something being set?
 	BEQ va_nbin			; if not, continue with regular code
 		_JMPX(va_xtb-16)	; otherwise process accordingly (using another table, note offset)
+
 ; *** *** much closer control code, may be elsewhere *** ***
 ; * * expects row byte... * *
 vch_atyx:
 	SEC
 	SBC #' '			; from space and beyond
 ; compute new Y pointer...
+#ifdef	SAFE
+	CMP va_hght			; over screen size?
+	BCC vat_yok
+		_DR_ERR(INVALID)	; ignore if outside range
+vat_yok:
+#endif
 	STA va_y			; set new value
 	INC va_col			; flag expects second coordinate... routine pointer placed TWO bytes after!
 	INC va_col
-	RTS					; just wait for the next coordinate
+	_DR_OK				; just wait for the next coordinate
+
 ; * * ...and then expects column byte, note it is now 25, no longer 24! * *
 vch_atcl:
 	SEC
 	SBC #' '			; from space and beyond
 ; add X and set cursor...
-	STA va_x				; coordinates are set
-; **** TO DO
+#ifdef	SAFE
+	CMP va_wdth			; over screen size?
+	BCC vat_xok
+		_DR_ERR(INVALID)	; ignore if outside range
+vat_xok:
+#endif
+	STA va_x			; coordinates are set
+	JSR vch_scs			; set cursor
 		_BRA va_mbres		; reset flag and we are done
+
 ; * * take byte as FG colour * *
 vch_ink:
 	AND #%00001111		; filter relevant bits
@@ -291,6 +307,7 @@ vch_ink:
 	LDA va_attr			; get current colour
 	AND #%11110000		; will respect current paper
 		_BRA va_sfrb		; combine attributes and exit
+
 ; * * take byte as BG colour * * (vch_ink reuses some code)
 vch_papr:
 	AND #%00001111		; filter relevant bits
@@ -307,7 +324,8 @@ va_sfrb:
 va_mbres:
 	_STZA va_col		; clear flag and we are done
 	RTS					; *** no need for DR_OK as BCS is not being used
-; ** then check whether control char or printable **
+
+; ** check whether control char or printable **
 va_nbin:
 #ifdef	SEPARATORS
 	CMP #28				; from this one, all printable!
@@ -319,11 +337,13 @@ va_nbin:
 	ASL					; character code times two
 	TAX					; is now an index
 		_JMPX(va_c0)		; new, operate according to C0 code table
+
 ; *** *** much closer control routines, can be placed anywhere *** ***
 ; * * EON (inverse video) * *
 vch_so:
 	LDA #$FF			; mask for reverse video
 	BNE vso_xor			; set mask and finish, no need for BRA
+
 ; * * EOF (true video) * * vch_so reuses some code
 vch_si:
 		LDA #0				; mask for true video eeeeeeeeeek
@@ -331,10 +351,12 @@ vch_si:
 vso_xor:
 	STA va_xor			; set new mask
 	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+
 ; * * XON (cursor on) * *
 vch_sc:
 	LDA #96				; value for visible cursor, slowly blinking
 	BNE vc_set			; put this value on register, no need for BRA
+
 ; * * XOFF (cursor off) * * vch_sc reuses some code
 vch_hc:
 		LDA #32				; value for hidden cursor
@@ -344,13 +366,16 @@ vc_set:
 	STX crtc_rs			; select register...
 	STA crtc_da			; ...and set data
 	RTS					; all done for this setting
+
 ; * * HOME (without clearing) * *
 va_home:
-	_STZA va_y ; reset row... and fall into HOML
+	_STZA va_y			; reset row... and fall into HOML
+
 ; * * HOML (CR without LF) * *
 va_homl:
 	_STZA va_x			; just reset column
 	_BRA va_rtnw			; update cursor and exit
+
 ; * * cursor left * *
 vch_left:
 	LDX va_x			; check whether at leftmost column
@@ -359,6 +384,7 @@ vch_left:
 vcl_nl:
 	DEC va_x			; previous column
 	_BRA va_rtnw			; standard end
+
 ; * * cursor right * * also used by normal printing
 vch_rght:
 	INC va_x			; point to following column
@@ -366,11 +392,13 @@ vch_rght:
 	BNE va_rtnw
 		_STZX va_x			; if so, back to left...
 ; ...and fall into cursor down!
+
 ; * * cursor down * *
 vch_down:
 		INC va_y			; advance row
 va_rtnw:				; **** common exit point ***
 	JMP vch_scs			; update cursor and exit
+
 ; * * cursor up * *
 ; this is expected to be much longer, as may need to scroll up!
 vch_up:
@@ -381,18 +409,22 @@ vch_up:
 vcu_nt:
 	DEC va_y			; one row up
 	JMP vch_scs			; update cursor and exit (already checked for scrolling, may skip that)
+
 ; * * request for extra bytes * *
 vch_dcx:
 	STA va_col			; set flag if any colour or coordinate is to be set
 	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+
 ; * * direct glyph printing (was above) * * should be close to actual printing
 vch_dle:				; * process byte as glyph *
 	_STZA va_col		; ...but reset flag! eeeeeeeek
 		_BRA vch_prn		; NMOS might use BEQ instead, but not for CMOS!
+
 ; * * non-printable neither accepted control, thus use substitution character * *
 vch_npr:
 	LDA #'?'			; unrecognised char
 	STA io_c			; store as required
+
 ; **** actual printing ****
 ; *** convert ASCII into pointer offset, needs 11 bits ***
 vch_prn:
@@ -459,8 +491,36 @@ vch_scs:
 	BNE vch_ok		; no, just exit (3/2)
 ; scroll is needed, must update pointer array and base index
 ; *** *** *** TO DO *** *** ***
+		LDX va_bi			; current circular index
+		BNE vs_xnz			; not first one, no wrap
+			LDX va_hght			; get number of lines...
+vs_xnz:
+		DEX					; ...minus one, now points to last line pointer
+		LDA va_lpl, X		; get full value
+		LDY va_lph, X
+		INX					; go next in queue
+		CPX va_hght			; does it need to wrap?
+		BCC vs_bnw
+			LDX #0
+vs_bnw:
+		CLC
+		ADC va_wdth			; advance one line
+		BCC vs_msb			; check for wrapping
+			INY
+			CPY #>VA_SCRL		; did it even end the screen?
+			BCC vs_msb
+				LDY #>VA_BASE		; wrap it all!
+vs_msb:
+		STA va_lpl, X		; store new entry
+		TYA					; no STY abs, X...
+		STA va_lph, X
+		INX					; advance circular pointer
+		CPX va_hght			; does it need to wrap?
+		BCC vs_biok
+			LDX #0
+vs_biok:
+		STX va_bi			; correct base index, already at X
 ; set new base address on CRTC
-		LDX va_bi			; where is the new start address?
 		LDY va_lph, X			; get pointer, note order
 		LDA va_lpl, X
 ; set CRTC registers, note MSB is on Y and LSB on A!
@@ -503,7 +563,7 @@ vsc_cok:
 ; *** carriage return ***
 va_cr:
 	INC va_y		; line feed...
-	JMP vch_homl		; ...and finish with simple CR
+	JMP va_homl		; ...and finish with simple CR
 
 ; *** tab (8 spaces) ***
 va_tab:
@@ -548,7 +608,7 @@ va_c0:
 	.word	va_cls		; ENDT, end of text, may just issue a FF
 	.word	vch_npr		; ENDL, not accepted... or might just put cursor at the rightmost column
 	.word	vch_rght	; RGHT, move cursor
-	.word	va_npr		; BELL, should make something conspicuous***
+	.word	vch_npr		; BELL, should make something conspicuous***
 	.word	va_bs		; BKSP, backspace
 	.word	va_tab		; HTAB, move to next tab column
 	.word	vch_down	; DOWN, move cursor
