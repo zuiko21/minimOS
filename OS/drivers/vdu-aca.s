@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a14
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190502-1600
+; last modified 20190504-1802
 
 #include "../usual.h"
 
@@ -174,27 +174,27 @@ vs_nc:
 ; ***************************************
 va_cls:					; * initial code took 22t *
 ; should create the pointer array!
-	LDX #>VA_BASE		; base address (2) assume page aligned!
+	LDX #>VA_BASE		; base address (2+2) assume page aligned!
 	LDA #<VA_BASE		; actually 0!
-	TAY					; reset index
-	STY va_bi			; ...and circular base too...
-	STY va_x			; ...plus coordinates as well
+	TAY					; reset index (2)
+	STY va_bi			; ...and circular base too... (4)
+	STY va_x			; ...plus coordinates as well (4+4)
 	STY va_y
 va_clp:
-		STA va_lpl, Y		; make LSB entry
-		STA v_src			; fast buffer!
-		TXA					; get and store MSB
+		STA va_lpl, Y		; make LSB entry (4)
+		STA v_src			; fast buffer! (3)
+		TXA					; get and store MSB (2+4)
 		STA va_lph, Y
-		LDA v_src			; retrieve value
+		LDA v_src			; retrieve value (3)
 		CLC
-		ADC va_wdth			; add columns per line
-		BCC vc_nm			; check whether wraps
+		ADC va_wdth			; add columns per line (2+4)
+		BCC vc_nm			; check whether wraps (3/4)
 			INX
 vc_nm:
-		INY					; next row
+		INY					; next row (2+4+3)
 		CPY va_hght
 		BNE va_clp
-	LDY #<VA_BASE		; set home position... this is faster
+	LDY #<VA_BASE		; set home position... this is faster (2+2)
 	LDA #>VA_BASE
 ; must set this as start & cursor address!
 	LDX #12				; CRTC screen start register, then comes cursor address (2)
