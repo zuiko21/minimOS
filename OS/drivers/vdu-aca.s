@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a14
+; v0.6a15
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190504-1802
+; last modified 20190506-1342
 
 #include "../usual.h"
 
@@ -404,8 +404,38 @@ va_rtnw:				; **** common exit point ***
 vch_up:
 	LDX va_y			; check if already at top
 	BNE vcu_nt			; no, just update coordinate
-; otherwise, scroll up... *** TO DO *** TO DO *** TO DO ***
-		RTS				; temporarily do nothing
+; otherwise, scroll up...
+; *** *** scroll DOWN code just 'reversed', please check throughfully! *** ***
+		LDX va_bi			; current circular index
+		CPX #va_hght-1
+		BNE vs_xnz2			; not last one, no wrap
+			LDX #$FF			; is this OK?
+vs_xnz2:
+		INX					; ...plus one, now points to first line pointer
+; is the staff above really needed??
+		LDA va_lpl, X		; get full value
+		LDY va_lph, X
+		DEX					; go previous in queue
+		BPL vs_bnw2			; does it need to wrap? only OK up to 127 lines
+			LDX #va_hght-1
+vs_bnw2:
+		SEC
+		SBC va_wdth			; advance one line
+		BCS vs_msb			; check for wrapping
+			DEY
+			CPY #>VA_BASE		; is it before the screen?
+			BCS vs_msb2
+				LDY #>VA_SCRL-1		; wrap it all!
+vs_msb2:
+		STA va_lpl, X		; store new entry
+		TYA					; no STY abs, X...
+		STA va_lph, X
+		DEX					; backoff circular pointer
+		BPL vs_biok2		; does it need to wrap? only OK up to 127 lines!
+			LDX #va_hght-1
+; *** *** end of reference code, this ends with new circular index at X *** ***
+vs_biok2:
+		JMP vs_biok			; set new circular index, update CRTC, etc.
 vcu_nt:
 	DEC va_y			; one row up
 	JMP vch_scs			; update cursor and exit (already checked for scrolling, may skip that)
@@ -490,7 +520,6 @@ vch_scs:
 	CMP va_hght		; over last line?
 	BNE vch_ok		; no, just exit (3/2)
 ; scroll is needed, must update pointer array and base index
-; *** *** *** TO DO *** *** ***
 		LDX va_bi			; current circular index
 		BNE vs_xnz			; not first one, no wrap
 			LDX va_hght			; get number of lines...
@@ -521,7 +550,7 @@ vs_msb:
 vs_biok:
 		STX va_bi			; correct base index, already at X
 ; set new base address on CRTC
-		LDY va_lph, X			; get pointer, note order
+		LDY va_lph, X		; get pointer, note order
 		LDA va_lpl, X
 ; set CRTC registers, note MSB is on Y and LSB on A!
 		LDX #12				; start_h register on CRTC (2)
@@ -542,7 +571,7 @@ vch_ok:
 		SBC va_hght
 vsc_nwbi:
 	TAX					; use as index
-	LDA va_lpl, X			; get base pointer for that row
+	LDA va_lpl, X		; get base pointer for that row
 	LDY va_lph, X
 	CLC
 	ADC va_x			; and now add column offset
@@ -625,8 +654,9 @@ va_c0:
 	.word	va_home		; HOME, move cursor to top left without clearing
 	.word	va_cls		; PGDN, page down, may issue a FF
 	.word	vch_dcx		; ATYX, takes two more chars!
+; further savings can be done if these left printed anyway!
 	.word	vch_npr		; BKTB, no direct effect on screen
-	.word	vch_npr		; PGUP, no direct effect on screen
+	.word	vch_npr		; PGUP, no direct effect on screen, might do CLS anyway
 	.word	vch_npr		; STOP, no effect on screen
 	.word	vch_npr		; ESC,  no effect on screen (this far!)
 ; here come the ASCII separators, might be left printed anyway, saving 8 bytes from the table
@@ -640,12 +670,12 @@ va_c0:
 va_xtb:
 ; new table for extra-byte codes
 ; note offset as managed X codes are 16, 18, 20 and 23, thus padding byte
-	.word	vch_dle		; process byte as glyph
-	.word	vch_ink		; take byte as FG colour
-	.word	vch_papr	; take byte as BG colour
+	.word	vch_dle		; 16, process byte as glyph
+	.word	vch_ink		; 18, take byte as FG colour
+	.word	vch_papr	; 20, take byte as BG colour
 	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
-	.word	vch_atyx	; expects row byte
-	.word	vch_atcl	; expects column byte, note it is now 25, no longer 24!
+	.word	vch_atyx	; 23, expects row byte
+	.word	vch_atcl	; 25, expects column byte, note it is no longer 24!
 
 va_cspl:
 ; splash screen attributes table (ink on upper right)
