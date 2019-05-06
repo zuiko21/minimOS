@@ -1,5 +1,6 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a5 (32 column mode)
+; v0.6a5 (32 column mode) **** THIS VERSION DEPRECATED ****
+; *** MUST REDO FROM FULL VERSION *** but have a look at simplifying pattern!
 ; (c) 2019 Carlos J. Santisteban
 ; last modified 20190322-1043
 
