@@ -1,9 +1,9 @@
 /*
- * convert web-edited bitmap fonts *
- * into xa65 assembly files        *
+ * converts BitFontMaker exported fonts *
+ * into xa65 assembly files             *
  *
- * (c) 2019 Carlos J. Santisteban  *
- * last modified 20190507-1004     *
+ * (c) 2019 Carlos J. Santisteban       *
+ * last modified 20190508-1106          *
  */
 
 #include <stdio.h>
@@ -15,7 +15,7 @@
 	int		SCAN =16;			/* *** number of scanlines (assume 8-pixel wide) *** */
 
 /* functions */
-int	leenum(FILE *f) {
+int	readval(FILE *f) {
 	int x=0;
 	unsigned char c;
 	
@@ -30,9 +30,30 @@ int	leenum(FILE *f) {
 	} else return -1;					/* ERROR sentinel */
 }
 
+unsigned char minimOS(int x) {
+	switch(x) {
+		case 272:	return 208;
+		case 273:	return 240;
+		case 339:	return 189;
+		case 331:	return 190;
+		case :	return ;
+		case :	return ;
+		case :	return ;
+		case :	return ;
+		case :	return ;
+		case :	return ;
+		case :	return ;
+		case :	return ;
+		case :	return ;
+		case 8364:	return 164;
+
+		default:	return (unsigned char)x;
+	}
+}
+
 /* *** main code *** */
 int main(void) {
-	char	nombre[80];
+	char	name[80];
 	char	c;
 	int		i, j, k, x;
 
@@ -44,21 +65,20 @@ int main(void) {
 	}
 /* select input file */
 	printf("File? ");
-	fgets(nombre, 80, stdin);
+	fgets(name, 80, stdin);
 /* why should I put the terminator on the read string? */
 	i=0;
-	while (nombre[i]!='\n'&&nombre[i]!='\0')	i++;
-	nombre[i]=0;
-/* filename is OK */
-	printf("Opening %s file...\n", nombre);
-	f=fopen(nombre, "r");
-	if (f==NULL) {
+	while (name[i]!='\n' && name[i]!='\0')	{i++;}
+	name[i]=0;			/* filename is ready */
+	printf("Opening %s file...\n", name);
+	f=fopen(name, "r");
+	if (f==NULL) {		/* error handling */
 		printf("Could not open file!\n");
 	} else {
 /* open output file */
-		strcat(nombre,".s");
-		s=fopen(nombre,"w");
-		if (s==NULL) {
+		strcat(name,".s");
+		s=fopen(name,"w");
+		if (s==NULL) {	/* error handling */
 			printf("Cannot output source!\n");
 		} else {
 /* proceed! first read file into matrix */
@@ -73,26 +93,28 @@ int main(void) {
  * lastly  ],  and start again
  * any letter after  "  ends procedure */
 			while (fgetc(f)=='"') {			/* emergency exit */
-				i=leenum(f);				/* try to read index */
-				if (i==-1)			break;	/* *** non-numeric character found *** */
+				i=readval(f);				/* try to read index */
+				if (i<0)			break;	/* *** non-numeric character found *** */
+				i=minimOS(i);				/* convert non-compatible codes! */
 /* get array for this index */
 				if (fgetc(f)!=':')	break;
 				if (fgetc(f)!='[')	break;
 				for (j=0; j<SCAN; j++) {	/* get every scanline */
-					x=leenum(f);
+					x=readval(f);
 					if (x<0) 		break;	/* unexpected error... */
 					g[i][j]=x>>2;			/* note shift */
 				}
-				if (fgetc(f)!=',')	break;	/* ] was taken by last leenum() */
+				if (fgetc(f)!=',')	break;	/* ] was taken by last readval() */
 			}
 			fclose(f);
 			printf("All read!\n");
 		}
 /* then create assembly file from matrix contents */
-		printf("Writing into %s...\n", nombre);
+		printf("Writing into %s...\n", name);
 /* header contents */
 		fprintf(s, "; Automatic font definition for minimOS\n");
 		fprintf(s, "; (c) 2019 Carlos J. Santisteban\n");
+/* loops for contents creation */
 		for (i=0; i<256; i++) {
 			fprintf(s, "\n; ASCII $%X", i);			/* ASCII code */
 			if (i>31) {fprintf(s, " - %c", i);}		/* only printable chars */
