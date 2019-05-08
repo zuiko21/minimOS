@@ -3,7 +3,7 @@
  * into xa65 assembly files             *
  *
  * (c) 2019 Carlos J. Santisteban       *
- * last modified 20190508-1106          *
+ * last modified 20190508-1606          *
  */
 
 #include <stdio.h>
@@ -18,7 +18,7 @@
 int	readval(FILE *f) {
 	int x=0;
 	unsigned char c;
-	
+
 	while (-1) {
 		c=fgetc(f);
 		if (c>'9' || c<'0')		break;
@@ -32,20 +32,17 @@ int	readval(FILE *f) {
 
 unsigned char minimOS(int x) {
 	switch(x) {
-		case 272:	return 208;
-		case 273:	return 240;
-		case 339:	return 189;
-		case 331:	return 190;
-		case :	return ;
-		case :	return ;
-		case :	return ;
-		case :	return ;
-		case :	return ;
-		case :	return ;
-		case :	return ;
-		case :	return ;
-		case :	return ;
-		case 8364:	return 164;
+		case 290 ... 321:	return (unsigned char)x-290;	/* C0 control */
+		case 164:	return 32;	/* space, with invisible dot */
+		case 256 ... 271:	return (unsigned char)x-128;	/* ZX block graphs */
+		case 274 ... 289:	return (unsigned char)x-130;	/* greek & math */
+		case 189:	return 160;	/* hollow square */
+		case 190:	return 173;	/* not equal */
+		case 8364:	return 164;	/* euro */
+		case 339:	return 189;	/* oe ligature */
+		case 331:	return 190;	/* eng */
+		case 272:	return 208;	/* uppercase eth */
+		case 273:	return 240;	/* lowercase eth */
 
 		default:	return (unsigned char)x;
 	}
