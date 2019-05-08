@@ -57,7 +57,7 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 **$Cx**|À|Á|Â|Ã|Ä|Å|Æ|Ç|È|É|Ê|Ë|Ì|Í|Î|Ï
 **$Dx**|Đ|Ñ|Ò|Ó|Ô|Õ|Ö|×|Ø|Ù|Ú|Û|Ü|Ý|&#222;|&#223;
 **$Ex**|à|á|â|ã|ä|å|æ|ç|è|é|ê|ë|ì|í|î|ï
-**$Fx**|đ|ñ|ò|ó|ô|õ|ö|÷|ø|ù|ú|û|ü|ý|&#254;|&#255;
+**$Fx**|ð|ñ|ò|ó|ô|õ|ö|÷|ø|ù|ú|û|ü|ý|&#254;|&#255;
 
 ## Control characters
 
@@ -129,4 +129,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190428-2304*
+*last modified 20190508-0939*
