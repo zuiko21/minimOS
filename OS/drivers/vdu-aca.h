@@ -1,6 +1,6 @@
 ; minimOS driver for Acapulco built-in VDU
 ; variables for v0.6
-; last modified 20190503-1117
+; last modified 20190509-1212
 
 ; surely needed variables
 ; LOCAL data if using windows
@@ -14,6 +14,9 @@ va_col		.byt	0		; flag 0=normal, 16=binary mode, 18=wait for ink, 20=wait for pa
 ; perhaps local?
 va_wdth		.byt	0		; copy number of columns here, may remove widths array too!
 va_hght		.byt	0		; ditto for number of rows
+
+; new font RAM pointer, not sure if local or global
+va_font		.word	0
 
 ; newer variables for hardware scroll
 ; GLOBAL data

@@ -32,7 +32,7 @@ int	readval(FILE *f) {
 
 unsigned char minimOS(int x) {
 	switch(x) {
-		case 164:	return 32;	/* space, with invisible dot */
+		case 164:	return 32;		/* space, with invisible dot */
 		case 322:	return 127;	/* delete */
 		case 189:	return 160;	/* hollow square */
 		case 8364:	return 164;	/* euro */

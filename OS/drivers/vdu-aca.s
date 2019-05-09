@@ -1,5 +1,5 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
-; v0.6a15
+; v0.6a16
 ; (c) 2019 Carlos J. Santisteban
 ; last modified 20190506-1342
 
@@ -99,7 +99,11 @@ vi_cmr:
 	STA va_hght			; store convenient values
 	STX va_wdth
 ; MUST create line pointers array... but only when clearing screen!
-
+; new, set RAM pointer to supplied font!
+	LDA #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
+	STA va_font			; store locally (4)
+	LDA #>vs_font		; same for MSB (2+4) *** ditto for flexibility
+	STA va_font+1
 ; clear all VRAM... but preset standard colours before!
 	LDA #$F0			; white paper, black ink
 	STA va_attr			; this value will be used by CLS
@@ -466,13 +470,13 @@ vch_sh:
 		DEX					; next shift (2+3)
 		BNE vch_sh
 ; add offset to font base address
-	LDA #<va_font		; add to base... (2+2) *** might use a RAM pointer
+	LDA va_font			; add to base... (4+2) *** now using a RAM pointer
 	CLC
 	ADC io_c			; ...the computed offset (3)
 	STA v_src			; store locally (3)
-	LDA #>va_font		; same for MSB (2+3) *** ditto for flexibility
+	LDA va_font+1		; same for MSB (4+3) *** ditto for flexibility
 	ADC io_c+1
-;	_DEC				; in case the font has no non-printable glyphs
+;	DEC					; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
 ; create local destination pointer
 	LDA va_y			; current absolute row
@@ -785,6 +789,6 @@ va_data:
 	.byt 26				; R7, VSYNC position - 1
 
 ; *** glyphs ***
-va_font:
+vs_font:
 #include "fonts/8x8.s"
 .)
