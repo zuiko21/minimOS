@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a16
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190506-1342
+; last modified 20190509-1239
 
 #include "../usual.h"
 
@@ -174,9 +174,9 @@ vs_nc:
 	_DR_OK				; installation succeeded
 
 ; ***************************************
-; *** routine for clearing the screen *** takes about 60 ms @ 1.536 MHz
+; *** routine for clearing the screen *** takes about 61 ms @ 1.536 MHz
 ; ***************************************
-va_cls:					; * initial code took 22t *
+va_cls:					; * initial code takes 18t *
 ; should create the pointer array!
 	LDX #>VA_BASE		; base address (2+2) assume page aligned!
 	LDA #<VA_BASE		; actually 0!
@@ -184,6 +184,7 @@ va_cls:					; * initial code took 22t *
 	STY va_bi			; ...and circular base too... (4)
 	STY va_x			; ...plus coordinates as well (4+4)
 	STY va_y
+; *** loop for creating the line pointers table, for n rows it takes 2+34n, which is 852, 954 or 1022t ***
 va_clp:
 		STA va_lpl, Y		; make LSB entry (4)
 		STA v_src			; fast buffer! (3)
@@ -198,7 +199,7 @@ vc_nm:
 		INY					; next row (2+4+3)
 		CPY va_hght
 		BNE va_clp
-	LDY #<VA_BASE		; set home position... this is faster (2+2)
+	LDY #<VA_BASE		; set home position... this is faster (2+2) *** these add 6t ***
 	LDA #>VA_BASE
 ; must set this as start & cursor address!
 	LDX #12				; CRTC screen start register, then comes cursor address (2)
