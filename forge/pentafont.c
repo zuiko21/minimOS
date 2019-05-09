@@ -3,7 +3,7 @@
  * into xa65 assembly files             *
  *
  * (c) 2019 Carlos J. Santisteban       *
- * last modified 20190508-1606          *
+ * last modified 20190509-0911          *
  */
 
 #include <stdio.h>
@@ -32,17 +32,16 @@ int	readval(FILE *f) {
 
 unsigned char minimOS(int x) {
 	switch(x) {
-		case 290 ... 321:	return (unsigned char)x-290;	/* C0 control */
 		case 164:	return 32;	/* space, with invisible dot */
-		case 256 ... 271:	return (unsigned char)x-128;	/* ZX block graphs */
-		case 274 ... 289:	return (unsigned char)x-130;	/* greek & math */
+		case 322:	return 127;	/* delete */
 		case 189:	return 160;	/* hollow square */
-		case 190:	return 173;	/* not equal */
 		case 8364:	return 164;	/* euro */
+		case 190:	return 173;	/* not equal */
 		case 339:	return 189;	/* oe ligature */
 		case 331:	return 190;	/* eng */
-		case 272:	return 208;	/* uppercase eth */
-		case 273:	return 240;	/* lowercase eth */
+		case 290 ... 321:	return (unsigned char)(x-290);	/* C0 control */
+		case 256 ... 271:	return (unsigned char)(x-128);	/* ZX block graphs */
+		case 274 ... 289:	return (unsigned char)(x-130);	/* greek & math */
 
 		default:	return (unsigned char)x;
 	}
@@ -114,7 +113,7 @@ int main(void) {
 /* loops for contents creation */
 		for (i=0; i<256; i++) {
 			fprintf(s, "\n; ASCII $%X", i);			/* ASCII code */
-			if (i>31) {fprintf(s, " - %c", i);}		/* only printable chars */
+			if (i>31 && i<127) {fprintf(s, " - %c", i);}	/* only printable ASCII chars */
 			fprintf(s, "\n");
 			for (j=0; j<SCAN; j++) {				/* scanline loop */
 				fprintf(s,"\t.byt\t%%");
