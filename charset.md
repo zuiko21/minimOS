@@ -5,46 +5,46 @@ had to satisfy the following:
 
 - **Single-byte** sequences (for easier/faster parsing).
 - Reasonably adhesion to actual standards for convenient **compatibility**.
-- Support for **Spanish** characters... plus some other *personal interests* of mine.
+- Support for **Spanish** characters... plus some other _personal interests_ of mine.
 
 Another consideration was trying to match the text-LCD modules charset as much as
 possible.
 
-Currently, it is *loosely* based on **ISO 8859-1**. It does however include the
-**Euro** sign from 8859-15.
+Currently, it is _loosely_ based on **ISO 8859-1**. It does however include the
+**Euro** sign from 8859-15, replacing the ill-fitted _currency_ character.
 
-On the other hand, as *C1 control codes* were not defined on that standard, those
+On the other hand, as _C1 control codes_ were not defined on that standard, those
 were replaced with the following characters from other architectures:
 
-- 128-143 ($80-$8F) are the **Sinclair ZX Spectrum *semi-graphic*** characters.
-- 144-159 ($90-$9F) come from $E0-$EF of **code page 437** (*selected Greek for Maths*)
-but with four substitutions for equal or similar characters (vgr. using *Beta*
-instead of *Eszett*). These alterations are filled with some other characters from
-CP437 in the range $F0-$FF which were deemed interesting, like the *check mark*
-(actually derived from the *radical sign*), approximation and non-strict
-inequalities.
+- 128-143 ($80-$8F) are the **Sinclair ZX Spectrum _semi-graphic_** characters.
+- 144-159 ($90-$9F) come from $E0-$EF of **code page 437** (_selected Greek for Maths_)
+but with four substitutions for equal or similar glyphs (vgr. using _Eszett_
+instead of _Beta_). These alterations are filled with some other characters from
+CP437 in the range $F0-$FF which were deemed interesting, like the **check mark**
+(actually derived from the _radical sign_), **approximation** and **_non-strict_
+inequalities**.
  
 Up to 190 ($BE) there are some differences from ISO 8859-1. Beyond that, they are just
-the same -- and also like *Windows-1252*, for that matter.
+the same -- and also like _Windows-1252_, for that matter.
 
 The aforementioned differences include:
 
-- *Non-Breaking space* (160, $A0) is replaced by a hollow square/rectangle. Where
+- _Non-Breaking space_ (160, $A0) is replaced by a **hollow square/rectangle**. Where
 needed, its functionality may be provided by code 128/$80 Spectrum graphic (which
 shows up as a blank space anyway).
-- *Soft hyphen* (173, $AD) is replaced by the (seldom found on single-byte encodings!)
+- _Soft hyphen_ (173, $AD) is replaced by the (seldom found on single-byte encodings!)
 **slashed equal**.
-- *Cedilla* (184, $B8) is not needed as Iberian & Gallic keyboards have the
-*C-cedilla* key available, thus is replaced by **lowercase omega**. *This encoding
-is already used on some HD44780-based LCD text displays*. 
-- *Superscript 1* (185, $B9), unlike the superscript 2 & 3, makes little sense to me,
+- _Cedilla_ (184, $B8) is not needed as Iberian & Gallic keyboards have the
+_C-cedilla_ key available, thus is replaced by **lowercase omega**. _This encoding
+is already used on some HD44780-based LCD text displays_.
+- _Superscript 1_ (185, $B9), unlike the superscript 2 & 3, makes little sense to me,
 thus replaced by **uppercase delta**.
-- *Fractions* (188-190, $BC-$BE) were to be replaced by *French ligatures and uppercase
-Y with diaeresis* but, albeit current, they are rarely used. The latter is replaced
-by the **eng** character (required by Wolof language) while the first one will get
-the **bullet** character. Note that the *lowercase **oe** ligature* is kept from
-ISO 8859-15 as, like the Y with diaeresis, may be an acceptable substitute for the
-(rare) appearances of their uppercase counterparts.
+- _Fractions_ (188-190, $BC-$BE) are replaced by the **bullet** character, the
+_lowercase **oe** ligature_ (from ISO 8859-**15**) and the **eng** character
+(required by Wolof language, also in ISO 8859-15 but from a different code),
+respectively. Note that the _uppercase **oe** ligature_, like the _uppercase Y
+with diaeresis_ are **not** kept from ISO 8859-15 as their lowercase counterparts
+may be acceptable substitutes for their (rare) appearances.
 
 ## non-ASCII character table
 
@@ -59,26 +59,24 @@ mOS|$x0|$x1|$x2|$x3|$x4|$x5|$x6|$x7|$x8|$x9|$xA|$xB|$xC|$xD|$xE|$xF
 **$Ex**|à|á|â|ã|ä|å|æ|ç|è|é|ê|ë|ì|í|î|ï
 **$Fx**|ð|ñ|ò|ó|ô|õ|ö|÷|ø|ù|ú|û|ü|ý|&#254;|&#255;
 
-## Control characters
+## _C0_ Control characters
 
 Once again, these were selected in order to satisfy easy processing and reasonable
-adhesion to standards. In particular, most of bash key shortcuts are
-implemented here, while a few other are just standard ASCII. A notable difference
+adhesion to standards. In particular, most of _bash_ key shortcuts are
+implemented here, while a few other are just **traditional ASCII**. A notable difference
 is the use of **plain `CR` as _newline_**, unlike the common UNIX (`LF`) and
 DOS/Windows (`CR` plus `LF`) alternatives.
 
-Some exceptions are the cursor up/down (from VT and LF), the
-CR-without-LF (used as HOML, line home) and the XON/XOFF, which makes
-little sense on a "glass tty" but are used instead to **enable the cursor**.
+Notable differences are the **cursor up/down** (made from `VT` and `LF`), the
+_CR-without-LF_ (used as `HOML`, line home) and the `XON`/`XOFF`, which make
+little sense on a _glass tty_ but are used instead to **enable the cursor**.
 
-**Colour codes**, on the other hand, are
-generated in a similar way to the _ZX 
-Spectrum_ although with different codes.
+**Colour commands**, on the other hand, are generated in a similar way to the _ZX 
+Spectrum_ although with different codes (18 for `INK`, 20 for `PAPER`).
 
-A typical **mouse pointer arrow** is provided
-on the `ESC` code, for use with future GUIs.
+A typical **mouse pointer arrow** is provided on the `ESC` code, for use with future GUIs.
 
-When required, the _glyph_ is obtained by preceeding the code with a `DLE`.
+_When required, the normally hidden **glyph** is obtained by preceeding the code with a `DLE`._
 
 ^ key|Dec|Hex|ASCII|mOS|glyph & description|notes
 -----|---|---|-----|---|-------------------|-----
@@ -129,4 +127,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190508-0939*
+*last modified 20190510-1047*
