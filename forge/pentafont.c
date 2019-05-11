@@ -3,7 +3,7 @@
  * into xa65 assembly files             *
  *
  * (c) 2019 Carlos J. Santisteban       *
- * last modified 20190509-0911          *
+ * last modified 20190511-2241          *
  */
 
 #include <stdio.h>
@@ -49,7 +49,7 @@ unsigned char minimOS(int x) {
 
 /* *** main code *** */
 int main(void) {
-	char	name[80];
+	char	name[100];
 	char	c;
 	int		i, j, k, x;
 
