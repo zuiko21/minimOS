@@ -1,6 +1,6 @@
 ; RickRolling for Acapulco!
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190512-1331
+; last modified 20190512-1445
 
 .(
 ; *** minimOS header to be done ***
@@ -25,12 +25,36 @@
 	STY ex_pt			; set new ISR
 	STA ex_pt+1
 	_ADMIN(SET_ISR)
-	LDA #$5C			; start page of attribute area
-	STA vptr+1
 	LDY #0				; reset counter...
 	STY vptr			; ...and indirect pointer
+; must fill bitmap with pattern
+	LDA #$60			; start of VRAM
+	STA vptr+1
+	LDX #%01010101			; display pattern
+vi_pat:
+		TXA
+vi_fill:
+		STA (vptr), Y			; write to screen
+		INY					; next
+		BNE vi_fill			; until page is done
+			INC vptr+1			; next page
+				BMI vi_pb			; VRAM full
+			TAX					; save pattern
+			LDA vptr+1			; check current page
+			LSR					; bit 0 set?
+				BCS vi_pat			; restore pattern and continue
+			LSR					; bit 1 set?
+				BCS vi_pat			; restore pattern and continue
+			TXA					; get old pattern...
+			EOR #$FF			; ...and invert it
+			BNE vi_fill
+; prepare for video play
+vi_pb:
+	LDA #$5C			; start page of attribute area
+	STA vptr+1
 	LDA #240			; 8 seconds at 30fps
 	STA frames			; prepare counter, zero may be acceptable
+	JSR vsync			; * wait for frame start *
 	CLI					; enable audio and start playing!
 ; *** main loop *** usually 34t per byte, nearly 21 ms per frame :-(
 vi_loop:
@@ -45,6 +69,7 @@ vi_loop:
 				LDA #$5C			; (2+3) reset pointer
 				STA vptr+1
 ; should ask 6445 for next frame!
+				JSR vsync			; already one passed
 				DEC frames			; (5) fastest way up to 8s ~240 frames)
 				BEQ ra_end			; (2) until video is finished
 vi_nx:
