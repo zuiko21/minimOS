@@ -32,14 +32,94 @@ _interrupt-driven_.
 - **Video** data, on the other hand, takes most of the bandwidth but is nowhere as
 demanding on timing accuracy, since the scanned VRAM acts as an effective buffer.
 
-Thus, the ISR for _audio stream_ (stored in a **27C256**) will just **pulse `PB0`**
-(thru the usual `INC`-`DEC` sequence) to increase the audio counter and enable the
-audio ROM output, to keep interrupt overhead as low as possible.
+Thus, the ISR for _audio stream_ (stored in a 64 kiB **27C256**) will just **pulse
+`PB0`** (thru the usual `INC`-`DEC` sequence) to increment the audio counter and
+_enable_ the audio ROM output, to keep interrupt overhead as low as possible.
 
-For _video_ (stored in a **27EE020**) two approaches have been considered:
+For _video_ (stored in a 256 kiB **29EE020**) two approaches have been considered:
 
 1) Keep the full address counter on the board, being pulsed by `PB1`
 1) Take the lowest 6 bits from `PB1-PB6` (`PB7` expected _low_ at all times), while
 `PB6` is used to pulse an in-board counter for the remaining bits.
 
-_Last modified 20190512-1230_
+But after writing stubs of code, the first option in no better than the second one,
+and needs more hardware anyway, so we will provide the lowest video bits on PB.
+
+In short, the **auxiliary board** will use the following components:
+
+- One **27C512 EPROM** with the _audio_ samples
+- One **29EE020 EEPROM** with the _video_ data
+- Two **74HCT393** for the 16-bit _audio counter_
+- One **74HCT4040** for the upper 12 bits of _video addresses_
+- One **74HCT139** which selects audio or video ROM thru `PB0`, disabling
+both if `PB7` is high.
+
+And that's it! Both ROM's data busses are connected to `PA`, while their addresses
+lines are connected to the respective counters (the lowest video bits to `PB`, as is
+the selecting '139).
+
+## Media format
+
+Obviously, the format to be stored has to deal with two _normally antagonistic_ features:
+
+- Low bandwidth
+- Easy of processing
+
+**Audio and Video quality** had to suffer as a consequence. To keep things reasonable,
+the following parameters are chosen:
+
+- Video resolution: **36x28 pixels** (matching the _attribute area_ blocks)
+- Video depth: **4 bit fixed GRgB palette**, with _dithering_.
+- Video framerate: **30 fps** (for reasonably smooth motion)
+- Audio sampling: **8 kHz**, 9-level **PWM** patterns (8-bit, slightly better than
+_3-bit PCM_)
+
+### Audio playback
+
+This is the most demanding part, as _jitter_ requirements claim for really _tight timing_.
+While a precisely timed loop is frequently used on simple audio playback, interleaving that
+with video playback would be really difficult and inefficient; thus, **interrupt-driven
+audio playback** is implemented. The ISR is as slim as possible, combining clock drive with
+audio ROM selection (see above) but at a mere 1.536 MHz, still creates a considerable
+**24% overhead**. _All dithering and encoding is pre-recorded on the EPROM_, to make
+playback as simple as putting the value on the VIA's serial register.
+
+### Video playback
+
+The VRAM acting as a buffer makes timing lest strict; however, this part takes about
+**80% bandwith** and thus must be executed as fast as possible, especially taking into
+account the noticeable _audio interrupt overhead_. For easier addressing, _the whole
+1024 byte attribute area is transferred_ for each frame, even if some part of it is
+not visible.
+
+The currently used algorithm takes about _21 ms_ to transfer a frame which, having into
+account the _audio overhead_, will reach nearly **28 ms**, which is _just_ right for 30fps
+playback. But the VGA screen with be refreshed _twice_ during this time, thus some
+refreshing artifacts are to be expected in the lower half of the picture.
+
+Note that to keep video and audio synced, the code relies on a **6345/6445 CRTC** as
+normally specced for the _Acapulco_ computer, since it provides a way to detect the
+_vertical sync pulse_. In case a regular _6845_ is used, some extra hardware should make
+the code able to detect the `VSYNC` pulse for proper synchronisation, and the software
+conveniently adapted. Alternatively, an estimation of frame execution time (plus expected
+audio interrupts) may be computed for a suitable _delay loop_, but it may require some
+tweaking in order to achieve proper sync.
+
+## Signal pre-processing
+
+### Audio
+
+As prevuiously stated, for optimum performance audio samples are stored in a _ready-to-use_
+format. With an 8-bit PWM pattern, up to **9 levels** are available. Besides the extremes,
+several patterns are feasible for each level, which may be ransomised for a somewhat
+impoved listening experience.
+
+_Dithering_ is the key here, because of the limited bit depth. Larger orginal samples should
+be randomly approximated to the closest levels (alternating randomly selected patterns for
+each one) so some **noise** is heard instead of a much annoying _quantisation distortion_.
+
+### Video
+
+Both resolution and bit depth are severily limited here.
+
+_Last modified 20190513-1247_
