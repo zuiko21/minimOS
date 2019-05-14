@@ -135,8 +135,9 @@ giving a total of **63 different colours** with no performance penalty. The idea
 the screen with a **checkered** pattern_, allowing the mix of `INK` and `PAPER` colours. _If
 both colours (nibbles) are set the same, a **solid, non-dithered colour** will show up_, as the
 pattern will remain invisible. But if both nibbles differ, the mix of both colours will generate
-an acceptable average on screen, at least for such reduced resolution. Not all the 256 possible
-combinations are feasible, as many of them will produce the same effect on screen (if seen from
+an acceptable average on screen, at least for such reduced resolution. Not
+[all the 256 possible combinations](dithered.html)
+are feasible, as many of them will produce _the same effect on screen_ (if seen from
 a distance, that is), thus the aforementioned 63-colour _effective_ figure.
 
-_Last modified 20190514-1414_
+_Last modified 20190514-1416_
