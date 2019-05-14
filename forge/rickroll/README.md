@@ -120,6 +120,23 @@ each one) so some **noise** is heard instead of a much annoying _quantisation di
 
 ### Video
 
-Both resolution and bit depth are severily limited here.
+Both resolution and bit depth are severily limited here. Plus, processing time is _just right_
+for the aimed fps. Thus, all downscaling, quantising and dithering is previously done. The device
+will just copy **1024-byte chunks** into the _attribute area_, then wait for the next `VSYNC` in
+oreder to load the next frame. _The VGA standard having a **60 Hz** refresh rate, two `VSYNC`s
+are expected during each frame_; but the first one will happen half-way in the 28 ms transfer,
+thus the expected artifacts. In case a non-standard crystall is used, _it is worth tweaking the
+`VSYNC` rate in order to be **as close as possible to the nominal 60 Hz**_ for perfect
+audio/video sync.
 
-_Last modified 20190513-1247_
+About the **colour depth**, the _Acapulco_ harware is capable of _16 colours_ from its fixed
+[GRgB palette](../../other/grgb_palette.png); but a simple form of **dithering** may be used,
+giving a total of **63 different colours** with no performance penalty. The idea is to _fill
+the screen with a **checkered** pattern_, allowing the mix of `INK` and `PAPER` colours. _If
+both colours (nibbles) are set the same, a **solid, non-dithered colour** will show up_, as the
+pattern will remain invisible. But if both nibbles differ, the mix of both colours will generate
+an acceptable average on screen, at least for such reduced resolution. Not all the 256 possible
+combinations are feasible, as many of them will produce the same effect on screen (if seen from
+a distance, that is), thus the aforementioned 63-colour _effective_ figure.
+
+_Last modified 20190514-1414_
