@@ -140,4 +140,26 @@ an acceptable average on screen, at least for such reduced resolution. Not
 are feasible, as many of them will produce _the same effect on screen_ (if seen from
 a distance, that is), thus the aforementioned 63-colour _effective_ figure.
 
-_Last modified 20190514-1416_
+## Circuit description
+
+### Component list
+
+Qty|reference|purpose
+---|---------|-------
+1  |27C512   |Audio EPROM
+1  |29EE020  |Video EEPROM (could use a 27C2001 EPROM as well)
+2  |74HCT393 |16-bit Audio counter
+1  |74HCT4040|12-bit Video counter
+1  |74HCT139 |chip selection
+_1_|_74HC245_|_**optional:** keyboard input buffer_
+
+### Theory of opertation
+
+The now standard [VIAbus port](../../hard/buses/viaport.md) takes both port A & B from
+the VIA, although no control lines will be used. The signals are connected as follows:
+
+- `PA` is connected to both ROM's data pins.
+- `PB0` goes to the first **74HCT393** clock input, and also to one of the **74HCT139**'s
+decoder `A`input.
+
+_Last modified 20190515-1017_
