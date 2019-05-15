@@ -147,19 +147,43 @@ a distance, that is), thus the aforementioned 63-colour _effective_ figure.
 Qty|reference|purpose
 ---|---------|-------
 1  |27C512   |Audio EPROM
-1  |29EE020  |Video EEPROM (could use a 27C2001 EPROM as well)
+1  |29EE020  |Video EEPROM (could use a **27C2001** EPROM as well)
 2  |74HCT393 |16-bit Audio counter
 1  |74HCT4040|12-bit Video counter
 1  |74HCT139 |chip selection
 _1_|_74HC245_|_**optional:** keyboard input buffer_
 
-### Theory of opertation
+### Theory of operation
 
 The now standard [VIAbus port](../../hard/buses/viaport.md) takes both port A & B from
 the VIA, although no control lines will be used. The signals are connected as follows:
 
-- `PA` is connected to both ROM's data pins.
+- `PA` lines are connected to both ROM's data pins.
 - `PB0` goes to the first **74HCT393** clock input, and also to one of the **74HCT139**'s
-decoder `A`input.
+decoder `A`input (it is permanently _enabled_).
+- `PB7` is connected to _all counters' `RESET`_ input, as well as the previous '139 decoder
+`B` input.
+- `PB1...PB6` go respectively to the _Video ROM's_ `A0...A5`. On the other hand, `A6...A17`
+are connected to the **4040**'s outputs.
+- The **74HCT393**s outputs go to `A0...A15` on the _Audio ROM_. Of course, every clock input
+(minus the first one) is connected to `Q3` on the previous counter.
+- The aforementioned **74HCT139** `/Y0` output goes to the _Video ROM_ `/CS` input. Also, its
+`/Y1` output is connected to the _Audio ROM_ `/CS` input.
+- `/OE` is **grounded** in both memories.
 
-_Last modified 20190515-1017_
+In case the _optional **PASK** (Port A Simple Keyboard)_ is connected, some cautions must be
+taken in order to avoid **bus contention**. Thus:
+
+- The `PA` extension for the keyboard is connected to the data bus thru the **74HC245** (connect
+its `DIR` input as convenient).
+- The remaining decoder on the **74HCT139** (permanently enabled, too) takes `PB7` on its `B`
+input (just like the other), while its `A` input may be tied to **ground**.
+- The decoder `/Y2` output goes to `/OE` on the '245.
+- `CA1` from PASK goes directly to `CA1` on the **VIAport** interface.
+
+This way, typing during video playback will be read by software as a random keypress (after playback)
+but will never cause _bus contention_ neither disturb playback in any way.
+
+In case this part is not deemed necessary, the unused decoder inputs must _not_ be left floating.
+
+_Last modified 20190515-1041_
