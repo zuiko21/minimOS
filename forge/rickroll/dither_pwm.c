@@ -3,7 +3,7 @@
  * PWM for VIA's shift register    *
  *
  * (c) 2019 Carlos J. Santisteban  *
- * last modified 20190516-1239     *
+ * last modified 20190517-1045     *
  */
 
 #include <stdio.h>
@@ -12,33 +12,33 @@
 
 /* global variables */
 	FILE	*f, *s;
-	unsigned char	pwm[9]={0, 32, 64, 96, 128, 160, 192, 224, 255}; /* still linear, but should be logarithmic */
+	unsigned char	thr[9]={0, 70, 104, 120, 128, 136, 152, 186, 255}; 				/* sort-of-logarithmic threshold scale */
+	unsigned char	pwm[9]={0, 0x10, 0x24, 0x52, 0x55, 0xAD, 0xDB, 0xEF, 0xFF};		/* PWM patterns */
 
 /* functions */
 unsigned char	dither(unsigned char x) {
-	unsigned char	r, y, z;
-	int				i=0;
-	
-	while (x>pwm[i+1] && i<7)	i++;		/* scan threshold */
-	if (x==pwm[i])				r=x;		/* exact value */
+	unsigned char	r, y, z, i=0;
+
+	while (x>thr[i+1] && i<7)	i++;		/* scan threshold */
+	if (x==thr[i])				r=x;		/* exact value */
 	else {		/* dither intermediate value */
-		y = pwm[i+1]-pwm[i];				/* range */
-		z = x-pwm[i];						/* position of current sample */
-		if (rand()%y > z)		r=pwm[i];	/* closer to lower threshold... */
-		else					r=pwm[i+1];	/* ...or closer to ceiling */	
+		y = thr[i+1]-thr[i];				/* range */
+		z = x-thr[i];						/* position of current sample */
+		if (rand()%y > z)		r=thr[i];	/* closer to lower threshold... */
+		else					r=thr[i+1];	/* ...or closer to ceiling */	
 	}
 
-	return	r;
+	return	pwm[r];							/* return direct PWM pattern */
 }
 
 /* *** main code *** */
 int main(void) {
 	char			name[100];
 	unsigned char	c;
-	int				i, j, k, x;
+	int				i;
 
 	srand(time(NULL));		/* randomize numbers */
-	
+
 	/* test code
 	for(i=0;i<256;i+=32) {
 		x=dither(i);
