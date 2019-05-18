@@ -110,8 +110,8 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 -|27|$1B|`ESC`|**`ESC`**|&#11017; NW arrow/mouse cursor|escape
 -|28|$1C|`FS`|**` `**|&#9698;|wedge pointing SE
 -|29|$1D|`GS`|**` `**|&#9699;|wedge pointing SW
--|30|$1E|`RS`|**` `**|&#2592;|light pattern
--|31|$1F|`US`|**` `**|&#2593;|mid pattern
+-|30|$1E|`RS`|**` `**|&#9618;|light pattern
+-|31|$1F|`US`|**` `**|&#9619;|mid pattern
 -|127|$7F|`DEL`|**`DEL`**|&#8999;|delete
 
 ### Notes:
