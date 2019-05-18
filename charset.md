@@ -108,10 +108,10 @@ X|24|$18|`CAN`|**`BKTB`**|&#8676; left arrow with bar|backwards tabulation
 Y|22|$19|`EM`|**`PGUP`**|&#8607; double arrow up|page up
 Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 -|27|$1B|`ESC`|**`ESC`**|&#11017; NW arrow/mouse cursor|escape
--|28|$1C|`FS`|**` `**|&#9698;|
--|29|$1D|`GS`|**` `**|&#9699;|
--|30|$1E|`RS`|**` `**|&#9700;|
--|31|$1F|`US`|**` `**|&#9701;|
+-|28|$1C|`FS`|**` `**|&#9698;|wedge pointing SE
+-|29|$1D|`GS`|**` `**|&#9699;|wedge pointing SW
+-|30|$1E|`RS`|**` `**|&#2592;|light pattern
+-|31|$1F|`US`|**` `**|&#2593;|mid pattern
 -|127|$7F|`DEL`|**`DEL`**|&#8999;|delete
 
 ### Notes:
@@ -127,4 +127,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190510-1047*
+*last modified 20190518-1624*
