@@ -1,6 +1,6 @@
 ; RickRolling for Acapulco!
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190513-1310
+; last modified 20190519-1635
 
 .(
 ; *** minimOS header to be done ***
@@ -10,6 +10,12 @@
 	frames	= local1+2	; 8-bit frame counter, enough for ~8s
 
 ; *** initial code ***
+; should clear screen to make sure CRTC is not scrolled!
+	LDA #12				; FORM FEED clears the screen
+	STA io_c
+	LDY #192			; direct access to Acapulco driver * TBD *
+	_KERNEL(COUT)
+; in order to be able to return to shell, previous ISR handler must be saved
 #ifdef	SAFE
 	_STZA ex_pt			; get standard ISR
 	_STZA ex_pt+1
@@ -43,7 +49,7 @@ vi_fill:
 				BMI vi_pb			; VRAM full
 			DEX					; should I change pattern?
 		BNE vi_fill			; no, continue
-			EOR #$FF			; ...or invert it
+			ASL					; ...or invert it
 		BNE vi_pat			; no need for BRA
 vi_pb:
 ; ** VIA setup **
