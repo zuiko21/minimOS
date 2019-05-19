@@ -1,6 +1,6 @@
 ; font definition for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190505-2134
+; last modified 20190519-1622
 
 ; ASCII $00 - NULL / centre filled square
 	.byt	%11111111
@@ -302,25 +302,25 @@
 	.byt	%11111110
 	.byt	%11111111
 
-; ASCII $1E
-	.byt	%11111111
-	.byt	%11111110
-	.byt	%11111100
-	.byt	%11111000
-	.byt	%11110000
-	.byt	%11100000
-	.byt	%11000000
-	.byt	%10000000
+; ASCII $1E - light pattern
+	.byt	%00000000
+	.byt	%00100010
+	.byt	%00000000
+	.byt	%10001000
+	.byt	%00000000
+	.byt	%00100010
+	.byt	%00000000
+	.byt	%10001000
 
-; ASCII $1F
-	.byt	%11111111
-	.byt	%01111111
-	.byt	%00111111
-	.byt	%00011111
-	.byt	%00001111
-	.byt	%00000111
-	.byt	%00000011
-	.byt	%00000001
+; ASCII $1F - mid pattern
+	.byt	%01010101
+	.byt	%10101010
+	.byt	%01010101
+	.byt	%10101010
+	.byt	%01010101
+	.byt	%10101010
+	.byt	%01010101
+	.byt	%10101010
 
 ; ASCII $20 - SPACE, simple definition!
 	.byt	0, 0, 0, 0, 0, 0, 0, 0
