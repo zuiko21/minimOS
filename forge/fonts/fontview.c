@@ -1,7 +1,7 @@
 /*
  * PGM font viewer for minimOS bitmaps *
  * (C) 2019 Carlos J. Santisteban      *
- * Last modified: 20190520-1617        *
+ * Last modified: 20190520-1622        *
  */
 
 #include <stdio.h>
@@ -49,7 +49,8 @@ int main(void) {
 			fprintf(pgm, "P2\n145 273\n255\n");
 // then create picture from matrix contents
 			for(i=0; i<16; i++) {
-				for (z=0; z<16; z++)	fprintf(pgm,"128 128 128 128 128 128 128 128 128 128\n");
+				for (z=0; z<16; z++)	fprintf(pgm,"128 128 128 128 128 128 128 128 128\n");
+				fprintf(pgm, "128\n");
 				for (k=0; k<16; k++) {			// first scanline, then column
 					for (j=0; j<16; j++) {
 						fprintf(pgm, "\n128");	// 1px grey at left
@@ -61,8 +62,8 @@ int main(void) {
 					fprintf(pgm, " 128\n");	// 1px grey at right
 				}
 			}
-			for (z=0; z<16; z++)	fprintf(pgm,"128 128 128 128 128 128 128 128 128 128\n");
-			fprintf(pgm, "\n");
+			for (z=0; z<16; z++)	fprintf(pgm,"128 128 128 128 128 128 128 128 128\n");
+			fprintf(pgm, "128\n");
 // clean up
 			fclose(pgm);
 			printf("Success!\n");
