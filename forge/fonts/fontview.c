@@ -1,9 +1,9 @@
-/* 
+/*
  * PGM font viewer for minimOS bitmaps *
  * (C) 2019 Carlos J. Santisteban      *
- * Last modified: 20190520-1233        *
+ * Last modified: 20190520-1617        *
  */
- 
+
 #include <stdio.h>
 #include <string.h>
 
@@ -57,8 +57,8 @@ int main(void) {
 							if (mask & mat[i][j][k])	fprintf(pgm, "   0");	// black ink
 							else						fprintf(pgm, " 255");	// white paper
 						}
-						fprintf(pgm, " 128\n");	// 1px grey at right
 					}
+					fprintf(pgm, " 128\n");	// 1px grey at right
 				}
 			}
 			for (z=0; z<16; z++)	fprintf(pgm,"128 128 128 128 128 128 128 128 128 128\n");
