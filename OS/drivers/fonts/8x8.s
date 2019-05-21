@@ -1,6 +1,6 @@
 ; font definition for minimOS
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190519-1622
+; last modified 20190521-1009
 
 ; ASCII $00 - NULL / centre filled square
 	.byt	%11111111
@@ -73,7 +73,7 @@
 	.byt	%00010000
 
 ; ASCII $07 - BELL / bell
-
+	.byt	%00000000
 	.byt	%00010000
 	.byt	%01111100
 	.byt	%01111100
@@ -345,7 +345,7 @@
 	.byt	%00000000
 	.byt	%00000000
 
-; ASCII $23 - #
+; ASCII $23 - # (pound or hash sign)
 	.byt	%00000000
 	.byt	%00100100
 	.byt	%01111110
@@ -364,7 +364,6 @@
 	.byt	%00001010
 	.byt	%00111110
 	.byt	%00001000
-	.byt	%00000000
 
 ; ASCII $25 - %
 	.byt	%00000000
@@ -916,7 +915,7 @@
 	.byt	%00001110
 	.byt	%00000000
 
-; ASCII $5C - \
+; ASCII $5C - \ (backslash)
 	.byt	%00000000
 	.byt	%00000000
 	.byt	%01000000
@@ -2417,7 +2416,6 @@
 	.byt	%01000100
 	.byt	%01000100
 	.byt	%00111000
-	.byt	%00000000
 	.byt	%00000000
 
 ; ASCII $F3 - ó
