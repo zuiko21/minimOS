@@ -1,7 +1,7 @@
 /*
  * PGM font viewer for minimOS bitmaps *
  * (C) 2019 Carlos J. Santisteban      *
- * Last modified: 20190521-0948        *
+ * Last modified: 20190521-0959        *
  */
 
 #include <stdio.h>
@@ -13,10 +13,13 @@ int main(void) {
 	unsigned char mat[16][16][16];	// matrix for row, column, scanline
 	unsigned char c, mask;			// no longer unsigned char?
 	int i, j, k, z;
+	int scanl;					// scanlines per char, assume 8-bit width
 
 // select input file
 	printf("Font bitmap? ");
 	fgets(name, 100, stdin);
+	printf("Scanlines? (max. 16) ");
+	scanf(" %d", &scanl);
 // why should I put the terminator on the read string?
 	i=0;
 	while (name[i]!='\n' && name[i]!='\0')	{i++;}
@@ -35,7 +38,7 @@ int main(void) {
 // proceed! first read whole font in matrix
 			i = j = 0;			// reset row and column counters
 			while (!feof(font)) {
-				for (k=0; k<16; k++) {
+				for (k=0; k<scanl; k++) {
 					mat[i][j][k]=fgetc(font);	// read byte into matrix
 				}
 				if ((++j) == 16) {				// column wrap
@@ -46,12 +49,12 @@ int main(void) {
 			printf("All read!\n");
 			fclose(font);
 // create PGM header, in ASCII mode
-			fprintf(pgm, "P2\n145 273\n255\n");
+			fprintf(pgm, "P2\n145 %d\n255\n", 17+scanl*16);
 // then create picture from matrix contents
 			for(i=0; i<16; i++) {
 				for (z=0; z<16; z++)	fprintf(pgm,"\n128 128 128 128 128 128 128 128 128");
 				fprintf(pgm, " 128\n");
-				for (k=0; k<16; k++) {			// first scanline, then column
+				for (k=0; k<scanl; k++) {		// first scanline, then column
 					for (j=0; j<16; j++) {
 						fprintf(pgm, "\n128");	// 1px grey at left
 						for (mask=128; mask>0; mask/=2) {
