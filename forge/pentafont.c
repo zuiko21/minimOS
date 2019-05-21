@@ -3,7 +3,7 @@
  * into xa65 assembly files             *
  *
  * (c) 2019 Carlos J. Santisteban       *
- * last modified 20190511-2241          *
+ * last modified 20190521-0947          *
  */
 
 #include <stdio.h>
@@ -32,7 +32,7 @@ int	readval(FILE *f) {
 
 unsigned char minimOS(int x) {
 	switch(x) {
-		case 164:	return 32;		/* space, with invisible dot */
+		case 164:	return 32;	/* space, with invisible dot */
 		case 322:	return 127;	/* delete */
 		case 189:	return 160;	/* hollow square */
 		case 8364:	return 164;	/* euro */
@@ -113,7 +113,7 @@ int main(void) {
 /* loops for contents creation */
 		for (i=0; i<256; i++) {
 			fprintf(s, "\n; ASCII $%X", i);			/* ASCII code */
-			if (i>31 && i<127) {fprintf(s, " - %c", i);}	/* only printable ASCII chars */
+			if (i>31 && i<127 && i!=0x5C) {fprintf(s, " - %c", i);}	/* only printable ASCII chars */
 			fprintf(s, "\n");
 			for (j=0; j<SCAN; j++) {				/* scanline loop */
 				fprintf(s,"\t.byt\t%%");
