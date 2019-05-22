@@ -1,7 +1,7 @@
 /*
  * PGM font viewer for minimOS bitmaps *
  * (C) 2019 Carlos J. Santisteban      *
- * Last modified: 20190521-1417        *
+ * Last modified: 20190522-0826        *
  */
 
 #include <stdio.h>
@@ -49,24 +49,24 @@ int main(void) {
 			printf("All read! (%d)\n", y);
 			fclose(font);
 // create PGM header, in ASCII mode
-			fprintf(pgm, "P2\n145 %d\n255\n", 17+y*16);
+			fprintf(pgm, "P2\n145 %d\n2\n", 17+y*16);
 // then create picture from matrix contents
 			for(i=0; i<16; i++) {
-				for (z=0; z<16; z++)	fprintf(pgm,"\n128 128 128 128 128 128 128 128 128");
-				fprintf(pgm, " 128\n");
+				for (z=0; z<16; z++)	fprintf(pgm,"\n1 1 1 1 1 1 1 1 1");
+				fprintf(pgm, " 1\n");
 				for (k=0; k<y; k++) {		// first scanline, then column
 					for (j=0; j<16; j++) {
-						fprintf(pgm, "\n128");	// 1px grey at left
+						fprintf(pgm, "\n1");	// 1px grey at left
 						for (mask=128; mask>0; mask/=2) {
-							if (mask & mat[i][j][k])	fprintf(pgm, "   0");	// black ink
-							else						fprintf(pgm, " 255");	// white paper
+							if (mask & mat[i][j][k])	fprintf(pgm, " 0");	// black ink
+							else						fprintf(pgm, " 2");	// white paper
 						}
 					}
-					fprintf(pgm, " 128\n");	// 1px grey at right
+					fprintf(pgm, " 1\n");	// 1px grey at right
 				}
 			}
-			for (z=0; z<16; z++)	fprintf(pgm,"\n128 128 128 128 128 128 128 128 128");
-			fprintf(pgm, " 128\n");
+			for (z=0; z<16; z++)	fprintf(pgm,"\n1 1 1 1 1 1 1 1 1");
+			fprintf(pgm, " 1\n");
 // clean up
 			fclose(pgm);
 			printf("Success!\n");
