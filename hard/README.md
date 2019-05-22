@@ -138,9 +138,9 @@ Specs: 1 MHz 65(C)02, 32 kiB SRAM (plus 2 kiB *VRAM*,
 up to 32 kiB EPROM, VIA 65(C)22, PIA 6521/6821,
 CRTC HD6845, with *optional second PIA*.
 
-_This is a recreation of the Commodore PET 8032
+_This is a recreation of the `Commodore PET 8032`
 **switchable between 40 and 80 columns**_, with more
-modern components (e.g. SRAM)
+modern components (e.g. SRAM).
 
 Interfaces: **same as the original PET**; cassette and
 IEEE-488 on separate _optional_ boards.
