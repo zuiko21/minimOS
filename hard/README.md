@@ -128,6 +128,26 @@ in GRgB mode, only 2 of them each 8x8 pixels)
 
 
 
+[**miniPET**](minipet.md)
+
+Status: starting design.
+
+Form-factor: Breadboard with point-to-point soldering.
+
+Specs: 1 MHz 65(C)02, 32 kiB SRAM (plus 2 kiB *VRAM*, 
+up to 32 kiB EPROM, VIA 65(C)22, PIA 6521/6821,
+CRTC HD6845, with *optional second PIA*.
+
+_This is a recreation of the Commodore PET 8032
+**switchable between 40 and 80 columns**_, with more
+modern components (e.g. SRAM)
+
+Interfaces: **same as the original PET**; cassette and
+IEEE-488 on separate _optional_ boards.
+
+
+
+
 **Tijuana**
 
 Status: finishing design.
@@ -195,6 +215,6 @@ text console (or graphic) output...
 
 
 
-*...more to come!
+_...more to come!
 
-last modified: 20190405-1622*
+last modified: 20190522-0930_
