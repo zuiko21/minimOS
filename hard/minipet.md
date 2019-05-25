@@ -58,7 +58,7 @@ every `Phi-2` transition.
 
 The most logical implementation nowadays would be the use of a **single 6116 SRAM** (2 K * 8-bit), able
 to hold the whole 80-column screen; but needed **bandwidth** will rise, as latches can no longer be fed in
-parallel. This calls for a fastish 6116 (~120 nS) which is no big deal today. A different `VIDEO LATCH`
+parallel. This calls for a _fastish_ 6116 (~120 nS) which is no big deal today. A different `VIDEO LATCH`
 signal generation circuit must be designed, as both latches will be loaded _sequentially_. This might be
 as simple as _decoding the 1 & 2 MHz clocks_ to get the **two first fourths** of the cycle, as the 2 MHz clock
 will be sent to VRAM's `A0` _during `Phi 2` low state_, allowing timely latch loading during _display access_.
@@ -69,4 +69,10 @@ multiplexed with the CRTC lines, as it will be used for switching between _odd a
 the _recreated machine_, though, CPU address lines match those on the VRAM chip; but the CRTC `TA0-TA9`
 lines will be shifted in 80-column mode to make room for the 2 MHz clock as LSB.
 
-*Last modified: 20190524-1006*
+## ROMs
+
+Present-day integration allows the use of a **single EPROM** (up to 27C256) on this
+machine, instead of the battery of 2-4 kiB ROMs originally supplied. This single EPROM
+will be disabled when accessing to the _I/O area_ or the VRAM.
+
+*Last modified: 20190525-1013*
