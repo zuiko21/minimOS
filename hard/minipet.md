@@ -73,6 +73,8 @@ lines will be shifted in 80-column mode to make room for the 2 MHz clock as LSB.
 
 Present-day integration allows the use of a **single EPROM** (up to 27C256) on this
 machine, instead of the battery of 2-4 kiB ROMs originally supplied. This single EPROM
-will be disabled when accessing to the _I/O area_ or the VRAM.
+will be disabled when accessing to the _I/O area_ or the VRAM. On the other hand, I'm
+considering the use of a **daughter board** for that, perhaps with two or more sockets,
+in order to put my _many_ 27C128s to good use.
 
-*Last modified: 20190525-1013*
+*Last modified: 20190526-1459*
