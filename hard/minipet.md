@@ -103,8 +103,8 @@ with different jumper configuration_) starting on page 26, these are the most no
 for the remaining bits (now 11) but a _non-switchable_ version may be much simpler.
 - **Sheet 8:** Flip-flops replaced by '109s (perhaps one of them could use a '174). 2114s replaced by a single **6116**.
 `UC3` likely to be replaced by a '139. Needs new `/VIDEO LATCH` generation, separately for both '373s (maybe a '139 will do).
-`UB4-5` replaced by a '245.
-- **Sheet 9:** See above. Only the `UB8` latch remains, and a '245 is used instead of `UB6-7`.
+`UB4-7` replaced by a _single_ '245.
+- **Sheet 9:** See above. Only the `UB8` latch remains.
 - **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139
 
-*Last modified: 20190527-1341*
+*Last modified: 20190527-1345*
