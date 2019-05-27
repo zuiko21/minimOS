@@ -29,8 +29,11 @@ be compatible with the external monitor_, but tweaking the CRTC's register list 
 
 One doubt remains, however: it is said that, when switching between "text" and "graphic"
 modes, some extra _blank_ scanlines are configured. This means the CRTC registers are
-tweaked upon mode change, which will definitely affect VGA compatibility. Original
-code must be patched in order to disable this "feature".
+tweaked upon mode change, which will definitely throw VGA compatibility. Original
+code must be patched in order to disable this "feature". However, after inspecting the
+[Basic 4.0 & Kernal source code](http://www.zimmers.net/anonftp/pub/cbm/src/pet/pet_rom4_disassembly.txt),
+it seems that all CRTC initialisation is done thru two register tables at `$E72A` and
+`$E73C`, so here we are the tables to be patched.
 
 ## Static RAM
 
@@ -113,4 +116,4 @@ for the remaining bits (total 11). A _non-switchable_ version will be much simpl
 - **Sheet 9:** See above. Only the `UB8` latch remains.
 - **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139.
 
-*Last modified: 20190527-2047*
+*Last modified: 20190527-2153*
