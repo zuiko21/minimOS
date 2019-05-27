@@ -19,13 +19,18 @@ The later option adds much more complexity, but seems quite interesting. That wo
 
 - **Duplicate scanlines** per char (another CRTC tweak). _This means a different arranging
 of CRTC raster address lines_.
-- Optionally, redesigning PETSCII font in an **8x16 pixel** fashion, thus keeping most of the
-original raster address lines configuration, minus the `/NO_ROW` signal generation.
+- Optionally, redesigning PETSCII font in an **8x16 pixel** fashion, thus waiving
+the previous issue.
 - Speeding up CPU up to **~1.57 MHz**, in order to match the VGA's _25.175 MHz dot clock_.
 
-In case analog-TV compatibility is needed, first option is to be implemented, at the standard
+In case _analog-TV compatibility_ is needed, first option is to be implemented, at the standard
 clock rate, with somewhat compressed characters. _In any case would the regular ROM contents
 be compatible with the external monitor_, but tweaking the CRTC's register list is an easy task.
+
+One doubt remains, however: it is said that, when switching between "text" and "graphic"
+modes, some extra _blank_ scanlines are configured. This means the CRTC registers are
+tweaked upon mode change, which will definitely affect VGA compatibility. Original
+code must be patched in order to disable this "feature".
 
 ## Static RAM
 
@@ -95,16 +100,17 @@ with different jumper configuration_) starting on page 26, these are the most no
 - **Sheet 1:** buffers `UB9-10`, `UD13-14` removed. `UE11` & `UD15` gates removed. `UE14` replaced by a '688 here.
 `UE12` replaced by a '138, as only `/SEL 8 - /SEL F` will be used.
 - **Sheet 2:** _The IEEE-488 interface is optional and comes in an external board_. `CS1` may be generated elsewhere.
-- **Sheet 3:** _Cassette interface on a separate daughterboard_.
-- **Sheet 4:** adds a **74HC20** to combine separate selects. May add a '139 instead of the 7425 et al.
-- **Sheet 5:** merely becomes the **62256**. As simple as they come :-)
+- **Sheet 3:** _Cassette interface on a separate daughterboard_, although the remaining
+PIA & VIA stay. The cassette interface might be **integrated** in the IEEE-488 board.
+- **Sheet 4:** adds a **74HC20** to combine separate selects. May add a '139 instead of the 7425 _et al_.
+- **Sheet 5:** merely becomes the **62256** alone. As simple as they come :-)
 - **Sheet 6:** `UE1-3, UE6-7, UD1, UD5` all disappear as SRAM needs no extra signals nor refresh addresses.
-- **Sheet 7:** becomes 4x '245 as multiplexers, allowing the **40/80-column switch**. Will need a copuple of '153
-for the remaining bits (now 11) but a _non-switchable_ version may be much simpler.
-- **Sheet 8:** Flip-flops replaced by '109s (perhaps one of them could use a '174). 2114s replaced by a single **6116**.
+- **Sheet 7:** becomes 3x '245 as multiplexers, allowing the **40/80-column switch**. Will need a couple of '153
+for the remaining bits (total 11). A _non-switchable_ version will be much simpler: 2x '245, 1x '157.
+- **Sheet 8:** '74 Flip-flops replaced by '109s (perhaps one of them could use a '174). 2114s replaced by a single **6116**.
 `UC3` likely to be replaced by a '139. Needs new `/VIDEO LATCH` generation, separately for both '373s (maybe a '139 will do).
 `UB4-7` replaced by a _single_ '245.
 - **Sheet 9:** See above. Only the `UB8` latch remains.
-- **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139
+- **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139.
 
-*Last modified: 20190527-1345*
+*Last modified: 20190527-2047*
