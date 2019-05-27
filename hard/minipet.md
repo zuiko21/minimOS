@@ -77,4 +77,34 @@ will be disabled when accessing to the _I/O area_ or the VRAM. On the other hand
 considering the use of a **daughter board** for that, perhaps with two or more sockets,
 in order to put my _many_ 27C128s to good use.
 
-*Last modified: 20190526-1459*
+## Further circuit simplifying
+
+Some of the original circuitry may be simplified, or even completely deleted. For a start,
+instead of _bipolar TTL_ login I'll be using **CMOS logic**, which places little to no load
+into the buses and signals -- that means **no buffering** is usually needed. Some other signals
+may be generated in a different way, especially when using the _most abundant ICs_ in my stock,
+like the **74HC245** (for both buffering and _multiplexing_), **74HC139** (for 1-to-4 decoding
+plus some _3-input logic_ functions) and **74HC688** (for up to 8-bit active-low functions).
+Of course, as previously mentioned, the use of **static RAM** greatly reduces the component count,
+as does the **ROM bank**.
+
+Based on the [CBM8032 schematics](http://www.zimmers.net/anonftp/pub/cbm/schematics/computers/pet/4000_Series_4016-4032_Technical_Reference.pdf)
+(despite the manual stating the **4032** model, _both motherboards are the same
+with different jumper configuration_) starting on page 26, these are the most notable changes.
+
+- **Sheet 1:** buffers `UB9-10`, `UD13-14` removed. `UE11` & `UD15` gates removed. `UE14` replaced by a '688 here.
+`UE12` replaced by a '138, as only `/SEL 8 - /SEL F` will be used.
+- **Sheet 2:** _The IEEE-488 interface is optional and comes in an external board_. `CS1` may be generated elsewhere.
+- **Sheet 3:** _Cassette interface on a separate daughterboard_.
+- **Sheet 4:** adds a **74HC20** to combine separate selects. May add a '139 instead of the 7425 et al.
+- **Sheet 5:** merely becomes the **62256**. As simple as they come :-)
+- **Sheet 6:** `UE1-3, UE6-7, UD1, UD5` all disappear as SRAM needs no extra signals nor refresh addresses.
+- **Sheet 7:** becomes 4x '245 as multiplexers, allowing the **40/80-column switch**. Will need a copuple of '153
+for the remaining bits (now 11) but a _non-switchable_ version may be much simpler.
+- **Sheet 8:** Flip-flops replaced by '109s (perhaps one of them could use a '174). 2114s replaced by a single **6116**.
+`UC3` likely to be replaced by a '139. Needs new `/VIDEO LATCH` generation, separately for both '373s (maybe a '139 will do).
+`UB4-5` replaced by a '245.
+- **Sheet 9:** See above. Only the `UB8` latch remains, and a '245 is used instead of `UB6-7`.
+- **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139
+
+*Last modified: 20190527-1341*
