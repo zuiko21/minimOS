@@ -83,7 +83,7 @@ Present-day integration allows the use of a **single EPROM** (up to 27C256) on t
 machine, instead of the battery of 2-4 kiB ROMs originally supplied. This single EPROM
 will be disabled when accessing to the _I/O area_ or the VRAM. On the other hand, I'm
 considering the use of a **daughter board** for that, perhaps with two or more sockets,
-in order to put my _many_ 27C128s to good use.
+in order to put my _many_ **27C128s** to good use.
 
 ## Further circuit simplifying
 
@@ -100,20 +100,26 @@ Based on the [CBM8032 schematics](http://www.zimmers.net/anonftp/pub/cbm/schemat
 (despite the manual stating the **4032** model, _both motherboards are the same
 with different jumper configuration_) starting on page 26, these are the most notable changes.
 
-- **Sheet 1:** buffers `UB9-10`, `UD13-14` removed. `UE11` & `UD15` gates removed. `UE14` replaced by a '688 here.
-`UE12` replaced by a '138, as only `/SEL 8 - /SEL F` will be used.
-- **Sheet 2:** _The IEEE-488 interface is optional and comes in an external board_. `CS1` may be generated elsewhere.
+- **Sheet 1:** buffers `UB9-10`, `UD13-14` removed. `UE11` & `UD15` gates removed. `UE14` replaced by a'688
+(plus inverter). `UE12` replaced by a '138, as only `/SEL 8 - /SEL F` will be used.
+- **Sheet 2:** _The IEEE-488 interface is optional and comes in an external board_.
+`CS1` may be generated elsewhere (another '688 looking for `$x82x` plus inverter).
 - **Sheet 3:** _Cassette interface on a separate daughterboard_, although the remaining
 PIA & VIA stay. The cassette interface might be **integrated** in the IEEE-488 board.
-- **Sheet 4:** adds a **74HC20** to combine separate selects. May add a '139 instead of the 7425 _et al_.
-- **Sheet 5:** merely becomes the **62256** alone. As simple as they come :-)
+- **Sheet 4:** use half of a '139 for generating just two ROM selects. A '688 looking for `$E8` \* instead of
+the 7425 _et al_, plus a NAND together with `/NO ROM` generates the new ROM `/OE` signal.
+- **Sheet 5:** merely becomes the **62256** alone -- As simple as they come :-) `/CS` from `/RAM ON`
+(created via a NAND plus inverter)
 - **Sheet 6:** `UE1-3, UE6-7, UD1, UD5` all disappear as SRAM needs no extra signals nor refresh addresses.
 - **Sheet 7:** becomes 3x '245 as multiplexers, allowing the **40/80-column switch**. Will need a couple of '153
 for the remaining bits (total 11). A _non-switchable_ version will be much simpler: 2x '245, 1x '157.
+_MSB (`SA10`) should be muxed via the '157/'153_ in order to avoid VRAM mirroring.
 - **Sheet 8:** '74 Flip-flops replaced by '109s (perhaps one of them could use a '174). 2114s replaced by a single **6116**.
 `UC3` likely to be replaced by a '139. Needs new `/VIDEO LATCH` generation, separately for both '373s (maybe a '139 will do).
 `UB4-7` replaced by a _single_ '245.
 - **Sheet 9:** See above. Only the `UB8` latch remains.
-- **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139.
+- **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139... or a NAND if `I/O` is combined with `x8xx`.
 
-*Last modified: 20190527-2153*
+\*) This may generate a _combination_ of `I/O` and `x8xx`, further simplifying the circuit.
+
+*Last modified: 20190528-1439*
