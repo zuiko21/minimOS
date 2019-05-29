@@ -107,7 +107,7 @@ is no longer generated (with the new `I/O` just becomes `A6`, and `CS0` on both 
 - **Sheet 3:** _Cassette interface on a separate daughterboard_, although the remaining
 PIA & VIA stay. The cassette interface might be **integrated** in the IEEE-488 board. _Note simplified
 selection as stated above_.
-- **Sheet 4:** use half of a '139 for generating just two ROM selects. The combined `I/O` instead of
+- **Sheet 4:** use a 74HC20 for generating just two ROM selects. The combined `I/O` instead of
 the 7425 _et al_ goes to a NAND together with `/NO ROM`, generating the new ROM `/OE` signal.
 - **Sheet 5:** merely becomes the **62256** alone -- As simple as they come :-) `/CS` from `/RAM ON`
 (created via a NAND plus inverted `A15`)
@@ -123,4 +123,22 @@ _MSB (`SA10`) should be muxed via the '153_ in order to avoid VRAM mirroring on 
 - **Sheet 9:** See above. Only the `UB8` latch remains.
 - **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139.
 
-*Last modified: 20190529-0904*
+### List of materials
+
+org. sheet|Qty.|type|replaces
+----------|----|----|--------
+1|1|**CPU 65C02**|UB14
+1|1|**74HC138**|UE12 (`/SELx` decoding)
+1|1|**74HC688**|UE14 (combined `I/O` and `x8xx` signal)
+3|1|**VIA 6522**|UB15
+3|1|**PIA 68B21**|UB12 (6520)
+4|1|**74HC20**|ROM `/CS`
+4|1\*|NAND gate|UE14/5 (ROM `/OE`)
+5|1|**SRAM 62256**|all memory!
+6|1|**74HCT93**|UD3 (clock divider)
+6|1|**74HC20**|UD4 `/LOAD SR` signal (needs some muxing)
+6|3\*|fast inverter|UE4/UD2
+6|1\*|NAND gate|UD1,4 (generates `/RAM ON`)
+6|1\*|inverter|UE11 (creates `/A15` for the above gate)
+
+*Last modified: 20190529-1012*
