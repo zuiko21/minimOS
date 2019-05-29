@@ -100,26 +100,27 @@ Based on the [CBM8032 schematics](http://www.zimmers.net/anonftp/pub/cbm/schemat
 (despite the manual stating the **4032** model, _both motherboards are the same
 with different jumper configuration_) starting on page 26, these are the most notable changes.
 
-- **Sheet 1:** buffers `UB9-10`, `UD13-14` removed. `UE11` & `UD15` gates removed. `UE14` replaced by a'688
-(plus inverter). `UE12` replaced by a '138, as only `/SEL 8 - /SEL F` will be used.
-- **Sheet 2:** _The IEEE-488 interface is optional and comes in an external board_.
-`CS1` may be generated elsewhere (another '688 looking for `$x82x` plus inverter).
+- **Sheet 1:** buffers `UB9-10`, `UD13-14` removed. `UE11` & `UD15` gates removed. **`UE14` replaced by a'688
+looking for `$E8`, combined with `I/O`**. `UE12` replaced by a '138, as only `/SEL 8` will be actually used.
+- **Sheet 2:** _The IEEE-488 interface is optional and comes in an external board_. VIA's `CS1`
+is no longer generated (with the new `I/O` just becomes `A6`, and `CS0` on both PIAs is **1**).
 - **Sheet 3:** _Cassette interface on a separate daughterboard_, although the remaining
-PIA & VIA stay. The cassette interface might be **integrated** in the IEEE-488 board.
-- **Sheet 4:** use half of a '139 for generating just two ROM selects. A '688 looking for `$E8` \* instead of
-the 7425 _et al_, plus a NAND together with `/NO ROM` generates the new ROM `/OE` signal.
+PIA & VIA stay. The cassette interface might be **integrated** in the IEEE-488 board. _Note simplified
+selection as stated above_.
+- **Sheet 4:** use half of a '139 for generating just two ROM selects. The combined `I/O` instead of
+the 7425 _et al_ goes to a NAND together with `/NO ROM`, generating the new ROM `/OE` signal.
 - **Sheet 5:** merely becomes the **62256** alone -- As simple as they come :-) `/CS` from `/RAM ON`
-(created via a NAND plus inverter)
+(created via a NAND plus inverted `A15`)
 - **Sheet 6:** `UE1-3, UE6-7, UD1, UD5` all disappear as SRAM needs no extra signals nor refresh addresses.
+`UD4` may become a 74HC20, and must use some form of _multiplexing_ for the 40/80-column modes. `UD3` may be
+a 74HCT93.
 - **Sheet 7:** becomes 3x '245 as multiplexers, allowing the **40/80-column switch**. Will need a couple of '153
 for the remaining bits (total 11). A _non-switchable_ version will be much simpler: 2x '245, 1x '157.
-_MSB (`SA10`) should be muxed via the '157/'153_ in order to avoid VRAM mirroring.
+_MSB (`SA10`) should be muxed via the '153_ in order to avoid VRAM mirroring on the 40-column mode.
 - **Sheet 8:** '74 Flip-flops replaced by '109s (perhaps one of them could use a '174). 2114s replaced by a single **6116**.
 `UC3` likely to be replaced by a '139. Needs new `/VIDEO LATCH` generation, separately for both '373s (maybe a '139 will do).
 `UB4-7` replaced by a _single_ '245.
 - **Sheet 9:** See above. Only the `UB8` latch remains.
-- **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139... or a NAND if `I/O` is combined with `x8xx`.
+- **Sheet 10:** removes `UD1` and may substitute `UD2, UE13` by a '139.
 
-\*) This may generate a _combination_ of `I/O` and `x8xx`, further simplifying the circuit.
-
-*Last modified: 20190528-1439*
+*Last modified: 20190529-0904*
