@@ -132,13 +132,23 @@ org. sheet|Qty.|type|replaces
 1|1|**74HC688**|UE14 (combined `I/O` and `x8xx` signal)
 3|1|**VIA 6522**|UB15
 3|1|**PIA 68B21**|UB12 (6520)
-4|1|**74HC20**|ROM `/CS`
+3|1\*|NAND gate|UD5 (speaker output)
+3|1|**74HC154**|UC11 (may use a _74LS145_ like the original)
+4|1|**74HC20**|both ROM `/CS` lines
 4|1\*|NAND gate|UE14/5 (ROM `/OE`)
 5|1|**SRAM 62256**|all memory!
 6|1|**74HCT93**|UD3 (clock divider)
-6|1|**74HC20**|UD4 `/LOAD SR` signal (needs some muxing)
+6|1|**74HC20**|UD4 `/LOAD SR` signal (needs some muxing), may use 74HC21 or 74HC11 plus UD2 fast inverter
 6|3\*|fast inverter|UE4/UD2
-6|1\*|NAND gate|UD1,4 (generates `/RAM ON`)
-6|1\*|inverter|UE11 (creates `/A15` for the above gate)
+6|1\*|NAND gate|UD1/4 (generates `/RAM ON`)
+6|1\*|inverter|UE11 from sheet 1 (puts `/A15` on the above gate)
+7|3|**74HC245**|UC8,9 (VRAM address muxer, just _two_ if not switchable)
+7|2|**74HC153**|UC10 (VRAM MSB address muxer, just **one 74HC157** if not switchable)
+8|2|**74HC109**|UB1,2
+8|1|**_74F74_**|UC1 (might use a **74HC174** instead, if speed allows it)
+8|1|**74HC86**|UC2 (shared with CRTC section)
+8|1|**74HC166**|UA2
+8|1\*|3-input NAND|UD4 (may use a 74HC11 gate from UD4)
+8|1|**74HC139**|UC3 (VRAM access decoder)
 
-*Last modified: 20190529-1012*
+_Last modified: 20190529-1108_
