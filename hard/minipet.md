@@ -12,7 +12,7 @@ series worked at an unusual **20 kHz** horizontal rate. For compatibility with
 current standards, two options are considered:
 
 1) Tweaking the CRTC registers to achieve **~15.7 kHz** horizontal scan, essentialy
-by _enlarging porchs_.
+by _extending porchs_.
 2) Speed things up for **VGA** compatibility (at **31.5 kHz** scan rate).
 
 The later option adds much more complexity, but seems quite interesting. That would mean:
@@ -40,7 +40,7 @@ it seems that all CRTC initialisation is done thru two register tables at `$E72A
 Gone are the days when **static RAM** was _prohibitively expensive_ -- at least, within such
 _moderate_ (32 kiB) amounts of memory on a hobby-made level. The original 32K configuration included:
 
-- 16x _power hungry_ **4116 DRAM** chips, including _-5 and +12v lines_.
+- 16x _power hungry_ **4116 DRAM** chips, demanding _-5 and +12v lines_ besides the usual +5.
 - **Address multiplexers** for the DRAM chips, as usual.
 - Several _flip-flops_ and gates for generating the _precisely timed_ **`/CAS` and `/RAS` signals**.
 - A **shift register** decomposing the clock cycle into _eight phases_ for the above.
@@ -131,8 +131,7 @@ org. sheet|Qty.|type|replaces
 1|1|**CPU 65C02**|UB14
 1|1|**74HC138**|UE12 (some `/SELx` decoding)
 1|1|**74HC688**|UE14 (_combined_ `I/O` and `x8xx` signal)
-1|1|**74HCT11**|UD15 (simulate open-collector for `/RES`, `/IRQ` and `/NMI`,
-connected to external slots and built-in switches)
+1|1|**74HCT11**|UD15 (simulate open-collector `/RES`, `/IRQ` and `/NMI` lines, connected to external slots and built-in switches)
 3|1|**VIA 6522**|UB15
 3|1|**PIA 68B21**|UB12 (6520)
 3|1\*|NAND gate|UD5 (speaker output)
@@ -155,4 +154,4 @@ connected to external slots and built-in switches)
 8|1\*|3-input _AND_|UD4 (remaining 74HC11 gate from _UD4@sh.6_)
 8|1|**74HC139**|UC3 (VRAM access decoder)
 
-_Last modified: 20190530-1049_
+_Last modified: 20190530-1243_
