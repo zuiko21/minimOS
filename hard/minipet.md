@@ -85,6 +85,19 @@ will be disabled when accessing to the _I/O area_ or the VRAM. On the other hand
 considering the use of a **daughter board** for that, perhaps with two or more sockets,
 in order to put my _many_ **27C128s** to good use.
 
+## Expansion bus(es)
+
+In order to kep things simple, there is **no
+IEEE-488** functionality on board, as it would
+require a second PIA and associated circuitry.
+Ditto for the **cassette interface** which,
+despite having all _logic_ signals available,
+provides non-buffered motor control.
+
+Both interfaces are to be provided on an
+**expansion board**, fitted thru a **DIN
+41612** connector.
+
 ## Further circuit simplifying
 
 Some of the original circuitry may be simplified, or even completely deleted. For a start,
@@ -154,4 +167,4 @@ org. sheet|Qty.|type|replaces
 8|1\*|3-input _AND_|UD4 (remaining 74HC11 gate from _UD4@sh.6_)
 8|1|**74HC139**|UC3 (VRAM access decoder)
 
-_Last modified: 20190530-1243_
+_Last modified: 20190531-1319_
