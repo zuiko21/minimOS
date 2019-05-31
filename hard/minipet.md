@@ -94,9 +94,16 @@ Ditto for the **cassette interface** which,
 despite having all _logic_ signals available,
 provides non-buffered motor control.
 
-Both interfaces are to be provided on an
-**expansion board**, fitted thru a **DIN
-41612** connector.
+Both interfaces are to be provided on an **expansion board**, fitted thru a
+**DIN 41612** connector. This interface provides _all signals on the original
+connectors_, albeit with a few exceptions. For easier _pin breakout_, the original
+pins are grouped following the original pinouts as close as possible:
+
+- C1-B12: **User port** J2 (PAx on B row)
+- C21-C26: **Cassette port 2**
+- C27-C32: **Cassette port 1**
+- A9-A32: **Memory expansion** J9
+-
 
 ## Further circuit simplifying
 
@@ -167,4 +174,4 @@ org. sheet|Qty.|type|replaces
 8|1\*|3-input _AND_|UD4 (remaining 74HC11 gate from _UD4@sh.6_)
 8|1|**74HC139**|UC3 (VRAM access decoder)
 
-_Last modified: 20190531-1319_
+_Last modified: 20190531-1329_
