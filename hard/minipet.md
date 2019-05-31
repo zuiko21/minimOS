@@ -68,7 +68,7 @@ The most logical implementation nowadays would be the use of a **single 6116 SRA
 to hold the whole 80-column screen; but needed **bandwidth** will rise, as latches can no longer be fed in
 parallel. This calls for a _fastish_ 6116 (~120 nS) which is no big deal today. A different `VIDEO LATCH`
 signal generation circuit must be designed, as both latches will be loaded _sequentially_. This might be
-as simple as _decoding the 1 & 2 MHz clocks_ to get the **two first fourths** of the cycle, as the 2 MHz clock
+as simple as _decoding the 1 & 2 MHz clocks_ to get the **first two quarters** of the cycle, as the 2 MHz clock
 will be sent to VRAM's `A0` _during `Phi 2` low state_, allowing timely latch loading during _display access_.
 
 Speaking of multiplexing VRAM addresses, the real machines included a _bank of jumpers_ for a hardwired
@@ -87,23 +87,58 @@ in order to put my _many_ **27C128s** to good use.
 
 ## Expansion bus(es)
 
-In order to kep things simple, there is **no
-IEEE-488** functionality on board, as it would
-require a second PIA and associated circuitry.
-Ditto for the **cassette interface** which,
-despite having all _logic_ signals available,
-provides non-buffered motor control.
+In order to keep things simple, there is **no IEEE-488** functionality on board, as it
+would require a second PIA and associated circuitry. Ditto for the **cassette
+interface** which, despite having all _logic_ signals available, lacks _buffered_
+motor control. Note that both interfaces are suitable for Commodore hardware _only_,
+which I do not own.
 
 Both interfaces are to be provided on an **expansion board**, fitted thru a
-**DIN 41612** connector. This interface provides _all signals on the original
+**DIN 41612** connector. This card will provide _all signals on the original
 connectors_, albeit with a few exceptions. For easier _pin breakout_, the original
-pins are grouped following the original pinouts as close as possible:
+pins are grouped following the original connectors as close as possible.
 
-- C1-B12: **User port** J2 (PAx on B row)
-- C21-C26: **Cassette port 2**
-- C27-C32: **Cassette port 1**
-- A9-A32: **Memory expansion** J9
--
+### Expansion connector pinout
+
+- C1-C12 & B1-B12: **User port** (J2, PAx on B row)
+- C17-C20: reserved (`/SEL4` to `/SEL7` from J4, _currently **not** implemented_)
+- C21-C26: **Cassette port 2** (J6, _non-buffered_ motor control)
+- C27-C32: **Cassette port 1** (J3, ditto)
+- B15-B23: upper part of **Memory expansion** (J4, data bus)
+- B24-B32: lower part of **Memory expansion** (J4, `/SEL8` and further on)
+- A9-A32: right side of **Memory expansion** (J9)
+
+Some signals are currently lacking, though: `/PEN STROBE`, `/BRW` and the
+aforementioned `/SEL` lines, thus will remain _not connected_. On the other hand,
+the newly generated `/IOP` signal (access to `$E8` I/O page) is provided for
+convenience on pin A32, which was unused anyway.
+
+Besides the originally included supply contacts, some extra **power pins** are provided,
+even taking some otherwise unused locations.
+
+- C13-C14 & B13-B14: +5 V supply
+- C15-C16: ground
+- A9 & B15: ground (added to J4 & J9)
+
+### IEEE-488 support
+
+The full IEEE-488 interface is only provided on an auxiliary board; however, some
+signals are actually generated on the standard VIA & PIA, thus must be sent to the
+second PIA and associated circuitry. _The 8 remaining pins on the DIN connector are
+set for this_, although only pins A3-4 are determined as of May 2019. Suggested
+pinout is:
+
+- A1: `/DAV IN`
+- A2: `/NDAC IN`
+- **A3: `/SRQ IN` (goes also on C3)**
+- **A4: `/EOI IN` (goes also on C4)**
+- A5: `/NRFD IN`
+- A6: `/NRFD OUT`
+- A7: `/EOI OUT`
+- A8: `/ATN OUT`
+
+Note that `/SRQ IN` is **not** generated on the main board, but must be _returned_
+from the auxiliary board to be supplied on the **user port**.
 
 ## Further circuit simplifying
 
@@ -124,7 +159,7 @@ with different jumper configuration_) starting on page 26, these are the most no
 by a 74HCT11 for simulating _open-collector_ interrupt lines. **`UE14` replaced by a' 688 looking for `$E8`,
 combined with `I/O`**. `UE12` replaced by a '138, as only `/SEL 8` will be actually used.
 - **Sheet 2:** _The IEEE-488 interface is optional and comes in an external board_. VIA's `CS1`
-is no longer generated (with the new `I/O` just becomes `A6`, and `CS0` on both PIAs is **1**).
+is no longer generated (with the new `IOP` just becomes `A6`, and `CS0` on both PIAs is **1**).
 - **Sheet 3:** _Cassette interface on a separate daughterboard_, although the remaining
 PIA & VIA stay. The cassette interface might be **integrated** in the IEEE-488 board. _Note simplified
 selection as stated above_.
@@ -174,4 +209,4 @@ org. sheet|Qty.|type|replaces
 8|1\*|3-input _AND_|UD4 (remaining 74HC11 gate from _UD4@sh.6_)
 8|1|**74HC139**|UC3 (VRAM access decoder)
 
-_Last modified: 20190531-1329_
+_Last modified: 20190531-1811_
