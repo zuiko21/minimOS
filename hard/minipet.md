@@ -85,6 +85,12 @@ will be disabled when accessing to the _I/O area_ or the VRAM. On the other hand
 considering the use of a **daughter board** for that, perhaps with two or more sockets,
 in order to put my _many_ **27C128s** to good use.
 
+The current design puts the `/SELx` outputs from the '138 into the inputs of a '20
+(one gate for `/SEL9` to `/SEL B`, the other for `/SEL C` to `/SEL F`). This way $8xxx 
+addresses do not select any ROM, as they will be used by VRAM. The I/O page accesses
+just turn off the `/OE` input on ROMs, as does the `/NO ROM` line thru a NAND,
+something easier to do than if half a '139 was used for selecting.
+
 ## Expansion bus(es)
 
 In order to keep things simple, there is **no IEEE-488** functionality on board, as it
@@ -209,4 +215,4 @@ org. sheet|Qty.|type|replaces
 8|1\*|3-input _AND_|UD4 (remaining 74HC11 gate from _UD4@sh.6_)
 8|1|**74HC139**|UC3 (VRAM access decoder)
 
-_Last modified: 20190531-1811_
+_Last modified: 20190601-2206_
