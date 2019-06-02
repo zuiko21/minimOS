@@ -114,10 +114,14 @@ pins are grouped following the original connectors as close as possible.
 - B24-B32: lower part of **Memory expansion** (J4, `/SEL8` and further on)
 - A9-A32: right side of **Memory expansion** (J9)
 
-Some signals are currently lacking, though: `/PEN STROBE`, `/BRW` and the
+Some signals are currently lacking, though: `/PEN STROBE`\*, `/BRW` and the
 aforementioned `/SEL` lines, thus will remain _not connected_. On the other hand,
 the newly generated `/IOP` signal (access to `$E8` I/O page) is provided for
 convenience on pin A32, which was unused anyway.
+
+\*) This signal may be worth implementing, especially if a spare inverter is
+available. The remaining ones, on the other hand, are easily implemented on
+auxiliary boards should them be needed.
 
 Besides the originally included supply contacts, some extra **power pins** are provided,
 even taking some otherwise unused locations.
@@ -215,4 +219,4 @@ org. sheet|Qty.|type|replaces
 8|1\*|3-input _AND_|UD4 (remaining 74HC11 gate from _UD4@sh.6_)
 8|1|**74HC139**|UC3 (VRAM access decoder)
 
-_Last modified: 20190601-2206_
+_Last modified: 20190602-2034_
