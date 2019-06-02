@@ -135,11 +135,11 @@ Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`C
 `R`|$72 r|$52 R|$12`INK` |$86 &#9626;|$95 &#963; |$B0 °      |$AE &#174; |   -
 `T`|$74 t|$54 T|$14`PAPR`|$89 &#9630;|$97 &#964; |$A8 &#168; |$92 &#915; |   -
 `Y`|$79 y|$59 Y|$19`PGUP`|$82 &#9624;|$FD ý      |$DD Ý      |$FF &#255; |   -
-`U`|$75 u|$55 U|$15`CRTN`|$FB û      |$FA ú      |$DA Ú      |$FC ü      |$DC Ü
+`U`|$75 u|$55 U|$15`HOME`|$FB û      |$FA ú      |$DA Ú      |$FC ü      |$DC Ü
 `I`|$69 i|$49 I|$09`HTAB`|$EE î      |$ED í      |$CD Í      |$EF ï      |$CF Ï
 `O`|$6F o|$4F O|$0F`EOFF`|$F4 ô      |$F3 ó      |$D3 Ó      |$F6 ö      |$D6 Ö
 `P`|$70 p|$50 P|$10`DLE` |$84 &#9623;|$B6 &#182; |   -       |$93 &#960; |   -
-`A`|$61 a|$41 A|$01`HOME`|$E2 â      |$E1 á      |$C1 Á      |$E4 ä      |$C4 Ä
+`A`|$61 a|$41 A|$01`HOML`|$E2 â      |$E1 á      |$C1 Á      |$E4 ä      |$C4 Ä
 `S`|$73 s|$53 S|$13`XOFF`|$85 &#9616;|$A7 §      |$9F &#8745;|$94 &#931; |   -
 `D`|$64 d|$44 D|$04`ENDT`|$8A &#9612;|$F0 đ      |$D0 Đ      |$9B &#948; |   -
 `F`|$66 f|$46 F|$06`RGHT`|$8F &#9608;|   -       |   -       |   -       |   -
@@ -210,4 +210,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20190412-1115_
+_Last update: 20190602-2207_
