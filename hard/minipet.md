@@ -169,25 +169,29 @@ with different jumper configuration_) starting on page 26, these are the most no
 by a 74HCT11 for simulating _open-collector_ interrupt lines. **`UE14` replaced by a' 688 looking for `$E8`,
 combined with `I/O`**. `UE12` replaced by a '138, as only `/SEL 8` will be actually used.
 - **Sheet 2:** _The IEEE-488 interface is optional and comes in an external board_. VIA's `CS1`
-is no longer generated (with the new `IOP` just becomes `A6`, and `CS0` on both PIAs is **1**).
+is no longer generated (with the new `/IOP` just becomes `A6`, and `CS0` on both PIAs is **1**).
 - **Sheet 3:** _Cassette interface on a separate daughterboard_, although the remaining
 PIA & VIA stay. The cassette interface might be **integrated** in the IEEE-488 board. _Note simplified
 selection as stated above_.
-- **Sheet 4:** a 74HC20 generates just two 16kiB ROM selects. The combined `I/O` instead of
+- **Sheet 4:** a 74HC20 generates just two 16kiB ROM selects. The combined `/IOP` instead of
 the 7425 _et al_ goes to a NAND together with `/NO ROM`, generating the new `/ROM OE` signal.
+_A '138 might be used instead of a NAND._
 - **Sheet 5:** merely becomes the **62256** alone -- as simple as they come :-) `/CS` from `/RAM ON`
-(created via a `Phi2` NAND inverted `A15`).
+(created via `Phi2` NAND inverted `A15`.). _The use of a '138 instead of a NAND saves one inverter_.
 - **Sheet 6:** `UE1-3, UE6-7, UD1, UD5` all disappear as SRAM needs no extra signals nor refresh addresses.
 `UD4` may become a 74HCT11 (now _active high_) and must use some form of _multiplexing_ for the
-40/80-column modes (74**ACT**244). `UD3` may be a 74HCT93, as no more than 4 bits are needed.
+40/80-column modes; for instance, a 74**ACT**244) switching all signal pairs, including the output from
+_two_ 74HCT11 gates. `UD3` may be a 74HCT93, as no more than 4 bits are needed.
 - **Sheet 7:** becomes 3x '245 as multiplexers, one for the **40/80-column switch**. Will need a couple of '153
-for the remaining bits (total 11). A _non-switchable_ version will be much simpler: 2x '245, 1x '157.
-_MSB (`SA10`) should be muxed via the '153_ in order to avoid VRAM mirroring on the 40-column mode.
+for the remaining bits (total 11), plus half a '139 for the enable inputs. A _non-switchable_ version will be
+much simpler: 2x '245, 1x '157. _MSB (`SA10`) should be muxed via the '153_ in order to _create_ VRAM mirroring
+on the 40-column mode.
 - **Sheet 8:** '74 Flip-flops replaced by '109s (perhaps one of them could use a '174, or use a _bipolar 74**F**74_). 
 2114s replaced by a single **6116**. `UC3` likely to be replaced by a '139. Needs new `/VIDEO LATCH` generation,
 separately for both '373s (maybe half a '139 will do). `UB4-7` replaced by a _single_ '245.
 - **Sheet 9:** See above. Only the `UB8` latch remains.
-- **Sheet 10:** `UD1` becomes an inverter and may substitute `UD2, UE13` by half a '139.
+- **Sheet 10:** `UD1` becomes an inverter and may substitute `UD2, UE13` by half a '139. In case `/PEN STROBE`
+is needed, another inverter is necessary.
 
 ### List of materials
 
@@ -199,24 +203,32 @@ org. sheet|Qty.|type|replaces
 1|1|**74HCT11**|UD15 (simulate open-collector `/RES`, `/IRQ` and `/NMI` lines, connected to external slots and built-in switches)
 3|1|**VIA 6522**|UB15
 3|1|**PIA 68B21**|UB12 (6520)
-3|1\*|NAND gate|UD5 (speaker output)
+3|1\*|NAND gate|UD5 (speaker output) **could be half a '139**
 3|1|**74HC154**|UC11 (may use a _74LS145_ like the original)
 4|1|**74HC20**|both `/ROM CS` lines
-4|1\*|NAND gate|UE14/5 (new `/ROM OE`)
+4|1\*|NAND gate|UE14/5 (new `/ROM OE`) **could be half a '139 (rest of UD5@sh.3)**
 5|1|**SRAM 62256**|all memory!
 6|1|**74HCT93**|UD3 (clock divider)
 6|1|**74HCT11**|UD4 (_active high_ `LOAD SR`, two gates to be muxed for 40/80 modes)
-6|1|**74ACT244**|- (muxer for the above signal, _if 40/80 switchable_)
+6|1|**74_ACT_244**|- (muxer for the above signal, _if 40/80 switchable_)
 6|3\*|fast inverter|UE4/UD2
-6|1\*|NAND gate|UD1/4 (generates `/RAM ON`)
-6|1\*|inverter|UE11 from sheet 1 (puts `/A15` on the above gate)
+6|1\*|NAND gate|UD1/4 (generates `/RAM ON`) **will use half a '139**
+6|1\*|inverter|UE11 from sheet 1 (puts `/A15` on the above gate) **not needed with the above '139**
 7|3|**74HC245**|UC8,9 (VRAM address muxer, just _two_ if not switchable)
 7|2|**74HC153**|UC10 (VRAM MSB address muxer, just **one 74HC157** if not switchable)
+7|1|**74HC139**\*|**the other half of UD1/4 
 8|2|**74HC109**|UB1,2
-8|1|**_74F74_**|UC1 (might use a **74HC174** instead, if speed allows it)
+8|1|**_74F74_**|UC1 (might use a **74HC174** instead, if speed allows it, ideally a **74AC74**)
 8|1|**74HC86**|UC2 (shared with CRTC section)
 8|1|**74HC166**|UA2
 8|1\*|3-input _AND_|UD4 (remaining 74HC11 gate from _UD4@sh.6_)
 8|1|**74HC139**|UC3 (VRAM access decoder)
+8|1|**74HC139**|(new) _half of it for latch enabling_ (one half of UE8/UD2@sh.10)
+8|1|**SRAM 6116**|UC4/5/6/7 single VRAM (must be ~120 ns or faster)
+8|1|**74HC573**|UB3 even latch
+9|1|**74HC573**|UB8 odd latch
+10|1|**CRTC 6845**|UB13
+10|1|**74HC139**|UE8/UD2 chip select for CRTC
+10|1|\*inverter|UD2 in case `/PEN STROBE` is available.
 
-_Last modified: 20190602-2034_
+_Last modified: 20190603-1240_
