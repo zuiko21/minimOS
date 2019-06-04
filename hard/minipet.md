@@ -27,10 +27,9 @@ In case _analog-TV compatibility_ is needed, first option is to be implemented, 
 clock rate, with somewhat compressed characters. _In any case would the regular ROM contents
 be compatible with the external monitor_, but tweaking the CRTC's register list is an easy task.
 
-One doubt remains, however: it is said that, when switching between "text" and "graphic"
+It is known that, when switching between "text" and "graphic"
 modes, some extra _blank_ scanlines are configured. This means the CRTC registers are
-tweaked upon mode change, which will definitely throw VGA compatibility. Original
-code must be patched in order to disable this "feature". However, after inspecting the
+tweaked upon mode change. However, after inspecting the
 [Basic 4.0 & Kernal source code](http://www.zimmers.net/anonftp/pub/cbm/src/pet/pet_rom4_disassembly.txt),
 it seems that all CRTC initialisation is done thru two register tables at `$E72A` and
 `$E73C`, so here we are the tables to be patched.
@@ -231,4 +230,4 @@ org. sheet|Qty.|type|replaces
 10|1|**74HC139**|UE8/UD2 chip select for CRTC
 10|1|\*inverter|UD2 in case `/PEN STROBE` is available.
 
-_Last modified: 20190603-1240_
+_Last modified: 20190604-0955_
