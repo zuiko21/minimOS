@@ -225,7 +225,7 @@ IC18,19|**74HC245**|UC8,9 (VRAM address muxer)
 _IC20_|**74HC245**|UC8,9 (VRAM address muxer, _only if switchable_)
 IC21|**74HC153**|UC10 (VRAM _MSB_ address muxer, use a **74HC157** _if **non**-switchable_)
 _IC22_|**74HC153**|UC10 (VRAM _MSB_ address muxer, _only if switchable_)
-IC23,24|**74HC109**|UB1,2 (video signals delay)
+IC23,24|**74HC74**|UB1,2 (video signals delay, less pins than '109s)
 IC25|**_74F74_**|UC1 (might use a _74HC174_ instead, should speed allows it; ideally a **74AC74**)
 IC26|**74HC86**|UC2 (video and sync inverter)
 IC27|**74HC166**|UA2 (video shifter)
@@ -237,4 +237,4 @@ IC31,32|**74HC573**|UB3,8 even/odd latches _(one might be a '574, see IC17e abov
 IC33|**HD6845**|UB13 CRTC
 Q1|**BC547**|UD2 in case `/PEN STROBE` is available _(check for spare inverter)_
 
-_Last modified: 20190605-1005_
+_Last modified: 20190605-1045_
