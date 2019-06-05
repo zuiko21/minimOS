@@ -196,42 +196,42 @@ is needed, another inverter is necessary.
 
 ref.|type|replaces
 ----|----|--------
-IC1|**CPU 65C02**|UB14
+IC1|**65C02**|UB14 CPU
 IC2|**74HCT11**|UD15 (simulate open-collector `/RES`, `/IRQ` and `/NMI` lines, connected to expansion slots and buttons)
 IC3|**74HC138**|UE12 (some `/SELx` decoding)
 IC4|**74HC688**|UE14 (new `/IOP`, _combined_ `I/O` and `x8xx` signal)
-IC5|**VIA 6522A**|UB15
-IC6|**PIA 68A21**|UB12 (6520)
-IC7|**74HC154**|UC11 (may use a _74LS145_ like the original)
+IC5|**6522A**|UB15 VIA
+IC6|**68A21**|UB12 PIA (originally a 6520)
+IC7|**74HC154**|UC11 (keyboard decoder, may use a _74LS145_ like the original)
 IC8a|**74HC139**|UD1,4 (generates `/RAM ON`)
 IC8b||UD5 (speaker output)
 IC9|**74HC20**|both `/ROM CS` lines
 IC10,11|**27C128**|EPROMs
 IC12a|**74HC139**|UE14,5 (new `/ROM OE`)
-IC12b||new, enable lines for video addresses multiplexer
-IC13|**SRAM 62256**|UA4-19, UE8-10 (all memory!)
+IC12b||new (enable lines for video addresses multiplexer)
+IC13|**62256**|UA4-19, UE8-10 (Static RAM!)
 IC14|**74HCT93**|UD3 (clock divider)
 IC15a|**74HCT11**|UD4 (_active high_ `LOAD SR`, two gates to be muxed for 40/80 modes)
 IC15b||UD4 (_active high_ `LOAD SR`, only if _40/80 switchable_)
 IC15c||UD4 (video gate, now _active high_ for non-inverted output)
-_IC16|**74 _ACT_ 244**|new muxer for `LOAD SR` signals, only if 40/80 switchable
-IC17a,b,c|**74 _AC_ 14**|UE4,UD2 fast inverters for clock signals
+_IC16_|**74_ACT_244**|new muxer for `LOAD SR` signals, only if 40/80 switchable
+IC17a,b,c|**74_AC_14**|UE4,UD2 fast inverters for clock signals
 IC17d||UD16 Schmitt trigger for `/RESET`
 IC17e||_spare inverter?_
 IC17f||UD2 in case `/PEN STROBE` is available
 IC18,19|**74HC245**|UC8,9 (VRAM address muxer)
-_IC20|**74HC245**|UC8,9 (VRAM address muxer, only if switchable)_
+_IC20_|**74HC245**|UC8,9 (VRAM address muxer, _only if switchable_)
 IC21,22|**74HC153**|UC10 (VRAM _MSB_ address muxer)
-_IC21|**74HC157**|UC10 (VRAM _MSB_ address muxer, only if switchable)_
+_IC21_|**74HC157**|UC10 (VRAM _MSB_ address muxer, _only if switchable_)
 IC23,24|**74HC109**|UB1,2 (video signals delay)
-IC25|**_74F74_**|UC1 (might use a _74HC174_ instead, if speed allows it; ideally a **74AC74**)
+IC25|**_74F74_**|UC1 (might use a _74HC174_ instead, should speed allows it; ideally a **74AC74**)
 IC26|**74HC86**|UC2 (video and sync inverter)
 IC27|**74HC166**|UA2 (video shifter)
 IC28|**74HC139**|UC3 (VRAM access decoder)
 IC29a|**74HC139**|(new) latch enabling
 IC29b||UE8/UD2 chip select for CRTC
-IC30|**SRAM 6116**|UC4/5/6/7 single VRAM (~120 ns or faster)
+IC30|**6116**|UC4/5/6/7 VRAM (single SRAM chip, ~120 ns or faster)
 IC31,32|**74HC573**|UB3,8 even/odd latches
-IC33|**CRTC 6845**|UB13
+IC33|**HD6845**|UB13 CRTC
 
-_Last modified: 20190605-0909_
+_Last modified: 20190605-0925_
