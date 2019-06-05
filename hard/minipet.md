@@ -194,40 +194,44 @@ is needed, another inverter is necessary.
 
 ### List of materials
 
-org. sheet|Qty.|type|replaces
-----------|----|----|--------
-1|1|**CPU 65C02**|UB14
-1|1|**74HC138**|UE12 (some `/SELx` decoding)
-1|1|**74HC688**|UE14 (_combined_ `I/O` and `x8xx` signal)
-1|1|**74HCT11**|UD15 (simulate open-collector `/RES`, `/IRQ` and `/NMI` lines, connected to external slots and built-in switches)
-3|1|**VIA 6522**|UB15
-3|1|**PIA 68B21**|UB12 (6520)
-3|1\*|NAND gate|UD5 (speaker output) **could be half a '139**
-3|1|**74HC154**|UC11 (may use a _74LS145_ like the original)
-4|1|**74HC20**|both `/ROM CS` lines
-4|1\*|NAND gate|UE14/5 (new `/ROM OE`) **could be half a '139 (rest of UD5@sh.3)**
-5|1|**SRAM 62256**|all memory!
-6|1|**74HCT93**|UD3 (clock divider)
-6|1|**74HCT11**|UD4 (_active high_ `LOAD SR`, two gates to be muxed for 40/80 modes)
-6|1|**74_ACT_244**|- (muxer for the above signal, _if 40/80 switchable_)
-6|3\*|fast inverter|UE4/UD2
-6|1\*|NAND gate|UD1/4 (generates `/RAM ON`) **will use half a '139**
-6|1\*|inverter|UE11 from sheet 1 (puts `/A15` on the above gate) **not needed with the above '139**
-7|3|**74HC245**|UC8,9 (VRAM address muxer, just _two_ if not switchable)
-7|2|**74HC153**|UC10 (VRAM MSB address muxer, just **one 74HC157** if not switchable)
-7|1|**74HC139**\*|**the other half of UD1/4 
-8|2|**74HC109**|UB1,2
-8|1|**_74F74_**|UC1 (might use a **74HC174** instead, if speed allows it, ideally a **74AC74**)
-8|1|**74HC86**|UC2 (shared with CRTC section)
-8|1|**74HC166**|UA2
-8|1\*|3-input _AND_|UD4 (remaining 74HC11 gate from _UD4@sh.6_)
-8|1|**74HC139**|UC3 (VRAM access decoder)
-8|1|**74HC139**|(new) _half of it for latch enabling_ (one half of UE8/UD2@sh.10)
-8|1|**SRAM 6116**|UC4/5/6/7 single VRAM (must be ~120 ns or faster)
-8|1|**74HC573**|UB3 even latch
-9|1|**74HC573**|UB8 odd latch
-10|1|**CRTC 6845**|UB13
-10|1|**74HC139**|UE8/UD2 chip select for CRTC
-10|1|\*inverter|UD2 in case `/PEN STROBE` is available.
+ref.|type|replaces
+----|----|--------
+IC1|**CPU 65C02**|UB14
+IC2|**74HCT11**|UD15 (simulate open-collector `/RES`, `/IRQ` and `/NMI` lines, connected to expansion slots and buttons)
+IC3|**74HC138**|UE12 (some `/SELx` decoding)
+IC4|**74HC688**|UE14 (new `/IOP`, _combined_ `I/O` and `x8xx` signal)
+IC5|**VIA 6522A**|UB15
+IC6|**PIA 68A21**|UB12 (6520)
+IC7|**74HC154**|UC11 (may use a _74LS145_ like the original)
+IC8a|**74HC139**|UD1,4 (generates `/RAM ON`)
+IC8b||UD5 (speaker output)
+IC9|**74HC20**|both `/ROM CS` lines
+IC10,11|**27C128**|EPROMs
+IC12a|**74HC139**|UE14,5 (new `/ROM OE`)
+IC12b||new, enable lines for video addresses multiplexer
+IC13|**SRAM 62256**|UA4-19, UE8-10 (all memory!)
+IC14|**74HCT93**|UD3 (clock divider)
+IC15a|**74HCT11**|UD4 (_active high_ `LOAD SR`, two gates to be muxed for 40/80 modes)
+IC15b||UD4 (_active high_ `LOAD SR`, only if _40/80 switchable_)
+IC15c||UD4 (video gate, now _active high_ for non-inverted output)
+_IC16|**74 _ACT_ 244**|new muxer for `LOAD SR` signals, only if 40/80 switchable
+IC17a,b,c|**74 _AC_ 14**|UE4,UD2 fast inverters for clock signals
+IC17d||UD16 Schmitt trigger for `/RESET`
+IC17e||_spare inverter?_
+IC17f||UD2 in case `/PEN STROBE` is available
+IC18,19|**74HC245**|UC8,9 (VRAM address muxer)
+_IC20|**74HC245**|UC8,9 (VRAM address muxer, only if switchable)_
+IC21,22|**74HC153**|UC10 (VRAM _MSB_ address muxer)
+_IC21|**74HC157**|UC10 (VRAM _MSB_ address muxer, only if switchable)_
+IC23,24|**74HC109**|UB1,2 (video signals delay)
+IC25|**_74F74_**|UC1 (might use a _74HC174_ instead, if speed allows it; ideally a **74AC74**)
+IC26|**74HC86**|UC2 (video and sync inverter)
+IC27|**74HC166**|UA2 (video shifter)
+IC28|**74HC139**|UC3 (VRAM access decoder)
+IC29a|**74HC139**|(new) latch enabling
+IC29b||UE8/UD2 chip select for CRTC
+IC30|**SRAM 6116**|UC4/5/6/7 single VRAM (~120 ns or faster)
+IC31,32|**74HC573**|UB3,8 even/odd latches
+IC33|**CRTC 6845**|UB13
 
-_Last modified: 20190604-0955_
+_Last modified: 20190605-0909_
