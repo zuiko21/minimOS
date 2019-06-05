@@ -214,11 +214,10 @@ IC14|**74HCT93**|UD3 (clock divider)
 IC15a|**74HCT11**|UD4 (_active high_ `LOAD SR`, two gates to be muxed for 40/80 modes)
 IC15b||UD4 (_active high_ `LOAD SR`, only if _40/80 switchable_)
 IC15c||UD4 (video gate, now _active high_ for non-inverted output)
-_IC16a,b_|**74 _ACT_ 244**|new muxer for `LOAD SR` signals, only if 40/80 switchable, _could it be an **AC258**?_
-_IC16c,d_||new muxer for `DOT` signals, only if 40/80 switchable _(exchange inverter 17a if using a '258)_
-_IC16e_||create `/40` from `/80` _jumper_, if switchable _(not needed if using a '258)_
-_IC16f,g,h_||_not used_
-IC17a,b,c|**74 _AC_ 14**|UE4,UD2 fast inverters for clock signals, _is c `CLK1B` really needed? may be used for inverting `LOAD SR`_
+_IC16a,b_|**74 _AC_ 258**|new muxer for `LOAD SR` & `DOT` signals, only if 40/80 switchable
+_IC16c,d_||_not used, or could just switch off latch outputs_
+IC17a,b|**74 _AC_ 14**|UE4,UD2 fast inverters for clock signals, `CLK1B` no longer generated?
+IC17c||UD2 inverter for `/LOAD SR`
 IC17d||UD16 Schmitt trigger for `/RESET`
 IC17e,f||fast inverters for IC29a outputs _(perhaps just one if one latch is a non-transparent one?)_
 IC18,19|**74HC245**|UC8,9 (VRAM address muxer)
@@ -230,11 +229,12 @@ IC25|**_74F74_**|UC1 (might use a _74HC174_ instead, should speed allows it; ide
 IC26|**74HC86**|UC2 (video and sync inverter)
 IC27|**74HC166**|UA2 (video shifter)
 IC28|**74HC139**|UC3 (VRAM access decoder)
-IC29a|**74HC139**|UD1 (_revamped_ latch enabling)
+IC29a|**74HC139**|UD1 (_revamped_ latch enabling; could use different wiring for **40-col**, see IC32)
 IC29b||UE8/UD2 chip select for CRTC
 IC30|**6116**|UC4/5/6/7 VRAM (single SRAM chip, ~120 ns or faster)
-IC31,32|**74HC573**|UB3,8 even/odd latches _(one might be a '574, see IC17e above)_
+IC31|**74HC573**|UB3 even latch
+_IC32_|**74HC573**|UB8 odd latch _(might be a '574, see IC17f above, or **supressed** if full use of '258 on **40-col** mode)_
 IC33|**HD6845**|UB13 CRTC
-Q1|**BC547**|UD2 in case `/PEN STROBE` is available _(check for spare inverter)_
+Q1|**BC547**|UD2 in case `/PEN STROBE` is available _(check for spare inverter IC17f)_
 
-_Last modified: 20190605-1045_
+_Last modified: 20190605-1055_
