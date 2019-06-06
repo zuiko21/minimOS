@@ -1,8 +1,9 @@
 # miniPET
 
 This is an _accurate *recreation*_ of a **Commodore PET 8032**, albeit
-with more modern components. Performance is expected to be the same, save for
+with more modern components. Performance was expected to be the same, save for
 somewhat _reduced power consumption_ (and noticeably lower component count).
+However, the VGA mod (read later) will provide a **57% speed boost** as a bonus.
 
 ## Monitor compatibility
 
@@ -29,7 +30,7 @@ be compatible with the external monitor_, but tweaking the CRTC's register list 
 
 It is known that, when switching between "text" and "graphic"
 modes, some extra _blank_ scanlines are configured. This means the CRTC registers are
-tweaked upon mode change. However, after inspecting the
+tweaked upon every mode change. However, after inspecting the
 [Basic 4.0 & Kernal source code](http://www.zimmers.net/anonftp/pub/cbm/src/pet/pet_rom4_disassembly.txt),
 it seems that all CRTC initialisation is done thru two register tables at `$E72A` and
 `$E73C`, so here we are the tables to be patched.
@@ -56,10 +57,10 @@ validated as usual.
 ### Video RAM
 
 The original design was already using SRAM for this, as the _size_ requirements were much lower (1 K for
-the 40-column versions, and twice that for the 80-column machines). This was provided by two (or four)
+the 40-column machines, and twice that for the 80-column ones). This was provided by two (or four)
 _2114 SRAM chips_ (1 K * 4-bit). A relatively complex arrangement was needed and, in the 80-column machines,
 _even and odd addresses were stored in separate chips_ for **bandwidth** reasons -- 2114s have never been
-_speed kings_! In any case, _the CRTC supplied 40 columns_, even in the 80-column models. On these, the
+_speed kings_! In any case, _the CRTC supplied 40 column addressess_, even in the 80-column models. On this, the
 hardware multiplexed _latched outputs_ from both VRAM banks, to be supplied to the _character ROM_ on
 every `Phi-2` transition.
 
@@ -80,15 +81,16 @@ lines will be shifted in 80-column mode to make room for the 2 MHz clock as LSB.
 
 Present-day integration allows the use of a **single EPROM** (up to 27C256) on this
 machine, instead of the battery of 2-4 kiB ROMs originally supplied. This single EPROM
-will be disabled when accessing to the _I/O area_ or the VRAM. On the other hand, I'm
+output will be disabled when accessing to the _I/O area_ or the VRAM. On the other hand, I'm
 considering the use of a **daughter board** for that, perhaps with two or more sockets,
 in order to put my _many_ **27C128s** to good use.
 
-The current design puts the `/SELx` outputs from the '138 into the inputs of a '20
+The current design (27C128-based) puts the `/SELx` outputs from the '138 into the inputs of a '20
 (one gate for `/SEL9` to `/SEL B`, the other for `/SEL C` to `/SEL F`). This way $8xxx 
 addresses do not select any ROM, as they will be used by VRAM. The I/O page accesses
 just turn off the `/OE` input on ROMs, as does the `/NO ROM` line thru a NAND,
-something easier to do than if half a '139 was used for selecting.
+something easier to do than if half a '139 was used for selecting -- but the NAND itself is
+to be replaced by one '139 decoder, though.
 
 ## Expansion bus(es)
 
@@ -98,9 +100,9 @@ interface** which, despite having all _logic_ signals available, lacks _buffered
 motor control. Note that both interfaces are suitable for Commodore hardware _only_,
 which I do not own.
 
-Both interfaces are to be provided on an **expansion board**, fitted thru a
-**DIN 41612** connector. This card will provide _all signals on the original
-connectors_, albeit with a few exceptions. For easier _pin breakout_, the original
+The lacking circuits are to be provided on an **expansion board**, fitted thru a
+**DIN 41612** connector. This slot will provide _all signals on the original
+connectors_, albeit with a few exceptions. For easier _breakout_, the original
 pins are grouped following the original connectors as close as possible.
 
 ### Expansion connector pinout
@@ -110,7 +112,7 @@ pins are grouped following the original connectors as close as possible.
 - C21-C26: **Cassette port 2** (J6, _non-buffered_ motor control)
 - C27-C32: **Cassette port 1** (J3, ditto)
 - B15-B23: upper part of **Memory expansion** (J4, data bus)
-- B24-B32: lower part of **Memory expansion** (J4, `/SEL8` and further on)
+- B24-B32: lower part of **Memory expansion** (J4, `/SEL8` and further down)
 - A9-A32: right side of **Memory expansion** (J9)
 
 Some signals are currently lacking, though: `/PEN STROBE`\*, `/BRW` and the
@@ -137,14 +139,14 @@ second PIA and associated circuitry. _The 8 remaining pins on the DIN connector 
 set for this_, although only pins A3-4 are determined as of May 2019. Suggested
 pinout is:
 
-- A1: `/DAV IN`
-- A2: `/NDAC IN`
+- A1: `/DAV IN` _TBD_
+- A2: `/NDAC IN` _TBD_
 - **A3: `/SRQ IN` (goes also on C3)**
 - **A4: `/EOI IN` (goes also on C4)**
-- A5: `/NRFD IN`
-- A6: `/NRFD OUT`
-- A7: `/EOI OUT`
-- A8: `/ATN OUT`
+- A5: `/NRFD IN` _TBD_
+- A6: `/NRFD OUT` _TBD_
+- A7: `/EOI OUT` _TBD_
+- A8: `/ATN OUT` _TBD_
 
 Note that `/SRQ IN` is **not** generated on the main board, but must be _returned_
 from the auxiliary board to be supplied on the **user port**.
@@ -235,6 +237,6 @@ IC30|**6116**|UC4/5/6/7 VRAM (single SRAM chip, ~120 ns or faster)
 IC31|**74HC573**|UB3 even latch
 _IC32_|**74HC573**|UB8 odd latch _(might be a '574, see IC17f above, or **supressed** if full use of '258 on **40-col** mode)_
 IC33|**HD6845**|UB13 CRTC
-Q1|**BC547**|UD2 in case `/PEN STROBE` is available _(check for spare inverter IC17f)_
+Q1|**BC557**|UD2 in case `/PEN STROBE` is available _(check for spare inverter IC17f)_
 
-_Last modified: 20190605-1055_
+_Last modified: 20190606-2132_
