@@ -238,5 +238,5 @@ IC31|**74HC573**|UB3 even latch
 _IC32_|**74HC573**|UB8 odd latch _(might be a '574, see IC17f above, or **supressed** if full use of '258 on **40-col** mode)_
 IC33|**HD6845**|UB13 CRTC
 Q1|**BC557**|UD2 in case `/PEN STROBE` is available _(check for spare inverter IC17f)_
-
-_Last modified: 20190606-2132_
+Q2|**BC547**|VGA green channel output (plus 390 ohm emitter resistor)
+_Last modified: 20190607-0943_
