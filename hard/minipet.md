@@ -192,7 +192,7 @@ on the 40-column mode.
 separately for both '373s (maybe half a '139 will do). `UB4-7` replaced by a _single_ '245.
 - **Sheet 9:** See above. Only the `UB8` latch remains.
 - **Sheet 10:** `UD1` becomes an inverter and may substitute `UD2, UE13` by half a '139. In case `/PEN STROBE`
-is needed, another inverter (of a transistor) is needed.
+is needed, a transistor (acting as an inverter) is needed.
 
 ### List of materials
 
@@ -241,4 +241,4 @@ Q1|**BC557**|UD2 in case `/PEN STROBE` is available
 Q2|**BC547**|UD1, _V-sync_ inverter (plus diode)
 Q3|**BC547**|new, VGA _green_ channel output (plus 390 ohm emitter resistor)
 
-_Last modified: 20190608-1452_
+_Last modified: 20190610-2156_
