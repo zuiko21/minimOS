@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
-; v0.6a16
+; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190611-1201
+; last modified 20190611-1433
 
 #include "../usual.h"
 
@@ -37,8 +37,8 @@ va_err:
 ; *** define some constants ***
 	VP_BASE	= $8000		; standard VRAM for miniPET
 
-	crtc_rs	= $E840		; *** hardwired 6845 addresses on miniPET ***
-	crtc_da	= $E841
+	crtc_rs	= $E880		; *** hardwired 6845 addresses on miniPET ***
+	crtc_da	= $E881
 
 ; debug only!
 	va_mode	= $400		; *** *** *** DEBUGGING ONLY *** *** ***
@@ -88,79 +88,19 @@ vi_cmr:
 		INX					; next address, now single index
 		CPX #12				; last register done?
 		BNE vi_cmr			; continue otherwise
-; new, must copy R1 and R6 into va_wdth and va_hght
-	LDA va_data-2, Y	; Y is known to be base+8, thus -2 is R6
-	LDX va_data-7, Y	; Y is known to be base+8, thus -7 is R1
-	STA va_hght			; store convenient values
-	STX va_wdth
-; MUST create line pointers array... but only when clearing screen!
 ; new, set RAM pointer to supplied font!
 	LDA #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
 	STA va_font			; store locally (4)
 	LDA #>vs_font		; same for MSB (2+4) *** ditto for flexibility
 	STA va_font+1
-; clear all VRAM... but preset standard colours before!
-	LDA #$F0			; white paper, black ink
-	STA va_attr			; this value will be used by CLS
 ; software cursor will be set by CLS routine!
 ;	CLC					; just in case there is no splash code
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
 
 ; **************************
-; *** splash screen code *** 86 bytes, 7033t (~4.58 ms @ 1.536 MHz)
+; *** splash screen code ***
 ; **************************
-; initial code takes 27t
-	LDA #7				; line counter (2+3)
-	STA vs_cnt
-	LDA #<VA_BASE		; LSB as is page-aligned (2)
-	CLC					; prepare addition (2)
-	ADC va_wdth			; add chars per line (4)
-	SEC					; prepare subtraction (2)
-	SBC vs_cnt			; set initial column (3)
-	STA v_dest			; set LSB (3)
-	LDX #>VA_BASE		; MSB too (2)
-vs_nlin:
-; row loop takes 8 times 46+column loop, minus one = 7006t
-		STX v_dest+1		; will be updated on loop (3)
-		STA v_src			; LSB for both ponters! (3)
-		TXA					; get MSB back (2+2)
-		SEC
-		SBC #$4				; VRAM is 1k after colour RAM (2)
-		STA v_src+1			; set this MSB (3)
-		LDY #0				; reset horiz index (2)
-vs_ncol:
-; columns loop takes 239*n-1 (n=7...1) = 1672, 1433, 1194, 955, 716, 477, 238t (total 6685t)
-			LDA va_cspl, Y		; set attribute for this position (4+5)
-			STA (v_src), Y
-			LDA #$FF			; initial mask (2+3)
-			STA vs_mask
-vs_nras:
-; inner raster loop takes 26*8-1 = 207t
-				LDA vs_mask			; get mask for this raster (3)
-				STA (v_dest), Y		; put on VRAM (5)
-				LDA v_dest+1		; update for next raster (3+2+2+3)
-				CLC
-				ADC #4
-				STA v_dest+1
-				LSR vs_mask			; mask for next raster (5)
-				BNE vs_nras			; while some dots in it (3*)
-			LDA v_dest+1		; back to original raster (3+2+2+3)
-			SEC
-			SBC #$20
-			STA v_dest+1
-			INY					; next column (2)
-			CPY vs_cnt			; less than X? (3+3*)
-			BCC vs_ncol
-		TAX					; keep MSB eeeeeeek (2)
-		LDA v_dest			; get old pointer (3)
-		SEC					; add line length PLUS 1 (2)
-		ADC va_wdth			; add chars per line (4+3)
-		STA v_dest
-		BCC vs_nc			; no carry (3*)
-			INX					; check possible carry! (2)
-vs_nc:
-		DEC vs_cnt			; one less row to go (5+3*)
-		BNE vs_nlin
+
 ; ****************************
 ; *** end of splash screen ***
 ; ****************************
@@ -169,33 +109,14 @@ vs_nc:
 	_DR_OK				; installation succeeded
 
 ; ***************************************
-; *** routine for clearing the screen *** takes about 61 ms @ 1.536 MHz
+; *** routine for clearing the screen ***
 ; ***************************************
 va_cls:					; * initial code takes 18t *
 ; should create the pointer array!
-	LDX #>VA_BASE		; base address (2+2) assume page aligned!
-	LDA #<VA_BASE		; actually 0!
-	TAY					; reset index (2)
-	STY va_bi			; ...and circular base too... (4)
-	STY va_x			; ...plus coordinates as well (4+4)
-	STY va_y
-; *** loop for creating the line pointers table, for n rows it takes 2+34n, which is 852, 954 or 1022t ***
-va_clp:
-		STA va_lpl, Y		; make LSB entry (4)
-		STA v_src			; fast buffer! (3)
-		TXA					; get and store MSB (2+4)
-		STA va_lph, Y
-		LDA v_src			; retrieve value (3)
-		CLC
-		ADC va_wdth			; add columns per line (2+4)
-		BCC vc_nm			; check whether wraps (3/4)
-			INX
-vc_nm:
-		INY					; next row (2+4+3)
-		CPY va_hght
-		BNE va_clp
-	LDY #<VA_BASE		; set home position... this is faster (2+2) *** these add 6t ***
+	LDY #<VA_BASE		; set home position... this is faster (2+2)
 	LDA #>VA_BASE
+	STY va_x			; reset coordinates (4+4)
+	STY va_y
 ; must set this as start & cursor address!
 	LDX #12				; CRTC screen start register, then comes cursor address (2)
 vc_crs:					; * this loops takes 49t *
@@ -208,25 +129,17 @@ vc_crs:					; * this loops takes 49t *
 		CPX #16				; all done? (2+3 twice, minus 1)
 		BNE vc_crs
 ; must clear not only VRAM, but attribute area too! * this is 12t *
-	STY v_dest			; clear pointer LSB, will stay this way (3)
-	SBC #>(VA_BASE-VA_COL)	; set MSB, C was set, A held MSB (2)
+	STY v_dest			; clear pointer LSB, will stay this way (2)
 	STA v_dest+1		; eeeeeeeeeeeeek (4)
-	LDA va_attr			; default colour value! (4)
-; both areas (colour & VRAM) may be reset from a single loop!
+	LDA #32				; ASCII for space (2)
 vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2+3)
 		BNE vcl_c
-	INC v_dest+1		; check following page eeeeeeeeek (5)
-	LDX v_dest+1		; how far are we? (3) eeeeeeeeeeek
-	CPX #>VA_BASE		; already at VRAM? or suitable limit (2)
-	BNE vcl_l			; no, do not change A (3)
-; assume VRAM goes just after attribute area, thus v_dest already pointing to VA_BASE
-		TYA					; zero (on Y) is the standard clear value (2)
-; otherwise, do LDA #0 and TAY
-vcl_l:
-	CPX #>VA_END		; whole screen done?
-		BNE vcl_c			; if not, continue
+			INC v_dest+1		; check following page eeeeeeeeek (5)
+			LDX v_dest+1		; how far are we? (3) eeeeeeeeeeek
+			CPX #$88			; already at VRAM? or suitable limit (2)
+		BNE vcl_c			; no, do not change A (3)
 	RTS
 
 ; *********************************
@@ -300,6 +213,7 @@ vat_xok:
 	JSR vch_scs			; set cursor
 		_BRA va_mbres		; reset flag and we are done
 
+; -------------------------------- continue here ------------------------------------
 ; * * take byte as FG colour * *
 vch_ink:
 	AND #%00001111		; filter relevant bits
