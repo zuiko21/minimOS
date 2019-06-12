@@ -30,7 +30,7 @@ be compatible with the external monitor_, but tweaking the CRTC's register list 
 
 It is known that, when switching between "text" and "graphic"
 modes, some extra _blank_ scanlines are configured. This means the CRTC registers are
-tweaked upon every mode change. However, after inspecting the
+set upon every mode change. However, after inspecting the
 [Basic 4.0 & Kernal source code](http://www.zimmers.net/anonftp/pub/cbm/src/pet/pet_rom4_disassembly.txt),
 it seems that all CRTC initialisation is done thru two register tables at `$E72A` and
 `$E73C`, so here we are the tables to be patched.
@@ -162,7 +162,8 @@ plus some _3-input logic_ functions) and **74HC688** (for up to 8-bit active-low
 Of course, as previously mentioned, the use of **static RAM** greatly reduces the component count,
 as does the **ROM bank**.
 
-Based on the [CBM8032 schematics](http://www.zimmers.net/anonftp/pub/cbm/schematics/computers/pet/4000_Series_4016-4032_Technical_Reference.pdf)
+Based on the
+[CBM8032 schematics](http://www.zimmers.net/anonftp/pub/cbm/schematics/computers/pet/4000_Series_4016-4032_Technical_Reference.pdf)
 (despite the manual stating the **4032** model, _both motherboards are the same
 with different jumper configuration_) starting on page 26, these are the most notable changes.
 
@@ -173,18 +174,18 @@ combined with `I/O`**. `UE12` replaced by a '138, as only `/SEL 8` will be actua
 is no longer generated (with the new `/IOP` just becomes `A6`, and `CS0` on both PIAs is **1**).
 - **Sheet 3:** _Cassette interface on a separate daughterboard_, although the remaining
 PIA & VIA stay. The cassette interface might be **integrated** in the IEEE-488 board. _Note simplified
-selection as stated above_.
-- **Sheet 4:** a 74HC20 generates just two 16kiB ROM selects. The combined `/IOP` instead of
-the 7425 _et al_ goes to a NAND together with `/NO ROM`, generating the new `/ROM OE` signal.
-_A '138 might be used instead of a NAND._
+chip selection as stated above_.
+- **Sheet 4:** a 74HC20 generates just two 16 kiB ROM selects. Instead of the 7425 _et al_, newly combined
+`/IOP` goes to a NAND together with `/NO ROM`, generating the new `/ROM OE` signal.
+_A '138 might be used instead of a gate._
 - **Sheet 5:** merely becomes the **62256** alone -- as simple as they come :-) `/CS` from `/RAM ON`
 (created via `Phi2` NAND inverted `A15`.). _The use of a '138 instead of a NAND saves one inverter_.
 - **Sheet 6:** `UE1-3, UE6-7, UD1, UD5` all disappear as SRAM needs no extra signals nor refresh addresses.
 `UD4` may become a 74HCT11 (now _active high_) and must use some form of _multiplexing_ for the
-40/80-column modes; for instance, a 74**ACT**244) switching all signal pairs, including the output from
-_two_ 74HCT11 gates. `UD3` may be a 74HCT93, as no more than 4 bits are needed.
-- **Sheet 7:** becomes 3x '245 as multiplexers, one for the **40/80-column switch**. Will need a couple of '153
-for the remaining bits (total 11), plus half a '139 for the enable inputs. A _non-switchable_ version will be
+40/80-column modes; for instance, a 74**AC**258 switching (and inverting) all signal pairs, including the
+output from _both_ 74HCT11 gates. `UD3` may be a 74HCT93, as no more than 4 bits are needed.
+- **Sheet 7:** becomes 3x '245 as multiplexers, one of them for the **40/80-column switch**. Will need a couple
+of '153s for the most significant bits, plus half a '139 for selection. A _non-switchable_ version will be
 much simpler: 2x '245, 1x '157. _MSB (`SA10`) should be muxed via the '153_ in order to _create_ VRAM mirroring
 on the 40-column mode.
 - **Sheet 8:** '74 Flip-flops replaced by '109s (perhaps one of them could use a '174, or use a _bipolar 74**F**74_). 
@@ -241,4 +242,4 @@ Q1|**BC557**|UD2 in case `/PEN STROBE` is available
 Q2|**BC547**|UD1, _V-sync_ inverter (plus diode)
 Q3|**BC547**|new, VGA _green_ channel output (plus 390 ohm emitter resistor)
 
-_Last modified: 20190610-2156_
+_Last modified: 20190612-0852_
