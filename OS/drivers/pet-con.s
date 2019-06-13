@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190611-1433
+; last modified 20190613-0851
 
 #include "../usual.h"
 
@@ -58,36 +58,14 @@ va_err:
 ; *** initialise stuff *** should create line addresses table...
 ; ************************
 va_init:
-; must set up CRTC first, depending on selected video mode!
-	LDA va_mode			; get requested *** from firmware!
-	AND #7				; filter relevant bits, up to 8 modes
-	STA va_mode			; fix possible altered bits
-	ASL					; each mode has 8-byte table (remaining bytes are common)
-	ASL
-	ASL
-;	ASL
-	TAY					; use as index
-	LDX #0				; separate counter
-; reset inverse video mask!
-	STX va_xor			; clear mask is true video
 ; load 6845 CRTC registers
-; assumes FW has already set the special 6345/3445 regs!
+	LDX #10
 vi_crl:
 		STX crtc_rs			; select this register
-		LDA va_data, Y		; get value for it
+		LDA va_data, X		; get value for it
 		STA crtc_da			; set value
-		INY					; next address
-		INX
-		CPX #8				; last register done? (remaining registers are common, no longer $10)
-		BNE vi_crl			; continue otherwise
-; new, common registers from separate table (13 bytes more of code, but saves 72 from tables!)
-vi_cmr:
-		STX crtc_rs			; select this register
-		LDA va_cdat-8, X	; get COMMON value for it, note offset
-		STA crtc_da			; set value
-		INX					; next address, now single index
-		CPX #12				; last register done?
-		BNE vi_cmr			; continue otherwise
+		DEX					; next address
+		BPL vi_crl			; continue otherwise
 ; new, set RAM pointer to supplied font!
 	LDA #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
 	STA va_font			; store locally (4)
@@ -562,9 +540,9 @@ va_c0:
 	.word	vch_si		; EOFF, true video
 	.word	vch_dcx		; DLE,  disable next control char
 	.word	vch_sc		; XON,  turn cursor on
-	.word	vch_dcx		; INK,  set foreground colour (uses another char)
+	.word	vch_dcx		; INK,  set foreground colour (uses another char) *** NOT USED
 	.word	vch_hc		; XOFF, turn cursor off
-	.word	vch_dcx		; PAPR, set background colour (uses another char)
+	.word	vch_dcx		; PAPR, set background colour (uses another char) *** NOT USED
 	.word	va_home		; HOME, move cursor to top left without clearing
 	.word	va_cls		; PGDN, page down, may issue a FF
 	.word	vch_dcx		; ATYX, takes two more chars!
@@ -585,39 +563,21 @@ va_xtb:
 ; new table for extra-byte codes
 ; note offset as managed X codes are 16, 18, 20 and 23, thus padding byte
 	.word	vch_dle		; 16, process byte as glyph
-	.word	vch_ink		; 18, take byte as FG colour
-	.word	vch_papr	; 20, take byte as BG colour
+	.word	vch_ink		; 18, take byte as FG colour *** NOT USED
+	.word	vch_papr	; 20, take byte as BG colour *** NOT USED
 	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
 	.word	vch_atyx	; 23, expects row byte
 	.word	vch_atcl	; 25, expects column byte, note it is no longer 24!
 
-va_cspl:
-; splash screen attributes table (ink on upper right)
-	.byt	%11111110	; yellow on white
-	.byt	%11101011	; cyan on yellow
-	.byt	%10111010	; green on cyan
-	.byt	%10100101	; magenta on green
-	.byt	%01010100	; red on magenta
-	.byt	%01000001	; blue on red
-	.byt	%00010000	; black on blue
-
-; va_width array no longer used
-
-va_cdat:
-; new, common values for CRTC registers in ALL modes
-	.byt $50			; R8, interlaced mode AND 1 ch. skew
-	.byt 15				; R9, maximum raster - 1
-	.byt 32				; R10, cursor start raster & blink/disable (off)
-	.byt 15				; R11, cursor end raster
-; start & cursor addresses (R12...R15) to be set by CLS
 
 va_data:
-; CRTC registers initial values (only those which differ on each mode)
-; total of eight video modes
+; CRTC registers initial values
+; cursor raster & blink (R10, R11) to be reset (as not used) by CLS
+; start & cursor addresses (R12...R15) to be set by CLS
 
 ; *** values for 25.175 MHz dot clock *** 31.47 kHz Hsync, 59.94 Hz Vsync
 ; unlikely to work on 24.576 MHz crystal (30.72 kHz Hsync, 58.5 Hz Vsync)
-; mode 0 (aka 40/50) is 320x200 (40x25) 1-6-3, *** industry standard ***
+; graphic mode
 	.byt 49				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
@@ -625,80 +585,48 @@ va_data:
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt 26				; R7, VSYNC position - 1
+	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
+	.byt 0				; R8, interlaced mode
+	.byt 15				; R9, maximum raster - 1
 
-; mode 1 (aka 36/50) is 288x224 (36x28) 1-6-3, fully compatible
+; text mode
 	.byt 49				; R0, horizontal total chars - 1
-	.byt 36				; R1, horizontal displayed chars
-	.byt 39				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
-	.byt 28				; R6, vertical displayed chars
-	.byt 28				; R7, VSYNC position - 1
-
-; mode 2 (aka 32/50) is 256x240 (32x30) 1-6-3, fully compatible
-	.byt 49				; R0, horizontal total chars - 1
-	.byt 32				; R1, horizontal displayed chars
-	.byt 37				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
-	.byt 30				; R6, vertical displayed chars
-	.byt 30				; R7, VSYNC position - 1
-
-; *** values for 24.576 MHz dot clock *** 32 kHz Hsync, 60.95 Hz Vsync
-; mode 3 (aka 40/48S) is 320x200 (40x25) 1-6-1, 3.9uS sync, 650nS back porch (perhaps compatible)
-	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
+	.byt *				; R4, vertical total chars - 1
+	.byt *				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt 26				; R7, VSYNC position - 1
+	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
+	.byt 0				; R8, interlaced mode
+	.byt 17				; R9, maximum raster - 1
 
-; mode 4 (aka 40/48P) is 320x200 (40x25) 1-4-3, 2.6uS sync, 1.95uS back porch (likely compatible)
+; *** values for 24.576 MHz dot clock *** 32 kHz Hsync, 60.95 Hz Vsync (must be as close to 60 Hz as possible! try 533 lines)
+; graphic mode
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
 	.byt 36				; R3, HSYNC width (may have VSYNC in MSN) =4
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
+	.byt *				; R4, vertical total chars - 1
+	.byt *				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt 26				; R7, VSYNC position - 1
+	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
+	.byt 0				; R8, interlaced mode
+	.byt 15				; R9, maximum raster - 1
 
-; mode 5 (aka 36/48) is 288x224 (36x28) 1-6-3, most likely compatible
-	.byt 47				; R0, horizontal total chars - 1
-	.byt 36				; R1, horizontal displayed chars
-	.byt 39				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
-	.byt 28				; R6, vertical displayed chars
-	.byt 28				; R7, VSYNC position - 1
-
-; mode 6 (aka 32/48) is 256x240 (32x30) 1-6-3, most likely compatible
-	.byt 47				; R0, horizontal total chars - 1
-	.byt 32				; R1, horizontal displayed chars
-	.byt 37				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
-	.byt 30				; R6, vertical displayed chars
-	.byt 30				; R7, VSYNC position - 1
-
-; mode 7 (aka 40/48T) is 320x200 (40x25) 1-5-2, 3.25uS sync, 1.3uS back porch (most likely compatible)
+; business mode
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
-	.byt 37				; R3, HSYNC width (may have VSYNC in MSN) =5
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
+	.byt 36				; R3, HSYNC width (may have VSYNC in MSN) =5
+	.byt *				; R4, vertical total chars - 1
+	.byt *				; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt 26				; R7, VSYNC position - 1
+	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
+	.byt 0				; R8, interlaced mode
+	.byt 17				; R9, maximum raster - 1
 
 ; *** glyphs ***
 vs_font:
-#include "fonts/8x8.s"
+#include "fonts/8x16.s"
 .)
