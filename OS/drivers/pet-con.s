@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190613-0851
+; last modified 20190614-2252
 
 #include "../usual.h"
 
@@ -589,20 +589,7 @@ va_data:
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 
-; text mode
-	.byt 49				; R0, horizontal total chars - 1
-	.byt 40				; R1, horizontal displayed chars
-	.byt 41				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
-	.byt *				; R4, vertical total chars - 1
-	.byt *				; R5, total raster adjust
-	.byt 25				; R6, vertical displayed chars
-	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
-	.byt 0				; R8, interlaced mode
-	.byt 17				; R9, maximum raster - 1
-
 ; *** values for 24.576 MHz dot clock *** 32 kHz Hsync, 60.95 Hz Vsync (must be as close to 60 Hz as possible! try 533 lines)
-; graphic mode
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
@@ -613,18 +600,6 @@ va_data:
 	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
-
-; business mode
-	.byt 47				; R0, horizontal total chars - 1
-	.byt 40				; R1, horizontal displayed chars
-	.byt 41				; R2, HSYNC position - 1
-	.byt 36				; R3, HSYNC width (may have VSYNC in MSN) =5
-	.byt *				; R4, vertical total chars - 1
-	.byt *				; R5, total raster adjust
-	.byt 25				; R6, vertical displayed chars
-	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
-	.byt 0				; R8, interlaced mode
-	.byt 17				; R9, maximum raster - 1
 
 ; *** glyphs ***
 vs_font:
