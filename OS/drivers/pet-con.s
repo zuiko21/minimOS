@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190614-2252
+; last modified 20190615-1008
 
 #include "../usual.h"
 
@@ -577,27 +577,15 @@ va_data:
 
 ; *** values for 25.175 MHz dot clock *** 31.47 kHz Hsync, 59.94 Hz Vsync
 ; unlikely to work on 24.576 MHz crystal (30.72 kHz Hsync, 58.5 Hz Vsync)
-; graphic mode
-	.byt 49				; R0, horizontal total chars - 1
+; alternate commented values for 24.576 MHz crystal (32 kHz Hsync, 60.04 Hz VSync)
+	.byt 49		; 47		; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
+	.byt 6		; 4		; R3, HSYNC width
+	.byt 31		; 32		; R4, vertical total chars - 1
+	.byt 13		; 5		; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
-	.byt 0				; R8, interlaced mode
-	.byt 15				; R9, maximum raster - 1
-
-; *** values for 24.576 MHz dot clock *** 32 kHz Hsync, 60.95 Hz Vsync (must be as close to 60 Hz as possible! try 533 lines)
-	.byt 47				; R0, horizontal total chars - 1
-	.byt 40				; R1, horizontal displayed chars
-	.byt 41				; R2, HSYNC position - 1
-	.byt 36				; R3, HSYNC width (may have VSYNC in MSN) =4
-	.byt *				; R4, vertical total chars - 1
-	.byt *				; R5, total raster adjust
-	.byt 25				; R6, vertical displayed chars
-	.byt 26				; R7, VSYNC position - 1 (may use 25 is picture is set too high)
+	.byt 27		; 28		; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
 
