@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190615-1008
+; last modified 20190616-1549
 
 #include "../usual.h"
 
@@ -40,19 +40,12 @@ va_err:
 	crtc_rs	= $E880		; *** hardwired 6845 addresses on miniPET ***
 	crtc_da	= $E881
 
-; debug only!
-	va_mode	= $400		; *** *** *** DEBUGGING ONLY *** *** ***
-
 ; define SEPARATORS in order to use a shorter table by letting 28-31 as printable!
 #define	SEPARATORS	_SEPARATORS
 
 ; *** zeropage variables ***
 	v_dest	= $E8		; generic writes, was local2, perhaps including this on zeropage.h? aka ptc
-	v_src	= $EA		; font read, is this OK? aka ptl
 
-; do these need to be in zeropage?
-	vs_mask	= $E4		; *** local 1, splash screen only ***
-	vs_cnt	= $E5		; line counter
 
 ; ************************
 ; *** initialise stuff *** should create line addresses table...
@@ -66,12 +59,6 @@ vi_crl:
 		STA crtc_da			; set value
 		DEX					; next address
 		BPL vi_crl			; continue otherwise
-; new, set RAM pointer to supplied font!
-	LDA #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
-	STA va_font			; store locally (4)
-	LDA #>vs_font		; same for MSB (2+4) *** ditto for flexibility
-	STA va_font+1
-; software cursor will be set by CLS routine!
 ;	CLC					; just in case there is no splash code
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
 
@@ -95,18 +82,14 @@ va_cls:					; * initial code takes 18t *
 	LDA #>VA_BASE
 	STY va_x			; reset coordinates (4+4)
 	STY va_y
-; must set this as start & cursor address!
-	LDX #12				; CRTC screen start register, then comes cursor address (2)
-vc_crs:					; * this loops takes 49t *
-		STX crtc_rs
-		STA crtc_da			; set MSB... (4+4)
-		INX					; next register (2)
-		STX crtc_rs
-		STY crtc_da			; ...and LSB (4+4)
-		INX					; try next value (2)
-		CPX #16				; all done? (2+3 twice, minus 1)
-		BNE vc_crs
-; must clear not only VRAM, but attribute area too! * this is 12t *
+; must set this as start address!
+	LDX #12				; CRTC screen start register (2)
+	STX crtc_rs
+	STA crtc_da			; set MSB... (4+4)
+	INX					; next register (2)
+	STX crtc_rs
+	STY crtc_da			; ...and LSB (4+4)
+; must clear VRAM * this is 12t *
 	STY v_dest			; clear pointer LSB, will stay this way (2)
 	STA v_dest+1		; eeeeeeeeeeeeek (4)
 	LDA #32				; ASCII for space (2)
@@ -116,8 +99,8 @@ vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
 		BNE vcl_c
 			INC v_dest+1		; check following page eeeeeeeeek (5)
 			LDX v_dest+1		; how far are we? (3) eeeeeeeeeeek
-			CPX #$88			; already at VRAM? or suitable limit (2)
-		BNE vcl_c			; no, do not change A (3)
+			CPX #$88			; finished? (2)
+		BNE vcl_c			; no, continue (3)
 	RTS
 
 ; *********************************
@@ -233,7 +216,7 @@ va_nbin:
 ; *** *** much closer control routines, can be placed anywhere *** ***
 ; * * EON (inverse video) * *
 vch_so:
-	LDA #$FF			; mask for reverse video
+	LDA #$80			; mask for reverse video
 	BNE vso_xor			; set mask and finish, no need for BRA
 
 ; * * EOF (true video) * * vch_so reuses some code
@@ -246,17 +229,16 @@ vso_xor:
 
 ; * * XON (cursor on) * *
 vch_sc:
+; PET hardware does not use 6845 cursor --------
 	LDA #96				; value for visible cursor, slowly blinking
 	BNE vc_set			; put this value on register, no need for BRA
 
-; * * XOFF (cursor off) * * vch_sc reuses some code
+; * * XOFF (cursor off) * * vch_sc reuses some code ----------
 vch_hc:
 		LDA #32				; value for hidden cursor
 ; common code for XON & XOFF
 vc_set:
-	LDX #10				; CRTC cursor register
-	STX crtc_rs			; select register...
-	STA crtc_da			; ...and set data
+; should just set some software flag --------
 	RTS					; all done for this setting
 
 ; * * HOME (without clearing) * *
@@ -298,6 +280,7 @@ vch_up:
 	BNE vcu_nt			; no, just update coordinate
 ; otherwise, scroll up...
 ; *** *** scroll DOWN code just 'reversed', please check throughfully! *** ***
+;--------------------------------
 		LDX va_bi			; current circular index
 		CPX #va_hght-1
 		BNE vs_xnz2			; not last one, no wrap
@@ -348,64 +331,33 @@ vch_npr:
 	STA io_c			; store as required
 
 ; **** actual printing ****
-; *** convert ASCII into pointer offset, needs 11 bits ***
 vch_prn:
-	_STZA io_c+1		; clear MSB (3)
-	LDX #3				; will shift 3 bits left (2)
-vch_sh:
-		ASL io_c			; shift left (5+5)
-		ROL io_c+1
-		DEX					; next shift (2+3)
-		BNE vch_sh
-; add offset to font base address
-	LDA va_font			; add to base... (4+2) *** now using a RAM pointer
-	CLC
-	ADC io_c			; ...the computed offset (3)
-	STA v_src			; store locally (3)
-	LDA va_font+1		; same for MSB (4+3) *** ditto for flexibility
-	ADC io_c+1
-;	DEC					; in case the font has no non-printable glyphs
-	STA v_src+1			; is source pointer (3)
+	PHA
 ; create local destination pointer
+	_STZA v_dest+1			; pointer MSB
 	LDA va_y			; current absolute row
-	CLC
-	ADC va_bi			; actual position in circular array
-	CMP va_hght			; check for wrapping
-	BCC va_nwbi
-		SBC va_hght
-va_nwbi:
-	TAX					; use as index
-	LDA va_lpl, X			; get base pointer for that row
-	LDY va_lph, X
-	CLC
-	ADC va_x			; and now add column offset
-	STA v_dest			; will be destination pointer (3+3)
-	STY v_dest+1
-; copy from font (+1...) to VRAM (+1024...)
-	LDY #0				; scanline counter (2)
-vch_pl:
-		LDA (v_src), Y		; get glyph data (5)
-		EOR va_xor			; apply mask! (4)
-		_STAX(v_dest)		; store into VRAM (5) do not mess with Y
-; advance to next scanline
-		LDA v_dest+1		; get current MSB (3+2)
-		CLC
-		ADC #4				; offset for next scanline is 1024 (2)
-; *** *** is checking for wrap needed? *** ***
-		STA v_dest+1		; update (3)
-		INY					; next font byte (2)
-		CPY #VA_SCAN		; all done? (2)
-		BNE vch_pl			; continue otherwise (3)
-; now must set attribute accordingly!
-	SEC					; subtract 8192+1024 from v_dest (MSB already in A)
-	SBC #36
-vch_nw:
-	STA v_dest+1		; now it should be pointing to the corresponding attribute
-	LDA va_attr			; get preset colour...
-	_STAX(v_dest)		; ...and place it eeeeeeeeeek
+	ASL
+	ASL
+	ASL				; times 8
+	STA v_dest			; temporary
+	ASL
+	ROL v_dest+1
+	ASL
+	ROL v_dest+1			; times 32... and C is clear
+	ADC v_dest			; row x 40, C should stay clear
+	STA v_dest			; LSB OK
+	LDA v_dest+1
+	ADC #>VA_BASE			; actual address
+	STA v_dest+1			; pointer ready!
+; put char on VRAM
+	PLA
+;	EOR va_xor			; apply mask! (4)
+	LDY va_x			; column offset
+	STA (v_dest), Y
 ; printing is done, now advance current position
 	JMP vch_rght		; *** this is actually cursor right! ***
 vch_scs:
+; -------------
 ; check whether scrolling is needed *** RECOMPUTE USING TABLE
 ; it is assumed that only UPCU may issue a scroll up, thus not checked here
 	LDA va_y		; actual row
