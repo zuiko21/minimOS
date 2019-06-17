@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190616-1549
+; last modified 20190617-2038
 
 #include "../usual.h"
 
@@ -77,12 +77,11 @@ vi_crl:
 ; *** routine for clearing the screen ***
 ; ***************************************
 va_cls:					; * initial code takes 18t *
-; should create the pointer array!
 	LDY #<VA_BASE		; set home position... this is faster (2+2)
-	LDA #>VA_BASE
 	STY va_x			; reset coordinates (4+4)
 	STY va_y
-; must set this as start address!
+; must set this as start address... but A depends on mode!
+	LDA #0
 	LDX #12				; CRTC screen start register (2)
 	STX crtc_rs
 	STA crtc_da			; set MSB... (4+4)
@@ -90,6 +89,7 @@ va_cls:					; * initial code takes 18t *
 	STX crtc_rs
 	STY crtc_da			; ...and LSB (4+4)
 ; must clear VRAM * this is 12t *
+	LDA #>VA_BASE
 	STY v_dest			; clear pointer LSB, will stay this way (2)
 	STA v_dest+1		; eeeeeeeeeeeeek (4)
 	LDA #32				; ASCII for space (2)
