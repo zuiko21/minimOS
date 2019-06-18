@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190617-2038
+; last modified 20190618-2144
 
 #include "../usual.h"
 
@@ -175,28 +175,9 @@ vat_xok:
 		_BRA va_mbres		; reset flag and we are done
 
 ; -------------------------------- continue here ------------------------------------
-; * * take byte as FG colour * *
+; * * colours are simply ignored * *
 vch_ink:
-	AND #%00001111		; filter relevant bits
-	STA va_col			; temporary flag use for storing colour!
-	LDA va_attr			; get current colour
-	AND #%11110000		; will respect current paper
-		_BRA va_sfrb		; combine attributes and exit
-
-; * * take byte as BG colour * * (vch_ink reuses some code)
 vch_papr:
-	AND #%00001111		; filter relevant bits
-	ASL					; convert to paper code
-	ASL
-	ASL
-	ASL
-	STA va_col			; temporary flag use for storing colour!
-	LDA va_attr			; get current colour
-	AND #%00001111		; will respect current ink
-va_sfrb:
-	ORA va_col			; mix with (possibly shifted) new colour
-	STA va_attr			; new definition
-va_mbres:
 	_STZA va_col		; clear flag and we are done
 	RTS					; *** no need for DR_OK as BCS is not being used
 
