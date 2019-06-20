@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190618-2144
+; last modified 20190620-1226
 
 #include "../usual.h"
 
@@ -52,13 +52,15 @@ va_err:
 ; ************************
 va_init:
 ; load 6845 CRTC registers
-	LDX #10
+	LDX #13
 vi_crl:
 		STX crtc_rs			; select this register
 		LDA va_data, X		; get value for it
 		STA crtc_da			; set value
 		DEX					; next address
 		BPL vi_crl			; continue otherwise
+	LDA #192			; cursor is visible by default
+	STA va_cur
 ;	CLC					; just in case there is no splash code
 	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
 
@@ -69,7 +71,7 @@ vi_crl:
 ; ****************************
 ; *** end of splash screen ***
 ; ****************************
-; if not used may just use CLC above and let it fall into CLS routine ***
+; if not used may just do CLC above and let it fall into CLS routine ***
 
 	_DR_OK				; installation succeeded
 
@@ -80,14 +82,7 @@ va_cls:					; * initial code takes 18t *
 	LDY #<VA_BASE		; set home position... this is faster (2+2)
 	STY va_x			; reset coordinates (4+4)
 	STY va_y
-; must set this as start address... but A depends on mode!
-	LDA #0
-	LDX #12				; CRTC screen start register (2)
-	STX crtc_rs
-	STA crtc_da			; set MSB... (4+4)
-	INX					; next register (2)
-	STX crtc_rs
-	STY crtc_da			; ...and LSB (4+4)
+	STY va_xor			; reset inverse mode too (4)
 ; must clear VRAM * this is 12t *
 	LDA #>VA_BASE
 	STY v_dest			; clear pointer LSB, will stay this way (2)
@@ -99,7 +94,7 @@ vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
 		BNE vcl_c
 			INC v_dest+1		; check following page eeeeeeeeek (5)
 			LDX v_dest+1		; how far are we? (3) eeeeeeeeeeek
-			CPX #$88			; finished? (2)
+			CPX #$88			; finished? (2) *** could use $84 on 40-col mode
 		BNE vcl_c			; no, continue (3)
 	RTS
 
@@ -210,16 +205,17 @@ vso_xor:
 
 ; * * XON (cursor on) * *
 vch_sc:
-; PET hardware does not use 6845 cursor --------
-	LDA #96				; value for visible cursor, slowly blinking
+; PET hardware does not use 6845 cursor
+	LDA #192			; value for visible cursor
 	BNE vc_set			; put this value on register, no need for BRA
 
-; * * XOFF (cursor off) * * vch_sc reuses some code ----------
+; * * XOFF (cursor off) * * vch_sc reuses some code
 vch_hc:
-		LDA #32				; value for hidden cursor
+		LDA #0				; value for hidden cursor
 ; common code for XON & XOFF
 vc_set:
-; should just set some software flag --------
+; should just set some software flag
+	STA va_cur			; 0 means no cursor, %10000000 means cursor on but not showing, %11000000 is showing cursor
 	RTS					; all done for this setting
 
 ; * * HOME (without clearing) * *
@@ -260,36 +256,7 @@ vch_up:
 	LDX va_y			; check if already at top
 	BNE vcu_nt			; no, just update coordinate
 ; otherwise, scroll up...
-; *** *** scroll DOWN code just 'reversed', please check throughfully! *** ***
-;--------------------------------
-		LDX va_bi			; current circular index
-		CPX #va_hght-1
-		BNE vs_xnz2			; not last one, no wrap
-			LDX #$FF			; is this OK?
-vs_xnz2:
-		INX					; ...plus one, now points to first line pointer
-; is the staff above really needed??
-		LDA va_lpl, X		; get full value
-		LDY va_lph, X
-		DEX					; go previous in queue
-		BPL vs_bnw2			; does it need to wrap? only OK up to 127 lines
-			LDX #va_hght-1
-vs_bnw2:
-		SEC
-		SBC va_wdth			; advance one line
-		BCS vs_msb			; check for wrapping
-			DEY
-			CPY #>VA_BASE		; is it before the screen?
-			BCS vs_msb2
-				LDY #>VA_SCRL-1		; wrap it all!
-vs_msb2:
-		STA va_lpl, X		; store new entry
-		TYA					; no STY abs, X...
-		STA va_lph, X
-		DEX					; backoff circular pointer
-		BPL vs_biok2		; does it need to wrap? only OK up to 127 lines!
-			LDX #va_hght-1
-; *** *** end of reference code, this ends with new circular index at X *** ***
+; *** *** end of reference code, this ends with new circular index at X *** *** ---- ------ ------- -----
 vs_biok2:
 		JMP vs_biok			; set new circular index, update CRTC, etc.
 vcu_nt:
@@ -511,18 +478,22 @@ va_data:
 ; *** values for 25.175 MHz dot clock *** 31.47 kHz Hsync, 59.94 Hz Vsync
 ; unlikely to work on 24.576 MHz crystal (30.72 kHz Hsync, 58.5 Hz Vsync)
 ; alternate commented values for 24.576 MHz crystal (32 kHz Hsync, 60.04 Hz VSync)
-	.byt 49		; 47		; R0, horizontal total chars - 1
+	.byt 49		; 47	; R0, horizontal total chars - 1
 	.byt 40				; R1, horizontal displayed chars
 	.byt 41				; R2, HSYNC position - 1
-	.byt 6		; 4		; R3, HSYNC width
-	.byt 31		; 32		; R4, vertical total chars - 1
+	.byt 6		; 3		; R3, HSYNC width
+	.byt 31		; 32	; R4, vertical total chars - 1
 	.byt 13		; 5		; R5, total raster adjust
 	.byt 25				; R6, vertical displayed chars
-	.byt 27		; 28		; R7, VSYNC position - 1
+	.byt 27		; 28	; R7, VSYNC position - 1
 	.byt 0				; R8, interlaced mode
 	.byt 15				; R9, maximum raster - 1
+	.word 0				; R10-R11, cursor raster and blink *** NOT USED ***
+	.byt 0				; R12-R13, BE start address (use 32 on full ASCII mode)
+	.byt 0				; (R14-R15 irrelevant on this hardware)
 
 ; *** glyphs ***
+; standard mode may use a 128-char font
 vs_font:
 #include "fonts/8x16.s"
 .)
