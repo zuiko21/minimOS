@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190620-1226
+; last modified 20190621-1846
 
 #include "../usual.h"
 
@@ -51,6 +51,7 @@ va_err:
 ; *** initialise stuff *** should create line addresses table...
 ; ************************
 va_init:
+; should check for VRAM mirroring, for 40/80 col. auto-detecting
 ; load 6845 CRTC registers
 	LDX #13
 vi_crl:
