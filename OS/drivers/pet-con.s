@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
-; v0.6a1
+; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190621-1846
+; last modified 20190622-1118
 
 #include "../usual.h"
 
@@ -493,8 +493,5 @@ va_data:
 	.byt 0				; R12-R13, BE start address (use 32 on full ASCII mode)
 	.byt 0				; (R14-R15 irrelevant on this hardware)
 
-; *** glyphs ***
-; standard mode may use a 128-char font
-vs_font:
-#include "fonts/8x16.s"
+; *** no glyphs! ***
 .)
