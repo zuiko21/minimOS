@@ -242,4 +242,34 @@ Q1|**BC557**|UD2 in case `/PEN STROBE` is available
 Q2|**BC547**|UD1, _V-sync_ inverter (plus diode)
 Q3|**BC547**|new, VGA _green_ channel output (plus 390 ohm emitter resistor)
 
-_Last modified: 20190612-0852_
+## 7 or 8-bit charset?
+
+The original PET used a _7-bit charset_ (known as PETSCII) whereas the eigth bit was
+hardwired to the `INVERT` signal. Thus, any character with bit 7 set will be displayed
+in **inverse video**. A similar, global effect will be achieved by setting the CRTC's
+`TA12` line on. Also, the `TA13` line selects the alternative `CHR OPTION` when
+available -- or just shuts off the character ROM when not. On the other hand, the
+`GRAPHIC` signal (generated from VIA's `CA2`) is used as a high address line for the
+character ROM, which fits a **2 kiB ROM** (8 scanlines x 128 glyphs x 2 modes)
+or, if the `CHR OPTION` is to be used, _twice_ that amount.
+
+But **minimOS** is intended to use a **8-bit charset** for adequate international
+support. Thus, **miniPET** has its VRAM's `D7` connected as an address line for the
+charset ROM, besides the usual _inverse video_ switch. Because of the mandatory
+**original PET _compatibility_**, it will not be able to use **both** the full 8-bit
+charset _and_ inverse video on selected chars. _The original PET cannot display 8-bit
+chars by any means_, but the `GRAPHIC` signal might be used on the **miniPET** to
+switch between two display modes:
+
+1) **7-bit** charset **with** inverse video
+1) **full 8-bit** charset _without_ inverse video
+
+The first mode will need the whole glyph set _repeated_, as VRAM's `D7` is used as an
+address line. But in the second option, _the "bit-7 high" glyphs should be stored
+**inverted**, as these will be reinverted by the display hardware.
+
+All these options may be provided by an **8 kiB** character ROM (16 scanlines x
+256 glyphs x 2 modes) but, if the `CHR OPTION` is available, a **27C128** (16 kiB) is
+to be used -- no big deal as I own plenty of them.
+
+_Last modified: 20190623-1603_
