@@ -272,4 +272,12 @@ All these options may be provided by an **8 kiB** character ROM (16 scanlines x
 256 glyphs x 2 modes) but, if the `CHR OPTION` is available, a **27C128** (16 kiB) is
 to be used -- no big deal as I own plenty of them.
 
-_Last modified: 20190623-1603_
+In any case, the independent `INVERT` signal (from CRTC's `TA12`) may be set via _user_
+software with the otherwise unused `INK` and `PAPER` commands -- setting the _ink as
+pure black_ (zero) will activate the **global inverse mode**, whereas setting the _paper
+as pure black_ will revert to standard mode. _Any other colour setting will be ignored_,
+as will be (in 8-bit mode) the `EON` and `EOFF` _emphasis_ control codes. As of
+20190624, _no control codes are provided for switching between 7 and 8 bit modes_,
+as a suitable utility will be provided for that.
+
+_Last modified: 20190624-0907_
