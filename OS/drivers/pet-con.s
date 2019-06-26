@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190622-1118
+; last modified 20190626-1038
 
 #include "../usual.h"
 
@@ -52,6 +52,13 @@ va_err:
 ; ************************
 va_init:
 ; should check for VRAM mirroring, for 40/80 col. auto-detecting
+; not sure if this will work on a real PET!
+	LDA #80				; max columns
+	STA $87FF			; 80-col-only address
+	LSR					; half value (40 col)
+	STA $83FF			; end of 40 col screen
+	LDA $87FF			; this is either 80-col screen, or a mirror of the above (in 40-col mode)
+	STA va_wdth			; this is the actual screen width
 ; load 6845 CRTC registers
 	LDX #13
 vi_crl:
