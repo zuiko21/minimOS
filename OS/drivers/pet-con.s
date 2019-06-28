@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190626-1038
+; last modified 20190628-1841
 
 #include "../usual.h"
 
@@ -42,6 +42,9 @@ va_err:
 
 ; define SEPARATORS in order to use a shorter table by letting 28-31 as printable!
 #define	SEPARATORS	_SEPARATORS
+
+; define INVERSE7 in order to allow inverse video when bit 7 is set
+#define	INVERSE7	_INVERSE7
 
 ; *** zeropage variables ***
 	v_dest	= $E8		; generic writes, was local2, perhaps including this on zeropage.h? aka ptc
@@ -179,6 +182,7 @@ vat_xok:
 
 ; -------------------------------- continue here ------------------------------------
 ; * * colours are simply ignored * *
+; ...or let INK 0 set global inverse and PAPER 0 reset it!
 vch_ink:
 vch_papr:
 	_STZA va_col		; clear flag and we are done
@@ -307,7 +311,7 @@ vch_prn:
 	STA v_dest+1			; pointer ready!
 ; put char on VRAM
 	PLA
-;	EOR va_xor			; apply mask! (4)
+	ORA va_xor			; apply mask! expected to be 0 in 8-bit mode (4)
 	LDY va_x			; column offset
 	STA (v_dest), Y
 ; printing is done, now advance current position
