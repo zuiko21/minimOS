@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190628-1841
+; last modified 20190629-1509
 
 #include "../usual.h"
 
@@ -54,8 +54,8 @@ va_err:
 ; *** initialise stuff *** should create line addresses table...
 ; ************************
 va_init:
-; should check for VRAM mirroring, for 40/80 col. auto-detecting
-; not sure if this will work on a real PET!
+; must check for VRAM mirroring, for 40/80 col. auto-detecting
+; should work on a real PET, too!
 	LDA #80				; max columns
 	STA $87FF			; 80-col-only address
 	LSR					; half value (40 col)
@@ -155,7 +155,7 @@ vch_atyx:
 	SBC #' '			; from space and beyond
 ; compute new Y pointer...
 #ifdef	SAFE
-	CMP va_hght			; over screen size?
+	CMP #25			; over screen heigth?
 	BCC vat_yok
 		_DR_ERR(INVALID)	; ignore if outside range
 vat_yok:
@@ -180,11 +180,25 @@ vat_xok:
 	JSR vch_scs			; set cursor
 		_BRA va_mbres		; reset flag and we are done
 
-; -------------------------------- continue here ------------------------------------
 ; * * colours are simply ignored * *
 ; ...or let INK 0 set global inverse and PAPER 0 reset it!
 vch_ink:
+	TAX					; check whether zero
+	BNE vch_cend		; no, nothing to do
+		LDA #$10			; yes, set TA12
+		BNE vch_sinv
 vch_papr:
+	TAX					; check whether zero
+	BNE vch_cend		; no, nothing to do, otherwise clear TA12, A is already zero
+vch_sinv:
+		STA va_col			; keep temporary mask
+		LDX #12				; CRTC start address MSB
+		STX crtc_rs			; select register
+		LDA crtc_da			; get current data...
+		AND #%11101111			; ...mask out invert bit...
+		ORA va_col			; ...and set desired bit
+		STA crtc_da
+vch_cend:
 	_STZA va_col		; clear flag and we are done
 	RTS					; *** no need for DR_OK as BCS is not being used
 
