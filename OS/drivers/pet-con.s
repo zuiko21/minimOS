@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
-; v0.6a2
+; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190629-1611
+; last modified 20190629-1722
 
 #include "../usual.h"
 
@@ -48,7 +48,7 @@ va_err:
 
 ; *** zeropage variables ***
 	v_dest	= $E8		; generic writes, was local2, perhaps including this on zeropage.h? aka ptc
-
+	v_src	= $EA		; for scroll only
 
 ; ************************
 ; *** initialise stuff *** should create line addresses table...
@@ -99,13 +99,7 @@ va_cls:					; * initial code takes 18t *
 	STY v_dest			; clear pointer LSB, will stay this way (2)
 	STA v_dest+1		; eeeeeeeeeeeeek (4)
 ; better set proper limit depending on columns
-	LDA va_width		; read %00101000 or %01010000
-	LSR					; %00010100 or %00101000
-	LSR					; %00001010 or %00010100
-	SEC					; will set bit 7!
-	LSR					; %10000101 or %10001010
-	AND #%11111100				; %10000100 or %10001000
-	STA va_col			; temporary limit is $84 or $88
+	JSR va_vlim
 ; ready to clear VRAM
 	LDA #32				; ASCII for space (2)
 vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
@@ -117,6 +111,17 @@ vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
 			CPX va_col			; finished? (4)
 		BNE vcl_c			; no, continue (3)
 	STY va_col			; reset flag too EEEEEEEK
+	RTS
+
+; *** compute temporary VRAM limit***
+va_vlim:
+	LDA va_wdth		; read %00101000 or %01010000
+	LSR					; %00010100 or %00101000
+	LSR					; %00001010 or %00010100
+	SEC					; will set bit 7!
+	LSR					; %10000101 or %10001010
+	AND #%11111100				; %10000100 or %10001000
+	STA va_col			; temporary limit is $84 or $88
 	RTS
 
 ; *********************************
@@ -167,7 +172,7 @@ vch_atyx:
 #ifdef	SAFE
 	CMP #25			; over screen heigth?
 	BCC vat_yok
-		_DR_ERR(INVALID)	; ignore if outside range
+		LDA #24		; stay at limit if outside range
 vat_yok:
 #endif
 	STA va_y			; set new value
@@ -183,7 +188,7 @@ vch_atcl:
 #ifdef	SAFE
 	CMP va_wdth			; over screen size?
 	BCC vat_xok
-		_DR_ERR(INVALID)	; ignore if outside range
+		LDA #va_wdth-1		; stay at limit if outside range
 vat_xok:
 #endif
 	STA va_x			; coordinates are set
@@ -293,9 +298,8 @@ vch_up:
 	LDX va_y			; check if already at top
 	BNE vcu_nt			; no, just update coordinate
 ; otherwise, scroll up...
-; *** *** end of reference code, this ends with new circular index at X *** *** ---- ------ ------- -----
-vs_biok2:
-		JMP vs_biok			; set new circular index, update CRTC, etc.
+
+
 vcu_nt:
 	DEC va_y			; one row up
 	JMP vch_scs			; update cursor and exit (already checked for scrolling, may skip that)
@@ -344,79 +348,35 @@ vch_prn:
 ; printing is done, now advance current position
 	JMP vch_rght		; *** this is actually cursor right! ***
 vch_scs:
-; -------------
-; check whether scrolling is needed *** RECOMPUTE USING TABLE
+; check whether scrolling is needed
 ; it is assumed that only UPCU may issue a scroll up, thus not checked here
 	LDA va_y		; actual row
-	CMP va_hght		; over last line?
+	CMP #25			; over last line?
 	BNE vch_ok		; no, just exit (3/2)
-; scroll is needed, must update pointer array and base index
-		LDX va_bi			; current circular index
-		BNE vs_xnz			; not first one, no wrap
-			LDX va_hght			; get number of lines...
-vs_xnz:
-		DEX					; ...minus one, now points to last line pointer
-		LDA va_lpl, X		; get full value
-		LDY va_lph, X
-		INX					; go next in queue
-		CPX va_hght			; does it need to wrap?
-		BCC vs_bnw
-			LDX #0
-vs_bnw:
+; scroll is needed
+		JSR va_vlim		; should compute limit...
+		LDX #>VP_BASE		; base address (for destination)
+		LDA #<VP_BASE
+		TAY					; expected 0!
+		STX v_dest+1		; set pointers MSB
+		STX v_src+1
+		STA v_dest		; destination LSB
 		CLC
-		ADC va_wdth			; advance one line
-		BCC vs_msb			; check for wrapping
+		ADC va_wdth		; source is one line after
+		STA v_src
+vs_loop:
+			LDA (v_src), Y		; get source data
+			STA (v_dest), Y		; ...into destination
 			INY
-			CPY #>VA_SCRL		; did it even end the screen?
-			BCC vs_msb
-				LDY #>VA_BASE		; wrap it all!
-vs_msb:
-		STA va_lpl, X		; store new entry
-		TYA					; no STY abs, X...
-		STA va_lph, X
-		INX					; advance circular pointer
-		CPX va_hght			; does it need to wrap?
-		BCC vs_biok
-			LDX #0
-vs_biok:
-		STX va_bi			; correct base index, already at X
-; set new base address on CRTC
-		LDY va_lph, X		; get pointer, note order
-		LDA va_lpl, X
-; set CRTC registers, note MSB is on Y and LSB on A!
-		LDX #12				; start_h register on CRTC (2)
-		STX crtc_rs			; select register
-		STY crtc_da			; ...and set data MSB
-; go for next reg
-		INX					; next reg (2)
-		STX crtc_rs			; select register
-		STA crtc_da			; ...and set data LSB
+			BNE vs_loop
+				INC v_dest+1		; next page
+				INC v_src+1
+				LDA v_dest+1		; over limit?
+				CMP va_col
+			BNE vs_loop
+; scroll is done but must clear last line ** TO DO **
+
 vch_ok:
-; set cursor position from separate coordinates, might be inlined
-; access to circular array is worth a subroutine?
-	LDA va_y			; current absolute row
-	CLC
-	ADC va_bi			; actual position in circular array
-	CMP va_hght			; check for wrapping
-	BCC vsc_nwbi
-		SBC va_hght
-vsc_nwbi:
-	TAX					; use as index
-	LDA va_lpl, X		; get base pointer for that row
-	LDY va_lph, X
-	CLC
-	ADC va_x			; and now add column offset
-	BCC vsc_cok			; eeeeeeek
-		INY
-vsc_cok:
-; set CRTC registers, note MSB is on Y and LSB on A! worth another?
-	LDX #14				; cur_h register on CRTC (2)
-	STX crtc_rs			; select register
-	STY crtc_da			; ...and set data MSB
-; go for next
-	INX					; next reg (2)
-	STX crtc_rs			; select register
-	STA crtc_da			; ...and set data LSB
 	_DR_OK
 
 ; **** several printing features ****
