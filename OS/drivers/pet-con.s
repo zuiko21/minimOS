@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190629-1509
+; last modified 20190629-1534
 
 #include "../usual.h"
 
@@ -218,15 +218,18 @@ va_nbin:
 ; *** *** much closer control routines, can be placed anywhere *** ***
 ; * * EON (inverse video) * *
 vch_so:
+#ifdef	INVERSE7
 	LDA #$80			; mask for reverse video
 	BNE vso_xor			; set mask and finish, no need for BRA
-
+#endif
 ; * * EOF (true video) * * vch_so reuses some code
 vch_si:
+#ifdef	INVERSE7
 		LDA #0				; mask for true video eeeeeeeeeek
 ; common code for EON & EOFF
 vso_xor:
 	STA va_xor			; set new mask
+#endif
 	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 
 ; * * XON (cursor on) * *
