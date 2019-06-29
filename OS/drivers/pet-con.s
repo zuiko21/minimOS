@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190629-1534
+; last modified 20190629-1611
 
 #include "../usual.h"
 
@@ -90,14 +90,23 @@ vi_crl:
 ; *** routine for clearing the screen ***
 ; ***************************************
 va_cls:					; * initial code takes 18t *
-	LDY #<VA_BASE		; set home position... this is faster (2+2)
+	LDY #<VP_BASE		; set home position... must be zero (2)
 	STY va_x			; reset coordinates (4+4)
 	STY va_y
 	STY va_xor			; reset inverse mode too (4)
-; must clear VRAM * this is 12t *
-	LDA #>VA_BASE
+; must clear VRAM
+	LDA #>VP_BASE
 	STY v_dest			; clear pointer LSB, will stay this way (2)
 	STA v_dest+1		; eeeeeeeeeeeeek (4)
+; better set proper limit depending on columns
+	LDA va_width		; read %00101000 or %01010000
+	LSR					; %00010100 or %00101000
+	LSR					; %00001010 or %00010100
+	SEC					; will set bit 7!
+	LSR					; %10000101 or %10001010
+	AND #%11111100				; %10000100 or %10001000
+	STA va_col			; temporary limit is $84 or $88
+; ready to clear VRAM
 	LDA #32				; ASCII for space (2)
 vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
 		STA (v_dest), Y		; set this byte (5)
@@ -105,8 +114,9 @@ vcl_c:					; * whole loop takes 36x(2559+18) = 92772t *
 		BNE vcl_c
 			INC v_dest+1		; check following page eeeeeeeeek (5)
 			LDX v_dest+1		; how far are we? (3) eeeeeeeeeeek
-			CPX #$88			; finished? (2) *** could use $84 on 40-col mode
+			CPX va_col			; finished? (4)
 		BNE vcl_c			; no, continue (3)
+	STY va_col			; reset flag too EEEEEEEK
 	RTS
 
 ; *********************************
@@ -216,21 +226,19 @@ va_nbin:
 		_JMPX(va_c0)		; new, operate according to C0 code table
 
 ; *** *** much closer control routines, can be placed anywhere *** ***
+#ifdef	INVERSE7
 ; * * EON (inverse video) * *
 vch_so:
-#ifdef	INVERSE7
 	LDA #$80			; mask for reverse video
 	BNE vso_xor			; set mask and finish, no need for BRA
-#endif
-; * * EOF (true video) * * vch_so reuses some code
+; * * EOFF (true video) * * vch_so reuses some code
 vch_si:
-#ifdef	INVERSE7
 		LDA #0				; mask for true video eeeeeeeeeek
 ; common code for EON & EOFF
 vso_xor:
 	STA va_xor			; set new mask
-#endif
 	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+#endif
 
 ; * * XON (cursor on) * *
 vch_sc:
@@ -324,11 +332,13 @@ vch_prn:
 	ADC v_dest			; row x 40, C should stay clear
 	STA v_dest			; LSB OK
 	LDA v_dest+1
-	ADC #>VA_BASE			; actual address
+	ADC #>VP_BASE			; actual address
 	STA v_dest+1			; pointer ready!
 ; put char on VRAM
 	PLA
-	ORA va_xor			; apply mask! expected to be 0 in 8-bit mode (4)
+#ifdef	INVERSE7
+	EOR va_xor			; apply mask! may double invert (4)
+#endif
 	LDY va_x			; column offset
 	STA (v_dest), Y
 ; printing is done, now advance current position
@@ -465,13 +475,18 @@ va_c0:
 	.word	vch_up		; UPCU, move cursor
 	.word	va_cls		; FORM, clear screen
 	.word	va_cr		; NEWL, new line
+#ifdef	INVERSE7
 	.word	vch_so		; EON,  inverse video
 	.word	vch_si		; EOFF, true video
+#else
+	.word	va_rts		; no inverse video on full 8-bit
+	.word	va_rts
+#endif
 	.word	vch_dcx		; DLE,  disable next control char
 	.word	vch_sc		; XON,  turn cursor on
-	.word	vch_dcx		; INK,  set foreground colour (uses another char) *** NOT USED
+	.word	vch_dcx		; INK,  set foreground colour (uses another char, 0 for global inverse)
 	.word	vch_hc		; XOFF, turn cursor off
-	.word	vch_dcx		; PAPR, set background colour (uses another char) *** NOT USED
+	.word	vch_dcx		; PAPR, set background colour (uses another char, 0 disables global inverse)
 	.word	va_home		; HOME, move cursor to top left without clearing
 	.word	va_cls		; PGDN, page down, may issue a FF
 	.word	vch_dcx		; ATYX, takes two more chars!
@@ -492,8 +507,8 @@ va_xtb:
 ; new table for extra-byte codes
 ; note offset as managed X codes are 16, 18, 20 and 23, thus padding byte
 	.word	vch_dle		; 16, process byte as glyph
-	.word	vch_ink		; 18, take byte as FG colour *** NOT USED
-	.word	vch_papr	; 20, take byte as BG colour *** NOT USED
+	.word	vch_ink		; 18, take byte as FG colour *** global inverse only
+	.word	vch_papr	; 20, take byte as BG colour *** glonal inverse only
 	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
 	.word	vch_atyx	; 23, expects row byte
 	.word	vch_atcl	; 25, expects column byte, note it is no longer 24!
