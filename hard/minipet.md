@@ -280,4 +280,11 @@ as will be (in 8-bit mode) the `EON` and `EOFF` _emphasis_ control codes. As of
 20190624, _no control codes are provided for switching between 7 and 8 bit modes_,
 as a suitable utility will be provided for that.
 
-_Last modified: 20190624-0907_
+Back to the _global inverse mode_, the XOR gate for this, originally placed at the
+very end of the video signal path, should be relocated as will definitely throw off
+_black level_ on most (if not all) standard monitors. Thus, the XOR gate must go next
+to the other gate taking **bit 7** as inverse video signal. That way, the white "paper"
+typical of global inverse will be disabled outside the visible area, keeping black
+borders and guaranteeing proper black level setting.
+
+_Last modified: 20190630-1027_
