@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190629-1722
+; last modified 20190701-2007
 
 #include "../usual.h"
 
@@ -374,8 +374,22 @@ vs_loop:
 				LDA v_dest+1		; over limit?
 				CMP va_col
 			BNE vs_loop
-; scroll is done but must clear last line ** TO DO **
-
+; scroll is done but must clear last line ** from $83C0/$8780
+		LDA #$CO			; 40-col LSB, shift L for 80
+		STA v_dest
+		LDA #$83			; 40-col MSB, add 4 for 80
+		LDY va_wdth			; which mode?
+		CPY #80
+		BNE vcl_40
+			ASL v_dest			; turn into $80
+			ADC #4				; turn into $87 (C is clear)
+vcl_40:
+		STA v_dest+1			; store MSB and all ready
+		LDA #' '			; space to clear
+vcl_l:
+			STA (v_dest), Y			; clear (does one more)
+			DEY
+			BPL vcl_l			; until done, OK as 80<128
 vch_ok:
 	_DR_OK
 
