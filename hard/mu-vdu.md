@@ -18,6 +18,12 @@ anyway, _no reads are allowed_, just like with VRAM. _The circuit does **not** m
 use of the `R/W` line_, thus any read attempt will actually _write_ into VRAM (or CRTC
 registers) **the same value** as read from the computer's regular RAM. 
 
+While this issue does not prevent proper operation, it however makes unneeded VRAM
+accesses -- which will increase _snow_ generation or, in case of using the _optional RDY
+generator_, impair CPU performance because of the extra wait states (see below). Thus,
+it seems worth disabling the circuit during reads, something easily achived with some
+OR gates.
+
 ## Circuit description
 
 **VRAM select** (1/2 74HC139):
@@ -29,7 +35,8 @@ registers) **the same value** as read from the computer's regular RAM.
 The second '139 decoder may be used as an _inverter_ for the select signal **or** as an
 RDY-generating device in order to avoid _snow_ during CPU accesses:
 
-**RDY generation** (1/2 74HC139, _optional_):
+Original **RDY generation** (1/2 74HC139, _optional_):
+
 - previous `/SEL` to `A0` input
 - `DEN` from CRTC to `A1` input
 - `RDY` output from `/Y2`
@@ -38,9 +45,19 @@ RDY-generating device in order to avoid _snow_ during CPU accesses:
 In case _quick and dirty_ operation is desired, a jumper disconnecting the received
 `DEN` signal is to be used (with pulldown for `A1`).
 
+But, as previously stated, it pays to **disable _read_ operations**. The simplest (and
+fastest!) way is using a 74HC32 quad-OR gate as follows:
+
+- `A15` + **`R/W`**, output goes to `/G` on VRAM select (instead of `A15` alone)
+- `/SEL` + `DEN`, output creates _valid_ `/SEL` (in case of RDY generation)
+- `/SEL` + `/DEN` (use an inverter), output is `RDY`
+
+Just like the original design, a pulled-down jumper on `DEN` (before the inverter!)
+allows _quick-and-dirty_ operation if desired.
+
 **CRTC select** (74HC133):
 
-- one input is the _inverted_ VRAM select (may need a suitable inverter)
+- one input is the _inverted_ VRAM select (needs an inverter)
 - `A1-A12` as required-high inputs
 - output goes to CRTC `/CS`
 
@@ -83,11 +100,21 @@ In case _quick and dirty_ operation is desired, a jumper disconnecting the recei
 - `/WE` is the `/SEL` signal
 - `/OE` can be the _inverted_ select (or just kept low)
 
+**shift register** (74HC165):
+
+- parallel inputs to VRAM data lines
+- `CLK` from clock divider `Q0`
+- `Qh` (or `/Qh`) to output stage
+- `SH/LD` from register load gate
+
 **output stage** (1/2 74HC21):
 
 - only two inputs used, `Qh` from shift register and `DEN` from CRTC
 - might take `/Qh` in case an **inverse video** output is desired
-- gate output should be amplified with a suitable emitter-follower transistor
+- gate output fed with a suitable emitter-follower transistor to VGA **green** line
+- `CUR` similarly buffered to VGA **red** line
 - inverters should be used for `HS` and `VS` outputs (direct to VGA)
 
-_last modified 20190702-2254_
+Some _capacitors_ might be needed in order to introduce suitable **delays**.
+
+_last modified 20190703-0944_
