@@ -60,6 +60,11 @@ the **read-disable** feature may be implemented by using a 74HC13**8** instead o
 '139, applying `R/W` to the extra address input. _This will save the 74HC32_ and one
 of the inverters.
 
+Then, another option arises, implementing both **read disable** and **RDY generation**
+features thru the use of a _single 74HC139_. It will be wired as initially, but using
+`R/W` instead `A15` for gating. _This will mirror acceses on the top 32 kiB_ but, since
+this is usually ROM and reads are anyway disabled, no ill effects are expected.
+
 **CRTC select** (74HC133):
 
 - one input is the _inverted_ VRAM select (needs an inverter)
@@ -108,7 +113,7 @@ of the inverters.
 **shift register** (74HC165):
 
 - parallel inputs to VRAM data lines
-- `CLK` from clock divider `Q0`
+- `CLK` from clock divider `Q0` (perhaps inverted)
 - `Qh` (or `/Qh`) to output stage
 - `SH/LD` from register load gate
 
@@ -120,6 +125,8 @@ of the inverters.
 - `CUR` similarly buffered to VGA **red** line
 - inverters should be used for `HS` and `VS` outputs (direct to VGA)
 
-Some _capacitors_ might be needed in order to introduce suitable **delays**.
+Some _capacitors_ might be needed in order to introduce suitable **delays**. However,
+it seems that (most) Hitachi 6845 clones include a **skew** option, suitably delaying
+both `DEN` and `CUR` signals.
 
-_last modified 20190704-1300_
+_last modified 20190704-1852_
