@@ -55,6 +55,11 @@ fastest!) way is using a 74HC32 quad-OR gate as follows:
 Just like the original design, a pulled-down jumper on `DEN` (before the inverter!)
 allows _quick-and-dirty_ operation if desired.
 
+Alrernatively, if _arbitration_ (id est, the _RDY generation_ circuit) is not needed,
+the **read-disable** feature may be implemented by using a 74HC13**8** instead of a
+'139, applying `R/W` to the extra address input. _This will save the 74HC32_ and one
+of the inverters.
+
 **CRTC select** (74HC133):
 
 - one input is the _inverted_ VRAM select (needs an inverter)
@@ -117,4 +122,4 @@ allows _quick-and-dirty_ operation if desired.
 
 Some _capacitors_ might be needed in order to introduce suitable **delays**.
 
-_last modified 20190703-0944_
+_last modified 20190704-1300_
