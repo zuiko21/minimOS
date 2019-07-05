@@ -8,9 +8,9 @@ Includes 8 kiB of _write-only_ VRAM (CPU must keep a copy into its own RAM for r
 The VRAM address range is selectable:
 
 1) `$0000-$1FFF` (**not** recommended as will include _zeropage & stack_)
-1) `$2000-$3FFF`
+1) `$2000-$3FFF` (preferred for 16K systems)
 1) `$4000-$5FFF`
-1) `$6000-$7FFF` (preferred)
+1) `$6000-$7FFF` (preferred for 32K systems)
 
 The last two bytes of the selected block (`$1FFE-$1FFF`, `$3FFE-3FFF$`, `$5FFE-$5FFF` or
 `$7FFE-$7FFF`) are reserved for the **CRTC registers**. As most of them are **write-only**
@@ -28,7 +28,7 @@ OR gates.
 
 **VRAM select** (1/2 74HC139):
 
-- `A15` to `/G`
+- `A15` to `/G` (or could use `R/W` instead, see below)
 - `A13-A14` to inputs
 - `/SEL` output comes from one of its `/Yn` outputs (`/Y0` **not** recommended)
 
@@ -43,7 +43,7 @@ Original **RDY generation** (1/2 74HC139, _optional_):
 - valid `/SEL` from `/Y0`
 
 In case _quick and dirty_ operation is desired, a jumper disconnecting the received
-`DEN` signal is to be used (with pulldown for `A1`).
+`DEN` signal is to be used (with pulldown for `A1` input).
 
 But, as previously stated, it pays to **disable _read_ operations**. The simplest (and
 fastest!) way is using a 74HC32 quad-OR gate as follows:
@@ -129,4 +129,4 @@ Some _capacitors_ might be needed in order to introduce suitable **delays**. How
 it seems that (most) Hitachi 6845 clones include a **skew** option, suitably delaying
 both `DEN` and `CUR` signals.
 
-_last modified 20190704-1852_
+_last modified 20190705-2355_
