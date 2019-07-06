@@ -43,10 +43,11 @@ Original **RDY generation** (1/2 74HC139, _optional_):
 - valid `/SEL` from `/Y0`
 
 In case _quick and dirty_ operation is desired, a jumper disconnecting the received
-`DEN` signal is to be used (with pulldown for `A1` input).
+`DEN` signal is to be used (with pulldown for `A1` input). **RDY generation is
+_useless_ for NMOS 6502 systems!**
 
-But, as previously stated, it pays to **disable _read_ operations**. The simplest (and
-fastest!) way is using a 74HC32 quad-OR gate as follows:
+But, as previously stated, it pays to **disable _read_ operations**. One simple (and
+fast!) way is using a 74HC32 quad-OR gate as follows:
 
 - `A15` + **`R/W`**, output goes to `/G` on VRAM select (instead of `A15` alone)
 - `/SEL` + `DEN`, output creates _valid_ `/SEL` (in case of RDY generation)
@@ -59,6 +60,8 @@ Alrernatively, if _arbitration_ (id est, the _RDY generation_ circuit) is not ne
 the **read-disable** feature may be implemented by using a 74HC13**8** instead of a
 '139, applying `R/W` to the extra address input. _This will save the 74HC32_ and one
 of the inverters.
+
+_**Preferred option:**_
 
 Then, another option arises, implementing both **read disable** and **RDY generation**
 features thru the use of a _single 74HC139_. It will be wired as initially, but using
@@ -129,4 +132,4 @@ Some _capacitors_ might be needed in order to introduce suitable **delays**. How
 it seems that (most) Hitachi 6845 clones include a **skew** option, suitably delaying
 both `DEN` and `CUR` signals.
 
-_last modified 20190705-2355_
+_last modified 20190706-1604_
