@@ -99,12 +99,24 @@ this is usually ROM and reads are anyway disabled, no ill effects are expected.
 **CRTC** (6845):
 
 - `MA0-MA9` go to VRAM address lines **thru 1 K resistors**
-- `RA1-RA3` go to VRAM `A10-A12`, respectively (note offset)
+- `RA1-RA3` go to VRAM `A10-A12`, respectively, again with **resistors** (note offset)
 - CPU interface (`Dx, RS, E`) as usual, `/CS` as previously described
 - sync outputs and `CUR` go to the output stage
-- `DEN` goes to blanking gate
+- `DEN` goes to blanking gate (and optionally to RDY generator)
 - `CLK` as described, from clock divider
 
+This `Amstrad-like` layout is the same as the one used on the
+[Acapulco computer](acapulco.md) but, since this board maps the CRTC I/O _into_
+VRAM address range, **no _hardware scrolling_** will be available. Thus, a _C64-like_
+layout might be preferred, as that will simplify the software somewhat -- at least for
+text rendering. In this case, address lines are mapped as follows, the remaining
+connections being the same:
+
+- `RA1-RA3` to VRAM `A0-A2` (note offset)
+- `MA0-MA9` to VRAM `A3-A12`
+
+Always **thru 1 K resistors**.
+ 
 **VRAM** (6264):
 
 - address lines as described
@@ -132,4 +144,4 @@ Some _capacitors_ might be needed in order to introduce suitable **delays**. How
 it seems that (most) Hitachi 6845 clones include a **skew** option, suitably delaying
 both `DEN` and `CUR` signals.
 
-_last modified 20190706-1604_
+_last modified 20190707-1014_
