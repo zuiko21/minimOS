@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190708-1315
+; last modified 20190708-1537
 
 #include "../usual.h"
 
@@ -204,15 +204,16 @@ vat_xok:
 
 ; * * take byte as FG colour * * set inverse if zero!
 vch_ink:
+	_STZX va_col			; clear flag before!
 	TAX					; check whether zero
 	BNE vch_cend			; no, just ignore
 		_BRA vch_so			; yes, enable inverse
 ; * * take byte as BG colour * * disable inverse if zero (vch_ink reuses some code)
 vch_papr:
+	_STZX va_col			; clear flag before!
 	TAX					; check whether zero
 		BEQ vch_si			; yes, disable inverse
 vch_cend:
-	_STZA va_col			; clear flag and we are done
 	RTS						; *** no need for DR_OK as BCS is not being used
 
 ; ** check whether control char or printable **
