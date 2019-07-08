@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190707-1848
+; last modified 20190708-1315
 
 #include "../usual.h"
 
@@ -202,12 +202,18 @@ vat_xok:
 	JSR vch_scs			; set cursor
 		_BRA va_mbres		; reset flag and we are done
 
-; * * take byte as FG colour * * ignore!
+; * * take byte as FG colour * * set inverse if zero!
 vch_ink:
-
-; * * take byte as BG colour * * (vch_ink reuses some code)
+	TAX					; check whether zero
+	BNE vch_cend			; no, just ignore
+		_BRA vch_so			; yes, enable inverse
+; * * take byte as BG colour * * disable inverse if zero (vch_ink reuses some code)
 vch_papr:
-	RTS					; *** no need for DR_OK as BCS is not being used
+	TAX					; check whether zero
+		BEQ vch_si			; yes, disable inverse
+vch_cend:
+	_STZA va_col			; clear flag and we are done
+	RTS						; *** no need for DR_OK as BCS is not being used
 
 ; ** check whether control char or printable **
 va_nbin:
@@ -427,9 +433,9 @@ va_c0:
 	.word	vch_si		; EOFF, true video
 	.word	vch_dcx		; DLE,  disable next control char
 	.word	vch_sc		; XON,  turn cursor on
-	.word	vch_dcx		; INK,  set foreground colour (uses another char)
+	.word	vch_dcx		; INK,  set foreground colour (set inverse video if zero)
 	.word	vch_hc		; XOFF, turn cursor off
-	.word	vch_dcx		; PAPR, set background colour (uses another char)
+	.word	vch_dcx		; PAPR, set background colour (disable inverse video if zero)
 	.word	va_home		; HOME, move cursor to top left without clearing
 	.word	va_cls		; PGDN, page down, may issue a FF
 	.word	vch_dcx		; ATYX, takes two more chars!
@@ -450,8 +456,8 @@ va_xtb:
 ; new table for extra-byte codes
 ; note offset as managed X codes are 16, 18, 20 and 23, thus padding byte
 	.word	vch_dle		; 16, process byte as glyph
-	.word	vch_ink		; 18, take byte as FG colour
-	.word	vch_papr	; 20, take byte as BG colour
+	.word	vch_ink		; 18, take byte as FG colour (discard if not zero)
+	.word	vch_papr	; 20, take byte as BG colour (discard if not zero)
 	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
 	.word	vch_atyx	; 23, expects row byte
 	.word	vch_atcl	; 25, expects column byte, note it is no longer 24!
