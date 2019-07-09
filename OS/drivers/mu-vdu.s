@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190709-1511
+; last modified 20190709-1906
 
 #include "../usual.h"
 
@@ -171,7 +171,7 @@ va_char:
 	BEQ va_nbin			; if not, continue with regular code
 		_JMPX(va_xtb-16)	; otherwise process accordingly (using another table, note offset)
 
-; *** *** much closer control code, may be elsewhere *** ***
+; *** *** much closer controlý code, may be elsewhere *** ***
 ; * * expects row byte... * *
 vch_atyx:
 	SEC
@@ -336,21 +336,24 @@ vch_sh:
 ;	DEC					; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
 ; create local destination pointer
+	_STZA v_dest+1			; clear this MSB
 	LDA va_y			; current absolute row
 ; multiply by 36 (32+4), change code if different width
 	ASL
 	ASL					; times 4
 	STA va_col			; store 4x
 	ASL
-; must check carry! TO DO TO DO
+; must check carry!
 	ASL
+	ROL va_dest+1
 	ASL					; times 32
+	ROL va_dest+1
 	CLC
 	ADC va_col			; 32y + 4y = 36y
-
-	ADC va_x			; and now add column offset
 	STA v_dest			; will be destination pointer (3+3)
-	STY v_dest+1
+	LDA v_dest+1
+	ADC #>VA_BASE
+	STA v_dest+1
 ; copy from font to VRAM
 	LDY #VA_SCAN-1		; scanline counter (2)
 vch_pl:
