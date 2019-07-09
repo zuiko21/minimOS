@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190708-1537
+; last modified 20190709-1242
 
 #include "../usual.h"
 
@@ -36,6 +36,8 @@ va_err:
 
 ; *** define some constants ***
 	VA_BASE	= $6000		; screen start, could be $4000, $2000 or even $0!
+	VA_WDTH = 36			; screen size
+	VA_HGHT = 28			; screen size
 
 	VA_SCAN	= 8			; number of scanlines (pretty hardwired)
 
