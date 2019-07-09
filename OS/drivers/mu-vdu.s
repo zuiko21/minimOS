@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190709-1242
+; last modified 20190709-1511
 
 #include "../usual.h"
 
@@ -35,14 +35,16 @@ va_err:
 	_DR_ERR(UNAVAIL)	; unavailable function
 
 ; *** define some constants ***
-	VA_BASE	= $6000		; screen start, could be $4000, $2000 or even $0!
+	VA_BASE	= $6000		; screen start, not necessarily 8K-aligned if smaller screen
+	VA_END	= $7FFF		; must specify last address, in case the whole 8K block is not used
+
 	VA_WDTH = 36			; screen size
 	VA_HGHT = 28			; screen size
 
 	VA_SCAN	= 8			; number of scanlines (pretty hardwired)
 
-	crtc_rs	= VA_BASE+$1FFE		; *** 6845 addresses at VRAM end ***
-	crtc_da	= VA_BASE+$1FFF
+	crtc_rs	= VA_END-1		; *** 6845 addresses at VRAM end ***
+	crtc_da	= VA_END
 
 
 ; define SEPARATORS in order to use a shorter table by letting 28-31 as printable!
@@ -52,45 +54,42 @@ va_err:
 	v_dest	= $E8		; generic writes, was local2, perhaps including this on zeropage.h? aka ptc
 	v_src	= $EA		; font read, is this OK? aka ptl
 
-; do these need to be in zeropage? *** NEEDED?
-	vs_mask	= $E4		; *** local 1, splash screen only ***
-	vs_cnt	= $E5		; line counter
-
 ; ************************
 ; *** initialise stuff *** should create line addresses table...
 ; ************************
 va_init:
-; must set up CRTC first, depending on selected video mode!
-	LDX #0				; separate counter
-; reset inverse video mask!
-	STX va_xor			; clear mask is true video
+; first must make sure desired address range is free! TO DO TO DO
+
+; must set up CRTC
+	LDX #11				; last common register
 ; load 6845 CRTC registers
 vi_crl:
 		STX crtc_rs			; select this register
-		LDA va_data, Y		; get value for it
+		LDA va_data, X		; get value for it
 		STA crtc_da			; set value
-		INX					; next address
-		CPX #12				; last register done?
-		BNE vi_crl			; continue otherwise
+		DEX					; next address
+		BPL vi_crl			; continue until done
+	INX
+; reset inverse video mask! X is 0
+	STX va_xor			; clear mask is true video
+	STX va_cur			; eeeeeeeeeeeeek
 ; new, set RAM pointer to supplied font!
 	LDA #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
 	STA va_font			; store locally (4)
 	LDA #>vs_font		; same for MSB (2+4) *** ditto for flexibility
 	STA va_font+1
-; software cursor will be set by CLS routine!
-;	CLC					; just in case there is no splash code
-	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
+; start address and software cursor will be set by CLS routine!
 
+; CLC makes little sense even if there is no splash code
+;	JSR va_cls			; reuse code from Form Feed, but needs to return for the SPLASH screen!
 ; **************************
 ; *** splash screen code ***
 ; **************************
-
 ; ****************************
 ; *** end of splash screen ***
 ; ****************************
-
 ; if not used may just use CLC above and let it fall into CLS routine ***
-	_DR_OK				; installation succeeded
+;	_DR_OK				; installation succeeded
 
 ; ***************************************
 ; *** routine for clearing the screen ***
@@ -98,9 +97,6 @@ vi_crl:
 va_cls:
 	LDA #>VA_BASE		; base address (2+2) NOT necessarily page aligned!
 	LDY #<VA_BASE
-	LDX #0					; reset index (2)
-	STX va_x			; ...plus coordinates as well (4+4)
-	STX va_y
 ; must set this as start & cursor address!
 	LDX #12				; CRTC screen start register, then comes cursor address (2)
 vc_crs:					; * this loops takes 49t *
@@ -113,25 +109,28 @@ vc_crs:					; * this loops takes 49t *
 		CPX #16				; all done? (2+3 twice, minus 1)
 		BNE vc_crs
 ; clear VRAM area
+	LDX #0					; reset index (2)
+	STX va_x			; ...plus coordinates as well (4+4)
+	STX va_y
+	STX v_dest			; keep LSB zero as will use Y as index
 	STA v_dest+1			; set pointer MSB (3)
-	LDA #0					; clear value, as no STX (zp), Y
-	STA v_dest			; keep LSB zero as will use Y as index
+	TXA					; clear value, as no STX (zp), Y
 vcl_c:
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2+3)
 		BNE vcl_c
 			INC v_dest+1		; check following page eeeeeeeeek (5)
 			LDX v_dest+1		; how far are we? (3) eeeeeeeeeeek
-			CPX #>VA_BASE+$1F		; already at last page? (2)
+			CPX #>VA_END		; already at last page? (2)
 		BNE vcl_c			; no, continue as usual (3)
 ; otherwise, do not fill the whole page as will affect the 6845!
 ; this takes 7 bytes & 3047 clocks
 vcl_l:
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2)
-		CPY #$1E			; all except last two? (2+3)
+		CPY #<VA_END			; all except last two? (2+3)
 		BNE vcl_l
-	RTS
+	_EXIT_OK			; worth it as comparisons set C
 
 ; *********************************
 ; *** print block of characters *** mandatory loop
@@ -179,7 +178,7 @@ vch_atyx:
 	SBC #' '			; from space and beyond
 ; compute new Y pointer...
 #ifdef	SAFE
-	CMP va_hght			; over screen size?
+	CMP #VA_HGHT			; over screen size?
 	BCC vat_yok
 		_DR_ERR(INVALID)	; ignore if outside range
 vat_yok:
@@ -195,7 +194,7 @@ vch_atcl:
 	SBC #' '			; from space and beyond
 ; add X and set cursor...
 #ifdef	SAFE
-	CMP va_wdth			; over screen size?
+	CMP #VA_WDTH			; over screen size?
 	BCC vat_xok
 		_DR_ERR(INVALID)	; ignore if outside range
 vat_xok:
@@ -281,7 +280,7 @@ vcl_nl:
 ; * * cursor right * * also used by normal printing
 vch_rght:
 	INC va_x			; point to following column
-	CMP va_wdth			; over line length?
+	CMP #VA_WDTH			; over line length?
 	BNE va_rtnw
 		_STZX va_x			; if so, back to left...
 ; ...and fall into cursor down!
@@ -338,7 +337,17 @@ vch_sh:
 	STA v_src+1			; is source pointer (3)
 ; create local destination pointer
 	LDA va_y			; current absolute row
-; TO DO TO DO TO DO.......
+; multiply by 36 (32+4), change code if different width
+	ASL
+	ASL					; times 4
+	STA va_col			; store 4x
+	ASL
+; must check carry! TO DO TO DO
+	ASL
+	ASL					; times 32
+	CLC
+	ADC va_col			; 32y + 4y = 36y
+
 	ADC va_x			; and now add column offset
 	STA v_dest			; will be destination pointer (3+3)
 	STY v_dest+1
@@ -357,12 +366,11 @@ vch_scs:
 ; check whether scrolling is needed *** RECOMPUTE USING TABLE
 ; it is assumed that only UPCU may issue a scroll up, thus not checked here
 	LDA va_y		; actual row
-	CMP va_hght		; over last line?
+	CMP #VA_HGHT		; over last line?
 	BNE vch_ok		; no, just exit (3/2)
 
 vch_ok:
 ; set cursor position from separate coordinates, might be inlined
-; access to circular array is worth a subroutine?
 	LDA va_y			; current absolute row
 ; TODO TODO TODO
 vsc_cok:
@@ -388,7 +396,7 @@ va_tab:
 	AND #%11111000		; modulo 8 (2+2)
 	CLC
 	ADC #8				; increment target position (2)
-	CMP va_wdth			; over the limit?
+	CMP #VA_WDTH			; over the limit?
 	BCC vtb_l
 		LDA #0
 vtb_l:
@@ -480,17 +488,8 @@ va_data:
 	.byt 13				; R5, total raster adjust
 	.byt 28				; R6, vertical displayed chars
 	.byt 28				; R7, VSYNC position - 1
-
-; *** values for 24.576 MHz dot clock *** 32 kHz Hsync, 60.95 Hz Vsync
-; mode 5 (aka 36/48) is 288x224 (36x28) 1-6-3, most likely compatible
-	.byt 47				; R0, horizontal total chars - 1
-	.byt 36				; R1, horizontal displayed chars
-	.byt 39				; R2, HSYNC position - 1
-	.byt 38				; R3, HSYNC width (may have VSYNC in MSN) =6
-	.byt 31				; R4, vertical total chars - 1
-	.byt 13				; R5, total raster adjust
-	.byt 28				; R6, vertical displayed chars
-	.byt 28				; R7, VSYNC position - 1
+	.byt 50				; R8, non-interlaced and 1 ch. skew
+	.byt 15				; R9, maximum raster - 1
 
 ; *** glyphs ***
 vs_font:
