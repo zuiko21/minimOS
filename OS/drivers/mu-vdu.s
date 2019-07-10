@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190709-1906
+; last modified 20190710-1646
 
 #include "../usual.h"
 
@@ -61,7 +61,7 @@ va_init:
 ; first must make sure desired address range is free! TO DO TO DO
 
 ; must set up CRTC
-	LDX #11				; last common register
+	LDX #13				; last common register
 ; load 6845 CRTC registers
 vi_crl:
 		STX crtc_rs			; select this register
@@ -72,7 +72,7 @@ vi_crl:
 	INX
 ; reset inverse video mask! X is 0
 	STX va_xor			; clear mask is true video
-	STX va_cur			; eeeeeeeeeeeeek
+	STX va_col			; reset flag eeeeeeeeeeeeek
 ; new, set RAM pointer to supplied font!
 	LDA #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
 	STA va_font			; store locally (4)
@@ -97,17 +97,13 @@ vi_crl:
 va_cls:
 	LDA #>VA_BASE		; base address (2+2) NOT necessarily page aligned!
 	LDY #<VA_BASE
-; must set this as start & cursor address!
-	LDX #12				; CRTC screen start register, then comes cursor address (2)
-vc_crs:					; * this loops takes 49t *
-		STX crtc_rs
-		STA crtc_da			; set MSB... (4+4)
-		INX					; next register (2)
-		STX crtc_rs
-		STY crtc_da			; ...and LSB (4+4)
-		INX					; try next value (2)
-		CPX #16				; all done? (2+3 twice, minus 1)
-		BNE vc_crs
+; reset cursor
+	LDX #14				; CRTC cursor address register (2)
+	STX crtc_rs
+	STA crtc_da			; set MSB... (4+4)
+	INX					; next register (2)
+	STX crtc_rs
+	STY crtc_da			; ...and LSB (4+4)
 ; clear VRAM area
 	LDX #0					; reset index (2)
 	STX va_x			; ...plus coordinates as well (4+4)
@@ -201,7 +197,8 @@ vat_xok:
 #endif
 	STA va_x			; coordinates are set
 	JSR vch_scs			; set cursor
-		_BRA va_mbres		; reset flag and we are done
+	_STZA va_col			; reset flag and we are done
+	RTS
 
 ; * * take byte as FG colour * * set inverse if zero!
 vch_ink:
@@ -336,12 +333,14 @@ vch_sh:
 ;	DEC					; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
 ; create local destination pointer
+; **************************************************************
+; *** original code is 49b, <89t ***
 	_STZA v_dest+1			; clear this MSB
 	LDA va_y			; current absolute row
-; multiply by 36 (32+4), change code if different width
+; *** multiply by 36 (32+4) ** change code if different width **
 	ASL
 	ASL					; times 4
-	STA va_col			; store 4x
+	STA va_dest			; store 4x
 	ASL
 ; must check carry!
 	ASL
@@ -349,11 +348,29 @@ vch_sh:
 	ASL					; times 32
 	ROL va_dest+1
 	CLC
-	ADC va_col			; 32y + 4y = 36y
+	ADC va_dest			; 32y + 4y = 36y
+	BCC vch_mu			; add this carry before adding X
+		INC va_dest+1
+		CLC
+vch_mu:
+	ADC va_x			; add X... but must multiply by 8!
+	BCC vch_ax			; add this carry before adding X
+		INC va_dest+1
+		CLC
+vch_ax:
+	ASL				; multiply by 8
+	ROL va_dest+1
+	ASL
+	ROL va_dest+1
+	ASL
+	ROL va_dest+1			; C is clear
+; above code surely can be simplified!
 	STA v_dest			; will be destination pointer (3+3)
 	LDA v_dest+1
 	ADC #>VA_BASE
 	STA v_dest+1
+; *** alternatives? ***
+; *********************************************************
 ; copy from font to VRAM
 	LDY #VA_SCAN-1		; scanline counter (2)
 vch_pl:
@@ -366,7 +383,7 @@ vch_pl:
 ; printing is done, now advance current position
 	JMP vch_rght		; *** this is actually cursor right! ***
 vch_scs:
-; check whether scrolling is needed *** RECOMPUTE USING TABLE
+; check whether scrolling is needed
 ; it is assumed that only UPCU may issue a scroll up, thus not checked here
 	LDA va_y		; actual row
 	CMP #VA_HGHT		; over last line?
@@ -491,8 +508,13 @@ va_data:
 	.byt 13				; R5, total raster adjust
 	.byt 28				; R6, vertical displayed chars
 	.byt 28				; R7, VSYNC position - 1
-	.byt 50				; R8, non-interlaced and 1 ch. skew
+	.byt $50			; R8, non-interlaced and 1 ch. skew
 	.byt 15				; R9, maximum raster - 1
+	.byt 32				; R10, cursor start raster & blink/disable
+	.byt 15				; R11, cursor end raster
+	.byt >VA_BASE		; R12, start address MSB
+	.byt <VA_BASE		; R13, start address LSB
+; cursor address (R14-R15) to be set by CLS
 
 ; *** glyphs ***
 vs_font:
