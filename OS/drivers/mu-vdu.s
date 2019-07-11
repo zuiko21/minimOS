@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190711-1436
+; last modified 20190711-1453
 
 #include "../usual.h"
 
@@ -87,7 +87,7 @@ vi_crl:
 ; ****************************
 ; *** end of splash screen ***
 ; ****************************
-; if not used may just use CLC above and let it fall into CLS routine ***
+; if not used may just let it fall into CLS routine ***
 ;	_DR_OK				; installation succeeded
 
 ; ***************************************
@@ -196,9 +196,8 @@ vch_atcl:
 vat_xok:
 #endif
 	STA va_x			; coordinates are set
-	JSR vch_scs			; set cursor
-	_STZA va_col			; reset flag and we are done
-	RTS
+	_STZA va_col			; reset flag
+	JMP vch_scs			; set cursor... and return
 
 ; * * take byte as FG colour * * set inverse if zero!
 vch_ink:
@@ -340,30 +339,30 @@ vch_sh:
 ; *** multiply by 36 (32+4) ** change code if different width **
 	ASL
 	ASL					; times 4
-	STA va_dest			; store 4x
+	STA v_dest			; store 4x
 	ASL
 ; must check carry!
 	ASL
-	ROL va_dest+1
+	ROL v_dest+1
 	ASL					; times 32
-	ROL va_dest+1
+	ROL v_dest+1
 	CLC
-	ADC va_dest			; 32y + 4y = 36y
+	ADC v_dest			; 32y + 4y = 36y
 	BCC vch_mu			; add this carry before adding X
-		INC va_dest+1
+		INC v_dest+1
 		CLC
 vch_mu:
 	ADC va_x			; add X... but must multiply by 8!
 	BCC vch_ax			; add this carry before adding X
-		INC va_dest+1
+		INC v_dest+1
 		CLC
 vch_ax:
 	ASL				; multiply by 8
-	ROL va_dest+1
+	ROL v_dest+1
 	ASL
-	ROL va_dest+1
+	ROL v_dest+1
 	ASL
-	ROL va_dest+1			; C is clear
+	ROL v_dest+1			; C is clear
 ; above code surely can be simplified!
 	STA v_dest			; will be destination pointer (3+3)
 	LDA v_dest+1
@@ -388,7 +387,43 @@ vch_scs:
 	LDA va_y		; actual row
 	CMP #VA_HGHT		; over last line?
 	BNE vch_ok		; no, just exit (3/2)
+; *** *** scroll routine *** ***
+		DEC va_y		; scrolling moves cursor up (6)
+; pointer setup
+		LDY #>VA_BASE		; base address (2+2) NOT necessarily page aligned!
+		LDA #<VA_BASE		; note unusual register assignment
+		STY v_dest+1		; set pointer MSB (3)
+		STA v_dest		; destination is ready... (3)
+		LDA #VA_WDTH		; computing offset (2)
+		ASL
+		ASL
+		ASL				; each char is 8 bytes (2x3) might set C
+		BCC vsc_wc		; most likely set unless <32 cols. (2)
+			INY				; if set, increment MSB (2+2)
+			CLC
+vsc_wc:
+		ADC v_dest		; non-aligned base LSB (3)
+		STA v_src		; next line address (3)
+		BCC vsc_mc		; unlikely unless non-aligned (3)
+			INY				; if set, increment MSB (...2+2)
+			CLC
+vsc_mc:
+		STY v_src+1		; both pointers set (3)
+; scrolling loop
+		LDY #0			; reset index (2)
+		LDX #>VA_END
+vsc_dl:
+			LDA (v_src), Y	; transfer value (5)
+			STA (v_dest), Y	; (5)
+			INY				; next (2)
+			BNE vsc_dl		; complete page (3)
+				INC v_src+1		; or next page (5+5)
+				INC v_dest+1
+				CPX v_dest+1		; check MSB, stub (3)
+			BNE vsc_dl		; next page (3)
+; muat refine end and clear last visible line TO DO TO DO TO DO
 
+; *** *** end of scroll routine *** ***
 vch_ok:
 ; set cursor position from separate coordinates, might be inlined
 	LDA va_y			; current absolute row
