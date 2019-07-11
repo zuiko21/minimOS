@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190711-1332
+; last modified 20190711-1436
 
 #include "../usual.h"
 
@@ -91,9 +91,10 @@ vi_crl:
 ;	_DR_OK				; installation succeeded
 
 ; ***************************************
-; *** routine for clearing the screen ***
+; *** routine for clearing the screen *** takes 82766t for full 8K screen
 ; ***************************************
 va_cls:
+; initial stuff takes 42t
 	LDA #>VA_BASE		; base address (2+2) NOT necessarily page aligned!
 	LDY #<VA_BASE
 ; reset cursor
@@ -104,28 +105,28 @@ va_cls:
 	STX crtc_rs
 	STY crtc_da			; ...and LSB (4+4)
 ; clear VRAM area
-	LDX #0					; reset index (2)
-	STX va_x			; ...plus coordinates as well (4+4)
-	STX va_y
-	STX v_dest			; keep LSB zero as will use Y as index
 	STA v_dest+1			; set pointer MSB (3)
-	TXA					; clear value, as no STX (zp), Y
+	LDA #0				; clear value (2), as no STZ (zp), Y
+	STA va_x			; ...plus coordinates as well (4+4)
+	STA va_y
+	STA v_dest			; keep LSB zero as will use Y as index (3)
+	LDX #>VA_END			; store last page (2)
+; main loop takes (2559+11)x31-1 = 79669t
 vcl_c:
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2+3)
 		BNE vcl_c
-			INC v_dest+1		; check following page eeeeeeeeek (5)
-			LDX v_dest+1		; how far are we? (3) eeeeeeeeeeek
-			CPX #>VA_END		; already at last page? (2)
-		BNE vcl_c			; no, continue as usual (3)
+			INC v_dest+1			; check following page eeeeeeeeek (5)
+			CPX v_dest+1			; already at last page? (3)
+			BNE vcl_c			; no, continue as usual (3)
 ; otherwise, do not fill the whole page as will affect the 6845!
 ; this takes 7 bytes & 3047 clocks
 vcl_l:
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2)
-		CPY #<VA_END			; all except last two? (2+3)
+		CPY #<VA_END-1			; all except last two? (2+3)
 		BNE vcl_l
-	_EXIT_OK			; worth it as comparisons set C
+	_EXIT_OK			; worth it as comparisons set C (8)
 
 ; *********************************
 ; *** print block of characters *** mandatory loop
