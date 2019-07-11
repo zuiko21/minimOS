@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190710-1646
+; last modified 20190711-1332
 
 #include "../usual.h"
 
@@ -60,23 +60,22 @@ va_err:
 va_init:
 ; first must make sure desired address range is free! TO DO TO DO
 
-; must set up CRTC
-	LDX #13				; last common register
 ; load 6845 CRTC registers
+	LDX #13				; last common register
 vi_crl:
 		STX crtc_rs			; select this register
 		LDA va_data, X		; get value for it
 		STA crtc_da			; set value
 		DEX					; next address
 		BPL vi_crl			; continue until done
-	INX
-; reset inverse video mask! X is 0
+	INX					; make sure X is zero
+; reset flags! X is 0
 	STX va_xor			; clear mask is true video
 	STX va_col			; reset flag eeeeeeeeeeeeek
 ; new, set RAM pointer to supplied font!
-	LDA #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
-	STA va_font			; store locally (4)
-	LDA #>vs_font		; same for MSB (2+4) *** ditto for flexibility
+	LDY #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
+	LDA #>vs_font		; same for MSB (2)
+	STY va_font			; store locally (4+4)
 	STA va_font+1
 ; start address and software cursor will be set by CLS routine!
 
