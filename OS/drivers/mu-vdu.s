@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190711-1453
+; last modified 20190712-1925
 
 #include "../usual.h"
 
@@ -36,15 +36,21 @@ va_err:
 
 ; *** define some constants ***
 	VA_BASE	= $6000		; screen start, not necessarily 8K-aligned if smaller screen
-	VA_END	= $7FFF		; must specify last address, in case the whole 8K block is not used
+	VA_TOP	= $7FFF		; must specify last address, in case the whole 8K block is not used
 
 	VA_WDTH = 36			; screen size
 	VA_HGHT = 28			; screen size
 
+	VA_NEXT	= $6120		; second line address, for scroll routines (depends on above values)
+	VA_LAST	= $7E60		; last line address, for scroll routines (depends on above values)
+	VA_END	= $7F80		; first free address on VRAM (depends on above values)
+
 	VA_SCAN	= 8			; number of scanlines (pretty hardwired)
 
-	crtc_rs	= VA_END-1		; *** 6845 addresses at VRAM end ***
-	crtc_da	= VA_END
+	VA_BPL	= VA_WDTH*VA_SCAN	; number of bytes per row
+
+	crtc_rs	= VA_TOP-1		; *** 6845 addresses at VRAM end ***
+	crtc_da	= VA_TOP
 
 
 ; define SEPARATORS in order to use a shorter table by letting 28-31 as printable!
@@ -71,7 +77,7 @@ vi_crl:
 	INX					; make sure X is zero
 ; reset flags! X is 0
 	STX va_xor			; clear mask is true video
-	STX va_col			; reset flag eeeeeeeeeeeeek
+	STX va_flag			; reset flag eeeeeeeeeeeeek
 ; new, set RAM pointer to supplied font!
 	LDY #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
 	LDA #>vs_font		; same for MSB (2)
@@ -91,7 +97,7 @@ vi_crl:
 ;	_DR_OK				; installation succeeded
 
 ; ***************************************
-; *** routine for clearing the screen *** takes 82766t for full 8K screen
+; *** routine for clearing the screen *** takes less than 82766t for full 8K screen
 ; ***************************************
 va_cls:
 ; initial stuff takes 42t
@@ -111,7 +117,7 @@ va_cls:
 	STA va_y
 	STA v_dest			; keep LSB zero as will use Y as index (3)
 	LDX #>VA_END			; store last page (2)
-; main loop takes (2559+11)x31-1 = 79669t
+
 vcl_c:
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2+3)
@@ -120,11 +126,10 @@ vcl_c:
 			CPX v_dest+1			; already at last page? (3)
 			BNE vcl_c			; no, continue as usual (3)
 ; otherwise, do not fill the whole page as will affect the 6845!
-; this takes 7 bytes & 3047 clocks
 vcl_l:
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2)
-		CPY #<VA_END-1			; all except last two? (2+3)
+		CPY #<VA_END			; all visible? (2+3)
 		BNE vcl_l
 	_EXIT_OK			; worth it as comparisons set C (8)
 
@@ -163,11 +168,11 @@ va_rts:
 va_char:
 	LDA io_c			; get char (3)
 ; ** first of all, check whether was waiting for an extra byte (or two) **
-	LDX va_col			; something being set?
+	LDX va_flag			; something being set?
 	BEQ va_nbin			; if not, continue with regular code
 		_JMPX(va_xtb-16)	; otherwise process accordingly (using another table, note offset)
 
-; *** *** much closer controlý code, may be elsewhere *** ***
+; *** *** much closer control code, may be elsewhere *** ***
 ; * * expects row byte... * *
 vch_atyx:
 	SEC
@@ -180,8 +185,8 @@ vch_atyx:
 vat_yok:
 #endif
 	STA va_y			; set new value
-	INC va_col			; flag expects second coordinate... routine pointer placed TWO bytes after!
-	INC va_col
+	INC va_flag			; flag expects second coordinate... routine pointer placed TWO bytes after!
+	INC va_flag
 	_DR_OK				; just wait for the next coordinate
 
 ; * * ...and then expects column byte, note it is now 25, no longer 24! * *
@@ -196,18 +201,18 @@ vch_atcl:
 vat_xok:
 #endif
 	STA va_x			; coordinates are set
-	_STZA va_col			; reset flag
+	_STZA va_flag			; reset flag
 	JMP vch_scs			; set cursor... and return
 
 ; * * take byte as FG colour * * set inverse if zero!
 vch_ink:
-	_STZX va_col			; clear flag before!
+	_STZX va_flag			; clear flag before!
 	TAX					; check whether zero
 	BNE vch_cend			; no, just ignore
 		_BRA vch_so			; yes, enable inverse
 ; * * take byte as BG colour * * disable inverse if zero (vch_ink reuses some code)
 vch_papr:
-	_STZX va_col			; clear flag before!
+	_STZX va_flag			; clear flag before!
 	TAX					; check whether zero
 		BEQ vch_si			; yes, disable inverse
 vch_cend:
@@ -224,17 +229,17 @@ va_nbin:
 ; **** identify possible control codes ****
 	ASL					; character code times two
 	TAX					; is now an index
-		_JMPX(va_c0)		; new, operate according to C0 code table
+	_JMPX(va_c0)		; new, operate according to C0 code table
 
 ; *** *** much closer control routines, can be placed anywhere *** ***
 ; * * EON (inverse video) * *
 vch_so:
 	LDA #$FF			; mask for reverse video
-	BNE vso_xor			; set mask and finish, no need for BRA
+		BNE vso_xor			; set mask and finish, no need for BRA
 
 ; * * EOF (true video) * * vch_so reuses some code
 vch_si:
-		LDA #0				; mask for true video eeeeeeeeeek
+	LDA #0				; mask for true video eeeeeeeeeek
 ; common code for EON & EOFF
 vso_xor:
 	STA va_xor			; set new mask
@@ -243,11 +248,11 @@ vso_xor:
 ; * * XON (cursor on) * *
 vch_sc:
 	LDA #96				; value for visible cursor, slowly blinking
-	BNE vc_set			; put this value on register, no need for BRA
+		BNE vc_set			; put this value on register, no need for BRA
 
 ; * * XOFF (cursor off) * * vch_sc reuses some code
 vch_hc:
-		LDA #32				; value for hidden cursor
+	LDA #32				; value for hidden cursor
 ; common code for XON & XOFF
 vc_set:
 	LDX #10				; CRTC cursor register
@@ -283,7 +288,7 @@ vch_rght:
 
 ; * * cursor down * *
 vch_down:
-		INC va_y			; advance row
+	INC va_y			; advance row
 va_rtnw:				; **** common exit point ***
 	JMP vch_scs			; update cursor and exit
 
@@ -299,13 +304,13 @@ vcu_nt:
 
 ; * * request for extra bytes * *
 vch_dcx:
-	STA va_col			; set flag if any colour or coordinate is to be set
+	STA va_flag			; set flag if any colour or coordinate is to be set
 	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 
 ; * * direct glyph printing (was above) * * should be close to actual printing
 vch_dle:				; * process byte as glyph *
-	_STZX va_col		; ...but reset flag! eeeeeeeek^2
-		_BRA vch_prn		; NMOS might use BEQ instead, but not for CMOS!
+	_STZX va_flag		; ...but reset flag! eeeeeeeek^2
+	_BRA vch_prn		; NMOS might use BEQ instead, but not for CMOS!
 
 ; * * non-printable neither accepted control, thus use substitution character * *
 vch_npr:
@@ -332,44 +337,23 @@ vch_sh:
 ;	DEC					; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
 ; create local destination pointer
-; **************************************************************
-; *** original code is 49b, <89t ***
-	_STZA v_dest+1			; clear this MSB
-	LDA va_y			; current absolute row
-; *** multiply by 36 (32+4) ** change code if different width **
+; original code was 49b, <89t
+; tables take 56 bytes (for 36x28 mode) but this code is 26b, <38t
+	LDX va_y		; current row
+	LDY vla_h, X		; is index for MSB table
+	LDA va_x		; current column
 	ASL
-	ASL					; times 4
-	STA v_dest			; store 4x
 	ASL
-; must check carry!
-	ASL
-	ROL v_dest+1
-	ASL					; times 32
-	ROL v_dest+1
-	CLC
-	ADC v_dest			; 32y + 4y = 36y
-	BCC vch_mu			; add this carry before adding X
-		INC v_dest+1
+	ASL			; 8 bytes per char
+	BCC vs_xnc		; if offset is over one page...
+		INY				; ...increment MSB
 		CLC
-vch_mu:
-	ADC va_x			; add X... but must multiply by 8!
-	BCC vch_ax			; add this carry before adding X
-		INC v_dest+1
-		CLC
-vch_ax:
-	ASL				; multiply by 8
-	ROL v_dest+1
-	ASL
-	ROL v_dest+1
-	ASL
-	ROL v_dest+1			; C is clear
-; above code surely can be simplified!
-	STA v_dest			; will be destination pointer (3+3)
-	LDA v_dest+1
-	ADC #>VA_BASE
-	STA v_dest+1
-; *** alternatives? ***
-; *********************************************************
+vs_xnc:
+	ADC vla_l, X		; add offset to table LSB
+	STA v_dest		; LSB is ready
+	TYA				; this is MSB
+	ADC #0			; add eventual carry
+	STA v_dest+1		; pointer is ready
 ; copy from font to VRAM
 	LDY #VA_SCAN-1		; scanline counter (2)
 vch_pl:
@@ -391,37 +375,39 @@ vch_scs:
 		DEC va_y		; scrolling moves cursor up (6)
 ; pointer setup
 		LDY #>VA_BASE		; base address (2+2) NOT necessarily page aligned!
-		LDA #<VA_BASE		; note unusual register assignment
+		LDA #<VA_BASE
 		STY v_dest+1		; set pointer MSB (3)
-		STA v_dest		; destination is ready... (3)
-		LDA #VA_WDTH		; computing offset (2)
-		ASL
-		ASL
-		ASL				; each char is 8 bytes (2x3) might set C
-		BCC vsc_wc		; most likely set unless <32 cols. (2)
-			INY				; if set, increment MSB (2+2)
-			CLC
-vsc_wc:
-		ADC v_dest		; non-aligned base LSB (3)
-		STA v_src		; next line address (3)
-		BCC vsc_mc		; unlikely unless non-aligned (3)
-			INY				; if set, increment MSB (...2+2)
-			CLC
-vsc_mc:
-		STY v_src+1		; both pointers set (3)
+		STA v_dest		; destination is ready (3)
+		LDY #>VA_NEXT		; second line address (2+2)
+		LDA #<VA_NEXT
+		STY v_src+1		; set pointer MSB (3)
+		STA v_src		; source is ready (3)
 ; scrolling loop
+		LDX #>VA_LAST	; screen limit for easier comparision (2)
 		LDY #0			; reset index (2)
-		LDX #>VA_END
 vsc_dl:
-			LDA (v_src), Y	; transfer value (5)
-			STA (v_dest), Y	; (5)
+			LDA (v_src), Y	; read source value... (5)
+			STA (v_dest), Y	; ...and copy it (5)
 			INY				; next (2)
 			BNE vsc_dl		; complete page (3)
-				INC v_src+1		; or next page (5+5)
+				INC v_src+1		; or jump to next page (5+5)
 				INC v_dest+1
-				CPX v_dest+1		; check MSB, stub (3)
-			BNE vsc_dl		; next page (3)
-; muat refine end and clear last visible line TO DO TO DO TO DO
+				CPX v_sec+1		; check page limit (3)
+			BNE vsc_dl		; not last, go for next page (3)
+; second loop for the very last bytes
+vsc_ll:
+			LDA (v_src), Y	; read source value... (5)
+			STA (v_dest), Y	; ...and copy it (5)
+			INY				; next (2)
+			CPY #<VA_LAST		; last byte of last page? (2)
+			BNE vsc_ll		; continue until the end (3)
+; clear last visible line
+		LDX #>VA_LAST		; last line address (2+2)
+		LDY #<VA_LAST
+		STX v_dest+1		; set pointer MSB (3)
+		STY v_dest		; pointer is ready (3)
+
+
 
 ; *** *** end of scroll routine *** ***
 vch_ok:
@@ -550,6 +536,71 @@ va_data:
 	.byt >VA_BASE		; R12, start address MSB
 	.byt <VA_BASE		; R13, start address LSB
 ; cursor address (R14-R15) to be set by CLS
+
+; *** line addresses tables ***
+; LSB
+vla_l:
+	.byt	<VA_BASE		; row 0 (or VA_BASE) is usually $6000
+	.byt	<VA_BASE+VA_BPL		; row 1 (or VA_NEXT) $6120
+	.byt	<VA_BASE+2*VA_BPL	; row 2 or $6240
+	.byt	<VA_BASE+3*VA_BPL	; row 3 or $6360
+	.byt	<VA_BASE+4*VA_BPL	; row 4 or $6480
+	.byt	<VA_BASE+5*VA_BPL	; row 5 or $65A0
+	.byt	<VA_BASE+6*VA_BPL	; row 6 or $66C0
+	.byt	<VA_BASE+7*VA_BPL	; row 7 or $67E0
+	.byt	<VA_BASE+8*VA_BPL	; row 8 or $6900
+	.byt	<VA_BASE+9*VA_BPL	; row 9 or $6A20
+	.byt	<VA_BASE+10*VA_BPL	; row 10 or $6B40
+	.byt	<VA_BASE+11*VA_BPL	; row 11 or $6C60
+	.byt	<VA_BASE+12*VA_BPL	; row 12 or $6D80
+	.byt	<VA_BASE+13*VA_BPL	; row 13 or $6EA0
+	.byt	<VA_BASE+14*VA_BPL	; row 14 or $6FC0
+	.byt	<VA_BASE+15*VA_BPL	; row 15 or $70E0
+	.byt	<VA_BASE+16*VA_BPL	; row 16 or $7200
+	.byt	<VA_BASE+17*VA_BPL	; row 17 or $7320
+	.byt	<VA_BASE+18*VA_BPL	; row 18 or $7440
+	.byt	<VA_BASE+19*VA_BPL	; row 19 or $7560
+	.byt	<VA_BASE+20*VA_BPL	; row 20 or $7680
+	.byt	<VA_BASE+21*VA_BPL	; row 21 or $77A0
+	.byt	<VA_BASE+22*VA_BPL	; row 22 or $78C0
+	.byt	<VA_BASE+23*VA_BPL	; row 23 or $79E0
+	.byt	<VA_BASE+24*VA_BPL	; row 24 or $7B00
+	.byt	<VA_BASE+25*VA_BPL	; row 25 or $7C20
+	.byt	<VA_BASE+26*VA_BPL	; row 26 or $7D40
+	.byt	<VA_BASE+27*VA_BPL	; row 27 (or VA_LAST) $7E60
+
+; MSB
+vla_h:
+	.byt	>VA_BASE		; row 0 (or VA_BASE) is usually $6000
+	.byt	>VA_BASE+VA_BPL		; row 1 (or VA_NEXT) $6120
+	.byt	>VA_BASE+2*VA_BPL	; row 2 or $6240
+	.byt	>VA_BASE+3*VA_BPL	; row 3 or $6360
+	.byt	>VA_BASE+4*VA_BPL	; row 4 or $6480
+	.byt	>VA_BASE+5*VA_BPL	; row 5 or $65A0
+	.byt	>VA_BASE+6*VA_BPL	; row 6 or $66C0
+	.byt	>VA_BASE+7*VA_BPL	; row 7 or $67E0
+	.byt	>VA_BASE+8*VA_BPL	; row 8 or $6900
+	.byt	>VA_BASE+9*VA_BPL	; row 9 or $6A20
+	.byt	>VA_BASE+10*VA_BPL	; row 10 or $6B40
+	.byt	>VA_BASE+11*VA_BPL	; row 11 or $6C60
+	.byt	>VA_BASE+12*VA_BPL	; row 12 or $6D80
+	.byt	>VA_BASE+13*VA_BPL	; row 13 or $6EA0
+	.byt	>VA_BASE+14*VA_BPL	; row 14 or $6FC0
+	.byt	>VA_BASE+15*VA_BPL	; row 15 or $70E0
+	.byt	>VA_BASE+16*VA_BPL	; row 16 or $7200
+	.byt	>VA_BASE+17*VA_BPL	; row 17 or $7320
+	.byt	>VA_BASE+18*VA_BPL	; row 18 or $7440
+	.byt	>VA_BASE+19*VA_BPL	; row 19 or $7560
+	.byt	>VA_BASE+20*VA_BPL	; row 20 or $7680
+	.byt	>VA_BASE+21*VA_BPL	; row 21 or $77A0
+	.byt	>VA_BASE+22*VA_BPL	; row 22 or $78C0
+	.byt	>VA_BASE+23*VA_BPL	; row 23 or $79E0
+	.byt	>VA_BASE+24*VA_BPL	; row 24 or $7B00
+	.byt	>VA_BASE+25*VA_BPL	; row 25 or $7C20
+	.byt	>VA_BASE+26*VA_BPL	; row 26 or $7D40
+	.byt	>VA_BASE+27*VA_BPL	; row 27 (or VA_LAST) $7E60
+
+; on 36x28 screens, $7F80-7FFD are free (last two used by CRTC I/O)
 
 ; *** glyphs ***
 vs_font:
