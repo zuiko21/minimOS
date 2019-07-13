@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190712-1925
+; last modified 20190713-1630
 
 #include "../usual.h"
 
@@ -116,8 +116,9 @@ va_cls:
 	STA va_x			; ...plus coordinates as well (4+4)
 	STA va_y
 	STA v_dest			; keep LSB zero as will use Y as index (3)
+vcl_do:
+; shared entry point with scrolling!
 	LDX #>VA_END			; store last page (2)
-
 vcl_c:
 		STA (v_dest), Y		; set this byte (5)
 		INY					; go for next (2+3)
@@ -406,9 +407,9 @@ vsc_ll:
 		LDY #<VA_LAST
 		STX v_dest+1		; set pointer MSB (3)
 		STY v_dest		; pointer is ready (3)
-
-
-
+		LDA #0			; clear value (2)
+		TAY				; reset index too (2)
+		JSR vcl_do		; finish clearing from CLS!
 ; *** *** end of scroll routine *** ***
 vch_ok:
 ; set cursor position from separate coordinates, might be inlined
