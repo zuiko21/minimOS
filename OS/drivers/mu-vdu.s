@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190713-1630
+; last modified 20190714-1223
 
 #include "../usual.h"
 
@@ -38,8 +38,8 @@ va_err:
 	VA_BASE	= $6000		; screen start, not necessarily 8K-aligned if smaller screen
 	VA_TOP	= $7FFF		; must specify last address, in case the whole 8K block is not used
 
-	VA_WDTH = 36			; screen size
-	VA_HGHT = 28			; screen size
+	VA_WDTH = 36			; screen size (columns)
+	VA_HGHT = 28			; screen size (rows)
 
 	VA_NEXT	= $6120		; second line address, for scroll routines (depends on above values)
 	VA_LAST	= $7E60		; last line address, for scroll routines (depends on above values)
@@ -97,19 +97,13 @@ vi_crl:
 ;	_DR_OK				; installation succeeded
 
 ; ***************************************
-; *** routine for clearing the screen *** takes less than 82766t for full 8K screen
+; *** routine for clearing the screen *** takes less than 83Kt for full 8K screen
 ; ***************************************
 va_cls:
-; initial stuff takes 42t
 	LDA #>VA_BASE		; base address (2+2) NOT necessarily page aligned!
 	LDY #<VA_BASE
-; reset cursor
-	LDX #14				; CRTC cursor address register (2)
-	STX crtc_rs
-	STA crtc_da			; set MSB... (4+4)
-	INX					; next register (2)
-	STX crtc_rs
-	STY crtc_da			; ...and LSB (4+4)
+; reset cursor to AAYY (reusing scroll code)
+	JSR vsc_cok			; set hardware cursor
 ; clear VRAM area
 	STA v_dest+1			; set pointer MSB (3)
 	LDA #0				; clear value (2), as no STZ (zp), Y
@@ -337,24 +331,8 @@ vch_sh:
 	ADC io_c+1
 ;	DEC					; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
-; create local destination pointer
-; original code was 49b, <89t
-; tables take 56 bytes (for 36x28 mode) but this code is 26b, <38t
-	LDX va_y		; current row
-	LDY vla_h, X		; is index for MSB table
-	LDA va_x		; current column
-	ASL
-	ASL
-	ASL			; 8 bytes per char
-	BCC vs_xnc		; if offset is over one page...
-		INY				; ...increment MSB
-		CLC
-vs_xnc:
-	ADC vla_l, X		; add offset to table LSB
-	STA v_dest		; LSB is ready
-	TYA				; this is MSB
-	ADC #0			; add eventual carry
-	STA v_dest+1		; pointer is ready
+; * call common routine to compute address from coordinates *
+	JSR vs_ptr			; create destination pointer
 ; copy from font to VRAM
 	LDY #VA_SCAN-1		; scanline counter (2)
 vch_pl:
@@ -412,18 +390,18 @@ vsc_ll:
 		JSR vcl_do		; finish clearing from CLS!
 ; *** *** end of scroll routine *** ***
 vch_ok:
-; set cursor position from separate coordinates, might be inlined
-	LDA va_y			; current absolute row
-; TODO TODO TODO
-vsc_cok:
-; set CRTC registers, note MSB is on Y and LSB on A! worth another?
+; set cursor position from separate coordinates
+	JSR vs_ptr			; compute address at v_dest, A holds MSB
+	LDY v_dest			; retrieve LSB
+; set CRTC registers, expects MSB on A and LSB on Y (reused by CLS)
+vch_cok:
 	LDX #14				; cur_h register on CRTC (2)
 	STX crtc_rs			; select register
-	STY crtc_da			; ...and set data MSB
+	STA crtc_da			; ...and set data MSB
 ; go for next
 	INX					; next reg (2)
 	STX crtc_rs			; select register
-	STA crtc_da			; ...and set data LSB
+	STY crtc_da			; ...and set data LSB
 	_DR_OK
 
 ; **** several printing features ****
@@ -461,6 +439,30 @@ va_bs:
 	JSR va_prn			; print whatever is in io_c (...)
 ; ...and back again!
 	JMP vch_left			; will return
+
+; **********************
+; *** other routines ***
+; **********************
+; create local destination pointer
+; original code was 49b, <89t
+; tables take 56 bytes (for 36x28 mode) but this code is 26b, <38t
+vs_ptr:
+	LDX va_y		; current row
+	LDY vla_h, X		; is index for MSB table
+	LDA va_x		; current column
+	ASL
+	ASL
+	ASL			; 8 bytes per char
+	BCC vs_xnc		; if offset is over one page...
+		INY				; ...increment MSB
+		CLC
+vs_xnc:
+	ADC vla_l, X		; add offset to table LSB
+	STA v_dest		; LSB is ready
+	TYA				; this is MSB
+	ADC #0			; add eventual carry
+	STA v_dest+1		; pointer is ready
+	RTS
 
 ; ********************
 ; *** several data ***
