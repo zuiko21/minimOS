@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a1
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190714-1223
+; last modified 20190715-2257
 
 #include "../usual.h"
 
@@ -384,9 +384,8 @@ vsc_ll:
 		LDX #>VA_LAST		; last line address (2+2)
 		LDY #<VA_LAST
 		STX v_dest+1		; set pointer MSB (3)
-		STY v_dest		; pointer is ready (3)
 		LDA #0			; clear value (2)
-		TAY				; reset index too (2)
+		STA v_dest		; pointer is ready, will use Y as LSB (3)
 		JSR vcl_do		; finish clearing from CLS!
 ; *** *** end of scroll routine *** ***
 vch_ok:
