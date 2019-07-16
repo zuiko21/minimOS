@@ -1,7 +1,10 @@
 # mu-VDU
 
-Minimal **288x224 bitmap _VGA-compatible_** VDU, to be installed into a 6502 socket.
+Minimal **288x224 bitmap _VGA-compatible_** VDU, to be installed into **any 6502 socket**.
 Includes 8 kiB of _write-only_ VRAM (CPU must keep a copy into its own RAM for reads).
+
+If the recommended standard oscillator is used, other resolutions between 320x200 and
+256x240 are possible.
 
 ## Addressing
 
@@ -122,8 +125,10 @@ Always **thru 1 K resistors**.
 - address lines as described
 - data lines go to shift register, in parallel with the data buffer
 - `/CS` kept low (and `CS` high), permanently enabled
-- `/WE` is the `/SEL` signal
+- `/WE` is the `/SEL` signal\*
 - `/OE` can be the _inverted_ select (or just kept low)
+
+\*) Note that writes **should be qualified** thru _Phi2_ as usual, for reliable operation.
 
 **shift register** (74HC165):
 
@@ -144,4 +149,4 @@ Some _capacitors_ might be needed in order to introduce suitable **delays**. How
 it seems that (most) Hitachi 6845 clones include a **skew** option, suitably delaying
 both `DEN` and `CUR` signals.
 
-_last modified 20190707-1014_
+_last modified 20190716-1829_
