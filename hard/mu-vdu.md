@@ -110,7 +110,7 @@ this is usually ROM and reads are anyway disabled, no ill effects are expected.
 
 This `Amstrad-like` layout is the same as the one used on the
 [Acapulco computer](acapulco.md) but, since this board maps the CRTC I/O _into_
-VRAM address range, **no _hardware scrolling_** will be available. Thus, a _C64-like_
+VRAM address range, **no _hardware scrolling_** will be available. Thus, a **C64-like**
 layout might be preferred, as that will simplify the software somewhat -- at least for
 text rendering. In this case, address lines are mapped as follows, the remaining
 connections being the same:
@@ -129,6 +129,8 @@ Always **thru 1 K resistors**.
 - `/OE` can be the _inverted_ select (or just kept low)
 
 \*) Note that writes **should be qualified** thru _Phi2_ as usual, for reliable operation.
+In such case, a **74HC11** may be used (together with a few inverters) instead of the
+74HC21 used in several places, as no more than a three-input NAND is needed.
 
 **shift register** (74HC165):
 
@@ -149,4 +151,4 @@ Some _capacitors_ might be needed in order to introduce suitable **delays**. How
 it seems that (most) Hitachi 6845 clones include a **skew** option, suitably delaying
 both `DEN` and `CUR` signals.
 
-_last modified 20190716-1829_
+_last modified 20190717-0907_
