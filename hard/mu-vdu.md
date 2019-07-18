@@ -52,9 +52,11 @@ _useless_ for NMOS 6502 systems!**
 But, as previously stated, it pays to **disable _read_ operations**. One simple (and
 fast!) way is using a 74HC32 quad-OR gate as follows:
 
-- `A15` + **`R/W`**, output goes to `/G` on VRAM select (instead of `A15` alone)
+- `A15` + **`R/W`**, output goes to `/G` on VRAM select '139 (instead of `A15` alone)
 - `/SEL` + `DEN`, output creates _valid_ `/SEL` (in case of RDY generation)
 - `/SEL` + `/DEN` (use an inverter), output is `RDY`
+
+A fourth gate may be used for _qualifying writes_, as recommended.
 
 Just like the original design, a pulled-down jumper on `DEN` (before the inverter!)
 allows _quick-and-dirty_ operation if desired.
@@ -94,7 +96,7 @@ this is usually ROM and reads are anyway disabled, no ill effects are expected.
 - `Q0` to `/CP1`, as usual
 - `Q3` (possibly inverted, see below) to CRTC `CLK`
 
-**register load** (1/2 74HC21):
+**register load** (1/2 74HC21 _or_ 1/3 74HC11):
 
 - takes `Q1`, `Q2` and (possibly inverted) `Q3` from the above
 - gate output goes to `SH/LD` input of shift register
@@ -139,7 +141,7 @@ In such case, a **74HC11** may be used (together with a few inverters) instead o
 - `Qh` (or `/Qh`) to output stage
 - `SH/LD` from register load gate
 
-**output stage** (1/2 74HC21):
+**output stage** (1/2 74HC21 or 1/3 74HC11):
 
 - only two inputs used, `Qh` from shift register and `DEN` from CRTC
 - might take `/Qh` in case an **inverse video** output is desired
@@ -151,4 +153,4 @@ Some _capacitors_ might be needed in order to introduce suitable **delays**. How
 it seems that (most) Hitachi 6845 clones include a **skew** option, suitably delaying
 both `DEN` and `CUR` signals.
 
-_last modified 20190717-0907_
+_last modified 20190718-2313_
