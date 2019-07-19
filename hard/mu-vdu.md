@@ -153,4 +153,19 @@ Some _capacitors_ might be needed in order to introduce suitable **delays**. How
 it seems that (most) Hitachi 6845 clones include a **skew** option, suitably delaying
 both `DEN` and `CUR` signals.
 
-_last modified 20190718-2313_
+### Component layout
+
+One of the design goals was fitting this into a **7 x 9 cm perfboard**. This is the reason
+behind some "ugly" decisions. Plus, the use of the most abundant components in my stock is
+preferred.
+
+Since this circuit is **_universally_ fitted in parallel with the CPU**, another problem
+arises: _probing_ sockets seem almost impossible to find, thus _the original CPU must be
+**removed** from the original board, to be fitted into the VDU itself_. This takes
+valuable _real estate_ from the VDU board.
+
+The only way to achieve this is by putting some ICs _below_ some other big ones. The
+current layout puts the 74HC245 _data buffer_ under the CRTC, the 74HC165 _shift register_
+under the VRAM, and both the 74HC139 and 74HC133 for _chip selection_ under the removed CPU!
+
+_last modified 20190719-1757_
