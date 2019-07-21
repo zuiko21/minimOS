@@ -46,8 +46,8 @@ Original **RDY generation** (1/2 74HC139, _optional_):
 - valid `/SEL` from `/Y0`
 
 In case _quick and dirty_ operation is desired, a jumper disconnecting the received
-`DEN` signal is to be used (with pulldown for `A1` input). **RDY generation is
-_useless_ for NMOS 6502 systems!**
+`DEN` signal is to be used (with pulldown for `A1` input). **Note that RDY generation is
+_useless_ on NMOS 6502 systems!**
 
 But, as previously stated, it pays to **disable _read_ operations**. One simple (and
 fast!) way is using a 74HC32 quad-OR gate as follows:
@@ -110,7 +110,7 @@ this is usually ROM and reads are anyway disabled, no ill effects are expected.
 - `DEN` goes to blanking gate (and optionally to RDY generator)
 - `CLK` as described, from clock divider
 
-This `Amstrad-like` layout is the same as the one used on the
+This _Amstrad-like_ layout is the same as the one used on the
 [Acapulco computer](acapulco.md) but, since this board maps the CRTC I/O _into_
 VRAM address range, **no _hardware scrolling_** will be available. Thus, a **C64-like**
 layout might be preferred, as that will simplify the software somewhat -- at least for
@@ -136,7 +136,7 @@ In such case, a **74HC11** may be used (together with a few inverters) instead o
 
 **shift register** (74HC165):
 
-- parallel inputs to VRAM data lines
+- parallel inputs to VRAM data lines (or data buffer output)
 - `CLK` from clock divider `Q0` (perhaps inverted)
 - `Qh` (or `/Qh`) to output stage
 - `SH/LD` from register load gate
@@ -164,8 +164,8 @@ arises: _probing_ sockets seem almost impossible to find, thus _the original CPU
 **removed** from the original board, to be fitted into the VDU itself_. This takes
 valuable _real estate_ from the VDU board.
 
-The only way to achieve this is by putting some ICs _below_ some other big ones. The
+The only way to achieve this is by putting some ICs _under_ some other big ones. The
 current layout puts the 74HC245 _data buffer_ under the CRTC, the 74HC165 _shift register_
 under the VRAM, and both the 74HC139 and 74HC133 for _chip selection_ under the removed CPU!
 
-_last modified 20190719-1757_
+_last modified 20190721-1436_
