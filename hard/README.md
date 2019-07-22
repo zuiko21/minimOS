@@ -194,6 +194,22 @@ Interfaces: most likely those of Veracruz, possibly plus SD-card,
 text console (or graphic) output...
 
 
+
+
+**SIXtation**
+
+Status: in design stage
+
+Form-factor: 4-layer PCB, SMD components.
+
+Specs: 10.7 MHz 65816, up to **8 MiB RAM** (2 x Garth's modules),
+32 kiB Kernel + 4 MiB *lib* EPROM, 2 x VIA 65C22, (2x) UART.
+
+Video output: 6445-based, _planar_ 1 MiB VRAM, up to **8 bpp**, typically **1360x768**.
+
+Other interfaces: most likely those of Jalisco, possibly adding CF & SD-card.
+
+
 ### Peripherals (TBD)
 
 **LED-Keypad**
@@ -218,4 +234,4 @@ text console (or graphic) output...
 
 _...more to come!
 
-last modified: 20190528-2243_
+last modified: 20190722-2106_
