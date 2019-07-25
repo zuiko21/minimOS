@@ -42,28 +42,26 @@ currently with a VIA-attached 4-digit **LED-keypad**.
 
 [**CHIHUAHUA**](https://flic.kr/s/aHsjEn5ntM)
 
-Status: finished and _sort-of_ working, but with some strange malfunction :-(
+Status: Finished and _sort-of_ working, but with some strange bug with VIA,
+not solved yet. _Likely to be discarded_.
 
-Form-factor: Breadboard with point-to-point soldering.
+Form-factor: Soldered, compact version of SDd. Breadboard with point-to-point soldering.
 
-Specs: Soldered, compact version of SDd. Strange bug with VIA, not solved yet.
-*Likely to be discarded*.
-
-Interfaces: Piezo buzzer between PB7-CB2, SS-22 and old *VIAport* connectors.
+Interfaces: Piezo buzzer between PB7-CB2, SS-22 and old _VIAport_ connectors.
 
 
 
 
 [**CHIHUAHA PLUS**](https://flic.kr/s/aHsjEGuCH3)
 
-Status: under construction.
+Status: under construction (recently redesigned).
 
 Form-factor: Breadboard with point-to-point soldering.
 
 Specs: 1 MHz (socketed) 65C02, 16 kiB RAM, 32 kiB EPROM, VIA 65C22.
-*Might be configured for 32 kiB RAM + 16 kiB EPROM if desired*.
+_Might be configured for 32 kiB RAM + 16 kiB EPROM if desired_.
 
-Interfaces: Amplified piezo buzzer between PB7-CB2, SS-22 and old *VIAport* connectors.
+Interfaces: Amplified piezo buzzer between PB7-CB2, SS-22 and old _VIAport_ connectors.
 
 
 
@@ -79,7 +77,7 @@ Specs: 1.25 / 2 MHz 65C02/102, 8-16 kIB RAM, 32 kiB EPROM, VIA 65C22, ACIA 65SC5
 RTC 146818.
 
 Interfaces: Amplified piezo buzzer between PB7-CB2, Hitachi LCD, TTL-level RS-232,
-SS-22 and old *VIAport* connectors. Several diagnostic LEDs.
+SS-22 and old _VIAport_ connectors. Several diagnostic LEDs.
 
 
 
@@ -88,60 +86,56 @@ SS-22 and old *VIAport* connectors. Several diagnostic LEDs.
 
 Status: never started :-(
 
-Specs: intended to be a *fully bankswitching* 65C02 **SBC**, but also pluggable into a backplane.
+Specs: intended to be a _fully bankswitching*_65C02 **SBC**,
+but pluggable into a backplane, too.
 
 
 
 
 [**Jalapa (formerly _SDm_)**](jalapa2.md)
 
-Status: **almost finished** design, heavily *revamped* as of Oct-2018.
+Status: almost finished design, heavily _revamped_ as of Oct-2018.
 
 Form-factor: Breadboard with point-to-point soldering.
 
 Specs: 1.8432 / 2.304 MHz **65C816**, 128 kiB RAM (or 512K),
-up to 32 kiB *Kernel* EPROM plus up to 512 kiB *library* EPROM,
+up to 32 kiB _Kernel_ EPROM plus up to 512 kiB _library_ EPROM,
 VIA 65C22, ACIA 65SC51.
 
-Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, new *VIAport*
-(*SBC-2* style but with "mirrored" power pins), TTL-level RS-232,
-*VME-like* slot (65816 direct expansion)
+Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, new _VIAport**2**_
+(_SBC-2_ style but with "mirrored" power pins), TTL-level RS-232,
+_VME-like_ slot (65816 direct expansion)
 
 
 
 
 [**Acapulco**](acapulco.md)
 
-Status: finishing design.
+Status: almost finished design.
 
 Form-factor: Breadboard with point-to-point soldering.
 
-Specs: 1.536 MHz 65C02, 32 kiB SRAM (plus 1 kiB
-in parallel as *attribute area*, 
-32 kiB EPROM, VIA 65C22, CRTC HD6445.
-*Intended to be a colour & graphics capable SBC.*
+Specs: 1.536 MHz 65C02, 32 kiB SRAM (plus 1 kiB in parallel as _attribute area_, 
+32 kiB EPROM, VIA 65C22, CRTC HD6445. _Intended to be a colour & graphics capable SBC._
 
-Interfaces: Piezo buzzer, SS-22, new VIA connector,
-VGA-compatible video output (320x200 @ 16 colours
-in GRgB mode, only 2 of them each 8x8 pixels)
+Interfaces: Piezo buzzer, SS-22, new VIA connector, VGA-compatible video output
+(~320x200 @ 16 colours in GRgB mode, only 2 of them each 8x8 pixels)
 
 
 
 
 [**miniPET**](minipet.md)
 
-Status: finishing design.
+Status: **essentially finished** design.
 
 Form-factor: Breadboard with point-to-point soldering.
 
-Specs: 1.57 MHz 65(C)02, 32 kiB SRAM (plus 2 kiB *VRAM*, 
+Specs: 1.57 MHz 65(C)02, 32 kiB SRAM (plus 2 kiB _VRAM_, 
 up to 32 kiB EPROM, VIA 65(C)22, PIA 6521/6821,
-CRTC HD6845, with *optional second PIA*.
+CRTC HD6845, with _optional second PIA_.
 
-_This is a recreation of the `Commodore PET 8032`
-**switchable between 40 and 80 columns**_, with more
-modern components (e.g. SRAM) and **VGA-compatible**
-output.
+_This is a recreation of the `Commodore PET 8032` **switchable between 40 and 80 columns**_,
+with updated components (e.g. SRAM) and **VGA-compatible** output.
 
 Interfaces: **same as the original PET**; cassette and
 IEEE-488 on separate _optional_ boards.
@@ -155,13 +149,13 @@ Status: finishing design.
 
 Form-factor: Single layer PCB?
 
-Specs: 6.144 MHz 65C816, 16 kiB SRAM (plus 16 more for *ROM-in-RAM*, 3x32 kiB VRAM,
-16 kiB EPROM, VIA 65C22, CRTC HD46505, ACIA 6551A. *Intended to be a
-colour & graphics capable VT-52 based terminal.*
+Specs: 6.144 MHz 65C816, 16 kiB SRAM (plus 16 more for _ROM-in-RAM_), 3x32 kiB VRAM,
+16 kiB EPROM, VIA 65C22, CRTC HD6845, ACIA 6551A.
+_Intended to be a colour & graphics capable VT-52 based terminal._
 
 Interfaces: Piezo buzzer, TTL-level async., SS-22, parallel input,
-VGA-compatible video output (576x448 @ 1 bpp, 3-bit RGB or 3-bit greyscale),
-*VME-like* slot (65816 direct expansion) 
+VGA-compatible video output (~576x448 @ 1 bpp, 3-bit RGB or 3-bit greyscale),
+_VME-like_ slot (65816 direct expansion) 
 
 
 
@@ -170,13 +164,13 @@ VGA-compatible video output (576x448 @ 1 bpp, 3-bit RGB or 3-bit greyscale),
 
 Status: in design stage
 
-Form-factor: ?
+Form-factor: thru-hole PCB?
 
-Specs: 4 MHz (at least) 65816, 512 kiB RAM, 32 kiB *Kernel* EPROM, 512 kiB *lib* EPROM,
+Specs: 4 MHz (at least) 65816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
 2 x VIA 65C22, UART 16C550, RTC MC146818.
 
 Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
-**65SIB**, Hitachi LCD thru VIA, maybe *I2C*, *VME-like* slot (65816 direct expansion)
+**65SIB**, Hitachi LCD thru VIA, maybe _I2C_, _VME-like_ slot (65816 direct expansion)
 
 
 
@@ -188,7 +182,7 @@ Status: in design stage
 Form-factor: 4-layer PCB, SMD components.
 
 Specs: 12 MHz (I hope!) 65816, up to **8 MiB RAM** (2 x Garth's modules),
-32 kiB Kernel + 2 MiB *lib* EPROM, 2 x VIA 65C22, (2x) UART.
+32 kiB Kernel + 2 MiB _lib_ EPROM, 2 x VIA 65C22, (2x) UART 16C552.
 
 Interfaces: most likely those of Veracruz, possibly plus SD-card,
 text console (or graphic) output...
@@ -198,16 +192,17 @@ text console (or graphic) output...
 
 **SIXtation**
 
-Status: in design stage
+Status: in _early_ design stage
 
 Form-factor: 4-layer PCB, SMD components.
 
-Specs: **9 MHz 65816**, up to **8 MiB RAM** (2 x Garth's modules),
-32 kiB Kernel + 4 MiB *lib* EPROM, 2 x VIA 65C22, (2x) 16C552 UART, MC146818 RTC.
+Specs: **9 MHz 65816**, _overclocked_ (?) **_36 MHz_ 68882 FPU**,
+up to **8 MiB RAM** (2x Garth's modules), 32 kiB Kernel + 4 MiB *lib* EPROM,
+2x VIA 65C22, (2x) 16C552 UART, MC146818 RTC.
 
 Video output: 6445-based, _planar_ 1 MiB VRAM, up to **8 bpp**, typically **1360x768**.
 
-Other interfaces: most likely those of Jalisco, possibly adding CF & SD-card.
+Other interfaces: most likely those of _Jalisco_, adding CF & SD-card.
 
 
 ### Peripherals (TBD)
@@ -232,6 +227,12 @@ Other interfaces: most likely those of Jalisco, possibly adding CF & SD-card.
 
 
 
-_...more to come!
+**mu-VDU**
 
-last modified: 20190724-2336_
+Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
+**288x224 bitmap**.
+
+
+_...more to come!_
+
+_last modified: 20190725-1527_
