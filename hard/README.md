@@ -170,7 +170,7 @@ Specs: 4 MHz (at least) 65816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_
 2 x VIA 65C22, UART 16C550, RTC MC146818.
 
 Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
-**65SIB**, Hitachi LCD thru VIA, maybe _I2C_, _VME-like_ slot (65816 direct expansion)
+**65SIB**, Hitachi LCD thru VIA, **PS/2**, _VME-like_ slot (65816 direct expansion)
 
 
 
@@ -202,7 +202,8 @@ up to **8 MiB RAM** (2x Garth's modules), 32 kiB Kernel + 4 MiB *lib* EPROM,
 
 Video output: 6445-based, _planar_ 1 MiB VRAM, up to **8 bpp**, typically **1360x768**.
 
-Other interfaces: most likely those of _Jalisco_, adding CF & SD-card.
+Other interfaces: most likely those of _Jalisco_, adding CF & SD-card. Will _definitely_
+include PS/2 keyboard/mouse ports.
 
 
 ### Peripherals (TBD)
@@ -235,4 +236,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20190725-1527_
+_last modified: 20190726-1017_
