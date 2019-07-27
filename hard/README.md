@@ -231,9 +231,9 @@ include PS/2 keyboard/mouse ports.
 **mu-VDU**
 
 Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
-**288x224 bitmap**.
+**288x224 bitmap**. _An extended **planar** version might provide **8 colours**_.
 
 
 _...more to come!_
 
-_last modified: 20190726-1017_
+_last modified: 20190727-2006_
