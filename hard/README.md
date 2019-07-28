@@ -69,7 +69,7 @@ Interfaces: Amplified piezo buzzer between PB7-CB2, SS-22 and old _VIAport_ conn
 [**SDx _("Sistema de Desarrollo eXpandible", Expansible Develpment 
 System)_**](https://flic.kr/s/aHsjDAwJBR)
 
-Status: aborted :-(
+Status: aborted during construction :-(
 
 Form-factor: Breadboard with point-to-point soldering.
 
@@ -236,4 +236,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20190727-2006_
+_last modified: 20190728-1231_
