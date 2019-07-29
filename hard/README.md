@@ -45,7 +45,7 @@ currently with a VIA-attached 4-digit **LED-keypad**.
 Status: Finished and _sort-of_ working, but with some strange bug with VIA,
 not solved yet. _Likely to be discarded_.
 
-Form-factor: Soldered, compact version of SDd. Breadboard with point-to-point soldering.
+Form-factor: Soldered, compact version of SDd. Perfboard with point-to-point soldering.
 
 Interfaces: Piezo buzzer between PB7-CB2, SS-22 and old _VIAport_ connectors.
 
@@ -56,7 +56,7 @@ Interfaces: Piezo buzzer between PB7-CB2, SS-22 and old _VIAport_ connectors.
 
 Status: under construction (recently redesigned).
 
-Form-factor: Breadboard with point-to-point soldering.
+Form-factor: Perfboard with point-to-point soldering.
 
 Specs: 1 MHz (socketed) 65C02, 16 kiB RAM, 32 kiB EPROM, VIA 65C22.
 _Might be configured for 32 kiB RAM + 16 kiB EPROM if desired_.
@@ -71,7 +71,7 @@ System)_**](https://flic.kr/s/aHsjDAwJBR)
 
 Status: aborted during construction :-(
 
-Form-factor: Breadboard with point-to-point soldering.
+Form-factor: Perfboard with point-to-point soldering.
 
 Specs: 1.25 / 2 MHz 65C02/102, 8-16 kIB RAM, 32 kiB EPROM, VIA 65C22, ACIA 65SC51,
 RTC 146818.
@@ -96,7 +96,7 @@ but pluggable into a backplane, too.
 
 Status: almost finished design, heavily _revamped_ as of Oct-2018.
 
-Form-factor: Breadboard with point-to-point soldering.
+Form-factor: Perfboard with point-to-point soldering.
 
 Specs: 1.8432 / 2.304 MHz **65C816**, 128 kiB RAM (or 512K),
 up to 32 kiB _Kernel_ EPROM plus up to 512 kiB _library_ EPROM,
@@ -113,7 +113,7 @@ _VME-like_ slot (65816 direct expansion)
 
 Status: almost finished design.
 
-Form-factor: Breadboard with point-to-point soldering.
+Form-factor: Perfboard with point-to-point soldering.
 
 Specs: 1.536 MHz 65C02, 32 kiB SRAM (plus 1 kiB in parallel as _attribute area_, 
 32 kiB EPROM, VIA 65C22, CRTC HD6445. _Intended to be a colour & graphics capable SBC._
@@ -128,7 +128,7 @@ Interfaces: Piezo buzzer, SS-22, new VIA connector, VGA-compatible video output
 
 Status: **essentially finished** design.
 
-Form-factor: Breadboard with point-to-point soldering.
+Form-factor: Perfboard with point-to-point soldering.
 
 Specs: 1.57 MHz 65(C)02, 32 kiB SRAM (plus 2 kiB _VRAM_, 
 up to 32 kiB EPROM, VIA 65(C)22, PIA 6521/6821,
@@ -182,7 +182,7 @@ Status: in design stage
 Form-factor: 4-layer PCB, SMD components.
 
 Specs: 12 MHz (I hope!) 65816, up to **8 MiB RAM** (2 x Garth's modules),
-32 kiB Kernel + 2 MiB _lib_ EPROM, 2 x VIA 65C22, (2x) UART 16C552.
+32 kiB Kernel + 2 MiB _lib_ EPROM, 2 x VIA 65C22, (2x) UART 16C552, _ROM-in-RAM_.
 
 Interfaces: most likely those of Veracruz, possibly plus SD-card,
 text console (or graphic) output...
@@ -198,7 +198,7 @@ Form-factor: 4-layer PCB, SMD components.
 
 Specs: **9 MHz 65816**, _overclocked_ (?) **_36 MHz_ 68882 FPU**,
 up to **8 MiB RAM** (2x Garth's modules), 32 kiB Kernel + 4 MiB *lib* EPROM,
-2x VIA 65C22, (2x) 16C552 UART, MC146818 RTC.
+2x VIA 65C22, (2x) 16C552 UART, MC146818 RTC, _ROM-in-RAM_.
 
 Video output: 6445-based, _planar_ 1 MiB VRAM, up to **8 bpp**, typically **1360x768**.
 
@@ -236,4 +236,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20190728-1231_
+_last modified: 20190729-2212_
