@@ -5,8 +5,9 @@
 With great embarrassment I have to admit never having owned a 65xx computer...
 but suport for these classic machines shouldn't be difficult to add -- for
 instance, I have declared as 'reserved' the two first zero-page bytes in case
-the utterly popular Commodore-64 (using a 6510) is targeted. Back to my
-**own-designed** machines, here's the current history & roadmap:
+the utterly popular Commodore-64 (using a 6510) is targeted.
+
+Back to my **own-designed** machines, here's the current history & roadmap:
 
 ### Computers
 
@@ -18,7 +19,7 @@ Status: finishing design.
 Form-factor: soldered PCB.
 
 Specs: 1 MHz 6503 (28 pin, 4 kiB addressing space), 128-byte RAM,
-3 kiB-EPROM (addressable range from a 2732), VIA 6522
+3 kiB-EPROM (addressed range from a 2732), VIA 6522
 
 Intefaces: four (very large) 7-segment LED digits, light sensor, a couple of keys...
 
@@ -162,7 +163,7 @@ _VME-like_ slot (65816 direct expansion)
 
 **Veracruz**
 
-Status: in design stage
+Status: in design stage _(might be merged with **Jalapa**)_
 
 Form-factor: thru-hole PCB?
 
@@ -175,7 +176,7 @@ Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
 
 
 
-**Jalisco**
+**Jalisco** _(might be merged with **SIXtation**)_
 
 Status: in design stage
 
@@ -236,4 +237,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20190729-2212_
+_last modified: 20190730-1606_
