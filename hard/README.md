@@ -191,7 +191,7 @@ text console (or graphic) output...
 
 
 
-**SIXtation**
+[**SIXtation**](sixtation.md)
 
 Status: in _early_ design stage
 
@@ -237,4 +237,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20190730-1606_
+_last modified: 20190731-2217_
