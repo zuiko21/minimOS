@@ -16,5 +16,18 @@ inspired by the _3M-compliant_ (1 MByte,
 - Storage: CF & SD (possibly _bit-banged_) interfaces
 - Usual 65xx ports, including **PS/2**
 
-_last modified 20190801-1125_
+## Graphic card
+
+Perhaps on a separate PCB, but otherwise **higly integrated** on the system. Trying to
+match the 1366/1360 x 768 resolution of my cheap Acer widescreen, which just fits the
+_megapixel_ rating, the standard 85.5 MHz (85.86 MHz according to other sources) _dot clock_
+is almost impossible to find from standard oscillator cans, whereas a **72 MHz** one seems
+quite popular. There is a **reduced blanking** timing standard for that resolution, thus
+seems quite suitable.
+
+Divided by 8 it will generate the **9 MHz CPU clock** (instead of the previously specced
+_10.7 MHz_), and further halved will fit the _4.5 MHz **HD6445** CRTC_ clock. On the other
+hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU.
+
+_last modified 20190803-1625_
 
