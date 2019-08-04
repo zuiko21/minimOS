@@ -16,7 +16,21 @@ inspired by the _3M-compliant_ (1 MByte,
 - Storage: CF & SD (possibly _bit-banged_) interfaces
 - Usual 65xx ports, including **PS/2**
 
-## Graphic card
+## Memory
+
+In order to be fully _3 M compliant_, the main board is provided with **1 MiB RAM** as
+standard. Then, two pin-header slots for _Garth Wilson's RAM 4 MiB cards_ are provided.
+Since every 512 kiB `Chip Select` line is individually accesible, three RAM configurations
+are supported:
+
+- **1 MiB** (standard on-board RAM)
+- **5 MiB** (add one Garth module, plus the supplied megabyte)
+- **8 MiB** (needs two Garth modules, although two chips on the second one will remain unused)
+
+Mwmory addresses above `$800000` will be reserved for special I/O, whereas above `$C00000`
+are intended for _library_ ROM.
+
+## Graphic card & clock
 
 Perhaps on a separate PCB, but otherwise **higly integrated** on the system. Trying to
 match the 1366/1360 x 768 resolution of my cheap Acer widescreen, which just fits the
@@ -29,5 +43,4 @@ Divided by 8 it will generate the **9 MHz CPU clock** (instead of the previously
 _10.7 MHz_), and further halved will fit the _4.5 MHz **HD6445** CRTC_ clock. On the other
 hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU.
 
-_last modified 20190803-1625_
-
+_last modified 20190804-1558_
