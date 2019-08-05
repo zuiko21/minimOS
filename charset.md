@@ -108,10 +108,10 @@ X|24|$18|`CAN`|**`BKTB`**|&#8676; left arrow with bar|backwards tabulation
 Y|22|$19|`EM`|**`PGUP`**|&#8607; double arrow up|page up
 Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 -|27|$1B|`ESC`|**`ESC`**|&#11017; NW arrow/mouse cursor|escape
--|28|$1C|`FS`|**` `**|&#9698;|wedge pointing SE
--|29|$1D|`GS`|**` `**|&#9699;|wedge pointing SW
--|30|$1E|`RS`|**` `**|&#9618;|light pattern
--|31|$1F|`US`|**` `**|&#9619;|mid pattern
+-|28|$1C|`FS`|**`PLOT`**|&#9698; wedge pointing SE|point graph mode (6)(7)
+-|29|$1D|`GS`|**`DRAW`**|&#9699; wedge pointing SW|vector graph mode (6)(7)
+-|30|$1E|`RS`|**`INCR`**|&#9618; light pattern|incremental plotting mode (6)
+-|31|$1F|`US`|**`TEXT`**|&#9619; mid pattern|back to text mode (6)
 -|127|$7F|`DEL`|**`DEL`**|&#8999;|delete
 
 ### Notes:
@@ -127,4 +127,8 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-*last modified 20190518-1624*
+6.**Tektronix 4016** graphic modes, may take several bytes afterwards until back to text mode.
+
+7.May take _extra_ byte for screen sizes over 1024 pixels, but extra bits are MSB.
+ 
+_last modified 20190805-0938_
