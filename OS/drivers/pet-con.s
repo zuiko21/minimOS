@@ -1,7 +1,7 @@
 ; miniPET built-in VGA-compatible VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190701-2007
+; last modified 20190806-1624
 
 #include "../usual.h"
 
@@ -41,6 +41,8 @@ va_err:
 	crtc_da	= $E881
 
 ; define SEPARATORS in order to use a shorter table by letting 28-31 as printable!
+; these are intended for Tektronix-4014 graphics, but this machine will reject them...
+; ...and all the following characters until back to text mode.
 #define	SEPARATORS	_SEPARATORS
 
 ; define INVERSE7 in order to allow inverse video when bit 7 is set
@@ -309,6 +311,23 @@ vch_dcx:
 	STA va_col			; set flag if any colour or coordinate is to be set
 	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
 
+; special code detecting graphic strings
+#ifndef	SEPARATORS
+#ifdef	SAFE
+vch_grr:
+	LDA #27				; special graphic-reject code
+	BNE vch_dcx			; set flag, no need for BRA
+
+vch_rej:
+	CMP #TEXT			; end of graphic string?
+	BEQ vch_btx			; yes, reset mode
+		RTS					; no, just ignore
+vch_btx:
+	LDA #0					; back to text mode
+	BEQ vch_dcx			; reset flag, no need for BRA
+#endif
+#endif
+
 ; * * direct glyph printing (was above) * * should be close to actual printing
 vch_dle:				; * process byte as glyph *
 	_STZX va_col		; ...but reset flag! eeeeeeeek^2
@@ -334,6 +353,7 @@ vch_prn:
 	ASL
 	ROL v_dest+1			; times 32... and C is clear
 	ADC v_dest			; row x 40, C should stay clear
+; what if in 80-col mode? eeeeeeeeeek!
 	STA v_dest			; LSB OK
 	LDA v_dest+1
 	ADC #>VP_BASE			; actual address
@@ -470,15 +490,24 @@ va_c0:
 	.word	vch_npr		; STOP, no effect on screen
 	.word	vch_npr		; ESC,  no effect on screen (this far!)
 ; here come the ASCII separators, might be left printed anyway, saving 8 bytes from the table
+; since they are graphic commands, could at least ignore following data until back to TEXT mode
 #ifndef	SEPARATORS
+#ifdef	SAFE
+	.word	vch_grr		; PLOT, graphic mode, filter following chars
+	.word	vch_grr		; DRAW, graphic mode, filter following chars
+	.word	vch_grr		; INCG, graphic mode, filter followimg chars
+	.word	vch_btx		; TEXT, diable filtering, back to text mode
+#else
 	.word	vch_npr		; FS,   no effect on screen or just print the glyph
 	.word	vch_npr		; GS,   no effect on screen or just print the glyph
 	.word	vch_npr		; RS,   no effect on screen or just print the glyph
 	.word	vch_npr		; US,   no effect on screen or just print the glyph
 #endif
+#endif
 
 va_xtb:
 ; new table for extra-byte codes
+; note that NMOS macro affects A!
 ; note offset as managed X codes are 16, 18, 20 and 23, thus padding byte
 	.word	vch_dle		; 16, process byte as glyph
 	.word	vch_ink		; 18, take byte as FG colour *** global inverse only
@@ -486,7 +515,12 @@ va_xtb:
 	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
 	.word	vch_atyx	; 23, expects row byte
 	.word	vch_atcl	; 25, expects column byte, note it is no longer 24!
-
+; may ignore graphic data for a neater presentation
+#ifndef	SEPARATORS
+#ifdef	SAFE
+	.word	vch_rej		; 27, reject graphic strings
+#endif
+#endif
 
 va_data:
 ; CRTC registers initial values
