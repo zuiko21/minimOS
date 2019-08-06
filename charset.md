@@ -110,7 +110,7 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 -|27|$1B|`ESC`|**`ESC`**|&#11017; NW arrow/mouse cursor|escape
 -|28|$1C|`FS`|**`PLOT`**|&#9698; wedge pointing SE|point graph mode (6)(7)
 -|29|$1D|`GS`|**`DRAW`**|&#9699; wedge pointing SW|vector graph mode (6)(7)
--|30|$1E|`RS`|**`INCR`**|&#9618; light pattern|incremental plotting mode (6)
+-|30|$1E|`RS`|**`INCG`**|&#9618; light pattern|incremental plotting mode (6)
 -|31|$1F|`US`|**`TEXT`**|&#9619; mid pattern|back to text mode (6)
 -|127|$7F|`DEL`|**`DEL`**|&#8999;|delete
 
@@ -131,4 +131,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 7.May take _extra_ byte for screen sizes over 1024 pixels, but extra bits are MSB.
  
-_last modified 20190805-0938_
+_last modified 20190806-1601_
