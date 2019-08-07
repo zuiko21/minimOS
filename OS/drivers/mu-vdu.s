@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
-; v0.6a1
+; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190715-2257
+; last modified 20190807-0938
 
 #include "../usual.h"
 
@@ -215,11 +215,7 @@ vch_cend:
 
 ; ** check whether control char or printable **
 va_nbin:
-#ifdef	SEPARATORS
-	CMP #28				; from this one, all printable!
-#else
 	CMP #' '			; printable? (2)
-#endif
 		BCS vch_prn			; it is! skip further comparisons (3)
 ; **** identify possible control codes ****
 	ASL					; character code times two
@@ -493,13 +489,12 @@ va_c0:
 	.word	va_home		; HOME, move cursor to top left without clearing
 	.word	va_cls		; PGDN, page down, may issue a FF
 	.word	vch_dcx		; ATYX, takes two more chars!
-; further savings can be done if these left printed anyway!
 	.word	vch_npr		; BKTB, no direct effect on screen
 	.word	vch_npr		; PGUP, no direct effect on screen, might do CLS anyway
 	.word	vch_npr		; STOP, no effect on screen
 	.word	vch_npr		; ESC,  no effect on screen (this far!)
-; here come the ASCII separators, might be left printed anyway, saving 8 bytes from the table
-#ifndef	SEPARATORS
+; here come the ASCII separators, now the Tektronix 4014 graphic commands!
+#ifdef	TEKTRONIX
 	.word	vch_npr		; FS,   no effect on screen or just print the glyph
 	.word	vch_npr		; GS,   no effect on screen or just print the glyph
 	.word	vch_npr		; RS,   no effect on screen or just print the glyph
@@ -515,6 +510,7 @@ va_xtb:
 	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
 	.word	vch_atyx	; 23, expects row byte
 	.word	vch_atcl	; 25, expects column byte, note it is no longer 24!
+; *** must add tektronix commands! ***
 
 va_data:
 ; CRTC registers initial values
