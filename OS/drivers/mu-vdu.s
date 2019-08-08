@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190807-0938
+; last modified 20190808-1651
 
 #include "../usual.h"
 
@@ -78,6 +78,11 @@ vi_crl:
 ; reset flags! X is 0
 	STX va_xor			; clear mask is true video
 	STX va_flag			; reset flag eeeeeeeeeeeeek
+#ifdef	TEKTRONIX
+	STX va_gx			; reset graphic coordinates
+	STX va_gx+1			; MSB as width is usually 288
+	STX va_gy
+#endif
 ; new, set RAM pointer to supplied font!
 	LDY #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
 	LDA #>vs_font		; same for MSB (2)
@@ -215,7 +220,11 @@ vch_cend:
 
 ; ** check whether control char or printable **
 va_nbin:
+#ifdef	TEKTRONIX
 	CMP #' '			; printable? (2)
+#else
+	CMP #28					; printable? including unsupported graphic commands (2)
+#endif
 		BCS vch_prn			; it is! skip further comparisons (3)
 ; **** identify possible control codes ****
 	ASL					; character code times two
@@ -293,7 +302,16 @@ vcu_nt:
 	DEC va_y			; one row up
 	JMP vch_scs			; update cursor and exit (already checked for scrolling, may skip that)
 
-; * * request for extra bytes * *
+; * * here come the special modes * *
+vch_g27:
+	LDA #27					; special offset for PLOT mode
+	BNE vch_dcx			; ...and set offset (no need for BRA)
+vch_g31:
+	LDA #31					; special offset for INCG mode
+	BNE vch_dcx			; ...and set offset (no need for BRA)
+vch_rst:
+	LDA #0				; clear flag, back to text mode
+; * * request for extra bytes (if offset matches ASCII) * *
 vch_dcx:
 	STA va_flag			; set flag if any colour or coordinate is to be set
 	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
@@ -306,7 +324,7 @@ vch_dle:				; * process byte as glyph *
 ; * * non-printable neither accepted control, thus use substitution character * *
 vch_npr:
 	LDA #'?'			; unrecognised char
-	STA io_c			; store as required
+	STA io_c			; store as required and...
 
 ; **** actual printing ****
 ; *** convert ASCII into pointer offset, needs 11 bits ***
@@ -435,6 +453,16 @@ va_bs:
 ; ...and back again!
 	JMP vch_left			; will return
 
+; **********************************
+; *** Tektronix graphic routines ***
+; **********************************
+vch_plt:		; 27, plot routine (was ASCII 28) ** TO DO **
+
+vch_drw:		; 29, draw routine (same as ASCII!) ** TO DO **
+
+vch_inc:		; 31, incremental plotting (was ASCII 30)
+	
+
 ; **********************
 ; *** other routines ***
 ; **********************
@@ -495,10 +523,10 @@ va_c0:
 	.word	vch_npr		; ESC,  no effect on screen (this far!)
 ; here come the ASCII separators, now the Tektronix 4014 graphic commands!
 #ifdef	TEKTRONIX
-	.word	vch_npr		; FS,   no effect on screen or just print the glyph
-	.word	vch_npr		; GS,   no effect on screen or just print the glyph
-	.word	vch_npr		; RS,   no effect on screen or just print the glyph
-	.word	vch_npr		; US,   no effect on screen or just print the glyph
+	.word	vch_g27		; PLOT, set points (offset 27 instead of 28)
+	.word	vch_dcx		; DRAW, draw lines (offset 29!)
+	.word	vch_g31		; INCG, incremental plotting (offset 31 intead of 30)
+	.word	vch_rst		; TEXT, back to text mode
 #endif
 
 va_xtb:
@@ -510,7 +538,12 @@ va_xtb:
 	.byt	$FF			; *** padding as ATYX is 23, not 22 ***
 	.word	vch_atyx	; 23, expects row byte
 	.word	vch_atcl	; 25, expects column byte, note it is no longer 24!
-; *** must add tektronix commands! ***
+; *** special offsets for tektronix commands! ***
+#ifdef	TEKTRONIX
+	.word	vch_plt		; 27, plot routine (was ASCII 28)
+	.word	vch_drw		; 29, draw routine (same as ASCII!)
+	.word	vch_inc		; 31, incremental plotting (was ASCII 30)
+#endif
 
 va_data:
 ; CRTC registers initial values
