@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a2
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190808-1651
+; last modified 20190808-1914
 
 #include "../usual.h"
 
@@ -53,8 +53,8 @@ va_err:
 	crtc_da	= VA_TOP
 
 
-; define SEPARATORS in order to use a shorter table by letting 28-31 as printable!
-#define	SEPARATORS	_SEPARATORS
+; define TEKTRONIX in order to enable graphic commands, otherwise printable glyphs!
+#define	TEKTRONIX	_TEKTRONIX
 
 ; *** zeropage variables ***
 	v_dest	= $E8		; generic writes, was local2, perhaps including this on zeropage.h? aka ptc
@@ -82,6 +82,7 @@ vi_crl:
 	STX va_gx			; reset graphic coordinates
 	STX va_gx+1			; MSB as width is usually 288
 	STX va_gy
+	STX va_gflg			; graphic flags TBD, pen UP (D0=0) by default
 #endif
 ; new, set RAM pointer to supplied font!
 	LDY #<vs_font		; get supplied LSB (2) *** now using a RAM pointer
@@ -456,12 +457,143 @@ va_bs:
 ; **********************************
 ; *** Tektronix graphic routines ***
 ; **********************************
+#ifdef	TEKTRONIX
 vch_plt:		; 27, plot routine (was ASCII 28) ** TO DO **
 
 vch_drw:		; 29, draw routine (same as ASCII!) ** TO DO **
 
 vch_inc:		; 31, incremental plotting (was ASCII 30)
-	
+	TAX					; check for null
+		BEQ vig_rts			; will be simply ignored!
+	CMP #' '			; pen up?
+		BEQ vig_pu
+	CMP #'P'			; pen down?
+		BEQ vig_pd
+	CMP #'D'			; north?
+		BEQ vig_n
+	CMP #'E'			; north east?
+		BEQ vig_ne
+	CMP #'A'			; east?
+		BEQ vig_e
+	CMP #'I'			; south east?
+		BEQ vig_se
+	CMP #'H'			; south?
+		BEQ vig_s
+ 	CMP #'J'			; south west?
+		BEQ vig_sw
+	CMP #'B'			; west?
+		BEQ vig_w
+	CMP #'F'			; north west?
+		BEQ vig_nw			; otherwise unrecognised command, just print it
+	_STZA va_flag			; back to text mode
+vig_rts:
+	RTS
+; incremental commands follow
+; * PEN UP *
+vig_pu:
+	LDA va_gflg			; graphic flags
+	AND #254				; clear bit 0
+	STA va_gflg			; update flag
+	RTS
+; * PEN DOWN *
+vig_pd:
+	LDA va_gflg			; graphic flags
+	ORA #1				; set bit 0
+	STA va_gflg			; update flag
+	RTS				; ** must print current position ** TO DO
+; * NORTH *
+vig_n:
+	INC va_gy			; up
+	JSR vig_chy
+	_BRA vig_pix
+; * NORTH EAST *
+vig_ne:
+	INC va_gy			; up
+	JSR vig_chy			; check bounds!
+; ...continue NE into EAST code
+; * EAST *
+vig_e:
+	INC va_gx			; right (LSB)
+	BNE vig_eok
+		INC va_gx+1
+vig_eok:
+	JSR vig_chx
+	_BRA vig_pix			; plot it, if pen is down
+; * SOUTH EAST *
+vig_se:
+	DEC va_gy			; down
+	JSR vig_chy			; check bounds!
+	_BRA vig_e			; ...continue with EAST code
+; * SOUTH *
+vig_s:
+	DEC va_gy			; down
+	JSR vig_chy
+	_BRA vig_pix			; plot it, if pen is down
+; * SOUTH WEST *
+vig_sw:
+	DEC va_gy			; down
+	JSR vig_chy			; check bounds!
+	_BRA vig_w			; ...continue with WEST code
+; * NORTH WEST *
+vig_nw:
+	INC va_gy			; up
+	JSR vig_chy			; check bounds!
+; ... continue into WEST code
+; * WEST *
+vig_w:
+	DEC va_gx			; left (LSB)
+	CMP #255			; check carry
+	BNE vie_wok			; check MSB
+		DEC va_gx+1
+vie_wok:
+	JSR vig_chx
+; ...and continue into plotting routine
+; *** place dot if pen is down ***
+vig_pix:
+	LDA va_gflg			; check bit 0
+	LSR					; pen down?
+		BCC vig_rts			; no, just return
+; compute address and set plot ** TO DO ** TO DO **
+
+; bounds checking (unified)
+; horizontal
+vig_chx:
+	LDX va_gx
+	LDY va_gx+1			; MSB too!
+	CPX #255			; below zero?
+	BNE vcx_hi			; no
+		TYA					; did it wrap?
+		BPL vcx_ok			; no, ok
+			INX					; ...or back to min
+			INY
+		BEQ vcx_set
+vcx_hi:
+	TYA					; is MSB set? *** should compare against max MSB
+	BEQ vcx_ok			; no, all ok (note above)
+		CPX #32			; over the limit? (288-256)***
+	BNE vcy_ok			; no, all OK
+		DEX					; ...or back to max
+vcx_set:
+		STX va_gx			; correct value if needed
+		STY va_gx+1
+vcx_ok:
+	RTS
+; vertical
+vig_chy:
+	LDX va_gy
+	CPX #255			; below zero?
+	BNE vcy_hi			; no
+		INX					; ...or back to min
+		BEQ vcy_set
+vcy_hi:
+	CPX #224			; over the top? ***
+	BNE vcy_ok			; no, all OK
+		DEX					; ...or back to max
+vcy_set:
+		STX va_gy			; correct value if needed
+vcy_ok:
+	RTS
+#endif
 
 ; **********************
 ; *** other routines ***
