@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
-; v0.6a2
+; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190808-1914
+; last modified 20190809-1639
 
 #include "../usual.h"
 
@@ -509,8 +509,7 @@ vig_n:
 ; * NORTH EAST *
 vig_ne:
 	INC va_gy			; up
-	JSR vig_chy			; check bounds!
-; ...continue NE into EAST code
+	JSR vig_chy			; check bounds... and continue NE into EAST code
 ; * EAST *
 vig_e:
 	INC va_gx			; right (LSB)
@@ -537,8 +536,7 @@ vig_sw:
 ; * NORTH WEST *
 vig_nw:
 	INC va_gy			; up
-	JSR vig_chy			; check bounds!
-; ... continue into WEST code
+	JSR vig_chy			; check bounds... and continue into WEST code
 ; * WEST *
 vig_w:
 	DEC va_gx			; left (LSB)
@@ -546,14 +544,14 @@ vig_w:
 	BNE vie_wok			; check MSB
 		DEC va_gx+1
 vie_wok:
-	JSR vig_chx
-; ...and continue into plotting routine
+	JSR vig_chx			; check bounds... and continue into plotting routine
 ; *** place dot if pen is down ***
 vig_pix:
 	LDA va_gflg			; check bit 0
 	LSR					; pen down?
 		BCC vig_rts			; no, just return
 ; compute address and set plot ** TO DO ** TO DO **
+vig_dot:
 
 ; bounds checking (unified)
 ; horizontal
@@ -568,17 +566,24 @@ vig_chx:
 			INY
 		BEQ vcx_set
 vcx_hi:
-	TYA					; is MSB set? *** should compare against max MSB
-	BEQ vcx_ok			; no, all ok (note above)
-		CPX #32			; over the limit? (288-256)***
+;	TYA					; is MSB set? *** should compare against max MSB
+	CPY #>(8*VA_WDTH)	; max MSB?
+	BNE vcx_ok			; no, all ok (was BEQ, see above)
+		CPX #<(8*VA_WDTH)	; over the limit? (usually 32, 288-256)
 	BNE vcy_ok			; no, all OK
+; * this is only needed if width is multiple of 256 *
+		TXA					; has just wrapped?
+		BNE vcx_npw			; no, just correct LSB
+			DEY
+vcx_npw:
+; * end of code, remove if (width MOD 256) is not zero *
 		DEX					; ...or back to max
 vcx_set:
 		STX va_gx			; correct value if needed
-		STY va_gx+1
+		STY va_gx+1			; not always needed!
 vcx_ok:
 	RTS
-; vertical
+; vertical (valid up to 255 lines!)
 vig_chy:
 	LDX va_gy
 	CPX #255			; below zero?
@@ -586,7 +591,7 @@ vig_chy:
 		INX					; ...or back to min
 		BEQ vcy_set
 vcy_hi:
-	CPX #224			; over the top? ***
+	CPX #VA_SCAN*VA_HGHT		; over the top? uaually 224
 	BNE vcy_ok			; no, all OK
 		DEX					; ...or back to max
 vcy_set:
