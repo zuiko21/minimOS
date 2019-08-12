@@ -92,7 +92,7 @@ H|8|$08|`BS`|**`BKSP`**|&#9003; left sign with x|backspace, clear previous chara
 I|9|$09|`HT`|**`HTAB`**|&#8677; right arrow with bar|advance to next tab, printing spaces
 J|10|$0A|`LF`|**`DOWN`**|&#8681; arrow down|cursor down (no CR)
 K|11|$0B|`VT`|**`UPCU`**|&#8679; arrow up|cursor up one line
-L|12|$0C|`FF`|**`FORM`**|&#73668; paper sheet|clear screen (2)
+L|12|$0C|`FF`|**`CLRS`**|&#73668; paper sheet|clear screen (2)
 M|13|$0D|`CR`|**`NEWL`**|&#9166; angled arrow|newline, ZX Spectrum-like
 N|14|$0E|`SO`|**`EON`**|&#8658; imply|emphasis on
 O|15|$0F|`SI`|**`EOFF`**|&#8656; reverse imply|emphasis off
@@ -131,4 +131,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 7.May take _extra_ byte for screen sizes over 1024 pixels, but extra bits are MSB.
  
-_last modified 20190811-2214_
+_last modified 20190812-2319_
