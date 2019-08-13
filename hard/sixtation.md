@@ -43,4 +43,20 @@ Divided by 8 it will generate the **9 MHz CPU clock** (instead of the previously
 _10.7 MHz_), and further halved will fit the _4.5 MHz **HD6445** CRTC_ clock. On the other
 hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU.
 
-_last modified 20190804-1558_
+### VRAM
+
+Being **6445-based** (improved 6845), VRAM is organized in an _Amstrad-like_ fashion, but
+with **16 scanlines per row**. While a _bitmapped_ display is optimum for performance,
+colour is certainly desired. **Planar** layout is chosen for scalability.
+
+Assuming a colour depth of **8 bits per pixel** (up to 256 colours), this needs a whopping
+**1 MiB VRAM**, somewhat above the capabilities of a 65816, even at a mighty **9 MHz**.
+Please note that the original _3 M_ workstations, while bearing slower CPUs (a 10 MHz
+_MC 68000_ is about **2.5 times slower** than a 9 MHz 65816), had _graphic coprocessors_
+for much improved screen handling (_RasterOp_ on Sun, _Geometry Engine_ on SGI IRIS...).
+
+Despite this handicap, there is one trick from Sun graphic cards that is _easily
+implemented_ and will noticeably speed-up a few operations: the ability to _write on more
+of a bit plane **simultaneously**_.
+
+_last modified 20190813-2308_
