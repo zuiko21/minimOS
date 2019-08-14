@@ -52,11 +52,16 @@ colour is certainly desired. **Planar** layout is chosen for scalability.
 Assuming a colour depth of **8 bits per pixel** (up to 256 colours), this needs a whopping
 **1 MiB VRAM**, somewhat above the capabilities of a 65816, even at a mighty **9 MHz**.
 Please note that the original _3 M_ workstations, while bearing slower CPUs (a 10 MHz
-_MC 68000_ is about **2.5 times slower** than a 9 MHz 65816), had _graphic coprocessors_
+_MC 68000_ is about **2.5 times slower** than a **9 MHz 65816**), had _graphic coprocessors_
 for much improved screen handling (_RasterOp_ on Sun, _Geometry Engine_ on SGI IRIS...).
 
 Despite this handicap, there is one trick from Sun graphic cards that is _easily
 implemented_ and will noticeably speed-up a few operations: the ability to _write on more
 of a bit plane **simultaneously**_.
 
-_last modified 20190813-2308_
+## Storage
+
+**IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
+_bit-banging_, unless the **65SPI** hardware is used. 
+
+_last modified 20190814-2204_
