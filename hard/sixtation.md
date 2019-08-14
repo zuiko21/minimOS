@@ -27,7 +27,7 @@ are supported:
 - **5 MiB** (add one Garth module, plus the supplied megabyte)
 - **8 MiB** (needs two Garth modules, although two chips on the second one will remain unused)
 
-Mwmory addresses above `$800000` will be reserved for special I/O, whereas above `$C00000`
+Memory addresses above `$800000` will be reserved for special I/O, whereas above `$C00000`
 are intended for _library_ ROM.
 
 ## Graphic card & clock
@@ -42,6 +42,10 @@ seems quite suitable.
 Divided by 8 it will generate the **9 MHz CPU clock** (instead of the previously specced
 _10.7 MHz_), and further halved will fit the _4.5 MHz **HD6445** CRTC_ clock. On the other
 hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU.
+
+On the other hand, a somewhat reduced resolution of **880 x 864** should be compatible
+with the _Apple Portrait Display_ (with non-square pixels, unfortunately), all
+within software configuration.
 
 ### VRAM
 
@@ -64,4 +68,4 @@ of a bit plane **simultaneously**_.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190814-2204_
+_last modified 20190814-2241_
