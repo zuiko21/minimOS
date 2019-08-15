@@ -45,7 +45,8 @@ hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU.
 
 On the other hand, a somewhat reduced resolution of **880 x 864** should be compatible
 with the _Apple Portrait Display_ (with non-square pixels, unfortunately), all
-within software configuration.
+within software configuration. While this reduced resolution is compatible with the
+Acer monitor, it is not recommended as sharpness will be sub-optimal.
 
 ### VRAM
 
@@ -68,4 +69,4 @@ of a bit plane **simultaneously**_.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190814-2241_
+_last modified 20190815-2147_
