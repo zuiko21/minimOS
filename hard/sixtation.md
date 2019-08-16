@@ -64,9 +64,18 @@ Despite this handicap, there is one trick from Sun graphic cards that is _easily
 implemented_ and will noticeably speed-up a few operations: the ability to _write on more
 of a bit plane **simultaneously**_.
 
+### Palette
+
+The _planar_ video architecture allows easy **bit-depth configuration**, either at
+build time or on-the-fly. While a single bit _bitmap_ (128 kiB) leads to simple
+construction and high performance, it may be easily scaled by adding more RAM chips.
+Several _fixed_ palettes (both colour and greyscale) have been considered depending on
+bit depth (not limited to powers of two!), but the most versatile (and relatively simple)
+option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
+
 ## Storage
 
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190815-2147_
+_last modified 20190816-2240_
