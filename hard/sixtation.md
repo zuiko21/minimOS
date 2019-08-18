@@ -60,9 +60,34 @@ Please note that the original _3 M_ workstations, while bearing slower CPUs (a 1
 _MC 68000_ is about **2.5 times slower** than a **9 MHz 65816**), had _graphic coprocessors_
 for much improved screen handling (_RasterOp_ on Sun, _Geometry Engine_ on SGI IRIS...).
 
+### Performance improvements
+
 Despite this handicap, there is one trick from Sun graphic cards that is _easily
 implemented_ and will noticeably speed-up a few operations: the ability to _write on more
-of a bit plane **simultaneously**_.
+than one bit plane **simultaneously**_.
+
+While this device is perfectly capable of displaying _graphic content_, most development
+tasks are expected to be done on _text windows_. With more than one bit plane installed,
+these are colour capable too; but then one _software trick_ (combined with the previous
+**multi-plane writes**) may _improve drawing and **scrolling** speed noticeably_.
+
+For the sake of simplicity, let us assume an example with 4 planes following the `GRgB` model:
+```
+    INK: 0010 (dark green)
+  PAPER: 1110 (yellow)
+```
+
+Note that both planes 0 (light green) and 1 (red) will switch on every pixel depending
+whether it is foreground (clear) or background (set). Since they take **identical values**
+on both set or clear pixels, the whole byte can be set _on both planes_ at once, thanks
+to the aforementioned hardware feature.
+
+However, _neither planes 2 and 3 change_, no matter what gets printed! This means that
+**these planes will remain constant** (one all set, the other one all clear), thus the
+system _will not bother writing or **scrolling**_ them. All combined, **only one out of
+4 planes** is actually accessed by the CPU.
+
+Enable byte _TO DO TO DO_
 
 ### Palette
 
@@ -78,4 +103,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190816-2240_
+_last modified 20190818-1839_
