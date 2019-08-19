@@ -1,17 +1,14 @@
 # SIXtation
 
-A powerful **_65816_ graphic workstation**
-inspired by the _3M-compliant_ (1 MByte,
-1 MegaPixel, 1 MIPS) computers of the early 80s
-(Sun-1, SGI IRIS...)
+A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MByte,
+1 MegaPixel, 1 MIPS) computers of the early 80s (Sun-1, SGI IRIS 1000...)
 
 ## Specifications
 
 - CPU: 65816 @ **9 MHz**
 - FPU: 68882 @ **36 MHz** (overclocked)
 - VDU: 6445 based, **1360x768**, up to 8 bpp
-- RAM: **1 MiB** on board, two _Garth_ slots
-(up to **8 MiB**, 5 MiB possible)
+- RAM: **1 MiB** on board, two _Garth_ slots (up to **8 MiB**, 5 MiB possible)
 - ROM: 32 kiB _Kernel_, up to 4 MiB _library_
 - Storage: CF & SD (possibly _bit-banged_) interfaces
 - Usual 65xx ports, including **PS/2**
@@ -87,7 +84,29 @@ However, _neither planes 2 and 3 change_, no matter what gets printed! This mean
 system _will not bother writing or **scrolling**_ them. All combined, **only one out of
 4 planes** is actually accessed by the CPU.
 
-Enable byte _TO DO TO DO_
+In order to keep track of the actually used planed, an **enable mask** is to be used.
+Upon `CLRS` this mask is reset as the _exclusive-OR_ of both INK and PAPER values. From
+the above example, `0010 XOR 1110 =**1100**`, leaving planes 2 and 3 untouched (after
+filling them appropriately).
+
+However, further colours may appear on that window. Those should enable further planes,
+and eventually all available planes would be in use, cancelling the performance
+advantage -- until a new `CLRS` is issued. These new colours should be inclusive-ORed with
+the current mask. If some _dark turuqoise_ (0011) text on white appears, we could compute
+a new enable mask as follows:
+```
+    INK: 0011 (dark turquoise) _newly set_
+  PAPER: 1110 (yellow)
+
+         0011 XOR 1110 = 1101 (temporary mask)
+old mask 1100  OR 1101 = **1101 (new _enable mask_)**
+
+    INK: 0011 (dark turquoise)
+  PAPER: 1111 (white) _newly set_
+
+         0011 XOR 1111 = 1100 (temporary mask)
+old mask 1101  OR 1100 = **1101 (new _enable mask_)**
+```
 
 ### Palette
 
@@ -103,4 +122,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190818-1839_
+_last modified 20190819-2129_
