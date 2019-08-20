@@ -99,14 +99,21 @@ a new enable mask as follows:
   PAPER: 1110 (yellow)
 
          0011 XOR 1110 = 1101 (temporary mask)
-old mask 1100  OR 1101 = **1101 (new _enable mask_)**
+old mask 1100  OR 1101 = 1101 (new _enable mask_ for this setting)
 
     INK: 0011 (dark turquoise)
-  PAPER: 1111 (white) _newly set_
+  PAPER: 1111 (white) newly set
 
          0011 XOR 1111 = 1100 (temporary mask)
-old mask 1101  OR 1100 = **1101 (new _enable mask_)**
+old mask 1101  OR 1100 = 1101 (definitive enable mask)
 ```
+
+Printing logic operations are equally simple. _Disabled planes_ are of course ignored and,
+thanks to the multiplane writes, easily done. A _temporary mask_ as per the previous examples must be computed,
+and then ANDing that with both INK and PAPER codes results on which planes will take the
+_normal_ pattern (INK) and the _inverse_ pattern (PAPER).
+If more than a bit is set from those AND ops, the pattern may be set at obce on all of them,
+thanks to yhe hardware trick.
 
 ### Palette
 
@@ -122,4 +129,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190819-2129_
+_last modified 20190820-1521_
