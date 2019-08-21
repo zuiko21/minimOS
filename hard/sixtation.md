@@ -112,8 +112,8 @@ Printing logic operations are equally simple. _Disabled planes_ are of course ig
 thanks to the multiplane writes, easily done. A _temporary mask_ as per the previous examples must be computed,
 and then ANDing that with both INK and PAPER codes results on which planes will take the
 _normal_ pattern (INK) and the _inverse_ pattern (PAPER).
-If more than a bit is set from those AND ops, the pattern may be set at obce on all of them,
-thanks to yhe hardware trick.
+If more than a bit is set from those AND ops, the pattern may be set at once on all of them,
+thanks to the multiplane write feature.
 
 ### Palette
 
@@ -129,4 +129,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190820-1521_
+_last modified 20190821-2139_
