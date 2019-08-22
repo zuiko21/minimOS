@@ -113,7 +113,7 @@ thanks to the multiplane writes, easily done. A _temporary mask_ as per the prev
 and then ANDing that with both INK and PAPER codes results on which planes will take the
 _normal_ pattern (INK) and the _inverse_ pattern (PAPER).
 If more than a bit is set from those AND ops, the pattern may be set at once on all of them,
-thanks to the multiplane write feature.
+thanks to the multiplane write feature. However, unaffected planes must be checked for.
 
 ### Palette
 
@@ -129,4 +129,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190821-2139_
+_last modified 20190822-2347_
