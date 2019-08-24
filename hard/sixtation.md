@@ -45,7 +45,7 @@ with the _Apple Portrait Display_ (with non-square pixels, unfortunately), all
 within software configuration. While this reduced resolution is compatible with the
 Acer monitor, it is not recommended as sharpness will be sub-optimal.
 
-### VRAM
+### VRAM layout
 
 Being **6445-based** (improved 6845), VRAM is organized in an _Amstrad-like_ fashion, but
 with **16 scanlines per row**. While a _bitmapped_ display is optimum for performance,
@@ -129,4 +129,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190822-2347_
+_last modified 20190824-1918_
