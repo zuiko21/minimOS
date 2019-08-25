@@ -115,6 +115,20 @@ _normal_ pattern (INK) and the _inverse_ pattern (PAPER).
 If more than a bit is set from those AND ops, the pattern may be set at once on all of them,
 thanks to the multiplane write feature. However, unaffected planes must be checked for.
 
+For instance:
+```
+    INK: 0011 (dark turquoise)
+  PAPER: 1111 (white) newly set
+
+         0011 XOR 1111 = 1100 (temporary mask)
+           enable mask = 1101 (previously set)
+
+         0011 AND 1100 = 0000 (ink AND temp, no "positive" planes to be set)
+         1111 AND 1100 = 1100 (paper AND temp, planes 0 & 1 to be set with INVERTED pattern)
+
+         1100 XOR 1101 = 0001 (temp XOR mask, plane 3 is NOT unaffected!)
+         0001 AND 1101 = 0001 (...AND mask, plane 3 to be filled with 1s)
+```
 ### Palette
 
 The _planar_ video architecture allows easy **bit-depth configuration**, either at
@@ -129,4 +143,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190824-1918_
+_last modified 20190825-1800_
