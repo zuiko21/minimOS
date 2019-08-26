@@ -24,7 +24,7 @@ are supported:
 - **5 MiB** (add one Garth module, plus the supplied megabyte)
 - **8 MiB** (needs two Garth modules, although two chips on the second one will remain unused)
 
-Memory addresses above `$800000` will be reserved for special I/O, whereas above `$C00000`
+Memory addresses above `$800000` will be reserved for I/O boards, and those above `$C00000`
 are intended for _library_ ROM.
 
 ## Graphic card & clock
@@ -143,4 +143,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190825-1800_
+_last modified 20190826-0931_

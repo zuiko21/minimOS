@@ -80,7 +80,7 @@ _When required, the normally hidden **glyph** is obtained by preceeding the code
 
 ^ key|Dec|Hex|ASCII|mOS|glyph & description|notes
 -----|---|---|-----|---|-------------------|-----
--|0|$00|`NUL`|**`NULL`**|&#9635; square with block|(1)
+-|0|$00|`NUL`|**`SWFC`**|&#9635; square with block|switch focus/window (1)
 A|1|$01|`SOH`|**`CRET`**|&#8606; double arrow left|carriage return (without line feed)
 B|2|$02|`STX`|**`LEFT`**|&#8678; arrow left|cursor left (no backspace)
 C|3|$03|`ETX`|**`TERM`**|&#9211; ball switch|send TERM signal
@@ -131,4 +131,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 7.May take _extra_ byte for screen sizes over 1024 pixels, but extra bits are MSB.
  
-_last modified 20190812-2319_
+_last modified 20190826-0933_
