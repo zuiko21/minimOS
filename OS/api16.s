@@ -1,7 +1,7 @@
 ; minimOS·16 generic Kernel API!
 ; v0.6rc22, should match kernel16.s
 ; (c) 2016-2019 Carlos J. Santisteban
-; last modified 20190201-1209
+; last modified 20190828-2052
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
@@ -1020,6 +1020,7 @@ bf_ok:
 ; this MUST handle DLEs accordingly, cin_mode as global or PID-based array???
 	.asc	"<B_EVENT>"
 b_event:
+; TO DO check whether zero, if so just switch to another foreground task
 	CPY #3				; is it ^C?
 	BNE be_nc
 		LDA #SIGTERM

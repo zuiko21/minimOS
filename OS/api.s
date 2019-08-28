@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc27, must match kernel.s
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190201-1014
+; last modified 20190828-2052
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -824,6 +824,7 @@ bf_ok:
 ; this MUST handle DLEs accordingly, cin_mode as global or PID-based array???
 	.asc	"<B_EVENT>"
 b_event:
+; if Y is zero, should switch foreground task/window!
 	CPY #3				; is it ^C?
 	BNE be_nc
 		LDA #SIGTERM
