@@ -1,7 +1,7 @@
 ; minimOS generic Kernel API
 ; v0.6rc27, must match kernel.s
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190828-2052
+; last modified 20190830-2305
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -38,6 +38,7 @@ k_vec:
 	.word	b_flags		; get execution flags of a task ***eeeeeeeeeek
 	.word	set_hndl	; set SIGTERM handler
 	.word	b_yield		; give away CPU time for I/O-bound process ***does nothing
+; should I replace these by some get_fg _window_?
 	.word	b_fore		; set foreground task ***new
 	.word	get_fg		; get foreground task ***newer
 ; non-patched task management
