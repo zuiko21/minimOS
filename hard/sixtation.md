@@ -38,7 +38,9 @@ seems quite suitable.
 
 Divided by 8 it will generate the **9 MHz CPU clock** (instead of the previously specced
 _10.7 MHz_), and further halved will fit the _4.5 MHz **HD6445** CRTC_ clock. On the other
-hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU.
+hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU. Since
+all timing is derived from the _dot clock_, the main CPU board **has no oscillator**, as
+it will be located on the video board.
 
 On the other hand, a somewhat reduced resolution of **880 x 864** should be compatible
 with the _Apple Portrait Display_ (with non-square pixels, unfortunately), all
@@ -143,4 +145,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190826-0931_
+_last modified 20190901-1045_
