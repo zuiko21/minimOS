@@ -6,12 +6,14 @@ A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MBy
 ## Specifications
 
 - CPU: 65816 @ **9 MHz**
-- FPU: 68882 @ **36 MHz** (overclocked)
+- FPU: 68882 @ **36 MHz** (overclocked\*)
 - VDU: 6445 based, **1360x768**, up to 8 bpp
 - RAM: **1 MiB** on board, two _Garth_ slots (up to **8 MiB**, 5 MiB possible)
 - ROM: 32 kiB _Kernel_, up to 4 MiB _library_
 - Storage: CF & SD (possibly _bit-banged_) interfaces
 - Usual 65xx ports, including **PS/2**
+
+\*) A jumper may provide a 18 Mhz clock for the FPU, in case overclocking fails.
 
 ## Memory
 
@@ -145,4 +147,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190901-1045_
+_last modified 20190902-1544_
