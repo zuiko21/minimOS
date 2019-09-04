@@ -13,7 +13,10 @@ A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MBy
 - Storage: CF & SD (possibly _bit-banged_) interfaces
 - Usual 65xx ports, including **PS/2**
 
-\*) A jumper may provide a 18 Mhz clock for the FPU, in case overclocking fails.
+\*) A jumper may provide a 18 Mhz clock for the FPU, in case overclocking fails. The main
+concern is that, unkike the 68040, the 68020/030/**881/882*** have the silicon die _atop_
+the ceramic PGA substrate, with an **air gap** between it and the metallic cover, making
+the use of a _heatsink_ **totally ineffective**.
 
 ## Memory
 
@@ -147,4 +150,4 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190902-1544_
+_last modified 20190904-2103_
