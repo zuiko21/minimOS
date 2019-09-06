@@ -143,11 +143,12 @@ build time or on-the-fly. While a single bit _bitmap_ (128 kiB) leads to simple
 construction and high performance, it may be easily scaled by adding more RAM chips.
 Several _fixed_ palettes (both colour and greyscale) have been considered depending on
 bit depth (not limited to powers of two!), but the most versatile (and relatively simple)
-option is the use of a suitable **RAMDAC**, preferibly of 24-bit type.
+option is the use of a suitable **RAMDAC**, preferibly of 24-bit type. The well-known
+**Bt 478** RAMDAC, for inatance, is readily available and pretty adequate for this.
 
 ## Storage
 
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190904-2103_
+_last modified 20190906-2150_
