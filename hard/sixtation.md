@@ -136,6 +136,7 @@ For instance:
          1100 XOR 1101 = 0001 (temp XOR mask, plane 3 is NOT unaffected!)
          0001 AND 1101 = 0001 (...AND mask, plane 3 to be filled with 1s)
 ```
+
 ### Palette
 
 The _planar_ video architecture allows easy **bit-depth configuration**, either at
@@ -144,11 +145,12 @@ construction and high performance, it may be easily scaled by adding more RAM ch
 Several _fixed_ palettes (both colour and greyscale) have been considered depending on
 bit depth (not limited to powers of two!), but the most versatile (and relatively simple)
 option is the use of a suitable **RAMDAC**, preferibly of 24-bit type. The well-known
-**Bt 478** RAMDAC, for inatance, is readily available and pretty adequate for this.
+**Bt 478** RAMDAC, for instance, is readily available and pretty adequate for this (80
+MHz version required).
 
 ## Storage
 
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190906-2150_
+_last modified 20190907-2351_
