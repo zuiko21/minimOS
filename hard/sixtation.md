@@ -11,6 +11,7 @@ A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MBy
 - RAM: **1 MiB** on board, two _Garth_ slots (up to **8 MiB**, 5 MiB possible)
 - ROM: 32 kiB _Kernel_, up to 4 MiB _library_
 - Storage: CF & SD (possibly _bit-banged_) interfaces
+- RTC (146818) and DUART (16C552)
 - Usual 65xx ports, including **PS/2**
 
 \*) A jumper may provide a 18 Mhz clock for the FPU, in case overclocking fails. The main
@@ -153,4 +154,4 @@ MHz version required).
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190907-2351_
+_last modified 20190909-1643_
