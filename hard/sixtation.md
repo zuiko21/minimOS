@@ -5,8 +5,8 @@ A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MBy
 
 ## Specifications
 
-- CPU: 65816 @ **9 MHz**
-- FPU: 68882 @ **36 MHz** (overclocked\*)
+- CPU: 65816 @ **9 MHz** (~2.5 MIPS)
+- FPU: 68882 @ **36 MHz** (~0.38 MFLOPS, slightly overclocked\*)
 - VDU: 6445 based, **1360x768**, up to 8 bpp
 - RAM: **1 MiB** on board, two _Garth_ slots (up to **8 MiB**, 5 MiB possible)
 - ROM: 32 kiB _Kernel_, up to 4 MiB _library_
@@ -17,7 +17,7 @@ A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MBy
 \*) A jumper may provide a 18 Mhz clock for the FPU, in case overclocking fails. The main
 concern is that, unkike the 68040, the 68020/030/**881/882*** have the silicon die _atop_
 the ceramic PGA substrate, with an **air gap** between it and the metallic cover, making
-the use of a _heatsink_ **totally ineffective**.
+the use of a _heatsink_ **highly ineffective**.
 
 ## Memory
 
@@ -154,4 +154,4 @@ MHz version required).
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20190909-1643_
+_last modified 20190910-2219_
