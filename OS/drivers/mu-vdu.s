@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190809-1639
+; last modified 20190912-1557
 
 #include "../usual.h"
 
@@ -607,9 +607,11 @@ vcy_ok:
 ; original code was 49b, <89t
 ; tables take 56 bytes (for 36x28 mode) but this code is 26b, <38t
 vs_ptr:
-	LDX va_y		; current row
-	LDY vla_h, X		; is index for MSB table
 	LDA va_x		; current column
+	LDX va_y		; current row
+; ** common entry point with A=column, X=row **
+vs_rc:
+	LDY vla_h, X		; is index for MSB table
 	ASL
 	ASL
 	ASL			; 8 bytes per char
