@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190912-1557
+; last modified 20190915-1754
 
 #include "../usual.h"
 
@@ -552,8 +552,29 @@ vig_pix:
 		BCC vig_rts			; no, just return
 ; compute address and set plot ** TO DO ** TO DO **
 vig_dot:
+	_STZA v_src			; reset scanline in row
+	_STZA v_src+1			; ...and pixel in byte
+	LDA #VA_HGHT*VA_SCAN	; total lines, OK if less than 255!
+	SEC
+	SBC va_gy			; mirrored Y coordinate! off by 1?
+	LSR					; divide by 8...
+	ROR v_src			; ...and keep the raster part on MSb
+	LSR
+	ROR v_src
+	LSR
+	ROR v_src
+	TAX					; row coordinate
+	LDA va_gx			; X coordinate is OK
+	LSR					; divide by 8...
+	ROR v_src+1			; ...and keep the pixel in byte part on MSb
+	LSR
+	ROR v_src+1
+	LSR
+	ROR v_src+1
+	JSR vs_rc			; compute byte address within row
 
-; bounds checking (unified)
+
+; ** bounds checking (unified) **
 ; horizontal
 vig_chx:
 	LDX va_gx
