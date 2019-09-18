@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a3
 ; (c) 2019 Carlos J. Santisteban
-; last modified 20190915-1754
+; last modified 20190919-2148
 
 #include "../usual.h"
 
@@ -459,8 +459,10 @@ va_bs:
 ; **********************************
 #ifdef	TEKTRONIX
 vch_plt:		; 27, plot routine (was ASCII 28) ** TO DO **
+	_DR_ERR(UNAVAIL)	; placeholder
 
 vch_drw:		; 29, draw routine (same as ASCII!) ** TO DO **
+	_DR_ERR(UNAVAIL)	; placeholder
 
 vch_inc:		; 31, incremental plotting (was ASCII 30)
 	TAX					; check for null
