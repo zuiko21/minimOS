@@ -1,7 +1,7 @@
 ; minimOS 0.6rc22 API/ABI
 ; *** not compatible with earlier versions ***
 ; (c) 2012-2019 Carlos J. Santisteban
-; last modified 20190204-1304
+; last modified 20190920-2248
 
 ; *************************************************
 ; *************************************************
@@ -232,6 +232,27 @@ W_OPEN		=   0	; active window in use
 W_CLOSE		= 192	; closed, free window
 W_FREE		= 128	; no longer in use, may be closed by kernel itself
 W_REQ		=  64	; requested to close, will send SIGTERM to creator braid
+
+; *****************************************
+; ** device numbers and identifier names ** TBD
+; *****************************************
+; 128...135	lr0-7, low-RAM devices
+; 136...143	ff0-7, fixed-function devices, e.g. multitask, windowing...
+; 144...151	io0-7, combined I/O devices, e.g. terminal
+; 152...159	
+; 160...167	st0-7, storage devices (R/W)
+; 168...175	ro0-7, massive read-only devices
+; 176...183	nt0-7, network interfaces?
+; 184...191	kb0-7, keyboards & keypads
+; 192...199	td0-7, text displays
+; 200...207	gd0-7, graphic (bitmapped) displays
+; 208...215	pt0-7, pointing devices, e.g. mouse
+; 216...223	pr0-7, printers?
+; 224...232	gp0-7, general purpose I/O, e.g. VIAport
+; 232...239	as0-7, asynchronous serial, e.g. RS-232
+; 240...247	ss0-7, synchronous serial, e.g. SS-22
+; 248...254	ud0-6, user defined
+; 255		rdv, reserved
 
 /*
 ; ****************************************************
