@@ -22,7 +22,10 @@ int main(void) {
 		return 1;
 	}
 /* create awful HTML header */
-	fprintf(f,"<html><body><table border='0'>");
+	fprintf(f,"<html>\n\t<head>\n\t\t");
+	fprintf(f,"<title>minimOS palette</title>");
+	fprintf(f,"\n\t\</head>\n\t<body>\n");
+	fprintf(f,"\t\t<table border='0'>\n");
 /* non-indented code follows... do not attempt this at home, kids! */
 /* high nibble */
 	for (r1=0; r1<2; r1++) {
