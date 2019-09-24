@@ -21,44 +21,48 @@ int main(void) {
 		printf("No file!\n");
 		return 1;
 	}
-/* create awful HTML header */
-	fprintf(f,"<html>\n\t<head>\n\t\t");
-	fprintf(f,"<title>minimOS palette</title>");
-	fprintf(f,"\n\t\</head>\n\t<body>\n");
+/* create basic HTML header */
+	fprintf(f,"<html>\n\t<head>\n");
+	fprintf(f,"\t\t<title>minimOS palette</title>\n");
+	fprintf(f,"\t\</head>\n\t<body>\n");
 	fprintf(f,"\t\t<table border='0'>\n");
-/* non-indented code follows... do not attempt this at home, kids! */
 /* high nibble */
 	for (r1=0; r1<2; r1++) {
-	for (g0=0; g0<2; g0++) {
-	for (r0=0; r0<2; r0++) {
-	for (b0=0; b0<2; b0++) {
+		for (g0=0; g0<2; g0++) {
+			for (r0=0; r0<2; r0++) {
+				for (b0=0; b0<2; b0++) {
 /* low nibble, switch row here */
-		fprintf(f,"<tr>");
-		for (g2=0; g2<2; g2++) {
-		for (r2=0; r2<2; r2++) {
-		for (g1=0; g1<2; g1++) {
-		for (b1=0; b1<2; b1++) {
-//			fprintf(f,"<td>%d%d%d%d%d%d%d%d</td>",r1,g0,r0,b0,g2,r2,g1,b1);
-//			fprintf(f,"<td>%d</td>",bin(r1,g0,r0,b0,g2,r2,g1,b1));
+					fprintf(f,"\t\t\t<tr>\n");
+					for (g2=0; g2<2; g2++) {
+						for (r2=0; r2<2; r2++) {
+							for (g1=0; g1<2; g1++) {
+								for (b1=0; b1<2; b1++) {
+/* compute colour values and labels */
+									R=bin(r2,r1,r0,r2,r1,r0,r2,r1);
+									G=bin(g2,g1,g0,g2,g1,g0,g2,g1);
+									B=bin(b1,b0,b1,b0,b1,b0,b1,b0);
 
-			R=bin(r2,r1,r0,r2,r2,r2,r2,r2);
-			G=bin(g2,g1,g0,g2,g2,g2,g2,g2);
-			B=bin(b1,b0,b1,b0,b1,b0,b1,b0);
-
-			tr=48+bin(0,0,0,0,0,r2,r1,r0);
-			tg=48+bin(0,0,0,0,0,g2,g1,g0);
-			tb=48+bin(0,0,0,0,0,0,b1,b0);
-
-			if(tg>'3') {
-				fprintf(f,"<td style='color:black;background-color:rgb(%d,%d,%d);'>%c%c%c</td>",R,G,B,tr,tg,tb);
-			} else {
-				fprintf(f,"<td style='color:white;background-color:rgb(%d,%d,%d);'>%c%c%c</td>",R,G,B,tr,tg,tb);
+									tr=48+bin(0,0,0,0,0,r2,r1,r0);
+									tg=48+bin(0,0,0,0,0,g2,g1,g0);
+									tb=48+bin(0,0,0,0,0,0,b1,b0);
+/* generate table cells */
+									fprintf(f,"\t\t\t\t");
+									if(tg>'3') {
+										fprintf(f,"<td style='color:black;background-color:rgb(%d,%d,%d);'>%c%c%c</td>\n",R,G,B,tr,tg,tb);
+									} else {
+										fprintf(f,"<td style='color:white;background-color:rgb(%d,%d,%d);'>%c%c%c</td>\n",R,G,B,tr,tg,tb);
+									}
+								}
+							}
+						}
+					}
+					fprintf(f,"\t\t\t</tr>\n");
+				}
 			}
-		}}}}
-		fprintf(f,"</tr>\n");
-	}}}}
+		}
+	}
 /* complete HTML table */
-	fprintf(f,"</table></body></html>");
+	fprintf(f,"\t\t</table>\n\t</body>\n</html>");
 	fclose(f);
 
 	return 0;
