@@ -24,7 +24,7 @@ int main(void) {
 /* create basic HTML header */
 	fprintf(f,"<html>\n\t<head>\n");
 	fprintf(f,"\t\t<title>minimOS palette</title>\n");
-	fprintf(f,"\t\</head>\n\t<body>\n");
+	fprintf(f,"\t</head>\n\t<body>\n");
 	fprintf(f,"\t\t<table border='0'>\n");
 /* high nibble */
 	for (r1=0; r1<2; r1++) {
