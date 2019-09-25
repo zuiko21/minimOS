@@ -1,6 +1,7 @@
 /*
  * minimOS palette generator
  * (c) 2019 Carlos J. Santisteban
+ * last modified: 20190925-0859
  */
 
 #include <stdio.h>
@@ -46,12 +47,15 @@ int main(void) {
 									tg=48+bin(0,0,0,0,0,g2,g1,g0);
 									tb=48+bin(0,0,0,0,0,0,b1,b0);
 /* generate table cells */
-									fprintf(f,"\t\t\t\t");
+									fprintf(f,"\t\t\t\t<td style='color:");
+/* select foreground colour for adequate contrast against background */
 									if(tg>'3') {
-										fprintf(f,"<td style='color:black;background-color:rgb(%d,%d,%d);'>%c%c%c</td>\n",R,G,B,tr,tg,tb);
+										fprintf(f,"black");
 									} else {
-										fprintf(f,"<td style='color:white;background-color:rgb(%d,%d,%d);'>%c%c%c</td>\n",R,G,B,tr,tg,tb);
+										fprintf(f,"white");
 									}
+/* continue with actual cell contents */
+									fprintf(f,";background-color:rgb(%d,%d,%d);'>%c%c%c</td>\n",R,G,B,tr,tg,tb);
 								}
 							}
 						}
