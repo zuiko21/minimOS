@@ -1,7 +1,7 @@
 /*
  * minimOS palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified: 20190925-0859
+ * last modified: 20190925-0905
  */
 
 #include <stdio.h>
@@ -39,9 +39,9 @@ int main(void) {
 							for (g1=0; g1<2; g1++) {
 								for (b1=0; b1<2; b1++) {
 /* compute colour values and labels */
-									R=bin(r2,r1,r0,r2,r1,r0,r2,r1);
-									G=bin(g2,g1,g0,g2,g1,g0,g2,g1);
-									B=bin(b1,b0,b1,b0,b1,b0,b1,b0);
+									R=bin(0, 0, 0, 0, 0, r2,r1,r0)*255/7;
+									G=bin(0, 0, 0, 0, 0, g2,g1,g0)*255/7;
+									B=bin(0, 0, 0, 0, 0, 0, b1,b0)*255/3;
 
 									tr=48+bin(0,0,0,0,0,r2,r1,r0);
 									tg=48+bin(0,0,0,0,0,g2,g1,g0);
