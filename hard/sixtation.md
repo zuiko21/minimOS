@@ -149,9 +149,9 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type. The well-
 **Bt 478** RAMDAC, for instance, is readily available and pretty adequate for this (**80
 MHz** version required).
 
-[_Suggested_ **8-bit palette**](../other/256col+s+g.html) includes:
+[_Suggested_ **8-bit palette**](../forge/palettes/256col+s+g.html) includes:
 
-- **16 system colours** from the _GRgB_ scheme (like those on [_Acapulco_ display](acapulco.md)
+- **16 system colours** from the _GRgB_ scheme (like those on [_Acapulco_ display](acapulco.md))
 - **16 grey entries** besides black and white _from the System colours_ (for a total of **18-level greyscale**)
 - The remaining 224 entries on a _7-8-4 scheme_. **These may be changed** if required.
 
@@ -163,4 +163,4 @@ for photographic images.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20191001-0959_
+_last modified 20191001-1257_
