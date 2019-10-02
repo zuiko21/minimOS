@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191001-1219 */
+ *	last modified 20191002-1012 */
 
 int main(void) {
 	char nombre[80];				/* string for filenames, plus read buffer */
@@ -34,5 +34,11 @@ P3
 #whitespace is ignored
 */
 	
+/* neighbouring colours: (RRRBGGGB)
+R & %11100000 if >=%100000
+| G>>4 & %1110
+| B&%10000000 >>3
+| B&%01000000 >>7
+*/
 	return 0;
 }
