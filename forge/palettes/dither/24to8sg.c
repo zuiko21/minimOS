@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191002-1012 */
+ *	last modified 20191004-0847 */
 
 int main(void) {
 	char nombre[80];				/* string for filenames, plus read buffer */
@@ -34,11 +34,16 @@ P3
 #whitespace is ignored
 */
 	
-/* neighbouring colours: (RRRBGGGB)
+/* neighbouring colours: (RRRBGGGB) NO LONGER VALID
 R & %11100000 if >=%100000
 | G>>4 & %1110
 | B&%10000000 >>3
 | B&%01000000 >>7
 */
+
+/* new 894 palette:
+ * R values = $12, 37, 5B, 80, A4, C8, ED
+ * G values = $10, 30, 50, 70, 8F, AF, CF, EF
+ * B values = $00, 55, AA, FF... or $20, 60, 9F, DF
 	return 0;
 }
