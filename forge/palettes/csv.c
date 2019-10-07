@@ -15,7 +15,8 @@ int main(void) {
 	int R[7]={18,55,91,128,164,200,237};
 
 /* open output file */
-	arch=fopen("256col.csv","w");
+/* must check about GPL format... */
+	arch=fopen("256col.gpl","w");
 	if (arch==NULL) {
 		printf("*** CANNOT WRITE ***\n");
 		return -1;
