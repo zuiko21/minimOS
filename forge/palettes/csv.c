@@ -2,7 +2,7 @@
 
 /* GIMP palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified 20191008-2238
+ * last modified 20191009-0822
  */
 
 int main(void) {
@@ -21,7 +21,7 @@ int main(void) {
 		return -1;
 	}
 /* GIMP palette header */
-	fprintf(arch,"GIMP Palette\n\Name: minimOS\nColumns: 16\n#\n");
+	fprintf(arch,"GIMP Palette\nName: minimOS\nColumns: 16\n#\n");
 /* create system colours */
 	for (h=0;h<2;h++) {
 		for (r=0;r<2;r++) {
