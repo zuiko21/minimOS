@@ -2,7 +2,7 @@
 
 /* GIMP system palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified 20191011-0953
+ * last modified 20191011-1008
  */
 
 int main(void) {
@@ -10,9 +10,8 @@ int main(void) {
 	int r,g,b,h,l,i=0;
 
 /* scale arrays */
-	int B[4]={32,96,159,223};
-	int G[8]={16,48,80,112,143,175,207,239};
-	int R[7]={18,55,91,128,164,200,237};
+	int G[4]={0,85,170,255};
+	int RB[2]={0,255};
 
 /* open output file */
 	arch=fopen("minimOSsys.gpl","w");
@@ -28,7 +27,7 @@ int main(void) {
 			for (l=0;l<2;l++) {
 				for (b=0;b<2;b++) {
 					g=h*2+l;
-					fprintf(arch,"%d %d %d\tIndex %d\n",r*255,g*85,b*255,i++);
+					fprintf(arch,"%d %d %d\tIndex %d\n",RB[r],G[g],RB[b],i++);
 				}
 			}
 		}
