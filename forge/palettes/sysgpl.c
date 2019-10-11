@@ -2,7 +2,7 @@
 
 /* GIMP system palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified 20191011-1008
+ * last modified 20191011-1908
  */
 
 int main(void) {
@@ -26,19 +26,20 @@ int main(void) {
 		for (r=0;r<2;r++) {
 			for (l=0;l<2;l++) {
 				for (b=0;b<2;b++) {
-					g=h*2+l;
+					g=(h<<1)|l;
 					fprintf(arch,"%d %d %d\tIndex %d\n",RB[r],G[g],RB[b],i++);
 				}
 			}
 		}
 	}
+	printf("Created %d system colours\n",i);
 /* create system greyscale */
 	for (g=15;g<255;g+=15) {
 		fprintf(arch,"%d %d %d\tIndex %d\n",g,g,g,i++);
 	}
 
-	printf("Created %d entries\n",i);
 	fclose(arch);
+	printf("Added system greyscale (total %d entries)\n",i);
 
 	return 0;
 }
