@@ -1,13 +1,16 @@
-#include <stdio.h>
-#include <string.h>
-
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191012-1655 */
+ *	last modified 20191012-1730 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main(void) {
 	char nombre[80];			/* string for filenames, plus read buffer */
-	char *pt;				/* pointer to dynamically allocated output buffer */
+	char *pt;				/* temporary pointer */
+	unsigned char *R, *G, *B, *I;		/* pointer to dynamically allocated buffers */
+	int sx, sy, x, y;			/* coordinates and limits */
 	FILE *fi, *fo;				/* file handlers */
 
 /* get input file */
@@ -15,14 +18,14 @@ int main(void) {
 	fgets(nombre, 80, stdin);		/* no longer scanf! */
 	fi=fopen(nombre, "r");			/* open input file */
 	if (fi==NULL) {
-		printf("NO FILE!\n");		/* error handling */
+		printf("NO FILE!\n");			/* error handling */
 		return -1;
 	}
 
 /* swap extension on filename */
-	pt=strstr(nombre,".ppm");		/*** temporary pointer use ***/
+	pt=strstr(nombre, ".ppm");		/* temporary pointer use */
 	if (pt==NULL) {				/* extension not found? */
-		pt=strstr(nombre,".PPM");		/* perhaps in uppercase */
+		pt=strstr(nombre, ".PPM");		/* perhaps in uppercase */
 		if (pt==NULL) {
 			printf("WRONG TYPE!\n");
 			return -1;
@@ -30,12 +33,24 @@ int main(void) {
 	}
 	*pt='\0';				/* cut extension off */
 	strcat(nombre, ".six");			/* create output filename */
-	printf("Output file:%s\n",nombre);
+	printf("Output file:%s\n", nombre);
 
 /* prepare output file*/
 	fo=fopen(nombre, "wb");			/* open output file */
 	if (fo==NULL) {
 		printf("CANNOT OUTPUT!\n");	/* error handling */
+		return -1;
+	}
+
+/* start reading PPM in order to determine size */
+
+/* allocate buffer space */
+	R=(unsigned char*)malloc(sx*sy);
+	G=(unsigned char*)malloc(sx*sy);
+	B=(unsigned char*)malloc(sx*sy);
+	I=(unsigned char*)malloc(sx*sy);	/* indexed output */
+	if(R==NULL||G==NULL||G==NULL||I==NULL) {
+		printf("OUT OF MEMORY!\n");
 		return -1;
 	}
 
@@ -68,6 +83,16 @@ R & %11100000 if >=%100000
 /* cleanup and exit */
 	fclose(fi);
 	fclose(fo);
+/* THIS FOR DEBUGGING */
+	if(R==NULL||G==NULL||G==NULL||I==NULL) {
+		printf("OUT OF MEMORY!\n");
+		return -1;
+	}
+/* release memory */
+	free(R);
+	free(G);
+	free(B);
+	free(I);
 
 	return 0;
 }
