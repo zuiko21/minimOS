@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191012-1730 */
+ *	last modified 20191013-2234 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +9,7 @@
 int main(void) {
 	char nombre[80];			/* string for filenames, plus read buffer */
 	char *pt;				/* temporary pointer */
-	unsigned char *R, *G, *B, *I;		/* pointer to dynamically allocated buffers */
+	unsigned char *R, *G, *B, *I;		/* pointers to dynamically allocated buffers */
 	int sx, sy, x, y;			/* coordinates and limits */
 	FILE *fi, *fo;				/* file handlers */
 
@@ -43,6 +43,8 @@ int main(void) {
 	}
 
 /* start reading PPM in order to determine size */
+sx=1360;	/* placeholders */
+sy=768;
 
 /* allocate buffer space */
 	R=(unsigned char*)malloc(sx*sy);
