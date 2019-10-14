@@ -1,15 +1,66 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191013-2234 */
+ *	last modified 20191014-2205 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+/* global variables */
+unsigned char levR[7]={18, 55, 91, 128, 164, 200, 237};
+unsigned char levG[8]={16, 48, 80, 112, 143, 175, 207, 239};
+unsigned char levB[4]={32, 96, 159, 223};
+
+/***********************/
+/* auxiliary functions */
+/***********************/
+unsigned char *coord(int x, int y, int sx) {
+/* compute offset from coordinates */
+	return (unsigned char*)(sx*y+x);
+}
+
+unsigned char palR(int i) {
+/* get red value from standard palette */
+	if (i>31) {				/* user-defined colours */
+		return levR[((i&224)>>5)-1];
+	} else if (i<16) {			/* system colours */
+		return (i&4)?255:0;
+	} else {				/* system grayscale */
+		return (i-15)*15;
+	}
+}
+
+unsigned char palG(int i) {
+/* get green value from standard palette */
+	if (i>31) {				/* user-defined colours */
+		return levG[(i&15)>>1];
+	} else if (i<16) {			/* system colours */
+		return (((i&8)>>2)|((i&2)>>1))*85;
+	} else {				/* system grayscale */
+		return (i-15)*15;
+	}
+}
+
+unsigned char palB(int i) {
+/* get blue value from standard palette */
+	if (i>31) {				/* user-defined colours */
+		return levB[((i&16)>>3)|(i&1)];
+	} else if (i<16) {			/* system colours */
+		return (i&1)?255:0;
+	} else {				/* system grayscale */
+		return (i-15)*15;
+	}
+}
+
+/****************/
+/* main program */
+/****************/
 int main(void) {
 	char nombre[80];			/* string for filenames, plus read buffer */
 	char *pt;				/* temporary pointer */
 	unsigned char *R, *G, *B, *I;		/* pointers to dynamically allocated buffers */
+	unsigned char r, g, b, i;		/* pixel values and index */
+	char dr, dg, db;			/* error diffusion variables */
 	int sx, sy, x, y;			/* coordinates and limits */
 	FILE *fi, *fo;				/* file handlers */
 
@@ -19,7 +70,7 @@ int main(void) {
 	fi=fopen(nombre, "r");			/* open input file */
 	if (fi==NULL) {
 		printf("NO FILE!\n");			/* error handling */
-		return -1;
+//		return -1;
 	}
 
 /* swap extension on filename */
@@ -43,8 +94,8 @@ int main(void) {
 	}
 
 /* start reading PPM in order to determine size */
-sx=1360;	/* placeholders */
-sy=768;
+sx=1;//360;	/* placeholders */
+sy=1;//768;
 
 /* allocate buffer space */
 	R=(unsigned char*)malloc(sx*sy);
@@ -68,19 +119,27 @@ P3
 #triplet order is R G B
 #whitespace is ignored
 */
-	
-/* neighbouring colours: (RRRBGGGB) NO LONGER VALID
-R & %11100000 if >=%100000
-| G>>4 & %1110
-| B&%10000000 >>3
-| B&%01000000 >>7
-*/
 
-/* new 894 palette: OBSOLETE, look for 895 instead!
- * R values = $12, 37, 5B, 80, A4, C8, ED
- * G values = $10, 30, 50, 70, 8F, AF, CF, EF
- * B values = $00, 55, AA, FF... or $20, 60, 9F, DF
-*/
+/* scan original file for error diffusion */
+	pt=0;					/* base offset */
+	for (y=0;y<sy;y++) {
+		for (x=0;x<sx;x++) {
+			pt=coord(x,y,sx);			/* current pixel */
+			r=R[pt];				/* component values */
+			g=G[pt];
+			b=B[pt];
+/* seek nearest colour */
+i=31;/*placeholder*/
+			I[pt]=i;				/* set indexed pixel */
+			/* might be pushed directly into output file as well */
+/* compute error per channel */
+			dr=r-palR(i);
+			dg=g-palG(i);
+			db=b-palB(i);
+/* diffuse error */
+
+		}
+	}
 
 /* cleanup and exit */
 	fclose(fi);
