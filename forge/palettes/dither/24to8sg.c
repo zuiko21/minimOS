@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191014-2205 */
+ *	last modified 20191014-2226 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,9 +14,9 @@ unsigned char levB[4]={32, 96, 159, 223};
 /***********************/
 /* auxiliary functions */
 /***********************/
-unsigned char *coord(int x, int y, int sx) {
+long coord(int x, int y, int sx) {
 /* compute offset from coordinates */
-	return (unsigned char*)(sx*y+x);
+	return (long)sx*y+x;
 }
 
 unsigned char palR(int i) {
@@ -62,6 +62,7 @@ int main(void) {
 	unsigned char r, g, b, i;		/* pixel values and index */
 	char dr, dg, db;			/* error diffusion variables */
 	int sx, sy, x, y;			/* coordinates and limits */
+	long xy;
 	FILE *fi, *fo;				/* file handlers */
 
 /* get input file */
@@ -124,20 +125,20 @@ P3
 	pt=0;					/* base offset */
 	for (y=0;y<sy;y++) {
 		for (x=0;x<sx;x++) {
-			pt=coord(x,y,sx);			/* current pixel */
-			r=R[pt];				/* component values */
-			g=G[pt];
-			b=B[pt];
+			xy=coord(x,y,sx);			/* current pixel */
+			r=R[xy];				/* component values */
+			g=G[xy];
+			b=B[xy];
 /* seek nearest colour */
 i=31;/*placeholder*/
-			I[pt]=i;				/* set indexed pixel */
+			I[xy]=i;				/* set indexed pixel */
 			/* might be pushed directly into output file as well */
 /* compute error per channel */
 			dr=r-palR(i);
 			dg=g-palG(i);
 			db=b-palB(i);
 /* diffuse error */
-
+			
 		}
 	}
 
