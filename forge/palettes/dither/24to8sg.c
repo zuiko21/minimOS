@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191015-1343 */
+ *	last modified 20191015-1418 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,73 +12,16 @@ unsigned char levG[8]=	{16, 48, 80, 112, 143, 175, 207, 239};
 unsigned char levB[4]=	{32, 96, 159, 223};
 unsigned char grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240};
 
-/***********************/
-/* auxiliary functions */
-/***********************/
-long coord(int x, int y, int sx, int sy) {
-/* compute offset from coordinates */
-	if (x>=sx|y>=sy)	return -1;	/* negative offset means OUT of bounds! */
-	return (long)sx*y+x;			/* returns long in case int cannot handle one meg */
-}
-
-float luma(unsigned char r, unsigned char g, unsigned char b){
-/* return luminance value for selected RGB values */
-	return 0.3*r+0.59*g+0.11*b;
-}
-
-int prox(unsigned char r, unsigned char g, unsigned char b){
-/* find index closest to suggested RGB, based on luma! */
-	int i, pos;
-	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
-
-	yo=luma(r, g, b);				/* target luminance */
-	for (i=0;i<256;i++) {			/* scan all indexed colours */
-		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
-		if (y<yo) {					/* compute absolute value of difference */
-			y=yo-y;
-		} else {
-			y=y-yo
-		}
-		if (y<diff) {				/* update minimum if found */
-			diff=y;
-			pos=i;					/* keep track of found index */
-		}
-	}
-
-	return i;						/* this is the closest (by luma) indexed colour */
-}
-
-unsigned char byte(int v) {
-/* trim value to unsigned byte */
-	if (v<0)	return 0;			/* check boundaries */
-	if (v>255)	return 255;
-	return (unsigned char)v;		/* standard uncropped value */
-}
-
-unsigned char palR(int i) {
-/* get red value from standard palette */
-	if (i>31)	return levR[((i&224)>>5)-1];	/* user-defined colours */
-	if (i>15)	return grey[i-16];				/* system grayscale */
-	return (i&4)?255:0;							/* system colours otherwise */
-	}
-}
-
-unsigned char palG(int i) {
-/* get green value from standard palette */
-	unsigned char g;
-	if (i>31)	return levG[(i&15)>>1];			/* user-defined colours */
-	if (i>15) 	return grey[i-16];				/* system grayscale */
-	/* system colours otherwise... a bit more difficult here as uses two bits for green */
-	g=((i&8)>>2)|((i&2)>>1);					/* green level 0...3 */
-	return g|(g<<2)|(g<<4)|(g<<6);				/* faster multiply by 85 */
-}
-
-unsigned char palB(int i) {
-/* get blue value from standard palette */
-	if (i>31) 	return levB[((i&16)>>3)|(i&1)];	/* user-defined colours */
-	if (i>15)	return grey[i-16];				/* system grayscale */
-	return (i&1)?255:0;							/* system colours otherwise */
-}
+/************************/
+/* auxiliary prototypes */
+/************************/
+long			coord(int x, int y, int sx, int sy);						/* compute offset from coordinates */
+float			luma(unsigned char r, unsigned char g, unsigned char b);	/* return luminance value for selected RGB values */
+unsigned char	byte(int v);					/* trim value to unsigned byte */
+unsigned char	palR(int i);					/* get red value from standard palette */
+unsigned char	palG(int i);					/* get green value from standard palette */
+unsigned char	palB(int i);					/* get blue value from standard palette */
+int				prox(unsigned char r, unsigned char g, unsigned char b);	/* find index closest to suggested RGB, based on luma! */
 
 /****************/
 /* main program */
@@ -96,6 +39,10 @@ int main(void) {
 /* get input file */
 	printf("PPM file? ");			/* get input filename */
 	fgets(nombre, 80, stdin);		/* no longer scanf! */
+	x=0;							/* damned! I have to manually terminate the string */
+	while (nombre[x]!='\n' && nombre[x]!='\0')	{x++;}	/* look for CR or NULL */
+	nombre[x]=0;					/* filename is ready */
+	printf("Try to open %s...\n", nombre);
 	fi=fopen(nombre, "r");			/* open input file */
 	if (fi==NULL) {
 		printf("NO FILE!\n");			/* error handling */
@@ -104,33 +51,34 @@ int main(void) {
 
 /* swap extension on filename */
 	pt=strstr(nombre, ".ppm");		/* temporary pointer use */
-	if (pt==NULL) {				/* extension not found? */
+	if (pt==NULL) {					/* extension not found? */
 		pt=strstr(nombre, ".PPM");		/* perhaps in uppercase? */
 		if (pt==NULL) {
 			printf("WRONG TYPE!\n");
 			return -1;
 		}
+		printf("(caps) ");
 	}
 	*pt='\0';						/* cut extension off */
 	strcat(nombre, ".six");			/* create output filename */
-	printf("Output file:%s\n", nombre);
+	printf("Output file: %s\n", nombre);
 
 /* prepare output file*/
 	fo=fopen(nombre, "wb");			/* open output file */
 	if (fo==NULL) {
-		printf("CANNOT OUTPUT!\n");	/* error handling */
+		printf("CANNOT OUTPUT!\n");		/* error handling */
 		return -1;
 	}
 
 /* start reading PPM in order to determine size */
-sx=1;//1360;	/* placeholders */
-sy=1;//768;
+sx=768;//1360;	/* placeholders */
+sy=1024;//768;
 
 /* allocate buffer space */
 	R=(unsigned char*)malloc(sx*sy);
 	G=(unsigned char*)malloc(sx*sy);
 	B=(unsigned char*)malloc(sx*sy);
-	if(R==NULL||G==NULL||G==NULL) {
+	if(R==NULL||G==NULL||B==NULL) {
 		printf("OUT OF MEMORY!\n");
 		return -1;
 	}
@@ -150,6 +98,7 @@ P3
 
 /* scan original file for error diffusion */
 	for (y=0;y<sy;y++) {
+		if (!(y&15))	printf("Processing row %d...\n", y);
 		for (x=0;x<sx;x++) {
 			xy=coord(x,y,sx,sy);	/* current pixel, no need to check bounds */
 //			if (xy>=0) {			/* not really needed here... */
@@ -158,7 +107,7 @@ P3
 			b=B[xy];
 /* seek nearest colour */
 			i=prox(r, g, b);		/* find best match */
-			fputc(fo,i);			/* get value into file! */
+			fputc(i,fo);			/* get value into file! */
 /* compute error per channel */
 			dr=r-palR(i);			/* these are signed! */
 			dg=g-palG(i);
@@ -201,8 +150,8 @@ P3
 	fclose(fi);
 	fclose(fo);
 /* THIS FOR DEBUGGING */
-	if(R==NULL||G==NULL||G==NULL) {
-		printf("OUT OF MEMORY!\n");
+	if(R==NULL||G==NULL||B==NULL) {
+		printf("UNALLOCATED MEMORY!\n");
 		return -1;
 	}
 /* release memory */
@@ -211,4 +160,71 @@ P3
 	free(B);
 
 	return 0;
+}
+
+/************************/
+/* function definitions */
+/************************/
+long coord(int x, int y, int sx, int sy) {
+/* compute offset from coordinates */
+	if (x>=sx|y>=sy)	return -1;	/* negative offset means OUT of bounds! */
+	return (long)sx*y+x;			/* returns long in case int cannot handle one meg */
+}
+
+float luma(unsigned char r, unsigned char g, unsigned char b){
+/* return luminance value for selected RGB values */
+	return 0.3*r+0.59*g+0.11*b;
+}
+
+unsigned char byte(int v) {
+/* trim value to unsigned byte */
+	if (v<0)	return 0;			/* check boundaries */
+	if (v>255)	return 255;
+	return (unsigned char)v;		/* standard uncropped value */
+}
+
+unsigned char palR(int i) {
+/* get red value from standard palette */
+	if (i>31)	return levR[((i&224)>>5)-1];	/* user-defined colours */
+	if (i>15)	return grey[i-16];				/* system grayscale */
+	return (i&4)?255:0;							/* system colours otherwise */
+}
+
+unsigned char palG(int i) {
+/* get green value from standard palette */
+	unsigned char g;
+	if (i>31)	return levG[(i&15)>>1];			/* user-defined colours */
+	if (i>15) 	return grey[i-16];				/* system grayscale */
+	/* system colours otherwise... a bit more difficult here as uses two bits for green */
+	g=((i&8)>>2)|((i&2)>>1);					/* green level 0...3 */
+	return g|(g<<2)|(g<<4)|(g<<6);				/* faster multiply by 85 */
+}
+
+unsigned char palB(int i) {
+/* get blue value from standard palette */
+	if (i>31) 	return levB[((i&16)>>3)|(i&1)];	/* user-defined colours */
+	if (i>15)	return grey[i-16];				/* system grayscale */
+	return (i&1)?255:0;							/* system colours otherwise */
+}
+
+int prox(unsigned char r, unsigned char g, unsigned char b){
+/* find index closest to suggested RGB, based on luma! */
+	int i, pos;
+	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
+
+	yo=luma(r, g, b);				/* target luminance */
+	for (i=0;i<256;i++) {			/* scan all indexed colours */
+		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
+		if (y<yo) {					/* compute absolute value of difference */
+			y=yo-y;
+		} else {
+			y=y-yo;
+		}
+		if (y<diff) {				/* update minimum if found */
+			diff=y;
+			pos=i;					/* keep track of found index */
+		}
+	}
+
+	return i;						/* this is the closest (by luma) indexed colour */
 }
