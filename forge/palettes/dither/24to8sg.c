@@ -1,66 +1,83 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191015-1106 */
+ *	last modified 20191015-1343 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* global variables */
-unsigned char levR[7]={18, 55, 91, 128, 164, 200, 237};
+unsigned char levR[7]=	{18, 55, 91, 128, 164, 200, 237};
 unsigned char levG[8]=	{16, 48, 80, 112, 143, 175, 207, 239};
 unsigned char levB[4]=	{32, 96, 159, 223};
-unsigned char grey[16]={15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240};
+unsigned char grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240};
 
 /***********************/
 /* auxiliary functions */
 /***********************/
 long coord(int x, int y, int sx, int sy) {
 /* compute offset from coordinates */
-	if (x>=sx|y>=sy)	return -1;			/* negative offset means OUT of bounds! */
-	return (long)sx*y+x;					/* returns long in case int cannot handle one meg */
+	if (x>=sx|y>=sy)	return -1;	/* negative offset means OUT of bounds! */
+	return (long)sx*y+x;			/* returns long in case int cannot handle one meg */
+}
+
+float luma(unsigned char r, unsigned char g, unsigned char b){
+/* return luminance value for selected RGB values */
+	return 0.3*r+0.59*g+0.11*b;
+}
+
+int prox(unsigned char r, unsigned char g, unsigned char b){
+/* find index closest to suggested RGB, based on luma! */
+	int i, pos;
+	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
+
+	yo=luma(r, g, b);				/* target luminance */
+	for (i=0;i<256;i++) {			/* scan all indexed colours */
+		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
+		if (y<yo) {					/* compute absolute value of difference */
+			y=yo-y;
+		} else {
+			y=y-yo
+		}
+		if (y<diff) {				/* update minimum if found */
+			diff=y;
+			pos=i;					/* keep track of found index */
+		}
+	}
+
+	return i;						/* this is the closest (by luma) indexed colour */
 }
 
 unsigned char byte(int v) {
 /* trim value to unsigned byte */
-	if (v<0)	return 0;
+	if (v<0)	return 0;			/* check boundaries */
 	if (v>255)	return 255;
-	return (unsigned char)v;
+	return (unsigned char)v;		/* standard uncropped value */
 }
 
 unsigned char palR(int i) {
 /* get red value from standard palette */
-	if (i>31) {					/* user-defined colours */
-		return levR[((i&224)>>5)-1];
-	} else if (i<16) {			/* system colours */
-		return (i&4)?255:0;
-	} else {					/* system grayscale */
-		return grey[i-16];
+	if (i>31)	return levR[((i&224)>>5)-1];	/* user-defined colours */
+	if (i>15)	return grey[i-16];				/* system grayscale */
+	return (i&4)?255:0;							/* system colours otherwise */
 	}
 }
 
 unsigned char palG(int i) {
 /* get green value from standard palette */
 	unsigned char g;
-	if (i>31) {					/* user-defined colours */
-		return levG[(i&15)>>1];
-	} else if (i<16) {			/* system colours... a bit more difficult here as two bits for green */
-		g=((i&8)>>2)|((i&2)>>1);
-		return g|(g<<2)|(g<<4)|(g<<6);
-	} else {					/* system grayscale */
-		return grey[i-16];
-	}
+	if (i>31)	return levG[(i&15)>>1];			/* user-defined colours */
+	if (i>15) 	return grey[i-16];				/* system grayscale */
+	/* system colours otherwise... a bit more difficult here as uses two bits for green */
+	g=((i&8)>>2)|((i&2)>>1);					/* green level 0...3 */
+	return g|(g<<2)|(g<<4)|(g<<6);				/* faster multiply by 85 */
 }
 
 unsigned char palB(int i) {
 /* get blue value from standard palette */
-	if (i>31) {					/* user-defined colours */
-		return levB[((i&16)>>3)|(i&1)];
-	} else if (i<16) {			/* system colours */
-		return (i&1)?255:0;
-	} else {					/* system grayscale */
-		return grey[i-16];
-	}
+	if (i>31) 	return levB[((i&16)>>3)|(i&1)];	/* user-defined colours */
+	if (i>15)	return grey[i-16];				/* system grayscale */
+	return (i&1)?255:0;							/* system colours otherwise */
 }
 
 /****************/
@@ -69,9 +86,9 @@ unsigned char palB(int i) {
 int main(void) {
 	char nombre[80];				/* string for filenames, plus read buffer */
 	char *pt;						/* temporary pointer */
-	unsigned char *R, *G, *B, *I;	/* pointers to dynamically allocated buffers, may remove I! */
-	unsigned char r, g, b, i;		/* pixel values and index */
-	int dr, dg, db;					/* error diffusion, best with extended range AND SIGNED */
+	unsigned char *R, *G, *B;		/* pointers to dynamically allocated buffers */
+	unsigned char r, g, b, i;		/* pixel values PLUS index */
+	float dr, dg, db, k;			/* error diffusion plus factor, best with extended range AND SIGNED */
 	int sx, sy, x, y;				/* coordinates and limits */
 	long xy;						/* complete array offset */
 	FILE *fi, *fo;					/* file handlers */
@@ -106,15 +123,14 @@ int main(void) {
 	}
 
 /* start reading PPM in order to determine size */
-sx=1;//360;	/* placeholders */
+sx=1;//1360;	/* placeholders */
 sy=1;//768;
 
 /* allocate buffer space */
 	R=(unsigned char*)malloc(sx*sy);
 	G=(unsigned char*)malloc(sx*sy);
 	B=(unsigned char*)malloc(sx*sy);
-	I=(unsigned char*)malloc(sx*sy);		/* indexed output, might be removed! */
-	if(R==NULL||G==NULL||G==NULL||I==NULL) {
+	if(R==NULL||G==NULL||G==NULL) {
 		printf("OUT OF MEMORY!\n");
 		return -1;
 	}
@@ -141,22 +157,41 @@ P3
 			g=G[xy];
 			b=B[xy];
 /* seek nearest colour */
-i=31;/*placeholder*/
-			I[xy]=i;				/* set indexed pixel */
-			/* might be pushed directly into output file as well */
+			i=prox(r, g, b);		/* find best match */
+			fputc(fo,i);			/* get value into file! */
 /* compute error per channel */
 			dr=r-palR(i);			/* these are signed! */
 			dg=g-palG(i);
 			db=b-palB(i);
 /* diffuse error */
-			xy=coord(x+1,y,sx,sy);	/* pixel at right */
-			if (xy>=0) {
-				dr += R[xy];		/* add diffusion... */
-				R[xy]=byte(dr);		/* ...within bounds */
-				dg += G[xy];		/* add diffusion... */
-				G[xy]=byte(dg);		/* ...within bounds */
-				db += B[xy];		/* add diffusion... */
-				B[xy]=byte(db);		/* ...within bounds */
+/* trying floyd-steinberg formula */
+			xy=coord(x+1,y,sx,sy);				/* pixel at right */
+			if (xy>=0) {						/* add diffusion within bounds */
+				k=7/16.0;
+				R[xy]=byte(k*dr+R[xy]);
+				G[xy]=byte(k*dg+G[xy]);
+				B[xy]=byte(k*db+B[xy]);
+			}
+			xy=coord(x+1,y+1,sx,sy);			/* pixel at down right */
+			if (xy>=0) {						/* add diffusion within bounds */
+				k=1/16.0;
+				R[xy]=byte(k*dr+R[xy]);
+				G[xy]=byte(k*dg+G[xy]);
+				B[xy]=byte(k*db+B[xy]);
+			}
+			xy=coord(x,y+1,sx,sy);				/* pixel at down */
+			if (xy>=0) {						/* add diffusion within bounds */
+				k=5/16.0;
+				R[xy]=byte(k*dr+R[xy]);
+				G[xy]=byte(k*dg+G[xy]);
+				B[xy]=byte(k*db+B[xy]);
+			}
+			xy=coord(x-1,y+1,sx,sy);			/* pixel at down left */
+			if (xy>=0) {						/* add diffusion within bounds */
+				k=3/16.0;
+				R[xy]=byte(k*dr+R[xy]);
+				G[xy]=byte(k*dg+G[xy]);
+				B[xy]=byte(k*db+B[xy]);
 			}
 //			}						/* ...in case of coordinates check */
 		}
@@ -166,7 +201,7 @@ i=31;/*placeholder*/
 	fclose(fi);
 	fclose(fo);
 /* THIS FOR DEBUGGING */
-	if(R==NULL||G==NULL||G==NULL||I==NULL) {
+	if(R==NULL||G==NULL||G==NULL) {
 		printf("OUT OF MEMORY!\n");
 		return -1;
 	}
@@ -174,7 +209,6 @@ i=31;/*placeholder*/
 	free(R);
 	free(G);
 	free(B);
-	free(I);
 
 	return 0;
 }
