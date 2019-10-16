@@ -258,7 +258,7 @@ int prox(unsigned char r, unsigned char g, unsigned char b){
 	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
 
 	yo=luma(r, g, b);				/* target luminance */
-	for (i=0;i<256;i++) {			/* scan all indexed colours */
+	for (i=0;i<16;i++) {			/* scan all indexed colours */
 		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
 		if (y<yo) {					/* compute absolute value of difference */
 			y=yo-y;
