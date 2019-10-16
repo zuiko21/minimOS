@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191015-1418 */
+ *	last modified 20191016-0958 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,12 +27,13 @@ int				prox(unsigned char r, unsigned char g, unsigned char b);	/* find index cl
 /* main program */
 /****************/
 int main(void) {
-	char nombre[80];				/* string for filenames, plus read buffer */
+	char nombre[80];				/* string for filenames, plus substrings buffer */
+	char buf[80];					/* read buffer */
 	char *pt;						/* temporary pointer */
 	unsigned char *R, *G, *B;		/* pointers to dynamically allocated buffers */
 	unsigned char r, g, b, i;		/* pixel values PLUS index */
 	float dr, dg, db, k;			/* error diffusion plus factor, best with extended range AND SIGNED */
-	int sx, sy, x, y;				/* coordinates and limits */
+	int sx, sy, x, y, z;			/* coordinates and limits, plus read value */
 	long xy;						/* complete array offset */
 	FILE *fi, *fo;					/* file handlers */
 
@@ -46,7 +47,7 @@ int main(void) {
 	fi=fopen(nombre, "r");			/* open input file */
 	if (fi==NULL) {
 		printf("NO FILE!\n");			/* error handling */
-//		return -1;
+		return -1;
 	}
 
 /* swap extension on filename */
@@ -71,9 +72,35 @@ int main(void) {
 	}
 
 /* start reading PPM in order to determine size */
-sx=768;//1360;	/* placeholders */
-sy=1024;//768;
-
+/*** common read-buffer-minus-comments code ***/ 
+	do {
+		fgets(buf, 80, fi);				/* get line into temporary buffer... */
+	} while (buf[0]=='#');			/* ...but reject comments! */
+/*** end of comment-striping code ***/
+	if (strcmp(buf, "P3\n")!=0) {
+		printf("WRONG FORMAT!\n");		/* abort if not ASCII-type PPM */
+		return -1;
+	}
+	do {
+		fgets(buf, 80, fi);				/* get line into temporary buffer... */
+	} while (buf[0]=='#');			/* ...but reject comments! */
+/* hardwired format, both sizes on one line, then another with max value, then each value on single line */
+/* read sizes */
+	sscanf(buf, "%d", &sx);			/* get one number from file */
+	pt=buf;
+	do {
+		i=*pt;
+		pt++;
+	} while (i!='\0' && i!=' ' && i!='\n' && i!='\t');
+	sscanf(pt, "%d", &sy);			/* get one number from file */
+	do {
+		fgets(buf, 80, fi);				/* get line into temporary buffer... */
+	} while (buf[0]=='#');			/* ...but reject comments! */
+	if (strcmp(buf, "255\n")!=0) {
+		printf("WRONG DEPTH!\n");		/* abort if not 256-level */
+		return -1;
+	}
+	printf("Image size is %d x %d pixels\n", sx, sy);
 /* allocate buffer space */
 	R=(unsigned char*)malloc(sx*sy);
 	G=(unsigned char*)malloc(sx*sy);
@@ -82,21 +109,36 @@ sy=1024;//768;
 		printf("OUT OF MEMORY!\n");
 		return -1;
 	}
-
-/* expected format:
-P3
-#comments after pound sign
-#P3 means ASCII pixmap
-#width and height in pixels
-1360 768
-#max value
-255
-#actual data follows, no more than 76 chars per line
-#triplet order is R G B
-#whitespace is ignored
-*/
-
-/* scan original file for error diffusion */
+	printf("Successfully allocated %d bytes per channel\n", sx*sy);
+/* read image file into array */
+	xy=0;						/* convenient counter */
+	while (!feof(fi)) {
+		if (!(xy&16383))		printf("Read %ld Kp...\n", xy>>10); 
+/* read RED */
+		do {
+			fgets(buf, 80, fi);			/* get line into temporary buffer... */
+		} while (buf[0]=='#');		/* ...but reject comments! */
+		sscanf(buf, "%d", &z);		/* get one number from file */
+		R[xy] = z;					/* put value into array */
+/* read GREEN */
+		do {
+			fgets(buf, 80, fi);			/* get line into temporary buffer... */
+		} while (buf[0]=='#');		/* ...but reject comments! */
+		sscanf(buf, "%d", &z);		/* get one number from file */
+		G[xy] = z;					/* put value into array */
+/* read BLUE */
+		do {
+			fgets(buf, 80, fi);			/* get line into temporary buffer... */
+		} while (buf[0]=='#');		/* ...but reject comments! */
+		sscanf(buf, "%d", &z);		/* get one number from file */
+		B[xy] = z;					/* put value into array */
+//printf("[%d.%d.%d]",R[xy],G[xy],B[xy]);
+/* go for next! */
+		xy++;
+	}
+/*******************************************/
+/* scan original array for error diffusion */
+/*******************************************/
 	for (y=0;y<sy;y++) {
 		if (!(y&15))	printf("Processing row %d...\n", y);
 		for (x=0;x<sx;x++) {
@@ -105,6 +147,7 @@ P3
 			r=R[xy];				/* component values */
 			g=G[xy];
 			b=B[xy];
+//printf("(%d-%d-%d)",r,g,b);
 /* seek nearest colour */
 			i=prox(r, g, b);		/* find best match */
 			fputc(i,fo);			/* get value into file! */
@@ -112,32 +155,34 @@ P3
 			dr=r-palR(i);			/* these are signed! */
 			dg=g-palG(i);
 			db=b-palB(i);
+/*****************/
 /* diffuse error */
-/* trying floyd-steinberg formula */
+/*****************/
+/* trying Floyd-Steinberg formula */
 			xy=coord(x+1,y,sx,sy);				/* pixel at right */
 			if (xy>=0) {						/* add diffusion within bounds */
-				k=7/16.0;
+				k=7/16.0;							/* diffusion coefficient */
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			}
-			xy=coord(x+1,y+1,sx,sy);			/* pixel at down right */
+			xy=coord(x+1,y+1,sx,sy);			/* pixel below right */
 			if (xy>=0) {						/* add diffusion within bounds */
-				k=1/16.0;
+				k=1/16.0;							/* diffusion coefficient */
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			}
-			xy=coord(x,y+1,sx,sy);				/* pixel at down */
+			xy=coord(x,y+1,sx,sy);				/* pixel below */
 			if (xy>=0) {						/* add diffusion within bounds */
-				k=5/16.0;
+				k=5/16.0;							/* diffusion coefficient */
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			}
-			xy=coord(x-1,y+1,sx,sy);			/* pixel at down left */
+			xy=coord(x-1,y+1,sx,sy);			/* pixel below left */
 			if (xy>=0) {						/* add diffusion within bounds */
-				k=3/16.0;
+				k=3/16.0;							/* diffusion coefficient */
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
@@ -167,7 +212,7 @@ P3
 /************************/
 long coord(int x, int y, int sx, int sy) {
 /* compute offset from coordinates */
-	if (x>=sx|y>=sy)	return -1;	/* negative offset means OUT of bounds! */
+	if (x>=sx||y>=sy)	return -1;	/* negative offset means OUT of bounds! */
 	return (long)sx*y+x;			/* returns long in case int cannot handle one meg */
 }
 
@@ -226,5 +271,5 @@ int prox(unsigned char r, unsigned char g, unsigned char b){
 		}
 	}
 
-	return i;						/* this is the closest (by luma) indexed colour */
+	return pos;						/* this is the closest (by luma) indexed colour */
 }
