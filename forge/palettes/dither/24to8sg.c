@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191016-1220 */
+ *	last modified 20191016-1230 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -257,19 +257,19 @@ int prox(unsigned char r, unsigned char g, unsigned char b){
 	int i, pos;
 	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
 	yo=luma(r, g, b);				/* target luminance */
-//	for (i=0;i<256;i++) {			/* scan all indexed colours */
-//		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
-//		if (y<yo) {					/* compute absolute value of difference */
-/*			y=yo-y;
+	for (i=0;i<256;i++) {			/* scan all indexed colours */
+		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
+		if (y<yo) {					/* compute absolute value of difference */
+			y=yo-y;
 		} else {
 			y=y-yo;
 		}
 		if (y<diff) {				/* update minimum if found */
-/*			diff=y;
+			diff=y;
 			pos=i;					/* keep track of found index */
-//		}
-//	}
-if (yo<128)	return 0;				/* black */
-return 15;							/* white */
-//	return pos;						/* this is the closest (by luma) indexed colour */
+		}
+	}
+//if (yo<128)	return 0;				/* black */
+//return 15;							/* white */
+	return pos;						/* this is the closest (by luma) indexed colour */
 }
