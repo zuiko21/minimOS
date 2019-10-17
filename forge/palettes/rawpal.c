@@ -2,7 +2,7 @@
 
 /* RAW palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified 20191016-1053
+ * last modified 20191017-2306
  */
 
 int main(void) {
@@ -27,6 +27,7 @@ int main(void) {
 		for (r=0;r<2;r++) {
 			for (l=0;l<2;l++) {
 				for (b=0;b<2;b++) {
+					i++;
 					g=(h<<1)|l;
 					fprintf(arch,"%c%c%c",byte[r],four[g],byte[b]);
 				}
@@ -36,6 +37,7 @@ int main(void) {
 	printf("Created %d system colours\n",i);
 /* create system greyscale */
 	for (g=15;g<255;g+=15) {
+		i++;
 		fprintf(arch,"%c%c%c",g,g,g);
 	}
 	printf("Added system greyscale (total %d entries)\n",i);
@@ -44,7 +46,8 @@ int main(void) {
 		for (l=0;l<2;l++) {
 			for (g=0;g<8;g++) {
 				for (h=0;h<2;h++) {
-					b=h*2+l;
+					i++;
+					b=(h<<1)|l;
 					fprintf(arch,"%c%c%c",R[r],G[g],B[b]);
 				}
 			}

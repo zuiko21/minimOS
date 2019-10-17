@@ -2,7 +2,7 @@
 
 /* GIMP palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified 20191011-1907
+ * last modified 20191017-2302
  */
 
 int main(void) {
@@ -46,7 +46,7 @@ int main(void) {
 		for (l=0;l<2;l++) {
 			for (g=0;g<8;g++) {
 				for (h=0;h<2;h++) {
-					b=h*2+l;
+					b=(h<<1)|l;
 					fprintf(arch,"%d %d %d\tIndex %d\n",R[r],G[g],B[b],i++);
 				}
 			}
