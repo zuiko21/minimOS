@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191018-2025 */
+ *	last modified 20191018-2125 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -228,17 +228,56 @@ float luma(unsigned char r, unsigned char g, unsigned char b){
 
 float hue(unsigned char r, unsigned char g, unsigned char b){
 /* return hue for selected RGB values */
-	return 0;
+	float max=r, min=r, h;
+
+	if (g>max)	max=g;
+	if (b>max)	max=b;
+	if (g<min)	min=g;
+	if (b<min)	min=b;
+
+	if (max==min)	return 0;
+
+	switch (max) {
+		case r:
+			h=(g-b)/(max-min);
+			break;
+		case g:
+			h=(b-r)/(max-min)+2;
+			break;
+		case b:
+			h=(r-g)/(max-min)+2;
+			break;
+	}
+	h *= 60/255;
+	if (h<0)	h+=360;
+
+	return h;
 }
 
 float sat(unsigned char r, unsigned char g, unsigned char b){
 /* return saturation for selected RGB values */
-	return 0;
+	float max=r, min=r, s;
+
+	if (g>max)	max=g;
+	if (b>max)	max=b;
+
+	if (max==0)	return 0;
+
+	if (g<min)	min=g;
+	if (b<min)	min=b;
+	s=(max-min)/max;
+
+	return s;
 }
 
 float val(unsigned char r, unsigned char g, unsigned char b){
 /* return value for selected RGB values */
-	return 0;
+	float max=r;
+
+	if (g>max)	max=g;
+	if (b>max)	max=b;
+
+	return max;
 }
 
 unsigned char byte(int v) {
@@ -258,6 +297,7 @@ unsigned char palR(int i) {
 unsigned char palG(int i) {
 /* get green value from standard palette */
 	unsigned char g;
+
 	if (i>31)	return levG[(i&15)>>1];			/* user-defined colours */
 	if (i>15) 	return grey[i-16];				/* system grayscale */
 	/* system colours otherwise... a bit more difficult here as uses two bits for green */
@@ -278,10 +318,6 @@ int prox(unsigned char r, unsigned char g, unsigned char b, char meth, char pal)
 	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
 
 	switch(pal) {
-		case 'e':			/* Euclidean distance quantizing */
-			break;
-		case 'h':			/* Hue-based quantizing */
-			break;
 		case 'g':			/* Greyscale quantizing (0, 15 and 16...31) */
 			i=(int)luma(r, g, b);		/* target luminance */
 			if (i<8)	return 0;	/* darkest goes black */
@@ -289,7 +325,8 @@ int prox(unsigned char r, unsigned char g, unsigned char b, char meth, char pal)
 			i -= 8;					/* darkest grey compensation */
 			i /= 15;				/* into 16 greyscale values */
 			return i+16;				/* closest grey */
-		case 's':			/* Salt & pepper quantizing (0 and 15) */
+		case 's':			/* System colours & greyscale (0...31) */
+		case 'm':			/* Salt & pepper quantizing (0 and 15) */
 			i=(int)luma(r, g, b);		/* target luminance */
 			if (i<128)	return 0;	/* lower than mid-grey goes black */
 			return 15;				/* otherwise goes white */
