@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191016-1230 */
+ *	last modified 20191018-1439 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,12 +16,17 @@ unsigned char grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 1
 /* auxiliary prototypes */
 /************************/
 long			coord(int x, int y, int sx, int sy);						/* compute offset from coordinates */
-float			luma(unsigned char r, unsigned char g, unsigned char b);	/* return luminance value for selected RGB values */
-unsigned char	byte(int v);					/* trim value to unsigned byte */
-unsigned char	palR(int i);					/* get red value from standard palette */
-unsigned char	palG(int i);					/* get green value from standard palette */
-unsigned char	palB(int i);					/* get blue value from standard palette */
-int				prox(unsigned char r, unsigned char g, unsigned char b);	/* find index closest to suggested RGB, based on luma! */
+float			luma(unsigned char r, unsigned char g, unsigned char b);	/* return luminance for selected RGB values */
+float			hue(unsigned char r, unsigned char g, unsigned char b);		/* return hue for selected RGB values */
+float			sat(unsigned char r, unsigned char g, unsigned char b);		/* return saturation for selected RGB values */
+float			val(unsigned char r, unsigned char g, unsigned char b);		/* return value for selected RGB values */
+unsigned char	byte(int v);		/* trim value to unsigned byte */
+unsigned char	palR(int i);		/* get red value from standard palette */
+unsigned char	palG(int i);		/* get green value from standard palette */
+unsigned char	palB(int i);		/* get blue value from standard palette */
+int				prox(unsigned char r, unsigned char g, unsigned char b);	/* find index closest to suggested RGB */
+int				grsc(unsigned char r, unsigned char g, unsigned char b);	/* find grey index closest to suggested RGB luma */
+int				salt(unsigned char r, unsigned char g, unsigned char b);	/* select salt-and-peeper pixel based on luma! */
 
 /****************/
 /* main program */
@@ -148,8 +153,8 @@ int main(void) {
 			g=G[xy];
 			b=B[xy];
 //printf("(%d-%d-%d)",r,g,b);
-/* seek nearest colour */
-			i=prox(r, g, b);		/* find best match */
+/*** seek nearest colour ***/
+			i=grsc(r, g, b);		/* find best match (prox for colour, grsc or salt for B&W */
 			fputc(i,fo);			/* get value into file! */
 /* compute error per channel */
 			dr=r-palR(i);			/* these are signed! */
@@ -252,8 +257,34 @@ unsigned char palB(int i) {
 	return (i&1)?255:0;							/* system colours otherwise */
 }
 
+int salt(unsigned char r, unsigned char g, unsigned char b){
+/* select salt-and-peeper pixel based on luma */
+	float yo;
+
+	yo=luma(r, g, b);				/* target luminance */
+	if (yo<128)	return 0;			/* lower than mid-grey goes black */
+	return 15;						/* otherwise goes white */
+}
+
+int grsc(unsigned char r, unsigned char g, unsigned char b){
+/* select greyscale pixel based on luma */
+/* uses 0 as black, 15 as white and 16...31 for greyscale */
+
+	int i;
+
+	i=(int)luma(r, g, b);			/* target luminance */
+
+	if (i<8)	return 0;			/* darkest goes black */
+	if (i>247)	return 15;			/* lightest goes white */
+	i -= 8;							/* darkest grey compensation */
+	i /= 15;						/* into 16 greyscale values */
+
+	return i+16;					/* closest grey */
+}
+
 int prox(unsigned char r, unsigned char g, unsigned char b){
-/* find index closest to suggested RGB, based on luma! */
+/* find index closest to suggested RGB, based on HSV */
+// TO DO TO DO TO DO
 	int i, pos;
 	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
 	yo=luma(r, g, b);				/* target luminance */
@@ -269,7 +300,6 @@ int prox(unsigned char r, unsigned char g, unsigned char b){
 			pos=i;					/* keep track of found index */
 		}
 	}
-//if (yo<128)	return 0;				/* black */
-//return 15;							/* white */
+
 	return pos;						/* this is the closest (by luma) indexed colour */
 }
