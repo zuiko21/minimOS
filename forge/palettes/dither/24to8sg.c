@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191018-1439 */
+ *	last modified 20191018-2025 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,9 +24,7 @@ unsigned char	byte(int v);		/* trim value to unsigned byte */
 unsigned char	palR(int i);		/* get red value from standard palette */
 unsigned char	palG(int i);		/* get green value from standard palette */
 unsigned char	palB(int i);		/* get blue value from standard palette */
-int				prox(unsigned char r, unsigned char g, unsigned char b);	/* find index closest to suggested RGB */
-int				grsc(unsigned char r, unsigned char g, unsigned char b);	/* find grey index closest to suggested RGB luma */
-int				salt(unsigned char r, unsigned char g, unsigned char b);	/* select salt-and-peeper pixel based on luma! */
+int				prox(unsigned char r, unsigned char g, unsigned char b, char meth, char pal);	/* find index closest to suggested RGB, several methods */
 
 /****************/
 /* main program */
@@ -34,7 +32,7 @@ int				salt(unsigned char r, unsigned char g, unsigned char b);	/* select salt-a
 int main(void) {
 	char nombre[80];				/* string for filenames, plus substrings buffer */
 	char buf[80];					/* read buffer */
-	char *pt;						/* temporary pointer */
+	char *pt, mode, col;				/* temporary pointer plus dither mode */
 	unsigned char *R, *G, *B;		/* pointers to dynamically allocated buffers */
 	unsigned char r, g, b, i;		/* pixel values PLUS index */
 	float dr, dg, db, k;			/* error diffusion plus factor, best with extended range AND SIGNED */
@@ -77,7 +75,7 @@ int main(void) {
 	}
 
 /* start reading PPM in order to determine size */
-/*** common read-buffer-minus-comments code ***/ 
+/*** common read-buffer-minus-comments code ***/
 	do {
 		fgets(buf, 80, fi);				/* get line into temporary buffer... */
 	} while (buf[0]=='#');			/* ...but reject comments! */
@@ -137,10 +135,13 @@ int main(void) {
 		} while (buf[0]=='#');		/* ...but reject comments! */
 		sscanf(buf, "%d", &z);		/* get one number from file */
 		B[xy] = z;					/* put value into array */
-//printf("[%d.%d.%d]",R[xy],G[xy],B[xy]);
 /* go for next! */
 		xy++;
 	}
+/* file is read, select dithering type */
+	printf("Quantizing method (Euclidean/Hue/Greyscale/Salt&pepper): ");
+	scanf("%c", &mode);
+
 /*******************************************/
 /* scan original array for error diffusion */
 /*******************************************/
@@ -152,9 +153,8 @@ int main(void) {
 			r=R[xy];				/* component values */
 			g=G[xy];
 			b=B[xy];
-//printf("(%d-%d-%d)",r,g,b);
 /*** seek nearest colour ***/
-			i=grsc(r, g, b);		/* find best match (prox for colour, grsc or salt for B&W */
+			i=prox(r, g, b, mode, col);	/* find best match according to mode (e, h, g, s) */
 			fputc(i,fo);			/* get value into file! */
 /* compute error per channel */
 			dr=r-palR(i);			/* these are signed! */
@@ -222,8 +222,23 @@ long coord(int x, int y, int sx, int sy) {
 }
 
 float luma(unsigned char r, unsigned char g, unsigned char b){
-/* return luminance value for selected RGB values */
+/* return luminance for selected RGB values */
 	return 0.3*r+0.59*g+0.11*b;
+}
+
+float hue(unsigned char r, unsigned char g, unsigned char b){
+/* return hue for selected RGB values */
+	return 0;
+}
+
+float sat(unsigned char r, unsigned char g, unsigned char b){
+/* return saturation for selected RGB values */
+	return 0;
+}
+
+float val(unsigned char r, unsigned char g, unsigned char b){
+/* return value for selected RGB values */
+	return 0;
 }
 
 unsigned char byte(int v) {
@@ -257,36 +272,28 @@ unsigned char palB(int i) {
 	return (i&1)?255:0;							/* system colours otherwise */
 }
 
-int salt(unsigned char r, unsigned char g, unsigned char b){
-/* select salt-and-peeper pixel based on luma */
-	float yo;
-
-	yo=luma(r, g, b);				/* target luminance */
-	if (yo<128)	return 0;			/* lower than mid-grey goes black */
-	return 15;						/* otherwise goes white */
-}
-
-int grsc(unsigned char r, unsigned char g, unsigned char b){
-/* select greyscale pixel based on luma */
-/* uses 0 as black, 15 as white and 16...31 for greyscale */
-
-	int i;
-
-	i=(int)luma(r, g, b);			/* target luminance */
-
-	if (i<8)	return 0;			/* darkest goes black */
-	if (i>247)	return 15;			/* lightest goes white */
-	i -= 8;							/* darkest grey compensation */
-	i /= 15;						/* into 16 greyscale values */
-
-	return i+16;					/* closest grey */
-}
-
-int prox(unsigned char r, unsigned char g, unsigned char b){
-/* find index closest to suggested RGB, based on HSV */
-// TO DO TO DO TO DO
+int prox(unsigned char r, unsigned char g, unsigned char b, char meth, char pal){
+/* find index closest to suggested RGB, according to method (e, h) and palette (f, g, s, m) */
 	int i, pos;
 	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
+
+	switch(pal) {
+		case 'e':			/* Euclidean distance quantizing */
+			break;
+		case 'h':			/* Hue-based quantizing */
+			break;
+		case 'g':			/* Greyscale quantizing (0, 15 and 16...31) */
+			i=(int)luma(r, g, b);		/* target luminance */
+			if (i<8)	return 0;	/* darkest goes black */
+			if (i>247)	return 15;	/* lightest goes white */
+			i -= 8;					/* darkest grey compensation */
+			i /= 15;				/* into 16 greyscale values */
+			return i+16;				/* closest grey */
+		case 's':			/* Salt & pepper quantizing (0 and 15) */
+			i=(int)luma(r, g, b);		/* target luminance */
+			if (i<128)	return 0;	/* lower than mid-grey goes black */
+			return 15;				/* otherwise goes white */
+// TO DO TO DO TO DO
 	yo=luma(r, g, b);				/* target luminance */
 	for (i=0;i<256;i++) {			/* scan all indexed colours */
 		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
@@ -299,6 +306,7 @@ int prox(unsigned char r, unsigned char g, unsigned char b){
 			diff=y;
 			pos=i;					/* keep track of found index */
 		}
+	}
 	}
 
 	return pos;						/* this is the closest (by luma) indexed colour */
