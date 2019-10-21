@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191018-2125 */
+ *	last modified 20191021-1006 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +16,7 @@ unsigned char grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 1
 /* auxiliary prototypes */
 /************************/
 long			coord(int x, int y, int sx, int sy);						/* compute offset from coordinates */
+float			eucl(int i, unsigned char r, unsigned char g, unsigned char b);	/* Euclidean distance between some index and supplied RGB value */
 float			luma(unsigned char r, unsigned char g, unsigned char b);	/* return luminance for selected RGB values */
 float			hue(unsigned char r, unsigned char g, unsigned char b);		/* return hue for selected RGB values */
 float			sat(unsigned char r, unsigned char g, unsigned char b);		/* return saturation for selected RGB values */
@@ -226,9 +227,21 @@ float luma(unsigned char r, unsigned char g, unsigned char b){
 	return 0.3*r+0.59*g+0.11*b;
 }
 
+float eucl(int i, unsigned char r, unsigned char g, unsigned char b) {
+/* Euclidean distance between some index and supplied RGB value */
+	int pr, pg, pb;
+
+	pr = palR(i);					/* get RGB values for selected index */
+	pg = palG(i);
+	pb = palB(i);
+
+	return ((pr-r)*(pr-r)+(pg-g)*(pg-g)+(pb-b)-(pb-b));		/* compute Euclidean distance */
+}
+
 float hue(unsigned char r, unsigned char g, unsigned char b){
 /* return hue for selected RGB values */
-	float max=r, min=r, h;
+	float max=r, min=r;
+	float h;
 
 	if (g>max)	max=g;
 	if (b>max)	max=b;
@@ -237,16 +250,12 @@ float hue(unsigned char r, unsigned char g, unsigned char b){
 
 	if (max==min)	return 0;
 
-	switch (max) {
-		case r:
-			h=(g-b)/(max-min);
-			break;
-		case g:
-			h=(b-r)/(max-min)+2;
-			break;
-		case b:
-			h=(r-g)/(max-min)+2;
-			break;
+	if (max==r) {
+		h=(g-b)/(max-min);
+	} else if (max==g) {
+		h=(b-r)/(max-min)+2;
+	} else {
+		h=(r-g)/(max-min)+2;
 	}
 	h *= 60/255;
 	if (h<0)	h+=360;
