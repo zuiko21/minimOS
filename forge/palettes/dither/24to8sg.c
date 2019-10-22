@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191022-1045 */
+ *	last modified 20191022-1337 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -144,7 +144,6 @@ int main(void) {
 	printf("Luma based: G=Greyscale (16+2), S=Salt&pepper)\n");
 	printf("Your choice? ");
 	scanf("%c", &mode);
-	mode |= 32;						/* always lowercase */
 
 /*******************************************/
 /* scan original array for error diffusion */
@@ -157,7 +156,7 @@ int main(void) {
 			r=R[xy];				/* component values */
 			g=G[xy];
 			b=B[xy];
-/*** seek nearest colour ***/
+/* seek nearest colour */
 			i=prox(r, g, b, mode);	/* find best match according to mode (e, h, g, s) */
 			fputc(i,fo);			/* get value into file! */
 /* compute error per channel */
@@ -238,7 +237,7 @@ float eucl(int i, unsigned char r, unsigned char g, unsigned char b) {
 	pg = palG(i);
 	pb = palB(i);
 
-	return ((pr-r)*(pr-r)+(pg-g)*(pg-g)+(pb-b)-(pb-b));		/* compute Euclidean distance */
+	return ((pr-r)*(pr-r)+(pg-g)*(pg-g)+(pb-b)*(pb-b));		/* compute Euclidean distance */
 }
 
 float hue(unsigned char r, unsigned char g, unsigned char b){
@@ -330,43 +329,47 @@ int prox(unsigned char r, unsigned char g, unsigned char b, char met) {
 /* Hue-based (h=256, u=32, e=16) */
 /* Luma-based (g=16+2 greyscale, s=salt & pepper)  */
 	int i, pos, col=256;
-	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
+	float y, yo, diff=200000;		/* sentinel value, as we are looking for the minimum distance in absolute value */
 
+	met |= 32;						/* always lowercase */
+	if (met=='g'||met=='s') {		/* non-colour modes use luma */
+		i=(int)luma(r, g, b);			/* target luminance */
+	}
 	switch(met) {
-		case 'g', 's':
-			i=(int)luma(r, g, b);	/* target luminance */
-		case 'g':			/* Greyscale quantizing (0, 15 and 16...31) */
-			if (i<8)	return 0;	/* darkest goes black */
-			if (i>247)	return 15;	/* lightest goes white */
-			i -= 8;					/* darkest grey compensation */
-			i /= 15;				/* into 16 greyscale values */
-			return i+16;			/* closest grey */
-		case 's':			/* Salt & pepper quantizing (0 and 15) */
-			if (i<128)	return 0;	/* lower than mid-grey goes black */
-			return 15;				/* otherwise goes white */
-// TO DO TO DO TO DO
-		case 'l', 'u':		/* System colours & greyscale (0...31) */
-			col=32;					/* number of colours */
+		case 'g':					/* Greyscale quantizing (0, 15 and 16...31) */
+			if (i<8)	return 0;		/* darkest goes black */
+			if (i>247)	return 15;		/* lightest goes white */
+			i -= 8;						/* darkest grey compensation */
+			i /= 15;					/* into 16 greyscale values */
+			return i+16;				/* EXIT with closest grey */
+		case 's':					/* Salt & pepper quantizing (0 and 15) */
+			if (i<128)	return 0;		/* lower than mid-grey EXIT as black */
+			return 15;					/* otherwise EXIT as white */
+/* remaining cases only for colour loop, otherwise the function is over */
+		case 'l':					/* System colours & greyscale (0...31) */
+		case 'u':
+			col=32;						/* number of colours */
 			break;
-		case 'd', 'e':		/* Sytem colours only (0...15) */
+		case 'd':					/* Sytem colours only (0...15) */
+		case 'e':
 			col=16;
 //			break;
-//		case 'c', 'h':		/* Whole palette */
+//		case 'c':					/* whole palette */
+//		case 'h':
 //			col=256;
 	}
 	for (i=0;i<col;i++) {			/* scan all indexed colours */
-		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
-		if (y<yo) {					/* compute absolute value of difference */
-			y=yo-y;
-		} else {
-			y=y-yo;
+		if (met=='c'||met=='l'||met=='d') {		/* Euclidean method selected */
+			y=eucl(i, r, g, b);
+		}
+		if (met=='h'||met=='u'||met=='e') {		/* Hue-based method selected */
+printf("HUE!");
 		}
 		if (y<diff) {				/* update minimum if found */
 			diff=y;
 			pos=i;					/* keep track of found index */
 		}
 	}
-	}
 
-	return pos;						/* this is the closest (by luma) indexed colour */
+	return pos;						/* this is the closest indexed colour */
 }
