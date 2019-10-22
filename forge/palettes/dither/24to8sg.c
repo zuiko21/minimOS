@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191021-1006 */
+ *	last modified 20191022-1045 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,17 +15,17 @@ unsigned char grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 1
 /************************/
 /* auxiliary prototypes */
 /************************/
-long			coord(int x, int y, int sx, int sy);						/* compute offset from coordinates */
+long			coord(int x, int y, int sx, int sy);									/* compute offset from coordinates */
 float			eucl(int i, unsigned char r, unsigned char g, unsigned char b);	/* Euclidean distance between some index and supplied RGB value */
-float			luma(unsigned char r, unsigned char g, unsigned char b);	/* return luminance for selected RGB values */
-float			hue(unsigned char r, unsigned char g, unsigned char b);		/* return hue for selected RGB values */
-float			sat(unsigned char r, unsigned char g, unsigned char b);		/* return saturation for selected RGB values */
-float			val(unsigned char r, unsigned char g, unsigned char b);		/* return value for selected RGB values */
+float			luma(unsigned char r, unsigned char g, unsigned char b);			/* return luminance for selected RGB values */
+float			hue(unsigned char r, unsigned char g, unsigned char b);			/* return hue for selected RGB values */
+float			sat(unsigned char r, unsigned char g, unsigned char b);			/* return saturation for selected RGB values */
+float			val(unsigned char r, unsigned char g, unsigned char b);			/* return value for selected RGB values */
 unsigned char	byte(int v);		/* trim value to unsigned byte */
 unsigned char	palR(int i);		/* get red value from standard palette */
 unsigned char	palG(int i);		/* get green value from standard palette */
 unsigned char	palB(int i);		/* get blue value from standard palette */
-int				prox(unsigned char r, unsigned char g, unsigned char b, char meth, char pal);	/* find index closest to suggested RGB, several methods */
+int				prox(unsigned char r, unsigned char g, unsigned char b, char met);	/* find index closest to suggested RGB, several methods */
 
 /****************/
 /* main program */
@@ -33,7 +33,7 @@ int				prox(unsigned char r, unsigned char g, unsigned char b, char meth, char p
 int main(void) {
 	char nombre[80];				/* string for filenames, plus substrings buffer */
 	char buf[80];					/* read buffer */
-	char *pt, mode, col;				/* temporary pointer plus dither mode */
+	char *pt, mode;					/* temporary pointer plus quantizing mode */
 	unsigned char *R, *G, *B;		/* pointers to dynamically allocated buffers */
 	unsigned char r, g, b, i;		/* pixel values PLUS index */
 	float dr, dg, db, k;			/* error diffusion plus factor, best with extended range AND SIGNED */
@@ -139,9 +139,12 @@ int main(void) {
 /* go for next! */
 		xy++;
 	}
-/* file is read, select dithering type */
-	printf("Quantizing method (Euclidean/Hue/Greyscale/Salt&pepper): ");
+/* file is read, select quantizing type */
+	printf("Quantizing method:\nEuclidean (C=256, L=32, D=16)\nHue (H=256, U=32, E=16)\n");
+	printf("Luma based: G=Greyscale (16+2), S=Salt&pepper)\n");
+	printf("Your choice? ");
 	scanf("%c", &mode);
+	mode |= 32;						/* always lowercase */
 
 /*******************************************/
 /* scan original array for error diffusion */
@@ -155,7 +158,7 @@ int main(void) {
 			g=G[xy];
 			b=B[xy];
 /*** seek nearest colour ***/
-			i=prox(r, g, b, mode, col);	/* find best match according to mode (e, h, g, s) */
+			i=prox(r, g, b, mode);	/* find best match according to mode (e, h, g, s) */
 			fputc(i,fo);			/* get value into file! */
 /* compute error per channel */
 			dr=r-palR(i);			/* these are signed! */
@@ -321,27 +324,37 @@ unsigned char palB(int i) {
 	return (i&1)?255:0;							/* system colours otherwise */
 }
 
-int prox(unsigned char r, unsigned char g, unsigned char b, char meth, char pal){
-/* find index closest to suggested RGB, according to method (e, h) and palette (f, g, s, m) */
-	int i, pos;
+int prox(unsigned char r, unsigned char g, unsigned char b, char met) {
+/* find index closest to suggested RGB, according to method: */
+/* Euclidean (c=256 colours, l=sys+gs, d=16 system colours) */
+/* Hue-based (h=256, u=32, e=16) */
+/* Luma-based (g=16+2 greyscale, s=salt & pepper)  */
+	int i, pos, col=256;
 	float y, yo, diff=256;			/* sentinel value, as we are looking for the minimum distance in absolute value */
 
-	switch(pal) {
+	switch(met) {
+		case 'g', 's':
+			i=(int)luma(r, g, b);	/* target luminance */
 		case 'g':			/* Greyscale quantizing (0, 15 and 16...31) */
-			i=(int)luma(r, g, b);		/* target luminance */
 			if (i<8)	return 0;	/* darkest goes black */
 			if (i>247)	return 15;	/* lightest goes white */
 			i -= 8;					/* darkest grey compensation */
 			i /= 15;				/* into 16 greyscale values */
-			return i+16;				/* closest grey */
-		case 's':			/* System colours & greyscale (0...31) */
-		case 'm':			/* Salt & pepper quantizing (0 and 15) */
-			i=(int)luma(r, g, b);		/* target luminance */
+			return i+16;			/* closest grey */
+		case 's':			/* Salt & pepper quantizing (0 and 15) */
 			if (i<128)	return 0;	/* lower than mid-grey goes black */
 			return 15;				/* otherwise goes white */
 // TO DO TO DO TO DO
-	yo=luma(r, g, b);				/* target luminance */
-	for (i=0;i<256;i++) {			/* scan all indexed colours */
+		case 'l', 'u':		/* System colours & greyscale (0...31) */
+			col=32;					/* number of colours */
+			break;
+		case 'd', 'e':		/* Sytem colours only (0...15) */
+			col=16;
+//			break;
+//		case 'c', 'h':		/* Whole palette */
+//			col=256;
+	}
+	for (i=0;i<col;i++) {			/* scan all indexed colours */
 		y=luma(palR(i), palG(i), palB(i));		/* luminance for this one */
 		if (y<yo) {					/* compute absolute value of difference */
 			y=yo-y;
