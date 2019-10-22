@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191022-1337 */
+ *	last modified 20191022-1357 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,9 +15,10 @@ unsigned char grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 1
 /************************/
 /* auxiliary prototypes */
 /************************/
-long			coord(int x, int y, int sx, int sy);									/* compute offset from coordinates */
-float			eucl(int i, unsigned char r, unsigned char g, unsigned char b);	/* Euclidean distance between some index and supplied RGB value */
-float			luma(unsigned char r, unsigned char g, unsigned char b);			/* return luminance for selected RGB values */
+long			coord(int x, int y, int sx, int sy);							/* compute offset from coordinates */
+float			eucl(int i, unsigned char r, unsigned char g, unsigned char b);		/* Euclidean distance between some index and supplied RGB value */
+float			hdist(int i, unsigned char r, unsigned char g, unsigned char b);	/* hue-based distance between some index and supplied RGB value */
+float			luma(unsigned char r, unsigned char g, unsigned char b);		/* return luminance for selected RGB values */
 float			hue(unsigned char r, unsigned char g, unsigned char b);			/* return hue for selected RGB values */
 float			sat(unsigned char r, unsigned char g, unsigned char b);			/* return saturation for selected RGB values */
 float			val(unsigned char r, unsigned char g, unsigned char b);			/* return value for selected RGB values */
@@ -240,6 +241,15 @@ float eucl(int i, unsigned char r, unsigned char g, unsigned char b) {
 	return ((pr-r)*(pr-r)+(pg-g)*(pg-g)+(pb-b)*(pb-b));		/* compute Euclidean distance */
 }
 
+float hdist(int i, unsigned char r, unsigned char g, unsigned char b) {
+/* hue-based distance between some index and supplied RGB value */
+	float hi, si, vi;				/* values for indexed entry */
+	float hp, sp, vp;
+	pr = palR(i);					/* get RGB values for selected index */
+	pg = palG(i);
+	pb = palB(i);
+	
+}
 float hue(unsigned char r, unsigned char g, unsigned char b){
 /* return hue for selected RGB values */
 	float max=r, min=r;
