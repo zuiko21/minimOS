@@ -1,15 +1,15 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191022-1357 */
+ *	last modified 20191023-1210 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* global variables */
-unsigned char levR[7]=	{18, 55, 91, 128, 164, 200, 237};
-unsigned char levG[8]=	{16, 48, 80, 112, 143, 175, 207, 239};
-unsigned char levB[4]=	{32, 96, 159, 223};
+unsigned char levR[7]=		{18, 55, 91, 128, 164, 200, 237};
+unsigned char levG[8]=		{16, 48, 80, 112, 143, 175, 207, 239};
+unsigned char levB[4]=		{32, 96, 159, 223};
 unsigned char grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240};
 
 /************************/
@@ -245,11 +245,22 @@ float hdist(int i, unsigned char r, unsigned char g, unsigned char b) {
 /* hue-based distance between some index and supplied RGB value */
 	float hi, si, vi;				/* values for indexed entry */
 	float hp, sp, vp;
-	pr = palR(i);					/* get RGB values for selected index */
-	pg = palG(i);
-	pb = palB(i);
-	
+	unsigned char ir, ig, ib;
+
+	ir = palR(i);					/* get RGB values for selected index */
+	ig = palG(i);
+	ib = palB(i);
+	hi = hue(ir, ig, ib);			/* convert indexed colour to HSV */
+	si = sat(ir, ig, ib);
+	vi = val(ir, ig, ib);
+	hp = hue(r, g, b);				/* convert pixel colour to HSV */
+	sp = sat(r, g, b);
+	vp = val(r, g, b);
+
+// TO DO TO DO TO DO
+	return ((hi-hp)*(hi-hp)+(si-sp)*(si-sp)+(vi-vp)*(vi-vp));
 }
+
 float hue(unsigned char r, unsigned char g, unsigned char b){
 /* return hue for selected RGB values */
 	float max=r, min=r;
@@ -339,7 +350,7 @@ int prox(unsigned char r, unsigned char g, unsigned char b, char met) {
 /* Hue-based (h=256, u=32, e=16) */
 /* Luma-based (g=16+2 greyscale, s=salt & pepper)  */
 	int i, pos, col=256;
-	float y, yo, diff=200000;		/* sentinel value, as we are looking for the minimum distance in absolute value */
+	float y, diff=200000;			/* sentinel value, as we are looking for the minimum distance in absolute value */
 
 	met |= 32;						/* always lowercase */
 	if (met=='g'||met=='s') {		/* non-colour modes use luma */
@@ -360,7 +371,7 @@ int prox(unsigned char r, unsigned char g, unsigned char b, char met) {
 		case 'u':
 			col=32;						/* number of colours */
 			break;
-		case 'd':					/* Sytem colours only (0...15) */
+		case 'd':					/* System colours only (0...15) */
 		case 'e':
 			col=16;
 //			break;
@@ -373,7 +384,7 @@ int prox(unsigned char r, unsigned char g, unsigned char b, char met) {
 			y=eucl(i, r, g, b);
 		}
 		if (met=='h'||met=='u'||met=='e') {		/* Hue-based method selected */
-printf("HUE!");
+			y=hdist(i, r, g, b);
 		}
 		if (y<diff) {				/* update minimum if found */
 			diff=y;
