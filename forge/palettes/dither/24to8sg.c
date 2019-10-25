@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191023-1210 */
+ *	last modified 20191025-0824 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,9 +19,9 @@ long			coord(int x, int y, int sx, int sy);							/* compute offset from coordin
 float			eucl(int i, unsigned char r, unsigned char g, unsigned char b);		/* Euclidean distance between some index and supplied RGB value */
 float			hdist(int i, unsigned char r, unsigned char g, unsigned char b);	/* hue-based distance between some index and supplied RGB value */
 float			luma(unsigned char r, unsigned char g, unsigned char b);		/* return luminance for selected RGB values */
-float			hue(unsigned char r, unsigned char g, unsigned char b);			/* return hue for selected RGB values */
-float			sat(unsigned char r, unsigned char g, unsigned char b);			/* return saturation for selected RGB values */
-float			val(unsigned char r, unsigned char g, unsigned char b);			/* return value for selected RGB values */
+float			hue(unsigned char r, unsigned char g, unsigned char b);			/* return hue (0...360) for selected RGB values */
+float			sat(unsigned char r, unsigned char g, unsigned char b);			/* return saturation (0...1) for selected RGB values */
+float			val(unsigned char r, unsigned char g, unsigned char b);			/* return value (0...255) for selected RGB values */
 unsigned char	byte(int v);		/* trim value to unsigned byte */
 unsigned char	palR(int i);		/* get red value from standard palette */
 unsigned char	palG(int i);		/* get green value from standard palette */
@@ -244,8 +244,8 @@ float eucl(int i, unsigned char r, unsigned char g, unsigned char b) {
 float hdist(int i, unsigned char r, unsigned char g, unsigned char b) {
 /* hue-based distance between some index and supplied RGB value */
 	float hi, si, vi;				/* values for indexed entry */
-	float hp, sp, vp;
-	unsigned char ir, ig, ib;
+	float hp, sp, vp;				/* values for target colour */
+	unsigned char ir, ig, ib;		/* temporary palette values */
 
 	ir = palR(i);					/* get RGB values for selected index */
 	ig = palG(i);
@@ -278,9 +278,9 @@ float hue(unsigned char r, unsigned char g, unsigned char b){
 	} else if (max==g) {
 		h=(b-r)/(max-min)+2;
 	} else {
-		h=(r-g)/(max-min)+2;
+		h=(r-g)/(max-min)+4;
 	}
-	h *= 60/255;
+	h *= 60;
 	if (h<0)	h+=360;
 
 	return h;
