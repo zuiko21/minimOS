@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191025-1013 */
+ *	last modified 20191025-1109 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -159,7 +159,7 @@ int main(void) {
 /*******************************************/
 	for (y=0;y<sy;y++) {
 		if (!(y&15))	printf("Processing row %d...\n", y);	// progress indicator
-		for (x=0;x<sx;x++) {
+		for (x=0;x<sx-1;x++) {		// get rid of last column?
 			xy=coord(x,y,sx,sy);		// current pixel, no need to check bounds
 //			if (xy>=0) {				// not really needed here...
 			r=R[xy];					// component values
@@ -167,7 +167,7 @@ int main(void) {
 			b=B[xy];
 /* seek nearest colour */
 			i=prox(r, g, b, mode);		// find best match according to mode (e, h, g, s)
-			fputc(i,fo);				// get value into file!
+			fputc(i, fo);				// get value into file!
 /* compute error per channel */
 			dr=r-palR(i);				// these are signed!
 			dg=g-palG(i);
@@ -176,40 +176,40 @@ int main(void) {
 /* diffuse error */
 /*****************/
 /* trying Floyd-Steinberg formula */
-/*			diff(1, 0, xy, sx, siz, 7.0/16, dr, dg, db, R, G, B);	// pixel at right
-			diff(1, 1, xy, sx, siz, 1.0/16, dr, dg, db, R, G, B);	// pixel below right
-			diff(0, 1, xy, sx, siz, 5.0/16, dr, dg, db, R, G, B);	// pixel below
-			diff(-1, 1, xy, sx, siz, 3.0/16, dr, dg, db, R, G, B);	// pixel below left
-*/			xy=coord(x+1,y,sx,sy);				// pixel at right
+			diff(1, 0, xy, sx, siz, 7/16.0, dr, dg, db, R, G, B);	// pixel at right
+			diff(1, 1, xy, sx, siz, 1/16.0, dr, dg, db, R, G, B);	// pixel below right
+			diff(0, 1, xy, sx, siz, 5/16.0, dr, dg, db, R, G, B);	// pixel below
+			diff(-1, 1, xy, sx, siz, 3/16.0, dr, dg, db, R, G, B);	// pixel below left
+/*			xy=coord(x+1,y,sx,sy);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
-			}
+			} else printf("*");
 			xy=coord(x+1,y+1,sx,sy);			// pixel below right
 			if (xy>=0) {						// add diffusion within bounds
 				k=1/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
-			}
+			} else printf("*");
 			xy=coord(x,y+1,sx,sy);				// pixel below
 			if (xy>=0) {						// add diffusion within bounds
 				k=5/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
-			}
+			} else printf("*");
 			xy=coord(x-1,y+1,sx,sy);			// pixel below left
 			if (xy>=0) {						// add diffusion within bounds
 				k=3/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
-			}
+			} else printf("*");
 //			}							// ...in case of coordinates check
-		}
+*/		}
 	}
 
 /* cleanup and exit */
@@ -245,7 +245,7 @@ void diff(int dx, int dy, long xy, int sx, long siz, float k, int dr, int dg, in
 		R[xy]=byte(k*dr+R[xy]);		// diffuse the error
 		G[xy]=byte(k*dg+G[xy]);
 		B[xy]=byte(k*db+B[xy]);
-	}
+	} else printf("*");
 }
 
 float luma(byt r, byt g, byt b){
