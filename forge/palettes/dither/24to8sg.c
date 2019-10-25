@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191025-0824 */
+ *	last modified 20191025-0843 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +22,7 @@ float			luma(unsigned char r, unsigned char g, unsigned char b);		/* return lumi
 float			hue(unsigned char r, unsigned char g, unsigned char b);			/* return hue (0...360) for selected RGB values */
 float			sat(unsigned char r, unsigned char g, unsigned char b);			/* return saturation (0...1) for selected RGB values */
 float			val(unsigned char r, unsigned char g, unsigned char b);			/* return value (0...255) for selected RGB values */
+float			uns(float x) {return (x<0?-x:x);}								/* absolute value */
 unsigned char	byte(int v);		/* trim value to unsigned byte */
 unsigned char	palR(int i);		/* get red value from standard palette */
 unsigned char	palG(int i);		/* get green value from standard palette */
@@ -238,7 +239,8 @@ float eucl(int i, unsigned char r, unsigned char g, unsigned char b) {
 	pg = palG(i);
 	pb = palB(i);
 
-	return ((pr-r)*(pr-r)+(pg-g)*(pg-g)+(pb-b)*(pb-b));		/* compute Euclidean distance */
+//	return ((pr-r)*(pr-r)+(pg-g)*(pg-g)+(pb-b)*(pb-b));		/* compute Euclidean distance */
+	return (uns(pr-r)+uns(pg-g)+uns(pb-b));		/* compute Euclidean distance */
 }
 
 float hdist(int i, unsigned char r, unsigned char g, unsigned char b) {
@@ -258,7 +260,7 @@ float hdist(int i, unsigned char r, unsigned char g, unsigned char b) {
 	vp = val(r, g, b);
 
 // TO DO TO DO TO DO
-	return ((hi-hp)*(hi-hp)+(si-sp)*(si-sp)+(vi-vp)*(vi-vp));
+	return ((360+(hi-hp)*(hi-hp))*(1+(si-sp)*(si-sp))*(256+(vi-vp)*(vi-vp)));
 }
 
 float hue(unsigned char r, unsigned char g, unsigned char b){
@@ -350,7 +352,7 @@ int prox(unsigned char r, unsigned char g, unsigned char b, char met) {
 /* Hue-based (h=256, u=32, e=16) */
 /* Luma-based (g=16+2 greyscale, s=salt & pepper)  */
 	int i, pos, col=256;
-	float y, diff=200000;			/* sentinel value, as we are looking for the minimum distance in absolute value */
+	float y, diff=1e38;			/* sentinel value, as we are looking for the minimum distance in absolute value */
 
 	met |= 32;						/* always lowercase */
 	if (met=='g'||met=='s') {		/* non-colour modes use luma */
