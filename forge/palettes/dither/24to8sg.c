@@ -1,14 +1,14 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191025-0921 */
+ *	last modified 20191025-1013 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-typedef unsigned char	byt;
+typedef unsigned char	byt;	// most helpful!
 
-/* global variables */
+/* global arrays */
 byt levR[7]=	{18, 55, 91, 128, 164, 200, 237};
 byt levG[8]=	{16, 48, 80, 112, 143, 175, 207, 239};
 byt levB[4]=	{32, 96, 159, 223};
@@ -150,7 +150,7 @@ int main(void) {
 	}
 /* file is read, select quantizing method */
 	printf("Quantizing method:\nEuclidean (C=256, L=32, D=16)\nHue (H=256, U=32, E=16)\n");
-	printf("Luma based: G=Greyscale (16+2), S=Salt&pepper)\n");
+	printf("Luma based: G=Greyscale (16+2), S=Salt&pepper(2)\n");
 	printf("Your choice? ");
 	scanf("%c", &mode);
 
@@ -176,7 +176,11 @@ int main(void) {
 /* diffuse error */
 /*****************/
 /* trying Floyd-Steinberg formula */
-			xy=coord(x+1,y,sx,sy);				// pixel at right
+/*			diff(1, 0, xy, sx, siz, 7.0/16, dr, dg, db, R, G, B);	// pixel at right
+			diff(1, 1, xy, sx, siz, 1.0/16, dr, dg, db, R, G, B);	// pixel below right
+			diff(0, 1, xy, sx, siz, 5.0/16, dr, dg, db, R, G, B);	// pixel below
+			diff(-1, 1, xy, sx, siz, 3.0/16, dr, dg, db, R, G, B);	// pixel below left
+*/			xy=coord(x+1,y,sx,sy);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
