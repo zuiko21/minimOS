@@ -260,7 +260,8 @@ float hdist(int i, unsigned char r, unsigned char g, unsigned char b) {
 	vp = val(r, g, b);
 
 // TO DO TO DO TO DO
-	return ((360+(hi-hp)*(hi-hp))*(1+(si-sp)*(si-sp))*(256+(vi-vp)*(vi-vp)));
+//	return ((360+(hi-hp)*(hi-hp))*(1+(si-sp)*(si-sp))*(256+(vi-vp)*(vi-vp)));
+	return ((360+uns(hi-hp)*uns(hi-hp))*(1+uns(si-sp))*(256+uns(vi-vp)));
 }
 
 float hue(unsigned char r, unsigned char g, unsigned char b){
