@@ -171,29 +171,29 @@ int main(void) {
 /* trying Floyd-Steinberg formula */
 			xy=coord(x+1,y,sx,sy);				/* pixel at right */
 			if (xy>=0) {						/* add diffusion within bounds */
-				k=7/16.0;							/* diffusion coefficient */
+				k=1.0;//7/16.0;							/* diffusion coefficient */
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			}
-			xy=coord(x+1,y+1,sx,sy);			/* pixel below right */
-			if (xy>=0) {						/* add diffusion within bounds */
-				k=1/16.0;							/* diffusion coefficient */
-				R[xy]=byte(k*dr+R[xy]);
+/*			xy=coord(x+1,y+1,sx,sy);			/* pixel below right */
+/*			if (xy>=0) {						/* add diffusion within bounds */
+/*				k=1/16.0;							/* diffusion coefficient */
+/*				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			}
 			xy=coord(x,y+1,sx,sy);				/* pixel below */
-			if (xy>=0) {						/* add diffusion within bounds */
-				k=5/16.0;							/* diffusion coefficient */
-				R[xy]=byte(k*dr+R[xy]);
+/*			if (xy>=0) {						/* add diffusion within bounds */
+/*				k=5/16.0;							/* diffusion coefficient */
+/*				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			}
 			xy=coord(x-1,y+1,sx,sy);			/* pixel below left */
-			if (xy>=0) {						/* add diffusion within bounds */
-				k=3/16.0;							/* diffusion coefficient */
-				R[xy]=byte(k*dr+R[xy]);
+/*			if (xy>=0) {						/* add diffusion within bounds */
+/*				k=3/16.0;							/* diffusion coefficient */
+/*				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			}
