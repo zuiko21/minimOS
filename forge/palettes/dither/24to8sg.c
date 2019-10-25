@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191025-1109 */
+ *	last modified 20191025-1436 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -159,7 +159,7 @@ int main(void) {
 /*******************************************/
 	for (y=0;y<sy;y++) {
 		if (!(y&15))	printf("Processing row %d...\n", y);	// progress indicator
-		for (x=0;x<sx-1;x++) {		// get rid of last column?
+		for (x=0;x<sx;x++) {
 			xy=coord(x,y,sx,sy);		// current pixel, no need to check bounds
 //			if (xy>=0) {				// not really needed here...
 			r=R[xy];					// component values
@@ -176,10 +176,10 @@ int main(void) {
 /* diffuse error */
 /*****************/
 /* trying Floyd-Steinberg formula */
-			diff(1, 0, xy, sx, siz, 7/16.0, dr, dg, db, R, G, B);	// pixel at right
-			diff(1, 1, xy, sx, siz, 1/16.0, dr, dg, db, R, G, B);	// pixel below right
-			diff(0, 1, xy, sx, siz, 5/16.0, dr, dg, db, R, G, B);	// pixel below
-			diff(-1, 1, xy, sx, siz, 3/16.0, dr, dg, db, R, G, B);	// pixel below left
+			diff(1, 0, xy, sx, siz, 7.0/16, dr, dg, db, R, G, B);	// pixel at right
+			diff(1, 1, xy, sx, siz, 1.0/16, dr, dg, db, R, G, B);	// pixel below right
+			diff(0, 1, xy, sx, siz, 5.0/16, dr, dg, db, R, G, B);	// pixel below
+			diff(-1, 1, xy, sx, siz, 3.0/16, dr, dg, db, R, G, B);	// pixel below left
 /*			xy=coord(x+1,y,sx,sy);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
@@ -240,6 +240,7 @@ long coord(int x, int y, int sx, int sy) {
 void diff(int dx, int dy, long xy, int sx, long siz, float k, int dr, int dg, int db, byt *R, byt *G, byt *B) {
 /* generic diffusion function */
 	xy += dx;
+	if (xy%sx < dx)	return;		// did wrap horizontally! eeeeeeeeeek
 	xy += (sx*dy);				// compute new offset
 	if (xy>=0 && xy<siz) {		// check bounds
 		R[xy]=byte(k*dr+R[xy]);		// diffuse the error
