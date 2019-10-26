@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191025-1436 */
+ *	last modified 20191026-2228 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,15 +13,17 @@ byt levR[7]=	{18, 55, 91, 128, 164, 200, 237};
 byt levG[8]=	{16, 48, 80, 112, 143, 175, 207, 239};
 byt levB[4]=	{32, 96, 159, 223};
 byt grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240};
+byt *R, *G, *B;				// pointers to dynamically allocated buffers
+int sx, sy;					// coordinate limits
 
 /************************/
 /* auxiliary prototypes */
 /************************/
 float	uns(float x) {return (x<0?-x:x);}		// absolute value (no prototype)
 
-long	coord(int x, int y, int sx, int sy);	// compute offset from coordinates
-void	diff(int dx, int dy, long xy, int sx, long siz, float k, int dr, int dg, int db, byt *R, byt *G, byt *B);	// generic diffusion function
-void	floyd(long xy, int sx, long siz, byt *R, byt *G, byt *B);	// Floyd-Steinberg implementation
+long	coord(int x, int y);	// compute offset from coordinates
+void	diff(int dx, int dy, long xy, long siz, float k, int dr, int dg, int db);	// generic diffusion function
+void	floyd(long xy, long siz);	// Floyd-Steinberg implementation
 float	eucl(int i, byt r, byt g, byt b);		// Euclidean distance between some index and supplied RGB value
 float	hdist(int i, byt r, byt g, byt b);		// hue-based distance between some index and supplied RGB value
 float	luma(byt r, byt g, byt b);				// return luminance for selected RGB values
@@ -41,11 +43,10 @@ int main(void) {
 	char nombre[80];			// string for filenames, plus substrings buffer
 	char buf[80];				// read buffer
 	char *pt, mode;				// temporary pointer plus quantizing mode
-	byt *R, *G, *B;				// pointers to dynamically allocated buffers
 	byt r, g, b, i;				// pixel values PLUS index
 	int dr, dg, db;				// error diffusion, best with extended range AND SIGNED
 	float k;					// diffusion factor
-	int sx, sy, x, y, z;		// coordinates and limits, plus read value
+	int x, y, z;		// coordinates  plus read value
 	long xy, siz;				// complete array offset plus size
 	FILE *fi, *fo;				// file handlers
 
@@ -160,7 +161,7 @@ int main(void) {
 	for (y=0;y<sy;y++) {
 		if (!(y&15))	printf("Processing row %d...\n", y);	// progress indicator
 		for (x=0;x<sx;x++) {
-			xy=coord(x,y,sx,sy);		// current pixel, no need to check bounds
+			xy=coord(x,y);		// current pixel, no need to check bounds
 //			if (xy>=0) {				// not really needed here...
 			r=R[xy];					// component values
 			g=G[xy];
@@ -176,32 +177,32 @@ int main(void) {
 /* diffuse error */
 /*****************/
 /* trying Floyd-Steinberg formula */
-			diff(1, 0, xy, sx, siz, 7.0/16, dr, dg, db, R, G, B);	// pixel at right
-			diff(1, 1, xy, sx, siz, 1.0/16, dr, dg, db, R, G, B);	// pixel below right
-			diff(0, 1, xy, sx, siz, 5.0/16, dr, dg, db, R, G, B);	// pixel below
-			diff(-1, 1, xy, sx, siz, 3.0/16, dr, dg, db, R, G, B);	// pixel below left
-/*			xy=coord(x+1,y,sx,sy);				// pixel at right
+			diff(1, 0, xy, siz, 7.0/16, dr, dg, db);	// pixel at right
+			diff(1, 1, xy, siz, 1.0/16, dr, dg, db);	// pixel below right
+			diff(0, 1, xy, siz, 5.0/16, dr, dg, db);	// pixel below
+			diff(-1, 1, xy, siz, 3.0/16, dr, dg, db);	// pixel below left
+/*			xy=coord(x+1,y);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			} else printf("*");
-			xy=coord(x+1,y+1,sx,sy);			// pixel below right
+			xy=coord(x+1,y+1);			// pixel below right
 			if (xy>=0) {						// add diffusion within bounds
 				k=1/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			} else printf("*");
-			xy=coord(x,y+1,sx,sy);				// pixel below
+			xy=coord(x,y+1);				// pixel below
 			if (xy>=0) {						// add diffusion within bounds
 				k=5/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
 			} else printf("*");
-			xy=coord(x-1,y+1,sx,sy);			// pixel below left
+			xy=coord(x-1,y+1);			// pixel below left
 			if (xy>=0) {						// add diffusion within bounds
 				k=3/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
@@ -231,13 +232,13 @@ int main(void) {
 /************************/
 /* function definitions */
 /************************/
-long coord(int x, int y, int sx, int sy) {
+long coord(int x, int y) {
 /* compute offset from coordinates */
 	if (x>=sx||y>=sy)	return -1;	// negative offset means OUT of bounds!
 	return (long)sx*y+x;			// returns long in case int cannot handle one meg
 }
 
-void diff(int dx, int dy, long xy, int sx, long siz, float k, int dr, int dg, int db, byt *R, byt *G, byt *B) {
+void diff(int dx, int dy, long xy, long siz, float k, int dr, int dg, int db) {
 /* generic diffusion function */
 	xy += dx;
 	if (xy%sx < dx)	return;		// did wrap horizontally! eeeeeeeeeek
