@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191027-1445 */
+ *	last modified 20191027-1459 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -176,11 +176,7 @@ int main(void) {
 /*****************/
 /* diffuse error */
 /*****************/
-/* trying Floyd-Steinberg formula */
-			diff(x+1,   y, 7.0/16, dr, dg, db);	// pixel at right
-			diff(x+1, y+1, 1.0/16, dr, dg, db);	// pixel below right
-			diff(  x, y+1, 5.0/16, dr, dg, db);	// pixel below
-			diff(x-1, y+1, 3.0/16, dr, dg, db);	// pixel below left
+			floyd(x, y, dr, dg, db);	/* trying Floyd-Steinberg formula */
 /*			xy=coord(x+1,y);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
@@ -244,9 +240,18 @@ void diff(int x, int y, float k, int dr, int dg, int db) {
 
 	xy=coord(x, y);
 	if (xy<0)	return;			// check bounds
+
 	R[xy]=byte(k*dr+R[xy]);		// diffuse the error
 	G[xy]=byte(k*dg+G[xy]);
 	B[xy]=byte(k*db+B[xy]);
+}
+
+void floyd(int x, int y, int dr, int dg, int db) {
+/* Floyd-Steinberg implementation */
+	diff(x+1,   y, 7.0/16, dr, dg, db);	// pixel at right
+	diff(x+1, y+1, 1.0/16, dr, dg, db);	// pixel below right
+	diff(  x, y+1, 5.0/16, dr, dg, db);	// pixel below
+	diff(x-1, y+1, 3.0/16, dr, dg, db);	// pixel below left
 }
 
 float luma(byt r, byt g, byt b){
@@ -262,8 +267,8 @@ float eucl(int i, byt r, byt g, byt b) {
 	pg = palG(i);
 	pb = palB(i);
 
-//	return ((pr-r)*(pr-r)+(pg-g)*(pg-g)+(pb-b)*(pb-b));		// compute Euclidean distance
-	return (uns(pr-r)+uns(pg-g)+uns(pb-b));		// compute Euclidean distance
+	return ((pr-r)*(pr-r)+(pg-g)*(pg-g)+(pb-b)*(pb-b));		// compute Euclidean distance
+//	return (uns(pr-r)+uns(pg-g)+uns(pb-b));		// compute Euclidean distance, but cuadratic looks a bit better
 }
 
 float hdist(int i, byt r, byt g, byt b) {
