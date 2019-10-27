@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191026-2228 */
+ *	last modified 20191027-1445 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,8 +22,8 @@ int sx, sy;					// coordinate limits
 float	uns(float x) {return (x<0?-x:x);}		// absolute value (no prototype)
 
 long	coord(int x, int y);	// compute offset from coordinates
-void	diff(int dx, int dy, long xy, long siz, float k, int dr, int dg, int db);	// generic diffusion function
-void	floyd(long xy, long siz);	// Floyd-Steinberg implementation
+void	diff(int x, int y, float k, int dr, int dg, int db);	// generic diffusion function
+void	floyd(int x, int y, int dr, int dg, int db);	// Floyd-Steinberg implementation
 float	eucl(int i, byt r, byt g, byt b);		// Euclidean distance between some index and supplied RGB value
 float	hdist(int i, byt r, byt g, byt b);		// hue-based distance between some index and supplied RGB value
 float	luma(byt r, byt g, byt b);				// return luminance for selected RGB values
@@ -177,10 +177,10 @@ int main(void) {
 /* diffuse error */
 /*****************/
 /* trying Floyd-Steinberg formula */
-			diff(1, 0, xy, siz, 7.0/16, dr, dg, db);	// pixel at right
-			diff(1, 1, xy, siz, 1.0/16, dr, dg, db);	// pixel below right
-			diff(0, 1, xy, siz, 5.0/16, dr, dg, db);	// pixel below
-			diff(-1, 1, xy, siz, 3.0/16, dr, dg, db);	// pixel below left
+			diff(x+1,   y, 7.0/16, dr, dg, db);	// pixel at right
+			diff(x+1, y+1, 1.0/16, dr, dg, db);	// pixel below right
+			diff(  x, y+1, 5.0/16, dr, dg, db);	// pixel below
+			diff(x-1, y+1, 3.0/16, dr, dg, db);	// pixel below left
 /*			xy=coord(x+1,y);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
@@ -234,20 +234,19 @@ int main(void) {
 /************************/
 long coord(int x, int y) {
 /* compute offset from coordinates */
-	if (x>=sx||y>=sy)	return -1;	// negative offset means OUT of bounds!
+	if (0>x||x>=sx||0>y||y>=sy)	return -1;	// negative offset means OUT of bounds!
 	return (long)sx*y+x;			// returns long in case int cannot handle one meg
 }
 
-void diff(int dx, int dy, long xy, long siz, float k, int dr, int dg, int db) {
+void diff(int x, int y, float k, int dr, int dg, int db) {
 /* generic diffusion function */
-	xy += dx;
-	if (xy%sx < dx)	return;		// did wrap horizontally! eeeeeeeeeek
-	xy += (sx*dy);				// compute new offset
-	if (xy>=0 && xy<siz) {		// check bounds
-		R[xy]=byte(k*dr+R[xy]);		// diffuse the error
-		G[xy]=byte(k*dg+G[xy]);
-		B[xy]=byte(k*db+B[xy]);
-	} else printf("*");
+	long xy;
+
+	xy=coord(x, y);
+	if (xy<0)	return;			// check bounds
+	R[xy]=byte(k*dr+R[xy]);		// diffuse the error
+	G[xy]=byte(k*dg+G[xy]);
+	B[xy]=byte(k*db+B[xy]);
 }
 
 float luma(byt r, byt g, byt b){
