@@ -13,17 +13,18 @@ byt levR[7]=	{18, 55, 91, 128, 164, 200, 237};
 byt levG[8]=	{16, 48, 80, 112, 143, 175, 207, 239};
 byt levB[4]=	{32, 96, 159, 223};
 byt grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240};
-byt *R, *G, *B;				// pointers to dynamically allocated buffers
-int sx, sy;					// coordinate limits
+byt *R, *G, *B;					// pointers to dynamically allocated buffers
+int sx, sy;						// coordinate limits
 
 /************************/
 /* auxiliary prototypes */
 /************************/
 float	uns(float x) {return (x<0?-x:x);}		// absolute value (no prototype)
 
-long	coord(int x, int y);	// compute offset from coordinates
+long	coord(int x, int y);					// compute offset from coordinates
 void	diff(int x, int y, float k, int dr, int dg, int db);	// generic diffusion function
-void	floyd(int x, int y, int dr, int dg, int db);	// Floyd-Steinberg implementation
+void	floyd(int x, int y, int dr, int dg, int db);			// Floyd-Steinberg implementation
+void	sierra(int x, int y, int dr, int dg, int db);			// full Sierra implementation
 float	eucl(int i, byt r, byt g, byt b);		// Euclidean distance between some index and supplied RGB value
 float	hdist(int i, byt r, byt g, byt b);		// hue-based distance between some index and supplied RGB value
 float	luma(byt r, byt g, byt b);				// return luminance for selected RGB values
@@ -176,37 +177,37 @@ int main(void) {
 /*****************/
 /* diffuse error */
 /*****************/
-//			floyd(x, y, dr, dg, db);	/* trying Floyd-Steinberg formula */
-/**/			xy=coord(x+1,y);				// pixel at right
+			floyd(x, y, dr, dg, db);	/* trying Floyd-Steinberg formula */
+/*			xy=coord(x+1,y);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
-			} else printf("*");
+			}
 			xy=coord(x+1,y+1);			// pixel below right
 			if (xy>=0) {						// add diffusion within bounds
 				k=1/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
-			} else printf("*");
+			}
 			xy=coord(x,y+1);				// pixel below
 			if (xy>=0) {						// add diffusion within bounds
 				k=5/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
-			} else printf("*");
+			}
 			xy=coord(x-1,y+1);			// pixel below left
 			if (xy>=0) {						// add diffusion within bounds
 				k=3/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
 				G[xy]=byte(k*dg+G[xy]);
 				B[xy]=byte(k*db+B[xy]);
-			} else printf("*");
+			}
 //			}							// ...in case of coordinates check
-/**/		}
+*/		}
 	}
 
 /* cleanup and exit */
@@ -252,6 +253,18 @@ void floyd(int x, int y, int dr, int dg, int db) {
 	diff(x+1, y+1, 1.0/16, dr, dg, db);	// pixel below right
 	diff(  x, y+1, 5.0/16, dr, dg, db);	// pixel below
 	diff(x-1, y+1, 3.0/16, dr, dg, db);	// pixel below left
+}
+
+void sierra(int x, int y, int dr, int dg, int db) {
+/* full Sierra implementation */
+	diff(x+1,   y, 5.0/32, dr, dg, db);	// pixel at right
+	diff(x+2,   y, 3.0/32, dr, dg, db);	// two pixels at right
+	diff(x+1, y+1, 4.0/32, dr, dg, db);	// pixel below right
+	diff(x+2, y+1, 2.0/32, dr, dg, db);	// two pixels right, below
+	diff(  x, y+1, 5.0/32, dr, dg, db);	// pixel below
+	diff(x-1, y+1, 4.0/32, dr, dg, db);	// pixel below left
+	diff(x-2, y+1, 2.0/32, dr, dg, db);	// pixel below left
+
 }
 
 float luma(byt r, byt g, byt b){
