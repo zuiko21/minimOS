@@ -176,8 +176,8 @@ int main(void) {
 /*****************/
 /* diffuse error */
 /*****************/
-			floyd(x, y, dr, dg, db);	/* trying Floyd-Steinberg formula */
-/*			xy=coord(x+1,y);				// pixel at right
+//			floyd(x, y, dr, dg, db);	/* trying Floyd-Steinberg formula */
+/**/			xy=coord(x+1,y);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
 				R[xy]=byte(k*dr+R[xy]);
@@ -206,7 +206,7 @@ int main(void) {
 				B[xy]=byte(k*db+B[xy]);
 			} else printf("*");
 //			}							// ...in case of coordinates check
-*/		}
+/**/		}
 	}
 
 /* cleanup and exit */
