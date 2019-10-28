@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191027-1459 */
+ *	last modified 20191028-1049 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,6 +25,8 @@ long	coord(int x, int y);					// compute offset from coordinates
 void	diff(int x, int y, float k, int dr, int dg, int db);	// generic diffusion function
 void	floyd(int x, int y, int dr, int dg, int db);			// Floyd-Steinberg implementation
 void	sierra(int x, int y, int dr, int dg, int db);			// full Sierra implementation
+void	atkinson(int x, int y, int dr, int dg, int db);		// Atkinson implementation
+void	burkes(int x, int y, int dr, int dg, int db);			// Burkes implementation
 float	eucl(int i, byt r, byt g, byt b);		// Euclidean distance between some index and supplied RGB value
 float	hdist(int i, byt r, byt g, byt b);		// hue-based distance between some index and supplied RGB value
 float	luma(byt r, byt g, byt b);				// return luminance for selected RGB values
@@ -47,7 +49,7 @@ int main(void) {
 	byt r, g, b, i;				// pixel values PLUS index
 	int dr, dg, db;				// error diffusion, best with extended range AND SIGNED
 	float k;					// diffusion factor
-	int x, y, z;		// coordinates  plus read value
+	int x, y, z;				// coordinates  plus read value
 	long xy, siz;				// complete array offset plus size
 	FILE *fi, *fo;				// file handlers
 
@@ -129,24 +131,24 @@ int main(void) {
 	xy=0;						// convenient counter
 	while (!feof(fi)) {
 		if (!(xy&16383))	printf("Read %ld Kp...\n", xy>>10);	// progress indicator
-// read RED
+
 		do {
 			fgets(buf, 80, fi);			// get line into temporary buffer...
 		} while (buf[0]=='#');		// ...but reject comments!
 		sscanf(buf, "%d", &z);		// get one number from file
-		R[xy] = z;					// put value into array
-// read GREEN
+		R[xy] = z;					// put RED value into array
+
 		do {
 			fgets(buf, 80, fi);			// get line into temporary buffer...
 		} while (buf[0]=='#');		// ...but reject comments!
 		sscanf(buf, "%d", &z);		// get one number from file
-		G[xy] = z;					// put value into array
-// read BLUE
+		G[xy] = z;					// put GREEN value into array
+
 		do {
 			fgets(buf, 80, fi);			// get line into temporary buffer...
 		} while (buf[0]=='#');		// ...but reject comments!
 		sscanf(buf, "%d", &z);		// get one number from file
-		B[xy] = z;					// put value into array
+		B[xy] = z;					// put BLUE value into array
 
 		xy++;						// go for next
 	}
@@ -162,7 +164,7 @@ int main(void) {
 	for (y=0;y<sy;y++) {
 		if (!(y&15))	printf("Processing row %d...\n", y);	// progress indicator
 		for (x=0;x<sx;x++) {
-			xy=coord(x,y);		// current pixel, no need to check bounds
+			xy=coord(x,y);				// current pixel, no need to check bounds
 //			if (xy>=0) {				// not really needed here...
 			r=R[xy];					// component values
 			g=G[xy];
@@ -177,7 +179,11 @@ int main(void) {
 /*****************/
 /* diffuse error */
 /*****************/
-			floyd(x, y, dr, dg, db);	/* trying Floyd-Steinberg formula */
+//			floyd(x, y, dr, dg, db);	// trying Floyd-Steinberg formula
+			atkinson(x, y, dr, dg, db);	// trying Atkinson formula
+//			sierra(x, y, dr, dg, db);	// trying full Sierra formula
+//			burkes(x, y, dr, dg, db);	// trying Burkes formula
+/*** (discrete implementation of Floyd-Steinberg) ***/
 /*			xy=coord(x+1,y);				// pixel at right
 			if (xy>=0) {						// add diffusion within bounds
 				k=7/16.0;							// diffusion coefficient
@@ -259,12 +265,37 @@ void sierra(int x, int y, int dr, int dg, int db) {
 /* full Sierra implementation */
 	diff(x+1,   y, 5.0/32, dr, dg, db);	// pixel at right
 	diff(x+2,   y, 3.0/32, dr, dg, db);	// two pixels at right
+	diff(x-2, y+1, 2.0/32, dr, dg, db);	// two pixels left below
+	diff(x-1, y+1, 4.0/32, dr, dg, db);	// pixel below left
+	diff(  x, y+1, 5.0/32, dr, dg, db);	// pixel below
 	diff(x+1, y+1, 4.0/32, dr, dg, db);	// pixel below right
 	diff(x+2, y+1, 2.0/32, dr, dg, db);	// two pixels right, below
-	diff(  x, y+1, 5.0/32, dr, dg, db);	// pixel below
-	diff(x-1, y+1, 4.0/32, dr, dg, db);	// pixel below left
-	diff(x-2, y+1, 2.0/32, dr, dg, db);	// pixel below left
+	diff(x-1, y+2, 2.0/32, dr, dg, db);	// two pixels below left
+	diff(  x, y+2, 3.0/32, dr, dg, db);	// two pixels below
+	diff(x+1, y+2, 2.0/32, dr, dg, db);	// two pixels below right
+}
 
+void atkinson(int x, int y, int dr, int dg, int db) {
+/* Atkinson implementation */
+/* some specific implementation will speed this up a lot */
+	diff(x+1,   y, 1.0/8, dr, dg, db);	// pixel at right
+	diff(x+2,   y, 1.0/8, dr, dg, db);	// two pixels at right
+	diff(x-1, y+1, 1.0/8, dr, dg, db);	// pixel below left
+	diff(  x, y+1, 1.0/8, dr, dg, db);	// pixel below
+	diff(x+1, y+1, 1.0/8, dr, dg, db);	// pixel below right
+	diff(  x, y+2, 1.0/8, dr, dg, db);	// two pixels below
+}
+
+void burkes(int x, int y, int dr, int dg, int db) {
+/* Burkes implementation */
+/* some specific implementation will speed this up */
+	diff(x+1,   y, 8.0/32, dr, dg, db);	// pixel at right
+	diff(x+2,   y, 4.0/32, dr, dg, db);	// two pixels at right
+	diff(x-2, y+1, 2.0/32, dr, dg, db);	// two pixels left below
+	diff(x-1, y+1, 4.0/32, dr, dg, db);	// pixel below left
+	diff(  x, y+1, 8.0/32, dr, dg, db);	// pixel below
+	diff(x+1, y+1, 4.0/32, dr, dg, db);	// pixel below right
+	diff(x+2, y+1, 2.0/32, dr, dg, db);	// two pixels right, below
 }
 
 float luma(byt r, byt g, byt b){
