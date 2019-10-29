@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191029-1321 */
+ *	last modified 20191029-1353 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,14 +19,15 @@ int sx, sy;						// coordinate limits
 /************************/
 /* auxiliary prototypes */
 /************************/
-float	uns(float x) {return (x<0?-x:x);}		// absolute value (no prototype)
+float	uns(float x) {return (x<0?-x:x);}		// absolute value **no prototype**
 
 long	coord(int x, int y);					// compute offset from coordinates
 void	diff(int x, int y, float k, int dr, int dg, int db);	// generic diffusion function
 void	floyd(int x, int y, int dr, int dg, int db);			// Floyd-Steinberg implementation
 void	sierra(int x, int y, int dr, int dg, int db);			// full Sierra implementation
-void	atkinson(int x, int y, int dr, int dg, int db);		// Atkinson implementation
+void	atkinson(int x, int y, int dr, int dg, int db);			// Atkinson implementation
 void	burkes(int x, int y, int dr, int dg, int db);			// Burkes implementation
+void	simple(int x, int y, int dr, int dg, int db) {diff(x+1,y,1,dr,dg,db);}	// simple diffusion at right ** no prototype **
 float	eucl(int i, byt r, byt g, byt b);		// Euclidean distance between some index and supplied RGB value
 float	hdist(int i, byt r, byt g, byt b);		// hue-based distance between some index and supplied RGB value
 float	luma(byt r, byt g, byt b);				// return luminance for selected RGB values
@@ -163,7 +164,7 @@ int main(void) {
 		return -1;						// abort in case of wrong parameter
 	}
 /* ditto for dithering method */
-	printf("Dithering method:\n[F]loyd-Steinberg, [A]tkinson, full [S]ierra, [B]urkes? ");
+	printf("Dithering method:\n[F]loyd-Steinberg, [A]tkinson, full [S]ierra, [B]urkes, simple [D]iffusion? ");
 	scanf(" %c", &dith);
 	dith |= 32;						// always lowercase, will check values later
 /*******************************************/
@@ -199,6 +200,9 @@ int main(void) {
 					break;
 				case 'b':
 					burkes(x, y, dr, dg, db);	// trying Burkes formula
+					break;
+				case 'd':
+					simple(x, y, dr, dg, db);	// trying simple diffusion formula
 					break;
 				default:
 					printf("*** Unrecognised dithering algorithm! ***\n");
