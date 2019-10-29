@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191028-1049 */
+ *	last modified 20191029-1321 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,7 +45,7 @@ int		prox(byt r, byt g, byt b, char met);	// find index closest to suggested RGB
 int main(void) {
 	char nombre[80];			// string for filenames, plus substrings buffer
 	char buf[80];				// read buffer
-	char *pt, mode;				// temporary pointer plus quantizing mode
+	char *pt, mode, dith;		// temporary pointer plus quantizing/dithering mode
 	byt r, g, b, i;				// pixel values PLUS index
 	int dr, dg, db;				// error diffusion, best with extended range AND SIGNED
 	float k;					// diffusion factor
@@ -156,8 +156,16 @@ int main(void) {
 	printf("Quantizing method:\nEuclidean (C=256, L=32, D=16)\nHue (H=256, U=32, E=16)\n");
 	printf("Luma based: G=Greyscale (16+2), S=Salt&pepper(2)\n");
 	printf("Your choice? ");
-	scanf("%c", &mode);
-
+	scanf(" %c", &mode);
+	mode |= 32;						// always lowercase
+	if (mode!='c' && mode!='l' && mode!='d' && mode!='h' && mode!='u' && mode!='e' && mode!='g' && mode!='s') {
+		printf("*** Unrecognised quantizing method ***\n");
+		return -1;						// abort in case of wrong parameter
+	}
+/* ditto for dithering method */
+	printf("Dithering method:\n[F]loyd-Steinberg, [A]tkinson, full [S]ierra, [B]urkes? ");
+	scanf(" %c", &dith);
+	dith |= 32;						// always lowercase, will check values later
 /*******************************************/
 /* scan original array for error diffusion */
 /*******************************************/
@@ -179,41 +187,25 @@ int main(void) {
 /*****************/
 /* diffuse error */
 /*****************/
-//			floyd(x, y, dr, dg, db);	// trying Floyd-Steinberg formula
-			atkinson(x, y, dr, dg, db);	// trying Atkinson formula
-//			sierra(x, y, dr, dg, db);	// trying full Sierra formula
-//			burkes(x, y, dr, dg, db);	// trying Burkes formula
-/*** (discrete implementation of Floyd-Steinberg) ***/
-/*			xy=coord(x+1,y);				// pixel at right
-			if (xy>=0) {						// add diffusion within bounds
-				k=7/16.0;							// diffusion coefficient
-				R[xy]=byte(k*dr+R[xy]);
-				G[xy]=byte(k*dg+G[xy]);
-				B[xy]=byte(k*db+B[xy]);
-			}
-			xy=coord(x+1,y+1);			// pixel below right
-			if (xy>=0) {						// add diffusion within bounds
-				k=1/16.0;							// diffusion coefficient
-				R[xy]=byte(k*dr+R[xy]);
-				G[xy]=byte(k*dg+G[xy]);
-				B[xy]=byte(k*db+B[xy]);
-			}
-			xy=coord(x,y+1);				// pixel below
-			if (xy>=0) {						// add diffusion within bounds
-				k=5/16.0;							// diffusion coefficient
-				R[xy]=byte(k*dr+R[xy]);
-				G[xy]=byte(k*dg+G[xy]);
-				B[xy]=byte(k*db+B[xy]);
-			}
-			xy=coord(x-1,y+1);			// pixel below left
-			if (xy>=0) {						// add diffusion within bounds
-				k=3/16.0;							// diffusion coefficient
-				R[xy]=byte(k*dr+R[xy]);
-				G[xy]=byte(k*dg+G[xy]);
-				B[xy]=byte(k*db+B[xy]);
+			switch(dith) {				// select dithering algorithm
+				case 'f':
+					floyd(x, y, dr, dg, db);	// trying Floyd-Steinberg formula
+					break;
+				case 'a':
+					atkinson(x, y, dr, dg, db);	// trying Atkinson formula
+					break;
+				case 's':
+					sierra(x, y, dr, dg, db);	// trying full Sierra formula
+					break;
+				case 'b':
+					burkes(x, y, dr, dg, db);	// trying Burkes formula
+					break;
+				default:
+					printf("*** Unrecognised dithering algorithm! ***\n");
+					return -1;
 			}
 //			}							// ...in case of coordinates check
-*/		}
+		}
 	}
 
 /* cleanup and exit */
@@ -427,7 +419,6 @@ int prox(byt r, byt g, byt b, char met) {
 	int i, pos, col=256;
 	float y, diff=1e38;			// sentinel value, as we are looking for the minimum distance in absolute value
 
-	met |= 32;					// always lowercase
 	if (met=='g'||met=='s') {	// non-colour modes use luma
 		i=(int)luma(r, g, b);		// target luminance
 	}
@@ -449,10 +440,11 @@ int prox(byt r, byt g, byt b, char met) {
 		case 'd':					// System colours only (0...15)
 		case 'e':
 			col=16;
-//			break;
-//		case 'c':					// whole palette
-//		case 'h':
-//			col=256;
+/* optional sentences as default value is OK */
+			break;
+		case 'c':					// whole palette
+		case 'h':
+			col=256;
 	}
 	for (i=0;i<col;i++) {		// scan all indexed colours
 		if (met=='c'||met=='l'||met=='d') {		// Euclidean method selected
