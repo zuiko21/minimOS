@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191029-1353 */
+ *	last modified 20191030-0837 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,17 +8,21 @@
 
 typedef unsigned char	byt;	// most helpful!
 
-/* global arrays */
+/* global arrays and variables */
 byt levR[7]=	{18, 55, 91, 128, 164, 200, 237};
 byt levG[8]=	{16, 48, 80, 112, 143, 175, 207, 239};
 byt levB[4]=	{32, 96, 159, 223};
 byt grey[16]=	{15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240};
 byt *R, *G, *B;					// pointers to dynamically allocated buffers
 int sx, sy;						// coordinate limits
+char buf[80];					// read buffer
+FILE *fi, *fo;					// file handlers
 
-/************************/
-/* auxiliary prototypes */
-/************************/
+/***********************/
+/* auxiliary functions */
+/***********************/
+void	readf(void) {do fgets(buf, 80, fi); while (buf[0]=='#');}	// read into buffer but reject comments! ** no prototype **
+
 float	uns(float x) {return (x<0?-x:x);}		// absolute value **no prototype**
 
 long	coord(int x, int y);					// compute offset from coordinates
@@ -45,14 +49,12 @@ int		prox(byt r, byt g, byt b, char met);	// find index closest to suggested RGB
 /****************/
 int main(void) {
 	char nombre[80];			// string for filenames, plus substrings buffer
-	char buf[80];				// read buffer
 	char *pt, mode, dith;		// temporary pointer plus quantizing/dithering mode
 	byt r, g, b, i;				// pixel values PLUS index
 	int dr, dg, db;				// error diffusion, best with extended range AND SIGNED
 	float k;					// diffusion factor
 	int x, y, z;				// coordinates  plus read value
 	long xy, siz;				// complete array offset plus size
-	FILE *fi, *fo;				// file handlers
 
 /* get input file */
 	printf("PPM file? ");		// get input filename
@@ -89,18 +91,12 @@ int main(void) {
 	}
 
 /* start reading PPM in order to determine size */
-/*** common read-buffer-minus-comments code ***/
-	do {
-		fgets(buf, 80, fi);			// get line into temporary buffer...
-	} while (buf[0]=='#');		// ...but reject comments!
-/*** end of comment-striping code ***/
+	readf();					// common read-buffer-minus-comments
 	if (strcmp(buf, "P3\n")!=0) {
 		printf("WRONG FORMAT!\n");	// abort if not ASCII-type PPM
 		return -1;
 	}
-	do {
-		fgets(buf, 80, fi);			// get line into temporary buffer...
-	} while (buf[0]=='#');		// ...but reject comments!
+	readf();					// common read-buffer-minus-comments
 /* hardwired format, both sizes on one line, then another with max value, then each value on single line */
 /* read sizes */
 	sscanf(buf, "%d", &sx);		// get one number from file
@@ -110,14 +106,13 @@ int main(void) {
 		pt++;
 	} while (i!='\0' && i!=' ' && i!='\n' && i!='\t');
 	sscanf(pt, "%d", &sy);		// get one number from file
-	do {
-		fgets(buf, 80, fi);			// get line into temporary buffer...
-	} while (buf[0]=='#');		// ...but reject comments!
+	readf();					// common read-buffer-minus-comments
 	if (strcmp(buf, "255\n")!=0) {
 		printf("WRONG DEPTH!\n");	// abort if not 256-level
 		return -1;
 	}
 	printf("Image size is %d x %d pixels\n", sx, sy);
+
 /* allocate buffer space */
 	siz=sx*sy;					// precompute size
 	R=(byt*)malloc(siz);		// allocate arrays
@@ -128,31 +123,27 @@ int main(void) {
 		return -1;
 	}
 	printf("Successfully allocated %ld bytes per channel\n", siz);
+
 /* read image file into array */
 	xy=0;						// convenient counter
 	while (!feof(fi)) {
 		if (!(xy&16383))	printf("Read %ld Kp...\n", xy>>10);	// progress indicator
 
-		do {
-			fgets(buf, 80, fi);			// get line into temporary buffer...
-		} while (buf[0]=='#');		// ...but reject comments!
+		readf();					// common read-buffer-minus-comments
 		sscanf(buf, "%d", &z);		// get one number from file
 		R[xy] = z;					// put RED value into array
 
-		do {
-			fgets(buf, 80, fi);			// get line into temporary buffer...
-		} while (buf[0]=='#');		// ...but reject comments!
+		readf();					// common read-buffer-minus-comments
 		sscanf(buf, "%d", &z);		// get one number from file
 		G[xy] = z;					// put GREEN value into array
 
-		do {
-			fgets(buf, 80, fi);			// get line into temporary buffer...
-		} while (buf[0]=='#');		// ...but reject comments!
+		readf();					// common read-buffer-minus-comments
 		sscanf(buf, "%d", &z);		// get one number from file
 		B[xy] = z;					// put BLUE value into array
 
 		xy++;						// go for next
 	}
+
 /* file is read, select quantizing method */
 	printf("Quantizing method:\nEuclidean (C=256, L=32, D=16)\nHue (H=256, U=32, E=16)\n");
 	printf("Luma based: G=Greyscale (16+2), S=Salt&pepper(2)\n");
@@ -167,6 +158,7 @@ int main(void) {
 	printf("Dithering method:\n[F]loyd-Steinberg, [A]tkinson, full [S]ierra, [B]urkes, simple [D]iffusion? ");
 	scanf(" %c", &dith);
 	dith |= 32;						// always lowercase, will check values later
+
 /*******************************************/
 /* scan original array for error diffusion */
 /*******************************************/
@@ -215,11 +207,7 @@ int main(void) {
 /* cleanup and exit */
 	fclose(fi);
 	fclose(fo);
-/* THIS FOR DEBUGGING */
-	if(R==NULL||G==NULL||B==NULL) {
-		printf("UNALLOCATED MEMORY!\n");
-		return -1;
-	}
+
 /* release memory */
 	free(R);
 	free(G);
