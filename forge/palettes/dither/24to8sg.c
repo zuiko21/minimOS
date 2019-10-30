@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191030-0837 */
+ *	last modified 20191030-0858 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +28,9 @@ float	uns(float x) {return (x<0?-x:x);}		// absolute value **no prototype**
 long	coord(int x, int y);					// compute offset from coordinates
 void	diff(int x, int y, float k, int dr, int dg, int db);	// generic diffusion function
 void	floyd(int x, int y, int dr, int dg, int db);			// Floyd-Steinberg implementation
+void	stucki(int x, int y, int dr, int dg, int db);			// Stucki implementation
 void	sierra(int x, int y, int dr, int dg, int db);			// full Sierra implementation
+void	s2row(int x, int y, int dr, int dg, int db);			// 2-row Sierra implementation
 void	atkinson(int x, int y, int dr, int dg, int db);			// Atkinson implementation
 void	burkes(int x, int y, int dr, int dg, int db);			// Burkes implementation
 void	simple(int x, int y, int dr, int dg, int db) {diff(x+1,y,1,dr,dg,db);}	// simple diffusion at right ** no prototype **
@@ -146,7 +148,7 @@ int main(void) {
 
 /* file is read, select quantizing method */
 	printf("Quantizing method:\nEuclidean (C=256, L=32, D=16)\nHue (H=256, U=32, E=16)\n");
-	printf("Luma based: G=Greyscale (16+2), S=Salt&pepper(2)\n");
+	printf("Luma based: G=Greyscale (16+2), S=Salt&pepper (2)\n");
 	printf("Your choice? ");
 	scanf(" %c", &mode);
 	mode |= 32;						// always lowercase
@@ -155,7 +157,8 @@ int main(void) {
 		return -1;						// abort in case of wrong parameter
 	}
 /* ditto for dithering method */
-	printf("Dithering method:\n[F]loyd-Steinberg, [A]tkinson, full [S]ierra, [B]urkes, simple [D]iffusion? ");
+	printf("Dithering method:\n[F]loyd-Steinberg, [A]tkinson, [B]urkes, simple [D]iffusion,\n");
+	printf("Full [S]ierra, [T]wo-row Sierra, Stuc[K]i? "); 
 	scanf(" %c", &dith);
 	dith |= 32;						// always lowercase, will check values later
 
@@ -187,8 +190,14 @@ int main(void) {
 				case 'a':
 					atkinson(x, y, dr, dg, db);	// trying Atkinson formula
 					break;
+				case 'k':
+					stucki(x, y, dr, dg, db);	// trying Stucki formula
+					break;
 				case 's':
 					sierra(x, y, dr, dg, db);	// trying full Sierra formula
+					break;
+				case 't':
+					s2row(x, y, dr, dg, db);	// trying 2-row Sierra formula
 					break;
 				case 'b':
 					burkes(x, y, dr, dg, db);	// trying Burkes formula
@@ -245,6 +254,22 @@ void floyd(int x, int y, int dr, int dg, int db) {
 	diff(x-1, y+1, 3.0/16, dr, dg, db);	// pixel below left
 }
 
+void stucki(int x, int y, int dr, int dg, int db) {
+/* Stucki implementation */
+	diff(x+1,   y, 8.0/42, dr, dg, db);	// pixel at right
+	diff(x+2,   y, 4.0/42, dr, dg, db);	// two pixels at right
+	diff(x-2, y+1, 2.0/42, dr, dg, db);	// two pixels left below
+	diff(x-1, y+1, 4.0/42, dr, dg, db);	// pixel below left
+	diff(  x, y+1, 8.0/42, dr, dg, db);	// pixel below
+	diff(x+1, y+1, 4.0/42, dr, dg, db);	// pixel below right
+	diff(x+2, y+1, 2.0/42, dr, dg, db);	// two pixels right, below
+	diff(x-2, y+2, 1.0/42, dr, dg, db);	// two pixels below and left
+	diff(x-1, y+2, 2.0/42, dr, dg, db);	// two pixels below left
+	diff(  x, y+2, 4.0/42, dr, dg, db);	// two pixels below
+	diff(x+1, y+2, 2.0/42, dr, dg, db);	// two pixels below right
+	diff(x+2, y+2, 1.0/42, dr, dg, db);	// two pixels below and right
+}
+
 void sierra(int x, int y, int dr, int dg, int db) {
 /* full Sierra implementation */
 	diff(x+1,   y, 5.0/32, dr, dg, db);	// pixel at right
@@ -257,6 +282,17 @@ void sierra(int x, int y, int dr, int dg, int db) {
 	diff(x-1, y+2, 2.0/32, dr, dg, db);	// two pixels below left
 	diff(  x, y+2, 3.0/32, dr, dg, db);	// two pixels below
 	diff(x+1, y+2, 2.0/32, dr, dg, db);	// two pixels below right
+}
+
+void s2row(int x, int y, int dr, int dg, int db) {
+/* 2-row Sierra implementation */
+	diff(x+1,   y, 4.0/16, dr, dg, db);	// pixel at right
+	diff(x+2,   y, 3.0/16, dr, dg, db);	// two pixels at right
+	diff(x-2, y+1, 1.0/16, dr, dg, db);	// two pixels left below
+	diff(x-1, y+1, 2.0/16, dr, dg, db);	// pixel below left
+	diff(  x, y+1, 3.0/16, dr, dg, db);	// pixel below
+	diff(x+1, y+1, 2.0/16, dr, dg, db);	// pixel below right
+	diff(x+2, y+1, 1.0/16, dr, dg, db);	// two pixels right, below
 }
 
 void atkinson(int x, int y, int dr, int dg, int db) {
