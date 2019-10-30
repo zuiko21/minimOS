@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191030-0858 */
+ *	last modified 20191030-1003 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +44,8 @@ byt		byte(int v);							// trim value to unsigned byte
 byt		palR(int i);							// get red value from standard palette
 byt		palG(int i);							// get green value from standard palette
 byt		palB(int i);							// get blue value from standard palette
-int		prox(byt r, byt g, byt b, char met);	// find index closest to suggested RGB, several methods
+int		prox(byt r, byt g, byt b, char met);	// find index closest to suggested RGB, several palettes
+int		pdith(byt r, byt g, byt b, char met);	// P-dither suggested RGB, several palettes
 
 /****************/
 /* main program */
@@ -158,7 +159,7 @@ int main(void) {
 	}
 /* ditto for dithering method */
 	printf("Dithering method:\n[F]loyd-Steinberg, [A]tkinson, [B]urkes, simple [D]iffusion,\n");
-	printf("Full [S]ierra, [T]wo-row Sierra, Stuc[K]i? "); 
+	printf("Full [S]ierra, [T]wo-row Sierra, Stuc[K]i, [P]-dither? "); 
 	scanf(" %c", &dith);
 	dith |= 32;						// always lowercase, will check values later
 
@@ -174,8 +175,12 @@ int main(void) {
 			g=G[xy];
 			b=B[xy];
 /* seek nearest colour */
-			i=prox(r, g, b, mode);		// find best match according to mode (e, h, g, s)
-			fputc(i, fo);				// get value into file!
+			if (dith!='p') {			// except for P-dithering...
+				i=prox(r, g, b, mode);		// ...find best match according to mode (will diffuse error later)
+			} else {					// P-dither directly implemented here!
+				i=pdith(r, g, b, mode);		// add random noise depending on palette
+			}
+			fputc(i, fo);				// ** put index value into output file! **
 /* compute error per channel */
 			dr=r-palR(i);				// these are signed!
 			dg=g-palG(i);
@@ -204,6 +209,7 @@ int main(void) {
 					break;
 				case 'd':
 					simple(x, y, dr, dg, db);	// trying simple diffusion formula
+				case 'p':					// P-dithering makes no error diffusion!
 					break;
 				default:
 					printf("*** Unrecognised dithering algorithm! ***\n");
@@ -488,4 +494,50 @@ int prox(byt r, byt g, byt b, char met) {
 	}
 
 	return pos;					// this is the closest indexed colour
+}
+
+int pdith(byt r, byt g, byt b, char met) {
+/* P-dither suggested RGB, several palettes */
+/* Euclidean and Hue-based work the same here: C=H=_224_, L=U=32, D=E=16 colours */
+	float y;					// target luma
+	int x, xr, xg, xb;			// random values
+	int qr, qg, qb;				// quantized values
+	int i;						// output index, if applyable
+
+	switch(met) {
+		case 'g':					// 16+2 greys
+			y=luma(r, g, b);			// compute target luminance
+			x=1+rand()%15;				// generate noise
+			i=(int)y/grey[0]-1;			// scaled index -1...16
+			if (i<0) {					// is it really dark? may turn black
+				if (y<x)			return 0;		// emit full black...
+				else				return 16;		// ...or the darkest grey
+			} else if (i>=15) {			// or is it really light?
+				if (y-grey[15]<x)	return 31;		// emit the lightest grey...
+				else				return 15;		// ...or full white
+			} else {					// regular greyscale otherwise
+				if (y-grey[i]<x)	return 16+i;	// emit computed index...
+				else				return 17+i;	// ...or the following one
+			}
+			// no need for break as already returns either value
+		case 's':					// salt-and-pepper
+			y=luma(r, g, b);			// compute target luminance
+			x=1+rand()%255;				// generate random noise
+			if (y<x)	return 0;		// emit black or white depending on chance
+			else		return 15;
+			// no need for break as already returns either value
+		case 'c':					// 224-colour modes
+		case 'h':
+			xr=1+rand()%37;				// generate noise according to quantizing intervals
+			xg=1+rand()%32;
+			xb=1+rand()%64;
+			break;
+		case 'd':					// 16 system colours
+		case 'e':
+		
+		case 'l':					// 16 system colours + 16 greys!
+		case 'u':
+			break;
+	}
+return x;
 }
