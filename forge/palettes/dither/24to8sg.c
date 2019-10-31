@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191030-1003 */
+ *	last modified 20191031-0958 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +26,9 @@ void	readf(void) {do fgets(buf, 80, fi); while (buf[0]=='#');}	// read into buff
 float	uns(float x) {return (x<0?-x:x);}		// absolute value **no prototype**
 
 long	coord(int x, int y);					// compute offset from coordinates
+
 void	diff(int x, int y, float k, int dr, int dg, int db);	// generic diffusion function
+
 void	floyd(int x, int y, int dr, int dg, int db);			// Floyd-Steinberg implementation
 void	stucki(int x, int y, int dr, int dg, int db);			// Stucki implementation
 void	sierra(int x, int y, int dr, int dg, int db);			// full Sierra implementation
@@ -34,18 +36,23 @@ void	s2row(int x, int y, int dr, int dg, int db);			// 2-row Sierra implementati
 void	atkinson(int x, int y, int dr, int dg, int db);			// Atkinson implementation
 void	burkes(int x, int y, int dr, int dg, int db);			// Burkes implementation
 void	simple(int x, int y, int dr, int dg, int db) {diff(x+1,y,1,dr,dg,db);}	// simple diffusion at right ** no prototype **
+
 float	eucl(int i, byt r, byt g, byt b);		// Euclidean distance between some index and supplied RGB value
 float	hdist(int i, byt r, byt g, byt b);		// hue-based distance between some index and supplied RGB value
+
 float	luma(byt r, byt g, byt b);				// return luminance for selected RGB values
 float	hue(byt r, byt g, byt b);				// return hue (0...360) for selected RGB values
 float	sat(byt r, byt g, byt b);				// return saturation (0...1) for selected RGB values
 float	val(byt r, byt g, byt b);				// return value (0...255) for selected RGB values
+
 byt		byte(int v);							// trim value to unsigned byte
+
 byt		palR(int i);							// get red value from standard palette
 byt		palG(int i);							// get green value from standard palette
 byt		palB(int i);							// get blue value from standard palette
+
 int		prox(byt r, byt g, byt b, char met);	// find index closest to suggested RGB, several palettes
-int		pdith(byt r, byt g, byt b, char met);	// P-dither suggested RGB, several palettes
+int		pdith(byt r, byt g, byt b, char met);	// P-dither suggested index, several palettes
 
 /****************/
 /* main program */
@@ -502,13 +509,13 @@ int pdith(byt r, byt g, byt b, char met) {
 	float y;					// target luma
 	int x, xr, xg, xb;			// random values
 	int qr, qg, qb;				// quantized values
-	int i;						// output index, if applyable
+	int i, o;					// temporary and output index, if appliable
 
 	switch(met) {
 		case 'g':					// 16+2 greys
 			y=luma(r, g, b);			// compute target luminance
 			x=1+rand()%15;				// generate noise
-			i=(int)y/grey[0]-1;			// scaled index -1...16
+			i=(int)y/grey[0]-1;			// closest grey, index -1...16 (palette greyscale is 0...15, plus black & white)
 			if (i<0) {					// is it really dark? may turn black
 				if (y<x)			return 0;		// emit full black...
 				else				return 16;		// ...or the darkest grey
@@ -526,12 +533,40 @@ int pdith(byt r, byt g, byt b, char met) {
 			if (y<x)	return 0;		// emit black or white depending on chance
 			else		return 15;
 			// no need for break as already returns either value
-		case 'c':					// 224-colour modes
+		case 'c':					// 224-colour modes (does not use greyscale!)
 		case 'h':
-			xr=1+rand()%37;				// generate noise according to quantizing intervals
-			xg=1+rand()%32;
-			xb=1+rand()%64;
-			break;
+			o=0;						// base index (minus 32) RRRBGGGB, where R=0...6 (not 7)
+// Red channel
+			xr=1+rand()%36;				// generate noise according to quantizing intervals
+			i=(y-levR[0])/36;			// closest red index
+			if (y-levR[i]<x)	o |= (i<<4);	// emit computed index...
+			else				o |= ((i+1)<<4);	// ...or the following one
+// Green channel
+			i=(int)y/levG[0]-1;			// closest green, index -1...16 (palette greyscale is 0...15, plus black & white)
+			xg=1+rand()%31;				// generate noise according to quantizing intervals
+			if (i<0) {					// is it really dark? may turn black
+				if (y<x)			return 0;		// emit full black...
+				else				return 16;		// ...or the darkest green
+			} else if (i>=15) {			// or is it really light?
+				if (y-levG[15]<x)	return 31;		// emit the lightest green...
+				else				return 15;		// ...or full white
+			} else {					// regular greyscale otherwise
+				if (y-levG[i]<x)	return 16+i;	// emit computed index...
+				else				return 17+i;	// ...or the following one
+			}
+// Blue channel
+			xb=1+rand()%63;				// generate noise according to quantizing intervals
+			i=(int)y/levB[0]-1;			// closest blue, index -1...16 (palette greyscale is 0...15, plus black & white)
+			if (i<0) {					// is it really dark? may turn black
+				if (y<x)			return 0;		// emit full black...
+				else				return 16;		// ...or the darkest blue
+			} else if (i>=15) {			// or is it really light?
+				if (y-levB[15]<x)	return 31;		// emit the lightest blue...
+				else				return 15;		// ...or full white
+			} else {					// regular greyscale otherwise
+				if (y-levB[i]<x)	return 16+i;	// emit computed index...
+				else				return 17+i;	// ...or the following one
+			}
 		case 'd':					// 16 system colours
 		case 'e':
 		
