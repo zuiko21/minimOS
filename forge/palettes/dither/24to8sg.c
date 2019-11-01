@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191031-0958 */
+ *	last modified 20191101-1013 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -538,35 +538,36 @@ int pdith(byt r, byt g, byt b, char met) {
 			o=0;						// base index (minus 32) RRRBGGGB, where R=0...6 (not 7)
 // Red channel
 			xr=1+rand()%36;				// generate noise according to quantizing intervals
-			i=(y-levR[0])/36;			// closest red index
-			if (y-levR[i]<x)	o |= (i<<4);	// emit computed index...
-			else				o |= ((i+1)<<4);	// ...or the following one
+			i=(r-levR[0])/36;			// closest red index
+			if (r-levR[i]<x)	o |= (i<<5);	// emit computed index...
+			else				o |= ((++i)<<5);	// ...or the following one
 // Green channel
 			i=(int)y/levG[0]-1;			// closest green, index -1...16 (palette greyscale is 0...15, plus black & white)
 			xg=1+rand()%31;				// generate noise according to quantizing intervals
 			if (i<0) {					// is it really dark? may turn black
-				if (y<x)			return 0;		// emit full black...
-				else				return 16;		// ...or the darkest green
+				if (g<xg)			;		// emit no green...
+				else				o |= 2;		// ...or the darkest green
 			} else if (i>=15) {			// or is it really light?
-				if (y-levG[15]<x)	return 31;		// emit the lightest green...
-				else				return 15;		// ...or full white
-			} else {					// regular greyscale otherwise
-				if (y-levG[i]<x)	return 16+i;	// emit computed index...
-				else				return 17+i;	// ...or the following one
+				if (g-levG[15]<x)	o |= 12;		// emit a very light green...
+				else				o |= 14;		// ...or full green
+			} else {					// regularly spaced otherwise
+				if (g-levG[i]<x)	o |= (i<<1);	// emit computed index...
+				else				o |= ((++i)<<1);	// ...or the following one
 			}
 // Blue channel
 			xb=1+rand()%63;				// generate noise according to quantizing intervals
 			i=(int)y/levB[0]-1;			// closest blue, index -1...16 (palette greyscale is 0...15, plus black & white)
 			if (i<0) {					// is it really dark? may turn black
-				if (y<x)			return 0;		// emit full black...
-				else				return 16;		// ...or the darkest blue
+				if (y<x)			;		// emit no blue...
+				else				o |= 1;		// ...or the darkest blue
 			} else if (i>=15) {			// or is it really light?
-				if (y-levB[15]<x)	return 31;		// emit the lightest blue...
-				else				return 15;		// ...or full white
+				if (y-levB[15]<x)	o |= 16;		// emit a very light blue...
+				else				o |= 17;		// ...or full blue
 			} else {					// regular greyscale otherwise
-				if (y-levB[i]<x)	return 16+i;	// emit computed index...
-				else				return 17+i;	// ...or the following one
+				if (b-levB[i]<x)	o |= (i&1)|((i&2)<<3);	// emit computed index...
+				else				{i++; o |= (i&1)|((i&2)<<3);}	// ...or the following one
 			}
+			return o;
 		case 'd':					// 16 system colours
 		case 'e':
 		
