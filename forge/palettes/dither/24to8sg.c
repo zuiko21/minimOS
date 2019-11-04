@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191102-2124 */
+ *	last modified 20191104-1851 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -509,6 +509,7 @@ int pdith(byt r, byt g, byt b, char met) {
 	float y;					// target luma
 	int x, xr, xg, xb;			// random values
 	int qr, qg, qb;				// quantized values
+	int dr, dg, db;				// quantizing scales
 	int i, o;					// temporary and output index, if appliable
 
 	switch(met) {
@@ -538,7 +539,8 @@ int pdith(byt r, byt g, byt b, char met) {
 			o=0;						// base index (minus 32) RRRBGGGB, where R=0...6 (not 7)
 // Red channel
 			xr=1+rand()%36;				// generate noise according to quantizing intervals
-			i=(r-levR[0])/36;			// closest red index
+			i=(r/levR[0]-1)/2;			// closest red index
+//** must check negative values for refuced range, plus top value! **
 			if (r-levR[i]<x)	o |= (i<<5);	// emit computed index...
 			else				o |= ((++i)<<5);	// ...or the following one
 // Green channel
