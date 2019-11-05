@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191104-1851 */
+ *	last modified 20191105-1440 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -538,11 +538,16 @@ int pdith(byt r, byt g, byt b, char met) {
 		case 'h':
 			o=0;						// base index (minus 32) RRRBGGGB, where R=0...6 (not 7)
 // Red channel
-			xr=1+rand()%36;				// generate noise according to quantizing intervals
-			i=(r/levR[0]-1)/2;			// closest red index
-//** must check negative values for refuced range, plus top value! **
-			if (r-levR[i]<x)	o |= (i<<5);	// emit computed index...
-			else				o |= ((++i)<<5);	// ...or the following one
+			i=((int)r/levR[0]-1)>>1;	// floored red index (-1 is the darkest value)
+			if (i<0) {					// is it really dark?
+				o |= 32;					// emit the darkest red
+			} else if (i>=6) {			// or is it really light?
+				o |= 224;					// emit a very light red
+			} else {					// regularly spaced otherwise
+				xr=1+rand()%(levR[i+1]-levR[i]-1);	// generate noise according to quantizing intervals
+				if (r+levR[0]-levR[i]<x)	o |= (i<<5);		// emit computed index...
+				else						o |= ((++i)<<5);	// ...or the following one
+			}
 // Green channel
 			i=(int)y/levG[0]-1;			// closest green, index -1...16 (palette greyscale is 0...15, plus black & white)
 			xg=1+rand()%31;				// generate noise according to quantizing intervals
@@ -562,8 +567,8 @@ int pdith(byt r, byt g, byt b, char met) {
 			if (i<0) {					// is it really dark? may turn black
 				if (y<x)			;		// emit no blue...
 				else				o |= 1;		// ...or the darkest blue
-			} else if (i>=4) {			// or is it really light?
-				if (y-levB[4]<x)	o |= 16;		// emit a very light blue...
+			} else if (i>=3) {			// or is it really light?
+				if (y-levB[3]<x)	o |= 16;		// emit a very light blue...
 				else				o |= 17;		// ...or full blue
 			} else {					// regular greyscale otherwise
 				if (b-levB[i]<x)	o |= (i&1)|((i&2)<<3);	// emit computed index...
