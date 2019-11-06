@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191105-1440 */
+ *	last modified 20191106-1217 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -507,9 +507,7 @@ int pdith(byt r, byt g, byt b, char met) {
 /* P-dither suggested RGB, several palettes */
 /* Euclidean and Hue-based work the same here: C=H=_224_, L=U=32, D=E=16 colours */
 	float y;					// target luma
-	int x, xr, xg, xb;			// random values
-	int qr, qg, qb;				// quantized values
-	int dr, dg, db;				// quantizing scales
+	int x;						// random value
 	int i, o;					// temporary and output index, if appliable
 
 	switch(met) {
@@ -544,35 +542,31 @@ int pdith(byt r, byt g, byt b, char met) {
 			} else if (i>=6) {			// or is it really light?
 				o |= 224;					// emit a very light red
 			} else {					// regularly spaced otherwise
-				xr=1+rand()%(levR[i+1]-levR[i]-1);	// generate noise according to quantizing intervals
+				x=1+rand()%(levR[i+1]-levR[i]-1);	// generate noise according to quantizing intervals
 				if (r+levR[0]-levR[i]<x)	o |= (i<<5);		// emit computed index...
 				else						o |= ((++i)<<5);	// ...or the following one
 			}
 // Green channel
-			i=(int)y/levG[0]-1;			// closest green, index -1...16 (palette greyscale is 0...15, plus black & white)
-			xg=1+rand()%31;				// generate noise according to quantizing intervals
-			if (i<0) {					// is it really dark? may turn black
-				if (g<xg)			;		// emit no green...
-				else				o |= 2;		// ...or the darkest green
+			i=((int)g/levG[0]-1)>>1;	// floored green index (-1 is the darkest value)
+			if (i<0) {					// is it really dark?
+				o |= 2;						// emit the darkest red
 			} else if (i>=7) {			// or is it really light?
-				if (g-levG[7]<x)	o |= 12;		// emit a very light green...
-				else				o |= 14;		// ...or full green
+				o |= 14;					// emit a very light green
 			} else {					// regularly spaced otherwise
-				if (g-levG[i]<x)	o |= (i<<1);	// emit computed index...
-				else				o |= ((++i)<<1);	// ...or the following one
+				x=1+rand()%(levG[i+1]-levG[i]-1);	// generate noise according to quantizing intervals
+				if (r+levG[0]-levG[i]<x)	o |= (i<<1);		// emit computed index...
+				else						o |= ((++i)<<1);	// ...or the following one
 			}
 // Blue channel
-			xb=1+rand()%63;				// generate noise according to quantizing intervals
-			i=(int)y/levB[0]-1;			// closest blue
-			if (i<0) {					// is it really dark? may turn black
-				if (y<x)			;		// emit no blue...
-				else				o |= 1;		// ...or the darkest blue
+			i=((int)b/levB[0]-1)>>1;	// floored blue index (-1 is the darkest value)
+			if (i<0) {					// is it really dark?
+				o |= 1;						// emit the darkest blue
 			} else if (i>=3) {			// or is it really light?
-				if (y-levB[3]<x)	o |= 16;		// emit a very light blue...
-				else				o |= 17;		// ...or full blue
-			} else {					// regular greyscale otherwise
-				if (b-levB[i]<x)	o |= (i&1)|((i&2)<<3);	// emit computed index...
-				else				{i++; o |= (i&1)|((i&2)<<3);}	// ...or the following one
+				o |= 17;					// emit a very light blue
+			} else {					// regularly spaced otherwise
+				x=1+rand()%(levB[i+1]-levB[i]-1);	// generate noise according to quantizing intervals
+				if (r+levB[0]-levB[i]<x)	o |= (i&1)|((i&2)<<3);			// emit computed index...
+				else						{i++; o |= (i&1)|((i&2)<<3);}	// ...or the following one
 			}
 			return o;
 		case 'd':					// 16 system colours
