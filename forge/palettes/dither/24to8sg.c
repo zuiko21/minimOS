@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191106-1217 */
+ *	last modified 20191107-0934 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -508,6 +508,7 @@ int pdith(byt r, byt g, byt b, char met) {
 /* Euclidean and Hue-based work the same here: C=H=_224_, L=U=32, D=E=16 colours */
 	float y;					// target luma
 	int x;						// random value
+	int dr, dg, db;				// component values
 	int i, o;					// temporary and output index, if appliable
 
 	switch(met) {
@@ -532,43 +533,46 @@ int pdith(byt r, byt g, byt b, char met) {
 			if (y<x)	return 0;		// emit black or white depending on chance
 			else		return 15;
 			// no need for break as already returns either value
-		case 'c':					// 224-colour modes (does not use greyscale!)
+		case 'c':					// 224-colour modes (do not use greyscale!)
 		case 'h':
-			o=0;						// base index (minus 32) RRRBGGGB, where R=0...6 (not 7)
 // Red channel
-			i=((int)r/levR[0]-1)>>1;	// floored red index (-1 is the darkest value)
-			if (i<0) {					// is it really dark?
-				o |= 32;					// emit the darkest red
-			} else if (i>=6) {			// or is it really light?
-				o |= 224;					// emit a very light red
+			i=(r+levR[0])/levR[0]/2;	// floored red index (0 is the darkest value)
+			if (i<1) {					// is it really dark?
+				dr = 1;						// emit the darkest red
+			} else if (i>5) {			// or is it really light?
+				dr = 7;						// emit a very light red
 			} else {					// regularly spaced otherwise
-				x=1+rand()%(levR[i+1]-levR[i]-1);	// generate noise according to quantizing intervals
-				if (r+levR[0]-levR[i]<x)	o |= (i<<5);		// emit computed index...
-				else						o |= ((++i)<<5);	// ...or the following one
+				x=1+rand()%(levR[i]-levR[i-1]-1);	// generate noise according to quantizing intervals
+				if (r-levR[i-1]<x)			dr=i;	// emit computed index...
+				else						dr=i+1;	// ...or the following one
 			}
+if (dr>7) printf("R");
 // Green channel
-			i=((int)g/levG[0]-1)>>1;	// floored green index (-1 is the darkest value)
-			if (i<0) {					// is it really dark?
-				o |= 2;						// emit the darkest red
-			} else if (i>=7) {			// or is it really light?
-				o |= 14;					// emit a very light green
+			i=(g+levG[0])/levG[0]/2;	// floored green index (0 is the darkest value)
+			if (i<1) {					// is it really dark?
+				dg = 0;						// emit the darkest green
+			} else if (i>6) {			// or is it really light?
+				dg = 7;						// emit a very light green
 			} else {					// regularly spaced otherwise
-				x=1+rand()%(levG[i+1]-levG[i]-1);	// generate noise according to quantizing intervals
-				if (r+levG[0]-levG[i]<x)	o |= (i<<1);		// emit computed index...
-				else						o |= ((++i)<<1);	// ...or the following one
+				x=1+rand()%(levG[i]-levG[i-1]-1);	// generate noise according to quantizing intervals
+				if (r-levG[i-1]<x)			dg=i;	// emit computed index...
+				else						dg=i+1;	// ...or the following one
 			}
+if (dg>7) printf("G");
 // Blue channel
-			i=((int)b/levB[0]-1)>>1;	// floored blue index (-1 is the darkest value)
-			if (i<0) {					// is it really dark?
-				o |= 1;						// emit the darkest blue
-			} else if (i>=3) {			// or is it really light?
-				o |= 17;					// emit a very light blue
+			i=(b+levB[0])/levB[0]/2;	// floored blue index (0 is the darkest value)
+			if (i<1) {					// is it really dark?
+				db = 0;						// emit the darkest blue
+			} else if (i>2) {			// or is it really light?
+				db = 3;						// emit a very light blue
 			} else {					// regularly spaced otherwise
-				x=1+rand()%(levB[i+1]-levB[i]-1);	// generate noise according to quantizing intervals
-				if (r+levB[0]-levB[i]<x)	o |= (i&1)|((i&2)<<3);			// emit computed index...
-				else						{i++; o |= (i&1)|((i&2)<<3);}	// ...or the following one
+				x=1+rand()%(levB[i]-levB[i-1]-1);	// generate noise according to quantizing intervals
+				if (r-levB[i-1]<x)			db=i;	// emit computed index...
+				else						db=i+1;	// ...or the following one
 			}
-			return o;
+if (db>3) printf("B");
+			o = (dr<<5)|(dg<<1)|(db&1)|((db&2)<<3);	// base index RRRBGGGB, where R=1...7
+			return o;								// eeeeeeeek
 		case 'd':					// 16 system colours
 		case 'e':
 		
