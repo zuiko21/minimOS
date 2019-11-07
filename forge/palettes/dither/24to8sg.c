@@ -555,8 +555,8 @@ if (dr>7) printf("R");
 				dg = 7;						// emit a very light green
 			} else {					// regularly spaced otherwise
 				x=1+rand()%(levG[i]-levG[i-1]-1);	// generate noise according to quantizing intervals
-				if (r-levG[i-1]<x)			dg=i;	// emit computed index...
-				else						dg=i+1;	// ...or the following one
+				if (r-levG[i-1]<x)			dg=i-1;	// emit computed index...
+				else						dg=i;	// ...or the following one
 			}
 if (dg>7) printf("G");
 // Blue channel
@@ -567,8 +567,8 @@ if (dg>7) printf("G");
 				db = 3;						// emit a very light blue
 			} else {					// regularly spaced otherwise
 				x=1+rand()%(levB[i]-levB[i-1]-1);	// generate noise according to quantizing intervals
-				if (r-levB[i-1]<x)			db=i;	// emit computed index...
-				else						db=i+1;	// ...or the following one
+				if (r-levB[i-1]<x)			db=i-1;	// emit computed index...
+				else						db=i;	// ...or the following one
 			}
 if (db>3) printf("B");
 			o = (dr<<5)|(dg<<1)|(db&1)|((db&2)<<3);	// base index RRRBGGGB, where R=1...7
