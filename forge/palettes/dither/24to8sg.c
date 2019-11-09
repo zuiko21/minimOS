@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191107-0934 */
+ *	last modified 20191109-1329 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -166,7 +166,7 @@ int main(void) {
 	}
 /* ditto for dithering method */
 	printf("Dithering method:\n[F]loyd-Steinberg, [A]tkinson, [B]urkes, simple [D]iffusion,\n");
-	printf("Full [S]ierra, [T]wo-row Sierra, Stuc[K]i, [P]-dither? "); 
+	printf("Full [S]ierra, [T]wo-row Sierra, Stuc[K]i, [P]-dither, [N]one? ");
 	scanf(" %c", &dith);
 	dith |= 32;						// always lowercase, will check values later
 
@@ -217,6 +217,7 @@ int main(void) {
 				case 'd':
 					simple(x, y, dr, dg, db);	// trying simple diffusion formula
 				case 'p':					// P-dithering makes no error diffusion!
+				case 'n':					// just like no dither at all
 					break;
 				default:
 					printf("*** Unrecognised dithering algorithm! ***\n");
