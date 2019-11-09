@@ -80,8 +80,8 @@ _When required, the normally hidden **glyph** is obtained by preceeding the code
 
 ^ key|Dec|Hex|ASCII|mOS|glyph & description|notes
 -----|---|---|-----|---|-------------------|-----
--|0|$00|`NUL`|**`SWFC`**|&#9635; square with block|switch focus/window (1)
-A|1|$01|`SOH`|**`CRET`**|&#8606; double arrow left|carriage return (without line feed)
+-|0|$00|`NUL`|**`SWTC`**|&#9635; square with block|switch focus/window (1)
+A|1|$01|`SOH`|**`CRTN`**|&#8606; double arrow left|carriage return (without line feed)
 B|2|$02|`STX`|**`LEFT`**|&#8678; arrow left|cursor left (no backspace)
 C|3|$03|`ETX`|**`TERM`**|&#9211; ball switch|send TERM signal
 D|4|$04|`EOT`|**`ENDT`**|&#8690; arrow to SE corner|end of text
@@ -96,7 +96,7 @@ L|12|$0C|`FF`|**`CLRS`**|&#73668; paper sheet|clear screen (2)
 M|13|$0D|`CR`|**`NEWL`**|&#9166; angled arrow|newline, ZX Spectrum-like
 N|14|$0E|`SO`|**`EON`**|&#8658; imply|emphasis on
 O|15|$0F|`SI`|**`EOFF`**|&#8656; reverse imply|emphasis off
-P|16|$10|`DLE`|**`DLE`**|&#9829; heart suit|do not interpret next control char (3) 
+P|16|$10|`DLE`|**`DLE`**|&#9829; heart suit|show glyph for next char, do not interpret (3) 
 Q|17|$11|`DC1`|**`XON`**|&#9733; star|cursor on
 R|18|$12|`DC2`|**`INK`**|&#9999; pencil|set foreground colour (3)(4)
 S|19|$13|`DC3`|**`XOFF`**|&#9830; diamond suit|cursor off
@@ -111,7 +111,7 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 -|28|$1C|`FS`|**`PLOT`**|&#9698; wedge pointing SE|point graph mode (6)(7)
 -|29|$1D|`GS`|**`DRAW`**|&#9699; wedge pointing SW|vector graph mode (6)(7)
 -|30|$1E|`RS`|**`INCG`**|&#9618; light pattern|incremental plotting mode (6)
--|31|$1F|`US`|**`TEXT`**|&#9619; mid pattern|back to text mode (6)
+-|31|$1F|`US`|**`TXTM`**|&#9619; mid pattern|back to text mode (6)
 -|127|$7F|`DEL`|**`DEL`**|&#8999;|delete
 
 ### Notes:
@@ -127,8 +127,8 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
 
-6.**Tektronix 4016** graphic modes, may take several bytes afterwards until back to text mode.
+6.**Tektronix 4014** graphic modes, may take several bytes afterwards until back to text mode.
 
 7.May take _extra_ byte for screen sizes over 1024 pixels, but extra bits are MSB.
  
-_last modified 20190826-0933_
+_last modified 20191109-1355_
