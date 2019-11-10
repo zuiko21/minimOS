@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191109-1329 */
+ *	last modified 20191110-1401 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -353,6 +353,7 @@ float hdist(int i, byt r, byt g, byt b) {
 /* hue-based distance between some index and supplied RGB value */
 	float hi, si, vi;			// values for indexed entry
 	float hp, sp, vp;			// values for target colour
+	float dh, fh;				// absolute hue distances
 	byt ir, ig, ib;				// temporary palette values
 
 	ir = palR(i);				// get RGB values for selected index
@@ -364,10 +365,15 @@ float hdist(int i, byt r, byt g, byt b) {
 	hp = hue(r, g, b);			// convert pixel colour to HSV
 	sp = sat(r, g, b);
 	vp = val(r, g, b);
+// check possible hue wrap!
+	dh =uns(hi-hp);				// standard distance...
+	fh =uns(hi-hp-360);		// ...in case hue wrapped
+	if (fh<dh)	dh = fh;	// choose the lowest one
 
 // TO DO TO DO TO DO
 //	return ((360+(hi-hp)*(hi-hp))*(1+(si-sp)*(si-sp))*(256+(vi-vp)*(vi-vp)));
-	return (((hi-hp)*(hi-hp))+(256*uns(si-sp))+(uns(vi-vp)));
+//	return (((hi-hp)*(hi-hp))+(256*uns(si-sp))+(uns(vi-vp)));
+	return	(dh*dh*dh)*(si-sp)*(si-sp)+uns(vi-vp);
 }
 
 float hue(byt r, byt g, byt b){
