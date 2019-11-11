@@ -48,13 +48,15 @@ hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU. S
 all timing is derived from the _dot clock_, the main CPU board **has no oscillator**, as
 it will be located on the video board.
 
-On the other hand, a somewhat reduced resolution of **880 x 864** should be compatible
+### Alternative video modes
+
+On the other hand, a somewhat reduced resolution of **800 x 864** should be compatible
 with the _Apple Portrait Display_ (with non-square pixels, unfortunately), all
 within software configuration. While this reduced resolution is compatible with the
-Acer monitor, it is not recommended as sharpness will be sub-optimal.
+Acer monitor, it is not recommended as sharpness will be sub-optimal. If a proper **57.28 MHz clock** is used, a _square pixel 640x870_ may be attained on the APD, although slowing the computer down to **7.16 MHz**.
 
 Another easily-implemented video mode is **816×1024** with a pixel aspect ratio of about _1.5:1_,
-which should match _VESA 1280x1024 @ 60 Hz_, thus well fitted to my LG1910S monitor.
+which should match _VESA 1280x1024 @ 60 Hz_, thus well fitted to my LG1910S monitor. Due to 6445 limitations, only the equivalent width of 1224 pixels will be covered.
 
 ### VRAM layout
 
@@ -166,4 +168,4 @@ for photographic images.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20191111-1949_
+_last modified 20191111-2011_
