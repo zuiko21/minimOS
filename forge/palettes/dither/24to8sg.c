@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191110-1401 */
+ *	last modified 20191111-0943 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -377,7 +377,7 @@ float hdist(int i, byt r, byt g, byt b) {
 }
 
 float hue(byt r, byt g, byt b){
-/* return hue for selected RGB values */
+/* return hue (0...360) for selected RGB values */
 	float max=r, min=r;
 	float h;
 
@@ -386,7 +386,7 @@ float hue(byt r, byt g, byt b){
 	if (g<min)	min=g;
 	if (b<min)	min=b;
 
-	if (max==min)	return 0;	// black is a special case
+	if (max==min)	return 0;	// grey is a special case (same hue as RED)
 
 	if (max==r) {				// compute according to formulae
 		h=(g-b)/(max-min);
@@ -402,7 +402,7 @@ float hue(byt r, byt g, byt b){
 }
 
 float sat(byt r, byt g, byt b){
-/* return saturation for selected RGB values */
+/* return saturation (0...1) for selected RGB values */
 	float max=r, min=r, s;
 
 	if (g>max)	max=g;			// compute maximum
@@ -418,7 +418,7 @@ float sat(byt r, byt g, byt b){
 }
 
 float val(byt r, byt g, byt b){
-/* return value for selected RGB values */
+/* return value (0...255) for selected RGB values */
 	float max=r;
 
 	if (g>max)	max=g;			// compute maximum
