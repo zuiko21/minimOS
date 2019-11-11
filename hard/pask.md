@@ -120,10 +120,10 @@ I have tried to assign the whole character set in a reasonable way. Goals includ
 Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`CTL`+`SHFT`
 ---|------|-------|------|------------|-------|------------|-----------|----------------
 `1`|$31 1|$21 !|$2B +    |$1B`ESC`   |$BA &#186; |$AA &#170; |$A1 ¡      |   -
-`2`|$32 2|$22 "|$2C ,    |$1C`FS`    |$B2 &#178; |$B3 &#179; |$A2 &#162; |   -
-`3`|$33 3|$23 #|$2D -    |$1D`GS`    |$B7 &#183; |$BC &#8226;|$A3 £      |   -
-`4`|$34 4|$24 $|$2E .    |$1E`RS`    |$B1 &#177; |   -       |$A4 €      |   -
-`5`|$35 5|$25 %|$2F /    |$1F`US`    |$F7 ÷      |   -       |$A5 ¥      |   -
+`2`|$32 2|$22 "|$2C ,    |$1C`PLOT`  |$B2 &#178; |$B3 &#179; |$A2 &#162; |   -
+`3`|$33 3|$23 #|$2D -    |$1D`DRAW`  |$B7 &#183; |$BC &#8226;|$A3 £      |   -
+`4`|$34 4|$24 $|$2E .    |$1E`INCG`  |$B1 &#177; |   -       |$A4 €      |   -
+`5`|$35 5|$25 %|$2F /    |$1F`TXTM`  |$F7 ÷      |   -       |$A5 ¥      |   -
 `6`|$36 6|$26 &|$3A :    |$5B [      |$7B {      |$AC &#172; |   -       |   -
 `7`|$37 7|$27 '|$3B ;    |$5C \\     |$7C \|     |$A6 &#166; |   -       |   -
 `8`|$38 8|$28 (|$3C <    |$5D ]      |$7D }      |$96 &#8804;|$9C &#8734;|$AB &#171;
@@ -139,7 +139,7 @@ Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`C
 `I`|$69 i|$49 I|$09`HTAB`|$EE î      |$ED í      |$CD Í      |$EF ï      |$CF Ï
 `O`|$6F o|$4F O|$0F`EOFF`|$F4 ô      |$F3 ó      |$D3 Ó      |$F6 ö      |$D6 Ö
 `P`|$70 p|$50 P|$10`DLE` |$84 &#9623;|$B6 &#182; |   -       |$93 &#960; |   -
-`A`|$61 a|$41 A|$01`HOML`|$E2 â      |$E1 á      |$C1 Á      |$E4 ä      |$C4 Ä
+`A`|$61 a|$41 A|$01`CRTN`|$E2 â      |$E1 á      |$C1 Á      |$E4 ä      |$C4 Ä
 `S`|$73 s|$53 S|$13`XOFF`|$85 &#9616;|$A7 §      |$9F &#8745;|$94 &#931; |   -
 `D`|$64 d|$44 D|$04`ENDT`|$8A &#9612;|$F0 đ      |$D0 Đ      |$9B &#948; |   -
 `F`|$66 f|$46 F|$06`RGHT`|$8F &#9608;|   -       |   -       |   -       |   -
@@ -155,9 +155,9 @@ Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`C
 `B`|$62 b|$42 B|$02`LEFT`|$83 &#9600;|$DF ß      |   -       |   -       |   -
 `N`|$6E n|$4E N|$0E`EON `|$8C &#9604;|$F1 ñ      |$D1 Ñ      |$BE &#331; |   -
 `M`|$6D m|$4D M|$0D`NEWL`|$3F ?      |$B5 &#181; |$BF ¿      |$9E &#8712;|   -
-`SPC`|$20`SPC`|$80`NBSP`|$40 @|$60 &#96;|$A0 &#9633;|$B4 &#180;|**$00`NULL`**|-
+`SPC`|$20`SPC`|$80`NBSP`|$40 @|$60 &#96;|$A0 &#9633;|$B4 &#180;|**$00`SWTC`**|-
 
-Unused combos render `NULL` ($00), although the recommended standard is **`CTRL`+`ALT`+`SPACE`**.
+Unused combos render `NUL/SWTC` ($00), although the recommended standard is **`CTRL`+`ALT`+`SPACE`**.
 
 ## Circuit design
 
@@ -210,4 +210,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20190602-2207_
+_Last update: 20191111-1826_
