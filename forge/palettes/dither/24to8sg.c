@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191111-0943 */
+ *	last modified 20191111-1016 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,6 +66,11 @@ int main(void) {
 	int x, y, z;				// coordinates  plus read value
 	long xy, siz;				// complete array offset plus size
 
+r=0;g=85;b=0;i=4;
+printf("(%d,%d,%d): H=%f, S=%f, V=%f\n",r,g,b,hue(r,g,b),sat(r,g,b),val(r,g,b)); 
+printf("S%d > %f\n",i,hdist(i,r,g,b));
+printf("G[%d,%d,%d]\n",palR(i),palG(i),palB(i));
+return -2;
 /* get input file */
 	printf("PPM file? ");		// get input filename
 	fgets(nombre, 80, stdin);	// no longer scanf!
@@ -366,14 +371,14 @@ float hdist(int i, byt r, byt g, byt b) {
 	sp = sat(r, g, b);
 	vp = val(r, g, b);
 // check possible hue wrap!
-	dh =uns(hi-hp);				// standard distance...
-	fh =uns(hi-hp-360);		// ...in case hue wrapped
-	if (fh<dh)	dh = fh;	// choose the lowest one
+	dh = uns(hi-hp);			// standard distance...
+	fh = 360 - dh;				// ...in case hue wrapped
+	if (fh<dh)		dh = fh;	// choose the lowest one
 
 // TO DO TO DO TO DO
 //	return ((360+(hi-hp)*(hi-hp))*(1+(si-sp)*(si-sp))*(256+(vi-vp)*(vi-vp)));
 //	return (((hi-hp)*(hi-hp))+(256*uns(si-sp))+(uns(vi-vp)));
-	return	(dh*dh*dh)*(si-sp)*(si-sp)+uns(vi-vp);
+	return	(dh*dh)*uns(si-sp)+uns(vi-vp);
 }
 
 float hue(byt r, byt g, byt b){
@@ -490,11 +495,11 @@ int prox(byt r, byt g, byt b, char met) {
 			col=16;
 /* optional sentences as default value is OK */
 			break;
-		case 'c':					// whole palette
 		case 'h':
+		case 'c':					// these modes use the whole palette
 			col=256;
 	}
-	for (i=0;i<col;i++) {		// scan all indexed colours
+	for (i=0;i<col;i++) {		// scan suitable number of indexed colours
 		if (met=='c'||met=='l'||met=='d') {		// Euclidean method selected
 			y=eucl(i, r, g, b);
 		}
