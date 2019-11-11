@@ -53,6 +53,9 @@ with the _Apple Portrait Display_ (with non-square pixels, unfortunately), all
 within software configuration. While this reduced resolution is compatible with the
 Acer monitor, it is not recommended as sharpness will be sub-optimal.
 
+Another easily-implemented video mode is **816×1024** with a pixel aspect ratio of about _1.5:1_,
+which should match _VESA 1280x1024 @ 60 Hz_, thus well fitted to my LG1910S monitor.
+
 ### VRAM layout
 
 Being **6445-based** (improved 6845), VRAM is organized in an _Amstrad-like_ fashion, but
@@ -163,4 +166,4 @@ for photographic images.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20191001-1257_
+_last modified 20191111-1949_
