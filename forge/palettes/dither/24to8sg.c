@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191112-1302 */
+ *	last modified 20191112-1342 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -522,7 +522,7 @@ int pdith(byt r, byt g, byt b, char met) {
 	float y;					// target luma
 	int x;						// random value
 	int dr, dg, db;				// component values
-	int i, o;					// temporary and output index, if appliable
+	int i;						// temporary index, if appliable
 
 	switch(met) {
 		case 'g':					// 16+2 greys
@@ -581,12 +581,21 @@ int pdith(byt r, byt g, byt b, char met) {
 				if (r-levB[i-1]<x)			db=i-1;	// emit computed index...
 				else						db=i;	// ...or the following one
 			}
-			o = (dr<<5)|(dg<<1)|(db&1)|((db&2)<<3);	// base index RRRBGGGB, where R=1...7
-			return o;								// eeeeeeeek
+			return (dr<<5)|(dg<<1)|(db&1)|((db&2)<<3);	// base index RRRBGGGB, where R=1...7
 		case 'd':					// 16 system colours
 		case 'e':
-			// TO DO
-			break;
+// Red channel
+			x  = 1+rand()%255;			// generate red noise...
+			dr = r<x ? 0 : 4;			// ...and emit discrete value
+// Green channel (black plus 3 levels!)
+			x  = 1+rand()%84;			// generate green noise (shallower range)
+			i  = g/85;					// floored green index (0...3)
+			dg = (g-85*i)<x ? i : i+1;	// emit discrete value
+if (dg>3) printf("G");
+// Blue channel
+			x  = 1+rand()%255;			// generate blue noise...
+			db = b<x ? 0 : 1;			// ...and emit discrete value
+			return dr|((dg&1)<<1)|((dg&2)<<2)|db;	// compute index and exit
 		case 'l':					// 16 system colours + 16 greys!
 		case 'u':
 			// TO DO
