@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191111-1016 */
+ *	last modified 20191112-1302 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,12 +65,13 @@ int main(void) {
 	float k;					// diffusion factor
 	int x, y, z;				// coordinates  plus read value
 	long xy, siz;				// complete array offset plus size
-
+/*
 r=0;g=85;b=0;i=4;
 printf("(%d,%d,%d): H=%f, S=%f, V=%f\n",r,g,b,hue(r,g,b),sat(r,g,b),val(r,g,b)); 
 printf("S%d > %f\n",i,hdist(i,r,g,b));
 printf("G[%d,%d,%d]\n",palR(i),palG(i),palB(i));
 return -2;
+/**/
 /* get input file */
 	printf("PPM file? ");		// get input filename
 	fgets(nombre, 80, stdin);	// no longer scanf!
@@ -558,7 +559,6 @@ int pdith(byt r, byt g, byt b, char met) {
 				if (r-levR[i-1]<x)			dr=i;	// emit computed index...
 				else						dr=i+1;	// ...or the following one
 			}
-if (dr>7) printf("R");
 // Green channel
 			i=(g+levG[0])/levG[0]/2;	// floored green index (0 is the darkest value)
 			if (i<1) {					// is it really dark?
@@ -570,7 +570,6 @@ if (dr>7) printf("R");
 				if (r-levG[i-1]<x)			dg=i-1;	// emit computed index...
 				else						dg=i;	// ...or the following one
 			}
-if (dg>7) printf("G");
 // Blue channel
 			i=(b+levB[0])/levB[0]/2;	// floored blue index (0 is the darkest value)
 			if (i<1) {					// is it really dark?
@@ -582,14 +581,15 @@ if (dg>7) printf("G");
 				if (r-levB[i-1]<x)			db=i-1;	// emit computed index...
 				else						db=i;	// ...or the following one
 			}
-if (db>3) printf("B");
 			o = (dr<<5)|(dg<<1)|(db&1)|((db&2)<<3);	// base index RRRBGGGB, where R=1...7
 			return o;								// eeeeeeeek
 		case 'd':					// 16 system colours
 		case 'e':
-		
+			// TO DO
+			break;
 		case 'l':					// 16 system colours + 16 greys!
 		case 'u':
+			// TO DO
 			break;
 	}
 return x;
