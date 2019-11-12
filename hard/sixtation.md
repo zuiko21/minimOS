@@ -35,28 +35,32 @@ are intended for _library_ ROM.
 
 ## Graphic card & clock
 
-Perhaps on a separate PCB, but otherwise **higly integrated** on the system. Trying to
-match the 1366/1360 x 768 resolution of my cheap Acer widescreen, which just fits the
+Perhaps on a separate PCB, but anyway **highly integrated** on the system. _This will generate
+the main **CPU Phi-2 clock** in a fully synchronous way, for optimum performance_. Trying to
+match the 1366/**1360 x 768** resolution of my cheap Acer widescreen monitor, which just fits the
 _megapixel_ rating, the standard 85.5 MHz (85.86 MHz according to other sources) _dot clock_
 is almost impossible to find from standard oscillator cans, whereas a **72 MHz** one seems
-quite popular. There is a **reduced blanking** timing standard for that resolution, thus
-seems quite suitable.
+quite popular. There is a **reduced blanking** timing standard for that frequency, thus will
+be the chosen master clock.
 
 Divided by 8 it will generate the **9 MHz CPU clock** (instead of the previously specced
-_10.7 MHz_), and further halved will fit the _4.5 MHz **HD6445** CRTC_ clock. On the other
-hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU. Since
-all timing is derived from the _dot clock_, the main CPU board **has no oscillator**, as
-it will be located on the video board.
+_10.7 MHz_), and further halved will fit the maximum _4.5 MHz **HD6445** CRTC_ clock. On the
+other hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU. Since
+**all timing is derived from the _dot clock_**, the main CPU board _may lack an oscillator_,
+as it will be located on the video board.
 
 ### Alternative video modes
 
 On the other hand, a somewhat reduced resolution of **800 x 864** should be compatible
-with the _Apple Portrait Display_ (with non-square pixels, unfortunately), all
-within software configuration. While this reduced resolution is compatible with the
-Acer monitor, it is not recommended as sharpness will be sub-optimal. If a proper **57.28 MHz clock** is used, a _square pixel 640x870_ may be attained on the APD, although slowing the computer down to **7.16 MHz**.
+with the _Apple Portrait Display_ (with non-square _1:1.257_ pixels, unfortunately), all
+within mere software configuration. While this reduced resolution is compatible with the
+Acer monitor, it is not recommended as sharpness will be sub-optimal. If the official
+**57.28 MHz clock** is used, the _pixel-perfect 640x870 mode_ may be attained on the APD,
+although slowing the computer down to **7.16 MHz**.
 
 Another easily-implemented video mode is **816×1024** with a pixel aspect ratio of about _1.5:1_,
-which should match _VESA 1280x1024 @ 60 Hz_, thus well fitted to my LG1910S monitor. Due to 6445 limitations, only the equivalent width of 1224 pixels will be covered.
+which basically matches the _VESA 1280x1024 @ 60 Hz_ timing, thus well suited to my _LG 1910S_ monitor.
+Due to 6445 _hsync_ timing limitations, only the equivalent width of 1224 pixels will be covered.
 
 ### VRAM layout
 
@@ -151,8 +155,8 @@ construction and high performance, it may be easily scaled by adding more RAM ch
 Several _fixed_ palettes (both colour and greyscale) have been considered depending on
 bit depth (not limited to powers of two!), but the most versatile (and relatively simple)
 option is the use of a suitable **RAMDAC**, preferibly of 24-bit type. The well-known
-**Bt 478** RAMDAC, for instance, is readily available and pretty adequate for this (**80
-MHz** version required).
+**Bt478** RAMDAC, for instance, is **readily available**, well documented, **inexpensive**
+and thus pretty adequate for this application (**80MHz** version required).
 
 [_Suggested_ **8-bit palette**](../forge/palettes/256col+s+g.html) includes:
 
@@ -168,4 +172,4 @@ for photographic images.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20191111-2011_
+_last modified 20191112-1100_
