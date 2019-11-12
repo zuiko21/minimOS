@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191112-1342 */
+ *	last modified 20191112-1412 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -524,8 +524,9 @@ int pdith(byt r, byt g, byt b, char met) {
 	int dr, dg, db;				// component values
 	int i;						// temporary index, if appliable
 
-	switch(met) {
-		case 'g':					// 16+2 greys
+	switch(met) {				// add dithering noise according to selected palette
+// ** 16+2 greys **
+		case 'g':
 			y=luma(r, g, b);			// compute target luminance
 			x=1+rand()%15;				// generate noise
 			i=(int)y/grey[0]-1;			// closest grey, index -1...16 (palette greyscale is 0...15, plus black & white)
@@ -539,16 +540,16 @@ int pdith(byt r, byt g, byt b, char met) {
 				if (y-grey[i]<x)	return 16+i;	// emit computed index...
 				else				return 17+i;	// ...or the following one
 			}
-			// no need for break as already returns either value
-		case 's':					// salt-and-pepper
+// ** salt-and-pepper **
+		case 's':
 			y=luma(r, g, b);			// compute target luminance
 			x=1+rand()%255;				// generate random noise
 			if (y<x)	return 0;		// emit black or white depending on chance
 			else		return 15;
-			// no need for break as already returns either value
-		case 'c':					// 224-colour modes (do not use greyscale!)
+// ** 224-colour modes (not using greyscale!) **
+		case 'c':
 		case 'h':
-// Red channel
+// Red channel from 224
 			i=(r+levR[0])/levR[0]/2;	// floored red index (0 is the darkest value)
 			if (i<1) {					// is it really dark?
 				dr = 1;						// emit the darkest red
@@ -559,7 +560,7 @@ int pdith(byt r, byt g, byt b, char met) {
 				if (r-levR[i-1]<x)			dr=i;	// emit computed index...
 				else						dr=i+1;	// ...or the following one
 			}
-// Green channel
+// Green channel from 224
 			i=(g+levG[0])/levG[0]/2;	// floored green index (0 is the darkest value)
 			if (i<1) {					// is it really dark?
 				dg = 0;						// emit the darkest green
@@ -570,7 +571,7 @@ int pdith(byt r, byt g, byt b, char met) {
 				if (r-levG[i-1]<x)			dg=i-1;	// emit computed index...
 				else						dg=i;	// ...or the following one
 			}
-// Blue channel
+// Blue channel from 224
 			i=(b+levB[0])/levB[0]/2;	// floored blue index (0 is the darkest value)
 			if (i<1) {					// is it really dark?
 				db = 0;						// emit the darkest blue
@@ -582,8 +583,14 @@ int pdith(byt r, byt g, byt b, char met) {
 				else						db=i;	// ...or the following one
 			}
 			return (dr<<5)|(dg<<1)|(db&1)|((db&2)<<3);	// base index RRRBGGGB, where R=1...7
-		case 'd':					// 16 system colours
+// ** 16 system colours **
+		case 'd':
 		case 'e':
+// system + greyscale will try to compute one candidate from system palette, just like if using 16 system colours only
+// alternative grey tried only when allowed
+		case 'l':
+		case 'u':
+// generic system colour picker
 // Red channel
 			x  = 1+rand()%255;			// generate red noise...
 			dr = r<x ? 0 : 4;			// ...and emit discrete value
@@ -591,15 +598,29 @@ int pdith(byt r, byt g, byt b, char met) {
 			x  = 1+rand()%84;			// generate green noise (shallower range)
 			i  = g/85;					// floored green index (0...3)
 			dg = (g-85*i)<x ? i : i+1;	// emit discrete value
-if (dg>3) printf("G");
 // Blue channel
 			x  = 1+rand()%255;			// generate blue noise...
 			db = b<x ? 0 : 1;			// ...and emit discrete value
-			return dr|((dg&1)<<1)|((dg&2)<<2)|db;	// compute index and exit
-		case 'l':					// 16 system colours + 16 greys!
-		case 'u':
-			// TO DO
-			break;
+			if (met=='d'||met=='e')		// if no greys are allowed...
+				return dr|((dg&1)<<1)|((dg&2)<<2)|db;	// ...compute index and exit
+// ** 16 system colours + 16 greys! Does this make any sense? **
+// dr, dg, db already have a candidate system colour
+// let us find a suitable grey, just in case
+			if (sat(r, g, b)<0.2) {		// is it a weakly-saturated colour?
+				y = luma(r, g, b);			// compute target luminance
+				x=1+rand()%15;				// generate noise
+				i=(int)y/grey[0]-1;			// closest grey, index -1...16 (palette greyscale is 0...15, plus black & white)
+				if (i<0) {					// is it really dark? may turn black
+					if (y<x)			i = 0;	// emit full black...
+					else				i = 16;	// ...or the darkest grey
+				} else if (i>=15) {			// or is it really light?
+					if (y-grey[15]<x)	i = 31;	// emit the lightest grey...
+					else				i = 15;	// ...or full white
+				} else {					// regular greyscale otherwise
+					if (y-grey[i]<x)	i=16+i;	// emit computed index...
+					else				i=17+i;	// ...or the following one
+				}
+				return i;					// ** PLACEHOLDERS **
+			} else return dr|((dg&1)<<1)|((dg&2)<<2)|db;
 	}
-return x;
 }
