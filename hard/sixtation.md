@@ -41,7 +41,7 @@ match the 1366/**1360 x 768** resolution of my cheap Acer widescreen monitor, wh
 _megapixel_ rating, the standard 85.5 MHz (85.86 MHz according to other sources) _dot clock_
 is almost impossible to find from standard oscillator cans, whereas a **72 MHz** one seems
 quite popular. There is a **reduced blanking** timing standard for that frequency, thus will
-be the chosen master clock.
+be the chosen master clock. _Vertical sync pulse is **positive**, while horizontal sync is negative_.
 
 Divided by 8 it will generate the **9 MHz CPU clock** (instead of the previously specced
 _10.7 MHz_), and further halved will fit the maximum _4.5 MHz **HD6445** CRTC_ clock. On the
@@ -61,6 +61,8 @@ although slowing the computer down to **7.16 MHz**.
 Another easily-implemented video mode is **816×1024** with a pixel aspect ratio of about _1.5:1_,
 which basically matches the _VESA 1280x1024 @ 60 Hz_ timing, thus well suited to my _LG 1910S_ monitor.
 Due to 6445 _hsync_ timing limitations, only the equivalent width of 1224 pixels will be covered.
+_Note that this mode needs a **positive** horizontal sync pulse_. On the other hand, _the APD monitor
+expects **negative** syncs_, so a full-software resolution switch does not seem feasible.
 
 ### VRAM layout
 
@@ -172,4 +174,4 @@ for photographic images.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20191112-1100_
+_last modified 20191113-1215_
