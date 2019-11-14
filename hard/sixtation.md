@@ -30,8 +30,8 @@ are supported:
 - **5 MiB** (add one Garth module, plus the supplied megabyte)
 - **8 MiB** (needs two Garth modules, although two chips on the second one will remain unused)
 
-Memory addresses above `$800000` will be reserved for I/O boards, and those above `$C00000`
-are intended for _library_ ROM.
+Memory addresses above `$800000` will be reserved for I/O boards (including the supplied
+**graphic card**) and those above `$C00000` are intended for _library_ ROM.
 
 ## Graphic card & clock
 
@@ -62,7 +62,22 @@ Another easily-implemented video mode is **816×1024** with a pixel aspect ratio
 which basically matches the _VESA 1280x1024 @ 60 Hz_ timing, thus well suited to my _LG 1910S_ monitor.
 Due to 6445 _hsync_ timing limitations, only the equivalent width of 1224 pixels will be covered.
 _Note that this mode needs a **positive** horizontal sync pulse_. On the other hand, _the APD monitor
-expects **negative** syncs_, so a full-software resolution switch does not seem feasible.
+expects **negative** syncs_, so a full-software resolution switch does not seem feasible, unless some
+port bits are used for selective inversion of syncs (via XOR gates).
+
+### SIXtation TURBO?
+
+A further development would be a **faster** version of the SIXtation, by syncing with the _VESA 1280 x 1024 timing_,
+quite suitable for my _superb LG 1910S monitor_. In order to stay within the _megapixel_ limit (which for 8bpp takes
+one MiB of VRAM), 1280 x 1024 @ 60 Hz timing will be used, but restricting the visible area to **1152 x 864**. From the
+standard _108 MHz dot clock_ a whopping **13.5 MHz Phi-2 clock** is achieved. Note that the CRTC must work at
+_*a quarter* of Phi-2 frequency_ to keep within the 6445 limits, thus configured for 32-pixel wide "virtual"
+characters. While this configuration further reduces sync and porch timing accuracy, no issues are expected thanks
+to the ample borders (64 pixels both left & right, 80 top & down).
+
+A downside effect of this new rating is **impaired FPU performance**, as 54 MHz is _beyond any feasible overclocking_.
+Once again, taking a quarter of the dot clock would result on a **27 MHz** rate, still good for 0.285 MFLOPS. This
+clock rate is likely to be allowed by a 25 MHz part.
 
 ### VRAM layout
 
@@ -76,11 +91,16 @@ Please note that the original _3 M_ workstations, while bearing slower CPUs (a 1
 _MC 68000_ is about **2.5 times slower** than a **9 MHz 65816**), had _graphic coprocessors_
 for much improved screen handling (_RasterOp_ on Sun, _Geometry Engine_ on SGI IRIS...).
 
+The Planar layout would take several consecutive 128 kiB bitmaps, first one at `$800000-$81FFFF`.
+In case of the recommended _8 bpp_ configuration, last plane would take `$8E0000-$8FFFFF`. Some
+addresses should be taken after that for CRTC & RAMDAC configuration (see below).
+
 ### Performance improvements
 
 Despite this handicap, there is one trick from Sun graphic cards that is _easily
 implemented_ and will noticeably speed-up a few operations: the ability to _write on more
-than one bit plane **simultaneously**_.
+than one bit plane **simultaneously**_. After _enabling_ the desired planes on some register
+(see above) simultaneous **writes** (only) may be done on the area `$900000-$91FFFF`.
 
 While this device is perfectly capable of displaying _graphic content_, most development
 tasks are expected to be done on _text windows_. With more than one bit plane installed,
@@ -174,4 +194,4 @@ for photographic images.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20191113-1215_
+_last modified 20191114-1318_
