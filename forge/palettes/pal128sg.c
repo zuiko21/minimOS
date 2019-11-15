@@ -1,7 +1,7 @@
 /*
- * minimOS palette generator
+ * minimOS 128-colour palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified: 20190928-1816
+ * last modified: 20191115-1432
  */
 
 #include <stdio.h>
@@ -17,14 +17,14 @@ int main(void) {
 	FILE* f;
 
 /* open output file and abort if error */
-	f=fopen("256col-sg.html","w");
+	f=fopen("128col-sg.html","w");
 	if (f==NULL) {
 		printf("No file!\n");
 		return 1;
 	}
 /* create basic HTML header */
 	fprintf(f,"<html>\n\t<head>\n");
-	fprintf(f,"\t\t<title>minimOS palette*</title>\n");
+	fprintf(f,"\t\t<title>minimOS palette**</title>\n");
 	fprintf(f,"\t</head>\n\t<body>\n");
 	fprintf(f,"\t\t<table border='0'>\n");
 /* system GRgB colours */
@@ -69,7 +69,7 @@ int main(void) {
 	fprintf(f,"\t\t\t</tr>\n");
 /* proposed remaining colours */
 /* high nibble */
-	for (r1=0; r1<2; r1++) {
+	for (r1=0; r1<1; r1++) {//check
 		for (g0=0; g0<2; g0++) {
 			for (r0=0; r0<2; r0++) {
 				for (b0=0; b0<2; b0++) {
@@ -80,12 +80,12 @@ int main(void) {
 							for (g1=0; g1<2; g1++) {
 								for (b1=0; b1<2; b1++) {
 /* compute colour values and labels */
-									R=bin(r2,r1,r0,r2,r1,r0,r2,r1);
+									R=bin(r2,r1,r2,r1,r2,r1,r2,r1);
 									G=bin(g2,g1,g0,g2,g1,g0,g2,g1);
 									B=bin(b1,b0,b1,b0,b1,b0,b1,b0);
 
 /* non-LSB values (mainly for labels) */
-									r=bin(0,0,0,0,0,r2,r1,r0);
+									r=bin(0,0,0,0,0,0,r1,r0);
 									g=bin(0,0,0,0,0,g2,g1,g0);
 									b=bin(0,0,0,0,0,0,b1,b0);
 
