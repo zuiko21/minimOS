@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191112-1412 */
+ *	last modified 20191115-0958 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -606,7 +606,8 @@ int pdith(byt r, byt g, byt b, char met) {
 // ** 16 system colours + 16 greys! Does this make any sense? **
 // dr, dg, db already have a candidate system colour
 // let us find a suitable grey, just in case
-			if (sat(r, g, b)<0.2) {		// is it a weakly-saturated colour?
+			if (sat(r, g, b)<0.1) {		// is it a weakly-saturated colour?
+// should alternate between grey & sys with chance according to saturation!
 				y = luma(r, g, b);			// compute target luminance
 				x=1+rand()%15;				// generate noise
 				i=(int)y/grey[0]-1;			// closest grey, index -1...16 (palette greyscale is 0...15, plus black & white)
