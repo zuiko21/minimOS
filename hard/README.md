@@ -206,6 +206,8 @@ Video output: 6445-based, _planar_ 1 MiB VRAM, up to **8 bpp**, typically **1360
 Other interfaces: most likely those of _Jalisco_, adding CF & SD-card. Will _definitely_
 include PS/2 keyboard/mouse ports.
 
+_Might create an alternate SIXtation **Turbo @ 13.5 MHz** and 1152x864 pixels_
+
 
 ### Peripherals (TBD)
 
@@ -237,4 +239,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20190731-2217_
+_last modified: 20191124-2309_
