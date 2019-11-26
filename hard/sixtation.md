@@ -133,6 +133,7 @@ and eventually all available planes would be in use, cancelling the performance
 advantage -- until a new `CLRS` is issued. These new colours should be inclusive-ORed with
 the current mask. If some _dark turuqoise_ (0011) text on white appears, we could compute
 a new enable mask as follows:
+
 ```
     INK: 0011 (dark turquoise) _newly set_
   PAPER: 1110 (yellow)
@@ -145,7 +146,7 @@ old mask 1100  OR 1101 = 1101 (new _enable mask_ for this setting)
 
          0011 XOR 1111 = 1100 (temporary mask)
 old mask 1101  OR 1100 = 1101 (definitive enable mask)
-```
+``
 
 Printing logic operations are equally simple. _Disabled planes_ are of course ignored and,
 thanks to the multiplane writes, easily done. A _temporary mask_ as per the previous examples must be computed,
@@ -167,7 +168,7 @@ For instance:
 
          1100 XOR 1101 = 0001 (temp XOR mask, plane 3 is NOT unaffected!)
          0001 AND 1101 = 0001 (...AND mask, plane 3 to be filled with 1s)
-```
+``
 
 ### Palette
 
@@ -194,4 +195,31 @@ for photographic images.
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
 _bit-banging_, unless the **65SPI** hardware is used. 
 
-_last modified 20191114-1318_
+## Glue logic (_stub_)
+
+### RAM enabling
+
+Due to the multiple RAM configurations for this machine, RAM decoding is fairly complex. Initially,
+we can have:
+
+- **1 MiB _on board_**, to make it _3M-compliant_.
+- **5 MiB**, the base MiB plus one [_4 MiB module from Garth Wilson_](http://wilsonminesco.com/).
+- **8 MiB**, using _**two** 4 MiB modules_.
+
+Note that the _base_ MiB is used in all configurations, thus the last megabyte
+on the _second_ module is **wasted**. _Its last `CE` lines may be put on the expansion bus for
+**optional decoding**_.
+
+A couple of `74AC138` are needed for all RAM decoding. `BA3-5` are the common address lines for them,
+and the set of `Enables` are wired as follows:
+
+- `BA7` goes to both decoders' _active-low_ enable, effectively disabling RAM for _expansion card_ space.
+- `BA6` goes to the "low" decoder's next _active-low_ enable, and to the "high" decoder _active-high_ enable.
+
+The remaining enable lines are tied to `VCC` or `GND`, accordingly. Note that the slots are **not**
+interchangeable, the 5 MiB configuration _must_ populate the "low" slot.
+
+About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
+and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
+
+_last modified 20191126-1101_
