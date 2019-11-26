@@ -108,6 +108,7 @@ these are colour capable too; but then one _software trick_ (combined with the p
 **multi-plane writes**) may _improve drawing and **scrolling** speed noticeably_.
 
 For the sake of simplicity, let us assume an example with 4 planes following the `GRgB` model:
+
 ```
     INK: 0010 (dark green)
   PAPER: 1110 (yellow)
@@ -146,7 +147,7 @@ old mask 1100  OR 1101 = 1101 (new _enable mask_ for this setting)
 
          0011 XOR 1111 = 1100 (temporary mask)
 old mask 1101  OR 1100 = 1101 (definitive enable mask)
-``
+```
 
 Printing logic operations are equally simple. _Disabled planes_ are of course ignored and,
 thanks to the multiplane writes, easily done. A _temporary mask_ as per the previous examples must be computed,
@@ -156,6 +157,7 @@ If more than a bit is set from those AND ops, the pattern may be set at once on 
 thanks to the multiplane write feature. However, unaffected planes must be checked for.
 
 For instance:
+
 ```
     INK: 0011 (dark turquoise)
   PAPER: 1111 (white) newly set
@@ -168,7 +170,7 @@ For instance:
 
          1100 XOR 1101 = 0001 (temp XOR mask, plane 3 is NOT unaffected!)
          0001 AND 1101 = 0001 (...AND mask, plane 3 to be filled with 1s)
-``
+```
 
 ### Palette
 
@@ -222,4 +224,4 @@ interchangeable, the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191126-1101_
+_last modified 20191126-1347_
