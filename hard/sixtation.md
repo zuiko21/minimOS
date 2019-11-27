@@ -5,30 +5,30 @@ A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MBy
 
 ## Specifications
 
-- CPU: 65816 @ **9 MHz** (~2.5 MIPS)
+- CPU: 65816 @ **9 MHz** (~2.5 MIPS) or **13.5 MHz** on the _Turbo_ version (~4 MIPS)
 - FPU: 68882 @ **36 MHz** (~0.38 MFLOPS, slightly overclocked\*)
 - VDU: 6445 based, **1360x768**, up to 8 bpp
 - RAM: **1 MiB** on board, two _Garth_ slots (up to **8 MiB**, 5 MiB possible)
-- ROM: 32 kiB _Kernel_, up to 4 MiB _library_
+- ROM: 32 kiB _Kernel_ (fully switchable), up to 4 MiB _library_
 - Storage: CF & SD (possibly _bit-banged_) interfaces
 - RTC (146818) and DUART (16C552)
-- Usual 65xx ports, including **PS/2**
+- Usual 65xx ports, including **PS/2**, perhaps thru the use of _three_ **65C22 VIAs**.
 
 \*) A jumper may provide a 18 Mhz clock for the FPU, in case overclocking fails. The main
 concern is that, unkike the 68040, the 68020/030/**881/882*** have the silicon die _atop_
-the ceramic PGA substrate, with an **air gap** between it and the metallic cover, making
-the use of a _heatsink_ **highly ineffective**.
+the ceramic PGA substrate, with an _air gap_ between it and the metallic cover, making
+the use of a _heatsink_ **highly ineffective**. _Read below about the Turbo version_.
 
 ## Memory
 
 In order to be fully _3 M compliant_, the main board is provided with **1 MiB RAM** as
-standard. Then, two pin-header slots for _Garth Wilson's RAM 4 MiB cards_ are provided.
-Since every 512 kiB `Chip Select` line is individually accesible, three RAM configurations
+standard. Then, two pin-header slots for [Garth Wilson's RAM 4 MiB cards](http://wilsonminesco.com/)
+are provided. Since every 512 kiB `Chip Select` line is individually accesible, three RAM configurations
 are supported:
 
 - **1 MiB** (standard on-board RAM)
-- **5 MiB** (add one Garth module, plus the supplied megabyte)
-- **8 MiB** (needs two Garth modules, although two chips on the second one will remain unused)
+- **5 MiB** (add one Garth module, _plus the supplied megabyte_)
+- **8 MiB** (needs two Garth modules, although two chips on the second module will remain unused)
 
 Memory addresses above `$800000` will be reserved for I/O boards (including the supplied
 **graphic card**) and those above `$C00000` are intended for _library_ ROM.
@@ -63,7 +63,7 @@ which basically matches the _VESA 1280x1024 @ 60 Hz_ timing, thus well suited to
 Due to 6445 _hsync_ timing limitations, only the equivalent width of 1224 pixels will be covered.
 _Note that this mode needs a **positive** horizontal sync pulse_. On the other hand, _the APD monitor
 expects **negative** syncs_, so a full-software resolution switch does not seem feasible, unless some
-port bits are used for selective inversion of syncs (via XOR gates).
+port bits are used for selective inversion of syncs (via XOR gates, which may be as slow as a 4000-series IC).
 
 ### SIXtation TURBO?
 
@@ -71,7 +71,7 @@ A further development would be a **faster** version of the SIXtation, by syncing
 quite suitable for my _superb LG 1910S monitor_. In order to stay within the _megapixel_ limit (which for 8bpp takes
 one MiB of VRAM), 1280 x 1024 @ 60 Hz timing will be used, but restricting the visible area to **1152 x 864**. From the
 standard _108 MHz dot clock_ a whopping **13.5 MHz Phi-2 clock** is achieved. Note that the CRTC must work at
-_*a quarter* of Phi-2 frequency_ to keep within the 6445 limits, thus configured for 32-pixel wide "virtual"
+_a **quarter** of Phi-2 frequency_ to stay within the 6445 limits, thus configured for 32-pixel wide "virtual"
 characters. While this configuration further reduces sync and porch timing accuracy, no issues are expected thanks
 to the ample borders (64 pixels both left & right, 80 top & down).
 
@@ -93,7 +93,7 @@ for much improved screen handling (_RasterOp_ on Sun, _Geometry Engine_ on SGI I
 
 The Planar layout would take several consecutive 128 kiB bitmaps, first one at `$800000-$81FFFF`.
 In case of the recommended _8 bpp_ configuration, last plane would take `$8E0000-$8FFFFF`. Some
-addresses should be taken after that for CRTC & RAMDAC configuration (see below).
+addresses should be taken after that for CRTC & RAMDAC configuration (perhaps in bank `$92`, see below).
 
 ### Performance improvements
 
@@ -192,6 +192,9 @@ and thus pretty adequate for this application (**80MHz** version required).
 Keeping the first 32 entries allows a _consistent_ interface display, while providing adequate support
 for photographic images.
 
+Alternate **128 and 64-colour palettes** have been considered, starting with the aforementioned _32 system entries_
+followed by the remaining 96 or 32 colours, based on a _3-8-4_ or _4-4-2_ scheme, respectively.
+
 ## Storage
 
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
@@ -201,15 +204,9 @@ _bit-banging_, unless the **65SPI** hardware is used.
 
 ### RAM enabling
 
-Due to the multiple RAM configurations for this machine, RAM decoding is fairly complex. Initially,
-we can have:
-
-- **1 MiB _on board_**, to make it _3M-compliant_.
-- **5 MiB**, the base MiB plus one [_4 MiB module from Garth Wilson_](http://wilsonminesco.com/).
-- **8 MiB**, using _**two** 4 MiB modules_.
-
-Note that the _base_ MiB is used in all configurations, thus the last megabyte
-on the _second_ module is **wasted**. _Its last `CE` lines may be put on the expansion bus for
+Due to the multiple RAM configurations for this machine (see above), RAM decoding is fairly complex.
+Note that the _base_ MiB is used in all configurations, thus the last megabyte on the _second_
+optional module is **wasted**. _Its two highest `CE` lines may be put on the expansion bus for
 **optional decoding**_.
 
 A couple of `74AC138` are needed for all RAM decoding. `BA3-5` are the common address lines for them,
@@ -219,9 +216,9 @@ and the set of `Enables` are wired as follows:
 - `BA6` goes to the "low" decoder's next _active-low_ enable, and to the "high" decoder _active-high_ enable.
 
 The remaining enable lines are tied to `VCC` or `GND`, accordingly. Note that the slots are **not**
-interchangeable, the 5 MiB configuration _must_ populate the "low" slot.
+interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191126-1347_
+_last modified 20191127-0917_

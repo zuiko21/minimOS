@@ -18,13 +18,13 @@ tp | `/BCLR` | /ML | **1?** | **1** | **1** | **1** | _/BUSY_
 oc | `/BERR` | /ABORT | **1** | **1** | **1** | **1** | **1** (AVMA?)
 3s | `/DS1` | VDA | **1** | VMA | VMA | BS | BS
 3s | `/DS0` | VPA | SYNC | **0** | **0** | BA | BA
-3s | `/LWORD` | M/X | **1** | **1** | **1** | **1**
-3s | `AM0` | **0** | **1** | **1** | **1** | **1** _(65816 sense)_
-3s | `AM1` | Emu | **1** | **1** | **1** | **1**
-3s | `AM2` | /VP | **1?** | **1** | **1** | **1**
-3s | `AM3` | **1** | /SO | **1** | **1** | **1** | **1**
-3s | `AM5` | **1** | **1** | **1** | **1** | **1** _(16-bit bus)_
-3s | `/AS` | ? | ? | ? | ? | Q | Q
+3s | `/LWORD` | M/X | **1** | **1** | **1** | **1** | **1**
+3s | `AM0` | **0** | **1** | **1** | **1** | **1** | **1** _(65816 sense)_
+3s | `AM1` | Emu | **1** | **1** | **1** | **1** | **1**
+3s | `AM2` | /VP | **1?** | **1** | **1** | **1** | **1**
+3s | `AM3` | /CE10 | /SO | **1** | **1** | **1** | **1**
+3s | `AM5` | /CE11 | **1** | **1** | **1** | **1** | **1**
+3s | `/AS` | ? | ? | ? | ? | Q | Q _(16-bit bus?)_
 3s | `D0-D7` | D0-D7 | D0-D7 | D0-D7 | DO-D7 | D0-D7 | D0-D7
 3s | `D8-D15` | _NC, reserved_
 3s | `A1-A7` | A0-A6 | A0-A6 | A0-A6 | A0-A6 | A0-A6 | A0-A6
@@ -32,15 +32,14 @@ oc | `/BERR` | /ABORT | **1** | **1** | **1** | **1** | **1** (AVMA?)
 3s | `A8-A15` | A8-A15 | A8-A15 | A8-A15 | A8-A15 | A8-A15 | A8-A15
 3s | `A16-A23` | BA0-BA7 | **0** | **0** | **0** | **0** | **0**
 
-- `RDY` on 65816 systems (or W65C02**S**) may be used as a **clock stretching** input.
-- `/DS1` will stay **high** on '02 systems, letting `SYNC` into `/DS0`, allowing common
-circuitry in most cases.
-- Some 65C02's have `/ML`, `/VP` and `BE` lines, otherwise they should use
-adequate _pull-ups_ on bus.
-- Values in _italics_ are not generated/taken by the CPU itself, but modified
-on board for bus compatibility among platforms.
-- **Fixed values must be set thru _pull-up_ (or _pull-down_) resistors.**
-- Most IRQ lines are tied together _on the CPU side_. Peripheral cards should put
-their requests on **one** line according to a reasonable priority.
+Notes:
 
-_Last modified 20190322-1004_
+- `RDY` on 65816 systems (or W65C02**S**) may be used as a **clock stretching** input.
+- `/DS1` will stay **high** on '02 systems, letting `SYNC` into `/DS0`, allowing common circuitry in most cases.
+- Some 65C02's have `/ML`, `/VP` and `BE` lines, otherwise they should use adequate _pull-ups_ on bus.
+- Values in _italics_ are not generated/taken by the CPU itself, but modified on board for bus compatibility among platforms.
+- **Fixed values must be set thru _pull-up_ (or _pull-down_) resistors.**
+- Most IRQ lines are tied together _on the CPU side_. Peripheral cards should put their requests on **one** line according to a reasonable priority.
+- **SIXtation** allows for external decoding of the _ninth_ RAM megabyte, if fitted, thru `/CE10` and `/CE11`, open-collector lines **pulled-up** in any case.
+
+_Last modified 20191127-0936_
