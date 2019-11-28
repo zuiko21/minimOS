@@ -1,6 +1,6 @@
 /*	24-bit dithering for 8-bit SIXtation palette
  *	(c) 2019 Carlos J. Santisteban
- *	last modified 20191115-0958 */
+ *	last modified 20191128-0956 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,21 +29,21 @@ long	coord(int x, int y);					// compute offset from coordinates
 
 void	diff(int x, int y, float k, int dr, int dg, int db);	// generic diffusion function
 
-void	floyd(int x, int y, int dr, int dg, int db);			// Floyd-Steinberg implementation
-void	stucki(int x, int y, int dr, int dg, int db);			// Stucki implementation
-void	sierra(int x, int y, int dr, int dg, int db);			// full Sierra implementation
-void	s2row(int x, int y, int dr, int dg, int db);			// 2-row Sierra implementation
-void	atkinson(int x, int y, int dr, int dg, int db);			// Atkinson implementation
-void	burkes(int x, int y, int dr, int dg, int db);			// Burkes implementation
-void	simple(int x, int y, int dr, int dg, int db) {diff(x+1,y,1,dr,dg,db);}	// simple diffusion at right ** no prototype **
+void	floyd   (int x, int y, int dr, int dg, int db);		// Floyd-Steinberg implementation
+void	stucki  (int x, int y, int dr, int dg, int db);		// Stucki implementation
+void	sierra  (int x, int y, int dr, int dg, int db);		// full Sierra implementation
+void	s2row   (int x, int y, int dr, int dg, int db);		// 2-row Sierra implementation
+void	atkinson(int x, int y, int dr, int dg, int db);		// Atkinson implementation
+void	burkes  (int x, int y, int dr, int dg, int db);		// Burkes implementation
+void	simple  (int x, int y, int dr, int dg, int db) {diff(x+1,y,1,dr,dg,db);}	// simple diffusion at right ** no prototype **
 
-float	eucl(int i, byt r, byt g, byt b);		// Euclidean distance between some index and supplied RGB value
+float	eucl (int i, byt r, byt g, byt b);		// Euclidean distance between some index and supplied RGB value
 float	hdist(int i, byt r, byt g, byt b);		// hue-based distance between some index and supplied RGB value
 
 float	luma(byt r, byt g, byt b);				// return luminance for selected RGB values
-float	hue(byt r, byt g, byt b);				// return hue (0...360) for selected RGB values
-float	sat(byt r, byt g, byt b);				// return saturation (0...1) for selected RGB values
-float	val(byt r, byt g, byt b);				// return value (0...255) for selected RGB values
+float	hue (byt r, byt g, byt b);				// return hue (0...360) for selected RGB values
+float	sat (byt r, byt g, byt b);				// return saturation (0...1) for selected RGB values
+float	val (byt r, byt g, byt b);				// return value (0...255) for selected RGB values
 
 byt		byte(int v);							// trim value to unsigned byte
 
@@ -51,7 +51,7 @@ byt		palR(int i);							// get red value from standard palette
 byt		palG(int i);							// get green value from standard palette
 byt		palB(int i);							// get blue value from standard palette
 
-int		prox(byt r, byt g, byt b, char met);	// find index closest to suggested RGB, several palettes
+int		prox (byt r, byt g, byt b, char met);	// find index closest to suggested RGB, several palettes
 int		pdith(byt r, byt g, byt b, char met);	// P-dither suggested index, several palettes
 
 /****************/
