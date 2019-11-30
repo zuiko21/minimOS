@@ -21,7 +21,7 @@ cards, but is really intended for a **65816 card**, also in the making.
 Still within design phase, here is an outline of its basic specs:
 
 - CPU: **65C02**
-- Clock speed: **1.536 MHz** (although **1.5734375** might be preferred)
+- Clock speed: **1.536 MHz** (although **1.5734375 MHz** might be preferred)
 - VIA: single **65C22**, with the typical **piezo-buzzer** at `PB7-CB2`
 - RAM: **32 kiB** (static) plus 1 kiB *shadow* RAM for attributes. 
 - (E)EPROM: **32 kiB**
@@ -35,7 +35,7 @@ Still within design phase, here is an outline of its basic specs:
 _optional **65816 card**_)
 - Expansion bus
 
-### Clock generation
+## Clock generation
 
 According to the usual way of selecting my _most abundant_ components in stock,
 the clock signal is generated from a **24.576 MHz oscillator** can. However, the
@@ -85,7 +85,7 @@ _Firmware_ may provide a module for **quick video mode selection** during startu
 
 6x45's _raster addresses_ are wired as the most significant bits. This allows fast
 **hardware-assisted scrolling** (Amstrad-like). It also sets a _constant distance_
-(`$0400`) between the _colour RAM_ and the upper raster of each displayed character,
+(`$400`) between the _colour RAM_ and the upper raster of each displayed character,
 greatly simplifying the driver.
 
 ### VGA compatibility and the 6845
@@ -111,7 +111,7 @@ Despite being a **4 bpp** screen, the use of an _attribute area_ makes VRAM
 format as simple as a **bitmap** one. Thus, during CRTC addressing, RAM data is
 latched into a **'165 shift register** as usual. However, instead of sending
 its serial output directly to the VGA connector, it is used for _multiplexing_
-the nibbles read from the *colour RAM* (in parallel with the regular RAM), and
+the nibbles read from the _colour RAM_ (in parallel with the regular RAM), and
 those 4 bits (representing either _foreground_ or _background_ color) are sent
 to the _makeshift **DAC**_. The colour RAM output is, by the way, _latched_ at
 the same time as the shift register.
@@ -122,13 +122,13 @@ multiplexer_, actually swapping fore- and background colours (much like the ZX
 Spectrum's `INVERSE` or `FLASH` modes). Ditto for **blanking**, not sure if via
 some AND gate or by totally disabling the colour mux.
 
-### Palette for the *Colour RAM*
+### Palette for the _Colour RAM_
 
 For moderate bandwith and attractive presentation, a **GRgB palette** is used -- the
 _green_ channel sporting **4 levels** isntead of two, as the human eye is most sensitive
 to this one. The colour codes _for each character_ (or the corresponding **8x8 pixel**
 area) are recorded with the most significant nibble representing the
-**background** one.
+_background_ one.
 
 You can see the **GRgB palette** (among several discarded other ones)
 [here](../other/grgb.html):
@@ -140,19 +140,19 @@ Within the usual 6502 restriction to 64 kiB address space, this machine is simpl
 defined as **32 kiB SRAM + 32 kiB EPROM**. From the latter, a full page (`$DFxx`)
 is assigned to I/O devices -- although with quite a bit of mirroring.
 
-Because of the _built-in video_ feature, some of the RAM is used as *VRAM*. **Colour
+Because of the _built-in video_ feature, some of the RAM is used as _VRAM_. **Colour
 RAM** is, by the way, in a _separate **6116** chip_, but will be read by the CRTC only;
 _writes on that area will be made **simultaneously on the 62256** too_, allowing
 further reading by the CPU.
 
 The standard memory map goes as follows:
 
-- `$0000-$5BFF`: *62256* **RAM** (general purpose)
-- `$5C00-$5FFF`: **Colour RAM** (**1K used** from a separate *6116*)
-- `$6000-$7FFF`: **Video RAM** (stored in the *62256*)
+- `$0000-$5BFF`: _62256_ **SRAM** (general purpose)
+- `$5C00-$5FFF`: **Colour RAM** (**1K used** from a separate _6116_)
+- `$6000-$7FFF`: **Video RAM** (stored in the _62256_)
 - `$8000-$DEFF`: EPROM (**kernel & firmware**, plus any desired apps)
-- `$DF00-$DFFF`: built-in **I/O** (NON selectable, buy maybe *switchable*)
-- `$E000-$FFFF`: EPROM (continued kernel & firmware, including *hardware vectors*)
+- `$DF00-$DFFF`: built-in **I/O** (NON selectable, but maybe _switchable_?)
+- `$E000-$FFFF`: EPROM (continued kernel & firmware, including _hardware vectors_)
 
 Decoded via a '139, the **I/O page** supports just **four** internal devices
 with a 32-byte area each (decoding address lines `A5-A6`), mirrored on the
@@ -195,7 +195,7 @@ on _Chip selection_ for a complete solution. _None of these solutions will be
 actually needed if using a properly **multiplexed** 6845_.
 
 Special consideration needs the 6116 **Colour RAM**. Wired (mostly) in parallel
-with the regular 62256 RAM, it is _write-only_ from the CPU side (it will read from
+with the regular 62256 SRAM, it is _write-only_ from the CPU side (it will read from
 the 62256, which is always written with the same contents) thru another '245 (a '244
 may be used as well) and _read-only_ for the CRTC (thru a suitable '374/'574 latch).
 
@@ -207,7 +207,7 @@ execution of `WAI/STP` opcodes, as long as the jumper is NOT set to provide `VSS
 
 ### Chip Selection
 
-_Unless noted otherwise, all '688s and '139s are *enabled* as long as **`/EN`**
+_Unless noted otherwise, all '688s and '139s are enabled as long as **`/EN`**
 (perhaps available at CPU socket pin 1) is held **low**._
 
 - **`/IO`** (peripheral page): a '688 compares `A8-A15` to `$DF`
@@ -250,6 +250,7 @@ input. On the other hand, _the CPU bus cannot be simply enabled by this signal_.
 In order to allow safe operation without _bus contention_, as previously stated,
 the CPU addresses are enabled by the aforementioned `/MUX` signal. For this trick
 to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
-the tristate option is activated**. _Aproppriate firmware makes sure about this_. 
+the tristate option is activated**. _Read above about ways to achieve this,
+thru proper enabling of the `RAM /CS` signal_. 
 
-*Last modified: 20190319-1413*
+_Last modified: 20191130-2200_
