@@ -169,4 +169,25 @@ are in **high** state._
 - **`KERNEL /CS`** uses `/BZ` to _enable_ a '688, then `A8-A15` as configured, but as it _must_ take the uppermost bits, `A15` is expected to be **always high**, while `A14-A11` might be _sequentially compared to ones_ for **reduced kernel sizes** (from **32 kiB** down to **2 kiB**). Some jumpers will disconnect _ignored_ address lines, letting their inputs pulled up. In this scheme, _ROM will stay enabled during I/O_ but with outputs disabled.
 - **`KERNEL /OE`** takes `/IO` negated (high) and `R/W` high to avoid _bus contention_.  If done thru a 74HC139's `/Y3` output, there is another output signalling _contention states_ (`/Y2` if `R/W` is set to the decoder's `A0`), but that '139 _must_ be enabled via `/BZ`. _Should this feature not be needed, the decoder could be permanently active_. Plus, swapping ROM's `/CS` and `/OE` inputs allows for higher performance at the cost of increased power consumption. On the other hand, moving the `R/W` signal to the `KERNEL /CS` '688 (with corresponding '139 input set high) would further reduce power consumption.
 
-_Last modified: 20191127-0914_
+### VIA configuration
+
+A **two-VIAs design** is very interesting because of obvious reasons. Being targeted
+as a _development machine_, keeping both VIAports for user devices while keeping a
+second VIA for a basic **debug interface** (_PASK_ plus a 4-bit LCD module) is
+expected to considerably ease development, while putting the **_jiffy_ T1 interrupt**
+on the "user" VIA, separate from the **frequency generator** for the piezo-buzzer
+allows for much more accurate timing. Suggested connections for the _system VIA_:
+
+- `PA0-PA7`: data lines for PASK
+- `CA1`: strobe for PASK
+- `CA2`: strobe for SS-22
+- `PB0`: Enable for LCD (easily pulsed!)
+- `PB1`: Register Select for LCD
+- `PB2-5`: Data lines for LCD (4-bit mode)
+- `PB6`: _could be set for LCD's R/W (not essential) or, if desired, the **ROM disable** feature_.
+- `PB7`: piezo-buzzer (active low)
+- `CB1`: SS-22 clock
+- `CB2`: SS-22 data, plus buzzer enable (active high)
+
+_Last modified: 20191201-2228_
+
