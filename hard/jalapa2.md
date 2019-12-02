@@ -189,5 +189,10 @@ allows for much more accurate timing. Suggested connections for the _system VIA_
 - `CB1`: SS-22 clock
 - `CB2`: SS-22 data, plus buzzer enable (active high)
 
-_Last modified: 20191201-2228_
+Note that the **jiffy interrupt timer** is responsibility of the _user_ VIA, whereas the buzzer
+is connected to the _system_ VIA. That way, user VIA's `PB7` is completely free for use, but
+Timer 1 isn't. In case such functionality is needed, the _system_ VIA's T1 timer is available,
+as long as system `CB2` is kept low.
+
+_Last modified: 20191202-1109_
 
