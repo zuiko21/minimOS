@@ -69,7 +69,7 @@ port bits are used for selective inversion of syncs (via XOR gates, which may be
 
 A further development would be a **faster** version of the SIXtation, by syncing with the _VESA 1280 x 1024 timing_,
 quite suitable for my _superb LG 1910S monitor_. In order to stay within the _megapixel_ limit (which for 8bpp takes
-one MiB of VRAM), 1280 x 1024 @ 60 Hz timing will be used, but restricting the visible area to **1152 x 864**. From the
+one MiB of VRAM), 1280 x 1024 @ 60 Hz timing will be used, but restricting the visible area to **1152 x 896**. From the
 standard _108 MHz dot clock_ a whopping **13.5 MHz Phi-2 clock** is achieved. Note that the CRTC must work at
 _a **quarter** of Phi-2 frequency_ to stay within the 6445 limits, thus configured for 32-pixel wide "virtual"
 characters. While this configuration further reduces sync and porch timing accuracy, no issues are expected thanks
@@ -233,4 +233,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191203-1057_
+_last modified 20191203-1100_
