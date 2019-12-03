@@ -92,15 +92,27 @@ _MC 68000_ is about **2.5 times slower** than a **9 MHz 65816**), had _graphic c
 for much improved screen handling (_RasterOp_ on Sun, _Geometry Engine_ on SGI IRIS...).
 
 The Planar layout would take several consecutive 128 kiB bitmaps, first one at `$800000-$81FFFF`.
-In case of the recommended _8 bpp_ configuration, last plane would take `$8E0000-$8FFFFF`. Some
-addresses should be taken after that for CRTC & RAMDAC configuration (perhaps in bank `$92`, see below).
+In case of the recommended _8 bpp_ configuration, last plane would take `$8E0000-$8FFFFF`.
+
+For CRTC & RAMDAC configuration, plus the _multi-plane write selector_ register, regular I/O is
+to be used (typically at page `$DF` from the first bank). **Sync inverting** flags may be addressed
+in a simlar way.
+
+Suggested I/O map:
+
+- `$DFC0-1`: 6445 **CRTC** registers (perhaps _write-only_)
+- `$DFC2-3`: **multi-plane write** selector _write_ (`A0` is not used, both addresses do the same)
+- `$DFC4-5`: **multi-plane write** selector _read_ (same as above, _optional_)
+- `$DFC6-7`: **sync inverting** flags (TBD, only two bits used)
+- `$DFC8-F`: Bt478 **RAMDAC** registers
 
 ### Performance improvements
 
 Despite this handicap, there is one trick from Sun graphic cards that is _easily
-implemented_ and will noticeably speed-up a few operations: the ability to _write on more
-than one bit plane **simultaneously**_. After _enabling_ the desired planes on some register
-(see above) simultaneous **writes** (only) may be done on the area `$900000-$91FFFF`.
+implemented_ and will noticeably speed-up a few operations: **multi-plane _write_**
+feature. After _enabling_ the desired planes on some register (see above),
+simultaneous **writes** (only) may be done on the area `$900000-$91FFFF`. _If decoding
+is made simpler, **mirroring** of this multi-plane area is acceptable up to `$9FFFFF`_
 
 While this device is perfectly capable of displaying _graphic content_, most development
 tasks are expected to be done on _text windows_. With more than one bit plane installed,
@@ -221,4 +233,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191127-0917_
+_last modified 20191203-1057_
