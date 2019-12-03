@@ -172,27 +172,29 @@ are in **high** state._
 ### VIA configuration
 
 A **two-VIAs design** is very interesting because of obvious reasons. Being targeted
-as a _development machine_, keeping both VIAports for user devices while keeping a
+as a _development machine_, having a separate **VIAport**s for user devices while keeping a
 second VIA for a basic **debug interface** (_PASK_ plus a 4-bit LCD module) is
-expected to considerably ease development, while putting the **_jiffy_ T1 interrupt**
-on the "user" VIA, separate from the **frequency generator** for the piezo-buzzer
-allows for much more accurate timing. Suggested connections for the _system VIA_:
+expected to considerably ease development, whilst having the **_jiffy_ T1 interrupt**
+on the _user_ VIA, separate from the **frequency generator** for the piezo-buzzer,
+allows for much more accurate interrupt timing.
 
-- `PA0-PA7`: data lines for PASK
-- `CA1`: strobe for PASK
-- `CA2`: strobe for SS-22
-- `PB0`: Enable for LCD (easily pulsed!)
-- `PB1`: Register Select for LCD
-- `PB2-5`: Data lines for LCD (4-bit mode)
-- `PB6`: _could be set for LCD's R/W (not essential) or, if desired, the **ROM disable** feature_.
-- `PB7`: piezo-buzzer (active low)
+Suggested connections for the _system VIA_:
+
+- `PA0-PA7`: data lines for [PASK](pask.md)
+- `CA1`: strobe for **PASK**
+- `CA2`: strobe for **SS-22**
+- `PB0`: _Enable_ clock line for **LCD** (easily pulsed!)
+- `PB1`: _Register Select_ line for LCD
+- `PB2-5`: _Data_ lines for LCD (**4-bit** mode)
+- `PB6`: _could be set for LCD's `R/W` (not essential) or, if desired, the **ROM disable** feature_.
+- `PB7`: **piezo-buzzer** (active low)
 - `CB1`: SS-22 clock
 - `CB2`: SS-22 data, plus buzzer enable (active high)
 
 Note that the **jiffy interrupt timer** is responsibility of the _user_ VIA, whereas the buzzer
 is connected to the _system_ VIA. That way, user VIA's `PB7` is completely free for use, but
-Timer 1 isn't. In case such functionality is needed, the _system_ VIA's T1 timer is available,
-as long as system `CB2` is kept low.
+_Timer 1_ isn't. In case such functionality is needed, the _system_ VIA's **T1 timer** is available,
+as long as system `CB2` is kept low (to avoid driving the buzzer)
 
-_Last modified: 20191202-1109_
+_Last modified: 20191203-1041_
 
