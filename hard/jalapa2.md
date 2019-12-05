@@ -41,10 +41,10 @@ and **M/X** (register sizes) lines of the 65816. These will be available on the
 
 The newest redesign, however, allows easy implementation of the _ROM-in-RAM_
 feature, by adding an extra _comparison bit_ to the `ROM /CS` signal generation.
-But, being a **single VIA** machine, such switching signal should be generated
-_manually via a jumper_, as there is hardly a spare bit for that. _This is a good
-reason to use **two VIAs** instead_, with the added benefit of having a
-_frequency generator_ completely independent from the **jiffy interrupt** timer.
+Being a **single VIA** machine, such switching signal should be generated
+_manually via a jumper_, as there is hardly a spare bit for that. _Here is a good
+reason to use **two VIAs** instead_, with the added benefit of complete separation
+of the _frequency generator_ from the **jiffy interrupt** timer.
  
 ### Clock generation
 
@@ -63,7 +63,7 @@ a good idea, as the _duty cycle_ would be far from the desired 50%.
 
 ## Memory map
 
-This machine fomerly was designed around a  **20-bit** address bus _(1 MiB)_,
+This machine was fomerly designed around a  **20-bit** address bus _(1 MiB)_,
 enough to allow **up to 512 kiB RAM & 512 kiB ROM** (plus up to _32 kiB Kernel ROM_
 for a grand total of **544 kiB**), which is the biggest size available in
 _hobbyist-friendly_, 5 volt DIP packages. However, the need for an appropriate
@@ -106,8 +106,8 @@ as VIA & ACIA appear _twice_ on the page.
 Since a complete _expansion bus_ is fitted, the **high ROM** must be decoded at the
 _uppermost banks_ (`BA4-BA7` = **1**) limiting mirroring.
 Also, _RAM should be properly decoded_ too, but within the **lowest MiB**.
-That would render `/lib` ROM at $F80000-$FFFFFF, leaving all addresses
-$100000-$EFFFFF, a whole **14 MiB free** for expansion.
+That would render `/LIB` ROM at $F80000-$FFFFFF (mirrored at $F00000-$F7FFFF),
+leaving all addresses in the range $100000-$EFFFFF, a whole **14 MiB free** for expansion.
  
 ## Glue-logic implementation
 
@@ -171,7 +171,7 @@ are in **high** state._
 
 ### VIA configuration
 
-A **two-VIAs design** is very interesting because of obvious reasons. Being targeted
+A **dual-VIA design** is very interesting because of obvious reasons. Being targeted
 as a _development machine_, having a separate **VIAport**s for user devices while keeping a
 second VIA for a basic **debug interface** (_PASK_ plus a 4-bit LCD module) is
 expected to considerably ease development, whilst having the **_jiffy_ T1 interrupt**
@@ -180,21 +180,21 @@ allows for much more accurate interrupt timing.
 
 Suggested connections for the _system VIA_:
 
-- `PA0-PA7`: data lines for [PASK](pask.md)
-- `CA1`: strobe for **PASK**
-- `CA2`: strobe for **SS-22**
-- `PB0`: _Enable_ clock line for **LCD** (easily pulsed!)
-- `PB1`: _Register Select_ line for LCD
-- `PB2-5`: _Data_ lines for LCD (**4-bit** mode)
-- `PB6`: _could be set for LCD's `R/W` (not essential) or, if desired, the **ROM disable** feature_.
-- `PB7`: **piezo-buzzer** (active low)
-- `CB1`: SS-22 clock
-- `CB2`: SS-22 data, plus buzzer enable (active high)
+- `PA0-PA7`: (in) data lines for [PASK](pask.md)
+- `CA1`: (in) strobe for **PASK**
+- `CA2`: (out) strobe for **SS-22**
+- `PB0`: (out) _Enable_ clock line for **LCD** (easily pulsed!)
+- `PB1`: (out) _Register Select_ line for LCD
+- `PB2-5`: (out/\*in) _Data_ lines for LCD (**4-bit** mode)
+- `PB6`: (out) _could be set for LCD's `R/W` (not essential) or, if desired, the **ROM disable** feature_.
+- `PB7`: (out) **piezo-buzzer** (active low)
+- `CB1`: (in/out) SS-22 clock
+- `CB2`: (in/out) SS-22 data, plus buzzer enable (active high)
 
 Note that the **jiffy interrupt timer** is responsibility of the _user_ VIA, whereas the buzzer
 is connected to the _system_ VIA. That way, user VIA's `PB7` is completely free for use, but
 _Timer 1_ isn't. In case such functionality is needed, the _system_ VIA's **T1 timer** is available,
 as long as system `CB2` is kept low (to avoid driving the buzzer)
 
-_Last modified: 20191203-1041_
+_Last modified: 20191205-2011_
 
