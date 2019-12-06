@@ -7,7 +7,7 @@ oc | `SYSRESET` | /RES | /RES | /RESET | /RESET | /RESET | /RESET
 3s | `/WRITE` | R/W | R/W | R/W | R/W | R/W | R/W
 oc | `/DTACK` | _RDY_ | RDY | /HALT | MR | /HALT | /HALT
 oc | `/IRQ7` | /NMI | /NMI | /NMI | /NMI | /NMI | /NMI
-oc | `/IRQ6` | /IRQ | /IRQ | /IRQ | /IRQ | /IRQ | /FIRQ
+oc | `/IRQ6` | /IRQ | /SO | /IRQ | /IRQ | /IRQ | /FIRQ
 oc | `/IRQ5` | /IRQ | /IRQ | /IRQ | /IRQ | /IRQ | /FIRQ
 oc | `/IRQ4` | /IRQ | /IRQ | /IRQ | /IRQ | /IRQ | /FIRQ
 oc | `/IRQ3` | /IRQ | /IRQ | /IRQ | /IRQ | /IRQ | /IRQ
@@ -22,7 +22,7 @@ oc | `/BERR` | /ABORT | **1** | **1** | **1** | **1** | **1** (AVMA?)
 3s | `AM0` | **0** | **1** | **1** | **1** | **1** | **1** _(65816 sense)_
 3s | `AM1` | Emul. | **1** | **1** | **1** | **1** | **1**
 3s | `AM2` | /CE10 | **1** | **1** | **1** | **1** | **1**
-3s | `AM3` | /CE11 | /SO | **1** | **1** | **1** | **1**
+3s | `AM3` | /CE11 | **1** | **1** | **1** | **1** | **1**
 3s | `AM5` | /VP | **?** | **1** | **1** | **1** | **1**
 3s | `/AS` | ? | ? | ? | Phi1 | Q | Q _(16-bit bus?)_
 3s | `D0-D7` | D0-D7 | D0-D7 | D0-D7 | DO-D7 | D0-D7 | D0-D7
@@ -44,4 +44,4 @@ Notes:
 
 `SERCLK` may be used as DOTCLK.
 
-_Last modified 20191204-1920_
+_Last modified 20191206-2007_
