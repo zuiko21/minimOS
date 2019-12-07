@@ -79,6 +79,9 @@ A downside effect of this new rating is **impaired FPU performance**, as 54 MHz 
 Once again, taking a quarter of the dot clock would result on a **27 MHz** rate, still good for 0.285 MFLOPS. This
 clock rate is likely to be allowed by a 25 MHz part.
 
+On the other hand, a faster (110 MHz) **Bt 481 _RAMDAC_** should be used, otherwise
+fully compatible with slower cards.
+ 
 ### VRAM layout
 
 Being **6445-based** (improved 6845), VRAM is organized in an _Amstrad-like_ fashion, but
@@ -221,6 +224,13 @@ Note that the _base_ MiB is used in all configurations, thus the last megabyte o
 optional module is **wasted**. _Its two highest `CE` lines may be put on the expansion bus for
 **optional decoding**_.
 
+In such case, an **alternative video card addressing** makes sense: putting the standard
+planes at `$900000-$9FFFFF` (instead of banks `$8x`) and, if required, the _multiplane_
+range at, say, `$A00000-$A1FFFF` (safely mirrored up to `$AFFFFF`) will allow a
+**9 MiB RAM** configuration, making use of the wasted chips on the _second_ slot, when
+installed. _The video card is responsible for generaring `/CE10` and `/CE11` on the bus
+from the appropriate values at `BA3-BA7`_.
+ 
 A couple of `74AC138` are needed for all RAM decoding. `BA3-5` are the common address lines for them,
 and the set of `Enables` are wired as follows:
 
@@ -233,4 +243,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191203-1100_
+_last modified 20191207-2134_
