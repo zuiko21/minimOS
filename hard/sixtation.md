@@ -213,7 +213,8 @@ followed by the remaining 96 or 32 colours, based on a _3-8-4_ or _4-4-2_ scheme
 ## Storage
 
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
-_bit-banging_, unless the **65SPI** hardware is used. 
+_bit-banging_, unless the **65SPI** hardware is used. _**65SIB** is expected_, perhaps
+using device 1 as the **SD interface**.
 
 ## Glue logic (_stub_)
 
@@ -243,4 +244,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191207-2134_
+_last modified 20191209-1949_
