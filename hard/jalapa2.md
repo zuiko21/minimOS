@@ -16,7 +16,7 @@ Still within design phase, here is an outline of its basic specs:
 
 - CPU: **65C816**
 - Clock speed: **2.304 MHz**, with **1.8432** and **3.072 *turbo*** options
-- VIA: (one or two?) **65C22**, with the typical **piezo-buzzer** at PB7/CB2
+- VIA: (how many?) **65C22**, with the typical **piezo-buzzer** at PB7/CB2
 - RAM: 128 or **512 kiB** (static 32-pin DIP)
 - (E)EPROM: up to **512 kiB** (plus separate _Kernel_ ROM up to 32 kiB)
 - Serial: single **65C51**, just for the sake of completeness
@@ -45,6 +45,9 @@ Being a **single VIA** machine, such switching signal should be generated
 _manually via a jumper_, as there is hardly a spare bit for that. _Here is a good
 reason to use **two VIAs** instead_, with the added benefit of complete separation
 of the _frequency generator_ from the **jiffy interrupt** timer.
+
+On second thought, the **experimental** orientation of this machine justifies the
+use of up to _three_ VIAs, just like the [SIXtation](sixtation.md).
  
 ### Clock generation
 
@@ -97,7 +100,8 @@ EPROM area_. This is enabled by switching off both the _kernel ROM_
 and RAM outputs (just in case) for peripheral access.
 
 Decoded via a '139, the **I/O page** supports just **four** internal devices,
-two of them already assigned, **VIA** and **ACIA** (or _three_ if a second VIA is used).
+two of them already assigned, **VIA** and **ACIA** (or _three_ if a second VIA is used,
+or even fill the whole '139 outputs in a _three_-VIA design).
 As per _minimOS_ recommendations, each device owns **32 bytes** from this page,
 thus the 128-byte decoded I/O gets _mirrored_. Any _external card_ decoding extra devices
 on this standard area will thus have just another _four_ available slots (or three),
@@ -196,5 +200,7 @@ is connected to the _system_ VIA. That way, user VIA's `PB7` is completely free 
 _Timer 1_ isn't. In case such functionality is needed, the _system_ VIA's **T1 timer** is available,
 as long as system `CB2` is kept low (to avoid driving the buzzer)
 
-_Last modified: 20191205-2011_
+A _third_ VIA is to be considered, giving access to the interesting **65SIB** interface.
+
+_Last modified: 20191209-1810_
 
