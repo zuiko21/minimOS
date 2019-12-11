@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-	<!--	last modified 20191211-1729
+	<!--	last modified 20191211-1746
 		sorted to put MSB at plane 0
 		(c) 2019 Carlos J. Santisteban -->
 	<head>
@@ -10,41 +10,41 @@
 		<table border='0'>
 <!-- system colours, 0000BgRG scheme -->
 			<tr>
-				<td style='color:white;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
-				<td style='color:black;background-color:#0A0;'>S8<br /><span style='font-size:0.7em;'>0A0</span></td>
-				<td style='color:white;background-color:#F00;'>S4<br /><span style='font-size:0.7em;'>F00</span></td>
-				<td style='color:black;background-color:#FA0;'>S12<br /><span style='font-size:0.7em;'>FA0</span></td>
-				<td style='color:white;background-color:#050;'>S2<br /><span style='font-size:0.7em;'>050</span></td>
-				<td style='color:black;background-color:#0F0;'>S10<br /><span style='font-size:0.7em;'>0F0</span></td>
-				<td style='color:white;background-color:#F50;'>S6<br /><span style='font-size:0.7em;'>F50</span></td>
-				<td style='color:black;background-color:#FF0;'>S14<br /><span style='font-size:0.7em;'>FF0</span></td>
-				<td style='color:white;background-color:#00F;'>S1<br /><span style='font-size:0.7em;'>00F</span></td>
-				<td style='color:black;background-color:#0AF;'>S9<br /><span style='font-size:0.7em;'>0AF</span></td>
-				<td style='color:white;background-color:#F0F;'>S5<br /><span style='font-size:0.7em;'>F0F</span></td>
-				<td style='color:black;background-color:#FAF;'>S13<br /><span style='font-size:0.7em;'>FAF</span></td>
-				<td style='color:white;background-color:#05F;'>S3<br /><span style='font-size:0.7em;'>05F</span></td>
-				<td style='color:black;background-color:#0FF;'>S11<br /><span style='font-size:0.7em;'>0FF</span></td>
-				<td style='color:white;background-color:#F5F;'>S7<br /><span style='font-size:0.7em;'>F5F</span></td>
-				<td style='color:black;background-color:#FFF;'>S15<br /><span style='font-size:0.7em;'>FFF</span></td>
+				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
+				<td style='color:#000;background-color:#0A0;'>S8<br /><span style='font-size:0.7em;'>0A0</span></td>
+				<td style='color:#FA0;background-color:#F00;'>S4<br /><span style='font-size:0.7em;'>F00</span></td>
+				<td style='color:#F00;background-color:#FA0;'>S12<br /><span style='font-size:0.7em;'>FA0</span></td>
+				<td style='color:#0F0;background-color:#050;'>S2<br /><span style='font-size:0.7em;'>050</span></td>
+				<td style='color:#050;background-color:#0F0;'>S10<br /><span style='font-size:0.7em;'>0F0</span></td>
+				<td style='color:#FF0;background-color:#F50;'>S6<br /><span style='font-size:0.7em;'>F50</span></td>
+				<td style='color:#F50;background-color:#FF0;'>S14<br /><span style='font-size:0.7em;'>FF0</span></td>
+				<td style='color:#0AF;background-color:#00F;'>S1<br /><span style='font-size:0.7em;'>00F</span></td>
+				<td style='color:#00F;background-color:#0AF;'>S9<br /><span style='font-size:0.7em;'>0AF</span></td>
+				<td style='color:#FAF;background-color:#F0F;'>S5<br /><span style='font-size:0.7em;'>F0F</span></td>
+				<td style='color:#F0F;background-color:#FAF;'>S13<br /><span style='font-size:0.7em;'>FAF</span></td>
+				<td style='color:#0FF;background-color:#05F;'>S3<br /><span style='font-size:0.7em;'>05F</span></td>
+				<td style='color:#05F;background-color:#0FF;'>S11<br /><span style='font-size:0.7em;'>0FF</span></td>
+				<td style='color:#FFF;background-color:#F5F;'>S7<br /><span style='font-size:0.7em;'>F5F</span></td>
+				<td style='color:#F5F;background-color:#FFF;'>S15<br /><span style='font-size:0.7em;'>FFF</span></td>
 			</tr>
 <!-- system greyscale, 0001yyyY, does not include black or white, note MSB as bit 0 -->
 			<tr>
-				<td style='color:white;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>.0F.</span></td>
-				<td style='color:black;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>.87.</span></td>
-				<td style='color:white;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>.4B.</span></td>
-				<td style='color:black;background-color:#C3C3C3;'>G13<br /><span style='font-size:0.7em;'>.C3.</span></td>
-				<td style='color:white;background-color:#2D2D2D;'>G3<br /><span style='font-size:0.7em;'>.2D.</span></td>
-				<td style='color:black;background-color:#A5A5A5;'>G11<br /><span style='font-size:0.7em;'>.A5.</span></td>
-				<td style='color:white;background-color:#696969;'>G7<br /><span style='font-size:0.7em;'>.69.</span></td>
-				<td style='color:black;background-color:#E1E1E1;'>G15<br /><span style='font-size:0.7em;'>.E1.</span></td>
-				<td style='color:white;background-color:#1E1E1E;'>G2<br /><span style='font-size:0.7em;'>.1E.</span></td>
-				<td style='color:black;background-color:#969696;'>G10<br /><span style='font-size:0.7em;'>.96.</span></td>
-				<td style='color:white;background-color:#5A5A5A;'>G6<br /><span style='font-size:0.7em;'>.5A.</span></td>
-				<td style='color:black;background-color:#D2D2D2;'>G14<br /><span style='font-size:0.7em;'>.D2.</span></td>
-				<td style='color:white;background-color:#3C3C3C;'>G4<br /><span style='font-size:0.7em;'>.3C.</span></td>
-				<td style='color:black;background-color:#B4B4B4;'>G12<br /><span style='font-size:0.7em;'>.B4.</span></td>
-				<td style='color:white;background-color:#787878;'>G8<br /><span style='font-size:0.7em;'>.78.</span></td>
-				<td style='color:black;background-color:#F0F0F0;'>G16<br /><span style='font-size:0.7em;'>.F0.</span></td>
+				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>.0F.</span></td>
+				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>.87.</span></td>
+				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>.4B.</span></td>
+				<td style='color:#4B4B4B;background-color:#C3C3C3;'>G13<br /><span style='font-size:0.7em;'>.C3.</span></td>
+				<td style='color:#A5A5A5;background-color:#2D2D2D;'>G3<br /><span style='font-size:0.7em;'>.2D.</span></td>
+				<td style='color:#2D2D2D;background-color:#A5A5A5;'>G11<br /><span style='font-size:0.7em;'>.A5.</span></td>
+				<td style='color:#E1E1E1;background-color:#696969;'>G7<br /><span style='font-size:0.7em;'>.69.</span></td>
+				<td style='color:#696969;background-color:#E1E1E1;'>G15<br /><span style='font-size:0.7em;'>.E1.</span></td>
+				<td style='color:#969696;background-color:#1E1E1E;'>G2<br /><span style='font-size:0.7em;'>.1E.</span></td>
+				<td style='color:#1E1E1E;background-color:#969696;'>G10<br /><span style='font-size:0.7em;'>.96.</span></td>
+				<td style='color:#D2D2D2;background-color:#5A5A5A;'>G6<br /><span style='font-size:0.7em;'>.5A.</span></td>
+				<td style='color:#5A5A5A;background-color:#D2D2D2;'>G14<br /><span style='font-size:0.7em;'>.D2.</span></td>
+				<td style='color:#B4B4B4;background-color:#3C3C3C;'>G4<br /><span style='font-size:0.7em;'>.3C.</span></td>
+				<td style='color:#3C3C3C;background-color:#B4B4B4;'>G12<br /><span style='font-size:0.7em;'>.B4.</span></td>
+				<td style='color:#F0F0F0;background-color:#787878;'>G8<br /><span style='font-size:0.7em;'>.78.</span></td>
+				<td style='color:#787878;background-color:#F0F0F0;'>G16<br /><span style='font-size:0.7em;'>.F0.</span></td>
 			</tr>
 <!-- non system colours -->
 <!-- 384 scheme is 0RRBGGGB?, where R=1...3 ** TO DO ** -->
