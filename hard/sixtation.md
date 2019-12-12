@@ -210,6 +210,15 @@ for photographic images.
 Alternate **128 and 64-colour palettes** have been considered, starting with the aforementioned _32 system entries_
 followed by the remaining 96 or 32 colours, based on a _3-8-4_ or _4-4-2_ scheme, respectively.
 
+Palette colours are arranged in such a way that
+_consecutive_ entries sport **noticeable luma
+difference** (typically by using the most
+significant bit of the _green_ channel). This way,
+the **firmware console driver** may just deal
+with _plane 0_ (present on all configurations),
+simplifying the driver and achieving both
+**speed and adequate contrast**.
+
 ## Storage
 
 **IDE/CF** and **SD/MMC** interfaces will be provided. The latter might be implemented on
@@ -244,4 +253,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191209-1949_
+_last modified 20191212-2122_
