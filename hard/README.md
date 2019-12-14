@@ -101,7 +101,7 @@ Form-factor: Perfboard with point-to-point soldering.
 
 Specs: 1.8432 / 2.304 MHz **65C816**, 128 kiB RAM (or 512K),
 up to 32 kiB _Kernel_ EPROM plus up to 512 kiB _library_ EPROM,
-VIA 65C22, ACIA 65SC51.
+VIA 65C22 (x2?), ACIA 65SC51.
 
 Intefaces: Amplified piezo buzzer between PB7-CB2, SS-22, new _VIAport**2**_
 (_SBC-2_ style but with "mirrored" power pins), TTL-level RS-232,
@@ -120,7 +120,7 @@ Specs: 1.536 MHz 65C02, 32 kiB SRAM (plus 1 kiB in parallel as _attribute area_,
 32 kiB EPROM, VIA 65C22, CRTC HD6445. _Intended to be a colour & graphics capable SBC._
 
 Interfaces: Piezo buzzer, SS-22, new VIA connector, VGA-compatible video output
-(~320x200 @ 16 colours in GRgB mode, only 2 of them each 8x8 pixels)
+(~320x200 @ 16 colours in GRgB mode, only 2 of them on any 8x8-pixel block)
 
 
 
@@ -163,15 +163,17 @@ _VME-like_ slot (65816 direct expansion)
 
 **Veracruz**
 
-Status: in design stage _(might be merged with **Jalapa**)_
+Status: in design stage _(might become a lower-spec **SIXtation**)_
 
 Form-factor: thru-hole PCB?
 
-Specs: 4 MHz (at least) 65816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
-2 x VIA 65C22, UART 16C550, RTC MC146818.
+Specs: 4.096 MHz 65C816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
+2 x VIA 65C22, UART 16C550 (?), RTC MC146818.
 
 Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
-**65SIB**, Hitachi LCD thru VIA, **PS/2**, _VME-like_ slot (65816 direct expansion)
+**65SIB** (?), Hitachi LCD thru VIA, **PS/2**, _VME-like_ slot (65816 direct expansion)
+
+_Likely to include a 4bpp, 640x400 card._
 
 
 
@@ -239,4 +241,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20191124-2309_
+_last modified: 20191214-2152_
