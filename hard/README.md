@@ -168,7 +168,7 @@ Status: in design stage _(might become a lower-spec **SIXtation**)_
 Form-factor: thru-hole PCB?
 
 Specs: 4.096 MHz 65C816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
-2 x VIA 65C22, UART 16C550 (?), RTC MC146818.
+2 x VIA 65C22, UART 16C550 (?), RTC MC146818 (?).
 
 Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
 **65SIB** (?), Hitachi LCD thru VIA, **PS/2**, _VME-like_ slot (65816 direct expansion)
@@ -185,10 +185,10 @@ Status: in design stage
 Form-factor: 4-layer PCB, SMD components.
 
 Specs: 12 MHz (I hope!) 65816, up to **8 MiB RAM** (2 x Garth's modules),
-32 kiB Kernel + 2 MiB _lib_ EPROM, 2 x VIA 65C22, (2x) UART 16C552, _ROM-in-RAM_.
+32 kiB Kernel + 2 MiB _lib_ EPROM, 2 x VIA 65C22, UART 16C552, _ROM-in-RAM_.
 
-Interfaces: most likely those of Veracruz, possibly plus SD-card,
-text console (or graphic) output...
+Interfaces: most likely those of Veracruz, possibly plus SD-card (via **65SIB**),
+_VME-like slot_...
 
 
 
@@ -241,4 +241,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20191214-2152_
+_last modified: 20191215-1643_
