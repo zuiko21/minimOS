@@ -1,10 +1,12 @@
 /*
  * minimOS palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified: 20190928-1816
+ * last modified: 20191216-1611
  */
 
 #include <stdio.h>
+
+/* global arrays */
 
 int bin(int d7, int d6, int d5, int d4, int d3, int d2, int d1, int d0) {
 	return d7<<7|d6<<6|d5<<5|d4<<4|d3<<3|d2<<2|d1<<1|d0;
@@ -17,22 +19,22 @@ int main(void) {
 	FILE* f;
 
 /* open output file and abort if error */
-	f=fopen("256col-sg.html","w");
+	f=fopen("a256col-s.html","w");
 	if (f==NULL) {
-		printf("No file!\n");
+		printf("No space!\n");
 		return 1;
 	}
 /* create basic HTML header */
-	fprintf(f,"<html>\n\t<head>\n");
-	fprintf(f,"\t\t<title>minimOS palette*</title>\n");
+	fprintf(f,"<!DOCTYPE html>\n<html>\n\t<head>\n");
+	fprintf(f,"\t\t<title>minimOS AUTO palette</title>\n");
 	fprintf(f,"\t</head>\n\t<body>\n");
 	fprintf(f,"\t\t<table border='0'>\n");
-/* system GRgB colours */
+/* system GRgB colours, LSB-to-MSB */
 	fprintf(f,"\t\t\t<tr>\n");
-	for (g1=0; g1<2; g1++) {
-		for (r1=0; r1<2; r1++) {
-			for (g0=0; g0<2; g0++) {
-				for (b1=0; b1<2; b1++) {
+	for (b1=0; b1<2; b1++) {
+		for (g0=0; g0<2; g0++) {
+			for (r1=0; r1<2; r1++) {
+				for (g1=0; g1<2; g1++) {
 					R=255*r1;
 					G=170*g1+85*g0;
 					B=255*b1;
@@ -45,13 +47,13 @@ int main(void) {
 						fprintf(f,"white");
 					}
 /* continue with actual cell contents */
-					fprintf(f,";background-color:rgb(%d,%d,%d);'>S%d<br />%d%d%d</td>\n",R,G,B,bin(0,0,0,0,g1,r1,g0,b1),R/128,G/85,B/128);
+					fprintf(f,";background-color:#%.2x%.2x%.2x;'>S%d<br />%d%d%d</td>\n",R,G,B,bin(0,0,0,0,g1,r1,g0,b1),R/128,G/85,B/128);
 				}
 			}
 		}
 	}
 	fprintf(f,"\t\t\t</tr>\n");
-/* system greyscale */
+/* system greyscale * TO DO TO DO TO DO */
 	fprintf(f,"\t\t\t<tr>\n");
 	for (g1=1; g1<17; g1++) {
 		G=g1*15;
