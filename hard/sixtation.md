@@ -232,7 +232,7 @@ using device 1 as the **SD interface**.
 Due to the multiple RAM configurations for this machine (see above), RAM decoding is fairly complex.
 Note that the _base_ MiB is used in all configurations, thus the last megabyte on the _second_
 optional module is **wasted**. _Its two highest `CE` lines may be put on the expansion bus for
-**optional decoding**_.
+**optional decoding** (under consideration)_.
 
 In such case, an **alternative video card addressing** makes sense: putting the standard
 planes at `$900000-$9FFFFF` (instead of banks `$8x`) and, if required, the _multiplane_
@@ -253,4 +253,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191212-2122_
+_last modified 20191216-1521_

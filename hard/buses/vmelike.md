@@ -1,4 +1,4 @@
-## VME-like bus for 65816
+## VME-like bus for 65816 _(and other CPUs)_
 
 _re CPU_ | VME | 65816 | 65C02 | 6800 | 6802 | 6809 | 6809E
 ------ | --- | ----- | ----- | ---- | ---- | ---- | -----
@@ -21,8 +21,8 @@ oc | `/BERR` | /ABORT | **1** | **1** | **1** | **1** | **1** (AVMA?)
 3s | `/LWORD` | M/X | **1** | **1** | **1** | **1** | **1**
 3s | `AM0` | **0** | **1** | **1** | **1** | **1** | **1** _(65816 sense)_
 3s | `AM1` | Emul. | **1** | **1** | **1** | **1** | **1**
-3s | `AM2` | /CE10 | **1** | **1** | **1** | **1** | **1**
-3s | `AM3` | /CE11 | **1** | **1** | **1** | **1** | **1**
+3s | `AM2` | /CE10\* | **1** | **1** | **1** | **1** | **1**
+3s | `AM3` | /CE11\* | **1** | **1** | **1** | **1** | **1**
 3s | `AM5` | /VP | **?** | **1** | **1** | **1** | **1**
 3s | `/AS` | ? | ? | ? | Phi1 | Q | Q _(16-bit bus?)_
 3s | `D0-D7` | D0-D7 | D0-D7 | D0-D7 | DO-D7 | D0-D7 | D0-D7
@@ -40,8 +40,9 @@ Notes:
 - Values in _italics_ are not generated/taken by the CPU itself, but modified on board for bus compatibility among platforms.
 - **Fixed values must be set thru _pull-up_ (or _pull-down_) resistors.**
 - Most IRQ lines are tied together _on the CPU side_. Peripheral cards should put their requests on **one** line according to a reasonable priority.
-- **SIXtation** allows for external decoding of the _ninth_ RAM megabyte, if fitted, thru `/CE10` and `/CE11`, open-collector lines **pulled-up** in any case.
+
+\*) _Under consideration:_ **SIXtation** may allow for external decoding of the _ninth_ RAM megabyte, if fitted, thru `/CE10` and `/CE11`, open-collector lines **pulled-up** in any case.
 
 `SERCLK` may be used as DOTCLK.
 
-_Last modified 20191206-2007_
+_Last modified 20191216-1519_
