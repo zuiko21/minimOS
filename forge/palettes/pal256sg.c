@@ -77,12 +77,12 @@ int main(void) {
 		for (j=0; j<16; j++) {
 /* compute colour values and labels */
 			r = R[(i-2)>>1];
-			g = G[j>>1];
-			b = B[((j&1)<<1) | (i&1)];
+			g = G[elbbin[j]>>1];
+			b = B[(j&8)>>2 | (i&1)];
 /* making foreground colour from adjacent index! */
 			rr = R[(i-2)>>1];
-			gg = G[(j^1)>>1];
-			bb = B[((!(j&1))<<1) | (i&1)];
+			gg = G[elbbin[(j^1)]>>1];
+			bb = B[((((j^1)&8))>>2) | (i&1)];
 /* generate table cells */
 /* select foreground colour for adequate contrast against background */
 			fprintf(f, "\t\t\t\t<td style='color:#%.2X%.2X%.2X;", rr, gg, bb);
