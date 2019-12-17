@@ -1,7 +1,7 @@
 /*
  * minimOS palette generator
  * (c) 2019 Carlos J. Santisteban
- * last modified: 20191217-1338
+ * last modified: 20191217-1347
  */
 
 #include <stdio.h>
@@ -79,11 +79,10 @@ int main(void) {
 			r = R[(i-2)>>1];
 			g = G[j>>1];
 			b = B[((j&1)<<1) | (i&1)];
-			if (g<128) {
-				rr = gg = bb = 255;		// white so far
-			} else {
-				rr = gg = bb = 0;		// black for light backgrounds
-			}
+/* making foreground colour from adjacent index! */
+			rr = R[(i-2)>>1];
+			gg = G[(j^1)>>1];
+			bb = B[((!(j&1))<<1) | (i&1)];
 /* generate table cells */
 /* select foreground colour for adequate contrast against background */
 			fprintf(f, "\t\t\t\t<td style='color:#%.2X%.2X%.2X;", rr, gg, bb);
