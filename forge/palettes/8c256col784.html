@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html>
-	<!--	784 palette, centered values ** DEFINITIVE **
+<!--	784 palette, centered values ** DEFINITIVE **
 		System colours rearranged in order to put MSB (high Green) at plane 0
-		also 8-colour compatible (gBRG) -->
-	<!--	last modified 20191218-1817
+		also 8-colour compatible (gBRG)
+		last modified 20191219-1313
 		(c) 2019 Carlos J. Santisteban -->
 	<head>
 		<title>minimOS 256-colour palette (8-colour compatible)</title>
 	</head>
 	<body style="font-family:'DINNeuzeitGrotesk LT Light', avantgarde, sans-serif;">
 		<table border='0'>
+<!-- system colours, 0000gBRG scheme -->
 			<tr>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S8<br /><span style='font-size:0.7em;'>0A0</span></td>
@@ -28,6 +29,7 @@
 				<td style='color:#FFF;background-color:#F5F;'>S7<br /><span style='font-size:0.7em;'>F5F</span></td>
 				<td style='color:#F5F;background-color:#FFF;'>S15<br /><span style='font-size:0.7em;'>FFF</span></td>
 			</tr>
+<!-- system greyscale, 0001yyyY, does not include black or white (····y1y0y2y3) -->
 			<tr>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
@@ -46,6 +48,9 @@
 				<td style='color:#F0F0F0;background-color:#787878;'>G8<br /><span style='font-size:0.7em;'>#78</span></td>
 				<td style='color:#787878;background-color:#F0F0F0;'>G16<br /><span style='font-size:0.7em;'>#F0</span></td>
 			</tr>
+<!--	non system colours
+		784 scheme is *currently* rrRbgBgG, where R=1...7 (r1r0r2b0g0b1g1g2)
+		note order: 0, 8, 4, C, 1, 9, 5, D, 2, A, 6, E, 3, B, 7, F -->
 			<tr>
 				<td style='color:#378F20;background-color:#371020;'>$40<br /><span style='font-size:0.5em;'>371020</span></td>
 				<td style='color:#371020;background-color:#378F20;'>$48<br /><span style='font-size:0.5em;'>378F20</span></td>
