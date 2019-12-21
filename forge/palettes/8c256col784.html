@@ -2,31 +2,31 @@
 <html>
 <!--	784 palette, centered values ** DEFINITIVE **
 		System colours rearranged in order to put MSB (high Green) at plane 0
-		also 8-colour compatible (gBRG)
-		last modified 20191219-1313
+		also 8, 64 & 128/96-colour compatible (gBRG)
+		last modified 20191221-1355
 		(c) 2019 Carlos J. Santisteban -->
 	<head>
 		<title>minimOS 256-colour palette (8-colour compatible)</title>
 	</head>
-	<body style="font-family:'DINNeuzeitGrotesk LT Light', avantgarde, sans-serif;">
+	<body style="font-family:'DINNeuzeitGrotesk LT Light', avantgarde, sans-serif;text-align:center;">
 		<table border='0'>
 <!-- system colours, 0000gBRG scheme -->
 			<tr>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
-				<td style='color:#000;background-color:#0A0;'>S8<br /><span style='font-size:0.7em;'>0A0</span></td>
-				<td style='color:#FA0;background-color:#F00;'>S4<br /><span style='font-size:0.7em;'>F00</span></td>
-				<td style='color:#F00;background-color:#FA0;'>S12<br /><span style='font-size:0.7em;'>FA0</span></td>
-				<td style='color:#0AF;background-color:#00F;'>S1<br /><span style='font-size:0.7em;'>00F</span></td>
-				<td style='color:#00F;background-color:#0AF;'>S9<br /><span style='font-size:0.7em;'>0AF</span></td>
-				<td style='color:#FAF;background-color:#F0F;'>S5<br /><span style='font-size:0.7em;'>F0F</span></td>
-				<td style='color:#F0F;background-color:#FAF;'>S13<br /><span style='font-size:0.7em;'>FAF</span></td>
-				<td style='color:#0F0;background-color:#050;'>S2<br /><span style='font-size:0.7em;'>050</span></td>
-				<td style='color:#050;background-color:#0F0;'>S10<br /><span style='font-size:0.7em;'>0F0</span></td>
-				<td style='color:#FF0;background-color:#F50;'>S6<br /><span style='font-size:0.7em;'>F50</span></td>
-				<td style='color:#F50;background-color:#FF0;'>S14<br /><span style='font-size:0.7em;'>FF0</span></td>
-				<td style='color:#0FF;background-color:#05F;'>S3<br /><span style='font-size:0.7em;'>05F</span></td>
-				<td style='color:#05F;background-color:#0FF;'>S11<br /><span style='font-size:0.7em;'>0FF</span></td>
-				<td style='color:#FFF;background-color:#F5F;'>S7<br /><span style='font-size:0.7em;'>F5F</span></td>
+				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
+				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
+				<td style='color:#F00;background-color:#FA0;'>S3<br /><span style='font-size:0.7em;'>FA0</span></td>
+				<td style='color:#0AF;background-color:#00F;'>S4<br /><span style='font-size:0.7em;'>00F</span></td>
+				<td style='color:#00F;background-color:#0AF;'>S5<br /><span style='font-size:0.7em;'>0AF</span></td>
+				<td style='color:#FAF;background-color:#F0F;'>S6<br /><span style='font-size:0.7em;'>F0F</span></td>
+				<td style='color:#F0F;background-color:#FAF;'>S7<br /><span style='font-size:0.7em;'>FAF</span></td>
+				<td style='color:#0F0;background-color:#050;'>S8<br /><span style='font-size:0.7em;'>050</span></td>
+				<td style='color:#050;background-color:#0F0;'>S9<br /><span style='font-size:0.7em;'>0F0</span></td>
+				<td style='color:#FF0;background-color:#F50;'>S10<br /><span style='font-size:0.7em;'>F50</span></td>
+				<td style='color:#F50;background-color:#FF0;'>S11<br /><span style='font-size:0.7em;'>FF0</span></td>
+				<td style='color:#0FF;background-color:#05F;'>S12<br /><span style='font-size:0.7em;'>05F</span></td>
+				<td style='color:#05F;background-color:#0FF;'>S13<br /><span style='font-size:0.7em;'>0FF</span></td>
+				<td style='color:#FFF;background-color:#F5F;'>S14<br /><span style='font-size:0.7em;'>F5F</span></td>
 				<td style='color:#F5F;background-color:#FFF;'>S15<br /><span style='font-size:0.7em;'>FFF</span></td>
 			</tr>
 <!-- system greyscale, 0001yyyY, does not include black or white (····y1y0y2y3) -->
@@ -49,8 +49,11 @@
 				<td style='color:#787878;background-color:#F0F0F0;'>G16<br /><span style='font-size:0.7em;'>#F0</span></td>
 			</tr>
 <!--	non system colours
-		784 scheme is *currently* rrRbgBgG, where R=1...7 (r1r0r2b0g0b1g1g2)
-		note order: 0, 8, 4, C, 1, 9, 5, D, 2, A, 6, E, 3, B, 7, F -->
+		784 scheme *was* rrRbgBgG, where R=1...7 (r1r0r2b0g0b1g1g2)
+		444 scheme is now 0b1rgBRG, thus this 784 goes like g0b0r0r1-g1b1r2g2
+		...or limit to 192-colour 684? R=$15/40/6B/95/A0/EB, for R=1,2,3,5,6,7
+		system band when r0=0 and r1=0 (R=0 & R=4), what about b0?
+		perhaps g0R1r0B0···· makes more sense -->
 			<tr>
 				<td style='color:#378F20;background-color:#371020;'>$40<br /><span style='font-size:0.5em;'>371020</span></td>
 				<td style='color:#371020;background-color:#378F20;'>$48<br /><span style='font-size:0.5em;'>378F20</span></td>
