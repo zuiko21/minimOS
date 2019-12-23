@@ -1,6 +1,6 @@
 # SIXtation
 
-A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MByte,
+A powerful **_65816-based_ graphic workstation** inspired by the _3M-compliant_ (1 MByte,
 1 MegaPixel, 1 MIPS) computers of the early 80s (Sun-1, SGI IRIS 1000...)
 
 ## Specifications
@@ -8,7 +8,7 @@ A powerful **_65816_ graphic workstation** inspired by the _3M-compliant_ (1 MBy
 - CPU: 65816 @ **9 MHz** (~2.5 MIPS) or **13.5 MHz** on the _Turbo_ version (~4 MIPS)
 - FPU: 68882 @ **36 MHz** (~0.38 MFLOPS, slightly overclocked\*)
 - VDU: 6445 based, **1360x768**, up to 8 bpp
-- RAM: **1 MiB** on board, two _Garth_ slots (up to **8 MiB**, 5 MiB possible)
+- RAM: **1 MiB** on board, two _Garth Wilson's_ slots (up to **8 MiB**, 5 MiB possible)
 - ROM: 32 kiB _Kernel_ (fully switchable), up to 4 MiB _library_
 - Storage: CF & SD (possibly _bit-banged_) interfaces
 - RTC (146818) and DUART (16C552)
@@ -208,7 +208,7 @@ Keeping the first 32 entries allows a _consistent_ interface display, while prov
 for photographic images.
 
 Alternate **128 and 64-colour palettes** have been considered, starting with the aforementioned _32 system entries_
-followed by the remaining 96 or 32 colours, based on a _3-8-4_ or _4-4-2_ scheme, respectively.
+followed by the remaining 96 or 32 colours, based on a _4-4-4_ or _4-4-2_ scheme, respectively. _Note that the 128-colour palette uses only 64 out of 96 non-system colours, repeating the system colours band_.
 
 Palette colours are arranged in such a way that
 _consecutive_ entries sport **noticeable luma
@@ -253,4 +253,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191216-1521_
+_last modified 20191223-2131_
