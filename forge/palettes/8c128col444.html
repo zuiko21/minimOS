@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<!--	last modified 20191222-1746
+<!--	last modified 20191224-1908
 		sorted to put MSB at plane 0, plus 8-colour compatible order
 		OK, I give up, this will be a 96-colour palette, repeating the system colours and greyscale...
 		(c) 2019 Carlos J. Santisteban -->
@@ -11,6 +11,7 @@
 		<table border='0'>
 <!-- system colours, 0000gBRG scheme -->
 			<tr>
+				<th>*Sx</th>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
 				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
@@ -30,6 +31,7 @@
 			</tr>
 <!-- system greyscale, 0001yyyY, does not include black or white (····y1y0y2y3) -->
 			<tr>
+				<th>*Gx</th>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
 				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>#4B</span></td>
@@ -52,6 +54,7 @@
 		now let's try a 444 scheme, actually a 96-colour palette!
 		444 scheme is 0b1rgBRG, system band is repeated where ··0····· -->
 			<tr>
+				<th>$2x</th>
 				<td style='color:#209F20;background-color:#202020;'>$20<br /><span style='font-size:0.5em;'>202020</span></td>
 				<td style='color:#202020;background-color:#209F20;'>$21<br /><span style='font-size:0.5em;'>209F20</span></td>
 				<td style='color:#9F9F20;background-color:#9F2020;'>$22<br /><span style='font-size:0.5em;'>9F2020</span></td>
@@ -70,6 +73,7 @@
 				<td style='color:#9F609F;background-color:#9FDF9F;'>$2F<br /><span style='font-size:0.5em;'>9FDF9F</span></td>
 			</tr>
 			<tr>
+				<th>$3x</th>
 				<td style='color:#609F20;background-color:#602020;'>$30<br /><span style='font-size:0.5em;'>602020</span></td>
 				<td style='color:#602020;background-color:#609F20;'>$31<br /><span style='font-size:0.5em;'>609F20</span></td>
 				<td style='color:#DF9F20;background-color:#DF2020;'>$32<br /><span style='font-size:0.5em;'>DF2020</span></td>
@@ -89,6 +93,7 @@
 			</tr>
 <!-- here comes the repeated system band -->
 			<tr>
+				<th>$4x</th>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
 				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
@@ -107,6 +112,7 @@
 				<td style='color:#F5F;background-color:#FFF;'>S15<br /><span style='font-size:0.7em;'>FFF</span></td>
 			</tr>
 			<tr>
+				<th>$5x</th>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
 				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>#4B</span></td>
@@ -126,6 +132,7 @@
 			</tr>
 <!-- more colours than 64, with blue LSB on -->
 			<tr>
+				<th>$6x</th>
 				<td style='color:#209F60;background-color:#202060;'>$60<br /><span style='font-size:0.5em;'>202060</span></td>
 				<td style='color:#202060;background-color:#209F60;'>$61<br /><span style='font-size:0.5em;'>209F60</span></td>
 				<td style='color:#9F9F60;background-color:#9F2060;'>$62<br /><span style='font-size:0.5em;'>9F2060</span></td>
@@ -144,6 +151,7 @@
 				<td style='color:#9F60DF;background-color:#9FDFDF;'>$67<br /><span style='font-size:0.5em;'>9FDFDF</span></td>
 			</tr>
 			<tr>
+				<th>$7x</th>
 				<td style='color:#609F60;background-color:#602060;'>$70<br /><span style='font-size:0.5em;'>602060</span></td>
 				<td style='color:#602060;background-color:#609F60;'>$71<br /><span style='font-size:0.5em;'>609F60</span></td>
 				<td style='color:#DF9F60;background-color:#DF2060;'>$72<br /><span style='font-size:0.5em;'>DF2060</span></td>
@@ -164,6 +172,7 @@
 <!-- * * * * * repeated entries for comparison * * * * * -->
 <!-- system colours, 0000gBRG scheme -->
 			<tr>
+				<th>$8x</th>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
 				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
@@ -183,6 +192,7 @@
 			</tr>
 <!-- system greyscale, 0001yyyY, does not include black or white (····y1y0y2y3) -->
 			<tr>
+				<th>$9x</th>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
 				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>#4B</span></td>
@@ -205,6 +215,7 @@
 		now let's try a 444 scheme, actually a 96-colour palette!
 		444 scheme is 0b1rgBRG, system band is repeated where ··0····· -->
 			<tr>
+				<th>$Ax</th>
 				<td style='color:#209F20;background-color:#202020;'>$20<br /><span style='font-size:0.5em;'>202020</span></td>
 				<td style='color:#202020;background-color:#209F20;'>$21<br /><span style='font-size:0.5em;'>209F20</span></td>
 				<td style='color:#9F9F20;background-color:#9F2020;'>$22<br /><span style='font-size:0.5em;'>9F2020</span></td>
@@ -223,6 +234,7 @@
 				<td style='color:#9F609F;background-color:#9FDF9F;'>$2F<br /><span style='font-size:0.5em;'>9FDF9F</span></td>
 			</tr>
 			<tr>
+				<th>$Bx</th>
 				<td style='color:#609F20;background-color:#602020;'>$30<br /><span style='font-size:0.5em;'>602020</span></td>
 				<td style='color:#602020;background-color:#609F20;'>$31<br /><span style='font-size:0.5em;'>609F20</span></td>
 				<td style='color:#DF9F20;background-color:#DF2020;'>$32<br /><span style='font-size:0.5em;'>DF2020</span></td>
@@ -242,6 +254,7 @@
 			</tr>
 <!-- here comes the repeated system band -->
 			<tr>
+				<th>$Cx</th>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
 				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
@@ -260,6 +273,7 @@
 				<td style='color:#F5F;background-color:#FFF;'>S15<br /><span style='font-size:0.7em;'>FFF</span></td>
 			</tr>
 			<tr>
+				<th>$Dx</th>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
 				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>#4B</span></td>
@@ -279,6 +293,7 @@
 			</tr>
 <!-- more colours than 64, with blue LSB on -->
 			<tr>
+				<th>$Ex</th>
 				<td style='color:#209F60;background-color:#202060;'>$60<br /><span style='font-size:0.5em;'>202060</span></td>
 				<td style='color:#202060;background-color:#209F60;'>$61<br /><span style='font-size:0.5em;'>209F60</span></td>
 				<td style='color:#9F9F60;background-color:#9F2060;'>$62<br /><span style='font-size:0.5em;'>9F2060</span></td>
@@ -297,6 +312,7 @@
 				<td style='color:#9F60DF;background-color:#9FDFDF;'>$67<br /><span style='font-size:0.5em;'>9FDFDF</span></td>
 			</tr>
 			<tr>
+				<th>$Fx</th>
 				<td style='color:#609F60;background-color:#602060;'>$70<br /><span style='font-size:0.5em;'>602060</span></td>
 				<td style='color:#602060;background-color:#609F60;'>$71<br /><span style='font-size:0.5em;'>609F60</span></td>
 				<td style='color:#DF9F60;background-color:#DF2060;'>$72<br /><span style='font-size:0.5em;'>DF2060</span></td>

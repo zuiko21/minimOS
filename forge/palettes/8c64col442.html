@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<!--	last modified 20191221-1258
+<!--	last modified 20191224-1905
 		sorted to put MSB at plane 0, plus 8-colour compatible order
 		(c) 2019 Carlos J. Santisteban -->
 	<head>
@@ -10,6 +10,7 @@
 		<table border='0'>
 <!-- system colours, 0000gBRG scheme -->
 			<tr>
+				<th>*Sx</th>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
 				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
@@ -29,6 +30,7 @@
 			</tr>
 <!-- system greyscale, 0001yyyY, does not include black or white (····y1y0y2y3) -->
 			<tr>
+				<th>*Gx</th>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
 				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>#4B</span></td>
@@ -49,6 +51,7 @@
 <!--	non system colours
 		442 scheme is * * *finally* * * 001rgBRG -->
 			<tr>
+				<th>$2x</th>
 				<td style='color:#209F40;background-color:#202040;'>$20<br /><span style='font-size:0.5em;'>202040</span></td>
 				<td style='color:#202040;background-color:#209F40;'>$21<br /><span style='font-size:0.5em;'>209F40</span></td>
 				<td style='color:#9F9F40;background-color:#9F2040;'>$22<br /><span style='font-size:0.5em;'>9F2040</span></td>
@@ -67,6 +70,7 @@
 				<td style='color:#9F60C0;background-color:#9FDFC0;'>$2F<br /><span style='font-size:0.5em;'>9FDFC0</span></td>
 			</tr>
 			<tr>
+				<th>$3x</th>
 				<td style='color:#609F40;background-color:#602040;'>$30<br /><span style='font-size:0.5em;'>602040</span></td>
 				<td style='color:#602040;background-color:#609F40;'>$31<br /><span style='font-size:0.5em;'>609F40</span></td>
 				<td style='color:#DF9F40;background-color:#DF2040;'>$32<br /><span style='font-size:0.5em;'>DF2040</span></td>
@@ -87,6 +91,7 @@
 <!-- * * * * * repeated entries for comparison * * * * * -->
 <!-- system colours, 0000gBRG scheme -->
 			<tr>
+				<th>$4x</th>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
 				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
@@ -106,6 +111,7 @@
 			</tr>
 <!-- system greyscale, 0001yyyY, does not include black or white (····y1y0y2y3) -->
 			<tr>
+				<th>$5x</th>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
 				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>#4B</span></td>
@@ -126,6 +132,7 @@
 <!--	non system colours
 		442 scheme is * * *finally* * * 001rgBRG -->
 			<tr>
+				<th>$6x</th>
 				<td style='color:#209F40;background-color:#202040;'>$20<br /><span style='font-size:0.5em;'>202040</span></td>
 				<td style='color:#202040;background-color:#209F40;'>$21<br /><span style='font-size:0.5em;'>209F40</span></td>
 				<td style='color:#9F9F40;background-color:#9F2040;'>$22<br /><span style='font-size:0.5em;'>9F2040</span></td>
@@ -144,6 +151,7 @@
 				<td style='color:#9F60C0;background-color:#9FDFC0;'>$2F<br /><span style='font-size:0.5em;'>9FDFC0</span></td>
 			</tr>
 			<tr>
+				<th>$7x</th>
 				<td style='color:#609F40;background-color:#602040;'>$30<br /><span style='font-size:0.5em;'>602040</span></td>
 				<td style='color:#602040;background-color:#609F40;'>$31<br /><span style='font-size:0.5em;'>609F40</span></td>
 				<td style='color:#DF9F40;background-color:#DF2040;'>$32<br /><span style='font-size:0.5em;'>DF2040</span></td>
@@ -163,6 +171,7 @@
 			</tr>
 <!-- system colours, 0000gBRG scheme -->
 			<tr>
+				<th>$8x</th>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
 				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
@@ -182,6 +191,7 @@
 			</tr>
 <!-- system greyscale, 0001yyyY, does not include black or white (····y1y0y2y3) -->
 			<tr>
+				<th>$9x</th>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
 				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>#4B</span></td>
@@ -202,6 +212,7 @@
 <!--	non system colours
 		442 scheme is * * *finally* * * 001rgBRG -->
 			<tr>
+				<th>$Ax</th>
 				<td style='color:#209F40;background-color:#202040;'>$20<br /><span style='font-size:0.5em;'>202040</span></td>
 				<td style='color:#202040;background-color:#209F40;'>$21<br /><span style='font-size:0.5em;'>209F40</span></td>
 				<td style='color:#9F9F40;background-color:#9F2040;'>$22<br /><span style='font-size:0.5em;'>9F2040</span></td>
@@ -220,6 +231,7 @@
 				<td style='color:#9F60C0;background-color:#9FDFC0;'>$2F<br /><span style='font-size:0.5em;'>9FDFC0</span></td>
 			</tr>
 			<tr>
+				<th>$Bx</th>
 				<td style='color:#609F40;background-color:#602040;'>$30<br /><span style='font-size:0.5em;'>602040</span></td>
 				<td style='color:#602040;background-color:#609F40;'>$31<br /><span style='font-size:0.5em;'>609F40</span></td>
 				<td style='color:#DF9F40;background-color:#DF2040;'>$32<br /><span style='font-size:0.5em;'>DF2040</span></td>
@@ -239,6 +251,7 @@
 			</tr>
 <!-- system colours, 0000gBRG scheme -->
 			<tr>
+				<th>$Cx</th>
 				<td style='color:#0A0;background-color:#000;'>S0<br /><span style='font-size:0.7em;'>000</span></td>
 				<td style='color:#000;background-color:#0A0;'>S1<br /><span style='font-size:0.7em;'>0A0</span></td>
 				<td style='color:#FA0;background-color:#F00;'>S2<br /><span style='font-size:0.7em;'>F00</span></td>
@@ -258,6 +271,7 @@
 			</tr>
 <!-- system greyscale, 0001yyyY, does not include black or white (····y1y0y2y3) -->
 			<tr>
+				<th>$Dx</th>
 				<td style='color:#878787;background-color:#0F0F0F;'>G1<br /><span style='font-size:0.7em;'>#0F</span></td>
 				<td style='color:#0F0F0F;background-color:#878787;'>G9<br /><span style='font-size:0.7em;'>#87</span></td>
 				<td style='color:#C3C3C3;background-color:#4B4B4B;'>G5<br /><span style='font-size:0.7em;'>#4B</span></td>
@@ -278,6 +292,7 @@
 <!--	non system colours
 		442 scheme is * * *finally* * * 001rgBRG -->
 			<tr>
+				<th>$Ex</th>
 				<td style='color:#209F40;background-color:#202040;'>$20<br /><span style='font-size:0.5em;'>202040</span></td>
 				<td style='color:#202040;background-color:#209F40;'>$21<br /><span style='font-size:0.5em;'>209F40</span></td>
 				<td style='color:#9F9F40;background-color:#9F2040;'>$22<br /><span style='font-size:0.5em;'>9F2040</span></td>
@@ -296,6 +311,7 @@
 				<td style='color:#9F60C0;background-color:#9FDFC0;'>$2F<br /><span style='font-size:0.5em;'>9FDFC0</span></td>
 			</tr>
 			<tr>
+				<th>$Fx</th>
 				<td style='color:#609F40;background-color:#602040;'>$30<br /><span style='font-size:0.5em;'>602040</span></td>
 				<td style='color:#602040;background-color:#609F40;'>$31<br /><span style='font-size:0.5em;'>609F40</span></td>
 				<td style='color:#DF9F40;background-color:#DF2040;'>$32<br /><span style='font-size:0.5em;'>DF2040</span></td>
