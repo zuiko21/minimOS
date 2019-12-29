@@ -3,7 +3,7 @@
 <!--	684 palette, centered values, with alternative system band
 		System colours rearranged in order to put MSB (high Green) at plane 0
 		also 8, 64 & 128/96-colour compatible (gBRG)
-		last modified 20191229-0049
+		last modified 20191229-1028
 		(c) 2019 Carlos J. Santisteban -->
 	<head>
 		<title>minimOS 256-colour palette (fully compatible)</title>
@@ -60,7 +60,7 @@
 		I have no idea of what I'm saying... :-(
 		OK, let's try 784 as g0b0r0r1-g1b1r2g2 
 		and what about that 684 g0r1r0b0?
-		another attempt: g0r0r1b0 with special band (Red level) -->
+		another attempt: g0r0r1b0 with special desaturated band (Red level) -->
 			<tr>
 				<th>$2x</th><!--0010,R(2)-->
 				<td style='color:#408F20;background-color:#401020;'>$40<br /><span style='font-size:0.5em;'>401020</span></td>
@@ -177,42 +177,42 @@
 			</tr>
 			<tr>
 				<th>$8x*</th><!--1000,g(0) (special band, 40-6B-95-C0)-->
-				<td style='color:#409540;background-color:#404040;'>$82<br /><span style='font-size:0.5em;'>503020</span></td>
-				<td style='color:#404040;background-color:#409540;'>$8A<br /><span style='font-size:0.5em;'>50AF20</span></td>
-				<td style='color:#C09540;background-color:#C04040;'>$92<br /><span style='font-size:0.5em;'>503060</span></td>
-				<td style='color:#C04040;background-color:#C09540;'>$9A<br /><span style='font-size:0.5em;'>50AF60</span></td>
-				<td style='color:#4095C0;background-color:#4040C0;'>$83<br /><span style='font-size:0.5em;'>50309F</span></td>
-				<td style='color:#4040C0;background-color:#4095C0;'>$8B<br /><span style='font-size:0.5em;'>50AF9F</span></td>
-				<td style='color:#C095C0;background-color:#C040C0;'>$93<br /><span style='font-size:0.5em;'>5030DF</span></td>
-				<td style='color:#C040C0;background-color:#C095C0;'>$9B<br /><span style='font-size:0.5em;'>50AFDF</span></td>
-				<td style='color:#40C040;background-color:#406B40;'>$86<br /><span style='font-size:0.5em;'>507020</span></td>
-				<td style='color:#406B40;background-color:#40C040;'>$85<br /><span style='font-size:0.5em;'>50EF20</span></td>
-				<td style='color:#C0C040;background-color:#C06B40;'>$96<br /><span style='font-size:0.5em;'>507060</span></td>
-				<td style='color:#C06B40;background-color:#C0C040;'>$9E<br /><span style='font-size:0.5em;'>50EF60</span></td>
-				<td style='color:#40C0C0;background-color:#406BC0;'>$87<br /><span style='font-size:0.5em;'>50709F</span></td>
-				<td style='color:#406BC0;background-color:#40C0C0;'>$8F<br /><span style='font-size:0.5em;'>50EF9F</span></td>
-				<td style='color:#C0C0C0;background-color:#C06BC0;'>$97<br /><span style='font-size:0.5em;'>5070DF</span></td>
-				<td style='color:#C06BC0;background-color:#C0C0C0;'>$9F<br /><span style='font-size:0.5em;'>50EFDF</span></td>
+				<td style='color:#409540;background-color:#404040;'>$80<br /><span style='font-size:0.5em;'>404040</span></td>
+				<td style='color:#404040;background-color:#409540;'>$81<br /><span style='font-size:0.5em;'>409540</span></td>
+				<td style='color:#C09540;background-color:#C04040;'>$82<br /><span style='font-size:0.5em;'>C04040</span></td>
+				<td style='color:#C04040;background-color:#C09540;'>$83<br /><span style='font-size:0.5em;'>C09540</span></td>
+				<td style='color:#4095C0;background-color:#4040C0;'>$84<br /><span style='font-size:0.5em;'>4040C0</span></td>
+				<td style='color:#4040C0;background-color:#4095C0;'>$85<br /><span style='font-size:0.5em;'>4095C0</span></td>
+				<td style='color:#C095C0;background-color:#C040C0;'>$86<br /><span style='font-size:0.5em;'>C040C0</span></td>
+				<td style='color:#C040C0;background-color:#C095C0;'>$87<br /><span style='font-size:0.5em;'>C095C0</span></td>
+				<td style='color:#40C040;background-color:#406B40;'>$88<br /><span style='font-size:0.5em;'>406B40</span></td>
+				<td style='color:#406B40;background-color:#40C040;'>$89<br /><span style='font-size:0.5em;'>40C040</span></td>
+				<td style='color:#C0C040;background-color:#C06B40;'>$8A<br /><span style='font-size:0.5em;'>C06B40</span></td>
+				<td style='color:#C06B40;background-color:#C0C040;'>$8B<br /><span style='font-size:0.5em;'>C0C040</span></td>
+				<td style='color:#40C0C0;background-color:#406BC0;'>$8C<br /><span style='font-size:0.5em;'>406BC0</span></td>
+				<td style='color:#406BC0;background-color:#40C0C0;'>$8D<br /><span style='font-size:0.5em;'>40C0C0</span></td>
+				<td style='color:#C0C0C0;background-color:#C06BC0;'>$8E<br /><span style='font-size:0.5em;'>C06BC0</span></td>
+				<td style='color:#C06BC0;background-color:#C0C0C0;'>$8F<br /><span style='font-size:0.5em;'>C0C0C0</span></td>
 			</tr>
 			<tr>
 				<th>$9x*</th><!--1001,gb(0) (special band, like greyscale with minimally saturated colours)-->
 <!-- colours $0-15-2A-40, base greys: $24,2c,34,3c,44,4c,54,5c;64,6c,74,7c,84,8c,94,9c -->
-				<td style='color:#648E64;background-color:#242424;'>$90<br /><span style='font-size:0.5em;'>801020</span></td>
-				<td style='color:#242424;background-color:#648E64;'>$98<br /><span style='font-size:0.5em;'>808F20</span></td>
-				<td style='color:#C4AE84;background-color:#844444;'>$94<br /><span style='font-size:0.5em;'>801060</span></td>
-				<td style='color:#844444;background-color:#C4AE84;'>$9C<br /><span style='font-size:0.5em;'>808F60</span></td>
-				<td style='color:#6C96AC;background-color:#2C2C6C;'>$91<br /><span style='font-size:0.5em;'>80109F</span></td>
-				<td style='color:#2C2C6C;background-color:#6C96AC;'>$99<br /><span style='font-size:0.5em;'>808F9F</span></td>
-				<td style='color:#CCB6CC;background-color:#8C4C8C;'>$95<br /><span style='font-size:0.5em;'>8010DF</span></td>
-				<td style='color:#8C4C8C;background-color:#CCB6CC;'>$9D<br /><span style='font-size:0.5em;'>808FDF</span></td>
-				<td style='color:#74B474;background-color:#344934;'>$92<br /><span style='font-size:0.5em;'>805020</span></td>
-				<td style='color:#344934;background-color:#74B474;'>$9A<br /><span style='font-size:0.5em;'>80CF20</span></td>
-				<td style='color:#D4D494;background-color:#946954;'>$96<br /><span style='font-size:0.5em;'>805060</span></td>
-				<td style='color:#946954;background-color:#D4D494;'>$9E<br /><span style='font-size:0.5em;'>80CF60</span></td>
-				<td style='color:#7CBCBC;background-color:#3C517C;'>$93<br /><span style='font-size:0.5em;'>80509F</span></td>
-				<td style='color:#3C517C;background-color:#7CBCBC;'>$9B<br /><span style='font-size:0.5em;'>80CF9F</span></td>
-				<td style='color:#DCDCDC;background-color:#9C619C;'>$97<br /><span style='font-size:0.5em;'>8050DF</span></td>
-				<td style='color:#9C619C;background-color:#DCDCDC;'>$9F<br /><span style='font-size:0.5em;'>80CFDF</span></td>
+				<td style='color:#648E64;background-color:#242424;'>$90<br /><span style='font-size:0.5em;'>242424</span></td>
+				<td style='color:#242424;background-color:#648E64;'>$91<br /><span style='font-size:0.5em;'>648E64</span></td>
+				<td style='color:#C4AE84;background-color:#844444;'>$92<br /><span style='font-size:0.5em;'>844444</span></td>
+				<td style='color:#844444;background-color:#C4AE84;'>$93<br /><span style='font-size:0.5em;'>C4AE84</span></td>
+				<td style='color:#6C96AC;background-color:#2C2C6C;'>$94<br /><span style='font-size:0.5em;'>2C2C6C</span></td>
+				<td style='color:#2C2C6C;background-color:#6C96AC;'>$95<br /><span style='font-size:0.5em;'>6C96AC</span></td>
+				<td style='color:#CCB6CC;background-color:#8C4C8C;'>$96<br /><span style='font-size:0.5em;'>8C4C8C</span></td>
+				<td style='color:#8C4C8C;background-color:#CCB6CC;'>$97<br /><span style='font-size:0.5em;'>CCB6CC</span></td>
+				<td style='color:#74B474;background-color:#344934;'>$98<br /><span style='font-size:0.5em;'>344934</span></td>
+				<td style='color:#344934;background-color:#74B474;'>$99<br /><span style='font-size:0.5em;'>74B474</span></td>
+				<td style='color:#D4D494;background-color:#946954;'>$9A<br /><span style='font-size:0.5em;'>946954</span></td>
+				<td style='color:#946954;background-color:#D4D494;'>$9B<br /><span style='font-size:0.5em;'>D4D494</span></td>
+				<td style='color:#7CBCBC;background-color:#3C517C;'>$9C<br /><span style='font-size:0.5em;'>3C517C</span></td>
+				<td style='color:#3C517C;background-color:#7CBCBC;'>$9D<br /><span style='font-size:0.5em;'>7CBCBC</span></td>
+				<td style='color:#DCDCDC;background-color:#9C619C;'>$9E<br /><span style='font-size:0.5em;'>9C619C</span></td>
+				<td style='color:#9C619C;background-color:#DCDCDC;'>$9F<br /><span style='font-size:0.5em;'>DCDCDC</span></td>
 			</tr>
 			<tr>
 				<th>$Ax</th><!--1010,gR(2)-->
