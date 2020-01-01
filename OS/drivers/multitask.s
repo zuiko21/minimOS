@@ -1,6 +1,6 @@
 ; software multitasking module for minimOS
 ; v0.6b1
-; (c) 2015-2019 Carlos J. Santisteban
+; (c) 2015-2020 Carlos J. Santisteban
 ; last modified 20190215-1204
 ; *** UNDER REVISION ***
 

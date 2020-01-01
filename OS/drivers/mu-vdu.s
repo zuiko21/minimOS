@@ -1,6 +1,6 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a3
-; (c) 2019 Carlos J. Santisteban
+; (c) 2019-2020 Carlos J. Santisteban
 ; last modified 20190920-2231
 
 #include "../usual.h"

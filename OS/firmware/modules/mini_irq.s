@@ -1,6 +1,6 @@
 ; minimal ISR for minimOS
 ; v0.6.1a1, should match kernel.s
-; (c) 2019 Carlos J. Santisteban
+; (c) 2019-2020 Carlos J. Santisteban
 ; last modified 20190402-1227
 
 #ifndef	HEADERS

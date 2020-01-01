@@ -1,6 +1,6 @@
 ; SS-22 driver for minimOS
-; v0.5b1
-; (c) 2012-2016 Carlos J. Santisteban
+; v0.5b1, seems OBSOLETE since 2016
+; (c) 2012-2020 Carlos J. Santisteban
 ; last modified 20150323-1102
 ; revised 20160928
 

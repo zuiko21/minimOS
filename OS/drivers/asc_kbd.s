@@ -1,6 +1,6 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6b5
-; (c) 2012-2019 Carlos J. Santisteban
+; (c) 2012-2020 Carlos J. Santisteban
 ; last modified 20190304-1336
 
 ; VIA bit functions

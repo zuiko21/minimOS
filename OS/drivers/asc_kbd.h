@@ -1,5 +1,5 @@
 ; variables for ASCII keyboard driver
-; (c) 2018-2019 Carlos J. Santisteban
+; (c) 2018-2020 Carlos J. Santisteban
 ; last modified 20180819-1603
 
 ak_fi	.byt	0		; FIFO pointers

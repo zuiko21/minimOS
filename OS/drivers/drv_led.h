@@ -1,5 +1,5 @@
 ; LED-keypad driver 0.9.6 variables
-; (c) 2013-2019 Carlos J. Santisteban
+; (c) 2013-2020 Carlos J. Santisteban
 ; last modified 20171220-1346
 
 ; now defines here number of digits (nominally 4)

@@ -1,5 +1,5 @@
 ; firmware module for minimOS·16
-; (c) 2018-2019 Carlos J. Santisteban
+; (c) 2018-2020 Carlos J. Santisteban
 ; last modified 20180201-1417
 
 ; *** vectored call to COP handler, kernel entry point ***

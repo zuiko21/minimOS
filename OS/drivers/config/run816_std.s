@@ -1,7 +1,7 @@
 ; includes for minimOS drivers
 ; run65816 BBC simulator specific configuration!
 ; v0.9b2
-; (c) 2017-2018 Carlos J. Santisteban
+; (c) 2017-2020 Carlos J. Santisteban
 ; last modified 20180404-1343
 
 #define		DRIVERS		_DRIVERS

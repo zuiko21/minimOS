@@ -1,6 +1,6 @@
 ; 0.6 dummy driver for minimOS
 ; new 0.6 ABI 20170830
-; (c) 2013-2019 Carlos J. Santisteban
+; (c) 2013-2020 Carlos J. Santisteban
 ; last modified 20170830-1723
 
 ; *** dummy device driver ***

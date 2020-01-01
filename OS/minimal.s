@@ -1,7 +1,7 @@
 ; MINIMAL support for minimOS components
 ; on Kowalski's 6502 simulator
 ; v0.9.2a1
-; (c)2016-2017 Carlos J. Santisteban
+; (c)2016-2020 Carlos J. Santisteban
 ; last modified 20170112-1111
 
 #include "usual.h"

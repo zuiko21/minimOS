@@ -1,7 +1,7 @@
 ; DEBUG bus-sniffer driver for minimOS
 ; v0.9.3b1, makeshift single-byte size version
 ; 0.6 API version 20170831
-; (c) 2012-2018 Carlos J. Santisteban
+; (c) 2012-2020 Carlos J. Santisteban
 ; last modified 20180404-1325
 
 #include "../usual.h"

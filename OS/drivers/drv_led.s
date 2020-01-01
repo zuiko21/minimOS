@@ -1,6 +1,6 @@
 ; LED Keypad driver for minimOS
 ; v0.9.6 adapted to mOS-65 0.6 driver format 20171220
-; (c) 2012-2019 Carlos J. Santisteban
+; (c) 2012-2020 Carlos J. Santisteban
 ; last modified 20190221-1033
 
 #ifndef		HEADERS

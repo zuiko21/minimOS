@@ -1,5 +1,6 @@
 ; minimOS driver for VIA-connected VDU
 ; variables for v0.6
+; (c) 2017-2020 Carlos J. Santiateban, just in case.
 ; last modified 20170926-1715
 
 vdu_xor		.byt	0		; mask to be EORed with glyph data

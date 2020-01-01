@@ -1,5 +1,5 @@
 ; minimOS 0.6rc10 zero-page system variables
-; (c) 2012-2019 Carlos J. Santisteban
+; (c) 2012-2020 Carlos J. Santisteban
 ; last modified 20190130-0906
 
 .zero

@@ -1,6 +1,6 @@
 ; 40-key simple ASCII keyboard for minimOS!
 ; v0.6a2
-; (c) 2019 Carlos J. Santisteban
+; (c) 2019-2020 Carlos J. Santisteban
 ; last modified 20190417-2121
 
 ; ***********************

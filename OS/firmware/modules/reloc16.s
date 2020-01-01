@@ -1,5 +1,5 @@
 ; firmware module for minimOS·16
-; (c) 2019 Carlos J. Santisteban
+; (c) 2019-2020 Carlos J. Santisteban
 ; last modified 20181210-1344
 
 ; *** relocate 65816-based code and data ***

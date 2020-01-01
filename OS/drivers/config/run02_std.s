@@ -2,7 +2,7 @@
 ; run65816 BBC simulator specific configuration!
 ; 8-bit version
 ; v0.9b3
-; (c) 2017-2019 Carlos J. Santisteban
+; (c) 2017-2020 Carlos J. Santisteban
 ; last modified 20190215-0954
 
 #define		DRIVERS		_DRIVERS
