@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; suitable for Acapulco
 ; copy or link as options.h in root dir
-; (c) 2019 Carlos J. Santisteban
+; (c) 2019-2020 Carlos J. Santisteban
 ; last modified 20190213-0905
 
 ; *** set conditional assembly ***

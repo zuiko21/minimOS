@@ -1,6 +1,6 @@
 /* disassembler module for minimOS
  * last modified 20151201-1353
- * (c) 2015 Carlos J. Santisteban
+ * (c) 2015-2020 Carlos J. Santisteban
  * */
 
 /* for standalone compilation */

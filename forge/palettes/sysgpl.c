@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 /* GIMP system palette generator
- * (c) 2019 Carlos J. Santisteban
+ * (c) 2019-2020 Carlos J. Santisteban
  * last modified 20191011-1908
  */
 

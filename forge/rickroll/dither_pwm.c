@@ -1,9 +1,9 @@
 /*
- * converts 8bit WAV into dithered *
- * PWM for VIA's shift register    *
+ * converts 8bit WAV into dithered      *
+ * PWM for VIA's shift register         *
  *
- * (c) 2019 Carlos J. Santisteban  *
- * last modified 20190517-1045     *
+ * (c) 2019-2020 Carlos J. Santisteban  *
+ * last modified 20190517-1045          *
  */
 
 #include <stdio.h>

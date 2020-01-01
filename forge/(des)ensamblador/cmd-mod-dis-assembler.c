@@ -1,6 +1,6 @@
 /* non-symbolic (dis)assembler with monitor commands for minimOS
  * last modified 20151201-1359
- * (c) 2015 Carlos J. Santisteban
+ * (c) 2015-2020 Carlos J. Santisteban
  * */
  
 #include <stdio.h>

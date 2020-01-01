@@ -1,5 +1,5 @@
 ; nanoBoot-SO NMI handler for 6502, v0.2a1
-; (c) 2018-2019 Carlos J. Santisteban
+; (c) 2018-2020 Carlos J. Santisteban
 ; last modified 20190112-1700
 
 nb_nmi:

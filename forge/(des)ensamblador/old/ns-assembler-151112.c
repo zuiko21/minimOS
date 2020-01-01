@@ -1,6 +1,6 @@
 /* 65C02 non-symbolic assembler module for minimOS
  * last modified 20151112-0946
- * (c) Carlos J. Santisteban
+ * (c) 2015-2020 Carlos J. Santisteban
  * */
  
 #include <stdio.h>

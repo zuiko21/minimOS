@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; suitable for Jalapa and its strange memory architecture!
 ; copy or link as options.h in root dir
-; (c) 2015-2018 Carlos J. Santisteban
+; (c) 2015-2020 Carlos J. Santisteban
 ; last modified 20180801-2045
 
 ; *** set conditional assembly ***

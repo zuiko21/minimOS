@@ -1,8 +1,8 @@
 /* Symbolic (dis)assembler with monitor commands for minimOS
  * last modified 20151221-1443
- * (c) 2015 Carlos J. Santisteban
+ * (c) 2015-2020 Carlos J. Santisteban
  * */
- 
+
 #include <stdio.h>
 
 /* Function prototypes */

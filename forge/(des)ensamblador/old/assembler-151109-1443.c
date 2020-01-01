@@ -1,3 +1,4 @@
+/* (c) 2015-2020 Carlos J. Santisteban */
 #include <stdio.h>
 
 int main(void) {

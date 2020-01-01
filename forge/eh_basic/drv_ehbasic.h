@@ -1,6 +1,6 @@
 ;*** EhBASIC static variables ***
 ; implemented as a pseudo-driver for minimOS
-; (c) 2015 Carlos J. Santisteban
+; (c) 2015-2020 Carlos J. Santisteban
 ; last modified 20150313-1443
 
 eh_basic:

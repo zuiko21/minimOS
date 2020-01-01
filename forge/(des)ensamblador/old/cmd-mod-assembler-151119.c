@@ -1,6 +1,6 @@
 /* 65C02 non-symbolic assembler with monitor commands for minimOS
  * last modified 20151119-1311
- * (c) Carlos J. Santisteban
+ * (c) 2015-2020 Carlos J. Santisteban
  * */
  
 #include <stdio.h>

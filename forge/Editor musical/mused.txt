@@ -1,5 +1,5 @@
 /* Cabecera ejecutable minimOS (por determinar) */
-
+/* (c) 2020 Carlos J. Santisteban */
 /* código a ejecutar */
 		y = open_w(0)		// obtiene dispositivo, no sé si guardarlo en PZ
 		z_used = *			// bytes usados (por determinar)

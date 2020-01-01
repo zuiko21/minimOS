@@ -2,8 +2,8 @@
  * converts BitFontMaker exported fonts *
  * into xa65 assembly files             *
  *
- * (c) 2019 Carlos J. Santisteban       *
- * last modified 20190521-0947          *
+ * (c) 2019-2020 Carlos J. Santisteban  *
+ * last modified 20200101-1705          *
  */
 
 #include <stdio.h>
@@ -109,7 +109,7 @@ int main(void) {
 		printf("Writing into %s...\n", name);
 /* header contents */
 		fprintf(s, "; Automatic font definition for minimOS\n");
-		fprintf(s, "; (c) 2019 Carlos J. Santisteban\n");
+		fprintf(s, "; (c) 2019-2020 Carlos J. Santisteban\n");
 /* loops for contents creation */
 		for (i=0; i<256; i++) {
 			fprintf(s, "\n; ASCII $%X", i);			/* ASCII code */

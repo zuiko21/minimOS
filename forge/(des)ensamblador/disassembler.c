@@ -1,6 +1,6 @@
 /* disassembler for minimOS 0.5a1
- * (c)2015 Carlos J. Santisteban
- * last modified 2015-12-01 13:47
+ * (c) 2015-2020 Carlos J. Santisteban
+ * last modified 20151201-1347
  * */
  
 #include <stdio.h>

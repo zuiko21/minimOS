@@ -1,6 +1,6 @@
 /* Monitor shell for minimOS (simple version) 0.5b1
  * last modified 2016-03-02
- * (c) 2016 Carlos J. Santisteban
+ * (c) 2016-2020 Carlos J. Santisteban
  * */
  
 #include <stdio.h>

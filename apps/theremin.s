@@ -1,5 +1,5 @@
 ; optical Theremin (app version)
-; (c) 2018-2019 Carlos J. Santisteban
+; (c) 2018-2020 Carlos J. Santisteban
 ; v0.4b3
 ; last modified 20180404-1421
 

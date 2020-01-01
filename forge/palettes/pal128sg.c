@@ -1,6 +1,6 @@
 /*
  * minimOS 128-colour palette generator
- * (c) 2019 Carlos J. Santisteban
+ * (c) 2019-2020 Carlos J. Santisteban
  * last modified: 20191115-1432
  */
 

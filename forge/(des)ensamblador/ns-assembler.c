@@ -1,8 +1,8 @@
 /* non-symbolic assembler module for minimOS
  * last modified 20151201-1405
- * (c) 2015 Carlos J. Santisteban
+ * (c) 2015-2020 Carlos J. Santisteban
  * */
- 
+
 #include <stdio.h>
 
 int main(void) {

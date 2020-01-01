@@ -1,6 +1,6 @@
 ; miniGaal, VERY elementary HTML browser for minimOS
 ; v0.1a3
-; (c) 2018-2019 Carlos J. Santisteban
+; (c) 2018-2020 Carlos J. Santisteban
 ; last modified 20180425-1327
 
 #include "../OS/usual.h"

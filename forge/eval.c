@@ -1,6 +1,6 @@
 /* simple expression evaluator
  * intended for symbolic miniMoDA
- * (c) 2018 Carlos J. Santisteban
+ * (c) 2018-2020 Carlos J. Santisteban
  * last modified 20180425-1259
  */
 #define	DEBUG	1

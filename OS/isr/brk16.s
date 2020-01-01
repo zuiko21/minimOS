@@ -1,6 +1,6 @@
 ; minimOS·16 BRK handler
 ; v0.6b4
-; (c) 2016-2019 Carlos J. Santisteban
+; (c) 2016-2020 Carlos J. Santisteban
 ; last modified 20190225-1407
 
 #ifndef	HEADERS

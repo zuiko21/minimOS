@@ -1,7 +1,7 @@
 ; Virtual R65C02 for minimOS-16!!!
 ; specially fast version!
 ; v0.1a5
-; (c) 2016-2019 Carlos J. Santisteban
+; (c) 2016-2020 Carlos J. Santisteban
 ; last modified 20180727-1032
 
 //#include "../OS/usual.h"

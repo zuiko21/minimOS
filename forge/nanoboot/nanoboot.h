@@ -1,5 +1,5 @@
 ; zeropage variables for nanoBoot, v0.2a3
-; (c) 2018-2019 Carlos J. Santisteban
+; (c) 2018-2020 Carlos J. Santisteban
 ; last modified 20190220-1038
 
 .zero

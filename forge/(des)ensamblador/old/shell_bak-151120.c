@@ -1,6 +1,6 @@
 /* 65C02 symbolic (dis)assembler with monitor commands for minimOS
  * last modified 20151120-1002
- * (c) Carlos J. Santisteban
+ * (c) 2015-2020 Carlos J. Santisteban
  * */
  
 #include <stdio.h>

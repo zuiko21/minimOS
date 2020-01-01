@@ -1,5 +1,6 @@
 *** API for minimOS 0.5 ***
 *** last modified 20160404-1343 ***
+*** (c) 2016-2020 Carlos J. Santisteban ***
 
 COUT = 0
 ====

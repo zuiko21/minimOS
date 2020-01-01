@@ -3,7 +3,7 @@
 //  EditorMusical
 //
 //  Created by Carlos Javier Santisteban Salinas on 13/05/13.
-//  Copyright (c) 2013 Carlos Javier Santisteban Salinas. All rights reserved.
+//  Copyright (c) 2013-2020 Carlos Javier Santisteban Salinas. All rights reserved.
 //
 
 #include <stdio.h>

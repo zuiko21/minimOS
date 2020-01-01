@@ -1,7 +1,8 @@
 ; default options for minimOS and other modules
 ; suitable for Kowalski simulator
 ; copy or link as options.h in root dir
-; (c) 2015-2018 Carlos J. Santisteban
+; seems OBSOLETE since 2018
+; (c) 2015-2020 Carlos J. Santisteban
 ; last modified 20161230-2257
 
 ; *** set conditional assembly ***

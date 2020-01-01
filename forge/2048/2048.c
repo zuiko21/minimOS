@@ -1,5 +1,5 @@
 /* 2048 tile game 1.0, 20140504-1600 */
-/* (c) 2014 Carlos J. Santisteban */
+/* (c) 2014-2020 Carlos J. Santisteban */
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,10 +1,10 @@
 ; minimOS ZX tape interface loader - alternate version
 ; v0.1b2
-; (c) 2016 Carlos J. Santisteban
+; (c) 2016-2020 Carlos J. Santisteban
 ; last modified 20160923-0942
 
 ; ***** REFERENCE: pulse lengths *****
-; guide tone = 619/619 uS (cycle 1.238 mS) 
+; guide tone = 619/619 uS (cycle 1.238 mS)
 ; sync = 191/210 uS
 ; zero = 244/244 uS (cycle 488 uS)
 ; one = 489/489 uS (cycle 978 uS)
