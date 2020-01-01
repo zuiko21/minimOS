@@ -1,5 +1,5 @@
 ; minimOS 0.4rc1 (release candidate 1) SDd, 65C02
-; (c) 2012-2016 Carlos J. Santisteban
+; (c) 2012-2020 Carlos J. Santisteban
 ; last modified 2013.05.21
 ; include filenames updated 2016.01.13 (for GitHub)
 

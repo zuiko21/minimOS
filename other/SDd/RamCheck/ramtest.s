@@ -1,7 +1,7 @@
 ; SDd SRAM-tester (up to 512Kx8)
-; (c) 2013 Carlos J. Santisteban
+; (c) 2013-2020 Carlos J. Santisteban
 ; version 1.0, 65C02
-; last modified 2013.02.02
+; last modified 20130202
 
 #define	_VIA	$6FF0
 

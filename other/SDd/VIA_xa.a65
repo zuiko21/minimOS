@@ -1,3 +1,4 @@
+; (c) 2020 Carlos J. Santisteban
 .text
 * = $FF80
 last_c = 0

@@ -1,5 +1,5 @@
 // ***** Protocolo CPU esclava ***** (sin problemas, creo)
-
+// (c) 2020 Carlos J. Santisteban
 char cmd;  // memoria compartida
 
 void cpu_principal(void)

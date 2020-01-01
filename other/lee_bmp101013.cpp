@@ -1,3 +1,4 @@
+/* (c) 2010-2020 Carlos J. Santisteban */
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>

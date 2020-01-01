@@ -1,3 +1,5 @@
+(c) 2020 Carlos J. Santisteban
+
 open_w(size, pos, *y)	// returns y = virtual device number
 {
 	i=0;

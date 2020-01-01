@@ -1,3 +1,4 @@
+;(c) 2020 Carlos J. Santisteban
 ;inicializar procesador
 reset:
 FF80  78      SEI       ;sin interrupciones ***no 87***

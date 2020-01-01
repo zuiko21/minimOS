@@ -1,6 +1,6 @@
 /* emulación de servidor de archivos para minimOS
  * v0.5b1
- * (c) 2015 Carlos J. Santisteban
+ * (c) 2015-2020 Carlos J. Santisteban
  * modificado 20150202-1438 */
 
 #include <stdio.h>

@@ -1,3 +1,4 @@
+; (c) 2020 Carlos J. Santisteban
 #include <stdio.h>
 
 void binario(char v)

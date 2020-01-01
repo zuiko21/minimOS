@@ -1,3 +1,4 @@
+; (c) 2020 Carlos J. Santisteban
 #define	VIA	$6FF0
 #include <via.h>
 

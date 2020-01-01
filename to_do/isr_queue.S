@@ -1,3 +1,5 @@
+; (c) 2020 Carlos J. Santisteban
+
 	LDA int_q_n		; number of interrupt tasks
 	DEC				; 0...n-1, or suppress?
 	ASL				; 2-byte addresses

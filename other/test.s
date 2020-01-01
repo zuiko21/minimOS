@@ -1,5 +1,5 @@
 ; code for minimOS testing purposes
-
+; (c) 2020 Carlos J. Santisteban
 ; assemble from OS/ as usual
 #include "usual.h"
 

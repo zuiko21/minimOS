@@ -1,5 +1,5 @@
 ; minimOS 0.5 load_link function ***stub***
-; (c) 2015 Carlos J. Santisteban
+; (c) 2015-2020 Carlos J. Santisteban
 ; last modified 20150107-1005
 
 ; originally written on 20141107
