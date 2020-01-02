@@ -125,6 +125,21 @@ Interfaces: Piezo buzzer, SS-22, new VIA connector, VGA-compatible video output
 
 
 
+[**miniKIM**](minikim.md)
+
+Status: finishing redesign specs.
+
+Form-factor: Perfboard with point-to-point soldering.
+
+Specs: 1 MHz 6502, 32 kiB RAM (16 available), 2x16 kiB EPROM, 2xVIA 6522, ready for
+_cheap video_ output. May use 32K RAM and 16K EPROM instead.
+
+Interfaces: original KIM keypad, 6x seven-segment displays (muxed LTC4622),
+original Application & Expansion slots.
+
+
+
+
 [**miniPET**](minipet.md)
 
 Status: **essentially finished** design.
@@ -241,4 +256,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20191215-1643_
+_last modified: 20200102-1406_
