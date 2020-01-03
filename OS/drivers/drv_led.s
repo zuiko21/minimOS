@@ -1,7 +1,7 @@
 ; LED Keypad driver for minimOS
-; v0.9.6 adapted to mOS-65 0.6 driver format 20171220
+; v0.9.7 including KIM-like keys (0.6.x format)
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20190221-1033
+; last modified 20200103-2356
 
 #ifndef		HEADERS
 #include "../usual.h"
@@ -171,7 +171,18 @@ led_cur:
 	_DR_OK
 
 ; *** input, rewritten 130507 ***
-; a single-byte buffer will do
+; ***** INTENDED CHANGES *****
+; ./^/# is a kind of shift key, turning 0...6(9) into A...G(J), perhaps other keys will shift too
+; KIM monitor equivalents:
+; + as usual
+; - as DA
+; ?/HELP as AD
+; G (^6) as GO
+; CR/OK/= as check data (not needed on KIM)
+; ESC/NO as PC
+; *** Shifted keys TBD ***
+; ^+ (*), ^- (/), ^* (TAB), ^= (SPC), ^? (!)
+; a single-byte buffer will do, but must store shift mode somehow.
 led_cin:
 	LDX lkp_cont	; number of characters in buffer
 	BEQ ledi_none	; no way if it's empty
@@ -238,7 +249,9 @@ ledg_scan:
 	TAX				; scancode (1-16) as index
 		BEQ ledg_end	; scancode 0 means no key at all!!!
 	DEX				; no 0-scancode in the table!
+; *** check for alternate (shifted) table here ***
 	LDA kptable, X	; get ASCII from scancode table
+; *** here must check for '.' in order to enter shift mode ***
 ; a single-byte buffer will do
 	LDX lkp_cont	; number of characters in buffer
 	BNE ledg_full	; has something already
@@ -283,6 +296,12 @@ kptable:		; ascii values, reversed both column and row order 130512
 	.asc "852."
 	.asc "963?"
 	.asc "+-", 27, 13	; rightmost column, top to bottom
+kpshift:		; alternate, shifted table (TBD)
+	.asc "HEBA"			; leftmost column, top to bottom
+	.asc "IFC."			; don't know what to do with . (shift)
+	.asc "JGD!"			; ditto with '?'
+	.asc "*/", HTAB, 32	; ditto with rightmost column, top to bottom
+
 
 ; **** place bitmap here (minus non-printable chars)
 lk_font:
