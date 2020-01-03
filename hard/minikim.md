@@ -9,6 +9,19 @@ the **6-digit LED display** and the limited **1 kiB RAM**, plus the intended use
 Don Lancaster's **_cheap_ video display adapter**, which required some modifications
 on the original KIM-1.
 
+### Limitations
+
+The KIM-1 was originally supplied with a couple of 6530 RRIOTs, one for the system,
+one for the Application bus. While theoretically is possible to run a KIM without
+this last RRIOT, its ROM contains the **tape routines**, thus becomes necessary even
+if the Application bus isn't used. But after replacing the RRIOTs (either with
+**6532 RIOTs** or even with **6522 VIAs**) the ROM is external anyway, and there is
+_plenty_ of it, so this second _periheral bus set_ becomes optional.
+
+**Casette** and **current loop** interfaces are somewhat obsolete nowadays, even
+for a retro-enthusiast... plus, the cassette interface requires 12 V supply, so it
+makes sense to keep that circuit in a _separate, optional board_.
+
 ## Component substitution
 
 ### 6530 RRIOT
@@ -34,17 +47,21 @@ _overkill_) substitute for the 6532, having into account the following issues:
 
 - `Port A` and `Port B` on the 6530/6532 are simple, without the `CAx/CBx` control
 lines on the VIA. Software must be modified for proper configuration _at startup_, and
-the port addresses are different anyway.
+the port addresses are different anyway. **Swapping `RS0` and `RS1`** at least puts
+the _Data Registers_ and _Data **Direction** Registers_ in the same order of a 6530.
+_Note that `PA` and `PB` are swapped_ unless `RS0` is inverted. **In any case, the
+VIA's registers get shuffled**, so the corresponding firmware must be designed
+accordingly.   
 - The **interval timer** on the 6532 can be sort-of-emulated with the VIA's
 _single-shot T1_, although with quite different programming: the VIA can be set between
 **1 and 65535 _T_** delay, while the 6530 uses an 8-bit register (thus up to 255 counts)
 but with a choice of division factors (1, 8, 64 & 1024), allowing intervals up to
 **261120 _T_**, although with much reduced precision. Anyway, the only use of it found
 on KIM's software is in the _tape routines_, and no further than the 64:1 factor, thus
-well within the capabilites of the VIA. _The PIA 6820/6520 seems unsuitable because of
-this_.
--The missing **RAM** is no problem as we now have plenty of them. Addresses must be
-fixed in software, though.
+well within the capabilites of the VIA. The _PIA 6820/6520 seems unsuitable_ because of
+this.
+- The missing **RAM** is no problem as we now have plenty of them. Since the I/O addresses
+will have to be fixed in software anyway, at least there is RAM enough for the
+Application and system areas from the RRIOTs at `$1780-$17FF`.
 
-_Last modified: 20200102-1756_
-
+_Last modified: 20200103-2213_
