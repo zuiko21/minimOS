@@ -1,7 +1,7 @@
 ; LED Keypad driver for minimOS
 ; v0.9.7 including KIM-like keys (0.6.x format)
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200103-2356
+; last modified 20200104-1007
 
 #ifndef		HEADERS
 #include "../usual.h"
@@ -31,7 +31,7 @@
 
 ; *** info string ***
 led_info:
-	.asc	"LED-keypad v0.9.6", 0
+	.asc	"LED-keypad v0.9.7", 0
 
 ; *** mandatory block functions as per mOS 0.6 specs ***
 ; * block input *
@@ -145,7 +145,7 @@ led_nobs:
 	_DR_OK
 led_nodot:
 	CMP #' '		; check whether is non-printable
-	BPL led_print	; OK to print
+	BCS led_print	; OK to print ***did BPL even work?***
 		LDA #' '		; put a space instead (or another char?)
 		STA z2			; modify parameter!
 led_print:
@@ -172,13 +172,14 @@ led_cur:
 
 ; *** input, rewritten 130507 ***
 ; ***** INTENDED CHANGES *****
-; ./^/# is a kind of shift key, turning 0...6(9) into A...G(J), perhaps other keys will shift too
+; ./^ is a kind of shift key, turning 0...6(9) into A...G(J), perhaps other keys will shift too
 ; KIM monitor equivalents:
 ; + as usual
 ; - as DA
 ; ?/HELP as AD
 ; G (^6) as GO
-; CR/OK/= as check data (not needed on KIM)
+; I (^8) as check address (not needed on KIM)
+; CR/OK as check data (not needed on KIM)
 ; ESC/NO as PC
 ; *** Shifted keys TBD ***
 ; ^+ (*), ^- (/), ^* (TAB), ^= (SPC), ^? (!)
