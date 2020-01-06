@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
-; v0.1
-; last modified 20200105-1821
+; v0.1a1
+; last modified 20200106-2203
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -52,10 +52,10 @@ KpadSize	=	KpadEnd - KpadHead - 256	; compute size NOT including header!
 ; check whether has enough zeropage space
 #ifdef	SAFE
 	CMP z_used			; check available zeropage space
-	BCC go_xkp			; enough space
-	BEQ go_xkp			; just enough!
+	BCC go_kp			; enough space
+	BEQ go_kp			; just enough!
 		_ABORT(FULL)		; not enough memory otherwise (rare) new interface
-go_xkp:
+go_kp:
 #endif
 	STA z_used			; set needed ZP space as required by minimOS
 	_STZA w_rect		; no screen size required
@@ -70,15 +70,103 @@ go_xkp:
 	STA str_pt+2		; and set parameter
 #endif
 	_KERNEL(OPEN_W)		; ask for a character I/O device
-	BCC open_xkp		; no errors
+	BCC open_kp		; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
-open_xkp:
+open_kp:
 	STY iodev			; store device!!!
 ; ##### end of minimOS specific stuff #####
 
-; *** begin things *** TO DO TO DO TO DO
-main_loop:
-	_PANIC("{exit}")	; temporary check
+; *** begin things ***
+; must initialise thing first... TO DO
+	_STZA kp_mode		; starts on address mode
+kp_mloop:
+		LDY iodev		; get char from standard device
+		_KERNEL(CIN)
+		BCC kp_rcv		; some received!
+			CPY #EMPTY		; just waiting?
+			BEQ kp_mloop
+				_PANIC("{dev}")		; device failed!
+kp_rcv:
+		LDA io_c		; read what was pressed
+; *** VALID COMMANDS ***
+; ? ($3F) goes into address mode (AD key on KIM)
+; - ($2D) goes into data (write) mode (DA key on KIM)
+; CR/= ($0D/$3D) updates display with data (ending in period if in data mode)
+; I ($49/$69) updates display with address after CR (ending in period if in data mode)
+; ESC/* ($1B/$2A) shows stored Program Counter (PC key on KIM)
+; + ($2B) advances address (like KIM)
+; G ($47/$67) executes code (GO key on KIM, but only allowed on address mode)
+; **********************
+; check address mode selection
+		CMP #'?'
+		BNE kp_nad
+			BIT kp_mode		; was it writing?
+			BPL kp_ad
+				JSR kp_dwr		; update byte if so
+				LDA io_c		; retrieve char!
+kp_ad:
+			_STZX  kp_mode		; zero (or plus) is address mode
+			JMP kp_echo
+kp_nad:
+; check data mode selection
+		CMP #'-'
+		BNE kp_nda
+			BIT kp_mode		; was it entering address?
+			BMI kp_da
+				JSR kp_awr		; update pointer if so
+kp_da:
+			LDX #$FF		; $FF (or negative) is data entry mode
+			STX kp_mode
+			LDA #'.'		; dot means will write
+			JMP kp_echo
+kp_nda:
+; check address advance
+		CMP #'+'
+		BNE kp_nplus
+			BIT kp_mode		; was it writing?
+			BPL kp_plus
+				JSR kp_dwr		; update byte if so
+kp_plus:
+			INC kp_ptr		; next
+			BNE kp_pnw
+				INC kp_ptr+1
+kp_pnw:
+; must print CR, new address (and dot if in data mode) TO DO
+			
+			JMP kp_echo
+kp_nplus:
+; check execution
+		CMP #'G'
+			BEQ kp_go
+		CMP #'g'
+		BNE kp_ngo
+kp_go:
+			BIT kp_mode		; was it writing?
+			BPL kp_go2
+				JSR kp_dwr		; update byte if so
+				JMP kp_gda		; and notify error!
+kp_go2:
+; should I prepare anything before execution?
+			JMP (kp_ptr)		; execute!
+kp_ngo:
+; check a*** mode selection
+		CMP #'?'
+		BNE kp_nad
+			BIT kp_mode		; was it writing?
+			BPL kp_ad
+				JSR kp_dwr		; update byte if so
+				LDA io_c		; retrieve char!
+kp_ad:
+			_STZX  kp_mode
+			JMP kp_echo
+
+; look for a valid hex digit
+		CMP #'0'
+
+; echo desired char in A and continue
+kp_echo:
+		JSR prnChar
+		JMP kp_mloop
 
 ; *** useful routines *** as usual, but needs some hex conversion!
 
