@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a1
-; last modified 20200106-2203
+; last modified 20200107-2024
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -105,7 +105,7 @@ kp_rcv:
 				JSR kp_dwr		; update byte if so
 				LDA io_c		; retrieve char!
 kp_ad:
-			_STZX  kp_mode		; zero (or plus) is address mode
+			_STZX kp_mode		; zero (or plus) is address mode
 			JMP kp_echo
 kp_nad:
 ; check data mode selection
@@ -131,8 +131,9 @@ kp_plus:
 			BNE kp_pnw
 				INC kp_ptr+1
 kp_pnw:
-; must print CR, new address (and dot if in data mode) TO DO
-			
+			LDA #CR
+			JSR prnChar
+; must print new address-dot-data (and dot if in data mode) TO DO
 			JMP kp_echo
 kp_nplus:
 ; check execution
@@ -149,6 +150,31 @@ kp_go2:
 ; should I prepare anything before execution?
 			JMP (kp_ptr)		; execute!
 kp_ngo:
+; update address display
+		CMP #'I'
+			BEQ kp_ua
+		CMP #'i'
+		BNE kp_nua
+kp_ua:
+;			BIT kp_mode		; was it writing?
+;			BPL kp_go2
+;				JSR kp_dwr		; update byte if so
+;				JMP kp_gda		; and notify error!
+;kp_go2:
+
+;			JMP (kp_ptr)		; execute!
+kp_nua:
+; check a*** mode selection
+		CMP #'?'
+		BNE kp_nad
+			BIT kp_mode		; was it writing?
+			BPL kp_ad
+				JSR kp_dwr		; update byte if so
+				LDA io_c		; retrieve char!
+kp_ad:
+			_STZX  kp_mode
+			JMP kp_echo
+
 ; check a*** mode selection
 		CMP #'?'
 		BNE kp_nad
@@ -161,12 +187,51 @@ kp_ad:
 			JMP kp_echo
 
 ; look for a valid hex digit
+		CMP #'F'
+			BCS kp_nhex			; >F, no number
 		CMP #'0'
-
+			BCC kp_nhex			; <0, no number
+		CMP #$3A
+			BCC kp_hex			; <=9 is OK
+		CMP #'A'
+			BCC kp_nhex			; <A is not
+kp_hex:
+		SEC
+		SBC #'0'			; ASCII to value, if number
+		CMP #10				; or is it a letter?
+		BCC kp_hnum
+			SBC #7				; convert letter to value
+kp_hnum:
+		ASL value			; 2 times previous value
+		ROL value+1
+		ASL value			; 4 times previous value
+		ROL value+1
+		ASL value			; 8 times previous value
+		ROL value+1
+		ASL value			; 16 times previous value
+		ROL value+1
+		ORA value			; add new cipher
+		STA value
+		LDA io_c			; recover raw char for echo
 ; echo desired char in A and continue
 kp_echo:
 		JSR prnChar
+kp_nhex:
 		JMP kp_mloop
+; *** business routines ***
+; update address pointer
+kp_awr:
+	LDY value			; get recent 16-bit number
+	LDA value+1
+	STY kp_ptr			; store into address pointer
+	STA kp_ptr+1
+	RTS
+
+; update data entry
+kp_dwr:
+	LDA value			; get recent 8-bit number
+	_STAY(kp_ptr)			; store into pointed address
+	RTS
 
 ; *** useful routines *** as usual, but needs some hex conversion!
 
@@ -194,8 +259,8 @@ prnStr:
 
 ; *** strings and other data ***
 
-xkp_err:
-	.asc	" Err!", CR, 0
+kp_err:
+	.asc	"Err!", CR, 0
 
 #ifdef	NOHEAD
 KPtitle:
