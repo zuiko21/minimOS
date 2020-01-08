@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a3
-; last modified 20200108-1207
+; last modified 20200108-1239
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -84,10 +84,15 @@ open_kp:
 ; ##### end of minimOS specific stuff #####
 
 ; **********************************************
-; *** install interrupt (NMI & BRK) handlers *** TO DO
+; *** install interrupt (NMI & BRK) handlers ***
 ; **********************************************
+	LDY #<kp_int		; point to ISR
+	LDA #>kp_int
+	_ADMIN(SET_NMI)		; ### install debuggers ###
+	_ADMIN(SET_DBG)
 
 ; *** initialise variables ***
+kp_init:
 	_STZA mode			; starts on address mode
 	_STZA value			; clear entry buffer
 	_STZA value+1
@@ -348,6 +353,26 @@ kp_err:
 KPtitle:
 	.asc	"KIMpad 0.1", 0	; for headerless builds
 #endif
+
+; *********************************
+; *** *** INTERRUPT HANDLER *** ***
+; *********************************
+kp_int:
+	STA s_acc			; save registers as usual
+	PLA					; top of stack after interrupt is P
+	STA s_psr
+kp_jsr:					; * in case of entry via JSR *
+	PLA					; pull LSB
+	STA s_pc
+	STA pointer			; just in case
+	PLA					; ditto for MSB
+	STA s_pc+1
+	STA pointer+1
+	STY s_yreg
+	STX s_xreg
+	TSX					; save stack pointer too
+	STX s_sp
+	JMP kp_init			; ...or could be inlined, app skipping interrupt handler
 
 ; ***** end of stuff *****
 KPEnd:					; ### for easy size computation ###
