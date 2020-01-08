@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
-; v0.1a1
-; last modified 20200107-2024
+; v0.1a2
+; last modified 20200108-1011
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -11,15 +11,21 @@
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	iodev	= uz			; standard I/O device ##### minimOS specific #####
-		= iodev+1		; storage for launched PID, cursor no longer needed
-	buffer	= pid+4			; storage for input line (BUFSIZ chars) ***extra space in order to avoid LOAD_LINK wrap!!!
-; ...some stuff goes here, update final label!!!
-	__last	= buffer+BUFSIZ	; ##### just for easier size check #####
+	mode	= iodev+1		; 0/+ is address (read) mode, $FF/- is data (write) mode
+	value	= mode+1		; storage for typed numbers (word)
+	pointer	= value+2		; storage for pointed address (word)
+	s_pc	= pointer+2		; saved PC (word)
+	s_psr	= s_pc+2		; saved P
+	s_sp	= s_psr+1		; saved S
+	s_acc	= s_sp+1		; saved A
+	s_yreg	= s_acc+1		; saved Y
+	s_xreg	= s_yreg+1		; saved X
+	__last	= s_xreg+1		; ##### just for easier size check #####
 
 ; ##### include minimOS headers and some other stuff #####
 #ifndef	NOHEAD
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
-KpadHead:
+KPHead:
 ; *** header identification ***
 	BRK						; don't enter here! NUL marks beginning of header
 	.asc	"m", CPU_TYPE	; minimOS app!
@@ -30,16 +36,16 @@ KPtitle:
 	.asc	"KIMpad 0.1", 0, 0	; file name (mandatory) and empty comment
 
 ; advance to end of header
-	.dsb	KpadHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+	.dsb	KPHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$54E0			; time, 10.39
-	.word	$4AAB			; date, 2017/5/11
+	.word	$4800			; time, 9.00
+	.word	$5028			; date, 2020/1/8
 
-KpadSize	=	KpadEnd - KpadHead - 256	; compute size NOT including header!
+KPSize	=	KPEnd - KPHead - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	KpadSize		; filesize
+	.word	KPSize			; filesize
 	.word	0				; 64K space does not use upper 16-bit
 #endif
 ; ##### end of minimOS executable header #####
@@ -58,6 +64,7 @@ KpadSize	=	KpadEnd - KpadHead - 256	; compute size NOT including header!
 go_kp:
 #endif
 	STA z_used			; set needed ZP space as required by minimOS
+; following code may be omitted in case default (#0) devs are used
 	_STZA w_rect		; no screen size required
 	_STZA w_rect+1		; neither MSB
 	LDY #<KPtitle		; LSB of window title
@@ -70,24 +77,28 @@ go_kp:
 	STA str_pt+2		; and set parameter
 #endif
 	_KERNEL(OPEN_W)		; ask for a character I/O device
-	BCC open_kp		; no errors
+	BCC open_kp			; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_kp:
-	STY iodev			; store device!!!
+	STY iodev			; store device... or just assume zero!
 ; ##### end of minimOS specific stuff #####
 
 ; *** begin things ***
-; must initialise thing first... TO DO
-	_STZA kp_mode		; starts on address mode
+; must initialise things first... TO DO
+	_STZA mode			; starts on address mode
+	_STZA value			; clear entry buffer
+	_STZA value+1
+; what about the interrupt handling?
 kp_mloop:
-		LDY iodev		; get char from standard device
+; read key
+		LDY iodev			; get char from standard device
 		_KERNEL(CIN)
-		BCC kp_rcv		; some received!
-			CPY #EMPTY		; just waiting?
+		BCC kp_rcv			; some received!
+			CPY #EMPTY			; just waiting?
 			BEQ kp_mloop
 				_PANIC("{dev}")		; device failed!
 kp_rcv:
-		LDA io_c		; read what was pressed
+		LDA io_c			; read what was pressed
 ; *** VALID COMMANDS ***
 ; ? ($3F) goes into address mode (AD key on KIM)
 ; - ($2D) goes into data (write) mode (DA key on KIM)
@@ -100,41 +111,33 @@ kp_rcv:
 ; check address mode selection
 		CMP #'?'
 		BNE kp_nad
-			BIT kp_mode		; was it writing?
-			BPL kp_ad
-				JSR kp_dwr		; update byte if so
-				LDA io_c		; retrieve char!
-kp_ad:
-			_STZX kp_mode		; zero (or plus) is address mode
-			JMP kp_echo
+			JSR kp_chk		; update pending values
+			_STZX mode		; zero (or plus) is address mode
+			LDA #'?'		; retrieve char (might change prompt if desired)
+			BNE kp_echo		; show prompt and keep reading (was BRA)
 kp_nad:
 ; check data mode selection
 		CMP #'-'
 		BNE kp_nda
-			BIT kp_mode		; was it entering address?
-			BMI kp_da
-				JSR kp_awr		; update pointer if so
-kp_da:
+			JSR kp_chk		; update pending values
 			LDX #$FF		; $FF (or negative) is data entry mode
-			STX kp_mode
+			STX mode
+kp_dot:
 			LDA #'.'		; dot means will write
-			JMP kp_echo
+			BNE kp_echo		; was BRA
 kp_nda:
 ; check address advance
 		CMP #'+'
 		BNE kp_nplus
-			BIT kp_mode		; was it writing?
-			BPL kp_plus
-				JSR kp_dwr		; update byte if so
-kp_plus:
-			INC kp_ptr		; next
+			JSR kp_naw		; check for pending data only!
+			INC pointer		; next address
 			BNE kp_pnw
-				INC kp_ptr+1
+				INC pointer+1
 kp_pnw:
-			LDA #CR
-			JSR prnChar
-; must print new address-dot-data (and dot if in data mode) TO DO
-			JMP kp_echo
+; print address.data (plus another dot if in write mode)
+			JSR kp_crad		; print address
+			JSR kp_data		; print data byte
+			_BRA kp_wdot	; add dot if in write mode
 kp_nplus:
 ; check execution
 		CMP #'G'
@@ -142,13 +145,15 @@ kp_nplus:
 		CMP #'g'
 		BNE kp_ngo
 kp_go:
-			BIT kp_mode		; was it writing?
-			BPL kp_go2
-				JSR kp_dwr		; update byte if so
-				JMP kp_gda		; and notify error!
-kp_go2:
+			JSR kp_chk		; update pending values
+			BIT mode		; was it writing?
+			BMI kp_go2		; notify error if so!
 ; should I prepare anything before execution?
-			JMP (kp_ptr)		; execute!
+				JMP (pointer)		; execute!
+; if not ready to execute, print error
+kp_go2:
+			JSR kp_nex		; print error message
+			_BRA kp_mloop
 kp_ngo:
 ; update address display
 		CMP #'I'
@@ -156,37 +161,38 @@ kp_ngo:
 		CMP #'i'
 		BNE kp_nua
 kp_ua:
-;			BIT kp_mode		; was it writing?
-;			BPL kp_go2
-;				JSR kp_dwr		; update byte if so
-;				JMP kp_gda		; and notify error!
-;kp_go2:
-
-;			JMP (kp_ptr)		; execute!
+; must print new address (and dot if in data mode)
+			JSR kp_crad		; print address after CR
+kp_wdot:
+			BIT mode		; is it writing?
+				BMI kp_dot		; yeah, print dot and exit
+			JMP kp_mloop	; otherwise stay with address on display
 kp_nua:
-; check a*** mode selection
-		CMP #'?'
-		BNE kp_nad
-			BIT kp_mode		; was it writing?
-			BPL kp_ad
-				JSR kp_dwr		; update byte if so
-				LDA io_c		; retrieve char!
-kp_ad:
-			_STZX  kp_mode
-			JMP kp_echo
-
-; check a*** mode selection
-		CMP #'?'
-		BNE kp_nad
-			BIT kp_mode		; was it writing?
-			BPL kp_ad
-				JSR kp_dwr		; update byte if so
-				LDA io_c		; retrieve char!
-kp_ad:
-			_STZX  kp_mode
-			JMP kp_echo
-
-; look for a valid hex digit
+; check data update selection
+		CMP #CR
+			BEQ kp_ud
+		CMP #'='
+		BNE kp_nud
+kp_ud:
+; must print pointed data (and dot if in data entry mode)
+			JSR kp_data		; print data
+			_BRA kp_wdot	; ...and a dot if in write mode
+kp_nud:
+; check PC retrieve selection
+		CMP #ESC
+			BEQ kp_pc
+		CMP #'i'
+		BNE kp_npc
+kp_pc:
+; must copy PC as address, then print as usual
+			JSR kp_chk		; update pending values
+			LDY s_pc		; get saved PC
+			LDA s_pc+1
+			STY pointer		; store as new address
+			STA pointer+1
+			_BRA kp_ua		; print address
+kp_npc:
+; last, look for a valid hex digit
 		CMP #'F'
 			BCS kp_nhex			; >F, no number
 		CMP #'0'
@@ -217,24 +223,62 @@ kp_hnum:
 kp_echo:
 		JSR prnChar
 kp_nhex:
-		JMP kp_mloop
+		_BRA kp_mloop
+
 ; *** business routines ***
-; update address pointer
-kp_awr:
-	LDY value			; get recent 16-bit number
-	LDA value+1
-	STY kp_ptr			; store into address pointer
-	STA kp_ptr+1
+; check and update pending data
+kp_chk:
+	BIT mode		; was it entering address?
+	BMI kp_naw		; update pointer if so
+		LDY value		; get recent 16-bit number
+		LDA value+1
+		STY pointer		; store into address pointer
+		STA pointer+1
+kp_naw:				; check only pending data from here
+	BIT mode		; was it writing?
+	BPL kp_ndw
+		LDA value		; get recent 8-bit number
+		_STAY(pointer)	; store into pointed address
+kp_ndw:
+	_STZA value			; clear entry buffer, is this the right place?
+	_STZA value+1
 	RTS
 
-; update data entry
-kp_dwr:
-	LDA value			; get recent 8-bit number
-	_STAY(kp_ptr)			; store into pointed address
-	RTS
+; print address after CR
+kp_crad:
+	LDA #CR			; newline
+	JSR prnChar
+; print address
+	LDA pointer+1	; get MSB
+	JSR kp_byte
+	LDA pointer		; get LSB and print it
+	_BRA kp_byte	; will return
+
+; print data after dot
+kp_data:
+	LDA #'.'
+	JSR prnChar		; separating dot
+; print data
+	_LDAY(pointer)	; get current contents
+; * print A as two hex ciphers *
+kp_byte:
+	PHA				; save for later
+	LSR				; shift MSNibble into position
+	LSR
+	LSR
+	LSR
+	JSR kp_nib		; print MSNibble
+	PLA				; retrieve full byte, only LSNibble will remain
+kp_nib:
+	AND #$0F		; supress high nibble
+	CMP #$10		; should use letter?
+	BCC kp_num
+		ADC #6			; carry was set! now is clear
+kp_num:
+	ADC #'0'		; carry was clear, now is ASCII
+; ...and fall into prnChar below! Will return (JMP otherwise)
 
 ; *** useful routines *** as usual, but needs some hex conversion!
-
 ; * print a character in A *
 prnChar:
 	STA io_c			; store character
@@ -243,6 +287,11 @@ prnChar:
 ; ignoring possible I/O errors
 	RTS
 
+; ** print error message **
+kp_nex:
+	LDY #<kp_err		; get pointer to error string
+	LDA #>kp_err
+; ...and fall into prnStr below! (will return)
 ; * print a NULL-terminated string pointed by $AAYY *
 prnStr:
 	STA str_pt+1		; store MSB
@@ -260,7 +309,7 @@ prnStr:
 ; *** strings and other data ***
 
 kp_err:
-	.asc	"Err!", CR, 0
+	.asc	" Err!", CR, 0
 
 #ifdef	NOHEAD
 KPtitle:
@@ -268,5 +317,5 @@ KPtitle:
 #endif
 
 ; ***** end of stuff *****
-KpadEnd:				; ### for easy size computation ###
+KPEnd:				; ### for easy size computation ###
 .)
