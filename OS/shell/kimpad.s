@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
-; v0.1a3
-; last modified 20200108-1239
+; v0.1a4
+; last modified 20200109-1330
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -102,8 +102,7 @@ kp_init:
 	LDY #<KPtitle
 	LDA #>KPtitle
 	JSR prnStr			; splash screen
-	LDA #CR
-	JSR prnChar			; newline for convenience
+	JSR newline			; newline for convenience
 
 ; *****************
 ; *** main loop ***
@@ -127,7 +126,7 @@ kp_rcv:
 ; -		($2D)		goes into data (write) mode (DA key on KIM)
 ; CR/=	($0D/$3D)	updates display with data (ending dot if in data mode)
 ; I		($49/$69)	updates display with address after CR (ending dot if in data mode)
-; ESC/*	($1B/$2A)	shows stored Program Counter (PC key on KIM)
+; ESC/ *	($1B/$2A)	shows stored Program Counter (PC key on KIM)
 ; +		($2B)		advances address (like KIM)
 ; G		($47/$67)	executes code (GO key on KIM, but only allowed on address mode)
 ; **************************
@@ -172,6 +171,9 @@ kp_go:
 			BIT mode		; was it writing?
 			BMI kp_go2		; notify error if so!
 ; should I prepare anything before execution?
+				LDY #<kp_run	; get pointer to run string
+				LDA #>kp_run
+				JSR prnStr
 ; *** for instance, preload registers ***
 				LDX s_sp		; worth it?
 				TXS
@@ -181,12 +183,19 @@ kp_go:
 				PHA				; ...from stack
 				LDA s_acc
 				PLP				; status updated!
-; ***************************************
-				JMP (pointer)		; execute!
+				JMP (pointer)	; execute!
 ; if not ready to execute, print error
 kp_go2:
 			JSR kp_nex		; print error message
 			_BRA kp_mloop
+
+; *** echo and loop return ***
+kp_echo:
+		JSR prnChar
+kp_nhex:				; ignore wrong key
+		_BRA kp_mloop
+; *** actual loop end ***
+
 kp_ngo:
 ; * check update address display *
 		CMP #'I'
@@ -253,10 +262,7 @@ kp_hnum:
 		STA value
 		LDA io_c			; recover raw char for echo
 ; echo desired char in A and continue
-kp_echo:
-		JSR prnChar
-kp_nhex:
-		_BRA kp_mloop
+		_BRA kp_echo
 
 ; *************************
 ; *** business routines ***
@@ -281,8 +287,7 @@ kp_ndw:
 
 ; * print address after CR *
 kp_crad:
-	LDA #CR			; newline
-	JSR prnChar
+	JSR newline
 ; print address word
 	LDA pointer+1	; get MSB
 	JSR kp_byte
@@ -324,11 +329,17 @@ prnChar:
 ; ignoring possible I/O errors
 	RTS
 
+; * print CR *
+newline:
+	LDA #CR
+	BNE prnChar			; no need for BRA
+
 ; *** print error message ***
 kp_nex:
 	LDY #<kp_err		; get pointer to error string
 	LDA #>kp_err
 ; ...and fall into prnStr below! (will return)
+
 ; * print a NULL-terminated string pointed by $AAYY *
 prnStr:
 	STA str_pt+1		; store MSB
@@ -348,6 +359,9 @@ prnStr:
 ; ******************************
 kp_err:
 	.asc	" Err!", CR, 0
+
+kp_run:
+	.asc	CR, "Run", CR, 0
 
 #ifdef	NOHEAD
 KPtitle:
@@ -377,3 +391,4 @@ kp_jsr:					; * in case of entry via JSR *
 ; ***** end of stuff *****
 KPEnd:					; ### for easy size computation ###
 .)
+
