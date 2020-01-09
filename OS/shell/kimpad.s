@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a4
-; last modified 20200109-1330
+; last modified 20200109-1729
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -125,8 +125,8 @@ kp_rcv:
 ; ?		($3F)		goes into address mode (AD key on KIM)
 ; -		($2D)		goes into data (write) mode (DA key on KIM)
 ; CR/=	($0D/$3D)	updates display with data (ending dot if in data mode)
-; I		($49/$69)	updates display with address after CR (ending dot if in data mode)
-; ESC/ *	($1B/$2A)	shows stored Program Counter (PC key on KIM)
+; */Esc	($1B/$2A)	updates display with address after CR (ending dot if in data mode)
+; I		($49/$69)	shows stored Program Counter (PC key on KIM)
 ; +		($2B)		advances address (like KIM)
 ; G		($47/$67)	executes code (GO key on KIM, but only allowed on address mode)
 ; **************************
@@ -156,7 +156,7 @@ kp_nda:
 			BNE kp_pnw
 				INC pointer+1
 kp_pnw:
-; print address.data (plus another dot if in write mode)
+; print address-dot-data (plus another dot if in write mode)
 			JSR kp_crad		; print CR + address
 			JSR kp_data		; print dot + data byte
 			_BRA kp_wdot	; add final dot if in write mode
@@ -189,18 +189,20 @@ kp_go2:
 			JSR kp_nex		; print error message
 			_BRA kp_mloop
 
+; ****************************
 ; *** echo and loop return ***
 kp_echo:
 		JSR prnChar
 kp_nhex:				; ignore wrong key
 		_BRA kp_mloop
-; *** actual loop end ***
+; ***** actual  loop end *****
+; ****************************
 
 kp_ngo:
 ; * check update address display *
-		CMP #'I'
+		CMP #ESC
 			BEQ kp_ua
-		CMP #'i'
+		CMP #'*'
 		BNE kp_nua
 kp_ua:
 ; must print new address (and dot if in data mode)
@@ -221,7 +223,7 @@ kp_ud:
 			_BRA kp_wdot	; ...and a dot if in write mode
 kp_nud:
 ; * check PC retrieve *
-		CMP #ESC
+		CMP #'I'
 			BEQ kp_pc
 		CMP #'i'
 		BNE kp_npc
