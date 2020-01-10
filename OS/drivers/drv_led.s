@@ -1,7 +1,7 @@
 ; LED Keypad driver for minimOS
 ; v0.9.7 including KIM-like keys (0.6.x format)
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200110-0913
+; last modified 20200110-0942
 
 #ifndef		HEADERS
 #include "../usual.h"
@@ -176,11 +176,10 @@ led_cur:
 ; ^+ (*), ^- (/), ^NO (SPC), ^YES (=), ^HELP (!)
 ; a single-byte buffer will do, but must store shift mode somehow.
 led_cin:
-	LDX lkp_cont		; number of characters in buffer
+	LDA lkp_buf			; gets the only char stored at buffer
 	BEQ ledi_none		; no way if it's empty
-		LDA lkp_buf			; gets the only char stored at buffer
 		STA z2				; output value
-		_STZA lkp_cont		; it's empty now! Could use DEC, but no advantage on CMOS
+		_STZA lkp_buf		; it's empty now! no longer uses separate flag
 		_DR_OK
 ledi_none:
 	_DR_ERR(EMPTY)		; mild error otherwise
@@ -242,16 +241,17 @@ ledg_scan:
 		BEQ ledg_end		; scancode 0 means no key at all!!!
 	DEX					; no 0-scancode in the table!
 ; *** check for alternate (shifted) table here ***
+	BIT
 	LDA kptable, X		; get ASCII from scancode table
 ; *** here must check for HTAB (./^ key) in order to enter shift mode ***
+	LDX lkp_cont		; check shift flag
 ; a single-byte buffer will do
-	LDX lkp_cont		; number of characters in buffer
+	LDY lkp_buf			; check buffer contents
 	BNE ledg_full		; has something already
-		STA lkp_buf			; store char from A into buffer
-		INC lkp_cont		; it's full now!
+		STA lkp_buf			; store char from A into buffer otherwise
 		_DR_OK
 ledg_full:
-	_DR_ERR(FULL)		; no room
+	_DR_ERR(FULL)		; no room for it
 
 ; *** initialise, revised for new simplified keypad buffer 130507 ***
 led_reset:
@@ -260,20 +260,19 @@ led_reset:
 	LDY #$FF			; PB is all output
 	STY VIA+DDRB		; easier with unprotected I/O, it's within kernel code anyway
 
-; clear display	and related variables
+; clear display, keypad and related variables
 	LDX #DIGITS			; display size
 	LDA #0				; there's STZ on CMOS, but NMOS macros are worse here
+; a single-byte buffer will do
+	STA lkp_cont		; unshifted mode by default
+	STA lkp_buf			; NUL means empty!
+	STA lkp_new			; no scancode detected so far
 led_dispcl:
-		STA led_buf-1, X	; clear variable
+		STA led_buf-1, X	; clear array element
 		DEX					; previous
 		BNE led_dispcl		; won't reach offset 0, where the size is stored!
 	LDA #DIGITS-1		; ***correct value, so first interrupt won't miss first column!
 	STA led_mux			; ***fixed 130521
-
-; clear keypad things
-; a single-byte buffer will do
-	_STZA lkp_cont		; it's empty
-	_STZA lkp_new		; no scancode detected so far
 
 ; enable display
 	LDA VIA+PCR			; easier with unprotected I/O
