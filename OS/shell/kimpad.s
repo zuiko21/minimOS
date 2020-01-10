@@ -4,8 +4,14 @@
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
-#include "../usual.h"
+//#include "../usual.h"
 #endif
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+.text
 
 .(
 ; *** assembling options ***
@@ -13,6 +19,8 @@
 #define	KIMSHELL	_KIMSHELL
 ; KIMDEV tries not to ask for an I/O device, using default ID 0 instead
 #define	KIMDEV		_KIMDEV
+; remove minimOS headers
+#define	NOHEAD		_NOHEAD
 
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####

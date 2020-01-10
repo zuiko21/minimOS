@@ -1,7 +1,7 @@
 ; LED Keypad driver for minimOS
 ; v0.9.7 including KIM-like keys (0.6.x format)
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200104-1007
+; last modified 20200110-0913
 
 #ifndef		HEADERS
 #include "../usual.h"
@@ -53,11 +53,11 @@ lkbi_l:
 		STA (bl_ptr), Y		; ...goes into buffer
 		INY					; go for next
 		BNE lkbi_nw			; still within page
-			INC bl_ptr+1			; ...or increment MSB
+			INC bl_ptr+1		; ...or increment MSB
 lkbi_nw:
 		DEC bl_siz			; one less to go
 			BNE lkbi_l			; no wrap, continue
-		LDA bl_siz+1			; check MSB otherwise EEEEEK
+		LDA bl_siz+1		; check MSB otherwise EEEEEK
 			BEQ lkbi_end		; no more!
 		DEC bl_siz+1		; ...or one page less
 		_BRA lkbi_l
@@ -87,119 +87,110 @@ lkbo_l:
 		_PLY				; restore index
 		INY					; go for next
 		BNE lkbo_nw			; still within page
-			INC bl_ptr+1			; ...or increment MSB
+			INC bl_ptr+1		; ...or increment MSB
 lkbo_nw:
 		DEC bl_siz			; one less to go
 			BNE lkbo_l			; no wrap, continue
-		LDA bl_siz+1			; check MSB otherwise
+		LDA bl_siz+1		; check MSB otherwise
 			BEQ lkbi_end		; no more!
 		DEC bl_siz+1		; ...or one page less
 		_BRA lkbo_l
 
-
 ; *** output, rewritten 130507 ***
 led_cout:
-	LDA z2			; get char in case is control
-	CMP #13			; carriage return? (won't just clear, but wait for next char instead)
-	BNE led_ncr		; check other codes
-		LDA #$FF		; -1 means next received character will clear the display
-		STA led_pos		; update variable!
+	LDA z2				; get char in case is control
+	CMP #13				; carriage return? (won't just clear, but wait for next char instead)
+	BNE led_ncr			; check other codes
+		LDA #$FF			; -1 means next received character will clear the display
+		STA led_pos			; update variable!
 led_pend:
 		_DR_OK
 led_ncr:
-	CMP #FORMFEED	; FF clears too
+	CMP #FORMFEED		; FF clears too
 		BEQ led_blank
-	CMP #LF			; LF clears too
-	BNE led_noclear	; else, do print
+	CMP #LF				; LF clears too
+	BNE led_noclear		; else, do print
 led_blank:
-		LDX #DIGITS		; display size
+		LDX #DIGITS			; display size
 led_clear:
 		_STZA led_pos, X	; will clear LED buffer _and_ position, NMOS will *not* keep A corrected 20160407
 		DEX
-		BPL led_clear	; loops until all clear, zero will loop too
+		BPL led_clear		; loops until all clear, zero will loop too
 		_DR_OK
 led_noclear:
-	LDX led_pos		; check whether a new line was due
-	BPL	led_nonl	; some other standard value
-		JSR led_blank	; interesting in-function subroutine call, and then continue printing the new character
+	LDX led_pos			; check whether a new line was due
+	BPL	led_nonl		; some other standard value
+		JSR led_blank		; interesting in-function subroutine call, and then continue printing the new character
 led_nonl:
-	CMP #8			; backspace?
+	CMP #8				; backspace?
 	BNE led_nobs
-		LDX led_pos		; gets cursor position
-		BEQ led_end		; nothing to delete
-		DEX				; else, backs off one place
+		LDX led_pos			; gets cursor position
+		BEQ led_end			; nothing to delete
+		DEX					; else, backs off one place
 		_STZA led_buf, X	; clear position
-		STX led_pos		; update cursor position
+		STX led_pos			; update cursor position
 led_end:
 		_DR_OK
 led_nobs:
-	CMP #'.'		; may add dot to previous char
+	CMP #'.'			; may add dot to previous char
 		BNE led_nodot
-	LDX led_pos		; gets cursor position
-		BEQ led_nodot	; nothing before
-	DEX				; go to previous character, but let variable as it was
-	LDA led_buf, X	; previous char. bitmap
-	LSR				; check LSB for decimal point
-		BCS led_nodot	; already has dot, go away
-	INC led_buf, X	; add decimal point
+	LDX led_pos			; gets cursor position
+		BEQ led_nodot		; nothing before
+	DEX					; go to previous character, but let variable as it was
+	LDA led_buf, X		; previous char. bitmap
+	LSR					; check LSB for decimal point
+		BCS led_nodot		; already has dot, go away
+	INC led_buf, X		; add decimal point
 	_DR_OK
 led_nodot:
-	CMP #' '		; check whether is non-printable
-	BCS led_print	; OK to print ***did BPL even work?***
-		LDA #' '		; put a space instead (or another char?)
-		STA z2			; modify parameter!
+	CMP #' '			; check whether is non-printable
+	BCS led_print		; OK to print ***did BPL even work?***
+		LDA #' '			; put a space instead (or another char?)
+		STA z2				; modify parameter!
 led_print:
-	LDA led_pos		; cursor position
-	CMP #DIGITS		; is display full?
-		BMI led_cur		; else, don't scroll
-	LDX #0			; reset index
+	LDA led_pos			; cursor position
+	CMP #DIGITS			; is display full?
+		BMI led_cur			; else, don't scroll
+	LDX #0				; reset index
 led_scroll:
 		LDA led_buf+1, X	; get from second character
-		STA led_buf, X	; copy it before
-		INX				; get next character
-		CPX #DIGITS		; until screen ends
-		BNE led_scroll	; will scroll some garbage for a moment, but maaaaaaah, anyway it's just 0 (blank) or 1 segment
-	DEX				; back off one place
+		STA led_buf, X		; copy it before
+		INX					; get next character
+		CPX #DIGITS			; until screen ends
+		BNE led_scroll		; will scroll some garbage for a moment, but maaaaaaah, anyway it's just 0 (blank) or 1 segment
+	DEX					; back off one place
 	_STZA led_buf, X	; get rid of the garbage
-	STX led_pos		; cursor *after* last digit
+	STX led_pos			; cursor *after* last digit
 led_cur:
-	LDX z2			; get the ASCII code
+	LDX z2				; get the ASCII code
 	LDA lk_font-32, X	; get that character's bitmap (beware of NMOS page boundary!)
-	LDX led_pos		; get cursor position
-	STA led_buf, X	; store bitmap
-	INC led_pos		; move cursor
+	LDX led_pos			; get cursor position
+	STA led_buf, X		; store bitmap
+	INC led_pos			; move cursor
 	_DR_OK
 
 ; *** input, rewritten 130507 ***
 ; ***** INTENDED CHANGES *****
 ; ./^ is a kind of shift key, turning 0...6(9) into A...G(J), perhaps other keys will shift too
-; KIM monitor equivalents:
-; + as usual
-; - as DA
-; ?/HELP as AD
-; G (^6) as GO
-; I (^8) as check address (not needed on KIM)
-; CR/OK as check data (not needed on KIM)
-; ESC/NO as PC
-; *** Shifted keys TBD ***
-; ^+ (*), ^- (/), ^* (TAB), ^= (SPC), ^? (!)
+; *** Shifted command keys TBD ***
+; ^+ (*), ^- (/), ^NO (SPC), ^YES (=), ^HELP (!)
 ; a single-byte buffer will do, but must store shift mode somehow.
 led_cin:
-	LDX lkp_cont	; number of characters in buffer
-	BEQ ledi_none	; no way if it's empty
-		LDA lkp_buf		; gets the only char stored at buffer
-		STA z2			; output value
-		_STZA lkp_cont	; it's empty now! Could use DEC, but no advantage on CMOS
+	LDX lkp_cont		; number of characters in buffer
+	BEQ ledi_none		; no way if it's empty
+		LDA lkp_buf			; gets the only char stored at buffer
+		STA z2				; output value
+		_STZA lkp_cont		; it's empty now! Could use DEC, but no advantage on CMOS
 		_DR_OK
 ledi_none:
-	_DR_ERR(EMPTY)	; mild error otherwise
+	_DR_ERR(EMPTY)		; mild error otherwise
 
 ; *** poll, rewritten 130506, corrected 130512 ***
 led_get:
 	LDA VIA+IORA		; get current cathode mask
 ;	TAY					; save input bits
 	AND #$F0			; only the output bits
-	_STZX VIA+IORB	; disable digit as late as possible
+	_STZX VIA+IORB		; disable digit as late as possible
 	LDX led_mux			; currently displayed digit
 	INX					; next digit???
 	ASL					; shift to the next (left), or INC if decoded
@@ -216,7 +207,7 @@ led_nw:
 	AND #$0F			; mask input bits, keep PA0...PA3 only
 	STA lkp_mat, X		; store current column
 	INX					; next column, not stored, now it's 1...4
-	CPX #DIGITS		; four columns processed?
+	CPX #DIGITS			; four columns processed?
 	BEQ ledg_go			; decode it!
 ledg_end:
 		_DR_OK
@@ -234,30 +225,30 @@ ledg_row:
 		DEX					; next column
 		BPL ledg_col		; does zero too!
 ledg_kpr:
-	BCS ledg_scan	; key was actually pressed?
-		_STZA lkp_new	; no longer pressed, reset previous scancode
-		RTS				; ...and go away, there was no error **** WATCH THIS
+	BCS ledg_scan		; key was actually pressed?
+		_STZA lkp_new		; no longer pressed, reset previous scancode
+		RTS					; ...and go away, there was no error **** WATCH THIS
 ledg_scan:
-	STY systmp		; save row (1-4) number
-	TXA				; column number
-	ASL				; multiply by four
+	STY systmp			; save row (1-4) number
+	TXA					; column number
+	ASL					; multiply by four
 	ASL
-	CLC				; ORA no longer possible with 1-4 row numbers!
-	ADC systmp		; add row to 4*column, hope new var's OK!
-	CMP lkp_new		; new scancode?
-		BEQ ledg_end	; if the same, do nothing
-	STA lkp_new		; update register
-	TAX				; scancode (1-16) as index
-		BEQ ledg_end	; scancode 0 means no key at all!!!
-	DEX				; no 0-scancode in the table!
+	CLC					; ORA no longer possible with 1-4 row numbers!
+	ADC systmp			; add row to 4*column, hope new var's OK!
+	CMP lkp_new			; new scancode?
+		BEQ ledg_end		; if the same, do nothing
+	STA lkp_new			; update register
+	TAX					; scancode (1-16) as index
+		BEQ ledg_end		; scancode 0 means no key at all!!!
+	DEX					; no 0-scancode in the table!
 ; *** check for alternate (shifted) table here ***
-	LDA kptable, X	; get ASCII from scancode table
-; *** here must check for '.' in order to enter shift mode ***
+	LDA kptable, X		; get ASCII from scancode table
+; *** here must check for HTAB (./^ key) in order to enter shift mode ***
 ; a single-byte buffer will do
-	LDX lkp_cont	; number of characters in buffer
-	BNE ledg_full	; has something already
-		STA lkp_buf		; store char from A into buffer
-		INC lkp_cont	; it's full now!
+	LDX lkp_cont		; number of characters in buffer
+	BNE ledg_full		; has something already
+		STA lkp_buf			; store char from A into buffer
+		INC lkp_cont		; it's full now!
 		_DR_OK
 ledg_full:
 	_DR_ERR(FULL)		; no room
@@ -285,26 +276,26 @@ led_dispcl:
 	_STZA lkp_new		; no scancode detected so far
 
 ; enable display
-	LDA VIA+PCR		; easier with unprotected I/O
+	LDA VIA+PCR			; easier with unprotected I/O
 	AND #%00011111		; keep other PCR bits
 	ORA #%11000000		; CB2 low (display enable)
-	STA VIA+PCR		; instead of the rest
+	STA VIA+PCR			; instead of the rest
 	_DR_OK
 
 ; **** data tables ****
-kptable:		; ascii values, reversed both column and row order 130512
+kptable:				; ** ASCII values, reversed both column and row order 130512 **
 	.asc "7410"			; leftmost column, top to bottom
-	.asc "852."
+	.asc "852", HTAB	; shift key temporarily recevied as HTAB
 	.asc "963?"
 	.asc "+-", 27, 13	; rightmost column, top to bottom
-kpshift:		; alternate, shifted table (TBD)
+
+kpshift:				; ** alternate, shifted table (TBD) **
 	.asc "HEBA"			; leftmost column, top to bottom
-	.asc "IFC."			; don't know what to do with . (shift)
-	.asc "JGD!"			; ditto with '?'
-	.asc "*/", HTAB, 32	; ditto with rightmost column, top to bottom
+	.asc "IFC."			; strike shift twice to get a dot
+	.asc "JGD!"
+	.asc "*/ ="
 
-
-; **** place bitmap here (minus non-printable chars)
+; **** place bitmap here (minus non-printable chars) ****
 lk_font:
 	.byt $00, $61, $44, $7E, $B4, $4B, $3C, $04, $9C, $F0, $6C, $62, $08, $02, $01, $4A
 	.byt $FC, $60, $DA, $F2, $66, $B6, $BE, $E0, $FE, $F6, $41, $50, $18, $12, $30, $CA
