@@ -1,17 +1,23 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a5
-; last modified 20200110-0900
+; last modified 20200110-1009
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
-//#include "../usual.h"
-#endif
+#ifdef		TESTING
+; ** special include set to be assembled via... **
+; xa shell/kimpad.s -DTESTING=1
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
 .zero
 #include "zeropage.h"
 .text
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+#endif
 
 .(
 ; *** assembling options ***

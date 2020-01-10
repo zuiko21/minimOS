@@ -4,7 +4,18 @@
 ; last modified 20200110-0942
 
 #ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/drv_led.s -I drivers/ -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
 #include "../usual.h"
+#endif
 ; specific header for this driver
 .bss
 #include "drv_led.h"
@@ -108,7 +119,7 @@ led_pend:
 led_ncr:
 	CMP #FORMFEED		; FF clears too
 		BEQ led_blank
-	CMP #LF				; LF clears too
+	CMP #LF				; LF clears too... or should it be treated like CR?
 	BNE led_noclear		; else, do print
 led_blank:
 		LDX #DIGITS			; display size
@@ -191,7 +202,7 @@ led_get:
 	AND #$F0			; only the output bits
 	_STZX VIA+IORB		; disable digit as late as possible
 	LDX led_mux			; currently displayed digit
-	INX					; next digit???
+	INX					; next digit?
 	ASL					; shift to the next (left), or INC if decoded
 	BCC led_nw			; should it wrap? BNE/BMI after a CMP, if decoded
 		LDA #$10			; begin from the right
@@ -241,10 +252,22 @@ ledg_scan:
 		BEQ ledg_end		; scancode 0 means no key at all!!!
 	DEX					; no 0-scancode in the table!
 ; *** check for alternate (shifted) table here ***
-	BIT
+	LDY lkp_cont		; check shift flag
+	BEQ lkp_asc			; not shifted, just get the code
+		TXA					; original 0-15 scancode...
+		ORA lkp_cont		; ...plus shift (power-of-two! otherwise CLC/ADC)...
+		_STZY lkp_cont		; ...only for this time
+		TAX					; corrected index
+lkp_asc:
+; *** read ASCII, including possible shift ***
 	LDA kptable, X		; get ASCII from scancode table
-; *** here must check for HTAB (./^ key) in order to enter shift mode ***
-	LDX lkp_cont		; check shift flag
+; *** here must check for HTAB (unshifted . key) in order to enter shift mode ***
+	CMP #HTAB			; trying to shift?
+	BNE lkp_nsh			; no, just store this key
+		LDA #kpshift-kptable	; shifted offset (MUST be power of two!)
+		STA lkp_cont		; set shift mode...
+		_DR_OK				; ...and finish quietly
+lkp_nsh:
 ; a single-byte buffer will do
 	LDY lkp_buf			; check buffer contents
 	BNE ledg_full		; has something already
@@ -288,7 +311,7 @@ kptable:				; ** ASCII values, reversed both column and row order 130512 **
 	.asc "963?"
 	.asc "+-", 27, 13	; rightmost column, top to bottom
 
-kpshift:				; ** alternate, shifted table (TBD) **
+kpshift:				; ** alternate, shifted table (TBD) ** MUST differ a power-of-two from kptable
 	.asc "HEBA"			; leftmost column, top to bottom
 	.asc "IFC."			; strike shift twice to get a dot
 	.asc "JGD!"
