@@ -1,9 +1,8 @@
 ; default options for minimOS and other modules
-; suitable for SDd with emulated serial
-; ***** Jornadas HackLabAlmería en El Ejido 2017 *****
+; suitable for SDd with LED keypad and KIM-like monitor
 ; copy or link as options.h in root dir
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20171114-0951
+; last modified 20200110-1045
 
 ; *** set conditional assembly ***
 
@@ -36,17 +35,19 @@
 #define		MACHINE_ID		"sdd"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
-#define		ARCH			chihuahua
+#define		ARCH_h			"firmware/chihuahua.h"
+#define		ARCH_s			"firmware/chihuahua.s"
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK		sdd_serial
+#define		DRIVER_PACK_h		"drivers/config/sdd_kimpad.h"
+#define		DRIVER_PACK_s		"drivers/config/sdd_kimpad.s"
 
 ; *** Default files ***
 ; default shell from folder
-#define		SHELL		monitor.s
+#define		SHELL		"shell/kimpad.s"
 
-; default NMI, BRK etc TBD ***********
+; NMI and BRK will be supplied by KIMpad shell!
 
 ; ** start of ROM **
 ROM_BASE	=	$F000	; classic SDd 4 kiB EPROM
@@ -78,7 +79,7 @@ VIA_U	=	VIA1
 
 
 ; *** set standard device *** new 20160331
-DEVICE	=	SOFT232		; standard I/O device
+DEVICE	=	DEV_LED		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220
@@ -97,7 +98,7 @@ ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp
 PHI2	=	1000000		; clock speed in Hz
 
 ; ** jiffy interrupt frequency **
-IRQ_FREQ =	200			; general case
+IRQ_FREQ =	250			; general case, new standard speed!
 ; T1_DIV no longer specified, should be computed elsewhere
 ; could be PHI2/IRQ_FREQ-2
 
