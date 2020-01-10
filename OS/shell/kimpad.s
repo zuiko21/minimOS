@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
-; v0.1a4
-; last modified 20200109-1729
+; v0.1a5
+; last modified 20200110-0900
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -8,6 +8,12 @@
 #endif
 
 .(
+; *** assembling options ***
+; KIMSHELL waives all minimOS initialisation, as this is a VERY low-level shell
+#define	KIMSHELL	_KIMSHELL
+; KIMDEV tries not to ask for an I/O device, using default ID 0 instead
+#define	KIMDEV		_KIMDEV
+
 ; *** declare zeropage variables ***
 ; ##### uz is first available zeropage byte #####
 	iodev	= uz			; standard I/O device ##### minimOS specific #####
@@ -53,7 +59,9 @@ KPSize	=	KPEnd - KPHead - 256	; compute size NOT including header!
 ; ****************************
 ; *** initialise the shell ***
 ; ****************************
-; ##### minimOS specific stuff #####
+
+; ##### minimOS specific stuff ##### not really needed as this is VERY low-level!
+#ifndef	KIMSHELL
 	LDA #__last-uz		; zeropage space needed
 ; check whether has enough zeropage space
 #ifdef	SAFE
@@ -65,6 +73,7 @@ go_kp:
 #endif
 	STA z_used			; set needed ZP space as required by minimOS
 ; ### remaining specific code may be omitted in case default (#0) devs are used ###
+#ifndef	KIMDEV
 	_STZA w_rect		; no screen size required
 	_STZA w_rect+1		; neither MSB
 	LDY #<KPtitle		; LSB of window title
@@ -80,25 +89,57 @@ go_kp:
 	BCC open_kp			; no errors
 		_ABORT(NO_RSRC)		; abort otherwise! proper error code
 open_kp:
-	STY iodev			; store device... or just assume zero!
+#else
+	LDY #0				; ### default kernel device for KIMDEV option ###
+#endif
+	STY iodev			; ### store device... or just assume zero! ###
+#endif
 ; ##### end of minimOS specific stuff #####
+
+	_STZA mode			; starts on address mode (!)
+	_STZA value			; clear entry buffer
+	_STZA value+1
+; anything else? may put splash screen here
 
 ; **********************************************
 ; *** install interrupt (NMI & BRK) handlers ***
 ; **********************************************
-	LDY #<kp_int		; point to ISR
-	LDA #>kp_int
+	LDY #<kp_isr		; point to ISR
+	LDA #>kp_isr
+	STY ex_pt			; eeeeeeeek (may directly poke the firmware vector instead...)
+	STA ex_pt+1
 	_ADMIN(SET_NMI)		; ### install debuggers ###
 	_ADMIN(SET_DBG)
 
-; *** initialise variables ***
-kp_init:
-	_STZA mode			; starts on address mode
-	_STZA value			; clear entry buffer
-	_STZA value+1
-; anything else?
+; proceed with shell
+	TSX
+	STX s_sp			; at least, keep SP as will be altered upon execution!
+	_BRA kp_start		; if not from interrupt, register values are meaningless
 
-; it's nice to have a little splash screen
+; *********************************
+; *** *** INTERRUPT HANDLER *** ***
+; *********************************
+kp_isr:
+	STA s_acc			; save registers as usual
+	PLA					; top of stack after interrupt is P
+	STA s_psr
+kp_jsr:					; * in case of entry via JSR *
+	PLA					; pull LSB
+	STA s_pc
+	STA pointer			; just in case
+	PLA					; ditto for MSB
+	STA s_pc+1
+	STA pointer+1
+	STY s_yreg
+	STX s_xreg
+	TSX					; save stack pointer too
+	STX s_sp
+; ***************************************************
+; *** *** ...and fall into main loop (no RTI) *** ***
+; ***************************************************
+
+kp_start:
+; it's nice to have a little splash screen ever it starts, anyway (may be put as app init)
 	LDY #<KPtitle
 	LDA #>KPtitle
 	JSR prnStr			; splash screen
@@ -124,13 +165,14 @@ kp_rcv:
 ; VALID COMMANDS:
 ; ?		($3F)		goes into address mode (AD key on KIM)
 ; -		($2D)		goes into data (write) mode (DA key on KIM)
-; CR/=	($0D/$3D)	updates display with data (ending dot if in data mode)
-; */Esc	($1B/$2A)	updates display with address after CR (ending dot if in data mode)
+; CR  =	($0D/$3D)	updates display with data (ending dot if in data mode)
+; Esc *	($1B/$2A)	updates display with address after CR (ending dot if in data mode)
 ; I		($49/$69)	shows stored Program Counter (PC key on KIM)
 ; +		($2B)		advances address (like KIM)
 ; G		($47/$67)	executes code (GO key on KIM, but only allowed on address mode)
 ; **************************
-; * check address mode selection *
+
+; ** select address mode (?) **
 		CMP #'?'
 		BNE kp_nad
 			JSR kp_chk		; update pending values
@@ -138,7 +180,8 @@ kp_rcv:
 			LDA #'?'		; prompt (might be changed if desired)
 			BNE kp_echo		; show prompt and keep reading (was BRA)
 kp_nad:
-; * check data mode selection *
+
+; ** select data entry mode (-) **
 		CMP #'-'
 		BNE kp_nda
 			JSR kp_chk		; update pending values
@@ -148,7 +191,8 @@ kp_dot:
 			LDA #'.'		; dot means write mode, best for LED keypad
 			BNE kp_echo		; was BRA
 kp_nda:
-; * check address advance *
+
+; ** advance address (+) **
 		CMP #'+'
 		BNE kp_nplus
 			JSR kp_naw		; check for pending data only!
@@ -156,12 +200,12 @@ kp_nda:
 			BNE kp_pnw
 				INC pointer+1
 kp_pnw:
-; print address-dot-data (plus another dot if in write mode)
+; print address-dot-data, plus another dot if in write mode
 			JSR kp_crad		; print CR + address
 			JSR kp_data		; print dot + data byte
 			_BRA kp_wdot	; add final dot if in write mode
 kp_nplus:
-; * check execution *
+; ** execution (G) **
 		CMP #'G'
 			BEQ kp_go
 		CMP #'g'
@@ -170,11 +214,11 @@ kp_go:
 			JSR kp_chk		; update pending values
 			BIT mode		; was it writing?
 			BMI kp_go2		; notify error if so!
-; should I prepare anything before execution?
+; should I prepare anything else before execution...?
 				LDY #<kp_run	; get pointer to run string
 				LDA #>kp_run
 				JSR prnStr
-; *** for instance, preload registers ***
+; ...for instance, preload registers
 				LDX s_sp		; worth it?
 				TXS
 				LDX s_xreg
@@ -199,20 +243,21 @@ kp_nhex:				; ignore wrong key
 ; ****************************
 
 kp_ngo:
-; * check update address display *
+; ** display updated address (Esc or *) **
 		CMP #ESC
 			BEQ kp_ua
 		CMP #'*'
 		BNE kp_nua
 kp_ua:
-; must print new address (and dot if in data mode)
+; must print new address, plus dot if in data mode
 			JSR kp_crad		; print address after CR
 kp_wdot:
 			BIT mode		; is it writing?
 				BMI kp_dot		; yeah, print dot and exit
 			JMP kp_mloop	; otherwise stay with address on display
 kp_nua:
-; * check data update *
+
+; ** display updated data (CR or =) **
 		CMP #CR
 			BEQ kp_ud
 		CMP #'='
@@ -222,7 +267,8 @@ kp_ud:
 			JSR kp_data		; print data
 			_BRA kp_wdot	; ...and a dot if in write mode
 kp_nud:
-; * check PC retrieve *
+
+; ** retrieve PC contents (I) **
 		CMP #'I'
 			BEQ kp_pc
 		CMP #'i'
@@ -236,7 +282,8 @@ kp_pc:
 			STA pointer+1
 			_BRA kp_ua		; print address
 kp_npc:
-; * last, look for a valid hex digit *
+
+; ** lastly, look for a valid hex digit **
 		CMP #'F'
 			BCS kp_nhex			; >F, no number
 		CMP #'0'
@@ -369,26 +416,6 @@ kp_run:
 KPtitle:
 	.asc	"KIMpad 0.1", 0	; for headerless builds
 #endif
-
-; *********************************
-; *** *** INTERRUPT HANDLER *** ***
-; *********************************
-kp_int:
-	STA s_acc			; save registers as usual
-	PLA					; top of stack after interrupt is P
-	STA s_psr
-kp_jsr:					; * in case of entry via JSR *
-	PLA					; pull LSB
-	STA s_pc
-	STA pointer			; just in case
-	PLA					; ditto for MSB
-	STA s_pc+1
-	STA pointer+1
-	STY s_yreg
-	STX s_xreg
-	TSX					; save stack pointer too
-	STX s_sp
-	JMP kp_init			; ...or could be inlined, app skipping interrupt handler
 
 ; ***** end of stuff *****
 KPEnd:					; ### for easy size computation ###
