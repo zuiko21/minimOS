@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a5
-; last modified 20200110-1009
+; last modified 20200111-2307
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -128,6 +128,11 @@ open_kp:
 ; proceed with shell
 	TSX
 	STX s_sp			; at least, keep SP as will be altered upon execution!
+; it's nice to have a little splash screen on startup
+	LDY #<KPtitle
+	LDA #>KPtitle
+	JSR prnStr			; splash screen
+	JSR newline			; newline for convenience
 	_BRA kp_start		; if not from interrupt, register values are meaningless
 
 ; *********************************
@@ -153,11 +158,7 @@ kp_jsr:					; * in case of entry via JSR *
 ; ***************************************************
 
 kp_start:
-; it's nice to have a little splash screen ever it starts, anyway (may be put as app init)
-	LDY #<KPtitle
-	LDA #>KPtitle
-	JSR prnStr			; splash screen
-	JSR newline			; newline for convenience
+; anything else? could be elsewhere
 
 ; *****************
 ; *** main loop ***
