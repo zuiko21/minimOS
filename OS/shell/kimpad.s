@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a6
-; last modified 20200112-1432
+; last modified 20200112-1511
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -170,7 +170,7 @@ kp_jsr:					; * in case of entry via JSR *
 	STX s_xreg
 #else
 ; ### take saved register values from standard minimOS stack frame ###
-	.asc "NUj*"			; magic string for minimOS firmware handler (inocuous execution!) 
+	.asc "UNj*"			; magic string for minimOS firmware handler (inocuous execution!) 
 	PLA					; discard extended state...
 	PLA
 	PLA
