@@ -199,20 +199,20 @@ kp_jsr:
 
 kp_start:
 ; anything else? could be elsewhere
-
+	CLI					; enable interrupts for the display!
 ; *****************
 ; *** main loop ***
 ; *****************
 kp_mloop:
 ; read key
-		LDY iodev			; get char from standard device
+		LDY iodev			; get char from standard device ###
 		_KERNEL(CIN)
 		BCC kp_rcv			; some received!
 			CPY #EMPTY			; just waiting?
 			BEQ kp_mloop
 				_PANIC("{dev}")		; device failed!
 kp_rcv:
-		LDA io_c			; read what was pressed
+		LDA io_c			; read what was pressed ###
 
 ; **************************
 ; *** command processing ***
@@ -364,7 +364,7 @@ kp_hnum:
 		ROL value+1
 		ORA value			; add new cipher
 		STA value
-		LDA io_c			; recover raw char for echo
+		LDA io_c			; recover raw char for echo ###
 ; echo desired char in A and continue
 		_BRA kp_echo
 
@@ -457,6 +457,8 @@ prnStr:
 	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
 	RTS
+
+; ** could have a generic input routine too... **
 
 ; ******************************
 ; *** strings and other data ***
