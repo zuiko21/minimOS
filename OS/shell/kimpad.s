@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
-; v0.1a5
-; last modified 20200111-2307
+; v0.1a6
+; last modified 20200112-1050
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -20,16 +20,22 @@
 #endif
 
 .(
+; **************************
 ; *** assembling options ***
+; **************************
 ; KIMSHELL waives all minimOS initialisation, as this is a VERY low-level shell
 #define	KIMSHELL	_KIMSHELL
 ; KIMDEV tries not to ask for an I/O device, using default ID 0 instead
 #define	KIMDEV		_KIMDEV
 ; remove minimOS headers
 #define	NOHEAD		_NOHEAD
+; use standard debug stack frame, comment if not available from firmware
+#define	NMI_SF		_NMI_SF
 
-; *** declare zeropage variables ***
-; ##### uz is first available zeropage byte #####
+; *****************************
+; *** zeropage declarations ***
+; *****************************
+; ##### uz is first available zeropage byte, typically 3 on minimOS #####
 	iodev	= uz			; standard I/O device ##### minimOS specific #####
 	mode	= iodev+1		; 0/+ is address (read) mode, $FF/- is data (write) mode
 	value	= mode+1		; storage for typed numbers (word)
@@ -120,12 +126,21 @@ open_kp:
 ; **********************************************
 	LDY #<kp_isr		; point to ISR
 	LDA #>kp_isr
+#ifdef	NMI_SF
 	STY ex_pt			; eeeeeeeek (may directly poke the firmware vector instead...)
 	STA ex_pt+1
 	_ADMIN(SET_NMI)		; ### install debuggers ###
 	_ADMIN(SET_DBG)
+#else
+	STY fw_nmi			; set specific interrupt indirect vectors
+	STA fw_nmi+1
+	STY fw_dbg
+	STA fw_dbg+1
+#endif
 
-; proceed with shell
+; **************************
+; *** proceed with shell ***
+; **************************
 	TSX
 	STX s_sp			; at least, keep SP as will be altered upon execution!
 ; it's nice to have a little splash screen on startup
@@ -139,6 +154,8 @@ open_kp:
 ; *** *** INTERRUPT HANDLER *** ***
 ; *********************************
 kp_isr:
+#ifndef	NMI_SF
+; direct register saving, in case firmware does not do it
 	STA s_acc			; save registers as usual
 	PLA					; top of stack after interrupt is P
 	STA s_psr
@@ -151,6 +168,29 @@ kp_jsr:					; * in case of entry via JSR *
 	STA pointer+1
 	STY s_yreg
 	STX s_xreg
+#else
+; ### take saved register values from standard minimOS stack frame ###
+	.asc "NUj*"			; magic string for minimOS firmware handler (inocuous execution!) 
+	PLA					; discard extended state...
+	PLA
+	PLA
+	PLA					; stored Y
+	STA s_yreg
+	PLA					; stored X
+	STA s_xreg
+	PLA					; stored A
+	STA s_acc
+	PLA					; stored PSR
+	STA s_psr
+kp_jsr:
+	PLA					; stored PC.L
+	STA s_pc
+	STA s_pointer
+	PLA					; stored PC.H
+	STA s_pc+1
+	STA s_pointer+1
+; stack is empty already, SP is like it was before interrupt
+#endif
 	TSX					; save stack pointer too
 	STX s_sp
 ; ***************************************************
