@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a6
-; last modified 20200112-1050
+; last modified 20200112-1432
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -193,26 +193,19 @@ kp_jsr:
 #endif
 	TSX					; save stack pointer too
 	STX s_sp
+	CLI					; enable interrupts for the display!
 ; ***************************************************
 ; *** *** ...and fall into main loop (no RTI) *** ***
 ; ***************************************************
 
 kp_start:
-; anything else? could be elsewhere
-	CLI					; enable interrupts for the display!
+; anything else?
+
 ; *****************
 ; *** main loop ***
 ; *****************
 kp_mloop:
-; read key
-		LDY iodev			; get char from standard device ###
-		_KERNEL(CIN)
-		BCC kp_rcv			; some received!
-			CPY #EMPTY			; just waiting?
-			BEQ kp_mloop
-				_PANIC("{dev}")		; device failed!
-kp_rcv:
-		LDA io_c			; read what was pressed ###
+		JSR readChar			; read key in A, letters are uppercase (generic)
 
 ; **************************
 ; *** command processing ***
@@ -260,12 +253,10 @@ kp_pnw:
 			JSR kp_data		; print dot + data byte
 			_BRA kp_wdot	; add final dot if in write mode
 kp_nplus:
+
 ; ** execution (G) **
 		CMP #'G'
-			BEQ kp_go
-		CMP #'g'
 		BNE kp_ngo
-kp_go:
 			JSR kp_chk		; update pending values
 			BIT mode		; was it writing?
 			BMI kp_go2		; notify error if so!
@@ -298,6 +289,7 @@ kp_nhex:				; ignore wrong key
 ; ****************************
 
 kp_ngo:
+
 ; ** display updated address (Esc or *) **
 		CMP #ESC
 			BEQ kp_ua
@@ -325,10 +317,7 @@ kp_nud:
 
 ; ** retrieve PC contents (I) **
 		CMP #'I'
-			BEQ kp_pc
-		CMP #'i'
 		BNE kp_npc
-kp_pc:
 ; must copy PC as address, then print as usual
 			JSR kp_chk		; update pending values
 			LDY s_pc		; get saved PC
@@ -338,7 +327,7 @@ kp_pc:
 			_BRA kp_ua		; print address
 kp_npc:
 
-; ** lastly, look for a valid hex digit **
+; ** lastly, look for a valid hex digit, needs uppercase! **
 		CMP #'F'
 			BCS kp_nhex			; >F, no number
 		CMP #'0'
@@ -350,7 +339,7 @@ kp_npc:
 kp_hex:
 		SEC
 		SBC #'0'			; ASCII to value, if number
-		CMP #10				; or is it a letter?
+		CMP #10				; or is it a letter? must be uppercase!
 		BCC kp_hnum
 			SBC #7				; convert letter to value, C is set
 kp_hnum:
@@ -415,7 +404,7 @@ kp_byte:
 	PLA				; retrieve full byte, only LSNibble will remain
 kp_nib:
 	AND #$0F		; supress high nibble
-	CMP #$10		; should use letter?
+	CMP #10			; should use letter?
 	BCC kp_num
 		ADC #6			; carry was set! now is clear
 kp_num:
@@ -458,7 +447,22 @@ prnStr:
 ; currently ignoring any errors...
 	RTS
 
-; ** could have a generic input routine too... **
+; * read key into A (locking) *
+readChar:
+	LDY iodev			; get char from standard device ###
+	_KERNEL(CIN)
+	BCC kp_rcv			; some received!
+		CPY #EMPTY			; just waiting?
+		BEQ kp_mloop
+			_PANIC("{dev}")		; device failed!
+kp_rcv:
+	LDA io_c			; read what was pressed ###
+	CMP #'a'			; is it lowercase?
+	BCC kp_nlc
+		AND # %11011111			; convert to uppercase (letters only)
+kp_nlc:
+;	STA io_c			; store for echo if not using OS
+	RTS
 
 ; ******************************
 ; *** strings and other data ***
@@ -477,4 +481,3 @@ KPtitle:
 ; ***** end of stuff *****
 KPEnd:					; ### for easy size computation ###
 .)
-
