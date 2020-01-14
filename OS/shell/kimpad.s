@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
-; v0.1a6
-; last modified 20200112-1511
+; v0.1a7
+; last modified 20200114-2247
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -211,18 +211,21 @@ kp_mloop:
 ; *** command processing ***
 ; **************************
 ; VALID COMMANDS:
-; ?		($3F)		goes into address mode (AD key on KIM)
+; Esc *	($1B/$2A)		goes into address mode (AD key on KIM)
 ; -		($2D)		goes into data (write) mode (DA key on KIM)
 ; CR  =	($0D/$3D)	updates display with data (ending dot if in data mode)
-; Esc *	($1B/$2A)	updates display with address after CR (ending dot if in data mode)
+; ?		($3B)	updates display with address after CR (ending dot if in data mode)
 ; I		($49/$69)	shows stored Program Counter (PC key on KIM)
 ; +		($2B)		advances address (like KIM)
 ; G		($47/$67)	executes code (GO key on KIM, but only allowed on address mode)
 ; **************************
 
-; ** select address mode (?) **
-		CMP #'?'
+; ** select address mode (ESC or *) **
+		CMP #ESC
+			BEQ kp_adm
+		CMP #'*'
 		BNE kp_nad
+kp_adm:
 			JSR kp_chk		; update pending values
 			_STZX mode		; zero (or plus) is address mode
 			LDA #'?'		; prompt (might be changed if desired)
@@ -291,11 +294,8 @@ kp_nhex:				; ignore wrong key
 kp_ngo:
 
 ; ** display updated address (Esc or *) **
-		CMP #ESC
-			BEQ kp_ua
-		CMP #'*'
+		CMP #'?'
 		BNE kp_nua
-kp_ua:
 ; must print new address, plus dot if in data mode
 			JSR kp_crad		; print address after CR
 kp_wdot:
