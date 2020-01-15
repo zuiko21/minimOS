@@ -1,7 +1,7 @@
 ; LED Keypad driver for minimOS
-; v0.9.7 including KIM-like keys (0.6.x format)
+; v0.9.7b1 including KIM-like keys (0.6.x format)
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200110-0942
+; last modified 20200115-2216
 
 #ifndef		HEADERS
 #ifdef			TESTING
@@ -111,15 +111,16 @@ lkbo_nw:
 led_cout:
 	LDA z2				; get char in case is control
 	CMP #13				; carriage return? (won't just clear, but wait for next char instead)
+		BEQ led_wcr
+	CMP #LF				; LF is treated like CR!
 	BNE led_ncr			; check other codes
+led_wcr:
 		LDA #$FF			; -1 means next received character will clear the display
 		STA led_pos			; update variable!
 led_pend:
 		_DR_OK
 led_ncr:
 	CMP #FORMFEED		; FF clears too
-		BEQ led_blank
-	CMP #LF				; LF clears too... or should it be treated like CR?
 	BNE led_noclear		; else, do print
 led_blank:
 		LDX #DIGITS			; display size
@@ -130,7 +131,7 @@ led_clear:
 		_DR_OK
 led_noclear:
 	LDX led_pos			; check whether a new line was due
-	BPL	led_nonl		; some other standard value
+	BPL led_nonl			; some other standard value
 		JSR led_blank		; interesting in-function subroutine call, and then continue printing the new character
 led_nonl:
 	CMP #8				; backspace?
@@ -161,7 +162,7 @@ led_nodot:
 led_print:
 	LDA led_pos			; cursor position
 	CMP #DIGITS			; is display full?
-		BMI led_cur			; else, don't scroll
+		BMI led_cur			; else, don't scroll, is this OK?
 	LDX #0				; reset index
 led_scroll:
 		LDA led_buf+1, X	; get from second character
@@ -180,12 +181,11 @@ led_cur:
 	INC led_pos			; move cursor
 	_DR_OK
 
-; *** input, rewritten 130507 ***
-; ***** INTENDED CHANGES *****
+; *** input, rewritten 130507, shift added late 2019-early 2020 ***
 ; ./^ is a kind of shift key, turning 0...6(9) into A...G(J), perhaps other keys will shift too
 ; *** Shifted command keys TBD ***
 ; ^+ (*), ^- (/), ^NO (SPC), ^YES (=), ^HELP (!)
-; a single-byte buffer will do, but must store shift mode somehow.
+; a single-byte buffer will do, but must store shift mode on the old buffer size.
 led_cin:
 	LDA lkp_buf			; gets the only char stored at buffer
 	BEQ ledi_none		; no way if it's empty
