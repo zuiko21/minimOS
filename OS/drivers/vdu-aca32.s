@@ -7,7 +7,25 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/vdu-aca32.s -I drivers/ -I firmware/ -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
 #include "../usual.h"
+#endif
+; specific headers for this driver
+.bss
+#include "firmware/acapulco.h"
+#include "vdu-aca32.h"
+.text
+#endif
 
 .(
 ; *** begins with sub-function addresses table ***
@@ -50,6 +68,10 @@ va_err:
 ; *** initialise stuff ***
 ; ************************
 va_init:
+	LDY #<va_sfont		; install supplied font eeeeeeek
+	LDA #>va_sfont
+	STY va_font
+	STA va_font+1
 ; must set up CRTC first, depending on selected video mode!
 	LDA va_mode			; get requested *** from firmware!
 	AND #4				; filter relevant bits, just D2
@@ -241,11 +263,11 @@ vch_sh:
 		DEX					; next shift (2+3)
 		BNE vch_sh
 ; add offset to font base address
-	LDA #<va_font		; add to base... (2+2)
+	LDA va_font			; add to base... (2+2)
 	CLC
 	ADC io_c			; ...the computed offset (3)
 	STA v_src			; store locally (3)
-	LDA #>va_font		; same for MSB (2+3)
+	LDA va_font+1		; same for MSB (2+3)
 	ADC io_c+1
 ;	_DEC				; in case the font has no non-printable glyphs
 	STA v_src+1			; is source pointer (3)
@@ -422,7 +444,7 @@ va_data:
 ; mode 0 (aka 32/50) is 256x240 1-6-3, fully compatible
 	.byt 49				; R0, horizontal total chars - 1
 	.byt 32				; R1, horizontal displayed chars
-	.byt *37				; R2, HSYNC position - 1
+	.byt 37				; R2, HSYNC position - 1 ***check***
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
@@ -441,7 +463,7 @@ va_data:
 ; mode 4 (aka 32/48) is 256x240 1-6-3, most likely compatible
 	.byt 47				; R0, horizontal total chars - 1
 	.byt 32				; R1, horizontal displayed chars
-	.byt *37				; R2, HSYNC position - 1
+	.byt 37				; R2, HSYNC position - 1 ***check***
 	.byt 38				; R3, HSYNC width (may have VSYNC in MSN)
 	.byt 31				; R4, vertical total chars - 1
 	.byt 13				; R5, total raster adjust
@@ -457,6 +479,6 @@ va_data:
 	.byt <VA_BASE
 
 ; *** glyphs ***
-va_font:
+va_sfont:
 #include "fonts/8x8.s"
 .)

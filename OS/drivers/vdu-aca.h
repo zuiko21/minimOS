@@ -1,7 +1,7 @@
 ; minimOS driver for Acapulco built-in VDU
 ; variables for v0.6
 ; (c) 2019-2020 Carlos J. Santisteban, just in case
-; last modified 20190509-1212
+; last modified 20200117-1434
 
 ; surely needed variables
 ; LOCAL data if using windows
@@ -22,10 +22,10 @@ va_font		.word	0
 ; newer variables for hardware scroll
 ; GLOBAL data
 va_bi		.byt	0		; first element on circular pointer array
-va_lpl		.dsb	30, 0		; LSB of line pointers
-va_lph		.dsb	30, 0		; MSB of line pointers
+va_lpl		.dsb	30, 0	; LSB of line pointers
+va_lph		.dsb	30, 0	; MSB of line pointers
 
 ; *** older variables with probably no more use ***
-;va_sch		.word	0		; limit address for scroll triggering
-;va_ba		.word	0		; CRTC start address, little-endian
-;va_cur		.word	0		; cursor position, little-endian
+va_sch		.word	0		; limit address for scroll triggering
+va_ba		.word	0		; CRTC start address, little-endian
+va_cur		.word	0		; cursor position, little-endian
