@@ -1,7 +1,7 @@
 ; 40-key simple ASCII keyboard for minimOS!
-; v0.6a2
+; v0.6a3
 ; (c) 2019-2020 Carlos J. Santisteban
-; last modified 20200117-1109
+; last modified 20200117-1339
 
 ; ***********************
 ; *** minimOS headers ***
@@ -19,7 +19,9 @@
 ; ** regular assembly **
 #include "../usual.h"
 #endif
-; no specific header for this driver
+; specific header for this driver
+.bss
+#include "pask.h"
 .text
 #endif
 .(
@@ -99,24 +101,24 @@ pk_init:
 pk_exit:				; placeholder
 	_DR_OK				; succeeded
 
-
-ak_get:
-	LDX ak_fo			; get output position
-	CPX ak_fi			; is it empty?
-	BNE ak_some			; no, do extract
+; *** key input ***
+pk_get:
+	LDX pk_fo			; get output position
+	CPX pk_fi			; is it empty?
+	BNE pk_some			; no, do extract
 		_DR_ERR(EMPTY)		; yes, do nothing
-ak_some:
-	LDA ak_buff, X		; extract char
+pk_some:
+	LDA pk_buff, X		; extract char
 	INX					; this is no more
 	CPX #AF_SIZ			; wrapped?
-	BNE ak_rnw			; no
+	BNE pk_rnw			; no
 		LDX #0				; or yes, back to zero
-ak_rnw:
-	STX ak_fo			; eeeeeeeeeek
+pk_rnw:
+	STX pk_fo			; eeeeeeeeeek
 	_DR_OK
 
 ; *** misc ***
-ak_nreq:
+pk_nreq:
 	_NXT_ISR			; in case gets called, exit ASAP
 
 .)
