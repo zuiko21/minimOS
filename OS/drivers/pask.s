@@ -1,12 +1,27 @@
 ; 40-key simple ASCII keyboard for minimOS!
 ; v0.6a2
 ; (c) 2019-2020 Carlos J. Santisteban
-; last modified 20190417-2121
+; last modified 20200117-1109
 
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-#include "usual.h"
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/pask.s -I drivers/ -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+; no specific header for this driver
+.text
+#endif
 .(
 ; ******************************
 ; *** standard minimOS stuff ***

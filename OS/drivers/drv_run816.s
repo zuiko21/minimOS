@@ -2,9 +2,24 @@
 ; v0.9.6b4
 ; *** new format for mOS 0.6 compatibility *** 16-bit version
 ; (c) 2017-2020 Carlos J. Santisteban
-; last modified 20180404-1320
+; last modified 20200117-1105
 
-#include	"../usual.h"
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/drv_run816.s -I drivers/ -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+; no specific header for this driver
+.text
+#endif
 .(
 ; *** begins with sub-function addresses table ***
 	.byt	DEV_CNIO	; D_ID, new values 20150323
