@@ -1,12 +1,26 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a16
 ; (c) 2019-2020 Carlos J. Santisteban
-; last modified 20190509-1239
+; last modified 20200117-1411
 
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/vdu-aca.s -I drivers/ -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
 #include "../usual.h"
-
-; this for debugging only!
+#endif
+; specific header for this driver
+.bss
 #include "vdu-aca.h"
+.text
+#endif
 
 ; ***********************
 ; *** minimOS headers ***
@@ -341,124 +355,17 @@ va_nbin:
 ; **** identify possible control codes ****
 	ASL					; character code times two
 	TAX					; is now an index
-		_JMPX(va_c0)		; new, operate according to C0 code table
-
-; *** *** much closer control routines, can be placed anywhere *** ***
-; * * EON (inverse video) * *
-vch_so:
-	LDA #$FF			; mask for reverse video
-	BNE vso_xor			; set mask and finish, no need for BRA
-
-; * * EOF (true video) * * vch_so reuses some code
-vch_si:
-		LDA #0				; mask for true video eeeeeeeeeek
-; common code for EON & EOFF
-vso_xor:
-	STA va_xor			; set new mask
-	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
-
-; * * XON (cursor on) * *
-vch_sc:
-	LDA #96				; value for visible cursor, slowly blinking
-	BNE vc_set			; put this value on register, no need for BRA
-
-; * * XOFF (cursor off) * * vch_sc reuses some code
-vch_hc:
-		LDA #32				; value for hidden cursor
-; common code for XON & XOFF
-vc_set:
-	LDX #10				; CRTC cursor register
-	STX crtc_rs			; select register...
-	STA crtc_da			; ...and set data
-	RTS					; all done for this setting
-
-; * * HOME (without clearing) * *
-va_home:
-	_STZA va_y			; reset row... and fall into HOML
-
-; * * HOML (CR without LF) * *
-va_homl:
-	_STZA va_x			; just reset column
-	_BRA va_rtnw			; update cursor and exit
-
-; * * cursor left * *
-vch_left:
-	LDX va_x			; check whether at leftmost column
-	BNE vcl_nl			; no, proceed
-		RTS				; yes, simply ignore!
-vcl_nl:
-	DEC va_x			; previous column
-	_BRA va_rtnw			; standard end
-
-; * * cursor right * * also used by normal printing
-vch_rght:
-	INC va_x			; point to following column
-	CMP va_wdth			; over line length?
-	BNE va_rtnw
-		_STZX va_x			; if so, back to left...
-; ...and fall into cursor down!
-
-; * * cursor down * *
-vch_down:
-		INC va_y			; advance row
-va_rtnw:				; **** common exit point ***
-	JMP vch_scs			; update cursor and exit
-
-; * * cursor up * *
-; this is expected to be much longer, as may need to scroll up!
-vch_up:
-	LDX va_y			; check if already at top
-	BNE vcu_nt			; no, just update coordinate
-; otherwise, scroll up...
-; *** *** scroll DOWN code just 'reversed', please check throughfully! *** ***
-		LDX va_bi			; current circular index
-		CPX #va_hght-1
-		BNE vs_xnz2			; not last one, no wrap
-			LDX #$FF			; is this OK?
-vs_xnz2:
-		INX					; ...plus one, now points to first line pointer
-; is the staff above really needed??
-		LDA va_lpl, X		; get full value
-		LDY va_lph, X
-		DEX					; go previous in queue
-		BPL vs_bnw2			; does it need to wrap? only OK up to 127 lines
-			LDX #va_hght-1
-vs_bnw2:
-		SEC
-		SBC va_wdth			; advance one line
-		BCS vs_msb			; check for wrapping
-			DEY
-			CPY #>VA_BASE		; is it before the screen?
-			BCS vs_msb2
-				LDY #>VA_SCRL-1		; wrap it all!
-vs_msb2:
-		STA va_lpl, X		; store new entry
-		TYA					; no STY abs, X...
-		STA va_lph, X
-		DEX					; backoff circular pointer
-		BPL vs_biok2		; does it need to wrap? only OK up to 127 lines!
-			LDX #va_hght-1
-; *** *** end of reference code, this ends with new circular index at X *** ***
-vs_biok2:
-		JMP vs_biok			; set new circular index, update CRTC, etc.
-vcu_nt:
-	DEC va_y			; one row up
-	JMP vch_scs			; update cursor and exit (already checked for scrolling, may skip that)
-
-; * * request for extra bytes * *
-vch_dcx:
-	STA va_col			; set flag if any colour or coordinate is to be set
-	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+	_JMPX(va_c0)		; new, operate according to C0 code table
 
 ; * * direct glyph printing (was above) * * should be close to actual printing
 vch_dle:				; * process byte as glyph *
 	_STZX va_col		; ...but reset flag! eeeeeeeek^2
-		_BRA vch_prn		; NMOS might use BEQ instead, but not for CMOS!
+	_BRA vch_prn		; NMOS might use BEQ instead, but not for CMOS!
 
 ; * * non-printable neither accepted control, thus use substitution character * *
 vch_npr:
 	LDA #'?'			; unrecognised char
-	STA io_c			; store as required
+	STA io_c			; store as required... and fall into next
 
 ; **** actual printing ****
 ; *** convert ASCII into pointer offset, needs 11 bits ***
@@ -628,6 +535,116 @@ va_bs:
 	JSR va_prn			; print whatever is in io_c (...)
 ; ...and back again!
 	JMP vch_left			; will return
+
+; *** *** much closer control routines, can be placed anywhere *** ***
+; * * EON (inverse video) * *
+vch_so:
+	LDA #$FF			; mask for reverse video
+	BNE vso_xor			; set mask and finish, no need for BRA
+
+; * * EOF (true video) * * vch_so reuses some code
+vch_si:
+		LDA #0				; mask for true video eeeeeeeeeek
+; common code for EON & EOFF
+vso_xor:
+	STA va_xor			; set new mask
+	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+
+; * * XON (cursor on) * *
+vch_sc:
+	LDA #96				; value for visible cursor, slowly blinking
+	BNE vc_set			; put this value on register, no need for BRA
+
+; * * XOFF (cursor off) * * vch_sc reuses some code
+vch_hc:
+		LDA #32				; value for hidden cursor
+; common code for XON & XOFF
+vc_set:
+	LDX #10				; CRTC cursor register
+	STX crtc_rs			; select register...
+	STA crtc_da			; ...and set data
+	RTS					; all done for this setting
+
+; * * HOME (without clearing) * *
+va_home:
+	_STZA va_y			; reset row... and fall into HOML
+
+; * * HOML (CR without LF) * *
+va_homl:
+	_STZA va_x			; just reset column
+	_BRA va_rtnw			; update cursor and exit
+
+; * * cursor left * *
+vch_left:
+	LDX va_x			; check whether at leftmost column
+	BNE vcl_nl			; no, proceed
+		RTS				; yes, simply ignore!
+vcl_nl:
+	DEC va_x			; previous column
+	_BRA va_rtnw			; standard end
+
+; * * cursor right * * also used by normal printing
+vch_rght:
+	INC va_x			; point to following column
+	CMP va_wdth			; over line length?
+	BNE va_rtnw
+		_STZX va_x			; if so, back to left...
+; ...and fall into cursor down!
+
+; * * cursor down * *
+vch_down:
+		INC va_y			; advance row
+va_rtnw:				; **** common exit point ***
+	JMP vch_scs			; update cursor and exit
+
+; * * cursor up * *
+; this is expected to be much longer, as may need to scroll up!
+vch_up:
+	LDX va_y			; check if already at top
+	BNE vcu_nt			; no, just update coordinate
+; otherwise, scroll up...
+; *** *** scroll DOWN code just 'reversed', please check throughfully! *** ***
+		LDX va_bi			; current circular index
+		CPX va_hght			; *** had -1, check following condition, was BNE ***
+		BCC vs_xnz2			; not last one, no wrap
+			LDX #$FF			; is this OK?
+vs_xnz2:
+		INX					; ...plus one, now points to first line pointer
+; is the staff above really needed??
+		LDA va_lpl, X		; get full value
+		LDY va_lph, X
+		DEX					; go previous in queue
+		BPL vs_bnw2			; does it need to wrap? only OK up to 127 lines
+			LDX va_hght
+			DEX					; ...as LDX # had -1
+vs_bnw2:
+		SEC
+		SBC va_wdth			; advance one line
+		BCS vs_msb2			; check for wrapping
+			DEY
+			CPY #>VA_BASE		; is it before the screen?
+			BCS vs_msb2
+				LDY #>VA_SCRL-1		; wrap it all!
+vs_msb2:
+		STA va_lpl, X		; store new entry
+		TYA					; no STY abs, X...
+		STA va_lph, X
+		DEX					; backoff circular pointer
+		BPL vs_biok2		; does it need to wrap? only OK up to 127 lines!
+			LDX va_hght
+			DEX					; ...as LDX # had -1
+; *** *** end of reference code, this ends with new circular index at X *** ***
+vs_biok2:
+		JMP vs_biok			; set new circular index, update CRTC, etc.
+vcu_nt:
+	DEC va_y			; one row up
+	JMP vch_scs			; update cursor and exit (already checked for scrolling, may skip that)
+
+; * * request for extra bytes * *
+vch_dcx:
+	STA va_col			; set flag if any colour or coordinate is to be set
+	RTS					; all done for this setting *** no need for DR_OK as BCS is not being used
+; *** *** end of independent routines *** ***
 
 ; ********************
 ; *** several data ***
