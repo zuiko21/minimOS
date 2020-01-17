@@ -1,12 +1,12 @@
 ; LED Keypad driver for minimOS
-; v0.9.7b1 including KIM-like keys (0.6.x format)
+; v0.9.7b2 including KIM-like keys (0.6.x format)
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200115-2216
+; last modified 20200117-1441
 
 #ifndef		HEADERS
 #ifdef			TESTING
 ; ** special include set to be assembled via... **
-; xa drivers/drv_led.s -I drivers/ -DTESTING=1
+; xa drivers/drv_led.s -DTESTING=1
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
@@ -18,7 +18,7 @@
 #endif
 ; specific header for this driver
 .bss
-#include "drv_led.h"
+#include "drivers/drv_led.h"
 .text
 #endif
 
