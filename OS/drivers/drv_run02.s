@@ -2,12 +2,12 @@
 ; v0.9.6b5
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
 ; (c) 2017-2020 Carlos J. Santisteban
-; last modified 20200116-1017
+; last modified 20200118-2250
 
 #ifndef		HEADERS
 #ifdef			TESTING
 ; ** special include set to be assembled via... **
-; xa drivers/drv_run02.s -I drivers/ -DTESTING=1
+; xa drivers/drv_run02.s -DTESTING=1
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
