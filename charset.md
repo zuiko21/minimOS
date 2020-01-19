@@ -4,13 +4,13 @@ Focused on limited resource platforms, the standard **character set** for minimO
 had to satisfy the following:
 
 - **Single-byte** sequences (for easier/faster parsing).
-- Reasonably adhesion to actual standards for convenient **compatibility**.
+- Reasonably compliant to actual standards for convenient **compatibility**.
 - Support for **Spanish** characters... plus some other _personal interests_ of mine.
 
 Another consideration was trying to match the text-LCD modules charset as much as
 possible.
 
-Currently, it is _loosely_ based on **ISO 8859-1**. It does however include the
+Currently, it is _mostly_ based on **ISO 8859-1**. It does however include the
 **Euro** sign from 8859-15, replacing the ill-fitted _currency_ character.
 
 On the other hand, as _C1 control codes_ were not defined on that standard, those
@@ -69,7 +69,7 @@ DOS/Windows (`CR` plus `LF`) alternatives.
 
 Notable differences are the **cursor up/down** (made from `VT` and `LF`), the
 _CR-without-LF_ (used as `HOML`, line home) and the `XON`/`XOFF`, which make
-little sense on a _glass tty_ but are used instead to **enable the cursor**.
+little sense on a _glass tty_ but are used instead to **enable/disable the cursor**.
 
 **Colour commands**, on the other hand, are generated in a similar way to the _ZX 
 Spectrum_ although with different codes (18 for `INK`, 20 for `PAPER`).
@@ -131,4 +131,4 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 
 7.May take _extra_ byte for screen sizes over 1024 pixels, but extra bits are MSB.
  
-_last modified 20191109-1355_
+_last modified 20200119-2156_
