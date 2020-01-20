@@ -199,7 +199,7 @@ Status: in design stage
 Form-factor: 4-layer PCB, SMD components.
 
 Specs: up to 13.5 MHz 65816, up to **8 MiB RAM** (2 x Garth's modules),
-32 kiB Kernel + 2 MiB _lib_ EPROM, 2x or 3x VIA 65C22, UART 16C552, RTC MC146818, _ROM-in-RAM_.
+32 kiB Kernel + 4 MiB _lib_ EPROM, 2x or 3x VIA 65C22, UART 16C552, RTC MC146818, _ROM-in-RAM_.
 
 Interfaces: most likely those of Veracruz, plus CF & SD-card (via **65SIB**),
 _VME-like slot_...
@@ -222,7 +222,7 @@ Video output: 6445-based, _planar_ 1 MiB VRAM, up to **8 bpp**, typically **1360
 Other interfaces: most likely those of _Jalisco_. Will _definitely_ include **PS/2**
 keyboard/mouse ports.
 
-_Might create an alternate SIXtation **Turbo @ 13.5 MHz** and 1152x864 pixels_
+_Might create an alternate SIXtation **Turbo @ 13.5 MHz** and 1152x896 pixels_
 
 
 ### Peripherals (TBD)

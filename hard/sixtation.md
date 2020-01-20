@@ -18,7 +18,7 @@ A powerful **_65816-based_ graphic workstation** inspired by the _3M-compliant_ 
 is provided; nonetheless, some jumpers may provide a _half_ or a _quarter_ frequency
 of `DOTCLK` (**18 Mhz or 36 MHz** on the base _SIXtation_) as clock for the FPU, saving the
 independent oscillator. Note that _overclocking is **not** recommended_. The main
-concern is that, unkike the 68040, the 68020/030/**881/882*** have the silicon die _atop_
+concern is that, unlike the 68040, the 68020/030/**881/882*** have the silicon die _atop_
 the ceramic PGA substrate, with an _air gap_ between it and the metallic cover, making
 the use of a _heatsink_ **highly ineffective**. _Read below about the Turbo version_.
 
