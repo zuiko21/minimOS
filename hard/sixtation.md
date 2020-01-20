@@ -14,7 +14,7 @@ A powerful **_65816-based_ graphic workstation** inspired by the _3M-compliant_ 
 - RTC (146818) and DUART (16C552)
 - Usual 65xx ports, including **PS/2**, perhaps thru the use of _three_ **65C22 VIAs**.
 
-\*) Since these FPS may run **asynchronously** from the CPU, an independent oscillator
+\*) Since these FPUs may run **asynchronously** from the CPU, an independent oscillator
 is provided; nonetheless, some jumpers may provide a _half_ or a _quarter_ frequency
 of `DOTCLK` (**18 Mhz or 36 MHz** on the base _SIXtation_) as clock for the FPU, saving the
 independent oscillator. Note that _overclocking is **not** recommended_. The main
@@ -258,4 +258,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20200120-0955_
+_last modified 20200120-1003_

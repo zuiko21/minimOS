@@ -127,12 +127,12 @@ Interfaces: Piezo buzzer, SS-22, new VIA connector, VGA-compatible video output
 
 [**miniKIM**](minikim.md)
 
-Status: finishing redesign specs.
+Status: finishing specs.
 
 Form-factor: Perfboard with point-to-point soldering.
 
-Specs: 1 MHz 6502, 32 kiB RAM (16 available), 2x16 kiB EPROM, 2xVIA 6522, ready for
-_cheap video_ output. May use 32K RAM and 16K EPROM instead.
+Specs: 1 MHz 6502, 32 kiB RAM (**16 KiB** available), 2x16 kiB EPROM, 2xVIA 6522,
+ready for _cheap video_ output. _May use 32K RAM and 16K EPROM_ instead.
 
 Interfaces: original KIM keypad, 6x seven-segment displays (muxed LTC4622),
 original Application & Expansion slots.
@@ -153,8 +153,7 @@ CRTC HD6845, with _optional second PIA_.
 _This is a recreation of the `Commodore PET 8032` **switchable between 40 and 80 columns**_,
 with updated components (e.g. SRAM) and **VGA-compatible** output.
 
-Interfaces: **same as the original PET**; cassette and
-IEEE-488 on separate _optional_ boards.
+Interfaces: **same as the original PET**; cassette and IEEE-488 on separate _optional_ boards.
 
 
 
@@ -183,7 +182,7 @@ Status: in design stage _(might become a lower-spec **SIXtation**)_
 Form-factor: thru-hole PCB?
 
 Specs: 3.072 MHz 65C816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
-2 x VIA 65C22, UART 16C550 (?), RTC MC146818 (?).
+2x VIA 65C22, UART 16C550 (?), RTC MC146818 (?).
 
 Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
 **65SIB** (?), Hitachi LCD thru VIA, **PS/2**, _VME-like_ slot (65816 direct expansion)
@@ -199,10 +198,10 @@ Status: in design stage
 
 Form-factor: 4-layer PCB, SMD components.
 
-Specs: 12 MHz (I hope!) 65816, up to **8 MiB RAM** (2 x Garth's modules),
-32 kiB Kernel + 2 MiB _lib_ EPROM, 2 x VIA 65C22, UART 16C552, _ROM-in-RAM_.
+Specs: up to 13.5 MHz 65816, up to **8 MiB RAM** (2 x Garth's modules),
+32 kiB Kernel + 2 MiB _lib_ EPROM, 2x or 3x VIA 65C22, UART 16C552, RTC MC146818, _ROM-in-RAM_.
 
-Interfaces: most likely those of Veracruz, possibly plus SD-card (via **65SIB**),
+Interfaces: most likely those of Veracruz, plus CF & SD-card (via **65SIB**),
 _VME-like slot_...
 
 
@@ -210,7 +209,7 @@ _VME-like slot_...
 
 [**SIXtation**](sixtation.md)
 
-Status: in _early_ design stage
+Status: in design stage
 
 Form-factor: 4-layer PCB, SMD components.
 
@@ -220,8 +219,8 @@ up to **8 MiB RAM** (2x Garth's modules), 32 kiB Kernel + 4 MiB *lib* EPROM,
 
 Video output: 6445-based, _planar_ 1 MiB VRAM, up to **8 bpp**, typically **1360x768**.
 
-Other interfaces: most likely those of _Jalisco_, adding CF & SD-card. Will _definitely_
-include PS/2 keyboard/mouse ports.
+Other interfaces: most likely those of _Jalisco_. Will _definitely_ include **PS/2**
+keyboard/mouse ports.
 
 _Might create an alternate SIXtation **Turbo @ 13.5 MHz** and 1152x864 pixels_
 
@@ -238,7 +237,7 @@ _Might create an alternate SIXtation **Turbo @ 13.5 MHz** and 1152x864 pixels_
 
 
 
-**[PASK (_Port A Simple Keyboard_)](pask.md)**
+**[PASK (_Port 'A' Simple Keyboard_)](pask.md)**
 
 
 
@@ -256,4 +255,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20200120-0956_
+_last modified: 20200120-1010_
