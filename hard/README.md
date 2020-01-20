@@ -21,7 +21,7 @@ Form-factor: soldered PCB.
 Specs: 1 MHz 6503 (28 pin, 4 kiB addressing space), 128-byte RAM,
 3 kiB-EPROM (addressed range from a 2732), VIA 6522
 
-Intefaces: four (very large) 7-segment LED digits, light sensor, a couple of keys...
+Interfaces: four (very large) 7-segment LED digits, light sensor, a couple of keys...
 
 
 
@@ -182,7 +182,7 @@ Status: in design stage _(might become a lower-spec **SIXtation**)_
 
 Form-factor: thru-hole PCB?
 
-Specs: 4.096 MHz 65C816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
+Specs: 3.072 MHz 65C816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
 2 x VIA 65C22, UART 16C550 (?), RTC MC146818 (?).
 
 Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
@@ -214,7 +214,7 @@ Status: in _early_ design stage
 
 Form-factor: 4-layer PCB, SMD components.
 
-Specs: **9 MHz 65816**, _overclocked_ (?) **_36 MHz_ 68882 FPU**,
+Specs: **9 MHz 65816**, **_24.576 MHz_ 68881 FPU** (or faster),
 up to **8 MiB RAM** (2x Garth's modules), 32 kiB Kernel + 4 MiB *lib* EPROM,
 2x VIA 65C22, (2x) 16C552 UART, MC146818 RTC, _ROM-in-RAM_.
 
@@ -256,4 +256,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20200102-1406_
+_last modified: 20200120-0956_

@@ -6,7 +6,7 @@ A powerful **_65816-based_ graphic workstation** inspired by the _3M-compliant_ 
 ## Specifications
 
 - CPU: 65816 @ **9 MHz** (~2.5 MIPS) or **13.5 MHz** on the _Turbo_ version (~4 MIPS)
-- FPU: 68882 @ **36 MHz** (~0.38 MFLOPS, slightly overclocked\*)
+- FPU: 68881 @ **24.576 MHz** or faster\* (~0.236 MFLOPS, perhaps up to **0.35 MFLOPS**)
 - VDU: 6445 based, **1360x768**, up to 8 bpp
 - RAM: **1 MiB** on board, two _Garth Wilson's_ slots (up to **8 MiB**, 5 MiB possible)
 - ROM: 32 kiB _Kernel_ (fully switchable), up to 4 MiB _library_
@@ -14,7 +14,10 @@ A powerful **_65816-based_ graphic workstation** inspired by the _3M-compliant_ 
 - RTC (146818) and DUART (16C552)
 - Usual 65xx ports, including **PS/2**, perhaps thru the use of _three_ **65C22 VIAs**.
 
-\*) A jumper may provide a 18 Mhz clock for the FPU, in case overclocking fails. The main
+\*) Since these FPS may run **asynchronously** from the CPU, an independent oscillator
+is provided; nonetheless, some jumpers may provide a _half_ or a _quarter_ frequency
+of `DOTCLK` (**18 Mhz or 36 MHz** on the base _SIXtation_) as clock for the FPU, saving the
+independent oscillator. Note that _overclocking is **not** recommended_. The main
 concern is that, unkike the 68040, the 68020/030/**881/882*** have the silicon die _atop_
 the ceramic PGA substrate, with an _air gap_ between it and the metallic cover, making
 the use of a _heatsink_ **highly ineffective**. _Read below about the Turbo version_.
@@ -36,16 +39,16 @@ Memory addresses above `$800000` will be reserved for I/O boards (including the 
 ## Graphic card & clock
 
 Perhaps on a separate PCB, but anyway **highly integrated** on the system. _This will generate
-the main **CPU Phi-2 clock** in a fully synchronous way, for optimum performance_. Trying to
+the main **CPU Phi-2 clock** in a fully synchronous way, for **optimum performance**_. Trying to
 match the 1366/**1360 x 768** resolution of my cheap Acer widescreen monitor, which just fits the
 _megapixel_ rating, the standard 85.5 MHz (85.86 MHz according to other sources) _dot clock_
 is almost impossible to find from standard oscillator cans, whereas a **72 MHz** one seems
 quite popular. There is a **reduced blanking** timing standard for that frequency, thus will
 be the chosen master clock. _Vertical sync pulse is **positive**, while horizontal sync is negative_.
 
-Divided by 8 it will generate the **9 MHz CPU clock** (instead of the previously specced
-_10.7 MHz_), and further halved will fit the maximum _4.5 MHz **HD6445** CRTC_ clock. On the
-other hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU. Since
+This `DOTCLK` divided by 8 will generate the **9 MHz CPU clock** (instead of the previously specced
+_10.7 MHz_), and further halved will fit the maximum _4.5 MHz **HD6445 CRTC**_ clock. On the
+other hand, half the dot clock (36 MHz) might work for a _slightly overclocked_ FPU (read above). Since
 **all timing is derived from the _dot clock_**, the main CPU board _may lack an oscillator_,
 as it will be located on the video board.
 
@@ -75,9 +78,10 @@ _a **quarter** of Phi-2 frequency_ to stay within the 6445 limits, thus configur
 characters. While this configuration further reduces sync and porch timing accuracy, no issues are expected thanks
 to the ample borders (64 pixels both left & right, 80 top & down).
 
-A downside effect of this new rating is **impaired FPU performance**, as 54 MHz is _beyond any feasible overclocking_.
-Once again, taking a quarter of the dot clock would result on a **27 MHz** rate, still good for 0.285 MFLOPS. This
-clock rate is likely to be allowed by a 25 MHz part.
+A downside effect of this new rating might be _impaired FPU performance_, as 54 MHz is _beyond any feasible overclocking_.
+Taking a _quarter_ of the dot clock would result on a **27 MHz** rate, still good for 0.285 MFLOPS, and likely to be
+allowed by a 25 MHz part. Thus, _the use of a **separate oscillator** for the FPU is highly recommended_.
+A **32 MHz** clock on a common **68882**/33 will give nearly **0.34 MFLOPS**.
 
 On the other hand, a faster (110 MHz) **Bt 481 _RAMDAC_** should be used, otherwise
 fully compatible with slower cards.
@@ -95,7 +99,8 @@ _MC 68000_ is about **2.5 times slower** than a **9 MHz 65816**), had _graphic c
 for much improved screen handling (_RasterOp_ on Sun, _Geometry Engine_ on SGI IRIS...).
 
 The Planar layout would take several consecutive 128 kiB bitmaps, first one at `$800000-$81FFFF`.
-In case of the recommended _8 bpp_ configuration, last plane would take `$8E0000-$8FFFFF`.
+In case of the recommended _8 bpp_ configuration, last plane would take `$8E0000-$8FFFFF` _(read
+below about alternative address ranges)_.
 
 For CRTC & RAMDAC configuration, plus the _multi-plane write selector_ register, regular I/O is
 to be used (typically at page `$DF` from the first bank). **Sync inverting** flags may be addressed
@@ -253,4 +258,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20191223-2131_
+_last modified 20200120-0955_
