@@ -1,7 +1,7 @@
 ; SS-22 driver for minimOS
 ; v0.5b2, seems OBSOLETE since 2016
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20150323-1102
+; last modified 20200121-1406
 ; revised 20160928
 
 #ifndef		HEADERS
@@ -36,7 +36,7 @@
 	.word	ss_full	; NEW, no block output
 	.word	ss_bye	; shutdown procedure, new 20150305
 	.word	ss_info	; D_INFO string
-	.byt	0		; D_MEM reserved
+	.word	0		; D_MEM reserved
 
 ; *** info string ***
 ss_info:
