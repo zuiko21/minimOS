@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
-; v0.1a7
-; last modified 20200114-2247
+; v0.1a8
+; last modified 20200121-1041
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -23,9 +23,9 @@
 ; **************************
 ; *** assembling options ***
 ; **************************
-; KIMSHELL waives all minimOS initialisation, as this is a VERY low-level shell
+; KIMSHELL waives all minimOS initialisation, as this is a VERY low-level shell (assumes KIMDEV)
 #define	KIMSHELL	_KIMSHELL
-; KIMDEV tries not to ask for an I/O device, using default ID 0 instead
+; KIMDEV tries not to ask for a new I/O device, using default ID 0 instead
 #define	KIMDEV		_KIMDEV
 ; remove minimOS headers
 #define	NOHEAD		_NOHEAD
@@ -112,8 +112,10 @@ open_kp:
 #else
 	LDY #0				; ### default kernel device for KIMDEV option ###
 #endif
-	STY iodev			; ### store device... or just assume zero! ###
+#else
+	LDY #0				; ### KIMSHELL assumes KIMDEV
 #endif
+	STY iodev			; ### store device... or just assume zero! ###
 ; ##### end of minimOS specific stuff #####
 
 	_STZA mode			; starts on address mode (!)
@@ -212,12 +214,12 @@ kp_mloop:
 ; **************************
 ; VALID COMMANDS:
 ; Esc *	($1B/$2A)		goes into address mode (AD key on KIM)
-; -		($2D)		goes into data (write) mode (DA key on KIM)
-; CR  =	($0D/$3D)	updates display with data (ending dot if in data mode)
-; ?		($3B)	updates display with address after CR (ending dot if in data mode)
-; I		($49/$69)	shows stored Program Counter (PC key on KIM)
-; +		($2B)		advances address (like KIM)
-; G		($47/$67)	executes code (GO key on KIM, but only allowed on address mode)
+; -		($2D)			goes into data (write) mode (DA key on KIM)
+; CR  =	($0D/$3D)		updates display with data (ending dot if in data mode)
+; ?		($3B)			updates display with address after CR (ending dot if in data mode)
+; I		($49/$69)		shows stored Program Counter (PC key on KIM)
+; +		($2B)			advances address (like KIM)
+; G		($47/$67)		executes code (GO key on KIM, but only allowed on address mode)
 ; **************************
 
 ; ** select address mode (ESC or *) **
@@ -293,7 +295,7 @@ kp_nhex:				; ignore wrong key
 
 kp_ngo:
 
-; ** display updated address (Esc or *) **
+; ** display updated address (?) **
 		CMP #'?'
 		BNE kp_nua
 ; must print new address, plus dot if in data mode
@@ -447,7 +449,7 @@ prnStr:
 ; currently ignoring any errors...
 	RTS
 
-; * read key into A (locking) *
+; * read key into A (locking), copy into io_c *
 readChar:
 	LDY iodev			; get char from standard device ###
 	_KERNEL(CIN)
@@ -456,12 +458,13 @@ readChar:
 		BEQ kp_mloop
 			_PANIC("{dev}")		; device failed!
 kp_rcv:
+; convert into uppercase...
 	LDA io_c			; read what was pressed ###
 	CMP #'a'			; is it lowercase?
 	BCC kp_nlc
-		AND # %11011111			; convert to uppercase (letters only)
+		AND # %11011111		; convert to uppercase (letters only)
 kp_nlc:
-;	STA io_c			; store for echo if not using OS
+	STA io_c			; store for echo (always uppercase) if not using OS
 	RTS
 
 ; ******************************
