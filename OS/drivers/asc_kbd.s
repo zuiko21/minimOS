@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6b5
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20190304-1336
+; last modified 20200121-1331
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -31,27 +31,35 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-#include "usual.h"
-/*
-#include "options/chihuahua_plus.h"
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/asc_kbd.s -I drivers/ -DTESTING=1
+#include "options.h"
 #include "macros.h"
 #include "abi.h"
 .zero
 #include "zeropage.h"
-* = $200
-#include "drivers/asc_kbd.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+; specific header for this driver
+.bss
+#include "asc_kbd.h"
 .text
-*/
+#endif
+
 .(
 ; ***************
 ; *** options ***
 ; ***************
 
 ; uncomment for repeat (except for deadkeys)
-;#define	REPEAT	_REPEAT
+#define	REPEAT	_REPEAT
 
 ; uncomment for deadkey support (Spanish only this far)
-;#define	DEADKEY	_DEADKEY
+#define	DEADKEY	_DEADKEY
 
 ; ******************************
 ; *** standard minimOS stuff ***

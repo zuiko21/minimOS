@@ -1,31 +1,39 @@
 ; minimOS basic I/O driver for Kowalski 6502 simulator
-; v0.9b1
+; v0.9b2
 ; (c) 2016-2020 Carlos J. Santisteban
-; last modified 20160310-1310
+; last modified 20200121-1349
 
-#ifndef		DRIVERS
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/drv_kowalski.s -DTESTING=1
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
 .zero
 #include "zeropage.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+; no specific header for this driver
 .text
 #endif
 
 ; *** begins with sub-function addresses table ***
-	.byt	DEV_CONIO	; D_ID, new values 20150323
-	.byt	A_CIN + A_COUT	; poll, no req., I/O, no 1-sec and neither block transfers, non relocatable (NEWEST HERE)
-	.word	kow_rts		; initialize device, called by POST only
-	.word	kow_rts		; poll, NOT USED
-	.word	kow_rts		; req, this one can't generate IRQs, thus CLC+RTS
+	.byt	DEV_CNIO	; D_ID, new values 20150323
+	.byt	A_BLIN | A_BOUT	; poll, no req., I/O, no 1-sec and neither block transfers, non relocatable (NEWEST HERE)
 	.word	kow_cin		; cin, input from keyboard
 	.word	kow_cout	; cout, output to display
-	.word	kow_rts		; 1-sec, no need for 1-second interrupt
-	.word	kow_rts		; sin, no block input
-	.word	kow_rts		; sout, no block output
+	.word	kow_rts		; initialize device, called by POST only
+	.word	kow_rts		; poll, NOT USED
+	.word	0			; irrelevant value as no polled interrupts
+	.word	kow_err		; req, this one can't generate IRQs, thus SEC+RTS
+	.word	kow_err		; no config
+	.word	kow_err		; no status
 	.word	kow_rts		; bye, no shutdown procedure
 	.word	debug_info	; info string
-	.byt	0			; reserved for D_MEM
+	.word	0			; reserved for D_MEM
 
 ; *** info string ***
 debug_info:
@@ -52,3 +60,5 @@ kow_cin:
 		_DR_OK
 kow_empty:
 	_DR_ERR(EMPTY)		; nothing yet
+kow_err:
+	_DR_ERR(UNAVAIL)

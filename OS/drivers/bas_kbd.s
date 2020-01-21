@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS, simple version
 ; v0.6a2
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20180909-1251
+; last modified 20200121-1333
 
 ; *** caveats ***
 ; alt not recognised
@@ -30,15 +30,24 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-//#include "usual.h"
-#include "options/chihuahua_plus.h"
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/bas_kbd.s -I drivers/ -DTESTING=1
+#include "options.h"
 #include "macros.h"
 #include "abi.h"
 .zero
 #include "zeropage.h"
-* = $200
-#include "drivers/bas_kbd.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+; specific header for this driver
+.bss
+#include "bas_kbd.h"
 .text
+#endif
 
 .(
 ; ******************************

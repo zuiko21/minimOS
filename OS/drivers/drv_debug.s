@@ -1,25 +1,40 @@
 ; DEBUG bus-sniffer driver for minimOS
-; v0.9.3b1, makeshift single-byte size version
+; v0.9.3b2, makeshift single-byte size version
 ; 0.6 API version 20170831
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20180404-1325
+; last modified 20200121-1342
 
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/drv_debug.s -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
 #include "../usual.h"
+#endif
+; no specific header for this driver
+.text
+#endif
 
 ; *** begins with sub-function addresses table ***
-	.byt	DEV_DEBUG				; D_ID, new values 20150323
+	.byt	DEV_DBG		; D_ID, new values 20150323
 	.byt	A_POLL | A_BOUT	; poll, no async., Output only, no config/status, non relocatable (NEWEST HERE)
 	.word	dled_err	; no input
-	.word	dled_coutN	; output N to display
+	.word	dled_cout	; output N to display
 	.word	dled_reset	; initialize device and appropiate systmps, called by POST only
 	.word	dled_get	; poll, read keypad into buffer (called by ISR)
-	.word	200		; actually will toggle CB2 each ~1 sec
+	.word	250			; will actually toggle CB2 each ~1 sec
 	.word	dled_err	; req, this one can't generate IRQs, must at least set C
 	.word	dled_err	; no config
 	.word	dled_err	; no status
 	.word	ledg_rts	; bye, no shutdown procedure
 	.word	debug_info	; info string
-	.word	0		; reserved for D_MEM
+	.word	0			; reserved for D_MEM
 
 ; *** info string ***
 debug_info:

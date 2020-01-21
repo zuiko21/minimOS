@@ -3,25 +3,32 @@
 ; (c) 2012-2020 Carlos J. Santisteban
 ; last modified 20150929-0944
 ; revised 20160928 FOR NEW INTERFACE
+; revised 20200121 for debug headers
 
 ; *** constants for 65(C)51 registers ***
 ; get ACIA from options.h
 
-; in case of standalone assembly via 'xa drivers/drv_acia.s'
-#ifndef		DRIVERS
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/drv_acia.s -I drivers/ -DTESTING=1
 #include "options.h"
+#ifndef	ACIA
+ACIA		= $DFA0		; placeholder ACIA address
+#endif
 #include "macros.h"
-#include "abi.h"	; new filename
+#include "abi.h"
 .zero
 #include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-#include "sysvars.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
 ; specific header for this driver
-#include "drivers/drv_acia.h"
+.bss
+#include "drv_acia.h"
 .text
 #endif
-
 
 ; some labels
 ACIA_RD		= ACIA		; receive data
@@ -33,7 +40,7 @@ ACIA_CTL	= ACIA + 3	; control
 
 ; *** begins with sub-function addresses table, new format 20150323 ***
 	.byt	DEV_ACIA					; physical driver number D_ID (TBD)
-	.byt	A_REQ + A_CIN + A_COUT		; no poll, by request, I/O, no 1-sec nor block transfers, non-relocatable (NEW format 20150323)
+	.byt	A_REQ | A_BLIN | A_BOUT		; no poll, by request, I/O, no 1-sec nor block transfers, non-relocatable (NEW format 20150323)
 	.word	acia_init	; initialize device and appropiate sysvars, called by POST only
 	.word	acia_rts	; nothing periodic to do
 	.word	acia_rcvd	; D_REQ IRQ whenever a character arrives, put it into buffer
