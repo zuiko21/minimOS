@@ -1,7 +1,7 @@
 ; SS-22 driver for minimOS
 ; v0.5b2, seems OBSOLETE since 2016
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200121-1406
+; last modified 20200121-1409
 ; revised 20160928
 
 #ifndef		HEADERS
@@ -26,14 +26,14 @@
 ; *** begins with sub-function addresses table ***
 	.byt	DEV_SS22					; D_ID, new format 20150323, TBD
 	.byt	A_REQ | A_BLIN | A_BOUT		; no poll, by request, I/O, no 1-sec nor block transfers, non-relocatable (NEW)
-	.word	ss_init	; initialize VIA and appropiate sysvars, called by POST only
-	.word	ss_full	; nothing periodic to do
-	.word	ss_rcp	; IRQ whenever Tx wants to send (start receiving) OR a character fully arrived (put it into buffer)
 	.word	ss_cin	; input from buffer
 	.word	ss_cout	; output via SS-22 (unbuffered)
-	.word	ss_full	; NEW, no need for 1-second interrupt
-	.word	ss_full	; NEW, no block input
-	.word	ss_full	; NEW, no block output
+	.word	ss_init	; initialize VIA and appropiate sysvars, called by POST only
+	.word	ss_full	; nothing periodic to do
+	.word	$FF		; irrelevant value as nothing periodic
+	.word	ss_rcp	; IRQ whenever Tx wants to send (start receiving) OR a character fully arrived (put it into buffer)
+	.word	ss_full	; no config
+	.word	ss_full	; no status
 	.word	ss_bye	; shutdown procedure, new 20150305
 	.word	ss_info	; D_INFO string
 	.word	0		; D_MEM reserved
