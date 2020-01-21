@@ -1,42 +1,59 @@
 ; SS-22 *asynchronous* driver for minimOS
-; v0.5a1, seems OBSOLETE since 2016
+; v0.5a2, seems OBSOLETE since 2016
 ; (c) 2012-2016 Carlos J. Santisteban
-; last modified 20150323-1103
+; last modified 20200121-1414
 ; revised 20160928
 
-; in case of standalone assembly via 'xa drivers/drv_ss22.s'
-#ifndef		DRIVERS
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/drv_ss22_async.s -I drivers/ -DTESTING=1
 #include "options.h"
 #include "macros.h"
-#include "abi.h"		; new filename
+#include "abi.h"
 .zero
 #include "zeropage.h"
-.bss
-#include "firmware/firmware.h"
-#include "sysvars.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
 ; specific header for this driver
-#include "drivers/drv_ss22.h"
+.bss
+#include "drv_ss22.h"
 .text
 #endif
 
-; *** begins with sub-function addresses table ***
-	.byt	DEV_SS22					; D_ID shared with synchronous version, TBD
-	.byt	A_REQ + A_CIN + A_COUT		; no poll, by request, I/O, no 1-sec nor block transfers, non-relocatable (NEW)
-	.word	ss_init	; initialize VIA and appropiate sysvars, called by POST only
-	.word	ss_end	; nothing periodic to do
-	.word	ss_rcp	; IRQ whenever Tx wants to send (start receiving) OR a character fully arrived (put it into buffer)
+
 	.word	ss_cin	; input from buffer
 	.word	ss_cout	; output via SS-22 (unbuffered)
-	.word	ss_end	; NEW, no need for 1-second interrupt
-	.word	ss_end	; NEW, no block input
-	.word	ss_end	; NEW, no block output
+	.word	ss_init	; initialize VIA and appropiate sysvars, called by POST only
+	.word	ss_full	; nothing periodic to do
+	.word	$FF		; irrelevant value as nothing periodic
+	.word	ss_rcp	; IRQ whenever Tx wants to send (start receiving) OR a character fully arrived (put it into buffer)
+	.word	ss_full	; no config
+	.word	ss_full	; no status
+	.word	ss_bye	; shutdown procedure, new 20150305
+	.word	ss_info	; D_INFO string
+	.word	0		; D_MEM reserved
+
+; *** begins with sub-function addresses table ***
+	.byt	DEV_SS22					; D_ID shared with synchronous version, TBD
+	.byt	A_REQ | A_BLIN | A_BOUT		; no poll, by request, I/O, no 1-sec nor block transfers, non-relocatable (NEW)
+	.word	ss_cin	; input from buffer
+	.word	ss_cout	; output via SS-22 (unbuffered)
+	.word	ss_init	; initialize VIA and appropiate sysvars, called by POST only
+	.word	ss_end	; nothing periodic to do
+	.word	$FF		; irrelevant value as nothing periodic
+	.word	ss_rcp	; IRQ whenever Tx wants to send (start receiving) OR a character fully arrived (put it into buffer)
+	.word	ss_full	; no config
+	.word	ss_full	; no status
 	.word	ss_bye	; NEW 20150213 shutdown procedure
 	.word	ss_info	; NEW 20150323 info string
-	.byt	0		; reserved for D_MEM
+	.word	0		; reserved for D_MEM
 
 ; *** info string ***
 ss_info:
-	.asc	"SS-22 asynchronous driver v0.5a1", 0
+	.asc	"SS-22 asynchronous driver v0.5a2", 0
 
 ; *** initialise ***
 ss_init:
@@ -46,7 +63,7 @@ ss_init:
 	_STZA ss_read
 	_STZA ss_cont
 	_STZA ss_stat	; no pending operations
-	LDA #_SS_SPEED	; get initial value for 15625 bps
+	LDA #SS_SPEED	; get initial value for 15625 bps
 	STA ss_speed	; will be read upon reception
 ; stay disabled until actually needed!
 	LDA VIA+ACR		; get previous state
@@ -80,7 +97,7 @@ ss_free:
 	STA VIA+ACR		; shift-out under external clock
 ; put character
 	LDA zpar		; get char to be sent
-	STA VIA+SR		; put into register
+	STA VIA+VSR		; put into register
 ; pulse out CA2 and we're done
 	LDA VIA+PCR		; get previous state
 	PHA				; store for later
@@ -113,7 +130,8 @@ ss_some:
 		LDA ss_stat		; check if there was an operation in progress
 			BEQ ss_ok		; nothing in progress
 			BPL ss_shift	; get the pending byte, if receiving
-ss_ok
+ss_ok:
+ss_full:
 	_DR_OK
 
 ; *** request ***
@@ -135,7 +153,7 @@ ss_rcp:
 		LDA ss_write	; position to be written on buffer (4)
 		AND #$0F		; modulo-16, new 20150211 (2+2)
 		TAX
-		LDA VIA+SR		; load received value (4)
+		LDA VIA+VSR		; load received value (4)
 		STA ss_buf, X	; store char from A into buffer (4)
 		INX				; advance to next position (2)
 		STX ss_write	; update pointer (4)
