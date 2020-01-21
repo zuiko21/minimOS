@@ -177,7 +177,7 @@ _VME-like_ slot (65816 direct expansion)
 
 **Veracruz**
 
-Status: in design stage _(might become a lower-spec **SIXtation**)_
+Status: in design stage _(might become a lower-spec **SIXtation**)_.
 
 Form-factor: thru-hole PCB?
 
@@ -194,7 +194,7 @@ _Likely to include a 4bpp, 640x400 card._
 
 **Jalisco** _(might be merged with **SIXtation**)_
 
-Status: in design stage
+Status: in design stage.
 
 Form-factor: 4-layer PCB, SMD components.
 
@@ -209,7 +209,7 @@ _VME-like slot_...
 
 [**SIXtation**](sixtation.md)
 
-Status: in design stage
+Status: in design stage.
 
 Form-factor: 4-layer PCB, SMD components.
 
@@ -229,25 +229,51 @@ _Might create an alternate SIXtation **Turbo @ 13.5 MHz** and 1152x896 pixels_
 
 **LED-Keypad**
 
+Status: [WORKING!](https://flic.kr/p/dL6Nec)
 
+Form-factor: solderless breadboard.
+
+Specs: four 7-segment LED displays, 16-key keypad.
+
+Interface: old-style _VIAport_ connector.
+
+Intended as a basic I/O device, current driver allows hex input via a _shift_ key.
 
 
 **ASCII Keyboard**
 
+Status: [in design stage.](https://flic.kr/p/e7C1mS)
 
+Form-factor: solderless breadboard.
+
+Specs: 64 decoded keys, two sets of three modifier keys. _May include a 20x4 LCD_.
+
+Interface: old-style _VIAport_ connector, thinking about using the new **VIAport2**.
+
+Conveniently laid out keyboard, the use of an **optional LCD** will make a _self-contained
+simple terminal_.
 
 
 **[PASK (_Port 'A' Simple Keyboard_)](pask.md)**
 
+Status: in design stage.
 
+A self-contained keyboard, supported by a **minimal driver**. 40 keys plus
+the usual three _modifier_ keys allow input of the **full 8-bit** ASCII set.
 
 
 **Roñavid**
 
+Status: (almost) finished design.
 
+_Somewhat cumbersome_ **video card** for _VME-like bus_. No CRTC, just suitably
+programmed EPROMs generating all needed signals for _VGA-compatible_ output
+(typically **576x448 _bitmap_** or **288x224 @ 4bpp**).
 
 
 **mu-VDU**
+
+Status: (almost) finished design.
 
 Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 **288x224 bitmap**. _An extended **planar** version might provide **8 colours**_.
@@ -255,4 +281,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20200120-1010_
+_last modified: 20200121-0908_
