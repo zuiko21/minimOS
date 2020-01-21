@@ -1,6 +1,6 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a8
-; last modified 20200121-1041
+; last modified 20200121-1321
 ; (c) 2020 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -12,11 +12,12 @@
 #include "abi.h"
 .zero
 #include "zeropage.h"
-.text
 #else
 ; ** regular assembly **
 #include "../usual.h"
 #endif
+; no specific header
+.text
 #endif
 
 .(
@@ -187,10 +188,10 @@ kp_jsr:					; * in case of entry via JSR *
 kp_jsr:
 	PLA					; stored PC.L
 	STA s_pc
-	STA s_pointer
+	STA pointer
 	PLA					; stored PC.H
 	STA s_pc+1
-	STA s_pointer+1
+	STA pointer+1
 ; stack is empty already, SP is like it was before interrupt
 #endif
 	TSX					; save stack pointer too
@@ -299,6 +300,7 @@ kp_ngo:
 		CMP #'?'
 		BNE kp_nua
 ; must print new address, plus dot if in data mode
+kp_ua:
 			JSR kp_crad		; print address after CR
 kp_wdot:
 			BIT mode		; is it writing?
@@ -455,7 +457,7 @@ readChar:
 	_KERNEL(CIN)
 	BCC kp_rcv			; some received!
 		CPY #EMPTY			; just waiting?
-		BEQ kp_mloop
+		BEQ readChar		; try again, or...
 			_PANIC("{dev}")		; device failed!
 kp_rcv:
 ; convert into uppercase...
