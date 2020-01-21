@@ -1,8 +1,27 @@
 ; software multitasking module for minimOS
 ; v0.6b1
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20190215-1204
+; last modified 20200121-1431
 ; *** UNDER REVISION ***
+
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/multitask.s -I drivers/ -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+; specific header for this driver
+.bss
+#include "multitask.h"
+.text
+#endif
 
 ; ********************************
 ; *** multitasking driver code ***
@@ -10,14 +29,6 @@
 
 ; *** MX_BRAID defined in .h for some reasonable number of braids ***
 ; *** delay counter for reasonable overhead will be set in header ***
-
-#ifndef		HEADERS
-#include "../usual.h"
-; specific header
-.bss
-#include "multitask.h"
-.text
-#endif
 
 .(
 ; *** begins with sub-function addresses table *** REVISE

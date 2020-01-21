@@ -1,7 +1,7 @@
 ; software multitasking module for minimOS·16
 ; v0.6a5
 ; (c) 2016-2020 Carlos J. Santisteban
-; last modified 20181104-1143
+; last modified 20200121-1432
 
 ; ***************************
 ; *** multitasking driver ***
@@ -11,8 +11,19 @@
 MX_BRAID		= 16	; takes 8 kiB -- hope it is OK to define here!
 
 #ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa -w drivers/multitask16.s -I drivers/ -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
 #include "../usual.h"
-; specific header
+#endif
+; specific header for this driver
 .bss
 #include "multitask16.h"
 .text
@@ -328,6 +339,7 @@ mmf_loop:
 		BNE mmf_loop		; until the bottom of the list (3/2)
 	BEQ mmf_nfound		; nothing was found, just return 0 as system-reserved braid ID
 ; otherwise there are some flags to initialise
+mmf_found:
 		LDA #BR_BORN		; new value, no longer set as BR_STOP (2)
 		STA mm_flags-2, Y	; reserve braid (4)
 mmf_nfound:
@@ -481,7 +493,8 @@ mm_hndl:
 
 
 ; -------------------------------OLD----------------------
-/*
+
+
 ; get code at some address running into a paused (?) braid ****** REVISE ****** REVISE ******
 ; Y <- PID, ex_pt <- addr, cpu_ll <- architecture, def_io <- sys_in & sysout
 ; no longer should need some flag to indicate XIP or not! code start address always at stack bottom
@@ -569,7 +582,7 @@ mmx_sfp:
 ; set architecture into flags!
 	LDX #0				; reset index
 arch_loop:
-		CMP arch_tab, X		; compare with list item
+;		CMP arch_tab, X		; compare with list item *********
 			BEQ arch_ok			; detected!
 		INX					; next
 		CPX #4				; supported limit?
@@ -587,8 +600,10 @@ arch_ok:
 	XBA					; now for LSB
 	LDA #<mm_context	; should be zero for optimum performance
 	TCD					; back to current direct page
+; placeholders ********
+mm_seth:mm_fore:mm_getfg
 	_DR_OK				; done
-*/
+
 
 ; *********************************
 ; *** diverse data and pointers ***

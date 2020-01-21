@@ -1,7 +1,7 @@
 ; Hitachi LCD for minimOS
 ; v0.6a4
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20180821-2135
+; last modified 20200121-1424
 
 ; new VIA-connected device ID is $10-17, will go into PB
 ; VIA bit functions (data goes thru PA)
@@ -13,23 +13,31 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-//#include "../usual.h"
-#include "options/chihuahua_plus.h"
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa drivers/lcd.s -I drivers/ -DTESTING=1
+#include "options.h"
 #include "macros.h"
 #include "abi.h"
 .zero
 #include "zeropage.h"
-
-* = $200
-#include "drivers/lcd.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+; specific header for this driver
+.bss
+#include "lcd.h"
 .text
+#endif
 
 .(
 ; *** assembly options and other constants ***
 ; substitution for undefined chars
 #define	SUBST	'?'
 ; enable char redefining for international support
-;#define	INTLSUP	_INTLSUP
+#define	INTLSUP	_INTLSUP
 
 ; *** begins with sub-function addresses table ***
 	.byt	144			; physical driver number D_ID (TBD)
@@ -38,7 +46,7 @@
 	.word	lcd_prn		; print N characters
 	.word	lcd_init	; initialise device, called by POST only
 	.word	lcd_rts		; no periodic interrupt
-	.word	0			; frequency makes no sense
+	.word	$FF			; frequency makes no sense
 	.word	lcd_err		; D_ASYN does nothing
 	.word	lcd_err		; no config
 	.word	lcd_err		; no status

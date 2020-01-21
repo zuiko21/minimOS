@@ -7,7 +7,7 @@
 #ifndef		HEADERS
 #ifdef			TESTING
 ; ** special include set to be assembled via... **
-; xa drivers/drv_run816.s -DTESTING=1
+; xa -w drivers/drv_run816.s -DTESTING=1
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
@@ -20,6 +20,7 @@
 ; no specific header for this driver
 .text
 #endif
+
 .(
 ; *** begins with sub-function addresses table ***
 	.byt	DEV_CNIO	; D_ID, new values 20150323

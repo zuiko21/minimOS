@@ -1,7 +1,7 @@
 ; 40-key simple ASCII keyboard for minimOS!
 ; v0.6a3
 ; (c) 2019-2020 Carlos J. Santisteban
-; last modified 20200120-0935
+; last modified 20200120-1441
 
 ; ***********************
 ; *** minimOS headers ***
@@ -9,7 +9,7 @@
 #ifndef		HEADERS
 #ifdef			TESTING
 ; ** special include set to be assembled via... **
-; xa drivers/pask.s -DTESTING=1
+; xa drivers/pask.s -I drivers/ -DTESTING=1
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
@@ -21,9 +21,10 @@
 #endif
 ; specific header for this driver
 .bss
-#include "drivers/pask.h"
+#include "pask.h"
 .text
 #endif
+
 .(
 ; ******************************
 ; *** standard minimOS stuff ***
@@ -62,7 +63,7 @@ pk_rloop:
 			BEQ blck_end		; nothing to do
 ; inlined code to get one char in A
 		PHY
-#include "firmware/modules/pask_read.s"
+#include "../firmware/modules/pask_read.s"
 ; should check events here
 		BCS pk_nev		; skip event polling if nothing picked
 			_KERNEL(B_EVENT)
@@ -97,7 +98,7 @@ pk_err:
 ; *** initialise stuff *** taken from firmware
 ; ************************
 pk_init:
-#include "firmware/modules/pask_init.s"
+#include "../firmware/modules/pask_init.s"
 pk_exit:				; placeholder
 	_DR_OK				; succeeded
 
