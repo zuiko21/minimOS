@@ -1,5 +1,5 @@
 ; minimOS opcode list for (dis)assembler modules
-; (c) 2015-2019 Carlos J. Santisteban
+; (c) 2015-2020 Carlos J. Santisteban
 ; last modified 20170530-1936
 
 ; ***** for 68asm MC6800 cross assembler *****

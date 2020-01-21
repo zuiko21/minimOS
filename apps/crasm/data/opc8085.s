@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
-; (c) 2015-2019 Carlos J. Santisteban
-; last modified 20170505-0829
+; (c) 2015-2020 Carlos J. Santisteban
+; last modified 20200121-2212
 
 ; ***** for 80asm i8080/8085 cross assembler *****
 ; 8085 set
@@ -133,7 +133,7 @@
 	.asc	"MOV M, ", 'E'+$80	; $73=MOV M,E
 	.asc	"MOV M, ", 'H'+$80	; $74=MOV M,H
 	.asc	"MOV M, ", 'L'+$80	; $75=MOV M,L
-	.asc	"MOV M, ", 'M'+$80	; $76=MOV M,M
+	.asc	"HL", 'T'+$80		; $76=HLT
 	.asc	"MOV M, ", 'A'+$80	; $77=MOV M,A
 	.asc	"MOV A, ", 'B'+$80	; $78=MOV A,B
 	.asc	"MOV A, ", 'C'+$80	; $79=MOV A,C
