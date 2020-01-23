@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200123-1727
+; last modified 20200123-2205
 
 ; ***** for z80asm Z80 cross assembler *****
 ; Z80 set, with 8085 mnemonics on comment
@@ -564,282 +564,153 @@ z80_cb:
 	.asc	"SET 7, (HL",')'+$80	; $CB $FE=SET 7, (HL)
 	.asc	"SET 7, ", 'A'+$80	; $CB $FF=SET 7, A
 
-; ********************************************** TO DO
+; **********************************************
 ; *** IX+d indexed instructions ($DD prefix) *** @pointer table + 4
 ; **********************************************
 z80_dd:
-	.asc	"NO", 'P'+$80		; $DD $00=NOP
-	.asc	"LD BC, ", '&'+$80	; $DD $01=LXI B
-	.asc	"LD (BC), ",'A'+$80	; $DD $02=STAX B
-	.asc	"INC B", 'C'+$80	; $DD $03=INX B
-	.asc	"INC ", 'B'+$80		; $DD $04=INR B
-	.asc	"DEC ", 'B'+$80		; $DD $05=DCR B
-	.asc	"LD B, ", '@'+$80	; $DD $06=MVI B
-	.asc	"RLC", 'A'+$80		; $DD $07=RLC
-	.asc	"EX AF, AF",$27+$80	; $DD $08=EX AF, AF'	Z80 ONLY!
+	.dsb	9, '?'+$80		; $DD00 ... $DD08 filler
 	.asc	"ADD HL, B",'C'+$80	; $DD $09=DAD B
-	.asc	"LD A, (BC",')'+$80	; $DD $0A=LDAX B
-	.asc	"DEC B", 'C'+$80	; $DD $0B=DCX B
-	.asc	"INC ", 'C'+$80		; $DD $0C=INR C
-	.asc	"DEC ", 'C'+$80		; $DD $0D=DCR C
-	.asc	"LD C, ", '@'+$80	; $DD $0E=MVI C
-	.asc	"RRC", 'A'+$80		; $DD $0F=RRC
+	.dsb	6, '?'+$80		; $DD0A ... $DD0F filler
 
-	.asc	"DJNZ, ", '@'+$80	; $DD $10=DJNZ		Z80 ONLY!
-	.asc	"LD DE, ", '&'+$80	; $DD $11=LXI D
-	.asc	"LD (DE), ",'A'+$80	; $DD $12=STAX D
-	.asc	"INC D", 'E'+$80	; $DD $13=INX D
-	.asc	"INC ", 'D'+$80		; $DD $14=INR D
-	.asc	"DEC ", 'D'+$80		; $DD $15=DCR D
-	.asc	"LD D, ", '@'+$80	; $DD $16=MVI D
-	.asc	"RL", 'A'+$80		; $DD $17=RAL
-	.asc	"JR ", '%'+$80		; $DD $18=JR		Z80 ONLY!
+	.dsb	9, '?'+$80		; $DD10 ... $DD18 filler
 	.asc	"ADD HL, D",'E'+$80	; $DD $19=DAD D
-	.asc	"LD A, (DE",')'+$80	; $DD $1A=LDAX D
-	.asc	"DEC D", 'E'+$80	; $DD $1B=DCX D
-	.asc	"INC ", 'E'+$80		; $DD $1C=INR E
-	.asc	"DEC ", 'E'+$80		; $DD $1D=DCR E
-	.asc	"LD E, ", '@'+$80	; $DD $1E=MVI E
-	.asc	"RR", 'A'+$80		; $DD $1F=RAR
+	.dsb	6, '?'+$80		; $DD1A ... $DD1F filler
 
-	.asc	"JR NZ, ", '%'+$80	; $DD $20=JR NZ		Z80 ONLY!
-	.asc	"LD HL, ", '&'+$80	; $DD $21=LXI H
-	.asc	"LD (&), H",'L'+$80	; $DD $22=SHLD
-	.asc	"INC H", 'L'+$80	; $DD $23=INX H
-	.asc	"INC ", 'H'+$80		; $DD $24=INR H
-	.asc	"DEC ", 'H'+$80		; $DD $25=DCR H
-	.asc	"LD H, ", '@'+$80	; $DD $26=MVI H
-	.asc	"DA", 'A'+$80		; $DD $27=DAA
-	.asc	"JR Z, ", '@'+$80	; $DD $28=JR Z		Z80 ONLY!
-	.asc	"ADD HL, H",'L'+$80	; $DD $29=DAD H
-	.asc	"LD HL, (&",')'+$80	; $DD $2A=LDHL
-	.asc	"DEC H", 'L'+$80	; $DD $2B=DCX H
-	.asc	"INC ", 'L'+$80		; $DD $2C=INR L
-	.asc	"DEC ", 'L'+$80		; $DD $2D=DCR L
-	.asc	"LD L, ", '@'+$80	; $DD $2E=MVI L
-	.asc	"CP", 'L'+$80		; $DD $2F=CMA
+	.asc	'?'+$80			; $DD $20
+	.asc	"LD IX, ", '&'+$80	; $DD $21=LD IX
+	.asc	"LD (&), I",'X'+$80	; $DD $22=LD (**),IX
+	.asc	"INC I", 'X'+$80	; $DD $23=INC IX
+	.asc	"INC IX", 'H'+$80	; $DD $24=INC IXH	UNDOCUMENTED!
+	.asc	"DEC IX", 'H'+$80	; $DD $25=DEC IXH	UNDOCUMENTED!
+	.asc	"LD IXH, ", '@'+$80	; $DD $26=LD IXH,*	UNDOCUMENTED!
+	.asc	'?'+$80			; $DD $27
+	.asc	'?'+$80			; $DD $28
+	.asc	"ADD IX, I",'X'+$80	; $DD $29=ADD IX,IX
+	.asc	"LD IX, (&",')'+$80	; $DD $2A=LD IX,(**)
+	.asc	"DEC I", 'X'+$80	; $DD $2B=DEC IX
+	.asc	"INC IX", 'L'+$80	; $DD $2C=INC IXL	UNDOCUMENTED!
+	.asc	"DEC IX", 'L'+$80	; $DD $2D=DEC IXL	UNDOCUMENTED!
+	.asc	"LD IXL, ", '@'+$80	; $DD $2E=LD IXL,*	UNDOCUMENTED!
+	.asc	'?'+$80			; $DD $2F
 
-	.asc	"JR NC, ", '%'+$80	; $DD $30=JR NC		UNLIKE 8085
-	.asc	"LD SP, ", '&'+$80	; $DD $31=LXI SP
-	.asc	"LD (&), ", 'A'+$80	; $DD $32=STA
-	.asc	"INC S", 'P'+$80	; $DD $33=INX SP
-	.asc	"INC (HL", ')'+$80	; $DD $34=INR M
-	.asc	"DEC (HL", ')'+$80	; $DD $35=DCR M
-	.asc	"LD (HL), ",'@'+$80	; $DD $36=MVI M
-	.asc	"SC", 'F'+$80		; $DD $37=STC
-	.asc	"JR C, ", '%'+$80	; $DD $38=JR C		Z80 ONLY!
-	.asc	"ADD HL, S",'P'+$80	; $DD $39=DAD SP
-	.asc	"LD A, (&", ')'+$80	; $DD $3A=LDA
-	.asc	"DEC S", 'P'+$80	; $DD $3B=DCX SP
-	.asc	"INC ", 'A'+$80		; $DD $3C=INR A
-	.asc	"DEC ", 'A'+$80		; $DD $3D=DCR A
-	.asc	"LD A, ", '@'+$80	; $DD $3E=MVI A
-	.asc	"CC", 'F'+$80		; $DD $3F=CMC
+	.asc	4, '?'+$80		; $DD30 ... $DD33 filler
+	.asc	"INC (IX+@", ')'+$80	; $DD $34=INC (IX+*)
+	.asc	"DEC (IX+@", ')'+$80	; $DD $35=DEC (IX+*)
+	.asc	"LD (IX+@), ",'@'+$80	; $DD $36=LD (IX+*),*
+	.asc	2, '?'+$80		; $DD37 ... $DD38 filler
+	.asc	"ADD IX, S",'P'+$80	; $DD $39=ADD IX,SP
+	.asc	6, '?'+$80		; $DD3A ... $DD3F filler
 
-	.asc	"LD B, ", 'B'+$80	; $DD $40=MOV B,B
-	.asc	"LD B, ", 'C'+$80	; $DD $41=MOV B,C
-	.asc	"LD B, ", 'D'+$80	; $DD $42=MOV B,D
-	.asc	"LD B, ", 'E'+$80	; $DD $43=MOV B,E
-	.asc	"LD B, ", 'H'+$80	; $DD $44=MOV B,H
-	.asc	"LD B, ", 'L'+$80	; $DD $45=MOV B,L
-	.asc	"LD B, (HL",')'+$80	; $DD $46=MOV B,M
-	.asc	"LD B, ", 'A'+$80	; $DD $47=MOV B,A
-	.asc	"LD C, ", 'B'+$80	; $DD $48=MOV C,B
-	.asc	"LD C, ", 'C'+$80	; $DD $49=MOV C,C
-	.asc	"LD C, ", 'D'+$80	; $DD $4A=MOV C,D
-	.asc	"LD C, ", 'E'+$80	; $DD $4B=MOV C,E
-	.asc	"LD C, ", 'H'+$80	; $DD $4C=MOV C,H
-	.asc	"LD C, ", 'L'+$80	; $DD $4D=MOV C,L
-	.asc	"LD C, (HL",')'+$80	; $DD $4E=MOV C,M
-	.asc	"LD C, ", 'A'+$80	; $DD $4F=MOV C,A
+	.asc	4, '?'+$80		; $DD40 ... $DD43 filler
+	.asc	"LD B, IX", 'H'+$80	; $DD $44=LD B,IXH	UNDOCUMENTED!
+	.asc	"LD B, IX", 'L'+$80	; $DD $45=LD B,IXL	UNDOCUMENTED!
+	.asc	"LD B, (IX+@",')'+$80	; $DD $46=LD B,(IX+*)
+	.asc	5, '?'+$80		; $DD47 ... $DD4B filler
+	.asc	"LD C, IX", 'H'+$80	; $DD $4C=LD C,IXH	UNDOCUMENTED!
+	.asc	"LD C, IX", 'L'+$80	; $DD $4D=LD C,IXL	UNDOCUMENTED!
+	.asc	"LD C, (IX+@",')'+$80	; $DD $4E=LD C,(IX+*)
+	.asc	'?'+$80			; $DD $4F
 
+	.asc	4, '?'+$80		; $DD50 ... $DD53 filler
+	.asc	"LD D, IX", 'H'+$80	; $DD $54=LD D,IXH	UNDOCUMENTED!
+	.asc	"LD D, IX", 'L'+$80	; $DD $55=LD D,IXL	UNDOCUMENTED!
+	.asc	"LD D, (IX+@",')'+$80	; $DD $56=LD D,(IX+*)
+	.asc	5, '?'+$80		; $DD57 ... $DD5B filler
+	.asc	"LD E, IX", 'H'+$80	; $DD $5C=LD E,IXH	UNDOCUMENTED!
+	.asc	"LD E, IX", 'L'+$80	; $DD $5D=LD E,IXL	UNDOCUMENTED!
+	.asc	"LD E, (IX+@",')'+$80	; $DD $5E=LD E,(IX+*)
+	.asc	'?'+$80			; $DD $5F
 
-	.asc	"LD D, ", 'B'+$80	; $DD $50=MOV D,B
-	.asc	"LD D, ", 'C'+$80	; $DD $51=MOV D,C
-	.asc	"LD D, ", 'D'+$80	; $DD $52=MOV D,D
-	.asc	"LD D, ", 'E'+$80	; $DD $53=MOV D,E
-	.asc	"LD D, ", 'H'+$80	; $DD $54=MOV D,H
-	.asc	"LD D, ", 'L'+$80	; $DD $55=MOV D,L
-	.asc	"LD D, (HL",')'+$80	; $DD $56=MOV D,M
-	.asc	"LD D, ", 'A'+$80	; $DD $57=MOV D,A
-	.asc	"LD E, ", 'B'+$80	; $DD $58=MOV E,B
-	.asc	"LD E, ", 'C'+$80	; $DD $59=MOV E,C
-	.asc	"LD E, ", 'D'+$80	; $DD $5A=MOV E,D
-	.asc	"LD E, ", 'E'+$80	; $DD $5B=MOV E,E
-	.asc	"LD E, ", 'H'+$80	; $DD $5C=MOV E,H
-	.asc	"LD E, ", 'L'+$80	; $DD $5D=MOV E,L
-	.asc	"LD E, (HL",')'+$80	; $DD $5E=MOV E,M
-	.asc	"LD E, ", 'A'+$80	; $DD $5F=MOV E,A
+	.asc	"LD IXH, ", 'B'+$80	; $DD $60=LD IXH,B	UNDOCUMENTED!
+	.asc	"LD IXH, ", 'C'+$80	; $DD $61=LD IXH,C	UNDOCUMENTED!
+	.asc	"LD IXH, ", 'D'+$80	; $DD $62=LD IXH,D	UNDOCUMENTED!
+	.asc	"LD IXH, ", 'E'+$80	; $DD $63=LD IXH,E	UNDOCUMENTED!
+	.asc	"LD IXH, ", 'H'+$80	; $DD $64=LD IXH,H	UNDOCUMENTED!
+	.asc	"LD IXH, ", 'L'+$80	; $DD $65=LD IXH,L	UNDOCUMENTED!
+	.asc	"LD H, (IX+@",')'+$80	; $DD $66=LD H,(IX+*)
+	.asc	"LD IXH, ", 'A'+$80	; $DD $67=LD IXH,A	UNDOCUMENTED!
+	.asc	"LD IXL, ", 'B'+$80	; $DD $68=LD IXL,B	UNDOCUMENTED!
+	.asc	"LD IXL, ", 'C'+$80	; $DD $69=LD IXL,C	UNDOCUMENTED!
+	.asc	"LD IXL, ", 'D'+$80	; $DD $6A=LD IXL,D	UNDOCUMENTED!
+	.asc	"LD IXL, ", 'E'+$80	; $DD $6B=LD IXL,E	UNDOCUMENTED!
+	.asc	"LD IXL, ", 'H'+$80	; $DD $6C=LD IXL,H	UNDOCUMENTED!
+	.asc	"LD IXL, ", 'L'+$80	; $DD $6D=LD IXL,L	UNDOCUMENTED!
+	.asc	"LD L, (IX+@",')'+$80	; $DD $6E=LD L,(IX+*)
+	.asc	"LD IXL, ", 'A'+$80	; $DD $6F=LD IXL,A	UNDOCUMENTED!
 
-	.asc	"LD H, ", 'B'+$80	; $DD $60=MOV H,B
-	.asc	"LD H, ", 'C'+$80	; $DD $61=MOV H,C
-	.asc	"LD H, ", 'D'+$80	; $DD $62=MOV H,D
-	.asc	"LD H, ", 'E'+$80	; $DD $63=MOV H,E
-	.asc	"LD H, ", 'H'+$80	; $DD $64=MOV H,H
-	.asc	"LD H, ", 'L'+$80	; $DD $65=MOV H,L
-	.asc	"LD H, (HL",')'+$80	; $DD $66=MOV H,M
-	.asc	"LD H, ", 'A'+$80	; $DD $67=MOV H,A
-	.asc	"LD L, ", 'B'+$80	; $DD $68=MOV L,B
-	.asc	"LD L, ", 'C'+$80	; $DD $69=MOV L,C
-	.asc	"LD L, ", 'D'+$80	; $DD $6A=MOV L,D
-	.asc	"LD L, ", 'E'+$80	; $DD $6B=MOV L,E
-	.asc	"LD L, ", 'H'+$80	; $DD $6C=MOV L,H
-	.asc	"LD L, ", 'L'+$80	; $DD $6D=MOV L,L
-	.asc	"LD L, (HL",')'+$80	; $DD $6E=MOV L,M
-	.asc	"LD L, ", 'A'+$80	; $DD $6F=MOV L,A
+	.asc	"LD (IX+@), ",'B'+$80	; $DD $70=LD (IX+*),B
+	.asc	"LD (IX+@), ",'C'+$80	; $DD $71=LD (IX+*),C
+	.asc	"LD (IX+@), ",'D'+$80	; $DD $72=LD (IX+*),D
+	.asc	"LD (IX+@), ",'E'+$80	; $DD $73=LD (IX+*),E
+	.asc	"LD (IX+@), ",'H'+$80	; $DD $74=LD (IX+*),H
+	.asc	"LD (IX+@), ",'L'+$80	; $DD $75=LD (IX+*),L
+	.asc	'?'+$80			; $DD $76
+	.asc	"LD (IX+@), ",'A'+$80	; $DD $77=LD (IX+*),A
+	.asc	4, '?'+$80		; $DD78 ... $DD7B filler
+	.asc	"LD A, IX", 'H'+$80	; $DD $7C=LD A,IXH	UNDOCUMENTED!
+	.asc	"LD A, IX", 'L'+$80	; $DD $7D=LD A,IXL	UNDOCUMENTED!
+	.asc	"LD A, (IX+@",')'+$80	; $DD $7E=LD A,(IX+*)
+	.asc	'?'+$80			; $DD $7F
 
-	.asc	"LD (HL), ",'B'+$80	; $DD $70=MOV M,B
-	.asc	"LD (HL), ",'C'+$80	; $DD $71=MOV M,C
-	.asc	"LD (HL), ",'D'+$80	; $DD $72=MOV M,D
-	.asc	"LD (HL), ",'E'+$80	; $DD $73=MOV M,E
-	.asc	"LD (HL), ",'H'+$80	; $DD $74=MOV M,H
-	.asc	"LD (HL), ",'L'+$80	; $DD $75=MOV M,L
-	.asc	"HAL", 'T'+$80		; $DD $76=HLT
-	.asc	"LD (HL), ",'A'+$80	; $DD $77=MOV M,A
-	.asc	"LD A, ", 'B'+$80	; $DD $78=MOV A,B
-	.asc	"LD A, ", 'C'+$80	; $DD $79=MOV A,C
-	.asc	"LD A, ", 'D'+$80	; $DD $7A=MOV A,D
-	.asc	"LD A, ", 'E'+$80	; $DD $7B=MOV A,E
-	.asc	"LD A, ", 'H'+$80	; $DD $7C=MOV A,H
-	.asc	"LD A, ", 'L'+$80	; $DD $7D=MOV A,L
-	.asc	"LD A, (HL",')'+$80	; $DD $7E=MOV A,M
-	.asc	"LD A, ", 'A'+$80	; $DD $7F=MOV A,A
+	.asc	4, '?'+$80		; $DD80 ... $DD83 filler
+	.asc	"ADD A, IX", 'H'+$80	; $DD $84=ADD A,IXH	UNDOCUMENTED!
+	.asc	"ADD A, IX", 'L'+$80	; $DD $85=ADD A,IXL	UNDOCUMENTED!
+	.asc	"ADD A, (IX+@",')'+$80	; $DD $86=ADD A,(IX+*)
+	.asc	5, '?'+$80		; $DD87 ... $DD8B filler
+	.asc	"ADC A, IX", 'H'+$80	; $DD $8C=ADC A,IXH	UNDOCUMENTED!
+	.asc	"ADC A, IX", 'L'+$80	; $DD $8D=ADC A,IXL	UNDOCUMENTED!
+	.asc	"ADC A, (IX+@",')'+$80	; $DD $8E=ADC A,(IX+*)
+	.asc	'?'+$80			; $DD $8F
 
-	.asc	"ADD A, ", 'B'+$80	; $DD $80=ADD B
-	.asc	"ADD A, ", 'C'+$80	; $DD $81=ADD C
-	.asc	"ADD A, ", 'D'+$80	; $DD $82=ADD D
-	.asc	"ADD A, ", 'E'+$80	; $DD $83=ADD E
-	.asc	"ADD A, ", 'H'+$80	; $DD $84=ADD H
-	.asc	"ADD A, ", 'L'+$80	; $DD $85=ADD L
-	.asc	"ADD A, (HL",')'+$80	; $DD $86=ADD M
-	.asc	"ADD A, ", 'A'+$80	; $DD $87=ADD A
-	.asc	"ADC A, ", 'B'+$80	; $DD $88=ADC B
-	.asc	"ADC A, ", 'C'+$80	; $DD $89=ADC C
-	.asc	"ADC A, ", 'D'+$80	; $DD $8A=ADC D
-	.asc	"ADC A, ", 'E'+$80	; $DD $8B=ADC E
-	.asc	"ADC A, ", 'H'+$80	; $DD $8C=ADC H
-	.asc	"ADC A, ", 'L'+$80	; $DD $8D=ADC L
-	.asc	"ADC A, (HL",')'+$80	; $DD $8E=ADC M
-	.asc	"ADC A, ", 'A'+$80	; $DD $8F=ADC A
+	.asc	4, '?'+$80		; $DD90 ... $DD93 filler
+	.asc	"SUB IX", 'H'+$80	; $DD $94=SUB IXH	UNDOCUMENTED!
+	.asc	"SUB IX", 'L'+$80	; $DD $95=SUB IXL	UNDOCUMENTED!
+	.asc	"SUB (IX+@",')'+$80	; $DD $96=SUB (IX+*)
+	.asc	5, '?'+$80		; $DD97 ... $DD9B filler
+	.asc	"SBC A, IX", 'H'+$80	; $DD $9C=SBC A,IXH	UNDOCUMENTED!
+	.asc	"SBC A, IX", 'L'+$80	; $DD $9D=SBC A,IXL	UNDOCUMENTED!
+	.asc	"SBC A, (IX+@",')'+$80	; $DD $9E=SBC A,(IX+*)
+	.asc	'?'+$80			; $DD $9F
 
-	.asc	"SUB ", 'B'+$80		; $DD $90=SUB B
-	.asc	"SUB ", 'C'+$80		; $DD $91=SUB C
-	.asc	"SUB ", 'D'+$80		; $DD $92=SUB D
-	.asc	"SUB ", 'E'+$80		; $DD $93=SUB E
-	.asc	"SUB ", 'H'+$80		; $DD $94=SUB H
-	.asc	"SUB ", 'L'+$80		; $DD $95=SUB L
-	.asc	"SUB (HL", ')'+$80	; $DD $96=SUB M
-	.asc	"SUB ", 'A'+$80		; $DD $97=SUB A
-	.asc	"SBC A, ", 'B'+$80	; $DD $98=SBB B
-	.asc	"SBC A, ", 'C'+$80	; $DD $99=SBB C
-	.asc	"SBC A, ", 'D'+$80	; $DD $9A=SBB D
-	.asc	"SBC A, ", 'E'+$80	; $DD $9B=SBB E
-	.asc	"SBC A, ", 'H'+$80	; $DD $9C=SBB H
-	.asc	"SBC A, ", 'L'+$80	; $DD $9D=SBB L
-	.asc	"SBC A, (HL",')'+$80	; $DD $9E=SBB M
-	.asc	"SBC A, ", 'A'+$80	; $DD $9F=SBB A
+	.asc	4, '?'+$80		; $DDA0 ... $DDA3 filler
+	.asc	"AND IX", 'H'+$80	; $DD $A4=AND IXH	UNDOCUMENTED!
+	.asc	"AND IX", 'L'+$80	; $DD $A5=AND IXL	UNDOCUMENTED!
+	.asc	"AND (IX+@",')'+$80	; $DD $A6=AND (IX+*)
+	.asc	5, '?'+$80		; $DDA7 ... $DDAB filler
+	.asc	"XOR IX", 'H'+$80	; $DD $AC=XOR IXH	UNDOCUMENTED!
+	.asc	"XOR IX", 'L'+$80	; $DD $AD=XOR IXL	UNDOCUMENTED!
+	.asc	"XOR (IX+@",')'+$80	; $DD $AE=XOR (IX+*)
+	.asc	'?'+$80			; $DD $AF
 
-	.asc	"AND ", 'B'+$80		; $DD $A0=ANA B
-	.asc	"AND ", 'C'+$80		; $DD $A1=ANA C
-	.asc	"AND ", 'D'+$80		; $DD $A2=ANA D
-	.asc	"AND ", 'E'+$80		; $DD $A3=ANA E
-	.asc	"AND ", 'H'+$80		; $DD $A4=ANA H
-	.asc	"AND ", 'L'+$80		; $DD $A5=ANA L
-	.asc	"AND (HL", ')'+$80	; $DD $A6=ANA M
-	.asc	"AND ", 'A'+$80		; $DD $A7=ANA A
-	.asc	"XOR ", 'B'+$80		; $DD $A8=XRA B
-	.asc	"XOR ", 'C'+$80		; $DD $A9=XRA C
-	.asc	"XOR ", 'D'+$80		; $DD $AA=XRA D
-	.asc	"XOR ", 'E'+$80		; $DD $AB=XRA E
-	.asc	"XOR ", 'H'+$80		; $DD $AC=XRA H
-	.asc	"XOR ", 'L'+$80		; $DD $AD=XRA L
-	.asc	"XOR (HL", ')'+$80	; $DD $AE=XRA M
-	.asc	"XOR ", 'A'+$80		; $DD $AF=XRA A
+	.asc	4, '?'+$80		; $DDB0 ... $DDB3 filler
+	.asc	"OR IX", 'H'+$80	; $DD $B4=OR IXH	UNDOCUMENTED!
+	.asc	"OR IX", 'L'+$80	; $DD $B5=OR IXL	UNDOCUMENTED!
+	.asc	"OR (IX+@",')'+$80	; $DD $B6=OR (IX+*)
+	.asc	5, '?'+$80		; $DDB7 ... $DDBB filler
+	.asc	"CP IX", 'H'+$80	; $DD $BC=CP IXH	UNDOCUMENTED!
+	.asc	"CP IX", 'L'+$80	; $DD $BD=CP IXL	UNDOCUMENTED!
+	.asc	"CP (IX+@",')'+$80	; $DD $BE=CP (IX+*)
+	.asc	'?'+$80			; $DD $BF
 
-	.asc	"OR ", 'B'+$80		; $DD $B0=ORA B
-	.asc	"OR ", 'C'+$80		; $DD $B1=ORA C
-	.asc	"OR ", 'D'+$80		; $DD $B2=ORA D
-	.asc	"OR ", 'E'+$80		; $DD $B3=ORA E
-	.asc	"OR ", 'H'+$80		; $DD $B4=ORA H
-	.asc	"OR ", 'L'+$80		; $DD $B5=ORA L
-	.asc	"OR (HL", ')'+$80	; $DD $B6=ORA M
-	.asc	"OR ", 'A'+$80		; $DD $B7=ORA A
-	.asc	"CP ", 'B'+$80		; $DD $B8=CMP B
-	.asc	"CP ", 'C'+$80		; $DD $B9=CMP C
-	.asc	"CP ", 'D'+$80		; $DD $BA=CMP D
-	.asc	"CP ", 'E'+$80		; $DD $BB=CMP E
-	.asc	"CP ", 'H'+$80		; $DD $BC=CMP H
-	.asc	"CP ", 'L'+$80		; $DD $BD=CMP L
-	.asc	"CP (HL", ')'+$80	; $DD $BE=CMP M
-	.asc	"CP ", 'A'+$80		; $DD $BF=CMP A
-
-	.asc	"RET N", 'Z'+$80	; $DD $C0=RNZ
-	.asc	"POP B", 'C'+$80	; $DD $C1=POP B
-	.asc	"JP NZ, ", '&'+$80	; $DD $C2=JNZ
-	.asc	"JP ", '&'+$80		; $DD $C3=JMP
-	.asc	"CALL NZ, ",'&'+$80	; $DD $C4=CNZ
-	.asc	"PUSH B", 'C'+$80	; $DD $C5=PUSH B
-	.asc	"ADD A, ", '@'+$80	; $DD $C6=ADI
-	.asc	"RST 00", 'H'+$80	; $DD $C7=RST 0
-	.asc	"RET ", 'Z'+$80		; $DD $C8=RZ
-	.asc	"RE", 'T'+$80		; $DD $C9=RET
-	.asc	"JP Z, ", '&'+$80	; $DD $CA=JZ
+	.asc	11, '?'+$80		; $DDC0 ... $DDCA filler
 	.asc	"*", 10+$80		; $DD $CB=...IX BITS 		** Z80 PREFIXES **
-	.asc	"CALL Z, ", '&'+$80	; $DD $CC=CZ
-	.asc	"CALL ", '&'+$80	; $DD $CD=CALL
-	.asc	"ADC A, ", '@'+$80	; $DD $CE=ACI
-	.asc	"RST 08", 'H'+$80	; $DD $CF=RST 1
+	.asc	4, '?'+$80		; $DDCC ... $DDCF filler
 
-	.asc	"RET N", 'C'+$80	; $DD $D0=RNC
-	.asc	"POP D", 'E'+$80	; $DD $D1=POP D
-	.asc	"JP NC, ", '&'+$80	; $DD $D2=JNC
-	.asc	"OUT (@), ",'A'+$80	; $DD $D3=OUT
-	.asc	"CALL NC, ",'&'+$80	; $DD $D4=CNC
-	.asc	"PUSH D", 'E'+$80	; $DD $D5=PUSH D
-	.asc	"SUB ", '@'+$80		; $DD $D6=SUI
-	.asc	"RST 10", 'H'+$80	; $DD $D7=RST 2
-	.asc	"RET ", 'C'+$80		; $DD $D8=RC
-	.asc	"EX", 'X'+$80		; $DD $D9=EXX		Z80 ONLY!
-	.asc	"JP C, ", '&'+$80	; $DD $DA=JC
-	.asc	"IN A, (@", ')'+$80	; $DD $DB=IN
-	.asc	"CALL C, ", '&'+$80	; $DD $DC=CC
-	.asc	"?", ' '+$80		; $DD $DD=**IX+D**		** Z80 PREFIX **
-	.asc	"SBA A, ", '@'+$80	; $DD $DE=SBI
-	.asc	"RST 18", 'H'+$80	; $DD $DF=RST 3
+	.asc	16, '?'+$80		; $DDD0 ... $DDDF filler
 
-	.asc	"RET P", 'O'+$80	; $DD $E0=RPO
-	.asc	"POP H", 'L'+$80	; $DD $E1=POP H
-	.asc	"JP PO, ", '&'+$80	; $DD $E2=JPO
-	.asc	"EX (SP), H",'L'+$80	; $DD $E3=XTHL
-	.asc	"CALL PO, ",'&'+$80	; $DD $E4=CPO
-	.asc	"PUSH H", 'L'+$80	; $DD $E5=PUSH H
-	.asc	"AND ", '@'+$80		; $DD $E6=ANI
-	.asc	"RST 20", 'H'+$80	; $DD $E7=RST 4
-	.asc	"RET P", 'E'+$80	; $DD $E8=RPE
-	.asc	"JP (HL", ')'+$80	; $DD $E9=PCHL
-	.asc	"JP PE, ", '&'+$80	; $DD $EA=JPE
-	.asc	"EX DE, H", 'L'+$80	; $DD $EB=XCHG
-	.asc	"CALL PE, ",'&'+$80	; $DD $EC=CPE
-	.asc	"?", ' '+$80		; $DD $ED		** Z80 PREFIXES **
-	.asc	"XOR ", '@'+$80		; $DD $EE=XRI
-	.asc	"RST 28", 'H'+$80	; $DD $EF=RST 5
+	.asc	'?'+$80			; $DD $E0
+	.asc	"POP I", 'X'+$80	; $DD $E1=POP IX
+	.asc	'?'+$80			; $DD $E2
+	.asc	"EX (SP), I",'X'+$80	; $DD $E3=EX SP,IX
+	.asc	'?'+$80			; $DD $E4
+	.asc	"PUSH I", 'X'+$80	; $DD $E5=PUSH IX
+	.asc	3, '?'+$80		; $DDE6 ... $DDE8 filler
+	.asc	"JP (IX", ')'+$80	; $DD $E9=JMP (IX)
+	.asc	6, '?'+$80		; $DDEA ... $DDEF filler
 
-	.asc	"RET ", 'P'+$80		; $DD $F0=RP
-	.asc	"POP A", 'F'+$80	; $DD $F1=POP PSW
-	.asc	"JP P, ", '&'+$80	; $DD $F2=JP
-	.asc	"D", 'I'+$80		; $DD $F3=DI
-	.asc	"CALL P, ", '&'+$80	; $DD $F4=CP
-	.asc	"PUSH A", 'F'+$80	; $DD $F5=PUSH PSW
-	.asc	"OR ", '@'+$80		; $DD $F6=ORI
-	.asc	"RST 30", 'H'+$80	; $DD $F7=RST 6
-	.asc	"RET ", 'M'+$80		; $DD $F8=RM
+	.asc	9, '?'+$80		; $DDF0 ... $DDF8 filler
 	.asc	"LD SP, H", 'L'+$80	; $DD $F9=SPHL
-	.asc	"JP M, ", '&'+$80	; $DD $FA=JM
-	.asc	"E", 'I'+$80		; $DD $FB=EI
-	.asc	"CALL M, ", '&'+$80	; $DD $FC=CM
-	.asc	"?", ' '+$80		; $DD $FD=**IY+D**		** Z80 PREFIX **
-	.asc	"CP ", '@'+$80		; $DD $FE=CPI
-	.asc	"RST 38", 'H'+$80	; $DD $FF=RST 7
+	.asc	6, '?'+$80		; $DDFA ... $DDFF filler
 
 ; ******************************************
 ; *** extended instructions ($ED prefix) *** @pointer table + 6
@@ -1042,7 +913,6 @@ z80_fd:
 	.asc	"LD C, ", 'L'+$80	; $FD $4D=MOV C,L
 	.asc	"LD C, (HL",')'+$80	; $FD $4E=MOV C,M
 	.asc	"LD C, ", 'A'+$80	; $FD $4F=MOV C,A
-
 
 	.asc	"LD D, ", 'B'+$80	; $FD $50=MOV D,B
 	.asc	"LD D, ", 'C'+$80	; $FD $51=MOV D,C
@@ -1509,3 +1379,7 @@ z80_ddcb:
 	.asc	"SET 7, (IX+@",')'+$80	; $DD $CB $FE=SET 7, (IX+*)
 	.asc	"SET 7, ", 'A'+$80	; $DD $CB $FF=SET 7, A
 
+; **************************************************** TO DO TO DO
+; *** IY+d indexed BIT instructions ($FDCB prefix) *** @pointer table + 10!
+; ****************************************************
+z80_fdcb:
