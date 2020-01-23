@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200123-1656
+; last modified 20200123-1727
 
 ; ***** for z80asm Z80 cross assembler *****
 ; Z80 set, with 8085 mnemonics on comment
@@ -9,7 +9,12 @@
 ; % expects RELATIVE addressing
 ; *** need some special characters for prefixes ***
 ; temporarily using *2, *4... (value + $80, not ASCII) for easier indexing
+; 2@bits, 4@ix, 6@xtnd, 8@iy, 10@bits ix, 12@bits iy
 
+; *************************************
+; *** standard (unprefixed) opcodes *** @pointer table
+; *************************************
+z80_std:
 	.asc	"NO", 'P'+$80		; $00=NOP
 	.asc	"LD BC, ", '&'+$80	; $01=LXI B
 	.asc	"LD (BC), ",'A'+$80	; $02=STAX B
@@ -815,7 +820,7 @@ z80_dd:
 	.asc	"JP PE, ", '&'+$80	; $DD $EA=JPE
 	.asc	"EX DE, H", 'L'+$80	; $DD $EB=XCHG
 	.asc	"CALL PE, ",'&'+$80	; $DD $EC=CPE
-	.asc	"*", 12+$80		; $DD $ED=...IX EXTD		** Z80 PREFIXES **
+	.asc	"?", ' '+$80		; $DD $ED		** Z80 PREFIXES **
 	.asc	"XOR ", '@'+$80		; $DD $EE=XRI
 	.asc	"RST 28", 'H'+$80	; $DD $EF=RST 5
 
@@ -840,6 +845,9 @@ z80_dd:
 ; *** extended instructions ($ED prefix) *** @pointer table + 6
 ; ******************************************
 z80_ed:
+; needs to fill unused opcodes!
+	.dsb	64, '?'+$80		; $ED00 ... $ED3F filler
+
 	.asc	"IN B, (C", ')'+$80	; $ED $40=IN B, (C)
 	.asc	"OUT (C), ",'B'+$80	; $ED $41=OUT (C), B
 	.asc	"SBC HL, B",'C'+$80	; $ED $42=SBC HL, BC
@@ -856,7 +864,6 @@ z80_ed:
 	.asc	"RET", 'I'+$80		; $ED $4D=RETI
 	.asc	"IM 0/", '1'+$80	; $ED $4E=IM 0/1		UNDEFINED!
 	.asc	"LD R, ", 'A'+$80	; $ED $4F=LD R, A
-
 
 	.asc	"IN D, (C", ')'+$80	; $ED $50=IN D, (C)
 	.asc	"OUT (C), ",'D'+$80	; $ED $51=OUT (C), D
@@ -909,6 +916,8 @@ z80_ed:
 	.asc	"IM ",'2'+$80		; $ED $7E=IM 2
 	.asc	"?", ' '+$80		; $ED $7F				UNDEFINED
 
+	.dsb	32, '?'+$80		; $ED80 ... $ED9F filler
+
 	.asc	"LD", 'I'+$80		; $ED $A0=LDI
 	.asc	"CP", 'I'+$80		; $ED $A1=CPI
 	.asc	"IN", 'I'+$80		; $ED $A2=INI
@@ -942,6 +951,8 @@ z80_ed:
 	.asc	"?", ' '+$80		; $ED $BD				UNDEFINED
 	.asc	"?", ' '+$80		; $ED $BE				UNDEFINED
 	.asc	"?", ' '+$80		; $ED $BF				UNDEFINED
+
+	.dsb	64, '?'+$80		; $EDC0 ... $EDFF filler
 
 ; ********************************************** TO DO
 ; *** IY+d indexed instructions ($FD prefix) *** @pointer table + 8
@@ -1163,7 +1174,7 @@ z80_fd:
 	.asc	"RET ", 'Z'+$80		; $FD $C8=RZ
 	.asc	"RE", 'T'+$80		; $FD $C9=RET
 	.asc	"JP Z, ", '&'+$80	; $FD $CA=JZ
-	.asc	"*", 14+$80		; $FD $CB=...IY BITS		** Z80 PREFIXES **
+	.asc	"*", 12+$80		; $FD $CB=...IY BITS		** Z80 PREFIXES **
 	.asc	"CALL Z, ", '&'+$80	; $FD $CC=CZ
 	.asc	"CALL ", '&'+$80	; $FD $CD=CALL
 	.asc	"ADC A, ", '@'+$80	; $FD $CE=ACI
@@ -1182,7 +1193,7 @@ z80_fd:
 	.asc	"JP C, ", '&'+$80	; $FD $DA=JC
 	.asc	"IN A, (@", ')'+$80	; $FD $DB=IN
 	.asc	"CALL C, ", '&'+$80	; $FD $DC=CC
-	.asc	"?", ' '+$80		; $FD $DD=**IX+D**		** Z80 PREFIX **
+	.asc	"?", ' '+$80		; $FD $DD=		** Z80 PREFIX **
 	.asc	"SBA A, ", '@'+$80	; $FD $DE=SBI
 	.asc	"RST 18", 'H'+$80	; $FD $DF=RST 3
 
@@ -1199,7 +1210,7 @@ z80_fd:
 	.asc	"JP PE, ", '&'+$80	; $FD $EA=JPE
 	.asc	"EX DE, H", 'L'+$80	; $FD $EB=XCHG
 	.asc	"CALL PE, ",'&'+$80	; $FD $EC=CPE
-	.asc	"*", 16+$80		; $FD $ED=...IY EXTD		** Z80 PREFIXES **
+	.asc	"?", ' '+$80		; $FD $ED=		** Z80 PREFIXES **
 	.asc	"XOR ", '@'+$80		; $FD $EE=XRI
 	.asc	"RST 28", 'H'+$80	; $FD $EF=RST 5
 
@@ -1216,7 +1227,7 @@ z80_fd:
 	.asc	"JP M, ", '&'+$80	; $FD $FA=JM
 	.asc	"E", 'I'+$80		; $FD $FB=EI
 	.asc	"CALL M, ", '&'+$80	; $FD $FC=CM
-	.asc	"?", ' '+$80		; $FD $FD=**IY+D**		** Z80 PREFIX **
+	.asc	"?", ' '+$80		; $FD $FD=		** Z80 PREFIX **
 	.asc	"CP ", '@'+$80		; $FD $FE=CPI
 	.asc	"RST 38", 'H'+$80	; $FD $FF=RST 7
 
