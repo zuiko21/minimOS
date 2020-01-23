@@ -1,13 +1,14 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200123-1016
+; last modified 20200123-1656
 
 ; ***** for z80asm Z80 cross assembler *****
 ; Z80 set, with 8085 mnemonics on comment
 ; Opcode list as bit-7 terminated strings
 ; @ expects single byte, & expects word
 ; % expects RELATIVE addressing
-; *** need some special characters for prefixes *** TBD
+; *** need some special characters for prefixes ***
+; temporarily using *2, *4... (value + $80, not ASCII) for easier indexing
 
 	.asc	"NO", 'P'+$80		; $00=NOP
 	.asc	"LD BC, ", '&'+$80	; $01=LXI B
@@ -225,7 +226,7 @@
 	.asc	"RET ", 'Z'+$80		; $C8=RZ
 	.asc	"RE", 'T'+$80		; $C9=RET
 	.asc	"JP Z, ", '&'+$80	; $CA=JZ
-	.asc	"?", ' '+$80		; $CB=**BITS**		** Z80 PREFIX **
+	.asc	"*", 2+$80		; $CB=...BITS		** Z80 PREFIX **
 	.asc	"CALL Z, ", '&'+$80	; $CC=CZ
 	.asc	"CALL ", '&'+$80	; $CD=CALL
 	.asc	"ADC A, ", '@'+$80	; $CE=ACI
@@ -244,7 +245,7 @@
 	.asc	"JP C, ", '&'+$80	; $DA=JC
 	.asc	"IN A, (@", ')'+$80	; $DB=IN
 	.asc	"CALL C, ", '&'+$80	; $DC=CC
-	.asc	"?", ' '+$80		; $DD=**IX+D**		** Z80 PREFIX **
+	.asc	"*", 4+$80		; $DD=...IX+D		** Z80 PREFIX **
 	.asc	"SBA A, ", '@'+$80	; $DE=SBI
 	.asc	"RST 18", 'H'+$80	; $DF=RST 3
 
@@ -261,7 +262,7 @@
 	.asc	"JP PE, ", '&'+$80	; $EA=JPE
 	.asc	"EX DE, H", 'L'+$80	; $EB=XCHG
 	.asc	"CALL PE, ",'&'+$80	; $EC=CPE
-	.asc	"?", ' '+$80		; $ED=**EXTD**		** Z80 PREFIX **
+	.asc	"*", 6+$80		; $ED=...EXTD		** Z80 PREFIX **
 	.asc	"XOR ", '@'+$80		; $EE=XRI
 	.asc	"RST 28", 'H'+$80	; $EF=RST 5
 
@@ -278,12 +279,12 @@
 	.asc	"JP M, ", '&'+$80	; $FA=JM
 	.asc	"E", 'I'+$80		; $FB=EI
 	.asc	"CALL M, ", '&'+$80	; $FC=CM
-	.asc	"?", ' '+$80		; $FD=**IY+D**		** Z80 PREFIX **
+	.asc	"*", 8+$80		; $FD=...IY+D		** Z80 PREFIX **
 	.asc	"CP ", '@'+$80		; $FE=CPI
 	.asc	"RST 38", 'H'+$80	; $FF=RST 7
 
 ; *************************************
-; *** BIT instructions ($CB prefix) ***
+; *** BIT instructions ($CB prefix) *** @pointer table+2
 ; *************************************
 z80_cb:
 	.asc	"RLC ", 'B'+$80		; $CB $00=RLC B
@@ -558,8 +559,8 @@ z80_cb:
 	.asc	"SET 7, (HL",')'+$80	; $CB $FE=SET 7, (HL)
 	.asc	"SET 7, ", 'A'+$80	; $CB $FF=SET 7, A
 
-; **********************************************
-; *** IX+d indexed instructions ($DD prefix) *** TO DO
+; ********************************************** TO DO
+; *** IX+d indexed instructions ($DD prefix) *** @pointer table + 4
 ; **********************************************
 z80_dd:
 	.asc	"NO", 'P'+$80		; $DD $00=NOP
@@ -778,7 +779,7 @@ z80_dd:
 	.asc	"RET ", 'Z'+$80		; $DD $C8=RZ
 	.asc	"RE", 'T'+$80		; $DD $C9=RET
 	.asc	"JP Z, ", '&'+$80	; $DD $CA=JZ
-	.asc	"?", ' '+$80		; $DD $CB=**BITS**		** Z80 PREFIX **
+	.asc	"*", 10+$80		; $DD $CB=...IX BITS 		** Z80 PREFIXES **
 	.asc	"CALL Z, ", '&'+$80	; $DD $CC=CZ
 	.asc	"CALL ", '&'+$80	; $DD $CD=CALL
 	.asc	"ADC A, ", '@'+$80	; $DD $CE=ACI
@@ -814,7 +815,7 @@ z80_dd:
 	.asc	"JP PE, ", '&'+$80	; $DD $EA=JPE
 	.asc	"EX DE, H", 'L'+$80	; $DD $EB=XCHG
 	.asc	"CALL PE, ",'&'+$80	; $DD $EC=CPE
-	.asc	"?", ' '+$80		; $DD $ED=**EXTD**		** Z80 PREFIX **
+	.asc	"*", 12+$80		; $DD $ED=...IX EXTD		** Z80 PREFIXES **
 	.asc	"XOR ", '@'+$80		; $DD $EE=XRI
 	.asc	"RST 28", 'H'+$80	; $DD $EF=RST 5
 
@@ -836,7 +837,7 @@ z80_dd:
 	.asc	"RST 38", 'H'+$80	; $DD $FF=RST 7
 
 ; ******************************************
-; *** extended instructions ($ED prefix) ***
+; *** extended instructions ($ED prefix) *** @pointer table + 6
 ; ******************************************
 z80_ed:
 	.asc	"IN B, (C", ')'+$80	; $ED $40=IN B, (C)
@@ -851,7 +852,7 @@ z80_ed:
 	.asc	"OUT (C), ",'C'+$80	; $ED $49=OUT (C), C
 	.asc	"ADC HL, B",'C'+$80	; $ED $4A=ADC HL, BC
 	.asc	"LD BC, (&",')'+$80	; $ED $4B=LD BC, (**)
-	.asc	"NEG", '?'+$80		; $ED $4C=NEG			**REPEATED**
+	.asc	"NEG", '?'+$80		; $ED $4C=NEG			UNDOCUMENTED?
 	.asc	"RET", 'I'+$80		; $ED $4D=RETI
 	.asc	"IM 0/", '1'+$80	; $ED $4E=IM 0/1		UNDEFINED!
 	.asc	"LD R, ", 'A'+$80	; $ED $4F=LD R, A
@@ -861,7 +862,7 @@ z80_ed:
 	.asc	"OUT (C), ",'D'+$80	; $ED $51=OUT (C), D
 	.asc	"SBC HL, D",'E'+$80	; $ED $52=SBC HL, DE
 	.asc	"LD (&), D",'E'+$80	; $ED $53=LD (**), DE
-	.asc	"NEG", '?'+$80		; $ED $54=NEG			**REPEATED**
+	.asc	"NEG", '?'+$80		; $ED $54=NEG			UNDOCUMENTED?
 	.asc	"RET", 'N'+$80		; $ED $55=RETN
 	.asc	"IM ", '1'+$80		; $ED $56=IM 1
 	.asc	"LD A, ", 'I'+$80	; $ED $57=LD A, I
@@ -869,7 +870,7 @@ z80_ed:
 	.asc	"OUT (C), ",'E'+$80	; $ED $59=OUT (C), E
 	.asc	"ADC HL, D",'E'+$80	; $ED $5A=ADC HL, DE
 	.asc	"LD DE, (&",')'+$80	; $ED $5B=LD DE, (**)
-	.asc	"NEG", '?'+$80		; $ED $5C=NEG			**REPEATED**
+	.asc	"NEG", '?'+$80		; $ED $5C=NEG			UNDOCUMENTED?
 	.asc	"RET", 'N'+$80		; $ED $5D=RETN
 	.asc	"IM ", '2'+$80		; $ED $5E=IM 2
 	.asc	"LD A, ", 'R'+$80	; $ED $5F=LD A, R
@@ -877,16 +878,16 @@ z80_ed:
 	.asc	"IN H, (C", ')'+$80	; $ED $60=IN H, (C)
 	.asc	"OUT (C), ",'H'+$80	; $ED $61=OUT (C), H
 	.asc	"SBC HL, H",'L'+$80	; $ED $62=SBC HL, HL
-	.asc	"LD (&), H",'L'+$80	; $ED $63=LD (**), HL	**REPEATED**
-	.asc	"NEG", '?'+$80		; $ED $64=NEG			**REPEATED**
+	.asc	"LD (&), H",'L'+$80	; $ED $63=LD (**), HL		UNDOCUMENTED?
+	.asc	"NEG", '?'+$80		; $ED $64=NEG			UNDOCUMENTED?
 	.asc	"RET", 'N'+$80		; $ED $65=RETN
 	.asc	"IM", '0'+$80		; $ED $66=IM 0
 	.asc	"RR", 'D'+$80		; $ED $67=RRD
 	.asc	"IN L, (C", ')'+$80	; $ED $68=IN L, (C)
 	.asc	"OUT (C), ",'L'+$80	; $ED $69=OUT (C), L
 	.asc	"ADC HL, H",'L'+$80	; $ED $6A=ADC HL, HL
-	.asc	"LD HL, (&",')'+$80	; $ED $6B=LD HL, (**)	**REPEATED**
-	.asc	"NEG", '?'+$80		; $ED $6C=NEG			**REPEATED**
+	.asc	"LD HL, (&",')'+$80	; $ED $6B=LD HL, (**)	UNDOCUMENTED?
+	.asc	"NEG", '?'+$80		; $ED $6C=NEG			UNDOCUMENTED?
 	.asc	"RET", 'N'+$80		; $ED $6D=RETN
 	.asc	"IM 0/", '1'+$80	; $ED $6E=IM O/1		UNDEFINED!
 	.asc	"RL", 'D'+$80		; $ED $6F=RLD
@@ -895,7 +896,7 @@ z80_ed:
 	.asc	"OUT (C), ",'0'+$80	; $ED $71=OUT (C), 0	UNDOCUMENTED?
 	.asc	"SBC HL, S",'P'+$80	; $ED $72=SBC HL, SP
 	.asc	"LD (&), S",'P'+$80	; $ED $73=LD (**), SP
-	.asc	"NEG", '?'+$80		; $ED $74=NEG			**REPEATED**
+	.asc	"NEG", '?'+$80		; $ED $74=NEG			UNDOCUMENTED?
 	.asc	"RET", 'N'+$80		; $ED $75=RETN
 	.asc	"IM ", '1'+$80		; $ED $76=IM 1
 	.asc	"?", ' '+$80		; $ED $77				UNDEFINED
@@ -903,7 +904,7 @@ z80_ed:
 	.asc	"OUT (C), ",'A'+$80	; $ED $79=OUT (C), A
 	.asc	"ADC HL, S",'P'+$80	; $ED $7A=ADC HL, SP
 	.asc	"LD SP, (&",')'+$80	; $ED $7B=LD SP, (**)
-	.asc	"NEG", '?'+$80		; $ED $7C=NEG			**REPEATED**
+	.asc	"NEG", '?'+$80		; $ED $7C=NEG			UNDOCUMENTED?
 	.asc	"RET", 'N'+$80		; $ED $7D=RETN
 	.asc	"IM ",'2'+$80		; $ED $7E=IM 2
 	.asc	"?", ' '+$80		; $ED $7F				UNDEFINED
@@ -942,8 +943,8 @@ z80_ed:
 	.asc	"?", ' '+$80		; $ED $BE				UNDEFINED
 	.asc	"?", ' '+$80		; $ED $BF				UNDEFINED
 
-; **********************************************
-; *** IY+d indexed instructions ($FD prefix) *** TO DO
+; ********************************************** TO DO
+; *** IY+d indexed instructions ($FD prefix) *** @pointer table + 8
 ; **********************************************
 z80_fd:
 	.asc	"NO", 'P'+$80		; $FD $00=NOP
@@ -1162,7 +1163,7 @@ z80_fd:
 	.asc	"RET ", 'Z'+$80		; $FD $C8=RZ
 	.asc	"RE", 'T'+$80		; $FD $C9=RET
 	.asc	"JP Z, ", '&'+$80	; $FD $CA=JZ
-	.asc	"?", ' '+$80		; $FD $CB=**BITS**		** Z80 PREFIX **
+	.asc	"*", 14+$80		; $FD $CB=...IY BITS		** Z80 PREFIXES **
 	.asc	"CALL Z, ", '&'+$80	; $FD $CC=CZ
 	.asc	"CALL ", '&'+$80	; $FD $CD=CALL
 	.asc	"ADC A, ", '@'+$80	; $FD $CE=ACI
@@ -1198,7 +1199,7 @@ z80_fd:
 	.asc	"JP PE, ", '&'+$80	; $FD $EA=JPE
 	.asc	"EX DE, H", 'L'+$80	; $FD $EB=XCHG
 	.asc	"CALL PE, ",'&'+$80	; $FD $EC=CPE
-	.asc	"?", ' '+$80		; $FD $ED=**EXTD**		** Z80 PREFIX **
+	.asc	"*", 16+$80		; $FD $ED=...IY EXTD		** Z80 PREFIXES **
 	.asc	"XOR ", '@'+$80		; $FD $EE=XRI
 	.asc	"RST 28", 'H'+$80	; $FD $EF=RST 5
 
@@ -1221,8 +1222,8 @@ z80_fd:
 
 ; *** remaining prefix COMBOS ***
 ; TO DO
-; ****************************************************
-; *** IX+d indexed BIT instructions ($DDCB prefix) *** TO DO
+; **************************************************** ON IT
+; *** IX+d indexed BIT instructions ($DDCB prefix) *** @pointer table + 10!
 ; ****************************************************
 z80_ddcb:
 	.asc	"RLC ", 'B'+$80		; $DD $CB $00=RLC B
