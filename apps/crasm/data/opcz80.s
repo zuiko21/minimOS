@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200123-1007
+; last modified 20200123-1016
 
 ; ***** for z80asm Z80 cross assembler *****
 ; Z80 set, with 8085 mnemonics on comment
@@ -1221,3 +1221,279 @@ z80_fd:
 
 ; *** remaining prefix COMBOS ***
 ; TO DO
+; ****************************************************
+; *** IX+d indexed BIT instructions ($DDCB prefix) *** TO DO
+; ****************************************************
+z80_ddcb:
+	.asc	"RLC ", 'B'+$80		; $DD $CB $00=RLC B
+	.asc	"RLC ", 'C'+$80		; $DD $CB $01=RLC C
+	.asc	"RLC ", 'D'+$80		; $DD $CB $02=RLC D
+	.asc	"RLC ", 'E'+$80		; $DD $CB $03=RLC E
+	.asc	"RLC ", 'H'+$80		; $DD $CB $04=RLC H
+	.asc	"RLC ", 'L'+$80		; $DD $CB $05=RLC L
+	.asc	"RLC (IX+@", ')'+$80	; $DD $CB $06=RLC (IX+*)
+	.asc	"RLC ", 'A'+$80		; $DD $CB $07=RLC A
+	.asc	"RRC ", 'B'+$80		; $DD $CB $08=RRC B
+	.asc	"RRC ", 'C'+$80		; $DD $CB $09=RRC C
+	.asc	"RRC ", 'D'+$80		; $DD $CB $0A=RRC D
+	.asc	"RRC ", 'E'+$80		; $DD $CB $0B=RRC E
+	.asc	"RRC ", 'H'+$80		; $DD $CB $0C=RRC H
+	.asc	"RRC ", 'L'+$80		; $DD $CB $0D=RRC L
+	.asc	"RRC (IX+@", ')'+$80	; $DD $CB $0E=RRC (IX+*)
+	.asc	"RRC ", 'A'+$80		; $DD $CB $0F=RRC A
+
+	.asc	"RL ", 'B'+$80		; $DD $CB $10=RL B
+	.asc	"RL ", 'C'+$80		; $DD $CB $11=RL C
+	.asc	"RL ", 'D'+$80		; $DD $CB $12=RL D
+	.asc	"RL ", 'E'+$80		; $DD $CB $13=RL E
+	.asc	"RL ", 'H'+$80		; $DD $CB $14=RL H
+	.asc	"RL ", 'L'+$80		; $DD $CB $15=RL L
+	.asc	"RL (IX+@", ')'+$80	; $DD $CB $16=RL (IX+*)
+	.asc	"RL ", 'A'+$80		; $DD $CB $17=RL A
+	.asc	"RR ", 'B'+$80		; $DD $CB $18=RR B
+	.asc	"RR ", 'C'+$80		; $DD $CB $19=RR C
+	.asc	"RR ", 'D'+$80		; $DD $CB $1A=RR D
+	.asc	"RR ", 'E'+$80		; $DD $CB $1B=RR E
+	.asc	"RR ", 'H'+$80		; $DD $CB $1C=RR H
+	.asc	"RR ", 'L'+$80		; $DD $CB $1D=RR L
+	.asc	"RR (IX+@", ')'+$80	; $DD $CB $1E=RR (IX+*)
+	.asc	"RR ", 'A'+$80		; $DD $CB $1F=RR A
+
+	.asc	"SLA ", 'B'+$80		; $DD $CB $20=SLA B
+	.asc	"SLA ", 'C'+$80		; $DD $CB $21=SLA C
+	.asc	"SLA ", 'D'+$80		; $DD $CB $22=SLA D
+	.asc	"SLA ", 'E'+$80		; $DD $CB $23=SLA E
+	.asc	"SLA ", 'H'+$80		; $DD $CB $24=SLA H
+	.asc	"SLA ", 'L'+$80		; $DD $CB $25=SLA L
+	.asc	"SLA (IX+@", ')'+$80	; $DD $CB $26=SLA (IX+*)
+	.asc	"SLA ", 'A'+$80		; $DD $CB $27=SLA A
+	.asc	"SRA ", 'B'+$80		; $DD $CB $28=SRA B
+	.asc	"SRA ", 'C'+$80		; $DD $CB $29=SRA C
+	.asc	"SRA ", 'D'+$80		; $DD $CB $2A=SRA D
+	.asc	"SRA ", 'E'+$80		; $DD $CB $2B=SRA E
+	.asc	"SRA ", 'H'+$80		; $DD $CB $2C=SRA H
+	.asc	"SRA ", 'L'+$80		; $DD $CB $2D=SRA L
+	.asc	"SRA (IX+@", ')'+$80	; $DD $CB $2E=SRA (IX+*)
+	.asc	"SRA ", 'A'+$80		; $DD $CB $2F=SRA A
+
+	.asc	"SLL ", 'B'+$80		; $DD $CB $30=SLL B		UNDOCUMENTED!
+	.asc	"SLL ", 'C'+$80		; $DD $CB $31=SLL C		UNDOCUMENTED!
+	.asc	"SLL ", 'D'+$80		; $DD $CB $32=SLL D		UNDOCUMENTED!
+	.asc	"SLL ", 'E'+$80		; $DD $CB $33=SLL E		UNDOCUMENTED!
+	.asc	"SLL ", 'H'+$80		; $DD $CB $34=SLL H		UNDOCUMENTED!
+	.asc	"SLL ", 'L'+$80		; $DD $CB $35=SLL L		UNDOCUMENTED!
+	.asc	"SLL (IX+@", ')'+$80	; $DD $CB $36=SLL (IX+*)	UNDOCUMENTED!
+	.asc	"SLL ", 'A'+$80		; $DD $CB $37=SLL A		UNDOCUMENTED!
+	.asc	"SRL ", 'B'+$80		; $DD $CB $38=SRL B
+	.asc	"SRL ", 'C'+$80		; $DD $CB $39=SRL C
+	.asc	"SRL ", 'D'+$80		; $DD $CB $3A=SRL D
+	.asc	"SRL ", 'E'+$80		; $DD $CB $3B=SRL E
+	.asc	"SRL ", 'H'+$80		; $DD $CB $3C=SRL H
+	.asc	"SRL ", 'L'+$80		; $DD $CB $3D=SRL L
+	.asc	"SRL (IX+@", ')'+$80	; $DD $CB $3E=SRL (IX+*)
+	.asc	"SRL ", 'A'+$80		; $DD $CB $3F=SRL A
+
+	.asc	"BIT 0, ", 'B'+$80	; $DD $CB $40=BIT 0, B
+	.asc	"BIT 0, ", 'C'+$80	; $DD $CB $41=BIT 0, C
+	.asc	"BIT 0, ", 'D'+$80	; $DD $CB $42=BIT 0, D
+	.asc	"BIT 0, ", 'E'+$80	; $DD $CB $43=BIT 0, E
+	.asc	"BIT 0, ", 'H'+$80	; $DD $CB $44=BIT 0, H
+	.asc	"BIT 0, ", 'L'+$80	; $DD $CB $45=BIT 0, L
+	.asc	"BIT 0, (IX+@",')'+$80	; $DD $CB $46=BIT 0, (IX+*)
+	.asc	"BIT 0, ", 'A'+$80	; $DD $CB $47=BIT 0, A
+	.asc	"BIT 1, ", 'B'+$80	; $DD $CB $48=BIT 1, B
+	.asc	"BIT 1, ", 'C'+$80	; $DD $CB $49=BIT 1, C
+	.asc	"BIT 1, ", 'D'+$80	; $DD $CB $4A=BIT 1, D
+	.asc	"BIT 1, ", 'E'+$80	; $DD $CB $4B=BIT 1, E
+	.asc	"BIT 1, ", 'H'+$80	; $DD $CB $4C=BIT 1, H
+	.asc	"BIT 1, ", 'L'+$80	; $DD $CB $4D=BIT 1, L
+	.asc	"BIT 1, (IX+@",')'+$80	; $DD $CB $4E=BIT 1, (IX+*)
+	.asc	"BIT 1, ", 'A'+$80	; $DD $CB $4F=BIT 1, A
+
+	.asc	"BIT 2, ", 'B'+$80	; $DD $CB $50=BIT 2, B
+	.asc	"BIT 2, ", 'C'+$80	; $DD $CB $51=BIT 2, C
+	.asc	"BIT 2, ", 'D'+$80	; $DD $CB $52=BIT 2, D
+	.asc	"BIT 2, ", 'E'+$80	; $DD $CB $53=BIT 2, E
+	.asc	"BIT 2, ", 'H'+$80	; $DD $CB $54=BIT 2, H
+	.asc	"BIT 2, ", 'L'+$80	; $DD $CB $55=BIT 2, L
+	.asc	"BIT 2, (IX+@",')'+$80	; $DD $CB $56=BIT 2, (IX+*)
+	.asc	"BIT 2, ", 'A'+$80	; $DD $CB $57=BIT 2, A
+	.asc	"BIT 3, ", 'B'+$80	; $DD $CB $58=BIT 3, B
+	.asc	"BIT 3, ", 'C'+$80	; $DD $CB $59=BIT 3, C
+	.asc	"BIT 3, ", 'D'+$80	; $DD $CB $5A=BIT 3, D
+	.asc	"BIT 3, ", 'E'+$80	; $DD $CB $5B=BIT 3, E
+	.asc	"BIT 3, ", 'H'+$80	; $DD $CB $5C=BIT 3, H
+	.asc	"BIT 3, ", 'L'+$80	; $DD $CB $5D=BIT 3, L
+	.asc	"BIT 3, (IX+@",')'+$80	; $DD $CB $5E=BIT 3, (IX+*)
+	.asc	"BIT 3, ", 'A'+$80	; $DD $CB $5F=BIT 3, A
+
+	.asc	"BIT 4, ", 'B'+$80	; $DD $CB $60=BIT 4, B
+	.asc	"BIT 4, ", 'C'+$80	; $DD $CB $61=BIT 4, C
+	.asc	"BIT 4, ", 'D'+$80	; $DD $CB $62=BIT 4, D
+	.asc	"BIT 4, ", 'E'+$80	; $DD $CB $63=BIT 4, E
+	.asc	"BIT 4, ", 'H'+$80	; $DD $CB $64=BIT 4, H
+	.asc	"BIT 4, ", 'L'+$80	; $DD $CB $65=BIT 4, L
+	.asc	"BIT 4, (IX+@",')'+$80	; $DD $CB $66=BIT 4, (IX+*)
+	.asc	"BIT 4, ", 'A'+$80	; $DD $CB $67=BIT 4, A
+	.asc	"BIT 5, ", 'B'+$80	; $DD $CB $68=BIT 5, B
+	.asc	"BIT 5, ", 'C'+$80	; $DD $CB $69=BIT 5, C
+	.asc	"BIT 5, ", 'D'+$80	; $DD $CB $6A=BIT 5, D
+	.asc	"BIT 5, ", 'E'+$80	; $DD $CB $6B=BIT 5, E
+	.asc	"BIT 5, ", 'H'+$80	; $DD $CB $6C=BIT 5, H
+	.asc	"BIT 5, ", 'L'+$80	; $DD $CB $6D=BIT 5, L
+	.asc	"BIT 5, (IX+@",')'+$80	; $DD $CB $6E=BIT 5, (IX+*)
+	.asc	"BIT 5, ", 'A'+$80	; $DD $CB $6F=BIT 5, A
+
+	.asc	"BIT 6, ", 'B'+$80	; $DD $CB $70=BIT 6, B
+	.asc	"BIT 6, ", 'C'+$80	; $DD $CB $71=BIT 6, C
+	.asc	"BIT 6, ", 'D'+$80	; $DD $CB $72=BIT 6, D
+	.asc	"BIT 6, ", 'E'+$80	; $DD $CB $73=BIT 6, E
+	.asc	"BIT 6, ", 'H'+$80	; $DD $CB $74=BIT 6, H
+	.asc	"BIT 6, ", 'L'+$80	; $DD $CB $75=BIT 6, L
+	.asc	"BIT 6, (IX+@",')'+$80	; $DD $CB $76=BIT 6, (IX+*)
+	.asc	"BIT 6, ", 'A'+$80	; $DD $CB $77=BIT 6, A
+	.asc	"BIT 7, ", 'B'+$80	; $DD $CB $78=BIT 7, B
+	.asc	"BIT 7, ", 'C'+$80	; $DD $CB $79=BIT 7, C
+	.asc	"BIT 7, ", 'D'+$80	; $DD $CB $7A=BIT 7, D
+	.asc	"BIT 7, ", 'E'+$80	; $DD $CB $7B=BIT 7, E
+	.asc	"BIT 7, ", 'H'+$80	; $DD $CB $7C=BIT 7, H
+	.asc	"BIT 7, ", 'L'+$80	; $DD $CB $7D=BIT 7, L
+	.asc	"BIT 7, (IX+@",')'+$80	; $DD $CB $7E=BIT 7, (IX+*)
+	.asc	"BIT 7, ", 'A'+$80	; $DD $CB $7F=BIT 7, A
+
+	.asc	"RES 0, ", 'B'+$80	; $DD $CB $80=RES 0, B
+	.asc	"RES 0, ", 'C'+$80	; $DD $CB $81=RES 0, C
+	.asc	"RES 0, ", 'D'+$80	; $DD $CB $82=RES 0, D
+	.asc	"RES 0, ", 'E'+$80	; $DD $CB $83=RES 0, E
+	.asc	"RES 0, ", 'H'+$80	; $DD $CB $84=RES 0, H
+	.asc	"RES 0, ", 'L'+$80	; $DD $CB $85=RES 0, L
+	.asc	"RES 0, (IX+@",')'+$80	; $DD $CB $86=RES 0, (IX+*)
+	.asc	"RES 0, ", 'A'+$80	; $DD $CB $87=RES 0, A
+	.asc	"RES 1, ", 'B'+$80	; $DD $CB $88=RES 1, B
+	.asc	"RES 1, ", 'C'+$80	; $DD $CB $89=RES 1, C
+	.asc	"RES 1, ", 'D'+$80	; $DD $CB $8A=RES 1, D
+	.asc	"RES 1, ", 'E'+$80	; $DD $CB $8B=RES 1, E
+	.asc	"RES 1, ", 'H'+$80	; $DD $CB $8C=RES 1, H
+	.asc	"RES 1, ", 'L'+$80	; $DD $CB $8D=RES 1, L
+	.asc	"RES 1, (IX+@",')'+$80	; $DD $CB $8E=RES 1, (IX+*)
+	.asc	"RES 1, ", 'A'+$80	; $DD $CB $8F=RES 1, A
+
+	.asc	"RES 2, ", 'B'+$80	; $DD $CB $90=RES 2, B
+	.asc	"RES 2, ", 'C'+$80	; $DD $CB $91=RES 2, C
+	.asc	"RES 2, ", 'D'+$80	; $DD $CB $92=RES 2, D
+	.asc	"RES 2, ", 'E'+$80	; $DD $CB $93=RES 2, E
+	.asc	"RES 2, ", 'H'+$80	; $DD $CB $94=RES 2, H
+	.asc	"RES 2, ", 'L'+$80	; $DD $CB $95=RES 2, L
+	.asc	"RES 2, (IX+@",')'+$80	; $DD $CB $96=RES 2, (IX+*)
+	.asc	"RES 2, ", 'A'+$80	; $DD $CB $97=RES 2, A
+	.asc	"RES 3, ", 'B'+$80	; $DD $CB $98=RES 3, B
+	.asc	"RES 3, ", 'C'+$80	; $DD $CB $99=RES 3, C
+	.asc	"RES 3, ", 'D'+$80	; $DD $CB $9A=RES 3, D
+	.asc	"RES 3, ", 'E'+$80	; $DD $CB $9B=RES 3, E
+	.asc	"RES 3, ", 'H'+$80	; $DD $CB $9C=RES 3, H
+	.asc	"RES 3, ", 'L'+$80	; $DD $CB $9D=RES 3, L
+	.asc	"RES 3, (IX+@",')'+$80	; $DD $CB $9E=RES 3, (IX+*)
+	.asc	"RES 3, ", 'A'+$80	; $DD $CB $9F=RES 3, A
+
+	.asc	"RES 4, ", 'B'+$80	; $DD $CB $A0=RES 4, B
+	.asc	"RES 4, ", 'C'+$80	; $DD $CB $A1=RES 4, C
+	.asc	"RES 4, ", 'D'+$80	; $DD $CB $A2=RES 4, D
+	.asc	"RES 4, ", 'E'+$80	; $DD $CB $A3=RES 4, E
+	.asc	"RES 4, ", 'H'+$80	; $DD $CB $A4=RES 4, H
+	.asc	"RES 4, ", 'L'+$80	; $DD $CB $A5=RES 4, L
+	.asc	"RES 4, (IX+@",')'+$80	; $DD $CB $A6=RES 4, (IX+*)
+	.asc	"RES 4, ", 'A'+$80	; $DD $CB $A7=RES 4, A
+	.asc	"RES 5, ", 'B'+$80	; $DD $CB $A8=RES 5, B
+	.asc	"RES 5, ", 'C'+$80	; $DD $CB $A9=RES 5, C
+	.asc	"RES 5, ", 'D'+$80	; $DD $CB $AA=RES 5, D
+	.asc	"RES 5, ", 'E'+$80	; $DD $CB $AB=RES 5, E
+	.asc	"RES 5, ", 'H'+$80	; $DD $CB $AC=RES 5, H
+	.asc	"RES 5, ", 'L'+$80	; $DD $CB $AD=RES 5, L
+	.asc	"RES 5, (IX+@",')'+$80	; $DD $CB $AE=RES 5, (IX+*)
+	.asc	"RES 5, ", 'A'+$80	; $DD $CB $AF=RES 5, A
+
+	.asc	"RES 6, ", 'B'+$80	; $DD $CB $B0=RES 6, B
+	.asc	"RES 6, ", 'C'+$80	; $DD $CB $B1=RES 6, C
+	.asc	"RES 6, ", 'D'+$80	; $DD $CB $B2=RES 6, D
+	.asc	"RES 6, ", 'E'+$80	; $DD $CB $B3=RES 6, E
+	.asc	"RES 6, ", 'H'+$80	; $DD $CB $B4=RES 6, H
+	.asc	"RES 6, ", 'L'+$80	; $DD $CB $B5=RES 6, L
+	.asc	"RES 6, (IX+@",')'+$80	; $DD $CB $B6=RES 6, (IX+*)
+	.asc	"RES 6, ", 'A'+$80	; $DD $CB $B7=RES 6, A
+	.asc	"RES 7, ", 'B'+$80	; $DD $CB $B8=RES 7, B
+	.asc	"RES 7, ", 'C'+$80	; $DD $CB $B9=RES 7, C
+	.asc	"RES 7, ", 'D'+$80	; $DD $CB $BA=RES 7, D
+	.asc	"RES 7, ", 'E'+$80	; $DD $CB $BB=RES 7, E
+	.asc	"RES 7, ", 'H'+$80	; $DD $CB $BC=RES 7, H
+	.asc	"RES 7, ", 'L'+$80	; $DD $CB $BD=RES 7, L
+	.asc	"RES 7, (IX+@",')'+$80	; $DD $CB $BE=RES 7, (IX+*)
+	.asc	"RES 7, ", 'A'+$80	; $DD $CB $BF=RES 7, A
+
+	.asc	"SET 0, ", 'B'+$80	; $DD $CB $C0=SET 0, B
+	.asc	"SET 0, ", 'C'+$80	; $DD $CB $C1=SET 0, C
+	.asc	"SET 0, ", 'D'+$80	; $DD $CB $C2=SET 0, D
+	.asc	"SET 0, ", 'E'+$80	; $DD $CB $C3=SET 0, E
+	.asc	"SET 0, ", 'H'+$80	; $DD $CB $C4=SET 0, H
+	.asc	"SET 0, ", 'L'+$80	; $DD $CB $C5=SET 0, L
+	.asc	"SET 0, (IX+@",')'+$80	; $DD $CB $C6=SET 0, (IX+*)
+	.asc	"SET 0, ", 'A'+$80	; $DD $CB $C7=SET 0, A
+	.asc	"SET 1, ", 'B'+$80	; $DD $CB $C8=SET 1, B
+	.asc	"SET 1, ", 'C'+$80	; $DD $CB $C9=SET 1, C
+	.asc	"SET 1, ", 'D'+$80	; $DD $CB $CA=SET 1, D
+	.asc	"SET 1, ", 'E'+$80	; $DD $CB $CB=SET 1, E
+	.asc	"SET 1, ", 'H'+$80	; $DD $CB $CC=SET 1, H
+	.asc	"SET 1, ", 'L'+$80	; $DD $CB $CD=SET 1, L
+	.asc	"SET 1, (IX+@",')'+$80	; $DD $CB $CE=SET 1, (IX+*)
+	.asc	"SET 1, ", 'A'+$80	; $DD $CB $CF=SET 1, A
+
+	.asc	"SET 2, ", 'B'+$80	; $DD $CB $D0=SET 2, B
+	.asc	"SET 2, ", 'C'+$80	; $DD $CB $D1=SET 2, C
+	.asc	"SET 2, ", 'D'+$80	; $DD $CB $D2=SET 2, D
+	.asc	"SET 2, ", 'E'+$80	; $DD $CB $D3=SET 2, E
+	.asc	"SET 2, ", 'H'+$80	; $DD $CB $D4=SET 2, H
+	.asc	"SET 2, ", 'L'+$80	; $DD $CB $D5=SET 2, L
+	.asc	"SET 2, (IX+@",')'+$80	; $DD $CB $D6=SET 2, (IX+*)
+	.asc	"SET 2, ", 'A'+$80	; $DD $CB $D7=SET 2, A
+	.asc	"SET 3, ", 'B'+$80	; $DD $CB $D8=SET 3, B
+	.asc	"SET 3, ", 'C'+$80	; $DD $CB $D9=SET 3, C
+	.asc	"SET 3, ", 'D'+$80	; $DD $CB $DA=SET 3, D
+	.asc	"SET 3, ", 'E'+$80	; $DD $CB $DB=SET 3, E
+	.asc	"SET 3, ", 'H'+$80	; $DD $CB $DC=SET 3, H
+	.asc	"SET 3, ", 'L'+$80	; $DD $CB $DD=SET 3, L
+	.asc	"SET 3, (IX+@",')'+$80	; $DD $CB $DE=SET 3, (IX+*)
+	.asc	"SET 3, ", 'A'+$80	; $DD $CB $DF=SET 3, A
+
+	.asc	"SET 4, ", 'B'+$80	; $DD $CB $E0=SET 4, B
+	.asc	"SET 4, ", 'C'+$80	; $DD $CB $E1=SET 4, C
+	.asc	"SET 4, ", 'D'+$80	; $DD $CB $E2=SET 4, D
+	.asc	"SET 4, ", 'E'+$80	; $DD $CB $E3=SET 4, E
+	.asc	"SET 4, ", 'H'+$80	; $DD $CB $E4=SET 4, H
+	.asc	"SET 4, ", 'L'+$80	; $DD $CB $E5=SET 4, L
+	.asc	"SET 4, (IX+@",')'+$80	; $DD $CB $E6=SET 4, (IX+*)
+	.asc	"SET 4, ", 'A'+$80	; $DD $CB $E7=SET 4, A
+	.asc	"SET 5, ", 'B'+$80	; $DD $CB $E8=SET 5, B
+	.asc	"SET 5, ", 'C'+$80	; $DD $CB $E9=SET 5, C
+	.asc	"SET 5, ", 'D'+$80	; $DD $CB $EA=SET 5, D
+	.asc	"SET 5, ", 'E'+$80	; $DD $CB $EB=SET 5, E
+	.asc	"SET 5, ", 'H'+$80	; $DD $CB $EC=SET 5, H
+	.asc	"SET 5, ", 'L'+$80	; $DD $CB $ED=SET 5, L
+	.asc	"SET 5, (IX+@",')'+$80	; $DD $CB $EE=SET 5, (IX+*)
+	.asc	"SET 5, ", 'A'+$80	; $DD $CB $EF=SET 5, A
+
+	.asc	"SET 6, ", 'B'+$80	; $DD $CB $F0=SET 6, B
+	.asc	"SET 6, ", 'C'+$80	; $DD $CB $F1=SET 6, C
+	.asc	"SET 6, ", 'D'+$80	; $DD $CB $F2=SET 6, D
+	.asc	"SET 6, ", 'E'+$80	; $DD $CB $F3=SET 6, E
+	.asc	"SET 6, ", 'H'+$80	; $DD $CB $F4=SET 6, H
+	.asc	"SET 6, ", 'L'+$80	; $DD $CB $F5=SET 6, L
+	.asc	"SET 6, (IX+@",')'+$80	; $DD $CB $F6=SET 6, (IX+*)
+	.asc	"SET 6, ", 'A'+$80	; $DD $CB $F7=SET 6, A
+	.asc	"SET 7, ", 'B'+$80	; $DD $CB $F8=SET 7, B
+	.asc	"SET 7, ", 'C'+$80	; $DD $CB $F9=SET 7, C
+	.asc	"SET 7, ", 'D'+$80	; $DD $CB $FA=SET 7, D
+	.asc	"SET 7, ", 'E'+$80	; $DD $CB $FB=SET 7, E
+	.asc	"SET 7, ", 'H'+$80	; $DD $CB $FC=SET 7, H
+	.asc	"SET 7, ", 'L'+$80	; $DD $CB $FD=SET 7, L
+	.asc	"SET 7, (IX+@",')'+$80	; $DD $CB $FE=SET 7, (IX+*)
+	.asc	"SET 7, ", 'A'+$80	; $DD $CB $FF=SET 7, A
+
