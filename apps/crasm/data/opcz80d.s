@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200124-1438
+; last modified 20200124-2154
 
 ; ***** for z80asm Z80 cross assembler *****
 ; *** DOCUMENTED opcodes only ***
@@ -344,14 +344,7 @@ z80_cb:
 	.asc	"SRA (HL", ')'+$80	; $CB $2E=SRA (HL)
 	.asc	"SRA ", 'A'+$80		; $CB $2F=SRA A
 
-	.asc	'?'+$80				; $CB $30
-	.asc	'?'+$80				; $CB $31
-	.asc	'?'+$80				; $CB $32
-	.asc	'?'+$80				; $CB $33
-	.asc	'?'+$80				; $CB $34
-	.asc	'?'+$80				; $CB $35
-	.asc	'?'+$80				; $CB $36
-	.asc	'?'+$80				; $CB $37
+	.dsb	8, '?'+$80			; $CB30 ... $CB37 filler
 	.asc	"SRL ", 'B'+$80		; $CB $38=SRL B
 	.asc	"SRL ", 'C'+$80		; $CB $39=SRL C
 	.asc	"SRL ", 'D'+$80		; $CB $3A=SRL D
@@ -571,38 +564,31 @@ z80_cb:
 z80_dd:
 	.dsb	9, '?'+$80			; $DD00 ... $DD08 filler
 	.asc	"ADD IX, B",'C'+$80	; $DD $09=ADD IX, BC
-	.dsb	6, '?'+$80			; $DD0A ... $DD0F filler
 
-	.dsb	9, '?'+$80			; $DD10 ... $DD18 filler
+	.dsb	15, '?'+$80			; $DD0A ... $DD18 filler
+
 	.asc	"ADD IX, D",'E'+$80	; $DD $19=ADD IX, DE
-	.dsb	6, '?'+$80			; $DD1A ... $DD1F filler
 
-	.asc	'?'+$80				; $DD $20
+	.dsb	7, '?'+$80			; $DD1A ... $DD20 filler
+
 	.asc	"LD IX, ", '&'+$80	; $DD $21=LD IX
 	.asc	"LD (&), I",'X'+$80	; $DD $22=LD (**),IX
 	.asc	"INC I", 'X'+$80	; $DD $23=INC IX
-	.asc	'?'+$80				; $DD $24
-	.asc	'?'+$80				; $DD $25
-	.asc	'?'+$80				; $DD $26
-	.asc	'?'+$80				; $DD $27
-	.asc	'?'+$80				; $DD $28
+	.dsb	5, '?'+$80			; $DD24 ... $DD28 filler
 	.asc	"ADD IX, I",'X'+$80	; $DD $29=ADD IX,IX
 	.asc	"LD IX, (&",')'+$80	; $DD $2A=LD IX,(**)
 	.asc	"DEC I", 'X'+$80	; $DD $2B=DEC IX
-	.asc	'?'+$80				; $DD $2C
-	.asc	'?'+$80				; $DD $2D
-	.asc	'?'+$80				; $DD $2E
-	.asc	'?'+$80				; $DD $2F
 
-	.asc	4, '?'+$80			; $DD30 ... $DD33 filler
+	.dsb	8, '?'+$80			; $DD2C ... $DD33 filler
+
 	.asc	"INC (IX+@",')'+$80	; $DD $34=INC (IX+*)
 	.asc	"DEC (IX+@",')'+$80	; $DD $35=DEC (IX+*)
 	.asc	"LD (IX+@), ", $C0	; $DD $36=LD (IX+*),*	$C0 was '@'+$80
 	.asc	2, '?'+$80			; $DD37 ... $DD38 filler
 	.asc	"ADD IX, S",'P'+$80	; $DD $39=ADD IX,SP
-	.asc	6, '?'+$80			; $DD3A ... $DD3F filler
 
-	.asc	4, '?'+$80			; $DD40 ... $DD43 filler
+	.asc	10, '?'+$80			; $DD3A ... $DD43 filler
+
 	.asc	"LD B, IX", 'H'+$80	; $DD $44=LD B,IXH		UNDOCUMENTED!
 	.asc	"LD B, IX", 'L'+$80	; $DD $45=LD B,IXL		UNDOCUMENTED!
 	.asc	"LD B, (IX+@", $A9	; $DD $46=LD B,(IX+*)	$A9 was ')'+$80
@@ -610,9 +596,9 @@ z80_dd:
 	.asc	"LD C, IX", 'H'+$80	; $DD $4C=LD C,IXH		UNDOCUMENTED!
 	.asc	"LD C, IX", 'L'+$80	; $DD $4D=LD C,IXL		UNDOCUMENTED!
 	.asc	"LD C, (IX+@", $A9	; $DD $4E=LD C,(IX+*)	$A9 was ')'+$80
-	.asc	'?'+$80				; $DD $4F
 
-	.asc	4, '?'+$80			; $DD50 ... $DD53 filler
+	.asc	5, '?'+$80			; $DD4F ... $DD53 filler
+
 	.asc	"LD D, IX", 'H'+$80	; $DD $54=LD D,IXH		UNDOCUMENTED!
 	.asc	"LD D, IX", 'L'+$80	; $DD $55=LD D,IXL		UNDOCUMENTED!
 	.asc	"LD D, (IX+@", $A9	; $DD $56=LD D,(IX+*)	$A9 was ')'+$80
@@ -620,24 +606,13 @@ z80_dd:
 	.asc	"LD E, IX", 'H'+$80	; $DD $5C=LD E,IXH		UNDOCUMENTED!
 	.asc	"LD E, IX", 'L'+$80	; $DD $5D=LD E,IXL		UNDOCUMENTED!
 	.asc	"LD E, (IX+@", $A9	; $DD $5E=LD E,(IX+*)	$A9 was ')'+$80
-	.asc	'?'+$80				; $DD $5F
 
-	.asc	"LD IXH, ", 'B'+$80	; $DD $60=LD IXH,B		UNDOCUMENTED!
-	.asc	"LD IXH, ", 'C'+$80	; $DD $61=LD IXH,C		UNDOCUMENTED!
-	.asc	"LD IXH, ", 'D'+$80	; $DD $62=LD IXH,D		UNDOCUMENTED!
-	.asc	"LD IXH, ", 'E'+$80	; $DD $63=LD IXH,E		UNDOCUMENTED!
-	.asc	"LD IXH, ", 'H'+$80	; $DD $64=LD IXH,H		UNDOCUMENTED!
-	.asc	"LD IXH, ", 'L'+$80	; $DD $65=LD IXH,L		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD5F ... $DD65 filler
+
 	.asc	"LD H, (IX+@", $A9	; $DD $66=LD H,(IX+*)	$A9 was ')'+$80
-	.asc	"LD IXH, ", 'A'+$80	; $DD $67=LD IXH,A		UNDOCUMENTED!
-	.asc	"LD IXL, ", 'B'+$80	; $DD $68=LD IXL,B		UNDOCUMENTED!
-	.asc	"LD IXL, ", 'C'+$80	; $DD $69=LD IXL,C		UNDOCUMENTED!
-	.asc	"LD IXL, ", 'D'+$80	; $DD $6A=LD IXL,D		UNDOCUMENTED!
-	.asc	"LD IXL, ", 'E'+$80	; $DD $6B=LD IXL,E		UNDOCUMENTED!
-	.asc	"LD IXL, ", 'H'+$80	; $DD $6C=LD IXL,H		UNDOCUMENTED!
-	.asc	"LD IXL, ", 'L'+$80	; $DD $6D=LD IXL,L		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD67 ... $DD6D filler
 	.asc	"LD L, (IX+@", $A9	; $DD $6E=LD L,(IX+*)	$A9 was ')'+$80
-	.asc	"LD IXL, ", 'A'+$80	; $DD $6F=LD IXL,A		UNDOCUMENTED!
+	.asc	'?'+$80				; $DD $6F
 
 	.asc	"LD (IX+@),", $C2	; $DD $70=LD (IX+*),B	$C2 was 'B'+$80
 	.asc	"LD (IX+@),", $C3	; $DD $71=LD (IX+*),C	$C3 was 'C'+$80
@@ -647,59 +622,39 @@ z80_dd:
 	.asc	"LD (IX+@),", $CC	; $DD $75=LD (IX+*),L	$CC was 'L'+$80
 	.asc	'?'+$80				; $DD $76
 	.asc	"LD (IX+@),", $C1	; $DD $77=LD (IX+*),A	$C1 was 'A'+$80
-	.asc	4, '?'+$80			; $DD78 ... $DD7B filler
-	.asc	"LD A, IX", 'H'+$80	; $DD $7C=LD A,IXH		UNDOCUMENTED!
-	.asc	"LD A, IX", 'L'+$80	; $DD $7D=LD A,IXL		UNDOCUMENTED!
+	.asc	6, '?'+$80			; $DD78 ... $DD7D filler
 	.asc	"LD A, (IX+@", $A9	; $DD $7E=LD A,(IX+*)	$A9 was ')'+$80
-	.asc	'?'+$80				; $DD $7F
 
-	.asc	4, '?'+$80			; $DD80 ... $DD83 filler
-	.asc	"ADD A, IX",'H'+$80	; $DD $84=ADD A,IXH		UNDOCUMENTED!
-	.asc	"ADD A, IX",'L'+$80	; $DD $85=ADD A,IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD7F ... $DD85 filler
+
 	.asc	"ADD A, (IX+@", $A9	; $DD $86=ADD A,(IX+*)	$A9 was ')'+$80
-	.asc	5, '?'+$80			; $DD87 ... $DD8B filler
-	.asc	"ADC A, IX",'H'+$80	; $DD $8C=ADC A,IXH		UNDOCUMENTED!
-	.asc	"ADC A, IX",'L'+$80	; $DD $8D=ADC A,IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD87 ... $DD8D filler
 	.asc	"ADC A, (IX+@", $A9	; $DD $8E=ADC A,(IX+*)	$A9 was ')'+$80
-	.asc	'?'+$80				; $DD $8F
 
-	.asc	4, '?'+$80			; $DD90 ... $DD93 filler
-	.asc	"SUB IX", 'H'+$80	; $DD $94=SUB IXH		UNDOCUMENTED!
-	.asc	"SUB IX", 'L'+$80	; $DD $95=SUB IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD8F ... $DD95 filler
+
 	.asc	"SUB (IX+@",')'+$80	; $DD $96=SUB (IX+*)
-	.asc	5, '?'+$80			; $DD97 ... $DD9B filler
-	.asc	"SBC A, IX",'H'+$80	; $DD $9C=SBC A,IXH		UNDOCUMENTED!
-	.asc	"SBC A, IX",'L'+$80	; $DD $9D=SBC A,IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD97 ... $DD9D filler
 	.asc	"SBC A, (IX+@", $A9	; $DD $9E=SBC A,(IX+*)	$A9 was ')'+$80
-	.asc	'?'+$80				; $DD $9F
 
-	.asc	4, '?'+$80			; $DDA0 ... $DDA3 filler
-	.asc	"AND IX", 'H'+$80	; $DD $A4=AND IXH		UNDOCUMENTED!
-	.asc	"AND IX", 'L'+$80	; $DD $A5=AND IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD9F ... $DDA5 filler
+
 	.asc	"AND (IX+@",')'+$80	; $DD $A6=AND (IX+*)
-	.asc	5, '?'+$80			; $DDA7 ... $DDAB filler
-	.asc	"XOR IX", 'H'+$80	; $DD $AC=XOR IXH		UNDOCUMENTED!
-	.asc	"XOR IX", 'L'+$80	; $DD $AD=XOR IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DDA7 ... $DDAD filler
 	.asc	"XOR (IX+@",')'+$80	; $DD $AE=XOR (IX+*)
-	.asc	'?'+$80				; $DD $AF
 
-	.asc	4, '?'+$80			; $DDB0 ... $DDB3 filler
-	.asc	"OR IX", 'H'+$80	; $DD $B4=OR IXH		UNDOCUMENTED!
-	.asc	"OR IX", 'L'+$80	; $DD $B5=OR IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DDAF ... $DDB5 filler
+
 	.asc	"OR (IX+@",')'+$80	; $DD $B6=OR (IX+*)
-	.asc	5, '?'+$80			; $DDB7 ... $DDBB filler
-	.asc	"CP IX", 'H'+$80	; $DD $BC=CP IXH		UNDOCUMENTED!
-	.asc	"CP IX", 'L'+$80	; $DD $BD=CP IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DDB7 ... $DDBD filler
 	.asc	"CP (IX+@",')'+$80	; $DD $BE=CP (IX+*)
-	.asc	'?'+$80				; $DD $BF
 
-	.asc	11, '?'+$80			; $DDC0 ... $DDCA filler
+	.asc	12, '?'+$80			; $DDBF ... $DDCA filler
+
 	.asc	'*', 10+$80			; $DD $CB=...IX BITS 	** Z80 PREFIXES **
-	.asc	4, '?'+$80			; $DDCC ... $DDCF filler
 
-	.asc	16, '?'+$80			; $DDD0 ... $DDDF filler
+	.asc	21, '?'+$80			; $DDCC ... $DDE0 filler
 
-	.asc	'?'+$80				; $DD $E0
 	.asc	"POP I", 'X'+$80	; $DD $E1=POP IX
 	.asc	'?'+$80				; $DD $E2
 	.asc	"EX (SP),I",'X'+$80	; $DD $E3=EX SP,IX
@@ -707,9 +662,9 @@ z80_dd:
 	.asc	"PUSH I", 'X'+$80	; $DD $E5=PUSH IX
 	.asc	3, '?'+$80			; $DDE6 ... $DDE8 filler
 	.asc	"JP (IX", ')'+$80	; $DD $E9=JMP (IX)
-	.asc	6, '?'+$80			; $DDEA ... $DDEF filler
 
-	.asc	9, '?'+$80			; $DDF0 ... $DDF8 filler
+	.asc	15, '?'+$80			; $DDEA ... $DDF8 filler
+
 	.asc	"LD SP, I", 'X'+$80	; $DD $F9=LD SP, IX
 	.asc	6, '?'+$80			; $DDFA ... $DDFF filler
 
