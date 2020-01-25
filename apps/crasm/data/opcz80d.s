@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200124-2154
+; last modified 20200125-2204
 
 ; ***** for z80asm Z80 cross assembler *****
 ; *** DOCUMENTED opcodes only ***
@@ -587,24 +587,16 @@ z80_dd:
 	.asc	2, '?'+$80			; $DD37 ... $DD38 filler
 	.asc	"ADD IX, S",'P'+$80	; $DD $39=ADD IX,SP
 
-	.asc	10, '?'+$80			; $DD3A ... $DD43 filler
+	.asc	12, '?'+$80			; $DD3A ... $DD45 filler
 
-	.asc	"LD B, IX", 'H'+$80	; $DD $44=LD B,IXH		UNDOCUMENTED!
-	.asc	"LD B, IX", 'L'+$80	; $DD $45=LD B,IXL		UNDOCUMENTED!
 	.asc	"LD B, (IX+@", $A9	; $DD $46=LD B,(IX+*)	$A9 was ')'+$80
-	.asc	5, '?'+$80			; $DD47 ... $DD4B filler
-	.asc	"LD C, IX", 'H'+$80	; $DD $4C=LD C,IXH		UNDOCUMENTED!
-	.asc	"LD C, IX", 'L'+$80	; $DD $4D=LD C,IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD47 ... $DD4D filler
 	.asc	"LD C, (IX+@", $A9	; $DD $4E=LD C,(IX+*)	$A9 was ')'+$80
 
-	.asc	5, '?'+$80			; $DD4F ... $DD53 filler
+	.asc	7, '?'+$80			; $DD4F ... $DD55 filler
 
-	.asc	"LD D, IX", 'H'+$80	; $DD $54=LD D,IXH		UNDOCUMENTED!
-	.asc	"LD D, IX", 'L'+$80	; $DD $55=LD D,IXL		UNDOCUMENTED!
 	.asc	"LD D, (IX+@", $A9	; $DD $56=LD D,(IX+*)	$A9 was ')'+$80
-	.asc	5, '?'+$80			; $DD57 ... $DD5B filler
-	.asc	"LD E, IX", 'H'+$80	; $DD $5C=LD E,IXH		UNDOCUMENTED!
-	.asc	"LD E, IX", 'L'+$80	; $DD $5D=LD E,IXL		UNDOCUMENTED!
+	.asc	7, '?'+$80			; $DD57 ... $DD5D filler
 	.asc	"LD E, (IX+@", $A9	; $DD $5E=LD E,(IX+*)	$A9 was ')'+$80
 
 	.asc	7, '?'+$80			; $DD5F ... $DD65 filler
