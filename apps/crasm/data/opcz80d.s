@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200125-2204
+; last modified 20200126-1221
 
 ; ***** for z80asm Z80 cross assembler *****
 ; *** DOCUMENTED opcodes only ***
@@ -679,16 +679,16 @@ z80_ed:
 	.asc	"OUT (C), ",'C'+$80	; $ED $49=OUT (C), C
 	.asc	"ADC HL, B",'C'+$80	; $ED $4A=ADC HL, BC
 	.asc	"LD BC, (&",')'+$80	; $ED $4B=LD BC, (**)
-	.asc	"NEG", '?'+$80		; $ED $4C=NEG			UNDOCUMENTED?
+	.asc	'?'+$80			; $ED $4C
 	.asc	"RET", 'I'+$80		; $ED $4D=RETI
-	.asc	"IM 0/", '1'+$80	; $ED $4E=IM 0/1		UNDEFINED!
+	.asc	'?'+$80			; $ED $4E
 	.asc	"LD R, ", 'A'+$80	; $ED $4F=LD R, A
 
 	.asc	"IN D, (C", ')'+$80	; $ED $50=IN D, (C)
 	.asc	"OUT (C), ",'D'+$80	; $ED $51=OUT (C), D
 	.asc	"SBC HL, D",'E'+$80	; $ED $52=SBC HL, DE
 	.asc	"LD (&), D",'E'+$80	; $ED $53=LD (**), DE
-	.asc	"NEG", '?'+$80		; $ED $54=NEG			UNDOCUMENTED?
+	.asc	'?'+$80			; $ED $54
 	.asc	"RET", 'N'+$80		; $ED $55=RETN
 	.asc	"IM ", '1'+$80		; $ED $56=IM 1
 	.asc	"LD A, ", 'I'+$80	; $ED $57=LD A, I
@@ -696,7 +696,7 @@ z80_ed:
 	.asc	"OUT (C), ",'E'+$80	; $ED $59=OUT (C), E
 	.asc	"ADC HL, D",'E'+$80	; $ED $5A=ADC HL, DE
 	.asc	"LD DE, (&",')'+$80	; $ED $5B=LD DE, (**)
-	.asc	"NEG", '?'+$80		; $ED $5C=NEG			UNDOCUMENTED?
+	.asc	'?'+$80			; $ED $5C
 	.asc	"RET", 'N'+$80		; $ED $5D=RETN
 	.asc	"IM ", '2'+$80		; $ED $5E=IM 2
 	.asc	"LD A, ", 'R'+$80	; $ED $5F=LD A, R
@@ -704,25 +704,25 @@ z80_ed:
 	.asc	"IN H, (C", ')'+$80	; $ED $60=IN H, (C)
 	.asc	"OUT (C), ",'H'+$80	; $ED $61=OUT (C), H
 	.asc	"SBC HL, H",'L'+$80	; $ED $62=SBC HL, HL
-	.asc	"LD (&), H",'L'+$80	; $ED $63=LD (**), HL	UNDOCUMENTED?
-	.asc	"NEG", '?'+$80		; $ED $64=NEG			UNDOCUMENTED?
+	.asc	'?'+$80			; $ED $63
+	.asc	'?'+$80			; $ED $64
 	.asc	"RET", 'N'+$80		; $ED $65=RETN
 	.asc	"IM", '0'+$80		; $ED $66=IM 0
 	.asc	"RR", 'D'+$80		; $ED $67=RRD
 	.asc	"IN L, (C", ')'+$80	; $ED $68=IN L, (C)
 	.asc	"OUT (C), ",'L'+$80	; $ED $69=OUT (C), L
 	.asc	"ADC HL, H",'L'+$80	; $ED $6A=ADC HL, HL
-	.asc	"LD HL, (&",')'+$80	; $ED $6B=LD HL, (**)	UNDOCUMENTED?
-	.asc	"NEG", '?'+$80		; $ED $6C=NEG			UNDOCUMENTED?
+	.asc	'?'+$80			; $ED $6B
+	.asc	'?'+$80			; $ED $6C
 	.asc	"RET", 'N'+$80		; $ED $6D=RETN
-	.asc	"IM 0/", '1'+$80	; $ED $6E=IM O/1		UNDEFINED!
+	.asc	'?'+$80			; $ED $6E
 	.asc	"RL", 'D'+$80		; $ED $6F=RLD
 
-	.asc	"IN (C", ')'+$80	; $ED $70=IN (C)		UNDOCUMENTED?
-	.asc	"OUT (C), ",'0'+$80	; $ED $71=OUT (C), 0	UNDOCUMENTED?
+	.asc	'?'+$80			; $ED $70
+	.asc	'?'+$80			; $ED $71
 	.asc	"SBC HL, S",'P'+$80	; $ED $72=SBC HL, SP
 	.asc	"LD (&), S",'P'+$80	; $ED $73=LD (**), SP
-	.asc	"NEG", '?'+$80		; $ED $74=NEG			UNDOCUMENTED?
+	.asc	'?'+$80			; $ED $74
 	.asc	"RET", 'N'+$80		; $ED $75=RETN
 	.asc	"IM ", '1'+$80		; $ED $76=IM 1
 	.asc	'?'+$80				; $ED $77
@@ -730,48 +730,34 @@ z80_ed:
 	.asc	"OUT (C), ",'A'+$80	; $ED $79=OUT (C), A
 	.asc	"ADC HL, S",'P'+$80	; $ED $7A=ADC HL, SP
 	.asc	"LD SP, (&",')'+$80	; $ED $7B=LD SP, (**)
-	.asc	"NEG", '?'+$80		; $ED $7C=NEG			UNDOCUMENTED?
+	.asc	'?'+$80			; $ED $7C
 	.asc	"RET", 'N'+$80		; $ED $7D=RETN
 	.asc	"IM ",'2'+$80		; $ED $7E=IM 2
-	.asc	'?'+$80				; $ED $7F
 
-	.dsb	32, '?'+$80			; $ED80 ... $ED9F filler
+	.dsb	33, '?'+$80			; $ED7F ... $ED9F filler
 
 	.asc	"LD", 'I'+$80		; $ED $A0=LDI
 	.asc	"CP", 'I'+$80		; $ED $A1=CPI
 	.asc	"IN", 'I'+$80		; $ED $A2=INI
 	.asc	"OUT", 'I'+$80		; $ED $A3=OUTI
-	.asc	'?'+$80				; $ED $A4
-	.asc	'?'+$80				; $ED $A5
-	.asc	'?'+$80				; $ED $A6
-	.asc	'?'+$80				; $ED $A7
+	.dsb	4, '?'+$80			; $EDA4 ... $EDA7 filler
 	.asc	"LD", 'D'+$80		; $ED $A8=LDD
 	.asc	"CP", 'D'+$80		; $ED $A9=CPD
 	.asc	"IN", 'D'+$80		; $ED $AA=IND
 	.asc	"OUT", 'D'+$80		; $ED $AB=OUTD
-	.asc	'?'+$80				; $ED $AC
-	.asc	'?'+$80				; $ED $AD
-	.asc	'?'+$80				; $ED $AE
-	.asc	'?'+$80				; $ED $AF
+	.dsb	4, '?'+$80			; $EDAC ... $EDAF filler
 
 	.asc	"LDI", 'R'+$80		; $ED $B0=LDIR
 	.asc	"CPI", 'R'+$80		; $ED $B1=CPIR
 	.asc	"INI", 'R'+$80		; $ED $B2=INIR
 	.asc	"OTI", 'R'+$80		; $ED $B3=OTIR
-	.asc	"?", ' '+$80		; $ED $B4				UNDEFINED
-	.asc	"?", ' '+$80		; $ED $B5				UNDEFINED
-	.asc	"?", ' '+$80		; $ED $B6				UNDEFINED
-	.asc	"?", ' '+$80		; $ED $B7				UNDEFINED
+	.dsb	4, '?'+$80			; $EDB4 ... $EDB7 filler
 	.asc	"LDD", 'R'+$80		; $ED $B8=LDDR
 	.asc	"CPD", 'R'+$80		; $ED $B9=CPDR
 	.asc	"IND", 'R'+$80		; $ED $BA=INDR
 	.asc	"OTD", 'R'+$80		; $ED $BB=OTDR
-	.asc	"?", ' '+$80		; $ED $BC				UNDEFINED
-	.asc	"?", ' '+$80		; $ED $BD				UNDEFINED
-	.asc	"?", ' '+$80		; $ED $BE				UNDEFINED
-	.asc	"?", ' '+$80		; $ED $BF				UNDEFINED
 
-	.dsb	64, '?'+$80			; $EDC0 ... $EDFF filler
+	.dsb	68, '?'+$80			; $EDBC ... $EDFF filler
 
 ; **********************************************
 ; *** IY+d indexed instructions ($FD prefix) *** @pointer table + 8
