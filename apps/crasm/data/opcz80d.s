@@ -865,277 +865,99 @@ z80_fd:
 ; *** IX+d indexed BIT instructions ($DDCB prefix) *** @pointer table + 10!
 ; ****************************************************
 z80_ddcb:
-	.asc	"RLC (IX+@), ", $C2	; $DD $CB $00=RLC (IX+*),B	UNDOCUMENTED
-	.asc	"RLC (IX+@), ", $C3	; $DD $CB $01=RLC (IX+*),C	UNDOCUMENTED
-	.asc	"RLC (IX+@), ", $C4	; $DD $CB $02=RLC (IX+*),D	UNDOCUMENTED
-	.asc	"RLC (IX+@), ", $C5	; $DD $CB $03=RLC (IX+*),E	UNDOCUMENTED
-	.asc	"RLC (IX+@), ", $C8	; $DD $CB $04=RLC (IX+*),H	UNDOCUMENTED
-	.asc	"RLC (IX+@), ", $CC	; $DD $CB $05=RLC (IX+*),L	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCB00 ... $DDCB05 filler
 	.asc	"RLC (IX+@",')'+$80	; $DD $CB $06=RLC (IX+*)
-	.asc	"RLC (IX+@), ", $C1	; $DD $CB $07=RLC (IX+*),A	UNDOCUMENTED
-	.asc	"RRC (IX+@), ", $C2	; $DD $CB $08=RRC (IX+*),B	UNDOCUMENTED
-	.asc	"RRC (IX+@), ", $C3	; $DD $CB $09=RRC (IX+*),C	UNDOCUMENTED
-	.asc	"RRC (IX+@), ", $C4	; $DD $CB $0A=RRC (IX+*),D	UNDOCUMENTED
-	.asc	"RRC (IX+@), ", $C5	; $DD $CB $0B=RRC (IX+*),E	UNDOCUMENTED
-	.asc	"RRC (IX+@), ", $C8	; $DD $CB $0C=RRC (IX+*),H	UNDOCUMENTED
-	.asc	"RRC (IX+@), ", $CC	; $DD $CB $0D=RRC (IX+*),L	UNDOCUMENTED
+	.asc	7, '?'+$80			; $DDCB07 ... $DDCB0D filler
 	.asc	"RRC (IX+@",')'+$80	; $DD $CB $0E=RRC (IX+*)
-	.asc	"RRC (IX+@), ", $C1	; $DD $CB $0F=RRC (IX+*),A	UNDOCUMENTED
+	.asc	'?'+$80				; $DD $CB $0F
 
-	.asc	"RL (IX+@), ", $C2	; $DD $CB $10=RL (IX+*),B	UNDOCUMENTED
-	.asc	"RL (IX+@), ", $C3	; $DD $CB $11=RL (IX+*),C	UNDOCUMENTED
-	.asc	"RL (IX+@), ", $C4	; $DD $CB $12=RL (IX+*),D	UNDOCUMENTED
-	.asc	"RL (IX+@), ", $C5	; $DD $CB $13=RL (IX+*),E	UNDOCUMENTED
-	.asc	"RL (IX+@), ", $C8	; $DD $CB $14=RL (IX+*),H	UNDOCUMENTED
-	.asc	"RL (IX+@), ", $CC	; $DD $CB $15=RL (IX+*),L	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCB10 ... $DDCB15 filler
 	.asc	"RL (IX+@",')'+$80	; $DD $CB $16=RL (IX+*)
-	.asc	"RL (IX+@), ", $C1	; $DD $CB $17=RL (IX+*),A	UNDOCUMENTED
-	.asc	"RR (IX+@), ", $C2	; $DD $CB $18=RR (IX+*),B	UNDOCUMENTED
-	.asc	"RR (IX+@), ", $C3	; $DD $CB $19=RR (IX+*),C	UNDOCUMENTED
-	.asc	"RR (IX+@), ", $C4	; $DD $CB $1A=RR (IX+*),D	UNDOCUMENTED
-	.asc	"RR (IX+@), ", $C5	; $DD $CB $1B=RR (IX+*),E	UNDOCUMENTED
-	.asc	"RR (IX+@), ", $C8	; $DD $CB $1C=RR (IX+*),H	UNDOCUMENTED
-	.asc	"RR (IX+@), ", $CC	; $DD $CB $1D=RR (IX+*),L	UNDOCUMENTED
+	.asc	7, '?'+$80			; $DDCB17 ... $DDCB1D filler
 	.asc	"RR (IX+@",')'+$80	; $DD $CB $1E=RR (IX+*)
-	.asc	"RR (IX+@), ", $C1	; $DD $CB $1F=RR (IX+*),A	UNDOCUMENTED
+	.asc	'?'+$80				; $DD $CB $1F
 
-	.asc	"SLA (IX+@), ", $C2	; $DD $CB $20=SLA(IX+*),B	UNDOCUMENTED
-	.asc	"SLA (IX+@), ", $C3	; $DD $CB $21=SLA(IX+*),C	UNDOCUMENTED
-	.asc	"SLA (IX+@), ", $C4	; $DD $CB $22=SLA(IX+*),D	UNDOCUMENTED
-	.asc	"SLA (IX+@), ", $C5	; $DD $CB $23=SLA(IX+*),E	UNDOCUMENTED
-	.asc	"SLA (IX+@), ", $C8	; $DD $CB $24=SLA(IX+*),H	UNDOCUMENTED
-	.asc	"SLA (IX+@), ", $CC	; $DD $CB $25=SLA(IX+*),L	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCB20 ... $DDCB25 filler
 	.asc	"SLA (IX+@",')'+$80	; $DD $CB $26=SLA (IX+*)
-	.asc	"SLA (IX+@), ", $C1	; $DD $CB $27=SLA(IX+*),A	UNDOCUMENTED
-	.asc	"SRA (IX+@), ", $C2	; $DD $CB $28=SRA(IX+*),B	UNDOCUMENTED
-	.asc	"SRA (IX+@), ", $C3	; $DD $CB $29=SRA(IX+*),C	UNDOCUMENTED
-	.asc	"SRA (IX+@), ", $C4	; $DD $CB $2A=SRA(IX+*),D	UNDOCUMENTED
-	.asc	"SRA (IX+@), ", $C5	; $DD $CB $2B=SRA(IX+*),E	UNDOCUMENTED
-	.asc	"SRA (IX+@), ", $C8	; $DD $CB $2C=SRA(IX+*),H	UNDOCUMENTED
-	.asc	"SRA (IX+@), ", $CC	; $DD $CB $2D=SRA(IX+*),L	UNDOCUMENTED
+	.asc	7, '?'+$80			; $DDCB27 ... $DDCB2D filler
 	.asc	"SRA (IX+@",')'+$80	; $DD $CB $2E=SRA (IX+*)
-	.asc	"SRA (IX+@), ", $C1	; $DD $CB $2F=SRA(IX+*),A	UNDOCUMENTED
+	.asc	'?'+$80				; $DD $CB $2F
 
-	.asc	"SLL (IX+@), ", $C2	; $DD $CB $30=SLL(IX+*),B	UNDOCUMENTED
-	.asc	"SLL (IX+@), ", $C3	; $DD $CB $31=SLL(IX+*),C	UNDOCUMENTED
-	.asc	"SLL (IX+@), ", $C4	; $DD $CB $32=SLL(IX+*),D	UNDOCUMENTED
-	.asc	"SLL (IX+@), ", $C5	; $DD $CB $33=SLL(IX+*),E	UNDOCUMENTED
-	.asc	"SLL (IX+@), ", $C8	; $DD $CB $34=SLL(IX+*),H	UNDOCUMENTED
-	.asc	"SLL (IX+@), ", $CC	; $DD $CB $35=SLL(IX+*),L	UNDOCUMENTED
-	.asc	"SLL (IX+@",')'+$80	; $DD $CB $36=SLL (IX+*)	UNDOCUMENTED!
-	.asc	"SLL (IX+@), ", $C1	; $DD $CB $37=SLL(IX+*),A	UNDOCUMENTED
-	.asc	"SRL (IX+@), ", $C2	; $DD $CB $38=SRL(IX+*),B	UNDOCUMENTED
-	.asc	"SRL (IX+@), ", $C3	; $DD $CB $39=SRL(IX+*),C	UNDOCUMENTED
-	.asc	"SRL (IX+@), ", $C4	; $DD $CB $3A=SRL(IX+*),D	UNDOCUMENTED
-	.asc	"SRL (IX+@), ", $C5	; $DD $CB $3B=SRL(IX+*),E	UNDOCUMENTED
-	.asc	"SRL (IX+@), ", $C8	; $DD $CB $3C=SRL(IX+*),H	UNDOCUMENTED
-	.asc	"SRL (IX+@), ", $CC	; $DD $CB $3D=SRL(IX+*),L	UNDOCUMENTED
+	.asc	14, '?'+$80			; $DDCB30 ... $DDCB3D filler!
 	.asc	"SRL (IX+@",')'+$80	; $DD $CB $3E=SRL (IX+*)
-	.asc	"SRL (IX+@), ", $C1	; $DD $CB $3F=SRL(IX+*),A	UNDOCUMENTED
+	.asc	'?'+$80				; $DD $CB $3F
 
-	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $40=BIT 0,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $41=BIT 0,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $42=BIT 0,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $43=BIT 0,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $44=BIT 0,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $45=BIT 0,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $46=BIT 0,(IX+*)					$A9 was ')'+$80
-	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $47=BIT 0,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $48=BIT 1,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $49=BIT 1,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $4A=BIT 1,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $4B=BIT 1,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $4C=BIT 1,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $4D=BIT 1,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $4E=BIT 1,(IX+*)					$A9 was ')'+$80
-	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $4F=BIT 1,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
+	.asc	6, '?'+$80			; $DDCB40 ... $DDCB45 filler
+	.asc	"BIT 0, (IX+@", $A9	; $DD $CB $46=BIT 0,(IX+*)	$A9 was ')'+$80
+	.asc	7, '?'+$80			; $DDCB47 ... $DDCB4D filler
+	.asc	"BIT 1, (IX+@", $A9	; $DD $CB $4E=BIT 1,(IX+*)	$A9 was ')'+$80
+	.asc	'?'+$80				; $DD $CB $4F
 
-	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $50=BIT 2,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $51=BIT 2,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $52=BIT 2,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $53=BIT 2,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $54=BIT 2,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $55=BIT 2,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $56=BIT 2,(IX+*)					$A9 was ')'+$80
-	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $57=BIT 2,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $58=BIT 3,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $59=BIT 3,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $5A=BIT 3,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $5B=BIT 3,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $5C=BIT 3,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $5D=BIT 3,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $5E=BIT 3,(IX+*)					$A9 was ')'+$80
-	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $5F=BIT 3,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
+	.asc	6, '?'+$80			; $DDCB50 ... $DDCB55 filler
+	.asc	"BIT 2, (IX+@", $A9	; $DD $CB $56=BIT 2,(IX+*)	$A9 was ')'+$80
+	.asc	7, '?'+$80			; $DDCB57 ... $DDCB5D filler
+	.asc	"BIT 3, (IX+@", $A9	; $DD $CB $5E=BIT 3,(IX+*)	$A9 was ')'+$80
+	.asc	'?'+$80				; $DD $CB $5F
 
-	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $60=BIT 4,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $61=BIT 4,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $62=BIT 4,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $63=BIT 4,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $64=BIT 4,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $65=BIT 4,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $66=BIT 4,(IX+*)					$A9 was ')'+$80
-	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $67=BIT 4,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $68=BIT 5,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $69=BIT 5,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $6A=BIT 5,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $6B=BIT 5,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $6C=BIT 5,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $6D=BIT 5,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $6E=BIT 5,(IX+*)					$A9 was ')'+$80
-	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $6F=BIT 5,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
+	.asc	6, '?'+$80			; $DDCB60 ... $DDCB65 filler
+	.asc	"BIT 4, (IX+@", $A9	; $DD $CB $66=BIT 4,(IX+*)	$A9 was ')'+$80
+	.asc	7, '?'+$80			; $DDCB67 ... $DDCB6D filler
+	.asc	"BIT 5, (IX+@", $A9	; $DD $CB $6E=BIT 5,(IX+*)	$A9 was ')'+$80
+	.asc	'?'+$80				; $DD $CB $6F
 
-	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $70=BIT 6,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $71=BIT 6,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $72=BIT 6,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $73=BIT 6,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $74=BIT 6,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $75=BIT 6,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $76=BIT 6,(IX+*)					$A9 was ')'+$80
-	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $77=BIT 6,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $78=BIT 7,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $79=BIT 7,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $7A=BIT 7,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $7B=BIT 7,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $7C=BIT 7,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $7D=BIT 7,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
-	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $7E=BIT 7,(IX+*)					$A9 was ')'+$80
-	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $7F=BIT 7,(IX+*)	UNDOCUMENTED	$A9 was ')'+$80
+	.asc	6, '?'+$80			; $DDCB70 ... $DDCB75 filler
+	.asc	"BIT 6, (IX+@", $A9	; $DD $CB $76=BIT 6,(IX+*)	$A9 was ')'+$80
+	.asc	7, '?'+$80			; $DDCB77 ... $DDCB7D filler
+	.asc	"BIT 7, (IX+@", $A9	; $DD $CB $7E=BIT 7,(IX+*)	$A9 was ')'+$80
+	.asc	'?'+$80				; $DD $CB $7F
 
-	.asc	"RES 0,(IX+@),",$C2	; $DD $CB $80=RES 0,(IX+*),B	UNDOCUMENTED
-	.asc	"RES 0,(IX+@),",$C3	; $DD $CB $81=RES 0,(IX+*),C	UNDOCUMENTED
-	.asc	"RES 0,(IX+@),",$C4	; $DD $CB $82=RES 0,(IX+*),D	UNDOCUMENTED
-	.asc	"RES 0,(IX+@),",$C5	; $DD $CB $83=RES 0,(IX+*),E	UNDOCUMENTED
-	.asc	"RES 0,(IX+@),",$C8	; $DD $CB $84=RES 0,(IX+*),H	UNDOCUMENTED
-	.asc	"RES 0,(IX+@),",$CC	; $DD $CB $85=RES 0,(IX+*),L	UNDOCUMENTED
-	.asc	"RES 0, (IX+@", $A9	; $DD $CB $86=RES 0,(IX+*)		$A9 was ')'+$80
-	.asc	"RES 0,(IX+@),",$C1	; $DD $CB $87=RES 0,(IX+*),A	UNDOCUMENTED
-	.asc	"RES 1,(IX+@),",$C2	; $DD $CB $88=RES 1,(IX+*),B	UNDOCUMENTED
-	.asc	"RES 1,(IX+@),",$C3	; $DD $CB $89=RES 1,(IX+*),C	UNDOCUMENTED
-	.asc	"RES 1,(IX+@),",$C4	; $DD $CB $8A=RES 1,(IX+*),D	UNDOCUMENTED
-	.asc	"RES 1,(IX+@),",$C5	; $DD $CB $8B=RES 1,(IX+*),E	UNDOCUMENTED
-	.asc	"RES 1,(IX+@),",$C8	; $DD $CB $8C=RES 1,(IX+*),H	UNDOCUMENTED
-	.asc	"RES 1,(IX+@),",$CC	; $DD $CB $8D=RES 1,(IX+*),L	UNDOCUMENTED
-	.asc	"RES 1, (IX+@", $A9	; $DD $CB $8E=RES 1,(IX+*)		$A9 was ')'+$80
-	.asc	"RES 1,(IX+@),",$C1	; $DD $CB $8F=RES 1,(IX+*),A	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCB80 ... $DDCB85 filler
+	.asc	"RES 0, (IX+@", $A9	; $DD $CB $86=RES 0,(IX+*)	$A9 was ')'+$80
+	.asc	7, '?'+$80			; $DDCB87 ... $DDCB8D filler
+	.asc	"RES 1, (IX+@", $A9	; $DD $CB $8E=RES 1,(IX+*)	$A9 was ')'+$80
+	.asc	'?'+$80				; $DD $CB $8F
 
-	.asc	"RES 2,(IX+@),",$C2	; $DD $CB $90=RES 2,(IX+*),B	UNDOCUMENTED
-	.asc	"RES 2,(IX+@),",$C3	; $DD $CB $91=RES 2,(IX+*),C	UNDOCUMENTED
-	.asc	"RES 2,(IX+@),",$C4	; $DD $CB $92=RES 2,(IX+*),D	UNDOCUMENTED
-	.asc	"RES 2,(IX+@),",$C5	; $DD $CB $93=RES 2,(IX+*),E	UNDOCUMENTED
-	.asc	"RES 2,(IX+@),",$C8	; $DD $CB $94=RES 2,(IX+*),H	UNDOCUMENTED
-	.asc	"RES 2,(IX+@),",$CC	; $DD $CB $95=RES 2,(IX+*),L	UNDOCUMENTED
-	.asc	"RES 2, (IX+@", $A9	; $DD $CB $96=RES 2,(IX+*)		$A9 was ')'+$90
-	.asc	"RES 2,(IX+@),",$C1	; $DD $CB $97=RES 2,(IX+*),A	UNDOCUMENTED
-	.asc	"RES 3,(IX+@),",$C2	; $DD $CB $98=RES 3,(IX+*),B	UNDOCUMENTED
-	.asc	"RES 3,(IX+@),",$C3	; $DD $CB $99=RES 3,(IX+*),C	UNDOCUMENTED
-	.asc	"RES 3,(IX+@),",$C4	; $DD $CB $9A=RES 3,(IX+*),D	UNDOCUMENTED
-	.asc	"RES 3,(IX+@),",$C5	; $DD $CB $9B=RES 3,(IX+*),E	UNDOCUMENTED
-	.asc	"RES 3,(IX+@),",$C8	; $DD $CB $9C=RES 3,(IX+*),H	UNDOCUMENTED
-	.asc	"RES 3,(IX+@),",$CC	; $DD $CB $9D=RES 3,(IX+*),L	UNDOCUMENTED
-	.asc	"RES 3, (IX+@", $A9	; $DD $CB $9E=RES 3,(IX+*)		$A9 was ')'+$90
-	.asc	"RES 3,(IX+@),",$C1	; $DD $CB $9F=RES 3,(IX+*),A	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCB90 ... $DDCB95 filler
+	.asc	"RES 2, (IX+@", $A9	; $DD $CB $96=RES 2,(IX+*)	$A9 was ')'+$90
+	.asc	7, '?'+$80			; $DDCB097 ... $DDCB9D filler
+	.asc	"RES 3, (IX+@", $A9	; $DD $CB $9E=RES 3,(IX+*)	$A9 was ')'+$90
+	.asc	'?'+$80				; $DD $CB $9F
 
-	.asc	"RES 4,(IX+@),",$C2	; $DD $CB $A0=RES 4,(IX+*),B	UNDOCUMENTED
-	.asc	"RES 4,(IX+@),",$C3	; $DD $CB $A1=RES 4,(IX+*),C	UNDOCUMENTED
-	.asc	"RES 4,(IX+@),",$C4	; $DD $CB $A2=RES 4,(IX+*),D	UNDOCUMENTED
-	.asc	"RES 4,(IX+@),",$C5	; $DD $CB $A3=RES 4,(IX+*),E	UNDOCUMENTED
-	.asc	"RES 4,(IX+@),",$C8	; $DD $CB $A4=RES 4,(IX+*),H	UNDOCUMENTED
-	.asc	"RES 4,(IX+@),",$CC	; $DD $CB $A5=RES 4,(IX+*),L	UNDOCUMENTED
-	.asc	"RES 4, (IX+@", $A9	; $DD $CB $A6=RES 4,(IX+*)		$A9 was ')'+$A0
-	.asc	"RES 4,(IX+@),",$C1	; $DD $CB $A7=RES 4,(IX+*),A	UNDOCUMENTED
-	.asc	"RES 5,(IX+@),",$C2	; $DD $CB $A8=RES 5,(IX+*),B	UNDOCUMENTED
-	.asc	"RES 5,(IX+@),",$C3	; $DD $CB $A9=RES 5,(IX+*),C	UNDOCUMENTED
-	.asc	"RES 5,(IX+@),",$C4	; $DD $CB $AA=RES 5,(IX+*),D	UNDOCUMENTED
-	.asc	"RES 5,(IX+@),",$C5	; $DD $CB $AB=RES 5,(IX+*),E	UNDOCUMENTED
-	.asc	"RES 5,(IX+@),",$C8	; $DD $CB $AC=RES 5,(IX+*),H	UNDOCUMENTED
-	.asc	"RES 5,(IX+@),",$CC	; $DD $CB $AD=RES 5,(IX+*),L	UNDOCUMENTED
-	.asc	"RES 5, (IX+@", $A9	; $DD $CB $AE=RES 5,(IX+*)		$A9 was ')'+$A0
-	.asc	"RES 5,(IX+@),",$C1	; $DD $CB $AF=RES 5,(IX+*),A	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCBA0 ... $DDCBA5 filler
+	.asc	"RES 4, (IX+@", $A9	; $DD $CB $A6=RES 4,(IX+*)	$A9 was ')'+$A0
+	.asc	7, '?'+$80			; $DDCBA7 ... $DDCBAD filler
+	.asc	"RES 5, (IX+@", $A9	; $DD $CB $AE=RES 5,(IX+*)	$A9 was ')'+$A0
+	.asc	'?'+$80				; $DD $CB $AF
 
-	.asc	"RES 6,(IX+@),",$C2	; $DD $CB $B0=RES 6,(IX+*),B	UNDOCUMENTED
-	.asc	"RES 6,(IX+@),",$C3	; $DD $CB $B1=RES 6,(IX+*),C	UNDOCUMENTED
-	.asc	"RES 6,(IX+@),",$C4	; $DD $CB $B2=RES 6,(IX+*),D	UNDOCUMENTED
-	.asc	"RES 6,(IX+@),",$C5	; $DD $CB $B3=RES 6,(IX+*),E	UNDOCUMENTED
-	.asc	"RES 6,(IX+@),",$C8	; $DD $CB $B4=RES 6,(IX+*),H	UNDOCUMENTED
-	.asc	"RES 6,(IX+@),",$CC	; $DD $CB $B5=RES 6,(IX+*),L	UNDOCUMENTED
-	.asc	"RES 6, (IX+@", $A9	; $DD $CB $B6=RES 6,(IX+*)		$A9 was ')'+$B0
-	.asc	"RES 6,(IX+@),",$C1	; $DD $CB $B7=RES 6,(IX+*),A	UNDOCUMENTED
-	.asc	"RES 7,(IX+@),",$C2	; $DD $CB $B8=RES 7,(IX+*),B	UNDOCUMENTED
-	.asc	"RES 7,(IX+@),",$C3	; $DD $CB $B9=RES 7,(IX+*),C	UNDOCUMENTED
-	.asc	"RES 7,(IX+@),",$C4	; $DD $CB $BA=RES 7,(IX+*),D	UNDOCUMENTED
-	.asc	"RES 7,(IX+@),",$C5	; $DD $CB $BB=RES 7,(IX+*),E	UNDOCUMENTED
-	.asc	"RES 7,(IX+@),",$C8	; $DD $CB $BC=RES 7,(IX+*),H	UNDOCUMENTED
-	.asc	"RES 7,(IX+@),",$CC	; $DD $CB $BD=RES 7,(IX+*),L	UNDOCUMENTED
-	.asc	"RES 7, (IX+@", $A9	; $DD $CB $BE=RES 7,(IX+*)		$A9 was ')'+$B0
-	.asc	"RES 7,(IX+@),",$C1	; $DD $CB $BF=RES 7,(IX+*),A	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCBB0 ... $DDCBB5 filler
+	.asc	"RES 6, (IX+@", $A9	; $DD $CB $B6=RES 6,(IX+*)	$A9 was ')'+$B0
+	.asc	7, '?'+$80			; $DDCBB7 ... $DDCBBD filler
+	.asc	"RES 7, (IX+@", $A9	; $DD $CB $BE=RES 7,(IX+*)	$A9 was ')'+$B0
+	.asc	'?'+$80				; $DD $CB $BF
 
-	.asc	"SET 0,(IX+@),",$C2	; $DD $CB $C0=SET 0,(IX+*),B	UNDOCUMENTED
-	.asc	"SET 0,(IX+@),",$C3	; $DD $CB $C1=SET 0,(IX+*),C	UNDOCUMENTED
-	.asc	"SET 0,(IX+@),",$C4	; $DD $CB $C2=SET 0,(IX+*),D	UNDOCUMENTED
-	.asc	"SET 0,(IX+@),",$C5	; $DD $CB $C3=SET 0,(IX+*),E	UNDOCUMENTED
-	.asc	"SET 0,(IX+@),",$C8	; $DD $CB $C4=SET 0,(IX+*),H	UNDOCUMENTED
-	.asc	"SET 0,(IX+@),",$CC	; $DD $CB $C5=SET 0,(IX+*),L	UNDOCUMENTED
-	.asc	"SET 0, (IX+@", $A9	; $DD $CB $C6=SET 0,(IX+*)		$A9 was ')'+$80
-	.asc	"SET 0,(IX+@),",$C1	; $DD $CB $C7=SET 0,(IX+*),A	UNDOCUMENTED
-	.asc	"SET 1,(IX+@),",$C2	; $DD $CB $C8=SET 1,(IX+*),B	UNDOCUMENTED
-	.asc	"SET 1,(IX+@),",$C3	; $DD $CB $C9=SET 1,(IX+*),C	UNDOCUMENTED
-	.asc	"SET 1,(IX+@),",$C4	; $DD $CB $CA=SET 1,(IX+*),D	UNDOCUMENTED
-	.asc	"SET 1,(IX+@),",$C5	; $DD $CB $CB=SET 1,(IX+*),E	UNDOCUMENTED
-	.asc	"SET 1,(IX+@),",$C8	; $DD $CB $CC=SET 1,(IX+*),H	UNDOCUMENTED
-	.asc	"SET 1,(IX+@),",$CC	; $DD $CB $CD=SET 1,(IX+*),L	UNDOCUMENTED
-	.asc	"SET 1, (IX+@", $A9	; $DD $CB $CE=SET 1,(IX+*)		$A9 was ')'+$80
-	.asc	"SET 1,(IX+@),",$C1	; $DD $CB $CF=SET 1,(IX+*),A	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCBC0 ... $DDCBC5 filler
+	.asc	"SET 0, (IX+@", $A9	; $DD $CB $C6=SET 0,(IX+*)	$A9 was ')'+$80
+	.asc	7, '?'+$80			; $DDCBC7 ... $DDCBCD filler
+	.asc	"SET 1, (IX+@", $A9	; $DD $CB $CE=SET 1,(IX+*)	$A9 was ')'+$80
+	.asc	'?'+$80				; $DD $CB $CF
 
-	.asc	"SET 2,(IX+@),",$C2	; $DD $CB $D0=SET 2,(IX+*),B	UNDOCUMENTED
-	.asc	"SET 2,(IX+@),",$C3	; $DD $CB $D1=SET 2,(IX+*),C	UNDOCUMENTED
-	.asc	"SET 2,(IX+@),",$C4	; $DD $CB $D2=SET 2,(IX+*),D	UNDOCUMENTED
-	.asc	"SET 2,(IX+@),",$C5	; $DD $CB $D3=SET 2,(IX+*),E	UNDOCUMENTED
-	.asc	"SET 2,(IX+@),",$C8	; $DD $CB $D4=SET 2,(IX+*),H	UNDOCUMENTED
-	.asc	"SET 2,(IX+@),",$CC	; $DD $CB $D5=SET 2,(IX+*),L	UNDOCUMENTED
-	.asc	"SET 2, (IX+@", $A9	; $DD $CB $D6=SET 2,(IX+*)		$A9 was ')'+$90
-	.asc	"SET 2,(IX+@),",$C1	; $DD $CB $D7=SET 2,(IX+*),A	UNDOCUMENTED
-	.asc	"SET 3,(IX+@),",$C2	; $DD $CB $D8=SET 3,(IX+*),B	UNDOCUMENTED
-	.asc	"SET 3,(IX+@),",$C3	; $DD $CB $D9=SET 3,(IX+*),C	UNDOCUMENTED
-	.asc	"SET 3,(IX+@),",$C4	; $DD $CB $DA=SET 3,(IX+*),D	UNDOCUMENTED
-	.asc	"SET 3,(IX+@),",$C5	; $DD $CB $DB=SET 3,(IX+*),E	UNDOCUMENTED
-	.asc	"SET 3,(IX+@),",$C8	; $DD $CB $DC=SET 3,(IX+*),H	UNDOCUMENTED
-	.asc	"SET 3,(IX+@),",$CC	; $DD $CB $DD=SET 3,(IX+*),L	UNDOCUMENTED
-	.asc	"SET 3, (IX+@", $A9	; $DD $CB $DE=SET 3,(IX+*)		$A9 was ')'+$90
-	.asc	"SET 3,(IX+@),",$C1	; $DD $CB $DF=SET 3,(IX+*),A	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCBD0 ... $DDCBD5 filler
+	.asc	"SET 2, (IX+@", $A9	; $DD $CB $D6=SET 2,(IX+*)	$A9 was ')'+$90
+	.asc	7, '?'+$80			; $DDCBD7 ... $DDCBDD filler
+	.asc	"SET 3, (IX+@", $A9	; $DD $CB $DE=SET 3,(IX+*)	$A9 was ')'+$90
+	.asc	'?'+$80				; $DD $CB $DF
 
-	.asc	"SET 4,(IX+@),",$C2	; $DD $CB $E0=SET 4,(IX+*),B	UNDOCUMENTED
-	.asc	"SET 4,(IX+@),",$C3	; $DD $CB $E1=SET 4,(IX+*),C	UNDOCUMENTED
-	.asc	"SET 4,(IX+@),",$C4	; $DD $CB $E2=SET 4,(IX+*),D	UNDOCUMENTED
-	.asc	"SET 4,(IX+@),",$C5	; $DD $CB $E3=SET 4,(IX+*),E	UNDOCUMENTED
-	.asc	"SET 4,(IX+@),",$C8	; $DD $CB $E4=SET 4,(IX+*),H	UNDOCUMENTED
-	.asc	"SET 4,(IX+@),",$CC	; $DD $CB $E5=SET 4,(IX+*),L	UNDOCUMENTED
-	.asc	"SET 4, (IX+@", $A9	; $DD $CB $E6=SET 4,(IX+*)		$A9 was ')'+$A0
-	.asc	"SET 4,(IX+@),",$C1	; $DD $CB $E7=SET 4,(IX+*),A	UNDOCUMENTED
-	.asc	"SET 5,(IX+@),",$C2	; $DD $CB $E8=SET 5,(IX+*),B	UNDOCUMENTED
-	.asc	"SET 5,(IX+@),",$C3	; $DD $CB $E9=SET 5,(IX+*),C	UNDOCUMENTED
-	.asc	"SET 5,(IX+@),",$C4	; $DD $CB $EA=SET 5,(IX+*),D	UNDOCUMENTED
-	.asc	"SET 5,(IX+@),",$C5	; $DD $CB $EB=SET 5,(IX+*),E	UNDOCUMENTED
-	.asc	"SET 5,(IX+@),",$C8	; $DD $CB $EC=SET 5,(IX+*),H	UNDOCUMENTED
-	.asc	"SET 5,(IX+@),",$CC	; $DD $CB $ED=SET 5,(IX+*),L	UNDOCUMENTED
-	.asc	"SET 5, (IX+@", $A9	; $DD $CB $EE=SET 5,(IX+*)		$A9 was ')'+$A0
-	.asc	"SET 5,(IX+@),",$C1	; $DD $CB $EF=SET 5,(IX+*),A	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCBE0 ... $DDCBE5 filler
+	.asc	"SET 4, (IX+@", $A9	; $DD $CB $E6=SET 4,(IX+*)	$A9 was ')'+$A0
+	.asc	7, '?'+$80			; $DDCBE7 ... $DDCBED filler
+	.asc	"SET 5, (IX+@", $A9	; $DD $CB $EE=SET 5,(IX+*)	$A9 was ')'+$A0
+	.asc	'?'+$80				; $DD $CB $EF
 
-	.asc	"SET 6,(IX+@),",$C2	; $DD $CB $F0=SET 6,(IX+*),B	UNDOCUMENTED
-	.asc	"SET 6,(IX+@),",$C3	; $DD $CB $F1=SET 6,(IX+*),C	UNDOCUMENTED
-	.asc	"SET 6,(IX+@),",$C4	; $DD $CB $F2=SET 6,(IX+*),D	UNDOCUMENTED
-	.asc	"SET 6,(IX+@),",$C5	; $DD $CB $F3=SET 6,(IX+*),E	UNDOCUMENTED
-	.asc	"SET 6,(IX+@),",$C8	; $DD $CB $F4=SET 6,(IX+*),H	UNDOCUMENTED
-	.asc	"SET 6,(IX+@),",$CC	; $DD $CB $F5=SET 6,(IX+*),L	UNDOCUMENTED
-	.asc	"SET 6, (IX+@", $A9	; $DD $CB $F6=SET 6,(IX+*)		$A9 was ')'+$B0
-	.asc	"SET 6,(IX+@),",$C1	; $DD $CB $F7=SET 6,(IX+*),A	UNDOCUMENTED
-	.asc	"SET 7,(IX+@),",$C2	; $DD $CB $F8=SET 7,(IX+*),B	UNDOCUMENTED
-	.asc	"SET 7,(IX+@),",$C3	; $DD $CB $F9=SET 7,(IX+*),C	UNDOCUMENTED
-	.asc	"SET 7,(IX+@),",$C4	; $DD $CB $FA=SET 7,(IX+*),D	UNDOCUMENTED
-	.asc	"SET 7,(IX+@),",$C5	; $DD $CB $FB=SET 7,(IX+*),E	UNDOCUMENTED
-	.asc	"SET 7,(IX+@),",$C8	; $DD $CB $FC=SET 7,(IX+*),H	UNDOCUMENTED
-	.asc	"SET 7,(IX+@),",$CC	; $DD $CB $FD=SET 7,(IX+*),L	UNDOCUMENTED
-	.asc	"SET 7, (IX+@", $A9	; $DD $CB $FE=SET 7,(IX+*)		$A9 was ')'+$B0
-	.asc	"SET 7,(IX+@),",$C1	; $DD $CB $FF=SET 7,(IX+*),A	UNDOCUMENTED
+	.asc	6, '?'+$80			; $DDCBF0 ... $DDCBF5 filler
+	.asc	"SET 6, (IX+@", $A9	; $DD $CB $F6=SET 6,(IX+*)	$A9 was ')'+$B0
+	.asc	7, '?'+$80			; $DDCBF7 ... $DDCBFD filler
+	.asc	"SET 7, (IX+@", $A9	; $DD $CB $FE=SET 7,(IX+*)	$A9 was ')'+$B0
+	.asc	'?'+$80				; $DD $CB $FF
 
 ; ****************************************************
 ; *** IY+d indexed BIT instructions ($FDCB prefix) *** @pointer table + 12!
