@@ -6,7 +6,7 @@ _quasi-VGA_ format, actual picture resolution is _SD TV-like_ but compatible wit
 more modern devices. This also stays better within the limited power of a 65C02.
 
 Another feature for both a more attractive display _and_ resource saving is the
-ability to **display up to 16 colours** from a _fixed **GRgB** palette_, although
+ability to **display up to 16 colours** from a _fixed **gBRG** palette_, although
 limited to _two of them over each 8x8 pixel region_, by means of an
 **attribute area** (much like the one on the **ZX Spectrum**, although with no
 `BRIGHT` or `FLASH` attributes.
@@ -122,17 +122,21 @@ multiplexer_, actually swapping fore- and background colours (much like the ZX
 Spectrum's `INVERSE` or `FLASH` modes). Ditto for **blanking**, not sure if via
 some AND gate or by totally disabling the colour mux.
 
+
 ### Palette for the _Colour RAM_
 
-For moderate bandwith and attractive presentation, a **GRgB palette** is used -- the
-_green_ channel sporting **4 levels** isntead of two, as the human eye is most sensitive
+For moderate bandwith and attractive presentation, a **gBRG palette** is used -- the
+_green_ channel sporting **4 levels** instead of two, as the human eye is most sensitive
 to this one. The colour codes _for each character_ (or the corresponding **8x8 pixel**
 area) are recorded with the most significant nibble representing the
 _background_ one.
 
-You can see the **GRgB palette** (among several discarded other ones)
+Note that _the most noticeable bit is **LSB**_, guaranteeing **adecuate contrast**
+if only the LSB gets changed. _This is the reason behing renaming the old `GRgB` scheme_.
+
+You can see the **gBRG palette** (among several discarded other ones)
 [here](../other/grgb.html):
-![GRgB palette](../other/grgb_palette.png)
+![gBRG palette](../other/grgb_palette.png)
 
 ## Memory map
 
@@ -253,4 +257,4 @@ to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
 the tristate option is activated**. _Read above about ways to achieve this,
 thru proper enabling of the `RAM /CS` signal_. 
 
-_Last modified: 20191130-2200_
+_Last modified: 20200128-1431_
