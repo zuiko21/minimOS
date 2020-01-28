@@ -197,7 +197,7 @@ mimic the highly compatible **Dragon 32/64**.
   * Specs: four 7-segment LED displays, 16-key keypad.
   * Interface: old-style _VIAport_ connector.
 
-Intended as a basic I/O device, current driver allows hex input via a _shift_ key.
+> Intended as a basic I/O device, current driver allows hex input via a _shift_ key.
 
 
 **ASCII Keyboard**
@@ -207,7 +207,7 @@ Intended as a basic I/O device, current driver allows hex input via a _shift_ ke
   * Specs: **64 keys**, two sets of three modifier keys. _May include a 20x4 LCD_.
   * Interface: old-style _VIAport_ connector, thinking about using the new **VIAport2**.
 
-Conveniently laid out keyboard, the use of an **optional LCD** will make a _self-contained
+> Conveniently laid out keyboard, the use of an **optional LCD** will make a _self-contained
 simple terminal_.
 
 
@@ -217,7 +217,7 @@ simple terminal_.
   * Specs: **40 keys** including the three usual _modifiers_ `Shift`, `Ctrl` and `Alt`.
   * Interface: single **VIAport2**, supposedly compatible with _Centronics_ printer interface.
 
-A self-contained keyboard, supported by a **minimal driver**.  Allows input of the **full 8-bit** ASCII set.
+> A self-contained keyboard, supported by a **minimal driver**.  Allows input of the **full 8-bit** ASCII set.
 
 
 **Roñavid**
@@ -226,7 +226,7 @@ A self-contained keyboard, supported by a **minimal driver**.  Allows input of t
   * Specs: **VGA-compatible** output, typically **576x448 _bitmap_** or **288x224 @ 4bpp** _chunky_).
   * Interface: _VME-like bus_.
   
-_Somewhat cumbersome_ **video card**. No CRTC, just _suitably programmed EPROMs_
+> _Somewhat cumbersome_ **video card**. No CRTC, just _suitably programmed EPROMs_
 generating all needed addresses and signals.
 
 
@@ -236,8 +236,8 @@ generating all needed addresses and signals.
   * Specs: **VGA-compatible** output of **288x224px bitmap**.
   * Interface: **6502-CPU _socket_**
 
-Simple, universal **graphic display**. _An extended **planar** version might provide **8 colours**_.
+> Simple, universal **graphic display**. _An extended **planar** version might provide **8 colours**_.
 ---
 _...and many more to come!_
 
-_last modified: 20200128-1437_
+_last modified: 20200128-1441_
