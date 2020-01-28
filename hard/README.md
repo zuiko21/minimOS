@@ -225,6 +225,39 @@ keyboard/mouse ports.
 _Might create an alternate SIXtation **Turbo @ 13.5 MHz** and 1152x896 pixels_
 
 
+#### Non-65xx architectures
+
+**Keraton**
+
+_Made from **ceramic**-cased ICs only_.
+
+Specs: 921 kHz **MC 6800**, 128-byte RAM, up to 32 kiB EPROM, PIA 6820.
+
+
+
+
+**miniCoCo**
+
+Recreation of Tandy's **TRS-80 _Color Computer_** (version 1), switchable to
+mimic the highly compatible **Dragon 32/64**.
+
+Specs: 895 kHz **MC 6809**, 32-64 KiB **S**RAM, 2x PIA 6821,
+**MC 6847** video (with _RGB_ output).
+
+
+
+**miniMC10**
+
+Recreation of Tandy's **TRS-80 _MC-10_**), perhaps switchable to
+mimic its french clone **Matra Alice**.
+
+Specs: 895 kHz **MC 6803** _MCU_, 8 KiB SRAM,
+**MC 6847** video (with _RGB_ output).
+
+
+
+
+
 ### Peripherals (TBD)
 
 **LED-Keypad**
@@ -281,4 +314,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20200121-0908_
+_last modified: 20200128-1101_
