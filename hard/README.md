@@ -164,14 +164,15 @@ keyboard/mouse ports and **flash-memory** via 65SIB.
 
 ### Non-65xx architectures
 
-**Keraton**
+[**KERAton**](https://flic.kr/p/dUEH5s)
 
-  * Specs: 921 kHz **MC6800, 128-byte RAM**, up to 32 kiB EPROM, PIA 6820.
+  * Specs: 921.6 kHz **MC6800, 128-byte RAM**, up to 32 kiB EPROM,
+PIA **CM602** (6820 clone), ACIA 2651.
 
 > Made from **ceramic**-cased ICs only.
 
 
-**miniCoCo**
+[**miniCoCo**](minicoco.md)
 
   * Specs: 895 kHz **MC6809**, 32-64 KiB **S**RAM, 2x PIA 6821,
 **MC6847 video** (with _RGB_ output).
@@ -180,7 +181,7 @@ keyboard/mouse ports and **flash-memory** via 65SIB.
 mimic the highly compatible **Dragon 32/64**.
 
 
-**miniMC10**
+[**miniMC10**](minimc10.md)
 
   * Specs: 895 kHz **MC 6803** _MCU_, **8 KiB** SRAM, **MC6847** video (with _RGB_ output).
 
@@ -239,4 +240,4 @@ Simple, universal **graphic display**. _An extended **planar** version might pro
 ---
 _...and many more to come!_
 
-_last modified: 20200128-1414_
+_last modified: 20200128-1437_
