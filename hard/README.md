@@ -62,15 +62,15 @@ SS-22 and old _VIAport_ connectors. Several diagnostic LEDs.
 **Baja**
 
   * Status: never started :-(
-  * Specs: intended to be a _fully bankswitching_ **65C02 SBC**,
-but pluggable into a backplane, too.
+
+> Intended to be a _fully bankswitching_ **65C02 SBC**, but pluggable into a backplane, too.
 
 
 [**Jalapa (formerly _SDm_)**](jalapa2.md)
 
   * Status: almost finished design, heavily _revamped_ as of Oct-2018.
   * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: 1.8432 / 2.304 MHz **65C816**, **128/512 kiB RAM**,
+  * Specs: 1.8432 / 2.304 MHz **65816**, **128/512 kiB RAM**,
 up to **32 kiB _Kernel_ EPROM** plus **up to 512 kiB _library_ EPROM**,
 VIA 65C22 (x2?), ACIA 65SC51.
   * Interfaces: Amplified piezo buzzer between PB7-CB2, SS-22, new _VIAport**2**_
@@ -102,13 +102,12 @@ original Application & Expansion slots.
 
   * Status: **essentially finished** design.
   * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: **1.57 MHz** 65(C)02, **32 kiB SRAM** (plus 2 kiB _VRAM_), 
-up to **32 kiB EPROM**, VIA 65(C)22, PIA 6521/6821, CRTC HD6845,
-with _optional second PIA_ for **IEEE-488** interface.
+  * Specs: **1.57 MHz** 65(C)02, **32 kiB SRAM** (plus 2 kiB _VRAM_), up to **32 kiB EPROM**,
+VIA 65(C)22, PIA 6521/6821, CRTC HD6845, with _optional second PIA_ for **IEEE-488** interface.
   * Interfaces: **same as the original PET**; cassette and IEEE-488 on
 separate _optional_ board.
 
-_This is a recreation of the **Commodore PET/CBM 8032**, 
+> _This is a recreation of the **Commodore PET/CBM 8032**, 
 switchable between **40 and 80 columns**_, with updated components
 (e.g. SRAM) and **VGA-compatible** output (thus about **57% faster**).
 
@@ -117,35 +116,35 @@ switchable between **40 and 80 columns**_, with updated components
 
   * Status: finishing design.
   * Form-factor: Single layer PCB?
-  * Specs: **6.144 MHz 65C816**, 16 kiB SRAM (plus 16 more for _ROM-in-RAM_),
+  * Specs: **6.144 MHz 65816**, 16 kiB SRAM (plus 16 more for _ROM-in-RAM_),
 **3x32 kiB VRAM**, 16 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
   * Interfaces: Piezo buzzer, TTL-level async., SS-22, parallel input,
 **VGA-compatible** video output (**~576x448** @ up to **4bpp**, gBRG or greyscale),
 _VME-like_ slot (65816 direct expansion) 
 
-_Intended to be a **colour & graphics** capable **VT-52** based terminal._
-
+> Intended to be a **colour & graphics** capable **VT-52** based terminal.
 
 
 **Veracruz** _(might become the **SIXtation Lite**)_
 
   * Status: in design stage _(might become a lower-spec **SIXtation**)_.
   * Form-factor: thru-hole PCB?
-  * Specs: **3.072 MHz 65C816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM**,
+  * Specs: **3.072 MHz 65816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM**,
 2x VIA 65C22, UART 16C550 (?), RTC MC146818 (?).
   * Interfaces: Piezo buzzer, new VIA and SS-22 connectors, TTL-level async,
-**65SIB** (?), Hitachi LCD thru VIA, **PS/2**, _VME-like_ slot (65816 direct expansion)
+**65SIB** (?), Hitachi LCD thru VIA (?), **PS/2**, _VME-like_ slot (65816 direct expansion)
 
-_Likely to include a **4bpp, ~640x400px** card._
+> _Likely to include a **4bpp, ~640x400px** card._
 
 
 **Jalisco** _(might be merged with **SIXtation**)_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
-  * Specs: up to 13.5 MHz 65816, up to **8 MiB RAM** (2 x Garth's modules),
-32 kiB Kernel + 4 MiB _lib_ EPROM, 2x or 3x VIA 65C22, UART 16C552, RTC MC146818, _ROM-in-RAM_.
-  * Interfaces: most likely those of Veracruz, plus CF & SD-card (via **65SIB**),
+  * Specs: up to **13.5 MHz 65816**, optional **68881/882 FPU @ 24 MHz** or faster,
+up to **8 MiB RAM** (2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**,
+2x or 3x VIA 65C22, UART 16C552, RTC MC146818, _ROM-in-RAM_.
+  * Interfaces: most likely those of _Veracruz_, plus CF & SD-card (via **65SIB**),
 _VME-like slot_...
 
 
@@ -153,14 +152,14 @@ _VME-like slot_...
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
-  * Specs: **9 MHz 65816**, **_24.576 MHz_ 68881 FPU** (or faster),
-up to **8 MiB RAM** (2x Garth's modules), 32 kiB Kernel + 4 MiB *lib* EPROM,
+  * Specs: **9 MHz 65816**, **_24.576 MHz_ 68881/882 FPU** (or faster),
+up to **8 MiB RAM** (2x Garth's modules), **32 kiB Kernel + 4 MiB _lib_ EPROM**,
 2x VIA 65C22, (2x) 16C552 UART, MC146818 RTC, _ROM-in-RAM_.
   * Video output: 6445-based, _planar_ up to 8x128 kiB VRAM and **8 bpp**, typically **1360x768**.
   * Other interfaces: most likely those of _Jalisco_. Will _definitely_ include **PS/2**
-keyboard/mouse ports.
+keyboard/mouse ports and **flash-memory** via 65SIB.
 
-_Base design allows an alternate **SIXtation Turbo @ 13.5 MHz** and **1152x896px**._
+> Base design allows an alternate **SIXtation Turbo @ 13.5 MHz** and **1152x896px**.
 
 
 ### Non-65xx architectures
@@ -169,7 +168,7 @@ _Base design allows an alternate **SIXtation Turbo @ 13.5 MHz** and **1152x896px
 
   * Specs: 921 kHz **MC6800, 128-byte RAM**, up to 32 kiB EPROM, PIA 6820.
 
-_Made from **ceramic**-cased ICs only_.
+> Made from **ceramic**-cased ICs only.
 
 
 **miniCoCo**
@@ -177,16 +176,15 @@ _Made from **ceramic**-cased ICs only_.
   * Specs: 895 kHz **MC6809**, 32-64 KiB **S**RAM, 2x PIA 6821,
 **MC6847 video** (with _RGB_ output).
 
-Recreation of Tandy's **TRS-80 _Color Computer_** (version 1), switchable to
+> Recreation of Tandy's **TRS-80 _Color Computer_** (version 1), switchable to
 mimic the highly compatible **Dragon 32/64**.
 
 
 **miniMC10**
 
-Recreation of Tandy's **TRS-80 _MC-10_**), perhaps switchable to
-mimic its french clone **Matra Alice**.
+  * Specs: 895 kHz **MC 6803** _MCU_, **8 KiB** SRAM, **MC6847** video (with _RGB_ output).
 
-Specs: 895 kHz **MC 6803** _MCU_, 8 KiB SRAM, **MC 6847** video (with _RGB_ output).
+> Recreation of Tandy's **TRS-80 _MC-10_**), perhaps switchable to mimic its french clone **Matra Alice**.
 
 
 ## Peripherals (TBD)
