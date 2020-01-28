@@ -9,36 +9,25 @@ the utterly popular Commodore-64 (using a 6510) is targeted.
 
 Back to my **own-designed** machines, here's the current history & roadmap:
 
-### Computers
-
+## Computers
 
 **MTE _("Medidor de Tiempos de Exposición", Exposure Time Meter)_**
 
-Status: finishing design.
-
-Form-factor: soldered PCB.
-
-Specs: 1 MHz 6503 (28 pin, 4 kiB addressing space), 128-byte RAM,
-3 kiB-EPROM (addressed range from a 2732), VIA 6522
-
-Interfaces: four (very large) 7-segment LED digits, light sensor, a couple of keys...
-
-
+  * Status: finishing design.
+  * Form-factor: soldered PCB.
+  * Specs: 1 MHz 6503 (28 pin, 4 kiB addressing space), 128-byte RAM,
+3 kiB-EPROM (useable range from a 2732), VIA 6522
+  * Interfaces: four (very large) 7-segment LED digits, light sensor, a couple of keys...
 
 
 [**SDd _("Sistema de Desarrollo didáctico", Learning Development 
 System)_**](https://flic.kr/s/aHsjCMszTY)
 
-Status: [WORKING!](https://twitter.com/zuiko21/status/936654607014653952?s=19)
-
-Form-factor: solderless breadboard.
-
-Specs: 1 MHz 65SC02, 2 kiB RAM, 2-4 kIB (E)EPROM, VIA 65C22.
-
-Interfaces: Amplified piezo buzzer between PB7-CB2,
+  * Status: [WORKING!](https://twitter.com/zuiko21/status/936654607014653952?s=19)
+  * Form-factor: solderless breadboard.
+  * Specs: 1 MHz 65SC02, 2 kiB RAM, 2-4 kIB (E)EPROM, VIA 65C22.
+  * Interfaces: Amplified piezo buzzer between PB7-CB2,
 currently with a VIA-attached 4-digit **LED-keypad**.
-
-
 
 
 [**CHIHUAHUA**](https://flic.kr/s/aHsjEn5ntM)
@@ -225,7 +214,7 @@ keyboard/mouse ports.
 _Might create an alternate SIXtation **Turbo @ 13.5 MHz** and 1152x896 pixels_
 
 
-#### Non-65xx architectures
+### Non-65xx architectures
 
 **Keraton**
 
@@ -258,7 +247,7 @@ Specs: 895 kHz **MC 6803** _MCU_, 8 KiB SRAM,
 
 
 
-### Peripherals (TBD)
+## Peripherals (TBD)
 
 **LED-Keypad**
 
@@ -314,4 +303,4 @@ Simple, _CPU-socket installed_ **graphic display** (VGA-compatible) with
 
 _...more to come!_
 
-_last modified: 20200128-1101_
+_last modified: 20200128-1333_
