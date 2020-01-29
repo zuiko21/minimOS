@@ -11,12 +11,48 @@ A recreation of Tandy's [**TRS-80 _Color Computer_**](https://en.wikipedia.org/w
 - **RGB video** output, preferably suited to European standards
 (15625 kHz/50 Hz, although _60 Hz_ would be acceptable)
 - **Dragon 32/64** compatibility via a jumper setting.
+- Alternative 8x12 **character matrix** for the 6847.
 
 ### Differences between CoCo and Dragon models
 
 Based on the same [Motorola datasheet](http://www.colorcomputerarchive.com/coco/Documents/Datasheets/MC6883%20Synchronous%20Address%20Multiplexer%20(Motorola).pdf),
+both computers are fairly similar (and thus **highly compatible**). Stated differences are:
+
+- Keyboard matrix layout (some rows are swapped)
+- Serial and parallel ports
+- ROM contents (and size in case of the Dragon **64**)
+- PAL vs. NTSC video output
+
+For the first issue, a couple of _'245s_ will easily turn keyboard rows 012345 (CoCo)
+into a 450123 order (Dragon); no big deal here. The following two items, however, ask for further
+consideration as there are differences between both Dragon models:
+
+Machine:      | CoCo     | Dragon 32 | Dragon 64
+========      | ====     | ========= | =========
+Serial port   | emulated | _n/a_     | **6551-based**
+Parallel port | _n/a_    | Yes       | Yes
+ROM size      | 16K      | 16K       | **2x**16K
+
+The original CoCo used a few VIA-1 pins (`PA1`, `CA1` and `PB0`) as the serial lines `TX`, `CD` and `RX`, respectively.
+But on the Dragon these pins become `/STROBE`, `ACK` and `/BUSY` for the Centronics parallel interface.
+While this seems no issue _as long as no more than one interface is populated_, the input lines for parallel will collide with
+the _level shifter_ outputs, even if no device is connected to the (emulated) serial port. This can be solved by _tri-stating_
+input signals from the level shifter, **easily achieved** as there are two free buffers on one of the '245s for _keyboard layout switching_.
+
+> By the way, the aforementioned _level shifter_ circuit won't be discretely implemented any longer, as an IC like **MAX232**
+seems a much better option nowadays. _One_ comparator is still needed for cassette input, though.
+
+As per the ROM contents, the simplest option would be the use of a **27C256** (32 kiB EPROM) with `A14` tied to the _CoCo/Dragon_
+switching option. Another jumper at `A14` may leave a _pull-up_ on it in case a 16 kiB, non-switchable EPROM is used. However,
+the **Dragon 64** is supplied with _two_ 16 kiB ROMs which are switched between _32 and 64 modes_ (never simultaneously!) thru
+PIA-1's `PB2` (`ROMSEL`). Thus, for a _fully-compliant Coco/D32/D64_ computer, a whopping **64 kiB 27C512 EPROM** is needed.
+The aforementioned `ROMSEL` line may go into `A15` but, once again, swapped for a _pull-up_ in case a smaller chip is used.
+Assuming the switch line is 0 for _CoCo mode_ and `ROMSEL` is 1 for _64 mode_, the ROM contents order may be
+_CoCo_, _D32_, _CoCo_ again and finally _D64_.
 
 ## Specs
+
+* * * * * * TO BE DONE * * * * * *
 
 Still within design phase, here is an outline of its basic specs:
 
@@ -90,4 +126,4 @@ The standard memory map goes as follows:
 
 
 
-_Last modified: 20200129-0902_
+_Last modified: 20200129-1013_
