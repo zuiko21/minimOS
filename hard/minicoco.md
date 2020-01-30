@@ -27,8 +27,8 @@ About the first issue, a couple of _'245s_ will easily turn keyboard rows 0-1-2-
 into a 4-5-0-1-2-3 order (Dragon); no big deal here. The following two items, however, ask for further
 consideration as there are differences between both Dragon models:
 
-Machine:      | CoCo     | Dragon 32 | Dragon 64
-========      | ====     | ========= | =========
+Machine->     | CoCo     | Dragon 32 | Dragon 64
+-------       | ----     | --------- | ---------
 Serial port   | emulated | _n/a_     | **6551-based**
 Parallel port | _n/a_    | Yes       | Yes
 ROM size      | 16K      | 16K       | **2x**16K
