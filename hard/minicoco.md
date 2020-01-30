@@ -50,6 +50,14 @@ The aforementioned `ROMSEL` line may go into `A15` but, once again, swapped for 
 Assuming the switch line is 0 for _CoCo mode_ and `ROMSEL` is 1 for _64 mode_, the ROM contents order may be
 _CoCo_, _D32_, _CoCo_ again and finally _D64_.
 
+#### 32K-only version
+
+An intermediate option, however, would be keeping the _Coco/Dragon **32**_ compatibility but losing the _Dragon 64_ option, as this
+will save the **ACIA** (and associated _level switcher_, independent from that on CoCo's _emulated_ serial) plus the **extra RAM**,
+which would mean _another_ 62256 chip. **ROM size** would be reduced to a reasonable **32 kiB** _without mirroring_. `PB2` on VIA1
+is no longer the `ROMSEL` outbut, but back an _input_ tied to ground (or +5v in some boards). Decoding circuitry must be modified
+anyway in order to use a **single 16 kiB EPROM** (or 32K for CoCo compatibility) instead of the _two 8 kiB ROMs_ on the original.
+
 ## Specs
 
 * * * * * * TO BE DONE * * * * * *
@@ -126,4 +134,4 @@ The standard memory map goes as follows:
 
 
 
-_Last modified: 20200129-1013_
+_Last modified: 20200130-1011_
