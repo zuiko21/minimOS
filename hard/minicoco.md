@@ -10,21 +10,21 @@ A recreation of Tandy's [**TRS-80 _Color Computer_**](https://en.wikipedia.org/w
 - Keep using _standard_ components (unlike later versions).
 - **RGB video** output, preferably suited to European standards
 (15625 kHz/50 Hz, although _60 Hz_ would be acceptable)
-- **Dragon 32/64** compatibility via a jumper setting.
-- Alternative 8x12 **character matrix** for the 6847.
+- **Dragon 32** (and/or **64**) compatibility via a jumper setting.
+- Alternative **8x12 character matrix** for the 6847.
 
-### Differences between CoCo and Dragon models
+## Differences between CoCo and Dragon models
 
 Based on the same [Motorola datasheet](http://www.colorcomputerarchive.com/coco/Documents/Datasheets/MC6883%20Synchronous%20Address%20Multiplexer%20(Motorola).pdf),
 both computers are fairly similar (and thus **highly compatible**). Stated differences are:
 
 - Keyboard matrix layout (some rows are swapped)
-- Serial and parallel ports
-- ROM contents (and size in case of the Dragon **64**)
+- Serial and parallel ports (see table below)
+- ROM contents (and _size_, in case of the **Dragon 64**)
 - PAL vs. NTSC video output
 
-For the first issue, a couple of _'245s_ will easily turn keyboard rows 012345 (CoCo)
-into a 450123 order (Dragon); no big deal here. The following two items, however, ask for further
+About the first issue, a couple of _'245s_ will easily turn keyboard rows 0-1-2-3-4-5 (CoCo)
+into a 4-5-0-1-2-3 order (Dragon); no big deal here. The following two items, however, ask for further
 consideration as there are differences between both Dragon models:
 
 Machine:      | CoCo     | Dragon 32 | Dragon 64
@@ -32,6 +32,8 @@ Machine:      | CoCo     | Dragon 32 | Dragon 64
 Serial port   | emulated | _n/a_     | **6551-based**
 Parallel port | _n/a_    | Yes       | Yes
 ROM size      | 16K      | 16K       | **2x**16K
+
+### Serial and parallel ports
 
 The original CoCo used a few VIA-1 pins (`PA1`, `CA1` and `PB0`) as the serial lines `TX`, `CD` and `RX`, respectively.
 But on the Dragon these pins become `/STROBE`, `ACK` and `/BUSY` for the Centronics parallel interface.
@@ -42,8 +44,10 @@ input signals from the level shifter, **easily achieved** as there are two free 
 > By the way, the aforementioned _level shifter_ circuit won't be discretely implemented any longer, as an IC like **MAX232**
 seems a much better option nowadays. _One_ comparator is still needed for cassette input, though.
 
-As per the ROM contents, the simplest option would be the use of a **27C256** (32 kiB EPROM) with `A14` tied to the _CoCo/Dragon_
-switching option. Another jumper at `A14` may leave a _pull-up_ on it in case a 16 kiB, non-switchable EPROM is used. However,
+### ROM contents (and size)
+
+The simplest option for a fully switchable machine would be the use of a **27C256** (32 kiB EPROM) with `A14` tied to the _CoCo/Dragon_
+option jumper. Another jumper at `A14` may leave a _pull-up_ on it in case a 16 kiB, non-switchable EPROM is used. However,
 the **Dragon 64** is supplied with _two_ 16 kiB ROMs which are switched between _32 and 64 modes_ (never simultaneously!) thru
 PIA-1's `PB2` (`ROMSEL`). Thus, for a _fully-compliant Coco/D32/D64_ computer, a whopping **64 kiB 27C512 EPROM** is needed.
 The aforementioned `ROMSEL` line may go into `A15` but, once again, swapped for a _pull-up_ in case a smaller chip is used.
@@ -57,6 +61,15 @@ will save the **ACIA** (and associated _level switcher_, independent from that o
 which would mean _another_ 62256 chip. **ROM size** would be reduced to a reasonable **32 kiB** _without mirroring_. `PB2` on VIA1
 is no longer the `ROMSEL` outbut, but back an _input_ tied to ground (or +5v in some boards). Decoding circuitry must be modified
 anyway in order to use a **single 16 kiB EPROM** (or 32K for CoCo compatibility) instead of the _two 8 kiB ROMs_ on the original.
+
+In any case, putting a _pulled-down_ `ROMSEL` into EPROM's **pin 1** will allow the use
+of the alternative "64" ROM, while the missing 32K RAM could be added on the **expansion port**.
+This way, a 27C512 EPROM is a must for Dragon 64 compatibility, even if no CoCo support is desired.
+
+Since pin 1 is `Vpp` on any EPROM of 32 kiB or less, a _pulled-up_ (or pulled _down_?)
+jumper is provided if Dragon 64 support is not needed. Similarly, **pin 27** (`A14` or `/PGM`)
+should have a jumper allowing the use of a 27C128 for _non-switchable_ operation.
+
 
 ## Specs
 
@@ -134,4 +147,4 @@ The standard memory map goes as follows:
 
 
 
-_Last modified: 20200130-1011_
+_Last modified: 20200130-1949_
