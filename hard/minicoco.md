@@ -24,7 +24,7 @@ both computers are fairly similar (and thus **highly compatible**). Stated diffe
 - PAL vs. NTSC video output
 
 About the first issue, a couple of _'245s_ will easily turn keyboard rows 0-1-2-3-4-5 (CoCo)
-into a **4-5-**0-1-2-3 order (Dragon); no big deal here. The next two items, however, ask for
+into a 4-5-0-1-2-3 order (Dragon); no big deal here. The next two items, however, ask for
 further consideration as there are differences between both Dragon models:
 
 Machine->     | CoCo     | Dragon 32 | Dragon 64
@@ -61,7 +61,7 @@ the ROM contents order may be  _D32_, _CoCo_, then  _D64_ and finally _CoCo_ aga
 An intermediate option, however, would be keeping the _Coco/Dragon **32**_ compatibility but losing the _Dragon 64_
 option, as this will save the **ACIA** (and associated _level switcher_, independent from that on CoCo's _emulated_
 serial) plus the **extra RAM**, which would mean _another_ 62256 chip. **ROM size** would be reduced to a reasonable
-**32 kiB** _without mirroring_. `PB2` on VIA1 is no longer the `ROMSEL` outbut, but back an _input_ tied to ground
+**32 kiB** _without mirroring_. `PB2` on VIA1 is no longer the `ROMSEL` output, but back an _input_ tied to ground
 (or +5v in some boards). Decoding circuitry must be modified anyway in order to use a **single 16 kiB EPROM**
 (or 32K for CoCo compatibility) instead of the _two 8 kiB ROMs_ on the original.
 
@@ -123,4 +123,4 @@ _TO BE DONE_
 
 
 
-_Last modified: 20200131-1010_
+_Last modified: 20200131-1015_
