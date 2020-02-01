@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200131-1346
+; last modified 20200201-1142
 
 ; ***** for 69asm MC6809 cross assembler *****
 ; Regular Motorola set (not 6309 yet)
@@ -18,35 +18,35 @@
 	.asc	"LSR ", '@'+$80		; $04=LSR d
 	.asc	'?'+$80				; $05=?
 	.asc	"ROR ", '@'+$80		; $06=ROR d
-	.asc	"TP", 'A'+$80		; $07=ASR d
-	.asc	"IN", 'X'+$80		; $08=ASL d (LSL d)
-	.asc	"DE", 'X'+$80		; $09=ROL d
-	.asc	"CL", 'V'+$80		; $0A=DEC d
+	.asc	"ASR ", '@'+$80		; $07=ASR d
+	.asc	"ASL ", '@'+$80		; $08=ASL d (LSL d)
+	.asc	"ROL ", '@'+$80		; $09=ROL d
+	.asc	"DEC ", '@'+$80		; $0A=DEC d
 	.asc	'?'+$80				; $0B=?
-	.asc	"CL", 'C'+$80		; $0C=INC d
-	.asc	"SE", 'C'+$80		; $0D=TST d
-	.asc	"CL", 'I'+$80		; $0E=JMP d
-	.asc	"SE", 'I'+$80		; $0F=CLR d
+	.asc	"INC ", '@'+$80		; $0C=INC d
+	.asc	"TST ", '@'+$80		; $0D=TST d
+	.asc	"JMP ", '@'+$80		; $0E=JMP d
+	.asc	"CLR ", '@'+$80		; $0F=CLR d
 
 	.asc	'*', 2+$80			; $10		** 6809 PREFIX **
 	.asc	'*', 4+$80			; $11		** 6809 PREFIX **
 	.asc	"NO", 'P'+$80		; $12=NOP
-	.asc	"?", ' '+$80		; $13=SYNC
+	.asc	"SYN", 'C'+$80		; $13=SYNC
 	.asc	'?'+$80				; $14=?
 	.asc	'?'+$80				; $15=?
 	.asc	"LBRA ", '='+$80	; $16=LBRA lr
-	.asc	"TB", 'A'+$80		; $17=LBSR lr
+	.asc	"LBSR ", '='+$80	; $17=LBSR lr
 	.asc	'?'+$80				; $18=?
 	.asc	"DA", 'A'+$80		; $19=DAA
-	.asc	"SL", 'P'+$80		; $1A=ORCC #
+	.asc	"ORCC ", '@'+$80	; $1A=ORCC #
 	.asc	'?'+$80				; $1B=?
-	.asc	"?", ' '+$80		; $1C=ANDCC #
-	.asc	"?", ' '+$80		; $1D=SEX
-	.asc	"?", ' '+$80		; $1E=EXG #
-	.asc	"?", ' '+$80		; $1F=TFR #
+	.asc	"ANDCC ", '@'+$80	; $1C=ANDCC #
+	.asc	"SE", 'X'+$80		; $1D=SEX
+	.asc	"EXG ", '@'+$80		; $1E=EXG #
+	.asc	"TFR ", '@'+$80		; $1F=TFR #
 
 	.asc	"BRA ", '%'+$80		; $20=BRA rel
-	.asc	"BRN ", '%'+$80		; $21=BRN rel	MC6801
+	.asc	"BRN ", '%'+$80		; $21=BRN rel
 	.asc	"BHI ", '%'+$80		; $22=BHI rel
 	.asc	"BLS ", '%'+$80		; $23=BLS rel
 	.asc	"BCC ", '%'+$80		; $24=BCC rel (BHS)
@@ -62,19 +62,19 @@
 	.asc	"BGT ", '%'+$80		; $2E=BGT rel
 	.asc	"BLE ", '%'+$80		; $2F=BLE rel
 
-	.asc	"TS", 'X'+$80		; $30=LEAX idx
-	.asc	"IN", 'S'+$80		; $31=LEAY
-	.asc	"PUL ", 'A'+$80		; $32=LEAS
-	.asc	"PUL ", 'B'+$80		; $33=LEAU
-	.asc	"DE", 'S'+$80		; $34=PSHS #
-	.asc	"TX", 'S'+$80		; $35=PULS #
-	.asc	"PSH ", 'A'+$80		; $36=PSHU #
-	.asc	"PSH ", 'B'+$80		; $37=PULU #
+	.asc	"LEAX ", '?'+$80		; $30=LEAX idx ?
+	.asc	"LEAY ", '?'+$80		; $31=LEAY ?
+	.asc	"LEAS ", '?'+$80		; $32=LEAS ?
+	.asc	"LEAU ", '?'+$80		; $33=LEAU ?
+	.asc	"PSHS ", '@'+$80	; $34=PSHS #
+	.asc	"PULS ", '@'+$80	; $35=PULS #
+	.asc	"PSHU ", '@'+$80	; $36=PSHU #
+	.asc	"PULU ", '@'+$80	; $37=PULU #
 	.asc	'?'+$80				; $38=?
 	.asc	"RT", 'S'+$80		; $39=RTS
 	.asc	"AB", 'X'+$80		; $3A=ABX
 	.asc	"RT", 'I'+$80		; $3B=RTI
-	.asc	"PSH", 'X'+$80		; $3C=CWAI #
+	.asc	"CWAI ", '@'+$80	; $3C=CWAI #
 	.asc	"MU", 'L'+$80		; $3D=MUL
 	.asc	'?'+$80				; $3E=?
 	.asc	"SW", 'I'+$80		; $3F=SWI
@@ -147,69 +147,69 @@
 	.asc	"JMP ", '&'+$80		; $7E=JMP ext
 	.asc	"CLR ", '&'+$80		; $7F=CLR ext
 
-	.asc	"SUB A #", '@'+$80	; $80=SUB A #
-	.asc	"CMP A #", '@'+$80	; $81=CMP A #
-	.asc	"SBC A #", '@'+$80	; $82=SBC A #
+	.asc	"SUBA #", '@'+$80	; $80=SUB A #
+	.asc	"CMPA #", '@'+$80	; $81=CMP A #
+	.asc	"SBCA #", '@'+$80	; $82=SBC A #
 	.asc	"SUBD #", '&'+$80	; $83=SUBD #
-	.asc	"AND A #", '@'+$80	; $84=AND A #
-	.asc	"BIT A #", '@'+$80	; $85=BIT A #
+	.asc	"ANDA #", '@'+$80	; $84=AND A #
+	.asc	"BITA #", '@'+$80	; $85=BIT A #
 	.asc	"LDA #", '@'+$80	; $86=LDA #
 	.asc	'?'+$80				; $87=?
-	.asc	"EOR A #", '@'+$80	; $88=EOR A #
-	.asc	"ADC A #", '@'+$80	; $89=ADC A #
+	.asc	"EORA #", '@'+$80	; $88=EOR A #
+	.asc	"ADCA #", '@'+$80	; $89=ADC A #
 	.asc	"ORA #", '@'+$80	; $8A=ORA #
-	.asc	"ADD A #", '@'+$80	; $8B=ADD A #
+	.asc	"ADDA #", '@'+$80	; $8B=ADD A #
 	.asc	"CMPX # ", '&'+$80	; $8C=CMPX #
 	.asc	"BSR ", '%'+$80		; $8D=BSR rel
 	.asc	"LDX #", '&'+$80	; $8E=LDX #
 	.asc	"?", ' '+$80		; $8F=?
 
-	.asc	"SUB A ", '@'+$80	; $90=SUB A dir
-	.asc	"CMP A ", '@'+$80	; $91=CMP A dir
-	.asc	"SBC A ", '@'+$80	; $92=SBC A dir
+	.asc	"SUBA ", '@'+$80	; $90=SUB A dir
+	.asc	"CMPA ", '@'+$80	; $91=CMP A dir
+	.asc	"SBCA ", '@'+$80	; $92=SBC A dir
 	.asc	"SUBD ", '@'+$80	; $93=SUBD dir
-	.asc	"AND A ", '@'+$80	; $94=AND A dir
-	.asc	"BIT A ", '@'+$80	; $95=BIT A dir
+	.asc	"ANDA ", '@'+$80	; $94=AND A dir
+	.asc	"BITA ", '@'+$80	; $95=BIT A dir
 	.asc	"LDA ", '@'+$80		; $96=LDA dir
 	.asc	"STA ", '@'+$80		; $97=STA dir
-	.asc	"EOR A ", '@'+$80	; $98=EOR A dir
-	.asc	"ADC A ", '@'+$80	; $99=ADC A dir
+	.asc	"EORA ", '@'+$80	; $98=EOR A dir
+	.asc	"ADCA ", '@'+$80	; $99=ADC A dir
 	.asc	"ORA ", '@'+$80		; $9A=ORA dir
-	.asc	"ADD A ", '@'+$80	; $9B=ADD A dir
+	.asc	"ADDA ", '@'+$80	; $9B=ADD A dir
 	.asc	"CMPX ", '@'+$80	; $9C=CMPX dir
 	.asc	"JSR ", '@'+$80		; $9D=JSR dir
 	.asc	"LDX ", '@'+$80		; $9E=LDX dir
 	.asc	"STX ", '@'+$80		; $9F=STX dir
 
-	.asc	"SUB A @, ", 'X'+$80	; $A0=SUB A idx
-	.asc	"CMP A @, ", 'X'+$80	; $A1=CMP A idx
-	.asc	"SBC A @, ", 'X'+$80	; $A2=SBC A idx
-	.asc	"SUBD @, ", 'X'+$80		; $A3=SUBD idx
-	.asc	"AND A @, ", 'X'+$80	; $A4=AND A idx
-	.asc	"BIT A @, ", 'X'+$80	; $A5=BIT A idx
+	.asc	"SUBA @, ", 'X'+$80	; $A0=SUB A idx
+	.asc	"CMPA @, ", 'X'+$80	; $A1=CMP A idx
+	.asc	"SBCA @, ", 'X'+$80	; $A2=SBC A idx
+	.asc	"SUBD @, ", 'X'+$80	; $A3=SUBD idx
+	.asc	"ANDA @, ", 'X'+$80	; $A4=AND A idx
+	.asc	"BITA @, ", 'X'+$80	; $A5=BIT A idx
 	.asc	"LDA @, ", 'X'+$80		; $A6=LDA idx
 	.asc	"STA @, ", 'X'+$80		; $A7=STA idx
-	.asc	"EOR A @, ", 'X'+$80	; $A8=EOR A idx
-	.asc	"ADC A @, ", 'X'+$80	; $A9=ADC A idx
+	.asc	"EORA @, ", 'X'+$80	; $A8=EOR A idx
+	.asc	"ADCA @, ", 'X'+$80	; $A9=ADC A idx
 	.asc	"ORA @, ", 'X'+$80		; $AA=ORA idx
-	.asc	"ADD A @, ", 'X'+$80	; $AB=ADD A idx
-	.asc	"CMPX @, ", 'X'+$80		; $AC=CMPX idx
+	.asc	"ADDA @, ", 'X'+$80	; $AB=ADD A idx
+	.asc	"CMPX @, ", 'X'+$80	; $AC=CMPX idx
 	.asc	"JSR @, ", 'X'+$80		; $AD=JSR idx
 	.asc	"LDX @, ", 'X'+$80		; $AE=LDX idx
 	.asc	"STX @, ", 'X'+$80		; $AF=STX idx
 
-	.asc	"SUB A ", '&'+$80	; $B0=SUB A ext
-	.asc	"CMP A ", '&'+$80	; $B1=CMP A ext
-	.asc	"SBC A ", '&'+$80	; $B2=SBC A ext
+	.asc	"SUBA ", '&'+$80	; $B0=SUB A ext
+	.asc	"CMPA ", '&'+$80	; $B1=CMP A ext
+	.asc	"SBCA ", '&'+$80	; $B2=SBC A ext
 	.asc	"SUBD ", '&'+$80	; $B3=SUBD ext
-	.asc	"AND A ", '&'+$80	; $B4=AND A ext
-	.asc	"BIT A ", '&'+$80	; $B5=BIT A ext
+	.asc	"ANDA ", '&'+$80	; $B4=AND A ext
+	.asc	"BITA ", '&'+$80	; $B5=BIT A ext
 	.asc	"LDA ", '&'+$80		; $B6=LDA ext
-	.asc	"STA A ", '&'+$80	; $B7=STA A ext
-	.asc	"EOR A ", '&'+$80	; $B8=EOR A ext
-	.asc	"ADC A ", '&'+$80	; $B9=ADC A ext
+	.asc	"STA ", '&'+$80		; $B7=STA ext
+	.asc	"EORA ", '&'+$80	; $B8=EOR A ext
+	.asc	"ADCA ", '&'+$80	; $B9=ADC A ext
 	.asc	"ORA ", '&'+$80		; $BA=ORA ext
-	.asc	"ADD A ", '&'+$80	; $BB=ADD A ext
+	.asc	"ADDA ", '&'+$80	; $BB=ADD A ext
 	.asc	"CMPX ", '&'+$80	; $BC=CMPX ext
 	.asc	"JSR ", '&'+$80		; $BD=JSR ext
 	.asc	"LDX ", '&'+$80		; $BE=LDX ext
