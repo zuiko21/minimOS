@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200201-1254
+; last modified 20200201-2234
 
 ; ***** for 69asm MC6809 cross assembler *****
 ; Regular Motorola set (not 6309 yet)
@@ -14,6 +14,7 @@
 ; *** needs some special characters for prefixes, like Z80 ***
 ; temporarily using {2, {4... (value + $80, not ASCII) for easier indexing
 
+mc6809_std:
 	.asc	"NEG ", '@'+$80		; $00=NEG dir
 	.asc	'?'+$80				; $01=?
 	.asc	'?'+$80				; $02=?
@@ -289,8 +290,81 @@
 ; ******************
 ; *** $10 PREFIX ***
 ; ******************
+mc6809_10:
+	.dsb	33, '?'+$80			; filler $00-20
+
+	.asc	"LBRN ", '}'+$80	; $10 $21=LBRN long rel
+	.asc	"LBHI ", '}'+$80	; $10 $22=LBHI long rel
+	.asc	"LBLS ", '}'+$80	; $10 $23=LBLS long rel
+	.asc	"LBCC ", '}'+$80	; $10 $24=LBCC long rel
+	.asc	"LBCS ", '}'+$80	; $10 $25=LBCS long rel
+	.asc	"LBNE ", '}'+$80	; $10 $26=LBNE long rel
+	.asc	"LBEQ ", '}'+$80	; $10 $27=LBEQ long rel
+	.asc	"LBVC ", '}'+$80	; $10 $28=LBVC long rel
+	.asc	"LBVS ", '}'+$80	; $10 $29=LBVS long rel
+	.asc	"LBPL ", '}'+$80	; $10 $2A=LBPL long rel
+	.asc	"LBMI ", '}'+$80	; $10 $2B=LBMI long rel
+	.asc	"LBGE ", '}'+$80	; $10 $2C=LBGE long rel
+	.asc	"LBLT ", '}'+$80	; $10 $2D=LBLT long rel
+	.asc	"LBGT ", '}'+$80	; $10 $2E=LBGT long rel
+	.asc	"LBLE ", '}'+$80	; $10 $2F=LBLE long rel
+
+	.dsb	15, '?'+$80			; filler $30-3E
+	.asc	"SWI", '2'+$80		; $10 $3F=SWI2
+
+	.dsb	67, '?'+$80			; filler $40-82
+
+	.asc	"CMPD #", '&'+$80	; $10 $83=CMPD #
+	.dsb	8, '?'+$80			; filler $84-8B
+	.asc	"CMPY #", '&'+$80	; $10 $8C=CMPY #
+	.asc	'?'+$80				; $10 $8D=?
+	.asc	"LDY #", '&'+$80	; $10 $8E=LDY #
+
+	.dsb	4, '?'+$80			; filler $8F-92
+
+	.asc	"CMPD ", '@'+$80	; $10 $93=CMPD dir
+	.dsb	8, '?'+$80			; filler $94-9B
+	.asc	"CMPY ", '@'+$80	; $10 $9C=CMPY dir
+	.asc	'?'+$80				; $10 $9D=?
+	.asc	"LDY ", '@'+$80		; $10 $9E=LDY dir
+	.asc	"STY ", '@'+$80		; $10 $9F=STY dir
+
+	.dsb	3, '?'+$80			; filler $A0-A2
+	.asc	"CMPD ", '~'+$80	; $10 $A3=CMPD idx
+	.dsb	8, '?'+$80			; filler $A4-AB
+	.asc	"CMPY ", '~'+$80	; $10 $AC=CMPY idx
+	.asc	'?'+$80				; $10 $AD=?
+	.asc	"LDY ", '~'+$80		; $10 $AE=LDY idx
+	.asc	"STY ", '~'+$80		; $10 $AF=STY idx
+
+	.dsb	3, '?'+$80			; filler $B0-B2
+	.asc	"CMPD ", '&'+$80	; $10 $B3=CMPD ext
+	.dsb	8, '?'+$80			; filler $B4-BB
+	.asc	"CMPY ", '&'+$80	; $10 $BC=CMPY ext
+	.asc	'?'+$80				; $10 $BD=?
+	.asc	"LDY ", '&'+$80		; $10 $BE=LDY ext
+	.asc	"STY ", '&'+$80		; $10 $BF=STY ext
+
+	.dsb	14, '?'+$80			; filler $C0-CD
+	.asc	"LDS #", '&'+$80	; $10 $CE=LDS #
+
+	.dsb	15, '?'+$80			; filler $CF-DD
+
+	.asc	"LDS ", '@'+$80		; $10 $DE=LDS dir
+	.asc	"STS ", '@'+$80		; $10 $DF=STS dir
+
+	.dsb	14, '?'+$80			; filler $E0-ED
+	.asc	"LDS ", '~'+$80		; $10 $EE=LDS idx
+	.asc	"STS ", '~'+$80		; $10 $EF=STS idx
+
+	.dsb	14, '?'+$80			; filler $F0-FD
+	.asc	"LDS ", '&'+$80		; $10 $FE=LDS ext
+	.asc	"STS ", '&'+$80		; $10 $FF=STS ext
+
 
 ; ******************
 ; *** $11 PREFIX ***
 ; ******************
+mc6809_11:
 
+; *** should include some strings for the substitution postbytes ***
