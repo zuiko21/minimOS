@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200201-2234
+; last modified 20200202-1308
 
 ; ***** for 69asm MC6809 cross assembler *****
 ; Regular Motorola set (not 6309 yet)
@@ -361,10 +361,40 @@ mc6809_10:
 	.asc	"LDS ", '&'+$80		; $10 $FE=LDS ext
 	.asc	"STS ", '&'+$80		; $10 $FF=STS ext
 
-
 ; ******************
 ; *** $11 PREFIX ***
 ; ******************
 mc6809_11:
+	.dsb	63, '?'+$80			; filler $00-3E
 
+	.asc	"SWI", '3'+$80		; $11 $3F=SWI3
+
+	.dsb	67, '?'+$80			; filler $40-82
+
+	.asc	"CMPU #", '&'+$80	; $11 $83=CMPU #
+	.dsb	8, '?'+$80			; filler $84-8B
+	.asc	"CMPS #", '&'+$80	; $11 $8C=CMPS #
+
+	.dsb	6, '?'+$80			; filler $8D-92
+
+	.asc	"CMPU ", '@'+$80	; $11 $93=CMPU dir
+	.dsb	8, '?'+$80			; filler $94-9B
+	.asc	"CMPS ", '@'+$80	; $11 $9C=CMPS dir
+
+	.dsb	6, '?'+$80			; filler $9D-A2
+
+	.asc	"CMPU ", '~'+$80	; $11 $A3=CMPU idx
+	.dsb	8, '?'+$80			; filler $A4-AB
+	.asc	"CMPS ", '~'+$80	; $11 $AC=CMPS idx
+
+	.dsb	6, '?'+$80			; filler $AD-B2
+
+	.asc	"CMPU ", '&'+$80	; $11 $B3=CMPU ext
+	.dsb	8, '?'+$80			; filler $B4-BB
+	.asc	"CMPS ", '&'+$80	; $11 $BC=CMPS ext
+
+	.dsb	67, '?'+$80			; filler $BD-FF
+
+; ******************************************************************
 ; *** should include some strings for the substitution postbytes ***
+; ******************************************************************
