@@ -66,10 +66,16 @@ serial) plus the **extra RAM**, which would mean _another_ 62256 chip. **ROM siz
 (or 32K for CoCo compatibility) instead of the _two 8 kiB ROMs_ on the original.
 
 In any case, putting a _pulled-down_ `ROMSEL` into EPROM's **pin 1** will allow the use
-of the alternative "64" ROM, while the missing 32K RAM could be added on the **expansion port**.
-This way, a 27C512 EPROM is a must for Dragon 64 compatibility, even if no CoCo support is desired.
-Since pin 1 is `Vpp` on any EPROM of 32 kiB or less, a _pulled-up_ (or pulled _down_?)
-jumper is provided if Dragon 64 support is not needed.
+of the alternative "64" ROM, while the missing 32K RAM _might_ be added on the **expansion port**.
+This way, a 27C512 EPROM is a must for **Dragon 64** compatibility, even if no CoCo support is desired.
+Since pin 1 is `Vpp` on any EPROM of 32 kiB or less, a _pulled-up_ (or pulled _down_?) jumper is
+provided if _Dragon 64_ support is not needed.
+
+On that machine, the ACIA is decoded from _mirrored_ PIA1 space, using `/A2` (note inversion) on
+active-high `CS` of PIA1 (or _both PIAs_ in the original design). While this is hardly a cause of
+incompatibilities, in case some _rare_ software tries to access the PIA(s) _on a **mirror** address_,
+another jumper may be provided with pull-up for VIA active-high `CS` line(s). Thus, a proper 6551 with
+assiciated MAX232 can be decoded on the **expansion port**.
 
 ### PAL vs NTSC video output
 
@@ -106,21 +112,29 @@ of the circuit could be just deleted, getting an acceptable **60-Hz RGB video ou
 - PIA: two **MC6821**
 - Sound: either one-bit line, or **6-bit DAC**
 - RAM: **32 kiB** (static), might get another 32 K if _Dragon 64_ compatibility is needed
-- (E)EPROM: **16-64 kiB**
+- (E)EPROM: **16-64 kiB** (\*)
 - Built-in video: EIA format, **MC6847** based, expected to have **RGB** output
 
+> *) 16 for _single_ machine, 32 for _CoCo/Dragon **32**_, 64 in any case of _Dragon **64**_ support
 
 ## Memory map
 
 _TO BE DONE_
 
-- `$0000-$5BFF`: _62256_ **SRAM** (general purpose)
-- `$5C00-$5FFF`: **Colour RAM** (**1K used** from a separate _6116_)
-- `$6000-$7FFF`: **Video RAM** (stored in the _62256_)
-- `$8000-$DEFF`: EPROM (**kernel & firmware**, plus any desired apps)
-- `$DF00-$DFFF`: built-in **I/O** (NON selectable, but maybe _switchable_?)
-- `$E000-$FFFF`: EPROM (continued kernel & firmware, including _hardware vectors_)
+- `$0000-$7FFF`: _62256_ **SRAM** (general purpose, all machines)
+- `$8000-$BFFF`: EPROM (_CoCo_ and _Dragon 32_ modes) (\*)
+- `$8000-$BFFF`: RAM (_Dragon **64**_ mode)
+- `$C000-$FEFF`: **Cartridge** area (_CoCo_ and _Dragon 32_ modes)
+- `$C000-$FEFF`: _RAM copy_ of EPROM (_Dragon **64**_ mode)
+- `$FF00-$FF1F`: built-in **PIA0**, with _mirror_ images
+- `$FF20-$FF3F`: built-in **PIA1** (_CoCo_ and _Dragon 32_ modes), with _mirror_ images
+- `$FF20-$FF23`: built-in **PIA1** (_Dragon **64**_ mode), some mirror images afterwards
+- `$FF24-$FF27`: External **ACIA** (_Dragon **64**_ mode), some mirror images afterwards
+- `$FF40-$FFBF`: External **I/O** (Usually for _CoCo_?)
+- `$FFC0-$FFDF`: **SAM** control registers
+- `$FFE0-$FFF1`: _reserved_
+- `$FFF2-$FFFF`: _remapped_ **6809 vectors** from $BFF2-$BFFF
 
+\*) _CoCo_ without **Extended BASIC** will use $A000-$BFFF only.
 
-
-_Last modified: 20200131-1015_
+_Last modified: 20200203-1056_
