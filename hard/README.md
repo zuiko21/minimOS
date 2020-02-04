@@ -187,7 +187,7 @@ PIA **CM602** (MC6820 clone), ACIA 2651.
 mimic the highly compatible **Dragon 32/64**.
 
 
-[**miniMC10**](minimc10.md)
+[**miniAlice**](minialice.md)
 
   * Specs: 895 kHz **MC6803** _MCU_, **8 KiB** SRAM, **MC6847** video (with _RGB_ output).
 
@@ -247,4 +247,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20200129-0849_
+_last modified: 20200204-1741_
