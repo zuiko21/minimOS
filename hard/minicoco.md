@@ -74,8 +74,12 @@ provided if _Dragon 64_ support is not needed.
 On that machine, the ACIA is decoded from _mirrored_ PIA1 space, using `/A2` (note inversion) on
 active-high `CS` of PIA1 (or _both PIAs_ in the original design). While this is hardly a cause of
 incompatibilities, in case some _rare_ software tries to access the PIA(s) _on a **mirror** address_,
-another jumper may be provided with pull-up for VIA active-high `CS` line(s). Thus, a proper 6551 with
+another jumper(\*) may be provided with pull-up for VIA active-high `CS` line(s). Thus, a proper 6551 with
 assiciated MAX232 can be decoded on the **expansion port**.
+
+> \*) Please note that a _misconfiguration_ of this jumper may lead to some **bus contention**,
+which in turn may lead to actual **hardware damage**. Thus, this jumper is **not** recommended,
+as the aforementioned incompatibility issue seems rather unlikely anyway.
 
 ### PAL vs NTSC video output
 
@@ -137,4 +141,4 @@ _TO BE DONE_
 
 \*) _CoCo_ without **Extended BASIC** will use $A000-$BFFF only.
 
-_Last modified: 20200203-1056_
+_Last modified: 20200204-1054_
