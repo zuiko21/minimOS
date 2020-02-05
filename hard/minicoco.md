@@ -9,7 +9,7 @@ A recreation of Tandy's [**TRS-80 _Color Computer_**](https://en.wikipedia.org/w
 - Use of **static RAM** instead of DRAM.
 - Keep using _standard_ components (unlike later versions).
 - **Dragon 32** (and _optionally_ **64**) compatibility via a jumper setting.
-- Alternative **8x12 character matrix** for the 6847.
+- Alternative **8x12 character matrix** for the 6847 (needed for **minimOS** support!)
 - **RGB video** output, preferably suited to European standards
 (15625 kHz/50 Hz, although _60 Hz_ would be acceptable)
 
@@ -43,7 +43,8 @@ serial port. This can be solved by _tri-stating_ input signals from the level sh
 as there are two free buffers on one of the '245s for _keyboard layout switching_.
 
 > By the way, the aforementioned _level shifter_ circuit won't be discretely implemented any longer, as an IC like
-**MAX232** seems a much better option nowadays. _One_ comparator is still needed for cassette input, though.
+**MAX232** seems a much better option nowadays. _One_ comparator is still needed for cassette input, though, plus
+another one for the _joystick input_.
 
 ### ROM contents (and size)
 
@@ -56,6 +57,10 @@ line may go into `A15` but, once again, swapped for a _pull-up_ in case a smalle
 line is **1** for _CoCo mode_ (convenient choice as it saves one inverter!) and `ROMSEL` is 1 for _64 mode_,
 the ROM contents order may be  _D32_, _CoCo_, then  _D64_ and finally _CoCo_ again.
 
+> Let's call **`JCD`** the **Coco/Dragon** selection jumper at EPROM's  `A14-/PGM` (pin 27).
+Let's call **`J32`** the **Dragon support** selection jumper nearest to pin 27 (with _pull-up_).
+Let's call **`J64`** the **Dragon 32/64** selection jumper at EPROM's `A15-Vpp` (pin 1).
+
 #### 32K-only version
 
 An intermediate option, however, would be keeping the _Coco/Dragon **32**_ compatibility but losing the _Dragon 64_
@@ -63,23 +68,24 @@ option, as this will save the **ACIA** (and associated _level switcher_, indepen
 serial) plus the **extra RAM**, which would mean _another_ 62256 chip. **ROM size** would be reduced to a reasonable
 **32 kiB** _without mirroring_. `PB2` on VIA1 is no longer the `ROMSEL` output, but back an _input_ tied to ground
 (or +5v in some boards). Decoding circuitry must be modified anyway in order to use a **single 16 kiB EPROM**
-(or 32K for CoCo compatibility) instead of the _two 8 kiB ROMs_ on the original.
+(or 32K for CoCo/Dragon compatibility) instead of the _two 8 kiB ROMs_ on the original.
 
 In any case, putting a _pulled-down_ `ROMSEL` into EPROM's **pin 1** will allow the use
 of the alternative "64" ROM, while the missing 32K RAM _might_ be added on the **expansion port**.
 This way, a 27C512 EPROM is a must for **Dragon 64** compatibility, even if no CoCo support is desired.
-Since pin 1 is `Vpp` on any EPROM of 32 kiB or less, a _pulled-up_ (or pulled _down_?) jumper is
-provided if _Dragon 64_ support is not needed.
+Since pin 1 is `Vpp` on any EPROM of 32 kiB or less, a _pulled-up_ (or pulled _down_?) jumper (`J64`) could
+be removed if _Dragon 64_ support is not used.
 
 On that machine, the ACIA is decoded from _mirrored_ PIA1 space, using `/A2` (note inversion) on
 active-high `CS` of PIA1 (or _both PIAs_ in the original design). While this is hardly a cause of
 incompatibilities, in case some _rare_ software tries to access the PIA(s) _on a **mirror** address_,
-another jumper(\*) may be provided with pull-up for VIA active-high `CS` line(s). Thus, a proper 6551 with
+another jumper (`JA`) may be provided with pull-up for VIA active-high `CS` line(s). Thus, a proper 6551 with
 assiciated MAX232 can be decoded on the **expansion port**.
 
-> \*) Please note that a _misconfiguration_ of this jumper may lead to some **bus contention**,
-which in turn may lead to actual **hardware damage**. Thus, this jumper is **not** recommended,
-as the aforementioned incompatibility issue seems rather unlikely anyway.
+> Let's call **`JA`** the **ACIA**-enabling jumper, connected from `A2` and its inverter to PIA & ACIA
+active-high `CS`. Please note that a _misconfiguration_ of this jumper may lead to some **bus contention**,
+which in turn will cause actual **hardware damage**. Thus, this jumper is **not** recommended, as the
+aforementioned incompatibility issue seems _rather unlikely_ anyway.
 
 ### PAL vs NTSC video output
 
@@ -109,11 +115,15 @@ is somewhat supported from the fact that it takes both sync signals and sort-of-
 most likely in order to **generate sync pulses** while the 6847 is stopped. _If this assumption is correct_, this part
 of the circuit could be just deleted, getting an acceptable **60-Hz RGB video output**.
 
+#### Alternative font
+
+_TO BE DONE..._
+
 ## Specs
 
 - CPU: **MC6809E**
 - Clock speed: **0.895 MHz**
-- PIA: two **MC6821**
+- PIA: two **MC6821**s
 - Sound: either one-bit line, or **6-bit DAC**
 - RAM: **32 kiB** (static), might get another 32 K if _Dragon 64_ compatibility is needed
 - (E)EPROM: **16-64 kiB** (\*)
@@ -123,11 +133,9 @@ of the circuit could be just deleted, getting an acceptable **60-Hz RGB video ou
 
 ## Memory map
 
-_TO BE DONE_
-
 - `$0000-$7FFF`: _62256_ **SRAM** (general purpose, all machines)
 - `$8000-$BFFF`: EPROM (_CoCo_ and _Dragon 32_ modes) (\*)
-- `$8000-$BFFF`: RAM (_Dragon **64**_ mode)
+- `$8000-$BFFF`: SRAM (_Dragon **64**_ mode)
 - `$C000-$FEFF`: **Cartridge** area (_CoCo_ and _Dragon 32_ modes)
 - `$C000-$FEFF`: _RAM copy_ of EPROM (_Dragon **64**_ mode)
 - `$FF00-$FF1F`: built-in **PIA0**, with _mirror_ images
@@ -141,4 +149,4 @@ _TO BE DONE_
 
 \*) _CoCo_ without **Extended BASIC** will use $A000-$BFFF only.
 
-_Last modified: 20200204-1054_
+_Last modified: 20200205-0929_
