@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200202-1308
+; last modified 20200206-1016
 
 ; ***** for 69asm MC6809 cross assembler *****
 ; Regular Motorola set (not 6309 yet)
@@ -398,3 +398,17 @@ mc6809_11:
 ; ******************************************************************
 ; *** should include some strings for the substitution postbytes ***
 ; ******************************************************************
+mc6809_regs:
+; register names for transfer instructions
+	.asc	'D'+$80				; %0000 = D
+	.asc	'X'+$80				; %0001 = X
+	.asc	'Y'+$80				; %0010 = Y
+	.asc	'U'+$80				; %0011 = U
+	.asc	'S'+$80				; %0100 = S
+	.asc	'P', 'C'+$80		; %0101 = PC
+	.dsb	2, '?'+$80			; %0110, 0111 are INVALID
+	.asc	'A'+$80				; %1000 = A
+	.asc	'B'+$80				; %1001 = B
+	.asc	'C', 'C'+$80		; %1010 = CC
+	.asc	'D', 'P'+$80		; %1011 = DP
+	.dsb	4, '?'+$80			; remaining patterns are INVALID
