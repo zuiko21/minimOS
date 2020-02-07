@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200206-1016
+; last modified 20200207-2057
 
 ; ***** for 69asm MC6809 cross assembler *****
 ; Regular Motorola set (not 6309 yet)
@@ -8,11 +8,13 @@
 ; @ expects single byte, & expects word
 ; % expects RELATIVE addressing
 ; } expects LONG RELATIVE addressing
+; *** new relative SIGNED offsets ***
+; temporarily using ~ for 8-bit, \ for 16-bit offsets
 ; future versions should not use * or = anywhere!
-; *** 6809 uses three kinds of postbytes! ***
-; temporarily using ~ for indexed, ` for stackops, \ for reg.transfers
 ; *** needs some special characters for prefixes, like Z80 ***
 ; temporarily using {2, {4... (value + $80, not ASCII) for easier indexing
+; *** 6809 uses three kinds of postbytes! ***
+; may work as generic prefixes, {6 for indexed, {8 for stack ops, {10 for reg.transfers
 
 mc6809_std:
 	.asc	"NEG ", '@'+$80		; $00=NEG dir
@@ -46,8 +48,8 @@ mc6809_std:
 	.asc	'?'+$80				; $1B=?
 	.asc	"ANDCC #", '@'+$80	; $1C=ANDCC #
 	.asc	"SE", 'X'+$80		; $1D=SEX
-	.asc	"EXG ", '\'+$80		; $1E=EXG...
-	.asc	"TFR ", '\'+$80		; $1F=TFR...
+	.asc	"EXG {", 10+$80		; $1E=EXG...
+	.asc	"TFR {", 10+$80		; $1F=TFR...
 
 	.asc	"BRA ", '%'+$80		; $20=BRA rel
 	.asc	"BRN ", '%'+$80		; $21=BRN rel
@@ -66,14 +68,14 @@ mc6809_std:
 	.asc	"BGT ", '%'+$80		; $2E=BGT rel
 	.asc	"BLE ", '%'+$80		; $2F=BLE rel
 
-	.asc	"LEAX ", '~'+$80	; $30=LEAX idx
-	.asc	"LEAY ", '~'+$80	; $31=LEAY idx
-	.asc	"LEAS ", '~'+$80	; $32=LEAS idx
-	.asc	"LEAU ", '~'+$80	; $33=LEAU idx
-	.asc	"PSHS ", '`'+$80	; $34=PSHS...
-	.asc	"PULS ", '`'+$80	; $35=PULS...
-	.asc	"PSHU ", '`'+$80	; $36=PSHU...
-	.asc	"PULU ", '`'+$80	; $37=PULU...
+	.asc	"LEAX {", 6+$80		; $30=LEAX idx
+	.asc	"LEAY {", 6+$80		; $31=LEAY idx
+	.asc	"LEAS {", 6+$80		; $32=LEAS idx
+	.asc	"LEAU {", 6+$80		; $33=LEAU idx
+	.asc	"PSHS {", 8+$80		; $34=PSHS...
+	.asc	"PULS {", 8+$80		; $35=PULS...
+	.asc	"PSHU {", 8+$80		; $36=PSHU...
+	.asc	"PULU {", 8+$80		; $37=PULU...
 	.asc	'?'+$80				; $38=?
 	.asc	"RT", 'S'+$80		; $39=RTS
 	.asc	"AB", 'X'+$80		; $3A=ABX
@@ -117,22 +119,22 @@ mc6809_std:
 	.asc	'?'+$80				; $5E=?
 	.asc	"CLR ", 'B'+$80		; $5F=CLR B
 
-	.asc	"NEG ", '~'+$80		; $60=NEG idx
+	.asc	"NEG {", 6+$80		; $60=NEG idx
 	.asc	'?'+$80				; $61=?
 	.asc	'?'+$80				; $62=?
-	.asc	"COM ", '~'+$80		; $63=COM idx
-	.asc	"LSR ", '~'+$80		; $64=LSR idx
+	.asc	"COM {", 6+$80		; $63=COM idx
+	.asc	"LSR {", 6+$80		; $64=LSR idx
 	.asc	'?'+$80				; $65=?
-	.asc	"ROR ", '~'+$80		; $66=ROR idx
-	.asc	"ASR ", '~'+$80		; $67=ASR idx
-	.asc	"ASL ", '~'+$80		; $68=ASL idx (LSL)
-	.asc	"ROL ", '~'+$80		; $69=ROL idx
-	.asc	"DEC ", '~'+$80		; $6A=DEC idx
+	.asc	"ROR {", 6+$80		; $66=ROR idx
+	.asc	"ASR {", 6+$80		; $67=ASR idx
+	.asc	"ASL {", 6+$80		; $68=ASL idx (LSL)
+	.asc	"ROL {", 6+$80		; $69=ROL idx
+	.asc	"DEC {", 6+$80		; $6A=DEC idx
 	.asc	'?'+$80				; $6B=?
-	.asc	"INC ", '~'+$80		; $6C=INC idx
-	.asc	"TST ", '~'+$80		; $6D=TST idx
-	.asc	"JMP ", '~'+$80		; $6E=JMP idx
-	.asc	"CLR ", '~'+$80		; $6F=CLR idx
+	.asc	"INC {", 6+$80		; $6C=INC idx
+	.asc	"TST {", 6+$80		; $6D=TST idx
+	.asc	"JMP {", 6+$80		; $6E=JMP idx
+	.asc	"CLR {", 6+$80		; $6F=CLR idx
 
 	.asc	"NEG ", '&'+$80		; $70=NEG ext
 	.asc	'?'+$80				; $71=?
@@ -185,22 +187,22 @@ mc6809_std:
 	.asc	"LDX ", '@'+$80		; $9E=LDX dir
 	.asc	"STX ", '@'+$80		; $9F=STX dir
 
-	.asc	"SUBA ", '~'+$80	; $A0=SUB A idx
-	.asc	"CMPA ", '~'+$80	; $A1=CMP A idx
-	.asc	"SBCA ", '~'+$80	; $A2=SBC A idx
-	.asc	"SUBD ", '~'+$80	; $A3=SUBD idx
-	.asc	"ANDA ", '~'+$80	; $A4=AND A idx
-	.asc	"BITA ", '~'+$80	; $A5=BIT A idx
-	.asc	"LDA ", '~'+$80		; $A6=LDA idx
-	.asc	"STA ", '~'+$80		; $A7=STA idx
-	.asc	"EORA ", '~'+$80	; $A8=EOR A idx
-	.asc	"ADCA ", '~'+$80	; $A9=ADC A idx
-	.asc	"ORA ", '~'+$80		; $AA=ORA idx
-	.asc	"ADDA ", '~'+$80	; $AB=ADD A idx
-	.asc	"CMPX ", '~'+$80	; $AC=CMPX idx
-	.asc	"JSR ", '~'+$80		; $AD=JSR idx
-	.asc	"LDX ", '~'+$80		; $AE=LDX idx
-	.asc	"STX ", '~'+$80		; $AF=STX idx
+	.asc	"SUBA {", 6+$80		; $A0=SUB A idx
+	.asc	"CMPA {", 6+$80		; $A1=CMP A idx
+	.asc	"SBCA {", 6+$80		; $A2=SBC A idx
+	.asc	"SUBD {", 6+$80		; $A3=SUBD idx
+	.asc	"ANDA {", 6+$80		; $A4=AND A idx
+	.asc	"BITA {", 6+$80		; $A5=BIT A idx
+	.asc	"LDA {", 6+$80		; $A6=LDA idx
+	.asc	"STA {", 6+$80		; $A7=STA idx
+	.asc	"EORA {", 6+$80		; $A8=EOR A idx
+	.asc	"ADCA {", 6+$80		; $A9=ADC A idx
+	.asc	"ORA {", 6+$80		; $AA=ORA idx
+	.asc	"ADDA {", 6+$80		; $AB=ADD A idx
+	.asc	"CMPX {", 6+$80		; $AC=CMPX idx
+	.asc	"JSR {", 6+$80		; $AD=JSR idx
+	.asc	"LDX {", 6+$80		; $AE=LDX idx
+	.asc	"STX {", 6+$80		; $AF=STX idx
 
 	.asc	"SUBA ", '&'+$80	; $B0=SUB A ext
 	.asc	"CMPA ", '&'+$80	; $B1=CMP A ext
@@ -253,22 +255,22 @@ mc6809_std:
 	.asc	"LDU ", '@'+$80		; $DE=LDU dir
 	.asc	"STU ", '@'+$80		; $DF=STU dir
 
-	.asc	"SUBB ", '~'+$80	; $E0=SUB B idx
-	.asc	"CMPB ", '~'+$80	; $E1=CMP B idx
-	.asc	"SBCB ", '~'+$80	; $E2=SBC B idx
-	.asc	"ADDD ", '~'+$80	; $E3=ADDD idx
-	.asc	"ANDB ", '~'+$80	; $E4=AND B idx
-	.asc	"BITB ", '~'+$80	; $E5=BIT B idx
-	.asc	"LDB ", '~'+$80		; $E6=LDB idx
-	.asc	"STB ", '~'+$80		; $E7=STB idx
-	.asc	"EORB ", '~'+$80	; $E8=EOR B idx
-	.asc	"ADCB ", '~'+$80	; $E9=ADC B idx
-	.asc	"ORB ", '~'+$80		; $EA=ORB idx
-	.asc	"ADDB ", '~'+$80	; $EB=ADD B idx
-	.asc	"LDD ", '~'+$80		; $EC=LDD idx
-	.asc	"STD ", '~'+$80		; $ED=STD idx
-	.asc	"LDU ", '~'+$80		; $EE=LDU idx
-	.asc	"STU ", '~'+$80		; $EF=STU idx
+	.asc	"SUBB {", 6+$80		; $E0=SUB B idx
+	.asc	"CMPB {", 6+$80		; $E1=CMP B idx
+	.asc	"SBCB {", 6+$80		; $E2=SBC B idx
+	.asc	"ADDD {", 6+$80		; $E3=ADDD idx
+	.asc	"ANDB {", 6+$80		; $E4=AND B idx
+	.asc	"BITB {", 6+$80		; $E5=BIT B idx
+	.asc	"LDB {", 6+$80		; $E6=LDB idx
+	.asc	"STB {", 6+$80		; $E7=STB idx
+	.asc	"EORB {", 6+$80		; $E8=EOR B idx
+	.asc	"ADCB {", 6+$80		; $E9=ADC B idx
+	.asc	"ORB {", 6+$80		; $EA=ORB idx
+	.asc	"ADDB {", 6+$80		; $EB=ADD B idx
+	.asc	"LDD {", 6+$80		; $EC=LDD idx
+	.asc	"STD {", 6+$80		; $ED=STD idx
+	.asc	"LDU {", 6+$80		; $EE=LDU idx
+	.asc	"STU {", 6+$80		; $EF=STU idx
 
 	.asc	"SUBB ", '&'+$80	; $F0=SUB B ext
 	.asc	"CMPB ", '&'+$80	; $F1=CMP B ext
@@ -330,12 +332,12 @@ mc6809_10:
 	.asc	"STY ", '@'+$80		; $10 $9F=STY dir
 
 	.dsb	3, '?'+$80			; filler $A0-A2
-	.asc	"CMPD ", '~'+$80	; $10 $A3=CMPD idx
+	.asc	"CMPD {", 6+$80		; $10 $A3=CMPD idx
 	.dsb	8, '?'+$80			; filler $A4-AB
-	.asc	"CMPY ", '~'+$80	; $10 $AC=CMPY idx
+	.asc	"CMPY {", 6+$80		; $10 $AC=CMPY idx
 	.asc	'?'+$80				; $10 $AD=?
-	.asc	"LDY ", '~'+$80		; $10 $AE=LDY idx
-	.asc	"STY ", '~'+$80		; $10 $AF=STY idx
+	.asc	"LDY {", 6+$80		; $10 $AE=LDY idx
+	.asc	"STY {", 6+$80		; $10 $AF=STY idx
 
 	.dsb	3, '?'+$80			; filler $B0-B2
 	.asc	"CMPD ", '&'+$80	; $10 $B3=CMPD ext
@@ -354,8 +356,8 @@ mc6809_10:
 	.asc	"STS ", '@'+$80		; $10 $DF=STS dir
 
 	.dsb	14, '?'+$80			; filler $E0-ED
-	.asc	"LDS ", '~'+$80		; $10 $EE=LDS idx
-	.asc	"STS ", '~'+$80		; $10 $EF=STS idx
+	.asc	"LDS {", 6+$80		; $10 $EE=LDS idx
+	.asc	"STS {", 6+$80		; $10 $EF=STS idx
 
 	.dsb	14, '?'+$80			; filler $F0-FD
 	.asc	"LDS ", '&'+$80		; $10 $FE=LDS ext
@@ -383,9 +385,9 @@ mc6809_11:
 
 	.dsb	6, '?'+$80			; filler $9D-A2
 
-	.asc	"CMPU ", '~'+$80	; $11 $A3=CMPU idx
+	.asc	"CMPU {", 6+$80		; $11 $A3=CMPU idx
 	.dsb	8, '?'+$80			; filler $A4-AB
-	.asc	"CMPS ", '~'+$80	; $11 $AC=CMPS idx
+	.asc	"CMPS {", 6+$80		; $11 $AC=CMPS idx
 
 	.dsb	6, '?'+$80			; filler $AD-B2
 
@@ -412,3 +414,176 @@ mc6809_regs:
 	.asc	'C', 'C'+$80		; %1010 = CC
 	.asc	'D', 'P'+$80		; %1011 = DP
 	.dsb	4, '?'+$80			; remaining patterns are INVALID
+
+; *** may just attempt another string generator for postbyte ***
+mc6809_idx:
+	.asc	"0, ", 'X'+$80		; %00000000 = X with offset 0?
+	.asc	"1, ", 'X'+$80		; %000sdddd = X with 5-bit offset
+	.asc	"2, ", 'X'+$80
+	.asc	"3, ", 'X'+$80
+	.asc	"4, ", 'X'+$80
+	.asc	"5, ", 'X'+$80
+	.asc	"6, ", 'X'+$80
+	.asc	"7, ", 'X'+$80
+	.asc	"8, ", 'X'+$80
+	.asc	"9, ", 'X'+$80
+	.asc	"10, ", 'X'+$80
+	.asc	"11, ", 'X'+$80
+	.asc	"12, ", 'X'+$80
+	.asc	"13, ", 'X'+$80
+	.asc	"14, ", 'X'+$80
+	.asc	"15, ", 'X'+$80
+
+	.asc	"-16, ", 'X'+$80
+	.asc	"-15, ", 'X'+$80
+	.asc	"-14, ", 'X'+$80
+	.asc	"-13, ", 'X'+$80
+	.asc	"-12, ", 'X'+$80
+	.asc	"-11, ", 'X'+$80
+	.asc	"-10, ", 'X'+$80
+	.asc	"-9, ", 'X'+$80
+	.asc	"-8, ", 'X'+$80
+	.asc	"-7, ", 'X'+$80
+	.asc	"-6, ", 'X'+$80
+	.asc	"-5, ", 'X'+$80
+	.asc	"-4, ", 'X'+$80
+	.asc	"-3, ", 'X'+$80
+	.asc	"-2, ", 'X'+$80
+	.asc	"-1, ", 'X'+$80
+
+	.asc	"0, ", 'Y'+$80		; %00100000 = Y with offset 0?
+	.asc	"1, ", 'Y'+$80		; %001sdddd = Y with 5-bit offset
+	.asc	"2, ", 'Y'+$80
+	.asc	"3, ", 'Y'+$80
+	.asc	"4, ", 'Y'+$80
+	.asc	"5, ", 'Y'+$80
+	.asc	"6, ", 'Y'+$80
+	.asc	"7, ", 'Y'+$80
+	.asc	"8, ", 'Y'+$80
+	.asc	"9, ", 'Y'+$80
+	.asc	"10, ", 'Y'+$80
+	.asc	"11, ", 'Y'+$80
+	.asc	"12, ", 'Y'+$80
+	.asc	"13, ", 'Y'+$80
+	.asc	"14, ", 'Y'+$80
+	.asc	"15, ", 'Y'+$80
+
+	.asc	"-16, ", 'Y'+$80
+	.asc	"-15, ", 'Y'+$80
+	.asc	"-14, ", 'Y'+$80
+	.asc	"-13, ", 'Y'+$80
+	.asc	"-12, ", 'Y'+$80
+	.asc	"-11, ", 'Y'+$80
+	.asc	"-10, ", 'Y'+$80
+	.asc	"-9, ", 'Y'+$80
+	.asc	"-8, ", 'Y'+$80
+	.asc	"-7, ", 'Y'+$80
+	.asc	"-6, ", 'Y'+$80
+	.asc	"-5, ", 'Y'+$80
+	.asc	"-4, ", 'Y'+$80
+	.asc	"-3, ", 'Y'+$80
+	.asc	"-2, ", 'Y'+$80
+	.asc	"-1, ", 'Y'+$80
+
+	.asc	"0, ", 'U'+$80		; %01000000 = U with offset 0?
+	.asc	"1, ", 'U'+$80		; %010sdddd = U with 5-bit offset
+	.asc	"2, ", 'U'+$80
+	.asc	"3, ", 'U'+$80
+	.asc	"4, ", 'U'+$80
+	.asc	"5, ", 'U'+$80
+	.asc	"6, ", 'U'+$80
+	.asc	"7, ", 'U'+$80
+	.asc	"8, ", 'U'+$80
+	.asc	"9, ", 'U'+$80
+	.asc	"10, ", 'U'+$80
+	.asc	"11, ", 'U'+$80
+	.asc	"12, ", 'U'+$80
+	.asc	"13, ", 'U'+$80
+	.asc	"14, ", 'U'+$80
+	.asc	"15, ", 'U'+$80
+
+	.asc	"-16, ", 'U'+$80
+	.asc	"-15, ", 'U'+$80
+	.asc	"-14, ", 'U'+$80
+	.asc	"-13, ", 'U'+$80
+	.asc	"-12, ", 'U'+$80
+	.asc	"-11, ", 'U'+$80
+	.asc	"-10, ", 'U'+$80
+	.asc	"-9, ", 'U'+$80
+	.asc	"-8, ", 'U'+$80
+	.asc	"-7, ", 'U'+$80
+	.asc	"-6, ", 'U'+$80
+	.asc	"-5, ", 'U'+$80
+	.asc	"-4, ", 'U'+$80
+	.asc	"-3, ", 'U'+$80
+	.asc	"-2, ", 'U'+$80
+	.asc	"-1, ", 'U'+$80
+
+	.asc	"0, ", 'S'+$80		; %01100000 = S with offset 0?
+	.asc	"1, ", 'S'+$80		; %011sdddd = S with 5-bit offset
+	.asc	"2, ", 'S'+$80
+	.asc	"3, ", 'S'+$80
+	.asc	"4, ", 'S'+$80
+	.asc	"5, ", 'S'+$80
+	.asc	"6, ", 'S'+$80
+	.asc	"7, ", 'S'+$80
+	.asc	"8, ", 'S'+$80
+	.asc	"9, ", 'S'+$80
+	.asc	"10, ", 'S'+$80
+	.asc	"11, ", 'S'+$80
+	.asc	"12, ", 'S'+$80
+	.asc	"13, ", 'S'+$80
+	.asc	"14, ", 'S'+$80
+	.asc	"15, ", 'S'+$80
+
+	.asc	"-16, ", 'S'+$80
+	.asc	"-15, ", 'S'+$80
+	.asc	"-14, ", 'S'+$80
+	.asc	"-13, ", 'S'+$80
+	.asc	"-12, ", 'S'+$80
+	.asc	"-11, ", 'S'+$80
+	.asc	"-10, ", 'S'+$80
+	.asc	"-9, ", 'S'+$80
+	.asc	"-8, ", 'S'+$80
+	.asc	"-7, ", 'S'+$80
+	.asc	"-6, ", 'S'+$80
+	.asc	"-5, ", 'S'+$80
+	.asc	"-4, ", 'S'+$80
+	.asc	"-3, ", 'S'+$80
+	.asc	"-2, ", 'S'+$80
+	.asc	"-1, ", 'S'+$80
+
+	.asc	", X", '+'+$80		; %10000000 = ,X+
+	.asc	", X+", '+'+$80		; %10000001 = ,X++
+	.asc	", -", 'X'+$80		; %10000010 = ,-X
+	.asc	", --", 'X'+$80		; %10000011 = ,--X
+	.asc	", ", 'X'+$80		; %10000100 = ,X (no offset)
+	.asc	", X", '+'+$80		; %10000101 = B,X
+	.asc	", X", '+'+$80		; %10000110 = A,X
+	.asc	'?'+$80				; %10000111 (illegal)
+	.asc	"~, X", '+'+$80		; %10001000 = n,X (8-bit offset)
+	.asc	"\, X", '+'+$80		; %10001001 = nn,X (16-bit offset)
+	.asc	'?'+$80				; %10001010 (illegal)
+	.asc	", X", '+'+$80		; %10001011 = D,X
+	.asc	"~, P", 'C'+$80		; %1xx01100 = n,PC (8-bit offset)
+	.asc	"\, P", 'C'+$80		; %1xx01101 = nn,PC (16-bit offset)
+	.asc	'?'+$80				; %10001110 (illegal)
+	.asc	'?'+$80				; %10001111 (illegal)
+
+	.asc	'?'+$80				; %10010000 (illegal)
+	.asc	", X+", '+'+$80		; %10010001 = [,X++]
+	.asc	'?'+$80				; %10010010 (illegal)
+	.asc	", --", 'X'+$80		; %10010011 = [,--X]
+	.asc	", ", 'X'+$80		; %10010100 = [,X] (no offset)
+	.asc	", X", '+'+$80		; %10010101 = [B,X]
+	.asc	", X", '+'+$80		; %10010110 = [A,X]
+	.asc	'?'+$80				; %10010111 (illegal)
+	.asc	"~, X", '+'+$80		; %10011000 = [n,X] (8-bit offset)
+	.asc	"\, X", '+'+$80		; %10011001 = [nn,X] (16-bit offset)
+	.asc	'?'+$80				; %10011010 (illegal)
+	.asc	", X", '+'+$80		; %10011011 = [D,X]
+	.asc	"~, P", 'C'+$80		; %1xx11100 = [n,PC] (8-bit offset)
+	.asc	"\, P", 'C'+$80		; %1xx11101 = [nn,PC] (16-bit offset)
+	.asc	'?'+$80				; %10001110 (illegal)
+	.asc	"[&", ']'+$80		; %10011111 = [nn]
+
