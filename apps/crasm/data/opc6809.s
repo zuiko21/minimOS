@@ -400,22 +400,10 @@ mc6809_11:
 ; ******************************************************************
 ; *** should include some strings for the substitution postbytes ***
 ; ******************************************************************
-mc6809_regs:
-; register names for transfer instructions
-	.asc	'D'+$80				; %0000 = D
-	.asc	'X'+$80				; %0001 = X
-	.asc	'Y'+$80				; %0010 = Y
-	.asc	'U'+$80				; %0011 = U
-	.asc	'S'+$80				; %0100 = S
-	.asc	'P', 'C'+$80		; %0101 = PC
-	.dsb	2, '?'+$80			; %0110, 0111 are INVALID
-	.asc	'A'+$80				; %1000 = A
-	.asc	'B'+$80				; %1001 = B
-	.asc	'C', 'C'+$80		; %1010 = CC
-	.asc	'D', 'P'+$80		; %1011 = DP
-	.dsb	4, '?'+$80			; remaining patterns are INVALID
 
-; *** may just attempt another string generator for postbyte ***
+; **************************************
+; *** brute force indexed post bytes ***
+; **************************************
 mc6809_idx:
 	.asc	"0, ", 'X'+$80		; %00000000 = X with offset 0?
 	.asc	"1, ", 'X'+$80		; %000sdddd = X with 5-bit offset
@@ -619,7 +607,7 @@ mc6809_idx:
 	.asc	"[~, P", ']'+$80	; %1xx11100 = [n,PC] (8-bit offset)
 	.asc	"[\, P", ']'+$80	; %1xx11101 = [nn,PC] (16-bit offset)
 	.asc	'?'+$80				; %10101110 ILLEGAL
-	.asc	"[&", ']'+$80		; %10111111 = [nn]
+	.asc	"[&", ']'+$80		; %10111111 = [nn] ? ?
 
 	.asc	", U", '+'+$80		; %11000000 = ,U+
 	.asc	", U+", '+'+$80		; %11000001 = ,U++
@@ -653,7 +641,7 @@ mc6809_idx:
 	.asc	"[~, P", ']'+$80	; %1xx11100 = [n,PC] (8-bit offset)
 	.asc	"[\, P", ']'+$80	; %1xx11101 = [nn,PC] (16-bit offset)
 	.asc	'?'+$80				; %11001110 ILLEGAL
-	.asc	"[&", ']'+$80		; %11011111 = [nn]
+	.asc	"[&", ']'+$80		; %11011111 = [nn] ? ?
 
 	.asc	", S", '+'+$80		; %11100000 = ,S+
 	.asc	", S+", '+'+$80		; %11100001 = ,S++
@@ -687,5 +675,187 @@ mc6809_idx:
 	.asc	"[~, P", ']'+$80	; %1xx11100 = [n,PC] (8-bit offset)
 	.asc	"[\, P", ']'+$80	; %1xx11101 = [nn,PC] (16-bit offset)
 	.asc	'?'+$80				; %11101110 ILLEGAL
-	.asc	"[&", ']'+$80		; %11111111 = [nn]
+	.asc	"[&", ']'+$80		; %11111111 = [nn] ? ?
 
+; ***************************************
+; *** brute force stackops post bytes ***
+; ***************************************
+mc6809_sp:
+
+; *******************************************
+; *** brute force reg.transfer post bytes ***
+; *******************************************
+mc6809_reg:
+	.asc	"D, ", 'D'+$80		; $00 = D > D
+	.asc	"D, ", 'X'+$80		; $01 = D > X
+	.asc	"D, ", 'Y'+$80		; $02 = D > Y
+	.asc	"D, ", 'U'+$80		; $03 = D > U
+	.asc	"D, ", 'S'+$80		; $04 = D > S
+	.asc	"D, P", 'C'+$80		; $05 = D > PC
+	.asc	'?'+$80				; $06 ILLEGAL
+	.asc	'?'+$80				; $07 ILLEGAL
+	.asc	"D, ", 'A'+$80		; $08 = D > A
+	.asc	"D, ", 'B'+$80		; $09 = D > B
+	.asc	"D, C", 'C'+$80		; $0A = D > CC
+	.asc	"D, D", 'P'+$80		; $0B = D > DP
+	.asc	'?'+$80				; $0C ILLEGAL
+	.asc	'?'+$80				; $0D ILLEGAL
+	.asc	'?'+$80				; $0E ILLEGAL
+	.asc	'?'+$80				; $0F ILLEGAL
+
+	.asc	"X, ", 'D'+$80		; $10 = X > D
+	.asc	"X, ", 'X'+$80		; $11 = X > X
+	.asc	"X, ", 'Y'+$80		; $12 = X > Y
+	.asc	"X, ", 'U'+$80		; $13 = X > U
+	.asc	"X, ", 'S'+$80		; $14 = X > S
+	.asc	"X, P", 'C'+$80		; $15 = X > PC
+	.asc	'?'+$80				; $16 ILLEGAL
+	.asc	'?'+$80				; $17 ILLEGAL
+	.asc	"X, ", 'A'+$80		; $18 = X > A
+	.asc	"X, ", 'B'+$80		; $19 = X > B
+	.asc	"X, C", 'C'+$80		; $1A = X > CC
+	.asc	"X, D", 'P'+$80		; $1B = X > DP
+	.asc	'?'+$80				; $1C ILLEGAL
+	.asc	'?'+$80				; $1D ILLEGAL
+	.asc	'?'+$80				; $1E ILLEGAL
+	.asc	'?'+$80				; $1F ILLEGAL
+
+	.asc	"Y, ", 'D'+$80		; $20 = Y > D
+	.asc	"Y, ", 'X'+$80		; $21 = Y > X
+	.asc	"Y, ", 'Y'+$80		; $22 = Y > Y
+	.asc	"Y, ", 'U'+$80		; $23 = Y > U
+	.asc	"Y, ", 'S'+$80		; $24 = Y > S
+	.asc	"Y, P", 'C'+$80		; $25 = Y > PC
+	.asc	'?'+$80				; $26 ILLEGAL
+	.asc	'?'+$80				; $27 ILLEGAL
+	.asc	"Y, ", 'A'+$80		; $28 = Y > A
+	.asc	"Y, ", 'B'+$80		; $29 = Y > B
+	.asc	"Y, C", 'C'+$80		; $2A = Y > CC
+	.asc	"Y, D", 'P'+$80		; $2B = Y > DP
+	.asc	'?'+$80				; $2C ILLEGAL
+	.asc	'?'+$80				; $2D ILLEGAL
+	.asc	'?'+$80				; $2E ILLEGAL
+	.asc	'?'+$80				; $2F ILLEGAL
+
+	.asc	"U, ", 'D'+$80		; $30 = U > D
+	.asc	"U, ", 'X'+$80		; $31 = U > X
+	.asc	"U, ", 'Y'+$80		; $32 = U > Y
+	.asc	"U, ", 'U'+$80		; $33 = U > U
+	.asc	"U, ", 'S'+$80		; $34 = U > S
+	.asc	"U, P", 'C'+$80		; $35 = U > PC
+	.asc	'?'+$80				; $36 ILLEGAL
+	.asc	'?'+$80				; $37 ILLEGAL
+	.asc	"U, ", 'A'+$80		; $38 = U > A
+	.asc	"U, ", 'B'+$80		; $39 = U > B
+	.asc	"U, C", 'C'+$80		; $3A = U > CC
+	.asc	"U, D", 'P'+$80		; $3B = U > DP
+	.asc	'?'+$80				; $3C ILLEGAL
+	.asc	'?'+$80				; $3D ILLEGAL
+	.asc	'?'+$80				; $3E ILLEGAL
+	.asc	'?'+$80				; $3F ILLEGAL
+
+	.asc	"S, ", 'D'+$80		; $40 = S > D
+	.asc	"S, ", 'X'+$80		; $41 = S > X
+	.asc	"S, ", 'Y'+$80		; $42 = S > Y
+	.asc	"S, ", 'U'+$80		; $43 = S > U
+	.asc	"S, ", 'S'+$80		; $44 = S > S
+	.asc	"S, P", 'C'+$80		; $45 = S > PC
+	.asc	'?'+$80				; $46 ILLEGAL
+	.asc	'?'+$80				; $47 ILLEGAL
+	.asc	"S, ", 'A'+$80		; $48 = S > A
+	.asc	"S, ", 'B'+$80		; $49 = S > B
+	.asc	"S, C", 'C'+$80		; $4A = S > CC
+	.asc	"S, D", 'P'+$80		; $4B = S > DP
+	.asc	'?'+$80				; $4C ILLEGAL
+	.asc	'?'+$80				; $4D ILLEGAL
+	.asc	'?'+$80				; $4E ILLEGAL
+	.asc	'?'+$80				; $4F ILLEGAL
+
+	.asc	"PC, ", 'D'+$80		; $50 = PC > D
+	.asc	"PC, ", 'X'+$80		; $51 = PC > X
+	.asc	"PC, ", 'Y'+$80		; $52 = PC > Y
+	.asc	"PC, ", 'U'+$80		; $53 = PC > U
+	.asc	"PC, ", 'S'+$80		; $54 = PC > S
+	.asc	"PC, P", 'C'+$80	; $55 = PC > PC
+	.asc	'?'+$80				; $56 ILLEGAL
+	.asc	'?'+$80				; $57 ILLEGAL
+	.asc	"PC, ", 'A'+$80		; $58 = PC > A
+	.asc	"PC, ", 'B'+$80		; $59 = PC > B
+	.asc	"PC, C", 'C'+$80	; $5A = PC > CC
+	.asc	"PC, D", 'P'+$80	; $5B = PC > DP
+	.asc	'?'+$80				; $5C ILLEGAL
+	.asc	'?'+$80				; $5D ILLEGAL
+	.asc	'?'+$80				; $5E ILLEGAL
+	.asc	'?'+$80				; $5F ILLEGAL
+
+	.dsb	32, '?'+$80			; $60-7F filler
+
+	.asc	"A, ", 'D'+$80		; $80 = A > D
+	.asc	"A, ", 'X'+$80		; $81 = A > X
+	.asc	"A, ", 'Y'+$80		; $82 = A > Y
+	.asc	"A, ", 'U'+$80		; $83 = A > U
+	.asc	"A, ", 'S'+$80		; $84 = A > S
+	.asc	"A, P", 'C'+$80		; $85 = A > PC
+	.asc	'?'+$80				; $86 ILLEGAL
+	.asc	'?'+$80				; $87 ILLEGAL
+	.asc	"A, ", 'A'+$80		; $88 = A > A
+	.asc	"A, ", 'B'+$80		; $89 = A > B
+	.asc	"A, C", 'C'+$80		; $8A = A > CC
+	.asc	"A, D", 'P'+$80		; $8B = A > DP
+	.asc	'?'+$80				; $8C ILLEGAL
+	.asc	'?'+$80				; $8D ILLEGAL
+	.asc	'?'+$80				; $8E ILLEGAL
+	.asc	'?'+$80				; $8F ILLEGAL
+
+	.asc	"B, ", 'D'+$80		; $90 = B > D
+	.asc	"B, ", 'X'+$80		; $91 = B > X
+	.asc	"B, ", 'Y'+$80		; $92 = B > Y
+	.asc	"B, ", 'U'+$80		; $93 = B > U
+	.asc	"B, ", 'S'+$80		; $94 = B > S
+	.asc	"B, P", 'C'+$80		; $95 = B > PC
+	.asc	'?'+$80				; $96 ILLEGAL
+	.asc	'?'+$80				; $97 ILLEGAL
+	.asc	"B, ", 'A'+$80		; $98 = B > A
+	.asc	"B, ", 'B'+$80		; $99 = B > B
+	.asc	"B, C", 'C'+$80		; $9A = B > CC
+	.asc	"B, D", 'P'+$80		; $9B = B > DP
+	.asc	'?'+$80				; $9C ILLEGAL
+	.asc	'?'+$80				; $9D ILLEGAL
+	.asc	'?'+$80				; $9E ILLEGAL
+	.asc	'?'+$80				; $9F ILLEGAL
+
+	.asc	"CC, ", 'D'+$80		; $A0 = CC > D
+	.asc	"CC, ", 'X'+$80		; $A1 = CC > X
+	.asc	"CC, ", 'Y'+$80		; $A2 = CC > Y
+	.asc	"CC, ", 'U'+$80		; $A3 = CC > U
+	.asc	"CC, ", 'S'+$80		; $A4 = CC > S
+	.asc	"CC, P", 'C'+$80	; $A5 = CC > PC
+	.asc	'?'+$80				; $A6 ILLEGAL
+	.asc	'?'+$80				; $A7 ILLEGAL
+	.asc	"CC, ", 'A'+$80		; $A8 = CC > A
+	.asc	"CC, ", 'B'+$80		; $A9 = CC > B
+	.asc	"CC, C", 'C'+$80	; $AA = CC > CC
+	.asc	"CC, D", 'P'+$80	; $AB = CC > DP
+	.asc	'?'+$80				; $AC ILLEGAL
+	.asc	'?'+$80				; $AD ILLEGAL
+	.asc	'?'+$80				; $AE ILLEGAL
+	.asc	'?'+$80				; $AF ILLEGAL
+
+	.asc	"DP, ", 'D'+$80		; $B0 = DP > D
+	.asc	"DP, ", 'X'+$80		; $B1 = DP > X
+	.asc	"DP, ", 'Y'+$80		; $B2 = DP > Y
+	.asc	"DP, ", 'U'+$80		; $B3 = DP > U
+	.asc	"DP, ", 'S'+$80		; $B4 = DP > S
+	.asc	"DP, P", 'C'+$80	; $B5 = DP > PC
+	.asc	'?'+$80				; $B6 ILLEGAL
+	.asc	'?'+$80				; $B7 ILLEGAL
+	.asc	"DP, ", 'A'+$80		; $B8 = DP > A
+	.asc	"DP, ", 'B'+$80		; $B9 = DP > B
+	.asc	"DP, C", 'C'+$80	; $BA = DP > CC
+	.asc	"DP, D", 'P'+$80	; $BB = DP > DP
+	.asc	'?'+$80				; $BC ILLEGAL
+	.asc	'?'+$80				; $BD ILLEGAL
+	.asc	'?'+$80				; $BE ILLEGAL
+	.asc	'?'+$80				; $BF ILLEGAL
+
+	.dsb	64, '?'+$80			; $C0-FF filler
