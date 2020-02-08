@@ -1,8 +1,8 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200207-2200
+; last modified 20200208-2121
 
-; ***** for 69asm MC6809 cross assembler *****
+; ***** for 09asm MC6809 cross assembler *****
 ; Regular Motorola set (not 6309 yet)
 ; Opcode list as bit-7 terminated strings
 ; @ expects single byte, & expects word
@@ -681,6 +681,7 @@ mc6809_idx:
 ; *** brute force stackops post bytes ***
 ; ***************************************
 mc6809_sp:
+	; think about using simply an immediate parameter...
 
 ; *******************************************
 ; *** brute force reg.transfer post bytes ***
