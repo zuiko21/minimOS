@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200208-2121
+; last modified 20200209-1200
 
 ; ***** for 09asm MC6809 cross assembler *****
 ; Regular Motorola set (not 6309 yet)
@@ -681,7 +681,42 @@ mc6809_idx:
 ; *** brute force stackops post bytes ***
 ; ***************************************
 mc6809_sp:
-	; think about using simply an immediate parameter...
+; think about simply using an immediate parameter...
+	.asc	'?'+$80				; %00000000	ILLEGAL
+	.asc	"C", 'C'+$80		; %00000001 = CC
+	.asc	'A'+$80				; %00000010 = A
+	.asc	"A, C", 'C'+$80		; %00000011 = A,CC
+	.asc	'B'+$80				; %00000100 = B
+	.asc	"B, C", 'C'+$80		; %00000101 = B,CC
+	.asc	"B, ", 'A'+$80		; %00000110 = B,A
+	.asc	"B, A, C", 'C'+$80	; %00000111 = B,A,CC
+	.asc	"D", 'P'+$80		; %00001000 = DP
+	.asc	"DP, C", 'C'+$80	; %00001001 = DP,CC
+	.asc	"DP, ", 'A'+$80		; %00001010 = DP,A
+	.asc	"DP, A, C", 'C'+$80	; %00001011 = DP,A,CC
+	.asc	"DP, ", 'B'+$80		; %00001100 = DP,B
+	.asc	"DP, B, C", 'C'+$80	; %00001101 = DP,B,CC
+	.asc	"DP, B, ", 'A'+$80	; %00001110 = DP,B,A
+	.asc	"DP, B, A, C", 'C'+$80	; %00001111 = DP,B,A,CC
+
+	.asc	'X'+$80				; %00010000 = X
+	.asc	"X, C", 'C'+$80		; %00010001 = X,CC
+	.asc	"X, ", 'A'+$80		; %00010010 = X,A
+	.asc	"X, A, C", 'C'+$80	; %00010011 = X,A,CC
+	.asc	"X, ", 'B'+$80		; %00010100 = X,B
+	.asc	"X, B, C", 'C'+$80	; %00010101 = X,B,CC
+	.asc	"X, B, ", 'A'+$80	; %00010110 = X,B,A
+	.asc	"X, B, A, C", 'C'+$80	; %00010111 = X,B,A,CC
+	.asc	"X, D", 'P'+$80		; %00011000 = X,DP
+	.asc	"X, DP, C", 'C'+$80	; %00011001 = X,DP,CC
+	.asc	"X, DP, ", 'A'+$80	; %00011010 = X,DP,A
+	.asc	"X, DP, A, C", 'C'+$80	; %00011011 = X,DP,A,CC
+	.asc	"X, DP, ", 'B'+$80	; %00011100 = X,DP,B
+	.asc	"X, DP, B, C", 'C'+$80	; %00011101 = X,DP,B,CC
+	.asc	"X, DP, B, ", 'A'+$80	; %00011110 = X,DP,B,A
+	.asc	"X,DP,B,A,C", 'C'+$80	; %00011111 = X,DP,B,A,CC
+
+
 
 ; *******************************************
 ; *** brute force reg.transfer post bytes ***
