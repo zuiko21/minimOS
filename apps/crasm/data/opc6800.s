@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20170530-1936
+; last modified 20200209-1537
 
 ; ***** for 68asm MC6800 cross assembler *****
 ; basic 6800 set
@@ -219,7 +219,7 @@
 	.asc	"AND B #", '@'+$80	; $C4=AND B #
 	.asc	"BIT B #", '@'+$80	; $C5=BIT B #
 	.asc	"LDA B #", '@'+$80	; $C6=LDA B #
-	.asc	"STA B #", '@'+$80	; $C7=STA B #
+	.asc	"?", ' '+$80	; $C7=?
 	.asc	"EOR B #", '@'+$80	; $C8=EOR B #
 	.asc	"ADC B #", '@'+$80	; $C9=ADC B #
 	.asc	"ORA B #", '@'+$80	; $CA=ORA B #
