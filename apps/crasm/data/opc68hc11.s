@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200210-1516
+; last modified 20200210-1529
 
 ; ***** for MC68HC11 cross assembler *****
 ; Opcode list as bit-7 terminated strings
@@ -279,5 +279,119 @@ hc11_std:
 	.asc	"ADD B ", '&'+$80	; $FB=ADD B ext
 	.asc	"LDD ", '&'+$80		; $FC=LDD ext
 	.asc	"STD ", '&'+$80		; $FD=STD ext
-	.asc	"LDX ", '&'+$80	; $FE=LDX ext
-	.asc	"STX ", '&'+$80	; $FF=STX ext
+	.asc	"LDX ", '&'+$80		; $FE=LDX ext
+	.asc	"STX ", '&'+$80		; $FF=STX ext
+
+; ******************
+; *** $18 prefix ***
+; ******************
+hc11_18:
+
+	.dsb	8, '?'+$80				; $1800-1807 filler
+	.asc	"IN", 'Y'+$80			; $1808=INY
+	.asc	"DE", 'Y'+$80			; $1809=DEY
+
+	.dsb	18, '?'+$80				; $180A-181B filler
+
+	.asc	"BSET @,Y #",'@'+$80	; $181C=BSET idy #mask		HC11
+	.asc	"BCLR @,Y #",'@'+$80	; $181D=BCLR idy #mask		HC11
+	.asc	"BRSET @,Y #@,",'%'+$80	; $181E=BRSET idy #mask rel	HC11
+	.asc	"BRCLR @,Y #@,",'%'+$80	; $181F=BRCLR idy #mask rel	HC11
+
+	.dsb	16, '?'+$80				; $1820-182F filler
+
+	.asc	"TS", 'Y'+$80			; $1830=TSY
+	.dsb	4, '?'+$80				; $1831-1834 filler
+	.asc	"TY", 'S'+$80			; $1835=TYS
+	.dsb	2, '?'+$80				; $1836-1837 filler
+	.asc	"PUL", 'Y'+$80			; $1838=PULY
+	.asc	'?'+$80					; $1839		ILLEGAL
+	.asc	"AB", 'Y'+$80			; $183A=ABY
+	.asc	'?'+$80					; $183B		ILLEGAL
+	.asc	"PSH", 'Y'+$80			; $183C=PSHY
+	.dsb	35, '?'+$80				; $183D-185F filler
+
+	.asc	"NEG @, ", 'Y'+$80		; $1860=NEG idy
+	.dsb	2, '?'+$80				; $1861-1862 filler
+	.asc	"COM @, ", 'Y'+$80		; $1863=COM idy
+	.asc	"LSR @, ", 'Y'+$80		; $1864=LSR idy
+	.asc	'?'+$80					; $1865		ILLEGAL
+	.asc	"ROR @, ", 'Y'+$80		; $1866=ROR idy
+	.asc	"ASR @, ", 'Y'+$80		; $1867=ASR idy
+	.asc	"ASL @, ", 'Y'+$80		; $1868=ASL idy
+	.asc	"ROL @, ", 'Y'+$80		; $1869=ROL idy
+	.asc	"DEC @, ", 'Y'+$80		; $186A=DEC idy
+	.asc	'?'+$80					; $186B		ILLEGAL
+	.asc	"INC @, ", 'Y'+$80		; $186C=INC idy
+	.asc	"TST @, ", 'Y'+$80		; $186D=TST idy
+	.asc	"JMP @, ", 'Y'+$80		; $186E=JMP idy
+	.asc	"CLR @, ", 'Y'+$80		; $186F=CLR idy
+
+	.dsb	28, '?'+$80				; $1870-188B filler
+	.asc	"CPY # ", '&'+$80		; $188C=CPY #
+	.dsb	2, '?'+$80				; $188D-188E filler
+	.asc	"XGD", 'Y'+$80			; $188F=XGDY
+
+	.dsb	12, '?'+$80				; $1890-189B filler
+	.asc	"CPY ", '@'+$80			; $189C=CPY dir
+	.dsb	3, '?'+$80				; $189D-189F filler
+
+	.asc	"SUB A @, ", 'Y'+$80	; $18A0=SUB A idy
+	.asc	"CMP A @, ", 'Y'+$80	; $18A1=CMP A idy
+	.asc	"SBC A @, ", 'Y'+$80	; $18A2=SBC A idy
+	.asc	"SUBD @, ", 'Y'+$80		; $18A3=SUBD idy
+	.asc	"AND A @, ", 'Y'+$80	; $18A4=AND A idy
+	.asc	"BIT A @, ", 'Y'+$80	; $18A5=BIT A idy
+	.asc	"LDA A @, ", 'Y'+$80	; $18A6=LDA A idy
+	.asc	"STA A @, ", 'Y'+$80	; $18A7=STA A idy
+	.asc	"EOR A @, ", 'Y'+$80	; $18A8=EOR A idy
+	.asc	"ADC A @, ", 'Y'+$80	; $18A9=ADC A idy
+	.asc	"ORA A @, ", 'Y'+$80	; $18AA=ORA A idy
+	.asc	"ADD A @, ", 'Y'+$80	; $18AB=ADD A idy
+	.asc	"CPY @, ", 'Y'+$80		; $18AC=CPY idy
+	.asc	"JSR @, ", 'Y'+$80		; $18AD=JSR idy
+	.asc	"LDS @, ", 'Y'+$80		; $18AE=LDS A idy
+	.asc	"STS @, ", 'Y'+$80		; $18AF=STS A idy
+
+	.dsb	12, '?'+$80				; $18B0-18BB iller
+	.asc	"CPY ", '&'+$80			; $18BC=CPY ext
+
+	.dsb	17, '?'+$80				; $18BD-18CD filler
+
+	.asc	"LDY #", '&'+$80		; $18CE=LDY #
+
+	.dsb	15, '?'+$80				; $18CF-18DD filler
+
+	.asc	"LDY ", '@'+$80			; $18DE=LDY dir
+	.asc	"STY ", '@'+$80		 	; $18DF=STY dir
+
+	.asc	"SUB B @, ", 'Y'+$80	; $18E0=SUB B idy
+	.asc	"CMP B @, ", 'Y'+$80	; $18E1=CMP B idy
+	.asc	"SBC B @, ", 'Y'+$80	; $18E2=SBC B idy
+	.asc	"ADDD @, ", 'Y'+$80		; $18E3=ADDD idy
+	.asc	"AND B @, ", 'Y'+$80	; $18E4=AND B idy
+	.asc	"BIT B @, ", 'Y'+$80	; $18E5=BIT B idy
+	.asc	"LDA B @, ", 'Y'+$80	; $18E6=LDA B idy
+	.asc	"STA B @, ", 'Y'+$80	; $18E7=STA B idy
+	.asc	"EOR B @, ", 'Y'+$80	; $18E8=EOR B idy
+	.asc	"ADC B @, ", 'Y'+$80	; $18E9=ADC B idy
+	.asc	"ORA B @, ", 'Y'+$80	; $18EA=ORA B idy
+	.asc	"ADD B @, ", 'Y'+$80	; $18EB=ADD B idy
+	.asc	"LDD @, ", 'Y'+$80	; $18EC=LDD idy
+	.asc	"STD @, ", 'Y'+$80	; $18ED=STD idy
+	.asc	"LDY @, ", 'Y'+$80	; $18EE=LDY idy
+	.asc	"STY @, ", 'Y'+$80	; $18EF=STY idy
+
+	.dsb	14, '?'+$80				; $18F0-18FD filler
+	.asc	"LDY ", '&'+$80		; $18FE=LDY ext
+	.asc	"STY ", '&'+$80		; $18FF=STY ext
+
+; ******************
+; *** $1A prefix ***
+; ******************
+hc11_1a:
+
+; ******************
+; *** $CD prefix ***
+; ******************
+hc11_cd:
