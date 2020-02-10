@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200210-1529
+; last modified 20200210-1622
 
 ; ***** for MC68HC11 cross assembler *****
 ; Opcode list as bit-7 terminated strings
@@ -149,7 +149,7 @@ hc11_std:
 	.asc	"SUB A #", '@'+$80	; $80=SUB A #
 	.asc	"CMP A #", '@'+$80	; $81=CMP A #
 	.asc	"SBC A #", '@'+$80	; $82=SBC A #
-	.asc	"SUBD #", '&'+$80	; $83=SUBD #Y
+	.asc	"SUBD #", '&'+$80	; $83=SUBD #
 	.asc	"AND A #", '@'+$80	; $84=AND A #
 	.asc	"BIT A #", '@'+$80	; $85=BIT A #
 	.asc	"LDA A #", '@'+$80	; $86=LDA A #
@@ -377,19 +377,44 @@ hc11_18:
 	.asc	"ADC B @, ", 'Y'+$80	; $18E9=ADC B idy
 	.asc	"ORA B @, ", 'Y'+$80	; $18EA=ORA B idy
 	.asc	"ADD B @, ", 'Y'+$80	; $18EB=ADD B idy
-	.asc	"LDD @, ", 'Y'+$80	; $18EC=LDD idy
-	.asc	"STD @, ", 'Y'+$80	; $18ED=STD idy
-	.asc	"LDY @, ", 'Y'+$80	; $18EE=LDY idy
-	.asc	"STY @, ", 'Y'+$80	; $18EF=STY idy
+	.asc	"LDD @, ", 'Y'+$80		; $18EC=LDD idy
+	.asc	"STD @, ", 'Y'+$80		; $18ED=STD idy
+	.asc	"LDY @, ", 'Y'+$80		; $18EE=LDY idy
+	.asc	"STY @, ", 'Y'+$80		; $18EF=STY idy
 
 	.dsb	14, '?'+$80				; $18F0-18FD filler
-	.asc	"LDY ", '&'+$80		; $18FE=LDY ext
-	.asc	"STY ", '&'+$80		; $18FF=STY ext
+	.asc	"LDY ", '&'+$80			; $18FE=LDY ext
+	.asc	"STY ", '&'+$80			; $18FF=STY ext
 
 ; ******************
 ; *** $1A prefix ***
 ; ******************
 hc11_1a:
+
+	.dsb	131, '?'+$80				; $1A00-1A82 filler
+
+	.asc	"CPD #", '&'+$80		; $1A83=CPD #
+
+	.dsb	15, '?'+$80				; $1A84-1A92 filler
+
+	.asc	"CPD ", '@'+$80			; $1A93=CPD dir
+
+	.dsb	15, '?'+$80				; $1A94-1AA2 filler
+
+	.asc	"CPD @, ", 'X'+$80		; $1AA3=CPD idx
+	.dsb	8, '?'+$80				; $1AA4-1AAB filler
+	.asc	"CPY @, ", 'X'+$80		; $1AAC=CPY idx
+
+	.dsb	6, '?'+$80				; $1AAD-1AB2 filler
+
+	.asc	"CPD ", '&'+$80			; $1AB3=CPD ext
+
+	.dsb	26, '?'+$80				; $1AB4-1AED filler
+
+	.asc	"LDY @, ", 'X'+$80		; $1AEE=LDY idx
+	.asc	"STY @, ", 'X'+$80		; $1AEF=STY idx
+
+	.dsb	16, '?'+$80				; $18F0-18FF filler
 
 ; ******************
 ; *** $CD prefix ***
