@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200209-1519
+; last modified 20200210-1516
 
 ; ***** for MC68HC11 cross assembler *****
 ; Opcode list as bit-7 terminated strings
@@ -35,9 +35,9 @@ hc11_std:
 	.asc	"BCLR @, #",'@'+$80	; $15=BCLR dir #mask		HC11
 	.asc	"TA", 'B'+$80		; $16=TAB
 	.asc	"TB", 'A'+$80		; $17=TBA
-	.asc	"{", 2+$80		; $18=*IY prefix*, was XGDX on HD6301
+	.asc	"{", 2+$80		; $18=**IY prefix** was XGDX on HD6301
 	.asc	"DA", 'A'+$80		; $19=DAA
-	.asc	"{", 4+$80		; $1A=*Y ind X*, was SLP on HD6301
+	.asc	"{", 4+$80		; $1A=**Y ind IX** was SLP on HD6301
 	.asc	"AB", 'A'+$80		; $1B=ABA
 	.asc	"BSET @,X #",'@'+$80	; $1C=BSET idx #mask		HC11
 	.asc	"BCLR @,X #",'@'+$80	; $1D=BCLR idx #mask		HC11
@@ -79,37 +79,37 @@ hc11_std:
 	.asc	"SW", 'I'+$80		; $3F=SWI
 
 	.asc	"NEG ", 'A'+$80		; $40=NEG A
-	.asc	"?", ' '+$80		; $41=?
-	.asc	"?", ' '+$80		; $42=?
+	.asc	'?'+$80				; $41		ILLEGAL
+	.asc	'?'+$80				; $42		ILLEGAL
 	.asc	"COM ", 'A'+$80		; $43=COM A
 	.asc	"LSR ", 'A'+$80		; $44=LSR A
-	.asc	"?", ' '+$80		; $45=?
+	.asc	'?'+$80				; $45		ILLEGAL
 	.asc	"ROR ", 'A'+$80		; $46=ROR A
 	.asc	"ASR ", 'A'+$80		; $47=ASR A
 	.asc	"ASL ", 'A'+$80		; $48=ASL A
 	.asc	"ROL ", 'A'+$80		; $49=ROL A
 	.asc	"DEC ", 'A'+$80		; $4A=DEC A
-	.asc	"?", ' '+$80		; $4B=?
+	.asc	'?'+$80				; $4B		ILLEGAL
 	.asc	"INC ", 'A'+$80		; $4C=INC A
 	.asc	"TST ", 'A'+$80		; $4D=TST A
-	.asc	"?", ' '+$80		; $4E=?
+	.asc	'?'+$80				; $4E		ILLEGAL
 	.asc	"CLR ", 'A'+$80		; $4F=CLR A
 
 	.asc	"NEG ", 'B'+$80		; $50=NEG B
-	.asc	"?", ' '+$80		; $51=?
-	.asc	"?", ' '+$80		; $52=?
+	.asc	'?'+$80				; $51		ILLEGAL
+	.asc	'?'+$80				; $52		ILLEGAL
 	.asc	"COM ", 'B'+$80		; $53=COM B
 	.asc	"LSR ", 'B'+$80		; $54=LSR B
-	.asc	"?", ' '+$80		; $55=?
+	.asc	'?'+$80				; $55		ILLEGAL
 	.asc	"ROR ", 'B'+$80		; $56=ROR B
 	.asc	"ASR ", 'B'+$80		; $57=ASR B
 	.asc	"ASL ", 'B'+$80		; $58=ASL B
 	.asc	"ROL ", 'B'+$80		; $59=ROL B
 	.asc	"DEC ", 'B'+$80		; $5A=DEC B
-	.asc	"?", ' '+$80		; $5B=?
+	.asc	'?'+$80				; $5B		ILLEGAL
 	.asc	"INC ", 'B'+$80		; $5C=INC B
 	.asc	"TST ", 'B'+$80		; $5D=TST B
-	.asc	"?", ' '+$80		; $5E=?
+	.asc	'?'+$80				; $5E		ILLEGAL
 	.asc	"CLR ", 'B'+$80		; $5F=CLR B
 
 	.asc	"NEG @, ", 'X'+$80		; $60=NEG idx
@@ -149,11 +149,11 @@ hc11_std:
 	.asc	"SUB A #", '@'+$80	; $80=SUB A #
 	.asc	"CMP A #", '@'+$80	; $81=CMP A #
 	.asc	"SBC A #", '@'+$80	; $82=SBC A #
-	.asc	"SUBD #", '&'+$80	; $83=SUBD #
+	.asc	"SUBD #", '&'+$80	; $83=SUBD #Y
 	.asc	"AND A #", '@'+$80	; $84=AND A #
 	.asc	"BIT A #", '@'+$80	; $85=BIT A #
 	.asc	"LDA A #", '@'+$80	; $86=LDA A #
-	.asc	"?", ' '+$80		; $87=?
+	.asc	'?'+$80				; $87		ILLEGAL
 	.asc	"EOR A #", '@'+$80	; $88=EOR A #
 	.asc	"ADC A #", '@'+$80	; $89=ADC A #
 	.asc	"ORA A #", '@'+$80	; $8A=ORA A #
@@ -221,15 +221,15 @@ hc11_std:
 	.asc	"AND B #", '@'+$80	; $C4=AND B #
 	.asc	"BIT B #", '@'+$80	; $C5=BIT B #
 	.asc	"LDA B #", '@'+$80	; $C6=LDA B #
-	.asc	"?", ' '+$80		; $C7=?
+	.asc	'?'+$80				; $C7		ILLEGAL
 	.asc	"EOR B #", '@'+$80	; $C8=EOR B #
 	.asc	"ADC B #", '@'+$80	; $C9=ADC B #
 	.asc	"ORA B #", '@'+$80	; $CA=ORA B #
 	.asc	"ADD B #", '@'+$80	; $CB=ADD B #
 	.asc	"LDD #", '&'+$80	; $CC=LDD #
-	.asc	"{", 4+$80		; $CD=*X ind Y prefix*
+	.asc	"{", 4+$80		; $CD=**X ind IY prefix**
 	.asc	"LDX #", '&'+$80	; $CE=LDX #
-	.asc	"STO", 'P'+$80		; $CF=STOP	HC11
+	.asc	"STO", 'P'+$80		; $CF=STOP			HC11
 
 	.asc	"SUB B ", '@'+$80	; $D0=SUB B dir
 	.asc	"CMP B ", '@'+$80	; $D1=CMP B dir
