@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200210-1622
+; last modified 20200210-1646
 
 ; ***** for MC68HC11 cross assembler *****
 ; Opcode list as bit-7 terminated strings
@@ -214,39 +214,39 @@ hc11_std:
 	.asc	"LDS ", '&'+$80		; $BE=LDS ext
 	.asc	"STS ", '&'+$80		; $BF=STS ext
 
-	.asc	"SUB B #", '@'+$80	; $C0=SUB B #
-	.asc	"CMP B #", '@'+$80	; $C1=CMP B #
-	.asc	"SBC B #", '@'+$80	; $C2=SBC B #
-	.asc	"ADDD #", '&'+$80	; $C3=ADDD #
-	.asc	"AND B #", '@'+$80	; $C4=AND B #
-	.asc	"BIT B #", '@'+$80	; $C5=BIT B #
-	.asc	"LDA B #", '@'+$80	; $C6=LDA B #
-	.asc	'?'+$80				; $C7		ILLEGAL
-	.asc	"EOR B #", '@'+$80	; $C8=EOR B #
-	.asc	"ADC B #", '@'+$80	; $C9=ADC B #
-	.asc	"ORA B #", '@'+$80	; $CA=ORA B #
-	.asc	"ADD B #", '@'+$80	; $CB=ADD B #
-	.asc	"LDD #", '&'+$80	; $CC=LDD #
-	.asc	"{", 4+$80		; $CD=**X ind IY prefix**
-	.asc	"LDX #", '&'+$80	; $CE=LDX #
-	.asc	"STO", 'P'+$80		; $CF=STOP			HC11
+	.asc	"SUB B #", '@'+$80		; $C0=SUB B #
+	.asc	"CMP B #", '@'+$80		; $C1=CMP B #
+	.asc	"SBC B #", '@'+$80		; $C2=SBC B #
+	.asc	"ADDD #", '&'+$80		; $C3=ADDD #
+	.asc	"AND B #", '@'+$80		; $C4=AND B #
+	.asc	"BIT B #", '@'+$80		; $C5=BIT B #
+	.asc	"LDA B #", '@'+$80		; $C6=LDA B #
+	.asc	'?'+$80					; $C7		ILLEGAL
+	.asc	"EOR B #", '@'+$80	 	; $C8=EOR B #
+	.asc	"ADC B #", '@'+$80		; $C9=ADC B #
+	.asc	"ORA B #", '@'+$80		; $CA=ORA B #
+	.asc	"ADD B #", '@'+$80		; $CB=ADD B #
+	.asc	"LDD #", '&'+$80		; $CC=LDD #
+	.asc	"{", 4+$80			; $CD=**X ind IY prefix**
+	.asc	"LDX #", '&'+$80		; $CE=LDX #
+	.asc	"STO", 'P'+$80			; $CF=STOP			HC11
 
-	.asc	"SUB B ", '@'+$80	; $D0=SUB B dir
-	.asc	"CMP B ", '@'+$80	; $D1=CMP B dir
-	.asc	"SBC B ", '@'+$80	; $D2=SBC B dir
-	.asc	"ADDD ", '@'+$80	; $D3=ADDD dir
-	.asc	"AND B ", '@'+$80	; $D4=AND B dir
-	.asc	"BIT B ", '@'+$80	; $D5=BIT B dir
-	.asc	"LDA B ", '@'+$80	; $D6=LDA B dir
-	.asc	"STA B ", '@'+$80	; $D7=STA B dir
-	.asc	"EOR B ", '@'+$80	; $D8=EOR B dir
-	.asc	"ADC B ", '@'+$80	; $D9=ADC B dir
-	.asc	"ORA B ", '@'+$80	; $DA=ORA B dir
-	.asc	"ADD B ", '@'+$80	; $DB=ADD B dir
-	.asc	"LDD ", '@'+$80		; $DC=LDD dir
-	.asc	"STD ", '@'+$80		; $DD=STD dir
-	.asc	"LDX ", '@'+$80		; $DE=LDX dir
-	.asc	"STX ", '@'+$80		; $DF=STX dir
+	.asc	"SUB B ", '@'+$80		; $D0=SUB B dir
+	.asc	"CMP B ", '@'+$80		; $D1=CMP B dir
+	.asc	"SBC B ", '@'+$80		; $D2=SBC B dir
+	.asc	"ADDD ", '@'+$80		; $D3=ADDD dir
+	.asc	"AND B ", '@'+$80		; $D4=AND B dir
+	.asc	"BIT B ", '@'+$80		; $D5=BIT B dir
+	.asc	"LDA B ", '@'+$80		; $D6=LDA B dir
+	.asc	"STA B ", '@'+$80		; $D7=STA B dir
+	.asc	"EOR B ", '@'+$80		; $D8=EOR B dir
+	.asc	"ADC B ", '@'+$80		; $D9=ADC B dir
+	.asc	"ORA B ", '@'+$80		; $DA=ORA B dir
+	.asc	"ADD B ", '@'+$80		; $DB=ADD B dir
+	.asc	"LDD ", '@'+$80			; $DC=LDD dir
+	.asc	"STD ", '@'+$80			; $DD=STD dir
+	.asc	"LDX ", '@'+$80			; $DE=LDX dir
+	.asc	"STX ", '@'+$80			; $DF=STX dir
 
 	.asc	"SUB B @, ", 'X'+$80	; $E0=SUB B idx
 	.asc	"CMP B @, ", 'X'+$80	; $E1=CMP B idx
@@ -265,22 +265,22 @@ hc11_std:
 	.asc	"LDX @, ", 'X'+$80		; $EE=LDX idx
 	.asc	"STX @, ", 'X'+$80		; $EF=STX idx
 
-	.asc	"SUB B ", '&'+$80	; $F0=SUB B ext
-	.asc	"CMP B ", '&'+$80	; $F1=CMP B ext
-	.asc	"SBC B ", '&'+$80	; $F2=SBC B ext
-	.asc	"ADDD ", '&'+$80	; $F3=ADDD ext
-	.asc	"AND B ", '&'+$80	; $F4=AND B ext
-	.asc	"BIT B ", '&'+$80	; $F5=BIT B ext
-	.asc	"LDA B ", '&'+$80	; $F6=LDA B ext
-	.asc	"STA B ", '&'+$80	; $F7=STA B ext
-	.asc	"EOR B ", '&'+$80	; $F8=EOR B ext
-	.asc	"ADC B ", '&'+$80	; $F9=ADC B ext
-	.asc	"ORA B ", '&'+$80	; $FA=ORA B ext
-	.asc	"ADD B ", '&'+$80	; $FB=ADD B ext
-	.asc	"LDD ", '&'+$80		; $FC=LDD ext
-	.asc	"STD ", '&'+$80		; $FD=STD ext
-	.asc	"LDX ", '&'+$80		; $FE=LDX ext
-	.asc	"STX ", '&'+$80		; $FF=STX ext
+	.asc	"SUB B ", '&'+$80		; $F0=SUB B ext
+	.asc	"CMP B ", '&'+$80		; $F1=CMP B ext
+	.asc	"SBC B ", '&'+$80		; $F2=SBC B ext
+	.asc	"ADDD ", '&'+$80		; $F3=ADDD ext
+	.asc	"AND B ", '&'+$80		; $F4=AND B ext
+	.asc	"BIT B ", '&'+$80		; $F5=BIT B ext
+	.asc	"LDA B ", '&'+$80		; $F6=LDA B ext
+	.asc	"STA B ", '&'+$80		; $F7=STA B ext
+	.asc	"EOR B ", '&'+$80		; $F8=EOR B ext
+	.asc	"ADC B ", '&'+$80		; $F9=ADC B ext
+	.asc	"ORA B ", '&'+$80		; $FA=ORA B ext
+	.asc	"ADD B ", '&'+$80		; $FB=ADD B ext
+	.asc	"LDD ", '&'+$80			; $FC=LDD ext
+	.asc	"STD ", '&'+$80			; $FD=STD ext
+	.asc	"LDX ", '&'+$80			; $FE=LDX ext
+	.asc	"STX ", '&'+$80			; $FF=STX ext
 
 ; ******************
 ; *** $18 prefix ***
@@ -414,9 +414,21 @@ hc11_1a:
 	.asc	"LDY @, ", 'X'+$80		; $1AEE=LDY idx
 	.asc	"STY @, ", 'X'+$80		; $1AEF=STY idx
 
-	.dsb	16, '?'+$80				; $18F0-18FF filler
+	.dsb	16, '?'+$80				; $1AF0-1AFF filler
 
 ; ******************
 ; *** $CD prefix ***
 ; ******************
 hc11_cd:
+	.dsb	163, '?'+$80				; $CD00-CDA2 filler
+
+	.asc	"CPD @, ", 'Y'+$80		; $CDA3=CPD idy
+	.dsb	8, '?'+$80				; $CDA4-CDAB filler
+	.asc	"CPX @, ", 'Y'+$80		; $CDAC=CPX idy
+
+	.dsb	65, '?'+$80				; $CDAD-CDED filler
+
+	.asc	"LDX @, ", 'Y'+$80		; $CDEE=LDX idy
+	.asc	"STX @, ", 'Y'+$80		; $CDEF=STX idy
+
+	.dsb	16, '?'+$80				; $CDF0-CDFF filler
