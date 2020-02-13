@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
-; v0.6rc2
-; last modified 20190117-1218
+; v0.6rc3
+; last modified 20200213-1705
 ; (c) 2016-2020 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -246,7 +246,7 @@ sc_in:
 ; ...but C will be lost upon further comparisons!
 ; manage new 65816 operand formats
 		JSR $FFFF & adrmodes			; check NEW addressing modes in list, return with standard marker in A
-		CMP #'='			; 24-bit addressing?
+		CMP #'^'			; 24-bit addressing?
 		BNE sc_nlong
 ; *** get a long-sized operand! ***
 ; no need to pick a word (BANK+MSB) first, then a byte!
@@ -274,7 +274,7 @@ overflow:
 
 ; continue with classic operand formats (but add 16-bit relative!)
 sc_nlong:
-		CMP #'*'			; long relative?
+		CMP #'}'			; long relative?
 		BNE sc_nrlong		; check also short relative
 			LDX #2				; 16-bit relative
 			BRA sc_relat		; continue unified relative processing
