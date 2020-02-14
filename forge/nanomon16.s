@@ -1,13 +1,14 @@
 ; minimOS-16 nano-monitor
-; v0.2a1
+; v0.3a1
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20190414-1333
+; last modified 20200214-1429
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
 ; (aaaaaa=6 hex char addr on stack, wwww=4 hex char on stack, dd=2 hex char on stack)
-; aaaaaa,	read byte into stack
-; ddaaaaaa!	write byte
+; aaaaaa@	read byte into stack, NEW format (special mode)
+; dd,		write byte AND advance pointer, NEW format
+; aaaaaa!	set write pointer, NEW format
 ; aaaaaa$	hex dump
 ; +			continue hex dump
 ; aaaaaa"	ASCII dump
@@ -21,9 +22,8 @@
 ; wwww#		set A
 ; dd'		set P
 ; wwww/		set SP (new)
-; NEW exit command is 'colon' character
-; special command to set B or D:
-; wwwwdd?	set D (16b) & B (last 8b)!
+; NEW exit command is 'colon' character, managed ad hoc
+; wwwwdd?	set D (16b) & B (last 8b), special mode
 
 #ifndef	HEADERS
 #include "../OS/macros.h"
@@ -141,9 +141,13 @@ nm_eval:
 nm_cont:
 ; *** check special command '?' then ***
 			CMP #'?'			; was set D&B?
-			BNE nm_ndb			; no...
-				LDA #'0'			; ...or set special index...
-				CLC					; nm_exe will subtract, expects borrow!
+				BEQ nm_spca			; special management!
+			CMP #'@'			; or was it peek?
+			BNE nm_ndb			; no, continue with general management...
+nm_spca:
+				CLC				; ...or adjust special index...
+				SBC #14			; nm_exe will subtract, expects borrow! CHECK
+				CLC
 				BRA nm_spcm			; ...and execute
 nm_ndb:
 ; *** continue with regular commands ***
@@ -187,7 +191,7 @@ nm_okx:
 ; *** command jump table ***
 ; **************************
 nm_cmds:
-	.word	nm_poke			; aaaaaa!	write byte
+	.word	nm_gaddr		; aaaaaa!	set write pointer (new)
 	.word	nm_asc			; aaaaaa"	ASCII dump
 	.word	nm_acc			; wwww#		set A
 	.word	nm_hex			; aaaaaa$	hex dump
@@ -198,12 +202,13 @@ nm_cmds:
 	.word	nm_iy			; wwww)		set Y
 	.word	nm_jmp			; aaaaaa*	jump
 	.word	nm_dump			; +			continue hex dump
-	.word	nm_peek			; aaaaaa,	read byte and push
+	.word	nm_poke			; dd,		write byte AND advance pointer (new)
 	.word	nm_admp			; -			continue ASCII dump
 	.word	nm_hpop			; dd.		show in hex
 	.word	nm_ssp			; wwww/		set SP (new)
 ; special commands outside normal range
 	.word	nm_sdb			; wwwwdd?	set D=wwww, B=dd
+	.word	nm_peek			; aaaaaa@	read byte and push
 
 #ifdef	SAFE
 ; label just for table size computation
@@ -215,16 +220,22 @@ nm_endc:
 ; ************************
 nm_poke:
 ; * poke value in memory *
-	JSR nm_gaddr
+;	JSR nm_gaddr
 	JSR nm_pop
 	STA [z_addr]
+	INC z_addr			; not worth going 16-bit?
+	BNE nm_pke
+		INC z_addr+1
+	BNE nm_pke
+		INC z_addr+2	; check bank too!
+nm_pke:
 	RTS
 
 nm_peek:
 ; * peek value from memory and put it on stack *
-	JSR nm_gaddr
+	JSR nm_gaddr		; traditional way...
 	LDA [z_addr]
-	JMP nm_push				; push... and return
+	JMP nm_push			; push... and return
 
 nm_asc:
 ; * 16-char ASCII dump from address on stack *

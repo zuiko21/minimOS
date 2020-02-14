@@ -1,13 +1,14 @@
 ; minimOS nano-monitor
-; v0.2a5
+; v0.3a1
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20190414-1212
+; last modified 20200214-1409
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
 ; (aaaa=4 hex char on stack, dd=2 hex char on stack)
-; aaaa,		read byte into stack
-; ddaaaa!	write byte
+; aaaa@		read byte into stack, NEW format (special mode)
+; dd,		write byte AND advance pointer, NEW format
+; aaaa!		set write pointer, NEW format
 ; aaaa$		hex dump
 ; +			continue hex dump
 ; aaaa"		ASCII dump
@@ -193,6 +194,12 @@ nm_eval:
 #endif
 ; *** end of exit command ***
 nm_cont:
+; *** special codes are managed here, 6502 version only uses new peek (@) character ***
+			CMP #'@'			; is it the peek command?
+			BNE nm_npeek		; no, continue with standard form
+				JSR nm_peek			; yes, call and return from routine
+				_BRA nm_next
+nm_npeek:
 			CMP #'0'			; is it a number?
 			BCS nm_num			; push its value
 				JSR nm_exe			; otherwise it is a command
@@ -244,7 +251,7 @@ nm_okx:
 ; *** command jump table ***
 ; **************************
 nm_cmds:
-	.word	nm_poke			; ddaaaa!	write byte
+	.word	nm_gaddr		; aaaa!		set write address (new, note that directly points to generic routine)
 	.word	nm_asc			; aaaa"		ASCII dump
 	.word	nm_acc			; dd#		set A
 	.word	nm_hex			; aaaa$		hex dump
@@ -255,10 +262,11 @@ nm_cmds:
 	.word	nm_iy			; dd)		set Y
 	.word	nm_jmp			; aaaa*		jump
 	.word	nm_dump			; +			continue hex dump
-	.word	nm_peek			; aaaa,		read byte and push
+	.word	nm_poke			; dd,		write byte and advance (new)
 	.word	nm_admp			; -			continue ASCII dump
 	.word	nm_hpop			; dd.		show in hex
 	.word	nm_ssp			; dd/		set SP (new)
+;	.word	nm_peek			; aaaa@		read byte and push (managed ad hoc)
 
 #ifdef	SAFE
 ; label for easy table size computation
@@ -270,16 +278,21 @@ nm_endc:
 ; ************************
 nm_poke:
 ; * poke value in memory *
-	JSR nm_gaddr
-	JSR nm_pop
-	_STAY(z_addr)
+
+;	JSR nm_gaddr		; now using predefined address!
+	JSR nm_pop			; get value...
+	_STAY(z_addr)		; ...and store it into pointed address
+	INC z_addr			; new, advance to next address
+	BNE nm_pke			; check in case of carry
+		INC z_addr+1
+nm_pke:
 	RTS
 
 nm_peek:
 ; * peek value from memory and put it on stack *
-	JSR nm_gaddr
-	_LDAY(z_addr)
-	JMP nm_push				; push... and return
+	JSR nm_gaddr		; traditional way...
+	_LDAY(z_addr)		; get byte at that address
+	JMP nm_push			; push... and return
 
 nm_asc:
 ; * 16-char ASCII dump from address on stack *
