@@ -1,7 +1,7 @@
 ; minimOS-16 nano-monitor
 ; v0.3a1
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20200214-1429
+; last modified 20200215-1116
 ; 65816-specific version
 
 ; *** NMI handler, now valid for BRK ***
@@ -145,9 +145,8 @@ nm_cont:
 			CMP #'@'			; or was it peek?
 			BNE nm_ndb			; no, continue with general management...
 nm_spca:
-				CLC				; ...or adjust special index...
-				SBC #14			; nm_exe will subtract, expects borrow! CHECK
-				CLC
+				SBC #14			; nm_exe will subtract, expects borrow
+				CLC					; following call expects C clear
 				BRA nm_spcm			; ...and execute
 nm_ndb:
 ; *** continue with regular commands ***
