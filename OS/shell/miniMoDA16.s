@@ -1,11 +1,27 @@
 ; Monitor-debugger-assembler shell for minimOS·16!
 ; v0.6rc3
-; last modified 20200213-1705
+; last modified 20200220-1000
 ; (c) 2016-2020 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa -wM shell/miniMoDA16.s -I shell/ -I shell/data -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+user_ram = $400
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
 #include "../usual.h"
+#endif
+; no specific header for this
+.text
+#endif
 
 .as:.xs
 
@@ -246,7 +262,7 @@ sc_in:
 ; ...but C will be lost upon further comparisons!
 ; manage new 65816 operand formats
 		JSR $FFFF & adrmodes			; check NEW addressing modes in list, return with standard marker in A
-		CMP #'^'			; 24-bit addressing?
+		CMP #$5E			; 24-bit addressing?
 		BNE sc_nlong
 ; *** get a long-sized operand! ***
 ; no need to pick a word (BANK+MSB) first, then a byte!
