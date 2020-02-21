@@ -8,7 +8,7 @@
 #ifndef		HEADERS
 #ifdef			TESTING
 ; ** special include set to be assembled via... **
-; xa -wM shell/miniMoDA16.s -I shell/ -I shell/data -DTESTING=1
+; xa -wM shell/miniMoDA16.s -I shell/ -DTESTING=1
 #include "options.h"
 #include "macros.h"
 #include "abi.h"
