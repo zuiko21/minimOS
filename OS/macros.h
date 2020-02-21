@@ -1,6 +1,6 @@
-; minimOS 0.6rc11 MACRO definitions
+; minimOS 0.6rc12 MACRO definitions
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20190225-0921
+; last modified 20200221-1043
 
 ; **************************
 ; *** standard addresses ***
@@ -104,16 +104,27 @@ FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entrie
 ; ** panic call, now using BRK in case of error display ** new BRK handled 20161010
 #define		_PANIC(a)	BRK: .asc a, 0
 
+; *****************************
 ; *** usual ASCII constants ***
-#define		CR		13
-#define		LF		10
-#define		BS		8
-#define		FORMFEED	12
+; *****************************
+; * newer, minimOS names *
+#define		BELL	7
+#define		BKSP	8
 ; renamed TAB for 6800 compatibility!
 #define		HTAB	9
-#define		BEL		7
+#define		DOWN	10
+#define		CLRS	12
+#define		NEWL	13
 #define		ESC		27
-#define		COLON		58
+; these may give trouble on xa65
+#define		COLON	58
+#define		CARET	94
+; * older ASCII names for compatibility *
+#define		BEL		7
+#define		BS		8
+#define		LF		10
+#define		FORMFEED	12
+#define		CR		13
 
 ; *** conditional opcode assembly ***
 #ifdef	NMOS
