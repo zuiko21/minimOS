@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200209-1200
+; last modified 20200223-1701
 
 ; ***** for 09asm MC6809 cross assembler *****
 ; Regular Motorola set (not 6309 yet)
@@ -14,7 +14,8 @@
 ; *** needs some special characters for prefixes, like Z80 ***
 ; temporarily using {2, {4... (value + $80, not ASCII) for easier indexing
 ; *** 6809 uses three kinds of postbytes! ***
-; may work as generic prefixes, {6 for indexed, {8 for stack ops, {10 for reg.transfers
+; stackops are best represented as a single-byte parameter, like REP/SEP
+; may work as generic prefixes, {6 for indexed, {8 for reg.transfers (was 10)
 
 mc6809_std:
 	.asc	"NEG ", '@'+$80		; $00=NEG dir
@@ -48,8 +49,8 @@ mc6809_std:
 	.asc	'?'+$80				; $1B=?
 	.asc	"ANDCC #", '@'+$80	; $1C=ANDCC #
 	.asc	"SE", 'X'+$80		; $1D=SEX
-	.asc	"EXG {", 10+$80		; $1E=EXG...
-	.asc	"TFR {", 10+$80		; $1F=TFR...
+	.asc	"EXG {", 8+$80		; $1E=EXG...
+	.asc	"TFR {", 8+$80		; $1F=TFR...
 
 	.asc	"BRA ", '%'+$80		; $20=BRA rel
 	.asc	"BRN ", '%'+$80		; $21=BRN rel
@@ -72,10 +73,10 @@ mc6809_std:
 	.asc	"LEAY {", 6+$80		; $31=LEAY idx
 	.asc	"LEAS {", 6+$80		; $32=LEAS idx
 	.asc	"LEAU {", 6+$80		; $33=LEAU idx
-	.asc	"PSHS {", 8+$80		; $34=PSHS...
-	.asc	"PULS {", 8+$80		; $35=PULS...
-	.asc	"PSHU {", 8+$80		; $36=PSHU...
-	.asc	"PULU {", 8+$80		; $37=PULU...
+	.asc	"PSHS #", '@'+$80	; $34=PSHS #
+	.asc	"PULS #", '@'+$80	; $35=PULS #
+	.asc	"PSHU #", '@'+$80	; $36=PSHU #
+	.asc	"PULU #", '@'+$80	; $37=PULU #
 	.asc	'?'+$80				; $38=?
 	.asc	"RT", 'S'+$80		; $39=RTS
 	.asc	"AB", 'X'+$80		; $3A=ABX
@@ -397,10 +398,6 @@ mc6809_11:
 
 	.dsb	67, '?'+$80			; filler $BD-FF
 
-; ******************************************************************
-; *** should include some strings for the substitution postbytes ***
-; ******************************************************************
-
 ; **************************************
 ; *** brute force indexed post bytes ***
 ; **************************************
@@ -677,45 +674,8 @@ mc6809_idx:
 	.asc	'?'+$80				; %11101110 ILLEGAL
 	.asc	"[&", ']'+$80		; %11111111 = [nn] ? ?
 
-; ***************************************
-; *** brute force stackops post bytes ***
-; ***************************************
-mc6809_sp:
-; think about simply using an immediate parameter...
-	.asc	'?'+$80				; %00000000	ILLEGAL
-	.asc	"C", 'C'+$80		; %00000001 = CC
-	.asc	'A'+$80				; %00000010 = A
-	.asc	"A, C", 'C'+$80		; %00000011 = A,CC
-	.asc	'B'+$80				; %00000100 = B
-	.asc	"B, C", 'C'+$80		; %00000101 = B,CC
-	.asc	"B, ", 'A'+$80		; %00000110 = B,A
-	.asc	"B, A, C", 'C'+$80	; %00000111 = B,A,CC
-	.asc	"D", 'P'+$80		; %00001000 = DP
-	.asc	"DP, C", 'C'+$80	; %00001001 = DP,CC
-	.asc	"DP, ", 'A'+$80		; %00001010 = DP,A
-	.asc	"DP, A, C", 'C'+$80	; %00001011 = DP,A,CC
-	.asc	"DP, ", 'B'+$80		; %00001100 = DP,B
-	.asc	"DP, B, C", 'C'+$80	; %00001101 = DP,B,CC
-	.asc	"DP, B, ", 'A'+$80	; %00001110 = DP,B,A
-	.asc	"DP, B, A, C", 'C'+$80	; %00001111 = DP,B,A,CC
 
-	.asc	'X'+$80				; %00010000 = X
-	.asc	"X, C", 'C'+$80		; %00010001 = X,CC
-	.asc	"X, ", 'A'+$80		; %00010010 = X,A
-	.asc	"X, A, C", 'C'+$80	; %00010011 = X,A,CC
-	.asc	"X, ", 'B'+$80		; %00010100 = X,B
-	.asc	"X, B, C", 'C'+$80	; %00010101 = X,B,CC
-	.asc	"X, B, ", 'A'+$80	; %00010110 = X,B,A
-	.asc	"X, B, A, C", 'C'+$80	; %00010111 = X,B,A,CC
-	.asc	"X, D", 'P'+$80		; %00011000 = X,DP
-	.asc	"X, DP, C", 'C'+$80	; %00011001 = X,DP,CC
-	.asc	"X, DP, ", 'A'+$80	; %00011010 = X,DP,A
-	.asc	"X, DP, A, C", 'C'+$80	; %00011011 = X,DP,A,CC
-	.asc	"X, DP, ", 'B'+$80	; %00011100 = X,DP,B
-	.asc	"X, DP, B, C", 'C'+$80	; %00011101 = X,DP,B,CC
-	.asc	"X, DP, B, ", 'A'+$80	; %00011110 = X,DP,B,A
-	.asc	"X,DP,B,A,C", 'C'+$80	; %00011111 = X,DP,B,A,CC
-
+; *** no longer brute force for stackops ***
 
 
 ; *******************************************
