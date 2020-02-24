@@ -1,276 +1,110 @@
-4 pull
-5 log
-10 status
-16 commit
-17 push
-18 log
-20 status
-21 commit
-26 status
-27 commit
-28 log
-29 push
-31 pull
-32 log
-38 pull
-44 status
-45 commit
-46 status
-47 log
-48 push
-50 pull
-51 diff
-52 log
-54 pull
-55 log
-57 pull
-62 add
-63 commit
-64 push
-66 pull
-67 log
-71 status
-75 status
-76 add
-77 commit
-78 push
-80 pull
-81 tag
-82 branch
-83 log
-85 pull
-86 log
-89 commit
-91 commit
-92 log
-93 push
-94 log
-98 status
-99 commit
-100 push
-101 log
-103 pull
-106 status
-107 diff
-109 commit
-110 log
-113 diff
-114 commit
-115 log
-116 push
-121 pull
-122 log
-127 status
-128 commit
-129 push
-131 pull
-135 commit
-136 push
-138 pull
-139 log
-143 status
-144 commit
-145 push
-147 pull
-148 log
-150 commit
-151 push
-153 pull
-154 help
-155 help
-156 log
-159 pull
-160 log
-162 pull
-163 log
-176 status
-177 commit
-178 log
-179 push
-181 pull
-182 log
-185 pull
-186 log
-191 status
-192 commit
-193 commit
-194 push
-196 pull
-198 oull
-199 pull
-200 log
-203 pull
-205 commit
-206 log
-207 push
-209 pull
-210 log
-217 commit
-218 puab
-219 push
-221 commit
-222 push
-224 pull
-227 commit
-228 push
-230 pull
-231 log
-233 commit
-234 log
-235 push
-237 pull
-240 log
-241 status
-242 commit
-243 log
-244 push
-246 pull
-248 commit
-249 push
-251 pull
-253 commit
-254 log
-256 commit
-257 log
-258 push
-261 commit
-262 push
-264 pull
-266 status
-267 commit
-268 push
-270 pjll
-271 pull
-273 commit
-274 log
-275 push
-277 pull
-278 log
-283 commit
-284 push
-286 commit
-287 push
-288 log
-291 pull
-293 commit
-294 push
-296 log
-298 commit
-299 log
-300 push
-302 pull
-303 log
-305 commit
-306 push
-308 pull
-310 pull
-312 pull
-313 log
-317 status
-318 commit
-319 push
-321 pull
-322 log
-324 commit
-325 push
-327 phll
-328 pull
-329 log
-333 statua
-334 status
-335 commit
-336 push
-338 pull
-339 log
-342 pull
-343 log
-349 status
-350 add
-351 status
-352 commit
-353 push
-355 status
-356 commit
-357 pusb
-358 pusb
-359 push
-361 log
-364 commit
-365 push
-367 commit
-368 push
-370 commit
-371 push
-373 commit
-374 push
-376 commit
-377 push
-380 commit
-381 push
-384 commit
-385 push
-387 commit
-388 push
-390 commit
-391 push
-393 commit
-394 push
-396 commit
-397 log
-399 status
-400 commit
-401 log
-402 pusn
-403 push
-405 pull
-406 log
-408 commit
-409 log
-410 push
-412 commit
-413 log
-414 push
-417 commit
-418 push
-420 pull
-421 log
-423 pull
-424 log
-427 pull
-429 commit
-430 push
-432 pull
-433 log
-435 commit
-436 push
-438 pull
-439 log
-440 log
-445 commit
-446 push
-448 pull
-452 diff
-453 commit
-459 status
-460 add
-461 commit
-462 log
-466 diff
-468 commit
-469 status
-470 log
-471 push
-473 log
-477 commit
-483 status
-484 add
-485 status
-486 commit
-487 log
-488 push
-490 pull
-491 log
-493 commit
-495 push
-499 commit
-500 push
+minimOS version history
+(c) 2012-2013 Carlos J. Santisteban
+
+0.1a1 (2007-02-03):
+	-ran (rather buggy!) on a 6502 emulator written in C.
+	-cout and string only (!) 
+	-supports 6845 VDU and 6551 ACIA
+	-hardwired slots (VDU, RAM, NuBus...)
+	-debugger stub
+
+0.1.a2 (2007-03-13, incomplete):
+	-revamped zeropage & I/O area
+	-UART 16C550 instead of ACIA 6551
+	-intended support for RTC MC146818 and Hitachi LCD
+	-detects CPU type (NMOS, CMOS, Rockwell, C816)
+
+0.2: complete rewrite for "less hardwired" slots; never assembled
+
+0.3: design stage of a much more flexible architecture, hardly any coding
+
+***THE REAL THING***
+
+0.4a1 (2012-11-19):
+	-Preliminary API, 11 kernel functions
+	-EXTREMELY KLUDGY memory management...
+
+0.4a2 (2012-12-05):
+	-modular coding (#includes et al)
+	-added 3 kernel functions (su_peek, su_poke, string)
+	-supports LED keypad; intended support for LCD and ACIA
+
+0.4a3 (2012-12-26)
+	-NEW KERNEL CALL ADDRESS, doesn't need over 8 kiB
+	-SEPARATE device drivers: LED keypad so far, dummy driver for others
+	-drivers have 5 routines: reset, poll, request, input, output
+		poll = called by periodical interrupt (VIA timer 1)
+		request = called by device-generated IRQ (should check source)
+
+0.4b1 (2012-12-26)
+	-Assembled for SDd (untested so far)
+0.4b2 (2013-02-19)
+	-New API for disabling/enabling interrupts
+	-New API for frequency generator, ø2/(2n)
+	-drivers have now 9 routines -- add 1-sec interrupt, block I/O and shutdown procedure to those above (a3)
+	-offset 18 @ driver header has authorization code about driver capabilities:
+		D7 = poll (may need to be authorized by future kernel versions)
+		D6 = request (id.)
+		D5 = input capable
+		D4 = output capable
+		D3 = 1-sec. interrupt (may be authorized)
+		D2 = block-input capable
+		D1 = block-output capable
+		D0 = relocatable / loadable on-the-fly (not yet implemented)
+	-sorted out preprocessor issues... :-(
+		*NO comments after #defines
+		*macros with colons shouldn't be written inside comments (!)
+	-not really necessary, but changed all constants to Hex, name beginning with underscore
+	-Assembled for SDd with LED-keypad driver only, NMOS version available
+	-Some (future) support for MTE, SDx and stub driver for SS-22 port!
+
+0.4b3 (2013-05-04)
+	-Essentially a debug release
+	-ISR finally acknowledges VIA-T1 interrupt!!!
+	-Minor fixes in LED Keypad driver
+	-Some builds with debug code for hex display
+	-Among other things, RAM check algorithm was faulty
+
+0.4b4b (2013-05-05) ***** FIRST SUCCESSFUL BOOT!!! *****
+	-Built for SDd CMOS
+	-Debug driver for Hex display
+	-New, faster RAM check algorithm
+
+0.4b4LK4 (2013-05-12)
+	-Based on 0.4b4b
+	-Complete rewrite of LED Keypad driver, with single byte FIFO
+	-Typing program at the end of POST, only to demonstrate
+	-Dirty NMI "debugger"
+
+0.4rc (2013-05-21)
+	-Final release of 0.4 version
+	-Fixed LED keypad driver: made spurious keystroke at powerup
+	-Minor cosmetic changes
+	-Separate "shell.s" file included after POST
+
+====================================================
+
+0.4.1 TO DO:
+	-uptime() API in ticks + 24-bit seconds
+	-Generic FIFO
+	-Driver for ASCII keyboard + Hitachi LCD
+	-Droplet-like startup sound!
+	-User-installed NMI routine, with 'magic number' for safety
+	-Tidy up exec() even without filesystem
+	-Possible modification of SDd in order to use ACIA; finish appropriate driver
+	-Driver for SS-22 port
+	-Boot from SS-22 "server"!
+	-Possible new naming convention
+	-Fix remaining bug on LED keypad driver when more than three dots go...
+
+	-0.4.x will become a single-task fork of 0.5 and beyond.
+=================================================
+0.5 to do:
+
+All of the obove plus:
+	-software multitasking (4 jobs)
+	-separate firmware and modules
+	-possible "netbooting" via ACIA instead of SS-22 (separate, simplified FW drivers)
+	-hardware options described in options.h for easier porting
+	-improved memory management
+
