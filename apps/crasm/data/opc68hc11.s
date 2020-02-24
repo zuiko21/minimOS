@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200210-1734
+; last modified 20200224-1039
 
 ; ***** for MC68HC11 cross assembler *****
 ; Opcode list as bit-7 terminated strings
@@ -12,8 +12,8 @@
 hc11_std:
 	.asc	"TES", 'T'+$80			; $00=TEST (for test mode)
 	.asc	"NO", 'P'+$80			; $01=NOP
-	.asc	"IDI", 'V'+$80			; $02=IDIV			HC11
-	.asc	"FDI", 'V'+$80			; $03=FDIV			HC11
+	.asc	"IDI", 'V'+$80			; $02=IDIV				HC11
+	.asc	"FDI", 'V'+$80			; $03=FDIV				HC11
 	.asc	"LSR", 'D'+$80			; $04=LSRD
 	.asc	"ASL", 'D'+$80			; $05=ASLD
 	.asc	"TA", 'P'+$80			; $06=TAP
@@ -29,20 +29,20 @@ hc11_std:
 
 	.asc	"SB", 'A'+$80			; $10=SBA
 	.asc	"CB", 'A'+$80			; $11=CBA
-	.asc	"BRSET @, #@, ",'%'+$80	; $12=BRSET dir #mask rel	HC11
-	.asc	"BRCLR @, #@, ",'%'+$80	; $13=BRCLR dir #mask rel	HC11
-	.asc	"BSET @, #",'@'+$80		; $14=BSET dir #mask		HC11
-	.asc	"BCLR @, #",'@'+$80		; $15=BCLR dir #mask		HC11
+	.asc	"BRSET @, #@, ",'%'+$80	; $12=BRSET dir # rel	HC11
+	.asc	"BRCLR @, #@, ",'%'+$80	; $13=BRCLR dir # rel	HC11
+	.asc	"BSET @, #",'@'+$80		; $14=BSET dir #		HC11
+	.asc	"BCLR @, #",'@'+$80		; $15=BCLR dir #		HC11
 	.asc	"TA", 'B'+$80			; $16=TAB
 	.asc	"TB", 'A'+$80			; $17=TBA
-	.asc	"{", 2+$80				; $18	**IY prefix** was XGDX on HD6301
+	.asc	"{", 2+$80				; $18					**IY prefix** was XGDX on HD6301
 	.asc	"DA", 'A'+$80			; $19=DAA
-	.asc	"{", 4+$80				; $1A	**Y ind IX** was SLP on HD6301
+	.asc	"{", 4+$80				; $1A					**Y ind IX** was SLP on HD6301
 	.asc	"AB", 'A'+$80			; $1B=ABA
-	.asc	"BSET @,X #",'@'+$80	; $1C=BSET idx #mask		HC11
-	.asc	"BCLR @,X #",'@'+$80	; $1D=BCLR idx #mask		HC11
-	.asc	"BRSET @,X #@,",'%'+$80	; $1E=BRSET idx #mask rel	HC11
-	.asc	"BRCLR @,X #@,",'%'+$80	; $1F=BRCLR idx #mask rel	HC11
+	.asc	"BSET @,X #",'@'+$80	; $1C=BSET idx #		HC11
+	.asc	"BCLR @,X #",'@'+$80	; $1D=BCLR idx #		HC11
+	.asc	"BRSET @,X #@,",'%'+$80	; $1E=BRSET idx # rel	HC11
+	.asc	"BRCLR @,X #@,",'%'+$80	; $1F=BRCLR idx # rel	HC11
 
 	.asc	"BRA ", '%'+$80			; $20=BRA rel
 	.asc	"BRN ", '%'+$80			; $21=BRN rel
@@ -79,68 +79,68 @@ hc11_std:
 	.asc	"SW", 'I'+$80			; $3F=SWI
 
 	.asc	"NEG ", 'A'+$80			; $40=NEG A
-	.asc	'?'+$80					; $41			ILLEGAL
-	.asc	'?'+$80					; $42			ILLEGAL
+	.asc	'?'+$80					; $41					ILLEGAL
+	.asc	'?'+$80					; $42					ILLEGAL
 	.asc	"COM ", 'A'+$80			; $43=COM A
 	.asc	"LSR ", 'A'+$80			; $44=LSR A
-	.asc	'?'+$80					; $45			ILLEGAL
+	.asc	'?'+$80					; $45					ILLEGAL
 	.asc	"ROR ", 'A'+$80			; $46=ROR A
 	.asc	"ASR ", 'A'+$80			; $47=ASR A
 	.asc	"ASL ", 'A'+$80			; $48=ASL A
 	.asc	"ROL ", 'A'+$80			; $49=ROL A
 	.asc	"DEC ", 'A'+$80			; $4A=DEC A
-	.asc	'?'+$80					; $4B			ILLEGAL
+	.asc	'?'+$80					; $4B					ILLEGAL
 	.asc	"INC ", 'A'+$80			; $4C=INC A
 	.asc	"TST ", 'A'+$80			; $4D=TST A
-	.asc	'?'+$80					; $4E			ILLEGAL
+	.asc	'?'+$80					; $4E					ILLEGAL
 	.asc	"CLR ", 'A'+$80			; $4F=CLR A
 
 	.asc	"NEG ", 'B'+$80			; $50=NEG B
-	.asc	'?'+$80					; $51			ILLEGAL
-	.asc	'?'+$80					; $52			ILLEGAL
+	.asc	'?'+$80					; $51					ILLEGAL
+	.asc	'?'+$80					; $52					ILLEGAL
 	.asc	"COM ", 'B'+$80			; $53=COM B
 	.asc	"LSR ", 'B'+$80			; $54=LSR B
-	.asc	'?'+$80					; $55			ILLEGAL
+	.asc	'?'+$80					; $55					ILLEGAL
 	.asc	"ROR ", 'B'+$80			; $56=ROR B
 	.asc	"ASR ", 'B'+$80			; $57=ASR B
 	.asc	"ASL ", 'B'+$80			; $58=ASL B
 	.asc	"ROL ", 'B'+$80			; $59=ROL B
 	.asc	"DEC ", 'B'+$80			; $5A=DEC B
-	.asc	'?'+$80					; $5B			ILLEGAL
+	.asc	'?'+$80					; $5B					ILLEGAL
 	.asc	"INC ", 'B'+$80			; $5C=INC B
 	.asc	"TST ", 'B'+$80			; $5D=TST B
-	.asc	'?'+$80					; $5E			ILLEGAL
+	.asc	'?'+$80					; $5E					ILLEGAL
 	.asc	"CLR ", 'B'+$80			; $5F=CLR B
 
 	.asc	"NEG @, ", 'X'+$80		; $60=NEG idx
-	.asc	'?'+$80					; $61			ILLEGAL
-	.asc	'?'+$80					; $62			ILLEGAL
+	.asc	'?'+$80					; $61					ILLEGAL
+	.asc	'?'+$80					; $62					ILLEGAL
 	.asc	"COM @, ", 'X'+$80		; $63=COM idx
 	.asc	"LSR @, ", 'X'+$80		; $64=LSR idx
-	.asc	'?'+$80					; $65			ILLEGAL
+	.asc	'?'+$80					; $65					ILLEGAL
 	.asc	"ROR @, ", 'X'+$80		; $66=ROR idx
 	.asc	"ASR @, ", 'X'+$80		; $67=ASR idx
 	.asc	"ASL @, ", 'X'+$80		; $68=ASL idx
 	.asc	"ROL @, ", 'X'+$80		; $69=ROL idx
 	.asc	"DEC @, ", 'X'+$80		; $6A=DEC idx
-	.asc	'?'+$80					; $6B			ILLEGAL
+	.asc	'?'+$80					; $6B					ILLEGAL
 	.asc	"INC @, ", 'X'+$80		; $6C=INC idx
 	.asc	"TST @, ", 'X'+$80		; $6D=TST idx
 	.asc	"JMP @, ", 'X'+$80		; $6E=JMP idx
 	.asc	"CLR @, ", 'X'+$80		; $6F=CLR idx
 
 	.asc	"NEG ", '&'+$80			; $70=NEG ext
-	.asc	'?'+$80					; $71			ILLEGAL
-	.asc	'?'+$80					; $72			ILLEGAL
+	.asc	'?'+$80					; $71					ILLEGAL
+	.asc	'?'+$80					; $72					ILLEGAL
 	.asc	"COM ", '&'+$80			; $73=COM ext
 	.asc	"LSR ", '&'+$80			; $74=LSR ext
-	.asc	'?'+$80					; $75			ILLEGAL
+	.asc	'?'+$80					; $75					ILLEGAL
 	.asc	"ROR ", '&'+$80			; $76=ROR ext
 	.asc	"ASR ", '&'+$80			; $77=ASR ext
 	.asc	"ASL ", '&'+$80			; $78=ASL ext
 	.asc	"ROL ", '&'+$80			; $79=ROL ext
 	.asc	"DEC ", '&'+$80			; $7A=DEC ext
-	.asc	'?'+$80					; $7B			ILLEGAL
+	.asc	'?'+$80					; $7B					ILLEGAL
 	.asc	"INC ", '&'+$80			; $7C=INC ext
 	.asc	"TST ", '&'+$80			; $7D=TST ext
 	.asc	"JMP ", '&'+$80			; $7E=JMP ext
@@ -153,7 +153,7 @@ hc11_std:
 	.asc	"AND A #", '@'+$80		; $84=AND A #
 	.asc	"BIT A #", '@'+$80		; $85=BIT A #
 	.asc	"LDA A #", '@'+$80		; $86=LDA A #
-	.asc	'?'+$80					; $87			ILLEGAL
+	.asc	'?'+$80					; $87					ILLEGAL
 	.asc	"EOR A #", '@'+$80		; $88=EOR A #
 	.asc	"ADC A #", '@'+$80		; $89=ADC A #
 	.asc	"ORA A #", '@'+$80		; $8A=ORA A #
@@ -161,7 +161,7 @@ hc11_std:
 	.asc	"CPX # ", '&'+$80		; $8C=CPX #
 	.asc	"BSR ", '%'+$80			; $8D=BSR rel
 	.asc	"LDS #", '&'+$80		; $8E=LDS #
-	.asc	"XGD", 'X'+$80			; $8F=XGDX (unlike HD6301)	HC11
+	.asc	"XGD", 'X'+$80			; $8F=XGDX (vs HD6301)	HC11
 
 	.asc	"SUB A ", '@'+$80		; $90=SUB A dir
 	.asc	"CMP A ", '@'+$80		; $91=CMP A dir
@@ -221,15 +221,15 @@ hc11_std:
 	.asc	"AND B #", '@'+$80		; $C4=AND B #
 	.asc	"BIT B #", '@'+$80		; $C5=BIT B #
 	.asc	"LDA B #", '@'+$80		; $C6=LDA B #
-	.asc	'?'+$80					; $C7			ILLEGAL
+	.asc	'?'+$80					; $C7					ILLEGAL
 	.asc	"EOR B #", '@'+$80	 	; $C8=EOR B #
 	.asc	"ADC B #", '@'+$80		; $C9=ADC B #
 	.asc	"ORA B #", '@'+$80		; $CA=ORA B #
 	.asc	"ADD B #", '@'+$80		; $CB=ADD B #
 	.asc	"LDD #", '&'+$80		; $CC=LDD #
-	.asc	"{", 4+$80				; $CD	**X ind IY prefix**
+	.asc	"{", 4+$80				; $CD					**X ind IY prefix**
 	.asc	"LDX #", '&'+$80		; $CE=LDX #
-	.asc	"STO", 'P'+$80			; $CF=STOP			HC11
+	.asc	"STO", 'P'+$80			; $CF=STOP				HC11
 
 	.asc	"SUB B ", '@'+$80		; $D0=SUB B dir
 	.asc	"CMP B ", '@'+$80		; $D1=CMP B dir
@@ -293,10 +293,10 @@ hc11_18:
 
 	.dsb	18, '?'+$80				; $180A-181B filler
 
-	.asc	"BSET @,Y #",'@'+$80	; $181C=BSET idy #mask		HC11
-	.asc	"BCLR @,Y #",'@'+$80	; $181D=BCLR idy #mask		HC11
-	.asc	"BRSET @,Y #@,",'%'+$80	; $181E=BRSET idy #mask rel	HC11
-	.asc	"BRCLR @,Y #@,",'%'+$80	; $181F=BRCLR idy #mask rel	HC11
+	.asc	"BSET @,Y #",'@'+$80	; $181C=BSET idy #		HC11
+	.asc	"BCLR @,Y #",'@'+$80	; $181D=BCLR idy #		HC11
+	.asc	"BRSET @,Y #@,",'%'+$80	; $181E=BRSET idy # rel	HC11
+	.asc	"BRCLR @,Y #@,",'%'+$80	; $181F=BRCLR idy # rel	HC11
 
 	.dsb	16, '?'+$80				; $1820-182F filler
 
@@ -305,9 +305,9 @@ hc11_18:
 	.asc	"TY", 'S'+$80			; $1835=TYS
 	.dsb	2, '?'+$80				; $1836-1837 filler
 	.asc	"PUL", 'Y'+$80			; $1838=PULY
-	.asc	'?'+$80					; $1839			ILLEGAL
+	.asc	'?'+$80					; $1839					ILLEGAL
 	.asc	"AB", 'Y'+$80			; $183A=ABY
-	.asc	'?'+$80					; $183B			ILLEGAL
+	.asc	'?'+$80					; $183B					ILLEGAL
 	.asc	"PSH", 'Y'+$80			; $183C=PSHY
 	.dsb	35, '?'+$80				; $183D-185F filler
 
@@ -315,13 +315,13 @@ hc11_18:
 	.dsb	2, '?'+$80				; $1861-1862 filler
 	.asc	"COM @, ", 'Y'+$80		; $1863=COM idy
 	.asc	"LSR @, ", 'Y'+$80		; $1864=LSR idy
-	.asc	'?'+$80					; $1865			ILLEGAL
+	.asc	'?'+$80					; $1865					ILLEGAL
 	.asc	"ROR @, ", 'Y'+$80		; $1866=ROR idy
 	.asc	"ASR @, ", 'Y'+$80		; $1867=ASR idy
 	.asc	"ASL @, ", 'Y'+$80		; $1868=ASL idy
 	.asc	"ROL @, ", 'Y'+$80		; $1869=ROL idy
 	.asc	"DEC @, ", 'Y'+$80		; $186A=DEC idy
-	.asc	'?'+$80					; $186B			ILLEGAL
+	.asc	'?'+$80					; $186B					ILLEGAL
 	.asc	"INC @, ", 'Y'+$80		; $186C=INC idy
 	.asc	"TST @, ", 'Y'+$80		; $186D=TST idy
 	.asc	"JMP @, ", 'Y'+$80		; $186E=JMP idy
