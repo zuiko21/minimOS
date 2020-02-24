@@ -68,7 +68,7 @@
 	.asc	"MVI M, ", '@'+$80	; $36=MVI M
 	.asc	"ST", 'C'+$80		; $37=STC
 	.asc	"? ", '@'+$80		; $38=*LDSI		UNDOCUMENTED!
-	.asc	"DAD S", 'P'+$80		; $39=DAD SP
+	.asc	"DAD S", 'P'+$80	; $39=DAD SP
 	.asc	"LDA ", '&'+$80		; $3A=LDA
 	.asc	"DCX S", 'P'+$80	; $3B=DCX SP
 	.asc	"INR ", 'A'+$80		; $3C=INR A
