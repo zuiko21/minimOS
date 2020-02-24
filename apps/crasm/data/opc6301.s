@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200212-1219
+; last modified 20200224-1041
 
 ; ***** for 68asm MC6800 cross assembler *****
 ; Hitachi 6301/6303 set
@@ -12,8 +12,8 @@
 	.asc	"NO", 'P'+$80		; $01=NOP
 	.asc	'?'+$80				; $02=?
 	.asc	'?'+$80				; $03=?
-	.asc	"LSR", 'D'+$80		; $04=LSRD	MC6801
-	.asc	"ASL", 'D'+$80		; $05=ASLD	MC6801
+	.asc	"LSR", 'D'+$80		; $04=LSRD		MC6801
+	.asc	"ASL", 'D'+$80		; $05=ASLD		MC6801
 	.asc	"TA", 'P'+$80		; $06=TAP
 	.asc	"TP", 'A'+$80		; $07=TPA
 	.asc	"IN", 'X'+$80		; $08=INX
@@ -29,13 +29,13 @@
 	.asc	"CB", 'A'+$80		; $11=CBA
 	.asc	'?'+$80				; $12=?
 	.asc	'?'+$80				; $13=?
-	.asc	"?NB", 'A'+$80		; $14=NBA	UNDOCUMENTED!
+	.asc	"?NB", 'A'+$80		; $14=NBA		UNDOCUMENTED!
 	.asc	'?'+$80				; $15=?
 	.asc	"TA", 'B'+$80		; $16=TAB
 	.asc	"TB", 'A'+$80		; $17=TBA
-	.asc	"XGD", 'X'+$80		; $18=XGDX	HD6301
+	.asc	"XGD", 'X'+$80		; $18=XGDX		HD6301, unlike HC11
 	.asc	"DA", 'A'+$80		; $19=DAA
-	.asc	"SL", 'P'+$80		; $1A=SLP	HD6301
+	.asc	"SL", 'P'+$80		; $1A=SLP		HD6301
 	.asc	"AB", 'A'+$80		; $1B=ABA
 	.asc	'?'+$80				; $1C=?
 	.asc	'?'+$80				; $1D=?
@@ -67,12 +67,12 @@
 	.asc	"TX", 'S'+$80		; $35=TXS
 	.asc	"PSH ", 'A'+$80		; $36=PSH A
 	.asc	"PSH ", 'B'+$80		; $37=PSH B
-	.asc	"PUL", 'X'+$80		; $38=PULX	MC6801
+	.asc	"PUL", 'X'+$80		; $38=PULX		MC6801
 	.asc	"RT", 'S'+$80		; $39=RTS
-	.asc	"AB", 'X'+$80		; $3A=ABX	MC6801
+	.asc	"AB", 'X'+$80		; $3A=ABX		MC6801
 	.asc	"RT", 'I'+$80		; $3B=RTI
-	.asc	"PSH", 'X'+$80		; $3C=PSHX	MC6801
-	.asc	"MU", 'L'+$80		; $3D=MUL	MC6801
+	.asc	"PSH", 'X'+$80		; $3C=PSHX		MC6801
+	.asc	"MU", 'L'+$80		; $3D=MUL		MC6801
 	.asc	"WA", 'I'+$80		; $3E=WAI
 	.asc	"SW", 'I'+$80		; $3F=SWI
 
@@ -90,7 +90,7 @@
 	.asc	'?'+$80				; $4B=?
 	.asc	"INC ", 'A'+$80		; $4C=INC A
 	.asc	"TST ", 'A'+$80		; $4D=TST A
-	.asc	"?TES", 'T'+$80		; $4E=TEST	UNDOCUMENTED!
+	.asc	"?TES", 'T'+$80		; $4E=TEST		UNDOCUMENTED!
 	.asc	"CLR ", 'A'+$80		; $4F=CLR A
 
 	.asc	"NEG ", 'B'+$80		; $50=NEG B
@@ -107,7 +107,7 @@
 	.asc	'?'+$80				; $5B=?
 	.asc	"INC ", 'B'+$80		; $5C=INC B
 	.asc	"TST ", 'B'+$80		; $5D=TST B
-	.asc	"?TES", 'T'+$80		; $5E=TEST	UNDOCUMENTED!
+	.asc	"?TES", 'T'+$80		; $5E=TEST		UNDOCUMENTED!
 	.asc	"CLR ", 'B'+$80		; $5F=CLR B
 
 	.asc	"NEG @, ", 'X'+$80	; $60=NEG idx
@@ -224,7 +224,7 @@
 	.asc	"ADC B #", '@'+$80	; $C9=ADC B #
 	.asc	"ORA B #", '@'+$80	; $CA=ORA B #
 	.asc	"ADD B #", '@'+$80	; $CB=ADD B #
-	.asc	"LDD #", '&'+$80	; $CC=LDD #	MC6801
+	.asc	"LDD #", '&'+$80	; $CC=LDD #		MC6801
 	.asc	'?'+$80				; $CD=?
 	.asc	"LDX #", '&'+$80	; $CE=LDX #
 	.asc	'?'+$80				; $CF=?
