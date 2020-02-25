@@ -1,6 +1,6 @@
 /* opcode list reader for minimOS crasm package
  * (c) 2020 Carlos J. Santisteban
- * last modified 20200225-0915
+ * last modified 20200225-1037
  * */
 
 #include <stdio.h>
@@ -18,6 +18,7 @@ int main(void) {
 		printf("$0: ");
 		while(!feof(f)) {
 			c=getc(f);
+			if (c==255)		break;
 			if (c!='{') {
 				printf("%c", c&127);
 			}

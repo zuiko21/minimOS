@@ -353,7 +353,7 @@ hc11_18:
 	.asc	"LDS @, ", 'Y'+$80		; $18AE=LDS A idy
 	.asc	"STS @, ", 'Y'+$80		; $18AF=STS A idy
 
-	.dsb	12, '?'+$80				; $18B0-18BB iller
+	.dsb	12, '?'+$80				; $18B0-18BB filler
 	.asc	"CPY ", '&'+$80			; $18BC=CPY ext
 
 	.dsb	17, '?'+$80				; $18BD-18CD filler
@@ -409,7 +409,7 @@ hc11_1a:
 
 	.asc	"CPD ", '&'+$80			; $1AB3=CPD ext
 
-	.dsb	26, '?'+$80				; $1AB4-1AED filler
+	.dsb	58, '?'+$80				; $1AB4-1AED filler
 
 	.asc	"LDY @, ", 'X'+$80		; $1AEE=LDY idx
 	.asc	"STY @, ", 'X'+$80		; $1AEF=STY idx
