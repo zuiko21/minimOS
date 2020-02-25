@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200224-1039
+; last modified 20200225-1041
 
 ; ***** for MC68HC11 cross assembler *****
 ; Opcode list as bit-7 terminated strings
@@ -328,7 +328,7 @@ hc11_18:
 	.asc	"CLR @, ", 'Y'+$80		; $186F=CLR idy
 
 	.dsb	28, '?'+$80				; $1870-188B filler
-	.asc	"CPY # ", '&'+$80		; $188C=CPY #
+	.asc	"CPY #", '&'+$80		; $188C=CPY #
 	.dsb	2, '?'+$80				; $188D-188E filler
 	.asc	"XGD", 'Y'+$80			; $188F=XGDY
 
