@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200225-1026
+; last modified 20200225-1106
 
 ; ***** for z80asm Z80 cross assembler *****
 ; *** DOCUMENTED opcodes only ***
@@ -584,25 +584,25 @@ z80_dd:
 	.asc	"INC (IX+@",')'+$80	; $DD $34=INC (IX+)
 	.asc	"DEC (IX+@",')'+$80	; $DD $35=DEC (IX+)
 	.asc	"LD (IX+@), ", $C0	; $DD $36=LD (IX+),*	$C0 was '@'+$80
-	.asc	2, '?'+$80			; $DD37 ... $DD38 filler
+	.dsb	2, '?'+$80			; $DD37 ... $DD38 filler
 	.asc	"ADD IX, S",'P'+$80	; $DD $39=ADD IX,SP
 
-	.asc	12, '?'+$80			; $DD3A ... $DD45 filler
+	.dsb	12, '?'+$80			; $DD3A ... $DD45 filler
 
 	.asc	"LD B, (IX+@", $A9	; $DD $46=LD B,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DD47 ... $DD4D filler
+	.dsb	7, '?'+$80			; $DD47 ... $DD4D filler
 	.asc	"LD C, (IX+@", $A9	; $DD $4E=LD C,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DD4F ... $DD55 filler
+	.dsb	7, '?'+$80			; $DD4F ... $DD55 filler
 
 	.asc	"LD D, (IX+@", $A9	; $DD $56=LD D,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DD57 ... $DD5D filler
+	.dsb	7, '?'+$80			; $DD57 ... $DD5D filler
 	.asc	"LD E, (IX+@", $A9	; $DD $5E=LD E,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DD5F ... $DD65 filler
+	.dsb	7, '?'+$80			; $DD5F ... $DD65 filler
 
 	.asc	"LD H, (IX+@", $A9	; $DD $66=LD H,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DD67 ... $DD6D filler
+	.dsb	7, '?'+$80			; $DD67 ... $DD6D filler
 	.asc	"LD L, (IX+@", $A9	; $DD $6E=LD L,(IX+)	$A9 was ')'+$80
 	.asc	'?'+$80				; $DD $6F
 
@@ -614,51 +614,51 @@ z80_dd:
 	.asc	"LD (IX+@),", $CC	; $DD $75=LD (IX+),L	$CC was 'L'+$80
 	.asc	'?'+$80				; $DD $76
 	.asc	"LD (IX+@),", $C1	; $DD $77=LD (IX+),A	$C1 was 'A'+$80
-	.asc	6, '?'+$80			; $DD78 ... $DD7D filler
+	.dsb	6, '?'+$80			; $DD78 ... $DD7D filler
 	.asc	"LD A, (IX+@", $A9	; $DD $7E=LD A,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DD7F ... $DD85 filler
+	.dsb	7, '?'+$80			; $DD7F ... $DD85 filler
 
 	.asc	"ADD A, (IX+@", $A9	; $DD $86=ADD A,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DD87 ... $DD8D filler
+	.dsb	7, '?'+$80			; $DD87 ... $DD8D filler
 	.asc	"ADC A, (IX+@", $A9	; $DD $8E=ADC A,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DD8F ... $DD95 filler
+	.dsb	7, '?'+$80			; $DD8F ... $DD95 filler
 
 	.asc	"SUB (IX+@",')'+$80	; $DD $96=SUB (IX+)
-	.asc	7, '?'+$80			; $DD97 ... $DD9D filler
+	.dsb	7, '?'+$80			; $DD97 ... $DD9D filler
 	.asc	"SBC A, (IX+@", $A9	; $DD $9E=SBC A,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DD9F ... $DDA5 filler
+	.dsb	7, '?'+$80			; $DD9F ... $DDA5 filler
 
 	.asc	"AND (IX+@",')'+$80	; $DD $A6=AND (IX+)
-	.asc	7, '?'+$80			; $DDA7 ... $DDAD filler
+	.dsb	7, '?'+$80			; $DDA7 ... $DDAD filler
 	.asc	"XOR (IX+@",')'+$80	; $DD $AE=XOR (IX+)
 
-	.asc	7, '?'+$80			; $DDAF ... $DDB5 filler
+	.dsb	7, '?'+$80			; $DDAF ... $DDB5 filler
 
 	.asc	"OR (IX+@",')'+$80	; $DD $B6=OR (IX+)
-	.asc	7, '?'+$80			; $DDB7 ... $DDBD filler
+	.dsb	7, '?'+$80			; $DDB7 ... $DDBD filler
 	.asc	"CP (IX+@",')'+$80	; $DD $BE=CP (IX+)
 
-	.asc	12, '?'+$80			; $DDBF ... $DDCA filler
+	.dsb	12, '?'+$80			; $DDBF ... $DDCA filler
 
 	.asc	'{', 10+$80			; $DD $CB=...IX BITS 	** Z80 PREFIXES **
 
-	.asc	21, '?'+$80			; $DDCC ... $DDE0 filler
+	.dsb	21, '?'+$80			; $DDCC ... $DDE0 filler
 
 	.asc	"POP I", 'X'+$80	; $DD $E1=POP IX
 	.asc	'?'+$80				; $DD $E2
 	.asc	"EX (SP),I",'X'+$80	; $DD $E3=EX SP,IX
 	.asc	'?'+$80				; $DD $E4
 	.asc	"PUSH I", 'X'+$80	; $DD $E5=PUSH IX
-	.asc	3, '?'+$80			; $DDE6 ... $DDE8 filler
+	.dsb	3, '?'+$80			; $DDE6 ... $DDE8 filler
 	.asc	"JP (IX", ')'+$80	; $DD $E9=JMP (IX)
 
-	.asc	15, '?'+$80			; $DDEA ... $DDF8 filler
+	.dsb	15, '?'+$80			; $DDEA ... $DDF8 filler
 
 	.asc	"LD SP, I", 'X'+$80	; $DD $F9=LD SP, IX
-	.asc	6, '?'+$80			; $DDFA ... $DDFF filler
+	.dsb	6, '?'+$80			; $DDFA ... $DDFF filler
 
 ; ******************************************
 ; *** extended instructions ($ED prefix) *** @pointer table + 6
@@ -785,25 +785,25 @@ z80_fd:
 	.asc	"INC (IY+@",')'+$80	; $FD $34=INC (IY+)
 	.asc	"DEC (IY+@",')'+$80	; $FD $35=DEC (IY+)
 	.asc	"LD (IY+@), ", $C0	; $FD $36=LD (IY+),*	$C0 was '@'+$80
-	.asc	2, '?'+$80			; $FD37 ... $FD38 filler
+	.dsb	2, '?'+$80			; $FD37 ... $FD38 filler
 	.asc	"ADD IY, S",'P'+$80	; $FD $39=ADD IY,SP
 
-	.asc	12, '?'+$80			; $FD3A ... $FD45 filler
+	.dsb	12, '?'+$80			; $FD3A ... $FD45 filler
 
 	.asc	"LD B, (IY+@", $A9	; $FD $46=LD B,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FD47 ... $FD4D filler
+	.dsb	7, '?'+$80			; $FD47 ... $FD4D filler
 	.asc	"LD C, (IY+@", $A9	; $FD $4E=LD C,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FD4F ... $FD55 filler
+	.dsb	7, '?'+$80			; $FD4F ... $FD55 filler
 
 	.asc	"LD D, (IY+@", $A9	; $FD $56=LD D,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FD57 ... $FD5D filler
+	.dsb	7, '?'+$80			; $FD57 ... $FD5D filler
 	.asc	"LD E, (IY+@", $A9	; $FD $5E=LD E,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FD5F ... $FD65 filler
+	.dsb	7, '?'+$80			; $FD5F ... $FD65 filler
 
 	.asc	"LD H, (IY+@", $A9	; $FD $66=LD H,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FD67 ... $FD6D filler
+	.dsb	7, '?'+$80			; $FD67 ... $FD6D filler
 	.asc	"LD L, (IY+@", $A9	; $FD $6E=LD L,(IY+)	$A9 was ')'+$80
 	.asc	'?'+$80				; $FD $6F
 
@@ -815,146 +815,146 @@ z80_fd:
 	.asc	"LD (IY+@),", $CC	; $FD $75=LD (IY+),L	$CC was 'L'+$80
 	.asc	'?'+$80				; $FD $76
 	.asc	"LD (IY+@),", $C1	; $FD $77=LD (IY+),A	$C1 was 'A'+$80
-	.asc	6, '?'+$80			; $FD78 ... $FD7D filler
+	.dsb	6, '?'+$80			; $FD78 ... $FD7D filler
 	.asc	"LD A, (IY+@", $A9	; $FD $7E=LD A,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FD7F ... $FD85 filler
+	.dsb	7, '?'+$80			; $FD7F ... $FD85 filler
 
 	.asc	"ADD A, (IY+@", $A9	; $FD $86=ADD A,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FD87 ... $FD8D filler
+	.dsb	7, '?'+$80			; $FD87 ... $FD8D filler
 	.asc	"ADC A, (IY+@", $A9	; $FD $8E=ADC A,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FD8F ... $FD95 filler
+	.dsb	7, '?'+$80			; $FD8F ... $FD95 filler
 
 	.asc	"SUB (IY+@",')'+$80	; $FD $96=SUB (IY+)
-	.asc	7, '?'+$80			; $FD97 ... $FD9D filler
+	.dsb	7, '?'+$80			; $FD97 ... $FD9D filler
 	.asc	"SBC A, (IY+@", $A9	; $FD $9E=SBC A,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FD9F ... $FDA5 filler
+	.dsb	7, '?'+$80			; $FD9F ... $FDA5 filler
 
 	.asc	"AND (IY+@",')'+$80	; $FD $A6=AND (IY+)
-	.asc	7, '?'+$80			; $FDA7 ... $FDAD filler
+	.dsb	7, '?'+$80			; $FDA7 ... $FDAD filler
 	.asc	"XOR (IY+@",')'+$80	; $FD $AE=XOR (IY+)
 
-	.asc	7, '?'+$80			; $FDAF ... $FDB5 filler
+	.dsb	7, '?'+$80			; $FDAF ... $FDB5 filler
 
 	.asc	"OR (IY+@",')'+$80	; $FD $B6=OR (IY+)
-	.asc	7, '?'+$80			; $FDB7 ... $FDBD filler
+	.dsb	7, '?'+$80			; $FDB7 ... $FDBD filler
 	.asc	"CP (IY+@",')'+$80	; $FD $BE=CP (IY+)
 
-	.asc	12, '?'+$80			; $FDBF ... $FDCA filler
+	.dsb	12, '?'+$80			; $FDBF ... $FDCA filler
 
 	.asc	'{', 10+$80			; $FD $CB=...IY BITS 	** Z80 PREFIXES **
 
-	.asc	21, '?'+$80			; $FDCC ... $FDE0 filler
+	.dsb	21, '?'+$80			; $FDCC ... $FDE0 filler
 
 	.asc	"POP I", 'Y'+$80	; $FD $E1=POP IY
 	.asc	'?'+$80				; $FD $E2
 	.asc	"EX (SP),I",'Y'+$80	; $FD $E3=EX SP,IY
 	.asc	'?'+$80				; $FD $E4
 	.asc	"PUSH I", 'Y'+$80	; $FD $E5=PUSH IY
-	.asc	3, '?'+$80			; $FDE6 ... $FDE8 filler
+	.dsb	3, '?'+$80			; $FDE6 ... $FDE8 filler
 	.asc	"JP (IY", ')'+$80	; $FD $E9=JMP (IY)
 
-	.asc	15, '?'+$80			; $FDEA ... $FDF8 filler
+	.dsb	15, '?'+$80			; $FDEA ... $FDF8 filler
 
 	.asc	"LD SP, I", 'Y'+$80	; $FD $F9=LD SP, IY
-	.asc	6, '?'+$80			; $FDFA ... $FDFF filler
+	.dsb	6, '?'+$80			; $FDFA ... $FDFF filler
 
 ; ****************************************************
 ; *** IX+d indexed BIT instructions ($DDCB prefix) *** @pointer table + 10!
 ; ****************************************************
 z80_ddcb:
-	.asc	6, '?'+$80			; $DDCB00 ... $DDCB05 filler
+	.dsb	6, '?'+$80			; $DDCB00 ... $DDCB05 filler
 	.asc	"RLC (IX+@",')'+$80	; $DDCB06=RLC (IX+)
-	.asc	7, '?'+$80			; $DDCB07 ... $DDCB0D filler
+	.dsb	7, '?'+$80			; $DDCB07 ... $DDCB0D filler
 	.asc	"RRC (IX+@",')'+$80	; $DDCB0E=RRC (IX+)
 
-	.asc	7, '?'+$80			; $DDCB0F ... $DDCB15 filler
+	.dsb	7, '?'+$80			; $DDCB0F ... $DDCB15 filler
 
 	.asc	"RL (IX+@",')'+$80	; $DDCB16=RL (IX+)
-	.asc	7, '?'+$80			; $DDCB17 ... $DDCB1D filler
+	.dsb	7, '?'+$80			; $DDCB17 ... $DDCB1D filler
 	.asc	"RR (IX+@",')'+$80	; $DDCB1E=RR (IX+)
 
-	.asc	7, '?'+$80			; $DDCB1F ... $DDCB25 filler
+	.dsb	7, '?'+$80			; $DDCB1F ... $DDCB25 filler
 
 	.asc	"SLA (IX+@",')'+$80	; $DDCB26=SLA (IX+)
-	.asc	7, '?'+$80			; $DDCB27 ... $DDCB2D filler
+	.dsb	7, '?'+$80			; $DDCB27 ... $DDCB2D filler
 	.asc	"SRA (IX+@",')'+$80	; $DDCB2E=SRA (IX+)
 
-	.asc	15, '?'+$80			; $DDCB2F ... $DDCB3D filler!
+	.dsb	15, '?'+$80			; $DDCB2F ... $DDCB3D filler!
 	.asc	"SRL (IX+@",')'+$80	; $DDCB3E=SRL (IX+)
 
-	.asc	6, '?'+$80			; $DDCB3F ... $DDCB45 filler
+	.dsb	7, '?'+$80			; $DDCB3F ... $DDCB45 filler
 
 	.asc	"BIT 0, (IX+@", $A9	; $DDCB46=BIT 0,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DDCB47 ... $DDCB4D filler
+	.dsb	7, '?'+$80			; $DDCB47 ... $DDCB4D filler
 	.asc	"BIT 1, (IX+@", $A9	; $DDCB4E=BIT 1,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DDCB4F ... $DDCB55 filler
+	.dsb	7, '?'+$80			; $DDCB4F ... $DDCB55 filler
 
 	.asc	"BIT 2, (IX+@", $A9	; $DDCB56=BIT 2,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DDCB57 ... $DDCB5D filler
+	.dsb	7, '?'+$80			; $DDCB57 ... $DDCB5D filler
 	.asc	"BIT 3, (IX+@", $A9	; $DDCB5E=BIT 3,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DDCB5F ... $DDCB65 filler
+	.dsb	7, '?'+$80			; $DDCB5F ... $DDCB65 filler
 
 	.asc	"BIT 4, (IX+@", $A9	; $DDCB66=BIT 4,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DDCB67 ... $DDCB6D filler
+	.dsb	7, '?'+$80			; $DDCB67 ... $DDCB6D filler
 	.asc	"BIT 5, (IX+@", $A9	; $DDCB6E=BIT 5,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DDCB6F ... $DDCB75 filler
+	.dsb	7, '?'+$80			; $DDCB6F ... $DDCB75 filler
 
 	.asc	"BIT 6, (IX+@", $A9	; $DDCB76=BIT 6,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DDCB77 ... $DDCB7D filler
+	.dsb	7, '?'+$80			; $DDCB77 ... $DDCB7D filler
 	.asc	"BIT 7, (IX+@", $A9	; $DDCB7E=BIT 7,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DDCB7F ... $DDCB85 filler
+	.dsb	7, '?'+$80			; $DDCB7F ... $DDCB85 filler
 
 	.asc	"RES 0, (IX+@", $A9	; $DDCB86=RES 0,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DDCB87 ... $DDCB8D filler
+	.dsb	7, '?'+$80			; $DDCB87 ... $DDCB8D filler
 	.asc	"RES 1, (IX+@", $A9	; $DDCB8E=RES 1,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DDCB8F ... $DDCB95 filler
+	.dsb	7, '?'+$80			; $DDCB8F ... $DDCB95 filler
 
 	.asc	"RES 2, (IX+@", $A9	; $DDCB96=RES 2,(IX+)	$A9 was ')'+$90
-	.asc	7, '?'+$80			; $DDCB97 ... $DDCB9D filler
+	.dsb	7, '?'+$80			; $DDCB97 ... $DDCB9D filler
 	.asc	"RES 3, (IX+@", $A9	; $DDCB9E=RES 3,(IX+)	$A9 was ')'+$90
 
-	.asc	7, '?'+$80			; $DDCB9F ... $DDCBA5 filler
+	.dsb	7, '?'+$80			; $DDCB9F ... $DDCBA5 filler
 
 	.asc	"RES 4, (IX+@", $A9	; $DDCBA6=RES 4,(IX+)	$A9 was ')'+$A0
-	.asc	7, '?'+$80			; $DDCBA7 ... $DDCBAD filler
+	.dsb	7, '?'+$80			; $DDCBA7 ... $DDCBAD filler
 	.asc	"RES 5, (IX+@", $A9	; $DDCBAE=RES 5,(IX+)	$A9 was ')'+$A0
 
-	.asc	7, '?'+$80			; $DDCBAF ... $DDCBB5 filler
+	.dsb	7, '?'+$80			; $DDCBAF ... $DDCBB5 filler
 
 	.asc	"RES 6, (IX+@", $A9	; $DDCBB6=RES 6,(IX+)	$A9 was ')'+$B0
-	.asc	7, '?'+$80			; $DDCBB7 ... $DDCBBD filler
+	.dsb	7, '?'+$80			; $DDCBB7 ... $DDCBBD filler
 	.asc	"RES 7, (IX+@", $A9	; $DDCBBE=RES 7,(IX+)	$A9 was ')'+$B0
 
-	.asc	7, '?'+$80			; $DDCBBF ... $DDCBC5 filler
+	.dsb	7, '?'+$80			; $DDCBBF ... $DDCBC5 filler
 
 	.asc	"SET 0, (IX+@", $A9	; $DDCBC6=SET 0,(IX+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $DDCBC7 ... $DDCBCD filler
+	.dsb	7, '?'+$80			; $DDCBC7 ... $DDCBCD filler
 	.asc	"SET 1, (IX+@", $A9	; $DDCBCE=SET 1,(IX+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $DDCBCF ... $DDCBD5 filler
+	.dsb	7, '?'+$80			; $DDCBCF ... $DDCBD5 filler
 
 	.asc	"SET 2, (IX+@", $A9	; $DDCBD6=SET 2,(IX+)	$A9 was ')'+$90
-	.asc	7, '?'+$80			; $DDCBD7 ... $DDCBDD filler
+	.dsb	7, '?'+$80			; $DDCBD7 ... $DDCBDD filler
 	.asc	"SET 3, (IX+@", $A9	; $DDCBDE=SET 3,(IX+)	$A9 was ')'+$90
 
-	.asc	7, '?'+$80			; $DDCBDF ... $DDCBE5 filler
+	.dsb	7, '?'+$80			; $DDCBDF ... $DDCBE5 filler
 
 	.asc	"SET 4, (IX+@", $A9	; $DDCBE6=SET 4,(IX+)	$A9 was ')'+$A0
-	.asc	7, '?'+$80			; $DDCBE7 ... $DDCBED filler
+	.dsb	7, '?'+$80			; $DDCBE7 ... $DDCBED filler
 	.asc	"SET 5, (IX+@", $A9	; $DDCBEE=SET 5,(IX+)	$A9 was ')'+$A0
 
-	.asc	7, '?'+$80			; $DDCBEF ... $DDCBF5 filler
+	.dsb	7, '?'+$80			; $DDCBEF ... $DDCBF5 filler
 
 	.asc	"SET 6, (IX+@", $A9	; $DDCBF6=SET 6,(IX+)	$A9 was ')'+$B0
-	.asc	7, '?'+$80			; $DDCBF7 ... $DDCBFD filler
+	.dsb	7, '?'+$80			; $DDCBF7 ... $DDCBFD filler
 	.asc	"SET 7, (IX+@", $A9	; $DDCBFE=SET 7,(IX+)	$A9 was ')'+$B0
 	.asc	'?'+$80				; $DDCBFF
 
@@ -962,95 +962,95 @@ z80_ddcb:
 ; *** IY+d indexed BIT instructions ($FDCB prefix) *** @pointer table + 12!
 ; ****************************************************
 z80_fdcb:
-	.asc	6, '?'+$80			; $FDCB00 ... $FDCB05 filler
+	.dsb	6, '?'+$80			; $FDCB00 ... $FDCB05 filler
 	.asc	"RLC (IY+@",')'+$80	; $FDCB06=RLC (IY+)
-	.asc	7, '?'+$80			; $FDCB07 ... $FDCB0D filler
+	.dsb	7, '?'+$80			; $FDCB07 ... $FDCB0D filler
 	.asc	"RRC (IY+@",')'+$80	; $FDCB0E=RRC (IY+)
 
-	.asc	7, '?'+$80			; $FDCB0F ... $FDCB15 filler
+	.dsb	7, '?'+$80			; $FDCB0F ... $FDCB15 filler
 
 	.asc	"RL (IY+@",')'+$80	; $FDCB16=RL (IY+)
-	.asc	7, '?'+$80			; $FDCB17 ... $FDCB1D filler
+	.dsb	7, '?'+$80			; $FDCB17 ... $FDCB1D filler
 	.asc	"RR (IY+@",')'+$80	; $FDCB1E=RR (IY+)
 
-	.asc	7, '?'+$80			; $FDCB1F ... $FDCB25 filler
+	.dsb	7, '?'+$80			; $FDCB1F ... $FDCB25 filler
 
 	.asc	"SLA (IY+@",')'+$80	; $FDCB26=SLA (IY+)
-	.asc	7, '?'+$80			; $FDCB27 ... $FDCB2D filler
+	.dsb	7, '?'+$80			; $FDCB27 ... $FDCB2D filler
 	.asc	"SRA (IY+@",')'+$80	; $FDCB2E=SRA (IY+)
 
-	.asc	15, '?'+$80			; $FDCB2F ... $FDCB3D filler!
+	.dsb	15, '?'+$80			; $FDCB2F ... $FDCB3D filler!
 	.asc	"SRL (IY+@",')'+$80	; $FDCB3E=SRL (IY+)
 
-	.asc	6, '?'+$80			; $FDCB3F ... $FDCB45 filler
+	.dsb	7, '?'+$80			; $FDCB3F ... $FDCB45 filler
 
 	.asc	"BIT 0, (IY+@", $A9	; $FDCB46=BIT 0,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FDCB47 ... $FDCB4D filler
+	.dsb	7, '?'+$80			; $FDCB47 ... $FDCB4D filler
 	.asc	"BIT 1, (IY+@", $A9	; $FDCB4E=BIT 1,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FDCB4F ... $FDCB55 filler
+	.dsb	7, '?'+$80			; $FDCB4F ... $FDCB55 filler
 
 	.asc	"BIT 2, (IY+@", $A9	; $FDCB56=BIT 2,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FDCB57 ... $FDCB5D filler
+	.dsb	7, '?'+$80			; $FDCB57 ... $FDCB5D filler
 	.asc	"BIT 3, (IY+@", $A9	; $FDCB5E=BIT 3,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FDCB5F ... $FDCB65 filler
+	.dsb	7, '?'+$80			; $FDCB5F ... $FDCB65 filler
 
 	.asc	"BIT 4, (IY+@", $A9	; $FDCB66=BIT 4,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FDCB67 ... $FDCB6D filler
+	.dsb	7, '?'+$80			; $FDCB67 ... $FDCB6D filler
 	.asc	"BIT 5, (IY+@", $A9	; $FDCB6E=BIT 5,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FDCB6F ... $FDCB75 filler
+	.dsb	7, '?'+$80			; $FDCB6F ... $FDCB75 filler
 
 	.asc	"BIT 6, (IY+@", $A9	; $FDCB76=BIT 6,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FDCB77 ... $FDCB7D filler
+	.dsb	7, '?'+$80			; $FDCB77 ... $FDCB7D filler
 	.asc	"BIT 7, (IY+@", $A9	; $FDCB7E=BIT 7,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FDCB7F ... $FDCB85 filler
+	.dsb	7, '?'+$80			; $FDCB7F ... $FDCB85 filler
 
 	.asc	"RES 0, (IY+@", $A9	; $FDCB86=RES 0,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FDCB87 ... $FDCB8D filler
+	.dsb	7, '?'+$80			; $FDCB87 ... $FDCB8D filler
 	.asc	"RES 1, (IY+@", $A9	; $FDCB8E=RES 1,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FDCB8F ... $FDCB95 filler
+	.dsb	7, '?'+$80			; $FDCB8F ... $FDCB95 filler
 
 	.asc	"RES 2, (IY+@", $A9	; $FDCB96=RES 2,(IY+)	$A9 was ')'+$90
-	.asc	7, '?'+$80			; $FDCB97 ... $FDCB9D filler
+	.dsb	7, '?'+$80			; $FDCB97 ... $FDCB9D filler
 	.asc	"RES 3, (IY+@", $A9	; $FDCB9E=RES 3,(IY+)	$A9 was ')'+$90
 
-	.asc	7, '?'+$80			; $FDCB9F ... $FDCBA5 filler
+	.dsb	7, '?'+$80			; $FDCB9F ... $FDCBA5 filler
 
 	.asc	"RES 4, (IY+@", $A9	; $FDCBA6=RES 4,(IY+)	$A9 was ')'+$A0
-	.asc	7, '?'+$80			; $FDCBA7 ... $FDCBAD filler
+	.dsb	7, '?'+$80			; $FDCBA7 ... $FDCBAD filler
 	.asc	"RES 5, (IY+@", $A9	; $FDCBAE=RES 5,(IY+)	$A9 was ')'+$A0
 
-	.asc	7, '?'+$80			; $FDCBAF ... $FDCBB5 filler
+	.dsb	7, '?'+$80			; $FDCBAF ... $FDCBB5 filler
 
 	.asc	"RES 6, (IY+@", $A9	; $FDCBB6=RES 6,(IY+)	$A9 was ')'+$B0
-	.asc	7, '?'+$80			; $FDCBB7 ... $FDCBBD filler
+	.dsb	7, '?'+$80			; $FDCBB7 ... $FDCBBD filler
 	.asc	"RES 7, (IY+@", $A9	; $FDCBBE=RES 7,(IY+)	$A9 was ')'+$B0
 
-	.asc	7, '?'+$80			; $FDCBBF ... $FDCBC5 filler
+	.dsb	7, '?'+$80			; $FDCBBF ... $FDCBC5 filler
 
 	.asc	"SET 0, (IY+@", $A9	; $FDCBC6=SET 0,(IY+)	$A9 was ')'+$80
-	.asc	7, '?'+$80			; $FDCBC7 ... $FDCBCD filler
+	.dsb	7, '?'+$80			; $FDCBC7 ... $FDCBCD filler
 	.asc	"SET 1, (IY+@", $A9	; $FDCBCE=SET 1,(IY+)	$A9 was ')'+$80
 
-	.asc	7, '?'+$80			; $FDCBCF ... $FDCBD5 filler
+	.dsb	7, '?'+$80			; $FDCBCF ... $FDCBD5 filler
 
 	.asc	"SET 2, (IY+@", $A9	; $FDCBD6=SET 2,(IY+)	$A9 was ')'+$90
-	.asc	7, '?'+$80			; $FDCBD7 ... $FDCBDD filler
+	.dsb	7, '?'+$80			; $FDCBD7 ... $FDCBDD filler
 	.asc	"SET 3, (IY+@", $A9	; $FDCBDE=SET 3,(IY+)	$A9 was ')'+$90
 
-	.asc	7, '?'+$80			; $FDCBDF ... $FDCBE5 filler
+	.dsb	7, '?'+$80			; $FDCBDF ... $FDCBE5 filler
 
 	.asc	"SET 4, (IY+@", $A9	; $FDCBE6=SET 4,(IY+)	$A9 was ')'+$A0
-	.asc	7, '?'+$80			; $FDCBE7 ... $FDCBED filler
+	.dsb	7, '?'+$80			; $FDCBE7 ... $FDCBED filler
 	.asc	"SET 5, (IY+@", $A9	; $FDCBEE=SET 5,(IY+)	$A9 was ')'+$A0
 
-	.asc	7, '?'+$80			; $FDCBEF ... $FDCBF5 filler
+	.dsb	7, '?'+$80			; $FDCBEF ... $FDCBF5 filler
 
 	.asc	"SET 6, (IY+@", $A9	; $FDCBF6=SET 6,(IY+)	$A9 was ')'+$B0
-	.asc	7, '?'+$80			; $FDCBF7 ... $FDCBFD filler
+	.dsb	7, '?'+$80			; $FDCBF7 ... $FDCBFD filler
 	.asc	"SET 7, (IY+@", $A9	; $FDCBFE=SET 7,(IY+)	$A9 was ')'+$B0
 	.asc	'?'+$80				; $FDCBFF
