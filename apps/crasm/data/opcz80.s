@@ -1,13 +1,13 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200224-1102
+; last modified 20200225-0916
 
 ; ***** for z80asm Z80 cross assembler *****
 ; Opcode list as bit-7 terminated strings
 ; @ expects single byte, & expects word
 ; % expects RELATIVE addressing
 ; *** need some special characters for prefixes ***
-; temporarily using *2, *4... (value + $80, not ASCII) for easier indexing
+; temporarily using {2, {4... (value + $80, not ASCII) for easier indexing
 ; 2@bits, 4@ix, 6@xtnd, 8@iy, 10@bits ix, 12@bits iy
 
 ; *************************************
@@ -231,7 +231,7 @@ z80_std:
 	.asc	"RET ", 'Z'+$80		; $C8=RZ
 	.asc	"RE", 'T'+$80		; $C9=RET
 	.asc	"JP Z, ", '&'+$80	; $CA=JZ
-	.asc	'*', 2+$80			; $CB=...BITS			** Z80 PREFIX **
+	.asc	'{', 2+$80			; $CB=...BITS			** Z80 PREFIX **
 	.asc	"CALL Z, ", '&'+$80	; $CC=CZ
 	.asc	"CALL ", '&'+$80	; $CD=CALL
 	.asc	"ADC A, ", '@'+$80	; $CE=ACI
@@ -250,7 +250,7 @@ z80_std:
 	.asc	"JP C, ", '&'+$80	; $DA=JC
 	.asc	"IN A, (@", ')'+$80	; $DB=IN
 	.asc	"CALL C, ", '&'+$80	; $DC=CC
-	.asc	'*', 4+$80			; $DD=...IX+D			** Z80 PREFIX **
+	.asc	'{', 4+$80			; $DD=...IX+D			** Z80 PREFIX **
 	.asc	"SBA A, ", '@'+$80	; $DE=SBI
 	.asc	"RST 18", 'H'+$80	; $DF=RST 3
 
@@ -267,7 +267,7 @@ z80_std:
 	.asc	"JP PE, ", '&'+$80	; $EA=JPE
 	.asc	"EX DE, H", 'L'+$80	; $EB=XCHG
 	.asc	"CALL PE, ",'&'+$80	; $EC=CPE
-	.asc	'*', 6+$80			; $ED=...EXTD			** Z80 PREFIX **
+	.asc	'{', 6+$80			; $ED=...EXTD			** Z80 PREFIX **
 	.asc	"XOR ", '@'+$80		; $EE=XRI
 	.asc	"RST 28", 'H'+$80	; $EF=RST 5
 
@@ -284,7 +284,7 @@ z80_std:
 	.asc	"JP M, ", '&'+$80	; $FA=JM
 	.asc	"E", 'I'+$80		; $FB=EI
 	.asc	"CALL M, ", '&'+$80	; $FC=CM
-	.asc	'*', 8+$80			; $FD=...IY+D			** Z80 PREFIX **
+	.asc	'{', 8+$80			; $FD=...IY+D			** Z80 PREFIX **
 	.asc	"CP ", '@'+$80		; $FE=CPI
 	.asc	"RST 38", 'H'+$80	; $FF=RST 7
 
@@ -693,7 +693,7 @@ z80_dd:
 	.asc	'?'+$80				; $DD $BF
 
 	.asc	11, '?'+$80			; $DDC0 ... $DDCA filler
-	.asc	'*', 10+$80			; $DD $CB=...IX BITS 	** Z80 PREFIXES **
+	.asc	'{', 10+$80			; $DD $CB=...IX BITS 	** Z80 PREFIXES **
 	.asc	4, '?'+$80			; $DDCC ... $DDCF filler
 
 	.asc	16, '?'+$80			; $DDD0 ... $DDDF filler
@@ -954,7 +954,7 @@ z80_fd:
 	.asc	'?'+$80				; $FD $BF
 
 	.asc	11, '?'+$80			; $FDC0 ... $FDCA filler
-	.asc	'*', 10+$80			; $FD $CB=...IY BITS 	** Z80 PREFIYES **
+	.asc	'{', 10+$80			; $FD $CB=...IY BITS 	** Z80 PREFIYES **
 	.asc	4, '?'+$80			; $FDCC ... $FDCF filler
 
 	.asc	16, '?'+$80			; $FDD0 ... $FDDF filler
