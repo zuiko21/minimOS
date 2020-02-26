@@ -1,6 +1,6 @@
 ; minimOS opcode list for (dis)assembler modules
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200225-1110
+; last modified 20200226-1453
 
 ; ***** for z80asm Z80 cross assembler *****
 ; Opcode list as bit-7 terminated strings
@@ -666,7 +666,7 @@ z80_dd:
 	.asc	"SUB IX", 'H'+$80	; $DD $94=SUB IXH		UNDOCUMENTED!
 	.asc	"SUB IX", 'L'+$80	; $DD $95=SUB IXL		UNDOCUMENTED!
 	.asc	"SUB (IX+@",')'+$80	; $DD $96=SUB (IX+*)
-	.asc	5, '?'+$80			; $DD97 ... $DD9B filler
+	.dsb	5, '?'+$80			; $DD97 ... $DD9B filler
 	.asc	"SBC A, IX",'H'+$80	; $DD $9C=SBC A,IXH		UNDOCUMENTED!
 	.asc	"SBC A, IX",'L'+$80	; $DD $9D=SBC A,IXL		UNDOCUMENTED!
 	.asc	"SBC A, (IX+@", $A9	; $DD $9E=SBC A,(IX+*)	$A9 was ')'+$80
