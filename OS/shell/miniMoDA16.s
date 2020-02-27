@@ -197,7 +197,7 @@ cli_loop:
 		LDY #$FF			; getNextChar will advance it to zero!
 		JSR $FFFF &  gnc_do			; get first character on string, without the variable
 		TAX					; set status for A
-			BEQ main_loop		; ignore blank lines! 
+			BEQ main_loop		; ignore blank lines!
 		CMP #COLON			; end of instruction?
 			BEQ cli_chk			; advance to next valid char
 		CMP #CR				; ** newline is the same as colon **
