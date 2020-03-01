@@ -3,7 +3,7 @@
 ; for 8-bit kernel testing!
 ; copy or link as options.h in root dir
 ; (c) 2017-2020 Carlos J. Santisteban
-; last modified 20190215-1216
+; last modified 20200301-1008
 
 ; *** set conditional assembly ***
 
@@ -52,7 +52,7 @@
 ; default shell from folder
 #define		SHELL		"shell/minishell.s"
 ; default firmware NMI
-#define		STD_NMI		"../forge/nanomon.s"
+#define		STD_NMI		"shell/nanomon.s"
 ; default NMI, BRK etc TBD ***********
 
 ; ** start of ROM **

@@ -2,7 +2,7 @@
 ; generic template, suitable for SDm/Jalapa
 ; copy or link as options.h in root dir
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20180903-1832
+; last modified 20200301-1009
 
 ; *** set conditional assembly ***
 ; uncomment to remove debugging markup
@@ -51,7 +51,7 @@
 ; *** Default files ***
 ; default shell from folder
 #define		SHELL		"shell/monitor.s"
-#define		STD_NMI		"../forge/nanomon.s"
+#define		STD_NMI		"shell/nanomon.s"
 
 ; default NMI, BRK etc TBD ***********
 

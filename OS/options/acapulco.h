@@ -2,7 +2,7 @@
 ; suitable for Acapulco
 ; copy or link as options.h in root dir
 ; (c) 2019-2020 Carlos J. Santisteban
-; last modified 20190213-0905
+; last modified 20200301-1010
 
 ; *** set conditional assembly ***
 
@@ -47,7 +47,7 @@
 ; default shell
 #define		SHELL		"shell/minishell.s"
 ; default Firmware NMI
-#define		STD_NMI		"../forge/nanomon.s"
+#define		STD_NMI		"shell/nanomon.s"
 
 ; default NMI, BRK etc TBD ***********
 
