@@ -679,16 +679,16 @@ z80_ed:
 	.asc	"OUT (C), ",'C'+$80	; $ED $49=OUT (C), C
 	.asc	"ADC HL, B",'C'+$80	; $ED $4A=ADC HL, BC
 	.asc	"LD BC, (&",')'+$80	; $ED $4B=LD BC, (**)
-	.asc	'?'+$80			; $ED $4C
+	.asc	'?'+$80				; $ED $4C
 	.asc	"RET", 'I'+$80		; $ED $4D=RETI
-	.asc	'?'+$80			; $ED $4E
+	.asc	'?'+$80				; $ED $4E
 	.asc	"LD R, ", 'A'+$80	; $ED $4F=LD R, A
 
 	.asc	"IN D, (C", ')'+$80	; $ED $50=IN D, (C)
 	.asc	"OUT (C), ",'D'+$80	; $ED $51=OUT (C), D
 	.asc	"SBC HL, D",'E'+$80	; $ED $52=SBC HL, DE
 	.asc	"LD (&), D",'E'+$80	; $ED $53=LD (**), DE
-	.asc	'?'+$80			; $ED $54
+	.asc	'?'+$80				; $ED $54
 	.asc	"RET", 'N'+$80		; $ED $55=RETN
 	.asc	"IM ", '1'+$80		; $ED $56=IM 1
 	.asc	"LD A, ", 'I'+$80	; $ED $57=LD A, I
@@ -696,7 +696,7 @@ z80_ed:
 	.asc	"OUT (C), ",'E'+$80	; $ED $59=OUT (C), E
 	.asc	"ADC HL, D",'E'+$80	; $ED $5A=ADC HL, DE
 	.asc	"LD DE, (&",')'+$80	; $ED $5B=LD DE, (**)
-	.asc	'?'+$80			; $ED $5C
+	.asc	'?'+$80				; $ED $5C
 	.asc	"RET", 'N'+$80		; $ED $5D=RETN
 	.asc	"IM ", '2'+$80		; $ED $5E=IM 2
 	.asc	"LD A, ", 'R'+$80	; $ED $5F=LD A, R
@@ -704,25 +704,25 @@ z80_ed:
 	.asc	"IN H, (C", ')'+$80	; $ED $60=IN H, (C)
 	.asc	"OUT (C), ",'H'+$80	; $ED $61=OUT (C), H
 	.asc	"SBC HL, H",'L'+$80	; $ED $62=SBC HL, HL
-	.asc	'?'+$80			; $ED $63
-	.asc	'?'+$80			; $ED $64
+	.asc	'?'+$80				; $ED $63
+	.asc	'?'+$80				; $ED $64
 	.asc	"RET", 'N'+$80		; $ED $65=RETN
 	.asc	"IM", '0'+$80		; $ED $66=IM 0
 	.asc	"RR", 'D'+$80		; $ED $67=RRD
 	.asc	"IN L, (C", ')'+$80	; $ED $68=IN L, (C)
 	.asc	"OUT (C), ",'L'+$80	; $ED $69=OUT (C), L
 	.asc	"ADC HL, H",'L'+$80	; $ED $6A=ADC HL, HL
-	.asc	'?'+$80			; $ED $6B
-	.asc	'?'+$80			; $ED $6C
+	.asc	'?'+$80				; $ED $6B
+	.asc	'?'+$80				; $ED $6C
 	.asc	"RET", 'N'+$80		; $ED $6D=RETN
-	.asc	'?'+$80			; $ED $6E
+	.asc	'?'+$80				; $ED $6E
 	.asc	"RL", 'D'+$80		; $ED $6F=RLD
 
-	.asc	'?'+$80			; $ED $70
-	.asc	'?'+$80			; $ED $71
+	.asc	'?'+$80				; $ED $70
+	.asc	'?'+$80				; $ED $71
 	.asc	"SBC HL, S",'P'+$80	; $ED $72=SBC HL, SP
 	.asc	"LD (&), S",'P'+$80	; $ED $73=LD (**), SP
-	.asc	'?'+$80			; $ED $74
+	.asc	'?'+$80				; $ED $74
 	.asc	"RET", 'N'+$80		; $ED $75=RETN
 	.asc	"IM ", '1'+$80		; $ED $76=IM 1
 	.asc	'?'+$80				; $ED $77
@@ -730,7 +730,7 @@ z80_ed:
 	.asc	"OUT (C), ",'A'+$80	; $ED $79=OUT (C), A
 	.asc	"ADC HL, S",'P'+$80	; $ED $7A=ADC HL, SP
 	.asc	"LD SP, (&",')'+$80	; $ED $7B=LD SP, (**)
-	.asc	'?'+$80			; $ED $7C
+	.asc	'?'+$80				; $ED $7C
 	.asc	"RET", 'N'+$80		; $ED $7D=RETN
 	.asc	"IM ",'2'+$80		; $ED $7E=IM 2
 
