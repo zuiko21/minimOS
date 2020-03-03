@@ -119,10 +119,10 @@ I have tried to assign the whole character set in a reasonable way. Goals includ
 
 Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`CTL`+`SHFT`
 ---|------|-------|------|------------|-------|------------|-----------|----------------
-`1`|$31 1|$21 !|$2B +    |$1B`ESC`   |$BA &#186; |$AA &#170; |$A1 ¡      |   -
-`2`|$32 2|$22 "|$2C ,    |$1C`PLOT`  |$B2 &#178; |$B3 &#179; |$A2 &#162; |   -
-`3`|$33 3|$23 #|$2D -    |$1D`DRAW`  |$B7 &#183; |$BC &#8226;|$A3 £      |   -
-`4`|$34 4|$24 $|$2E .    |$1E`INCG`  |$B1 &#177; |   -       |$A4 €      |   -
+**`1`**|$31 `1`|$21 `!`|$2B `+`    |$1B`ESC`   |$BA `&#186;` |$AA `&#170;` |$A1 `¡`      |   -
+**`2`**|$32 `2`|$22 `"`|$2C `,`    |$1C`PLOT`  |$B2 `&#178;` |$B3 `&#179;` |$A2 `&#162;` |   -
+**`3`**|$33 `3`|$23 `#`|$2D `-`    |$1D`DRAW`  |$B7 `&#183;` |$BC `&#8226;`|$A3 `£`      |   -
+**`4`**|$34 `4`|$24 `$`|$2E `.`    |$1E`INCG`  |$B1 `&#177;` |   -         |$A4 `€`      |   -
 `5`|$35 5|$25 %|$2F /    |$1F`TXTM`  |$F7 ÷      |   -       |$A5 ¥      |   -
 `6`|$36 6|$26 &|$3A :    |$5B [      |$7B {      |$AC &#172; |   -       |   -
 `7`|$37 7|$27 '|$3B ;    |$5C \\     |$7C \|     |$A6 &#166; |   -       |   -
@@ -210,4 +210,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20191111-1826_
+_Last update: 20200303-0837_
