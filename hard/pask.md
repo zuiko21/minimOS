@@ -155,7 +155,7 @@ Key|normal|`SHIFT`|`CTRL`|`CTL`+`SHFT`|` ALT `|`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`C
 **B**|$62 `b`|$42 `B`|$02`LEFT`|$83 &#9600;|$DF ß      |   -       |   -       |   -
 **N**|$6E `n`|$4E `N`|$0E`EON `|$8C &#9604;|$F1 ñ      |$D1 Ñ      |$BE &#331; |   -
 **M**|$6D `m`|$4D `M`|$0D`NEWL`|$3F ?      |$B5 &#181; |$BF ¿      |$9E &#8712;|   -
-**`SPC`**|$20`SPC`|$80`NBSP`|$40 `@`|$60 ```|$A0 &#9633;|$B4 &#180;|**$00`SWTC`**|-
+**`SPC`**|$20`SPC`|$80`NBSP`|$40 `@`|$60 ` ` `|$A0 &#9633;|$B4 &#180;|**$00`SWTC`**|-
 
 Unused combos render `NUL/SWTC` ($00), although the recommended standard is **`CTRL`+`ALT`+`SPACE`**.
 
@@ -210,4 +210,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20200303-0909_
+_Last update: 20200303-0914_
