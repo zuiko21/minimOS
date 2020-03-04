@@ -124,9 +124,9 @@ Key  |normal |`SHIFT`|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT`+
 **2**|$32 `2`|$22 `"`|$27 `'`  |$1C`PLOT`     |$40 `@`     |   -         |$A2 `¢`     |$B2 `²`
 **3**|$33 `3`|$B7 `·`|$2E `.`  |$1D`DRAW`     |$23 `#`     |$B1 `±`      |$BC `•`     |$B3 `³`
 **4**|$34 `4`|$24 `$`|$2C `,`  |$1E`INCG`     |$A4 `€`     |$A3 `£`      |$A5 `¥`     |   -
-**5**|$35 `5`|$25 `%`|$3A `:`  |$1F`TXTM`     |$F7 `÷`     |   -         |$BA `º`     |$AA `ª`
+**5**|$35 `5`|$25 `%`|$3A `:`  |$1F`TXTM`     |$F7 `÷`     |$AA `ª`      |$BA `º`     |   -
 **6**|$36 `6`|$26 `&`|$3B `;`  |$5E `^`       |$AC `¬`     |$B4 `´`      |$60 ` ` `   |   -
-**7**|$37 `7`|$2F `/`|$2D `-`  |   -          |$A6 `¦`     |$5C `\`      |   -        |   -
+**7**|$37 `7`|$2F `/`|$2D `-`  |$3F `?`       |$A6 `¦`     |$5C `\`      |$BF `¿`     |   -
 **8**|$38 `8`|$28 `(`|$3C `<`  |$5B `[`       |$7B `{`     |$AB `«`      |$96 `≤`     |$9C `∞`
 **9**|$39 `9`|$29 `)`|$3E `>`  |$5D `]`       |$7D `}`     |$BB `»`      |$98 `≥`     |   -
 **0**|$30 `0`|$3D `=`|$5F `_`  |$7F`DEL`      |$7E `~`     |$9D `≈`      |$AD `≠`     |$AF `¯`
@@ -154,7 +154,7 @@ Key  |normal |`SHIFT`|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT`+
 **V**|$76 `v`|$56 `V`|$16`PGDN`|$8E `▙`       |$91 `✓`     |   -         |$B9 `Δ`     |   -
 **B**|$62 `b`|$42 `B`|$02`LEFT`|$83 `▀`       |$DF `ß`     |   -         |   -        |   -
 **N**|$6E `n`|$4E `N`|$0E`EON` |$8C `▄`       |$F1 `ñ`     |$D1 `Ñ`      |$BE `ŋ`     |   -
-**M**|$6D `m`|$4D `M`|$0D`NEWL`|$3F `?`       |$B5 `µ`     |$BF `¿`      |$9E `∈`     |   -
+**M**|$6D `m`|$4D `M`|$0D`NEWL`|   -          |$B5 `µ`     |   -         |$9E `∈`     |   -
 **`SPC`**|$20`SPC`|  |$80`NBSP`|   -          |$A0 `□`     |   -        |**$00`SWTC`**|   -
 
 Unused combos render `NUL/SWTC` ($00), although the recommended standard is **`CTRL`+`ALT`+`SPACE`**.
@@ -210,4 +210,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20200304-1232_
+_Last update: 20200304-1238_
