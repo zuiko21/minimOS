@@ -123,7 +123,7 @@ I have tried to assign the whole character set in a reasonable way. Goals includ
 |$BA `º`
 |$AA `ª`
 
-Key  |normal |`SHIFT`|`CTRL`   |`CTL`+`SHFT`|`ALT`   |`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`CTL`+`SHFT`
+Key  |normal |`SHIFT`|`CTRL`   |`CTL`+`SHFT`|` ALT ` |`ALT`+`SHFT`|`ALT`+`CTL`|`ALT`+`CTL`+`SHFT`
 -----|-------|-------|---------|------------|--------|------------|-----------|----------------
 **1**|$31 `1`|$21 `!`|$2B `+`  |$1B`ESC`    |$7C `\|`|$A1 `¡`     |$2A `*`    |   -
 **2**|$32 `2`|$22 `"`|$2C `,`  |$1C`PLOT`   |$40 `@` |            |$A2 `¢`    |$B2 `²`
