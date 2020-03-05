@@ -109,7 +109,7 @@ I have tried to assign the whole character set in a reasonable way. Goals includ
 - Scarce use of the rather awkward `CTRL` + `ALT` + `SHIFT` combo.
 
 
-Key  |normal |`SHIFT`ed|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT`+`CTRL`|`ALT`+`CTRL`+`SHIFT`
+Key  |normal |`SHIFTed`|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT`+`CTRL`|`ALT`+`CTRL`+`SHIFT`
 -----|-------|---------|---------|--------------|------------|-------------|------------|--------------------
 **1**|$31 `1`|$21 `!`  |$2B `+`  |$1B`ESC`      |$7C `\|`    |$A1 `¡`      |$2A `*`     |   -
 **2**|$32 `2`|$22 `"`  |$27 `'`  |$1C`PLOT`     |$40 `@`     |   -         |$A2 `¢`     |$B2 `²`
@@ -147,7 +147,7 @@ Key  |normal |`SHIFT`ed|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT
 **B**|$62 `b`|$42 `B`  |$02`LEFT`|$83 `▀`       |$DF `ß`     |   -         |   -        |   -
 **N**|$6E `n`|$4E `N`  |$0E`EON` |$8C `▄`       |$F1 `ñ`     |$D1 `Ñ`      |$BE `ŋ`     |   -
 **M**|$6D `m`|$4D `M`  |$0D`NEWL`|   -          |$B5 `µ`     |   -         |$9E `∈`     |   -
-**`SPC`**|$20`SPC`| -|$80`NBSP`|   -          |$A0 `□`     |   -        |**$00`SWTC`**|   -
+**`SPC`**|$20`SPC`|   -|$80`NBSP`|   -          |$A0 `□`     |   -        |**$00`SWTC`**|   -
 
 Unused combos render `NUL/SWTC` ($00), although the recommended standard is **`CTRL`+`ALT`+`SPACE`**.
 
