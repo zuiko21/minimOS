@@ -82,40 +82,31 @@ Based on the previously shown layouts.
 Format: _`row`.`column`_
 
 ```
-               STANDARD                                     COMPACT
+               STANDARD                              COMPACT (ALTERNATIVE)
 
 00  01  02  03  04  40  41  42  43  44      00  01  02  03  04  40  41  42  43  44
 10  11  12  13  14  50  51  52  53  54      10  11  12  13  14  50  51  52  53  54
-  20  21  22  23  24  60  61  62  63            20  21  22  23  24  60  61  62  63
-      30  31  32  33  34  70  71                    30  31  32  33  34  70  71  72
-                  72
+  20  21  22  23  24  60  61  62  63            21  22  23  24  60  61  62  63  64
+      31  32  33  34  70  71  72                    32  33  34  70  71  72  73  74
+                  74
 ```
 
 Note: `SHIFT`, `CONTROL` and `ALT` are **outside** the matrix, thus the
-matrix points `64`, `73` and `74` remain unused.
+matrix points `30`, `64` and `73` remain unused.
 
-Alternatively, the **compact** layout may suggest the use of a different decoding,
-which could simplify the wiring. In this case, the unused matrix points are
-`20`, `30` and `31` (where the _modifier_ keys would be located). EPROM mappings
-would be different to those of the standard version:
-
-```
-         COMPACT (ALTERNATIVE)
-
-00  01  02  03  04  40  41  42  43  44
-10  11  12  13  14  50  51  52  53  54
-    21  22  23  24  60  61  62  63  64
-        32  33  34  70  71  72  73  74  
-```
+The **compact** layout suggests the use of a decoding scheme designed to
+simplify the wiring. In this case, the unused matrix points are
+`20`, `30` and `31` (where the _modifier_ keys would be located). _A somewhat
+similar criterium has been adopted for the standard layout_.
 
 ### Keymap codes
 
 I have tried to assign the whole character set in a reasonable way. Goals included:
 
-- Easy access to **Spanish diacritics** (acute accent, ñ and diaeresis)
-- Reasonable access for commonly used missing keys (_`CTL` + number_ for most **punctuation symbols**)
-- Reasonably consistent and intuitive symbols access.
-- Scarce use of the rather awkward `CTRL`+`ALT`+`SHIFT` combo.
+- Easy access to **Spanish diacritics** (acute accent, `ñ` and diaeresis)
+- Reasonable access for commonly used missing keys (_`CTRL` + number_ for most **punctuation symbols**)
+- Reasonably consistent and intuitive symbol access.
+- Scarce use of the rather awkward `CTRL` + `ALT` + `SHIFT` combo.
 
 
 Key  |normal |`SHIFT`|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT`+`CTRL`|`ALT`+`CTRL`+`SHIFT`
@@ -125,7 +116,7 @@ Key  |normal |`SHIFT`|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT`+
 **3**|$33 `3`|$B7 `·`|$2E `.`  |$1D`DRAW`     |$23 `#`     |$B1 `±`      |$BC `•`     |$B3 `³`
 **4**|$34 `4`|$24 `$`|$2C `,`  |$1E`INCG`     |$A4 `€`     |$A3 `£`      |$A5 `¥`     |   -
 **5**|$35 `5`|$25 `%`|$3A `:`  |$1F`TXTM`     |$F7 `÷`     |$AA `ª`      |$BA `º`     |   -
-**6**|$36 `6`|$26 `&`|$3B `;`  |$5E `^`       |$AC `¬`     |$B4 `´`      |$60 ` ` `   |   -
+**6**|$36 `6`|$26 `&`|$3B `;`  |$5E `^`       |$AC `¬`     |$B4 `´`      |$60 `` ` `` |   -
 **7**|$37 `7`|$2F `/`|$2D `-`  |$3F `?`       |$A6 `¦`     |$5C `\`      |$BF `¿`     |   -
 **8**|$38 `8`|$28 `(`|$3C `<`  |$5B `[`       |$7B `{`     |$AB `«`      |$96 `≤`     |$9C `∞`
 **9**|$39 `9`|$29 `)`|$3E `>`  |$5D `]`       |$7D `}`     |$BB `»`      |$98 `≥`     |   -
@@ -155,7 +146,7 @@ Key  |normal |`SHIFT`|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT`+
 **B**|$62 `b`|$42 `B`|$02`LEFT`|$83 `▀`       |$DF `ß`     |   -         |   -        |   -
 **N**|$6E `n`|$4E `N`|$0E`EON` |$8C `▄`       |$F1 `ñ`     |$D1 `Ñ`      |$BE `ŋ`     |   -
 **M**|$6D `m`|$4D `M`|$0D`NEWL`|   -          |$B5 `µ`     |   -         |$9E `∈`     |   -
-**`SPC`**|$20`SPC`|  |$80`NBSP`|   -          |$A0 `□`     |   -        |**$00`SWTC`**|   -
+**`SPC`**|$20`SPC`| -|$80`NBSP`|   -          |$A0 `□`     |   -        |**$00`SWTC`**|   -
 
 Unused combos render `NUL/SWTC` ($00), although the recommended standard is **`CTRL`+`ALT`+`SPACE`**.
 
@@ -210,4 +201,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20200304-1238_
+_Last update: 20200305-0919_
