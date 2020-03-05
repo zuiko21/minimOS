@@ -122,7 +122,8 @@ Key  |normal |`SHIFT`|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT`+
 **9**|$39 `9`|$29 `)`|$3E `>`  |$5D `]`       |$7D `}`     |$BB `»`      |$98 `≥`     |   -
 **0**|$30 `0`|$3D `=`|$5F `_`  |$7F`DEL`      |$7E `~`     |$9D `≈`      |$AD `≠`     |$AF `¯`
 **Q**|$71 `q`|$51 `Q`|$11`XON` |$BD `œ`       |$F8 `ø`     |$D8 `Ø`      |   -        |   -
-**W**|$77 `w`|$57 `W`|$17`ATYX`|$81 `▝`       |$B8 `ω`     |$C9 `É`      |$EB `ë`     |$CB `Ë`
+**W**|$77 `w`|$57 `W`|$17`ATYX`|$81 `▝`       |$B8 `ω`     |$9A `Ω`      |   -        |   -
+**E**|$65 `e`|$45 `E`|$05`ENDL`|$EA `ê`       |$E9 `é`     |$C9 `É`      |$EB `ë`     |$CB `Ë`
 **R**|$72 `r`|$52 `R`|$12`INK` |$86 `▚`       |$95 `σ`     |$B0 `°`      |$AE `®`     |   -
 **T**|$74 `t`|$54 `T`|$14`PAPR`|$89 `▞`       |$97 `τ`     |$A8 `¨`      |$92 `Γ`     |   -
 **Y**|$79 `y`|$59 `Y`|$19`PGUP`|$82 `▘`       |$FD `ý`     |$DD `Ý`      |$FF `ÿ`     |   -
@@ -201,4 +202,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20200305-0919_
+_Last update: 20200305-0948_
