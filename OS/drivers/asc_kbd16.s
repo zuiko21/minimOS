@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS-16!
 ; v0.6a3
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200306-0953
+; last modified 20200306-1001
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
@@ -31,15 +31,24 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-//#include "usual.h"
-#include "options/chihuahua_plus.h"
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa -w drivers/asc_kbd16.s -I drivers/ -DTESTING=1
+#include "options.h"
 #include "macros.h"
 #include "abi.h"
 .zero
 #include "zeropage.h"
-* = $200
-#include "drivers/asc_kbd.h"
+#else
+; ** regular assembly **
+#include "../usual.h"
+#endif
+; specific header for this driver
+.bss
+#include "asc_kbd.h"
 .text
+#endif
 
 .(
 ; ***************
@@ -47,29 +56,29 @@
 ; ***************
 
 ; uncomment for repeat (except for deadkeys)
-;#define	REPEAT	_REPEAT
+#define	REPEAT	_REPEAT
 
 ; uncomment for deadkey support (Spanish only this far)
-;#define	DEADKEY	_DEADKEY
+#define	DEADKEY	_DEADKEY
 
 ; ******************************
 ; *** standard minimOS stuff ***
 ; ******************************
 
 ; *** begins with sub-function addresses table ***
-	.byt	145		; physical driver number D_ID (TBD)
+	.byt	145			; physical driver number D_ID (TBD)
 	.byt	A_BLIN|A_POLL	; input driver, periodic interrupt-driven
 	.word	ak_read		; read from input buffer
 	.word	ak_err		; no output
 	.word	ak_init		; initialise 'device', called by POST only
 	.word	ak_poll		; periodic interrupt...
-	.word	4		; 20ms scan seems fast enough
+	.word	4			; 20ms scan seems fast enough
 	.word	ak_nreq		; D_ASYN does nothing
 	.word	ak_err		; no config
 	.word	ak_err		; no status
 	.word	ak_exit		; shutdown procedure, leave VIA as it was...
 	.word	ak_info		; points to descriptor string
-	.word	0		; non-relocatable, D_MEM
+	.word	0			; non-relocatable, D_MEM
 
 ; *** driver description ***
 ak_info:
