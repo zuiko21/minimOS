@@ -115,7 +115,7 @@ Key  |normal |`SHIFTed`|`CONTROL`|`CTRL`+`SHIFT`|`ALTERNATE` |`ALT`+`SHIFT`|`ALT
 **2**|$32 `2`|$22 `"`  |$27 `'`  |$1C`PLOT`     |$40 `@`     |   -         |$A2 `¢`     |$B2 `²`
 **3**|$33 `3`|$B7 `·`  |$2E `.`  |$1D`DRAW`     |$23 `#`     |$BC `•`      |$B1 `±`     |$B3 `³`
 **4**|$34 `4`|$24 `$`  |$2C `,`  |$1E`INCG`     |$A4 `€`     |$A3 `£`      |$A5 `¥`     |   -
-**5**|$35 `5`|$25 `%`  |$3A `:`  |$1F`TXTM`     |$F7 `÷`     |$AA `ª`      |$BA `º`     |   -
+**5**|$35 `5`|$25 `%`  |$3A `:`  |$1F`TXTM`     |$BA `º`     |$AA `ª`      |$F7 `÷`     |   -
 **6**|$36 `6`|$26 `&`  |$3B `;`  |$5E `^`       |$AC `¬`     |$B4 `´`      |$60 `` ` `` |   -
 **7**|$37 `7`|$2F `/`  |$2D `-`  |$3F `?`       |$A6 `¦`     |$5C `\`      |$BF `¿`     |   -
 **8**|$38 `8`|$28 `(`  |$3C `<`  |$5B `[`       |$7B `{`     |$AB `«`      |$96 `≤`     |$9C `∞`
@@ -202,4 +202,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20200305-1009_
+_Last update: 20200306-0831_
