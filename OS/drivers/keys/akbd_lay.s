@@ -1,8 +1,8 @@
-; *******************************
-; *** scancode to ASCII tables***
-; *******************************
+; ********************************
+; *** scancode to ASCII tables *** for 64-key ASCII keyboard
+; ********************************
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200306-1357
+; last modified 20200307-1908
 
 ; cols 0...14, and inside rows 0...3
 ; note standard labels!
@@ -48,16 +48,16 @@ ak_tua:
 	.byt	$0 , $E5, $D3, $7D,  $AF, $7E, $B6, $7E,  $0 , $7B, $5B, $0		; ·åÓ} ¯~¶~ ·{[·
 	.byt	$0 , $7D, $5D, $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0		; ·}]· ···· ····
 
-; shift & alt (with or without caps lock) worth separating?*****
+; shift & alt (with or without caps lock)
 ak_tsa:
 ak_tsua:
-	.byt	$0 , $98, $0 , $B0,  $9F, $C5, $9B, $A6,  $0 , $A7, $9A, $B2
-	.byt	$A9, $D0, $9E, $BC,  $B9, $0 , $AE, $A3,  $95, $92, $0 , $0
-	.byt	$0 , $0 , $0 , $B3,  $94, $C6, $0 , $0 ,  $0 , $0 , $0 , $0
-	.byt	$0 , $0 , $D8, $0 ,  $0 , $0 , $DE, $9D,  $0 , $AB, $BD, $0
-	.byt	$0 , $BB, $B1, $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0
+	.byt	$0 , $96, $0 , $5C,  $DE, $C1, $F8, $7C,  $D7, $9F, $9A, $40	; ·≤·\ ÞÁø| ×∩Ω@ BOOORING
+	.byt	$C7, $D0, $C9, $23,  $91, $0 , $95, $A4,  $DF, $E3, $97, $BA	; ÇĐÉ# ✓·σ€ ßãτº
+	.byt	$D1, $E6, $DD, $AC,  $B5, $0 , $FA, $A6,  $0 , $F5, $CD, $7B	; ÑæÝ¬ µ·ú¦ ·õÍ{
+	.byt	$0 , $E5, $D3, $7D,  $AF, $7E, $B6, $7E,  $0 , $7B, $5B, $0		; ·åÓ} ¯~¶~ ·{[·
+	.byt	$0 , $7D, $5D, $0 ,  $0 , $0 , $0 , $0 ,  $0 , $0 , $0 , $0		; ·}]· ···· ····
 
-; control (with or without caps lock or shift)
+; control (with or without caps lock or shift) worth separating?
 ak_tc:
 ak_tuc:
 ak_tsc:
