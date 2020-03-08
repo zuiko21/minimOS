@@ -82,7 +82,7 @@ Based on the previously shown layouts.
 Format: _`row`.`column`_
 
 ```
-               STANDARD                              COMPACT (ALTERNATIVE)
+               STANDARD                                    COMPACT
 
 00  01  02  03  04  40  41  42  43  44      00  01  02  03  04  40  41  42  43  44
 10  11  12  13  14  50  51  52  53  54      10  11  12  13  14  50  51  52  53  54
@@ -202,4 +202,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20200306-0831_
+_Last update: 20200308-1938_
