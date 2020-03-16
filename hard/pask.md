@@ -94,10 +94,9 @@ Format: _`row`.`column`_
 Note: `SHIFT`, `CONTROL` and `ALT` are **outside** the matrix, thus the
 matrix points `30`, `64` and `73` remain unused.
 
-The **compact** layout suggests the use of a decoding scheme designed to
-simplify the wiring. In this case, the unused matrix points are
-`20`, `30` and `31` (where the _modifier_ keys would be located). _A somewhat
-similar criterium has been adopted for the standard layout_.
+**Both** layouts suggest the use of decoding schemes designed to
+simplify the wiring. On the _compact_ layout, the unused matrix points are
+`20`, `30` and `31` (where the _modifier_ keys would be located).
 
 ### Keymap codes
 
@@ -202,4 +201,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20200308-1938_
+_Last update: 20200316-2257_
