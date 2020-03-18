@@ -134,7 +134,7 @@ _VME-like_ slot (65816 direct expansion) .
   * Status: in design stage _(might become a lower-spec **SIXtation**)_.
   * Form-factor: thru-hole PCB?
   * Specs: **3.072 MHz 65816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM**,
-2x VIA 65C22, UART 16C550 (?), RTC MC146818 (?).
+2x VIA 65C22, UART 16C550 (?), RTC MC146818 (?), ROM-in-RAM (?). 
   * Peripherals: Piezo buzzer, Hitachi LCD thru VIA (?).
   * Interfaces: new VIA and SS-22 connectors, TTL-level async, **65SIB** (?), **PS/2**,
 _VME-like_ slot (65816 direct expansion).
@@ -159,7 +159,7 @@ up to **8 MiB RAM** (2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**
   * Form-factor: 4-layer PCB, SMD components.
   * Specs: **9 MHz 65816** (base model), **24.576 MHz 68881 FPU** (or faster),
 up to **8 MiB RAM** (2x Garth's modules), **32 kiB Kernel + 4 MiB _lib_ EPROM**,
-2x VIA 65C22, (2x) 16C552 UART, MC146818 RTC, _ROM-in-RAM_.
+2x or 3x VIA 65C22, 16C552 UART, MC146818 RTC, _ROM-in-RAM_.
   * Video output: 6445-based, _planar_ up to 8x128 kiB VRAM and **8 bpp**, typically **1360x768**.
   * Other interfaces: most likely those of _Jalisco_.
 
@@ -247,4 +247,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20200204-1741_
+_last modified: 20200318-2241_
