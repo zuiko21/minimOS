@@ -74,7 +74,7 @@ ACIA 65SC51, RTC 146818.
   * Form-factor: Perfboard with point-to-point soldering.
   * Specs: 1.8432 / 2.304 MHz **65816**, **128/512 kiB RAM**,
 up to **32 kiB _Kernel_ EPROM** plus **up to 512 kiB _library_ EPROM**,
-VIA 65C22 (x2?), ACIA 65SC51.
+VIA 65C22 (x2?), ACIA 65SC51, ROM-in-RAM (?).
   * Peripherals: Amplified piezo buzzer between PB7-CB2.
   * Interfaces: SS-22, new _VIAport**2**_ (_SBC-2_ style but with "mirrored" power pins),
   TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
@@ -126,10 +126,10 @@ up to **4bpp**, gBRG or greyscale).
   * Interfaces: TTL-level async., SS-22, parallel input, perhaps
 _VME-like_ slot (65816 direct expansion) .
 
-> Intended to be a **colour & graphics** capable **VT-52** based terminal.
+> _Intended to be a **colour & graphics** capable **VT-52** based terminal_.
 
 
-**Veracruz** _(might become the slower, FPU-less **SIXtation Lite**)_
+**Veracruz**
 
   * Status: in design stage _(might become a lower-spec **SIXtation**)_.
   * Form-factor: thru-hole PCB?
@@ -139,10 +139,10 @@ _VME-like_ slot (65816 direct expansion) .
   * Interfaces: new VIA and SS-22 connectors, TTL-level async, **65SIB** (?), **PS/2**,
 _VME-like_ slot (65816 direct expansion).
 
-> _Likely to include a **4bpp, ~640x400px** card._
+> _Likely to include a **4bpp, ~640x400px** card (**SIXtation Lite**)_
 
 
-**Jalisco** _(might be merged with **SIXtation**)_
+**Jalisco** _(CPU card for **SIXtation**)_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
@@ -153,15 +153,14 @@ up to **8 MiB RAM** (2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**
   * Interfaces: most likely those of _Veracruz_, including **65SIB**, _VME-like slot_...
 
 
-[**SIXtation**](sixtation.md)
+[**SIXtation**](sixtation.md) _essentially a **Jalisco** CPU card with an 8-plane VDU_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
   * Specs: **9 MHz 65816** (base model), **24.576 MHz 68881 FPU** (or faster),
-up to **8 MiB RAM** (2x Garth's modules), **32 kiB Kernel + 4 MiB _lib_ EPROM**,
-2x or 3x VIA 65C22, 16C552 UART, MC146818 RTC, _ROM-in-RAM_.
+just like the _Jalisco_ CPU card.
   * Video output: 6445-based, _planar_ up to 8x128 kiB VRAM and **8 bpp**, typically **1360x768**.
-  * Other interfaces: most likely those of _Jalisco_.
+  * Other interfaces: those of _Jalisco_.
 
 > Base design allows an alternate **SIXtation Turbo @ 13.5 MHz** and **1152x896px**.
 Another option would be the _SIXtation-P_ (portrait) designed around _Apple Portrait Display_,
@@ -247,4 +246,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20200318-2241_
+_last modified: 20200320-2326_
