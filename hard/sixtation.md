@@ -7,7 +7,7 @@ A powerful **_65816-based_ graphic workstation** inspired by the _3M-compliant_ 
 
 - CPU: 65816 @ **9 MHz** (~2.5 MIPS) or **13.5 MHz** on the _Turbo_ version (~4 MIPS)
 - FPU: 68881 @ **24.576 MHz** or faster\* (~0.236 MFLOPS, perhaps up to **0.35 MFLOPS**)
-- VDU: 6445 based, **1360x768**, up to 8 bpp
+- VDU: 6445 based, **1360x768**, up to 8 bpp (**1152x896** on _Turbo_)
 - RAM: **1 MiB** on board, two _Garth Wilson's_ slots (up to **8 MiB**, 5 MiB possible)
 - ROM: 32 kiB _Kernel_ (fully switchable), up to 4 MiB _library_
 - Storage: CF & SD (possibly _bit-banged_) interfaces
@@ -35,6 +35,8 @@ are supported:
 
 Memory addresses above `$800000` will be reserved for I/O boards (including the supplied
 **graphic card**) and those above `$C00000` are intended for _library_ ROM.
+_A fully populated SIXtation might enable the last megabyte of RAM (`$800000-$8FFFFF`),
+thus the recommended I/O range would be `$900000-$BFFFFF`_.
 
 ## Graphic card & clock
 
@@ -78,10 +80,11 @@ _a **quarter** of Phi-2 frequency_ to stay within the 6445 limits, thus configur
 characters. While this configuration further reduces sync and porch timing accuracy, no issues are expected thanks
 to the ample borders (64 pixels both left & right, 80 top & down).
 
-A downside effect of this new rating might be _impaired FPU performance_, as 54 MHz is _beyond any feasible overclocking_.
-Taking a _quarter_ of the dot clock would result on a **27 MHz** rate, still good for 0.285 MFLOPS, and likely to be
-allowed by a 25 MHz part. Thus, _the use of a **separate oscillator** for the FPU is highly recommended_.
-A **32 MHz** clock on a common **68882**/33 will give nearly **0.34 MFLOPS**.
+Note that _FPU performance_ remains independent of main CPU clock, as the 6888x chips
+are **asynchronous**. However, for convenience **half** and **quarter** the Phi2 rate
+clock signals are provided. Anyway, _the use of a **separate oscillator** for the FPU is
+highly recommended_. A **32 MHz** clock on a common **68882**/33 will give nearly
+**0.34 MFLOPS**.
 
 On the other hand, a faster (110 MHz) **Bt 481 _RAMDAC_** should be used, otherwise
 fully compatible with slower cards.
@@ -98,9 +101,8 @@ Please note that the original _3 M_ workstations, while bearing slower CPUs (a 1
 _MC 68000_ is about **2.5 times slower** than a **9 MHz 65816**), had _graphic coprocessors_
 for much improved screen handling (_RasterOp_ on Sun, _Geometry Engine_ on SGI IRIS...).
 
-The Planar layout would take several consecutive 128 kiB bitmaps, first one at `$800000-$81FFFF`.
-In case of the recommended _8 bpp_ configuration, last plane would take `$8E0000-$8FFFFF` _(read
-below about alternative address ranges)_.
+The Planar layout would take several consecutive 128 kiB bitmaps, first one at `$A00000-$A1FFFF`.
+In case of the recommended _8 bpp_ configuration, last plane would take `$AE0000-$AFFFFF`.
 
 For CRTC & RAMDAC configuration, plus the _multi-plane write selector_ register, regular I/O is
 to be used (typically at page `$DF` from the first bank). **Sync inverting** flags may be addressed
@@ -119,8 +121,8 @@ Suggested I/O map:
 Despite this handicap, there is one trick from Sun graphic cards that is _easily
 implemented_ and will noticeably speed-up a few operations: **multi-plane _write_**
 feature. After _enabling_ the desired planes on some register (see above),
-simultaneous **writes** (only) may be done on the area `$900000-$91FFFF`. _If decoding
-is made simpler, **mirroring** of this multi-plane area is acceptable up to `$9FFFFF`_
+simultaneous **writes** (only) may be done on the area `$B00000-$B1FFFF`. _If decoding
+is made simpler, **mirroring** of this multi-plane area is acceptable up to `$BFFFFF`_.
 
 While this device is perfectly capable of displaying _graphic content_, most development
 tasks are expected to be done on _text windows_. With more than one bit plane installed,
@@ -215,14 +217,10 @@ for photographic images.
 Alternate **128 and 64-colour palettes** have been considered, starting with the aforementioned _32 system entries_
 followed by the remaining 96 or 32 colours, based on a _4-4-4_ or _4-4-2_ scheme, respectively. _Note that the 128-colour palette uses only 64 out of 96 non-system colours, repeating the system colours band_.
 
-Palette colours are arranged in such a way that
-_consecutive_ entries sport **noticeable luma
-difference** (typically by using the most
-significant bit of the _green_ channel). This way,
-the **firmware console driver** may just deal
-with _plane 0_ (present on all configurations),
-simplifying the driver and achieving both
-**speed and adequate contrast**.
+Palette colours are arranged in such a way that _consecutive_ entries sport **noticeable luma
+difference** (typically by using the most significant bit of the _green_ channel). This way,
+the **firmware console driver** may just deal with _plane 0_ (present on all configurations),
+simplifying the driver and achieving both **speed and adequate contrast**.
 
 ## Storage
 
@@ -239,9 +237,7 @@ Note that the _base_ MiB is used in all configurations, thus the last megabyte o
 optional module is **wasted**. _Its two highest `CE` lines may be put on the expansion bus for
 **optional decoding** (under consideration)_.
 
-In such case, an **alternative video card addressing** makes sense: putting the standard
-planes at `$900000-$9FFFFF` (instead of banks `$8x`) and, if required, the _multiplane_
-range at, say, `$A00000-$A1FFFF` (safely mirrored up to `$AFFFFF`) will allow a
+Current _video card addressing_ allows the use of this last megabyte of RAM, for a
 **9 MiB RAM** configuration, making use of the wasted chips on the _second_ slot, when
 installed. _The video card is responsible for generaring `/CE10` and `/CE11` on the bus
 from the appropriate values at `BA3-BA7`_.
@@ -258,4 +254,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20200120-1003_
+_last modified 20200322-2205_
