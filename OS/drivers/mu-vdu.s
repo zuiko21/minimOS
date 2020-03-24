@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a3
 ; (c) 2019-2020 Carlos J. Santisteban
-; last modified 20190920-2231
+; last modified 20200324-0958
 
 #include "../usual.h"
 
@@ -552,7 +552,7 @@ vig_pix:
 	LDA va_gflg			; check bit 0
 	LSR					; pen down?
 		BCC vig_rts			; no, just return
-; compute address and set plot ** TO DO ** TO DO **
+; compute address and set plot
 vig_dot:
 	_STZA v_src			; reset scanline in row
 	_STZA v_src+1			; ...and pixel in byte
@@ -574,7 +574,25 @@ vig_dot:
 	LSR
 	ROR v_src+1
 	JSR vs_rc			; compute byte address within row
-
+; is the following OK?
+	LDA v_src+1			; now get pixel position in byte (MSB)
+	LSR					; turn into LSB for counter
+	LSR
+	LSR
+	LSR
+	LSR
+	TAY					; use as counter
+; might use a table instead... 11 instead of 8 bytes? but 4t instead of <=61t
+	LDA #0				; initial bit mask...
+	SEC					; ...but not yet set
+	INY					; ...will be set anyway
+vig_dpx:
+		ROR						; shift bit
+		DEY						; until done
+		BNE vig_dpx
+	ORA (v_dest), Y		; add previous bits (Y is zero!)
+	STA (v_dest), Y		; ...and store new pattern
+	JMP vig_rts			; is this OK?
 
 ; ** bounds checking (unified) **
 ; horizontal
