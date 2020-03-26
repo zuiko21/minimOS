@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a3
 ; (c) 2019-2020 Carlos J. Santisteban
-; last modified 20200324-0958
+; last modified 20200326-2144
 
 #include "../usual.h"
 
@@ -489,7 +489,8 @@ vch_inc:		; 31, incremental plotting (was ASCII 30)
 		BEQ vig_nw			; otherwise unrecognised command, just print it
 	_STZA va_flag			; back to text mode
 vig_rts:
-	RTS
+	_DR_OK
+
 ; incremental commands follow
 ; * PEN UP *
 vig_pu:
@@ -581,15 +582,10 @@ vig_dot:
 	LSR
 	LSR
 	LSR
-	TAY					; use as counter
-; might use a table instead... 11 instead of 8 bytes? but 4t instead of <=61t
-	LDA #0				; initial bit mask...
-	SEC					; ...but not yet set
-	INY					; ...will be set anyway
-vig_dpx:
-		ROR						; shift bit
-		DEY						; until done
-		BNE vig_dpx
+	TAX 					; use as table index
+
+	LDA v_bmsk, X		; new table-driven bit mask...
+; what about Y? should it take the raster?
 	ORA (v_dest), Y		; add previous bits (Y is zero!)
 	STA (v_dest), Y		; ...and store new pattern
 	JMP vig_rts			; is this OK?
