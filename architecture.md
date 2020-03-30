@@ -1,6 +1,6 @@
 # minimOS architecture
 
-*Last update: 2019-04-04*
+*Last update: 2020-03-30*
 
 ## Rationale
 
@@ -206,11 +206,10 @@ header and I/O routines that will be directly called. *As long as the header add
 provided into the configuration list at `drvrs_ad`, it might be used by the regular
 kernel too*.
 
-For those systems lacking a fixed keyboard but
-sporting a VIA, a simple parallel input may be
-provided by _enabling PA latch_ and reading
-its value whenever a valid transition
-happened at `CA1`.
+For those systems lacking a fixed keyboard but sporting a VIA, a simple parallel input may be
+provided by _enabling PA latch_ and reading its value whenever a valid transition
+happened at `CA1`. _This is the method used for the [PASK](hard/pask.md) design_,
+a simple but versatile keyboard with a **minimal** supporting driver.
 
 ## Firmware
 
