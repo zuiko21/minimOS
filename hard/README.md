@@ -77,17 +77,18 @@ up to **32 kiB _Kernel_ EPROM** plus **up to 512 kiB _library_ EPROM**,
 VIA 65C22 (x2?), ACIA 65SC51, ROM-in-RAM (?).
   * Peripherals: Amplified piezo buzzer between PB7-CB2.
   * Interfaces: SS-22, new _VIAport**2**_ (_SBC-2_ style but with "mirrored" power pins),
-  TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
+TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
 
 
 [**Acapulco**](acapulco.md)
 
   * Status: almost finished design.
   * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: **1.536 MHz** 65C02, **32 kiB SRAM** (plus 1 kiB in parallel as _attribute area_, 
-**32 kiB EPROM**, VIA 65C22, CRTC HD6445. _Intended to be a **colour & graphics** capable SBC._
-  * Peripherals: Piezo buzzer, **VGA-compatible** video output (**~320x200 @ 16 colours** in gBRG mode,
-only 2 of them on any 8x8-pixel block)
+  * Specs: **1.536 MHz** 65C02, **32 kiB SRAM** (plus 1 kiB in parallel as
+_attribute area_, **32 kiB EPROM**, VIA 65C22, CRTC HD6445.
+_Intended to be a **colour & graphics** capable SBC._
+  * Peripherals: Piezo buzzer, **VGA-compatible** video output
+(**~320x200 @ 16 colours** in gBRG mode, only 2 of them on any 8x8-pixel block)
   * Interfaces: SS-22, new VIA connector.
 
 
@@ -105,10 +106,11 @@ ready for _cheap video_ output. _May use 32K RAM and 16K EPROM_ instead.
 
   * Status: **essentially finished** design.
   * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: **1.57 MHz** 65(C)02, **32 kiB SRAM** (plus 2 kiB _VRAM_), up to **32 kiB EPROM**,
-VIA 65(C)22, PIA 6521/6821, CRTC HD6845, with _optional second PIA_ for **IEEE-488** interface.
-  * Interfaces: **same as the original PET**; cassette and IEEE-488 on
-separate _optional_ board.
+  * Specs: **1.57 MHz** 65(C)02, **32 kiB SRAM** (plus 2 kiB _VRAM_), up to
+**32 kiB EPROM**, VIA 65(C)22, PIA 6521/6821, CRTC HD6845, with _optional second PIA_
+for **IEEE-488** interface.
+  * Interfaces: **same as the original PET**; cassette and IEEE-488 on separate
+_optional_ board.
 
 > _This is a recreation of the **Commodore PET/CBM 8032**, 
 switchable between **40 and 80 columns**_, with updated components
@@ -159,12 +161,13 @@ up to **8 MiB RAM** (2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**
   * Form-factor: 4-layer PCB, SMD components.
   * Specs: **9 MHz 65816** (base model), **24.576 MHz 68881 FPU** (or faster),
 just like the _Jalisco_ CPU card.
-  * Video output: 6445-based, _planar_ up to 8x128 kiB VRAM and **8 bpp**, typically **1360x768**.
+  * Video output: 6445-based, _planar_ up to 8x128 kiB VRAM and **8 bpp**, typically
+**1360x768**.
   * Other interfaces: those of _Jalisco_.
 
 > Base design allows an alternate **SIXtation Turbo @ 13.5 MHz** and **1152x896px**.
-Another option would be the _SIXtation-P_ (portrait) designed around _Apple Portrait Display_,
-putting **640x864px** at a reduced CPU speed of **7.16 MHz**.
+Another option would be the _SIXtation-P_ (portrait) designed around the
+_Apple Portrait Display_, getting **640x864px** at a reduced CPU speed of **7.16 MHz**.
 
 
 ### Non-65xx architectures
@@ -213,23 +216,26 @@ mimic the highly compatible **Dragon 32/64**.
   * Specs: **64 keys**, two sets of three modifier keys. _May include a 20x4 LCD_.
   * Interface: old-style _VIAport_ connector, thinking about using the new **VIAport2**.
 
-> Conveniently laid out keyboard, the use of an **optional LCD** will make a _self-contained
-simple terminal_.
+> Conveniently laid out keyboard, the use of an **optional LCD** will make a
+_self-contained simple terminal_.
 
 
 **[PASK (_Port-'A' Simple Keyboard_)](pask.md)**
 
   * Status: in design stage.
   * Specs: **40 keys** including the three usual _modifiers_: `Shift`, `Ctrl` and `Alt`.
-  * Interface: single **VIAport2**, supposedly compatible with _Centronics_ printer interface.
+  * Interface: single **VIAport2**, supposedly compatible with _Centronics_
+printer interface.
 
-> A self-contained keyboard, supported by a **minimal driver**.  Allows input of the **full 8-bit** ASCII set.
+> A self-contained keyboard, supported by a **minimal driver**.  Allows input of the
+**full 8-bit** ASCII set.
 
 
 **Roñavid**
 
   * Status: (almost) finished design.
-  * Specs: **VGA-compatible** output, typically **576x448 _bitmap_** or **288x224 @ 4bpp** _chunky_).
+  * Specs: **VGA-compatible** output, typically **576x448 _bitmap_** or
+**288x224 @ 4bpp** _chunky_).
   * Interface: _VME-like bus_.
   
 > _Somewhat cumbersome_ **video card**. No CRTC, just _suitably programmed EPROMs_
@@ -242,8 +248,9 @@ generating all needed addresses and signals.
   * Specs: **VGA-compatible** output of **288x224px bitmap**.
   * Interface: **6502-CPU _socket_**
 
-> Simple, universal **graphic display**. _An extended **planar** version might provide **8 colours**_.
+> Simple, universal **graphic display**. _An extended **planar** version might provide
+**8 colours**_.
 ---
 _...and many more to come!_
 
-_last modified: 20200320-2326_
+_last modified: 20200403-1922_
