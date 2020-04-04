@@ -1,0 +1,43 @@
+; SIXtation FW background fill
+; (c) 2020 Carlos J. Santisteban
+; last modified 20200404-1853
+
+; *** hardware definitions ***
+
+	mp_sel =	$DFC2		; multiplane select write
+	mp_lngl =	$B00000		; multiplane access base
+	mp_lngh =	$B10000		; multiplane access second half
+
+	* = $FBF0				; experimental background fill routine, note BF mnemonic
+
+bg_fill:
+; enter routine, Y = background colour (AND 254)
+; in case full 8-bit enter is not guaranteed...
+	SEP #$30				; all 8-bit (3)
+	.xs:.as
+; will exit on 16-bit both M & X
+	TYA						; base colour on A.MSB... (2)
+	XBA						; switch accs (3)
+	TYA						; ...and on A.LSB (2)
+	LDX #0						; reset index (2)
+
+	REP #$30				; all 16-bit (3)
+	.xl:.al
+
+	AND #$FEFE				; mask bit 0 (and 8) out (3)
+	TAY						; save for later (2)
+	EOR #$FEFE				; select zeroed bits (3)
+	STA mp_sel				; enable these banks, LSB ignored (5)
+	TXA						; clear value for these banks (2)
+bf_loop:	; 19x32768+13-1 twice -1, 30+6 overhead
+		STA @mp_lngl, X				; clear that word... (6)
+		STA @mp_lngh, X				; ...on both halves (6)
+		INX							; next word (2+2)
+		INX
+		BNE bf_loop				; repeat until X wraps (3)
+	STY mp_sel				; select planes to be set, LSB ignored (5)
+	DEC						; now A will be all ones (2)
+	CMP #$FFFE				; went twice? (3)
+		BNE bf_loop				; if not, go for a second time (3)
+	RTS						; *** ends in all 16-bit ***
+; takes about 0.138s @ 9 MHz, or 92ms @ 13.5 MHz, 41 bytes ($FBF0-$FC18)
