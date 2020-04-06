@@ -1,6 +1,6 @@
 ; SIXtation FW background fill
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20200405-2319
+; last modified 20200406-2224
 
 ; *** hardware definitions ***
 
@@ -41,9 +41,10 @@ bf_loop:	; 19x32768+13-1 twice -1, 30+6 overhead
 		BNE bf_loop				; if not, go for a second time (3)
 	RTS						; *** ends in all 16-bit ***
 ; takes about 0.138s @ 9 MHz, or 92ms @ 13.5 MHz, 41 bytes ($FBF0-$FC18)
+; is this timing right?
 
 /*
-; alternative way is 51 bytes, not sure if any faster
+; alternative way is 51 bytes, actually SLOWER 189ms @ 9 MHz
 	SEP #$30
 	.as:.xs
 
@@ -57,26 +58,26 @@ bf_loop:	; 19x32768+13-1 twice -1, 30+6 overhead
 	REP #$30
 	.xl:.al
 
-	TXA
+	TXA				; common part 22t
 bf_cyc:
-		PEA #$B1B0
-		PLB
+		PEA #$B1B0		; 5t twice
+		PLB			; 1st loop is 4t plus 32k x 13 -1, 425987t
 bf_loop:
 			STA 0, X	; zeropage or absolute for 16-bit index?
 			INX
 			INX
 			BNE bf_loop
-		PLB
+		PLB			; 2nd loop is 425987t
 bf_loop2:
 			STA 0, X	; zeropage or absolute for 16-bit index?
 			INX
 			INX
 			BNE bf_loop2
-		DEC
+		DEC			; 1+ twice 7
 		CMP #$FFFE
 	BEQ bf_exit
 
-		SEP #$10
+		SEP #$10		; once done 13
 		.xs
 
 		STY mp_sel
@@ -86,5 +87,5 @@ bf_loop2:
 
 		BRA bf_cyc
 bf_exit:
-	RTS
+	RTS				; last 6t, TOTAL 
 */
