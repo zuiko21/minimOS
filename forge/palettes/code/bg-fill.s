@@ -1,6 +1,6 @@
 ; SIXtation FW background fill
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20200406-2224
+; last modified 20200410-2227
 
 ; *** hardware definitions ***
 
@@ -12,7 +12,7 @@
 
 bg_fill:
 ; enter routine, Y = background colour (AND 254)
-; in case full 8-bit enter is not guaranteed...
+; in case full 8-bit entry is not guaranteed...
 	SEP #$30				; all 8-bit (3)
 	.xs:.as
 ; will exit on 16-bit both M & X
@@ -41,7 +41,7 @@ bf_loop:	; 19x32768+13-1 twice -1, 30+6 overhead
 		BNE bf_loop				; if not, go for a second time (3)
 	RTS						; *** ends in all 16-bit ***
 ; takes about 0.138s @ 9 MHz, or 92ms @ 13.5 MHz, 41 bytes ($FBF0-$FC18)
-; is this timing right?
+; is this timing right? seems so!
 
 /*
 ; alternative way is 51 bytes, actually SLOWER 189ms @ 9 MHz
