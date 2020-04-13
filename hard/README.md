@@ -9,7 +9,9 @@ the utterly popular Commodore-64 (using a 6510) is targeted.
 
 Back to my **own-designed** devices, here's the range (past, present and future):
 
-## Computers
+## (Simple) Computers
+
+### 65x02-based
 
 **MTE _("Medidor de Tiempos de Exposición", Exposure Time Meter)_**
 
@@ -39,6 +41,7 @@ not solved yet. _Likely to be discarded_.
   * Peripherals: Piezo buzzer between PB7-CB2
   * Interfaces: **SS-22** and _old **VIAport**_ connectors.
 
+> Soldered, compact version of SDd.
 
 [**CHIHUAHA PLUS**](https://flic.kr/s/aHsjEGuCH3)
 
@@ -48,48 +51,6 @@ not solved yet. _Likely to be discarded_.
 _Can be configured for **32 kiB RAM + 16 kiB EPROM** if desired_.
   * Peripherals: _Amplified_ piezo buzzer between PB7-CB2
   * Interfaces: **SS-22** and _old **VIAport**_ connectors.
-
-
-[**SDx _("Sistema de Desarrollo eXpandible", Expansible Develpment 
-System)_**](https://flic.kr/s/aHsjDAwJBR)
-
-  * Status: aborted during construction :-(
-  * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: 1.25 / 2 MHz 65C02/102, 8-16 kIB RAM, 32 kiB EPROM, VIA 65C22,
-ACIA 65SC51, RTC 146818.
-  * Peripherals: Amplified piezo buzzer between PB7-CB2, several diagnostic LEDs.
-  * Interfaces: Hitachi LCD, TTL-level RS-232, SS-22 and old _VIAport_ connectors.
-
-
-**Baja**
-
-  * Status: never started :-(
-
-> Intended to be a **fully _bankswitching_ 65C02 SBC**, but pluggable into a backplane, too.
-
-
-[**Jalapa (formerly _SDm_)**](jalapa2.md)
-
-  * Status: almost finished design, heavily _revamped_ as of Oct-2018.
-  * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: 1.8432 / 2.304 MHz **65816**, **128/512 kiB RAM**,
-up to **32 kiB _Kernel_ EPROM** plus **up to 512 kiB _library_ EPROM**,
-VIA 65C22 (x2?), ACIA 65SC51, ROM-in-RAM (?).
-  * Peripherals: Amplified piezo buzzer between PB7-CB2.
-  * Interfaces: SS-22, new _VIAport**2**_ (_SBC-2_ style but with "mirrored" power pins),
-TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
-
-
-[**Acapulco**](acapulco.md)
-
-  * Status: almost finished design.
-  * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: **1.536 MHz** 65C02, **32 kiB SRAM** (plus 1 kiB in parallel as
-_attribute area_, **32 kiB EPROM**, VIA 65C22, CRTC HD6445.
-_Intended to be a **colour & graphics** capable SBC._
-  * Peripherals: Piezo buzzer, **VGA-compatible** video output
-(**~320x200 @ 16 colours** in gBRG mode, only 2 of them on any 8x8-pixel block)
-  * Interfaces: SS-22, new VIA connector.
 
 
 [**miniKIM**](minikim.md)
@@ -117,60 +78,133 @@ switchable between **40 and 80 columns**_, with updated components
 (e.g. SRAM) and **VGA-compatible** output (thus about **57% faster**).
 
 
+**Tampico**
+
+  * Status: finishing specs.
+  * Form-factor: Perfboard with point-to-point soldering.
+  * Specs: **1.536 MHz** 65C02, **32 kiB SRAM**, **32 kiB EPROM**, VIA 65C22, CRTC HD6845.
+  * Peripherals: Piezo buzzer, **VGA-compatible** video output
+(**~288x224 bitmap** with option of _288x**448**_, similar to **mu-VDU**)
+  * Interfaces: SS-22, new VIA connector.
+
+> A _black & white_ version of **Acapulco**, albeit with a 'high' resolution option
+(might be added to **Acapulco**, too).
+
+
+[**Acapulco**](acapulco.md)
+
+  * Status: almost finished design.
+  * Form-factor: Perfboard with point-to-point soldering.
+  * Specs: **1.536 MHz** 65C02, **32 kiB SRAM** (plus 1 kiB in parallel as
+_attribute area_, **32 kiB EPROM**, VIA 65C22, CRTC HD6445.
+_Intended to be a **colour & graphics** capable SBC._
+  * Peripherals: Piezo buzzer, **VGA-compatible** video output
+(**~228x224 @ 16 colours** in gBRG mode, only 2 of them on any 8x8-pixel block)
+  * Interfaces: SS-22, new VIA connector.
+
+> _May use the 'high' resolution option from **Tampico**, as CRAM is really 2 kiB_.
+
+
+### 65816-based
+
+[**Jalapa (formerly _SDm_)**](jalapa2.md)
+
+  * Status: almost finished design, heavily _revamped_ as of Oct-2018.
+  * Form-factor: Perfboard with point-to-point soldering.
+  * Specs: 1.8432 / 2.304 MHz **65816**, **128/512 kiB RAM**,
+up to **32 kiB _Kernel_ EPROM** plus **up to 512 kiB _library_ EPROM**,
+VIA 65C22 (x2?), ACIA 65SC51, ROM-in-RAM (?).
+  * Peripherals: Amplified piezo buzzer between PB7-CB2.
+  * Interfaces: SS-22, new _VIAport**2**_ (_SBC-2_ style but with "mirrored" power pins),
+TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
+
+> **Development system**, much like the former _SDx_ project.
+
+
 **Tijuana**
 
-  * Status: finishing design.
+  * Status: finishing design, _revamped as 20200413_
   * Form-factor: Single layer PCB?
-  * Specs: **6.144 MHz 65816**, 16 kiB SRAM (plus 16 more for _ROM-in-RAM_),
-**3x32 kiB VRAM**, 16 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
-  * Peripherals: Piezo buzzer, **VGA-compatible** video output (**~576x448** @
-up to **4bpp**, gBRG or greyscale). 
+  * Specs: **3.072 MHz 65816**, 128 kiB SRAM (expandable to **512 kB**),
+(optional?) 32 kiB **CRAM**, 16 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
+  * Peripherals: Piezo buzzer, **VGA-compatible** video output (**~576x448** bitmap or
+up to **4bpp** on 8x1 _attribute area_, gBRG or greyscale?).
   * Interfaces: TTL-level async., SS-22, parallel input, perhaps
-_VME-like_ slot (65816 direct expansion) .
+_VME-like_ slot (65816 direct expansion).
 
-> _Intended to be a **colour & graphics** capable **VT-52** based terminal_.
+> _Intended to be a **graphics** (and perhaps _colour_) capable **VT-52** based terminal_,
+a bit like an '816-based **Tampico** computer.
 
+## Workstations (65816-based)
 
 **Veracruz**
 
   * Status: in design stage _(might become a lower-spec **SIXtation**)_.
   * Form-factor: thru-hole PCB?
-  * Specs: **3.072 MHz 65816, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM**,
-2x VIA 65C22, UART 16C550 (?), RTC MC146818 (?), ROM-in-RAM (?). 
+  * Specs: **6.144 MHz 65816**, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
+2x VIA 65C22, UART 16C550, RTC MC146818 (?), ROM-in-RAM. 
   * Peripherals: Piezo buzzer, Hitachi LCD thru VIA (?).
   * Interfaces: new VIA and SS-22 connectors, TTL-level async, **65SIB** (?), **PS/2**,
 _VME-like_ slot (65816 direct expansion).
 
-> _Likely to include a **4bpp, ~640x400px** card (**SIXtation Lite**)_
+> _Likely to include a **4bpp, ~576x448 px** card (becoming the **SIXtation Lite**)_
 
 
 **Jalisco** _(CPU card for **SIXtation**)_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
-  * Specs: up to **13.5 MHz 65816**, optional **68881/882 FPU**,
-up to **8 MiB RAM** (2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**,
-2x or 3x VIA 65C22, UART 16C552, RTC MC146818, _ROM-in-RAM_.
+  * Specs: up to **13.5 MHz 65816**, **68881/882 FPU**, up to **8-9 MiB RAM**
+(2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**, 2x or 3x VIA 65C22,
+UART 16C552, RTC MC146818, _ROM-in-RAM_.
   * Peripherals: most likely those of _Veracruz_, plus CF & SD-card.
   * Interfaces: most likely those of _Veracruz_, including **65SIB**, _VME-like slot_...
+
+> The 7.16/9 Mhz version could be **Jalisco**, and the **13.5 MHz** could be
+**Tabasco**, as the standard CPU card for the _SIXtation TURBO_
+
+
+**Tabasco** _(CPU card for **SIXtation TURBO**)_
 
 
 [**SIXtation**](sixtation.md) _essentially a **Jalisco** CPU card with an 8-plane VDU_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
-  * Specs: **9 MHz 65816** (base model), **24.576 MHz 68881 FPU** (or faster),
-just like the _Jalisco_ CPU card.
+  * Specs: **9 MHz 65816** (base model), **24.576 MHz 68881 FPU** (or faster) using the
+_Jalisco_ (or _Tabasco_) CPU card.
   * Video output: 6445-based, _planar_ up to 8x128 kiB VRAM and **8 bpp**, typically
-**1360x768**.
+**1360x768 px**.
   * Other interfaces: those of _Jalisco_.
 
-> Base design allows an alternate **SIXtation Turbo @ 13.5 MHz** and **1152x896px**.
+> Base design allows an alternate **SIXtation Turbo @ 13.5 MHz** and **1152x896 px**.
 Another option would be the _SIXtation-P_ (portrait) designed around the
-_Apple Portrait Display_, getting **640x864px** at a reduced CPU speed of **7.16 MHz**.
+_Apple Portrait Display_, getting **640x864 px** at a reduced CPU speed of **7.16 MHz**.
 
 
-### Non-65xx architectures
+## Aborted projects (6502-based)
+
+[**SDx _("Sistema de Desarrollo eXpandible", Expansible Develpment 
+System)_**](https://flic.kr/s/aHsjDAwJBR)
+
+  * Status: aborted during construction :-(
+  * Form-factor: Perfboard with point-to-point soldering.
+  * Specs: 1.25 / 2 MHz 65C02/102, 8-16 kIB RAM, 32 kiB EPROM, VIA 65C22,
+ACIA 65SC51, RTC 146818.
+  * Peripherals: Amplified piezo buzzer between PB7-CB2, several diagnostic LEDs.
+  * Interfaces: Hitachi LCD, TTL-level RS-232, SS-22 and old _VIAport_ connectors.
+
+
+**Baja**
+
+  * Status: never started :-(
+
+> Intended to be a **fully _bankswitching_ 65C02 SBC**, but pluggable into a backplane, too.
+
+
+## Non-65xx architectures
+
+### Motorola 6800 & 6809-based
 
 [**KERAton**](https://flic.kr/p/dUEH5s)
 
@@ -180,6 +214,14 @@ PIA **CM602** (MC6820 clone), ACIA 2651.
 > Made from **ceramic**-cased ICs only.
 
 
+[**miniAlice**](minialice.md)
+
+  * Specs: 895 kHz **MC6803** _MCU_, **8 KiB** SRAM, **MC6847** video (with _RGB_ output).
+
+> Recreation of Tandy's **TRS-80 _MC-10_**), perhaps switchable to mimic its French clone
+**Matra & Hachette _Alice_** (AZERTY keyboard).
+
+
 [**miniCoCo**](minicoco.md)
 
   * Specs: 895 kHz **MC6809**, 32-64 KiB **S**RAM, 2x PIA 6821,
@@ -187,14 +229,6 @@ PIA **CM602** (MC6820 clone), ACIA 2651.
 
 > Recreation of Tandy's **TRS-80 _Color Computer_** (version 1), switchable to
 mimic the highly compatible **Dragon 32/64**.
-
-
-[**miniAlice**](minialice.md)
-
-  * Specs: 895 kHz **MC6803** _MCU_, **8 KiB** SRAM, **MC6847** video (with _RGB_ output).
-
-> Recreation of Tandy's **TRS-80 _MC-10_**), perhaps switchable to mimic its French clone
-**Matra & Hachette _Alice_** (AZERTY keyboard).
 
 
 ## Peripherals (TBD)
@@ -253,4 +287,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20200403-1922_
+_last modified: 20200413-1737_
