@@ -3,6 +3,21 @@
 A powerful **_65816-based_ graphic workstation** inspired by the _3M-compliant_ (1 MByte,
 1 MegaPixel, 1 MIPS) computers of the early 80s (Sun-1, SGI IRIS 1000...)
 
+## The range
+
+The **SIXtation** range is actually the combination of any powerful 65816 CPU card
+(**Veracruz**, **Jalisco** or **Tabasco**) with a suitable _planar_ video card.
+
+Model|CPU card|MHz|px|bpp
+-----|--------|---|--|---
+SIXtation lite|Veracruz|6.144|576x448\*|4
+SIXtation P|Jalisco|7.16|640x864\*|8
+SIXtation|Jalisco|9|1360x768|8
+SIXtation TURBO|Tabasco|13.5|1152x896|8
+
+> \*) These resolutions fail to satisfy the 1 MP criterium. The **Veracruz** card
+may be limited to 512 kiB, too.
+
 ## Specifications
 
 - CPU: 65816 @ **9 MHz** (~2.5 MIPS) or **13.5 MHz** on the _Turbo_ version (~4 MIPS)
@@ -70,7 +85,7 @@ _Note that this mode needs a **positive** horizontal sync pulse_. On the other h
 expects **negative** syncs_, so a full-software resolution switch does not seem feasible, unless some
 port bits are used for selective inversion of syncs (via XOR gates, which may be as slow as a 4000-series IC).
 
-### SIXtation TURBO?
+### SIXtation TURBO
 
 A further development would be a **faster** version of the SIXtation, by syncing with the _VESA 1280 x 1024 timing_,
 quite suitable for my _superb LG 1910S monitor_. In order to stay within the _megapixel_ limit (which for 8bpp takes
@@ -254,4 +269,4 @@ interchangeable, thus the 5 MiB configuration _must_ populate the "low" slot.
 About the `/OE` signal on RAMs, it must be **disabled during I/O** (as the standard `$DF` I/O page conflicts),
 and also when `sys` ROM is accessed _while not disabled_ -- this machine has the **ROM-in-RAM** feature.
 
-_last modified 20200322-2205_
+_last modified 20200415-2311_
