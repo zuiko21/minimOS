@@ -27,16 +27,17 @@ a couple of buttons...
 
   * Status: [WORKING!](https://twitter.com/zuiko21/status/936654607014653952?s=19)
   * Form-factor: [solderless breadboard.](https://flic.kr/s/aHsjCMszTY)
-  * Specs: 1 MHz 65SC02, **2 kiB RAM, 2-4 kIB (E)EPROM**, VIA 65C22.
+  * Specs: 1 MHz 65SC02 (only 13 address bits used), **2 kiB RAM, 2-4 kIB (E)EPROM**,
+VIA 65C22.
   * Peripherals: Amplified piezo buzzer between PB7-CB2,
 currently with a VIA-attached 4-digit **LED-keypad**.
 
 
-[**CHIHUAHUA**](https://flic.kr/s/aHsjEn5ntM)
+[**CHIHUAHUA**](chihuahua.md)
 
-  * Status: Finished and _sort-of_ working, but with some strange bug with VIA,
+  * Status: Finished and _sort-of_ working, but with some strange bug around VIA access,
 not solved yet. _Likely to be discarded_.
-  * Form-factor: Perfboard with point-to-point soldering.
+  * Form-factor: [Perfboard with point-to-point soldering.](https://flic.kr/s/aHsjEn5ntM)
   * Peripherals: Piezo buzzer between PB7-CB2
   * Interfaces: **SS-22** and _old **VIAport**_ connectors.
 
@@ -46,7 +47,7 @@ not solved yet. _Likely to be discarded_.
 
   * Status: [under construction (recently redesigned).](https://flic.kr/s/aHsjEGuCH3)
   * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: **1 MHz (socketed)** 65C02, **16 kiB RAM, 32 kiB EPROM**, VIA 65C22.
+  * Specs: **1 MHz (socketed XTAL)** 65C02, **16 kiB RAM, 32 kiB EPROM**, VIA 65C22.
 _Can be configured for **32 kiB RAM + 16 kiB EPROM** if desired_.
   * Peripherals: _Amplified_ piezo buzzer between PB7-CB2
   * Interfaces: **SS-22** and _old **VIAport**_ connectors.
@@ -87,7 +88,7 @@ switchable between **40 and 80 columns**_, with updated components
   * Interfaces: SS-22, new VIA connector.
 
 > A _black & white_ version of **Acapulco**, albeit with a 'high' resolution option
-(might be added to **Acapulco**, too).
+(might be added to **Acapulco**, too). _Might include a 6551-based TTL serial_.
 
 
 [**Acapulco**](acapulco.md)
@@ -110,9 +111,9 @@ _Intended to be a **colour & graphics** capable SBC._
 
   * Status: almost finished design, heavily _revamped_ as of Oct-2018.
   * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: 1.8432 / 2.304 MHz **65816**, **128/512 kiB RAM**,
+  * Specs: 1.8432 / 2.304 MHz **65816**, **128-512 kiB RAM**,
 up to **32 kiB _Kernel_ EPROM** plus **up to 512 kiB _library_ EPROM**,
-VIA 65C22 (x2?), ACIA 65SC51, ROM-in-RAM (?).
+VIA 65C22 (x2?), ACIA 65SC51, ROM-in-RAM, RTC 146818 (?).
   * Peripherals: Amplified piezo buzzer between PB7-CB2.
   * Interfaces: SS-22, new _VIAport**2**_ (_SBC-2_ style but with "mirrored" power pins),
 TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
@@ -125,16 +126,15 @@ TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
   * Status: finishing design, _revamped as 20200413_
   * Form-factor: Single layer PCB?
   * Specs: **3.072 MHz 65816**, 128 kiB SRAM (expandable to **512 kB**),
-(optional?) 32 kiB **CRAM**, 16 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
+(optional?) 32 kiB **CRAM**, 32 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
   * Peripherals: Piezo buzzer, **VGA-compatible** video output (**~576x448** bitmap or
 up to **4bpp** on 8x1 _attribute area_, gBRG or greyscale?).
-  * Interfaces: TTL-level async., SS-22, parallel input, perhaps
-_VME-like_ slot (65816 direct expansion).
+  * Interfaces: TTL-level async., SS-22, VIAport2.
 
 > _Intended to be a **graphics** (and perhaps _colour_) capable **VT-52** based terminal_,
-a bit like an '816-based **Tampico** computer.
+a bit like an '816-based **Tampico** computer. Might use a 16C550 instead of the 6551.
 
-## Workstations (65816-based)
+##  Workstations (65816-based)
 
 [**Veracruz**](veracruz.md)
 
@@ -167,7 +167,7 @@ uses a **9 MHz** clock.
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
-  * Specs: up to **13.5 MHz 65816**, **68881/882 FPU**, up to **1 MiB RAM, expandable**
+  * Specs: **13.5 MHz 65816**, **68881/882 FPU**, **1 MiB RAM, expandable**
 (2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**, 2x or 3x VIA 65C22,
 UART 16C552, RTC MC146818, _ROM-in-RAM_.
   * Peripherals: most likely those of _Jalisco_, plus CF & SD-card.
