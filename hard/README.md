@@ -13,7 +13,7 @@ Back to my **own-designed** devices, here's the range (past, present and future)
 
 ### 65x02-based
 
-**MTE _("Medidor de Tiempos de Exposición", Exposure Time Meter)_**
+[**MTE** _("Medidor de Tiempos de Exposición", Exposure Time Meter)_](mte.md)
 
   * Status: finishing design.
   * Form-factor: soldered PCB.
@@ -23,11 +23,10 @@ Back to my **own-designed** devices, here's the range (past, present and future)
 a couple of buttons...
 
 
-[**SDd _("Sistema de Desarrollo didáctico", Learning Development 
-System)_**](https://flic.kr/s/aHsjCMszTY)
+[**SDd** _("Sistema de Desarrollo didáctico", Learning Development System)_](sdd.md)
 
   * Status: [WORKING!](https://twitter.com/zuiko21/status/936654607014653952?s=19)
-  * Form-factor: solderless breadboard.
+  * Form-factor: [solderless breadboard.](https://flic.kr/s/aHsjCMszTY)
   * Specs: 1 MHz 65SC02, **2 kiB RAM, 2-4 kIB (E)EPROM**, VIA 65C22.
   * Peripherals: Amplified piezo buzzer between PB7-CB2,
 currently with a VIA-attached 4-digit **LED-keypad**.
@@ -37,15 +36,15 @@ currently with a VIA-attached 4-digit **LED-keypad**.
 
   * Status: Finished and _sort-of_ working, but with some strange bug with VIA,
 not solved yet. _Likely to be discarded_.
-  * Form-factor: Soldered, compact version of SDd. Perfboard with point-to-point soldering.
+  * Form-factor: Perfboard with point-to-point soldering.
   * Peripherals: Piezo buzzer between PB7-CB2
   * Interfaces: **SS-22** and _old **VIAport**_ connectors.
 
-> Soldered, compact version of SDd.
+> Soldered, compact version of [SDd](sdd.md).
 
-[**CHIHUAHA PLUS**](https://flic.kr/s/aHsjEGuCH3)
+[**CHIHUAHA PLUS**](chihuahuaplus.md)
 
-  * Status: under construction (recently redesigned).
+  * Status: [under construction (recently redesigned).](https://flic.kr/s/aHsjEGuCH3)
   * Form-factor: Perfboard with point-to-point soldering.
   * Specs: **1 MHz (socketed)** 65C02, **16 kiB RAM, 32 kiB EPROM**, VIA 65C22.
 _Can be configured for **32 kiB RAM + 16 kiB EPROM** if desired_.
@@ -78,7 +77,7 @@ switchable between **40 and 80 columns**_, with updated components
 (e.g. SRAM) and **VGA-compatible** output (thus about **57% faster**).
 
 
-**Tampico**
+[**Tampico**](tampico.md)
 
   * Status: finishing specs.
   * Form-factor: Perfboard with point-to-point soldering.
@@ -107,7 +106,7 @@ _Intended to be a **colour & graphics** capable SBC._
 
 ### 65816-based
 
-[**Jalapa (formerly _SDm_)**](jalapa2.md)
+[**Jalapa** (formerly _SDm_)](jalapa2.md)
 
   * Status: almost finished design, heavily _revamped_ as of Oct-2018.
   * Form-factor: Perfboard with point-to-point soldering.
@@ -121,7 +120,7 @@ TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
 > **Development system**, much like the former _SDx_ project.
 
 
-**Tijuana**
+[**Tijuana**](tijuana.md)
 
   * Status: finishing design, _revamped as 20200413_
   * Form-factor: Single layer PCB?
@@ -137,7 +136,7 @@ a bit like an '816-based **Tampico** computer.
 
 ## Workstations (65816-based)
 
-**Veracruz**
+[**Veracruz**](veracruz.md)
 
   * Status: in design stage _(might become a lower-spec **SIXtation**)_.
   * Form-factor: thru-hole PCB?
@@ -150,7 +149,7 @@ _VME-like_ slot (65816 direct expansion).
 > _Likely to include a **4bpp, ~576x448 px** card (becoming the **SIXtation Lite**)_
 
 
-**Jalisco** _(CPU card for **SIXtation**)_
+[**Jalisco**](jalisco.md) _(CPU card for **SIXtation**)_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
@@ -164,7 +163,7 @@ UART 16C552, RTC MC146818, _ROM-in-RAM_.
 **Tabasco**, as the standard CPU card for the _SIXtation TURBO_
 
 
-**Tabasco** _(CPU card for **SIXtation TURBO**)_
+[**Tabasco**](tabasco.md) _(CPU card for **SIXtation TURBO**)_
 
 
 [**SIXtation**](sixtation.md) _essentially a **Jalisco** CPU card with an 8-plane VDU_
@@ -287,4 +286,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20200413-1737_
+_last modified: 20200419-1728_
