@@ -138,7 +138,7 @@ a bit like an '816-based **Tampico** computer.
 
 [**Veracruz**](veracruz.md)
 
-  * Status: in design stage _(might become a lower-spec **SIXtation**)_.
+  * Status: in design stage.
   * Form-factor: thru-hole PCB?
   * Specs: **6.144 MHz 65816**, 512 kiB RAM, 32 kiB _Kernel_ EPROM, 512 kiB _lib_ EPROM,
 2x VIA 65C22, UART 16C550, RTC MC146818 (?), ROM-in-RAM. 
@@ -153,32 +153,40 @@ _VME-like_ slot (65816 direct expansion).
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
-  * Specs: up to **13.5 MHz 65816**, **68881/882 FPU**, up to **8-9 MiB RAM**
+  * Specs: **7.16-9 MHz 65816**, **68881/882 FPU**, **1 MiB RAM, expandable**
 (2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**, 2x or 3x VIA 65C22,
 UART 16C552, RTC MC146818, _ROM-in-RAM_.
   * Peripherals: most likely those of _Veracruz_, plus CF & SD-card.
   * Interfaces: most likely those of _Veracruz_, including **65SIB**, _VME-like slot_...
 
-> The 7.16/9 Mhz version could be **Jalisco**, and the **13.5 MHz** could be
-**Tabasco**, as the standard CPU card for the _SIXtation TURBO_
+> The 7.16 MHz version is the CPU card for _SIXtation-P_, while the standard model
+uses a **9 MHz** clock.
 
 
 [**Tabasco**](tabasco.md) _(CPU card for **SIXtation TURBO**)_
 
+  * Status: in design stage.
+  * Form-factor: 4-layer PCB, SMD components.
+  * Specs: up to **13.5 MHz 65816**, **68881/882 FPU**, up to **1 MiB RAM, expandable**
+(2 x Garth's modules), 32 kiB Kernel + **4 MiB _lib_ EPROM**, 2x or 3x VIA 65C22,
+UART 16C552, RTC MC146818, _ROM-in-RAM_.
+  * Peripherals: most likely those of _Jalisco_, plus CF & SD-card.
+  * Interfaces: most likely those of _Jalisco_.
 
-[**SIXtation**](sixtation.md) _essentially a **Jalisco** CPU card with an 8-plane VDU_
+
+[**SIXtation**](sixtation.md) _essentially a **Jalisco/Tabasco** CPU card with an 8-plane VDU_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
-  * Specs: **9 MHz 65816** (base model), **24.576 MHz 68881 FPU** (or faster) using the
-_Jalisco_ (or _Tabasco_) CPU card.
-  * Video output: 6445-based, _planar_ up to 8x128 kiB VRAM and **8 bpp**, typically
-**1360x768 px**.
-  * Other interfaces: those of _Jalisco_.
+  * Specs: **9 MHz 65816** (base model), **24.576 MHz 68881 FPU** (or faster), up to
+**8-9 MiB RAM** using the _Jalisco_ (or _Tabasco_) CPU card.
+  * Video output: VGA, 6445-based, _planar_ up to 8x128 kiB VRAM and **8 bpp**, typically
+**1360x768 px**. 24-bit CLUT.
+  * Other interfaces: those of _Jalisco/Tabasco_.
 
-> Base design allows an alternate **SIXtation Turbo @ 13.5 MHz** and **1152x896 px**.
-Another option would be the _SIXtation-P_ (portrait) designed around the
-_Apple Portrait Display_, getting **640x864 px** at a reduced CPU speed of **7.16 MHz**.
+> Range include the P (portrait) version (**7.16 MHz, 640x864 px**) and _TURBO_ model
+(**13.5 MHz, 1152x896 px**). Also the FPU-less, Veracruz-based _SIXtation Lite_
+(**6.144 MHz, 576x448 px, 4 bpp**).
 
 
 ## Aborted projects (6502-based)
@@ -286,4 +294,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20200419-1728_
+_last modified: 20200419-1806_
