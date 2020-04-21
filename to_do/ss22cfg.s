@@ -4,11 +4,11 @@
 /*
 Init:
 	Set 15625 bps
-	Send $55, receive (CB2=entry1)
+	Send $55, receive (CA2=entry1)
 Entry 1:
-	Got $55? Send $22, receive (CB2=entry2)
+	Got $55? Send $22, receive (CA2=entry2)
 	Got $22?	if not shifted, DISABLE!
-			else Send S, receive (CB2=entry3)
+			else Send S, receive (CA2=entry3)
 	Got anything else? DISABLE!
 Entry 2:
 	Get X=other end's speed
@@ -21,5 +21,5 @@ Link:
 		if x>s, T2=0
 		else if x=s, T2=1
 		else T2=myTab[x]
-	Set CB2 to standard buffer reception
+	Set CA2 to standard buffer reception
 */
