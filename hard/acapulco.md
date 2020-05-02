@@ -83,6 +83,10 @@ thus provide several _configuration tables_, allowing these suggested modes:
 
 _Firmware_ may provide a module for **quick video mode selection** during startup.
 
+On the other hand, some VGA monitors (like my Acer) allow the somewhat reduced
+scan frequencies (58.5 Hz & 30.7 kHz) from a 24.576 MHz clock, thus taking the whole
+320 x 200 without any weaking.   
+
 6x45's _raster addresses_ are wired as the most significant bits. This allows fast
 **hardware-assisted scrolling** (Amstrad-like). It also sets a _constant distance_
 (`$400`) between the _colour RAM_ and the upper raster of each displayed character,
@@ -257,4 +261,4 @@ to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
 the tristate option is activated**. _Read above about ways to achieve this,
 thru proper enabling of the `RAM /CS` signal_. 
 
-_Last modified: 20200128-1431_
+_Last modified: 20200502-2245_
