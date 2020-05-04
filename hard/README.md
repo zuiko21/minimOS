@@ -84,7 +84,7 @@ switchable between **40 and 80 columns**_, with updated components
   * Form-factor: Perfboard with point-to-point soldering.
   * Specs: **1.536 MHz** 65C02, **32 kiB SRAM**, **32 kiB EPROM**, VIA 65C22, CRTC HD6845.
   * Peripherals: Piezo buzzer, **VGA-compatible** video output
-(**~288x224 bitmap** with option of _288x**448**_, similar to **mu-VDU**)
+(**320x200/288x224 bitmap** with option of _**400/448 lines**_)
   * Interfaces: SS-22, new VIA connector.
 
 > A _black & white_ version of **Acapulco**, albeit with a 'high' resolution option
@@ -99,7 +99,7 @@ switchable between **40 and 80 columns**_, with updated components
 _attribute area_, **32 kiB EPROM**, VIA 65C22, CRTC HD6445.
 _Intended to be a **colour & graphics** capable SBC._
   * Peripherals: Piezo buzzer, **VGA-compatible** video output
-(**~228x224 @ 16 colours** in gBRG mode, only 2 of them on any 8x8-pixel block)
+(**320x200/228x224 @ 16 colours** in gBRG mode, only 2 of them on any 8x8-pixel block)
   * Interfaces: SS-22, new VIA connector.
 
 > _May use the 'high' resolution option from **Tampico**, as CRAM is really 2 kiB_.
@@ -127,8 +127,8 @@ TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
   * Form-factor: Single layer PCB?
   * Specs: **3.072 MHz 65816**, 128 kiB SRAM (expandable to **512 kB**),
 (optional?) 32 kiB **CRAM**, 32 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
-  * Peripherals: Piezo buzzer, **VGA-compatible** video output (**~576x448** bitmap or
-up to **4bpp** on 8x1 _attribute area_, gBRG or greyscale?).
+  * Peripherals: Piezo buzzer, **VGA-compatible** video output (**640x400/576x448**
+bitmap or up to **4bpp** on 8x1 _attribute area_, gBRG or greyscale?).
   * Interfaces: TTL-level async., SS-22, VIAport2.
 
 > _Intended to be a **graphics** (and perhaps _colour_) capable **VT-52** based terminal_,
@@ -146,7 +146,7 @@ a bit like an '816-based **Tampico** computer. Might use a 16C550 instead of the
   * Interfaces: new VIA and SS-22 connectors, TTL-level async, **65SIB** (?), **PS/2**,
 _VME-like_ slot (65816 direct expansion).
 
-> _Likely to include a **4bpp, ~576x448 px** card (becoming the **SIXtation Lite**)_
+> _Likely to include a **4bpp, 640x400/576x448 px** card (becoming the **SIXtation Lite**)_
 
 
 [**Jalisco**](jalisco.md) _(CPU card for **SIXtation**)_
@@ -159,8 +159,8 @@ UART 16C552, RTC MC146818, _ROM-in-RAM_.
   * Peripherals: most likely those of _Veracruz_, plus CF & SD-card.
   * Interfaces: most likely those of _Veracruz_, including **65SIB**, _VME-like slot_...
 
-> The 7.16 MHz version is the CPU card for _SIXtation-P_, while the standard model
-uses a **9 MHz** clock.
+> The 7.16 MHz version is the CPU card for _SIXtation-P_ (**640x864 px**),
+while the standard model uses a **9 MHz** clock (**1360x768 px**).
 
 
 [**Tabasco**](tabasco.md) _(CPU card for **SIXtation TURBO**)_
@@ -275,8 +275,8 @@ printer interface.
 **Roñavid**
 
   * Status: (almost) finished design.
-  * Specs: **VGA-compatible** output, typically **576x448 _bitmap_** or
-**288x224 @ 4bpp** _chunky_).
+  * Specs: **VGA-compatible** output, typically **640x400/576x448 _bitmap_** or
+**320x200/288x224 @ 4bpp** _chunky_).
   * Interface: _VME-like bus_.
   
 > _Somewhat cumbersome_ **video card**. No CRTC, just _suitably programmed EPROMs_
@@ -286,7 +286,7 @@ generating all needed addresses and signals.
 **mu-VDU**
 
   * Status: (almost) finished design.
-  * Specs: **VGA-compatible** output of **288x224px bitmap**.
+  * Specs: **VGA-compatible** output of **320x200/288x224px bitmap**.
   * Interface: **6502-CPU _socket_**
 
 > Simple, universal **graphic display**. _An extended **planar** version might provide
@@ -294,4 +294,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20200419-1806_
+_last modified: 20200504-2209_
