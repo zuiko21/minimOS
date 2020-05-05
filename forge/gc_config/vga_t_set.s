@@ -1,7 +1,7 @@
 ; graphic card auto-configuration firmware module
 ; suitable for Tampico and perhaps Acapulco computers
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20200505-0926
+; last modified 20200505-1143
 
 ; first of all, preconfigure CRTC to desired first mode
 ; *** TO DO **
@@ -48,9 +48,9 @@ vs_cls:
 ; suggested order is:
 ; 40 (40x25, VGA industry standard timing)
 ; 36 (36x28, standard timing)
-; 32-L (32x30, VSYNC set for Leading edge)
-; 32-T (32x30, VSYNC set for Trailing edge)
+; 32-L (32x30, VSYNC set for Leading edge) THESE MAY CHANGE
+; 32-T (32x30, VSYNC set for Trailing edge) ID
 ; 40-DS (40x25 on 24.576 MHz dotclock and shorter sync)
 ; 36-D (36x28 on 24.576, SAFEST mode)
-; 32-DL (32x30 on 24.576, VSYNC set for Leading edge)
-; 32-DT (32x30 on 24.576, VSYNC set for Trailing edge)
+; 32-DL (32x30 on 24.576, VSYNC set for Leading edge) THESE MAY CHANGE
+; 32-DT (32x30 on 24.576, VSYNC set for Trailing edge) ID
