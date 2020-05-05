@@ -1,7 +1,7 @@
 ; graphic card auto-configuration firmware module
 ; suitable for Tampico and perhaps Acapulco computers
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20200505-1143
+; last modified 20200505-1634
 
 ; first of all, preconfigure CRTC to desired first mode
 ; *** TO DO **
@@ -17,7 +17,7 @@ vs_cls:
 		INY				; go for next byte in page
 		BNE vs_cls
 			INC z_pt+1		; next page
-		BPL vs_cls		; fortunately, it's until the last "positive" address!
+		BPL vs_cls		; fortunately, it's up to the last "positive" address!
 
 ; *******************************************************************************
 ; *** now let's place some patterns at the corners of every screen resolution ***
@@ -45,12 +45,12 @@ vs_cls:
 ; if CR is pressed, keep current mode and go on
 ; if timeout expired, set safe mode (36-D) and go on
 ; every time SPC is pressed, cycle between modes and reset timer
-; suggested order is:
-; 40 (40x25, VGA industry standard timing)
-; 36 (36x28, standard timing)
-; 32-L (32x30, VSYNC set for Leading edge) THESE MAY CHANGE
-; 32-T (32x30, VSYNC set for Trailing edge) ID
-; 40-DS (40x25 on 24.576 MHz dotclock and shorter sync)
-; 36-D (36x28 on 24.576, SAFEST mode)
-; 32-DL (32x30 on 24.576, VSYNC set for Leading edge) THESE MAY CHANGE
-; 32-DT (32x30 on 24.576, VSYNC set for Trailing edge) ID
+; suggested [mode] order is:
+; [0] 40	(40x25, industry-standard VGA timing)
+; [1] 40DS	(40x25, slow dotclock and shorter sync)
+; [2] 36	(36x28, standard VGA timing)
+; [3] 36D	(36x28, slow dotclock) *** SAFEST mode ***
+; [4] 32L	(32x30, leading VSYNC)
+; [5] 32DL	(32x30, slow dotclock, leading VSYNC)
+; [6] 32T	(32x30, trailing VSYNC)
+; [7] 32DT	(32x30, slow dotclock, trailing VSYNC)
