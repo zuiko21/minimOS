@@ -1,12 +1,14 @@
 ; graphic card auto-configuration firmware module
 ; suitable for Tampico and perhaps Acapulco computers
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20200505-1634
+; last modified 20200506-1624
 
-; first of all, preconfigure CRTC to desired first mode
+; first of all, preconfigure CRTC to desired first mode, maybe standard 40 col
 ; *** TO DO **
 
-; clear the screen
+; ************************
+; *** clear the screen ***
+; ************************
 	LDX #$60		; Tampico & Acapulco screen takes $6000-$7FFF in line-doubled mode
 	LDY #0			; will reset index too
 	TYA				; clear value
@@ -30,7 +32,7 @@ vs_cls:
 
 	LDA #%10101010	; leftmost pattern
 	STA $6000		; upper left is always the same address
-	STA $7FA0		; store at bottom left places (f/32, 40 & 36)
+	STA $7FA0		; store at bottom left places (32, 40 & 36)
 	STA $7FC0
 	STA $7FCC
 	LSR				; makes %01010101 for rightmost pattern
@@ -54,3 +56,68 @@ vs_cls:
 ; [5] 32DL	(32x30, slow dotclock, leading VSYNC)
 ; [6] 32T	(32x30, trailing VSYNC)
 ; [7] 32DT	(32x30, slow dotclock, trailing VSYNC)
+
+; *****************************************
+; *** set timeout counter and interrupt ***
+; *****************************************
+	LDX #$FF			; about 10 seconds at slowest interrupt rate @ 1.5 MHz
+	STX vs_tmout
+; set VIA here?
+	STX VIA_J+T1CL		; set VIA T1
+	STX VIA_J+T1CH
+	SEI
+	LDX #>vs_isr		; supplied ISR
+	LDY #<vs_isr
+	STX fw_isr+1		; set IRQ vector
+	STY fw_isr
+; enable VIA T1 interrupt here?
+	CLI
+
+; ********************************************
+; *** main loop, wait for press or timeout ***
+; ********************************************
+vs_loop:
+		LDY #0				; set for firmware input
+		_ADMIN(CONIO)		; firmware BIOS call
+			BCS vs_chk		; wait until press or timeout
+		CPY #32			; space bar pressed?
+		BNE vs_nsp
+; *** toggle mode and reset timeout ***
+			LDA #vs_mode
+			_INC
+			_INC
+			AND #7
+			TAX
+			JSR vs_setm
+vs_nsp:
+		CPY #NEWL		; newline pressed?
+			BEQ vs_keep		; *** keep this mode and exit ***
+vs_chk:
+		LDA vs_tmout		; did timeout expire?
+		BNE vs_loop
+; *** *** TIMEOUT, set safe mode and exit *** ***
+	LDX #6				; MODE 3 offset (SAFEST)
+	JSR vs_setm
+	_BRA vs_exit
+
+; *****************************
+; *** skip routines and ISR ***
+; *****************************
+vs_setm:
+
+	STX vs_tmout
+	RTS
+; *** ISR, if from T1, decrement timeout counter ***
+vs_isr:
+	PHA
+	LDA #%
+	BIT VIA_J+IFR
+	BEQ vs_iexit
+		STA VIA_J+IFR
+		DEC vs_tmout
+vs_iexit:
+	PLA
+	RTI
+
+; *** CONTINUE FIRMWARE INITIALISATION ***
+vs_exit:
