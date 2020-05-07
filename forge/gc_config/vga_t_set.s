@@ -1,7 +1,7 @@
 ; graphic card auto-configuration firmware module
 ; suitable for Tampico and perhaps Acapulco computers
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20200506-1624
+; last modified 20200507-2333
 
 ; first of all, preconfigure CRTC to desired first mode, maybe standard 40 col
 ; *** TO DO **
@@ -94,8 +94,31 @@ vs_nsp:
 			BEQ vs_keep		; *** keep this mode and exit ***
 vs_chk:
 		LDA vs_tmout		; did timeout expire?
-		BNE vs_loop
+	BEQ vs_end
+; *** print timeout counter ***
+		AND #٪11100000		; filter countdown 8...1 (-1)
+		LSR
+		LSR
+		LSR
+		ORA #%11000000		; ASCII 48 and up on 8x8 font definition
+		TAX
+		LDY #$62		; middle of the screen is around $6200
+		STY zvs_p+1
+		_STZY zvs
+		LDY #8			; raster counter
+vs_cl:
+			LDA c_font-8, X		; get raster data
+			STA (zvs_p)		; *** NEEDS CMOS or another counter ***
+			LDA zvs_p+1
+			CLC
+			ADC #4			; advance 1KB each raster
+			STA zvs_p+1
+			INX				; next font byte
+			DEY
+			BNE vs_cl
+		BEQ vs_loop
 ; *** *** TIMEOUT, set safe mode and exit *** ***
+vs_end:
 	LDX #6				; MODE 3 offset (SAFEST)
 	JSR vs_setm
 	_BRA vs_exit
@@ -104,7 +127,7 @@ vs_chk:
 ; *** skip routines and ISR ***
 ; *****************************
 vs_setm:
-
+; *** *** TO DO *** ***
 	STX vs_tmout
 	RTS
 ; *** ISR, if from T1, decrement timeout counter ***
