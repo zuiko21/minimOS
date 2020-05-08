@@ -1,7 +1,7 @@
 ; graphic card auto-configuration firmware module
 ; suitable for Tampico and perhaps Acapulco computers
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20200508-1337
+; last modified 20200508-1433
 
 ; ******************************************
 ; *** variable storage, best in zeropage ***
@@ -93,9 +93,10 @@ vs_loop:
 		CPY #SPACE		; space bar pressed?
 		BNE vs_nsp
 ; *** SPACE: toggle mode and reset timeout ***
-			LDA vs_mode
-			ADC #
-			AND #
+			LDA vs_mode		; last set mode
+			CLC
+			ADC #8			; each mode table takes 8 bytes
+			AND #63			; mod 64
 			TAX
 			JSR vs_setm
 			_BRA vs_loop
@@ -150,8 +151,9 @@ vs_cl:
 ; *** *** TIMEOUT, set safe mode and exit *** ***
 ; ***********************************************
 vs_fail:
-	LDX #				; MODE 3 offset (SAFEST)
+	LDX #31				; MODE 3 offset (SAFEST)
 	JSR vs_setm
+vs_keep:
 	JMP vs_exit			; will be far as routines and tables are in between
 
 ; *****************************************
@@ -210,17 +212,17 @@ vs_iexit:
 ; *** *** table data  *** ***
 ; ***************************
 
-; *** specific mode data, note REVERSE order, [X] preloaded with LAST offset ***
+; *** specific mode data, [X] preloaded with LAST offset ***
 crtc_tab:
 ; [ 7] 40	(40x25, industry-standard VGA timing)
-	.byt	26		; R7, VSYNC row position
-	.byt	25		; R6, displayed rows
-	.byt	13		; R5, vertical raster adjust
-	.byt	31		; R4, total rows
-	.byt	38		; R3, sync width (H=6 col, V=2 raster)
-	.byt	41		; R2, HSYNC column position
-	.byt	40		; R1, displayed columns
 	.byt	49		; R0, total columns
+	.byt	40		; R1, displayed columns
+	.byt	41		; R2, HSYNC column position
+	.byt	38		; R3, sync width (H=6 col, V=2 raster)
+	.byt	31		; R4, total rows
+	.byt	13		; R5, vertical raster adjust
+	.byt	25		; R6, displayed rows
+	.byt	26		; R7, VSYNC row position
 
 ; [15] 40DS	(40x25, slow dotclock and shorter sync)
 
@@ -236,13 +238,13 @@ crtc_tab:
 
 ; [63] 32DT	(32x30, slow dotclock, trailing VSYNC)
 
-; *** common registers (R8...R15), note STANDARD order ***
+; *** common registers (R8...R15) ***
 crtc_com:
 	.byt	0		; R8, no interlace, no skew
 	.byt	15		; R9, maximum raster
 	.byt	32		; R10, no cursor (starts at raster 0)
 	.byt	0		; R11, cursor ends at raster 15, if shown
-	.word	0		; R12-13, start address, 0 is double-scan
+	.word	0		; R12-13, start address, 0 is double-raster
 	.word	0		; R14-15, cursor address
 
 ; ****************************************
@@ -251,4 +253,5 @@ crtc_com:
 ; ****************************************
 ; ****************************************
 vs_exit:
+; ** ** may store mode in a permanent fashion, plus setting some driver parameters ** **
 	JSR vs_cls		; clear again and exit
