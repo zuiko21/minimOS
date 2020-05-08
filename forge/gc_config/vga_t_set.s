@@ -1,11 +1,18 @@
 ; graphic card auto-configuration firmware module
 ; suitable for Tampico and perhaps Acapulco computers
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20200508-1433
+; last modified 20200508-2143
 
 ; ******************************************
 ; *** variable storage, best in zeropage ***
 ; ******************************************
+
+	vs_mode	= uz			; table offset for selected mode +7
+	zvs_p	= vs_mode + 1		; indirect pointer
+	vs_tmout= zvs_p + 2		; timeout counter
+#ifdef	NMOS
+	vs_cnt	= vs_tmout + 1		; raster loop counter (NMOS only)
+#endif
 
 ; **********************
 ; *** initialisation ***
@@ -21,7 +28,7 @@ vs_init:
 		CPX #7			; check whether outside common regs
 		BNE vs_init		; until all done
 ; particular mode data comes next, X is ready for standard 40-col mode!
-;	LDX #7			; [0] 40 col industry-standard offst (backwards!)
+;	LDX #7			; [A] 40 col industry-standard offset (backwards!)
 	JSR vs_setm		; this will reset timeout too
 
 	JSR vs_cls		; *** clear the screen ***
@@ -53,14 +60,14 @@ vs_init:
 ; if timeout expired, set safe mode (36-D) and go on
 ; every time SPC is pressed, cycle between modes and reset timer
 ; suggested [mode] order is:
-; [0] 40	(40x25, industry-standard VGA timing)
-; [1] 40DS	(40x25, slow dotclock and shorter sync)
-; [2] 36	(36x28, standard VGA timing)
-; [3] 36D	(36x28, slow dotclock) *** SAFEST mode ***
-; [4] 32L	(32x30, leading VSYNC)
-; [5] 32DL	(32x30, slow dotclock, leading VSYNC)
-; [6] 32T	(32x30, trailing VSYNC)
-; [7] 32DT	(32x30, slow dotclock, trailing VSYNC)
+; [A] 40	(40x25, industry-standard VGA timing)
+; [B] 40DS	(40x25, slow dotclock and shorter sync)
+; [C] 36	(36x28, standard VGA timing)
+; [D] 36D	(36x28, slow dotclock) *** SAFEST mode ***
+; [E] 32L	(32x30, leading VSYNC)
+; [F] 32DL	(32x30, slow dotclock, leading VSYNC)
+; [G] 32T	(32x30, trailing VSYNC)
+; [H] 32DT	(32x30, slow dotclock, trailing VSYNC)
 
 ; *****************************
 ; *** set timeout interrupt ***
@@ -115,37 +122,16 @@ vs_chk:
 		LSR			; keep 8 scanlines
 		LSR
 		TAX
-		LDY #$62		; middle of the screen is around $6200
-		STY zvs_p+1
-#ifndef	NMOS
-		STZ zvs_p		; *** needs CMOS unless Y counter is freed ***
-		LDY #8				; raster counter
-#else
-		LDY #0				; replace STZ and keep Y clear
-		STY zvs_p
-		LDA #8
-		STA vs_cnt		; NMOS raster counter
-
-#endif
-vs_cl:
-			LDA c_font+392, X	; get raster data (from ASCII '1')
-#ifndef	NMOS
-			STA (zvs_p)		; *** NEEDS CMOS or another counter ***
-#else
-			STA (zvs_p), Y		; Y is kept 0 in NMOS
-#endif
-			LDA zvs_p+1
-			CLC
-			ADC #4			; advance 1KB each raster
-			STA zvs_p+1
-			INX				; next font byte
-#ifndef	NMOS
-			DEY				; * for CMOS-only version *
-#else
-			DEC vs_cnt
-#endif
-			BNE vs_cl
-		BEQ vs_loop
+		LDA #0		; no offset
+		JSR vs_prn	; print counter
+; print letter identifying mode, too
+		LDA vs_mode
+		AND #%00111000	; filter base table pointer
+		ORA #128	; first mode makes 'A'
+		TAX
+		LDA #1		; just beside the counter
+		JSR vs_prn	; print mode
+		BEQ vs_loop	; Z was set, no need for BRA
 
 ; ***********************************************
 ; *** *** TIMEOUT, set safe mode and exit *** ***
@@ -175,7 +161,7 @@ vsm_l:
 		DEX
 		DEY
 		BPL vsm_l		; until all done
-; as Y is $FF, will give  about 10 seconds at slowest interrupt rate @ 1.5 MHz
+; as Y is $FF, will give nearly 11 seconds at slowest interrupt rate @ 1.5 MHz
 	STY vs_tmout
 	RTS
 
@@ -207,6 +193,40 @@ vs_isr:
 		DEC vs_tmout			; timeout countdown
 vs_iexit:
 	RTI
+
+; *****************************************************
+; *** print around screen centre +A, X=(ASCII-49)*8 ***
+; *****************************************************
+vs_prn:
+	LDY #$62		; middle of the screen is around $6200
+	STY zvs_p+1
+	STA zvs_p		; new parameter, printing offset
+#ifndef	NMOS
+	LDY #8				; raster counter
+#else
+	LDY #0				; replace STZ and keep Y clear
+	LDA #8
+	STA vs_cnt		; NMOS raster counter
+#endif
+vs_cl:
+		LDA c_font+392, X	; get raster data (from ASCII '1')
+#ifndef	NMOS
+		STA (zvs_p)		; *** NEEDS CMOS or another counter ***
+#else
+		STA (zvs_p), Y		; Y is kept 0 in NMOS
+#endif
+		LDA zvs_p+1
+		CLC
+		ADC #4			; advance 1KB each raster
+		STA zvs_p+1
+		INX				; next font byte
+#ifndef	NMOS
+		DEY				; * for CMOS-only version *
+#else
+		DEC vs_cnt
+#endif
+		BNE vs_cl
+	RTS				; returns with Z flag set
 
 ; ***************************
 ; *** *** table data  *** ***
