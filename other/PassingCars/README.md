@@ -199,7 +199,7 @@ After `ADC #0` use the following code chunk instead:
 
 ```assembly
   CMP #15259     ; already at the limit? (0/3)
-   BEQ over      ; return -1 if so(0/2*)
+   BEQ over      ; return -1 if so (0/2*)
   STA total+2    ; (as before)
   SEP #$20
 next:
@@ -213,10 +213,26 @@ over:
 end:
 ```
 
-Performance-wise, this is expected to run about **20% faster** than the 6502 version.
+Performance-wise, this takes **56 bytes** and **17 or 45 cycles** per iteration, thus
+expected to run about **20% faster** than the 6502 version. Needs _4 bytes_ of RAM,
+preferably on _zeropage_.  
 
 ### The (almost) final version
 
-TO DO * TO DO
+In order to reach the specified _array size_ (100000 elements), regular 16-bit indexing
+is no longer an option; but the 65C816's _indirect postindexed **long**_ addressing mode
+comes to the rescue! This way the array may span several banks, waiving the 64K limit.
 
-_last modified: 20200510-1741_
+TO DO
+ 
+### Compact array
+
+Even if it's intereseting to store a prominently **boolean** array as bytes for the sake
+of _performance_, properly storing every element as a **single bit** will allow the use
+of 16-bit indexing _while keeping a reasonable 512 Ki-element array_.
+
+TO DO 
+
+## 6502 revisited: 512K elements in compact form
+
+_last modified: 20200510-1822_
