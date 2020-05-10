@@ -66,7 +66,11 @@ Which allows for a "full"-sized **256-element array**... albeit with a _2-cycle 
 appropriate offset on the indexed read and removing the time-consuming `CPX` atop the `BNE`. _If care is exerted on **not** placing
 the array at the very start of a page_ (address `$xx00`), no boundary-crossing penalty is to be expected.
 
-### Going bigger: the 64k (not Ki) version
+For performance estimation, this code is **23 bytes** long (assuming its only variable
+`total` on _zeropage_). Execution time depends on whether the array element holds an `1`
+or a `0`, with each iteration taking **17 or 23 clock cycles**, respectively.
+  
+### Going bigger: the 64 KB (not KiB) version
 
 Even if still below [the original specs](https://app.codility.com/programmers/lessons/5-prefix_sums/passing_cars), some more
 elaborated code will allow a **nearly 64K-element array** -- theoretically up to 65536 elements, but some space must be allowed for
@@ -125,4 +129,19 @@ over:
 end:
 ```
 
-_last modified: 20200510-1300_
+This sample is **84 bytes** long and takes **19 or 54 clock cycles** per iteration.
+It also uses **7 bytes of zeropage** space (`ptr` is mandatory there).
+   
+### TO DO: even bigger
+
+Whilst being able to access a whopping 64 K of data, it's still below the specified
+_100000-element array_. A more **efficient array storage** is thus needed, using
+just _one bit_ per element instead of a whole byte.
+
+## 65C816: the 6502's Big Brother
+
+TO DO
+
+
+
+_last modified: 20200510-1602_
