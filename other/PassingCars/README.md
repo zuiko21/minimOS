@@ -50,7 +50,7 @@ next:
 
 Which, while being valid as a _proof-of-concept_, it's far below the original specs: this code is all **8-bit arithmetic** and values
 up to 255, whereas the original excercise was expected to count up to **one thousand million cars** and running against a
-**100000-element array**. To make things worse, the `BPL` trick in the loop allows the array to **start at index _zero_** without
+**100,000-element array**. To make things worse, the `BPL` trick in the loop allows the array to **start at index _zero_** without
 any _page-boundary crossing_ penalty, but limits the array size to **128 elements**, as anything above will be evaluated as
 _negative_, stopping the loop right after the first iteration...
 
@@ -78,7 +78,8 @@ or a `0`, with each iteration taking **17 or 23 clock cycles**, respectively.
 Even if still below [the original specs](https://app.codility.com/programmers/lessons/5-prefix_sums/passing_cars), some more
 elaborated code will allow a **nearly 64K-element array** -- theoretically up to 65536 elements, but some space must be allowed for
 variables and the code itself, not mentioning a _minimal I/O_ environment, interrupt vectors, stack, etc. Including some
-cumbersome **16- and 32-bit arithmetic**, this [much bigger chunk of code](6502-64k.s) is shown as reference:
+cumbersome **16- and 32-bit arithmetic**, this [much bigger chunk of code](6502-64k.s)
+is shown as reference (_critical_ instruction timings shown between parentheses):
 
 ```assembly
 LDX #0          ; reset LOW byte of partial counter (X)
@@ -92,32 +93,32 @@ STX total+2
 STX total+3
 STX partial.h   ; reset HIGH byte of partial counter (on zeropage as will change much less frequently)
 loop:
- LDA (ptr), Y   ; get array element (5)
- BEQ zero       ; if not zero... (2/3) [timing shown for (then/else) sections]
-  INX           ; ...increment partial counter (2/0)
-  BNE next      ; check for possible carry! (3-10/0) extra cycles only 0.4% of the time
+ LDA (ptr), Y   ; (5) get array element
+ BEQ zero       ; (2/3) if not zero... [timing shown for (then/else) sections]
+  INX           ; (2/0) ...increment partial counter
+  BNE next      ; (3-10/0) check for possible carry! extra cycles only 0.4% of the time
   INC partial.h
   BNE next
 zero:
-  TXA           ; ...else take partial counter... (0/2)
+  TXA           ; (0/2) ...else take partial counter...
   CLC           ; (0/2)
-  ADC total     ; ...and add it to current total (0/3)
+  ADC total     ; (0/3) ...and add it to current total
   STA total     ; (0/3)
-  LDA total+1   ; ditto for 2nd byte (0/3)
-  ADC partial.h ; note partial MSB origin (0/3)
+  LDA total+1   ; (0/3) ditto for 2nd byte
+  ADC partial.h ; (0/3) note partial MSB origin
   STA total+1   ; (0/3)
   LDA total+2   ; (0/3)
-  ADC #0        ; partial is 16-bit, but carry may propagate (0/2)
+  ADC #0        ; (0/2) partial is 16-bit, but carry may propagate
   STA total+2   ; (0/3)
   LDA total+3   ; (0/3)
-  ADC #0        ; ditto for last byte, but... (0/2)
-  CMP #60       ; ...have we reached the limit? (0/2)
-   BEQ over     ; if so, no more iterations! (0/2*) if this jump executes, no more iterations
-  STA total+3   ; if not, just update value (0/3)
+  ADC #0        ; (0/2) ditto for last byte, but...
+  CMP #60       ; (0/2) ...have we reached the limit?
+   BEQ over     ; (0/2) yes? no more iterations! if this jump executes, no more iterations
+  STA total+3   ; (0/3) no? just update value
 next:
- DEY            ; go for next byte (2)
- CPY #$FF       ; wraparound? (2)
- BNE loop       ; if not, just iterate (3-15) extra cycles only ~0.4% of the time
+ DEY            ; (2) go for next byte
+ CPY #$FF       ; (2) wraparound?
+ BNE loop       ; (3-15) if not, just iterate; extra cycles only ~0.4% of the time
   DEC ptr+1     ; otherwise, modify pointer MSB...
   LDA ptr+1
   CMP #>array   ; ...until we went below array start address
@@ -155,22 +156,22 @@ LDY #0           ; reset partial (16-bit)...
 STY total        ; ...and total (32-bit) counters
 STY total+2
 loop:
- LDA @array-1, X ; get array element (5)
- BEQ zero        ; if it's 1... (2/3) [timing as above]
-  INY            ; ...increment partial (2/0)
+ LDA @array-1, X ; (5) get array element
+ BEQ zero        ; (2/3) if it's 1... [timing as above]
+  INY            ; (2/0) ...increment partial
   BRA next       ; (3/0)
 zero:
-  REP #$20       ; ...else use 16-bit memory for a moment (0/3)
-  TYA            ; add partial... (0/2)
-  CLC            ; ...for the first time... (0/2)
-  ADC total      ; ...to current total (0/4)
+  REP #$20       ; (0/3) ...else use 16-bit memory for a moment
+  TYA            ; (0/2) add partial...
+  CLC            ; (0/2) ...for the first time...
+  ADC total      ; (0/4) ...to current total
   STA total      ; (0/4)
-  LDA total+2    ; ditto for high order word... (0/4)
-  ADC #0         ; ...as carry may propagate (0/3)
+  LDA total+2    ; (0/4) ditto for high order word...
+  ADC #0         ; (0/3) ...as carry may propagate
   STA total+2    ; (0/4)
-  SEP #$20       ; back to 8-bit accesses (0/3)
+  SEP #$20       ; (0/3) back to 8-bit accesses
 next:
- DEX             ; go for next element (2)
+ DEX             ; (2) go for next element
  BNE loop        ; (3)
 ```
 
@@ -182,24 +183,24 @@ But there's still much room for [improvement](816-t32o.s):
 The last one is easily implemented, saving 1 byte & 2 clock cycles... just replace:
 
 ```assembly
-  REP #$20       ; ...else use 16-bit memory for a moment (0/3)
-  TYA            ; add partial... (0/2)
-  CLC            ; ...for the first time... (0/2)
+  REP #$20       ; ...else use 16-bit memory for a moment
+  TYA            ; add partial...
+  CLC            ; ...for the first time...
 ```
 
 by:
 
 ```assembly
-  REP #$21       ; use 16-bit memory AND clear Carry flag
-  TYA            ; add partial...
+  REP #$21       ; (0/3) use 16-bit memory AND clear Carry flag
+  TYA            ; (0/2) add partial...
 ```
 
 The execution limit, thanks to the 16-bit arithmetic, is nowhere as cumbersome as on the 6502.
 After `ADC #0` use the following code chunk instead:
 
 ```assembly
-  CMP #15259     ; already at the limit? (0/3)
-   BEQ over      ; return -1 if so (0/2*)
+  CMP #15259     ; (0/3) already at the limit?
+   BEQ over      ; (0/2) return -1 if so, executes at most ONCE 
   STA total+2    ; (as before)
   SEP #$20
 next:
@@ -207,24 +208,78 @@ next:
  BNE loop
 BRA end          ; (add the following)
 over:
- LDX #$FFFF      ; -1
+ LDX #$FFFF      ; load value as -1
  STX total       ; set total counter
  STX total+2
 end:
 ```
 
 Performance-wise, this takes **56 bytes** and **17 or 45 cycles** per iteration, thus
-expected to run about **20% faster** than the 6502 version. Needs _4 bytes_ of RAM,
-preferably on _zeropage_.  
+expected to run about **20% faster** than the 6502 version. Variables need _4 bytes_
+of RAM, preferably on _zeropage_.  
 
 ### The (almost) final version
 
 In order to reach the specified _array size_ (100000 elements), regular 16-bit indexing
 is no longer an option; but the 65C816's _indirect postindexed **long**_ addressing mode
-comes to the rescue! This way the array may span several banks, waiving the 64K limit.
+comes to the rescue! [This way](816-16m.s) the array may span several banks, waiving
+the 64K limit.
 
-TO DO
- 
+```assembly
+REP #$10              ; 16-bit indexes
+SEP #$20              ; 8-bit memory & accumulator
+LDX #0                ; reset partial, also for clearing words
+STX partial.h         ; needs 32-bit clean, although uses only 24
+LDA #(array+size-1).h ; last BANK used by the array, must be computed
+LDY #!(array+size-1)  ; last low word used by the array
+STA ptr+2             ; create LONG indirect pointer
+STX ptr
+STX total             ; reset total counter
+STZ total+2
+loop:
+ LDA [ptr], Y    ;(6)   get array data
+ BEQ zero        ;(2/3) if not zero...
+  INX            ;(2/0) ...increment partial
+  BNE next       ;(3/0) VERY rarely over 3 cycles
+   INC partial.h ;(5*/0) don't care about fourth byte
+  BRA next       ;(3*/0) VERY rarely done
+zero:
+  REP #$21       ;(0/3) else clear C and set 16-bit memory
+  TXA            ;(0/2) add partial...
+  ADC total      ;(0/4) ...to current total
+  STA total      ;(0/4)
+  LDA total+2    ;(0/4) ditto with high word...
+  ADC partial.h  ;(0/4) ...not just carry
+  CMP #15259     ;(0/3) are we at the limit?
+   BEQ over      ;(0/2) return -1 if so, executes at most ONCE
+  STA total+2    ;(0/4) total is updated
+  SEP #$20       ;(0/3) back to 8-bit memory & accumulator
+next:
+ DEY             ;(2) next element
+ CPY #$FFFF      ;(3) are we switching bank?
+ BNE loop        ;(3) VERY rarely beyond this point
+  DEC ptr+2      ;(5*) point to previous bank
+  LDA ptr+2      ;(3*) could be waived if starting at bank 1
+  CMP #array.h   ;(2*) could be waived if starting at bank 1
+ BCS loop        ;(3*) use BNE if waived
+BRA end
+over:
+ LDX #$FFFF    ; -1 to be set in case of overflow
+ STX total
+ STX total+2
+end:
+```
+
+This code is 72 or **76 bytes** long (depending on whether the array starts at `$010000`
+or not) and takes ** or cycles** per iteration. _Array must be bank-aligned_, but
+not forcing it to start at bank 1 will have **negligible effect on performance**, just
+saving 4 bytes.
+
+Further improvement may be done by using the classic _indirect postindexed_ addressing,
+as the array is **sequentially** scanned and bank switches are rare. But code is likely
+to become much more cumbersome, for a _single cycle saving_ per iteration, which
+doesn't seem to be worth the hassle. 
+
 ### Compact array
 
 Even if it's intereseting to store a prominently **boolean** array as bytes for the sake
@@ -235,4 +290,4 @@ TO DO
 
 ## 6502 revisited: 512K elements in compact form
 
-_last modified: 20200510-1822_
+_last modified: 20200511-1225_
