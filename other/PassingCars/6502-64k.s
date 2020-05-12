@@ -4,7 +4,7 @@
 
 ; *** CAVEATS ***
 ; Array up to about 64000 elements
-; (theoretically 65536, but needs some space for variables, stack, interrupt vectors, I/O routines and this code itself!)
+; (needs some space for variables, stack, interrupt vectors, I/O routines and this code itself!)
 ; Execution limit is not accurate, stopping after counting 1,006,632,960 cars
 ; Array elements are bytes, containing either zero or any non-zero value
 ; 32-bit total and 16-bit partial counters
@@ -14,7 +14,9 @@
 ptr			.word	0		; indirect pointer *** MUST be on zeropage ***
 total		.dsb	4, 0	; 32-bit total counter
 partial_h	.byt	0		; MSB for 16-bit partial counter (rest in X)
+
 array		.dsb	64000	; likely to clear stack, code, interrupt vectors...
+size		=	64000
 
 ; ************
 ; *** CODE ***
@@ -69,3 +71,5 @@ over:
 		STA total+3
 end:
 ; ************
+; 84 bytes, 19 or 54 clock cycles per iteration
+; assuming all variables in zeropage

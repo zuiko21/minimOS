@@ -10,15 +10,15 @@
 
 ; *** memory use ***
 total	.dsb	4, 0	; 32-bit total counter
-array	.dsb	65536	; best on bank boundary start
+array	.dsb	65535	; best on bank boundary start
+size	=	65535
 
 ; ************
 ; *** CODE ***
 ; ************
-	
 	REP #$10			; use 16-bit indexes...
 	SEP #$20			; ...but 8-bit memory/accumlator
-	LDX #length			; backwards loop, as usual
+	LDX #size			; backwards loop, as usual
 	LDY #0				; reset partial (16-bit)...
 	STY total			; ...and total (32-bit) counters
 	STY total+2
@@ -35,7 +35,7 @@ zero:
 			LDA total+2	; (0/4) ditto for high order word...
 			ADC #0		; (0/3) ...as carry may propagate
 			CMP #15259	; (0/3) already at the limit?
-				BEQ over; (0/2) return -1 if so, executes at most ONCE 
+				BEQ over; (0/2) return -1 if so, executes at most ONCE
 			STA total+2	; (0/4)
 			SEP #$20	; (0/3) back to 8-bit accesses
 next:
@@ -48,3 +48,5 @@ over:
 		STX total+2
 end:
 ; ************
+; 56 bytes, 17 or 45 clock cycles per iteration
+; assuming all variables in zeropage

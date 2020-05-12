@@ -10,12 +10,12 @@
 
 ; *** memory use ***
 total	.dsb	4, 0	; 32-bit total counter
-array	.dsb	65536	; best on bank boundary start
+array	.dsb	65535
+size	=	65535
 
 ; ************
 ; *** CODE ***
 ; ************
-	
 	REP #$10			; use 16-bit indexes...
 	SEP #$20			; ...but 8-bit memory/accumlator
 	LDX #length			; backwards loop, as usual
@@ -41,3 +41,5 @@ next:
 		DEX				; (2) go for next element
 		BNE loop		; (3)
 ; ************
+; 43 bytes, 17 or 42 cycles per iteration
+; assuming variables in zeropage
