@@ -70,7 +70,7 @@ compared to the 128-element version. _If care is exerted on **not** placing the 
  very start of a page_ (address `$xx00`), no boundary-crossing penalty is to be expected.
 
 For performance estimation, this code is **23 bytes** long (assuming its only variable
-`total` resides on _zeropage_). Execution time depends on whether the array element holds
+`total` resides in _zeropage_). Execution time depends on whether the array element holds
 an `1` or a `0`, with each iteration taking **17 or 23 clock cycles**, respectively.
   
 ### Going bigger: the 64 KB (not KiB) version
@@ -91,7 +91,7 @@ STX total       ; reset 32-bit total counter
 STX total+1
 STX total+2
 STX total+3
-STX partial.h   ; reset HIGH byte of partial counter (on zeropage as will change much less frequently)
+STX partial.h   ; reset HIGH byte of partial counter (in zeropage as will change much less frequently)
 loop:
  LDA (ptr), Y   ; (5) get array element
  BEQ zero       ; (2/3) if not zero... [timing shown for (then/else) sections]
@@ -134,7 +134,7 @@ end:
 ```
 
 This sample is **84 bytes** long and takes **19 or 54 clock cycles** per iteration.
-It also uses **7 bytes of RAM** space (`ptr` is mandatorily on **zeropage**). Note
+It also uses **7 bytes of RAM** space (`ptr` is mandatorily in **zeropage**). Note
 that the array must be _page-aligned_.
    
 ### TO DO: even bigger
@@ -180,7 +180,7 @@ But there's still much room for [improvement](816-t32o.s):
 
 - No execution limit
 - `Carry` flag (usually reset by a `CLC` before adding) can be cleared thru the previous `REP`
-- The array fits a single _bank_ so, assuming all variables are on _zeropage_, could use
+- The array fits a single _bank_ so, assuming all variables are in _zeropage_, could use
 the classic **absolute indexed** (not _long_) addresing, saving one byte, as long
 as the `Data Bank` is selected beforehand.
  
@@ -213,7 +213,7 @@ end:
 
 Performance-wise, this takes **56 bytes** and **17 or 45 cycles** per iteration, thus
 expected to run about **20% faster** than the 6502 version. Variables need **4 bytes
-of RAM**, preferably on _zeropage_.  
+of RAM**, preferably in _zeropage_.  
 
 ### The (almost) final version
 
@@ -330,7 +330,7 @@ At **71 bytes**, this is [surprinsingly compact code](816-c512k). Performance is
 even including the ^**15-cycle overhead _every 16 iterations_**. Depending on stored
 value and including the overhead, each one will take around **20 or 50 cycles**,
 nearing the performance of the _24-bit version_. **6 RAM bytes** are used, not
-necessarily on zeropage.
+necessarily in zeropage.
 
 Note that the array can be located anywhere, as long as the `Data Bank` register is
 pointing to it; but **its size must be a multiple of 16** 
