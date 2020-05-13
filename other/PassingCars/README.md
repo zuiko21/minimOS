@@ -26,7 +26,7 @@ Now the ordeal was, obviously, rewrite [this JS code](passing.js) as **6502 asse
 
 ## 6502 version
 
-Being a _pure_ 8-bit CPU, the original 6502 is a somewhat ill-fitted choice for working on large data sets. A _quick and dirty_
+Being a _pure_ 8-bit CPU, the original 6502 is a somewhat _ill-fitted_ choice for working on large data sets. A _quick and dirty_
 approach was [like this](6502-128.s):
 
 ```assembly
@@ -181,7 +181,7 @@ But there's still much room for [improvement](816-t32o.s):
 - No execution limit
 - `Carry` flag (usually reset by a `CLC` before adding) can be cleared thru the previous `REP`
 - The array fits a single _bank_ so, assuming all variables are in _zeropage_, could use
-the classic **absolute indexed** (not _long_) addresing, saving one byte, as long
+the classic **absolute indexed** (not _long_) addressing, saving one byte, as long
 as the `Data Bank` is selected beforehand.
  
 The last one is easily implemented, as is the second one, saving another byte &
@@ -255,7 +255,7 @@ next:
  DEY             ;(2)   next element
  CPY #$FFFF      ;(3)   are we switching bank?
  BNE loop        ;(3)   VERY rarely beyond this point
-  DEC ptr+2      ;(5*) point to previous bank
+  DEC ptr+2      ;(5*) switch to previous bank
   LDA ptr+2      ;(3*) could be waived if starting at bank 1
   CMP #array>>16 ;(2*) could be waived if starting at bank 1
  BCS loop        ;(3*) use BNE if waived
@@ -265,15 +265,16 @@ over:
  STX total
  STX total+2
 end:
+
+; *) Very rarely (~0.0015%) executed
 ```
 
-This code is 72 or **76 bytes** long (depending on whether the array starts at `$010000`
-or not) and takes ** or cycles** per iteration. _Array must be bank-aligned_, but
-not forcing it to start at bank 1 will have **negligible effect on performance**, just
-saving 4 bytes.
+This code is **76 bytes** long and typically takes **21 or 50 cycles** per iteration. _Array must be
+**bank-aligned**_. Some 4 bytes can be saved if we assume the array to start at `$010000`, but with
+**negligible improvement on performance**, though.
 
-Further improvement may be done by using the classic _indirect postindexed_ addressing,
-as the array is **sequentially** scanned and bank switches are rare. But code is likely
+Further speedup may be done by using the classic _indirect postindexed_ addressing,
+as the array is **sequentially** scanned and bank switching is rare. But code is likely
 to become much more cumbersome, for a _single cycle saving_ per iteration, which
 doesn't seem to be worth the hassle. 
 
@@ -291,8 +292,8 @@ STZ partial+2
 STZ total
 STZ total+2
 loop:
- LDY #16        ; (3^)  number of bits to be shifted from a word
- LDA array-2, X ; (6^)  get word, or 16 array entries
+ LDY #16        ; (3*)  number of bits to be shifted from a word
+ LDA array-2, X ; (6*)  get word, or 16 array entries
 bit:
   ASL           ; (2)   shift word, MSB is the last element of the chunk
   BCC zero      ; (2/3) if not zero...
@@ -315,24 +316,26 @@ zero:
 next:
   DEY           ; (2)   another bit in the word
   BNE bit       ; (3)   after the last bit is done, this is one cycle faster
- DEX            ; (2^)  word is empty, go for next one
- DEX            ; (2^)  pointer arithmetic!
- BNE loop       ; (3^)  until array is done
+ DEX            ; (2*)  word is empty, go for next one
+ DEX            ; (2*)  pointer arithmetic!
+ BNE loop       ; (3*)  until array is done
 BRA end
 over:
  LDA #$FFFF     ; load -1...
  STA total      ; ...into total counter
  STA total+2
 end:
+
+;*) executed once every 16 iterations
 ```
 
 At **71 bytes**, this is [surprinsingly compact code](816-c512k). Performance is nice too,
-even including the ^**15-cycle overhead _every 16 iterations_**. Depending on stored
+even including the **15-cycle overhead _every 16 iterations_**. Depending on stored
 value and including the overhead, each one will take around **20 or 50 cycles**,
-nearing the performance of the _24-bit version_. **6 RAM bytes** are used, not
-necessarily in zeropage.
+actually improving the performance of the _24-bit version_. **6 RAM bytes** are used,
+not necessarily in zeropage.
 
-Note that the array can be located anywhere, as long as the `Data Bank` register is
+Note that _the array can be located anywhere_, as long as the `Data Bank` register is
 pointing to it; but **its size must be a multiple of 16** 
 
 ## 6502 revisited: 512K elements in compact form
@@ -362,9 +365,9 @@ bit:
   BCC zero        ; (2/3) if not zero...
    INC partial    ; (5/0) ...count into partial
    BNE next       ; (3/0) check possible carry
-    INC partial+1 ; (5/0) this is done 0.4% of time
-   BNE next       ; VERY seldom beyond this point
-    INC partial+2
+    INC partial+1 ; (*5/0) this is done 0.4% of time
+   BNE next       ; (*3/0) VERY seldom beyond this point
+    INC partial+2 ; (**5/0)
    BNE next
 zero:
    STA tmp        ; (0/3) store accumulator as it has unshifted bits
@@ -404,4 +407,4 @@ over:
 end:
 ```
 
-_last modified: 20200511-1942_
+_last modified: 20200513-1126_
