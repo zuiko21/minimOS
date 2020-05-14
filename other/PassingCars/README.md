@@ -37,7 +37,7 @@ loop:
   LDA array, X  ; get element from array (zero or otherwise)
   BEQ zero      ; if not zero...
     INY         ; ...increment partial counter...
-    BRA next
+    BNE next    ; CMOS could use BRA as well
 zero:
     TYA         ; ...else add partial counter...
     CLC
@@ -67,7 +67,7 @@ Which allows for a "full"-sized **256-element array**... albeit with a _2-cycle 
 appropriate offset on the indexed read and removing the time-consuming `CPX` atop the `BNE`.
 This sacrifices a single array element **(maximum 255 bytes) without impacting performance**
 compared to the 128-element version. _If care is exerted on **not** placing the array at the
- very start of a page_ (address `$xx00`), no boundary-crossing penalty is to be expected.
+very start of a page_ (address `$xx00`), no boundary-crossing penalty is to be expected.
 
 For performance estimation, this code is **23 bytes** long (assuming its only variable
 `total` resides in _zeropage_). Execution time depends on whether the array element holds
@@ -97,7 +97,7 @@ loop:
  BEQ zero       ; (2/3) if not zero... [timing shown for (then/else) sections]
   INX           ; (2/0) ...increment partial counter
   BNE next      ; (3-10/0) check for possible carry! extra cycles only 0.4% of the time
-  INC partial.h
+   INC partial.h
   BNE next
 zero:
   TXA           ; (0/2) ...else take partial counter...
@@ -366,8 +366,8 @@ bit:
    INC partial    ; (5/0) ...count into partial
    BNE next       ; (3/0) check possible carry
     INC partial+1 ; (*5/0) this is done 0.4% of time
-   BNE next       ; (*3/0) VERY seldom beyond this point
-    INC partial+2 ; (**5/0)
+   BNE next       ; (*3/0) VERY seldom (~0.0015%) beyond this point
+    INC partial+2
    BNE next
 zero:
    STA tmp        ; (0/3) store accumulator as it has unshifted bits
@@ -384,15 +384,15 @@ zero:
    LDA total+3    ; (0/3)
    ADC #0         ; (0/2) possible carry
    CMP #60        ; (0/2) are we over the limit?
-    BEQ over      ; (0/2*) ONCE at most
+    BEQ over      ; (0/2) will take 3 cycles ONCE at most
    STA total+1    ; (0/3) updated counter
    LDA tmp        ; (0/3) retrieve remaining bytes
 next:
-  DEX             ; (2^)  next bit
-  BNE bit         ; (3^)  will take one less cycle the last bit
- DEY              ; (2)   next byte
- CPY #$FF         ; (2)   wraparound?
- BNE loop         ; (3)   another iteration, only 0.4% beyond this point
+  DEX             ; (2)  next bit
+  BNE bit         ; (3)  will take one less cycle the last bit
+ DEY              ; (2^)   next byte
+ CPY #$FF         ; (2^)   wraparound?
+ BNE loop         ; (3^)   another iteration, rarely beyond this point
   DEC ptr+1       ; decrement MSB and check limits
   LDA ptr+1
   CMP #>array
@@ -405,6 +405,13 @@ over:
  STY total+2
  STY total+3
 end:
+
+; ^) executed once each 8 iterations
+; *) executed 0.4% of the time
 ```
 
-_last modified: 20200513-1126_
+A ~13-cycle overhead _every 8 iterations_ accounts for a bit less than 2 clock cycles, thus
+total iteration time is **~18.6 or ~58.6 cycles**. Code size is again **104 bytes**, with
+2 bytes less for the CMOS version.
+
+_last modified: 20200514-1538_
