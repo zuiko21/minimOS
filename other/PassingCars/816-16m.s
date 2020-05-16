@@ -23,7 +23,7 @@ size		=		16000000
 	SEP #$20					; 8-bit memory & accumulator
 	LDX #0						; reset partial, also for clearing words
 	STX partial_h				; needs 32-bit clean, although uses only 24
-	LDA #(array+size-1).h		; last BANK used by the array *** must be computed ***
+	LDA #(array+size-1)>>16		; last BANK used by the array
 	LDY #!(array+size-1)		; last low word used by the array
 	STA ptr+2					; create LONG indirect pointer
 	STX ptr
@@ -53,7 +53,7 @@ next:
 		BNE loop				;(3) VERY rarely beyond this point
 			DEC ptr+2			;(5*) point to previous bank
 			LDA ptr+2			;(3*) could be waived if starting at bank 1
-			CMP #array.h		;(2*) could be waived if starting at bank 1 *** must be computed ***
+			CMP #array>>16		;(2*) could be waived if starting at bank 1
 		BCS loop				;(3*) use BNE if waived
 	BRA end
 over:
@@ -62,3 +62,6 @@ over:
 		STX total+2
 end:
 ; ************
+; *) Very rarely (~0.00015%) executed
+; 21 or 50 cycles per iteration, 76 bytes
+
