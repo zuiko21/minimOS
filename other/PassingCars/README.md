@@ -411,7 +411,51 @@ end:
 ```
 
 A ~13-cycle overhead _every 8 iterations_ accounts for a bit less than 2 clock cycles, thus
-total iteration time is **~18.6 or ~58.6 cycles**. Code size is again **104 bytes**, with
-2 bytes less for the CMOS version.
+total iteration time is **~18.6 or ~58.6 cycles**. Code size is again **104 bytes**, or
+2 bytes less if the CMOS version is used.
 
-_last modified: 20200514-1538_
+## Further improvements
+
+### Accurate 1,000,000,000 limit
+
+While the "definitive" code attempts shown here do stop counting over one thousand million cars,
+for performance reasons the comparison is made on the _most significant_ byte (or word).
+Despite the extra iterations executed, this is usually worth it as the main loop becomes faster.
+However, some software relying on the original specs may fail on these somewhat larger values.
+
+Assuming the extra iterations will hardly be a limiting factor, the needed correction just
+checks the final and _destroys_ any value over the specified one, by **overwriting -1**. A
+simple **plain 6502** solution could be placed at the very end of the loop, replacing the
+`BCS end` (or `BRA`) by the comparison sequence; any value over 1,000,000,000 would fail to
+jump to the end as before, simply falling into the `over:` label whose code will
+appropriately clear the counter:
+
+```assembly
+LDA total+3
+CMP #
+```
+
+It does add quite some bytes () but its effect on performance is negligible, as it's only
+executed **once**. In 16-bit mode, the 65816 allows for a much compact chunk:
+
+```assembly
+LDA total+3
+CMP #
+```
+
+### Arbitrary array length
+
+This is a particular nuisance of the **compact array** version. The idea is simplay skipping,
+for the first time, the `LDX #8` (or `LDY #16`) at the very beginning of the _outer loop_,
+having it preloaded with the appropriate modulus. _Even for **dynamically set array sizes**
+this is easily computed as we're dealing with **powers of 2**_. This first outer loop
+instruction becomes as follows:
+
+```assembly
+
+
+``` 
+
+Which, again, has **no effect on performance** as the actual loop code remains unchanged.
+   
+_last modified: 20200518-1840_
