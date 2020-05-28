@@ -449,13 +449,18 @@ This is a particular nuisance of the **compact array** version. The idea is simp
 for the first time, the `LDX #8` (or `LDY #16`) at the very beginning of the _outer loop_,
 having it preloaded with the appropriate modulus. _Even for **dynamically set array sizes**
 this is easily computed as we're dealing with **powers of 2**_. This first outer loop
-instruction becomes as follows:
+instruction becomes as follows (6502-version):
 
 ```assembly
-
-
+LDX #(size%8)+1   ; last chunk size (but relevant bits must be towards MSB)
+BNE first         ; no need for BRA
+loop:
+ LDX #8           ; skipped first time
+first:
+ LDA (ptr), Y     ; continue as usual
 ``` 
 
 Which, again, has **no effect on performance** as the actual loop code remains unchanged.
-   
-_last modified: 20200518-1840_
+65816-version is similar, just make those `LDX #` become `LDY #` and use 16 instead of 8. 
+
+_last modified: 20200528-1240_
