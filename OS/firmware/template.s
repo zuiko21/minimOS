@@ -1,7 +1,7 @@
 ; more-or-less generic firmware template for minimOS·65
-; v0.6b18
+; v0.6b19
 ; (c)2015-2020 Carlos J. Santisteban
-; last modified 20190402-1219
+; last modified 20200805-1131
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -41,6 +41,13 @@ fw_splash:
 fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
+
+; *** new, make a cold proper reboot if executed ***
+	LDY #PW_COLD		; select cold reboot
+	_KERNEL(SHUTDOWN)
+fw_boot:
+	CLI					; make sure iterrupts are enabled...
+	_BRA fw_boot		; ...and keep waiting for whole system shutdown
 
 ; *********************************
 ; *********************************

@@ -1,7 +1,7 @@
 ; more-or-less generic firmware for minimOS·16
-; v0.6b14
+; v0.6b15
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20190206-0853
+; last modified 20200805-1138
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -42,6 +42,13 @@ fw_mname:
 	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
 
+; *** new, make a cold proper reboot if executed ***
+	LDY #PW_COLD		; select cold reboot
+	_KERNEL(SHUTDOWN)
+fw_boot:
+	CLI					; make sure iterrupts are enabled...
+	BRA fw_boot			; ...and keep waiting for whole system shutdown
+
 ; *********************************
 ; *********************************
 ; *** administrative jump table *** changing
@@ -74,8 +81,6 @@ fw_admin:
 missing:
 		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
 #endif
-
-
 
 ; **************************
 ; **************************
