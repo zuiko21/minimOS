@@ -1,4 +1,6 @@
-## VME-like bus for 65816 _(and other CPUs)_
+## MxBus (aka _MexiBUS_) for 65816 _(and other CPUs)_
+
+### Formerly known as _VME-like_
 
 _re CPU_ | VME | 65816 | 65C02 | 6800 | 6802 | 6809 | 6809E
 ------ | --- | ----- | ----- | ---- | ---- | ---- | -----
@@ -45,4 +47,4 @@ Notes:
 
 `SERCLK` may be used as DOTCLK.
 
-_Last modified 20191216-1519_
+_Last modified 20200923-1429_
