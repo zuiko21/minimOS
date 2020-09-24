@@ -1,18 +1,24 @@
 ; 64-key ASCII keyboard for minimOS!
-; v0.6b6
+; v0.6.1a1
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200306-0953
+; last modified 20200924-1251
+; new VIAport interface version
 
 ; VIA bit functions
 ; PA0...3	= input from selected column
 ; PA4...7	= output (selected column)
-; PB3		= caps lock LED (hopefully respected!)
+; PB0		= caps lock status, will be latched for LED
+; *** in case an LCD is integrated, PA3 might be temprorarily _output_ as RS line, while PB0 will create the E pulse ***
 
-; new VIA-connected device ID is $A5/AD, $25/2D with PB7 off (%x010x101)
+; new VIA-connected device ID (at PB) is $AC when caps lock is on, and $AD otherwise
+; could jumper-enable the use of $2C/$2D, in case PB7 output is being used
+; might reserve $AE & $AF (perhaps with $2E/$2F) for optional LCD module
 
 ; ** driver variables description **
 ; ak_fi, first free element in FIFO
 ; ak_fo, element ready for exit in FIFO
+; ak_caps, flag for caps lock bit
+;  *** CHECK
 ; ak_ddra, old port config
 ; ak_iorb, old command **needed?**
 ; ak_rmod, last detected raw modifier combo
@@ -61,6 +67,9 @@
 ; uncomment for deadkey support (Spanish only this far)
 #define	DEADKEY	_DEADKEY
 
+; uncomment for non-PB7 savvy
+#define	PB7KEEP	_PB7KEEP
+
 ; ******************************
 ; *** standard minimOS stuff ***
 ; ******************************
@@ -72,7 +81,7 @@
 	.word	ak_err		; no output
 	.word	ak_init		; initialise 'device', called by POST only
 	.word	ak_poll		; periodic interrupt...
-	.word	4			; 20ms scan seems fast enough
+	.word	5			; 20ms scan seems fast enough
 	.word	ak_nreq		; D_ASYN does nothing
 	.word	ak_err		; no config
 	.word	ak_err		; no status
@@ -82,15 +91,20 @@
 
 ; *** driver description ***
 ak_info:
-	.asc	"ASCII keyboard v0.6", 0
+	.asc	"ASCII keyboard v0.6.1", 0
 
 ; *** some constant definitions ***
 AF_SIZ		= 16		; buffer size (only 15 useable) no need to be power of two
 AR_DEL		= 35		; 35×20 ms (0.7s) original delay
 AR_RATE		= 5			; 5×20 ms (1/10s) original repeat rate
-PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output
-PB_KEEP		= %10001000	; keep PB7... and PB3 eeeeeeeeeeeek
-PB_MASK		= %00100101	; VIAport address
+PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output, PA3 only output for optional LCD module
+PB_CAPS		= %00000001	; PB0 indicates caps lock status (0=on!)
+#ifdef	PB7KEEP
+PB_CMD		= $2C		; VIAport address (caps lock on, add PB_CAPS for caps lock off) not disturbing with PB7
+PB_KEEP		= %10000000	; PB7 must be kept undisturbed
+#else
+PB_CMD		= $AC		; VIAport address (caps lock on, add PB_CAPS for caps lock off) but cannot use PB7
+#endif
 
 ak_mk		= sysptr	; *** required zeropage pointer ***
 
@@ -139,6 +153,10 @@ ak_init:
 	_STZA ak_rmod
 	_STZA ak_cmod
 	_STZA ak_scod
+; reset caps lock status
+	LDA #PB_CAPS		; caps lock bit is one
+	STA ak_caps			; caps lock disabled on startup
+; optional stuff
 #ifdef	DEADKEY
 ; clear deadkey mode
 	_STZA ak_dead
@@ -160,16 +178,26 @@ ak_exit:				; placeholder
 ; *** scan matrix and put char on FIFO, if available *** D_POLL task
 ; ******************************************************
 ak_poll:
+	LDY #$FF			; useful?
 ; must setup VIA first!!
-	LDA VIA_U+IORB		; set control port
-	AND #PB_KEEP		; keep desired bits
-	ORA #PB_MASK		; set accordingly
-	STA VIA_U+IORB
 	LDA VIA_U+DDRA		; save older port config
-	STA ak_ddra
+	PHA
 	LDA #PA_MASK		; prepare for this device
 	STA VIA_U+DDRA
-; scan modifier column
+#ifdef	PB7KEEP
+	LDA VIA_U+IORB		; get control port
+	AND #PB_KEEP		; keep desired bits
+	ORA #PB_CMD			; and set the rest
+#else
+	LDA #PB_CMD			; single command
+	ORA ak_caps			; remind caps lock status!
+	STA VIA_U+IORB
+#ifdef	SAFE
+	LDA VIA_U+DDRB		; previous PB status?
+	PHA					; don't forget!
+	STY VIA_U+DDRB		; PB must be all output
+#endif
+; scan modifier column **** CHECK **** CHECK
 	LDX #15				; maximum column index (modifiers)
 	JSR ap_scol			; scan this column
 	_CRITIC				; will use zeropage interrupt space!
@@ -191,7 +219,7 @@ ap_cok:
 			AND #1				; current caps lock status
 			TAY					; keep for later
 ; and update status of caps lock LED
-			LDA VIA_U+IORB		; clear PB3, thus caps lock LED
+			LDA VIA_U+IORB		; clear PB3, thus caps lock LED *** NOT HERE
 			AND #%11110111
 			CPY #0				; is caps lock on?
 			BEQ ap_updc			; nope...
@@ -297,7 +325,7 @@ ap_live:
 	_STZA ak_dead			; no repeat for deadkeys, this far
 #endif
 ;	JMP ak_push			; goes into FIFO... and return to ISR
-; no need for the above if ak_push code follows!
+; no need for the above if ak_push code follows! it's the only use!
 
 ; **************************
 ; *** auxiliary routines ***
@@ -322,6 +350,20 @@ ak_wnw:
 		LDA #AF_SIZ-1		; or just place it at the end
 		STA ak_fi
 ak_room:
+; *** as this is the interrupt task exit, must restore VIA config ***
+#ifdef	SAFE
+	PLA
+	STA VIA_U+DDRB		; restore previous PB status
+#endif
+#ifdef	PB7KEEP
+	LDA #PB_KEEP^$FF	; disable selection, but respect PB7
+	ORA VIA_U+IORB		; current status for PB7
+	STA VIA_U+IORB
+#else
+	STY VIA_U+IORB		; null device selected, end of operation
+#endif
+	PLA
+	STA VIA_U+DDRA		; restore older PA config
 	RTS					; no errors here
 
 ; *** read one byte from FIFO *** A -> char, C = empty, uses X
