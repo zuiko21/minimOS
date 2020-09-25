@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6.1a1
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200924-1251
+; last modified 20200925-1029
 ; new VIAport interface version
 
 ; VIA bit functions
@@ -20,7 +20,7 @@
 ; ak_caps, flag for caps lock bit
 ;  *** CHECK
 ; ak_ddra, old port config
-; ak_iorb, old command **needed?**
+; ak_iorb, old command
 ; ak_rmod, last detected raw modifier combo
 ;	d0 = caps lock
 ;	d1 = alt
@@ -190,6 +190,7 @@ ak_poll:
 	ORA #PB_CMD			; and set the rest
 #else
 	LDA #PB_CMD			; single command
+#endif
 	ORA ak_caps			; remind caps lock status!
 	STA VIA_U+IORB
 #ifdef	SAFE
@@ -197,7 +198,7 @@ ak_poll:
 	PHA					; don't forget!
 	STY VIA_U+DDRB		; PB must be all output
 #endif
-; scan modifier column **** CHECK **** CHECK
+; scan modifier column
 	LDX #15				; maximum column index (modifiers)
 	JSR ap_scol			; scan this column
 	_CRITIC				; will use zeropage interrupt space!
@@ -206,7 +207,7 @@ ak_poll:
 		STA ak_rmod			; update raw modifier combo...
 		LSR					; pressing caps lock?
 		BCC ap_selt			; no, just check other modifiers
-; toggle caps lock status bit (A holds shifted modifiers)
+; toggle caps lock status bit (A holds shifted modifiers) *** *** REVISE *** ***
 			LSR ak_cmod			; get older cpaps state
 			BCC ap_cup			; was off, turn it on...
 				CLC					; ...or turn off if was on
@@ -217,15 +218,7 @@ ap_cok:
 			ROL					; reinsert new status together with other bits
 			STA ak_cmod			; update all bits
 			AND #1				; current caps lock status
-			TAY					; keep for later
-; and update status of caps lock LED
-			LDA VIA_U+IORB		; clear PB3, thus caps lock LED *** NOT HERE
-			AND #%11110111
-			CPY #0				; is caps lock on?
-			BEQ ap_updc			; nope...
-				ORA #%00001000		; ...or yes
-ap_updc:
-			STA VIA_U+IORB		; update LED status
+			STA ak_caps			; keep for later, will update caps lock LED on next read!
 ; get table address for this modifier combo
 ap_selt:
 		LDA ak_cmod			; retrieve modifier status
