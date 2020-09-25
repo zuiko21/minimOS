@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6.1a1
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200925-1029
+; last modified 20200925-1250
 ; new VIAport interface version
 
 ; VIA bit functions
@@ -17,7 +17,6 @@
 ; ** driver variables description **
 ; ak_fi, first free element in FIFO
 ; ak_fo, element ready for exit in FIFO
-; ak_caps, flag for caps lock bit
 ;  *** CHECK
 ; ak_ddra, old port config
 ; ak_iorb, old command
@@ -152,10 +151,8 @@ ak_init:
 ; clear previous scancodes
 	_STZA ak_rmod
 	_STZA ak_cmod
+; caps lock status is reset, as bit 0 from ak_comd will be inverted towards PB0
 	_STZA ak_scod
-; reset caps lock status
-	LDA #PB_CAPS		; caps lock bit is one
-	STA ak_caps			; caps lock disabled on startup
 ; optional stuff
 #ifdef	DEADKEY
 ; clear deadkey mode
@@ -178,24 +175,34 @@ ak_exit:				; placeholder
 ; *** scan matrix and put char on FIFO, if available *** D_POLL task
 ; ******************************************************
 ak_poll:
-	LDY #$FF			; useful?
 ; must setup VIA first!!
+; note stacking order, DDRA-(IORA)-DDRB
 	LDA VIA_U+DDRA		; save older port config
 	PHA
 	LDA #PA_MASK		; prepare for this device
 	STA VIA_U+DDRA
+#ifdef	SAFE
+	LDA VIA_U+IORA		; save this too, just in case
+	PHA
+#endif
+	LDA VIA_U+DDRB		; previous PB config?
+	PHA					; don't forget!
+; create command with caps lock status, perhaps saving PB7
 #ifdef	PB7KEEP
 	LDA VIA_U+IORB		; get control port
 	AND #PB_KEEP		; keep desired bits
-	ORA #PB_CMD			; and set the rest
+	ORA ak_cmod			; and look for the status (won't mess with PB4...7 anyway)
+	AND #PB_CAPS|PB_KEEP	; only PB7 and caps lock
 #else
-	LDA #PB_CMD			; single command
+	LDA ak_cmod			; get whole status
+	AND #PB_CAPS		; just for caps lock
 #endif
-	ORA ak_caps			; remind caps lock status!
-	STA VIA_U+IORB
+	EOR #PB_CAPS		; LED goes inverted!
+	ORA #PB_CMD			; set single command
+#endif
+	STA VIA_U+IORB		; issue VIAport command!
 #ifdef	SAFE
-	LDA VIA_U+DDRB		; previous PB status?
-	PHA					; don't forget!
+	LDY #$FF			; useful?
 	STY VIA_U+DDRB		; PB must be all output
 #endif
 ; scan modifier column
@@ -208,20 +215,12 @@ ak_poll:
 		LSR					; pressing caps lock?
 		BCC ap_selt			; no, just check other modifiers
 ; toggle caps lock status bit (A holds shifted modifiers) *** *** REVISE *** ***
-			LSR ak_cmod			; get older cpaps state
-			BCC ap_cup			; was off, turn it on...
-				CLC					; ...or turn off if was on
-				BCC ap_cok
-ap_cup:
-			SEC					; this turns caps on
-ap_cok:
-			ROL					; reinsert new status together with other bits
-			STA ak_cmod			; update all bits
-			AND #1				; current caps lock status
-			STA ak_caps			; keep for later, will update caps lock LED on next read!
+			LDA ak_cmod			; get older caps state
+			EOR #PB_CAPS		; just FUCKING toggle it...
+			STA ak_cmod			; update all bits, will update caps lock LED on next read!
 ; get table address for this modifier combo
 ap_selt:
-		LDA ak_cmod			; retrieve modifier status
+		LDA ak_cmod			; retrieve modifier status EEEEEEEK
 #ifdef	DEADKEY
 ; *** check whether in deadkey mode for simplified modifier handling ***
 		LDX ak_dead			; will be modified by previous deadkey?
@@ -325,6 +324,7 @@ ap_live:
 ; **************************
 
 ; *** push one byte into FIFO *** A <- char, uses X
+; actually inlined as only used by interrupt task
 ak_push:
 	LDX ak_fi			; get input position
 	STA ak_buff, X		; insert char
@@ -360,6 +360,7 @@ ak_room:
 	RTS					; no errors here
 
 ; *** read one byte from FIFO *** A -> char, C = empty, uses X
+; perhaps worth inlining, but take care of error code (Y and P.C)
 ak_get:
 	LDX ak_fo			; get output position
 	CPX ak_fi			; is it empty?
@@ -376,6 +377,7 @@ ak_rnw:
 	_DR_OK
 
 ; *** get rows in A as selected in column X ***
+; cannot be inlined...
 ap_scol:
 	LDA col4, X			; column times 4
 	ASL					; make it times 16 for port
