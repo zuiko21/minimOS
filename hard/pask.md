@@ -170,7 +170,7 @@ On the other hand, the **5x8 matrix** will
 fit a **74HC238** decoder which, besides its
 large availability (from my stock), has
 _active-high_ outputs, allowing the use of
-just eight unexpensive 1N4148 diodes.
+just eight inexpensive 1N4148 diodes.
 
 Once the row is selected by the decoder,
 each column line is received as _unencoded_
@@ -201,4 +201,4 @@ seems to be a suitable clock rate for _debouncing_,
 although frequencies up to 1 MHz might work well
 with the interface.
 
-_Last update: 20200316-2257_
+_Last update: 20200929-1406_
