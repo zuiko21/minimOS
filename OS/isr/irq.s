@@ -2,7 +2,7 @@
 ; v0.6.1a3, should match kernel.s
 ; features TBD
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20200929-1339
+; last modified 20200929-1345
 
 #define		ISR		_ISR
 
@@ -177,11 +177,12 @@ i_pnx:
 ip_done:
 ; *********************************************
 ; *** STUB for procastinated task execution ***
-	LDA i_delay			; something pending? (4)
-	BNE i_wait			; if not, just continue (2/3)
+	LDA i_delay			; something pending? (4) might use an array of several tasks!
+	BNE i_wait			; if not, just continue (2/3) usually minimal latency this way
 ; *** see below for continuation ***
 ; **********************************
 ; update uptime, much faster new format
+ip_tick:
 	INC ticks			; increment uptime count (6)
 		BNE isr_done		; did not wrap (3/2)
 	INC ticks+1			; otherwise carry (6)
@@ -193,12 +194,12 @@ ip_done:
 ; ******************************************************
 ; *** continue STUB for procastinated task execution ***
 i_wait:
-	DEC i_delay			; decrement counter (6)
-	BNE isr_done		; still not expired (3/2)
-		JSR i_dcall			; or call supplied routine (6)
-		_BRA isr_done		; all done (3)
+	DEC i_delay			; decrement counter (6) could be an array
+		BNE ip_tick			; still not expired (3/2)
+	JSR i_dcall			; or call supplied routine (6) perhaps indexed thru X
+		_BRA ip_tick		; all done (3)
 i_dcall:
-	JMP (i_dptr)		; call supplied routine (6)
+	JMP (i_dptr)		; call supplied routine (6) could be an array
 ; *** note an API is needed to set this pointer, only if the counter is zero! ***
 ; *******************************************************************************
 
