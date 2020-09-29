@@ -175,8 +175,8 @@ i_pnx:
 		BPL i_poll			; until zero is done (3/2)
 ; *** continue after all interrupts dispatched ***
 ip_done:
-; *********************************************
-; *** STUB for procastinated task execution ***
+; **********************************************
+; *** STUB for procrastinated task execution ***
 	LDA i_delay			; something pending? (4) might use an array of several tasks!
 	BNE i_wait			; if not, just continue (2/3) usually minimal latency this way
 ; *** see below for continuation ***
@@ -191,8 +191,8 @@ ip_tick:
 		BNE isr_done		; did not wrap (3/2)
 	INC ticks+3			; otherwise carry (6)
 	_BRA isr_done		; go away (3)
-; ******************************************************
-; *** continue STUB for procastinated task execution ***
+; *******************************************************
+; *** continue STUB for procrastinated task execution ***
 i_wait:
 	DEC i_delay			; decrement counter (6) could be an array
 		BNE ip_tick			; still not expired (3/2)
