@@ -30,6 +30,8 @@ for the _frequency generator_ (toggling `PB7`).
 The aforementioned backplanes may include an older _VIAport_ connector plus
 separate _SS-22_ header for backwards compatibility.
 
+A [device ID list](viabus_id.md) is being made to avoid future conflicts.
+
 ## Pinouts
 
 The pinout is inspired, but not directly compatible, with that on
@@ -102,4 +104,4 @@ in case of **hot-plugging**.
 \*\*) Might be left _NC_ on computers and connected to a **LED** on peripherals
 for _backwards fitting_ detection.
 
-_Last modified 20190322-0855_
+_Last modified 20200929-1307_
