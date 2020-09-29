@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6.1a2, should match kernel.s
+; v0.6.1a3, should match kernel.s
 ; features TBD
 ; (c) 2015-2020 Carlos J. Santisteban
-; last modified 20190222-0930
+; last modified 20200929-1339
 
 #define		ISR		_ISR
 
@@ -175,6 +175,12 @@ i_pnx:
 		BPL i_poll			; until zero is done (3/2)
 ; *** continue after all interrupts dispatched ***
 ip_done:
+; *********************************************
+; *** STUB for procastinated task execution ***
+	LDA i_delay			; something pending? (4)
+	BNE i_wait			; if not, just continue (2/3)
+; *** see below for continuation ***
+; **********************************
 ; update uptime, much faster new format
 	INC ticks			; increment uptime count (6)
 		BNE isr_done		; did not wrap (3/2)
@@ -184,6 +190,17 @@ ip_done:
 		BNE isr_done		; did not wrap (3/2)
 	INC ticks+3			; otherwise carry (6)
 	_BRA isr_done		; go away (3)
+; ******************************************************
+; *** continue STUB for procastinated task execution ***
+i_wait:
+	DEC i_delay			; decrement counter (6)
+	BNE isr_done		; still not expired (3/2)
+		JSR i_dcall			; or call supplied routine (6)
+		_BRA isr_done		; all done (3)
+i_dcall:
+	JMP (i_dptr)		; call supplied routine (6)
+; *** note an API is needed to set this pointer, only if the counter is zero! ***
+; *******************************************************************************
 
 ; *******************
 ; *** BRK handler ***
