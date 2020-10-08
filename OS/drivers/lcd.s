@@ -1,4 +1,4 @@
-; Hitachi LCD for minimOS
+; Hitachi LCD for minimOS *** O B S O L E T E ***
 ; v0.6a4
 ; (c) 2018-2020 Carlos J. Santisteban
 ; last modified 20200121-1424

@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
-; v0.6.1a1
+; v0.6.1a2
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20200925-1250
+; last modified 20201008-1357
 ; new VIAport interface version
 
 ; VIA bit functions
@@ -69,15 +69,23 @@
 ; uncomment for non-PB7 savvy
 #define	PB7KEEP	_PB7KEEP
 
+; uncomment for optional LCD module support
+#define	LCDCHAR	_LCDCHAR
 ; ******************************
 ; *** standard minimOS stuff ***
 ; ******************************
 
-; *** begins with sub-function addresses table ***
+; *** begins with sub-function addresses table *** note options
 	.byt	145			; physical driver number D_ID (TBD)
+#ifndef	LCDCHAR
 	.byt	A_BLIN|A_POLL	; input driver, periodic interrupt-driven
 	.word	ak_read		; read from input buffer
 	.word	ak_err		; no output
+#else
+	.byt	A_BLIN|A_BOUT|A_POLL	; I/O driver, periodic interrupt-driven
+	.word	ak_read		; read from input buffer
+	.word	ak_out		; output to LCD
+#endif
 	.word	ak_init		; initialise 'device', called by POST only
 	.word	ak_poll		; periodic interrupt...
 	.word	5			; 20ms scan seems fast enough
@@ -90,7 +98,11 @@
 
 ; *** driver description ***
 ak_info:
+#ifndef	LCDCHAR
 	.asc	"ASCII keyboard v0.6.1", 0
+#else
+	.asc	"ASCII keyboard + LCD module v0.6.1", 0
+#endif
 
 ; *** some constant definitions ***
 AF_SIZ		= 16		; buffer size (only 15 useable) no need to be power of two
@@ -141,6 +153,35 @@ blck_end:
 ak_err:
 	_DR_ERR(NO_RSRC)	; cannot do this
 
+; **************************
+; *** LCD output routine *** optional
+; **************************
+ak_out:
+	LDA bl_ptr+1		; get pointer MSB
+	PHA					; in case gets modified...
+	LDY #0				; reset index
+lp_l:
+		_PHY				; keep this
+		LDA (bl_ptr), Y		; buffer contents...
+		STA io_c			; ...will be sent
+		JSR lcd_char		; *** print one byte ***
+			BCS lcd_exit		; any error ends transfer!
+		_PLY				; restore index
+		INY					; go for next
+		DEC bl_siz			; one less to go
+			BNE lp_l			; no wrap, continue
+		LDA bl_siz+1		; check MSB otherwise
+			BEQ lcd_end			; no more!
+		DEC bl_siz+1		; ...or one page less
+		_BRA lp_l
+lcd_exit:
+	PLA					; discard saved index
+lcd_end:
+	PLA					; get saved MSB...
+	STA bl_ptr+1		; ...and restore it
+lcd_rts:
+	RTS					; exit, perhaps with an error code
+
 ; ************************
 ; *** initialise stuff ***
 ; ************************
@@ -166,6 +207,10 @@ ak_init:
 	LDA #AR_RATE
 	STA ak_vrep
 	STA ak_rep
+#endif
+; *** in case LCD is installed, reset it too ***
+#ifdef	LCDCHAR
+; * * * T O   D O * * *
 #endif
 ; all done
 ak_exit:				; placeholder
