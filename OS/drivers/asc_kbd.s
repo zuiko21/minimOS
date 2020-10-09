@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6.1a2
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20201008-1357
+; last modified 20201009-0926
 ; new VIAport interface version
 
 ; VIA bit functions
@@ -153,9 +153,9 @@ blck_end:
 ak_err:
 	_DR_ERR(NO_RSRC)	; cannot do this
 
-; **************************
-; *** LCD output routine *** optional
-; **************************
+; *****************************
+; *** write to optional LCD *** 
+; *****************************
 ak_out:
 	LDA bl_ptr+1		; get pointer MSB
 	PHA					; in case gets modified...
@@ -215,6 +215,12 @@ ak_init:
 ; all done
 ak_exit:				; placeholder
 	_DR_OK				; succeeded
+
+; *************************************
+; *** optional LCD character output ***
+; *************************************
+lcd_char:				; placeholder
+	_DR_OK				; should succeed...
 
 ; ******************************************************
 ; *** scan matrix and put char on FIFO, if available *** D_POLL task
