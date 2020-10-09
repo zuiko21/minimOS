@@ -1,7 +1,7 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6.1a2
 ; (c) 2012-2020 Carlos J. Santisteban
-; last modified 20201009-0926
+; last modified 20201009-1011
 ; new VIAport interface version
 
 ; VIA bit functions
@@ -112,11 +112,15 @@ PA_MASK		= %11110000	; PA0-3 as input, PA4-7 as output, PA3 only output for opti
 PB_CAPS		= %00000001	; PB0 indicates caps lock status (0=on!)
 #ifdef	PB7KEEP
 PB_CMD		= $2C		; VIAport address (caps lock on, add PB_CAPS for caps lock off) not disturbing with PB7
+PB_LCD		= $2F		; just in case (E is HIGH, will DEC later)
 PB_KEEP		= %10000000	; PB7 must be kept undisturbed
 #else
 PB_CMD		= $AC		; VIAport address (caps lock on, add PB_CAPS for caps lock off) but cannot use PB7
+PB_LCD		= $AF		; just for convenience (E is HIGH, will DEC later)
 #endif
-
+#ifdef	LCDCHAR
+PA_RS		= %00001000	; RS is PA3 for optional LCD
+#endif
 ak_mk		= sysptr	; *** required zeropage pointer ***
 
 ; ****************************************
@@ -216,11 +220,40 @@ ak_init:
 ak_exit:				; placeholder
 	_DR_OK				; succeeded
 
+#ifdef	LCDCHAR
 ; *************************************
 ; *** optional LCD character output ***
 ; *************************************
 lcd_char:				; placeholder
+; *** *** really OUGHT to make a generic routine for this, with a variable RS *** ***
+	TAX					; keep character
+	AND #PA_MASK		; filter MSN first
+	ORA #PA_RS			; set RS=1
+	STA VIA_U+IORA		; put data on VIAport
+	LDA VIA_U+DDRA		; make sure PA3 is output for RS
+	ORA #PA_RS			; enable RS
+	STA VIA_U+DDRA		; all data is ready
+#ifdef	PB7KEEP
+	LDA VIA_U+IORB		; original command
+	AND #PB_KEEP		; keep PB7 status from it
+	ORA #PB_LCD			; select LCD with E high
+#else
+	LDA #PB_LCD			; just select LCD with E high
+#endif
+	STA VIA_U+IORB		; issue LCD command (sets E)
+	DEC VIA_U+IORB		; ...and E goes down for a moment
+	TXA					; retrieve original char
+	ASL					; will keep LSN (might use SEC & ROL instead but not worth)
+	ASL
+	ASL
+	ASL
+	ORA #PA_RS			; enable RS as this is a char
+	STA VIA_U+IORA		; put data on VIAport
+	INC VIA_U+IORB		; and pulse E again
+	DEC VIA_U+IORB		; *** this may suffice, instead of issuing a NULL PB command ***
+; *** *** end of LCD transfer "routine" *** ***
 	_DR_OK				; should succeed...
+#endif
 
 ; ******************************************************
 ; *** scan matrix and put char on FIFO, if available *** D_POLL task
