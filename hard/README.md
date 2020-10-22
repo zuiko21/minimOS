@@ -82,13 +82,13 @@ switchable between **40 and 80 columns**_, with updated components
 
   * Status: finishing specs.
   * Form-factor: Perfboard with point-to-point soldering.
-  * Specs: **1.536 MHz** 65C02, **32 kiB SRAM**, **32 kiB EPROM**, VIA 65C22, CRTC HD6845.
+  * Specs: **1.536 MHz** 65C02, **32 kiB SRAM**, **32 kiB EPROM**, VIA 65C22, CRTC HD6845/6445.
   * Peripherals: Piezo buzzer, **VGA-compatible** video output
 (**320x200/288x224 bitmap** with option of _**400/448 lines**_)
   * Interfaces: SS-22, new VIA connector.
 
-> A _black & white_ version of **Acapulco**, albeit with a 'high' resolution option
-(might be added to **Acapulco**, too). _Might include a 6551-based TTL serial_.
+> A _black & white_ version of **Acapulco**, albeit with a 'high' resolution option.
+_Might include a 6551-based TTL serial_.
 
 
 [**Acapulco**](acapulco.md)
@@ -102,7 +102,7 @@ _Intended to be a **colour & graphics** capable SBC._
 (**320x200/228x224 @ 16 colours** in gBRG mode, only 2 of them on any 8x8-pixel block)
   * Interfaces: SS-22, new VIA connector.
 
-> _May use the 'high' resolution option from **Tampico**, as CRAM is really 2 kiB_.
+> _May use an **alternate attribute area**, as CRAM is really 2 kiB_.
 
 
 ### 65816-based
@@ -294,4 +294,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20200504-2209_
+_last modified: 20201022-1328_
