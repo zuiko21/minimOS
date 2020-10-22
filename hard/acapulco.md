@@ -3,13 +3,24 @@
 The **Acapulco** project, formerly called _Tampico_, is a simple 65C02 computer with
 **built-in _VGA-compatible_ video output**. Despite this output fitting a
 _quasi-VGA_ format, actual picture resolution is _SD TV-like_ but compatible with
-more modern devices. This also stays better within the limited power of a 65C02.
+more modern devices. This also works better within the limited power of a 65C02.
 
 Another feature for both a more attractive display _and_ resource saving is the
 ability to **display up to 16 colours** from a _fixed **gBRG** palette_, although
 limited to _two of them over each 8x8 pixel region_, by means of an
-**attribute area** (much like the one on the **ZX Spectrum**, although with no
+**attribute area**, much like the one on the **ZX Spectrum**, although with no
 `BRIGHT` or `FLASH` attributes.
+
+A new (as of October 2020) easily implemented feature, since the ColourRAM is already
+_twice_ the needed size, is to allow an **alternate attribute area**, quickly switchable
+on-the-fly by using `MA13` on the CRTC -- setting this bit on the _base address_ will
+display the alternate colours. The most simple implementation would just tie `A10` on the
+Colour RAM to `MA13` instread of (say) `1` if unused; but a more elaborated arrangement
+would allow **writing on one attribute area while displaying the other one**, great for
+animations. This can be done in a similar way as **[Tampico's](tampico.md) double-res
+mode**, thus _an extra KiB of RAM must be reserved by the OS_, leaving **22 KiB free**
+instead of the usual 23. By the way, it has been considered but _there's NO easy way
+to implement double-res mode on Acapulco_.
 
 As this machine lacks the _experimental_ aim of the **Jalapa 2** project,
 no _configuration options_ will be available, although pin 1 on the CPU socket may
@@ -23,7 +34,7 @@ Still within design phase, here is an outline of its basic specs:
 - CPU: **65C02**
 - Clock speed: **1.536 MHz** (although **1.5734375 MHz** might be preferred)
 - VIA: single **65C22**, with the typical **piezo-buzzer** at `PB7-CB2`
-- RAM: **32 kiB** (static) plus 1 kiB *shadow* RAM for attributes. 
+- RAM: **32 kiB** (static) plus 1 (or 2) kiB *shadow* RAM for attributes. 
 - (E)EPROM: **32 kiB**
 - Built-in video: **6445** based, 6845 may be used with extra multiplexing.
 
@@ -88,7 +99,7 @@ scan frequencies (58.5 Hz & 30.7 kHz) from a 24.576 MHz clock, thus taking the w
 320 x 200 without any weaking.   
 
 6x45's _raster addresses_ are wired as the most significant bits. This allows fast
-**hardware-assisted scrolling** (Amstrad-like). It also sets a _constant distance_
+**hardware-assisted scrolling** (Amstrad-CPC-like). It also sets a _constant distance_
 (`$400`) between the _colour RAM_ and the upper raster of each displayed character,
 greatly simplifying the driver.
 
@@ -129,11 +140,11 @@ some AND gate or by totally disabling the colour mux.
 
 ### Palette for the _Colour RAM_
 
-For moderate bandwith and attractive presentation, a **gBRG palette** is used -- the
-_green_ channel sporting **4 levels** instead of two, as the human eye is most sensitive
-to this one. The colour codes _for each character_ (or the corresponding **8x8 pixel**
-area) are recorded with the most significant nibble representing the
-_background_ one.
+For moderate bandwith and attractive presentation, a **gBRG palette** is
+used -- the _green_ channel sporting **4 levels** instead of two, as the
+human eye is most sensitive to this one. The colour codes _for each character_
+(or the corresponding **8x8 pixel** area) are recorded with the most significant
+nibble representing the _background_ one.
 
 Note that _the most noticeable bit is **LSB**_, guaranteeing **adecuate contrast**
 if only the LSB gets changed. _This is the reason behing renaming the old `GRgB` scheme_.
@@ -155,8 +166,9 @@ further reading by the CPU.
 
 The standard memory map goes as follows:
 
-- `$0000-$5BFF`: _62256_ **SRAM** (general purpose)
-- `$5C00-$5FFF`: **Colour RAM** (**1K used** from a separate _6116_)
+- `$0000-$57FF`: _62256_ **SRAM** (general purpose)
+- `$5800-$5BFF`: **Colour RAM** (_alternate_ area; could work as _general purpose_ RAM)
+- `$5C00-$5FFF`: **Colour RAM** (standard area, **1K used** from a separate _6116_)
 - `$6000-$7FFF`: **Video RAM** (stored in the _62256_)
 - `$8000-$DEFF`: EPROM (**kernel & firmware**, plus any desired apps)
 - `$DF00-$DFFF`: built-in **I/O** (NON selectable, but maybe _switchable_?)
@@ -206,12 +218,15 @@ Special consideration needs the 6116 **Colour RAM**. Wired (mostly) in parallel
 with the regular 62256 SRAM, it is _write-only_ from the CPU side (it will read from
 the 62256, which is always written with the same contents) thru another '245 (a '244
 may be used as well) and _read-only_ for the CRTC (thru a suitable '374/'574 latch).
+If the **alternate attribute area** isn't used, `A10` on the 6116 may be tied to `1`;
+otherwise, see _double-res mode_ on [Tampico computer](tampico.md) for some feasible wiring.
 
 ### RDY implementation
 
 Note that this machine _does **not** negate RDY_ by itself, thus a _gentle_ pull-up
-is connected to this pin on the CPU. Thus, _WDC parts_ should not worry about the
-execution of `WAI/STP` opcodes, as long as the jumper is NOT set to provide `VSS` there.
+is connected to this pin on the CPU. Thus, **WDC parts** should not worry about the
+execution of `WAI/STP` opcodes, as long as the _internal decoding_ jumper is NOT set
+to provide `VSS` there (as pin 1 is used for `/VP` on them).
 
 ### Chip Selection
 
@@ -261,4 +276,4 @@ to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
 the tristate option is activated**. _Read above about ways to achieve this,
 thru proper enabling of the `RAM /CS` signal_. 
 
-_Last modified: 20200502-2245_
+_Last modified: 20201022-1326_
