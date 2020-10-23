@@ -11,6 +11,12 @@ video RAM (now 16 KiB out of 32). The easiest way to implement this is via `MA13
 the CRTC: thus, if the screen base address is anywhere in the upper 8K (from the 16K
 addressable by the 6x45), `VA13` (to SRAM) takes the otherwise ignored `RA0` from CRTC.
 
+Another feasible feature would be a _chunky_ **2 bpp mode**, halving horizontal resolution.
+Instead of getting (V)RAM data into a _shift register_, a **dual 4-to-1 mux** (e.g. 74HC253)
+will supply the 4-colour bitstream to the RGB outputs. Perhaps the simplest palette would
+be a kind of _semaphore plus black_ driving, say, LSB into `G` and MSB into `R`.
+6x45 cursor output might go into the blue channel. Much like the aforementioned _double-res_
+mode, this could be enabled by `MA12` on the CRTC, saving a dedicated register.
 
 As this machine lacks the _experimental_ aim of the **Jalapa 2** project,
 no _configuration options_ will be available, although pin 1 on the CPU socket may
@@ -51,23 +57,18 @@ CRTC accesses for **optimum performance**.
 
 ## Video output
 
-**C** **H** **A** **N** **G** **E**
-The main feature of the otherwise simple **Tampico** computer is the VGA-compatible
-**colour video output**. But since a complete _4 bpp full VGA_ display would need
-at least _128 kiB of VRAM_, some measures must be taken in order to reduce the memory
-and bandwith requirememts so they fit into the 6502's capabilities:
-
-1) **Halving the resolution**, both H & V, down to those on the _home computers_
-of old times, via **line doubling**.
-1) The use of an **attribute area**, allowing the whole image to be stored like a
-_bitmap_, limited to **two available colours _each 8x8 pixels_**.
-
-_END OF_ **C** **H** **A** **N** **G** **E**
-
+Even on monochrome, a complete _full VGA_ display would need the whole available RAM
+on Tampico, and then some more, thus a **reduced resolution** around _320x200_ is set
+(see below resolution options). As the number of lines is halved, _line doubling_ must
+be used for VGA compliance.
 These restrictions allow the whole VRAM area to fit into a mere **8 kiB**, subtracted
 from the regular SRAM as _vampire-video_. On the other hand, if the _double-res_ feature
 is enabled, **16 kiB** will be used. Supplied with 32 kiB of static RAM, either approach
 seems reasonable.
+
+On the other hand, the optional **colour mode** just takes 2 bits per pixel, halving
+horizontal resolution but still fitting into the same VRAM size. _Note that this mode
+could be combined with the **double-res** mode, but would definitely look horrible!_
 
 The versatility of the **6x45 CRTCs** allow easy implementation of several video
 modes. The choice of oscillator will affect compatibility, so some _timing tweaking_
@@ -85,6 +86,9 @@ thus provide several _configuration tables_, allowing these suggested modes:
 3) **288x224** (36x28 char.) most likely compatible with _slightly_ faster timing
 3) **256x240** (32x30 char.) ditto, allowing a simpler driver
 3) **320x200** (40x25 char.) shorter _back porch & sync pulses_ (most likely compatible)
+
+Vertical resolution doubles up to 400/448/480 lines in case _double-res_ mode is enabled,
+but timing will remain the same.
 
 _Firmware_ may provide a module for **quick video mode selection** during startup.
 
@@ -116,24 +120,23 @@ OS _driver_ does not have to check for other than the **generic 6845 registers**
 
 ### Video signal generation
 
-**C** **H** **A** **N** **G** **E**
-
-Despite being a **4 bpp** screen, the use of an _attribute area_ makes VRAM
-format as simple as a **bitmap** one. Thus, during CRTC addressing, RAM data is
-latched into a **'165 shift register** as usual. However, instead of sending
-its serial output directly to the VGA connector, it is used for _multiplexing_
-the nibbles read from the _colour RAM_ (in parallel with the regular RAM), and
-those 4 bits (representing either _foreground_ or _background_ color) are sent
-to the _makeshift **DAC**_. The colour RAM output is, by the way, _latched_ at
-the same time as the shift register.
+VRAM data is handled differently depending on the _double-res_ mode being enabled
+or not. When on standard _line doubling_ mode, RAM data is
+latched into a **'165 shift register** as usual. However, the colour mode takes
+these bytes into a **'253 dual 4-to-1 mux**, switching pairs at half the usual
+dot rate. A simple hardwired palette is expected.
 
 _**Cursor** circuitry is TBD_, certainly with the assistance of the 6x45 hardware.
-Most likely will involve some XOR gate between the shift register and the _colour
-multiplexer_, actually swapping fore- and background colours (much like the ZX
-Spectrum's `INVERSE` or `FLASH` modes). Ditto for **blanking**, not sure if via
-some AND gate or by totally disabling the colour mux.
+A simple approach would be putting the monochrome video output to, say, the green
+channel and the cursor output to the red channel, switching the _vintage_ green-on-black
+look to a yellow-on-red one -- could use jumpers for alternative colour schemes.
+Ditto for the _colour_ mode, with two (fixed?) channels for display and the remaining
+one for cursor -- might turn a semaphore-like palette into a CGA-like one!
 
-_END OF_ **C** **H** **A** **N** **G** **E**
+About the **double-res mode**, it's just a matter of muxing into `VA13` either 1
+(normal mode) or the normally ignored `/RA0` (note it is _negated_), depending on
+the state of `MA13`, which can be easily selected from a spare '139. _But the **OS**
+must take account of this, reserving the `$4000-$5FFF` RAM area for display_.
 
 ## Memory map
 
@@ -192,8 +195,6 @@ any problems. **6502 does a (fake) stack access during RESET**, thus note the tr
 on _Chip selection_ for a complete solution. _None of these solutions will be
 actually needed if using a properly **multiplexed** 6845_.
 
-_Here **M** **U** **S** **T** speak about double-res mode_
-
 ### RDY implementation
 
 Note that this machine _does **not** negate RDY_ by itself, thus a _gentle_ pull-up
@@ -248,4 +249,4 @@ to work, it is ESSENTIAL that **no RAM is accessed** (including stack) **until
 the tristate option is activated**. _Read above about ways to achieve this,
 thru proper enabling of the `RAM /CS` signal_. 
 
-_Last modified: 20201022-1344_
+_Last modified: 20201023-1010_
