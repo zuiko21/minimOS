@@ -2,7 +2,7 @@
  * PPM font viewer for minimOS bitmaps *
  * when converted to 4px width         *
  * (C) 2020 Carlos J. Santisteban      *
- * Last modified: 20201023-1906        *
+ * Last modified: 20201030-1317        *
  */
 
 #include <stdio.h>
@@ -50,13 +50,14 @@ int main(void) {
 			printf("All read! (%d)\n", y);
 			fclose(font);
 // create PPM header, in ASCII mode
-			fprintf(ppm, "P3\n132 %d\n1\n", y*16);
+			fprintf(ppm, "P3\n132 %d\n1\n", 2+y*16);
+// white line at top
 			fprintf(ppm, "1 1 1 1 1 1\n");		// 2px white at left
 			for (k=0; k<16; k++)	fprintf(ppm, "1 1 1 1 1 1  1 1 1 1 1 1  1 1 1 1 1 1  1 1 1 1 1 1\n");
 			fprintf(ppm, "1 1 1 1 1 1\n\n");	// 2px white at right
 // then create picture from matrix contents
 			for(i=0; i<16; i++) {
-				fprintf(ppm, "# row %d\n\n", i)
+				fprintf(ppm, "# row %d\n\n", i);
 				for (k=0; k<y; k++) {			// first scanline, then column
 					fprintf(ppm, "1 1 1 1 1 1\n");		// 2px white at left
 					for (j=0; j<16; j++) {
@@ -75,6 +76,7 @@ int main(void) {
 				}
 				fprintf(ppm, "\n");
 			}
+// white line at bottom
 			fprintf(ppm, "\n1 1 1 1 1 1\n");	// 2px white at left
 			for (k=0; k<16; k++)	fprintf(ppm, "1 1 1 1 1 1  1 1 1 1 1 1  1 1 1 1 1 1  1 1 1 1 1 1\n");
 			fprintf(ppm, "1 1 1 1 1 1\n");		// 2px white at right
