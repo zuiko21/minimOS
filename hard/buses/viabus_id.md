@@ -22,6 +22,8 @@ ASCII keyboard (`CAPS LOCK` on)|$AC|$2C
 ASCII keyboard (`CAPS LOCK` off)|$AD|$2D
 LCD module (`E` low)|$AE|$2E
 LCD module (`E` high\*)|$AF|$2F
+CText VDU (CRTC control)|$C8...$CF|$48...$4F
+CText VDU (VRAM access)|$D0...$D3|$50...$53
 2564 EPROM _blower_ (Vpp off)|$E8...$EB|$68...$6B \*\*
 2564 EPROM _blower_ (Vpp **on**)|$EC...$EF|$6C...$6F \*\*\*
 
@@ -31,4 +33,4 @@ LCD module (`E` high\*)|$AF|$2F
 
 _more to come..._
 
-_Last modified 20201030-1331_
+_Last modified 20201103-1108_
