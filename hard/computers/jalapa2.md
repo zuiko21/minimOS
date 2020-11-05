@@ -30,7 +30,7 @@ _Kernel and application/**library**_ EPROMs).
 
 For debugging purposes, LEDs will indicate the state of **E** (emulation mode)
 and **M/X** (register sizes) lines of the 65816. These will be available on the
-[_VME-like_ bus](buses/vmelike.md), too.
+[_VME-like_ bus](../buses/vmelike.md), too.
 
 ### Not provided on this machine
 
@@ -184,7 +184,7 @@ allows for much more accurate interrupt timing.
 
 Suggested connections for the _system VIA_:
 
-- `PA0-PA7`: (in) data lines for [PASK](pask.md)
+- `PA0-PA7`: (in) data lines for [PASK](../peripheral/pask.md)
 - `CA1`: (in) strobe for **PASK**
 - `CA2`: (out) strobe for **SS-22**
 - `PB0`: (out) _Enable_ clock line for **LCD** (easily pulsed!)

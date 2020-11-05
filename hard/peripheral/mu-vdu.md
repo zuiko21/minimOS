@@ -111,7 +111,7 @@ this is usually ROM and reads are anyway disabled, no ill effects are expected.
 - `CLK` as described, from clock divider
 
 This _Amstrad-like_ layout is the same as the one used on the
-[Acapulco computer](acapulco.md) but, since this board maps the CRTC I/O _into_
+[Acapulco computer](../computers/acapulco.md) but, since this board maps the CRTC I/O _into_
 VRAM address range, **no _hardware scrolling_** will be available. Thus, a **C64-like**
 layout might be preferred, as that will simplify the software somewhat -- at least for
 text rendering. In this case, address lines are mapped as follows, the remaining

@@ -13,7 +13,7 @@ Back to my **own-designed** devices, here's the range (past, present and future)
 
 ### 65x02-based
 
-[**MTE** _("Medidor de Tiempos de Exposición", Exposure Time Meter)_](mte.md)
+[**MTE** _("Medidor de Tiempos de Exposición", Exposure Time Meter)_](computers/mte.md)
 
   * Status: finishing design.
   * Form-factor: soldered PCB.
@@ -23,7 +23,7 @@ Back to my **own-designed** devices, here's the range (past, present and future)
 a couple of buttons...
 
 
-[**SDd** _("Sistema de Desarrollo didáctico", Learning Development System)_](sdd.md)
+[**SDd** _("Sistema de Desarrollo didáctico", Learning Development System)_](computers/sdd.md)
 
   * Status: [WORKING!](https://twitter.com/zuiko21/status/936654607014653952?s=19)
   * Form-factor: [solderless breadboard.](https://flic.kr/s/aHsjCMszTY)
@@ -33,7 +33,7 @@ VIA 65C22.
 currently with a VIA-attached 4-digit **LED-keypad**.
 
 
-[**CHIHUAHUA**](chihuahua.md)
+[**CHIHUAHUA**](computers/chihuahua.md)
 
   * Status: Finished and _sort-of_ working, but with some strange bug around VIA access,
 not solved yet. _Likely to be discarded_.
@@ -43,7 +43,7 @@ not solved yet. _Likely to be discarded_.
 
 > Soldered, compact version of [SDd](sdd.md).
 
-[**CHIHUAHA PLUS**](chihuahuaplus.md)
+[**CHIHUAHA PLUS**](computers/chihuahuaplus.md)
 
   * Status: [under construction (recently redesigned).](https://flic.kr/s/aHsjEGuCH3)
   * Form-factor: Perfboard with point-to-point soldering.
@@ -53,7 +53,7 @@ _Can be configured for **32 kiB RAM + 16 kiB EPROM** if desired_.
   * Interfaces: **SS-22** and _old **VIAport**_ connectors.
 
 
-[**miniKIM**](minikim.md)
+[**miniKIM**](computers/minikim.md)
 
   * Status: finishing specs.
   * Form-factor: Perfboard with point-to-point soldering.
@@ -63,7 +63,7 @@ ready for _cheap video_ output. _May use 32K RAM and 16K EPROM_ instead.
   * Interfaces: original Application & Expansion slots, _upstream tap_ for **cheap video**.
 
 
-[**miniPET**](minipet.md)
+[**miniPET**](computers/minipet.md)
 
   * Status: **essentially finished** design.
   * Form-factor: Perfboard with point-to-point soldering.
@@ -78,7 +78,7 @@ switchable between **40 and 80 columns**_, with updated components
 (e.g. SRAM) and **VGA-compatible** output (thus about **57% faster**).
 
 
-[**Tampico**](tampico.md)
+[**Tampico**](computers/tampico.md)
 
   * Status: finishing specs.
   * Form-factor: Perfboard with point-to-point soldering.
@@ -92,7 +92,7 @@ _Might include a 6551-based TTL serial_.
 > Optional **2 bpp colour mode** by halving horizontal resolution.
 
 
-[**Acapulco**](acapulco.md)
+[**Acapulco**](computers/acapulco.md)
 
   * Status: almost finished design.
   * Form-factor: Perfboard with point-to-point soldering.
@@ -108,7 +108,7 @@ _Intended to be a **colour & graphics** capable SBC._
 
 ### 65816-based
 
-[**Jalapa** (formerly _SDm_)](jalapa2.md)
+[**Jalapa** (formerly _SDm_)](computers/jalapa2.md)
 
   * Status: almost finished design, heavily _revamped_ as of Oct-2018.
   * Form-factor: Perfboard with point-to-point soldering.
@@ -122,7 +122,7 @@ TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
 > **Development system**, much like the former _SDx_ project.
 
 
-[**Tijuana**](tijuana.md)
+[**Tijuana**](computers/tijuana.md)
 
   * Status: finishing design, _revamped as 20200413_
   * Form-factor: Single layer PCB?
@@ -137,7 +137,7 @@ a bit like an '816-based **Tampico** computer. Might use a 16C550 instead of the
 
 ##  Workstations (65816-based)
 
-[**Veracruz**](veracruz.md)
+[**Veracruz**](computers/veracruz.md)
 
   * Status: in design stage.
   * Form-factor: thru-hole PCB?
@@ -150,7 +150,7 @@ _VME-like_ slot (65816 direct expansion).
 > _Likely to include a **4bpp, 640x400/576x448 px** card (becoming the **SIXtation Lite**)_
 
 
-[**Jalisco**](jalisco.md) _(CPU card for **SIXtation**)_
+[**Jalisco**](computers/jalisco.md) _(CPU card for **SIXtation**)_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
@@ -164,7 +164,7 @@ UART 16C552, RTC MC146818, _ROM-in-RAM_.
 while the standard model uses a **9 MHz** clock (**1360x768 px**).
 
 
-[**Tabasco**](tabasco.md) _(CPU card for **SIXtation TURBO**)_
+[**Tabasco**](computers/tabasco.md) _(CPU card for **SIXtation TURBO**)_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
@@ -175,7 +175,7 @@ UART 16C552, RTC MC146818, _ROM-in-RAM_.
   * Interfaces: most likely those of _Jalisco_.
 
 
-[**SIXtation**](sixtation.md) _essentially a **Jalisco/Tabasco** CPU card with an 8-plane VDU_
+[**SIXtation**](computers/sixtation.md) _essentially a **Jalisco/Tabasco** CPU card with an 8-plane VDU_
 
   * Status: in design stage.
   * Form-factor: 4-layer PCB, SMD components.
@@ -222,7 +222,7 @@ PIA **CM602** (MC6820 clone), ACIA 2651.
 > Made from **ceramic**-cased ICs only.
 
 
-[**miniAlice**](minialice.md)
+[**miniAlice**](computers/minialice.md)
 
   * Specs: 895 kHz **MC6803** _MCU_, **8 KiB** SRAM, **MC6847** video (with _RGB_ output).
 
@@ -230,7 +230,7 @@ PIA **CM602** (MC6820 clone), ACIA 2651.
 **Matra & Hachette _Alice_** (AZERTY keyboard).
 
 
-[**miniCoCo**](minicoco.md)
+[**miniCoCo**](computers/minicoco.md)
 
   * Specs: 895 kHz **MC6809**, 32-64 KiB **S**RAM, 2x PIA 6821,
 **MC6847 video** (with _RGB_ output).
@@ -262,7 +262,7 @@ mimic the highly compatible **Dragon 32/64**.
 _self-contained simple terminal_.
 
 
-**[PASK (_Port-'A' Simple Keyboard_)](pask.md)**
+**[PASK (_Port-'A' Simple Keyboard_)](peripheral/pask.md)**
 
   * Status: in design stage.
   * Specs: **40 keys** including the three usual _modifiers_: `Shift`, `Ctrl` and `Alt`.
@@ -273,7 +273,7 @@ printer interface.
 **full 8-bit** ASCII set.
 
 
-**Roñavid**
+**[Roñavid](peripheral/roñavid.md)**
 
   * Status: (almost) finished design.
   * Specs: **VGA-compatible** output, typically **640x400/576x448 _bitmap_** or
@@ -284,7 +284,7 @@ printer interface.
 generating all needed addresses and signals.
 
 
-**mu-VDU**
+**[mu-VDU](peripheral/mu-vdu.md)**
 
   * Status: (almost) finished design.
   * Specs: **VGA-compatible** output of **320x200/288x224px bitmap**.
@@ -295,4 +295,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20201030-1324_
+_last modified: 20201105-1255_

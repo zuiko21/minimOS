@@ -220,7 +220,7 @@ option is the use of a suitable **RAMDAC**, preferibly of 24-bit type. The well-
 **Bt478** RAMDAC, for instance, is **readily available**, well documented, **inexpensive**
 and thus pretty adequate for this application (**80MHz** version required).
 
-[_Suggested_ **8-bit palette**](../forge/palettes/256col+s+g.html) includes:
+[_Suggested_ **8-bit palette**](../../forge/palettes/256col+s+g.html) includes:
 
 - **16 system colours** from the _GRgB_ scheme (like those on [_Acapulco_ display](acapulco.md))
 - **16 grey entries** besides black and white _from the System colours_ (for a total of **18-level greyscale**)

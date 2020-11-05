@@ -150,8 +150,8 @@ Note that _the most noticeable bit is **LSB**_, guaranteeing **adecuate contrast
 if only the LSB gets changed. _This is the reason behing renaming the old `GRgB` scheme_.
 
 You can see the **gBRG palette** (among several discarded other ones)
-[here](../other/grgb.html):
-![gBRG palette](../other/grgb_palette.png)
+[here](../../other/grgb.html):
+![gBRG palette](../../other/grgb_palette.png)
 
 ## Memory map
 
