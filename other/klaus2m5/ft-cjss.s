@@ -3,7 +3,8 @@
 ;
 ; Copyright (C) 2012-2020  Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
-; *** last modified 20201105-1923 ***
+; *** for xa65 assembler ***
+; *** last modified 20201105-2345 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -16,7 +17,7 @@
 ; GNU General Public License for more details.
 ;
 ; You should have received a copy of the GNU General Public License
-; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+; along with this program.  If not, see <http://www.gnu.* =/licenses/>.
 
 
 ; This program is designed to test all opcodes of a 6502 emulator using all
@@ -134,7 +135,7 @@ ram_top = $80			; for 32 kiB
 ;2=disable including decimal flag in processor status
 disable_decimal = 0
 
-        noopt       ;do not take shortcuts
+;        noopt       ;do not take shortcuts
 
 ;macros for error & success traps to allow user modification
 ;example:
@@ -152,40 +153,44 @@ disable_decimal = 0
 ; may lead to branch range problems for some tests.
 ; *** MUST resolve these all ***
 
-    if report = 0
-trap    macro
-        jmp *           ;failed anyway
-        endm
-trap_eq macro
-        beq *           ;failed equal (zero)
-        endm
-trap_ne macro
-        bne *           ;failed not equal (non zero)
-        endm
-trap_cs macro
-        bcs *           ;failed carry set
-        endm
-trap_cc macro
-        bcc *           ;failed carry clear
-        endm
-trap_mi macro
-        bmi *           ;failed minus (bit 7 set)
-        endm
-trap_pl macro
-        bpl *           ;failed plus (bit 7 clear)
-        endm
-trap_vs macro
-        bvs *           ;failed overflow set
-        endm
-trap_vc macro
-        bvc *           ;failed overflow clear
-        endm
+#define	hash	#
+; *** that is needed for xa's CPP-like preprocessor! ***
+
+;    if report = 0
+#define	trap	JMP *
+;failed anyway
+
+#define	trap_eq	BEQ *
+;failed equal (zero)
+
+#define	trap_ne	BNE *
+;failed not equal (non zero)
+
+#define	trap_cs	BCS *
+;failed carry set
+
+#define	trap_cc	BCC *
+;failed carry clear
+
+#define	trap_mi	BMI *
+;failed minus (bit 7 set)
+
+#define	trap_pl	BPL *
+;failed plus (bit 7 clear)
+
+#define	trap_vs	BVS *
+;failed overflow set
+
+#define	trap_vc	BVC *
+;failed overflow clear
+
 ; please observe that during the test the stack gets invalidated
 ; therefore a RTS inside the success macro is not possible
-success macro
-        jmp *           ;test passed, no errors
-        endm
-    endif
+#define	success	JMP report_success
+;test passed, no errors
+
+; endif
+/*
     if report = 1
 trap    macro
         jsr report_error
@@ -236,44 +241,49 @@ success macro
         jsr report_success
         endm
     endif
+*/
 
+carry   = %00000001   ;flag bits in status
+zero    = %00000010
+intdis  = %00000100
+decmode = %00001000
+break   = %00010000
+reserv  = %00100000
+overfl  = %01000000
+minus   = %10000000
 
-carry   equ %00000001   ;flag bits in status
-zero    equ %00000010
-intdis  equ %00000100
-decmode equ %00001000
-break   equ %00010000
-reserv  equ %00100000
-overfl  equ %01000000
-minus   equ %10000000
+fc      = carry
+fz      = zero
+fzc     = carry+zero
+fv      = overfl
+fvz     = overfl+zero
+fn      = minus
+fnc     = minus+carry
+fnz     = minus+zero
+fnzc    = minus+zero+carry
+fnv     = minus+overfl
 
-fc      equ carry
-fz      equ zero
-fzc     equ carry+zero
-fv      equ overfl
-fvz     equ overfl+zero
-fn      equ minus
-fnc     equ minus+carry
-fnz     equ minus+zero
-fnzc    equ minus+zero+carry
-fnv     equ minus+overfl
-
-fao     equ break+reserv    ;bits always on after PHP, BRK
-fai     equ fao+intdis      ;+ forced interrupt disable
-faod    equ fao+decmode     ;+ ignore decimal
-faid    equ fai+decmode     ;+ ignore decimal
-m8      equ $ff             ;8 bit mask
-m8i     equ $ff&~intdis     ;8 bit mask - interrupt disable
+fao     = break+reserv    ;bits always on after PHP, BRK
+fai     = fao+intdis      ;+ forced interrupt disable
+faod    = fao+decmode     ;+ ignore decimal
+faid    = fai+decmode     ;+ ignore decimal
+m8      = $ff             ;8 bit mask
+m8i     = %11111011     ;8 bit mask - interrupt disable *** checked ***
 
 ;macros to allow masking of status bits.
 ;masking test of decimal bit
 ;masking of interrupt enable/disable on load and compare
 ;masking of always on bits after PHP or BRK (unused & break) on compare
-    if disable_decimal < 2
-        if I_flag = 0
-load_flag   macro
-            lda #\1&m8i         ;force enable interrupts (mask I)
-            endm
+; *** will check these later *** 
+;    if disable_decimal < 2
+;        if I_flag = 0
+
+#define	load_flag(a)	LDA hash a &m8i
+; *** that seems to be the proper way ***
+
+;force enable interrupts (mask I)
+
+/*
 cmp_flag    macro
             cmp #(\1|fao)&m8i   ;I_flag is always enabled + always on bits
             endm
@@ -376,14 +386,17 @@ eor_flag    macro
             endm
         endif
     endif
-
+*/
 ;macros to set (register|memory|zeropage) & status
-set_stat    macro       ;setting flags in the processor status register
+/*set_stat    macro       ;setting flags in the processor status register
             load_flag \1
             pha         ;use stack to load status
             plp
             endm
-
+*/
+#define	set_stat(a)		load_flag(a):PHA:PLP
+; *** is the above correct macro replacent? ***
+/*
 set_a       macro       ;precharging accu & status
             load_flag \2
             pha         ;use stack to load status
@@ -620,71 +633,72 @@ test_num = test_num + 1
     else
         bss                 ;uninitialized segment, copy of data at end of code!
     endif
-        org zero_page
+*/ 
+	* =		zero_page
 ;break test interrupt save
-irq_a   ds  1               ;a register
-irq_x   ds  1               ;x register
+irq_a   .dsb  1               ;a register
+irq_x   .dsb  1               ;x register
     if I_flag = 2
 ;masking for I bit in status
-flag_I_on   ds  1           ;or mask to load flags   
-flag_I_off  ds  1           ;and mask to load flags
+flag_I_on   .dsb  1           ;or mask to load flags   
+flag_I_off  .dsb  1           ;and mask to load flags
     endif
 zpt                         ;6 bytes store/modify test area
 ;add/subtract operand generation and result/flag prediction
-adfc    ds  1               ;carry flag before op
-ad1     ds  1               ;operand 1 - accumulator
-ad2     ds  1               ;operand 2 - memory / immediate
-adrl    ds  1               ;expected result bits 0-7
-adrh    ds  1               ;expected result bit 8 (carry)
-adrf    ds  1               ;expected flags NV0000ZC (only binary mode)
-sb2     ds  1               ;operand 2 complemented for subtract
+adfc    .dsb  1               ;carry flag before op
+ad1     .dsb  1               ;operand 1 - accumulator
+ad2     .dsb  1               ;operand 2 - memory / immediate
+adrl    .dsb  1               ;expected result bits 0-7
+adrh    .dsb  1               ;expected result bit 8 (carry)
+adrf    .dsb  1               ;expected flags NV0000ZC (only binary mode)
+sb2     .dsb  1               ;operand 2 complemented for subtract
 zp_bss
-zps     db  $80,1           ;additional shift pattern to test zero result & flag
-zp1     db  $c3,$82,$41,0   ;test patterns for LDx BIT ROL ROR ASL LSR
-zp7f    db  $7f             ;test pattern for compare  
+zps     .byt  $80,1           ;additional shift pattern to test zero result & flag
+zp1     .byt  $c3,$82,$41,0   ;test patterns for LDx BIT ROL ROR ASL LSR
+zp7f    .byt  $7f             ;test pattern for compare  
 ;logical zeropage operands
-zpOR    db  0,$1f,$71,$80   ;test pattern for OR
-zpAN    db  $0f,$ff,$7f,$80 ;test pattern for AND
-zpEO    db  $ff,$0f,$8f,$8f ;test pattern for EOR
+zpOR    .byt  0,$1f,$71,$80   ;test pattern for OR
+zpAN    .byt  $0f,$ff,$7f,$80 ;test pattern for AND
+zpEO    .byt  $ff,$0f,$8f,$8f ;test pattern for EOR
 ;indirect addressing pointers
-ind1    dw  abs1            ;indirect pointer to pattern in absolute memory
-        dw  abs1+1
-        dw  abs1+2
-        dw  abs1+3
-        dw  abs7f
-inw1    dw  abs1-$f8        ;indirect pointer for wrap-test pattern
-indt    dw  abst            ;indirect pointer to store area in absolute memory
-        dw  abst+1
-        dw  abst+2
-        dw  abst+3
-inwt    dw  abst-$f8        ;indirect pointer for wrap-test store
-indAN   dw  absAN           ;indirect pointer to AND pattern in absolute memory
-        dw  absAN+1
-        dw  absAN+2
-        dw  absAN+3
-indEO   dw  absEO           ;indirect pointer to EOR pattern in absolute memory
-        dw  absEO+1
-        dw  absEO+2
-        dw  absEO+3
-indOR   dw  absOR           ;indirect pointer to OR pattern in absolute memory
-        dw  absOR+1
-        dw  absOR+2
-        dw  absOR+3
+ind1    .word  abs1            ;indirect pointer to pattern in absolute memory
+        .word  abs1+1
+        .word  abs1+2
+        .word  abs1+3
+        .word  abs7f
+inw1    .word  abs1-$f8        ;indirect pointer for wrap-test pattern
+indt    .word  abst            ;indirect pointer to store area in absolute memory
+        .word  abst+1
+        .word  abst+2
+        .word  abst+3
+inwt    .word  abst-$f8        ;indirect pointer for wrap-test store
+indAN   .word  absAN           ;indirect pointer to AND pattern in absolute memory
+        .word  absAN+1
+        .word  absAN+2
+        .word  absAN+3
+indEO   .word  absEO           ;indirect pointer to EOR pattern in absolute memory
+        .word  absEO+1
+        .word  absEO+2
+        .word  absEO+3
+indOR   .word  absOR           ;indirect pointer to OR pattern in absolute memory
+        .word  absOR+1
+        .word  absOR+2
+        .word  absOR+3
 ;add/subtract indirect pointers
-adi2    dw  ada2            ;indirect pointer to operand 2 in absolute memory
-sbi2    dw  sba2            ;indirect pointer to complemented operand 2 (SBC)
-adiy2   dw  ada2-$ff        ;with offset for indirect indexed
-sbiy2   dw  sba2-$ff
+adi2    .word  ada2            ;indirect pointer to operand 2 in absolute memory
+sbi2    .word  sba2            ;indirect pointer to complemented operand 2 (SBC)
+adiy2   .word  ada2-$ff        ;with offset for indirect indexed
+sbiy2   .word  sba2-$ff
 zp_bss_end
    
-        org data_segment
-test_case   ds  1           ;current test number
-ram_chksm   ds  2           ;checksum for RAM integrity test
+        * = data_segment
+test_case   .dsb  1           ;current test number
+ram_chksm   .dsb  2           ;checksum for RAM integrity test
 ;add/subtract operand copy - abs tests write area
 abst                        ;6 bytes store/modify test area
-ada2    ds  1               ;operand 2
-sba2    ds  1               ;operand 2 complemented for subtract
-        ds  4               ;fill remaining bytes
+ada2    .dsb  1               ;operand 2
+sba2    .dsb  1               ;operand 2 complemented for subtract
+        .dsb  4               ;fill remaining bytes
 data_bss
     if load_data_direct = 1
 ex_andi and #0              ;execute immediate opcodes
@@ -698,49 +712,49 @@ ex_adci adc #0              ;execute immediate opcodes
 ex_sbci sbc #0              ;execute immediate opcodes
         rts
     else
-ex_andi ds  3
-ex_eori ds  3
-ex_orai ds  3
-ex_adci ds  3
-ex_sbci ds  3
+ex_andi .dsb  3
+ex_eori .dsb  3
+ex_orai .dsb  3
+ex_adci .dsb  3
+ex_sbci .dsb  3
     endif
-;zps    db  $80,1           ;additional shift patterns test zero result & flag
-abs1    db  $c3,$82,$41,0   ;test patterns for LDx BIT ROL ROR ASL LSR
-abs7f   db  $7f             ;test pattern for compare
+;zps    .byt  $80,1           ;additional shift patterns test zero result & flag
+abs1    .byt  $c3,$82,$41,0   ;test patterns for LDx BIT ROL ROR ASL LSR
+abs7f   .byt  $7f             ;test pattern for compare
 ;loads
-fLDx    db  fn,fn,0,fz              ;expected flags for load
+fLDx    .byt  fn,fn,0,fz              ;expected flags for load
 ;shifts
 rASL                                ;expected result ASL & ROL -carry
-rROL    db  0,2,$86,$04,$82,0
-rROLc   db  1,3,$87,$05,$83,1       ;expected result ROL +carry
+rROL    .byt  0,2,$86,$04,$82,0
+rROLc   .byt  1,3,$87,$05,$83,1       ;expected result ROL +carry
 rLSR                                ;expected result LSR & ROR -carry
-rROR    db  $40,0,$61,$41,$20,0
-rRORc   db  $c0,$80,$e1,$c1,$a0,$80 ;expected result ROR +carry
+rROR    .byt  $40,0,$61,$41,$20,0
+rRORc   .byt  $c0,$80,$e1,$c1,$a0,$80 ;expected result ROR +carry
 fASL                                ;expected flags for shifts
-fROL    db  fzc,0,fnc,fc,fn,fz      ;no carry in
-fROLc   db  fc,0,fnc,fc,fn,0        ;carry in 
+fROL    .byt  fzc,0,fnc,fc,fn,fz      ;no carry in
+fROLc   .byt  fc,0,fnc,fc,fn,0        ;carry in 
 fLSR 
-fROR    db  0,fzc,fc,0,fc,fz        ;no carry in
-fRORc   db  fn,fnc,fnc,fn,fnc,fn    ;carry in
+fROR    .byt  0,fzc,fc,0,fc,fz        ;no carry in
+fRORc   .byt  fn,fnc,fnc,fn,fnc,fn    ;carry in
 ;increments (decrements)
-rINC    db  $7f,$80,$ff,0,1         ;expected result for INC/DEC
-fINC    db  0,fn,fn,fz,0            ;expected flags for INC/DEC
+rINC    .byt  $7f,$80,$ff,0,1         ;expected result for INC/DEC
+fINC    .byt  0,fn,fn,fz,0            ;expected flags for INC/DEC
 ;logical memory operand
-absOR   db  0,$1f,$71,$80           ;test pattern for OR
-absAN   db  $0f,$ff,$7f,$80         ;test pattern for AND
-absEO   db  $ff,$0f,$8f,$8f         ;test pattern for EOR
+absOR   .byt  0,$1f,$71,$80           ;test pattern for OR
+absAN   .byt  $0f,$ff,$7f,$80         ;test pattern for AND
+absEO   .byt  $ff,$0f,$8f,$8f         ;test pattern for EOR
 ;logical accu operand
-absORa  db  0,$f1,$1f,0             ;test pattern for OR
-absANa  db  $f0,$ff,$ff,$ff         ;test pattern for AND
-absEOa  db  $ff,$f0,$f0,$0f         ;test pattern for EOR
+absORa  .byt  0,$f1,$1f,0             ;test pattern for OR
+absANa  .byt  $f0,$ff,$ff,$ff         ;test pattern for AND
+absEOa  .byt  $ff,$f0,$f0,$0f         ;test pattern for EOR
 ;logical results
-absrlo  db  0,$ff,$7f,$80
-absflo  db  fz,fn,0,fn
+absrlo  .byt  0,$ff,$7f,$80
+absflo  .byt  fz,fn,0,fn
 data_bss_end
 
 
         code
-        org code_segment
+        * = code_segment
 start   cld
         ldx #$ff
         txs
@@ -1504,12 +1518,12 @@ brvc8
         trap_ne
         cpy #$42
         trap_ne
-        ldx #$db
+        ldx #$.byt
         ldy #$bd
         set_a $e7,$ff
         nop
         tst_a $e7,$ff
-        cpx #$db
+        cpx #$.byt
         trap_ne
         cpy #$bd
         trap_ne
@@ -5832,8 +5846,8 @@ test_far
         
 ; target for the jump indirect test
         align
-ptr_tst_ind dw test_ind
-ptr_ind_ret dw ind_ret
+ptr_tst_ind .word test_ind
+ptr_ind_ret .word ind_ret
         trap            ;runover protection
         dey
         dey
@@ -6007,42 +6021,42 @@ break2                  ;BRK pass 2
 ;copy of data to initialize BSS segment
     if load_data_direct != 1
 zp_init
-zps_    db  $80,1           ;additional shift pattern to test zero result & flag
-zp1_    db  $c3,$82,$41,0   ;test patterns for LDx BIT ROL ROR ASL LSR
-zp7f_   db  $7f             ;test pattern for compare
+zps_    .byt  $80,1           ;additional shift pattern to test zero result & flag
+zp1_    .byt  $c3,$82,$41,0   ;test patterns for LDx BIT ROL ROR ASL LSR
+zp7f_   .byt  $7f             ;test pattern for compare
 ;logical zeropage operands
-zpOR_   db  0,$1f,$71,$80   ;test pattern for OR
-zpAN_   db  $0f,$ff,$7f,$80 ;test pattern for AND
-zpEO_   db  $ff,$0f,$8f,$8f ;test pattern for EOR
+zpOR_   .byt  0,$1f,$71,$80   ;test pattern for OR
+zpAN_   .byt  $0f,$ff,$7f,$80 ;test pattern for AND
+zpEO_   .byt  $ff,$0f,$8f,$8f ;test pattern for EOR
 ;indirect addressing pointers
-ind1_   dw  abs1            ;indirect pointer to pattern in absolute memory
-        dw  abs1+1
-        dw  abs1+2
-        dw  abs1+3
-        dw  abs7f
-inw1_   dw  abs1-$f8        ;indirect pointer for wrap-test pattern
-indt_   dw  abst            ;indirect pointer to store area in absolute memory
-        dw  abst+1
-        dw  abst+2
-        dw  abst+3
-inwt_   dw  abst-$f8        ;indirect pointer for wrap-test store
-indAN_  dw  absAN           ;indirect pointer to AND pattern in absolute memory
-        dw  absAN+1
-        dw  absAN+2
-        dw  absAN+3
-indEO_  dw  absEO           ;indirect pointer to EOR pattern in absolute memory
-        dw  absEO+1
-        dw  absEO+2
-        dw  absEO+3
-indOR_  dw  absOR           ;indirect pointer to OR pattern in absolute memory
-        dw  absOR+1
-        dw  absOR+2
-        dw  absOR+3
+ind1_   .word  abs1            ;indirect pointer to pattern in absolute memory
+        .word  abs1+1
+        .word  abs1+2
+        .word  abs1+3
+        .word  abs7f
+inw1_   .word  abs1-$f8        ;indirect pointer for wrap-test pattern
+indt_   .word  abst            ;indirect pointer to store area in absolute memory
+        .word  abst+1
+        .word  abst+2
+        .word  abst+3
+inwt_   .word  abst-$f8        ;indirect pointer for wrap-test store
+indAN_  .word  absAN           ;indirect pointer to AND pattern in absolute memory
+        .word  absAN+1
+        .word  absAN+2
+        .word  absAN+3
+indEO_  .word  absEO           ;indirect pointer to EOR pattern in absolute memory
+        .word  absEO+1
+        .word  absEO+2
+        .word  absEO+3
+indOR_  .word  absOR           ;indirect pointer to OR pattern in absolute memory
+        .word  absOR+1
+        .word  absOR+2
+        .word  absOR+3
 ;add/subtract indirect pointers
-adi2_   dw  ada2            ;indirect pointer to operand 2 in absolute memory
-sbi2_   dw  sba2            ;indirect pointer to complemented operand 2 (SBC)
-adiy2_  dw  ada2-$ff        ;with offset for indirect indexed
-sbiy2_  dw  sba2-$ff
+adi2_   .word  ada2            ;indirect pointer to operand 2 in absolute memory
+sbi2_   .word  sba2            ;indirect pointer to complemented operand 2 (SBC)
+adiy2_  .word  ada2-$ff        ;with offset for indirect indexed
+sbiy2_  .word  sba2-$ff
 zp_end
     if (zp_end - zp_init) != (zp_bss_end - zp_bss)   
         ;force assembler error if size is different   
@@ -6059,38 +6073,38 @@ ex_adc_ adc #0              ;execute immediate opcodes
         rts
 ex_sbc_ sbc #0              ;execute immediate opcodes
         rts
-;zps    db  $80,1           ;additional shift patterns test zero result & flag
-abs1_   db  $c3,$82,$41,0   ;test patterns for LDx BIT ROL ROR ASL LSR
-abs7f_  db  $7f             ;test pattern for compare
+;zps    .byt  $80,1           ;additional shift patterns test zero result & flag
+abs1_   .byt  $c3,$82,$41,0   ;test patterns for LDx BIT ROL ROR ASL LSR
+abs7f_  .byt  $7f             ;test pattern for compare
 ;loads
-fLDx_   db  fn,fn,0,fz              ;expected flags for load
+fLDx_   .byt  fn,fn,0,fz              ;expected flags for load
 ;shifts
 rASL_                               ;expected result ASL & ROL -carry
-rROL_   db  0,2,$86,$04,$82,0
-rROLc_  db  1,3,$87,$05,$83,1       ;expected result ROL +carry
+rROL_   .byt  0,2,$86,$04,$82,0
+rROLc_  .byt  1,3,$87,$05,$83,1       ;expected result ROL +carry
 rLSR_                               ;expected result LSR & ROR -carry
-rROR_   db  $40,0,$61,$41,$20,0
-rRORc_  db  $c0,$80,$e1,$c1,$a0,$80 ;expected result ROR +carry
+rROR_   .byt  $40,0,$61,$41,$20,0
+rRORc_  .byt  $c0,$80,$e1,$c1,$a0,$80 ;expected result ROR +carry
 fASL_                               ;expected flags for shifts
-fROL_   db  fzc,0,fnc,fc,fn,fz      ;no carry in
-fROLc_  db  fc,0,fnc,fc,fn,0        ;carry in 
+fROL_   .byt  fzc,0,fnc,fc,fn,fz      ;no carry in
+fROLc_  .byt  fc,0,fnc,fc,fn,0        ;carry in 
 fLSR_
-fROR_   db  0,fzc,fc,0,fc,fz        ;no carry in
-fRORc_  db  fn,fnc,fnc,fn,fnc,fn    ;carry in
+fROR_   .byt  0,fzc,fc,0,fc,fz        ;no carry in
+fRORc_  .byt  fn,fnc,fnc,fn,fnc,fn    ;carry in
 ;increments (decrements)
-rINC_   db  $7f,$80,$ff,0,1         ;expected result for INC/DEC
-fINC_   db  0,fn,fn,fz,0            ;expected flags for INC/DEC
+rINC_   .byt  $7f,$80,$ff,0,1         ;expected result for INC/DEC
+fINC_   .byt  0,fn,fn,fz,0            ;expected flags for INC/DEC
 ;logical memory operand
-absOR_  db  0,$1f,$71,$80           ;test pattern for OR
-absAN_  db  $0f,$ff,$7f,$80         ;test pattern for AND
-absEO_  db  $ff,$0f,$8f,$8f         ;test pattern for EOR
+absOR_  .byt  0,$1f,$71,$80           ;test pattern for OR
+absAN_  .byt  $0f,$ff,$7f,$80         ;test pattern for AND
+absEO_  .byt  $ff,$0f,$8f,$8f         ;test pattern for EOR
 ;logical accu operand
-absORa_ db  0,$f1,$1f,0             ;test pattern for OR
-absANa_ db  $f0,$ff,$ff,$ff         ;test pattern for AND
-absEOa_ db  $ff,$f0,$f0,$0f         ;test pattern for EOR
+absORa_ .byt  0,$f1,$1f,0             ;test pattern for OR
+absANa_ .byt  $f0,$ff,$ff,$ff         ;test pattern for AND
+absEOa_ .byt  $ff,$f0,$f0,$0f         ;test pattern for EOR
 ;logical results
-absrlo_ db  0,$ff,$7f,$80
-absflo_ db  fz,fn,0,fn
+absrlo_ .byt  0,$ff,$7f,$80
+absflo_ .byt  fz,fn,0,fn
 data_end
     if (data_end - data_init) != (data_bss_end - data_bss)
         ;force assembler error if size is different   
@@ -6098,17 +6112,17 @@ data_end
     endif 
 
 vec_init
-        dw  nmi_trap
-        dw  res_trap
-        dw  irq_trap
-vec_bss equ $fffa
+        .word  nmi_trap
+        .word  res_trap
+        .word  irq_trap
+vec_bss = $fffa
     endif                   ;end of RAM init data
     
     if (load_data_direct = 1) & (ROM_vectors = 1)  
-        org $fffa       ;vectors
-        dw  nmi_trap
-        dw  res_trap
-        dw  irq_trap
+        * = $fffa       ;vectors
+        .word  nmi_trap
+        .word  res_trap
+        .word  irq_trap
     endif
 
         end start
