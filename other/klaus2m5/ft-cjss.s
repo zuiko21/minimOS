@@ -106,27 +106,29 @@ zero_page = $a
 
 ;data_segment memory start address, $7B (123) consecutive Bytes required
 data_segment = $200  
-    if (data_segment & $ff) != 0
-        ERROR ERROR ERROR low byte of data_segment MUST be $00 !!
-    endif  
+;    if (data_segment & $ff) != 0
+;        ERROR ERROR ERROR low byte of data_segment MUST be $00 !!
+;    endif  
 
 ;code_segment memory start address, 13.1kB of consecutive space required
 ;                                   add 2.5 kB if I_flag = 2
-code_segment = $400  
+code_segment = $C000		; no longer $400 
 
 ;self modifying code may be disabled to allow running in ROM
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
+;*** must try to copy relevant section into RAM ***
 disable_selfmod = 0
 
 ;report errors through I/O channel (0=use standard self trap loops, 1=include
 ;report.i65 as I/O channel, add 3.5 kB)
+; *** might modify for some standard I/O ***
 report = 0
 
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
 ;leave disabled if a monitor, OS or background interrupt is allowed to alter RAM
-ram_top = -1
+ram_top = $80			; for 32 kiB
 
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
@@ -148,6 +150,8 @@ disable_decimal = 0
 ; my_error_handler should pop the calling address from the stack and report it.
 ; putting larger portions of code (more than 3 bytes) inside the trap macro
 ; may lead to branch range problems for some tests.
+; *** MUST resolve these all ***
+
     if report = 0
 trap    macro
         jmp *           ;failed anyway
