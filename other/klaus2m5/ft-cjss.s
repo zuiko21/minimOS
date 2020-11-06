@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020  Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201106-0941 ***
+; *** last modified 20201106-1012 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -281,34 +281,29 @@ m8i     = %11111011       ;8 bit mask - interrupt disable *** changed ***
 ;masking of always on bits after PHP or BRK (unused & break) on compare
 ;    if disable_decimal < 2
 ; *** don't think I'll disable D bit ***
-;        if I_flag = 0
-; *** perhaps as ifdef/ifndef directive? ***
-
+#if I_flag=0
+; *** is this correct? ***
 #define	load_flag(a)	LDA hash a &m8i
 ; *** that seems to be the proper way ***
-
 ;force enable interrupts (mask I)
-
-; *** will check these later *** 
 
 #define	cmp_flag(a)	CMP hash (a|fao)&m8i
 ;I_flag is always enabled + always on bits
 
-#define	eor_flag(a)	CMP hash (a|fao)&m8i
-            eor #(\1&m8i|fao)   ;mask I, invert expected flags + always on bits
-            endm
-        endif
-        if I_flag = 1
-load_flag   macro
-            lda #\1|intdis      ;force disable interrupts
-            endm
-cmp_flag    macro
-            cmp #(\1|fai)&m8    ;I_flag is always disabled + always on bits
-            endm
-eor_flag    macro
-            eor #(\1|fai)       ;invert expected flags + always on bits + I
-            endm
-        endif
+#define	eor_flag(a)	CMP hash (a&m8i|fao)
+;mask I, invert expected flags + always on bits
+#endif
+; *** will check these later *** 
+#if I_flag=1
+#define	load_flag(a)	LDA hash a|intdis
+;force disable interrupts
+
+#define	cmp_flag(a)	CMP hash (a|fai)&m8
+;I_flag is always disabled + always on bits
+
+#define	eor_flag(a)	CMP hash (a|fai)
+;invert expected flags + always on bits + I
+#endif
 ; *** won't disable I flag ***
 /*
         if I_flag = 2
@@ -327,18 +322,20 @@ eor_flag    macro
             endm
         endif
 */
-        if I_flag = 3
-load_flag   macro
-            lda #\1             ;allow test to change I-flag (no mask)
-            endm
-cmp_flag    macro
-            cmp #(\1|fao)&m8    ;expected flags + always on bits
-            endm
-eor_flag    macro
-            eor #\1|fao         ;invert expected flags + always on bits
-            endm
-        endif
-    else
+; *** check the changeable option ***
+;        if I_flag = 3
+#define	load_flag(a)	LDA hash a
+;allow test to change I-flag (no mask)
+
+#define	cmp_flag(a)	CMP hash (a|fao)&m8
+;expected flags + always on bits
+
+#define	eor_flag(a)	CMP hash (a|fao)
+;invert expected flags + always on bits
+#endif
+;    else
+; *** this is for disable_decimal=2, not implemented ***
+/*
         if I_flag = 0
 load_flag   macro
             lda #\1&m8i         ;force enable interrupts (mask I)
@@ -398,14 +395,9 @@ eor_flag    macro
     endif
 */
 ;macros to set (register|memory|zeropage) & status
-/*set_stat    macro       ;setting flags in the processor status register
-            load_flag \1
-            pha         ;use stack to load status
-            plp
-            endm
-*/
 #define	set_stat(a)		load_flag(a):PHA:PLP
-; *** is the above correct macro replacent? ***
+; *** seems correct macro replacent ***
+; *** *** *** C O N T I N U E   H E R E *** *** ***
 /*
 set_a       macro       ;precharging accu & status
             load_flag \2
