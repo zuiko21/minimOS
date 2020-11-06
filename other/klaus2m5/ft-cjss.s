@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020  Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201105-2345 ***
+; *** last modified 20201106-0941 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -88,12 +88,15 @@
 ;ROM_vectors writable (0=no, 1=yes)
 ;if ROM vectors can not be used interrupts will not be trapped
 ;as a consequence BRK can not be tested but will be emulated to test RTI
-ROM_vectors = 1
+; *** usually won't be writable! ***
+ROM_vectors = 0	; no longer 1
 
 ;load_data_direct (0=move from code segment, 1=load directly)
 ;loading directly is preferred but may not be supported by your platform
 ;0 produces only consecutive object code, 1 is not suitable for a binary image
-load_data_direct = 1
+; *** don't know about this in xa... ***
+; *** must check what to do          ***
+;load_data_direct = 1
 
 ;I_flag behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
@@ -113,7 +116,7 @@ data_segment = $200
 
 ;code_segment memory start address, 13.1kB of consecutive space required
 ;                                   add 2.5 kB if I_flag = 2
-code_segment = $C000		; no longer $400 
+code_segment = $C000		; *** no longer $400 ***
 
 ;self modifying code may be disabled to allow running in ROM
 ;0=part of the code is self modifying and must reside in RAM
@@ -123,19 +126,19 @@ disable_selfmod = 0
 
 ;report errors through I/O channel (0=use standard self trap loops, 1=include
 ;report.i65 as I/O channel, add 3.5 kB)
-; *** might modify for some standard I/O ***
-report = 0
+; *** might modify for some standard I/O, but not really expected ***
+;report = 0
 
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
 ;leave disabled if a monitor, OS or background interrupt is allowed to alter RAM
-ram_top = $80			; for 32 kiB
+ram_top = $80			; *** 32 kiB for simpler A15 decoding ***
 
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
 disable_decimal = 0
 
-;        noopt       ;do not take shortcuts
+;        noopt       ;do not take shortcuts *** what's this? ***
 
 ;macros for error & success traps to allow user modification
 ;example:
@@ -190,6 +193,8 @@ disable_decimal = 0
 ;test passed, no errors
 
 ; endif
+
+; *** reports will be probably disabled all the time as the CPU-checker lacks I/O ***
 /*
     if report = 1
 trap    macro
@@ -268,26 +273,28 @@ fai     = fao+intdis      ;+ forced interrupt disable
 faod    = fao+decmode     ;+ ignore decimal
 faid    = fai+decmode     ;+ ignore decimal
 m8      = $ff             ;8 bit mask
-m8i     = %11111011     ;8 bit mask - interrupt disable *** checked ***
+m8i     = %11111011       ;8 bit mask - interrupt disable *** changed ***
 
 ;macros to allow masking of status bits.
 ;masking test of decimal bit
 ;masking of interrupt enable/disable on load and compare
 ;masking of always on bits after PHP or BRK (unused & break) on compare
-; *** will check these later *** 
 ;    if disable_decimal < 2
+; *** don't think I'll disable D bit ***
 ;        if I_flag = 0
+; *** perhaps as ifdef/ifndef directive? ***
 
 #define	load_flag(a)	LDA hash a &m8i
 ; *** that seems to be the proper way ***
 
 ;force enable interrupts (mask I)
 
-/*
-cmp_flag    macro
-            cmp #(\1|fao)&m8i   ;I_flag is always enabled + always on bits
-            endm
-eor_flag    macro
+; *** will check these later *** 
+
+#define	cmp_flag(a)	CMP hash (a|fao)&m8i
+;I_flag is always enabled + always on bits
+
+#define	eor_flag(a)	CMP hash (a|fao)&m8i
             eor #(\1&m8i|fao)   ;mask I, invert expected flags + always on bits
             endm
         endif
@@ -302,6 +309,8 @@ eor_flag    macro
             eor #(\1|fai)       ;invert expected flags + always on bits + I
             endm
         endif
+; *** won't disable I flag ***
+/*
         if I_flag = 2
 load_flag   macro
             lda #\1
@@ -317,6 +326,7 @@ eor_flag    macro
             eor #(\1&m8i|fao)   ;mask I, invert expected flags + always on bits
             endm
         endif
+*/
         if I_flag = 3
 load_flag   macro
             lda #\1             ;allow test to change I-flag (no mask)
