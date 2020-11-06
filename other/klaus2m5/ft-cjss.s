@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020  Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201106-1301 ***
+; *** last modified 20201106-1825 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -468,16 +468,50 @@ eor_flag    macro
 ;   uses zpt word as indirect pointer, zpt+2 word as checksum
 #if ram_top > -1
 ; *** *** *** C O N T I N U E   H E R E *** *** ***
-check_ram   macro 
-            cld
-            lda #0
-            sta zpt         ;set low byte of indirect pointer
-            sta zpt+3       ;checksum high byte
 #if	disable_selfmod
-            sta range_adr   ;reset self modifying code
-#endif
-            clc
-            ldx #zp_bss-zero_page ;zeropage - write test area
+#define	check_ram					\
+	cld:							\
+	lda #0:							\
+	sta zpt:						\
+	sta zpt+3:						\
+		sta range_adr:				\
+	clc:							\
+	ldx #zp_bss-zero_page:			\
+	adc zero_page,x:				\
+	bcc *+5:						\
+	inc zpt+3:						\
+	clc:							\
+	inx:							\
+	bne *-8:						\
+	ldx #>abs1:						\
+	stx zpt+1:						\
+	ldy #<abs1:						\
+	adc (zpt),y:					\
+	bcc *+5:						\
+	inc zpt+3:						\
+	clc:							\
+	iny:							\
+	bne *-8:						\
+	inx:							\
+	stx zpt+1:						\
+	cpx #ram_top:					\
+	bne *-15:						\
+	sta zpt+2:						\
+	cmp ram_chksm:					\
+	trap_ne:						\
+	lda zpt+3:						\
+	cmp ram_chksm+1:				\
+	trap_ne
+#else
+#define	check_ram					\
+	cld:							\
+	lda #0:							\
+	sta zpt:						\
+	sta zpt+3:						\
+	clc:							\
+	ldx hash zp_bss-zero_page:		\
+	nop
+; *** resolve these relative references!! ***
 ccs3\?      adc zero_page,x
             bcc ccs2\?
             inc zpt+3       ;carry to high byte
@@ -503,9 +537,10 @@ ccs4\?      iny
             lda zpt+3       ;checksum high is
             cmp ram_chksm+1 ;checksum high expected
             trap_ne         ;checksum mismatch
-            endm            
+#endif
 #else
-#define	check_ram		;RAM check disabled - RAM size not set
+;RAM check disabled - RAM size not set
+#define	check_ram		0
 #endif
 
 ; *** *** *** AND   H E R E *** *** ***
