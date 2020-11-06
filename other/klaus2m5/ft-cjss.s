@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020  Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201106-1012 ***
+; *** last modified 20201106-1036 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -84,12 +84,13 @@
 ;                is shifted out
 
 ; C O N F I G U R A T I O N
+; *** DEFINEs seem more suitable for xa ***
 
 ;ROM_vectors writable (0=no, 1=yes)
 ;if ROM vectors can not be used interrupts will not be trapped
 ;as a consequence BRK can not be tested but will be emulated to test RTI
 ; *** usually won't be writable! ***
-ROM_vectors = 0	; no longer 1
+;#DEFINE	ROM_vectors	1
 
 ;load_data_direct (0=move from code segment, 1=load directly)
 ;loading directly is preferred but may not be supported by your platform
@@ -101,7 +102,7 @@ ROM_vectors = 0	; no longer 1
 ;I_flag behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
 ;tested if you allow changing the interrupt status (I_flag = 3)
-I_flag = 3
+#DEFINE	I_flag	3
 
 ;configure memory - try to stay away from memory used by the system
 ;zero_page memory start address, $52 (82) consecutive Bytes required
@@ -122,7 +123,7 @@ code_segment = $C000		; *** no longer $400 ***
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
 ;*** must try to copy relevant section into RAM ***
-disable_selfmod = 0
+;#DEFINE	disable_selfmod	1
 
 ;report errors through I/O channel (0=use standard self trap loops, 1=include
 ;report.i65 as I/O channel, add 3.5 kB)
@@ -136,7 +137,8 @@ ram_top = $80			; *** 32 kiB for simpler A15 decoding ***
 
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
-disable_decimal = 0
+; *** 2 is not used by me ***
+;disable_decimal = 0
 
 ;        noopt       ;do not take shortcuts *** what's this? ***
 
@@ -281,8 +283,8 @@ m8i     = %11111011       ;8 bit mask - interrupt disable *** changed ***
 ;masking of always on bits after PHP or BRK (unused & break) on compare
 ;    if disable_decimal < 2
 ; *** don't think I'll disable D bit ***
-#if I_flag=0
-; *** is this correct? ***
+#if I_flag==0
+; *** I think this is correct ***
 #define	load_flag(a)	LDA hash a &m8i
 ; *** that seems to be the proper way ***
 ;force enable interrupts (mask I)
@@ -294,7 +296,7 @@ m8i     = %11111011       ;8 bit mask - interrupt disable *** changed ***
 ;mask I, invert expected flags + always on bits
 #endif
 ; *** will check these later *** 
-#if I_flag=1
+#if I_flag==1
 #define	load_flag(a)	LDA hash a|intdis
 ;force disable interrupts
 
@@ -323,7 +325,7 @@ eor_flag    macro
         endif
 */
 ; *** check the changeable option ***
-;        if I_flag = 3
+#if I_flag == 3
 #define	load_flag(a)	LDA hash a
 ;allow test to change I-flag (no mask)
 
