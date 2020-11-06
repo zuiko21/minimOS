@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020  Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201106-1036 ***
+; *** last modified 20201106-1301 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@
 ;if ROM vectors can not be used interrupts will not be trapped
 ;as a consequence BRK can not be tested but will be emulated to test RTI
 ; *** usually won't be writable! ***
-;#DEFINE	ROM_vectors	1
+;#define	ROM_vectors		1
 
 ;load_data_direct (0=move from code segment, 1=load directly)
 ;loading directly is preferred but may not be supported by your platform
@@ -102,7 +102,7 @@
 ;I_flag behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
 ;tested if you allow changing the interrupt status (I_flag = 3)
-#DEFINE	I_flag	3
+#define	I_flag			3
 
 ;configure memory - try to stay away from memory used by the system
 ;zero_page memory start address, $52 (82) consecutive Bytes required
@@ -123,7 +123,7 @@ code_segment = $C000		; *** no longer $400 ***
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
 ;*** must try to copy relevant section into RAM ***
-;#DEFINE	disable_selfmod	1
+;#define	disable_selfmod	1
 
 ;report errors through I/O channel (0=use standard self trap loops, 1=include
 ;report.i65 as I/O channel, add 3.5 kB)
@@ -133,12 +133,12 @@ code_segment = $C000		; *** no longer $400 ***
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
 ;leave disabled if a monitor, OS or background interrupt is allowed to alter RAM
-ram_top = $80			; *** 32 kiB for simpler A15 decoding ***
+#define	ram_top			$80		; *** 32 kiB for simpler A15 decoding ***
 
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
 ; *** 2 is not used by me ***
-;disable_decimal = 0
+;#define	disable_decimal	1
 
 ;        noopt       ;do not take shortcuts *** what's this? ***
 
@@ -158,41 +158,42 @@ ram_top = $80			; *** 32 kiB for simpler A15 decoding ***
 ; may lead to branch range problems for some tests.
 ; *** MUST resolve these all ***
 
-#define	hash	#
+#define	hash			#
 ; *** that is needed for xa's CPP-like preprocessor! ***
 
 ;    if report = 0
-#define	trap	JMP *
+#define	trap			JMP *
 ;failed anyway
 
-#define	trap_eq	BEQ *
+#define	trap_eq			BEQ *
 ;failed equal (zero)
 
-#define	trap_ne	BNE *
+#define	trap_ne			BNE *
 ;failed not equal (non zero)
 
-#define	trap_cs	BCS *
+#define	trap_cs			BCS *
 ;failed carry set
 
-#define	trap_cc	BCC *
+#define	trap_cc			BCC *
 ;failed carry clear
 
-#define	trap_mi	BMI *
+#define	trap_mi			BMI *
 ;failed minus (bit 7 set)
 
-#define	trap_pl	BPL *
+#define	trap_pl			BPL *
 ;failed plus (bit 7 clear)
 
-#define	trap_vs	BVS *
+#define	trap_vs			BVS *
 ;failed overflow set
 
-#define	trap_vc	BVC *
+#define	trap_vc			BVC *
 ;failed overflow clear
 
 ; please observe that during the test the stack gets invalidated
 ; therefore a RTS inside the success macro is not possible
-#define	success	JMP report_success
+#define	success			JMP report_success
 ;test passed, no errors
+; *** will jump between two delay routines, alternating between ROM and RAM in order to blink a LED at, say, A15 ***
 
 ; endif
 
@@ -283,8 +284,9 @@ m8i     = %11111011       ;8 bit mask - interrupt disable *** changed ***
 ;masking of always on bits after PHP or BRK (unused & break) on compare
 ;    if disable_decimal < 2
 ; *** don't think I'll disable D bit ***
-#if I_flag==0
+#if I_flag == 0
 ; *** I think this is correct ***
+; I_FLAG IS ZERO
 #define	load_flag(a)	LDA hash a &m8i
 ; *** that seems to be the proper way ***
 ;force enable interrupts (mask I)
@@ -296,7 +298,8 @@ m8i     = %11111011       ;8 bit mask - interrupt disable *** changed ***
 ;mask I, invert expected flags + always on bits
 #endif
 ; *** will check these later *** 
-#if I_flag==1
+#if I_flag == 1
+; I_FLAG IS ONE
 #define	load_flag(a)	LDA hash a|intdis
 ;force disable interrupts
 
@@ -324,8 +327,9 @@ eor_flag    macro
             endm
         endif
 */
-; *** check the changeable option ***
+
 #if I_flag == 3
+; I_FLAG IS THREE
 #define	load_flag(a)	LDA hash a
 ;allow test to change I-flag (no mask)
 
@@ -399,195 +403,79 @@ eor_flag    macro
 ;macros to set (register|memory|zeropage) & status
 #define	set_stat(a)		load_flag(a):PHA:PLP
 ; *** seems correct macro replacent ***
-; *** *** *** C O N T I N U E   H E R E *** *** ***
-/*
-set_a       macro       ;precharging accu & status
-            load_flag \2
-            pha         ;use stack to load status
-            lda #\1     ;precharge accu
-            plp
-            endm
 
-set_x       macro       ;precharging index & status
-            load_flag \2
-            pha         ;use stack to load status
-            ldx #\1     ;precharge index x
-            plp
-            endm
+#define	set_a(a,b)		load_flag(b):PHA:LDA hash a:PLP
+;precharging accu & status
 
-set_y       macro       ;precharging index & status
-            load_flag \2
-            pha         ;use stack to load status
-            ldy #\1     ;precharge index y
-            plp
-            endm
+#define	set_x(a,b)		load_flag(b):PHA:LDX hash a:PLP
+;precharging index & status
 
-set_ax      macro       ;precharging indexed accu & immediate status
-            load_flag \2
-            pha         ;use stack to load status
-            lda \1,x    ;precharge accu
-            plp
-            endm
+#define	set_y(a,b)		load_flag(b):PHA:LDY hash a:PLP
+;precharging index & status
 
-set_ay      macro       ;precharging indexed accu & immediate status
-            load_flag \2
-            pha         ;use stack to load status
-            lda \1,y    ;precharge accu
-            plp
-            endm
+#define	set_ax(a,b)		load_flag(b):PHA:LDA hash a,X:PLP
+;precharging indexed accu & immediate status
 
-set_z       macro       ;precharging indexed zp & immediate status
-            load_flag \2
-            pha         ;use stack to load status
-            lda \1,x    ;load to zeropage
-            sta zpt
-            plp
-            endm
+#define	set_ay(a,b)		load_flag(b):PHA:LDA hash a,Y:PLP
+;precharging indexed accu & immediate status
 
-set_zx      macro       ;precharging zp,x & immediate status
-            load_flag \2
-            pha         ;use stack to load status
-            lda \1,x    ;load to indexed zeropage
-            sta zpt,x
-            plp
-            endm
+#define	set_z(a,b)		load_flag(b):PHA:LDA a,X:STA zpt:PLP
+;precharging indexed accu & immediate status
 
-set_abs     macro       ;precharging indexed memory & immediate status
-            load_flag \2
-            pha         ;use stack to load status
-            lda \1,x    ;load to memory
-            sta abst
-            plp
-            endm
+#define	set_zx(a,b)		load_flag(b):PHA:LDA a,X:STA zpt,X:PLP
+;precharging zp,x & immediate status
 
-set_absx    macro       ;precharging abs,x & immediate status
-            load_flag \2
-            pha         ;use stack to load status
-            lda \1,x    ;load to indexed memory
-            sta abst,x
-            plp
-            endm
+#define	set_abs(a,b)	load_flag(b):PHA:LDA a,X:STA abst:PLP
+;precharging indexed memory & immediate status
+
+#define	set_absx(a,b)	load_flag(b):PHA:LDA a,X:STA abst,X:PLP
+;precharging abs,x & immediate status
 
 ;macros to test (register|memory|zeropage) & status & (mask)
-tst_stat    macro       ;testing flags in the processor status register
-            php         ;save status
-            pla         ;use stack to retrieve status
-            pha
-            cmp_flag \1
-            trap_ne
-            plp         ;restore status
-            endm
+#define	tst_stat(a)		PHP:PLA:PHA:cmp_flag(a):trap_ne:PLP
+;testing flags in the processor status register
             
-tst_a       macro       ;testing result in accu & flags
-            php         ;save flags
-            cmp #\1     ;test result
-            trap_ne
-            pla         ;load status
-            pha
-            cmp_flag \2
-            trap_ne
-            plp         ;restore status
-            endm
+#define	tst_a(a,b)		PHP:CMP hash a:trap_ne:PLA:PHA:cmp_flag(b):trap_ne:PLP
+;testing result in accu & flags
 
-tst_x       macro       ;testing result in x index & flags
-            php         ;save flags
-            cpx #\1     ;test result
-            trap_ne
-            pla         ;load status
-            pha
-            cmp_flag \2
-            trap_ne
-            plp         ;restore status
-            endm
+#define	tst_x(a,b)		PHP:CPX hash a:trap_ne:PLA:PHA:cmp_flag(b):trap_ne:PLP
+;testing result in x index & flags
 
-tst_y       macro       ;testing result in y index & flags
-            php         ;save flags
-            cpy #\1     ;test result
-            trap_ne
-            pla         ;load status
-            pha
-            cmp_flag \2
-            trap_ne
-            plp         ;restore status
-            endm
+#define	tst_Y(a,b)		PHP:CPY hash a:trap_ne:PLA:PHA:cmp_flag(b):trap_ne:PLP
+;testing result in Y index & flags
 
-tst_ax      macro       ;indexed testing result in accu & flags
-            php         ;save flags
-            cmp \1,x    ;test result
-            trap_ne
-            pla         ;load status
-            eor_flag \3
-            cmp \2,x    ;test flags
-            trap_ne     ;
-            endm
+#define	tst_ax(a,b,c)	PHP:CMP a,X:trap_ne:PLA:eor_flag(c):CMP b,X:trap_ne
+;indexed testing result in accu & flags
 
-tst_ay      macro       ;indexed testing result in accu & flags
-            php         ;save flags
-            cmp \1,y    ;test result
-            trap_ne     ;
-            pla         ;load status
-            eor_flag \3
-            cmp \2,y    ;test flags
-            trap_ne
-            endm
+#define	tst_ay(a,b,c)	PHP:CMP a,Y:trap_ne:PLA:eor_flag(c):CMP b,Y:trap_ne
+;indexed testing result in accu & flags
         
-tst_z       macro       ;indexed testing result in zp & flags
-            php         ;save flags
-            lda zpt
-            cmp \1,x    ;test result
-            trap_ne
-            pla         ;load status
-            eor_flag \3
-            cmp \2,x    ;test flags
-            trap_ne
-            endm
+#define	tst_z(a,b,c)	PHP:LDA zpt:CMP a,X:trap_ne:PLA:eor_flag(c):CMP b,X:trap_ne
+;indexed testing result in zp & flags
 
-tst_zx      macro       ;testing result in zp,x & flags
-            php         ;save flags
-            lda zpt,x
-            cmp \1,x    ;test result
-            trap_ne
-            pla         ;load status
-            eor_flag \3
-            cmp \2,x    ;test flags
-            trap_ne
-            endm
+#define	tst_zx(a,b,c)	PHP:LDA zpt,X:CMP a,X:trap_ne:PLA:eor_flag(c):CMP b,X:trap_ne
+;testing result in zp,x & flags
 
-tst_abs     macro       ;indexed testing result in memory & flags
-            php         ;save flags
-            lda abst
-            cmp \1,x    ;test result
-            trap_ne
-            pla         ;load status
-            eor_flag \3
-            cmp \2,x    ;test flags
-            trap_ne
-            endm
+#define	tst_abs(a,b,c)	PHP:LDA abst:CMP a,X:trap_ne:PLA:eor_flag(c):CMP b,X:trap_ne
+;indexed testing result in memory & flags
 
-tst_absx    macro       ;testing result in abs,x & flags
-            php         ;save flags
-            lda abst,x
-            cmp \1,x    ;test result
-            trap_ne
-            pla         ;load status
-            eor_flag \3
-            cmp \2,x    ;test flags
-            trap_ne
-            endm
+#define	tst_absx(a,b,c)	PHP:LDA abst,X:CMP a,X:trap_ne:PLA:eor_flag(c):CMP b,X:trap_ne
+;testing result in abs,x & flags
             
 ; RAM integrity test
 ;   verifies that none of the previous tests has altered RAM outside of the
 ;   designated write areas.
 ;   uses zpt word as indirect pointer, zpt+2 word as checksum
-        if ram_top > -1
+#if ram_top > -1
+; *** *** *** C O N T I N U E   H E R E *** *** ***
 check_ram   macro 
             cld
             lda #0
             sta zpt         ;set low byte of indirect pointer
             sta zpt+3       ;checksum high byte
-          if disable_selfmod = 0
+#if	disable_selfmod
             sta range_adr   ;reset self modifying code
-          endif
+#endif
             clc
             ldx #zp_bss-zero_page ;zeropage - write test area
 ccs3\?      adc zero_page,x
@@ -616,12 +504,11 @@ ccs4\?      iny
             cmp ram_chksm+1 ;checksum high expected
             trap_ne         ;checksum mismatch
             endm            
-        else
-check_ram   macro
-            ;RAM check disabled - RAM size not set
-            endm
-        endif
+#else
+#define	check_ram		;RAM check disabled - RAM size not set
+#endif
 
+; *** *** *** AND   H E R E *** *** ***
 next_test   macro           ;make sure, tests don't jump the fence
             lda test_case   ;previous test
             cmp #test_num
