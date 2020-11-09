@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020  Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201106-1916 ***
+; *** last modified 20201109-1349 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -468,6 +468,7 @@ eor_flag    macro
 ;   uses zpt word as indirect pointer, zpt+2 word as checksum
 #if ram_top > -1
 #if	disable_selfmod
+; non-SMC version
 #define	check_ram					\
 	cld:							\
 	lda #0:							\
@@ -502,6 +503,7 @@ eor_flag    macro
 	cmp ram_chksm+1:				\
 	trap_ne
 #else
+; SMC version just removes sta range_adr
 #define	check_ram					\
 	cld:							\
 	lda #0:							\
@@ -537,19 +539,19 @@ eor_flag    macro
 #endif
 #else
 ;RAM check disabled - RAM size not set
-#define	check_ram		;
+#define	check_ram		;disabled_RAM_check
 #endif
-; *** *** *** C O N T I N U E   H E R E *** *** ***
 
-next_test   macro           ;make sure, tests don't jump the fence
-            lda test_case   ;previous test
-            cmp #test_num
-            trap_ne         ;test is out of sequence
-test_num = test_num + 1
-            lda #test_num   ;*** next tests' number
-            sta test_case
-            ;check_ram       ;uncomment to find altered RAM after each test
-            endm
+;make sure, tests don't jump the fence
+#define	next_test 				\
+	lda test_case:				\
+	cmp #test_num:				\
+	trap_ne:					\
+	test_num = test_num + 1:	\
+	lda #test_num:				\
+	sta test_case:				\
+	;check_ram					;uncomment to find altered RAM after each test
+
 /*
     if load_data_direct = 1
         data
@@ -559,8 +561,8 @@ test_num = test_num + 1
 */ 
 	* =		zero_page
 ;break test interrupt save
-irq_a	.dsb	1			;a register
-irq_x	.dsb	1			;x register
+irq_a		.dsb	1			;a register
+irq_x		.dsb	1			;x register
 /* I_flag is never 2
 #if I_flag == 2
 ;masking for I bit in status
@@ -568,15 +570,15 @@ flag_I_on   .dsb  1           ;or mask to load flags
 flag_I_off  .dsb  1           ;and mask to load flags
     endif
 */
-zpt:						;6 bytes store/modify test area
+zpt:							;6 bytes store/modify test area
 ;add/subtract operand generation and result/flag prediction
-adfc	.dsb	1			;carry flag before op
-ad1		.dsb	1			;operand 1 - accumulator
-ad2:	.dsb	1			;operand 2 - memory / immediate
-adrl	.dsb	1			;expected result bits 0-7
-adrh	.dsb	1			;expected result bit 8 (carry)
-adrf	.dsb	1			;expected flags NV0000ZC (only binary mode)
-sb2		.dsb	1			;operand 2 complemented for subtract
+adfc	.dsb	1				;carry flag before op
+ad1		.dsb	1				;operand 1 - accumulator
+ad2:	.dsb	1				;operand 2 - memory / immediate
+adrl	.dsb	1				;expected result bits 0-7
+adrh	.dsb	1				;expected result bit 8 (carry)
+adrf	.dsb	1				;expected flags NV0000ZC (only binary mode)
+sb2		.dsb	1				;operand 2 complemented for subtract
 zp_bss:
 zps		.byt	$80,1			;additional shift pattern to test zero result & flag
 zp1		.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
@@ -586,46 +588,46 @@ zpOR	.byt	0,$1f,$71,$80	;test pattern for OR
 zpAN	.byt	$0f,$ff,$7f,$80	;test pattern for AND
 zpEO	.byt	$ff,$0f,$8f,$8f	;test pattern for EOR
 ;indirect addressing pointers
-ind1	.word	abs1		;indirect pointer to pattern in absolute memory
+ind1	.word	abs1			;indirect pointer to pattern in absolute memory
 		.word	abs1+1
 		.word	abs1+2
 		.word	abs1+3
 		.word	abs7f
-inw1	.word	abs1-$f8	;indirect pointer for wrap-test pattern
-indt	.word	abst		;indirect pointer to store area in absolute memory
+inw1	.word	abs1-$f8		;indirect pointer for wrap-test pattern
+indt	.word	abst			;indirect pointer to store area in absolute memory
 		.word	abst+1
 		.word	abst+2
 		.word	abst+3
-inwt	.word	abst-$f8	;indirect pointer for wrap-test store
-indAN	.word	absAN		;indirect pointer to AND pattern in absolute memory
+inwt	.word	abst-$f8		;indirect pointer for wrap-test store
+indAN	.word	absAN			;indirect pointer to AND pattern in absolute memory
 		.word	absAN+1
 		.word	absAN+2
 		.word	absAN+3
-indEO	.word	absEO		;indirect pointer to EOR pattern in absolute memory
+indEO	.word	absEO			;indirect pointer to EOR pattern in absolute memory
 		.word	absEO+1
 		.word	absEO+2
 		.word	absEO+3
-indOR	.word	absOR		;indirect pointer to OR pattern in absolute memory
+indOR	.word	absOR			;indirect pointer to OR pattern in absolute memory
 		.word	absOR+1
 		.word	absOR+2
 		.word	absOR+3
 ;add/subtract indirect pointers
-adi2	.word	ada2		;indirect pointer to operand 2 in absolute memory
-sbi2	.word	sba2		;indirect pointer to complemented operand 2 (SBC)
-adiy2	.word	ada2-$ff	;with offset for indirect indexed
+adi2	.word	ada2			;indirect pointer to operand 2 in absolute memory
+sbi2	.word	sba2			;indirect pointer to complemented operand 2 (SBC)
+adiy2	.word	ada2-$ff		;with offset for indirect indexed
 sbiy2	.word	sba2-$ff
 zp_bss_end:
 
 	* = data_segment
-test_case	.dsb	1		;current test number
-ram_chksm	.dsb	2		;checksum for RAM integrity test
+test_case	.dsb	1			;current test number
+ram_chksm	.dsb	2			;checksum for RAM integrity test
 ;add/subtract operand copy - abs tests write area
-abst:						;6 bytes store/modify test area
-ada2	.dsb  1               ;operand 2
-sba2	.dsb  1               ;operand 2 complemented for subtract
-		.dsb  4               ;fill remaining bytes
+abst:							;6 bytes store/modify test area
+ada2		.dsb	1			;operand 2
+sba2		.dsb	1			;operand 2 complemented for subtract
+			.dsb	4			;fill remaining bytes
 data_bss:
-; **** must check these ****
+; **** MUST check these, which way I should go? ****
 /*
     if load_data_direct = 1
 ex_andi and #0              ;execute immediate opcodes
@@ -680,67 +682,71 @@ absrlo	.byt	0,$ff,$7f,$80
 absflo	.byt	fz,fn,0,fn
 data_bss_end:
 
-; *** *** *** A N D   C O N T I N U E   H E R E,   T O O *** *** ***
+; *** *** *** C O N T I N U E   H E R E *** *** ***
+;       code
+		* =		code_segment
+start	cld
+		ldx #$ff
+		txs
+		lda #0          ;*** test 0 = initialize
+		sta test_case
 
-        code
-        * = code_segment
-start   cld
-        ldx #$ff
-        txs
-        lda #0          ;*** test 0 = initialize
-        sta test_case
-test_num = 0
+		test_num = 0
 
 ;stop interrupts before initializing BSS
-    if I_flag = 1
-        sei
-    endif
+#if I_flag == 1
+		sei
+#endif
     
+/*
 ;initialize I/O for report channel
     if report = 1
         jsr report_init
     endif
-    
+*/
+   
 ;pretest small branch offset
-        ldx #5
-        jmp psb_test
+		ldx #5
+		jmp psb_test
 psb_bwok
-        ldy #5
-        bne psb_forw
-        trap        ;branch should be taken
-        dey         ;forward landing zone
-        dey
-        dey
-        dey
-        dey
+		ldy #5
+		bne psb_forw
+		trap				;branch should be taken
+		dey					;forward landing zone
+		dey
+		dey
+		dey
+		dey
 psb_forw
-        dey
-        dey
-        dey
-        dey
-        dey
-        beq psb_fwok
-        trap        ;forward offset
+		dey
+		dey
+		dey
+		dey
+		dey
+		beq psb_fwok
+		trap				;forward offset
 
-        dex         ;backward landing zone
-        dex
-        dex
-        dex
-        dex
+		dex					;backward landing zone
+		dex
+		dex
+		dex
+		dex
 psb_back
-        dex
-        dex
-        dex
-        dex
-        dex
-        beq psb_bwok
-        trap        ;backward offset
+		dex
+		dex
+		dex
+		dex
+		dex
+		beq psb_bwok
+		trap        ;backward offset
 psb_test
-        bne psb_back
-        trap        ;branch should be taken
+		bne psb_back
+		trap        ;branch should be taken
 psb_fwok
         
 ;initialize BSS segment
+/*
+; *** is this code needed at all? *** CHECK
     if load_data_direct != 1
         ldx #zp_end-zp_init-1
 ld_zp   lda zp_init,x
@@ -760,7 +766,8 @@ ld_vect lda vec_init,x
         bpl ld_vect
       endif
     endif
-
+*/
+/* *** I_flag is NEVER 2 ***
 ;retain status of interrupt flag
     if I_flag = 2
         php
@@ -770,412 +777,413 @@ ld_vect lda vec_init,x
         eor #lo(~4)     ;reverse
         sta flag_I_off  ;and mask
     endif
-        
+*/      
 ;generate checksum for RAM integrity test
-    if ram_top > -1
-        lda #0 
-        sta zpt         ;set low byte of indirect pointer
-        sta ram_chksm+1 ;checksum high byte
-      if disable_selfmod = 0
-        sta range_adr   ;reset self modifying code
-      endif
-        clc
-        ldx #zp_bss-zero_page ;zeropage - write test area
-gcs3    adc zero_page,x
-        bcc gcs2
-        inc ram_chksm+1 ;carry to high byte
-        clc
-gcs2    inx
-        bne gcs3
-        ldx #hi(abs1)   ;set high byte of indirect pointer
-        stx zpt+1
-        ldy #lo(abs1)   ;data after write & execute test area
-gcs5    adc (zpt),y
-        bcc gcs4
-        inc ram_chksm+1 ;carry to high byte
-        clc
-gcs4    iny
-        bne gcs5
-        inx             ;advance RAM high address
-        stx zpt+1
-        cpx #ram_top
-        bne gcs5
-        sta ram_chksm   ;checksum complete
-    endif
-        next_test            
+#if	ram_top > -1
+		lda #0 
+		sta zpt				;set low byte of indirect pointer
+		sta ram_chksm+1		;checksum high byte
+#if disable_selfmod == 0
+		sta range_adr		;reset self modifying code
+#endif
+		clc
+		ldx #zp_bss-zero_page	;zeropage - write test area
+gcs3	adc zero_page,x
+		bcc gcs2
+		inc ram_chksm+1		;carry to high byte
+		clc
+gcs2	inx
+		bne gcs3
+		ldx #hi(abs1		;set high byte of indirect pointer
+		stx zpt+1
+		ldy #<abs1			;data after write & execute test area
+gcs5	adc (zpt),y
+		bcc gcs4
+		inc ram_chksm+1		;carry to high byte
+		clc
+gcs4	iny
+		bne gcs5
+		inx					;advance RAM high address
+		stx zpt+1
+		cpx #ram_top
+		bne gcs5
+		sta ram_chksm		;checksum complete
+#endif
+		next_test            
 
-    if disable_selfmod = 0
+#if	disable_selfmod == 0
 ;testing relative addressing with BEQ
-        ldy #$fe        ;testing maximum range, not -1/-2 (invalid/self adr)
+		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
 range_loop
-        dey             ;next relative address
-        tya
-        tax             ;precharge count to end of loop
-        bpl range_fw    ;calculate relative address
-        clc             ;avoid branch self or to relative address of branch
-        adc #2
-        nop             ;offset landing zone - tolerate +/-5 offset to branch
-        nop
-        nop
-        nop
-        nop
+		dey					;next relative address
+		tya
+		tax					;precharge count to end of loop
+		bpl range_fw		;calculate relative address
+		clc					;avoid branch self or to relative address of branch
+		adc #2
+		nop					;offset landing zone - tolerate +/-5 offset to branch
+		nop
+		nop
+		nop
+		nop
 range_fw
-        nop
-        nop
-        nop
-        nop
-        nop
-        eor #$7f        ;complement except sign
-        sta range_adr   ;load into test target
-        lda #0          ;should set zero flag in status register
-        jmp range_op
+		nop
+		nop
+		nop
+		nop
+		nop
+		eor #$7f			;complement except sign
+		sta range_adr		;load into test target
+		lda #0				;should set zero flag in status register
+		jmp range_op
         
-        dex             ; offset landing zone - backward branch too far
-        dex
-        dex
-        dex
-        dex
-        ;relative address target field with branch under test in the middle
-        dex             ;-128 - max backward
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-120
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-110
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-100
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-90
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-80
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-70
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-60
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-50
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-40
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-30
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-20
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-10
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;-3
-range_op                ;test target with zero flag=0, z=1 if previous dex
-range_adr   = *+1       ;modifiable relative address
-        beq *+64        ;+64 if called without modification
-        dex             ;+0
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+10
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+20
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+30
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+40
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+50
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+60
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+70
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+80
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+90
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+100
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+110
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex             ;+120
-        dex
-        dex
-        dex
-        dex
-        dex
-        dex
-        nop             ;offset landing zone - forward branch too far
-        nop
-        nop
-        nop
-        nop
-        beq range_ok    ;+127 - max forward
-        trap            ; bad range
-        nop             ;offset landing zone - tolerate +/-5 offset to branch
-        nop
-        nop
-        nop
-        nop
+		dex             	; offset landing zone - backward branch too far
+		dex
+		dex
+		dex
+		dex
+		;relative address target field with branch under test in the middle
+		dex					;-128 - max backward
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-120
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-110
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-100
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-90
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-80
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-70
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-60
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-50
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-40
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-30
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-20
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-10
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;-3
+range_op					;test target with zero flag=0, z=1 if previous dex
+; *** should check SMC here ***
+range_adr =		*+1			;modifiable relative address
+		beq *+64			;+64 if called without modification
+		dex					;+0
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+10
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+20
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+30
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+40
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+50
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+60
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+70
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+80
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+90
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+100
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+110
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex					;+120
+		dex
+		dex
+		dex
+		dex
+		dex
+		dex
+		nop					;offset landing zone - forward branch too far
+		nop
+		nop
+		nop
+		nop
+		beq range_ok		;+127 - max forward
+		trap				; bad range
+		nop					;offset landing zone - tolerate +/-5 offset to branch
+		nop
+		nop
+		nop
+		nop
 range_ok
-        nop
-        nop
-        nop
-        nop
-        nop
-        cpy #0
-        beq range_end   
-        jmp range_loop
-range_end               ;range test successful
-    endif
-        next_test
+		nop
+		nop
+		nop
+		nop
+		nop
+		cpy #0
+		beq range_end   
+		jmp range_loop
+range_end					;range test successful
+#endif
+		next_test
 
 ;partial test BNE & CMP, CPX, CPY immediate
-        cpy #1          ;testing BNE true
-        bne test_bne
-        trap 
+		cpy #1				;testing BNE true
+		bne test_bne
+		trap 
 test_bne
-        lda #0 
-        cmp #0          ;test compare immediate 
-        trap_ne
-        trap_cc
-        trap_mi
-        cmp #1
-        trap_eq 
-        trap_cs
-        trap_pl
-        tax 
-        cpx #0          ;test compare x immediate
-        trap_ne
-        trap_cc
-        trap_mi
-        cpx #1
-        trap_eq 
-        trap_cs
-        trap_pl
-        tay 
-        cpy #0          ;test compare y immediate
-        trap_ne
-        trap_cc
-        trap_mi
-        cpy #1
-        trap_eq 
-        trap_cs
-        trap_pl
-        next_test
+		lda #0 
+		cmp #0				;test compare immediate 
+		trap_ne
+		trap_cc
+		trap_mi
+		cmp #1
+		trap_eq 
+		trap_cs
+		trap_pl
+		tax 
+		cpx #0				;test compare x immediate
+		trap_ne
+		trap_cc
+		trap_mi
+		cpx #1
+		trap_eq 
+		trap_cs
+		trap_pl
+		tay 
+		cpy #0				;test compare y immediate
+		trap_ne
+		trap_cc
+		trap_mi
+		cpy #1
+		trap_eq 
+		trap_cs
+		trap_pl
+		next_test
 ;testing stack operations PHA PHP PLA PLP
             
-        ldx #$ff        ;initialize stack
-        txs
-        lda #$55
-        pha
-        lda #$aa
-        pha
-        cmp $1fe        ;on stack ?
-        trap_ne
-        tsx
-        txa             ;overwrite accu
-        cmp #$fd        ;sp decremented?
-        trap_ne
-        pla
-        cmp #$aa        ;successful retreived from stack?
-        trap_ne
-        pla
-        cmp #$55
-        trap_ne
-        cmp $1ff        ;remains on stack?
-        trap_ne
-        tsx
-        cpx #$ff        ;sp incremented?
-        trap_ne
-        next_test
+		ldx #$ff			;initialize stack
+		txs
+		lda #$55
+		pha
+		lda #$aa
+		pha
+		cmp $1fe			;on stack ?
+		trap_ne
+		tsx
+		txa					;overwrite accu
+		cmp #$fd			;sp decremented?
+		trap_ne
+		pla
+		cmp #$aa			;successful retreived from stack?
+		trap_ne
+		pla
+		cmp #$55
+		trap_ne
+		cmp $1ff			;remains on stack?
+		trap_ne
+		tsx
+		cpx #$ff			;sp incremented?
+		trap_ne
+		next_test
 
 ;testing branch decisions BPL BMI BVC BVS BCC BCS BNE BEQ
         set_stat $ff    ;all on
