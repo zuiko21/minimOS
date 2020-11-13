@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201113-1009 ***
+; *** last modified 20201113-1342 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -1195,19 +1195,19 @@ test_bne
 		trap 
 br1		bvs br2
 		trap 
-	br2	bcs br3
+br2		bcs br3
 		trap 
-	br3	beq br4
+br3		beq br4
 		trap 
-	nbr1
+nbr1
 		trap	;previous bpl taken 
-	nbr2
+nbr2
 		trap	;previous bvc taken
-	nbr3
+nbr3
 		trap	;previous bcc taken
-	nbr4
+nbr4
 		trap	;previous bne taken
-	br4	php
+br4		php
 		tsx
 		cpx #$fe	;sp after php?
 		trap_ne
@@ -1224,21 +1224,21 @@ br1		bvs br2
 		beq nbr14
 		bpl br11	;branches should be taken
 		trap 
-	br11	bvc br12
+br11	bvc br12
 		trap 
-	br12	bcc br13
+br12	bcc br13
 		trap 
-	br13	bne br14
+br13	bne br14
 		trap 
-	nbr11
+nbr11
 		trap	;previous bmi taken 
-	nbr12
+nbr12
 		trap	;previous bvs taken 
-	nbr13
+nbr13
 		trap	;previous bcs taken 
-	nbr14
+nbr14
 		trap	;previous beq taken 
-	br14	php
+br14	php
 		pla
 		cmp_flag 0	;flags off except break (pushed by sw) + reserved?
 		trap_ne
@@ -1246,151 +1246,151 @@ br1		bvs br2
 		set_stat zero
 		bne brzs1
 		beq brzs2
-	brzs1
+brzs1
 		trap	;branch zero/non zero
-	brzs2	bcs brzs3
+brzs2	bcs brzs3
 		bcc brzs4
-	brzs3
+brzs3
 		trap	;branch carry/no carry
-	brzs4	bmi brzs5
+brzs4	bmi brzs5
 		bpl brzs6
-	brzs5
+brzs5
 		trap	;branch minus/plus
-	brzs6	bvs brzs7
+brzs6	bvs brzs7
 		bvc brzs8
-	brzs7
+brzs7
 		trap	;branch overflow/no overflow
-	brzs8
+brzs8
 		set_stat carry
 		beq brcs1
 		bne brcs2
-	brcs1
+brcs1
 		trap	;branch zero/non zero
-	brcs2	bcc brcs3
+brcs2	bcc brcs3
 		bcs brcs4
-	brcs3
+brcs3
 		trap	;branch carry/no carry
-	brcs4	bmi brcs5
+brcs4	bmi brcs5
 		bpl brcs6
-	brcs5
+brcs5
 		trap	;branch minus/plus
-	brcs6	bvs brcs7
+brcs6	bvs brcs7
 		bvc brcs8
-	brcs7
+brcs7
 		trap	;branch overflow/no overflow
 
-	brcs8
+brcs8
 		set_stat minus
 		beq brmi1
 		bne brmi2
-	brmi1
+brmi1
 		trap	;branch zero/non zero
-	brmi2	bcs brmi3
+brmi2	bcs brmi3
 		bcc brmi4
-	brmi3
+brmi3
 		trap	;branch carry/no carry
-	brmi4	bpl brmi5
+brmi4	bpl brmi5
 		bmi brmi6
-	brmi5
+brmi5
 		trap	;branch minus/plus
-	brmi6	bvs brmi7
+brmi6	bvs brmi7
 		bvc brmi8
-	brmi7
+brmi7
 		trap	;branch overflow/no overflow
-	brmi8
+brmi8
 		set_stat overfl
 		beq brvs1
 		bne brvs2
-	brvs1
+brvs1
 		trap	;branch zero/non zero
-	brvs2	bcs brvs3
+brvs2	bcs brvs3
 		bcc brvs4
-	brvs3
+brvs3
 		trap	;branch carry/no carry
-	brvs4	bmi brvs5
+brvs4	bmi brvs5
 		bpl brvs6
-	brvs5
+brvs5
 		trap	;branch minus/plus
-	brvs6	bvc brvs7
+brvs6	bvc brvs7
 		bvs brvs8
-	brvs7
+brvs7
 		trap	;branch overflow/no overflow
-	brvs8
+brvs8
 		set_stat $ff-zero
 		beq brzc1
 		bne brzc2
-	brzc1
+brzc1
 		trap	;branch zero/non zero
-	brzc2	bcc brzc3
+brzc2	bcc brzc3
 		bcs brzc4
-	brzc3
+brzc3
 		trap	;branch carry/no carry
-	brzc4	bpl brzc5
+brzc4	bpl brzc5
 		bmi brzc6
-	brzc5
+brzc5
 		trap	;branch minus/plus
-	brzc6	bvc brzc7
+brzc6	bvc brzc7
 		bvs brzc8
-	brzc7
+brzc7
 		trap	;branch overflow/no overflow
-	brzc8
+brzc8
 		set_stat $ff-carry
 		bne brcc1
 		beq brcc2
-	brcc1
+brcc1
 		trap	;branch zero/non zero
-	brcc2	bcs brcc3
+brcc2	bcs brcc3
 		bcc brcc4
-	brcc3
+brcc3
 		trap	;branch carry/no carry
-	brcc4	bpl brcc5
+brcc4	bpl brcc5
 		bmi brcc6
-	brcc5
+brcc5
 		trap	;branch minus/plus
-	brcc6	bvc brcc7
+brcc6	bvc brcc7
 		bvs brcc8
-	brcc7
+brcc7
 		trap	;branch overflow/no overflow
-	brcc8
+brcc8
 		set_stat $ff-minus
 		bne brpl1
 		beq brpl2
-	brpl1
+brpl1
 		trap	;branch zero/non zero
-	brpl2	bcc brpl3
+brpl2	bcc brpl3
 		bcs brpl4
-	brpl3
+brpl3
 		trap	;branch carry/no carry
-	brpl4	bmi brpl5
+brpl4	bmi brpl5
 		bpl brpl6
-	brpl5
+brpl5
 		trap	;branch minus/plus
-	brpl6	bvc brpl7
+brpl6	bvc brpl7
 		bvs brpl8
-	brpl7
+brpl7
 		trap	;branch overflow/no overflow
-	brpl8
+brpl8
 		set_stat $ff-overfl
 		bne brvc1
 		beq brvc2
-	brvc1
+brvc1
 		trap	;branch zero/non zero
-	brvc2	bcc brvc3
+brvc2	bcc brvc3
 		bcs brvc4
-	brvc3
+brvc3
 		trap	;branch carry/no carry
-	brvc4	bpl brvc5
+brvc4	bpl brvc5
 		bmi brvc6
-	brvc5
+brvc5
 		trap	;branch minus/plus
-	brvc6	bvs brvc7
+brvc6	bvs brvc7
 		bvc brvc8
-	brvc7
+brvc7
 		trap	;branch overflow/no overflow
-	brvc8
+brvc8
 		next_test
 
-	; test PHA does not alter flags or accumulator but PLA does
+; test PHA does not alter flags or accumulator but PLA does
 		ldx #$55	;x & y protected
 		ldy #$aa
 		set_a 1,$ff	;push
@@ -1435,7 +1435,7 @@ br1		bvs br2
 		trap_ne
 		next_test
 	 
-	; partial pretest EOR #
+; partial pretest EOR #
 		set_a $3c,0
 		eor #$c3
 		tst_a $ff,fn
@@ -1444,8 +1444,8 @@ br1		bvs br2
 		tst_a 0,fz
 		next_test
 
-	; PC modifying instructions except branches (NOP, JMP, JSR, RTS, BRK, RTI)
-	; testing NOP
+; PC modifying instructions except branches (NOP, JMP, JSR, RTS, BRK, RTI)
+; testing NOP
 		ldx #$24
 		ldy #$42
 		set_a $18,0
@@ -1466,7 +1466,7 @@ br1		bvs br2
 		trap_ne
 		next_test
 		
-	; jump absolute
+; jump absolute
 		set_stat $0
 		lda #'F'
 		ldx #'A'
@@ -1477,7 +1477,7 @@ br1		bvs br2
 		trap_ne	;runover protection
 		inx
 		inx
-	far_ret 
+far_ret 
 		trap_eq	;returned flags OK?
 		trap_pl
 		trap_cc
@@ -1499,7 +1499,7 @@ br1		bvs br2
 		trap_ne	;runover protection
 		inx
 		inx
-	test_near
+test_near
 		trap_eq	;passed flags OK?
 		trap_mi
 		trap_cc
@@ -1512,7 +1512,7 @@ br1		bvs br2
 		trap_ne
 		next_test
 		
-	; jump indirect
+; jump indirect
 		set_stat 0
 		lda #'I'
 		ldx #'N'
@@ -1522,7 +1522,7 @@ br1		bvs br2
 		trap_ne	;runover protection
 		dey
 		dey
-	ind_ret 
+ind_ret 
 		php	;either SP or Y count will fail, if we do not hit
 		dey
 		dey
@@ -1543,13 +1543,13 @@ br1		bvs br2
 		trap_ne
 		next_test
 
-	; jump subroutine & return from subroutine
+; jump subroutine & return from subroutine
 		set_stat 0
 		lda #'J'
 		ldx #'S'
 		ldy #'R'	;N=0, V=0, Z=0, C=0
 		jsr test_jsr
-	jsr_ret = *-1	;last address of jsr = return address
+jsr_ret = *-1	;last address of jsr = return address
 		php	;either SP or Y count will fail, if we do not hit
 		dey
 		dey
@@ -1570,7 +1570,7 @@ br1		bvs br2
 		trap_ne
 		next_test
 
-	; break & return from interrupt
+; break & return from interrupt
 		if ROM_vectors = 1
 		load_flag 0	;with interrupts enabled if allowed!
 		pha
@@ -1595,7 +1595,7 @@ br1		bvs br2
 		jmp irq_trap
 		endif
 		dey	;should not be executed
-	brk_ret0	;address of break return
+brk_ret0	;address of break return
 		php	;either SP or Y count will fail, if we do not hit
 		dey
 		dey
@@ -1636,7 +1636,7 @@ br1		bvs br2
 		jmp irq_trap
 		endif
 		dey	;should not be executed
-	brk_ret1	;address of break return
+brk_ret1	;address of break return
 		php	;either SP or Y count will fail, if we do not hit
 		dey
 		dey
@@ -1656,7 +1656,7 @@ br1		bvs br2
 		trap_ne
 		next_test
 	 
-	; test set and clear flags CLC CLI CLD CLV SEC SEI SED
+; test set and clear flags CLC CLI CLD CLV SEC SEI SED
 		set_stat $ff
 		clc
 		tst_stat $ff-carry
@@ -1695,8 +1695,8 @@ br1		bvs br2
 		clv
 		tst_stat 0
 		next_test
-	; testing index register increment/decrement and transfer
-	; INX INY DEX DEY TAX TXA TAY TYA 
+; testing index register increment/decrement and transfer
+; INX INY DEX DEY TAX TXA TAY TYA 
 		ldx #$fe
 		set_stat $ff
 		inx	;ff
@@ -1883,8 +1883,8 @@ br1		bvs br2
 		tst_x $ff,minus
 		next_test
 		
-	;TSX sets NZ - TXS does not
-	;	This section also tests for proper stack wrap around.
+;TSX sets NZ - TXS does not
+;	This section also tests for proper stack wrap around.
 		ldx #1	;01
 		set_stat $ff
 		txs
@@ -1980,10 +1980,10 @@ br1		bvs br2
 		pla	;sp=ff
 		next_test
 		
-	; testing index register load & store LDY LDX STY STX all addressing modes
-	; LDX / STX - zp,y / abs,y
+; testing index register load & store LDY LDX STY STX all addressing modes
+; LDX / STX - zp,y / abs,y
 		ldy #3
-	tldx	
+tldx	
 		set_stat 0
 		ldx zp1,y
 		php	;test stores do not alter flags
@@ -2003,7 +2003,7 @@ br1		bvs br2
 		bpl tldx	
 
 		ldy #3
-	tldx1	
+tldx1	
 		set_stat $ff
 		ldx zp1,y
 		php	;test stores do not alter flags
@@ -2023,7 +2023,7 @@ br1		bvs br2
 		bpl tldx1	
 
 		ldy #3
-	tldx2	
+tldx2	
 		set_stat 0
 		ldx abs1,y
 		php	;test stores do not alter flags
@@ -2044,7 +2044,7 @@ br1		bvs br2
 		bpl tldx2	
 
 		ldy #3
-	tldx3	
+tldx3	
 		set_stat $ff
 		ldx abs1,y
 		php	;test stores do not alter flags
@@ -2066,7 +2066,7 @@ br1		bvs br2
 		
 		ldy #3	;testing store result
 		ldx #0
-	tstx	lda zpt,y
+tstx	lda zpt,y
 		eor #$c3
 		cmp zp1,y
 		trap_ne	;store to zp data
@@ -2081,23 +2081,23 @@ br1		bvs br2
 		bpl tstx
 		next_test
 		
-	; indexed wraparound test (only zp should wrap)
+; indexed wraparound test (only zp should wrap)
 		ldy #3+$fa
-	tldx4	ldx zp1-$fa&$ff,y	;wrap on indexed zp
+tldx4	ldx zp1-$fa&$ff,y	;wrap on indexed zp
 		txa
 		sta abst-$fa,y	;no STX abs,y!
 		dey
 		cpy #$fa
 		bcs tldx4	
 		ldy #3+$fa
-	tldx5	ldx abs1-$fa,y	;no wrap on indexed abs
+tldx5	ldx abs1-$fa,y	;no wrap on indexed abs
 		stx zpt-$fa&$ff,y
 		dey
 		cpy #$fa
 		bcs tldx5	
 		ldy #3	;testing wraparound result
 		ldx #0
-	tstx1	lda zpt,y
+tstx1	lda zpt,y
 		cmp zp1,y
 		trap_ne	;store to zp data
 		stx zpt,y	;clear	
@@ -2110,9 +2110,9 @@ br1		bvs br2
 		bpl tstx1
 		next_test
 		
-	; LDY / STY - zp,x / abs,x
+; LDY / STY - zp,x / abs,x
 		ldx #3
-	tldy	
+tldy	
 		set_stat 0
 		ldy zp1,x
 		php	;test stores do not alter flags
@@ -2132,7 +2132,7 @@ br1		bvs br2
 		bpl tldy	
 
 		ldx #3
-	tldy1	
+tldy1	
 		set_stat $ff
 		ldy zp1,x
 		php	;test stores do not alter flags
@@ -2152,7 +2152,7 @@ br1		bvs br2
 		bpl tldy1	
 
 		ldx #3
-	tldy2	
+tldy2	
 		set_stat 0
 		ldy abs1,x
 		php	;test stores do not alter flags
@@ -2173,7 +2173,7 @@ br1		bvs br2
 		bpl tldy2	
 
 		ldx #3
-	tldy3
+tldy3
 		set_stat $ff
 		ldy abs1,x
 		php	;test stores do not alter flags
@@ -2195,7 +2195,7 @@ br1		bvs br2
 
 		ldx #3	;testing store result
 		ldy #0
-	tsty	lda zpt,x
+tsty	lda zpt,x
 		eor #$c3
 		cmp zp1,x
 		trap_ne	;store to zp,x data
@@ -2210,23 +2210,23 @@ br1		bvs br2
 		bpl tsty
 		next_test
 
-	; indexed wraparound test (only zp should wrap)
+; indexed wraparound test (only zp should wrap)
 		ldx #3+$fa
-	tldy4	ldy zp1-$fa&$ff,x	;wrap on indexed zp
+tldy4	ldy zp1-$fa&$ff,x	;wrap on indexed zp
 		tya
 		sta abst-$fa,x	;no STX abs,x!
 		dex
 		cpx #$fa
 		bcs tldy4	
 		ldx #3+$fa
-	tldy5	ldy abs1-$fa,x	;no wrap on indexed abs
+tldy5	ldy abs1-$fa,x	;no wrap on indexed abs
 		sty zpt-$fa&$ff,x
 		dex
 		cpx #$fa
 		bcs tldy5	
 		ldx #3	;testing wraparound result
 		ldy #0
-	tsty1	lda zpt,x
+tsty1	lda zpt,x
 		cmp zp1,x
 		trap_ne	;store to zp,x data
 		sty zpt,x	;clear	
@@ -2239,7 +2239,7 @@ br1		bvs br2
 		bpl tsty1
 		next_test
 
-	; LDX / STX - zp / abs / #
+; LDX / STX - zp / abs / #
 		set_stat 0	
 		ldx zp1
 		php	;test stores do not alter flags
@@ -2629,7 +2629,7 @@ br1		bvs br2
 		stx abst+3	;clear	
 		next_test
 
-	; LDY / STY - zp / abs / #
+; LDY / STY - zp / abs / #
 		set_stat 0
 		ldy zp1	
 		php	;test stores do not alter flags
@@ -3024,10 +3024,10 @@ br1		bvs br2
 		sty abst+3	;clear	
 		next_test
 
-	; testing load / store accumulator LDA / STA all addressing modes
-	; LDA / STA - zp,x / abs,x
+; testing load / store accumulator LDA / STA all addressing modes
+; LDA / STA - zp,x / abs,x
 		ldx #3
-	tldax	
+tldax	
 		set_stat 0
 		lda zp1,x
 		php	;test stores do not alter flags
@@ -3046,7 +3046,7 @@ br1		bvs br2
 		bpl tldax	
 
 		ldx #3
-	tldax1	
+tldax1	
 		set_stat $ff
 		lda zp1,x
 		php	;test stores do not alter flags
@@ -3065,7 +3065,7 @@ br1		bvs br2
 		bpl tldax1	
 
 		ldx #3
-	tldax2	
+tldax2	
 		set_stat 0
 		lda abs1,x
 		php	;test stores do not alter flags
@@ -3084,7 +3084,7 @@ br1		bvs br2
 		bpl tldax2	
 
 		ldx #3
-	tldax3
+tldax3
 		set_stat $ff
 		lda abs1,x
 		php	;test stores do not alter flags
@@ -3104,7 +3104,7 @@ br1		bvs br2
 
 		ldx #3	;testing store result
 		ldy #0
-	tstax	lda zpt,x
+tstax	lda zpt,x
 		eor #$c3
 		cmp zp1,x
 		trap_ne	;store to zp,x data
@@ -3119,9 +3119,9 @@ br1		bvs br2
 		bpl tstax
 		next_test
 
-	; LDA / STA - (zp),y / abs,y / (zp,x)
+; LDA / STA - (zp),y / abs,y / (zp,x)
 		ldy #3
-	tlday	
+tlday	
 		set_stat 0
 		lda (ind1),y
 		php	;test stores do not alter flags
@@ -3140,7 +3140,7 @@ br1		bvs br2
 		bpl tlday	
 
 		ldy #3
-	tlday1	
+tlday1	
 		set_stat $ff
 		lda (ind1),y
 		php	;test stores do not alter flags
@@ -3160,7 +3160,7 @@ br1		bvs br2
 
 		ldy #3	;testing store result
 		ldx #0
-	tstay	lda abst,y
+tstay	lda abst,y
 		eor #$c3
 		cmp abs1,y
 		trap_ne	;store to abs data
@@ -3170,7 +3170,7 @@ br1		bvs br2
 		bpl tstay
 
 		ldy #3
-	tlday2	
+tlday2	
 		set_stat 0
 		lda abs1,y
 		php	;test stores do not alter flags
@@ -3189,7 +3189,7 @@ br1		bvs br2
 		bpl tlday2	
 
 		ldy #3
-	tlday3	
+tlday3	
 		set_stat $ff
 		lda abs1,y
 		php	;test stores do not alter flags
@@ -3209,7 +3209,7 @@ br1		bvs br2
 		
 		ldy #3	;testing store result
 		ldx #0
-	tstay1	lda abst,y
+tstay1	lda abst,y
 		eor #$c3
 		cmp abs1,y
 		trap_ne	;store to abs data
@@ -3220,7 +3220,7 @@ br1		bvs br2
 		
 		ldx #6
 		ldy #3
-	tldax4	
+tldax4	
 		set_stat 0
 		lda (ind1,x)
 		php	;test stores do not alter flags
@@ -3242,7 +3242,7 @@ br1		bvs br2
 
 		ldx #6
 		ldy #3
-	tldax5
+tldax5
 		set_stat $ff
 		lda (ind1,x)
 		php	;test stores do not alter flags
@@ -3264,7 +3264,7 @@ br1		bvs br2
 
 		ldy #3	;testing store result
 		ldx #0
-	tstay2	lda abst,y
+tstay2	lda abst,y
 		eor #$c3
 		cmp abs1,y
 		trap_ne	;store to abs data
@@ -3274,15 +3274,15 @@ br1		bvs br2
 		bpl tstay2
 		next_test
 
-	; indexed wraparound test (only zp should wrap)
+; indexed wraparound test (only zp should wrap)
 		ldx #3+$fa
-	tldax6	lda zp1-$fa&$ff,x	;wrap on indexed zp
+tldax6	lda zp1-$fa&$ff,x	;wrap on indexed zp
 		sta abst-$fa,x	;no STX abs,x!
 		dex
 		cpx #$fa
 		bcs tldax6	
 		ldx #3+$fa
-	tldax7	lda abs1-$fa,x	;no wrap on indexed abs
+tldax7	lda abs1-$fa,x	;no wrap on indexed abs
 		sta zpt-$fa&$ff,x
 		dex
 		cpx #$fa
@@ -3290,7 +3290,7 @@ br1		bvs br2
 		
 		ldx #3	;testing wraparound result
 		ldy #0
-	tstax1	lda zpt,x
+tstax1	lda zpt,x
 		cmp zp1,x
 		trap_ne	;store to zp,x data
 		sty zpt,x	;clear	
@@ -3304,7 +3304,7 @@ br1		bvs br2
 
 		ldy #3+$f8
 		ldx #6+$f8
-	tlday4	lda (ind1-$f8&$ff,x) ;wrap on indexed zp indirect
+tlday4	lda (ind1-$f8&$ff,x) ;wrap on indexed zp indirect
 		sta abst-$f8,y
 		dex
 		dex
@@ -3313,7 +3313,7 @@ br1		bvs br2
 		bcs tlday4
 		ldy #3	;testing wraparound result
 		ldx #0
-	tstay4	lda abst,y
+tstay4	lda abst,y
 		cmp abs1,y
 		trap_ne	;store to abs data
 		txa
@@ -3322,14 +3322,14 @@ br1		bvs br2
 		bpl tstay4
 		
 		ldy #3+$f8
-	tlday5	lda abs1-$f8,y	;no wrap on indexed abs
+tlday5	lda abs1-$f8,y	;no wrap on indexed abs
 		sta (inwt),y
 		dey
 		cpy #$f8
 		bcs tlday5	
 		ldy #3	;testing wraparound result
 		ldx #0
-	tstay5	lda abst,y
+tstay5	lda abst,y
 		cmp abs1,y
 		trap_ne	;store to abs data
 		txa
@@ -3339,7 +3339,7 @@ br1		bvs br2
 
 		ldy #3+$f8
 		ldx #6+$f8
-	tlday6	lda (inw1),y	;no wrap on zp indirect indexed 
+tlday6	lda (inw1),y	;no wrap on zp indirect indexed 
 		sta (indt-$f8&$ff,x)
 		dex
 		dex
@@ -3348,7 +3348,7 @@ br1		bvs br2
 		bcs tlday6
 		ldy #3	;testing wraparound result
 		ldx #0
-	tstay6	lda abst,y
+tstay6	lda abst,y
 		cmp abs1,y
 		trap_ne	;store to abs data
 		txa
@@ -3357,7 +3357,7 @@ br1		bvs br2
 		bpl tstay6
 		next_test
 
-	; LDA / STA - zp / abs / #
+; LDA / STA - zp / abs / #
 		set_stat 0	
 		lda zp1
 		php	;test stores do not alter flags
@@ -3699,8 +3699,8 @@ br1		bvs br2
 		stx abst+3	;clear	
 		next_test
 
-	; testing bit test & compares BIT CPX CPY CMP all addressing modes
-	; BIT - zp / abs
+; testing bit test & compares BIT CPX CPY CMP all addressing modes
+; BIT - zp / abs
 		set_a $ff,0
 		bit zp1+3	;00 - should set Z / clear	NV
 		tst_a $ff,fz 
@@ -3754,7 +3754,7 @@ br1		bvs br2
 		tst_a 1,~fz
 		next_test
 		
-	; CPX - zp / abs / #	
+; CPX - zp / abs / #	
 		set_x $80,0
 		cpx zp7f
 		tst_stat fc
@@ -3813,7 +3813,7 @@ br1		bvs br2
 		tst_x $7e,~fzc
 		next_test
 
-	; CPY - zp / abs / #	
+; CPY - zp / abs / #	
 		set_y $80,0
 		cpy zp7f
 		tst_stat fc
@@ -3872,7 +3872,7 @@ br1		bvs br2
 		tst_y $7e,~fzc
 		next_test
 
-	; CMP - zp / abs / #	
+; CMP - zp / abs / #	
 		set_a $80,0
 		cmp zp7f
 		tst_a $80,fc
@@ -4029,17 +4029,17 @@ br1		bvs br2
 		tst_a $7e,~fzc
 		next_test
 
-	; testing shifts - ASL LSR ROL ROR all addressing modes
-	; shifts - accumulator
+; testing shifts - ASL LSR ROL ROR all addressing modes
+; shifts - accumulator
 		ldx #5
-	tasl
+tasl
 		set_ax zps,0
 		asl a
 		tst_ax rASL,fASL,0
 		dex
 		bpl tasl
 		ldx #5
-	tasl1
+tasl1
 		set_ax zps,$ff
 		asl a
 		tst_ax rASL,fASL,$ff-fnzc
@@ -4047,14 +4047,14 @@ br1		bvs br2
 		bpl tasl1
 
 		ldx #5
-	tlsr
+tlsr
 		set_ax zps,0
 		lsr a
 		tst_ax rLSR,fLSR,0
 		dex
 		bpl tlsr
 		ldx #5
-	tlsr1
+tlsr1
 		set_ax zps,$ff
 		lsr a
 		tst_ax rLSR,fLSR,$ff-fnzc
@@ -4062,14 +4062,14 @@ br1		bvs br2
 		bpl tlsr1
 
 		ldx #5
-	trol
+trol
 		set_ax zps,0
 		rol a
 		tst_ax rROL,fROL,0
 		dex
 		bpl trol
 		ldx #5
-	trol1
+trol1
 		set_ax zps,$ff-fc
 		rol a
 		tst_ax rROL,fROL,$ff-fnzc
@@ -4077,14 +4077,14 @@ br1		bvs br2
 		bpl trol1
 
 		ldx #5
-	trolc
+trolc
 		set_ax zps,fc
 		rol a
 		tst_ax rROLc,fROLc,0
 		dex
 		bpl trolc
 		ldx #5
-	trolc1
+trolc1
 		set_ax zps,$ff
 		rol a
 		tst_ax rROLc,fROLc,$ff-fnzc
@@ -4092,14 +4092,14 @@ br1		bvs br2
 		bpl trolc1
 
 		ldx #5
-	tror
+tror
 		set_ax zps,0
 		ror a
 		tst_ax rROR,fROR,0
 		dex
 		bpl tror
 		ldx #5
-	tror1
+tror1
 		set_ax zps,$ff-fc
 		ror a
 		tst_ax rROR,fROR,$ff-fnzc
@@ -4107,14 +4107,14 @@ br1		bvs br2
 		bpl tror1
 
 		ldx #5
-	trorc
+trorc
 		set_ax zps,fc
 		ror a
 		tst_ax rRORc,fRORc,0
 		dex
 		bpl trorc
 		ldx #5
-	trorc1
+trorc1
 		set_ax zps,$ff
 		ror a
 		tst_ax rRORc,fRORc,$ff-fnzc
@@ -4122,16 +4122,16 @@ br1		bvs br2
 		bpl trorc1
 		next_test
 
-	; shifts - zeropage
+; shifts - zeropage
 		ldx #5
-	tasl2
+tasl2
 		set_z zps,0
 		asl zpt
 		tst_z rASL,fASL,0
 		dex
 		bpl tasl2
 		ldx #5
-	tasl3
+tasl3
 		set_z zps,$ff
 		asl zpt
 		tst_z rASL,fASL,$ff-fnzc
@@ -4139,14 +4139,14 @@ br1		bvs br2
 		bpl tasl3
 
 		ldx #5
-	tlsr2
+tlsr2
 		set_z zps,0
 		lsr zpt
 		tst_z rLSR,fLSR,0
 		dex
 		bpl tlsr2
 		ldx #5
-	tlsr3
+tlsr3
 		set_z zps,$ff
 		lsr zpt
 		tst_z rLSR,fLSR,$ff-fnzc
@@ -4154,14 +4154,14 @@ br1		bvs br2
 		bpl tlsr3
 
 		ldx #5
-	trol2
+trol2
 		set_z zps,0
 		rol zpt
 		tst_z rROL,fROL,0
 		dex
 		bpl trol2
 		ldx #5
-	trol3
+trol3
 		set_z zps,$ff-fc
 		rol zpt
 		tst_z rROL,fROL,$ff-fnzc
@@ -4169,14 +4169,14 @@ br1		bvs br2
 		bpl trol3
 
 		ldx #5
-	trolc2
+trolc2
 		set_z zps,fc
 		rol zpt
 		tst_z rROLc,fROLc,0
 		dex
 		bpl trolc2
 		ldx #5
-	trolc3
+trolc3
 		set_z zps,$ff
 		rol zpt
 		tst_z rROLc,fROLc,$ff-fnzc
@@ -4184,14 +4184,14 @@ br1		bvs br2
 		bpl trolc3
 
 		ldx #5
-	tror2
+tror2
 		set_z zps,0
 		ror zpt
 		tst_z rROR,fROR,0
 		dex
 		bpl tror2
 		ldx #5
-	tror3
+tror3
 		set_z zps,$ff-fc
 		ror zpt
 		tst_z rROR,fROR,$ff-fnzc
@@ -4199,14 +4199,14 @@ br1		bvs br2
 		bpl tror3
 
 		ldx #5
-	trorc2
+trorc2
 		set_z zps,fc
 		ror zpt
 		tst_z rRORc,fRORc,0
 		dex
 		bpl trorc2
 		ldx #5
-	trorc3
+trorc3
 		set_z zps,$ff
 		ror zpt
 		tst_z rRORc,fRORc,$ff-fnzc
@@ -4306,7 +4306,7 @@ trorc5
 		bpl trorc5
 		next_test
 
-	; shifts - zp indexed
+; shifts - zp indexed
 		ldx #5
 tasl6
 		set_zx zps,0
@@ -5967,28 +5967,28 @@ zpAN_	.byt	$0f,$ff,$7f,$80 ;test pattern for AND
 zpEO_	.byt	$ff,$0f,$8f,$8f ;test pattern for EOR
 ;indirect addressing pointers
 ind1_	.word	abs1	;indirect pointer to pattern in absolute memory
-	.word	abs1+1
-	.word	abs1+2
-	.word	abs1+3
-	.word	abs7f
+		.word	abs1+1
+		.word	abs1+2
+		.word	abs1+3
+		.word	abs7f
 inw1_	.word	abs1-$f8	;indirect pointer for wrap-test pattern
 indt_	.word	abst	;indirect pointer to store area in absolute memory
-	.word	abst+1
-	.word	abst+2
-	.word	abst+3
+		.word	abst+1
+		.word	abst+2
+		.word	abst+3
 inwt_	.word	abst-$f8	;indirect pointer for wrap-test store
 indAN_	.word	absAN	;indirect pointer to AND pattern in absolute memory
-	.word	absAN+1
-	.word	absAN+2
-	.word	absAN+3
+		.word	absAN+1
+		.word	absAN+2
+		.word	absAN+3
 indEO_	.word	absEO	;indirect pointer to EOR pattern in absolute memory
-	.word	absEO+1
-	.word	absEO+2
-	.word	absEO+3
+		.word	absEO+1
+		.word	absEO+2
+		.word	absEO+3
 indOR_	.word	absOR	;indirect pointer to OR pattern in absolute memory
-	.word	absOR+1
-	.word	absOR+2
-	.word	absOR+3
+		.word	absOR+1
+		.word	absOR+2
+		.word	absOR+3
 ;add/subtract indirect pointers
 adi2_	.word	ada2	;indirect pointer to operand 2 in absolute memory
 sbi2_	.word	sba2	;indirect pointer to complemented operand 2 (SBC)
@@ -6001,15 +6001,15 @@ zp_end
 	endif 
 data_init
 ex_and_ and #0	;execute immediate opcodes
-	rts
+		rts
 ex_eor_ eor #0	;execute immediate opcodes
-	rts
+		rts
 ex_ora_ ora #0	;execute immediate opcodes
-	rts
+		rts
 ex_adc_ adc #0	;execute immediate opcodes
-	rts
+		rts
 ex_sbc_ sbc #0	;execute immediate opcodes
-	rts
+		rts
 ;zps	.byt	$80,1	;additional shift patterns test zero result & flag
 abs1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
 abs7f_	.byt	$7f	;test pattern for compare
@@ -6049,17 +6049,17 @@ data_end
 	endif 
 
 vec_init
-	.word	nmi_trap
-	.word	res_trap
-	.word	irq_trap
+		.word	nmi_trap
+		.word	res_trap
+		.word	irq_trap
 vec_bss = $fffa
 	endif	;end of RAM init data
 	
 	if (load_data_direct = 1) & (ROM_vectors = 1)	
-	* = $fffa	;vectors
-	.word	nmi_trap
-	.word	res_trap
-	.word	irq_trap
+		* = $fffa	;vectors
+		.word	nmi_trap
+		.word	res_trap
+		.word	irq_trap
 	endif
 
 	end start
