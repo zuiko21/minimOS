@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201116-1405 ***
+; *** last modified 20201116-1428 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -441,7 +441,7 @@ eor_flag	macro
 #define	tst_x(a,b)		PHP:CPX hash a:trap_ne:PLA:PHA:cmp_flag(b):trap_ne:PLP
 ;testing result in x index & flags
 
-#define	tst_Y(a,b)		PHP:CPY hash a:trap_ne:PLA:PHA:cmp_flag(b):trap_ne:PLP
+#define	tst_y(a,b)		PHP:CPY hash a:trap_ne:PLA:PHA:cmp_flag(b):trap_ne:PLP
 ;testing result in Y index & flags
 
 #define	tst_ax(a,b,c)	PHP:CMP a,X:trap_ne:PLA:eor_flag(c):CMP b,X:trap_ne
@@ -1393,42 +1393,42 @@ brvc8
 ; test PHA does not alter flags or accumulator but PLA does
 		ldx #$55			;x & y protected
 		ldy #$aa
-		set_a 1,$ff			;push
+		set_a(1,$ff)		;push
 		pha
-		tst_a 1,$ff
-		set_a 0,0
+		tst_a(1,$ff)
+		set_a(0,0)
 		pha
-		tst_a 0,0
-		set_a $ff,$ff
+		tst_a(0,0)
+		set_a($ff,$ff)
 		pha
-		tst_a $ff,$ff
-		set_a 1,0
+		tst_a($ff,$ff)
+		set_a(1,0)
 		pha
-		tst_a 1,0
-		set_a 0,$ff
+		tst_a(1,0)
+		set_a(0,$ff)
 		pha
-		tst_a 0,$ff
-		set_a $ff,0
+		tst_a(0,$ff)
+		set_a($ff,0)
 		pha
-		tst_a $ff,0
-		set_a 0,$ff			;pull
+		tst_a($ff,0)
+		set_a(0,$ff)		;pull
 		pla
-		tst_a $ff,$ff-zero
-		set_a $ff,0
+		tst_a($ff,$ff-zero)
+		set_a($ff,0)
 		pla
-		tst_a 0,zero
-		set_a $fe,$ff
+		tst_a(0,zero)
+		set_a($fe,$ff)
 		pla
-		tst_a 1,$ff-zero-minus
-		set_a 0,0
+		tst_a(1,$ff-zero-minus)
+		set_a(0,0)
 		pla
-		tst_a $ff,minus
-		set_a $ff,$ff
+		tst_a($ff,minus)
+		set_a($ff,$ff)
 		pla
-		tst_a 0,$ff-minus
-		set_a $fe,0
+		tst_a(0,$ff-minus)
+		set_a($fe,0)
 		pla
-		tst_a 1,0
+		tst_a(1,0)
 		cpx #$55			;x & y unchanged?
 		trap_ne
 		cpy #$aa
@@ -1436,30 +1436,30 @@ brvc8
 		next_test
 	 
 ; partial pretest EOR #
-		set_a $3c,0
+		set_a($3c,0)
 		eor #$c3
-		tst_a $ff,fn
-		set_a $c3,0
+		tst_a($ff,fn
+		set_a($c3,0)
 		eor #$c3
-		tst_a 0,fz
+		tst_a(0,fz)
 		next_test
 
 ; PC modifying instructions except branches (NOP, JMP, JSR, RTS, BRK, RTI)
 ; testing NOP
 		ldx #$24
 		ldy #$42
-		set_a $18,0
+		set_a($18,0)
 		nop
-		tst_a $18,0
+		tst_a($18,0)
 		cpx #$24
 		trap_ne
 		cpy #$42
 		trap_ne
 		ldx #$.byt
 		ldy #$bd
-		set_a $e7,$ff
+		set_a($e7,$ff)
 		nop
-		tst_a $e7,$ff
+		tst_a($e7,$ff)
 		cpx #$.byt
 		trap_ne
 		cpy #$bd
@@ -1700,108 +1700,108 @@ brk_ret1					;address of break return
 		ldx #$fe
 		set_stat($ff)
 		inx					;ff
-		tst_x $ff,$ff-zero
+		tst_x($ff,$ff-zero)
 		inx					;00
-		tst_x 0,$ff-minus
+		tst_x(0,$ff-minus)
 		inx					;01
-		tst_x 1,$ff-minus-zero
+		tst_x(1,$ff-minus-zero)
 		dex					;00
-		tst_x 0,$ff-minus
+		tst_x(0,$ff-minus)
 		dex					;ff
-		tst_x $ff,$ff-zero
+		tst_x($ff,$ff-zero)
 		dex					;fe
 		set_stat(0)
 		inx					;ff
-		tst_x $ff,minus
+		tst_x($ff,minus)
 		inx					;00
-		tst_x 0,zero
+		tst_x(0,zero)
 		inx					;01
-		tst_x 1,0
+		tst_x(1,0)
 		dex					;00
-		tst_x 0,zero
+		tst_x(0,zero)
 		dex					;ff
-		tst_x $ff,minus
+		tst_x($ff,minus)
 
 		ldy #$fe
 		set_stat($ff)
 		iny					;ff
-		tst_y $ff,$ff-zero
+		tst_y($ff,$ff-zero)
 		iny					;00
-		tst_y 0,$ff-minus
+		tst_y(0,$ff-minus)
 		iny					;01
-		tst_y 1,$ff-minus-zero
+		tst_y(1,$ff-minus-zero)
 		dey					;00
-		tst_y 0,$ff-minus
+		tst_y(0,$ff-minus)
 		dey					;ff
-		tst_y $ff,$ff-zero
+		tst_y($ff,$ff-zero)
 		dey					;fe
 		set_stat(0)
 		iny					;ff
-		tst_y $ff,0+minus
+		tst_y($ff,0+minus)
 		iny					;00
-		tst_y 0,zero
+		tst_y(0,zero)
 		iny					;01
-		tst_y 1,0
+		tst_y(1,0)
 		dey					;00
-		tst_y 0,zero
+		tst_y(0,zero)
 		dey					;ff
-		tst_y $ff,minus
+		tst_y($ff,minus)
 		
 		ldx #$ff
 		set_stat($ff)
 		txa
-		tst_a $ff,$ff-zero
+		tst_a($ff,$ff-zero)
 		php
 		inx					;00
 		plp
 		txa
-		tst_a 0,$ff-minus
+		tst_a(0,$ff-minus)
 		php
 		inx					;01
 		plp
 		txa
-		tst_a 1,$ff-minus-zero
+		tst_a(1,$ff-minus-zero)
 		set_stat(0)
 		txa
-		tst_a 1,0
+		tst_a(1,0)
 		php
 		dex					;00
 		plp
 		txa
-		tst_a 0,zero
+		tst_a(0,zero)
 		php
 		dex					;ff
 		plp
 		txa
-		tst_a $ff,minus
+		tst_a($ff,minus)
 		
 		ldy #$ff
 		set_stat($ff)
 		tya
-		tst_a $ff,$ff-zero
+		tst_a($ff,$ff-zero)
 		php
 		iny					;00
 		plp
 		tya
-		tst_a 0,$ff-minus
+		tst_a(0,$ff-minus)
 		php
 		iny					;01
 		plp
 		tya
-		tst_a 1,$ff-minus-zero
+		tst_a(1,$ff-minus-zero)
 		set_stat(0)
 		tya
-		tst_a 1,0
+		tst_a(1,0)
 		php
 		dey					;00
 		plp
 		tya
-		tst_a 0,zero
+		tst_a(0,zero)
 		php
 		dey					;ff
 		plp
 		tya
-		tst_a $ff,minus
+		tst_a($ff,minus)
 
 		load_flag($ff)
 		pha
@@ -1809,38 +1809,38 @@ brk_ret1					;address of break return
 		txa
 		plp	
 		tay
-		tst_y $ff,$ff-zero
+		tst_y($ff,$ff-zero)
 		php
 		inx					;00
 		txa
 		plp
 		tay
-		tst_y 0,$ff-minus
+		tst_y(0,$ff-minus)
 		php
 		inx					;01
 		txa
 		plp
 		tay
-		tst_y 1,$ff-minus-zero
+		tst_y(1,$ff-minus-zero)
 		load_flag(0)
 		pha
 		lda #0
 		txa
 		plp
 		tay
-		tst_y 1,0
+		tst_y(1,0)
 		php
 		dex					;00
 		txa
 		plp
 		tay
-		tst_y 0,zero
+		tst_y(0,zero)
 		php
 		dex					;ff
 		txa
 		plp
 		tay
-		tst_y $ff,minus
+		tst_y($ff,minus)
 
 
 		load_flag($ff)
@@ -1849,38 +1849,38 @@ brk_ret1					;address of break return
 		tya
 		plp
 		tax
-		tst_x $ff,$ff-zero
+		tst_x($ff,$ff-zero)
 		php
 		iny					;00
 		tya
 		plp
 		tax
-		tst_x 0,$ff-minus
+		tst_x(0,$ff-minus)
 		php
 		iny					;01
 		tya
 		plp
 		tax
-		tst_x 1,$ff-minus-zero
+		tst_x(1,$ff-minus-zero)
 		load_flag(0)
 		pha
 		lda #0				;preset status
 		tya
 		plp
 		tax
-		tst_x 1,0
+		tst_x(1,0)
 		php
 		dey					;00
 		tya
 		plp
 		tax
-		tst_x 0,zero
+		tst_x(0,zero)
 		php
 		dey					;ff
 		tya
 		plp
 		tax
-		tst_x $ff,minus
+		tst_x($ff,minus)
 		next_test
 		
 ;TSX sets NZ - TXS does not
@@ -3701,61 +3701,61 @@ tstay6	lda abst,y
 
 ; testing bit test & compares BIT CPX CPY CMP all addressing modes
 ; BIT - zp / abs
-		set_a $ff,0
+		set_a($ff,0)
 		bit zp1+3	;00 - should set Z / clear	NV
-		tst_a $ff,fz 
-		set_a 1,0
+		tst_a($ff,fz)
+		set_a(1,0)
 		bit zp1+2	;41 - should set V (M6) / clear NZ
-		tst_a 1,fv
-		set_a 1,0
+		tst_a(1,fv)
+		set_a(1,0)
 		bit zp1+1	;82 - should set N (M7) & Z / clear V
-		tst_a 1,fnz
-		set_a 1,0
+		tst_a(1,fnz)
+		set_a(1,0)
 		bit zp1	;c3 - should set N (M7) & V (M6) / clear Z
-		tst_a 1,fnv
+		tst_a(1,fnv)
 		
-		set_a $ff,$ff
+		set_a($ff,$ff)
 		bit zp1+3	;00 - should set Z / clear	NV
-		tst_a $ff,~fnv 
-		set_a 1,$ff
+		tst_a($ff,~fnv)
+		set_a(1,$ff)
 		bit zp1+2	;41 - should set V (M6) / clear NZ
-		tst_a 1,~fnz
-		set_a 1,$ff
+		tst_a(1,~fnz)
+		set_a(1,$ff)
 		bit zp1+1	;82 - should set N (M7) & Z / clear V
-		tst_a 1,~fv
-		set_a 1,$ff
+		tst_a(1,~fv)
+		set_a(1,$ff)
 		bit zp1	;c3 - should set N (M7) & V (M6) / clear Z
-		tst_a 1,~fz
+		tst_a(1,~fz)
 		
-		set_a $ff,0
+		set_a($ff,0)
 		bit abs1+3	;00 - should set Z / clear	NV
-		tst_a $ff,fz 
-		set_a 1,0
+		tst_a($ff,fz)
+		set_a(1,0)
 		bit abs1+2	;41 - should set V (M6) / clear NZ
-		tst_a 1,fv
-		set_a 1,0
+		tst_a(1,fv)
+		set_a(1,0)
 		bit abs1+1	;82 - should set N (M7) & Z / clear V
-		tst_a 1,fnz
-		set_a 1,0
+		tst_a(1,fnz)
+		set_a(1,0)
 		bit abs1	;c3 - should set N (M7) & V (M6) / clear Z
-		tst_a 1,fnv
+		tst_a(1,fnv)
 		
-		set_a $ff,$ff
+		set_a($ff,$ff)
 		bit abs1+3	;00 - should set Z / clear	NV
-		tst_a $ff,~fnv 
-		set_a 1,$ff
+		tst_a($ff,~fnv)
+		set_a(1,$ff)
 		bit abs1+2	;41 - should set V (M6) / clear NZ
-		tst_a 1,~fnz
-		set_a 1,$ff
+		tst_a(1,~fnz)
+		set_a(1,$ff)
 		bit abs1+1	;82 - should set N (M7) & Z / clear V
-		tst_a 1,~fv
-		set_a 1,$ff
+		tst_a(1,~fv)
+		set_a(1,$ff)
 		bit abs1	;c3 - should set N (M7) & V (M6) / clear Z
-		tst_a 1,~fz
+		tst_a(1,~fz)
 		next_test
 		
 ; CPX - zp / abs / #	
-		set_x $80,0
+		set_x($80,0)
 		cpx zp7f
 		tst_stat(fc)
 		dex
@@ -3763,8 +3763,8 @@ tstay6	lda abst,y
 		tst_stat(fzc)
 		dex
 		cpx zp7f
-		tst_x $7e,fn
-		set_x $80,$ff
+		tst_x($7e,fn)
+		set_x($80,$ff)
 		cpx zp7f
 		tst_stat(~fnz)
 		dex
@@ -3772,9 +3772,9 @@ tstay6	lda abst,y
 		tst_stat(~fn)
 		dex
 		cpx zp7f
-		tst_x $7e,~fzc
+		tst_x($7e,~fzc)
 
-		set_x $80,0
+		set_x($80,0)
 		cpx abs7f
 		tst_stat(fc)
 		dex
@@ -3782,8 +3782,8 @@ tstay6	lda abst,y
 		tst_stat(fzc)
 		dex
 		cpx abs7f
-		tst_x $7e,fn
-		set_x $80,$ff
+		tst_x($7e,fn)
+		set_x($80,$ff)
 		cpx abs7f
 		tst_stat(~fnz)
 		dex
@@ -3791,9 +3791,9 @@ tstay6	lda abst,y
 		tst_stat(~fn)
 		dex
 		cpx abs7f
-		tst_x $7e,~fzc
+		tst_x($7e,~fzc)
 
-		set_x $80,0
+		set_x($80,0)
 		cpx #$7f
 		tst_stat(fc)
 		dex
@@ -3801,8 +3801,8 @@ tstay6	lda abst,y
 		tst_stat(fzc)
 		dex
 		cpx #$7f
-		tst_x $7e,fn
-		set_x $80,$ff
+		tst_x($7e,fn)
+		set_x($80,$ff)
 		cpx #$7f
 		tst_stat(~fnz)
 		dex
@@ -3810,11 +3810,11 @@ tstay6	lda abst,y
 		tst_stat(~fn)
 		dex
 		cpx #$7f
-		tst_x $7e,~fzc
+		tst_x($7e,~fzc)
 		next_test
 
-; CPY - zp / abs / #	
-		set_y $80,0
+; CPY - zp / abs / #
+		set_y($80,0)
 		cpy zp7f
 		tst_stat(fc)
 		dey
@@ -3822,8 +3822,8 @@ tstay6	lda abst,y
 		tst_stat(fzc)
 		dey
 		cpy zp7f
-		tst_y $7e,fn
-		set_y $80,$ff
+		tst_y($7e,fn)
+		set_y($80,$ff)
 		cpy zp7f
 		tst_stat(~fnz)
 		dey
@@ -3831,9 +3831,9 @@ tstay6	lda abst,y
 		tst_stat(~fn)
 		dey
 		cpy zp7f
-		tst_y $7e,~fzc
+		tst_y($7e,~fzc)
 
-		set_y $80,0
+		set_y($80,0)
 		cpy abs7f
 		tst_stat(fc)
 		dey
@@ -3841,8 +3841,8 @@ tstay6	lda abst,y
 		tst_stat(fzc)
 		dey
 		cpy abs7f
-		tst_y $7e,fn
-		set_y $80,$ff
+		tst_y($7e,fn)
+		set_y($80,$ff)
 		cpy abs7f
 		tst_stat(~fnz)
 		dey
@@ -3850,9 +3850,9 @@ tstay6	lda abst,y
 		tst_stat(~fn)
 		dey
 		cpy abs7f
-		tst_y $7e,~fzc
+		tst_y($7e,~fzc)
 
-		set_y $80,0
+		set_y($80,0)
 		cpy #$7f
 		tst_stat(fc)
 		dey
@@ -3860,8 +3860,8 @@ tstay6	lda abst,y
 		tst_stat(fzc)
 		dey
 		cpy #$7f
-		tst_y $7e,fn
-		set_y $80,$ff
+		tst_y($7e,fn)
+		set_y($80,$ff)
 		cpy #$7f
 		tst_stat(~fnz)
 		dey
@@ -3869,164 +3869,164 @@ tstay6	lda abst,y
 		tst_stat(~fn)
 		dey
 		cpy #$7f
-		tst_y $7e,~fzc
+		tst_y($7e,~fzc)
 		next_test
 
-; CMP - zp / abs / #	
-		set_a $80,0
+; CMP - zp / abs / #
+		set_a($80,0)
 		cmp zp7f
-		tst_a $80,fc
-		set_a $7f,0
+		tst_a($80,fc)
+		set_a($7f,0)
 		cmp zp7f
-		tst_a $7f,fzc
-		set_a $7e,0
+		tst_a($7f,fzc)
+		set_a($7e,0)
 		cmp zp7f
-		tst_a $7e,fn
-		set_a $80,$ff
+		tst_a($7e,fn)
+		set_a($80,$ff)
 		cmp zp7f
-		tst_a $80,~fnz
-		set_a $7f,$ff
+		tst_a($80,~fnz)
+		set_a($7f,$ff)
 		cmp zp7f
-		tst_a $7f,~fn
-		set_a $7e,$ff
+		tst_a($7f,~fn)
+		set_a($7e,$ff)
 		cmp zp7f
-		tst_a $7e,~fzc
+		tst_a($7e,~fzc)
 
-		set_a $80,0
+		set_a($80,0)
 		cmp abs7f
-		tst_a $80,fc
-		set_a $7f,0
+		tst_a($80,fc)
+		set_a($7f,0)
 		cmp abs7f
-		tst_a $7f,fzc
-		set_a $7e,0
+		tst_a($7f,fzc)
+		set_a($7e,0)
 		cmp abs7f
-		tst_a $7e,fn
-		set_a $80,$ff
+		tst_a($7e,fn)
+		set_a($80,$ff)
 		cmp abs7f
-		tst_a $80,~fnz
-		set_a $7f,$ff
+		tst_a($80,~fnz)
+		set_a($7f,$ff)
 		cmp abs7f
-		tst_a $7f,~fn
-		set_a $7e,$ff
+		tst_a($7f,~fn)
+		set_a($7e,$ff)
 		cmp abs7f
-		tst_a $7e,~fzc
+		tst_a($7e,~fzc)
 
-		set_a $80,0
+		set_a($80,0)
 		cmp #$7f
-		tst_a $80,fc
-		set_a $7f,0
+		tst_a($80,fc)
+		set_a($7f,0)
 		cmp #$7f
-		tst_a $7f,fzc
-		set_a $7e,0
+		tst_a($7f,fzc)
+		set_a($7e,0)
 		cmp #$7f
-		tst_a $7e,fn
-		set_a $80,$ff
+		tst_a($7e,fn)
+		set_a($80,$ff)
 		cmp #$7f
-		tst_a $80,~fnz
-		set_a $7f,$ff
+		tst_a($80,~fnz)
+		set_a($7f,$ff)
 		cmp #$7f
-		tst_a $7f,~fn
-		set_a $7e,$ff
+		tst_a($7f,~fn)
+		set_a($7e,$ff)
 		cmp #$7f
-		tst_a $7e,~fzc
+		tst_a($7e,~fzc)
 
 		ldx #4	;with indexing by X
-		set_a $80,0
+		set_a($80,0)
 		cmp zp1,x
-		tst_a $80,fc
-		set_a $7f,0
+		tst_a($80,fc)
+		set_a($7f,0)
 		cmp zp1,x
-		tst_a $7f,fzc
-		set_a $7e,0
+		tst_a($7f,fzc)
+		set_a($7e,0)
 		cmp zp1,x
-		tst_a $7e,fn
-		set_a $80,$ff
+		tst_a($7e,fn)
+		set_a($80,$ff)
 		cmp zp1,x
-		tst_a $80,~fnz
-		set_a $7f,$ff
+		tst_a($80,~fnz)
+		set_a($7f,$ff)
 		cmp zp1,x
-		tst_a $7f,~fn
-		set_a $7e,$ff
+		tst_a($7f,~fn)
+		set_a($7e,$ff)
 		cmp zp1,x
-		tst_a $7e,~fzc
+		tst_a($7e,~fzc)
 
-		set_a $80,0
+		set_a($80,0)
 		cmp abs1,x
-		tst_a $80,fc
-		set_a $7f,0
+		tst_a($80,fc)
+		set_a($7f,0)
 		cmp abs1,x
-		tst_a $7f,fzc
-		set_a $7e,0
+		tst_a($7f,fzc)
+		set_a($7e,0)
 		cmp abs1,x
-		tst_a $7e,fn
-		set_a $80,$ff
+		tst_a($7e,fn)
+		set_a($80,$ff)
 		cmp abs1,x
-		tst_a $80,~fnz
-		set_a $7f,$ff
+		tst_a($80,~fnz)
+		set_a($7f,$ff)
 		cmp abs1,x
-		tst_a $7f,~fn
-		set_a $7e,$ff
+		tst_a($7f,~fn)
+		set_a($7e,$ff)
 		cmp abs1,x
-		tst_a $7e,~fzc
+		tst_a($7e,~fzc)
 
 		ldy #4	;with indexing by Y
 		ldx #8	;with indexed indirect
-		set_a $80,0
+		set_a($80,0)
 		cmp abs1,y
-		tst_a $80,fc
-		set_a $7f,0
+		tst_a($80,fc
+		set_a($7f,0)
 		cmp abs1,y
-		tst_a $7f,fzc
-		set_a $7e,0
+		tst_a($7f,fzc
+		set_a($7e,0)
 		cmp abs1,y
-		tst_a $7e,fn
-		set_a $80,$ff
+		tst_a($7e,fn)
+		set_a($80,$ff)
 		cmp abs1,y
-		tst_a $80,~fnz
-		set_a $7f,$ff
+		tst_a($80,~fnz)
+		set_a($7f,$ff)
 		cmp abs1,y
-		tst_a $7f,~fn
-		set_a $7e,$ff
+		tst_a($7f,~fn)
+		set_a($7e,$ff)
 		cmp abs1,y
-		tst_a $7e,~fzc
+		tst_a($7e,~fzc)
 
-		set_a $80,0
+		set_a($80,0)
 		cmp (ind1,x)
-		tst_a $80,fc
-		set_a $7f,0
+		tst_a($80,fc)
+		set_a($7f,0)
 		cmp (ind1,x)
-		tst_a $7f,fzc
-		set_a $7e,0
+		tst_a($7f,fzc
+		set_a($7e,0)
 		cmp (ind1,x)
-		tst_a $7e,fn
-		set_a $80,$ff
+		tst_a($7e,fn)
+		set_a($80,$ff)
 		cmp (ind1,x)
-		tst_a $80,~fnz
-		set_a $7f,$ff
+		tst_a($80,~fnz)
+		set_a($7f,$ff)
 		cmp (ind1,x)
-		tst_a $7f,~fn
-		set_a $7e,$ff
+		tst_a($7f,~fn)
+		set_a($7e,$ff)
 		cmp (ind1,x)
-		tst_a $7e,~fzc
+		tst_a($7e,~fzc)
 
-		set_a $80,0
+		set_a($80,0)
 		cmp (ind1),y
-		tst_a $80,fc
-		set_a $7f,0
+		tst_a($80,fc)
+		set_a($7f,0)
 		cmp (ind1),y
-		tst_a $7f,fzc
-		set_a $7e,0
+		tst_a($7f,fzc)
+		set_a($7e,0)
 		cmp (ind1),y
-		tst_a $7e,fn
-		set_a $80,$ff
+		tst_a($7e,fn)
+		set_a($80,$ff)
 		cmp (ind1),y
-		tst_a $80,~fnz
-		set_a $7f,$ff
+		tst_a($80,~fnz)
+		set_a($7f,$ff)
 		cmp (ind1),y
-		tst_a $7f,~fn
-		set_a $7e,$ff
+		tst_a($7f,~fn)
+		set_a($7e,$ff)
 		cmp (ind1),y
-		tst_a $7e,~fzc
+		tst_a($7e,~fzc)
 		next_test
 
 ; testing shifts - ASL LSR ROL ROR all addressing modes
