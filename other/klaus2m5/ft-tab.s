@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201113-1342 ***
+; *** last modified 20201116-1342 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -2502,526 +2502,526 @@ tsty1	lda zpt,x
 		tax
 		plp
 		stx zpt+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tax
-		cpx zp1+3	;test result
+		cpx zp1+3			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+3	;test flags
+		pla					;load status
+		eor_flag lo~fnz 	;mask bits not altered
+		cmp fLDx+3			;test flags
 		trap_ne
 
 		set_stat 0	
 		ldx #$c3
 		php
-		cpx abs1	;test result
+		cpx abs1			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx	;test flags
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat 0
 		ldx #$82
 		php
-		cpx abs1+1	;test result
+		cpx abs1+1			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+1	;test flags
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat 0
 		ldx #$41
 		php
-		cpx abs1+2	;test result
+		cpx abs1+2			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+2	;test flags
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat 0
 		ldx #0
 		php
-		cpx abs1+3	;test result
+		cpx abs1+3			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+3	;test flags
+		cmp fLDx+3			;test flags
 		trap_ne
 
 		set_stat $ff
 		ldx #$c3	
 		php
-		cpx abs1	;test result
+		cpx abs1			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat $ff
 		ldx #$82
 		php
-		cpx abs1+1	;test result
+		cpx abs1+1			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+1	;test flags
+		pla					;load status
+		eor_flag lo~fnz 	;mask bits not altered
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat $ff
 		ldx #$41
 		php
-		cpx abs1+2	;test result
+		cpx abs1+2			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+2	;test flags
+		pla					;load status
+		eor_flag lo~fnz 	;mask bits not altered
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat $ff
 		ldx #0
 		php
-		cpx abs1+3	;test result
+		cpx abs1+3			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+3	;test flags
+		pla					;load status
+		eor_flag lo~fnz 	;mask bits not altered
+		cmp fLDx+3			;test flags
 		trap_ne
 
 		ldx #0
 		lda zpt	
 		eor #$c3
 		cmp zp1	
-		trap_ne	;store to zp data
-		stx zpt	;clear	
+		trap_ne				;store to zp data
+		stx zpt				;clear	
 		lda abst	
 		eor #$c3
 		cmp abs1	
-		trap_ne	;store to abs data
-		stx abst	;clear	
+		trap_ne				;store to abs data
+		stx abst			;clear	
 		lda zpt+1
 		eor #$c3
 		cmp zp1+1
-		trap_ne	;store to zp data
-		stx zpt+1	;clear	
+		trap_ne				;store to zp data
+		stx zpt+1			;clear	
 		lda abst+1
 		eor #$c3
 		cmp abs1+1
-		trap_ne	;store to abs data
-		stx abst+1	;clear	
+		trap_ne				;store to abs data
+		stx abst+1			;clear	
 		lda zpt+2
 		eor #$c3
 		cmp zp1+2
-		trap_ne	;store to zp data
-		stx zpt+2	;clear	
+		trap_ne				;store to zp data
+		stx zpt+2			;clear	
 		lda abst+2
 		eor #$c3
 		cmp abs1+2
-		trap_ne	;store to abs data
-		stx abst+2	;clear	
+		trap_ne				;store to abs data
+		stx abst+2			;clear	
 		lda zpt+3
 		eor #$c3
 		cmp zp1+3
-		trap_ne	;store to zp data
-		stx zpt+3	;clear	
+		trap_ne				;store to zp data
+		stx zpt+3			;clear	
 		lda abst+3
 		eor #$c3
 		cmp abs1+3
-		trap_ne	;store to abs data
-		stx abst+3	;clear	
+		trap_ne				;store to abs data
+		stx abst+3			;clear	
 		next_test
 
 ; LDY / STY - zp / abs / #
 		set_stat 0
 		ldy zp1	
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty abst	
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy #$c3	;test result
+		cpy #$c3			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx	;test flags
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat 0
 		ldy zp1+1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty abst+1
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy #$82	;test result
+		cpy #$82			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+1	;test flags
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat 0
 		ldy zp1+2
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty abst+2
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy #$41	;test result
+		cpy #$41			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+2	;test flags
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat 0
 		ldy zp1+3
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty abst+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy #0	;test result
+		cpy #0				;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+3	;test flags
+		cmp fLDx+3			;test flags
 		trap_ne
 
 		set_stat $ff
 		ldy zp1	
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty abst	
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy #$c3	;test result
+		cpy #$c3			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat $ff
 		ldy zp1+1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty abst+1
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy #$82	;test result
+		cpy #$82			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+1	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat $ff
 		ldy zp1+2
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty abst+2
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy #$41	;test result
+		cpy #$41			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+2	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat $ff
 		ldy zp1+3
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty abst+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy #0	;test result
+		cpy #0				;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+3	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+3			;test flags
 		trap_ne
 		
 		set_stat 0
 		ldy abs1	
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty zpt	
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy zp1	;test result
+		cpy zp1				;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx	;test flags
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat 0
 		ldy abs1+1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty zpt+1
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy zp1+1	;test result
+		cpy zp1+1			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+1	;test flags
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat 0
 		ldy abs1+2
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty zpt+2
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy zp1+2	;test result
+		cpy zp1+2			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+2	;test flags
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat 0
 		ldy abs1+3
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty zpt+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cpy zp1+3	;test result
+		cpy zp1+3			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+3	;test flags
+		cmp fLDx+3			;test flags
 		trap_ne
 
 		set_stat $ff
 		ldy abs1	
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty zpt	
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cmp zp1	;test result
+		cmp zp1				;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat $ff
 		ldy abs1+1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty zpt+1
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cmp zp1+1	;test result
+		cmp zp1+1			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+1	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat $ff
 		ldy abs1+2
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty zpt+2
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cmp zp1+2	;test result
+		cmp zp1+2			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+2	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat $ff
 		ldy abs1+3
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		tya
 		eor #$c3
 		tay
 		plp
 		sty zpt+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
 		tay
-		cmp zp1+3	;test result
+		cmp zp1+3			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+3	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+3			;test flags
 		trap_ne
 
 
 		set_stat 0
 		ldy #$c3	
 		php
-		cpy abs1	;test result
+		cpy abs1			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx	;test flags
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat 0
 		ldy #$82
 		php
-		cpy abs1+1	;test result
+		cpy abs1+1			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+1	;test flags
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat 0
 		ldy #$41
 		php
-		cpy abs1+2	;test result
+		cpy abs1+2			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+2	;test flags
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat 0
 		ldy #0
 		php
-		cpy abs1+3	;test result
+		cpy abs1+3			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag 0
-		cmp fLDx+3	;test flags
+		cmp fLDx+3			;test flags
 		trap_ne
 
 		set_stat $ff
 		ldy #$c3	
 		php
-		cpy abs1	;test result
+		cpy abs1			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat $ff
 		ldy #$82
 		php
-		cpy abs1+1	;test result
+		cpy abs1+1			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+1	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat $ff
 		ldy #$41
 		php
-		cpy abs1+2	;test result
+		cpy abs1+2			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+2	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat $ff
 		ldy #0
 		php
-		cpy abs1+3	;test result
+		cpy abs1+3			;test result
 		trap_ne
-		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
-		cmp fLDx+3	;test flags
+		pla					;load status
+		eor_flag lo~fnz		;mask bits not altered
+		cmp fLDx+3			;test flags
 		trap_ne
 		
 		ldy #0
 		lda zpt	
 		eor #$c3
 		cmp zp1	
-		trap_ne	;store to zp	data
-		sty zpt	;clear	
+		trap_ne				;store to zp data
+		sty zpt				;clear	
 		lda abst	
 		eor #$c3
 		cmp abs1	
-		trap_ne	;store to abs	data
-		sty abst	;clear	
+		trap_ne				;store to abs data
+		sty abst			;clear	
 		lda zpt+1
 		eor #$c3
 		cmp zp1+1
-		trap_ne	;store to zp+1 data
-		sty zpt+1	;clear	
+		trap_ne				;store to zp+1 data
+		sty zpt+1			;clear	
 		lda abst+1
 		eor #$c3
 		cmp abs1+1
-		trap_ne	;store to abs+1 data
-		sty abst+1	;clear	
+		trap_ne				;store to abs+1 data
+		sty abst+1			;clear	
 		lda zpt+2
 		eor #$c3
 		cmp zp1+2
-		trap_ne	;store to zp+2 data
-		sty zpt+2	;clear	
+		trap_ne				;store to zp+2 data
+		sty zpt+2			;clear	
 		lda abst+2
 		eor #$c3
 		cmp abs1+2
-		trap_ne	;store to abs+2 data
-		sty abst+2	;clear	
+		trap_ne				;store to abs+2 data
+		sty abst+2			;clear	
 		lda zpt+3
 		eor #$c3
 		cmp zp1+3
-		trap_ne	;store to zp+3 data
-		sty zpt+3	;clear	
+		trap_ne				;store to zp+3 data
+		sty zpt+3			;clear	
 		lda abst+3
 		eor #$c3
 		cmp abs1+3
-		trap_ne	;store to abs+3 data
-		sty abst+3	;clear	
+		trap_ne				;store to abs+3 data
+		sty abst+3			;clear	
 		next_test
 
 ; testing load / store accumulator LDA / STA all addressing modes
