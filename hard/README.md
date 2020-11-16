@@ -135,6 +135,25 @@ bitmap or up to **4bpp** on 8x1 _attribute area_, gBRG or greyscale?).
 > _Intended to be a **graphics** (and perhaps _colour_) capable **VT-52** based terminal_,
 a bit like an '816-based **Tampico** computer. Might use a 16C550 instead of the 6551.
 
+[**Tantoyuca**](computers/tantoyuca.md)
+
+  * Status: creating specs
+  * Form-factor: Single layer PCB?
+  * Specs: **3.072 MHz 65816**, 128 kiB SRAM (expandable to **512 kB**),
+32\* kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
+  * Peripherals: Piezo buzzer, **VGA-compatible** video output
+  * Display resolution: **640x400/576x448**
+bitmap, **320x400/288x448 2bpp** or **160x400/144x448 _gBRG_ 4bpp**.
+Might reduce vertical resolution to 200/224 lines for reduced 16 kiB
+_vampire video_ memory.
+  * Interfaces: TTL-level async., SS-22, VIAport2.
+
+> _Might become integrated with the Tijuana project_, a bit like an
+'816-based **Tampico** computer. Might use a 16C550 instead of the 6551.
+\* _Bank 0_ ROM should be limited to 16 kiB, putting larger EPROMs into
+further banks, perhaps in a sparse way.
+
+
 ##  Workstations (65816-based)
 
 [**Veracruz**](computers/veracruz.md)
@@ -295,4 +314,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20201105-1255_
+_last modified: 20201116-1723_
