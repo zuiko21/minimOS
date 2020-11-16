@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201116-1342 ***
+; *** last modified 20201116-1405 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -99,14 +99,14 @@
 ; *** must check what to do	***
 ;load_data_direct = 1
 
-;I_flag behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
+;I_flag(behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
-;tested if you allow changing the interrupt status (I_flag = 3)
+;tested if you allow changing the interrupt status (I_flag(= 3)
 #define	I_flag			3
 
 ;configure memory - try to stay away from memory used by the system
 ;zero_page memory start address, $52 (82) consecutive Bytes required
-;	add 2 if I_flag = 2
+;	add 2 if I_flag(= 2
 zero_page = $a	
 
 ;data_segment memory start address, $7B (123) consecutive Bytes required
@@ -116,7 +116,7 @@ data_segment = $200
 ;	endif	
 
 ;code_segment memory start address, 13.1kB of consecutive space required
-;	add 2.5 kB if I_flag = 2
+;	add 2.5 kB if I_flag(= 2
 code_segment = $C000		; *** no longer $400 ***
 
 ;self modifying code may be disabled to allow running in ROM
@@ -284,7 +284,7 @@ m8i	= %11111011	;8 bit mask - interrupt disable *** changed ***
 ;masking of always on bits after PHP or BRK (unused & break) on compare
 ;	if disable_decimal < 2
 ; *** don't think I'll disable D bit ***
-#if I_flag == 0
+#if I_flag== 0
 ; *** I think this is correct ***
 ; I_FLAG IS ZERO
 #define	load_flag(a)	LDA hash a &m8i
@@ -298,7 +298,7 @@ m8i	= %11111011	;8 bit mask - interrupt disable *** changed ***
 ;mask I, invert expected flags + always on bits
 #endif
 ; *** will check these later *** 
-#if I_flag == 1
+#if I_flag== 1
 ; I_FLAG IS ONE
 #define	load_flag(a)	LDA hash a|intdis
 ;force disable interrupts
@@ -311,24 +311,24 @@ m8i	= %11111011	;8 bit mask - interrupt disable *** changed ***
 #endif
 ; *** won't disable I flag ***
 /*
-	if I_flag = 2
+	if I_flag= 2
 load_flag	macro
 	lda #\1
 	ora flag_I_on	;restore I-flag
 	and flag_I_off
 	endm
 cmp_flag	macro
-	eor flag_I_on	;I_flag is never changed
+	eor flag_I_on	;I_flag(is never changed
 	cmp #(\1|fao)&m8i	;expected flags + always on bits, mask I
 	endm
 eor_flag	macro
-	eor flag_I_on	;I_flag is never changed
+	eor flag_I_on	;I_flag(is never changed
 	eor #(\1&m8i|fao)	;mask I, invert expected flags + always on bits
 	endm
 	endif
 */
 
-#if I_flag == 3
+#if I_flag== 3
 ; I_FLAG IS THREE
 #define	load_flag(a)	LDA hash a
 ;allow test to change I-flag (no mask)
@@ -342,7 +342,7 @@ eor_flag	macro
 ;	else
 ; *** this is for disable_decimal=2, not implemented ***
 /*
-	if I_flag = 0
+	if I_flag= 0
 load_flag	macro
 	lda #\1&m8i	;force enable interrupts (mask I)
 	endm
@@ -355,7 +355,7 @@ eor_flag	macro
 	eor #(\1&m8i|faod)	;mask I, invert expected flags + always on bits
 	endm
 	endif
-	if I_flag = 1
+	if I_flag= 1
 load_flag	macro
 	lda #\1|intdis	;force disable interrupts
 	endm
@@ -368,7 +368,7 @@ eor_flag	macro
 	eor #(\1|faid)	;invert expected flags + always on bits + I
 	endm
 	endif
-	if I_flag = 2
+	if I_flag= 2
 load_flag	macro
 	lda #\1
 	ora flag_I_on	;restore I-flag
@@ -385,7 +385,7 @@ eor_flag	macro
 	eor #(\1&m8i|faod)	;mask I, invert expected flags + always on bits
 	endm
 	endif
-	if I_flag = 3
+	if I_flag= 3
 load_flag	macro
 	lda #\1	;allow test to change I-flag (no mask)
 	endm
@@ -564,7 +564,7 @@ eor_flag	macro
 irq_a		.dsb	1			;a register
 irq_x		.dsb	1			;x register
 /* I_flag is never 2
-#if I_flag == 2
+if I_flag= 2
 ;masking for I bit in status
 flag_I_on	.dsb	1	;or mask to load flags	
 flag_I_off	.dsb	1	;and mask to load flags
@@ -694,7 +694,7 @@ start	cld
 		test_num = 0
 
 ;stop interrupts before initializing BSS
-#if I_flag == 1
+#if I_flag== 1
 		sei
 #endif
 	
@@ -769,12 +769,12 @@ ld_vect lda vec_init,x
 */
 /* *** I_flag is NEVER 2 ***
 ;retain status of interrupt flag
-	if I_flag = 2
+	if I_flag= 2
 	php
 	pla
 	and #4					;isolate flag
 	sta flag_I_on			;or mask
-	eor #lo(~4)				;reverse
+	eor #<(~4)				;reverse
 	sta flag_I_off			;and mask
 	endif
 */	
@@ -794,7 +794,7 @@ gcs3	adc zero_page,x
 		clc
 gcs2	inx
 		bne gcs3
-		ldx #hi(abs1		;set high byte of indirect pointer
+		ldx #>abs1		;set high byte of indirect pointer
 		stx zpt+1
 		ldy #<abs1			;data after write & execute test area
 gcs5	adc (zpt),y
@@ -1186,7 +1186,7 @@ test_bne
 		next_test
 
 ;testing branch decisions BPL BMI BVC BVS BCC BCS BNE BEQ
-		set_stat $ff		;all on
+		set_stat($ff)		;all on
 		bpl nbr1			;branches should not be taken
 		bvc nbr2
 		bcc nbr3
@@ -1212,12 +1212,12 @@ br4		php
 		cpx #$fe			;sp after php?
 		trap_ne
 		pla
-		cmp_flag $ff		;returned all flags on?
+		cmp_flag($ff)		;returned all flags on?
 		trap_ne
 		tsx
 		cpx #$ff			;sp after php?
 		trap_ne
-		set_stat 0			;all off
+		set_stat(0)			;all off
 		bmi nbr11			;branches should not be taken
 		bvs nbr12
 		bcs nbr13
@@ -1240,10 +1240,10 @@ nbr14
 		trap				;previous beq taken 
 br14	php
 		pla
-		cmp_flag 0			;flags off except break (pushed by sw) + reserved?
+		cmp_flag(0)			;flags off except break (pushed by sw) + reserved?
 		trap_ne
 ;crosscheck flags
-		set_stat zero
+		set_stat(zero)
 		bne brzs1
 		beq brzs2
 brzs1
@@ -1261,7 +1261,7 @@ brzs6	bvs brzs7
 brzs7
 		trap				;branch overflow/no overflow
 brzs8
-		set_stat carry
+		set_stat(carry)
 		beq brcs1
 		bne brcs2
 brcs1
@@ -1280,7 +1280,7 @@ brcs7
 		trap				;branch overflow/no overflow
 
 brcs8
-		set_stat minus
+		set_stat(minus)
 		beq brmi1
 		bne brmi2
 brmi1
@@ -1298,7 +1298,7 @@ brmi6	bvs brmi7
 brmi7
 		trap				;branch overflow/no overflow
 brmi8
-		set_stat overfl
+		set_stat(overfl)
 		beq brvs1
 		bne brvs2
 brvs1
@@ -1316,7 +1316,7 @@ brvs6	bvc brvs7
 brvs7
 		trap				;branch overflow/no overflow
 brvs8
-		set_stat $ff-zero
+		set_stat($ff-zero)
 		beq brzc1
 		bne brzc2
 brzc1
@@ -1334,7 +1334,7 @@ brzc6	bvc brzc7
 brzc7
 		trap				;branch overflow/no overflow
 brzc8
-		set_stat $ff-carry
+		set_stat($ff-carry)
 		bne brcc1
 		beq brcc2
 brcc1
@@ -1352,7 +1352,7 @@ brcc6	bvc brcc7
 brcc7
 		trap				;branch overflow/no overflow
 brcc8
-		set_stat $ff-minus
+		set_stat($ff-minus)
 		bne brpl1
 		beq brpl2
 brpl1
@@ -1370,7 +1370,7 @@ brpl6	bvc brpl7
 brpl7
 		trap				;branch overflow/no overflow
 brpl8
-		set_stat $ff-overfl
+		set_stat($ff-overfl)
 		bne brvc1
 		beq brvc2
 brvc1
@@ -1467,7 +1467,7 @@ brvc8
 		next_test
 		
 ; jump absolute
-		set_stat $0
+		set_stat($0)
 		lda #'F'
 		ldx #'A'
 		ldy #'R'			;N=0, V=0, Z=0, C=0
@@ -1513,7 +1513,7 @@ test_near
 		next_test
 		
 ; jump indirect
-		set_stat 0
+		set_stat(0)
 		lda #'I'
 		ldx #'N'
 		ldy #'D'			;N=0, V=0, Z=0, C=0
@@ -1544,7 +1544,7 @@ ind_ret
 		next_test
 
 ; jump subroutine & return from subroutine
-		set_stat 0
+		set_stat(0)
 		lda #'J'
 		ldx #'S'
 		ldy #'R'			;N=0, V=0, Z=0, C=0
@@ -1572,7 +1572,7 @@ jsr_ret = *-1				;last address of jsr = return address
 
 ; break & return from interrupt
 		if ROM_vectors = 1
-		load_flag 0			;with interrupts enabled if allowed!
+		load_flag(0)			;with interrupts enabled if allowed!
 		pha
 		lda #'B'
 		ldx #'R'
@@ -1584,9 +1584,9 @@ jsr_ret = *-1				;last address of jsr = return address
 		pha
 		lda #lo brk_ret0
 		pha
-		load_flag fao		;set break & unused on stack
+		load_flag(fao)		;set break & unused on stack
 		pha
-		load_flag intdis	;during interrupt
+		load_flag(intdis)	;during interrupt
 		pha
 		lda #'B'
 		ldx #'R'
@@ -1608,13 +1608,13 @@ brk_ret0					;address of break return
 		cpy #'K'-6
 		trap_ne
 		pla					;returned flags OK (unchanged)?
-		cmp_flag 0
+		cmp_flag(0)
 		trap_ne
 		tsx					;sp?
 		cpx #$ff
 		trap_ne
 		if ROM_vectors = 1
-		load_flag $ff		;with interrupts disabled if allowed!
+		load_flag($ff)		;with interrupts disabled if allowed!
 		pha
 		lda #$ff-'B'
 		ldx #$ff-'R'
@@ -1626,7 +1626,7 @@ brk_ret0					;address of break return
 		pha
 		lda #lo brk_ret1
 		pha
-		load_flag $ff
+		load_flag($ff)
 		pha					;set break & unused on stack
 		pha					;actual flags
 		lda #$ff-'B'
@@ -1649,7 +1649,7 @@ brk_ret1					;address of break return
 		cpy #$ff-'K'-6
 		trap_ne
 		pla					;returned flags OK (unchanged)?
-		cmp_flag $ff
+		cmp_flag($ff)
 		trap_ne
 		tsx					;sp?
 		cpx #$ff
@@ -1657,48 +1657,48 @@ brk_ret1					;address of break return
 		next_test
 	 
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
-		set_stat $ff
+		set_stat($ff)
 		clc
-		tst_stat $ff-carry
+		tst_stat($ff-carry)
 		sec
-		tst_stat $ff
-		if I_flag = 3
+		tst_stat($ff)
+#if I_flag== 3
 		cli
-		tst_stat $ff-intdis
+		tst_stat($ff-intdis)
 		sei
-		tst_stat $ff
-		endif
+		tst_stat($ff)
+#endif
 		cld
-		tst_stat $ff-decmode
+		tst_stat($ff-decmode)
 		sed
-		tst_stat $ff
+		tst_stat($ff)
 		clv
-		tst_stat $ff-overfl
-		set_stat 0
-		tst_stat 0
+		tst_stat($ff-overfl)
+		set_stat(0)
+		tst_stat(0)
 		sec
-		tst_stat carry
+		tst_stat(carry)
 		clc
-		tst_stat 0	
-		if I_flag = 3
+		tst_stat(0)
+#if I_flag== 3
 		sei
-		tst_stat intdis
+		tst_stat(intdis)
 		cli
-		tst_stat 0
-		endif	
+		tst_stat(0)
+#endif	
 		sed
-		tst_stat decmode
+		tst_stat(decmode)
 		cld
-		tst_stat 0	
-		set_stat overfl
-		tst_stat overfl
+		tst_stat(0)
+		set_stat(overfl)
+		tst_stat(overfl)
 		clv
-		tst_stat 0
+		tst_stat(0)
 		next_test
 ; testing index register increment/decrement and transfer
 ; INX INY DEX DEY TAX TXA TAY TYA 
 		ldx #$fe
-		set_stat $ff
+		set_stat($ff)
 		inx					;ff
 		tst_x $ff,$ff-zero
 		inx					;00
@@ -1710,7 +1710,7 @@ brk_ret1					;address of break return
 		dex					;ff
 		tst_x $ff,$ff-zero
 		dex					;fe
-		set_stat 0
+		set_stat(0)
 		inx					;ff
 		tst_x $ff,minus
 		inx					;00
@@ -1723,7 +1723,7 @@ brk_ret1					;address of break return
 		tst_x $ff,minus
 
 		ldy #$fe
-		set_stat $ff
+		set_stat($ff)
 		iny					;ff
 		tst_y $ff,$ff-zero
 		iny					;00
@@ -1735,7 +1735,7 @@ brk_ret1					;address of break return
 		dey					;ff
 		tst_y $ff,$ff-zero
 		dey					;fe
-		set_stat 0
+		set_stat(0)
 		iny					;ff
 		tst_y $ff,0+minus
 		iny					;00
@@ -1748,7 +1748,7 @@ brk_ret1					;address of break return
 		tst_y $ff,minus
 		
 		ldx #$ff
-		set_stat $ff
+		set_stat($ff)
 		txa
 		tst_a $ff,$ff-zero
 		php
@@ -1761,7 +1761,7 @@ brk_ret1					;address of break return
 		plp
 		txa
 		tst_a 1,$ff-minus-zero
-		set_stat 0
+		set_stat(0)
 		txa
 		tst_a 1,0
 		php
@@ -1776,7 +1776,7 @@ brk_ret1					;address of break return
 		tst_a $ff,minus
 		
 		ldy #$ff
-		set_stat $ff
+		set_stat($ff)
 		tya
 		tst_a $ff,$ff-zero
 		php
@@ -1789,7 +1789,7 @@ brk_ret1					;address of break return
 		plp
 		tya
 		tst_a 1,$ff-minus-zero
-		set_stat 0
+		set_stat(0)
 		tya
 		tst_a 1,0
 		php
@@ -1803,7 +1803,7 @@ brk_ret1					;address of break return
 		tya
 		tst_a $ff,minus
 
-		load_flag $ff
+		load_flag($ff)
 		pha
 		ldx #$ff			;ff
 		txa
@@ -1822,7 +1822,7 @@ brk_ret1					;address of break return
 		plp
 		tay
 		tst_y 1,$ff-minus-zero
-		load_flag 0
+		load_flag(0)
 		pha
 		lda #0
 		txa
@@ -1843,7 +1843,7 @@ brk_ret1					;address of break return
 		tst_y $ff,minus
 
 
-		load_flag $ff
+		load_flag($ff)
 		pha
 		ldy #$ff			;ff
 		tya
@@ -1862,7 +1862,7 @@ brk_ret1					;address of break return
 		plp
 		tax
 		tst_x 1,$ff-minus-zero
-		load_flag 0
+		load_flag(0)
 		pha
 		lda #0				;preset status
 		tya
@@ -1886,96 +1886,96 @@ brk_ret1					;address of break return
 ;TSX sets NZ - TXS does not
 ;	This section also tests for proper stack wrap around.
 		ldx #1				;01
-		set_stat $ff
+		set_stat($ff)
 		txs
 		php
 		lda $101
-		cmp_flag $ff
+		cmp_flag($ff)
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		txs
 		php
 		lda $101
-		cmp_flag 0
+		cmp_flag(0)
 		trap_ne
 		dex					;00
-		set_stat $ff
+		set_stat($ff)
 		txs
 		php
 		lda $100
-		cmp_flag $ff
+		cmp_flag($ff)
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		txs
 		php
 		lda $100
-		cmp_flag 0
+		cmp_flag(0)
 		trap_ne
 		dex					;ff
-		set_stat $ff
+		set_stat($ff)
 		txs
 		php
 		lda $1ff
-		cmp_flag $ff
+		cmp_flag($ff)
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		txs
 		php
 		lda $1ff
-		cmp_flag 0
+		cmp_flag(0)
 		
 		ldx #1
 		txs					;sp=01
-		set_stat $ff
+		set_stat($ff)
 		tsx					;clears Z, N
 		php					;sp=00
 		cpx #1
 		trap_ne
 		lda $101
-		cmp_flag $ff-minus-zero
+		cmp_flag($ff-minus-zero)
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		tsx					;clears N, sets Z
 		php					;sp=ff
 		cpx #0
 		trap_ne
 		lda $100
-		cmp_flag $ff-minus
+		cmp_flag($ff-minus)
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		tsx					;clears N, sets Z
 		php					;sp=fe
 		cpx #$ff
 		trap_ne
 		lda $1ff
-		cmp_flag $ff-zero
+		cmp_flag($ff-zero)
 		trap_ne
 		
 		ldx #1
 		txs					;sp=01
-		set_stat 0
+		set_stat(0)
 		tsx					;clears Z, N
 		php					;sp=00
 		cpx #1
 		trap_ne
 		lda $101
-		cmp_flag 0
+		cmp_flag(0)
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		tsx					;clears N, sets Z
 		php					;sp=ff
 		cpx #0
 		trap_ne
 		lda $100
-		cmp_flag zero
+		cmp_flag(zero)
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		tsx					;clears N, sets Z
 		php					;sp=fe
 		cpx #$ff
 		trap_ne
 		lda $1ff
-		cmp_flag minus
+		cmp_flag(minus)
 		trap_ne
 		pla					;sp=ff
 		next_test
@@ -1984,7 +1984,7 @@ brk_ret1					;address of break return
 ; LDX / STX - zp,y / abs,y
 		ldy #3
 tldx	
-		set_stat 0
+		set_stat(0)
 		ldx zp1,y
 		php					;test stores do not alter flags
 		txa
@@ -1996,7 +1996,7 @@ tldx
 		cmp abs1,y			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,y			;test flags
 		trap_ne
 		dey
@@ -2004,7 +2004,7 @@ tldx
 
 		ldy #3
 tldx1	
-		set_stat $ff
+		set_stat($ff)
 		ldx zp1,y
 		php					;test stores do not alter flags
 		txa
@@ -2016,7 +2016,7 @@ tldx1
 		cmp abs1,y			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz) 	;mask bits not altered
 		cmp fLDx,y			;test flags
 		trap_ne
 		dey
@@ -2024,7 +2024,7 @@ tldx1
 
 		ldy #3
 tldx2	
-		set_stat 0
+		set_stat(0)
 		ldx abs1,y
 		php					;test stores do not alter flags
 		txa
@@ -2037,7 +2037,7 @@ tldx2
 		cmp zp1,y			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,y			;test flags
 		trap_ne
 		dey
@@ -2045,7 +2045,7 @@ tldx2
 
 		ldy #3
 tldx3	
-		set_stat $ff
+		set_stat($ff)
 		ldx abs1,y
 		php					;test stores do not alter flags
 		txa
@@ -2058,7 +2058,7 @@ tldx3
 		cmp zp1,y			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx,y			;test flags
 		trap_ne
 		dey
@@ -2113,7 +2113,7 @@ tstx1	lda zpt,y
 ; LDY / STY - zp,x / abs,x
 		ldx #3
 tldy	
-		set_stat 0
+		set_stat(0)
 		ldy zp1,x
 		php					;test stores do not alter flags
 		tya
@@ -2125,7 +2125,7 @@ tldy
 		cmp abs1,x			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,x			;test flags
 		trap_ne
 		dex
@@ -2133,7 +2133,7 @@ tldy
 
 		ldx #3
 tldy1	
-		set_stat $ff
+		set_stat($ff)
 		ldy zp1,x
 		php					;test stores do not alter flags
 		tya
@@ -2145,7 +2145,7 @@ tldy1
 		cmp abs1,x			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz) 	;mask bits not altered
 		cmp fLDx,x			;test flags
 		trap_ne
 		dex
@@ -2153,7 +2153,7 @@ tldy1
 
 		ldx #3
 tldy2	
-		set_stat 0
+		set_stat(0)
 		ldy abs1,x
 		php					;test stores do not alter flags
 		tya
@@ -2166,7 +2166,7 @@ tldy2
 		cmp zp1,x			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,x			;test flags
 		trap_ne
 		dex
@@ -2174,7 +2174,7 @@ tldy2
 
 		ldx #3
 tldy3
-		set_stat $ff
+		set_stat($ff)
 		ldy abs1,x
 		php					;test stores do not alter flags
 		tya
@@ -2187,7 +2187,7 @@ tldy3
 		cmp zp1,x			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx,x			;test flags
 		trap_ne
 		dex
@@ -2240,7 +2240,7 @@ tsty1	lda zpt,x
 		next_test
 
 ; LDX / STX - zp / abs / #
-		set_stat 0	
+		set_stat(0)
 		ldx zp1
 		php					;test stores do not alter flags
 		txa
@@ -2254,10 +2254,10 @@ tsty1	lda zpt,x
 		cpx #$c3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx zp1+1
 		php					;test stores do not alter flags
 		txa
@@ -2271,10 +2271,10 @@ tsty1	lda zpt,x
 		cpx #$82			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx zp1+2
 		php					;test stores do not alter flags
 		txa
@@ -2288,10 +2288,10 @@ tsty1	lda zpt,x
 		cpx #$41			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx zp1+3
 		php					;test stores do not alter flags
 		txa
@@ -2305,11 +2305,11 @@ tsty1	lda zpt,x
 		cpx #0				;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3			;test flags
 		trap_ne
 
-		set_stat $ff
+		set_stat($ff)
 		ldx zp1	
 		php					;test stores do not alter flags
 		txa
@@ -2323,10 +2323,10 @@ tsty1	lda zpt,x
 		cpx #$c3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz) 	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx zp1+1
 		php					;test stores do not alter flags
 		txa
@@ -2340,10 +2340,10 @@ tsty1	lda zpt,x
 		cpx #$82			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz) 	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx zp1+2
 		php					;test stores do not alter flags
 		txa
@@ -2357,10 +2357,10 @@ tsty1	lda zpt,x
 		cpx #$41			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx zp1+3
 		php					;test stores do not alter flags
 		txa
@@ -2374,11 +2374,11 @@ tsty1	lda zpt,x
 		cpx #0				;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
-		set_stat 0
+		set_stat(0)
 		ldx abs1	
 		php					;test stores do not alter flags
 		txa
@@ -2391,10 +2391,10 @@ tsty1	lda zpt,x
 		cmp zp1				;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx abs1+1
 		php					;test stores do not alter flags
 		txa
@@ -2407,10 +2407,10 @@ tsty1	lda zpt,x
 		cmp zp1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx abs1+2
 		php					;test stores do not alter flags
 		txa
@@ -2423,10 +2423,10 @@ tsty1	lda zpt,x
 		cmp zp1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx abs1+3
 		php					;test stores do not alter flags
 		txa
@@ -2439,11 +2439,11 @@ tsty1	lda zpt,x
 		cmp zp1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3			;test flags
 		trap_ne
 
-		set_stat $ff
+		set_stat($ff)
 		ldx abs1	
 		php					;test stores do not alter flags
 		txa
@@ -2457,10 +2457,10 @@ tsty1	lda zpt,x
 		cpx zp1				;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx abs1+1
 		php					;test stores do not alter flags
 		txa
@@ -2474,10 +2474,10 @@ tsty1	lda zpt,x
 		cpx zp1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx abs1+2
 		php					;test stores do not alter flags
 		txa
@@ -2491,10 +2491,10 @@ tsty1	lda zpt,x
 		cpx zp1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx abs1+3
 		php					;test stores do not alter flags
 		txa
@@ -2508,81 +2508,81 @@ tsty1	lda zpt,x
 		cpx zp1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
-		set_stat 0	
+		set_stat(0)
 		ldx #$c3
 		php
 		cpx abs1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx #$82
 		php
 		cpx abs1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx #$41
 		php
 		cpx abs1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldx #0
 		php
 		cpx abs1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3			;test flags
 		trap_ne
 
-		set_stat $ff
+		set_stat($ff)
 		ldx #$c3	
 		php
 		cpx abs1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx #$82
 		php
 		cpx abs1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx #$41
 		php
 		cpx abs1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldx #0
 		php
 		cpx abs1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz 	;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2630,7 +2630,7 @@ tsty1	lda zpt,x
 		next_test
 
 ; LDY / STY - zp / abs / #
-		set_stat 0
+		set_stat(0)
 		ldy zp1	
 		php					;test stores do not alter flags
 		tya
@@ -2644,10 +2644,10 @@ tsty1	lda zpt,x
 		cpy #$c3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy zp1+1
 		php					;test stores do not alter flags
 		tya
@@ -2661,10 +2661,10 @@ tsty1	lda zpt,x
 		cpy #$82			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy zp1+2
 		php					;test stores do not alter flags
 		tya
@@ -2678,10 +2678,10 @@ tsty1	lda zpt,x
 		cpy #$41			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy zp1+3
 		php					;test stores do not alter flags
 		tya
@@ -2695,11 +2695,11 @@ tsty1	lda zpt,x
 		cpy #0				;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3			;test flags
 		trap_ne
 
-		set_stat $ff
+		set_stat($ff)
 		ldy zp1	
 		php					;test stores do not alter flags
 		tya
@@ -2713,10 +2713,10 @@ tsty1	lda zpt,x
 		cpy #$c3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)		;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy zp1+1
 		php					;test stores do not alter flags
 		tya
@@ -2730,10 +2730,10 @@ tsty1	lda zpt,x
 		cpy #$82			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)		;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy zp1+2
 		php					;test stores do not alter flags
 		tya
@@ -2747,10 +2747,10 @@ tsty1	lda zpt,x
 		cpy #$41			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)		;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy zp1+3
 		php					;test stores do not alter flags
 		tya
@@ -2764,11 +2764,11 @@ tsty1	lda zpt,x
 		cpy #0				;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 		
-		set_stat 0
+		set_stat(0)
 		ldy abs1	
 		php					;test stores do not alter flags
 		tya
@@ -2782,10 +2782,10 @@ tsty1	lda zpt,x
 		cpy zp1				;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy abs1+1
 		php					;test stores do not alter flags
 		tya
@@ -2799,10 +2799,10 @@ tsty1	lda zpt,x
 		cpy zp1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy abs1+2
 		php					;test stores do not alter flags
 		tya
@@ -2816,10 +2816,10 @@ tsty1	lda zpt,x
 		cpy zp1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy abs1+3
 		php					;test stores do not alter flags
 		tya
@@ -2833,11 +2833,11 @@ tsty1	lda zpt,x
 		cpy zp1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3			;test flags
 		trap_ne
 
-		set_stat $ff
+		set_stat($ff)
 		ldy abs1	
 		php					;test stores do not alter flags
 		tya
@@ -2851,10 +2851,10 @@ tsty1	lda zpt,x
 		cmp zp1				;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy abs1+1
 		php					;test stores do not alter flags
 		tya
@@ -2868,10 +2868,10 @@ tsty1	lda zpt,x
 		cmp zp1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy abs1+2
 		php					;test stores do not alter flags
 		tya
@@ -2885,10 +2885,10 @@ tsty1	lda zpt,x
 		cmp zp1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy abs1+3
 		php					;test stores do not alter flags
 		tya
@@ -2902,82 +2902,82 @@ tsty1	lda zpt,x
 		cmp zp1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
 
-		set_stat 0
+		set_stat(0)
 		ldy #$c3	
 		php
 		cpy abs1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy #$82
 		php
 		cpy abs1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy #$41
 		php
 		cpy abs1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		ldy #0
 		php
 		cpy abs1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3			;test flags
 		trap_ne
 
-		set_stat $ff
+		set_stat($ff)
 		ldy #$c3	
 		php
 		cpy abs1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy #$82
 		php
 		cpy abs1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy #$41
 		php
 		cpy abs1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		ldy #0
 		php
 		cpy abs1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag lo~fnz		;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 		
@@ -3028,7 +3028,7 @@ tsty1	lda zpt,x
 ; LDA / STA - zp,x / abs,x
 		ldx #3
 tldax	
-		set_stat 0
+		set_stat(0)
 		lda zp1,x
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3039,7 +3039,7 @@ tldax
 		cmp abs1,x	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,x	;test flags
 		trap_ne
 		dex
@@ -3047,7 +3047,7 @@ tldax
 
 		ldx #3
 tldax1	
-		set_stat $ff
+		set_stat($ff)
 		lda zp1,x
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3058,7 +3058,7 @@ tldax1
 		cmp abs1,x	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx,x	;test flags
 		trap_ne
 		dex
@@ -3066,7 +3066,7 @@ tldax1
 
 		ldx #3
 tldax2	
-		set_stat 0
+		set_stat(0)
 		lda abs1,x
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3077,7 +3077,7 @@ tldax2
 		cmp zp1,x	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,x	;test flags
 		trap_ne
 		dex
@@ -3085,7 +3085,7 @@ tldax2
 
 		ldx #3
 tldax3
-		set_stat $ff
+		set_stat($ff)
 		lda abs1,x
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3096,7 +3096,7 @@ tldax3
 		cmp zp1,x	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx,x	;test flags
 		trap_ne
 		dex
@@ -3122,7 +3122,7 @@ tstax	lda zpt,x
 ; LDA / STA - (zp),y / abs,y / (zp,x)
 		ldy #3
 tlday	
-		set_stat 0
+		set_stat(0)
 		lda (ind1),y
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3133,7 +3133,7 @@ tlday
 		cmp abs1,y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,y	;test flags
 		trap_ne
 		dey
@@ -3141,7 +3141,7 @@ tlday
 
 		ldy #3
 tlday1	
-		set_stat $ff
+		set_stat($ff)
 		lda (ind1),y
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3152,7 +3152,7 @@ tlday1
 		cmp abs1,y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx,y	;test flags
 		trap_ne
 		dey
@@ -3171,7 +3171,7 @@ tstay	lda abst,y
 
 		ldy #3
 tlday2	
-		set_stat 0
+		set_stat(0)
 		lda abs1,y
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3182,7 +3182,7 @@ tlday2
 		cmp (ind1),y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,y	;test flags
 		trap_ne
 		dey
@@ -3190,7 +3190,7 @@ tlday2
 
 		ldy #3
 tlday3	
-		set_stat $ff
+		set_stat($ff)
 		lda abs1,y
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3201,7 +3201,7 @@ tlday3
 		cmp (ind1),y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx,y	;test flags
 		trap_ne
 		dey
@@ -3221,7 +3221,7 @@ tstay1	lda abst,y
 		ldx #6
 		ldy #3
 tldax4	
-		set_stat 0
+		set_stat(0)
 		lda (ind1,x)
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3232,7 +3232,7 @@ tldax4
 		cmp abs1,y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx,y	;test flags
 		trap_ne
 		dex
@@ -3243,7 +3243,7 @@ tldax4
 		ldx #6
 		ldy #3
 tldax5
-		set_stat $ff
+		set_stat($ff)
 		lda (ind1,x)
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3254,7 +3254,7 @@ tldax5
 		cmp abs1,y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx,y	;test flags
 		trap_ne
 		dex
@@ -3358,7 +3358,7 @@ tstay6	lda abst,y
 		next_test
 
 ; LDA / STA - zp / abs / #
-		set_stat 0	
+		set_stat(0)
 		lda zp1
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3369,10 +3369,10 @@ tstay6	lda abst,y
 		cmp #$c3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda zp1+1
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3383,10 +3383,10 @@ tstay6	lda abst,y
 		cmp #$82	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda zp1+2
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3397,10 +3397,10 @@ tstay6	lda abst,y
 		cmp #$41	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda zp1+3
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3411,10 +3411,10 @@ tstay6	lda abst,y
 		cmp #0	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda zp1	
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3425,10 +3425,10 @@ tstay6	lda abst,y
 		cmp #$c3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda zp1+1
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3439,10 +3439,10 @@ tstay6	lda abst,y
 		cmp #$82	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+1	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda zp1+2
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3453,10 +3453,10 @@ tstay6	lda abst,y
 		cmp #$41	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+2	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda zp1+3
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3467,10 +3467,10 @@ tstay6	lda abst,y
 		cmp #0	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda abs1	
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3481,10 +3481,10 @@ tstay6	lda abst,y
 		cmp zp1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda abs1+1
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3495,10 +3495,10 @@ tstay6	lda abst,y
 		cmp zp1+1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda abs1+2
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3509,10 +3509,10 @@ tstay6	lda abst,y
 		cmp zp1+2	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda abs1+3
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3523,10 +3523,10 @@ tstay6	lda abst,y
 		cmp zp1+3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda abs1	
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3537,10 +3537,10 @@ tstay6	lda abst,y
 		cmp zp1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda abs1+1
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3551,10 +3551,10 @@ tstay6	lda abst,y
 		cmp zp1+1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+1	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda abs1+2
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3565,10 +3565,10 @@ tstay6	lda abst,y
 		cmp zp1+2	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+2	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda abs1+3
 		php	;test stores do not alter flags
 		eor #$c3
@@ -3579,80 +3579,80 @@ tstay6	lda abst,y
 		cmp zp1+3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3	;test flags
 		trap_ne
-		set_stat 0	
+		set_stat(0)
 		lda #$c3
 		php
 		cmp abs1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda #$82
 		php
 		cmp abs1+1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+1	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda #$41
 		php
 		cmp abs1+2	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+2	;test flags
 		trap_ne
-		set_stat 0
+		set_stat(0)
 		lda #0
 		php
 		cmp abs1+3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag 0
+		eor_flag(0)
 		cmp fLDx+3	;test flags
 		trap_ne
 
-		set_stat $ff
+		set_stat($ff)
 		lda #$c3	
 		php
 		cmp abs1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda #$82
 		php
 		cmp abs1+1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+1	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda #$41
 		php
 		cmp abs1+2	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+2	;test flags
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		lda #0
 		php
 		cmp abs1+3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag lo~fnz ;mask bits not altered
+		eor_flag(lo~fnz)	;mask bits not altered
 		cmp fLDx+3	;test flags
 		trap_ne
 
@@ -3757,57 +3757,57 @@ tstay6	lda abst,y
 ; CPX - zp / abs / #	
 		set_x $80,0
 		cpx zp7f
-		tst_stat fc
+		tst_stat(fc)
 		dex
 		cpx zp7f
-		tst_stat fzc
+		tst_stat(fzc)
 		dex
 		cpx zp7f
 		tst_x $7e,fn
 		set_x $80,$ff
 		cpx zp7f
-		tst_stat ~fnz
+		tst_stat(~fnz)
 		dex
 		cpx zp7f
-		tst_stat ~fn
+		tst_stat(~fn)
 		dex
 		cpx zp7f
 		tst_x $7e,~fzc
 
 		set_x $80,0
 		cpx abs7f
-		tst_stat fc
+		tst_stat(fc)
 		dex
 		cpx abs7f
-		tst_stat fzc
+		tst_stat(fzc)
 		dex
 		cpx abs7f
 		tst_x $7e,fn
 		set_x $80,$ff
 		cpx abs7f
-		tst_stat ~fnz
+		tst_stat(~fnz)
 		dex
 		cpx abs7f
-		tst_stat ~fn
+		tst_stat(~fn)
 		dex
 		cpx abs7f
 		tst_x $7e,~fzc
 
 		set_x $80,0
 		cpx #$7f
-		tst_stat fc
+		tst_stat(fc)
 		dex
 		cpx #$7f
-		tst_stat fzc
+		tst_stat(fzc)
 		dex
 		cpx #$7f
 		tst_x $7e,fn
 		set_x $80,$ff
 		cpx #$7f
-		tst_stat ~fnz
+		tst_stat(~fnz)
 		dex
 		cpx #$7f
-		tst_stat ~fn
+		tst_stat(~fn)
 		dex
 		cpx #$7f
 		tst_x $7e,~fzc
@@ -3816,57 +3816,57 @@ tstay6	lda abst,y
 ; CPY - zp / abs / #	
 		set_y $80,0
 		cpy zp7f
-		tst_stat fc
+		tst_stat(fc)
 		dey
 		cpy zp7f
-		tst_stat fzc
+		tst_stat(fzc)
 		dey
 		cpy zp7f
 		tst_y $7e,fn
 		set_y $80,$ff
 		cpy zp7f
-		tst_stat ~fnz
+		tst_stat(~fnz)
 		dey
 		cpy zp7f
-		tst_stat ~fn
+		tst_stat(~fn)
 		dey
 		cpy zp7f
 		tst_y $7e,~fzc
 
 		set_y $80,0
 		cpy abs7f
-		tst_stat fc
+		tst_stat(fc)
 		dey
 		cpy abs7f
-		tst_stat fzc
+		tst_stat(fzc)
 		dey
 		cpy abs7f
 		tst_y $7e,fn
 		set_y $80,$ff
 		cpy abs7f
-		tst_stat ~fnz
+		tst_stat(~fnz)
 		dey
 		cpy abs7f
-		tst_stat ~fn
+		tst_stat(~fn)
 		dey
 		cpy abs7f
 		tst_y $7e,~fzc
 
 		set_y $80,0
 		cpy #$7f
-		tst_stat fc
+		tst_stat(fc)
 		dey
 		cpy #$7f
-		tst_stat fzc
+		tst_stat(fzc)
 		dey
 		cpy #$7f
 		tst_y $7e,fn
 		set_y $80,$ff
 		cpy #$7f
-		tst_stat ~fnz
+		tst_stat(~fnz)
 		dey
 		cpy #$7f
-		tst_stat ~fn
+		tst_stat(~fn)
 		dey
 		cpy #$7f
 		tst_y $7e,~fzc
@@ -4496,7 +4496,7 @@ trorc9
 		lda #$7e
 		sta zpt
 tinc	
-		set_stat 0
+		set_stat(0)
 		inc zpt
 		tst_z rINC,fINC,0
 		inx
@@ -4509,7 +4509,7 @@ tinc1	cpx #5
 		dex
 		inc zpt
 tdec	
-		set_stat 0
+		set_stat(0)
 		dec zpt
 		tst_z rINC,fINC,0
 		dex
@@ -4524,7 +4524,7 @@ tdec1
 		lda #$7e
 		sta zpt
 tinc10	
-		set_stat $ff
+		set_stat($ff)
 		inc zpt
 		tst_z rINC,fINC,$ff-fnz
 		inx
@@ -4537,7 +4537,7 @@ tinc11	cpx #5
 		dex
 		inc zpt
 tdec10	
-		set_stat $ff
+		set_stat($ff)
 		dec zpt
 		tst_z rINC,fINC,$ff-fnz
 		dex
@@ -4555,7 +4555,7 @@ tdec11
 		lda #$7e
 		sta abst
 tinc2	
-		set_stat 0
+		set_stat(0)
 		inc abst
 		tst_abs rINC,fINC,0
 		inx
@@ -4568,7 +4568,7 @@ tinc3	cpx #5
 		dex
 		inc abst
 tdec2	
-		set_stat 0
+		set_stat(0)
 		dec abst
 		tst_abs rINC,fINC,0
 		dex
@@ -4583,7 +4583,7 @@ tdec3
 		lda #$7e
 		sta abst
 tinc12	
-		set_stat $ff
+		set_stat($ff)
 		inc abst
 		tst_abs rINC,fINC,$ff-fnz
 		inx
@@ -4596,7 +4596,7 @@ tinc13	cpx #5
 		dex
 		inc abst
 tdec12	
-		set_stat $ff
+		set_stat($ff)
 		dec abst
 		tst_abs rINC,fINC,$ff-fnz
 		dex
@@ -4613,7 +4613,7 @@ tdec13
 		ldx #0
 		lda #$7e
 tinc4	sta zpt,x
-		set_stat 0
+		set_stat(0)
 		inc zpt,x
 		tst_zx rINC,fINC,0
 		lda zpt,x
@@ -4626,7 +4626,7 @@ tinc5	cpx #5
 		dex
 		lda #2
 tdec4	sta zpt,x 
-		set_stat 0
+		set_stat(0)
 		dec zpt,x
 		tst_zx rINC,fINC,0
 		lda zpt,x
@@ -4640,7 +4640,7 @@ tdec5
 		ldx #0
 		lda #$7e
 tinc14	sta zpt,x
-		set_stat $ff
+		set_stat($ff)
 		inc zpt,x
 		tst_zx rINC,fINC,$ff-fnz
 		lda zpt,x
@@ -4653,7 +4653,7 @@ tinc15	cpx #5
 		dex
 		lda #2
 tdec14	sta zpt,x 
-		set_stat $ff
+		set_stat($ff)
 		dec zpt,x
 		tst_zx rINC,fINC,$ff-fnz
 		lda zpt,x
@@ -4670,7 +4670,7 @@ tdec15
 		ldx #0
 		lda #$7e
 tinc6	sta abst,x
-		set_stat 0
+		set_stat(0)
 		inc abst,x
 		tst_absx rINC,fINC,0
 		lda abst,x
@@ -4683,7 +4683,7 @@ tinc7	cpx #5
 		dex
 		lda #2
 tdec6	sta abst,x 
-		set_stat 0
+		set_stat(0)
 		dec abst,x
 		tst_absx rINC,fINC,0
 		lda abst,x
@@ -4697,7 +4697,7 @@ tdec7
 		ldx #0
 		lda #$7e
 tinc16	sta abst,x
-		set_stat $ff
+		set_stat($ff)
 		inc abst,x
 		tst_absx rINC,fINC,$ff-fnz
 		lda abst,x
@@ -4710,7 +4710,7 @@ tinc17	cpx #5
 		dex
 		lda #2
 tdec16	sta abst,x 
-		set_stat $ff
+		set_stat($ff)
 		dec abst,x
 		tst_absx rINC,fINC,$ff-fnz
 		lda abst,x
@@ -5124,9 +5124,9 @@ tora15
 		tst_ay	absrlo,absflo,$ff-fnz
 		dey
 		bpl tora15
-		if I_flag = 3
+#if I_flag== 3
 		cli
-		endif	
+#endif	
 		next_test
 
 ; full binary add/subtract test
@@ -5775,7 +5775,7 @@ test_far
 		trap_ne
 		pla	;restore x
 		tax
-		set_stat $ff
+		set_stat($ff)
 		pla	;restore a
 		inx	;return registers with modifications
 		eor #$aa	;N=1, V=1, Z=0, C=1
@@ -5812,7 +5812,7 @@ test_ind
 		trap_ne
 		pla	;restore x
 		tax
-		set_stat $ff
+		set_stat($ff)
 		pla	;restore a
 		inx	;return registers with modifications
 		eor #$aa	;N=1, V=1, Z=0, C=1
@@ -5846,12 +5846,12 @@ test_jsr
 		cpx #$fb
 		trap_ne
 		lda $1ff	;propper return on stack
-		cmp #hi(jsr_ret)
+		cmp #>jsr_ret
 		trap_ne
 		lda $1fe
-		cmp #lo(jsr_ret)
+		cmp #<jsr_ret
 		trap_ne
-		set_stat $ff
+		set_stat($ff)
 		pla	;pull x,a
 		tax
 		pla
@@ -5891,21 +5891,21 @@ irq_trap	;BRK test or unextpected BRK or IRQ
 		stx irq_x
 		tsx	;test break on stack
 		lda $102,x
-		cmp_flag 0	;break test should have B=1 & unused=1 on stack
+		cmp_flag(0)	;break test should have B=1 & unused=1 on stack
 		trap_ne	; - no break flag on stack
 		pla
-		cmp_flag intdis ;should have added interrupt disable
+		cmp_flag(intdis)	;should have added interrupt disable
 		trap_ne
 		tsx
 		cpx #$fc	;sp -3? (return addr, flags)
 		trap_ne
 		lda $1ff	;propper return on stack
-		cmp #hi(brk_ret0)
+		cmp #>brk_ret0
 		trap_ne
 		lda $1fe
-		cmp #lo(brk_ret0)
+		cmp #<brk_ret0
 		trap_ne
-		load_flag $ff
+		load_flag($ff)
 		pha
 		ldx irq_x
 		inx	;return registers with modifications
@@ -5925,22 +5925,22 @@ break2	;BRK pass 2
 		stx irq_x
 		tsx	;test break on stack
 		lda $102,x
-		cmp_flag $ff	;break test should have B=1
+		cmp_flag($ff)	;break test should have B=1
 		trap_ne	; - no break flag on stack
 		pla
 		ora #decmode	;ignore decmode cleared if 65c02
-		cmp_flag $ff	;actual passed flags
+		cmp_flag($ff)	;actual passed flags
 		trap_ne
 		tsx
 		cpx #$fc	;sp -3? (return addr, flags)
 		trap_ne
 		lda $1ff	;propper return on stack
-		cmp #hi(brk_ret1)
+		cmp #>brk_ret1
 		trap_ne
 		lda $1fe
-		cmp #lo(brk_ret1)
+		cmp #<brk_ret1
 		trap_ne
-		load_flag intdis
+		load_flag(intdis)
 		pha	
 		ldx irq_x
 		inx	;return registers with modifications
