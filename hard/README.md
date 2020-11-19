@@ -127,7 +127,7 @@ TTL-level RS-232, **_VME-like_ slot** (65816 direct expansion).
   * Status: finishing design, _revamped as 20200413_
   * Form-factor: Single layer PCB?
   * Specs: **3.072 MHz 65816**, 128 kiB SRAM (expandable to **512 kB**),
-(optional?) 32 kiB **CRAM**, 32 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
+(optional?) 32 kiB **ColourRAM**, 32 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
   * Peripherals: Piezo buzzer, **VGA-compatible** video output (**640x400/576x448**
 bitmap or up to **4bpp** on 8x1 _attribute area_, gBRG or greyscale?).
   * Interfaces: TTL-level async., SS-22, VIAport2.
@@ -140,7 +140,7 @@ a bit like an '816-based **Tampico** computer. Might use a 16C550 instead of the
   * Status: creating specs
   * Form-factor: Single layer PCB?
   * Specs: **3.072 MHz 65816**, 128 kiB SRAM (expandable to **512 kB**),
-32\* kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
+32 kiB EPROM, VIA 65C22, **CRTC HD6845**, ACIA 6551A.
   * Peripherals: Piezo buzzer, **VGA-compatible** video output
   * Display resolution: **640x400/576x448**
 bitmap, **320x400/288x448 2bpp** or **160x400/144x448 _gBRG_ 4bpp**.
@@ -150,8 +150,9 @@ _vampire video_ memory.
 
 > _Might become integrated with the Tijuana project_, a bit like an
 '816-based **Tampico** computer. Might use a 16C550 instead of the 6551.
-\* _Bank 0_ ROM should be limited to 16 kiB, putting larger EPROMs into
-further banks, perhaps in a sparse way.
+Might switch between high and low resolution (400/448 vs. 200/224 lines)
+thru the `E` line, _remapping VRAM_ from $10000-$17FFF to just 16 kiB at
+$4000-7FFF, more suitable for 6502 emulation mode.
 
 
 ##  Workstations (65816-based)
@@ -314,4 +315,4 @@ generating all needed addresses and signals.
 ---
 _...and many more to come!_
 
-_last modified: 20201116-1723_
+_last modified: 20201119-1406_
