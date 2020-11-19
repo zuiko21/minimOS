@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201116-1428 ***
+; *** last modified 20201119-1417 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -284,7 +284,7 @@ m8i	= %11111011	;8 bit mask - interrupt disable *** changed ***
 ;masking of always on bits after PHP or BRK (unused & break) on compare
 ;	if disable_decimal < 2
 ; *** don't think I'll disable D bit ***
-#if I_flag== 0
+#if I_flag == 0
 ; *** I think this is correct ***
 ; I_FLAG IS ZERO
 #define	load_flag(a)	LDA hash a &m8i
@@ -1571,7 +1571,7 @@ jsr_ret = *-1				;last address of jsr = return address
 		next_test
 
 ; break & return from interrupt
-		if ROM_vectors = 1
+#if ROM_vectors == 1
 		load_flag(0)			;with interrupts enabled if allowed!
 		pha
 		lda #'B'
@@ -1579,7 +1579,7 @@ jsr_ret = *-1				;last address of jsr = return address
 		ldy #'K'
 		plp					;N=0, V=0, Z=0, C=0
 		brk
-		else
+#else
 		lda #hi brk_ret0	;emulated break
 		pha
 		lda #lo brk_ret0
@@ -1593,7 +1593,7 @@ jsr_ret = *-1				;last address of jsr = return address
 		ldy #'K'
 		plp					;N=0, V=0, Z=0, C=0
 		jmp irq_trap
-		endif
+#endif
 		dey					;should not be executed
 brk_ret0					;address of break return
 		php					;either SP or Y count will fail, if we do not hit
@@ -1622,9 +1622,9 @@ brk_ret0					;address of break return
 		plp					;N=1, V=1, Z=1, C=1
 		brk
 		else
-		lda #hi brk_ret1	;emulated break
+		lda #>brk_ret1	;emulated break
 		pha
-		lda #lo brk_ret1
+		lda #<brk_ret1
 		pha
 		load_flag($ff)
 		pha					;set break & unused on stack
@@ -5178,7 +5178,7 @@ tadd1	ora adrh	;merge C to expected flags
 		lda ad2	
 		sta adrl
 		bne tadd	;iterate op2
-		if disable_decimal < 1
+#if disable_decimal < 1
 		next_test
 
 ; decimal add/subtract test
@@ -5317,7 +5317,7 @@ bin_rti_ret
 		adc #$55
 		cmp #$aa
 		trap_ne	;expected binary result after rti D=0
-		endif
+#endif
 		
 		lda test_case
 		cmp #test_num
@@ -5343,7 +5343,7 @@ bin_rti_ret
 ; S U C C E S S ************************************************
 		jmp start	;run again	
 
-		if disable_decimal < 1
+#if disable_decimal < 1
 ; core subroutine of the decimal add/subtract test
 ; *** WARNING - tests documented behavior only! ***
 ;	only valid BCD operands are tested, N V Z flags are ignored
@@ -5539,7 +5539,7 @@ chkdad
 		trap_ne	;bad carry
 		plp
 		rts
-		endif
+#endif
 
 ; core subroutine of the full binary add/subtract test
 ; iterates through all combinations of operands and carry input
@@ -5951,9 +5951,10 @@ break2	;BRK pass 2
 		trap	;runover protection
 		jmp start	;catastrophic error - cannot continue
 
-		if report = 1
+; *** is this needed? ***
+#if report == 1
 		include "report.i65"
-		endif
+#endif
 
 ;copy of data to initialize BSS segment
 	if load_data_direct != 1
@@ -5995,10 +5996,12 @@ sbi2_	.word	sba2	;indirect pointer to complemented operand 2 (SBC)
 adiy2_	.word	ada2-$ff	;with offset for indirect indexed
 sbiy2_	.word	sba2-$ff
 zp_end
-	if (zp_end - zp_init) != (zp_bss_end - zp_bss)	
+
+#if (zp_end - zp_init) != (zp_bss_end - zp_bss)	
 	;force assembler error if size is different	
 	ERROR ERROR ERROR	;mismatch between bss and zeropage data
-	endif 
+#endif
+ 
 data_init
 ex_and_ and #0	;execute immediate opcodes
 		rts
@@ -6043,24 +6046,27 @@ absEOa_ .byt	$ff,$f0,$f0,$0f	;test pattern for EOR
 absrlo_ .byt	0,$ff,$7f,$80
 absflo_ .byt	fz,fn,0,fn
 data_end
-	if (data_end - data_init) != (data_bss_end - data_bss)
+
+#if (data_end - data_init) != (data_bss_end - data_bss)
 	;force assembler error if size is different	
 	ERROR ERROR ERROR	;mismatch between bss and data
-	endif 
+#endif 
 
 vec_init
 		.word	nmi_trap
 		.word	res_trap
 		.word	irq_trap
 vec_bss = $fffa
-	endif	;end of RAM init data
+#endif	;end of RAM init data
 	
-	if (load_data_direct = 1) & (ROM_vectors = 1)	
+; *** check these ***
+#if (load_data_direct == 1) & (ROM_vectors == 1)	
 		* = $fffa	;vectors
 		.word	nmi_trap
 		.word	res_trap
 		.word	irq_trap
-	endif
+#endif
 
+; ?
 	end start
 	
