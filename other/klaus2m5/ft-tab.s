@@ -2,7 +2,7 @@
 ; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201120-1304 ***
+; *** last modified 20201120-1340 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -95,26 +95,24 @@
 ;0 produces only consecutive object code, 1 is not suitable for a binary image
 ; *** don't know about this in xa... ***
 ; *** must check what to do	***
-;load_data_direct = 1
+;load_data_direct	= 1
 
 ;I_flag(behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
-;tested if you allow changing the interrupt status (I_flag(= 3)
+;tested if you allow changing the interrupt status (I_flag=3)
 #define	I_flag			3
 
 ;configure memory - try to stay away from memory used by the system
 ;zero_page memory start address, $52 (82) consecutive Bytes required
-;	add 2 if I_flag(= 2
-zero_page = $a	
+;	add 2 if I_flag=2
+zero_page		= $a
 
 ;data_segment memory start address, $7B (123) consecutive Bytes required
-data_segment = $200	
-;	if (data_segment & $ff) != 0
-;	ERROR ERROR ERROR low byte of data_segment MUST be $00 !!
-;	endif	
+data_segment	= $200
+;low byte of data_segment MUST be $00 !!
 
 ;code_segment memory start address, 13.1kB of consecutive space required
-;	add 2.5 kB if I_flag(= 2
+;	add 2.5 kB if I_flag=2
 code_segment = $C000		; *** no longer $400 ***
 
 ;self modifying code may be disabled to allow running in ROM
@@ -123,9 +121,7 @@ code_segment = $C000		; *** no longer $400 ***
 ;*** must try to copy relevant section into RAM ***
 ;#define	disable_selfmod	1
 
-;report errors through I/O channel (0=use standard self trap loops, 1=include
-;report.i65 as I/O channel, add 3.5 kB)
-; *** might modify for some standard I/O, but not really expected ***
+;report errors through standard self trap loops
 ;report = 0
 
 ;RAM integrity test option. Checks for undesired RAM writes.
@@ -137,30 +133,15 @@ code_segment = $C000		; *** no longer $400 ***
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
 ; *** 2 is not used by me ***
-;#define	disable_decimal		1
+#define	disable_decimal	0
 
-;	noopt	;do not take shortcuts *** what's this? ***
-
-;macros for error & success traps to allow user modification
-;example:
-;trap	macro
-;	jsr my_error_handler
-;	endm
-;trap_eq macro
-;	bne skip\?
-;	trap	;failed equal (zero)
-;skip\?
-;	endm
-;
-; my_error_handler should pop the calling address from the stack and report it.
 ; putting larger portions of code (more than 3 bytes) inside the trap macro
 ; may lead to branch range problems for some tests.
-; *** MUST resolve these all ***
 
 #define	hash			#
 ; *** that is needed for xa's CPP-like preprocessor! ***
 
-;	if report = 0
+; *** always report errors thru traps ***
 #define	trap			JMP *
 ;failed anyway
 
@@ -194,61 +175,7 @@ code_segment = $C000		; *** no longer $400 ***
 ;test passed, no errors
 ; *** will jump between two delay routines, alternating between ROM and RAM in order to blink a LED at, say, A15 ***
 
-; endif
-
-; *** reports will be probably disabled all the time as the CPU-checker lacks I/O ***
-/*
-	if report = 1
-trap	macro
-	jsr report_error
-	endm
-trap_eq macro
-	bne skip\?
-	trap	;failed equal (zero)
-skip\?
-	endm
-trap_ne macro
-	beq skip\?
-	trap	;failed not equal (non zero)
-skip\?
-	endm
-trap_cs macro
-	bcc skip\?
-	trap	;failed carry set
-skip\?
-	endm
-trap_cc macro
-	bcs skip\?
-	trap	;failed carry clear
-skip\?
-	endm
-trap_mi macro
-	bpl skip\?
-	trap	;failed minus (bit 7 set)
-skip\?
-	endm
-trap_pl macro
-	bmi skip\?
-	trap	;failed plus (bit 7 clear)
-skip\?
-	endm
-trap_vs macro
-	bvc skip\?
-	trap	;failed overflow set
-skip\?
-	endm
-trap_vc macro
-	bvs skip\?
-	trap	;failed overflow clear
-skip\?
-	endm
-; please observe that during the test the stack gets invalidated
-; therefore a RTS inside the success macro is not possible
-success macro
-	jsr report_success
-	endm
-	endif
-*/
+; *** reports are disabled all the time as the CPU-checker lacks I/O ***
 
 carry	= %00000001	;flag bits in status
 zero	= %00000010
@@ -270,7 +197,7 @@ fnz		= minus+zero
 fnzc	= minus+zero+carry
 fnv		= minus+overfl
 
-; *** as xa lacks ~, reversed bytes ***
+; *** as xa lacks ~ operator, reversed bytes ***
 Nfz		= fz ^ $FF
 Nfn		= fn ^ $FF
 Nfv		= fv ^ $FF
@@ -282,134 +209,54 @@ fao		= break+reserv	;bits always on after PHP, BRK
 fai		= fao+intdis	;+ forced interrupt disable
 faod	= fao+decmode	;+ ignore decimal
 faid	= fai+decmode	;+ ignore decimal
-m8		= $ff	;8 bit mask
-m8i		= %11111011	;8 bit mask - interrupt disable *** changed ***
+m8		= $ff			;8 bit mask
+m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 
 ;macros to allow masking of status bits.
 ;masking test of decimal bit
 ;masking of interrupt enable/disable on load and compare
 ;masking of always on bits after PHP or BRK (unused & break) on compare
-;	if disable_decimal < 2
-; *** don't think I'll disable D bit ***
+; *** don't think I'll disable D bit, disable_decimal never 2 ***
 #if I_flag == 0
-; *** I think this is correct ***
-; I_FLAG IS ZERO
+;		*** I_FLAG IS ZERO ***
 #define	load_flag(a)	LDA hash a &m8i
-; *** that seems to be the proper way ***
 ;force enable interrupts (mask I)
 
-#define	cmp_flag(a)	CMP hash (a|fao)&m8i
+#define	cmp_flag(a)		CMP hash (a|fao)&m8i
 ;I_flag is always enabled + always on bits
 
-#define	eor_flag(a)	CMP hash (a&m8i|fao)
+#define	eor_flag(a)		CMP hash (a&m8i|fao)
 ;mask I, invert expected flags + always on bits
 #endif
-; *** will check these later *** 
+
 #if I_flag== 1
-; I_FLAG IS ONE
+;		*** I_FLAG IS ONE ***
 #define	load_flag(a)	LDA hash a|intdis
 ;force disable interrupts
 
-#define	cmp_flag(a)	CMP hash (a|fai)&m8
+#define	cmp_flag(a)		CMP hash (a|fai)&m8
 ;I_flag is always disabled + always on bits
 
-#define	eor_flag(a)	CMP hash (a|fai)
+#define	eor_flag(a)		CMP hash (a|fai)
 ;invert expected flags + always on bits + I
 #endif
-; *** won't disable I flag ***
-/*
-	if I_flag= 2
-load_flag	macro
-	lda #\1
-	ora flag_I_on	;restore I-flag
-	and flag_I_off
-	endm
-cmp_flag	macro
-	eor flag_I_on	;I_flag(is never changed
-	cmp #(\1|fao)&m8i	;expected flags + always on bits, mask I
-	endm
-eor_flag	macro
-	eor flag_I_on	;I_flag(is never changed
-	eor #(\1&m8i|fao)	;mask I, invert expected flags + always on bits
-	endm
-	endif
-*/
+; *** I flag is never 2 ***
 
 #if I_flag== 3
-; I_FLAG IS THREE
+;		*** I_FLAG IS THREE ***
 #define	load_flag(a)	LDA hash a
 ;allow test to change I-flag (no mask)
 
-#define	cmp_flag(a)	CMP hash (a|fao)&m8
+#define	cmp_flag(a)		CMP hash (a|fao)&m8
 ;expected flags + always on bits
 
-#define	eor_flag(a)	CMP hash (a|fao)
+#define	eor_flag(a)		CMP hash (a|fao)
 ;invert expected flags + always on bits
 #endif
-;	else
-; *** this is for disable_decimal=2, not implemented ***
-/*
-	if I_flag= 0
-load_flag	macro
-	lda #\1&m8i	;force enable interrupts (mask I)
-	endm
-cmp_flag	macro
-	ora #decmode	;ignore decimal mode bit
-	cmp #(\1|faod)&m8i	;I_flag is always enabled + always on bits
-	endm
-eor_flag	macro
-	ora #decmode	;ignore decimal mode bit
-	eor #(\1&m8i|faod)	;mask I, invert expected flags + always on bits
-	endm
-	endif
-	if I_flag= 1
-load_flag	macro
-	lda #\1|intdis	;force disable interrupts
-	endm
-cmp_flag	macro
-	ora #decmode	;ignore decimal mode bit
-	cmp #(\1|faid)&m8	;I_flag is always disabled + always on bits
-	endm
-eor_flag	macro
-	ora #decmode	;ignore decimal mode bit
-	eor #(\1|faid)	;invert expected flags + always on bits + I
-	endm
-	endif
-	if I_flag= 2
-load_flag	macro
-	lda #\1
-	ora flag_I_on	;restore I-flag
-	and flag_I_off
-	endm
-cmp_flag	macro
-	eor flag_I_on	;I_flag is never changed
-	ora #decmode	;ignore decimal mode bit
-	cmp #(\1|faod)&m8i	;expected flags + always on bits, mask I
-	endm
-eor_flag	macro
-	eor flag_I_on	;I_flag is never changed
-	ora #decmode	;ignore decimal mode bit
-	eor #(\1&m8i|faod)	;mask I, invert expected flags + always on bits
-	endm
-	endif
-	if I_flag= 3
-load_flag	macro
-	lda #\1	;allow test to change I-flag (no mask)
-	endm
-cmp_flag	macro
-	ora #decmode	;ignore decimal mode bit
-	cmp #(\1|faod)&m8	;expected flags + always on bits
-	endm
-eor_flag	macro
-	ora #decmode	;ignore decimal mode bit
-	eor #\1|faod	;invert expected flags + always on bits
-	endm
-	endif
-	endif
-*/
+; *** this was for disable_decimal=2, not implemented ***
+
 ;macros to set (register|memory|zeropage) & status
 #define	set_stat(a)		load_flag(a):PHA:PLP
-; *** seems correct macro replacent ***
 
 #define	set_a(a,b)		load_flag(b):PHA:LDA hash a:PLP
 ;precharging accu & status
@@ -554,32 +401,29 @@ eor_flag	macro
 	lda test_case:				\
 	cmp #test_num:				\
 	trap_ne:					\
+	test_num=test_num+1:		\
 	lda #test_num:				\
 	sta test_case:				\
 	check_ram
 
-;removed	test_num = test_num + 1		after trapNe
+; *** removed	test_num = test_num + 1		after trapNe ***
+; *** ...but does not assemble with it ***
 	
 ;uncomment checkRam above to find altered RAM after each test
 
-/*
-	if load_data_direct = 1
+; *** must check about load_data_direct ***
+#if load_data_direct == 1
 	data
-	else
+#else
 	bss	;uninitialized segment, copy of data at end of code!
-	endif
-*/ 
-	* =		zero_page
+#endif
+
+; *** should I put .zero otherwise? ***
+		* =		zero_page
 ;break test interrupt save
-irq_a		.dsb	1			;a register
-irq_x		.dsb	1			;x register
-/* I_flag is never 2
-if I_flag= 2
-;masking for I bit in status
-flag_I_on	.dsb	1	;or mask to load flags	
-flag_I_off	.dsb	1	;and mask to load flags
-	endif
-*/
+irq_a	.dsb	1				;a register
+irq_x	.dsb	1				;x register
+; *** I_flag is never 2 ***
 zpt:							;6 bytes store/modify test area
 ;add/subtract operand generation and result/flag prediction
 adfc	.dsb	1				;carry flag before op
@@ -628,6 +472,7 @@ adiy2	.word	ada2-$ff		;with offset for indirect indexed
 sbiy2	.word	sba2-$ff
 zp_bss_end:
 
+; *** check for binary load ***
 	* = data_segment
 test_case	.dsb	1			;current test number
 ram_chksm	.dsb	2			;checksum for RAM integrity test
@@ -637,8 +482,8 @@ ada2		.dsb	1			;operand 2
 sba2		.dsb	1			;operand 2 complemented for subtract
 			.dsb	4			;fill remaining bytes
 data_bss:
-; **** MUST check these, which way I should go? ****
 
+; **** MUST check these, which way I should go? ****
 #if load_data_direct == 1
 ex_andi and #0	;execute immediate opcodes
 	rts
@@ -692,8 +537,7 @@ absrlo	.byt	0,$ff,$7f,$80
 absflo	.byt	fz,fn,0,fn
 data_bss_end:
 
-; *** *** *** C O N T I N U E	H E R E *** *** ***
-;	code
+; *** perhaps some binarty filling? ***
 		* =		code_segment
 start	cld
 		ldx #$ff
@@ -708,12 +552,7 @@ start	cld
 		sei
 #endif
 	
-/*
-;initialize I/O for report channel
-	if report = 1
-	jsr report_init
-	endif
-*/
+; *** no I/O channel ***
 	
 ;pretest small branch offset
 		ldx #5
@@ -755,9 +594,8 @@ psb_test
 psb_fwok
 	
 ;initialize BSS segment
-/*
-; *** is this code needed at all? *** CHECK
-		if load_data_direct != 1
+; *** MUST check this ***
+#if load_data_direct != 1
 		ldx #zp_end-zp_init-1
 ld_zp	lda zp_init,x
 		sta zp_bss,x
@@ -768,58 +606,47 @@ ld_data lda data_init,x
 		sta data_bss,x
 		dex
 		bpl ld_data
-		if ROM_vectors = 1
-		ldx #5
-ld_vect lda vec_init,x
-		sta vec_bss,x
-		dex
-		bpl ld_vect
-		endif
-		endif
-*/
-/* *** I_flag is NEVER 2 ***
-;retain status of interrupt flag
-	if I_flag= 2
-	php
-	pla
-	and #4					;isolate flag
-	sta flag_I_on			;or mask
-	eor #<(~4)				;reverse
-	sta flag_I_off			;and mask
-	endif
-*/	
+#if ROM_vectors == 1
+			ldx #5
+ld_vect		lda vec_init,x
+			sta vec_bss,x
+			dex
+			bpl ld_vect
+#endif
+#endif
+
 ;generate checksum for RAM integrity test
 #if	ram_top > -1
 		lda #0 
-		sta zpt				;set low byte of indirect pointer
-		sta ram_chksm+1		;checksum high byte
+		sta zpt					;set low byte of indirect pointer
+		sta ram_chksm+1			;checksum high byte
 #if disable_selfmod == 0
-		sta range_adr		;reset self modifying code
+		sta range_adr			;reset self modifying code
 #endif
 		clc
 		ldx #zp_bss-zero_page	;zeropage - write test area
 gcs3	adc zero_page,x
 		bcc gcs2
-		inc ram_chksm+1		;carry to high byte
+		inc ram_chksm+1			;carry to high byte
 		clc
 gcs2	inx
 		bne gcs3
-		ldx #>abs1		;set high byte of indirect pointer
+		ldx #>abs1				;set high byte of indirect pointer
 		stx zpt+1
-		ldy #<abs1			;data after write & execute test area
+		ldy #<abs1				;data after write & execute test area
 gcs5	adc (zpt),y
 		bcc gcs4
-		inc ram_chksm+1		;carry to high byte
+		inc ram_chksm+1			;carry to high byte
 		clc
 gcs4	iny
 		bne gcs5
-		inx					;advance RAM high address
+		inx						;advance RAM high address
 		stx zpt+1
 		cpx #ram_top
 		bne gcs5
-		sta ram_chksm		;checksum complete
+		sta ram_chksm			;checksum complete
 #endif
-		next_test	
+		next_test
 
 #if	disable_selfmod == 0
 ;testing relative addressing with BEQ
@@ -2026,7 +1853,7 @@ tldx1
 		cmp abs1,y			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz) 	;mask bits not altered
+		eor_flag(Nfnz) 		;mask bits not altered
 		cmp fLDx,y			;test flags
 		trap_ne
 		dey
@@ -2068,7 +1895,7 @@ tldx3
 		cmp zp1,y			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx,y			;test flags
 		trap_ne
 		dey
@@ -2155,7 +1982,7 @@ tldy1
 		cmp abs1,x			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz) 	;mask bits not altered
+		eor_flag(Nfnz) 		;mask bits not altered
 		cmp fLDx,x			;test flags
 		trap_ne
 		dex
@@ -2197,7 +2024,7 @@ tldy3
 		cmp zp1,x			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx,x			;test flags
 		trap_ne
 		dex
@@ -2239,12 +2066,12 @@ tldy5	ldy abs1-$fa,x		;no wrap on indexed abs
 tsty1	lda zpt,x
 		cmp zp1,x
 		trap_ne				;store to zp,x data
-		sty zpt,x			;clear	
+		sty zpt,x			;clear
 		lda abst,x
 		cmp abs1,x
 		trap_ne				;store to abs,x data
 		txa
-		sta abst,x			;clear	
+		sta abst,x			;clear
 		dex
 		bpl tsty1
 		next_test
@@ -2333,7 +2160,7 @@ tsty1	lda zpt,x
 		cpx #$c3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz) 	;mask bits not altered
+		eor_flag(Nfnz) 		;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2350,7 +2177,7 @@ tsty1	lda zpt,x
 		cpx #$82			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz) 	;mask bits not altered
+		eor_flag(Nfnz) 		;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2367,7 +2194,7 @@ tsty1	lda zpt,x
 		cpx #$41			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2384,7 +2211,7 @@ tsty1	lda zpt,x
 		cpx #0				;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2467,7 +2294,7 @@ tsty1	lda zpt,x
 		cpx zp1				;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2484,7 +2311,7 @@ tsty1	lda zpt,x
 		cpx zp1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2501,7 +2328,7 @@ tsty1	lda zpt,x
 		cpx zp1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2518,7 +2345,7 @@ tsty1	lda zpt,x
 		cpx zp1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2565,7 +2392,7 @@ tsty1	lda zpt,x
 		cpx abs1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2574,7 +2401,7 @@ tsty1	lda zpt,x
 		cpx abs1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2583,7 +2410,7 @@ tsty1	lda zpt,x
 		cpx abs1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2592,7 +2419,7 @@ tsty1	lda zpt,x
 		cpx abs1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2774,7 +2601,7 @@ tsty1	lda zpt,x
 		cpy #0				;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 		
@@ -2861,7 +2688,7 @@ tsty1	lda zpt,x
 		cmp zp1				;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2878,7 +2705,7 @@ tsty1	lda zpt,x
 		cmp zp1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2895,7 +2722,7 @@ tsty1	lda zpt,x
 		cmp zp1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2912,7 +2739,7 @@ tsty1	lda zpt,x
 		cmp zp1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2960,7 +2787,7 @@ tsty1	lda zpt,x
 		cpy abs1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2969,7 +2796,7 @@ tsty1	lda zpt,x
 		cpy abs1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2978,7 +2805,7 @@ tsty1	lda zpt,x
 		cpy abs1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2987,7 +2814,7 @@ tsty1	lda zpt,x
 		cpy abs1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(Nfnz)	;mask bits not altered
+		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 		
@@ -3031,7 +2858,7 @@ tsty1	lda zpt,x
 		eor #$c3
 		cmp abs1+3
 		trap_ne				;store to abs+3 data
-		sty abst+3			;clear	
+		sty abst+3			;clear
 		next_test
 
 ; testing load / store accumulator LDA / STA all addressing modes
@@ -3046,11 +2873,11 @@ tldax
 		sta abst,x
 		php	;flags after load/store sequence
 		eor #$c3
-		cmp abs1,x	;test result
+		cmp abs1,x			;test result
 		trap_ne
 		pla	;load status
 		eor_flag(0)
-		cmp fLDx,x	;test flags
+		cmp fLDx,x			;test flags
 		trap_ne
 		dex
 		bpl tldax	
