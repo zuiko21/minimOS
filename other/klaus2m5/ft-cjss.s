@@ -1455,12 +1455,12 @@ brvc8
         trap_ne
         cpy #$42
         trap_ne
-        ldx #$.byt
+        ldx #$DB
         ldy #$bd
         set_a $e7,$ff
         nop
         tst_a $e7,$ff
-        cpx #$.byt
+        cpx #$DB
         trap_ne
         cpy #$bd
         trap_ne
@@ -5495,7 +5495,7 @@ chkdad
 ; decimal ADC / SBC (zp,x)
         php             ;save carry for subtract
         lda ad1
-        adc (lo adi2-ad2,x) ;perform add
+        adc (< adi2-ad2,x) ;perform add
         php          
         cmp adrl        ;check result
         trap_ne         ;bad result
@@ -5506,7 +5506,7 @@ chkdad
         plp
         php             ;save carry for next add
         lda ad1
-        sbc (lo sbi2-ad2,x) ;perform subtract
+        sbc (< sbi2-ad2,x) ;perform subtract
         php          
         cmp adrl        ;check result
         trap_ne         ;bad result
@@ -5703,7 +5703,7 @@ ckad1   pla
 ; binary ADC / SBC (zp,x)
         php             ;save carry for subtract
         lda ad1
-        adc (lo adi2-ad2,x) ;perform add
+        adc (< adi2-ad2,x) ;perform add
         php          
         cmp adrl        ;check result
         trap_ne         ;bad result
@@ -5714,7 +5714,7 @@ ckad1   pla
         plp
         php             ;save carry for next add
         lda ad1
-        sbc (lo sbi2-ad2,x) ;perform subtract
+        sbc (< sbi2-ad2,x) ;perform subtract
         php          
         cmp adrl        ;check result
         trap_ne         ;bad result
@@ -6055,7 +6055,7 @@ vec_init
 vec_bss = $fffa
     endif                   ;end of RAM init data
     
-    if (load_data_direct = 1) & (ROM_vectors = 1)  
+    if (<ad_data_direct = 1) & (ROM_vectors = 1)  
         * = $fffa       ;vectors
         .word  nmi_trap
         .word  res_trap

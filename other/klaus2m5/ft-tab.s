@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201119-1417 ***
+; *** last modified 20201120-1011 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -133,7 +133,8 @@ code_segment = $C000		; *** no longer $400 ***
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
 ;leave disabled if a monitor, OS or background interrupt is allowed to alter RAM
-#define	ram_top			$80		; *** 32 kiB for simpler A15 decoding ***
+#define	ram_top			128
+; *** 32 kiB for simpler A15 decoding ***
 
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
@@ -270,6 +271,14 @@ fnc	= minus+carry
 fnz	= minus+zero
 fnzc	= minus+zero+carry
 fnv	= minus+overfl
+
+; *** as xa lacks ~, reversed bytes ***
+Nfz		= fz ^ $FF
+Nfn		= fn ^ $FF
+Nfv		= fv ^ $FF
+Nfnz	= fnz ^ $FF
+Nfnv	= fnv ^ $FF
+Nfzc	= fzc ^ $FF
 
 fao	= break+reserv	;bits always on after PHP, BRK
 fai	= fao+intdis	;+ forced interrupt disable
@@ -547,10 +556,13 @@ eor_flag	macro
 	lda test_case:				\
 	cmp #test_num:				\
 	trap_ne:					\
-	test_num = test_num + 1:	\
 	lda #test_num:				\
 	sta test_case:				\
-	;check_ram					;uncomment to find altered RAM after each test
+	check_ram
+
+;removed	test_num = test_num + 1		after trapNe
+	
+;uncomment checkRam above to find altered RAM after each test
 
 /*
 	if load_data_direct = 1
@@ -1438,7 +1450,7 @@ brvc8
 ; partial pretest EOR #
 		set_a($3c,0)
 		eor #$c3
-		tst_a($ff,fn
+		tst_a($ff,fn)
 		set_a($c3,0)
 		eor #$c3
 		tst_a(0,fz)
@@ -1455,12 +1467,12 @@ brvc8
 		trap_ne
 		cpy #$42
 		trap_ne
-		ldx #$.byt
+		ldx #$DB
 		ldy #$bd
 		set_a($e7,$ff)
 		nop
 		tst_a($e7,$ff)
-		cpx #$.byt
+		cpx #$DB
 		trap_ne
 		cpy #$bd
 		trap_ne
@@ -1580,9 +1592,9 @@ jsr_ret = *-1				;last address of jsr = return address
 		plp					;N=0, V=0, Z=0, C=0
 		brk
 #else
-		lda #hi brk_ret0	;emulated break
+		lda #>brk_ret0	;emulated break
 		pha
-		lda #lo brk_ret0
+		lda #<brk_ret0
 		pha
 		load_flag(fao)		;set break & unused on stack
 		pha
@@ -2016,7 +2028,7 @@ tldx1
 		cmp abs1,y			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz) 	;mask bits not altered
+		eor_flag(<~fnz) 	;mask bits not altered
 		cmp fLDx,y			;test flags
 		trap_ne
 		dey
@@ -2058,7 +2070,7 @@ tldx3
 		cmp zp1,y			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx,y			;test flags
 		trap_ne
 		dey
@@ -2145,7 +2157,7 @@ tldy1
 		cmp abs1,x			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz) 	;mask bits not altered
+		eor_flag(<~fnz) 	;mask bits not altered
 		cmp fLDx,x			;test flags
 		trap_ne
 		dex
@@ -2187,7 +2199,7 @@ tldy3
 		cmp zp1,x			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx,x			;test flags
 		trap_ne
 		dex
@@ -2323,7 +2335,7 @@ tsty1	lda zpt,x
 		cpx #$c3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz) 	;mask bits not altered
+		eor_flag(<~fnz) 	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2340,7 +2352,7 @@ tsty1	lda zpt,x
 		cpx #$82			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz) 	;mask bits not altered
+		eor_flag(<~fnz) 	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2357,7 +2369,7 @@ tsty1	lda zpt,x
 		cpx #$41			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2374,7 +2386,7 @@ tsty1	lda zpt,x
 		cpx #0				;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2457,7 +2469,7 @@ tsty1	lda zpt,x
 		cpx zp1				;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2474,7 +2486,7 @@ tsty1	lda zpt,x
 		cpx zp1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2491,7 +2503,7 @@ tsty1	lda zpt,x
 		cpx zp1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2508,7 +2520,7 @@ tsty1	lda zpt,x
 		cpx zp1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2555,7 +2567,7 @@ tsty1	lda zpt,x
 		cpx abs1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2564,7 +2576,7 @@ tsty1	lda zpt,x
 		cpx abs1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2573,7 +2585,7 @@ tsty1	lda zpt,x
 		cpx abs1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2582,7 +2594,7 @@ tsty1	lda zpt,x
 		cpx abs1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2713,7 +2725,7 @@ tsty1	lda zpt,x
 		cpy #$c3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)		;mask bits not altered
+		eor_flag(<~fnz)		;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2730,7 +2742,7 @@ tsty1	lda zpt,x
 		cpy #$82			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)		;mask bits not altered
+		eor_flag(<~fnz)		;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2747,7 +2759,7 @@ tsty1	lda zpt,x
 		cpy #$41			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)		;mask bits not altered
+		eor_flag(<~fnz)		;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2764,7 +2776,7 @@ tsty1	lda zpt,x
 		cpy #0				;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 		
@@ -2851,7 +2863,7 @@ tsty1	lda zpt,x
 		cmp zp1				;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2868,7 +2880,7 @@ tsty1	lda zpt,x
 		cmp zp1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2885,7 +2897,7 @@ tsty1	lda zpt,x
 		cmp zp1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2902,7 +2914,7 @@ tsty1	lda zpt,x
 		cmp zp1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 
@@ -2950,7 +2962,7 @@ tsty1	lda zpt,x
 		cpy abs1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2959,7 +2971,7 @@ tsty1	lda zpt,x
 		cpy abs1+1			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2968,7 +2980,7 @@ tsty1	lda zpt,x
 		cpy abs1+2			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
@@ -2977,7 +2989,7 @@ tsty1	lda zpt,x
 		cpy abs1+3			;test result
 		trap_ne
 		pla					;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
 		
@@ -3058,7 +3070,7 @@ tldax1
 		cmp abs1,x	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx,x	;test flags
 		trap_ne
 		dex
@@ -3096,7 +3108,7 @@ tldax3
 		cmp zp1,x	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx,x	;test flags
 		trap_ne
 		dex
@@ -3152,7 +3164,7 @@ tlday1
 		cmp abs1,y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx,y	;test flags
 		trap_ne
 		dey
@@ -3201,7 +3213,7 @@ tlday3
 		cmp (ind1),y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx,y	;test flags
 		trap_ne
 		dey
@@ -3254,7 +3266,7 @@ tldax5
 		cmp abs1,y	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx,y	;test flags
 		trap_ne
 		dex
@@ -3425,7 +3437,7 @@ tstay6	lda abst,y
 		cmp #$c3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3439,7 +3451,7 @@ tstay6	lda abst,y
 		cmp #$82	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+1	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3453,7 +3465,7 @@ tstay6	lda abst,y
 		cmp #$41	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+2	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3467,7 +3479,7 @@ tstay6	lda abst,y
 		cmp #0	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3	;test flags
 		trap_ne
 		set_stat(0)
@@ -3537,7 +3549,7 @@ tstay6	lda abst,y
 		cmp zp1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3551,7 +3563,7 @@ tstay6	lda abst,y
 		cmp zp1+1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+1	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3565,7 +3577,7 @@ tstay6	lda abst,y
 		cmp zp1+2	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+2	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3579,7 +3591,7 @@ tstay6	lda abst,y
 		cmp zp1+3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3	;test flags
 		trap_ne
 		set_stat(0)
@@ -3625,7 +3637,7 @@ tstay6	lda abst,y
 		cmp abs1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3634,7 +3646,7 @@ tstay6	lda abst,y
 		cmp abs1+1	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+1	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3643,7 +3655,7 @@ tstay6	lda abst,y
 		cmp abs1+2	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+2	;test flags
 		trap_ne
 		set_stat($ff)
@@ -3652,7 +3664,7 @@ tstay6	lda abst,y
 		cmp abs1+3	;test result
 		trap_ne
 		pla	;load status
-		eor_flag(lo~fnz)	;mask bits not altered
+		eor_flag(<~fnz)	;mask bits not altered
 		cmp fLDx+3	;test flags
 		trap_ne
 
@@ -3973,10 +3985,10 @@ tstay6	lda abst,y
 		ldx #8	;with indexed indirect
 		set_a($80,0)
 		cmp abs1,y
-		tst_a($80,fc
+		tst_a($80,fc)
 		set_a($7f,0)
 		cmp abs1,y
-		tst_a($7f,fzc
+		tst_a($7f,fzc)
 		set_a($7e,0)
 		cmp abs1,y
 		tst_a($7e,fn)
@@ -3995,7 +4007,7 @@ tstay6	lda abst,y
 		tst_a($80,fc)
 		set_a($7f,0)
 		cmp (ind1,x)
-		tst_a($7f,fzc
+		tst_a($7f,fzc)
 		set_a($7e,0)
 		cmp (ind1,x)
 		tst_a($7e,fn)
@@ -4033,91 +4045,91 @@ tstay6	lda abst,y
 ; shifts - accumulator
 		ldx #5
 tasl
-		set_ax zps,0
+		set_ax(zps,0)
 		asl a
-		tst_ax rASL,fASL,0
+		tst_ax(rASL,fASL,0)
 		dex
 		bpl tasl
 		ldx #5
 tasl1
-		set_ax zps,$ff
+		set_ax(zps,$ff)
 		asl a
-		tst_ax rASL,fASL,$ff-fnzc
+		tst_ax(rASL,fASL,$ff-fnzc)
 		dex
 		bpl tasl1
 
 		ldx #5
 tlsr
-		set_ax zps,0
+		set_ax(zps,0)
 		lsr a
-		tst_ax rLSR,fLSR,0
+		tst_ax(rLSR,fLSR,0)
 		dex
 		bpl tlsr
 		ldx #5
 tlsr1
-		set_ax zps,$ff
+		set_ax(zps,$ff)
 		lsr a
-		tst_ax rLSR,fLSR,$ff-fnzc
+		tst_ax(rLSR,fLSR,$ff-fnzc)
 		dex
 		bpl tlsr1
 
 		ldx #5
 trol
-		set_ax zps,0
+		set_ax(zps,0)
 		rol a
-		tst_ax rROL,fROL,0
+		tst_ax(rROL,fROL,0)
 		dex
 		bpl trol
 		ldx #5
 trol1
-		set_ax zps,$ff-fc
+		set_ax(zps,$ff-fc)
 		rol a
-		tst_ax rROL,fROL,$ff-fnzc
+		tst_ax(rROL,fROL,$ff-fnzc)
 		dex
 		bpl trol1
 
 		ldx #5
 trolc
-		set_ax zps,fc
+		set_ax(zps,fc)
 		rol a
-		tst_ax rROLc,fROLc,0
+		tst_ax(rROLc,fROLc,0)
 		dex
 		bpl trolc
 		ldx #5
 trolc1
-		set_ax zps,$ff
+		set_ax(zps,$ff)
 		rol a
-		tst_ax rROLc,fROLc,$ff-fnzc
+		tst_ax(rROLc,fROLc,$ff-fnzc)
 		dex
 		bpl trolc1
 
 		ldx #5
 tror
-		set_ax zps,0
+		set_ax(zps,0)
 		ror a
-		tst_ax rROR,fROR,0
+		tst_ax(rROR,fROR,0)
 		dex
 		bpl tror
 		ldx #5
 tror1
-		set_ax zps,$ff-fc
+		set_ax(zps,$ff-fc)
 		ror a
-		tst_ax rROR,fROR,$ff-fnzc
+		tst_ax(rROR,fROR,$ff-fnzc)
 		dex
 		bpl tror1
 
 		ldx #5
 trorc
-		set_ax zps,fc
+		set_ax(zps,fc)
 		ror a
-		tst_ax rRORc,fRORc,0
+		tst_ax(rRORc,fRORc,0)
 		dex
 		bpl trorc
 		ldx #5
 trorc1
-		set_ax zps,$ff
+		set_ax(zps,$ff)
 		ror a
-		tst_ax rRORc,fRORc,$ff-fnzc
+		tst_ax(rRORc,fRORc,$ff-fnzc)
 		dex
 		bpl trorc1
 		next_test
@@ -4125,91 +4137,91 @@ trorc1
 ; shifts - zeropage
 		ldx #5
 tasl2
-		set_z zps,0
+		set_z(zps,0)
 		asl zpt
-		tst_z rASL,fASL,0
+		tst_z(rASL,fASL,0)
 		dex
 		bpl tasl2
 		ldx #5
 tasl3
-		set_z zps,$ff
+		set_z(zps,$ff)
 		asl zpt
-		tst_z rASL,fASL,$ff-fnzc
+		tst_z(rASL,fASL,$ff-fnzc)
 		dex
 		bpl tasl3
 
 		ldx #5
 tlsr2
-		set_z zps,0
+		set_z(zps,0)
 		lsr zpt
-		tst_z rLSR,fLSR,0
+		tst_z(rLSR,fLSR,0)
 		dex
 		bpl tlsr2
 		ldx #5
 tlsr3
-		set_z zps,$ff
+		set_z(zps,$ff)
 		lsr zpt
-		tst_z rLSR,fLSR,$ff-fnzc
+		tst_z(rLSR,fLSR,$ff-fnzc)
 		dex
 		bpl tlsr3
 
 		ldx #5
 trol2
-		set_z zps,0
+		set_z(zps,0)
 		rol zpt
-		tst_z rROL,fROL,0
+		tst_z(rROL,fROL,0)
 		dex
 		bpl trol2
 		ldx #5
 trol3
-		set_z zps,$ff-fc
+		set_z(zps,$ff-fc)
 		rol zpt
-		tst_z rROL,fROL,$ff-fnzc
+		tst_z(rROL,fROL,$ff-fnzc)
 		dex
 		bpl trol3
 
 		ldx #5
 trolc2
-		set_z zps,fc
+		set_z(zps,fc)
 		rol zpt
-		tst_z rROLc,fROLc,0
+		tst_z(rROLc,fROLc,0)
 		dex
 		bpl trolc2
 		ldx #5
 trolc3
-		set_z zps,$ff
+		set_z(zps,$ff)
 		rol zpt
-		tst_z rROLc,fROLc,$ff-fnzc
+		tst_z(rROLc,fROLc,$ff-fnzc)
 		dex
 		bpl trolc3
 
 		ldx #5
 tror2
-		set_z zps,0
+		set_z(zps,0)
 		ror zpt
-		tst_z rROR,fROR,0
+		tst_z(rROR,fROR,0)
 		dex
 		bpl tror2
 		ldx #5
 tror3
-		set_z zps,$ff-fc
+		set_z(zps,$ff-fc)
 		ror zpt
-		tst_z rROR,fROR,$ff-fnzc
+		tst_z(rROR,fROR,$ff-fnzc)
 		dex
 		bpl tror3
 
 		ldx #5
 trorc2
-		set_z zps,fc
+		set_z(zps,fc)
 		ror zpt
-		tst_z rRORc,fRORc,0
+		tst_z(rRORc,fRORc,0)
 		dex
 		bpl trorc2
 		ldx #5
 trorc3
-		set_z zps,$ff
+		set_z(zps,$ff)
 		ror zpt
-		tst_z rRORc,fRORc,$ff-fnzc
+		tst_z(rRORc,fRORc,$ff-fnzc)
 		dex
 		bpl trorc3
 		next_test
@@ -4217,91 +4229,91 @@ trorc3
 ; shifts - absolute
 		ldx #5
 tasl4
-		set_abs zps,0
+		set_abs(zps,0)
 		asl abst
-		tst_abs rASL,fASL,0
+		tst_abs(rASL,fASL,0)
 		dex
 		bpl tasl4
 		ldx #5
 tasl5
-		set_abs zps,$ff
+		set_abs(zps,$ff)
 		asl abst
-		tst_abs rASL,fASL,$ff-fnzc
+		tst_abs(rASL,fASL,$ff-fnzc)
 		dex
 		bpl tasl5
 
 		ldx #5
 tlsr4
-		set_abs zps,0
+		set_abs(zps,0)
 		lsr abst
-		tst_abs rLSR,fLSR,0
+		tst_abs(rLSR,fLSR,0)
 		dex
 		bpl tlsr4
 		ldx #5
 tlsr5
-		set_abs zps,$ff
+		set_abs(zps,$ff)
 		lsr abst
-		tst_abs rLSR,fLSR,$ff-fnzc
+		tst_abs(rLSR,fLSR,$ff-fnzc)
 		dex
 		bpl tlsr5
 
 		ldx #5
 trol4
-		set_abs zps,0
+		set_abs(zps,0)
 		rol abst
-		tst_abs rROL,fROL,0
+		tst_abs(rROL,fROL,0)
 		dex
 		bpl trol4
 		ldx #5
 trol5
-		set_abs zps,$ff-fc
+		set_abs(zps,$ff-fc)
 		rol abst
-		tst_abs rROL,fROL,$ff-fnzc
+		tst_abs(rROL,fROL,$ff-fnzc)
 		dex
 		bpl trol5
 
 		ldx #5
 trolc4
-		set_abs zps,fc
+		set_abs(zps,fc)
 		rol abst
-		tst_abs rROLc,fROLc,0
+		tst_abs(rROLc,fROLc,0)
 		dex
 		bpl trolc4
 		ldx #5
 trolc5
-		set_abs zps,$ff
+		set_abs(zps,$ff)
 		rol abst
-		tst_abs rROLc,fROLc,$ff-fnzc
+		tst_abs(rROLc,fROLc,$ff-fnzc)
 		dex
 		bpl trolc5
 
 		ldx #5
 tror4
-		set_abs zps,0
+		set_abs(zps,0)
 		ror abst
-		tst_abs rROR,fROR,0
+		tst_abs(rROR,fROR,0)
 		dex
 		bpl tror4
 		ldx #5
 tror5
-		set_abs zps,$ff-fc
+		set_abs(zps,$ff-fc)
 		ror abst
-		tst_abs rROR,fROR,$ff-fnzc
+		tst_abs(rROR,fROR,$ff-fnzc)
 		dex
 		bpl tror5
 
 		ldx #5
 trorc4
-		set_abs zps,fc
+		set_abs(zps,fc)
 		ror abst
-		tst_abs rRORc,fRORc,0
+		tst_abs(rRORc,fRORc,0)
 		dex
 		bpl trorc4
 		ldx #5
 trorc5
-		set_abs zps,$ff
+		set_abs(zps,$ff)
 		ror abst
-		tst_abs rRORc,fRORc,$ff-fnzc
+		tst_abs(rRORc,fRORc,$ff-fnzc)
 		dex
 		bpl trorc5
 		next_test
@@ -4309,91 +4321,91 @@ trorc5
 ; shifts - zp indexed
 		ldx #5
 tasl6
-		set_zx zps,0
+		set_zx(zps,0)
 		asl zpt,x
-		tst_zx rASL,fASL,0
+		tst_zx(rASL,fASL,0)
 		dex
 		bpl tasl6
 		ldx #5
 tasl7
-		set_zx zps,$ff
+		set_zx(zps,$ff)
 		asl zpt,x
-		tst_zx rASL,fASL,$ff-fnzc
+		tst_zx(rASL,fASL,$ff-fnzc)
 		dex
 		bpl tasl7
 
 		ldx #5
 tlsr6
-		set_zx zps,0
+		set_zx(zps,0)
 		lsr zpt,x
-		tst_zx rLSR,fLSR,0
+		tst_zx(rLSR,fLSR,0)
 		dex
 		bpl tlsr6
 		ldx #5
 tlsr7
-		set_zx zps,$ff
+		set_zx(zps,$ff)
 		lsr zpt,x
-		tst_zx rLSR,fLSR,$ff-fnzc
+		tst_zx(rLSR,fLSR,$ff-fnzc)
 		dex
 		bpl tlsr7
 
 		ldx #5
 trol6
-		set_zx zps,0
+		set_zx(zps,0)
 		rol zpt,x
-		tst_zx rROL,fROL,0
+		tst_zx(rROL,fROL,0)
 		dex
 		bpl trol6
 		ldx #5
 trol7
-		set_zx zps,$ff-fc
+		set_zx(zps,$ff-fc)
 		rol zpt,x
-		tst_zx rROL,fROL,$ff-fnzc
+		tst_zx(rROL,fROL,$ff-fnzc)
 		dex
 		bpl trol7
 
 		ldx #5
 trolc6
-		set_zx zps,fc
+		set_zx(zps,fc)
 		rol zpt,x
-		tst_zx rROLc,fROLc,0
+		tst_zx(rROLc,fROLc,0)
 		dex
 		bpl trolc6
 		ldx #5
 trolc7
-		set_zx zps,$ff
+		set_zx(zps,$ff)
 		rol zpt,x
-		tst_zx rROLc,fROLc,$ff-fnzc
+		tst_zx(rROLc,fROLc,$ff-fnzc)
 		dex
 		bpl trolc7
 
 		ldx #5
 tror6
-		set_zx zps,0
+		set_zx(zps,0)
 		ror zpt,x
-		tst_zx rROR,fROR,0
+		tst_zx(rROR,fROR,0)
 		dex
 		bpl tror6
 		ldx #5
 tror7
-		set_zx zps,$ff-fc
+		set_zx(zps,$ff-fc)
 		ror zpt,x
-		tst_zx rROR,fROR,$ff-fnzc
+		tst_zx(rROR,fROR,$ff-fnzc)
 		dex
 		bpl tror7
 
 		ldx #5
 trorc6
-		set_zx zps,fc
+		set_zx(zps,fc)
 		ror zpt,x
-		tst_zx rRORc,fRORc,0
+		tst_zx(rRORc,fRORc,0)
 		dex
 		bpl trorc6
 		ldx #5
 trorc7
-		set_zx zps,$ff
+		set_zx(zps,$ff)
 		ror zpt,x
-		tst_zx rRORc,fRORc,$ff-fnzc
+		tst_zx(rRORc,fRORc,$ff-fnzc)
 		dex
 		bpl trorc7
 		next_test
@@ -4401,91 +4413,91 @@ trorc7
 ; shifts - abs indexed
 		ldx #5
 tasl8
-		set_absx zps,0
+		set_absx(zps,0)
 		asl abst,x
-		tst_absx rASL,fASL,0
+		tst_absx(rASL,fASL,0)
 		dex
 		bpl tasl8
 		ldx #5
 tasl9
-		set_absx zps,$ff
+		set_absx(zps,$ff)
 		asl abst,x
-		tst_absx rASL,fASL,$ff-fnzc
+		tst_absx(rASL,fASL,$ff-fnzc)
 		dex
 		bpl tasl9
 
 		ldx #5
 tlsr8
-		set_absx zps,0
+		set_absx(zps,0)
 		lsr abst,x
-		tst_absx rLSR,fLSR,0
+		tst_absx(rLSR,fLSR,0)
 		dex
 		bpl tlsr8
 		ldx #5
 tlsr9
-		set_absx zps,$ff
+		set_absx(zps,$ff)
 		lsr abst,x
-		tst_absx rLSR,fLSR,$ff-fnzc
+		tst_absx(rLSR,fLSR,$ff-fnzc)
 		dex
 		bpl tlsr9
 
 		ldx #5
 trol8
-		set_absx zps,0
+		set_absx(zps,0)
 		rol abst,x
-		tst_absx rROL,fROL,0
+		tst_absx(rROL,fROL,0)
 		dex
 		bpl trol8
 		ldx #5
 trol9
-		set_absx zps,$ff-fc
+		set_absx(zps,$ff-fc)
 		rol abst,x
-		tst_absx rROL,fROL,$ff-fnzc
+		tst_absx(rROL,fROL,$ff-fnzc)
 		dex
 		bpl trol9
 
 		ldx #5
 trolc8
-		set_absx zps,fc
+		set_absx(zps,fc)
 		rol abst,x
-		tst_absx rROLc,fROLc,0
+		tst_absx(rROLc,fROLc,0)
 		dex
 		bpl trolc8
 		ldx #5
 trolc9
-		set_absx zps,$ff
+		set_absx(zps,$ff)
 		rol abst,x
-		tst_absx rROLc,fROLc,$ff-fnzc
+		tst_absx(rROLc,fROLc,$ff-fnzc)
 		dex
 		bpl trolc9
 
 		ldx #5
 tror8
-		set_absx zps,0
+		set_absx(zps,0)
 		ror abst,x
-		tst_absx rROR,fROR,0
+		tst_absx(rROR,fROR,0)
 		dex
 		bpl tror8
 		ldx #5
 tror9
-		set_absx zps,$ff-fc
+		set_absx(zps,$ff-fc)
 		ror abst,x
-		tst_absx rROR,fROR,$ff-fnzc
+		tst_absx(rROR,fROR,$ff-fnzc)
 		dex
 		bpl tror9
 
 		ldx #5
 trorc8
-		set_absx zps,fc
+		set_absx(zps,fc)
 		ror abst,x
-		tst_absx rRORc,fRORc,0
+		tst_absx(rRORc,fRORc,0)
 		dex
 		bpl trorc8
 		ldx #5
 trorc9
-		set_absx zps,$ff
+		set_absx(zps,$ff)
 		ror abst,x
-		tst_absx rRORc,fRORc,$ff-fnzc
+		tst_absx(rRORc,fRORc,$ff-fnzc)
 		dex
 		bpl trorc9
 		next_test
@@ -4498,7 +4510,7 @@ trorc9
 tinc	
 		set_stat(0)
 		inc zpt
-		tst_z rINC,fINC,0
+		tst_z(rINC,fINC,0)
 		inx
 		cpx #2
 		bne tinc1
@@ -4511,7 +4523,7 @@ tinc1	cpx #5
 tdec	
 		set_stat(0)
 		dec zpt
-		tst_z rINC,fINC,0
+		tst_z(rINC,fINC,0)
 		dex
 		bmi tdec1
 		cpx #1
@@ -4526,7 +4538,7 @@ tdec1
 tinc10	
 		set_stat($ff)
 		inc zpt
-		tst_z rINC,fINC,$ff-fnz
+		tst_z(rINC,fINC,$ff-fnz)
 		inx
 		cpx #2
 		bne tinc11
@@ -4539,7 +4551,7 @@ tinc11	cpx #5
 tdec10	
 		set_stat($ff)
 		dec zpt
-		tst_z rINC,fINC,$ff-fnz
+		tst_z(rINC,fINC,$ff-fnz)
 		dex
 		bmi tdec11
 		cpx #1
@@ -4557,7 +4569,7 @@ tdec11
 tinc2	
 		set_stat(0)
 		inc abst
-		tst_abs rINC,fINC,0
+		tst_abs(rINC,fINC,0)
 		inx
 		cpx #2
 		bne tinc3
@@ -4570,7 +4582,7 @@ tinc3	cpx #5
 tdec2	
 		set_stat(0)
 		dec abst
-		tst_abs rINC,fINC,0
+		tst_abs(rINC,fINC,0)
 		dex
 		bmi tdec3
 		cpx #1
@@ -4585,7 +4597,7 @@ tdec3
 tinc12	
 		set_stat($ff)
 		inc abst
-		tst_abs rINC,fINC,$ff-fnz
+		tst_abs(rINC,fINC,$ff-fnz)
 		inx
 		cpx #2
 		bne tinc13
@@ -4598,7 +4610,7 @@ tinc13	cpx #5
 tdec12	
 		set_stat($ff)
 		dec abst
-		tst_abs rINC,fINC,$ff-fnz
+		tst_abs(rINC,fINC,$ff-fnz)
 		dex
 		bmi tdec13
 		cpx #1
@@ -4615,7 +4627,7 @@ tdec13
 tinc4	sta zpt,x
 		set_stat(0)
 		inc zpt,x
-		tst_zx rINC,fINC,0
+		tst_zx(rINC,fINC,0)
 		lda zpt,x
 		inx
 		cpx #2
@@ -4628,7 +4640,7 @@ tinc5	cpx #5
 tdec4	sta zpt,x 
 		set_stat(0)
 		dec zpt,x
-		tst_zx rINC,fINC,0
+		tst_zx(rINC,fINC,0)
 		lda zpt,x
 		dex
 		bmi tdec5
@@ -4642,7 +4654,7 @@ tdec5
 tinc14	sta zpt,x
 		set_stat($ff)
 		inc zpt,x
-		tst_zx rINC,fINC,$ff-fnz
+		tst_zx(rINC,fINC,$ff-fnz)
 		lda zpt,x
 		inx
 		cpx #2
@@ -4655,7 +4667,7 @@ tinc15	cpx #5
 tdec14	sta zpt,x 
 		set_stat($ff)
 		dec zpt,x
-		tst_zx rINC,fINC,$ff-fnz
+		tst_zx(rINC,fINC,$ff-fnz)
 		lda zpt,x
 		dex
 		bmi tdec15
@@ -4672,7 +4684,7 @@ tdec15
 tinc6	sta abst,x
 		set_stat(0)
 		inc abst,x
-		tst_absx rINC,fINC,0
+		tst_absx(rINC,fINC,0)
 		lda abst,x
 		inx
 		cpx #2
@@ -4685,7 +4697,7 @@ tinc7	cpx #5
 tdec6	sta abst,x 
 		set_stat(0)
 		dec abst,x
-		tst_absx rINC,fINC,0
+		tst_absx(rINC,fINC,0)
 		lda abst,x
 		dex
 		bmi tdec7
@@ -4699,7 +4711,7 @@ tdec7
 tinc16	sta abst,x
 		set_stat($ff)
 		inc abst,x
-		tst_absx rINC,fINC,$ff-fnz
+		tst_absx(rINC,fINC,$ff-fnz)
 		lda abst,x
 		inx
 		cpx #2
@@ -4712,7 +4724,7 @@ tinc17	cpx #5
 tdec16	sta abst,x 
 		set_stat($ff)
 		dec abst,x
-		tst_absx rINC,fINC,$ff-fnz
+		tst_absx(rINC,fINC,$ff-fnz)
 		lda abst,x
 		dex
 		bmi tdec17
@@ -4728,105 +4740,105 @@ tdec17
 		ldx #3	;immediate
 tand	lda zpAN,x
 		sta ex_andi+1	;set AND # operand
-		set_ax	absANa,0
+		set_ax(absANa,0)
 		jsr ex_andi	;execute AND # in RAM
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tand
 		ldx #3
 tand1	lda zpAN,x
 		sta ex_andi+1	;set AND # operand
-		set_ax	absANa,$ff
+		set_ax(absANa,$ff)
 		jsr ex_andi	;execute AND # in RAM
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tand1
 		
 		ldx #3	;zp
 tand2	lda zpAN,x
 		sta zpt
-		set_ax	absANa,0
+		set_ax(absANa,0)
 		and zpt
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tand2
 		ldx #3
 tand3	lda zpAN,x
 		sta zpt
-		set_ax	absANa,$ff
+		set_ax(absANa,$ff)
 		and zpt
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tand3
 
 		ldx #3	;abs
 tand4	lda zpAN,x
 		sta abst
-		set_ax	absANa,0
+		set_ax(absANa,0)
 		and abst
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tand4
 		ldx #3
 tand5	lda zpAN,x
 		sta abst
-		set_ax	absANa,$ff
+		set_ax(absANa,$ff)
 		and abst
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tand6
 
 		ldx #3	;zp,x
 tand6
-		set_ax	absANa,0
+		set_ax(absANa,0)
 		and zpAN,x
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tand6
 		ldx #3
 tand7
-		set_ax	absANa,$ff
+		set_ax(absANa,$ff)
 		and zpAN,x
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tand7
 
 		ldx #3	;abs,x
 tand8
-		set_ax	absANa,0
+		set_ax(absANa,0)
 		and absAN,x
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tand8
 		ldx #3
 tand9
-		set_ax	absANa,$ff
+		set_ax(absANa,$ff)
 		and absAN,x
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tand9
 
 		ldy #3	;abs,y
 tand10
-		set_ay	absANa,0
+		set_ay(absANa,0)
 		and absAN,y
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dey
 		bpl tand10
 		ldy #3
 tand11
-		set_ay	absANa,$ff
+		set_ay(absANa,$ff)
 		and absAN,y
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dey
 		bpl tand11
 
 		ldx #6	;(zp,x)
 		ldy #3
 tand12
-		set_ay	absANa,0
+		set_ay(absANa,0)
 		and (indAN,x)
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dex
 		dex
 		dey
@@ -4834,9 +4846,9 @@ tand12
 		ldx #6
 		ldy #3
 tand13
-		set_ay	absANa,$ff
+		set_ay(absANa,$ff)
 		and (indAN,x)
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dex
 		dex
 		dey
@@ -4844,16 +4856,16 @@ tand13
 
 		ldy #3	;(zp),y
 tand14
-		set_ay	absANa,0
+		set_ay(absANa,0)
 		and (indAN),y
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dey
 		bpl tand14
 		ldy #3
 tand15
-		set_ay	absANa,$ff
+		set_ay(absANa,$ff)
 		and (indAN),y
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dey
 		bpl tand15
 		next_test
@@ -4862,105 +4874,105 @@ tand15
 		ldx #3	;immediate - self modifying code
 teor	lda zpEO,x
 		sta ex_eori+1	;set EOR # operand
-		set_ax	absEOa,0
+		set_ax(absEOa,0)
 		jsr ex_eori	;execute EOR # in RAM
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl teor
 		ldx #3
 teor1	lda zpEO,x
 		sta ex_eori+1	;set EOR # operand
-		set_ax	absEOa,$ff
+		set_ax(absEOa,$ff)
 		jsr ex_eori	;execute EOR # in RAM
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl teor1
 		
 		ldx #3	;zp
 teor2	lda zpEO,x
 		sta zpt
-		set_ax	absEOa,0
+		set_ax(absEOa,0)
 		eor zpt
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl teor2
 		ldx #3
 teor3	lda zpEO,x
 		sta zpt
-		set_ax	absEOa,$ff
+		set_ax(absEOa,$ff)
 		eor zpt
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl teor3
 
 		ldx #3	;abs
 teor4	lda zpEO,x
 		sta abst
-		set_ax	absEOa,0
+		set_ax(absEOa,0)
 		eor abst
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl teor4
 		ldx #3
 teor5	lda zpEO,x
 		sta abst
-		set_ax	absEOa,$ff
+		set_ax(absEOa,$ff)
 		eor abst
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl teor6
 
 		ldx #3	;zp,x
 teor6
-		set_ax	absEOa,0
+		set_ax(absEOa,0)
 		eor zpEO,x
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl teor6
 		ldx #3
 teor7
-		set_ax	absEOa,$ff
+		set_ax(absEOa,$ff)
 		eor zpEO,x
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl teor7
 
 		ldx #3	;abs,x
 teor8
-		set_ax	absEOa,0
+		set_ax(absEOa,0)
 		eor absEO,x
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl teor8
 		ldx #3
 teor9
-		set_ax	absEOa,$ff
+		set_ax(absEOa,$ff)
 		eor absEO,x
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl teor9
 
 		ldy #3	;abs,y
 teor10
-		set_ay	absEOa,0
+		set_ay(absEOa,0)
 		eor absEO,y
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dey
 		bpl teor10
 		ldy #3
 teor11
-		set_ay	absEOa,$ff
+		set_ay(absEOa,$ff)
 		eor absEO,y
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dey
 		bpl teor11
 
 		ldx #6	;(zp,x)
 		ldy #3
 teor12
-		set_ay	absEOa,0
+		set_ay(absEOa,0)
 		eor (indEO,x)
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dex
 		dex
 		dey
@@ -4968,9 +4980,9 @@ teor12
 		ldx #6
 		ldy #3
 teor13
-		set_ay	absEOa,$ff
+		set_ay(absEOa,$ff)
 		eor (indEO,x)
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dex
 		dex
 		dey
@@ -4978,16 +4990,16 @@ teor13
 
 		ldy #3	;(zp),y
 teor14
-		set_ay	absEOa,0
+		set_ay(absEOa,0)
 		eor (indEO),y
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dey
 		bpl teor14
 		ldy #3
 teor15
-		set_ay	absEOa,$ff
+		set_ay(absEOa,$ff)
 		eor (indEO),y
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dey
 		bpl teor15
 		next_test
@@ -4996,105 +5008,105 @@ teor15
 		ldx #3	;immediate - self modifying code
 tora	lda zpOR,x
 		sta ex_orai+1	;set ORA # operand
-		set_ax	absORa,0
+		set_ax(absORa,0)
 		jsr ex_orai	;execute ORA # in RAM
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tora
 		ldx #3
 tora1	lda zpOR,x
 		sta ex_orai+1	;set ORA # operand
-		set_ax	absORa,$ff
+		set_ax(absORa,$ff)
 		jsr ex_orai	;execute ORA # in RAM
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tora1
 		
 		ldx #3	;zp
 tora2	lda zpOR,x
 		sta zpt
-		set_ax	absORa,0
+		set_ax(absORa,0)
 		ora zpt
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tora2
 		ldx #3
 tora3	lda zpOR,x
 		sta zpt
-		set_ax	absORa,$ff
+		set_ax(absORa,$ff)
 		ora zpt
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tora3
 
 		ldx #3	;abs
 tora4	lda zpOR,x
 		sta abst
-		set_ax	absORa,0
+		set_ax(absORa,0)
 		ora abst
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tora4
 		ldx #3
 tora5	lda zpOR,x
 		sta abst
-		set_ax	absORa,$ff
+		set_ax(absORa,$ff)
 		ora abst
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tora6
 
 		ldx #3	;zp,x
 tora6
-		set_ax	absORa,0
+		set_ax(absORa,0)
 		ora zpOR,x
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tora6
 		ldx #3
 tora7
-		set_ax	absORa,$ff
+		set_ax(absORa,$ff)
 		ora zpOR,x
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tora7
 
 		ldx #3	;abs,x
 tora8
-		set_ax	absORa,0
+		set_ax(absORa,0)
 		ora absOR,x
-		tst_ax	absrlo,absflo,0
+		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tora8
 		ldx #3
 tora9
-		set_ax	absORa,$ff
+		set_ax(absORa,$ff)
 		ora absOR,x
-		tst_ax	absrlo,absflo,$ff-fnz
+		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tora9
 
 		ldy #3	;abs,y
 tora10
-		set_ay	absORa,0
+		set_ay(absORa,0)
 		ora absOR,y
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dey
 		bpl tora10
 		ldy #3
 tora11
-		set_ay	absORa,$ff
+		set_ay(absORa,$ff)
 		ora absOR,y
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dey
 		bpl tora11
 
 		ldx #6	;(zp,x)
 		ldy #3
 tora12
-		set_ay	absORa,0
+		set_ay(absORa,0)
 		ora (indOR,x)
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dex
 		dex
 		dey
@@ -5102,9 +5114,9 @@ tora12
 		ldx #6
 		ldy #3
 tora13
-		set_ay	absORa,$ff
+		set_ay(absORa,$ff)
 		ora (indOR,x)
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dex
 		dex
 		dey
@@ -5112,16 +5124,16 @@ tora13
 
 		ldy #3	;(zp),y
 tora14
-		set_ay	absORa,0
+		set_ay(absORa,0)
 		ora (indOR),y
-		tst_ay	absrlo,absflo,0
+		tst_ay(absrlo,absflo,0)
 		dey
 		bpl tora14
 		ldy #3
 tora15
-		set_ay	absORa,$ff
+		set_ay(absORa,$ff)
 		ora (indOR),y
-		tst_ay	absrlo,absflo,$ff-fnz
+		tst_ay(absrlo,absflo,$ff-fnz)
 		dey
 		bpl tora15
 #if I_flag== 3
@@ -5293,15 +5305,15 @@ tdad7
 		cmp #$aa
 		trap_ne	;expected binary result after plp D=0
 		clc
-		lda #hi bin_rti_ret ;emulated interrupt for rti
+		lda #>bin_rti_ret ;emulated interrupt for rti
 		pha
-		lda #lo bin_rti_ret
+		lda #<bin_rti_ret
 		pha
 		php
 		sed
-		lda #hi dec_rti_ret ;emulated interrupt for rti
+		lda #>dec_rti_ret ;emulated interrupt for rti
 		pha
-		lda #lo dec_rti_ret
+		lda #<dec_rti_ret
 		pha
 		php
 		cld
@@ -5495,7 +5507,7 @@ chkdad
 ; decimal ADC / SBC (zp,x)
 		php	;save carry for subtract
 		lda ad1
-		adc (lo adi2-ad2,x) ;perform add
+		adc (<adi2-ad2,x) ;perform add
 		php	
 		cmp adrl	;check result
 		trap_ne	;bad result
@@ -5506,7 +5518,7 @@ chkdad
 		plp
 		php	;save carry for next add
 		lda ad1
-		sbc (lo sbi2-ad2,x) ;perform subtract
+		sbc (<sbi2-ad2,x) ;perform subtract
 		php	
 		cmp adrl	;check result
 		trap_ne	;bad result
@@ -5703,7 +5715,7 @@ ckad1	pla
 ; binary ADC / SBC (zp,x)
 		php	;save carry for subtract
 		lda ad1
-		adc (lo adi2-ad2,x) ;perform add
+		adc (<adi2-ad2,x) ;perform add
 		php	
 		cmp adrl	;check result
 		trap_ne	;bad result
@@ -5714,7 +5726,7 @@ ckad1	pla
 		plp
 		php	;save carry for next add
 		lda ad1
-		sbc (lo sbi2-ad2,x) ;perform subtract
+		sbc (<sbi2-ad2,x) ;perform subtract
 		php	
 		cmp adrl	;check result
 		trap_ne	;bad result
@@ -5957,7 +5969,7 @@ break2	;BRK pass 2
 #endif
 
 ;copy of data to initialize BSS segment
-	if load_data_direct != 1
+#if load_data_direct != 1
 zp_init
 zps_	.byt	$80,1	;additional shift pattern to test zero result & flag
 zp1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
@@ -6057,10 +6069,11 @@ vec_init
 		.word	res_trap
 		.word	irq_trap
 vec_bss = $fffa
-#endif	;end of RAM init data
+#endif
+;end of RAM init data
 	
 ; *** check these ***
-#if (load_data_direct == 1) & (ROM_vectors == 1)	
+#if (ad_data_direct == 1) & (ROM_vectors == 1)	
 		* = $fffa	;vectors
 		.word	nmi_trap
 		.word	res_trap
@@ -6068,5 +6081,5 @@ vec_bss = $fffa
 #endif
 
 ; ?
-	end start
+;	end start
 	
