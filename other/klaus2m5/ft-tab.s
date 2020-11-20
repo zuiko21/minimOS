@@ -1,10 +1,8 @@
-;
-; 6 5 0 2	F U N C T I O N A L	T E S T
-;
-; Copyright (C) 2012-2020	Klaus Dormann
+; ; 6 5 0 2	F U N C T I O N A L	T E S T
+; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler ***
-; *** last modified 20201120-1038 ***
+; *** last modified 20201120-1304 ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -17,7 +15,7 @@
 ; GNU General Public License for more details.
 ;
 ; You should have received a copy of the GNU General Public License
-; along with this program.	If not, see <http://www.gnu.* =/licenses/>.
+; along with this program.	If not, see <www.gnu.org/licenses/>.
 
 
 ; This program is designed to test all opcodes of a 6502 emulator using all
@@ -139,7 +137,7 @@ code_segment = $C000		; *** no longer $400 ***
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
 ; *** 2 is not used by me ***
-;#define	disable_decimal	1
+;#define	disable_decimal		1
 
 ;	noopt	;do not take shortcuts *** what's this? ***
 
@@ -261,16 +259,16 @@ reserv	= %00100000
 overfl	= %01000000
 minus	= %10000000
 
-fc	= carry
-fz	= zero
-fzc	= carry+zero
-fv	= overfl
-fvz	= overfl+zero
-fn	= minus
-fnc	= minus+carry
-fnz	= minus+zero
+fc		= carry
+fz		= zero
+fzc		= carry+zero
+fv		= overfl
+fvz		= overfl+zero
+fn		= minus
+fnc		= minus+carry
+fnz		= minus+zero
 fnzc	= minus+zero+carry
-fnv	= minus+overfl
+fnv		= minus+overfl
 
 ; *** as xa lacks ~, reversed bytes ***
 Nfz		= fz ^ $FF
@@ -280,12 +278,12 @@ Nfnz	= fnz ^ $FF
 Nfnv	= fnv ^ $FF
 Nfzc	= fzc ^ $FF
 
-fao	= break+reserv	;bits always on after PHP, BRK
-fai	= fao+intdis	;+ forced interrupt disable
+fao		= break+reserv	;bits always on after PHP, BRK
+fai		= fao+intdis	;+ forced interrupt disable
 faod	= fao+decmode	;+ ignore decimal
 faid	= fai+decmode	;+ ignore decimal
-m8	= $ff	;8 bit mask
-m8i	= %11111011	;8 bit mask - interrupt disable *** changed ***
+m8		= $ff	;8 bit mask
+m8i		= %11111011	;8 bit mask - interrupt disable *** changed ***
 
 ;macros to allow masking of status bits.
 ;masking test of decimal bit
@@ -640,8 +638,8 @@ sba2		.dsb	1			;operand 2 complemented for subtract
 			.dsb	4			;fill remaining bytes
 data_bss:
 ; **** MUST check these, which way I should go? ****
-/*
-	if load_data_direct = 1
+
+#if load_data_direct == 1
 ex_andi and #0	;execute immediate opcodes
 	rts
 ex_eori eor #0	;execute immediate opcodes
@@ -652,14 +650,14 @@ ex_adci adc #0	;execute immediate opcodes
 	rts
 ex_sbci sbc #0	;execute immediate opcodes
 	rts
-	else
+#else
 ex_andi .dsb	3
 ex_eori .dsb	3
 ex_orai .dsb	3
 ex_adci .dsb	3
 ex_sbci .dsb	3
-	endif
-*/
+#endif
+
 ;zps	.byt	$80,1			;additional shift patterns test zero result & flag
 abs1	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
 abs7f	.byt	$7f				;test pattern for compare
@@ -4046,14 +4044,14 @@ tstay6	lda abst,y
 		ldx #5
 tasl
 		set_ax(zps,0)
-		asl a
+		asl
 		tst_ax(rASL,fASL,0)
 		dex
 		bpl tasl
 		ldx #5
 tasl1
 		set_ax(zps,$ff)
-		asl a
+		asl
 		tst_ax(rASL,fASL,$ff-fnzc)
 		dex
 		bpl tasl1
@@ -4061,14 +4059,14 @@ tasl1
 		ldx #5
 tlsr
 		set_ax(zps,0)
-		lsr a
+		lsr
 		tst_ax(rLSR,fLSR,0)
 		dex
 		bpl tlsr
 		ldx #5
 tlsr1
 		set_ax(zps,$ff)
-		lsr a
+		lsr
 		tst_ax(rLSR,fLSR,$ff-fnzc)
 		dex
 		bpl tlsr1
@@ -4076,14 +4074,14 @@ tlsr1
 		ldx #5
 trol
 		set_ax(zps,0)
-		rol a
+		rol
 		tst_ax(rROL,fROL,0)
 		dex
 		bpl trol
 		ldx #5
 trol1
 		set_ax(zps,$ff-fc)
-		rol a
+		rol
 		tst_ax(rROL,fROL,$ff-fnzc)
 		dex
 		bpl trol1
@@ -4091,14 +4089,14 @@ trol1
 		ldx #5
 trolc
 		set_ax(zps,fc)
-		rol a
+		rol
 		tst_ax(rROLc,fROLc,0)
 		dex
 		bpl trolc
 		ldx #5
 trolc1
 		set_ax(zps,$ff)
-		rol a
+		rol
 		tst_ax(rROLc,fROLc,$ff-fnzc)
 		dex
 		bpl trolc1
@@ -4106,14 +4104,14 @@ trolc1
 		ldx #5
 tror
 		set_ax(zps,0)
-		ror a
+		ror
 		tst_ax(rROR,fROR,0)
 		dex
 		bpl tror
 		ldx #5
 tror1
 		set_ax(zps,$ff-fc)
-		ror a
+		ror
 		tst_ax(rROR,fROR,$ff-fnzc)
 		dex
 		bpl tror1
@@ -4121,14 +4119,14 @@ tror1
 		ldx #5
 trorc
 		set_ax(zps,fc)
-		ror a
+		ror
 		tst_ax(rRORc,fRORc,0)
 		dex
 		bpl trorc
 		ldx #5
 trorc1
 		set_ax(zps,$ff)
-		ror a
+		ror
 		tst_ax(rRORc,fRORc,$ff-fnzc)
 		dex
 		bpl trorc1
@@ -5351,6 +5349,7 @@ bin_rti_ret
 ; S U C C E S S ************************************************
 ; -------------	
 		success	;if you get here everything went well
+report_success:
 ; -------------	
 ; S U C C E S S ************************************************
 		jmp start	;run again	
