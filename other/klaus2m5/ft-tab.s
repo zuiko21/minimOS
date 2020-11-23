@@ -401,7 +401,7 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 	lda test_case:				\
 	cmp #test_num:				\
 	trap_ne:					\
-	test_num=test_num+1:		\
+	-test_num=test_num+1:		\
 	lda #test_num:				\
 	sta test_case:				\
 	check_ram
