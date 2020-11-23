@@ -1,8 +1,10 @@
 ; ; 6 5 0 2	F U N C T I O N A L	T E S T
 ; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
-; *** for xa65 assembler ***
-; *** last modified 20201120-1340 ***
+; *** for xa65 assembler, previously processed by cpp ***
+; *** last modified 20201123-1424 ***
+;
+; *** all comments added by me go between sets of three asterisks ***
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -88,14 +90,14 @@
 ;if ROM vectors can not be used interrupts will not be trapped
 ;as a consequence BRK can not be tested but will be emulated to test RTI
 ; *** usually won't be writable! ***
-;#define	ROM_vectors		1
+#define	ROM_vectors		0
 
 ;load_data_direct (0=move from code segment, 1=load directly)
 ;loading directly is preferred but may not be supported by your platform
 ;0 produces only consecutive object code, 1 is not suitable for a binary image
 ; *** don't know about this in xa... ***
 ; *** must check what to do	***
-;load_data_direct	= 1
+load_data_direct		= 1
 
 ;I_flag(behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
@@ -105,24 +107,25 @@
 ;configure memory - try to stay away from memory used by the system
 ;zero_page memory start address, $52 (82) consecutive Bytes required
 ;	add 2 if I_flag=2
-zero_page		= $a
+zero_page				= $A
 
 ;data_segment memory start address, $7B (123) consecutive Bytes required
-data_segment	= $200
+data_segment			= $200
 ;low byte of data_segment MUST be $00 !!
 
 ;code_segment memory start address, 13.1kB of consecutive space required
 ;	add 2.5 kB if I_flag=2
-code_segment = $C000		; *** no longer $400 ***
+code_segment			= $C000		; *** no longer $400 ***
 
 ;self modifying code may be disabled to allow running in ROM
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
 ;*** must try to copy relevant section into RAM ***
-;#define	disable_selfmod	1
+#define	disable_selfmod	0
 
 ;report errors through standard self trap loops
 ;report = 0
+; *** won't be used by me because 6502 tester has no other I/O than a LED on A15! ***
 
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
@@ -197,7 +200,7 @@ fnz		= minus+zero
 fnzc	= minus+zero+carry
 fnv		= minus+overfl
 
-; *** as xa lacks ~ operator, reversed bytes ***
+; *** as xa lacks ~ operator, inverted bytes follow ***
 Nfz		= fz ^ $FF
 Nfn		= fn ^ $FF
 Nfv		= fv ^ $FF
@@ -240,6 +243,7 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 #define	eor_flag(a)		CMP hash (a|fai)
 ;invert expected flags + always on bits + I
 #endif
+
 ; *** I flag is never 2 ***
 
 #if I_flag== 3
@@ -323,72 +327,74 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 #if ram_top > -1
 #if	disable_selfmod
 ; non-SMC version
-#define	check_ram					\
-	cld:							\
-	lda #0:							\
-	sta zpt:						\
-	sta zpt+3:						\
-		sta range_adr:				\
-	clc:							\
-	ldx #zp_bss-zero_page:			\
-	adc zero_page,x:				\
-	bcc *+5:						\
-	inc zpt+3:						\
-	clc:							\
-	inx:							\
-	bne *-8:						\
-	ldx #>abs1:						\
-	stx zpt+1:						\
-	ldy #<abs1:						\
-	adc (zpt),y:					\
-	bcc *+5:						\
-	inc zpt+3:						\
-	clc:							\
-	iny:							\
-	bne *-8:						\
-	inx:							\
-	stx zpt+1:						\
-	cpx #ram_top:					\
-	bne *-15:						\
-	sta zpt+2:						\
-	cmp ram_chksm:					\
-	trap_ne:						\
-	lda zpt+3:						\
-	cmp ram_chksm+1:				\
+; *** CPP admits no temporary labels, thus resolved as relative references ***
+#define	check_ram			\
+	cld:					\
+	lda #0:					\
+	sta zpt:				\
+	sta zpt+3:				\
+		sta range_adr:		\
+	clc:					\
+	ldx #zp_bss-zero_page:	\
+	adc zero_page,x:		\
+	bcc *+5:				\
+	inc zpt+3:				\
+	clc:					\
+	inx:					\
+	bne *-8:				\
+	ldx #>abs1:				\
+	stx zpt+1:				\
+	ldy #<abs1:				\
+	adc (zpt),y:			\
+	bcc *+5:				\
+	inc zpt+3:				\
+	clc:					\
+	iny:					\
+	bne *-8:				\
+	inx:					\
+	stx zpt+1:				\
+	cpx #ram_top:			\
+	bne *-15:				\
+	sta zpt+2:				\
+	cmp ram_chksm:			\
+	trap_ne:				\
+	lda zpt+3:				\
+	cmp ram_chksm+1:		\
 	trap_ne
 #else
 ; SMC version just removes sta range_adr
-#define	check_ram					\
-	cld:							\
-	lda #0:							\
-	sta zpt:						\
-	sta zpt+3:						\
-	clc:							\
-	ldx hash zp_bss-zero_page:		\
-	adc zero_page,x:				\
-	bcc *+5:						\
-	inc zpt+3:						\
-	clc:							\
-	inx:							\
-	bne *-8:						\
-	ldx #>abs1:						\
-	stx zpt+1:						\
-	ldy #<abs1:						\
-	adc (zpt),y:					\
-	bcc *+5:						\
-	inc zpt+3:						\
-	clc:							\
-	iny:							\
-	bne *-8:						\
-	inx:							\
-	stx zpt+1:						\
-	cpx #ram_top:					\
-	bne *-15:						\
-	sta zpt+2:						\
-	cmp ram_chksm:					\
-	trap_ne:						\
-	lda zpt+3:						\
-	cmp ram_chksm+1:				\
+; *** CPP admits no temporary labels, thus resolved as relative references ***
+#define	check_ram			\
+	cld:					\
+	lda #0:					\
+	sta zpt:				\
+	sta zpt+3:				\
+	clc:					\
+	ldx #zp_bss-zero_page:	\
+	adc zero_page,x:		\
+	bcc *+5:				\
+	inc zpt+3:				\
+	clc:					\
+	inx:					\
+	bne *-8:				\
+	ldx #>abs1:				\
+	stx zpt+1:				\
+	ldy #<abs1:				\
+	adc (zpt),y:			\
+	bcc *+5:				\
+	inc zpt+3:				\
+	clc:					\
+	iny:					\
+	bne *-8:				\
+	inx:					\
+	stx zpt+1:				\
+	cpx #ram_top:			\
+	bne *-15:				\
+	sta zpt+2:				\
+	cmp ram_chksm:			\
+	trap_ne:				\
+	lda zpt+3:				\
+	cmp ram_chksm+1:		\
 	trap_ne
 #endif
 #else
@@ -397,19 +403,17 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 #endif
 
 ;make sure, tests don't jump the fence
-#define	next_test 				\
-	lda test_case:				\
-	cmp #test_num:				\
-	trap_ne:					\
-	-test_num=test_num+1:		\
-	lda #test_num:				\
-	sta test_case:				\
+; *** note redefinable label test_num ***
+#define	next_test 			\
+	lda test_case:			\
+	cmp #test_num:			\
+	trap_ne:				\
+	-test_num=test_num+1:	\
+	lda #test_num:			\
+	sta test_case:			\
 	check_ram
 
-; *** removed	test_num = test_num + 1		after trapNe ***
-; *** ...but does not assemble with it ***
-	
-;uncomment checkRam above to find altered RAM after each test
+; *** place checkRam above to find altered RAM after each test, otherwise supress it (and previous \) ***
 
 ; *** must check about load_data_direct ***
 #if load_data_direct == 1
@@ -1450,7 +1454,7 @@ brk_ret0					;address of break return
 		tsx					;sp?
 		cpx #$ff
 		trap_ne
-		if ROM_vectors = 1
+#if ROM_vectors == 1
 		load_flag($ff)		;with interrupts disabled if allowed!
 		pha
 		lda #$ff-'B'
@@ -1458,7 +1462,7 @@ brk_ret0					;address of break return
 		ldy #$ff-'K'
 		plp					;N=1, V=1, Z=1, C=1
 		brk
-		else
+#else
 		lda #>brk_ret1	;emulated break
 		pha
 		lda #<brk_ret1
@@ -1471,7 +1475,7 @@ brk_ret0					;address of break return
 		ldy #$ff-'K'
 		plp					;N=1, V=1, Z=1, C=1
 		jmp irq_trap
-		endif
+#endif
 		dey					;should not be executed
 brk_ret1					;address of break return
 		php					;either SP or Y count will fail, if we do not hit
