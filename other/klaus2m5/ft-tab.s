@@ -2,7 +2,7 @@
 ; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201123-1424 ***
+; *** last modified 20201123-1432 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -96,8 +96,8 @@
 ;loading directly is preferred but may not be supported by your platform
 ;0 produces only consecutive object code, 1 is not suitable for a binary image
 ; *** don't know about this in xa... ***
-; *** must check what to do	***
-load_data_direct		= 1
+; *** must check what to do, think it will be disabled all the time	***
+load_data_direct		= 0
 
 ;I_flag(behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
@@ -420,6 +420,7 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 	data
 #else
 	bss	;uninitialized segment, copy of data at end of code!
+; *** I think this would be .zero all the time ***
 #endif
 
 ; *** should I put .zero otherwise? ***
@@ -489,6 +490,7 @@ data_bss:
 
 ; **** MUST check these, which way I should go? ****
 #if load_data_direct == 1
+; *** these must be loaded afterwards, think will delete them ***
 ex_andi and #0	;execute immediate opcodes
 	rts
 ex_eori eor #0	;execute immediate opcodes
@@ -500,6 +502,7 @@ ex_adci adc #0	;execute immediate opcodes
 ex_sbci sbc #0	;execute immediate opcodes
 	rts
 #else
+; *** just declare space for immediate opcodes ***
 ex_andi .dsb	3
 ex_eori .dsb	3
 ex_orai .dsb	3
@@ -507,6 +510,7 @@ ex_adci .dsb	3
 ex_sbci .dsb	3
 #endif
 
+; *** do the following definition make any sense, besides setting label addresses? ***
 ;zps	.byt	$80,1			;additional shift patterns test zero result & flag
 abs1	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
 abs7f	.byt	$7f				;test pattern for compare
@@ -600,6 +604,7 @@ psb_fwok
 ;initialize BSS segment
 ; *** MUST check this ***
 #if load_data_direct != 1
+; *** this code preloads data on ZP, thus OK ***
 		ldx #zp_end-zp_init-1
 ld_zp	lda zp_init,x
 		sta zp_bss,x
@@ -611,6 +616,7 @@ ld_data lda data_init,x
 		dex
 		bpl ld_data
 #if ROM_vectors == 1
+; *** but check this anyway ***
 			ldx #5
 ld_vect		lda vec_init,x
 			sta vec_bss,x
@@ -653,6 +659,7 @@ gcs4	iny
 		next_test
 
 #if	disable_selfmod == 0
+; *** another thing to be checked ***
 ;testing relative addressing with BEQ
 		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
 range_loop
@@ -5800,6 +5807,7 @@ break2	;BRK pass 2
 
 ;copy of data to initialize BSS segment
 #if load_data_direct != 1
+; *** the important stuff ***
 zp_init
 zps_	.byt	$80,1	;additional shift pattern to test zero result & flag
 zp1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
