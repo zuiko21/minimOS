@@ -2,7 +2,7 @@
 ; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201123-1432 ***
+; *** last modified 20201126-1331 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -83,7 +83,9 @@
 ;	05-jan-2020	fixed shifts not testing zero result and flag when last 1-bit
 ;	is shifted out
 
+; *** ***************** ***
 ; C O N F I G U R A T I O N
+; *** ***************** ***
 ; *** DEFINEs seem more suitable for xa ***
 
 ;ROM_vectors writable (0=no, 1=yes)
@@ -95,9 +97,8 @@
 ;load_data_direct (0=move from code segment, 1=load directly)
 ;loading directly is preferred but may not be supported by your platform
 ;0 produces only consecutive object code, 1 is not suitable for a binary image
-; *** don't know about this in xa... ***
-; *** must check what to do, think it will be disabled all the time	***
-load_data_direct		= 0
+; *** it will be disabled all the time	***
+; load_data_direct		= 0
 
 ;I_flag(behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
@@ -215,6 +216,9 @@ faid	= fai+decmode	;+ ignore decimal
 m8		= $ff			;8 bit mask
 m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 
+; *************************
+; *** macro definitions ***
+; *************************
 ;macros to allow masking of status bits.
 ;masking test of decimal bit
 ;masking of interrupt enable/disable on load and compare
@@ -415,15 +419,12 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 
 ; *** place checkRam above to find altered RAM after each test, otherwise supress it (and previous \) ***
 
-; *** must check about load_data_direct ***
-#if load_data_direct == 1
-	data
-#else
-	bss	;uninitialized segment, copy of data at end of code!
-; *** I think this would be .zero all the time ***
-#endif
+; ********************
+; *** memory usage ***
+; ********************
+; *** load_data_direct is always off ***
+		.zero
 
-; *** should I put .zero otherwise? ***
 		* =		zero_page
 ;break test interrupt save
 irq_a	.dsb	1				;a register
@@ -477,8 +478,9 @@ adiy2	.word	ada2-$ff		;with offset for indirect indexed
 sbiy2	.word	sba2-$ff
 zp_bss_end:
 
+			.bss
 ; *** check for binary load ***
-	* = data_segment
+			* = data_segment
 test_case	.dsb	1			;current test number
 ram_chksm	.dsb	2			;checksum for RAM integrity test
 ;add/subtract operand copy - abs tests write area
@@ -488,29 +490,14 @@ sba2		.dsb	1			;operand 2 complemented for subtract
 			.dsb	4			;fill remaining bytes
 data_bss:
 
-; **** MUST check these, which way I should go? ****
-#if load_data_direct == 1
-; *** these must be loaded afterwards, think will delete them ***
-ex_andi and #0	;execute immediate opcodes
-	rts
-ex_eori eor #0	;execute immediate opcodes
-	rts
-ex_orai ora #0	;execute immediate opcodes
-	rts
-ex_adci adc #0	;execute immediate opcodes
-	rts
-ex_sbci sbc #0	;execute immediate opcodes
-	rts
-#else
 ; *** just declare space for immediate opcodes ***
 ex_andi .dsb	3
 ex_eori .dsb	3
 ex_orai .dsb	3
 ex_adci .dsb	3
 ex_sbci .dsb	3
-#endif
 
-; *** do the following definition make any sense, besides setting label addresses? ***
+; *** do the following definitions make any sense, besides setting label addresses? ***
 ;zps	.byt	$80,1			;additional shift patterns test zero result & flag
 abs1	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
 abs7f	.byt	$7f				;test pattern for compare
@@ -544,8 +531,13 @@ absEOa	.byt	$ff,$f0,$f0,$0f			;test pattern for EOR
 absrlo	.byt	0,$ff,$7f,$80
 absflo	.byt	fz,fn,0,fn
 data_bss_end:
+; *** blinking routine should be copied here ***
 
-; *** perhaps some binarty filling? ***
+; **********************************************
+; *** beginning of ROM code, no fillings yet ***
+; **********************************************
+		.text
+
 		* =		code_segment
 start	cld
 		ldx #$ff
@@ -602,8 +594,6 @@ psb_test
 psb_fwok
 	
 ;initialize BSS segment
-; *** MUST check this ***
-#if load_data_direct != 1
 ; *** this code preloads data on ZP, thus OK ***
 		ldx #zp_end-zp_init-1
 ld_zp	lda zp_init,x
@@ -615,15 +605,7 @@ ld_data lda data_init,x
 		sta data_bss,x
 		dex
 		bpl ld_data
-#if ROM_vectors == 1
-; *** but check this anyway ***
-			ldx #5
-ld_vect		lda vec_init,x
-			sta vec_bss,x
-			dex
-			bpl ld_vect
-#endif
-#endif
+; *** vectors are always in ROM ***
 
 ;generate checksum for RAM integrity test
 #if	ram_top > -1
@@ -659,7 +641,7 @@ gcs4	iny
 		next_test
 
 #if	disable_selfmod == 0
-; *** another thing to be checked ***
+; *** another thing to be checked *** C H E C K
 ;testing relative addressing with BEQ
 		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
 range_loop
@@ -1418,7 +1400,7 @@ jsr_ret = *-1				;last address of jsr = return address
 		trap_ne
 		next_test
 
-; break & return from interrupt
+; break & return from interrupt *** C H E C K
 #if ROM_vectors == 1
 		load_flag(0)			;with interrupts enabled if allowed!
 		pha
@@ -1931,7 +1913,7 @@ tstx	lda zpt,y
 		
 ; indexed wraparound test (only zp should wrap)
 		ldy #3+$fa
-tldx4	ldx zp1-$fa&$ff,y	;wrap on indexed zp
+tldx4	ldx zp1-$fa& $ff,y	;wrap on indexed zp
 		txa
 		sta abst-$fa,y		;no STX abs,y!
 		dey
@@ -5309,9 +5291,9 @@ chkdad
 		plp
 		php	;save carry for next add
 		lda ad1
-		sbc sba2-ad2,x	;perform subtract
+		sbc sba2 - ad2,x		;perform subtract
 		php	
-		cmp adrl	;check result
+		cmp adrl		;check result
 		trap_ne	;bad result
 		pla	;check flags
 		and #1	;mask carry
@@ -5806,80 +5788,79 @@ break2	;BRK pass 2
 #endif
 
 ;copy of data to initialize BSS segment
-#if load_data_direct != 1
 ; *** the important stuff ***
 zp_init
-zps_	.byt	$80,1	;additional shift pattern to test zero result & flag
+zps_	.byt	$80,1			;additional shift pattern to test zero result & flag
 zp1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
-zp7f_	.byt	$7f	;test pattern for compare
+zp7f_	.byt	$7f				;test pattern for compare
 ;logical zeropage operands
 zpOR_	.byt	0,$1f,$71,$80	;test pattern for OR
 zpAN_	.byt	$0f,$ff,$7f,$80 ;test pattern for AND
 zpEO_	.byt	$ff,$0f,$8f,$8f ;test pattern for EOR
 ;indirect addressing pointers
-ind1_	.word	abs1	;indirect pointer to pattern in absolute memory
+ind1_	.word	abs1			;indirect pointer to pattern in absolute memory
 		.word	abs1+1
 		.word	abs1+2
 		.word	abs1+3
 		.word	abs7f
-inw1_	.word	abs1-$f8	;indirect pointer for wrap-test pattern
-indt_	.word	abst	;indirect pointer to store area in absolute memory
+inw1_	.word	abs1-$f8		;indirect pointer for wrap-test pattern
+indt_	.word	abst			;indirect pointer to store area in absolute memory
 		.word	abst+1
 		.word	abst+2
 		.word	abst+3
-inwt_	.word	abst-$f8	;indirect pointer for wrap-test store
-indAN_	.word	absAN	;indirect pointer to AND pattern in absolute memory
+inwt_	.word	abst-$f8		;indirect pointer for wrap-test store
+indAN_	.word	absAN			;indirect pointer to AND pattern in absolute memory
 		.word	absAN+1
 		.word	absAN+2
 		.word	absAN+3
-indEO_	.word	absEO	;indirect pointer to EOR pattern in absolute memory
+indEO_	.word	absEO			;indirect pointer to EOR pattern in absolute memory
 		.word	absEO+1
 		.word	absEO+2
 		.word	absEO+3
-indOR_	.word	absOR	;indirect pointer to OR pattern in absolute memory
+indOR_	.word	absOR			;indirect pointer to OR pattern in absolute memory
 		.word	absOR+1
 		.word	absOR+2
 		.word	absOR+3
 ;add/subtract indirect pointers
-adi2_	.word	ada2	;indirect pointer to operand 2 in absolute memory
-sbi2_	.word	sba2	;indirect pointer to complemented operand 2 (SBC)
-adiy2_	.word	ada2-$ff	;with offset for indirect indexed
+adi2_	.word	ada2			;indirect pointer to operand 2 in absolute memory
+sbi2_	.word	sba2			;indirect pointer to complemented operand 2 (SBC)
+adiy2_	.word	ada2-$ff		;with offset for indirect indexed
 sbiy2_	.word	sba2-$ff
 zp_end
 
 #if (zp_end - zp_init) != (zp_bss_end - zp_bss)	
 	;force assembler error if size is different	
-	ERROR ERROR ERROR	;mismatch between bss and zeropage data
+	ERROR ERROR ERROR			;mismatch between bss and zeropage data
 #endif
  
 data_init
-ex_and_ and #0	;execute immediate opcodes
+ex_and_ and #0					;execute immediate opcodes
 		rts
-ex_eor_ eor #0	;execute immediate opcodes
+ex_eor_ eor #0					;execute immediate opcodes
 		rts
-ex_ora_ ora #0	;execute immediate opcodes
+ex_ora_ ora #0					;execute immediate opcodes
 		rts
-ex_adc_ adc #0	;execute immediate opcodes
+ex_adc_ adc #0					;execute immediate opcodes
 		rts
-ex_sbc_ sbc #0	;execute immediate opcodes
+ex_sbc_ sbc #0					;execute immediate opcodes
 		rts
-;zps	.byt	$80,1	;additional shift patterns test zero result & flag
+;zps	.byt	$80,1			;additional shift patterns test zero result & flag
 abs1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
-abs7f_	.byt	$7f	;test pattern for compare
+abs7f_	.byt	$7f				;test pattern for compare
 ;loads
-fLDx_	.byt	fn,fn,0,fz	;expected flags for load
+fLDx_	.byt	fn,fn,0,fz		;expected flags for load
 ;shifts
 rASL_	;expected result ASL & ROL -carry
 rROL_	.byt	0,2,$86,$04,$82,0
-rROLc_	.byt	1,3,$87,$05,$83,1	;expected result ROL +carry
+rROLc_	.byt	1,3,$87,$05,$83,1		;expected result ROL +carry
 rLSR_	;expected result LSR & ROR -carry
 rROR_	.byt	$40,0,$61,$41,$20,0
 rRORc_	.byt	$c0,$80,$e1,$c1,$a0,$80 ;expected result ROR +carry
 fASL_	;expected flags for shifts
-fROL_	.byt	fzc,0,fnc,fc,fn,fz	;no carry in
-fROLc_	.byt	fc,0,fnc,fc,fn,0	;carry in 
+fROL_	.byt	fzc,0,fnc,fc,fn,fz		;no carry in
+fROLc_	.byt	fc,0,fnc,fc,fn,0		;carry in 
 fLSR_
-fROR_	.byt	0,fzc,fc,0,fc,fz	;no carry in
+fROR_	.byt	0,fzc,fc,0,fc,fz		;no carry in
 fRORc_	.byt	fn,fnc,fnc,fn,fnc,fn	;carry in
 ;increments (decrements)
 rINC_	.byt	$7f,$80,$ff,0,1	;expected result for INC/DEC
@@ -5889,7 +5870,7 @@ absOR_	.byt	0,$1f,$71,$80	;test pattern for OR
 absAN_	.byt	$0f,$ff,$7f,$80	;test pattern for AND
 absEO_	.byt	$ff,$0f,$8f,$8f	;test pattern for EOR
 ;logical accu operand
-absORa_ .byt	0,$f1,$1f,0	;test pattern for OR
+absORa_ .byt	0,$f1,$1f,0		;test pattern for OR
 absANa_ .byt	$f0,$ff,$ff,$ff	;test pattern for AND
 absEOa_ .byt	$ff,$f0,$f0,$0f	;test pattern for EOR
 ;logical results
@@ -5899,25 +5880,18 @@ data_end
 
 #if (data_end - data_init) != (data_bss_end - data_bss)
 	;force assembler error if size is different	
-	ERROR ERROR ERROR	;mismatch between bss and data
+	ERROR ERROR ERROR			;mismatch between bss and data
 #endif 
 
-vec_init
-		.word	nmi_trap
-		.word	res_trap
-		.word	irq_trap
-vec_bss = $fffa
-#endif
 ;end of RAM init data
 	
-; *** check these ***
-#if (ad_data_direct == 1) & (ROM_vectors == 1)	
-		* = $fffa	;vectors
+; *** hardware vectors are always set, with padding ***
+vec_bss = $fffa
+		.dsb	vec_bss - *, $FF
+
+		* = vec_bss
+;vectors
 		.word	nmi_trap
 		.word	res_trap
 		.word	irq_trap
-#endif
 
-; ?
-;	end start
-	
