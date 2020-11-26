@@ -2879,17 +2879,17 @@ tldax
 tldax1	
 		set_stat($ff)
 		lda zp1,x
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst,x
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp abs1,x	;test result
+		cmp abs1,x			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx,x	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx,x			;test flags
 		trap_ne
 		dex
 		bpl tldax1	
@@ -2898,17 +2898,17 @@ tldax1
 tldax2	
 		set_stat(0)
 		lda abs1,x
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt,x
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1,x	;test result
+		cmp zp1,x			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx,x	;test flags
+		cmp fLDx,x			;test flags
 		trap_ne
 		dex
 		bpl tldax2	
@@ -2917,34 +2917,34 @@ tldax2
 tldax3
 		set_stat($ff)
 		lda abs1,x
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt,x
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1,x	;test result
+		cmp zp1,x			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx,x	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx,x			;test flags
 		trap_ne
 		dex
 		bpl tldax3
 
-		ldx #3	;testing store result
+		ldx #3				;testing store result
 		ldy #0
 tstax	lda zpt,x
 		eor #$c3
 		cmp zp1,x
-		trap_ne	;store to zp,x data
-		sty zpt,x	;clear	
+		trap_ne				;store to zp,x data
+		sty zpt,x			;clear
 		lda abst,x
 		eor #$c3
 		cmp abs1,x
-		trap_ne	;store to abs,x data
+		trap_ne				;store to abs,x data
 		txa
-		sta abst,x	;clear	
+		sta abst,x			;clear
 		dex
 		bpl tstax
 		next_test
@@ -2954,17 +2954,17 @@ tstax	lda zpt,x
 tlday	
 		set_stat(0)
 		lda (ind1),y
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst,y
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp abs1,y	;test result
+		cmp abs1,y			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx,y	;test flags
+		cmp fLDx,y			;test flags
 		trap_ne
 		dey
 		bpl tlday	
@@ -2973,29 +2973,29 @@ tlday
 tlday1	
 		set_stat($ff)
 		lda (ind1),y
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst,y
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp abs1,y	;test result
+		cmp abs1,y			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx,y	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx,y			;test flags
 		trap_ne
 		dey
 		bpl tlday1	
 
-		ldy #3	;testing store result
+		ldy #3				;testing store result
 		ldx #0
 tstay	lda abst,y
 		eor #$c3
 		cmp abs1,y
-		trap_ne	;store to abs data
+		trap_ne				;store to abs data
 		txa
-		sta abst,y	;clear	
+		sta abst,y			;clear	
 		dey
 		bpl tstay
 
@@ -3003,17 +3003,17 @@ tstay	lda abst,y
 tlday2	
 		set_stat(0)
 		lda abs1,y
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta (indt),y
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp (ind1),y	;test result
+		cmp (ind1),y		;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx,y	;test flags
+		cmp fLDx,y			;test flags
 		trap_ne
 		dey
 		bpl tlday2	
@@ -3022,29 +3022,29 @@ tlday2
 tlday3	
 		set_stat($ff)
 		lda abs1,y
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta (indt),y
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp (ind1),y	;test result
+		cmp (ind1),y		;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx,y	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx,y			;test flags
 		trap_ne
 		dey
 		bpl tlday3
 		
-		ldy #3	;testing store result
+		ldy #3				;testing store result
 		ldx #0
 tstay1	lda abst,y
 		eor #$c3
 		cmp abs1,y
-		trap_ne	;store to abs data
+		trap_ne				;store to abs data
 		txa
-		sta abst,y	;clear	
+		sta abst,y			;clear	
 		dey
 		bpl tstay1
 		
@@ -3053,17 +3053,17 @@ tstay1	lda abst,y
 tldax4	
 		set_stat(0)
 		lda (ind1,x)
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta (indt,x)
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp abs1,y	;test result
+		cmp abs1,y			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx,y	;test flags
+		cmp fLDx,y			;test flags
 		trap_ne
 		dex
 		dex
@@ -3075,31 +3075,31 @@ tldax4
 tldax5
 		set_stat($ff)
 		lda (ind1,x)
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta (indt,x)
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp abs1,y	;test result
+		cmp abs1,y			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx,y	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx,y			;test flags
 		trap_ne
 		dex
 		dex
 		dey
 		bpl tldax5
 
-		ldy #3	;testing store result
+		ldy #3				;testing store result
 		ldx #0
 tstay2	lda abst,y
 		eor #$c3
 		cmp abs1,y
-		trap_ne	;store to abs data
+		trap_ne				;store to abs data
 		txa
-		sta abst,y	;clear	
+		sta abst,y			;clear	
 		dey
 		bpl tstay2
 		next_test
@@ -3107,82 +3107,82 @@ tstay2	lda abst,y
 ; indexed wraparound test (only zp should wrap)
 		ldx #3+$fa
 tldax6	lda zp1-$fa&$ff,x	;wrap on indexed zp
-		sta abst-$fa,x	;no STX abs,x!
+		sta abst-$fa,x		;no STX abs,x!
 		dex
 		cpx #$fa
 		bcs tldax6	
 		ldx #3+$fa
-tldax7	lda abs1-$fa,x	;no wrap on indexed abs
+tldax7	lda abs1-$fa,x		;no wrap on indexed abs
 		sta zpt-$fa&$ff,x
 		dex
 		cpx #$fa
 		bcs tldax7
 		
-		ldx #3	;testing wraparound result
+		ldx #3				;testing wraparound result
 		ldy #0
 tstax1	lda zpt,x
 		cmp zp1,x
-		trap_ne	;store to zp,x data
-		sty zpt,x	;clear	
+		trap_ne				;store to zp,x data
+		sty zpt,x			;clear	
 		lda abst,x
 		cmp abs1,x
-		trap_ne	;store to abs,x data
+		trap_ne				;store to abs,x data
 		txa
-		sta abst,x	;clear	
+		sta abst,x			;clear	
 		dex
 		bpl tstax1
 
 		ldy #3+$f8
 		ldx #6+$f8
-tlday4	lda (ind1-$f8&$ff,x) ;wrap on indexed zp indirect
+tlday4	lda (ind1-$f8&$ff,x)	;wrap on indexed zp indirect
 		sta abst-$f8,y
 		dex
 		dex
 		dey
 		cpy #$f8
 		bcs tlday4
-		ldy #3	;testing wraparound result
+		ldy #3				;testing wraparound result
 		ldx #0
 tstay4	lda abst,y
 		cmp abs1,y
-		trap_ne	;store to abs data
+		trap_ne				;store to abs data
 		txa
-		sta abst,y	;clear	
+		sta abst,y			;clear	
 		dey
 		bpl tstay4
 		
 		ldy #3+$f8
-tlday5	lda abs1-$f8,y	;no wrap on indexed abs
+tlday5	lda abs1-$f8,y		;no wrap on indexed abs
 		sta (inwt),y
 		dey
 		cpy #$f8
 		bcs tlday5	
-		ldy #3	;testing wraparound result
+		ldy #3				;testing wraparound result
 		ldx #0
 tstay5	lda abst,y
 		cmp abs1,y
-		trap_ne	;store to abs data
+		trap_ne				;store to abs data
 		txa
-		sta abst,y	;clear	
+		sta abst,y			;clear	
 		dey
 		bpl tstay5
 
 		ldy #3+$f8
 		ldx #6+$f8
-tlday6	lda (inw1),y	;no wrap on zp indirect indexed 
+tlday6	lda (inw1),y		;no wrap on zp indirect indexed 
 		sta (indt-$f8&$ff,x)
 		dex
 		dex
 		dey
 		cpy #$f8
 		bcs tlday6
-		ldy #3	;testing wraparound result
+		ldy #3				;testing wraparound result
 		ldx #0
 tstay6	lda abst,y
 		cmp abs1,y
-		trap_ne	;store to abs data
+		trap_ne				;store to abs data
 		txa
-		sta abst,y	;clear	
+		sta abst,y			;clear	
 		dey
 		bpl tstay6
 		next_test
@@ -3190,55 +3190,55 @@ tstay6	lda abst,y
 ; LDA / STA - zp / abs / #
 		set_stat(0)
 		lda zp1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp #$c3	;test result
+		cmp #$c3			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx	;test flags
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat(0)
 		lda zp1+1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst+1
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp #$82	;test result
+		cmp #$82			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+1	;test flags
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat(0)
 		lda zp1+2
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst+2
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp #$41	;test result
+		cmp #$41			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+2	;test flags
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat(0)
 		lda zp1+3
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp #0	;test result
+		cmp #0				;test result
 		trap_ne
 		pla	;load status
 		eor_flag(0)
