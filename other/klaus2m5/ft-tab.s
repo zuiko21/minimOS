@@ -137,7 +137,7 @@ code_segment			= $C000		; *** no longer $400 ***
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
 ; *** 2 is not used by me ***
-#define	disable_decimal	0
+#define	disable_decimal	1
 
 ; putting larger portions of code (more than 3 bytes) inside the trap macro
 ; may lead to branch range problems for some tests.
