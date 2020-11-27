@@ -2,7 +2,7 @@
 ; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201127-0924 ***
+; *** last modified 20201127-1009 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -119,8 +119,8 @@ code_segment			= $C000		; *** no longer $400 ***
 ;self modifying code may be disabled to allow running in ROM
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
-;*** must try to copy relevant section into RAM ***
-#define	disable_selfmod	1
+;*** must try to copy relevant section into RAM *** C H E C K
+;#define	disable_selfmod	1
 
 ;report errors through standard self trap loops
 ;report = 0
@@ -135,7 +135,7 @@ code_segment			= $C000		; *** no longer $400 ***
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
 ; *** 2 is not used by me ***
-#define	disable_decimal	1
+;#define	disable_decimal	1
 
 ; putting larger portions of code (more than 3 bytes) inside the trap macro
 ; may lead to branch range problems for some tests.
@@ -173,7 +173,7 @@ code_segment			= $C000		; *** no longer $400 ***
 
 ; please observe that during the test the stack gets invalidated
 ; therefore a RTS inside the success macro is not possible
-#define	success			JMP report_success
+#define	success			JMP ram_blink
 ;test passed, no errors
 ; *** will jump between two delay routines, alternating between ROM and RAM in order to blink a LED at, say, A15 ***
 
@@ -477,7 +477,6 @@ sbiy2	.word	sba2-$ff
 zp_bss_end:
 
 			.bss
-; *** check for binary load ***
 			* = data_segment
 test_case	.dsb	1			;current test number
 ram_chksm	.dsb	2			;checksum for RAM integrity test
@@ -495,7 +494,7 @@ ex_orai .dsb	3
 ex_adci .dsb	3
 ex_sbci .dsb	3
 
-; *** do the following definitions make any sense, besides setting label addresses? ***
+; *** definitions for the label addresses only ***
 ;zps	.byt	$80,1			;additional shift patterns test zero result & flag
 abs1	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
 abs7f	.byt	$7f				;test pattern for compare
@@ -528,8 +527,12 @@ absEOa	.byt	$ff,$f0,$f0,$0f			;test pattern for EOR
 ;logical results
 absrlo	.byt	0,$ff,$7f,$80
 absflo	.byt	fz,fn,0,fn
+; *** after RAM data, blinking routine ***
+ram_blink
+		.dsb	10			; *** blinking routine should be copied here ***
+ram_ret
+		.dsb	2			; *** actual ROM return address ***
 data_bss_end:
-; *** blinking routine should be copied here ***
 
 ; **********************************************
 ; *** beginning of ROM code, no fillings yet ***
@@ -537,10 +540,13 @@ data_bss_end:
 		.text
 
 		* =		code_segment
+
+		.asc	"6502 Functional Test ROM by klaus2m5"	; *** ID text ***
+
 start	cld
 		ldx #$ff
 		txs
-		lda #0				;*** test 0 = initialize
+		lda #0				; *** test 0 = initialize ***
 		sta test_case
 
 		test_num = 0
@@ -598,11 +604,17 @@ ld_zp	lda zp_init,x
 		sta zp_bss,x
 		dex
 		bpl ld_zp
+; *** preloading RAM area should copy blinking routine too ***
 		ldx #data_end-data_init-1
 ld_data lda data_init,x
 		sta data_bss,x
 		dex
 		bpl ld_data
+; *** change jump address accordingly ***
+		LDY #<rom_blink
+		LDX #>rom_blink
+		STY ram_ret
+		STX ram_ret
 ; *** vectors are always in ROM ***
 
 ;generate checksum for RAM integrity test
@@ -610,7 +622,7 @@ ld_data lda data_init,x
 		lda #0 
 		sta zpt					;set low byte of indirect pointer
 		sta ram_chksm+1			;checksum high byte
-#if disable_selfmod == 0
+#ifndef disable_selfmod
 		sta range_adr			;reset self modifying code
 #endif
 		clc
@@ -638,7 +650,7 @@ gcs4	iny
 #endif
 		next_test
 
-#if	disable_selfmod == 0
+#ifndef	disable_selfmod
 ; *** another thing to be checked *** C H E C K
 ;testing relative addressing with BEQ
 		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
@@ -664,7 +676,9 @@ range_fw
 		sta range_adr		;load into test target
 		lda #0				;should set zero flag in status register
 		jmp range_op
-	
+; *************************************************
+; *** I believe this is the test zone to be SMC ***
+; *************************************************
 		dex					; offset landing zone - backward branch too far
 		dex
 		dex
@@ -798,7 +812,6 @@ range_fw
 		dex
 		dex					;-3
 range_op					;test target with zero flag=0, z=1 if previous dex
-; *** should check SMC here ***
 range_adr =		*+1			;modifiable relative address
 		beq *+64			;+64 if called without modification
 		dex					;+0
@@ -950,6 +963,9 @@ range_ok
 		beq range_end	
 		jmp range_loop
 range_end					;range test successful
+; *********************************************
+; *** I believe this is the end of SMC code ***
+; *********************************************
 #endif
 		next_test
 
@@ -4970,12 +4986,12 @@ tadd1	ora adrh	;merge C to expected flags
 		pla
 		and #$82	;mask N00000Z0
 		sta adrf	;no need to check carry as we are adding to 0
-		dec sb2	;complement subtract operand 2
+		dec sb2		;complement subtract operand 2
 		dec sba2
 		lda ad2	
 		sta adrl
 		bne tadd	;iterate op2
-#if disable_decimal < 1
+#ifndef disable_decimal
 		next_test
 
 ; decimal add/subtract test
@@ -5136,12 +5152,12 @@ bin_rti_ret
 ; S U C C E S S ************************************************
 ; -------------	
 		success	;if you get here everything went well
-report_success:
+; *** this will jump to RAM blink routine for faster LED indication ***
 ; -------------	
 ; S U C C E S S ************************************************
 		jmp start	;run again	
 
-#if disable_decimal < 1
+#ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
 ; *** WARNING - tests documented behavior only! ***
 ;	only valid BCD operands are tested, N V Z flags are ignored
@@ -5655,6 +5671,7 @@ test_jsr
 		pla
 		inx	;return registers with modifications
 		eor #$aa	;N=1, V=1, Z=0, C=1
+ex_rts						; *** label for a delay via JSR/RTS ***
 		rts
 		trap	;runover protection
 		jmp start	;catastrophic error - cannot continue
@@ -5749,10 +5766,7 @@ break2	;BRK pass 2
 		trap	;runover protection
 		jmp start	;catastrophic error - cannot continue
 
-; *** is this needed? ***
-#if report == 1
-		include "report.i65"
-#endif
+; *** no reports ***
 
 ;copy of data to initialize BSS segment
 ; *** the important stuff ***
@@ -5843,6 +5857,17 @@ absEOa_ .byt	$ff,$f0,$f0,$0f	;test pattern for EOR
 ;logical results
 absrlo_ .byt	0,$ff,$7f,$80
 absflo_ .byt	fz,fn,0,fn
+; ************************************************************
+; *** after all data, blinking routine code will be copied ***
+rom_blink
+		JSR ex_rts			; just some suitable delay
+		INX
+		BNE rom_blink
+		INY
+		BNE rom_blink
+		JMP ram_blink		; original jump, will be changed in RAM
+; *** end of blinking routine *** 12 bytes reserved!
+; *******************************
 data_end
 
 #if (data_end - data_init) != (data_bss_end - data_bss)
