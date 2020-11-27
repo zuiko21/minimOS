@@ -543,7 +543,8 @@ data_bss_end:
 
 		.asc	"6502 Functional Test ROM by klaus2m5"	; *** ID text ***
 
-start	cld
+res_trap					; *** actual 6502 start ***
+		cld
 		ldx #$ff
 		txs
 		lda #0				; *** test 0 = initialize ***
