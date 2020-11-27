@@ -2,7 +2,7 @@
 ; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201127-2318 ***
+; *** last modified 20201127-0047 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -83,9 +83,9 @@
 ;	05-jan-2020	fixed shifts not testing zero result and flag when last 1-bit
 ;	is shifted out
 
-; *** ***************** ***
+; *************************
 ; C O N F I G U R A T I O N
-; *** ***************** ***
+; *************************
 ; *** DEFINEs seem more suitable for xa ***
 
 ;ROM_vectors writable (0=no, 1=yes)
@@ -101,11 +101,13 @@
 ;I_flag(behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
 ;tested if you allow changing the interrupt status (I_flag=3)
+; *** value 2 is NOT accepted ***
 #define	I_flag			3
 
 ;configure memory - try to stay away from memory used by the system
 ;zero_page memory start address, $52 (82) consecutive Bytes required
 ;	add 2 if I_flag=2
+; *** really not using anything else... might just start at 2 for the sake of 6510 compatibility ***
 zero_page				= $A
 
 ;data_segment memory start address, $7B (123) consecutive Bytes required
@@ -119,8 +121,8 @@ code_segment			= $C000		; *** no longer $400 ***
 ;self modifying code may be disabled to allow running in ROM
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
-;*** must try to copy relevant section into RAM *** C H E C K
-;#define	disable_selfmod	1
+;*** will copy relevant section into RAM ***
+#define	disable_selfmod	1
 
 ;report errors through standard self trap loops
 ;report = 0
@@ -141,9 +143,9 @@ code_segment			= $C000		; *** no longer $400 ***
 ; may lead to branch range problems for some tests.
 
 #define	hash			#
-; *** that is needed for xa's CPP-like preprocessor! ***
+; *** this is needed for xa's CPP-like preprocessor! ***
 
-; *** always report errors thru traps ***
+; *** always report errors thru trap addresses ***
 #define	trap			JMP *
 ;failed anyway
 
@@ -179,7 +181,7 @@ code_segment			= $C000		; *** no longer $400 ***
 
 ; *** reports are disabled all the time as the CPU-checker lacks I/O ***
 
-carry	= %00000001	;flag bits in status
+carry	= %00000001			;flag bits in status
 zero	= %00000010
 intdis	= %00000100
 decmode = %00001000
@@ -207,12 +209,12 @@ Nfnz	= fnz ^ $FF
 Nfnv	= fnv ^ $FF
 Nfzc	= fzc ^ $FF
 
-fao		= break+reserv	;bits always on after PHP, BRK
-fai		= fao+intdis	;+ forced interrupt disable
-faod	= fao+decmode	;+ ignore decimal
-faid	= fai+decmode	;+ ignore decimal
-m8		= $ff			;8 bit mask
-m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
+fao		= break+reserv		;bits always on after PHP, BRK
+fai		= fao+intdis		;+ forced interrupt disable
+faod	= fao+decmode		;+ ignore decimal
+faid	= fai+decmode		;+ ignore decimal
+m8		= $ff				;8 bit mask
+m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 
 ; *************************
 ; *** macro definitions ***
@@ -221,7 +223,6 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 ;masking test of decimal bit
 ;masking of interrupt enable/disable on load and compare
 ;masking of always on bits after PHP or BRK (unused & break) on compare
-; *** don't think I'll disable D bit, disable_decimal never 2 ***
 #if I_flag == 0
 ;		*** I_FLAG IS ZERO ***
 #define	load_flag(a)	LDA hash a &m8i
@@ -246,7 +247,7 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 ;invert expected flags + always on bits + I
 #endif
 
-; *** I flag is never 2 ***
+; *** I_FLAG is never 2 ***
 
 #if I_flag== 3
 ;		*** I_FLAG IS THREE ***
@@ -259,6 +260,7 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 #define	eor_flag(a)		CMP hash (a|fao)
 ;invert expected flags + always on bits
 #endif
+
 ; *** this was for disable_decimal=2, not implemented ***
 
 ;macros to set (register|memory|zeropage) & status
@@ -534,6 +536,16 @@ ram_ret
 		.dsb	2			; *** actual ROM return address ***
 data_bss_end:
 
+; *** here should define some space for the SMC branch test ***
+; *** some "set" values just for reference, as all will be filled/poked ***
+smc_bra		.dsb	131, $CA	; filled with DEX
+range_op	.byt	$F0			;test target with zero flag=0, z=1 if previous dex *** will be poked with BEQ ***
+range_adr	.byt	64			;modifiable relative address *** BEQ +64 if called without modification ***
+			.dsb	127, $CA	; more DEX filling
+smc_nops	.dsb	5, $EA		; first batch of NOPs (loop will fill all 20 bytes, poking 3 bytes afterwards)
+smc_rok		.dsb	15, $EA		; NOPs but will poke BEQ and TRAP (5 bytes)
+smc_ret		.dsb	3, $4C		; JMP to rom_ret (proper address to be poked as well)
+
 ; **********************************************
 ; *** beginning of ROM code, no fillings yet ***
 ; **********************************************
@@ -617,13 +629,49 @@ ld_data lda data_init,x
 		STX ram_ret
 ; *** vectors are always in ROM ***
 
+#ifndef	disable_selfmod
+; *** this is the time to create the SMC ***
+		LDY #2				; as I need more than 255 bytes to fill, count two rounds
+		LDX #255			; intial value for first round
+		LDA #$CA			; DEX opcode
+dex_fill:
+			STA smc_bra-1, X	; fill byte! note offset
+			DEX					; next byte
+			BNE dex_fill
+			DEY					; if round finished, update counter
+				BEQ dex_ok			; 2 rounds done, go for NOPs
+			LDX #5				; initial value for second round
+			BNE dex_fill		; and fill the rest
+dex_ok:
+		LDX #20				; number of NOPs
+		LDA #$EA			; NOP opcode
+nop_fill:
+			STA smc_nops-1, X	; fill byte! note offset
+			DEX
+			BNE nop_fill		; finish loop
+; *** now for the pokes... ***
+		LDA #$F0			; BEQ opcode goes in two places
+		STA range_op
+		STA smc_rok
+		LDX #64				; range_adr operand
+		LDY #8				; range_ok offset
+		STX range_adr
+		STY smc_rok+1
+		LDA #$4C			; JMP opcode
+		STA smc_ret
+		LDY #<rom_ret		; pointer for jump
+		LDX #>rom_ret
+		STY smc_ret+1
+		STX smc_ret+2
+#endif
+
 ;generate checksum for RAM integrity test
 #if	ram_top > -1
 		lda #0 
 		sta zpt					;set low byte of indirect pointer
 		sta ram_chksm+1			;checksum high byte
 #ifndef disable_selfmod
-			sta range_adr			;reset self modifying code
+		sta range_adr			;reset self modifying code
 #endif
 		clc
 		ldx #zp_bss-zero_page	;zeropage - write test area
@@ -651,7 +699,7 @@ gcs4	iny
 		next_test
 
 #ifndef	disable_selfmod
-; *** another thing to be checked *** C H E C K
+; *** prepare code, then jump to RAM-generated SMC ***
 ;testing relative addressing with BEQ
 		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
 range_loop
@@ -673,301 +721,20 @@ range_fw
 		nop
 		nop
 		eor #$7f			;complement except sign
-		sta range_adr		;load into test target
+		sta range_adr		;load into test target *** RAM address ***
 		lda #0				;should set zero flag in status register
 		jmp range_op		; *** as this is on RAM, jump to copy address ***
-; *************************************************
-; *** I believe this is the test zone to be SMC *** might be mostly generated from a DEX-filling loop!
-; *************************************************
-		dex					; offset landing zone - backward branch too far
-		dex
-		dex
-		dex
-		dex
-;relative address target field with branch under test in the middle
-		dex					;-128 - max backward
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-120
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-110
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-100
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-90
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-80
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-70
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-60
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-50
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-40
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-30
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-20
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-10
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;-3
-range_op					;test target with zero flag=0, z=1 if previous dex
-range_adr =		*+1			;modifiable relative address
-		beq *+64			;+64 if called without modification *** poke this opcode ***
-		dex					;+0
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+10
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+20
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+30
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+40
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+50
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+60
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+70
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+80
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+90
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+100
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+110
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex					;+120
-		dex
-		dex
-		dex
-		dex
-		dex
-		dex
-; *** a second loop with the NOPs seems reasonable, poking the BEQ & TRAP afterwards ***
-		nop					;offset landing zone - forward branch too far
-		nop
-		nop
-		nop
-		nop
-		beq range_ok		;+127 - max forward
-		trap				; bad range
-		nop					;offset landing zone - tolerate +/-5 offset to branch
-		nop
-		nop
-		nop
-		nop
-range_ok
-		nop
-		nop
-		nop
-		nop
-		nop
-; *** a mere JMP to following ROM code might be poked here ***
+
+; ********************************************
+; *** SMC is called between these segments ***
+; ********************************************
+
+rom_ret:
+; *** continue after SMC ***
 		cpy #0
 		beq range_end	
 		jmp range_loop
 range_end					;range test successful
-; *********************************************
-; *** I believe this is the end of SMC code *** see new JMP above
-; *********************************************
 #endif
 		next_test
 
