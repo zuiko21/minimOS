@@ -2,7 +2,7 @@
 ; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201126-1331 ***
+; *** last modified 20201127-0924 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -91,14 +91,12 @@
 ;ROM_vectors writable (0=no, 1=yes)
 ;if ROM vectors can not be used interrupts will not be trapped
 ;as a consequence BRK can not be tested but will be emulated to test RTI
-; *** usually won't be writable! ***
-#define	ROM_vectors		0
+; *** since this is an ad-hoc tester ROM, hard vectors will always point to these supplied routines ***
 
 ;load_data_direct (0=move from code segment, 1=load directly)
 ;loading directly is preferred but may not be supported by your platform
 ;0 produces only consecutive object code, 1 is not suitable for a binary image
 ; *** it will be disabled all the time	***
-; load_data_direct		= 0
 
 ;I_flag(behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
@@ -122,7 +120,7 @@ code_segment			= $C000		; *** no longer $400 ***
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
 ;*** must try to copy relevant section into RAM ***
-#define	disable_selfmod	0
+#define	disable_selfmod	1
 
 ;report errors through standard self trap loops
 ;report = 0
@@ -329,7 +327,7 @@ m8i		= %11111011		;8 bit mask - interrupt disable *** changed ***
 ;	designated write areas.
 ;	uses zpt word as indirect pointer, zpt+2 word as checksum
 #if ram_top > -1
-#if	disable_selfmod
+#ifdef	disable_selfmod
 ; non-SMC version
 ; *** CPP admits no temporary labels, thus resolved as relative references ***
 #define	check_ram			\
@@ -1400,8 +1398,7 @@ jsr_ret = *-1				;last address of jsr = return address
 		trap_ne
 		next_test
 
-; break & return from interrupt *** C H E C K
-#if ROM_vectors == 1
+; break & return from interrupt *** always available
 		load_flag(0)			;with interrupts enabled if allowed!
 		pha
 		lda #'B'
@@ -1409,21 +1406,6 @@ jsr_ret = *-1				;last address of jsr = return address
 		ldy #'K'
 		plp					;N=0, V=0, Z=0, C=0
 		brk
-#else
-		lda #>brk_ret0	;emulated break
-		pha
-		lda #<brk_ret0
-		pha
-		load_flag(fao)		;set break & unused on stack
-		pha
-		load_flag(intdis)	;during interrupt
-		pha
-		lda #'B'
-		ldx #'R'
-		ldy #'K'
-		plp					;N=0, V=0, Z=0, C=0
-		jmp irq_trap
-#endif
 		dey					;should not be executed
 brk_ret0					;address of break return
 		php					;either SP or Y count will fail, if we do not hit
@@ -1443,7 +1425,6 @@ brk_ret0					;address of break return
 		tsx					;sp?
 		cpx #$ff
 		trap_ne
-#if ROM_vectors == 1
 		load_flag($ff)		;with interrupts disabled if allowed!
 		pha
 		lda #$ff-'B'
@@ -1451,20 +1432,6 @@ brk_ret0					;address of break return
 		ldy #$ff-'K'
 		plp					;N=1, V=1, Z=1, C=1
 		brk
-#else
-		lda #>brk_ret1	;emulated break
-		pha
-		lda #<brk_ret1
-		pha
-		load_flag($ff)
-		pha					;set break & unused on stack
-		pha					;actual flags
-		lda #$ff-'B'
-		ldx #$ff-'R'
-		ldy #$ff-'K'
-		plp					;N=1, V=1, Z=1, C=1
-		jmp irq_trap
-#endif
 		dey					;should not be executed
 brk_ret1					;address of break return
 		php					;either SP or Y count will fail, if we do not hit
