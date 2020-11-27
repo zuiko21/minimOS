@@ -2,7 +2,7 @@
 ; ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201127-1009 ***
+; *** last modified 20201127-2318 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -542,8 +542,7 @@ data_bss_end:
 		* =		code_segment
 
 		.asc	"6502 Functional Test ROM by klaus2m5"	; *** ID text ***
-
-res_trap					; *** actual 6502 start ***
+start						; *** actual 6502 start ***
 		cld
 		ldx #$ff
 		txs
@@ -611,7 +610,7 @@ ld_data lda data_init,x
 		sta data_bss,x
 		dex
 		bpl ld_data
-; *** change jump address accordingly ***
+; *** *** change jump address accordingly *** ***
 		LDY #<rom_blink
 		LDX #>rom_blink
 		STY ram_ret
@@ -624,7 +623,7 @@ ld_data lda data_init,x
 		sta zpt					;set low byte of indirect pointer
 		sta ram_chksm+1			;checksum high byte
 #ifndef disable_selfmod
-		sta range_adr			;reset self modifying code
+			sta range_adr			;reset self modifying code
 #endif
 		clc
 		ldx #zp_bss-zero_page	;zeropage - write test area
@@ -676,9 +675,9 @@ range_fw
 		eor #$7f			;complement except sign
 		sta range_adr		;load into test target
 		lda #0				;should set zero flag in status register
-		jmp range_op
+		jmp range_op		; *** as this is on RAM, jump to copy address ***
 ; *************************************************
-; *** I believe this is the test zone to be SMC ***
+; *** I believe this is the test zone to be SMC *** might be mostly generated from a DEX-filling loop!
 ; *************************************************
 		dex					; offset landing zone - backward branch too far
 		dex
@@ -814,7 +813,7 @@ range_fw
 		dex					;-3
 range_op					;test target with zero flag=0, z=1 if previous dex
 range_adr =		*+1			;modifiable relative address
-		beq *+64			;+64 if called without modification
+		beq *+64			;+64 if called without modification *** poke this opcode ***
 		dex					;+0
 		dex
 		dex
@@ -942,6 +941,7 @@ range_adr =		*+1			;modifiable relative address
 		dex
 		dex
 		dex
+; *** a second loop with the NOPs seems reasonable, poking the BEQ & TRAP afterwards ***
 		nop					;offset landing zone - forward branch too far
 		nop
 		nop
@@ -960,12 +960,13 @@ range_ok
 		nop
 		nop
 		nop
+; *** a mere JMP to following ROM code might be poked here ***
 		cpy #0
 		beq range_end	
 		jmp range_loop
 range_end					;range test successful
 ; *********************************************
-; *** I believe this is the end of SMC code ***
+; *** I believe this is the end of SMC code *** see new JMP above
 ; *********************************************
 #endif
 		next_test
@@ -5156,7 +5157,8 @@ bin_rti_ret
 ; *** this will jump to RAM blink routine for faster LED indication ***
 ; -------------	
 ; S U C C E S S ************************************************
-		jmp start	;run again	
+
+; *** ...and nothing else as it is already flashing the A15 LED ***
 
 #ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
@@ -5632,8 +5634,7 @@ test_ind
 		inx	;return registers with modifications
 		eor #$aa	;N=1, V=1, Z=0, C=1
 		jmp (ptr_ind_ret)
-		trap	;runover protection
-		jmp start	;catastrophic error - cannot continue
+		trap	;runover protection *** cannot continue ***
 
 ; target for the jump subroutine test
 		dey
@@ -5674,17 +5675,11 @@ test_jsr
 		eor #$aa	;N=1, V=1, Z=0, C=1
 ex_rts						; *** label for a delay via JSR/RTS ***
 		rts
-		trap	;runover protection
-		jmp start	;catastrophic error - cannot continue
+		trap	;runover protection *** cannot continue ***
 		
 ;trap in case of unexpected IRQ, NMI, BRK, RESET - BRK test target
-nmi_trap
-		trap	;check stack for conditions at NMI
-		jmp start	;catastrophic error - cannot continue
-res_trap
-		trap	;unexpected RESET
-		jmp start	;catastrophic error - cannot continue
-		
+; *** no monitor or IO to check NMI stack status, just end test acknowledging NMI ***
+; *** no res_trap as will just start the test ***		
 		dey
 		dey
 irq_trap	;BRK test or unextpected BRK or IRQ
@@ -5729,8 +5724,7 @@ irq_trap	;BRK test or unextpected BRK or IRQ
 		eor #$aa
 		plp	;N=1, V=1, Z=1, C=1 but original flags should be restored
 		rti
-		trap	;runover protection
-		jmp start	;catastrophic error - cannot continue
+		trap	;runover protection *** cannot continue ***
 		
 break2	;BRK pass 2	
 		cpx #$ff-'R'
@@ -5764,13 +5758,14 @@ break2	;BRK pass 2
 		eor #$aa
 		plp	;N=0, V=0, Z=0, C=0 but original flags should be restored
 		rti
-		trap	;runover protection
-		jmp start	;catastrophic error - cannot continue
+		trap	;runover protection *** cannot continue ***
 
 ; *** no reports ***
 
+;**************************************
 ;copy of data to initialize BSS segment
-; *** the important stuff ***
+;***   including blinking routine   ***
+;**************************************
 zp_init
 zps_	.byt	$80,1			;additional shift pattern to test zero result & flag
 zp1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
@@ -5863,9 +5858,9 @@ absflo_ .byt	fz,fn,0,fn
 rom_blink
 		JSR ex_rts			; just some suitable delay
 		INX
-		BNE rom_blink
+		BNE rom_blink		; relative branches will generate the same binary
 		INY
-		BNE rom_blink
+		BNE rom_blink		; relative branches will generate the same binary
 		JMP ram_blink		; original jump, will be changed in RAM
 ; *** end of blinking routine *** 12 bytes reserved!
 ; *******************************
@@ -5884,7 +5879,7 @@ vec_bss = $fffa
 
 		* = vec_bss
 ;vectors
-		.word	nmi_trap
-		.word	res_trap
+		.word	ram_blink	; *** without monitor or any IO, will just acknowledge NMI as successful ***
+		.word	start		; *** only functionality of this device ***
 		.word	irq_trap
 
