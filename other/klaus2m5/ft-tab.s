@@ -1,8 +1,10 @@
-; ; 6 5 0 2	F U N C T I O N A L	T E S T
-; ; Copyright (C) 2012-2020	Klaus Dormann
+;
+; 6 5 0 2		F U N C T I O N A L		T E S T
+;
+; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201127-0047 ***
+; *** last modified 20201130-0041 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -98,7 +100,7 @@
 ;0 produces only consecutive object code, 1 is not suitable for a binary image
 ; *** it will be disabled all the time	***
 
-;I_flag(behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
+;I_flag behavior (0=force enabled, 1=force disabled, 2=prohibit change, 3=allow
 ;change) 2 requires extra code and is not recommended. SEI & CLI can only be
 ;tested if you allow changing the interrupt status (I_flag=3)
 ; *** value 2 is NOT accepted ***
@@ -121,8 +123,8 @@ code_segment			= $C000		; *** no longer $400 ***
 ;self modifying code may be disabled to allow running in ROM
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
-;*** will copy relevant section into RAM ***
-#define	disable_selfmod	1
+;*** if enabled, does generate relevant section into RAM ***
+;#define	disable_selfmod	1
 
 ;report errors through standard self trap loops
 ;report = 0
@@ -440,6 +442,7 @@ adrh	.dsb	1				;expected result bit 8 (carry)
 adrf	.dsb	1				;expected flags NV0000ZC (only binary mode)
 sb2		.dsb	1				;operand 2 complemented for subtract
 zp_bss:
+; *** byte definitions for reference only, will be stored later ***
 zps		.byt	$80,1			;additional shift pattern to test zero result & flag
 zp1		.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
 zp7f	.byt	$7f				;test pattern for compare	
