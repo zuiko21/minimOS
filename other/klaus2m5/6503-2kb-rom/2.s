@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1616 ***
+; *** last modified 20201130-1627 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -335,6 +335,7 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 #ifdef	disable_selfmod
 ; non-SMC version
 ; *** CPP admits no temporary labels, thus resolved as relative references ***
+; *** might supress the range_addr reference altogether ***
 #define	check_ram			\
 	cld:					\
 	lda #0:					\
@@ -417,8 +418,7 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 	trap_ne:				\
 	-test_num=test_num+1:	\
 	lda #test_num:			\
-	sta test_case:			\
-	check_ram
+	sta test_case
 
 ; *** place checkRam above to find altered RAM after each test, otherwise supress it (and previous \) ***
 
