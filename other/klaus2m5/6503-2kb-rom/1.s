@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1429 ***
+; *** last modified 20201130-1811 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -24,7 +24,7 @@
 
 
 ; This program is designed to test all opcodes of a 6502 emulator using all
-; addressing modes with focus on propper setting of the processor status
+; addressing modes with focus on proper setting of the processor status
 ; register bits.
 ;
 ; version 05-jan-2020
@@ -700,6 +700,7 @@ gcs4	iny
 		sta ram_chksm			;checksum complete
 #endif
 		next_test
+; *** test_case = 1 ***
 
 #ifndef	disable_selfmod
 ; *** prepare code, then jump to RAM-generated SMC ***
@@ -739,10 +740,8 @@ rom_ret:
 		jmp range_loop
 range_end					;range test successful
 #endif
-
-
-
 		next_test
+; *** test_case = 2 ***
 
 ;partial test BNE & CMP, CPX, CPY immediate
 		cpy #1				;testing BNE true
@@ -777,6 +776,8 @@ test_bne
 		trap_cs
 		trap_pl
 		next_test
+; *** test_case = 3 ***
+
 ;testing stack operations PHA PHP PLA PLP
 	
 		ldx #$ff			;initialize stack
@@ -803,6 +804,7 @@ test_bne
 		cpx #$ff			;sp incremented?
 		trap_ne
 		next_test
+; *** test_case = 4 ***
 
 ;testing branch decisions BPL BMI BVC BVS BCC BCS BNE BEQ
 		set_stat($ff)		;all on
@@ -1008,6 +1010,7 @@ brvc7
 		trap				;branch overflow/no overflow
 brvc8
 		next_test
+; *** test_case = 5 ***
 
 ; test PHA does not alter flags or accumulator but PLA does
 		ldx #$55			;x & y protected
@@ -1053,7 +1056,8 @@ brvc8
 		cpy #$aa
 		trap_ne
 		next_test
-	 
+; *** test_case = 6 ***
+ 
 ; partial pretest EOR #
 		set_a($3c,0)
 		eor #$c3
@@ -1062,6 +1066,7 @@ brvc8
 		eor #$c3
 		tst_a(0,fz)
 		next_test
+; *** test_case = 7 ***
 
 ; PC modifying instructions except branches (NOP, JMP, JSR, RTS, BRK, RTI)
 ; testing NOP
@@ -1084,7 +1089,8 @@ brvc8
 		cpy #$bd
 		trap_ne
 		next_test
-		
+; *** test_case = 8 ***
+
 ; jump absolute
 		set_stat($0)
 		lda #'F'
@@ -1130,7 +1136,8 @@ test_near
 		cpy #'R'
 		trap_ne
 		next_test
-		
+; *** test_case = 9 ***
+
 ; jump indirect
 		set_stat(0)
 		lda #'I'
@@ -1161,6 +1168,7 @@ ind_ret
 		cpx #$ff
 		trap_ne
 		next_test
+; *** test_case = 10 ***
 
 ; jump subroutine & return from subroutine
 		set_stat(0)
@@ -1188,6 +1196,7 @@ jsr_ret = *-1				;last address of jsr = return address
 		cpx #$ff
 		trap_ne
 		next_test
+; *** test_case = 11 ***
 
 ; break & return from interrupt *** always available
 		load_flag(0)			;with interrupts enabled if allowed!
@@ -1243,7 +1252,12 @@ brk_ret1					;address of break return
 		cpx #$ff
 		trap_ne
 		next_test
+; *** test_case = 12 ***
 ; *** checked OK for test 1 ***
+
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
 /*	 
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
 		set_stat($ff)
@@ -4908,10 +4922,14 @@ bin_rti_ret
 		trap_ne	;expected binary result after rti D=0
 #endif
 */		
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
+
 		lda test_case
 		cmp #test_num
-		trap_ne	;previous test is out of sequence
-		lda #$f0	;mark opcode testing complete
+		trap_ne				;previous test is out of sequence
+		lda #$f0			;mark opcode testing complete
 		sta test_case
 		
 ; final RAM integrity test
@@ -4933,6 +4951,10 @@ bin_rti_ret
 ; S U C C E S S ************************************************
 
 ; *** ...and nothing else as it is already flashing the A10 LED ***
+
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
 /*
 #ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
@@ -5339,92 +5361,96 @@ ckad1	pla
 		plp
 		rts
 */
+; *** *** ********************************** *** ***
+; *** *** *** BACK TO ENABLED CODE AGAIN *** *** ***
+; *** *** ********************************** *** ***
+
 ; *** jumps and interrupt targets needed for test 1 ***
 ; target for the jump absolute test
 		dey
 		dey
 test_far
-		php	;either SP or Y count will fail, if we do not hit
+		php					;either SP or Y count will fail, if we do not hit
 		dey
 		dey
 		dey
 		plp
-		trap_cs	;flags loaded?
+		trap_cs				;flags loaded?
 		trap_vs
 		trap_mi
 		trap_eq 
-		cmp #'F'	;registers loaded?
+		cmp #'F'			;registers loaded?
 		trap_ne
 		cpx #'A'
 		trap_ne	
 		cpy #('R'-3)
 		trap_ne
-		pha	;save a,x
+		pha					;save a,x
 		txa
 		pha
 		tsx
-		cpx #$fd	;check SP
+		cpx #$fd			;check SP
 		trap_ne
-		pla	;restore x
+		pla					;restore x
 		tax
 		set_stat($ff)
-		pla	;restore a
-		inx	;return registers with modifications
-		eor #$aa	;N=1, V=1, Z=0, C=1
+		pla					;restore a
+		inx					;return registers with modifications
+		eor #$aa			;N=1, V=1, Z=0, C=1
 		jmp far_ret
 		
 ; target for the jump indirect test
 		align
 ptr_tst_ind .word test_ind
 ptr_ind_ret .word ind_ret
-		trap	;runover protection
+		trap				;runover protection
 		dey
 		dey
 test_ind
-		php	;either SP or Y count will fail, if we do not hit
+		php					;either SP or Y count will fail, if we do not hit
 		dey
 		dey
 		dey
 		plp
-		trap_cs	;flags loaded?
+		trap_cs				;flags loaded?
 		trap_vs
 		trap_mi
 		trap_eq 
-		cmp #'I'	;registers loaded?
+		cmp #'I'			;registers loaded?
 		trap_ne
 		cpx #'N'
 		trap_ne	
 		cpy #('D'-3)
 		trap_ne
-		pha	;save a,x
+		pha					;save a,x
 		txa
 		pha
 		tsx
-		cpx #$fd	;check SP
+		cpx #$fd			;check SP
 		trap_ne
-		pla	;restore x
+		pla					;restore x
 		tax
 		set_stat($ff)
-		pla	;restore a
-		inx	;return registers with modifications
-		eor #$aa	;N=1, V=1, Z=0, C=1
+		pla					;restore a
+		inx					;return registers with modifications
+		eor #$aa			;N=1, V=1, Z=0, C=1
 		jmp (ptr_ind_ret)
-		trap	;runover protection *** cannot continue ***
+		trap				;runover protection *** cannot continue ***
 
 ; target for the jump subroutine test
 		dey
 		dey
 test_jsr
-		php	;either SP or Y count will fail, if we do not hit
+		php					;either SP or Y count will fail, if we do not hit
 		dey
 		dey
 		dey
 		plp
-		trap_cs	;flags loaded?
+		trap_cs				;flags loaded?
 		trap_vs
 		trap_mi
 		trap_eq 
-		cmp #'J'	;registers loaded?
+		cmp #'J'			;registers loaded?
 		trap_ne
 		cpx #'S'
 		trap_ne	
@@ -5433,59 +5459,59 @@ test_jsr
 		pha	;save a,x
 		txa
 		pha	
-		tsx	;sp -4? (return addr,a,x)
+		tsx					;sp -4? (return addr,a,x)
 		cpx #$fb
 		trap_ne
-		lda $1ff	;propper return on stack
+		lda $1ff			;proper return on stack
 		cmp #>jsr_ret
 		trap_ne
 		lda $1fe
 		cmp #<jsr_ret
 		trap_ne
 		set_stat($ff)
-		pla	;pull x,a
+		pla					;pull x,a
 		tax
 		pla
-		inx	;return registers with modifications
-		eor #$aa	;N=1, V=1, Z=0, C=1
-ex_rts						; *** label for a delay via JSR/RTS ***
+		inx					;return registers with modifications
+		eor #$aa			;N=1, V=1, Z=0, C=1
+ex_rts						; *** label for delay via JSR/RTS ***
 		rts
-		trap	;runover protection *** cannot continue ***
+		trap				;runover protection *** cannot continue ***
 		
 ;trap in case of unexpected IRQ, NMI, BRK, RESET - BRK test target
 ; *** no monitor or IO to check NMI stack status, just end test acknowledging NMI ***
 ; *** no res_trap as will just start the test ***		
 		dey
 		dey
-irq_trap	;BRK test or unextpected BRK or IRQ
-		php	;either SP or Y count will fail, if we do not hit
+irq_trap					;BRK test or unextpected BRK or IRQ
+		php					;either SP or Y count will fail, if we do not hit
 		dey
 		dey
 		dey
-		;next traps could be caused by unexpected BRK or IRQ
-		;check stack for BREAK and originating location
-		;possible jump/branch into weeds (uninitialized space)
-		cmp #$ff-'B'	;BRK pass 2 registers loaded?
+;next traps could be caused by unexpected BRK or IRQ
+;check stack for BREAK and originating location
+;possible jump/branch into weeds (uninitialized space)
+		cmp #$ff-'B'		;BRK pass 2 registers loaded?
 		beq break2
-		cmp #'B'	;BRK pass 1 registers loaded?
+		cmp #'B'			;BRK pass 1 registers loaded?
 		trap_ne
 		cpx #'R'
 		trap_ne	
 		cpy #'K'-3
 		trap_ne
-		sta irq_a	;save registers during break test
+		sta irq_a			;save registers during break test
 		stx irq_x
-		tsx	;test break on stack
+		tsx					;test break on stack
 		lda $102,x
-		cmp_flag(0)	;break test should have B=1 & unused=1 on stack
-		trap_ne	; - no break flag on stack
+		cmp_flag(0)			;break test should have B=1 & unused=1 on stack
+		trap_ne				; - no break flag on stack
 		pla
 		cmp_flag(intdis)	;should have added interrupt disable
 		trap_ne
 		tsx
-		cpx #$fc	;sp -3? (return addr, flags)
+		cpx #$fc			;sp -3? (return addr, flags)
 		trap_ne
-		lda $1ff	;propper return on stack
+		lda $1ff			;proper return on stack
 		cmp #>brk_ret0
 		trap_ne
 		lda $1fe
@@ -5494,32 +5520,32 @@ irq_trap	;BRK test or unextpected BRK or IRQ
 		load_flag($ff)
 		pha
 		ldx irq_x
-		inx	;return registers with modifications
+		inx					;return registers with modifications
 		lda irq_a
 		eor #$aa
-		plp	;N=1, V=1, Z=1, C=1 but original flags should be restored
+		plp					;N=1, V=1, Z=1, C=1 but original flags should be restored
 		rti
-		trap	;runover protection *** cannot continue ***
+		trap				;runover protection *** cannot continue ***
 		
-break2	;BRK pass 2	
+break2						;BRK pass 2	
 		cpx #$ff-'R'
 		trap_ne	
 		cpy #$ff-'K'-3
 		trap_ne
-		sta irq_a	;save registers during break test
+		sta irq_a			;save registers during break test
 		stx irq_x
-		tsx	;test break on stack
+		tsx					;test break on stack
 		lda $102,x
-		cmp_flag($ff)	;break test should have B=1
-		trap_ne	; - no break flag on stack
+		cmp_flag($ff)		;break test should have B=1
+		trap_ne				; - no break flag on stack
 		pla
-		ora #decmode	;ignore decmode cleared if 65c02
-		cmp_flag($ff)	;actual passed flags
+		ora #decmode		;ignore decmode cleared if 65c02
+		cmp_flag($ff)		;actual passed flags
 		trap_ne
 		tsx
-		cpx #$fc	;sp -3? (return addr, flags)
+		cpx #$fc			;sp -3? (return addr, flags)
 		trap_ne
-		lda $1ff	;propper return on stack
+		lda $1ff			;proper return on stack
 		cmp #>brk_ret1
 		trap_ne
 		lda $1fe
@@ -5528,12 +5554,12 @@ break2	;BRK pass 2
 		load_flag(intdis)
 		pha	
 		ldx irq_x
-		inx	;return registers with modifications
+		inx					;return registers with modifications
 		lda irq_a
 		eor #$aa
-		plp	;N=0, V=0, Z=0, C=0 but original flags should be restored
+		plp					;N=0, V=0, Z=0, C=0 but original flags should be restored
 		rti
-		trap	;runover protection *** cannot continue ***
+		trap				;runover protection *** cannot continue ***
 
 ; *** no reports ***
 
@@ -5647,10 +5673,6 @@ data_end
 #endif 
 
 ;end of RAM init data
-; *** *** *** TESTING for reduced sets *** *** ***
-;irq_trap
-		trap
-; *** *** ******************************** *** ***
 
 ; *** hardware vectors are always set, with padding ***
 vec_bss = $fffa
@@ -5661,4 +5683,3 @@ vec_bss = $fffa
 		.word	ram_blink	; *** without monitor or any IO, will just acknowledge NMI as successful ***
 		.word	start		; *** only functionality of this device ***
 		.word	irq_trap	; *** this one will hang upon unexpected interrupt, as BRK is not tested
-

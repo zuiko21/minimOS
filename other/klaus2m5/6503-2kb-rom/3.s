@@ -1,11 +1,11 @@
 ;
-; 6 5 0 2		F U N C T I O N A L		T E S T
+; 6 5 0 2		F U N C T I O N A L		T E S T		P A R T		3
 ;
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1627 ***
+; *** last modified 20201130-1700 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -572,7 +572,7 @@ start						; *** actual 6502 start ***
 #endif
 	
 ; *** no I/O channel ***
-	
+	/*
 ;pretest small branch offset
 		ldx #5
 		jmp psb_test
@@ -1185,7 +1185,7 @@ jsr_ret = *-1				;last address of jsr = return address
 		cpx #$ff
 		trap_ne
 		next_test
-
+*/
 ; break & return from interrupt *** always available
 		load_flag(0)			;with interrupts enabled if allowed!
 		pha
@@ -1239,7 +1239,7 @@ brk_ret1					;address of break return
 		tsx					;sp?
 		cpx #$ff
 		trap_ne
-		next_test
+/*		next_test
 	 
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
 		set_stat($ff)
@@ -1793,7 +1793,7 @@ tsty	lda zpt,x
 		sta abst,x			;clear	
 		dex
 		bpl tsty
-		next_test
+		next_test*/
 
 ; indexed wraparound test (only zp should wrap)
 		ldx #3+$fa
@@ -2213,7 +2213,7 @@ tsty1	lda zpt,x
 		trap_ne				;store to abs data
 		stx abst+3			;clear	
 		next_test
-
+; *** checked OK ***
 ; LDY / STY - zp / abs / #
 		set_stat(0)
 		ldy zp1	
@@ -2565,7 +2565,7 @@ tsty1	lda zpt,x
 		eor_flag(Nfnz)		;mask bits not altered
 		cmp fLDx+3			;test flags
 		trap_ne
-		
+	
 		ldy #0
 		lda zpt	
 		eor #$c3
@@ -4903,7 +4903,7 @@ bin_rti_ret
 		cmp #$aa
 		trap_ne	;expected binary result after rti D=0
 #endif
-		
+		*/
 		lda test_case
 		cmp #test_num
 		trap_ne	;previous test is out of sequence
@@ -4929,7 +4929,7 @@ bin_rti_ret
 ; S U C C E S S ************************************************
 
 ; *** ...and nothing else as it is already flashing the A10 LED ***
-
+/*
 #ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
 ; *** WARNING - tests documented behavior only! ***
@@ -5442,11 +5442,11 @@ test_jsr
 		tax
 		pla
 		inx	;return registers with modifications
-		eor #$aa	;N=1, V=1, Z=0, C=1
+		eor #$aa	;N=1, V=1, Z=0, C=1*/
 ex_rts						; *** label for a delay via JSR/RTS ***
 		rts
-		trap	;runover protection *** cannot continue ***
-		
+/*		trap	;runover protection *** cannot continue ***
+		*/
 ;trap in case of unexpected IRQ, NMI, BRK, RESET - BRK test target
 ; *** no monitor or IO to check NMI stack status, just end test acknowledging NMI ***
 ; *** no res_trap as will just start the test ***		
