@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-0044 ***
+; *** last modified 20201130-1345 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -556,7 +556,7 @@ smc_ret		.dsb	3, $4C		; JMP to rom_ret (proper address to be poked as well)
 
 		* =		code_segment
 
-		.asc	"6503 klaus2m5 test"	; *** shorter ID text ***
+		.asc	"6503 klaus2m5 test 1"	; *** shorter ID text ***
 start						; *** actual 6503 start ***
 		cld
 		ldx #$ff

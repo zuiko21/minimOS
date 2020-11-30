@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-0041 ***
+; *** last modified 20201130-1345 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -129,7 +129,7 @@ code_segment			= $F800		; *** no longer $400, special 2 kiB version ***
 
 ;report errors through standard self trap loops
 ;report = 0
-; *** won't be used by me because 6502 tester has no other I/O than a LED on A15! ***
+; *** won't be used by me because 6502 tester has no other I/O than a LED on A10! ***
 
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
@@ -180,7 +180,7 @@ code_segment			= $F800		; *** no longer $400, special 2 kiB version ***
 ; therefore a RTS inside the success macro is not possible
 #define	success			JMP ram_blink
 ;test passed, no errors
-; *** will jump between two delay routines, alternating between ROM and RAM in order to blink a LED at, say, A15 ***
+; *** will jump between two delay routines, alternating between ROM and RAM in order to blink a LED at, say, A10 ***
 
 ; *** reports are disabled all the time as the CPU-checker lacks I/O ***
 
@@ -557,7 +557,7 @@ smc_ret		.dsb	3, $4C		; JMP to rom_ret (proper address to be poked as well)
 
 		* =		code_segment
 
-		.asc	"6502 Functional Test ROM by klaus2m5"	; *** ID text ***
+		.asc	"6503 klaus2m5 test 3"	; *** shorter ID text ***
 start						; *** actual 6502 start ***
 		cld
 		ldx #$ff
@@ -4929,7 +4929,7 @@ bin_rti_ret
 ; -------------	
 ; S U C C E S S ************************************************
 
-; *** ...and nothing else as it is already flashing the A15 LED ***
+; *** ...and nothing else as it is already flashing the A10 LED ***
 
 #ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
