@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1844 ***
+; *** last modified 20201130-1858 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -1731,6 +1731,10 @@ tstx1	lda zpt,y
 		next_test
 ; *** test_case = 7 ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 ; LDY / STY - zp,x / abs,x
 		ldx #3
 tldy	
@@ -1830,13 +1834,7 @@ tsty	lda zpt,x
 		dex
 		bpl tsty
 		next_test
-; *** test_case = 8 ***
-; *** OK for test 2, at least until here ***
 
-; *** *** *********************************** *** ***
-; *** *** *** D I S A B L E D   T E S T S *** *** ***
-; *** *** *********************************** *** ***
-/*
 ; indexed wraparound test (only zp should wrap)
 		ldx #3+$fa
 tldy4	ldy zp1-$fa&$ff,x	;wrap on indexed zp
