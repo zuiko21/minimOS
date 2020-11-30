@@ -1,11 +1,11 @@
 ;
-; 6 5 0 2		F U N C T I O N A L		T E S T
+; 6 5 0 2		F U N C T I O N A L		T E S T		P A R T		6
 ;
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1627 ***
+; *** last modified 20201130-2325 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -573,6 +573,10 @@ start						; *** actual 6502 start ***
 	
 ; *** no I/O channel ***
 	
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 ;pretest small branch offset
 		ldx #5
 		jmp psb_test
@@ -611,7 +615,11 @@ psb_test
 		bne psb_back
 		trap				;branch should be taken
 psb_fwok
-	
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
+
 ;initialize BSS segment
 ; *** this code preloads data on ZP, thus OK ***
 		ldx #zp_end-zp_init-1
@@ -632,6 +640,11 @@ ld_data lda data_init,x
 		STX ram_ret
 ; *** vectors are always in ROM ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
+; *** never has SMC ***
 #ifndef	disable_selfmod
 ; *** this is the time to create the SMC ***
 		LDY #2				; as I need more than 255 bytes to fill, count two rounds
@@ -667,6 +680,10 @@ nop_fill:
 		STY smc_ret+1
 		STX smc_ret+2
 #endif
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
 
 ;generate checksum for RAM integrity test
 #if	ram_top > -1
@@ -700,7 +717,12 @@ gcs4	iny
 		sta ram_chksm			;checksum complete
 #endif
 		next_test
+; *** test_case = 1 ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 #ifndef	disable_selfmod
 ; *** prepare code, then jump to RAM-generated SMC ***
 ;testing relative addressing with BEQ
@@ -1185,6 +1207,10 @@ jsr_ret = *-1				;last address of jsr = return address
 		cpx #$ff
 		trap_ne
 		next_test
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
 
 ; break & return from interrupt *** always available
 		load_flag(0)			;with interrupts enabled if allowed!
@@ -1240,7 +1266,12 @@ brk_ret1					;address of break return
 		cpx #$ff
 		trap_ne
 		next_test
-	 
+	; *** test_case = 2 ***
+
+; *** *** ********************************* *** ***
+; *** *** *** D I S A B L E D   C O D E *** *** ***
+; *** *** ********************************* *** ***
+/*
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
 		set_stat($ff)
 		clc
@@ -3397,6 +3428,10 @@ tstay6	lda abst,y
 		cpx #$7f
 		tst_x($7e,Nfzc)
 		next_test
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
 
 ; CPY - zp / abs / #
 		set_y($80,0)
@@ -3456,6 +3491,7 @@ tstay6	lda abst,y
 		cpy #$7f
 		tst_y($7e,Nfzc)
 		next_test
+; *** test_case = 3 ***
 
 ; CMP - zp / abs / #
 		set_a($80,0)
@@ -3515,7 +3551,7 @@ tstay6	lda abst,y
 		cmp #$7f
 		tst_a($7e,Nfzc)
 
-		ldx #4	;with indexing by X
+		ldx #4				;with indexing by X
 		set_a($80,0)
 		cmp zp1,x
 		tst_a($80,fc)
@@ -3554,8 +3590,8 @@ tstay6	lda abst,y
 		cmp abs1,x
 		tst_a($7e,Nfzc)
 
-		ldy #4	;with indexing by Y
-		ldx #8	;with indexed indirect
+		ldy #4				;with indexing by Y
+		ldx #8				;with indexed indirect
 		set_a($80,0)
 		cmp abs1,y
 		tst_a($80,fc)
@@ -3613,7 +3649,12 @@ tstay6	lda abst,y
 		cmp (ind1),y
 		tst_a($7e,Nfzc)
 		next_test
+; *** test_case = 4 ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 ; testing shifts - ASL LSR ROL ROR all addressing modes
 ; shifts - accumulator
 		ldx #5
@@ -4903,7 +4944,11 @@ bin_rti_ret
 		cmp #$aa
 		trap_ne	;expected binary result after rti D=0
 #endif
-		
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
+
 		lda test_case
 		cmp #test_num
 		trap_ne	;previous test is out of sequence
@@ -4930,6 +4975,10 @@ bin_rti_ret
 
 ; *** ...and nothing else as it is already flashing the A10 LED ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 #ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
 ; *** WARNING - tests documented behavior only! ***
@@ -5443,10 +5492,17 @@ test_jsr
 		pla
 		inx	;return registers with modifications
 		eor #$aa	;N=1, V=1, Z=0, C=1
+*/
+; *** *** *** NEEDS AN ENABLED RTS FOR BLINKING DELAY *** *** ***
 ex_rts						; *** label for a delay via JSR/RTS ***
 		rts
-		trap	;runover protection *** cannot continue ***
-		
+/*		trap	;runover protection *** cannot continue ***
+*/
+
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
+
 ;trap in case of unexpected IRQ, NMI, BRK, RESET - BRK test target
 ; *** no monitor or IO to check NMI stack status, just end test acknowledging NMI ***
 ; *** no res_trap as will just start the test ***		
@@ -5652,4 +5708,3 @@ vec_bss = $fffa
 		.word	ram_blink	; *** without monitor or any IO, will just acknowledge NMI as successful ***
 		.word	start		; *** only functionality of this device ***
 		.word	irq_trap
-
