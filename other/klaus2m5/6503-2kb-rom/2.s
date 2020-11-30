@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1627 ***
+; *** last modified 20201130-1655 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -426,6 +426,7 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 ; *** memory usage ***
 ; ********************
 ; *** load_data_direct is always off ***
+; *** should be optimised at some point ***
 		.zero
 
 		* =		zero_page
@@ -501,6 +502,7 @@ ex_adci .dsb	3
 ex_sbci .dsb	3
 
 ; *** definitions for the label addresses only ***
+; *** particularly interesting to be optimised as will save the data to be loaded ***
 ;zps	.byt	$80,1			;additional shift patterns test zero result & flag
 abs1	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
 abs7f	.byt	$7f				;test pattern for compare
@@ -573,7 +575,8 @@ start						; *** actual 6502 start ***
 #endif
 	
 ; *** no I/O channel ***
-	
+/*
+; *** small branches assumed to be OK after test 1 ***
 ;pretest small branch offset
 		ldx #5
 		jmp psb_test
@@ -612,7 +615,7 @@ psb_test
 		bne psb_back
 		trap				;branch should be taken
 psb_fwok
-	
+*/
 ;initialize BSS segment
 ; *** this code preloads data on ZP, thus OK ***
 		ldx #zp_end-zp_init-1
@@ -633,6 +636,8 @@ ld_data lda data_init,x
 		STX ram_ret
 ; *** vectors are always in ROM ***
 
+/*
+; *** never has SMC ***
 #ifndef	disable_selfmod
 ; *** this is the time to create the SMC ***
 		LDY #2				; as I need more than 255 bytes to fill, count two rounds
@@ -668,7 +673,7 @@ nop_fill:
 		STY smc_ret+1
 		STX smc_ret+2
 #endif
-
+*/
 ;generate checksum for RAM integrity test
 #if	ram_top > -1
 		lda #0 
@@ -701,7 +706,7 @@ gcs4	iny
 		sta ram_chksm			;checksum complete
 #endif
 		next_test
-
+/*
 #ifndef	disable_selfmod
 ; *** prepare code, then jump to RAM-generated SMC ***
 ;testing relative addressing with BEQ
@@ -1186,7 +1191,7 @@ jsr_ret = *-1				;last address of jsr = return address
 		cpx #$ff
 		trap_ne
 		next_test
-
+*/
 ; break & return from interrupt *** always available
 		load_flag(0)			;with interrupts enabled if allowed!
 		pha
@@ -1241,7 +1246,7 @@ brk_ret1					;address of break return
 		cpx #$ff
 		trap_ne
 		next_test
-	 
+ 
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
 		set_stat($ff)
 		clc
@@ -1794,7 +1799,8 @@ tsty	lda zpt,x
 		sta abst,x			;clear	
 		dex
 		bpl tsty
-		next_test
+		/*next_test
+; *** OK for test 2, at least until here ***
 
 ; indexed wraparound test (only zp should wrap)
 		ldx #3+$fa
@@ -4910,7 +4916,7 @@ bin_rti_ret
 		trap_ne	;previous test is out of sequence
 		lda #$f0	;mark opcode testing complete
 		sta test_case
-		
+*/
 ; final RAM integrity test
 ;	verifies that none of the previous tests has altered RAM outside of the
 ;	designated write areas.
@@ -4930,7 +4936,7 @@ bin_rti_ret
 ; S U C C E S S ************************************************
 
 ; *** ...and nothing else as it is already flashing the A10 LED ***
-
+/*
 #ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
 ; *** WARNING - tests documented behavior only! ***
@@ -5444,10 +5450,11 @@ test_jsr
 		pla
 		inx	;return registers with modifications
 		eor #$aa	;N=1, V=1, Z=0, C=1
+*/
 ex_rts						; *** label for a delay via JSR/RTS ***
 		rts
-		trap	;runover protection *** cannot continue ***
-		
+/*		trap	;runover protection *** cannot continue ***
+*/
 ;trap in case of unexpected IRQ, NMI, BRK, RESET - BRK test target
 ; *** no monitor or IO to check NMI stack status, just end test acknowledging NMI ***
 ; *** no res_trap as will just start the test ***		
