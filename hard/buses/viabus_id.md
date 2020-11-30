@@ -31,6 +31,25 @@ CText VDU (VRAM access)|$D0...$D3|$50...$53
 \*\*) Sub-commands are `IDLE` ($x8), `LATCH L` ($x9), `LATCH H` ($xA) and `READ` ($xB)
 \*\*\*) _Official_ sub-commands are `IDLE` ($xC) and `WRITE` ($xF)
 
+### Older devices adapted to VIAbus spec
+
+Due to the versatility of the **VIAbus** interface, it makes sense to adapt
+older peripherals in order to share the connection. Of particular is the
+_LED-Keypad_ which in turn allows for quick boot selection, in a similar
+way as the ASCII keyboard. A possible implementation would be:
+
+- `$A0` = Select enabled display (`CB2` low, latches column from `PA4...PA7`)
+- `$A4` = Disable display (`CB2` high _and latch column from `PA4...PA7`_)
+- `$A8` = Latch display data from `PA` (like transferring via `PB` old-style)
+- `$AC` = Read column on `PA0...PA3` (as selected from `PA4...PA7`)
+
+Note that the `$AC` command is shared with the **ASCII keyboard**, thus
+_able to read the boot selection just the same way_. The unusual latching scheme
+allows the use of a '374/574 for display data and a '174 for latching both the
+active LED (from `PA4...PA7`) and the `CB2` status (from `PB2`, when `PB3` is low).
+Device section just looks for `PB` as **`%1010xx00, which together with
+_command decoding_ could be done with a couple of '139s.
+
 _more to come..._
 
-_Last modified 20201103-1108_
+_Last modified 20201130-2339_
