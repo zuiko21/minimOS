@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1345 ***
+; *** last modified 20201130-1429 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -417,8 +417,7 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 	trap_ne:				\
 	-test_num=test_num+1:	\
 	lda #test_num:			\
-	sta test_case:			\
-	check_ram
+	sta test_case
 
 ; *** place checkRam above to find altered RAM after each test, otherwise supress it (and previous \) ***
 
@@ -740,6 +739,9 @@ rom_ret:
 		jmp range_loop
 range_end					;range test successful
 #endif
+
+
+
 		next_test
 
 ;partial test BNE & CMP, CPX, CPY immediate
@@ -1241,7 +1243,8 @@ brk_ret1					;address of break return
 		cpx #$ff
 		trap_ne
 		next_test
-	 
+; *** checked OK for test 1 ***
+/*	 
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
 		set_stat($ff)
 		clc
@@ -4904,7 +4907,7 @@ bin_rti_ret
 		cmp #$aa
 		trap_ne	;expected binary result after rti D=0
 #endif
-		
+*/		
 		lda test_case
 		cmp #test_num
 		trap_ne	;previous test is out of sequence
@@ -4930,7 +4933,7 @@ bin_rti_ret
 ; S U C C E S S ************************************************
 
 ; *** ...and nothing else as it is already flashing the A10 LED ***
-
+/*
 #ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
 ; *** WARNING - tests documented behavior only! ***
@@ -5335,7 +5338,8 @@ ckad1	pla
 		trap_ne	;bad flags
 		plp
 		rts
-
+*/
+; *** jumps and interrupt targets needed for test 1 ***
 ; target for the jump absolute test
 		dey
 		dey
@@ -5643,7 +5647,11 @@ data_end
 #endif 
 
 ;end of RAM init data
-	
+; *** *** *** TESTING for reduced sets *** *** ***
+;irq_trap
+		trap
+; *** *** ******************************** *** ***
+
 ; *** hardware vectors are always set, with padding ***
 vec_bss = $fffa
 		.dsb	vec_bss - *, $FF
@@ -5652,5 +5660,5 @@ vec_bss = $fffa
 ;vectors
 		.word	ram_blink	; *** without monitor or any IO, will just acknowledge NMI as successful ***
 		.word	start		; *** only functionality of this device ***
-		.word	irq_trap
+		.word	irq_trap	; *** this one will hang upon unexpected interrupt, as BRK is not tested
 
