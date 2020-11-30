@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1627 ***
+; *** last modified 20201130-2252 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -24,7 +24,7 @@
 
 
 ; This program is designed to test all opcodes of a 6502 emulator using all
-; addressing modes with focus on propper setting of the processor status
+; addressing modes with focus on proper setting of the processor status
 ; register bits.
 ;
 ; version 05-jan-2020
@@ -573,6 +573,10 @@ start						; *** actual 6502 start ***
 	
 ; *** no I/O channel ***
 	
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 ;pretest small branch offset
 		ldx #5
 		jmp psb_test
@@ -611,6 +615,10 @@ psb_test
 		bne psb_back
 		trap				;branch should be taken
 psb_fwok
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
 	
 ;initialize BSS segment
 ; *** this code preloads data on ZP, thus OK ***
@@ -632,6 +640,11 @@ ld_data lda data_init,x
 		STX ram_ret
 ; *** vectors are always in ROM ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
+; *** never has SMC ***
 #ifndef	disable_selfmod
 ; *** this is the time to create the SMC ***
 		LDY #2				; as I need more than 255 bytes to fill, count two rounds
@@ -667,6 +680,10 @@ nop_fill:
 		STY smc_ret+1
 		STX smc_ret+2
 #endif
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
 
 ;generate checksum for RAM integrity test
 #if	ram_top > -1
@@ -700,7 +717,12 @@ gcs4	iny
 		sta ram_chksm			;checksum complete
 #endif
 		next_test
+; *** test_case = 1 ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 #ifndef	disable_selfmod
 ; *** prepare code, then jump to RAM-generated SMC ***
 ;testing relative addressing with BEQ
@@ -1185,6 +1207,10 @@ jsr_ret = *-1				;last address of jsr = return address
 		cpx #$ff
 		trap_ne
 		next_test
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
 
 ; break & return from interrupt *** always available
 		load_flag(0)			;with interrupts enabled if allowed!
@@ -1240,7 +1266,12 @@ brk_ret1					;address of break return
 		cpx #$ff
 		trap_ne
 		next_test
-	 
+; *** test_case = 2 ***
+
+; *** *** ********************************* *** ***
+; *** *** *** D I S A B L E D   C O D E *** *** ***
+; *** *** ********************************* *** ***
+/*
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
 		set_stat($ff)
 		clc
@@ -2941,6 +2972,10 @@ tstay6	lda abst,y
 		dey
 		bpl tstay6
 		next_test
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
 
 ; LDA / STA - zp / abs / #
 		set_stat(0)
@@ -2995,350 +3030,352 @@ tstay6	lda abst,y
 		eor #$c3
 		cmp #0				;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+3	;test flags
+		cmp fLDx+3			;test flags
 		trap_ne
 		set_stat($ff)
 		lda zp1	
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst	
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp #$c3	;test result
+		cmp #$c3			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
 		lda zp1+1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst+1
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp #$82	;test result
+		cmp #$82			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+1	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
 		lda zp1+2
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst+2
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp #$41	;test result
+		cmp #$41			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+2	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
 		lda zp1+3
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta abst+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp #0	;test result
+		cmp #0				;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+3	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+3			;test flags
 		trap_ne
 		set_stat(0)
 		lda abs1	
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt	
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1	;test result
+		cmp zp1				;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx	;test flags
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat(0)
 		lda abs1+1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt+1
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1+1	;test result
+		cmp zp1+1			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+1	;test flags
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat(0)
 		lda abs1+2
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt+2
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1+2	;test result
+		cmp zp1+2			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+2	;test flags
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat(0)
 		lda abs1+3
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1+3	;test result
+		cmp zp1+3			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+3	;test flags
+		cmp fLDx+3			;test flags
 		trap_ne
 		set_stat($ff)
 		lda abs1	
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt	
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1	;test result
+		cmp zp1				;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
 		lda abs1+1
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt+1
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1+1	;test result
+		cmp zp1+1			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+1	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
 		lda abs1+2
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt+2
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1+2	;test result
+		cmp zp1+2			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+2	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
 		lda abs1+3
-		php	;test stores do not alter flags
+		php					;test stores do not alter flags
 		eor #$c3
 		plp
 		sta zpt+3
-		php	;flags after load/store sequence
+		php					;flags after load/store sequence
 		eor #$c3
-		cmp zp1+3	;test result
+		cmp zp1+3			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+3	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+3			;test flags
 		trap_ne
 		set_stat(0)
 		lda #$c3
 		php
-		cmp abs1	;test result
+		cmp abs1			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx	;test flags
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat(0)
 		lda #$82
 		php
-		cmp abs1+1	;test result
+		cmp abs1+1			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+1	;test flags
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat(0)
 		lda #$41
 		php
-		cmp abs1+2	;test result
+		cmp abs1+2			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+2	;test flags
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat(0)
 		lda #0
 		php
-		cmp abs1+3	;test result
+		cmp abs1+3			;test result
 		trap_ne
-		pla	;load status
+		pla					;load status
 		eor_flag(0)
-		cmp fLDx+3	;test flags
+		cmp fLDx+3			;test flags
 		trap_ne
 
 		set_stat($ff)
 		lda #$c3	
 		php
-		cmp abs1	;test result
+		cmp abs1			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx			;test flags
 		trap_ne
 		set_stat($ff)
 		lda #$82
 		php
-		cmp abs1+1	;test result
+		cmp abs1+1			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+1	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+1			;test flags
 		trap_ne
 		set_stat($ff)
 		lda #$41
 		php
-		cmp abs1+2	;test result
+		cmp abs1+2			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+2	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+2			;test flags
 		trap_ne
 		set_stat($ff)
 		lda #0
 		php
-		cmp abs1+3	;test result
+		cmp abs1+3			;test result
 		trap_ne
-		pla	;load status
-		eor_flag(Nfnz)	;mask bits not altered
-		cmp fLDx+3	;test flags
+		pla					;load status
+		eor_flag(Nfnz)		;mask bits not altered
+		cmp fLDx+3			;test flags
 		trap_ne
 
 		ldx #0
-		lda zpt	
+		lda zpt
 		eor #$c3
 		cmp zp1	
-		trap_ne	;store to zp data
-		stx zpt	;clear	
-		lda abst	
+		trap_ne				;store to zp data
+		stx zpt				;clear	
+		lda abst
 		eor #$c3
-		cmp abs1	
-		trap_ne	;store to abs data
-		stx abst	;clear	
+		cmp abs1
+		trap_ne				;store to abs data
+		stx abst			;clear	
 		lda zpt+1
 		eor #$c3
 		cmp zp1+1
-		trap_ne	;store to zp data
-		stx zpt+1	;clear	
+		trap_ne				;store to zp data
+		stx zpt+1			;clear	
 		lda abst+1
 		eor #$c3
 		cmp abs1+1
-		trap_ne	;store to abs data
-		stx abst+1	;clear	
+		trap_ne				;store to abs data
+		stx abst+1			;clear	
 		lda zpt+2
 		eor #$c3
 		cmp zp1+2
-		trap_ne	;store to zp data
-		stx zpt+2	;clear	
+		trap_ne				;store to zp data
+		stx zpt+2			;clear	
 		lda abst+2
 		eor #$c3
 		cmp abs1+2
-		trap_ne	;store to abs data
-		stx abst+2	;clear	
+		trap_ne				;store to abs data
+		stx abst+2			;clear	
 		lda zpt+3
 		eor #$c3
 		cmp zp1+3
-		trap_ne	;store to zp data
-		stx zpt+3	;clear	
+		trap_ne				;store to zp data
+		stx zpt+3			;clear
 		lda abst+3
 		eor #$c3
 		cmp abs1+3
-		trap_ne	;store to abs data
-		stx abst+3	;clear	
+		trap_ne				;store to abs data
+		stx abst+3			;clear	
 		next_test
+; *** test_case = 3 ***
 
 ; testing bit test & compares BIT CPX CPY CMP all addressing modes
 ; BIT - zp / abs
 		set_a($ff,0)
-		bit zp1+3	;00 - should set Z / clear	NV
+		bit zp1+3			;00 - should set Z / clear	NV
 		tst_a($ff,fz)
 		set_a(1,0)
-		bit zp1+2	;41 - should set V (M6) / clear NZ
+		bit zp1+2			;41 - should set V (M6) / clear NZ
 		tst_a(1,fv)
 		set_a(1,0)
-		bit zp1+1	;82 - should set N (M7) & Z / clear V
+		bit zp1+1			;82 - should set N (M7) & Z / clear V
 		tst_a(1,fnz)
 		set_a(1,0)
-		bit zp1	;c3 - should set N (M7) & V (M6) / clear Z
+		bit zp1				;c3 - should set N (M7) & V (M6) / clear Z
 		tst_a(1,fnv)
 		
 		set_a($ff,$ff)
-		bit zp1+3	;00 - should set Z / clear	NV
+		bit zp1+3			;00 - should set Z / clear	NV
 		tst_a($ff,Nfnv)
 		set_a(1,$ff)
-		bit zp1+2	;41 - should set V (M6) / clear NZ
+		bit zp1+2			;41 - should set V (M6) / clear NZ
 		tst_a(1,Nfnz)
 		set_a(1,$ff)
-		bit zp1+1	;82 - should set N (M7) & Z / clear V
+		bit zp1+1			;82 - should set N (M7) & Z / clear V
 		tst_a(1,Nfv)
 		set_a(1,$ff)
-		bit zp1	;c3 - should set N (M7) & V (M6) / clear Z
+		bit zp1				;c3 - should set N (M7) & V (M6) / clear Z
 		tst_a(1,Nfz)
 		
 		set_a($ff,0)
-		bit abs1+3	;00 - should set Z / clear	NV
+		bit abs1+3			;00 - should set Z / clear	NV
 		tst_a($ff,fz)
 		set_a(1,0)
-		bit abs1+2	;41 - should set V (M6) / clear NZ
+		bit abs1+2			;41 - should set V (M6) / clear NZ
 		tst_a(1,fv)
 		set_a(1,0)
-		bit abs1+1	;82 - should set N (M7) & Z / clear V
+		bit abs1+1			;82 - should set N (M7) & Z / clear V
 		tst_a(1,fnz)
 		set_a(1,0)
-		bit abs1	;c3 - should set N (M7) & V (M6) / clear Z
+		bit abs1			;c3 - should set N (M7) & V (M6) / clear Z
 		tst_a(1,fnv)
 		
 		set_a($ff,$ff)
-		bit abs1+3	;00 - should set Z / clear	NV
+		bit abs1+3			;00 - should set Z / clear	NV
 		tst_a($ff,Nfnv)
 		set_a(1,$ff)
-		bit abs1+2	;41 - should set V (M6) / clear NZ
+		bit abs1+2			;41 - should set V (M6) / clear NZ
 		tst_a(1,Nfnz)
 		set_a(1,$ff)
-		bit abs1+1	;82 - should set N (M7) & Z / clear V
+		bit abs1+1			;82 - should set N (M7) & Z / clear V
 		tst_a(1,Nfv)
 		set_a(1,$ff)
-		bit abs1	;c3 - should set N (M7) & V (M6) / clear Z
+		bit abs1			;c3 - should set N (M7) & V (M6) / clear Z
 		tst_a(1,Nfz)
 		next_test
-		
+; *** test_case = 4 ***
+
 ; CPX - zp / abs / #	
 		set_x($80,0)
 		cpx zp7f
@@ -3397,7 +3434,12 @@ tstay6	lda abst,y
 		cpx #$7f
 		tst_x($7e,Nfzc)
 		next_test
+; *** test_case = 5 ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 ; CPY - zp / abs / #
 		set_y($80,0)
 		cpy zp7f
@@ -4903,11 +4945,15 @@ bin_rti_ret
 		cmp #$aa
 		trap_ne	;expected binary result after rti D=0
 #endif
-		
+*/
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
+
 		lda test_case
 		cmp #test_num
-		trap_ne	;previous test is out of sequence
-		lda #$f0	;mark opcode testing complete
+		trap_ne				;previous test is out of sequence
+		lda #$f0			;mark opcode testing complete
 		sta test_case
 		
 ; final RAM integrity test
@@ -4923,13 +4969,17 @@ bin_rti_ret
 
 ; S U C C E S S ************************************************
 ; -------------	
-		success	;if you get here everything went well
+		success				;if you get here everything went well
 ; *** this will jump to RAM blink routine for faster LED indication ***
 ; -------------	
 ; S U C C E S S ************************************************
 
 ; *** ...and nothing else as it is already flashing the A10 LED ***
 
+; *** *** *********************************** *** ***
+; *** *** *** D I S A B L E D   T E S T S *** *** ***
+; *** *** *********************************** *** ***
+/*
 #ifndef disable_decimal
 ; core subroutine of the decimal add/subtract test
 ; *** WARNING - tests documented behavior only! ***
@@ -5431,7 +5481,7 @@ test_jsr
 		tsx	;sp -4? (return addr,a,x)
 		cpx #$fb
 		trap_ne
-		lda $1ff	;propper return on stack
+		lda $1ff	;proper return on stack
 		cmp #>jsr_ret
 		trap_ne
 		lda $1fe
@@ -5443,44 +5493,51 @@ test_jsr
 		pla
 		inx	;return registers with modifications
 		eor #$aa	;N=1, V=1, Z=0, C=1
+*/
+; *** *** *** NEEDS AN ENABLED RTS FOR BLINKING DELAY *** *** ***
 ex_rts						; *** label for a delay via JSR/RTS ***
 		rts
-		trap	;runover protection *** cannot continue ***
-		
+/*		trap	;runover protection *** cannot continue ***
+*/
+
+; *** *** **************************** *** ***
+; *** *** *** BACK TO ENABLED CODE *** *** ***
+; *** *** **************************** *** ***
+
 ;trap in case of unexpected IRQ, NMI, BRK, RESET - BRK test target
 ; *** no monitor or IO to check NMI stack status, just end test acknowledging NMI ***
 ; *** no res_trap as will just start the test ***		
 		dey
 		dey
-irq_trap	;BRK test or unextpected BRK or IRQ
-		php	;either SP or Y count will fail, if we do not hit
+irq_trap					;BRK test or unextpected BRK or IRQ
+		php					;either SP or Y count will fail, if we do not hit
 		dey
 		dey
 		dey
-		;next traps could be caused by unexpected BRK or IRQ
-		;check stack for BREAK and originating location
-		;possible jump/branch into weeds (uninitialized space)
-		cmp #$ff-'B'	;BRK pass 2 registers loaded?
+;next traps could be caused by unexpected BRK or IRQ
+;check stack for BREAK and originating location
+;possible jump/branch into weeds (uninitialized space)
+		cmp #$ff-'B'		;BRK pass 2 registers loaded?
 		beq break2
-		cmp #'B'	;BRK pass 1 registers loaded?
+		cmp #'B'			;BRK pass 1 registers loaded?
 		trap_ne
 		cpx #'R'
 		trap_ne	
 		cpy #'K'-3
 		trap_ne
-		sta irq_a	;save registers during break test
+		sta irq_a			;save registers during break test
 		stx irq_x
-		tsx	;test break on stack
+		tsx					;test break on stack
 		lda $102,x
-		cmp_flag(0)	;break test should have B=1 & unused=1 on stack
-		trap_ne	; - no break flag on stack
+		cmp_flag(0)			;break test should have B=1 & unused=1 on stack
+		trap_ne				; - no break flag on stack
 		pla
 		cmp_flag(intdis)	;should have added interrupt disable
 		trap_ne
 		tsx
-		cpx #$fc	;sp -3? (return addr, flags)
+		cpx #$fc			;sp -3? (return addr, flags)
 		trap_ne
-		lda $1ff	;propper return on stack
+		lda $1ff			;proper return on stack
 		cmp #>brk_ret0
 		trap_ne
 		lda $1fe
@@ -5489,32 +5546,32 @@ irq_trap	;BRK test or unextpected BRK or IRQ
 		load_flag($ff)
 		pha
 		ldx irq_x
-		inx	;return registers with modifications
+		inx					;return registers with modifications
 		lda irq_a
 		eor #$aa
-		plp	;N=1, V=1, Z=1, C=1 but original flags should be restored
+		plp					;N=1, V=1, Z=1, C=1 but original flags should be restored
 		rti
-		trap	;runover protection *** cannot continue ***
+		trap				;runover protection *** cannot continue ***
 		
-break2	;BRK pass 2	
+break2						;BRK pass 2	
 		cpx #$ff-'R'
 		trap_ne	
 		cpy #$ff-'K'-3
 		trap_ne
-		sta irq_a	;save registers during break test
+		sta irq_a			;save registers during break test
 		stx irq_x
-		tsx	;test break on stack
+		tsx					;test break on stack
 		lda $102,x
-		cmp_flag($ff)	;break test should have B=1
-		trap_ne	; - no break flag on stack
+		cmp_flag($ff)		;break test should have B=1
+		trap_ne				; - no break flag on stack
 		pla
-		ora #decmode	;ignore decmode cleared if 65c02
-		cmp_flag($ff)	;actual passed flags
+		ora #decmode		;ignore decmode cleared if 65c02
+		cmp_flag($ff)		;actual passed flags
 		trap_ne
 		tsx
-		cpx #$fc	;sp -3? (return addr, flags)
+		cpx #$fc			;sp -3? (return addr, flags)
 		trap_ne
-		lda $1ff	;propper return on stack
+		lda $1ff			;proper return on stack
 		cmp #>brk_ret1
 		trap_ne
 		lda $1fe
@@ -5523,12 +5580,12 @@ break2	;BRK pass 2
 		load_flag(intdis)
 		pha	
 		ldx irq_x
-		inx	;return registers with modifications
+		inx					;return registers with modifications
 		lda irq_a
 		eor #$aa
-		plp	;N=0, V=0, Z=0, C=0 but original flags should be restored
+		plp					;N=0, V=0, Z=0, C=0 but original flags should be restored
 		rti
-		trap	;runover protection *** cannot continue ***
+		trap				;runover protection *** cannot continue ***
 
 ; *** no reports ***
 
@@ -5652,4 +5709,3 @@ vec_bss = $fffa
 		.word	ram_blink	; *** without monitor or any IO, will just acknowledge NMI as successful ***
 		.word	start		; *** only functionality of this device ***
 		.word	irq_trap
-
