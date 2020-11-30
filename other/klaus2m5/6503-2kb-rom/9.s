@@ -124,8 +124,8 @@ code_segment			= $F800		; *** no longer $400, special 2 kiB version ***
 ;self modifying code may be disabled to allow running in ROM
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
-;*** if enabled, does generate relevant section into RAM ***
-;#define	disable_selfmod	1
+;*** SMC was used on test 1, thus disabled on the remaining tests ***
+#define	disable_selfmod	1
 
 ;report errors through standard self trap loops
 ;report = 0
