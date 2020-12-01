@@ -4613,24 +4613,24 @@ teor15
 ; *** *** **************************** *** ***
 
 ; OR
-		ldx #3	;immediate - self modifying code
+		ldx #3				;immediate - self modifying code
 tora	lda zpOR,x
-		sta ex_orai+1	;set ORA # operand
+		sta ex_orai+1		;set ORA # operand
 		set_ax(absORa,0)
-		jsr ex_orai	;execute ORA # in RAM
+		jsr ex_orai			;execute ORA # in RAM
 		tst_ax(absrlo,absflo,0)
 		dex
 		bpl tora
 		ldx #3
 tora1	lda zpOR,x
-		sta ex_orai+1	;set ORA # operand
+		sta ex_orai+1		;set ORA # operand
 		set_ax(absORa,$ff)
-		jsr ex_orai	;execute ORA # in RAM
+		jsr ex_orai			;execute ORA # in RAM
 		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl tora1
 		
-		ldx #3	;zp
+		ldx #3				;zp
 tora2	lda zpOR,x
 		sta zpt
 		set_ax(absORa,0)
@@ -4647,7 +4647,7 @@ tora3	lda zpOR,x
 		dex
 		bpl tora3
 
-		ldx #3	;abs
+		ldx #3				;abs
 tora4	lda zpOR,x
 		sta abst
 		set_ax(absORa,0)
@@ -4664,7 +4664,7 @@ tora5	lda zpOR,x
 		dex
 		bpl tora6
 
-		ldx #3	;zp,x
+		ldx #3				;zp,x
 tora6
 		set_ax(absORa,0)
 		ora zpOR,x
@@ -4679,7 +4679,7 @@ tora7
 		dex
 		bpl tora7
 
-		ldx #3	;abs,x
+		ldx #3				;abs,x
 tora8
 		set_ax(absORa,0)
 		ora absOR,x
@@ -4694,7 +4694,7 @@ tora9
 		dex
 		bpl tora9
 
-		ldy #3	;abs,y
+		ldy #3				;abs,y
 tora10
 		set_ay(absORa,0)
 		ora absOR,y
@@ -4709,7 +4709,7 @@ tora11
 		dey
 		bpl tora11
 
-		ldx #6	;(zp,x)
+		ldx #6				;(zp,x)
 		ldy #3
 tora12
 		set_ay(absORa,0)
@@ -4730,7 +4730,7 @@ tora13
 		dey
 		bpl tora13
 
-		ldy #3	;(zp),y
+		ldy #3				;(zp),y
 tora14
 		set_ay(absORa,0)
 		ora (indOR),y
@@ -4754,51 +4754,51 @@ tora15
 ; iterates through all combinations of operands and carry input
 ; uses increments/decrements to predict result & result flags
 		cld
-		ldx #ad2	;for indexed test
-		ldy #$ff	;max range
-		lda #0	;start with adding zeroes & no carry
-		sta adfc	;carry in - for diag
-		sta ad1	;operand 1 - accumulator
-		sta ad2	;operand 2 - memory or immediate
-		sta ada2	;non zp
-		sta adrl	;expected result bits 0-7
-		sta adrh	;expected result bit 8 (carry out)
-		lda #$ff	;complemented operand 2 for subtract
+		ldx #ad2			;for indexed test
+		ldy #$ff			;max range
+		lda #0				;start with adding zeroes & no carry
+		sta adfc			;carry in - for diag
+		sta ad1				;operand 1 - accumulator
+		sta ad2				;operand 2 - memory or immediate
+		sta ada2			;non zp
+		sta adrl			;expected result bits 0-7
+		sta adrh			;expected result bit 8 (carry out)
+		lda #$ff			;complemented operand 2 for subtract
 		sta sb2
-		sta sba2	;non zp
-		lda #2	;expected Z-flag
+		sta sba2			;non zp
+		lda #2				;expected Z-flag
 		sta adrf
-tadd	clc	;test with carry clear
+tadd	clc					;test with carry clear
 		jsr chkadd
-		inc adfc	;now with carry
-		inc adrl	;result +1
-		php	;save N & Z from low result
+		inc adfc			;now with carry
+		inc adrl			;result +1
+		php					;save N & Z from low result
 		php
-		pla	;accu holds expected flags
-		and #$82	;mask N & Z
+		pla					;accu holds expected flags
+		and #$82			;mask N & Z
 		plp
 		bne tadd1
-		inc adrh	;result bit 8 - carry
-tadd1	ora adrh	;merge C to expected flags
-		sta adrf	;save expected flags except overflow
-		sec	;test with carry set
+		inc adrh			;result bit 8 - carry
+tadd1	ora adrh			;merge C to expected flags
+		sta adrf			;save expected flags except overflow
+		sec					;test with carry set
 		jsr chkadd
-		dec adfc	;same for operand +1 but no carry
+		dec adfc			;same for operand +1 but no carry
 		inc ad1
-		bne tadd	;iterate op1
-		lda #0	;preset result to op2 when op1 = 0
+		bne tadd			;iterate op1
+		lda #0				;preset result to op2 when op1 = 0
 		sta adrh
 		inc ada2
 		inc ad2
-		php	;save NZ as operand 2 becomes the new result
+		php					;save NZ as operand 2 becomes the new result
 		pla
-		and #$82	;mask N00000Z0
-		sta adrf	;no need to check carry as we are adding to 0
-		dec sb2		;complement subtract operand 2
+		and #$82			;mask N00000Z0
+		sta adrf			;no need to check carry as we are adding to 0
+		dec sb2				;complement subtract operand 2
 		dec sba2
 		lda ad2	
 		sta adrl
-		bne tadd	;iterate op2
+		bne tadd			;iterate op2
 		next_test
 ; *** test_case = 4 ***
 
@@ -5185,207 +5185,207 @@ chkdad
 ; core subroutine of the full binary add/subtract test
 ; iterates through all combinations of operands and carry input
 ; uses increments/decrements to predict result & result flags
-chkadd	lda adrf	;add V-flag if overflow
-		and #$83	;keep N-----ZC / clear V
+chkadd	lda adrf			;add V-flag if overflow
+		and #$83			;keep N-----ZC / clear V
 		pha
-		lda ad1	;test sign unequal between operands
+		lda ad1				;test sign unequal between operands
 		eor ad2
-		bmi ckad1	;no overflow possible - operands have different sign
-		lda ad1	;test sign equal between operands and result
+		bmi ckad1			;no overflow possible - operands have different sign
+		lda ad1				;test sign equal between operands and result
 		eor adrl
-		bpl ckad1	;no overflow occured - operand and result have same sign
+		bpl ckad1			;no overflow occured - operand and result have same sign
 		pla
-		ora #$40	;set V
+		ora #$40			;set V
 		pha
 ckad1	pla
-		sta adrf	;save expected flags
+		sta adrf			;save expected flags
 ; binary ADC / SBC zp
-		php	;save carry for subtract
+		php					;save carry for subtract
 		lda ad1
-		adc ad2	;perform add
+		adc ad2				;perform add
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
-		php	;save carry for next add
+		php					;save carry for next add
 		lda ad1
-		sbc sb2	;perform subtract
+		sbc sb2				;perform subtract
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
 ; binary ADC / SBC abs
-		php	;save carry for subtract
+		php					;save carry for subtract
 		lda ad1
-		adc ada2	;perform add
+		adc ada2			;perform add
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
-		php	;save carry for next add
+		php					;save carry for next add
 		lda ad1
-		sbc sba2	;perform subtract
+		sbc sba2			;perform subtract
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
 ; binary ADC / SBC #
-		php	;save carry for subtract
+		php					;save carry for subtract
 		lda ad2
-		sta ex_adci+1	;set ADC # operand
+		sta ex_adci+1		;set ADC # operand
 		lda ad1
-		jsr ex_adci	;execute ADC # in RAM
+		jsr ex_adci			;execute ADC # in RAM
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
-		php	;save carry for next add
+		php					;save carry for next add
 		lda sb2
-		sta ex_sbci+1	;set SBC # operand
+		sta ex_sbci+1		;set SBC # operand
 		lda ad1
-		jsr ex_sbci	;execute SBC # in RAM
+		jsr ex_sbci			;execute SBC # in RAM
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
 ; binary ADC / SBC zp,x
-		php	;save carry for subtract
+		php					;save carry for subtract
 		lda ad1
-		adc 0,x	;perform add
+		adc 0,x				;perform add
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
-		php	;save carry for next add
+		php					;save carry for next add
 		lda ad1
-		sbc sb2-ad2,x	;perform subtract
+		sbc sb2-ad2,x		;perform subtract
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
 ; binary ADC / SBC abs,x
-		php	;save carry for subtract
+		php					;save carry for subtract
 		lda ad1
-		adc ada2-ad2,x	;perform add
+		adc ada2-ad2,x		;perform add
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
-		php	;save carry for next add
+		php					;save carry for next add
 		lda ad1
-		sbc sba2-ad2,x	;perform subtract
+		sbc sba2-ad2,x		;perform subtract
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
 ; binary ADC / SBC abs,y
-		php	;save carry for subtract
+		php					;save carry for subtract
 		lda ad1
-		adc ada2-$ff,y	;perform add
+		adc ada2-$ff,y		;perform add
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
-		php	;save carry for next add
+		php					;save carry for next add
 		lda ad1
-		sbc sba2-$ff,y	;perform subtract
+		sbc sba2-$ff,y		;perform subtract
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
 ; binary ADC / SBC (zp,x)
-		php	;save carry for subtract
+		php					;save carry for subtract
 		lda ad1
-		adc (<adi2-ad2,x) ;perform add
+		adc (<adi2-ad2,x)	;perform add
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
-		php	;save carry for next add
+		php					;save carry for next add
 		lda ad1
-		sbc (<sbi2-ad2,x) ;perform subtract
+		sbc (<sbi2-ad2,x)	;perform subtract
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
 ; binary ADC / SBC (abs),y
-		php	;save carry for subtract
+		php					;save carry for subtract
 		lda ad1
-		adc (adiy2),y	;perform add
+		adc (adiy2),y		;perform add
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
-		php	;save carry for next add
+		php					;save carry for next add
 		lda ad1
-		sbc (sbiy2),y	;perform subtract
+		sbc (sbiy2),y		;perform subtract
 		php	
-		cmp adrl	;check result
-		trap_ne	;bad result
-		pla	;check flags
-		and #$c3	;mask NV----ZC
+		cmp adrl			;check result
+		trap_ne				;bad result
+		pla					;check flags
+		and #$c3			;mask NV----ZC
 		cmp adrf
-		trap_ne	;bad flags
+		trap_ne				;bad flags
 		plp
 		rts
 ; *** *** *********************************** *** ***

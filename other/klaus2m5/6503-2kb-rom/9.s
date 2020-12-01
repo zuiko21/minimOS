@@ -4481,24 +4481,24 @@ tand15
 ; *** test_case = 4 ***
 
 ; EOR
-		ldx #3	;immediate - self modifying code
+		ldx #3				;immediate - self modifying code
 teor	lda zpEO,x
-		sta ex_eori+1	;set EOR # operand
+		sta ex_eori+1		;set EOR # operand
 		set_ax(absEOa,0)
-		jsr ex_eori	;execute EOR # in RAM
+		jsr ex_eori			;execute EOR # in RAM
 		tst_ax(absrlo,absflo,0)
 		dex
 		bpl teor
 		ldx #3
 teor1	lda zpEO,x
-		sta ex_eori+1	;set EOR # operand
+		sta ex_eori+1		;set EOR # operand
 		set_ax(absEOa,$ff)
-		jsr ex_eori	;execute EOR # in RAM
+		jsr ex_eori			;execute EOR # in RAM
 		tst_ax(absrlo,absflo,$ff-fnz)
 		dex
 		bpl teor1
 		
-		ldx #3	;zp
+		ldx #3				;zp
 teor2	lda zpEO,x
 		sta zpt
 		set_ax(absEOa,0)
@@ -4515,7 +4515,7 @@ teor3	lda zpEO,x
 		dex
 		bpl teor3
 
-		ldx #3	;abs
+		ldx #3				;abs
 teor4	lda zpEO,x
 		sta abst
 		set_ax(absEOa,0)
@@ -4532,7 +4532,7 @@ teor5	lda zpEO,x
 		dex
 		bpl teor6
 
-		ldx #3	;zp,x
+		ldx #3				;zp,x
 teor6
 		set_ax(absEOa,0)
 		eor zpEO,x
@@ -4547,7 +4547,7 @@ teor7
 		dex
 		bpl teor7
 
-		ldx #3	;abs,x
+		ldx #3				;abs,x
 teor8
 		set_ax(absEOa,0)
 		eor absEO,x
@@ -4562,7 +4562,7 @@ teor9
 		dex
 		bpl teor9
 
-		ldy #3	;abs,y
+		ldy #3				;abs,y
 teor10
 		set_ay(absEOa,0)
 		eor absEO,y
@@ -4577,7 +4577,7 @@ teor11
 		dey
 		bpl teor11
 
-		ldx #6	;(zp,x)
+		ldx #6				;(zp,x)
 		ldy #3
 teor12
 		set_ay(absEOa,0)
@@ -4598,7 +4598,7 @@ teor13
 		dey
 		bpl teor13
 
-		ldy #3	;(zp),y
+		ldy #3				;(zp),y
 teor14
 		set_ay(absEOa,0)
 		eor (indEO),y
