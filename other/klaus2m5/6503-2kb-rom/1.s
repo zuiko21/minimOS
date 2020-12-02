@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1811 ***
+; *** last modified 202011202-1901 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -332,8 +332,8 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 ;	designated write areas.
 ;	uses zpt word as indirect pointer, zpt+2 word as checksum
 #if ram_top > -1
-#ifdef	disable_selfmod
-; non-SMC version
+#ifndef	disable_selfmod
+; *** SMC version EEEEEEEK ***
 ; *** CPP admits no temporary labels, thus resolved as relative references ***
 #define	check_ram			\
 	cld:					\
@@ -369,7 +369,7 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 	cmp ram_chksm+1:		\
 	trap_ne
 #else
-; SMC version just removes sta range_adr
+; *** SMC version just ADDS sta range_adr EEEEEK ***
 ; *** CPP admits no temporary labels, thus resolved as relative references ***
 #define	check_ram			\
 	cld:					\

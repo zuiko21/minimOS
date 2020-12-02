@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201130-0041 ***
+; *** last modified 20201202-1858 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -124,7 +124,7 @@ code_segment			= $C000		; *** no longer $400 ***
 ;0=part of the code is self modifying and must reside in RAM
 ;1=tests disabled: branch range
 ;*** if enabled, does generate relevant section into RAM ***
-;#define	disable_selfmod	1
+;*** no longer need to disable as all code is ROMmable, SMC is poked into RAM anyway ***
 
 ;report errors through standard self trap loops
 ;report = 0
@@ -133,8 +133,12 @@ code_segment			= $C000		; *** no longer $400 ***
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
 ;leave disabled if a monitor, OS or background interrupt is allowed to alter RAM
-#define	ram_top			128
-; *** 32 kiB for simpler A15 decoding ***
+#define	ram_top			192
+; *** 48 kiB needs a bit more decoding but more able to detect spurious writes ***
+; *** A15 directly to low-RAM /CS (62256) ***
+; *** A15-A14 to half a '139, /Y2 to second RAM, /Y3 to 16K ROM /CS ***
+; *** the other half a '139 could qualify writes AND reads, avoiding bus contention in case of ROM write attempts ***
+; *** ø2-R/W to inputs A1-A0, /Y3 to all /OEs, /Y2 to /WE ***
 
 ;disable test decimal mode ADC & SBC, 0=enable, 1=disable,
 ;2=disable including decimal flag in processor status
@@ -180,6 +184,7 @@ code_segment			= $C000		; *** no longer $400 ***
 #define	success			JMP ram_blink
 ;test passed, no errors
 ; *** will jump between two delay routines, alternating between ROM and RAM in order to blink a LED at, say, A15 ***
+; *** for trap detection, another LED (or pair for Hi/Lo) at A3 should remain active during whole test ***
 
 ; *** reports are disabled all the time as the CPU-checker lacks I/O ***
 
@@ -331,15 +336,14 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 ;	designated write areas.
 ;	uses zpt word as indirect pointer, zpt+2 word as checksum
 #if ram_top > -1
-#ifdef	disable_selfmod
-; non-SMC version
+; *** SMC version just ADDS sta range_adr EEEEEEEEEEK ***
 ; *** CPP admits no temporary labels, thus resolved as relative references ***
 #define	check_ram			\
 	cld:					\
 	lda #0:					\
 	sta zpt:				\
 	sta zpt+3:				\
-		sta range_adr:		\
+	sta range_adr:			\
 	clc:					\
 	ldx #zp_bss-zero_page:	\
 	adc zero_page,x:		\
@@ -367,42 +371,6 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 	lda zpt+3:				\
 	cmp ram_chksm+1:		\
 	trap_ne
-#else
-; SMC version just removes sta range_adr
-; *** CPP admits no temporary labels, thus resolved as relative references ***
-#define	check_ram			\
-	cld:					\
-	lda #0:					\
-	sta zpt:				\
-	sta zpt+3:				\
-	clc:					\
-	ldx #zp_bss-zero_page:	\
-	adc zero_page,x:		\
-	bcc *+5:				\
-	inc zpt+3:				\
-	clc:					\
-	inx:					\
-	bne *-8:				\
-	ldx #>abs1:				\
-	stx zpt+1:				\
-	ldy #<abs1:				\
-	adc (zpt),y:			\
-	bcc *+5:				\
-	inc zpt+3:				\
-	clc:					\
-	iny:					\
-	bne *-8:				\
-	inx:					\
-	stx zpt+1:				\
-	cpx #ram_top:			\
-	bne *-15:				\
-	sta zpt+2:				\
-	cmp ram_chksm:			\
-	trap_ne:				\
-	lda zpt+3:				\
-	cmp ram_chksm+1:		\
-	trap_ne
-#endif
 #else
 ;RAM check disabled - RAM size not set
 #define	check_ram		;disabled_RAM_check
@@ -632,7 +600,6 @@ ld_data lda data_init,x
 		STX ram_ret
 ; *** vectors are always in ROM ***
 
-#ifndef	disable_selfmod
 ; *** this is the time to create the SMC ***
 		LDY #2				; as I need more than 255 bytes to fill, count two rounds
 		LDX #255			; intial value for first round
@@ -666,16 +633,13 @@ nop_fill:
 		LDX #>rom_ret
 		STY smc_ret+1
 		STX smc_ret+2
-#endif
 
 ;generate checksum for RAM integrity test
 #if	ram_top > -1
 		lda #0 
 		sta zpt					;set low byte of indirect pointer
 		sta ram_chksm+1			;checksum high byte
-#ifndef disable_selfmod
-		sta range_adr			;reset self modifying code
-#endif
+		sta range_adr			;reset self modifying code ***always EEEEEEEK***
 		clc
 		ldx #zp_bss-zero_page	;zeropage - write test area
 gcs3	adc zero_page,x
