@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201130-1919 ***
+; *** last modified 20201202-2324 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -332,44 +332,7 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 ;	designated write areas.
 ;	uses zpt word as indirect pointer, zpt+2 word as checksum
 #if ram_top > -1
-#ifdef	disable_selfmod
-; non-SMC version
-; *** CPP admits no temporary labels, thus resolved as relative references ***
-#define	check_ram			\
-	cld:					\
-	lda #0:					\
-	sta zpt:				\
-	sta zpt+3:				\
-		sta range_adr:		\
-	clc:					\
-	ldx #zp_bss-zero_page:	\
-	adc zero_page,x:		\
-	bcc *+5:				\
-	inc zpt+3:				\
-	clc:					\
-	inx:					\
-	bne *-8:				\
-	ldx #>abs1:				\
-	stx zpt+1:				\
-	ldy #<abs1:				\
-	adc (zpt),y:			\
-	bcc *+5:				\
-	inc zpt+3:				\
-	clc:					\
-	iny:					\
-	bne *-8:				\
-	inx:					\
-	stx zpt+1:				\
-	cpx #ram_top:			\
-	bne *-15:				\
-	sta zpt+2:				\
-	cmp ram_chksm:			\
-	trap_ne:				\
-	lda zpt+3:				\
-	cmp ram_chksm+1:		\
-	trap_ne
-#else
-; SMC version just removes sta range_adr
+; non-SMC version *** EEEEEEEEK
 ; *** CPP admits no temporary labels, thus resolved as relative references ***
 #define	check_ram			\
 	cld:					\
@@ -403,7 +366,6 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 	lda zpt+3:				\
 	cmp ram_chksm+1:		\
 	trap_ne
-#endif
 #else
 ;RAM check disabled - RAM size not set
 #define	check_ram		;disabled_RAM_check
@@ -690,9 +652,6 @@ nop_fill:
 		lda #0 
 		sta zpt					;set low byte of indirect pointer
 		sta ram_chksm+1			;checksum high byte
-#ifndef disable_selfmod
-		sta range_adr			;reset self modifying code
-#endif
 		clc
 		ldx #zp_bss-zero_page	;zeropage - write test area
 gcs3	adc zero_page,x

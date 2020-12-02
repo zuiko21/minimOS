@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 202011202-1901 ***
+; *** last modified 202011202-2329 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -332,7 +332,6 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 ;	designated write areas.
 ;	uses zpt word as indirect pointer, zpt+2 word as checksum
 #if ram_top > -1
-#ifndef	disable_selfmod
 ; *** SMC version EEEEEEEK ***
 ; *** CPP admits no temporary labels, thus resolved as relative references ***
 #define	check_ram			\
@@ -368,42 +367,6 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 	lda zpt+3:				\
 	cmp ram_chksm+1:		\
 	trap_ne
-#else
-; *** SMC version just ADDS sta range_adr EEEEEK ***
-; *** CPP admits no temporary labels, thus resolved as relative references ***
-#define	check_ram			\
-	cld:					\
-	lda #0:					\
-	sta zpt:				\
-	sta zpt+3:				\
-	clc:					\
-	ldx #zp_bss-zero_page:	\
-	adc zero_page,x:		\
-	bcc *+5:				\
-	inc zpt+3:				\
-	clc:					\
-	inx:					\
-	bne *-8:				\
-	ldx #>abs1:				\
-	stx zpt+1:				\
-	ldy #<abs1:				\
-	adc (zpt),y:			\
-	bcc *+5:				\
-	inc zpt+3:				\
-	clc:					\
-	iny:					\
-	bne *-8:				\
-	inx:					\
-	stx zpt+1:				\
-	cpx #ram_top:			\
-	bne *-15:				\
-	sta zpt+2:				\
-	cmp ram_chksm:			\
-	trap_ne:				\
-	lda zpt+3:				\
-	cmp ram_chksm+1:		\
-	trap_ne
-#endif
 #else
 ;RAM check disabled - RAM size not set
 #define	check_ram		;disabled_RAM_check
@@ -632,7 +595,6 @@ ld_data lda data_init,x
 		STX ram_ret
 ; *** vectors are always in ROM ***
 
-#ifndef	disable_selfmod
 ; *** this is the time to create the SMC ***
 		LDY #2				; as I need more than 255 bytes to fill, count two rounds
 		LDX #255			; intial value for first round
@@ -666,16 +628,13 @@ nop_fill:
 		LDX #>rom_ret
 		STY smc_ret+1
 		STX smc_ret+2
-#endif
 
 ;generate checksum for RAM integrity test
 #if	ram_top > -1
 		lda #0 
 		sta zpt					;set low byte of indirect pointer
 		sta ram_chksm+1			;checksum high byte
-#ifndef disable_selfmod
 		sta range_adr			;reset self modifying code
-#endif
 		clc
 		ldx #zp_bss-zero_page	;zeropage - write test area
 gcs3	adc zero_page,x
@@ -702,7 +661,6 @@ gcs4	iny
 		next_test
 ; *** test_case = 1 ***
 
-#ifndef	disable_selfmod
 ; *** prepare code, then jump to RAM-generated SMC ***
 ;testing relative addressing with BEQ
 		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
@@ -739,7 +697,6 @@ rom_ret:
 		beq range_end	
 		jmp range_loop
 range_end					;range test successful
-#endif
 		next_test
 ; *** test_case = 2 ***
 
