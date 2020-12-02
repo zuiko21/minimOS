@@ -3885,8 +3885,6 @@ trorc5
 		tst_abs(rRORc,fRORc,$ff-fnzc)
 		dex
 		bpl trorc5
-		next_test
-; *** test_case = 5 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***

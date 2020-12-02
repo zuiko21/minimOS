@@ -4758,8 +4758,6 @@ tadd1	ora adrh			;merge C to expected flags
 		lda ad2	
 		sta adrl
 		bne tadd			;iterate op2
-		next_test
-; *** test_case = 4 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***

@@ -1686,8 +1686,6 @@ tstx1	lda zpt,y
 		sta abst,y			;clear	
 		dey
 		bpl tstx1
-		next_test
-; *** test_case = 7 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***

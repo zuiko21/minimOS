@@ -1208,9 +1208,6 @@ brk_ret1					;address of break return
 		tsx					;sp?
 		cpx #$ff
 		trap_ne
-		next_test
-; *** test_case = 12 ***
-; *** checked OK for test 1 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***

@@ -2209,8 +2209,6 @@ tsty1	lda zpt,x
 		cmp abs1+3
 		trap_ne				;store to abs data
 		stx abst+3			;clear	
-		next_test
-; *** test_case = 5 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***

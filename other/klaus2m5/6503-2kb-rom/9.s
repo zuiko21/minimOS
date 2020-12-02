@@ -4571,8 +4571,6 @@ teor15
 		tst_ay(absrlo,absflo,$ff-fnz)
 		dey
 		bpl teor15
-		next_test
-; *** test_case = 5 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***

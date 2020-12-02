@@ -3607,8 +3607,6 @@ tstay6	lda abst,y
 		set_a($7e,$ff)
 		cmp (ind1),y
 		tst_a($7e,Nfzc)
-		next_test
-; *** test_case = 4 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***

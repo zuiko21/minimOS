@@ -2936,8 +2936,6 @@ tstay6	lda abst,y
 		sta abst,y			;clear	
 		dey
 		bpl tstay6
-		next_test
-; *** test_case = 6 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***

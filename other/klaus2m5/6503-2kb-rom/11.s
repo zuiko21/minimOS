@@ -4896,8 +4896,6 @@ bin_rti_ret
 		adc #$55
 		cmp #$aa
 		trap_ne				;expected binary result after rti D=0
-		next_test
-; *** test_case = 4 ***
 
 		lda test_case
 		cmp #test_num

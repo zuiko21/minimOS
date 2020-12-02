@@ -4247,8 +4247,6 @@ tdec14	sta zpt,x
 		lda #$81
 		bne tdec14
 tdec15
-		next_test
-; *** test_case = 7 ***
 
 ; *** *** *********************************** *** ***
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***
