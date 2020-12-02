@@ -524,7 +524,7 @@ smc_ret		.dsb	3, $4C		; JMP to rom_ret (proper address to be poked as well)
 
 		* =		code_segment
 
-		.asc	"6502 Functional Test ROM by klaus2m5"	; *** ID text ***
+		.asc	"6502 Functional Test ROM by klaus2m5", 0	; *** ID text ***
 start						; *** actual 6502 start ***
 		cld
 		ldx #$ff
@@ -623,9 +623,7 @@ nop_fill:
 		LDA #$F0			; BEQ opcode goes in two places
 		STA range_op
 		STA smc_rok
-		LDX #64				; range_adr operand
 		LDY #8				; range_ok offset
-		STX range_adr
 		STY smc_rok+1
 		LDA #$4C			; JMP opcode
 		STA smc_ret
@@ -665,7 +663,6 @@ gcs4	iny
 #endif
 		next_test
 
-#ifndef	disable_selfmod
 ; *** prepare code, then jump to RAM-generated SMC ***
 ;testing relative addressing with BEQ
 		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
@@ -702,7 +699,6 @@ rom_ret:
 		beq range_end	
 		jmp range_loop
 range_end					;range test successful
-#endif
 		next_test
 
 ;partial test BNE & CMP, CPX, CPY immediate
@@ -738,6 +734,7 @@ test_bne
 		trap_cs
 		trap_pl
 		next_test
+
 ;testing stack operations PHA PHP PLA PLP
 	
 		ldx #$ff			;initialize stack
@@ -1244,6 +1241,7 @@ brk_ret1					;address of break return
 		clv
 		tst_stat(0)
 		next_test
+		
 ; testing index register increment/decrement and transfer
 ; INX INY DEX DEY TAX TXA TAY TYA 
 		ldx #$fe
@@ -1390,7 +1388,6 @@ brk_ret1					;address of break return
 		plp
 		tay
 		tst_y($ff,minus)
-
 
 		load_flag($ff)
 		pha
@@ -4884,7 +4881,6 @@ bin_rti_ret
 ; may give false errors when monitor, OS or other background activity is
 ; allowed during previous tests.
 
-
 ; S U C C E S S ************************************************
 ; -------------	
 		success	;if you get here everything went well
@@ -5593,9 +5589,9 @@ rom_blink
 		JSR ex_rts			; just some suitable delay
 		INX
 		BNE rom_blink		; relative branches will generate the same binary
-		INY
+			INY
 		BNE rom_blink		; relative branches will generate the same binary
-		JMP ram_blink		; original jump, will be changed in RAM
+	JMP ram_blink			; original jump, will be changed in RAM
 ; *** end of blinking routine *** 12 bytes reserved!
 ; *******************************
 data_end
@@ -5616,4 +5612,3 @@ vec_bss = $fffa
 		.word	ram_blink	; *** without monitor or any IO, will just acknowledge NMI as successful ***
 		.word	start		; *** only functionality of this device ***
 		.word	irq_trap
-
