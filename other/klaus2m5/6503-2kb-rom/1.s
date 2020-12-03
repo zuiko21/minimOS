@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 202011203-1345 ***
+; *** last modified 202011203-1555 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -1116,9 +1116,49 @@ brk_ret1					;address of break return
 		tsx					;sp?
 		cpx #$ff
 		trap_ne
+		next_test
+
+; *** test_case = 12 ***
+; test set and clear flags CLC CLI CLD CLV SEC SEI SED
+		set_stat($ff)
+		clc
+		tst_stat($ff-carry)
+		sec
+		tst_stat($ff)
+#if I_flag== 3
+		cli
+		tst_stat($ff-intdis)
+		sei
+		tst_stat($ff)
+#endif
+		cld
+		tst_stat($ff-decmode)
+		sed
+		tst_stat($ff)
+		clv
+		tst_stat($ff-overfl)
+		set_stat(0)
+		tst_stat(0)
+		sec
+		tst_stat(carry)
+		clc
+		tst_stat(0)
+#if I_flag== 3
+		sei
+		tst_stat(intdis)
+		cli
+		tst_stat(0)
+#endif	
+		sed
+		tst_stat(decmode)
+		cld
+		tst_stat(0)
+		set_stat(overfl)
+		tst_stat(overfl)
+		clv
+		tst_stat(0)
 
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***
-; test set and clear flags CLC CLI CLD CLV SEC SEI SED
 ; testing index register increment/decrement and transfer
 ; testing index register load & store LDY LDX STY STX all addressing modes
 ; testing load / store accumulator LDA / STA all addressing modes
@@ -1145,7 +1185,6 @@ brk_ret1					;address of break return
 ; narrow down the responsible opcode.
 ; may give false errors when monitor, OS or other background activity is
 ; allowed during previous tests.
-
 
 ; S U C C E S S ************************************************
 ; -------------	
