@@ -540,8 +540,9 @@ start						; *** actual 6502 start ***
 #endif
 	
 ; *** no I/O channel ***
-	
+
 ;pretest small branch offset
+lab_t00:
 		ldx #5
 		jmp psb_test
 psb_bwok
@@ -579,7 +580,7 @@ psb_test
 		bne psb_back
 		trap				;branch should be taken
 psb_fwok
-	
+lab_t00end:
 ;initialize BSS segment
 ; *** this code preloads data on ZP, thus OK ***
 		ldx #zp_end-zp_init-1
@@ -665,6 +666,7 @@ gcs4	iny
 
 ; *** prepare code, then jump to RAM-generated SMC ***
 ;testing relative addressing with BEQ
+lab_t01:
 		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
 range_loop
 		dey					;next relative address
@@ -702,6 +704,7 @@ range_end					;range test successful
 		next_test
 
 ;partial test BNE & CMP, CPX, CPY immediate
+lab_t02:
 		cpy #1				;testing BNE true
 		bne test_bne
 		trap 
@@ -736,7 +739,7 @@ test_bne
 		next_test
 
 ;testing stack operations PHA PHP PLA PLP
-	
+lab_t03:
 		ldx #$ff			;initialize stack
 		txs
 		lda #$55
@@ -763,6 +766,7 @@ test_bne
 		next_test
 
 ;testing branch decisions BPL BMI BVC BVS BCC BCS BNE BEQ
+lab_t04:
 		set_stat($ff)		;all on
 		bpl nbr1			;branches should not be taken
 		bvc nbr2
@@ -968,6 +972,7 @@ brvc8
 		next_test
 
 ; test PHA does not alter flags or accumulator but PLA does
+lab_t05:
 		ldx #$55			;x & y protected
 		ldy #$aa
 		set_a(1,$ff)		;push
@@ -1013,6 +1018,7 @@ brvc8
 		next_test
 	 
 ; partial pretest EOR #
+lab_t06:
 		set_a($3c,0)
 		eor #$c3
 		tst_a($ff,fn)
@@ -1023,6 +1029,7 @@ brvc8
 
 ; PC modifying instructions except branches (NOP, JMP, JSR, RTS, BRK, RTI)
 ; testing NOP
+lab_t07:
 		ldx #$24
 		ldy #$42
 		set_a($18,0)
@@ -1042,8 +1049,9 @@ brvc8
 		cpy #$bd
 		trap_ne
 		next_test
-		
+
 ; jump absolute
+lab_t08:
 		set_stat($0)
 		lda #'F'
 		ldx #'A'
@@ -1088,8 +1096,9 @@ test_near
 		cpy #'R'
 		trap_ne
 		next_test
-		
+
 ; jump indirect
+lab_t09:
 		set_stat(0)
 		lda #'I'
 		ldx #'N'
@@ -1121,6 +1130,7 @@ ind_ret
 		next_test
 
 ; jump subroutine & return from subroutine
+lab_t10:
 		set_stat(0)
 		lda #'J'
 		ldx #'S'
@@ -1147,7 +1157,8 @@ jsr_ret = *-1				;last address of jsr = return address
 		trap_ne
 		next_test
 
-; break & return from interrupt *** always available
+; break & return from interrupt
+lab_t11:
 		load_flag(0)			;with interrupts enabled if allowed!
 		pha
 		lda #'B'
@@ -1201,8 +1212,9 @@ brk_ret1					;address of break return
 		cpx #$ff
 		trap_ne
 		next_test
-	 
+
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
+lab_t12:
 		set_stat($ff)
 		clc
 		tst_stat($ff-carry)
@@ -1241,9 +1253,10 @@ brk_ret1					;address of break return
 		clv
 		tst_stat(0)
 		next_test
-		
+
 ; testing index register increment/decrement and transfer
 ; INX INY DEX DEY TAX TXA TAY TYA 
+lab_t13:
 		ldx #$fe
 		set_stat($ff)
 		inx					;ff
@@ -1428,9 +1441,10 @@ brk_ret1					;address of break return
 		tax
 		tst_x($ff,minus)
 		next_test
-		
+
 ;TSX sets NZ - TXS does not
 ;	This section also tests for proper stack wrap around.
+lab_t14:
 		ldx #1				;01
 		set_stat($ff)
 		txs
@@ -1525,9 +1539,10 @@ brk_ret1					;address of break return
 		trap_ne
 		pla					;sp=ff
 		next_test
-		
+
 ; testing index register load & store LDY LDX STY STX all addressing modes
 ; LDX / STX - zp,y / abs,y
+lab_t15:
 		ldy #3
 tldx	
 		set_stat(0)
@@ -1626,8 +1641,9 @@ tstx	lda zpt,y
 		dey
 		bpl tstx
 		next_test
-		
+
 ; indexed wraparound test (only zp should wrap)
+lab_t16:
 		ldy #3+$fa
 tldx4	ldx zp1-$fa& $ff,y	;wrap on indexed zp
 		txa
@@ -1655,8 +1671,9 @@ tstx1	lda zpt,y
 		dey
 		bpl tstx1
 		next_test
-		
+
 ; LDY / STY - zp,x / abs,x
+lab_t17:
 		ldx #3
 tldy	
 		set_stat(0)
@@ -1757,6 +1774,7 @@ tsty	lda zpt,x
 		next_test
 
 ; indexed wraparound test (only zp should wrap)
+lab_t18:
 		ldx #3+$fa
 tldy4	ldy zp1-$fa&$ff,x	;wrap on indexed zp
 		tya
@@ -1786,6 +1804,7 @@ tsty1	lda zpt,x
 		next_test
 
 ; LDX / STX - zp / abs / #
+lab_t19:
 		set_stat(0)
 		ldx zp1
 		php					;test stores do not alter flags
@@ -2176,6 +2195,7 @@ tsty1	lda zpt,x
 		next_test
 
 ; LDY / STY - zp / abs / #
+lab_t20:
 		set_stat(0)
 		ldy zp1	
 		php					;test stores do not alter flags
@@ -2452,7 +2472,6 @@ tsty1	lda zpt,x
 		cmp fLDx+3			;test flags
 		trap_ne
 
-
 		set_stat(0)
 		ldy #$c3	
 		php
@@ -2572,6 +2591,7 @@ tsty1	lda zpt,x
 
 ; testing load / store accumulator LDA / STA all addressing modes
 ; LDA / STA - zp,x / abs,x
+lab_t21:
 		ldx #3
 tldax	
 		set_stat(0)
@@ -2666,6 +2686,7 @@ tstax	lda zpt,x
 		next_test
 
 ; LDA / STA - (zp),y / abs,y / (zp,x)
+lab_t22:
 		ldy #3
 tlday	
 		set_stat(0)
@@ -2821,6 +2842,7 @@ tstay2	lda abst,y
 		next_test
 
 ; indexed wraparound test (only zp should wrap)
+lab_t23:
 		ldx #3+$fa
 tldax6	lda zp1-$fa&$ff,x	;wrap on indexed zp
 		sta abst-$fa,x		;no STX abs,x!
@@ -2904,6 +2926,7 @@ tstay6	lda abst,y
 		next_test
 
 ; LDA / STA - zp / abs / #
+lab_t24:
 		set_stat(0)
 		lda zp1
 		php					;test stores do not alter flags
@@ -3247,6 +3270,7 @@ tstay6	lda abst,y
 
 ; testing bit test & compares BIT CPX CPY CMP all addressing modes
 ; BIT - zp / abs
+lab_t25:
 		set_a($ff,0)
 		bit zp1+3	;00 - should set Z / clear	NV
 		tst_a($ff,fz)
@@ -3299,8 +3323,9 @@ tstay6	lda abst,y
 		bit abs1	;c3 - should set N (M7) & V (M6) / clear Z
 		tst_a(1,Nfz)
 		next_test
-		
+
 ; CPX - zp / abs / #	
+lab_t26:
 		set_x($80,0)
 		cpx zp7f
 		tst_stat(fc)
@@ -3360,6 +3385,7 @@ tstay6	lda abst,y
 		next_test
 
 ; CPY - zp / abs / #
+lab_t27:
 		set_y($80,0)
 		cpy zp7f
 		tst_stat(fc)
@@ -3419,6 +3445,7 @@ tstay6	lda abst,y
 		next_test
 
 ; CMP - zp / abs / #
+lab_t28:
 		set_a($80,0)
 		cmp zp7f
 		tst_a($80,fc)
@@ -3577,6 +3604,7 @@ tstay6	lda abst,y
 
 ; testing shifts - ASL LSR ROL ROR all addressing modes
 ; shifts - accumulator
+lab_t29:
 		ldx #5
 tasl
 		set_ax(zps,0)
@@ -3669,6 +3697,7 @@ trorc1
 		next_test
 
 ; shifts - zeropage
+lab_t30:
 		ldx #5
 tasl2
 		set_z(zps,0)
@@ -3761,6 +3790,7 @@ trorc3
 		next_test
 
 ; shifts - absolute
+lab_t31:
 		ldx #5
 tasl4
 		set_abs(zps,0)
@@ -3853,6 +3883,7 @@ trorc5
 		next_test
 
 ; shifts - zp indexed
+lab_t32:
 		ldx #5
 tasl6
 		set_zx(zps,0)
@@ -3943,8 +3974,9 @@ trorc7
 		dex
 		bpl trorc7
 		next_test
-		
+
 ; shifts - abs indexed
+lab_t33:
 		ldx #5
 tasl8
 		set_absx(zps,0)
@@ -4038,10 +4070,11 @@ trorc9
 
 ; testing memory increment/decrement - INC DEC all addressing modes
 ; zeropage
+lab_t34:
 		ldx #0
 		lda #$7e
 		sta zpt
-tinc	
+tinc
 		set_stat(0)
 		inc zpt
 		tst_z(rINC,fINC,0)
@@ -4054,7 +4087,7 @@ tinc1	cpx #5
 		bne tinc
 		dex
 		inc zpt
-tdec	
+tdec
 		set_stat(0)
 		dec zpt
 		tst_z(rINC,fINC,0)
@@ -4069,7 +4102,7 @@ tdec1
 		ldx #0
 		lda #$7e
 		sta zpt
-tinc10	
+tinc10
 		set_stat($ff)
 		inc zpt
 		tst_z(rINC,fINC,$ff-fnz)
@@ -4082,7 +4115,7 @@ tinc11	cpx #5
 		bne tinc10
 		dex
 		inc zpt
-tdec10	
+tdec10
 		set_stat($ff)
 		dec zpt
 		tst_z(rINC,fINC,$ff-fnz)
@@ -4097,6 +4130,7 @@ tdec11
 		next_test
 
 ; absolute memory
+lab_t35:
 		ldx #0
 		lda #$7e
 		sta abst
@@ -4156,6 +4190,7 @@ tdec13
 		next_test
 
 ; zeropage indexed
+lab_t36:
 		ldx #0
 		lda #$7e
 tinc4	sta zpt,x
@@ -4213,6 +4248,7 @@ tdec15
 		next_test
 
 ; memory indexed
+lab_t37:
 		ldx #0
 		lda #$7e
 tinc6	sta abst,x
@@ -4271,6 +4307,7 @@ tdec17
 
 ; testing logical instructions - AND EOR ORA all addressing modes
 ; AND
+lab_t38:
 		ldx #3	;immediate
 tand	lda zpAN,x
 		sta ex_andi+1	;set AND # operand
@@ -4405,6 +4442,7 @@ tand15
 		next_test
 
 ; EOR
+lab_t39:
 		ldx #3	;immediate - self modifying code
 teor	lda zpEO,x
 		sta ex_eori+1	;set EOR # operand
@@ -4539,6 +4577,7 @@ teor15
 		next_test
 
 ; OR
+lab_t40:
 		ldx #3	;immediate - self modifying code
 tora	lda zpOR,x
 		sta ex_orai+1	;set ORA # operand
@@ -4678,6 +4717,7 @@ tora15
 ; full binary add/subtract test
 ; iterates through all combinations of operands and carry input
 ; uses increments/decrements to predict result & result flags
+lab_t41:
 		cld
 		ldx #ad2	;for indexed test
 		ldy #$ff	;max range
@@ -4732,6 +4772,7 @@ tadd1	ora adrh	;merge C to expected flags
 ;	only valid BCD operands are tested, N V Z flags are ignored
 ; iterates through all valid combinations of operands and carry input
 ; uses increments/decrements to predict result & carry flag
+lab_t42:
 		sed 
 		ldx #ad2	;for indexed test
 		ldy #$ff	;max range
@@ -4813,6 +4854,7 @@ tdad7
 ; decimal/binary switch test
 ; tests CLD, SED, PLP, RTI to properly switch between decimal & binary opcode
 ;	tables
+lab_t43:
 		clc
 		cld
 		php
@@ -4864,7 +4906,7 @@ bin_rti_ret
 		cmp #$aa
 		trap_ne	;expected binary result after rti D=0
 #endif
-		
+lab_t43end:
 		lda test_case
 		cmp #test_num
 		trap_ne	;previous test is out of sequence
@@ -4898,6 +4940,7 @@ bin_rti_ret
 ; uses increments/decrements to predict result & carry flag
 chkdad
 ; decimal ADC / SBC zp
+lab_r1:
 		php	;save carry for subtract
 		lda ad1
 		adc ad2	;perform add
@@ -5091,6 +5134,7 @@ chkdad
 ; core subroutine of the full binary add/subtract test
 ; iterates through all combinations of operands and carry input
 ; uses increments/decrements to predict result & result flags
+lab_r2:
 chkadd	lda adrf	;add V-flag if overflow
 		and #$83	;keep N-----ZC / clear V
 		pha
@@ -5296,6 +5340,7 @@ ckad1	pla
 		rts
 
 ; target for the jump absolute test
+lab_r3:
 		dey
 		dey
 test_far
@@ -5329,6 +5374,7 @@ test_far
 		jmp far_ret
 		
 ; target for the jump indirect test
+lab_r4:
 		align
 ptr_tst_ind .word test_ind
 ptr_ind_ret .word ind_ret
@@ -5367,6 +5413,7 @@ test_ind
 		trap	;runover protection *** cannot continue ***
 
 ; target for the jump subroutine test
+lab_r5:
 		dey
 		dey
 test_jsr
@@ -5410,6 +5457,7 @@ ex_rts						; *** label for a delay via JSR/RTS ***
 ;trap in case of unexpected IRQ, NMI, BRK, RESET - BRK test target
 ; *** no monitor or IO to check NMI stack status, just end test acknowledging NMI ***
 ; *** no res_trap as will just start the test ***		
+lab_r6:
 		dey
 		dey
 irq_trap	;BRK test or unextpected BRK or IRQ
@@ -5455,7 +5503,7 @@ irq_trap	;BRK test or unextpected BRK or IRQ
 		plp	;N=1, V=1, Z=1, C=1 but original flags should be restored
 		rti
 		trap	;runover protection *** cannot continue ***
-		
+lab_r7:
 break2	;BRK pass 2	
 		cpx #$ff-'R'
 		trap_ne	
@@ -5489,7 +5537,7 @@ break2	;BRK pass 2
 		plp	;N=0, V=0, Z=0, C=0 but original flags should be restored
 		rti
 		trap	;runover protection *** cannot continue ***
-
+lab_r7end:
 ; *** no reports ***
 
 ;**************************************
