@@ -397,19 +397,19 @@ irq_a	.dsb	1				;a register
 irq_x	.dsb	1				;x register
 ; *** I_flag is never 2 ***
 zpt:							;6 bytes store/modify test area
-;add/subtract operand generation and result/flag prediction
+;add/subtract operand generation and result/flag prediction	*** NONE OF THESE IS USED ***
 adfc	.dsb	1				;carry flag before op
 ad1		.dsb	1				;operand 1 - accumulator
 ad2:	.dsb	1				;operand 2 - memory / immediate
 adrl	.dsb	1				;expected result bits 0-7
 adrh	.dsb	1				;expected result bit 8 (carry)
 adrf	.dsb	1				;expected flags NV0000ZC (only binary mode)
-sb2		.dsb	1				;operand 2 complemented for subtract
+sb2		.dsb	1				;operand 2 complemented for subtract	***
 zp_bss:
-; *** byte definitions for reference only, will be stored later ***
-zps		.byt	$80,1			;additional shift pattern to test zero result & flag
-zp1		.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
-zp7f	.byt	$7f				;test pattern for compare	
+; *** byte definitions for reference only, will be stored later ***	MUST OPTIMISE ***
+zps		.byt	$80,1			;additional shift pattern to test zero result & flag *** NO
+zp1		.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR *** NO
+zp7f	.byt	$7f				;test pattern for compare	*** NO
 ;logical zeropage operands
 zpOR	.byt	0,$1f,$71,$80	;test pattern for OR
 zpAN	.byt	$0f,$ff,$7f,$80	;test pattern for AND
