@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 202011203-1228 ***
+; *** last modified 202011203-1345 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -396,53 +396,10 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 irq_a	.dsb	1				;a register
 irq_x	.dsb	1				;x register
 ; *** I_flag is never 2 ***
-zpt:							;6 bytes store/modify test area
-;add/subtract operand generation and result/flag prediction	*** NONE OF THESE IS USED ***
-adfc	.dsb	1				;carry flag before op
-ad1		.dsb	1				;operand 1 - accumulator
-ad2:	.dsb	1				;operand 2 - memory / immediate
-adrl	.dsb	1				;expected result bits 0-7
-adrh	.dsb	1				;expected result bit 8 (carry)
-adrf	.dsb	1				;expected flags NV0000ZC (only binary mode)
-sb2		.dsb	1				;operand 2 complemented for subtract	***
+zpt:							;6 bytes store/modify test area	*** 4 only for this part
+		.dsb	4
 zp_bss:
-; *** byte definitions for reference only, will be stored later ***	MUST OPTIMISE ***
-zps		.byt	$80,1			;additional shift pattern to test zero result & flag *** NO
-zp1		.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR *** NO
-zp7f	.byt	$7f				;test pattern for compare	*** NO
-;logical zeropage operands
-zpOR	.byt	0,$1f,$71,$80	;test pattern for OR
-zpAN	.byt	$0f,$ff,$7f,$80	;test pattern for AND
-zpEO	.byt	$ff,$0f,$8f,$8f	;test pattern for EOR
-;indirect addressing pointers
-ind1	.word	abs1			;indirect pointer to pattern in absolute memory
-		.word	abs1+1
-		.word	abs1+2
-		.word	abs1+3
-		.word	abs7f
-inw1	.word	abs1-$f8		;indirect pointer for wrap-test pattern
-indt	.word	abst			;indirect pointer to store area in absolute memory
-		.word	abst+1
-		.word	abst+2
-		.word	abst+3
-inwt	.word	abst-$f8		;indirect pointer for wrap-test store
-indAN	.word	absAN			;indirect pointer to AND pattern in absolute memory
-		.word	absAN+1
-		.word	absAN+2
-		.word	absAN+3
-indEO	.word	absEO			;indirect pointer to EOR pattern in absolute memory
-		.word	absEO+1
-		.word	absEO+2
-		.word	absEO+3
-indOR	.word	absOR			;indirect pointer to OR pattern in absolute memory
-		.word	absOR+1
-		.word	absOR+2
-		.word	absOR+3
-;add/subtract indirect pointers
-adi2	.word	ada2			;indirect pointer to operand 2 in absolute memory
-sbi2	.word	sba2			;indirect pointer to complemented operand 2 (SBC)
-adiy2	.word	ada2-$ff		;with offset for indirect indexed
-sbiy2	.word	sba2-$ff
+; *** byte definitions for reference only, will be stored later ***	OPTIMISED ***
 zp_bss_end:
 
 ; *** especially important to check for unused references ***
@@ -450,53 +407,10 @@ zp_bss_end:
 			* = data_segment
 test_case	.dsb	1			;current test number
 ram_chksm	.dsb	2			;checksum for RAM integrity test
-;add/subtract operand copy - abs tests write area
-abst:							;6 bytes store/modify test area
-ada2		.dsb	1			;operand 2
-sba2		.dsb	1			;operand 2 complemented for subtract
-			.dsb	4			;fill remaining bytes
+abst:							;6 bytes store/modify test area	*** none used for this part
 data_bss:
-
-; *** just declare space for immediate opcodes ***
-ex_andi .dsb	3
-ex_eori .dsb	3
-ex_orai .dsb	3
-ex_adci .dsb	3
-ex_sbci .dsb	3
-
-; *** definitions for the label addresses only ***
-;zps	.byt	$80,1			;additional shift patterns test zero result & flag
+; *** definitions for the label addresses only *** OPTIMISED
 abs1	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
-abs7f	.byt	$7f				;test pattern for compare
-;loads
-fLDx	.byt	fn,fn,0,fz		;expected flags for load
-;shifts
-rASL:									;expected result ASL & ROL -carry
-rROL	.byt	0,2,$86,$04,$82,0
-rROLc	.byt	1,3,$87,$05,$83,1		;expected result ROL +carry
-rLSR									;expected result LSR & ROR -carry
-rROR	.byt	$40,0,$61,$41,$20,0
-rRORc	.byt	$c0,$80,$e1,$c1,$a0,$80	;expected result ROR +carry
-fASL:									;expected flags for shifts
-fROL	.byt	fzc,0,fnc,fc,fn,fz		;no carry in
-fROLc	.byt	fc,0,fnc,fc,fn,0		;carry in 
-fLSR:
-fROR	.byt	0,fzc,fc,0,fc,fz		;no carry in
-fRORc	.byt	fn,fnc,fnc,fn,fnc,fn	;carry in
-;increments (decrements)
-rINC	.byt	$7f,$80,$ff,0,1			;expected result for INC/DEC
-fINC	.byt	0,fn,fn,fz,0			;expected flags for INC/DEC
-;logical memory operand
-absOR	.byt	0,$1f,$71,$80			;test pattern for OR
-absAN	.byt	$0f,$ff,$7f,$80			;test pattern for AND
-absEO	.byt	$ff,$0f,$8f,$8f			;test pattern for EOR
-;logical accu operand
-absORa	.byt	0,$f1,$1f,0				;test pattern for OR
-absANa	.byt	$f0,$ff,$ff,$ff			;test pattern for AND
-absEOa	.byt	$ff,$f0,$f0,$0f			;test pattern for EOR
-;logical results
-absrlo	.byt	0,$ff,$7f,$80
-absflo	.byt	fz,fn,0,fn
 ; *** after RAM data, blinking routine ***
 ram_blink
 		.dsb	10			; *** blinking routine should be copied here ***
@@ -578,12 +492,7 @@ psb_test
 psb_fwok
 	
 ;initialize BSS segment
-; *** this code preloads data on ZP, thus OK ***
-		ldx #zp_end-zp_init-1
-ld_zp	lda zp_init,x
-		sta zp_bss,x
-		dex
-		bpl ld_zp
+; *** no ZP data to preload, no code ***
 ; *** preloading RAM area should copy blinking routine too ***
 		ldx #data_end-data_init-1
 ld_data lda data_init,x
@@ -1455,44 +1364,8 @@ break2						;BRK pass 2
 ;copy of data to initialize BSS segment
 ;***   including blinking routine   ***
 ;**************************************
-; *** good to check for unused references! ***
+; *** free from unused references! ***
 zp_init
-zps_	.byt	$80,1			;additional shift pattern to test zero result & flag
-zp1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
-zp7f_	.byt	$7f				;test pattern for compare
-;logical zeropage operands
-zpOR_	.byt	0,$1f,$71,$80	;test pattern for OR
-zpAN_	.byt	$0f,$ff,$7f,$80 ;test pattern for AND
-zpEO_	.byt	$ff,$0f,$8f,$8f ;test pattern for EOR
-;indirect addressing pointers
-ind1_	.word	abs1			;indirect pointer to pattern in absolute memory
-		.word	abs1+1
-		.word	abs1+2
-		.word	abs1+3
-		.word	abs7f
-inw1_	.word	abs1-$f8		;indirect pointer for wrap-test pattern
-indt_	.word	abst			;indirect pointer to store area in absolute memory
-		.word	abst+1
-		.word	abst+2
-		.word	abst+3
-inwt_	.word	abst-$f8		;indirect pointer for wrap-test store
-indAN_	.word	absAN			;indirect pointer to AND pattern in absolute memory
-		.word	absAN+1
-		.word	absAN+2
-		.word	absAN+3
-indEO_	.word	absEO			;indirect pointer to EOR pattern in absolute memory
-		.word	absEO+1
-		.word	absEO+2
-		.word	absEO+3
-indOR_	.word	absOR			;indirect pointer to OR pattern in absolute memory
-		.word	absOR+1
-		.word	absOR+2
-		.word	absOR+3
-;add/subtract indirect pointers
-adi2_	.word	ada2			;indirect pointer to operand 2 in absolute memory
-sbi2_	.word	sba2			;indirect pointer to complemented operand 2 (SBC)
-adiy2_	.word	ada2-$ff		;with offset for indirect indexed
-sbiy2_	.word	sba2-$ff
 zp_end
 
 #if (zp_end - zp_init) != (zp_bss_end - zp_bss)	
@@ -1501,48 +1374,7 @@ zp_end
 #endif
  
 data_init
-ex_and_ and #0					;execute immediate opcodes
-		rts
-ex_eor_ eor #0					;execute immediate opcodes
-		rts
-ex_ora_ ora #0					;execute immediate opcodes
-		rts
-ex_adc_ adc #0					;execute immediate opcodes
-		rts
-ex_sbc_ sbc #0					;execute immediate opcodes
-		rts
-;zps	.byt	$80,1			;additional shift patterns test zero result & flag
-abs1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
-abs7f_	.byt	$7f				;test pattern for compare
-;loads
-fLDx_	.byt	fn,fn,0,fz		;expected flags for load
-;shifts
-rASL_	;expected result ASL & ROL -carry
-rROL_	.byt	0,2,$86,$04,$82,0
-rROLc_	.byt	1,3,$87,$05,$83,1		;expected result ROL +carry
-rLSR_	;expected result LSR & ROR -carry
-rROR_	.byt	$40,0,$61,$41,$20,0
-rRORc_	.byt	$c0,$80,$e1,$c1,$a0,$80 ;expected result ROR +carry
-fASL_	;expected flags for shifts
-fROL_	.byt	fzc,0,fnc,fc,fn,fz		;no carry in
-fROLc_	.byt	fc,0,fnc,fc,fn,0		;carry in 
-fLSR_
-fROR_	.byt	0,fzc,fc,0,fc,fz		;no carry in
-fRORc_	.byt	fn,fnc,fnc,fn,fnc,fn	;carry in
-;increments (decrements)
-rINC_	.byt	$7f,$80,$ff,0,1	;expected result for INC/DEC
-fINC_	.byt	0,fn,fn,fz,0	;expected flags for INC/DEC
-;logical memory operand
-absOR_	.byt	0,$1f,$71,$80	;test pattern for OR
-absAN_	.byt	$0f,$ff,$7f,$80	;test pattern for AND
-absEO_	.byt	$ff,$0f,$8f,$8f	;test pattern for EOR
-;logical accu operand
-absORa_ .byt	0,$f1,$1f,0		;test pattern for OR
-absANa_ .byt	$f0,$ff,$ff,$ff	;test pattern for AND
-absEOa_ .byt	$ff,$f0,$f0,$0f	;test pattern for EOR
-;logical results
-absrlo_ .byt	0,$ff,$7f,$80
-absflo_ .byt	fz,fn,0,fn
+abs1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR	*** needed for RAMcheck
 ; ************************************************************
 ; *** after all data, blinking routine code will be copied ***
 rom_blink:
