@@ -529,9 +529,7 @@ nop_fill:
 		LDA #$F0			; BEQ opcode goes in two places
 		STA range_op
 		STA smc_rok
-		LDX #64				; range_adr operand
 		LDY #8				; range_ok offset
-		STX range_adr
 		STY smc_rok+1
 		LDA #$4C			; JMP opcode
 		STA smc_ret
