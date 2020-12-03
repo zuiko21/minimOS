@@ -451,8 +451,9 @@ start						; *** actual 6502 start ***
 #endif
 	
 ; *** no I/O channel ***
-	
+
 ;pretest small branch offset
+lab_t00:
 		ldx #5
 		jmp psb_test
 psb_bwok
@@ -490,7 +491,7 @@ psb_test
 		bne psb_back
 		trap				;branch should be taken
 psb_fwok
-	
+lab_t00end:
 ;initialize BSS segment
 ; *** no ZP data to preload, no code ***
 ; *** preloading RAM area should copy blinking routine too ***
@@ -572,6 +573,7 @@ gcs4	iny
 ; *** test_case = 1 ***
 ; *** init code, then jump to SMC generated into RAM ***
 ;testing relative addressing with BEQ
+lab_t01:
 		ldy #$fe			;testing maximum range, not -1/-2 (invalid/self adr)
 range_loop
 		dey					;next relative address
@@ -608,6 +610,7 @@ range_end					;range test successful
 
 ; *** test_case = 2 ***
 ;partial test BNE & CMP, CPX, CPY immediate
+lab_t02:
 		cpy #1				;testing BNE true
 		bne test_bne
 		trap 
@@ -643,6 +646,7 @@ test_bne
 
 ; *** test_case = 3 ***
 ;testing stack operations PHA PHP PLA PLP
+lab_t03:
 		ldx #$ff			;initialize stack
 		txs
 		lda #$55
@@ -670,6 +674,7 @@ test_bne
 
 ; *** test_case = 4 ***
 ;testing branch decisions BPL BMI BVC BVS BCC BCS BNE BEQ
+lab_t04:
 		set_stat($ff)		;all on
 		bpl nbr1			;branches should not be taken
 		bvc nbr2
@@ -876,6 +881,7 @@ brvc8
 
 ; *** test_case = 5 ***
 ; test PHA does not alter flags or accumulator but PLA does
+lab_t05:
 		ldx #$55			;x & y protected
 		ldy #$aa
 		set_a(1,$ff)		;push
@@ -922,6 +928,7 @@ brvc8
 
 ; *** test_case = 6 *** 
 ; partial pretest EOR #
+lab_t06:
 		set_a($3c,0)
 		eor #$c3
 		tst_a($ff,fn)
@@ -933,6 +940,7 @@ brvc8
 ; *** test_case = 7 ***
 ; PC modifying instructions except branches (NOP, JMP, JSR, RTS, BRK, RTI)
 ; testing NOP
+lab_t07:
 		ldx #$24
 		ldy #$42
 		set_a($18,0)
@@ -955,6 +963,7 @@ brvc8
 
 ; *** test_case = 8 ***
 ; jump absolute
+lab_t08:
 		set_stat($0)
 		lda #'F'
 		ldx #'A'
@@ -1002,6 +1011,7 @@ test_near
 
 ; *** test_case = 9 ***
 ; jump indirect
+lab_t09:
 		set_stat(0)
 		lda #'I'
 		ldx #'N'
@@ -1034,6 +1044,7 @@ ind_ret
 
 ; *** test_case = 10 ***
 ; jump subroutine & return from subroutine
+lab_t10:
 		set_stat(0)
 		lda #'J'
 		ldx #'S'
@@ -1061,7 +1072,8 @@ jsr_ret = *-1				;last address of jsr = return address
 		next_test
 
 ; *** test_case = 11 ***
-; break & return from interrupt *** always available?
+; break & return from interrupt
+lab_t11:
 		load_flag(0)			;with interrupts enabled if allowed!
 		pha
 		lda #'B'
@@ -1118,6 +1130,7 @@ brk_ret1					;address of break return
 
 ; *** test_case = 12 ***
 ; test set and clear flags CLC CLI CLD CLV SEC SEI SED
+lab_t12:
 		set_stat($ff)
 		clc
 		tst_stat($ff-carry)
@@ -1167,13 +1180,13 @@ brk_ret1					;address of break return
 ; full binary add/subtract test
 ; decimal add/subtract test
 ; decimal/binary switch test * tests CLD, SED, PLP, RTI to properly switch between decimal & binary opcode
-
+lab_t43end:
 		lda test_case
 		cmp #test_num
 		trap_ne				;previous test is out of sequence
 		lda #$f0			;mark opcode testing complete
 		sta test_case
-		
+
 ; final RAM integrity test
 ;	verifies that none of the previous tests has altered RAM outside of the
 ;	designated write areas.
@@ -1201,6 +1214,7 @@ brk_ret1					;address of break return
 
 ; *** jumps and interrupt targets needed for test 1 ***
 ; target for the jump absolute test
+lab_r3:
 		dey
 		dey
 test_far
@@ -1234,6 +1248,7 @@ test_far
 		jmp far_ret
 
 ; target for the jump indirect test
+lab_r4:
 		align
 ptr_tst_ind .word test_ind
 ptr_ind_ret .word ind_ret
@@ -1272,6 +1287,7 @@ test_ind
 		trap				;runover protection *** cannot continue ***
 
 ; target for the jump subroutine test
+lab_r5:
 		dey
 		dey
 test_jsr
@@ -1315,6 +1331,7 @@ ex_rts						; *** label for delay via JSR/RTS ***
 ;trap in case of unexpected IRQ, NMI, BRK, RESET - BRK test target
 ; *** no monitor or IO to check NMI stack status, just end test acknowledging NMI ***
 ; *** no res_trap as will just start the test ***		
+lab_r6:
 		dey
 		dey
 irq_trap					;BRK test or unextpected BRK or IRQ
@@ -1360,7 +1377,7 @@ irq_trap					;BRK test or unextpected BRK or IRQ
 		plp					;N=1, V=1, Z=1, C=1 but original flags should be restored
 		rti
 		trap				;runover protection *** cannot continue ***
-		
+lab_r7:
 break2						;BRK pass 2	
 		cpx #$ff-'R'
 		trap_ne	
@@ -1394,7 +1411,7 @@ break2						;BRK pass 2
 		plp					;N=0, V=0, Z=0, C=0 but original flags should be restored
 		rti
 		trap				;runover protection *** cannot continue ***
-
+lab_r7end:
 ; *** no reports ***
 
 ;**************************************
