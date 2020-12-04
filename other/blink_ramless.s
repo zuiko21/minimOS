@@ -1,7 +1,7 @@
 ; ***   A5 blinking LED mini-test    ***
 ; *** ***   RAM-less version!    *** ***   
 ; *** (c) 2020 Carlos J. Santisteban ***
-; *** last modified 20201204-2326    ***
+; *** last modified 20201204-2337    ***
 
 		.text
 
@@ -26,15 +26,16 @@ blink1:
 ; *** filling until the next 32-byte chunk ***
 ; ********************************************
 
+		blink2 = $FFE0
+
 		.dsb	blink2-*, $FF
 
 ; ***********************************
 ; *** second delay loop (A5 high) ***
 ; ***********************************
 
-		* = $FFE0			; A5 is now on
+		* = blink2			; A5 is now on
 
-blink2:
 			JSR ex_rts		; just some suitable delay
 			INX
 			BNE blink2
