@@ -5,7 +5,7 @@
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***
-; *** last modified 20201203-1617 ***
+; *** last modified 20201204-1617 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -390,12 +390,8 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 		.zero
 
 		* =		zero_page
-;break test interrupt save
-irq_a	.dsb	1				;a register
-irq_x	.dsb	1				;x register
-; *** I_flag is never 2 ***
-zpt:							;6 bytes store/modify test area	*** 4 only for this part
-		.dsb	4
+zpt:							;6 bytes store/modify test area
+		.dsb	6
 zp_bss:
 ; *** byte definitions for reference only, will be stored later *** optimised
 zp1		.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
@@ -406,8 +402,8 @@ zp_bss_end:
 test_case	.dsb	1			;current test number
 ram_chksm	.dsb	2			;checksum for RAM integrity test
 ;add/subtract operand copy - abs tests write area
-abst:							;6 bytes store/modify test area	*** 4 only for this part
-			.dsb	4
+abst:							;6 bytes store/modify test area
+			.dsb	6
 data_bss:
 ; *** definitions for the label addresses only *** optimised
 abs1	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR

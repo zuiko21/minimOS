@@ -396,8 +396,8 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 irq_a	.dsb	1				;a register
 irq_x	.dsb	1				;x register
 ; *** I_flag is never 2 ***
-zpt:							;6 bytes store/modify test area	*** 4 only for this part
-		.dsb	4
+zpt:							;6 bytes store/modify test area
+		.dsb	6
 zp_bss:
 ; *** byte definitions for reference only, will be stored later ***	OPTIMISED ***
 zp_bss_end:
@@ -407,7 +407,8 @@ zp_bss_end:
 			* = data_segment
 test_case	.dsb	1			;current test number
 ram_chksm	.dsb	2			;checksum for RAM integrity test
-abst:							;6 bytes store/modify test area	*** none used for this part
+abst:							;6 bytes store/modify test area
+			.dsb	6
 data_bss:
 ; *** definitions for the label addresses only *** OPTIMISED
 abs1	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR
