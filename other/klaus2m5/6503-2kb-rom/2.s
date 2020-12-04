@@ -1071,7 +1071,7 @@ tsty1	lda zpt,x
 		bpl tsty1
 		next_test
 
-; *** test_case = 7 *** CAN BE THIS ONE?
+; *** test_case = 7 *** this one looks susitable
 ; testing load / store accumulator LDA / STA all addressing modes
 ; LDA / STA - zp,x / abs,x
 lab_t21:
@@ -1172,7 +1172,8 @@ tstax	lda zpt,x
 ; *** *** *********************************** *** ***
 ; LDX / STX - zp / abs / #
 ; LDY / STY - zp / abs / #
-; *** REVISE THIS
+; LDA / STA - (zp),y / abs,y / (zp,x)
+; LDA / STA - zp / abs / #
 ; testing bit test & compares BIT CPX CPY CMP all addressing modes
 ; testing shifts - ASL LSR ROL ROR all addressing modes
 ; testing memory increment/decrement - INC DEC all addressing modes
