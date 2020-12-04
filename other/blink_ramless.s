@@ -40,7 +40,7 @@ blink2:
 			BNE blink2
 				INY
 			BNE blink2
-		JMP blink1			; and turn A off again, this chunk is 14 bytes plus 6 for the vectors
+		JMP blink1			; and turn A5 off again, this chunk is 14 bytes plus 6 for the vectors
 
 ; *************************
 ; *** auxiliary opcodes ***
