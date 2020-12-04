@@ -1,7 +1,7 @@
 ; ***   A5 blinking LED mini-test    ***
 ; *** ***   RAM-less version!    *** ***   
 ; *** (c) 2020 Carlos J. Santisteban ***
-; *** last modified 20201204-2337    ***
+; *** last modified 20201204-2358    ***
 
 		.text
 
@@ -12,15 +12,18 @@
 		* = $FFC0			; whole code fits into the last 64-byte chunk
 
 start:
-		SEI					; just in case
-		CLD
+		SEI					; really needed, as any interrupt will crash!
 blink1:
-			JSR ex_rts		; just some suitable delay
+			NOP				; cannot call subroutines! adjusted delay for ~1 sec @ 1 MHz
+			NOP
+			NOP
+			NOP
+			NOP
 			INX
 			BNE blink1
 				INY
 			BNE blink1
-		JMP blink2			; that will turn A5 on! 14 bytes this chunk
+		JMP blink2			; that will turn A5 on! 15 bytes this chunk
 
 ; ********************************************
 ; *** filling until the next 32-byte chunk ***
@@ -36,19 +39,22 @@ blink1:
 
 		* = blink2			; A5 is now on
 
-			JSR ex_rts		; just some suitable delay
+			NOP				; cannot call subroutines! adjusted delay for ~1 sec @ 1 MHz
+			NOP
+			NOP
+			NOP
+			NOP
 			INX
 			BNE blink2
 				INY
 			BNE blink2
-		JMP blink1			; and turn A5 off again, this chunk is 14 bytes plus 6 for the vectors
+		JMP blink1			; and turn A5 off again, this chunk is 17 bytes plus 6 for the vectors
 
 ; *************************
 ; *** auxiliary opcodes ***
 ; *************************
 
-ex_rts:	RTS					; *** label for delay via JSR/RTS  ***
-ex_rti:	RTI					; *** label for unexpected IRQ/BRK ***
+lock:	JMP lock			; *** unexpected interrupts will definitely crash when RAMless! ***
 
 ; *************************************
 ; *** filling until the ROM vectors ***
@@ -64,6 +70,6 @@ ex_rti:	RTI					; *** label for unexpected IRQ/BRK ***
 
 		* = vectors
 
-		.word	start		; *** without monitor or any IO, will just acknowledge NMI as cycle restart ***
+		.word	start		; *** NMI will work like RESET, hopefully no bus contention is done ***
 		.word	start		; *** only functionality of this device ***
-		.word	ex_rti		; *** will ignore unexpected IRQs or BRKs ***
+		.word	lock		; *** will crash upon unexpected IRQs or BRKs ***
