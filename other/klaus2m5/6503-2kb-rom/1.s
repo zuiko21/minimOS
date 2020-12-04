@@ -1180,6 +1180,7 @@ lab_t12:
 ; full binary add/subtract test
 ; decimal add/subtract test
 ; decimal/binary switch test * tests CLD, SED, PLP, RTI to properly switch between decimal & binary opcode
+
 lab_t43end:
 		lda test_case
 		cmp #test_num
@@ -1209,8 +1210,6 @@ lab_t43end:
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***
 ; core subroutine of the decimal add/subtract test
 ; core subroutine of the full binary add/subtract test
-
-; *** *** *** BACK TO ENABLED CODE AGAIN *** *** ***
 
 ; *** jumps and interrupt targets needed for test 1 ***
 ; target for the jump absolute test

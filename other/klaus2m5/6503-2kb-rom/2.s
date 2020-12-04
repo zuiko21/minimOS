@@ -1182,10 +1182,11 @@ tstax	lda zpt,x
 ; decimal add/subtract test
 ; decimal/binary switch test * tests CLD, SED, PLP, RTI to properly switch between decimal & binary opcode
 
+lab_t43end:
 		lda test_case
 		cmp #test_num
-		trap_ne	;previous test is out of sequence
-		lda #$f0	;mark opcode testing complete
+		trap_ne				;previous test is out of sequence
+		lda #$f0			;mark opcode testing complete
 		sta test_case
 
 ; final RAM integrity test
@@ -1200,7 +1201,7 @@ tstax	lda zpt,x
 
 ; S U C C E S S ************************************************
 ; -------------	
-		success	;if you get here everything went well
+		success				;if you get here everything went well
 ; *** this will jump to RAM blink routine for faster LED indication ***
 ; -------------	
 ; S U C C E S S ************************************************
