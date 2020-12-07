@@ -463,7 +463,7 @@ ld_data lda data_init,x
 		LDY #<rom_blink
 		LDX #>rom_blink
 		STY ram_ret
-		STX ram_ret
+		STX ram_ret+1
 ; *** vectors are always in ROM ***
 
 ; *** *** *** D I S A B L E D   T E S T S *** *** ***
