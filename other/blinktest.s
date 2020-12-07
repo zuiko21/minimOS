@@ -1,6 +1,6 @@
 ; *** A15 blinking LED mini-test     ***
 ; *** (c) 2020 Carlos J. Santisteban ***
-; *** last modified 20201207-1850    ***
+; *** last modified 20201208-0031    ***
 
 		.bss
 
@@ -38,7 +38,7 @@ loop:	LDA rom_blink-1, X
 		LDY #<rom_blink
 		LDX #>rom_blink
 		STY ram_ret
-		STX ram_ret
+		STX ram_ret+1		; EEEEEEEEEEEEEEEEEEK
 
 ; ***********************************************************
 ; *** blinking routine code will be copied after all data ***
