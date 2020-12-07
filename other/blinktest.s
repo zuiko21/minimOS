@@ -1,6 +1,6 @@
 ; *** A15 blinking LED mini-test     ***
 ; *** (c) 2020 Carlos J. Santisteban ***
-; *** last modified 20201204-1743    ***
+; *** last modified 20201207-1845    ***
 
 		.bss
 
@@ -17,12 +17,13 @@ ram_ret:
 ; *******************************
 		.text
 
-		* = $FFC0			; at 37 bytes+vectors, the whole code fits easily into the last 64-byte chunk
+		* = $FFC0			; at 40 bytes+vectors, the whole code fits easily into the last 64-byte chunk
 
 start:
 		SEI					; just in case
 		CLD
-
+		LDX #$FF			; also just in case
+		TXS
 ; *** copy blinking routine in RAM ***
 		LDX #ex_rts-rom_blink
 loop:	LDA rom_blink-1,x
