@@ -48,9 +48,6 @@ good:
 		LSR chkmsk			; try a lower bit now
 		BCC try
 ; chkptr+1 is the highest addressable RAM page (mirrored or not)
-	LDX chkptr+1			; more than 256 bytes?
-	BNE mirror				; as expected, investigate mirroring
-; here we have no more than 256 bytes of RAM, thus check them all
 zpchk:
 		LDA #$AA			; test pattern
 		DEX					; initial value was zero, now $FF
@@ -59,14 +56,14 @@ zpchk:
 patchk:
 			STA 0, X		; try writing it
 			CMP 0, X		; wrote OK?
-				BNE zpchk	; try another if it did not
-			LSR				; go for next pattern ($55 or exit)
-			BCC patchk		; try both patterns
-		STX chkptr			; if arrived here, X points to the highest byte (MSB expected to be zero)
+			BNE zpchk		; try another if it did not
+		LSR					; go for next pattern ($55 or exit)
+		BCC patchk			; try both patterns
+	STX chkptr				; if arrived here, X points to the highest byte (MSB expected to be zero)
 ; *** at this point, chkptr points to the highest addressable RAM byte, mirrored or not ***
 mirror:
 	TXA						; if X=0, we have more than 256 bytes of RAM, thus check for page mirroring
-	BNE no_page				; otherwise just check zeropage
+	BNE zp_bw				; otherwise just check zeropage
 ; check pages for mirroring *** first write page number on every available page
 		STX chkpag			; (re)set pointers, it was zero
 		LDA chkptr+1
@@ -84,12 +81,13 @@ pgw_loop:
 pgr_loop:
 			LDA chkpag+1	; reload page number
 			CMP (chkpag), Y	; compare with stored page number
-				BEQ pg_found	; if they match, there is no mirroring
+				BEQ no_page	; if they match, there is no mirroring
 			DEC chkpag+1	; otherwise try previous page
 			BNE pgr_loop
-; if arrived here, there's only zeropage mirrored elsewhere
+		STA chkptr+1		; now that's the real last page
+; perhaps there's only zeropage mirrored elsewhere
 no_page:
-	STA chkptr+1			; now that's the real last byte
+	LDX #$FF				; assume full page is OK
 zp_bw:
 		TXA					; reload byte number
 		STA 0, X			; try to store it
@@ -102,7 +100,7 @@ zp_mr:
 		CMP 0, X			; matches read value?
 			BEQ zp_nm		; found highest real byte!
 		DEX					; or try previous byte, as usual
-		CPX #1
+		CPX #7
 		BNE zp_mr
 zp_nm:
  	STX chkptr				; non-mirrored zeropage last byte!
