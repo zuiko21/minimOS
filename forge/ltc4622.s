@@ -8,7 +8,7 @@
 ; decoder outputs 0...7 go to anode pins on LEDs A9...A6, then B9...B6 -- NOTE ORDER!
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201210-1238
+; last modified 20201210-1832
 
 	.zero
 
@@ -24,6 +24,7 @@ ch_i	.dsb 1				; index for read hex-char
 
 	* = $FF00
 
+display:
 	LDA #7					; max anode index
 	STA anode
 	LSR						; now it's 3
@@ -35,7 +36,7 @@ cloop:
 		LDA bitmap, X		; get pattern
 		AND (d_ptr), Y		; apply the mask, in case a dot is shown
 		AND #$F0			; keep MSN only
-;		ORA #%1000			; set D3 if connected to pin 1
+		ORA #%1000			; set D3 if connected to pin 1 *** COMMENT otherwise ***
 		JSR disdel			; enable anode and make delay
 		LDA bitmap, X		; get pattern again
 		ASL					; will set LSN as MSN

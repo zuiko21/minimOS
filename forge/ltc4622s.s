@@ -23,6 +23,7 @@ ch_i	.dsb 1				; index for read hex-char
 
 	* = $FF00
 
+display:
 	LDA #%1000				; highest anode select line
 	STA anode
 	LDA #1
