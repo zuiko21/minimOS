@@ -3,7 +3,7 @@
 ; 4-hex char string pointed from zeropage
 ; takes ~10 ms, port is any write to $FFFx
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201210-1212
+; last modified 20201210-1238
 
 	.zero
 
@@ -14,7 +14,7 @@ anode	.dsb 1				; index for selected anode
 ch_i	.dsb 1				; index for read hex-char
 
 
-	. text
+	.text
 
 	* = $FF00
 
