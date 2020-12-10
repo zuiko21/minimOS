@@ -1,16 +1,131 @@
 ; display detected non-mirrored RAM on mux. display
 ; (c) 2020 Carlos J. Santisteban
+; last modified 20201210-1937
 
-; *** to be integrated with ramprobe.s and ltc4622s.s ***
+; *** integrated with ramprobe.s and ltc4622s.s ***
 
 	.zero
 
+	* = 2					; 6510 and NMOS-savvy
+
+; *** ramprobe variables ***
+chkptr	.dsb	2			; pointer to tested byte
+chkpag	.dsb	1			; pointer for mirroring test (including next byte)
+chkmsk	.dsb	1			; shift counter for new bit
+
+; *** ramdisp variables ***
 hexstr	.dsb	4			; room for 4 hex-chars
 dp_str	.dsb	2			; decimal point pattern (will change)
 count	.dsb	1			; delay counter
 
+; *** display parameters, in a minimOS-savvy configuration ***
+
+	* = $F2					; minimOS compatible string address
+
+d_ptr	.dsb 2				; pointer to AND-mask for each bitmap (abc* on MSN only)
+c_ptr	.dsb 2				; pointer to hex-string (2 char)
+anode	.dsb 1				; index for selected anode
+ch_i	.dsb 1				; index for read hex-char
+
+; *** *** *** *** *** ***
 	.text
 
+	* = $FE80
+
+; *********************
+; *** ramprobe code ***
+; *********************
+ramtest:
+	LDA #$80				; MSB is set first
+	STA chkmsk
+	LDX #0
+	STX chkptr				; reset pointer as well
+	STX chkptr+1
+	LDY #4					; this will make the code VIA-savvy (T1 counter will be affected)
+try:
+		LDA chkptr+1		; get current value...
+		ORA chkmsk			; ...and add suggested bit
+		STA chkptr+1
+		LDA #$AA			; test pattern
+bytchk:
+			STA (chkptr), Y	; try writing it
+			CMP (chkptr), Y	; wrote OK?
+				BNE bad		; abort loop if it did not
+			LSR				; go for next pattern ($55 or exit)
+			BCC bytchk		; try both patterns
+		BCS good			; that byte is OK, thus try to add another (less significant) bit
+bad:
+; the proposed bit goes beyond addressable RAM and must be removed
+			LDA chkmsk		; offending bit
+			EOR #$FF		; mask for removing
+			AND chkptr+1	; previous pointer minus offending bit
+			STA chkptr+1	; now back to a safe location, may try a lower bit
+good:
+		LSR chkmsk			; try a lower bit now
+		BCC try
+; chkptr+1 is the highest addressable RAM page (mirrored or not)
+zpchk:
+		LDA #$AA			; test pattern
+		DEX					; initial value was zero, now $FF
+		CPX #7				; cannot fully check down to zero, such a system would be quite useless anyway
+		BEQ *				; *** locked (no more than 8 bytes of RAM) ***
+patchk:
+			STA 0, X		; try writing it
+			CMP 0, X		; wrote OK?
+			BNE zpchk		; try another if it did not
+		LSR					; go for next pattern ($55 or exit)
+		BCC patchk			; try both patterns
+	STX chkptr				; if arrived here, X points to the highest byte (MSB expected to be zero)
+; *** at this point, chkptr points to the highest addressable RAM byte, mirrored or not ***
+mirror:
+	TXA						; if X=0, we have more than 256 bytes of RAM, thus check for page mirroring
+	BNE zp_bw				; otherwise just check zeropage
+; check pages for mirroring *** first write page number on every available page
+		STX chkpag			; (re)set pointers, it was zero
+		LDA chkptr+1
+		STA chkpag+1
+pgw_loop:
+			LDA chkpag+1	; reload page number
+			STA (chkpag), Y	; store page number
+			DEC chkpag+1	; previous page
+			BNE pgw_loop
+		TXA					; write a zero...
+		STA (chkpag), Y		; on what should be chkpag @ zeropage, in case it's mirrored!
+; now have a look at the stored values, whether they're read at their respective pages
+		LDA chkptr+1		; let's scan pages again
+		STA chkpag+1
+pgr_loop:
+			LDA chkpag+1	; reload page number
+			CMP (chkpag), Y	; compare with stored page number
+				BEQ no_page	; if they match, there is no mirroring
+			DEC chkpag+1	; otherwise try previous page
+			BNE pgr_loop
+		STA chkptr+1		; now that's the real last page
+; perhaps there's only zeropage mirrored elsewhere
+no_page:
+	LDX #$FF				; assume full page is OK
+zp_bw:
+		TXA					; reload byte number
+		STA 0, X			; try to store it
+		DEX					; previous byte
+		CPX #7				; do not touch first 8 bytes
+		BNE zp_bw
+	LDX chkptr				; retrieve stored count
+zp_mr:
+		TXA					; there should be the byte number itself
+		CMP 0, X			; matches read value?
+			BEQ zp_nm		; found highest real byte!
+		DEX					; or try previous byte, as usual
+		CPX #7
+		BNE zp_mr
+zp_nm:
+ 	STX chkptr				; non-mirrored zeropage last byte!
+; *** chkptr holds the last real address of non-mirrored RAM ***
+
+; ********************
+; *** ramdisp code ***
+; ********************
+ramdisp:
 ; * convert 16-bit value into 4 hex-char *
 	LDX #1					; byte index
 	LDY #3					; hex-char index
@@ -49,7 +164,7 @@ cyc_loop:
 ds_loop:
 			JSR display
 			DEC count
-			BNE dh_loop
+			BNE ds_loop
 		LDA dp_str+1		; get DP status for second char
 		EOR #$10			; toggle DP
 		STA dp_str+1
@@ -62,3 +177,72 @@ ds_loop:
 		ADC #<hexstr		; base pointer
 		STA c_ptr			; display routine parameter updated
 		JMP cyc_loop		; display forever
+
+; ************************
+; *** display routines ***
+; ************************
+display:
+	LDA #%1000				; highest anode select line
+	STA anode
+	LDA #1
+	STA ch_i				; pointing to last character
+cloop:
+		LDY ch_i			; retrieve index
+		LDA (c_ptr), Y		; read pointed character
+		TAX					; use as bitmap index
+		LDA bitmap, X		; get pattern
+		AND (d_ptr), Y		; apply the mask, in case a dot is shown
+		AND #$F0			; keep MSN only
+		JSR disdel			; enable anode and make delay
+		LDA bitmap, X		; get pattern again
+; could add here AND with the mask for d...g segments, but retrieving Y index, not really worth it
+		ASL					; will set LSN as MSN (mask won't apply as no DP here)
+		ASL
+		ASL
+		ASL
+		JSR disdel			; enable, store and delay
+		DEC ch_i			; back to previous character
+		BPL cloop
+	RTS
+
+; *** delay routine ***
+disdel:
+	ORA anode				; add anode selection to cathode pattern
+	STA $FFF0				; set output port
+dl_loop:
+		INY
+		BNE dl_loop			; about 1.3 ms delay
+	LSR anode				; enable next anode, non decoded version
+	RTS
+
+; *** bitmap ***
+; being cathodes, 0 means ON
+bitmap:
+;			 abc*defg
+	.byt	%00010001		; 0
+	.byt	%10011111		; 1
+	.byt	%00110010		; 2
+	.byt	%00010110		; 3
+	.byt	%10011100		; 4
+	.byt	%01010100		; 5
+	.byt	%01010000		; 6
+	.byt	%00011111		; 7
+	.byt	%00010000		; 8
+	.byt	%00011100		; 9
+	.byt	%00011000		; A
+	.byt	%11010000		; B
+	.byt	%01110001		; C
+	.byt	%10010010		; D
+	.byt	%01110000		; E
+	.byt	%01111000		; F
+	.byt	$FF				; special blank value (16)
+
+; *** *** *** *** *** ***
+
+	.dsb	$FFFA-*, $FF	; ROM filling
+
+; *** hardware vectors ***
+vectors:
+	.word	ramtest
+	.word	ramtest
+	.word	ramtest			; all interrupts like reset!
