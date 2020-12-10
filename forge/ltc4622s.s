@@ -1,21 +1,20 @@
-; LTC-4622 simple driver (2x 2 1/2 digits mux. display, A=MSB, B=LSB)
-; 4-hex char string pointed from zeropage
+; LTC-4622 simple driver (single 2 1/2 digits mux. display)
+; 2-hex char string pointed from zeropage
 ; an independent string is used as an AND mask for the bitmaps, enabling Decimal Point ($EF)
-; call periodically for display, takes ~10 ms, port is any write to $FFFx
+; call periodically for display, takes ~5 ms, port is any write to $FFFx
 ; port bits 4...7 = pins 5...2 on LEDs (cathodes) -- NOTE ORDER!
-; port bit 3 might be connected to pin 1 on LEDs, but software must set d3 on port (leading "1" cathode, NOT currently used)
-; port bits 0...2 = 3-to-8 decoder input ('238 -> '245)
-; decoder outputs 0...7 go to anode pins on LEDs A9...A6, then B9...B6 -- NOTE ORDER!
+; port bits 0...3 = pins 9...6 on LEDs (anodes) -- NOTE ORDER!
+; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201210-1238
+; last modified 20201210-1811
 
 	.zero
 
 	* = $F2					; minimOS compatible string address
 
 d_ptr	.dsb 2				; pointer to AND-mask for each bitmap (abc* on MSN only)
-c_ptr	.dsb 2				; pointer to hex-string (4 char)
+c_ptr	.dsb 2				; pointer to hex-string (2 char)
 anode	.dsb 1				; index for selected anode
 ch_i	.dsb 1				; index for read hex-char
 
@@ -24,9 +23,9 @@ ch_i	.dsb 1				; index for read hex-char
 
 	* = $FF00
 
-	LDA #7					; max anode index
+	LDA #%1000				; highest anode select line
 	STA anode
-	LSR						; now it's 3
+	LDA #1
 	STA ch_i				; pointing to last character
 cloop:
 		LDY ch_i			; retrieve index
@@ -35,10 +34,10 @@ cloop:
 		LDA bitmap, X		; get pattern
 		AND (d_ptr), Y		; apply the mask, in case a dot is shown
 		AND #$F0			; keep MSN only
-;		ORA #%1000			; set D3 if connected to pin 1
 		JSR disdel			; enable anode and make delay
 		LDA bitmap, X		; get pattern again
-		ASL					; will set LSN as MSN
+; could add here AND with the mask for d...g segments, but retrieving Y index, not really worth it
+		ASL					; will set LSN as MSN (mask won't apply as no DP here)
 		ASL
 		ASL
 		ASL
@@ -54,7 +53,7 @@ disdel:
 dl_loop:
 		INY
 		BNE dl_loop			; about 1.3 ms delay
-	DEC anode				; enable next anode
+	LSR anode				; enable next anode, non decoded version
 	RTS
 
 ; *** bitmap ***
