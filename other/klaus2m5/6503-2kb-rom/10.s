@@ -5458,11 +5458,6 @@ test_jsr
 		inx	;return registers with modifications
 		eor #$aa	;N=1, V=1, Z=0, C=1
 */
-; *** *** *** NEEDS AN ENABLED RTS FOR BLINKING DELAY *** *** ***
-ex_rts						; *** label for a delay via JSR/RTS ***
-		rts
-/*		trap	;runover protection *** cannot continue ***
-*/
 
 ; *** *** **************************** *** ***
 ; *** *** *** BACK TO ENABLED CODE *** *** ***
@@ -5647,7 +5642,7 @@ absflo_ .byt	fz,fn,0,fn
 ; ************************************************************
 ; *** after all data, blinking routine code will be copied ***
 rom_blink
-		JSR ex_rts			; just some suitable delay
+		NOP:NOP:NOP			; just some suitable delay
 		INX
 		BNE rom_blink		; relative branches will generate the same binary
 		INY

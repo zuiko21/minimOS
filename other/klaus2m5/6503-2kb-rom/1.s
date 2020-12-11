@@ -1324,7 +1324,6 @@ test_jsr
 		pla
 		inx					;return registers with modifications
 		eor #$aa			;N=1, V=1, Z=0, C=1
-ex_rts						; *** label for delay via JSR/RTS ***
 		rts
 		trap				;runover protection *** cannot continue ***
 		
@@ -1432,7 +1431,7 @@ abs1_	.byt	$c3,$82,$41,0	;test patterns for LDx BIT ROL ROR ASL LSR	*** needed f
 ; ************************************************************
 ; *** after all data, blinking routine code will be copied ***
 rom_blink:
-		JSR ex_rts			; just some suitable delay
+		NOP:NOP:NOP			; just some suitable delay
 		INX
 		BNE rom_blink		; relative branches will generate the same binary
 		INY

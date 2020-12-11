@@ -1458,10 +1458,6 @@ lab_t43end:
 ; target for the jump indirect test
 ; target for the jump subroutine test
 
-; *** *** *** NEEDS AN ENABLED RTS FOR BLINKING DELAY *** *** ***
-ex_rts						; *** label for a delay via JSR/RTS ***
-		rts
-
 ; *** *** *** NEEDS AN ENABLED RTI FOR ACCIDENTAL INTERRUPT *** *** ***
 irq_trap
 		rti
@@ -1501,7 +1497,7 @@ fLDx_	.byt	fn,fn,0,fz		;expected flags for load
 ; ************************************************************
 ; *** after all data, blinking routine code will be copied ***
 rom_blink
-		JSR ex_rts			; just some suitable delay
+		NOP:NOP:NOP			; just some suitable delay
 		INX
 		BNE rom_blink		; relative branches will generate the same binary
 		INY

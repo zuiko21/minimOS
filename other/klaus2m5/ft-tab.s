@@ -5634,7 +5634,7 @@ absflo_ .byt	fz,fn,0,fn
 ; ************************************************************
 ; *** after all data, blinking routine code will be copied ***
 rom_blink
-		JSR ex_rts			; just some suitable delay
+		NOP:NOP:NOP			; just some suitable delay
 		INX
 		BNE rom_blink		; relative branches will generate the same binary
 			INY
