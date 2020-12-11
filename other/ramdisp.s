@@ -1,6 +1,6 @@
 ; display detected non-mirrored RAM on mux. display
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201210-1937
+; last modified 20201211-1110
 
 ; *** integrated with ramprobe.s and ltc4622s.s ***
 
@@ -68,7 +68,18 @@ zpchk:
 		LDA #$AA			; test pattern
 		DEX					; initial value was zero, now $FF
 		CPX #7				; cannot fully check down to zero, such a system would be quite useless anyway
-		BEQ *				; *** locked (no more than 8 bytes of RAM) ***
+		BNE patchk		; *** locked (no more than 8 bytes of RAM) ***
+; *** special code to put '--' on the display while locked ***
+lock:
+			LDA #%11100100	; dash on digit 1
+lock_dis:
+				STA $FFF0	; put it on port
+lock_dp:
+					INX
+					BNE lock_dp	; wait for a while
+				EOR #$00000101	; switch between digits
+				BNE lock_dis	; no need for BRA
+; *** end of lock ***
 patchk:
 			STA 0, X		; try writing it
 			CMP 0, X		; wrote OK?
