@@ -1,6 +1,6 @@
 ; *** A15 blinking LED mini-test     ***
 ; *** (c) 2020 Carlos J. Santisteban ***
-; *** last modified 20201208-0031    ***
+; *** last modified 20201211-1339    ***
 
 		.bss
 
@@ -43,7 +43,7 @@ loop:	LDA rom_blink-1, X
 ; ***********************************************************
 ; *** blinking routine code will be copied after all data ***
 rom_blink:
-			JSR ex_rts		; just some suitable delay
+			NOP:NOP:NOP		; just some suitable delay
 			INX
 			BNE rom_blink	; relative branches will generate the same binary
 				INY
@@ -52,7 +52,6 @@ rom_blink:
 ; *** end of blinking routine *** needs 12 bytes! ***********
 ; ***********************************************************
 
-ex_rts:	RTS					; *** label for delay via JSR/RTS   ***
 ex_rti:	RTI					; *** label for unexpected IRQ/BRK  ***
 
 ; *********************************************
