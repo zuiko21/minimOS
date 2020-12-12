@@ -25,7 +25,7 @@ start:
 		LDX #$FF			; also just in case
 		TXS
 ; *** copy blinking routine in RAM ***
-		LDX #ex_rts-rom_blink
+		LDX #ex_rti-rom_blink
 loop:	LDA rom_blink-1, X
 		STA ram_blink-1, X
 ; *** *** paranoid check *** ***
