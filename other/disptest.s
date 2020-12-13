@@ -1,6 +1,6 @@
 ; LTC4622 display test
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201213-0044
+; last modified 20201213-1329
 
 	.zero
 
@@ -11,7 +11,12 @@ dly		.dsb	1			; another counter
 
 	.text
 
-	* = $FF80
+;	* = $FF80
+	* = $FF00				; *** *** patch! *** ***
+patch:
+	JMP irq
+	.dsb	$FF80-*, $FF	; *** ROM filling ***
+; *** *** end of patch *** ***
 
 ; main code, executes forever
 reset:
@@ -27,18 +32,18 @@ dloop:
 ; *** interrupt traps ***
 ; put '--' on the display while locked via IRQ
 irq:
-	LDA #%11100100	; dash on digit 1
+	LDA #%11100100			; dash on digit 1
 lock_dis:
-		STA $FFF0	; put it on port
+		STA $FFF0			; put it on port
 lock_dp:
 			INX
-			BNE lock_dp	; wait for a while
-		EOR #%00000101	; switch between digits
-		BNE lock_dis	; no need for BRA
+			BNE lock_dp		; wait for a while
+		EOR #%00000101		; switch between digits
+		BNE lock_dis		; no need for BRA
 ; NMI lock will show '==' instead
 nmi:
-	LDA #%01100100		; '=' on digit 1
-	BNE lock_dis		; otherwise the same 
+	LDA #%01100100			; '=' on digit 1
+	BNE lock_dis			; otherwise the same 
 ; *** end of lock ***
 
 ; routines
@@ -96,5 +101,5 @@ bitmap:
 ; *** hardware vectors ***
 vectors:
 	.word	nmi				; NMI shows '=='
-	.word	reset
+	.word	patch			; *** not reset
 	.word	irq				; IRQ shows '--'
