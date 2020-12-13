@@ -1,6 +1,6 @@
 ; LTC4622 display test
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201213-1329
+; last modified 20201213-1520
 
 	.zero
 
@@ -32,17 +32,20 @@ dloop:
 ; *** interrupt traps ***
 ; put '--' on the display while locked via IRQ
 irq:
-	LDA #%11100100			; dash on digit 1
+;		  23456789			; pins on LTC
+;	LDA #%11100100			; dash on digit 1
+	LDA #%11100101			; dash on BOTH digits ***
 lock_dis:
 		STA $FFF0			; put it on port
 lock_dp:
-			INX
-			BNE lock_dp		; wait for a while
-		EOR #%00000101		; switch between digits
-		BNE lock_dis		; no need for BRA
+;			INX
+;			BNE lock_dp		; wait for a while
+;		EOR #%00000101		; switch between digits
+		BNE lock_dis		; no need for BRA *** will lock forever ***
 ; NMI lock will show '==' instead
 nmi:
-	LDA #%01100100			; '=' on digit 1
+;	LDA #%01100100			; '=' on digit 1
+	LDA #%01100101			; '=' on BOTH digits ***
 	BNE lock_dis			; otherwise the same 
 ; *** end of lock ***
 
@@ -95,6 +98,8 @@ bitmap:
 	.byt	%01111000		; F
 
 ; *** *** *** *** *** ***
+
+	.asc	0, "LTCtest ***PATCH 2***", 0	; some ID
 
 	.dsb	$FFFA-*, $FF	; ROM filling
 
