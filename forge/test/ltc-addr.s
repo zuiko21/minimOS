@@ -1,6 +1,6 @@
 ; latch addressing test
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201214-2357
+; last modified 20201215-0047
 
 	.zero
 
@@ -57,7 +57,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary EEEEEEEEEEEEEK
 
 ; print $FE
 ;	.byt	%01111000		; F
@@ -86,7 +86,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $FD
 ;	.byt	%01111000		; F
@@ -115,7 +115,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $FC
 ;	.byt	%01111000		; F
@@ -144,7 +144,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $FB
 ;	.byt	%01111000		; F
@@ -173,7 +173,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $FA
 ;	.byt	%01111000		; F
@@ -202,7 +202,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F9
 ;	.byt	%01111000		; F
@@ -231,7 +231,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F8
 ;	.byt	%01111000		; F
@@ -260,7 +260,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F7
 ;	.byt	%01111000		; F
@@ -289,7 +289,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F6
 ;	.byt	%01111000		; F
@@ -318,7 +318,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F5
 ;	.byt	%01111000		; F
@@ -347,7 +347,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F4
 ;	.byt	%01111000		; F
@@ -376,7 +376,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F3
 ;	.byt	%01111000		; F
@@ -405,7 +405,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F2
 ;	.byt	%01111000		; F
@@ -434,7 +434,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F1
 ;	.byt	%01111000		; F
@@ -463,7 +463,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $F0
 ;	.byt	%01111000		; F
@@ -495,7 +495,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $E0
 ;	.byt	%01110000		; E
@@ -527,7 +527,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $D0
 ;	.byt	%10010010		; D
@@ -559,7 +559,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $C0
 ;	.byt	%01110001		; C
@@ -591,7 +591,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $B0
 ;	.byt	%11010000		; B
@@ -623,7 +623,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $A0
 ;	.byt	%00011000		; A
@@ -655,7 +655,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $90
 ;	.byt	%00011100		; 9
@@ -685,7 +685,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $80
 ;	.byt	%00010000		; 8
@@ -717,7 +717,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $70
 ;	.byt	%00011111		; 7
@@ -749,7 +749,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $60
 ;	.byt	%01010000		; 6
@@ -781,7 +781,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $50
 ;	.byt	%01010100		; 5
@@ -813,7 +813,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $40
 ;	.byt	%10011100		; 4
@@ -845,7 +845,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $30
 ;	.byt	%00010110		; 3
@@ -877,7 +877,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $20
 ;	.byt	%00110010		; 2
@@ -909,7 +909,7 @@ exec:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $FF		; padding up to page boundary
+	.dsb	216, $EA		; padding up to page boundary
 
 ; print $10
 ;	.byt	%10011111		; 1
@@ -938,7 +938,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $0F
 ;	.byt	%00010001		; 0
@@ -967,7 +967,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $0E
 ;	.byt	%00010001		; 0
@@ -996,7 +996,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $0D
 ;	.byt	%00010001		; 0
@@ -1025,7 +1025,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $0C
 ;	.byt	%00010001		; 0
@@ -1054,7 +1054,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $0B
 ;	.byt	%00010001		; 0
@@ -1083,7 +1083,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $0A
 ;	.byt	%00010001		; 0
@@ -1112,7 +1112,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $09
 ;	.byt	%00010001		; 0
@@ -1141,7 +1141,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $08
 ;	.byt	%00010001		; 0
@@ -1170,7 +1170,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $07
 ;	.byt	%00010001		; 0
@@ -1199,7 +1199,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $06
 ;	.byt	%00010001		; 0
@@ -1228,7 +1228,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $05
 ;	.byt	%00010001		; 0
@@ -1257,7 +1257,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $04
 ;	.byt	%00010001		; 0
@@ -1286,7 +1286,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $03
 ;	.byt	%00010001		; 0
@@ -1315,7 +1315,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $02
 ;	.byt	%00010001		; 0
@@ -1344,7 +1344,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $01	* STACK *
 ;	.byt	%00010001		; 0
@@ -1373,7 +1373,7 @@ exec:
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $FF		; padding up to page boundary
+	.dsb	221, $EA		; padding up to page boundary
 
 ; print $00	* ZEROPAGE *
 ;	.byt	%00010001		; 0
@@ -1398,7 +1398,7 @@ exec:
 		DEX
 		BNE *-29			; stay 0.5s
 
-	.dsb	225, $FF		; padding up to page boundary
+	.dsb	225, $EA		; padding up to page boundary
 
 lock:
 ; print '..' at regular port address
