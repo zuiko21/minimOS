@@ -1402,7 +1402,7 @@ exec:
 
 lock:
 ; print '..' at regular port address
-	LDX #FF
+	LDX #$FF
 	STX ptr+1				; back to $FFF0
 ;	.byt	%11101111		; .
 		LDA #%11101000		; MSN1
