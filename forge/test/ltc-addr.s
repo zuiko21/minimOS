@@ -1,6 +1,6 @@
 ; latch addressing test
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201215-0047
+; last modified 20201215-0052
 
 	.zero
 
@@ -26,8 +26,9 @@ reset:
 
 	JMP exec
 
-	.asc	0, "LATCH TESTER", 0
-	.dsb	223, $FF		; some ID, we need 256-byte blocks anyway
+	.dsb	$C020-*, $FF
+	.asc	"LTC-4622 LATCH TESTER", 0
+	.dsb	$C100-*, $FF	; some ID, we need 256-byte blocks anyway
 
 exec:
 ; print $FF ** 28+3 = 31 bytes **
@@ -676,6 +677,8 @@ exec:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
+; repeat display for a while
+		DEX
 		BNE *-29			; stay 0.5s
 
 ; next tested page*16, takes 9 bytes
@@ -1423,7 +1426,6 @@ lock:
 			INY
 			BNE *-1			; inline delay
 		JMP lock			; stay forever!
-
 
 ; *** filling ***
 	.dsb	$FFFA-*, $FF	; ROM filling
