@@ -388,6 +388,8 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 	check_ram
 
 ; *** place checkRam above to find altered RAM after each test, otherwise supress it (and previous \) ***
+; *** just before that checkRam could use TAX: LDA bitmap,X: STA $FFFF for progress display on LTC-4622 ***
+; *** bitmap format is nnnn1000, then nnnn0100 and nnnn0010 for nnnn=/d0/d1/d2/d3 (1...15) ***
 
 ; ********************
 ; *** memory usage ***
