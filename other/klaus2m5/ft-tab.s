@@ -5725,21 +5725,21 @@ bitmap:
 		.byt	%01000100	; test 28, segments g2+f2+d2
 		.byt	%10000100	; test 29, segments g2+f2+e2
 		.byt	%00000100	; test 30, segments g2+f2+e2+d2
-		.byt	%01111000	; test 31, segment a1
-		.byt	%10111000	; test 32, segment b1
-		.byt	%00111000	; test 33, segments a1+b1
-		.byt	%11011000	; test 34, segment c1
-		.byt	%01011000	; test 35, segments a1+c1
-		.byt	%10011000	; test 36, segments b1+c1, like 1
-		.byt	%00011000	; test 37, segments a1+b1+c1, like a 7!
-		.byt	%11101000	; test 38, dp1
-		.byt	%01101000	; test 39, dp1 and segment a1
-		.byt	%10101000	; test 40, dp1 and segments b1
-		.byt	%00101000	; test 41, dp1 and segments a1+b1
-		.byt	%11001000	; test 42, dp1 and segments c1
-;		.byt	%01001000	; test 43, dp1 and segments a1+c1
-;		.byt	%10001000	; test 44, dp1 and segments b1+c1, like 1.
-;		.byt	%00001000	; test 45, dp1 and segments a1+b1+c1, like a 7.!
+		.byt	%01110010	; test 31, segment a1
+		.byt	%10110010	; test 32, segment b1
+		.byt	%00110010	; test 33, segments a1+b1
+		.byt	%11010010	; test 34, segment c1
+		.byt	%01010010	; test 35, segments a1+c1
+		.byt	%10010010	; test 36, segments b1+c1, like 1
+		.byt	%00010010	; test 37, segments a1+b1+c1, like a 7!
+		.byt	%11100010	; test 38, dp1
+		.byt	%01100010	; test 39, dp1 and segment a1
+		.byt	%10100010	; test 40, dp1 and segments b1
+		.byt	%00100010	; test 41, dp1 and segments a1+b1
+		.byt	%11000010	; test 42, dp1 and segments c1
+;		.byt	%01000010	; test 43, dp1 and segments a1+c1
+;		.byt	%10000010	; test 44, dp1 and segments b1+c1, like 1.
+;		.byt	%00000010	; test 45, dp1 and segments a1+b1+c1, like a 7.!
 #endif
 
 ; *** hardware vectors are always set, with padding ***
