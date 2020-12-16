@@ -4,7 +4,7 @@
 ; Copyright (C) 2012-2020	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
-; *** last modified 20201216-1724 ***
+; *** last modified 20201216-1858 ***
 ;
 ; *** all comments added by me go between sets of three asterisks ***
 ;
@@ -130,7 +130,7 @@ code_segment			= $C000		; *** no longer $400 ***
 ;report = 0
 ; *** won't be used by me because 6502 tester has no other I/O than a LED on A15! ***
 ; *** instead of it, the monitor option will show progress on an LTC-4622 display, writing at $FFFx ***
-;#define	monitor			1
+#define	monitor			1
 
 ;RAM integrity test option. Checks for undesired RAM writes.
 ;set lowest non RAM or RAM mirror address page (-1=disable, 0=64k, $40=16k)
@@ -405,13 +405,13 @@ m8i		= %11111011			;8 bit mask - interrupt disable *** changed ***
 	-test_num=test_num+1:	\
 	lda #test_num:			\
 	sta test_case:			\
+	check_ram:				\
 	TAX:					\
 	LDA bitmap,X:			\
-	STA $FFF0:				\
-	check_ram
+	STA $FFF0
 #endif
 ; *** place checkRam above to find altered RAM after each test, otherwise supress it (and previous \) ***
-; *** just before that checkRam could use TAX: LDA bitmap,X: STA $FFF0 for progress display on LTC-4622 ***
+; *** just AFTER that checkRam could use TAX: LDA bitmap,X: STA $FFF0 for progress display on LTC-4622 ***
 ; *** bitmap format is nnnn1000, then nnnn0100 and nnnn0010 for nnnn=/d0/d1/d2/d3 (1...15) ***
 
 ; ********************
@@ -553,7 +553,12 @@ smc_ret		.dsb	3, $4C		; JMP to rom_ret (proper address to be poked as well)
 
 		* =		code_segment
 
+#ifndef	monitor
 		.asc	"6502 Functional Test ROM by klaus2m5", 0	; *** ID text ***
+#else
+		.asc	"klaus2m5 test", 0	; *** LTC support needs more room! ***
+#endif
+
 start						; *** actual 6502 start ***
 		cld
 		ldx #$ff
