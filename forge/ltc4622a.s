@@ -1,4 +1,4 @@
-; LTC-4622 driver (2x 2 1/2 digits mux. display)
+; LTC-4622 driver (2x 2 1/2 digits mux. display, A=1-2, B=3-4)
 ; 4 ASCII char string pointed from zeropage
 ; call periodically for display, takes ~10 ms, port is any write to $FFFx
 ; port bits 4...7 = pins 5...2 on LEDs (cathodes) -- NOTE ORDER!
@@ -13,15 +13,38 @@
 
 	* = $F4					; minimOS compatible string address
 
-c_ptr	.dsb 2				; pointer to string (4 char)
-anode	.dsb 1				; index for selected anode
-ch_i	.dsb 1				; index for read char
-
+c_ptr	.dsb	2			; pointer to string (4 char)
+anode	.dsb	1			; index for selected anode
+ch_i	.dsb	1			; index for read char
+count	.dsb	1			; *** delay counter for testing ***
 
 	.text
 
 	* = $FF00
-
+; *****************
+; *** test code ***
+texto:
+	.asc	"  Hijoputa...       "	; 16+4-byte padded string 
+start:
+	LDX #>texto
+	LDY #<texto
+	STX c_ptr+1				; set indirect pointer
+	STY c_ptr
+char:
+		LDA #100			; 1 sec delay
+		STA count
+loop:
+			JSR display		; show pointed substring
+			DEC count		; for a while
+			BNE loop
+		LDA c_ptr
+		CLC
+		ADC #1				; next position
+		AND #$F0			; modulo-16
+		STA c_ptr
+		JMP char			; repeat forever
+; *** end of test code ***
+; ************************
 display:
 	LDA #7					; max anode index
 	STA anode
@@ -158,3 +181,13 @@ bitmap:
 	.byt	%11111000		; }
 	.byt	%11111100		; ~
 	.byt	%01110110		; DEL
+
+; *****************************
+; *** test hardware vectors ***
+; *****************************
+
+	.dsb	$FFFA-*, $FF	; filling
+
+	.word	start			; interrupts will restart
+	.word	start
+	.word	start
