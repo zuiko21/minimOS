@@ -6,7 +6,7 @@
 ; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201217-2318
+; last modified 20201217-2338
 
 	.zero
 
@@ -26,7 +26,7 @@ texto:
 	.asc	"  Hijoputa...     "	; 16+2-byte padded string 
 start:
 	LDX #>texto
-	LDY #<texto
+	LDY #<texto				; must be zero!
 	STX c_ptr+1				; set indirect pointer
 	STY c_ptr
 char:
@@ -36,13 +36,10 @@ loop:
 			JSR display		; show pointed substring
 			DEC count		; for a while
 			BNE loop
-		LDX c_ptr
-		INX					; next position
-		CPX #<texto+16		; modulo-16
-		BNE nowrap
-			LDX #<texto
-nowrap:
-		STX c_ptr
+		LDA c_ptr
+		CLC:ADC #1			; next position
+		AND #16				; modulo-16
+		STA c_ptr
 		JMP char			; repeat forever
 ; *** end of test code ***
 ; ************************
@@ -61,7 +58,6 @@ cloop:
 		TAX					; use as bitmap index
 		LDA bitmap, X		; get pattern
 		AND #$F0			; keep MSN only
-;		ORA #%1000			; set D3 if connected to pin 1 *** COMMENT otherwise ***
 		JSR disdel			; enable anode and make delay
 		LDA bitmap, X		; get pattern again
 		ASL					; will set LSN as MSN
