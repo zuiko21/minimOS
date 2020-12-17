@@ -7,7 +7,7 @@
 ; (buffered) decoder outputs 0...7 go to anode pins on LEDs A9...A6, then B9...B6 -- NOTE ORDER!
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201217-1220
+; last modified 20201217-1817
 
 	.zero
 
@@ -68,11 +68,11 @@ bitmap:
 	.byt	%10111101		; "
 	.byt	%10010110		; #
 	.byt	%01010101		; $
-	.byt	%; %
+	.byt	%10101010		; %
 	.byt	%11111101		; '
 	.byt	%01110001		; (
 	.byt	%00010111		; )
-	.byt	%; *
+	.byt	%10011010		; *
 	.byt	%10011110		; +
 	.byt	%11111011		; ,
 	.byt	%11111110		; -
@@ -88,31 +88,73 @@ bitmap:
 	.byt	%00011111		; 7
 	.byt	%00010000		; 8
 	.byt	%00011100		; 9
-	.byt	%		; :
-	.byt	%		; ;
-	.byt	%		; <
-	.byt	%		; =
-	.byt	%		; >
-	.byt	%		; ? 
-	.byt	%		; @
+	.byt	%01110111		; :
+	.byt	%11100111		; ;
+	.byt	%11110011		; <
+	.byt	%11110110		; =
+	.byt	%11010111		; >
+	.byt	%00101010		; ? 
+	.byt	%00010010		; @
 	.byt	%00011000		; A
 	.byt	%11010000		; B
 	.byt	%01110001		; C
 	.byt	%10010010		; D
 	.byt	%01110000		; E
 	.byt	%01111000		; F
-	.byt	%		; G
-	
-	.byt	%		; [
-	.byt	%		; \
-	.byt	%		; ]
-	.byt	%		; ^
-	.byt	%		; _
-	.byt	%		; `
-	.byt	%		; a
-	
-	.byt	%		; {
-	.byt	%		; |
-	.byt	%		; }
-	.byt	%		; ~
-	.byt	$FF		; DEL?
+	.byt	%01010001		; G
+	.byt	%10011000		; H
+	.byt	%10011111		; I
+	.byt	%00010011		; J
+	.byt	%11111000		; K
+	.byt	%11110001		; L
+	.byt	%00011001		; M
+	.byt	%11011010		; N
+	.byt	%00010001		; O
+	.byt	%00111000		; P
+	.byt	%00100001		; Q
+	.byt	%11111010		; R
+	.byt	%01010100		; S
+	.byt	%11110000		; T
+	.byt	%10010001		; U
+	.byt	%10111000		; V
+	.byt	%10000001		; W
+	.byt	%10011001		; X
+	.byt	%10011101		; Y
+	.byt	%00110010		; Z
+	.byt	%01110001		; [
+	.byt	%11011100		; \ 
+	.byt	%00010111		; ]
+	.byt	%00111101		; ^
+	.byt	%11110111		; _
+	.byt	%10111111		; `
+	.byt	%00010010		; a
+	.byt	%11010000		; b
+	.byt	%11110010		; c
+	.byt	%10010010		; d
+	.byt	%00110000		; e
+	.byt	%01111000		; f
+	.byt	%00010100		; g
+	.byt	%11011000		; h
+	.byt	%11011111		; i
+	.byt	%10010111		; j
+	.byt	%11111000		; k
+	.byt	%11110001		; l
+	.byt	%00011001		; m
+	.byt	%11011010		; n
+	.byt	%11010010		; o
+	.byt	%00111000		; p
+	.byt	%00001100		; q
+	.byt	%11111010		; r
+	.byt	%11010110		; s
+	.byt	%11110000		; t
+	.byt	%11010011		; u
+	.byt	%10111000		; v
+	.byt	%11000011		; w
+	.byt	%11011011		; x
+	.byt	%10010100		; y
+	.byt	%00110010		; z
+	.byt	%10011110		; {
+	.byt	%11111001		; |
+	.byt	%11111000		; }
+	.byt	%11111100		; ~
+	.byt	%01110110		; DEL
