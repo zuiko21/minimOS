@@ -23,14 +23,14 @@ count	.dsb	1			; *** delay counter for testing ***
 ; *****************
 ; *** test code ***
 texto:
-	.asc	"  Hijoputa...       "	; 16+4-byte padded string 
+	.asc	"  Hijoputa...     "	; 16+2-byte padded string 
 start:
 	LDX #>texto
 	LDY #<texto
 	STX c_ptr+1				; set indirect pointer
 	STY c_ptr
 char:
-		LDA #100			; 1 sec delay
+		LDA #200			; 1 sec delay
 		STA count
 loop:
 			JSR display		; show pointed substring
