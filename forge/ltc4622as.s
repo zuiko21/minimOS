@@ -6,7 +6,7 @@
 ; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201217-2338
+; last modified 20201219-1720
 
 	.zero
 
@@ -23,7 +23,7 @@ count	.dsb	1			; *** delay counter for testing ***
 ; *****************
 ; *** test code ***
 texto:
-	.asc	"  Hijoputa...     "	; 16+2-byte padded string 
+	.asc	"Hijoputa...      "	; 16+1-byte padded string 
 start:
 	LDX #>texto
 	LDY #<texto				; must be zero!
@@ -38,7 +38,7 @@ loop:
 			BNE loop
 		LDA c_ptr
 		CLC:ADC #1			; next position
-		AND #16				; modulo-16
+		AND #15				; modulo-16 EEEEEEEEEEEEEK
 		STA c_ptr
 		JMP char			; repeat forever
 ; *** end of test code ***
