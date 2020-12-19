@@ -6,14 +6,14 @@
 ; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201219-1720
+; last modified 20201219-1747
 
 	.zero
 
 	* = $F4					; minimOS compatible string address
 
 c_ptr	.dsb	2			; pointer to string (4 char)
-anode	.dsb	1			; index for selected anode
+anode	.dsb	1			; mask for selected anode
 ch_i	.dsb	1			; index for read char
 count	.dsb	1			; *** delay counter for testing ***
 
@@ -26,6 +26,7 @@ texto:
 	.asc	"Hijoputa...      "	; 16+1-byte padded string 
 start:
 	LDX #>texto
+	TXS						; to be safe, as X happens to be $FF
 	LDY #<texto				; must be zero!
 	STX c_ptr+1				; set indirect pointer
 	STY c_ptr
@@ -38,13 +39,13 @@ loop:
 			BNE loop
 		LDA c_ptr
 		CLC:ADC #1			; next position
-		AND #15				; modulo-16 EEEEEEEEEEEEEK
+		AND #%00001111		; modulo-16 EEEEEEEEEEEEEK
 		STA c_ptr
 		JMP char			; repeat forever
 ; *** end of test code ***
 ; ************************
 display:
-	LDA #%1000				; highest anode select line
+	LDA #%00001000			; highest anode select line
 	STA anode
 	LDA #1
 	STA ch_i				; pointing to last character
@@ -52,12 +53,12 @@ cloop:
 		LDY ch_i			; retrieve index
 		LDA (c_ptr), Y		; read pointed character
 ; might use bit 7 as emphasis, perhaps setting (or inverting) decimal point
+		AND #%01111111		; just in case
 		SEC
 		SBC #32				; only printable ASCII
-		AND #$7F			; just in case
 		TAX					; use as bitmap index
 		LDA bitmap, X		; get pattern
-		AND #$F0			; keep MSN only
+		AND #%11110000		; keep MSN only
 		JSR disdel			; enable anode and make delay
 		LDA bitmap, X		; get pattern again
 		ASL					; will set LSN as MSN
