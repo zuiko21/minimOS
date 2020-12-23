@@ -6,7 +6,7 @@
 ; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201219-1747
+; last modified 20201224-0011
 
 	.zero
 
@@ -22,63 +22,10 @@ count	.dsb	1			; *** delay counter for testing ***
 	* = $FF00
 ; *****************
 ; *** test code ***
-texto:
-	.asc	"Hijoputa...      "	; 16+1-byte padded string 
-start:
-	LDX #>texto
-	TXS						; to be safe, as X happens to be $FF
-	LDY #<texto				; must be zero!
-	STX c_ptr+1				; set indirect pointer
-	STY c_ptr
-char:
-		LDA #200			; 1 sec delay
-		STA count
-loop:
-			JSR display		; show pointed substring
-			DEC count		; for a while
-			BNE loop
-		LDA c_ptr
-		CLC:ADC #1			; next position
-		AND #%00001111		; modulo-16 EEEEEEEEEEEEEK
-		STA c_ptr
-		JMP char			; repeat forever
-; *** end of test code ***
-; ************************
-display:
-	LDA #%00001000			; highest anode select line
-	STA anode
-	LDA #1
-	STA ch_i				; pointing to last character
-cloop:
-		LDY ch_i			; retrieve index
-		LDA (c_ptr), Y		; read pointed character
-; might use bit 7 as emphasis, perhaps setting (or inverting) decimal point
-		AND #%01111111		; just in case
-		SEC
-		SBC #32				; only printable ASCII
-		TAX					; use as bitmap index
-		LDA bitmap, X		; get pattern
-		AND #%11110000		; keep MSN only
-		JSR disdel			; enable anode and make delay
-		LDA bitmap, X		; get pattern again
-		ASL					; will set LSN as MSN
-		ASL
-		ASL
-		ASL
-		JSR disdel			; enable, store and delay
-		DEC ch_i			; back to previous character
-		BPL cloop
-	RTS
 
-; *** delay routine ***
-disdel:
-	ORA anode				; add anode selection to cathode pattern
-	STA $FFF0				; set output port
-dl_loop:
-		INY
-		BNE dl_loop			; about 1.3 ms delay
-	LSR anode				; enable next anode
-	RTS
+; *** text string ***
+texto:
+	.asc	"Hijoputa...      "	; 16+1-byte padded string *** MUST start at page boundary ***
 
 ; *** bitmap ***
 ; being cathodes, 0 means ON
@@ -179,12 +126,72 @@ bitmap:
 	.byt	%11111000		; }
 	.byt	%11111100		; ~
 	.byt	%01110110		; DEL
-end:
+
+; *****************
+; *** test code ***
+	.dsb	$FF80-*, $FF	; *** some padding in order to start at $FF80 ***
+
+start:
+	LDX #>texto
+	TXS						; to be safe, as X happens to be $FF
+	LDY #<texto				; must be zero!
+	STX c_ptr+1				; set indirect pointer
+	STY c_ptr
+char:
+		LDA #200			; 1 sec delay
+		STA count
+loop:
+			JSR display		; show pointed substring
+			DEC count		; for a while
+			BNE loop
+		LDA c_ptr
+		CLC:ADC #1			; next position
+		AND #%00001111		; modulo-16 EEEEEEEEEEEEEK
+		STA c_ptr
+		JMP char			; repeat forever
+; *** end of test code ***
+; ************************
+
+display:
+	LDA #%00001000			; highest anode select line
+	STA anode
+	LDA #1
+	STA ch_i				; pointing to last character
+cloop:
+		LDY ch_i			; retrieve index
+		LDA (c_ptr), Y		; read pointed character
+; might use bit 7 as emphasis, perhaps setting (or inverting) decimal point
+		AND #%01111111		; just in case
+		SEC
+		SBC #32				; only printable ASCII
+		TAX					; use as bitmap index
+		LDA bitmap, X		; get pattern
+		AND #%11110000		; keep MSN only
+		JSR disdel			; enable anode and make delay
+		LDA bitmap, X		; get pattern again
+		ASL					; will set LSN as MSN
+		ASL
+		ASL
+		ASL
+		JSR disdel			; enable, store and delay
+		DEC ch_i			; back to previous character
+		BPL cloop
+	RTS
+
+; *** delay routine ***
+disdel:
+	ORA anode				; add anode selection to cathode pattern
+	STA $FFF0				; set output port
+dl_loop:
+		INY
+		BNE dl_loop			; about 1.3 ms delay
+	LSR anode				; enable next anode
+	RTS
 
 ; *****************************
 ; *** test hardware vectors ***
 ; *****************************
-
+end:
 	.dsb	$FFFA-*, $FF	; filling
 
 	.word	start			; interrupts will restart
