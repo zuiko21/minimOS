@@ -6,7 +6,7 @@
 ; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201224-0011
+; last modified 20201225-2031
 
 	.zero
 
@@ -37,6 +37,7 @@ bitmap:
 	.byt	%10010110		; #
 	.byt	%01010101		; $
 	.byt	%10101010		; %
+	.byt	%11111000		; & eeeeeeeeeek
 	.byt	%11111101		; '
 	.byt	%01110001		; (
 	.byt	%00010111		; )
