@@ -1,6 +1,6 @@
 ; latch addressing test
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201225-1908
+; last modified 20201225-1928
 
 	.zero
 
@@ -34,20 +34,20 @@ exec:
 ; print $FF ** 28+3 = 31 bytes **
 _ff:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%01111000		; F
-		LDA #%01110010		; MSN2
+		LDA #%01111000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000001		; LSN2
+		LDA #%10000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -64,20 +64,20 @@ _ff:
 ; print $FE
 _fe:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%01110000		; E
-		LDA #%01110010		; MSN2
+		LDA #%01111000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00000001		; LSN2
+		LDA #%00000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -94,20 +94,20 @@ _fe:
 ; print $FD
 _fd:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -124,20 +124,20 @@ _fd:
 ; print $FC
 _fc:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%01110001		; C
-		LDA #%01110010		; MSN2
+		LDA #%01111000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -154,20 +154,20 @@ _fc:
 ; print $FB
 _fb:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%11010000		; B
-		LDA #%11010010		; MSN2
+		LDA #%11011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00000001		; LSN2
+		LDA #%00000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -184,20 +184,20 @@ _fb:
 ; print $FA
 _fa:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00011000		; A
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000001		; LSN2
+		LDA #%10000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -214,20 +214,20 @@ _fa:
 ; print $F9
 _f9:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00011100		; 9
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11000001		; LSN2
+		LDA #%11000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -244,20 +244,20 @@ _f9:
 ; print $F8
 _f8:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010000		; 8
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00000001		; LSN2
+		LDA #%00000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -274,20 +274,20 @@ _f8:
 ; print $F7
 _f7:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00011111		; 7
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11110001		; LSN2
+		LDA #%11110100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -304,20 +304,20 @@ _f7:
 ; print $F6
 _f6:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%01010000		; 6
-		LDA #%01010010		; MSN2
+		LDA #%01011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00000001		; LSN2
+		LDA #%00000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -334,20 +334,20 @@ _f6:
 ; print $F5
 _f5:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%01010100		; 5
-		LDA #%01010010		; MSN2
+		LDA #%01011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%01000001		; LSN2
+		LDA #%01000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -364,20 +364,20 @@ _f5:
 ; print $F4
 _f4:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10011100		; 4
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11000001		; LSN2
+		LDA #%11000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -394,20 +394,20 @@ _f4:
 ; print $F3
 _f3:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010110		; 3
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%01100001		; LSN2
+		LDA #%01100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -424,20 +424,20 @@ _f3:
 ; print $F2
 _f2:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00110010		; 2
-		LDA #%00110010		; MSN2
+		LDA #%00111000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -454,20 +454,20 @@ _f2:
 ; print $F1
 _f1:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10011111		; 1
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11110001		; LSN2
+		LDA #%11110100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -484,20 +484,20 @@ _f1:
 ; print $F0
 _f0:
 ;	.byt	%01111000		; F
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -517,20 +517,20 @@ _f0:
 ; print $E0
 _e0:
 ;	.byt	%01110000		; E
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00000100		; LSN1
+		LDA #%00000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -550,20 +550,20 @@ _e0:
 ; print $D0
 _d0:
 ;	.byt	%10010010		; D
-		LDA #%10011000		; MSN1
+		LDA #%10010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN1
+		LDA #%00100001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -583,20 +583,20 @@ _d0:
 ; print $C0
 _c0:
 ;	.byt	%01110001		; C
-		LDA #%01111000		; MSN1
+		LDA #%01110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -616,20 +616,20 @@ _c0:
 ; print $B0
 _b0:
 ;	.byt	%11010000		; B
-		LDA #%11011000		; MSN1
+		LDA #%11010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00000100		; LSN1
+		LDA #%00000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -649,20 +649,20 @@ _b0:
 ; print $A0
 _a0:
 ;	.byt	%00011000		; A
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000100		; LSN1
+		LDA #%10000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -682,20 +682,20 @@ _a0:
 ; print $90
 _90:
 ;	.byt	%00011100		; 9
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11000100		; LSN1
+		LDA #%11000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -715,20 +715,20 @@ _90:
 ; print $80
 _80:
 ;	.byt	%00010000		; 8
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00000100		; LSN1
+		LDA #%00000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -748,20 +748,20 @@ _80:
 ; print $70
 _70:
 ;	.byt	%00011111		; 7
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11110100		; LSN1
+		LDA #%11110001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -781,20 +781,20 @@ _70:
 ; print $60
 _60:
 ;	.byt	%01010000		; 6
-		LDA #%01011000		; MSN1
+		LDA #%01010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00000100		; LSN1
+		LDA #%00000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -814,20 +814,20 @@ _60:
 ; print $50
 _50:
 ;	.byt	%01010100		; 5
-		LDA #%01011000		; MSN1
+		LDA #%01010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%01000100		; LSN1
+		LDA #%01000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -847,20 +847,20 @@ _50:
 ; print $40
 _40:
 ;	.byt	%10011100		; 4
-		LDA #%10011000		; MSN1
+		LDA #%10010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11000100		; LSN1
+		LDA #%11000001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -880,20 +880,20 @@ _40:
 ; print $30
 _30:
 ;	.byt	%00010110		; 3
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%01100100		; LSN1
+		LDA #%01100001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -913,20 +913,20 @@ _30:
 ; print $20
 _20:
 ;	.byt	%00110010		; 2
-		LDA #%00111000		; MSN1
+		LDA #%00110010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN1
+		LDA #%00100001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -946,20 +946,20 @@ _20:
 ; print $10
 _10:
 ;	.byt	%10011111		; 1
-		LDA #%10011000		; MSN1
+		LDA #%10010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11110100		; LSN1
+		LDA #%11110001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -976,20 +976,20 @@ _10:
 ; print $0F
 _0f:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%01111000		; F
-		LDA #%01110010		; MSN2
+		LDA #%01111000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%10000001		; LSN2
+		LDA #%10000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1006,20 +1006,20 @@ _0f:
 ; print $0E
 _0e:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1036,20 +1036,20 @@ _0e:
 ; print $0D
 _0d:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1066,20 +1066,20 @@ _0d:
 ; print $0C
 _0c:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1096,20 +1096,20 @@ _0c:
 ; print $0B
 _0b:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1126,20 +1126,20 @@ _0b:
 ; print $0A
 _0a:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1156,20 +1156,20 @@ _0a:
 ; print $09
 _09:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1186,20 +1186,20 @@ _09:
 ; print $08
 _08:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1216,20 +1216,20 @@ _08:
 ; print $07
 _07:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1246,20 +1246,20 @@ _07:
 ; print $06
 _06:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1276,20 +1276,20 @@ _06:
 ; print $05
 _05:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1306,20 +1306,20 @@ _05:
 ; print $04
 _04:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1336,20 +1336,20 @@ _04:
 ; print $03
 _03:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1366,20 +1366,20 @@ _03:
 ; print $02
 _02:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1396,20 +1396,20 @@ _02:
 ; print $01	* STACK *
 _01:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%10010010		; D
-		LDA #%10010010		; MSN2
+		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100001		; LSN2
+		LDA #%00100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1426,20 +1426,20 @@ _01:
 ; print $00	* ZEROPAGE *
 _00:
 ;	.byt	%00010001		; 0
-		LDA #%00011000		; MSN1
+		LDA #%00010010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010100		; LSN1
+		LDA #%00010001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%00010001		; 0
-		LDA #%00010010		; MSN2
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00010001		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1454,20 +1454,20 @@ lock:
 	LDX #$FF
 	STX ptr+1				; back to $FFF0
 ;	.byt	%11101111		; .
-		LDA #%11101000		; MSN1
+		LDA #%11100010		; MSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11110100		; LSN1
+		LDA #%11110001		; LSN1
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ;	.byt	%11101111		; .
-		LDA #%11100010		; MSN2
+		LDA #%11101000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%11110001		; LSN2
+		LDA #%11110100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
