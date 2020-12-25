@@ -21,6 +21,8 @@ reset:
 	LDY #$F0
 	STY !ptr
 	STX !ptr+1
+
+; initial register values
 	LDY #0
 	LDX #100
 
@@ -34,7 +36,7 @@ exec:
 ; print $FF ** 28+3 = 31 bytes **
 _ff:
 ;	.byt	%01111000		; F
-		LDA #%01110010		; MSN1
+		LDA #%01110010		; MSN1 eeeeeek
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
