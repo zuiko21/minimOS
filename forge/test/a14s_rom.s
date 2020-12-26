@@ -1,14 +1,14 @@
 ; sound test (speaker on *A13*)
 ; *** ROMmable version ***
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201226-1557
+; last modified 20201226-1607
 
 	.text
 
 ; *** addresses configuation ***
 	*	= $C000				; 27C128 savvy
 
-alt		= $FFC0				; needs 12 kiB RAM! change and use another address line if needed (A14...A6)
+alt		= $FFC0				; needs 16 kiB ROM! change and use another address line if needed (A13...A6)
 
 ; since * is %1100000000000000
 ; and alt is $1111111111000000
