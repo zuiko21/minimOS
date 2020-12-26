@@ -1,6 +1,6 @@
 ; display detected non-mirrored RAM on mux. display
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201211-1206
+; last modified 20201226-0129
 
 ; *** integrated with ramprobe.s and ltc4622s.s ***
 
@@ -92,6 +92,7 @@ patchk:
 		BCC patchk			; try both patterns
 	STX chkptr				; if arrived here, X points to the highest byte (MSB expected to be zero)
 ; *** at this point, chkptr points to the highest addressable RAM byte, mirrored or not ***
+; *** *** *** the mirror-detecting routine seems not to work *** *** ***
 mirror:
 	TXA						; if X=0, we have more than 256 bytes of RAM, thus check for page mirroring
 	BNE zp_bw				; otherwise just check zeropage
@@ -115,7 +116,7 @@ pgr_loop:
 				BEQ no_page	; if they match, there is no mirroring
 			DEC chkpag+1	; otherwise try previous page
 			BNE pgr_loop
-		STA chkptr+1		; now that's the real last page
+;		STA chkptr+1		; now that's the real last page
 ; perhaps there's only zeropage mirrored elsewhere
 no_page:
 	LDX #$FF				; assume full page is OK
@@ -134,31 +135,31 @@ zp_mr:
 		CPX #7
 		BNE zp_mr
 zp_nm:
- 	STX chkptr				; non-mirrored zeropage last byte!
-; *** chkptr holds the last real address of non-mirrored RAM ***
+ 	STX chkpag				; non-mirrored zeropage last byte! *** instead of chkptr
+; *** chkpag holds the last real address of non-mirrored RAM *** instead of chkptr
 
 ; ********************
 ; *** ramdisp code ***
 ; ********************
 ramdisp:
 ; * convert 16-bit value into 4 hex-char *
-	LDX #1					; byte index
-	LDY #3					; hex-char index
+	LDX #0					; byte index, start checking little-endian LSB...
+	LDY #3					; hex-char index ...as we start at LSD, which is last
 str_loop:
-		LDA chkptr, X		; get this byte
+		LDA chkpag, X		; get this byte *** instead of chkptr, which is limit of addressable RAM
 		AND #$0F			; LSN only
 ; might convert to ASCII here
 		STA hexstr, Y		; store non-ASCII value (absolute)
 		DEY
-		LDA chkptr, X		; get this byte again
+		LDA chkpag, X		; get this byte again *** not chkptr
 		LSR					; MSN down x16
 		LSR
 		LSR
 		LSR
 ; might convert to ASCII here
 		STA hexstr, Y		; two hex-chars complete
+		INX
 		DEY
-		DEX
 		BPL str_loop		; go for value MSB
 
 ; * display size in loop *
@@ -250,7 +251,7 @@ bitmap:
 	.byt	%10010010		; D
 	.byt	%01110000		; E
 	.byt	%01111000		; F
-	.byt	$FF				; special blank value (16)
+;	.byt	$FF				; special blank value (16)
 
 ; *** *** *** *** *** ***
 
