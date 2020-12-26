@@ -1,6 +1,6 @@
 ; display detected non-mirrored RAM on mux. display
 ; (c) 2020 Carlos J. Santisteban
-; last modified 20201226-0129
+; last modified 20201226-1101
 
 ; *** integrated with ramprobe.s and ltc4622s.s ***
 
@@ -36,12 +36,13 @@ ch_i	.dsb 1				; index for read hex-char
 ; *** ramprobe code ***
 ; *********************
 ramtest:
-	LDA #$80				; MSB is set first
-	STA chkmsk
+	LDX #$80				; MSB is set first
+	STX chkmsk
+	TXS						; also suitable for stack pointer, even on 128-byte systems (leaves 8-byte stack space)
 	LDX #0
 	STX chkptr				; reset pointer as well
 	STX chkptr+1
-	LDY #4					; this will make the code VIA-savvy (T1 counter will be affected)
+	LDY #14					; this will make the code VIA-savvy (IER will be affected)
 try:
 		LDA chkptr+1		; get current value...
 		ORA chkmsk			; ...and add suggested bit
@@ -67,7 +68,7 @@ good:
 zpchk:
 		LDA #$AA			; test pattern
 		DEX					; initial value was zero, now $FF
-		CPX #7				; cannot fully check down to zero, such a system would be quite useless anyway
+		CPX #15				; cannot fully check down to zero, such a system would be quite useless anyway
 		BNE patchk			; *** locked if no more than 8 bytes of RAM ***
 ; *** special code to put '--' on the display while locked ***
 lock:
@@ -92,9 +93,9 @@ patchk:
 		BCC patchk			; try both patterns
 	STX chkptr				; if arrived here, X points to the highest byte (MSB expected to be zero)
 ; *** at this point, chkptr points to the highest addressable RAM byte, mirrored or not ***
-; *** *** *** the mirror-detecting routine seems not to work *** *** ***
 mirror:
-	TXA						; if X=0, we have more than 256 bytes of RAM, thus check for page mirroring
+	INX						; EEEEEEEEEEEEEEEEEEEEEEEEK
+	TXA						; if X=0, we have more than 256 bytes of RAM, thus check for page mirroring **** NOOOOO, X was $FF ****
 	BNE zp_bw				; otherwise just check zeropage
 ; check pages for mirroring *** first write page number on every available page
 		STX chkpag			; (re)set pointers, it was zero
@@ -132,10 +133,10 @@ zp_mr:
 		CMP 0, X			; matches read value?
 			BEQ zp_nm		; found highest real byte!
 		DEX					; or try previous byte, as usual
-		CPX #7
+		CPX #15
 		BNE zp_mr
 zp_nm:
- 	STX chkpag				; non-mirrored zeropage last byte! *** instead of chkptr
+	STX chkpag				; non-mirrored zeropage last byte! *** instead of chkptr
 ; *** chkpag holds the last real address of non-mirrored RAM *** instead of chkptr
 
 ; ********************
