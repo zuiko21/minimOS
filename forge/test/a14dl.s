@@ -1,4 +1,4 @@
-; sound test (speaker on A14-A6)
+; sound test (speaker on some of A14-A6)
 ; *** RAM-copied version ***
 ; (c) 2020 Carlos J. Santisteban
 ; last modified 20201226-1653
@@ -8,7 +8,11 @@
 ; *** addresses configuation ***
 orig	= $0400				; most firmware savvy
 
-alt		= $5FC0				; needs 32 kiB RAM! change and use another address line if needed (A14...A6)
+alt		= $5FC0				; needs 32 kiB RAM! change and use another address line if needed (see below)
+
+; orig is %0000010000000000
+; alt  is %0101111111000000
+; A14, A12-11, A9-6 will do
 
 ; ****************
 ; *** ROM code ***
