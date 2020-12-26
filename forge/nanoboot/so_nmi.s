@@ -1,14 +1,14 @@
-; nanoBoot-SO NMI handler for 6502, v0.2a1
+; nanoBoot-SO NMI handler for 6502, v0.3a1
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20190112-1700
+; last modified 20201226-1330
 
 nb_nmi:
+; received bits should be LSB first!
 	CLV					; allow zero by default eeeeek (2)
-	CLC					; let us insert a zero... (2)
+	SEC					; let us insert a one... (2) eeeeeek
 	BVC nn_vc			; ...if no overflow (3/4)
-		SEC					; ...otherwise set it
+		CLC				; ...otherwise clear it
 nn_vc:
-	ROL nb_rcv			; inject new bit (5)
-	SEC					; must set another bit on flag (2)
-	ROR nb_flag			; this will set bit 7 after 8 shifts (5)
-	RTI					; (6) total 25/26 clocks plus 7 of NMI
+	ROR nb_rcv			; inject C into byte, LSB first (5)
+	DEC nb_flag			; this will turn 0 when done, if preloaded with 8 (5)
+	RTI					; (6) total 23/24 clocks plus 7 of NMI, worst case 31 per bit

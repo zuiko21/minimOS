@@ -1,13 +1,12 @@
-; nanoBoot ISR for 6502, v0.2a1
+; nanoBoot ISR for 6502, v0.3a1
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20190112-1631
+; last modified 20201226-1235
 
 nb_irq:
-	LSR nb_rcv		; mimick IRQ level on least significant bit...
-	ASL nb_rcv		; ...without affecting other than state
-; not sure if while IRQ is held low, this will be retriggered upon return
-; although will affect A, it is safer to mask I into the saved status
-	PLA				; saved status...
-	ORA #%00000100	; ...now with I set
-	PHA				; restore all (A changed)
-	RTI			; as I flag is to be set, takes 25 clocks
+; *** this modifies A (and stored P), thus PHA is needed on NMI for proper operation ***
+; since this has to set I flag anyway, clear stored C as received bit value
+	PLA				; saved status... (4)
+	ORA #%00000100	; ...now with I set... (2)
+	AND #%11111110	; ...and C clear (2)
+	PHA				; restore all (A changed) (3)
+	RTI				; (6) whole routine takes only 17 clocks

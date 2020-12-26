@@ -1,18 +1,17 @@
-; nanoBoot NMI handler for 6502 v0.2a1
+; nanoBoot NMI handler for 6502 v0.3a1
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20190112-1630
+; last modified 20201226-1234
 
 nb_nmi:
-	SEC
-	ROL nb_rcv			; prepare for next bit, initially on (2+5)
-; do not know if keeping IRQ low will retrigger the interrupt
-; ISR should alter saved status masking I, anyway this SEI is needed
-; as it will affect A, must be kept here
-	PHA					; must save A before IRQ! (3)
-	CLI					; enable IRQ for a moment... (2)
-; if IRQ is low, will clear nb_rcv LSB, otherwise will stay set
-	SEI					; ...and disable it back! (2)
-	PLA					; restored (4)
-	ROL nb_flag			; this will set bit 7 after eight executions (5) EEEEEEEEEEEK
-	RTI					; (6) total 29 clocks + ISR
-; 7 clocks to acknowledge IRQ plus 25 of the ISR itself, grand total 61 clocks
+; received bits should be LSB first!
+	SEC					; bits are on by default (2)
+	PHA					; preserve A, as ISR will change it! (3)
+	CLI					; enable interrupts for a moment (2...)
+; if /IRQ was low, ISR will clear C, thus injecting a zero
+	SEI					; what happened? (2)
+	PLA					; retrieve A, but C won't be affected (4)
+	ROR nb_rcv			; inject C into byte, LSB first (5)
+	DEC nb_flag			; this will turn 0 when done, if preloaded with 8 (5)
+	RTI					; (6) total 29, plus ISR
+; ISR takes 7 clocks to acknowledge, plus 17 clocks itself, that's 24 for a grand total (including NMI ack) of 60 clocks per bit worst case
+
