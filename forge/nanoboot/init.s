@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502, v0.3a3
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20201227-1600
+; last modified 20201227-1619
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -221,4 +221,9 @@ nb_pat:						; segment patterns for hex numbers
 nb_exit:
 #ifndef	TIMEBOOT
 	JMP ($FFFC)				; reset, hopefully will go elsewhere
+#endif
+#ifdef	DISPLAY
+	LDA #%11100101			; dash on BOTH digits ***
+	STA $FFF0				; put it on port
+	BNE *					; lock
 #endif
