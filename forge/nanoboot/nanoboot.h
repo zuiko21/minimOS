@@ -1,6 +1,6 @@
-; zeropage variables for nanoBoot, v0.3a1
+; zeropage variables for nanoBoot, v0.3a3
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20201226-1315
+; last modified 20201227-1526
 
 .zero
 
@@ -8,6 +8,10 @@
 
 #ifdef	TIMEBOOT
 timeout	.word	0			; timeout counter
+#endif
+#ifdef	DISPLAY
+nb_cur	.byt	0			; selected anode on LTC4622 display (or digit)
+nb_disp	.dsb	4, 0		; bitmap patterns (including selected anode)
 #endif
 nb_rcv	.byt	0			; received value
 nb_flag	.byt	0			; a byte is ready when zero (must be preset every byte)

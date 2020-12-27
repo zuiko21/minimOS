@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502, v0.3a3
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20201227-1340
+; last modified 20201227-1600
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -20,11 +20,16 @@ nb_init:
 	LDX #3					; copy 4 bytes (2)
 nb_svec:
 		LDA nb_tab, X		; get origin from table (4)
-		STA fw_isr, X		; and write for FW (4)
+		STA fw_isr, X		; and write for FW (5)
+#ifdef	DISPLAY
+		LDA nb_boot, X		; while we are on it, prepare display message (4+4)
+		STA nb_disp, X
+#endif
 		DEX					; next (2)
 		BPL nb_svec			; no need to preset X (3)
 #else
 ; *** alternate code in case /SO is used, no ISR is set ***
+	CLV						; reset this ASAP!
 	LDY #<nb_nmi			; copy routine address...
 	LDA #>nb_nmi
 	STY fw_nmi				; ...and store it into firmware
@@ -56,12 +61,14 @@ nb_lbit:
 			BNE nb_cont			; not yet expired, continue after 15 extra cycles (3/2)
 				PLA				; discard return address otherwise... (4+4)
 				PLA
-				BNE nb_exit		; ...and proceed with standard boot!
+				JMP nb_exit		; ...and proceed with standard boot!
 nb_cont:
 #else
 nb_lbit:
 ; *** base loop w/o feedback is 6 cycles, plus interrupts => 64t/bit => 512t/byte ***
+; make that 84t/bit and 672t/byte if LTC display is enabled 
 #endif
+#ifdef	DISPLAY
 ; ** sample code for LED display, constant 28t overhead (224 per byte) **
 ;		LDX nb_cur			; current position (3)
 ;		LDA nb_disp, X		; get pattern (4)
@@ -73,14 +80,15 @@ nb_lbit:
 ;		AND #3				; on a four digit display (2)
 ;		STA nb_cur			; update for next round (3)
 ; ** another sample for LTC display, 20t per bit, 160 per byte **
-;		LDX nb_cur			; current position (3)
-;		LDA nb_disp, X		; get pattern (4)
-;		STA $FFF0			; put on display (4)
-;		INX					; next anode (2+2)
-;		TXA
-;		AND #3				; four anodes on a single LTC4622 display (2)
-;		STA nb_cur			; update for next round (3)
+		LDX nb_cur			; current position (3)
+		LDA nb_disp, X		; get pattern (4)
+		STA $FFF0			; put on display (4)
+		INX					; next anode (2+2)
+		TXA
+		AND #3				; four anodes on a single LTC4622 display (2)
+		STA nb_cur			; update for next round (3)
 ; ** end of feedback **
+#endif
 		LDX nb_flag			; received something? (3)
 		BNE nb_lbit			; no, keep trying (3/2)
 		LDA nb_rcv			; get received (3)
@@ -103,6 +111,15 @@ nb_lbit:
 	TAY						; last byte loaded is the index! (2)
 	LDX #0
 	STX nb_ptr				; ready for indirect-indexed (X known to be zero, or use STZ)
+#ifdef	DISPLAY
+; create acknowledge message while loading first page (16t)
+	LDA #%11101000			; dot on second digit
+	STA nb_disp+2
+	LDA #%11100010			; dot on first digit
+	STA nb_disp
+	STX nb_disp+1			; clear remaining segments (known to be zero)
+	STX nb_disp+3
+#endif
 ; *** execute transfer ***
 ; *** performance when using NMI/IRQ ***
 ; total overhead per byte (over nb_rec execution) is typically ?t
@@ -125,22 +142,41 @@ nb_gbit:
 ; *** byte received in A ***
 ; **************************
 		STA (nb_ptr), Y		; store at destination (5 or 6)
+#ifdef	DISPLAY
 ; *** this is a god place to update display *** single LTC, for instance
-;		LDX nb_cur			; current position (3)
-;		LDA nb_disp, X		; get pattern (4)
-;		STA $FFF0			; put on display (4)
-;		INX					; next anode (2+2)
-;		TXA
-;		AND #3				; four anodes on a single LTC4622 display (2)
-;		STA nb_cur			; update for next round (3)
+		LDX nb_cur			; current position (3)
+		LDA nb_disp, X		; get pattern (4)
+		STA $FFF0			; put on display (4)
+		INX					; next anode (2+2)
+		TXA
+		AND #3				; four anodes on a single LTC4622 display (2)
+		STA nb_cur			; update for next round (3)
 ; *** end of display update *** 20t per byte
+#endif
 		INY					; next (2)
 		BNE nbg_nw			; check MSB too (3/7)
 			INC nb_ptr+1
 ; *** page has changed, may be reflected on display ***
+#ifdef	DISPLAY
+; show page LSN, takes 35t each 256 bytes
+			LDA nb_ptr+1	; get new page number (3)
+			AND #15			; LSN only (2)
+			TAX				; as index (2)
+			LDA nb_pat, X	; low pattern first (4)
+			AND #240		; MSN as cathodes (2)
+			ORA #%0010		; enable first anode of second digit (2+3)
+			STA nb_disp+2
+			LDA nb_pat, X	; load again full pattern (4)
+			ASL				; keep LSN only (2+2+2+2)
+			ASL
+			ASL
+			ASL
+			ORA #%0001		; enable second anode of second digit (2+3)
+			STA nb_disp+3
+#endif
 nbg_nw:
 		CPY nb_fin			; check whether ended (3)
-		BNE nb_get			; no, continue (3/11/10)
+		BNE nb_rec			; no, continue (3/11/10)
 			LDA nb_ptr+1	; check MSB too
 			CMP nb_fin+1
 		BNE nb_rec			; no, continue
@@ -150,12 +186,33 @@ nbg_nw:
 	JMP (nb_ex)				; go!
 
 ; *************************************
-; *** table with interrupt pointers ***
+; *** table with interrupt pointers *** and diverse data
 ; *************************************
-nb_tab:
 #ifndef	SETOVER
+nb_tab:
 	.word	nb_irq
 	.word	nb_nmi
+#endif
+#ifdef	DISPLAY
+nb_boot:
+	.byt	%11010010, %10100001, %11011000, %00000100	; patterns to show 'nb' on LTC display (integrated anodes)
+nb_pat:						; segment patterns for hex numbers
+	.byt	%00010001		; 0
+	.byt	%10011111		; 1
+	.byt	%00110010		; 2
+	.byt	%00010110		; 3
+	.byt	%10011100		; 4
+	.byt	%01010100		; 5
+	.byt	%01010000		; 6
+	.byt	%00011111		; 7
+	.byt	%00010000		; 8
+	.byt	%00011100		; 9
+	.byt	%00011000		; A
+	.byt	%11010000		; B
+	.byt	%01110001		; C
+	.byt	%10010010		; D
+	.byt	%01110000		; E
+	.byt	%01111000		; F
 #endif
 
 ; **********************************************************************

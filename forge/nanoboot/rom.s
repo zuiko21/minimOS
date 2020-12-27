@@ -1,45 +1,65 @@
 ; minimal nanoBoot firmware
-; v0.2a3
+; v0.3a3
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20190220-1042
+; last modified 20201227-1516
 
 ; already NMOS-savvy
+
+; *********************
+; *** configuration ***
+; *********************
+; extra header checking
 #define	SAFE	_SAFE
+
+; timeout routines, will abort in ~0.9s @ 1 MHz
 #define	TIMEBOOT	_TIMEBOOT
+
+; alternate version using /SO pin
 ;#define	SETOVER	_SETOVER
 
+; progress display in LTC4622
+#define	DISPLAY	_DISPLAY
+
+; *************************************
+; *** includes and system variables ***
+; *************************************
 #include "../../OS/macros.h"
 #include "nanoboot.h"
 
-; mimimal firmware variables?
+; mimimal firmware variables!
 ; these should NOT go into zeropage, even if saving a few bytes
 .bss
 * = $0200
 fw_isr	.word	0
 fw_nmi	.word	0
+
 .text
+; *************************
+; *** boot ROM contents ***
+; *************************
+#ifndef	DISPLAY
+* = $FF80					; 128 bytes will suffice, even with timeout!
+#else
+* = $FF00					; display routines need much more space, but one page seems enough
+#endif
 
-; *** ROM contents *** 128 bytes will suffice!
-* = $FF80
-
+reset:
 ; standard 6502 init... NOT NEEDED
 ; * no adds or subtractions, thus decimal mode irrelevant
 ; * stack can be anywhere into page 1
-
-reset:
-#ifdef	SETOVER
-nb_irq:
-#endif
 ;	CLD
 ;	LDX #$FF
 ;	TXS
 
 ; ...followed by code chunks
 #include "init.s"
+
 #ifndef	SETOVER
+; regular version
 #include "nmi.s"
 #include "isr.s"
 #else
+; /SO version
 #include "so_nmi.s"
 #endif
 
