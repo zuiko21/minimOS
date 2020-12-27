@@ -39,7 +39,7 @@ d_last:
 		DEY					; now a bit higher freq
 		BNE cont
 lock:
-			JMP lock		; lock here
+			JMP init		; *** repeat forever ***
 cont:
 	JMP alt					; execute alternate copy *** this will change on copy ***
 end:

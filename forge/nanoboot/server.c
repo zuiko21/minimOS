@@ -67,8 +67,9 @@ void dato(int x) {
 		bit = x & 1;
 		digitalWrite(CB2, bit);
 		digitalWrite(CB1, 0);
+delay(1);
 		digitalWrite(CB1, 1);
-//		printf("%d", bit);//placeholder
+//		printf("%d", bit);/*placeholder*/
 		x >>= 1;
 		i--;
 	}
