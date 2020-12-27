@@ -1,4 +1,4 @@
-; startup nanoBoot for 6502, v0.3a1
+; startup nanoBoot for 6502, v0.3a2
 ; (c) 2018-2020 Carlos J. Santisteban
 ; last modified 20201227-0111
 
@@ -82,10 +82,10 @@ nb_tab:
 ; *** routine waits for a fully received byte (in A) and clear flags ***
 ; **********************************************************************
 ; affects X
-; whole byte takes at least 542t, or 614 w/TO (670 worst case)
-; with display these times become 766, 838 or 894t
+; whole byte takes at least 528t, or 600 w/TO (656 worst case)
+; with display these times become 752, 824 or 880t, no less than 1136 B/s
 nb_rec:
-; *** standard overhead per byte is 14t, or 22t with timeout ***
+; *** standard overhead per byte is 16t, or 24t with timeout ***
 	LDX #8					; number of bits per byte (2)
 	STX nb_flag				; preset bit counter (3)
 #ifdef	TIMEBOOT
@@ -104,7 +104,7 @@ nb_gbit:
 nb_cont:
 #else
 nb_gbit:
-; *** base loop is 6 cycles, plus interrupts => 66t/bit => 528t/byte ***
+; *** base loop is 6 cycles, plus interrupts => 64t/bit => 512t/byte ***
 #endif
 ; sample code for LED display, constant 28t overhead (224 per byte)
 ;		LDX nb_cur			; current position (3)
@@ -119,6 +119,7 @@ nb_gbit:
 		LDX nb_flag			; received something? (3)
 		BNE nb_gbit			; no, keep trying (3/2)
 	LDA nb_rcv				; get received (3)
+	EOR #$FF				; must invert byte, as now works the opposite (2)
 	RTS
 ; might include a second routine, without display updating nor timeout
 
