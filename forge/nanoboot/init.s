@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502, v0.3a1
 ; (c) 2018-2020 Carlos J. Santisteban
-; last modified 20201226-1311
+; last modified 20201227-0111
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (No longer need to be reset!)
@@ -50,20 +50,18 @@ nb_loop:
 	TAY						; last byte loaded is the index! (2)
 	LDX #0
 	STX nb_ptr				; ready for indirect-indexed (X known to be zero, or use STZ)
-; *** execute transfer *** worst case 55? clocks per byte plus both interrupts
-nb_get:
-		JSR nb_rec			; wait for byte in A, affects X ()
-		STA (nb_ptr), Y		; store at destination (5 or 6)
+; *** execute transfer ***
 ; *** performance when using NMI/IRQ ***
-
-; *** performance when using SO (no IRQ) *** must revise
-; interrupt cycle becomes at worst 24+7+6 = 37 clocks (27 kbps @ 1 MHz)
-; including delay for each received byte is 92 clocks, 10.87 kbps
+; total overhead per byte (over nb_rec execution) is typically 17t
+; *** performance when using SO (no IRQ) ***
+nb_get:
+		JSR nb_rec			; wait for byte in A, affects X (6+...)
+		STA (nb_ptr), Y		; store at destination (5 or 6)
 		INY					; next (2)
 		BNE nbg_nw			; check MSB too (3/7)
 			INC nb_ptr+1
 nbg_nw:
-		CPY nb_fin			; check whether ended (3)
+		CPY nb_fin			; check whether ended (3) *** MUST REVISE *** may not stop outside page boundaries
 		BNE nb_get			; no, continue (3/11/10)
 			LDA nb_ptr+1	; check MSB too
 			CMP nb_fin+1
@@ -84,7 +82,10 @@ nb_tab:
 ; *** routine waits for a fully received byte (in A) and clear flags ***
 ; **********************************************************************
 ; affects X
+; whole byte takes at least 542t, or 614 w/TO (670 worst case)
+; with display these times become 766, 838 or 894t
 nb_rec:
+; *** standard overhead per byte is 14t, or 22t with timeout ***
 	LDX #8					; number of bits per byte (2)
 	STX nb_flag				; preset bit counter (3)
 #ifdef	TIMEBOOT
@@ -92,6 +93,7 @@ nb_rec:
 	STX timeout				; preset timeout counter for ~0.92 s @ 1 MHz (3+3)
 	STX timeout+1
 nb_gbit:
+; *** optional timeout adds typically 8 cycles to loop, plus 7t sometimes ***
 		DEC timeout			; one less to go (5)
 		BNE nb_cont			; if still within time, continue waiting after 8 extra cycles (3/2)
 			DEC timeout+1	; update MSB too otherwise (5)
@@ -102,11 +104,23 @@ nb_gbit:
 nb_cont:
 #else
 nb_gbit:
+; *** base loop is 6 cycles, plus interrupts => 66t/bit => 528t/byte ***
 #endif
+; sample code for LED display, constant 28t overhead (224 per byte)
+;		LDX nb_cur			; current position (3)
+;		LDA nb_disp, X		; get pattern (4)
+;		STA via_pb			; put on anodes (4)
+;		LDA nb_col, X		; get selected common cathode (4)
+;		STA via_pa			; set it (4)
+;		INX					; next char (2+2)
+;		TXA
+;		AND #3				; on a four digit display (2)
+;		STA nb_cur			; update for next round (3)
 		LDX nb_flag			; received something? (3)
 		BNE nb_gbit			; no, keep trying (3/2)
 	LDA nb_rcv				; get received (3)
 	RTS
+; might include a second routine, without display updating nor timeout
 
 ; **********************************************************************
 ; *** in case nonvalid header is detected, reset or continue booting ***
