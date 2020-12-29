@@ -1,78 +1,95 @@
 /* nanoBoot server for Raspberry Pi! *
  * (c) 2020 Carlos J. Santisteban    *
- * last modified 20201227-1820       */
+ * last modified 20201229-1743       */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
+/* needs -lwiringPi option */
 
-/* definición de pines, 36-38-40 en el conector, BCM 16-20-21 */
+/* piin definition, 36-38-40 at header, BCM 16-20-21 */
 #define	CB1		27
 #define	CB2		28
 #define	STB		29
 
-/* prototipos */
+/* prototypes */
 void dato(int x);
 
-/* *** programa principal *** */
+/* *** main code *** */
 int main(void) {
 	FILE*	f;
 	int		i, c, fin, ini;
 	char	nombre[80];
 
-/* preparar GPIO */
+/* GPIO setup */
 	wiringPiSetup();
-	digitalWrite(CB1, 1);
+	digitalWrite(CB1, 1);	/* clock initially disabled */
 	pinMode(CB1, OUTPUT);
 	pinMode(CB2, OUTPUT);
 	pinMode(STB, OUTPUT);
-/* abrir archivo original */
-	printf("Archivo: ");
+/* open source file */
+	printf("File: ");
 	scanf("%s", nombre);
 	if ((f = fopen(nombre, "rb")) == NULL) {
-		printf("*** NO EXISTE EL ARCHIVO ***\n");
+		printf("*** NO SUCH FILE ***\n");
 		return -1;
 	}
-/* preparar parámetros de cabecera */
-	printf("Dirección (en decimal): ");
-	scanf("%d", &ini);
+/* compute header parameters */
+	printf("Address (HEX): ");
+	scanf("%x", &ini);
 	fseek(f, 0, SEEK_END);
-	fin = ini + ftell(f);
-	printf("Son %d bytes...\n\n", fin-ini);
-/* generar cabecera */
-	dato(0x4B);
-	dato(fin>>8);
-	dato(fin&255);
-	dato(ini>>8);
-	dato(ini&255);
-/* enviar archivo binario */
+	fin = ftell(f);
+	printf("It's %d bytes long...\n\n", fin);
+	fin += ini;				/* nanoBoot mandatory format */
+/* send header */
+	cabe(0x4B);
+	cabe(fin>>8);
+	cabe(fin&255);
+	cabe(ini>>8);
+	cabe(ini&255);
+/* send binary */
 	rewind(f);
-	printf("¡¡¡TOMA!!! ¡Todo pa´dentro, maricón!\n");
+	printf("GO!!!\n");
 	for (i=ini; i<fin; i++) {
-		if (i&255 == 0)		delay(1);
+		if (i&255 == 0)
+			delay(2);		/* page crossing may need some time */
 		c = fgetc(f);
 		dato(c);
 	}
-	printf("Acaba en %d\n", fin);
+	printf("Ending at $%04X\n", fin);
 	fclose(f);
 	
 	return 0;
 }
 
-/* *** definición de funciones *** */
-void dato(int x) {
+/* *** function definitions *** */
+void cabe(int x) {			/* just like dato() but with longer bit delay, whole header takes ~85 ms */
 	int bit, i = 8;
 	
 	while(i>0) {
 		bit = x & 1;
 		digitalWrite(CB2, bit);
 		digitalWrite(CB1, 0);
-delay(1);
+		delay(2);			/* way too long, just in case */
 		digitalWrite(CB1, 1);
-//		printf("%d", bit);/*placeholder*/
 		x >>= 1;
 		i--;
 	}
-	delay(1);
-//	printf(" ");//placeholder
+	delay(1);				/* shouldn't be needed, but won't harm anyway */
+}
+
+void dato(int x) {			/* send a byte at 'top' speed */
+	int bit, i = 8;
+	
+	while(i>0) {
+		bit = x & 1;
+		digitalWrite(CB2, bit);
+		digitalWrite(CB1, 0);
+		delay(1);	// should be much shorter, 75 µs or so (at 1 MHz)
+		digitalWrite(CB1, 1);
+/* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
+		x >>= 1;
+		i--;
+	}
+	delay(1);	// should be quite shorter, perhaps 200 µs or so
 }
