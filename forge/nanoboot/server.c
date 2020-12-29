@@ -1,18 +1,19 @@
 /* nanoBoot server for Raspberry Pi! *
  * (c) 2020 Carlos J. Santisteban    *
- * last modified 20201229-1743       */
+ * last modified 20201229-1750       */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
 /* needs -lwiringPi option */
 
-/* piin definition, 36-38-40 at header, BCM 16-20-21 */
+/* pin definitions, 36-38-40 at header, BCM 16-20-21 */
 #define	CB1		27
 #define	CB2		28
 #define	STB		29
 
 /* prototypes */
+void cabe(int x);
 void dato(int x);
 
 /* *** main code *** */
@@ -49,7 +50,7 @@ int main(void) {
 	cabe(ini&255);
 /* send binary */
 	rewind(f);
-	printf("GO!!!\n");
+	printf("*** GO!!! ***\n");
 	for (i=ini; i<fin; i++) {
 		if (i&255 == 0)
 			delay(2);		/* page crossing may need some time */
