@@ -1,5 +1,5 @@
 ; minimOS 0.5a1 disassembler
-; (c) 2015-2020 Carlos J. Santisteban
+; (c) 2015-2021 Carlos J. Santisteban
 ; last modified 20151111-1320
 
 ; Opcode list as bit-7 terminated strings

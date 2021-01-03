@@ -1,6 +1,6 @@
 ; SS-22 driver variables for minimOS
 ; v0.5a1, OBSOLETE since 2015
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20150212-1211
 
 ss_speed	.byt	0	; speed code for reception

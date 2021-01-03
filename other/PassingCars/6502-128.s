@@ -1,6 +1,6 @@
 ; Simple 65(C)02 code for the Passing Cars exercise
 ; https://app.codility.com/programmers/lessons/5-prefix_sums/passing_cars
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 
 ; *** CAVEATS ***
 ; No execution limit

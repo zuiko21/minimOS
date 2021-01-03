@@ -1,6 +1,6 @@
-; *** RAM probe for 65(C)02 v2       ***
-; *** (c) 2020 Carlos J. Santisteban ***
-; *** last modified 20201208-1635    ***
+; ***     RAM probe for 65(C)02 v2        ***
+; *** (c) 2020-2021 Carlos J. Santisteban ***
+; ***    last modified 20201208-1635      ***
 
 	.zero
 ; *** zeropage declarations ***

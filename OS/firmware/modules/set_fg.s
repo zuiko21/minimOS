@@ -1,5 +1,5 @@
 ; *** SET_FG, enable/disable frequency generator (Phi2/n) on VIA_FG *** revised 20150208...
-; (c) 2015-2020 Carlos J. Santisteban
+; (c) 2015-2021 Carlos J. Santisteban
 ; last modified 20190206-0901
 
 ; **************************************************

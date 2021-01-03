@@ -1,6 +1,6 @@
 ; ejecucion drivers
 ; escrito el 20141001
-; (c) 2014-2020 Carlos J. Santisteban
+; (c) 2014-2021 Carlos J. Santisteban
 	LDX #0
 bucle:
 		PHX

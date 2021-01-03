@@ -1,6 +1,6 @@
-/* nanoBoot server for Raspberry Pi! *
- * (c) 2020 Carlos J. Santisteban    *
- * last modified 20201229-1750       */
+/* nanoBoot server for Raspberry Pi!   *
+ * (c) 2020-2021 Carlos J. Santisteban *
+ * last modified 20201229-1750         */
 
 #include <stdio.h>
 #include <stdlib.h>

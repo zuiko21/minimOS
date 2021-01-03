@@ -1,7 +1,7 @@
 ; includes for minimOS drivers
 ; Acapulco specific configuration!
 ; v0.6b1
-; (c) 2019-2020 Carlos J. Santisteban
+; (c) 2019-2021 Carlos J. Santisteban
 ; last modified 20190204-1300
 
 #define		DRIVERS		1

@@ -1,4 +1,4 @@
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 ; Y = device ID
 	TYA
 	BPL log_dev		; it's a logical device, don't check any drivers yet

@@ -2,7 +2,7 @@
  * converts 8bit WAV into dithered      *
  * PWM for VIA's shift register         *
  *
- * (c) 2019-2020 Carlos J. Santisteban  *
+ * (c) 2019-2021 Carlos J. Santisteban  *
  * last modified 20190517-1045          *
  */
 

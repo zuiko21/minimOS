@@ -1,7 +1,7 @@
 ; includes for minimOS drivers
 ; Chihuahua PLUS specific configuration!
 ; v0.6b4
-; (c) 2015-2020 Carlos J. Santisteban
+; (c) 2015-2021 Carlos J. Santisteban
 ; last modified 20190215-0959
 
 #define		DRIVERS		1

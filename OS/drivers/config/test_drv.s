@@ -1,7 +1,7 @@
 ; includes for minimOS drivers
 ; EMPTY configuration for testing purposes!
 ; v1.0
-; (c) 2016-2020 Carlos J. Santisteban
+; (c) 2016-2021 Carlos J. Santisteban
 ; last modified 20180405-1401
 
 #define		DRIVERS		_DRIVERS

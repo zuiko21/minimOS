@@ -1,5 +1,5 @@
 ; *** alternate netboot Lboot module for minimOS ***
-; (c) 2015-2020 Carlos J. Santisteban Salinas
+; (c) 2015-2021 Carlos J. Santisteban Salinas
 ; last modified 20150304-0945
 ; revised 20160115 for commit *** perhaps obsolete ***
 

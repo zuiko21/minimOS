@@ -1,5 +1,5 @@
 ; Acapulco firmware module for minimOS
-; (c) 2019-2020 Carlos J. Santisteban
+; (c) 2019-2021 Carlos J. Santisteban
 ; last modified 20190320-0848
 
 ; *** set Acapulco video mode at boot ***

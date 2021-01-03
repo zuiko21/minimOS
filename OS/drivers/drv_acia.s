@@ -1,6 +1,6 @@
 ; 65(C)51 ACIA driver for minimOS
 ; v0.5b3
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20150929-0944
 ; revised 20160928 FOR NEW INTERFACE
 ; revised 20200121 for debug headers

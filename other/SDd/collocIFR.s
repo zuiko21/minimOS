@@ -1,4 +1,4 @@
-; (c) 2013-2020 Carlos J. Santisteban
+; (c) 2013-2021 Carlos J. Santisteban
 * = 2
 ; zero-page variables
 user	.byt 0	; minimOS compatibility

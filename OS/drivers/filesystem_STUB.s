@@ -1,5 +1,5 @@
 ; filesystem fopen routine for minimOS 0.5a1, seems *OBSOLETE* since 2015
-; (c) 2015-2020 Carlos J. Santisteban
+; (c) 2015-2021 Carlos J. Santisteban
 ; last modified 20150306-1422
 
 ; *** fopen alternative code ***

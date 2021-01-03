@@ -1,6 +1,6 @@
 ; Intel 8080/8085 emulator for minimOS-16!!!
 ; v0.1b4
-; (c) 2016-2020 Carlos J. Santisteban
+; (c) 2016-2021 Carlos J. Santisteban
 ; last modified 20180404-1425
 
 #include "../../OS/usual.h"

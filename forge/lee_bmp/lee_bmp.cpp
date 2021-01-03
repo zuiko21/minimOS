@@ -1,4 +1,4 @@
-/* (c) 2020 Carlos J. Santisteban */
+/* (c) 2020-2021 Carlos J. Santisteban */
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>

@@ -1,7 +1,7 @@
 ; firmware module for most minimOS machines
 ; startup beep code 0.9.2b1
 ; 0.9 originally supplied with minimOS 0.4rc
-; (c) 2013-2020 Carlos J. Santisteban
+; (c) 2013-2021 Carlos J. Santisteban
 ; last modified 20180404-1404
 ; revised 20160115 for commit with new filenames
 

@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; suitable for SDd with LED keypad and KIM-like monitor
 ; copy or link as options.h in root dir
-; (c) 2015-2020 Carlos J. Santisteban
+; (c) 2015-2021 Carlos J. Santisteban
 ; last modified 20200110-1045
 
 ; *** set conditional assembly ***

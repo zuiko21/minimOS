@@ -1,6 +1,6 @@
 ; static variables for minimOS drivers
 ; empty file for testing purposes!
-; (c) 2016-2020 Carlos J. Santisteban
+; (c) 2016-2021 Carlos J. Santisteban
 ; last modified 20180404-1346
 
 ; optional multitasking

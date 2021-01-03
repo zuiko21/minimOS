@@ -2,7 +2,7 @@
 ; empty file for testing purposes
 ; copy or link as options.h in root dir
 ; seems OBSOLETE since 2018
-; (c) 2016-2020 Carlos J. Santisteban
+; (c) 2016-2021 Carlos J. Santisteban
 ; last modified 20180801-2043
 
 ; *** set conditional assembly ***

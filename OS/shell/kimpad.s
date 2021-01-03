@@ -1,7 +1,7 @@
 ; KIM-like shell for minimOS, suitable for LED keypad!
 ; v0.1a8
 ; last modified 20200121-1321
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 
 #ifndef	HEADERS
 #ifdef		TESTING

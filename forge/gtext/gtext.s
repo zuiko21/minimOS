@@ -1,6 +1,6 @@
 ; print text on arbitrary pixel boundaries
 ; 65C02-version
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 ; last modified 20201224-1156
 
 ; assume 8x8 pixel font, bitmap or planar VRAM layout

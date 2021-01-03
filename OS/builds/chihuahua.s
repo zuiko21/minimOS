@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; specific config for CHIHUAHUA
 ; v0.6b5
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20180114-1548
 
 ; create ready-to-blow ROM image

@@ -1,6 +1,6 @@
 ; 6800 emulator for minimOS! *** COMPACT VERSION ***
 ; v0.1b2 -- complete minus hardware interrupts!
-; (c) 2016-2020 Carlos J. Santisteban
+; (c) 2016-2021 Carlos J. Santisteban
 ; last modified 20160923-0935
 
 #include "../../OS/options.h"	; machine specific

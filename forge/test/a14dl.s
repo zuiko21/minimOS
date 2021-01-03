@@ -1,6 +1,6 @@
 ; sound test (speaker on some of A14-A6)
 ; *** RAM-copied version ***
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 ; last modified 20201226-1653
 
 	.text

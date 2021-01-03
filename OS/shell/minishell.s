@@ -2,7 +2,7 @@
 ; v0.5.2rc2
 ; like 0.5.1 for 0.6 ABI/API!
 ; last modified 20190129-0958
-; (c) 2016-2020 Carlos J. Santisteban
+; (c) 2016-2021 Carlos J. Santisteban
 
 #ifndef	HEADERS
 #include "../usual.h"

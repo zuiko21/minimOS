@@ -1,6 +1,6 @@
 ; 64-key ASCII keyboard for minimOS!
 ; v0.6.1a2
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20201009-1011
 ; new VIAport interface version
 

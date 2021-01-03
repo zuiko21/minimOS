@@ -1,6 +1,6 @@
 ; static variables for minimOS drivers
 ; v0.9b3
-; (c) 2017-2020 Carlos J. Santisteban
+; (c) 2017-2021 Carlos J. Santisteban
 ; last modified 20190215-0955
 
 ; ***** none needed for the simple drv_run02.s driver! *****

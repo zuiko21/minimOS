@@ -1,7 +1,7 @@
 ; DEBUG bus-sniffer driver for minimOS
 ; v0.9.3b2, makeshift single-byte size version
 ; 0.6 API version 20170831
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20200121-1342
 
 #ifndef		HEADERS

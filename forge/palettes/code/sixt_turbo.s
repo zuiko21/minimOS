@@ -1,5 +1,5 @@
 ; SIXtation TURBO splash screen
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 ; last modified 20200411-1733
 
 ; must horizontally scroll a 1152x32 image, 32px (2 words) per frame!

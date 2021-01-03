@@ -2,7 +2,7 @@
 ; memory size estimation (needs mirroring, undecoded areas not allowed)
 ; 20-bit Jalapa version
 ; v0.6a4
-; (c) 2017-2020 Carlos J. Santisteban
+; (c) 2017-2021 Carlos J. Santisteban
 ; last modified 20180124-1320
 
 .(

@@ -1,5 +1,5 @@
 ; firmware module for minimOS·16
-; (c) 2018-2020 Carlos J. Santisteban
+; (c) 2018-2021 Carlos J. Santisteban
 ; last modified 20181210-1014
 
 ; *** start a 65816-based kernel ***

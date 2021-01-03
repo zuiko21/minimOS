@@ -1,5 +1,5 @@
 /* opcode list reader for minimOS crasm package
- * (c) 2020 Carlos J. Santisteban
+ * (c) 2020-2021 Carlos J. Santisteban
  * last modified 20200225-1037
  * */
 

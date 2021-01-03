@@ -1,6 +1,6 @@
 ; minimOS driver for Acapulco built-in VDU
 ; variables for v0.6
-; (c) 2019-2020 Carlos J. Santisteban, just in case
+; (c) 2019-2021 Carlos J. Santisteban, just in case
 ; last modified 20200117-1434
 
 ; surely needed variables

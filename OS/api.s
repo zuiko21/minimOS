@@ -1,6 +1,6 @@
 ; minimOS generic Kernel API
 ; v0.6rc27, must match kernel.s
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20190830-2305
 ; no way for standalone assembly...
 

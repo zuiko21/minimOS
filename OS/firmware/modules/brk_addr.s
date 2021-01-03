@@ -1,5 +1,5 @@
 ; firmware module for minimOS·65
-; (c) 2017-2020 Carlos J. Santisteban
+; (c) 2017-2021 Carlos J. Santisteban
 ; last modified 20180905-1728
 
 ; *** preset default BRK handler *** temporarily set as default NMI

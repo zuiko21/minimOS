@@ -1,5 +1,5 @@
 ; minimOS 0.5??? signal handling
-; (c) 2014-2020 Carlos J. Santisteban
+; (c) 2014-2021 Carlos J. Santisteban
 ; last modified 20141210-1015
 
 ; *** KILL process indicated on Y (1...) ***

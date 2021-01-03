@@ -2,7 +2,7 @@
 ; suitable for Jalapa with 65816 miniBus card!
 ; copy or link as options.h in root dir
 ; seems OBSOLETE since 2018
-; (c) 2015-2020 Carlos J. Santisteban
+; (c) 2015-2021 Carlos J. Santisteban
 ; last modified 20180801-2038
 
 ; *** set conditional assembly ***

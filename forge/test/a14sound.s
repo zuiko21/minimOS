@@ -1,6 +1,6 @@
 ; sound test (speaker on A14)
 ; *** downloadable version ***
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 ; last modified 20201226-1554
 
 	.text

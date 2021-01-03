@@ -1,6 +1,6 @@
 ; minimOS 0.6rc22 API/ABI
 ; *** not compatible with earlier versions ***
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20190920-2248
 
 ; *************************************************

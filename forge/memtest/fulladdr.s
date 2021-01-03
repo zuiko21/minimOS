@@ -1,5 +1,5 @@
-; FW module extensive memory test for minimOS
-; (c) 2020 Carlos J. Santisteban
+; FW module extensive memory test for minimOS *** likely to be OBSOLETE
+; (c) 2020-2021 Carlos J. Santisteban
 ; last modified 20200509-1207
 
 ; *** check zeropage ***

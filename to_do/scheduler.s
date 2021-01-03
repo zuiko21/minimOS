@@ -1,5 +1,5 @@
 ; minimOS software multitasking
-; (c) 2014-2020 Carlos J. Santisteban
+; (c) 2014-2021 Carlos J. Santisteban
 ; last modified: 20141010-1109
 
 ; local definitions

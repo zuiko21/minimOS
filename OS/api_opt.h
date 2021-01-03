@@ -1,5 +1,5 @@
 ; minimOS 0.6rc7 FAST API calls
-; (c) 2018-2020 Carlos J. Santisteban
+; (c) 2018-2021 Carlos J. Santisteban
 ; last modified 20180411-0855
 
 #ifdef	FAST_API

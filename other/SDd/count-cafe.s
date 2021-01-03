@@ -1,4 +1,4 @@
-; (c) 2013-2020 Carlos J. Santisteban
+; (c) 2013-2021 Carlos J. Santisteban
 * = $F800
 
 reset:	SEI

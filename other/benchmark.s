@@ -1,4 +1,4 @@
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 .o1f00
 ; repeat 10 times .c $2000
 LDA #0A

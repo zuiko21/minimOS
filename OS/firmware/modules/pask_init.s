@@ -1,5 +1,5 @@
 ; firmware module for minimOS·65
-; (c) 2019-2020 Carlos J. Santisteban
+; (c) 2019-2021 Carlos J. Santisteban
 ; last modified 20200509-1635
 
 ; *** initialise PASK ***

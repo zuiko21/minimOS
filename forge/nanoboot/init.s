@@ -1,5 +1,5 @@
 ; startup nanoBoot for 6502, v0.3a4
-; (c) 2018-2020 Carlos J. Santisteban
+; (c) 2018-2021 Carlos J. Santisteban
 ; last modified 20201229-0100
 
 ; *** needed zeropage variables ***

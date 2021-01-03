@@ -1,6 +1,6 @@
 ; 65(C)51 ACIA driver variables for minimOS
 ; v0.5a1, seems OBSOLETE anyway...
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20150211-0907
 
 ser_cont	.byt	0	; number of characters stored in buffer

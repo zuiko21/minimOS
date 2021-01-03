@@ -1,5 +1,5 @@
 ; latch addressing test
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 ; last modified 20201225-1928
 
 	.zero

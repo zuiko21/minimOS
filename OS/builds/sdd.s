@@ -1,7 +1,7 @@
 ; minimOS ROM template
 ; specific config for SDd
 ; v0.6.1a1
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20200113-1000
 
 ; create ready-to-blow ROM image (xa ... builds/sdd.s -I builds/ ...)

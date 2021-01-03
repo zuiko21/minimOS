@@ -1,6 +1,6 @@
 ; minimOS generic Kernel API for LOWRAM systems
 ; v0.6rc22
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20190201-1128
 
 ; jump table, if not in separate 'jump' file

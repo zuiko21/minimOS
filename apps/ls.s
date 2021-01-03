@@ -1,7 +1,7 @@
 ; ROM header listing for minimOS!
 ; v0.5rc1
 ; last modified 20180404-1423
-; (c) 2016-2020 Carlos J. Santisteban
+; (c) 2016-2021 Carlos J. Santisteban
 
 #include "../OS/usual.h"
 .(

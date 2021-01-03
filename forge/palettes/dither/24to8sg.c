@@ -1,5 +1,5 @@
 /*	24-bit dithering for 8-bit SIXtation palette
- *	(c) 2019-2020 Carlos J. Santisteban
+ *	(c) 2019-2021 Carlos J. Santisteban
  *	last modified 20191128-0956 */
 
 #include <stdio.h>

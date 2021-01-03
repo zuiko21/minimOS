@@ -6,7 +6,7 @@
 ; port bits 0...2 = 3-to-8 decoder input ('238 -> '245 or '138 -> '240)
 ; (buffered) decoder outputs 0...7 go to anode pins on LEDs A9...A6, then B9...B6 -- NOTE ORDER!
 ; bitmap format is now abc*defg, simplifying both hard and soft
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 ; last modified 20201217-1817
 
 	.zero

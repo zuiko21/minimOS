@@ -1,6 +1,6 @@
 ; Hitachi LCD for minimOS *** O B S O L E T E ***
 ; v0.6a4
-; (c) 2018-2020 Carlos J. Santisteban
+; (c) 2018-2021 Carlos J. Santisteban
 ; last modified 20200121-1424
 
 ; new VIA-connected device ID is $10-17, will go into PB

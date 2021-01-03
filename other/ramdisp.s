@@ -1,5 +1,5 @@
 ; display detected non-mirrored RAM on mux. display
-; (c) 2020 Carlos J. Santisteban
+; (c) 2020-2021 Carlos J. Santisteban
 ; last modified 20201226-1101
 
 ; *** integrated with ramprobe.s and ltc4622s.s ***

@@ -1,6 +1,6 @@
 ; LED Keypad driver for minimOS
 ; v0.9.7b2 including KIM-like keys (0.6.x format)
-; (c) 2012-2020 Carlos J. Santisteban
+; (c) 2012-2021 Carlos J. Santisteban
 ; last modified 20200121-1329
 
 #ifndef		HEADERS

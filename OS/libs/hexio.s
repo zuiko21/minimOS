@@ -1,7 +1,7 @@
 ; shared library for minimOS
 ; hexadecimal routines
 ; version 0.5rc2, seems OBSOLETE since 2016
-; (c) 2016-2020 Carlos J. Santisteban
+; (c) 2016-2021 Carlos J. Santisteban
 ; last modified 20160512-0853
 
 #ifndef	HEXIO

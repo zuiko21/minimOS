@@ -1,7 +1,7 @@
 ; includes for minimOS drivers
 ; SDd with LED keypad specific configuration!
 ; v0.6.1a1
-; (c) 2015-2020 Carlos J. Santisteban
+; (c) 2015-2021 Carlos J. Santisteban
 ; last modified 20200110-1049
 
 #define		DRIVERS		1
