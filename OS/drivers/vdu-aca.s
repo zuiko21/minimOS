@@ -1,7 +1,7 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a16
 ; (c) 2019-2021 Carlos J. Santisteban
-; last modified 20200117-1411
+; last modified 20210107-0957
 
 #ifndef		HEADERS
 #ifdef			TESTING
@@ -294,6 +294,8 @@ vch_atyx:
 	SBC #' '			; from space and beyond
 ; compute new Y pointer...
 #ifdef	SAFE
+; note that any byte below 32 MUST be ignored if gtext is not supported!
+	BCC va_ngy			; just ignore this byte, keep waiting for MSB
 	CMP va_hght			; over screen size?
 	BCC vat_yok
 		_DR_ERR(INVALID)	; ignore if outside range
@@ -302,6 +304,7 @@ vat_yok:
 	STA va_y			; set new value
 	INC va_col			; flag expects second coordinate... routine pointer placed TWO bytes after!
 	INC va_col
+va_ngy:
 	_DR_OK				; just wait for the next coordinate
 
 ; * * ...and then expects column byte, note it is now 25, no longer 24! * *
@@ -310,6 +313,8 @@ vch_atcl:
 	SBC #' '			; from space and beyond
 ; add X and set cursor...
 #ifdef	SAFE
+; note that any byte below 32 MUST be ignored if gtext is not supported!
+	BCC va_ngy			; just ignore this byte, keep waiting for MSB
 	CMP va_wdth			; over screen size?
 	BCC vat_xok
 		_DR_ERR(INVALID)	; ignore if outside range
