@@ -125,10 +125,12 @@ Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
 4.Currently only low nibble used as `GRgB` or `G2 R2 G1 B2`. *High nibble may be used
 (when supported) as `R1 G0 R0 B1`*.
 
-5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0)
+5.Takes another TWO chars, _ASCII 32_ and up, stating row & column (home is 0,0).
+_These may be preceded by fixed-point LSBs for **graphic text**, and **must** be
+ignored otherwise (ASCII below 32)_.
 
 6.**Tektronix 4014** graphic modes, may take several bytes afterwards until back to text mode.
 
 7.May take _extra_ byte for screen sizes over 1024 pixels, but extra bits are MSB.
  
-_last modified 20200119-2156_
+_last modified 20210107-0945_
