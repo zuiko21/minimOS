@@ -1,7 +1,7 @@
 ; 8 KiB micro-VDU for minimOS!
 ; v0.6a3
 ; (c) 2019-2021 Carlos J. Santisteban
-; last modified 20200326-2144
+; last modified 20210107-1006
 
 #include "../usual.h"
 
@@ -180,6 +180,8 @@ vch_atyx:
 	SBC #' '			; from space and beyond
 ; compute new Y pointer...
 #ifdef	SAFE
+; note that any byte below 32 MUST be ignored if gtext is not supported!
+	BCC va_ngy			; just ignore this byte, keep waiting for MSB
 	CMP #VA_HGHT			; over screen size?
 	BCC vat_yok
 		_DR_ERR(INVALID)	; ignore if outside range
@@ -188,6 +190,7 @@ vat_yok:
 	STA va_y			; set new value
 	INC va_flag			; flag expects second coordinate... routine pointer placed TWO bytes after!
 	INC va_flag
+va_ngy:
 	_DR_OK				; just wait for the next coordinate
 
 ; * * ...and then expects column byte, note it is now 25, no longer 24! * *
@@ -196,6 +199,8 @@ vch_atcl:
 	SBC #' '			; from space and beyond
 ; add X and set cursor...
 #ifdef	SAFE
+; note that any byte below 32 MUST be ignored if gtext is not supported!
+	BCC va_ngy			; just ignore this byte, keep waiting for MSB
 	CMP #VA_WDTH			; over screen size?
 	BCC vat_xok
 		_DR_ERR(INVALID)	; ignore if outside range
