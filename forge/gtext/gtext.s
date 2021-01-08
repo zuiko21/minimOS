@@ -1,7 +1,7 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210108-0024
+; last modified 20210108-1219
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
@@ -30,6 +30,7 @@ x_pos	.dsb	2			; 16-bit x-position, fixed-point (5b LSB first, then 8b MSB)
 ; systems with "wide" hardware chars (e.g. SIXtation) would take that into account when computing addresses
 y_pos	.dsb	2			; 16-bit y-position, fixed-point (5b LSB first, then 8b MSB)
 char	.dsb	1			; ASCII to be printed
+l_byt	.dsb	1			; last byte for each scanline (number of bytes minus 1)
 
 ; *** required constants *** may be in RAM for versatilty
 
@@ -88,6 +89,10 @@ print:
 	CLC
 	ADC x_pos				; interestingly, add offset for mask positioning (already equalised) (3)
 	TAX						; how many bits must our mask be shifted? compute first! (2)
+	LSR						; how many bytes does it take? divide by 8!
+	LSR
+	LSR
+	STA l_byt				; store for later *** CHECK ***
 	LDA #$FF				; set mask before rotating EEEEEEEEK (2)
 	STA mask+1				; remaining bytes in memory (3+3)
 	STA mask+2
@@ -98,6 +103,7 @@ print:
 mk_set:
 		CLC					; insert a LOW bit... EEEEEK (2)*w
 mk_rot:
+; *** might optimise as loops a lot of times
 			ROR				; ...into LSB... (2)*(w+o)
 			ROR mask+1		; ...and the rest (5+5)*(w+o)
 			ROR mask+2
@@ -132,14 +138,11 @@ mk_rot:
 ; *** worst case s=32, b=4, o=7 *** 
 ; prepare scanline counter, fortunately X is kept all the time
 	LDX #0					; worth doing forward this time (2) [grand total from here is 12799t]
+; *** the above has little effect on performance, may become a RAM variable
 gs_loop:
 ; *** this must be done for every scanline ***
 ; copy (unshifted) scanline at 'scan' [takes up to 1952t]
-#ifdef	GW16
-		LDY #1				; will copy 2 bytes for scanline (2)*s
-#else
-		LDY #3				; will copy 4 bytes for scanline, not sure if worth optimising further
-#endif
+		LDY l_byt			; get bytes to be copied (n-1) *** SEEMS OK
 gs_cp:
 			LDA (f_ptr), Y
 			STA scan, Y		; this is absolute! may not work on '816 (5+5+2+3')*s*b
@@ -148,6 +151,7 @@ gs_cp:
 ; shift scanline pretty much like the mask after inserting all bits [takes up to 6304]
 		LDY x_pos			; thanks to now equalised fixed-point, this is the number of bits to be shifted (3+3)*s
 		LDA scan
+; *** might use X as a loop to make just the needed rotations, no A involved
 gs_mr:
 			LSR				; rotate right all bytes (2+5+5)*s*o
 			ROR scan+1
@@ -160,11 +164,8 @@ gs_mr:
 			BPL gs_mr
 		STA scan			; EEEEEEEEK (3)*s
 ; *** now read from VRAM, AND with 'mask' and OR with glyph data at 'scan' [takes up to 3104t]
-#ifdef	GW16
-		LDY #1				; will operate on 2 bytes for scanline (2)*s
-#else
-		LDY #3				; will operate on 4 bytes for scanline, not sure if worth optimising
-#endif
+		LDY l_byt			; get last byte for copies... *** SEEMS OK
+		INY					; ...and add one more for dealing with screen!
 blit:
 			LDA (v_ptr), Y	; get screen data (5)*s*b
 			AND mask, Y		; clear where the glyph goes *** note for 65816 (4)*s*b
@@ -175,11 +176,7 @@ blit:
 ; now prepare for the next scanline! [up to 1439t, including all overhead except mask creation]
 		LDA f_ptr+1			; get font pointer MSB (3)*s
 		CLC					; will jump to next scanline, note planar-like format (2)*s
-#ifdef	GW16
-		ADC #2				; 512 bytes ahead (2)*s
-#else
-		ADC #4				; 1 K ahead
-#endif
+		ADC l_byt			; advance 512 or 1K *** CHECK
 		STA f_ptr+1			; (3)*s
 ; ...but now must advance v_ptr too, with the help of the offset array!
 		LDY y_pos			; get this part of the coordinate (no need to equalise this) (3+3+2)*s
