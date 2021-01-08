@@ -1,7 +1,7 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210108-1219
+; last modified 20210108-1238
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
@@ -30,7 +30,9 @@ x_pos	.dsb	2			; 16-bit x-position, fixed-point (5b LSB first, then 8b MSB)
 ; systems with "wide" hardware chars (e.g. SIXtation) would take that into account when computing addresses
 y_pos	.dsb	2			; 16-bit y-position, fixed-point (5b LSB first, then 8b MSB)
 char	.dsb	1			; ASCII to be printed
-l_byt	.dsb	1			; last byte for each scanline (number of bytes minus 1)
+l_byt	.dsb	1			; last font byte for each scanline (number of bytes minus 1)
+l_msk	.dsb	1			; last mask byte for each scanline (number of bytes minus 1, usually l_byt+1 but not always)
+count	.dsb	1			; RAM variable for loops, allowing free use of X
 
 ; *** required constants *** may be in RAM for versatilty
 
@@ -47,7 +49,7 @@ hght	.dsb	1			; font height
 ; assuming i[x,y] where i is the character, x is the horizontal byte 0...3 (0 the leftmost) and y the scanline
 ; 0[0,0]-0[1,0]-0[2,0]-0[3,0]-1[0,0] ... 255[3,0]-0[0,1]-0[1,1]-0[2,1] ... 255[3,31] maximum
 ; *** could be cut in half if font is known to be up to 16 pixels wide (bytes 0...1) ***
-; widths array is as simple as a 256-byte structure, in pixels
+; widths array is as simple as a 256-byte structure, in pixels (minus one!)
 ; every scanline is 1024 bytes apart (512 if 16px maximum width)
 ; glyph pointer is base+asc*4 (or *2)
 
@@ -86,13 +88,18 @@ print:
 	LDY char				; get ASCII as index (3)
 	LDA (wdth), Y			; that character width (5)
 	TAY						; this is the number of bits to insert (2+2)
+	LSR						; how many bytes does it take? divide by 8!
+	LSR
+	LSR
+	STA l_byt				; store for later (glyph scan size)
+	TYA						; retrieve original bit-width value
 	CLC
 	ADC x_pos				; interestingly, add offset for mask positioning (already equalised) (3)
 	TAX						; how many bits must our mask be shifted? compute first! (2)
 	LSR						; how many bytes does it take? divide by 8!
 	LSR
 	LSR
-	STA l_byt				; store for later *** CHECK ***
+	STA l_msk				; store for later (last byte of mask)
 	LDA #$FF				; set mask before rotating EEEEEEEEK (2)
 	STA mask+1				; remaining bytes in memory (3+3)
 	STA mask+2
@@ -137,12 +144,11 @@ mk_rot:
 ; *** performance evaluation, s=scanlines, b=scan size in bytes, o=offset ***
 ; *** worst case s=32, b=4, o=7 *** 
 ; prepare scanline counter, fortunately X is kept all the time
-	LDX #0					; worth doing forward this time (2) [grand total from here is 12799t]
-; *** the above has little effect on performance, may become a RAM variable
+	_STZX count				; worth doing forward this time (3) [grand total from here is ]
 gs_loop:
 ; *** this must be done for every scanline ***
 ; copy (unshifted) scanline at 'scan' [takes up to 1952t]
-		LDY l_byt			; get bytes to be copied (n-1) *** SEEMS OK
+		LDY l_byt			; get bytes to be copied (n-1)
 gs_cp:
 			LDA (f_ptr), Y
 			STA scan, Y		; this is absolute! may not work on '816 (5+5+2+3')*s*b
@@ -150,6 +156,9 @@ gs_cp:
 			BPL gs_cp
 ; shift scanline pretty much like the mask after inserting all bits [takes up to 6304]
 		LDY x_pos			; thanks to now equalised fixed-point, this is the number of bits to be shifted (3+3)*s
+;**
+
+;**
 		LDA scan
 ; *** might use X as a loop to make just the needed rotations, no A involved
 gs_mr:
