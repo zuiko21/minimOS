@@ -1,7 +1,7 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210108-1427
+; last modified 20210111-1431
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
@@ -59,9 +59,6 @@ hght	.dsb	1			; font height
 
 init:
 ; must load 'font', 'wdth' with font data, also 'hght' and 'vram'
-	LDA font				; use base address for pointer
-	STA f_ptr
-	LDA font
 ; needs to fill offset tables! *** TO DO
 	RTS						; anything else to do?
 
@@ -126,6 +123,14 @@ mk_rot:
 		CPX #0				; what happened to the shift counter instead?
 		BPL mk_rot			; there is one more bit to rotate (C is known to be SET)
 	STA mask				; mask is complete!
+; that was for bitmaps, in case of a planar screen add the following
+;	LDY l_msk
+;im_l:
+;		LDA mask, Y
+;		EOR #$FF
+;		STA imsk, Y
+;		DEY
+;		BPL im_l
 ; make f_ptr point to base glyph data
 	_STZA f_ptr+1			; MSB of offset will be computed here
 	LDA char				; multiply ASCII by 2 or 4
@@ -145,7 +150,7 @@ mk_rot:
 
 ; *** performance evaluation, s=scanlines, b=scan top byte, m=mask top, o=offset ***
 ; prepare scanline counter
-	LDX #0				; worth doing forward this time (3) [grand total from here is ]
+	LDX #0					; worth doing forward this time (3) [grand total from here is ]
 gs_loop:
 ; *** this must be done for every scanline ***
 ; copy (unshifted) scanline at 'scan' [takes up to ]
@@ -170,10 +175,25 @@ gs_mr:
 			DEY				; (2+3')*s*o
 			BPL gs_mr
 		STA scan			; EEEEEEEEK (3)*s
+; that was for bitmaps, in case of a planar screen add the following
+;	LDY l_msk
+;is_l:
+;		LDA scan, Y
+;		EOR #$FF
+;		AND mask, Y			; eeek
+;		STA iscn, Y
+;		DEY
+;		BPL is_l
 ; *** now read from VRAM, AND with 'mask' and OR with glyph data at 'scan' [takes up to 3104t]
 v_draw:
 		LDY l_msk			; get last byte for drawing!
 blit:
+; this is for a bitmapped B/W screen
+; in case of planar screens, the ORA op will change according to the fg & bg bits
+; if both are 0, do nothing (skip the ORA, actually)
+; if both are 1, ORA imsk, Y -- which is an INVERTED copy of *mask*
+; if only fg is 1, proceed normally
+; if only bg is 1, ORA iscn, Y -- which is an (INVERTED copy of *scan*) AND mask
 			LDA (v_ptr), Y	; get screen data (5)*s*b
 			AND mask, Y		; clear where the glyph goes *** note for 65816 (4)*s*b
 			ORA scan, Y		; set glyph pixels *** ditto for 65816 (4)*s*b
