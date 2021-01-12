@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20201229-1750         */
+ * last modified 20210112-1758         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,8 +13,9 @@
 #define	STB		29
 
 /* prototypes */
-void cabe(int x);
-void dato(int x);
+void cabe(int x);	/* send header byte in a slow way */
+void dato(int x);	/* send data byte at full speed! */
+void usec(int x);	/* delay for specified microseconds */
 
 /* *** main code *** */
 int main(void) {
@@ -36,11 +37,11 @@ int main(void) {
 		return -1;
 	}
 /* compute header parameters */
-	printf("Address (HEX): ");
-	scanf("%x", &ini);
 	fseek(f, 0, SEEK_END);
 	fin = ftell(f);
-	printf("It's %d bytes long...\n\n", fin);
+	printf("It's %d bytes long ($%04X)\n\n", fin, fin);
+	printf("Address (HEX): ");
+	scanf("%x", &ini);
 	fin += ini;				/* nanoBoot mandatory format */
 /* send header */
 	cabe(0x4B);
@@ -52,12 +53,14 @@ int main(void) {
 	rewind(f);
 	printf("*** GO!!! ***\n");
 	for (i=ini; i<fin; i++) {
-		if (i&255 == 0)
+		if ((i&255) == 0) {
 			delay(2);		/* page crossing may need some time */
+			printf("$%02X...\n", i>>8);
+		}
 		c = fgetc(f);
 		dato(c);
 	}
-	printf("Ending at $%04X\n", fin);
+	printf("\nEnded at $%04X\n", fin);
 	fclose(f);
 	
 	return 0;
@@ -86,11 +89,19 @@ void dato(int x) {			/* send a byte at 'top' speed */
 		bit = x & 1;
 		digitalWrite(CB2, bit);
 		digitalWrite(CB1, 0);
-		delay(1);	// should be much shorter, 75 µs or so (at 1 MHz)
+		usec(75);			/* *** 75 µs or so (at 1 MHz) *** */
 		digitalWrite(CB1, 1);
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
 	}
-	delay(1);	// should be quite shorter, perhaps 200 µs or so
+	usec(200);				/* *** perhaps 200 µs or so *** */
+}
+
+void usec(int x){
+	int i, t;
+	
+	for (t=0; t<x; t++){
+		for (i=0; i<200; i++);	/* *** 200 iterations = 1 µs on RPi400 *** */
+	}
 }
