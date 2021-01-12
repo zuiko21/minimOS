@@ -1,28 +1,52 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210111-1436
+; last modified 20210112-1823
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
 ; this code assumes Amstrad VRAM layout, but could use C64-style layout as well, just changing the y-offset LUT
 
+; *** configuration options ***
+
 ; reducing MAX width to 16px dramatically improves things
 #define	GW16	_GW16
+
+; adds extra code for planar colour screens
+#define	PLANAR	_PLANAR 
+
+#ifdef	GW16
+#define	MSKSIZ	3
+#else
+#define	MSKSIZ	5
+#endif
+
+	.zero
 
 ; *** zero page variables ***
 
 f_ptr	.dsb	2			; indirect pointer for font reading
 v_ptr	.dsb	2			; indirect pointer for screen writing
 
+; *** required pointers *** in RAM for versatility
+
+font	.dsb	2			; font definition start pointer
+wdth	.dsb	2			; font widths pointer
+vram	.dsb	2			; screen start pointer
+hght	.dsb	1			; font height
+
 ; these are recommended to be in ZP because of performance reasons
-#ifdef	GW16
-mask	.dsb	3			; shiftable 16+8-bit mask for printing
-scan	.dsb	3			; copy of font scanline to be shifted
-#else
-mask	.dsb	5			; shiftable 32+8-bit mask for printing
-scan	.dsb	5			; copy of font scanline to be shifted
+mask	.dsb	MSKSIZ		; shiftable 32 (or 16)+8-bit mask for printing
+scan	.dsb	MSKSIZ		; copy of font scanline to be shifted
+
+#ifdef	PLANAR
+imsk	.dsb	MSKSIZ		; inverted versions of the above
+iscn	.dsb	MSKSIZ
+fg		.dsb	1			; foreground and background colours
+bg		.dsb	1
+nplan	.dsb	1			; number of planes
 #endif
+
 l_byt	.dsb	1			; last font byte for each scanline (number of bytes minus 1)
 l_msk	.dsb	1			; last mask byte for each scanline (number of bytes minus 1, usually l_byt+1 but not always)
 
@@ -32,14 +56,9 @@ x_pos	.dsb	2			; 16-bit x-position, fixed-point (5b LSB first, then 8b MSB)
 ; systems with "wide" hardware chars (e.g. SIXtation) would take that into account when computing addresses
 y_pos	.dsb	2			; 16-bit y-position, fixed-point (5b LSB first, then 8b MSB)
 char	.dsb	1			; ASCII to be printed
+off_l	.dsb	64			; LSB of offsets for twice the max scanlines
+off_h	.dsb	64			; MSB of the above
 count	.dsb	1			; RAM variable for loops, allowing free use of X
-
-; *** required constants *** may be in RAM for versatilty
-
-font	.dsb	2			; font definition start pointer
-wdth	.dsb	2			; font widths pointer
-vram	.dsb	2			; screen start pointer
-hght	.dsb	1			; font height
 
 ; ****************************************************************************
 ; *** font format TBD, but is very important, especially if variable width ***
@@ -124,15 +143,17 @@ mk_rot:
 		BPL mk_rot			; there is one more bit to rotate (C is known to be SET)
 	STA mask				; mask is complete!
 ; that was for bitmaps, in case of a planar screen add the following
-;	LDY l_msk
-;im_l:
-;		LDA mask, Y
-;		EOR #$FF
-;		STA imsk, Y
-;		DEY
-;		BPL im_l
+#ifdef	PLANAR
+	LDY l_msk
+im_l:
+		LDA mask, Y
+		EOR #$FF
+		STA imsk, Y			; create inverted (shifted) mask
+		DEY
+		BPL im_l
+#endif
 ; make f_ptr point to base glyph data
-	_STZA f_ptr+1			; MSB of offset will be computed here
+	STZ f_ptr+1				; (***CMOS***) MSB of offset will be computed here
 	LDA char				; multiply ASCII by 2 or 4
 	ASL
 	ROL f_ptr+1
@@ -152,7 +173,9 @@ mk_rot:
 ; prepare scanline counter
 	LDX #0					; worth doing forward this time (3) [grand total from here is ]
 gs_loop:
+; ********************************************
 ; *** this must be done for every scanline ***
+; ********************************************
 ; copy (unshifted) scanline at 'scan' [takes up to ]
 		LDY l_byt			; get bytes to be copied (n-1)
 gs_cp:
@@ -176,14 +199,16 @@ gs_mr:
 			BPL gs_mr
 		STA scan			; EEEEEEEEK (3)*s
 ; that was for bitmaps, in case of a planar screen add the following
-;	LDY l_msk
-;is_l:
-;		LDA scan, Y
-;		EOR #$FF
-;		AND mask, Y			; eeek
-;		STA iscn, Y
-;		DEY
-;		BPL is_l
+#ifdef	PLANAR
+	LDY l_msk
+is_l:
+		LDA scan, Y
+		EOR #$FF
+		AND mask, Y			; eeek
+		STA iscn, Y			; create inverted (rotated and masked!) scanline
+		DEY
+		BPL is_l
+#endif
 ; *** now read from VRAM, AND with 'mask' and OR with glyph data at 'scan' [takes up to 3104t]
 v_draw:
 		LDY l_msk			; get last byte for drawing!
@@ -196,7 +221,9 @@ blit:
 ; if only bg is 1, ORA iscn, Y -- which is an (INVERTED copy of shifted *scan*) AND mask
 			LDA (v_ptr), Y	; get screen data (5)*s*b
 			AND mask, Y		; clear where the glyph goes *** note for 65816 (4)*s*b
+; *** *** this op is to be changed for planar screens *** ***
 			ORA scan, Y		; set glyph pixels *** ditto for 65816 (4)*s*b
+; *** *** ******************************************* *** ***
 			STA (v_ptr), Y	; update screen (6+2+3')*s*b
 			DEY
 			BPL blit
@@ -210,66 +237,12 @@ blit:
 		LDA v_ptr
 		CLC
 		ADC off_l, Y		; add from offset table *** careful with 65816! (4+3)*s
-		STA v_pos
+		STA v_ptr
 		LDA v_ptr+1			; ditto for MSB (3+4+3)*s
 		ADC off_h, Y
-		STA v_pos+1
+		STA v_ptr+1
 ; fortunately respected X
 		INX
 		CPX hght			; all scanlines done? (2+3+3')*s
 		BNE gs_loop
 ; *** *** is it all done now? *** ***
-
-
-
-
-
-/* old code ***
-	STZ f_ptr+1				; reset for temporary use
-	LDA char				; get ascii
-	ASL						; 16-bit rotation, three times
-	ROL f_ptr+1
-	ASL
-	ROL f_ptr+1
-	ASL
-	ROL f_ptr+1
-	TAY						; keep offset LSB as index (always < 248)
-	LDA #>FONT				; prepare MSB too
-	CLC
-	ADC f_ptr+1				; add offset to base
-	STA f_ptr+1
-; with C64-style, VRAM offset is (x-x MOD 8)+INT(y/8)*320, thus the remaining is the pointer LSB, other layouts will differ
-	LDA x_pos				; get X position again, now for the rest
-	AND #248
-;	CLC
-;	ADC #<VRAM				; in case is not page aligned (rare)
-	STA v_ptr				; still missing Y-offset
-;	LDA y_pos+1				; in case Y.H is relevant
-;	STA v_ptr+1
-	LDA y_pos
-;	ASL v_ptr+1				; if used, the following istruction is to be ROL instead
-	ASL						; divide-by-eight
-;	ASL v_ptr+1				; the same, three times
-	ASL
-;	ASL v_ptr+1
-	ASL
-		
-s_loop:
-		LDA (f_ptr), Y		; get font data
-		STA scan			; put on LSB...
-		STZ scan+1			; ...with clear MSB
-		STZ mask			; mask is 0 where printed...
-		LDA #$FF			; ...and 1 where original pixel is to be kept
-		STA mask+1
-		LDA x_pos			; get X position, just for the bit-offset
-		AND #7
-		TAX					; number of pixels to shift within byte
-x_loop:
-			ASL scan		; rotate font data...
-			ROL scan+1
-			ASL mask		; ...and mask
-			ROL masl+1
-			DEX
-			BPL x_loop
-		
-*** */
