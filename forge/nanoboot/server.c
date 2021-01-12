@@ -8,6 +8,7 @@
 /* *** needs -lwiringPi option *** */
 
 /* pin definitions, 36-38-40 at header, BCM 16-20-21 */
+/* CB1 is clock, CB2 data, can use pin 34 as GND */
 /* STB pin isn't currently used, just a placeholder for SS22 */
 #define	CB1		27
 #define	CB2		28

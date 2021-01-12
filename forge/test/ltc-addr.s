@@ -1,6 +1,8 @@
 ; latch addressing test
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20201225-1928
+; last modified 20210112-1920
+
+#define	DOWNL	_DOWNL
 
 	.zero
 
@@ -10,7 +12,13 @@ ptr	.dsb	1
 
 	.text
 
-	* = $C000
+#ifndef	DOWNL
+	addr = $C000
+#else
+	addr = $0400	; standard download address, anything up to $4000 will do
+#endif
+
+	* = addr
 
 reset:
 ; init stuff ** 1+15+3 bytes **
@@ -28,9 +36,9 @@ reset:
 
 	JMP exec
 
-	.dsb	$C020-*, $FF
+	.dsb	addr+$20-*, $FF
 	.asc	"LTC-4622 LATCH TESTER", 0
-	.dsb	$C100-*, $FF	; some ID, we need 256-byte blocks anyway
+	.dsb	addr+$100-*, $FF	; some ID, we need 256-byte blocks anyway
 
 exec:
 ; print $FF ** 28+3 = 31 bytes **
@@ -1475,6 +1483,7 @@ lock:
 			BNE *-1			; inline delay
 		JMP lock			; stay forever!
 
+#ifndef	DOWNL
 ; *** filling ***
 	.dsb	$FFFA-*, $FF	; ROM filling
 
@@ -1483,3 +1492,4 @@ vectors:
 	.word	lock			; NMI
 	.word	reset
 	.word	lock			; IRQ/BRK
+#endif
