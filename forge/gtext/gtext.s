@@ -1,7 +1,7 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210112-1823
+; last modified 20210114-1422
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
@@ -28,12 +28,11 @@
 f_ptr	.dsb	2			; indirect pointer for font reading
 v_ptr	.dsb	2			; indirect pointer for screen writing
 
-; *** required pointers *** in RAM for versatility
+; *** required pointers *** actually parameters to be set by init
 
 font	.dsb	2			; font definition start pointer
 wdth	.dsb	2			; font widths pointer
 vram	.dsb	2			; screen start pointer
-hght	.dsb	1			; font height
 
 ; these are recommended to be in ZP because of performance reasons
 mask	.dsb	MSKSIZ		; shiftable 32 (or 16)+8-bit mask for printing
@@ -51,11 +50,15 @@ l_byt	.dsb	1			; last font byte for each scanline (number of bytes minus 1)
 l_msk	.dsb	1			; last mask byte for each scanline (number of bytes minus 1, usually l_byt+1 but not always)
 
 ; *** variables not necessarily in ZP ***
+; actual printing parameters
 x_pos	.dsb	2			; 16-bit x-position, fixed-point (5b LSB first, then 8b MSB)
 ; that MUST be equalized so the "low" part is 3b ONLY, incrementing column as needed
 ; systems with "wide" hardware chars (e.g. SIXtation) would take that into account when computing addresses
 y_pos	.dsb	2			; 16-bit y-position, fixed-point (5b LSB first, then 8b MSB)
 char	.dsb	1			; ASCII to be printed
+hght	.dsb	1			; font height
+
+; local variables
 off_l	.dsb	64			; LSB of offsets for twice the max scanlines
 off_h	.dsb	64			; MSB of the above
 count	.dsb	1			; RAM variable for loops, allowing free use of X
