@@ -1,7 +1,7 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210115-1423
+; last modified 20210115-1432
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
@@ -321,7 +321,7 @@ vd_plan:
 		ADC off_h, Y
 		STA v_ptr+1
 ; X was free anyway, just count remaining scanlines
-		DEC count			; all scanlines done? (2+3+3')*s
+		DEC count			; all scanlines done? (5+3')*s
 		BNE gs_loop
 ; *** *** is it all done now? *** ***
 	_DR_OK
