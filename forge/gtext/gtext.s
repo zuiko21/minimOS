@@ -1,11 +1,15 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210115-1228
+; last modified 20210115-1340
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
 ; this code assumes Amstrad VRAM layout, but could use C64-style layout as well, just changing the y-offset LUT
+
+#ifndef	HEADERS
+#include "../../OS/macros.h"
+#endif
 
 ; *** configuration options ***
 
@@ -163,7 +167,7 @@ im_l:
 		BPL im_l
 #endif
 ; make f_ptr point to base glyph data
-	STZ f_ptr+1				; (***CMOS***) MSB of offset will be computed here
+	_STZA f_ptr+1			; MSB of offset will be computed here
 	LDA char				; multiply ASCII by 2 or 4
 	ASL
 	ROL f_ptr+1
@@ -195,11 +199,12 @@ p_opt:
 		ASL					; make it index!
 		STA optab, X		; create entry *** check orientation
 		DEX
-		BPL p_opt
+		BEQ p_opt
 #endif
 ; *** performance evaluation, s=scanlines, b=scan top byte, m=mask top, o=offset ***
 ; prepare scanline counter
-	LDX #0					; worth doing forward this time (3) [grand total from here is ]
+	LDX hght				; worth doing forward this time -- WHY? (3) [grand total from here is ]
+	STX count				; will be down to zero, as is total number of scanlines (3)
 gs_loop:
 ; ********************************************
 ; *** this must be done for every scanline ***
@@ -246,6 +251,7 @@ vd_init:
 ; essentially a plane counter, perhaps having previously created a combo index array!
 ; %00000fb0 for every plane, to be set before any character
 ; loop should use X, the scanline counter may be back to variable as matters little performance-wise
+		LDX nplan			; going backwards? check generation!
 #endif
 blit:
 ; this is for a bitmapped B/W screen
@@ -260,9 +266,9 @@ blit:
 ; let's try something
 ; *** preset plane! *** TBD TBD TBD
 			LDA optab, X	; get pointer to appropriate op for that bit combo
-			PHX				; eeeeek! no good for speed
+			_PHX			; eeeeek! no good for speed
 			TAX
-			JMP (vd_op, X)	; do as appropriate
+			_JMPX(vd_op)	; do as appropriate *** very bad on NMOS
 ; ****************************************
 ; *** *** operations pointer table *** ***
 ; ****************************************
@@ -276,14 +282,15 @@ vd_op:
 ; **************************************
 vd_inv:
 			ORA scan, Y		; set inverted glyph bits *** ditto for 65816
-			BRA vd_plan
+			_BRA vd_plan
 vd_set:
 			ORA scan, Y		; set all bits *** ditto for 65816
-			BRA vd_plan
+			_BRA vd_plan
 #endif
 ; ***********************************************************
 ; *** *** this op is to be changed for planar screens *** ***
 ; ***********************************************************
+; alternatively, jump to SMC opcode and then back after here (or a JMP ind with current routines)
 vd_ora:
 			ORA scan, Y		; set glyph pixels *** ditto for 65816 (4)*s*b
 vd_plan:
@@ -291,7 +298,7 @@ vd_plan:
 			STA (v_ptr), Y	; update screen (6+2+3')*s*b
 #ifdef	PLANAR
 ; loop for every plane
-			PLX				; eeeeeek! no good
+			_PLX			; eeeeeek! no good
 			DEX
 			BPL blit
 #endif
@@ -302,7 +309,7 @@ vd_plan:
 		CLC					; will jump to next scanline, note planar-like format (2)*s
 		ADC l_byt			; advance 512 or 1K *** CHECK
 		STA f_ptr+1			; (3)*s
-; ...but now must advance v_ptr too, with the help of the offset array!
+; ...but now must advance v_ptr too, with the help of the offset array! *** check relative reference
 		LDY y_pos			; get this part of the coordinate (no need to equalise this) (3+3+2)*s
 		LDA v_ptr
 		CLC
@@ -311,8 +318,8 @@ vd_plan:
 		LDA v_ptr+1			; ditto for MSB (3+4+3)*s
 		ADC off_h, Y
 		STA v_ptr+1
-; fortunately respected X
-		INX
-		CPX hght			; all scanlines done? (2+3+3')*s
+; X was free anyway, just count remaining scanlines
+		DEC count			; all scanlines done? (2+3+3')*s
 		BNE gs_loop
 ; *** *** is it all done now? *** ***
+	_DR_OK
