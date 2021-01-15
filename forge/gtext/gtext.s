@@ -1,7 +1,7 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210115-1111
+; last modified 20210115-1228
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
@@ -41,9 +41,10 @@ scan	.dsb	MSKSIZ		; copy of font scanline to be shifted
 #ifdef	PLANAR
 imsk	.dsb	MSKSIZ		; inverted versions of the above
 iscn	.dsb	MSKSIZ
-fg		.dsb	1			; foreground and background colours
+fg		.dsb	1			; foreground and background colours (may be read elsewhere)
 bg		.dsb	1
-nplan	.dsb	1			; number of planes
+
+nplan	.dsb	1			; max plane number *** set at init or screen switch
 #endif
 
 l_byt	.dsb	1			; last font byte for each scanline (number of bytes minus 1)
@@ -63,6 +64,9 @@ hght	.dsb	1			; font height *** to be set at font change, no big deal on perform
 off_l	.dsb	64			; LSB of offsets for twice the max scanlines
 off_h	.dsb	64			; MSB of the above
 
+; table of bitplane combinations for quick jump *** for every character, as it may change colours, no advantage in ZP as is indexed
+optab	.dsb	16			; 2*number of planes
+ 
 ; local variables
 count	.dsb	1			; RAM variable for loops, allowing free use of X
 
@@ -174,7 +178,25 @@ im_l:
 	ADC font+1				; ...plus high base (and possible carry)...
 	STA f_ptr+1				; ...makes MSB
 ; must prepare base v_ptr! *** TO DO
-
+#ifdef	PLANAR
+; create a combo index array for bitplane selection depending on colours!
+; %00000fb0 for every plane, to be set before any scanline
+	LDA bg					; background colour...
+	STA scan				; ...temporarily stored
+	LDA fg					; ditto for foreground colour
+	STA scan+1
+	LDX nplan				; number of planes minus one
+p_opt:
+		ASL scan+1			; shift FG
+		ROL					; into A
+		ASL scan			; also with BG
+		ROL
+		AND #3				; just two bytes
+		ASL					; make it index!
+		STA optab, X		; create entry *** check orientation
+		DEX
+		BPL p_opt
+#endif
 ; *** performance evaluation, s=scanlines, b=scan top byte, m=mask top, o=offset ***
 ; prepare scanline counter
 	LDX #0					; worth doing forward this time (3) [grand total from here is ]
@@ -236,17 +258,22 @@ blit:
 			AND mask, Y		; clear where the glyph goes *** note for 65816 (4)*s*b
 #ifdef	PLANAR
 ; let's try something
+; *** preset plane! *** TBD TBD TBD
 			LDA optab, X	; get pointer to appropriate op for that bit combo
 			PHX				; eeeeek! no good for speed
 			TAX
 			JMP (vd_op, X)	; do as appropriate
-; operations pointer table 
+; ****************************************
+; *** *** operations pointer table *** ***
+; ****************************************
 vd_op:
 				.word	vd_plan	; %00 = skip ORA (clears place)
 				.word	vd_inv	; %01 = place inverted scan
 				.word	vd_ora	; %10 = normal operation
 				.word	vd_set	; %11 = set inverted mask
-; alternative operations
+; **************************************
+; *** *** alternative operations *** ***
+; **************************************
 vd_inv:
 			ORA scan, Y		; set inverted glyph bits *** ditto for 65816
 			BRA vd_plan
@@ -254,7 +281,9 @@ vd_set:
 			ORA scan, Y		; set all bits *** ditto for 65816
 			BRA vd_plan
 #endif
+; ***********************************************************
 ; *** *** this op is to be changed for planar screens *** ***
+; ***********************************************************
 vd_ora:
 			ORA scan, Y		; set glyph pixels *** ditto for 65816 (4)*s*b
 vd_plan:
@@ -262,6 +291,7 @@ vd_plan:
 			STA (v_ptr), Y	; update screen (6+2+3')*s*b
 #ifdef	PLANAR
 ; loop for every plane
+			PLX				; eeeeeek! no good
 			DEX
 			BPL blit
 #endif
