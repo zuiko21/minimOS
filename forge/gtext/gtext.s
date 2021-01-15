@@ -1,7 +1,7 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210115-1340
+; last modified 20210115-1423
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
@@ -237,7 +237,7 @@ gs_mr:
 is_l:
 		LDA scan, Y
 		EOR #$FF
-		AND mask, Y			; eeek
+		AND imsk, Y			; eeek^2
 		STA iscn, Y			; create inverted (rotated and masked!) scanline
 		DEY
 		BPL is_l
@@ -260,14 +260,16 @@ blit:
 ; if only bg is 1, ORA iscn, Y -- which is an (INVERTED copy of shifted *scan*) AND mask
 ; if only fg is 1, proceed normally
 ; if both are 1, ORA imsk, Y -- which is an INVERTED copy of the ORIGINAL mask, before applying glyph!
-			LDA (v_ptr), Y	; get screen data (5)*s*b
-			AND mask, Y		; clear where the glyph goes *** note for 65816 (4)*s*b
 #ifdef	PLANAR
 ; let's try something
 ; *** preset plane! *** TBD TBD TBD
 			LDA optab, X	; get pointer to appropriate op for that bit combo
 			_PHX			; eeeeek! no good for speed
-			TAX
+			TAX				; ready for indexing
+#endif
+			LDA (v_ptr), Y	; get screen data (5)*s*b
+			AND mask, Y		; clear where the glyph goes *** note for 65816 (4)*s*b
+#ifdef	PLANAR
 			_JMPX(vd_op)	; do as appropriate *** very bad on NMOS
 ; ****************************************
 ; *** *** operations pointer table *** ***
@@ -281,10 +283,10 @@ vd_op:
 ; *** *** alternative operations *** ***
 ; **************************************
 vd_inv:
-			ORA scan, Y		; set inverted glyph bits *** ditto for 65816
+			ORA iscn, Y		; set inverted glyph bits *** ditto for 65816
 			_BRA vd_plan
 vd_set:
-			ORA scan, Y		; set all bits *** ditto for 65816
+			ORA imsk, Y		; set all bits *** ditto for 65816
 			_BRA vd_plan
 #endif
 ; ***********************************************************
