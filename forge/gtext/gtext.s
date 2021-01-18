@@ -1,7 +1,7 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210115-1432
+; last modified 20210118-1102
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)
 ; supports variable width fonts!
@@ -199,7 +199,7 @@ p_opt:
 		ASL					; make it index!
 		STA optab, X		; create entry *** check orientation
 		DEX
-		BEQ p_opt
+		BPL p_opt			; eeeeeeek
 #endif
 ; *** performance evaluation, s=scanlines, b=scan top byte, m=mask top, o=offset ***
 ; prepare scanline counter
