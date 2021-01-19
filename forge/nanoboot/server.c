@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210112-1758         */
+ * last modified 20210119-1859         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +9,7 @@
 
 /* pin definitions, 36-38-40 at header, BCM 16-20-21 */
 /* CB1 is clock, CB2 data, can use pin 34 as GND */
+/* THIS VERSION NEEDS OPEN COLLECTOR (INVERTING) DRIVERS */
 /* STB pin isn't currently used, just a placeholder for SS22 */
 #define	CB1		27
 #define	CB2		28
@@ -25,9 +26,11 @@ int main(void) {
 	int		i, c, fin, ini;
 	char	nombre[80];
 
+	printf("*** nanoBoot server (OC) ***\n\n");
+	printf("pin 34=GND, 36=CLK, 38=/DAT\n\n");
 /* GPIO setup */
 	wiringPiSetup();
-	digitalWrite(CB1, 1);	/* clock initially disabled */
+	digitalWrite(CB1, 0);	/* clock initially disabled, note OC */
 	pinMode(CB1, OUTPUT);
 	pinMode(CB2, OUTPUT);
 	pinMode(STB, OUTPUT);	/* not actually used */
@@ -64,20 +67,20 @@ int main(void) {
 	}
 	printf("\nEnded at $%04X\n", fin);
 	fclose(f);
-	
+
 	return 0;
 }
 
 /* *** function definitions *** */
 void cabe(int x) {			/* just like dato() but with longer bit delay, whole header takes ~85 ms */
 	int bit, i = 8;
-	
+
 	while(i>0) {
 		bit = x & 1;
-		digitalWrite(CB2, bit);
-		digitalWrite(CB1, 0);
-		delay(2);			/* way too long, just in case */
+		digitalWrite(CB2, bit^1);	/* send INVERTED bit for OC */
 		digitalWrite(CB1, 1);
+		delay(2);			/* way too long, just in case, note OC */
+		digitalWrite(CB1, 0);
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
@@ -87,13 +90,13 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 
 void dato(int x) {			/* send a byte at 'top' speed */
 	int bit, i = 8;
-	
+
 	while(i>0) {
 		bit = x & 1;
-		digitalWrite(CB2, bit);
-		digitalWrite(CB1, 0);
-		useg(75);			/* *** 75 µs or so (at 1 MHz) *** */
+		digitalWrite(CB2, bit^1);	/* note OC */
 		digitalWrite(CB1, 1);
+		useg(75);			/* *** 75 µs or so (at 1 MHz) *** */
+		digitalWrite(CB1, 0);
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
@@ -103,7 +106,7 @@ void dato(int x) {			/* send a byte at 'top' speed */
 
 void useg(int x){
 	int i, t;
-	
+
 	for (t=0; t<x; t++){
 		for (i=0; i<200; i++);	/* *** 200 iterations = 1 µs on RPi400 *** */
 	}
