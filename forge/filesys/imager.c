@@ -1,6 +1,6 @@
 /* minimOS disk imager v0.1       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210120-0029    *
+ * last modified 20210120-1711    *
  */
 
 #include <stdio.h>
@@ -16,16 +16,41 @@ void	insert(void);
 void	delete(void);
 void	extract(void);
 
+/* global variables */
+	FILE*			im;
+	unsigned char*	rd = NULL;
+	long			siz = 0;
+
 /* main loop */
 int main(void) {
-	FILE*	im, ext;
-	char	nom[80];
 	int		opc;
-	
+
 	printf("minimOS disk image manager v0.1\n");
 	printf("===============================\n\n");
 	do {
 		opc=menu();
+		switch(opc) {
+			case 1:
+				create();
+				break;
+			case 2:
+				open();
+				break;
+			case 3:
+				dir();
+				break;
+			case 4:
+				close();
+				break;
+			case 5:
+				insert();
+				break;
+			case 6:
+				delete();
+				break;
+			case 7:
+				extract();
+		}
 	} while (opc != 0);
 	
 	return 0;
@@ -56,9 +81,36 @@ void	create(void){
 }
 
 void	open(void) {
-	
+	char	nom[80];
+
+	if (rd != NULL) {
+		printf("*** Error: one image is open ***\n");
+		return;
+	}
+	printf("Image file: ");		/* ask for a file */
+	scanf("%s", nom);
+	im = fopen(nom, "rb");
+	if (im == NULL) {
+		printf("*** Error: no such file ***\n");
+		return;
+	}
+	fseek(im, 0, SEEK_END);		/* check file length */
+	siz = ftell(im);
+	rewind(im);
+	rd = (unsigned char*)malloc(siz);	/* reserve RAM */
+	if (rd == NULL) {
+		printf("*** Error: not enough memory ***\n");
+		fclose(im);
+		return;
+	}
+	fread(rd, 1, siz, im);		/* load whole file into RAMdisk */
+	printf("Loaded %ld bytes\n\n", siz);
+	fclose(im);
 }
 
+void	dir(void) {
+	
+}
 void	close(void) {
 	
 }
