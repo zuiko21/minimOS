@@ -1,58 +1,110 @@
 /* minimOS disk imager v0.1       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210120-1711    *
+ * last modified 20210121-1241    *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 
+/* type definitions */
+typedef	int		ERR;
+
+struct	imagen {
+	char*	byte;
+	long	size;
+};
+
 /* function prototypes */
-int		menu(void);
-void	create(void);
-void	open(void);
-void	dir(void);
-void	close(void);
-void	insert(void);
-void	delete(void);
-void	extract(void);
+int				menu(void);
+struct imagen*	create(long tama);
+struct imagen*	open(char *nom);
+ERR				dir(struct imagen* fs);
+ERR				close(struct imagen* fs, char* nom);
+ERR				insert(struct imagen* fs, char* nom);
+ERR				delete(struct imagen* fs, char* nom);
+ERR				extract(struct imagen* fs, char* nom);
 
 /* global variables */
-	FILE*			im;
-	unsigned char*	rd = NULL;
-	long			siz = 0;
+	FILE*	im;
+	char*	rd = NULL;
+	long	siz = 0, kb;
 
 /* main loop */
 int main(void) {
-	int		opc;
+	int		opc, err;
+	char	nom[80];
+	struct imagen*	rd = NULL;
 
 	printf("minimOS disk image manager v0.1\n");
 	printf("===============================\n\n");
 	do {
 		opc=menu();
 		switch(opc) {
-			case 1:
-				create();
+			case 1:			/* create image in RAM */
+				if (rd != NULL) {
+					printf("*** Error: one image is open ***\n");
+				} else {
+					printf("How many kiB? ");
+					scanf("%ld", &kb);
+					rd = create(kb<<10);	/* multiply by 1024 */
+					if (rd == NULL) {
+						printf("*** Error: not enough memory ***\n");
+					}
+				}
 				break;
-			case 2:
-				open();
+			case 2:			/* open image from disk */
+				if (rd != NULL) {
+					printf("*** Error: one image is open ***\n");
+				} else {
+					printf("Image file: ");
+					scanf("%s", nom);
+					rd = open(nom);
+					if (rd == (struct imagen *)-1) {
+						printf("*** Error: no such file ***\n");
+						rd = NULL;
+					} else if (rd == NULL) {
+						printf("*** Error: not enough memory ***\n");
+					}
+					if (rd != NULL) {
+						printf("Loaded %ld bytes\n", rd->size);
+					}
+				}
 				break;
-			case 3:
-				dir();
+			case 3:			/* display image contents */
+				if (dir(rd))	printf("*** Error: no image in use ***\n");
 				break;
-			case 4:
-				close();
+			case 4:			/* save image to file */
+				if (rd != NULL) {
+					printf("Save to image file: ");
+					scanf("%s", nom);
+					err = close(rd, nom);
+					if (rd == (struct imagen *)-2) {
+						printf("*** Error: couldn't save image ***\n");
+					} else {
+						free(rd);
+						rd = NULL;
+					}
+				} else {
+					printf("*** Error: no image to save ***\n");
+				}
 				break;
-			case 5:
-				insert();
+			case 5:			/* insert file into image */
+				printf("File to insert: ");
+				scanf("%s", nom);
+				insert(rd, nom);
 				break;
-			case 6:
-				delete();
+			case 6:			/* delete file from image */
+				printf("Delete from image, which file? ");
+				scanf("%s", nom);
+				delete(rd, nom);
 				break;
-			case 7:
-				extract();
+			case 7:			/* extract file from image */
+				printf("Extract from image, which file? ");
+				scanf("%s", nom);
+				extract(rd, nom);
 		}
 	} while (opc != 0);
-	
+
 	return 0;
 }
 
@@ -60,7 +112,7 @@ int main(void) {
 int menu(void) {
 	int x=-1;
 	
-	printf("1.Create image\n");
+	printf("\n1.Create image\n");
 	printf("2.Open image\n");
 	printf("3.Show image contents\n");
 	printf("4.Close image\n");
@@ -76,53 +128,55 @@ int menu(void) {
 	return x;
 }
 
-void	create(void){
-	
+struct imagen*	create(long tama) {
+	struct imagen*	ptr;
+
+	ptr->byte = (char*)malloc(tama);	/* allocate RAM */
+	if (ptr->byte == NULL)				return NULL;
+	ptr->size = tama;
+
+	return	ptr;
 }
 
-void	open(void) {
-	char	nom[80];
+struct imagen*	open(char *nom) {
+	struct imagen*	ptr;
+	FILE*			im;
+	long			tama;
 
-	if (rd != NULL) {
-		printf("*** Error: one image is open ***\n");
-		return;
-	}
-	printf("Image file: ");		/* ask for a file */
-	scanf("%s", nom);
 	im = fopen(nom, "rb");
 	if (im == NULL) {
-		printf("*** Error: no such file ***\n");
-		return;
+		return (struct imagen *)-1;		/* ** no file ** */
 	}
-	fseek(im, 0, SEEK_END);		/* check file length */
-	siz = ftell(im);
+	fseek(im, 0, SEEK_END);				/* check file length */
+	tama = ftell(im);
 	rewind(im);
-	rd = (unsigned char*)malloc(siz);	/* reserve RAM */
-	if (rd == NULL) {
-		printf("*** Error: not enough memory ***\n");
+	ptr = create(tama);					/* allocate RAM */
+	if (ptr == NULL) {
 		fclose(im);
-		return;
+		return ptr;						/* ** not enough memory ** */
 	}
-	fread(rd, 1, siz, im);		/* load whole file into RAMdisk */
-	printf("Loaded %ld bytes\n\n", siz);
+	fread(ptr->byte, sizeof(char), tama, im);	/* load whole file into RAMdisk */
 	fclose(im);
+
+	return ptr;
 }
 
-void	dir(void) {
-	
-}
-void	close(void) {
-	
+ERR				dir(struct imagen* fs) {
+	return 0;
 }
 
-void	insert(void) {
-	
+ERR				close(struct imagen* fs, char* nom) {
+	return 0;
 }
 
-void	delete(void) {
-	
+ERR				insert(struct imagen* fs, char* nom) {
+	return 0;
 }
 
-void	extract(void) {
-	
+ERR				delete(struct imagen* fs, char* nom) {
+	return 0;
+}
+
+ERR				extract(struct imagen* fs, char* nom) {
+	return 0;
 }
