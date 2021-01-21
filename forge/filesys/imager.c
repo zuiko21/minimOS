@@ -1,28 +1,29 @@
-/* minimOS disk imager v0.1       *
+/* minimOS disk imager v0.2       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210121-1241    *
+ * last modified 20210121-1426    *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 
 /* type definitions */
-typedef	int		ERR;
-
 struct	imagen {
 	char*	byte;
 	long	size;
 };
 
+typedef	int				ERR;
+typedef	struct imagen*	PIM;
+
 /* function prototypes */
-int				menu(void);
-struct imagen*	create(long tama);
-struct imagen*	open(char *nom);
-ERR				dir(struct imagen* fs);
-ERR				close(struct imagen* fs, char* nom);
-ERR				insert(struct imagen* fs, char* nom);
-ERR				delete(struct imagen* fs, char* nom);
-ERR				extract(struct imagen* fs, char* nom);
+int		menu(void);
+PIM		create(long tama);
+PIM		open(char *nom);
+ERR		dir(PIM fs);
+ERR		close(PIM fs, char* nom);
+ERR		insert(PIM fs, char* nom);
+ERR		delete(PIM fs, char* nom);
+ERR		extract(PIM fs, char* nom);
 
 /* global variables */
 	FILE*	im;
@@ -33,10 +34,10 @@ ERR				extract(struct imagen* fs, char* nom);
 int main(void) {
 	int		opc, err;
 	char	nom[80];
-	struct imagen*	rd = NULL;
+	struct imagen	rd;
 
-	printf("minimOS disk image manager v0.1\n");
-	printf("===============================\n\n");
+	printf("\nminimOS disk image manager v0.1");
+	printf("\n===============================\n");
 	do {
 		opc=menu();
 		switch(opc) {
@@ -128,8 +129,8 @@ int menu(void) {
 	return x;
 }
 
-struct imagen*	create(long tama) {
-	struct imagen*	ptr;
+PIM	create(long tama) {
+	PIM	ptr;
 
 	ptr->byte = (char*)malloc(tama);	/* allocate RAM */
 	if (ptr->byte == NULL)				return NULL;
@@ -138,8 +139,8 @@ struct imagen*	create(long tama) {
 	return	ptr;
 }
 
-struct imagen*	open(char *nom) {
-	struct imagen*	ptr;
+PIM	open(char *nom) {
+	PIM	ptr;
 	FILE*			im;
 	long			tama;
 
@@ -161,22 +162,22 @@ struct imagen*	open(char *nom) {
 	return ptr;
 }
 
-ERR				dir(struct imagen* fs) {
+ERR				dir(PIM fs) {
 	return 0;
 }
 
-ERR				close(struct imagen* fs, char* nom) {
+ERR				close(PIM fs, char* nom) {
 	return 0;
 }
 
-ERR				insert(struct imagen* fs, char* nom) {
+ERR				insert(PIM fs, char* nom) {
 	return 0;
 }
 
-ERR				delete(struct imagen* fs, char* nom) {
+ERR				delete(PIM fs, char* nom) {
 	return 0;
 }
 
-ERR				extract(struct imagen* fs, char* nom) {
+ERR				extract(PIM fs, char* nom) {
 	return 0;
 }
