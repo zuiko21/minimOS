@@ -1,6 +1,6 @@
 /* minimOS disk imager v0.2       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210121-1943    *
+ * last modified 20210121-2024    *
  */
 
 #include <stdio.h>
@@ -17,7 +17,7 @@ typedef	struct imagen*	PIM;
 
 /* function prototypes */
 int		menu(void);
-ERR		create(PIM ptr, long tama);
+ERR		create(PIM ptr, long tama, char *nom);
 ERR		open(PIM ptr, char *nom);
 ERR		dir(PIM ptr);
 ERR		close(PIM ptr, char* nom);
@@ -46,7 +46,9 @@ int main(void) {
 				} else {
 					printf("How many kiB? ");
 					scanf("%ld", &kb);	/* will be multiplied by 1024 */
-					if (create(&rd, kb<<10)) {
+					printf("Volume name: ");
+					scanf("%s", nom);
+					if (create(&rd, kb<<10, nom)) {
 						printf("*** Error: not enough memory ***\n");
 					}
 				}
@@ -64,6 +66,7 @@ int main(void) {
 						printf("*** Error: not enough memory ***\n");
 					} else {
 						printf("Loaded %ld bytes\n", rd.size);
+						printf("Volume name: %s\n", &(rd.byte[8]));
 					}
 				}
 				break;
@@ -126,7 +129,7 @@ int menu(void) {
 	return x;
 }
 
-ERR	create(PIM ptr, long tama) {
+ERR	create(PIM ptr, long tama, char *nom) {
 
 	ptr->byte = (char*)malloc(tama);	/* allocate RAM */
 	if (ptr->byte == NULL)	return -2;	/* ** not enough memory ** */
@@ -139,18 +142,21 @@ ERR	open(PIM ptr, char *nom) {
 	FILE*	im;
 	long	tama;
 	ERR		err;
+	char	vol[80];
 
 	im = fopen(nom, "rb");
 	if (im == NULL) {
-		return -1;				/* ** no file ** */
+		return -1;					/* ** no file ** */
 	}
-	fseek(im, 0, SEEK_END);		/* check file length */
+	fseek(im, 0, SEEK_END);			/* check file length */
 	tama = ftell(im);
+	fseek(im, 8, SEEK_SET);			/* check volume name */
+	fgets(vol, 80, im);
 	rewind(im);
-	err = create(ptr, tama);	/* allocate RAM */
+	err = create(ptr, tama, vol);	/* allocate RAM */
 	if (err) {
 		fclose(im);
-		return err;				/* ** not enough memory ** */
+		return err;					/* ** not enough memory ** */
 	}
 	fread(ptr->byte, sizeof(char), tama, im);	/* load whole file into RAMdisk */
 	fclose(im);
