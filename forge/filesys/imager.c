@@ -1,6 +1,6 @@
 /* minimOS disk imager v0.2       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210121-2024    *
+ * last modified 20210121-2034    *
  */
 
 #include <stdio.h>
@@ -130,10 +130,27 @@ int menu(void) {
 }
 
 ERR	create(PIM ptr, long tama, char *nom) {
+	int i = 0;
 
 	ptr->byte = (char*)malloc(tama);	/* allocate RAM */
 	if (ptr->byte == NULL)	return -2;	/* ** not enough memory ** */
 	ptr->size = tama;
+/* create minimOS header */
+	ptr->byte[0]=0;
+	ptr->byte[1]='a';
+	ptr->byte[2]='V';
+	ptr->byte[3]='*';
+	ptr->byte[4]='*';
+	ptr->byte[5]='*';
+	ptr->byte[6]='*';
+	ptr->byte[7]=13;
+	while(nom[i]!='\0')	{
+		ptr->byte[8+i] = nom[i];
+		i++;
+	}
+	ptr->byte[8+i] = 0;
+	ptr->byte[9+i] = 0;
+/* to do the rest of the header */
 
 	return	0;
 }
