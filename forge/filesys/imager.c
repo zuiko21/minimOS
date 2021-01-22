@@ -1,6 +1,6 @@
 /* minimOS disk imager v0.2       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210122-1437    *
+ * last modified 20210122-2028    *
  */
 
 #include <stdio.h>
@@ -10,6 +10,7 @@
 struct	imagen {
 	char*	byte;
 	long	size;
+	char	dirty;
 };
 
 typedef	int				ERR;
@@ -35,16 +36,15 @@ int main(void) {
 
 	rd.byte = NULL;			/* object intialisation */
 	rd.size = 0;			/* just in case */
+	rd.dirty = 0;			/* nothing to save yet */
 
 	printf("\nminimOS disk image manager v0.2");
 	printf("\n===============================\n");
 	do {
 		opc=menu();
 		switch(opc) {
-			case 1:			/* create image in RAM */
-				if (rd.byte != NULL) {
-					discard(&rd);	/* will you discard current image? */
-				}
+			case 1:					/* create image in RAM */
+				discard(&rd);		/* check current image */
 				printf("How many kiB? ");
 				scanf("%ld", &kb);	/* will be multiplied by 1024 */
 				printf("Volume name: ");
@@ -53,10 +53,8 @@ int main(void) {
 					printf("*** Error: not enough memory ***\n");
 				}
 				break;
-			case 2:			/* open image from disk */
-				if (rd.byte != NULL) {
-					discard(&rd);	/* will you discard current image? */
-				}
+			case 2:					/* open image from disk */
+				discard(&rd);		/* check current image */
 				printf("Image file: ");
 				scanf("%s", nom);
 				err = open(&rd, nom);
@@ -102,6 +100,9 @@ int main(void) {
 				printf("Extract from image, which file? ");
 				scanf("%s", nom);
 				err = extract(&rd, nom);
+				break;
+			case 0:			/* exit, but check for unsaved image */
+				if (rd.dirty)	opc=discard(&rd);
 		}
 	} while (opc != 0);
 
@@ -134,6 +135,7 @@ ERR	create(PIM ptr, long tama, char *nom) {
 	ptr->byte = (char*)malloc(tama);	/* allocate RAM */
 	if (ptr->byte == NULL)	return -2;	/* ** not enough memory ** */
 	ptr->size = tama;
+	ptr->dirty = 1;
 /* create minimOS header */
 	ptr->byte[0]=0;
 	ptr->byte[1]='a';
@@ -178,6 +180,7 @@ ERR	open(PIM ptr, char *nom) {
 	}
 	fread(ptr->byte, sizeof(char), tama, im);	/* load whole file into RAMdisk */
 	fclose(im);
+	ptr->dirty = 1;
 
 	return 0;
 }
@@ -192,9 +195,9 @@ ERR	close(PIM ptr, char* nom) {
 	FILE*	im;
 	char	chk[80];
 
-	im = fopen(nom, "r");
+	im = fopen(nom, "rb");
 	fclose(im);
-/* check whether this file already exists *
+/* check whether this file already exists */
 	if (im != NULL) {
 		printf("-- File exists. Overwrite? (y/n): ");
 		scanf("%s", chk);
@@ -208,31 +211,42 @@ ERR	close(PIM ptr, char* nom) {
 	if (im == NULL)		return -3;			/* ** couldn't write ** */
 	fwrite(ptr->byte, 1, ptr->size, im);	/* save whole file into RAMdisk */
 	fclose(im);
+	ptr->dirty = 0;
 
 	return 0;
 }
 
 ERR	insert(PIM ptr, char* nom) {
+	if (ptr->byte == NULL)	return -5;
+	ptr->dirty = 1;
+
 	return 0;
 }
 
 ERR	delete(PIM ptr, char* nom) {
+	if (ptr->byte == NULL)	return -6;
+	ptr->dirty = 1;
 	return 0;
 }
 
 ERR	extract(PIM ptr, char* nom) {
+	if (ptr->byte == NULL)	return -6;
 	return 0;
 }
 
 ERR	discard(PIM ptr) {
 	char	chk[80];
 
-	printf("-- Image in use. Discard? (y/n): ");
-	scanf("%s", chk);
-	if ((chk[0]|32) == 'y') {	/* will discard current image */
-		free(ptr->byte);
-		ptr->byte = NULL;
+	if (ptr->byte != NULL) {
+		printf("-- Image in use. Discard? (y/n): ");
+		scanf("%s", chk);
+		if ((chk[0]|32) == 'y') {
+			free(ptr->byte);
+			ptr->byte = NULL;
+			ptr->dirty = 0;
+			return 0;		/* ** image was discarded ** */
+		}
 	}
 
-	return 0;
+	return -4;				/* ** NOT discarded, operation aborted ** */
 }
