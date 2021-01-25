@@ -1,18 +1,34 @@
 ; 2 kiB pico-VDU (direct bus version)
 ; v0.1a1
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210125-1435
+; last modified 20210125-1759
 
 ; *** stub with TONS of things to do ***
+#ifndef	HEADERS
+#include "../macros.h"
+; *** experimental variables **
+	* = $E0
+io_c	.dsb	2			; ASCII and temporary
+pv_fpt	.dsb	2			; ZP pointers
+pv_spt	.dsb	2
+pv_fgl	.dsb	1			; flags
+pv_fch	.dsb	1
+pv_x	.dsb	1			; coordinates
+pv_y	.dsb	1
+font	.dsb	2			; font pointer (not necessarily in ZP)
+#endif
 
+	.text
+	* = $400
 pv_pch:
 ; ** print char **
-	_STZA pv_2c				; clear this flag
+	_STZA pv_fgl			; clear this flag (rightmost glyph, odd ASCII)
+	_STZA pv_fch			; this one too (rightmost char, odd column)
 	_STZA io_c+1			; clear MSB
 ; compute glyph pointer
 	LDA io_c				; get ASCII
 	LSR						; two chars per byte!
-	ROR pv_2c				; store C into high bit of flag
+	ROR pv_fgl				; store C into flag d7
 	ASL
 	ASL						; takes 8 scanlines per COUPLE of chars
 	ROL io_c+1
@@ -36,8 +52,52 @@ pv_pch:
 	ADC #$78				; screen base address MSB
 	STA pv_spt+1			; MSB is ready, but...
 	LDA pv_x				; column (0...31)
-	LSR						; two columns per byte
-	ORA pv_spt				; LSB is only 0 or 128! D6-D4 will change each scanline!
+	LSR						; two columns per byte (0...15)
+	ROR pv_fch				; d7 on in case of an odd column
+	ORA pv_spt				; MSB is only 0 or 128! D6-D4 will change each scanline!
 	STA pv_spt				; ready
 ; put glyph data on screen
-
+; first extract and shift appropriate glyph
+	LDY #0
+pv_scn:
+		LDA (pv_fpt), Y		; get two conscutive glyphs data
+		BIT pv_fgl			; check flags, is it the leftmost glyph?
+		BMI pv_lgl			; no, just keep the LSN...
+			LSR				; ...or shift MSN down
+			LSR
+			LSR
+			LSR
+pv_lgl:
+		AND #$0F			; only MSN
+		BIT pv_fch			; will be printed here or to the left?
+		BMI pv_lch			; if here, do nothing...
+			ASL				; ...or shift it back
+			ASL
+			ASL
+			ASL
+pv_lch:
+		STA io_c+1			; temporary glyph storage
+; then mask screen contents and put glyph on it
+; * could check here for inverse mode, but check masking *
+		LDA #$0F			; keep rightmost char, print to the left
+		BIT pv_fch			; is that the place?
+		BPL pv_msk			; yes, stay so
+			EOR #$FF		; no, switch mask location
+pv_msk:
+#ifndef	NMOS
+		AND (pv_spt)		; AND mask with current screen data
+#else
+		LDX #0				; NMOS version, no macro! Could set X first
+		AND (pv_spt, X)
+#endif
+		ORA io_c+1			; OR with glyph pattern
+		_STAX(pv_spt)		; and place it back into screen
+; advance to next scanline, both screen and font
+		INY					; font pointer set!
+		LDA pv_spt			; screen pointer LSB
+		CLC
+		ADC #16				; next scanline
+		STA pv_spt			; do not care about carry
+		CPY #8				; are we done?
+		BNE pv_scn
+; ** should update coordinates! **
