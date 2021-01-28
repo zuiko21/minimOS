@@ -1,10 +1,11 @@
 /* minimOS disk imager v0.2       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210128-1225    *
+ * last modified 20210128-1412    *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* type definitions */
 struct	imagen {
@@ -287,6 +288,6 @@ ERR		w_sector(char *sec, struct cabecera* c) {
 }
 
 ERR		r_sector(char *sec, struct cabecera* c) {
-	if ((sec[0]!=0) || (sec[7]!=13)		return -7;	/* bad header */
+	if ((sec[0]!=0) || (sec[7]!=13))	return -7;	/* bad header */
 	return 0;
 }
