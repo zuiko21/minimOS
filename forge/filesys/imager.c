@@ -1,6 +1,6 @@
 /* minimOS disk imager v0.2       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210122-2028    *
+ * last modified 20210128-1225    *
  */
 
 #include <stdio.h>
@@ -11,6 +11,20 @@ struct	imagen {
 	char*	byte;
 	long	size;
 	char	dirty;
+};
+
+struct cabecera {
+	char	tipo[2];
+	char	extra[4];
+	char	nombre[240];
+	char	coment[240];
+	int		year;
+	int		mes;
+	int		dia;
+	int		hora;
+	int		minuto;
+	int		segundo;
+	long	sgte;
 };
 
 typedef	int				ERR;
@@ -26,6 +40,8 @@ ERR		insert(PIM ptr, char* nom);
 ERR		delete(PIM ptr, char* nom);
 ERR		extract(PIM ptr, char* nom);
 ERR		discard(PIM ptr);
+ERR		r_sector(char *sec, struct cabecera* c);
+ERR		w_sector(char *sec, struct cabecera* c);
 
 /* main loop */
 int main(void) {
@@ -33,6 +49,10 @@ int main(void) {
 	long			kb;
 	char			nom[80];
 	struct imagen	rd;
+	
+	struct cabecera c;
+	
+	printf("%ld\n",sizeof(c));
 
 	rd.byte = NULL;			/* object intialisation */
 	rd.size = 0;			/* just in case */
@@ -249,4 +269,24 @@ ERR	discard(PIM ptr) {
 	}
 
 	return -4;				/* ** NOT discarded, operation aborted ** */
+}
+
+ERR		w_sector(char *sec, struct cabecera* c) {
+	int i=0, j=0;
+
+	sec[0] = 0;
+	sec[7] = 13;
+	memcpy(&(sec[1]), c->tipo, 2);
+	memcpy(&(sec[3]), c->extra, 4);
+	while(c->nombre[i++]!='\0');			/* i is name length, incl. term */
+	while(c->coment[j++]!='\0');			/* j is comment length, incl. term */
+	if (i+j>240) 	c->coment[239]='\0';	/* truncate comment if filename is too long */
+	strcpy(&(sec[8]), c->nombre);
+	strcpy(&(sec[8+i]), c->coment);
+	return 0;
+}
+
+ERR		r_sector(char *sec, struct cabecera* c) {
+	if ((sec[0]!=0) || (sec[7]!=13)		return -7;	/* bad header */
+	return 0;
 }
