@@ -1,7 +1,7 @@
 ; 2 kiB pico-VDU (direct bus version)
 ; v0.1a1
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210125-1759
+; last modified 20210126-0955
 
 ; *** stub with TONS of things to do ***
 #ifndef	HEADERS
@@ -86,12 +86,14 @@ pv_lch:
 pv_msk:
 #ifndef	NMOS
 		AND (pv_spt)		; AND mask with current screen data
+		ORA io_c+1			; OR with glyph pattern
+		STA (pv_spt)		; and place it back into screen
 #else
 		LDX #0				; NMOS version, no macro! Could set X first
 		AND (pv_spt, X)
+		ORA io_c+1
+		STA (pv_spt, X)		; not worth using the macro, as X is already 0
 #endif
-		ORA io_c+1			; OR with glyph pattern
-		_STAX(pv_spt)		; and place it back into screen
 ; advance to next scanline, both screen and font
 		INY					; font pointer set!
 		LDA pv_spt			; screen pointer LSB
