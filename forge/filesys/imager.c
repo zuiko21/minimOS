@@ -1,6 +1,6 @@
-/* minimOS disk imager v0.2       *
+/* minimOS disk imager v0.3       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20210128-1412    *
+ * last modified 20210129-1428    *
  */
 
 #include <stdio.h>
@@ -151,30 +151,21 @@ int menu(void) {
 }
 
 ERR	create(PIM ptr, long tama, char *nom) {
-	int i = 0;
+	int				i = 0;
+	struct cabecera	c;
 
 	ptr->byte = (char*)malloc(tama);	/* allocate RAM */
 	if (ptr->byte == NULL)	return -2;	/* ** not enough memory ** */
 	ptr->size = tama;
 	ptr->dirty = 1;
 /* create minimOS header */
-	ptr->byte[0]=0;
-	ptr->byte[1]='a';
-	ptr->byte[2]='V';
-	ptr->byte[3]='*';
-	ptr->byte[4]='*';
-	ptr->byte[5]='*';
-	ptr->byte[6]='*';
-	ptr->byte[7]=13;
-/* copy volume name into header */
-	while(nom[i]!='\0')	{
-		ptr->byte[8+i] = nom[i];
-		i++;
-	}
-/* name and comment terminators */
-	ptr->byte[8+i] = 0;
-	ptr->byte[9+i] = 0;
+	memcpy(c.tipo, "aV", 2);
+	memcpy(c.extra, "****", 4);			/* does this include volume size? */
+	strcpy(c.nombre, nom);
+	c.coment[0]='\0';
 /* to do the rest of the header */
+/* create header as start sector */
+	w_sector(ptr->byte, &c);
 
 	return	0;
 }
@@ -273,21 +264,46 @@ ERR	discard(PIM ptr) {
 }
 
 ERR		w_sector(char *sec, struct cabecera* c) {
-	int i=0, j=0;
+	int 			i=0, j=0;
+	unsigned int	hora, fecha;
 
-	sec[0] = 0;
+	sec[0] = 0;								/* minimOS header ID */
 	sec[7] = 13;
-	memcpy(&(sec[1]), c->tipo, 2);
+	memcpy(&(sec[1]), c->tipo, 2);			/* type and value signature */
 	memcpy(&(sec[3]), c->extra, 4);
 	while(c->nombre[i++]!='\0');			/* i is name length, incl. term */
 	while(c->coment[j++]!='\0');			/* j is comment length, incl. term */
-	if (i+j>240) 	c->coment[239]='\0';	/* truncate comment if filename is too long */
+	if (i+j>240) 	c->coment[239-i]='\0';	/* truncate comment if filename is too long */
 	strcpy(&(sec[8]), c->nombre);
 	strcpy(&(sec[8+i]), c->coment);
+	hora = c->hora << 11;					/* compose timestamp */
+	hora |= c->minuto << 5;
+	hora |= c->segundo >> 1;
+	fecha = (c->year-1980) << 9;			/* compose datestamp */
+	fecha |= c->mes << 5;
+	fecha |= c->dia;
+	memcpy(&(sec[248]), &hora, 2);			/* transfer modified time */
+	memcpy(&(sec[250]), &fecha, 2);
+
 	return 0;
 }
 
 ERR		r_sector(char *sec, struct cabecera* c) {
+	int				i=0;
+	unsigned int	hora, fecha;
+
 	if ((sec[0]!=0) || (sec[7]!=13))	return -7;	/* bad header */
+	strcpy(c->nombre, &(sec[8]));
+	while(c->nombre[i++]!='\0');			/* i is name length, incl. term */
+	strcpy(c->coment, &(sec[8+i]));
+	memcpy(&hora, &(sec[248]), 2);			/* extract modified time */
+	memcpy(&fecha, &(sec[250]), 2);
+	c->hora = hora >> 11;					/* decompose timestamp */
+	c->minuto = (hora >> 5) & 0b111111;
+	c->segundo = (hora & 0b11111) << 1;
+	c->year = fecha >> 9;					/* decompose datestamp */
+	c->mes = (fecha >> 5) & 0b1111;
+	c->dia = fecha & 0b11111;
+
 	return 0;
 }
