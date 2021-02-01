@@ -1,7 +1,7 @@
 /*
  * PGM font viewer for minimOS bitmaps *
  * (C) 2019-2021 Carlos J. Santisteban *
- * Last modified: 20210201-1617        *
+ * Last modified: 20210201-1748        *
  */
 
 #include <stdio.h>
@@ -14,12 +14,17 @@ int main(void) {
 	unsigned char c, mask;			// no longer unsigned char?
 	int i, j, k, z, top;
 	int y;					// scanlines per char, assume 8-bit width
+	int	narrow;				// 0 for 8-pix wide, 1 for 4-pix wide
+	int cols;				// 16 columns, or 32 if narrow
 
 // select input file
 	printf("Font bitmap? ");
 	fgets(name, 100, stdin);
 	printf("Scanlines? (max. 16) ");
 	scanf(" %d", &y);
+	printf("4 or 8 pixel wide? ");
+	scanf(" %d", %narrow);
+	narrow = (narrow==4)?1:0;
 // why should I put the terminator on the read string?
 	i=0;
 	while (name[i]!='\n' && name[i]!='\0')	{i++;}
@@ -53,7 +58,8 @@ int main(void) {
 // then create picture from matrix contents
 			for(i=0; i<top; i++) {
 				printf("Row %d of 16 columns...\n", i);
-				for (z=0; z<16; z++)	fprintf(pgm,"\n1 1 1 1 1 1 1 1 1");
+				for (z=0; z<16; z++)	if (narrow)	fprintf(pgm,"\n1 1 1 1 1");
+										else		fprintf(pgm,"\n1 1 1 1 1 1 1 1 1");
 				fprintf(pgm, " 1\n");
 				for (k=0; k<y; k++) {		// first scanline, then column
 					for (j=0; j<16; j++) {
