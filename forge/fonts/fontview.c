@@ -1,7 +1,7 @@
 /*
  * PGM font viewer for minimOS bitmaps *
  * (C) 2019-2021 Carlos J. Santisteban *
- * Last modified: 20190522-0826        *
+ * Last modified: 20210201-1617        *
  */
 
 #include <stdio.h>
@@ -12,7 +12,7 @@ int main(void) {
 	char name[100];				// filename
 	unsigned char mat[16][16][16];	// matrix for row, column, scanline
 	unsigned char c, mask;			// no longer unsigned char?
-	int i, j, k, z;
+	int i, j, k, z, top;
 	int y;					// scanlines per char, assume 8-bit width
 
 // select input file
@@ -36,28 +36,29 @@ int main(void) {
 			printf("Cannot output picture!\n");
 		} else {
 // proceed! first read whole font in matrix
-			i = j = 0;			// reset row and column counters
-			while (!feof(font) && i<16) {
+			top = j = 0;		// reset row and column counters
+			while (!feof(font) && top<16) {
 				for (k=0; k<y; k++) {
-					mat[i][j][k]=fgetc(font);	// read byte into matrix
+					mat[top][j][k]=fgetc(font);	// read byte into matrix
 				}
 				if ((++j) == 16) {				// column wrap
 					j=0;
-					++i;
+					++top;
 				}
 			}
 			printf("All read! (%d)\n", y);
 			fclose(font);
 // create PGM header, in ASCII mode
-			fprintf(pgm, "P2\n145 %d\n2\n", 17+y*16);
+			fprintf(pgm, "P2\n145 %d\n2\n", 17+y*top);
 // then create picture from matrix contents
-			for(i=0; i<16; i++) {
+			for(i=0; i<top; i++) {
+				printf("Row %d of 16 columns...\n", i);
 				for (z=0; z<16; z++)	fprintf(pgm,"\n1 1 1 1 1 1 1 1 1");
 				fprintf(pgm, " 1\n");
 				for (k=0; k<y; k++) {		// first scanline, then column
 					for (j=0; j<16; j++) {
 						fprintf(pgm, "\n1");	// 1px grey at left
-						for (mask=128; mask>0; mask/=2) {
+						for (mask=128; mask>0; mask>>=1) {
 							if (mask & mat[i][j][k])	fprintf(pgm, " 0");	// black ink
 							else						fprintf(pgm, " 2");	// white paper
 						}
