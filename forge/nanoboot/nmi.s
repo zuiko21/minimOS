@@ -1,6 +1,6 @@
-; nanoBoot NMI handler for 6502 v0.3a2
+; nanoBoot NMI handler for 6502 v0.3b2
 ; (c) 2018-2021 Carlos J. Santisteban
-; last modified 20201227-0149
+; last modified 20210202-1845
 
 nb_nmi:
 ; received bits should be LSB first!
@@ -12,6 +12,7 @@ nb_nmi:
 	PLA					; retrieve A, but C won't be affected (4)
 	ROR nb_rcv			; inject C into byte, LSB first (5)
 	DEC nb_flag			; this will turn 0 when done, if preloaded with 8 (5)
+nb_rti:
 	RTI					; (6) total 29, plus ISR
 ; ISR takes 7 clocks to acknowledge, plus 15 clocks itself, that's 22t for a grand total (including NMI ack) of 58 clocks per bit worst case
 

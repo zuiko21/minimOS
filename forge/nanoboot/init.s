@@ -1,6 +1,6 @@
-; startup nanoBoot for 6502, v0.3a4
+; startup nanoBoot for 6502, v0.4a1
 ; (c) 2018-2021 Carlos J. Santisteban
-; last modified 20201229-0100
+; last modified 20210202-1937
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -69,27 +69,7 @@ nb_lbit:
 ; make that 84t/bit and 672t/byte if LTC display is enabled 
 #endif
 #ifdef	DISPLAY
-; ** sample code for LED display, constant 28t overhead (224 per byte) **
-;			LDX nb_cur			; current position (3)
-;			LDA nb_disp, X		; get pattern (4)
-;			STA via_pb			; put on anodes (4)
-;			LDA nb_col, X		; get selected common cathode (4)
-;			STA via_pa			; set it (4)
-;			INX					; next char (2+2)
-;			TXA
-;			AND #3				; on a four digit display (2)
-;			STA nb_cur			; update for next round (3)
-; ***************************************************************
-; ** another sample for LTC display, 20t per bit, 160 per byte **
-			LDX nb_cur			; current position (3)
-			LDA nb_disp, X		; get pattern (4)
-			STA $FFF0			; put on display (4)
-			INX					; next anode (2+2)
-			TXA
-			AND #3				; four anodes on a single LTC4622 display (2)
-			STA nb_cur			; update for next round (3)
-; ** end of feedback **
-; *********************
+			JSR ltc_up			; mux display, total 32t per bit
 #endif
 			LDX nb_flag			; received something? (3)
 			BNE nb_lbit			; no, keep trying (3/2)
@@ -109,14 +89,14 @@ nb_lbit:
 #ifdef	SAFE
 	LDX nb_ex+4				; this holds the magic byte (3)
 	CPX #$4B				; valid nanoBoot link? (2)
-		BNE nb_exit			; no, abort (2/3)
+		BNE nb_err			; no, abort (2/3)
 ; could check for valid addresses as well
 ;	LDX nb_ptr+1
 ;	CPX nb_fin+1			; does it end before it starts?
 ;		BCC nb_ok			; no, proceed
-;		BNE nb_exit			; yes, abort
+;		BNE nb_err			; yes, abort
 ;	CMP nb_fin				; if equal MSB, check LSB (A known to have nb_ptr)
-;		BCS nb_exit			; nb_ptr cannot be higher neither equal than nb_fin
+;		BCS nb_err			; nb_ptr cannot be higher neither equal than nb_fin
 nb_ok:
 ; might also check for boundaries (system dependant)
 #endif
@@ -156,17 +136,7 @@ nb_gbit:
 ; **************************
 		STA (nb_ptr), Y		; store at destination (5 or 6)
 #ifdef	DISPLAY
-; **********************************************
-; *** this is a good place to update display *** single LTC, for instance
-		LDX nb_cur			; current position (3)
-		LDA nb_disp, X		; get pattern (4)
-		STA $FFF0			; put on display (4)
-		INX					; next anode (2+2)
-		TXA
-		AND #3				; four anodes on a single LTC4622 display (2)
-		STA nb_cur			; update for next round (3)
-; *** end of display update *** 20t per byte
-; *****************************
+		JSR ltc_up			; now adds 32t per BYTE, likely irrelevant
 #endif
 		INY					; next (2)
 		BNE nbg_nw			; check MSB too (3/7)
@@ -200,6 +170,13 @@ nbg_nw:
 ; ********************************************
 ; *** transfer ended, execute loaded code! ***
 ; ********************************************
+#ifdef	DISPLAY
+	LDA #$FF				; in case a TTL latch is used!
+	STA $FFF0				; nice to turn off display!
+#endif
+#ifdef	SAFE
+; should I reset NMI/IRQ vectors?
+#endif
 	JMP (nb_ex)				; go!
 
 ; *************************************
@@ -230,17 +207,32 @@ nb_pat:						; segment patterns for hex numbers
 	.byt	%10010010		; D
 	.byt	%01110000		; E
 	.byt	%01111000		; F
+; *******************************************************
+; ** LTC display update routine, 20t plus 12t overhead **
+ltc_up:
+	LDX nb_cur			; current position (3)
+	LDA nb_disp, X		; get pattern (4)
+	STA $FFF0			; put on display (4)
+	INX					; next anode (2+2)
+	TXA
+	AND #3				; four anodes on a single LTC4622 display (2)
+	STA nb_cur			; update for next round (3)
+	RTS
+; *******************************************************
 #endif
 
 ; **********************************************************************
 ; *** in case nonvalid header is detected, reset or continue booting ***
 ; **********************************************************************
-nb_exit:
-#ifndef	TIMEBOOT
-	JMP ($FFFC)				; reset, hopefully will go elsewhere
-#endif
+nb_err:
 #ifdef	DISPLAY
-	LDA #%11100101			; dash on BOTH digits ***
+	LDA #%11100101			; dash on BOTH digits means ERROR
+	BNE ltc_ab				; if no display, same as error
+#endif
+nb_exit:
+#ifdef	DISPLAY
+	LDA #$FF				; will clear display in case of timeout
+							; might show '..' instead (%11101010)
+ltc_ab:
 	STA $FFF0				; put it on port
-	BNE *					; lock
 #endif

@@ -1,7 +1,7 @@
 ; minimal nanoBoot firmware
-; v0.3a3
+; v0.4a1
 ; (c) 2018-2021 Carlos J. Santisteban
-; last modified 20201227-1516
+; last modified 20210202-1937
 
 ; already NMOS-savvy
 
@@ -53,7 +53,10 @@ reset:
 
 ; ...followed by code chunks
 #include "init.s"
+; as this simple bootloader has nothing else to do, just lock (Z known to be clear)
+	BNE *
 
+; *** nanoBoot interrupt service routines ***
 #ifndef	SETOVER
 ; regular version
 #include "nmi.s"
@@ -63,7 +66,7 @@ reset:
 #include "so_nmi.s"
 #endif
 
-; vectored interrupt handlers
+; *** vectored interrupt handlers ***
 nmi:
 	JMP (fw_nmi)
 irq:
