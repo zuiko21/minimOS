@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210119-1859         */
+ * last modified 20210203-1835         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,9 +11,9 @@
 /* CB1 is clock, CB2 data, can use pin 34 as GND */
 /* THIS VERSION NEEDS OPEN COLLECTOR (INVERTING) DRIVERS */
 /* STB pin isn't currently used, just a placeholder for SS22 */
-#define	CB1		27
-#define	CB2		28
-#define	STB		29
+#define	CB1		16
+#define	CB2		20
+#define	STB		21
 
 /* prototypes */
 void cabe(int x);	/* send header byte in a slow way */
@@ -29,7 +29,7 @@ int main(void) {
 	printf("*** nanoBoot server (OC) ***\n\n");
 	printf("pin 34=GND, 36=CLK, 38=/DAT\n\n");
 /* GPIO setup */
-	wiringPiSetup();
+	wiringPiSetupGpio();	/* using BCM numbering! */
 	digitalWrite(CB1, 0);	/* clock initially disabled, note OC */
 	pinMode(CB1, OUTPUT);
 	pinMode(CB2, OUTPUT);
