@@ -23,7 +23,7 @@ int main(void) {
 	printf("Scanlines? (max. 16) ");
 	scanf(" %d", &y);
 	printf("4 or 8 pixel wide? ");
-	scanf(" %d", %narrow);
+	scanf(" %d", &narrow);
 	narrow = (narrow==4)?1:0;
 // why should I put the terminator on the read string?
 	i=0;
