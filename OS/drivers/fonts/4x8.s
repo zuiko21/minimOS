@@ -1,6 +1,6 @@
 ; 4x8 font definition for minimOS picoVDU
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210205-1005
+; last modified 20210205-1345
 
 ; for space saving, even glyps are stored as MSN, and odd glyphs as LSN
 
@@ -413,225 +413,125 @@
 	.byt	%00000000
 
 ; ASCII $4A - J
-	.byt	%0000
-	.byt	%0010
-	.byt	%0010
-	.byt	%0010
-	.byt	%1010
-	.byt	%1010
-	.byt	%0100
-	.byt	%0000
-
 ; ASCII $4B - K
-	.byt	%0000
-	.byt	%1001
-	.byt	%1010
-	.byt	%1100
-	.byt	%1100
-	.byt	%1010
-	.byt	%1001
-	.byt	%0000
+	.byt	%00000000
+	.byt	%00101001
+	.byt	%00101010
+	.byt	%00101100
+	.byt	%10101100
+	.byt	%10101010
+	.byt	%01001001
+	.byt	%00000000
 
 ; ASCII $4C - L
-	.byt	%0000
-	.byt	%1000
-	.byt	%1000
-	.byt	%1000
-	.byt	%1000
-	.byt	%1000
-	.byt	%1110
-	.byt	%0000
-
 ; ASCII $4D - M
-	.byt	%0000
-	.byt	%1010
-	.byt	%1110
-	.byt	%1110
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%0000
+	.byt	%00000000
+	.byt	%10001010
+	.byt	%10001110
+	.byt	%10001110
+	.byt	%10001010
+	.byt	%10001010
+	.byt	%11101010
+	.byt	%00000000
 
 ; ASCII $4E - N
-	.byt	%0000
-	.byt	%1001
-	.byt	%1101
-	.byt	%1101
-	.byt	%1011
-	.byt	%1011
-	.byt	%1001
-	.byt	%0000
-
 ; ASCII $4F - O
-	.byt	%0000
-	.byt	%0100
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%0100
-	.byt	%0000
+	.byt	%00000000
+	.byt	%10010100
+	.byt	%11011010
+	.byt	%11011010
+	.byt	%10111010
+	.byt	%10111010
+	.byt	%10010100
+	.byt	%00000000
 
 ; ASCII $50 - P
-	.byt	%0000
-	.byt	%1100
-	.byt	%1010
-	.byt	%1010
-	.byt	%1100
-	.byt	%1000
-	.byt	%1000
-	.byt	%0000
-
 ; ASCII $51 - Q
-	.byt	%0000
-	.byt	%0100
-	.byt	%1010
-	.byt	%1010
-	.byt	%1110
-	.byt	%1010
-	.byt	%0101
-	.byt	%0000
+	.byt	%00000000
+	.byt	%11000100
+	.byt	%10101010
+	.byt	%10101010
+	.byt	%11001110
+	.byt	%10001010
+	.byt	%10000101
+	.byt	%00000000
 
 ; ASCII $52 - R
-	.byt	%0000
-	.byt	%1100
-	.byt	%1010
-	.byt	%1010
-	.byt	%1100
-	.byt	%1010
-	.byt	%1010
-	.byt	%0000
-
 ; ASCII $53 - S
-	.byt	%0000
-	.byt	%0110
-	.byt	%1000
-	.byt	%0100
-	.byt	%0010
-	.byt	%0010
-	.byt	%1100
-	.byt	%0000
+	.byt	%00000000
+	.byt	%11000110
+	.byt	%10101000
+	.byt	%10100100
+	.byt	%11000010
+	.byt	%10100010
+	.byt	%10101100
+	.byt	%00000000
 
 ; ASCII $54 - T
-	.byt	%0000
-	.byt	%1110
-	.byt	%0100
-	.byt	%0100
-	.byt	%0100
-	.byt	%0100
-	.byt	%0100
-	.byt	%0000
-
 ; ASCII $55 - U
-	.byt	%0000
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%0100
-	.byt	%0000
+	.byt	%00000000
+	.byt	%11101010
+	.byt	%01001010
+	.byt	%01001010
+	.byt	%01001010
+	.byt	%01001010
+	.byt	%01000100
+	.byt	%00000000
 
 ; ASCII $56 - V
-	.byt	%0000
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%0100
-	.byt	%0100
-	.byt	%0000
-
 ; ASCII $57 - W
-
-	.byt	%0000
-	.byt	%1010
-	.byt	%1010
-	.byt	%1010
-	.byt	%1110
-	.byt	%1110
-	.byt	%1010
-	.byt	%0000
+	.byt	%00000000
+	.byt	%10101010
+	.byt	%10101010
+	.byt	%10101010
+	.byt	%10101110
+	.byt	%01001110
+	.byt	%01001010
+	.byt	%00000000
 
 ; ASCII $58 - X
-	.byt	%0000
-	.byt	%1010
-	.byt	%1010
-	.byt	%0100
-	.byt	%0100
-	.byt	%1010
-	.byt	%1010
-	.byt	%0000
-
 ; ASCII $59 - Y
-	.byt	%0000
-	.byt	%1010
-	.byt	%1010
-	.byt	%0100
-	.byt	%0100
-	.byt	%0100
-	.byt	%0100
-	.byt	%0000
+	.byt	%00000000
+	.byt	%10101010
+	.byt	%10101010
+	.byt	%01000100
+	.byt	%01000100
+	.byt	%10100100
+	.byt	%10100100
+	.byt	%00000000
 
 ; ASCII $5A - Z
-	.byt	%0000
-	.byt	%1110
-	.byt	%0010
-	.byt	%0100
-	.byt	%0100
-	.byt	%1000
-	.byt	%1110
-	.byt	%0000
-
 ; ASCII $5B - [
-	.byt	%0000
-	.byt	%0110
-	.byt	%0100
-	.byt	%0100
-	.byt	%0100
-	.byt	%0100
-	.byt	%0110
-	.byt	%0000
+	.byt	%00000000
+	.byt	%11100110
+	.byt	%00100100
+	.byt	%01000100
+	.byt	%01000100
+	.byt	%10000100
+	.byt	%11100110
+	.byt	%00000000
 
 ; ASCII $5C - \ (backslash)
-	.byt	%0000
-	.byt	%1000
-	.byt	%0100
-	.byt	%0100
-	.byt	%0010
-	.byt	%0010
-	.byt	%0001
-	.byt	%0000
-
 ; ASCII $5D - ]
-	.byt	%0000
-	.byt	%0110
-	.byt	%0010
-	.byt	%0010
-	.byt	%0010
-	.byt	%0010
-	.byt	%0110
-	.byt	%0000
+	.byt	%00000000
+	.byt	%10000110
+	.byt	%01000010
+	.byt	%01000010
+	.byt	%00100010
+	.byt	%00100010
+	.byt	%00010110
+	.byt	%00000000
 
 ; ASCII $5E - ^
-	.byt	%0000
-	.byt	%0100
-	.byt	%1010
-	.byt	%0000
-	.byt	%0000
-	.byt	%0000
-	.byt	%0000
-	.byt	%0000
-
 ; ASCII $5F - _
-	.byt	%0000
-	.byt	%0000
-	.byt	%0000
-	.byt	%0000
-	.byt	%0000
-	.byt	%0000
-	.byt	%0000
-	.byt	%1111
+	.byt	%00000000
+	.byt	%01000000
+	.byt	%10100000
+	.byt	%00000000
+	.byt	%00000000
+	.byt	%00000000
+	.byt	%00000000
+	.byt	%00001111
 
 ; ASCII $60 - `
 	.byt	%0000
@@ -646,11 +546,11 @@
 ; ASCII $61 - a
 	.byt	%0000
 	.byt	%0000
-	.byt	%1100
+	.byt	%0100
 	.byt	%0010
-	.byt	%1110
-	.byt	%1010
 	.byt	%0110
+	.byt	%1010
+	.byt	%0100
 	.byt	%0000
 
 ; ASCII $62 - b
