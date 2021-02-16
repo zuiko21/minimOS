@@ -1,6 +1,6 @@
-; nanoBoot NMI handler for 6502 v0.4a1
+; nanoBoot NMI handler for 6502 v0.4a2
 ; (c) 2018-2021 Carlos J. Santisteban
-; last modified 20210202-1845
+; last modified 20210216-2235
 
 nb_nmi:
 ; received bits should be LSB first!
@@ -14,7 +14,7 @@ nb_nmi:
 ; ** may SEVERELY impair bit rate (+13t, worst total of 71t vs. 58) **
 	PHP					; put C (and others) in stack
 	PLA					; back as D0 (inverted!)
-	EOR #1				; ** CHECK THIS
+;	EOR #1				; ** CHECK THIS
 	STA $BFFF			; store at beeper flipflop
 #endif
 	PLA					; retrieve A, but C won't be affected (4)
