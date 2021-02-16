@@ -1,4 +1,4 @@
-; startup nanoBoot for 6502, v0.4a1
+; startup nanoBoot for 6502, v0.4a2
 ; (c) 2018-2021 Carlos J. Santisteban
 ; last modified 20210216-2200
 
