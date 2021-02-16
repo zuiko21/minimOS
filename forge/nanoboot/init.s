@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502, v0.4a1
 ; (c) 2018-2021 Carlos J. Santisteban
-; last modified 20210202-1937
+; last modified 20210216-2200
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -10,6 +10,8 @@
 ; nb_ex (word) keeps initial address, should be consecutive
 ; *** will temporarily use 3 more bytes, the last one for checking valid header ***
 
+; note new NBEXTRA for enhanced feedback, may impair performance
+#define	NBEXTRA	_NBEXTRA
 nb_init:
 	SEI						; make sure interrupts are off (2)
 ; ******************************
@@ -73,6 +75,16 @@ nb_lbit:
 #endif
 			LDX nb_flag			; received something? (3)
 			BNE nb_lbit			; no, keep trying (3/2)
+#ifdef	DISPLAY
+#ifdef		NBEXTRA
+	LDA #%11101000			; dot on second digit (will show .. during header, adds a lot of overhead but transmission is slow anyway)
+	STA nb_disp+2
+	LDA #%11100010			; dot on first digit
+	STA nb_disp
+	STX nb_disp+1			; clear remaining segments (known to be zero)
+	STX nb_disp+3
+#endif
+#endif
 		LDA nb_rcv			; get received (3)
 ; note regular NMI get inverted bytes, while SO version does not
 #ifndef	SETOVER
@@ -105,13 +117,8 @@ nb_ok:
 	STX nb_ptr				; ready for indirect-indexed (X known to be zero, or use STZ)
 	TAY						; last byte loaded is the index! (2)
 #ifdef	DISPLAY
-; create acknowledge message while loading first page (16t)
-	LDA #%11101000			; dot on second digit
-	STA nb_disp+2
-	LDA #%11100010			; dot on first digit
-	STA nb_disp
-	STX nb_disp+1			; clear remaining segments (known to be zero)
-	STX nb_disp+3
+; create acknowledge message while loading first page (12t + routine length)
+	JSR show_pg
 #endif
 ; **************************************
 ; *** header is OK, execute transfer ***
@@ -143,23 +150,7 @@ nb_gbit:
 			INC nb_ptr+1
 ; *** page has changed, may be reflected on display ***
 #ifdef	DISPLAY
-; ***************************************
-; show page LSN, takes 35t each 256 bytes
-			LDA nb_ptr+1	; get new page number (3)
-			AND #15			; LSN only (2)
-			TAX				; as index (2)
-			LDA nb_pat, X	; low pattern first (4)
-			AND #240		; MSN as cathodes (2)
-			ORA #%1000		; enable first anode of second digit (2+3)
-			STA nb_disp+2
-			LDA nb_pat, X	; load again full pattern (4)
-			ASL				; keep LSN only (2+2+2+2)
-			ASL
-			ASL
-			ASL
-			ORA #%0100		; enable second anode of second digit (2+3)
-			STA nb_disp+3
-; ***************************************
+		JSR show_pg			; adds 12t + routine length every 256 bytes
 #endif
 nbg_nw:
 		CPY nb_fin			; check whether ended (3)
@@ -178,6 +169,23 @@ nbg_nw:
 ; should I reset NMI/IRQ vectors?
 #endif
 	JMP (nb_ex)				; go!
+
+; **********************************************************************
+; *** in case nonvalid header is detected, reset or continue booting ***
+; **********************************************************************
+nb_err:
+#ifdef	DISPLAY
+	LDA #%11100101			; dash on BOTH digits means ERROR
+	BNE ltc_ab				; if no display, same as error
+#endif
+nb_exit:
+#ifdef	DISPLAY
+	LDA #$FF				; will clear display in case of timeout
+							; might show '..' instead (%11101010)
+ltc_ab:
+	STA $FFF0				; put it on port
+#endif
+	JMP abort				; get out of here, just in case
 
 ; *************************************
 ; *** table with interrupt pointers *** and diverse data
@@ -218,21 +226,45 @@ ltc_up:
 	AND #3				; four anodes on a single LTC4622 display (2)
 	STA nb_cur			; update for next round (3)
 	RTS
-; *******************************************************
+; ****************************************
+; ** LTC page display, no longer inline **
+show_pg:
+#ifdef	NBEXTRA
+; show page MSN, takes 41t  more each 256 bytes
+	LDA nb_ptr+1	; get new page number (3)
+	LSR				; MSN only (4x2)
+	LSR
+	LSR
+	LSR
+	TAX				; as index (2)
+	LDA nb_pat, X	; low pattern first (4)
+	AND #240		; MSN as cathodes (2)
+	ORA #%0010		; enable first anode of first digit (2+3)
+	STA nb_disp
+	LDA nb_pat, X	; load again full pattern (4)
+	ASL				; keep LSN only (2+2+2+2)
+	ASL
+	ASL
+	ASL
+	ORA #%0001		; enable second anode of first digit (2+3)
+	STA nb_disp+1
 #endif
-
-; **********************************************************************
-; *** in case nonvalid header is detected, reset or continue booting ***
-; **********************************************************************
-nb_err:
-#ifdef	DISPLAY
-	LDA #%11100101			; dash on BOTH digits means ERROR
-	BNE ltc_ab				; if no display, same as error
+; show page LSN, takes 35t each 256 bytes
+	LDA nb_ptr+1	; get new page number (3)
+	AND #15			; LSN only (2)
+	TAX				; as index (2)
+	LDA nb_pat, X	; low pattern first (4)
+	AND #240		; MSN as cathodes (2)
+	ORA #%1000		; enable first anode of second digit (2+3)
+	STA nb_disp+2
+	LDA nb_pat, X	; load again full pattern (4)
+	ASL				; keep LSN only (2+2+2+2)
+	ASL
+	ASL
+	ASL
+	ORA #%0100		; enable second anode of second digit (2+3)
+	STA nb_disp+3
+	RTS
 #endif
-nb_exit:
-#ifdef	DISPLAY
-	LDA #$FF				; will clear display in case of timeout
-							; might show '..' instead (%11101010)
-ltc_ab:
-	STA $FFF0				; put it on port
-#endif
+; *** all finished, continue execution if unsuccessful ***
+abort:
