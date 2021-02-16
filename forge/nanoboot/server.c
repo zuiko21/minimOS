@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210203-1835         */
+ * last modified 20210216-2157         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +65,7 @@ int main(void) {
 		c = fgetc(f);
 		dato(c);
 	}
+	digitalWrite(CB2, 0);	/* let data line float high, note OC */
 	printf("\nEnded at $%04X\n", fin);
 	fclose(f);
 
