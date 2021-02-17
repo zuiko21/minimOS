@@ -1,8 +1,8 @@
 ; breadboard nanoBoot-loaded firmware
 ; based on generic firmware template for minimOS·65
-; v0.6b19
+; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210215-1401
+; last modified 20210217-0953
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -10,24 +10,30 @@
 
 .(
 #ifndef	NOHEAD
+; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
+	JMP reset					; skip two pages
+; could put here some routines, or tables, really disposable once booted into minimOS...
+
+; header is expected to be page-aligned
+	.dsb	fw_start-*, $FF
+
 ; *************************************
 ; *** first some ROM identification *** new 20150612
 ; *************************************
-; this is expected to be loaded at an aligned address anyway
 fw_start:
 	.asc 0, "m", CPU_TYPE		; standard system file wrapper, new format 20161010, experimental type
 	.asc "****", CR				; flags TBD
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "0.6 firmware for "	; machine description as comment
+	.asc "0.6 LOADABLE firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header (may need extra fields for relocation)
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$7000				; time, 14.00
-	.word	$524F				; date, 2021/2/15
+	.word	$4BC0				; time, 09.30
+	.word	$5251				; date, 2021/2/17
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -35,50 +41,13 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 	.word	fwSize				; filesize
 	.word	0					; 64K space does not use upper 16-bit
 ; *** end of standard header ***
-#else
-; if no headers, put identifying strings somewhere
-fw_splash:
-	.asc	"0.6 FW @ "
-fw_mname:
-	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
+; if no headers, put identifying strings somewhere, but NOT HERE!
 
 ; *** cannot do proper shutdown as this will be executed first ***
-	JMP reset			; skip tables
+; since this is the start point from nanoBoot, HERE starts the mOS firmware!
 
-; *********************************
-; *********************************
-; *** administrative jump table *** changing
-; *********************************
-; *********************************
-fw_admin:
-#ifndef		FAST_FW
-; generic functions, esp. interrupt related
-	.word	gestalt		; GESTALT get system info (renumbered)
-	.word	set_isr		; SET_ISR set IRQ vector
-	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
-	.word	set_dbg		; SET_DBG set debugger, new 20170517
-	.word	jiffy		; JIFFY set jiffy IRQ speed
-	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
-
-; pretty hardware specific
-	.word	poweroff	; POWEROFF power-off, suspend or cold boot
-	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
-; not for LOWRAM systems
-#ifndef	LOWRAM
-	.word	install		; INSTALL copy jump table
-	.word	patch		; PATCH patch single function (renumbered)
-	.word	reloc		; RELOCate code and data (TBD)
-#else
-	.word	missing		; these three functions not implemented on such systems
-	.word	missing
-	.word	missing
-#endif
-	.word	conio		; CONIO, basic console when available (TBD)
-#ifdef	LOWRAM
-missing:
-		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
-#endif
+;	JMP reset			; skip tables ** now moved
 
 ; ********************
 ; ********************
@@ -102,7 +71,7 @@ reset:
 ; *** optional firmware modules ***
 ; *********************************
 
-; optional boot selector
+; optional boot selector *** makes little sense with downloaded kernel
 ;#include "modules/bootoff.s"
 
 ; might check ROM integrity here
@@ -111,11 +80,11 @@ reset:
 ; some systems might copy ROM-in-RAM and continue at faster speed!
 ;#include "modules/rominram.s"
 
-; startup beep
+; startup beep *** not really using this
 ;#include "modules/beepIO9.s" 
 
 ; SRAM test
-#include "modules/ramtestI09.s"	; *** integrated new beep for breadboard loader
+#include "modules/ramtestI0B.s"	; *** integrated new beep for breadboard loader
 
 ; ********************************
 ; *** hardware interrupt setup ***
@@ -149,7 +118,7 @@ reset:
 #include "modules/mini_nmi.s"
 #include "modules/mini_irq.s"
 
-; preset jiffy irq frequency *** so much with 0.5.x compatibility!
+; preset jiffy irq frequency *** this hardware is fixed-freq, so much with 0.5.x compatibility!
 ;#include "modules/jiffy_hz.s"
 
 ; reset jiffy count
@@ -158,12 +127,12 @@ reset:
 ; reset last installed kernel (new)
 #include "modules/rst_lastk.s"
 
-
 ; *** direct print splash string code comes here, when available ***
+; perhaps time to initialise picoVDU
 
-; *** optional network booting ***
-; might modify the contents of fw_warm
-;#include "modules/netboot.s"
+; *** optional network booting *** makes no sense with nanoBoot
+
+
 
 ; *** possible kernel RELOCation should be done here ***
 
@@ -174,6 +143,39 @@ start_kernel:
 
 #include "modules/start.s"
 
+; *********************************
+; *********************************
+; *** administrative jump table *** this has been safely moved forward, saving the mandatory jump instruction
+; ********************************* if headers are used, may be placed just after the first JMP
+; *********************************
+fw_admin:
+#ifndef		FAST_FW
+; generic functions, esp. interrupt related
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
+; not for LOWRAM systems
+#ifndef	LOWRAM
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+	.word	reloc		; RELOCate code and data (TBD)
+#else
+	.word	missing		; these three functions not implemented on such systems
+	.word	missing
+	.word	missing
+#endif
+	.word	conio		; CONIO, basic console when available (TBD)
+#ifdef	LOWRAM
+missing:
+		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
+#endif
 
 ; ********************************
 ; ********************************
@@ -182,7 +184,7 @@ start_kernel:
 ; ********************************
 
 ; **********************************************
-; *** vectored NMI handler with magic number ***
+; *** vectored NMI handler with magic number *** not as safe as nanoboot requires (fast) vectored NMI handler
 ; **********************************************
 nmi:
 #include "modules/nmi_hndl.s"
@@ -208,7 +210,7 @@ brk_hndl:				; label from vector list
 
 ; ********************************
 ; ********************************
-; *** administrative functions ***
+; *** administrative functions *** these take some custom modules
 ; ********************************
 ; ********************************
 
@@ -244,14 +246,14 @@ set_dbg:
 ; JIFFY, set jiffy IRQ period
 ; ***************************
 jiffy:
-#include "modules/jiffy.s"
+#include "modules/nv_jiffy.s"	; special module, cannot set speed but at least enable 244 Hz interrupt source!
 
 ; ****************************************
 ; IRQ_SRC, investigate source of interrupt
 ; ****************************************
-; notice non-standard ABI, same module as 6502 version!
+; notice non-standard ABI, special module for VIA-less system, just check whether jiffy is disabled in hardware!
 irq_src:
-#include "modules/irq_src.s"
+#include "modules/nv_i_src.s"
 
 ; *** hardware specific ***
 
@@ -285,22 +287,32 @@ patch:
 ; RELOC, data and code relocation *** TBD
 ; *******************************
 reloc:
-;#include "modules/reloc.s"
+	DR_ERR(UNAVAIL)	; not yet implemented
 #endif
 
 ; ***********************************
-; CONIO, basic console when available *** TBD
+; CONIO, basic console when available *** will include picoVDU
 ; ***********************************
 conio:
-;#include "modules/conio.s"
-;	DR_ERR(UNAVAIL)	; not implemented unless specific device
-; *** should include picoVDU @ IO8
+#include "modules/picovdu.s"
 
 ; ***********************************
 ; ***********************************
-; *** some firmware odds and ends *** will remain in bootloader ROM!
+; *** some firmware odds and ends *** entry points and handlers will remain in bootloader ROM!
 ; ***********************************
 ; ***********************************
+
+; ID strings unless residing on header
+#ifdef	NOHEADERS
+fw_splash:
+	.asc	"0.6 FW @ "
+fw_mname:
+	.asc	MACHINE_NAME, 0		; store the name at least
+#endif
+
+; **************************************
+; *** *** *** NO LONGER HERE *** *** ***
+; **************************************
 /*
 ; *** memory map, as used by gestalt, not sure what to do with it ***
 fw_map:					; TO BE DONE
