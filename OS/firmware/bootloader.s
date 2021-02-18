@@ -2,9 +2,11 @@
 ; minimal support for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210218-1054
+; last modified 20210218-1224
 
 #include "../usual.h"
+#include "template.h"
+; takes standard FW variables, already nanoBoot-savvy
 
 .(
 	.text
@@ -29,6 +31,7 @@ fw_mname:
 	.word	$4BC0				; time, 09.30
 	.word	$5251				; date, 2021/2/17
 
+
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
@@ -37,14 +40,20 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 ; *** end of standard header ***
 #endif
 
+; *** auxiliary stuff for nanoBoot ***
+#include "../../forge/nanoboot/nanoboot.h"
+#include "../../forge/nanoboot/nmi.s"
+#include "../../forge/nanoboot/isr.s"
+
 ; ********************
 ; ********************
 ; *** cold restart *** launch nanoBoot, then execute a test counter
 ; ********************
 ; ********************
-
+; *** actual RST entry point ***
 reset:
-; place nanoBoot code here:
+; place nanoBoot init code here, then alternative:
+#include "../../forge/nanoboot/init.s"
 
 ; **********************************************************
 ; *** if unsuccessful, how a demo counter on LTC display ***
@@ -69,26 +78,31 @@ count:
 ; *************************************
 cnt_isr:
 	PHA						; take some time, just in case
+	SED						; best done in decimal
 	DEC nb_ptr				; count number of interrupts
 	BNE ci_end				; second not yet complete, exit
 ; *** will in this case last enough for the IRQ pulse to have ended?
 		LDA #244			; reload counter
 		STA nb_ptr
-		INC nb_ptr+1		; count up a new second
-		LDA nb_ptr+1		; check LSN
-		AND #15
-		CMP #10				; decimal overflow?
-		BNE ci_end			; no, finish
-			LDA nb_ptr+1	; retrieve full value otherwise
-			ADC #5			; yes, advance decade (C was set)
-			CMP #$A0		; already at 100?
-			BNE ci_upd		; no, just update value
-				LDA #0		; yes, reset counter... but change dots?
+		LDA nb_ptr+1		; will increment display counter
+		CLC
+		ADC #1				; one more second
+		CMP #$60			; full minute?
+		BNE ci_upd			; no, just update value
+			LDA #0			; yes, reset counter... but change dots?
 ci_upd:
-			STA nb_ptr+1	; update decade too
+		STA nb_ptr+1		; update decade too
 ci_end:
 	PLA						; restore status
 	RTI
+
+; ******************************************
+; *** simple hardware interrupt handlers ***
+; ******************************************
+irq:
+	JMP (fw_isr)
+nmi:
+	JMP (fw_nmi)			; unfortunately, no longer safe
 
 ; *******************************
 ; *******************************
