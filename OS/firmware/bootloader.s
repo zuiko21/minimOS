@@ -2,11 +2,12 @@
 ; minimal support for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210218-1330
+; last modified 20210218-2008
 
 #define	NOHEAD	_NOHEAD
 #define	DISPLAY	_DISPLAY
 #define	NBEXTRA	_NBEXTRA
+#define	ROM		_ROM
 
 #include "../options.h"
 #include "../macros.h"
