@@ -19,7 +19,7 @@
 #include "template.h"
 ; takes standard FW variables, already nanoBoot-savvy
 
-	fw_admin=$400				; *** PLACEHOLDER ***
+	fw_admin=$700				; *** PLACEHOLDER ***
 
 .(
 	.text
