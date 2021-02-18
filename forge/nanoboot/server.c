@@ -27,7 +27,7 @@ int main(void) {
 	char	nombre[80];
 
 	printf("*** nanoBoot server (OC) ***\n\n");
-	printf("pin 34=GND, 36=CLK, 38=/DAT\n\n");
+	printf("pin 34=GND, 36=CLK, 38=DAT\n\n");
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
 	digitalWrite(CB1, 0);	/* clock initially disabled, note OC */
