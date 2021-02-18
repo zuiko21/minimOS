@@ -2,15 +2,28 @@
 ; minimal support for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210218-1224
+; last modified 20210218-1330
 
-#include "../usual.h"
+#define	NOHEAD	_NOHEAD
+#define	DISPLAY	_DISPLAY
+#define	NBEXTRA	_NBEXTRA
+
+#include "../options.h"
+#include "../macros.h"
+#include "../abi.h"
+#include "../../forge/nanoboot/nanoboot.h"
+#include "../zeropage.h"
+
+	.bss:
+	* =	$200					; standard sysmem start
 #include "template.h"
 ; takes standard FW variables, already nanoBoot-savvy
 
+	fw_admin=$400				; *** PLACEHOLDER ***
+
 .(
 	.text
-	* = $FC00					; minimal 1 KB ROM
+	* = $FE00					; minimal 1 KB ROM, 0.5K if NOHEAD option
 
 #ifndef	NOHEAD
 ; *************************************
@@ -41,7 +54,6 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #endif
 
 ; *** auxiliary stuff for nanoBoot ***
-#include "../../forge/nanoboot/nanoboot.h"
 #include "../../forge/nanoboot/nmi.s"
 #include "../../forge/nanoboot/isr.s"
 
@@ -103,6 +115,12 @@ irq:
 	JMP (fw_isr)
 nmi:
 	JMP (fw_nmi)			; unfortunately, no longer safe
+brk_hndl:
+	JSR brk_call			; indirect jump will return here
+	RTI						; *** should jum to some end-of-handler
+; as no indirect call is available, call here and return to handler
+brk_call:
+	JMP (fw_dbg)		; will return
 
 ; *******************************
 ; *******************************
