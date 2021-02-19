@@ -2,7 +2,7 @@
 ; minimal support for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210218-2008
+; last modified 20210219-0917
 
 #define	NOHEAD	_NOHEAD
 #define	DISPLAY	_DISPLAY
@@ -83,6 +83,9 @@ reset:
 	CLI						; interrupts are on!
 count:
 		JSR show_pg			; create bitmaps from value
+		LDA nb_disp+3		; get second digit...
+		AND #%11101111		; ...and set decimal point
+		STA nb_disp+3
 		JSR ltc_up			; quickly update display
 		JMP count			; forever
 
@@ -139,8 +142,8 @@ ret1:
 	STA $FFF0				; first digit, second anode
 	BNE del2
 ret2:
-;	.byt	%01101010		; r.
-	LDA #%01101000
+;	.byt	%11101010		; r.
+	LDA #%11101000
 	STA $FFF0				; second digit, first anode
 	BNE del3
 ret3:
@@ -226,7 +229,7 @@ nmos_adc:
 * = lock
 	SEI					; reunified procedure 20181101
 ; *** jump to a suitable lock routine if needed ***
-	JMP panic_loop		; will display 'Er' on LTC
+	JMP panic_loop		; will display 'Er.' on LTC
 
 * = $FFE4				; should be already at it
 #ifdef	SAFE
