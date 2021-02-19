@@ -31,7 +31,7 @@ p_test:
 			BNE lock
 		DEX					; go for next ZP address (2+3)
 		BNE z_test			; THIS LOOP: 2+34+12+5-1=52t per byte, plus 7 every 5 bytes
-; buzzer bit toggles every 267t => 1873 Hz @ 1 MHz
+; buzzer bit toggles every 267t => 1873 Hz @ 1 MHz, VERY close to Bb6
 
 ; another note should be musically related to 1873 Hz
 ram_ok:
