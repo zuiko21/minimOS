@@ -63,8 +63,14 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 ; *** cold restart *** launch nanoBoot, then execute a test counter
 ; ********************
 ; ********************
+
 ; *** actual RST entry point ***
 reset:
+	SEI						; basic 6502 init, worth it now
+	CLD
+	LDX #$FF				; theoretically not needed, but...
+	TXS
+
 ; place nanoBoot init code here, then alternative:
 #include "../../forge/nanoboot/init.s"
 
