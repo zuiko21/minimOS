@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502, v0.4a2
 ; (c) 2018-2021 Carlos J. Santisteban
-; last modified 20210216-2234
+; last modified 20210219-0906
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -89,7 +89,7 @@ nb_lbit:
 		LDA nb_rcv			; get received (3)
 ; note regular NMI get inverted bytes, while SO version does not
 #ifndef	SETOVER
-		EOR #$FF			; must invert byte, as now works the opposite (2)
+;		EOR #$FF			; NOPE***must invert byte, as now works the opposite (2)
 #endif
 ; **************************
 ; *** byte received in A ***
@@ -137,7 +137,7 @@ nb_gbit:
 		BNE nb_gbit			; no, keep trying (3/2)
 	LDA nb_rcv				; get received (3)
 #ifndef	SETOVER
-;	EOR #$FF				; must invert byte, as now works the opposite (2) NO LONGER, but check SO option
+;	EOR #$FF				; NOPE***must invert byte, as now works the opposite (2) NO LONGER, but check SO option
 #endif
 ; **************************
 ; *** byte received in A ***
