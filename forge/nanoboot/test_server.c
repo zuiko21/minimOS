@@ -54,8 +54,9 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* send bit for OC, NO longer INVERTED */
 		digitalWrite(CB1, 1);
-		delay(2);			/* way too long, just in case, note OC */
+		useg(5);
 		digitalWrite(CB1, 0);
+		delay(2);			/* way too long, just in case, note OC */
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
@@ -70,8 +71,9 @@ void dato(int x) {			/* send a byte at 'top' speed */
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* note OC */
 		digitalWrite(CB1, 1);
-		useg(75);			/* *** 75 µs or so (at 1 MHz), may need more with IOB beep *** */
+		useg(5);
 		digitalWrite(CB1, 0);
+		useg(50);			/* *** 75 µs or so (at 1 MHz), may need more with IOB beep *** */
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;

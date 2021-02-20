@@ -35,7 +35,7 @@ int main(void) {
 	pinMode(CB1, OUTPUT);
 	pinMode(CB2, OUTPUT);
 	pinMode(STB, OUTPUT);	/* not actually used */
-cabe(0x80);
+while(-1){dato(0b10000101);}
 return 0;
 /* open source file */
 	printf("File: ");
@@ -85,11 +85,7 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 		digitalWrite(CB1, 1);
 		delay(2);			/* way too long, just in case, note OC */
 		digitalWrite(CB1, 0);
-for(int z=0;z<7;z++){
-delay(50);
-digitalWrite(CB1, 1);
-delay(1);			/* way too long, just in case, note OC */
-digitalWrite(CB1, 0);}
+		useg(200);
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
@@ -104,13 +100,9 @@ void dato(int x) {			/* send a byte at 'top' speed */
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* note OC */
 		digitalWrite(CB1, 1);
-		useg(75);			/* *** 75 µs or so (at 1 MHz), may need more with IOB beep *** */
+		useg(65);			/* *** 75 µs or so (at 1 MHz), may need more with IOB beep *** */
 		digitalWrite(CB1, 0);
-for(int z=0;z<7;z++){
-delay(50);
-digitalWrite(CB1, 1);
-useg(60);			/* *** 75 µs or so (at 1 MHz), may need more with IOB beep *** */
-digitalWrite(CB1, 0);}
+		useg(10);
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;

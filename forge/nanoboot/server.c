@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210216-2231         */
+ * last modified 20210220-2035         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,7 +65,6 @@ int main(void) {
 		c = fgetc(f);
 		dato(c);
 	}
-	digitalWrite(CB2, 0);	/* let data line float high, note OC */
 	printf("\nEnded at $%04X\n", fin);
 	fclose(f);
 
@@ -73,6 +72,7 @@ int main(void) {
 }
 
 /* *** function definitions *** */
+/* for old nanoBoot ROM, invert bit (bit^1) */
 void cabe(int x) {			/* just like dato() but with longer bit delay, whole header takes ~85 ms */
 	int bit, i = 8;
 
@@ -80,8 +80,9 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* send bit for OC, NO longer INVERTED */
 		digitalWrite(CB1, 1);
-		delay(2);			/* way too long, just in case, note OC */
+		useg(5);			/* eeeeeek */
 		digitalWrite(CB1, 0);
+		delay(2);			/* way too long, just in case, note OC */
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
@@ -96,13 +97,15 @@ void dato(int x) {			/* send a byte at 'top' speed */
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* note OC */
 		digitalWrite(CB1, 1);
-		useg(75);			/* *** 75 µs or so (at 1 MHz), may need more with IOB beep *** */
+		useg(5);			/* eeeeeeek */
 		digitalWrite(CB1, 0);
+		useg(60);			/* *** cranked up to 55 µs or so (at 1 MHz), may need more with IOB beep *** */
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
 	}
-	useg(200);				/* *** perhaps 200 µs or so *** */
+	digitalWrite(CB2, 0);	/* let data line float high, note OC */
+	useg(125);				/* *** perhaps 200 µs or so *** */
 }
 
 void useg(int x){
