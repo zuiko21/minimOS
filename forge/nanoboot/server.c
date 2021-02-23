@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210220-2035         */
+ * last modified 20210223-2328         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,10 +80,10 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* send bit for OC, NO longer INVERTED */
 		digitalWrite(CB1, 1);
-		useg(5);			/* eeeeeek */
+		useg(15);			/* eeeeeek */
 		digitalWrite(CB1, 0);
 		delay(2);			/* way too long, just in case, note OC */
-/* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
+/* delay is best here in any case */
 		x >>= 1;
 		i--;
 	}
@@ -97,10 +97,10 @@ void dato(int x) {			/* send a byte at 'top' speed */
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* note OC */
 		digitalWrite(CB1, 1);
-		useg(5);			/* eeeeeeek */
+		useg(15);			/* eeeeeeek */
 		digitalWrite(CB1, 0);
-		useg(60);			/* *** cranked up to 55 µs or so (at 1 MHz), may need more with IOB beep *** */
-/* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
+		useg(65);			/* *** cranked up to 55 µs or so (at 1 MHz) is pretty unreliable *** */
+/* delay is best here in any case */
 		x >>= 1;
 		i--;
 	}
