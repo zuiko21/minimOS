@@ -1,8 +1,10 @@
 ; display detected non-mirrored RAM on mux. display
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20201226-1101
+; last modified 20210220-2321
 
 ; *** integrated with ramprobe.s and ltc4622s.s ***
+
+#define	DOWNL	_DOWNL
 
 	.zero
 
@@ -30,7 +32,11 @@ ch_i	.dsb 1				; index for read hex-char
 ; *** *** *** *** *** ***
 	.text
 
+#ifdef	DOWNL
+	* = $400
+#else
 	* = $FE80
+#endif
 
 ; *********************
 ; *** ramprobe code ***
@@ -255,7 +261,7 @@ bitmap:
 ;	.byt	$FF				; special blank value (16)
 
 ; *** *** *** *** *** ***
-
+#ifndef	DOWNL
 	.dsb	$FFFA-*, $FF	; ROM filling
 
 ; *** hardware vectors ***
@@ -263,3 +269,4 @@ vectors:
 	.word	irq_trap
 	.word	ramtest
 	.word	irq_trap		; all interrupts show '=='
+#endif
