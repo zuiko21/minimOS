@@ -2,17 +2,17 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210224-1629
+; last modified 20210224-1737
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
 ; already set at FW_BASE via rom.s
 
 .(
-	* = $4000			; *** *** standard downloadable firmware address *** ***
+	* = $4000					; *** *** standard downloadable firmware address *** ***
 	
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
-	JMP reset			; skip up to two pages
+	JMP reset					; skip up to two pages
 ; could put here some routines, or tables, really disposable once booted into minimOS...
 
 ; *********************************
@@ -21,25 +21,25 @@
 ; ********************************* note STANDARD $4003 location
 ; *********************************
 
--fw_admin:				; *** now at $4003 as standard for downloadable firmware ***
+-fw_admin:						; *** now at $4003 as standard for downloadable firmware ***
 #ifndef		FAST_FW
 ; generic functions, esp. interrupt related
-	.word	gestalt		; GESTALT get system info (renumbered)
-	.word	set_isr		; SET_ISR set IRQ vector
-	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
-	.word	set_dbg		; SET_DBG set debugger, new 20170517
-	.word	jiffy		; JIFFY set jiffy IRQ speed
-	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
+	.word	gestalt				; GESTALT get system info (renumbered)
+	.word	set_isr				; SET_ISR set IRQ vector
+	.word	set_nmi				; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg				; SET_DBG set debugger, new 20170517
+	.word	jiffy				; JIFFY set jiffy IRQ speed
+	.word	irq_src				; IRQ_SOURCE get interrupt source in X for total ISR independence
 
 ; pretty hardware specific
-	.word	poweroff	; POWEROFF power-off, suspend or cold boot
-	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
+	.word	poweroff			; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen			; *** FREQ_GEN frequency generator hardware interface, TBD
 ; not for LOWRAM systems
-	.word	install		; INSTALL copy jump table
-	.word	patch		; PATCH patch single function (renumbered)
-	.word	reloc		; RELOCate code and data (TBD)
+	.word	install				; INSTALL copy jump table
+	.word	patch				; PATCH patch single function (renumbered)
+	.word	reloc				; RELOCate code and data (TBD)
 ; basic I/O
-	.word	conio		; CONIO, basic console when available (TBD)
+	.word	conio				; CONIO, basic console when available (TBD)
 
 ; *** there's still some room for routines! ***
 ; ID strings unless residing on header
@@ -119,15 +119,15 @@ reset:
 ; startup beep *** not really using this
 ;#include "modules/beep.s" 
 
-; SRAM test
-#include "modules/ramtestI0B.s"	; *** integrated new beep for breadboard loader
+; SRAM test *** integrates new beep for breadboard loader
+#include "modules/ramtestI0B.s"
 
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
 
-; VIA initialisation (and stop beeping) *** stop beeping integrated in RAMtest
-;#include "modules/via_init.s"
+; VIA initialisation (and stop beeping) *** stop beeping integrated in RAMtest, this will enable hardware periodic interrupt
+#include "modules/ioa_enable.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -151,11 +151,12 @@ reset:
 #include "modules/brk_addr.s"
 
 ; NMI is NOT validated, and 6502 systems should set a minimal IRQ handler in order to enable PANIC (BRK) handling!
+; perhaps mini_nmi should include the standard nmi_end?
 #include "modules/mini_nmi.s"
 #include "modules/mini_irq.s"
 
-; preset jiffy irq frequency *** this hardware is fixed-freq, so much with 0.5.x compatibility!
-;#include "modules/jiffy_hz.s"	; might just preset that 244 Hz
+; preset jiffy irq frequency *** this hardware is fixed-freq, so much with 0.5.x compatibility! might just preset that 244 Hz
+;#include "modules/jiffy_hz.s"
 
 ; reset jiffy count
 #include "modules/jiffy_rst.s"
@@ -220,14 +221,14 @@ set_dbg:
 ; ***************************
 ; JIFFY, set jiffy IRQ period
 ; ***************************
-jiffy:
-#include "modules/nv_jiffy.s"	; special module, cannot set speed but at least enable 244 Hz interrupt source!
+jiffy:							; special module, cannot set speed but at least enable 244 Hz interrupt source!
+#include "modules/nv_jiffy.s"
 
 ; ****************************************
 ; IRQ_SRC, investigate source of interrupt
 ; ****************************************
-; notice non-standard ABI, special module for VIA-less system, just check whether jiffy is disabled in hardware!
-irq_src:
+; notice non-standard ABI
+irq_src:						; special module for VIA-less system, just check whether jiffy is disabled in hardware!
 #include "modules/nv_i_src.s"
 
 ; *** hardware specific ***
