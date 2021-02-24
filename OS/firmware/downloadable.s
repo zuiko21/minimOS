@@ -2,7 +2,7 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210224-1332
+; last modified 20210224-1629
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
@@ -12,14 +12,15 @@
 	* = $4000			; *** *** standard downloadable firmware address *** ***
 	
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
-	JMP reset					; skip two pages
+	JMP reset			; skip up to two pages
 ; could put here some routines, or tables, really disposable once booted into minimOS...
 
 ; *********************************
 ; *********************************
-; *** administrative jump table *** this has been safely moved forward, saving the mandatory jump instruction
-; ********************************* if headers are used, may be placed just after the first JMP
+; *** administrative jump table *** this has been safely moved backwards, thanks to the mandatory jump instruction
+; ********************************* note STANDARD $4003 location
 ; *********************************
+
 -fw_admin:				; *** now at $4003 as standard for downloadable firmware ***
 #ifndef		FAST_FW
 ; generic functions, esp. interrupt related
@@ -34,21 +35,23 @@
 	.word	poweroff	; POWEROFF power-off, suspend or cold boot
 	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
 ; not for LOWRAM systems
-#ifndef	LOWRAM
 	.word	install		; INSTALL copy jump table
 	.word	patch		; PATCH patch single function (renumbered)
 	.word	reloc		; RELOCate code and data (TBD)
-#else
-	.word	missing		; these three functions not implemented on such systems
-	.word	missing
-	.word	missing
-#endif
+; basic I/O
 	.word	conio		; CONIO, basic console when available (TBD)
-#ifdef	LOWRAM
-missing:
-		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
+
+; *** there's still some room for routines! ***
+; ID strings unless residing on header
+#ifdef	NOHEAD
+fw_splash:
+	.asc	"0.6 FW @ "
+fw_mname:
+	.asc	MACHINE_NAME, 0		; store the name at least
 #endif
 
+
+; *** firmware code follows ***
 #ifndef	NOHEAD
 ; header is expected to be page-aligned
 	.dsb	fw_start-*, $FF
@@ -78,8 +81,6 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 	.word	0					; 64K space does not use upper 16-bit
 ; *** end of standard header ***
 #endif
-; if no headers, put identifying strings somewhere, but NOT HERE!
-
 
 ; *** cannot do proper shutdown as this will be executed first ***
 ; since this is the start point from nanoBoot, HERE starts the mOS firmware!
@@ -92,7 +93,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
 reset:
 ; *** basic init *** could save a few bytes if unlikely to use a 65816, use basic_init02.s instead
-#include "modules/basic_init.s"
+#include "modules/basic_init02.s"
 
 ; ******************************
 ; *** minimal hardware setup ***
@@ -116,7 +117,7 @@ reset:
 ;#include "modules/rominram.s"
 
 ; startup beep *** not really using this
-;#include "modules/beepIO9.s" 
+;#include "modules/beep.s" 
 
 ; SRAM test
 #include "modules/ramtestI0B.s"	; *** integrated new beep for breadboard loader
@@ -154,7 +155,7 @@ reset:
 #include "modules/mini_irq.s"
 
 ; preset jiffy irq frequency *** this hardware is fixed-freq, so much with 0.5.x compatibility!
-;#include "modules/jiffy_hz.s"
+;#include "modules/jiffy_hz.s"	; might just preset that 244 Hz
 
 ; reset jiffy count
 #include "modules/jiffy_rst.s"
@@ -167,8 +168,6 @@ reset:
 
 ; *** optional network booting *** makes no sense with nanoBoot
 
-
-
 ; *** possible kernel RELOCation should be done here ***
 
 ; ************************
@@ -179,34 +178,9 @@ start_kernel:
 #include "modules/start.s"
 
 ; ********************************
+; ****** interrupt handlers ****** no longer here, these go into bootloader firmware
 ; ********************************
-; ****** interrupt handlers ******
-; ********************************
-; ********************************
-
-; **********************************************
-; *** vectored NMI handler with magic number *** not as safe as nanoboot requires (fast) vectored NMI handler
-; **********************************************
-nmi:
-#include "modules/nmi_hndl.s"
-
-; ****************************
-; *** vectored IRQ handler ***
-; ****************************
-; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
-irq:
-#include "modules/irq_hndl.s"
-
-; ****************************
-; *** vectored BRK handler ***
-; ****************************
-brk_hndl:				; label from vector list
-#include "modules/brk_hndl.s"
-
 ; *** *** 65x02 does have no use for a COP handler *** ***
-
-
-
 
 
 ; ********************************
@@ -268,10 +242,10 @@ poweroff:
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
-#include "modules/set_fg.s"
+	DR_ERR(UNAVAIL)	; this system lacks hardware oscillator
 
 ; *** other functions for systems with RAM enough ***
-#ifndef	LOWRAM
+
 ; **************************
 ; INSTALL, supply jump table
 ; **************************
@@ -289,27 +263,12 @@ patch:
 ; *******************************
 reloc:
 	DR_ERR(UNAVAIL)	; not yet implemented
-#endif
 
 ; ***********************************
 ; CONIO, basic console when available *** will include picoVDU
 ; ***********************************
 conio:
 #include "modules/picovdu.s"
-
-; ***********************************
-; ***********************************
-; *** some firmware odds and ends *** entry points and handlers will remain in bootloader ROM!
-; ***********************************
-; ***********************************
-
-; ID strings unless residing on header
-#ifdef	NOHEADERS
-fw_splash:
-	.asc	"0.6 FW @ "
-fw_mname:
-	.asc	MACHINE_NAME, 0		; store the name at least
-#endif
 
 ; base FW and minimOS support are...
 ; **************************************
