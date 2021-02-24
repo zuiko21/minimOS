@@ -1,6 +1,6 @@
 ; latch addressing test
 ; (c) 2020-2021 Carlos J. Santisteban
-; last modified 20210112-1920
+; last modified 20210124-0110
 
 #define	DOWNL	_DOWNL
 
@@ -21,8 +21,9 @@ ptr	.dsb	1
 	* = addr
 
 reset:
-; init stuff ** 1+15+3 bytes **
+; init stuff ** 2+15+3 bytes **
 	SEI
+	CLD						; eeeeeek
 
 	LDX #$FF
 	TXS
@@ -41,6 +42,7 @@ reset:
 	.dsb	addr+$100-*, $FF	; some ID, we need 256-byte blocks anyway
 
 exec:
+; *** test start, highest addresses should be OK for LTC ***
 ; print $FF ** 28+3 = 31 bytes **
 _ff:
 ;	.byt	%01111000		; F
@@ -63,7 +65,7 @@ _ff:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; 0.5s total as X was 100
+		BNE _ff				; 0.5s total as X was 100
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -93,7 +95,7 @@ _fe:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _fe				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -123,7 +125,7 @@ _fd:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _fd				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -153,7 +155,7 @@ _fc:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _fc				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -183,7 +185,7 @@ _fb:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _fb				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -213,7 +215,7 @@ _fa:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _fa				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -243,7 +245,7 @@ _f9:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f9				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -273,7 +275,7 @@ _f8:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f8				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -303,7 +305,7 @@ _f7:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f7				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -333,7 +335,7 @@ _f6:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f6				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -363,7 +365,7 @@ _f5:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f5				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -393,7 +395,7 @@ _f4:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f4				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -423,7 +425,7 @@ _f3:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f3				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -453,7 +455,7 @@ _f2:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f2				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -483,7 +485,7 @@ _f1:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f1				; stay 0.5s
 
 ; next tested page, takes just 4 bytes
 	LDX #100
@@ -513,7 +515,7 @@ _f0:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _f0				; stay 0.5s
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -546,7 +548,7 @@ _e0:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _e0				; stay 0.5s
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -579,7 +581,7 @@ _d0:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _d0				; stay 0.5s
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -612,7 +614,8 @@ _c0:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _c0				; stay 0.5s
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -621,8 +624,9 @@ _c0:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	213, $EA		; padding up to page boundary
 
+; *** from now on, muxed data won't show on LTC, scan display once at least ***
 ; print $B0
 _b0:
 ;	.byt	%11010000		; B
@@ -645,7 +649,19 @@ _b0:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _b0				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%11010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00000001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -654,7 +670,7 @@ _b0:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $A0
 _a0:
@@ -678,7 +694,19 @@ _a0:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _a0				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%10000001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -687,7 +715,7 @@ _a0:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $90
 _90:
@@ -711,7 +739,19 @@ _90:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _90				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%11000001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -720,7 +760,7 @@ _90:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $80
 _80:
@@ -744,7 +784,19 @@ _80:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _80				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00000001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -753,8 +805,9 @@ _80:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
+; *** this area may be dangerous as may corrupt RAM contents ***
 ; print $70
 _70:
 ;	.byt	%00011111		; 7
@@ -777,7 +830,19 @@ _70:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _70				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%11110001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -786,7 +851,7 @@ _70:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $60
 _60:
@@ -810,7 +875,19 @@ _60:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _60				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%01010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00000001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -819,7 +896,7 @@ _60:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $50
 _50:
@@ -843,7 +920,19 @@ _50:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _50			; stay 0.5s
+; re-send display to actual LTC
+		LDA #%01010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%01000001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -852,7 +941,7 @@ _50:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $40
 _40:
@@ -876,7 +965,19 @@ _40:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _40				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%10010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%11000001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -885,7 +986,7 @@ _40:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $30
 _30:
@@ -909,7 +1010,19 @@ _30:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _30				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%01100001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -918,7 +1031,7 @@ _30:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $20
 _20:
@@ -942,7 +1055,19 @@ _20:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _20				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00110010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00100001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page*16, takes 9 bytes
 	LDX #100
@@ -951,7 +1076,7 @@ _20:
 	SBC #$10
 	STA ptr+1
 
-	.dsb	216, $EA		; padding up to page boundary
+	.dsb	190, $EA		; padding up to page boundary
 
 ; print $10
 _10:
@@ -975,13 +1100,25 @@ _10:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _10				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%10010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%11110001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $0F
 _0f:
@@ -1005,13 +1142,25 @@ _0f:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _0f			; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%01111000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%10000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $0E
 _0e:
@@ -1024,24 +1173,36 @@ _0e:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%01110000		; E
+		LDA #%01111000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%00000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _0e			; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%01111000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $0D
 _0d:
@@ -1065,13 +1226,25 @@ _0d:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _0d				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%10011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00100100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $0C
 _0c:
@@ -1084,24 +1257,36 @@ _0c:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%01110001		; C
+		LDA #%01111000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%00010100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _0c				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%01111000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00010100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $0B
 _0b:
@@ -1114,24 +1299,36 @@ _0b:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%11010000		; B
+		LDA #%11011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%00000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _0b				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%11011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $0A
 _0a:
@@ -1144,24 +1341,36 @@ _0a:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%00011000		; A
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%10000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _0a				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%10000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $09
 _09:
@@ -1174,24 +1383,36 @@ _09:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%00011100		; 9
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%11000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _09				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%11000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $08
 _08:
@@ -1204,24 +1425,36 @@ _08:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%00010000		; 8
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%00000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _08				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $07
 _07:
@@ -1234,24 +1467,36 @@ _07:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%00011111		; 7
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%11110100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _07				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%11110100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $06
 _06:
@@ -1264,24 +1509,36 @@ _06:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%01010000		; 6
+		LDA #%01011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%00000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _06				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%01011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $05
 _05:
@@ -1294,24 +1551,36 @@ _05:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%01010100		; 5
+		LDA #%01011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%01000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _05				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%01011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%01000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $04
 _04:
@@ -1324,24 +1593,36 @@ _04:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
+;	.byt	%10011100		; 4
 		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%11000100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _04				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%10011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%11000100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $03
 _03:
@@ -1354,24 +1635,36 @@ _03:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%00010110		; 3
+		LDA #%00011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%01100100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _03				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%01100100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $02
 _02:
@@ -1384,8 +1677,8 @@ _02:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
-		LDA #%10011000		; MSN2
+;	.byt	%00110010		; 2
+		LDA #%00111000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
@@ -1395,13 +1688,25 @@ _02:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _02				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%00111000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%00100100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $01	* STACK *
 _01:
@@ -1414,24 +1719,36 @@ _01:
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-;	.byt	%10010010		; D
+;	.byt	%10011111		; 1
 		LDA #%10011000		; MSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
-		LDA #%00100100		; LSN2
+		LDA #%11110100		; LSN2
 		STA (ptr), Y		; put on port
 			INY
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _01				; stay 0.5s
+; re-send display to actual LTC
+		LDA #%00010010		; MSN1
+		STA $FFF0			; put on port
+		LDA #%00010001		; LSN1
+		STA $FFF0			; put on port
+		LDA #%10011000		; MSN2
+		STA $FFF0			; put on port
+		LDA #%11110100		; LSN2
+		STA $FFF0			; put on port
+		INY
+		BNE *-21			; inline delay
+	STX $FFF0				; *** clear display ***
 
 ; next tested page, takes just 4 bytes
 	LDX #100
 	DEC ptr+1
 
-	.dsb	221, $EA		; padding up to page boundary
+	.dsb	195, $EA		; padding up to page boundary
 
 ; print $00	* ZEROPAGE *
 _00:
@@ -1455,9 +1772,12 @@ _00:
 			BNE *-1			; inline delay
 ; repeat display for a while
 		DEX
-		BNE *-29			; stay 0.5s
+		BNE _00				; stay 0.5s
+; *** no need to show anything else as is the end of the test ***
+; ...BUT FIRST DISABLE INTERRUPT, FOR GOD'S SAKE!
+	LDA $AFF0				; any ODD address will do
 
-	.dsb	225, $EA		; padding up to page boundary
+	.dsb	222, $EA		; padding up to page boundary
 
 lock:
 ; print '..' at regular port address
