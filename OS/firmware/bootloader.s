@@ -2,7 +2,7 @@
 ; minimal support for minimOS·65
 ; v0.6b21
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210224-1302
+; last modified 20210224-1340
 
 #define	TIMEBOOT	_TIMEBOOT
 #define	DISPLAY		_DISPLAY
@@ -35,26 +35,26 @@
 ; *************************************
 ; *** first some ROM identification *** new 20150612
 ; *************************************
-fw_start:
+nl_start:
 	.asc 0, "m", CPU_TYPE		; standard system file wrapper, new format 20161010, experimental type
 	.asc "****", CR				; flags TBD
 	.asc "nanoBoot", 0			; standard filename
-fw_splash:
+nl_splash:
 	.asc "0.6 nanoBoot loader for "	; machine description as comment
-fw_mname:
+nl_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header (may need extra fields for relocation)
-	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
+	.dsb	nl_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
 	.word	$4BC0				; time, 09.30
 	.word	$5251				; date, 2021/2/17
 
 
-fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
+nlSize	=	nl_end - nl_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
-	.word	fwSize				; filesize
+	.word	nlSize				; filesize
 	.word	0					; 64K space does not use upper 16-bit
 ; *** end of standard header ***
 #endif
@@ -239,5 +239,5 @@ nmos_adc:
 	.word	nmi			; NMI	@ $FFFA
 	.word	reset		; RST	@ $FFFC
 	.word	irq			; IRQ	@ $FFFE
-fw_end:					; for size computation
+nl_end:					; for size computation
 .)
