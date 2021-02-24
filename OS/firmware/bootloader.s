@@ -24,7 +24,7 @@
 #include "template.h"
 ; takes standard FW variables, already nanoBoot-savvy
 
-	fw_admin=$4003				; *** new stardard address for downloadable FWs ***
+	-fw_admin=$4003				; *** new stardard address for downloadable FWs ***
 
 .(
 	.text
