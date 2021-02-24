@@ -1,13 +1,17 @@
 ; breadboard nanoBoot-loader ROM
 ; minimal support for minimOS·65
-; v0.6b20
+; v0.6b21
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210219-0917
+; last modified 20210224-1302
 
-#define	NOHEAD	_NOHEAD
-#define	DISPLAY	_DISPLAY
-#define	NBEXTRA	_NBEXTRA
-#define	ROM		_ROM
+#define	TIMEBOOT	_TIMEBOOT
+#define	DISPLAY		_DISPLAY
+#define	NBEXTRA		_NBEXTRA
+#define	DOWNLOAD	_DOWNLOAD
+#define	ROM			_ROM
+
+; headers intended to be assembled from /OS like the following line
+; xa firmware/bootloader.s -I firmware
 
 #include "../options.h"
 #include "../macros.h"
@@ -16,17 +20,18 @@
 #include "../zeropage.h"
 
 	.bss:
-	* =	$200					; standard sysmem start
+	* =	$200					; standard FW variables start
 #include "template.h"
 ; takes standard FW variables, already nanoBoot-savvy
 
-	fw_admin=$700				; *** PLACEHOLDER ***
+	fw_admin=$4003				; *** new stardard address for downloadable FWs ***
 
 .(
 	.text
-	* = $FE00					; minimal 1 KB ROM, 0.5K if NOHEAD option
-
-#ifndef	NOHEAD
+#ifdef	NOHEAD
+	* = $FE00					; minimal 0.5K if NOHEAD option
+#else
+	* = $FC00					; minimal 1 KB ROM with headers
 ; *************************************
 ; *** first some ROM identification *** new 20150612
 ; *************************************
@@ -142,28 +147,14 @@ panic_loop:
 ;	.byt	%01110000		; E
 	LDA #%01110010
 	STA $FFF0				; first digit, first anode
-	BNE del1				; slight delay, not using stack!
-ret1:
 	LDA #%00000001
 	STA $FFF0				; first digit, second anode
-	BNE del2
-ret2:
 ;	.byt	%11101010		; r.
 	LDA #%11101000
 	STA $FFF0				; second digit, first anode
-	BNE del3
-ret3:
 	LDA #%10100100
 	STA $FFF0				; second digit, second anode
-	BNE del4
-del4:
-	BNE panic_loop
-del3:
-	BNE ret3
-del2:
-	BNE ret2
-del1:
-	BNE ret1
+	BNE panic_loop			; no longer using delays, not worth it
 
 ; *** NMOS version needs large ADMIN call back here! ***
 #ifndef	FAST_FW
@@ -237,28 +228,11 @@ nmos_adc:
 ; *** jump to a suitable lock routine if needed ***
 	JMP panic_loop		; will display 'Er.' on LTC
 
-* = $FFE4				; should be already at it
-#ifdef	SAFE
-; *** 65C816 ROM vectors, just in case ***
-	.word	nmi			; native COP		@ $FFE4, will debug
-	.word	nmi			; native BRK		@ $FFE6, will debug
-	.word	aborted		; native ABORT		@ $FFE8
-	.word	aborted		; native NMI		@ $FFEA
-aborted:
-	.word	$FF40		; reserved (nRST)	@ $FFEC holds RTI!
-	.word	aborted		; native IRQ		@ $FFEE
-	.word	$FFFF		; reserved			@ $FFF0
-	.word	$FFFF		; reserved			@ $FFF2
-	.word	nmi			; emulated COP		@ $FFF4, not compatible
-; must store the BRK handler address!
-	.word	brk_hndl	; reserved (eBRK)	@ $FFF6, 65x02 BRK handler entry
-	.word	aborted		; emulated ABORT 	@ $FFF8, not supported
-#else
+;* = $FFE4				; should be already at it
 #ifdef	ROM
 	.dsb	$FFF6-*, $FF
 	.word	brk_hndl	; new eBRK			@ $FFF6
 	.word	nmi			; emulated ABORT 	@ $FFF8
-#endif
 #endif
 ; *** 65(C)02 ROM vectors ***
 * = $FFFA				; just in case
