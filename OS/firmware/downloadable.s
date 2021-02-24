@@ -2,18 +2,54 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210217-0953
+; last modified 20210224-1323
 
 #define		FIRMWARE	_FIRMWARE
 #include "../usual.h"
 ; already set at FW_BASE via rom.s
 
 .(
-#ifndef	NOHEAD
+	* = $4000			; *** standard downoadable firmware address ***
+	
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
 	JMP reset					; skip two pages
 ; could put here some routines, or tables, really disposable once booted into minimOS...
 
+; *********************************
+; *********************************
+; *** administrative jump table *** this has been safely moved forward, saving the mandatory jump instruction
+; ********************************* if headers are used, may be placed just after the first JMP
+; *********************************
+fw_admin:				; *** now at $4003 as standard for downloadable firmware ***
+#ifndef		FAST_FW
+; generic functions, esp. interrupt related
+	.word	gestalt		; GESTALT get system info (renumbered)
+	.word	set_isr		; SET_ISR set IRQ vector
+	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
+	.word	set_dbg		; SET_DBG set debugger, new 20170517
+	.word	jiffy		; JIFFY set jiffy IRQ speed
+	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
+
+; pretty hardware specific
+	.word	poweroff	; POWEROFF power-off, suspend or cold boot
+	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
+; not for LOWRAM systems
+#ifndef	LOWRAM
+	.word	install		; INSTALL copy jump table
+	.word	patch		; PATCH patch single function (renumbered)
+	.word	reloc		; RELOCate code and data (TBD)
+#else
+	.word	missing		; these three functions not implemented on such systems
+	.word	missing
+	.word	missing
+#endif
+	.word	conio		; CONIO, basic console when available (TBD)
+#ifdef	LOWRAM
+missing:
+		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
+#endif
+
+#ifndef	NOHEAD
 ; header is expected to be page-aligned
 	.dsb	fw_start-*, $FF
 
@@ -44,10 +80,9 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 #endif
 ; if no headers, put identifying strings somewhere, but NOT HERE!
 
+
 ; *** cannot do proper shutdown as this will be executed first ***
 ; since this is the start point from nanoBoot, HERE starts the mOS firmware!
-
-;	JMP reset			; skip tables ** now moved
 
 ; ********************
 ; ********************
@@ -142,40 +177,6 @@ reset:
 start_kernel:
 
 #include "modules/start.s"
-
-; *********************************
-; *********************************
-; *** administrative jump table *** this has been safely moved forward, saving the mandatory jump instruction
-; ********************************* if headers are used, may be placed just after the first JMP
-; *********************************
-fw_admin:
-#ifndef		FAST_FW
-; generic functions, esp. interrupt related
-	.word	gestalt		; GESTALT get system info (renumbered)
-	.word	set_isr		; SET_ISR set IRQ vector
-	.word	set_nmi		; SET_NMI set (magic preceded) NMI routine
-	.word	set_dbg		; SET_DBG set debugger, new 20170517
-	.word	jiffy		; JIFFY set jiffy IRQ speed
-	.word	irq_src		; IRQ_SOURCE get interrupt source in X for total ISR independence
-
-; pretty hardware specific
-	.word	poweroff	; POWEROFF power-off, suspend or cold boot
-	.word	freq_gen	; *** FREQ_GEN frequency generator hardware interface, TBD
-; not for LOWRAM systems
-#ifndef	LOWRAM
-	.word	install		; INSTALL copy jump table
-	.word	patch		; PATCH patch single function (renumbered)
-	.word	reloc		; RELOCate code and data (TBD)
-#else
-	.word	missing		; these three functions not implemented on such systems
-	.word	missing
-	.word	missing
-#endif
-	.word	conio		; CONIO, basic console when available (TBD)
-#ifdef	LOWRAM
-missing:
-		_DR_ERR(UNAVAIL)	; return some error while trying to install or patch!
-#endif
 
 ; ********************************
 ; ********************************
