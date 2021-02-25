@@ -103,7 +103,9 @@ dreset:
 ; 65x02 does not need to deal with native vs. emulation mode
 
 ; check for VIA presence and disable all interrupts *** currently no VIA!
+; perhaps make certain that hardware interrupt is disabled?
 ;#include "modules/viacheck_irq.s"
+	STA $AFF0				; irrelevant data, as long as the ADDRESS is EVEN
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -128,8 +130,9 @@ dreset:
 ; *** hardware interrupt setup ***
 ; ********************************
 
-; VIA initialisation (and stop beeping) *** stop beeping integrated in RAMtest, this will enable hardware periodic interrupt
-#include "modules/ioa_enable.s"
+; VIA initialisation (and stop beeping) *** stop beeping integrated in RAMtest
+; this will enable hardware periodic interrupt
+	STA $AFFF				; irrelevant data, as long as the ADDRESS is ODD
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -154,7 +157,7 @@ dreset:
 
 ; NMI is NOT validated, and 6502 systems should set a minimal IRQ handler in order to enable PANIC (BRK) handling!
 ; perhaps mini_nmi should include the standard nmi_end?
-#include "modules/mini_nmi.s"
+;#include "modules/mini_nmi.s"
 #include "modules/mini_irq.s"
 
 ; preset jiffy irq frequency *** this hardware is fixed-freq, so much with 0.5.x compatibility! might just preset that 244 Hz
