@@ -2,12 +2,11 @@
 ; minimal support for minimOS·65
 ; v0.6b21
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210224-1340
+; last modified 20210225-1153
 
 #define	TIMEBOOT	_TIMEBOOT
 #define	DISPLAY		_DISPLAY
 #define	NBEXTRA		_NBEXTRA
-#define	DOWNLOAD	_DOWNLOAD
 #define	ROM			_ROM
 
 ; headers intended to be assembled from /OS like the following line
@@ -21,6 +20,7 @@
 
 	.bss:
 	* =	$200					; standard FW variables start
+
 #include "template.h"
 ; takes standard FW variables, already nanoBoot-savvy
 
