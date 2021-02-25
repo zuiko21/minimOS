@@ -2,9 +2,11 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210224-1737
+; last modified 20210225-1224
 
 #define		FIRMWARE	_FIRMWARE
+#define		DOWNLOAD	_DOWNLOAD
+
 #include "../usual.h"
 ; already set at FW_BASE via rom.s
 
@@ -12,7 +14,7 @@
 	* = $4000					; *** *** standard downloadable firmware address *** ***
 	
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
-	JMP reset					; skip up to two pages
+	JMP dreset					; skip up to two pages
 ; could put here some routines, or tables, really disposable once booted into minimOS...
 
 ; *********************************
@@ -91,7 +93,7 @@ fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 ; ********************
 ; ********************
 
-reset:
+dreset:
 ; *** basic init *** could save a few bytes if unlikely to use a 65816, use basic_init02.s instead
 #include "modules/basic_init02.s"
 
