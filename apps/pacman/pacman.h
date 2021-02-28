@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210228-1829
+; last modified 20210228-2346
 
 ; **************************
 ; *** zeropage variables ***
@@ -17,12 +17,14 @@ sprite_y	.dsb	5, 0
 sprite_d	.dsb	5, 0	; sprite direction is 0=right, 2=down, 4=left, 6=up
 sprite_s	.dsb	5, 0	; sprite status is 0=scatter, 2=chase, 4=frightened, 6=eaten (makes no sense for pacman)
 sel_gh		.byt	0		; temporarily selected ghost (index for arrays above), also temporary use
-score		.word	0		; score (a tenth of the original score, thus up to 655350 in the arcade)
+score		.word			; score in BCD (a tenth of the original score, thus up to 99990 in the arcade)
 lives		.byt	0		; remaining lives
 draw_x		.byt	0		; temporary copy of arrays at one index
 draw_y		.byt	0
 draw_d		.byt	0
 draw_s		.byt	0
+jiffy		.dsb	3, 0	; 24-bit jiffy counter, about 19 hours
+stick		.byt	0		; read value from 'joystick', every ISR
 
 ; *** these MUST reside in zeropage ***
 map_pt	.word	0			; pointer to descriptor map

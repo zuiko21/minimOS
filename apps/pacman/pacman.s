@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210228-2001
+; last modified 20210301-0020
 
 ; can be assembled from this folder
 
@@ -9,7 +9,9 @@
 #include "pacman.h"
 
 ; *** constants definitions ***
-	vram = $7800			; suitable for Tommy2
+	fw_isr	= $200			; standard minimOS address
+	vram	= $7800			; suitable for Tommy2
+	sc_da	= vram + $310	; address for score display, usually $7B10
 
 ; uncomment this if non-direct, IO-based connection is used
 #define	IOSCREEN	_IOSCREEN
@@ -26,11 +28,16 @@ start:
 	LDX #$FF
 	TXS
 	STX $FFF0				; turn off Tommy2 display
+	LDY #<pm_isr			; set interrupt vector
+	LDA #>pm_isr
+	STY fw_isr				; standard minimOS address
+	STA fw_isr+1
 
 ; perhaps is time to init data...
 	INX						; gets a zero
 	STX score				; reset score
 	STX score+1
+	STX score+2
 	LDA #5					; initial lives
 	STA lives
 
@@ -171,9 +178,9 @@ sp_dir:
 	.word	sd_left
 	.word	sd_up
 
-; sample routine for sprite drawing, towards right ***
+; routine for sprite drawing, towards right
 sd_right:
-	LDY draw_x
+	LDY draw_x				; get parameters for chk_map
 	INY						; try one pixel to the right
 	TYA
 	LDX draw_y
@@ -243,9 +250,10 @@ sr_loop:
 			BNE sr_loop
 sr_abort:
 	RTS
-; *** remaining sprite drawing functions TBD ***
+
+; routine for sprite drawing, downwards -- needs a VERY different approach!
 sd_down:
-	LDA draw_x
+	LDA draw_x				; get parameters for chk_map
 	LDX draw_y
 	INX						; try one pixel down
 	JSR chk_map				; check status of suggested tile
@@ -254,8 +262,9 @@ sd_down:
 sd_abort:
 	RTS
 
+; routine for sprite drawing, towards left
 sd_left:
-	LDY draw_x
+	LDY draw_x				; get parameters for chk_map
 	DEY						; try one pixel to the left
 	TYA
 	LDX draw_y
@@ -265,8 +274,9 @@ sd_left:
 sl_abort:
 	RTS
 
+; routine for sprite drawing, upwards -- needs a VERY different approach!
 sd_up:
-	LDA draw_x
+	LDA draw_x				; get parameters for chk_map
 	LDX draw_y
 	DEX						; try one pixel up
 	JSR chk_map				; check status of suggested tile
@@ -299,6 +309,94 @@ chk_map:
 	ADC map_pt+1
 	STA map_pt+1			; pointer is ready
 	LDA (map_pt), Y			; map entry for that position
+
+; add points to score and display it
+; takes value (BCD) in A (low), X (high, only for 160 --fourth ghost eaten--)
+add_sc:
+; add X.A to current score
+	STX sel_gh				; store temporarily
+	SED						; decimal mode!
+	CLC
+	ADC score				; add to current value
+	STA score
+	LDA score+1
+	ADC sel_gh				; possible carry plus any value over 99
+	STA score+1
+	CLD						; back to binary
+; now display it, two ciphers at a time!
+	LDX #5
+	STX sel_gh				; use this as a scanline counter
+	LDY #<bcdt				; set BCD table pointer
+	LDA #>bcdt
+	STY spr_pt
+	STA spr_pt+1
+	LDX #<sc_da				; set screen address for score area
+	LDA #>sc_da
+	STX dest_pt				; will be kept as low address
+	STA dest_pt+1
+#ifdef	IOSCREEN
+	STA $8000				; latch high address, fortunately won't change ($7B10...$7B61)
+	STX $8001
+#endif
+ds_sc:
+; first two digits
+		LDY score+1			; this is an index for most significant couple of figures!
+		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
+		STA (dest_pt)		; put on this scanline *** CMOS ***
+#ifdef	IOSCREEN
+		STA $8003
+#endif
+; last two digits
+#ifndef	IOSCREEN
+		INC dest_pt			; advance to next couple of figures
+#else
+		INX
+		STX dest_pt
+		STX $8001
+#endif
+		LDY score			; this is an index for least significant couple of figures!
+		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
+		STA (dest_pt)		; put on this scanline *** CMOS ***
+#ifdef	IOSCREEN
+		STA $8003
+#endif
+		LDA dest_pt			; increase screen pointer
+		CLC
+		ADC #15
+		STA dest_pt
+#ifdef	IOSCREEN
+		TAX					; keep low order address updated
+#endif
+;		BCC ds_nnw			; should NEVER wrap, at least within the original range ($7B10-$7B61)
+;			INC dest_pt+1
+;ds_nnw:
+		LDA spr_pt			; also increase table pointer
+		CLC
+		ADC #100			; BCD tables have 100 entries each
+		STA spr_pt
+		LDA spr_pt+1
+		BCC ds_tnw			; this is more likely to wrap
+			INC spr_pt+1
+ds_tnw:
+		DEC sel_gh			; until 5 scanlines are done
+		BNE ds_sc
+	RTS
+
+; *********************************
+; *** interrupt service routine ***
+; *********************************
+pm_isr:
+	PHA
+	LDA $9FF0				; get input port
+	STA stick				; store in variable
+	PLA
+	INC jiffy				; count time
+		BNE i_end
+	INC jiffy+1
+		BNE i_end
+	INC jiffy+2
+i_end:
+	RTI
 
 ; ****************************
 ; ****************************
