@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210228-1339
+; last modified 20210228-1525
 
 ; **************************
 ; *** zeropage variables ***
@@ -11,13 +11,12 @@
 	* = 3					; minimOS-savvy, although will be a stand-alone game
 
 ; *** these not necessarily in ZP, but nice anyway for performance reasons ***
-pac_x	.byt	0			; player coordinates (in pixels)
-pac_y	.byt	0
-pac_dir	.byt	0			; player direction is 0=right, 1=down, 2=left, 3=up
-ghost_x	.dsb	4, 0		; ghost coordinates, array for 4 ghosts
-ghost_y	.dsb	4, 0
-ghost_d	.dsb	4, 0		; ditto for directions
-sel_gh	.byt	0			; temporarily selected ghost (index for arrays above)
+; note new order, where pacman is just a srpite like the ghosts
+sprite_x	.dsb	5, 0	; sprite coordinates (in pixels), array for pacman + 4 ghosts
+sprite_y	.dsb	5, 0
+sprite_d	.dsb	5, 0	; sprite direction is 0=right, 1=down, 2=left, 3=up
+sprite_s	.dsb	5, 0	; sprite status is 0=scatter, 1=chase, 2=frightened, 3=eaten (makes no sense for pacman)
+sel_gh		.byt	0		; temporarily selected ghost (index for arrays above)
 
 ; *** these MUST reside in zeropage ***
 map_pt	.word	0			; pointer to descriptor map

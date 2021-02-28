@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210228-1339
+; last modified 20210228-1635
 
 ; can be assembled from this folder
 
@@ -27,49 +27,11 @@ start:
 	TXS
 	STX $FFF0				; turn off Tommy2 display
 
-; must copy the intial screen to VRAM *and* the 'clean' buffer (about 62 ms @ 1 MHz w/IO, or 45 ms direct)
-	LDY #<maze				; pointer to fresh maze
-	LDA #>maze
-	STY spr_pt				; load origin pointer (temporarily)
-	STA spr_pt+1
-	LDY #<vram				; pointer to VRAM
-	LDA #>vram
-	STY dest_pt				; load destination pointer
-	STA dest_pt+1
-#ifdef	IOSCREEN
-	STA $8000				; preload page into high-address latch
-#endif
-;	LDY #<org_b				; pointer to clean screen (Y known to be zero, as both blocks are page-aligned)
-	LDA #>org_b
-	STY org_pt				; load parallel destination
-	STA org_pt+1
-sc_loop:
-		LDA (spr_pt), Y		; get data... (5)
-		STA (org_pt), Y		; ...into buffer... (6)
-		STA (dest_pt), Y	; ...and into VRAM (6)
-#ifdef	IOSCREEN
-		STY $8001			; low-address latch (4)
-		STA $8003			; actual data transfer (4)
-#endif
-		INY					; (2)
-		BNE sc_loop			; (usually 3 for 255 times, then 2)
-			INC spr_pt+1	; page crossing (5+5+5)
-			INC org_pt+1
-			INC dest_pt+1	; VRAM is last, as will set N flag when finished!
-#ifdef	IOSCREEN
-			LDA dest_pt+1	; new page value... (3)
-			STA $8000		; ...gets into high-address latch (4)
-#endif
-		BPL sc_loop			; (usually 3, just 8 times)
-
 ; perhaps is time to init data...
-	LDX #15					; number of bytes to be copied
-id_loop:
-		LDA init_p-1, X		; get data from tables, note offsets
-		STA pac_x-1, X		; into ZP variables
-		DEX
-		BNE id_loop
 
+	JSR newmap				; reset initial map
+	JSR screen				; draw initial field (and current dots)
+	JSR positions			; reset initial positions
 ; now coordinates are set, draw all ghosts and pacman on screen... *** TBD
 
 ; screen is ready, now play the tune... that started it all!
@@ -110,7 +72,86 @@ m_next:
 m_end:
 
 ; music finished, now start the game!
+level:
 
+
+; create next level
+	JSR newmap				; reset initial map
+	JSR screen				; draw initial field (and current dots)
+	JSR positions			; reset initial positions
+; some delay is in order
+	JMP level				; and begin new level (without music)
+
+; ***************************
+; ***************************
+; *** supporting routines ***
+; ***************************
+; ***************************
+
+; preload map with initial state
+; will just copy 1Kbyte, don't bother with individual coordinates (10.5 ms)
+newmap:
+	LDX #0
+nm_loop:
+		LDA i_map, X		; get initial data
+		STA d_map, X		; copy into RAM
+		LDA i_map+256, X	; ditto for remaining pages
+		STA i_map+256, X
+		LDA i_map+512, X
+		STA i_map+512, X
+		LDA i_map+768, X
+		STA i_map+768, X
+		INX
+		BNE nm_loop
+	RTS
+
+; copy the intial screen to VRAM *and* the 'clean' buffer (about 62 ms @ 1 MHz w/IO, or 45 ms direct)
+screen:
+	LDY #<maze				; pointer to fresh maze
+	LDA #>maze
+	STY spr_pt				; load origin pointer (temporarily)
+	STA spr_pt+1
+	LDY #<vram				; pointer to VRAM
+	LDA #>vram
+	STY dest_pt				; load destination pointer
+	STA dest_pt+1
+#ifdef	IOSCREEN
+	STA $8000				; preload page into high-address latch
+#endif
+;	LDY #<org_b				; pointer to clean screen (Y known to be zero, as both blocks are page-aligned)
+	LDA #>org_b
+	STY org_pt				; load parallel destination
+	STA org_pt+1
+sc_loop:
+		LDA (spr_pt), Y		; get data... (5)
+		STA (org_pt), Y		; ...into buffer... (6)
+		STA (dest_pt), Y	; ...and into VRAM (6)
+#ifdef	IOSCREEN
+		STY $8001			; low-address latch (4)
+		STA $8003			; actual data transfer (4)
+#endif
+		INY					; (2)
+		BNE sc_loop			; (usually 3 for 255 times, then 2)
+			INC spr_pt+1	; page crossing (5+5+5)
+			INC org_pt+1
+			INC dest_pt+1	; VRAM is last, as will set N flag when finished!
+#ifdef	IOSCREEN
+			LDA dest_pt+1	; new page value... (3)
+			STA $8000		; ...gets into high-address latch (4)
+#endif
+		BPL sc_loop			; (usually 3, just 8 times)
+; now place dots according to current map *** TBD
+	RTS
+
+; reset initial positions
+positions:
+	LDX #15					; number of bytes to be copied
+ip_loop:
+		LDA init_p-1, X		; get data from tables, note offsets
+		STA sprite_x-1, X	; into ZP variables
+		DEX
+		BNE ip_loop
+	RTS
 
 ; ****************************
 ; ****************************
@@ -119,15 +160,30 @@ m_end:
 ; ****************************
 
 ; initial positions (note order is pac_x, pac_y, pac_dir and the respective arrays with ghost # as index
-; ghost arrays are blinky, pinky, inky and clyde
+; ghost arrays (1...4) are blinky, pinky, inky and clyde, with pacman first (index 0)
 ; blinky is outside the base at startup
-; *** note fucking 2-px offset! will surely make maze into 4-px boundaries at least
+; note horizontal 2-px offset to make maze into 4-px boundaries at least
+; vertical movements of ghosts inside the base should be ad hoc
 init_p:
-	.byt	52, 90, 2		; pacman
-	.byt	52, 52, 44, 60	; ghosts initial X
-	.byt	42, 54, 54, 54	; ghosts initial Y
-	.byt	 2,  3,  3,  3	; ghosts initial direction
+	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
+	.byt	90, 42, 54, 54, 54	; sprites initial Y
+	.byt	 2,  2,  3,  3,  3	; sprites initial direction
+	.byt	 0,  0,  0,  0,  0	; ghosts initial state (nonsense for pacman)
+
+; valid X values in current system (+2 offset)
+; 2, 10, 22, 34, 46, (52 the base), 58, 70, 82, 94, 102
+; which +2 become
+; 4, 12, 24, 36, 48, (54), 60, 72, 84, 96, 104
+; which fit into these (half)byte offsets
+; 0.5, 1.5, 3, 4.5, 6, (6.75), 7.5, 9, 10.5, 12, 13
+; since the base exit is for rising ghosts only, it might be an special case
+; but some ghosts inside the base jump at X=44+2 and X=60+2 (5.75 & 7.75)
+
 ; not sure if i will use an offset table for the map
+
+; initial map status
+i_map:
+#include "map.s"
 
 ; *******************
 ; *** music score ***
