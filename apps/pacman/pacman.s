@@ -153,6 +153,27 @@ ip_loop:
 		BNE ip_loop
 	RTS
 
+; draw one sprite... TBD
+draw:
+	LDX draw_d				; check direction
+	JMP (sp_dir, X)			; *** CMOS only *** execute appropriate code
+
+sp_dir:
+	.word	sd_right		; table of pointers for sprite drawing routines
+	.word	sd_down
+	.word	sd_left
+	.word	sd_up
+
+; sample routine for sprite drawing, towards right
+sd_right:
+	
+	RTS
+; *** remaining sprite drawing functions TBD ***
+sd_down:
+sd_left:
+sd_up:
+	RTS
+
 ; ****************************
 ; ****************************
 ; *** *** diverse data *** ***
@@ -166,8 +187,8 @@ ip_loop:
 ; vertical movements of ghosts inside the base should be ad hoc
 init_p:
 	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
-	.byt	90, 42, 54, 54, 54	; sprites initial Y
-	.byt	 2,  2,  3,  3,  3	; sprites initial direction
+	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
+	.byt	 4,  4,  6,  6,  6	; sprites initial direction
 	.byt	 0,  0,  0,  0,  0	; ghosts initial state (nonsense for pacman)
 
 ; valid X values in current system (+2 offset)
