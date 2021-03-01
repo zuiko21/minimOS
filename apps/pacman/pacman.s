@@ -190,7 +190,7 @@ sd_right:
 		INC draw_x			; one pixel to the right
 		LDA draw_x
 		AND #7				; bit within byte
-		BNE nowrap
+		BNE sr_nb
 ; perhaps could clear here the leftmost column
 			LDY org_pt		; if wrapped, advance one byte
 			INY
@@ -246,6 +246,7 @@ sr_loop:
 				LDX dest_pt+1
 				STX $8000
 #endif
+sr_nw:
 			CPY #16				; until sprite file is done
 			BNE sr_loop
 sr_abort:
@@ -280,9 +281,9 @@ sd_up:
 	LDX draw_y
 	DEX						; try one pixel up
 	JSR chk_map				; check status of suggested tile
-	BMI sr_abort
+	BMI su_abort
 
-sr_abort:
+su_abort:
 	RTS
 
 ; compute map data from pixel coordinates
@@ -372,7 +373,7 @@ ds_sc:
 ;ds_nnw:
 		LDA spr_pt			; also increase table pointer
 		CLC
-		ADC #100			; BCD tables have 100 entries each
+		ADC #160			; BCD tables have 160 entries each
 		STA spr_pt
 		LDA spr_pt+1
 		BCC ds_tnw			; this is more likely to wrap
@@ -428,6 +429,11 @@ init_p:
 i_map:
 #include "map.s"
 
+; BCD glyph pair tables
+; each scanline, then 100 values from $00 to $99
+bcdt:
+#include "bcdt.s"
+ 
 ; *******************
 ; *** music score ***
 ; *******************
