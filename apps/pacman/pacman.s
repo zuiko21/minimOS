@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210301-0020
+; last modified 20210301-0108
 
 ; can be assembled from this folder
 
@@ -271,7 +271,71 @@ sd_left:
 	LDX draw_y
 	JSR chk_map				; check status of suggested tile
 	BMI sl_abort
-
+		;***check dot/pill (perhaps in chk_map)
+		DEC draw_x			; one pixel to the right
+		LDA draw_x
+		AND #7				; bit within byte
+		CMP #7				; check reverse wrap
+		BNE sl_nb
+; perhaps could clear here the rightmost column
+			LDY org_pt		; if wrapped, back one byte
+			DEY
+			STY org_pt
+			STY dest_pt
+			CPY #$FF
+			BNE sl_nb		; page boundary crossing
+				DEC org_pt+1
+				DEC dest_pt+1
+sl_nb:
+#ifdef	IOSCREEN
+		LDY dest_pt+1		; this needs to be ready always
+		STY $8000
+#endif
+		ASL					; each pixel displacement takes 16 bytes of sprite file
+		ASL
+		ASL
+		ASL
+		CLC
+		ADC spr_pt			; add to selected sprite file base address
+		STA spr_pt
+		BCC sl_now			; check for wrapping in sprite file
+			INC spr_pt+1
+sl_now:
+		LDY #0				; reset sprite byte counter
+sl_loop:
+			LDA (org_pt), Y		; get clean data
+			ORA (spr_pt), Y		; put sprite data on it
+			STA (dest_pt), Y	; and place it on screen
+#ifdef	IOSCREEN
+			LDX dest_pt			; eeeeeeeek must get this pointer
+			STX $8001			; latch low address, high byte was already done
+			STA $8003			; copy data on screen!
+#endif
+			INY					; advance to adjacent byte in both sprite and screen
+			LDA (org_pt), Y		; ditto with this second byte, get clean data
+			ORA (spr_pt), Y		; put sprite data on it
+			STA (dest_pt), Y	; and place it on screen
+#ifdef	IOSCREEN
+			LDX dest_pt			; eeeeeeeek must get this pointer
+			STX $8001			; latch low address, high byte was already done
+			STA $8003			; copy data on screen!
+#endif
+			INY					; prepare for next entry
+			LDA org_pt			; advance screen pointers... backing off a bit as the index increases!
+			CLC
+			ADC #14				; must subtract the two processed entries on sprite file
+			STA org_pt
+			STA dest_pt			; VRAM pointer too
+			BCC sl_nw
+				INC org_pt+1	; page wrapping
+				INC dest_pt+1
+#ifdef	IOSCREEN
+				LDX dest_pt+1
+				STX $8000
+#endif
+sl_nw:
+			CPY #16				; until sprite file is done
+			BNE sl_loop
 sl_abort:
 	RTS
 
