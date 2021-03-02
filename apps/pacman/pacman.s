@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210302-2000
+; last modified 20210303-0027
 
 ; can be assembled from this folder
 
@@ -158,10 +158,12 @@ sc_loop:
 ; for every 4x4 cell, dots are at +3, +3
 ; odd dots @d0, even dots @d4
 ; screen pointer advances 64 bytes per row
-; pills should be 3x3, thus from +2 to +4, either at even or odd column :-(
-; for right pill (even) these are @d543 and, for the left pill (odd), @d10 and @d7 at next byte :-( :-(
+; pills should be 3x3, thus from +2 to +4, either at even or odd column
+; for right pill (even) these are @d543 and, for the left pill (odd), @d10 and @d7 at next byte
 ; placing the pills offset to the right will be @d654 and @d210...
 ; ...no byte boundaries crossed, and doesn't look THAT bad!
+; as for the pill's 3 bytes, there cannot be page crossing backwards, but it's likely to happen otherwise!
+placedots:
 	LDY #<d_map				; get initial pointer
 	LDA #>d_map
 	STY map_pt
@@ -174,25 +176,28 @@ sc_loop:
 	STX $8000				; preload page into high-address latch
 #endif
 dp_loop:
-		LDY draw_y			; tile offset from temporary var
+		LDA map_pt			; tile offset from lowest bits of pointer
+		AND #31
+		TAY
 		LDA (map_pt), Y		; get info for current tile
 		ASL					; check d7 (wall)
-			BCS dp_next		; wall, nothing to be added
+		BCC dp_dot
+			JMP dp_next		; wall, nothing to be added
+dp_dot:
 		ASL					; check d6 (standard dot)
-		BCC dp_ndot			; no? try some pill
+		BCC dp_pill			; no? try some pill
 ; add a regular dot
 			TYA				; check X-coord
 			LSR				; is it even or odd tile? 
 			TAY				; also now proper byte index! eeeeek
-			LDA (dest_pt), Y	; get original data in the meanwhile
-			BCC dp_d_e		; if was odd...
-				ORA #1		; ...set d0...
-				BNE dp_set
-dp_d_e:
-			ORA #16			; ...or set d4 otherwise
+			LDA #1			; mask originally with d0 set (odd)
+			BCS dp_set		; if was even...
+				LDA #16		; ...set d4 instead
 dp_set:
+			ORA (dest_pt), Y	; mix with original data
 			STA (dest_pt), Y	; update screen
 #ifdef	IOSCREEN
+; worth inlining as dots are frequently put
 			TAX				; keep this value
 			TYA				; get screen offset
 			CLC
@@ -201,55 +206,117 @@ dp_set:
 			STX $8003		; ...and transfer data
 #endif
 			JMP dp_next
-dp_ndot:
+dp_pill:
 		ASL					; check d5 (pill)
 		BCC dp_next			; just an empty tile
 ; add a pill
+; first get screen pointer back (no wrapping ever!), then will advance one raster (w/o wrap) and lastly the third advance which may cross page
+			LDA dest_pt
+			SEC
+			SBC #16			; get one raster up (can't wrap!)
+			STA dest_pt
+; continue with screen insertion, but thrice
+; since the only difference between odd and even tiles is the bit positions, let's make a mask for them
 			TYA				; check X
 			LSR				; is it even or odd tile? 
 			TAY				; also now proper byte index! eeeeek
-			LDX #
+			LDA #7			; original mask sets d0-2
+			BCS dp_pset		; if was even...
+				LDA #$70	; ...set d4-6 instead
 dp_pset:
-			LDA (dest_pt), Y	; get original data in the meanwhile
-			BCC dp_p_e		; if was odd...
-				ORA #7		; ...set d0-2...
-				BNE dp_three
-dp_p_e:
-			ORA #$70		; ...or set d4-6 otherwise
-dp_three:
-			BNE dp_next
-		
+			STA draw_s		; store mask temporarily
+; now it's time to modify the three bytes in sequence, checking for wrap in the last one
+; first one, mask already in A
+			ORA (dest_pt), Y	; mix with original data in the upper raster
+			STA (dest_pt), Y
+#ifdef	IOSCREEN
+			JSR io_off		; not worth inlining, as is much less frequently called
+#endif
+			LDA dest_pt
+			CLC
+			ADC #16			; get one raster down (can't wrap either!)
+			STA dest_pt
+; second one
+			LDA draw_s		; retrieve mask
+			ORA (dest_pt), Y	; mix with original data in the upper raster
+			STA (dest_pt), Y
+#ifdef	IOSCREEN
+			JSR io_off		; not worth inlining, as is much less frequently called
+#endif
+			LDA dest_pt
+			CLC
+			ADC #16			; get one raster down (but check for wrap!)
+			STA dest_pt
+			LDA dest_pt+1
+			ADC #0
+			STA dest_pt+1
+#ifdef	IOSCREEN
+			STA $8000		; MSB was updated
+#endif
+; last one
+			LDA draw_s		; retrieve mask
+			ORA (dest_pt), Y	; mix with original data in the upper raster
+			STA (dest_pt), Y
+#ifdef	IOSCREEN
+			JSR io_off		; not worth inlining, as is much less frequently called
+#endif
+; worth computing back the standard address, faster than using the stack!
+			LDA dest_pt
+			SEC
+			SBC #16			; get one raster up (but check for wrap!)
+			STA dest_pt
+			LDA dest_pt+1
+			SBC #0
+			STA dest_pt+1
+#ifdef	IOSCREEN
+			STA $8000		; MSB was updated
+#endif
 dp_next:
-; advance screen address, may be done BEFORE, just switch even/odd as offset hasn't been incremented yet
-		LSR					; now even or odd tile?
-		BCS dp_ot			; odd, no byte change
-			LDA dest_pt		; even, advance screen coordinates
-			ADC #$40		; advance number of entries -- C known to be clear
-			STA dest_pt		; update, checking possible wrap (by one)
-			BCC dp_ot
-				INC dest_pt+1
-dp_ot:
-; ¿
-			LDA map_pt		; even, advance tile coordinates
-			ADC #32			; advance number of entries -- C known to be clear
-			STA map_pt		; update, checking possible wrap (by one)
-			BCC dp_ot
-				INC map_pt+1
-dp_:
-; this is probably BEST done AFTER updating screen address
-		INC draw_y			; next tile coordinate
-		LDY draw_y
-		CPY #28				; check X offset is valid
-		BCC dp_tnw			; it is, try to update screen address
-			LDA map_pt		; or advance tile row otherwise
-			ADC #31			; next row, C known to be SET!
-			STA map_pt
-			STZ draw_y		; *** CMOS, but A is now free ***
-			BCC dp_tnw
-				INC map_pt+1
+; advance screen address, pretty much the same but four rasters
+			LDA dest_pt
+			CLC
+			ADC #$40		; get four rasters down (but check for wrap!)
+			STA dest_pt
+			LDA dest_pt+1	; better keep it in A as might be needed for IOSCREEN
+			ADC #0
+			STA dest_pt+1
+#ifdef	IOSCREEN
+			STA $8000		; MSB was updated
+#endif
+; update tile coordinates
+		INC map_pt			; next tile coordinate
+		LDA map_pt
+		AND #31				; check lowest bits, which are offset
+		CMP #28				; check X offset is valid
+		BEQ dp_tnw			; it is, do not advance line
+dp_rpt:
+			JMP dp_loop		; continue if so
 dp_tnw:
+		LDA map_pt			; or advance tile row otherwise
+		ADC #3				; next row, C known to be SET because of BEQ!
+		STA map_pt
+		LDA map_pt+1
+		ADC #0				; propagate carry (better this way, not INC)
+		STA map_pt+1
+		CMP #>(d_map+992)	; within range?
+			BNE dp_rpt
+		LDA map_pt
+		CMP #<(d_map+992)	; really within range?
+			BNE dp_rpt
+	RTS						; otherwise we're done!
 
+; * store A thru IO8 with offset Y *
+#ifdef	IOSCREEN
+io_off:
+; not worth inlining for pills
+	TAX						; keep this value
+	TYA						; get screen offset
+	CLC
+	ADC dest_pt				; compute final address -- no way any offset could cross page boundaries, IF page-aligned
+	STA $8001				; latch low address...
+	STX $8003				; ...and transfer data
 	RTS
+#endif
 
 ; * reset initial positions *
 positions:
