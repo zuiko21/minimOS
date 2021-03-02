@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210302-1053
+; last modified 20210302-2000
 
 ; can be assembled from this folder
 
@@ -155,7 +155,100 @@ sc_loop:
 #endif
 		BPL sc_loop			; (usually 3, just 8 times)
 ; now place dots according to current map *** TBD
-	
+; for every 4x4 cell, dots are at +3, +3
+; odd dots @d0, even dots @d4
+; screen pointer advances 64 bytes per row
+; pills should be 3x3, thus from +2 to +4, either at even or odd column :-(
+; for right pill (even) these are @d543 and, for the left pill (odd), @d10 and @d7 at next byte :-( :-(
+; placing the pills offset to the right will be @d654 and @d210...
+; ...no byte boundaries crossed, and doesn't look THAT bad!
+	LDY #<d_map				; get initial pointer
+	LDA #>d_map
+	STY map_pt
+	STA map_pt+1
+;	LDY #<vram				; pointer to VRAM (LSB known to be zero)
+	LDX #>vram
+	STY dest_pt				; load destination pointer
+	STX dest_pt+1			; keep this too
+#ifdef	IOSCREEN
+	STX $8000				; preload page into high-address latch
+#endif
+dp_loop:
+		LDY draw_y			; tile offset from temporary var
+		LDA (map_pt), Y		; get info for current tile
+		ASL					; check d7 (wall)
+			BCS dp_next		; wall, nothing to be added
+		ASL					; check d6 (standard dot)
+		BCC dp_ndot			; no? try some pill
+; add a regular dot
+			TYA				; check X-coord
+			LSR				; is it even or odd tile? 
+			TAY				; also now proper byte index! eeeeek
+			LDA (dest_pt), Y	; get original data in the meanwhile
+			BCC dp_d_e		; if was odd...
+				ORA #1		; ...set d0...
+				BNE dp_set
+dp_d_e:
+			ORA #16			; ...or set d4 otherwise
+dp_set:
+			STA (dest_pt), Y	; update screen
+#ifdef	IOSCREEN
+			TAX				; keep this value
+			TYA				; get screen offset
+			CLC
+			ADC dest_pt		; compute final address -- no way any offset could cross page boundaries, IF page-aligned
+			STA $8001		; latch low address...
+			STX $8003		; ...and transfer data
+#endif
+			JMP dp_next
+dp_ndot:
+		ASL					; check d5 (pill)
+		BCC dp_next			; just an empty tile
+; add a pill
+			TYA				; check X
+			LSR				; is it even or odd tile? 
+			TAY				; also now proper byte index! eeeeek
+			LDX #
+dp_pset:
+			LDA (dest_pt), Y	; get original data in the meanwhile
+			BCC dp_p_e		; if was odd...
+				ORA #7		; ...set d0-2...
+				BNE dp_three
+dp_p_e:
+			ORA #$70		; ...or set d4-6 otherwise
+dp_three:
+			BNE dp_next
+		
+dp_next:
+; advance screen address, may be done BEFORE, just switch even/odd as offset hasn't been incremented yet
+		LSR					; now even or odd tile?
+		BCS dp_ot			; odd, no byte change
+			LDA dest_pt		; even, advance screen coordinates
+			ADC #$40		; advance number of entries -- C known to be clear
+			STA dest_pt		; update, checking possible wrap (by one)
+			BCC dp_ot
+				INC dest_pt+1
+dp_ot:
+; ¿
+			LDA map_pt		; even, advance tile coordinates
+			ADC #32			; advance number of entries -- C known to be clear
+			STA map_pt		; update, checking possible wrap (by one)
+			BCC dp_ot
+				INC map_pt+1
+dp_:
+; this is probably BEST done AFTER updating screen address
+		INC draw_y			; next tile coordinate
+		LDY draw_y
+		CPY #28				; check X offset is valid
+		BCC dp_tnw			; it is, try to update screen address
+			LDA map_pt		; or advance tile row otherwise
+			ADC #31			; next row, C known to be SET!
+			STA map_pt
+			STZ draw_y		; *** CMOS, but A is now free ***
+			BCC dp_tnw
+				INC map_pt+1
+dp_tnw:
+
 	RTS
 
 ; * reset initial positions *
@@ -497,7 +590,11 @@ i_map:
 ; each scanline, then 100 values from $00 to $99
 bcdt:
 #include "bcdt.s"
- 
+
+; squares table for AI
+; provides sq_lo and sq_ai labels
+#include "squares.s"
+
 ; *******************
 ; *** music score ***
 ; *******************
