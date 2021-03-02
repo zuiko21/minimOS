@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210301-0108
+; last modified 20210302-1053
 
 ; can be assembled from this folder
 
@@ -102,7 +102,7 @@ level:
 ; ***************************
 ; ***************************
 
-; preload map with initial state
+; * preload map with initial state *
 ; will just copy 1Kbyte, don't bother with individual coordinates (10.5 ms)
 newmap:
 	LDX #0
@@ -110,16 +110,16 @@ nm_loop:
 		LDA i_map, X		; get initial data
 		STA d_map, X		; copy into RAM
 		LDA i_map+256, X	; ditto for remaining pages
-		STA i_map+256, X
+		STA d_map+256, X
 		LDA i_map+512, X
-		STA i_map+512, X
+		STA d_map+512, X
 		LDA i_map+768, X
-		STA i_map+768, X
+		STA d_map+768, X	; eeeeeek
 		INX
 		BNE nm_loop
 	RTS
 
-; copy the intial screen to VRAM *and* the 'clean' buffer (about 62 ms @ 1 MHz w/IO, or 45 ms direct)
+; * copy the intial screen to VRAM *and* the 'clean' buffer (about 62 ms @ 1 MHz w/IO, or 45 ms direct) *
 screen:
 	LDY #<maze				; pointer to fresh maze
 	LDA #>maze
@@ -158,7 +158,7 @@ sc_loop:
 	
 	RTS
 
-; reset initial positions
+; * reset initial positions *
 positions:
 	LDX #15					; number of bytes to be copied
 ip_loop:
@@ -178,7 +178,7 @@ sp_dir:
 	.word	sd_left
 	.word	sd_up
 
-; routine for sprite drawing, towards right
+; * routine for sprite drawing, towards right * MUST CHANGE
 sd_right:
 	LDY draw_x				; get parameters for chk_map
 	INY						; try one pixel to the right
@@ -191,7 +191,7 @@ sd_right:
 		LDA draw_x
 		AND #7				; bit within byte
 		BNE sr_nb
-; perhaps could clear here the leftmost column
+; perhaps could clear here the leftmost column *** NO LONGER NEEDED
 			LDY org_pt		; if wrapped, advance one byte
 			INY
 			STY org_pt
@@ -252,7 +252,7 @@ sr_nw:
 sr_abort:
 	RTS
 
-; routine for sprite drawing, downwards -- needs a VERY different approach!
+; * routine for sprite drawing, downwards -- needs a VERY different approach! *
 sd_down:
 	LDA draw_x				; get parameters for chk_map
 	LDX draw_y
@@ -263,7 +263,7 @@ sd_down:
 sd_abort:
 	RTS
 
-; routine for sprite drawing, towards left
+; * routine for sprite drawing, towards left *
 sd_left:
 	LDY draw_x				; get parameters for chk_map
 	DEY						; try one pixel to the left
@@ -339,7 +339,7 @@ sl_nw:
 sl_abort:
 	RTS
 
-; routine for sprite drawing, upwards -- needs a VERY different approach!
+; * routine for sprite drawing, upwards -- needs a VERY different approach! *
 sd_up:
 	LDA draw_x				; get parameters for chk_map
 	LDX draw_y
@@ -350,7 +350,7 @@ sd_up:
 su_abort:
 	RTS
 
-; compute map data from pixel coordinates
+; * compute map data from pixel coordinates *
 chk_map:
 ; input is A=suggested draw_x, X=suggested draw_y
 	LSR
@@ -375,7 +375,7 @@ chk_map:
 	STA map_pt+1			; pointer is ready
 	LDA (map_pt), Y			; map entry for that position
 
-; add points to score and display it
+; * add points to score and display it *
 ; takes value (BCD) in A (low), X (high, only for 160 --fourth ghost eaten--)
 add_sc:
 ; add X.A to current score
