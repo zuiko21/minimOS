@@ -156,17 +156,19 @@ peak1:
 		JSR mt_beep
 		DEC cur
 		DEC cur
+		DEC cur
 		LDA cur
 		CMP cur+2
-		BNE peak1
+		BCS peak1
 peak:
 		LDX cur+3
 		JSR mt_beep
 		INC cur
 		INC cur
+		INC cur
 		LDA cur
 		CMP cur+1
-		BNE peak
+		BCC peak
 	RTS
 
 ; *******************
