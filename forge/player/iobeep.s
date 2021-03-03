@@ -39,25 +39,25 @@ sweep:
 		BNE sweep
 */
 ; pacman death
-	LDA #100	; initial freq
-	LDY #86		; top freq
+	LDA #99		; initial freq
+	LDY #88		; top freq
 	LDX #36		; length
 	JSR squeak
-	LDA #118	; initial freq
-	LDY #104	; top freq
-	LDX #32		; length
+	LDA #118
+	LDY #105
+	LDX #30
 	JSR squeak
-	LDA #127
-	LDY #111
-	LDX #28
-	JSR squeak
-	LDA #136
+	LDA #132
 	LDY #117
+	LDX #27
+	JSR squeak
+	LDA #148
+	LDY #132
 	LDX #24
 	JSR squeak
-	LDA #144
-	LDY #124
-	LDX #22
+	LDA #176
+	LDY #157
+	LDX #20
 	JSR squeak
 ; last two sweeps ** OK
 	LDA #2
