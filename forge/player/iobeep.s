@@ -1,6 +1,6 @@
 ; music player for breadboard!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210303-1638
+; last modified 20210303-2330
 
 ; *** required variables (not necessarily in ZP) ***
 
@@ -25,7 +25,7 @@ cur		.byt	0			; current score position
 
 ; *** experimntal code ***
 ; sweep for pacman eating ghost ** OK
-/*	LDA #0
+	LDA #0
 	STA cur
 sweep:
 		LDX #8
@@ -37,7 +37,15 @@ sweep:
 		LDA cur
 		CMP #16
 		BNE sweep
-*/
+
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+
 ; pacman death
 	LDA #99		; initial freq
 	LDY #88		; top freq
@@ -78,9 +86,49 @@ send:
 ; next iteration
 	DEC cur+1
 	BNE d_rpt
-	JMP end
+
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+
+; munch dot
+	LDA #179
+	LDX #4
+	JSR mt_beep
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	LDA #179
+	LDX #4
+	JSR mt_beep
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	LDA #179
+	LDX #4
+	JSR mt_beep
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	LDA #179
+	LDX #4
+	JSR mt_beep
+
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+	JSR ms74
+
 ; ************************
-	INX						; now it's zero
+
+	LDX #0					; now it's zero
 	STX cur					; reset cursor (or use STZ)
 loop:
 		LDY cur				; get index
