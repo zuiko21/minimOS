@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-1415
+; last modified 20210304-1424
 
 ; can be assembled from this folder
 
@@ -379,7 +379,8 @@ sd_right:
 		;***check dot/pill (perhaps in chk_map)
 		INC draw_x			; one pixel to the right
 		LDA draw_x
-		AND #7				; bit within byte ****  C H E C K
+		AND #7				; bit within byte
+		CMP #1				; if it's 1, it just advanced a byte
 		BNE sr_nb
 			LDY org_pt		; if wrapped, advance one byte
 			INY
@@ -452,7 +453,7 @@ sd_down:
 sd_abort:
 	RTS
 
-; * routine for sprite drawing, towards left *
+; * routine for sprite drawing, towards left * ADAPT FROM RIGHT ONCE FINISHED
 sd_left:
 	LDY draw_x				; get parameters for chk_map
 	DEY						; try one pixel to the left
@@ -466,7 +467,6 @@ sd_left:
 		AND #7				; bit within byte
 		CMP #7				; check reverse wrap
 		BNE sl_nb
-; perhaps could clear here the rightmost column
 			LDY org_pt		; if wrapped, back one byte
 			DEY
 			STY org_pt
