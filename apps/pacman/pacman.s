@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-1424
+; last modified 20210304-1439
 
 ; can be assembled from this folder
 
@@ -957,3 +957,15 @@ s_fg_d:
 s_fg_l:
 ; frightened ghost upwards ***
 s_fg_u:
+
+; NOTE, in scatter mode, targets are
+; pinky = tile(2,-4)
+; blinky = tile(25,-4)
+; clyde = tile(0,31)
+; inky = tile(27,31)
+
+; in chase mode, targets are
+; blinky = PACMAN
+; pinky = L(-4,+0), D(+0,+4), R(+0,+4), U(-4,-4)!
+; inky = pre L(-2,0), D(0,2), R(0,2), U(-2,-2), extended by blinky...
+; clyde = PACMAN [d>8]; tile(0,31) [d<=8]
