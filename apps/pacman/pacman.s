@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-1347
+; last modified 20210304-1351
 
 ; can be assembled from this folder
 
@@ -751,11 +751,10 @@ eat_gh:
 sweep:
 		LDX #8
 		JSR m_beep
-		DEC temp
-		DEC temp
-		DEC temp
-		DEC temp
 		LDA temp
+		SEC
+		SBC #4
+		STA temp
 		CMP #16
 		BCS sweep
 	RTS						; eeeeeeek
@@ -829,19 +828,19 @@ squeak:
 sw_up:
 		LDX temp
 		JSR m_beep
-		DEC cur
-		DEC cur
-		DEC cur
 		LDA cur
+		SEC
+		SBC #3
+		STA cur
 		CMP cur+2
 		BCS sw_up
 sw_down:
 		LDX temp
 		JSR m_beep
-		INC cur
-		INC cur
-		INC cur
 		LDA cur
+		CLC
+		ADC #3
+		STA cur
 		CMP cur+1
 		BCC sw_down
 	RTS
