@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-0622
+; last modified 20210304-1250
 
 ; can be assembled from this folder
 
@@ -28,14 +28,16 @@ start:
 	CLD
 	LDX #$FF
 	TXS
+
 	STX $FFF0				; turn off Tommy2 display
+
 	LDY #<pm_isr			; set interrupt vector
 	LDA #>pm_isr
 	STY fw_isr				; standard minimOS address
 	STA fw_isr+1
 
 ; perhaps is time to init data...
-	INX						; gets a zero
+	INX						; gets a zero (X known to be zero)
 	STX score				; reset score
 	STX score+1
 	STX score+2
@@ -740,7 +742,7 @@ r_loop:
 munch:
 	LDA #179
 	LDX #4
-	JMP mt_beep				; ...and will return to caller
+	JMP m_beep				; ...and will return to caller
 
 ; * sound after pacman eats a ghost *
 eat_gh:
@@ -748,7 +750,7 @@ eat_gh:
 	STA temp
 sweep:
 		LDX #8
-		JSR mt_beep
+		JSR m_beep
 		DEC temp
 		DEC temp
 		DEC temp
@@ -790,7 +792,7 @@ d_rpt:
 	STA temp
 dth_sw:
 		LDX #10
-		JSR mt_beep
+		JSR m_beep
 		LDA temp
 		SEC
 		SBC #24
@@ -807,7 +809,7 @@ dth_sw:
 ; ~74 ms delay
 ; expects X=0, returns X=Y=0
 ms74:
-;	LDX #0					; not needed if called after mt_beep
+;	LDX #0					; not needed if called after m_beep
 	LDY #198
 dly74:
 			INX
@@ -818,7 +820,7 @@ dly74:
 
 ; squeak, get higher then lower
 ; A=initial period, Y=final period, X=length
-; uses mt_beep
+; uses m_beep
 squeak:
 	STA cur+1
 	STA cur		; and current
@@ -826,7 +828,7 @@ squeak:
 	STX temp
 sw_up:
 		LDX temp
-		JSR mt_beep
+		JSR m_beep
 		DEC cur
 		DEC cur
 		DEC cur
@@ -835,7 +837,7 @@ sw_up:
 		BCS sw_up
 sw_down:
 		LDX temp
-		JSR mt_beep
+		JSR m_beep
 		INC cur
 		INC cur
 		INC cur
@@ -923,6 +925,7 @@ m_note:
 
 ; original maze (full 128x128 screen)
 maze:
+	.bin	11, 2048, "../../other/data/maze.pbm"
 
 ; *** sprites ***
 ; pacman towards right
