@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-0544
+; last modified 20210304-0622
 
 ; can be assembled from this folder
 
@@ -46,7 +46,7 @@ start:
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions, X is zero but...
-; now coordinates are set, draw all ghosts and pacman on screen... *** TBD
+	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
@@ -73,12 +73,13 @@ m_end:
 ; **********************************************************
 ; music finished, now start the game!
 level:
-
+	CLI						; enable interrupts as will be needed for timing
 
 ; create next level
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots)
 	JSR positions			; reset initial positions
+	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 ; some delay is in order
 	JMP level				; and begin new level (without music)
 
@@ -87,34 +88,6 @@ level:
 ; *** supporting routines ***
 ; ***************************
 ; ***************************
-
-; *** ** beeping routine ** ***
-; *** X = length, A = freq. ***
-; *** tcyc = 10 A + 20      ***
-; modifies Y, returns X=0
-m_beep:
-		TAY					; determines frequency (2)
-		STX $BFF0			; send X's LSB to beeper (4)
-rb_zi:
-			DEY				; count pulse length (y*2)
-			BNE rb_zi		; stay this way for a while (y*3-1)
-		DEX					; toggles even/odd number (2)
-		BNE m_beep			; new half cycle (3)
-	STX $BFF0				; turn off the beeper!
-	RTS
-
-; *** ** rest routine ** ***
-; ***     X = length     ***
-; ***    t = X 1.28 ms   ***
-; modifies Y, returns X=0
-m_rest:
-		LDY #0				; this resets the counter
-r_loop:
-			INY
-			BNE r_loop		; this will take ~ 1.28 ms
-		DEX					; continue
-		BNE m_rest
-	RTS
 
 ; * preload map with initial state *
 ; will just copy 1Kbyte, don't bother with individual coordinates (10.5 ms)
@@ -357,6 +330,17 @@ ip_loop:
 		STA sprite_x-1, X	; into ZP variables
 		DEX
 		BNE ip_loop
+	RTS
+
+; * draw all sprites *
+sprites:
+	LDY #4					; sprite to be drawn
+das_l:
+		PHY					; must be saved! ** CMOS **
+		JSR draw
+		PLY					; ** CMOS **
+		DEY
+		BPL das_l
 	RTS
 
 ; *** draw one sprite... ***
@@ -720,6 +704,144 @@ ds_lv:
 dl_tnw:
 		DEC temp			; until 5 scanlines are done
 		BNE ds_lv
+	RTS
+
+; *** sound effects ***
+
+; *** ** beeping routine ** ***
+; *** X = length, A = freq. ***
+; *** tcyc = 10 A + 20      ***
+; modifies Y, returns X=0
+m_beep:
+		TAY					; determines frequency (2)
+		STX $BFF0			; send X's LSB to beeper (4)
+rb_zi:
+			DEY				; count pulse length (y*2)
+			BNE rb_zi		; stay this way for a while (y*3-1)
+		DEX					; toggles even/odd number (2)
+		BNE m_beep			; new half cycle (3)
+	STX $BFF0				; turn off the beeper!
+	RTS
+
+; *** ** rest routine ** ***
+; ***     X = length     ***
+; ***    t = X 1.28 ms   ***
+; modifies Y, returns X=0
+m_rest:
+		LDY #0				; this resets the counter
+r_loop:
+			INY
+			BNE r_loop		; this will take ~ 1.28 ms
+		DEX					; continue
+		BNE m_rest
+	RTS
+
+; * click after pacman eats a dot *
+munch:
+	LDA #179
+	LDX #4
+	JMP mt_beep				; ...and will return to caller
+
+; * sound after pacman eats a ghost *
+eat_gh:
+	LDA #0
+	STA temp
+sweep:
+		LDX #8
+		JSR mt_beep
+		DEC temp
+		DEC temp
+		DEC temp
+		DEC temp
+		LDA temp
+		CMP #16
+		BCS sweep
+	RTS						; eeeeeeek
+
+; **************************************************************
+; * sound after pacman dies (must be combined with animation!) *
+death:
+; these are the parts to be called
+	LDA #99		; initial freq
+	LDY #88		; top freq
+	LDX #36		; length
+	JSR squeak	; actual routine
+	LDA #118
+	LDY #105
+	LDX #30
+	JSR squeak
+	LDA #132
+	LDY #117
+	LDX #27
+	JSR squeak
+	LDA #148
+	LDY #132
+	LDX #24
+	JSR squeak
+	LDA #176
+	LDY #157
+	LDX #20
+	JSR squeak
+; last two sweeps
+	LDA #2
+	PHA						; iteration
+d_rpt:
+	LDA #255
+	STA temp
+dth_sw:
+		LDX #10
+		JSR mt_beep
+		LDA temp
+		SEC
+		SBC #24
+		STA temp
+		CMP #15
+		BCS dth_sw
+	JSR ms74
+; next iteration
+	PLA
+	DEC						; *** CMOS ***
+	BNE d_rpt
+; **************************************************************
+
+; ~74 ms delay
+; expects X=0, returns X=Y=0
+ms74:
+;	LDX #0					; not needed if called after mt_beep
+	LDY #198
+dly74:
+			INX
+			BNE dly74
+		INY
+		BNE dly74
+	RTS
+
+; squeak, get higher then lower
+; A=initial period, Y=final period, X=length
+; uses mt_beep
+squeak:
+	STA cur+1
+	STA cur		; and current
+	STY cur+2
+	STX temp
+sw_up:
+		LDX temp
+		JSR mt_beep
+		DEC cur
+		DEC cur
+		DEC cur
+		LDA cur
+		CMP cur+2
+		BCS sw_up
+sw_down:
+		LDX temp
+		JSR mt_beep
+		INC cur
+		INC cur
+		INC cur
+		LDA cur
+		CMP cur+1
+		BCC sw_down
 	RTS
 
 ; *********************************

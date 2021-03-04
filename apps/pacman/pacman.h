@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-0507
+; last modified 20210304-0613
 
 ; **************************
 ; *** zeropage variables ***
@@ -20,7 +20,8 @@ temp:
 sel_gh		.byt	0		; temporarily selected ghost (index for arrays above), also other temporary use
 score		.word			; score in BCD (a tenth of the original score, thus up to 99990 in the arcade)
 lives		.byt	0		; remaining lives
-draw_x		.byt	0		; temporary copy of arrays at one index
+cur:
+draw_x		.byt	0		; temporary copy of arrays at one index (and other temporary use)
 draw_y		.byt	0
 ;draw_d		.byt	0		; this copy no longer needed
 draw_s		.byt	0
