@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-1250
+; last modified 20210304-1347
 
 ; can be assembled from this folder
 
@@ -337,17 +337,17 @@ ip_loop:
 ; * draw all sprites *
 sprites:
 	LDY #4					; sprite to be drawn
+	STY sel_gh
 das_l:
-		PHY					; must be saved! ** CMOS **
 		JSR draw
-		PLY					; ** CMOS **
-		DEY
+		DEC sel_gh
 		BPL das_l
 	RTS
 
 ; *** draw one sprite... ***
-; new interface, Y selects sprite (0=pacman, 1...4=ghost)
+; new interface, sel_gh selects sprite (0=pacman, 1...4=ghost)
 draw:
+	LDY sel_gh				; get selected sprite
 	LDA sprite_x, Y			; copy from array to temporary var
 	STA draw_x
 	LDA sprite_y, Y
@@ -375,7 +375,7 @@ sd_right:
 		;***check dot/pill (perhaps in chk_map)
 		INC draw_x			; one pixel to the right
 		LDA draw_x
-		AND #7				; bit within byte
+		AND #7				; bit within byte ****  C H E C K
 		BNE sr_nb
 			LDY org_pt		; if wrapped, advance one byte
 			INY
