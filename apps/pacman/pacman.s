@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-1351
+; last modified 20210304-1415
 
 ; can be assembled from this folder
 
@@ -14,6 +14,9 @@
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
 	lv_da	= vram + $49D	; address for lives display, usually $7C9D
 	bytlin	= 16			; bytes per line, being a power of two makes things MUCH simpler!
+	IO8lh	= $8000			; I/O addresses
+	IO8ll	= $8001
+	IO8wr	= $8003
 
 ; uncomment this if non-direct, IO-based connection is used
 #define	IOSCREEN	_IOSCREEN
@@ -122,7 +125,7 @@ screen:
 	STY dest_pt				; load destination pointer
 	STA dest_pt+1
 #ifdef	IOSCREEN
-	STA $8000				; preload page into high-address latch
+	STA IO8lh				; preload page into high-address latch
 #endif
 ;	LDY #<org_b				; pointer to clean screen (Y known to be zero, as both blocks are page-aligned)
 	LDA #>org_b
@@ -133,8 +136,8 @@ sc_loop:
 		STA (org_pt), Y		; ...into buffer... (6)
 		STA (dest_pt), Y	; ...and into VRAM (6)
 #ifdef	IOSCREEN
-		STY $8001			; low-address latch (4)
-		STA $8003			; actual data transfer (4)
+		STY IO8ll			; low-address latch (4)
+		STA IO8wr			; actual data transfer (4)
 #endif
 		INY					; (2)
 		BNE sc_loop			; (usually 3 for 255 times, then 2)
@@ -143,7 +146,7 @@ sc_loop:
 			INC dest_pt+1	; VRAM is last, as will set N flag when finished!
 #ifdef	IOSCREEN
 			LDA dest_pt+1	; new page value... (3)
-			STA $8000		; ...gets into high-address latch (4)
+			STA IO8lh		; ...gets into high-address latch (4)
 #endif
 		BPL sc_loop			; (usually 3, just 8 times)
 ; now place dots according to current map (not yet timed, but around 80-100ms)
@@ -166,7 +169,7 @@ placedots:
 	STY dest_pt				; load destination pointer
 	STA dest_pt+1
 #ifdef	IOSCREEN
-	STA $8000				; preload page into high-address latch
+	STA IO8lh				; preload page into high-address latch
 #endif
 dp_loop:
 		LDA map_pt			; tile offset from lowest bits of pointer
@@ -196,8 +199,8 @@ dp_set:
 			TYA				; get screen offset
 			CLC
 			ADC dest_pt		; compute final address -- no way any offset could cross page boundaries, IF page-aligned
-			STA $8001		; latch low address...
-			STX $8003		; ...and transfer data
+			STA IO8ll		; latch low address...
+			STX IO8wr		; ...and transfer data
 #endif
 			JMP dp_next
 dp_pill:
@@ -252,7 +255,7 @@ dp_pset:
 pd_nw:
 #ifdef	IOSCREEN
 			LDA dest_pt+1	; worth it
-			STA $8000		; MSB was updated
+			STA IO8lh		; MSB was updated
 #endif
 ; last one
 			LDA temp		; retrieve mask
@@ -273,7 +276,7 @@ pd_nw:
 pb_nw:
 #ifdef	IOSCREEN
 			LDA dest_pt+1	; worth it
-			STA $8000		; MSB was updated
+			STA IO8lh		; MSB was updated
 #endif
 dp_next:
 ; advance screen address, pretty much the same but four rasters
@@ -287,7 +290,7 @@ dp_next:
 pd_adv:
 #ifdef	IOSCREEN
 			LDA dest_pt+1	; worth it
-			STA $8000		; MSB was updated
+			STA IO8lh		; MSB was updated
 #endif
 ; update tile coordinates
 		INC map_pt			; next tile coordinate
@@ -319,8 +322,8 @@ io_off:
 	TYA						; get screen offset
 	CLC
 	ADC dest_pt				; compute final address -- no way any offset could cross page boundaries, IF page-aligned
-	STA $8001				; latch low address...
-	STX $8003				; ...and transfer data
+	STA IO8ll				; latch low address...
+	STX IO8wr				; ...and transfer data
 	RTS
 #endif
 
@@ -388,7 +391,7 @@ sd_right:
 sr_nb:
 #ifdef	IOSCREEN
 		LDY dest_pt+1		; this needs to be ready always
-		STY $8000
+		STY IO8lh
 #endif
 		ASL					; each pixel displacement takes 16 bytes of sprite file
 		ASL
@@ -407,8 +410,8 @@ sr_loop:
 			STA (dest_pt), Y	; and place it on screen
 #ifdef	IOSCREEN
 			LDX dest_pt			; eeeeeeeek must get this pointer
-			STX $8001			; latch low address, high byte was already done
-			STA $8003			; copy data on screen!
+			STX IO8ll			; latch low address, high byte was already done
+			STA IO8wr			; copy data on screen!
 #endif
 			INY					; advance to adjacent byte in both sprite and screen
 			LDA (org_pt), Y		; ditto with this second byte, get clean data
@@ -416,8 +419,8 @@ sr_loop:
 			STA (dest_pt), Y	; and place it on screen
 #ifdef	IOSCREEN
 			LDX dest_pt			; eeeeeeeek must get this pointer
-			STX $8001			; latch low address, high byte was already done
-			STA $8003			; copy data on screen!
+			STX IO8ll			; latch low address, high byte was already done
+			STA IO8wr			; copy data on screen!
 #endif
 			INY					; prepare for next entry
 			LDA org_pt			; advance screen pointers... backing off a bit as the index increases!
@@ -430,7 +433,7 @@ sr_loop:
 				INC dest_pt+1
 #ifdef	IOSCREEN
 				LDX dest_pt+1
-				STX $8000
+				STX IO8lh
 #endif
 sr_nw:
 			CPY #16				; until sprite file is done
@@ -475,7 +478,7 @@ sd_left:
 sl_nb:
 #ifdef	IOSCREEN
 		LDY dest_pt+1		; this needs to be ready always
-		STY $8000
+		STY IO8lh
 #endif
 		ASL					; each pixel displacement takes 16 bytes of sprite file
 		ASL
@@ -494,8 +497,8 @@ sl_loop:
 			STA (dest_pt), Y	; and place it on screen
 #ifdef	IOSCREEN
 			LDX dest_pt			; eeeeeeeek must get this pointer
-			STX $8001			; latch low address, high byte was already done
-			STA $8003			; copy data on screen!
+			STX IO8ll			; latch low address, high byte was already done
+			STA IO8wr			; copy data on screen!
 #endif
 			INY					; advance to adjacent byte in both sprite and screen
 			LDA (org_pt), Y		; ditto with this second byte, get clean data
@@ -503,8 +506,8 @@ sl_loop:
 			STA (dest_pt), Y	; and place it on screen
 #ifdef	IOSCREEN
 			LDX dest_pt			; eeeeeeeek must get this pointer
-			STX $8001			; latch low address, high byte was already done
-			STA $8003			; copy data on screen!
+			STX IO8ll			; latch low address, high byte was already done
+			STA IO8wr			; copy data on screen!
 #endif
 			INY					; prepare for next entry
 			LDA org_pt			; advance screen pointers... backing off a bit as the index increases!
@@ -517,7 +520,7 @@ sl_loop:
 				INC dest_pt+1
 #ifdef	IOSCREEN
 				LDX dest_pt+1
-				STX $8000
+				STX IO8lh
 #endif
 sl_nw:
 			CPY #16				; until sprite file is done
@@ -617,8 +620,8 @@ add_sc:
 	STX dest_pt				; will be kept as low address
 	STA dest_pt+1
 #ifdef	IOSCREEN
-	STA $8000				; latch high address, fortunately won't change ($7B10...$7B61)
-	STX $8001
+	STA IO8lh				; latch high address, fortunately won't change ($7B10...$7B61)
+	STX IO8ll
 #endif
 ds_sc:
 ; first two digits
@@ -626,7 +629,7 @@ ds_sc:
 		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
 		STA (dest_pt)		; put on this scanline *** CMOS ***
 #ifdef	IOSCREEN
-		STA $8003
+		STA IO8wr
 #endif
 ; last two digits
 #ifndef	IOSCREEN
@@ -634,13 +637,13 @@ ds_sc:
 #else
 		INX
 		STX dest_pt
-		STX $8001
+		STX IO8ll
 #endif
 		LDY score			; this is an index for least significant couple of figures!
 		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
 		STA (dest_pt)		; put on this scanline *** CMOS ***
 #ifdef	IOSCREEN
-		STA $8003
+		STA IO8wr
 #endif
 		LDA dest_pt			; increase screen pointer
 		CLC
@@ -678,8 +681,8 @@ up_lives:
 	STX dest_pt				; will be kept as low address
 	STA dest_pt+1
 #ifdef	IOSCREEN
-	STA $8000				; latch high address, fortunately won't change ($7B1C...$7B5D)
-	STX $8001
+	STA IO8lh				; latch high address, fortunately won't change ($7B1C...$7B5D)
+	STX IO8ll
 #endif
 ds_lv:
 ; only two digits
@@ -687,7 +690,7 @@ ds_lv:
 		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
 		STA (dest_pt)		; put on this scanline *** CMOS, hard to emulate in NMOS ***
 #ifdef	IOSCREEN
-		STA $8003
+		STA IO8wr
 #endif
 		LDA dest_pt			; increase screen pointer
 		CLC
