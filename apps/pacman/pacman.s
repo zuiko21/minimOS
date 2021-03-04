@@ -13,6 +13,7 @@
 	vram	= $7800			; suitable for Tommy2
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
 	lv_da	= vram + $49D	; address for lives display, usually $7C9D
+	bytlin	= 16			; bytes per line, being a power of two makes things MUCH simpler!
 
 ; uncomment this if non-direct, IO-based connection is used
 #define	IOSCREEN	_IOSCREEN
@@ -145,7 +146,7 @@ sc_loop:
 			STA $8000		; ...gets into high-address latch (4)
 #endif
 		BPL sc_loop			; (usually 3, just 8 times)
-; now place dots according to current map (not yet timed!)
+; now place dots according to current map (not yet timed, but around 80-100ms)
 ; placing the pills offset to the left will be @d654 and @d210...
 ; ...no byte boundaries crossed, and doesn't look THAT bad!
 ; as for the pill's 3 bytes, there cannot be page crossing backwards, but it's likely to happen otherwise!
@@ -206,7 +207,7 @@ dp_pill:
 ; first get screen pointer back (no wrapping ever!), then will advance one raster (w/o wrap) and lastly the third advance which may cross page
 			LDA dest_pt
 			SEC
-			SBC #16			; get one raster up (can't wrap!)
+			SBC #bytlin		; get one raster up (can't wrap!)
 			STA dest_pt
 			STA org_pt		; buffer too! eeeeeek
 ; continue with screen insertion, but thrice
@@ -229,7 +230,7 @@ dp_pset:
 #endif
 			LDA dest_pt
 			CLC
-			ADC #16			; get back to original raster (can't wrap either!)
+			ADC #bytlin		; get back to original raster (can't wrap either!)
 			STA dest_pt
 			STA org_pt		; same with buffer! eeeeeek
 ; second one
@@ -242,7 +243,7 @@ dp_pset:
 #endif
 			LDA dest_pt
 			CLC
-			ADC #16			; get one raster down (but check for wrap!)
+			ADC #bytlin		; get one raster down (but check for wrap!)
 			STA dest_pt
 			STA org_pt		; eeeeek
 			BCC pd_nw		; worth checking wrap this way, as two MSBs are to be updated!
@@ -264,7 +265,7 @@ pd_nw:
 ; worth computing back the standard address, faster than using the stack!
 			LDA dest_pt
 			SEC
-			SBC #16			; get one raster up (but check for wrap!)
+			SBC #bytlin		; get one raster up (but check for wrap!)
 			STA dest_pt
 			BCS pb_nw
 				DEC dest_pt+1
@@ -278,7 +279,7 @@ dp_next:
 ; advance screen address, pretty much the same but four rasters
 			LDA dest_pt
 			CLC
-			ADC #$40		; get four rasters down (but check for wrap!)
+			ADC #bytlin*4		; get four rasters down (but check for wrap!)
 			STA dest_pt
 			BCC pd_adv		; better this way
 				INC dest_pt+1
@@ -643,7 +644,7 @@ ds_sc:
 #endif
 		LDA dest_pt			; increase screen pointer
 		CLC
-		ADC #15
+		ADC #bytlin-1
 		STA dest_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
@@ -690,7 +691,7 @@ ds_lv:
 #endif
 		LDA dest_pt			; increase screen pointer
 		CLC
-		ADC #16
+		ADC #bytlin
 		STA dest_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
