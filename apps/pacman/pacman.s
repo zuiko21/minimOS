@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210303-0027
+; last modified 20210304-0544
 
 ; can be assembled from this folder
 
@@ -11,7 +11,8 @@
 ; *** constants definitions ***
 	fw_isr	= $200			; standard minimOS address
 	vram	= $7800			; suitable for Tommy2
-	sc_da	= vram + $310	; address for score display, usually $7B10
+	sc_da	= vram + $31C	; address for score display, usually $7B1C
+	lv_da	= vram + $49D	; address for lives display, usually $7C9D
 
 ; uncomment this if non-direct, IO-based connection is used
 #define	IOSCREEN	_IOSCREEN
@@ -43,45 +44,30 @@ start:
 
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
-	JSR screen				; draw initial field (and current dots)
-	JSR positions			; reset initial positions
+	JSR screen				; draw initial field (and current dots), may modify X
+	JSR positions			; reset initial positions, X is zero but...
 ; now coordinates are set, draw all ghosts and pacman on screen... *** TBD
 
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
-	STX sel_gh				; reset cursor (temporary use, X known to be zero **** sure? **** at this point)
+	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
+	STX temp				; reset cursor (temporary use)
 m_loop:
-		LDY sel_gh			; get index
+		LDY temp			; get index
 		LDA m_len, Y		; get length from duration array
 			BEQ m_end		; length=0 means END of score
 		TAX
 		LDA m_note, Y		; get note period (10A+20 t) from its array
-		BEQ m_rest			; if zero, no sound!
-; *** ** beeping routine ** *** inlined
-; *** X = length, A = freq. ***
-; *** tcyc = 10 A + 20      ***
-m_beep:
-			TAY				; determines frequency (2)
-			STX $BFF0		; send X's LSB to beeper (4)
-rb_zi:
-				DEY			; count pulse length (y*2)
-				BNE rb_zi	; stay this way for a while (y*3-1)
-			DEX				; toggles even/odd number (2)
-			BNE m_beep		; new half cycle (3)
-		STX $BFF0			; turn off the beeper!
-		BEQ m_next			; go for next note
+		BEQ mc_rest			; if zero, no sound!
+			JSR m_beep		; play this note (exits with Z)
+			BEQ m_next		; go for next note
 ; *** ** rest routine ** *** inlined
 ; ***     X = length     ***
 ; ***    t = X 1.28 ms   ***
-m_rest:
-		TAY					; if period is zero for rests, this resets the counter
-r_loop:
-			INY
-			BNE r_loop		; this will take ~ 1.28 ms
-		DEX					; continue
-		BNE m_rest
+mc_rest:
+		JSR m_rest
 m_next:
-		INC sel_gh			; advance cursor to next note
+		INC temp			; advance cursor to next note
 		BNE m_loop
 m_end:
 ; **********************************************************
@@ -102,8 +88,37 @@ level:
 ; ***************************
 ; ***************************
 
+; *** ** beeping routine ** ***
+; *** X = length, A = freq. ***
+; *** tcyc = 10 A + 20      ***
+; modifies Y, returns X=0
+m_beep:
+		TAY					; determines frequency (2)
+		STX $BFF0			; send X's LSB to beeper (4)
+rb_zi:
+			DEY				; count pulse length (y*2)
+			BNE rb_zi		; stay this way for a while (y*3-1)
+		DEX					; toggles even/odd number (2)
+		BNE m_beep			; new half cycle (3)
+	STX $BFF0				; turn off the beeper!
+	RTS
+
+; *** ** rest routine ** ***
+; ***     X = length     ***
+; ***    t = X 1.28 ms   ***
+; modifies Y, returns X=0
+m_rest:
+		LDY #0				; this resets the counter
+r_loop:
+			INY
+			BNE r_loop		; this will take ~ 1.28 ms
+		DEX					; continue
+		BNE m_rest
+	RTS
+
 ; * preload map with initial state *
 ; will just copy 1Kbyte, don't bother with individual coordinates (10.5 ms)
+; returns X=0, modifies A
 newmap:
 	LDX #0
 nm_loop:
@@ -119,7 +134,8 @@ nm_loop:
 		BNE nm_loop
 	RTS
 
-; * copy the intial screen to VRAM *and* the 'clean' buffer (about 62 ms @ 1 MHz w/IO, or 45 ms direct) *
+; * copy the intial screen to VRAM *and* the 'clean' buffer (w/o dots, about 62 ms @ 1 MHz w/IO, or 45 ms direct) *
+; first part ends with Y=0, A modified
 screen:
 	LDY #<maze				; pointer to fresh maze
 	LDA #>maze
@@ -154,26 +170,27 @@ sc_loop:
 			STA $8000		; ...gets into high-address latch (4)
 #endif
 		BPL sc_loop			; (usually 3, just 8 times)
-; now place dots according to current map *** TBD
-; for every 4x4 cell, dots are at +3, +3
-; odd dots @d0, even dots @d4
-; screen pointer advances 64 bytes per row
-; pills should be 3x3, thus from +2 to +4, either at even or odd column
-; for right pill (even) these are @d543 and, for the left pill (odd), @d10 and @d7 at next byte
-; placing the pills offset to the right will be @d654 and @d210...
+; now place dots according to current map (not yet timed!)
+; placing the pills offset to the left will be @d654 and @d210...
 ; ...no byte boundaries crossed, and doesn't look THAT bad!
 ; as for the pill's 3 bytes, there cannot be page crossing backwards, but it's likely to happen otherwise!
+; must store into buffer too! eeeeeeek!
+; modifies A & Y (and X if IOSCREEN)
 placedots:
 	LDY #<d_map				; get initial pointer
 	LDA #>d_map
 	STY map_pt
 	STA map_pt+1
+;	LDY #<org_b				; pointer to buffer (Y known to be zero, as both blocks are page-aligned)
+	LDA #>org_b
+	STY org_pt				; load parallel destination
+	STA org_pt+1
 ;	LDY #<vram				; pointer to VRAM (LSB known to be zero)
-	LDX #>vram
+	LDA #>vram
 	STY dest_pt				; load destination pointer
-	STX dest_pt+1			; keep this too
+	STA dest_pt+1
 #ifdef	IOSCREEN
-	STX $8000				; preload page into high-address latch
+	STA $8000				; preload page into high-address latch
 #endif
 dp_loop:
 		LDA map_pt			; tile offset from lowest bits of pointer
@@ -196,6 +213,7 @@ dp_dot:
 dp_set:
 			ORA (dest_pt), Y	; mix with original data
 			STA (dest_pt), Y	; update screen
+			STA (org_pt), Y	; and buffer too! eeeeeeek
 #ifdef	IOSCREEN
 ; worth inlining as dots are frequently put
 			TAX				; keep this value
@@ -215,6 +233,7 @@ dp_pill:
 			SEC
 			SBC #16			; get one raster up (can't wrap!)
 			STA dest_pt
+			STA org_pt		; buffer too! eeeeeek
 ; continue with screen insertion, but thrice
 ; since the only difference between odd and even tiles is the bit positions, let's make a mask for them
 			TYA				; check X
@@ -224,22 +243,25 @@ dp_pill:
 			BCS dp_pset		; if was even...
 				LDA #$70	; ...set d4-6 instead
 dp_pset:
-			STA draw_s		; store mask temporarily
+			STA temp		; store mask temporarily
 ; now it's time to modify the three bytes in sequence, checking for wrap in the last one
 ; first one, mask already in A
 			ORA (dest_pt), Y	; mix with original data in the upper raster
 			STA (dest_pt), Y
+			STA (org_pt), Y	; and buffer too! eeeeeeek
 #ifdef	IOSCREEN
 			JSR io_off		; not worth inlining, as is much less frequently called
 #endif
 			LDA dest_pt
 			CLC
-			ADC #16			; get one raster down (can't wrap either!)
+			ADC #16			; get back to original raster (can't wrap either!)
 			STA dest_pt
+			STA org_pt		; same with buffer! eeeeeek
 ; second one
-			LDA draw_s		; retrieve mask
+			LDA temp		; retrieve mask
 			ORA (dest_pt), Y	; mix with original data in the upper raster
 			STA (dest_pt), Y
+			STA (org_pt), Y	; and buffer too! eeeeeeek
 #ifdef	IOSCREEN
 			JSR io_off		; not worth inlining, as is much less frequently called
 #endif
@@ -247,16 +269,20 @@ dp_pset:
 			CLC
 			ADC #16			; get one raster down (but check for wrap!)
 			STA dest_pt
-			LDA dest_pt+1
-			ADC #0
-			STA dest_pt+1
+			STA org_pt		; eeeeek
+			BCC pd_nw		; worth checking wrap this way, as two MSBs are to be updated!
+				INC dest_pt+1
+				INC org_pt+1	; eeeeeek
+pd_nw:
 #ifdef	IOSCREEN
+			LDA dest_pt+1	; worth it
 			STA $8000		; MSB was updated
 #endif
 ; last one
-			LDA draw_s		; retrieve mask
+			LDA temp		; retrieve mask
 			ORA (dest_pt), Y	; mix with original data in the upper raster
 			STA (dest_pt), Y
+			STA (org_pt), Y	; and buffer too! eeeeeeek
 #ifdef	IOSCREEN
 			JSR io_off		; not worth inlining, as is much less frequently called
 #endif
@@ -265,10 +291,12 @@ dp_pset:
 			SEC
 			SBC #16			; get one raster up (but check for wrap!)
 			STA dest_pt
-			LDA dest_pt+1
-			SBC #0
-			STA dest_pt+1
+			BCS pb_nw
+				DEC dest_pt+1
+				DEC org_pt+1	; eeeeek
+pb_nw:
 #ifdef	IOSCREEN
+			LDA dest_pt+1	; worth it
 			STA $8000		; MSB was updated
 #endif
 dp_next:
@@ -277,10 +305,12 @@ dp_next:
 			CLC
 			ADC #$40		; get four rasters down (but check for wrap!)
 			STA dest_pt
-			LDA dest_pt+1	; better keep it in A as might be needed for IOSCREEN
-			ADC #0
-			STA dest_pt+1
+			BCC pd_adv		; better this way
+				INC dest_pt+1
+				INC org_pt+1	; eeeeeek
+pd_adv:
 #ifdef	IOSCREEN
+			LDA dest_pt+1	; worth it
 			STA $8000		; MSB was updated
 #endif
 ; update tile coordinates
@@ -319,8 +349,9 @@ io_off:
 #endif
 
 ; * reset initial positions *
+; returns X=0, modifies A
 positions:
-	LDX #15					; number of bytes to be copied
+	LDX #20					; 5 sprites x 4 coordinates/stati
 ip_loop:
 		LDA init_p-1, X		; get data from tables, note offsets
 		STA sprite_x-1, X	; into ZP variables
@@ -329,8 +360,16 @@ ip_loop:
 	RTS
 
 ; *** draw one sprite... ***
+; new interface, Y selects sprite (0=pacman, 1...4=ghost)
 draw:
-	LDX draw_d				; check direction
+	LDA sprite_x, Y			; copy from array to temporary var
+	STA draw_x
+	LDA sprite_y, Y
+	STA draw_y
+	LDA sprite_s, Y
+	STA draw_s
+	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
+;	STX draw_d				; lastly, set direction (is storage actually needed?)
 	JMP (sp_dir, X)			; *** CMOS only *** execute appropriate code
 sp_dir:
 	.word	sd_right		; table of pointers for sprite drawing routines
@@ -340,23 +379,23 @@ sp_dir:
 
 ; * routine for sprite drawing, towards right * MUST CHANGE
 sd_right:
+	JSR comp_y				; compute base screen pointer from draw_y! eeeeek
 	LDY draw_x				; get parameters for chk_map
 	INY						; try one pixel to the right
 	TYA
 	LDX draw_y
 	JSR chk_map				; check status of suggested tile
-	BMI sr_abort
+	BMI sr_abort			; do nothing if wall *** might check for ghost base
 		;***check dot/pill (perhaps in chk_map)
 		INC draw_x			; one pixel to the right
 		LDA draw_x
 		AND #7				; bit within byte
 		BNE sr_nb
-; perhaps could clear here the leftmost column *** NO LONGER NEEDED
 			LDY org_pt		; if wrapped, advance one byte
 			INY
 			STY org_pt
 			STY dest_pt
-			BNE sr_nb		; page boundary crossing
+			BNE sr_nb		; page boundary crossing, really needed?
 				INC org_pt+1
 				INC dest_pt+1
 sr_nb:
@@ -510,6 +549,37 @@ sd_up:
 su_abort:
 	RTS
 
+; * compute base screen pointer from draw_y *
+; returns MSB in A
+comp_y:
+	LDA draw_y				; original row
+	STA dest_pt				; will be shifted
+	LDA #0					; clear MSB
+	ASL dest_pt				; this screen is 16 bytes/line
+	ROL						; MSB gets loaded...
+	ASL dest_pt
+	ROL
+	ASL dest_pt
+	ROL
+	ASL dest_pt
+	ROL						; ...after four shifts
+	CLC
+	ADC #>vram				; add base address
+	STA dest_pt+1
+	RTS
+
+; * compute offset from draw_x (after calling comp_y, I presume) *
+; returns full LSB in A
+comp_x:
+	LDA draw_x				; original column
+	LSR						; will shift 4 times...
+	LSR
+	LSR
+	LSR						; ...as this screen is 16 bytes/line
+	ORA dest_pt				; MSN is expected to be set!
+	STA dest_pt
+	RTS
+
 ; * compute map data from pixel coordinates *
 chk_map:
 ; input is A=suggested draw_x, X=suggested draw_y
@@ -539,18 +609,18 @@ chk_map:
 ; takes value (BCD) in A (low), X (high, only for 160 --fourth ghost eaten--)
 add_sc:
 ; add X.A to current score
-	STX sel_gh				; store temporarily
+	STX temp				; store temporarily
 	SED						; decimal mode!
 	CLC
 	ADC score				; add to current value
 	STA score
 	LDA score+1
-	ADC sel_gh				; possible carry plus any value over 99
+	ADC temp				; possible carry plus any value over 99
 	STA score+1
 	CLD						; back to binary
 ; now display it, two ciphers at a time!
 	LDX #5
-	STX sel_gh				; use this as a scanline counter
+	STX temp				; use this as a scanline counter
 	LDY #<bcdt				; set BCD table pointer
 	LDA #>bcdt
 	STY spr_pt
@@ -592,7 +662,7 @@ ds_sc:
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
 #endif
-;		BCC ds_nnw			; should NEVER wrap, at least within the original range ($7B10-$7B61)
+;		BCC ds_nnw			; should NEVER wrap, at least within the original range ($7B1C-$7B6D)
 ;			INC dest_pt+1
 ;ds_nnw:
 		LDA spr_pt			; also increase table pointer
@@ -603,8 +673,53 @@ ds_sc:
 		BCC ds_tnw			; this is more likely to wrap
 			INC spr_pt+1
 ds_tnw:
-		DEC sel_gh			; until 5 scanlines are done
+		DEC temp			; until 5 scanlines are done
 		BNE ds_sc
+	RTS
+
+; * update lives counter *
+; now display it, two ciphers at a time!
+up_lives:
+	LDX #5
+	STX temp				; use this as a scanline counter
+	LDY #<bcdt				; set BCD table pointer
+	LDA #>bcdt
+	STY spr_pt
+	STA spr_pt+1
+	LDX #<lv_da				; set screen address for lives area
+	LDA #>lv_da
+	STX dest_pt				; will be kept as low address
+	STA dest_pt+1
+#ifdef	IOSCREEN
+	STA $8000				; latch high address, fortunately won't change ($7B1C...$7B5D)
+	STX $8001
+#endif
+ds_lv:
+; only two digits
+		LDY lives			; this is an index for a couple of figures!
+		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
+		STA (dest_pt)		; put on this scanline *** CMOS, hard to emulate in NMOS ***
+#ifdef	IOSCREEN
+		STA $8003
+#endif
+		LDA dest_pt			; increase screen pointer
+		CLC
+		ADC #16
+		STA dest_pt
+#ifdef	IOSCREEN
+		TAX					; keep low order address updated
+#endif
+; should NEVER wrap, at least within the original range ($7C9D-$7CDD)
+		LDA spr_pt			; also increase table pointer
+		CLC
+		ADC #160			; BCD tables have 160 entries each
+		STA spr_pt
+		LDA spr_pt+1
+		BCC dl_tnw			; this is more likely to wrap
+			INC spr_pt+1
+dl_tnw:
+		DEC temp			; until 5 scanlines are done
+		BNE ds_lv
 	RTS
 
 ; *********************************
