@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-1439
+; last modified 20210305-1300
 
 ; can be assembled from this folder
 
@@ -77,11 +77,16 @@ m_next:
 		BNE m_loop
 m_end:
 ; **********************************************************
-; music finished, now start the game!
+; **********************************************************
+; ***  ***   music finished, now start the game!    ***  ***
+; **********************************************************
+; **********************************************************
 level:
 	CLI						; enable interrupts as will be needed for timing
 
-; create next level
+; ***************************************
+; *** *** restart another 'level' *** ***
+; ***************************************
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots)
 	JSR positions			; reset initial positions
