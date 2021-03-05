@@ -1,7 +1,7 @@
 ; PacMan for Tommy2 breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210305-1300
+; last modified 20210305-1340
 
 ; can be assembled from this folder
 
@@ -213,11 +213,7 @@ dp_pill:
 		BCC dp_next			; just an empty tile
 ; add a pill
 ; first get screen pointer back (no wrapping ever!), then will advance one raster (w/o wrap) and lastly the third advance which may cross page
-			LDA dest_pt
-			SEC
-			SBC #bytlin		; get one raster up (can't wrap!)
-			STA dest_pt
-			STA org_pt		; buffer too! eeeeeek
+			JSR ras_up
 ; continue with screen insertion, but thrice
 ; since the only difference between odd and even tiles is the bit positions, let's make a mask for them
 			TYA				; check X
@@ -230,30 +226,12 @@ dp_pset:
 			STA temp		; store mask temporarily
 ; now it's time to modify the three bytes in sequence, checking for wrap in the last one
 ; first one, mask already in A
-			ORA (dest_pt), Y	; mix with original data in the upper raster
-			STA (dest_pt), Y
-			STA (org_pt), Y	; and buffer too! eeeeeeek
-#ifdef	IOSCREEN
-			JSR io_off		; not worth inlining, as is much less frequently called
-#endif
-			LDA dest_pt
-			CLC
-			ADC #bytlin		; get back to original raster (can't wrap either!)
-			STA dest_pt
-			STA org_pt		; same with buffer! eeeeeek
+			JSR putpill		; no longer inline as will be rarely done
+			JSR ras_down	; and advance to next raster, no wrap!
 ; second one
 			LDA temp		; retrieve mask
-			ORA (dest_pt), Y	; mix with original data in the upper raster
-			STA (dest_pt), Y
-			STA (org_pt), Y	; and buffer too! eeeeeeek
-#ifdef	IOSCREEN
-			JSR io_off		; not worth inlining, as is much less frequently called
-#endif
-			LDA dest_pt
-			CLC
-			ADC #bytlin		; get one raster down (but check for wrap!)
-			STA dest_pt
-			STA org_pt		; eeeeek
+			JSR putpill		; place mask again
+			JSR ras_down	; advance, but this time check wrap!
 			BCC pd_nw		; worth checking wrap this way, as two MSBs are to be updated!
 				INC dest_pt+1
 				INC org_pt+1	; eeeeeek
@@ -264,17 +242,9 @@ pd_nw:
 #endif
 ; last one
 			LDA temp		; retrieve mask
-			ORA (dest_pt), Y	; mix with original data in the upper raster
-			STA (dest_pt), Y
-			STA (org_pt), Y	; and buffer too! eeeeeeek
-#ifdef	IOSCREEN
-			JSR io_off		; not worth inlining, as is much less frequently called
-#endif
+			JSR putpill
 ; worth computing back the standard address, faster than using the stack!
-			LDA dest_pt
-			SEC
-			SBC #bytlin		; get one raster up (but check for wrap!)
-			STA dest_pt
+			JSR ras_up		; but this time check for wrap!
 			BCS pb_nw
 				DEC dest_pt+1
 				DEC org_pt+1	; eeeeek
@@ -319,8 +289,19 @@ dp_tnw:
 			BNE dp_rpt
 	RTS						; otherwise we're done!
 
-; * store A thru IO8 with offset Y *
+; * place dot mask on current coordinates *
+putpill:
+	ORA (dest_pt), Y		; mix with original data in the upper raster
+	STA (dest_pt), Y
+	STA (org_pt), Y			; and buffer too! eeeeeeek
 #ifdef	IOSCREEN
+;	JMP io_off				; not worth inlining, actually follows this code and will return to caller!
+#else
+	RTS
+#endif
+
+#ifdef	IOSCREEN
+; * store A thru IO8 with offset Y *
 io_off:
 ; not worth inlining for pills
 	TAX						; keep this value
@@ -331,6 +312,24 @@ io_off:
 	STX IO8wr				; ...and transfer data
 	RTS
 #endif
+
+; * down one raster without pagecrossing *
+ras_down:
+	LDA dest_pt
+	CLC
+	ADC #bytlin				; get back to original raster (can't wrap either!)
+	STA dest_pt
+	STA org_pt				; same with buffer! eeeeeek
+	RTS
+
+; * up one raster without pagecrossing *
+ras_up:
+	LDA dest_pt
+	SEC
+	SBC #bytlin				; get one raster up (can't wrap!)
+	STA dest_pt
+	STA org_pt				; buffer too! eeeeeek
+	RTS
 
 ; * reset initial positions *
 ; returns X=0, modifies A
