@@ -24,17 +24,25 @@ cur		.byt	0			; current score position
 	STX $FFF0				; turn off display, just in case
 
 ; *** experimental code ***
-	LDA #190
+	LDA #83
+	LDX #0
+	JSR mt_beep
+	LDA #168
 	LDX #0
 	JSR mt_beep
 
 ; play one 2-note chord
-	LDA #94				; note values
-	LDY #94
+	LDA #168				; note values
+	LDY #83
 	LDX #0
 	JSR mt_double
-	JMP end
 
+; ...but it sounds like this
+	LDA #253
+	LDX #0
+	JSR mt_beep
+
+	JMP end
 ; sweep for pacman eating ghost ** OK
 	LDA #0
 	STA cur
