@@ -1,6 +1,6 @@
 ; music player for breadboard!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210303-2330
+; last modified 20210306-1816
 
 ; *** required variables (not necessarily in ZP) ***
 
@@ -23,7 +23,18 @@ cur		.byt	0			; current score position
 
 	STX $FFF0				; turn off display, just in case
 
-; *** experimntal code ***
+; *** experimental code ***
+	LDA #190
+	LDX #0
+	JSR mt_beep
+
+; play one 2-note chord
+	LDA #94				; note values
+	LDY #94
+	LDX #0
+	JSR mt_double
+	JMP end
+
 ; sweep for pacman eating ghost ** OK
 	LDA #0
 	STA cur
@@ -218,6 +229,51 @@ peak:
 		CMP cur+1
 		BCC peak
 	RTS
+
+; *****************************
+; *** ** 2-chord routine ** ***
+; *** X = length (4n!!!)    ***
+; *** A = per.1, Y = per.2  ***
+; *** tcyc = 10 n + 20      ***
+; *****************************
+mt_double:
+	STA cur				; temporary storage
+	STY cur+1
+mt_beep2:
+; first note, 10n + 20
+		LDY cur			; determines frequency (3)
+		STX $BFF0		; send X's LSB to beeper (4)
+rb_d1:
+			DEY			; count pulse length (y*2)
+			BNE rb_d1	; stay this way for a while (y*3-1)
+		DEX				; toggles even/odd number (2)
+		LDA 0			; ***eq***
+		LDY cur			; determines frequency (3)
+		STX $BFF0		; send X's LSB to beeper (4)
+rb_u1:
+			DEY			; count pulse length (y*2)
+			BNE rb_u1	; stay this way for a while (y*3-1)
+		DEX				; eEEEEEEEK
+		LDA 0			; ***eq***
+; second note
+		LDY cur+1		; determines frequency (3)
+		STX $BFF0		; send X's LSB to beeper (4)
+rb_d2:
+			DEY			; count pulse length (y*2)
+			BNE rb_d2	; stay this way for a while (y*3-1)
+		DEX				; toggles even/odd number (2)
+		LDA 0			; ***eq***
+		LDY cur+1		; determines frequency (3)
+		STX $BFF0		; send X's LSB to beeper (4)
+rb_u2:
+			DEY			; count pulse length (y*2)
+			BNE rb_u2	; stay this way for a while (y*3-1)
+; repeat cycle, note X *must* be a multiple of 4!
+		DEX				; toggles even/odd number (2)
+		BNE mt_beep2	; new half cycles (3)
+	STX $BFF0			; turn off the beeper!
+	RTS
+; *****************************
 
 ; *******************
 ; *** music score ***
