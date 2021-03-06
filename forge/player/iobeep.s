@@ -28,7 +28,7 @@ cur		.byt	0			; current score position
 	LDX #0
 	JSR mt_beep
 	LDA #168
-	LDX #0
+	LDX #128
 	JSR mt_beep
 
 ; play one 2-note chord
@@ -39,7 +39,7 @@ cur		.byt	0			; current score position
 
 ; ...but it sounds like this
 	LDA #253
-	LDX #0
+	LDX #128
 	JSR mt_beep
 
 	JMP end
