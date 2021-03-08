@@ -52,7 +52,7 @@ start:
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions, X is zero but...
-	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
+;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
@@ -160,6 +160,7 @@ sc_loop:
 ; as for the pill's 3 bytes, there cannot be page crossing backwards, but it's likely to happen otherwise!
 ; must store into buffer too! eeeeeeek!
 ; modifies A & Y (and X if IOSCREEN)
+rts
 placedots:
 	LDY #<d_map				; get initial pointer
 	LDA #>d_map
