@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210311-1217
+; last modified 20210311-2351
 
 ; can be assembled from this folder
 
@@ -85,11 +85,11 @@ jsr up_lives
 level:
 	CLI						; enable interrupts as will be needed for timing
 	STA $AFF1				; ...and enable in hardware too! eeeeek
-
+; test code
 lda #1
 ldx #0
 jsr add_sc
-jsr death
+jsr death					; seems to corrupt score?
 jmp level
 ; ***************************************
 ; *** *** restart another 'level' *** ***
@@ -168,7 +168,7 @@ sc_loop:
 ; must store into buffer too! eeeeeeek!
 ; modifies A & Y (and X if IOSCREEN)
 rts
-placedots:
+placedots:	; *** *** *** *** CRAP *** *** *** ***
 	LDY #<d_map				; get initial pointer
 	LDA #>d_map
 	STY map_pt
@@ -191,7 +191,7 @@ dp_loop:
 		LDA (map_pt), Y		; get info for current tile
 		ASL					; check d7 (wall)
 		BCC dp_dot
-			JMP dp_next		; wall, nothing to be added
+			JMP dp_next		; wall, nothing to be added... but stay on same line! eeeeeek
 dp_dot:
 		ASL					; check d6 (standard dot)
 		BCC dp_pill			; no? try some pill
@@ -202,6 +202,7 @@ dp_dot:
 			LDA #1			; mask originally with d0 set (odd)
 			BCS dp_set		; if was even...
 				LDA #16		; ...set d4 instead
+				; ...and fucking advance pointers, perhaps after writing (C will stay)
 dp_set:
 			ORA (dest_pt), Y	; mix with original data
 			STA (dest_pt), Y	; update screen
@@ -212,6 +213,8 @@ dp_set:
 			TYA				; get screen offset
 			CLC
 			ADC dest_pt		; compute final address -- no way any offset could cross page boundaries, IF page-aligned
+			STA dest_pt		; eeeeeek... or so I think
+			STA org_pt
 			STA IO8ll		; latch low address...
 			STX IO8wr		; ...and transfer data
 #endif
@@ -263,11 +266,22 @@ pb_nw:
 			STA IO8lh		; MSB was updated
 #endif
 dp_next:
-; advance screen address, pretty much the same but four rasters
+; update tile coordinates
+		INC map_pt			; next tile coordinate
+		LDA map_pt
+		AND #31				; check lowest bits, which are offset
+
+		CMP #28				; check X offset is valid
+		BEQ dp_tnw			; it is, do not advance line
+dp_rpt:
+			JMP dp_loop		; continue if so
+dp_tnw:
+; advance screen row, pretty much the same but four rasters (actually should be THREE as one line is completed)
 			LDA dest_pt
 			CLC
-			ADC #bytlin*4		; get four rasters down (but check for wrap!)
+			ADC #bytlin*3		; get three rasters down (but check for wrap!) eeeeeek
 			STA dest_pt
+			STA org_pt		; buffer too! eeeeeeeeeek
 			BCC pd_adv		; better this way
 				INC dest_pt+1
 				INC org_pt+1	; eeeeeek
@@ -276,15 +290,7 @@ pd_adv:
 			LDA dest_pt+1	; worth it
 			STA IO8lh		; MSB was updated
 #endif
-; update tile coordinates
-		INC map_pt			; next tile coordinate
-		LDA map_pt
-		AND #31				; check lowest bits, which are offset
-		CMP #28				; check X offset is valid
-		BEQ dp_tnw			; it is, do not advance line
-dp_rpt:
-			JMP dp_loop		; continue if so
-dp_tnw:
+; continue updating tile coordinates
 		LDA map_pt			; or advance tile row otherwise
 		ADC #3				; next row, C known to be SET because of BEQ!
 		STA map_pt
@@ -728,7 +734,7 @@ dl_tnw:
 	RTS
 
 ; * generic delay in tenths of a second *
-; A = desired time * 0.5 s
+; A = desired time * 0.1 s
 tenths:
 	LDX #23				; will do ~0.1 s @ 1 MHz
 	LDY #0
