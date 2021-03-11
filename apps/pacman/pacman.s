@@ -1,7 +1,7 @@
-; PacMan for Tommy2 breadboard computer!
+; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210305-1340
+; last modified 20210311-1217
 
 ; can be assembled from this folder
 
@@ -10,7 +10,7 @@
 
 ; *** constants definitions ***
 	fw_isr	= $200			; standard minimOS address
-	vram	= $7800			; suitable for Tommy2
+	vram	= $7800			; suitable for Durango
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
 	lv_da	= vram + $49D	; address for lives display, usually $7C9D
 	bytlin	= 16			; bytes per line, being a power of two makes things MUCH simpler!
@@ -33,7 +33,7 @@ start:
 	LDX #$FF
 	TXS
 
-	STX $FFF0				; turn off Tommy2 display
+	STX $FFF0				; turn off Durango display
 
 	LDY #<pm_isr			; set interrupt vector
 	LDA #>pm_isr
@@ -84,13 +84,14 @@ m_end:
 level:
 	CLI						; enable interrupts as will be needed for timing
 
+
 ; ***************************************
 ; *** *** restart another 'level' *** ***
 ; ***************************************
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots)
 	JSR positions			; reset initial positions
-	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
+;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 ; some delay is in order
 	JMP level				; and begin new level (without music)
 
@@ -717,6 +718,84 @@ dl_tnw:
 		BNE ds_lv
 	RTS
 
+; * generic delay in tenths of a second *
+; A = desired time * 0.5 s
+tenths:
+	LDX #23				; will do ~0.1 s @ 1 MHz
+	LDY #0
+hs_lp:
+			INY				; (2)
+			JSR hs_ret		; (6+6)
+			BNE hs_lp		; (3, total above is 4351 t)
+		DEX
+		BNE hs_lp
+	DEC						; *** CMOS ***
+	BNE tenths
+hs_ret:
+	RTS
+
+; * Pacman death, animation plus integrated sound *
+death:
+	SEI						; interrupts disabled for sound
+	LDA #10					; one second pause
+	JSR tenths
+; draw first frame *** TBD
+; first sqweak
+	LDA #99		; initial freq
+	LDY #88		; top freq
+	LDX #36		; length
+	JSR squeak	; actual routine
+; draw second frame *** TBD
+; second sqweak
+	LDA #118
+	LDY #105
+	LDX #30
+	JSR squeak
+; draw third frame *** TBD
+; third sqweak
+	LDA #132
+	LDY #117
+	LDX #27
+	JSR squeak
+; draw fourth frame *** TBD
+; fourth sqweak
+	LDA #148
+	LDY #132
+	LDX #24
+	JSR squeak
+; draw fifth frame *** TBD
+; fifth sqweak
+	LDA #176
+	LDY #157
+	LDX #20
+	JSR squeak
+; draw bubble frame *** TBD
+; last two sweeps
+	LDA #2
+	PHA						; iteration
+d_rpt:
+	LDA #255
+	STA temp
+dth_sw:
+		LDX #10
+		JSR m_beep
+		LDA temp
+		SEC
+		SBC #24
+		STA temp
+		CMP #15
+		BCS dth_sw
+	JSR ms74
+; next iteration
+	PLA
+	DEC						; *** CMOS ***
+	BNE d_rpt
+; should clear pacman space
+	LDA #15
+	JSR tenths				; one-and-a-half seconds delay
+; should detract one life, and check for possible gameover
+	RTS
+
 ; *** sound effects ***
 
 ; *** ** beeping routine ** ***
@@ -770,48 +849,6 @@ sweep:
 
 ; **************************************************************
 ; * sound after pacman dies (must be combined with animation!) *
-death:
-; these are the parts to be called
-	LDA #99		; initial freq
-	LDY #88		; top freq
-	LDX #36		; length
-	JSR squeak	; actual routine
-	LDA #118
-	LDY #105
-	LDX #30
-	JSR squeak
-	LDA #132
-	LDY #117
-	LDX #27
-	JSR squeak
-	LDA #148
-	LDY #132
-	LDX #24
-	JSR squeak
-	LDA #176
-	LDY #157
-	LDX #20
-	JSR squeak
-; last two sweeps
-	LDA #2
-	PHA						; iteration
-d_rpt:
-	LDA #255
-	STA temp
-dth_sw:
-		LDX #10
-		JSR m_beep
-		LDA temp
-		SEC
-		SBC #24
-		STA temp
-		CMP #15
-		BCS dth_sw
-	JSR ms74
-; next iteration
-	PLA
-	DEC						; *** CMOS ***
-	BNE d_rpt
 ; **************************************************************
 
 ; ~74 ms delay
