@@ -81,10 +81,16 @@ m_end:
 ; ***  ***   music finished, now start the game!    ***  ***
 ; **********************************************************
 ; **********************************************************
+jsr up_lives
 level:
 	CLI						; enable interrupts as will be needed for timing
+	STA $AFF1				; ...and enable in hardware too! eeeeek
 
-
+lda #1
+ldx #0
+jsr add_sc
+jsr death
+jmp level
 ; ***************************************
 ; *** *** restart another 'level' *** ***
 ; ***************************************
@@ -211,6 +217,7 @@ dp_set:
 #endif
 			JMP dp_next
 dp_pill:
+jmp dp_next
 		ASL					; check d5 (pill)
 		BCC dp_next			; just an empty tile
 ; add a pill
@@ -657,6 +664,7 @@ ds_sc:
 		STA dest_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
+		STX IO8ll			; eeeeeeeeeeek
 #endif
 ;		BCC ds_nnw			; should NEVER wrap, at least within the original range ($7B1C-$7B6D)
 ;			INC dest_pt+1
@@ -704,6 +712,7 @@ ds_lv:
 		STA dest_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
+		STX IO8ll			; eeeeeeeek
 #endif
 ; should NEVER wrap, at least within the original range ($7C9D-$7CDD)
 		LDA spr_pt			; also increase table pointer
@@ -772,8 +781,8 @@ death:
 ; draw bubble frame *** TBD
 ; last two sweeps
 	LDA #2
-	PHA						; iteration
 d_rpt:
+	PHA						; iteration
 	LDA #255
 	STA temp
 dth_sw:
