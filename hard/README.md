@@ -63,6 +63,20 @@ ready for _cheap video_ output. _May use 32K RAM and 16K EPROM_ instead.
   * Interfaces: original Application & Expansion slots, _upstream tap_ for **cheap video**.
 
 
+[**DURANGO**](computers/durango.md)
+
+  * Status: **working**.
+  * Form-factor: several solderless breadboards.
+  * Specs: 1 MHz 6502, **32 kiB RAM, 16 kiB EPROM**, includes **picoVDU**
+TV video output (128x128 _bitmap_).
+  * Peripherals: simple bit buzzer, **2x seven-segment displays** (muxed LTC4622).
+  * Interfaces: 8-bit input (`IO9`), 8-bit output for _picoVDU_ (`IO8`)
+
+> Originally intended as a **6502 CPU tester** with _no I/O_ whatsoever, it evolved
+into a fully featured development platform with sort-of integrated **video output**.
+_May become a definitive, improved version in perfboard_
+
+
 [**miniPET**](computers/minipet.md)
 
   * Status: **essentially finished** design.
@@ -134,6 +148,7 @@ bitmap or up to **4bpp** on 8x1 _attribute area_, gBRG or greyscale?).
 
 > _Intended to be a **graphics** (and perhaps _colour_) capable **VT-52** based terminal_,
 a bit like an '816-based **Tampico** computer. Might use a 16C550 instead of the 6551.
+
 
 [**Tantoyuca**](computers/tantoyuca.md)
 
@@ -312,7 +327,16 @@ generating all needed addresses and signals.
 
 > Simple, universal **graphic display**. _An extended **planar** version might provide
 **8 colours**_.
+
+
+**[pico-VDU](peripheral/pico-vdu.md)**
+
+  * Status: **working**.
+  * Specs: PAL TV output of **128x128/256x256px bitmap**.
+  * Interface: **6502-CPU _socket_**, also available as _IOchannel_ and **VIAbus**
+
+> Simple, universal **graphic display**, also integrated in _DURANGO_.
 ---
 _...and many more to come!_
 
-_last modified: 20201119-1406_
+_last modified: 20210312-1428_
