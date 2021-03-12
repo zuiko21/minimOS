@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210312-1416
+; last modified 20210312-2317
 
 ; can be assembled from this folder
 
@@ -17,6 +17,9 @@
 	IO8lh	= $8000			; I/O addresses
 	IO8ll	= $8001
 	IO8wr	= $8003
+	IOAie	= $A001			; enable hardware interrupt, LSB must be $01!
+	IOAid	= $A000			; disable hardware interrupt
+	LTCdo	= $FFF0			; LTC display port
 
 ; uncomment this if non-direct, IO-based connection is used
 #define	IOSCREEN	_IOSCREEN
@@ -33,7 +36,7 @@ start:
 	LDX #$FF
 	TXS
 
-	STX $FFF0				; turn off Durango display
+	STX LTCdo				; turn off Durango display
 
 	LDY #<pm_isr			; set interrupt vector
 	LDA #>pm_isr
@@ -44,13 +47,14 @@ start:
 	INX						; gets a zero (X known to be zero)
 	STX score				; reset score
 	STX score+1
-	STX score+2
 	LDA #5					; initial lives
 	STA lives
 
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
+LDA #0:TAX
+jsr add_sc
 	JSR positions			; reset initial positions, X is zero but...
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 
@@ -84,14 +88,11 @@ m_end:
 jsr up_lives
 level:
 	CLI						; enable interrupts as will be needed for timing
-	STA $Afff				; ...and enable in hardware too! eeeeek
+	LDA IOAie				; ...and enable in hardware too! eeeeek
 ; test code
-lda #20
-jsr ms25
-sta $a000
 loop:
-lda #1
-ldx #0
+lda #$99
+ldx #$99
 jsr add_sc
 ;jsr death					; seems to corrupt score?
 lda #10
