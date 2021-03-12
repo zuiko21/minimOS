@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210311-2351
+; last modified 20210312-1359
 
 ; can be assembled from this folder
 
@@ -733,27 +733,25 @@ dl_tnw:
 		BNE ds_lv
 	RTS
 
-; * generic delay in tenths of a second *
-; A = desired time * 0.1 s
-tenths:
-	LDX #23				; will do ~0.1 s @ 1 MHz
-	LDY #0
-hs_lp:
-			INY				; (2)
-			JSR hs_ret		; (6+6)
-			BNE hs_lp		; (3, total above is 4351 t)
-		DEX
-		BNE hs_lp
-	DEC						; *** CMOS ***
-	BNE tenths
-hs_ret:
-	RTS
+; * 25ms generic delay *
+; delay ~25A ms
+ms25:
+	LDX #20					; computed iterations for a 25ms delay (note below, total 9t overhead, 0.036%)
+	LDY #$78				; first iteration takes ~half the time, will run 138 cycles, actually ~19.5 iterations
+m25d:
+			DEY				; inner loop (2y)x
+			BNE m25d		; (3y-1)x, total 1279t if in full, ~689 otherwise
+		DEX					; outer loop (2x)
+		BNE m25d			; (3x-1)
+	DEC						; ** CMOS **
+		BNE ms25
+	RTS						; add 12t from call overhead
 
 ; * Pacman death, animation plus integrated sound *
 death:
 	SEI						; interrupts disabled for sound
-	LDA #10					; one second pause
-	JSR tenths
+	LDA #40					; one second pause
+	JSR ms25
 ; draw first frame *** TBD
 ; first sqweak
 	LDA #99		; initial freq
@@ -800,14 +798,15 @@ dth_sw:
 		STA temp
 		CMP #15
 		BCS dth_sw
-	JSR ms74
+	LDA #3
+	JSR ms25				; ~75 ms delay
 ; next iteration
 	PLA
 	DEC						; *** CMOS ***
 	BNE d_rpt
 ; should clear pacman space
-	LDA #15
-	JSR tenths				; one-and-a-half seconds delay
+	LDA #60
+	JSR ms25				; one-and-a-half seconds delay
 ; should detract one life, and check for possible gameover
 	RTS
 
@@ -862,22 +861,7 @@ sweep:
 		BCS sweep
 	RTS						; eeeeeeek
 
-; **************************************************************
 ; * sound after pacman dies (must be combined with animation!) *
-; **************************************************************
-
-; ~74 ms delay
-; expects X=0, returns X=Y=0
-ms74:
-;	LDX #0					; not needed if called after m_beep
-	LDY #198
-dly74:
-			INX
-			BNE dly74
-		INY
-		BNE dly74
-	RTS
-
 ; squeak, get higher then lower
 ; A=initial period, Y=final period, X=length
 ; uses m_beep
@@ -910,17 +894,17 @@ sw_down:
 ; *** interrupt service routine ***
 ; *********************************
 pm_isr:
-	PHA
-	LDA $9FF0				; get input port
-	STA stick				; store in variable
-	PLA
-	INC jiffy				; count time
-		BNE i_end
-	INC jiffy+1
-		BNE i_end
-	INC jiffy+2
+	PHA						; (3)
+	LDA $9FF0				; get input port (4)
+	STA stick				; store in variable (3)
+	PLA						; (4)
+	INC jiffy				; count time (5)
+		BNE i_end			; (3 in the fastest case)
+	INC jiffy+1				; (or add 2+5)
+		BNE i_end			; (perhaps 3)
+	INC jiffy+2				; (or add 2+5)
 i_end:
-	RTI
+	RTI						; (6, fastest case is 27, plus 7 of IRQ ack, seems OK at 34...)
 
 ; ****************************
 ; ****************************
