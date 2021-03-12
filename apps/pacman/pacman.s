@@ -91,12 +91,21 @@ level:
 	LDA IOAie				; ...and enable in hardware too! eeeeek
 ; test code
 loop:
-lda #$99
-ldx #$99
+lda jiffy
+cmp lives
+bne loop
+pha
+ldx #0
+lda #1
 jsr add_sc
-;jsr death					; seems to corrupt score?
-lda #10
-jsr ms25
+/*ldy#5
+wait:inx
+bne wait
+dey:bne wait
+*/pla
+clc
+adc#244
+sta lives
 jmp loop
 ; ***************************************
 ; *** *** restart another 'level' *** ***
@@ -918,7 +927,6 @@ pm_isr:
 	INC jiffy+2				; (or add 2+5)
 i_end:
 	RTI						; (6, fastest case is 27, plus 7 of IRQ ack, seems OK at 34...)
-
 ; ****************************
 ; ****************************
 ; *** *** diverse data *** ***
