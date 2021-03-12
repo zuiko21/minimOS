@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210304-0613
+; last modified 20210312-2332
 
 ; **************************
 ; *** zeropage variables ***
@@ -18,7 +18,7 @@ sprite_d	.dsb	5, 0	; sprite direction is 0=right, 2=down, 4=left, 6=up
 sprite_s	.dsb	5, 0	; sprite status is 0=scatter, 2=chase, 4=frightened, 6=eaten (makes no sense for pacman)
 temp:
 sel_gh		.byt	0		; temporarily selected ghost (index for arrays above), also other temporary use
-score		.word			; score in BCD (a tenth of the original score, thus up to 99990 in the arcade)
+score		.word	0		; score in BCD (a tenth of the original score, thus up to 99990 in the arcade)
 lives		.byt	0		; remaining lives
 cur:
 draw_x		.byt	0		; temporary copy of arrays at one index (and other temporary use)
