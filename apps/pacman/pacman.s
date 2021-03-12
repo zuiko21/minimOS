@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210312-1359
+; last modified 20210312-1416
 
 ; can be assembled from this folder
 
@@ -969,7 +969,7 @@ m_note:
 
 ; original maze (full 128x128 screen)
 maze:
-	.bin	11, 2048, "../../other/data/maze.pbm"
+	.bin	11, 2048, "../../other/data/maze2.pbm"	; *** check new offset or resave file!
 
 ; *** sprites ***
 ; pacman towards right
