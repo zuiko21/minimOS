@@ -84,15 +84,19 @@ m_end:
 jsr up_lives
 level:
 	CLI						; enable interrupts as will be needed for timing
-	STA $AFF1				; ...and enable in hardware too! eeeeek
+	STA $Afff				; ...and enable in hardware too! eeeeek
 ; test code
+lda #20
+jsr ms25
+sta $a000
+loop:
 lda #1
 ldx #0
 jsr add_sc
 ;jsr death					; seems to corrupt score?
 lda #10
 jsr ms25
-jmp level
+jmp loop
 ; ***************************************
 ; *** *** restart another 'level' *** ***
 ; ***************************************
@@ -749,6 +753,13 @@ m25d:
 		BNE ms25
 	RTS						; add 12t from call overhead
 
+; * fixed sprite animation *
+; support for pacman death sound
+
+; *********************
+; *** sound effects ***
+; *********************
+
 ; * Pacman death, animation plus integrated sound *
 death:
 	SEI						; interrupts disabled for sound
@@ -812,7 +823,6 @@ dth_sw:
 ; should detract one life, and check for possible gameover
 	RTS
 
-; *** sound effects ***
 
 ; *** ** beeping routine ** ***
 ; *** X = length, A = freq. ***
