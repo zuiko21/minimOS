@@ -89,7 +89,9 @@ level:
 lda #1
 ldx #0
 jsr add_sc
-jsr death					; seems to corrupt score?
+;jsr death					; seems to corrupt score?
+lda #10
+jsr ms25
 jmp level
 ; ***************************************
 ; *** *** restart another 'level' *** ***
@@ -969,7 +971,7 @@ m_note:
 
 ; original maze (full 128x128 screen)
 maze:
-	.bin	11, 2048, "../../other/data/maze2.pbm"	; *** check new offset or resave file!
+	.bin	57, 2048, "../../other/data/maze2.pbm"	; *** check new offset or resave file!
 
 ; *** sprites ***
 ; pacman towards right
