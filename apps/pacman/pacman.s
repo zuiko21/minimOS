@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210312-2317
+; last modified 20210313-1014
 
 ; can be assembled from this folder
 
@@ -141,14 +141,13 @@ nm_loop:
 		BNE nm_loop
 	RTS
 
-; * copy the intial screen to VRAM *and* the 'clean' buffer (w/o dots, about 62 ms @ 1 MHz w/IO, or 45 ms direct) *
-; first part ends with Y=0, A modified
+; * copy the intial screen to VRAM *and* the 'clean' buffer, now including dots *
 screen:
-	LDY #<maze				; pointer to fresh maze
+	LDY #<maze				; pointer to fresh maze (NOT page aligned)
 	LDA #>maze
 	STY spr_pt				; load origin pointer (temporarily)
 	STA spr_pt+1
-	LDY #<vram				; pointer to VRAM
+	LDY #<vram				; pointer to VRAM (page-aligned)
 	LDA #>vram
 	STY dest_pt				; load destination pointer
 	STA dest_pt+1
@@ -159,14 +158,22 @@ screen:
 	LDA #>org_b
 	STY org_pt				; load parallel destination
 	STA org_pt+1
+;	LDY #<d_map				; get map initial pointer, once again page-aligned
+	LDA #>d_map
+	STY map_pt
+	STA map_pt+1
+; MUST think about a compact-map format, two tiles per byte, w0d0p0b0w1d1p1b1, as makes a lot of sense!
 sc_loop:
-		LDA (spr_pt), Y		; get data... (5)
+
+		ORA (spr_pt), Y		; mix mask with orignal data... (5)
 		STA (org_pt), Y		; ...into buffer... (6)
 		STA (dest_pt), Y	; ...and into VRAM (6)
 #ifdef	IOSCREEN
 		STY IO8ll			; low-address latch (4)
 		STA IO8wr			; actual data transfer (4)
 #endif
+
+
 		INY					; (2)
 		BNE sc_loop			; (usually 3 for 255 times, then 2)
 			INC spr_pt+1	; page crossing (5+5+5)
@@ -184,7 +191,7 @@ sc_loop:
 ; must store into buffer too! eeeeeeek!
 ; modifies A & Y (and X if IOSCREEN)
 rts
-placedots:	; *** *** *** *** CRAP *** *** *** ***
+/* placedots:	; *** *** *** *** CRAP *** *** *** ***
 	LDY #<d_map				; get initial pointer
 	LDA #>d_map
 	STY map_pt
@@ -361,7 +368,7 @@ ras_up:
 	STA dest_pt
 	STA org_pt				; buffer too! eeeeeek
 	RTS
-
+*/
 ; * reset initial positions *
 ; returns X=0, modifies A
 positions:
