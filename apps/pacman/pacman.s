@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210315-1420
+; last modified 20210315-1853
 
 ; can be assembled from this folder
 
@@ -130,8 +130,10 @@ newmap:
 	LDX #0
 nm_loop:
 		LDA i_map, X		; get initial data
+and#%11011101
 		STA d_map, X		; copy into RAM
 		LDA i_map+256, X	; ditto for remaining pages
+and#%11011101
 		STA d_map+256, X
 		INX
 		BNE nm_loop
@@ -158,14 +160,14 @@ screen:
 	LDA #>d_map
 	STY map_pt
 	STA map_pt+1
+	STY cur					; save this index, as isn't valid everywhere
 ; now using a compact-map format, two tiles per byte, w0d0p0b0w1d1p1b1, as it makes a lot of sense!
 sc_loop:
 ; check line position within row
-		STY cur				; save this index, as isn't valid everywhere
-		TYA					; check coordinates
+		LDA cur				; check coordinates
 		AND #bytlin-1		; filter column (assuming bytlin is power of 2)
-		TAX					; will be used for the mask array
-		TYA					; now for the lowest Y-bits
+		TAY					; will be used for the mask array AND map index
+		LDA cur				; now for the lowest Y-bits
 		AND #%00110000		; we only need the lowest 2 bits, assuming bytlin = 16
 ; will place dots at every +2, instead of +3, makes pill placement MUCH easier as no page/tile crossing is done!
 ; thus, Y MOD 4 TIMES 16 could be 0 (no dots), 16 or 48 (pills only, same mask), or 32 (dots and/or pills)
@@ -175,23 +177,19 @@ sc_loop:
 			CMP #32			; is it the raster for dots?
 			BNE sc_cpil		; no, check whether pill
 ; third raster (A=32) the only one where dots are feasible
-; *** Y is NOT valid as index for map_pt, but #16 should have loaded it from X
 sc_sdot:
 				LDA (map_pt), Y	; get map data for both tiles!
 				AND #%01000100	; filter dot bits
 				LSR
 				LSR				; shift them to the rightmost column
-				ORA dmask, X	; combine with possible pills, must be an array of them
+;				ORA dmask, Y	; combine with possible pills, must be an array of them
 				JMP sc_ndot
 sc_cpil:
 ; I don't think I need to check any other value, it MUST be a pill raster
 ; but 16 is the first one, thus SET appropriate dmask entry
 			CMP #48			; second set of pill pixels?
 			BEQ sc_spil		; yes, go set them
-; second raster (A=16)
-; *** Y is not a valid offset for map_pt as won't increase as frequently (every 4 scanlines)
-				TXA			; this section is first, apart from 0
-				TAY			; use offset from X as we'll be dealing with the tile map
+; second raster (A=16) may have pills
 				LDA (map_pt), Y	; otherwise check whether pills have to be set
 				AND #%00100010	; filter pill bits
 				BEQ sc_npil	; worth skipping as most tiles will have no pills
@@ -202,19 +200,23 @@ sc_cpil:
 					LSR
 					ORA temp	; fill all three pixels
 sc_npil:
-				STA dmask, X	; and store it into array
+				STA dmask, Y	; and store it into array
 				JMP sc_sdot		; eeeeeeeek
 sc_spil:
 ; fourth raster (A=48)
-			LDA map_pt		; this is the end of the tile raster, thus advance to next row
-			CLC
-			ADC #bytlin		; will advance map_pt, usually by 16
-			STA map_pt
-			BCC sc_rowm		; check possible carry
-				INC map_pt+1
+; can only advance pointer ONCE per raster!!!!!!!!!!! eeeeeeek
+			LDA cur			; beginning of line?
+			AND #15			; eeeeeeeeek
+			BNE sc_rowm		; if not, do NOT increment! eeeeeeeeek
+				LDA map_pt	; this is the end of the tile raster, thus advance to next row
+				CLC
+				ADC #bytlin	; will advance map_pt, usually by 16
+				STA map_pt
+				BCC sc_rowm	; check possible carry
+					INC map_pt+1
 sc_rowm:
 ; take the same mask as created two rasters before
-			LDA dmask, X	; take previously created mask
+			LDA dmask, Y	; take previously created mask
 sc_ndot:
 ; add mask data into screens, may retrieve Y index here
 		LDY cur				; retrieve index!
@@ -225,7 +227,7 @@ sc_ndot:
 		STY IO8ll			; low-address latch (4)
 		STA IO8wr			; actual data transfer (4)
 #endif
-		INY					; (2)
+		INC cur				; (5, unfortunately)
 		BNE sc_loop			; (usually 3 for 255 times, then 2)
 			INC spr_pt+1	; page crossing (5+5+5)
 			INC org_pt+1
@@ -830,8 +832,8 @@ init_p:
 
 ; initial map status
 i_map:
-;#include "map.s"
-	.dsb	512, %00100010
+#include "map.s"
+
 ; BCD glyph pair tables
 ; each scanline, then 100 values from $00 to $99
 bcdt:
