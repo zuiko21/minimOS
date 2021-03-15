@@ -86,7 +86,7 @@ m_end:
 ; **********************************************************
 ; **********************************************************
 jsr up_lives
-level:
+play:
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
 ; test code
@@ -115,7 +115,7 @@ jmp loop
 	JSR positions			; reset initial positions
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 ; some delay is in order
-	JMP level				; and begin new level (without music)
+	JMP play				; and begin new level (without music)
 
 ; ***************************
 ; ***************************
@@ -150,7 +150,7 @@ screen:
 #ifdef	IOSCREEN
 	STA IO8lh				; preload page into high-address latch
 #endif
-;	LDY #<org_b				; pointer to clean screen (Y known to be zero, as both blocks are page-aligned)
+;	LDY #<org_b				; pointer to clean buffer (Y known to be zero, as both blocks are page-aligned)
 	LDA #>org_b
 	STY org_pt				; load parallel destination
 	STA org_pt+1
@@ -170,10 +170,13 @@ sc_loop:
 ; will place dots at every +2, instead of +3, makes pill placement MUCH easier as no page/tile crossing is done!
 ; thus, Y MOD 4 TIMES 16 could be 0 (no dots), 16 or 48 (pills only, same mask), or 32 (dots and/or pills)
 		BEQ sc_ndot			; no dots on raster 0
+; first raster (A=0) goes away
 ; otherwise put shifted mask for dots, perhaps extended if pills
 			CMP #32			; is it the raster for dots?
 			BNE sc_cpil		; no, check whether pill
+; third raster (A=32) the only one where dots are feasible
 ; *** Y is NOT valid as index for map_pt, but #16 should have loaded it from X
+sc_sdot:
 				LDA (map_pt), Y	; get map data for both tiles!
 				AND #%01000100	; filter dot bits
 				LSR
@@ -185,12 +188,14 @@ sc_cpil:
 ; but 16 is the first one, thus SET appropriate dmask entry
 			CMP #48			; second set of pill pixels?
 			BEQ sc_spil		; yes, go set them
+; second raster (A=16)
 ; *** Y is not a valid offset for map_pt as won't increase as frequently (every 4 scanlines)
 				TXA			; this section is first, apart from 0
 				TAY			; use offset from X as we'll be dealing with the tile map
 				LDA (map_pt), Y	; otherwise check whether pills have to be set
 				AND #%00100010	; filter pill bits
 				BEQ sc_npil	; worth skipping as most tiles will have no pills
+					ASL		; eeeeeeek, but pills looked better without it...
 					STA temp	; temporary use, better performance than using the mask array
 					LSR
 					ORA temp
@@ -198,8 +203,9 @@ sc_cpil:
 					ORA temp	; fill all three pixels
 sc_npil:
 				STA dmask, X	; and store it into array
-				JMP sc_ndot		; single clock cycle saving?
+				JMP sc_sdot		; eeeeeeeek
 sc_spil:
+; fourth raster (A=48)
 			LDA map_pt		; this is the end of the tile raster, thus advance to next row
 			CLC
 			ADC #bytlin		; will advance map_pt, usually by 16
@@ -824,8 +830,8 @@ init_p:
 
 ; initial map status
 i_map:
-#include "map.s"
-
+;#include "map.s"
+	.dsb	512, %00100010
 ; BCD glyph pair tables
 ; each scanline, then 100 values from $00 to $99
 bcdt:
