@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210313-1014
+; last modified 20210315-2241
 
 ; can be assembled from this folder
 
@@ -86,7 +86,7 @@ m_end:
 ; **********************************************************
 ; **********************************************************
 jsr up_lives
-level:
+play:
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
 ; test code
@@ -115,7 +115,7 @@ jmp loop
 	JSR positions			; reset initial positions
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 ; some delay is in order
-	JMP level				; and begin new level (without music)
+	JMP play				; and begin new level (without music)
 
 ; ***************************
 ; ***************************
@@ -124,7 +124,7 @@ jmp loop
 ; ***************************
 
 ; * preload map with initial state *
-; will just copy 1Kbyte, don't bother with individual coordinates (10.5 ms)
+; will just copy 0.5 Kbyte, don't bother with individual coordinates (5.9 ms)
 ; returns X=0, modifies A
 newmap:
 	LDX #0
@@ -133,10 +133,6 @@ nm_loop:
 		STA d_map, X		; copy into RAM
 		LDA i_map+256, X	; ditto for remaining pages
 		STA d_map+256, X
-		LDA i_map+512, X
-		STA d_map+512, X
-		LDA i_map+768, X
-		STA d_map+768, X	; eeeeeek
 		INX
 		BNE nm_loop
 	RTS
@@ -154,7 +150,7 @@ screen:
 #ifdef	IOSCREEN
 	STA IO8lh				; preload page into high-address latch
 #endif
-;	LDY #<org_b				; pointer to clean screen (Y known to be zero, as both blocks are page-aligned)
+;	LDY #<org_b				; pointer to clean buffer (Y known to be zero, as both blocks are page-aligned)
 	LDA #>org_b
 	STY org_pt				; load parallel destination
 	STA org_pt+1
@@ -162,19 +158,74 @@ screen:
 	LDA #>d_map
 	STY map_pt
 	STA map_pt+1
-; MUST think about a compact-map format, two tiles per byte, w0d0p0b0w1d1p1b1, as makes a lot of sense!
+	STY cur					; save this index, as isn't valid everywhere
+; now using a compact-map format, two tiles per byte, w0d0p0b0w1d1p1b1, as it makes a lot of sense!
 sc_loop:
-
-		ORA (spr_pt), Y		; mix mask with orignal data... (5)
+; check line position within row
+		LDA cur				; check coordinates
+		AND #bytlin-1		; filter column (assuming bytlin is power of 2)
+		TAY					; will be used for the mask array AND map index
+		LDA cur				; now for the lowest Y-bits
+		AND #%00110000		; we only need the lowest 2 bits, assuming bytlin = 16
+; will place dots at every +2, instead of +3, makes pill placement MUCH easier as no page/tile crossing is done!
+; thus, Y MOD 4 TIMES 16 could be 0 (no dots), 16 or 48 (pills only, same mask), or 32 (dots and/or pills)
+		BEQ sc_ndot			; no dots on raster 0
+; first raster (A=0) goes away
+; otherwise put shifted mask for dots, perhaps extended if pills
+			CMP #32			; is it the raster for dots?
+			BNE sc_cpil		; no, check whether pill
+; third raster (A=32) the only one where dots are feasible
+sc_sdot:
+				LDA (map_pt), Y	; get map data for both tiles!
+				AND #%01000100	; filter dot bits
+;				LSR				; comment this for dots centered with pills, less offset otherwise
+				LSR				; shift them to the rightmost column
+				ORA dmask, Y	; combine with possible pills, must be an array of them
+				JMP sc_ndot
+sc_cpil:
+; I don't think I need to check any other value, it MUST be a pill raster
+; but 16 is the first one, thus SET appropriate dmask entry
+			CMP #48			; second set of pill pixels?
+			BEQ sc_spil		; yes, go set them
+; second raster (A=16) may have pills
+				LDA (map_pt), Y	; otherwise check whether pills have to be set
+				AND #%00100010	; filter pill bits
+				BEQ sc_npil	; worth skipping as most tiles will have no pills
+					ASL		; eeeeeeek, but pills looked better without it...
+					STA temp	; temporary use, better performance than using the mask array
+					LSR
+					ORA temp
+					LSR
+					ORA temp	; fill all three pixels
+sc_npil:
+				STA dmask, Y	; and store it into array
+				JMP sc_ndot		; eeeeeeeek²
+sc_spil:
+; fourth raster (A=48)
+; can only advance pointer ONCE per raster!!!!!!!!!!! eeeeeeek
+			LDA cur			; beginning of line?
+			AND #15			; eeeeeeeeek
+			BNE sc_rowm		; if not, do NOT increment! eeeeeeeeek
+				LDA map_pt	; this is the end of the tile raster, thus advance to next row
+				CLC
+				ADC #bytlin	; will advance map_pt, usually by 16
+				STA map_pt
+				BCC sc_rowm	; check possible carry
+					INC map_pt+1
+sc_rowm:
+; take the same mask as created two rasters before
+			LDA dmask, Y	; take previously created mask
+sc_ndot:
+; add mask data into screens, may retrieve Y index here
+		LDY cur				; retrieve index!
+		ORA (spr_pt), Y		; mix mask with original data... (5)
 		STA (org_pt), Y		; ...into buffer... (6)
 		STA (dest_pt), Y	; ...and into VRAM (6)
 #ifdef	IOSCREEN
 		STY IO8ll			; low-address latch (4)
 		STA IO8wr			; actual data transfer (4)
 #endif
-
-
-		INY					; (2)
+		INC cur				; (5, unfortunately)
 		BNE sc_loop			; (usually 3 for 255 times, then 2)
 			INC spr_pt+1	; page crossing (5+5+5)
 			INC org_pt+1
@@ -183,192 +234,9 @@ sc_loop:
 			LDA dest_pt+1	; new page value... (3)
 			STA IO8lh		; ...gets into high-address latch (4)
 #endif
-		BPL sc_loop			; (usually 3, just 8 times)
-; now place dots according to current map (not yet timed, but around 80-100ms)
-; placing the pills offset to the left will be @d654 and @d210...
-; ...no byte boundaries crossed, and doesn't look THAT bad!
-; as for the pill's 3 bytes, there cannot be page crossing backwards, but it's likely to happen otherwise!
-; must store into buffer too! eeeeeeek!
-; modifies A & Y (and X if IOSCREEN)
-rts
-/* placedots:	; *** *** *** *** CRAP *** *** *** ***
-	LDY #<d_map				; get initial pointer
-	LDA #>d_map
-	STY map_pt
-	STA map_pt+1
-;	LDY #<org_b				; pointer to buffer (Y known to be zero, as both blocks are page-aligned)
-	LDA #>org_b
-	STY org_pt				; load parallel destination
-	STA org_pt+1
-;	LDY #<vram				; pointer to VRAM (LSB known to be zero)
-	LDA #>vram
-	STY dest_pt				; load destination pointer
-	STA dest_pt+1
-#ifdef	IOSCREEN
-	STA IO8lh				; preload page into high-address latch
-#endif
-dp_loop:
-		LDA map_pt			; tile offset from lowest bits of pointer
-		AND #31
-		TAY
-		LDA (map_pt), Y		; get info for current tile
-		ASL					; check d7 (wall)
-		BCC dp_dot
-			JMP dp_next		; wall, nothing to be added... but stay on same line! eeeeeek
-dp_dot:
-		ASL					; check d6 (standard dot)
-		BCC dp_pill			; no? try some pill
-; add a regular dot
-			TYA				; check X-coord
-			LSR				; is it even or odd tile? 
-			TAY				; also now proper byte index! eeeeek
-			LDA #1			; mask originally with d0 set (odd)
-			BCS dp_set		; if was even...
-				LDA #16		; ...set d4 instead
-				; ...and fucking advance pointers, perhaps after writing (C will stay)
-dp_set:
-			ORA (dest_pt), Y	; mix with original data
-			STA (dest_pt), Y	; update screen
-			STA (org_pt), Y	; and buffer too! eeeeeeek
-#ifdef	IOSCREEN
-; worth inlining as dots are frequently put
-			TAX				; keep this value
-			TYA				; get screen offset
-			CLC
-			ADC dest_pt		; compute final address -- no way any offset could cross page boundaries, IF page-aligned
-			STA dest_pt		; eeeeeek... or so I think
-			STA org_pt
-			STA IO8ll		; latch low address...
-			STX IO8wr		; ...and transfer data
-#endif
-			JMP dp_next
-dp_pill:
-jmp dp_next
-		ASL					; check d5 (pill)
-		BCC dp_next			; just an empty tile
-; add a pill
-; first get screen pointer back (no wrapping ever!), then will advance one raster (w/o wrap) and lastly the third advance which may cross page
-			JSR ras_up
-; continue with screen insertion, but thrice
-; since the only difference between odd and even tiles is the bit positions, let's make a mask for them
-			TYA				; check X
-			LSR				; is it even or odd tile? 
-			TAY				; also now proper byte index! eeeeek
-			LDA #7			; original mask sets d0-2
-			BCS dp_pset		; if was even...
-				LDA #$70	; ...set d4-6 instead
-dp_pset:
-			STA temp		; store mask temporarily
-; now it's time to modify the three bytes in sequence, checking for wrap in the last one
-; first one, mask already in A
-			JSR putpill		; no longer inline as will be rarely done
-			JSR ras_down	; and advance to next raster, no wrap!
-; second one
-			LDA temp		; retrieve mask
-			JSR putpill		; place mask again
-			JSR ras_down	; advance, but this time check wrap!
-			BCC pd_nw		; worth checking wrap this way, as two MSBs are to be updated!
-				INC dest_pt+1
-				INC org_pt+1	; eeeeeek
-pd_nw:
-#ifdef	IOSCREEN
-			LDA dest_pt+1	; worth it
-			STA IO8lh		; MSB was updated
-#endif
-; last one
-			LDA temp		; retrieve mask
-			JSR putpill
-; worth computing back the standard address, faster than using the stack!
-			JSR ras_up		; but this time check for wrap!
-			BCS pb_nw
-				DEC dest_pt+1
-				DEC org_pt+1	; eeeeek
-pb_nw:
-#ifdef	IOSCREEN
-			LDA dest_pt+1	; worth it
-			STA IO8lh		; MSB was updated
-#endif
-dp_next:
-; update tile coordinates
-		INC map_pt			; next tile coordinate
-		LDA map_pt
-		AND #31				; check lowest bits, which are offset
+		BPL sc_loop			; stop at $8000 (usually 3, just 8 times)
+	RTS						; that's all? nice!
 
-		CMP #28				; check X offset is valid
-		BEQ dp_tnw			; it is, do not advance line
-dp_rpt:
-			JMP dp_loop		; continue if so
-dp_tnw:
-; advance screen row, pretty much the same but four rasters (actually should be THREE as one line is completed)
-			LDA dest_pt
-			CLC
-			ADC #bytlin*3		; get three rasters down (but check for wrap!) eeeeeek
-			STA dest_pt
-			STA org_pt		; buffer too! eeeeeeeeeek
-			BCC pd_adv		; better this way
-				INC dest_pt+1
-				INC org_pt+1	; eeeeeek
-pd_adv:
-#ifdef	IOSCREEN
-			LDA dest_pt+1	; worth it
-			STA IO8lh		; MSB was updated
-#endif
-; continue updating tile coordinates
-		LDA map_pt			; or advance tile row otherwise
-		ADC #3				; next row, C known to be SET because of BEQ!
-		STA map_pt
-		LDA map_pt+1
-		ADC #0				; propagate carry (better this way, not INC)
-		STA map_pt+1
-		CMP #>(d_map+992)	; within range?
-			BNE dp_rpt
-		LDA map_pt
-		CMP #<(d_map+992)	; really within range?
-			BNE dp_rpt
-	RTS						; otherwise we're done!
-
-; * place dot mask on current coordinates *
-putpill:
-	ORA (dest_pt), Y		; mix with original data in the upper raster
-	STA (dest_pt), Y
-	STA (org_pt), Y			; and buffer too! eeeeeeek
-#ifdef	IOSCREEN
-;	JMP io_off				; not worth inlining, actually follows this code and will return to caller!
-#else
-	RTS
-#endif
-
-#ifdef	IOSCREEN
-; * store A thru IO8 with offset Y *
-io_off:
-; not worth inlining for pills
-	TAX						; keep this value
-	TYA						; get screen offset
-	CLC
-	ADC dest_pt				; compute final address -- no way any offset could cross page boundaries, IF page-aligned
-	STA IO8ll				; latch low address...
-	STX IO8wr				; ...and transfer data
-	RTS
-#endif
-
-; * down one raster without pagecrossing *
-ras_down:
-	LDA dest_pt
-	CLC
-	ADC #bytlin				; get back to original raster (can't wrap either!)
-	STA dest_pt
-	STA org_pt				; same with buffer! eeeeeek
-	RTS
-
-; * up one raster without pagecrossing *
-ras_up:
-	LDA dest_pt
-	SEC
-	SBC #bytlin				; get one raster up (can't wrap!)
-	STA dest_pt
-	STA org_pt				; buffer too! eeeeeek
-	RTS
-*/
 ; * reset initial positions *
 ; returns X=0, modifies A
 positions:
@@ -963,6 +831,7 @@ init_p:
 ; initial map status
 i_map:
 #include "map.s"
+	.dsb	16, 0			; mandatory padding
 
 ; BCD glyph pair tables
 ; each scanline, then 100 values from $00 to $99
