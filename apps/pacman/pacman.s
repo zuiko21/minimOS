@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210313-1014
+; last modified 20210315-0846
 
 ; can be assembled from this folder
 
@@ -124,7 +124,7 @@ jmp loop
 ; ***************************
 
 ; * preload map with initial state *
-; will just copy 1Kbyte, don't bother with individual coordinates (10.5 ms)
+; will just copy 0.5 Kbyte, don't bother with individual coordinates (5.9 ms)
 ; returns X=0, modifies A
 newmap:
 	LDX #0
@@ -133,10 +133,6 @@ nm_loop:
 		STA d_map, X		; copy into RAM
 		LDA i_map+256, X	; ditto for remaining pages
 		STA d_map+256, X
-		LDA i_map+512, X
-		STA d_map+512, X
-		LDA i_map+768, X
-		STA d_map+768, X	; eeeeeek
 		INX
 		BNE nm_loop
 	RTS
@@ -162,9 +158,30 @@ screen:
 	LDA #>d_map
 	STY map_pt
 	STA map_pt+1
-; MUST think about a compact-map format, two tiles per byte, w0d0p0b0w1d1p1b1, as makes a lot of sense!
+; now using a compact-map format, two tiles per byte, w0d0p0b0w1d1p1b1, as it makes a lot of sense!
 sc_loop:
-
+; check line position within row
+		TYA					; check coordinates
+		AND #$0F			; filter column (assuming bytlin=16)
+		TAX					; will be used for the mask array
+		TYA					; now for the lowest Y-bits
+		AND #%00110000		; we only need the lowest 2 bits, assuming bytlin = 16
+; will place dots at every +2, instead of +3, makes pill placement MUCH easier as no page/tile crossing is done!
+; thus, Y MOD 4 TIMES 16 could be 0 (no dots), 16 or 48 (pills only, same mask), or 32 (dots and/or pills)
+		BEQ sc_ndot			; no dots on raster 0
+; otherwise put shifted mask for dots, perhaps extended if pills
+			CMP #32			; is it the raster for dots?
+			BNE sc_cpil		; no, check whether pill
+				LDA (map_pt), Y	; get map data for both tiles!
+				AND #%01000100	; filter dot bits
+				LSR
+				LSR				; shift them to the rightmost column
+				ORA dmask, X	; combine with possible pills, must be an array of them
+				JMP sc_ndot
+sc_cpil:
+; I don't think I need to check any other value, it MUST be a pill raster
+			
+sc_ndot:
 		ORA (spr_pt), Y		; mix mask with orignal data... (5)
 		STA (org_pt), Y		; ...into buffer... (6)
 		STA (dest_pt), Y	; ...and into VRAM (6)
