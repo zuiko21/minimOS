@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210315-2241
+; last modified 20210316-0030
 
 ; can be assembled from this folder
 
@@ -90,6 +90,7 @@ play:
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
 ; test code
+jsr death
 loop:
 lda jiffy
 cmp lives
@@ -640,7 +641,84 @@ m25d:
 
 ; * fixed sprite animation *
 ; support for pacman death sound
-
+; X=frame number (0...31), 8x8 pixel images
+; takes coordinates from sprite_x[0] and sprite_y[0]
+anim:
+	TXA						; frame number
+	ASL
+	ASL
+	ASL						; times 8
+	TAY						; is index for sprite file
+	LDX #8					; number of bytes
+	STX temp				; as counter
+	LDA sprite_y			; must be kept!
+	STA draw_s
+	LDA sprite_x			; pacman coordinates ·yyyyyyy ·xxxxxxx
+	ASL						; bit 7 unused xxxxxxx0
+	LSR draw_s				; non-destructive computing
+	ROR						; 00yyyyyy yxxxxxxx
+	LSR draw_s
+	ROR						; 000yyyyy yyxxxxxx
+	LSR draw_s
+	ROR						; 0000yyyy yyyxxxxx
+	LSR draw_s
+	ROR						; 00000yyy yyyyxxxx
+	STA dest_pt				; part of the pointer
+	LDA draw_s
+	ORA #>vram				; page aligned 01111yyy
+	STA dest_pt+1			; pointer complete
+; must compute dest_pt accordingly
+af_loop:
+		LDA sprite_x		; retrieve lower coordinate
+		AND #8				; pixel within sprite
+		TAX
+		LDA pac_dies, Y		; get sprite data
+; X must have the offset from byte boundary
+		CPX #0
+		BEQ sh_end
+sh_loop:
+			LSR
+			ROR cur+1
+			DEX
+			BNE sh_loop
+; A holds first byte, cur+1 is second byte
+		STA cur			; save for later
+		LDA cur+1		; get shifted value
+		INC dest_pt		; it's the second one
+		STA (dest_pt)	; ** CMOS **
+#ifdef	IOSCREEN
+		LDX dest_pt+1	; MSB actually
+		STX IO8lh
+		LDX dest_pt		; this is LSB
+		STX IO8ll
+		STA IO8wr		; store this
+#endif
+		LDA cur			; retrieve first byte
+		DEC dest_pt		; back one byte
+sh_end:
+		STA (dest_pt)	; ** CMOS **
+#ifdef	IOSCREEN
+		LDX dest_pt+1	; MSB actually
+		STX IO8lh
+		LDX dest_pt		; this is LSB
+		STX IO8ll
+		STA IO8wr		; store this
+#endif
+		LDA dest_pt
+		CLC
+		ADC #bytlin		; next line
+		STA dest_pt		; eeeek
+		BCC af_nw
+			INC dest_pt+1
+#ifdef	IOSCREEN
+			LDA dest_pt+1
+			STA IO8lh
+#endif
+af_nw:
+		INY				; next raster in animation
+		DEC temp		; one less to go
+		BNE af_loop
+	RTS
 ; *********************
 ; *** sound effects ***
 ; *********************
@@ -650,37 +728,45 @@ death:
 	SEI						; interrupts disabled for sound
 	LDA #40					; one second pause
 	JSR ms25
-; draw first frame *** TBD
+; prepare animation parameters
+
+	LDX #0
+	JSR anim				; draw first frame
 ; first sqweak
-	LDA #99		; initial freq
-	LDY #88		; top freq
-	LDX #36		; length
-	JSR squeak	; actual routine
-; draw second frame *** TBD
+	LDA #99					; initial freq
+	LDY #88					; top freq
+	LDX #36					; length
+	JSR squeak				; actual routine
+	LDX #1
+	JSR anim				; draw second frame
 ; second sqweak
 	LDA #118
 	LDY #105
 	LDX #30
 	JSR squeak
-; draw third frame *** TBD
+	LDX #2
+	JSR anim				; draw third frame
 ; third sqweak
 	LDA #132
 	LDY #117
 	LDX #27
 	JSR squeak
-; draw fourth frame *** TBD
+	LDX #3
+	JSR anim				; draw fourth frame
 ; fourth sqweak
 	LDA #148
 	LDY #132
 	LDX #24
 	JSR squeak
-; draw fifth frame *** TBD
+	LDX #4
+	JSR anim				; draw fifth frame
 ; fifth sqweak
 	LDA #176
 	LDY #157
 	LDX #20
 	JSR squeak
-; draw bubble frame *** TBD
+	LDX #5
+	JSR anim				; draw bubble frame
 ; last two sweeps
 	LDA #2
 d_rpt:
@@ -698,14 +784,17 @@ dth_sw:
 		BCS dth_sw
 	LDA #3
 	JSR ms25				; ~75 ms delay
+; should clear pacman space
+	LDX #6
+	JSR anim				; last frame is clear
 ; next iteration
 	PLA
 	DEC						; *** CMOS ***
 	BNE d_rpt
-; should clear pacman space
 	LDA #60
 	JSR ms25				; one-and-a-half seconds delay
 ; should detract one life, and check for possible gameover
+	CLI
 	RTS
 
 
@@ -871,20 +960,26 @@ maze:
 ; *** sprites ***
 ; pacman towards right
 s_pac_r:
+	.bin	9, 128, "../../other/data/pac-right.pbm"
 ; pacman downwards *** need new scheme for vertical!
 s_pac_d:
 ; pacman towards left
 s_pac_l:
+	.bin	9, 128, "../../other/data/pac-left.pbm"
 ; pacman upwards ***
 s_pac_u:
 ; pacman dies! (animation)
 pac_dies:
+	.bin	53, 48, "../../other/data/palmatoria.pbm"
+	.dsb	8, 0			; mandatory end padding
 ; ghost towards right
 s_gh_r:
+	.bin	9, 128, "../../other/data/ghost-right.pbm"
 ; ghost downwards ***
 s_gh_d:
 ; ghost towards left
 s_gh_l:
+	.bin	9, 128, "../../other/data/ghost-left.pbm"
 ; ghost upwards ***
 s_gh_u:
 ; frightened ghost towards right
