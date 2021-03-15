@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210315-1853
+; last modified 20210315-2241
 
 ; can be assembled from this folder
 
@@ -130,10 +130,8 @@ newmap:
 	LDX #0
 nm_loop:
 		LDA i_map, X		; get initial data
-and#%11011101
 		STA d_map, X		; copy into RAM
 		LDA i_map+256, X	; ditto for remaining pages
-and#%11011101
 		STA d_map+256, X
 		INX
 		BNE nm_loop
@@ -180,9 +178,9 @@ sc_loop:
 sc_sdot:
 				LDA (map_pt), Y	; get map data for both tiles!
 				AND #%01000100	; filter dot bits
-				LSR
+;				LSR				; comment this for dots centered with pills, less offset otherwise
 				LSR				; shift them to the rightmost column
-;				ORA dmask, Y	; combine with possible pills, must be an array of them
+				ORA dmask, Y	; combine with possible pills, must be an array of them
 				JMP sc_ndot
 sc_cpil:
 ; I don't think I need to check any other value, it MUST be a pill raster
@@ -201,7 +199,7 @@ sc_cpil:
 					ORA temp	; fill all three pixels
 sc_npil:
 				STA dmask, Y	; and store it into array
-				JMP sc_sdot		; eeeeeeeek
+				JMP sc_ndot		; eeeeeeeek²
 sc_spil:
 ; fourth raster (A=48)
 ; can only advance pointer ONCE per raster!!!!!!!!!!! eeeeeeek
@@ -833,6 +831,7 @@ init_p:
 ; initial map status
 i_map:
 #include "map.s"
+	.dsb	16, 0			; mandatory padding
 
 ; BCD glyph pair tables
 ; each scanline, then 100 values from $00 to $99
