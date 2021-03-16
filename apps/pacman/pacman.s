@@ -182,7 +182,21 @@ sc_sdot:
 ;				LSR				; comment this for dots centered with pills, less offset otherwise
 				LSR				; shift them to the rightmost column
 				ORA dmask, Y	; combine with possible pills, must be an array of them
-				JMP sc_ndot
+; *** *** attempt for dot auto-count *** ***
+				TAX				; save this conf
+				LSR				; put possible right dot at d0 (comment if two LSRs above)
+				LSR				; get d0 in C
+				BCC cd_nr		; dot/pill at right?
+					INC dots	; count it!
+cd_nr:
+				LSR				; get rid of right pill, if exists
+				BNE cd_nl		; dot/pill at left?
+					INC dots	; count it too!
+cd_nl:
+				TXA				; retrieve pattern
+; *** *** ************************** *** ***
+				JMP sc_ndot		; in any case, place pattern on screen
+
 sc_cpil:
 ; I don't think I need to check any other value, it MUST be a pill raster
 ; but 16 is the first one, thus SET appropriate dmask entry
