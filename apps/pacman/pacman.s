@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210316-0030
+; last modified 20210317-2022
 
 ; can be assembled from this folder
 
@@ -235,10 +235,11 @@ sc_ndot:
 		LDY cur				; retrieve index!
 		ORA (spr_pt), Y		; mix mask with original data... (5)
 		STA (org_pt), Y		; ...into buffer... (6)
-		STA (dest_pt), Y	; ...and into VRAM (6)
 #ifdef	IOSCREEN
 		STY IO8ll			; low-address latch (4)
 		STA IO8wr			; actual data transfer (4)
+#else
+		STA (dest_pt), Y	; ...and into VRAM (6)
 #endif
 		INC cur				; (5, unfortunately)
 		BNE sc_loop			; (usually 3 for 255 times, then 2)
@@ -333,20 +334,22 @@ sr_now:
 sr_loop:
 			LDA (org_pt), Y		; get clean data
 			ORA (spr_pt), Y		; put sprite data on it
-			STA (dest_pt), Y	; and place it on screen
 #ifdef	IOSCREEN
 			LDX dest_pt			; eeeeeeeek must get this pointer
 			STX IO8ll			; latch low address, high byte was already done
 			STA IO8wr			; copy data on screen!
+#else
+			STA (dest_pt), Y	; and place it on screen
 #endif
 			INY					; advance to adjacent byte in both sprite and screen
 			LDA (org_pt), Y		; ditto with this second byte, get clean data
 			ORA (spr_pt), Y		; put sprite data on it
-			STA (dest_pt), Y	; and place it on screen
 #ifdef	IOSCREEN
 			LDX dest_pt			; eeeeeeeek must get this pointer
 			STX IO8ll			; latch low address, high byte was already done
 			STA IO8wr			; copy data on screen!
+#else
+			STA (dest_pt), Y	; and place it on screen
 #endif
 			INY					; prepare for next entry
 			LDA org_pt			; advance screen pointers... backing off a bit as the index increases!
@@ -419,20 +422,22 @@ sl_now:
 sl_loop:
 			LDA (org_pt), Y		; get clean data
 			ORA (spr_pt), Y		; put sprite data on it
-			STA (dest_pt), Y	; and place it on screen
 #ifdef	IOSCREEN
 			LDX dest_pt			; eeeeeeeek must get this pointer
 			STX IO8ll			; latch low address, high byte was already done
 			STA IO8wr			; copy data on screen!
+#else
+			STA (dest_pt), Y	; and place it on screen
 #endif
 			INY					; advance to adjacent byte in both sprite and screen
 			LDA (org_pt), Y		; ditto with this second byte, get clean data
 			ORA (spr_pt), Y		; put sprite data on it
-			STA (dest_pt), Y	; and place it on screen
 #ifdef	IOSCREEN
 			LDX dest_pt			; eeeeeeeek must get this pointer
 			STX IO8ll			; latch low address, high byte was already done
 			STA IO8wr			; copy data on screen!
+#else
+			STA (dest_pt), Y	; and place it on screen
 #endif
 			INY					; prepare for next entry
 			LDA org_pt			; advance screen pointers... backing off a bit as the index increases!
@@ -552,9 +557,10 @@ ds_sc:
 ; first two digits
 		LDY score+1			; this is an index for most significant couple of figures!
 		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
-		STA (dest_pt)		; put on this scanline *** CMOS ***
 #ifdef	IOSCREEN
 		STA IO8wr
+#else
+		STA (dest_pt)		; put on this scanline *** CMOS ***
 #endif
 ; last two digits
 #ifndef	IOSCREEN
@@ -566,9 +572,10 @@ ds_sc:
 #endif
 		LDY score			; this is an index for least significant couple of figures!
 		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
-		STA (dest_pt)		; put on this scanline *** CMOS ***
 #ifdef	IOSCREEN
 		STA IO8wr
+#else
+		STA (dest_pt)		; put on this scanline *** CMOS ***
 #endif
 		LDA dest_pt			; increase screen pointer
 		CLC
@@ -614,9 +621,10 @@ ds_lv:
 ; only two digits
 		LDY lives			; this is an index for a couple of figures!
 		LDA (spr_pt), Y		; using this pointer to a BCD-glyph table
-		STA (dest_pt)		; put on this scanline *** CMOS, hard to emulate in NMOS ***
 #ifdef	IOSCREEN
 		STA IO8wr
+#else
+		STA (dest_pt)		; put on this scanline *** CMOS, hard to emulate in NMOS ***
 #endif
 		LDA dest_pt			; increase screen pointer
 		CLC
@@ -699,24 +707,26 @@ sh_loop:
 		STA cur			; save for later
 		LDA cur+1		; get shifted value
 		INC dest_pt		; it's the second one
-		STA (dest_pt)	; ** CMOS **
 #ifdef	IOSCREEN
 		LDX dest_pt+1	; MSB actually
 		STX IO8lh
 		LDX dest_pt		; this is LSB
 		STX IO8ll
 		STA IO8wr		; store this
+#else
+		STA (dest_pt)	; ** CMOS **
 #endif
 		LDA cur			; retrieve first byte
 		DEC dest_pt		; back one byte
 sh_end:
-		STA (dest_pt)	; ** CMOS **
 #ifdef	IOSCREEN
 		LDX dest_pt+1	; MSB actually
 		STX IO8lh
 		LDX dest_pt		; this is LSB
 		STX IO8ll
 		STA IO8wr		; store this
+#else
+		STA (dest_pt)	; ** CMOS **
 #endif
 		LDA dest_pt
 		CLC
