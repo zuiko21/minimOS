@@ -57,6 +57,43 @@ LDA #0:TAX
 jsr add_sc
 	JSR positions			; reset initial positions, X is zero but...
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
+;test code, braw blinky
+;	LDY #0					; sprite to be drawn
+;	STY sel_gh
+;	JSR draw
+;manual sprite draw
+ldx#4
+stx $8000
+stz temp
+rrr:
+ldy#0
+ldx temp
+ttt:
+lda s_pac_r,x
+sty $8001
+sta $8003
+iny
+inx
+lda s_pac_r,x
+sty $8001
+sta $8003
+tya
+clc
+adc#15
+tay
+inx
+txa
+sec
+sbc temp
+cmp#16
+bne ttt
+lda #4
+jsr ms25
+lda temp
+clc
+adc #16
+sta temp
+bne rrr
 
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
@@ -296,6 +333,7 @@ sp_dir:
 ; * routine for sprite drawing, towards right * MUST CHANGE
 sd_right:
 	JSR comp_y				; compute base screen pointer from draw_y! eeeeek
+	JSR comp_x				; ok?
 	LDY draw_x				; get parameters for chk_map
 	INY						; try one pixel to the right
 	TYA
@@ -483,9 +521,15 @@ comp_y:
 	ROL
 	ASL dest_pt
 	ROL						; ...after four shifts
+	LDX dest_pt
+	STX org_pt
+	TAX
 	CLC
 	ADC #>vram				; add base address
 	STA dest_pt+1
+	TXA
+	ADC #>org_b
+	STA org_pt+1
 	RTS
 
 ; * compute offset from draw_x (after calling comp_y, I presume) *
@@ -510,7 +554,9 @@ chk_map:
 	LSR						; will get map row from A (one each 4 pixels)
 	LSR
 	STZ map_pt				; clear temporary variable *** CMOS ***
-	LSR						; each y advances 32 bytes in table, thus divide MSB by 8 (256/8=32)
+	LSR						; each y advances 16 bytes in table, thus divide MSB by 16
+	ROR map_pt
+	LSR
 	ROR map_pt
 	LSR
 	ROR map_pt
@@ -929,7 +975,7 @@ i_end:
 init_p:
 	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
 	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
-	.byt	 4,  4,  6,  6,  6	; sprites initial direction
+	.byt	 0,  0,  6,  6,  6	; sprites initial direction (times two) 0 instead of 4 for testing****
 	.byt	 0,  0,  0,  0,  0	; ghosts initial state (nonsense for pacman)
 
 ; valid X values in current system (+2 offset)
