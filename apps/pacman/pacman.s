@@ -53,12 +53,15 @@ start:
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
-LDA #0:TAX
-jsr add_sc
+puntos:
+LDA #1:LDX #0
+;jsr add_sc
+DEC dots
+BNE puntos
 	JSR positions			; reset initial positions, X is zero but...
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-;test code, braw blinky
-;	LDY #0					; sprite to be drawn
+;test code, draw blinky
+;	LDY #1					; sprite to be drawn
 ;	STY sel_gh
 ;	JSR draw
 ;manual sprite draw
@@ -94,20 +97,20 @@ adc #13
 tay
 inx
 txa
-and #127
-tax
+;and #127
+;tax
 sec
 sbc temp
 cmp #16
 bne ttt
-lda #4
+lda #2
 jsr ms25
 lda temp
 clc
 adc #16
-and #127
+;and #127
 sta temp
-cmp #16
+cmp #0
 bne rrr
 
 ; **********************************************************
