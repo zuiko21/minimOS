@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210318-1408
+; last modified 20210318-2007
 
 ; can be assembled from this folder
 
@@ -336,212 +336,210 @@ das_l:
 
 ; *** draw one sprite... ***
 ; new interface, sel_gh selects sprite (0=pacman, 1...4=ghost)
-; perhaps actually moving the coordinates doesn't belong here, but using the proper direction is essential
+; actually moving the coordinates doesn't belong here, but using the proper direction is essential
 draw:
+; make a local copy of parameters
 	LDY sel_gh				; get selected sprite
-	LDA sprite_x, Y			; copy from array to temporary var
-	STA draw_x
-	LDA sprite_y, Y
-	STA draw_y
-	LDA sprite_s, Y
+	LDA sprite_s, Y			; copy from array to temporary var
 	STA draw_s
+	LDA sprite_y, Y			; A holds actual Y coordinate, will shift in register
+	STA draw_y
+	LDX sprite_x, Y			; X holds, well, X coordinate, will be shifted in storage
+	STX draw_x
+; compute base addresses, specific code will change as appropriate anyway
+; I think inlined is OK (45t)
+	STX org_pt				; store initial LSB (same for dest_pt)
+	LSR						; divide by 16, assuming this is bytlin
+	ROR org_pt
+	LSR
+	ROR org_pt
+	LSR
+	ROR org_pt
+	LSR
+	ROR org_pt				; LSB is ready here, base MSB in A
+	TAX						; keep original offset
+	ORA #>org_b				; convert in full buffer address, valid for page-aligned addresses!
+	STA org_pt+1
+	TXA						; again for VRAM pointer
+	ORA #>vram
+	STA dest_pt+1
+; select routine according to direction
 	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
 ;	STX draw_d				; lastly, set direction (is storage actually needed?)
 	JMP (sp_dir, X)			; *** CMOS only *** execute appropriate code
-sp_dir:
-	.word	sd_right		; table of pointers for sprite drawing routines
-	.word	sd_down
-	.word	sd_left
-	.word	sd_up
 
-; * routine for sprite drawing, towards right *
-sd_right:
+; ** table of pointers for sprite drawing routines **
+sp_dir:
+	.word	s_right
+	.word	s_down
+	.word	s_left
+	.word	s_up
+
+; *** routine for sprite drawing, towards right ***
+s_right:
+; must select sprite file first! I don't think this can be generic
+	LDA sel_gh				; pacman or ghost?
+	BEQ sp_pac
+; if it's a ghost, must check status, as frightened (and eaten) are different
+		LDA draw_s			; status of chost
+		CMP #2				; 0,1=normal, 2=fright, 3=eaten
+		BCS sr_frg			; normal ghost
+			LDY #<s_gh_r	; facing right
+			LDA #>s_gh_r
+			BNE spr_set		; set this pointer
+sr_frg:
+;		CMP #3				; should differentiate eaten ghost
+;		BEQ sr_eat
+			LDY #<s_fg_r	; frightened, facing right
+			LDA #>s_fg_r
+			BNE spr_srt
+sr_eat:
+;		LDY #<s_eat_r		; eaten, facing right?
+;		LDA #>s_eat_r
+;		BNE spr_set
+sp_pac:
+; it's pacman, no status check, just direction
+	LDY #<s_pac_r
+	LDA #>s_pac_r
+spr_set:
+	STY spr_pt				; select sprite file base address
+	STA spr_pt+1
+; org_pt and dest_pt are basically OK, but will change when aligned
 	LDA draw_x				; check horizontal offset
 	AND #7
-; I now think it's best to make the sprite file for offsets 1...8
-	BEQ sd_nc				; not centered, do not back off
-		; set screen pointer one byte before, no page boundaries expected
-		
-sd_nc:
+	BEQ sr_nal				; not aligned, do not back off
+		DEC dest_pt			; otherwise, set both screen pointers one byte before, no page boundaries expected
+		DEC org_pt
+sr_nal:
+	JMP sh_draw				; all set and A as requested by common code
+
+; *** routine for sprite drawing, towards left ***
+s_left:
+; must select sprite file first! I don't think this can be generic
+	LDA sel_gh				; pacman or ghost?
+	BEQ sp_pac
+; if it's a ghost, must check status, as frightened (and eaten) are different
+		LDA draw_s			; status of chost
+		CMP #2				; 0,1=normal, 2=fright, 3=eaten
+		BCS sr_frg			; normal ghost
+			LDY #<s_gh_l	; facing left
+			LDA #>s_gh_l
+			BNE spr_set		; set this pointer
+sl_frg:
+;		CMP #3				; should differentiate eaten ghost
+;		BEQ sl_eat
+			LDY #<s_fg_l	; frightened, facing left
+			LDA #>s_fg_l
+			BNE spr_srt
+sl_eat:
+;		LDY #<s_eat_l		; eaten, facing left?
+;		LDA #>s_eat_l
+;		BNE spr_set
+sp_pac:
+; it's pacman, no status check, just direction
+	LDY #<s_pac_l
+	LDA #>s_pac_l
+spr_set:
+	STY spr_pt				; select sprite file base address
+	STA spr_pt+1
+; org_pt and dest_pt are basically OK, but will change when aligned *** NOT SURE ABOUT THIS
+	LDA draw_x				; check horizontal offset
+	AND #7
+	BEQ sl_nal				; not aligned, do not back off
+		DEC dest_pt			; otherwise, set both screen pointers one byte before, no page boundaries expected
+		DEC org_pt
+sl_nal:
+	JMP sh_draw				; all set and A as requested by common code
+
+; inside-out, assume dest_pt, org_pt and spr_pt already set
+; will use Y as direct index for spr, and indirectly offset for the screen pointers
+; ** this should be valid for both left and right facing sprites, as long as pointers are properly set **
+sh_draw:
+; must finish spr_pt for the correct frame (this is common for all horizontal sprites) as long as A holds [x MOD 8]
 	ASL						; times 16 as index for sprite file
 	ASL
 	ASL
 	ASL
 	CLC
-	ADC spr_pt				; add to selected sprite file base address
+	ADC spr_pt				; add to selected sprite file base address ***
 	STA spr_pt
-	BCC sr_now				; check for wrapping in sprite file
+	BCC sh_nsw				; check for wrapping in sprite file
 		INC spr_pt+1
-sr_now:
-/*
-; *** *** LEGACY CODE *** ***
-	JSR comp_y				; compute base screen pointer from draw_y! eeeeek
-	JSR comp_x				; ok?
-	LDY draw_x				; get parameters for chk_map
-	INY						; try one pixel to the right
-	TYA
-	LDX draw_y
-	JSR chk_map				; check status of suggested tile
-	BMI sr_abort			; do nothing if wall *** might check for ghost base
-		;***check dot/pill (perhaps in chk_map)
-		INC draw_x			; one pixel to the right
-		LDA draw_x
-		AND #7				; bit within byte
-		CMP #1				; if it's 1, it just advanced a byte
-		BNE sr_nb
-			LDY org_pt		; if wrapped, advance one byte
-			INY
-			STY org_pt
-			STY dest_pt
-			BNE sr_nb		; page boundary crossing, really needed?
-				INC org_pt+1
-				INC dest_pt+1
-sr_nb:
+sh_nsw:
+	LDY #0					; reset sprite-file cursor
 #ifdef	IOSCREEN
-		LDY dest_pt+1		; this needs to be ready always
-		STY IO8lh
+	LDX dest_pt				; keep this updated
 #endif
-		ASL					; each pixel displacement takes 16 bytes of sprite file
-		ASL
-		ASL
-		ASL
+sh_loop:
+		LDA (spr_pt), Y		; take sprite data
+		ORA (org_pt), Y		; combine with clean screen
+#ifdef	IOSCREEN
+		STX IO8ll			; alternate index, copying dest_pt LSB
+		STA IO8wr			; place data
+#else
+		STA (dest_pt), Y	; regular screen
+#endif
+		INY					; ditto for next byte
+		LDA (spr_pt), Y		; take sprite data
+		ORA (org_pt), Y		; combine with clean screen
+#ifdef	IOSCREEN
+		STX IO8ll			; alternate index, copying dest_pt LSB
+		STA IO8wr			; place data
+#else
+		STA (dest_pt), Y	; regular screen
+#endif
+		INY					; done
+		LDA org_pt			; Y has advanced twice, pointers should advance 14 (bytlin-2)
 		CLC
-		ADC spr_pt			; add to selected sprite file base address
-		STA spr_pt
-		BCC sr_now			; check for wrapping in sprite file
-			INC spr_pt+1
-sr_now:
-		LDY #0				; reset sprite byte counter
-sr_loop:
-			LDA (org_pt), Y		; get clean data
-			ORA (spr_pt), Y		; put sprite data on it
+		ADC #bytlin-2
+		STA org_pt
+		STA dest_pt			; really the same MSB
 #ifdef	IOSCREEN
-			LDX dest_pt			; eeeeeeeek must get this pointer
-			STX IO8ll			; latch low address, high byte was already done
-			STA IO8wr			; copy data on screen!
-#else
-			STA (dest_pt), Y	; and place it on screen
+		TAX					; keep this index updated
 #endif
-			INY					; advance to adjacent byte in both sprite and screen
-			LDA (org_pt), Y		; ditto with this second byte, get clean data
-			ORA (spr_pt), Y		; put sprite data on it
+		BCC sh_npb			; check possible carry
+			INC org_pt+1
+			INC dest_pt+1
 #ifdef	IOSCREEN
-			LDX dest_pt			; eeeeeeeek must get this pointer
-			STX IO8ll			; latch low address, high byte was already done
-			STA IO8wr			; copy data on screen!
-#else
-			STA (dest_pt), Y	; and place it on screen
+			LDA dest_pt+1
+			STA IO8lh
 #endif
-			INY					; prepare for next entry
-			LDA org_pt			; advance screen pointers... backing off a bit as the index increases!
-			CLC
-			ADC #14				; must subtract the two processed entries on sprite file
-			STA org_pt
-			STA dest_pt			; VRAM pointer too
-			BCC sr_nw
-				INC org_pt+1	; page wrapping
-				INC dest_pt+1
-#ifdef	IOSCREEN
-				LDX dest_pt+1
-				STX IO8lh
-#endif
-sr_nw:
-			CPY #16				; until sprite file is done
-			BNE sr_loop
-sr_abort:
+sh_npb:
+		CPY #16				; bytes per sprite frame
+		BNE sh_loop
 	RTS
-*/
+
+
 
 ; * routine for sprite drawing, downwards -- needs a VERY different approach! *
-sd_down:
-	LDA draw_x				; get parameters for chk_map
-	LDX draw_y
-	INX						; try one pixel down
-	JSR chk_map				; check status of suggested tile
-	BMI sd_abort
-
-sd_abort:
+; just place appropriate sprite frame and an extra byte above
+; perhaps two if between bytes
+s_down:
+	JSR xy_addr				; compute base address from coordinates
+	LDA org_pt				; actually the same MSB as dest_pt
+	SEC
+	SBC #bytlin				; have to take one byte above
+	STA org_pt				; update both values
+	STA dest_pt				; see above
+	BCS sd_nob				; usually no page crossing
+		DEC org_pt+1		; otherwise update both MSBs
+		DEC dest_pt+1
+sd_nob:
+	LDA draw_x
+	AND #4					; is it between bytes?
+	BEQ sd_sb				; if not, process both bytes
+; new format for vertical sprites is one raster centered, and two bytes for the spanned one
+; rasters are THREE bytes apart, and frames are 24 (vs. 2 and 16 for horizontal ones)
+		LDY #2				; third bit in raster
+		; **** NO IDEA **** NO IDEA ***
+sd_sb:
+	TAY						; use A as sprite index, if the second byte was used must be 1!
 	RTS
 
-; * routine for sprite drawing, towards left * ADAPT FROM RIGHT ONCE FINISHED
-sd_left:
-	LDY draw_x				; get parameters for chk_map
-	DEY						; try one pixel to the left
-	TYA
-	LDX draw_y
-	JSR chk_map				; check status of suggested tile
-	BMI sl_abort
-		;***check dot/pill (perhaps in chk_map)
-		DEC draw_x			; one pixel to the right
-		LDA draw_x
-		AND #7				; bit within byte
-		CMP #7				; check reverse wrap
-		BNE sl_nb
-			LDY org_pt		; if wrapped, back one byte
-			DEY
-			STY org_pt
-			STY dest_pt
-			CPY #$FF
-			BNE sl_nb		; page boundary crossing
-				DEC org_pt+1
-				DEC dest_pt+1
-sl_nb:
-#ifdef	IOSCREEN
-		LDY dest_pt+1		; this needs to be ready always
-		STY IO8lh
-#endif
-		ASL					; each pixel displacement takes 16 bytes of sprite file
-		ASL
-		ASL
-		ASL
-		CLC
-		ADC spr_pt			; add to selected sprite file base address
-		STA spr_pt
-		BCC sl_now			; check for wrapping in sprite file
-			INC spr_pt+1
-sl_now:
-		LDY #0				; reset sprite byte counter
-sl_loop:
-			LDA (org_pt), Y		; get clean data
-			ORA (spr_pt), Y		; put sprite data on it
-#ifdef	IOSCREEN
-			LDX dest_pt			; eeeeeeeek must get this pointer
-			STX IO8ll			; latch low address, high byte was already done
-			STA IO8wr			; copy data on screen!
-#else
-			STA (dest_pt), Y	; and place it on screen
-#endif
-			INY					; advance to adjacent byte in both sprite and screen
-			LDA (org_pt), Y		; ditto with this second byte, get clean data
-			ORA (spr_pt), Y		; put sprite data on it
-#ifdef	IOSCREEN
-			LDX dest_pt			; eeeeeeeek must get this pointer
-			STX IO8ll			; latch low address, high byte was already done
-			STA IO8wr			; copy data on screen!
-#else
-			STA (dest_pt), Y	; and place it on screen
-#endif
-			INY					; prepare for next entry
-			LDA org_pt			; advance screen pointers... backing off a bit as the index increases!
-			CLC
-			ADC #14				; must subtract the two processed entries on sprite file
-			STA org_pt
-			STA dest_pt			; VRAM pointer too
-			BCC sl_nw
-				INC org_pt+1	; page wrapping
-				INC dest_pt+1
-#ifdef	IOSCREEN
-				LDX dest_pt+1
-				STX IO8lh
-#endif
-sl_nw:
-			CPY #16				; until sprite file is done
-			BNE sl_loop
-sl_abort:
-	RTS
+
 
 ; * routine for sprite drawing, upwards -- needs a VERY different approach! *
-sd_up:
+s_up:
 	LDA draw_x				; get parameters for chk_map
 	LDX draw_y
 	DEX						; try one pixel up
@@ -551,44 +549,9 @@ sd_up:
 su_abort:
 	RTS
 
-; * compute base screen pointer from draw_y *
-; returns MSB in A
-comp_y:
-	LDA draw_y				; original row
-	STA dest_pt				; will be shifted
-	LDA #0					; clear MSB
-	ASL dest_pt				; this screen is 16 bytes/line
-	ROL						; MSB gets loaded...
-	ASL dest_pt
-	ROL
-	ASL dest_pt
-	ROL
-	ASL dest_pt
-	ROL						; ...after four shifts
-	LDX dest_pt
-	STX org_pt
-	TAX
-	CLC
-	ADC #>vram				; add base address
-	STA dest_pt+1
-	TXA
-	ADC #>org_b
-	STA org_pt+1
-	RTS
 
-; * compute offset from draw_x (after calling comp_y, I presume) *
-; returns full LSB in A
-comp_x:
-	LDA draw_x				; original column
-	LSR						; will shift 4 times...
-	LSR
-	LSR
-	LSR						; ...as this screen is 16 bytes/line
-	ORA dest_pt				; MSN is expected to be set!
-	STA dest_pt
-	RTS
 
-; * compute map data from pixel coordinates *
+; * compute map data from pixel coordinates * MUST CHECK ****
 chk_map:
 ; input is A=suggested draw_x, X=suggested draw_y
 	LSR
@@ -615,6 +578,7 @@ chk_map:
 	STA map_pt+1			; pointer is ready
 	LDA (map_pt), Y			; map entry for that position
 
+; ** alphanumeric routines **
 ; * add points to score and display it *
 ; takes value (BCD) in A (low), X (high, only for 160 --fourth ghost eaten--)
 add_sc:
@@ -737,6 +701,7 @@ dl_tnw:
 		BNE ds_lv
 	RTS
 
+; ** timing and animations **
 ; * 25ms generic delay *
 ; delay ~25A ms
 ms25:
@@ -833,6 +798,7 @@ af_nw:
 		DEC temp		; one less to go
 		BNE af_loop
 	RTS
+
 ; *********************
 ; *** sound effects ***
 ; *********************
