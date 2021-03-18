@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210317-2022
+; last modified 20210318-1313
 
 ; can be assembled from this folder
 
@@ -62,11 +62,12 @@ jsr add_sc
 ;	STY sel_gh
 ;	JSR draw
 ;manual sprite draw
-ldx#4
+ldx #3
 stx $8000
-stz temp
+lda #16
+sta temp
 rrr:
-ldy#0
+ldy#$80
 ldx temp
 ttt:
 lda s_pac_r,x
@@ -77,22 +78,36 @@ inx
 lda s_pac_r,x
 sty $8001
 sta $8003
+iny
+dex
+lda s_gh_r,x
+sty $8001
+sta $8003
+iny
+inx
+lda s_gh_r,x
+sty $8001
+sta $8003
 tya
 clc
-adc#15
+adc #13
 tay
 inx
 txa
+and #127
+tax
 sec
 sbc temp
-cmp#16
+cmp #16
 bne ttt
 lda #4
 jsr ms25
 lda temp
 clc
 adc #16
+and #127
 sta temp
+cmp #16
 bne rrr
 
 ; **********************************************************
