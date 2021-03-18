@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210318-1313
+; last modified 20210318-1336
 
 ; can be assembled from this folder
 
@@ -70,22 +70,22 @@ rrr:
 ldy#$80
 ldx temp
 ttt:
-lda s_pac_r,x
+lda s_gh_r,x
 sty $8001
 sta $8003
 iny
 inx
-lda s_pac_r,x
+lda s_gh_r,x
 sty $8001
 sta $8003
 iny
 dex
-lda s_gh_r,x
+lda s_pac_r,x
 sty $8001
 sta $8003
 iny
 inx
-lda s_gh_r,x
+lda s_pac_r,x
 sty $8001
 sta $8003
 tya
@@ -314,9 +314,11 @@ ip_loop:
 		STA sprite_x-1, X	; into ZP variables
 		DEX
 		BNE ip_loop
+; I think this should reset counters and timers as well
 	RTS
 
 ; * draw all sprites *
+; this may be fine for game start, however during play each sprite will be triggered by its own timer
 sprites:
 	LDY #4					; sprite to be drawn
 	STY sel_gh
@@ -328,6 +330,7 @@ das_l:
 
 ; *** draw one sprite... ***
 ; new interface, sel_gh selects sprite (0=pacman, 1...4=ghost)
+; perhaps actually moving the coordinates doesn't belong here, but using the proper direction is essential
 draw:
 	LDY sel_gh				; get selected sprite
 	LDA sprite_x, Y			; copy from array to temporary var
@@ -347,6 +350,9 @@ sp_dir:
 
 ; * routine for sprite drawing, towards right * MUST CHANGE
 sd_right:
+
+/*
+; *** *** LEGACY CODE *** ***
 	JSR comp_y				; compute base screen pointer from draw_y! eeeeek
 	JSR comp_x				; ok?
 	LDY draw_x				; get parameters for chk_map
@@ -422,6 +428,7 @@ sr_nw:
 			BNE sr_loop
 sr_abort:
 	RTS
+*/
 
 ; * routine for sprite drawing, downwards -- needs a VERY different approach! *
 sd_down:
@@ -966,6 +973,10 @@ sw_down:
 ; *********************************
 pm_isr:
 	PHA						; (3)
+; *** I'm a bit paranoid about the interrupt being somewhat irregular, thus I'll waste some time ***
+	LDA #%00010000			; enable column 1 from keyboard/keypad
+	STA LTCdo				; display remains shut down, as all anodes are low
+; *** end of paranoid code ***
 	LDA $9FF0				; get input port (4)
 	STA stick				; store in variable (3)
 	PLA						; (4)
@@ -976,6 +987,7 @@ pm_isr:
 	INC jiffy+2				; (or add 2+5)
 i_end:
 	RTI						; (6, fastest case is 27, plus 7 of IRQ ack, seems OK at 34...)
+							; *** in case of paranoid code, add 6 cycles, for a safer 33t without ack ***
 ; ****************************
 ; ****************************
 ; *** *** diverse data *** ***
