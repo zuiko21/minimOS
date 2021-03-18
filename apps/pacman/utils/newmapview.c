@@ -32,6 +32,9 @@ int main(void) {
 					case 0:				/* empty */
 						printf(" ");
 						break;
+					case 16:			/* tunnel */
+						printf("~");
+						break;
 					default:
 						printf("?");
 				}
