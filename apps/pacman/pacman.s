@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210318-1336
+; last modified 20210318-1408
 
 ; can be assembled from this folder
 
@@ -317,6 +317,9 @@ ip_loop:
 ; I think this should reset counters and timers as well
 	RTS
 
+; *** *** sprite drawing, the thing becomes interesting *** ***
+; note tile coordinates are (x/4,y/4) from sprite upper left, although each tile is positioned (+2,+2)
+
 ; * draw all sprites *
 ; this may be fine for game start, however during play each sprite will be triggered by its own timer
 sprites:
@@ -348,9 +351,25 @@ sp_dir:
 	.word	sd_left
 	.word	sd_up
 
-; * routine for sprite drawing, towards right * MUST CHANGE
+; * routine for sprite drawing, towards right *
 sd_right:
-
+	LDA draw_x				; check horizontal offset
+	AND #7
+; I now think it's best to make the sprite file for offsets 1...8
+	BEQ sd_nc				; not centered, do not back off
+		; set screen pointer one byte before, no page boundaries expected
+		
+sd_nc:
+	ASL						; times 16 as index for sprite file
+	ASL
+	ASL
+	ASL
+	CLC
+	ADC spr_pt				; add to selected sprite file base address
+	STA spr_pt
+	BCC sr_now				; check for wrapping in sprite file
+		INC spr_pt+1
+sr_now:
 /*
 ; *** *** LEGACY CODE *** ***
 	JSR comp_y				; compute base screen pointer from draw_y! eeeeek
