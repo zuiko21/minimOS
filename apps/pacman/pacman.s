@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210319-1358
+; last modified 20210319-1426
 
 ; can be assembled from this folder
 
@@ -389,6 +389,7 @@ s_left:
 			LDA #>s_gh_l
 			BNE spr_set		; set this pointer
 sl_frg:
+; might include a FIFTH state (clear), not sure if suitable for pacman too...
 ;		CMP #3				; should differentiate eaten ghost
 ;		BEQ sl_eat
 			LDY #<s_fg_l	; frightened, facing left
@@ -506,9 +507,7 @@ sh_npb:
 		BNE sh_loop
 	RTS
 
-
-
-; * routine for sprite drawing, downwards -- needs a VERY different approach! *
+; * routine for sprite drawing, downwards -- needs a VERY different approach! *** TBD * TBD
 ; just place appropriate sprite frame and an extra byte above
 ; perhaps two if between bytes
 s_down:
@@ -535,7 +534,7 @@ sd_sb:
 
 
 
-; * routine for sprite drawing, upwards -- needs a VERY different approach! *
+; * routine for sprite drawing, upwards -- needs a VERY different approach! *** TBD * TBD
 s_up:
 	LDA draw_x				; get parameters for chk_map
 	LDX draw_y
@@ -546,10 +545,9 @@ s_up:
 su_abort:
 	RTS
 
-
-
-; * compute map data from pixel coordinates * MUST CHECK ****
+; * compute map data from pixel coordinates * MUST CHECK ****** TBD * TBD
 chk_map:
+; new interface is X=x, A=y
 ; input is A=suggested draw_x, X=suggested draw_y
 	LSR
 	LSR
@@ -575,7 +573,7 @@ chk_map:
 	STA map_pt+1			; pointer is ready
 	LDA (map_pt), Y			; map entry for that position
 
-; ** alphanumeric routines **
+; ** alphanumeric routines ** TONS of repeated code
 ; * add points to score and display it *
 ; takes value (BCD) in A (low), X (high, only for 160 --fourth ghost eaten--)
 add_sc:
@@ -725,7 +723,7 @@ anim:
 	TAY						; is index for sprite file
 	LDX #8					; number of bytes
 	STX temp				; as counter
-; this works (27b, 50t), but might reuse sprite screen address computing
+; this works (27b, 50t), but might reuse sprite screen address computing ***
 	LDA sprite_y			; must be kept! (3+3)
 	STA draw_s
 	LDA sprite_x			; pacman coordinates ·yyyyyyy ·xxxxxxx (3)
@@ -869,12 +867,18 @@ dth_sw:
 	PLA
 	DEC						; *** CMOS ***
 	BNE d_rpt
+	LDA #$FF				; "add" -1 lives...
+	TAX
+	JSR up_lives
+; check for gameover
+	LDA lives
+	BNE nx_liv
+; *** game is over *** TBD
+nx_liv:
 	LDA #60
-	JSR ms25				; one-and-a-half seconds delay
-; should detract one life, and check for possible gameover
+	JSR ms25				; one-and-a-half seconds delay before next live
 	CLI
 	RTS
-
 
 ; *** ** beeping routine ** ***
 ; *** X = length, A = freq. ***
