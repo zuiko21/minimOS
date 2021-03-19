@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210318-2007
+; last modified 20210319-1358
 
 ; can be assembled from this folder
 
@@ -9,11 +9,11 @@
 #include "pacman.h"
 
 ; *** constants definitions ***
-	fw_isr	= $200			; standard minimOS address
+	fw_isr	= $200			; standard minimOS firmware address
 	vram	= $7800			; suitable for Durango
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
 	lv_da	= vram + $49D	; address for lives display, usually $7C9D
-	bytlin	= 16			; bytes per line, being a power of two makes things MUCH simpler!
+	lwidth	= 16			; formerly lwidth, bytes per line, being a power of two makes things MUCH simpler!
 	IO8lh	= $8000			; I/O addresses
 	IO8ll	= $8001
 	IO8wr	= $8003
@@ -219,10 +219,10 @@ screen:
 sc_loop:
 ; check line position within row
 		LDA cur				; check coordinates
-		AND #bytlin-1		; filter column (assuming bytlin is power of 2)
+		AND #lwidth-1		; filter column (assuming lwidth is power of 2)
 		TAY					; will be used for the mask array AND map index
 		LDA cur				; now for the lowest Y-bits
-		AND #%00110000		; we only need the lowest 2 bits, assuming bytlin = 16
+		AND #%00110000		; we only need the lowest 2 bits, assuming lwidth = 16
 ; will place dots at every +2, instead of +3, makes pill placement MUCH easier as no page/tile crossing is done!
 ; thus, Y MOD 4 TIMES 16 could be 0 (no dots), 16 or 48 (pills only, same mask), or 32 (dots and/or pills)
 		BEQ sc_ndot			; no dots on raster 0
@@ -278,7 +278,7 @@ sc_spil:
 			BNE sc_rowm		; if not, do NOT increment! eeeeeeeeek
 				LDA map_pt	; this is the end of the tile raster, thus advance to next row
 				CLC
-				ADC #bytlin	; will advance map_pt, usually by 16
+				ADC #lwidth	; will advance map_pt, usually by 16
 				STA map_pt
 				BCC sc_rowm	; check possible carry
 					INC map_pt+1
@@ -347,9 +347,10 @@ draw:
 	LDX sprite_x, Y			; X holds, well, X coordinate, will be shifted in storage
 	STX draw_x
 ; compute base addresses, specific code will change as appropriate anyway
-; I think inlined is OK (45t)
+; I think inlined is OK (24b, 45t) somewhat speed critical
+; X=x, A=y, returns address in org_pt AND dest_pt
 	STX org_pt				; store initial LSB (same for dest_pt)
-	LSR						; divide by 16, assuming this is bytlin
+	LSR						; divide by 16, assuming this is lwidth
 	ROR org_pt
 	LSR
 	ROR org_pt
@@ -374,6 +375,40 @@ sp_dir:
 	.word	s_down
 	.word	s_left
 	.word	s_up
+
+; *** routine for sprite drawing, towards left ***
+s_left:
+; must select sprite file first! I don't think this can be generic
+	LDA sel_gh				; pacman or ghost?
+	BEQ sp_pac
+; if it's a ghost, must check status, as frightened (and eaten) are different
+		LDA draw_s			; status of chost
+		CMP #2				; 0,1=normal, 2=fright, 3=eaten
+		BCS sr_frg			; normal ghost
+			LDY #<s_gh_l	; facing left
+			LDA #>s_gh_l
+			BNE spr_set		; set this pointer
+sl_frg:
+;		CMP #3				; should differentiate eaten ghost
+;		BEQ sl_eat
+			LDY #<s_fg_l	; frightened, facing left
+			LDA #>s_fg_l
+			BNE spr_srt
+sl_eat:
+;		LDY #<s_eat_l		; eaten, facing left?
+;		LDA #>s_eat_l
+;		BNE spr_set
+sp_pac:
+; it's pacman, no status check, just direction
+	LDY #<s_pac_l
+	LDA #>s_pac_l
+spr_set:
+	STY spr_pt				; select sprite file base address
+	STA spr_pt+1
+; org_pt and dest_pt are certainly OK, just get X mod 8 for sprite frame selection
+	LDA draw_x				; check horizontal offset
+	AND #7					; towards left there is no back off! eeeeeeeeek
+	JMP sh_draw				; all set and A as requested by common code
 
 ; *** routine for sprite drawing, towards right ***
 s_right:
@@ -407,49 +442,11 @@ spr_set:
 ; org_pt and dest_pt are basically OK, but will change when aligned
 	LDA draw_x				; check horizontal offset
 	AND #7
-	BEQ sr_nal				; not aligned, do not back off
+	BNE sr_nal				; not aligned, do not back off eeeeeeeeeek
 		DEC dest_pt			; otherwise, set both screen pointers one byte before, no page boundaries expected
 		DEC org_pt
 sr_nal:
-	JMP sh_draw				; all set and A as requested by common code
-
-; *** routine for sprite drawing, towards left ***
-s_left:
-; must select sprite file first! I don't think this can be generic
-	LDA sel_gh				; pacman or ghost?
-	BEQ sp_pac
-; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDA draw_s			; status of chost
-		CMP #2				; 0,1=normal, 2=fright, 3=eaten
-		BCS sr_frg			; normal ghost
-			LDY #<s_gh_l	; facing left
-			LDA #>s_gh_l
-			BNE spr_set		; set this pointer
-sl_frg:
-;		CMP #3				; should differentiate eaten ghost
-;		BEQ sl_eat
-			LDY #<s_fg_l	; frightened, facing left
-			LDA #>s_fg_l
-			BNE spr_srt
-sl_eat:
-;		LDY #<s_eat_l		; eaten, facing left?
-;		LDA #>s_eat_l
-;		BNE spr_set
-sp_pac:
-; it's pacman, no status check, just direction
-	LDY #<s_pac_l
-	LDA #>s_pac_l
-spr_set:
-	STY spr_pt				; select sprite file base address
-	STA spr_pt+1
-; org_pt and dest_pt are basically OK, but will change when aligned *** NOT SURE ABOUT THIS
-	LDA draw_x				; check horizontal offset
-	AND #7
-	BEQ sl_nal				; not aligned, do not back off
-		DEC dest_pt			; otherwise, set both screen pointers one byte before, no page boundaries expected
-		DEC org_pt
-sl_nal:
-	JMP sh_draw				; all set and A as requested by common code
+;	JMP sh_draw				; all set and A as requested by common code
 
 ; inside-out, assume dest_pt, org_pt and spr_pt already set
 ; will use Y as direct index for spr, and indirectly offset for the screen pointers
@@ -489,9 +486,9 @@ sh_loop:
 		STA (dest_pt), Y	; regular screen
 #endif
 		INY					; done
-		LDA org_pt			; Y has advanced twice, pointers should advance 14 (bytlin-2)
+		LDA org_pt			; Y has advanced twice, pointers should advance 14 (lwidth-2)
 		CLC
-		ADC #bytlin-2
+		ADC #lwidth-2
 		STA org_pt
 		STA dest_pt			; really the same MSB
 #ifdef	IOSCREEN
@@ -518,7 +515,7 @@ s_down:
 	JSR xy_addr				; compute base address from coordinates
 	LDA org_pt				; actually the same MSB as dest_pt
 	SEC
-	SBC #bytlin				; have to take one byte above
+	SBC #lwidth				; have to take one byte above
 	STA org_pt				; update both values
 	STA dest_pt				; see above
 	BCS sd_nob				; usually no page crossing
@@ -633,7 +630,7 @@ ds_sc:
 #endif
 		LDA dest_pt			; increase screen pointer
 		CLC
-		ADC #bytlin-1
+		ADC #lwidth-1
 		STA dest_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
@@ -682,7 +679,7 @@ ds_lv:
 #endif
 		LDA dest_pt			; increase screen pointer
 		CLC
-		ADC #bytlin
+		ADC #lwidth
 		STA dest_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
@@ -728,22 +725,23 @@ anim:
 	TAY						; is index for sprite file
 	LDX #8					; number of bytes
 	STX temp				; as counter
-	LDA sprite_y			; must be kept!
+; this works (27b, 50t), but might reuse sprite screen address computing
+	LDA sprite_y			; must be kept! (3+3)
 	STA draw_s
-	LDA sprite_x			; pacman coordinates ·yyyyyyy ·xxxxxxx
-	ASL						; bit 7 unused xxxxxxx0
-	LSR draw_s				; non-destructive computing
-	ROR						; 00yyyyyy yxxxxxxx
+	LDA sprite_x			; pacman coordinates ·yyyyyyy ·xxxxxxx (3)
+	ASL						; bit 7 unused xxxxxxx0 (2)
+	LSR draw_s				; non-destructive computing (5)
+	ROR						; 00yyyyyy yxxxxxxx (2+5)
 	LSR draw_s
-	ROR						; 000yyyyy yyxxxxxx
+	ROR						; 000yyyyy yyxxxxxx (2+5)
 	LSR draw_s
-	ROR						; 0000yyyy yyyxxxxx
+	ROR						; 0000yyyy yyyxxxxx (2+5)
 	LSR draw_s
-	ROR						; 00000yyy yyyyxxxx
-	STA dest_pt				; part of the pointer
+	ROR						; 00000yyy yyyyxxxx (2)
+	STA dest_pt				; part of the pointer (3+3)
 	LDA draw_s
-	ORA #>vram				; page aligned 01111yyy
-	STA dest_pt+1			; pointer complete
+	ORA #>vram				; page aligned 01111yyy yyyyxxxx (2)
+	STA dest_pt+1			; pointer complete (3)
 ; must compute dest_pt accordingly
 af_loop:
 		LDA sprite_x		; retrieve lower coordinate
@@ -785,7 +783,7 @@ sh_end:
 #endif
 		LDA dest_pt
 		CLC
-		ADC #bytlin		; next line
+		ADC #lwidth		; next line
 		STA dest_pt		; eeeek
 		BCC af_nw
 			INC dest_pt+1
@@ -1050,7 +1048,7 @@ s_pac_r:
 s_pac_d:
 ; pacman towards left
 s_pac_l:
-	.bin	9, 128, "../../other/data/pac-left.pbm"
+	.bin	55, 128, "../../other/data/pac-left.pbm"
 ; pacman upwards ***
 s_pac_u:
 ; pacman dies! (animation)
@@ -1064,7 +1062,7 @@ s_gh_r:
 s_gh_d:
 ; ghost towards left
 s_gh_l:
-	.bin	9, 128, "../../other/data/ghost-left.pbm"
+	.bin	55, 128, "../../other/data/ghost-left.pbm"
 ; ghost upwards ***
 s_gh_u:
 ; frightened ghost towards right
@@ -1077,10 +1075,10 @@ s_fg_l:
 s_fg_u:
 
 ; NOTE, in scatter mode, targets are
-; pinky = tile(2,-4)
-; blinky = tile(25,-4)
-; clyde = tile(0,31)
-; inky = tile(27,31)
+; pinky = tile(2,-4) or is it -3???
+; blinky = tile(25,-4) id
+; clyde = tile(0,31) or is it 32???
+; inky = tile(27,31) id
 
 ; in chase mode, targets are
 ; blinky = PACMAN
