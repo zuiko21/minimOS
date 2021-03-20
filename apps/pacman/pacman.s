@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210319-1426
+; last modified 20210320-1908
 
 ; can be assembled from this folder
 
@@ -61,11 +61,11 @@ BNE puntos
 	JSR positions			; reset initial positions, X is zero but...
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 ;test code, draw blinky
-;	LDY #1					; sprite to be drawn
-;	STY sel_gh
-;	JSR draw
+	LDY #1					; sprite to be drawn
+	STY sel_gh
+	JSR draw
 ;manual sprite draw
-ldx #3
+/*ldx #3
 stx $8000
 lda #16
 sta temp
@@ -112,7 +112,7 @@ adc #16
 sta temp
 cmp #0
 bne rrr
-
+*/
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
@@ -364,6 +364,8 @@ draw:
 	TXA						; again for VRAM pointer
 	ORA #>vram
 	STA dest_pt+1
+	LDY org_pt				; eeeeeeeek
+	STY dest_pt
 ; select routine according to direction
 	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
 ;	STX draw_d				; lastly, set direction (is storage actually needed?)
@@ -380,30 +382,30 @@ sp_dir:
 s_left:
 ; must select sprite file first! I don't think this can be generic
 	LDA sel_gh				; pacman or ghost?
-	BEQ sp_pac
+	BEQ sl_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
 		LDA draw_s			; status of chost
 		CMP #2				; 0,1=normal, 2=fright, 3=eaten
 		BCS sr_frg			; normal ghost
 			LDY #<s_gh_l	; facing left
 			LDA #>s_gh_l
-			BNE spr_set		; set this pointer
+			BNE spl_set		; set this pointer
 sl_frg:
 ; might include a FIFTH state (clear), not sure if suitable for pacman too...
 ;		CMP #3				; should differentiate eaten ghost
 ;		BEQ sl_eat
 			LDY #<s_fg_l	; frightened, facing left
 			LDA #>s_fg_l
-			BNE spr_srt
+			BNE spl_set
 sl_eat:
 ;		LDY #<s_eat_l		; eaten, facing left?
 ;		LDA #>s_eat_l
 ;		BNE spr_set
-sp_pac:
+sl_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_l
 	LDA #>s_pac_l
-spr_set:
+spl_set:
 	STY spr_pt				; select sprite file base address
 	STA spr_pt+1
 ; org_pt and dest_pt are certainly OK, just get X mod 8 for sprite frame selection
@@ -415,7 +417,7 @@ spr_set:
 s_right:
 ; must select sprite file first! I don't think this can be generic
 	LDA sel_gh				; pacman or ghost?
-	BEQ sp_pac
+	BEQ sr_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
 		LDA draw_s			; status of chost
 		CMP #2				; 0,1=normal, 2=fright, 3=eaten
@@ -428,12 +430,12 @@ sr_frg:
 ;		BEQ sr_eat
 			LDY #<s_fg_r	; frightened, facing right
 			LDA #>s_fg_r
-			BNE spr_srt
+			BNE spr_set
 sr_eat:
 ;		LDY #<s_eat_r		; eaten, facing right?
 ;		LDA #>s_eat_r
 ;		BNE spr_set
-sp_pac:
+sr_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_r
 	LDA #>s_pac_r
@@ -481,6 +483,7 @@ sh_loop:
 		LDA (spr_pt), Y		; take sprite data
 		ORA (org_pt), Y		; combine with clean screen
 #ifdef	IOSCREEN
+		INX					; eeeeeeek
 		STX IO8ll			; alternate index, copying dest_pt LSB
 		STA IO8wr			; place data
 #else
@@ -493,6 +496,9 @@ sh_loop:
 		STA org_pt
 		STA dest_pt			; really the same MSB
 #ifdef	IOSCREEN
+		TXA
+		SEC
+		ADC #lwidth-2		; will this work?
 		TAX					; keep this index updated
 #endif
 		BCC sh_npb			; check possible carry
@@ -511,7 +517,7 @@ sh_npb:
 ; just place appropriate sprite frame and an extra byte above
 ; perhaps two if between bytes
 s_down:
-	JSR xy_addr				; compute base address from coordinates
+;	JSR xy_addr				; compute base address from coordinates
 	LDA org_pt				; actually the same MSB as dest_pt
 	SEC
 	SBC #lwidth				; have to take one byte above
@@ -749,11 +755,11 @@ af_loop:
 ; X must have the offset from byte boundary
 		CPX #0
 		BEQ sh_end
-sh_loop:
+sha_l:
 			LSR
 			ROR cur+1
 			DEX
-			BNE sh_loop
+			BNE sha_l
 ; A holds first byte, cur+1 is second byte
 		STA cur			; save for later
 		LDA cur+1		; get shifted value
