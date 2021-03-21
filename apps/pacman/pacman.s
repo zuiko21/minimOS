@@ -64,36 +64,77 @@ lda#$55
 ;sta IO8wr
 	JSR positions			; reset initial positions, X is zero but...
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-;test code, move pacman right and left!
-set_right:
-STZ sprite_d+1
-test_right:
-LDA sprite_x+1
-CMP#86
-BEQ set_left
-lda#2
-jsr ms25
-inc sprite_x+1
-lda#1
-STA sel_gh
-JSR draw
-BRA test_right
+;test code, move pacman and ghost right and left!
+lda#0	; pacman starts facing right
+sta sprite_d
+lda#4	; ghosts starts facing left
+sta sprite_d+1
+sta sprite_d+2
+lda jiffy
+clc
+adc #1	; just start all quickly
+sta sprite_t+1
+sta sprite_t
+sta sprite_t+2
+sta IOAie	; eeeeek
+CLI
+; try to move and draw pacman
+testing:
+lda jiffy
+cmp sprite_t
+bne npac
+	clc
+	adc#10	; pacman speed
+	sta sprite_t
+	lda sprite_x	; actual X
+	cmp#85
+	bcc npr
+		ldx#4	; turn left
+		stx sprite_d
+npr:
+	cmp#24
+	bcs npl
+		stz sprite_d	; turn right
+npl:
+	ldx sprite_d	; direction?
+	clc
+	adc delta,x		; add displacement
+	and#127
+	sta sprite_x	; update
+	stz sel_gh	; draw pacman
+	jsr draw
+npac:
+lda jiffy
+cmp sprite_t+1
+bne ngh
+	clc
+	adc#7	; ghost speed
+	sta sprite_t+1
 
-set_left:
-LDA #4
-STA sprite_d+1
-test_left:
-LDA sprite_x+1
-CMP#24
-BEQ set_right
-lda#2
-jsr ms25
+	lda sprite_x+1	; actual X
+	cmp#85
+	bcc ngr
+		ldx#4	; turn left
+		stx sprite_d+1
+ngr:
+	cmp#24
+	bcs ngl
+		stz sprite_d+1	; turn right
+ngl:
+	ldx sprite_d+1	; direction?
+	clc
+	adc delta,x		; add displacement
+	and#127
+	sta sprite_x+1	; update
+	lda #1
+	sta sel_gh	; draw ghost
+	jsr draw
 
-dec sprite_x+1
-lda#1
-STa sel_gh
-JSR draw
-BRA test_left
+
+ngh:
+bra testing
+delta:
+.byt	1,0,0,0,$ff,0,0
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
