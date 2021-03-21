@@ -1,33 +1,34 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210321-0017
+; last modified 20210321-1144
 
 ; can be assembled from this folder
 
 ; variables, esp. zeropage
 #include "pacman.h"
 
-; *** constants definitions ***
+; *** constants definition ***
 	fw_isr	= $200			; standard minimOS firmware address
 	vram	= $7800			; suitable for Durango
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
 	lv_da	= vram + $49D	; address for lives display, usually $7C9D
-	lwidth	= 16			; formerly lwidth, bytes per line, being a power of two makes things MUCH simpler!
-	IO8lh	= $8000			; I/O addresses
-	IO8ll	= $8001
-	IO8wr	= $8003
+	lwidth	= 16			; formerly bytlin, bytes per line, being a power of two makes things MUCH simpler!
+; I/O addresses
+	IO8lh	= $8000			; screen latch high
+	IO8ll	= $8001			; screen latch low
+	IO8wr	= $8003			; screen write data
 	IOAie	= $A001			; enable hardware interrupt, LSB must be $01!
 	IOAid	= $A000			; disable hardware interrupt
 	LTCdo	= $FFF0			; LTC display port
 
-; uncomment this if non-direct, IO-based connection is used
+; uncomment this if non-direct, IO-based display interface is used
 #define	IOSCREEN	_IOSCREEN
 
 ; *** actual code starts here ***
 	.text
 
-	* = $4000				; standard system download address, hopefully will suffice!
+	* = $4000				; standard system download address, hopefully will be enough!
 
 ; basic 6502 init, as this is a stand-alone game
 start:
@@ -36,7 +37,7 @@ start:
 	LDX #$FF
 	TXS
 
-	STX LTCdo				; turn off Durango display
+	STX LTCdo				; turn off Durango display *** might use upper bits for keyboard read
 
 	LDY #<pm_isr			; set interrupt vector
 	LDA #>pm_isr
@@ -49,6 +50,8 @@ start:
 	STX score+1
 	LDA #5					; initial lives
 	STA lives
+	LDA #244				; number of dots (no longer automatic, not really worth it)
+	STA dots
 
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
@@ -219,19 +222,7 @@ sc_sdot:
 ;				LSR				; comment this for dots centered with pills, less offset otherwise
 				LSR				; shift them to the rightmost column
 				ORA dmask, Y	; combine with possible pills, must be an array of them
-; *** *** attempt for dot auto-count *** ***
-				TAX				; save this conf
-				LSR				; put possible right dot at d0 (comment if two LSRs above)
-				LSR				; get d0 in C
-				BCC cd_nr		; dot/pill at right?
-					INC dots	; count it!
-cd_nr:
-				LSR				; get rid of right pill, if exists
-				BNE cd_nl		; dot/pill at left?
-					INC dots	; count it too!
-cd_nl:
-				TXA				; retrieve pattern
-; *** *** ************************** *** ***
+; dot auto-count is no more...
 				JMP sc_ndot		; in any case, place pattern on screen
 
 sc_cpil:
