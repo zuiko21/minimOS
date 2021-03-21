@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210321-1302
+; last modified 20210321-1432
 
 ; can be assembled from this folder
 
@@ -64,12 +64,7 @@ lda#$55
 ;sta IO8wr
 	JSR positions			; reset initial positions, X is zero but...
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-;test code, move pacman and ghost right and left!
-lda#0	; pacman starts facing right
-sta sprite_d
-lda#4	; ghosts starts facing left
-sta sprite_d+1
-sta sprite_d+2
+;test code, move pacman and ghosts right and left!
 lda jiffy
 clc
 adc #1	; just start all quickly
@@ -78,8 +73,8 @@ sta sprite_t
 sta sprite_t+2
 sta IOAie	; eeeeek
 CLI
-; try to move and draw pacman
 testing:
+; try to move and draw pacman
 lda jiffy
 cmp sprite_t
 bne npac
@@ -104,6 +99,7 @@ npl:
 	stz sel_gh	; draw pacman
 	jsr draw
 npac:
+; try to move and draw ghost
 lda jiffy
 cmp sprite_t+1
 bne ngh
@@ -129,12 +125,37 @@ ngl:
 	lda #1
 	sta sel_gh	; draw ghost
 	jsr draw
-
-
 ngh:
+; try to move and draw frightened ghost
+lda jiffy
+cmp sprite_t+2
+bne nfh
+	clc
+	adc#14	; frightened ghost speed
+	sta sprite_t+2
+
+	lda sprite_x+2	; actual X
+	cmp#85
+	bcc nfr
+		ldx#4	; turn left
+		stx sprite_d+2
+nfr:
+	cmp#24
+	bcs nfl
+		stz sprite_d+2	; turn right
+nfl:
+	ldx sprite_d+2	; direction?
+	clc
+	adc delta,x		; add displacement
+	and#127
+	sta sprite_x+2	; update
+	lda #2
+	sta sel_gh	; draw frightened ghost
+	jsr draw
 bra testing
 delta:
 .byt	1,0,0,0,$ff,0,0
+
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
@@ -1017,11 +1038,11 @@ i_end:
 ; vertical movements of ghosts inside the base should be ad hoc
 init_p:
 	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
-	.byt	92, 92, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
+	.byt	92, 92, 92, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)****
 ;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
-	.byt	 4,  4,  0,  0,  0	; ***sprites initial direction (times two) 0 instead of 4 for testing****
-;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two) 0 instead of 4 for testing****
-	.byt	 0,  4,  0,  0,  0	; ghosts initial state (nonsense for pacman)
+	.byt	 0,  4,  4,  0,  0	; ***sprites initial direction (times two)
+;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
+	.byt	 0,  0,  4,  0,  0	; ghosts initial state (nonsense for pacman)***testing 
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
