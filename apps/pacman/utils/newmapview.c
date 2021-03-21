@@ -7,7 +7,7 @@
 int main(void) {
 	FILE	*f;
 	int		x, y, z;
-	int		c;
+	int		c, dots=0;
 
 	f=fopen("a.o65","rb");
 	if (f==NULL)	return -1;
@@ -25,9 +25,11 @@ int main(void) {
 						break;
 					case 64:			/* dot */
 						printf(".");
+						dots++;
 						break;
 					case 32:			/* pill */
 						printf("O");
+						dots++;
 						break;
 					case 0:				/* empty */
 						printf(" ");
@@ -43,6 +45,7 @@ int main(void) {
 		}
 		printf("\n");
 	}
+	printf("\ndots+pills = %d\n\n", dots);
 	fclose(f);
 	
 	return 0;
