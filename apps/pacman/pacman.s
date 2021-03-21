@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210321-1432
+; last modified 20210321-1637
 
 ; can be assembled from this folder
 
@@ -77,11 +77,19 @@ testing:
 ; try to move and draw pacman
 lda jiffy
 cmp sprite_t
-bne npac
-	clc
-	adc#10	; pacman speed
+bmi npac
+	adc#11	; pacman speed (12, as C was set)
 	sta sprite_t
 	lda sprite_x	; actual X
+	cmp sprite_x+2	; same as frightened?
+	bne pne
+		jsr sweep
+pne:
+	and#3
+	bne ndot
+		jsr munch
+ndot:
+	lda sprite_x	; eeeek
 	cmp#85
 	bcc npr
 		ldx#4	; turn left
@@ -102,12 +110,16 @@ npac:
 ; try to move and draw ghost
 lda jiffy
 cmp sprite_t+1
-bne ngh
-	clc
-	adc#7	; ghost speed
+bmi ngh
+	adc#6	; ghost speed (7, as C was set)
 	sta sprite_t+1
 
 	lda sprite_x+1	; actual X
+	cmp sprite_x
+	bne gne
+		jsr death
+		lda sprite_x+1	; eeeek
+gne:
 	cmp#85
 	bcc ngr
 		ldx#4	; turn left
@@ -129,9 +141,8 @@ ngh:
 ; try to move and draw frightened ghost
 lda jiffy
 cmp sprite_t+2
-bne nfh
-	clc
-	adc#14	; frightened ghost speed
+bmi nfh
+	adc#19	; frightened ghost speed (20, as C was set)
 	sta sprite_t+2
 
 	lda sprite_x+2	; actual X
@@ -152,7 +163,8 @@ nfl:
 	lda #2
 	sta sel_gh	; draw frightened ghost
 	jsr draw
-bra testing
+nfh:
+jmp testing
 delta:
 .byt	1,0,0,0,$ff,0,0
 
@@ -783,9 +795,13 @@ anim:
 	LSR draw_s
 	ROR						; 00000yyy yyyyxxxx (2)
 	STA dest_pt				; part of the pointer (3+3)
+	STA org_pt				; nicer
 	LDA draw_s
 	ORA #>vram				; page aligned 01111yyy yyyyxxxx (2)
 	STA dest_pt+1			; pointer complete (3)
+	LDA draw_s
+	ORA #>org_b
+	STA org_pt+1
 ; must compute dest_pt accordingly
 af_loop:
 		LDA sprite_x		; retrieve lower coordinate
@@ -805,6 +821,8 @@ sha_l:
 		STA cur			; save for later
 		LDA cur+1		; get shifted value
 		INC dest_pt		; it's the second one
+		INC org_pt		; nicer
+		ORA (org_pt)
 #ifdef	IOSCREEN
 		LDX dest_pt+1	; MSB actually
 		STX IO8lh
@@ -816,6 +834,8 @@ sha_l:
 #endif
 		LDA cur			; retrieve first byte
 		DEC dest_pt		; back one byte
+		DEC org_pt
+		ORA (org_pt)
 sh_end:
 #ifdef	IOSCREEN
 		LDX dest_pt+1	; MSB actually
@@ -830,8 +850,10 @@ sh_end:
 		CLC
 		ADC #lwidth		; next line
 		STA dest_pt		; eeeek
+		STA org_pt		; is this OK?
 		BCC af_nw
 			INC dest_pt+1
+			INC org_pt+1
 #ifdef	IOSCREEN
 			LDA dest_pt+1
 			STA IO8lh
@@ -932,14 +954,17 @@ nx_liv:
 ; *** tcyc = 10 A + 20      ***
 ; modifies Y, returns X=0
 m_beep:
+	SEI						; eeeeeek
+beep_l:
 		TAY					; determines frequency (2)
 		STX $BFF0			; send X's LSB to beeper (4)
 rb_zi:
 			DEY				; count pulse length (y*2)
 			BNE rb_zi		; stay this way for a while (y*3-1)
 		DEX					; toggles even/odd number (2)
-		BNE m_beep			; new half cycle (3)
+		BNE beep_l			; new half cycle (3)
 	STX $BFF0				; turn off the beeper!
+	CLI						; restore interrupts... if needed
 	RTS
 
 ; *** ** rest routine ** ***
