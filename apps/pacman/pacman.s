@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210321-1251
+; last modified 20210321-1302
 
 ; can be assembled from this folder
 
@@ -62,40 +62,36 @@ lda#$c3
 ;sta IO8ll
 lda#$55
 ;sta IO8wr
-
-puntos:
-LDA #1:LDX #0
-;jsr add_sc
-DEC dots
-BNE puntos
 	JSR positions			; reset initial positions, X is zero but...
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 ;test code, move pacman right and left!
 set_right:
-STZ sprite_d
+STZ sprite_d+1
 test_right:
-LDA sprite_x
+LDA sprite_x+1
 CMP#86
 BEQ set_left
 lda#2
 jsr ms25
-inc sprite_x
-STZ sel_gh
+inc sprite_x+1
+lda#1
+STA sel_gh
 JSR draw
 BRA test_right
 
 set_left:
 LDA #4
-STA sprite_d
+STA sprite_d+1
 test_left:
-LDA sprite_x
-CMP#22
+LDA sprite_x+1
+CMP#24
 BEQ set_right
 lda#2
 jsr ms25
 
-dec sprite_x
-STZ sel_gh
+dec sprite_x+1
+lda#1
+STa sel_gh
 JSR draw
 BRA test_left
 ; **********************************************************
@@ -980,10 +976,11 @@ i_end:
 ; vertical movements of ghosts inside the base should be ad hoc
 init_p:
 	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
-	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
+	.byt	92, 92, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
+;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
 	.byt	 4,  4,  0,  0,  0	; ***sprites initial direction (times two) 0 instead of 4 for testing****
 ;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two) 0 instead of 4 for testing****
-	.byt	 0,  0,  0,  0,  0	; ghosts initial state (nonsense for pacman)
+	.byt	 0,  4,  0,  0,  0	; ghosts initial state (nonsense for pacman)
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
