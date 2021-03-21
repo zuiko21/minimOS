@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210321-1144
+; last modified 20210321-1251
 
 ; can be assembled from this folder
 
@@ -1061,10 +1061,12 @@ s_gh_l:
 s_gh_u:
 ; frightened ghost towards right
 s_fg_r:
+	.bin	9, 128, "../../other/data/fright-right.pbm"
 ; frightened ghost downwards ***
 s_fg_d:
 ; frightened ghost towards left
 s_fg_l:
+	.bin	9, 128, "../../other/data/fright-left.pbm"
 ; frightened ghost upwards ***
 s_fg_u:
 
