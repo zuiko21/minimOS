@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210320-1908
+; last modified 20210321-0017
 
 ; can be assembled from this folder
 
@@ -53,66 +53,48 @@ start:
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
+lda#%01111101
+;sta IO8lh
+lda#$c3
+;sta IO8ll
+lda#$55
+;sta IO8wr
+
 puntos:
 LDA #1:LDX #0
 ;jsr add_sc
 DEC dots
 BNE puntos
 	JSR positions			; reset initial positions, X is zero but...
-;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-;test code, draw blinky
-	LDY #1					; sprite to be drawn
-	STY sel_gh
-	JSR draw
-;manual sprite draw
-/*ldx #3
-stx $8000
-lda #16
-sta temp
-rrr:
-ldy#$80
-ldx temp
-ttt:
-lda s_gh_r,x
-sty $8001
-sta $8003
-iny
-inx
-lda s_gh_r,x
-sty $8001
-sta $8003
-iny
-dex
-lda s_pac_r,x
-sty $8001
-sta $8003
-iny
-inx
-lda s_pac_r,x
-sty $8001
-sta $8003
-tya
-clc
-adc #13
-tay
-inx
-txa
-;and #127
-;tax
-sec
-sbc temp
-cmp #16
-bne ttt
-lda #2
+	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
+;test code, move pacman right and left!
+set_right:
+STZ sprite_d
+test_right:
+LDA sprite_x
+CMP#86
+BEQ set_left
+lda#2
 jsr ms25
-lda temp
-clc
-adc #16
-;and #127
-sta temp
-cmp #0
-bne rrr
-*/
+inc sprite_x
+STZ sel_gh
+JSR draw
+BRA test_right
+
+set_left:
+LDA #4
+STA sprite_d
+test_left:
+LDA sprite_x
+CMP#22
+BEQ set_right
+lda#2
+jsr ms25
+
+dec sprite_x
+STZ sel_gh
+JSR draw
+BRA test_left
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
@@ -342,13 +324,15 @@ draw:
 	LDY sel_gh				; get selected sprite
 	LDA sprite_s, Y			; copy from array to temporary var
 	STA draw_s
+	LDA sprite_x, Y			; X will hold X coordinate, will be shifted in storage
+	STA draw_x
+	ASL						; discard unused MSB! eeeeeeek
+	TAX						; X is 2x, actually
 	LDA sprite_y, Y			; A holds actual Y coordinate, will shift in register
-	STA draw_y
-	LDX sprite_x, Y			; X holds, well, X coordinate, will be shifted in storage
-	STX draw_x
+	STA draw_y				; ***maybe worth unifying
 ; compute base addresses, specific code will change as appropriate anyway
-; I think inlined is OK (24b, 45t) somewhat speed critical
-; X=x, A=y, returns address in org_pt AND dest_pt
+; I think inlined is OK (28b, 51t) somewhat speed critical
+; X=2x, A=y, returns address in org_pt AND dest_pt
 	STX org_pt				; store initial LSB (same for dest_pt)
 	LSR						; divide by 16, assuming this is lwidth
 	ROR org_pt
@@ -364,8 +348,8 @@ draw:
 	TXA						; again for VRAM pointer
 	ORA #>vram
 	STA dest_pt+1
-	LDY org_pt				; eeeeeeeek
-	STY dest_pt
+	LDX org_pt				; must copy eeeeeeeek
+	STX dest_pt
 ; select routine according to direction
 	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
 ;	STX draw_d				; lastly, set direction (is storage actually needed?)
@@ -468,6 +452,8 @@ sh_draw:
 sh_nsw:
 	LDY #0					; reset sprite-file cursor
 #ifdef	IOSCREEN
+	LDA dest_pt+1			; eeeeeek
+	STA IO8lh
 	LDX dest_pt				; keep this updated
 #endif
 sh_loop:
@@ -495,12 +481,6 @@ sh_loop:
 		ADC #lwidth-2
 		STA org_pt
 		STA dest_pt			; really the same MSB
-#ifdef	IOSCREEN
-		TXA
-		SEC
-		ADC #lwidth-2		; will this work?
-		TAX					; keep this index updated
-#endif
 		BCC sh_npb			; check possible carry
 			INC org_pt+1
 			INC dest_pt+1
@@ -509,6 +489,17 @@ sh_loop:
 			STA IO8lh
 #endif
 sh_npb:
+#ifdef	IOSCREEN
+			TYA
+			CLC
+			ADC dest_pt
+			BCC sh_npw
+				LDX dest_pt+1
+				INX
+				STX IO8lh
+sh_npw:
+			TAX				; keep this index updated
+#endif
 		CPY #16				; bytes per sprite frame
 		BNE sh_loop
 	RTS
@@ -749,12 +740,13 @@ anim:
 ; must compute dest_pt accordingly
 af_loop:
 		LDA sprite_x		; retrieve lower coordinate
-		AND #8				; pixel within sprite
+		AND #7				; pixel within sprite eeeeeek
 		TAX
 		LDA pac_dies, Y		; get sprite data
 ; X must have the offset from byte boundary
 		CPX #0
 		BEQ sh_end
+			STZ cur+1		; eeeeek
 sha_l:
 			LSR
 			ROR cur+1
@@ -998,7 +990,8 @@ i_end:
 init_p:
 	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
 	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
-	.byt	 0,  0,  6,  6,  6	; sprites initial direction (times two) 0 instead of 4 for testing****
+	.byt	 4,  4,  0,  0,  0	; ***sprites initial direction (times two) 0 instead of 4 for testing****
+;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two) 0 instead of 4 for testing****
 	.byt	 0,  0,  0,  0,  0	; ghosts initial state (nonsense for pacman)
 
 ; valid X values in current system (+2 offset)
