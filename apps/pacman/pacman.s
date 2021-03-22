@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210321-1637
+; last modified 20210322-1337
 
 ; can be assembled from this folder
 
@@ -385,32 +385,32 @@ draw:
 	LDY sel_gh				; get selected sprite
 	LDA sprite_s, Y			; copy from array to temporary var
 	STA draw_s
-	LDA sprite_x, Y			; X will hold X coordinate, will be shifted in storage
-	STA draw_x
-	ASL						; discard unused MSB! eeeeeeek
-	TAX						; X is 2x, actually
+	LDX sprite_x, Y			; X will hold X coordinate, will be shifted in storage
+	STX draw_x
 	LDA sprite_y, Y			; A holds actual Y coordinate, will shift in register
 	STA draw_y				; ***maybe worth unifying
 ; compute base addresses, specific code will change as appropriate anyway
-; I think inlined is OK (28b, 51t) somewhat speed critical
-; X=2x, A=y, returns address in org_pt AND dest_pt
-	STX org_pt				; store initial LSB (same for dest_pt)
-	LSR						; divide by 16, assuming this is lwidth
-	ROR org_pt
-	LSR
-	ROR org_pt
-	LSR
-	ROR org_pt
-	LSR
-	ROR org_pt				; LSB is ready here, base MSB in A
-	TAX						; keep original offset
+; new inlined version based on animation, 2b more but somewhat faster
+; X=x, A=y, returns address in org_pt AND dest_pt
+	STA org_pt+1			; store base MSB
+	TXA						; now A is X...
+	ASL						; ...but discard unused MSB!
+	LSR org_pt+1			; divide by 16, assuming this is lwidth
+	ROR
+	LSR org_pt+1
+	ROR
+	LSR org_pt+1
+	ROR
+	LSR org_pt+1
+	ROR						; LSB is ready here, base MSB in org_+1
+	STA org_pt				; store both LSBs (identical)
+	STA dest_pt
+	LDA org_pt+1			; retrieve base MSB
+	ORA #>vram
+	STA dest_pt+1			; screen pointer is ready
+	LDA org_pt+1			; retrieve base MSB, now for buffer pointer
 	ORA #>org_b				; convert in full buffer address, valid for page-aligned addresses!
 	STA org_pt+1
-	TXA						; again for VRAM pointer
-	ORA #>vram
-	STA dest_pt+1
-	LDX org_pt				; must copy eeeeeeeek
-	STX dest_pt
 ; select routine according to direction
 	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
 ;	STX draw_d				; lastly, set direction (is storage actually needed?)
