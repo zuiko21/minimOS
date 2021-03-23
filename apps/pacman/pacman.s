@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210324-0029
+; last modified 20210324-0035
 
 ; can be assembled from this folder
 
@@ -449,7 +449,7 @@ sl_frg:
 sl_eat:
 ;		LDY #<s_eat_l		; eaten, facing left?
 ;		LDA #>s_eat_l
-;		BNE spr_set
+;		BNE spl_set
 sl_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_l
@@ -582,22 +582,22 @@ s_down:
 		BCS sd_frg			; normal ghost
 			LDY #<s_gh_d	; facing right
 			LDX #>s_gh_d
-			BNE spr_set		; set this pointer
+			BNE spd_set		; set this pointer
 sd_frg:
 ;		CMP #3				; should differentiate eaten ghost
 ;		BEQ sd_eat
 			LDY #<s_fg_d	; frightened, facing right
 			LDX #>s_fg_d
-			BNE spr_set
+			BNE spd_set
 sd_eat:
 ;		LDY #<s_eat_d		; eaten, facing down?
 ;		LDX #>s_eat_d
-;		BNE spr_set
+;		BNE spd_set
 sd_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_d
 	LDX #>s_pac_d
-spr_set:
+spd_set:
 ; org_pt and dest_pt seem OK
 ; *** *** extra byte(s) above TBD! *** ***
 ; *** *** but once pointers are set, just call su_clr *** ***
@@ -616,22 +616,22 @@ s_up:
 		BCS su_frg			; normal ghost
 			LDY #<s_gh_u	; facing right
 			LDX #>s_gh_u
-			BNE spr_set		; set this pointer
+			BNE spu_set		; set this pointer
 su_frg:
 ;		CMP #3				; should differentiate eaten ghost
 ;		BEQ su_eat
 			LDY #<s_fg_u	; frightened, facing right
 			LDX #>s_fg_u
-			BNE spr_set
+			BNE spu_set
 su_eat:
 ;		LDY #<s_eat_u		; eaten, facing up?
 ;		LDX #>s_eat_u
-;		BNE spr_set
+;		BNE spu_set
 su_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_u
 	LDX #>s_pac_u
-spr_set:
+spu_set:
 ; org_pt and dest_pt seem OK
 ; advancing sprite pointer for half-byte lanes should be common!
 	JSR sv_draw				; all set, check new interface
@@ -1260,13 +1260,15 @@ maze:
 ; pacman towards right
 s_pac_r:
 	.bin	9, 128, "../../other/data/pac-right.pbm"
-; pacman downwards *** need new scheme for vertical!
+; pacman downwards *** uses new scheme for vertical!
 s_pac_d:
+	.bin	9, 192, "../../other/data/pac-down.pbm"
 ; pacman towards left
 s_pac_l:
 	.bin	55, 128, "../../other/data/pac-left.pbm"
-; pacman upwards ***
+; pacman upwards
 s_pac_u:
+	.bin	9, 192, "../../other/data/pac-up.pbm"
 ; pacman dies! (animation)
 pac_dies:
 	.bin	53, 48, "../../other/data/palmatoria.pbm"
@@ -1274,13 +1276,15 @@ pac_dies:
 ; ghost towards right
 s_gh_r:
 	.bin	9, 128, "../../other/data/ghost-right.pbm"
-; ghost downwards ***
+; ghost downwards
 s_gh_d:
+	.bin	9, 192, "../../other/data/ghost-down.pbm"
 ; ghost towards left
 s_gh_l:
 	.bin	55, 128, "../../other/data/ghost-left.pbm"
-; ghost upwards ***
+; ghost upwards
 s_gh_u:
+	.bin	9, 192, "../../other/data/ghost-up.pbm"
 ; frightened ghost towards right
 s_fg_r:
 	.bin	9, 128, "../../other/data/fright-right.pbm"
