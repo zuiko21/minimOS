@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210322-1337
+; last modified 20210324-0029
 
 ; can be assembled from this folder
 
@@ -56,15 +56,12 @@ start:
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
-lda#%01111101
-;sta IO8lh
-lda#$c3
-;sta IO8ll
-lda#$55
-;sta IO8wr
 	JSR positions			; reset initial positions, X is zero but...
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-;test code, move pacman and ghosts right and left!
+
+; *********************************************************
+; *** test code, move pacman and ghosts right and left! ***
+; *********************************************************
 lda jiffy
 clc
 adc #1	; just start all quickly
@@ -167,6 +164,8 @@ nfh:
 jmp testing
 delta:
 .byt	1,0,0,0,$ff,0,0
+; *** end of test code ***
+; ************************
 
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
@@ -195,11 +194,12 @@ m_end:
 ; ***  ***   music finished, now start the game!    ***  ***
 ; **********************************************************
 ; **********************************************************
-jsr up_lives
+
 play:
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
-; test code
+
+; *** test code follows ***
 jsr death
 loop:
 lda jiffy
@@ -218,6 +218,10 @@ clc
 adc#244
 sta lives
 jmp loop
+; *** end of test code ***
+; ************************
+
+
 ; ***************************************
 ; *** *** restart another 'level' *** ***
 ; ***************************************
@@ -565,42 +569,176 @@ sh_npw:
 		BNE sh_loop
 	RTS
 
-; * routine for sprite drawing, downwards -- needs a VERY different approach! *** TBD * TBD
+; *** routine for sprite drawing, downwards -- needs a VERY different approach! ***
 ; just place appropriate sprite frame and an extra byte above
 ; perhaps two if between bytes
 s_down:
-;	JSR xy_addr				; compute base address from coordinates
-	LDA org_pt				; actually the same MSB as dest_pt
-	SEC
-	SBC #lwidth				; have to take one byte above
-	STA org_pt				; update both values
-	STA dest_pt				; see above
-	BCS sd_nob				; usually no page crossing
-		DEC org_pt+1		; otherwise update both MSBs
-		DEC dest_pt+1
-sd_nob:
-	LDA draw_x
-	AND #4					; is it between bytes?
-	BEQ sd_sb				; if not, process both bytes
-; new format for vertical sprites is one raster centered, and two bytes for the spanned one
-; rasters are THREE bytes apart, and frames are 24 (vs. 2 and 16 for horizontal ones)
-		LDY #2				; third bit in raster
-		; **** NO IDEA **** NO IDEA ***
-sd_sb:
-	TAY						; use A as sprite index, if the second byte was used must be 1!
+; must select sprite file first! I don't think this can be generic
+	LDA sel_gh				; pacman or ghost?
+	BEQ sd_pac
+; if it's a ghost, must check status, as frightened (and eaten) are different
+		LDA draw_s			; status of chost
+		CMP #2				; 0,1=normal, 2=fright, 3=eaten
+		BCS sd_frg			; normal ghost
+			LDY #<s_gh_d	; facing right
+			LDX #>s_gh_d
+			BNE spr_set		; set this pointer
+sd_frg:
+;		CMP #3				; should differentiate eaten ghost
+;		BEQ sd_eat
+			LDY #<s_fg_d	; frightened, facing right
+			LDX #>s_fg_d
+			BNE spr_set
+sd_eat:
+;		LDY #<s_eat_d		; eaten, facing down?
+;		LDX #>s_eat_d
+;		BNE spr_set
+sd_pac:
+; it's pacman, no status check, just direction
+	LDY #<s_pac_d
+	LDX #>s_pac_d
+spr_set:
+; org_pt and dest_pt seem OK
+; *** *** extra byte(s) above TBD! *** ***
+; *** *** but once pointers are set, just call su_clr *** ***
+	JMP sv_draw				; all set, check new interface
+
+; *** routine for sprite drawing, upwards -- needs a VERY different approach! ***
+; just place appropriate sprite frame and an extra byte below
+; perhaps two if between bytes
+s_up:
+; must select sprite file first! I don't think this can be generic
+	LDA sel_gh				; pacman or ghost?
+	BEQ su_pac
+; if it's a ghost, must check status, as frightened (and eaten) are different
+		LDA draw_s			; status of chost
+		CMP #2				; 0,1=normal, 2=fright, 3=eaten
+		BCS su_frg			; normal ghost
+			LDY #<s_gh_u	; facing right
+			LDX #>s_gh_u
+			BNE spr_set		; set this pointer
+su_frg:
+;		CMP #3				; should differentiate eaten ghost
+;		BEQ su_eat
+			LDY #<s_fg_u	; frightened, facing right
+			LDX #>s_fg_u
+			BNE spr_set
+su_eat:
+;		LDY #<s_eat_u		; eaten, facing up?
+;		LDX #>s_eat_u
+;		BNE spr_set
+su_pac:
+; it's pacman, no status check, just direction
+	LDY #<s_pac_u
+	LDX #>s_pac_u
+spr_set:
+; org_pt and dest_pt seem OK
+; advancing sprite pointer for half-byte lanes should be common!
+	JSR sv_draw				; all set, check new interface
+; dest_pt and org_pt are just BELOW the sprite, where the clear line must be drawn
+; * if pointers are adequately set, this will serve for down facing sprites as well (above) *
+su_clr:
+		LDA (org_pt), Y		; get clean buffer (is Y OK?)
+#ifndef	IOSCREEN
+		STA (dest_pt), Y	; and store in screen
+#else
+		STX IO8ll			; alternate index, copying dest_pt LSB+Y
+		STA IO8wr			; place data
+		INX					; otherwise won't be indexed!
+#endif
+		INY					; in case a second byte is to be done
+		DEC temp			; was zero or one!
+		BPL su_clr			; if a second byte was needed, put it too
 	RTS
 
-
-
-; * routine for sprite drawing, upwards -- needs a VERY different approach! *** TBD * TBD
-s_up:
-	LDA draw_x				; get parameters for chk_map
-	LDX draw_y
-	DEX						; try one pixel up
-	JSR chk_map				; check status of suggested tile
-	BMI su_abort
-
-su_abort:
+sv_draw:
+; new common vertical sprite draw
+; takes base sprite pointer in X.Y
+	LDA draw_x				; check horizontal offset
+	AND #4					; is it between bytes?
+; *** what to do? just advance once the sprite pointer... but must signal somehow to draw two bytes per raster!
+	BEQ sv_alig				; it is aligned, stay at base sprite address
+		INY					; otherwise, advance pointer by one
+		BNE sv_alig			; just in case...
+			INX
+sv_alig:
+	LSR						; A was 4 or zero, but we prefer 1 or 0
+	LSR
+	STA temp				; we no longer need sel_gh, I think, may use somewhere in tmp_arr as well
+	LDA draw_y				; must select appropriate frame
+	AND #7					; Y MOD 8
+; ...but this time is x24, not x16
+	ASL						; times 2
+	ASL						; times 4
+	ASL						; times 8, must be temporarily saved
+	STA tmp_arr
+	ASL						; times 16, C guaranteed CLEAR
+	ADC tmp_arr				; times 24! again C is clear
+	STY tmp_arr				; this is LSB
+	ADC tmp_arr				; rectified pointer, A=Y+disp
+	BCC sv_npc				; carry is possible
+		INX
+sv_npc:
+	STA spr_pt				; set sprite file rectified address
+	STX spr_pt+1
+; all pointers set, go for it... but doing one (Z) or two bytes per raster depends on the contents of temp!
+; temporary copy***
+	LDY #0					; reset sprite-file cursor
+#ifdef	IOSCREEN
+	LDA dest_pt+1			; eeeeeek
+	STA IO8lh
+	LDX dest_pt				; keep this updated
+#endif
+sv_loop:
+		LDA (spr_pt), Y		; take sprite data
+		ORA (org_pt), Y		; combine with clean screen
+#ifdef	IOSCREEN
+		STX IO8ll			; alternate index, copying dest_pt LSB
+		STA IO8wr			; place data
+#else
+		STA (dest_pt), Y	; regular screen
+#endif
+		INY					; ditto for next byte... in case it is needed
+		LDA temp			; is it?
+		BEQ sv_2nd			; no, just go for next raster
+			LDA (spr_pt), Y	; otherwise, take sprite data
+			ORA (org_pt), Y	; combine with clean screen
+#ifdef	IOSCREEN
+			INX				; eeeeeeek
+			STX IO8ll		; alternate index, copying dest_pt LSB
+			STA IO8wr		; place data
+#else
+			STA (dest_pt), Y	; regular screen
+#endif
+sv_2nd:
+		INY					; done
+		INY					; in any case, there are three bytes per (vertical) sprite raster
+		LDA org_pt			; Y has advanced thrice, pointers should advance 13 (lwidth-3)
+		CLC
+		ADC #lwidth-3		; wink-wink-wink
+		STA org_pt
+		STA dest_pt			; really the same MSB
+		BCC sv_npb			; check possible carry
+			INC org_pt+1
+			INC dest_pt+1
+#ifdef	IOSCREEN
+			LDA dest_pt+1
+			STA IO8lh
+#endif
+sv_npb:
+#ifdef	IOSCREEN
+			TYA
+			CLC
+			ADC dest_pt
+			BCC sv_npw
+				LDX dest_pt+1
+				INX
+				STX IO8lh
+sv_npw:
+			TAX				; keep this index updated
+#endif
+		CPY #24				; bytes per sprite frame, not 16!
+		BNE sv_loop
 	RTS
 
 ; * compute map data from pixel coordinates * MUST CHECK ****** TBD * TBD
