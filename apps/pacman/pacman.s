@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210324-0035
+; last modified 20210324-1946
 
 ; can be assembled from this folder
 
@@ -57,7 +57,7 @@ start:
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions, X is zero but...
-	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
+;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 
 ; *********************************************************
 ; *** test code, move pacman and ghosts right and left! ***
@@ -70,6 +70,7 @@ sta sprite_t
 sta sprite_t+2
 sta IOAie	; eeeeek
 CLI
+; * try complete engine *
 testing:
 ; try to move and draw pacman
 lda jiffy
@@ -77,30 +78,33 @@ cmp sprite_t
 bmi npac
 	adc#11	; pacman speed (12, as C was set)
 	sta sprite_t
-	lda sprite_x	; actual X
-	cmp sprite_x+2	; same as frightened?
-	bne pne
-		jsr sweep
-pne:
-	and#3
-	bne ndot
-		jsr munch
-ndot:
-	lda sprite_x	; eeeek
-	cmp#85
-	bcc npr
-		ldx#4	; turn left
-		stx sprite_d
-npr:
-	cmp#24
-	bcs npl
-		stz sprite_d	; turn right
-npl:
-	ldx sprite_d	; direction?
-	clc
-	adc delta,x		; add displacement
-	and#127
-	sta sprite_x	; update
+;	lda sprite_x	; actual X
+;	cmp sprite_x+2	; same as frightened?
+;	bne pne
+;		jsr sweep
+;pne:
+;	and#3
+;	bne ndot
+;		jsr munch
+;ndot:
+;	lda sprite_x	; eeeek
+;	cmp#85
+;	bcc npr
+;		ldx#4	; turn left
+;		stx sprite_d
+;npr:
+;	cmp#24
+;	bcs npl
+;		stz sprite_d	; turn right
+;npl:
+;	ldx sprite_d	; direction?
+;	clc
+;	adc delta,x		; add displacement
+;	and#127
+;	sta sprite_x	; update
+; * update coordinates *
+	ldy #0			; pacman index
+	jsr destino		; check new destination, updating x/y and d
 	stz sel_gh	; draw pacman
 	jsr draw
 npac:
@@ -110,29 +114,29 @@ cmp sprite_t+1
 bmi ngh
 	adc#6	; ghost speed (7, as C was set)
 	sta sprite_t+1
-
-	lda sprite_x+1	; actual X
-	cmp sprite_x
-	bne gne
-		jsr death
-		lda sprite_x+1	; eeeek
-gne:
-	cmp#85
-	bcc ngr
-		ldx#4	; turn left
-		stx sprite_d+1
-ngr:
-	cmp#24
-	bcs ngl
-		stz sprite_d+1	; turn right
-ngl:
-	ldx sprite_d+1	; direction?
-	clc
-	adc delta,x		; add displacement
-	and#127
-	sta sprite_x+1	; update
-	lda #1
-	sta sel_gh	; draw ghost
+;	lda sprite_x+1	; actual X
+;	cmp sprite_x
+;	bne gne
+;		jsr death
+;		lda sprite_x+1	; eeeek
+;gne:
+;	cmp#85
+;	bcc ngr
+;		ldx#4	; turn left
+;		stx sprite_d+1
+;ngr:
+;	cmp#24
+;	bcs ngl
+;		stz sprite_d+1	; turn right
+;ngl:
+;	ldx sprite_d+1	; direction?
+;	clc
+;	adc delta,x		; add displacement
+;	and#127
+;	sta sprite_x+1	; update
+	ldy#1		; ghost index
+	sty sel_gh	; draw ghost
+	jsr destino		; check new destination, updating x/y and d
 	jsr draw
 ngh:
 ; try to move and draw frightened ghost
@@ -141,29 +145,98 @@ cmp sprite_t+2
 bmi nfh
 	adc#19	; frightened ghost speed (20, as C was set)
 	sta sprite_t+2
-
-	lda sprite_x+2	; actual X
-	cmp#85
-	bcc nfr
-		ldx#4	; turn left
-		stx sprite_d+2
-nfr:
-	cmp#24
-	bcs nfl
-		stz sprite_d+2	; turn right
-nfl:
-	ldx sprite_d+2	; direction?
-	clc
-	adc delta,x		; add displacement
-	and#127
-	sta sprite_x+2	; update
-	lda #2
-	sta sel_gh	; draw frightened ghost
+;	lda sprite_x+2	; actual X
+;	cmp#85
+;	bcc nfr
+;		ldx#4	; turn left
+;		stx sprite_d+2
+;nfr:
+;	cmp#24
+;	bcs nfl
+;		stz sprite_d+2	; turn right
+;nfl:
+;	ldx sprite_d+2	; direction?
+;	clc
+;	adc delta,x		; add displacement
+;	and#127
+;	sta sprite_x+2	; update
+	ldy #2
+	sty sel_gh	; draw frightened ghost
+	jsr destino
 	jsr draw
 nfh:
+; try to move and draw fast ghost
+lda jiffy
+cmp sprite_t+3
+bmi nxh
+	adc#0	; fast ghost speed (1, as C was set)
+	sta sprite_t+3
+	ldy #3
+	sty sel_gh	; draw fast ghost
+	jsr destino
+	jsr draw
+nxh:
 jmp testing
 delta:
-.byt	1,0,0,0,$ff,0,0
+.byt	1,0,0,0,$ff,0,0; ***check
+destino:
+; *** update path, Y = sprite index ***
+ldx sprite_d,y	; current direction
+recheck:
+jmp(direc,x)
+direc:
+.word go_r, go_d, go_l, go_u
+go_r:;check righmost coordinate
+lda sprite_x,y	; current x
+cmp#85	; right x limit
+bcc d_nr
+	ldx#2;now facing down
+	stx sprite_d,y
+	jmp recheck
+d_nr:
+tya
+tax
+inc sprite_x,x
+rts
+
+go_d:;check bottom limit
+lda sprite_y,y
+cmp #92;bottom y limit
+bcc d_nd
+	ldx#4;now facing left
+	stx sprite_d,y
+	jmp recheck
+d_nd:
+tya
+tax
+inc sprite_y,x
+rts
+
+go_l:;check left limit
+lda sprite_x,y
+cmp #26;left x limit
+bcs d_nl
+	ldx#6;now facing up
+	stx sprite_d,y
+	jmp recheck
+d_nl:
+tya
+tax
+dec sprite_x,x
+rts
+
+go_u:;check top limit
+lda sprite_y,y
+cmp #21;top y limit
+bcs d_nu
+	ldx#0;now facing right
+	stx sprite_d,y
+	jmp recheck
+d_nu:
+tya
+tax
+dec sprite_y,x
+rts
 ; *** end of test code ***
 ; ************************
 
@@ -599,9 +672,37 @@ sd_pac:
 	LDX #>s_pac_d
 spd_set:
 ; org_pt and dest_pt seem OK
-; *** *** extra byte(s) above TBD! *** ***
-; *** *** but once pointers are set, just call su_clr *** ***
-	JMP sv_draw				; all set, check new interface
+; *** put extra byte(s) above ***
+; *** this is VERY coarse, but works anyway ***
+; first, save future address
+	LDA dest_pt				; LSB is common with org_pt
+	SEC
+	SBC #lwidth				; back one raster
+	STA map_pt
+	LDA dest_pt+1
+	PHP						; borrow goes on two MSBs
+	SBC #0
+	STA map_pt+1			; map_pt is future dest_pt
+	LDA org_pt+1			; this MSB is different
+	PLP						; retrieve possible borrow
+	SBC #0
+	STA tmp_arr+15			; different storage
+; with X & Y properly set, proceed to draw
+	JSR sv_draw
+; *** retrieve address to be cleared ***
+	LDX map_pt				; common LSB must be in X for IOSCREEN
+	STX org_pt
+	STX dest_pt
+	LDA map_pt+1			; screen MSB
+	STA dest_pt+1
+#ifdef	IOSCREEN
+	STA IO8lh				; eeeeeeeek
+#endif
+	LDA tmp_arr+15			; the other MSB
+	STA org_pt+1
+	LDY #0					; eeeeek
+; *** *** once pointers are set, just call su_clr *** ***
+	JMP su_clr				; will return
 
 ; *** routine for sprite drawing, upwards -- needs a VERY different approach! ***
 ; just place appropriate sprite frame and an extra byte below
@@ -635,10 +736,10 @@ spu_set:
 ; org_pt and dest_pt seem OK
 ; advancing sprite pointer for half-byte lanes should be common!
 	JSR sv_draw				; all set, check new interface
-; dest_pt and org_pt are just BELOW the sprite, where the clear line must be drawn
+; dest_pt and org_pt (AFTER adding Y) are just BELOW the sprite, where the clear line must be drawn
 ; * if pointers are adequately set, this will serve for down facing sprites as well (above) *
 su_clr:
-		LDA (org_pt), Y		; get clean buffer (is Y OK?)
+		LDA (org_pt), Y		; get clean buffer (needs Y as expected)
 #ifndef	IOSCREEN
 		STA (dest_pt), Y	; and store in screen
 #else
@@ -1201,11 +1302,11 @@ i_end:
 ; vertical movements of ghosts inside the base should be ad hoc
 init_p:
 	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
-	.byt	92, 92, 92, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)****
+	.byt	92, 92, 92, 92, 56	; sprites initial Y (new 2px offset, not much of a problem)****
 ;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
-	.byt	 0,  4,  4,  0,  0	; ***sprites initial direction (times two)
+	.byt	 4,  4,  4,  4,  4	; ***sprites initial direction (times two)
 ;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
-	.byt	 0,  0,  4,  0,  0	; ghosts initial state (nonsense for pacman)***testing 
+	.byt	 0,  0,  1,  0,  0	; ghosts initial state (nonsense for pacman)***testing 
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
