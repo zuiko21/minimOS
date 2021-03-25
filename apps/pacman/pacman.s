@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210325-1438
+; last modified 20210325-1633
 
 ; can be assembled from this folder
 
@@ -58,7 +58,7 @@ start:
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions, X is zero but...
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-
+jsr death
 ; *********************************************************
 ; *** test code, move pacman and ghosts right and left! ***
 ; *********************************************************
@@ -169,7 +169,7 @@ nfh:
 lda jiffy
 cmp sprite_t+3
 bmi nxh
-	adc#0	; fast ghost speed (1, as C was set)
+	adc#1	; fast ghost speed (1, as C was set)
 	sta sprite_t+3
 	ldy #3
 	sty sel_gh	; draw fast ghost
@@ -425,7 +425,7 @@ sc_ndot:
 #ifdef	IOSCREEN
 			LDA org_pt+1	; new page value... (3)
 			STA IO8lh		; ...gets into high-address latch (4)
-;			CLC				; not sure if this is needed
+			CLC				; this IS needed, indeed
 			ADC #$70		; dirty hack for the BPL below to work!
 #else
 			INC dest_pt+1	; VRAM is last, as will set N flag when finished!
@@ -764,9 +764,9 @@ sv_npc:
 ; temporary copy***
 	LDY #0					; reset sprite-file cursor
 #ifdef	IOSCREEN
-	LDA dest_pt+1			; eeeeeek
+	LDA org_pt+1			; eeeeeek
 	STA IO8lh
-	LDX dest_pt				; keep this updated
+	LDX org_pt				; keep this updated
 #endif
 sv_loop:
 		LDA (spr_pt), Y		; take sprite data
@@ -796,21 +796,24 @@ sv_2nd:
 		CLC
 		ADC #lwidth-3		; wink-wink-wink
 		STA org_pt
+#ifndef	IOSCREEN
 		STA dest_pt			; really the same MSB
+#endif
 		BCC sv_npb			; check possible carry
 			INC org_pt+1
-			INC dest_pt+1
 #ifdef	IOSCREEN
-			LDA dest_pt+1
+			LDA org_pt+1
 			STA IO8lh
+#else
+			INC dest_pt+1
 #endif
 sv_npb:
 #ifdef	IOSCREEN
 			TYA
 			CLC
-			ADC dest_pt
+			ADC org_pt
 			BCC sv_npw
-				LDX dest_pt+1
+				LDX org_pt+1
 				INX
 				STX IO8lh
 sv_npw:
@@ -846,7 +849,7 @@ chk_map:
 		ASL
 		ASL
 		ASL
-np_left:
+mp_left:
 	RTS						; in any case, d7-d4 are the flags
 
 ; ** alphanumeric routines ** TONS of repeated code
@@ -854,6 +857,7 @@ np_left:
 ; takes value (BCD) in A (low), X (high, only for 160 --fourth ghost eaten--)
 add_sc:
 ; add X.A to current score
+; unusually, non-IOSCREEN version uses org_pt as VRAM pointer
 	STX temp				; store temporarily
 	SED						; decimal mode!
 	CLC
@@ -872,8 +876,8 @@ add_sc:
 	STA spr_pt+1
 	LDX #<sc_da				; set screen address for score area
 	LDA #>sc_da
-	STX dest_pt				; will be kept as low address
-	STA dest_pt+1
+	STX org_pt				; will be kept as low address
+	STA org_pt+1
 #ifdef	IOSCREEN
 	STA IO8lh				; latch high address, fortunately won't change ($7B10...$7B61)
 	STX IO8ll
@@ -885,14 +889,14 @@ ds_sc:
 #ifdef	IOSCREEN
 		STA IO8wr
 #else
-		STA (dest_pt)		; put on this scanline *** CMOS ***
+		STA (org_pt)		; put on this scanline *** CMOS ***
 #endif
 ; last two digits
 #ifndef	IOSCREEN
-		INC dest_pt			; advance to next couple of figures
+		INC org_pt			; advance to next couple of figures
 #else
 		INX
-		STX dest_pt
+		STX org_pt
 		STX IO8ll
 #endif
 		LDY score			; this is an index for least significant couple of figures!
@@ -900,18 +904,18 @@ ds_sc:
 #ifdef	IOSCREEN
 		STA IO8wr
 #else
-		STA (dest_pt)		; put on this scanline *** CMOS ***
+		STA (org_pt)		; put on this scanline *** CMOS ***
 #endif
-		LDA dest_pt			; increase screen pointer
+		LDA org_pt			; increase screen pointer
 		CLC
 		ADC #lwidth-1
-		STA dest_pt
+		STA org_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
 		STX IO8ll			; eeeeeeeeeeek
 #endif
 ;		BCC ds_nnw			; should NEVER wrap, at least within the original range ($7B1C-$7B6D)
-;			INC dest_pt+1
+;			INC org_pt+1
 ;ds_nnw:
 		LDA spr_pt			; also increase table pointer
 		CLC
@@ -936,8 +940,8 @@ up_lives:
 	STA spr_pt+1
 	LDX #<lv_da				; set screen address for lives area
 	LDA #>lv_da
-	STX dest_pt				; will be kept as low address
-	STA dest_pt+1
+	STX org_pt				; will be kept as low address
+	STA org_pt+1
 #ifdef	IOSCREEN
 	STA IO8lh				; latch high address, fortunately won't change ($7B1C...$7B5D)
 	STX IO8ll
@@ -949,12 +953,12 @@ ds_lv:
 #ifdef	IOSCREEN
 		STA IO8wr
 #else
-		STA (dest_pt)		; put on this scanline *** CMOS, hard to emulate in NMOS ***
+		STA (org_pt)		; put on this scanline *** CMOS, hard to emulate in NMOS ***
 #endif
-		LDA dest_pt			; increase screen pointer
+		LDA org_pt			; increase screen pointer
 		CLC
 		ADC #lwidth
-		STA dest_pt
+		STA org_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
 		STX IO8ll			; eeeeeeeek
@@ -1012,16 +1016,17 @@ anim:
 	ROR						; 0000yyyy yyyxxxxx (2+5)
 	LSR draw_s
 	ROR						; 00000yyy yyyyxxxx (2)
-	STA dest_pt				; part of the pointer (3+3)
 	STA org_pt				; nicer
+#ifndef	IOSCREEN
+	STA dest_pt				; part of the pointer (3+3)
+#endif
 	LDA draw_s
-	ORA #>vram				; page aligned 01111yyy yyyyxxxx (2)
-	STA dest_pt+1			; pointer complete (3)
-;	LDA draw_s
-;	ORA #>org_b
-	AND #$0F				; * this is feasible as dest=$7800 and org=$0800!
+	ORA #>org_b				; page aligned 00001yyy yyyyxxxx (2)
 	STA org_pt+1
-; must compute dest_pt accordingly
+#ifndef	IOSCREEN
+	ORA #$70				; * this is feasible as dest=$7800 and org=$0800!
+	STA dest_pt+1			; pointer complete (3)
+#endif
 af_loop:
 		LDA sprite_x		; retrieve lower coordinate
 		AND #7				; pixel within sprite eeeeeek
@@ -1039,43 +1044,46 @@ sha_l:
 ; A holds first byte, cur+1 is second byte
 		STA cur			; save for later
 		LDA cur+1		; get shifted value
-		INC dest_pt		; it's the second one
 		INC org_pt		; nicer
 		ORA (org_pt)
 #ifdef	IOSCREEN
-		LDX dest_pt+1	; MSB actually
+		LDX org_pt+1	; MSB actually
 		STX IO8lh
-		LDX dest_pt		; this is LSB
+		LDX org_pt		; this is LSB
 		STX IO8ll
 		STA IO8wr		; store this
 #else
+		INC dest_pt		; it's the second one
 		STA (dest_pt)	; ** CMOS **
+		DEC dest_pt		; back one byte
 #endif
 		LDA cur			; retrieve first byte
-		DEC dest_pt		; back one byte
-		DEC org_pt
+		DEC org_pt		; back one byte
 		ORA (org_pt)
 sh_end:
 #ifdef	IOSCREEN
-		LDX dest_pt+1	; MSB actually
+		LDX org_pt+1	; MSB actually
 		STX IO8lh
-		LDX dest_pt		; this is LSB
+		LDX org_pt		; this is LSB
 		STX IO8ll
 		STA IO8wr		; store this
 #else
 		STA (dest_pt)	; ** CMOS **
 #endif
-		LDA dest_pt
+		LDA org_pt
 		CLC
 		ADC #lwidth		; next line
-		STA dest_pt		; eeeek
-		STA org_pt		; is this OK?
+		STA org_pt		; eeeek
+#ifndef	IOSCREEN
+		STA dest_pt		; is this OK?
+#endif
 		BCC af_nw
-			INC dest_pt+1
 			INC org_pt+1
 #ifdef	IOSCREEN
-			LDA dest_pt+1
+			LDA org_pt+1
 			STA IO8lh
+#else
+			INC dest_pt+1
 #endif
 af_nw:
 		INY				; next raster in animation
@@ -1286,7 +1294,7 @@ init_p:
 ;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
 	.byt	 4,  4,  4,  4,  4	; ***sprites initial direction (times two)
 ;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
-	.byt	 0,  0,  2,  4,  0	; ghosts initial state (nonsense for pacman)***testing 
+	.byt	 0,  0,  0,  0,  0	; ghosts initial state (nonsense for pacman)***testing 
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
