@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210325-1405
+; last modified 20210325-1438
 
 ; can be assembled from this folder
 
@@ -331,22 +331,24 @@ screen:
 	LDA #>maze
 	STY spr_pt				; load origin pointer (temporarily)
 	STA spr_pt+1
-	LDY #<vram				; pointer to VRAM (page-aligned)
-	LDA #>vram
-	STY dest_pt				; load destination pointer
-	STA dest_pt+1
-#ifdef	IOSCREEN
-	STA IO8lh				; preload page into high-address latch
-#endif
-;	LDY #<org_b				; pointer to clean buffer (Y known to be zero, as both blocks are page-aligned)
+	LDY #<org_b				; pointer to clean buffer
 	LDA #>org_b
 	STY org_pt				; load parallel destination
 	STA org_pt+1
+#ifdef	IOSCREEN
+	STA IO8lh				; preload page into high-address latch (IOSCREEN doesn't care about highest bits)
+; IOSCREEN doesn't need dest_pt at all!
+#else
+;	LDY #<vram				; pointer to VRAM (Y known to be zero, as both blocks are page-aligned)
+	LDA #>vram
+	STY dest_pt				; load destination pointer
+	STA dest_pt+1
+#endif
 ;	LDY #<d_map				; get map initial pointer, once again page-aligned
 	LDA #>d_map
 	STY map_pt
 	STA map_pt+1
-	STY cur					; save this index, as isn't valid everywhere
+	STY cur					; save this index, as it isn't valid everywhere
 ; now using a compact-map format, two tiles per byte, w0d0p0b0w1d1p1b1, as it makes a lot of sense!
 sc_loop:
 ; check line position within row
@@ -420,10 +422,13 @@ sc_ndot:
 		BNE sc_loop			; (usually 3 for 255 times, then 2)
 			INC spr_pt+1	; page crossing (5+5+5)
 			INC org_pt+1
-			INC dest_pt+1	; VRAM is last, as will set N flag when finished!
 #ifdef	IOSCREEN
-			LDA dest_pt+1	; new page value... (3)
+			LDA org_pt+1	; new page value... (3)
 			STA IO8lh		; ...gets into high-address latch (4)
+;			CLC				; not sure if this is needed
+			ADC #$70		; dirty hack for the BPL below to work!
+#else
+			INC dest_pt+1	; VRAM is last, as will set N flag when finished!
 #endif
 		BPL sc_loop			; stop at $8000 (usually 3, just 8 times)
 	RTS						; that's all? nice!
@@ -481,14 +486,18 @@ draw:
 	LSR org_pt+1
 	ROR						; LSB is ready here, base MSB in org_+1
 	STA org_pt				; store both LSBs (identical)
+#ifndef	IOSCREEN
 	STA dest_pt
+#endif
 	LDA org_pt+1			; retrieve base MSB
-	ORA #>vram
-	STA dest_pt+1			; screen pointer is ready
-;	LDA org_pt+1			; retrieve base MSB, now for buffer pointer
-;	ORA #>org_b				; convert in full buffer address, valid for page-aligned addresses!
-	AND #$0F				; * this is feasible as dest=$7800 and org=$0800!
+	ORA #>org_b				; convert in full buffer address, valid for page-aligned addresses!
 	STA org_pt+1
+#ifndef	IOSCREEN
+;	AND #$07				; retrieve base MSB, now for VRAM
+;	ORA #>vram
+	ORA #$70				; * this is feasible as dest=$7800 and org=$0800!
+	STA dest_pt+1			; screen pointer is ready
+#endif
 ; select routine according to direction
 	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
 ;	STX draw_d				; lastly, set direction (is storage actually needed?)
@@ -554,8 +563,10 @@ spr_set:
 	LDA draw_x				; check horizontal offset
 	AND #7
 	BNE sr_nal				; not aligned, do not back off eeeeeeeeeek
-		DEC dest_pt			; otherwise, set both screen pointers one byte before, no page boundaries expected
 		DEC org_pt
+#ifndef	IOSCREEN
+		DEC dest_pt			; otherwise, set both screen pointers one byte before, no page boundaries expected
+#endif
 sr_nal:
 ;	JMP sh_draw				; all set and A as requested by common code
 
@@ -576,9 +587,9 @@ sh_draw:
 sh_nsw:
 	LDY #0					; reset sprite-file cursor
 #ifdef	IOSCREEN
-	LDA dest_pt+1			; eeeeeek
+	LDA org_pt+1			; eeeeeek, but doesn0¡'t matter if org_pt or dest_pt
 	STA IO8lh
-	LDX dest_pt				; keep this updated
+	LDX org_pt				; keep this updated, ditto
 #endif
 sh_loop:
 		LDA (spr_pt), Y		; take sprite data
@@ -604,21 +615,24 @@ sh_loop:
 		CLC
 		ADC #lwidth-2
 		STA org_pt
+#ifndef	IOSCREEN
 		STA dest_pt			; really the same MSB
+#endif
 		BCC sh_npb			; check possible carry
 			INC org_pt+1
-			INC dest_pt+1
 #ifdef	IOSCREEN
-			LDA dest_pt+1
+			LDA org_pt+1
 			STA IO8lh
+#else
+			INC dest_pt+1
 #endif
 sh_npb:
 #ifdef	IOSCREEN
 			TYA
 			CLC
-			ADC dest_pt
+			ADC org_pt
 			BCC sh_npw
-				LDX dest_pt+1
+				LDX org_pt+1	; note as above
 				INX
 				STX IO8lh
 sh_npw:
@@ -649,15 +663,15 @@ spd_set:
 ; *** put extra byte(s) above ***
 ; *** this is VERY coarse, but works anyway ***
 ; first, save future address
-	LDA dest_pt				; LSB is common with org_pt
+	LDA org_pt				; LSB is common with dest_pt
 	SEC
 	SBC #lwidth				; back one raster
 	STA map_pt
-	LDA dest_pt+1
+	LDA org_pt+1
 ;	PHP						; borrow goes on two MSBs
 	SBC #0
 	STA map_pt+1			; map_pt is future dest_pt
-;	LDA org_pt+1			; this MSB is different
+;	LDA dest_pt+1			; this MSB is different
 ;	PLP						; retrieve possible borrow
 ;	SBC #0
 ;	STA tmp_arr+15			; different storage
@@ -666,15 +680,16 @@ spd_set:
 ; *** retrieve address to be cleared ***
 	LDX map_pt				; common LSB must be in X for IOSCREEN
 	STX org_pt
-	STX dest_pt
-	LDA map_pt+1			; screen MSB
-	STA dest_pt+1
+	LDA map_pt+1			; buffer MSB
+	STA org_pt+1
 #ifdef	IOSCREEN
 	STA IO8lh				; eeeeeeeek
-#endif
+#else
+	STX dest_pt
 ;	LDA tmp_arr+15			; the other MSB
-	AND #$0F				; * this is feasible as dest=$7800 and org=$0800!
-	STA org_pt+1
+	ORA #$70				; * this is feasible as dest=$7800 and org=$0800!
+	STA dest_pt+1
+#endif
 	LDY #0					; eeeeek
 ; *** *** once pointers are set, just call su_clr *** ***
 	JMP su_clr				; will return
