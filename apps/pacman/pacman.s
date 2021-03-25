@@ -66,7 +66,9 @@ lda jiffy
 clc
 adc #1	; just start all quickly
 sta sprite_t+1
+inc
 sta sprite_t
+inc
 sta sprite_t+2
 sta IOAie	; eeeeek
 CLI
@@ -75,9 +77,17 @@ testing:
 ; try to move and draw pacman
 lda jiffy
 cmp sprite_t
-bmi npac
-	adc#11	; pacman speed (12, as C was set)
+bne npac	; bmi is safer
+	adc#4;11	; pacman speed (12, as C was set)
 	sta sprite_t
+/*	lda sprite_x
+	and#3
+	bne xxx
+	lda sprite_y
+	and#3
+	bne xxx
+	jsr munch
+*/	xxx:
 ;	lda sprite_x	; actual X
 ;	cmp sprite_x+2	; same as frightened?
 ;	bne pne
@@ -111,8 +121,8 @@ npac:
 ; try to move and draw ghost
 lda jiffy
 cmp sprite_t+1
-bmi ngh
-	adc#6	; ghost speed (7, as C was set)
+bne ngh	; bmi is safer
+	adc#3;6	; ghost speed (7, as C was set)
 	sta sprite_t+1
 ;	lda sprite_x+1	; actual X
 ;	cmp sprite_x
@@ -142,8 +152,8 @@ ngh:
 ; try to move and draw frightened ghost
 lda jiffy
 cmp sprite_t+2
-bmi nfh
-	adc#19	; frightened ghost speed (20, as C was set)
+bne nfh	; bmi is safer
+	adc#1;19	; frightened ghost speed (20, as C was set)
 	sta sprite_t+2
 ;	lda sprite_x+2	; actual X
 ;	cmp#85
@@ -168,8 +178,8 @@ nfh:
 ; try to move and draw fast ghost
 lda jiffy
 cmp sprite_t+3
-bmi nxh
-	adc#1	; fast ghost speed (1, as C was set)
+bne nxh	; bmi is safer
+	adc#0	; fast ghost speed (1, as C was set)
 	sta sprite_t+3
 	ldy #3
 	sty sel_gh	; draw fast ghost
