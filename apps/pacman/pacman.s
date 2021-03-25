@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210325-1339
+; last modified 20210325-1356
 
 ; can be assembled from this folder
 
@@ -485,8 +485,9 @@ draw:
 	LDA org_pt+1			; retrieve base MSB
 	ORA #>vram
 	STA dest_pt+1			; screen pointer is ready
-	LDA org_pt+1			; retrieve base MSB, now for buffer pointer
-	ORA #>org_b				; convert in full buffer address, valid for page-aligned addresses!
+;	LDA org_pt+1			; retrieve base MSB, now for buffer pointer
+;	ORA #>org_b				; convert in full buffer address, valid for page-aligned addresses!
+	AND #$0F				; * this is feasible as dest=$7800 and org=$0800!
 	STA org_pt+1
 ; select routine according to direction
 	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
@@ -653,13 +654,13 @@ spd_set:
 	SBC #lwidth				; back one raster
 	STA map_pt
 	LDA dest_pt+1
-	PHP						; borrow goes on two MSBs
+;	PHP						; borrow goes on two MSBs
 	SBC #0
 	STA map_pt+1			; map_pt is future dest_pt
-	LDA org_pt+1			; this MSB is different
-	PLP						; retrieve possible borrow
-	SBC #0
-	STA tmp_arr+15			; different storage
+;	LDA org_pt+1			; this MSB is different
+;	PLP						; retrieve possible borrow
+;	SBC #0
+;	STA tmp_arr+15			; different storage
 ; with X & Y properly set, proceed to draw
 	JSR sv_draw
 ; *** retrieve address to be cleared ***
@@ -671,7 +672,8 @@ spd_set:
 #ifdef	IOSCREEN
 	STA IO8lh				; eeeeeeeek
 #endif
-	LDA tmp_arr+15			; the other MSB
+;	LDA tmp_arr+15			; the other MSB
+	AND #$0F				; * this is feasible as dest=$7800 and org=$0800!
 	STA org_pt+1
 	LDY #0					; eeeeek
 ; *** *** once pointers are set, just call su_clr *** ***
@@ -999,8 +1001,9 @@ anim:
 	LDA draw_s
 	ORA #>vram				; page aligned 01111yyy yyyyxxxx (2)
 	STA dest_pt+1			; pointer complete (3)
-	LDA draw_s
-	ORA #>org_b
+;	LDA draw_s
+;	ORA #>org_b
+	AND #$0F				; * this is feasible as dest=$7800 and org=$0800!
 	STA org_pt+1
 ; must compute dest_pt accordingly
 af_loop:
