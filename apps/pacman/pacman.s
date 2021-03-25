@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210325-1356
+; last modified 20210325-1405
 
 ; can be assembled from this folder
 
@@ -805,33 +805,34 @@ sv_npw:
 		BNE sv_loop
 	RTS
 
-; * compute map data from pixel coordinates * MUST CHECK ****** TBD * TBD
+; * compute map data from pixel coordinates * REDONE, yet to be used
 chk_map:
-; new interface is X=x, A=y
-; input is A=suggested draw_x, X=suggested draw_y
+; newest interface is X=x, Y=y
+	TXA
+	ASL						; forget unused MSB.X
+	STA map_pt				; will be into pointer LSB
+	TYA						; get Y coordinate
 	LSR
-	LSR
-	TAY						; Y=map column (one each 4 pixels)
-	TXA						; this gets suggesteddraw_y
-	LSR						; will get map row from A (one each 4 pixels)
-	LSR
-	STZ map_pt				; clear temporary variable *** CMOS ***
-	LSR						; each y advances 16 bytes in table, thus divide MSB by 16
+	LSR						; discard raster for tile row
+	LSR						; shift into X in RAM
 	ROR map_pt
 	LSR
 	ROR map_pt
 	LSR
 	ROR map_pt
 	LSR
-	ROR map_pt				; this is the LSB
-	STA map_pt+1			; save this MSB
-	LDA #<d_map				; add LSB to offset.low
-	ADC map_pt				; C known to be clear (ROR of a reset value)
-	STA map_pt
-	LDA #>d_map				; MSB too
-	ADC map_pt+1
-	STA map_pt+1			; pointer is ready
-	LDA (map_pt), Y			; map entry for that position
+	ROR map_pt				; after this, C indicates left/right tile in byte
+	AND #1					; just save remaining MSB.Y
+	ORA #6					; ** valid as long as map is at $600 **
+	STA map_pt+1			; MSB (and whole pointer) is ready
+	LDA (map_pt)			; *** CMOS *** gets two consecutive tiles
+	BCC mp_left				; is the right (odd) nibble?
+		ASL					; rotate bits towards MSB
+		ASL
+		ASL
+		ASL
+np_left:
+	RTS						; in any case, d7-d4 are the flags
 
 ; ** alphanumeric routines ** TONS of repeated code
 ; * add points to score and display it *
