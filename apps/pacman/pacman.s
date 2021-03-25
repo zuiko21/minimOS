@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210325-1317
+; last modified 20210325-1339
 
 ; can be assembled from this folder
 
@@ -500,33 +500,26 @@ sp_dir:
 	.word	s_left
 	.word	s_up
 
+; ** pointer tables for status selection **
+spt_l:
+	.word	s_gh_l, s_gh_l, s_fg_l, s_eat_l, s_clr	; note new special sprites
+spt_r:
+	.word	s_gh_r, s_gh_r, s_fg_r, s_eat_r, s_clr	; note new special sprites
+spt_u:
+	.word	s_gh_u, s_gh_u, s_fg_u, s_eat_u, s_clr	; note new special sprites
+spt_d:
+	.word	s_gh_d, s_gh_d, s_fg_d, s_eat_d, s_clr	; note new special sprites
+
 ; *** routine for sprite drawing, towards left ***
 s_left:
 ; must select sprite file first! I don't think this can be generic
 	LDA sel_gh				; pacman or ghost?
 	BEQ sl_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDA draw_s			; status of chost
-		CMP #4				; 0,2=normal, 4=fright, 6=eaten, 8=invisible
-		BCS sr_frg			; normal ghost (scatter/chase)
-			LDY #<s_gh_l	; facing left
-			LDA #>s_gh_l
-			BNE spl_set		; set this pointer
-sl_frg:
-; might include a FIFTH state (clear), not sure if suitable for pacman too...
-;		CMP #8				; invisible ghost
-;		BEQ sl_inv
-;		CMP #6				; should differentiate eaten ghost
-;		BEQ sl_eat
-			LDY #<s_fg_l	; frightened, facing left
-			LDA #>s_fg_l
-			BNE spl_set
-sl_eat:
-;		LDY #<s_eat_l		; eaten, facing left?
-;		LDA #>s_eat_l
-;		BNE spl_set
-sl_inv:
-;		RTS					; is this all, or should I place the clean map?
+		LDX draw_s			; current status
+		LDY spt_l, X		; get pointer from table, one for each direction
+		LDA spt_l+1, X
+		BNE spl_set
 sl_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_l
@@ -545,22 +538,10 @@ s_right:
 	LDA sel_gh				; pacman or ghost?
 	BEQ sr_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDA draw_s			; status of chost
-		CMP #4				; 0,1=normal, 2=fright, 3=eaten
-		BCS sr_frg			; normal ghost
-			LDY #<s_gh_r	; facing right
-			LDA #>s_gh_r
-			BNE spr_set		; set this pointer
-sr_frg:
-;		CMP #6				; should differentiate eaten ghost
-;		BEQ sr_eat
-			LDY #<s_fg_r	; frightened, facing right
-			LDA #>s_fg_r
-			BNE spr_set
-sr_eat:
-;		LDY #<s_eat_r		; eaten, facing right?
-;		LDA #>s_eat_r
-;		BNE spr_set
+		LDX draw_s			; current status
+		LDY spt_r, X		; get pointer from table, one for each direction
+		LDA spt_r+1, X
+		BNE spr_set
 sr_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_r
@@ -654,22 +635,10 @@ s_down:
 	LDA sel_gh				; pacman or ghost?
 	BEQ sd_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDA draw_s			; status of chost
-		CMP #4				; 0,1=normal, 2=fright, 3=eaten
-		BCS sd_frg			; normal ghost
-			LDY #<s_gh_d	; facing right
-			LDX #>s_gh_d
-			BNE spd_set		; set this pointer
-sd_frg:
-;		CMP #6				; should differentiate eaten ghost
-;		BEQ sd_eat
-			LDY #<s_fg_d	; frightened, facing right
-			LDX #>s_fg_d
-			BNE spd_set
-sd_eat:
-;		LDY #<s_eat_d		; eaten, facing down?
-;		LDX #>s_eat_d
-;		BNE spd_set
+		LDX draw_s			; current status
+		LDY spt_d, X		; get pointer from table, one for each direction
+		LDA spt_d+1, X
+		BNE spd_set
 sd_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_d
@@ -716,22 +685,10 @@ s_up:
 	LDA sel_gh				; pacman or ghost?
 	BEQ su_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDA draw_s			; status of chost
-		CMP #4				; 0,1=normal, 2=fright, 3=eaten
-		BCS su_frg			; normal ghost
-			LDY #<s_gh_u	; facing right
-			LDX #>s_gh_u
-			BNE spu_set		; set this pointer
-su_frg:
-;		CMP #6				; should differentiate eaten ghost
-;		BEQ su_eat
-			LDY #<s_fg_u	; frightened, facing right
-			LDX #>s_fg_u
-			BNE spu_set
-su_eat:
-;		LDY #<s_eat_u		; eaten, facing up?
-;		LDX #>s_eat_u
-;		BNE spu_set
+		LDX draw_s			; current status
+		LDY spt_u, X		; get pointer from table, one for each direction
+		LDA spt_u+1, X
+		BNE spu_set
 su_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_u
@@ -1365,41 +1322,49 @@ maze:
 ; pacman towards right
 s_pac_r:
 	.bin	9, 128, "../../other/data/pac-right.pbm"
-; pacman downwards *** uses new scheme for vertical!
-s_pac_d:
-	.bin	9, 192, "../../other/data/pac-down.pbm"
 ; pacman towards left
 s_pac_l:
 	.bin	55, 128, "../../other/data/pac-left.pbm"
+; pacman downwards *** uses new 24x64 scheme for vertical!
+s_pac_d:
+	.bin	9, 192, "../../other/data/pac-down.pbm"
 ; pacman upwards
 s_pac_u:
 	.bin	9, 192, "../../other/data/pac-up.pbm"
-; pacman dies! (animation)
-pac_dies:
-	.bin	53, 48, "../../other/data/palmatoria.pbm"
-	.dsb	8, 0			; mandatory end padding
 ; ghost towards right
 s_gh_r:
 	.bin	9, 128, "../../other/data/ghost-right.pbm"
-; ghost downwards
-s_gh_d:
-	.bin	9, 192, "../../other/data/ghost-down.pbm"
 ; ghost towards left
 s_gh_l:
 	.bin	55, 128, "../../other/data/ghost-left.pbm"
+; ghost downwards
+s_gh_d:
+	.bin	9, 192, "../../other/data/ghost-down.pbm"
 ; ghost upwards
 s_gh_u:
 	.bin	9, 192, "../../other/data/ghost-up.pbm"
 ; frightened ghost towards right
 s_fg_r:
 	.bin	9, 128, "../../other/data/fright-right.pbm"
-; frightened ghost downwards ***
-s_fg_d:
 ; frightened ghost towards left
 s_fg_l:
 	.bin	9, 128, "../../other/data/fright-left.pbm"
+; frightened ghost downwards ***
+s_fg_d:
 ; frightened ghost upwards ***
 s_fg_u:
+; eaten ghosts (mostly identical frames, for the sake of code reuse)
+s_eat_r:
+s_eat_l:
+s_eat_d:
+s_eat_u:
+; pacman dies! (animation)
+pac_dies:
+	.bin	53, 48, "../../other/data/palmatoria.pbm"
+s_clr:
+	.dsb	192, 0			; mandatory end padding (8), also for clear sprites
+
+pm_end:						; for size computation
 
 ; NOTE, in scatter mode, targets are
 ; pinky = tile(2,-4) or is it -3???
