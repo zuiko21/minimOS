@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210324-1946
+; last modified 20210325-1317
 
 ; can be assembled from this folder
 
@@ -507,14 +507,16 @@ s_left:
 	BEQ sl_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
 		LDA draw_s			; status of chost
-		CMP #2				; 0,1=normal, 2=fright, 3=eaten
-		BCS sr_frg			; normal ghost
+		CMP #4				; 0,2=normal, 4=fright, 6=eaten, 8=invisible
+		BCS sr_frg			; normal ghost (scatter/chase)
 			LDY #<s_gh_l	; facing left
 			LDA #>s_gh_l
 			BNE spl_set		; set this pointer
 sl_frg:
 ; might include a FIFTH state (clear), not sure if suitable for pacman too...
-;		CMP #3				; should differentiate eaten ghost
+;		CMP #8				; invisible ghost
+;		BEQ sl_inv
+;		CMP #6				; should differentiate eaten ghost
 ;		BEQ sl_eat
 			LDY #<s_fg_l	; frightened, facing left
 			LDA #>s_fg_l
@@ -523,6 +525,8 @@ sl_eat:
 ;		LDY #<s_eat_l		; eaten, facing left?
 ;		LDA #>s_eat_l
 ;		BNE spl_set
+sl_inv:
+;		RTS					; is this all, or should I place the clean map?
 sl_pac:
 ; it's pacman, no status check, just direction
 	LDY #<s_pac_l
@@ -542,13 +546,13 @@ s_right:
 	BEQ sr_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
 		LDA draw_s			; status of chost
-		CMP #2				; 0,1=normal, 2=fright, 3=eaten
+		CMP #4				; 0,1=normal, 2=fright, 3=eaten
 		BCS sr_frg			; normal ghost
 			LDY #<s_gh_r	; facing right
 			LDA #>s_gh_r
 			BNE spr_set		; set this pointer
 sr_frg:
-;		CMP #3				; should differentiate eaten ghost
+;		CMP #6				; should differentiate eaten ghost
 ;		BEQ sr_eat
 			LDY #<s_fg_r	; frightened, facing right
 			LDA #>s_fg_r
@@ -651,13 +655,13 @@ s_down:
 	BEQ sd_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
 		LDA draw_s			; status of chost
-		CMP #2				; 0,1=normal, 2=fright, 3=eaten
+		CMP #4				; 0,1=normal, 2=fright, 3=eaten
 		BCS sd_frg			; normal ghost
 			LDY #<s_gh_d	; facing right
 			LDX #>s_gh_d
 			BNE spd_set		; set this pointer
 sd_frg:
-;		CMP #3				; should differentiate eaten ghost
+;		CMP #6				; should differentiate eaten ghost
 ;		BEQ sd_eat
 			LDY #<s_fg_d	; frightened, facing right
 			LDX #>s_fg_d
@@ -713,13 +717,13 @@ s_up:
 	BEQ su_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
 		LDA draw_s			; status of chost
-		CMP #2				; 0,1=normal, 2=fright, 3=eaten
+		CMP #4				; 0,1=normal, 2=fright, 3=eaten
 		BCS su_frg			; normal ghost
 			LDY #<s_gh_u	; facing right
 			LDX #>s_gh_u
 			BNE spu_set		; set this pointer
 su_frg:
-;		CMP #3				; should differentiate eaten ghost
+;		CMP #6				; should differentiate eaten ghost
 ;		BEQ su_eat
 			LDY #<s_fg_u	; frightened, facing right
 			LDX #>s_fg_u
@@ -1306,7 +1310,7 @@ init_p:
 ;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
 	.byt	 4,  4,  4,  4,  4	; ***sprites initial direction (times two)
 ;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
-	.byt	 0,  0,  1,  0,  0	; ghosts initial state (nonsense for pacman)***testing 
+	.byt	 0,  0,  2,  4,  0	; ghosts initial state (nonsense for pacman)***testing 
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
