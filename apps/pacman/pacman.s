@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210325-1633
+; last modified 20210325-1735
 
 ; can be assembled from this folder
 
@@ -653,6 +653,7 @@ s_down:
 		LDX draw_s			; current status
 		LDY spt_d, X		; get pointer from table, one for each direction
 		LDA spt_d+1, X
+		TAX					; eeeeeeeeeek
 		BNE spd_set
 sd_pac:
 ; it's pacman, no status check, just direction
@@ -705,6 +706,7 @@ s_up:
 		LDX draw_s			; current status
 		LDY spt_u, X		; get pointer from table, one for each direction
 		LDA spt_u+1, X
+		TAX					; eeeeeeeeeek
 		BNE spu_set
 su_pac:
 ; it's pacman, no status check, just direction
@@ -1294,7 +1296,7 @@ init_p:
 ;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
 	.byt	 4,  4,  4,  4,  4	; ***sprites initial direction (times two)
 ;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
-	.byt	 0,  0,  0,  0,  0	; ghosts initial state (nonsense for pacman)***testing 
+	.byt	 0,  0,  4,  0,  0	; ghosts initial state (nonsense for pacman)***testing 
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
