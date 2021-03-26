@@ -201,7 +201,8 @@ bne nxxh	; bmi is safer
 nxxh:
 jmp testing
 delta:
-.byt	1,0,0,0,$ff,0,0; ***check
+.byt	1,0,0,0,$ff,0,0; ***check*/
+jmp zzzz
 destino:
 ; *** update path, Y = sprite index ***
 ldx sprite_d,y	; current direction
@@ -262,9 +263,10 @@ dec sprite_y,x
 rts
 ; *** end of test code ***
 ; ************************
-*/
+
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
+zzzz:
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
 	STX temp				; reset cursor (temporary use)
 m_loop:
@@ -294,10 +296,10 @@ m_end:
 play:
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
-/*
+
 ; *** test code follows ***
-jsr death
-loop:
+;jsr death
+/*loop:
 lda jiffy
 cmp lives
 bne loop
@@ -305,11 +307,11 @@ pha
 ldx #0
 lda #1
 jsr add_sc
-/*ldy#5
-wait:inx
-bne wait
-dey:bne wait
-*/pla
+;ldy#5
+;wait:inx
+;bne wait
+;dey:bne wait
+pla
 clc
 adc#244
 sta lives
@@ -336,18 +338,21 @@ g_loop:
 			STX sel_gh		; X is selected sprite, must keep this!
 			LDA jiffy		; current time
 			CMP sprite_t, X	; time to update position?
-			BMI g_next		; * might use BNE for testing
+			Bne g_next		; * might use BNE instead of BMI for testing
 				CLC			; prepare next event
 				ADC sp_speed, X
 				STA sprite_t, X
 ; move-to-the-left placeholder
-DEC sprite_x, X
-LDA sprite_x, X
-CMP #3
-BNE moveok
-	LDA #104
-	STA sprite_x, X
-moveok:
+;DEC sprite_x, X
+;LDA sprite_x, X
+;CMP #3
+;BNE moveok
+;	LDA #104
+;	STA sprite_x, X
+;moveok:
+				txa
+				tay
+				jsr destino
 ; do something to update coordinates and sprite_d
 ; might abort loop if death and/or game over
 				JSR draw
@@ -356,14 +361,16 @@ g_next:
 			INX				; next sprite
 			CPX #5			; all sprites done?
 			BNE g_loop
+	lda#1:ldx#0
+	jsr add_sc
 		LDA dots			; all dots done?
 		BNE g_start			; repeat loop
 g_end:
 ; if arrived here, level ended successfully
 	LDA #80					; two-second delay
 	JSR ms25
+jsr sweep
 ; worth showing a flashing map for a couple of seconds?
-
 ; *************************************
 ; *** *** restart another level *** ***
 ; *************************************
