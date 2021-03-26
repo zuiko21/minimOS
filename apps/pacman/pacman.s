@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210326-0959
+; last modified 20210326-1326
 
 ; can be assembled from this folder
 
@@ -319,16 +319,64 @@ jmp loop
 ; *** end of test code ***
 ; ************************
 
+; stub for game engine
+	LDX #4					; first of all, preset all timers for instant start
+	LDA #1					; immediate movement (placeholder, as some ghosts will appear later)
+t_pres:
+		STA sprite_t, X		; reset timer
+		DEX
+		BPL t_pres
+; *************************
+; *** *** main loop *** ***
+; *************************
+g_start:
+		LDX #0				; displayed sprite counter
+g_loop:
+			PHX				; ** CMOS ** easily changed to TXA:PHA
+			STX sel_gh		; X is selected sprite, must keep this!
+			LDA jiffy		; current time
+			CMP sprite_t, X	; time to update position?
+			BMI g_next		; * might use BNE for testing
+				CLC			; prepare next event
+				ADC sp_speed, X
+				STA sprite_t, X
+				
+; do something to update coordinates and sprite_d
+; might abort loop if death and/or game over
+				JSR draw
+g_next:
+			PLX				; ** CMOS ** easily changed to PLA:TAX
+			INX				; next sprite
+			CPX #5			; all sprites done?
+			BNE g_loop
+		LDA dots			; all dots done?
+		BNE g_start			; repeat loop
+g_end:
+; if arrived here, level ended successfully
+	LDA #80					; two-second delay
+	JSR ms25
+; worth showing a flashing map for a couple of seconds?
 
-; ***************************************
-; *** *** restart another 'level' *** ***
-; ***************************************
+; *************************************
+; *** *** restart another level *** ***
+; *************************************
+	INC level
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots)
 	JSR positions			; reset initial positions
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-; some delay is in order
+; must print 'ready' and some delay, perhaps integrated in positions
 	JMP play				; and begin new level (without music)
+
+; ***************************
+; *** *** end of game *** *** if lives is 0 after death
+; ***************************
+gameover:
+	LDA #40					; one second delay
+	JSR ms25
+; display 'game over' somewhere on screen
+; shall I wait for some key to start a new game? exit option?
+	JMP *					; placeholder
 
 ; ***************************
 ; ***************************
