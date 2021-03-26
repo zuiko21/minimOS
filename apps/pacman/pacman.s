@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210325-1735
+; last modified 20210326-0959
 
 ; can be assembled from this folder
 
@@ -59,9 +59,9 @@ start:
 	JSR positions			; reset initial positions, X is zero but...
 ;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 jsr death
-; *********************************************************
-; *** test code, move pacman and ghosts right and left! ***
-; *********************************************************
+; ****************************************************
+; *** test code, move pacman and ghosts clockwise! ***
+; ****************************************************
 lda jiffy
 clc
 adc #1	; just start all quickly
@@ -70,6 +70,10 @@ inc
 sta sprite_t
 inc
 sta sprite_t+2
+inc
+sta sprite_t+3
+inc
+sta sprite_t+4
 sta IOAie	; eeeeek
 CLI
 ; * try complete engine *
@@ -78,7 +82,7 @@ testing:
 lda jiffy
 cmp sprite_t
 bne npac	; bmi is safer
-	adc#4;11	; pacman speed (12, as C was set)
+	adc#11;11	; pacman speed (12, as C was set)
 	sta sprite_t
 /*	lda sprite_x
 	and#3
@@ -122,7 +126,7 @@ npac:
 lda jiffy
 cmp sprite_t+1
 bne ngh	; bmi is safer
-	adc#3;6	; ghost speed (7, as C was set)
+	adc#6;6	; ghost speed (7, as C was set)
 	sta sprite_t+1
 ;	lda sprite_x+1	; actual X
 ;	cmp sprite_x
@@ -153,7 +157,7 @@ ngh:
 lda jiffy
 cmp sprite_t+2
 bne nfh	; bmi is safer
-	adc#1;19	; frightened ghost speed (20, as C was set)
+	adc#19;19	; frightened ghost speed (20, as C was set)
 	sta sprite_t+2
 ;	lda sprite_x+2	; actual X
 ;	cmp#85
@@ -186,6 +190,17 @@ bne nxh	; bmi is safer
 	jsr destino
 	jsr draw
 nxh:
+; try to move and draw eyes
+lda jiffy
+cmp sprite_t+4
+bne nxxh	; bmi is safer
+	adc#2	; eyes speed (3, as C was set)
+	sta sprite_t+4
+	ldy #4
+	sty sel_gh	; draw fast ghost
+	jsr destino
+	jsr draw
+nxxh:
 jmp testing
 delta:
 .byt	1,0,0,0,$ff,0,0; ***check
@@ -1306,7 +1321,7 @@ init_p:
 ;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
 	.byt	 4,  4,  4,  4,  4	; ***sprites initial direction (times two)
 ;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
-	.byt	 0,  0,  4,  0,  0	; ghosts initial state (nonsense for pacman)***testing 
+	.byt	 0,  0,  4,  2,  6	; ghosts initial state (nonsense for pacman)***testing 
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
@@ -1388,15 +1403,20 @@ s_fg_r:
 ; frightened ghost towards left
 s_fg_l:
 	.bin	9, 128, "../../other/data/fright-left.pbm"
-; frightened ghost downwards ***
+; frightened ghost downwards
+; frightened ghost upwards *** actually both using the same sprite
 s_fg_d:
-; frightened ghost upwards ***
 s_fg_u:
+	.bin	55, 192, "../../other/data/fright-vert.pbm"
 ; eaten ghosts (mostly identical frames, for the sake of code reuse)
 s_eat_r:
+	.bin	55, 128, "../../other/data/eyes-right.pbm"
 s_eat_l:
+	.bin	55, 128, "../../other/data/eyes-left.pbm"
 s_eat_d:
+	.bin	55, 192, "../../other/data/eyes-down.pbm"
 s_eat_u:
+	.bin	55, 192, "../../other/data/eyes-up.pbm"
 ; pacman dies! (animation)
 pac_dies:
 	.bin	53, 48, "../../other/data/palmatoria.pbm"
