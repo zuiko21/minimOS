@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210326-1326
+; last modified 20210326-1358
 
 ; can be assembled from this folder
 
@@ -50,15 +50,13 @@ start:
 	STX score+1
 	LDA #5					; initial lives
 	STA lives
-	LDA #244				; number of dots (no longer automatic, not really worth it)
-	STA dots
 
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions, X is zero but...
-;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-jsr death
+	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
+/*
 ; ****************************************************
 ; *** test code, move pacman and ghosts clockwise! ***
 ; ****************************************************
@@ -84,14 +82,14 @@ cmp sprite_t
 bne npac	; bmi is safer
 	adc#11;11	; pacman speed (12, as C was set)
 	sta sprite_t
-/*	lda sprite_x
-	and#3
-	bne xxx
-	lda sprite_y
-	and#3
-	bne xxx
-	jsr munch
-*/	xxx:
+;	lda sprite_x
+;	and#3
+;	bne xxx
+;	lda sprite_y
+;	and#3
+;	bne xxx
+;	jsr munch
+	xxx:
 ;	lda sprite_x	; actual X
 ;	cmp sprite_x+2	; same as frightened?
 ;	bne pne
@@ -264,7 +262,7 @@ dec sprite_y,x
 rts
 ; *** end of test code ***
 ; ************************
-
+*/
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
@@ -296,7 +294,7 @@ m_end:
 play:
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
-
+/*
 ; *** test code follows ***
 jsr death
 loop:
@@ -318,12 +316,14 @@ sta lives
 jmp loop
 ; *** end of test code ***
 ; ************************
-
+*/
 ; stub for game engine
 	LDX #4					; first of all, preset all timers for instant start
-	LDA #1					; immediate movement (placeholder, as some ghosts will appear later)
 t_pres:
+		LDA #1				; immediate movement (placeholder, as some ghosts will appear later)
 		STA sprite_t, X		; reset timer
+		LDA i_speed, X		; initial speed for that sprite
+		STA sp_speed, X
 		DEX
 		BPL t_pres
 ; *************************
@@ -340,7 +340,14 @@ g_loop:
 				CLC			; prepare next event
 				ADC sp_speed, X
 				STA sprite_t, X
-				
+; move-to-the-left placeholder
+DEC sprite_x, X
+LDA sprite_x, X
+CMP #3
+BNE moveok
+	LDA #104
+	STA sprite_x, X
+moveok:
 ; do something to update coordinates and sprite_d
 ; might abort loop if death and/or game over
 				JSR draw
@@ -361,10 +368,10 @@ g_end:
 ; *** *** restart another level *** ***
 ; *************************************
 	INC level
-	JSR newmap				; reset initial map
+	JSR newmap				; reset initial map (and dot count)
 	JSR screen				; draw initial field (and current dots)
 	JSR positions			; reset initial positions
-;	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
+	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 ; must print 'ready' and some delay, perhaps integrated in positions
 	JMP play				; and begin new level (without music)
 
@@ -396,6 +403,9 @@ nm_loop:
 		STA d_map+256, X
 		INX
 		BNE nm_loop
+; after resetting the new map, it's time to reset dot counter
+	LDA #244				; number of dots (no longer automatic, not really worth it)
+	STA dots
 	RTS
 
 ; * copy the intial screen to VRAM *and* the 'clean' buffer, now including dots *
@@ -1358,6 +1368,9 @@ i_end:
 ; ****************************
 ; ****************************
 
+; initial sprite speeds *** placeholder
+i_speed:
+	.byt	7, 8, 11, 6, 3	; pacman at 34.9pps, ghosts at 30.5pps (elroy2 at 39.2pps), frightened at 21.8pps, eaten at 81.3pps
 ; initial positions (note order is pac_x, pac_y, pac_dir and the respective arrays with ghost # as index
 ; ghost arrays (1...4) are blinky, pinky, inky and clyde, with pacman first (index 0)
 ; blinky is outside the base at startup
@@ -1377,8 +1390,6 @@ init_p:
 ; 0.5, 1.5, 3, 4.5, 6, (6.75), 7.5, 9, 10.5, 12, 13
 ; since the base exit is for rising ghosts only, it might be an special case
 ; but some ghosts inside the base jump at X=46 and X=62 (5.75 & 7.75)
-
-; not sure if i will use an offset table for the map
 
 ; initial map status
 i_map:
