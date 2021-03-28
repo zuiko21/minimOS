@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210328-1746
+; last modified 20210328-1808
 
 ; can be assembled from this folder
 
@@ -343,7 +343,7 @@ g_loop:
 			STX sel_gh		; X is selected sprite, must keep this!
 			LDA jiffy		; current time
 			CMP sprite_t, X	; time to update position?
-			Bne g_next		; * might use BNE instead of BMI for testing
+			BMI g_next		; * might use BNE instead of BMI for testing
 				CLC			; prepare next event
 				ADC sp_speed, X
 				STA sprite_t, X
@@ -358,11 +358,28 @@ g_loop:
 				txa
 				tay
 				jsr destino
+; flashing ghost test
+plx
+phx
+cpx#4
+bne nflash
+ldx#192
+fls:
+lda s_fg_d-1,x
+eor#$ff
+sta s_fg_d-1,x
+dex
+bne fls
+nflash:
 ; do something to update coordinates and sprite_d
 ; might abort loop if death and/or game over
 lda sprite_y	; check pacman height
 cmp#24
 bne cont
+lda sprite_x
+cmp#26
+bne cont
+	dec sprite_y
 	jsr die
 cont:
 				JSR draw
@@ -372,7 +389,7 @@ g_next:
 			CPX #5			; all sprites done?
 			BNE g_loop
 	lda#1:ldx#0
-	jsr add_sc
+;	jsr add_sc
 		LDA dots			; all dots done?
 		BNE g_start			; repeat loop
 g_end:
@@ -1453,9 +1470,9 @@ i_speed:
 ; vertical movements of ghosts inside the base should be ad hoc
 init_p:
 	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
-	.byt	92, 92, 92, 92, 56	; sprites initial Y (new 2px offset, not much of a problem)****
+	.byt	92, 92, 56, 92, 56	; sprites initial Y (new 2px offset, not much of a problem)****
 ;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
-	.byt	 4,  4,  6,  0,  4	; ***sprites initial direction (times two)
+	.byt	 4,  4,  6,  4,  0	; ***sprites initial direction (times two)
 ;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
 	.byt	 0,  0,  4,  2,  6	; ghosts initial state (nonsense for pacman)***testing 
 
