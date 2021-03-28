@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210329-0050
+; last modified 20210329-0101
 
 ; can be assembled from this folder
 
@@ -57,7 +57,7 @@ start:
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions (and show 'Ready!' message)
-	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
+	JSR sprites				; draw all ghosts and pacman on screen
 jmp zzzz
 destino:
 ; *** update path, Y = sprite index ***
@@ -682,7 +682,7 @@ su_clr:
 		INX					; otherwise won't be indexed!
 #endif
 		INY					; in case a second byte is to be done
-		DEC temp			; was zero or one!
+		DEC tmp_arr+1		; was zero or one!
 		BPL su_clr			; if a second byte was needed, put it too
 	RTS
 
@@ -699,7 +699,7 @@ sv_draw:
 sv_alig:
 	LSR						; A was 4 or zero, but we prefer 1 or 0
 	LSR
-	STA temp				; we no longer need sel_gh, I think, may use somewhere in tmp_arr as well
+	STA tmp_arr+1			; we DO need sel_gh, I must use somewhere in tmp_arr as well
 	LDA draw_y				; must select appropriate frame
 	AND #7					; Y MOD 8
 ; ...but this time is x24, not x16
@@ -734,7 +734,7 @@ sv_loop:
 		STA (dest_pt), Y	; regular screen
 #endif
 		INY					; ditto for next byte... in case it is needed
-		LDA temp			; is it?
+		LDA tmp_arr+1		; is it?
 		BEQ sv_2nd			; no, just go for next raster
 			LDA (spr_pt), Y	; otherwise, take sprite data
 			ORA (org_pt), Y	; combine with clean screen
