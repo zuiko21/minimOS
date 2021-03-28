@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210326-1358
+; last modified 20210328-1547
 
 ; can be assembled from this folder
 
@@ -1436,7 +1436,7 @@ m_note:
 
 ; original maze (full 128x128 screen)
 maze:
-	.bin	57, 2048, "../../other/data/maze2.pbm"	; *** check new offset or resave file!
+	.bin	11, 2048, "../../other/data/maze2.pbm"
 
 ; *** sprites ***
 ; pacman towards right
@@ -1444,7 +1444,7 @@ s_pac_r:
 	.bin	9, 128, "../../other/data/pac-right.pbm"
 ; pacman towards left
 s_pac_l:
-	.bin	55, 128, "../../other/data/pac-left.pbm"
+	.bin	9, 128, "../../other/data/pac-left.pbm"
 ; pacman downwards *** uses new 24x64 scheme for vertical!
 s_pac_d:
 	.bin	9, 192, "../../other/data/pac-down.pbm"
@@ -1456,7 +1456,7 @@ s_gh_r:
 	.bin	9, 128, "../../other/data/ghost-right.pbm"
 ; ghost towards left
 s_gh_l:
-	.bin	55, 128, "../../other/data/ghost-left.pbm"
+	.bin	9, 128, "../../other/data/ghost-left.pbm"
 ; ghost downwards
 s_gh_d:
 	.bin	9, 192, "../../other/data/ghost-down.pbm"
@@ -1473,19 +1473,19 @@ s_fg_l:
 ; frightened ghost upwards *** actually both using the same sprite
 s_fg_d:
 s_fg_u:
-	.bin	55, 192, "../../other/data/fright-vert.pbm"
+	.bin	9, 192, "../../other/data/fright-vert.pbm"
 ; eaten ghosts (mostly identical frames, for the sake of code reuse)
 s_eat_r:
-	.bin	55, 128, "../../other/data/eyes-right.pbm"
+	.bin	9, 128, "../../other/data/eyes-right.pbm"
 s_eat_l:
-	.bin	55, 128, "../../other/data/eyes-left.pbm"
+	.bin	9, 128, "../../other/data/eyes-left.pbm"
 s_eat_d:
-	.bin	55, 192, "../../other/data/eyes-down.pbm"
+	.bin	9, 192, "../../other/data/eyes-down.pbm"
 s_eat_u:
-	.bin	55, 192, "../../other/data/eyes-up.pbm"
+	.bin	9, 192, "../../other/data/eyes-up.pbm"
 ; pacman dies! (animation)
 pac_dies:
-	.bin	53, 48, "../../other/data/palmatoria.pbm"
+	.bin	8, 48, "../../other/data/palmatoria.pbm"
 s_clr:
 	.dsb	192, 0			; mandatory end padding (8), also for clear sprites
 
