@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210328-2053
+; last modified 20210329-0009
 
 ; **************************
 ; *** zeropage variables ***
@@ -15,7 +15,7 @@
 sprite_x	.dsb	5, 0	; sprite coordinates (in pixels), array for pacman [0] + ghosts [1...4]
 sprite_y	.dsb	5, 0
 sp_dir		.dsb	5, 0	; sprite direction is 0=right, 2=down, 4=left, 6=up *renamed*
-sp_stat		.dsb	5, 0	; sprite status is 0=scatter, 2=chase, 4=frightened, 6=inverse (frightened) *new*, 8=eaten (makes no sense for pacman), 10=invisible *** note new values
+sp_stat		.dsb	5, 0	; sprite status is 0=scatter, 2=chase, 4=frightened, 6=inverse (frightened) *new*, 8=eaten (makes no sense for pacman), 10=invisible, 12=disabled *** note new values
 sp_timer	.dsb	5, 0	; timer for next movement of every sprite
 sp_speed	.dsb	5, 0	; increment for each timer
 ; should add some timers for scatter/chase modes

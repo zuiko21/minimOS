@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210328-2105
+; last modified 20210329-0023
 
 ; can be assembled from this folder
 
@@ -425,6 +425,10 @@ draw:
 ; make a local copy of parameters
 	LDY sel_gh				; get selected sprite
 	LDA sp_stat, Y			; copy from array to temporary var
+	CMP #12					; is it disabled?
+	BNE draw_ok
+		RTS					; if so, just abort!
+draw_ok:
 	STA ds_stat
 	LDX sprite_x, Y			; X will hold X coordinate, will be shifted in storage
 	STX draw_x
@@ -1296,26 +1300,28 @@ i_end:
 
 ; initial sprite speeds *** placeholder
 i_speed:
-	.byt	7, 8, 11, 6, 3	; pacman at 34.9pps, ghosts at 30.5pps (elroy2 at 39.2pps), frightened at 21.8pps, eaten at 81.3pps
+	.byt	8, 9, 12, 12, 12	; pacman at 30.5pps, blinky at 27.1pps, pinky/inky & clyde in base at 20.3pps
+; should add additional speeds for further stati
+; ...and more entries for subsequent levels
+
 ; initial positions (note order is pac_x, pac_y, pac_dir and the respective arrays with ghost # as index
 ; ghost arrays (1...4) are blinky, pinky, inky and clyde, with pacman first (index 0)
 ; blinky is outside the base at startup
 ; note horizontal 2-px offset to make maze into 4-px boundaries at least
 ; vertical movements of ghosts inside the base should be ad hoc
 init_p:
-	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
-	.byt	92, 92, 56, 92, 56	; sprites initial Y (new 2px offset, not much of a problem)****
-;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
-	.byt	 4,  4,  6,  4,  0	; ***sprites initial direction (times two)
-;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
-	.byt	 0,  0,  4,  2,  6	; ghosts initial state (nonsense for pacman)***testing 
+	.byt	54, 54, 54, 54, 54	; sprites initial X
+;	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
+	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
+	.byt	 4,  4,  6,  6,  6	; sprites initial direction (RDLU times two)
+	.byt	 0,  0,  0, 12, 12	; ghosts initial state (nonsense for pacman, 12=disabled)
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
 ; which fit into these (half)byte offsets
 ; 0.5, 1.5, 3, 4.5, 6, (6.75), 7.5, 9, 10.5, 12, 13
-; since the base exit is for rising ghosts only, it might be an special case
-; but some ghosts inside the base jump at X=46 and X=62 (5.75 & 7.75)
+; since the base exit is for rising ghosts only, it might be an special case *** a 2px error seems acceptable
+; but some ghosts inside the base jump at X=46 and X=62 (5.75 & 7.75) *** will not show
 
 ; initial map status
 i_map:
@@ -1324,6 +1330,7 @@ i_map:
 
 ; BCD glyph pair tables
 ; each scanline, then 100 values from $00 to $99
+; could easily add some hex up to $9F
 bcdt:
 #include "bcdt.s"
 
@@ -1397,12 +1404,14 @@ s_fg_l:
 s_fg_d:
 s_fg_u:
 	.bin	9, 192, "../../other/data/fright-vert.pbm"
-; flashing frightened ghost, initially same as non-flashing
-s_ff_l = s_fg_l
-s_ff_r = s_fg_r
-s_ff_u = s_fg_u
-s_ff_d = s_fg_d
- 
+; flashing frightened ghost
+s_ff_l:
+	.bin	9, 128, "../../other/data/flash-left.pbm"
+s_ff_r:
+	.bin	9, 128, "../../other/data/flash-right.pbm"
+s_ff_u:
+s_ff_d:
+	.bin	9, 192, "../../other/data/flash-vert.pbm"
 ; eaten ghosts (mostly identical frames, for the sake of code reuse)
 s_eat_r:
 	.bin	9, 128, "../../other/data/eyes-right.pbm"
