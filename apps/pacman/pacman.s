@@ -60,7 +60,7 @@ start:
 jmp zzzz
 destino:
 ; *** update path, Y = sprite index ***
-ldx sprite_d,y	; current direction
+ldx sp_dir,y	; current direction
 recheck:
 jmp(direc,x)
 direc:
@@ -70,7 +70,7 @@ lda sprite_x,y	; current x
 cmp#85	; right x limit
 bcc d_nr
 	ldx#2;now facing down
-	stx sprite_d,y
+	stx sp_dir,y
 	jmp recheck
 d_nr:
 tya
@@ -83,7 +83,7 @@ lda sprite_y,y
 cmp #92;bottom y limit
 bcc d_nd
 	ldx#4;now facing left
-	stx sprite_d,y
+	stx sp_dir,y
 	jmp recheck
 d_nd:
 tya
@@ -96,7 +96,7 @@ lda sprite_x,y
 cmp #26;left x limit
 bcs d_nl
 	ldx#6;now facing up
-	stx sprite_d,y
+	stx sp_dir,y
 	jmp recheck
 d_nl:
 tya
@@ -109,7 +109,7 @@ lda sprite_y,y
 cmp #21;top y limit
 bcs d_nu
 	ldx#0;now facing right
-	stx sprite_d,y
+	stx sp_dir,y
 	jmp recheck
 d_nu:
 tya
@@ -161,7 +161,7 @@ play:
 	LDX #4					; first of all, preset all timers for instant start
 t_pres:
 		LDA #1				; immediate movement (placeholder, as some ghosts will appear later)
-		STA sprite_t, X		; reset timer
+		STA sp_timer, X		; reset timer
 		LDA i_speed, X		; initial speed for that sprite
 		STA sp_speed, X
 		DEX
@@ -175,11 +175,11 @@ g_loop:
 			PHX				; ** CMOS ** easily changed to TXA:PHA
 			STX sel_gh		; X is selected sprite, must keep this!
 			LDA jiffy		; current time
-			CMP sprite_t, X	; time to update position?
+			CMP sp_timer, X	; time to update position?
 			BMI g_next		; * might use BNE instead of BMI for testing
 				CLC			; prepare next event
 				ADC sp_speed, X
-				STA sprite_t, X
+				STA sp_timer, X
 				txa
 				tay
 				jsr destino
@@ -196,7 +196,7 @@ sta s_fg_d-1,x
 dex
 bne fls
 nflash:
-; ** do something to update coordinates and sprite_d **
+; ** do something to update coordinates and sp_dir **
 ; might abort loop if death and/or game over
 lda sprite_y	; check pacman height
 cmp#24
@@ -428,8 +428,8 @@ das_l:
 draw:
 ; make a local copy of parameters
 	LDY sel_gh				; get selected sprite
-	LDA sprite_s, Y			; copy from array to temporary var
-	STA draw_s
+	LDA sp_stat, Y			; copy from array to temporary var
+	STA ds_stat
 	LDX sprite_x, Y			; X will hold X coordinate, will be shifted in storage
 	STX draw_x
 	LDA sprite_y, Y			; A holds actual Y coordinate, will shift in register
@@ -462,11 +462,11 @@ draw:
 	STA dest_pt+1			; screen pointer is ready
 #endif
 ; select routine according to direction
-	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
-	JMP (sp_dir, X)			; *** CMOS only *** execute appropriate code
+	LDX sp_dir, Y			; this can be done directly in X as direction is to be checked right after
+	JMP (spd_draw, X)		; *** CMOS only *** execute appropriate code
 
 ; ** table of pointers for sprite drawing routines **
-sp_dir:
+spd_draw:
 	.word	s_right
 	.word	s_down
 	.word	s_left
@@ -489,7 +489,7 @@ s_left:
 	LDA sel_gh				; pacman or ghost?
 	BEQ sl_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDX draw_s			; current status
+		LDX ds_stat			; current status
 		LDY spt_l, X		; get pointer from table, one for each direction
 		LDA spt_l+1, X
 		BNE spl_set
@@ -511,7 +511,7 @@ s_right:
 	LDA sel_gh				; pacman or ghost?
 	BEQ sr_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDX draw_s			; current status
+		LDX ds_stat			; current status
 		LDY spt_r, X		; get pointer from table, one for each direction
 		LDA spt_r+1, X
 		BNE spr_set
@@ -613,7 +613,7 @@ s_down:
 	LDA sel_gh				; pacman or ghost?
 	BEQ sd_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDX draw_s			; current status
+		LDX ds_stat			; current status
 		LDY spt_d, X		; get pointer from table, one for each direction
 		LDA spt_d+1, X
 		TAX					; eeeeeeeeeek
@@ -666,7 +666,7 @@ s_up:
 	LDA sel_gh				; pacman or ghost?
 	BEQ su_pac
 ; if it's a ghost, must check status, as frightened (and eaten) are different
-		LDX draw_s			; current status
+		LDX ds_stat			; current status
 		LDY spt_u, X		; get pointer from table, one for each direction
 		LDA spt_u+1, X
 		TAX					; eeeeeeeeeek
@@ -1010,22 +1010,22 @@ anim:
 	STX temp				; as counter
 ; this works (27b, 50t), but might reuse sprite screen address computing ***
 	LDA sprite_y			; must be kept! (3+3)
-	STA draw_s
+	STA ds_stat
 	LDA sprite_x			; pacman coordinates ·yyyyyyy ·xxxxxxx (3)
 	ASL						; bit 7 unused xxxxxxx0 (2)
-	LSR draw_s				; non-destructive computing (5)
+	LSR ds_stat				; non-destructive computing (5)
 	ROR						; 00yyyyyy yxxxxxxx (2+5)
-	LSR draw_s
+	LSR ds_stat
 	ROR						; 000yyyyy yyxxxxxx (2+5)
-	LSR draw_s
+	LSR ds_stat
 	ROR						; 0000yyyy yyyxxxxx (2+5)
-	LSR draw_s
+	LSR ds_stat
 	ROR						; 00000yyy yyyyxxxx (2)
 	STA org_pt				; nicer
 #ifndef	IOSCREEN
 	STA dest_pt				; part of the pointer (3+3)
 #endif
-	LDA draw_s
+	LDA ds_stat
 	ORA #>org_b				; page aligned 00001yyy yyyyxxxx (2)
 	STA org_pt+1
 #ifndef	IOSCREEN
@@ -1388,6 +1388,12 @@ s_fg_l:
 s_fg_d:
 s_fg_u:
 	.bin	9, 192, "../../other/data/fright-vert.pbm"
+; flashing frightened ghost, initially same as non-flashing
+s_ff_l = s_fg_l
+s_ff_r = s_fg_r
+s_ff_u = s_fg_u
+s_ff_d = s_fg_d
+ 
 ; eaten ghosts (mostly identical frames, for the sake of code reuse)
 s_eat_r:
 	.bin	9, 128, "../../other/data/eyes-right.pbm"
