@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210328-1808
+; last modified 20210328-2030
 
 ; can be assembled from this folder
 
@@ -56,152 +56,7 @@ start:
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions (and show 'Ready!' message)
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-/*
-; ****************************************************
-; *** test code, move pacman and ghosts clockwise! ***
-; ****************************************************
-lda jiffy
-clc
-adc #1	; just start all quickly
-sta sprite_t+1
-inc
-sta sprite_t
-inc
-sta sprite_t+2
-inc
-sta sprite_t+3
-inc
-sta sprite_t+4
-sta IOAie	; eeeeek
-CLI
-; * try complete engine *
-testing:
-; try to move and draw pacman
-lda jiffy
-cmp sprite_t
-bne npac	; bmi is safer
-	adc#11;11	; pacman speed (12, as C was set)
-	sta sprite_t
-;	lda sprite_x
-;	and#3
-;	bne xxx
-;	lda sprite_y
-;	and#3
-;	bne xxx
-;	jsr munch
-	xxx:
-;	lda sprite_x	; actual X
-;	cmp sprite_x+2	; same as frightened?
-;	bne pne
-;		jsr sweep
-;pne:
-;	and#3
-;	bne ndot
-;		jsr munch
-;ndot:
-;	lda sprite_x	; eeeek
-;	cmp#85
-;	bcc npr
-;		ldx#4	; turn left
-;		stx sprite_d
-;npr:
-;	cmp#24
-;	bcs npl
-;		stz sprite_d	; turn right
-;npl:
-;	ldx sprite_d	; direction?
-;	clc
-;	adc delta,x		; add displacement
-;	and#127
-;	sta sprite_x	; update
-; * update coordinates *
-	ldy #0			; pacman index
-	jsr destino		; check new destination, updating x/y and d
-	stz sel_gh	; draw pacman
-	jsr draw
-npac:
-; try to move and draw ghost
-lda jiffy
-cmp sprite_t+1
-bne ngh	; bmi is safer
-	adc#6;6	; ghost speed (7, as C was set)
-	sta sprite_t+1
-;	lda sprite_x+1	; actual X
-;	cmp sprite_x
-;	bne gne
-;		jsr death
-;		lda sprite_x+1	; eeeek
-;gne:
-;	cmp#85
-;	bcc ngr
-;		ldx#4	; turn left
-;		stx sprite_d+1
-;ngr:
-;	cmp#24
-;	bcs ngl
-;		stz sprite_d+1	; turn right
-;ngl:
-;	ldx sprite_d+1	; direction?
-;	clc
-;	adc delta,x		; add displacement
-;	and#127
-;	sta sprite_x+1	; update
-	ldy#1		; ghost index
-	sty sel_gh	; draw ghost
-	jsr destino		; check new destination, updating x/y and d
-	jsr draw
-ngh:
-; try to move and draw frightened ghost
-lda jiffy
-cmp sprite_t+2
-bne nfh	; bmi is safer
-	adc#19;19	; frightened ghost speed (20, as C was set)
-	sta sprite_t+2
-;	lda sprite_x+2	; actual X
-;	cmp#85
-;	bcc nfr
-;		ldx#4	; turn left
-;		stx sprite_d+2
-;nfr:
-;	cmp#24
-;	bcs nfl
-;		stz sprite_d+2	; turn right
-;nfl:
-;	ldx sprite_d+2	; direction?
-;	clc
-;	adc delta,x		; add displacement
-;	and#127
-;	sta sprite_x+2	; update
-	ldy #2
-	sty sel_gh	; draw frightened ghost
-	jsr destino
-	jsr draw
-nfh:
-; try to move and draw fast ghost
-lda jiffy
-cmp sprite_t+3
-bne nxh	; bmi is safer
-	adc#0	; fast ghost speed (1, as C was set)
-	sta sprite_t+3
-	ldy #3
-	sty sel_gh	; draw fast ghost
-	jsr destino
-	jsr draw
-nxh:
-; try to move and draw eyes
-lda jiffy
-cmp sprite_t+4
-bne nxxh	; bmi is safer
-	adc#2	; eyes speed (3, as C was set)
-	sta sprite_t+4
-	ldy #4
-	sty sel_gh	; draw fast ghost
-	jsr destino
-	jsr draw
-nxxh:
-jmp testing
-delta:
-.byt	1,0,0,0,$ff,0,0; ***check*/
+
 jmp zzzz
 destino:
 ; *** update path, Y = sprite index ***
@@ -302,28 +157,6 @@ play:
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
 
-; *** test code follows ***
-;jsr death
-/*loop:
-lda jiffy
-cmp lives
-bne loop
-pha
-ldx #0
-lda #1
-jsr add_sc
-;ldy#5
-;wait:inx
-;bne wait
-;dey:bne wait
-pla
-clc
-adc#244
-sta lives
-jmp loop
-; *** end of test code ***
-; ************************
-*/
 ; stub for game engine
 	LDX #4					; first of all, preset all timers for instant start
 t_pres:
@@ -347,14 +180,6 @@ g_loop:
 				CLC			; prepare next event
 				ADC sp_speed, X
 				STA sprite_t, X
-; move-to-the-left placeholder
-;DEC sprite_x, X
-;LDA sprite_x, X
-;CMP #3
-;BNE moveok
-;	LDA #104
-;	STA sprite_x, X
-;moveok:
 				txa
 				tay
 				jsr destino
@@ -371,7 +196,7 @@ sta s_fg_d-1,x
 dex
 bne fls
 nflash:
-; do something to update coordinates and sprite_d
+; ** do something to update coordinates and sprite_d **
 ; might abort loop if death and/or game over
 lda sprite_y	; check pacman height
 cmp#24
@@ -638,7 +463,6 @@ draw:
 #endif
 ; select routine according to direction
 	LDX sprite_d, Y			; this can be done directly in X as direction is to be checked right after
-;	STX draw_d				; lastly, set direction (is storage actually needed?)
 	JMP (sp_dir, X)			; *** CMOS only *** execute appropriate code
 
 ; ** table of pointers for sprite drawing routines **
@@ -649,6 +473,7 @@ sp_dir:
 	.word	s_up
 
 ; ** pointer tables for status selection **
+; might add ANOTHER status for flashing frightened ghost (between frightened and eaten)
 spt_l:
 	.word	s_gh_l, s_gh_l, s_fg_l, s_eat_l, s_clr	; note new special sprites
 spt_r:
