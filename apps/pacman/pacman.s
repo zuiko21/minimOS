@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210328-1716
+; last modified 20210328-1746
 
 ; can be assembled from this folder
 
@@ -361,7 +361,7 @@ g_loop:
 ; do something to update coordinates and sprite_d
 ; might abort loop if death and/or game over
 lda sprite_y	; check pacman height
-cmp#21
+cmp#24
 bne cont
 	jsr die
 cont:
@@ -1124,6 +1124,7 @@ l_loop:
 			LDX #$75
 l_n5:
 		CPY #10
+		BNE l_n10
 			LDX #$85
 l_n10:
 		CPY #15
@@ -1326,8 +1327,13 @@ dth_sw:
 	PLA
 	DEC						; *** CMOS ***
 	BNE d_rpt
-	LDA #$FF				; "add" -1 lives...
-	TAX
+; subtract one life!
+	SED
+	LDA lives
+	SEC
+	SBC #1
+	STA lives
+	CLD
 	JMP up_lives			; will return
 
 ; *** ** beeping routine ** ***
@@ -1449,7 +1455,7 @@ init_p:
 	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
 	.byt	92, 92, 92, 92, 56	; sprites initial Y (new 2px offset, not much of a problem)****
 ;	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
-	.byt	 4,  4,  4,  4,  4	; ***sprites initial direction (times two)
+	.byt	 4,  4,  6,  0,  4	; ***sprites initial direction (times two)
 ;	.byt	 0,  4,  6,  6,  6	; sprites initial direction (times two)
 	.byt	 0,  0,  4,  2,  6	; ghosts initial state (nonsense for pacman)***testing 
 
