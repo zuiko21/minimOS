@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210328-2032
+; last modified 20210328-2053
 
 ; **************************
 ; *** zeropage variables ***
@@ -22,6 +22,7 @@ sp_speed	.dsb	5, 0	; increment for each timer
 temp:
 sel_gh		.byt	0		; temporarily selected ghost (index for arrays above), also other temporary use
 score		.word	0		; score in BCD (a tenth of the original score, thus up to 99990 in the arcade)
+goal		.byt	0		; desired goal for extra life, every 1000 points (MSB-only is 10) *new* 
 lives		.byt	0		; remaining lives
 level		.byt	0		; game level
 ; will need some timers for mode change
@@ -39,7 +40,7 @@ dmask		.dsb	16, 0	; 16-byte array with dot masks, also temporary space
 map_pt	.word	0			; pointer to descriptor map
 spr_pt	.word	0			; pointer to sprite entry
 org_pt	.word	0			; pointer to 'clean', sprite-less screen
-dest_pt	.word	0			; VRAM pointer
+dest_pt	.word	0			; VRAM pointer *** NOT used if IOSCREEN ***
 
 ; ***************************
 ; *** big data structures ***

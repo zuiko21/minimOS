@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210328-2030
+; last modified 20210328-2105
 
 ; can be assembled from this folder
 
@@ -50,6 +50,8 @@ start:
 	STX score+1
 	LDA #5					; initial lives
 	STA lives
+	ASL						; times two, A=10
+	STA goal				; next extra life at 1000 points
 
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
@@ -151,8 +153,6 @@ m_end:
 play:
 	LDY #<s_clr				; clear area in order to delete 'Ready!' message
 	LDA #>s_clr
-	STY org_pt
-	STA org_pt+1
 	JSR l_text
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
@@ -254,8 +254,6 @@ die:
 gameover:
 	LDY #<(p_text+25)		; second chunk is the 'Game Over' message
 	LDA #>(p_text+25)
-	STY org_pt
-	STA org_pt+1
 	JSR l_text
 ; shall I wait for some key to start a new game? exit option?
 	JMP *					; placeholder
@@ -404,8 +402,6 @@ ip_loop:
 ; lastly, print 'Ready!' message
 	LDY #<p_text			; initial patch is 'Ready!' message
 	LDA #>p_text
-	STY org_pt
-	STA org_pt+1
 	JMP l_text				; will return
 
 ; *** *** sprite drawing, the thing becomes interesting *** ***
@@ -892,11 +888,27 @@ ds_sc:
 ds_tnw:
 		DEC temp			; until 5 scanlines are done
 		BNE ds_sc
-	RTS
+; must check whether the score is over the goal for extra life
+	LDA score+1				; check MSB
+	CMP goal
+	BCS ds_extra			; below goal, ignore (***should I use BPL instead?)
+		RTS
+ds_extra:
+	SED						; will use BCD for both goal and lives, no need to go back to binary here
+	LDA goal
+	ADC #9					; advance 1000 points, C known to be SET here
+	STA goal
+	LDA #1					; extra life
+;	JMP up_lives			; will return... or fall directly
 
 ; * update lives counter *
-; now display it, two ciphers at a time!
+; now add A to lives and display it, two ciphers!
 up_lives:
+	SED						; BCD mode!
+	CLC
+	ADC lives				; add A to current lives
+	STA lives
+	CLD
 	LDX #5
 	STX temp				; use this as a scanline counter
 	LDY #<bcdt				; set BCD table pointer
@@ -942,9 +954,11 @@ dl_tnw:
 	RTS
 
 ; * text routine *
-; 40x5 patch to be placed is pointed by org_pt
+; 40x5 patch to be placed is pointed by A.Y (will use org_pt)
 ; will be placed at (40,70), which starts at $7C65 up to $7CA9 (no page crossing)
 l_text:
+	STY org_pt
+	STA org_pt+1
 #ifdef	IOSCREEN
 	LDA #$7C				; VRAM MSB
 	STA IO8lh				; no need to store this as will not change ever
@@ -1170,12 +1184,7 @@ dth_sw:
 	DEC						; *** CMOS ***
 	BNE d_rpt
 ; subtract one life!
-	SED
-	LDA lives
-	SEC
-	SBC #1
-	STA lives
-	CLD
+	LDA #$99				; in BCD, this is -1
 	JMP up_lives			; will return
 
 ; *** ** beeping routine ** ***
