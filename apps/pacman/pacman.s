@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210329-0101
+; last modified 20210329-0137
 
 ; can be assembled from this folder
 
@@ -179,20 +179,40 @@ g_loop:
 				CLC			; prepare next event
 				ADC sp_speed, X
 				STA sp_timer, X
+; experimental dot eating
+				txa			; is it pacman? X=0
+				bne no_pac
+				ldy sprite_y	; compute tile
+				ldx sprite_x
+				jsr chk_map
+				and %01100000	; check dot and/or pill
+				beq no_dot
+					txa
+					and #4		; left or right tile in byte?
+					beq dot_left
+						lda (map_pt)
+						and #%11111001	; remove right dot
+						bra newmsk
+dot_left:
+					lda (map_pt)
+					and #%10011111	; remove left dot
+newmsk:
+
+					sta (map_pt)	; reload map entry with supresssed dot
+; must clear relevant section of buffer, too!
+					dec dots
+					jsr munch
+					lda#1
+					ldx#0
+					jsr add_sc
+no_dot:
+				plx:phx
+no_pac:
 				txa
 				tay
 				jsr destino
 ; ** do something to update coordinates and sp_dir **
 ; might abort loop if death and/or game over
-lda sprite_y	; check pacman height
-cmp#24
-bne cont
-lda sprite_x
-cmp#26
-bne cont
-	dec sprite_y
-	jsr die
-cont:
 				JSR draw
 g_next:
 			PLX				; ** CMOS ** easily changed to PLA:TAX
@@ -621,11 +641,11 @@ spd_set:
 	LDA org_pt				; LSB is common with dest_pt
 	SEC
 	SBC #lwidth				; back one raster
-	STA map_pt
+	STA tmp_arr+2
 	LDA org_pt+1
 ;	PHP						; borrow goes on two MSBs
 	SBC #0
-	STA map_pt+1			; map_pt is future dest_pt
+	STA tmp_arr+3			; tmp_arr+2 is future dest_pt
 ;	LDA dest_pt+1			; this MSB is different
 ;	PLP						; retrieve possible borrow
 ;	SBC #0
@@ -633,9 +653,9 @@ spd_set:
 ; with X & Y properly set, proceed to draw
 	JSR sv_draw
 ; *** retrieve address to be cleared ***
-	LDX map_pt				; common LSB must be in X for IOSCREEN
+	LDX tmp_arr+2			; common LSB must be in X for IOSCREEN
 	STX org_pt
-	LDA map_pt+1			; buffer MSB
+	LDA tmp_arr+3			; buffer MSB
 	STA org_pt+1
 #ifdef	IOSCREEN
 	STA IO8lh				; eeeeeeeek
@@ -781,7 +801,7 @@ sv_npw:
 
 ; * compute map data from pixel coordinates * REDONE, yet to be used
 chk_map:
-; newest interface is X=x, Y=y
+; newest interface is X=x, Y=y, returns them unmodified! returns A.MSN
 	TXA
 	ASL						; forget unused MSB.X
 	STA map_pt				; will be into pointer LSB
@@ -1215,8 +1235,8 @@ r_loop:
 
 ; * click after pacman eats a dot *
 munch:
-	LDA #179
-	LDX #4
+	LDA #50
+	LDX #2
 	JMP m_beep				; ...and will return to caller
 
 ; * sound after pacman eats a ghost *
