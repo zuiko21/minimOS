@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210328-1547
+; last modified 20210328-1716
 
 ; can be assembled from this folder
 
@@ -54,7 +54,7 @@ start:
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
-	JSR positions			; reset initial positions, X is zero but...
+	JSR positions			; reset initial positions (and show 'Ready!' message)
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
 /*
 ; ****************************************************
@@ -294,6 +294,11 @@ m_end:
 ; **********************************************************
 
 play:
+	LDY #<s_clr				; clear area in order to delete 'Ready!' message
+	LDA #>s_clr
+	STY org_pt
+	STA org_pt+1
+	JSR l_text
 	CLI						; enable interrupts as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
 
@@ -355,6 +360,11 @@ g_loop:
 				jsr destino
 ; do something to update coordinates and sprite_d
 ; might abort loop if death and/or game over
+lda sprite_y	; check pacman height
+cmp#21
+bne cont
+	jsr die
+cont:
 				JSR draw
 g_next:
 			PLX				; ** CMOS ** easily changed to PLA:TAX
@@ -377,18 +387,34 @@ jsr sweep
 	INC level
 	JSR newmap				; reset initial map (and dot count)
 	JSR screen				; draw initial field (and current dots)
-	JSR positions			; reset initial positions
+	JSR positions			; reset initial positions (and print 'Ready!')
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-; must print 'ready' and some delay, perhaps integrated in positions
+	LDA #80					; 2-second delay
+	JSR ms25
 	JMP play				; and begin new level (without music)
+
+; *************************************
+; *** *** pacman death sequence *** ***
+; *************************************
+die:
+	JSR death				; create animation and sound
+; check for gameover
+	LDA lives
+		BEQ gameover
+	LDA #60					; one-and-a-half second delay
+	JSR ms25
+	CLI
+	RTS
 
 ; ***************************
 ; *** *** end of game *** *** if lives is 0 after death
 ; ***************************
 gameover:
-	LDA #40					; one second delay
-	JSR ms25
-; display 'game over' somewhere on screen
+	LDY #<(p_text+25)		; second chunk is the 'Game Over' message
+	LDA #>(p_text+25)
+	STY org_pt
+	STA org_pt+1
+	JSR l_text
 ; shall I wait for some key to start a new game? exit option?
 	JMP *					; placeholder
 
@@ -533,7 +559,12 @@ ip_loop:
 		DEX
 		BNE ip_loop
 ; I think this should reset counters and timers as well
-	RTS
+; lastly, print 'Ready!' message
+	LDY #<p_text			; initial patch is 'Ready!' message
+	LDA #>p_text
+	STY org_pt
+	STA org_pt+1
+	JMP l_text				; will return
 
 ; *** *** sprite drawing, the thing becomes interesting *** ***
 ; note tile coordinates are (x/4,y/4) from sprite upper left, although each tile is positioned (+2,+2)
@@ -1068,6 +1099,45 @@ dl_tnw:
 		BNE ds_lv
 	RTS
 
+; * text routine *
+; 40x5 patch to be placed is pointed by org_pt
+; will be placed at (40,70), which starts at $7C65 up to $7CA9 (no page crossing)
+l_text:
+#ifdef	IOSCREEN
+	LDA #$7C				; VRAM MSB
+	STA IO8lh				; no need to store this as will not change ever
+#endif
+	LDX #$65				; base screen offset
+	LDY #0					; read index
+l_loop:
+		LDA (org_pt), Y		; get patch data
+#ifdef IOSCREEN
+		STX IO8ll			; send data to IO screen
+		STA IO8wr
+#else
+		STA $7C00, X		; put it on screen
+#endif
+		INX
+		INY
+		CPY #5				; check all possible raster ends
+		BNE l_n5
+			LDX #$75
+l_n5:
+		CPY #10
+			LDX #$85
+l_n10:
+		CPY #15
+		BNE l_n15
+			LDX #$95
+l_n15:
+		CPY #20
+		BNE l_n20
+			LDX #$A5
+l_n20:
+		CPY #25
+		BNE l_loop
+	RTS
+
 ; ** timing and animations **
 ; * 25ms generic delay *
 ; delay ~25A ms
@@ -1192,8 +1262,9 @@ death:
 	SEI						; interrupts disabled for sound
 	LDA #40					; one second pause
 	JSR ms25
+; actual pacman arcade deletes all sprites during animation
+	JSR screen
 ; prepare animation parameters
-
 	LDX #0
 	JSR anim				; draw first frame
 ; first sqweak
@@ -1257,16 +1328,7 @@ dth_sw:
 	BNE d_rpt
 	LDA #$FF				; "add" -1 lives...
 	TAX
-	JSR up_lives
-; check for gameover
-	LDA lives
-	BNE nx_liv
-; *** game is over *** TBD
-nx_liv:
-	LDA #60
-	JSR ms25				; one-and-a-half seconds delay before next live
-	CLI
-	RTS
+	JMP up_lives			; will return
 
 ; *** ** beeping routine ** ***
 ; *** X = length, A = freq. ***
@@ -1437,6 +1499,10 @@ m_note:
 ; original maze (full 128x128 screen)
 maze:
 	.bin	11, 2048, "../../other/data/maze2.pbm"
+
+; text chunks
+p_text:
+	.bin	9, 50, "../../other/data/pacmantxt.pbm"
 
 ; *** sprites ***
 ; pacman towards right
