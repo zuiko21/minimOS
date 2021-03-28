@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210329-0023
+; last modified 20210329-0050
 
 ; can be assembled from this folder
 
@@ -58,7 +58,6 @@ start:
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions (and show 'Ready!' message)
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-
 jmp zzzz
 destino:
 ; *** update path, Y = sprite index ***
@@ -183,19 +182,6 @@ g_loop:
 				txa
 				tay
 				jsr destino
-; flashing ghost test
-plx
-phx
-cpx#4
-bne nflash
-ldx#192
-fls:
-lda s_fg_d-1,x
-eor#$ff
-sta s_fg_d-1,x
-dex
-bne fls
-nflash:
 ; ** do something to update coordinates and sp_dir **
 ; might abort loop if death and/or game over
 lda sprite_y	; check pacman height
@@ -416,7 +402,12 @@ das_l:
 		JSR draw
 		DEC sel_gh
 		BPL das_l
-	RTS
+; conveniently display score and lives
+	LDA #0
+	TAX
+	JSR add_sc
+	LDA #0
+	JMP up_lives			; will return
 
 ; *** draw one sprite... ***
 ; new interface, sel_gh selects sprite (0=pacman, 1...4=ghost)
@@ -475,13 +466,13 @@ spd_draw:
 ; ** pointer tables for status selection **
 ; might add ANOTHER status for flashing frightened ghost (between frightened and eaten)
 spt_l:
-	.word	s_gh_l, s_gh_l, s_fg_l, s_eat_l, s_clr	; note new special sprites
+	.word	s_gh_l, s_gh_l, s_fg_l, s_ff_l, s_eat_l, s_clr	; note new special sprites
 spt_r:
-	.word	s_gh_r, s_gh_r, s_fg_r, s_eat_r, s_clr	; note new special sprites
+	.word	s_gh_r, s_gh_r, s_fg_r, s_ff_r, s_eat_r, s_clr	; note new special sprites
 spt_u:
-	.word	s_gh_u, s_gh_u, s_fg_u, s_eat_u, s_clr	; note new special sprites
+	.word	s_gh_u, s_gh_u, s_fg_u, s_ff_u, s_eat_u, s_clr	; note new special sprites
 spt_d:
-	.word	s_gh_d, s_gh_d, s_fg_d, s_eat_d, s_clr	; note new special sprites
+	.word	s_gh_d, s_gh_d, s_fg_d, s_ff_d, s_eat_d, s_clr	; note new special sprites
 
 ; *** routine for sprite drawing, towards left ***
 s_left:
@@ -1314,7 +1305,8 @@ init_p:
 ;	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
 	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
 	.byt	 4,  4,  6,  6,  6	; sprites initial direction (RDLU times two)
-	.byt	 0,  0,  0, 12, 12	; ghosts initial state (nonsense for pacman, 12=disabled)
+	.byt	 0,  4,  6, 12, 12	; ghosts initial state (nonsense for pacman, 12=disabled)
+;	.byt	 0,  0,  0, 12, 12	; ghosts initial state (nonsense for pacman, 12=disabled)
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
