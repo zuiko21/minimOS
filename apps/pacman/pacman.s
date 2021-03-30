@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210329-0137
+; last modified 20210330-1902
 
 ; can be assembled from this folder
 
@@ -20,6 +20,7 @@
 	IO8wr	= $8003			; screen write data
 	IOAie	= $A001			; enable hardware interrupt, LSB must be $01!
 	IOAid	= $A000			; disable hardware interrupt
+	IOBeep	= $BFF0			; beeper address (latches D0 value)
 	LTCdo	= $FFF0			; LTC display port
 
 ; uncomment this if non-direct, IO-based display interface is used
@@ -50,7 +51,7 @@ start:
 	STX score+1
 	LDA #5					; initial lives
 	STA lives
-	ASL						; times two, A=10
+	LDA #$10				; needs to be 10 in BCD eeeeeeek
 	STA goal				; next extra life at 1000 points
 
 ; initial screen setup, will be done every level as well
@@ -58,71 +59,9 @@ start:
 	JSR screen				; draw initial field (and current dots), may modify X
 	JSR positions			; reset initial positions (and show 'Ready!' message)
 	JSR sprites				; draw all ghosts and pacman on screen
-jmp zzzz
-destino:
-; *** update path, Y = sprite index ***
-ldx sp_dir,y	; current direction
-recheck:
-jmp(direc,x)
-direc:
-.word go_r, go_d, go_l, go_u
-go_r:;check righmost coordinate
-lda sprite_x,y	; current x
-cmp#85	; right x limit
-bcc d_nr
-	ldx#2;now facing down
-	stx sp_dir,y
-	jmp recheck
-d_nr:
-tya
-tax
-inc sprite_x,x
-rts
-
-go_d:;check bottom limit
-lda sprite_y,y
-cmp #92;bottom y limit
-bcc d_nd
-	ldx#4;now facing left
-	stx sp_dir,y
-	jmp recheck
-d_nd:
-tya
-tax
-inc sprite_y,x
-rts
-
-go_l:;check left limit
-lda sprite_x,y
-cmp #26;left x limit
-bcs d_nl
-	ldx#6;now facing up
-	stx sp_dir,y
-	jmp recheck
-d_nl:
-tya
-tax
-dec sprite_x,x
-rts
-
-go_u:;check top limit
-lda sprite_y,y
-cmp #21;top y limit
-bcs d_nu
-	ldx#0;now facing right
-	stx sp_dir,y
-	jmp recheck
-d_nu:
-tya
-tax
-dec sprite_y,x
-rts
-; *** end of test code ***
-; ************************
 
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
-zzzz:
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
 	STX temp				; reset cursor (temporary use)
 m_loop:
@@ -153,10 +92,10 @@ play:
 	LDY #<s_clr				; clear area in order to delete 'Ready!' message
 	LDA #>s_clr
 	JSR l_text
-	CLI						; enable interrupts as will be needed for timing
+	CLI						; make sure interrupts are enabled as will be needed for timing
 	LDA IOAie				; ...and enable in hardware too! eeeeek
 
-; stub for game engine
+; game engine
 	LDX #4					; first of all, preset all timers for instant start
 t_pres:
 		LDA #1				; immediate movement (placeholder, as some ghosts will appear later)
@@ -165,6 +104,7 @@ t_pres:
 		STA sp_speed, X
 		DEX
 		BPL t_pres
+
 ; *************************
 ; *** *** main loop *** ***
 ; *************************
@@ -179,39 +119,7 @@ g_loop:
 				CLC			; prepare next event
 				ADC sp_speed, X
 				STA sp_timer, X
-; experimental dot eating
-				txa			; is it pacman? X=0
-				bne no_pac
-				ldy sprite_y	; compute tile
-				ldx sprite_x
-				jsr chk_map
-				and %01100000	; check dot and/or pill
-				beq no_dot
-					txa
-					and #4		; left or right tile in byte?
-					beq dot_left
-						lda (map_pt)
-						and #%11111001	; remove right dot
-						bra newmsk
-dot_left:
-					lda (map_pt)
-					and #%10011111	; remove left dot
-newmsk:
-
-					sta (map_pt)	; reload map entry with supresssed dot
-; must clear relevant section of buffer, too!
-					dec dots
-					jsr munch
-					lda#1
-					ldx#0
-					jsr add_sc
-no_dot:
-				plx:phx
-no_pac:
-				txa
-				tay
-				jsr destino
-; ** do something to update coordinates and sp_dir **
+; ** do something to update coordinates and sp_dir ** X holds sprite number
 ; might abort loop if death and/or game over
 				JSR draw
 g_next:
@@ -219,21 +127,24 @@ g_next:
 			INX				; next sprite
 			CPX #5			; all sprites done?
 			BNE g_loop
-	lda#1:ldx#0
-;	jsr add_sc
 		LDA dots			; all dots done?
 		BNE g_start			; repeat loop
+
 g_end:
-; if arrived here, level ended successfully
+; *************************************************
+; *** if arrived here, level ended successfully ***
+; *************************************************
 	LDA #80					; two-second delay
 	JSR ms25
-jsr sweep
-; worth showing a flashing map for a couple of seconds?
+; worth showing a flashing map (4 times) for a couple of seconds?
+
 ; *************************************
 ; *** *** restart another level *** ***
 ; *************************************
 	INC level
 	JSR newmap				; reset initial map (and dot count)
+g_again:
+; entry point after losing one life, continue level from current state (but with reset positions)
 	JSR screen				; draw initial field (and current dots)
 	JSR positions			; reset initial positions (and print 'Ready!')
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
@@ -248,11 +159,8 @@ die:
 	JSR death				; create animation and sound
 ; check for gameover
 	LDA lives
-		BEQ gameover
-	LDA #60					; one-and-a-half second delay
-	JSR ms25
-	CLI
-	RTS
+	BNE g_again				; continue playing if lives remaining
+;	BEQ gameover			; ...or end play otherwise
 
 ; ***************************
 ; *** *** end of game *** *** if lives is 0 after death
@@ -393,7 +301,12 @@ sc_ndot:
 			INC dest_pt+1	; VRAM is last, as will set N flag when finished!
 #endif
 		BPL sc_loop			; stop at $8000 (usually 3, just 8 times)
-	RTS						; that's all? nice!
+; conveniently display score and lives
+	LDA #0
+	TAX
+	JSR add_sc
+	LDA #0
+	JMP up_lives			; will return
 
 ; * reset initial positions *
 ; returns X=0, modifies A
@@ -422,12 +335,7 @@ das_l:
 		JSR draw
 		DEC sel_gh
 		BPL das_l
-; conveniently display score and lives
-	LDA #0
-	TAX
-	JSR add_sc
-	LDA #0
-	JMP up_lives			; will return
+	RTS
 
 ; *** draw one sprite... ***
 ; new interface, sel_gh selects sprite (0=pacman, 1...4=ghost)
@@ -1131,7 +1039,6 @@ af_nw:
 
 ; * Pacman death, animation plus integrated sound *
 death:
-	SEI						; interrupts disabled for sound
 	LDA #40					; one second pause
 	JSR ms25
 ; actual pacman arcade deletes all sprites during animation
@@ -1198,6 +1105,9 @@ dth_sw:
 	PLA
 	DEC						; *** CMOS ***
 	BNE d_rpt
+; one second delay after death
+	LDA #40
+	JSR ms25
 ; subtract one life!
 	LDA #$99				; in BCD, this is -1
 	JMP up_lives			; will return
@@ -1210,13 +1120,13 @@ m_beep:
 	SEI						; eeeeeek
 beep_l:
 		TAY					; determines frequency (2)
-		STX $BFF0			; send X's LSB to beeper (4)
+		STX IOBeep			; send X's LSB to beeper (4)
 rb_zi:
 			DEY				; count pulse length (y*2)
 			BNE rb_zi		; stay this way for a while (y*3-1)
 		DEX					; toggles even/odd number (2)
 		BNE beep_l			; new half cycle (3)
-	STX $BFF0				; turn off the beeper!
+	STX IOBeep				; turn off the beeper!
 	CLI						; restore interrupts... if needed
 	RTS
 
