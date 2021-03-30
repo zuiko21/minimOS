@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210329-0009
+; last modified 20210330-1913
 
 ; **************************
 ; *** zeropage variables ***
@@ -14,7 +14,7 @@
 ; note new order, where pacman is just a srpite like the ghosts
 sprite_x	.dsb	5, 0	; sprite coordinates (in pixels), array for pacman [0] + ghosts [1...4]
 sprite_y	.dsb	5, 0
-sp_dir		.dsb	5, 0	; sprite direction is 0=right, 2=down, 4=left, 6=up *renamed*
+sp_dir		.dsb	5, 0	; sprite direction is 0=right, 2=down, 4=left, 6=up *renumbered*
 sp_stat		.dsb	5, 0	; sprite status is 0=scatter, 2=chase, 4=frightened, 6=inverse (frightened) *new*, 8=eaten (makes no sense for pacman), 10=invisible, 12=disabled *** note new values
 sp_timer	.dsb	5, 0	; timer for next movement of every sprite
 sp_speed	.dsb	5, 0	; increment for each timer
@@ -22,7 +22,7 @@ sp_speed	.dsb	5, 0	; increment for each timer
 temp:
 sel_gh		.byt	0		; temporarily selected ghost (index for arrays above), also other temporary use
 score		.word	0		; score in BCD (a tenth of the original score, thus up to 99990 in the arcade)
-goal		.byt	0		; desired goal for extra life, every 1000 points (MSB-only is 10) *new* 
+goal		.byt	0		; desired goal for extra life, every 1000 points (MSB-only is $10 increments -- in BCD!) *new* 
 lives		.byt	0		; remaining lives
 level		.byt	0		; game level
 ; will need some timers for mode change
@@ -52,3 +52,26 @@ dest_pt	.word	0			; VRAM pointer *** NOT used if IOSCREEN ***
 
 d_map	.dsb	512, 0		; descriptor map (496 bytes actually needed, but rounded to 32x31=992), d7=wall, d6=dot, d5=pill
 org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with the VRAM ($7800 in Tommy2)
+
+; ********************************
+; *** magic number definitions ***
+; ********************************
+
+; directions
+#define	RIGHT	0
+#define	DOWN	2
+#define	LEFT	4
+#define	UP		6
+
+; status *note new values
+#define	WAIT	0
+#define	GROW	2
+#define	SCATTER	4
+#define	CHASE	6
+#define	FRIGHT	8
+#define	FLASH	10
+#define	EATEN	12
+#define	CLEAR	14
+#define	DISABLE	16
+
+

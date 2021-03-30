@@ -1,14 +1,14 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210330-1902
+; last modified 20210330-1945
 
 ; can be assembled from this folder
 
 ; variables, esp. zeropage
 #include "pacman.h"
 
-; *** constants definition ***
+; *** addresses definition ***
 	fw_isr	= $200			; standard minimOS firmware address
 	vram	= $7800			; suitable for Durango
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
@@ -121,6 +121,7 @@ g_loop:
 				STA sp_timer, X
 ; ** do something to update coordinates and sp_dir ** X holds sprite number
 ; might abort loop if death and/or game over
+				JSR move	; separated routine for the sake of clarity
 				JSR draw
 g_next:
 			PLX				; ** CMOS ** easily changed to PLA:TAX
@@ -323,7 +324,24 @@ ip_loop:
 	LDA #>p_text
 	JMP l_text				; will return
 
-; *** *** sprite drawing, the thing becomes interesting *** ***
+; *** *** sprite moving routines, the actual AI *** ***
+; X expected to have selected ghost (already stored in sel_gh)
+; must change sprite_x[X], sprite_y[X] and/or sp_dir[X], perhaps other paremeters too
+move:
+	TXA						; check sprite
+	BNE is_ghost			; pacman only looks for joystick input and map entries
+		INC sprite_x		; *** PLACEHOLDER
+		RTS
+is_ghost:
+		CPX #1				; *** PLACEHOLDER...
+		BNE growing
+			DEC sprite_x+1
+			RTS
+growing:
+			DEC sprite_y, X
+	RTS
+
+; *** *** sprite drawing *** ***
 ; note tile coordinates are (x/4,y/4) from sprite upper left, although each tile is positioned (+2,+2)
 
 ; * draw all sprites *
@@ -344,7 +362,7 @@ draw:
 ; make a local copy of parameters
 	LDY sel_gh				; get selected sprite
 	LDA sp_stat, Y			; copy from array to temporary var
-	CMP #12					; is it disabled?
+	CMP #DISABLE			; is it disabled?
 	BNE draw_ok
 		RTS					; if so, just abort!
 draw_ok:
@@ -383,24 +401,6 @@ draw_ok:
 ; select routine according to direction
 	LDX sp_dir, Y			; this can be done directly in X as direction is to be checked right after
 	JMP (spd_draw, X)		; *** CMOS only *** execute appropriate code
-
-; ** table of pointers for sprite drawing routines **
-spd_draw:
-	.word	s_right
-	.word	s_down
-	.word	s_left
-	.word	s_up
-
-; ** pointer tables for status selection **
-; might add ANOTHER status for flashing frightened ghost (between frightened and eaten)
-spt_l:
-	.word	s_gh_l, s_gh_l, s_fg_l, s_ff_l, s_eat_l, s_clr	; note new special sprites
-spt_r:
-	.word	s_gh_r, s_gh_r, s_fg_r, s_ff_r, s_eat_r, s_clr	; note new special sprites
-spt_u:
-	.word	s_gh_u, s_gh_u, s_fg_u, s_ff_u, s_eat_u, s_clr	; note new special sprites
-spt_d:
-	.word	s_gh_d, s_gh_d, s_fg_d, s_ff_d, s_eat_d, s_clr	; note new special sprites
 
 ; *** routine for sprite drawing, towards left ***
 s_left:
@@ -1221,9 +1221,10 @@ i_end:
 
 ; initial sprite speeds *** placeholder
 i_speed:
-	.byt	8, 9, 12, 12, 12	; pacman at 30.5pps, blinky at 27.1pps, pinky/inky & clyde in base at 20.3pps
+	.byt	8, 9, 9, 20, 20	; check tables for appropriate speeds, some will change!
 ; should add additional speeds for further stati
 ; ...and more entries for subsequent levels
+; *** speed for ghosts in WAIT mode might be sort of a counter for the expected delay to enter in GROW mode (which should start at fixed speed)
 
 ; initial positions (note order is pac_x, pac_y, pac_dir and the respective arrays with ghost # as index
 ; ghost arrays (1...4) are blinky, pinky, inky and clyde, with pacman first (index 0)
@@ -1231,12 +1232,10 @@ i_speed:
 ; note horizontal 2-px offset to make maze into 4-px boundaries at least
 ; vertical movements of ghosts inside the base should be ad hoc
 init_p:
-	.byt	54, 54, 54, 54, 54	; sprites initial X
-;	.byt	54, 54, 54, 46, 62	; sprites initial X (2px offset, note "wrong" intial values)
+	.byt	54, 54, 54, 54, 54	; sprites initial X (2px offset, note "wrong" intial values for last ghosts, not 46-62)
 	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
-	.byt	 4,  4,  6,  6,  6	; sprites initial direction (RDLU times two)
-	.byt	 0,  4,  6, 12, 12	; ghosts initial state (nonsense for pacman, 12=disabled)
-;	.byt	 0,  0,  0, 12, 12	; ghosts initial state (nonsense for pacman, 12=disabled)
+	.byt	 0,  4,  6,  6,  6	; sprites initial direction (RDLU times two)
+	.byt	 0,  4,  2,  0,  0	; ghosts initial state (nonsense for pacman, see pacman.h)
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
@@ -1245,10 +1244,33 @@ init_p:
 ; since the base exit is for rising ghosts only, it might be an special case *** a 2px error seems acceptable
 ; but some ghosts inside the base jump at X=46 and X=62 (5.75 & 7.75) *** will not show
 
+; ***************************************************
+; ** table of pointers for sprite drawing routines **
+spd_draw:
+	.word	s_right
+	.word	s_down
+	.word	s_left
+	.word	s_up
+
+; ** pointer tables for status selection **
+; status pointers order must match pacman.h
+;			WAIT	GROW	SCATTER	CHASE	FRIGHT	FLASH	EATEN	CLEAR	(no need for DISABLE as does nothing)
+spt_l:
+	.word	s_gh_l, s_gh_l, s_gh_l, s_gh_l, s_fg_l, s_ff_l, s_eat_l, s_clr	; note new special sprites
+spt_r:
+	.word	s_gh_r, s_gh_r, s_gh_r, s_gh_r, s_fg_r, s_ff_r, s_eat_r, s_clr	; note new special sprites
+spt_u:
+	.word	s_gh_u, s_gh_u, s_gh_u, s_gh_u, s_fg_u, s_ff_u, s_eat_u, s_clr	; note new special sprites, GROW makes sense here
+spt_d:
+	.word	s_gh_d, s_gh_d, s_gh_d, s_gh_d, s_fg_d, s_ff_d, s_eat_d, s_clr	; note new special sprites
+
+; ** ** ** end of pointer tables ** ** **
+; ***************************************
+
 ; initial map status
 i_map:
 #include "map.s"
-	.dsb	16, 0			; mandatory padding
+	.dsb	16, 0			; mandatory padding?
 
 ; BCD glyph pair tables
 ; each scanline, then 100 values from $00 to $99
