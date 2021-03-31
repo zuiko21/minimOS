@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210330-1945
+; last modified 20210331-1252
 
 ; can be assembled from this folder
 
@@ -1256,13 +1256,13 @@ spd_draw:
 ; status pointers order must match pacman.h
 ;			WAIT	GROW	SCATTER	CHASE	FRIGHT	FLASH	EATEN	CLEAR	(no need for DISABLE as does nothing)
 spt_l:
-	.word	s_gh_l, s_gh_l, s_gh_l, s_gh_l, s_fg_l, s_ff_l, s_eat_l, s_clr	; note new special sprites
+	.word	s_clr,  s_clr,  s_gh_l, s_gh_l, s_fg_l, s_ff_l, s_eat_l, s_clr	; note new special sprites
 spt_r:
-	.word	s_gh_r, s_gh_r, s_gh_r, s_gh_r, s_fg_r, s_ff_r, s_eat_r, s_clr	; note new special sprites
+	.word	s_clr,  s_clr,  s_gh_r, s_gh_r, s_fg_r, s_ff_r, s_eat_r, s_clr	; note new special sprites
 spt_u:
-	.word	s_gh_u, s_gh_u, s_gh_u, s_gh_u, s_fg_u, s_ff_u, s_eat_u, s_clr	; note new special sprites, GROW makes sense here
+	.word	s_clr,  s_gh_u, s_gh_u, s_gh_u, s_fg_u, s_ff_u, s_eat_u, s_clr	; note new special sprites, GROW only makes sense here
 spt_d:
-	.word	s_gh_d, s_gh_d, s_gh_d, s_gh_d, s_fg_d, s_ff_d, s_eat_d, s_clr	; note new special sprites
+	.word	s_clr,  s_clr,  s_gh_d, s_gh_d, s_fg_d, s_ff_d, s_eat_d, s_clr	; note new special sprites
 
 ; ** ** ** end of pointer tables ** ** **
 ; ***************************************

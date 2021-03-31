@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210330-1913
+; last modified 20210331-1254
 
 ; **************************
 ; *** zeropage variables ***
@@ -72,6 +72,7 @@ org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with 
 #define	FLASH	10
 #define	EATEN	12
 #define	CLEAR	14
+; might include extra state(s) for growing (waiting?) FRIGHTENED ghosts
 #define	DISABLE	16
 
 
