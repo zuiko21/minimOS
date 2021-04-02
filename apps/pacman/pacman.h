@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210331-1254
+; last modified 20210402-2310
 
 ; **************************
 ; *** zeropage variables ***
@@ -63,16 +63,29 @@ org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with 
 #define	LEFT	4
 #define	UP		6
 
-; status *note new values
+; status codes *note new values, most logic order
 #define	WAIT	0
 #define	GROW	2
 #define	SCATTER	4
 #define	CHASE	6
-#define	FRIGHT	8
-#define	FLASH	10
-#define	EATEN	12
-#define	CLEAR	14
-; might include extra state(s) for growing (waiting?) FRIGHTENED ghosts
-#define	DISABLE	16
+#define	CLEAR	8
+#define	EATEN	10
+#define	FRIGHT	12
+#define	FLASH	14
+#define	FR_WAIT	16
+#define	DISABLE	18
+#define	FR_GROW	20
+#define	FL_GROW	22
 
+; possible status changes
+; WAIT->GROW->SCATTER->CHASE... (switching between SCATTER and CHASE)
+; S/C->FRIGHT->FLASH->S/C (FR.-FL. alternate 5 or 3 times, alwasy ending in FLASH)
+; FRIGHT/FLASH->EATEN->GROW (being eaten, immediate exit from base)
+; WAIT->FR_WAIT->FR_GROW->FL_GROW (rare, especially the latter)
+; FLG->FRG->S (probably no time to switch more than once) fl_wait makes little sense
 
+; usual changes are 4<->6, 12<->14 and, rarely, 20<->22, that is xxx*x
+; pill does 4/6->12, 01x0->11*0, and sometimes 0->16 or 2->18
+; eaten goes 12/14->10, 11x0->1010, then 0010
+; initial sequence is 0->2->4 or, rarely, 16...20->22->12/14
+; xx000 are invisible, and 10010 as well
