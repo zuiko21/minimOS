@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP W65C816S
+D 8/16-Bit CMOS Microprocessing unit 14.0MHz, DIP-40
+K MCU
+F https://www.westerndesigncenter.com/wdc/datasheets/w65c816s.pdf
+$ENDCMP
+#
+#End Doc Library

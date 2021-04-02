@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP W65C02S
+D 8-Bit CMOS Microprocessing unit 14.0MHz, DIP-40
+K MCU
+F https://www.westerndesigncenter.com/wdc/documentation/w65c02s.pdf
+$ENDCMP
+#
+#End Doc Library

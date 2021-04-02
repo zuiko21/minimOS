@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP MOS6502
+D 8-Bit Microprocessing unit 1.0MHz, DIP-40
+K MCU
+F http://archive.6502.org/datasheets/rockwell_r650x_r651x.pdf
+$ENDCMP
+#
+#End Doc Library

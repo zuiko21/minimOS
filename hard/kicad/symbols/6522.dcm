@@ -1,0 +1,15 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP 6522
+D Peripheral Interface Adapter 1MHz, DIP-40
+K PIA
+F http://archive.6502.org/datasheets/rockwell_r6522_via.pdf
+$ENDCMP
+#
+$CMP W65C22S
+D Peripheral Interface Adapter 14MHz, DIP-40
+K PIA
+F http://www.6502.org/documents/datasheets/wdc/older/wdc_w65c22s_mar_2004.pdf
+$ENDCMP
+#
+#End Doc Library
