@@ -743,7 +743,7 @@ Wire Wire Line
 	700  7700 800  7700
 Connection ~ 800  7700
 Text GLabel 700  7700 0    50   Input ~ 0
-\SEL
+~SEL
 Wire Wire Line
 	7150 3500 7200 3500
 Wire Wire Line
@@ -868,4 +868,170 @@ Wire Wire Line
 	10100 4300 10100 5500
 Wire Wire Line
 	10100 5500 10050 5500
+$Comp
+L Memory_RAM:6264 U14
+U 1 1 606818EE
+P 6600 5400
+F 0 "U14" H 6600 6581 50  0000 C CNN
+F 1 "6264" H 6600 6490 50  0000 C CNN
+F 2 "Package_DIP:DIP-28_W15.24mm" H 6600 5400 50  0001 C CNN
+F 3 "http://users.ece.utexas.edu/~valvano/Datasheets/MCM6264.pdf" H 6600 5400 50  0001 C CNN
+	1    6600 5400
+	1    0    0    -1  
+$EndComp
+Wire Bus Line
+	8750 4350 7300 4350
+Entry Wire Line
+	8750 5200 8850 5300
+Entry Wire Line
+	8750 5100 8850 5200
+Entry Wire Line
+	8750 5000 8850 5100
+Entry Wire Line
+	8750 4900 8850 5000
+Entry Wire Line
+	8750 4800 8850 4900
+Entry Wire Line
+	8750 4700 8850 4800
+Entry Wire Line
+	8750 4600 8850 4700
+Entry Wire Line
+	8750 4500 8850 4600
+Entry Wire Line
+	7200 5300 7300 5400
+Entry Wire Line
+	7200 5200 7300 5300
+Entry Wire Line
+	7200 5100 7300 5200
+Entry Wire Line
+	7200 5000 7300 5100
+Entry Wire Line
+	7200 4900 7300 5000
+Entry Wire Line
+	7200 4800 7300 4900
+Entry Wire Line
+	7200 4700 7300 4800
+Entry Wire Line
+	7200 4600 7300 4700
+Wire Wire Line
+	8850 5300 9050 5300
+Wire Wire Line
+	8850 5200 9050 5200
+Wire Wire Line
+	8850 5100 9050 5100
+Wire Wire Line
+	8850 5000 9050 5000
+Wire Wire Line
+	8850 4900 9050 4900
+Wire Wire Line
+	8850 4800 9050 4800
+Wire Wire Line
+	8850 4700 9050 4700
+Wire Wire Line
+	8850 4600 9050 4600
+Wire Wire Line
+	7000 5300 7200 5300
+Wire Wire Line
+	7000 5200 7200 5200
+Wire Wire Line
+	7000 5100 7200 5100
+Wire Wire Line
+	7000 5000 7200 5000
+Wire Wire Line
+	7000 4900 7200 4900
+Wire Wire Line
+	7000 4800 7200 4800
+Wire Wire Line
+	7000 4700 7200 4700
+Wire Wire Line
+	7000 4600 7200 4600
+Text Label 8900 5300 0    50   ~ 0
+VD7
+Text Label 8900 5200 0    50   ~ 0
+VD6
+Text Label 8900 5100 0    50   ~ 0
+VD5
+Text Label 8900 5000 0    50   ~ 0
+VD4
+Text Label 8900 4900 0    50   ~ 0
+VD3
+Text Label 8900 4800 0    50   ~ 0
+VD2
+Text Label 8900 4700 0    50   ~ 0
+VD1
+Text Label 8900 4600 0    50   ~ 0
+VD0
+Text Label 7050 5300 0    50   ~ 0
+VD7
+Text Label 7050 5200 0    50   ~ 0
+VD6
+Text Label 7050 5100 0    50   ~ 0
+VD5
+Text Label 7050 5000 0    50   ~ 0
+VD4
+Text Label 7050 4900 0    50   ~ 0
+VD3
+Text Label 7050 4800 0    50   ~ 0
+VD2
+Text Label 7050 4700 0    50   ~ 0
+VD1
+Text Label 7050 4600 0    50   ~ 0
+VD0
+Wire Bus Line
+	7300 4350 5750 4350
+Connection ~ 7300 4350
+Entry Wire Line
+	5750 2700 5850 2800
+Entry Wire Line
+	5750 2800 5850 2900
+Entry Wire Line
+	5750 2900 5850 3000
+Entry Wire Line
+	5750 3000 5850 3100
+Entry Wire Line
+	5750 3100 5850 3200
+Entry Wire Line
+	5750 3200 5850 3300
+Entry Wire Line
+	5750 3300 5850 3400
+Entry Wire Line
+	5750 3400 5850 3500
+Wire Wire Line
+	5850 2800 6150 2800
+Wire Wire Line
+	5850 2900 6150 2900
+Wire Wire Line
+	5850 3000 6150 3000
+Wire Wire Line
+	5850 3100 6150 3100
+Wire Wire Line
+	5850 3200 6150 3200
+Wire Wire Line
+	5850 3300 6150 3300
+Wire Wire Line
+	5850 3400 6150 3400
+Wire Wire Line
+	5850 3500 6150 3500
+Wire Bus Line
+	5750 2700 5750 4350
+Wire Bus Line
+	7300 4350 7300 5400
+Wire Bus Line
+	8750 4350 8750 5300
+Text Label 5900 2800 0    50   ~ 0
+VD0
+Text Label 5900 2900 0    50   ~ 0
+VD1
+Text Label 5900 3000 0    50   ~ 0
+VD2
+Text Label 5900 3100 0    50   ~ 0
+VD3
+Text Label 5900 3200 0    50   ~ 0
+VD4
+Text Label 5900 3300 0    50   ~ 0
+VD5
+Text Label 5900 3400 0    50   ~ 0
+VD6
+Text Label 5900 3500 0    50   ~ 0
+VD7
 $EndSCHEMATC
