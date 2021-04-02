@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP 6264
+D SRAM 64 KiBit, [Obsolete]
+K SRAM 64KiBit
+F http://users.ece.utexas.edu/~valvano/Datasheets/MCM6264.pdf
+$ENDCMP
+#
+#End Doc Library

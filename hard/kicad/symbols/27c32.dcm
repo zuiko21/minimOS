@@ -1,0 +1,15 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP 2732
+D EPROM 32 KiBit, [Obsolete]
+K EPROM 32KiBit
+F http://ee.hawaii.edu/~sasaki/EE260/Labs/Datasheets/m2732a.pdf
+$ENDCMP
+#
+$CMP 27C32
+D EPROM 32 KiBit, [Obsolete]
+K EPROM 32KiBit
+F http://ee.hawaii.edu/~sasaki/EE260/Labs/Datasheets/m2732a.pdf
+$ENDCMP
+#
+#End Doc Library

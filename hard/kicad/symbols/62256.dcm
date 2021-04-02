@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP 62256
+D SRAM 256KiB
+K SRAM 256KiB
+F http://www.6502.org/users/alexis/62256.pdf
+$ENDCMP
+#
+#End Doc Library
