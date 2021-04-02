@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210402-2339
+; last modified 20210403-0157
 
 ; can be assembled from this folder
 
@@ -328,17 +328,118 @@ ip_loop:
 ; X expected to have selected ghost (already stored in sel_gh)
 ; must change sprite_x[X], sprite_y[X] and/or sp_dir[X], perhaps other paremeters too
 move:
-	TXA						; check sprite
+; in general, if pX or pY MOD 4 (see dir) is zero, may check map and AI or joystick to change direction, otherwise continue as indicated by dir
+	LDA sp_dir, X			; check my direction
+	AND #DOWN				; detect vertical movements (2 or 6) trying not to use indirect-indexed, as I prefer to keep X
+	BNE m_vert
+; some horizontal direction
+		LDA sprite_x, X		; current X pos
+		AND #3				; MOD 4
+		BEQ decide			; may change direction at crossings
+			LDA sp_dir, X	; left or right?
+			AND #LEFT		; 4=LEFT, 0=RIGHT
+			BNE m_left		; if right...
+				INC sprite_x, X
+				RTS
+m_left:
+			DEC sprite_x, X	; ...else go to the left
+			RTS
+m_vert:
+; some vertical direction
+	LDA sprite_y, X			; current Y pos, X was respected
+	AND #3					; MOD 4
+	BEQ decide				; may change direction at crossings
+		LDA sp_dir, X		; left or right?
+		AND #LEFT			; 6->4=UP, 2->0=DOWN
+		BNE m_up			; if down...
+			INC sprite_y, X
+			RTS
+m_up:
+		DEC sprite_y, X	; ...else go up
+		RTS
+; if arrived here, X or Y MOD 4 is zero, thus check map and AI or stick *** TBD
+decide:
+; check whether pacman or ghost
+	TXA						; check sprite, note X is still valid
 	BNE is_ghost			; pacman only looks for joystick input and map entries
-		INC sprite_x		; *** PLACEHOLDER
+; the joystick indicates certain desire to move... will do if map allows it
+; say d3=up, d2=left, d1=down and d0=right, 1+8 feasible movements are:
+; 0000=keep dir, 0001=try right, 0011=right or down, 0010=down, 0110=down or left, 0100=left, 1100=left or up, 1000=up, 1001=up or right
+; both possible movements are in separate tables, with usual code 0/2/4/6, and 8 for no change/invalid!
+; *** think about using zero for no-change and 2...8 instead of 0...6, change routines accordingly
+; if one of the directions is the actual one, may discard it and take the other one if possible? ***
+		LDX stick			; check desired movement
+		LDA st_des, X		; first of two tables! highest bit is prioritary, like ghosts
+		JSR peek			; check whether desired direction is feasible, move if so or return with C set otherwise
+		BCC p_did			; moved successfully
+;			LDX stick		; otherwise recheck desire *** MIGHT change, should read once and saved!
+			LDA st_alt, X	; check alternative movement, if possible
+			JMP peek		; will return -- this will IGNORE if second movement is impossible, just leave coordinates as they were
+p_did:
 		RTS
 is_ghost:
+
 		CPX #1				; *** PLACEHOLDER...
 		BNE growing
 			DEC sprite_x+1
 			RTS
 growing:
 			DEC sprite_y, X
+	RTS
+
+; *** movement feasibility routine ***
+; if desired direction (in A) is feasible, change coordinates as appropriate and clear C, otherwise return with C set
+peek:
+	PHA						; must save A, perhaps using tmp_arr saves one clock cycle
+	LDX sel_gh				; will operate on coordinate arrays, affecting X (replace LDX stick above)
+	LDY sprite_y, X			; coordinate Y is easy
+	LDA sprite_x, X			; this is X
+; original idea, depending on slowly emulated indirect-indexed jump but very fast otherwise!
+; not including pointer table (same as both tables above) is 15+10b, 14-17t, or 10 if none! ~15t
+; the ADC version, perhaps hard to convert to NMOS, was 13+10b, 27t
+#ifndef	NMOS
+	PLX						; (4)
+	JMP (pk_mv, X)			; adjust coordinates (6...)
+pk_rt:
+		INC					; typical code (2+3)
+		BNE dir_set
+pk_dn:
+		INY
+		BNE dir_set
+pk_lt:
+		DEC
+		BNE dir_set
+pk_up:
+		DEY					; no branch in this case (2)
+; ...and fall into dir_set, does need TAX
+dir_set:
+#endif
+	TAX						; it is AFTER the JMP version and BEFORE the CMP version, NOT needed in the ADC version (2)
+; alternative version, certainly the best suited for NMOS
+; this seems to be 25b WITHOUT the 10-byte table and 9/13/19/21/20t, 16.4t (RDLU-)
+#ifdef	NMOS
+; X has the coordinate already, assume RIGHT is zero, otherwise CMP #RIGHT
+	BNE pk_nr				; if right... (2/3)
+		INX					; ...move... (2/0)
+		BNE dir_sug			; ...and check (3/0)
+pk_nr:
+	CMP #DOWN				; if down... (0/2)
+	BNE pk_nd				; (0/2/3)
+		INY					; ...move and check (0/5/0)
+		BNE dir_sug
+pk_nd:
+	CMP #LEFT				; if left... (0/0/2)
+	BNE pk_nl				; (0/0/2/3)
+		DEX					; ...move and check (0/0/5/0)
+		BNE dir_sug
+pk_nl:
+	CMP #UP					; if up... (0/0/0/2)
+	BNE dir_sug				; (0/0/0/2/3)
+		DEY					; ...move and check (0/0/0/2/0)
+dir_sug:
+#endif
+; *** in any case, X and Y are the coordinates, must check map in case is not feasible (set C)
+
 	RTS
 
 ; *** *** sprite drawing *** ***
@@ -1254,7 +1355,7 @@ spd_draw:
 
 ; ** pointer tables for status selection **
 ; status pointers order must match pacman.h
-;			WAIT	GROW	SCATTER	CHASE	*CLEAR	*EATEN	FRIGHT	FLASH	*FR_W	*DISABL	*FR_G	*FL_G	(note FR_WAIT and DISABLE for padding)
+;			*WAIT	^GROW	SCATTER	CHASE	CLEAR	EATEN	FRIGHT	FLASH	*FR_W	*DISABL	^FR_G	^FL_G	(note FR_WAIT and DISABLE for padding)
 spt_l:
 	.word	s_clr,  s_clr,  s_gh_l, s_gh_l, s_clr, s_eat_l, s_fg_l, s_ff_l, s_clr,  s_clr,  s_clr,  s_clr
 spt_r:
@@ -1264,8 +1365,23 @@ spt_u:
 spt_d:
 	.word	s_clr,  s_clr,  s_gh_d, s_gh_d, s_clr, s_eat_d, s_fg_d, s_ff_d, s_clr,  s_clr,  s_clr,  s_clr
 
+#ifndef	NMOS
+pk_mv:
+	.word	pk_rt, pk_dn, pk_lt, pk_up, dir_set	; *** table of pointers, may go elsewhere but only for CMOS ***
+#endif
 ; ** ** ** end of pointer tables ** ** **
 ; ***************************************
+
+; * stick reaction tables *
+; *** think about using zero for no-change and 2...8 instead of 0...6, change routines accordingly
+; preferred movement
+st_des:
+; stick		0	1	2	3	4	5	6	7	8	9	A	B	C	D	E	F
+;			=	r	d	rd	l	lr!	ld	lrd!u	ur	ud!	urd!ul	ulr!uld!ALL!
+	.byt	8,	0,	2,	2,	4,	8,	4,	8,	6,	6,	8,	8,	6,	8,	8,	8
+; alternative movement
+st_alt:
+	.byt	8,	0,	2,	0,	4,	8,	2,	8,	6,	0,	8,	8,	4,	8,	8,	8
 
 ; initial map status
 i_map:
