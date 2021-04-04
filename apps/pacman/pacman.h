@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210402-2310
+; last modified 20210404-1358
 
 ; **************************
 ; *** zeropage variables ***
@@ -57,11 +57,15 @@ org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with 
 ; *** magic number definitions ***
 ; ********************************
 
+; bytes per line, may change for Durango·SV
+#define	LWIDTH	16
+
 ; directions
 #define	RIGHT	0
 #define	DOWN	2
 #define	LEFT	4
 #define	UP		6
+#define	KEEP	8
 
 ; status codes *note new values, most logic order
 #define	WAIT	0
@@ -76,6 +80,12 @@ org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with 
 #define	DISABLE	18
 #define	FR_GROW	20
 #define	FL_GROW	22
+
+; map flags (as returned by chk_map)
+#define	WALL	128
+#define	DOT		64
+#define	PILL	32
+#define	TU_BASE	16
 
 ; possible status changes
 ; WAIT->GROW->SCATTER->CHASE... (switching between SCATTER and CHASE)

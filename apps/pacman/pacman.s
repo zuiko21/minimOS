@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210403-0157
+; last modified 20210404-1402
 
 ; can be assembled from this folder
 
@@ -13,7 +13,7 @@
 	vram	= $7800			; suitable for Durango
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
 	lv_da	= vram + $49D	; address for lives display, usually $7C9D
-	lwidth	= 16			; formerly bytlin, bytes per line, being a power of two makes things MUCH simpler!
+
 ; I/O addresses
 	IO8lh	= $8000			; screen latch high
 	IO8ll	= $8001			; screen latch low
@@ -179,6 +179,20 @@ gameover:
 ; ***************************
 ; ***************************
 
+; * 25ms generic delay *
+; delay ~25A ms
+ms25:
+	LDX #20					; computed iterations for a 25ms delay (note below, total 9t overhead, 0.036%)
+	LDY #$78				; first iteration takes ~half the time, will run 138 cycles, actually ~19.5 iterations
+m25d:
+			DEY				; inner loop (2y)x
+			BNE m25d		; (3y-1)x, total 1279t if in full, ~689 otherwise
+		DEX					; outer loop (2x)
+		BNE m25d			; (3x-1)
+	DEC						; ** CMOS **
+		BNE ms25
+	RTS						; add 12t from call overhead
+
 ; * preload map with initial state *
 ; will just copy 0.5 Kbyte, don't bother with individual coordinates (5.9 ms)
 ; returns X=0, modifies A
@@ -195,6 +209,207 @@ nm_loop:
 	LDA #244				; number of dots (no longer automatic, not really worth it)
 	STA dots
 	RTS
+
+; * reset initial positions *
+; returns X=0, modifies A
+positions:
+	LDX #20					; 5 sprites x 4 coordinates/stati
+ip_loop:
+		LDA init_p-1, X		; get data from tables, note offsets
+		STA sprite_x-1, X	; into ZP variables
+		DEX
+		BNE ip_loop
+; I think this should reset counters and timers as well
+; lastly, print 'Ready!' message
+	LDY #<p_text			; initial patch is 'Ready!' message
+	LDA #>p_text
+	JMP l_text				; will return
+
+; *****************************************************
+; *** *** sprite moving routines, the actual AI *** ***
+; *****************************************************
+; X expected to have selected ghost (already stored in sel_gh)
+; must change sprite_x[X], sprite_y[X] and/or sp_dir[X], perhaps other paremeters too
+move:
+; in general, if pX or pY MOD 4 (see dir) is zero, may check map and AI or joystick to change direction, otherwise continue as indicated by dir
+	LDA sp_dir, X			; check my direction
+	AND #DOWN				; detect vertical movements (2 or 6) trying not to use indirect-indexed, as I prefer to keep X
+	BNE m_vert
+; some horizontal direction
+		LDA sprite_x, X		; current X pos
+		AND #3				; MOD 4
+		BEQ decide			; may change direction at crossings
+			LDA sp_dir, X	; left or right?
+			AND #LEFT		; 4=LEFT, 0=RIGHT
+			BNE m_left		; if right...
+				INC sprite_x, X
+				RTS
+m_left:
+			DEC sprite_x, X	; ...else go to the left
+			RTS
+m_vert:
+; some vertical direction
+	LDA sprite_y, X			; current Y pos, X was respected
+	AND #3					; MOD 4
+	BEQ decide				; may change direction at crossings
+		LDA sp_dir, X		; left or right?
+		AND #LEFT			; 6->4=UP, 2->0=DOWN
+		BNE m_up			; if down...
+			INC sprite_y, X
+			RTS
+m_up:
+		DEC sprite_y, X	; ...else go up
+		RTS
+; if arrived here, X or Y MOD 4 is zero, thus check map and AI or stick *** TBD
+decide:
+; check whether pacman or ghost
+	TXA						; check sprite, note X is still valid
+	BNE is_ghost			; pacman only looks for joystick input and map entries
+; the joystick indicates certain desire to move... will do if map allows it
+; say d3=up, d2=left, d1=down and d0=right, 1+8 feasible movements are:
+; 0000=keep dir, 0001=try right, 0011=right or down, 0010=down, 0110=down or left, 0100=left, 1100=left or up, 1000=up, 1001=up or right
+; both possible movements are in separate tables, with usual code 0/2/4/6, and 8 for no change/invalid!
+; note that no-change means altering coordinates as per sp_dir[X]!
+; if one of the directions is the current one, may discard it and take the other one if possible? ***
+		LDX stick			; check desired movement
+		LDA st_des, X		; first of two tables! highest bit is prioritary, like ghosts
+		CMP sp_dir			; is it the current one?
+			BEQ mv_alt		; if so, discard it and try alternative, just in case
+		CMP #KEEP			; no valid direction change?
+		BNE mv_do
+			LDA sp_dir		; keep previous
+mv_do:
+		JSR peek			; check whether desired direction is feasible, move if so or return with C set otherwise
+		BCS p_try
+			RTS				; moved successfully
+p_try:
+		LDX stick			; otherwise recheck desire *** MIGHT change, should read once and save... or not!
+mv_alt:
+		LDA st_alt, X		; check alternative movement, if possible
+		CMP #KEEP			; no valid direction change?
+		BNE alt_do
+			LDA sp_dir		; keep previous
+alt_do:
+		JMP peek			; will return -- this will IGNORE if second movement is impossible, just leave coordinates as they were
+; * ghost move management * the real AI (¡mis cojones!)
+is_ghost:
+
+		CPX #1				; *** PLACEHOLDER...
+		BNE growing
+			DEC sprite_x+1
+			RTS
+growing:
+			DEC sprite_y, X
+	RTS
+
+; *** movement feasibility routine ***
+; if desired direction (in A) is feasible, change coordinates as appropriate and clear C, otherwise return with C set
+peek:
+	STA tmp_arr+4			; must save A, using tmp_arr is faster and makes it retrieveable
+	LDX sel_gh				; will operate on coordinate arrays, affecting X (replace LDX stick above)
+	LDY sprite_y, X			; coordinate Y is easy
+	LDA sprite_x, X			; this is X
+; original idea, depending on slowly emulated indirect-indexed jump but very fast otherwise!
+; not including pointer table (same as both tables above) is 16+10b, 13-16t, or 9 if none! ~14t
+; the ADC version, perhaps hard to convert to NMOS, was 13+10b, 27t
+#ifndef	NMOS
+	LDX tmp_arr+4			; (3)
+	JMP (pk_mv, X)			; adjust coordinates (6...)
+pk_rt:
+		INC					; typical code (2+3)
+		BNE dir_set
+pk_dn:
+		INY
+		BNE dir_set
+pk_lt:
+		DEC
+		BNE dir_set
+pk_up:
+		DEY					; no branch in this case (2)
+; ...and fall into dir_set, does need TAX
+dir_set:
+#endif
+	TAX						; it is AFTER the JMP version and BEFORE the CMP version, NOT needed in the ADC version (2)
+; alternative version, certainly the best suited for NMOS
+; this seems to be 27b WITHOUT the 10-byte table and 12/16/22/24/23t, 19.4t (RDLU-)
+#ifdef	NMOS
+; X has the coordinate already, needs to retrieve direction in A!
+; assume RIGHT is zero, otherwise CMP #RIGHT
+	LDA tmp_arr+4			; eeeeeeek (3)
+;	CMP #RIGHT				; assume RIGHT is zero
+	BNE pk_nr				; if right... (2/3)
+		INX					; ...move... (2/0)
+		BNE dir_sug			; ...and check (3/0)
+pk_nr:
+	CMP #DOWN				; if down... (0/2)
+	BNE pk_nd				; (0/2/3)
+		INY					; ...move and check (0/5/0)
+		BNE dir_sug
+pk_nd:
+	CMP #LEFT				; if left... (0/0/2)
+	BNE pk_nl				; (0/0/2/3)
+		DEX					; ...move and check (0/0/5/0)
+		BNE dir_sug
+pk_nl:
+	CMP #UP					; if up... (0/0/0/2)
+	BNE dir_sug				; (0/0/0/2/3)
+		DEY					; ...move and check (0/0/0/2/0)
+dir_sug:
+#endif
+; *** in any case, X and Y are the coordinates, must check map in case is not feasible (set C) *** TBD
+	JSR chk_map				; get A.MSB with tile flags
+;	BIT #WALL				; CMOS, in case is needed could be AND plus some other LDA (chk_map)... perhaps best stored elsewhere or, even better, keep WALL at 128!
+	BPL dir_ok				; no obstacle (assumes WALL = 128)
+; note that ghosts, while in GROW or FL_GROW or FR_GROW can move with negative (d7) as long as they're inside the base (d4)
+;		AND #TU_BASE		; since D7 was set, this is base
+;	BNE dir_ok				; acceptable movement... if GROWing
+; otherwise there is a wall, thus do not move
+		SEC					; report inviable movement
+		RTS
+dir_ok:
+	TXA						; hopefully X was kept as the updated coordinate
+	LDX sel_gh				; sprite to be moved
+	STA sprite_x, X
+	STY sprite_y, X			; hopefully Y was respected too
+	LDA tmp_arr+4			; stored desired direction
+	STA sp_dir, X
+	CLC						; update was successful
+	RTS
+
+; * compute map data from pixel coordinates * REDONE, yet to be used
+chk_map:
+; newest interface is X=x, Y=y, returns them unmodified! returns A.MSN
+	TXA
+	ASL						; forget unused MSB.X
+	STA map_pt				; will be into pointer LSB
+	TYA						; get Y coordinate
+	LSR
+	LSR						; discard raster for tile row
+	LSR						; shift into X in RAM
+	ROR map_pt
+	LSR
+	ROR map_pt
+	LSR
+	ROR map_pt
+	LSR
+	ROR map_pt				; after this, C indicates left/right tile in byte
+	AND #1					; just save remaining MSB.Y
+	ORA #6					; ** valid as long as map is at $600 **
+	STA map_pt+1			; MSB (and whole pointer) is ready
+	LDA (map_pt)			; *** CMOS *** gets two consecutive tiles
+	BCC mp_left				; is the right (odd) nibble?
+		ASL					; rotate bits towards MSB
+		ASL
+		ASL
+		ASL
+mp_left:
+	RTS						; in any case, d7-d4 are the flags
+
+; ********************************
+; ********************************
+; *** *** graphic routines *** *** will change for Durango·SV
+; ********************************
+; ********************************
 
 ; * copy the intial screen to VRAM *and* the 'clean' buffer, now including dots *
 screen:
@@ -224,10 +439,10 @@ screen:
 sc_loop:
 ; check line position within row
 		LDA cur				; check coordinates
-		AND #lwidth-1		; filter column (assuming lwidth is power of 2)
+		AND #LWIDTH-1		; filter column (assuming LWIDTH is power of 2)
 		TAY					; will be used for the mask array AND map index
 		LDA cur				; now for the lowest Y-bits
-		AND #%00110000		; we only need the lowest 2 bits, assuming lwidth = 16
+		AND #%00110000		; we only need the lowest 2 bits, assuming LWIDTH = 16
 ; will place dots at every +2, instead of +3, makes pill placement MUCH easier as no page/tile crossing is done!
 ; thus, Y MOD 4 TIMES 16 could be 0 (no dots), 16 or 48 (pills only, same mask), or 32 (dots and/or pills)
 		BEQ sc_ndot			; no dots on raster 0
@@ -271,7 +486,7 @@ sc_spil:
 			BNE sc_rowm		; if not, do NOT increment! eeeeeeeeek
 				LDA map_pt	; this is the end of the tile raster, thus advance to next row
 				CLC
-				ADC #lwidth	; will advance map_pt, usually by 16
+				ADC #LWIDTH	; will advance map_pt, usually by 16
 				STA map_pt
 				BCC sc_rowm	; check possible carry
 					INC map_pt+1
@@ -309,140 +524,9 @@ sc_ndot:
 	LDA #0
 	JMP up_lives			; will return
 
-; * reset initial positions *
-; returns X=0, modifies A
-positions:
-	LDX #20					; 5 sprites x 4 coordinates/stati
-ip_loop:
-		LDA init_p-1, X		; get data from tables, note offsets
-		STA sprite_x-1, X	; into ZP variables
-		DEX
-		BNE ip_loop
-; I think this should reset counters and timers as well
-; lastly, print 'Ready!' message
-	LDY #<p_text			; initial patch is 'Ready!' message
-	LDA #>p_text
-	JMP l_text				; will return
-
-; *** *** sprite moving routines, the actual AI *** ***
-; X expected to have selected ghost (already stored in sel_gh)
-; must change sprite_x[X], sprite_y[X] and/or sp_dir[X], perhaps other paremeters too
-move:
-; in general, if pX or pY MOD 4 (see dir) is zero, may check map and AI or joystick to change direction, otherwise continue as indicated by dir
-	LDA sp_dir, X			; check my direction
-	AND #DOWN				; detect vertical movements (2 or 6) trying not to use indirect-indexed, as I prefer to keep X
-	BNE m_vert
-; some horizontal direction
-		LDA sprite_x, X		; current X pos
-		AND #3				; MOD 4
-		BEQ decide			; may change direction at crossings
-			LDA sp_dir, X	; left or right?
-			AND #LEFT		; 4=LEFT, 0=RIGHT
-			BNE m_left		; if right...
-				INC sprite_x, X
-				RTS
-m_left:
-			DEC sprite_x, X	; ...else go to the left
-			RTS
-m_vert:
-; some vertical direction
-	LDA sprite_y, X			; current Y pos, X was respected
-	AND #3					; MOD 4
-	BEQ decide				; may change direction at crossings
-		LDA sp_dir, X		; left or right?
-		AND #LEFT			; 6->4=UP, 2->0=DOWN
-		BNE m_up			; if down...
-			INC sprite_y, X
-			RTS
-m_up:
-		DEC sprite_y, X	; ...else go up
-		RTS
-; if arrived here, X or Y MOD 4 is zero, thus check map and AI or stick *** TBD
-decide:
-; check whether pacman or ghost
-	TXA						; check sprite, note X is still valid
-	BNE is_ghost			; pacman only looks for joystick input and map entries
-; the joystick indicates certain desire to move... will do if map allows it
-; say d3=up, d2=left, d1=down and d0=right, 1+8 feasible movements are:
-; 0000=keep dir, 0001=try right, 0011=right or down, 0010=down, 0110=down or left, 0100=left, 1100=left or up, 1000=up, 1001=up or right
-; both possible movements are in separate tables, with usual code 0/2/4/6, and 8 for no change/invalid!
-; *** think about using zero for no-change and 2...8 instead of 0...6, change routines accordingly
-; if one of the directions is the actual one, may discard it and take the other one if possible? ***
-		LDX stick			; check desired movement
-		LDA st_des, X		; first of two tables! highest bit is prioritary, like ghosts
-		JSR peek			; check whether desired direction is feasible, move if so or return with C set otherwise
-		BCC p_did			; moved successfully
-;			LDX stick		; otherwise recheck desire *** MIGHT change, should read once and saved!
-			LDA st_alt, X	; check alternative movement, if possible
-			JMP peek		; will return -- this will IGNORE if second movement is impossible, just leave coordinates as they were
-p_did:
-		RTS
-is_ghost:
-
-		CPX #1				; *** PLACEHOLDER...
-		BNE growing
-			DEC sprite_x+1
-			RTS
-growing:
-			DEC sprite_y, X
-	RTS
-
-; *** movement feasibility routine ***
-; if desired direction (in A) is feasible, change coordinates as appropriate and clear C, otherwise return with C set
-peek:
-	PHA						; must save A, perhaps using tmp_arr saves one clock cycle
-	LDX sel_gh				; will operate on coordinate arrays, affecting X (replace LDX stick above)
-	LDY sprite_y, X			; coordinate Y is easy
-	LDA sprite_x, X			; this is X
-; original idea, depending on slowly emulated indirect-indexed jump but very fast otherwise!
-; not including pointer table (same as both tables above) is 15+10b, 14-17t, or 10 if none! ~15t
-; the ADC version, perhaps hard to convert to NMOS, was 13+10b, 27t
-#ifndef	NMOS
-	PLX						; (4)
-	JMP (pk_mv, X)			; adjust coordinates (6...)
-pk_rt:
-		INC					; typical code (2+3)
-		BNE dir_set
-pk_dn:
-		INY
-		BNE dir_set
-pk_lt:
-		DEC
-		BNE dir_set
-pk_up:
-		DEY					; no branch in this case (2)
-; ...and fall into dir_set, does need TAX
-dir_set:
-#endif
-	TAX						; it is AFTER the JMP version and BEFORE the CMP version, NOT needed in the ADC version (2)
-; alternative version, certainly the best suited for NMOS
-; this seems to be 25b WITHOUT the 10-byte table and 9/13/19/21/20t, 16.4t (RDLU-)
-#ifdef	NMOS
-; X has the coordinate already, assume RIGHT is zero, otherwise CMP #RIGHT
-	BNE pk_nr				; if right... (2/3)
-		INX					; ...move... (2/0)
-		BNE dir_sug			; ...and check (3/0)
-pk_nr:
-	CMP #DOWN				; if down... (0/2)
-	BNE pk_nd				; (0/2/3)
-		INY					; ...move and check (0/5/0)
-		BNE dir_sug
-pk_nd:
-	CMP #LEFT				; if left... (0/0/2)
-	BNE pk_nl				; (0/0/2/3)
-		DEX					; ...move and check (0/0/5/0)
-		BNE dir_sug
-pk_nl:
-	CMP #UP					; if up... (0/0/0/2)
-	BNE dir_sug				; (0/0/0/2/3)
-		DEY					; ...move and check (0/0/0/2/0)
-dir_sug:
-#endif
-; *** in any case, X and Y are the coordinates, must check map in case is not feasible (set C)
-
-	RTS
-
+; ******************************
 ; *** *** sprite drawing *** ***
+; ******************************
 ; note tile coordinates are (x/4,y/4) from sprite upper left, although each tile is positioned (+2,+2)
 
 ; * draw all sprites *
@@ -478,7 +562,7 @@ draw_ok:
 	STA org_pt+1			; store base MSB
 	TXA						; now A is X...
 	ASL						; ...but discard unused MSB!
-	LSR org_pt+1			; divide by 16, assuming this is lwidth
+	LSR org_pt+1			; divide by 16, assuming this is LWIDTH
 	ROR
 	LSR org_pt+1
 	ROR
@@ -594,9 +678,9 @@ sh_loop:
 		STA (dest_pt), Y	; regular screen
 #endif
 		INY					; done
-		LDA org_pt			; Y has advanced twice, pointers should advance 14 (lwidth-2)
+		LDA org_pt			; Y has advanced twice, pointers should advance 14 (LWIDTH-2)
 		CLC
-		ADC #lwidth-2
+		ADC #LWIDTH-2
 		STA org_pt
 #ifndef	IOSCREEN
 		STA dest_pt			; really the same MSB
@@ -649,7 +733,7 @@ spd_set:
 ; first, save future address
 	LDA org_pt				; LSB is common with dest_pt
 	SEC
-	SBC #lwidth				; back one raster
+	SBC #LWIDTH				; back one raster
 	STA tmp_arr+2
 	LDA org_pt+1
 ;	PHP						; borrow goes on two MSBs
@@ -777,9 +861,9 @@ sv_loop:
 sv_2nd:
 		INY					; done
 		INY					; in any case, there are three bytes per (vertical) sprite raster
-		LDA org_pt			; Y has advanced thrice, pointers should advance 13 (lwidth-3)
+		LDA org_pt			; Y has advanced thrice, pointers should advance 13 (LWIDTH-3)
 		CLC
-		ADC #lwidth-3		; wink-wink-wink
+		ADC #LWIDTH-3		; wink-wink-wink
 		STA org_pt
 #ifndef	IOSCREEN
 		STA dest_pt			; really the same MSB
@@ -807,35 +891,6 @@ sv_npw:
 		CPY #24				; bytes per sprite frame, not 16!
 		BNE sv_loop
 	RTS
-
-; * compute map data from pixel coordinates * REDONE, yet to be used
-chk_map:
-; newest interface is X=x, Y=y, returns them unmodified! returns A.MSN
-	TXA
-	ASL						; forget unused MSB.X
-	STA map_pt				; will be into pointer LSB
-	TYA						; get Y coordinate
-	LSR
-	LSR						; discard raster for tile row
-	LSR						; shift into X in RAM
-	ROR map_pt
-	LSR
-	ROR map_pt
-	LSR
-	ROR map_pt
-	LSR
-	ROR map_pt				; after this, C indicates left/right tile in byte
-	AND #1					; just save remaining MSB.Y
-	ORA #6					; ** valid as long as map is at $600 **
-	STA map_pt+1			; MSB (and whole pointer) is ready
-	LDA (map_pt)			; *** CMOS *** gets two consecutive tiles
-	BCC mp_left				; is the right (odd) nibble?
-		ASL					; rotate bits towards MSB
-		ASL
-		ASL
-		ASL
-mp_left:
-	RTS						; in any case, d7-d4 are the flags
 
 ; ** alphanumeric routines ** TONS of repeated code
 ; * add points to score and display it *
@@ -893,7 +948,7 @@ ds_sc:
 #endif
 		LDA org_pt			; increase screen pointer
 		CLC
-		ADC #lwidth-1
+		ADC #LWIDTH-1
 		STA org_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
@@ -958,7 +1013,7 @@ ds_lv:
 #endif
 		LDA org_pt			; increase screen pointer
 		CLC
-		ADC #lwidth
+		ADC #LWIDTH
 		STA org_pt
 #ifdef	IOSCREEN
 		TAX					; keep low order address updated
@@ -1018,21 +1073,6 @@ l_n20:
 		CPY #25
 		BNE l_loop
 	RTS
-
-; ** timing and animations **
-; * 25ms generic delay *
-; delay ~25A ms
-ms25:
-	LDX #20					; computed iterations for a 25ms delay (note below, total 9t overhead, 0.036%)
-	LDY #$78				; first iteration takes ~half the time, will run 138 cycles, actually ~19.5 iterations
-m25d:
-			DEY				; inner loop (2y)x
-			BNE m25d		; (3y-1)x, total 1279t if in full, ~689 otherwise
-		DEX					; outer loop (2x)
-		BNE m25d			; (3x-1)
-	DEC						; ** CMOS **
-		BNE ms25
-	RTS						; add 12t from call overhead
 
 ; * fixed sprite animation *
 ; support for pacman death sound
@@ -1115,7 +1155,7 @@ sh_end:
 #endif
 		LDA org_pt
 		CLC
-		ADC #lwidth		; next line
+		ADC #LWIDTH		; next line
 		STA org_pt		; eeeek
 #ifndef	IOSCREEN
 		STA dest_pt		; is this OK?
@@ -1135,7 +1175,9 @@ af_nw:
 	RTS
 
 ; *********************
+; *********************
 ; *** sound effects ***
+; *********************
 ; *********************
 
 ; * Pacman death, animation plus integrated sound *
@@ -1295,7 +1337,9 @@ sw_down:
 	RTS
 
 ; *********************************
+; *********************************
 ; *** interrupt service routine ***
+; *********************************
 ; *********************************
 pm_isr:
 	PHA						; (3)
@@ -1373,15 +1417,14 @@ pk_mv:
 ; ***************************************
 
 ; * stick reaction tables *
-; *** think about using zero for no-change and 2...8 instead of 0...6, change routines accordingly
 ; preferred movement
 st_des:
-; stick		0	1	2	3	4	5	6	7	8	9	A	B	C	D	E	F
-;			=	r	d	rd	l	lr!	ld	lrd!u	ur	ud!	urd!ul	ulr!uld!ALL!
-	.byt	8,	0,	2,	2,	4,	8,	4,	8,	6,	6,	8,	8,	6,	8,	8,	8
+; stick		0		1		2		3		4		5		6		7		8		9		A		B		C		D		E		F
+;			=		r		d		rd		l		lr!		ld		lrd!	u		ur		ud!		urd!	ul		ulr!	uld!	ALL!
+	.byt	KEEP,	RIGHT,	DOWN,	DOWN,	LEFT,	KEEP,	LEFT,	KEEP,	UP,		UP,		KEEP,	KEEP,	UP,		KEEP,	KEEP,	KEEP
 ; alternative movement
 st_alt:
-	.byt	8,	0,	2,	0,	4,	8,	2,	8,	6,	0,	8,	8,	4,	8,	8,	8
+	.byt	KEEP,	RIGHT,	DOWN,	RIGHT,	LEFT,	KEEP,	DOWN,	KEEP,	UP,		RIGHT,	KEEP,	KEEP,	LEFT,	KEEP,	KEEP,	KEEP
 
 ; initial map status
 i_map:
