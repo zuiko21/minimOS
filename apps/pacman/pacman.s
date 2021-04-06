@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210406-1334
+; last modified 20210407-0043
 
 ; can be assembled from this folder
 
@@ -229,50 +229,12 @@ ip_loop:
 ; *** *** sprite moving routines, the actual AI *** ***
 ; *****************************************************
 ; X expected to have selected ghost (already stored in sel_gh)
-; must change sprite_x[X], sprite_y[X] and/or sp_dir[X], perhaps other paremeters too
+; must change sprite_x[X], sprite_y[X] and/or sp_dir[X], perhaps other parameters too
 move:
-; in general, if pX or pY MOD 4 (see dir) is zero, may check map and AI or joystick to change direction, otherwise continue as indicated by dir
-; *** but note! Pacman may reverse movement (left<->right or up<->down) at ANY time!
-	LDA sp_dir, X			; check my direction
-	AND #DOWN				; detect vertical movements (2 or 6) trying not to use indirect-indexed, as I prefer to keep X
-	BNE m_vert
-; some horizontal direction
-		LDA sprite_x, X		; current X pos
-		AND #3				; MOD 4
-		BEQ decide			; may change direction at crossings
-; *** pacman might invert direction at anytime
-			TXA				; is it pacman?
-			BNE m_lr		; if not, just keep moving
-; ***TBD
-m_lr:
-			LDA sp_dir, X	; left or right?
-			AND #LEFT		; 4=LEFT, 0=RIGHT
-			BNE m_left		; if right...
-				INC sprite_x, X
-				RTS
-m_left:
-			DEC sprite_x, X	; ...else go to the left
-			RTS
-m_vert:
-; some vertical direction
-	LDA sprite_y, X			; current Y pos, X was respected
-	AND #3					; MOD 4
-	BEQ decide				; may change direction at crossings
-; *** pacman might invert direction at anytime
-		LDA sp_dir, X		; left or right?
-		AND #LEFT			; 6->4=UP, 2->0=DOWN
-		BNE m_up			; if down...
-			INC sprite_y, X
-			RTS
-m_up:
-		DEC sprite_y, X	; ...else go up
-		RTS
-; if arrived here, X or Y MOD 4 is zero, thus check map and AI or stick *** TBD
-decide:
+; note Pacman may reverse movement (left<->right or up<->down) at ANY time!
 ; check whether pacman or ghost
-	TXA						; check sprite, note X is still valid
-	BNE is_ghost			; pacman only looks for joystick input and map entries
-; *** this should be another independent subroutine, as pacman may invert direction at any time!
+	TXA						; check sprite, note X is valid
+	BNE is_ghost			; pacman only looks for joystick input and map entries... and can move anytime
 ; the joystick indicates certain desire to move... will do if map allows it
 ; say d3=up, d2=left, d1=down and d0=right, 1+8 feasible movements are:
 ; 0000=keep dir, 0001=try right, 0011=right or down, 0010=down, 0110=down or left, 0100=left, 1100=left or up, 1000=up, 1001=up or right
@@ -301,6 +263,37 @@ alt_do:
 		JMP peek			; will return -- this will IGNORE if second movement is impossible, just leave coordinates as they were
 ; * ghost move management * the real AI (¡mis cojones!)
 is_ghost:
+; just for ghosts, if pX or pY MOD 4 (see dir) is zero, may check map and AI to change direction, otherwise continue as indicated by dir
+	LDA sp_dir, X			; check direction, X is still valid
+	AND #DOWN				; detect vertical movements (2 or 6) trying not to use indirect-indexed, as I prefer to keep X
+	BNE m_vert
+; some horizontal direction
+		LDA sprite_x, X		; current X pos
+		AND #3				; MOD 4
+		BEQ decide			; may change direction at crossings
+			LDA sp_dir, X	; left or right?
+			AND #LEFT		; 4=LEFT, 0=RIGHT
+			BNE m_left		; if right...
+				INC sprite_x, X
+				RTS
+m_left:
+			DEC sprite_x, X	; ...else go to the left
+			RTS
+m_vert:
+; some vertical direction
+	LDA sprite_y, X			; current Y pos, X was respected
+	AND #3					; MOD 4
+	BEQ decide				; may change direction at crossings
+		LDA sp_dir, X		; left or right?
+		AND #LEFT			; 6->4=UP, 2->0=DOWN
+		BNE m_up			; if down...
+			INC sprite_y, X
+			RTS
+m_up:
+		DEC sprite_y, X	; ...else go up
+		RTS
+; if arrived here, X or Y MOD 4 is zero, thus check map and AI *** TBD
+decide:
 
 		CPX #1				; *** PLACEHOLDER...
 		BNE growing
@@ -366,11 +359,11 @@ dir_sug:
 #endif
 ; *** in any case, X and Y are the coordinates, must check map in case is not feasible (set C) *** TBD
 	JSR chk_map				; get A.MSB with tile flags
-;	BIT #WALL				; CMOS, in case is needed could be AND plus some other LDA (chk_map)... perhaps best stored elsewhere or, even better, keep WALL at 128!
+;	BIT #WALL				; CMOS, in case is needed could be AND plus some later LDA (chk_map)... perhaps best stored elsewhere or, even better, keep WALL at 128!
 	BPL dir_ok				; no obstacle (assumes WALL = 128)
 ; note that ghosts, while in GROW or FL_GROW or FR_GROW can move with negative (d7) as long as they're inside the base (d4)
-;		AND #TU_BASE		; since D7 was set, this is base
-;	BNE dir_ok				; acceptable movement... if GROWing
+		AND #TU_BASE		; since D7 was set, this is base
+	BNE dir_ok				; acceptable movement... if GROWing
 ; otherwise there is a wall, thus do not move
 		SEC					; report inviable movement
 		RTS
@@ -387,29 +380,29 @@ dir_ok:
 ; * compute map data from pixel coordinates * REDONE, yet to be used
 chk_map:
 ; newest interface is X=x, Y=y, returns them unmodified! returns A.MSN
-	TXA
-	ASL						; forget unused MSB.X
-	STA map_pt				; will be into pointer LSB
-	TYA						; get Y coordinate
-	LSR
-	LSR						; discard raster for tile row
-	LSR						; shift into X in RAM
-	ROR map_pt
-	LSR
-	ROR map_pt
-	LSR
-	ROR map_pt
-	LSR
-	ROR map_pt				; after this, C indicates left/right tile in byte
-	AND #1					; just save remaining MSB.Y
-	ORA #6					; ** valid as long as map is at $600 **
-	STA map_pt+1			; MSB (and whole pointer) is ready
-	LDA (map_pt)			; *** CMOS *** gets two consecutive tiles
+	TXA						; A=·xxxxxoo
+	ASL						; forget unused bit A=xxxxxoo0
+	STA map_pt				; will be into pointer LSB, M=xxxxxoo0
+	TYA						; get Y coordinate A=·yyyyyrr
+	LSR						; A=0·yyyyyr
+	LSR						; discard raster for tile row  A=00·yyyyy, C=r
+	LSR						; shift into X in RAM, A=000·yyyy C=y0
+	ROR map_pt				; M=yxxxxxoo
+	LSR						; A=0000·yyy, C=y1
+	ROR map_pt				; M=yyxxxxxo
+	LSR						; A=00000·yy, C=y2
+	ROR map_pt				; M=yyyxxxxx
+	LSR						; A=000000·y, C=y3
+	ROR map_pt				; after this, C indicates left/right tile in byte M=yyyyxxxx, C=x0
+	AND #1					; just save remaining MSB.Y, A=0000000y
+	ORA #6					; ** valid as long as map is at $600 **, A=0000011y
+	STA map_pt+1			; MSB (and whole pointer) is ready, P=0000011y yyyyxxxx, C=x0
+	LDA (map_pt)			; *** CMOS *** gets two consecutive tiles, N=d7
 	BCC mp_left				; is the right (odd) nibble?
 		ASL					; rotate bits towards MSB
 		ASL
 		ASL
-		ASL
+		ASL					; in this case, N=original d3, now d7
 mp_left:
 	RTS						; in any case, d7-d4 are the flags
 
