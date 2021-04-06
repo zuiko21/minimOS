@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210404-1402
+; last modified 20210406-1334
 
 ; can be assembled from this folder
 
@@ -232,6 +232,7 @@ ip_loop:
 ; must change sprite_x[X], sprite_y[X] and/or sp_dir[X], perhaps other paremeters too
 move:
 ; in general, if pX or pY MOD 4 (see dir) is zero, may check map and AI or joystick to change direction, otherwise continue as indicated by dir
+; *** but note! Pacman may reverse movement (left<->right or up<->down) at ANY time!
 	LDA sp_dir, X			; check my direction
 	AND #DOWN				; detect vertical movements (2 or 6) trying not to use indirect-indexed, as I prefer to keep X
 	BNE m_vert
@@ -239,6 +240,11 @@ move:
 		LDA sprite_x, X		; current X pos
 		AND #3				; MOD 4
 		BEQ decide			; may change direction at crossings
+; *** pacman might invert direction at anytime
+			TXA				; is it pacman?
+			BNE m_lr		; if not, just keep moving
+; ***TBD
+m_lr:
 			LDA sp_dir, X	; left or right?
 			AND #LEFT		; 4=LEFT, 0=RIGHT
 			BNE m_left		; if right...
@@ -252,6 +258,7 @@ m_vert:
 	LDA sprite_y, X			; current Y pos, X was respected
 	AND #3					; MOD 4
 	BEQ decide				; may change direction at crossings
+; *** pacman might invert direction at anytime
 		LDA sp_dir, X		; left or right?
 		AND #LEFT			; 6->4=UP, 2->0=DOWN
 		BNE m_up			; if down...
@@ -265,6 +272,7 @@ decide:
 ; check whether pacman or ghost
 	TXA						; check sprite, note X is still valid
 	BNE is_ghost			; pacman only looks for joystick input and map entries
+; *** this should be another independent subroutine, as pacman may invert direction at any time!
 ; the joystick indicates certain desire to move... will do if map allows it
 ; say d3=up, d2=left, d1=down and d0=right, 1+8 feasible movements are:
 ; 0000=keep dir, 0001=try right, 0011=right or down, 0010=down, 0110=down or left, 0100=left, 1100=left or up, 1000=up, 1001=up or right
