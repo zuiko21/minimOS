@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210404-1358
+; last modified 20210407-2315
 
 ; **************************
 ; *** zeropage variables ***
@@ -34,7 +34,8 @@ ds_stat		.byt	0
 jiffy		.dsb	3, 0	; 24-bit jiffy counter, about 19 hours
 stick		.byt	0		; read value from 'joystick', every ISR
 tmp_arr:
-dmask		.dsb	16, 0	; 16-byte array with dot masks, also temporary space
+dmask:
+vh_mask		.dsb	16, 0	; 16-byte array with dot masks, also temporary space
 
 ; *** these MUST reside in zeropage ***
 map_pt	.word	0			; pointer to descriptor map
@@ -66,6 +67,8 @@ org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with 
 #define	LEFT	4
 #define	UP		6
 #define	KEEP	8
+
+#define	VNOTH	2
 
 ; status codes *note new values, most logic order
 #define	WAIT	0

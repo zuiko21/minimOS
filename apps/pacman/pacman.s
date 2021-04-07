@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210407-0043
+; last modified 20210407-2316
 
 ; can be assembled from this folder
 
@@ -235,6 +235,14 @@ move:
 ; check whether pacman or ghost
 	TXA						; check sprite, note X is valid
 	BNE is_ghost			; pacman only looks for joystick input and map entries... and can move anytime
+		LDA sprite_x		; check pacman coordinates, as between tiles only reversing is allowed
+		ORA sprite_y
+		AND #3
+		BEQ pac_cross
+; between tiles, check joystick and only inversions are recognised
+			LDA #VNOTH
+pac_cross:
+		STA vh_mask			; this flag will be 0 (at crossings) or 2, VNOTH, elsewhere
 ; the joystick indicates certain desire to move... will do if map allows it
 ; say d3=up, d2=left, d1=down and d0=right, 1+8 feasible movements are:
 ; 0000=keep dir, 0001=try right, 0011=right or down, 0010=down, 0110=down or left, 0100=left, 1100=left or up, 1000=up, 1001=up or right
@@ -242,24 +250,34 @@ move:
 ; note that no-change means altering coordinates as per sp_dir[X]!
 ; if one of the directions is the current one, may discard it and take the other one if possible? ***
 		LDX stick			; check desired movement
-		LDA st_des, X		; first of two tables! highest bit is prioritary, like ghosts
-		CMP sp_dir			; is it the current one?
+		LDY st_des, X		; first of two tables! highest bit is prioritary, like ghosts
+		CPY sp_dir			; is it the current one?
 			BEQ mv_alt		; if so, discard it and try alternative, just in case
-		CMP #KEEP			; no valid direction change?
+		CPY #KEEP			; no valid direction change?
 		BNE mv_do
-			LDA sp_dir		; keep previous
+			LDY sp_dir		; keep previous
 mv_do:
+; pacman may invert direction at any time, but axis change only at crossings!
+		TYA					; take direction for a moment
+		EOR sp_dir			; compare old and new direction
+		AND vh_mask			; did change axis?
+		BEQ vh_keep			; no, may reverse (or axis change allowed)
+			LDY sp_dir		; otherwise keep 
+vh_keep:
+		TYA					; peek expects new direction in A
 		JSR peek			; check whether desired direction is feasible, move if so or return with C set otherwise
 		BCS p_try
 			RTS				; moved successfully
 p_try:
 		LDX stick			; otherwise recheck desire *** MIGHT change, should read once and save... or not!
 mv_alt:
-		LDA st_alt, X		; check alternative movement, if possible
-		CMP #KEEP			; no valid direction change?
+; not sure what happens here, perhaps going from L to RU or RD will NOT change direction...
+		LDY st_alt, X		; check alternative movement, if possible
+		CPY #KEEP			; no valid direction change?
 		BNE alt_do
-			LDA sp_dir		; keep previous
+			LDY sp_dir		; keep previous
 alt_do:
+		TYA					; as defined by interface
 		JMP peek			; will return -- this will IGNORE if second movement is impossible, just leave coordinates as they were
 ; * ghost move management * the real AI (¡mis cojones!)
 is_ghost:
