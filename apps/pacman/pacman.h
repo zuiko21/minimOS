@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210407-2315
+; last modified 20210408-0925
 
 ; **************************
 ; *** zeropage variables ***
@@ -34,8 +34,21 @@ ds_stat		.byt	0
 jiffy		.dsb	3, 0	; 24-bit jiffy counter, about 19 hours
 stick		.byt	0		; read value from 'joystick', every ISR
 tmp_arr:
-dmask:
-vh_mask		.dsb	16, 0	; 16-byte array with dot masks, also temporary space
+dmask:						; 16-byte array with dot masks, also temporary space
+mul_tmp		.byt	0		; formerly tmp_arr
+hb_flag		.byt	0		; half-byte indicator (formerly tmp_arr+1)
+pre_pt		.word	0		; temporary dest_pt creation (formerly tmp_arr+2)
+des_dir		.byt	0		; desired direction (formerly tmp_arr+4)
+vh_mask		.byt	0		; direction mask to allow/disable axis changes
+cur_y		.byt	0		; current Y index for screen (formerly as cur)
+s_rot		.word	0		; rotated animation sprite (formerly cur...cur+1)
+swp_ct		.byt	0		; sweep sound counter (formerly temp)
+sqk_par		.dsb	3, 0	; squeak parametrer (formerly from cur, also using swp_ct instrad of temp)
+anim_pt		.byt	0		; frame counter (formerly temp)
+
+alt_msb		.byt	0		; formerly tmp_arr+15 (actually used?)
+
+;		.dsb	16, 0	; 16-byte array with dot masks, also temporary space
 
 ; *** these MUST reside in zeropage ***
 map_pt	.word	0			; pointer to descriptor map

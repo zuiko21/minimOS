@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210407-2316
+; last modified 20210408-0925
 
 ; can be assembled from this folder
 
@@ -324,7 +324,7 @@ growing:
 ; *** movement feasibility routine ***
 ; if desired direction (in A) is feasible, change coordinates as appropriate and clear C, otherwise return with C set
 peek:
-	STA tmp_arr+4			; must save A, using tmp_arr is faster and makes it retrieveable
+	STA des_dir				; must save A, using tmp_arr is faster and makes it retrieveable
 	LDX sel_gh				; will operate on coordinate arrays, affecting X (replace LDX stick above)
 	LDY sprite_y, X			; coordinate Y is easy
 	LDA sprite_x, X			; this is X
@@ -332,7 +332,7 @@ peek:
 ; not including pointer table (same as both tables above) is 16+10b, 13-16t, or 9 if none! ~14t
 ; the ADC version, perhaps hard to convert to NMOS, was 13+10b, 27t
 #ifndef	NMOS
-	LDX tmp_arr+4			; (3)
+	LDX des_dir				; (3)
 	JMP (pk_mv, X)			; adjust coordinates (6...)
 pk_rt:
 		INC					; typical code (2+3)
@@ -354,7 +354,7 @@ dir_set:
 #ifdef	NMOS
 ; X has the coordinate already, needs to retrieve direction in A!
 ; assume RIGHT is zero, otherwise CMP #RIGHT
-	LDA tmp_arr+4			; eeeeeeek (3)
+	LDA des_dir				; eeeeeeek (3)
 ;	CMP #RIGHT				; assume RIGHT is zero
 	BNE pk_nr				; if right... (2/3)
 		INX					; ...move... (2/0)
@@ -390,7 +390,7 @@ dir_ok:
 	LDX sel_gh				; sprite to be moved
 	STA sprite_x, X
 	STY sprite_y, X			; hopefully Y was respected too
-	LDA tmp_arr+4			; stored desired direction
+	LDA des_dir				; stored desired direction
 	STA sp_dir, X
 	CLC						; update was successful
 	RTS
@@ -453,14 +453,14 @@ screen:
 	LDA #>d_map
 	STY map_pt
 	STA map_pt+1
-	STY cur					; save this index, as it isn't valid everywhere
+	STY cur_y				; save this index, as it isn't valid everywhere
 ; now using a compact-map format, two tiles per byte, w0d0p0b0w1d1p1b1, as it makes a lot of sense!
 sc_loop:
 ; check line position within row
-		LDA cur				; check coordinates
+		LDA cur_y			; check coordinates
 		AND #LWIDTH-1		; filter column (assuming LWIDTH is power of 2)
 		TAY					; will be used for the mask array AND map index
-		LDA cur				; now for the lowest Y-bits
+		LDA cur_y			; now for the lowest Y-bits
 		AND #%00110000		; we only need the lowest 2 bits, assuming LWIDTH = 16
 ; will place dots at every +2, instead of +3, makes pill placement MUCH easier as no page/tile crossing is done!
 ; thus, Y MOD 4 TIMES 16 could be 0 (no dots), 16 or 48 (pills only, same mask), or 32 (dots and/or pills)
@@ -500,7 +500,7 @@ sc_npil:
 sc_spil:
 ; fourth raster (A=48)
 ; can only advance pointer ONCE per raster!!!!!!!!!!! eeeeeeek
-			LDA cur			; beginning of line?
+			LDA cur_y		; beginning of line?
 			AND #15			; eeeeeeeeek
 			BNE sc_rowm		; if not, do NOT increment! eeeeeeeeek
 				LDA map_pt	; this is the end of the tile raster, thus advance to next row
@@ -514,7 +514,7 @@ sc_rowm:
 			LDA dmask, Y	; take previously created mask
 sc_ndot:
 ; add mask data into screens, may retrieve Y index here
-		LDY cur				; retrieve index!
+		LDY cur_y			; retrieve index!
 		ORA (spr_pt), Y		; mix mask with original data... (5)
 		STA (org_pt), Y		; ...into buffer... (6)
 #ifdef	IOSCREEN
@@ -523,7 +523,7 @@ sc_ndot:
 #else
 		STA (dest_pt), Y	; ...and into VRAM (6)
 #endif
-		INC cur				; (5, unfortunately)
+		INC cur_y			; (5, unfortunately)
 		BNE sc_loop			; (usually 3 for 255 times, then 2)
 			INC spr_pt+1	; page crossing (5+5+5)
 			INC org_pt+1
@@ -753,27 +753,27 @@ spd_set:
 	LDA org_pt				; LSB is common with dest_pt
 	SEC
 	SBC #LWIDTH				; back one raster
-	STA tmp_arr+2
+	STA pre_pt
 	LDA org_pt+1
 ;	PHP						; borrow goes on two MSBs
 	SBC #0
-	STA tmp_arr+3			; tmp_arr+2 is future dest_pt
+	STA pre_pt+1			; future dest_pt
 ;	LDA dest_pt+1			; this MSB is different
 ;	PLP						; retrieve possible borrow
 ;	SBC #0
-;	STA tmp_arr+15			; different storage
+;	STA alt_msb				; different storage
 ; with X & Y properly set, proceed to draw
 	JSR sv_draw
 ; *** retrieve address to be cleared ***
-	LDX tmp_arr+2			; common LSB must be in X for IOSCREEN
+	LDX pre_pt				; common LSB must be in X for IOSCREEN
 	STX org_pt
-	LDA tmp_arr+3			; buffer MSB
+	LDA pre_pt+1			; buffer MSB
 	STA org_pt+1
 #ifdef	IOSCREEN
 	STA IO8lh				; eeeeeeeek
 #else
 	STX dest_pt
-;	LDA tmp_arr+15			; the other MSB
+;	LDA alt_msb				; the other MSB
 	ORA #$70				; * this is feasible as dest=$7800 and org=$0800!
 	STA dest_pt+1
 #endif
@@ -783,7 +783,7 @@ spd_set:
 
 ; *** routine for sprite drawing, upwards -- needs a VERY different approach! ***
 ; just place appropriate sprite frame and an extra byte below
-; perhaps two if between bytes
+; perhaps two if  between bytes
 s_up:
 ; must select sprite file first! I don't think this can be generic
 	LDA sel_gh				; pacman or ghost?
@@ -814,7 +814,7 @@ su_clr:
 		INX					; otherwise won't be indexed!
 #endif
 		INY					; in case a second byte is to be done
-		DEC tmp_arr+1		; was zero or one!
+		DEC hb_flag			; was zero or one!
 		BPL su_clr			; if a second byte was needed, put it too
 	RTS
 
@@ -831,18 +831,18 @@ sv_draw:
 sv_alig:
 	LSR						; A was 4 or zero, but we prefer 1 or 0
 	LSR
-	STA tmp_arr+1			; we DO need sel_gh, I must use somewhere in tmp_arr as well
+	STA hb_flag				; we DO need sel_gh, I must use somewhere in tmp_arr as well
 	LDA draw_y				; must select appropriate frame
 	AND #7					; Y MOD 8
 ; ...but this time is x24, not x16
 	ASL						; times 2
 	ASL						; times 4
 	ASL						; times 8, must be temporarily saved
-	STA tmp_arr
+	STA mul_tmp
 	ASL						; times 16, C guaranteed CLEAR
-	ADC tmp_arr				; times 24! again C is clear
-	STY tmp_arr				; this is LSB
-	ADC tmp_arr				; rectified pointer, A=Y+disp
+	ADC mul_tmp				; times 24! again C is clear
+	STY mul_tmp				; this is LSB
+	ADC mul_tmp				; rectified pointer, A=Y+disp
 	BCC sv_npc				; carry is possible
 		INX
 sv_npc:
@@ -866,7 +866,7 @@ sv_loop:
 		STA (dest_pt), Y	; regular screen
 #endif
 		INY					; ditto for next byte... in case it is needed
-		LDA tmp_arr+1		; is it?
+		LDA hb_flag			; is it?
 		BEQ sv_2nd			; no, just go for next raster
 			LDA (spr_pt), Y	; otherwise, take sprite data
 			ORA (org_pt), Y	; combine with clean screen
@@ -1104,7 +1104,7 @@ anim:
 	ASL						; times 8
 	TAY						; is index for sprite file
 	LDX #8					; number of bytes
-	STX temp				; as counter
+	STX anim_pt				; as counter
 ; this works (27b, 50t), but might reuse sprite screen address computing ***
 	LDA sprite_y			; must be kept! (3+3)
 	STA ds_stat
@@ -1137,40 +1137,40 @@ af_loop:
 ; X must have the offset from byte boundary
 		CPX #0
 		BEQ sh_end
-			STZ cur+1		; eeeeek
+			STZ s_rot+1		; eeeeek
 sha_l:
 			LSR
-			ROR cur+1
+			ROR s_rot+1
 			DEX
 			BNE sha_l
-; A holds first byte, cur+1 is second byte
-		STA cur			; save for later
-		LDA cur+1		; get shifted value
-		INC org_pt		; nicer
+; A holds first byte, s_rot+1 is second byte
+		STA s_rot			; save for later
+		LDA s_rot+1			; get shifted value
+		INC org_pt			; nicer
 		ORA (org_pt)
 #ifdef	IOSCREEN
-		LDX org_pt+1	; MSB actually
+		LDX org_pt+1		; MSB actually
 		STX IO8lh
-		LDX org_pt		; this is LSB
+		LDX org_pt			; this is LSB
 		STX IO8ll
-		STA IO8wr		; store this
+		STA IO8wr			; store this
 #else
-		INC dest_pt		; it's the second one
-		STA (dest_pt)	; ** CMOS **
-		DEC dest_pt		; back one byte
+		INC dest_pt			; it's the second one
+		STA (dest_pt)		; ** CMOS **
+		DEC dest_pt			; back one byte
 #endif
-		LDA cur			; retrieve first byte
-		DEC org_pt		; back one byte
+		LDA s_rot			; retrieve first byte
+		DEC org_pt			; back one byte
 		ORA (org_pt)
 sh_end:
 #ifdef	IOSCREEN
-		LDX org_pt+1	; MSB actually
+		LDX org_pt+1		; MSB actually
 		STX IO8lh
-		LDX org_pt		; this is LSB
+		LDX org_pt			; this is LSB
 		STX IO8ll
-		STA IO8wr		; store this
+		STA IO8wr			; store this
 #else
-		STA (dest_pt)	; ** CMOS **
+		STA (dest_pt)		; ** CMOS **
 #endif
 		LDA org_pt
 		CLC
@@ -1189,7 +1189,7 @@ sh_end:
 #endif
 af_nw:
 		INY				; next raster in animation
-		DEC temp		; one less to go
+		DEC anim_pt		; one less to go
 		BNE af_loop
 	RTS
 
@@ -1248,14 +1248,14 @@ death:
 d_rpt:
 	PHA						; iteration
 	LDA #255
-	STA temp
+	STA swp_ct
 dth_sw:
 		LDX #10
 		JSR m_beep
-		LDA temp
+		LDA swp_ct
 		SEC
 		SBC #24
-		STA temp
+		STA swp_ct
 		CMP #15
 		BCS dth_sw
 	LDA #3
@@ -1314,14 +1314,14 @@ munch:
 ; * sound after pacman eats a ghost *
 eat_gh:
 	LDA #0
-	STA temp
+	STA swp_ct
 sweep:
 		LDX #8
 		JSR m_beep
-		LDA temp
+		LDA swp_ct
 		SEC
 		SBC #4
-		STA temp
+		STA swp_ct
 		CMP #16
 		BCS sweep
 	RTS						; eeeeeeek
@@ -1331,27 +1331,27 @@ sweep:
 ; A=initial period, Y=final period, X=length
 ; uses m_beep
 squeak:
-	STA cur+1
-	STA cur		; and current
-	STY cur+2
-	STX temp
+	STA sqk_par+1
+	STA sqk_par				; and current
+	STY sqk_par+2
+	STX swp_ct
 sw_up:
-		LDX temp
+		LDX swp_ct
 		JSR m_beep
-		LDA cur
+		LDA sqk_par
 		SEC
 		SBC #3
-		STA cur
-		CMP cur+2
+		STA sqk_par
+		CMP sqk_par+2
 		BCS sw_up
 sw_down:
-		LDX temp
+		LDX swp_ct
 		JSR m_beep
-		LDA cur
+		LDA sqk_par
 		CLC
 		ADC #3
-		STA cur
-		CMP cur+1
+		STA sqk_par
+		CMP sqk_par+1
 		BCC sw_down
 	RTS
 
