@@ -3,7 +3,7 @@
 ; suitable for Durango (not Durango-SV) computer
 ; also for prototype with IOSCREEN option
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210409-0933
+; last modified 20210409-0951
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -113,6 +113,7 @@ cn_nbs:
 		CMP #CR				; new line?
 		BNE cn_ncr
 			LDA fw_ciop		; current position (LSB)
+cn_cr:
 			AND #$80		; the actual CR eeeeeeeek
 			CLC
 			ADC #$80		; then LF
@@ -149,7 +150,6 @@ cp_do:						; otherwise it is printable, or had received DLE
 			AND #7			; A=·····765
 			ADC #>font
 			STA cio_src+1	; pointer to glyph is ready
-; *** *** *** stub from BS
 			LDA fw_ciop		; get current address
 			LDX fw_ciop+1
 			STA cio_pt		; set pointer
@@ -181,7 +181,11 @@ cp_nras:
 				TYA			; recheck Y for N flag
 #endif
 				BPL cp_loop	; offset always below 128 (8x16)
-			_DR_OK
+; advance screen pointer before exit
+			INC fw_ciop
+			LDA fw_ciop
+			BIT #%01110000	; check possible linewrap (CMOS, may use AND plus LDA afterwards)
+				BNE cn_cr	; code shared with CR
 cn_end:
 		_DR_OK				; make sure C is clear
 cn_in:
