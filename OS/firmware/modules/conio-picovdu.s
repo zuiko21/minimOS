@@ -3,7 +3,7 @@
 ; suitable for Durango (not Durango-SV) computer
 ; also for prototype with IOSCREEN option
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210409-1015
+; last modified 20210409-1325
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -17,6 +17,8 @@
 ; C ->	no available char (if Y was 0)
 ; NMOS and 65816 savvy
 
+#include "../../usual.h"
+
 #define	IOSCREEN	_IOSCREEN
 
 pvdu	= $7800				; base address
@@ -29,15 +31,18 @@ IO9di	= $9FF0				; data input (TBD)
 
 .(
 	TYA						; check mode (and put into A, just in case)
-	BEQ cn_in				; Y=0 means input mode
+		BNE cn_out				; Y=0 means input mode
+	JMP cn_in
+cn_out:
 ; ***********************************
 ; *** output character (now in A) ***
 ; ***********************************
 		LDX fw_cbin			; check whether in binary mode
 		BEQ cio_ctl			; if not, check control codes
-			DEC fw_cbin		; otherwise, clear binary mode and print directly (STZ is safer!)
-			BEQ cp_do
+			_STZX fw_cbin	; otherwise, clear binary mode and print directly
+			JMP cp_do
 cio_ctl:
+;		AND #$7F			; in order to strip extended ASCII
 		CMP #FORMFEED		; reset device?
 		BNE cn_nff			; no, just print it
 ; * clear screen, not much to be inited *
@@ -61,19 +66,19 @@ cls_l:
 					STA IO8wr
 #endif
 					INY
-					BNE cls_l	; continue within page
+					BNE cls_l		; continue within page
 #ifndef	IOSCREEN
 				INC cio_pt+1
 #else
 				INX
 #endif
-				BPL cls_p		; same as cls_l if not using IOSCREEN
+				BPL cls_p	; same as cls_l if not using IOSCREEN
 			_DR_OK
 ; continue evaluating control codes
 cn_nff:
 		CMP #BS				; backspace?
 		BNE cn_nbs
-; back one char
+; * clear previous char *
 ; coordinates are stored 01111yyy y000xxxx
 ; y will remain constant, xxxx may go down to zero
 ; if xxxx is zero, do nothing... but better clear first char in line
@@ -115,9 +120,14 @@ bs_loop:
 cn_nbs:
 		CMP #CR				; new line?
 		BNE cn_ncr
+#ifdef	NMOS
+cn_cr:						; NMOS version needs this extra LDA for linewrap
+#endif
 			LDA fw_ciop		; current position (LSB)
 ; *** common code with line wrap ***
+#ifndef	NMOS
 cn_cr:
+#endif
 			AND #$80		; the actual CR eeeeeeeek
 			CLC
 			ADC #$80		; then LF
@@ -125,7 +135,7 @@ cn_cr:
 			BCC cn_cre		; check carry
 				INC fw_ciop+1
 				BPL cn_cre
-; this far, no scrolling, just wrap
+; ** this far, no scrolling, just wrap **
 					LDA #>pvdu
 					STA fw_ciop+1
 cn_cre:
@@ -133,18 +143,18 @@ cn_cre:
 cn_ncr:
 		CMP #DLE			; check for DLE
 		BNE cn_ndle
-			LDA #1			; set binary mode
-			STA fw_cbin
+; *** set binary mode ***
+			INC fw_cbin		; set binary mode, safe enough if reset with STZ
 cn_ndle:
 ; anything else?
-; PRINT HERE
+; *** PRINT GLYPH HERE ***
 		CMP #32				; check whether printable
 		BCC cn_end			; skip if < 32 (we are NOT in binary mode)
 cp_do:						; otherwise it is printable, or had received DLE
 			ASL				; times eight
 			ROL cio_src+1	; M=???????7, A=6543210·
 			ASL
-			ROL cio_src+1	; M=??????76, M=543210··
+			ROL cio_src+1	; M=??????76, A=543210··
 			ASL
 			ROL cio_src+1	; M=?????765, A=43210···
 			CLC
@@ -153,6 +163,7 @@ cp_do:						; otherwise it is printable, or had received DLE
 			LDA cio_src+1	; A=?????765
 			AND #7			; A=·····765
 			ADC #>font
+;			DEC				; or add >font -1 if no glyphs for control characters
 			STA cio_src+1	; pointer to glyph is ready
 			LDA fw_ciop		; get current address
 			LDX fw_ciop+1
@@ -188,10 +199,21 @@ cp_nras:
 ; advance screen pointer before exit
 			INC fw_ciop
 			LDA fw_ciop
+#ifndef	NMOS
 			BIT #%01110000	; check possible linewrap (CMOS, may use AND plus LDA afterwards)
-				BNE cn_cr	; code shared with CR
+#else
+			AND #%01110000
+#endif
+			BNE cn_cr		; code shared with CR
 cn_end:
 		_DR_OK				; make sure C is clear
+
+; **********************
+; *** keyboard input ***
+; **********************
+; IO9 port is read, normally 0
+; any non-zero value is stored and returned the first time, otherwise returns empty (C set)
+; any repeated characters must have a zero inbetween, 10 ms would suffice (perhaps as low as 5 ms)
 cn_in:
 	LDY IO9di				; get current data at port
 	BEQ cn_empty			; no transfer is in the making
