@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210408-0925
+; last modified 20210409-1437
 
 ; can be assembled from this folder
 
@@ -234,7 +234,7 @@ move:
 ; note Pacman may reverse movement (left<->right or up<->down) at ANY time!
 ; check whether pacman or ghost
 	TXA						; check sprite, note X is valid
-	BNE is_ghost			; pacman only looks for joystick input and map entries... and can move anytime
+	BNE is_ghost			; pacman only looks for joystick input and map entries... and can move anytime WITHIN THE CURRENT AXIS
 		LDA sprite_x		; check pacman coordinates, as between tiles only reversing is allowed
 		ORA sprite_y
 		AND #3
@@ -1444,6 +1444,11 @@ st_des:
 ; alternative movement
 st_alt:
 	.byt	KEEP,	RIGHT,	DOWN,	RIGHT,	LEFT,	KEEP,	DOWN,	KEEP,	UP,		RIGHT,	KEEP,	KEEP,	LEFT,	KEEP,	KEEP,	KEEP
+; special case between tiles
+st_horz:
+	.byt	KEEP,	RIGHT,	KEEP,	RIGHT,	LEFT,	KEEP,	LEFT,	KEEP,	KEEP,	RIGHT,	KEEP,	KEEP,	LEFT,	KEEP,	KEEP,	KEEP
+st_vert:
+	.byt	KEEP,	KEEP,	DOWN,	DOWN,	KEEP,	KEEP,	DOWN,	KEEP,	UP,		UP,		KEEP,	KEEP,	UP,		KEEP,	KEEP,	KEEP
 
 ; initial map status
 i_map:
