@@ -2,7 +2,7 @@
 ; including Durango specifics
 ; v0.6a7
 ; (c) 2015-2021 Carlos J. Santisteban
-; last modified 20210409-1340
+; last modified 20210409-1353
 
 -sysram:
 fw_isr		.word	0				; ISR vector
@@ -20,3 +20,4 @@ fw_lastk	.word	0				; address of last installed kernel jump table! new 20180116
 #endif
 fw_cbin		.byt	0				; integrated picoVDU-specifics
 fw_ciop		.word	0
+fw_io9		.byt	0				; received keypress

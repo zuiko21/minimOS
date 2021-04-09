@@ -1,6 +1,6 @@
 ; minimOS 0.6rc13 MACRO definitions
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20210409-1337
+; last modified 20210409-1352
 
 ; **************************
 ; *** standard addresses ***
@@ -116,6 +116,7 @@ PICO_VDU	=	160		; *** PLACEHOLDER ***
 #define		DOWN	10
 #define		CLRS	12
 #define		NEWL	13
+#define		DLE		16
 #define		ESC		27
 ; these may give trouble on xa65
 #define		COLON	58
