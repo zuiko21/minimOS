@@ -1,6 +1,6 @@
 ; minimOS 0.6rc11 zero-page system variables
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20210408-1310
+; last modified 20210409-0909
 
 .zero
 * = 0
@@ -46,6 +46,7 @@ local1: locpt1	.dsb	4			; variables for kernel functions @ $E4
 dq_off	= dr_aut+1					; 8b
 dq_ptr	= dr_aut+2					; 16b
 cio_pt	= dr_aut+2					; 16b for 6502-firmware CONIO
+cio_src	= dr_aut
 ; **********************************************
 
 ; *** include aliases here for local2/locpt2 ***

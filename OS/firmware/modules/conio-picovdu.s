@@ -3,7 +3,7 @@
 ; suitable for Durango (not Durango-SV) computer
 ; also for prototype with IOSCREEN option
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210408-1354
+; last modified 20210409-0933
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -36,7 +36,7 @@ IO9di	= $9FF0				; data input (TBD)
 			BEQ cp_do
 cio_ctl:
 		CMP #FORMFEED		; reset device?
-		BNE cn_out			; no, just print it
+		BNE cn_nff			; no, just print it
 ; clear screen here
 			LDY #<pvdu		; initial address
 			LDX #>pvdu		; valid MSB for IOSCREEN, black-on-white mode (%01111xxx) instead of inverse for Pacman (%00001xxx)
@@ -67,13 +67,13 @@ cls_l:
 				BPL cls_p		; same as cls_l if not using IOSCREEN
 			_DR_OK
 ; continue evaluating control codes
-cn_out:
+cn_nff:
 		CMP #BS				; backspace?
-		BNE cn_prn
+		BNE cn_nbs
 ; back one char
-; coordinates are stored 01111yyy yrrrxxxx
+; coordinates are stored 01111yyy y000xxxx
 ; y will remain constant, xxxx may go down to zero
-; if xxxx is zero, do nothing
+; if xxxx is zero, do nothing... but better clear first char in line
 ; will never cross page!
 ; with no cursor, best to clear current char after backing
 			LDA fw_ciop		; get LSB (yrrrxxxx)
@@ -103,21 +103,54 @@ bs_loop:
 				TAY
 #ifdef	IOSCREEN
 				CLC			; I/O LSB is offset + base LSB
-				ADC cio_pt
+				ADC cio_pt	; works because no page will cross between rasters!
 				STA IO8ll
 				TYA			; recheck Y for N flag
 #endif
 				BPL bs_loop	; offset always below 128 (8x16)
 			_DR_OK
-cn_prn:
+cn_nbs:
+		CMP #CR				; new line?
+		BNE cn_ncr
+			LDA fw_ciop		; current position (LSB)
+			AND #$80		; the actual CR eeeeeeeek
+			CLC
+			ADC #$80		; then LF
+			STA fw_ciop
+			BCC cn_cre		; check carry
+				INC fw_ciop+1
+				BPL cn_cre
+; this far, no scrolling, just wrap
+					LDA #>pvdu
+					STA fw_ciop+1
+cn_cre:
+			_DR_OK
+cn_ncr:
+		CMP #DLE			; check for DLE
+		BNE cn_ndle
+			LDA #1			; set binary mode
+			STA fw_cbin
+cn_ndle:
 ; anything else?
 ; PRINT HERE
 		CMP #32				; check whether printable
 		BCC cn_end			; skip if < 32 (we are NOT in binary mode)
 cp_do:						; otherwise it is printable, or had received DLE
-			
+			ASL				; times eight
+			ROL cio_src+1	; M=???????7, A=6543210·
+			ASL
+			ROL cio_src+1	; M=??????76, M=543210··
+			ASL
+			ROL cio_src+1	; M=?????765, A=43210···
+			CLC
+			ADC #<font		; add font base
+			STA cio_src
+			LDA cio_src+1	; A=?????765
+			AND #7			; A=·····765
+			ADC #>font
+			STA cio_src+1	; pointer to glyph is ready
 ; *** *** *** stub from BS
-			LDA fw_ciop		; get current address (perhaps after backing)
+			LDA fw_ciop		; get current address
 			LDX fw_ciop+1
 			STA cio_pt		; set pointer
 			STX cio_pt+1
@@ -127,12 +160,16 @@ cp_do:						; otherwise it is printable, or had received DLE
 #endif
 			LDY #0			; reset offset
 cp_loop:
-				_LDAX(cio_fn)	; glyph pattern
+				_LDAX(cio_src)	; glyph pattern
 #ifndef	IOSCREEN
 				STA (cio_pt), Y
 #else
 				STA IO8wr
 #endif
+				INC cio_src	; advance raster in font data, single byte
+				BNE cp_nras
+					INC cio_src
+cp_nras:
 				TYA			; advance offset to next raster
 				CLC
 				ADC #16
@@ -145,7 +182,6 @@ cp_loop:
 #endif
 				BPL cp_loop	; offset always below 128 (8x16)
 			_DR_OK
-; *** *** *** *** end of stub
 cn_end:
 		_DR_OK				; make sure C is clear
 cn_in:
