@@ -3,7 +3,7 @@
 ; suitable for Durango (not Durango-SV) computer
 ; also for prototype with IOSCREEN option
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210409-0951
+; last modified 20210409-1015
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -30,6 +30,9 @@ IO9di	= $9FF0				; data input (TBD)
 .(
 	TYA						; check mode (and put into A, just in case)
 	BEQ cn_in				; Y=0 means input mode
+; ***********************************
+; *** output character (now in A) ***
+; ***********************************
 		LDX fw_cbin			; check whether in binary mode
 		BEQ cio_ctl			; if not, check control codes
 			DEC fw_cbin		; otherwise, clear binary mode and print directly (STZ is safer!)
@@ -37,7 +40,7 @@ IO9di	= $9FF0				; data input (TBD)
 cio_ctl:
 		CMP #FORMFEED		; reset device?
 		BNE cn_nff			; no, just print it
-; clear screen here
+; * clear screen, not much to be inited *
 			LDY #<pvdu		; initial address
 			LDX #>pvdu		; valid MSB for IOSCREEN, black-on-white mode (%01111xxx) instead of inverse for Pacman (%00001xxx)
 			STY cio_pt		; set ZP pointer
@@ -113,6 +116,7 @@ cn_nbs:
 		CMP #CR				; new line?
 		BNE cn_ncr
 			LDA fw_ciop		; current position (LSB)
+; *** common code with line wrap ***
 cn_cr:
 			AND #$80		; the actual CR eeeeeeeek
 			CLC
@@ -189,11 +193,17 @@ cp_nras:
 cn_end:
 		_DR_OK				; make sure C is clear
 cn_in:
-; TBD ***
-	BCS cn_empty			; nothing here, keep trying
-		BCC cn_end			; send received otherwise
+	LDY IO9di				; get current data at port
+	BEQ cn_empty			; no transfer is in the making
+		CPY fw_io9			; otherwise compare with last received
+	BEQ cn_ack				; same as last, keep trying
+		STY fw_io9			; this is received and different
+		_DR_OK				; send received
 cn_empty:
+	STY fw_io9				; keep clear
+cn_ack:
 	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+
 font:
 #include "../../drivers/fonts/8x8.s"
 .)
