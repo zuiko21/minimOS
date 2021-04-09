@@ -1,6 +1,6 @@
-; minimOS 0.6rc12 MACRO definitions
+; minimOS 0.6rc13 MACRO definitions
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20200221-1043
+; last modified 20210409-1337
 
 ; **************************
 ; *** standard addresses ***
@@ -26,6 +26,7 @@ nmos_ii		=	$E2		; pointer for JMPX macro
 TASK_DEV	=	136		; back again as ft0 (standard feature)
 WIND_DEV	=	137		; new name 20161017, might become ft1
 FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entries for it! Perhaps as ft2?
+PICO_VDU	=	160		; *** PLACEHOLDER ***
 
 ; *************************************
 ; *** considerations for minimOS·16 ***
