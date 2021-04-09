@@ -2,7 +2,7 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210409-1345
+; last modified 20210409-1406
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
@@ -271,10 +271,10 @@ reloc:
 	DR_ERR(UNAVAIL)	; not yet implemented
 
 ; ***********************************
-; CONIO, basic console when available *** will include picoVDU
+; CONIO, basic console when available
 ; ***********************************
 conio:
-#include "modules/picovdu.s"
+#include "modules/conio-picovdu.s"
 
 ; base FW and minimOS support are...
 ; **************************************

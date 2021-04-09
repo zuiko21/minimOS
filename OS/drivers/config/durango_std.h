@@ -3,6 +3,8 @@
 ; (c) 2016-2021 Carlos J. Santisteban
 ; last modified 20210409-1348
 
+; Durango needs nothing as the sole driver is managed by the firmware
+
 /*; optional multitasking
 #ifdef	MULTITASK
 #ifdef	C816

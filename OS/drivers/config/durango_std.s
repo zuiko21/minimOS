@@ -16,22 +16,14 @@
 .text
 #endif
 
-; *** load appropriate drivers here, currently just the multitasking option ***
+; *** load appropriate drivers here, currently just the GENERIC firmware console ***
 driver0:
-#ifdef	MULTITASK
-#ifdef	C816
-#include	"../multitask16.s"
-#else
-#include	"../multitask.s"
-#endif
-#endif
+#include	"../conio.s"
 
 ; *** driver list in ROM ***
 ; only the addresses, in no particular order (watch out undefined drivers!)
 ; this might be generated in RAM in the future, allowing on-the-fly driver install
 
 drivers_ad:
-#ifdef	MULTITASK
 	.word	driver0		; generic list
-#endif
 	.word	0			; ***** TERMINATE LIST ***** (essential since 0.5a2)
