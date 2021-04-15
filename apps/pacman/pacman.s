@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210409-1437
+; last modified 20210415-1257
 
 ; can be assembled from this folder
 
@@ -240,9 +240,16 @@ move:
 		AND #3
 		BEQ pac_cross
 ; between tiles, check joystick and only inversions are recognised
-			LDA #VNOTH
+			LDX stick		; check desired movement
+			LDA sp_dir		; check pacman axis
+			AND #VNOTH
+			BEQ pac_hor		; if moving vertically...
+				LDY st_vert, X	; ... get possibly updated direction...
+				BRA mv_all	; ...and execute it! ** CMOS **
+pac_hor:
+			LDY st_horz, X	; otherwise is moving horizontally
+			BRA mv_all
 pac_cross:
-		STA vh_mask			; this flag will be 0 (at crossings) or 2, VNOTH, elsewhere
 ; the joystick indicates certain desire to move... will do if map allows it
 ; say d3=up, d2=left, d1=down and d0=right, 1+8 feasible movements are:
 ; 0000=keep dir, 0001=try right, 0011=right or down, 0010=down, 0110=down or left, 0100=left, 1100=left or up, 1000=up, 1001=up or right
@@ -253,26 +260,23 @@ pac_cross:
 		LDY st_des, X		; first of two tables! highest bit is prioritary, like ghosts
 		CPY sp_dir			; is it the current one?
 			BEQ mv_alt		; if so, discard it and try alternative, just in case
-		CPY #KEEP			; no valid direction change?
-		BNE mv_do
-			LDY sp_dir		; keep previous
-mv_do:
-; pacman may invert direction at any time, but axis change only at crossings!
-		TYA					; take direction for a moment
-		EOR sp_dir			; compare old and new direction
-		AND vh_mask			; did change axis?
-		BEQ vh_keep			; no, may reverse (or axis change allowed)
-			LDY sp_dir		; otherwise keep 
-vh_keep:
-		TYA					; peek expects new direction in A
-		JSR peek			; check whether desired direction is feasible, move if so or return with C set otherwise
+; *** is it possible to replace the following block by just JSR mv_all? saves 7 bytes ***
+;		CPY #KEEP			; no valid direction change?
+;		BNE mv_do
+;			LDY sp_dir		; keep previous
+;mv_do:
+;		TYA					; peek expects new direction in A
+;		JSR peek			; check whether desired direction is feasible, move if so or return with C set otherwise
+		JSR mv_all			; *** try to do movement as in Y, returns with C set if unfeasible ***
+; *** end of supposedly replaceable block ***
 		BCS p_try
 			RTS				; moved successfully
 p_try:
 		LDX stick			; otherwise recheck desire *** MIGHT change, should read once and save... or not!
 mv_alt:
-; not sure what happens here, perhaps going from L to RU or RD will NOT change direction...
 		LDY st_alt, X		; check alternative movement, if possible
+; this is where all inter-tile movements are executed, apart from alterantive direction change in crossings
+mv_all:
 		CPY #KEEP			; no valid direction change?
 		BNE alt_do
 			LDY sp_dir		; keep previous

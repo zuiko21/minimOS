@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210408-0925
+; last modified 20210415-1314
 
 ; **************************
 ; *** zeropage variables ***
@@ -39,7 +39,7 @@ mul_tmp		.byt	0		; formerly tmp_arr
 hb_flag		.byt	0		; half-byte indicator (formerly tmp_arr+1)
 pre_pt		.word	0		; temporary dest_pt creation (formerly tmp_arr+2)
 des_dir		.byt	0		; desired direction (formerly tmp_arr+4)
-vh_mask		.byt	0		; direction mask to allow/disable axis changes
+vh_mask		.byt	0		; direction mask to allow/disable axis changes *** NO LONGER IN USE
 cur_y		.byt	0		; current Y index for screen (formerly as cur)
 s_rot		.word	0		; rotated animation sprite (formerly cur...cur+1)
 swp_ct		.byt	0		; sweep sound counter (formerly temp)
