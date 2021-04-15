@@ -1,0 +1,8 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP LTC4622G
+D Multiplexed 2 1/2 digit 7 segment green LED common anode right hand decimal
+K display LED 7-segment
+$ENDCMP
+#
+#End Doc Library

@@ -269,11 +269,9 @@ $EndComp
 Wire Wire Line
 	1950 2650 1900 2650
 Wire Wire Line
-	1900 2650 1900 3850
+	1900 2650 1900 3950
 Wire Wire Line
-	550  4250 550  3850
-Wire Wire Line
-	550  3850 1400 3850
+	550  4250 550  3950
 $Comp
 L cpu-rescue:BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue Q1
 U 1 1 608143AC
@@ -844,14 +842,14 @@ Wire Wire Line
 Wire Wire Line
 	5850 2850 5650 2850
 Wire Wire Line
-	1900 3850 1900 4300
+	1900 3950 1900 4300
 Wire Wire Line
 	1900 4300 2950 4300
 Wire Wire Line
 	2950 4300 2950 4900
 Wire Wire Line
 	2950 4900 3250 4900
-Connection ~ 1900 3850
+Connection ~ 1900 3950
 Wire Wire Line
 	2950 3050 3000 3050
 Wire Wire Line
@@ -1233,9 +1231,6 @@ F 3 "" H 3250 5100 50  0001 C CNN
 	1    3250 5100
 	1    0    0    -1  
 $EndComp
-Connection ~ 1400 3850
-Wire Wire Line
-	1400 3850 1900 3850
 Wire Wire Line
 	1950 3250 1400 3250
 Connection ~ 1400 3250
@@ -1723,6 +1718,93 @@ Wire Wire Line
 	1550 6450 1550 5700
 Wire Wire Line
 	1550 5700 1750 5700
+Wire Bus Line
+	3200 750  3200 2550
+Wire Wire Line
+	550  3950 1900 3950
+$Comp
+L power:GND #PWR0115
+U 1 1 608F0193
+P 1400 3850
+F 0 "#PWR0115" H 1400 3600 50  0001 C CNN
+F 1 "GND" H 1405 3677 50  0000 C CNN
+F 2 "" H 1400 3850 50  0001 C CNN
+F 3 "" H 1400 3850 50  0001 C CNN
+	1    1400 3850
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC74 U8
+U 3 1 60907796
+P 9250 1000
+F 0 "U8" V 8883 1000 50  0000 C CNN
+F 1 "74HC74" V 8974 1000 50  0000 C CNN
+F 2 "" H 9250 1000 50  0001 C CNN
+F 3 "74xx/74hc_hct74.pdf" H 9250 1000 50  0001 C CNN
+	3    9250 1000
+	0    1    1    0   
+$EndComp
+$Comp
+L 74xx:74LS139 U4
+U 3 1 6090C838
+P 9250 1650
+F 0 "U4" V 8883 1650 50  0000 C CNN
+F 1 "74HC139" V 8974 1650 50  0000 C CNN
+F 2 "" H 9250 1650 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 9250 1650 50  0001 C CNN
+	3    9250 1650
+	0    1    1    0   
+$EndComp
+$Comp
+L 74xx:74LS139 U5
+U 3 1 6090D89D
+P 9250 2300
+F 0 "U5" V 8883 2300 50  0000 C CNN
+F 1 "74HC139" V 8974 2300 50  0000 C CNN
+F 2 "" H 9250 2300 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 9250 2300 50  0001 C CNN
+	3    9250 2300
+	0    1    1    0   
+$EndComp
+$Comp
+L 74xx:74LS139 U6
+U 3 1 6090E3CA
+P 9250 2950
+F 0 "U6" V 8883 2950 50  0000 C CNN
+F 1 "74HC139" V 8974 2950 50  0000 C CNN
+F 2 "" H 9250 2950 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 9250 2950 50  0001 C CNN
+	3    9250 2950
+	0    1    1    0   
+$EndComp
+$Comp
+L 74xx:74LS30 U11
+U 2 1 6091DC27
+P 9250 3600
+F 0 "U11" V 8883 3600 50  0000 C CNN
+F 1 "74HC30" V 8974 3600 50  0000 C CNN
+F 2 "" H 9250 3600 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS30" H 9250 3600 50  0001 C CNN
+	2    9250 3600
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8750 3600 8750 2950
+Wire Wire Line
+	8750 1000 8850 1000
+Connection ~ 8750 1650
+Wire Wire Line
+	8750 1650 8750 1000
+Connection ~ 8750 2300
+Wire Wire Line
+	8750 2300 8750 1650
+Connection ~ 8750 2950
+Wire Wire Line
+	8750 2950 8750 2300
+Wire Wire Line
+	9650 1000 9750 1000
+Wire Wire Line
+	9750 1000 9750 1650
 Wire Wire Line
 	5650 2450 5950 2450
 Wire Wire Line
@@ -1767,6 +1849,37 @@ Wire Bus Line
 	6050 3300 6050 6500
 Wire Bus Line
 	4650 1050 4650 6500
-Wire Bus Line
-	3200 750  3200 2550
+Connection ~ 9750 1650
+Wire Wire Line
+	9750 1650 9750 2300
+Connection ~ 9750 2300
+Wire Wire Line
+	9750 2300 9750 2950
+Connection ~ 9750 2950
+Wire Wire Line
+	9750 2950 9750 3600
+$Comp
+L power:GND #PWR?
+U 1 1 6097CD4D
+P 8750 3600
+F 0 "#PWR?" H 8750 3350 50  0001 C CNN
+F 1 "GND" H 8755 3427 50  0000 C CNN
+F 2 "" H 8750 3600 50  0001 C CNN
+F 3 "" H 8750 3600 50  0001 C CNN
+	1    8750 3600
+	1    0    0    -1  
+$EndComp
+Connection ~ 8750 3600
+$Comp
+L power:+5V #PWR?
+U 1 1 60980E31
+P 9750 1000
+F 0 "#PWR?" H 9750 850 50  0001 C CNN
+F 1 "+5V" H 9765 1173 50  0000 C CNN
+F 2 "" H 9750 1000 50  0001 C CNN
+F 3 "" H 9750 1000 50  0001 C CNN
+	1    9750 1000
+	1    0    0    -1  
+$EndComp
+Connection ~ 9750 1000
 $EndSCHEMATC
