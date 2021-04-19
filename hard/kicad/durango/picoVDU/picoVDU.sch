@@ -1,9 +1,10 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:picoVDU-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 1
+Sheet 1 2
 Title "picoVDU 128x128"
 Date ""
 Rev ""
@@ -243,29 +244,11 @@ Connection ~ 6200 5550
 Wire Wire Line
 	6700 2950 6850 2950
 Wire Wire Line
-	6850 2950 6850 3500
-Wire Wire Line
 	6850 5250 6700 5250
 NoConn ~ 6700 4950
 Wire Wire Line
 	1700 3850 2050 3850
 Connection ~ 1700 3850
-$Comp
-L Device:R_Network04 RN1
-U 1 1 6075D211
-P 5500 2050
-F 0 "RN1" V 5825 2050 50  0000 C CNN
-F 1 "4K7" V 5734 2050 50  0000 C CNN
-F 2 "Resistor_THT:R_Array_SIP5" V 5775 2050 50  0001 C CNN
-F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 5500 2050 50  0001 C CNN
-	1    5500 2050
-	0    -1   -1   0   
-$EndComp
-Wire Wire Line
-	6850 3500 5300 3500
-Wire Wire Line
-	5300 3500 5300 2250
-Connection ~ 6850 3500
 $Comp
 L power:GND #PWR0105
 U 1 1 60762596
@@ -308,13 +291,13 @@ Wire Wire Line
 Wire Wire Line
 	2200 4750 5700 4750
 Wire Wire Line
-	2250 1650 6200 1650
+	2250 1650 5700 1650
 $Comp
-L Memory_RAM:6116 U6
+L 6116:6116 U6
 U 1 1 607C2B43
 P 7450 4650
-F 0 "U6" H 7450 5831 50  0000 C CNN
-F 1 "6116" H 7450 5740 50  0000 C CNN
+F 0 "U6" H 7300 5600 50  0000 C CNN
+F 1 "6116" H 7600 5600 50  0000 C CNN
 F 2 "Package_DIP:DIP-24_W15.24mm" H 7450 4650 50  0001 C CNN
 F 3 "http://www.princeton.edu/~mae412/HANDOUTS/Datasheets/6116.pdf" H 7450 4650 50  0001 C CNN
 	1    7450 4650
@@ -342,10 +325,7 @@ $EndComp
 Wire Wire Line
 	6750 5550 6750 5750
 Wire Wire Line
-	6750 5750 7450 5750
-Wire Wire Line
 	8900 5750 8900 5350
-Connection ~ 7450 5750
 Wire Wire Line
 	8400 5050 8400 5750
 Wire Wire Line
@@ -394,8 +374,6 @@ Entry Wire Line
 	6900 3650 7000 3550
 Entry Wire Line
 	6950 3650 7050 3550
-Wire Wire Line
-	6850 3500 6850 5250
 Entry Wire Line
 	7000 3650 7100 3550
 Entry Wire Line
@@ -408,83 +386,6 @@ Text Label 7000 3800 1    50   ~ 0
 VA1
 Text Label 7050 3800 1    50   ~ 0
 VA0
-Entry Wire Line
-	7150 1950 7250 1850
-Entry Wire Line
-	7150 2050 7250 1950
-Entry Wire Line
-	7150 2150 7250 2050
-Entry Wire Line
-	7150 2250 7250 2150
-Entry Wire Line
-	7150 2350 7250 2250
-Entry Wire Line
-	7150 2450 7250 2350
-Entry Wire Line
-	7150 2550 7250 2450
-Entry Wire Line
-	7150 2650 7250 2550
-Entry Wire Line
-	7150 2750 7250 2650
-Entry Wire Line
-	7150 2850 7250 2750
-Entry Wire Line
-	7150 2950 7250 2850
-Wire Wire Line
-	7250 1850 7400 1850
-$Comp
-L Connector_Generic:Conn_01x11 J1
-U 1 1 6085BA23
-P 7600 2350
-F 0 "J1" H 7680 2392 50  0000 L CNN
-F 1 "LATCH ADDRESS" H 7680 2301 50  0000 L CNN
-F 2 "" H 7600 2350 50  0001 C CNN
-F 3 "~" H 7600 2350 50  0001 C CNN
-	1    7600 2350
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	7250 1950 7400 1950
-Wire Wire Line
-	7250 2050 7400 2050
-Wire Wire Line
-	7250 2150 7400 2150
-Wire Wire Line
-	7250 2250 7400 2250
-Wire Wire Line
-	7250 2350 7400 2350
-Wire Wire Line
-	7250 2450 7400 2450
-Wire Wire Line
-	7250 2550 7400 2550
-Wire Wire Line
-	7250 2650 7400 2650
-Wire Wire Line
-	7250 2750 7400 2750
-Text Label 7250 1850 0    50   ~ 0
-VA0
-Text Label 7250 1950 0    50   ~ 0
-VA1
-Text Label 7250 2050 0    50   ~ 0
-VA2
-Text Label 7250 2150 0    50   ~ 0
-VA3
-Text Label 7250 2250 0    50   ~ 0
-VA4
-Text Label 7250 2350 0    50   ~ 0
-VA5
-Text Label 7250 2450 0    50   ~ 0
-VA6
-Text Label 7250 2550 0    50   ~ 0
-VA7
-Text Label 7250 2650 0    50   ~ 0
-VA8
-Text Label 7250 2750 0    50   ~ 0
-VA9
-Wire Wire Line
-	7250 2850 7400 2850
-Text Label 7250 2850 0    50   ~ 0
-VA10
 Wire Wire Line
 	7450 3450 8900 3450
 $Comp
@@ -499,8 +400,6 @@ F 3 "" H 7450 3400 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Connection ~ 8400 5750
-Wire Wire Line
-	7450 5750 8400 5750
 Wire Wire Line
 	7450 3400 7450 3450
 Wire Wire Line
@@ -585,17 +484,6 @@ Text Label 8000 4450 0    50   ~ 0
 VD6
 Text Label 8000 4550 0    50   ~ 0
 VD7
-$Comp
-L Connector_Generic:Conn_01x08 J2
-U 1 1 6093BD0C
-P 10750 4450
-F 0 "J2" H 10830 4442 50  0000 L CNN
-F 1 "DATA BUS" H 10830 4351 50  0000 L CNN
-F 2 "" H 10750 4450 50  0001 C CNN
-F 3 "~" H 10750 4450 50  0001 C CNN
-	1    10750 4450
-	1    0    0    -1  
-$EndComp
 Entry Wire Line
 	9300 4050 9400 4150
 Entry Wire Line
@@ -629,27 +517,27 @@ Wire Wire Line
 Wire Wire Line
 	9400 4850 9550 4850
 Text Label 9400 4350 0    50   ~ 0
-VD0
+VD2
 Text Label 9400 4250 0    50   ~ 0
 VD1
 Text Label 9400 4150 0    50   ~ 0
-VD2
+VD0
 Text Label 9400 4850 0    50   ~ 0
-VD3
+VD7
 Text Label 9400 4750 0    50   ~ 0
-VD4
+VD6
 Text Label 9400 4650 0    50   ~ 0
 VD5
 Text Label 9400 4550 0    50   ~ 0
-VD6
+VD4
 Text Label 9400 4450 0    50   ~ 0
-VD7
+VD3
 $Comp
 L 74xx:74HC245 U9
 U 1 1 60984ED6
 P 10050 4650
-F 0 "U9" H 10050 5631 50  0000 C CNN
-F 1 "74HC245" H 10050 5540 50  0000 C CNN
+F 0 "U9" H 9850 5300 50  0000 C CNN
+F 1 "74HC245" H 10250 5300 50  0000 C CNN
 F 2 "" H 10050 4650 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 10050 4650 50  0001 C CNN
 	1    10050 4650
@@ -660,8 +548,6 @@ Wire Wire Line
 Wire Wire Line
 	10050 5750 10050 5450
 Connection ~ 8900 5750
-Wire Wire Line
-	8900 3450 9750 3450
 Wire Wire Line
 	10050 3450 10050 3850
 Connection ~ 8900 3450
@@ -899,8 +785,8 @@ $Comp
 L 74xx:74HCT00 U13
 U 4 1 60AA7E0E
 P 3600 3750
-F 0 "U13" V 3554 3938 50  0000 L CNN
-F 1 "74HCT00" V 3645 3938 50  0000 L CNN
+F 0 "U13" V 3650 3350 50  0000 L CNN
+F 1 "74HCT00" V 3750 3300 50  0000 L CNN
 F 2 "" H 3600 3750 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3600 3750 50  0001 C CNN
 	4    3600 3750
@@ -962,8 +848,8 @@ $Comp
 L 74xx:74HCT00 U13
 U 1 1 60BD5362
 P 3800 5950
-F 0 "U13" V 3754 5770 50  0000 R CNN
-F 1 "74HCT00" V 3845 5770 50  0000 R CNN
+F 0 "U13" V 3850 6300 50  0000 R CNN
+F 1 "74HCT00" V 3950 6400 50  0000 R CNN
 F 2 "" H 3800 5950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3800 5950 50  0001 C CNN
 	1    3800 5950
@@ -1096,7 +982,7 @@ $Comp
 L 74xx:74HC86 U15
 U 3 1 60F8DB5D
 P 7000 6300
-F 0 "U15" H 7000 6625 50  0000 C CNN
+F 0 "U15" H 7200 6450 50  0000 C CNN
 F 1 "74HC86" H 7000 6534 50  0000 C CNN
 F 2 "" H 7000 6300 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7000 6300 50  0001 C CNN
@@ -1146,8 +1032,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 9550 3000 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
-	9650 3300 9650 3750
-Wire Wire Line
 	9650 3950 9450 3950
 Wire Wire Line
 	9450 3950 9450 5700
@@ -1162,17 +1046,6 @@ Wire Wire Line
 Wire Wire Line
 	6850 5900 10550 5900
 Connection ~ 6850 5250
-$Comp
-L Connector_Generic:Conn_01x04 J3
-U 1 1 610AD836
-P 10750 5700
-F 0 "J3" H 10830 5692 50  0000 L CNN
-F 1 "CONTROL" H 10830 5601 50  0000 L CNN
-F 2 "" H 10750 5700 50  0001 C CNN
-F 3 "~" H 10750 5700 50  0001 C CNN
-	1    10750 5700
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	9550 5150 9550 5600
 Wire Wire Line
@@ -1185,25 +1058,6 @@ Text Label 10400 5800 0    50   ~ 0
 ~WE
 Text Label 10400 5900 0    50   ~ 0
 ABE
-$Comp
-L Device:R R1
-U 1 1 611548BC
-P 9750 3600
-F 0 "R1" H 9820 3646 50  0000 L CNN
-F 1 "100K" H 9820 3555 50  0000 L CNN
-F 2 "" V 9680 3600 50  0001 C CNN
-F 3 "~" H 9750 3600 50  0001 C CNN
-	1    9750 3600
-	1    0    0    -1  
-$EndComp
-Connection ~ 9750 3450
-Wire Wire Line
-	9750 3450 10050 3450
-Wire Wire Line
-	9750 3750 9650 3750
-Connection ~ 9650 3750
-Wire Wire Line
-	9650 3750 9650 3950
 $Comp
 L 74xx:74HCT02 U12
 U 3 1 6117A45F
@@ -1312,10 +1166,10 @@ $EndComp
 Wire Wire Line
 	10500 1800 10600 1800
 $Comp
-L Connector:Conn_Coaxial J4
+L Connector:Conn_Coaxial J1
 U 1 1 61226EE6
 P 11100 1800
-F 0 "J4" H 11050 2050 50  0000 L CNN
+F 0 "J1" H 11050 2050 50  0000 L CNN
 F 1 "VIDEO" H 10950 1950 50  0000 L CNN
 F 2 "" H 11100 1800 50  0001 C CNN
 F 3 " ~" H 11100 1800 50  0001 C CNN
@@ -1430,55 +1284,143 @@ Wire Wire Line
 Connection ~ 10500 1800
 Wire Wire Line
 	10500 1050 10500 1200
+Connection ~ 9150 1800
+Wire Wire Line
+	8850 1800 9150 1800
+Wire Wire Line
+	6750 5750 8400 5750
 Wire Wire Line
 	6700 4250 7050 4250
 Wire Bus Line
 	6800 3550 7150 3550
 Wire Bus Line
 	8250 3750 8250 5400
-Connection ~ 9150 1800
+$Sheet
+S 0    8550 11600 8950
+U 60824456
+F0 "Interface" 50
+F1 "picovdu-if.sch" 50
+$EndSheet
+Text GLabel 7150 3550 1    50   Input ~ 0
+VA[0..10]
+Text GLabel 10550 5600 2    50   Input ~ 0
+~DBE
+Text GLabel 10550 5700 2    50   Input ~ 0
+INV
+Text GLabel 10550 5800 2    50   Input ~ 0
+~WE
+Text GLabel 10550 5900 2    50   Input ~ 0
+ABE
 Wire Wire Line
-	8850 1800 9150 1800
+	10550 4150 10700 4150
+Wire Wire Line
+	10550 4250 10700 4250
+Wire Wire Line
+	10550 4350 10700 4350
+Wire Wire Line
+	10550 4450 10700 4450
+Wire Wire Line
+	10550 4550 10700 4550
+Wire Wire Line
+	10550 4650 10700 4650
+Wire Wire Line
+	10550 4750 10700 4750
+Wire Wire Line
+	10550 4850 10700 4850
+Entry Wire Line
+	10700 4150 10800 4050
+Entry Wire Line
+	10700 4250 10800 4150
+Entry Wire Line
+	10700 4350 10800 4250
+Entry Wire Line
+	10700 4450 10800 4350
+Entry Wire Line
+	10700 4550 10800 4450
+Entry Wire Line
+	10700 4650 10800 4550
+Entry Wire Line
+	10700 4750 10800 4650
+Entry Wire Line
+	10700 4850 10800 4750
+Text Label 10600 4150 0    50   ~ 0
+D0
+Text Label 10600 4250 0    50   ~ 0
+D1
+Text Label 10600 4350 0    50   ~ 0
+D2
+Text Label 10600 4450 0    50   ~ 0
+D3
+Text Label 10600 4550 0    50   ~ 0
+D4
+Text Label 10600 4650 0    50   ~ 0
+D5
+Text Label 10600 4750 0    50   ~ 0
+D6
+Text Label 10600 4850 0    50   ~ 0
+D7
+Text GLabel 10800 4050 1    50   Input ~ 0
+D[0..7]
+Wire Wire Line
+	6850 2950 6850 5250
+Wire Wire Line
+	5700 1650 5700 1950
 Wire Wire Line
 	7850 4550 8400 4550
+Wire Wire Line
+	7850 4450 8400 4450
+Wire Wire Line
+	7850 4350 8400 4350
+Wire Wire Line
+	7850 4250 8400 4250
+Wire Wire Line
+	7850 4150 8400 4150
+Wire Wire Line
+	7850 4050 8400 4050
+Wire Wire Line
+	7850 3950 8400 3950
+Wire Wire Line
+	7850 3850 8400 3850
+Wire Wire Line
+	7050 2350 7050 3850
+Wire Wire Line
+	7000 2450 7000 3950
 Wire Wire Line
 	6950 2550 6950 4050
 Wire Wire Line
 	6900 2650 6900 4150
 Wire Wire Line
-	7000 2450 7000 3950
-Wire Wire Line
-	7050 2350 7050 3850
-Wire Wire Line
-	6700 4750 7050 4750
-Wire Wire Line
-	6700 4650 7050 4650
-Wire Wire Line
-	6700 4550 7050 4550
+	6700 4350 7050 4350
 Wire Wire Line
 	6700 4450 7050 4450
 Wire Wire Line
-	6700 4350 7050 4350
+	6700 4550 7050 4550
 Wire Wire Line
-	7850 3850 8400 3850
+	6700 4650 7050 4650
 Wire Wire Line
-	7850 3950 8400 3950
-Wire Wire Line
-	7850 4050 8400 4050
-Wire Wire Line
-	7850 4150 8400 4150
-Wire Wire Line
-	7850 4250 8400 4250
-Wire Wire Line
-	7850 4350 8400 4350
-Wire Wire Line
-	7850 4450 8400 4450
+	6700 4750 7050 4750
 Wire Wire Line
 	6700 4850 7050 4850
 Wire Bus Line
 	6800 3550 6800 4950
 Wire Bus Line
-	9300 4050 9300 5400
+	10800 4050 10800 4750
 Wire Bus Line
-	7150 1950 7150 3550
+	9300 4050 9300 5400
+Connection ~ 5700 1650
+Wire Wire Line
+	5700 1650 6200 1650
+Connection ~ 5700 1950
+Wire Wire Line
+	5700 1950 5700 2050
+Connection ~ 5700 2050
+Wire Wire Line
+	5700 2050 5700 2150
+Connection ~ 5700 2150
+Wire Wire Line
+	5700 2150 5700 2250
+Wire Wire Line
+	8900 3450 10050 3450
+Wire Wire Line
+	9650 3300 9650 3950
 $EndSCHEMATC
