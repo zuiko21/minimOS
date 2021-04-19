@@ -614,9 +614,9 @@ Text Label 5800 5100 0    50   ~ 0
 HSYNC
 Text Label 9300 5100 0    50   ~ 0
 VSYNC
-Text Label 5800 2200 0    50   ~ 0
+Text Label 5850 2200 0    50   ~ 0
 ~DEH
-Text Label 8000 4100 0    50   ~ 0
+Text Label 7950 4100 0    50   ~ 0
 ~DEV
 Wire Wire Line
 	5800 2200 8100 2200
@@ -636,9 +636,9 @@ F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 8400 2300 50  0001 C CNN
 $EndComp
 Text Label 8700 2300 0    50   ~ 0
 DE
-Text Label 3050 3750 0    50   ~ 0
+Text Label 3200 3750 0    50   ~ 0
 ~LEND
-Text Label 7650 4800 0    50   ~ 0
+Text Label 7650 4900 0    50   ~ 0
 ~FEND
 Wire Wire Line
 	5800 3900 4000 3900
@@ -775,8 +775,6 @@ Wire Wire Line
 	7400 5000 7650 5000
 Wire Wire Line
 	7650 5000 7650 4800
-Wire Bus Line
-	2700 1250 7700 1250
 $Comp
 L power:GND #PWR?
 U 1 1 60903516
@@ -788,4 +786,8 @@ F 3 "" H 7400 5200 50  0001 C CNN
 	1    7400 5200
 	1    0    0    -1  
 $EndComp
+Wire Bus Line
+	2700 1250 7700 1250
+Text Notes 4100 3600 0    50   ~ 0
+May use an HC10 here,\nplacing U13A for ~LE
 $EndSCHEMATC
