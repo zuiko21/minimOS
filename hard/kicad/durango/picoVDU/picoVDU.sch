@@ -999,18 +999,14 @@ Connection ~ 5900 5600
 $Comp
 L 74xx:74HC86 U15
 U 1 1 60FA4104
-P 4700 6900
-F 0 "U15" H 4700 7225 50  0000 C CNN
-F 1 "74HC86" H 4700 7134 50  0000 C CNN
-F 2 "" H 4700 6900 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 4700 6900 50  0001 C CNN
-	1    4700 6900
+P 9750 6000
+F 0 "U15" H 9750 5800 50  0000 C CNN
+F 1 "74HC86" H 9750 5700 50  0000 C CNN
+F 2 "" H 9750 6000 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 9750 6000 50  0001 C CNN
+	1    9750 6000
 	-1   0    0    -1  
 $EndComp
-Connection ~ 5000 6800
-Wire Wire Line
-	5000 6800 5000 7000
-NoConn ~ 4400 6900
 Wire Wire Line
 	6100 6000 7900 6000
 Wire Wire Line
@@ -1042,10 +1038,7 @@ Wire Wire Line
 Wire Wire Line
 	7000 5800 10550 5800
 Wire Wire Line
-	6850 5250 6850 5900
-Wire Wire Line
-	6850 5900 10550 5900
-Connection ~ 6850 5250
+	10050 5900 10550 5900
 Wire Wire Line
 	9550 5150 9550 5600
 Wire Wire Line
@@ -1057,7 +1050,7 @@ Text Label 10400 5600 0    50   ~ 0
 Text Label 10400 5800 0    50   ~ 0
 ~WE
 Text Label 10400 5900 0    50   ~ 0
-ABE
+~ABE
 $Comp
 L 74xx:74HCT02 U12
 U 3 1 6117A45F
@@ -1188,7 +1181,7 @@ Wire Wire Line
 Wire Wire Line
 	7950 2800 7950 6300
 Text Label 10400 5700 0    50   ~ 0
-~INV
+INV
 $Comp
 L Transistor_BJT:BC547 Q1
 U 1 1 607A0165
@@ -1310,7 +1303,7 @@ INV
 Text GLabel 10550 5800 2    50   Input ~ 0
 ~WE
 Text GLabel 10550 5900 2    50   Input ~ 0
-ABE
+~ABE
 Wire Wire Line
 	10550 4150 10700 4150
 Wire Wire Line
@@ -1365,6 +1358,50 @@ Wire Wire Line
 	6850 2950 6850 5250
 Wire Wire Line
 	5700 1650 5700 1950
+Connection ~ 5700 1650
+Wire Wire Line
+	5700 1650 6200 1650
+Connection ~ 5700 1950
+Wire Wire Line
+	5700 1950 5700 2050
+Connection ~ 5700 2050
+Wire Wire Line
+	5700 2050 5700 2150
+Connection ~ 5700 2150
+Wire Wire Line
+	5700 2150 5700 2250
+Wire Wire Line
+	8900 3450 10050 3450
+Wire Wire Line
+	9650 3300 9650 3950
+$Comp
+L power:GND #PWR0116
+U 1 1 609EEC50
+P 8400 3750
+F 0 "#PWR0116" H 8400 3500 50  0001 C CNN
+F 1 "GND" H 8405 3577 50  0000 C CNN
+F 2 "" H 8400 3750 50  0001 C CNN
+F 3 "" H 8400 3750 50  0001 C CNN
+	1    8400 3750
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:+5V #PWR0119
+U 1 1 60A5AB21
+P 10050 6100
+F 0 "#PWR0119" H 10050 5950 50  0001 C CNN
+F 1 "+5V" V 10065 6228 50  0000 L CNN
+F 2 "" H 10050 6100 50  0001 C CNN
+F 3 "" H 10050 6100 50  0001 C CNN
+	1    10050 6100
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	6850 5250 6850 5900
+Wire Wire Line
+	6850 5900 9450 5900
+Wire Wire Line
+	9450 5900 9450 6000
 Wire Wire Line
 	7850 4550 8400 4550
 Wire Wire Line
@@ -1407,20 +1444,5 @@ Wire Bus Line
 	10800 4050 10800 4750
 Wire Bus Line
 	9300 4050 9300 5400
-Connection ~ 5700 1650
-Wire Wire Line
-	5700 1650 6200 1650
-Connection ~ 5700 1950
-Wire Wire Line
-	5700 1950 5700 2050
-Connection ~ 5700 2050
-Wire Wire Line
-	5700 2050 5700 2150
-Connection ~ 5700 2150
-Wire Wire Line
-	5700 2150 5700 2250
-Wire Wire Line
-	8900 3450 10050 3450
-Wire Wire Line
-	9650 3300 9650 3950
+Connection ~ 6850 5250
 $EndSCHEMATC
