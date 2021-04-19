@@ -301,7 +301,7 @@ Wire Wire Line
 	4300 3000 5450 3000
 Wire Wire Line
 	5450 3000 5450 2600
-Text GLabel 3500 3750 2    50   Input ~ 0
+Text GLabel 3350 3750 2    50   Input ~ 0
 ~WE
 Wire Wire Line
 	2200 3450 2150 3450
@@ -329,7 +329,7 @@ NoConn ~ 3200 4200
 NoConn ~ 3200 4300
 NoConn ~ 3200 4400
 Wire Wire Line
-	3200 3750 3500 3750
+	3200 3750 3350 3750
 Wire Wire Line
 	3750 3450 3200 3450
 Wire Wire Line
@@ -338,6 +338,105 @@ Wire Wire Line
 	3700 3100 3700 3550
 Wire Wire Line
 	3700 3550 3200 3550
+Wire Wire Line
+	3200 3750 3200 3950
+Wire Wire Line
+	3200 3950 3350 3950
+Connection ~ 3200 3750
+Text GLabel 3350 3950 2    50   Input ~ 0
+~DBE
+Text Label 2200 4500 2    50   ~ 0
+~IO8U
+Text Label 2200 3750 2    50   ~ 0
+~IO8Q
+Text GLabel 3800 4500 2    50   Input ~ 0
+~ABE
+$Comp
+L 74xx:74LS10 U8
+U 4 1 60A6F2D7
+P 6250 2100
+F 0 "U8" H 6480 2146 50  0000 L CNN
+F 1 "74HCT10" H 6480 2055 50  0000 L CNN
+F 2 "" H 6250 2100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS10" H 6250 2100 50  0001 C CNN
+	4    6250 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74LS21 U10
+U 3 1 60A708DE
+P 7050 2100
+F 0 "U10" H 7280 2146 50  0000 L CNN
+F 1 "74HC21" H 7280 2055 50  0000 L CNN
+F 2 "" H 7050 2100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 7050 2100 50  0001 C CNN
+	3    7050 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74LS20 U11
+U 3 1 60A7179A
+P 7850 2100
+F 0 "U11" H 8080 2146 50  0000 L CNN
+F 1 "74HC20" H 8080 2055 50  0000 L CNN
+F 2 "" H 7850 2100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS20" H 7850 2100 50  0001 C CNN
+	3    7850 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HCT02 U12
+U 5 1 60A729F0
+P 8650 2100
+F 0 "U12" H 8880 2146 50  0000 L CNN
+F 1 "74HCT02" H 8880 2055 50  0000 L CNN
+F 2 "" H 8650 2100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 8650 2100 50  0001 C CNN
+	5    8650 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HCT00 U13
+U 5 1 60A7455E
+P 9500 2100
+F 0 "U13" H 9730 2146 50  0000 L CNN
+F 1 "74HCT00" H 9730 2055 50  0000 L CNN
+F 2 "" H 9500 2100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 9500 2100 50  0001 C CNN
+	5    9500 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC86 U15
+U 5 1 60A7627A
+P 10300 2100
+F 0 "U15" H 10530 2146 50  0000 L CNN
+F 1 "74HC86" H 10530 2055 50  0000 L CNN
+F 2 "" H 10300 2100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 10300 2100 50  0001 C CNN
+	5    10300 2100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5450 1600 6250 1600
+Connection ~ 5450 1600
+Connection ~ 6250 1600
+Wire Wire Line
+	6250 1600 7050 1600
+Connection ~ 7050 1600
+Wire Wire Line
+	7050 1600 7850 1600
+Connection ~ 7850 1600
+Wire Wire Line
+	7850 1600 8650 1600
+Connection ~ 8650 1600
+Wire Wire Line
+	8650 1600 9500 1600
+Connection ~ 9500 1600
+Wire Wire Line
+	9500 1600 10300 1600
+Wire Wire Line
+	5450 2600 6250 2600
 Wire Bus Line
 	5100 1300 5100 1800
 Wire Bus Line
@@ -346,4 +445,20 @@ Wire Bus Line
 	1950 1350 1950 2300
 Wire Bus Line
 	3550 1350 3550 2300
+Connection ~ 5450 2600
+Connection ~ 6250 2600
+Wire Wire Line
+	6250 2600 7050 2600
+Connection ~ 7050 2600
+Wire Wire Line
+	7050 2600 7850 2600
+Connection ~ 7850 2600
+Wire Wire Line
+	7850 2600 8650 2600
+Connection ~ 8650 2600
+Wire Wire Line
+	8650 2600 9500 2600
+Connection ~ 9500 2600
+Wire Wire Line
+	9500 2600 10300 2600
 $EndSCHEMATC
