@@ -18,17 +18,11 @@ loop:
 	BNE loop
 	INC
 wait:
-	JSR delay
-	JSR delay
-	JSR delay
-	JSR delay
-	JSR delay
-	JSR delay
 	INY
 	BNE wait
 	TAY
 	BNE start
-	BEQ *
+	BEQ start
 delay:
 	JSR ret
 	JSR ret
