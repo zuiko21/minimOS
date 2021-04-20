@@ -511,7 +511,10 @@ Wire Wire Line
 Connection ~ 2550 5450
 Wire Wire Line
 	1350 5450 1350 5150
-Text Label 1950 5400 1    50   ~ 0
+Wire Wire Line
+	1950 5350 1950 5200
+Connection ~ 1950 5350
+Text Label 1950 5200 3    50   ~ 0
 ~PSEL
 Text Label 1350 5450 1    50   ~ 0
 ~SEL
@@ -678,6 +681,7 @@ Text Notes 1950 5000 1    50   ~ 0
 ~SEL~ OR ~PSEL
 Text Label 3000 5150 0    50   ~ 0
 ~SEL
+NoConn ~ 1950 5200
 Wire Bus Line
 	5100 1300 5100 1800
 Wire Bus Line

@@ -1,6 +1,5 @@
 EESchema Schematic File Version 4
-LIBS:picoVDU-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1045,12 +1044,6 @@ Wire Wire Line
 	9550 5600 10550 5600
 Wire Wire Line
 	10550 5700 9450 5700
-Text Label 10400 5600 0    50   ~ 0
-~DBE
-Text Label 10400 5800 0    50   ~ 0
-~WE
-Text Label 10400 5900 0    50   ~ 0
-~ABE
 $Comp
 L 74xx:74HCT02 U12
 U 3 1 6117A45F
@@ -1180,8 +1173,6 @@ Wire Wire Line
 	9150 2800 9150 2100
 Wire Wire Line
 	7950 2800 7950 6300
-Text Label 10400 5700 0    50   ~ 0
-INV
 $Comp
 L Transistor_BJT:BC547 Q1
 U 1 1 607A0165
@@ -1295,7 +1286,7 @@ Text GLabel 10550 5600 2    50   Input ~ 0
 Text GLabel 10550 5700 2    50   Input ~ 0
 INV
 Text GLabel 10550 5800 2    50   Input ~ 0
-~WE
+~DWE
 Text GLabel 10550 5900 2    50   Input ~ 0
 ~ABE
 Wire Wire Line
@@ -1445,4 +1436,6 @@ Wire Bus Line
 	8250 3750 8250 5400
 Wire Bus Line
 	9300 4050 9300 5400
+Text Label 9300 5900 0    50   ~ 0
+ABE
 $EndSCHEMATC
