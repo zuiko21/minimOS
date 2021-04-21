@@ -1,9 +1,9 @@
 ; firmware module for minimOS
 ; pico-VDU basic 16x16 firmware console 0.9.6a1
-; suitable for Durango (not Durango-SV) computer
-; also for prototype with IOSCREEN option
+; suitable for Durango-proto (not Durango-X/SV) computer
+; also for any other computer with picoVDU connected via IOSCREEN option
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210409-1325
+; last modified 20210421-2127
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -25,7 +25,7 @@ pvdu	= $7800				; base address
 #ifdef	IOSCREEN
 IO8lh	= $8000				; I/O Screen addresses (for prototype)
 IO8ll	= $8001
-IO8wr	= $8003
+IO8wr	= $8003				; *** THIS WILL CHANGE TO $8002 ***
 #endif
 IO9di	= $9FF0				; data input (TBD)
 
@@ -204,9 +204,16 @@ cp_nras:
 #else
 			AND #%01110000
 #endif
-			BNE cn_cr		; code shared with CR
+			BEQ cn_newl
 cn_end:
-		_DR_OK				; make sure C is clear
+				_DR_OK		; make sure C is clear
+cn_newl:
+#ifdef	NMOS
+			DEC fw_ciop		; eeeeeek
+#else
+			DEC
+#endif
+			BNE cn_cr		; code shared with CR
 
 ; **********************
 ; *** keyboard input ***
