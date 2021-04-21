@@ -1,8 +1,6 @@
 EESchema Schematic File Version 4
-LIBS:power
-LIBS:74xx
 LIBS:sv-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -182,7 +180,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 9550 5100 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L 74xx:74HC374 U11
+L 74xx:74LS374 U11
 U 1 1 6075F5C4
 P 6650 3300
 F 0 "U11" H 6650 4281 50  0000 C CNN
@@ -267,7 +265,7 @@ F 1 "470" V 10305 3400 50  0000 C CNN
 F 2 "" H 10200 3400 50  0001 C CNN
 F 3 "~" H 10200 3400 50  0001 C CNN
 	1    10200 3400
-	0    -1   -1   0   
+	0    1    1    0   
 $EndComp
 Wire Wire Line
 	10050 2800 10350 2800
@@ -976,8 +974,6 @@ Wire Wire Line
 Wire Wire Line
 	1600 1400 1600 1300
 Connection ~ 2400 2400
-Wire Wire Line
-	6650 4100 7550 4100
 Connection ~ 7550 4100
 Wire Wire Line
 	7550 4100 7550 4300
@@ -1082,14 +1078,14 @@ F 3 "" H 4450 2400 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Connection ~ 4450 2400
-Text Label 7250 4600 0    50   ~ 0
+Text Label 7300 4600 0    50   ~ 0
 VD0
-Text Label 8850 4600 0    50   ~ 0
+Text Label 8900 4600 0    50   ~ 0
 VD0
-Text Label 5850 2800 0    50   ~ 0
+Text Label 5900 2800 0    50   ~ 0
 VD0
 $Comp
-L Memory_RAM:6264 U14
+L 6264:6264 U14
 U 1 1 606818EE
 P 6850 5400
 F 0 "U14" H 6850 6650 50  0000 C CNN
@@ -1677,7 +1673,6 @@ Wire Bus Line
 Connection ~ 2150 5900
 Text Label 800  450  1    50   ~ 0
 Q4
-Connection ~ 6850 6500
 Wire Wire Line
 	5900 5750 5900 5900
 Wire Wire Line
@@ -1714,9 +1709,6 @@ Wire Wire Line
 NoConn ~ 7250 5500
 Wire Wire Line
 	6150 3800 6150 4100
-Wire Wire Line
-	6150 4100 6650 4100
-Connection ~ 6650 4100
 $Comp
 L Connector_Generic:Conn_01x08 J1
 U 1 1 62E98B77
@@ -1776,15 +1768,15 @@ F 3 "~" H 11000 3000 50  0001 C CNN
 $EndComp
 Text Label 10050 4600 0    50   ~ 0
 D0
-Text Label 11100 2850 0    50   ~ 0
+Text Label 10750 2650 0    50   ~ 0
 HSYNC
-Text Label 11100 2950 0    50   ~ 0
+Text Label 10700 2900 1    50   ~ 0
 VSYNC
-Text Label 11100 3050 0    50   ~ 0
+Text Label 10650 3000 0    50   ~ 0
 RED
-Text Label 11100 3150 0    50   ~ 0
+Text Label 10600 3100 0    50   ~ 0
 GREEN
-Text Label 11100 3250 0    50   ~ 0
+Text Label 10700 3400 0    50   ~ 0
 BLUE
 Wire Wire Line
 	2250 7700 3650 7700
@@ -1806,9 +1798,9 @@ F 3 "~" H 500 7650 50  0001 C CNN
 	1    500  7650
 	-1   0    0    -1  
 $EndComp
-Text Label 300  7700 0    50   ~ 0
+Text Label 700  7750 0    50   ~ 0
 ~WE
-Text Label 300  7800 0    50   ~ 0
+Text Label 700  7650 0    50   ~ 0
 ~SEL
 $Comp
 L Connector_Generic:Conn_01x13 J4
@@ -2010,6 +2002,9 @@ Wire Wire Line
 	6400 7750 7150 7750
 Wire Wire Line
 	7150 6500 7150 7750
+Connection ~ 6400 7750
+Wire Wire Line
+	6150 4100 7550 4100
 Wire Wire Line
 	3150 2200 3150 3200
 Wire Bus Line
@@ -2050,5 +2045,4 @@ Wire Bus Line
 	6250 4500 6250 5800
 Wire Bus Line
 	750  4600 750  5900
-Connection ~ 6400 7750
 $EndSCHEMATC
