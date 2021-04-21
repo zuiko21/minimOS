@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:cpu-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -14,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L cpu-rescue:62256-Memory_RAM-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U2
+L 62256:62256 U2
 U 1 1 6074461F
 P 3850 2050
 F 0 "U2" H 3650 3150 50  0000 C CNN
@@ -25,7 +26,7 @@ F 3 "http://www.6502.org/users/alexis/62256.pdf" H 3850 2050 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:27C128-Memory_EPROM-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U3
+L Memory_EPROM:27C128 U3
 U 1 1 60745512
 P 5250 2050
 F 0 "U3" H 5450 3100 50  0000 C CNN
@@ -36,7 +37,7 @@ F 3 "http://ww1.microchip.com/downloads/en/devicedoc/11003L.pdf" H 5250 2050 50 
 	-1   0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U4
+L 74xx:74LS139 U4
 U 1 1 6074706A
 P 3750 4150
 F 0 "U4" H 3750 4517 50  0000 C CNN
@@ -47,7 +48,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 3750 4150 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U4
+L 74xx:74LS139 U4
 U 2 1 607493A2
 P 3750 4900
 F 0 "U4" H 3750 5267 50  0000 C CNN
@@ -58,7 +59,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 3750 4900 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U5
+L 74xx:74LS139 U5
 U 1 1 60749982
 P 5300 4500
 F 0 "U5" H 5300 4750 50  0000 C CNN
@@ -69,7 +70,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 5300 4500 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L cpu-rescue:74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U5
+L 74xx:74LS139 U5
 U 2 1 6074A28D
 P 5300 3700
 F 0 "U5" H 5300 3350 50  0000 C CNN
@@ -80,7 +81,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 5300 3700 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:4040-4xxx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U10
+L 4xxx:4040 U10
 U 1 1 6074C247
 P 1050 4750
 F 0 "U10" H 1200 5550 50  0000 C CNN
@@ -91,7 +92,7 @@ F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U6
+L 74xx:74LS139 U6
 U 1 1 6074F30E
 P 5300 5350
 F 0 "U6" H 5300 5717 50  0000 C CNN
@@ -102,7 +103,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 5300 5350 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U6
+L 74xx:74LS139 U6
 U 2 1 6074FDAB
 P 5350 6100
 F 0 "U6" H 5350 6467 50  0000 C CNN
@@ -113,7 +114,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 5350 6100 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74HC245-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U9
+L 74xx:74HC245 U9
 U 1 1 60754204
 P 6950 5450
 F 0 "U9" H 6950 6431 50  0000 C CNN
@@ -124,7 +125,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 6950 5450 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74HC374-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U7
+L 74xx:74LS374 U7
 U 1 1 60755513
 P 3750 6200
 F 0 "U7" H 3900 6850 50  0000 C CNN
@@ -135,7 +136,7 @@ F 3 "https://www.ti.com/lit/ds/symlink/cd74hct374.pdf" H 3750 6200 50  0001 C CN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74HC74-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U8
+L 74xx:74HC74 U8
 U 1 1 60756402
 P 6750 1600
 F 0 "U8" H 6750 2081 50  0000 C CNN
@@ -146,7 +147,7 @@ F 3 "74xx/74hc_hct74.pdf" H 6750 1600 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:74HC74-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U8
+L 74xx:74HC74 U8
 U 2 1 60756EC3
 P 6750 2550
 F 0 "U8" H 6750 3031 50  0000 C CNN
@@ -157,7 +158,7 @@ F 3 "74xx/74hc_hct74.pdf" H 6750 2550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:LED-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue D2
+L Device:LED D2
 U 1 1 60757DE7
 P 7600 2650
 F 0 "D2" H 7600 2400 50  0000 C CNN
@@ -168,7 +169,7 @@ F 3 "~" H 7600 2650 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L cpu-rescue:ACO-xxxMHz-Oscillator-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue X1
+L Oscillator:ACO-xxxMHz X1
 U 1 1 60759190
 P 1400 3550
 F 0 "X1" H 1200 3650 50  0000 R CNN
@@ -179,7 +180,7 @@ F 3 "http://www.conwin.com/datasheets/cx/cx030.pdf" H 1300 3550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:R_Pack04_SIP-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue RN2
+L Device:R_Pack04_SIP RN2
 U 1 1 60787186
 P 2700 6650
 F 0 "RN2" H 1950 6650 50  0000 L CNN
@@ -190,7 +191,7 @@ F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 2700 6650 50  0001 C CNN
 	1    0    0    1   
 $EndComp
 $Comp
-L cpu-rescue:R-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue R4
+L Device:R R4
 U 1 1 6079DBE5
 P 7300 2650
 F 0 "R4" V 7400 2600 50  0000 L CNN
@@ -206,7 +207,7 @@ NoConn ~ 1550 4450
 NoConn ~ 1550 4350
 NoConn ~ 1550 4250
 $Comp
-L cpu-rescue:74LS30-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U11
+L 74xx:74LS30 U11
 U 1 1 6074DD29
 P 2150 4950
 F 0 "U11" H 2250 5150 50  0000 C CNN
@@ -255,7 +256,7 @@ Wire Wire Line
 Wire Wire Line
 	1850 3550 1700 3550
 $Comp
-L cpu-rescue:+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0101
+L cpu-rescue:+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0101
 U 1 1 607F0ABA
 P 1400 3250
 F 0 "#PWR0101" H 1400 3100 50  0001 C CNN
@@ -272,7 +273,7 @@ Wire Wire Line
 Wire Wire Line
 	550  4250 550  3950
 $Comp
-L cpu-rescue:BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue Q1
+L Transistor_BJT:BC547 Q1
 U 1 1 608143AC
 P 1200 2750
 F 0 "Q1" H 1391 2796 50  0000 L CNN
@@ -283,7 +284,7 @@ F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 1200 2750 50  0001 L CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue Q2
+L Transistor_BJT:BC547 Q2
 U 1 1 608161CB
 P 1000 2400
 F 0 "Q2" H 850 2300 50  0000 L CNN
@@ -294,7 +295,7 @@ F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 1000 2400 50  0001 L CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0103
+L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0103
 U 1 1 60817340
 P 1100 2600
 F 0 "#PWR0103" H 1100 2350 50  0001 C CNN
@@ -305,7 +306,7 @@ F 3 "" H 1100 2600 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0104
+L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0104
 U 1 1 60817CD4
 P 1300 2950
 F 0 "#PWR0104" H 1300 2700 50  0001 C CNN
@@ -316,7 +317,7 @@ F 3 "" H 1300 2950 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:R-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue R2
+L cpu-rescue:R-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue R2
 U 1 1 60818948
 P 800 2250
 F 0 "R2" H 850 2300 50  0000 L CNN
@@ -327,7 +328,7 @@ F 3 "~" H 800 2250 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:R-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue R1
+L Device:R R1
 U 1 1 6081916B
 P 600 2250
 F 0 "R1" H 650 2300 50  0000 L CNN
@@ -342,7 +343,7 @@ Wire Wire Line
 Wire Wire Line
 	600  2750 1000 2750
 $Comp
-L cpu-rescue:Conn_01x03-Connector_Generic-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue J1
+L Connector_Generic:Conn_01x03 J1
 U 1 1 6081A7B1
 P 700 1650
 F 0 "J1" V 900 1700 50  0000 R CNN
@@ -353,7 +354,7 @@ F 3 "~" H 700 1650 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0105
+L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0105
 U 1 1 6081F6A5
 P 700 1850
 F 0 "#PWR0105" H 700 1600 50  0001 C CNN
@@ -380,7 +381,7 @@ Wire Wire Line
 Wire Wire Line
 	1400 2350 1950 2350
 $Comp
-L cpu-rescue:R_Network04-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue RN1
+L Device:R_Network04 RN1
 U 1 1 60835B9A
 P 1200 1800
 F 0 "RN1" H 1350 2100 50  0000 R CNN
@@ -533,7 +534,7 @@ Wire Wire Line
 Wire Wire Line
 	1850 3550 1850 2150
 $Comp
-L cpu-rescue:MOS6502-CPU-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U1
+L mos6502:MOS6502 U1
 U 1 1 60743819
 P 2450 2350
 F 0 "U1" H 2200 3800 50  0000 C CNN
@@ -544,7 +545,7 @@ F 3 "http://archive.6502.org/datasheets/rockwell_r650x_r651x.pdf" H 2450 2350 50
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:R-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue R3
+L Device:R R3
 U 1 1 608C167A
 P 1250 850
 F 0 "R3" V 1043 850 50  0000 C CNN
@@ -557,7 +558,7 @@ $EndComp
 Wire Wire Line
 	1400 850  1400 1600
 $Comp
-L cpu-rescue:SW_Push-Switch-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue SW1
+L Switch:SW_Push SW1
 U 1 1 608D6A0F
 P 900 850
 F 0 "SW1" H 900 1135 50  0000 C CNN
@@ -568,7 +569,7 @@ F 3 "~" H 900 1050 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L cpu-rescue:C-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue C1
+L Device:C C1
 U 1 1 608D6E72
 P 900 1000
 F 0 "C1" V 1050 1000 50  0000 C CNN
@@ -597,7 +598,7 @@ Wire Wire Line
 Wire Wire Line
 	1800 2550 1800 4450
 $Comp
-L cpu-rescue:D-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue D1
+L cpu-rescue:D-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue D1
 U 1 1 60908C99
 P 2450 4600
 F 0 "D1" V 2450 4850 50  0000 R CNN
@@ -732,7 +733,7 @@ Wire Wire Line
 Wire Wire Line
 	5250 3250 5250 3150
 $Comp
-L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0108
+L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0108
 U 1 1 60A697B0
 P 2450 3750
 F 0 "#PWR0108" H 2450 3500 50  0001 C CNN
@@ -745,7 +746,7 @@ $EndComp
 Wire Wire Line
 	5650 2650 5750 2650
 $Comp
-L cpu-rescue:+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0109
+L cpu-rescue:+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0109
 U 1 1 60B43304
 P 5750 2650
 F 0 "#PWR0109" H 5750 2500 50  0001 C CNN
@@ -770,7 +771,7 @@ Wire Wire Line
 Wire Wire Line
 	7450 5350 7950 5350
 $Comp
-L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0111
+L cpu-rescue:GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0111
 U 1 1 60BBE2B7
 P 6950 6250
 F 0 "#PWR0111" H 6950 6000 50  0001 C CNN
@@ -786,10 +787,8 @@ Wire Wire Line
 	8450 6250 8450 5750
 Wire Wire Line
 	7450 5850 7500 5850
-Wire Wire Line
-	7500 4650 7250 4650
 $Comp
-L cpu-rescue:+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0112
+L cpu-rescue:+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR0112
 U 1 1 60BD1E66
 P 7250 4650
 F 0 "#PWR0112" H 7250 4500 50  0001 C CNN
@@ -872,7 +871,6 @@ Wire Wire Line
 	4250 4900 4300 4900
 NoConn ~ 4250 4800
 NoConn ~ 4250 5000
-Connection ~ 6950 6250
 Wire Wire Line
 	5800 3800 5900 3800
 Wire Wire Line
@@ -1026,8 +1024,6 @@ F 3 "" H 4800 3900 50  0001 C CNN
 	1    4800 3900
 	1    0    0    -1  
 $EndComp
-Connection ~ 1100 2200
-Connection ~ 1300 2550
 Wire Wire Line
 	6450 5150 6150 5150
 Wire Wire Line
@@ -1200,13 +1196,6 @@ Wire Wire Line
 	4800 6450 7450 6450
 Wire Wire Line
 	7450 6450 7450 5950
-Connection ~ 3850 3250
-Wire Wire Line
-	2350 3750 2450 3750
-Connection ~ 2450 3750
-Wire Wire Line
-	2450 3750 2550 3750
-Connection ~ 2550 3750
 $Comp
 L power:GND #PWR0110
 U 1 1 60C0AD73
@@ -1218,7 +1207,6 @@ F 3 "" H 1050 5650 50  0001 C CNN
 	1    1050 5650
 	1    0    0    -1  
 $EndComp
-Connection ~ 1050 5650
 $Comp
 L power:GND #PWR0114
 U 1 1 60C27D9D
@@ -1231,15 +1219,7 @@ F 3 "" H 3250 5100 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1950 3250 1400 3250
-Connection ~ 1400 3250
-Wire Wire Line
-	1400 3250 1050 3250
-Wire Wire Line
 	1050 3250 1050 3950
-Connection ~ 7250 4650
-Wire Wire Line
-	7250 4650 6950 4650
 Wire Wire Line
 	4800 5250 4550 5250
 Connection ~ 4550 5250
@@ -1275,7 +1255,6 @@ Wire Wire Line
 	4250 6700 4250 7000
 Wire Wire Line
 	3750 7000 4250 7000
-Connection ~ 3750 7000
 Wire Wire Line
 	6450 2450 6400 2450
 Wire Wire Line
@@ -1332,11 +1311,7 @@ Wire Wire Line
 	6750 2250 6400 2250
 Wire Wire Line
 	6400 2250 6400 1300
-Wire Wire Line
-	6400 1300 6750 1300
 Connection ~ 6400 1300
-Wire Wire Line
-	2550 3750 3850 3750
 $Comp
 L power:PWR_FLAG #FLG0102
 U 1 1 6147C26F
@@ -1348,7 +1323,6 @@ F 3 "~" H 700 850 50  0001 C CNN
 	1    700  850 
 	1    0    0    -1  
 $EndComp
-Connection ~ 700  850 
 Wire Wire Line
 	1700 4550 1700 4250
 Wire Wire Line
@@ -1373,7 +1347,6 @@ Wire Wire Line
 	7100 2450 7050 2450
 Wire Wire Line
 	5650 2650 5650 2750
-Connection ~ 5650 2650
 $Comp
 L Connector_Generic:Conn_01x10 J2
 U 1 1 61573CFB
@@ -1424,9 +1397,6 @@ $EndComp
 Connection ~ 7350 1500
 Wire Wire Line
 	7350 1250 7350 1500
-Wire Wire Line
-	6750 1300 7650 1300
-Connection ~ 6750 1300
 $Comp
 L Device:Buzzer BZ1
 U 1 1 616338AD
@@ -1452,12 +1422,7 @@ $EndComp
 NoConn ~ 7350 950 
 Text Label 7150 900  0    50   ~ 0
 AUDIO_FB_IN
-Wire Wire Line
-	2450 850  3850 850 
 Connection ~ 2450 850 
-Connection ~ 3850 850 
-Wire Wire Line
-	3850 850  5250 850 
 Wire Bus Line
 	3200 750  5900 750 
 Wire Wire Line
@@ -1747,7 +1712,7 @@ U 3 1 6090C838
 P 9250 1650
 F 0 "U4" V 8883 1650 50  0000 C CNN
 F 1 "74HC139" V 8974 1650 50  0000 C CNN
-F 2 "" H 9250 1650 50  0001 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm" H 9250 1650 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 9250 1650 50  0001 C CNN
 	3    9250 1650
 	0    1    1    0   
@@ -1758,7 +1723,7 @@ U 3 1 6090D89D
 P 9250 2300
 F 0 "U5" V 8883 2300 50  0000 C CNN
 F 1 "74HC139" V 8974 2300 50  0000 C CNN
-F 2 "" H 9250 2300 50  0001 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm" H 9250 2300 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 9250 2300 50  0001 C CNN
 	3    9250 2300
 	0    1    1    0   
@@ -1769,7 +1734,7 @@ U 3 1 6090E3CA
 P 9250 2950
 F 0 "U6" V 8883 2950 50  0000 C CNN
 F 1 "74HC139" V 8974 2950 50  0000 C CNN
-F 2 "" H 9250 2950 50  0001 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm" H 9250 2950 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 9250 2950 50  0001 C CNN
 	3    9250 2950
 	0    1    1    0   
@@ -1780,7 +1745,7 @@ U 2 1 6091DC27
 P 9250 3600
 F 0 "U11" V 8883 3600 50  0000 C CNN
 F 1 "74HC30" V 8974 3600 50  0000 C CNN
-F 2 "" H 9250 3600 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 9250 3600 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS30" H 9250 3600 50  0001 C CNN
 	2    9250 3600
 	0    1    1    0   
@@ -1836,6 +1801,21 @@ F 3 "" H 9750 1000 50  0001 C CNN
 $EndComp
 Connection ~ 9750 1000
 Wire Wire Line
+	6950 4650 7500 4650
+Wire Wire Line
+	1050 3250 1950 3250
+Wire Wire Line
+	6400 1300 7650 1300
+Wire Wire Line
+	2350 3750 3850 3750
+Wire Wire Line
+	2450 850  5250 850 
+Wire Bus Line
+	3200 750  3200 2550
+Connection ~ 1100 2200
+Wire Bus Line
+	1750 650  4650 650 
+Wire Wire Line
 	5650 2450 5950 2450
 Wire Wire Line
 	2950 2550 3150 2550
@@ -1872,13 +1852,11 @@ Wire Wire Line
 Wire Wire Line
 	5650 2350 6000 2350
 Wire Bus Line
-	1750 800  1750 1750
+	1750 650  1750 1750
 Wire Bus Line
 	5900 750  5900 2350
 Wire Bus Line
 	6050 3300 6050 6500
 Wire Bus Line
-	4650 1050 4650 6500
-Wire Bus Line
-	3200 750  3200 2550
+	4650 650  4650 6500
 $EndSCHEMATC
