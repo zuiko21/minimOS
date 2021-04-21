@@ -1,11 +1,10 @@
 EESchema Schematic File Version 4
-LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 2
-Title "DURANGO computer"
+Title "DURANGO-X computer"
 Date ""
 Rev ""
 Comp "@zuiko21"
@@ -879,8 +878,6 @@ Wire Wire Line
 Wire Wire Line
 	8300 750  10000 750 
 Connection ~ 8300 750 
-Wire Wire Line
-	6650 4800 7150 4800
 $Comp
 L power:GND #PWR0103
 U 1 1 60AE9E54
@@ -924,30 +921,6 @@ Wire Wire Line
 Connection ~ 4900 750 
 Wire Wire Line
 	4900 750  3500 750 
-$Comp
-L power:PWR_FLAG #FLG0101
-U 1 1 60BCEB2B
-P 3500 750
-F 0 "#FLG0101" H 3500 825 50  0001 C CNN
-F 1 "PWR_FLAG" H 3500 923 50  0000 C CNN
-F 2 "" H 3500 750 50  0001 C CNN
-F 3 "~" H 3500 750 50  0001 C CNN
-	1    3500 750 
-	1    0    0    -1  
-$EndComp
-Connection ~ 3500 750 
-$Comp
-L power:PWR_FLAG #FLG0102
-U 1 1 60BCF2B7
-P 7150 4800
-F 0 "#FLG0102" H 7150 4875 50  0001 C CNN
-F 1 "PWR_FLAG" H 7150 4973 50  0000 C CNN
-F 2 "" H 7150 4800 50  0001 C CNN
-F 3 "~" H 7150 4800 50  0001 C CNN
-	1    7150 4800
-	1    0    0    -1  
-$EndComp
-Connection ~ 7150 4800
 Text Label 2800 650  0    50   ~ 0
 D[0..7]
 Text Label 7550 700  0    50   ~ 0
@@ -1148,8 +1121,6 @@ Wire Wire Line
 Wire Wire Line
 	4450 4650 4450 5150
 Wire Wire Line
-	7150 4800 8300 4800
-Wire Wire Line
 	6100 4800 6650 4800
 Wire Wire Line
 	6650 2650 8300 2650
@@ -1268,6 +1239,8 @@ Wire Wire Line
 	7350 5250 9200 5250
 Wire Wire Line
 	9200 5250 9200 2650
+Wire Wire Line
+	6650 4800 8300 4800
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line

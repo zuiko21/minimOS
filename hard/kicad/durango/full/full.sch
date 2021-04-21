@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:full-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1241,12 +1242,23 @@ Wire Wire Line
 	9200 5250 9200 2650
 Wire Wire Line
 	6650 4800 8300 4800
-Wire Bus Line
-	5850 950  5850 5100
+Wire Wire Line
+	6100 7150 5000 7150
+Connection ~ 6100 4800
+Wire Wire Line
+	6100 4800 6100 7150
+Wire Wire Line
+	5000 5050 5700 5050
+Wire Wire Line
+	5700 5050 5700 4800
+Wire Wire Line
+	5700 4800 6100 4800
 Wire Bus Line
 	5800 3350 5800 5050
 Wire Bus Line
 	5800 5050 5800 6350
+Wire Bus Line
+	5850 950  5850 5100
 Wire Bus Line
 	7450 950  7450 5050
 Wire Bus Line
@@ -1267,4 +1279,8 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Text Notes 8000 5200 0    50   ~ 0
+JUST PHI2?
+Text Notes 550  3250 0    50   ~ 0
+~ROM CS~= NAND(A14,A15)\nIS FASTER
 $EndSCHEMATC

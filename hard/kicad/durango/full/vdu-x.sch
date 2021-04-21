@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:full-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -789,4 +790,6 @@ Text Notes 4100 3600 0    50   ~ 0
 May use an HC10 here,\nplacing U13A for ~LE
 Wire Bus Line
 	2700 1250 8100 1250
+Text Notes 8600 2650 0    50   ~ 0
+SPLIT IN TWO ‘175 INPUTS\nGATED BY ~HIRES~ AND ~COL\n\nPERHAPS VIA A ‘257
 $EndSCHEMATC
