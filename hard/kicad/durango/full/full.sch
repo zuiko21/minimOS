@@ -4,7 +4,7 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 2
-Title "DURANGO computer"
+Title "DURANGO-X computer"
 Date ""
 Rev ""
 Comp "@zuiko21"

@@ -252,7 +252,14 @@ S -30 60 30 -100 0 1 10 N
 S 70 60 130 -100 0 1 10 N
 S 170 60 230 -100 0 1 10 N
 S 270 60 330 -100 0 1 10 N
-P 2 0 1 0 -400 100 -400 60 N
+P 2 0 1 0 -400 -100 -400 -150 N
+P 2 0 1 0 -300 -100 -300 -150 N
+P 2 0 1 0 -200 -100 -200 -150 N
+P 2 0 1 0 -100 -100 -100 -150 N
+P 2 0 1 0 0 -100 0 -150 N
+P 2 0 1 0 100 -100 100 -150 N
+P 2 0 1 0 200 -100 200 -150 N
+P 2 0 1 0 300 -100 300 -150 N
 P 4 0 1 0 -400 60 -400 90 -300 90 -300 60 N
 P 4 0 1 0 -300 60 -300 90 -200 90 -200 60 N
 P 4 0 1 0 -200 60 -200 90 -100 90 -100 60 N
@@ -261,14 +268,14 @@ P 4 0 1 0 0 60 0 90 100 90 100 60 N
 P 4 0 1 0 100 60 100 90 200 90 200 60 N
 P 4 0 1 0 200 60 200 90 300 90 300 60 N
 X common 1 -400 200 100 D 50 50 1 1 P
-X R1 2 -400 -200 100 U 50 50 1 1 P
-X R2 3 -300 -200 100 U 50 50 1 1 P
-X R3 4 -200 -200 100 U 50 50 1 1 P
-X R4 5 -100 -200 100 U 50 50 1 1 P
-X R5 6 0 -200 100 U 50 50 1 1 P
-X R6 7 100 -200 100 U 50 50 1 1 P
-X R7 8 200 -200 100 U 50 50 1 1 P
-X R8 9 300 -200 100 U 50 50 1 1 P
+X R1 2 -400 -200 50 U 50 50 1 1 P
+X R2 3 -300 -200 50 U 50 50 1 1 P
+X R3 4 -200 -200 50 U 50 50 1 1 P
+X R4 5 -100 -200 50 U 50 50 1 1 P
+X R5 6 0 -200 50 U 50 50 1 1 P
+X R6 7 100 -200 50 U 50 50 1 1 P
+X R7 8 200 -200 50 U 50 50 1 1 P
+X R8 9 300 -200 50 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
@@ -284,69 +291,11 @@ $FPLIST
  D*DO?35*
 $ENDFPLIST
 DRAW
-P 2 0 1 8 -50 50 -50 -50 N
+P 2 0 1 10 -50 50 -50 -50 N
 P 2 0 1 0 50 0 -50 0 N
-P 4 0 1 8 50 50 50 -50 -50 0 50 50 N
+P 4 0 1 10 50 50 50 -50 -50 0 50 50 N
 X K 1 -150 0 100 R 50 50 1 1 P
 X A 2 150 0 100 L 50 50 1 1 P
-ENDDRAW
-ENDDEF
-#
-# Display_Character_LTC4622G
-#
-DEF Display_Character_LTC4622G U 0 25 Y Y 1 F N
-F0 "U" -100 550 50 H V R CNN
-F1 "Display_Character_LTC4622G" 550 550 50 H V R CNN
-F2 "" -500 -700 50 H I L CNN
-F3 "" 110 340 50 H I L CNN
-$FPLIST
- *MAN3410A*
-$ENDFPLIST
-DRAW
-T 0 220 420 20 0 0 0 A Normal 0 C C
-T 0 470 420 20 0 0 0 A Normal 0 C C
-T 0 310 390 20 0 0 0 B Normal 0 C C
-T 0 560 390 20 0 0 0 B Normal 0 C C
-T 0 300 270 20 0 0 0 C Normal 0 C C
-T 0 550 270 20 0 0 0 C Normal 0 C C
-T 0 200 240 20 0 0 0 D Normal 0 C C
-T 0 450 240 20 0 0 0 D Normal 0 C C
-T 0 350 210 20 0 0 0 DP Normal 0 C C
-T 0 600 210 20 0 0 0 DP Normal 0 C C
-T 0 110 270 20 0 0 0 E Normal 0 C C
-T 0 120 390 20 0 0 0 F Normal 0 C C
-T 0 210 360 20 0 0 0 G Normal 0 C C
-T 0 460 360 20 0 0 0 G Normal 0 C C
-T 0 50 270 20 0 0 0 H Normal 0 C C
-T 0 60 390 20 0 0 0 H Normal 0 C C
-S -200 500 850 -100 0 1 10 f
-P 2 0 1 20 20 310 10 230 N
-P 2 0 1 20 30 430 20 350 N
-P 2 0 1 20 150 310 140 230 N
-P 2 0 1 20 160 210 240 210 N
-P 2 0 1 20 160 430 150 350 N
-P 2 0 1 20 170 330 250 330 N
-P 2 0 1 20 180 450 260 450 N
-P 2 0 1 20 270 310 260 230 N
-P 2 0 1 20 280 430 270 350 N
-P 2 0 1 20 310 210 310 210 N
-P 2 0 1 20 400 310 390 230 N
-P 2 0 1 20 410 210 490 210 N
-P 2 0 1 20 410 430 400 350 N
-P 2 0 1 20 420 330 500 330 N
-P 2 0 1 20 430 450 510 450 N
-P 2 0 1 20 520 310 510 230 N
-P 2 0 1 20 530 430 520 350 N
-P 2 0 1 20 560 210 560 210 N
-X H(1R) 1 -300 0 100 R 50 50 1 1 I
-X A/D 2 -300 400 100 R 50 50 1 1 I
-X B/E 3 -300 300 100 R 50 50 1 1 I
-X C/F 4 -300 200 100 R 50 50 1 1 I
-X D.P./G 5 -300 100 100 R 50 50 1 1 I
-X CA2R 6 950 100 100 L 50 50 1 1 I
-X CA2L 7 950 200 100 L 50 50 1 1 I
-X CA1R 8 950 300 100 L 50 50 1 1 I
-X CA1L 9 950 400 100 L 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
@@ -374,11 +323,11 @@ X E 3 100 -200 100 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_+5V-power-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_+5V-power-cpu-rescue-cpu-rescue-cpu-rescue #PWR 0 0 Y Y 1 F P
+DEF cpu-rescue_+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR 0 0 Y Y 1 F P
 F0 "#PWR" 0 -150 50 H I C CNN
-F1 "cpu-rescue_+5V-power-cpu-rescue-cpu-rescue-cpu-rescue" 0 140 50 H V C CNN
+F1 "cpu-rescue_+5V-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 0 140 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 DRAW
@@ -389,11 +338,11 @@ X +5V 1 0 0 0 U 50 50 1 1 W N
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_27C128-Memory_EPROM-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_27C128-Memory_EPROM-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_27C128-Memory_EPROM-cpu-rescue-cpu-rescue-cpu-rescue U 0 20 Y Y 1 F N
+DEF cpu-rescue_27C128-Memory_EPROM-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 20 Y Y 1 F N
 F0 "U" -300 1050 50 H V C CNN
-F1 "cpu-rescue_27C128-Memory_EPROM-cpu-rescue-cpu-rescue-cpu-rescue" 100 -1050 50 H V L CNN
+F1 "cpu-rescue_27C128-Memory_EPROM-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 100 -1050 50 H V L CNN
 F2 "Package_DIP:DIP-28_W15.24mm" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -432,11 +381,11 @@ X A1 9 -400 800 100 R 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_4040-4xxx-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_4040-4xxx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_4040-4xxx-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 1 L N
+DEF cpu-rescue_4040-4xxx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 1 L N
 F0 "U" -300 650 50 H V C CNN
-F1 "cpu-rescue_4040-4xxx-cpu-rescue-cpu-rescue-cpu-rescue" -300 -750 50 H V C CNN
+F1 "cpu-rescue_4040-4xxx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" -300 -750 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -463,11 +412,11 @@ X Q0 9 500 500 200 L 50 50 1 0 O
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_62256-Memory_RAM-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_62256-Memory_RAM-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_62256-Memory_RAM-cpu-rescue-cpu-rescue-cpu-rescue U 0 20 Y Y 1 F N
+DEF cpu-rescue_62256-Memory_RAM-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 20 Y Y 1 F N
 F0 "U" -450 1100 50 H V L CNN
-F1 "cpu-rescue_62256-Memory_RAM-cpu-rescue-cpu-rescue-cpu-rescue" 150 1100 50 H V L CNN
+F1 "cpu-rescue_62256-Memory_RAM-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 150 1100 50 H V L CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 DRAW
@@ -503,11 +452,11 @@ X A1 9 -600 800 150 R 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_74HC245-74xx-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_74HC245-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_74HC245-74xx-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 1 L N
+DEF cpu-rescue_74HC245-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 1 L N
 F0 "U" -300 650 50 H V C CNN
-F1 "cpu-rescue_74HC245-74xx-cpu-rescue-cpu-rescue-cpu-rescue" -300 -650 50 H V C CNN
+F1 "cpu-rescue_74HC245-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" -300 -650 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -540,11 +489,11 @@ X A7 9 -500 -200 200 R 50 50 1 0 T
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_74HC374-74xx-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_74HC374-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_74HC374-74xx-cpu-rescue-cpu-rescue-cpu-rescue U 0 20 Y Y 1 F N
+DEF cpu-rescue_74HC374-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 20 Y Y 1 F N
 F0 "U" -300 650 50 H V C CNN
-F1 "cpu-rescue_74HC374-74xx-cpu-rescue-cpu-rescue-cpu-rescue" -300 -650 50 H V C CNN
+F1 "cpu-rescue_74HC374-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" -300 -650 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -577,11 +526,11 @@ X O3 9 500 200 200 L 50 50 1 0 T
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_74HC74-74xx-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_74HC74-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_74HC74-74xx-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 3 L N
+DEF cpu-rescue_74HC74-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 3 L N
 F0 "U" -300 350 50 H V C CNN
-F1 "cpu-rescue_74HC74-74xx-cpu-rescue-cpu-rescue-cpu-rescue" -300 -350 50 H V C CNN
+F1 "cpu-rescue_74HC74-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" -300 -350 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -608,11 +557,11 @@ X GND 7 0 -400 100 U 50 50 3 0 W
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 3 L N
+DEF cpu-rescue_74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 3 L N
 F0 "U" -300 350 50 H V C CNN
-F1 "cpu-rescue_74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue" -300 -350 50 H V C CNN
+F1 "cpu-rescue_74LS139-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" -300 -350 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -641,11 +590,11 @@ X GND 8 0 -500 200 U 50 50 3 0 W
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_74LS30-74xx-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_74LS30-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_74LS30-74xx-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 2 L N
+DEF cpu-rescue_74LS30-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 2 L N
 F0 "U" 0 50 50 H V C CNN
-F1 "cpu-rescue_74LS30-74xx-cpu-rescue-cpu-rescue-cpu-rescue" 0 -50 50 H V C CNN
+F1 "cpu-rescue_74LS30-74xx-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 0 -50 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -687,11 +636,11 @@ X ~ 8 300 0 150 L 50 50 1 2 O
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_ACO-xxxMHz-Oscillator-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_ACO-xxxMHz-Oscillator-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_ACO-xxxMHz-Oscillator-cpu-rescue-cpu-rescue-cpu-rescue X 0 10 Y Y 1 F N
+DEF cpu-rescue_ACO-xxxMHz-Oscillator-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue X 0 10 Y Y 1 F N
 F0 "X" -200 250 50 H V L CNN
-F1 "cpu-rescue_ACO-xxxMHz-Oscillator-cpu-rescue-cpu-rescue-cpu-rescue" 50 -250 50 H V L CNN
+F1 "cpu-rescue_ACO-xxxMHz-Oscillator-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 50 -250 50 H V L CNN
 F2 "Oscillator:Oscillator_DIP-14" 450 -350 50 H I C CNN
 F3 "" -100 0 50 H I C CNN
 $FPLIST
@@ -707,11 +656,11 @@ X OUT 8 300 0 100 L 50 50 1 1 O
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue Q 0 0 Y N 1 F N
+DEF cpu-rescue_BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue Q 0 0 Y N 1 F N
 F0 "Q" 200 75 50 H V L CNN
-F1 "cpu-rescue_BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue" 200 0 50 H V L CNN
+F1 "cpu-rescue_BC547-Transistor_BJT-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 200 0 50 H V L CNN
 F2 "Package_TO_SOT_THT:TO-92_Inline" 200 -75 50 H I L CIN
 F3 "" 0 0 50 H I L CNN
 $FPLIST
@@ -730,11 +679,11 @@ X E 3 100 -200 100 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_C-Device-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_C-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_C-Device-cpu-rescue-cpu-rescue-cpu-rescue C 0 10 N Y 1 F N
+DEF cpu-rescue_C-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue C 0 10 N Y 1 F N
 F0 "C" 25 100 50 H V L CNN
-F1 "cpu-rescue_C-Device-cpu-rescue-cpu-rescue-cpu-rescue" 25 -100 50 H V L CNN
+F1 "cpu-rescue_C-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 25 -100 50 H V L CNN
 F2 "" 38 -150 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -748,11 +697,11 @@ X ~ 2 0 -150 110 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_Conn_01x03-Connector_Generic-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_Conn_01x03-Connector_Generic-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_Conn_01x03-Connector_Generic-cpu-rescue-cpu-rescue-cpu-rescue J 0 40 Y N 1 F N
+DEF cpu-rescue_Conn_01x03-Connector_Generic-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue J 0 40 Y N 1 F N
 F0 "J" 0 200 50 H V C CNN
-F1 "cpu-rescue_Conn_01x03-Connector_Generic-cpu-rescue-cpu-rescue-cpu-rescue" 0 -200 50 H V C CNN
+F1 "cpu-rescue_Conn_01x03-Connector_Generic-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 0 -200 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -769,11 +718,11 @@ X Pin_3 3 -200 -100 150 R 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_D-Device-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_D-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_D-Device-cpu-rescue-cpu-rescue-cpu-rescue D 0 40 N N 1 F N
+DEF cpu-rescue_D-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue D 0 40 N N 1 F N
 F0 "D" 0 100 50 H V C CNN
-F1 "cpu-rescue_D-Device-cpu-rescue-cpu-rescue-cpu-rescue" 0 -100 50 H V C CNN
+F1 "cpu-rescue_D-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 0 -100 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -791,11 +740,11 @@ X A 2 150 0 100 L 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_GND-power-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_GND-power-cpu-rescue-cpu-rescue-cpu-rescue #PWR 0 0 Y Y 1 F P
+DEF cpu-rescue_GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue #PWR 0 0 Y Y 1 F P
 F0 "#PWR" 0 -250 50 H I C CNN
-F1 "cpu-rescue_GND-power-cpu-rescue-cpu-rescue-cpu-rescue" 0 -150 50 H V C CNN
+F1 "cpu-rescue_GND-power-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 0 -150 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 DRAW
@@ -804,11 +753,11 @@ X GND 1 0 0 0 D 50 50 1 1 W N
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_LED-Device-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_LED-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_LED-Device-cpu-rescue-cpu-rescue-cpu-rescue D 0 40 N N 1 F N
+DEF cpu-rescue_LED-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue D 0 40 N N 1 F N
 F0 "D" 0 100 50 H V C CNN
-F1 "cpu-rescue_LED-Device-cpu-rescue-cpu-rescue-cpu-rescue" 0 -100 50 H V C CNN
+F1 "cpu-rescue_LED-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 0 -100 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -827,11 +776,11 @@ X A 2 150 0 100 L 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_MOS6502-CPU-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_MOS6502-CPU-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_MOS6502-CPU-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 1 F N
+DEF cpu-rescue_MOS6502-CPU-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue U 0 40 Y Y 1 F N
 F0 "U" -350 1350 50 H V C CNN
-F1 "cpu-rescue_MOS6502-CPU-cpu-rescue-cpu-rescue-cpu-rescue" 400 1350 50 H V R CNN
+F1 "cpu-rescue_MOS6502-CPU-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 400 1350 50 H V R CNN
 F2 "Package_DIP:DIP-40_W15.24mm" 0 -1500 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -882,11 +831,11 @@ X A0 9 500 1200 100 L 50 50 1 1 O
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_R-Device-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_R-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_R-Device-cpu-rescue-cpu-rescue-cpu-rescue R 0 0 N Y 1 F N
+DEF cpu-rescue_R-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue R 0 0 N Y 1 F N
 F0 "R" 80 0 50 V V C CNN
-F1 "cpu-rescue_R-Device-cpu-rescue-cpu-rescue-cpu-rescue" 0 0 50 V V C CNN
+F1 "cpu-rescue_R-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 0 0 50 V V C CNN
 F2 "" -70 0 50 V I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -899,11 +848,11 @@ X ~ 2 0 -150 50 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_R_Network04-Device-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_R_Network04-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_R_Network04-Device-cpu-rescue-cpu-rescue-cpu-rescue RN 0 0 Y N 1 F N
+DEF cpu-rescue_R_Network04-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue RN 0 0 Y N 1 F N
 F0 "RN" -300 0 50 V V C CNN
-F1 "cpu-rescue_R_Network04-Device-cpu-rescue-cpu-rescue-cpu-rescue" 200 0 50 V V C CNN
+F1 "cpu-rescue_R_Network04-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 200 0 50 V V C CNN
 F2 "Resistor_THT:R_Array_SIP5" 275 0 50 V I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -930,11 +879,11 @@ X R4 5 100 -200 100 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_R_Pack04_SIP-Device-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_R_Pack04_SIP-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_R_Pack04_SIP-Device-cpu-rescue-cpu-rescue-cpu-rescue RN 0 0 Y N 1 F N
+DEF cpu-rescue_R_Pack04_SIP-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue RN 0 0 Y N 1 F N
 F0 "RN" -600 0 50 V V C CNN
-F1 "cpu-rescue_R_Pack04_SIP-Device-cpu-rescue-cpu-rescue-cpu-rescue" 600 0 50 V V C CNN
+F1 "cpu-rescue_R_Pack04_SIP-Device-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 600 0 50 V V C CNN
 F2 "Resistor_THT:R_Array_SIP8" 675 0 50 V I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
@@ -961,11 +910,11 @@ X R4.2 8 500 -200 150 U 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
-# cpu-rescue_SW_Push-Switch-cpu-rescue-cpu-rescue-cpu-rescue
+# cpu-rescue_SW_Push-Switch-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue
 #
-DEF cpu-rescue_SW_Push-Switch-cpu-rescue-cpu-rescue-cpu-rescue SW 0 40 N N 1 F N
+DEF cpu-rescue_SW_Push-Switch-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue SW 0 40 N N 1 F N
 F0 "SW" 50 100 50 H V L CNN
-F1 "cpu-rescue_SW_Push-Switch-cpu-rescue-cpu-rescue-cpu-rescue" 0 -60 50 H V C CNN
+F1 "cpu-rescue_SW_Push-Switch-cpu-rescue-cpu-rescue-cpu-rescue-cpu-rescue" 0 -60 50 H V C CNN
 F2 "" 0 200 50 H I C CNN
 F3 "" 0 200 50 H I C CNN
 DRAW
@@ -975,6 +924,64 @@ P 2 0 1 0 0 50 0 120 N
 P 2 0 1 0 100 50 -100 50 N
 X 1 1 -200 0 100 R 50 50 0 1 P
 X 2 2 200 0 100 L 50 50 0 1 P
+ENDDRAW
+ENDDEF
+#
+# ltc4622g_LTC4622G
+#
+DEF ltc4622g_LTC4622G U 0 25 Y Y 1 F N
+F0 "U" -100 550 50 H V R CNN
+F1 "ltc4622g_LTC4622G" 550 550 50 H V R CNN
+F2 "" -500 -700 50 H I L CNN
+F3 "" 110 340 50 H I L CNN
+$FPLIST
+ *MAN3410A*
+$ENDFPLIST
+DRAW
+T 0 220 420 20 0 0 0 A Normal 0 C C
+T 0 470 420 20 0 0 0 A Normal 0 C C
+T 0 310 390 20 0 0 0 B Normal 0 C C
+T 0 560 390 20 0 0 0 B Normal 0 C C
+T 0 300 270 20 0 0 0 C Normal 0 C C
+T 0 550 270 20 0 0 0 C Normal 0 C C
+T 0 200 240 20 0 0 0 D Normal 0 C C
+T 0 450 240 20 0 0 0 D Normal 0 C C
+T 0 350 210 20 0 0 0 DP Normal 0 C C
+T 0 600 210 20 0 0 0 DP Normal 0 C C
+T 0 110 270 20 0 0 0 E Normal 0 C C
+T 0 120 390 20 0 0 0 F Normal 0 C C
+T 0 210 360 20 0 0 0 G Normal 0 C C
+T 0 460 360 20 0 0 0 G Normal 0 C C
+T 0 50 270 20 0 0 0 H Normal 0 C C
+T 0 60 390 20 0 0 0 H Normal 0 C C
+S -200 500 850 -100 0 1 10 f
+P 2 0 1 20 20 310 10 230 N
+P 2 0 1 20 30 430 20 350 N
+P 2 0 1 20 150 310 140 230 N
+P 2 0 1 20 160 210 240 210 N
+P 2 0 1 20 160 430 150 350 N
+P 2 0 1 20 170 330 250 330 N
+P 2 0 1 20 180 450 260 450 N
+P 2 0 1 20 270 310 260 230 N
+P 2 0 1 20 280 430 270 350 N
+P 2 0 1 20 310 210 310 210 N
+P 2 0 1 20 400 310 390 230 N
+P 2 0 1 20 410 210 490 210 N
+P 2 0 1 20 410 430 400 350 N
+P 2 0 1 20 420 330 500 330 N
+P 2 0 1 20 430 450 510 450 N
+P 2 0 1 20 520 310 510 230 N
+P 2 0 1 20 530 430 520 350 N
+P 2 0 1 20 560 210 560 210 N
+X H(1R) 1 -300 0 100 R 50 50 1 1 I
+X A/D 2 -300 400 100 R 50 50 1 1 I
+X B/E 3 -300 300 100 R 50 50 1 1 I
+X C/F 4 -300 200 100 R 50 50 1 1 I
+X D.P./G 5 -300 100 100 R 50 50 1 1 I
+X CA2R 6 950 100 100 L 50 50 1 1 I
+X CA2L 7 950 200 100 L 50 50 1 1 I
+X CA1R 8 950 300 100 L 50 50 1 1 I
+X CA1L 9 950 400 100 L 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #

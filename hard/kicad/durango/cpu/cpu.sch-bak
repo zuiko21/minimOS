@@ -5,7 +5,7 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
-Title "CPU board for DURANGO computer"
+Title "CPU board for DURANGO computer (prototype)"
 Date "2021-04-12"
 Rev ""
 Comp "@zuiko21"
@@ -1859,10 +1859,10 @@ Connection ~ 9750 2950
 Wire Wire Line
 	9750 2950 9750 3600
 $Comp
-L power:GND #PWR?
+L power:GND #PWR0121
 U 1 1 6097CD4D
 P 8750 3600
-F 0 "#PWR?" H 8750 3350 50  0001 C CNN
+F 0 "#PWR0121" H 8750 3350 50  0001 C CNN
 F 1 "GND" H 8755 3427 50  0000 C CNN
 F 2 "" H 8750 3600 50  0001 C CNN
 F 3 "" H 8750 3600 50  0001 C CNN
@@ -1871,10 +1871,10 @@ F 3 "" H 8750 3600 50  0001 C CNN
 $EndComp
 Connection ~ 8750 3600
 $Comp
-L power:+5V #PWR?
+L power:+5V #PWR0122
 U 1 1 60980E31
 P 9750 1000
-F 0 "#PWR?" H 9750 850 50  0001 C CNN
+F 0 "#PWR0122" H 9750 850 50  0001 C CNN
 F 1 "+5V" H 9765 1173 50  0000 C CNN
 F 2 "" H 9750 1000 50  0001 C CNN
 F 3 "" H 9750 1000 50  0001 C CNN
