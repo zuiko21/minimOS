@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:picoVDU-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -999,12 +1000,12 @@ $Comp
 L 74xx:74HC86 U15
 U 1 1 60FA4104
 P 9750 6000
-F 0 "U15" H 9750 5800 50  0000 C CNN
-F 1 "74HC86" H 9750 5700 50  0000 C CNN
+F 0 "U15" H 10000 6100 50  0000 C CNN
+F 1 "74HC86" H 10000 6200 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 9750 6000 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 9750 6000 50  0001 C CNN
 	1    9750 6000
-	-1   0    0    -1  
+	-1   0    0    1   
 $EndComp
 Wire Wire Line
 	6100 6000 7900 6000
@@ -1272,7 +1273,7 @@ Connection ~ 9150 1800
 Wire Wire Line
 	8850 1800 9150 1800
 Wire Wire Line
-	6750 5750 8400 5750
+	6750 5750 7450 5750
 $Sheet
 S 0    8550 11600 8950
 U 60824456
@@ -1388,16 +1389,20 @@ Wire Wire Line
 Wire Wire Line
 	9450 5900 9450 6000
 Connection ~ 6850 5250
+Text Label 9300 5900 0    50   ~ 0
+ABE
 Wire Wire Line
 	6700 4250 7050 4250
+Wire Bus Line
+	6800 3550 7150 3550
+Wire Bus Line
+	8250 3750 8250 5400
 Wire Wire Line
 	7850 4550 8400 4550
 Wire Wire Line
 	6950 2550 6950 4050
 Wire Wire Line
 	6900 2650 6900 4150
-Wire Wire Line
-	6700 4850 7050 4850
 Wire Wire Line
 	7000 2450 7000 3950
 Wire Wire Line
@@ -1426,16 +1431,15 @@ Wire Wire Line
 	7850 4350 8400 4350
 Wire Wire Line
 	7850 4450 8400 4450
-Wire Bus Line
-	6800 3550 7150 3550
+Wire Wire Line
+	6700 4850 7050 4850
 Wire Bus Line
 	6800 3550 6800 4950
 Wire Bus Line
 	10800 4050 10800 4750
 Wire Bus Line
-	8250 3750 8250 5400
-Wire Bus Line
 	9300 4050 9300 5400
-Text Label 9300 5900 0    50   ~ 0
-ABE
+Connection ~ 7450 5750
+Wire Wire Line
+	7450 5750 8400 5750
 $EndSCHEMATC

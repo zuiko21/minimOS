@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:picoVDU-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -454,7 +455,7 @@ U 1 1 6082678C
 P 1650 5550
 F 0 "U19" H 1650 5875 50  0000 C CNN
 F 1 "74HC32" H 1650 5784 50  0000 C CNN
-F 2 "" H 1650 5550 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1650 5550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS32" H 1650 5550 50  0001 C CNN
 	1    1650 5550
 	1    0    0    -1  
@@ -465,7 +466,7 @@ U 2 1 6082767C
 P 2250 5450
 F 0 "U19" H 2250 5775 50  0000 C CNN
 F 1 "74HC32" H 2250 5684 50  0000 C CNN
-F 2 "" H 2250 5450 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2250 5450 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS32" H 2250 5450 50  0001 C CNN
 	2    2250 5450
 	1    0    0    -1  
@@ -476,7 +477,7 @@ U 3 1 60828CE2
 P 2850 5350
 F 0 "U19" H 2850 5675 50  0000 C CNN
 F 1 "74HC32" H 2850 5584 50  0000 C CNN
-F 2 "" H 2850 5350 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2850 5350 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS32" H 2850 5350 50  0001 C CNN
 	3    2850 5350
 	1    0    0    -1  
@@ -487,7 +488,7 @@ U 4 1 6082A76A
 P 3450 5250
 F 0 "U19" H 3450 4933 50  0000 C CNN
 F 1 "74HC32" H 3450 5024 50  0000 C CNN
-F 2 "" H 3450 5250 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3450 5250 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS32" H 3450 5250 50  0001 C CNN
 	4    3450 5250
 	1    0    0    1   
@@ -511,10 +512,7 @@ Wire Wire Line
 Connection ~ 2550 5450
 Wire Wire Line
 	1350 5450 1350 5150
-Wire Wire Line
-	1950 5350 1950 5200
-Connection ~ 1950 5350
-Text Label 1950 5200 3    50   ~ 0
+Text Label 1950 5400 1    50   ~ 0
 ~PSEL
 Text Label 1350 5450 1    50   ~ 0
 ~SEL
@@ -534,7 +532,7 @@ U 5 1 608C9DA3
 P 5450 3500
 F 0 "U19" H 5220 3454 50  0000 R CNN
 F 1 "74HC32" H 5220 3545 50  0000 R CNN
-F 2 "" H 5450 3500 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5450 3500 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS32" H 5450 3500 50  0001 C CNN
 	5    5450 3500
 	-1   0    0    1   
@@ -557,7 +555,7 @@ U 1 1 608E854C
 P 1400 2000
 F 0 "J2" H 1450 2517 50  0000 C CNN
 F 1 "IOX" H 1450 2426 50  0000 C CNN
-F 2 "" H 1400 2000 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Vertical" H 1400 2000 50  0001 C CNN
 F 3 "~" H 1400 2000 50  0001 C CNN
 	1    1400 2000
 	1    0    0    -1  
@@ -640,7 +638,7 @@ Wire Wire Line
 Wire Wire Line
 	1000 2200 1200 2200
 Connection ~ 1350 5150
-Text Label 1000 2200 0    50   ~ 0
+Text Label 1050 2200 0    50   ~ 0
 ~SEL
 Text Label 1200 2300 2    50   ~ 0
 ~WE
@@ -681,7 +679,6 @@ Text Notes 1950 5000 1    50   ~ 0
 ~SEL~ OR ~PSEL
 Text Label 3000 5150 0    50   ~ 0
 ~SEL
-NoConn ~ 1950 5200
 Wire Bus Line
 	5100 1300 5100 1800
 Wire Bus Line
@@ -690,4 +687,6 @@ Wire Bus Line
 	1950 1350 1950 2300
 Wire Bus Line
 	3500 1300 3500 2300
+Text Notes 4850 2300 0    50   ~ 0
+INV?
 $EndSCHEMATC

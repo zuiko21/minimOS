@@ -1,6 +1,5 @@
 EESchema Schematic File Version 4
-LIBS:sv-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -62,8 +61,8 @@ $Comp
 L 4xxx:4040 U4
 U 1 1 6066AB07
 P 2400 3500
-F 0 "U4" H 2400 4481 50  0000 C CNN
-F 1 "74HCT4040" H 2400 4390 50  0000 C CNN
+F 0 "U4" H 2250 4200 50  0000 C CNN
+F 1 "74HCT4040" H 2650 4200 50  0000 C CNN
 F 2 "" H 2400 3500 50  0001 C CNN
 F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 2400 3500 50  0001 C CNN
 	1    2400 3500
@@ -128,8 +127,8 @@ $Comp
 L 74xx:74LS85 U7
 U 1 1 60692E60
 P 3950 3100
-F 0 "U7" H 3950 3981 50  0000 C CNN
-F 1 "74HCT85" H 3950 3890 50  0000 C CNN
+F 0 "U7" H 3750 3700 50  0000 C CNN
+F 1 "74HCT85" H 4150 3700 50  0000 C CNN
 F 2 "" H 3950 3100 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS85" H 3950 3100 50  0001 C CNN
 	1    3950 3100
@@ -139,8 +138,8 @@ $Comp
 L 74xx:74LS85 U8
 U 1 1 6069676C
 P 3950 4750
-F 0 "U8" H 3950 5631 50  0000 C CNN
-F 1 "74HCT85" H 3950 5540 50  0000 C CNN
+F 0 "U8" H 3750 5300 50  0000 C CNN
+F 1 "74HCT85" H 4150 5300 50  0000 C CNN
 F 2 "" H 3950 4750 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS85" H 3950 4750 50  0001 C CNN
 	1    3950 4750
@@ -183,8 +182,8 @@ $Comp
 L 74xx:74LS374 U11
 U 1 1 6075F5C4
 P 6650 3300
-F 0 "U11" H 6650 4281 50  0000 C CNN
-F 1 "74HCT374" H 6650 4190 50  0000 C CNN
+F 0 "U11" H 6450 3950 50  0000 C CNN
+F 1 "74HCT374" H 6850 3950 50  0000 C CNN
 F 2 "" H 6650 3300 50  0001 C CNN
 F 3 "https://www.ti.com/lit/ds/symlink/cd74hct374.pdf" H 6650 3300 50  0001 C CNN
 	1    6650 3300
@@ -308,15 +307,6 @@ Wire Wire Line
 	1050 4400 1050 3150
 Wire Wire Line
 	1050 3150 1250 3150
-Wire Wire Line
-	1900 1750 2000 1750
-Wire Wire Line
-	2000 1750 2000 2700
-Wire Wire Line
-	2000 2700 1900 2700
-Wire Wire Line
-	1900 2700 1900 3000
-Connection ~ 1900 1750
 Wire Wire Line
 	1900 2550 2950 2550
 Wire Wire Line
@@ -713,8 +703,6 @@ Wire Wire Line
 	8850 3600 8550 3600
 Connection ~ 9050 3400
 Wire Wire Line
-	7550 4000 7550 4100
-Wire Wire Line
 	7550 4300 8050 4300
 Wire Wire Line
 	2950 2550 3200 2550
@@ -737,8 +725,8 @@ $Comp
 L 74xx:7402 U1
 U 2 1 60C66774
 P 5750 2050
-F 0 "U1" H 5750 2375 50  0000 C CNN
-F 1 "74HCT02" H 5750 2284 50  0000 C CNN
+F 0 "U1" H 5350 2100 50  0000 C CNN
+F 1 "74HCT02" H 5250 1900 50  0000 C CNN
 F 2 "" H 5750 2050 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn7402" H 5750 2050 50  0001 C CNN
 	2    5750 2050
@@ -932,7 +920,7 @@ L power:GND #PWR0107
 U 1 1 606EFDC3
 P 4250 5450
 F 0 "#PWR0107" H 4250 5200 50  0001 C CNN
-F 1 "GND" H 4255 5277 50  0000 C CNN
+F 1 "GND" H 4400 5400 50  0000 C CNN
 F 2 "" H 4250 5450 50  0001 C CNN
 F 3 "" H 4250 5450 50  0001 C CNN
 	1    4250 5450
@@ -974,9 +962,6 @@ Wire Wire Line
 Wire Wire Line
 	1600 1400 1600 1300
 Connection ~ 2400 2400
-Connection ~ 7550 4100
-Wire Wire Line
-	7550 4100 7550 4300
 Wire Wire Line
 	8050 4300 8950 4300
 Wire Wire Line
@@ -1088,8 +1073,8 @@ $Comp
 L 6264:6264 U14
 U 1 1 606818EE
 P 6850 5400
-F 0 "U14" H 6850 6650 50  0000 C CNN
-F 1 "6264" H 6850 6550 50  0000 C CNN
+F 0 "U14" H 6700 6350 50  0000 C CNN
+F 1 "6264" H 7000 6350 50  0000 C CNN
 F 2 "Package_DIP:DIP-28_W15.24mm" H 6850 5400 50  0001 C CNN
 F 3 "http://users.ece.utexas.edu/~valvano/Datasheets/MCM6264.pdf" H 6850 5400 50  0001 C CNN
 	1    6850 5400
@@ -1306,8 +1291,8 @@ $Comp
 L 74xx:74LS257 U17
 U 1 1 608343C4
 P 4200 6650
-F 0 "U17" H 4200 7731 50  0000 C CNN
-F 1 "74HC257" H 4200 7640 50  0000 C CNN
+F 0 "U17" H 3950 7600 50  0000 C CNN
+F 1 "74HC257" H 4400 7600 50  0000 C CNN
 F 2 "" H 4200 6650 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 4200 6650 50  0001 C CNN
 	1    4200 6650
@@ -1549,37 +1534,37 @@ Wire Bus Line
 Wire Wire Line
 	3250 3800 3250 5300
 Connection ~ 3250 3800
-Text Label 3250 3800 1    50   ~ 0
+Text Label 3250 5200 0    50   ~ 0
 Q12
 Wire Wire Line
 	3300 3500 3300 5300
 Connection ~ 3300 3500
-Text Label 3300 3500 1    50   ~ 0
+Text Label 3300 5300 0    50   ~ 0
 Q7
 Wire Wire Line
 	3200 3700 3200 5300
 Connection ~ 3200 3700
-Text Label 3200 3700 1    50   ~ 0
+Text Label 3200 5300 1    50   ~ 0
 Q11
 Wire Wire Line
 	2950 5050 2950 5300
 Connection ~ 2950 5050
-Text Label 2950 5050 1    50   ~ 0
+Text Label 2950 5250 2    50   ~ 0
 Q10
 Wire Wire Line
 	3000 4950 3000 5300
 Connection ~ 3000 4950
-Text Label 3000 4950 1    50   ~ 0
+Text Label 3000 5200 1    50   ~ 0
 Q9
 Wire Wire Line
 	3050 4850 3050 5300
 Connection ~ 3050 4850
-Text Label 3050 4850 1    50   ~ 0
+Text Label 3050 5100 1    50   ~ 0
 Q8
 Wire Wire Line
 	3100 5150 3100 5300
 Connection ~ 3100 5150
-Text Label 3100 5150 1    50   ~ 0
+Text Label 3100 5300 1    50   ~ 0
 Q6
 Entry Wire Line
 	3200 5400 3300 5300
@@ -1618,24 +1603,24 @@ Wire Bus Line
 	4600 2550 4600 5400
 Wire Wire Line
 	2950 2550 2950 2750
-Text Label 2950 2550 1    50   ~ 0
+Text Label 2950 2750 1    50   ~ 0
 Q0
 Wire Wire Line
 	3050 2350 3050 2750
 Connection ~ 3050 2350
-Text Label 3050 2350 1    50   ~ 0
+Text Label 3050 2750 0    50   ~ 0
 Q2
 Wire Wire Line
 	3000 2450 3000 2750
 Connection ~ 3000 2450
-Text Label 3000 2450 1    50   ~ 0
+Text Label 3000 2650 0    50   ~ 0
 Q3
 Wire Wire Line
 	3250 1700 3250 2750
 Connection ~ 3250 1700
 Wire Wire Line
 	3250 1700 3300 1700
-Text Label 3250 1700 1    50   ~ 0
+Text Label 3250 2650 3    50   ~ 0
 Q5
 Wire Wire Line
 	2900 1300 3000 1300
@@ -1645,7 +1630,7 @@ Wire Wire Line
 	3000 500  950  500 
 Wire Wire Line
 	950  500  950  2750
-Text Label 950  500  1    50   ~ 0
+Text Label 950  2750 1    50   ~ 0
 Q1
 Wire Wire Line
 	3250 1500 3250 450 
@@ -1654,8 +1639,6 @@ Wire Wire Line
 Connection ~ 3250 1500
 Wire Wire Line
 	800  450  800  2750
-Text Label 950  3100 1    50   ~ 0
-Q4
 Entry Wire Line
 	700  2850 800  2750
 Entry Wire Line
@@ -1671,7 +1654,7 @@ Entry Wire Line
 Wire Bus Line
 	2150 5900 750  5900
 Connection ~ 2150 5900
-Text Label 800  450  1    50   ~ 0
+Text Label 800  2750 1    50   ~ 0
 Q4
 Wire Wire Line
 	5900 5750 5900 5900
@@ -1707,8 +1690,6 @@ Wire Wire Line
 Wire Wire Line
 	850  7700 2250 7700
 NoConn ~ 7250 5500
-Wire Wire Line
-	6150 3800 6150 4100
 $Comp
 L Connector_Generic:Conn_01x08 J1
 U 1 1 62E98B77
@@ -2004,7 +1985,37 @@ Wire Wire Line
 	7150 6500 7150 7750
 Connection ~ 6400 7750
 Wire Wire Line
-	6150 4100 7550 4100
+	1900 2600 1900 3000
+Wire Wire Line
+	1900 2600 3550 2600
+Wire Wire Line
+	3550 2600 3550 2350
+Wire Wire Line
+	3550 2350 4500 2350
+Wire Wire Line
+	4500 2350 4500 1800
+Connection ~ 4500 1800
+Text Notes 3550 2350 0    50   ~ 0
+LINE CLOCK FROM HS
+Text Label 4500 1000 0    50   ~ 0
+HS
+Text Label 4550 1200 0    50   ~ 0
+VS
+Text Label 7200 1600 0    50   ~ 0
+~DE
+Text Label 4600 1400 0    50   ~ 0
+~DEH
+Text Label 4650 1600 0    50   ~ 0
+~DEV
+Wire Wire Line
+	7550 4000 7550 4300
+Wire Wire Line
+	6150 3800 6150 4300
+Wire Wire Line
+	6150 4300 6650 4300
+Connection ~ 7550 4300
+Wire Wire Line
+	6650 4100 6650 4300
 Wire Wire Line
 	3150 2200 3150 3200
 Wire Bus Line
@@ -2045,4 +2056,7 @@ Wire Bus Line
 	6250 4500 6250 5800
 Wire Bus Line
 	750  4600 750  5900
+Connection ~ 6650 4300
+Wire Wire Line
+	6650 4300 7550 4300
 $EndSCHEMATC

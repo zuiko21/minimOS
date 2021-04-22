@@ -1,6 +1,5 @@
 EESchema Schematic File Version 4
-LIBS:picoVDU-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -587,9 +586,6 @@ Wire Wire Line
 Connection ~ 2350 2250
 Wire Wire Line
 	2300 3450 1150 3450
-Connection ~ 1150 3450
-Wire Wire Line
-	1150 3450 1150 4150
 $Comp
 L 74xx:74LS21 U10
 U 1 1 607C83CE
@@ -1391,12 +1387,25 @@ Wire Wire Line
 Connection ~ 6850 5250
 Text Label 9300 5900 0    50   ~ 0
 ABE
+Connection ~ 7450 5750
+Wire Wire Line
+	7450 5750 8400 5750
 Wire Wire Line
 	6700 4250 7050 4250
 Wire Bus Line
 	6800 3550 7150 3550
 Wire Bus Line
 	8250 3750 8250 5400
+Wire Wire Line
+	3900 4050 3900 4150
+Wire Wire Line
+	3900 4150 2300 4150
+Wire Wire Line
+	2300 4150 2300 3550
+Wire Wire Line
+	2300 3550 1150 3550
+Wire Wire Line
+	1150 3550 1150 4150
 Wire Wire Line
 	7850 4550 8400 4550
 Wire Wire Line
@@ -1439,7 +1448,7 @@ Wire Bus Line
 	10800 4050 10800 4750
 Wire Bus Line
 	9300 4050 9300 5400
-Connection ~ 7450 5750
-Wire Wire Line
-	7450 5750 8400 5750
+Connection ~ 3900 4050
+Text Notes 2350 4100 0    50   ~ 0
+LINE CLOCK FROM ~HS
 $EndSCHEMATC
