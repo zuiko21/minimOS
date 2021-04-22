@@ -1,6 +1,5 @@
 EESchema Schematic File Version 4
-LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -320,7 +319,6 @@ Wire Wire Line
 	4450 3250 4450 2700
 Wire Wire Line
 	4450 2700 4500 2700
-Connection ~ 4500 3300
 Wire Wire Line
 	7300 3300 7300 1350
 Wire Wire Line
@@ -525,8 +523,6 @@ Wire Wire Line
 Wire Wire Line
 	5700 3800 4000 3800
 Wire Wire Line
-	4500 3300 6300 3300
-Wire Wire Line
 	3050 3300 3050 3750
 Wire Wire Line
 	3050 3750 3400 3750
@@ -611,9 +607,9 @@ F 3 "" H 8200 4600 50  0001 C CNN
 $EndComp
 Connection ~ 8200 4600
 Text Label 5800 5100 0    50   ~ 0
-HSYNC
+HS
 Text Label 9300 5100 0    50   ~ 0
-VSYNC
+VS
 Text Label 5850 2200 0    50   ~ 0
 ~DEH
 Text Label 7950 4100 0    50   ~ 0
@@ -788,8 +784,14 @@ F 3 "" H 7400 5200 50  0001 C CNN
 $EndComp
 Text Notes 4100 3600 0    50   ~ 0
 May use an HC10 here,\nplacing U13A for ~LE
-Wire Bus Line
-	2700 1250 8100 1250
 Text Notes 8600 2650 0    50   ~ 0
 SPLIT IN TWO ‘175 INPUTS\nGATED BY ~HIRES~ AND ~COL\n\nPERHAPS VIA A ‘257
+Wire Wire Line
+	5800 5100 6200 5100
+Wire Wire Line
+	6200 5100 6200 3300
+Wire Wire Line
+	6200 3300 6300 3300
+Wire Bus Line
+	2700 1250 8100 1250
 $EndSCHEMATC
