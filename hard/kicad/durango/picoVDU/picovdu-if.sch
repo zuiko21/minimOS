@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:picoVDU-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -90,14 +91,14 @@ Wire Wire Line
 Wire Wire Line
 	4800 1900 5000 1900
 Wire Wire Line
-	4800 2100 5000 2100
+	4800 2300 5000 2300
 Text Label 4800 1700 0    50   ~ 0
 VA8
 Text Label 4800 1800 0    50   ~ 0
 VA9
 Text Label 4800 1900 0    50   ~ 0
 VA10
-Text Label 4850 2100 0    50   ~ 0
+Text Label 4850 2300 0    50   ~ 0
 INV
 Entry Wire Line
 	5000 1700 5100 1600
@@ -107,7 +108,6 @@ Entry Wire Line
 	5000 1900 5100 1800
 NoConn ~ 4800 2000
 NoConn ~ 4800 2200
-NoConn ~ 4800 2300
 NoConn ~ 4800 2400
 Wire Wire Line
 	2050 1700 2200 1700
@@ -265,7 +265,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 2700 3550 50  0001 C CNN
 	2    2700 3550
 	1    0    0    -1  
 $EndComp
-Text GLabel 5000 2100 2    50   Input ~ 0
+Text GLabel 5000 2300 2    50   Input ~ 0
 INV
 $Comp
 L power:+5V #PWR0118
@@ -549,7 +549,7 @@ F 3 "" H 5450 4000 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Connector_Generic:Conn_02x08_Top_Bottom J2
+L Connector_Generic:Conn_02x08_Odd_Even J2
 U 1 1 608E854C
 P 1400 2000
 F 0 "J2" H 1450 2517 50  0000 C CNN
@@ -678,6 +678,7 @@ Text Notes 1950 5000 1    50   ~ 0
 ~SEL~ OR ~PSEL
 Text Label 3000 5150 0    50   ~ 0
 ~SEL
+NoConn ~ 4800 2100
 Wire Bus Line
 	5100 1300 5100 1800
 Wire Bus Line
@@ -686,6 +687,4 @@ Wire Bus Line
 	1950 1350 1950 2300
 Wire Bus Line
 	3500 1300 3500 2300
-Text Notes 4850 2300 0    50   ~ 0
-INV?
 $EndSCHEMATC

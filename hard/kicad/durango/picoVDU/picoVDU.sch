@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:picoVDU-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1154,7 +1155,7 @@ U 1 1 61226EE6
 P 11100 1800
 F 0 "J1" H 11050 2050 50  0000 L CNN
 F 1 "VIDEO" H 10950 1950 50  0000 L CNN
-F 2 "Connector_Audio:Jack_3.5mm_Neutrik_NMJ6HCD2_Horizontal" H 11100 1800 50  0001 C CNN
+F 2 "Connector_Coaxial:SMA_Amphenol_132289_EdgeMount" H 11100 1800 50  0001 C CNN
 F 3 " ~" H 11100 1800 50  0001 C CNN
 	1    11100 1800
 	1    0    0    -1  
@@ -1391,12 +1392,6 @@ Connection ~ 7450 5750
 Wire Wire Line
 	7450 5750 8400 5750
 Wire Wire Line
-	6700 4250 7050 4250
-Wire Bus Line
-	6800 3550 7150 3550
-Wire Bus Line
-	8250 3750 8250 5400
-Wire Wire Line
 	3900 4050 3900 4150
 Wire Wire Line
 	3900 4150 2300 4150
@@ -1406,12 +1401,19 @@ Wire Wire Line
 	2300 3550 1150 3550
 Wire Wire Line
 	1150 3550 1150 4150
+Connection ~ 3900 4050
+Text Notes 2350 4100 0    50   ~ 0
+LINE CLOCK FROM ~HS
+Wire Wire Line
+	6700 4250 7050 4250
 Wire Wire Line
 	7850 4550 8400 4550
 Wire Wire Line
 	6950 2550 6950 4050
 Wire Wire Line
 	6900 2650 6900 4150
+Wire Wire Line
+	6700 4850 7050 4850
 Wire Wire Line
 	7000 2450 7000 3950
 Wire Wire Line
@@ -1440,15 +1442,14 @@ Wire Wire Line
 	7850 4350 8400 4350
 Wire Wire Line
 	7850 4450 8400 4450
-Wire Wire Line
-	6700 4850 7050 4850
+Wire Bus Line
+	6800 3550 7150 3550
 Wire Bus Line
 	6800 3550 6800 4950
 Wire Bus Line
 	10800 4050 10800 4750
 Wire Bus Line
+	8250 3750 8250 5400
+Wire Bus Line
 	9300 4050 9300 5400
-Connection ~ 3900 4050
-Text Notes 2350 4100 0    50   ~ 0
-LINE CLOCK FROM ~HS
 $EndSCHEMATC
