@@ -5,16 +5,16 @@
 	LDA #0
 start:
 	LDY #0
-	LDX #0
+	LDX #$0
 loop:
 	STX $8000
 	STY $8001
 	STA $8003
-;	JSR delay
+	JSR delay
 	INY
 	BNE loop
 	INX
-	CPX #8
+	CPX #$8
 	BNE loop
 	INC
 wait:
