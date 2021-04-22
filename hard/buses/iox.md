@@ -11,7 +11,7 @@ Since this link allows for easy connection of simple, dumb devices, but it is **
 ## Pinout (standard version)
 
 function|pin|pin|function
---------|---|---|--------
+========|===|===|========
 	+5 V|1	|9	|D0
 	A0	|2	|10	|D1
 	A1	|3	|11	|D2
@@ -24,7 +24,7 @@ function|pin|pin|function
 ## Pinout (EXTENDED version)
 
 function|pin|pin|function
---------|---|---|--------
+========|===|===|========
 /USEL	|1	|11	|Phi2
 **KEY**	|2	|12	|R/W
 	+5 V|3	|13	|D0
