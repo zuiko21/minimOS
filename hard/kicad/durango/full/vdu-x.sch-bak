@@ -607,9 +607,9 @@ F 3 "" H 8200 4600 50  0001 C CNN
 $EndComp
 Connection ~ 8200 4600
 Text Label 5800 5100 0    50   ~ 0
-HSYNC
+HS
 Text Label 9300 5100 0    50   ~ 0
-VSYNC
+VS
 Text Label 5850 2200 0    50   ~ 0
 ~DEH
 Text Label 7950 4100 0    50   ~ 0
