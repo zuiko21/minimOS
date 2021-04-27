@@ -3,7 +3,7 @@
 ; suitable for Durango-proto (not Durango-X/SV) computer
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210421-2127
+; last modified 20210427-1721
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -25,9 +25,9 @@ pvdu	= $7800				; base address
 #ifdef	IOSCREEN
 IO8lh	= $8000				; I/O Screen addresses (for prototype)
 IO8ll	= $8001
-IO8wr	= $8003				; *** THIS WILL CHANGE TO $8002 ***
+IO8wr	= $8002
 #endif
-IO9di	= $9FF0				; data input (TBD)
+IO9di	= $9FFF				; data input (TBD)
 
 .(
 	TYA						; check mode (and put into A, just in case)

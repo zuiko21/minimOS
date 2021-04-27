@@ -9,7 +9,7 @@ start:
 loop:
 	STX $8000
 	STY $8001
-	STA $8003
+	STA $8002	;***
 	JSR delay
 	INY
 	BNE loop

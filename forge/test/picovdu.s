@@ -1,14 +1,14 @@
 ; test code for picoVDU in DURANGO computer
 ; IO-channel 8 connection
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210310-1859
+; last modified 20210427-1723
 
 	* = $400				; standard download address
 
 ; constants
 	io_lh =	$8000
 	io_ll =	$8001
-	io_wr =	$8003
+	io_wr =	$8002			; *** new
 	ltc_o =	$FFF0
 ; first block %01010101
 	LDX #0

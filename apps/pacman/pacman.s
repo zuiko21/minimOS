@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210415-1257
+; last modified 20210427-1720
 
 ; can be assembled from this folder
 
@@ -17,7 +17,7 @@
 ; I/O addresses
 	IO8lh	= $8000			; screen latch high
 	IO8ll	= $8001			; screen latch low
-	IO8wr	= $8003			; screen write data
+	IO8wr	= $8002			; screen write data **new address**
 	IOAie	= $A001			; enable hardware interrupt, LSB must be $01!
 	IOAid	= $A000			; disable hardware interrupt
 	IOBeep	= $BFF0			; beeper address (latches D0 value)
