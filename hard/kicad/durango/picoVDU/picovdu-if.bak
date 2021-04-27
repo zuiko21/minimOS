@@ -549,7 +549,7 @@ F 3 "" H 5450 4000 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Connector_Generic:Conn_02x08_Top_Bottom J2
+L Connector_Generic:Conn_02x08_Odd_Even J2
 U 1 1 608E854C
 P 1400 2000
 F 0 "J2" H 1450 2517 50  0000 C CNN

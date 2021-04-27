@@ -300,7 +300,7 @@ Wire Wire Line
 	4300 3000 5450 3000
 Wire Wire Line
 	5450 3000 5450 2600
-Text GLabel 3350 3750 2    50   Input ~ 0
+Text GLabel 3350 3650 2    50   Input ~ 0
 ~DWE
 Wire Wire Line
 	2200 3450 2150 3450
@@ -319,16 +319,12 @@ A0
 Text Label 2150 4200 0    50   ~ 0
 A1
 Wire Wire Line
-	3800 3050 3800 4500
-Wire Wire Line
-	3800 4500 3200 4500
+	3800 3050 3800 4400
 Connection ~ 3800 3050
-NoConn ~ 3200 3650
 NoConn ~ 3200 4200
 NoConn ~ 3200 4300
-NoConn ~ 3200 4400
 Wire Wire Line
-	3200 3750 3350 3750
+	3200 3650 3300 3650
 Wire Wire Line
 	3750 3450 3200 3450
 Wire Wire Line
@@ -338,13 +334,10 @@ Wire Wire Line
 Wire Wire Line
 	3700 3550 3200 3550
 Wire Wire Line
-	3200 3750 3200 3950
-Wire Wire Line
-	3200 3950 3350 3950
-Connection ~ 3200 3750
-Text GLabel 3350 3950 2    50   Input ~ 0
+	3300 3850 3350 3850
+Text GLabel 3350 3850 2    50   Input ~ 0
 ~DBE
-Text GLabel 3800 4500 2    50   Input ~ 0
+Text GLabel 3800 4400 2    50   Input ~ 0
 ~ABE
 $Comp
 L 74xx:74LS10 U8
@@ -679,6 +672,15 @@ Text Notes 1950 5000 1    50   ~ 0
 Text Label 3000 5150 0    50   ~ 0
 ~SEL
 NoConn ~ 4800 2100
+Wire Wire Line
+	3300 3850 3300 3650
+Connection ~ 3300 3650
+Wire Wire Line
+	3300 3650 3350 3650
+NoConn ~ 3200 3750
+Wire Wire Line
+	3200 4400 3800 4400
+NoConn ~ 3200 4500
 Wire Bus Line
 	5100 1300 5100 1800
 Wire Bus Line
