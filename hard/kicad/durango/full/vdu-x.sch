@@ -1,6 +1,5 @@
 EESchema Schematic File Version 4
-LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -658,7 +657,7 @@ Wire Wire Line
 Connection ~ 5550 1300
 Connection ~ 5450 1200
 Wire Wire Line
-	4650 4400 4950 4400
+	4650 4400 4750 4400
 Connection ~ 4950 900 
 Connection ~ 4650 3900
 Wire Wire Line
@@ -1721,17 +1720,6 @@ Wire Wire Line
 Wire Wire Line
 	5650 6500 5550 6500
 Connection ~ 5650 6400
-$Comp
-L 74xx:74HCT02 U16
-U 3 1 612B6A33
-P 6300 4850
-F 0 "U16" H 6300 5175 50  0000 C CNN
-F 1 "74HCT02*" H 6300 5084 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm" H 6300 4850 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 6300 4850 50  0001 C CNN
-	3    6300 4850
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	6000 4550 8950 4550
 Wire Wire Line
@@ -1761,14 +1749,10 @@ Connection ~ 4900 5700
 Wire Wire Line
 	6000 4750 6000 4550
 Wire Wire Line
-	6600 4850 6600 5150
-Wire Wire Line
 	5950 4850 5950 4950
 Wire Wire Line
 	5950 4950 6000 4950
 NoConn ~ 2100 5550
-Wire Wire Line
-	5350 4750 4900 4750
 Wire Wire Line
 	4750 4750 4750 7450
 Wire Wire Line
@@ -1781,23 +1765,40 @@ Text Label 4950 4750 0    50   ~ 0
 ~HRVID
 Text Label 4950 4950 0    50   ~ 0
 INVERT
+Wire Wire Line
+	4750 4750 5350 4750
 $Comp
-L Device:Jumper_NO_Small JP802
-U 1 1 614DDF3E
-P 4900 4850
-F 0 "JP802" V 4854 4898 50  0000 L CNN
-F 1 "NO HIRES" V 4945 4898 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 4900 4850 50  0001 C CNN
-F 3 "~" H 4900 4850 50  0001 C CNN
-	1    4900 4850
-	0    -1   1    0   
+L Device:R R821
+U 1 1 6090A54B
+P 4750 4600
+F 0 "R821" H 4820 4646 50  0000 L CNN
+F 1 "100K" V 4750 4500 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 4680 4600 50  0001 C CNN
+F 3 "~" H 4750 4600 50  0001 C CNN
+	1    4750 4600
+	1    0    0    -1  
+$EndComp
+Connection ~ 4750 4750
+Wire Wire Line
+	4750 4450 4750 4400
+Connection ~ 4750 4400
+Wire Wire Line
+	4750 4400 4950 4400
+Wire Wire Line
+	6600 4850 6600 5150
+$Comp
+L 74xx:74HCT02 U16
+U 3 1 612B6A33
+P 6300 4850
+F 0 "U16" H 6300 5175 50  0000 C CNN
+F 1 "74HCT02*" H 6300 5084 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 6300 4850 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 6300 4850 50  0001 C CNN
+	3    6300 4850
+	1    0    0    -1  
 $EndComp
 Wire Bus Line
 	1150 4350 3700 4350
 Wire Bus Line
 	2650 550  8050 550 
-Connection ~ 4900 4750
-Wire Wire Line
-	4900 4750 4750 4750
-Connection ~ 4900 4950
 $EndSCHEMATC
