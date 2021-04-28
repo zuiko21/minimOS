@@ -1,0 +1,194 @@
+EESchema Schematic File Version 4
+LIBS:full-cache
+EELAYER 29 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 3 3
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Connector:Barrel_Jack J7
+U 1 1 63122170
+P 900 1100
+F 0 "J7" H 957 1425 50  0000 C CNN
+F 1 "5V DC" H 957 1334 50  0000 C CNN
+F 2 "Connector_BarrelJack:BarrelJack_Wuerth_6941xx301002" H 950 1060 50  0001 C CNN
+F 3 "~" H 950 1060 50  0001 C CNN
+	1    900  1100
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0111
+U 1 1 6315BD20
+P 1350 1300
+F 0 "#PWR0111" H 1350 1050 50  0001 C CNN
+F 1 "GND" H 1355 1127 50  0000 C CNN
+F 2 "" H 1350 1300 50  0001 C CNN
+F 3 "" H 1350 1300 50  0001 C CNN
+	1    1350 1300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:CP C6
+U 1 1 6315BFF0
+P 1350 1150
+F 0 "C6" H 1400 1250 50  0000 L CNN
+F 1 "1000uF" H 1350 1050 50  0000 L CNN
+F 2 "Capacitor_THT:CP_Radial_D10.0mm_P5.00mm" H 1388 1000 50  0001 C CNN
+F 3 "~" H 1350 1150 50  0001 C CNN
+	1    1350 1150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1200 1200 1200 1300
+Wire Wire Line
+	1200 1300 1350 1300
+Connection ~ 1350 1300
+Wire Wire Line
+	1200 1000 1350 1000
+$Comp
+L power:+5V #PWR0153
+U 1 1 6315CF6B
+P 1350 1000
+F 0 "#PWR0153" H 1350 850 50  0001 C CNN
+F 1 "+5V" H 1365 1173 50  0000 C CNN
+F 2 "" H 1350 1000 50  0001 C CNN
+F 3 "" H 1350 1000 50  0001 C CNN
+	1    1350 1000
+	1    0    0    -1  
+$EndComp
+Connection ~ 1350 1000
+$Comp
+L Device:C C7
+U 1 1 6315D0B4
+P 1700 1150
+F 0 "C7" H 1750 1250 50  0000 L CNN
+F 1 "100nF" H 1700 1050 50  0000 L CNN
+F 2 "Capacitor_THT:C_Disc_D4.7mm_W2.5mm_P5.00mm" H 1738 1000 50  0001 C CNN
+F 3 "~" H 1700 1150 50  0001 C CNN
+	1    1700 1150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1350 1000 1700 1000
+Wire Wire Line
+	1350 1300 1700 1300
+$Comp
+L 74xx:74LS20 U13
+U 3 1 6318F3D4
+P 2150 1150
+F 0 "U13" H 2150 1600 50  0000 L CNN
+F 1 "74HC20" H 2150 1500 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 2150 1150 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS20" H 2150 1150 50  0001 C CNN
+	3    2150 1150
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HCT02 U16
+U 5 1 63193401
+P 2600 1150
+F 0 "U16" H 2600 1600 50  0000 L CNN
+F 1 "74HCT02*" H 2600 1500 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 2600 1150 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 2600 1150 50  0001 C CNN
+	5    2600 1150
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74LS132 U18
+U 5 1 63199332
+P 3050 1150
+F 0 "U18" H 3050 1600 50  0000 L CNN
+F 1 "74HC132" H 3050 1500 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 3050 1150 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 3050 1150 50  0001 C CNN
+	5    3050 1150
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HCT00 U19
+U 5 1 631D9308
+P 3500 1150
+F 0 "U19" H 3500 1600 50  0000 L CNN
+F 1 "74HC00*" H 3500 1500 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 3500 1150 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3500 1150 50  0001 C CNN
+	5    3500 1150
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC74 U20
+U 3 1 631DC617
+P 3950 1150
+F 0 "U20" H 3950 1600 50  0000 L CNN
+F 1 "74HC74*" H 3950 1500 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 3950 1150 50  0001 C CNN
+F 3 "74xx/74hc_hct74.pdf" H 3950 1150 50  0001 C CNN
+	3    3950 1150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1700 1000 1700 650 
+Wire Wire Line
+	1700 650  2150 650 
+Wire Wire Line
+	3950 650  3950 750 
+Connection ~ 1700 1000
+Connection ~ 2150 650 
+Wire Wire Line
+	2150 650  2600 650 
+Connection ~ 2600 650 
+Wire Wire Line
+	2600 650  3050 650 
+Connection ~ 3050 650 
+Wire Wire Line
+	3050 650  3500 650 
+Connection ~ 3500 650 
+Wire Wire Line
+	3500 650  3950 650 
+Wire Wire Line
+	1700 1300 1700 1650
+Wire Wire Line
+	1700 1650 2150 1650
+Wire Wire Line
+	3950 1650 3950 1550
+Connection ~ 1700 1300
+Connection ~ 2150 1650
+Wire Wire Line
+	2150 1650 2600 1650
+Connection ~ 2600 1650
+Wire Wire Line
+	2600 1650 3050 1650
+Connection ~ 3050 1650
+Wire Wire Line
+	3050 1650 3500 1650
+Connection ~ 3500 1650
+Wire Wire Line
+	3500 1650 3950 1650
+$Comp
+L 74xx:74LS126 U21
+U 5 1 63C8D79E
+P 4400 1150
+F 0 "U21" H 4630 1196 50  0000 L CNN
+F 1 "74HC126*" H 4630 1105 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 4400 1150 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS126" H 4400 1150 50  0001 C CNN
+	5    4400 1150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3950 650  4400 650 
+Connection ~ 3950 650 
+Wire Wire Line
+	3950 1650 4400 1650
+Connection ~ 3950 1650
+$EndSCHEMATC

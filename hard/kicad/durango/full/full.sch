@@ -4,7 +4,7 @@ EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 2
+Sheet 1 3
 Title "DURANGO-X computer"
 Date ""
 Rev ""
@@ -1685,7 +1685,7 @@ L 74xx:74HCT00 U19
 U 1 1 60DCA974
 P 3450 4200
 F 0 "U19" V 3404 4020 50  0000 R CNN
-F 1 "74HCT00*" V 3495 4020 50  0000 R CNN
+F 1 "74HC00*" V 3495 4020 50  0000 R CNN
 F 2 "Package_DIP:DIP-14_W7.62mm" H 3450 4200 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3450 4200 50  0001 C CNN
 	1    3450 4200
@@ -1702,7 +1702,7 @@ L 74xx:74HCT00 U19
 U 2 1 60E15C13
 P 3750 4700
 F 0 "U19" H 3400 4500 50  0000 L CNN
-F 1 "74HCT00*" H 3650 4500 50  0000 L CNN
+F 1 "74HC00*" H 3650 4500 50  0000 L CNN
 F 2 "Package_DIP:DIP-14_W7.62mm" H 3750 4700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3750 4700 50  0001 C CNN
 	2    3750 4700
@@ -1717,7 +1717,7 @@ L 74xx:74HCT00 U19
 U 3 1 60E5980E
 P 3800 5900
 F 0 "U19" V 3900 6300 50  0000 R CNN
-F 1 "74HCT00*" V 3700 6450 50  0000 R CNN
+F 1 "74HC00*" V 3700 6450 50  0000 R CNN
 F 2 "Package_DIP:DIP-14_W7.62mm" H 3800 5900 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3800 5900 50  0001 C CNN
 	3    3800 5900
@@ -1741,12 +1741,12 @@ Connection ~ 4400 6850
 $Comp
 L 74xx:74HCT00 U19
 U 4 1 60F87F45
-P 3850 6850
-F 0 "U19" H 3850 7100 50  0000 C CNN
-F 1 "74HCT00*" H 3850 6650 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm" H 3850 6850 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3850 6850 50  0001 C CNN
-	4    3850 6850
+P 3650 7750
+F 0 "U19" H 3650 8000 50  0000 C CNN
+F 1 "74HC00*" H 3650 7550 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 3650 7750 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3650 7750 50  0001 C CNN
+	4    3650 7750
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -2522,6 +2522,12 @@ Text Label 8700 5900 0    50   ~ 0
 ~IEN
 Text GLabel 7550 5450 2    50   Input ~ 0
 A[0..15]
+$Sheet
+S 100  17550 11600 7700
+U 6310B9C7
+F0 "power" 50
+F1 "power.sch" 50
+$EndSheet
 Wire Wire Line
 	2550 6200 3000 6200
 Wire Wire Line
@@ -2541,9 +2547,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	1650 5800 1650 6900
 Wire Bus Line
@@ -2564,4 +2570,6 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Text Notes 3250 7300 0    50   ~ 0
+I NEED this inverter\nWill use ‘175 or ’74\nfor IO8 latch
 $EndSCHEMATC

@@ -4,7 +4,7 @@ EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
-Sheet 1 2
+Sheet 1 3
 Title "DURANGO-X computer"
 Date ""
 Rev ""
@@ -2522,6 +2522,12 @@ Text Label 8700 5900 0    50   ~ 0
 ~IEN
 Text GLabel 7550 5450 2    50   Input ~ 0
 A[0..15]
+$Sheet
+S 100  17550 11600 7700
+U 6310B9C7
+F0 "power" 50
+F1 "power.sch" 50
+$EndSheet
 Wire Wire Line
 	2550 6200 3000 6200
 Wire Wire Line
@@ -2541,9 +2547,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	1650 5800 1650 6900
 Wire Bus Line
@@ -2564,4 +2570,6 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Text Notes 3250 7300 0    50   ~ 0
+I NEED this inverter\nWill use ‘175 or ’74\nfor IO8 latch
 $EndSCHEMATC
