@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:full-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -2489,6 +2490,8 @@ U 6310B9C7
 F0 "power" 50
 F1 "power.sch" 50
 $EndSheet
+Text Label 4400 6850 1    50   ~ 0
+~HIRES
 Wire Wire Line
 	2550 6200 3000 6200
 Wire Wire Line
@@ -2531,6 +2534,6 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text Label 4400 6850 1    50   ~ 0
-~HIRES
+Text GLabel 3000 6200 2    50   Input ~ 0
+R~W
 $EndSCHEMATC

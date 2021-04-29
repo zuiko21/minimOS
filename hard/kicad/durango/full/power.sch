@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:full-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -196,7 +197,7 @@ U 5 1 61BA3670
 P 4850 1150
 F 0 "U26" H 4850 1600 50  0000 L CNN
 F 1 "74HC86" H 4850 1500 50  0000 L CNN
-F 2 "" H 4850 1150 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 4850 1150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 4850 1150 50  0001 C CNN
 	5    4850 1150
 	1    0    0    -1  
@@ -207,7 +208,7 @@ U 5 1 61BAB9F2
 P 5300 1150
 F 0 "U28" H 5300 1600 50  0000 L CNN
 F 1 "74HC32" H 5300 1500 50  0000 L CNN
-F 2 "" H 5300 1150 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 5300 1150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS32" H 5300 1150 50  0001 C CNN
 	5    5300 1150
 	1    0    0    -1  
@@ -218,7 +219,7 @@ U 3 1 61BADF7E
 P 5750 1150
 F 0 "U29" H 5750 1600 50  0000 L CNN
 F 1 "74HC74*" H 5750 1500 50  0000 L CNN
-F 2 "" H 5750 1150 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 5750 1150 50  0001 C CNN
 F 3 "74xx/74hc_hct74.pdf" H 5750 1150 50  0001 C CNN
 	3    5750 1150
 	1    0    0    -1  
@@ -251,7 +252,7 @@ U 5 1 61BC27C7
 P 6200 1150
 F 0 "U127" H 6200 1600 50  0000 L CNN
 F 1 "74HC86" H 6200 1500 50  0000 L CNN
-F 2 "" H 6200 1150 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 6200 1150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 6200 1150 50  0001 C CNN
 	5    6200 1150
 	1    0    0    -1  
@@ -262,7 +263,7 @@ U 2 1 61BC4EA7
 P 6650 1150
 F 0 "U231" H 6650 1600 50  0000 L CNN
 F 1 "74HC30" H 6650 1500 50  0000 L CNN
-F 2 "" H 6650 1150 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 6650 1150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS30" H 6650 1150 50  0001 C CNN
 	2    6650 1150
 	1    0    0    -1  
@@ -279,4 +280,113 @@ Connection ~ 5750 1650
 Connection ~ 6200 1650
 Wire Wire Line
 	6200 1650 6650 1650
+Text GLabel 900  2050 1    50   Input ~ 0
+D[0..7]
+Text GLabel 800  2050 1    50   Input ~ 0
+A[0..15]
+$Comp
+L Connector_Generic:Conn_01x14 J8
+U 1 1 60AD9E5D
+P 1550 2650
+F 0 "J8" H 1630 2642 50  0000 L CNN
+F 1 "DEBUG" H 1630 2551 50  0000 L CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x14_P2.54mm_Vertical" H 1550 2650 50  0001 C CNN
+F 3 "~" H 1550 2650 50  0001 C CNN
+	1    1550 2650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	900  3250 1350 3250
+Wire Wire Line
+	900  3350 1350 3350
+Wire Wire Line
+	1000 3150 1350 3150
+Wire Wire Line
+	1000 3050 1350 3050
+Wire Wire Line
+	1000 2950 1350 2950
+Wire Wire Line
+	1000 2850 1350 2850
+Wire Wire Line
+	1000 2750 1350 2750
+Wire Wire Line
+	1000 2650 1350 2650
+Wire Wire Line
+	1000 2550 1350 2550
+Wire Wire Line
+	1000 2450 1350 2450
+Text Label 1250 2450 0    50   ~ 0
+D0
+Text Label 1250 2550 0    50   ~ 0
+D1
+Text Label 1250 2650 0    50   ~ 0
+D2
+Text Label 1250 2750 0    50   ~ 0
+D3
+Text Label 1250 2850 0    50   ~ 0
+D4
+Text Label 1250 2950 0    50   ~ 0
+D5
+Text Label 1250 3050 0    50   ~ 0
+D6
+Text Label 1250 3150 0    50   ~ 0
+D7
+Text Label 1200 3250 0    50   ~ 0
+A15
+Text Label 1200 3350 0    50   ~ 0
+A14
+Entry Wire Line
+	800  3150 900  3250
+Entry Wire Line
+	800  3250 900  3350
+Entry Wire Line
+	900  3050 1000 3150
+Entry Wire Line
+	900  2950 1000 3050
+Entry Wire Line
+	900  2850 1000 2950
+Entry Wire Line
+	900  2750 1000 2850
+Entry Wire Line
+	900  2650 1000 2750
+Entry Wire Line
+	900  2550 1000 2650
+Entry Wire Line
+	900  2450 1000 2550
+Entry Wire Line
+	900  2350 1000 2450
+Text GLabel 1000 2050 1    50   Input ~ 0
+R~W
+Wire Wire Line
+	1000 2050 1000 2350
+Wire Wire Line
+	1000 2350 1350 2350
+$Comp
+L power:GND #PWR0150
+U 1 1 60AD9E86
+P 1350 2250
+F 0 "#PWR0150" H 1350 2000 50  0001 C CNN
+F 1 "GND" V 1355 2122 50  0000 R CNN
+F 2 "" H 1350 2250 50  0001 C CNN
+F 3 "" H 1350 2250 50  0001 C CNN
+	1    1350 2250
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+5V #PWR0155
+U 1 1 60AD9E8C
+P 1350 2150
+F 0 "#PWR0155" H 1350 2000 50  0001 C CNN
+F 1 "+5V" V 1365 2278 50  0000 L CNN
+F 2 "" H 1350 2150 50  0001 C CNN
+F 3 "" H 1350 2150 50  0001 C CNN
+	1    1350 2150
+	0    -1   -1   0   
+$EndComp
+Text GLabel 1350 2050 1    50   Input ~ 0
+SCLK
+Wire Bus Line
+	800  2050 800  3250
+Wire Bus Line
+	900  2050 900  3050
 $EndSCHEMATC
