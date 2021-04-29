@@ -1,6 +1,5 @@
 EESchema Schematic File Version 4
-LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1138,7 +1137,7 @@ Wire Wire Line
 	4400 4750 4400 6850
 Wire Wire Line
 	4400 6850 4500 6850
-Text Label 7700 4500 3    50   ~ 0
+Text Label 7700 4300 3    50   ~ 0
 ~COL
 Wire Wire Line
 	7800 2350 7700 2350
@@ -1214,8 +1213,6 @@ F 3 "" H 5000 5250 50  0001 C CNN
 	1    5000 5250
 	0    1    1    0   
 $EndComp
-Text Label 4400 4750 3    50   ~ 0
-~HIRES
 Wire Wire Line
 	6050 4400 6050 5150
 Wire Wire Line
@@ -1735,25 +1732,7 @@ Wire Wire Line
 	7200 6100 7300 6100
 Text GLabel 7400 6100 2    50   Input ~ 0
 ~IO8Q
-Wire Wire Line
-	4400 6850 4150 6850
-Connection ~ 4400 6850
-$Comp
-L 74xx:74HCT00 U19
-U 4 1 60F87F45
-P 3650 7750
-F 0 "U19" H 3650 8000 50  0000 C CNN
-F 1 "74HC00*" H 3650 7550 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm" H 3650 7750 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3650 7750 50  0001 C CNN
-	4    3650 7750
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	3550 6750 3550 6950
-Text Label 3550 6750 1    50   ~ 0
-~COL
-Text GLabel 3550 6950 0    50   Input ~ 0
+Text GLabel 7700 4500 3    50   Input ~ 0
 HIRES
 $Comp
 L Connector_Generic:Conn_02x12_Odd_Even J3
@@ -2377,7 +2356,6 @@ Wire Wire Line
 	1500 550  10900 550 
 Text Label 1650 5800 0    50   ~ 0
 D[0..7]
-Connection ~ 3550 6950
 Entry Wire Line
 	3900 6350 4000 6450
 Text GLabel 4400 6850 3    50   Input ~ 0
@@ -2490,23 +2468,6 @@ Text Label 9900 4700 0    50   ~ 0
 Text Label 9300 4800 1    50   ~ 0
 ~WE3
 Wire Wire Line
-	3550 6950 3550 7250
-Wire Wire Line
-	3550 7250 6100 7250
-Wire Wire Line
-	6100 7250 6100 5600
-Wire Wire Line
-	6100 5200 7700 5200
-Wire Wire Line
-	7700 5200 7700 4500
-Wire Wire Line
-	6100 5500 6100 5200
-Wire Wire Line
-	6100 5600 6100 5500
-Connection ~ 7700 4500
-Text Label 6100 7100 1    50   ~ 0
-~COL
-Wire Wire Line
 	6000 5600 6200 5600
 Wire Wire Line
 	6000 5500 6200 5500
@@ -2547,9 +2508,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	1650 5800 1650 6900
 Wire Bus Line
@@ -2570,6 +2531,6 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text Notes 3250 7300 0    50   ~ 0
-I NEED this inverter\nWill use ‘175 or ’74\nfor IO8 latch
+Text Label 4400 6850 1    50   ~ 0
+~HIRES
 $EndSCHEMATC
