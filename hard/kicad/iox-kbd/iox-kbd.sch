@@ -1,0 +1,308 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title "IOX Keyboard Interface"
+Date "2021-04-29"
+Rev ""
+Comp "@zuiko21"
+Comment1 "(c) 2021 Carlos J. Santisteban"
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J1
+U 1 1 608AA623
+P 1550 2400
+F 0 "J1" H 1600 2917 50  0000 C CNN
+F 1 "IOX" H 1600 2826 50  0000 C CNN
+F 2 "" H 1550 2400 50  0001 C CNN
+F 3 "~" H 1550 2400 50  0001 C CNN
+	1    1550 2400
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74LS132 U1
+U 3 1 608AFF5B
+P 7350 1200
+F 0 "U1" H 7350 1525 50  0000 C CNN
+F 1 "74HC132" H 7350 1434 50  0000 C CNN
+F 2 "" H 7350 1200 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 7350 1200 50  0001 C CNN
+	3    7350 1200
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 608BA69F
+P 7400 1450
+F 0 "R?" V 7193 1450 50  0000 C CNN
+F 1 "R" V 7284 1450 50  0000 C CNN
+F 2 "" V 7330 1450 50  0001 C CNN
+F 3 "~" H 7400 1450 50  0001 C CNN
+	1    7400 1450
+	0    -1   1    0   
+$EndComp
+$Comp
+L Device:C C?
+U 1 1 608BAB7A
+P 7650 1600
+F 0 "C?" H 7765 1646 50  0000 L CNN
+F 1 "C" H 7765 1555 50  0000 L CNN
+F 2 "" H 7688 1450 50  0001 C CNN
+F 3 "~" H 7650 1600 50  0001 C CNN
+	1    7650 1600
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	7650 1450 7550 1450
+Wire Wire Line
+	7650 1450 7650 1300
+Connection ~ 7650 1450
+Wire Wire Line
+	7250 1450 7050 1450
+Wire Wire Line
+	7050 1450 7050 1200
+$Comp
+L power:GND #PWR?
+U 1 1 608BB74B
+P 7650 1750
+F 0 "#PWR?" H 7650 1500 50  0001 C CNN
+F 1 "GND" H 7655 1577 50  0000 C CNN
+F 2 "" H 7650 1750 50  0001 C CNN
+F 3 "" H 7650 1750 50  0001 C CNN
+	1    7650 1750
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Memory_EPROM:27C512 U2
+U 1 1 608BE570
+P 3000 3000
+F 0 "U2" H 3000 4281 50  0000 C CNN
+F 1 "27C512" H 3000 4190 50  0000 C CNN
+F 2 "Package_DIP:DIP-28_W15.24mm" H 3000 3000 50  0001 C CNN
+F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/doc0015.pdf" H 3000 3000 50  0001 C CNN
+	1    3000 3000
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	1850 2100 2600 2100
+Wire Wire Line
+	1350 2700 1250 2700
+Wire Wire Line
+	1150 2600 1150 3150
+Wire Wire Line
+	1350 2600 1150 2600
+Wire Wire Line
+	1150 3150 950  3150
+Connection ~ 1150 3150
+Wire Wire Line
+	1250 2700 1250 3750
+$Comp
+L 74xx:74LS132 U1
+U 2 1 608ADC22
+P 1150 4050
+F 0 "U1" H 1150 4375 50  0000 C CNN
+F 1 "74HC132" H 1150 4284 50  0000 C CNN
+F 2 "" H 1150 4050 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 1150 4050 50  0001 C CNN
+	2    1150 4050
+	0    -1   1    0   
+$EndComp
+$Comp
+L 74xx:74LS132 U1
+U 1 1 608ABE12
+P 1050 3450
+F 0 "U1" H 1050 3775 50  0000 C CNN
+F 1 "74HC132" H 1050 3684 50  0000 C CNN
+F 2 "" H 1050 3450 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 1050 3450 50  0001 C CNN
+	1    1050 3450
+	0    -1   1    0   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 60970C4A
+P 1350 2800
+F 0 "#PWR?" H 1350 2550 50  0001 C CNN
+F 1 "GND" H 1355 2627 50  0000 C CNN
+F 2 "" H 1350 2800 50  0001 C CNN
+F 3 "" H 1350 2800 50  0001 C CNN
+	1    1350 2800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1850 2200 1950 2200
+Wire Wire Line
+	1850 2400 2150 2400
+Wire Wire Line
+	1850 2500 2250 2500
+Wire Wire Line
+	1850 2600 2350 2600
+Wire Wire Line
+	1850 2700 2450 2700
+Wire Wire Line
+	1850 2800 2550 2800
+Text Label 1900 2100 0    50   ~ 0
+D0
+Text Label 1900 2200 0    50   ~ 0
+D1
+Text Label 1900 2300 0    50   ~ 0
+D2
+Text Label 1900 2400 0    50   ~ 0
+D3
+Text Label 1900 2500 0    50   ~ 0
+D4
+Text Label 1900 2600 0    50   ~ 0
+D5
+Text Label 1900 2700 0    50   ~ 0
+D6
+Text Label 1900 2800 0    50   ~ 0
+D7
+NoConn ~ 1350 2200
+NoConn ~ 1350 2300
+NoConn ~ 1350 2400
+NoConn ~ 1350 2500
+$Comp
+L power:+5V #PWR?
+U 1 1 60991D80
+P 1350 1900
+F 0 "#PWR?" H 1350 1750 50  0001 C CNN
+F 1 "+5V" H 1365 2073 50  0000 C CNN
+F 2 "" H 1350 1900 50  0001 C CNN
+F 3 "" H 1350 1900 50  0001 C CNN
+	1    1350 1900
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:PWR_FLAG #FLG?
+U 1 1 60991F91
+P 1350 2100
+F 0 "#FLG?" H 1350 2175 50  0001 C CNN
+F 1 "PWR_FLAG" V 1350 2227 50  0000 L CNN
+F 2 "" H 1350 2100 50  0001 C CNN
+F 3 "~" H 1350 2100 50  0001 C CNN
+	1    1350 2100
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:PWR_FLAG #FLG?
+U 1 1 60994075
+P 3000 4100
+F 0 "#FLG?" H 3000 4175 50  0001 C CNN
+F 1 "PWR_FLAG" V 3000 4227 50  0000 L CNN
+F 2 "" H 3000 4100 50  0001 C CNN
+F 3 "~" H 3000 4100 50  0001 C CNN
+	1    3000 4100
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 60994B74
+P 3000 4100
+F 0 "#PWR?" H 3000 3850 50  0001 C CNN
+F 1 "GND" H 3005 3927 50  0000 C CNN
+F 2 "" H 3000 4100 50  0001 C CNN
+F 3 "" H 3000 4100 50  0001 C CNN
+	1    3000 4100
+	1    0    0    -1  
+$EndComp
+Connection ~ 3000 4100
+Wire Wire Line
+	1350 1900 1350 2100
+Connection ~ 1350 1900
+Connection ~ 1350 2100
+Wire Wire Line
+	3400 3800 3450 3800
+Wire Wire Line
+	3450 3800 3450 4100
+Wire Wire Line
+	3450 4100 3000 4100
+$Comp
+L Device:R_Network08 RN1
+U 1 1 609B6A7C
+P 2250 1650
+F 0 "RN1" H 2638 1696 50  0000 L CNN
+F 1 "220K" H 2638 1605 50  0000 L CNN
+F 2 "Resistor_THT:R_Array_SIP9" V 2725 1650 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 2250 1650 50  0001 C CNN
+	1    2250 1650
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 609D459D
+P 1850 1450
+F 0 "#PWR?" H 1850 1200 50  0001 C CNN
+F 1 "GND" V 1855 1322 50  0000 R CNN
+F 2 "" H 1850 1450 50  0001 C CNN
+F 3 "" H 1850 1450 50  0001 C CNN
+	1    1850 1450
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1850 1850 1850 2100
+Connection ~ 1850 2100
+Wire Wire Line
+	1950 1850 1950 2200
+Connection ~ 1950 2200
+Wire Wire Line
+	1950 2200 2600 2200
+Wire Wire Line
+	1850 2300 2050 2300
+Wire Wire Line
+	3000 1900 1350 1900
+Wire Wire Line
+	2050 1850 2050 2300
+Connection ~ 2050 2300
+Wire Wire Line
+	2050 2300 2600 2300
+Wire Wire Line
+	2150 1850 2150 2400
+Connection ~ 2150 2400
+Wire Wire Line
+	2150 2400 2600 2400
+Wire Wire Line
+	2250 1850 2250 2500
+Connection ~ 2250 2500
+Wire Wire Line
+	2250 2500 2600 2500
+Wire Wire Line
+	2350 1850 2350 2600
+Connection ~ 2350 2600
+Wire Wire Line
+	2350 2600 2600 2600
+Wire Wire Line
+	2450 1850 2450 2700
+Connection ~ 2450 2700
+Wire Wire Line
+	2450 2700 2600 2700
+Wire Wire Line
+	2550 1850 2550 2800
+Connection ~ 2550 2800
+Wire Wire Line
+	2550 2800 2600 2800
+Wire Wire Line
+	3400 3300 3400 3400
+Connection ~ 3400 3400
+Wire Wire Line
+	3400 3400 3400 3500
+Connection ~ 3400 3500
+Wire Wire Line
+	3400 3500 3400 3600
+$Comp
+L power:+5V #PWR?
+U 1 1 609EFB88
+P 3400 3600
+F 0 "#PWR?" H 3400 3450 50  0001 C CNN
+F 1 "+5V" V 3415 3728 50  0000 L CNN
+F 2 "" H 3400 3600 50  0001 C CNN
+F 3 "" H 3400 3600 50  0001 C CNN
+	1    3400 3600
+	0    1    1    0   
+$EndComp
+Connection ~ 3400 3600
+$EndSCHEMATC
