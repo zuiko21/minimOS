@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210506-1322
+; last modified 20210506-1331
 
 ; can be assembled from this folder
 
@@ -442,6 +442,25 @@ chk_map:
 		ASL					; in this case, N=original d3, now d7
 mp_left:
 	RTS						; in any case, d7-d4 are the flags
+
+; * pseudo-random number generator *
+; * ahem, ahem, ahem, ahem ;-) ;-) *
+; returns A, seed must be >= 2
+rnd:
+	LDA seed
+	AND #2
+	STA temp				; hope this is OK
+	LDA seed+1
+	AND #2
+	EOR temp
+	CLC
+	BEQ rg_z
+		SEC
+rg_z:
+	ROR seed+1				; is this OK?
+	ROR seed
+	LDA seed				; returns MSB
+	RTS
 
 ; ********************************
 ; ********************************
