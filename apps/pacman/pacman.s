@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210427-1720
+; last modified 20210506-1322
 
 ; can be assembled from this folder
 
@@ -29,7 +29,7 @@
 ; *** actual code starts here ***
 	.text
 
-	* = $4000				; standard system download address, hopefully will be enough!
+	* = $1000				; new download address, just after RAM data structures
 
 ; basic 6502 init, as this is a stand-alone game
 start:
@@ -38,8 +38,23 @@ start:
 	LDX #$FF
 	TXS
 
-	STX LTCdo				; turn off Durango display *** might use upper bits for keyboard read
+	STX LTCdo				; turn off Durango debug display *** might use upper bits for keyboard read, unless using iox-kbd ASCII interface!
 
+; the pseudo-random number generator must have a proper seed...
+; NES Tetris used $8988, but might randomise it with some EOR with zp bytes?
+;	LDX #0
+	INX						; X was $FF, this saves one byte
+	TXA						; another byte saving
+rander:
+		ROR
+		EOR 0, X
+		INX
+		BNE rander
+	STA seed
+	LDA #$89
+	STA seed+1
+
+; system setup
 	LDY #<pm_isr			; set interrupt vector
 	LDA #>pm_isr
 	STY fw_isr				; standard minimOS address

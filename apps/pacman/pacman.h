@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210415-1314
+; last modified 20210506-1323
 
 ; **************************
 ; *** zeropage variables ***
@@ -33,6 +33,7 @@ draw_y		.byt	0
 ds_stat		.byt	0
 jiffy		.dsb	3, 0	; 24-bit jiffy counter, about 19 hours
 stick		.byt	0		; read value from 'joystick', every ISR
+seed		.word	$8988	; seed value for PRNG
 tmp_arr:
 dmask:						; 16-byte array with dot masks, also temporary space
 mul_tmp		.byt	0		; formerly tmp_arr
@@ -65,7 +66,7 @@ dest_pt	.word	0			; VRAM pointer *** NOT used if IOSCREEN ***
 	* = $600				; more-or-less minimOS-savvy
 
 d_map	.dsb	512, 0		; descriptor map (496 bytes actually needed, but rounded to 32x31=992), d7=wall, d6=dot, d5=pill
-org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with the VRAM ($7800 in Tommy2)
+org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with the VRAM ($7800 in picoVDU)
 
 ; ********************************
 ; *** magic number definitions ***
