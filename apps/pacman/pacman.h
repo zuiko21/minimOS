@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210506-1323
+; last modified 20210507-1330
 
 ; **************************
 ; *** zeropage variables ***
@@ -15,7 +15,7 @@
 sprite_x	.dsb	5, 0	; sprite coordinates (in pixels), array for pacman [0] + ghosts [1...4]
 sprite_y	.dsb	5, 0
 sp_dir		.dsb	5, 0	; sprite direction is 0=right, 2=down, 4=left, 6=up *renumbered*
-sp_stat		.dsb	5, 0	; sprite status is 0=scatter, 2=chase, 4=frightened, 6=inverse (frightened) *new*, 8=eaten (makes no sense for pacman), 10=invisible, 12=disabled *** note new values
+sp_stat		.dsb	5, 0	; sprite status, see below
 sp_timer	.dsb	5, 0	; timer for next movement of every sprite
 sp_speed	.dsb	5, 0	; increment for each timer
 ; should add some timers for scatter/chase modes
@@ -40,7 +40,7 @@ mul_tmp		.byt	0		; formerly tmp_arr
 hb_flag		.byt	0		; half-byte indicator (formerly tmp_arr+1)
 pre_pt		.word	0		; temporary dest_pt creation (formerly tmp_arr+2)
 des_dir		.byt	0		; desired direction (formerly tmp_arr+4)
-vh_mask		.byt	0		; direction mask to allow/disable axis changes *** NO LONGER IN USE
+vh_mask		.byt	0		; direction mask to allow/disable axis changes
 cur_y		.byt	0		; current Y index for screen (formerly as cur)
 s_rot		.word	0		; rotated animation sprite (formerly cur...cur+1)
 swp_ct		.byt	0		; sweep sound counter (formerly temp)
@@ -83,6 +83,8 @@ org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with 
 #define	KEEP	8
 
 #define	VNOTH	2
+#define REVERSE	4
+#define	DIR_PT	6
 
 ; status codes *note new values, most logic order
 #define	WAIT	0
@@ -97,6 +99,8 @@ org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with 
 #define	DISABLE	18
 #define	FR_GROW	20
 #define	FL_GROW	22
+
+#define	FL_TOG	2
 
 ; map flags (as returned by chk_map)
 #define	WALL	128

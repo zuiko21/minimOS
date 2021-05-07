@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210506-1331
+; last modified 20210507-1318
 
 ; can be assembled from this folder
 
@@ -50,7 +50,7 @@ rander:
 		EOR 0, X
 		INX
 		BNE rander
-	STA seed
+	STA seed				; could just store $88 here, like Tetris
 	LDA #$89
 	STA seed+1
 
@@ -241,7 +241,9 @@ ip_loop:
 	JMP l_text				; will return
 
 ; *****************************************************
+; *****************************************************
 ; *** *** sprite moving routines, the actual AI *** ***
+; *****************************************************
 ; *****************************************************
 ; X expected to have selected ghost (already stored in sel_gh)
 ; must change sprite_x[X], sprite_y[X] and/or sp_dir[X], perhaps other parameters too
@@ -329,15 +331,25 @@ m_vert:
 m_up:
 		DEC sprite_y, X	; ...else go up
 		RTS
-; if arrived here, X or Y MOD 4 is zero, thus check map and AI *** TBD
+; if arrived here, X or Y MOD 4 is zero, thus check map and AI
 decide:
-
-		CPX #1				; *** PLACEHOLDER...
-		BNE growing
-			DEC sprite_x+1
+	LDA sp_stat, X
+	ORA #FL_TOG				; will check for frightened ghosts, flashing or not
+	CMP #FLASH				; is it FRIGHT or FLASH? (FLASH = FRIGHT | FL_TOG)
+	BNE not_fr
+		LDA sp_dir, X		; pelase note that ghosts cannot just turn 180 degrees
+		EOR #REVERSE		; this is the opposite direction
+		STA vh_mask			; store this forbidden direction
+go_rnd:
+			JSR rnd			; get random direction!
+			AND #DIR_PT		; 0-2-4-6, as DIR_PT is 6
+			CMP vh_mask		; not just 180 degree turn?
+				BEQ go_rnd
+			JSR peek		; check feasibility
+				BCS go_rnd	; until a feasible address is decided
 			RTS
-growing:
-			DEC sprite_y, X
+not_fr:
+; TBD TBD TBD
 	RTS
 
 ; *** movement feasibility routine ***
@@ -446,6 +458,7 @@ mp_left:
 ; * pseudo-random number generator *
 ; * ahem, ahem, ahem, ahem ;-) ;-) *
 ; returns A, seed must be >= 2
+; X and Y intact!
 rnd:
 	LDA seed
 	AND #2
