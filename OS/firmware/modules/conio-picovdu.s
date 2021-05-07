@@ -3,7 +3,7 @@
 ; suitable for Durango-proto (not Durango-X/SV) computer
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210427-1721
+; last modified 20210507-1351
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -30,18 +30,19 @@ IO8wr	= $8002
 IO9di	= $9FFF				; data input (TBD)
 
 .(
+	LDX fw_cbin			; check whether in binary mode
+	BEQ cio_mode		; if not, check whether input or output
+		_STZX fw_cbin	; otherwise, clear binary mode and print directly
+		TYA
+		JMP cp_do
+cio_ctl:
 	TYA						; check mode (and put into A, just in case)
-		BNE cn_out				; Y=0 means input mode
-	JMP cn_in
+	BNE cn_out				; Y=0 means input mode (unless in binary mode)
+		JMP cn_in
 cn_out:
 ; ***********************************
 ; *** output character (now in A) ***
 ; ***********************************
-		LDX fw_cbin			; check whether in binary mode
-		BEQ cio_ctl			; if not, check control codes
-			_STZX fw_cbin	; otherwise, clear binary mode and print directly
-			JMP cp_do
-cio_ctl:
 ;		AND #$7F			; in order to strip extended ASCII
 		CMP #FORMFEED		; reset device?
 		BNE cn_nff			; no, just print it
