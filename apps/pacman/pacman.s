@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210507-1318
+; last modified 20210507-1347
 
 ; can be assembled from this folder
 
@@ -1450,7 +1450,8 @@ init_p:
 	.byt	54, 54, 54, 54, 54	; sprites initial X (2px offset, note "wrong" intial values for last ghosts, not 46-62)
 	.byt	92, 44, 56, 56, 56	; sprites initial Y (new 2px offset, not much of a problem)
 	.byt	 0,  4,  6,  6,  6	; sprites initial direction (RDLU times two)
-	.byt	 0,  4,  2,  0,  0	; ghosts initial state (nonsense for pacman, see pacman.h)
+; ghosts initial state (nonsense for pacman, see pacman.h)
+	.byt	WAIT, FRIGHT, FRIGHT, FRIGHT, FRIGHT	; *** all frightened for testing
 
 ; valid X values in current system (+2 offset)
 ; 4, 12, 24, 36, 48, (54 for base), 60, 72, 84, 96, 104
