@@ -1,6 +1,6 @@
 ; 4x8 font definition for minimOS picoVDU
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210211-1103
+; last modified 20210507-1430
 
 ; for space saving, even glyps are stored as MSN, and odd glyphs as LSN
 
@@ -1022,81 +1022,45 @@
 ; ASCII $B9 - delta
 	.byt	%00000000
 	.byt	%00000000
-	.byt	%00000000
-	.byt	%01000100
-	.byt	%10000010
-	.byt	%10010010
-	.byt	%01101100
-	.byt	%00000000
-
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00010000
-	.byt	%00101000
-	.byt	%01000100
-	.byt	%11111110
-	.byt	%00000000
+	.byt	%01100110
+	.byt	%10010110
+	.byt	%10011001
+	.byt	%01101001
+	.byt	%10011111
 	.byt	%00000000
 
 ; ASCII $BA - º
 ; ASCII $BB - right chevron
-	.byt	%01110000
-	.byt	%01110000
 	.byt	%00000000
-	.byt	%01110000
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%00000000
-
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%01001000
-	.byt	%00100100
-	.byt	%00010010
-	.byt	%00100100
-	.byt	%01001000
-	.byt	%00000000
+	.byt	%11101010
+	.byt	%10101010
+	.byt	%11100101
+	.byt	%00000101
+	.byt	%11100101
+	.byt	%00001010
+	.byt	%00001010
 
 ; ASCII $BC - bullet
 ; ASCII $BD - oe ligature
 	.byt	%00000000
-	.byt	%00111100
-	.byt	%01111110
-	.byt	%01111110
-	.byt	%01111110
-	.byt	%01111110
-	.byt	%00111100
 	.byt	%00000000
-
-	.byt	%00000000
-	.byt	%00000000
-	.byt	%01101100
-	.byt	%10010010
-	.byt	%10011100
-	.byt	%10010000
-	.byt	%01101110
+	.byt	%11100100
+	.byt	%11101011
+	.byt	%11101011
+	.byt	%11101010
+	.byt	%00000101
 	.byt	%00000000
 
 ; ASCII $BE - eng
 ; ASCII $BF - ¿
 	.byt	%00000000
-	.byt	%00000000
-	.byt	%01111000
-	.byt	%01000100
-	.byt	%01000100
-	.byt	%01000100
 	.byt	%00000100
-	.byt	%00001000
-
-	.byt	%00000000
-	.byt	%00010000
-	.byt	%00000000
-	.byt	%00010000
-	.byt	%00100000
-	.byt	%01000010
-	.byt	%00111100
-	.byt	%00000000
+	.byt	%11000000
+	.byt	%10100100
+	.byt	%10100100
+	.byt	%10101000
+	.byt	%00101010
+	.byt	%01000100
 
 ; ASCII $C0 - À
 ; ASCII $C1 - Á
