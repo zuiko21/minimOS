@@ -7,10 +7,23 @@
 
 #include <stdio.h>
 
+void row(FILE* f, char x8, char x4, char x2, char x1) {
+	int		i;
+	
+	for (i=0;i<7;i++)	fputc(f, 0);
+	fputc(f, x8);
+	for (i=0;i<3;i++)	fputc(f, 0);
+	fputc(f, x4);
+	fputc(f, 0);
+	fputc(f, x2);
+	fputc(f, x1);
+	fputc(f, 0);
+}
+
 int main(void) {
 	FILE*	rom;
 	int		i, j;
-	unsigned char	mat[16][16][16];	/* modifiers, col, row */
+
 /* Character ROM
  * A0..A3 = row
  * A4..A7 = column
@@ -23,15 +36,15 @@ int main(void) {
 /* ***********************
  * *** character EPROM ***
  * *********************** */
-/* unshifted but CAPS LOCK on */
-	
-	mat[0][0]={  0,  0,  0,  0,  0,  0,  0,'º',  0,  0,  9,  0,'<',' '};
-	
+
 	rom=fopen("iox-char.bin", "wb");
 	if (rom==NULL) {
 		printf("*** Can't write to character ROM ***\n\n");
 		return -1;
 	}
+
+/* unshifted but CAPS LOCK on */
+	row(rom, 'º', 9, '<', ' ');
 	
 	fclose(rom);
 	
