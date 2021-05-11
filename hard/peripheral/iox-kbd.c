@@ -10,14 +10,14 @@
 void row(FILE* f, char x8, char x4, char x2, char x1) {
 	int		i;
 	
-	for (i=0;i<7;i++)	fputc(f, 0);
-	fputc(f, x8);
-	for (i=0;i<3;i++)	fputc(f, 0);
-	fputc(f, x4);
-	fputc(f, 0);
-	fputc(f, x2);
-	fputc(f, x1);
-	fputc(f, 0);
+	for (i=0;i<7;i++)	fputc(0, f);
+	fputc(x8, f);
+	for (i=0;i<3;i++)	fputc(0, f);
+	fputc(x4, f);
+	fputc(0,  f);
+	fputc(x2, f);
+	fputc(x1, f);
+	fputc(0,  f);
 }
 
 int main(void) {
