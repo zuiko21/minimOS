@@ -44,8 +44,8 @@ int main(void) {
 	}
 
 /* unshifted but CAPS LOCK on */
-	row(rom, 'º', 9, '<', ' ');
-	
+	row(rom,0xBA,   9, '<', ' ');
+	rom(rom,)
 	fclose(rom);
 	
 	return 0;
