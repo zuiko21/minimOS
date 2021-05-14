@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210507-1347
+; last modified 20210514-1329
 
 ; can be assembled from this folder
 
@@ -150,9 +150,19 @@ g_end:
 ; *************************************************
 ; *** if arrived here, level ended successfully ***
 ; *************************************************
-	LDA #80					; two-second delay
+	LDA #80					; two-seconds delay
 	JSR ms25
-; worth showing a flashing map (4 times) for a couple of seconds?
+; worth showing a flashing map (4 times) for a couple of seconds
+	LDA #8					; clear inverse video flag, d0-3 is down counter
+fl_loop:
+		EOR #64				; toggle inverse flag
+		STA temp			; store counter and inverse flag
+		STA IO8lh			; works on both Durango-X and picoVDU
+		LDA #10				; quarter second delay
+		JSR ms25
+		LDA temp			; check counter
+		DEC					; CMOS, could be swapped by SEC, SBC #1 as well; or DEC temp, LDA temp instead
+		BNE fl_loop
 
 ; *************************************
 ; *** *** restart another level *** ***
