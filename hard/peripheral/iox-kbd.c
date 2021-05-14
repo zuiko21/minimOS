@@ -46,7 +46,7 @@ int main(void) {
 /* unshifted but CAPS LOCK on */
 	row(rom,0xBA,0x09, '<', ' ');	/* 0x */
 	rom(rom, '1', 'Q', 'A', 'Z');	/* 1x */
-	row(rom, '2', 'w', 'S', 'X');	/* 2x */
+	row(rom, '2', 'W', 'S', 'X');	/* 2x */
 	row(rom, '3', 'E', 'D', 'C');	/* 3x */
 	row(rom, '4', 'R', 'F', 'V');	/* 4x */
 	row(rom, '5', 'T', 'G', 'B');	/* 5x */
@@ -82,7 +82,7 @@ int main(void) {
 /* shifted, with or without CAPS LOCK */
 	row(rom,0xAA,0x0B, '>', ' ');	/* 0x, shift-Tab like VT (or cursor up) */
 	rom(rom, '!', 'Q', 'A', 'Z');	/* 1x */
-	row(rom,0x22, 'w', 'S', 'X');	/* 2x */
+	row(rom,0x22, 'W', 'S', 'X');	/* 2x */
 	row(rom, '·', 'E', 'D', 'C');	/* 3x */
 	row(rom, '$', 'R', 'F', 'V');	/* 4x */
 	row(rom, '%', 'T', 'G', 'B');	/* 5x */
@@ -96,10 +96,10 @@ int main(void) {
 	row(rom,0x08,0x0D,0x0B,0x0A);	/* BS, CR, up, down... perhaps will change*/
 	row(rom,0x1B,0x7F,0x19,0x16);	/* ESC, DEL, PgUp, PgDown */
 	row(rom,   0,   0,   0,   0);	/* MODIFIERS -> CapsLock, Shift, Control, Alt */
-/* same without CapsLock */
+
 	row(rom,0xAA,0x0B, '>', ' ');	/* 0x, shift-Tab like VT (or cursor up) */
 	rom(rom, '!', 'Q', 'A', 'Z');	/* 1x */
-	row(rom,0x22, 'w', 'S', 'X');	/* 2x */
+	row(rom,0x22, 'W', 'S', 'X');	/* 2x */
 	row(rom, '·', 'E', 'D', 'C');	/* 3x */
 	row(rom, '$', 'R', 'F', 'V');	/* 4x */
 	row(rom, '%', 'T', 'G', 'B');	/* 5x */
