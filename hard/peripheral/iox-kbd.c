@@ -114,6 +114,20 @@ int main(void) {
 	row(rom,0x1B,0x7F,0x19,0x16);	/* ESC, DEL, PgUp, PgDown */
 	row(rom,   0,   0,   0,   0);	/* MODIFIERS -> CapsLock, Shift, Control, Alt */
 
+/* CONTROL with or without CAPS LOCK */
+
+/* CONTROL-SHIFT with or without CAPS LOCK */
+
+/* ALT plus CAPS LOCK */
+
+/* ALT unshifted */
+
+/* ALT-SHIFT with or without CAPS LOCK */
+
+/* ALT-CONTROL, must check... */
+
+/* ALT-CONTROL-SHIFT, with or without CAPS LOCK */
+
 	fclose(rom);
 	
 	return 0;
