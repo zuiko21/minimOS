@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210507-1330
+; last modified 20210514-1359
 
 ; **************************
 ; *** zeropage variables ***
@@ -85,6 +85,14 @@ org_b	.dsb	2048, 0		; 'clean' screen buffer at $800, which is page-aligned with 
 #define	VNOTH	2
 #define REVERSE	4
 #define	DIR_PT	6
+
+; joystick bit values
+#define	STK_R	1
+#define	STK_D	2
+#define	STK_L	4
+#define	STK_U	8
+
+#define	STK_K	0
 
 ; status codes *note new values, most logic order
 #define	WAIT	0

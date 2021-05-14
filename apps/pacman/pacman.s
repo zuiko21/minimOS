@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210514-1329
+; last modified 20210514-1416
 
 ; can be assembled from this folder
 
@@ -126,7 +126,7 @@ t_pres:
 g_start:
 		LDX #0				; displayed sprite counter
 g_loop:
-			PHX				; ** CMOS ** easily changed to TXA:PHA
+;			PHX
 			STX sel_gh		; X is selected sprite, must keep this!
 			LDA jiffy		; current time
 			CMP sp_timer, X	; time to update position?
@@ -139,7 +139,7 @@ g_loop:
 				JSR move	; separated routine for the sake of clarity
 				JSR draw
 g_next:
-			PLX				; ** CMOS ** easily changed to PLA:TAX
+			LDX sel_gh		; ** no need for PLX **
 			INX				; next sprite
 			CPX #5			; all sprites done?
 			BNE g_loop
@@ -1423,12 +1423,15 @@ sw_down:
 ; *********************************
 pm_isr:
 	PHA						; (3)
+	PHX						; (3)
 ; *** I'm a bit paranoid about the interrupt being somewhat irregular, thus I'll waste some time ***
-	LDA #%00010000			; enable column 1 from keyboard/keypad
-	STA LTCdo				; display remains shut down, as all anodes are low
+;	LDA #%00010000			; enable column 1 from keyboard/keypad
+;	STA LTCdo				; display remains shut down, as all anodes are low
 ; *** end of paranoid code ***
-	LDA $9FF0				; get input port (4)
+	LDX $9FF0				; get input port (4)
+	LDA asc2dir, X			; QAOP, ESDF, Spectrum and cursor keys supported! (4)
 	STA stick				; store in variable (3)
+	PLX						; (4) eeek
 	PLA						; (4)
 	INC jiffy				; count time (5)
 		BNE i_end			; (3 in the fastest case)
@@ -1436,8 +1439,8 @@ pm_isr:
 		BNE i_end			; (perhaps 3)
 	INC jiffy+2				; (or add 2+5)
 i_end:
-	RTI						; (6, fastest case is 27, plus 7 of IRQ ack, seems OK at 34...)
-							; *** in case of paranoid code, add 6 cycles, for a safer 33t without ack ***
+	RTI						; (6, fastest case is 38, plus 7 of IRQ ack, seems OK at 45...)
+							; *** don't think I need paranoid code any longer ***
 ; ****************************
 ; ****************************
 ; *** *** diverse data *** ***
@@ -1496,6 +1499,20 @@ pk_mv:
 #endif
 ; ** ** ** end of pointer tables ** ** **
 ; ***************************************
+
+; * IO9 to stick conversion *
+asc2dir:
+	.byt	STK_K, STK_K, STK_L, STK_K, STK_K, STK_K, STK_R, STK_K, STK_K, STK_K, STK_D, STK_U, STK_K, STK_K, STK_K, STK_K	; arrow keys
+	.dsb	16, STK_K																										; no valid values here (16...31)
+	.dsb	16, STK_K																										; no valid values here (32...47)
+	.byt	STK_K, STK_K, STK_K, STK_K, STK_K, STK_L, STK_D, STK_U, STK_R, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K	; Spectrum cursors 5...8
+	.byt	STK_K, STK_D, STK_K, STK_K, STK_D, STK_U, STK_R, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_L	; A,D=down, E=up, F=right, O=left
+	.byt	STK_R, STK_U, STK_K, STK_L, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K	; P=right, Q=up, S=left
+	.byt	STK_K, STK_D, STK_K, STK_K, STK_D, STK_U, STK_R, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_L	; a,d=down, e=up, f=right, o=left
+	.byt	STK_R, STK_U, STK_K, STK_L, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K	; p=right, q=up, s=left
+#ifdef	SAFE
+	.dsb	128, STK_K		; non-standard ASCII values not recognised, seems important for º/ª in Spanish layout, maybe accents too!
+#endif
 
 ; * stick reaction tables *
 ; preferred movement
