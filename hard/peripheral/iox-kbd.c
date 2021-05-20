@@ -115,8 +115,59 @@ int main(void) {
 	row(rom,   0,   0,   0,   0);	/* MODIFIERS -> CapsLock, Shift, Control, Alt */
 
 /* CONTROL with or without CAPS LOCK */
+/* basic keys follow PASK standard, currently undetermined values are 0 */
+	row(rom,   0,   0,   0,0x80);	/* 0x, NBSP */
+	rom(rom, '+',0x11,0x01,0x1A);	/* 1x */
+	row(rom,0x27,0x17,0x13,0x18);	/* 2x */
+	row(rom, '.',0x05,0x04,0x03);	/* 3x */
+	row(rom, ',',0x12,0x06,0x16);	/* 4x */
+	row(rom, ':',0x14,0x07,0x02);	/* 5x */
+	row(rom, ';',0x19,0x08,0x0E);	/* 6x */
+	row(rom, '-',0x15,0x0A,0x0D);	/* 7x */
+	row(rom, '<',0x09,0x0B,   0);	/* 8x */
+	row(rom, '>',0x0F,0x0C,   0);	/* 9x */
+	row(rom, '_',0x10,   0,   0);	/* Ax */
+	row(rom,   0,   0,   0,   0);	/* Bx */
+	row(rom,   0,   0,   0,   0);	/* Cx */
+	row(rom,   0,   0,   0,   0);	/* BS, CR, up, down... perhaps will change*/
+	row(rom,   0,   0,   0,   0);	/* ESC, DEL, PgUp, PgDown */
+	row(rom,   0,   0,   0,   0);	/* MODIFIERS -> CapsLock, Shift, Control, Alt */
+
+	row(rom,   0,   0,   0,0x80);	/* 0x, NBSP */
+	rom(rom, '+',0x11,0x01,0x1A);	/* 1x */
+	row(rom,0x27,0x17,0x13,0x18);	/* 2x */
+	row(rom, '.',0x05,0x04,0x03);	/* 3x */
+	row(rom, ',',0x12,0x06,0x16);	/* 4x */
+	row(rom, ':',0x14,0x07,0x02);	/* 5x */
+	row(rom, ';',0x19,0x08,0x0E);	/* 6x */
+	row(rom, '-',0x15,0x0A,0x0D);	/* 7x */
+	row(rom, '<',0x09,0x0B,   0);	/* 8x */
+	row(rom, '>',0x0F,0x0C,   0);	/* 9x */
+	row(rom, '_',0x10,   0,   0);	/* Ax */
+	row(rom,   0,   0,   0,   0);	/* Bx */
+	row(rom,   0,   0,   0,   0);	/* Cx */
+	row(rom,   0,   0,   0,   0);	/* BS, CR, up, down... perhaps will change*/
+	row(rom,   0,   0,   0,   0);	/* ESC, DEL, PgUp, PgDown */
+	row(rom,   0,   0,   0,   0);	/* MODIFIERS -> CapsLock, Shift, Control, Alt */
 
 /* CONTROL-SHIFT with or without CAPS LOCK */
+	row(rom,   0,   0,   0,   0);	/* 0x, **************** TO BE DONE *************** */
+	rom(rom, '+',0x11,0x01,0x1A);	/* 1x */
+	row(rom,0x27,0x17,0x13,0x18);	/* 2x */
+	row(rom, '.',0x05,0x04,0x03);	/* 3x */
+	row(rom, ',',0x12,0x06,0x16);	/* 4x */
+	row(rom, ':',0x14,0x07,0x02);	/* 5x */
+	row(rom, ';',0x19,0x08,0x0E);	/* 6x */
+	row(rom, '-',0x15,0x0A,0x0D);	/* 7x */
+	row(rom, '<',0x09,0x0B,   0);	/* 8x */
+	row(rom, '>',0x0F,0x0C,   0);	/* 9x */
+	row(rom, '_',0x10,   0,   0);	/* Ax */
+	row(rom,   0,   0,   0,   0);	/* Bx */
+	row(rom,   0,   0,   0,   0);	/* Cx */
+	row(rom,   0,   0,   0,   0);	/* BS, CR, up, down... perhaps will change*/
+	row(rom,   0,   0,   0,   0);	/* ESC, DEL, PgUp, PgDown */
+	row(rom,   0,   0,   0,   0);	/* MODIFIERS -> CapsLock, Shift, Control, Alt */
+
 
 /* ALT plus CAPS LOCK */
 
