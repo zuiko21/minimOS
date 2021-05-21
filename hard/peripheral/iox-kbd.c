@@ -150,17 +150,17 @@ int main(void) {
 	row(rom,  00,  00,  00,  00);	/* Ex= ESC, DEL, PgUp, PgDown */
 	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
 
-/* CONTROL-SHIFT with or without CAPS LOCK */
-	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
-	rom(rom,0x1B,0xBD,0xE2,0x87);	/* 1x= 1 Q A Z */
+/* CONTROL-SHIFT with CAPS LOCK */
+	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space (should ctrl-shift-space render $20?) */
+	rom(rom,0x1B,0xBD,0xC2,0x87);	/* 1x= 1 Q A Z */
 	row(rom,0x1C,0x81,0x85,0x8B);	/* 2x= 2 W S X */
-	row(rom,0x1D,0xEA,0x8A,0x8D);	/* 3x= 3 E D C */
+	row(rom,0x1D,0xCA,0x8A,0x8D);	/* 3x= 3 E D C */
 	row(rom,0x1E,0x86,0x8F,0x8E);	/* 4x= 4 R F V */
 	row(rom,0x1F,0x89,0xC3,0x83);	/* 5x= 5 T G B */
 	row(rom, '^',0x82,0xC6,0x8C);	/* 6x= 6 Y H N */
-	row(rom, '?',0xFB,0x88,0x0D);	/* 7x= 7 U J M */
-	row(rom, '[',0xEE,0xD5,   0);	/* 8x= 8 I K , */
-	row(rom, ']',0xF4,0xC5,  00);	/* 9x= 9 O L . */
+	row(rom, '?',0xDB,0x88,0x0D);	/* 7x= 7 U J M */
+	row(rom, '[',0xCE,0xD5,   0);	/* 8x= 8 I K , */
+	row(rom, ']',0xD4,0xC5,  00);	/* 9x= 9 O L . */
 	row(rom,0x7F,0x84,  00,  00);	/* Ax= 0 P Ñ - */
 	row(rom,  00,  00,  00,  00);	/* Bx= apostrophe, backtick, acute accent, cursor left */
 	row(rom,  00,  00,  00,  00);	/* Cx= ¡ + Ç right */
@@ -168,7 +168,8 @@ int main(void) {
 	row(rom,  00,  00,  00,  00);	/* Ex= ESC, DEL, PgUp, PgDown */
 	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
 
-	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
+/* CONTROL-SHIFT without CAPS LOCK */
+	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space (should ctrl-shift-space render $20?) */
 	rom(rom,0x1B,0xBD,0xE2,0x87);	/* 1x= 1 Q A Z */
 	row(rom,0x1C,0x81,0x85,0x8B);	/* 2x= 2 W S X */
 	row(rom,0x1D,0xEA,0x8A,0x8D);	/* 3x= 3 E D C */
