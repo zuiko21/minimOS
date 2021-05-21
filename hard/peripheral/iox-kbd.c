@@ -187,8 +187,8 @@ int main(void) {
 	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
 
 /* ALT plus CAPS LOCK */
-	/* 0x= º Tab < Space */
-	/* 1x= 1 Q A Z */
+	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
+	row(rom, '|',0xF8,/* 1x= 1 Q A Z */
 	/* 2x= 2 W S X */
 	/* 3x= 3 E D C */
 	/* 4x= 4 R F V */
@@ -205,7 +205,7 @@ int main(void) {
 	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
 
 /* ALT unshifted */
-	/* 0x= º Tab < Space */
+	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
 	/* 1x= 1 Q A Z */
 	/* 2x= 2 W S X */
 	/* 3x= 3 E D C */
@@ -223,7 +223,7 @@ int main(void) {
 	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
 
 /* ALT-SHIFT with or without CAPS LOCK */
-	/* 0x= º Tab < Space */
+	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
 	/* 1x= 1 Q A Z */
 	/* 2x= 2 W S X */
 	/* 3x= 3 E D C */
@@ -241,7 +241,7 @@ int main(void) {
 	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
 
 /* ALT-CONTROL, must check... */
-	/* 0x= º Tab < Space */
+	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
 	/* 1x= 1 Q A Z */
 	/* 2x= 2 W S X */
 	/* 3x= 3 E D C */
@@ -259,7 +259,7 @@ int main(void) {
 	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
 
 /* ALT-CONTROL-SHIFT, with or without CAPS LOCK */
-	/* 0x= º Tab < Space */
+	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
 	/* 1x= 1 Q A Z */
 	/* 2x= 2 W S X */
 	/* 3x= 3 E D C */
