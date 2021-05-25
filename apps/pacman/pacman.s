@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210525-1410
+; last modified 20210525-1435
 
 ; can be assembled from this folder
 
@@ -68,6 +68,15 @@ rander:
 	STA lives
 	LDA #$10				; needs to be 10 in BCD eeeeeeek
 	STA goal				; next extra life at 1000 points
+
+; *** *** TBD must set stkb_tab accordingly for keyboard or joystick mode *** ***
+; placeholder for IO9 joystick
+	LDX #2					; *** set to 0 for ketyboard, 2 for joystick *** PLACEHOLDER
+
+	LDY dir_tab, X			; get selected table pointer
+	LDA dir_tab+1, X
+	STY stkb_tab			; store indirect pointer
+	STA stkb_tab+1
 
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
@@ -1425,15 +1434,15 @@ sw_down:
 ; *********************************
 pm_isr:
 	PHA						; (3)
-	PHX						; (3)
+	PHY						; (3)
 ; *** I'm a bit paranoid about the interrupt being somewhat irregular, thus I'll waste some time ***
 ;	LDA #%00010000			; enable column 1 from keyboard/keypad
 ;	STA LTCdo				; display remains shut down, as all anodes are low
-; *** end of paranoid code ***
-	LDX $9FF0				; get input port (4)
-	LDA asc2dir, X			; QAOP, ESDF, Spectrum and cursor keys supported! (4)
+; *** end of paranoid code *** no longer needed
+	LDY $9FF0				; get input port (4)
+	LDA (stkb_tab), Y		; on keyboard, QAOP, ESDF, Spectrum and cursor keys supported! Otherwise get joystick pattern (5)
 	STA stick				; store in variable (3)
-	PLX						; (4) eeek
+	PLY						; (4) eeek
 	PLA						; (4)
 	INC jiffy				; count time (5)
 		BNE i_end			; (3 in the fastest case)
@@ -1441,8 +1450,8 @@ pm_isr:
 		BNE i_end			; (perhaps 3)
 	INC jiffy+2				; (or add 2+5)
 i_end:
-	RTI						; (6, fastest case is 38, plus 7 of IRQ ack, seems OK at 45...)
-							; *** don't think I need paranoid code any longer ***
+	RTI						; (6, fastest case is 40, plus 7 of IRQ ack, seems OK at 47...)
+
 ; ****************************
 ; ****************************
 ; *** *** diverse data *** ***
@@ -1499,10 +1508,16 @@ spt_d:
 pk_mv:
 	.word	pk_rt, pk_dn, pk_lt, pk_up, dir_set	; *** table of pointers, may go elsewhere but only for CMOS ***
 #endif
+
+; ** pointer to stick index tables, depending on keyboard/joystick mode **
+dir_tab:
+	.word	asc2dir			; [0] for keyboard
+	.word	stk2dir			; [2] for joystick
+
 ; ** ** ** end of pointer tables ** ** **
 ; ***************************************
 
-; * IO9 to stick index conversion *
+; * IO9 keyboard to stick index conversion *
 asc2dir:
 	.byt	STK_K, STK_K, STK_L, STK_K, STK_K, STK_K, STK_R, STK_K, STK_K, STK_K, STK_D, STK_U, STK_K, STK_K, STK_K, STK_K	; arrow keys
 	.dsb	16, STK_K																										; no valid values here (16...31)
@@ -1515,6 +1530,12 @@ asc2dir:
 #ifdef	SAFE
 	.dsb	128, STK_K		; non-standard ASCII values not recognised, seems important for º/ª in Spanish layout, maybe accents too!
 #endif
+
+; * direct joystick to index conversion *
+; assume stick is wired d0=RIGHT, d1=DOWN, d2=LEFT, d3=UP
+; actually sequential values 0...15, assuming STK_R/D/L/U are 1, 2, 4 and 8
+stk2dir:
+	.byt	0,	1,	2,	3,	4,	5,	6,	7,	8,	9,	10,	11,	12,	13,	14,	15
 
 ; * stick reaction tables *
 ; preferred movement

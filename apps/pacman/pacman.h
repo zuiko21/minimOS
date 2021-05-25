@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210514-1359
+; last modified 20210525-1419
 
 ; **************************
 ; *** zeropage variables ***
@@ -33,6 +33,7 @@ draw_y		.byt	0
 ds_stat		.byt	0
 jiffy		.dsb	3, 0	; 24-bit jiffy counter, about 19 hours
 stick		.byt	0		; read value from 'joystick', every ISR
+stkb_tab	.word	0		; NEW pointer to stick or keyboard conversion table
 seed		.word	$8988	; seed value for PRNG
 tmp_arr:
 dmask:						; 16-byte array with dot masks, also temporary space
