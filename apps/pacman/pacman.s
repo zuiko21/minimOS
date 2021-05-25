@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210514-1416
+; last modified 20210525-1231
 
 ; can be assembled from this folder
 
@@ -278,7 +278,13 @@ pac_hor:
 			BRA mv_all
 pac_cross:
 ; the joystick indicates certain desire to move... will do if map allows it
-; say d3=up, d2=left, d1=down and d0=right, 1+8 feasible movements are:
+; say d3=up, d2=left, d1=down and d0=right... at least at the logic level
+; for compatibility of joystick with cursor keys, the former is phisically assigned as...
+; d0=up, d1=left (ASCII 2 is cursor left), d2=down, d3=right
+; joystick is read as 0=KEEP, 1=UP, 2=LEFT, 3=UP/LEFT, 4=DOWN, 5 invalid, 6=DOWN/LEFT, 7 invalid, 8=RIGHT, 9=RIGHT/UP, 10-11 invalid, 12=RIGHT/DOWN, 13...15 invalid
+; CHR$(2) coincides with joystick, other C0 codes are different from valid joystick directions, thus no interference
+; as will be table driven, no need to mess with inverting bit patterns back-to-front 
+; from the logic point of view, 1+8 feasible movements are...
 ; 0000=keep dir, 0001=try right, 0011=right or down, 0010=down, 0110=down or left, 0100=left, 1100=left or up, 1000=up, 1001=up or right
 ; both possible movements are in separate tables, with usual code 0/2/4/6, and 8 for no change/invalid!
 ; note that no-change means altering coordinates as per sp_dir[X]!
@@ -744,7 +750,7 @@ sh_loop:
 #ifdef	IOSCREEN
 		STX IO8ll			; alternate index, copying dest_pt LSB
 		STA IO8wr			; place data
-#else
+#elseK
 		STA (dest_pt), Y	; regular screen
 #endif
 		INY					; ditto for next byte
@@ -1501,8 +1507,9 @@ pk_mv:
 ; ***************************************
 
 ; * IO9 to stick conversion *
+; note new integration of joystick values (d3d2d1d0 are RDLU)
 asc2dir:
-	.byt	STK_K, STK_K, STK_L, STK_K, STK_K, STK_K, STK_R, STK_K, STK_K, STK_K, STK_D, STK_U, STK_K, STK_K, STK_K, STK_K	; arrow keys
+	.byt	STK_K, STK_U, STK_L, STK_K, STK_D, STK_K, STK_R, STK_K, STK_R, STK_K, STK_D, STK_U, STK_K, STK_K, STK_K, STK_K	; arrow keys, plus joystick bits
 	.dsb	16, STK_K																										; no valid values here (16...31)
 	.dsb	16, STK_K																										; no valid values here (32...47)
 	.byt	STK_K, STK_K, STK_K, STK_K, STK_K, STK_L, STK_D, STK_U, STK_R, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K, STK_K	; Spectrum cursors 5...8
