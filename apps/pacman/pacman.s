@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210525-1435
+; last modified 20210526-1418
 
 ; can be assembled from this folder
 
@@ -18,6 +18,7 @@
 	IO8lh	= $8000			; screen latch high
 	IO8ll	= $8001			; screen latch low
 	IO8wr	= $8002			; screen write data **new address**
+	IO9in	= $9FF0			; joystick/keyboard input
 	IOAie	= $A001			; enable hardware interrupt, LSB must be $01!
 	IOAid	= $A000			; disable hardware interrupt
 	IOBeep	= $BFF0			; beeper address (latches D0 value)
@@ -81,6 +82,12 @@ rander:
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
+; *** ask here for keyboard/joystick selection ***
+	LDY #<(p_text+50)		; third chunk (new!) is the joystick/keyboard selection message
+	LDA #>(p_text+50)
+	JSR l_text
+	JSR sel_if				; for the sake of clarity, choose depending on IO9 input, 8=joystick (UP), 13=keyboard (CR)
+; *** continue with game ***
 	JSR positions			; reset initial positions (and show 'Ready!' message)
 	JSR sprites				; draw all ghosts and pacman on screen
 
@@ -212,6 +219,26 @@ gameover:
 ; *** supporting routines ***
 ; ***************************
 ; ***************************
+
+; * select between joystick and keyboard *
+; sets stkb_tab accordingly, reads from IO9
+sel_if:
+		LDA IO9in			; get port input
+		CMP #8				; is it joystick up?
+		BEQ sel_joy
+			CMP #13			; is it keyboard instead?
+		BNE sel_if			; if neither, keep trying ** could check for Escape or joy down for exit **
+; if arrived here, keyboard is selected
+	LDY dir_tab				; pointer for keyboard tables ** should add extra label for clarity
+	LDA dir_tab+1
+	BNE sel_ok				; no need for BRA
+sel_joy:
+		LDY dir_tab+2		; pointer for joystick tables
+		LDA dir_tab+3
+sel_ok:
+	STY stkb_tab			; prepare input pointer
+	STA stkb_tab+1
+	RTS
 
 ; * 25ms generic delay *
 ; delay ~25A ms
@@ -1439,7 +1466,7 @@ pm_isr:
 ;	LDA #%00010000			; enable column 1 from keyboard/keypad
 ;	STA LTCdo				; display remains shut down, as all anodes are low
 ; *** end of paranoid code *** no longer needed
-	LDY $9FF0				; get input port (4)
+	LDY IO9in				; get input port (4)
 	LDA (stkb_tab), Y		; on keyboard, QAOP, ESDF, Spectrum and cursor keys supported! Otherwise get joystick pattern (5)
 	STA stick				; store in variable (3)
 	PLY						; (4) eeek
@@ -1595,7 +1622,7 @@ maze:
 
 ; text chunks
 p_text:
-	.bin	9, 50, "../../other/data/pacmantxt.pbm"
+	.bin	9, 50, "../../other/data/pacmantxt.pbm"	; *** this MUST change to 75, now with three chunks ***
 
 ; *** sprites ***
 ; pacman towards right
