@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210525-1419
+; last modified 20210527-1306
 
 ; **************************
 ; *** zeropage variables ***
@@ -47,7 +47,7 @@ s_rot		.word	0		; rotated animation sprite (formerly cur...cur+1)
 swp_ct		.byt	0		; sweep sound counter (formerly temp)
 sqk_par		.dsb	3, 0	; squeak parametrer (formerly from cur, also using swp_ct instrad of temp)
 anim_pt		.byt	0		; frame counter (formerly temp)
-
+bp_dly:						; new delay storage for 1.536 MHz beep
 alt_msb		.byt	0		; formerly tmp_arr+15 (actually used?)
 
 ;		.dsb	16, 0	; 16-byte array with dot masks, also temporary space

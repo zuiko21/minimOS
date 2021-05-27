@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210526-1418
+; last modified 20210527-1306
 
 ; can be assembled from this folder
 
@@ -246,6 +246,7 @@ ms25:
 	LDX #20					; computed iterations for a 25ms delay (note below, total 9t overhead, 0.036%)
 	LDY #$78				; first iteration takes ~half the time, will run 138 cycles, actually ~19.5 iterations
 m25d:
+			STY bp_dly		; delay for 1.536 MHz, 4% slower, worth changing initial values ***
 			DEY				; inner loop (2y)x
 			BNE m25d		; (3y-1)x, total 1279t if in full, ~689 otherwise
 		DEX					; outer loop (2x)
@@ -1375,7 +1376,9 @@ dth_sw:
 
 ; *** ** beeping routine ** ***
 ; *** X = length, A = freq. ***
+; *** X = 2*cycles          ***
 ; *** tcyc = 10 A + 20      ***
+; *** @1.536 MHz, 16 A + 20 ***
 ; modifies Y, returns X=0
 m_beep:
 	SEI						; eeeeeek
@@ -1383,6 +1386,7 @@ beep_l:
 		TAY					; determines frequency (2)
 		STX IOBeep			; send X's LSB to beeper (4)
 rb_zi:
+			STY bp_dly		; small delay for 1.536 MHz! (3)
 			DEY				; count pulse length (y*2)
 			BNE rb_zi		; stay this way for a while (y*3-1)
 		DEX					; toggles even/odd number (2)
@@ -1394,10 +1398,12 @@ rb_zi:
 ; *** ** rest routine ** ***
 ; ***     X = length     ***
 ; ***    t = X 1.28 ms   ***
+; *** X 1.33 ms @ 1.536M ***
 ; modifies Y, returns X=0
 m_rest:
 		LDY #0				; this resets the counter
 r_loop:
+			STY bp_dly		; delay for 1.536 MHz
 			INY
 			BNE r_loop		; this will take ~ 1.28 ms
 		DEX					; continue
