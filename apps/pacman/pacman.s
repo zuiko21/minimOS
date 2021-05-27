@@ -212,7 +212,8 @@ gameover:
 	LDA #>(p_text+25)
 	JSR l_text
 ; shall I wait for some key to start a new game? exit option?
-	JMP *					; placeholder
+release:
+	LDA IO9in
 
 ; ***************************
 ; ***************************
