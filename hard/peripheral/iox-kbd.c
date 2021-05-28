@@ -257,18 +257,36 @@ int main(void) {
 	row(rom,  00,  00,  00,  00);	/* Ex= ESC, DEL, PgUp, PgDown */
 	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
 
-/* ALT-CONTROL, must check... */
-	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
-	/* 1x= 1 Q A Z */
-	/* 2x= 2 W S X */
-	/* 3x= 3 E D C */
-	/* 4x= 4 R F V */
-	/* 5x= 5 T G B */
-	/* 6x= 6 Y H N */
-	/* 7x= 7 U J M */
-	/* 8x= 8 I K , */
-	/* 9x= 9 O L . */
-	/* Ax= 0 P Ñ - */
+/* ALT-CONTROL with CAPS LOCK */
+	row(rom,  00,  00,  00,   0);	/* 0x= º Tab < Space */
+	row(rom,0x2A,  00,0xC4,0x99);	/* 1x= 1 Q A Z */
+	row(rom,0xA2,  00,0x94,0x90);	/* 2x= 2 W S X */
+	row(rom,0xB1,0xCB,0x9B,0xA9);	/* 3x= 3 E D C */
+	row(rom,0xA5,0xAE,  00,0xB9);	/* 4x= 4 R F V */
+	row(rom,0xF7,0x92,0xC0,  00);	/* 5x= 5 T G B */
+	row(rom, '`',0xFF,0xC8,0xBE);	/* 6x= 6 Y H N */
+	row(rom,0xBF,0xDC,0xCC,0x9E);	/* 7x= 7 U J M */
+	row(rom,0x96,0xCF,0xD2,  00);	/* 8x= 8 I K , */
+	row(rom,0x98,0xD6,0xD9,  00);	/* 9x= 9 O L . */
+	row(rom,0xAD,0x93,  00,  00);	/* Ax= 0 P Ñ - */
+	row(rom,  00,  00,  00,  00);	/* Bx= apostrophe, backtick, acute accent, cursor left */
+	row(rom,  00,  00,  00,  00);	/* Cx= ¡ + Ç right */
+	row(rom,  00,  00,  00,  00);	/* Dx= BS, CR, up, down */
+	row(rom,  00,  00,  00,  00);	/* Ex= ESC, DEL, PgUp, PgDown */
+	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
+
+/* ALT-CONTROL, unshifted otherwise */
+	row(rom,  00,  00,  00,   0);	/* 0x= º Tab < Space */
+	row(rom,0x2A,  00,0xE4,0x99);	/* 1x= 1 Q A Z */
+	row(rom,0xA2,  00,0x94,0x90);	/* 2x= 2 W S X */
+	row(rom,0xB1,0xEB,0x9B,0xA9);	/* 3x= 3 E D C */
+	row(rom,0xA5,0xAE,  00,0xB9);	/* 4x= 4 R F V */
+	row(rom,0xF7,0x92,0xE0,  00);	/* 5x= 5 T G B */
+	row(rom, '`',0xFF,0xE8,0xBE);	/* 6x= 6 Y H N */
+	row(rom,0xBF,0xFC,0xEC,0x9E);	/* 7x= 7 U J M */
+	row(rom,0x96,0xEF,0xF2,  00);	/* 8x= 8 I K , */
+	row(rom,0x98,0xF6,0xF9,  00);	/* 9x= 9 O L . */
+	row(rom,0xAD,0x93,  00,  00);	/* Ax= 0 P Ñ - */
 	row(rom,  00,  00,  00,  00);	/* Bx= apostrophe, backtick, acute accent, cursor left */
 	row(rom,  00,  00,  00,  00);	/* Cx= ¡ + Ç right */
 	row(rom,  00,  00,  00,  00);	/* Dx= BS, CR, up, down */
@@ -277,16 +295,33 @@ int main(void) {
 
 /* ALT-CONTROL-SHIFT, with or without CAPS LOCK */
 	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
-	/* 1x= 1 Q A Z */
-	/* 2x= 2 W S X */
-	/* 3x= 3 E D C */
-	/* 4x= 4 R F V */
-	/* 5x= 5 T G B */
-	/* 6x= 6 Y H N */
-	/* 7x= 7 U J M */
-	/* 8x= 8 I K , */
-	/* 9x= 9 O L . */
-	/* Ax= 0 P Ñ - */
+	row(rom,  00,  00,0xC4,  00);	/* 1x= 1 Q A Z */
+	row(rom,0xB2,  00,  00,  00);	/* 2x= 2 W S X */
+	row(rom,0xB3,0xCB,  00,  00);	/* 3x= 3 E D C */
+	row(rom,  00,  00,  00,  00);	/* 4x= 4 R F V */
+	row(rom,  00,  00,0xC0,  00);	/* 5x= 5 T G B */
+	row(rom,  00,  00,0xC8,  00);	/* 6x= 6 Y H N */
+	row(rom,  00,0xDC,0xCC,  00);	/* 7x= 7 U J M */
+	row(rom,0x9C,0xCF,0xD2,  00);	/* 8x= 8 I K , */
+	row(rom,  00,0xD6,0xD9,  00);	/* 9x= 9 O L . */
+	row(rom,0xAF,  00,  00,  00);	/* Ax= 0 P Ñ - */
+	row(rom,  00,  00,  00,  00);	/* Bx= apostrophe, backtick, acute accent, cursor left */
+	row(rom,  00,  00,  00,  00);	/* Cx= ¡ + Ç right */
+	row(rom,  00,  00,  00,  00);	/* Dx= BS, CR, up, down */
+	row(rom,  00,  00,  00,  00);	/* Ex= ESC, DEL, PgUp, PgDown */
+	row(rom,   0,   0,   0,   0);	/* Fx (MODIFIERS)= CapsLock, Shift, Control, Alt */
+
+	row(rom,  00,  00,  00,  00);	/* 0x= º Tab < Space */
+	row(rom,  00,  00,0xC4,  00);	/* 1x= 1 Q A Z */
+	row(rom,0xB2,  00,  00,  00);	/* 2x= 2 W S X */
+	row(rom,0xB3,0xCB,  00,  00);	/* 3x= 3 E D C */
+	row(rom,  00,  00,  00,  00);	/* 4x= 4 R F V */
+	row(rom,  00,  00,0xC0,  00);	/* 5x= 5 T G B */
+	row(rom,  00,  00,0xC8,  00);	/* 6x= 6 Y H N */
+	row(rom,  00,0xDC,0xCC,  00);	/* 7x= 7 U J M */
+	row(rom,0x9C,0xCF,0xD2,  00);	/* 8x= 8 I K , */
+	row(rom,  00,0xD6,0xD9,  00);	/* 9x= 9 O L . */
+	row(rom,0xAF,  00,  00,  00);	/* Ax= 0 P Ñ - */
 	row(rom,  00,  00,  00,  00);	/* Bx= apostrophe, backtick, acute accent, cursor left */
 	row(rom,  00,  00,  00,  00);	/* Cx= ¡ + Ç right */
 	row(rom,  00,  00,  00,  00);	/* Dx= BS, CR, up, down */
