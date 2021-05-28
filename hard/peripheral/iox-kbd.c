@@ -91,7 +91,7 @@ int main(void) {
 	row(rom, '(', 'I', 'K', ',');	/* 8x= 8 I K , */
 	row(rom, ')', 'O', 'L', '.');	/* 9x= 9 O L . */
 	row(rom, '=', 'P',0xD1, '-');	/* Ax= 0 P Ñ - */
-	row(rom, '?', '^', '_',0x02);	/* Bx= apostrophe, backtick, acute accent, cursor left */
+	row(rom, '?', '^',0xA8,0x02);	/* Bx= apostrophe, backtick, acute accent, cursor left */
 	row(rom,0xBF, '*',0xC7,0x06);	/* Cx= ¡ + Ç right */
 	row(rom,0x08,0x0D,0x0B,0x0A);	/* Dx= BS, CR, up, down */
 	row(rom,0x1B,0x7F,0x19,0x16);	/* Ex= ESC, DEL, PgUp, PgDown */
@@ -108,7 +108,7 @@ int main(void) {
 	row(rom, '(', 'I', 'K', ',');	/* 8x= 8 I K , */
 	row(rom, ')', 'O', 'L', '.');	/* 9x= 9 O L . */
 	row(rom, '=', 'P',0xD1, '-');	/* Ax= 0 P Ñ - */
-	row(rom, '?', '^', '_',0x02);	/* Bx= apostrophe, backtick, acute accent, cursor left */
+	row(rom, '?', '^',0xA8,0x02);	/* Bx= apostrophe, backtick, acute accent, cursor left */
 	row(rom,0xBF, '*',0xC7,0x06);	/* Cx= ¡ + Ç right */
 	row(rom,0x08,0x0D,0x0B,0x0A);	/* Dx= BS, CR, up, down */
 	row(rom,0x1B,0x7F,0x19,0x16);	/* Ex= ESC, DEL, PgUp, PgDown */
