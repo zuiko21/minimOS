@@ -330,6 +330,17 @@ int main(void) {
 
 	fclose(rom);
 
+/* *********************
+ * *** control EPROM ***
+ * ********************* */
+	rom=fopen("iox-ctl.bin", "wb");
+	if (rom==NULL) {
+		printf("*** Can't write to control ROM ***\n\n");
+		return -1;
+	}
+
+	fclose(rom);
+
 	return 0;
 }
 
