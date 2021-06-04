@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210223-2328         */
+ * last modified 20210604-1426         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,15 +19,25 @@
 void cabe(int x);	/* send header byte in a slow way */
 void dato(int x);	/* send data byte at full speed! */
 void useg(int x);	/* delay for specified microseconds */
+void err(void);		/* show usage in case of parameter error */
 
 /* *** main code *** */
-int main(void) {
+/* NEW usage is server (file) [mode] [speed]  */
+/* where mode is + (safe) or - (fast NMI)     */
+/* speed in MHz, default 1 MHz, safe NMI mode */
+int main(int argc, char *argv[]) {
 	FILE*	f;
 	int		i, c, fin, ini;
 	char	nombre[80];
+	float	vel = 1;		/* NEW speed in MHz */
+	int		seg = 1;		/* NEW, set to 0 if not in SAFE mode (minimal NMI latency) */
 
 	printf("*** nanoBoot server (OC) ***\n\n");
 	printf("pin 34=GND, 36=CLK, 38=DAT\n\n");
+/* set new speed parameters (non interactive), otherwise take 1 MHz slow NMI */
+	if ()	/* TBD */
+	} else {
+	}
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
 	digitalWrite(CB1, 0);	/* clock initially disabled, note OC */
@@ -35,11 +45,15 @@ int main(void) {
 	pinMode(CB2, OUTPUT);
 	pinMode(STB, OUTPUT);	/* not actually used */
 /* open source file */
-	printf("File: ");
-	scanf("%s", nombre);
-	if ((f = fopen(nombre, "rb")) == NULL) {
-		printf("*** NO SUCH FILE ***\n");
-		return -1;
+	if (argc>=2) {			/* NEW batch mode */
+		/* ****** TBD ******* */
+	} else {
+		printf("File: ");
+		scanf("%s", nombre);
+		if ((f = fopen(nombre, "rb")) == NULL) {
+			printf("*** NO SUCH FILE ***\n");
+			return -1;
+		}
 	}
 /* compute header parameters */
 	fseek(f, 0, SEEK_END);
