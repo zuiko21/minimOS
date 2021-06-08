@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210604-1426         */
+ * last modified 20210608-1429         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,10 +15,18 @@
 #define	CB2		20
 #define	STB		21
 
+/* Global variables */
+int		datl;		/* bit length, nominally 15t with fast NMI */
+int		dats;		/* space between bits, nominally 65t with fast NMI */
+int		cabl;		/* header bit length, nominally 15t with fast NMI, same as datl */
+int		cabs;		/* space between header bits, nominally 2 mS */
+int		pagt;		/* delay on page crossing for feedback */
+int		periodo;	/* needed iterations for 1 uS delay, nominally 200 on RPi 400 */
+
 /* prototypes */
 void cabe(int x);	/* send header byte in a slow way */
 void dato(int x);	/* send data byte at full speed! */
-void useg(int x);	/* delay for specified microseconds */
+void useg(int x);	/* delay for specified microseconds (at 1 MHz) or t-states*/
 void err(void);		/* show usage in case of parameter error */
 
 /* *** main code *** */
@@ -29,7 +37,7 @@ int main(int argc, char *argv[]) {
 	FILE*	f;
 	int		i, c, fin, ini;
 	char	nombre[80];
-	float	vel = 1;		/* NEW speed in MHz */
+	float	vel = 1.0;		/* NEW speed in MHz */
 	int		seg = 1;		/* NEW, set to 0 if not in SAFE mode (minimal NMI latency) */
 
 	printf("*** nanoBoot server (OC) ***\n\n");
@@ -126,6 +134,6 @@ void useg(int x){
 	int i, t;
 
 	for (t=0; t<x; t++){
-		for (i=0; i<200; i++);	/* *** 200 iterations = 1 µs on RPi400 *** */
+		for (i=0; i<periodo; i++);	/* *** 200 iterations = 1 µs on RPi400 *** */
 	}
 }
