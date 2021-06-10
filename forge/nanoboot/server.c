@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210608-1429         */
+ * last modified 20210610-1417         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,11 +16,6 @@
 #define	STB		21
 
 /* Global variables */
-int		datl;		/* bit length, nominally 15t with fast NMI */
-int		dats;		/* space between bits, nominally 65t with fast NMI */
-int		cabl;		/* header bit length, nominally 15t with fast NMI, same as datl */
-int		cabs;		/* space between header bits, nominally 2 mS */
-int		pagt;		/* delay on page crossing for feedback */
 int		periodo;	/* needed iterations for 1 uS delay, nominally 200 on RPi 400 */
 
 /* prototypes */
@@ -30,22 +25,36 @@ void useg(int x);	/* delay for specified microseconds (at 1 MHz) or t-states*/
 void err(void);		/* show usage in case of parameter error */
 
 /* *** main code *** */
-/* NEW usage is server (file) [mode] [speed]  */
-/* where mode is + (safe) or - (fast NMI)     */
-/* speed in MHz, default 1 MHz, safe NMI mode */
+/* NEW usage is server (file) (address) [[mode]speed] */
+/* where mode is + (safe, default) or - (fast NMI)    */
+/* speed in MHz, default 1 MHz, safe NMI mode         */
 int main(int argc, char *argv[]) {
 	FILE*	f;
 	int		i, c, fin, ini;
 	char	nombre[80];
-	float	vel = 1.0;		/* NEW speed in MHz */
+	float	vel = 1.0;		/* NEW speed in MHz, keep these default values */
 	int		seg = 1;		/* NEW, set to 0 if not in SAFE mode (minimal NMI latency) */
+	int		dats;			/* space between bits, nominally 65t with fast NMI */
+	int		cabs;			/* space between header bits, nominally ~2000t */
 
 	printf("*** nanoBoot server (OC) ***\n\n");
 	printf("pin 34=GND, 36=CLK, 38=DAT\n\n");
 /* set new speed parameters (non interactive), otherwise take 1 MHz slow NMI */
-	if ()	/* TBD */
-	} else {
+	if (argc>=4) {			/* enough parameters detected */
+		vel=atof(argv[3]);	/* claimed speed, plus or minus */
+		if (vel<0) {
+			seg=0;			/* FAST mode set */
+			vel=-vel;		/* absolute value of speed */
+		}
 	}
+/* set delays accordingly */
+	if (vel<200)
+		periodo=200/vel;	/* 200 iterations = 1uS @ RPi400 */
+	else 	periodo=1;		/* maximum speed, we don't want it rounded to zero! */
+	dats=65+seg*150;		/* nominally 12.5 or 4.3 kb/s @ 1 MHz */
+	printf("%f MHz");
+	if (!seg)	prinf(", fast NMI mode");
+	printf("\n\n");
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
 	digitalWrite(CB1, 0);	/* clock initially disabled, note OC */
@@ -54,7 +63,8 @@ int main(int argc, char *argv[]) {
 	pinMode(STB, OUTPUT);	/* not actually used */
 /* open source file */
 	if (argc>=2) {			/* NEW batch mode */
-		/* ****** TBD ******* */
+		strcpy(nombre,argv[1]);			/* filename is mandatory in batch mode */
+		printf("File: %s\n", nombre);
 	} else {
 		printf("File: ");
 		scanf("%s", nombre);
@@ -67,8 +77,13 @@ int main(int argc, char *argv[]) {
 	fseek(f, 0, SEEK_END);
 	fin = ftell(f);
 	printf("It's %d bytes long ($%04X)\n\n", fin, fin);
-	printf("Address (HEX): ");
-	scanf("%x", &ini);
+/* check start address */
+	if (argc>=3) {			/* address supplied */
+		ini=atof(argv[2]);	/* atoi() won't accept Hex addresses! */
+	} else {
+		printf("Address (HEX): ");
+		scanf("%x", &ini);
+	}
 	fin += ini;				/* nanoBoot mandatory format */
 /* send header */
 	cabe(0x4B);
@@ -81,7 +96,7 @@ int main(int argc, char *argv[]) {
 	printf("*** GO!!! ***\n");
 	for (i=ini; i<fin; i++) {
 		if ((i&255) == 0) {
-			delay(2);		/* page crossing may need some time */
+			useg(2000);		/* page crossing may need some time */
 			printf("$%02X...\n", i>>8);
 		}
 		c = fgetc(f);
@@ -104,12 +119,12 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 		digitalWrite(CB1, 1);
 		useg(15);			/* eeeeeek */
 		digitalWrite(CB1, 0);
-		delay(2);			/* way too long, just in case, note OC */
+		useg(1985);			/* way too long, just in case, note OC */
 /* delay is best here in any case */
 		x >>= 1;
 		i--;
 	}
-	delay(1);				/* shouldn't be needed, but won't harm anyway */
+	useg(1000);				/* shouldn't be needed, but won't harm anyway */
 }
 
 void dato(int x) {			/* send a byte at 'top' speed */
@@ -121,7 +136,7 @@ void dato(int x) {			/* send a byte at 'top' speed */
 		digitalWrite(CB1, 1);
 		useg(15);			/* eeeeeeek */
 		digitalWrite(CB1, 0);
-		useg(65);			/* *** cranked up to 55 µs or so (at 1 MHz) is pretty unreliable *** */
+		useg(dats);			/* *** cranked up to 55 µs or so (at 1 MHz) is pretty unreliable *** */
 /* delay is best here in any case */
 		x >>= 1;
 		i--;
