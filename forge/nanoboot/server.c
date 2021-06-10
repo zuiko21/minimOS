@@ -61,17 +61,18 @@ int main(int argc, char *argv[]) {
 	pinMode(CB1, OUTPUT);
 	pinMode(CB2, OUTPUT);
 	pinMode(STB, OUTPUT);	/* not actually used */
-/* open source file */
+/* get filename, either in batch or interactive mode */
 	if (argc>=2) {			/* NEW batch mode */
 		strcpy(nombre,argv[1]);			/* filename is mandatory in batch mode */
 		printf("File: %s\n", nombre);
 	} else {
 		printf("File: ");
 		scanf("%s", nombre);
-		if ((f = fopen(nombre, "rb")) == NULL) {
-			printf("*** NO SUCH FILE ***\n");
-			return -1;
-		}
+	}
+/* open source file */
+	if ((f = fopen(nombre, "rb")) == NULL) {
+		printf("*** NO SUCH FILE ***\n");
+		return -1;
 	}
 /* compute header parameters */
 	fseek(f, 0, SEEK_END);
@@ -80,6 +81,13 @@ int main(int argc, char *argv[]) {
 /* check start address */
 	if (argc>=3) {			/* address supplied */
 		ini=atof(argv[2]);	/* atoi() won't accept Hex addresses! */
+/* alternative: if first char of argv[2] is $, change it to x
+ * then evaluate the string appending '0' first, in ANY case */
+/*		if (argv[2][0]=='$') {		/* hex value supplied, Motorola style */
+/*			argv[2][0]='x';
+		}
+		ini=atoi("0"+argv[2]);	*** concat is hard ***
+ * perhaps using atof will accept both Intel and Motorola hex formats! */
 	} else {
 		printf("Address (HEX): ");
 		scanf("%x", &ini);
