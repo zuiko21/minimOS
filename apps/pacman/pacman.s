@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210611-1013
+; last modified 20210611-1435
 
 ; can be assembled from this folder
 
@@ -70,15 +70,6 @@ rander:
 	LDA #$10				; needs to be 10 in BCD eeeeeeek
 	STA goal				; next extra life at 1000 points
 
-; *** *** TBD must set stkb_tab accordingly for keyboard or joystick mode *** ***
-; placeholder for IO9 joystick
-	LDX #2					; *** set to 0 for ketyboard, 2 for joystick *** PLACEHOLDER
-
-	LDY dir_tab, X			; get selected table pointer
-	LDA dir_tab+1, X
-	STY stkb_tab			; store indirect pointer
-	STA stkb_tab+1
-
 ; initial screen setup, will be done every level as well
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
@@ -87,7 +78,7 @@ rander:
 	LDA #>(p_text+50)
 	JSR l_text
 	JSR sel_if				; for the sake of clarity, choose depending on IO9 input, 8=joystick (UP), 13=keyboard (CR)
-; *** continue with game ***
+; *** continue with screen setup ***
 	JSR positions			; reset initial positions (and show 'Ready!' message)
 	JSR sprites				; draw all ghosts and pacman on screen
 
@@ -1378,8 +1369,8 @@ dth_sw:
 ; *** ** beeping routine ** ***
 ; *** X = length, A = freq. ***
 ; *** X = 2*cycles          ***
-; *** tcyc = 10 A + 20      ***
-; *** @1.536 MHz, 16 A + 20 ***
+; *** tcyc = 16 A + 20      ***
+; ***     @1.536 MHz        ***
 ; modifies Y, returns X=0
 m_beep:
 	SEI						; eeeeeek
@@ -1398,7 +1389,6 @@ rb_zi:
 
 ; *** ** rest routine ** ***
 ; ***     X = length     ***
-; ***    t = X 1.28 ms   ***
 ; *** X 1.33 ms @ 1.536M ***
 ; modifies Y, returns X=0
 m_rest:
@@ -1406,7 +1396,7 @@ m_rest:
 r_loop:
 			STY bp_dly		; delay for 1.536 MHz
 			INY
-			BNE r_loop		; this will take ~ 1.28 ms
+			BNE r_loop		; this will take ~ 1.33 ms
 		DEX					; continue
 		BNE m_rest
 	RTS
