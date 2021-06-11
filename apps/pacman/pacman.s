@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210527-1306
+; last modified 20210611-1013
 
 ; can be assembled from this folder
 
@@ -166,16 +166,16 @@ g_end:
 ; *************************************************
 ; *** if arrived here, level ended successfully ***
 ; *************************************************
-	LDA #80					; two-seconds delay
-	JSR ms25
+	LDA #100				; two-second delay
+	JSR ms20
 ; worth showing a flashing map (4 times) for a couple of seconds
 	LDA #8					; clear inverse video flag, d0-3 is down counter
 fl_loop:
 		EOR #64				; toggle inverse flag
 		STA temp			; store counter and inverse flag
 		STA IO8lh			; works on both Durango-X and picoVDU
-		LDA #10				; quarter second delay
-		JSR ms25
+		LDA #12				; ~quarter second delay
+		JSR ms20
 		LDA temp			; check counter
 		DEC					; CMOS, could be swapped by SEC, SBC #1 as well; or DEC temp, LDA temp instead
 		BNE fl_loop
@@ -190,8 +190,8 @@ g_again:
 	JSR screen				; draw initial field (and current dots)
 	JSR positions			; reset initial positions (and print 'Ready!')
 	JSR sprites				; draw all ghosts and pacman on screen (uses draw, in development)
-	LDA #80					; 2-second delay
-	JSR ms25
+	LDA #100				; 2-second delay
+	JSR ms20
 	JMP play				; and begin new level (without music)
 
 ; *************************************
@@ -241,19 +241,19 @@ sel_ok:
 	STA stkb_tab+1
 	RTS
 
-; * 25ms generic delay *
-; delay ~25A ms
-ms25:
-	LDX #20					; computed iterations for a 25ms delay (note below, total 9t overhead, 0.036%)
-	LDY #$78				; first iteration takes ~half the time, will run 138 cycles, actually ~19.5 iterations
-m25d:
-			STY bp_dly		; delay for 1.536 MHz, 4% slower, worth changing initial values ***
+; * 20ms generic delay *
+; delay ~20A ms, assuming 1.536 MHz clock! NEW
+ms20:
+	LDX #11					; computed iterations for a 20ms delay
+	LDY #44					; first iteration takes ~0.17 the time, actually ~10.17 iterations
+m20d:
+;			STY bp_dly		; delay for 1.536 MHz, 4% slower, worth changing initial values ***
 			DEY				; inner loop (2y)x
-			BNE m25d		; (3y-1)x, total 1279t if in full, ~689 otherwise
+			BNE m20d		; (3y-1)x, total 1279t if in full, ~220 otherwise
 		DEX					; outer loop (2x)
-		BNE m25d			; (3x-1)
+		BNE m20d			; (3x-1)
 	DEC						; ** CMOS **
-		BNE ms25
+		BNE ms20
 	RTS						; add 12t from call overhead
 
 ; * preload map with initial state *
@@ -1302,8 +1302,8 @@ af_nw:
 
 ; * Pacman death, animation plus integrated sound *
 death:
-	LDA #40					; one second pause
-	JSR ms25
+	LDA #50					; one second pause
+	JSR ms20
 ; actual pacman arcade deletes all sprites during animation
 	JSR screen
 ; prepare animation parameters
@@ -1359,8 +1359,8 @@ dth_sw:
 		STA swp_ct
 		CMP #15
 		BCS dth_sw
-	LDA #3
-	JSR ms25				; ~75 ms delay
+	LDA #4
+	JSR ms20				; ~80 ms delay, no longer 75
 ; should clear pacman space
 	LDX #6
 	JSR anim				; last frame is clear
@@ -1369,8 +1369,8 @@ dth_sw:
 	DEC						; *** CMOS ***
 	BNE d_rpt
 ; one second delay after death
-	LDA #40
-	JSR ms25
+	LDA #50
+	JSR ms20
 ; subtract one life!
 	LDA #$99				; in BCD, this is -1
 	JMP up_lives			; will return
