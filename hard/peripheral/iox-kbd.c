@@ -339,6 +339,21 @@ int main(void) {
 		return -1;
 	}
 
+/* this is hard
+ * D7...D0 = /MOD, ALT, CTL, SHIFT, /CAPS, (NC), /STB, /ACK
+ * STB is not used currently (might be generated from /ACK, although will send NUL on CAPS LOCK)
+ * ACK stops the clock, whenever a valid key press will generate a char (CAPS will enable it too)
+ * MOD detects the modifier column, latching the modifier key combo as a new address range
+ * note these latched modifiers come from the control EPROM, addressed by the keyboard rows
+ * 
+ * thus, /ACK is 0 on any valid char, 1 otherwise, except...
+ * CAPS LOCK, when pressed, generates /ACK too, although char code is NUL
+ * /STB (only used by a Centronics/VIA interface) is the same as /ACK except 1 on CAPS LOCK
+ * /CAPS reflects the status of A8, toggling when the CAPS LOCK key is pressed
+ * since the clock is stopped, toggling A8 should keep D7 constant, thus no more latching is done
+ * SHIFT, CTL, ALT will be latched upon /MOD, affecting A9, A10 and A11
+ * */
+
 	fclose(rom);
 
 	return 0;
