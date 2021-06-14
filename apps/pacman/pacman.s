@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210611-1435
+; last modified 20210614-1258
 
 ; can be assembled from this folder
 
@@ -133,7 +133,6 @@ t_pres:
 g_start:
 		LDX #0				; displayed sprite counter
 g_loop:
-;			PHX
 			STX sel_gh		; X is selected sprite, must keep this!
 			LDA jiffy		; current time
 			CMP sp_timer, X	; time to update position?
