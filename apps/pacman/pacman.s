@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210614-1258
+; last modified 20210625-2357
 
 ; can be assembled from this folder
 
@@ -1618,7 +1618,7 @@ maze:
 
 ; text chunks
 p_text:
-	.bin	9, 50, "../../other/data/pacmantxt.pbm"	; *** this MUST change to 75, now with three chunks ***
+	.bin	9, 75, "../../other/data/pacmantxt.pbm"	; *** now with three chunks ***
 
 ; *** sprites ***
 ; pacman towards right
