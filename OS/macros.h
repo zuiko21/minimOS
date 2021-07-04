@@ -1,6 +1,6 @@
-; minimOS 0.6rc13 MACRO definitions
+; minimOS 0.6rc14 MACRO definitions
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20210409-1352
+; last modified 20210704-2340
 
 ; **************************
 ; *** standard addresses ***
@@ -136,8 +136,8 @@ PICO_VDU	=	160		; *** PLACEHOLDER ***
 #define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
 #else
 ; in case of a NMOS-binary is executed on a 65816 machine, use this faster version
-; ...but NOT NMOS nanomon & CONIO compatible!
-#define		_JMPX(a)	LDA a+1, X: STA nmos_ii+1: LDA a, X: STA nmos_ii: JMP (nmos_ii)
+; now keeps A, should be compatible with everything, albeit slower...
+#define		_JMPX(a)	PHA: LDA a+1, X: STA nmos_ii+1: LDA a, X: STA nmos_ii: PLA: JMP (nmos_ii)
 #endif
 #define		_PHX		TXA: PHA
 #define		_PHY		TYA: PHA
