@@ -80,7 +80,7 @@ _When required, the normally hidden **glyph** is obtained by preceeding the code
 
 ^ key|Dec|Hex|ASCII|mOS|glyph & description|notes
 -----|---|---|-----|---|-------------------|-----
--|0|$00|`NUL`|**`SWTC`**|&#9635; square with block|switch focus/window (1)
+-|0|$00|`NUL`|**`SWTC`**|&#9635; square with block|switch focus/window _may be moved elsewhere_ (1)
 A|1|$01|`SOH`|**`CRTN`**|&#8606; double arrow left|carriage return (without line feed)
 B|2|$02|`STX`|**`LEFT`**|&#8678; arrow left|cursor left (no backspace)
 C|3|$03|`ETX`|**`TERM`**|&#9211; ball switch|send TERM signal
@@ -105,9 +105,9 @@ U|21|$15|`NAK`|**`HOME`**|&#8689; arrow to NW corner|reset cursor without cleari
 V|22|$16|`SYN`|**`PGDN`**|&#8609; double arrow down|page down
 W|23|$17|`ETB`|**`ATYX`**|&#9824; spade suit|set cursor position (5)
 X|24|$18|`CAN`|**`BKTB`**|&#8676; left arrow with bar|backwards tabulation
-Y|22|$19|`EM`|**`PGUP`**|&#8607; double arrow up|page up
-Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal
--|27|$1B|`ESC`|**`ESC`**|&#11017; NW arrow/mouse cursor|escape
+Y|25|$19|`EM`|**`PGUP`**|&#8607; double arrow up|page up
+Z|26|$1A|`SUB`|**`STOP`**|&#9940; no entry|send STOP signal _on input, may switch focus on **output**_
+-|27|$1B|`ESC`|**`ESC`**|&#11017; NW arrow/mouse cursor|escape _or switch focus?_
 -|28|$1C|`FS`|**`PLOT`**|&#9698; wedge pointing SE|point graph mode (6)(7)
 -|29|$1D|`GS`|**`DRAW`**|&#9699; wedge pointing SW|vector graph mode (6)(7)
 -|30|$1E|`RS`|**`INCG`**|&#9618; light pattern|incremental plotting mode (6)
@@ -133,4 +133,4 @@ ignored otherwise (ASCII below 32)_.
 
 7.May take _extra_ byte for screen sizes over 1024 pixels, but extra bits are MSB.
  
-_last modified 20210107-0945_
+_last modified 20210704-2245_
