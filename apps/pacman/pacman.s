@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210625-2357
+; last modified 20210704-1236
 
 ; can be assembled from this folder
 
@@ -10,7 +10,7 @@
 
 ; *** addresses definition ***
 	fw_isr	= $200			; standard minimOS firmware address
-	vram	= $7800			; suitable for Durango
+	vram	= $7800			; suitable for picoVDU
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
 	lv_da	= vram + $49D	; address for lives display, usually $7C9D
 
@@ -143,7 +143,7 @@ g_loop:
 ; ** do something to update coordinates and sp_dir ** X holds sprite number
 ; might abort loop if death and/or game over
 				JSR move	; separated routine for the sake of clarity
-				JSR draw
+				JSR draw	; not worth unifying with move as that has a lot of RTSs
 g_next:
 			LDX sel_gh		; ** no need for PLX **
 			INX				; next sprite
@@ -266,12 +266,12 @@ nm_loop:
 ; * reset initial positions *
 ; returns X=0, modifies A
 positions:
-	LDX #20					; 5 sprites x 4 coordinates/stati
+	LDX #19					; 5 sprites x 4 coordinates/stati max index
 ip_loop:
-		LDA init_p-1, X		; get data from tables, note offsets
-		STA sprite_x-1, X	; into ZP variables
+		LDA init_p, X		; get data from tables, note offsets
+		STA sprite_x, X		; into ZP variables
 		DEX
-		BNE ip_loop
+		BPL ip_loop
 ; I think this should reset counters and timers as well
 ; lastly, print 'Ready!' message
 	LDY #<p_text			; initial patch is 'Ready!' message
@@ -290,6 +290,7 @@ move:
 ; check whether pacman or ghost
 	TXA						; check sprite, note X is valid
 	BNE is_ghost			; pacman only looks for joystick input and map entries... and can move anytime WITHIN THE CURRENT AXIS
+; ** Pacman code **
 		LDA sprite_x		; check pacman coordinates, as between tiles only reversing is allowed
 		ORA sprite_y
 		AND #3
@@ -374,10 +375,13 @@ m_up:
 ; if arrived here, X or Y MOD 4 is zero, thus check map and AI
 decide:
 	LDA sp_stat, X
-	ORA #FL_TOG				; will check for frightened ghosts, flashing or not
-	CMP #FLASH				; is it FRIGHT or FLASH? (FLASH = FRIGHT | FL_TOG)
+;	ORA #FL_TOG				; will check for frightened ghosts, flashing or not (FL_TOG seems no longer necessary)
+	CMP #FRIGHT				; is it FRIGHT and/or FLASH? (FLASH = FRIGHT | FL_TOG)
+	BEQ yes_fr
+		CMP #FLASH			; better separate comparisons so A is kept
 	BNE not_fr
-		LDA sp_dir, X		; pelase note that ghosts cannot just turn 180 degrees
+yes_fr:
+		LDA sp_dir, X		; please note that ghosts cannot just turn 180 degrees
 		EOR #REVERSE		; this is the opposite direction
 		STA vh_mask			; store this forbidden direction
 go_rnd:
@@ -389,7 +393,15 @@ go_rnd:
 				BCS go_rnd	; until a feasible address is decided
 			RTS
 not_fr:
+	CMP #CHASE
+	BNE not_ch
 ; TBD TBD TBD
+not_ch:
+	CMP #SCATTER
+	BNE not_sct
+; TBD TBD TBD
+not_sct:
+; **** TBD ****
 	RTS
 
 ; *** movement feasibility routine ***
