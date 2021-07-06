@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210705-0032
+; last modified 20210706-1414
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -25,11 +25,13 @@
 ;		14	= inverse video
 ;		15	= true video
 ;		16	= DLE, do not execute next control char
-;		18	= set ink colour (MOD 16 in colour mode, MOD 2 in hires)\*
-;		20	= set paper colour (ditto)\*
+;		18	= set ink colour (MOD 16 in colour mode, MOD 2 in hires)*
+;		20	= set paper colour (ditto)*
 ;		21	= home without clear
+;		23	= set cursor position**
 ;		31	= back to text mode (simply IGNORED)
-; commands marked \* will take a second char as parameter
+; commands marked * will take a second char as parameter
+; command marked ** takes two subsequent bytes as parameters
 ; *** NOT YET supported (will show glyph like after DLE) ***
 ;		3	= TERM (?)
 ;		4	= end of screen
@@ -37,7 +39,6 @@
 ;		17	= cursor on (no cursor yet?) _might show current position for a split second_
 ;		19	= cursor off (no cursor yet?)
 ;		22	= page down (?)
-;		23	= set cursor position (!!!)
 ;		24	= backtab
 ;		25	= page up (?)
 ;		26	= switch focus (?)
@@ -48,8 +49,25 @@
 
 #include "../../usual.h"
 
-#define	IOSCREEN	_IOSCREEN
+; *** zeropage variables ***
+; cio_src.w (pointer to glyph definitions)
+; cio_pt.w (screen pointer)
 
+; *** firmware variables to be reset upon FF ***
+; fw_ink
+; fw_paper (possibly not worth combining)
+; fw_ciop.w (upper scan of cursor position)
+; fw_mask (for inverse/emphasis mode)
+; fw_hires (0=colour, 128=hires)
+; fw_cbin (binary or multibyte mode)
+; first two modes are directly processed, note BM_BLE is the shifted X
+#define	BM_CMD		0
+#define	BM_DLE		32
+; these modes are handled by indexed jump, note offset of 2
+#define	BM_INK		2
+#define	BM_PPR		4
+#define	BM_ATY		6
+#define	BM_ATX		8
 
 .(
 pvdu	= $6000				; base address
@@ -58,22 +76,26 @@ IO8attr	= $8000				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVER
 IOBeep	= $BFF0				; canonical buzzer address (d0)
 
 	TYA						; is going to be needed here anyway
-	LDX fw_cbin				; check whether in binary mode (must be reset on FF)
-	BNE cio_dle				; if not, check whether command (including INPUT) or glyph
-		CMP #32				; printable anyway?
-		BCS cio_prn			; go for it, flag known to be clear
-;			AND #31			; if arrived here, it MUST be below 32!
-			ASL				; two times
-			TAX				; use as index
-			CLC				; will simplify most returns as DR_OK becomes just RTS
-			_JMPX(cio_ctl)	; execute from table
-cio_dle:
+	LDX fw_cbin				; check whether in binary/multibyte mode
+	BEQ cio_cmd				; if not, check whether command (including INPUT) or glyph
+		CPX #BM_DLE			; just receiving what has to be printed?
+			BEQ cio_gl		; print the glyph!
+		_JMPX(cio_mbm-2)	; otherwise process following byte as expected, note offset
+cio_cmd:
+	CMP #32					; printable anyway?
+	BCS cio_prn				; go for it, flag known to be clear
+;		AND #31				; if arrived here, it MUST be below 32!
+		ASL					; two times
+		TAX					; use as index
+		CLC					; will simplify most returns as DR_OK becomes just RTS
+		_JMPX(cio_ctl)		; execute from table
+cio_gl:
 	_STZY fw_cbin			; clear flag!
 cio_prn:
 ; ***********************************
 ; *** output character (now in A) ***
 ; ***********************************
-			ASL				; times eight
+			ASL				; times eight scanlines
 			ROL cio_src+1	; M=???????7, A=6543210·
 			ASL
 			ROL cio_src+1	; M=??????76, A=543210··
@@ -245,7 +267,7 @@ cn_begin:
 ; make LSB AND %11100000 (hires) / %11000000 (colour)
 	LDA #%11100000			; base mask for hires
 	LDX fw_hires			; was it in hires mode?
-	BNE cn_lmok
+	BMI cn_lmok
 		LDA #%11000000		; otherwise, set colour mode mask
 cn_lmok:
 	AND cio_pt				; mask bits from LSB
@@ -258,7 +280,7 @@ cn_lf:
 ; ** do LF, adds 1 (hires) or 2 (colour) to MSB
 	LDA #1					; similarly, set base increase for hires and shift it left for colour
 	LDX fw_hires			; was it in hires mode?
-	BNE cn_hmok
+	BMI cn_hmok
 		ASL					; otherwise, set colour mode increase, keeps C clear
 cn_hmok:
 	ADC cio_pt+1			; increment MSB accordingly, C should remain clear!
@@ -276,30 +298,66 @@ cn_tab:
 ; *** not so fast, must check for possible line wrap... and even scrolling!
 	_DR_OK					; might set C, but could be removed if reuses the last check after LF
 
-cn_dle:
-; DLE, set binary mode
-;	LDX #1					; perhaps anything not zero is OK
-	STX fw_cbin				; set binary mode and we are done
-	RTS
-
 ; SO, set inverse mode
 cn_so:
 	LDA #$FF				; OK for all modes?
-	STA cp_mask				; set value to be EORed
+	STA fw_mask				; set value to be EORed
 	RTS
 
-; SI, set inverse mode
+; SI, set normal mode
 cn_si:
-	_STZA cp_mask			; clear value to be EORed
+	_STZA fw_mask			; clear value to be EORed
 	RTS
 
-cn_dle:
+md_dle:
 ; DLE, set binary mode
-;	LDX #1					; perhaps anything not zero is OK
+;	LDX #BM_DLE				; already set if 32
 	STX fw_cbin				; set binary mode and we are done
 	RTS
 
+; *** some multibyte routines ***
+cn_ink:						; 2= ink to be set
+	AND #15					; even if hires will just use d0, keep whole value for this hardware
+	STA fw_ink
+md_std:
+	_STZA fw_cbin			; back to standard mode
+	RTS
 
+cn_ppr:						; 4= paper to be set
+	AND #15					; same as ink
+	STA fw_ppr				; could use some trickery to use a common routine taking X as index
+	_BRA md_std
+
+cn_sety:					; 6= Y to be set, advance mode to 8
+	JSR coord_ok			; common coordinate check as is a square screen
+	STA fw_ciop+1			; note temporary use of MSB as Y coordinate
+	LDX #BM_ATX
+	STA fw_cbin				; go into X-expecting mode
+	RTS
+
+coord_ok:
+	AND #31					; filter coordinates, note +32 offset is deleted as well
+	LDX fw_hires			; if in colour mode, further filtering
+	BMI do_set
+		AND #15				; max colour coordinate
+do_set:
+	RTS						; if both coordinate setting combined, could be inlined
+
+cn_atyx:					; 8= X to be set and return to normal
+	JSR coord_ok
+	LDX fw_hires			; if in colour mode, each X is 4 bytes ahead
+	BMI do_atx
+		ASL
+		ASL
+		ASL fw_ciop+1		; THIS IS BAD *** KLUDGE
+		ASL fw_ciop+1
+do_atx:
+	STA fw_ciop				; THIS IS BAD *** KLUDGE
+	LDA fw_ciop+1			; add to recomputed offset the VRAM base address
+;	CLC
+	ADC #>pvdu
+	STA fw_ciop+1
+	_BRA md_std
 
 ; *** table of pointers to control char routines ***
 cio_ctl:
@@ -319,14 +377,14 @@ cio_ctl:
 	.word	cn_newl			; 13, newline
 	.word	cn_so			; 14, inverse
 	.word	cn_si			; 15, true video
-	.word	cn_dle			; 16, DLE, set flag
+	.word	md_dle			; 16, DLE, set flag
 	.word	cio_prn			; 17 ***
-	.word	; 18, set ink from next char...
+	.word	md_ink			; 18, set ink from next char
 	.word	cio_prn			; 19 ***
-	.word	; 20, set paper from next char...
+	.word	md_ppr			; 20, set paper from next char
 	.word	cio_home		; 21, home (what is done after CLS)
 	.word	cio_prn			; 22 ***
-	.word	cio_prn			; 23, should I implement it?
+	.word	md_atyx			; 23, ATYX will set cursor position
 	.word	cio_prn			; 24 ***
 	.word	cio_prn			; 25 ***
 	.word	cio_prn			; 26 ***
@@ -335,6 +393,13 @@ cio_ctl:
 	.word	cio_prn			; 29 ***
 	.word	cio_prn			; 30 ***
 	.word	cn_end			; 31, IGNORE back to text mode
+
+; *** table of pointers to multi-byte routines ***
+cio_mbm:
+	.word	cn_ink			; 2= ink to be set
+	.word	cn_ppr			; 4= paper to be set
+	.word	cn_sety			; 6= Y to be set, advance mode to 8
+	.word	cn_atyx			; 8= X to be set and return to normal
 
 font:
 #include "../../drivers/fonts/8x8.s"
