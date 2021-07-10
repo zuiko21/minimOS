@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210709-1314
+; last modified 20210711-0116
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -267,34 +267,41 @@ cn_begin:
 ; do CR... but keep Y
 ; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; make LSB AND %11110000 (hires) / %11000000 (colour)
-	LDA #%11100000			; base mask for hires
+; actually is a good idea to clear scanline bits, just in case
+	_STZA cio_pt			; all must clear! helps in case of tab wrapping too
+; in colour mode, the highest scanline bit is in MSB, usually (TABs, wrap) not worth clearing
+; ...but might help with unexpected mode change
+#ifdef	SAFE
 	LDX fw_hires			; was it in hires mode?
 	BMI cn_lmok
-		LDA #%11000000		; otherwise, set colour mode mask, not worth ASL
+		LDA cio_pt+1		; clear MSB lowest bit
+		AND #254
+		STA cio_pt+1
 cn_lmok:
-	AND cio_pt				; mask bits from LSB
-	STA cio_pt
+#endif
 ; check whether LF is to be done
 	DEY						; LF needed?
 	BEQ cn_ok				; not if Y was 1 (use BMI if Y was zeroed for LF)
-
+; *** will do LF if Y>1 ONLY ***
 cn_lf:
 ; do LF, adds 1 (hires) or 2 (colour) to MSB
-	LDA #1					; similarly, set base increment for hires and shift it left for colour
+; even simpler, INCrement MSB once... or two if in colour mode
+; hopefully highest scan bit is intact!!!
+	INC cio_pt+1			; increment MSB accordingly, this is OK for hires
 	LDX fw_hires			; was it in hires mode?
 	BMI cn_hmok
-		ASL					; otherwise, set colour mode increment, keeps C clear
+		INC cio_pt+1		; once again if in colour mode... 
 cn_hmok:
-	ADC cio_pt+1			; increment MSB accordingly, C should remain clear!
-	STA cio_pt+1
-; *** not so fast, must check for possible scrolling!!!
+; must check for possible scrolling!!! simply check sign ;-)
+	BPL cn_ok				; positive means no scroll
+; *** TBD TBD TBD ***
 cn_ok:
-	RTS
+	RTS	; note that some TAB wrapping might set C
 
 cn_tab:
 ; advance column to the next 8x position (all modes)
 ; this means adding 8 to LSB in hires mode, or 32 in colour mode
-; gotta set mask1!!!!!!********
+; remember format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 	LDA #%11111000			; hires mask first
 	STA fw_ctmp				; store temporarily
 	LDA #8					; lesser value in hires mode
@@ -306,11 +313,23 @@ cn_tab:
 		ASL					; but this will clear C in any case
 hr_tab:
 	ADC cio_pt				; this is LSB, contains old X...
-	AND #%fw_ctmp			; ...but round down position from the mask!
-; upper bits from the mask must be zero (original scan), otherwise NEWLINE!
+	AND fw_ctmp				; ...but round down position from the mask!
 	STA cio_pt
-; *** not so fast, must check for possible line wrap... and even scrolling!
-	_DR_OK					; might set C, but could be removed if reuses the last check after LF
+; not so fast, must check for possible line wrap... and even scrolling!
+	LDY #%11100000			; hires scanline mask
+	LDX fw_hires			; check mode
+	BMI tw_hr				; mask is OK for hires, and no need to look at MSB
+#ifdef	SAFE
+		LDA cio_pt+1		; have a look at highest scan bit!
+		LSR					; ...which is lowest MSB
+			BCS cn_begin	; just a normal NEWLINE (Y>1, but C is set)(consider AND#1,BNE)
+#endif
+		LDY #%11000000		; fix it otherwise, ASL is not worth as sets C (same bytes)
+tw_hr:
+	TYA						; guaranteed Y>1 in any case
+	AND cio_pt				; is any of the scanline bits high? must wrap!     
+		BNE cn_begin		; just a normal NEWLINE (Y>1, cannot guarantee A)
+	RTS
 
 ; SO, set inverse mode
 cn_so:
