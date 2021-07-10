@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210706-1414
+; last modified 20210709-1314
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -60,6 +60,7 @@
 ; fw_mask (for inverse/emphasis mode)
 ; fw_hires (0=colour, 128=hires)
 ; fw_cbin (binary or multibyte mode)
+; fw_ctmp (temporary use)
 ; first two modes are directly processed, note BM_BLE is the shifted X
 #define	BM_CMD		0
 #define	BM_DLE		32
@@ -261,14 +262,15 @@ cn_cr:
 
 cn_newl:
 ; CR, but will do LF afterwards by setting Y appropriately
-		TAY					; Y=13, thus allows full newline
+		TAY					; Y=13>1, thus allows full newline
 cn_begin:
-; ** do CR... but keep Y
-; make LSB AND %11100000 (hires) / %11000000 (colour)
+; do CR... but keep Y
+; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
+; make LSB AND %11110000 (hires) / %11000000 (colour)
 	LDA #%11100000			; base mask for hires
 	LDX fw_hires			; was it in hires mode?
 	BMI cn_lmok
-		LDA #%11000000		; otherwise, set colour mode mask
+		LDA #%11000000		; otherwise, set colour mode mask, not worth ASL
 cn_lmok:
 	AND cio_pt				; mask bits from LSB
 	STA cio_pt
@@ -277,11 +279,11 @@ cn_lmok:
 	BEQ cn_ok				; not if Y was 1 (use BMI if Y was zeroed for LF)
 
 cn_lf:
-; ** do LF, adds 1 (hires) or 2 (colour) to MSB
-	LDA #1					; similarly, set base increase for hires and shift it left for colour
+; do LF, adds 1 (hires) or 2 (colour) to MSB
+	LDA #1					; similarly, set base increment for hires and shift it left for colour
 	LDX fw_hires			; was it in hires mode?
 	BMI cn_hmok
-		ASL					; otherwise, set colour mode increase, keeps C clear
+		ASL					; otherwise, set colour mode increment, keeps C clear
 cn_hmok:
 	ADC cio_pt+1			; increment MSB accordingly, C should remain clear!
 	STA cio_pt+1
@@ -291,9 +293,21 @@ cn_ok:
 
 cn_tab:
 ; advance column to the next 8x position (all modes)
-	LDA cio_pt				; this is LSB, contains X
-	ADC #8					; advance...
-	AND #%11111000			; ...but round down position
+; this means adding 8 to LSB in hires mode, or 32 in colour mode
+; gotta set mask1!!!!!!********
+	LDA #%11111000			; hires mask first
+	STA fw_ctmp				; store temporarily
+	LDA #8					; lesser value in hires mode
+	LDX fw_hires			; check mode
+	BMI hr_tab				; if in hires, A is already correct
+		ASL fw_ctmp
+		ASL fw_ctmp			; shift mask too, will set C
+		ASL
+		ASL					; but this will clear C in any case
+hr_tab:
+	ADC cio_pt				; this is LSB, contains old X...
+	AND #%fw_ctmp			; ...but round down position from the mask!
+; upper bits from the mask must be zero (original scan), otherwise NEWLINE!
 	STA cio_pt
 ; *** not so fast, must check for possible line wrap... and even scrolling!
 	_DR_OK					; might set C, but could be removed if reuses the last check after LF
@@ -359,7 +373,27 @@ do_atx:
 	STA fw_ciop+1
 	_BRA md_std
 
+; *** support routines ***
+ck_wrap:
+; check for line wrap
+; pointer LSB *MUST* be x000xxxx in colour mode, 000xxxxx in hires **** NOOOOO *** CHECK ASAP ******
+	LDA #%11100000			; binary mask for hires
+	LDX fw_hires
+	BMI wr_ok				; if in colour mode, shift mask accordingly
+		LSR					; C remains clear
+wr_ok:
+	TAY						; keep this mask just in case
+	AND fw_ciop				; check scanline bits in pointer LSB
+	BEQ no_wrap				; all zero, no wrapping
+		TYA					; otherwise, retrieve mask...
+		EOR #$FF			; ...reversed
+		AND 
+no_wrap:
+	RTS						; is this OK? C clear?
+
+; **************************************************
 ; *** table of pointers to control char routines ***
+; **************************************************
 cio_ctl:
 	.word	cn_in			; 0, INPUT mode
 	.word	cn_cr			; 1, CR
