@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210711-0116
+; last modified 20210715-0105
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -57,6 +57,7 @@
 ; fw_ink
 ; fw_paper (possibly not worth combining)
 ; fw_ciop.w (upper scan of cursor position)
+; fw_fnt (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
 ; fw_hires (0=colour, 128=hires)
 ; fw_cbin (binary or multibyte mode)
@@ -91,7 +92,7 @@ cio_cmd:
 		CLC					; will simplify most returns as DR_OK becomes just RTS
 		_JMPX(cio_ctl)		; execute from table
 cio_gl:
-	_STZY fw_cbin			; clear flag!
+	_STZX fw_cbin			; clear flag!
 cio_prn:
 ; ***********************************
 ; *** output character (now in A) ***
@@ -103,55 +104,103 @@ cio_prn:
 			ASL
 			ROL cio_src+1	; M=?????765, A=43210···
 			CLC
-			ADC #<font		; add font base
+			ADC fw_fnt		; add font base
 			STA cio_src
 			LDA cio_src+1	; A=?????765
 			AND #7			; A=·····765
-			ADC #>font
+			ADC fw_fnt+1
 ;			DEC				; or add >font -1 if no glyphs for control characters
 			STA cio_src+1	; pointer to glyph is ready
 			LDA fw_ciop		; get current address
 			LDX fw_ciop+1
 			STA cio_pt		; set pointer
 			STX cio_pt+1
-			LDY #0			; reset offset
-cp_loop:
-				_LDAX(cio_src)	; glyph pattern
-				STA (cio_pt), Y
-				INC cio_src	; advance raster in font data, single byte
-				BNE cp_nras
-					INC cio_src
-cp_nras:
-				TYA			; advance offset to next raster
+			LDY #0			; reset screen offset (common)
+; *** now check for mode and jump to specific code ***
+			LDX fw_hires	; check mode, code is different, will only check d7 in case other flags get used
+			BPL cpc_do		; skip to colour mode, hires is smaller
+; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
+cph_loop:
+				_LDAX(cio_src)		; glyph pattern (5)
+				STA (cio_pt), Y		; put it on screen, note variable pointer (5)
+				INC cio_src			; advance to next glyph byte (5)
+				BNE cph_nw_nw		; (usually 3, rarely 7)
+					INC cio_src+1
+cph_nw:
+				TYA					; advance to next screen raster (2+2)
 				CLC
-				ADC #16
-				TAY
-				BPL cp_loop	; offset always below 128 (8x16)
-; advance screen pointer before exit
-			INC fw_ciop
-			LDA fw_ciop
-#ifndef	NMOS
-			BIT #%01110000	; check possible linewrap (CMOS, may use AND plus LDA afterwards)
-#else
-			AND #%01110000
-#endif
-			BEQ cn_newl
-cn_end:
-				_DR_OK		; make sure C is clear
-cn_newl:
-#ifdef	NMOS
-			DEC fw_ciop		; eeeeeek
-#else
-			DEC
-#endif
-			BNE cn_cr		; code shared with CR
-; anything else, or must be BRA?
+				ADC #16				; 16 bytes/raster (2)
+				TAY					; offset ready (2)
+				BPL cph_loop		; offset always below 128 (8x16, 3t)
+			BMI cur_r				; advance to next position!
+; colour version, 59b, typically 1895t (56/1823 if in ZP, 4% faster)
+; if glyph pattern is	g7g6g5g4g3g2g1g0...
+; and ink is			· · · · i3i2i1i0...
+; and paper is			· · · · p3p2p1p0...
+; must write 4 bytes...
+; (Xyz=Iz if Gy is 1, Pz otherwise)
+; X73X72X71X70X63X62X61X60
+; X53X52X51X50X43X42X41X40
+; X33X32X31X30X23X22X21X20
+; X13X12X11X10X03X02X01X00
+cpc_do:
+				_LDAX(cio_src)		; glyph pattern (5)
+				STA fw_tmp			; consider impact of putting this on ZP *** (4*)
+				LDX #4				; each glyph byte takes 4 screen bytes! (2)
+				INC cio_src			; advance to next glyph byte (5+usually 3)
+				BNE cpc_loop
+					INC cio_src+1
+cpc_loop:							; (all loop is done 4x52, 207t)
+					ASL fw_tmp		; extract leftmost bit from temporary glyph (6*)
+					BCC cpc_pl
+						LDA fw_ink	; bit ON means INK (in this case, 2+4+3=9)
+						BCS cpc_rot
+cpc_pl:
+						LDA fw_ppr	; bit OFF means PAPER (otherwise, 3+4=7; average 8)
+cpc_rot:
+					ASL
+					ASL
+					ASL
+					ASL				; colour code is now upper nibble (2+2+2+2)
+					ASL fw_tmp		; extract next bit from temporary glyph (6*)
+					BCC cpc_pr		; ditto for rightmost nibble (average 8)
+						ORA fw_ink	; bit ON means INK
+						BCS cpc_msk
+cpc_pr:
+						ORA fw_ppr	; bit OFF means PAPER
+cpc_msk:
+					EOR fw_mask		; in case inverse mode is set (4)
+					STA (cio_pt), Y	; put it on screen (5)
+					INY				; next screen byte for this glyph byte (2)
+					DEX				; glyph byte done? (2+3)
+					BNE cpc_loop
+				TYA					; advance to next screen raster, but take into account the 4-byte offset (2+2+2)
+				CLC
+				ADC #28
+				TAY					; offset ready (2)
+				BNE cpc_do			; offset will get zeroed for colour (8x32) (3, like all code is done 8x)
+; advance screen pointer before exit, just go to cursor-right routine!
+;			JMP cur_r		; no need for jump if cursor-right is just here!
+
+; **********************
+; *** cursor advance *** placed here for convenience of printing routine
+; **********************
+cur_r:
+	LDA #1					; base character width (in bytes) for hires mode
+	LDX fw_hires			; check mode
+	BMI rcu_hr				; already OK if hires
+		LDA #4				; ...or use value for colour mode
+rcu_hr:
+	CLC
+	ADC fw_ciop				; advance pointer
+	BNE rcu_nw				; check possible carry
+		INC fw_ciop+1
+rcu_nw:
+	JMP ck_wrap				; ...will return
 
 
 
-
-
-
+; *** legacy code just for reference
 ;		AND #$7F			; in order to strip extended ASCII
 ; no longer checks control chars here, just glyph!
 /*		CMP #FORMFEED		; reset device?
@@ -235,7 +284,7 @@ cn_ndle:
 */
 
 ; **********************
-; *** keyboard input ***
+; *** keyboard input *** may be moved elsewhere
 ; **********************
 ; IO9 port is read, normally 0
 ; any non-zero value is stored and returned the first time, otherwise returns empty (C set)
@@ -268,15 +317,15 @@ cn_begin:
 ; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; make LSB AND %11110000 (hires) / %11000000 (colour)
 ; actually is a good idea to clear scanline bits, just in case
-	_STZA cio_pt			; all must clear! helps in case of tab wrapping too
+	_STZA fw_ciop			; all must clear! helps in case of tab wrapping too (eeeeeeeeek...)
 ; in colour mode, the highest scanline bit is in MSB, usually (TABs, wrap) not worth clearing
 ; ...but might help with unexpected mode change
 #ifdef	SAFE
 	LDX fw_hires			; was it in hires mode?
 	BMI cn_lmok
-		LDA cio_pt+1		; clear MSB lowest bit
+		LDA fw_ciop+1		; clear MSB lowest bit
 		AND #254
-		STA cio_pt+1
+		STA fw_ciop+1
 cn_lmok:
 #endif
 ; check whether LF is to be done
@@ -287,10 +336,10 @@ cn_lf:
 ; do LF, adds 1 (hires) or 2 (colour) to MSB
 ; even simpler, INCrement MSB once... or two if in colour mode
 ; hopefully highest scan bit is intact!!!
-	INC cio_pt+1			; increment MSB accordingly, this is OK for hires
+	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
 	LDX fw_hires			; was it in hires mode?
 	BMI cn_hmok
-		INC cio_pt+1		; once again if in colour mode... 
+		INC fw_ciop+1		; once again if in colour mode... 
 cn_hmok:
 ; must check for possible scrolling!!! simply check sign ;-)
 	BPL cn_ok				; positive means no scroll
@@ -312,22 +361,23 @@ cn_tab:
 		ASL
 		ASL					; but this will clear C in any case
 hr_tab:
-	ADC cio_pt				; this is LSB, contains old X...
+	ADC fw_ciop				; this is LSB, contains old X...
 	AND fw_ctmp				; ...but round down position from the mask!
-	STA cio_pt
+	STA fw_ciop
 ; not so fast, must check for possible line wrap... and even scrolling!
+; must use a subroutine for this, as cur-right needs it too!!! *************** already done?
 	LDY #%11100000			; hires scanline mask
 	LDX fw_hires			; check mode
 	BMI tw_hr				; mask is OK for hires, and no need to look at MSB
 #ifdef	SAFE
-		LDA cio_pt+1		; have a look at highest scan bit!
+		LDA fw_ciop+1		; have a look at highest scan bit!
 		LSR					; ...which is lowest MSB
 			BCS cn_begin	; just a normal NEWLINE (Y>1, but C is set)(consider AND#1,BNE)
 #endif
 		LDY #%11000000		; fix it otherwise, ASL is not worth as sets C (same bytes)
 tw_hr:
 	TYA						; guaranteed Y>1 in any case
-	AND cio_pt				; is any of the scanline bits high? must wrap!     
+	AND fw_ciop				; is any of the scanline bits high? must wrap!     
 		BNE cn_begin		; just a normal NEWLINE (Y>1, cannot guarantee A)
 	RTS
 
@@ -420,7 +470,7 @@ cio_ctl:
 	.word	cio_prn			; 3 ***
 	.word	cio_prn			; 4 ***
 	.word	cio_prn			; 5 ***
-	.word	; 6, cursor right
+	.word	cur_r			; 6, cursor right
 	.word	; 7, beep
 	.word	; 8, backspace
 	.word	cn_tab			; 9, tab
