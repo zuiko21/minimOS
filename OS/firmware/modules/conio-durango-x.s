@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210715-0105
+; last modified 20210715-1750
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -134,15 +134,6 @@ cph_nw:
 				BPL cph_loop		; offset always below 128 (8x16, 3t)
 			BMI cur_r				; advance to next position!
 ; colour version, 59b, typically 1895t (56/1823 if in ZP, 4% faster)
-; if glyph pattern is	g7g6g5g4g3g2g1g0...
-; and ink is			· · · · i3i2i1i0...
-; and paper is			· · · · p3p2p1p0...
-; must write 4 bytes...
-; (Xyz=Iz if Gy is 1, Pz otherwise)
-; X73X72X71X70X63X62X61X60
-; X53X52X51X50X43X42X41X40
-; X33X32X31X30X23X22X21X20
-; X13X12X11X10X03X02X01X00
 cpc_do:
 				_LDAX(cio_src)		; glyph pattern (5)
 				STA fw_tmp			; consider impact of putting this on ZP *** (4*)
@@ -198,91 +189,6 @@ rcu_hr:
 rcu_nw:
 	JMP ck_wrap				; ...will return
 
-
-
-; *** legacy code just for reference
-;		AND #$7F			; in order to strip extended ASCII
-; no longer checks control chars here, just glyph!
-/*		CMP #FORMFEED		; reset device?
-		BNE cn_nff			; no, just print it
-; * clear screen, not much to be inited *
-			LDY #<pvdu		; initial address
-			LDX #>pvdu		; valid MSB for IOSCREEN, black-on-white mode (%01111xxx) instead of inverse for Pacman (%00001xxx)
-			STY cio_pt		; set ZP pointer
-			STX cio_pt+1
-			STY fw_ciop		; worth resetting global pointer (cursor) here (conio.h?)
-			STX fw_ciop+1
-;			LDY #0			; no need to reset index
-			TYA				; clear accumulator
-cls_p:
-cls_l:
-					STA (cio_pt), Y	; clear screen byte
-					INY
-					BNE cls_l		; continue within page
-				INC cio_pt+1
-				BPL cls_p	; same as cls_l if not using IOSCREEN
-			_DR_OK
-; continue evaluating control codes
-cn_nff:
-		CMP #BS				; backspace?
-		BNE cn_nbs
-; * clear previous char *
-; coordinates are stored 01111yyy y000xxxx
-; y will remain constant, xxxx may go down to zero
-; if xxxx is zero, do nothing... but better clear first char in line
-; will never cross page!
-; with no cursor, best to clear current char after backing
-			LDA fw_ciop		; get LSB (yrrrxxxx)
-			AND #$F			; check xxxx
-			BEQ bs_clr		; already at line start
-				DEC fw_ciop	; back one character (cannot be xxxx=0 as already checked for that)
-bs_clr:
-			LDA fw_ciop		; get current address (perhaps after backing)
-			LDX fw_ciop+1
-			STA cio_pt		; set pointer
-			STX cio_pt+1
-			LDY #0			; reset offset
-bs_loop:
-				LDA #0		; clear value
-				STA (cio_pt), Y
-				TYA			; advance offset to next raster
-				CLC
-				ADC #16
-				TAY
-				BPL bs_loop	; offset always below 128 (8x16)
-			_DR_OK
-cn_nbs:
-		CMP #CR				; new line?
-		BNE cn_ncr
-#ifdef	NMOS
-cn_cr:						; NMOS version needs this extra LDA for linewrap
-#endif
-			LDA fw_ciop		; current position (LSB)
-; *** common code with line wrap ***
-#ifndef	NMOS
-cn_cr:
-#endif
-			AND #$80		; the actual CR eeeeeeeek
-			CLC
-			ADC #$80		; then LF
-			STA fw_ciop
-			BCC cn_cre		; check carry
-				INC fw_ciop+1
-				BPL cn_cre
-; ** this far, no scrolling, just wrap **
-					LDA #>pvdu
-					STA fw_ciop+1
-cn_cre:
-			_DR_OK
-cn_ncr:
-		CMP #DLE			; check for DLE
-		BNE cn_ndle
-; *** set binary mode ***
-			INC fw_cbin		; set binary mode, safe enough if reset with STZ
-cn_ndle:
-; anything else?
-*/
-
 ; **********************
 ; *** keyboard input *** may be moved elsewhere
 ; **********************
@@ -300,6 +206,28 @@ cn_empty:
 	STY fw_io9				; keep clear
 cn_ack:
 	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+
+; ************************
+; *** support routines ***
+; ************************
+ck_wrap:
+; check for line wrap
+; address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
+; thus appropriate masks are %11100000 for hires and %11000000 in colour... but it's safer to check MSB's d0 too!
+	LDY #%11100000			; hires mask
+	LDX fw_hires			; check mode
+	BMI wr_hr				; OK if we're in hires
+#ifdef	SAFE
+		LDA fw_ciop+1		; check MSB
+		LSR					; just check d0
+			BNE cn_begin	; strange scanline, thus time for the NEWLINE (Y>1)
+#endif
+		LDY #%11000000		; in any case, get proper mask for colour mode
+wr_hr:
+	TYA						; prepare mask and guarantee Y>1 for auto LF
+	AND fw_ciop				; are scanline bits clear?
+		BNE cn_begin		; nope, do NEWLINE
+	RTS						; continue normally otherwise (should I clear C?)
 
 ; ************************
 ; *** control routines ***
@@ -323,9 +251,14 @@ cn_begin:
 #ifdef	SAFE
 	LDX fw_hires			; was it in hires mode?
 	BMI cn_lmok
-		LDA fw_ciop+1		; clear MSB lowest bit
+#ifdef	NMOS
+		LDA fw_ciop+1		; clear MSB lowest bit (8b/10t)
 		AND #254
 		STA fw_ciop+1
+#else
+		LDA #1				; bit to be cleared
+		TRB fw_ciop+1		; nice...
+#endif
 cn_lmok:
 #endif
 ; check whether LF is to be done
@@ -441,24 +374,6 @@ do_atx:
 	ADC #>pvdu
 	STA fw_ciop+1
 	_BRA md_std
-
-; *** support routines ***
-ck_wrap:
-; check for line wrap
-; pointer LSB *MUST* be x000xxxx in colour mode, 000xxxxx in hires **** NOOOOO *** CHECK ASAP ******
-	LDA #%11100000			; binary mask for hires
-	LDX fw_hires
-	BMI wr_ok				; if in colour mode, shift mask accordingly
-		LSR					; C remains clear
-wr_ok:
-	TAY						; keep this mask just in case
-	AND fw_ciop				; check scanline bits in pointer LSB
-	BEQ no_wrap				; all zero, no wrapping
-		TYA					; otherwise, retrieve mask...
-		EOR #$FF			; ...reversed
-		AND 
-no_wrap:
-	RTS						; is this OK? C clear?
 
 ; **************************************************
 ; *** table of pointers to control char routines ***
