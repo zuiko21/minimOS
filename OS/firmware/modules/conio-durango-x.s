@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210715-1750
+; last modified 20210715-1844
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -25,7 +25,9 @@
 ;		14	= inverse video
 ;		15	= true video
 ;		16	= DLE, do not execute next control char
+;		17	= cursor on (no cursor yet?) actually show current position for a split second
 ;		18	= set ink colour (MOD 16 in colour mode, MOD 2 in hires)*
+;		19	= cursor off (no cursor yet, simply IGNORED)
 ;		20	= set paper colour (ditto)*
 ;		21	= home without clear
 ;		23	= set cursor position**
@@ -36,8 +38,6 @@
 ;		3	= TERM (?)
 ;		4	= end of screen
 ;		5	= end of line
-;		17	= cursor on (no cursor yet?) _might show current position for a split second_
-;		19	= cursor off (no cursor yet?)
 ;		22	= page down (?)
 ;		24	= backtab
 ;		25	= page up (?)
@@ -314,6 +314,23 @@ tw_hr:
 		BNE cn_begin		; just a normal NEWLINE (Y>1, cannot guarantee A)
 	RTS
 
+; BEL, make a beep!
+; 40ms @ 1 kHz is 40 cycles
+; the 500µs halfperiod is about 325t
+cio_bel:
+	_CRITIC					; let's make things the right way
+	LDX #79					; 80 half-cycles, will end with d0 clear
+cbp_pul:
+		STX IOBeep			; pulse output bit (4)
+		LDY #63				; should make around 500µs halfcycle (2)
+cbp_del:
+			DEY
+			BNE cbp_del		; each iteration is (2+3)
+		DEX					; go for next semicycle
+		BPL cbp_pul			; must do zero too, to clear output bit
+	_NO_CRIT				; eeeeek
+	RTS
+
 ; SO, set inverse mode
 cn_so:
 	LDA #$FF				; OK for all modes?
@@ -331,7 +348,38 @@ md_dle:
 	STX fw_cbin				; set binary mode and we are done
 	RTS
 
+cio_cur:
+; XON, we have no cursor, but show its position for a moment
+; at least a full frame (40 ms or ~62kt)
+	LDY fw_ciop				; get current position pointer
+	LDX fw_ciop+1
+	STY cio_pt
+	LDY #224				; offset for last scanline at cursor position... in hires
+	LDA fw_hires			; are we in colour mode? that offset won't be valid!
+	BMI ccur_ok				; hires mode, all OK
+		INX					; otherwise, must advance pointer MSB
+		LDY #192			; new LSB offset
+ccur_ok:
+	STX cio_pt+1			; pointer complete
+	JSR xon_inv				; invert current contents (will return to caller the second time!)
+	TYA						; keep this offset!
+	LDY #49					; about 40 ms, or a full frame
+xon_del:
+			INX
+			BNE xon_del		; each iteration is (2+3), for full X is near 1.28kt
+		DEY					; go for next cycle
+		BNE xon_del
+	TAY						; retrieve offset
+xon_inv:
+	LDA (cio_pt), Y			; revert to original
+	EOR #$FF
+	STA (cio_pt), Y
+ignore:
+	RTS						; *** note generic exit ***
+
+; *******************************
 ; *** some multibyte routines ***
+; *******************************
 cn_ink:						; 2= ink to be set
 	AND #15					; even if hires will just use d0, keep whole value for this hardware
 	STA fw_ink
@@ -386,7 +434,7 @@ cio_ctl:
 	.word	cio_prn			; 4 ***
 	.word	cio_prn			; 5 ***
 	.word	cur_r			; 6, cursor right
-	.word	; 7, beep
+	.word	cio_bel			; 7, beep
 	.word	; 8, backspace
 	.word	cn_tab			; 9, tab
 	.word	cn_lf			; 10, LF
@@ -396,9 +444,9 @@ cio_ctl:
 	.word	cn_so			; 14, inverse
 	.word	cn_si			; 15, true video
 	.word	md_dle			; 16, DLE, set flag
-	.word	cio_prn			; 17 ***
+	.word	cio_cur			; 17, show cursor position
 	.word	md_ink			; 18, set ink from next char
-	.word	cio_prn			; 19 ***
+	.word	ignore			; 19, ignore XOFF (as there is no cursor to hide)
 	.word	md_ppr			; 20, set paper from next char
 	.word	cio_home		; 21, home (what is done after CLS)
 	.word	cio_prn			; 22 ***
@@ -410,7 +458,7 @@ cio_ctl:
 	.word	cio_prn			; 28 ***
 	.word	cio_prn			; 29 ***
 	.word	cio_prn			; 30 ***
-	.word	cn_end			; 31, IGNORE back to text mode
+	.word	ignore			; 31, IGNORE back to text mode
 
 ; *** table of pointers to multi-byte routines ***
 cio_mbm:
