@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210718-1609
+; last modified 20210718-1629
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -361,6 +361,34 @@ cbp_del:
 	_NO_CRIT				; eeeeek
 	RTS
 
+; FF, clear screen AND intialise values!
+cio_ff:
+; note that firmware must set fw_hires AND hardware register appropriately at boot!
+; we don't want a single CLS to switch modes, although a font reset is acceptable, set it again afterwards if needed
+; * things to be initialised... *
+; fw_ink
+; fw_paper (possibly not worth combining)
+; fw_fnt (new, pointer to relocatable 2KB font file)
+; fw_mask (for inverse/emphasis mode)
+; fw_cbin (binary or multibyte mode)
+
+;	LDA #0					; could just set this in case of black background
+	_STZA fw_cbin			; standard, character mode
+	_STZA fw_mask			; true video
+;	LDA #paper				; if a different background color is desired
+	STA fw_ppr				; black background (ignored in hires)
+	LDA #15					; white foreground or as desired
+	STA fw_ink				; ignored in hires
+	LDY #>font				; standard font address
+	LDA #<font
+	STY fw_fnt				; set firmware pointer (will need that again after FF)
+	STA fw_fnt+1
+; standard CLS, reset cursor and clear screen
+	JSR cio_home			; reset cursor and load appropriate address
+	STY cio_pt				; set pointer...
+	STA cio_pt+1
+	JMP cio_clear			; ...and clear whole screen, will return to caller
+
 ; SO, set inverse mode
 cn_so:
 	LDA #$FF				; OK for all modes?
@@ -406,6 +434,14 @@ xon_inv:
 	STA (cio_pt), Y
 ignore:
 	RTS						; *** note generic exit ***
+
+cio_home:
+; just reset cursor pointer, to be done after (or before!) CLS
+	LDY #<pvdu				; base address for all modes
+	LDA #>pvdu
+	STY fw_ciop				; just set pointer
+	STA fw_ciop+1
+	RTS						; C is clear, right?
 
 ; *******************************
 ; *** some multibyte routines ***
@@ -469,7 +505,7 @@ cio_ctl:
 	.word	cn_tab			; 9, tab
 	.word	cn_lf			; 10, LF
 	.word	; 11, cursor up
-	.word	; 12, FF clears screen and resets modes
+	.word	cio_ff			; 12, FF clears screen and resets modes
 	.word	cn_newl			; 13, newline
 	.word	cn_so			; 14, inverse
 	.word	cn_si			; 15, true video
