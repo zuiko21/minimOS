@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210715-1844
+; last modified 20210718-1609
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -219,7 +219,7 @@ ck_wrap:
 	BMI wr_hr				; OK if we're in hires
 #ifdef	SAFE
 		LDA fw_ciop+1		; check MSB
-		LSR					; just check d0
+		LSR					; just check d0, clears C
 			BNE cn_begin	; strange scanline, thus time for the NEWLINE (Y>1)
 #endif
 		LDY #%11000000		; in any case, get proper mask for colour mode
@@ -276,9 +276,53 @@ cn_lf:
 cn_hmok:
 ; must check for possible scrolling!!! simply check sign ;-)
 	BPL cn_ok				; positive means no scroll
-; *** TBD TBD TBD ***
+; ** scroll routine **
+; rows are 256 bytes apart in hires mode, but 512 in colour mode
+	LDY #<pvdu				; LSB must be zero, anyway
+	LDX #>pvdu				; MSB is actually OK for destination
+	STY cio_pt				; set both LSBs
+	STY cio_src
+	STX cio_pt+1			; destination is set
+	INX						; note trick for NMOS-savvyness
+	LDA fw_hires			; check mode anyway
+	BMI sc_hr				; +256 is OK for hires
+		INX					; make it +512 for colour
+sc_hr:
+	STX cio_src+1			; we're set
+sc_loop:
+		LDA (cio_src), Y	; move screen data ASAP
+		STA (cio_pt), Y
+		INY					; do a whole page
+		BNE sc_loop
+			INC cio_pt+1	; both MSBs are incremented at once...
+			INC cio_src+1	; ...but only source will enter high-32K at the end
+		BPL sc_loop
+; data has been transferred, now should clear the last line
+cio_clear:
+; ** generic screen clear routine, just set cio_pt with initial address and Y to zero **
+	TYA						; A should be zero in hires...
+	LDX fw_hires
+	BPL sc_clr
+		LDA fw_ppr			; but the paper colour otherwise
+		ASL
+		ASL
+		ASL
+		ASL
+		ORA fw_ppr
+sc_clr:
+			STA (cio_pt), Y	; clear all remaining bytes
+			INY
+			BNE sc_clr
+				INC cio_pt+1
+			BPL sc_clr		; colour mode needs an extra page to clear
+; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
+	TXA						; trick... A is fw_hires
+	ASL						; now C is set for hires
+	LDA fw_ciop+1			; cursor MSB
+	SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
+	STA fw_ciop+1
 cn_ok:
-	RTS	; note that some TAB wrapping might set C
+	_DR_OK					; note that some code might set C
 
 cn_tab:
 ; advance column to the next 8x position (all modes)
@@ -298,21 +342,7 @@ hr_tab:
 	AND fw_ctmp				; ...but round down position from the mask!
 	STA fw_ciop
 ; not so fast, must check for possible line wrap... and even scrolling!
-; must use a subroutine for this, as cur-right needs it too!!! *************** already done?
-	LDY #%11100000			; hires scanline mask
-	LDX fw_hires			; check mode
-	BMI tw_hr				; mask is OK for hires, and no need to look at MSB
-#ifdef	SAFE
-		LDA fw_ciop+1		; have a look at highest scan bit!
-		LSR					; ...which is lowest MSB
-			BCS cn_begin	; just a normal NEWLINE (Y>1, but C is set)(consider AND#1,BNE)
-#endif
-		LDY #%11000000		; fix it otherwise, ASL is not worth as sets C (same bytes)
-tw_hr:
-	TYA						; guaranteed Y>1 in any case
-	AND fw_ciop				; is any of the scanline bits high? must wrap!     
-		BNE cn_begin		; just a normal NEWLINE (Y>1, cannot guarantee A)
-	RTS
+	JMP ck_wrap				; will return in any case
 
 ; BEL, make a beep!
 ; 40ms @ 1 kHz is 40 cycles
