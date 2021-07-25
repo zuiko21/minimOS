@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210725-1129
+; last modified 20210725-2012
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -351,6 +351,43 @@ cbp_del:
 	_NO_CRIT				; eeeeek
 	RTS
 
+cio_up:
+; cursor up, no big deal, will stop at top row (27+2b CMOS(+NMOS), 35+2t hires/45+4t colour)
+; could be +1b, +2t if CLC is needed
+;	LDA #%00011111			; mask for hires
+;	LDY #1					; MSB increment for hires
+;	LDX fw_hires			; check mode, in order to discard LSB
+;	BMI cu_hr				; mask is valid for hires
+;		LDA #%00011110		; otherwise load colour mask
+;		INY					; now Y=2 saving one byte
+;cu_hr:
+;	AND fw_ciop+1			; current cursor position is now 000rrrrR, R for hires only
+;	BEQ cu_end				; if at top of screen, ignore cursor
+;cu_dloop:
+;			_DEC			; one less, not very efficient but no big deal either
+;			DEY
+;			BNE cu_dloop
+;		ORA #%01100000		; EEEEEEK must complete pointer address (5b, 6t)
+;		STA fw_ciop+1
+;cu_end:
+;	RTS						; not sure if C guranteed clear!
+
+; alternative (NMOS savvy, always 23b and 39t
+	LDA fw_hires			; check mode
+	ROL						; now C is set in hires!
+	PHP						; keep for later?
+	LDA #%00001111			; incomplete mask...
+	ROL						; but now is perfect! C is clear
+	AND fw_ciop+1			; current row is now 000rrrrR, R for hires only
+	BEQ cu_end				; if at top of screen, ignore cursor
+		PLP					; hires mode will set C again
+		SBC #1				; this will subtract 1 if C is set, and 2 if clear! YEAH!!!
+		CLC					; ending this with C set is a minor nitpick
+		ORA #%01100000		; EEEEEEK must complete pointer address (5b, 6t)
+		STA fw_ciop+1
+cu_end:
+	RTS						; now C is guranteed clear!
+
 ; FF, clear screen AND intialise values!
 cio_ff:
 ; note that firmware must set fw_hires AND hardware register appropriately at boot!
@@ -382,6 +419,8 @@ cio_ff:
 ;	JMP cio_clear			; ...and clear whole screen, will return to caller
 cio_clear:
 ; ** generic screen clear-to-end routine, just set cio_pt with initial address and Y to zero **
+; this works because all character rows are page-aligned
+; otherwise would be best keeping pointer LSB @ 0 and setting initial offset in Y, plus LDA #0
 	TYA						; A should be zero in hires...
 	LDX fw_hires
 	BPL sc_clr
@@ -514,7 +553,7 @@ cio_ctl:
 	.word	; 8, backspace
 	.word	cn_tab			; 9, tab
 	.word	cn_lf			; 10, LF
-	.word	; 11, cursor up
+	.word	cio_up			; 11, cursor up
 	.word	cio_ff			; 12, FF clears screen and resets modes
 	.word	cn_newl			; 13, newline
 	.word	cn_so			; 14, inverse
