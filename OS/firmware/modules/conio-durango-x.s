@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210718-1629
+; last modified 20210725-1129
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -70,6 +70,11 @@
 #define	BM_PPR		4
 #define	BM_ATY		6
 #define	BM_ATX		8
+
+; define custom initial ink, change as desired
+#define	STD_INK		15
+; define custom initial paper, but zero is recommended as might be reused for variable resetting!
+#define	STD_PPR		0
 
 .(
 pvdu	= $6000				; base address
@@ -256,7 +261,7 @@ cn_begin:
 		AND #254
 		STA fw_ciop+1
 #else
-		LDA #1				; bit to be cleared
+		LDA #1				; bit to be cleared (5b/7t)
 		TRB fw_ciop+1		; nice...
 #endif
 cn_lmok:
@@ -278,7 +283,7 @@ cn_hmok:
 	BPL cn_ok				; positive means no scroll
 ; ** scroll routine **
 ; rows are 256 bytes apart in hires mode, but 512 in colour mode
-	LDY #<pvdu				; LSB must be zero, anyway
+	LDY #<pvdu				; LSB *must* be zero, anyway
 	LDX #>pvdu				; MSB is actually OK for destination
 	STY cio_pt				; set both LSBs
 	STY cio_src
@@ -289,6 +294,7 @@ cn_hmok:
 		INX					; make it +512 for colour
 sc_hr:
 	STX cio_src+1			; we're set
+;	LDY #0					; in case pvdu is not page-aligned!
 sc_loop:
 		LDA (cio_src), Y	; move screen data ASAP
 		STA (cio_pt), Y
@@ -298,23 +304,7 @@ sc_loop:
 			INC cio_src+1	; ...but only source will enter high-32K at the end
 		BPL sc_loop
 ; data has been transferred, now should clear the last line
-cio_clear:
-; ** generic screen clear routine, just set cio_pt with initial address and Y to zero **
-	TYA						; A should be zero in hires...
-	LDX fw_hires
-	BPL sc_clr
-		LDA fw_ppr			; but the paper colour otherwise
-		ASL
-		ASL
-		ASL
-		ASL
-		ORA fw_ppr
-sc_clr:
-			STA (cio_pt), Y	; clear all remaining bytes
-			INY
-			BNE sc_clr
-				INC cio_pt+1
-			BPL sc_clr		; colour mode needs an extra page to clear
+	JSR cio_clear			; cannot be inlined!
 ; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
 	TXA						; trick... A is fw_hires
 	ASL						; now C is set for hires
@@ -372,12 +362,13 @@ cio_ff:
 ; fw_mask (for inverse/emphasis mode)
 ; fw_cbin (binary or multibyte mode)
 
-;	LDA #0					; could just set this in case of black background
 	_STZA fw_cbin			; standard, character mode
 	_STZA fw_mask			; true video
-;	LDA #paper				; if a different background color is desired
-	STA fw_ppr				; black background (ignored in hires)
-	LDA #15					; white foreground or as desired
+	_STZA fw_ppr			; black background (ignored in hires)
+; might use STA and LDA # with desired background colour, instead of the above
+;	LDA #STD_PPR
+;	STA fw_ppr
+	LDA #STD_INK			; white foreground or as desired
 	STA fw_ink				; ignored in hires
 	LDY #>font				; standard font address
 	LDA #<font
@@ -385,9 +376,28 @@ cio_ff:
 	STA fw_fnt+1
 ; standard CLS, reset cursor and clear screen
 	JSR cio_home			; reset cursor and load appropriate address
-	STY cio_pt				; set pointer...
+	STY cio_pt				; set pointer (LSB=0)...
 	STA cio_pt+1
-	JMP cio_clear			; ...and clear whole screen, will return to caller
+;	LDY #0					; usually not needed if screen is page-aligned!
+;	JMP cio_clear			; ...and clear whole screen, will return to caller
+cio_clear:
+; ** generic screen clear-to-end routine, just set cio_pt with initial address and Y to zero **
+	TYA						; A should be zero in hires...
+	LDX fw_hires
+	BPL sc_clr
+		LDA fw_ppr			; but the paper colour otherwise
+		ASL
+		ASL
+		ASL
+		ASL
+		ORA fw_ppr
+sc_clr:
+		STA (cio_pt), Y		; clear all remaining bytes
+		INY
+		BNE sc_clr
+			INC cio_pt+1
+		BPL sc_clr			; colour mode needs an extra page to clear
+	RTS
 
 ; SO, set inverse mode
 cn_so:
@@ -437,7 +447,7 @@ ignore:
 
 cio_home:
 ; just reset cursor pointer, to be done after (or before!) CLS
-	LDY #<pvdu				; base address for all modes
+	LDY #<pvdu				; base address for all modes, actually 0
 	LDA #>pvdu
 	STY fw_ciop				; just set pointer
 	STA fw_ciop+1
