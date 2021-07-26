@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210726-1810
+; last modified 20210726-1852
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -21,7 +21,7 @@
 ;		10	= line feed (cursor down, direct jump needs no Y set)
 ;		11	= cursor up
 ;		12	= clear screen AND initialise device
-;		13	= newline (actually LF after CR, eg. set Y to two or more so DEY clears Z and does LF)
+;		13	= newline (actually LF after CR, eg. set Y to anything but 1 so DEY clears Z and does LF)
 ;		14	= inverse video
 ;		15	= true video
 ;		16	= DLE, do not execute next control char
@@ -351,10 +351,10 @@ hr_tab:
 ; not so fast, must check for possible line wrap... and even scrolling!
 	JMP ck_wrap				; will return in any case
 
+cio_bel:
 ; BEL, make a beep!
 ; 40ms @ 1 kHz is 40 cycles
 ; the 500µs halfperiod is about 325t
-cio_bel:
 	_CRITIC					; let's make things the right way
 	LDX #79					; 80 half-cycles, will end with d0 clear
 cbp_pul:
@@ -369,16 +369,20 @@ cbp_del:
 	RTS
 
 cio_bs:
+; BACKSPACE, go back one char and clear cursor position
 	JSR cur_l				; back one char, if possible, then clear cursor position
 	LDY fw_ciop
 	LDA fw_ciop+1			; get current cursor position...
 	STY cio_pt
 	STA cio_pt+1			; ...into zp pointer
-	
-
+	LDX #8					; number of scanlines...
+	STX fw_ctmp				; ...as temporary variable (seldom used)
+; load appropriate A value (clear for hires, paper index repeated for colour)
 	LDA fw_hires			; check mode
 	ROL						; C set in hires
 	LDA #0					; A should be zero in hires, but ignore any other flags...
+	TAX						; so should be last index offset, for hires!
+	LDY #31					; this is what must be added to Y each scanline, in hires
 	BCS bs_hr
 		LDA fw_ppr			; but the paper colour otherwise
 		ASL
@@ -386,14 +390,30 @@ cio_bs:
 		ASL
 		ASL
 		ORA fw_ppr
+		LDX #3				; last index offset per scan (colour)
+		LDY #60				; this is what must be added to Y each scanline, in colour
 bs_hr:
-
-
-
-
-
-
-
+	STX cio_src				; another temporary variable
+	STY cio_src+1			; this is most used, thus must reside in ZP
+	LDY #0					; eeeeeeeeek *** must be revised for picoVDU
+bs_scan:
+			STA (cio_pt), Y	; clear screen byte
+			INY				; advance, just in case
+			DEX				; one less in a row
+			BPL bs_scan
+		LDX cio_src			; reload this counter
+		PHA					; save screen value!
+		TYA
+		CLC
+		ADC cio_src+1		; advance offset to next scanline
+		TAY
+		BCC bs_scw
+			INC cio_pt+1	; colour mode will cross page
+bs_scw:
+		PLA					; retrieved value, is there a better way?
+		DEC fw_ctmp			; one scanline less to go
+		BNE bs_scan
+	_DR_OK					; should be done
 
 cio_up:
 ; cursor up, no big deal, will stop at top row
@@ -560,12 +580,24 @@ cn_sety:					; 6= Y to be set, advance mode to 8
 	RTS
 
 coord_ok:
+#ifdef	SAFE
+	CMP #32					; check for not-yet-supported pixel coordinates
+		BCC not_px			; must be at least 32, remember stack balance!
+#endif
 	AND #31					; filter coordinates, note +32 offset is deleted as well
 	LDX fw_hires			; if in colour mode, further filtering
 	BMI do_set
 		AND #15				; max colour coordinate
 do_set:
-	RTS						; if both coordinate setting combined, could be inlined
+	RTS						; if both coordinates setting is combined, could be inlined
+
+#ifdef	SAFE
+not_px:
+; must ignore pixel coordinates, just rounding up to character position
+	PLA
+	PLA						; discard coordinate checking return address!
+	RTS						; that's all, as C known clear
+#endif
 
 cn_atyx:					; 8= X to be set and return to normal
 	JSR coord_ok
