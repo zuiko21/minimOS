@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210726-1744
+; last modified 20210726-1810
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -242,6 +242,23 @@ cn_cr:
 	LDY #1					; will skip LF routine
 	BNE cn_begin
 
+cur_l:
+; cursor left, no big deal, but do not wrap if at leftmost column
+; colour mode subtracts 4, but only 1 if in hires
+; only if LSB is not zero, assuming non-corrupted scanline bits
+; could use N flag after subtraction, as clear scanline bits guarantee its value
+	LDA #1					; hires decrement
+	LDX fw_hires
+	BPL cl_hr				; right mode for the decrement
+		LDA #4				; otherwise use colour value
+cl_hr:
+	SEC
+	SBC fw_ciop				; subtract to pointer, but...
+	BMI cl_end				; ...ignore operation if went negative
+		STA fw_ciop			; update pointer
+cl_end:
+	_DR_OK					; C known to be set, though
+
 cn_newl:
 ; CR, but will do LF afterwards by setting Y appropriately
 		TAY					; Y=13>1, thus allows full newline
@@ -351,6 +368,33 @@ cbp_del:
 	_NO_CRIT				; eeeeek
 	RTS
 
+cio_bs:
+	JSR cur_l				; back one char, if possible, then clear cursor position
+	LDY fw_ciop
+	LDA fw_ciop+1			; get current cursor position...
+	STY cio_pt
+	STA cio_pt+1			; ...into zp pointer
+	
+
+	LDA fw_hires			; check mode
+	ROL						; C set in hires
+	LDA #0					; A should be zero in hires, but ignore any other flags...
+	BCS bs_hr
+		LDA fw_ppr			; but the paper colour otherwise
+		ASL
+		ASL
+		ASL
+		ASL
+		ORA fw_ppr
+bs_hr:
+
+
+
+
+
+
+
+
 cio_up:
 ; cursor up, no big deal, will stop at top row
 ; preliminary version (27+2b CMOS(+NMOS), 35+2t hires/45+4t colour)
@@ -421,9 +465,10 @@ cio_clear:
 ; ** generic screen clear-to-end routine, just set cio_pt with initial address and Y to zero **
 ; this works because all character rows are page-aligned
 ; otherwise would be best keeping pointer LSB @ 0 and setting initial offset in Y, plus LDA #0
+; anyway, it is intended to clear whole rows
 	TYA						; A should be zero in hires...
 	LDX fw_hires
-	BPL sc_clr
+	BMI sc_clr				; eeeeeeeeek
 		LDA fw_ppr			; but the paper colour otherwise
 		ASL
 		ASL
@@ -544,13 +589,13 @@ do_atx:
 cio_ctl:
 	.word	cn_in			; 0, INPUT mode
 	.word	cn_cr			; 1, CR
-	.word	; 2, cursor left
+	.word	cur_l			; 2, cursor left
 	.word	cio_prn			; 3 ***
 	.word	cio_prn			; 4 ***
 	.word	cio_prn			; 5 ***
 	.word	cur_r			; 6, cursor right
 	.word	cio_bel			; 7, beep
-	.word	; 8, backspace
+	.word	cio_bs			; 8, backspace
 	.word	cn_tab			; 9, tab
 	.word	cn_lf			; 10, LF
 	.word	cio_up			; 11, cursor up
