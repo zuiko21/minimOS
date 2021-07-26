@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210725-2012
+; last modified 20210726-1744
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -352,7 +352,8 @@ cbp_del:
 	RTS
 
 cio_up:
-; cursor up, no big deal, will stop at top row (27+2b CMOS(+NMOS), 35+2t hires/45+4t colour)
+; cursor up, no big deal, will stop at top row
+; preliminary version (27+2b CMOS(+NMOS), 35+2t hires/45+4t colour)
 ; could be +1b, +2t if CLC is needed
 ;	LDA #%00011111			; mask for hires
 ;	LDY #1					; MSB increment for hires
@@ -370,23 +371,22 @@ cio_up:
 ;		ORA #%01100000		; EEEEEEK must complete pointer address (5b, 6t)
 ;		STA fw_ciop+1
 ;cu_end:
-;	RTS						; not sure if C guranteed clear!
+;	RTS						; not sure if C guaranteed clear!
 
-; alternative (NMOS savvy, always 23b and 39t
+; alternative (NMOS savvy, always 23b and 39t)
 	LDA fw_hires			; check mode
 	ROL						; now C is set in hires!
 	PHP						; keep for later?
 	LDA #%00001111			; incomplete mask...
 	ROL						; but now is perfect! C is clear
+	PLP						; hires mode will set C again but do it always! eeeeeeeeeeek
 	AND fw_ciop+1			; current row is now 000rrrrR, R for hires only
 	BEQ cu_end				; if at top of screen, ignore cursor
-		PLP					; hires mode will set C again
 		SBC #1				; this will subtract 1 if C is set, and 2 if clear! YEAH!!!
-		CLC					; ending this with C set is a minor nitpick
 		ORA #%01100000		; EEEEEEK must complete pointer address (5b, 6t)
 		STA fw_ciop+1
 cu_end:
-	RTS						; now C is guranteed clear!
+	_DR_OK					; ending this with C set is a minor nitpick, must reset anyway
 
 ; FF, clear screen AND intialise values!
 cio_ff:
