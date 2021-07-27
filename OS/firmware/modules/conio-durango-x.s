@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210726-1852
+; last modified 20210727-1936
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -17,7 +17,7 @@
 ;		6	= cursor right
 ;		7	= beep
 ;		8	= backspace
-;		9	= TAB (x+8 AND 248 in any case)
+;		9	= TAB (x+8 MOD 8 in any case)
 ;		10	= line feed (cursor down, direct jump needs no Y set)
 ;		11	= cursor up
 ;		12	= clear screen AND initialise device
@@ -26,7 +26,7 @@
 ;		15	= true video
 ;		16	= DLE, do not execute next control char
 ;		17	= cursor on (no cursor yet?) actually show current position for a split second
-;		18	= set ink colour (MOD 16 in colour mode, MOD 2 in hires)*
+;		18	= set ink colour (MOD 16 for colour mode, hires will set it as well but will be ignored)*
 ;		19	= cursor off (no cursor yet, simply IGNORED)
 ;		20	= set paper colour (ditto)*
 ;		21	= home without clear
@@ -62,7 +62,7 @@
 ; fw_hires (0=colour, 128=hires)
 ; fw_cbin (binary or multibyte mode)
 ; fw_ctmp (temporary use)
-; first two modes are directly processed, note BM_BLE is the shifted X
+; first two modes are directly processed, note BM_DLE is the shifted X
 #define	BM_CMD		0
 #define	BM_DLE		32
 ; these modes are handled by indexed jump, note offset of 2
