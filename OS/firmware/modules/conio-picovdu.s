@@ -1,9 +1,10 @@
 ; firmware module for minimOS
-; pico-VDU basic 16x16 firmware console 0.9.6a1
+; pico-VDU basic 16x16 firmware console 0.9.6a2
 ; suitable for Durango-proto (not Durango-X/SV) computer
 ; also for any other computer with picoVDU connected via IOSCREEN option
+; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210507-1351
+; last modified 20210727-2157
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -11,35 +12,102 @@
 ; template with temporary IO9 input support (no handshake!)
 ;	INPUT
 ; Y <-	char to be printed (1...255)
+;	supported control codes in this version
 ;		0	= ask for one character (non-locking)
+;		1	= start of line (CR withput LF, eg. set Y to one so DEY sets Z and skips LF routine)
+;		2	= cursor left
+;		6	= cursor right
+;		7	= beep
+;		8	= backspace
+;		9	= TAB (x+8 MOD 8 in any case)
+;		10	= line feed (cursor down, direct jump needs no Y set)
+;		11	= cursor up
 ;		12	= clear screen AND initialise device
+;		13	= newline (actually LF after CR, eg. set Y to anything but 1 so DEY clears Z and does LF)
+;		14	= inverse video
+;		15	= true video
+;		16	= DLE, do not execute next control char
+;		17	= cursor on (no cursor yet?) actually show current position for a split second
+;		18	= set ink colour (MOD 16 for colour mode, hires will set it as well but will be ignored)*
+;		19	= cursor off (no cursor yet, simply IGNORED)
+;		20	= set paper colour (ditto)*
+;		21	= home without clear
+;		23	= set cursor position**
+;		31	= back to text mode (simply IGNORED)
+; commands marked * will take a second char as parameter
+; command marked ** takes two subsequent bytes as parameters
+; *** NOT YET supported (will show glyph like after DLE) ***
+;		3	= TERM (?)
+;		4	= end of screen
+;		5	= end of line
+;		22	= page down (?)
+;		24	= backtab
+;		25	= page up (?)
+;		26	= switch focus (?)
+;		27	= escape (?)
+;		28...30	= Tektronix graphic commands
 ;	OUTPUT
 ; C ->	no available char (if Y was 0)
-; NMOS and 65816 savvy
 
 #include "../../usual.h"
 
+; in Durango-proto and the standalone IOx-picoVDU, enable IOSCREEN option for IO-based access
+; in case of direct mapping (Durango-L?) comment line below
 #define	IOSCREEN	_IOSCREEN
 
+; *** zeropage variables ***
+; cio_src.w (pointer to glyph definitions)
+; cio_pt.w (screen pointer)
+
+; *** firmware variables to be reset upon FF ***
+; fw_ink and fw_paper NO LONGER NEEDED
+; fw_ciop.w (upper scan of cursor position)
+; fw_fnt (new, pointer to relocatable 2KB font file)
+; fw_mask (for inverse/emphasis mode)
+; fw_flags (0=colour, 64=invers, was the older fw_hires, NO MORE FLAGS ALLOWED as must be ORed for IO8lh)
+; fw_cbin (binary or multibyte mode)
+; fw_ctmp (temporary use)
+; first two modes are directly processed, note BM_DLE is the shifted X
+#define	BM_CMD		0
+#define	BM_DLE		32
+; these modes are handled by indexed jump, note offset of 2
+; first of these modes just ignores the colour code, as no colours to be set, note new codes
+#define	BM_INK		2
+#define	BM_ATY		4
+#define	BM_ATX		6
+; no custom initial colours!
+
+.(
 pvdu	= $7800				; base address
+IO8attr	= $8000				; this address is not only for I/O, but d6 is the INVERSE mode
 #ifdef	IOSCREEN
-IO8lh	= $8000				; I/O Screen addresses (for prototype)
+IO8lh	= $8000				; I/O Screen addresses, this one must be ORed with fw_flags!
 IO8ll	= $8001
 IO8wr	= $8002
 #endif
 IO9di	= $9FFF				; data input (TBD)
+IOBeep	= $BFF0				; canonical buzzer address (d0)
 
-.(
-	LDX fw_cbin			; check whether in binary mode
-	BEQ cio_mode		; if not, check whether input or output
-		_STZX fw_cbin	; otherwise, clear binary mode and print directly
-		TYA
-		JMP cp_do
-cio_ctl:
-	TYA						; check mode (and put into A, just in case)
-	BNE cn_out				; Y=0 means input mode (unless in binary mode)
-		JMP cn_in
-cn_out:
+; *** *** code start, print char in Y (or ask for input) *** ***
+	TYA						; is going to be needed here anyway
+	LDX fw_cbin				; check whether in binary/multibyte mode
+	BEQ cio_cmd				; if not, check whether command (including INPUT) or glyph
+		CPX #BM_DLE			; just receiving what has to be printed?
+			BEQ cio_gl		; print the glyph!
+		_JMPX(cio_mbm-2)	; otherwise process following byte as expected, note offset
+cio_cmd:
+	CMP #32					; printable anyway?
+	BCS cio_prn				; go for it, flag known to be clear
+;		AND #31				; if arrived here, it MUST be below 32!
+		ASL					; two times
+		TAX					; use as index
+		CLC					; will simplify most returns as DR_OK becomes just RTS
+		_JMPX(cio_ctl)		; execute from table
+cio_gl:
+	_STZX fw_cbin			; clear flag!
+cio_prn:
+
+/*
 ; ***********************************
 ; *** output character (now in A) ***
 ; ***********************************
@@ -215,6 +283,8 @@ cn_newl:
 			DEC
 #endif
 			BNE cn_cr		; code shared with CR
+; *** *** *** *** END OF OLD CODE *** *** *** ***
+*/
 
 ; **********************
 ; *** keyboard input ***
@@ -233,6 +303,49 @@ cn_empty:
 	STY fw_io9				; keep clear
 cn_ack:
 	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+
+; **************************************************
+; *** table of pointers to control char routines ***
+; **************************************************
+cio_ctl:
+	.word	cn_in			; 0, INPUT mode
+	.word	cn_cr			; 1, CR
+	.word	cur_l			; 2, cursor left
+	.word	cio_prn			; 3 ***
+	.word	cio_prn			; 4 ***
+	.word	cio_prn			; 5 ***
+	.word	cur_r			; 6, cursor right
+	.word	cio_bel			; 7, beep
+	.word	cio_bs			; 8, backspace
+	.word	cn_tab			; 9, tab
+	.word	cn_lf			; 10, LF
+	.word	cio_up			; 11, cursor up
+	.word	cio_ff			; 12, FF clears screen and resets modes
+	.word	cn_newl			; 13, newline
+	.word	cn_so			; 14, inverse
+	.word	cn_si			; 15, true video
+	.word	md_dle			; 16, DLE, set flag
+	.word	cio_cur			; 17, show cursor position
+	.word	md_col			; 18, IGNORE following colour
+	.word	ignore			; 19, ignore XOFF (as there is no cursor to hide)
+	.word	md_col			; 20, IGNORE following colour
+	.word	cio_home		; 21, home (what is done after CLS)
+	.word	cio_prn			; 22 ***
+	.word	md_atyx			; 23, ATYX will set cursor position
+	.word	cio_prn			; 24 ***
+	.word	cio_prn			; 25 ***
+	.word	cio_prn			; 26 ***
+	.word	cio_prn			; 27 ***
+	.word	cio_prn			; 28 ***
+	.word	cio_prn			; 29 ***
+	.word	cio_prn			; 30 ***
+	.word	ignore			; 31, IGNORE back to text mode
+
+; *** table of pointers to multi-byte routines ***
+cio_mbm:
+	.word	md_std			; 2= ink or paper to be set, just to IGNORE the second byte
+	.word	cn_sety			; 4= Y to be set, then advance mode to 6
+	.word	cn_atyx			; 6= X to be set and return to normal
 
 font:
 #include "../../drivers/fonts/8x8.s"
