@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210728-1447
+; last modified 20210728-1609
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -261,7 +261,7 @@ cl_end:
 
 cn_newl:
 ; CR, but will do LF afterwards by setting Y appropriately
-		TAY					; Y=13>1, thus allows full newline
+		TAY					; Y=26>1, thus allows full newline
 cn_begin:
 ; do CR... but keep Y
 ; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)

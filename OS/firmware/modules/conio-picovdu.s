@@ -4,7 +4,7 @@
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210728-1548
+; last modified 20210728-1640
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -88,16 +88,16 @@ IO8wr	= $8002
 IO9di	= $9FFF				; data input (TBD)
 IOBeep	= $BFF0				; canonical buzzer address (d0)
 
-; *** *** code start, print char in Y (or ask for input) *** ***
-	TYA						; is going to be needed here anyway
-	LDX fw_cbin				; check whether in binary/multibyte mode
-	BEQ cio_cmd				; if not, check whether command (including INPUT) or glyph
+; *** *** code start, print char in Y (or ask for input) *** *** typical print overhead is 14t
+	TYA						; is going to be needed here anyway (2)
+	LDX fw_cbin				; check whether in binary/multibyte mode (4)
+	BEQ cio_cmd				; if not, check whether command (including INPUT) or glyph (usually 3)
 		CPX #BM_DLE			; just receiving what has to be printed?
 			BEQ cio_gl		; print the glyph!
 		_JMPX(cio_mbm-2)	; otherwise process following byte as expected, note offset
 cio_cmd:
-	CMP #32					; printable anyway?
-	BCS cio_prn				; go for it, flag known to be clear
+	CMP #32					; printable anyway? (2)
+	BCS cio_prn				; go for it, flag known to be clear (usually 3)
 		ASL					; two times
 		TAX					; use as index
 		CLC					; will simplify most returns as DR_OK becomes just RTS
@@ -109,233 +109,83 @@ cio_prn:
 ; *** output character (now in A) *** screen addresses are 01111yyy ysssxxxx
 ; ***********************************
 ; glyph pointer setting is always 24b, 43t
-			ASL				; times eight scanlines (2+5 x3)
-			ROL cio_src+1	; M=???????7, A=6543210·
-			ASL
-			ROL cio_src+1	; M=??????76, A=543210··
-			ASL
-			ROL cio_src+1	; M=?????765, A=43210···
-			CLC
-			ADC fw_fnt		; add font base (2+4+4)
-			STA cio_src
-			LDA cio_src+1	; A=?????765 (3)
-			AND #7			; A=·····765 (2+4)
-			ADC fw_fnt+1
-;			DEC				; or add >font -1 if no glyphs for control characters
-			STA cio_src+1	; pointer to glyph is ready (3)
+	ASL						; times eight scanlines (2+5 x3)
+	ROL cio_src+1			; M=???????7, A=6543210·
+	ASL
+	ROL cio_src+1			; M=??????76, A=543210··
+	ASL
+	ROL cio_src+1			; M=?????765, A=43210···
+	CLC
+	ADC fw_fnt				; add font base (2+4+4)
+	STA cio_src
+	LDA cio_src+1			; A=?????765 (3)
+	AND #7					; A=·····765 (2+4)
+	ADC fw_fnt+1
+;	DEC						; or add >font -1 if no glyphs for control characters
+	STA cio_src+1			; pointer to glyph is ready (3)
 ; screen pointer setting is 12b,16t direct and 16b,21t IOSCREEN (NMOS adds 5/6 or 7/8 for IOSCREEN)
-			LDY fw_ciop		; get current address (4+4)
-			LDA fw_ciop+1
-			STA cio_pt+1	; set pointer, good to keep MSB for increments (3)
+	LDY fw_ciop				; get current address (4+4)
+	LDA fw_ciop+1
+	STA cio_pt+1			; set pointer, good to keep MSB for increments (3)
 #ifdef	IOSCREEN
-			ORA fw_flags	; keep inverse mode (4)
-			STA IO8lh		; set MSB (4)
+	ORA fw_flags			; keep inverse mode (4)
+	STA IO8lh				; set MSB (4)
 #else
-			_STZA cio_pt	; LSB always in Y, ZP pointer LSB always 0 (3/5)
+	_STZA cio_pt			; LSB always in Y, ZP pointer LSB always 0 (3/5)
 #endif
-			LDX #8			; number of scanlines (2)
+	LDX #8					; number of scanlines (2)
 #ifdef	NMOS
-			STX fw_ctmp		; set counter (4)
-			LDX #0			; prepare for alternative instruction (2)
+	STX fw_ctmp				; set counter (4)
+	LDX #0					; prepare for alternative instruction (2)
 #endif
 cph_loop:
 ; main printing loop takes 18b,247t direct and 22b,271t IOSCREEN
 ; make that 20b,287t and 24b,311t IOSCREEN for NMOS
 #ifdef	NMOS
-				LDA (cio_src, X)	; glyph pattern (6)
+		LDA (cio_src, X)	; glyph pattern (6)
 #else
-				LDA (cio_src)		; CMOS is faster (5)
+		LDA (cio_src)		; CMOS is faster (5)
 #endif
 #ifdef	IOSCREEN
-				STY IO8ll			; select address low... (4)
-				STA IO8wr			; ...and write data into screen (4)
+		STY IO8ll			; select address low... (4)
+		STA IO8wr			; ...and write data into screen (4)
 #else
-				STA (cio_pt), Y		; put it on screen (5)
+		STA (cio_pt), Y		; put it on screen (5)
 #endif
-				INC cio_src			; advance to next glyph byte (5)
-				BNE cph_nw			; (usually 3, rarely 7) non-8-byte-aligned fonts need this
-					INC cio_src+1
+		INC cio_src			; advance to next glyph byte (5)
+		BNE cph_nw			; (usually 3, rarely 7) non-8-byte-aligned fonts need this
+			INC cio_src+1
 cph_nw:
-				TYA					; advance to next screen raster (2+2)
-				CLC
-				ADC #16				; 16 bytes/raster, this will NEVER wrap (2)
-				TAY					; offset ready (2)
+		TYA					; advance to next screen raster (2+2)
+		CLC
+		ADC #16				; 16 bytes/raster, this will NEVER wrap (2)
+		TAY					; offset ready (2)
 ; check some counter, no longer can rely on sign, note very different approach for NMOS
 #ifdef	NMOS
-				DEC fw_ctmp			; next scan (6)
+		DEC fw_ctmp			; next scan (6)
 #else
-				DEX					; next scan (2)
+		DEX					; next scan (2)
 #endif
-				BNE cph_loop		; until 8 times completed (3)
+		BNE cph_loop		; until 8 times completed (3)
 ; end of loop (8 times) 31·8-1/34·8-1, 36·8-1/39·8-1 NMOS
-			BEQ cur_r				; advance to next position! (always 3)
+;	BEQ cur_r				; advance to next position! (always 3)
 
+; **********************
+; *** cursor advance *** placed here for convenience of printing routine
+; **********************
+cur_r:
+	INC fw_ciop				; advance pointer, should NEVER wrap
+;	BNE ck_wrap				; ...will return
 
-
-
-/*
-cls_p:
-#ifdef	IOSCREEN
-				STX IO8lh	; set page on I/O device
-#endif
-cls_l:
-#ifndef IOSCREEN
-					STA (cio_pt), Y	; clear screen byte
-#else
-					STY IO8ll
-					STA IO8wr
-#endif
-					INY
-					BNE cls_l		; continue within page
-#ifndef	IOSCREEN
-				INC cio_pt+1
-#else
-				INX
-#endif
-				BPL cls_p	; same as cls_l if not using IOSCREEN
-			_DR_OK
-; continue evaluating control codes
-cn_nff:
-		CMP #BS				; backspace?
-		BNE cn_nbs
-; * clear previous char *
-; coordinates are stored 01111yyy y000xxxx
-; y will remain constant, xxxx may go down to zero
-; if xxxx is zero, do nothing... but better clear first char in line
-; will never cross page!
-; with no cursor, best to clear current char after backing
-			LDA fw_ciop		; get LSB (yrrrxxxx)
-			AND #$F			; check xxxx
-			BEQ bs_clr		; already at line start
-				DEC fw_ciop	; back one character (cannot be xxxx=0 as already checked for that)
-bs_clr:
-			LDA fw_ciop		; get current address (perhaps after backing)
-			LDX fw_ciop+1
-			STA cio_pt		; set pointer
-			STX cio_pt+1
-#ifdef	IOSCREEN
-			STX IO8lh		; preset I/O address
-			STA IO8ll
-#endif
-			LDY #0			; reset offset
-bs_loop:
-				LDA #0		; clear value
-#ifndef	IOSCREEN
-				STA (cio_pt), Y
-#else
-				STA IO8wr
-#endif
-				TYA			; advance offset to next raster
-				CLC
-				ADC #16
-				TAY
-#ifdef	IOSCREEN
-				CLC			; I/O LSB is offset + base LSB
-				ADC cio_pt	; works because no page will cross between rasters!
-				STA IO8ll
-				TYA			; recheck Y for N flag
-#endif
-				BPL bs_loop	; offset always below 128 (8x16)
-			_DR_OK
-cn_nbs:
-		CMP #CR				; new line?
-		BNE cn_ncr
-#ifdef	NMOS
-cn_cr:						; NMOS version needs this extra LDA for linewrap
-#endif
-			LDA fw_ciop		; current position (LSB)
-; *** common code with line wrap ***
-#ifndef	NMOS
-cn_cr:
-#endif
-			AND #$80		; the actual CR eeeeeeeek
-			CLC
-			ADC #$80		; then LF
-			STA fw_ciop
-			BCC cn_cre		; check carry
-				INC fw_ciop+1
-				BPL cn_cre
-; ** this far, no scrolling, just wrap **
-					LDA #>pvdu
-					STA fw_ciop+1
-cn_cre:
-			_DR_OK
-cn_ncr:
-		CMP #DLE			; check for DLE
-		BNE cn_ndle
-; *** set binary mode ***
-			INC fw_cbin		; set binary mode, safe enough if reset with STZ
-cn_ndle:
-; anything else?
-; *** PRINT GLYPH HERE ***
-		CMP #32				; check whether printable
-		BCC cn_end			; skip if < 32 (we are NOT in binary mode)
-cp_do:						; otherwise it is printable, or had received DLE
-			ASL				; times eight
-			ROL cio_src+1	; M=???????7, A=6543210·
-			ASL
-			ROL cio_src+1	; M=??????76, A=543210··
-			ASL
-			ROL cio_src+1	; M=?????765, A=43210···
-			CLC
-			ADC #<font		; add font base
-			STA cio_src
-			LDA cio_src+1	; A=?????765
-			AND #7			; A=·····765
-			ADC #>font
-;			DEC				; or add >font -1 if no glyphs for control characters
-			STA cio_src+1	; pointer to glyph is ready
-			LDA fw_ciop		; get current address
-			LDX fw_ciop+1
-			STA cio_pt		; set pointer
-			STX cio_pt+1
-#ifdef	IOSCREEN
-			STX IO8lh		; preset I/O address
-			STA IO8ll
-#endif
-			LDY #0			; reset offset
-cp_loop:
-				_LDAX(cio_src)	; glyph pattern
-#ifndef	IOSCREEN
-				STA (cio_pt), Y
-#else
-				STA IO8wr
-#endif
-				INC cio_src	; advance raster in font data, single byte
-				BNE cp_nras
-					INC cio_src
-cp_nras:
-				TYA			; advance offset to next raster
-				CLC
-				ADC #16
-				TAY
-#ifdef	IOSCREEN
-				CLC			; I/O LSB is offset + base LSB
-				ADC cio_pt
-				STA IO8ll
-				TYA			; recheck Y for N flag
-#endif
-				BPL cp_loop	; offset always below 128 (8x16)
-; advance screen pointer before exit
-			INC fw_ciop
-			LDA fw_ciop
-#ifndef	NMOS
-			BIT #%01110000	; check possible linewrap (CMOS, may use AND plus LDA afterwards)
-#else
-			AND #%01110000
-#endif
-			BEQ cn_newl
-cn_end:
-				_DR_OK		; make sure C is clear
-cn_newl:
-#ifdef	NMOS
-			DEC fw_ciop		; eeeeeek
-#else
-			DEC
-#endif
-			BNE cn_cr		; code shared with CR
-; *** *** *** *** END OF OLD CODE *** *** *** ***
-*/
+; ***************************
+; *** check for line wrap *** placed here for convenience of printing routine
+; ***************************
+ck_wrap:
+	LDY #%01110000			; scanline mask
+	TYA						; prepare mask and guarantee Y>1 for auto LF
+	AND fw_ciop				; are scanline bits clear?
+		BNE cn_begin		; nope, do NEWLINE
+	RTS						; continue normally otherwise (should I clear C?)
 
 ; **********************
 ; *** keyboard input ***
@@ -354,6 +204,90 @@ cn_empty:
 	STY fw_io9				; keep clear
 cn_ack:
 	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+
+; ************************
+; *** control routines ***
+; ************************
+cn_cr:
+; *** this is the CR without LF ***
+	LDY #1					; will skip LF routine
+	BNE cn_begin
+
+cur_l:
+; *** cursor left, no big deal, but do not wrap if at leftmost column ***
+	LDX fw_ciop				; try decrementing pointer by 1
+	DEX
+	TXA						; keep it in case it's valid
+	AND #%01110000			; check any scanline bits
+	BEQ cl_end				; ignore operation if any went high
+		STX fw_ciop			; ...update pointer otherwise
+cl_end:
+	RTS						; C known to be clear!
+
+cn_newl:
+; *** CR, but will do LF afterwards by setting Y appropriately ***
+		TAY					; Y=26>1, thus allows full newline
+cn_begin:
+; *** do CR... but keep Y ***
+; make LSB AND %1···0000 and, if LF is to be done, add 128
+; actually is a good idea to clear scanline bits, just in case
+#ifdef	NMOS
+		LDA fw_ciop			; clear LSB lowests bits (8b/10t)
+		AND #128
+		STA fw_ciop
+#else
+		LDA #127			; bits to be cleared (5b/7t)
+		TRB fw_ciop			; nice...
+#endif
+; check whether LF is to be done
+	DEY						; LF needed?
+	BEQ cn_ok				; not if Y was 1 (use BMI if Y was zeroed for LF)
+; *** will do LF if Y>1 ONLY ***
+cn_lf:
+; do LF, adds 128 to LSB
+; hopefully scan bits are intact!!!
+	LDA fw_ciop				; get pointer LSB
+	ADC #128				; C known to be clear! could use EOR as well?
+	STA fw_ciop				; update...
+	BCC cn_hmok				; ...taking care of possible  carry, BPL should do
+		INC fw_ciop+1
+cn_hmok:
+; must check for possible scrolling!!! simply check MSB sign ;-)
+	BIT fw_ciop+1
+	BPL cn_ok				; positive means no scroll
+; ** scroll routine **
+; rows are 128 bytes apart
+		LDA #<pvdu				; LSB *must* be zero, anyway
+		LDX #>pvdu				; MSB is actually OK for destination
+		STA cio_pt				; set both LSBs
+		ORA #128				; set bit 7 for source, was known to be zero
+		STA cio_src				; source is $7880
+		STX cio_pt+1			; MSBs are the same
+		STX cio_src+1			; we're set
+sc_loop:
+
+			LDA (cio_src), Y	; move screen data ASAP
+			STA (cio_pt), Y
+
+			INY					; do a whole page
+			BNE sc_loop
+				INC cio_pt+1	; both MSBs are incremented at once...
+
+				INC cio_src+1	; ...but only source will enter high-32K at the end
+			BPL sc_loop
+; data has been transferred, now should clear the last line
+		JSR cio_clear			; cannot be inlined!
+; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
+
+		TXA						; trick... A is fw_hires
+		ASL						; now C is set for hires
+		LDA fw_ciop+1			; cursor MSB
+		;SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
+		STA fw_ciop+1
+
+cn_ok:
+	_DR_OK					; note that some code might set C
+
 
 ; **************************************************
 ; *** table of pointers to control char routines ***
